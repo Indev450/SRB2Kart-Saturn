@@ -9100,14 +9100,15 @@ void HU_DrawTabRankings(INT32 x, INT32 y, playersort_t *tab, INT32 scorelines, I
 	{
 		char strtime[MAXPLAYERNAME+1];
 		const UINT8 pnum = tab[i].num;
+		player_t *player = &players[pnum];
 
-		if (players[pnum].spectator || !players[pnum].mo)
+		if (player->spectator || !player->mo)
 			continue; //ignore them.
 
-		const boolean whiteplayer = _isHighlightedPlayer(&players[pnum]);
-		const INT32 philicol = (whiteplayer ? V_SkinColorToHighlightcolor(players[pnum].skincolor) : 0);
+		const boolean whiteplayer = _isHighlightedPlayer(player);
+		const INT32 philicol = (whiteplayer ? V_SkinColorToHighlightcolor(player->skincolor) : 0);
 
-		if ((netgame && pnum != serverplayer) || (cv_mindelay.value && P_IsLocalPlayer(&players[pnum])))
+		if ((netgame && pnum != serverplayer) || (cv_mindelay.value && P_IsLocalPlayer(player)))
 		{
 			HU_drawPlayerPing(x + ((i < 8) ? -17 : rightoffset + 11), y-4, pnum, 0);
 		}
@@ -9119,23 +9120,23 @@ void HU_DrawTabRankings(INT32 x, INT32 y, playersort_t *tab, INT32 scorelines, I
 		else
 			V_DrawString(x + 20, y, philicol|V_ALLOWLOWERCASE, strtime);
 
-		if (players[pnum].mo->color)
+		if (player->mo->color)
 		{
-			if (players[pnum].mo->colorized)
-				colormap = R_GetTranslationColormap(TC_RAINBOW, players[pnum].mo->color, GTC_CACHE);
+			if (player->mo->colorized)
+				colormap = R_GetTranslationColormap(TC_RAINBOW, player->mo->color, GTC_CACHE);
 			else
-				colormap = R_GetTranslationColormap(players[pnum].skin, players[pnum].mo->color, GTC_CACHE);
+				colormap = R_GetTranslationColormap(player->skin, player->mo->color, GTC_CACHE);
 
 			if (cv_highresportrait.value)
-				V_DrawSmallMappedPatch(x, y-4, 0, R_GetSkinFaceWant(&players[pnum]), colormap);
+				V_DrawSmallMappedPatch(x, y-4, 0, R_GetSkinFaceWant(player), colormap);
 			else
-				V_DrawMappedPatch(x, y-4, 0, R_GetSkinFaceRank(&players[pnum]), colormap);
+				V_DrawMappedPatch(x, y-4, 0, R_GetSkinFaceRank(player), colormap);
 
-			/*if (G_BattleGametype() && players[pnum].kartstuff[k_bumper] > 0) -- not enough space for this
+			/*if (G_BattleGametype() && player->kartstuff[k_bumper] > 0) -- not enough space for this
 			{
 				INT32 bumperx = x+19;
 				V_DrawMappedPatch(bumperx-2, y-4, 0, kp_tinybumper[0], colormap);
-				for (j = 1; j < players[pnum].kartstuff[k_bumper]; j++)
+				for (j = 1; j < player->kartstuff[k_bumper]; j++)
 				{
 					bumperx += 5;
 					V_DrawMappedPatch(bumperx, y-4, 0, kp_tinybumper[1], colormap);
@@ -9146,11 +9147,11 @@ void HU_DrawTabRankings(INT32 x, INT32 y, playersort_t *tab, INT32 scorelines, I
 		if (whiteplayer)
 			V_DrawScaledPatch(x, y-4, 0, kp_facehighlight[(leveltime / 4) % 8]);
 
-		if (G_BattleGametype() && players[pnum].kartstuff[k_bumper] <= 0)
+		if (G_BattleGametype() && player->kartstuff[k_bumper] <= 0)
 			V_DrawScaledPatch(x-4, y-7, 0, kp_ranknobumpers);
 		else
 		{
-			INT32 pos = players[pnum].kartstuff[k_position];
+			INT32 pos = player->kartstuff[k_position];
 			if (pos < 0 || pos > MAXPLAYERS)
 				pos = 0;
 			// Draws the little number over the face
@@ -9162,18 +9163,18 @@ void HU_DrawTabRankings(INT32 x, INT32 y, playersort_t *tab, INT32 scorelines, I
 #define timestring(time) va("%i'%02i\"%02i", G_TicsToMinutes(time, true), G_TicsToSeconds(time), G_TicsToCentiseconds(time))
 			if (scorelines > 8)
 			{
-				if (players[pnum].exiting)
-					V_DrawRightAlignedThinString(x+rightoffset, y-1, hilicol|V_6WIDTHSPACE, timestring(players[pnum].realtime));
-				else if (players[pnum].pflags & PF_TIMEOVER)
+				if (player->exiting)
+					V_DrawRightAlignedThinString(x+rightoffset, y-1, hilicol|V_6WIDTHSPACE, timestring(player->realtime));
+				else if (player->pflags & PF_TIMEOVER)
 					V_DrawRightAlignedThinString(x+rightoffset, y-1, V_6WIDTHSPACE, "NO CONTEST.");
 				else if (circuitmap)
 					V_DrawRightAlignedThinString(x+rightoffset, y-1, V_6WIDTHSPACE, va("Lap %d", tab[i].count));
 			}
 			else
 			{
-				if (players[pnum].exiting)
-					V_DrawRightAlignedString(x+rightoffset, y, hilicol, timestring(players[pnum].realtime));
-				else if (players[pnum].pflags & PF_TIMEOVER)
+				if (player->exiting)
+					V_DrawRightAlignedString(x+rightoffset, y, hilicol, timestring(player->realtime));
+				else if (player->pflags & PF_TIMEOVER)
 					V_DrawRightAlignedThinString(x+rightoffset, y-1, 0, "NO CONTEST.");
 				else if (circuitmap)
 					V_DrawRightAlignedString(x+rightoffset, y, 0, va("Lap %d", tab[i].count));
