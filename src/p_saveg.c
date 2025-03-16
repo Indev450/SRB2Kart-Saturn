@@ -1680,8 +1680,10 @@ static void P_NetArchiveThinkers(savebuffer_t *save)
 	// save off the current thinkers
 	for (th = thinkercap.next; th != &thinkercap; th = th->next)
 	{
-		if (th->function.acp1 != (actionf_p1)P_RemoveThinkerDelayed)
-			numsaved++;
+		if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
+			continue;
+
+		numsaved++;
 
 		if (th->function.acp1 == (actionf_p1)P_MobjThinker)
 		{
