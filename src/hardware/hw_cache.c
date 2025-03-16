@@ -77,9 +77,6 @@ static void HWR_DrawColumnInCache(const column_t *patchcol, UINT8 *block, GLMipm
 
 	(void)patchheight; // This parameter is unused
 
-	if (!mipmap)
-		return;
-
 	if (originPatch) // originPatch can be NULL here, unlike in the software version
 		originy = originPatch->originy;
 
@@ -118,11 +115,11 @@ static void HWR_DrawColumnInCache(const column_t *patchcol, UINT8 *block, GLMipm
 			alpha = 0xFF;
 
 			// Make pixel transparent if chroma keyed
-			if ((mipmap && mipmap->flags & TF_CHROMAKEYED) && (texel == HWR_PATCHES_CHROMAKEY_COLORINDEX))
+			if ((mipmap->flags & TF_CHROMAKEYED) && (texel == HWR_PATCHES_CHROMAKEY_COLORINDEX))
 				alpha = 0x00;
 
 			//Hurdler: 25/04/2000: now support colormap in hardware mode
-			if (mipmap && mipmap->colormap)
+			if (mipmap->colormap)
 				texel = mipmap->colormap[texel];
 
 			// hope compiler will get this switch out of the loops (dreams...)
@@ -387,10 +384,11 @@ static void HWR_GenerateTexture(INT32 texnum, GLMapTexture_t *gltex, boolean noe
 	for (i = 0, patch = texture->patches; i < texture->patchcount; i++, patch++)
 	{
 		realpatch = W_CacheLumpNumPwad(patch->wad, patch->lump, PU_CACHE);
+
 		if (realpatch != NULL)
 		{
 			HWR_DrawTexturePatchInCache(&gltex->mipmap, blockwidth, blockheight, texture, patch, realpatch);
-			Z_ChangeTag(realpatch, PU_HWRCACHE_UNLOCKED);
+			//Z_ChangeTag(realpatch, PU_HWRCACHE_UNLOCKED);
 		}
 	}
 
