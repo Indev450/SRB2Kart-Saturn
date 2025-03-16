@@ -157,7 +157,28 @@ boolean OglSdlSurface(INT32 w, INT32 h)
 
 		GL_DBG_Printf("OpenGL %s\n", gl_version);
 		GL_DBG_Printf("GPU: %s\n", gl_renderer);
-		GL_DBG_Printf("Extensions: %s\n", gl_extensions);
+		GL_DBG_Printf("Extensions:");
+
+		{
+			// Need to do it with strtok for same reason its done like that in gr_glinfo command
+
+			char *copy = strdup((const char*)gl_extensions);
+			char *ext = strtok(copy, " ");
+
+			if (copy == NULL)
+			{
+				GL_DBG_Printf("Ran out of memory listing extensions?!?!");
+			}
+			else
+			{
+				do
+				{
+					GL_DBG_Printf(" %s", ext);
+				} while ((ext = strtok(NULL, " ")) != NULL);
+
+				free(copy);
+			}
+		}
 
 		if (strcmp((const char*)gl_renderer, "GDI Generic") == 0 &&
 			strcmp((const char*)gl_version, "1.1.0") == 0)
