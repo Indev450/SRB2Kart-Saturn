@@ -1623,8 +1623,8 @@ void GL_SetBlend(FBITFIELD PolyFlags)
 			GL_SetNoTexture();
 		}
 	}
-
 	CurrentPolyFlags = PolyFlags;
+
 }
 
 static void GL_AllocTextureBuffer(GLMipmap_t *pTexInfo)

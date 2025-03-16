@@ -5410,7 +5410,7 @@ static boolean K_SpeedLinesShouldBlend(player_t *player)
 	if (player->kartstuff[k_sneakertimer])
 		return true;
 
-	// this is how the percentage speedometer calcs, i suck at maths so this was the easiest thing to fo lmao
+	// this is how the percentage speedometer calcs, i suck at maths so this was the easiest thing to do lmao
 	percentspeed = (FixedDiv(player->speed, FixedMul(K_GetKartSpeed(player, false), ORIG_FRICTION))*100)>>FRACBITS;
 
 	if (percentspeed > 127) // sneaker boost is around 25%
@@ -5421,7 +5421,7 @@ static boolean K_SpeedLinesShouldBlend(player_t *player)
 
 typedef INT32 (*randomFunc)(INT32 min, INT32 max);
 
-static inline void K_SpawnNormalSpeedLines(player_t *player, boolean synched)
+FUNCINLINE static ATTRINLINE void K_SpawnNormalSpeedLines(player_t *player, boolean synched)
 {
 	randomFunc randomfunc = synched ? P_RandomRange : M_RandomRange;
 

@@ -1818,7 +1818,7 @@ static void R_ProjectSprite(mobj_t *thing)
 		if (vis->cut & SC_SEMIBRIGHT)
 			lindex = (MAXLIGHTSCALE/2) + (lindex >> 1);
 
-		vis->colormap = spritelights[lindex];
+		vis->colormap = lights_array[lindex];
 	}
 
 	vis->precip = false;
@@ -2108,7 +2108,7 @@ void R_AddPrecipitationSprites(void)
 		{
 			for (th = precipblocklinks[(by * bmapwidth) + bx]; th; th = next)
 			{
-				// Store this beforehand because R_ProjectPrecipitionSprite may free th (see P_PrecipThinker)
+				// Store this beforehand because R_ProjectPrecipitationSprite may free th (see P_PrecipThinker)
 				next = th->bnext;
 
 				if (th->precipflags & PCF_INVISIBLE)

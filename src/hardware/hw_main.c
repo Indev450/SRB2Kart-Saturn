@@ -322,55 +322,75 @@ static void HWR_SetShaderState(void)
 	GL_SetSpecialState(HWD_SET_SHADERS, HWR_UseShader() ? 1 : 0);
 }
 
-void HWR_Lighting(FSurfaceInfo *Surface, INT32 light_level, extracolormap_t *colormap)
+static boolean HWR_OverrideObjectLightLevel(mobj_t *thing, INT32 *lightlevel)
 {
+	if (R_ThingIsFullBright(thing))
+		*lightlevel = 255;
+	else if (R_ThingIsFullDark(thing))
+		*lightlevel = 0;
+	else if (thing->frame & FF_ABSOLUTELIGHTLEVEL)
+		*lightlevel = R_ThingLightLevel(thing);
+	else
+		return false;
+
+	return true;
+}
+
+void HWR_ObjectLightLevelPost(gl_vissprite_t *spr, const sector_t *sector, INT32 *lightlevel, boolean model, const boolean papersprite)
+{
+	const boolean semibright = R_ThingIsSemiBright(spr->mobj);
 	(void)papersprite;
 
-	if (spr->mobj->frame & FF_ABSOLUTELIGHTLEVEL)
+	*lightlevel += R_ThingLightLevel(spr->mobj);
+
+	if (maplighting.directional == true && P_SectorUsesDirectionalLighting(sector))
 	{
-		*lightlevel = R_ThingLightLevel(spr->mobj);
-		return;
+		if (model == false) // this is implemented by shader
+		{
+			fixed_t extralight = R_GetSpriteDirectionalLighting(R_PointToAngle(spr->mobj->x, spr->mobj->y));
+
+			// this seems to be wrong???
+			/*fixed_t extralight = R_GetSpriteDirectionalLighting(
+				papersprite
+				? R_PointToAngle(spr->mobj->x, spr->mobj->y) + (spr->flip ? -ANGLE_90 : ANGLE_90)
+				: R_PointToAngle(spr->mobj->x, spr->mobj->y) // fixme
+			);*/
+
+			// Less change in contrast in dark sectors
+			extralight = FixedMul(extralight, min(max(0, *lightlevel), 255) * FRACUNIT / 255);
+
+			// NO NO BAD! WHY!?
+			/*if (papersprite)
+			{
+				// Papersprite contrast should match walls
+				*lightlevel += FixedFloor(extralight + (FRACUNIT / 2)) / FRACUNIT;
+			}
+			else*/
+			{
+				// simple OGL approximation
+				fixed_t tr = R_PointToDist(spr->mobj->x, spr->mobj->y);
+				fixed_t xscale = FixedDiv((vid.width / 2) << FRACBITS, tr);
+
+				// Less change in contrast at further distances, to counteract DOOM diminished light
+				fixed_t n = FixedDiv(FixedMul(xscale, LIGHTRESOLUTIONFIX), ((MAXLIGHTSCALE-1) << LIGHTSCALESHIFT));
+				extralight = FixedMul(extralight, min(n, FRACUNIT));
+
+				// Contrast is stronger for normal sprites, stronger than wall lighting is at the same distance
+				*lightlevel += FixedFloor((extralight * 2) + (FRACUNIT / 2)) / FRACUNIT;
+			}
+		}
+
+		// Semibright objects will be made slightly brighter to compensate contrast
+		if (semibright)
+		{
+			*lightlevel += 16;
+		}
 	}
-	else
+
+	if (semibright)
 	{
-		*lightlevel += R_ThingLightLevel(spr->mobj);
+		*lightlevel = 128 + (*lightlevel >> 1);
 	}
-
-	if (maplighting.directional == false || !P_SectorUsesDirectionalLighting(sector) || model == true)
-		return;
-
-	fixed_t extralight = R_GetSpriteDirectionalLighting(R_PointToAngle(spr->mobj->x, spr->mobj->y));
-
-	// this seems to be wrong???
-	/*fixed_t extralight = R_GetSpriteDirectionalLighting(
-		papersprite
-		? R_PointToAngle(spr->mobj->x, spr->mobj->y) + (spr->flip ? -ANGLE_90 : ANGLE_90)
-		: R_PointToAngle(spr->mobj->x, spr->mobj->y) // fixme
-	);*/
-
-	// Less change in contrast in dark sectors
-	extralight = FixedMul(extralight, min(max(0, *lightlevel), 255) * FRACUNIT / 255);
-
-	// NO NO BAD! WHY!?
-	/*if (papersprite)
-	{
-		// Papersprite contrast should match walls
-		*lightlevel += FixedFloor(extralight + (FRACUNIT / 2)) / FRACUNIT;
-	}
-	else*/
-	{
-		// simple OGL approximation
-		fixed_t tr = R_PointToDist(spr->mobj->x, spr->mobj->y);
-		fixed_t xscale = FixedDiv((vid.width / 2) << FRACBITS, tr);
-
-		// Less change in contrast at further distances, to counteract DOOM diminished light
-		fixed_t n = FixedDiv(FixedMul(xscale, LIGHTRESOLUTIONFIX), ((MAXLIGHTSCALE-1) << LIGHTSCALESHIFT));
-		extralight = FixedMul(extralight, min(n, FRACUNIT));
-
-		// Contrast is stronger for normal sprites, stronger than wall lighting is at the same distance
-		*lightlevel += FixedFloor((extralight * 2) + (FRACUNIT / 2)) / FRACUNIT;
-	}
-
 }
 
 void HWR_Lighting(FSurfaceInfo *Surface, INT32 light_level, extracolormap_t *colormap, const boolean directional)
@@ -471,11 +491,9 @@ static FUINT HWR_CalcWallLight(FUINT lightnum, seg_t *seg)
 
 	if (seg != NULL && P_ApplyLightOffsetFine(lightnum, seg->frontsector))
 	{
-		if (cv_glfakecontrast.value == 2) // Smooth setting
-			finallight += seg->hwLightOffset;
-		else
-			finallight += seg->lightOffset * 8;
+		INT16 offset = (cv_glfakecontrast.value == 2) ? seg->hwLightOffset : ((INT16)seg->lightOffset * 8);
 
+		finallight += offset;
 		finallight = CLAMP(finallight, 0 , 255);
 	}
 
@@ -491,11 +509,9 @@ static FUINT HWR_CalcSlopeLight(FUINT lightnum, pslope_t *slope, const sector_t 
 
 	if (slope != NULL && sector != NULL && P_ApplyLightOffsetFine(lightnum, sector))
 	{
-		if (cv_glfakecontrast.value == 2) // Smooth setting
-			finallight += (fof ? -slope->hwLightOffset : slope->hwLightOffset);
-		else
-			finallight += (fof ? -slope->lightOffset * 8 : slope->lightOffset * 8);
+		INT16 offset = (cv_glfakecontrast.value == 2) ? slope->hwLightOffset : ((INT16)slope->lightOffset * 8);
 
+		finallight += (fof ? -offset : offset);
 		finallight = CLAMP(finallight, 0 , 255);
 	}
 
@@ -3541,6 +3557,7 @@ static void HWR_SplitSprite(gl_vissprite_t *spr, const boolean papersprite)
 	FSurfaceInfo Surf;
 	extracolormap_t *colormap;
 	INT32 lightlevel;
+	boolean lightset = true;
 	FBITFIELD blend = 0;
 	UINT8 alpha;
 
@@ -3676,10 +3693,7 @@ static void HWR_SplitSprite(gl_vissprite_t *spr, const boolean papersprite)
 	i = 0;
 	temp = FLOAT_TO_FIXED(realtop);
 
-	if (R_ThingIsFullBright(spr->mobj))
-		lightlevel = 255;
-	else if (R_ThingIsFullDark(spr->mobj))
-		lightlevel = 0;
+	lightset = HWR_OverrideObjectLightLevel(spr->mobj, &lightlevel);
 
 	for (i = 1; i < sector->numlights; i++)
 	{
@@ -3687,14 +3701,14 @@ static void HWR_SplitSprite(gl_vissprite_t *spr, const boolean papersprite)
 		if (!(h <= temp))
 			continue;
 
-		if (!(spr->mobj->frame & FF_FULLBRIGHT))
+		if (!lightset)
 			lightlevel = min(*list[i-1].lightlevel, 255);
 		colormap = list[i-1].extra_colormap;
 		break;
 	}
 
-	if (R_ThingIsSemiBright(spr->mobj))
-		lightlevel = 128 + (lightlevel>>1);
+	if (!lightset)
+		HWR_ObjectLightLevelPost(spr, sector, &lightlevel, false, papersprite);
 
 	for (i = 0; i < sector->numlights; i++)
 	{
@@ -3704,9 +3718,12 @@ static void HWR_SplitSprite(gl_vissprite_t *spr, const boolean papersprite)
 		// even if we aren't changing colormap or lightlevel, we still need to continue drawing down the sprite
 		if (!(list[i].flags & FF_NOSHADE) && (list[i].flags & FF_CUTSPRITES))
 		{
-			if (!(spr->mobj->frame & FF_FULLBRIGHT))
+			if (!lightset)
+			{
 				lightlevel = min(*list[i].lightlevel, 255);
-			HWR_ObjectLightLevelPost(spr, sector, &lightlevel, false, papersprite);
+				HWR_ObjectLightLevelPost(spr, sector, &lightlevel, false, papersprite);
+			}
+
 			colormap = list[i].extra_colormap;
 		}
 
@@ -3812,7 +3829,6 @@ static void HWR_DrawSprite(gl_vissprite_t *spr)
 	GLPatch_t *gpatch; // sprite patch converted to hardware
 	FSurfaceInfo Surf;
 	FBITFIELD blend = 0;
-	INT32 blendmode;
 
 	INT32 shader = SHADER_NONE;
 
@@ -3902,18 +3918,19 @@ static void HWR_DrawSprite(gl_vissprite_t *spr)
 	// colormap test
 	sector_t *sector = spr->mobj->subsector->sector;
 	INT32 lightlevel = 255;
+	boolean lightset = HWR_OverrideObjectLightLevel(spr->mobj, &lightlevel);
 	extracolormap_t *colormap = sector->extra_colormap;
+	const boolean fullbright = R_ThingIsFullBright(spr->mobj);
 
-	if (R_ThingIsFullDark(spr->mobj))
-		lightlevel = 0;
-	else if (!(R_ThingIsFullBright(spr->mobj)))
+	if (!lightset)
 		lightlevel = min(sector->lightlevel, 255);
 
-	if (R_ThingIsSemiBright(spr->mobj))
-		lightlevel = 128 + (lightlevel>>1);
+	if (!lightset)
+		HWR_ObjectLightLevelPost(spr, sector, &lightlevel, false, papersprite);
 
-	HWR_Lighting(&Surf, lightlevel, colormap);
+	HWR_Lighting(&Surf, lightlevel, colormap, P_SectorUsesDirectionalLighting(sector) && !fullbright);
 
+	INT32 blendmode;
 	if (spr->mobj->frame & FF_BLENDMASK)
 		blendmode = ((spr->mobj->frame & FF_BLENDMASK) >> FF_BLENDSHIFT) + 1;
 	else
@@ -4535,7 +4552,6 @@ static void HWR_ProjectSprite(mobj_t *thing)
 	float this_scale;
 	float spritexscale, spriteyscale;
 	float gz, gzt;
-	INT32 blendmode;
 	spritedef_t *sprdef;
 	spriteframe_t *sprframe;
 #ifdef ROTSPRITE
@@ -4584,6 +4600,7 @@ static void HWR_ProjectSprite(mobj_t *thing)
 
 	const boolean papersprite = (thing->frame & FF_PAPERSPRITE);
 
+	INT32 blendmode;
 	if (thing->frame & FF_BLENDMASK)
 		blendmode = ((thing->frame & FF_BLENDMASK) >> FF_BLENDSHIFT) + 1;
 	else
