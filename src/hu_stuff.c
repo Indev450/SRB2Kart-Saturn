@@ -2403,7 +2403,6 @@ Ping_conversion (UINT32 lag)
 	return lag;
 }
 
-
 //
 // HU_drawPing
 //

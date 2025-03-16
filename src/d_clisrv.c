@@ -6974,8 +6974,6 @@ void NetUpdate(void)
 	Net_AckTicker();
 	HandleNodeTimeouts();
 
-	nowtime /= NEWTICRATERATIO;
-
 	if (nowtime > resptime)
 	{
 		resptime = nowtime;
