@@ -66,9 +66,6 @@ struct demovars_s {
 		DSM_WILLSAVE,
 		DSM_SAVED
 	} savemode;
-
-	boolean freecam;
-
 };
 
 extern struct demovars_s demo;
@@ -118,12 +115,12 @@ extern consvar_t cv_songcredits;
 extern consvar_t cv_showfreeplay;
 extern consvar_t cv_growmusic, cv_supermusic;
 extern consvar_t cv_pauseifunfocused;
-//extern consvar_t cv_crosshair, cv_crosshair2, cv_crosshair3, cv_crosshair4;
-extern consvar_t cv_invertmouse/*, cv_alwaysfreelook, cv_chasefreelook, cv_mousemove*/;
-extern consvar_t cv_invertmouse2/*, cv_alwaysfreelook2, cv_chasefreelook2, cv_mousemove2*/;
+extern consvar_t cv_invertmouse;
 
 extern consvar_t cv_turnaxis[MAXSPLITSCREENPLAYERS];
 extern consvar_t cv_moveaxis[MAXSPLITSCREENPLAYERS];
+extern consvar_t cv_camturnaxis[MAXSPLITSCREENPLAYERS];
+extern consvar_t cv_camstrafeaxis[MAXSPLITSCREENPLAYERS];
 extern consvar_t cv_brakeaxis[MAXSPLITSCREENPLAYERS];
 extern consvar_t cv_aimaxis[MAXSPLITSCREENPLAYERS];
 extern consvar_t cv_lookaxis[MAXSPLITSCREENPLAYERS];
@@ -149,18 +146,19 @@ extern consvar_t cv_##name##_yoffset;
 DECL_HUD_OFFSET_X(name)\
 DECL_HUD_OFFSET_Y(name)
 
-DECL_HUD_OFFSET(item); // Item box
-DECL_HUD_OFFSET(time); // Time
-DECL_HUD_OFFSET(laps); // Number of laps
-DECL_HUD_OFFSET(dnft); // Countdown (did not finish timer)
-DECL_HUD_OFFSET(speed); // Speedometer
-DECL_HUD_OFFSET(posi); // Position in race
-DECL_HUD_OFFSET(face); // Mini rankings
-DECL_HUD_OFFSET(stcd); // Starting countdown
+DECL_HUD_OFFSET(item);   // Item box
+DECL_HUD_OFFSET(time);   // Time
+DECL_HUD_OFFSET(laps);   // Number of laps
+DECL_HUD_OFFSET(dnft);   // Countdown (did not finish timer)
+DECL_HUD_OFFSET(speed);  // Speedometer
+DECL_HUD_OFFSET(posi);   // Position in race
+DECL_HUD_OFFSET(wheel);  // RA Wheel
+DECL_HUD_OFFSET(face);   // Mini rankings
+DECL_HUD_OFFSET(stcd);   // Starting countdown
 DECL_HUD_OFFSET_Y(chek); // Check gfx
-DECL_HUD_OFFSET(mini); // Minimap
-DECL_HUD_OFFSET(want); // Wanted
-DECL_HUD_OFFSET(stat); // Stats
+DECL_HUD_OFFSET(mini);   // Minimap
+DECL_HUD_OFFSET(want);   // Wanted
+DECL_HUD_OFFSET(stat);   // Stats
 
 #undef DECL_HUD_OFFSET
 #undef DECL_HUD_OFFSET_X
@@ -182,6 +180,7 @@ extern consvar_t cv_sliptideroll;
 extern consvar_t cv_slamsound;
 extern consvar_t cv_sloperolldist;
 extern consvar_t cv_sparkroll;
+extern consvar_t cv_spinoutroll;
 
 extern consvar_t cv_cechotoggle;
 
@@ -194,6 +193,8 @@ typedef enum
 	AXISNONE = 0,
 	AXISTURN,
 	AXISMOVE,
+	AXISCAMTURN,
+	AXISCAMSTRAFE,
 	AXISBRAKE,
 	AXISAIM,
 	AXISLOOK,
@@ -230,8 +231,6 @@ INT32 JoyAxis(axis_input_e axissel, UINT8 p);
 extern angle_t localangle[MAXSPLITSCREENPLAYERS];
 extern INT32 localaiming[MAXSPLITSCREENPLAYERS]; // should be an angle_t but signed
 extern boolean camspin[MAXSPLITSCREENPLAYERS]; // SRB2Kart
-
-extern tic_t directortoggletimer;
 
 //
 // GAME
@@ -434,16 +433,39 @@ void G_ClearRecords(void);
 
 tic_t G_GetBestTime(INT16 map);
 
-FUNCMATH INT32 G_TicsToHours(tic_t tics);
-FUNCMATH INT32 G_TicsToMinutes(tic_t tics, boolean full);
-FUNCMATH INT32 G_TicsToSeconds(tic_t tics);
-FUNCMATH INT32 G_TicsToCentiseconds(tic_t tics);
-FUNCMATH INT32 G_TicsToMilliseconds(tic_t tics);
+// Time utility functions
+
+FUNCINLINE static ATTRINLINE FUNCMATH INT32 G_TicsToHours(tic_t tics)
+{
+	return tics/(3600*TICRATE);
+}
+
+FUNCINLINE static ATTRINLINE FUNCMATH INT32 G_TicsToMinutes(tic_t tics, boolean full)
+{
+	return full ? (tics/(60*TICRATE)) : (tics/(60*TICRATE)%60);
+}
+
+FUNCINLINE static ATTRINLINE FUNCMATH INT32 G_TicsToSeconds(tic_t tics)
+{
+	return (tics/TICRATE)%60;
+}
+
+FUNCINLINE static ATTRINLINE FUNCMATH INT32 G_TicsToCentiseconds(tic_t tics)
+{
+	return (INT32)((tics%TICRATE) * (100.00f/TICRATE));
+}
+
+FUNCINLINE static ATTRINLINE FUNCMATH INT32 G_TicsToMilliseconds(tic_t tics)
+{
+	return (INT32)((tics%TICRATE) * (1000.00f/TICRATE));
+}
 
 // Don't split up TOL handling
 INT16 G_TOLFlag(INT32 pgametype);
 
 INT16 G_RandMap(INT16 tolflags, INT16 pprevmap, boolean ignorebuffer, UINT8 maphell, boolean callagainsoon, INT16 *extbuffer);
 void G_AddMapToBuffer(INT16 map);
+
+void G_FixCamera(UINT8 view);
 
 #endif

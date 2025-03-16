@@ -1680,8 +1680,7 @@ static void P_NetArchiveThinkers(savebuffer_t *save)
 	// save off the current thinkers
 	for (th = thinkercap.next; th != &thinkercap; th = th->next)
 	{
-		if (!(th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed
-		 || th->function.acp1 == (actionf_p1)P_NullPrecipThinker))
+		if (th->function.acp1 != (actionf_p1)P_RemoveThinkerDelayed)
 			numsaved++;
 
 		if (th->function.acp1 == (actionf_p1)P_MobjThinker)
@@ -1689,9 +1688,6 @@ static void P_NetArchiveThinkers(savebuffer_t *save)
 			SaveMobjThinker(save, th, tc_mobj);
 			continue;
 		}
-#ifdef PARANOIA
-		else if (th->function.acp1 == (actionf_p1)P_NullPrecipThinker);
-#endif
 		else if (th->function.acp1 == (actionf_p1)T_MoveCeiling)
 		{
 			SaveCeilingThinker(save, th, tc_ceiling);
@@ -2151,12 +2147,11 @@ static void LoadMobjThinker(savebuffer_t *save, actionf_p1 thinker)
 	mobj->mirrored = 0;
 
 	// Sprite Rendering stuff
-	mobj->spritexoffset = 0;
-	mobj->spriteyoffset = 0;
-	mobj->spritexscale = FRACUNIT;
-	mobj->spriteyscale = FRACUNIT;
-	mobj->realxscale = FRACUNIT;
-	mobj->realyscale = FRACUNIT;
+	mobj->blendmode = AST_TRANSLUCENT;
+	mobj->spritexoffset = mobj->realxoffset = 0;
+	mobj->spriteyoffset = mobj->realxoffset = 0;
+	mobj->spritexscale = mobj->realxscale = FRACUNIT;
+	mobj->spriteyscale = mobj->realyscale = FRACUNIT;
 	mobj->stretchslam = 0;
 
 	// Timer for slam sound effect
@@ -2674,6 +2669,8 @@ static void P_NetUnArchiveThinkers(savebuffer_t *save)
 {
 	thinker_t *currentthinker;
 	thinker_t *next;
+	thinker_t *currentprecipthinker;
+	thinker_t *nextprecip;
 	UINT8 tclass;
 	UINT8 restoreNum = false;
 	UINT32 i;
@@ -2688,7 +2685,7 @@ static void P_NetUnArchiveThinkers(savebuffer_t *save)
 	{
 		next = currentthinker->next;
 
-		if (currentthinker->function.acp1 == (actionf_p1)P_MobjThinker || currentthinker->function.acp1 == (actionf_p1)P_NullPrecipThinker)
+		if (currentthinker->function.acp1 == (actionf_p1)P_MobjThinker)
 			P_RemoveSavegameMobj((mobj_t *)currentthinker); // item isn't saved, don't remove it
 		else
 		{
@@ -2696,6 +2693,24 @@ static void P_NetUnArchiveThinkers(savebuffer_t *save)
 			R_DestroyLevelInterpolators(currentthinker);
 			Z_Free(currentthinker);
 		}
+	}
+
+	// remove all the current precip thinkers
+	currentprecipthinker = precipcap.next;
+	for (currentprecipthinker = precipcap.next; currentprecipthinker != &precipcap; currentprecipthinker = nextprecip)
+	{
+		nextprecip = currentprecipthinker->next;
+
+#ifdef PARANOIA
+		if (currentprecipthinker->function.acp1 != (actionf_p1)P_NullPrecipThinker)
+		{
+			(next->prev = currentprecipthinker->prev)->next = nextprecip;
+			R_DestroyLevelInterpolators(currentprecipthinker);
+			Z_Free(currentprecipthinker);
+		}
+		else
+#endif
+			P_RemoveSavegameMobj((mobj_t *)currentprecipthinker); // item isn't saved, don't remove it
 	}
 
 	// we don't want the removed mobjs to come back
@@ -3336,7 +3351,7 @@ FUNCINLINE static ATTRINLINE boolean P_NetUnArchiveMisc(savebuffer_t *save, bool
 	// tell the sound code to reset the music since we're skipping what
 	// normally sets this flag
 	if (!reloading)
-		mapmusflags |= MUSIC_RELOADRESET;
+		mapmusic.flags |= MUSIC_RELOADRESET;
 
 	G_SetGamestate(READINT16(save->p));
 

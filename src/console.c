@@ -608,7 +608,7 @@ static void CON_MoveConsole(void)
 	}
 
 	// Not instant - Increment fracmovement fractionally
-	fracmovement += FixedMul(cons_speed.value*vid.fdupy, renderdeltatics);
+	fracmovement += FixedMul(cons_speed.value*vid.fdupy, (cv_uncappedhud.value ? renderdeltatics : FRACUNIT));
 
 	if (con_curlines < con_destlines) // Move the console downwards
 	{
@@ -1466,7 +1466,10 @@ static void CON_DrawHudlines(void)
 			{
 				charflags = (*p & 0x7f) << V_CHARCOLORSHIFT;
 				p++;
+				c++;
 			}
+			if (c >= con_width)
+				break;
 			if (*p < HU_FONTSTART)
 				;//charwidth = 4 * con_scalefactor;
 			else
@@ -1546,7 +1549,10 @@ static void CON_DrawConsole(void)
 			{
 				charflags = (*p & 0x7f) << V_CHARCOLORSHIFT;
 				p++;
+				c++;
 			}
+			if (c >= con_width)
+				break;
 			V_DrawCharacter(x, y, (INT32)(*p) | charflags | cv_constextsize.value | V_NOSCALESTART, !cv_allcaps.value);
 		}
 	}

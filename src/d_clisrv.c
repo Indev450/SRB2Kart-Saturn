@@ -103,6 +103,30 @@ static tic_t freezetimeout[MAXNETNODES]; // Until when can this node freeze the 
 UINT16 pingmeasurecount = 1;
 UINT32 realpingtable[MAXPLAYERS]; //the base table of ping where an average will be sent to everyone.
 UINT32 playerpingtable[MAXPLAYERS]; //table of player latency values.
+
+#define GENTLEMANSMOOTHING (TICRATE)
+static tic_t reference_lag;
+static UINT8 spike_time;
+tic_t lowest_lag;
+tic_t simulated_lag;
+boolean server_lagless;
+
+static void Lagless_OnChange(void)
+{
+	/* don't back out of dishonesty, or go lagless after playing honestly */
+	if (cv_lagless.value && gamestate == GS_LEVEL)
+		server_lagless = true;
+
+	/*if (cv_lagless.value)
+		HU_AddChatText(M_GetText("\x82*Gentlemans Delay has been disabled for Serverplayer."), false);
+	else
+		HU_AddChatText(M_GetText("\x82*Gentlemans Delay will be enabled for Serverplayer."), false);*/
+}
+
+static CV_PossibleValue_t mindelay_cons_t[] = {{0, "MIN"}, {30, "MAX"}, {0, NULL}};
+consvar_t cv_mindelay = {"mindelay", "0", CV_SAVE, mindelay_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_lagless = {"serverlagless", "On", CV_SAVE|CV_CALL|CV_NOINIT, CV_OnOff, Lagless_OnChange, 0, NULL, NULL, 0, 0, NULL}; // this should be a netvar Zzz...
+
 SINT8 nodetoplayer[MAXNETNODES];
 SINT8 nodetoplayer2[MAXNETNODES]; // say the numplayer for this node if any (splitscreen)
 SINT8 nodetoplayer3[MAXNETNODES]; // say the numplayer for this node if any (splitscreen == 2)
@@ -140,7 +164,7 @@ static UINT8 gamestate_resend_counter[MAXNETNODES];
 boolean hu_stopped = false;
 
 // Client specific
-static ticcmd_t localcmds[MAXSPLITSCREENPLAYERS];
+static ticcmd_t localcmds[MAXSPLITSCREENPLAYERS][MAXGENTLEMENDELAY];
 static boolean cl_packetmissed;
 // here it is for the secondary local player (splitscreen)
 static UINT8 mynode; // my address pointofview server
@@ -186,6 +210,16 @@ typedef struct textcmdtic_s
 	textcmdplayer_t *playercmds[TEXTCMD_HASH_SIZE];
 	struct textcmdtic_s *next;
 } textcmdtic_t;
+
+typedef struct textcmdbuf_s textcmdbuf_t;
+
+struct textcmdbuf_s
+{
+	textcmdbuf_t *next;
+	UINT8 cmd[MAXTEXTCMD];
+};
+
+static textcmdbuf_t *textcmdbuf[MAXSPLITSCREENPLAYERS] = {NULL};
 
 ticcmd_t netcmds[TICQUEUE][MAXPLAYERS];
 static textcmdtic_t *textcmds[TEXTCMD_HASH_SIZE] = {NULL};
@@ -271,23 +305,57 @@ void RegisterNetXCmd(netxcmd_t id, void (*cmd_f)(UINT8 **p, INT32 playernum))
 	listnetxcmd[id] = cmd_f;
 }
 
-void SendNetXCmdForPlayer(UINT8 playerid, netxcmd_t id, const void *param, size_t nparam)
+static void WriteNetXCmd(UINT8 *cmd, netxcmd_t id, const void *param, size_t nparam)
 {
-	if ((localtextcmd[playerid])[0]+2+nparam > MAXTEXTCMD)
-	{
-		// for future reference: if (cht_debug) != debug disabled.
-		CONS_Alert(CONS_ERROR, M_GetText("NetXCmd buffer full, cannot add netcmd %d! (size: %d, needed: %s)\n"), id, localtextcmd[playerid][0], sizeu1(nparam));
-		return;
-	}
-
-	localtextcmd[playerid][0]++;
-	localtextcmd[playerid][localtextcmd[playerid][0]] = (UINT8)id;
-
+	cmd[0]++;
+	cmd[cmd[0]] = (UINT8)id;
 	if (param && nparam)
 	{
-		M_Memcpy(&localtextcmd[playerid][localtextcmd[playerid][0] + 1], param, nparam);
-		localtextcmd[playerid][0] = (UINT8)(localtextcmd[playerid][0] + (UINT8)nparam);
+		M_Memcpy(&cmd[cmd[0]+1], param, nparam);
+		cmd[0] = (UINT8)(cmd[0] + (UINT8)nparam);
 	}
+}
+
+void SendNetXCmdForPlayer(UINT8 playerid, netxcmd_t id, const void *param, size_t nparam)
+{
+	if (localtextcmd[playerid][0]+2+nparam > MAXTEXTCMD)
+	{
+		textcmdbuf_t *buf = textcmdbuf[playerid];
+
+		if (2+nparam > MAXTEXTCMD)
+		{
+			CONS_Alert(CONS_ERROR, M_GetText("packet too large to fit NetXCmd, cannot add netcmd %d! (size: %s, max: %d)\n"), id, sizeu1(2+nparam), MAXTEXTCMD);
+			return;
+		}
+
+		// for future reference: if (cv_debug) != debug disabled.
+		CONS_Alert(CONS_NOTICE, M_GetText("NetXCmd buffer full, delaying netcmd %d... (size: %d, needed: %s)\n"), id, localtextcmd[playerid][0], sizeu1(nparam));
+		if (buf == NULL)
+		{
+			textcmdbuf[playerid] = Z_Malloc(sizeof(textcmdbuf_t), PU_STATIC, NULL);
+			textcmdbuf[playerid]->cmd[0] = 0;
+			textcmdbuf[playerid]->next = NULL;
+			WriteNetXCmd(textcmdbuf[playerid]->cmd, id, param, nparam);
+			return;
+		}
+
+		while (buf->next != NULL)
+			buf = buf->next;
+
+		if (buf->cmd[0]+2+nparam > MAXTEXTCMD)
+		{
+			buf->next = Z_Malloc(sizeof(textcmdbuf_t), PU_STATIC, NULL);
+			buf->next->cmd[0] = 0;
+			buf->next->next = NULL;
+			WriteNetXCmd(buf->next->cmd, id, param, nparam);
+		}
+		else
+		{
+			WriteNetXCmd(buf->cmd, id, param, nparam);
+		}
+		return;
+	}
+	WriteNetXCmd(localtextcmd[playerid], id, param, nparam);
 }
 
 /*UINT8 GetFreeXCmdSize(UINT8 playerid)
@@ -456,10 +524,15 @@ static void D_Clearticcmd(tic_t tic)
 
 void D_ResetTiccmds(void)
 {
-	INT32 i;
+	INT32 i, j;
 
 	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
-		memset(&localcmds[i], 0, sizeof(ticcmd_t));
+	{
+		for (j = 0; j < MAXGENTLEMENDELAY; j++)
+		{
+			memset(&localcmds[i][j], 0, sizeof(ticcmd_t));
+		}
+	}
 
 	// Reset the net command list
 	for (i = 0; i < TEXTCMD_HASH_SIZE; i++)
@@ -1159,7 +1232,8 @@ static inline void CL_DrawConnectionStatus(void)
 	INT32 ccstime = I_GetTime();
 
 	// Draw background fade
-	V_DrawFadeScreen(0xFF00, 16);
+	if (!menuactive) // menu already draws its own fade
+		V_DrawFadeScreen(0xFF00, 16); // force default
 
 	if (cl_mode != CL_DOWNLOADFILES && cl_mode != CL_LOADFILES && cl_mode != CL_CHECKFILES
 #ifdef HAVE_CURL
@@ -1185,10 +1259,22 @@ static inline void CL_DrawConnectionStatus(void)
 			case CL_DOWNLOADSAVEGAME:
 				if (lastfilenum != -1)
 				{
+					UINT32 currentsize = fileneeded[lastfilenum].currentsize;
+					UINT32 totalsize = fileneeded[lastfilenum].totalsize;
+					INT32 dldlength;
+
 					cltext = M_GetText("Downloading game state...");
 					Net_GetNetStat();
+
+					dldlength = (INT32)((currentsize/(double)totalsize) * 256);
+					if (dldlength > 256)
+						dldlength = 256;
+					V_DrawFill(BASEVIDWIDTH/2-128, BASEVIDHEIGHT-24, 256, 8, 111);
+					V_DrawFill(BASEVIDWIDTH/2-128, BASEVIDHEIGHT-24, dldlength, 8, 96);
+
 					V_DrawString(BASEVIDWIDTH/2-128, BASEVIDHEIGHT-24, V_20TRANS|V_MONOSPACE,
-						va(" %4uK",fileneeded[lastfilenum].currentsize>>10));
+						va(" %4uK/%4uK",currentsize>>10,totalsize>>10));
+
 					V_DrawRightAlignedString(BASEVIDWIDTH/2+128, BASEVIDHEIGHT-24, V_20TRANS|V_MONOSPACE,
 						va("%3.1fK/s ", ((double)getbps)/1024));
 				}
@@ -2683,11 +2769,11 @@ static void CL_ConnectToServer(void)
 	sprintf(tmpsave, "%s" PATHSEP TMPSAVENAME, srb2home);
 #endif
 
-	cl_mode = CL_SEARCHING;
-
 #ifdef CLIENT_LOADINGSCREEN
 	lastfilenum = -1;
 #endif
+
+	cl_mode = CL_SEARCHING;
 
 #ifdef JOININGAME
 	// Don't get a corrupt savegame error because tmpsave already exists
@@ -5270,6 +5356,12 @@ static void HandlePacketFromPlayer(SINT8 node)
 			/// \todo Use a separate cvar for that kind of timeout?
 			freezetimeout[node] = I_GetTime() + connectiontimeout;
 
+			// If we've alredy received a ticcmd for this tic, just submit it for the next one.
+			tic_t faketic = maketic;
+			if ((!!(netcmds[maketic % TICQUEUE][netconsole].angleturn & TICCMD_RECEIVED))
+				&& (maketic - firstticstosend < TICQUEUE - 1))
+				faketic++;
+
 			// Don't do anything for packets of type NODEKEEPALIVE?
 			// Sryder 2018/07/01: Update the freezetimeout still!
 			if (netbuffer->packettype == PT_NODEKEEPALIVE
@@ -5277,7 +5369,7 @@ static void HandlePacketFromPlayer(SINT8 node)
 				break;
 
 			// Copy ticcmd
-			G_MoveTiccmd(&netcmds[maketic%TICQUEUE][netconsole], &netbuffer->u.clientpak.cmd, 1);
+			G_MoveTiccmd(&netcmds[faketic%TICQUEUE][netconsole], &netbuffer->u.clientpak.cmd, 1);
 
 			// Check ticcmd for "speed hacks"
 			if (CheckForSpeedHacks((UINT8)netconsole))
@@ -5289,7 +5381,7 @@ static void HandlePacketFromPlayer(SINT8 node)
 				|| (netbuffer->packettype == PT_CLIENT4CMD || netbuffer->packettype == PT_CLIENT4MIS))
 				&& (nodetoplayer2[node] >= 0))
 			{
-				G_MoveTiccmd(&netcmds[maketic%TICQUEUE][(UINT8)nodetoplayer2[node]],
+				G_MoveTiccmd(&netcmds[faketic%TICQUEUE][(UINT8)nodetoplayer2[node]],
 					&netbuffer->u.client2pak.cmd2, 1);
 
 				if (CheckForSpeedHacks((UINT8)nodetoplayer2[node]))
@@ -5300,7 +5392,7 @@ static void HandlePacketFromPlayer(SINT8 node)
 				|| (netbuffer->packettype == PT_CLIENT4CMD || netbuffer->packettype == PT_CLIENT4MIS))
 				&& (nodetoplayer3[node] >= 0))
 			{
-				G_MoveTiccmd(&netcmds[maketic%TICQUEUE][(UINT8)nodetoplayer3[node]],
+				G_MoveTiccmd(&netcmds[faketic%TICQUEUE][(UINT8)nodetoplayer3[node]],
 					&netbuffer->u.client3pak.cmd3, 1);
 
 				if (CheckForSpeedHacks((UINT8)nodetoplayer3[node]))
@@ -5310,7 +5402,7 @@ static void HandlePacketFromPlayer(SINT8 node)
 			if ((netbuffer->packettype == PT_CLIENT4CMD || netbuffer->packettype == PT_CLIENT4MIS)
 				&& (nodetoplayer4[node] >= 0))
 			{
-				G_MoveTiccmd(&netcmds[maketic%TICQUEUE][(UINT8)nodetoplayer4[node]],
+				G_MoveTiccmd(&netcmds[faketic%TICQUEUE][(UINT8)nodetoplayer4[node]],
 					&netbuffer->u.client4pak.cmd4, 1);
 
 				if (CheckForSpeedHacks((UINT8)nodetoplayer4[node]))
@@ -6007,27 +6099,78 @@ static void CL_SendClientCmd(void)
 	}
 	else if (gamestate != GS_NULL)
 	{
+		UINT8 lagDelay = 0;
+
+		if (lowest_lag > 0)
+		{
+			// Gentlemens' ping.
+			lagDelay = min(lowest_lag, MAXGENTLEMENDELAY);
+
+			// Is our connection worse than our current gentleman point?
+			// Make sure it stays that way for a bit before increasing delay levels.
+			if (lagDelay > reference_lag)
+			{
+				spike_time++;
+				if (spike_time >= GENTLEMANSMOOTHING)
+				{
+					// Okay, this is genuinely the new baseline delay.
+					reference_lag = lagDelay;
+					spike_time = 0;
+				}
+				else
+				{
+					// Just a temporary fluctuation, ignore it.
+					lagDelay = reference_lag;
+				}
+			}
+			else
+			{
+				reference_lag = lagDelay; // Adjust quickly if the connection improves.
+				spike_time = 0;
+			}
+
+			/*
+			if (server) // Clients have to wait for the gamestate to make it back. Servers don't!
+				lagDelay *= 2; // Simulate the HELLFUCK NIGHTMARE of a complete round trip.
+			*/
+
+			// [deep breath in]
+			// Plausible, elegant explanation that is WRONG AND SUPER HARMFUL.
+			// Clients with stable connections were adding their mindelay to network delay,
+			// even when their mindelay was as high or higher than network delay—which made
+			// client delay APPEAR slower than host mindelay, by the exact value that made
+			// "lmao just double it" make sense at the time.
+			//
+			// While this fix made client connections match server mindelay in our most common
+			// test environment, it also masked an issue that seriously affected online handling
+			// responsiveness, completely ruining our opportunity to further investigate it!
+			//
+			// See UpdatePingTable.
+			// I am taking this shitty code to my grave as an example of "never trust your brain".
+			// -Tyron 2024-05-15
+		}
+
 		packetsize = sizeof (clientcmd_pak);
-		G_MoveTiccmd(&netbuffer->u.clientpak.cmd, &localcmds[0], 1);
-		netbuffer->u.clientpak.consistancy = SHORT(consistancy[gametic%TICQUEUE]);
+		G_MoveTiccmd(&netbuffer->u.clientpak.cmd, &localcmds[0][lagDelay], 1);
+		netbuffer->u.clientpak.consistancy = SHORT(consistancy[gametic % TICQUEUE]);
 
 		if (splitscreen || botingame) // Send a special packet with 2 cmd for splitscreen
 		{
 			netbuffer->packettype = (mis ? PT_CLIENT2MIS : PT_CLIENT2CMD);
 			packetsize = sizeof (client2cmd_pak);
-			G_MoveTiccmd(&netbuffer->u.client2pak.cmd2, &localcmds[1], 1);
+			G_MoveTiccmd(&netbuffer->u.client2pak.cmd2, &localcmds[1][lagDelay], 1);
 
 			if (splitscreen > 1)
 			{
 				netbuffer->packettype = (mis ? PT_CLIENT3MIS : PT_CLIENT3CMD);
 				packetsize = sizeof (client3cmd_pak);
-				G_MoveTiccmd(&netbuffer->u.client3pak.cmd3, &localcmds[2], 1);
+				G_MoveTiccmd(&netbuffer->u.client3pak.cmd3, &localcmds[2][lagDelay], 1);
 
 				if (splitscreen > 2)
 				{
 					netbuffer->packettype = (mis ? PT_CLIENT4MIS : PT_CLIENT4CMD);
 					packetsize = sizeof (client4cmd_pak);
-					G_MoveTiccmd(&netbuffer->u.client4pak.cmd4, &localcmds[3], 1);
+					G_MoveTiccmd(&netbuffer->u.client4pak.cmd4, &localcmds[3][lagDelay], 1);
 				}
 			}
 		}
@@ -6062,7 +6205,16 @@ static void CL_SendClientCmd(void)
 				M_Memcpy(netbuffer->u.textcmd, localtextcmd[i], localtextcmd[i][0]+1);
 				// All extra data have been sent
 				if (HSendPacket(servernode, true, 0, localtextcmd[i][0]+1)) // Send can fail...
+				{
 					localtextcmd[i][0] = 0;
+					if (textcmdbuf[i] != NULL)
+					{
+						textcmdbuf_t *buf = textcmdbuf[i];
+						M_Memcpy(localtextcmd[i], textcmdbuf[i]->cmd, textcmdbuf[i]->cmd[0]+1);
+						textcmdbuf[i] = textcmdbuf[i]->next;
+						Z_Free(buf);
+					}
+				}
 			}
 		}
 	}
@@ -6194,8 +6346,15 @@ static void SV_SendTics(void)
 //
 static inline void CreateNewLocalCMD(UINT8 p, INT32 realtics)
 {
-	G_BuildTiccmd(&localcmds[p], realtics, p+1);
-	localcmds[p].angleturn |= TICCMD_RECEIVED;
+	INT32 i;
+
+	for (i = MAXGENTLEMENDELAY-1; i > 0; i--)
+	{
+		G_MoveTiccmd(&localcmds[p][i], &localcmds[p][i-1], 1);
+	}
+
+	G_BuildTiccmd(&localcmds[p][0], realtics, p+1);
+	localcmds[p][0].angleturn |= TICCMD_RECEIVED;
 }
 
 static void Local_Maketic(INT32 realtics)
@@ -6207,8 +6366,8 @@ static void Local_Maketic(INT32 realtics)
 	                   // game responder calls HU_Responder, AM_Responder, F_Responder,
 	                   // and G_MapEventsToControls
 	if (!dedicated) rendergametic = gametic;
-	// translate inputs (keyboard/mouse/joystick) into game controls
 
+	// translate inputs (keyboard/mouse/joystick) into game controls
 	for (i = 0; i <= splitscreen; i++)
 	{
 		CreateNewLocalCMD(i, realtics);
@@ -6328,20 +6487,18 @@ boolean TryRunTics(tic_t realtics)
 	}
 #endif
 
-	ticking = neededtic > gametic;
-
-	if (ticking)
+	if (neededtic > gametic)
 	{
-		if (realtics)
-			hu_stopped = false;
+		hu_stopped = false;
 	}
 
 	if (player_joining)
 	{
-		if (realtics)
-			hu_stopped = true;
+		hu_stopped = true;
 		return false;
 	}
+
+	ticking = neededtic > gametic;
 
 	if (ticking)
 	{
@@ -6497,16 +6654,61 @@ static tic_t gametime = 0;
 
 static void UpdatePingTable(void)
 {
+	tic_t fastest;
+	tic_t lag;
+
 	INT32 i;
+
 	if (server)
 	{
-		if (netgame && !(gametime % 35))	// update once per second.
+		if (Playing() && !(gametime % 8)) // Value chosen based on _my vibes man_
 			PingUpdate();
+
+		fastest = 0;
+
 		// update node latency values so we can take an average later.
 		for (i = 0; i < MAXPLAYERS; i++)
-			if (playeringame[i] && playernode[i] != UINT8_MAX)
+		{
+			if (playeringame[i] && playernode[i] > 0 && playernode[i] != UINT8_MAX)
+			{
 				realpingtable[i] += GetLag(playernode[i]);
+
+				if (!server_lagless && !players[i].spectator)
+				{
+					lag = playerpingtable[i];
+					if (! fastest || lag < fastest)
+						fastest = lag;
+				}
+			}
+		}
+
+		if (server_lagless)
+			lowest_lag = 0;
+		else
+			lowest_lag = fastest;
+
+		// Don't gentleman below your mindelay
+		if (lowest_lag < (tic_t)cv_mindelay.value)
+			lowest_lag = (tic_t)cv_mindelay.value;
+
+		simulated_lag = lowest_lag;
+
 		pingmeasurecount++;
+	}
+	else // We're a client, handle mindelay on the way out.
+	{
+		// Previously (neededtic - gametic) - WRONG VALUE!
+		// Pretty sure that's measuring jitter, not RTT.
+		// Stable connections would be punished by adding their mindelay to network delay!
+		tic_t mydelay = playerpingtable[consoleplayer];
+
+		if (mydelay < (tic_t)cv_mindelay.value)
+		{
+			lowest_lag = ((tic_t)cv_mindelay.value - mydelay);
+			simulated_lag = (tic_t)cv_mindelay.value;
+		}
+		else
+			lowest_lag = simulated_lag = 0;
 	}
 }
 
@@ -6602,14 +6804,6 @@ void NetUpdate(void)
 	if (realtics <= 0) // nothing new to update
 		return;
 
-	if (realtics > 5)
-	{
-		if (server)
-			realtics = 1;
-		else
-			realtics = 5;
-	}
-
 #ifdef DEDICATEDIDLETIME
 	if (server && dedicated && gamestate == GS_LEVEL)
 	{
@@ -6657,6 +6851,14 @@ void NetUpdate(void)
 		}
 	}
 #endif
+
+	if (realtics > 5)
+	{
+		if (server)
+			realtics = 1;
+		else
+			realtics = 5;
+	}
 
 	gametime = nowtime;
 
@@ -6750,8 +6952,6 @@ void NetUpdate(void)
 	}
 	Net_AckTicker();
 	HandleNodeTimeouts();
-
-	nowtime /= NEWTICRATERATIO;
 
 	if (nowtime > resptime)
 	{

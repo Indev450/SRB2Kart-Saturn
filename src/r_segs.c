@@ -190,7 +190,7 @@ static void R_DrawWallSplats(void)
 					colfunc = basecolfunc;
 				else
 				{
-					dc_transmap = transtables + ((tr_trans50 - 1)<<FF_TRANSSHIFT);
+					dc_transmap = R_GetTranslucencyTable(tr_trans50);
 					colfunc = fuzzcolfunc;
 				}
 
@@ -277,7 +277,7 @@ static void R_Render2sidedMultiPatchColumn(column_t *column)
 	if (dc_yl <= dc_yh && dc_yh < vid.height && dc_yh > 0)
 	{
 		dc_source = (UINT8 *)column + 3;
-		dc_sourcelength = 0;
+		dc_sourcelength = column2s_length;
 
 		if (colfunc == wallcolfunc)
 			twosmultipatchfunc();
@@ -286,6 +286,28 @@ static void R_Render2sidedMultiPatchColumn(column_t *column)
 		else
 			colfunc();
 	}
+}
+
+transnum_t R_GetLinedefTransTable(fixed_t alpha)
+{
+	if (alpha < 9830)
+		return tr_trans90;
+	else if (alpha < 16384)
+		return tr_trans80;
+	else if (alpha < 22937)
+		return tr_trans70;
+	else if (alpha < 29491)
+		return tr_trans60;
+	else if (alpha < 36044)
+		return tr_trans50;
+	else if (alpha < 42598)
+		return tr_trans40;
+	else if (alpha < 49152)
+		return tr_trans30;
+	else if (alpha < 55705)
+		return tr_trans20;
+	else
+		return tr_trans10;
 }
 
 void R_RenderMaskedSegRange(drawseg_t *ds, INT32 x1, INT32 x2)
@@ -315,28 +337,32 @@ void R_RenderMaskedSegRange(drawseg_t *ds, INT32 x1, INT32 x2)
 
 	// hack translucent linedef types (900-909 for transtables 1-9)
 	ldef = curline->linedef;
-	switch (ldef->special)
+
+	if (!ldef->alpha)
+		return;
+	
+	if (ldef->blendmode)
 	{
-		case 900:
-		case 901:
-		case 902:
-		case 903:
-		case 904:
-		case 905:
-		case 906:
-		case 907:
-		case 908:
-			dc_transmap = transtables + ((ldef->special-900)<<FF_TRANSSHIFT);
-			colfunc = fuzzcolfunc;
-			break;
-		case 909:
-			colfunc = R_DrawFogColumn_8;
-			windowtop = frontsector->ceilingheight;
-			windowbottom = frontsector->floorheight;
-			break;
-		default:
-			colfunc = wallcolfunc;
-			break;
+		if (ldef->alpha == NUMTRANSMAPS || ldef->blendmode == AST_MODULATE)
+			dc_transmap = R_GetBlendTable(ldef->blendmode, 0);
+		else
+			dc_transmap = R_GetBlendTable(ldef->blendmode, R_GetLinedefTransTable(ldef->alpha));
+		colfunc = fuzzcolfunc;
+	}
+	else if (ldef->alpha > 0 && ldef->alpha < FRACUNIT)
+	{
+		dc_transmap = transtables + ((R_GetLinedefTransTable(ldef->alpha) - 1) << FF_TRANSSHIFT);
+		colfunc = fuzzcolfunc;
+	}
+	else if (ldef->special == 909)
+	{
+		colfunc = R_DrawFogColumn_8;
+		windowtop = frontsector->ceilingheight;
+		windowbottom = frontsector->floorheight;
+	}
+	else
+	{
+		colfunc = wallcolfunc;
 	}
 
 	if (curline->polyseg && curline->polyseg->translucency > 0)
@@ -344,7 +370,7 @@ void R_RenderMaskedSegRange(drawseg_t *ds, INT32 x1, INT32 x2)
 		if (curline->polyseg->translucency >= NUMTRANSMAPS)
 			return;
 
-		dc_transmap = transtables + ((curline->polyseg->translucency-1)<<FF_TRANSSHIFT);
+		dc_transmap = R_GetTranslucencyTable(curline->polyseg->translucency);
 		colfunc = fuzzcolfunc;
 	}
 
@@ -712,28 +738,17 @@ void R_RenderThickSideRange(drawseg_t *ds, INT32 x1, INT32 x2, ffloor_t *pfloor)
 		boolean fuzzy = true;
 
 		// Hacked up support for alpha value in software mode Tails 09-24-2002
-		if (pfloor->alpha < 12)
-			return; // Don't even draw it
-		else if (pfloor->alpha < 38)
-			dc_transmap = transtables + ((tr_trans90-1)<<FF_TRANSSHIFT);
-		else if (pfloor->alpha < 64)
-			dc_transmap = transtables + ((tr_trans80-1)<<FF_TRANSSHIFT);
-		else if (pfloor->alpha < 89)
-			dc_transmap = transtables + ((tr_trans70-1)<<FF_TRANSSHIFT);
-		else if (pfloor->alpha < 115)
-			dc_transmap = transtables + ((tr_trans60-1)<<FF_TRANSSHIFT);
-		else if (pfloor->alpha < 140)
-			dc_transmap = transtables + ((tr_trans50-1)<<FF_TRANSSHIFT);
-		else if (pfloor->alpha < 166)
-			dc_transmap = transtables + ((tr_trans40-1)<<FF_TRANSSHIFT);
-		else if (pfloor->alpha < 192)
-			dc_transmap = transtables + ((tr_trans30-1)<<FF_TRANSSHIFT);
-		else if (pfloor->alpha < 217)
-			dc_transmap = transtables + ((tr_trans20-1)<<FF_TRANSSHIFT);
-		else if (pfloor->alpha < 243)
-			dc_transmap = transtables + ((tr_trans10-1)<<FF_TRANSSHIFT);
-		else
-			fuzzy = false; // Opaque
+		// ...unhacked by toaster 04-01-2021, re-hacked a little by sphere 19-11-2021
+		// and mercilessly shoved into saturn by chearii 02-02-2025
+		{
+			INT32 trans = (10*((256+12) - pfloor->alpha))/255;
+			if (trans >= 10)
+				return; // Don't even draw it
+			if (pfloor->blend) // additive, (reverse) subtractive, modulative
+				dc_transmap = R_GetBlendTable(pfloor->blend, trans);
+			else if (!(dc_transmap = R_GetTranslucencyTable(trans)) || trans == 0)
+				fuzzy = false; // Opaque
+		}
 
 		if (fuzzy)
 			colfunc = fuzzcolfunc;
@@ -1450,7 +1465,7 @@ static void R_RenderSegLoop (void)
 				dc_texturemid = rw_midtexturemid;
 				dc_source = R_GetColumn(midtexture,texturecolumn);
 				dc_texheight = textureheight[midtexture]>>FRACBITS;
-				dc_sourcelength = 0;
+				dc_sourcelength = dc_texheight;
 				colfunc();
 
 				// dont draw anything more for this column, since
@@ -1498,7 +1513,7 @@ static void R_RenderSegLoop (void)
 						dc_texturemid = rw_toptexturemid;
 						dc_source = R_GetColumn(toptexture,texturecolumn);
 						dc_texheight = textureheight[toptexture]>>FRACBITS;
-						dc_sourcelength = 0;
+						dc_sourcelength = dc_texheight;
 						colfunc();
 						ceilingclip[rw_x] = (INT16)mid;
 					}
@@ -1536,7 +1551,7 @@ static void R_RenderSegLoop (void)
 						dc_source = R_GetColumn(bottomtexture,
 							texturecolumn);
 						dc_texheight = textureheight[bottomtexture]>>FRACBITS;
-						dc_sourcelength = 0;
+						dc_sourcelength = dc_texheight;
 						colfunc();
 						floorclip[rw_x] = (INT16)mid;
 					}
@@ -1612,12 +1627,6 @@ static INT64 R_CalcSegDist(seg_t* seg, INT64 x2, INT64 y2)
 		INT64 vdy = y2-(seg->v1->y);
 		return ((dy*vdx)-(dx*vdy))/(seg->length);
 	}
-}
-
-static inline INT32 get_flat_tex (INT32 texnum)
-{
-	texnum = R_GetTextureNum(texnum);
-	return textures[texnum]->holes ? 0 : texnum; // R_DrawWallColumn cannot render holey textures
 }
 
 //
@@ -1875,7 +1884,7 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 	{
 		fixed_t texheight;
 		// single sided line
-		midtexture = get_flat_tex(sidedef->midtexture);
+		midtexture = R_GetTextureNum(sidedef->midtexture);
 		texheight = textureheight[midtexture];
 		// a single sided line is terminal, so it must mark ends
 		markfloor = markceiling = true;
@@ -2052,15 +2061,15 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 			{
 				// Special case... use offsets from 2nd side but only if it has a texture.
 				side_t *def = &sides[linedef->sidenum[1]];
-				toptexture = get_flat_tex(def->toptexture);
+				toptexture = R_GetTextureNum(def->toptexture);
 
 				if (!toptexture) //Second side has no texture, use the first side's instead.
-					toptexture = get_flat_tex(sidedef->toptexture);
+					toptexture = R_GetTextureNum(sidedef->toptexture);
 				texheight = textureheight[toptexture];
 			}
 			else
 			{
-				toptexture = get_flat_tex(sidedef->toptexture);
+				toptexture = R_GetTextureNum(sidedef->toptexture);
 				texheight = textureheight[toptexture];
 			}
 			if (!(linedef->flags & ML_EFFECT1)) { // Ignore slopes for lower/upper textures unless flag is checked
@@ -2085,7 +2094,7 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 		if (worldlow > worldbottom || worldlowslope > worldbottomslope) // Only if VISIBLE!!!
 		{
 			// bottom texture
-			bottomtexture = get_flat_tex(sidedef->bottomtexture);
+			bottomtexture = R_GetTextureNum(sidedef->bottomtexture);
 
 			if (!(linedef->flags & ML_EFFECT1)) { // Ignore slopes for lower/upper textures unless flag is checked
 				if (linedef->flags & ML_DONTPEGBOTTOM)

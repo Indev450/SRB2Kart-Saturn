@@ -92,8 +92,6 @@ void I_OutputMsg(const char *error, ...)
 
 void I_StartupMouse(void){}
 
-void I_StartupMouse2(void){}
-
 void I_StartupKeyboard(void){}
 
 INT32 I_GetKey(void)
@@ -145,8 +143,6 @@ const char *I_LocateWad(void)
 void I_GetJoystickEvents(void){}
 
 void I_GetJoystick2Events(void){}
-
-void I_GetMouseEvents(void){}
 
 char *I_GetEnv(const char *name)
 {

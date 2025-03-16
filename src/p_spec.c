@@ -1427,14 +1427,14 @@ boolean P_RunTriggerLinedef(line_t *triggerline, mobj_t *actor, sector_t *caller
 	}
 	else if (caller)
 	{
-		INT32 special = GETSECSPECIAL(caller->special, 2);
+		const INT32 secspecial = GETSECSPECIAL(caller->special, 2);
 
-		if (special == 6)
+		if (secspecial == 6)
 		{
 			if (!(ALL7EMERALDS(emeralds)))
 				return false;
 		}
-		else if (special == 7) // SRB2Kart: reusing for Race Lap executor
+		else if (secspecial == 7) // SRB2Kart: reusing for Race Lap executor
 		{
 			UINT8 lap;
 
@@ -1468,7 +1468,7 @@ boolean P_RunTriggerLinedef(line_t *triggerline, mobj_t *actor, sector_t *caller
 		// If we were not triggered by a sector type especially for the purpose,
 		// a Linedef Executor linedef trigger is not handling sector triggers properly, return.
 
-		else if ((!special || special > 7) && (specialtype > 322))
+		else if ((!secspecial || secspecial > 7) && (specialtype > 322))
 		{
 			CONS_Alert(CONS_WARNING,
 				M_GetText("Linedef executor trigger isn't handling sector triggers properly!\nspecialtype = %d, if you are not a dev, report this warning instance\nalong with the wad that caused it!\n"),
@@ -1718,6 +1718,22 @@ void P_LinedefExecute(INT16 tag, mobj_t *actor, sector_t *caller)
 	}
 }
 
+static boolean is_rain_type (INT32 weathernum)
+{
+	switch (weathernum)
+	{
+		case PRECIP_SNOW:
+		case PRECIP_RAIN:
+		case PRECIP_STORM:
+		case PRECIP_STORM_NOSTRIKES:
+		case PRECIP_BLANK:
+			return true;
+
+		default:
+			return false;
+	}
+}
+
 //
 // P_SwitchWeather
 //
@@ -1725,53 +1741,14 @@ void P_LinedefExecute(INT16 tag, mobj_t *actor, sector_t *caller)
 //
 void P_SwitchWeather(INT32 weathernum)
 {
-	boolean purge = false;
-	INT32 swap = 0;
+	boolean purge = true;
 
-	switch (weathernum)
-	{
-		case PRECIP_NONE: // None
-			if (curWeather == PRECIP_NONE)
-				return; // Nothing to do.
-			purge = true;
-			break;
-		case PRECIP_STORM: // Storm
-		case PRECIP_STORM_NOSTRIKES: // Storm w/ no lightning
-		case PRECIP_RAIN: // Rain
-			if (curWeather == PRECIP_SNOW || curWeather == PRECIP_BLANK || curWeather == PRECIP_STORM_NORAIN)
-				swap = PRECIP_RAIN;
-			break;
-		case PRECIP_SNOW: // Snow
-			if (curWeather == PRECIP_SNOW)
-				return; // Nothing to do.
-			if (curWeather == PRECIP_RAIN || curWeather == PRECIP_STORM || curWeather == PRECIP_STORM_NOSTRIKES || curWeather == PRECIP_BLANK || curWeather == PRECIP_STORM_NORAIN)
-				swap = PRECIP_SNOW; // Need to delete the other precips.
-			break;
-		case PRECIP_STORM_NORAIN: // Storm w/o rain
-			if (curWeather == PRECIP_SNOW
-				|| curWeather == PRECIP_STORM
-				|| curWeather == PRECIP_STORM_NOSTRIKES
-				|| curWeather == PRECIP_RAIN
-				|| curWeather == PRECIP_BLANK)
-				swap = PRECIP_STORM_NORAIN;
-			else if (curWeather == PRECIP_STORM_NORAIN)
-				return;
-			break;
-		case PRECIP_BLANK:
-			if (curWeather == PRECIP_SNOW
-				|| curWeather == PRECIP_STORM
-				|| curWeather == PRECIP_STORM_NOSTRIKES
-				|| curWeather == PRECIP_RAIN)
-				swap = PRECIP_BLANK;
-			else if (curWeather == PRECIP_STORM_NORAIN)
-				swap = PRECIP_BLANK;
-			else if (curWeather == PRECIP_BLANK)
-				return;
-			break;
-		default:
-			CONS_Debug(DBG_GAMELOGIC, "P_SwitchWeather: Unknown weather type %d.\n", weathernum);
-			break;
-	}
+	if (weathernum == curWeather)
+		return;
+
+	if (is_rain_type(weathernum) &&
+		is_rain_type(curWeather))
+		purge = false;
 
 	if (purge)
 	{
@@ -1779,44 +1756,47 @@ void P_SwitchWeather(INT32 weathernum)
 		thinker_t *next;
 		precipmobj_t *precipmobj;
 
-		for (think = thinkercap.next; think != &thinkercap; think = next)
+		for (think = precipcap.next; think != &precipcap; think = next)
 		{
 			next = think->next;
 
+#ifdef PARANOIA
 			if (think->function.acp1 != (actionf_p1)P_NullPrecipThinker)
 				continue; // not a precipmobj thinker
+#endif
 
 			precipmobj = (precipmobj_t *)think;
 			P_FreePrecipMobj(precipmobj);
 		}
 	}
-	else if (swap && !((swap == PRECIP_BLANK && curWeather == PRECIP_STORM_NORAIN) || (swap == PRECIP_STORM_NORAIN && curWeather == PRECIP_BLANK))) // Rather than respawn all that crap, reuse it!
+	else // Rather than respawn all that crap, reuse it!
 	{
 		thinker_t *think;
 		precipmobj_t *precipmobj;
 		state_t *st;
 
-		for (think = thinkercap.next; think != &thinkercap; think = think->next)
+		for (think = precipcap.next; think != &precipcap; think = think->next)
 		{
+#ifdef PARANOIA
 			if (think->function.acp1 != (actionf_p1)P_NullPrecipThinker)
 				continue; // not a precipmobj thinker
+#endif
 
 			precipmobj = (precipmobj_t *)think;
 
-			mobjtype_t type = 0;
 			INT32 z = 0;
+			mobjtype_t type = MT_NULL;
 
-			if (swap == PRECIP_BLANK || swap == PRECIP_STORM_NORAIN) // Remove precip, but keep it around for reuse.
+			if (weathernum == PRECIP_NONE || weathernum == PRECIP_BLANK || weathernum == PRECIP_STORM_NORAIN) // Remove precip, but keep it around for reuse.
 			{
 				precipmobj->precipflags |= PCF_INVISIBLE;
 				continue;
 			}
-
-			if (swap == PRECIP_RAIN) // Snow To Rain
+			else if (weathernum == PRECIP_RAIN || weathernum == PRECIP_STORM || weathernum == PRECIP_STORM_NOSTRIKES) // Snow To Rain
 			{
 				type = MT_RAIN;
 			}
-			else if (swap == PRECIP_SNOW) // Rain To Snow
+			else if (weathernum == PRECIP_SNOW) // Rain To Snow
 			{
 				type = MT_SNOWFLAKE;
 
@@ -1846,50 +1826,45 @@ void P_SwitchWeather(INT32 weathernum)
 		}
 	}
 
-	boolean dontspawn = false;
+	boolean spawnprecip = false;
 
 	switch (weathernum)
 	{
 		case PRECIP_SNOW: // snow
 			curWeather = PRECIP_SNOW;
-			break;
+			spawnprecip = true;
+		break;
 		case PRECIP_RAIN: // rain
 		{
-			if (curWeather == PRECIP_RAIN || curWeather == PRECIP_STORM || curWeather == PRECIP_STORM_NOSTRIKES)
-				dontspawn = true;
-
 			curWeather = PRECIP_RAIN;
+			spawnprecip = true;
 			break;
 		}
 		case PRECIP_STORM: // storm
 		{
-			if (curWeather == PRECIP_RAIN || curWeather == PRECIP_STORM || curWeather == PRECIP_STORM_NOSTRIKES)
-				dontspawn = true;
-
 			curWeather = PRECIP_STORM;
+			spawnprecip = true;
 			break;
 		}
 		case PRECIP_STORM_NOSTRIKES: // storm w/o lightning
 		{
-			if (curWeather == PRECIP_RAIN || curWeather == PRECIP_STORM || curWeather == PRECIP_STORM_NOSTRIKES)
-				dontspawn = true;
-
 			curWeather = PRECIP_STORM_NOSTRIKES;
+			spawnprecip = true;
 			break;
 		}
 		case PRECIP_STORM_NORAIN: // storm w/o rain
 			curWeather = PRECIP_STORM_NORAIN;
 			break;
-		case PRECIP_BLANK:
+		case PRECIP_BLANK: //preloaded
 			curWeather = PRECIP_BLANK;
-			break;
+			spawnprecip = true;
+		break;
 		default:
-			dontspawn = true;
 			curWeather = PRECIP_NONE;
 			break;
 	}
 
-	if (!dontspawn && !swap)
+	if (spawnprecip && purge)
 		P_SpawnPrecipitation();
 }
 
@@ -2105,7 +2080,7 @@ static void P_ProcessLineSpecial(line_t *line, mobj_t *mo, sector_t *callsec)
 			break;
 
 		case 413: // Change music
-			if (keepmusic && (leveltime <= MUSICSTARTTIME)) //why check for starttime? cause encore music Zzz...
+			if (keepmapmusic && (leveltime <= MUSICSTARTTIME)) // why check for starttime? cause encore music Zzz...
 				return;
 
 			//if (cv_ignoremusicchanges.value && (leveltime >= MUSICSTARTTIME) && !fromlapexec) // keep lap music intanct tho
@@ -2153,19 +2128,19 @@ static void P_ProcessLineSpecial(line_t *line, mobj_t *mo, sector_t *callsec)
 				// Change the music and apply position/fade operations
 				else
 				{
-					strncpy(mapmusname, sides[line->sidenum[0]].text, 7);
-					mapmusname[6] = 0;
+					strncpy(mapmusic.name, sides[line->sidenum[0]].text, 7);
+					mapmusic.name[6] = 0;
 
-					mapmusflags = tracknum & MUSIC_TRACKMASK;
+					mapmusic.flags = tracknum & MUSIC_TRACKMASK;
 					if (!(line->flags & ML_BLOCKMONSTERS))
-						mapmusflags |= MUSIC_RELOADRESET;
+						mapmusic.flags |= MUSIC_RELOADRESET;
 					if (line->flags & ML_BOUNCY)
-						mapmusflags |= MUSIC_FORCERESET;
+						mapmusic.flags |= MUSIC_FORCERESET;
 
-					mapmusposition = position;
-					mapmusresume = 0;
+					mapmusic.position = position;
+					mapmusic.resume = 0;
 
-					S_ChangeMusicEx(mapmusname, mapmusflags, !(line->flags & ML_EFFECT4), position,
+					S_ChangeMusicEx(mapmusic.name, mapmusic.flags, !(line->flags & ML_EFFECT4), position,
 						!(line->flags & ML_EFFECT2) ? prefadems : 0,
 						!(line->flags & ML_EFFECT2) ? postfadems : 0);
 
@@ -2192,7 +2167,7 @@ static void P_ProcessLineSpecial(line_t *line, mobj_t *mo, sector_t *callsec)
 				INT32 sfxnum;
 
 				//dont play any funky sound intros that may interfere with the music
-				if (skipintromus && (leveltime < MUSICSTARTTIME))
+				if ((skipintromus || keepmapmusic) && (leveltime < MUSICSTARTTIME))
 					return;
 
 				sfxnum = sides[line->sidenum[0]].toptexture; //P_AproxDistance(line->dx, line->dy)>>FRACBITS;
@@ -3335,10 +3310,10 @@ void P_ProcessSpecialSector(player_t *player, sector_t *sector, sector_t *rovers
 		case 6: // Death Pit (Camera Tilt)
 		case 7: // Death Pit (No Camera Tilt)
 			if (roversector || P_MobjReadyToTrigger(player->mo, sector))
-				P_DamageMobj(player->mo, NULL, NULL, 10000);
+				P_DamageMobj(player->mo, NULL, NULL, DMG_INSTAKILL);
 			break;
 		case 8: // Instant Kill
-			P_DamageMobj(player->mo, NULL, NULL, 10000);
+			P_DamageMobj(player->mo, NULL, NULL, DMG_INSTAKILL);
 			break;
 		case 9: // Ring Drainer (Floor Touch)
 		case 10: // Ring Drainer (No Floor Touch)
@@ -3586,14 +3561,15 @@ DoneSection2:
 
 				if (!demo.playback || P_AnalogMove(player))
 				{
-					if (player == &players[consoleplayer])
-						localangle[0] = player->mo->angle;
-					else if (player == &players[displayplayers[1]])
-						localangle[1] = player->mo->angle;
-					else if (player == &players[displayplayers[2]])
-						localangle[2] = player->mo->angle;
-					else if (player == &players[displayplayers[3]])
-						localangle[3] = player->mo->angle;
+					for (UINT8 j = 0; j <= splitscreen; ++j)
+					{
+						INT32 id = (j == 0 ? consoleplayer : displayplayers[j]);
+						if (player == &players[id])
+						{
+							localangle[j] = player->mo->angle;
+							break;
+						}
+					}
 				}
 
 				if (!(lines[i].flags & ML_EFFECT4))
@@ -3937,17 +3913,13 @@ DoneSection2:
 						CON_LogMessage(va(M_GetText("%s has finished the race.\n"), player_names[player-players]));
 
 					// SRB2Kart: save best lap for record attack
-					if (player == &players[consoleplayer])
+					if (player->laptime[LAP_CUR] < player->laptime[LAP_BEST] || player->laptime[LAP_BEST] == 0)
 					{
-						if (curlap < bestlap || bestlap == 0)
-							bestlap = curlap;
-						curlap = 0;
+						player->laptime[LAP_BEST] = player->laptime[LAP_CUR];
 					}
 
-					// ONLY FOR HUD
 					player->laptime[LAP_LAST] = player->laptime[LAP_CUR];
 					player->laptime[LAP_CUR] = 0;
-					//
 
 					player->starposttime = player->realtime;
 					player->starpostnum = 0;
@@ -4779,16 +4751,34 @@ static ffloor_t *P_AddFakeFloor(sector_t *sec, sector_t *sec2, line_t *master, f
 		else th = th->next;
 	}
 
-
 	if (flags & FF_TRANSLUCENT)
 	{
 		if (sides[master->sidenum[0]].toptexture > 0)
-			ffloor->alpha = sides[master->sidenum[0]].toptexture; // for future reference, "#0" is 1, and "#255" is 256. Be warned
+		{
+			// for future reference, "#0" is 1, and "#255" is 256. Be warned
+			ffloor->alpha = sides[master->sidenum[0]].toptexture;
+
+			if (ffloor->alpha >= 1001) // fourth digit
+			{
+				ffloor->blend = (ffloor->alpha/1000)+1; // becomes an AST
+				ffloor->alpha %= 1000;
+			}
+			else
+			{
+				ffloor->blend = 0;
+			}
+		}
 		else
+		{
 			ffloor->alpha = 0x80;
+			ffloor->blend = 0;
+		}
 	}
 	else
+	{
 		ffloor->alpha = 0xff;
+		ffloor->blend = 0;
+	}
 
 	ffloor->spawnalpha = ffloor->alpha; // save for netgames
 
@@ -5298,20 +5288,8 @@ void P_SpawnSpecials(INT32 fromnetsave, boolean reloadinggamestate)
 		}
 	}
 
-	if (mapheaderinfo[gamemap-1]->weather == 2) // snow
-		curWeather = PRECIP_SNOW;
-	else if (mapheaderinfo[gamemap-1]->weather == 3) // rain
-		curWeather = PRECIP_RAIN;
-	else if (mapheaderinfo[gamemap-1]->weather == 1) // storm
-		curWeather = PRECIP_STORM;
-	else if (mapheaderinfo[gamemap-1]->weather == 5) // storm w/o rain
-		curWeather = PRECIP_STORM_NORAIN;
-	else if (mapheaderinfo[gamemap-1]->weather == 6) // storm w/o lightning
-		curWeather = PRECIP_STORM_NOSTRIKES;
-	else if (mapheaderinfo[gamemap-1]->weather == 4) // blank
-		curWeather = PRECIP_BLANK;
-	else
-		curWeather = PRECIP_NONE;
+	// set current weather
+	curWeather = mapheaderinfo[gamemap-1]->weather;
 
 	P_InitTagLists();   // Create xref tables for tags
 	P_SearchForDisableLinedefs(); // Disable linedefs are now allowed to disable *any* line
@@ -7429,33 +7407,18 @@ void T_Pusher(pusher_t *p)
 
 				if (!demo.playback || P_AnalogMove(thing->player))
 				{
-					if (thing->player == &players[consoleplayer])
+					for (UINT8 i = 0; i <= splitscreen; ++i)
 					{
-						if (thing->angle - localangle[0] > ANGLE_180)
-							localangle[0] -= (localangle[0] - thing->angle) / 8;
-						else
-							localangle[0] += (thing->angle - localangle[0]) / 8;
-					}
-					else if (thing->player == &players[displayplayers[1]])
-					{
-						if (thing->angle - localangle[1] > ANGLE_180)
-							localangle[1] -= (localangle[1] - thing->angle) / 8;
-						else
-							localangle[1] += (thing->angle - localangle[1]) / 8;
-					}
-					else if (thing->player == &players[displayplayers[2]])
-					{
-						if (thing->angle - localangle[2] > ANGLE_180)
-							localangle[2] -= (localangle[2] - thing->angle) / 8;
-						else
-							localangle[2] += (thing->angle - localangle[2]) / 8;
-					}
-					else if (thing->player == &players[displayplayers[3]])
-					{
-						if (thing->angle - localangle[3] > ANGLE_180)
-							localangle[3] -= (localangle[3] - thing->angle) / 8;
-						else
-							localangle[3] += (thing->angle - localangle[3]) / 8;
+						INT32 id = (i == 0 ? consoleplayer : displayplayers[i]);
+						if (thing->player == &players[id])
+						{
+							if (thing->angle - localangle[i] > ANGLE_180)
+								localangle[i] -= (localangle[i] - thing->angle) / 8;
+							else
+								localangle[i] += (thing->angle - localangle[i]) / 8;
+
+							break;
+						}
 					}
 				}
 			}

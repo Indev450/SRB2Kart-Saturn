@@ -109,7 +109,6 @@ static GLint min_filter = GL_LINEAR;
 static GLint mag_filter = GL_LINEAR;
 static GLint anisotropic_filter = 0;
 boolean supportMipMap = false;
-static FTransform  md2_transform;
 
 const GLubyte *gl_version = NULL;
 const GLubyte *gl_renderer = NULL;
@@ -495,6 +494,10 @@ static PFNglDeleteBuffers pglDeleteBuffers;
 typedef void    (APIENTRY *PFNglColorPointer)       (GLint, GLenum, GLsizei, const GLvoid*);
 static PFNglColorPointer pglColorPointer;
 
+/* 2.0 functions */
+typedef void (APIENTRY * PFNglBlendEquation) (GLenum mode);
+static PFNglBlendEquation pglBlendEquation;
+
 /* 1.2 Parms */
 /* GL_CLAMP_TO_EDGE_EXT */
 #ifndef GL_CLAMP_TO_EDGE
@@ -747,6 +750,9 @@ void SetupGLFunc4(void)
 	pglBufferData = GetGLFunc("glBufferData");
 	pglDeleteBuffers = GetGLFunc("glDeleteBuffers");
 	pglColorPointer = GetGLFunc("glColorPointer");
+
+	/* 2.0 funcs */
+	pglBlendEquation = GetGLFunc("glBlendEquation");
 	
 	pglStencilFuncSeparate = GetGLFunc("glStencilFuncSeparate");
 	pglStencilOpSeparate = GetGLFunc("glStencilOpSeparate");
@@ -1164,7 +1170,7 @@ static void GL_Framebuffer_Delete(void)
 	FramebufferObject = 0;
 }
 
-inline void GL_Framebuffer_Unbind(void)
+void GL_Framebuffer_Unbind(void)
 {
 	if (!supportFBO || fboinit == false)
 		return;
@@ -1176,7 +1182,7 @@ inline void GL_Framebuffer_Unbind(void)
 	pglBindRenderbuffer(GL_RENDERBUFFER, 0);
 }
 
-inline void GL_Framebuffer_Enable(void)
+void GL_Framebuffer_Enable(void)
 {
 	if (!supportFBO || !UseScreenFBO())
 		return;
@@ -1426,7 +1432,11 @@ void GL_Draw2DLine(F2DCoord * v1, F2DCoord * v2, RGBA_t Color)
 	pglEnableClientState(GL_TEXTURE_COORD_ARRAY);
 	pglEnable(GL_TEXTURE_2D);
 }
-
+// -----------------+
+// SetBlend         : Set render mode
+// -----------------+
+// PF_Masked - we could use an ALPHA_TEST of GL_EQUAL, and alpha ref of 0,
+//             is it faster when pixels are discarded ?
 static void Clamp2D(GLenum pname)
 {
 	pglTexParameteri(GL_TEXTURE_2D, pname, GL_CLAMP); // fallback clamp
@@ -1435,147 +1445,184 @@ static void Clamp2D(GLenum pname)
 #endif
 }
 
-// -----------------+
-// SetBlend         : Set render mode
-// -----------------+
-// PF_Masked - we could use an ALPHA_TEST of GL_EQUAL, and alpha ref of 0,
-//             is it faster when pixels are discarded ?
+static void GL_SetBlendEquation(GLenum mode)
+{
+	if (pglBlendEquation)
+		pglBlendEquation(mode);
+}
+
+static void GL_SetBlendMode(FBITFIELD flags)
+{
+	// Set blending function
+	switch (flags)
+	{
+		case PF_Translucent & PF_Blending:
+			pglBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); // alpha = level of transparency
+			break;
+		case PF_Masked & PF_Blending:
+			// Hurdler: does that mean lighting is only made by alpha src?
+			// it sounds ok, but not for polygonsmooth
+			pglBlendFunc(GL_SRC_ALPHA, GL_ZERO);                // 0 alpha = holes in texture
+			break;
+		case PF_Additive & PF_Blending:
+		case PF_Subtractive & PF_Blending:
+		case PF_ReverseSubtract & PF_Blending:
+			pglBlendFunc(GL_SRC_ALPHA, GL_ONE); // src * alpha + dest
+			break;
+		case PF_Environment & PF_Blending:
+			pglBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+			break;
+		case PF_Multiplicative & PF_Blending:
+			pglBlendFunc(GL_DST_COLOR, GL_ZERO);
+			break;
+		case PF_Fog & PF_Fog:
+			// Sryder: Fog
+			// multiplies input colour by input alpha, and destination colour by input colour, then adds them
+			pglBlendFunc(GL_SRC_ALPHA, GL_SRC_COLOR);
+			break;
+		default: // must be 0, otherwise it's an error
+			// No blending
+			pglBlendFunc(GL_ONE, GL_ZERO);   // the same as no blending
+			break;
+	}
+
+	// Set blending equation
+	switch (flags)
+	{
+		case PF_Subtractive & PF_Blending:
+			GL_SetBlendEquation(GL_FUNC_SUBTRACT);
+			break;
+		case PF_ReverseSubtract & PF_Blending:
+			// good for shadow
+			// not really but what else ?
+			GL_SetBlendEquation(GL_FUNC_REVERSE_SUBTRACT);
+			break;
+		default:
+			GL_SetBlendEquation(GL_FUNC_ADD);
+			break;
+	}
+
+	// Alpha test
+	switch (flags)
+	{
+		case PF_Masked & PF_Blending:
+			pglAlphaFunc(GL_GREATER, 0.5f);
+			break;
+		case PF_Translucent & PF_Blending:
+		case PF_Additive & PF_Blending:
+		case PF_Subtractive & PF_Blending:
+		case PF_ReverseSubtract & PF_Blending:
+		case PF_Environment & PF_Blending:
+		case PF_Multiplicative & PF_Blending:
+			pglAlphaFunc(GL_NOTEQUAL, 0.0f);
+			break;
+		case PF_Fog & PF_Fog:
+			pglAlphaFunc(GL_ALWAYS, 0.0f); // Don't discard zero alpha fragments
+			break;
+		default:
+			pglAlphaFunc(GL_GREATER, 0.5f);
+			break;
+	}
+}
+
 void GL_SetBlend(FBITFIELD PolyFlags)
 {
-	const FBITFIELD Xor = (CurrentPolyFlags ^ PolyFlags);
+	const FBITFIELD Xor = CurrentPolyFlags^PolyFlags;;
 
-	if (!(Xor & (PF_Blending|PF_RemoveYWrap|PF_ForceWrapX|PF_ForceWrapY|PF_Occlude|PF_NoTexture|PF_Modulated|PF_NoDepthTest|PF_Decal|PF_Invisible|PF_NoAlphaTest)))
+	if (Xor & (PF_Blending|PF_RemoveYWrap|PF_ForceWrapX|PF_ForceWrapY|PF_Occlude|PF_NoTexture|PF_Modulated|PF_NoDepthTest|PF_Decal|PF_Invisible))
 	{
-		CurrentPolyFlags = PolyFlags;
-		return;
-	}
+		if (Xor & PF_Blending) // if blending mode must be changed
+			GL_SetBlendMode(PolyFlags & PF_Blending);
 
-	if (Xor & PF_Blending) // if blending mode must be changed
-	{
-		switch (PolyFlags & PF_Blending)
+		if (Xor & PF_NoAlphaTest)
 		{
-			case (PF_Translucent & PF_Blending):
-				pglBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); // alpha = level of transparency
-				pglAlphaFunc(GL_NOTEQUAL, 0.0f);
-				break;
-			case (PF_Masked & PF_Blending):
-				// Hurdler: does that mean lighting is only made by alpha src?
-				// it sounds ok, but not for polygonsmooth
-				pglBlendFunc(GL_SRC_ALPHA, GL_ZERO);                // 0 alpha = holes in texture
-				pglAlphaFunc(GL_GREATER, 0.5f);
-				break;
-			case (PF_Additive & PF_Blending):
-				pglBlendFunc(GL_SRC_ALPHA, GL_ONE);                 // src * alpha + dest
-				pglAlphaFunc(GL_NOTEQUAL, 0.0f);
-				break;
-			case (PF_Environment & PF_Blending):
-				pglBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
-				pglAlphaFunc(GL_NOTEQUAL, 0.0f);
-				break;
-			case (PF_Substractive & PF_Blending):
-				// good for shadow
-				// not really but what else ?
-				pglBlendFunc(GL_ZERO, GL_ONE_MINUS_SRC_COLOR);
-				pglAlphaFunc(GL_NOTEQUAL, 0.0f);
-				break;
-			case (PF_Fog & PF_Fog):
-				// Sryder: Fog
-				// multiplies input colour by input alpha, and destination colour by input colour, then adds them
-				pglBlendFunc(GL_SRC_ALPHA, GL_SRC_COLOR);
-				pglAlphaFunc(GL_ALWAYS, 0.0f); // Don't discard zero alpha fragments
-				break;
-			default : // must be 0, otherwise it's an error
-				// No blending
-				pglBlendFunc(GL_ONE, GL_ZERO);   // the same as no blending
-				pglAlphaFunc(GL_GREATER, 0.5f);
-				break;
+			if (PolyFlags & PF_NoAlphaTest)
+				pglDisable(GL_ALPHA_TEST);
+			else
+				pglEnable(GL_ALPHA_TEST);      // discard 0 alpha pixels (holes in texture)
 		}
-	}
 
-	if (Xor & PF_NoAlphaTest)
-	{
-		if (PolyFlags & PF_NoAlphaTest)
-			pglDisable(GL_ALPHA_TEST);
-		else
-			pglEnable(GL_ALPHA_TEST);      // discard 0 alpha pixels (holes in texture)
-	}
+		if (Xor & PF_Decal)
+		{
+			if (PolyFlags & PF_Decal)
+				pglEnable(GL_POLYGON_OFFSET_FILL);
+			else
+				pglDisable(GL_POLYGON_OFFSET_FILL);
+		}
 
-	if (Xor & PF_Decal)
-	{
-		if (PolyFlags & PF_Decal)
-			pglEnable(GL_POLYGON_OFFSET_FILL);
-		else
-			pglDisable(GL_POLYGON_OFFSET_FILL);
-	}
-	if (Xor & PF_NoDepthTest)
-	{
-		if (PolyFlags & PF_NoDepthTest)
-			pglDepthFunc(GL_ALWAYS); //pglDisable(GL_DEPTH_TEST);
-		else
-			pglDepthFunc(GL_LEQUAL); //pglEnable(GL_DEPTH_TEST);
-	}
+		if (Xor & PF_NoDepthTest)
+		{
+			if (PolyFlags & PF_NoDepthTest)
+				pglDepthFunc(GL_ALWAYS); //pglDisable(GL_DEPTH_TEST);
+			else
+				pglDepthFunc(GL_LEQUAL); //pglEnable(GL_DEPTH_TEST);
+		}
 
-	if (Xor & PF_RemoveYWrap)
-	{
-		if (PolyFlags & PF_RemoveYWrap)
-			Clamp2D(GL_TEXTURE_WRAP_T);
-	}
+		if (Xor & PF_RemoveYWrap)
+		{
+			if (PolyFlags & PF_RemoveYWrap)
+				Clamp2D(GL_TEXTURE_WRAP_T);
+		}
 
-	if (Xor & PF_ForceWrapX)
-	{
-		if (PolyFlags & PF_ForceWrapX)
-			pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	}
+		if (Xor & PF_ForceWrapX)
+		{
+			if (PolyFlags & PF_ForceWrapX)
+				pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+		}
 
-	if (Xor & PF_ForceWrapY)
-	{
-		if (PolyFlags & PF_ForceWrapY)
-			pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-	}
+		if (Xor & PF_ForceWrapY)
+		{
+			if (PolyFlags & PF_ForceWrapY)
+				pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+		}
 
-	if (Xor & PF_Modulated)
-	{
+		if (Xor & PF_Modulated)
+		{
 #if defined (__unix__) || defined (UNIXCOMMON)
-		if (oglflags & GLF_NOTEXENV)
-		{
-			if (!(PolyFlags & PF_Modulated))
-				pglColor4ubv(white);
-		}
-		else
+			if (oglflags & GLF_NOTEXENV)
+			{
+				if (!(PolyFlags & PF_Modulated))
+					pglColor4ubv(white);
+			}
+			else
 #endif
+			if (PolyFlags & PF_Modulated)
+			{   // mix texture colour with Surface->PolyColor
+				pglTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+			}
+			else
+			{   // colour from texture is unchanged before blending
+				pglTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
+			}
+		}
 
-		// mix texture colour with Surface->PolyColor
-		if (PolyFlags & PF_Modulated)
-			pglTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-		// colour from texture is unchanged before blending
-		else
-			pglTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
-	}
-
-	if (Xor & PF_Occlude) // depth test but (no) depth write
-	{
-		if (PolyFlags & PF_Occlude)
-			pglDepthMask(1);
-		else
-			pglDepthMask(0);
-	}
-
-	////Hurdler: not used if we don't define POLYSKY
-	if (Xor & PF_Invisible)
-	{
-		if (PolyFlags&PF_Invisible)
-			pglBlendFunc(GL_ZERO, GL_ONE);         // transparent blending
-		else
-		{   // big hack: (TODO: manage that better)
-			// we test only for PF_Masked because PF_Invisible is only used
-			// (for now) with it (yeah, that's crappy, sorry)
-			if ((PolyFlags & PF_Blending) == PF_Masked)
-				pglBlendFunc(GL_SRC_ALPHA, GL_ZERO);
+		if (Xor & PF_Occlude) // depth test but (no) depth write
+		{
+			if (PolyFlags&PF_Occlude)
+			{
+				pglDepthMask(1);
+			}
+			else
+				pglDepthMask(0);
+		}
+		////Hurdler: not used if we don't define POLYSKY
+		if (Xor & PF_Invisible)
+		{
+			if (PolyFlags&PF_Invisible)
+				pglBlendFunc(GL_ZERO, GL_ONE);         // transparent blending
+			else
+			{   // big hack: (TODO: manage that better)
+				// we test only for PF_Masked because PF_Invisible is only used
+				// (for now) with it (yeah, that's crappy, sorry)
+				if ((PolyFlags&PF_Blending)==PF_Masked)
+					pglBlendFunc(GL_SRC_ALPHA, GL_ZERO);
+			}
+		}
+		if (PolyFlags & PF_NoTexture)
+		{
+			GL_SetNoTexture();
 		}
 	}
-
-	if (PolyFlags & PF_NoTexture)
-		GL_SetNoTexture();
 
 	CurrentPolyFlags = PolyFlags;
 }
@@ -1604,6 +1651,7 @@ static void GL_UpdateTexture(GLMipmap_t *pTexInfo)
 
 	INT32 w = pTexInfo->width, h = pTexInfo->height;
 	INT32 i, j;
+	INT32 idx;
 
 	const GLubyte *pImgData = (const GLubyte *)pTexInfo->data;
 	const GLvoid *ptex = NULL;
@@ -1632,18 +1680,13 @@ static void GL_UpdateTexture(GLMipmap_t *pTexInfo)
 
 			const int chromakeyed = (pTexInfo->flags & TF_CHROMAKEYED);
 
-			for (j = 0; j < h; j++)
+			for (idx = 0, j = 0; j < h; j++)
 			{
-				for (i = 0; i < w; i++)
+				for (i = 0; i < w; i++, idx++)
 				{
-					int idx = (w*j+i);
-
 					if (chromakeyed && (*pImgData == HWR_PATCHES_CHROMAKEY_COLORINDEX))
 					{
-						tex[idx].s.red   = 0;
-						tex[idx].s.green = 0;
-						tex[idx].s.blue  = 0;
-						tex[idx].s.alpha = 0;
+						tex[idx].s = (byteColor_t){0, 0, 0, 0};
 						pTexInfo->flags |= TF_TRANSPARENT; // there is a hole in it
 					}
 					else
@@ -1672,12 +1715,10 @@ static void GL_UpdateTexture(GLMipmap_t *pTexInfo)
 			ptex = tex = textureBuffer;
 			texformat = GL_LUMINANCE_ALPHA;
 
-			for (j = 0; j < h; j++)
+			for (idx = 0, j = 0; j < h; j++)
 			{
-				for (i = 0; i < w; i++)
+				for (i = 0; i < w; i++, idx++)
 				{
-					int idx = (w*j+i);
-
 					tex[idx].s.red   = *pImgData;
 					tex[idx].s.green = *pImgData;
 					tex[idx].s.blue  = *pImgData;
@@ -1692,17 +1733,13 @@ static void GL_UpdateTexture(GLMipmap_t *pTexInfo)
 			ptex = tex = textureBuffer;
 			texformat = GL_ALPHA;
 
-			for (j = 0; j < h; j++)
-			{
-				for (i = 0; i < w; i++)
-				{
-					int idx = (w*j+i);
+			memset(&tex->s, 255, sizeof(byteColor_t)*w*h); // 255 because the fade mask is modulated with the screen texture, so alpha affects it while the colours don't
 
-					tex[idx].s.red   = 255; // 255 because the fade mask is modulated with the screen texture, so alpha affects it while the colours don't
-					tex[idx].s.green = 255;
-					tex[idx].s.blue  = 255;
-					tex[idx].s.alpha = *pImgData;
-					pImgData++;
+			for (idx = 0, j = 0; j < h; j++)
+			{
+				for (i = 0; i < w; i++, idx++)
+				{
+					tex[idx].s.alpha = *pImgData++;
 				}
 			}
 			break;
@@ -2596,13 +2633,10 @@ void GL_DrawModelEx(model_t *model, INT32 frameIndex, float duration, float tics
 	poly.green  = byte2float[Surface->PolyColor.s.green];
 	poly.blue   = byte2float[Surface->PolyColor.s.blue];
 	poly.alpha  = byte2float[Surface->PolyColor.s.alpha];
-
-	if (poly.alpha < 1)
-		GL_SetBlend(PF_Translucent|PF_Modulated);
-	else
-		GL_SetBlend(PF_Masked|PF_Modulated|PF_Occlude);
-
+	
 	pglColor4ubv((GLubyte*)&Surface->PolyColor.s);
+
+	GL_SetBlend((poly.alpha < 1 ? Surface->PolyFlags : (PF_Masked|PF_Occlude))|PF_Modulated);
 
 	tint.red    = byte2float[Surface->TintColor.s.red];
 	tint.green  = byte2float[Surface->TintColor.s.green];
@@ -2627,7 +2661,6 @@ void GL_DrawModelEx(model_t *model, INT32 frameIndex, float duration, float tics
 	pglEnable(GL_CULL_FACE);
 	pglEnable(GL_NORMALIZE);
 
-#ifdef USE_FTRANSFORM_MIRROR
 	// flipped is if the object is vertically flipped
 	// hflipped is if the object is horizontally flipped
 	// pos->flip is if the screen is flipped vertically
@@ -2640,13 +2673,6 @@ void GL_DrawModelEx(model_t *model, INT32 frameIndex, float duration, float tics
 		else
 			pglCullFace(GL_BACK);
 	}
-#else
-	// pos->flip is if the screen is flipped too
-	if (flipped ^ hflipped ^ pos->flip) // If one or three of these are active, but not two, invert the model's culling
-		pglCullFace(GL_FRONT);
-	else
-		pglCullFace(GL_BACK);
-#endif
 
 	pglPushMatrix(); // should be the same as glLoadIdentity
 	pglTranslatef(pos->x, pos->z, pos->y);
@@ -2654,30 +2680,15 @@ void GL_DrawModelEx(model_t *model, INT32 frameIndex, float duration, float tics
 		scaley = -scaley;
 	if (hflipped)
 		scalez = -scalez;
-#ifdef USE_FTRANSFORM_ANGLEZ
-	pglRotatef(pos->anglez2, 0.0f, 0.0f, -1.0f); // rotate by slope from Kart
-#endif
-	pglRotatef(pos->anglex2, -1.0f, 0.0f, 0.0f);
+
+	pglRotatef(pos->anglez, 0.0f, 0.0f, -1.0f);
+	pglRotatef(pos->anglex, 1.0f, 0.0f, 0.0f);
 	pglRotatef(pos->angley, 0.0f, -1.0f, 0.0f);
 	
 	if (pos->roll)
 	{
-		float roll = (1.0f * pos->rollflip);
 		pglTranslatef(pos->centerx, pos->centery, 0);
-
-		// rotate model for pitch and roll
-		pglRotatef(pos->anglex, 1.0f, 0.0f, 0.0f);
-#ifdef USE_FTRANSFORM_ANGLEZ
-		pglRotatef(pos->anglez, 0.0f, 0.0f, -1.0f);
-#endif
-
-		if (pos->rotaxis == 2) // Z
-			pglRotatef(pos->rollangle, 0.0f, 0.0f, roll);
-		else if (pos->rotaxis == 1) // Y
-			pglRotatef(pos->rollangle, 0.0f, roll, 0.0f);
-		else // X
-			pglRotatef(pos->rollangle, roll, 0.0f, 0.0f);
-			
+		pglRotatef(pos->rollangle, pos->rollx, 0.0f, pos->rollz);
 		pglTranslatef(-pos->centerx, -pos->centery, 0);
 	}
 
@@ -2800,20 +2811,14 @@ void GL_SetTransform(FTransform *stransform)
 
 	if (stransform)
 	{
-		used_fov = stransform->fovxangle;
+		used_fov = stransform->fovangle;
 		shearing = stransform->shearing;
-		// keep a trace of the transformation for md2
-		memcpy(&md2_transform, stransform, sizeof (md2_transform));
 
-#ifdef USE_FTRANSFORM_MIRROR
-		// mirroring from Kart
 		if (stransform->mirror)
 			pglScalef(-stransform->scalex, stransform->scaley, -stransform->scalez);
 		else if (stransform->mirrorflip)
 			pglScalef(-stransform->scalex, -stransform->scaley, -stransform->scalez);
-		else
-#endif
-		if (stransform->flip)
+		else if (stransform->flip)
 			pglScalef(stransform->scalex, -stransform->scaley, -stransform->scalez);
 		else
 			pglScalef(stransform->scalex, stransform->scaley, -stransform->scalez);
@@ -2891,7 +2896,7 @@ void GL_PostImgRedraw(float points[SCREENVERTS][SCREENVERTS][2])
 	INT32 x, y;
 	float float_x, float_y, float_nextx, float_nexty;
 	float xfix, yfix;
-	INT32 texsize = 512;
+	INT32 texsizew = 512, texsizey = 512;
 
 	const float blackBack[16] =
 	{
@@ -2905,12 +2910,15 @@ void GL_PostImgRedraw(float points[SCREENVERTS][SCREENVERTS][2])
 		return;
 
 	// look for power of two that is large enough for the screen
-	while (texsize < screen_width || texsize < screen_height)
-		texsize <<= 1;
+	while (texsizew < screen_width)
+		texsizew <<= 1;
+
+	while (texsizey < screen_height)
+		texsizey <<= 1;
 
 	// X/Y stretch fix for all resolutions(!)
-	xfix = (float)(texsize)/((float)((screen_width)/(float)(SCREENVERTS-1)));
-	yfix = (float)(texsize)/((float)((screen_height)/(float)(SCREENVERTS-1)));
+	xfix = (float)(texsizew)/((float)((screen_width)/(float)(SCREENVERTS-1)));
+	yfix = (float)(texsizey)/((float)((screen_height)/(float)(SCREENVERTS-1)));
 
 	pglDisable(GL_DEPTH_TEST);
 	pglDisable(GL_BLEND);
@@ -2983,7 +2991,7 @@ void GL_FlushScreenTextures(void)
 void GL_DrawScreenTexture(int tex, FSurfaceInfo *surf, FBITFIELD polyflags)
 {
 	float xfix, yfix;
-	INT32 texsize = 512;
+	INT32 texsizew = 512, texsizey = 512;
 
 	const float screenVerts[12] =
 	{
@@ -2999,11 +3007,14 @@ void GL_DrawScreenTexture(int tex, FSurfaceInfo *surf, FBITFIELD polyflags)
 		return;
 
 	// look for power of two that is large enough for the screen
-	while (texsize < screen_width || texsize < screen_height)
-		texsize <<= 1;
+	while (texsizew < screen_width)
+		texsizew <<= 1;
 
-	xfix = 1/((float)(texsize)/((float)((screen_width))));
-	yfix = 1/((float)(texsize)/((float)((screen_height))));
+	while (texsizey < screen_height)
+		texsizey <<= 1;
+
+	xfix = 1/((float)(texsizew)/((float)((screen_width))));
+	yfix = 1/((float)(texsizey)/((float)((screen_height))));
 
 	// const float screenVerts[12]
 
@@ -3036,7 +3047,7 @@ void GL_DrawScreenTexture(int tex, FSurfaceInfo *surf, FBITFIELD polyflags)
 // Do screen fades!
 void GL_DoScreenWipe(int wipeStart, int wipeEnd)
 {
-	INT32 texsize = 512;
+	INT32 texsizew = 512, texsizey = 512;
 	float xfix, yfix;
 
 	INT32 fademaskdownloaded = tex_downloaded; // the fade mask that has been set
@@ -3063,11 +3074,14 @@ void GL_DoScreenWipe(int wipeStart, int wipeEnd)
 		return;
 
 	// look for power of two that is large enough for the screen
-	while (texsize < screen_width || texsize < screen_height)
-		texsize <<= 1;
+	while (texsizew < screen_width)
+		texsizew <<= 1;
 
-	xfix = 1/((float)(texsize)/((float)((screen_width))));
-	yfix = 1/((float)(texsize)/((float)((screen_height))));
+	while (texsizey < screen_height)
+		texsizey <<= 1;
+
+	xfix = 1/((float)(texsizew)/((float)((screen_width))));
+	yfix = 1/((float)(texsizey)/((float)((screen_height))));
 
 	// const float screenVerts[12]
 
@@ -3127,7 +3141,7 @@ void GL_DoScreenWipe(int wipeStart, int wipeEnd)
 
 void GL_RenderVhsEffect(fixed_t upbary, fixed_t downbary, UINT8 updistort, UINT8 downdistort, UINT8 barsize)
 {
-	INT32 texsize = 512;
+	INT32 texsizew = 512, texsizey = 512;
 	int tex = HWD_SCREENTEXTURE_VHS;
 	float xfix, yfix;
 	float fix[8];
@@ -3146,11 +3160,14 @@ void GL_RenderVhsEffect(fixed_t upbary, fixed_t downbary, UINT8 updistort, UINT8
 		return;
 
 	// look for power of two that is large enough for the screen
-	while (texsize < screen_width || texsize < screen_height)
-		texsize <<= 1;
+	while (texsizew < screen_width)
+		texsizew <<= 1;
 
-	xfix = 1/((float)(texsize)/((float)((screen_width))));
-	yfix = 1/((float)(texsize)/((float)((screen_height))));
+	while (texsizey < screen_height)
+		texsizey <<= 1;
+
+	xfix = 1/((float)(texsizew)/((float)((screen_width))));
+	yfix = 1/((float)(texsizey)/((float)((screen_height))));
 
 	// Slight fuzziness
 	GL_MakeScreenTexture(tex);
@@ -3234,15 +3251,18 @@ void GL_RenderVhsEffect(fixed_t upbary, fixed_t downbary, UINT8 updistort, UINT8
 // Create a texture from the screen.
 void GL_MakeScreenTexture(int tex)
 {
-	INT32 texsize = 512;
+	INT32 texsizew = 512, texsizey = 512;
 	boolean firstTime = (screenTextures[tex] == 0);
 	
 	if (!gl_enable_screen_textures)
 		return;
 
 	// look for power of two that is large enough for the screen
-	while (texsize < screen_width || texsize < screen_height)
-		texsize <<= 1;
+	while (texsizew < screen_width)
+		texsizew <<= 1;
+
+	while (texsizey < screen_height)
+		texsizey <<= 1;
 
 	// Create screen texture
 	if (firstTime)
@@ -3255,10 +3275,10 @@ void GL_MakeScreenTexture(int tex)
 		pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 		Clamp2D(GL_TEXTURE_WRAP_S);
 		Clamp2D(GL_TEXTURE_WRAP_T);
-		pglCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 0, 0, texsize, texsize, 0);
+		pglCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 0, 0, texsizew, texsizey, 0);
 	}
 	else
-		pglCopyTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 0, 0, texsize, texsize);
+		pglCopyTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 0, 0, texsizew, texsizey);
 
 	tex_downloaded = screenTextures[tex];
 }
@@ -3269,7 +3289,7 @@ void GL_DrawScreenFinalTexture(int tex, INT32 width, INT32 height, boolean usesh
 	float origaspect, newaspect;
 	float xoff = 1, yoff = 1; // xoffset and yoffset for the polygon to have black bars around the screen
 	FRGBAFloat clearColour;
-	INT32 texsize = 512;
+	INT32 texsizew = 512, texsizey = 512;
 
 	float off[12];
 	float fix[8];
@@ -3278,11 +3298,14 @@ void GL_DrawScreenFinalTexture(int tex, INT32 width, INT32 height, boolean usesh
 		return;
 
 	// look for power of two that is large enough for the screen
-	while (texsize < screen_width || texsize < screen_height)
-		texsize <<= 1;
+	while (texsizew < screen_width)
+		texsizew <<= 1;
 
-	xfix = 1/((float)(texsize)/((float)((screen_width))));
-	yfix = 1/((float)(texsize)/((float)((screen_height))));
+	while (texsizey < screen_height)
+		texsizey <<= 1;
+
+	xfix = 1/((float)(texsizew)/((float)((screen_width))));
+	yfix = 1/((float)(texsizey)/((float)((screen_height))));
 
 	origaspect = (float)screen_width / screen_height;
 	newaspect = (float)width / height;
@@ -3339,7 +3362,7 @@ void GL_DrawScreenFinalTexture(int tex, INT32 width, INT32 height, boolean usesh
 	pglVertexPointer(3, GL_FLOAT, 0, off);
 
 	pglDrawArrays(GL_TRIANGLE_FAN, 0, 4);
-	
+
 	if (useshader)
 		pglUseProgram(0);
 

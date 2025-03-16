@@ -7761,7 +7761,18 @@ struct {
 	{"FF_HORIZONTALFLIP",FF_HORIZONTALFLIP},
 	{"FF_PAPERSPRITE",FF_PAPERSPRITE},
 	{"FF_ANIMATE",FF_ANIMATE},
+	// brightness
+	{"FF_BRIGHTMASK",FF_BRIGHTMASK},
 	{"FF_FULLBRIGHT",FF_FULLBRIGHT},
+	{"FF_SEMIBRIGHT",FF_SEMIBRIGHT},
+	{"FF_FULLDARK",FF_FULLDARK},
+	// blending
+	{"FF_BLENDMASK",FF_BLENDMASK},
+	{"FF_BLENDSHIFT",FF_BRIGHTMASK},
+	{"FF_ADD",FF_ADD},
+	{"FF_SUBTRACT",FF_SUBTRACT},
+	{"FF_REVERSESUBTRACT",FF_REVERSESUBTRACT},
+	{"FF_MODULATE",FF_MODULATE},
 	{"FF_TRANSMASK",FF_TRANSMASK},
 	{"FF_TRANSSHIFT",FF_TRANSSHIFT},
 	// new preshifted translucency (used in source)
@@ -7796,6 +7807,15 @@ struct {
 	{"tr_trans80",tr_trans80},
 	{"tr_trans90",tr_trans90},
 	{"NUMTRANSMAPS",NUMTRANSMAPS},
+
+	// Alpha styles (blend modes)
+	{"AST_COPY",AST_COPY},
+	{"AST_TRANSLUCENT",AST_TRANSLUCENT},
+	{"AST_ADD",AST_ADD},
+	{"AST_SUBTRACT",AST_SUBTRACT},
+	{"AST_REVERSESUBTRACT",AST_REVERSESUBTRACT},
+	{"AST_MODULATE",AST_MODULATE},
+	{"AST_OVERLAY",AST_OVERLAY},
 
 	// Type of levels
 	{"TOL_SP",TOL_SP},
@@ -8160,6 +8180,14 @@ struct {
 
 	{"V_CHARCOLORSHIFT",V_CHARCOLORSHIFT},
 	{"V_ALPHASHIFT",V_ALPHASHIFT},
+
+	// Blending
+	{"V_BLENDSHIFT",V_BLENDSHIFT},
+	{"V_BLENDMASK",V_BLENDMASK},
+	{"B_ADD",B_ADD},
+	{"B_SUBTRACT",B_SUBTRACT},
+	{"B_REVERSESUBTRACT",B_REVERSESUBTRACT},
+	{"B_MODULATE",B_MODULATE},
 
 	//Kick Reasons
 	{"KR_KICK",KR_KICK},
@@ -8582,6 +8610,16 @@ static int lua_enumlib_basic_fallback(lua_State* L)
 static int lua_enumlib_mariomode_get(lua_State *L)
 {
 	lua_pushboolean(L, mariomode != 0);
+	return 1;
+}
+
+static int lua_enumlib_replayfreecam_get(lua_State *L)
+{
+	if (dedicated) // huh?
+		lua_pushboolean(L, false);
+	else
+		lua_pushboolean(L, camera[R_GetViewNumber()].freecam);
+
 	return 1;
 }
 
@@ -9189,8 +9227,6 @@ int LUA_EnumLib(lua_State *L)
 	PUSHGETTER(globalweather, u8);
 	PUSHGETTER(levelskynum, i32);
 	PUSHGETTER(globallevelskynum, i32);
-	PUSHGETTER(mapmusflags, u16);
-	PUSHGETTER(mapmusposition, u32);
 	PUSHGETTER(gravity, fxp);
 	PUSHGETTER(gamespeed, u8);
 	PUSHGETTER(encoremode, bool);
@@ -9206,8 +9242,18 @@ int LUA_EnumLib(lua_State *L)
 	PUSHGETTER(exitcountdown, u32);
 
 	lua_pushcfunction(L, lua_glib_new_getter);
+	lua_pushliteral(L, "mapmusflags");
+	lua_glib_push_u16_getter(L, &mapmusic.flags);
+	lua_call(L, 2, 0);
+
+	lua_pushcfunction(L, lua_glib_new_getter);
+	lua_pushliteral(L, "mapmusposition");
+	lua_glib_push_u32_getter(L, &mapmusic.position);
+	lua_call(L, 2, 0);
+
+	lua_pushcfunction(L, lua_glib_new_getter);
 	lua_pushliteral(L, "mapmusname");
-	lua_glib_push_str_getter(L, mapmusname);
+	lua_glib_push_str_getter(L, mapmusic.name);
 	lua_call(L, 2, 0);
 
 	lua_pushcfunction(L, lua_glib_new_getter);
@@ -9262,7 +9308,7 @@ int LUA_EnumLib(lua_State *L)
 
 	lua_pushcfunction(L, lua_glib_new_getter);
 	lua_pushliteral(L, "replayfreecam");
-	lua_glib_push_bool_getter(L, &demo.freecam);
+	lua_pushcfunction(L, lua_enumlib_replayfreecam_get);
 	lua_call(L, 2, 0);
 
 	if (!mathlib)

@@ -282,6 +282,9 @@ static Mix_Chunk *ds2chunk(void *stream)
 	freq = READUINT16(stream);
 	samples = READUINT32(stream);
 
+	if (freq == 0)
+		return NULL; // division by zero
+
 	// convert from signed 8bit ???hz to signed 16bit 44100hz.
 	switch(freq)
 	{
@@ -616,7 +619,7 @@ Countstutter (int len)
 			else
 				bytes = ( music_bytes - music_stutter_bytes );
 
-			I_SetSongPosition((int)( bytes/4/44100.0*1000 ));
+			I_SetSongPosition((int)( (float)bytes/4/44100.0*1000 ));
 		}
 	}
 }

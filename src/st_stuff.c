@@ -53,6 +53,9 @@
 
 UINT16 objectsdrawn = 0;
 
+// dumb fade thing for director toggle
+tic_t directortoggletimer = 0;
+
 //
 // STATUS BAR DATA
 //
@@ -76,73 +79,6 @@ char *localfacemmapprefix_name[MAXLOCALSKINS]; // minimap*/
 // ------------------------------------------
 //             status bar overlay
 // ------------------------------------------
-
-// icons for overlay
-patch_t *sboscore; // Score logo
-patch_t *sbotime; // Time logo
-patch_t *sbocolon; // Colon for time
-patch_t *sboperiod; // Period for time centiseconds
-patch_t *livesback; // Lives icon background
-static patch_t *nrec_timer; // Timer for NiGHTS records
-static patch_t *sborings;
-static patch_t *sboover;
-static patch_t *timeover;
-static patch_t *stlivex;
-static patch_t *rrings;
-static patch_t *getall; // Special Stage HUD
-static patch_t *timeup; // Special Stage HUD
-static patch_t *hunthoming[6];
-static patch_t *itemhoming[6];
-static patch_t *race1;
-static patch_t *race2;
-static patch_t *race3;
-static patch_t *racego;
-//static patch_t *ttlnum;
-static patch_t *nightslink;
-static patch_t *count5;
-static patch_t *count4;
-static patch_t *count3;
-static patch_t *count2;
-static patch_t *count1;
-static patch_t *count0;
-static patch_t *curweapon;
-static patch_t *normring;
-static patch_t *bouncering;
-static patch_t *infinityring;
-static patch_t *autoring;
-static patch_t *explosionring;
-static patch_t *scatterring;
-static patch_t *grenadering;
-static patch_t *railring;
-static patch_t *jumpshield;
-static patch_t *forceshield;
-static patch_t *ringshield;
-static patch_t *watershield;
-static patch_t *bombshield;
-static patch_t *pityshield;
-static patch_t *invincibility;
-static patch_t *sneakers;
-static patch_t *gravboots;
-static patch_t *nonicon;
-static patch_t *bluestat;
-static patch_t *byelstat;
-static patch_t *orngstat;
-static patch_t *redstat;
-static patch_t *yelstat;
-static patch_t *nbracket;
-static patch_t *nhud[12];
-static patch_t *nsshud;
-static patch_t *narrow[9];
-static patch_t *nredar[8]; // Red arrow
-static patch_t *drillbar;
-static patch_t *drillfill[3];
-static patch_t *capsulebar;
-static patch_t *capsulefill;
-patch_t *ngradeletters[7];
-static patch_t *minus5sec;
-static patch_t *minicaps;
-static patch_t *gotrflag;
-static patch_t *gotbflag;
 
 // Midnight Channel:
 static patch_t *hud_tv1;
@@ -280,8 +216,6 @@ void ST_UnloadGraphics(void)
 
 void ST_LoadGraphics(void)
 {
-	int i;
-
 	// SRB2 border patch
 	st_borderpatchnum = W_GetNumForName("GFZFLR01");
 	scr_borderpatch = W_CacheLumpNum(st_borderpatchnum, PU_HUDGFX);
@@ -291,95 +225,11 @@ void ST_LoadGraphics(void)
 	//                   but load them in R_AddSkins, that gets called
 	//                   first anyway
 	// cache the status bar overlay icons (fullscreen mode)
-	sborings = W_CachePatchName("SBORINGS", PU_HUDGFX);
-	sboscore = W_CachePatchName("SBOSCORE", PU_HUDGFX);
-	sboover = W_CachePatchName("SBOOVER", PU_HUDGFX);
-	timeover = W_CachePatchName("TIMEOVER", PU_HUDGFX);
-	stlivex = W_CachePatchName("STLIVEX", PU_HUDGFX);
-	livesback = W_CachePatchName("STLIVEBK", PU_HUDGFX);
-	rrings = W_CachePatchName("RRINGS", PU_HUDGFX);
-	sbotime = W_CachePatchName("SBOTIME", PU_HUDGFX); // Time logo
-	sbocolon = W_CachePatchName("SBOCOLON", PU_HUDGFX); // Colon for time
-	sboperiod = W_CachePatchName("SBOPERIO", PU_HUDGFX); // Period for time centiseconds
-	nrec_timer = W_CachePatchName("NGRTIMER", PU_HUDGFX); // Timer for NiGHTS
-	getall = W_CachePatchName("GETALL", PU_HUDGFX); // Special Stage HUD
-	timeup = W_CachePatchName("TIMEUP", PU_HUDGFX); // Special Stage HUD
-	race1 = W_CachePatchName("RACE1", PU_HUDGFX);
-	race2 = W_CachePatchName("RACE2", PU_HUDGFX);
-	race3 = W_CachePatchName("RACE3", PU_HUDGFX);
-	racego = W_CachePatchName("RACEGO", PU_HUDGFX);
-	nightslink = W_CachePatchName("NGHTLINK", PU_HUDGFX);
-	count5 = W_CachePatchName("DRWNF0", PU_HUDGFX);
-	count4 = W_CachePatchName("DRWNE0", PU_HUDGFX);
-	count3 = W_CachePatchName("DRWND0", PU_HUDGFX);
-	count2 = W_CachePatchName("DRWNC0", PU_HUDGFX);
-	count1 = W_CachePatchName("DRWNB0", PU_HUDGFX);
-	count0 = W_CachePatchName("DRWNA0", PU_HUDGFX);
 
-	for (i = 0; i < 6; ++i)
-	{
-		hunthoming[i] = W_CachePatchName(va("HOMING%d", i+1), PU_HUDGFX);
-		itemhoming[i] = W_CachePatchName(va("HOMITM%d", i+1), PU_HUDGFX);
-	}
-
-	curweapon = W_CachePatchName("CURWEAP", PU_HUDGFX);
-	normring = W_CachePatchName("RINGIND", PU_HUDGFX);
-	bouncering = W_CachePatchName("BNCEIND", PU_HUDGFX);
-	infinityring = W_CachePatchName("INFNIND", PU_HUDGFX);
-	autoring = W_CachePatchName("AUTOIND", PU_HUDGFX);
-	explosionring = W_CachePatchName("BOMBIND", PU_HUDGFX);
-	scatterring = W_CachePatchName("SCATIND", PU_HUDGFX);
-	grenadering = W_CachePatchName("GRENIND", PU_HUDGFX);
-	railring = W_CachePatchName("RAILIND", PU_HUDGFX);
-	jumpshield = W_CachePatchName("WHTVB0", PU_HUDGFX);
-	forceshield = W_CachePatchName("BLTVB0", PU_HUDGFX);
-	ringshield = W_CachePatchName("YLTVB0", PU_HUDGFX);
-	watershield = W_CachePatchName("ELTVB0", PU_HUDGFX);
-	bombshield = W_CachePatchName("BKTVB0", PU_HUDGFX);
-	pityshield = W_CachePatchName("GRTVB0", PU_HUDGFX);
-	invincibility = W_CachePatchName("PINVB0", PU_HUDGFX);
-	sneakers = W_CachePatchName("SHTVB0", PU_HUDGFX);
-	gravboots = W_CachePatchName("GBTVB0", PU_HUDGFX);
-
-	tagico = W_CachePatchName("TAGICO", PU_HUDGFX);
 	rflagico = W_CachePatchName("RFLAGICO", PU_HUDGFX);
 	bflagico = W_CachePatchName("BFLAGICO", PU_HUDGFX);
 	rmatcico = W_CachePatchName("RMATCICO", PU_HUDGFX);
 	bmatcico = W_CachePatchName("BMATCICO", PU_HUDGFX);
-	gotrflag = W_CachePatchName("GOTRFLAG", PU_HUDGFX);
-	gotbflag = W_CachePatchName("GOTBFLAG", PU_HUDGFX);
-	nonicon = W_CachePatchName("NONICON", PU_HUDGFX);
-
-	// NiGHTS HUD things
-	bluestat = W_CachePatchName("BLUESTAT", PU_HUDGFX);
-	byelstat = W_CachePatchName("BYELSTAT", PU_HUDGFX);
-	orngstat = W_CachePatchName("ORNGSTAT", PU_HUDGFX);
-	redstat = W_CachePatchName("REDSTAT", PU_HUDGFX);
-	yelstat = W_CachePatchName("YELSTAT", PU_HUDGFX);
-	nbracket = W_CachePatchName("NBRACKET", PU_HUDGFX);
-	for (i = 0; i < 12; ++i)
-		nhud[i] = W_CachePatchName(va("NHUD%d", i+1), PU_HUDGFX);
-	nsshud = W_CachePatchName("NSSHUD", PU_HUDGFX);
-	minicaps = W_CachePatchName("MINICAPS", PU_HUDGFX);
-
-	for (i = 0; i < 8; ++i)
-	{
-		narrow[i] = W_CachePatchName(va("NARROW%d", i+1), PU_HUDGFX);
-		nredar[i] = W_CachePatchName(va("NREDAR%d", i+1), PU_HUDGFX);
-	}
-
-	// non-animated version
-	narrow[8] = W_CachePatchName("NARROW9", PU_HUDGFX);
-
-	drillbar = W_CachePatchName("DRILLBAR", PU_HUDGFX);
-	for (i = 0; i < 3; ++i)
-		drillfill[i] = W_CachePatchName(va("DRILLFI%d", i+1), PU_HUDGFX);
-	capsulebar = W_CachePatchName("CAPSBAR", PU_HUDGFX);
-	capsulefill = W_CachePatchName("CAPSFILL", PU_HUDGFX);
-	minus5sec = W_CachePatchName("MINUS5", PU_HUDGFX);
-
-	for (i = 0; i < 7; ++i)
-		ngradeletters[i] = W_CachePatchName(va("GRADE%d", i), PU_HUDGFX);
 
 	K_LoadKartHUDGraphics();
 
@@ -427,9 +277,8 @@ void ST_ReloadSkinFaceGraphics(void)
 	for (i = 0; i < numskins; i++)
 		ST_LoadFaceGraphics(skins[i].facerank, skins[i].facewant, skins[i].facemmap, i);
 	
-	for (i = 0; i < numlocalskins; i++) {
+	for (i = 0; i < numlocalskins; i++)
 		ST_LoadLocalFaceGraphics(localskins[i].facerank, localskins[i].facewant, localskins[i].facemmap, i);
-	}
 }
 
 static inline void ST_InitData(void)
@@ -651,6 +500,25 @@ static void ST_drawLevelTitle(void)
 		V_DrawLevelTitle(ttlnumxpos+12, bary+6, V_SNAPTOBOTTOM, actnum);
 }
 
+// returns the actual button name for any gamecontrol
+// if unbound is set, it returns "Unbound" as a string should there be no button bound to a gamecontrol
+// if gamectrl is set, it adds an extra "-" for cases where theres also a hardcoded button like accelerate
+static const char *ST_GetButtonName(INT32 control, const char *inputtext, boolean unbound, boolean gamectrl)
+{
+	static char buttname[32] = "";
+	const char *butt1 = (gamecontrol[control][0] != 0 ? G_KeynumToString(gamecontrol[control][0]) : NULL);
+	const char *butt2 = (gamecontrol[control][1] != 0 ? G_KeynumToString(gamecontrol[control][1]) : NULL); // alternative bind
+
+	if (butt1 == NULL && butt2 == NULL) // not bound to a button
+		snprintf(buttname, 32, (unbound ? "%s - %s" : (gamectrl ? "-%s - %s" : "%s - %s")), (unbound ? "Unbound" : ""), inputtext);
+	else if (butt1 != NULL && butt2 != NULL) // bound to two buttons
+		snprintf(buttname, 32, "%s/%s - %s", butt1, butt2, inputtext);
+	else // bound to only one
+		snprintf(buttname, 32, (gamectrl ? "-%s - %s" : "%s - %s"), (butt1 != NULL ? butt1 : butt2 != NULL ? butt2 : ""), inputtext);
+
+	return buttname;
+}
+
 // Draw the status bar overlay, customisable: the user chooses which
 // kind of information to overlay
 //
@@ -702,7 +570,7 @@ static void ST_overlayDrawer(void)
 					V_DrawCenteredString((BASEVIDWIDTH/2), BASEVIDHEIGHT-32, V_SNAPTOBOTTOM|V_HUDTRANS|V_ALLOWLOWERCASE, player_names[stplyr-players]);
 				}
 			}
-			else if (!demo.title && !demo.freecam)
+			else if (!demo.title && !camera[stplyrnum].freecam)
 			{
 				if (!splitscreen)
 				{
@@ -713,7 +581,7 @@ static void ST_overlayDrawer(void)
 				{
 					char name[MAXPLAYERNAME+12];
 
-					INT32 y = (stplyr == &players[displayplayers[0]]) ? 4 : BASEVIDHEIGHT/2-12;
+					INT32 y = (stplyrnum == 0) ? 4 : BASEVIDHEIGHT/2-12;
 					sprintf(name, "VIEWPOINT: %s", player_names[stplyr-players]);
 					V_DrawRightAlignedThinString(BASEVIDWIDTH-40, y, V_HUDTRANSHALF|V_ALLOWLOWERCASE|K_calcSplitFlags(V_SNAPTOTOP|V_SNAPTOBOTTOM|V_SNAPTORIGHT), name);
 				}
@@ -775,26 +643,16 @@ static void ST_overlayDrawer(void)
 				{
 					V_DrawString(2, BASEVIDHEIGHT-50, V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_HUDTRANSHALF|V_YELLOWMAP, M_GetText("- SPECTATING -"));
 					V_DrawString(2, BASEVIDHEIGHT-40, V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_HUDTRANSHALF, itemtxt);
-					V_DrawString(2, BASEVIDHEIGHT-30, V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_HUDTRANSHALF, M_GetText("Accelerate - Float"));
-					V_DrawString(2, BASEVIDHEIGHT-20, V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_HUDTRANSHALF, M_GetText("Brake - Sink"));
-
-					char directortoggle[32] = {0};
-					const char *item1 = gamecontrol[gc_director][0] != 0 ? G_KeynumToString(gamecontrol[gc_director][0]) : NULL;
-					const char *item2 = gamecontrol[gc_director][1] != 0 ? G_KeynumToString(gamecontrol[gc_director][1]) : NULL;
-
-					if (item1 != NULL && item2 != NULL)
-						snprintf(directortoggle, 32, "%s/%s - Toggle Director", item1, item2);
-					else
-						snprintf(directortoggle, 32, "%s - Toggle Director", item1 != NULL ? item1 : item2 != NULL ? item2 : "Not Bound");
-
-					V_DrawString(2, BASEVIDHEIGHT-10, V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_HUDTRANSHALF, directortoggle);
+					V_DrawString(2, BASEVIDHEIGHT-30, V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_HUDTRANSHALF, va("Accelerate %s", ST_GetButtonName(gc_camfloat, "Float", false, true)));
+					V_DrawString(2, BASEVIDHEIGHT-20, V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_HUDTRANSHALF, va("Brake %s", ST_GetButtonName(gc_camsink, "Sink", false, true)));
+					V_DrawString(2, BASEVIDHEIGHT-10, V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_HUDTRANSHALF, ST_GetButtonName(gc_director, "Toggle Director", true, false));
 				}
 				else
 				{
 					V_DrawString(2, BASEVIDHEIGHT-40, V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_HUDTRANSHALF|V_YELLOWMAP, M_GetText("- SPECTATING -"));
 					V_DrawString(2, BASEVIDHEIGHT-30, V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_HUDTRANSHALF, itemtxt);
-					V_DrawString(2, BASEVIDHEIGHT-20, V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_HUDTRANSHALF, M_GetText("Accelerate - Float"));
-					V_DrawString(2, BASEVIDHEIGHT-10, V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_HUDTRANSHALF, M_GetText("Brake - Sink"));
+					V_DrawString(2, BASEVIDHEIGHT-20, V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_HUDTRANSHALF, va("Accelerate %s", ST_GetButtonName(gc_camfloat, "Float", false, true)));
+					V_DrawString(2, BASEVIDHEIGHT-10, V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_HUDTRANSHALF, va("Brake %s", ST_GetButtonName(gc_camsink, "Sink", false, true)));
 				}
 			}
 		}

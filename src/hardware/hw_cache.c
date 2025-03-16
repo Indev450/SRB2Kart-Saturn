@@ -319,7 +319,7 @@ static void HWR_GenerateTexture(INT32 texnum, GLMapTexture_t *gltex, boolean noe
 	patch_t *realpatch;
 	INT32 blockwidth, blockheight, blocksize;
 
-	INT32 i;
+	INT32 i, idx;
 	boolean skyspecial = false; //poor hack for Legacy large skies..
 
 	RGBA_t *palette;
@@ -368,12 +368,10 @@ static void HWR_GenerateTexture(INT32 texnum, GLMapTexture_t *gltex, boolean noe
 
 		col = palette[HWR_CHROMAKEY_EQUIVALENTCOLORINDEX];
 
-		for (j = 0; j < blockheight; j++)
+		for (idx = 0, j = 0; j < blockheight; j++)
 		{
-			for (i = 0; i < blockwidth; i++)
+			for (i = 0; i < blockwidth; i++, idx++)
 			{
-				int idx = (j*blockwidth+i);
-
 				block[4*idx+0] = col.s.red;
 				block[4*idx+1] = col.s.green;
 				block[4*idx+2] = col.s.blue;
@@ -386,8 +384,11 @@ static void HWR_GenerateTexture(INT32 texnum, GLMapTexture_t *gltex, boolean noe
 	for (i = 0, patch = texture->patches; i < texture->patchcount; i++, patch++)
 	{
 		realpatch = W_CacheLumpNumPwad(patch->wad, patch->lump, PU_CACHE);
-		HWR_DrawTexturePatchInCache(&gltex->mipmap, blockwidth, blockheight, texture, patch, realpatch);
-		Z_ChangeTag(realpatch, PU_HWRCACHE_UNLOCKED);
+		if (realpatch != NULL)
+		{
+			HWR_DrawTexturePatchInCache(&gltex->mipmap, blockwidth, blockheight, texture, patch, realpatch);
+			Z_ChangeTag(realpatch, PU_HWRCACHE_UNLOCKED);
+		}
 	}
 
 	//Hurdler: not efficient at all but I don't remember exactly how HWR_DrawPatchInCache works :(
@@ -639,8 +640,7 @@ static void HWR_CacheFlat(GLMipmap_t *glMipmap, lumpnum_t flatlumpnum)
 	glMipmap->height = (UINT16)pflatsize;
 
 	// the flat raw data needn't be converted with palettized textures
-	W_ReadLump(flatlumpnum, Z_Malloc(W_LumpLength(flatlumpnum),
-		PU_HWRCACHE, &glMipmap->data));
+	W_ReadLump(flatlumpnum, Z_Malloc(size, PU_HWRCACHE, &glMipmap->data));
 
 #ifdef GLENCORE
 	flat = glMipmap->data;
@@ -835,6 +835,7 @@ static void HWR_DrawFadeMaskInCache(GLMipmap_t *mipmap, INT32 pblockwidth, INT32
 	stepy = ((INT32)SHORT(fmheight)<<FRACBITS)/pblockheight;
 	stepx = ((INT32)SHORT(fmwidth)<<FRACBITS)/pblockwidth;
 	posy = 0;
+
 	for (j = 0; j < pblockheight; j++)
 	{
 		posx = 0;

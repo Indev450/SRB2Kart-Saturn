@@ -638,6 +638,7 @@ void Net_WaitAllAckReceived(UINT32 timeout)
 static void InitNode(node_t *node)
 {
 	node->acktosend_head = node->acktosend_tail = 0;
+	memset(node->acktosend, 0, sizeof(node->acktosend));
 	node->firstacktosend = 0;
 	node->nextacknum = 1;
 	node->remotefirstack = 0;
@@ -1339,9 +1340,9 @@ boolean D_CheckNetGame(void)
 		I_Error("Too many nodes (%d), max:%d", doomcom->numnodes, MAXNETNODES);
 
 	netbuffer = (doomdata_t *)(void *)&doomcom->data;
-	#ifdef HOLEPUNCH
+#ifdef HOLEPUNCH
 	holepunchpacket = (holepunch_t *)(void *)&doomcom->data;
-	#endif
+#endif
 
 #ifdef DEBUGFILE
 	if (M_CheckParm("-debugfile"))

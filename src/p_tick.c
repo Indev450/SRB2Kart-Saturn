@@ -49,6 +49,7 @@ tic_t leveltime;
 
 // Both the head and tail of the thinker list.
 thinker_t thinkercap;
+thinker_t precipcap;
 
 void Command_Numthinkers_f(void)
 {
@@ -56,6 +57,7 @@ void Command_Numthinkers_f(void)
 	INT32 count = 0;
 	actionf_p1 action;
 	thinker_t *think;
+	thinker_t *listtype;
 
 	if (gamestate != GS_LEVEL)
 	{
@@ -104,7 +106,9 @@ void Command_Numthinkers_f(void)
 			return;
 	}
 
-	for (think = thinkercap.next; think != &thinkercap; think = think->next)
+	listtype = (num == 2) ? &precipcap : &thinkercap;
+
+	for (think = listtype->next; think != listtype; think = think->next)
 	{
 		if (think->function.acp1 != action)
 			continue;
@@ -181,6 +185,7 @@ void Command_CountMobjs_f(void)
 void P_InitThinkers(void)
 {
 	thinkercap.prev = thinkercap.next = &thinkercap;
+	precipcap.prev = precipcap.next = &precipcap;
 	waypointcap = NULL;
 }
 
@@ -198,6 +203,22 @@ void P_AddThinker(thinker_t *thinker)
 	thinker->references = 0;    // killough 11/98: init reference counter to 0
 
 	thinker->cachable = (thinker->function.acp1 == (actionf_p1)P_MobjThinker);
+}
+
+//
+// P_AddPrecipThinker
+// Adds a new precip thinker at the end of the list.
+//
+void P_AddPrecipThinker(thinker_t *thinker)
+{
+	precipcap.prev->next = thinker;
+	thinker->next = &precipcap;
+	thinker->prev = precipcap.prev;
+	precipcap.prev = thinker;
+
+	thinker->references = 0;    // killough 11/98: init reference counter to 0
+
+	thinker->cachable = false;
 }
 
 //
@@ -341,8 +362,6 @@ static inline void P_RunThinkers(void)
 {
 	for (currentthinker = thinkercap.next; currentthinker != &thinkercap; currentthinker = currentthinker->next)
 	{
-		if (currentthinker->function.acp1 == (actionf_p1)P_NullPrecipThinker)
-			continue;
 #ifdef PARANOIA
 		I_Assert(currentthinker->function.acp1 != NULL)
 #endif
@@ -354,7 +373,7 @@ static void P_DeviceRumbleTick(void)
 {
 	UINT8 i;
 
-	if (I_NumJoys() == 0 || gamestate != GS_LEVEL)
+	if (dedicated || numcontrollers == 0 || gamestate != GS_LEVEL)
 	{
 		return;
 	}
@@ -364,24 +383,19 @@ static void P_DeviceRumbleTick(void)
 		UINT16 low = 0;
 		UINT16 high = 0;
 
+		if (!cv_usejoystick[i].value || !cv_rumble[i].value)
+		{
+			continue;
+		}
+
 		player_t *player = ((i == 0) ? &players[consoleplayer] : &players[displayplayers[i]]);
 
-		if (!cv_usejoystick[i].value)
+		if (player->spectator || !player->mo)
 		{
 			continue;
 		}
 
-		if (!cv_rumble[i].value)
-		{
-			continue;
-		}
-
-		if (player->spectator)
-		{
-			continue;
-		}
-
-		if (player->mo == NULL)
+		if (camera[i].freecam)
 		{
 			continue;
 		}
@@ -394,7 +408,8 @@ static void P_DeviceRumbleTick(void)
 
 		if (player->kartstuff[k_spinouttimer])
 		{
-			low = high = FRACUNIT / 4;
+			//low = high = FRACUNIT / 6;
+			low = high = FixedMul((FRACUNIT / 4), (FixedDiv(player->kartstuff[k_spinouttimer], (3*TICRATE / 2))));
 		}
 		else if (player->kartstuff[k_sneakertimer] > (sneakertime-(TICRATE/2)))
 		{
@@ -415,6 +430,12 @@ static void P_DeviceRumbleTick(void)
 			{
 				low = high = FRACUNIT / 64;
 			}
+		}
+		else if ((player->kartstuff[k_bananadrag] > TICRATE)
+			&& P_IsObjectOnGround(player->mo) && player->speed != 0)
+		{
+			if (leveltime & 1) // this is actually funny lel
+				high = FRACUNIT / 64;
 		}
 
 		if (player->kartstuff[k_brakedrift])
@@ -439,7 +460,20 @@ void P_RunChaseCameras(void)
 	for (i = 0; i <= splitscreen; i++)
 	{
 		if (camera[i].chase)
-			P_MoveChaseCamera(&players[displayplayers[i]], &camera[i], false);
+		{
+			player_t *p = &players[displayplayers[i]];
+			camera_t *cam = &camera[i];
+
+			if (cv_verticallook.value && leveltime > starttime && p->mo && p->kartstuff[k_respawn] == 0 && p->kartstuff[k_throwdir] != 0)
+			{
+				if (p->speed < 6 * p->mo->scale && abs(cam->dpad_y_held) < 2*TICRATE)
+					cam->dpad_y_held += intsign(p->kartstuff[k_throwdir]);
+			}
+			else
+				cam->dpad_y_held = 0;
+
+			P_MoveChaseCamera(p, cam, false);
+		}
 	}
 }
 
@@ -471,6 +505,32 @@ static void P_RunQuakes(void)
 	quake.roll = ir;
 
 	--quake.time;
+}
+
+static inline void P_ResetSpriteStuff(void)
+{
+	thinker_t *th;
+
+	if (rendermode == render_none)
+		return;
+
+	for (th = thinkercap.next; th != &thinkercap; th = th->next)
+	{
+		mobj_t *mo;
+
+		if (th->function.acp1 != (actionf_p1)P_MobjThinker) // not a mobj
+			continue;
+
+		mo = (mobj_t *)th;
+
+		if (mo->sprite == SPR_NULL || mo->flags2 & MF2_DONTDRAW || mo->type == MT_SHADOW)
+			continue;
+
+		mo->spritexscale = mo->realxscale;
+		mo->spriteyscale = mo->realyscale;
+		mo->spritexoffset = mo->realxoffset;
+		mo->spriteyoffset = mo->realyoffset;
+	}
 }
 
 //
@@ -520,8 +580,8 @@ void P_Ticker(boolean run)
 				timeinmap = (timeinmap-1) & ~3;
 			G_PreviewRewind(leveltime);
 		}
-		else if (demo.freecam && democam.cam)	// special case: allow freecam to MOVE during pause!
-			P_DemoCameraMovement(democam.cam);
+		else
+			P_RunChaseCameras();	// special case: allow freecam to MOVE during pause!
 
 		return;
 	}
@@ -573,6 +633,8 @@ void P_Ticker(boolean run)
 		ps_lua_mobjhooks.value.i = 0;
 		ps_checkposition_calls.value.i = 0;
 
+		P_ResetSpriteStuff();
+
 		PS_START_TIMING(ps_lua_prethinkframe_time);
 		LUA_HookPreThinkFrame();
 		PS_STOP_TIMING(ps_lua_prethinkframe_time);
@@ -614,10 +676,7 @@ void P_Ticker(boolean run)
 		PS_STOP_TIMING(ps_lua_thinkframe_time);
 	}
 
-	// Run shield positioning
-	//P_RunShields();
 	P_RunOverlays();
-
 	P_RunShadows();
 
 	P_UpdateSpecials();
@@ -647,7 +706,7 @@ void P_Ticker(boolean run)
 				if (!players[i].mo)
 					continue;
 
-				P_DamageMobj(players[i].mo, NULL, NULL, 10000);
+				P_DamageMobj(players[i].mo, NULL, NULL, DMG_INSTAKILL);
 			}
 		}
 

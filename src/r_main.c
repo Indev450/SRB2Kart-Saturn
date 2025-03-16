@@ -143,11 +143,13 @@ static CV_PossibleValue_t maxinterpdist_cons_t[] = {
        {3072, "3072"}, {4096, "4096"}, {6144, "6144"},
        {8192, "8192"}, {0, "Infinite"}, {0, NULL}};
 
-static CV_PossibleValue_t fov_cons_t[] = {{5*FRACUNIT, "MIN"}, {178*FRACUNIT, "MAX"}, {0, NULL}};
+static CV_PossibleValue_t fov_cons_t[] = {{MINFOV*FRACUNIT, "MIN"}, {MAXFOV*FRACUNIT, "MAX"}, {0, NULL}};
 
 static CV_PossibleValue_t translucenthud_cons_t[] = {{0, "MIN"}, {10, "MAX"}, {0, NULL}};
 static CV_PossibleValue_t maxportals_cons_t[] = {{0, "MIN"}, {12, "MAX"}, {0, NULL}}; // lmao rendering 32 portals, you're a card
 static CV_PossibleValue_t homremoval_cons_t[] = {{0, "No"}, {1, "Yes"}, {2, "Flash"}, {0, NULL}};
+
+static void R_SetFov(fixed_t playerfov);
 
 static void Fov_OnChange(void);
 static void FlipCam_OnChange(void);
@@ -202,6 +204,7 @@ consvar_t cv_ripplewater = {"waterripples", "On", CV_SAVE, CV_OnOff, NULL, 0, NU
 
 // cap fov, fov too high tears software apart.
 consvar_t cv_fov = {"fov", "90", CV_FLOAT|CV_CALL|CV_SAVE, fov_cons_t, Fov_OnChange, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_fovchange = {"fovchange", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 // Okay, whoever said homremoval causes a performance hit should be shot.
 consvar_t cv_homremoval = {"homremoval", "Yes", CV_SAVE, homremoval_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
@@ -296,12 +299,14 @@ static void Precipstuff_OnChange(void)
 	thinker_t *next;
 	precipmobj_t *precipmobj;
 
-	for (think = thinkercap.next; think != &thinkercap; think = next)
+	for (think = precipcap.next; think != &precipcap; think = next)
 	{
 		next = think->next;
 
+#ifdef PARANOIA
 		if (think->function.acp1 != (actionf_p1)P_NullPrecipThinker)
 			continue; // not a precipmobj thinker
+#endif
 
 		precipmobj = (precipmobj_t *)think;
 		P_FreePrecipMobj(precipmobj);
@@ -379,7 +384,7 @@ angle_t R_PlayerSliptideAngle(player_t *player)
 	spriteframe_t *sprframe;
 	angle_t ang = 0;
 
-	if (!cv_sloperoll.value || !cv_sliptideroll.value || !player || P_MobjWasRemoved(player->mo))
+	if (!cv_sliptideroll.value || !player || P_MobjWasRemoved(player->mo))
 		return 0;
 
 	mo = player->mo;
@@ -846,13 +851,10 @@ void R_ApplyViewMorph(void)
 			vid.width*vid.bpp, vid.height, vid.width*vid.bpp, vid.width);
 }
 
-static inline int intsign(int n) {
-	return n < 0 ? -1 : n > 0 ? 1 : 0;
-}
-
 angle_t R_ViewRollAngle(const player_t *player)
 {
 	angle_t roll = 0;
+	const UINT8 viewnum = R_GetViewNumber();
 
 	if (gamestate != GS_LEVEL)
 	{
@@ -871,7 +873,7 @@ angle_t R_ViewRollAngle(const player_t *player)
 
 	if (cv_tilting.value)
 	{
-		if (!player->spectator && !demo.freecam)
+		if (!player->spectator && !camera[viewnum].freecam)
 			roll += player->tilt;
 
 		if (cv_actionmovie.value)
@@ -904,12 +906,10 @@ void R_SetViewSize(void)
 //
 void R_ExecuteSetViewSize(void)
 {
-	fixed_t dy;
 	INT32 i;
 	INT32 j;
 	INT32 level;
 	INT32 startmapl;
-	angle_t fov;
 
 	setsizeneeded = false;
 
@@ -938,16 +938,9 @@ void R_ExecuteSetViewSize(void)
 	centerxfrac = centerx<<FRACBITS;
 	centeryfrac = centery<<FRACBITS;
 
-	fov = FixedAngle(cv_fov.value/2) + ANGLE_90;
-	fovtan = FixedMul(FINETANGENT(fov >> ANGLETOFINESHIFT), viewmorph.zoomneeded);
-	if (splitscreen == 1) // Splitscreen FOV should be adjusted to maintain expected vertical view
-		fovtan = 17*fovtan/10;
-
-	projection = projectiony = FixedDiv(centerxfrac, fovtan);
+	R_SetFov(cv_fov.value);
 
 	R_InitViewBuffer(scaledviewwidth, viewheight);
-
-	R_InitTextureMapping();
 
 	// why did we calc all the software crap?
 #ifdef HWRENDER
@@ -963,19 +956,6 @@ void R_ExecuteSetViewSize(void)
 	for (i = 0; i < viewwidth; i++)
 		screenheightarray[i] = (INT16)viewheight;
 
-	// setup sky scaling
-	R_SetSkyScale();
-
-	// planes
-	// this is only used for planes rendering in software mode
-	j = viewheight*16;
-	for (i = 0; i < j; i++)
-	{
-		dy = (i - viewheight*8)<<FRACBITS;
-		dy = FixedMul(abs(dy), fovtan);
-		yslopetab[i] = FixedDiv(centerx*FRACUNIT, dy);
-	}
-		
 	if (ds_su)
 		Z_Free(ds_su);
 	if (ds_sv)
@@ -1009,6 +989,37 @@ void R_ExecuteSetViewSize(void)
 	am_recalc = true;
 }
 
+fixed_t R_GetPlayerFov(player_t *player)
+{
+	fixed_t fov = cv_fov.value + player->fovadd;
+	return max(MINFOV*FRACUNIT, min(fov, MAXFOV*FRACUNIT));
+}
+
+static void R_SetFov(fixed_t playerfov)
+{
+	angle_t fov = FixedAngle(playerfov/2) + ANGLE_90;
+	fovtan = FixedMul(FINETANGENT(fov >> ANGLETOFINESHIFT), viewmorph.zoomneeded);
+	if (splitscreen == 1) // Splitscreen FOV should be adjusted to maintain expected vertical view
+		fovtan = 17*fovtan/10;
+
+	// this is only used for planes rendering in software mode
+	INT32 j = viewheight*16;
+	for (INT32 i = 0; i < j; i++)
+	{
+		fixed_t dy = (i - viewheight*8)<<FRACBITS;
+		dy = FixedMul(abs(dy), fovtan);
+		yslopetab[i] = FixedDiv(centerx*FRACUNIT, dy);
+	}
+
+	projection = projectiony = FixedDiv(centerxfrac, fovtan);
+
+	R_InitTextureMapping();
+
+	// setup sky scaling
+	R_SetSkyScale();
+}
+
+
 //
 // R_Init
 //
@@ -1030,8 +1041,8 @@ void R_Init(void)
 	//I_OutputMsg("\nR_InitLightTables");
 	R_InitLightTables();
 
-	//I_OutputMsg("\nR_InitTranslationTables\n");
-	R_InitTranslationTables();
+	//I_OutputMsg("\nR_InitTranslucencyTables\n");
+	R_InitTranslucencyTables();
 
 	R_InitDrawNodes();
 
@@ -1072,7 +1083,7 @@ subsector_t *R_IsPointInSubsector(fixed_t x, fixed_t y)
 
 mobj_t *viewmobj;
 
-static void R_SetupCommonFrame(player_t * player, subsector_t * subsector)
+static void R_SetupCommonFrame(player_t * player, sector_t * sector)
 {
 	newview->player = player;
 
@@ -1082,12 +1093,12 @@ static void R_SetupCommonFrame(player_t * player, subsector_t * subsector)
 
 	newview->roll = R_ViewRollAngle(player);
 
-	if (subsector && subsector->sector)
-		newview->sector = subsector->sector;
+	if (sector != NULL)
+		newview->sector = sector;
 	else
 		newview->sector = R_PointInSubsector(newview->x, newview->y)->sector;
 
-	R_InterpolateView(R_UsingFrameInterpolation() ? (demo.playback && demo.freecam) ? rendertimefrac_unpaused : rendertimefrac : FRACUNIT, false);
+	R_InterpolateView(R_UsingFrameInterpolation() ? rendertimefrac_unpaused : FRACUNIT, false);
 }
 
 static void R_SetupAimingFrame(player_t *player, camera_t *thiscam)
@@ -1213,10 +1224,10 @@ void R_SkyboxFrame(int s)
 	}
 #undef SETUPSKYVIEW
 
-	if (!P_MobjWasRemoved(viewmobj))
+	if (!P_MobjWasRemoved(viewmobj) && viewmobj->subsector && viewmobj->subsector->sector)
 		subsector = viewmobj->subsector;
 
-	R_SetupCommonFrame(player, subsector);
+	R_SetupCommonFrame(player, subsector->sector);
 }
 
 void R_SetupFrame(int s, boolean skybox)
@@ -1224,7 +1235,7 @@ void R_SetupFrame(int s, boolean skybox)
 	player_t *player = &players[displayplayers[s]];
 	camera_t *thiscam = &camera[s];
 	boolean chasecam = (cv_chasecam[s].value);
-	subsector_t * subsector = NULL;
+	sector_t * sector = NULL;
 
 	R_SetViewContext(VIEWCONTEXT_PLAYER1 + s);
 	if (thiscam->reset)
@@ -1233,9 +1244,14 @@ void R_SetupFrame(int s, boolean skybox)
 		thiscam->reset = false;
 	}
 
-	if (player->spectator) // no spectator chasecam
-		chasecam = false; // force chasecam off
-	else if (player->playerstate == PST_DEAD || player->exiting)
+	if (player->spectator)
+	{
+		// Free flying spectator uses demo freecam. This
+		// requires chasecam to be enabled.
+		chasecam = true;
+	}
+
+	if (player->playerstate == PST_DEAD || player->exiting)
 		chasecam = true; // force chasecam on
 
 	if (chasecam && (thiscam && !thiscam->chase))
@@ -1259,12 +1275,12 @@ void R_SetupFrame(int s, boolean skybox)
 		newview->y = viewmobj->y;
 		newview->z = viewmobj->z + 20*FRACUNIT;
 
-		if (!P_MobjWasRemoved(viewmobj))
-			subsector = viewmobj->subsector;
+		if (!P_MobjWasRemoved(viewmobj) && viewmobj->subsector && viewmobj->subsector->sector)
+			sector = viewmobj->subsector->sector;
 
-		R_SetupCommonFrame(player, subsector);
+		R_SetupCommonFrame(player, sector);
 	}
-	else if (!player->spectator && (thiscam && chasecam)) // use outside cam view
+	else if (thiscam && chasecam) // use outside cam view
 	{
 		viewmobj = NULL;
 
@@ -1272,10 +1288,10 @@ void R_SetupFrame(int s, boolean skybox)
 		newview->y = thiscam->y;
 		newview->z = thiscam->z + (thiscam->height>>1);
 
-		if (thiscam != NULL)
-			subsector = thiscam->subsector;
+		if (thiscam != NULL && thiscam->subsector && thiscam->subsector->sector)
+			sector = thiscam->subsector->sector;
 
-		R_SetupCommonFrame(player, subsector);
+		R_SetupCommonFrame(player, sector);
 	}
 	else // use the player's eyes view
 	{
@@ -1286,10 +1302,10 @@ void R_SetupFrame(int s, boolean skybox)
 		newview->y = viewmobj->y;
 		newview->z = player->viewz;
 
-		if (!P_MobjWasRemoved(viewmobj))
-			subsector = viewmobj->subsector;
+		if (!P_MobjWasRemoved(viewmobj) && viewmobj->subsector && viewmobj->subsector->sector)
+			sector = viewmobj->subsector->sector;
 
-		R_SetupCommonFrame(player, subsector);
+		R_SetupCommonFrame(player, sector);
 	}
 }
 
@@ -1330,6 +1346,8 @@ static void R_PortalFrame(portal_t *portal)
 // I mean, there is a win16lock() or something that lasts all the rendering,
 // so maybe we should release screen lock before each netupdate below..?
 
+static fixed_t viewfov[MAXSPLITSCREENPLAYERS];
+
 void R_RenderPlayerView(player_t *player)
 {
 	const boolean skybox = (skyboxmo[0] && cv_skybox.value);
@@ -1366,6 +1384,18 @@ void R_RenderPlayerView(player_t *player)
 
 		skyVisible = skyVisiblePerPlayer[i];
 		break;
+	}
+
+	fixed_t fov = R_GetPlayerFov(player);
+
+	for (UINT8 j = 0; j <= splitscreen; j++)
+	{
+		if (player == &players[displayplayers[i]]
+			&& viewfov[i] != fov)
+		{
+			viewfov[i] = fov;
+			R_SetFov(fov);
+		}
 	}
 
 	Portal_InitList();
@@ -1521,6 +1551,8 @@ void R_RegisterEngineStuff(void)
 	CV_RegisterVar(&cv_drawdist_precip);
 	CV_RegisterVar(&cv_lessprecip);
 	CV_RegisterVar(&cv_mobjscaleprecip);
+
+	CV_RegisterVar(&cv_fovchange);
 	CV_RegisterVar(&cv_fov);
 
 	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
@@ -1540,7 +1572,8 @@ void R_RegisterEngineStuff(void)
 		CV_RegisterVar(&cv_cam_height[i]);
 		CV_RegisterVar(&cv_cam_speed[i]);
 		CV_RegisterVar(&cv_cam_rotate[i]);
-		CV_RegisterVar(&cv_cam_rotspeed[i]);
+		CV_RegisterVar(&cv_cam_timeover[i]);
+		CV_RegisterVar(&cv_freecam_speed[i]);
 	}
 
 	CV_RegisterVar(&cv_tilting);
@@ -1556,6 +1589,7 @@ void R_RegisterEngineStuff(void)
 	CV_RegisterVar(&cv_sliptideroll);
 	CV_RegisterVar(&cv_sloperolldist);
 	CV_RegisterVar(&cv_sparkroll);
+	CV_RegisterVar(&cv_spinoutroll);
 
 	CV_RegisterVar(&cv_showhud);
 	CV_RegisterVar(&cv_translucenthud);

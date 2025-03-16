@@ -46,9 +46,6 @@ static INT32 tmflags;
 fixed_t tmx;
 fixed_t tmy;
 
-static precipmobj_t *tmprecipthing;
-static fixed_t preciptmbbox[4];
-
 // If "floatok" true, move would be ok
 // if within "tmfloorz - tmceilingz".
 boolean floatok;
@@ -68,7 +65,6 @@ line_t *ceilingline;
 line_t *blockingline;
 
 msecnode_t *sector_list = NULL;
-mprecipsecnode_t *precipsector_list = NULL;
 camera_t *mapcampointer;
 
 //
@@ -76,9 +72,9 @@ camera_t *mapcampointer;
 //
 
 //
-// P_TeleportMove
+// P_MoveOrigin - P_TeleportMove which KEEPS interpolation values.
 //
-static boolean P_TeleportMove(mobj_t *thing, fixed_t x, fixed_t y, fixed_t z)
+boolean P_MoveOrigin(mobj_t *thing, fixed_t x, fixed_t y, fixed_t z)
 {
 	// the move is ok,
 	// so link the thing into its new position
@@ -108,28 +104,19 @@ static boolean P_TeleportMove(mobj_t *thing, fixed_t x, fixed_t y, fixed_t z)
 	return true;
 }
 
+//
 // P_SetOrigin - P_TeleportMove which RESETS interpolation values.
 //
 boolean P_SetOrigin(mobj_t *thing, fixed_t x, fixed_t y, fixed_t z)
 {
-	boolean result = P_TeleportMove(thing, x, y, z);
-
-	if (result == true)
+	if (P_MoveOrigin(thing, x, y, z))
 	{
 		thing->old_x = thing->x;
 		thing->old_y = thing->y;
 		thing->old_z = thing->z;
 	}
 
-	return result;
-}
-
-//
-// P_MoveOrigin - P_TeleportMove which KEEPS interpolation values.
-//
-boolean P_MoveOrigin(mobj_t *thing, fixed_t x, fixed_t y, fixed_t z)
-{
-	return P_TeleportMove(thing, x, y, z);
+	return true;
 }
 
 // =========================================================================
@@ -235,14 +222,15 @@ boolean P_DoSpring(mobj_t *spring, mobj_t *object)
 
 			if (!demo.playback || P_AnalogMove(object->player))
 			{
-				if (object->player == &players[consoleplayer])
-					localangle[0] = spring->angle;
-				else if (object->player == &players[displayplayers[1]])
-					localangle[1] = spring->angle;
-				else if (object->player == &players[displayplayers[2]])
-					localangle[2] = spring->angle;
-				else if (object->player == &players[displayplayers[3]])
-					localangle[3] = spring->angle;
+				for (UINT8 j = 0; j <= splitscreen; ++j)
+				{
+					INT32 id = (j == 0 ? consoleplayer : displayplayers[j]);
+					if (object->player == &players[id])
+					{
+						localangle[j] = spring->angle;
+						break;
+					}
+				}
 			}
 		}
 
@@ -724,7 +712,7 @@ static boolean PIT_CheckThing(mobj_t *thing)
 			HU_SetCEchoDuration(5);
 			HU_DoCEcho(va("%s\\was hit by a kitchen sink.\\\\\\\\", player_names[thing->player-players]));
 			I_OutputMsg("%s was hit by a kitchen sink.\n", player_names[thing->player-players]);
-			P_DamageMobj(thing, tmthing, tmthing->target, 10000);
+			P_DamageMobj(thing, tmthing, tmthing->target, DMG_INSTAKILL);
 			P_KillMobj(tmthing, thing, thing);
 		}
 
@@ -991,7 +979,7 @@ static boolean PIT_CheckThing(mobj_t *thing)
 			HU_SetCEchoDuration(5);
 			HU_DoCEcho(va("%s\\was hit by a kitchen sink.\\\\\\\\", player_names[tmthing->player-players]));
 			I_OutputMsg("%s was hit by a kitchen sink.\n", player_names[tmthing->player-players]);
-			P_DamageMobj(tmthing, thing, thing->target, 10000);
+			P_DamageMobj(tmthing, thing, thing->target, DMG_INSTAKILL);
 			P_KillMobj(thing, tmthing, tmthing);
 		}
 
@@ -1726,7 +1714,10 @@ boolean P_CheckPosition(mobj_t *thing, fixed_t x, fixed_t y)
 	tmbbox[BOXRIGHT] = x + tmthing->radius;
 	tmbbox[BOXLEFT] = x - tmthing->radius;
 
-	newsubsec = R_PointInSubsector(x, y);
+	if (thing->x != x || thing->y != y || thing->subsector == NULL)
+		newsubsec = R_PointInSubsector(x, y);
+	else
+		newsubsec = thing->subsector;
 
 	ceilingline = blockingline = NULL;
 
@@ -1748,7 +1739,7 @@ boolean P_CheckPosition(mobj_t *thing, fixed_t x, fixed_t y)
 
 		for (rover = newsubsec->sector->ffloors; rover; rover = rover->next)
 		{
-			fixed_t topheight, bottomheight;
+			fixed_t topheight, bottomheight, midheight;
 
 			if (!(rover->flags & FF_EXISTS))
 				continue;
@@ -1813,10 +1804,10 @@ boolean P_CheckPosition(mobj_t *thing, fixed_t x, fixed_t y)
 				continue;
 			}
 
-			delta1 = thing->z - (bottomheight
-				+ ((topheight - bottomheight)/2));
-			delta2 = thingtop - (bottomheight
-				+ ((topheight - bottomheight)/2));
+			midheight = (bottomheight + ((topheight - bottomheight)/2));
+
+			delta1 = thing->z - midheight;
+			delta2 = thingtop - midheight;
 
 			if (topheight > tmfloorz && abs(delta1) < abs(delta2)
 				&& !(rover->flags & FF_REVERSEPLATFORM))
@@ -1847,10 +1838,13 @@ boolean P_CheckPosition(mobj_t *thing, fixed_t x, fixed_t y)
 	BMBOUNDFIX(xl, xh, yl, yh);
 
 	// Check polyobjects and see if tmfloorz/tmceilingz need to be altered
+	// do we really have to iterate through the complete blockmap for polyobjects if there are no polyobjects on the map?
+	if (numPolyObjects)
 	{
 		validcount++;
 
 		for (by = yl; by <= yh; by++)
+		{
 			for (bx = xl; bx <= xh; bx++)
 			{
 				INT32 offset;
@@ -1901,12 +1895,14 @@ boolean P_CheckPosition(mobj_t *thing, fixed_t x, fixed_t y)
 						delta1 = thing->z - (polybottom + ((polytop - polybottom)/2));
 						delta2 = thingtop - (polybottom + ((polytop - polybottom)/2));
 
-						if (polytop > tmfloorz && abs(delta1) < abs(delta2)) {
+						if (polytop > tmfloorz && abs(delta1) < abs(delta2))
+						{
 							tmfloorz = tmdropoffz = polytop;
 							tmfloorslope = NULL;
 						}
 
-						if (polybottom < tmceilingz && abs(delta1) >= abs(delta2)) {
+						if (polybottom < tmceilingz && abs(delta1) >= abs(delta2))
+						{
 							tmceilingz = tmdrpoffceilz = polybottom;
 							tmceilingslope = NULL;
 						}
@@ -1914,6 +1910,7 @@ boolean P_CheckPosition(mobj_t *thing, fixed_t x, fixed_t y)
 					plink = (polymaplink_t *)(plink->link.next);
 				}
 			}
+		}
 	}
 
 	// tmfloorthing is set when tmfloorz comes from a thing's top
@@ -1994,7 +1991,11 @@ boolean P_CheckCameraPosition(fixed_t x, fixed_t y, camera_t *thiscam)
 	tmbbox[BOXRIGHT] = x + thiscam->radius;
 	tmbbox[BOXLEFT] = x - thiscam->radius;
 
-	newsubsec = R_PointInSubsector(x, y);
+	if (thiscam->x != x || thiscam->y != y || thiscam->subsector == NULL)
+		newsubsec = R_PointInSubsector(x, y);
+	else
+		newsubsec = thiscam->subsector;
+
 	ceilingline = blockingline = NULL;
 
 	mapcampointer = thiscam;
@@ -2073,6 +2074,8 @@ boolean P_CheckCameraPosition(fixed_t x, fixed_t y, camera_t *thiscam)
 	BMBOUNDFIX(xl, xh, yl, yh);
 
 	// Check polyobjects and see if tmfloorz/tmceilingz need to be altered
+	// do we really have to iterate through the complete blockmap for polyobjects if there are no polyobjects on the map?
+	if (numPolyObjects)
 	{
 		validcount++;
 
@@ -2164,7 +2167,8 @@ boolean P_CheckCameraPosition(fixed_t x, fixed_t y, camera_t *thiscam)
 //
 boolean P_TryCameraMove(fixed_t x, fixed_t y, camera_t *thiscam)
 {
-	subsector_t *s = R_PointInSubsector(x, y);
+	subsector_t *s;
+
 	boolean retval = true;
 	boolean itsatwodlevel = false;
 	UINT8 i;
@@ -2173,6 +2177,11 @@ boolean P_TryCameraMove(fixed_t x, fixed_t y, camera_t *thiscam)
 
 	if (dedicated) // this crashes so don't even try it
 		return false;
+
+	if (thiscam->x != x || thiscam->y != y || thiscam->subsector == NULL)
+		s = R_PointInSubsector(x, y);
+	else
+		s = thiscam->subsector;
 
 	if (twodlevel)
 		itsatwodlevel = true;
@@ -2367,10 +2376,13 @@ boolean P_TryMove(mobj_t *thing, fixed_t x, fixed_t y, boolean allowdropoff)
 		radius = MAXRADIUS/2;
 
 	do {
-		if (thing->flags & MF_NOCLIP) {
+		if (thing->flags & MF_NOCLIP)
+		{
 			tryx = x;
 			tryy = y;
-		} else {
+		}
+		else
+		{
 			if (x-tryx > radius)
 				tryx += radius;
 			else if (x-tryx < -radius)
@@ -2392,19 +2404,16 @@ boolean P_TryMove(mobj_t *thing, fixed_t x, fixed_t y, boolean allowdropoff)
 		{
 			//All things are affected by their scale.
 			fixed_t maxstep = FixedMul(MAXSTEPMOVE, mapobjectscale);
-			INT32 special = 0;
 
 			if (thing->player)
 			{
-				 special = GETSECSPECIAL(R_PointInSubsector(x, y)->sector->special, 1);
-
 				// If using type Section1:13, double the maxstep.
 				if (P_PlayerTouchingSectorSpecial(thing->player, 1, 13)
-				|| special == 13)
+				|| GETSECSPECIAL(R_PointInSubsector(x, y)->sector->special, 1) == 13)
 					maxstep <<= 1;
 				// If using type Section1:12, no maxstep. For ledges you don't want the player to climb! (see: Egg Zeppelin & SMK port walls)
 				else if (P_PlayerTouchingSectorSpecial(thing->player, 1, 12)
-				|| special == 12)
+				|| GETSECSPECIAL(R_PointInSubsector(x, y)->sector->special, 1) == 12)
 					maxstep = 0;
 			}
 
@@ -2450,7 +2459,7 @@ boolean P_TryMove(mobj_t *thing, fixed_t x, fixed_t y, boolean allowdropoff)
 			else if (maxstep > 0 && !(
 				thing->player && (
 				P_PlayerTouchingSectorSpecial(thing->player, 1, 14)
-				|| special == 14)
+				|| GETSECSPECIAL(R_PointInSubsector(x, y)->sector->special, 1) == 14)
 				)) // Step down
 			{
 				// If the floor difference is MAXSTEPMOVE or less, and the sector isn't Section1:14, ALWAYS
@@ -2514,14 +2523,16 @@ boolean P_TryMove(mobj_t *thing, fixed_t x, fixed_t y, boolean allowdropoff)
 	if (!(thing->flags & MF_NOCLIPHEIGHT))
 	{
 		// Assign thing's standingslope if needed
-		if (thing->z <= tmfloorz && !(thing->eflags & MFE_VERTICALFLIP)) {
+		if (thing->z <= tmfloorz && !(thing->eflags & MFE_VERTICALFLIP))
+		{
 			if (!startingonground && tmfloorslope)
 				P_HandleSlopeLanding(thing, tmfloorslope);
 
 			if (thing->momz <= 0)
 				thing->standingslope = tmfloorslope;
 		}
-		else if (thing->z+thing->height >= tmceilingz && (thing->eflags & MFE_VERTICALFLIP)) {
+		else if (thing->z+thing->height >= tmceilingz && (thing->eflags & MFE_VERTICALFLIP))
+		{
 			if (!startingonground && tmceilingslope)
 				P_HandleSlopeLanding(thing, tmceilingslope);
 
@@ -3650,7 +3661,7 @@ static boolean PIT_ChangeSector(mobj_t *thing, boolean realcrush)
 		{
 			// Crush the object
 			if (netgame && thing->player && thing->player->spectator)
-				P_DamageMobj(thing, NULL, NULL, 42000); // Respawn crushed spectators
+				P_DamageMobj(thing, NULL, NULL, DMG_SPECTATOR); // Respawn crushed spectators
 			else
 			{
 				if (!killer)
@@ -3660,7 +3671,7 @@ static boolean PIT_ChangeSector(mobj_t *thing, boolean realcrush)
 					killer->threshold = 44; // Special flag for crushing
 				}
 				if (!thing->player)
-					P_DamageMobj(thing, killer, killer, 10000);
+					P_DamageMobj(thing, killer, killer, DMG_INSTAKILL);
 				else
 					K_SquishPlayer(thing->player, killer, killer); // SRB2kart - Squish instead of kill
 			}
@@ -3705,8 +3716,6 @@ boolean P_CheckSector(sector_t *sector, boolean crunch)
 				n->visited = false;
 
 			sec->moved = true;
-
-			P_RecalcPrecipInSector(sec);
 
 			if (!sector->attachedsolid[i])
 				continue;
@@ -3768,8 +3777,6 @@ boolean P_CheckSector(sector_t *sector, boolean crunch)
 
 			sec->moved = true;
 
-			P_RecalcPrecipInSector(sec);
-
 			if (!sector->attachedsolid[i])
 				continue;
 
@@ -3820,12 +3827,10 @@ boolean P_CheckSector(sector_t *sector, boolean crunch)
 */
 
 static msecnode_t *headsecnode = NULL;
-static mprecipsecnode_t *headprecipsecnode = NULL;
 
 void P_Initsecnode(void)
 {
 	headsecnode = NULL;
-	headprecipsecnode = NULL;
 }
 
 // P_GetSecnode() retrieves a node from the freelist. The calling routine
@@ -3845,33 +3850,12 @@ static msecnode_t *P_GetSecnode(void)
 	return node;
 }
 
-static mprecipsecnode_t *P_GetPrecipSecnode(void)
-{
-	mprecipsecnode_t *node;
-
-	if (headprecipsecnode)
-	{
-		node = headprecipsecnode;
-		headprecipsecnode = headprecipsecnode->m_thinglist_next;
-	}
-	else
-		node = Z_Calloc(sizeof (*node), PU_LEVEL, NULL);
-	return node;
-}
-
 // P_PutSecnode() returns a node to the freelist.
 
 static inline void P_PutSecnode(msecnode_t *node)
 {
 	node->m_thinglist_next = headsecnode;
 	headsecnode = node;
-}
-
-// Tails 08-25-2002
-static inline void P_PutPrecipSecnode(mprecipsecnode_t *node)
-{
-	node->m_thinglist_next = headprecipsecnode;
-	headprecipsecnode = node;
 }
 
 // P_AddSecnode() searches the current list to see if this sector is
@@ -3919,47 +3903,6 @@ static msecnode_t *P_AddSecnode(sector_t *s, mobj_t *thing, msecnode_t *nextnode
 	return node;
 }
 
-// More crazy crap Tails 08-25-2002
-static mprecipsecnode_t *P_AddPrecipSecnode(sector_t *s, precipmobj_t *thing, mprecipsecnode_t *nextnode)
-{
-	mprecipsecnode_t *node;
-
-	node = nextnode;
-	while (node)
-	{
-		if (node->m_sector == s) // Already have a node for this sector?
-		{
-			node->m_thing = thing; // Yes. Setting m_thing says 'keep it'.
-			return nextnode;
-		}
-		node = node->m_sectorlist_next;
-	}
-
-	// Couldn't find an existing node for this sector. Add one at the head
-	// of the list.
-
-	node = P_GetPrecipSecnode();
-
-	// mark new nodes unvisited.
-	node->visited = 0;
-
-	node->m_sector = s; // sector
-	node->m_thing = thing; // mobj
-	node->m_sectorlist_prev = NULL; // prev node on Thing thread
-	node->m_sectorlist_next = nextnode; // next node on Thing thread
-	if (nextnode)
-		nextnode->m_sectorlist_prev = node; // set back link on Thing
-
-	// Add new node at head of sector thread starting at s->touching_thinglist
-
-	node->m_thinglist_prev = NULL; // prev node on sector thread
-	node->m_thinglist_next = s->touching_preciplist; // next node on sector thread
-	if (s->touching_preciplist)
-		node->m_thinglist_next->m_thinglist_prev = node;
-	s->touching_preciplist = node;
-	return node;
-}
-
 // P_DelSecnode() deletes a sector node from the list of
 // sectors this object appears in. Returns a pointer to the next node
 // on the linked list, or NULL.
@@ -4002,57 +3945,11 @@ static msecnode_t *P_DelSecnode(msecnode_t *node)
 	return tn;
 }
 
-// Tails 08-25-2002
-static mprecipsecnode_t *P_DelPrecipSecnode(mprecipsecnode_t *node)
-{
-	mprecipsecnode_t *tp; // prev node on thing thread
-	mprecipsecnode_t *tn; // next node on thing thread
-	mprecipsecnode_t *sp; // prev node on sector thread
-	mprecipsecnode_t *sn; // next node on sector thread
-
-	if (!node)
-		return NULL;
-
-	// Unlink from the Thing thread. The Thing thread begins at
-	// sector_list and not from mobj_t->touching_sectorlist.
-
-	tp = node->m_sectorlist_prev;
-	tn = node->m_sectorlist_next;
-	if (tp)
-		tp->m_sectorlist_next = tn;
-	if (tn)
-		tn->m_sectorlist_prev = tp;
-
-	// Unlink from the sector thread. This thread begins at
-	// sector_t->touching_thinglist.
-
-	sp = node->m_thinglist_prev;
-	sn = node->m_thinglist_next;
-	if (sp)
-		sp->m_thinglist_next = sn;
-	else
-		node->m_sector->touching_preciplist = sn;
-	if (sn)
-		sn->m_thinglist_prev = sp;
-
-	// Return this node to the freelist
-
-	P_PutPrecipSecnode(node);
-	return tn;
-}
-
 // Delete an entire sector list
 void P_DelSeclist(msecnode_t *node)
 {
 	while (node)
 		node = P_DelSecnode(node);
-}
-
-// Tails 08-25-2002
-void P_DelPrecipSeclist(mprecipsecnode_t *node)
-{
-	while (node)
-		node = P_DelPrecipSecnode(node);
 }
 
 // PIT_GetSectors
@@ -4091,41 +3988,6 @@ static inline boolean PIT_GetSectors(line_t *ld)
 	// Use sidedefs instead of 2s flag to determine two-sidedness.
 	if (ld->backsector)
 		sector_list = P_AddSecnode(ld->backsector, tmthing, sector_list);
-
-	return true;
-}
-
-// Tails 08-25-2002
-static inline boolean PIT_GetPrecipSectors(line_t *ld)
-{
-	if (preciptmbbox[BOXRIGHT] <= ld->bbox[BOXLEFT] ||
-		preciptmbbox[BOXLEFT] >= ld->bbox[BOXRIGHT] ||
-		preciptmbbox[BOXTOP] <= ld->bbox[BOXBOTTOM] ||
-		preciptmbbox[BOXBOTTOM] >= ld->bbox[BOXTOP])
-		return true;
-
-	if (P_BoxOnLineSide(preciptmbbox, ld) != -1)
-		return true;
-
-	if (ld->polyobj) // line belongs to a polyobject, don't add it
-		return true;
-
-	// This line crosses through the object.
-
-	// Collect the sector(s) from the line and add to the
-	// sector_list you're examining. If the Thing ends up being
-	// allowed to move to this position, then the sector_list
-	// will be attached to the Thing's mobj_t at touching_sectorlist.
-
-	precipsector_list = P_AddPrecipSecnode(ld->frontsector, tmprecipthing, precipsector_list);
-
-	// Don't assume all lines are 2-sided, since some Things
-	// like MT_TFOG are allowed regardless of whether their radius takes
-	// them beyond an impassable linedef.
-
-	// Use sidedefs instead of 2s flag to determine two-sidedness.
-	if (ld->backsector)
-		precipsector_list = P_AddPrecipSecnode(ld->backsector, tmprecipthing, precipsector_list);
 
 	return true;
 }
@@ -4214,73 +4076,6 @@ void P_CreateSecNodeList(mobj_t *thing, fixed_t x, fixed_t y)
 		tmbbox[BOXRIGHT]  = tmx + tmthing->radius;
 		tmbbox[BOXLEFT]   = tmx - tmthing->radius;
 	}
-}
-
-// More crazy crap Tails 08-25-2002
-void P_CreatePrecipSecNodeList(precipmobj_t *thing,fixed_t x,fixed_t y)
-{
-	INT32 xl, xh, yl, yh, bx, by;
-	mprecipsecnode_t *node = precipsector_list;
-	precipmobj_t *saved_tmthing = tmprecipthing; /* cph - see comment at func end */
-
-	// First, clear out the existing m_thing fields. As each node is
-	// added or verified as needed, m_thing will be set properly. When
-	// finished, delete all nodes where m_thing is still NULL. These
-	// represent the sectors the Thing has vacated.
-
-	while (node)
-	{
-		node->m_thing = NULL;
-		node = node->m_sectorlist_next;
-	}
-
-	tmprecipthing = thing;
-
-	preciptmbbox[BOXTOP] = y + 2*FRACUNIT;
-	preciptmbbox[BOXBOTTOM] = y - 2*FRACUNIT;
-	preciptmbbox[BOXRIGHT] = x + 2*FRACUNIT;
-	preciptmbbox[BOXLEFT] = x - 2*FRACUNIT;
-
-	validcount++; // used to make sure we only process a line once
-
-	xl = (unsigned)(preciptmbbox[BOXLEFT] - bmaporgx)>>MAPBLOCKSHIFT;
-	xh = (unsigned)(preciptmbbox[BOXRIGHT] - bmaporgx)>>MAPBLOCKSHIFT;
-	yl = (unsigned)(preciptmbbox[BOXBOTTOM] - bmaporgy)>>MAPBLOCKSHIFT;
-	yh = (unsigned)(preciptmbbox[BOXTOP] - bmaporgy)>>MAPBLOCKSHIFT;
-
-	BMBOUNDFIX(xl, xh, yl, yh);
-
-	for (bx = xl; bx <= xh; bx++)
-		for (by = yl; by <= yh; by++)
-			P_BlockLinesIterator(bx, by, PIT_GetPrecipSectors);
-
-	// Add the sector of the (x, y) point to sector_list.
-	precipsector_list = P_AddPrecipSecnode(thing->subsector->sector, thing, precipsector_list);
-
-	// Now delete any nodes that won't be used. These are the ones where
-	// m_thing is still NULL.
-	node = precipsector_list;
-	while (node)
-	{
-		if (!node->m_thing)
-		{
-			if (node == precipsector_list)
-				precipsector_list = node->m_sectorlist_next;
-			node = P_DelPrecipSecnode(node);
-		}
-		else
-			node = node->m_sectorlist_next;
-	}
-
-	/* cph -
-	* This is the strife we get into for using global variables. tmthing
-	*  is being used by several different functions calling
-	*  P_BlockThingIterator, including functions that can be called *from*
-	*  P_BlockThingIterator. Using a global tmthing is not reentrant.
-	* OTOH for Boom/MBF demos we have to preserve the buggy behavior.
-	*  Fun. We restore its previous value unless we're in a Boom/MBF demo.
-	*/
-	tmprecipthing = saved_tmthing;
 }
 
 /* cphipps 2004/08/30 -

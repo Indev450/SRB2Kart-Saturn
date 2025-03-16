@@ -397,6 +397,18 @@ static int libd_cachePatch(lua_State *L)
 	return 1;
 }
 
+#ifdef ROTSPRITE
+static int libd_cachePatchRotated(lua_State *L)
+{
+	HUDONLY
+	angle_t rollangle = luaL_checkangle(L, 2);
+	INT32 rot = R_GetRollAngle(rollangle);
+	LUA_PushUserdata(L, W_CachePatchNameRotated(luaL_checkstring(L, 1), rot, PU_STATIC), META_PATCH);
+
+	return 1;
+}
+#endif
+
 // this is structured like getSprite2Patch in vanilla 2.2
 // v.getSpritePatch(skin, sprite, [frame, [angle, [rollangle]]])
 static int libd_getSpritePatch(lua_State *L)
@@ -462,12 +474,16 @@ static int libd_getSpritePatch(lua_State *L)
 	if (skn < 0) // standard sprite
 	{
 		sprdef = &sprites[i];
+#ifdef ROTSPRITE
 		sprinfo = &spriteinfo[i];
+#endif
 	}
 	else // player skin
 	{
 		sprdef = &skins[skn].spritedef;
+#ifdef ROTSPRITE
 		sprinfo = &skins[skn].sprinfo;
+#endif
 	}
 
 	// set frame number
@@ -488,13 +504,15 @@ static int libd_getSpritePatch(lua_State *L)
 	if (angle >= 8) // out of range?
 		angle = (angle & 7); // modulus angle by 8
 
+#ifdef ROTSPRITE
 	// rotsprite?????
-	if (lua_isnumber(L, 4) && cv_sloperoll.value)
+	if (lua_isnumber(L, 4))
 	{
 		angle_t rollangle = luaL_checkangle(L, 4);
 		INT32 rot = R_GetRollAngle(rollangle);
 
-		if (rot) {
+		if (rot)
+		{
 			patch_t *rotsprite = Patch_GetRotatedSprite(sprframe, frame, angle, sprframe->flip & (1<<angle), false, sprinfo, rot);
 			LUA_PushUserdata(L, rotsprite, META_PATCH);
 			lua_pushboolean(L, false);
@@ -502,6 +520,7 @@ static int libd_getSpritePatch(lua_State *L)
 			return 3;
 		}
 	}
+#endif
 
 	// push both the patch and its "flip" value
 	LUA_PushUserdata(L, W_CachePatchNum(sprframe->lumppat[angle], PU_STATIC), META_PATCH);
@@ -511,7 +530,7 @@ static int libd_getSpritePatch(lua_State *L)
 
 static int libd_draw(lua_State *L)
 {
-	INT32 x, y, flags;
+	INT32 x, y, flags, blend;
 	patch_t *patch;
 	UINT8 *colormap = NULL;
 	huddrawlist_h list;
@@ -523,6 +542,7 @@ static int libd_draw(lua_State *L)
 	flags = luaL_optinteger(L, 4, 0);
 	if (!lua_isnoneornil(L, 5))
 		colormap = *((UINT8 **)luaL_checkudata(L, 5, META_COLORMAP));
+	blend = luaL_optinteger(L, 6, 0);
 
 	flags &= ~V_PARAMMASK; // Don't let crashes happen.
 
@@ -531,16 +551,16 @@ static int libd_draw(lua_State *L)
 	lua_pop(L, 1);
 
 	if (LUA_HUD_IsDrawListValid(list))
-		LUA_HUD_AddDraw(list, x, y, patch, flags, colormap);
+		LUA_HUD_AddDraw(list, x, y, patch, flags, colormap, blend);
 	else
-		V_DrawFixedPatch(x<<FRACBITS, y<<FRACBITS, FRACUNIT, flags, patch, colormap);
+		V_DrawBlendingFixedPatch(x<<FRACBITS, y<<FRACBITS, FRACUNIT, flags, patch, colormap, blend);
 	return 0;
 }
 
 static int libd_drawScaled(lua_State *L)
 {
 	fixed_t x, y, scale;
-	INT32 flags;
+	INT32 flags, blend;
 	patch_t *patch;
 	UINT8 *colormap = NULL;
 	huddrawlist_h list;
@@ -555,6 +575,7 @@ static int libd_drawScaled(lua_State *L)
 	flags = luaL_optinteger(L, 5, 0);
 	if (!lua_isnoneornil(L, 6))
 		colormap = *((UINT8 **)luaL_checkudata(L, 6, META_COLORMAP));
+	blend = luaL_optinteger(L, 7, 0);
 
 	flags &= ~V_PARAMMASK; // Don't let crashes happen.
 
@@ -563,9 +584,9 @@ static int libd_drawScaled(lua_State *L)
 	lua_pop(L, 1);
 
 	if (LUA_HUD_IsDrawListValid(list))
-		LUA_HUD_AddDrawScaled(list, x, y, scale, patch, flags, colormap);
+		LUA_HUD_AddDrawScaled(list, x, y, scale, patch, flags, colormap, blend);
 	else
-		V_DrawFixedPatch(x, y, scale, flags, patch, colormap);
+		V_DrawBlendingFixedPatch(x, y, scale, flags, patch, colormap, blend);
 	return 0;
 }
 
@@ -649,7 +670,7 @@ static int libd_drawOnMinimap(lua_State *L)
 	if (gamestate != GS_LEVEL)
 		return 0;
 
-	if (stplyr != &players[displayplayers[0]])
+	if (stplyrnum != 0)
 		return 0;
 
 	AutomapPic = minimapinfo.minimap_pic;
@@ -709,7 +730,7 @@ static int libd_drawOnMinimap(lua_State *L)
 
 	if (LUA_HUD_IsDrawListValid(list))
 	{
-		LUA_HUD_AddDrawScaled(list, amxpos, amypos, scale, patch, splitflags, colormap);
+		LUA_HUD_AddDrawScaled(list, amxpos, amypos, scale, patch, splitflags, colormap, 0);
 	}
 	else
 	{
@@ -722,7 +743,7 @@ static int libd_drawOnMinimap(lua_State *L)
 static int libd_drawStretched(lua_State *L)
 {
 	fixed_t x, y, hscale, vscale;
-	INT32 flags;
+	INT32 flags, blend;
 	patch_t *patch;
 	UINT8 *colormap = NULL;
 	huddrawlist_h list;
@@ -740,6 +761,7 @@ static int libd_drawStretched(lua_State *L)
 	flags = luaL_optinteger(L, 6, 0);
 	if (!lua_isnoneornil(L, 7))
 		colormap = *((UINT8 **)luaL_checkudata(L, 7, META_COLORMAP));
+	blend = luaL_optinteger(L, 8, 0);
 
 	flags &= ~V_PARAMMASK; // Don't let crashes happen.
 
@@ -748,9 +770,9 @@ static int libd_drawStretched(lua_State *L)
 	lua_pop(L, 1);
 
 	if (LUA_HUD_IsDrawListValid(list))
-		LUA_HUD_AddDrawStretched(list, x, y, hscale, vscale, patch, flags, colormap);
+		LUA_HUD_AddDrawStretched(list, x, y, hscale, vscale, patch, flags, colormap, blend);
 	else
-		V_DrawStretchyFixedPatch(x, y, hscale, vscale, flags, patch, colormap);
+		V_DrawStretchyFixedPatch(x, y, hscale, vscale, flags, patch, colormap, blend);
 	return 0;
 }
 
@@ -1172,6 +1194,10 @@ static int libd_interpLatch(lua_State *L)
 static luaL_Reg lib_draw[] = {
 	{"patchExists", libd_patchExists},
 	{"cachePatch", libd_cachePatch},
+#ifdef ROTSPRITE
+	// Is this ifdef nonsense? Yes.
+	{"cachePatchRotated", libd_cachePatchRotated},
+#endif
 	{"draw", libd_draw},
 	{"drawScaled", libd_drawScaled},
 	{"drawStretched", libd_drawStretched},
