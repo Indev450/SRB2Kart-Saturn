@@ -10412,10 +10412,6 @@ static void K_drawKartMinimapHead(mobj_t *mo, INT32 x, INT32 y, INT32 flags)
 	const boolean skinlocal = mo->skinlocal;
 	const skin_t *skin = (skin_t*)(mo->localskin ? mo->localskin : mo->skin);
 
-	UINT8 skinnum = 0;
-	const boolean skinlocal = mo->skinlocal;
-	const skin_t *skin = (skin_t*)(mo->localskin ? mo->localskin : mo->skin);
-
 	fixed_t amnumxpos, amnumypos;
 	INT32 amxpos, amypos, wntdamxpos, wntdamypos;
 	fixed_t scale = FRACUNIT;
@@ -10440,7 +10436,7 @@ static void K_drawKartMinimapHead(mobj_t *mo, INT32 x, INT32 y, INT32 flags)
 	amxpos = amnumxpos + ((x + (SHORT(minimapinfo.minimap_pic->width)-SHORT(minimaphead->width)) / 2)<<FRACBITS);
 	amypos = amnumypos + ((y + (SHORT(minimapinfo.minimap_pic->height)-SHORT(minimaphead->height)) / 2)<<FRACBITS);
 
-	if (cv_showminimapnames.value && player && !(modeattacking || gamestate == GS_TIMEATTACK))
+	if (cv_showminimapnames.value && mo->player && !(modeattacking || gamestate == GS_TIMEATTACK))
 	{
 		V_DrawCenteredSmallStringAtFixed(amxpos + (4*FRACUNIT), amypos - (3*FRACUNIT), V_ALLOWLOWERCASE|flags|V_SkinColorToHighlightcolor(mo->color), player_names[mo->player - players]);
 	}
