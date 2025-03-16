@@ -1143,7 +1143,7 @@ void HWR_DrawMD2(gl_vissprite_t *spr)
 				colormap = sector->extra_colormap;
 		}
 
-		HWR_ObjectLightLevelPost(spr, sector, &lightlevel, true, false);
+		HWR_ObjectLightLevelPost(spr, sector, &lightlevel, true);
 
 		HWR_Lighting(&Surf, lightlevel, colormap, P_SectorUsesDirectionalLighting(sector) && !(spr->mobj->frame & FF_FULLBRIGHT));
 	}
