@@ -46,8 +46,6 @@
 #include "../i_video.h"
 #include "../f_finale.h"
 
-#include "../f_finale.h"
-
 #ifdef DEBUG_TO_FILE
 #include <stdarg.h>
 #if defined (_WIN32) && !defined (__CYGWIN__)
@@ -192,14 +190,25 @@ boolean OglSdlSurface(INT32 w, INT32 h)
 
 #if defined (__unix__)
 #ifdef USE_FBO_OGL
-		if (supportFBO && strstr((const char*)gl_renderer, "NVIDIA"))
+		char videodriver[4] = {'S','D','L',0};
+		if (supportFBO && strstr((const char*)gl_renderer, "NVIDIA")
+			&& (*strncpy(videodriver, SDL_GetCurrentVideoDriver(), 4) != '\0')
+			&& (strncasecmp("x11",videodriver,4) == 0))
 			xwaylandcrap = true;
 #endif
 #endif
 	}
 
-	SDL_GL_SetSwapInterval(cv_vidwait.value ? 1 : 0);
-
+	if (cv_vidwait.value)
+	{
+		if (SDL_GL_SetSwapInterval(-1) == -1) // try async vsync
+			SDL_GL_SetSwapInterval(1); // normal vsync
+	}
+	else
+		SDL_GL_SetSwapInterval(0);
+	
+	//SDL_GL_SetSwapInterval(cv_vidwait.value ? 1 : 0);
+	
 	// The screen textures need to be flushed if the width or height change so that they be remade for the correct size
 	if (screen_width != w || screen_height != h)
 	{
