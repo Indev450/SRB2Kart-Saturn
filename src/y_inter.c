@@ -385,17 +385,18 @@ static void Y_PlayerStandingsDrawer(y_data_t *standings, INT32 x, INT32 hilicol)
 	for (i = 0; i < standings->numplayers; i++)
 	{
 		const UINT8 pnum = standings->num[i];
+		player_t *player = &players[pnum];
 
 		if (pnum == MAXPLAYERS)
 			;
-		else if (!playeringame[pnum] || players[pnum].spectator == true)
+		else if (!playeringame[pnum] || player->spectator)
 			standings->num[i] = MAXPLAYERS; // this should be the only field setting in this function
 		else
 		{
 			char strtime[MAXPLAYERNAME+1];
 
-			const boolean whiteplayer = _isHighlightedPlayer(&players[pnum]);
-			const INT32 philicol = (whiteplayer ? V_SkinColorToHighlightcolor(players[pnum].skincolor) : 0);
+			const boolean whiteplayer = _isHighlightedPlayer(player);
+			const INT32 philicol = (whiteplayer ? V_SkinColorToHighlightcolor(player->skincolor) : 0);
 
 			// Apply the jitter offset (later reversed)
 			if (standings->jitter[pnum] > 0)
@@ -403,13 +404,14 @@ static void Y_PlayerStandingsDrawer(y_data_t *standings, INT32 x, INT32 hilicol)
 
 			V_DrawCenteredString(x+6, y, 0, va("%d", standings->pos[i]));
 
+			// localskins are amazing
 			if (standings->color[i] != SKINCOLOR_NONE)
 			{
 				UINT8 *colormap = R_GetTranslationColormap(*standings->character[i], *standings->color[i], GTC_CACHE);
-				INT32 skinnum = (players[pnum].localskin ? (players[pnum].localskin - 1) : *standings->character[i]);
+				INT32 skinnum = (player->localskin ? (player->localskin - 1) : *standings->character[i]);
 				patch_t *faceprefix = NULL;
 
-				if (!players[pnum].skinlocal)
+				if (!player->skinlocal)
 					faceprefix = (cv_highresportrait.value ? facewantprefix[skinnum] : facerankprefix[skinnum]);
 				else
 					faceprefix = (cv_highresportrait.value ? localfacewantprefix[skinnum] : localfacerankprefix[skinnum]);
