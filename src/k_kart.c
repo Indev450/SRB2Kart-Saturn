@@ -6349,15 +6349,15 @@ void K_KartUpdatePosition(player_t *player)
 	player->kartstuff[k_position] = position;
 }
 
-static mobj_t *K_SpawnOrMoveMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type, mobj_t *source, int id)
+mobj_t *K_SpawnOrMoveMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type, mobj_t **ref)
 {
-	mobj_t *mobj = source->watertrail[id];
+	mobj_t *mobj = *ref;
 
 	if (!mobj || P_MobjWasRemoved(mobj))
 	{
 		mobj = P_SpawnMobj(x, y, z, type);
 
-		P_SetTarget(&source->watertrail[id], mobj);
+		P_SetTarget(ref, mobj);
 	}
 	else
 	{
@@ -6475,7 +6475,7 @@ void K_SpawnWaterRunParticles(mobj_t *mobj)
 			// underlay
 			water = K_SpawnOrMoveMobj(x1, y1,
 				((mobj->eflags & MFE_VERTICALFLIP) ? mobj->waterbottom - FixedMul(mobjinfo[watertrailunderlay].height, mobj->scale) : mobj->watertop), watertrailunderlay,
-				mobj, 0);
+				&mobj->vfx[VFX_WATERTRAIL_LEFT_UNDERLAY]);
 			water->angle = forwardangle - ANGLE_180 - ANGLE_22h;
 			water->destscale = trailScale;
 			water->momx = mobj->momx;
@@ -6488,7 +6488,7 @@ void K_SpawnWaterRunParticles(mobj_t *mobj)
 			// overlay
 			water = K_SpawnOrMoveMobj(x1, y1,
 				((mobj->eflags & MFE_VERTICALFLIP) ? mobj->waterbottom - FixedMul(mobjinfo[watertrail].height, mobj->scale) : mobj->watertop), watertrail,
-				mobj, 1);
+				&mobj->vfx[VFX_WATERTRAIL_LEFT_OVERLAY]);
 			water->angle = forwardangle - ANGLE_180 - ANGLE_22h;
 			water->destscale = trailScale;
 			water->momx = mobj->momx;
@@ -6502,7 +6502,7 @@ void K_SpawnWaterRunParticles(mobj_t *mobj)
 			// Underlay
 			water = K_SpawnOrMoveMobj(x2, y2,
 				((mobj->eflags & MFE_VERTICALFLIP) ? mobj->waterbottom - FixedMul(mobjinfo[watertrailunderlay].height, mobj->scale) : mobj->watertop), watertrailunderlay,
-				mobj, 2);
+				&mobj->vfx[VFX_WATERTRAIL_RIGHT_UNDERLAY]);
 			water->angle = forwardangle - ANGLE_180 + ANGLE_22h;
 			water->destscale = trailScale;
 			water->momx = mobj->momx;
@@ -6515,7 +6515,7 @@ void K_SpawnWaterRunParticles(mobj_t *mobj)
 			// Overlay
 			water = K_SpawnOrMoveMobj(x2, y2,
 				((mobj->eflags & MFE_VERTICALFLIP) ? mobj->waterbottom - FixedMul(mobjinfo[watertrail].height, mobj->scale) : mobj->watertop), watertrail,
-				mobj, 3);
+				&mobj->vfx[VFX_WATERTRAIL_RIGHT_OVERLAY]);
 			water->angle = forwardangle - ANGLE_180 + ANGLE_22h;
 			water->destscale = trailScale;
 			water->momx = mobj->momx;

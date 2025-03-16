@@ -95,6 +95,7 @@ void K_CalculateBattleWanted(void);
 void K_CheckBumpers(void);
 void K_CheckSpectateStatus(void);
 void K_UpdateSpectateGrief(void);
+mobj_t *K_SpawnOrMoveMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type, mobj_t **ref);
 void K_SpawnWaterRunParticles(mobj_t *mobj);
 
 // sound stuff for lua

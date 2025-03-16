@@ -262,6 +262,15 @@ typedef enum {
 	PCF_THUNK     = 1<<5, // Ran the thinker this tic.
 } precipflag_t;
 
+typedef enum {
+	VFX_WATERTRAIL_LEFT_UNDERLAY = 0,
+	VFX_WATERTRAIL_LEFT_OVERLAY,
+	VFX_WATERTRAIL_RIGHT_UNDERLAY,
+	VFX_WATERTRAIL_RIGHT_OVERLAY,
+
+	NUMMOBJVFX,
+} mobjvfx_t;
+
 // Map Object definition.
 typedef struct mobj_s
 {
@@ -409,7 +418,7 @@ typedef struct mobj_s
 	boolean init_salty;
 
 	// WARNING: New fields must be added separately to savegame and Lua.
-	struct mobj_s *watertrail[4];
+	struct mobj_s *vfx[NUMMOBJVFX];
 } mobj_t;
 
 //
