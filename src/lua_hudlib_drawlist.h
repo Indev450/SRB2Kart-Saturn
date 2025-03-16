@@ -40,7 +40,8 @@ void LUA_HUD_AddDraw(
 	INT32 y,
 	patch_t *patch,
 	INT32 flags,
-	UINT8 *colormap
+	UINT8 *colormap,
+	INT32 blend
 );
 void LUA_HUD_AddDrawStretched(
 	huddrawlist_h list,
@@ -50,7 +51,8 @@ void LUA_HUD_AddDrawStretched(
 	fixed_t vscale,
 	patch_t *patch,
 	INT32 flags,
-	UINT8 *colormap
+	UINT8 *colormap,
+	INT32 blend
 );
 void LUA_HUD_AddDrawScaled(
 	huddrawlist_h list,
@@ -59,7 +61,8 @@ void LUA_HUD_AddDrawScaled(
 	fixed_t scale,
 	patch_t *patch,
 	INT32 flags,
-	UINT8 *colormap
+	UINT8 *colormap,
+	INT32 blend
 );
 void LUA_HUD_AddDrawNum(
 	huddrawlist_h list,

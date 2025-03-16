@@ -1887,13 +1887,13 @@ boolean P_CheckDeathPitCollide(mobj_t *mo)
 	I_Assert(mo != NULL);
 	I_Assert(!P_MobjWasRemoved(mo));
 
-	INT32 special = GETSECSPECIAL(mo->subsector->sector->special, 1);
+	const INT32 secspecial = GETSECSPECIAL(mo->subsector->sector->special, 1);
 
 	if (((mo->z <= mo->subsector->sector->floorheight
 		&& !(mo->eflags & MFE_VERTICALFLIP) && (mo->subsector->sector->flags & SF_FLIPSPECIAL_FLOOR))
 	|| (mo->z + mo->height >= mo->subsector->sector->ceilingheight
 		&& (mo->eflags & MFE_VERTICALFLIP) && (mo->subsector->sector->flags & SF_FLIPSPECIAL_CEILING)))
-	&& (special == 6 || special == 7))
+	&& (secspecial == 6 || secspecial == 7))
 		return true;
 
 	return false;
@@ -3144,7 +3144,7 @@ static boolean P_CameraCheckHeat(camera_t *thiscam)
 	sector_t *sector;
 	fixed_t halfheight;
 
-	if (!thiscam)
+	if (!thiscam || !thiscam->subsector)
 		return false;
 
 	halfheight = thiscam->z + (thiscam->height >> 1);
@@ -3182,7 +3182,7 @@ static boolean P_CameraCheckWater(camera_t *thiscam)
 	sector_t *sector;
 	fixed_t halfheight;
 
-	if (!thiscam)
+	if (!thiscam || !thiscam->subsector)
 		return false;
 
 	halfheight = thiscam->z + (thiscam->height >> 1);
@@ -3235,16 +3235,23 @@ void P_DestroyRobots(void)
 }
 
 // the below is chasecam only, if you're curious. check out P_CalcPostImg in p_user.c for first person
-static void P_CalcChasePostImg(player_t *player, camera_t *thiscam)
+void P_CalcChasePostImg(player_t *player, camera_t *thiscam)
 {
 	const boolean flipcam = (player->pflags & PF_FLIPCAM && !(player->pflags & PF_NIGHTSMODE) && player->mo->eflags & MFE_VERTICALFLIP);
-	UINT16 postimgflags = 0;
-	UINT8 i;
+	UINT8 postimgtype = 0;
 
 	if (encoremode)
-		postimgflags |= POSTIMG_MIRROR;
+		postimgtype |= POSTIMG_MIRROR;
 	if (flipcam)
-		postimgflags |= POSTIMG_FLIP;
+		postimgtype |= POSTIMG_FLIP;
+
+#ifdef HWRENDER
+	if (rendermode == render_opengl && splitscreen)
+	{
+		thiscam->postimg = postimgtype;
+		return;
+	}
+#endif
 
 	if (player->awayviewtics && player->awayviewmobj && !P_MobjWasRemoved(player->awayviewmobj)) // Camera must obviously exist
 	{
@@ -3259,27 +3266,20 @@ static void P_CalcChasePostImg(player_t *player, camera_t *thiscam)
 
 		// Are we in water?
 		if (P_CameraCheckWater(&dummycam))
-			postimgflags |= POSTIMG_WATER;
-		if (P_CameraCheckHeat(&dummycam))
-			postimgflags |= POSTIMG_HEAT;
+			postimgtype |= POSTIMG_WATER;
+		else if (P_CameraCheckHeat(&dummycam))
+			postimgtype |= POSTIMG_HEAT;
 	}
 	else
 	{
 		// Are we in water?
 		if (P_CameraCheckWater(thiscam))
-			postimgflags |= POSTIMG_WATER;
-		if (P_CameraCheckHeat(thiscam))
-			postimgflags |= POSTIMG_HEAT;
+			postimgtype |= POSTIMG_WATER;
+		else if (P_CameraCheckHeat(thiscam))
+			postimgtype |= POSTIMG_HEAT;
 	}
 
-	for (i = 0; i <= splitscreen; i++)
-	{
-		if (player != &players[displayplayers[i]])
-			continue;
-
-		players[displayplayers[i]].postimgflags = postimgflags;
-		break;
-	}
+	thiscam->postimg = postimgtype;
 }
 
 // P_CameraThinker
@@ -3567,7 +3567,7 @@ animonly:
 	}
 }
 
-static void CalculatePrecipFloor(precipmobj_t *mobj)
+static void P_CalculatePrecipFloor(precipmobj_t *mobj, boolean spawn)
 {
 	// recalculate floorz each time
 	const sector_t *mobjsecsubsec;
@@ -3575,6 +3575,10 @@ static void CalculatePrecipFloor(precipmobj_t *mobj)
 	if (mobj && mobj->subsector && mobj->subsector->sector)
 		mobjsecsubsec = mobj->subsector->sector;
 	else
+		return;
+
+	// no need to recalc anything if not moved
+	if (!spawn && !mobjsecsubsec->moved)
 		return;
 
 	mobj->floorz = P_GetSectorFloorZAt(mobjsecsubsec, mobj->x, mobj->y);
@@ -3599,19 +3603,6 @@ static void CalculatePrecipFloor(precipmobj_t *mobj)
 				mobj->floorz = topheight;
 		}
 	}
-}
-
-void P_RecalcPrecipInSector(sector_t *sector)
-{
-	mprecipsecnode_t *psecnode;
-
-	if (!sector)
-		return;
-
-	sector->moved = true; // Recalc lighting and things too, maybe
-
-	for (psecnode = sector->touching_preciplist; psecnode; psecnode = psecnode->m_thinglist_next)
-		CalculatePrecipFloor(psecnode->m_thing);
 }
 
 //
@@ -3679,6 +3670,9 @@ boolean P_PrecipThinker(precipmobj_t *mobj)
 
 	if (mobj->precipflags & PCF_SPLASH)
 		return true;
+
+	if (renderisnewtic)
+		P_CalculatePrecipFloor(mobj, false);
 
 	// adjust height
 	if ((mobj->z += mobj->momz) <= mobj->floorz)
@@ -6039,17 +6033,21 @@ static void P_KoopaThinker(mobj_t *koopa)
 //
 void P_RollPitchMobj(mobj_t* mobj)
 {
+	// we dont need this in dedi do we?
+	if (rendermode == render_none)
+		return;
+
 	if (P_MobjWasRemoved(mobj))
 		return;
 
 	if (cv_sloperoll.value != 2)
 	{
-		mobj->sloperoll = FixedAngle(0);
-		mobj->slopepitch = FixedAngle(0);
+		mobj->sloperoll = 0;
+		mobj->slopepitch = 0;
 		return;
 	}
 
-	K_RollMobjBySlopes(mobj, cv_sloperolldist.value && !splitscreen);
+	K_RollMobjBySlopes(mobj, mobj->standingslope);
 }
 
 angle_t P_MobjPitchAndRoll(mobj_t *mobj)
@@ -7060,8 +7058,21 @@ void P_MobjThinker(mobj_t *mobj)
 			}
 			break;
 		//{ SRB2kart Items - Death States
-		case MT_ORBINAUT:
 		case MT_BANANA:
+			if (cv_sloperoll.value == 2 && cv_bananthrowroll.value)
+			{
+				angle_t spin = FixedMul(FixedDiv(abs(mobj->momz), 8 * mobj->scale), ANGLE_67h);
+				//mobj->angle -= spin;
+
+				if (cv_bananthrowroll.value == 1)
+					mobj->sloperoll += spin; // im lazy but this makes sure the banan goes back to upright when it lands lmao
+				else if (cv_bananthrowroll.value == 2)
+					mobj->rollangle += spin;
+
+				//if (P_IsObjectOnGround(mobj) && mobj->momz * P_MobjFlip(mobj) <= 0)
+			}
+			/* FALLTHRU */
+		case MT_ORBINAUT:
 		case MT_EGGMANITEM:
 		case MT_SPB:
 			if (P_IsObjectOnGround(mobj))
@@ -7803,6 +7814,18 @@ void P_MobjThinker(mobj_t *mobj)
 		}
 		case MT_BANANA:
 		case MT_EGGMANITEM:
+			if (cv_sloperoll.value == 2 && cv_bananthrowroll.value && !P_IsObjectOnGround(mobj))
+			{
+				// tilt n tumble
+				angle_t spin = FixedMul(FixedDiv(mobj->momz, 8 * mobj->scale), ANGLE_67h);
+				//mobj->angle += spin;
+
+				if (cv_bananthrowroll.value == 1)
+					mobj->sloperoll -= spin; // im lazy but this makes sure the banan goes back to upright when it lands lmao
+				else if (cv_bananthrowroll.value == 2)
+					mobj->rollangle -= spin;
+			}
+
 			mobj->friction = ORIG_FRICTION/4;
 			if (mobj->momx || mobj->momy)
 				P_SpawnGhostMobj(mobj);
@@ -9449,6 +9472,7 @@ mobj_t *P_SpawnMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type)
 	}
 
 	// Sprite rendering
+	mobj->blendmode = AST_TRANSLUCENT;
 	mobj->realxscale = mobj->realyscale = mobj->scale;
 	mobj->spritexscale = mobj->realxscale;
 	mobj->spriteyscale = mobj->realyscale;
@@ -9885,6 +9909,7 @@ mobj_t *P_SpawnShadowMobj(mobj_t * caster)
 	mobj->radius = info->radius;
 	mobj->height = info->height;
 	mobj->flags = info->flags;
+	mobj->blendmode = AST_TRANSLUCENT;
 
 	mobj->health = info->spawnhealth;
 
@@ -10016,7 +10041,7 @@ static precipmobj_t *P_SpawnPrecipMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype
 	mobj->thinker.function.acp1 = (actionf_p1)P_NullPrecipThinker;
 	P_AddPrecipThinker(&mobj->thinker);
 
-	CalculatePrecipFloor(mobj);
+	P_CalculatePrecipFloor(mobj, true);
 
 	if (mobj->floorz != starting_floorz)
 		mobj->precipflags |= PCF_FOF;
@@ -10176,12 +10201,6 @@ void P_FreePrecipMobj(precipmobj_t *mobj)
 	// unlink from sector and block lists
 	P_UnsetPrecipThingPosition(mobj);
 
-	if (precipsector_list)
-	{
-		P_DelPrecipSeclist(precipsector_list);
-		precipsector_list = NULL;
-	}
-
 	// free block
 	// Precipmobjs don't actually think using their thinker,
 	// so the free cannot be delayed.
@@ -10195,12 +10214,6 @@ void P_RemoveSavegameMobj(mobj_t *mobj)
 	if (((thinker_t *)mobj)->function.acp1 == (actionf_p1)P_NullPrecipThinker)
 	{
 		P_UnsetPrecipThingPosition((precipmobj_t *)mobj);
-
-		if (precipsector_list)
-		{
-			P_DelPrecipSeclist(precipsector_list);
-			precipsector_list = NULL;
-		}
 	}
 	else
 	{
@@ -10619,7 +10632,9 @@ void P_SpawnPlayer(INT32 playernum)
 	if (multiplayer && demo.playback)
 		; // Don't mess with spectator values since the demo setup handles them already.
 	else if (!G_GametypeHasSpectators())
+	{
 		p->spectator = false;
+	}
 	else if (netgame && p->jointime <= 1 && pcount)
 	{
 		p->spectator = true;
@@ -10651,7 +10666,9 @@ void P_SpawnPlayer(INT32 playernum)
 			SendNetXCmd(XD_TEAMCHANGE, &usvalue, sizeof(usvalue));
 		}
 		else // Otherwise, never spectator.
+		{
 			p->spectator = false;
+		}
 	}
 
 	if (G_GametypeHasTeams())
@@ -10711,6 +10728,8 @@ void P_SpawnPlayer(INT32 playernum)
 	p->hitemtimer = 0;
 	p->hitemvictim = 255;
 
+	p->spinoutrot = 0;
+
 	if (G_BattleGametype()) // SRB2kart
 	{
 		mobj_t *overheadarrow = P_SpawnMobj(mobj->x, mobj->y, mobj->z + P_GetPlayerHeight(p)+16*FRACUNIT, MT_PLAYERARROW);
@@ -10756,6 +10775,30 @@ void P_SpawnPlayer(INT32 playernum)
 			P_SetScale(karmahitbox, mobj->scale);
 		}
 	}
+
+	// TODO: handle splitscreen
+	// Spectators can switch to freecam. This should be
+	// disabled when they enter the race, or when the level
+	// changes.
+	if (!demo.playback)
+	{
+		if (!p->spectator)
+		{
+			if (playernum == consoleplayer)
+				camera[0].freecam = false;
+			else if (splitscreen)
+			{
+				for (i = 1; i <= splitscreen; i++)
+				{
+					if (playernum == displayplayers[i])
+					{
+						camera[i].freecam = false;
+						break;
+					}
+				}
+			}
+		}
+	}
 }
 
 void P_AfterPlayerSpawn(INT32 playernum)
@@ -10798,15 +10841,18 @@ void P_AfterPlayerSpawn(INT32 playernum)
 
 	SV_SpawnPlayer(playernum, mobj->x, mobj->y, mobj->angle);
 
-	for (i = 0; i <= splitscreen; i++)
+	if (p->spectator == false)
 	{
-		if (!camera[i].chase)
-			continue;
+		for (i = 0; i <= splitscreen; i++)
+		{
+			if (!camera[i].chase)
+				continue;
 
-		if (displayplayers[i] != playernum)
-			continue;
+			if (displayplayers[i] != playernum)
+				continue;
 
-		P_ResetCamera(p, &camera[i]);
+			P_ResetCamera(p, &camera[i]);
+		}
 	}
 
 	if (CheckForReverseGravity)

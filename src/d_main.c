@@ -133,6 +133,7 @@ char srb2home[256] = ".";
 char srb2path[256] = ".";
 boolean usehome = true;
 const char *pandf = "%s" PATHSEP "%s";
+static char addonsdir[MAX_WADPATH];
 
 //
 // EVENT HANDLING
@@ -182,14 +183,17 @@ static void D_GamePadMenuScrollTicker(void)
 	static SINT8 menuInputDelayTimer = 0;
 	int key = 0; // butt-on output
 
+	if (dedicated)
+		return;
+
 	// wish i had a switch ono
-    if (DPADUPSCROLL)
+	if (DPADUPSCROLL)
 		key = KEY_UPARROW;
-    else if (DPADDOWNSCROLL)
+	else if (DPADDOWNSCROLL)
 		key = KEY_DOWNARROW;
-    else if (DPADLEFTSCROLL)
+	else if (DPADLEFTSCROLL)
 		key = KEY_LEFTARROW;
-    else if (DPADRIGHTSCROLL)
+	else if (DPADRIGHTSCROLL)
 		key = KEY_RIGHTARROW;
 
 	if (key)
@@ -210,20 +214,17 @@ static void D_GamePadMenuScrollTicker(void)
 static void D_DeviceLEDTick(void)
 {
 	UINT8 i;
-	UINT16 color[MAXSPLITSCREENPLAYERS];
-	UINT16 curcolor[MAXSPLITSCREENPLAYERS];
+	static UINT16 color[MAXSPLITSCREENPLAYERS] = {0, 0, 0, 0};
+	static UINT16 curcolor[MAXSPLITSCREENPLAYERS] = {0, 0, 0, 0};
 
-	if (I_NumJoys() == 0)
+	if (dedicated || numcontrollers == 0)
 	{
 		return;
 	}
 
 	for (i = 0; i <= splitscreen; i++)
 	{
-		if (!cv_usejoystick[i].value)
-			continue;
-
-		if (!cv_gamepadled[i].value)
+		if (!cv_usejoystick[i].value || !cv_gamepadled[i].value)
 			continue;
 
 		color[i] = G_GetSkinColor(i);
@@ -334,7 +335,7 @@ static boolean D_Display(void)
 
 		if (rendermode == render_soft && !splitscreen)
 		{
-			R_InterpolateViewRollAngle(rendertimefrac);
+			R_InterpolateViewRollAngle(rendertimefrac_unpaused);
 			R_CheckViewMorph();
 		}
 
@@ -352,6 +353,7 @@ static boolean D_Display(void)
 
 	// save the current screen if about to wipe
 	wipe = (gamestate != wipegamestate);
+
 	if (wipe)
 	{
 		// set for all later
@@ -504,7 +506,7 @@ static boolean D_Display(void)
 
 #ifdef HWRENDER
 					if (rendermode == render_opengl)
-						HWR_RenderPlayerView(i, &players[displayplayers[i]]);
+						HWR_RenderPlayerView();
 					else
 #endif
 					if (rendermode != render_none)
@@ -558,7 +560,7 @@ static boolean D_Display(void)
 
 				for (i = 0; i <= splitscreen; i++)
 				{
-					V_DoPostProcessor(i, &players[displayplayers[i]], postimgparam[i]);
+					V_DoPostProcessor(i, postimgparam[i]);
 				}
 			}
 
@@ -579,8 +581,6 @@ static boolean D_Display(void)
 		PS_START_TIMING(ps_uitime);
 		ST_Drawer();
 		HU_Drawer();
-
-		NetUpdate(); // TEST: run this EVERY frame
 	}
 	else
 	{
@@ -741,11 +741,9 @@ void D_SRB2Loop(void)
 		precise_t enterprecise = I_GetPreciseTime();
 		precise_t finishprecise = enterprecise;
 
-		{
-			// Casting the return value of a function is bad practice (apparently)
-			double budget = ((R_GetFramerateCap() == 0) ? 0.0 : round((1.0 / R_GetFramerateCap()) * I_GetPrecisePrecision()));
-			capbudget = (precise_t) budget;
-		}
+		// Casting the return value of a function is bad practice (apparently)
+		double budget = ((R_GetFramerateCap() == 0) ? 0.0 : round((1.0 / R_GetFramerateCap()) * I_GetPrecisePrecision()));
+		capbudget = (precise_t) budget;
 
 		boolean ranwipe = false;
 
@@ -791,7 +789,7 @@ void D_SRB2Loop(void)
 			// process tics (but maybe not if realtic == 0)
 			TryRunTics(realtics);
 
-			if (lastdraw || singletics || gametic > rendergametic)
+			if (lastdraw || singletics || (gametic > rendergametic))
 			{
 				rendergametic = gametic;
 				rendertimeout = entertic + TICRATE/17;
@@ -805,7 +803,7 @@ void D_SRB2Loop(void)
 				{
 					// Evaluate the chase cam once for every local realtic
 					// This might actually be better suited inside G_Ticker or TryRunTics
-					for (tic_t chasecamtics = 0; chasecamtics < realtics; chasecamtics++)
+					for (tic_t chasecamtics = 0; (chasecamtics < realtics); chasecamtics++)
 					{
 						P_RunChaseCameras();
 					}
@@ -827,7 +825,7 @@ void D_SRB2Loop(void)
 		{
 			renderdeltatics = FLOAT_TO_FIXED(deltatics);
 
-			if (!(paused || P_AutoPause()) && !hu_stopped)
+			if (!(paused || P_AutoPause()) && deltatics < 1.0 && !hu_stopped)
 			{
 				rendertimefrac = g_time.timefrac;
 			}
@@ -836,7 +834,14 @@ void D_SRB2Loop(void)
 				rendertimefrac = FRACUNIT;
 			}
 
-			rendertimefrac_unpaused = g_time.timefrac;
+			if ((deltatics < 1.0) && !hu_stopped)
+			{
+				rendertimefrac_unpaused = g_time.timefrac;
+			}
+			else
+			{
+				rendertimefrac_unpaused = FRACUNIT;
+			}
 		}
 		else
 		{
@@ -884,7 +889,7 @@ void D_SRB2Loop(void)
 		//
 		// Wipes run an inner loop and artificially increase
 		// the measured time.
-		if (!ranwipe && frameskip < 3 && deltatics > 1.0)
+		if (!ranwipe && (frameskip < 3) && (deltatics > 1.0))
 		{
 			frameskip++;
 		}
@@ -900,7 +905,7 @@ void D_SRB2Loop(void)
 			// in the case of "match refresh rate" + vsync, don't sleep at all
 			const boolean vsync_with_match_refresh = cv_vidwait.value && cv_fpscap.value == 0;
 
-			if (elapsed > 0 && (INT64)capbudget > elapsed && !vsync_with_match_refresh)
+			if ((elapsed > 0) && ((INT64)capbudget > elapsed) && !vsync_with_match_refresh)
 			{
 				I_SleepDuration(capbudget - (finishprecise - enterprecise));
 			}
@@ -975,10 +980,6 @@ void D_StartTitle(void)
 	S_ResetKeepAndSpecialMus(); // just in case
 
 	F_StartTitleScreen();
-
-	// Reset the palette -- SRB2Kart: actually never mind let's do this in the middle of every fade
-	/*if (rendermode != render_none)
-		V_SetPaletteLump("PLAYPAL");*/
 }
 
 //
@@ -1202,7 +1203,7 @@ boolean xtra_speedo3;      // 80x 11 extra speedometer check
 boolean xtra_speedo_clr3;  // 80x 11 extra speedometer colour check
 boolean achi_speedo;       // achiiro speedometer check
 boolean achi_speedo_clr;   // extra speedometer colour check
-boolean kartzspeedo;       // kartZ speedo
+boolean kartz_speedo;       // kartZ speedo
 
 boolean clr_hud;           // colour hud check
 boolean big_lap;           // bigger lap counter
@@ -1437,8 +1438,6 @@ void D_SRB2Main(void)
 
 			// can't use sprintf since there is %u in savegamename
 			strcatbf(savegamename, srb2home, PATHSEP);
-
-			I_mkdir(srb2home, 0700);
 #else
 			snprintf(srb2home, sizeof srb2home, "%s", userhome);
 			snprintf(downloaddir, sizeof downloaddir, "%s", userhome);
@@ -1474,6 +1473,10 @@ void D_SRB2Main(void)
 			remove(testfile);
 		}
 	}
+
+	// Create addons dir
+	snprintf(addonsdir, sizeof addonsdir, "%s%s%s", srb2home, PATHSEP, "addons");
+	I_mkdir(addonsdir, 0755);
 
 	D_SetupProtocol();
 
@@ -1627,7 +1630,7 @@ void D_SRB2Main(void)
 			"K_KZSP13", "K_KZSP14", "K_KZSP15", "K_KZSP16", "K_KZSP17", "K_KZSP18", "K_KZSP19", \
 			"K_KZSP20", "K_KZSP21", "K_KZSP22", "K_KZSP23", "K_KZSP24", "K_KZSP25", NULL))
 		{
-			kartzspeedo = true;
+			kartz_speedo = true;
 			PUSHCONS(speedo_cons_temp, last_speedo_i, 4, "P-Meter");
 		}
 
@@ -2074,7 +2077,7 @@ void D_SRB2Main(void)
 	}
 
 #ifdef HAVE_DISCORDRPC
-	if (! dedicated)
+	if (!dedicated)
 	{
 		DRPC_Init();
 	}

@@ -76,6 +76,10 @@ void R_DrawMasked(void);
 boolean R_ThingVisible (mobj_t *thing);
 boolean R_ThingWithinDist (mobj_t *thing, fixed_t limit_dist);
 
+boolean R_ThingIsFullBright (mobj_t *thing);
+boolean R_ThingIsSemiBright (mobj_t *thing);
+boolean R_ThingIsFullDark (mobj_t *thing);
+
 // -----------
 // SKINS STUFF
 // -----------
@@ -128,6 +132,9 @@ typedef enum
 	SC_BOTTOM = 2,
 	SC_VFLIP = 3,
 	SC_NOTVISIBLE = 4,
+	SC_FULLBRIGHT = 8,
+	SC_SEMIBRIGHT = 16,
+	SC_FULLDARK   = 32,
 	SC_CUTMASK    = SC_TOP|SC_BOTTOM|SC_NOTVISIBLE,
 	SC_FLAGMASK   = ~SC_CUTMASK
 } spritecut_e;

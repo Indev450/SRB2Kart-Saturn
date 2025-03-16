@@ -373,7 +373,7 @@ static void P_DeviceRumbleTick(void)
 {
 	UINT8 i;
 
-	if (I_NumJoys() == 0 || gamestate != GS_LEVEL)
+	if (dedicated || numcontrollers == 0 || gamestate != GS_LEVEL)
 	{
 		return;
 	}
@@ -383,24 +383,19 @@ static void P_DeviceRumbleTick(void)
 		UINT16 low = 0;
 		UINT16 high = 0;
 
+		if (!cv_usejoystick[i].value || !cv_rumble[i].value)
+		{
+			continue;
+		}
+
 		player_t *player = ((i == 0) ? &players[consoleplayer] : &players[displayplayers[i]]);
 
-		if (!cv_usejoystick[i].value)
+		if (player->spectator || !player->mo)
 		{
 			continue;
 		}
 
-		if (!cv_rumble[i].value)
-		{
-			continue;
-		}
-
-		if (player->spectator)
-		{
-			continue;
-		}
-
-		if (player->mo == NULL)
+		if (camera[i].freecam)
 		{
 			continue;
 		}
@@ -465,7 +460,20 @@ void P_RunChaseCameras(void)
 	for (i = 0; i <= splitscreen; i++)
 	{
 		if (camera[i].chase)
-			P_MoveChaseCamera(&players[displayplayers[i]], &camera[i], false);
+		{
+			player_t *p = &players[displayplayers[i]];
+			camera_t *cam = &camera[i];
+
+			if (cv_verticallook.value && leveltime > starttime && p->mo && p->kartstuff[k_respawn] == 0 && p->kartstuff[k_throwdir] != 0)
+			{
+				if (p->speed < 6 * p->mo->scale && abs(cam->dpad_y_held) < 2*TICRATE)
+					cam->dpad_y_held += intsign(p->kartstuff[k_throwdir]);
+			}
+			else
+				cam->dpad_y_held = 0;
+
+			P_MoveChaseCamera(p, cam, false);
+		}
 	}
 }
 
@@ -502,6 +510,9 @@ static void P_RunQuakes(void)
 static inline void P_ResetSpriteStuff(void)
 {
 	thinker_t *th;
+
+	if (rendermode == render_none)
+		return;
 
 	for (th = thinkercap.next; th != &thinkercap; th = th->next)
 	{
@@ -569,8 +580,8 @@ void P_Ticker(boolean run)
 				timeinmap = (timeinmap-1) & ~3;
 			G_PreviewRewind(leveltime);
 		}
-		else if (demo.freecam && democam.cam)	// special case: allow freecam to MOVE during pause!
-			P_DemoCameraMovement(democam.cam);
+		else
+			P_RunChaseCameras();	// special case: allow freecam to MOVE during pause!
 
 		return;
 	}
@@ -665,10 +676,7 @@ void P_Ticker(boolean run)
 		PS_STOP_TIMING(ps_lua_thinkframe_time);
 	}
 
-	// Run shield positioning
-	//P_RunShields();
 	P_RunOverlays();
-
 	P_RunShadows();
 
 	P_UpdateSpecials();

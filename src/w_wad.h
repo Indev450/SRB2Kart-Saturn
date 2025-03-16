@@ -106,9 +106,7 @@ virtlump_t* vres_Find(const virtres_t*, const char*);
 
 #define lumpcache_t void *
 
-#ifdef HWRENDER
 #include "m_aatree.h"
-#endif
 
 // Resource type of the WAD. Yeah, I know this sounds dumb, but I'll leave it like this until I clean up the code further.
 typedef enum restype
@@ -129,6 +127,9 @@ typedef struct wadfile_s
 	lumpcache_t *lumpcache;
 #ifdef HWRENDER
 	aatree_t *hwrcache; // patches are cached in renderer's native format
+#endif
+#ifdef ROTSPRITE
+	aatree_t *rotcache; // Cache rotsprites for rotating patches.
 #endif
 	UINT16 numlumps; // this wad's number of resources
 	FILE *handle;
@@ -218,6 +219,11 @@ void *W_CachePatchNum(lumpnum_t lumpnum, INT32 tag); // return a patch_t
 #else
 //#define W_CachePatchNumPwad(wad, lump, tag) W_CacheLumpNumPwad(wad, lump, tag)
 #define W_CachePatchNum(lumpnum, tag) W_CacheLumpNum(lumpnum, tag)
+#endif
+
+#ifdef ROTSPRITE
+void *W_GetCachedRotPatchPwad(UINT16 wadnum, UINT16 lumpnum); // Get patch-based rotsprites from the cache.
+void *W_CachePatchNameRotated(const char *name, INT32 rotationangle, INT32 tag);
 #endif
 
 void W_UnlockCachedPatch(void *patch);

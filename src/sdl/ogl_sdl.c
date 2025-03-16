@@ -44,6 +44,7 @@
 #include "hwsym_sdl.h"
 #include "../m_argv.h"
 #include "../i_video.h"
+#include "../f_finale.h"
 
 #include "../f_finale.h"
 
@@ -289,8 +290,8 @@ void OglSdlFinishUpdate(boolean waitvbl)
 
 #if defined (__unix__)
 #ifdef USE_FBO_OGL
-		if (loaded_config == true)
-			xwaylandcrap = false;
+	if (loaded_config == true)
+		xwaylandcrap = false;
 #endif
 #endif
 }

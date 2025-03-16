@@ -141,27 +141,19 @@ static int comparePolygons(const void *p1, const void *p2)
 	PolygonArrayEntry *poly2 = *(PolygonArrayEntry *const *)p2;
 	int diff;
 	INT64 diff64;
-	UINT32 downloaded1 = 0;
-	UINT32 downloaded2 = 0;
 
-	int shader1 = poly1->shader;
-	int shader2 = poly2->shader;
-	// make skywalls and horizon lines first in order
-	if (poly1->polyFlags & PF_NoTexture || poly1->horizonSpecial)
-		shader1 = -1;
-	if (poly2->polyFlags & PF_NoTexture || poly2->horizonSpecial)
-		shader2 = -1;
-	diff = shader1 - shader2;
-	if (diff != 0) return diff;
+	int shader1 = (poly1->polyFlags & PF_NoTexture || poly1->horizonSpecial) ? -1 : poly1->shader;
+	int shader2 = (poly2->polyFlags & PF_NoTexture || poly2->horizonSpecial) ? -1 : poly2->shader;
 
 	// skywalls and horizon lines must retain their order for horizon lines to work
 	if (shader1 == -1 && shader2 == -1)
 		return poly1 - poly2;
 
-	if (poly1->texture)
-		downloaded1 = poly1->texture->downloaded; // there should be a opengl texture name here, usable for comparisons
-	if (poly2->texture)
-		downloaded2 = poly2->texture->downloaded;
+	diff = shader1 - shader2;
+	if (diff != 0) return diff;
+
+	UINT32 downloaded1 = poly1->texture ? poly1->texture->downloaded : 0; // there should be a opengl texture name here, usable for comparisons
+	UINT32 downloaded2 = poly2->texture ? poly2->texture->downloaded : 0;
 	diff64 = downloaded1 - downloaded2;
 	if (diff64 != 0) return diff64;
 
@@ -190,21 +182,15 @@ static int comparePolygonsNoShaders(const void *p1, const void *p2)
 	int diff;
 	INT64 diff64;
 
-	GLMipmap_t *texture1 = poly1->texture;
-	GLMipmap_t *texture2 = poly2->texture;
-	UINT32 downloaded1 = 0;
-	UINT32 downloaded2 = 0;
-	if (poly1->polyFlags & PF_NoTexture || poly1->horizonSpecial)
-		texture1 = NULL;
-	if (poly2->polyFlags & PF_NoTexture || poly2->horizonSpecial)
-		texture2 = NULL;
-	if (texture1)
-		downloaded1 = texture1->downloaded; // there should be a opengl texture name here, usable for comparisons
-	if (texture2)
-		downloaded2 = texture2->downloaded;
+	GLMipmap_t *texture1 = (poly1->polyFlags & PF_NoTexture || poly1->horizonSpecial) ? NULL : poly1->texture;
+	GLMipmap_t *texture2 = (poly2->polyFlags & PF_NoTexture || poly2->horizonSpecial) ? NULL : poly2->texture;
+
 	// skywalls and horizon lines must retain their order for horizon lines to work
 	if (!texture1 && !texture2)
 		return poly1 - poly2;
+
+	UINT32 downloaded1 = texture1 ? texture1->downloaded : 0; // there should be a opengl texture name here, usable for comparisons
+	UINT32 downloaded2 = texture2 ? texture2->downloaded : 0;
 	diff64 = downloaded1 - downloaded2;
 	if (diff64 != 0) return diff64;
 

@@ -1161,8 +1161,6 @@ void HWR_DrawMD2(gl_vissprite_t *spr)
 		spritedef_t *sprdef;
 		spriteframe_t *sprframe;
 		spriteinfo_t *sprinfo;
-		INT32 rollfactor = 0;
-		angle_t ang;
 		interpmobjstate_t interp;
 
 		if (R_UsingFrameInterpolation() && !paused && (!cv_maxinterpdist.value || R_QuickCamDist(spr->mobj->x, spr->mobj->y) < cv_maxinterpdist.value))
@@ -1179,13 +1177,31 @@ void HWR_DrawMD2(gl_vissprite_t *spr)
 		// Apparently people don't like jump frames like that, so back it goes
 		//if (tics > durs)
 			//durs = tics;
+		
+		INT32 blendmode;
+		if (spr->mobj->frame & FF_BLENDMASK)
+			blendmode = ((spr->mobj->frame & FF_BLENDMASK) >> FF_BLENDSHIFT) + 1;
+		else
+			blendmode = spr->mobj->blendmode;
+		
+		blendmode = min(AST_MODULATE, blendmode);
 
 		if (spr->mobj->flags2 & MF2_SHADOW)
+		{
 			Surf.PolyColor.s.alpha = 0x40;
+			Surf.PolyFlags = HWR_GetBlendModeFlag(blendmode);
+		}
 		else if (spr->mobj->frame & FF_TRANSMASK)
+		{
 			HWR_TranstableToAlpha((spr->mobj->frame & FF_TRANSMASK)>>FF_TRANSSHIFT, &Surf);
+			Surf.PolyFlags = HWR_SurfaceBlend(blendmode, (spr->mobj->frame & FF_TRANSMASK)>>FF_TRANSSHIFT, &Surf);
+		}
 		else
-			Surf.PolyColor.s.alpha = 0xFF;
+		{
+			// this hack is dumb, but the blendmodes refuse to work otherwise
+			Surf.PolyColor.s.alpha = (blendmode == AST_TRANSLUCENT) ? 0xFF : 0xFE;
+			Surf.PolyFlags = HWR_GetBlendModeFlag(blendmode);
+		}
 
 		// dont forget to enabled the depth test because we can't do this like
 		// before: polygons models are not sorted
@@ -1341,7 +1357,7 @@ void HWR_DrawMD2(gl_vissprite_t *spr)
 		p.x = FIXED_TO_FLOAT(interp.x);
 		p.y = FIXED_TO_FLOAT(interp.y)+md2->offset;
 
-		if (spr->mobj->eflags & MFE_VERTICALFLIP)
+		if (flip)
 			p.z = FIXED_TO_FLOAT(interp.z + spr->mobj->height);
 		else
 			p.z = FIXED_TO_FLOAT(interp.z);
@@ -1364,109 +1380,58 @@ void HWR_DrawMD2(gl_vissprite_t *spr)
 			const fixed_t anglef = AngleFixed((R_PointToAngle(interp.x, interp.y))-ANGLE_180);
 			p.angley = FIXED_TO_FLOAT(anglef);
 		}
-		
-		p.rollangle = 0.0f;
-		p.rollflip = 1;
-		p.rotaxis = 0;
-		
-		p.spritexscale = FIXED_TO_FLOAT(spr->mobj->spritexscale);
-		p.spriteyscale = FIXED_TO_FLOAT(spr->mobj->spriteyscale);
 
-		angle_t sliptideroll = ((cv_sloperoll.value && cv_sliptideroll.value && spr->mobj->player) ? spr->mobj->player->sliproll : 0);
+		const angle_t sliptideroll = ((cv_sliptideroll.value && spr->mobj->player) ? spr->mobj->player->sliproll : 0);
+		const SINT8 flipfactor = flip ? -1 : 1;
 
 		if (spr->mobj->rollangle || sliptideroll)
 		{
-			angle_t rollang = 0;
-			rollfactor = ((spr->mobj->rollmodel == true) ? 1 : 0);
+			angle_t rollang = sliptideroll
+			? (spr->mobj->rollangle) + (sliptideroll * spr->mobj->player->kartstuff[k_aizdriftstrat])
+			: (spr->mobj->rollangle);
 
-			rollang = sliptideroll
-            ? (spr->mobj->rollangle * rollfactor) + (sliptideroll * spr->mobj->player->kartstuff[k_aizdriftstrat])
-            : (spr->mobj->rollangle * rollfactor);
-			
 			fixed_t anglef = AngleFixed(rollang);
-			p.rollangle = FIXED_TO_FLOAT(anglef);
-			p.rollmodel = (spr->mobj->rollmodel);
-			p.roll = true;
 
-			// rotation pivot
-			p.centerx = FIXED_TO_FLOAT(spr->mobj->radius/2)*(p.spritexscale);
-			p.centery = FIXED_TO_FLOAT(spr->mobj->height/2)*(p.spriteyscale);
+			p.rollangle = 0.0f;
 
-			// rotation axis
-			if (sprinfo->available)
-				p.rotaxis = (UINT8)(sprinfo->pivot[(spr->mobj->frame & FF_FRAMEMASK)].rotaxis);
+			if (anglef)
+			{
+				fixed_t camAngleDiff = AngleFixed(viewangle) - FLOAT_TO_FIXED(p.angley); // dumb reconversion back, I know
 
-			// for NiGHTS specifically but should work everywhere else
-			ang = R_PointToAngle (spr->mobj->x, spr->mobj->y) - (spr->mobj->player ? spr->mobj->player->frameangle : spr->mobj->angle);
-			if ((sprframe->rotate & SRF_RIGHT) && (ang < ANGLE_180)) // See from right
-				p.rollflip = 1;
-			else if ((sprframe->rotate & SRF_LEFT) && (ang >= ANGLE_180)) // See from left
-				p.rollflip = -1;
+				p.rollangle = FIXED_TO_FLOAT(anglef);
+				p.roll = true;
+
+				// rotation pivot
+				if (sprinfo->available)
+				{
+					p.centerx = FIXED_TO_FLOAT(sprinfo->pivot[frame].x);
+					p.centery = FIXED_TO_FLOAT(sprinfo->pivot[frame].y);
+				}
+				else
+				{
+					p.centerx = FIXED_TO_FLOAT(spr->mobj->radius/2);
+					p.centery = FIXED_TO_FLOAT(spr->mobj->height/2);
+				}
+
+				// rotation axes relative to camera
+				p.rollx = FIXED_TO_FLOAT(FINECOSINE(FixedAngle(camAngleDiff) >> ANGLETOFINESHIFT));
+				p.rollz = FIXED_TO_FLOAT(FINESINE(FixedAngle(camAngleDiff) >> ANGLETOFINESHIFT));
+			}
 		}
 
-		
-		p.anglex = 0.0f;
-		p.anglex2 = 0.0f;
-#ifdef USE_FTRANSFORM_ANGLEZ
-		// Slope rotation from Kart
-		p.anglez = 0.0f;
-		p.anglez2 = 0.0f;
-
-		// use secondary angles for the slope rotation
-		if (spr->mobj->standingslope)
-		{
-			fixed_t tempz = spr->mobj->standingslope->normal.z;
-			fixed_t tempy = spr->mobj->standingslope->normal.y;
-			fixed_t tempx = spr->mobj->standingslope->normal.x;
-			fixed_t tempangle = AngleFixed(R_PointToAngle2(0, 0, FixedSqrt(FixedMul(tempy, tempy) + FixedMul(tempz, tempz)), tempx));
-			p.anglez2 = FIXED_TO_FLOAT(tempangle);
-			tempangle = -AngleFixed(R_PointToAngle2(0, 0, tempz, tempy));
-			p.anglex2 = FIXED_TO_FLOAT(tempangle);
-		}
-		else if ((spr->mobj->sloperoll || spr->mobj->slopepitch) && (!P_IsObjectOnGround(spr->mobj)) && (!paused))
-		{
-			SINT8 flipfactor = flip ? -1 : 1;
-
-			angle_t camang = R_PointToAngle(interp.x, interp.y);
-			angle_t mobjang;
-
-			if (spr->mobj->flags & (MF_NOTHINK|MF_SCENERY))
-				mobjang = spr->mobj->angle;
-			else
-				mobjang = interp.angle;
-
-			angle_t fmoang;
-			fmoang = camang - mobjang;
-
-			// slopepitch
-			p.anglex += flipfactor*FIXED_TO_FLOAT( AngleFixed(FixedMul(FINESINE((camang-fmoang) >> ANGLETOFINESHIFT), interp.slopepitch)) );
-			p.anglez -= flipfactor*FIXED_TO_FLOAT( AngleFixed(FixedMul(FINECOSINE((camang-fmoang) >> ANGLETOFINESHIFT), interp.slopepitch)) );
-
-			// sloperoll
-			p.anglex += flipfactor*FIXED_TO_FLOAT( AngleFixed(FixedMul(FINECOSINE((camang-fmoang) >> ANGLETOFINESHIFT), interp.sloperoll)) );
-			p.anglez += flipfactor*FIXED_TO_FLOAT( AngleFixed(FixedMul(FINESINE((camang-fmoang) >> ANGLETOFINESHIFT), interp.sloperoll)) );
-			p.roll = true;
-		}
+		// slope pitch and roll
+		p.anglex += flipfactor*FIXED_TO_FLOAT(AngleFixed(interp.sloperoll));
+		p.anglez -= flipfactor*FIXED_TO_FLOAT(AngleFixed(interp.slopepitch));
 
 		// pitch and roll
-		if (interp.roll || interp.pitch)
-		{
-			SINT8 flipfactor = flip ? -1 : 1;
-			p.anglex += flipfactor*FIXED_TO_FLOAT(AngleFixed(interp.roll));
-			p.anglez -= flipfactor*FIXED_TO_FLOAT(AngleFixed(interp.pitch));
-			p.roll = true;
-		}
-#endif
+		p.anglex += flipfactor*FIXED_TO_FLOAT(AngleFixed(interp.roll));
+		p.anglez -= flipfactor*FIXED_TO_FLOAT(AngleFixed(interp.pitch));
 
 		p.flip = atransform.flip;
-#ifdef USE_FTRANSFORM_MIRROR
 		p.mirror = atransform.mirror; // from Kart
-#endif
 
 		GL_SetShader(SHADER_MODEL);	// model shader
 		{
-			SINT8 flipfactor = flip ? -1 : 1;
-			
 			float this_scale = FIXED_TO_FLOAT(interp.scale);
 
 			float xs = this_scale * FIXED_TO_FLOAT(interp.spritexscale);

@@ -372,7 +372,7 @@ angle_t R_PlayerSliptideAngle(player_t *player)
 	spriteframe_t *sprframe;
 	angle_t ang = 0;
 
-	if (!cv_sloperoll.value || !cv_sliptideroll.value || !player || P_MobjWasRemoved(player->mo))
+	if (!cv_sliptideroll.value || !player || P_MobjWasRemoved(player->mo))
 		return 0;
 
 	mo = player->mo;
@@ -839,13 +839,10 @@ void R_ApplyViewMorph(void)
 			vid.width*vid.bpp, vid.height, vid.width*vid.bpp, vid.width);
 }
 
-static inline int intsign(int n) {
-	return n < 0 ? -1 : n > 0 ? 1 : 0;
-}
-
 angle_t R_ViewRollAngle(const player_t *player)
 {
 	angle_t roll = 0;
+	const UINT8 viewnum = R_GetViewNumber();
 
 	if (gamestate != GS_LEVEL)
 	{
@@ -864,7 +861,7 @@ angle_t R_ViewRollAngle(const player_t *player)
 
 	if (cv_tilting.value)
 	{
-		if (!player->spectator && !demo.freecam)
+		if (!player->spectator && !camera[viewnum].freecam)
 			roll += player->tilt;
 
 		if (cv_actionmovie.value)
@@ -1032,8 +1029,8 @@ void R_Init(void)
 	//I_OutputMsg("\nR_InitLightTables");
 	R_InitLightTables();
 
-	//I_OutputMsg("\nR_InitTranslationTables\n");
-	R_InitTranslationTables();
+	//I_OutputMsg("\nR_InitTranslucencyTables\n");
+	R_InitTranslucencyTables();
 
 	R_InitDrawNodes();
 
@@ -1074,7 +1071,7 @@ subsector_t *R_IsPointInSubsector(fixed_t x, fixed_t y)
 
 mobj_t *viewmobj;
 
-static void R_SetupCommonFrame(player_t * player, subsector_t * subsector)
+static void R_SetupCommonFrame(player_t * player, sector_t * sector)
 {
 	newview->player = player;
 
@@ -1084,12 +1081,12 @@ static void R_SetupCommonFrame(player_t * player, subsector_t * subsector)
 
 	newview->roll = R_ViewRollAngle(player);
 
-	if (subsector && subsector->sector)
-		newview->sector = subsector->sector;
+	if (sector != NULL)
+		newview->sector = sector;
 	else
 		newview->sector = R_PointInSubsector(newview->x, newview->y)->sector;
 
-	R_InterpolateView(R_UsingFrameInterpolation() ? (demo.playback && demo.freecam) ? rendertimefrac_unpaused : rendertimefrac : FRACUNIT, false);
+	R_InterpolateView(R_UsingFrameInterpolation() ? rendertimefrac_unpaused : FRACUNIT, false);
 }
 
 static void R_SetupAimingFrame(player_t *player, camera_t *thiscam)
@@ -1215,10 +1212,10 @@ void R_SkyboxFrame(int s)
 	}
 #undef SETUPSKYVIEW
 
-	if (!P_MobjWasRemoved(viewmobj))
+	if (!P_MobjWasRemoved(viewmobj) && viewmobj->subsector && viewmobj->subsector->sector)
 		subsector = viewmobj->subsector;
 
-	R_SetupCommonFrame(player, subsector);
+	R_SetupCommonFrame(player, subsector->sector);
 }
 
 void R_SetupFrame(int s, boolean skybox)
@@ -1226,7 +1223,7 @@ void R_SetupFrame(int s, boolean skybox)
 	player_t *player = &players[displayplayers[s]];
 	camera_t *thiscam = &camera[s];
 	boolean chasecam = (cv_chasecam[s].value);
-	subsector_t * subsector = NULL;
+	sector_t * sector = NULL;
 
 	R_SetViewContext(VIEWCONTEXT_PLAYER1 + s);
 	if (thiscam->reset)
@@ -1235,9 +1232,14 @@ void R_SetupFrame(int s, boolean skybox)
 		thiscam->reset = false;
 	}
 
-	if (player->spectator) // no spectator chasecam
-		chasecam = false; // force chasecam off
-	else if (player->playerstate == PST_DEAD || player->exiting)
+	if (player->spectator)
+	{
+		// Free flying spectator uses demo freecam. This
+		// requires chasecam to be enabled.
+		chasecam = true;
+	}
+
+	if (player->playerstate == PST_DEAD || player->exiting)
 		chasecam = true; // force chasecam on
 
 	if (chasecam && (thiscam && !thiscam->chase))
@@ -1261,12 +1263,12 @@ void R_SetupFrame(int s, boolean skybox)
 		newview->y = viewmobj->y;
 		newview->z = viewmobj->z + 20*FRACUNIT;
 
-		if (!P_MobjWasRemoved(viewmobj))
-			subsector = viewmobj->subsector;
+		if (!P_MobjWasRemoved(viewmobj) && viewmobj->subsector && viewmobj->subsector->sector)
+			sector = viewmobj->subsector->sector;
 
-		R_SetupCommonFrame(player, subsector);
+		R_SetupCommonFrame(player, sector);
 	}
-	else if (!player->spectator && (thiscam && chasecam)) // use outside cam view
+	else if (thiscam && chasecam) // use outside cam view
 	{
 		viewmobj = NULL;
 
@@ -1274,10 +1276,10 @@ void R_SetupFrame(int s, boolean skybox)
 		newview->y = thiscam->y;
 		newview->z = thiscam->z + (thiscam->height>>1);
 
-		if (thiscam != NULL)
-			subsector = thiscam->subsector;
+		if (thiscam != NULL && thiscam->subsector && thiscam->subsector->sector)
+			sector = thiscam->subsector->sector;
 
-		R_SetupCommonFrame(player, subsector);
+		R_SetupCommonFrame(player, sector);
 	}
 	else // use the player's eyes view
 	{
@@ -1288,10 +1290,10 @@ void R_SetupFrame(int s, boolean skybox)
 		newview->y = viewmobj->y;
 		newview->z = player->viewz;
 
-		if (!P_MobjWasRemoved(viewmobj))
-			subsector = viewmobj->subsector;
+		if (!P_MobjWasRemoved(viewmobj) && viewmobj->subsector && viewmobj->subsector->sector)
+			sector = viewmobj->subsector->sector;
 
-		R_SetupCommonFrame(player, subsector);
+		R_SetupCommonFrame(player, sector);
 	}
 }
 
@@ -1558,8 +1560,8 @@ void R_RegisterEngineStuff(void)
 		CV_RegisterVar(&cv_cam_height[i]);
 		CV_RegisterVar(&cv_cam_speed[i]);
 		CV_RegisterVar(&cv_cam_rotate[i]);
-		CV_RegisterVar(&cv_cam_rotspeed[i]);
 		CV_RegisterVar(&cv_cam_timeover[i]);
+		CV_RegisterVar(&cv_freecam_speed[i]);
 	}
 
 	CV_RegisterVar(&cv_tilting);
@@ -1575,6 +1577,7 @@ void R_RegisterEngineStuff(void)
 	CV_RegisterVar(&cv_sliptideroll);
 	CV_RegisterVar(&cv_sloperolldist);
 	CV_RegisterVar(&cv_sparkroll);
+	CV_RegisterVar(&cv_spinoutroll);
 
 	CV_RegisterVar(&cv_showhud);
 	CV_RegisterVar(&cv_translucenthud);

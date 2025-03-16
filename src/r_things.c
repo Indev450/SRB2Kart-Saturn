@@ -584,7 +584,7 @@ void R_DrawMaskedColumn(column_t *column)
 
 	basetexturemid = dc_texturemid;
 
-	if (!column || column == 0)
+	if (column == NULL)
 		return;
 
 	for (; column->topdelta != 0xff ;)
@@ -968,7 +968,7 @@ static void R_DrawPrecipitationVisSprite(vissprite_t *vis)
 // R_SplitSprite
 // runs through a sector's lightlist and splits the sprite according to the heights
 //
-static void R_SplitSprite(vissprite_t *sprite, mobj_t *thing)
+static void R_SplitSprite(vissprite_t *sprite)
 {
 	INT32 i, lightnum, lindex;
 	INT16 cutfrac;
@@ -1034,13 +1034,16 @@ static void R_SplitSprite(vissprite_t *sprite, mobj_t *thing)
 
 			newsprite->extra_colormap = sector->lightlist[i].extra_colormap;
 
-			if (!((thing->frame & (FF_FULLBRIGHT|FF_TRANSMASK) || thing->flags2 & MF2_SHADOW)
+			if (!((newsprite->cut & SC_FULLBRIGHT)
 				&& (!newsprite->extra_colormap || !(newsprite->extra_colormap->fog & 1))))
 			{
 				lindex = FixedMul(sprite->xscale, LIGHTRESOLUTIONFIX)>>(LIGHTSCALESHIFT);
 
 				// Mitigate against negative xscale and arithmetic overflow
 				lindex = CLAMP(lindex, 0, MAXLIGHTSCALE - 1);
+
+				if (newsprite->cut & SC_SEMIBRIGHT)
+					lindex = (MAXLIGHTSCALE/2) + (lindex >>1);
 
 				newsprite->colormap = spritelights[lindex];
 			}
@@ -1135,6 +1138,7 @@ static void R_ProjectSprite(mobj_t *thing)
 	UINT8 flip;
 
 	INT32 lindex;
+	INT32 trans;
 
 	vissprite_t *vis;
 
@@ -1229,8 +1233,8 @@ static void R_ProjectSprite(mobj_t *thing)
 
 #ifdef ROTSPRITE
 	// determine here if sprite should rotate for optimization
-	const boolean sliprollrotate = (cv_sloperoll.value && cv_sliptideroll.value && (thing->player && thing->player->sliproll));
-	const boolean shouldrotate = (cv_sloperoll.value && (interp.roll || interp.pitch || interp.sloperoll || interp.slopepitch || thing->rollangle || sliprollrotate));
+	const boolean sliprollrotate = (cv_sliptideroll.value && (thing->player && thing->player->sliproll));
+	const boolean shouldrotate = (interp.roll || interp.pitch || interp.sloperoll || interp.slopepitch || thing->rollangle || sliprollrotate);
 #endif
 
 	//Fab : 02-08-98: 'skin' override spritedef currently used for skin
@@ -1277,9 +1281,9 @@ static void R_ProjectSprite(mobj_t *thing)
 		I_Error("R_ProjectSprite: sprframes NULL for sprite %d\n", thing->sprite);
 #endif
 
-	if (sprframe->rotate != SRF_SINGLE || papersprite ||
+	if (sprframe->rotate != SRF_SINGLE || papersprite
 #ifdef ROTSPRITE
-		(shouldrotate)
+		|| (shouldrotate)
 #endif
 	)
 	{
@@ -1544,6 +1548,24 @@ static void R_ProjectSprite(mobj_t *thing)
 			return;
 	}
 
+	INT32 blendmode;
+	if (oldthing->frame & FF_BLENDMASK)
+		blendmode = ((oldthing->frame & FF_BLENDMASK) >> FF_BLENDSHIFT) + 1;
+	else
+		blendmode = oldthing->blendmode;
+
+	// Determine the translucency value.
+	if (oldthing->flags2 & MF2_SHADOW || thing->flags2 & MF2_SHADOW) // actually only the player should use this (temporary invisibility)
+		trans = tr_trans80; // because now the translucency is set through FF_TRANSMASK
+	else if (oldthing->frame & FF_TRANSMASK)
+	{
+		trans = (oldthing->frame & FF_TRANSMASK) >> FF_TRANSSHIFT;
+		if (!R_BlendLevelVisible(blendmode, trans))
+			return;
+	}
+	else
+		trans = 0;
+
 	//SoM: 3/17/2000: Disregard sprites that are out of view..
 	if (vflip)
 	{
@@ -1670,6 +1692,18 @@ static void R_ProjectSprite(mobj_t *thing)
 		vis->scale += FixedMul(scalestep, spriteyscale) * (vis->x1 - x1);
 	}
 
+	if ((blendmode != AST_COPY) && cv_translucency.value)
+		vis->transmap = R_GetBlendTable(blendmode, trans);
+	else
+		vis->transmap = NULL;
+
+	if (R_ThingIsFullBright(oldthing) || oldthing->flags2 & MF2_SHADOW || thing->flags2 & MF2_SHADOW)
+		vis->cut |= SC_FULLBRIGHT;
+	else if (R_ThingIsSemiBright(oldthing))
+		vis->cut |= SC_SEMIBRIGHT;
+	else if (R_ThingIsFullDark(oldthing))
+		vis->cut |= SC_FULLDARK;
+
 	//Fab: lumppat is the lump number of the patch to use, this is different
 	//     than lumpid for sprites-in-pwad : the graphics are patched
 #ifdef ROTSPRITE
@@ -1679,25 +1713,18 @@ static void R_ProjectSprite(mobj_t *thing)
 #endif
 		vis->patch = W_CachePatchNum(sprframe->lumppat[rot], PU_CACHE);
 
-//
-// determine the colormap (lightlevel & special effects)
-//
-	vis->transmap = NULL;
+	//
+	// determine the colormap (lightlevel & special effects)
+	//
 
-	// specific translucency
-	if (!cv_translucency.value)
-		; // no translucency
-	else if (thing->flags2 & MF2_SHADOW) // actually only the player should use this (temporary invisibility)
-		vis->transmap = transtables + ((tr_trans80-1)<<FF_TRANSSHIFT); // because now the translucency is set through FF_TRANSMASK
-	else if (thing->frame & FF_TRANSMASK)
-		vis->transmap = transtables + (thing->frame & FF_TRANSMASK) - 0x10000;
-
-	if (((thing->frame & FF_FULLBRIGHT) || (thing->flags2 & MF2_SHADOW))
+	if ((vis->cut & SC_FULLBRIGHT)
 		&& (!vis->extra_colormap || !(vis->extra_colormap->fog & 1)))
 	{
 		// full bright: goggles
 		vis->colormap = colormaps;
 	}
+	else if (vis->cut & SC_FULLDARK)
+		vis->colormap = scalelight[0][0];
 	else
 	{
 		// diminished light
@@ -1705,6 +1732,9 @@ static void R_ProjectSprite(mobj_t *thing)
 
 		// Mitigate against negative xscale and arithmetic overflow
 		lindex = CLAMP(lindex, 0, MAXLIGHTSCALE - 1);
+
+		if (vis->cut & SC_SEMIBRIGHT)
+			lindex = (MAXLIGHTSCALE/2) + (lindex >> 1);
 
 		vis->colormap = spritelights[lindex];
 	}
@@ -1716,7 +1746,7 @@ static void R_ProjectSprite(mobj_t *thing)
 	vis->isScaled = false;
 
 	if (thing->subsector->sector->numlights)
-		R_SplitSprite(vis, thing);
+		R_SplitSprite(vis);
 
 	// Debug
 	++objectsdrawn;
@@ -1895,8 +1925,8 @@ static void R_ProjectPrecipitationSprite(precipmobj_t *thing)
 	vis->patch = W_CachePatchNum(sprframe->lumppat[0], PU_CACHE);
 
 	// specific translucency
-	if (thing->frame & FF_TRANSMASK)
-		vis->transmap = (thing->frame & FF_TRANSMASK) - 0x10000 + transtables;
+	if ((thing->blendmode != AST_COPY) && cv_translucency.value)
+		vis->transmap = R_GetTranslucencyTable((thing->frame & FF_TRANSMASK) >> FF_TRANSSHIFT);
 	else
 		vis->transmap = NULL;
 
@@ -2788,18 +2818,32 @@ boolean R_ThingVisible (mobj_t *thing)
 	return true;
 }
 
-boolean R_ThingWithinDist (mobj_t *thing, fixed_t limit_dist)
+boolean R_ThingWithinDist(mobj_t *thing, fixed_t limit_dist)
 {
 	if (limit_dist)
 	{
-		const fixed_t dist = P_AproxDistance(viewx-thing->x, viewy-thing->y);
-		if (dist > limit_dist)
+		if (P_AproxDistance(viewx-thing->x, viewy-thing->y) > limit_dist)
 		{
 			return false;
 		}
 	}
 
 	return true;
+}
+
+boolean R_ThingIsFullBright(mobj_t *thing)
+{
+	return ((thing->frame & FF_BRIGHTMASK) == FF_FULLBRIGHT);
+}
+
+boolean R_ThingIsSemiBright(mobj_t *thing)
+{
+	return ((thing->frame & FF_BRIGHTMASK) == FF_SEMIBRIGHT);
+}
+
+boolean R_ThingIsFullDark(mobj_t *thing)
+{
+	return ((thing->frame & FF_BRIGHTMASK) == FF_FULLDARK);
 }
 
 //
@@ -2894,7 +2938,7 @@ static void Sk_SetDefaultValue(skin_t *skin, boolean local)
 	//
 	memset(skin, 0, sizeof (skin_t));
 	snprintf(skin->name,
-		sizeof skin->name, "skin %u", (UINT32)(skin-( (local) ? localskins : skins )));
+		sizeof skin->name, "skin %u", (UINT32)(skin-(local ? localskins : skins)));
 	skin->name[sizeof skin->name - 1] = '\0';
 	skin->wadnum = INT16_MAX;
 	strcpy(skin->sprite, "");
@@ -3064,8 +3108,8 @@ boolean SetPlayerSkin(INT32 playernum, const char *skinname)
 
 void SetLocalPlayerSkin(INT32 playernum, const char *skinname, consvar_t *cvar)
 {
-	player_t *player = &players[playernum];
 	INT32 i;
+	player_t *player = &players[playernum];
 
 	if (strcasecmp(skinname, "none"))
 	{
@@ -3115,8 +3159,8 @@ void SetLocalPlayerSkin(INT32 playernum, const char *skinname, consvar_t *cvar)
 	{
 		if (player->localskin > 0)
 		{
-			CV_StealthSet(&cv_fakelocalskin, ( (player->skinlocal) ? localskins : skins )[player->localskin - 1].name);
-			CV_StealthSet(cvar, ( (player->skinlocal) ? localskins : skins )[player->localskin - 1].name);
+			CV_StealthSet(&cv_fakelocalskin, (player->skinlocal ? localskins : skins)[player->localskin-1].name);
+			CV_StealthSet(cvar, (player->skinlocal ? localskins : skins)[player->localskin-1].name);
 		}
 		else
 		{
@@ -3305,6 +3349,9 @@ void R_AddSkins(UINT16 wadnum, boolean local)
 	skin_t *skin;
 	boolean hudname, realname;
 
+#define lskin (local ? localskins : skins)
+#define lnumskins (local ? numlocalskins : numskins)
+
 	//
 	// search for all skin markers in pwad
 	//
@@ -3336,7 +3383,7 @@ void R_AddSkins(UINT16 wadnum, boolean local)
 		buf2[size] = '\0';
 
 		// set defaults
-		skin = &( (local) ? localskins : skins )[( (local) ? numlocalskins : numskins )];
+		skin = &lskin[lnumskins];
 		Sk_SetDefaultValue(skin, local);
 		skin->wadnum = wadnum;
 		hudname = realname = false;
@@ -3562,34 +3609,29 @@ next_token:
 
 		CONS_Printf(M_GetText("Added skin '%s'\n"), skin->name);
 #ifdef SKINVALUES
-		(local ? localskin_cons_t : skin_cons_t)[(local ? numlocalskins : numskins)].value = (local ? numlocalskins : numskins);
-		(local ? localskin_cons_t : skin_cons_t)[(local ? numlocalskins : numskins)].strvalue = skin->name;
+		(local ? localskin_cons_t : skin_cons_t)[lnumskins].value = lnumskins;
+		(local ? localskin_cons_t : skin_cons_t)[lnumskins].strvalue = skin->name;
 #endif
 
-		// Update the forceskin possiblevalues
 		if (!local)
 		{
+			// Update the forceskin possiblevalues
 			Forceskin_cons_t[numskins+1].value = numskins;
 			Forceskin_cons_t[numskins+1].strvalue = skins[numskins].name;
-		}
-
-		skin->localskin = local;
-
-		// so we dont have to guess
-		if (local)
-			skin->localnum = numlocalskins;
-		else
+			skin->localskin = false;
 			skin->localnum = numskins;
-
-		// add face graphics
-		if (local)
-			ST_LoadLocalFaceGraphics(skin->facerank, skin->facewant, skin->facemmap, numlocalskins);
-		else
 			ST_LoadFaceGraphics(skin->facerank, skin->facewant, skin->facemmap, numskins);
+		}
+		else
+		{
+			skin->localskin = true;
+			skin->localnum = numlocalskins;
+			ST_LoadLocalFaceGraphics(skin->facerank, skin->facewant, skin->facemmap, numlocalskins);
+		}
 
 #ifdef HWRENDER
 		if (rendermode == render_opengl)
-			HWR_AddPlayerMD2(((local) ? numlocalskins : numskins), local);
+			HWR_AddPlayerMD2(lnumskins, local);
 #endif
 		if (!local)
 		{
@@ -3600,12 +3642,14 @@ next_token:
 			skinsorted[numskins] = numskins;
 		}
 
-		allskins[numallskins] = ( (local) ? localskins : skins )[( (local) ? numlocalskins : numskins )];
+		allskins[numallskins] = lskin[lnumskins];
 
 		local ? numlocalskins++ : numskins++;
 		numallskins++;
 	}
 
+#undef lskin
+#undef lnumskins
 	//sortSkinGrid();
 
 	return;

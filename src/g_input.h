@@ -41,12 +41,10 @@ typedef enum
 	KEY_DBLJOY1 = KEY_DBLMOUSE1 + MOUSEBUTTONS,
 	KEY_DBLHAT1 = KEY_DBLJOY1 + JOYBUTTONS,
 
-	KEY_2MOUSE1 = KEY_DBLHAT1 + JOYHATS*4,
-	KEY_2JOY1 = KEY_2MOUSE1 + MOUSEBUTTONS,
+	KEY_2JOY1 = KEY_DBLHAT1 + MOUSEBUTTONS,
 	KEY_2HAT1 = KEY_2JOY1 + JOYBUTTONS,
 
-	KEY_DBL2MOUSE1 = KEY_2HAT1 + JOYHATS*4,
-	KEY_DBL2JOY1 = KEY_DBL2MOUSE1 + MOUSEBUTTONS,
+	KEY_DBL2JOY1 = KEY_2HAT1 + MOUSEBUTTONS,
 	KEY_DBL2HAT1 = KEY_DBL2JOY1 + JOYBUTTONS,
 
 	KEY_3JOY1 = KEY_DBL2HAT1 + JOYHATS*4,
@@ -63,10 +61,8 @@ typedef enum
 
 	KEY_MOUSEWHEELUP = KEY_DBL4HAT1 + JOYHATS*4,
 	KEY_MOUSEWHEELDOWN = KEY_MOUSEWHEELUP + 1,
-	KEY_2MOUSEWHEELUP = KEY_MOUSEWHEELDOWN + 1,
-	KEY_2MOUSEWHEELDOWN = KEY_2MOUSEWHEELUP + 1,
 
-	NUMINPUTS = KEY_2MOUSEWHEELDOWN + 1,
+	NUMINPUTS = KEY_MOUSEWHEELDOWN + 1,
 } key_input_e;
 
 typedef enum
@@ -100,12 +96,16 @@ typedef enum
 	gc_custom2, // Lua scriptable
 	gc_custom3, // Lua scriptable
 	gc_director,
+	gc_freecam, // Toggle for freecam while ingame
+	gc_camfloat, // alternative button for raising cam
+	gc_camsink, // alternative button for sinking
+	gc_strafeleft,
+	gc_straferight,
 	num_gamecontrols
 } gamecontrols_e;
 
 // mouse values are used once
 extern consvar_t cv_mousesens, cv_mouseysens;
-extern consvar_t cv_mousesens2, cv_mouseysens2;
 extern consvar_t cv_controlperkey, cv_turnsmooth;
 extern consvar_t cv_rumble[MAXSPLITSCREENPLAYERS];
 extern consvar_t cv_gamepadled[MAXSPLITSCREENPLAYERS];
@@ -113,7 +113,6 @@ extern consvar_t cv_ledpowerup[MAXSPLITSCREENPLAYERS];
 
 extern INT32 mousex, mousey;
 extern INT32 mlooky; //mousey with mlookSensitivity
-extern INT32 mouse2x, mouse2y, mlook2y;
 
 extern INT32 joyxmove[JOYAXISSET], joyymove[JOYAXISSET], joy2xmove[JOYAXISSET], joy2ymove[JOYAXISSET],
 	joy3xmove[JOYAXISSET], joy3ymove[JOYAXISSET], joy4xmove[JOYAXISSET], joy4ymove[JOYAXISSET];
