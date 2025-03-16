@@ -336,10 +336,9 @@ static boolean HWR_OverrideObjectLightLevel(mobj_t *thing, INT32 *lightlevel)
 	return true;
 }
 
-void HWR_ObjectLightLevelPost(gl_vissprite_t *spr, const sector_t *sector, INT32 *lightlevel, boolean model, const boolean papersprite)
+void HWR_ObjectLightLevelPost(gl_vissprite_t *spr, const sector_t *sector, INT32 *lightlevel, boolean model)
 {
 	const boolean semibright = R_ThingIsSemiBright(spr->mobj);
-	(void)papersprite;
 
 	*lightlevel += R_ThingLightLevel(spr->mobj);
 
@@ -349,35 +348,19 @@ void HWR_ObjectLightLevelPost(gl_vissprite_t *spr, const sector_t *sector, INT32
 		{
 			fixed_t extralight = R_GetSpriteDirectionalLighting(R_PointToAngle(spr->mobj->x, spr->mobj->y));
 
-			// this seems to be wrong???
-			/*fixed_t extralight = R_GetSpriteDirectionalLighting(
-				papersprite
-				? R_PointToAngle(spr->mobj->x, spr->mobj->y) + (spr->flip ? -ANGLE_90 : ANGLE_90)
-				: R_PointToAngle(spr->mobj->x, spr->mobj->y) // fixme
-			);*/
-
 			// Less change in contrast in dark sectors
 			extralight = FixedMul(extralight, min(max(0, *lightlevel), 255) * FRACUNIT / 255);
 
-			// NO NO BAD! WHY!?
-			/*if (papersprite)
-			{
-				// Papersprite contrast should match walls
-				*lightlevel += FixedFloor(extralight + (FRACUNIT / 2)) / FRACUNIT;
-			}
-			else*/
-			{
-				// simple OGL approximation
-				fixed_t tr = R_PointToDist(spr->mobj->x, spr->mobj->y);
-				fixed_t xscale = FixedDiv((vid.width / 2) << FRACBITS, tr);
+			// simple OGL approximation
+			fixed_t tr = R_PointToDist(spr->mobj->x, spr->mobj->y);
+			fixed_t xscale = FixedDiv((vid.width / 2) << FRACBITS, tr);
 
-				// Less change in contrast at further distances, to counteract DOOM diminished light
-				fixed_t n = FixedDiv(FixedMul(xscale, LIGHTRESOLUTIONFIX), ((MAXLIGHTSCALE-1) << LIGHTSCALESHIFT));
-				extralight = FixedMul(extralight, min(n, FRACUNIT));
+			// Less change in contrast at further distances, to counteract DOOM diminished light
+			fixed_t n = FixedDiv(FixedMul(xscale, LIGHTRESOLUTIONFIX), ((MAXLIGHTSCALE-1) << LIGHTSCALESHIFT));
+			extralight = FixedMul(extralight, min(n, FRACUNIT));
 
-				// Contrast is stronger for normal sprites, stronger than wall lighting is at the same distance
-				*lightlevel += FixedFloor((extralight * 2) + (FRACUNIT / 2)) / FRACUNIT;
-			}
+			// Contrast is stronger for normal sprites, stronger than wall lighting is at the same distance
+			*lightlevel += FixedFloor((extralight * 2) + (FRACUNIT / 2)) / FRACUNIT;
 		}
 
 		// Semibright objects will be made slightly brighter to compensate contrast
@@ -3708,7 +3691,7 @@ static void HWR_SplitSprite(gl_vissprite_t *spr, const boolean papersprite)
 	}
 
 	if (!lightset)
-		HWR_ObjectLightLevelPost(spr, sector, &lightlevel, false, papersprite);
+		HWR_ObjectLightLevelPost(spr, sector, &lightlevel, false);
 
 	for (i = 0; i < sector->numlights; i++)
 	{
@@ -3721,7 +3704,7 @@ static void HWR_SplitSprite(gl_vissprite_t *spr, const boolean papersprite)
 			if (!lightset)
 			{
 				lightlevel = min(*list[i].lightlevel, 255);
-				HWR_ObjectLightLevelPost(spr, sector, &lightlevel, false, papersprite);
+				HWR_ObjectLightLevelPost(spr, sector, &lightlevel, false);
 			}
 
 			colormap = list[i].extra_colormap;
@@ -3926,7 +3909,7 @@ static void HWR_DrawSprite(gl_vissprite_t *spr)
 		lightlevel = min(sector->lightlevel, 255);
 
 	if (!lightset)
-		HWR_ObjectLightLevelPost(spr, sector, &lightlevel, false, papersprite);
+		HWR_ObjectLightLevelPost(spr, sector, &lightlevel, false);
 
 	HWR_Lighting(&Surf, lightlevel, colormap, P_SectorUsesDirectionalLighting(sector) && !fullbright);
 
