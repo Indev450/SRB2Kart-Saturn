@@ -43,7 +43,7 @@ typedef struct gl_vissprite_s
 	INT32 dispoffset; // copy of info->dispoffset, affects ordering but not drawing
 } gl_vissprite_t;
 
-void HWR_ObjectLightLevelPost(gl_vissprite_t *spr, const sector_t *sector, INT32 *lightlevel, boolean model, const boolean papersprite);
+void HWR_ObjectLightLevelPost(gl_vissprite_t *spr, const sector_t *sector, INT32 *lightlevel, boolean model);
 
 // --------
 // hw_bsp.c
