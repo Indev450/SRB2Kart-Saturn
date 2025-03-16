@@ -49,7 +49,7 @@ FUNCMATH FUNCINLINE static ATTRINLINE fixed_t FloatToFixed(float f)
 	return (fixed_t)(f * FRACUNIT);
 }
 
-FUNCMATH FUNCINLINE static ATTRINLINE float FixedToDouble(fixed_t x)
+FUNCMATH FUNCINLINE static ATTRINLINE double FixedToDouble(fixed_t x)
 {
 	return x / (double)FRACUNIT;
 }
