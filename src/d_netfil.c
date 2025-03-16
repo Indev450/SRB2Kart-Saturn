@@ -867,8 +867,12 @@ void SV_FileSendTicker(void)
 
 					if (!transferFiles[f->fileid].file)
 					{
-						I_Error("Can't open file %s: %s",
+						CONS_Alert(CONS_ERROR, "Can't open file %s: %s\n",
 							f->id.filename, strerror(errno));
+
+						SV_EndFileSend(i);
+						HSendPacket(i, true, 0, PT_SERVERREFUSE);
+						break;
 					}
 				}
 
@@ -973,7 +977,7 @@ void Got_Filetxpak(void)
 
 	if (filenum >= fileneedednum)
 	{
-		DEBFILE(va("fileframent not needed %d>%d\n", filenum, fileneedednum));
+		DEBFILE(va("filefragment not needed %d>%d\n", filenum, fileneedednum));
 		//I_Error("Received an unneeded file fragment (file id received: %d, file id needed: %d)\n", filenum, fileneedednum);
 		return;
 	}
