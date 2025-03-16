@@ -93,7 +93,10 @@ ifeq ($(OS),Windows_NT) # all windows are Windows_NT...
  WINDOWSHELL=1
  NOOBJDUMP=1
 
+ NOBLUAJIT=1
+
 else # if you on the *nix
+ NOBLUAJIT=1
  system:=$(shell uname -s)
 
  ifeq ($(system),Linux)
