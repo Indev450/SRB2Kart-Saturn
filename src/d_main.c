@@ -689,6 +689,7 @@ static boolean D_Display(void)
 }
 
 //TODO: this is absolutely fucking horrific
+// needs to be put out of this and somewhere else
 static void DoFunnyDance (void)
 {
 	thinker_t *th;
@@ -712,8 +713,12 @@ static void DoFunnyDance (void)
 		ang = (FixedAngle(work)>>ANGLETOFINESHIFT) & FINEMASK;
 		bounce = (FINESINE(ang) - FRACUNIT/2);
 
+		// this is ass
+		// stuff should be stored in a temp var that still runs even when paused
+		// so the squish still is in sync with the music
 		if (!paused && !P_AutoPause())
 		{
+			// would be cool if we could just run this in player thinker or some crap
 			for (th = thinkercap.next; th != &thinkercap; th = th->next)
 			{
 				mobj_t *mo;
@@ -731,7 +736,7 @@ static void DoFunnyDance (void)
 			}
 		}
 
-		time += renderdeltatics;
+		time += renderdeltatics; // bruh
 	}
 	else
 		time = 0;
