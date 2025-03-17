@@ -3579,16 +3579,8 @@ static void K_QuiteSaltyHop(player_t *p)
 	}
 }
 
-// checks if slope rotation should be applied
-boolean K_ShouldSlopeRoll(mobj_t *mobj)
+boolean K_CheckSlopeRollDist(mobj_t *mobj)
 {
-	if (!cv_sloperoll.value || (!mobj->player && cv_sloperoll.value != 2)) // not a player and sloperoll not set to "Everything"
-		return false;
-
-	// seeing a character rotate mid-hop looks really janky
-	if (mobj->player && mobj->player->mo->salty_jump)
-		return false;
-
 	const boolean usedistance = cv_sloperolldist.value && !splitscreen;
 
 	// always roll from any distance
@@ -3599,6 +3591,19 @@ boolean K_ShouldSlopeRoll(mobj_t *mobj)
 	const fixed_t m_dist = (R_QuickCamDist(mobj->x, mobj->y)*FRACUNIT);
 
 	return (m_dist <= rolldist);
+}
+
+// checks if slope rotation should be applied
+boolean K_ShouldSlopeRoll(mobj_t *mobj)
+{
+	if (!cv_sloperoll.value || (!mobj->player && cv_sloperoll.value != 2)) // not a player and sloperoll not set to "Everything"
+		return false;
+
+	// seeing a character rotate mid-hop looks really janky
+	if (mobj->player && mobj->player->mo->salty_jump)
+		return false;
+
+	return K_CheckSlopeRollDist(mobj);
 }
 
 #define SLOPEROLL_DIV 3
@@ -4069,13 +4074,13 @@ static mobj_t *K_ThrowKartItem(player_t *player, boolean missile, mobjtype_t map
 				if (mo->eflags & MFE_UNDERWATER)
 					mo->momz = (117 * mo->momz) / 200;
 
-				if (cv_bananthrowroll.value && (mapthing == MT_BANANA) && K_ShouldSlopeRoll(mo))
+				if (cv_bananthrowroll.value && (mapthing == MT_BANANA))
 				{
 					//mo->angle = FixedAngle(M_RandomRange(-180, 180) << FRACBITS);
-					if (cv_bananthrowroll.value == 1)
-						mo->sloperoll = FixedAngle(M_RandomRange(-180, 180) << FRACBITS); // im lazy but this makes sure the banan goes back to upright when it lands lmao
+					if (cv_bananthrowroll.value == 1 && K_CheckSlopeRollDist(mo))
+						mo->sloperoll = (angle_t)FixedAngle(M_RandomRange(-180, 180) << FRACBITS); // im lazy but this makes sure the banan goes back to upright when it lands lmao
 					else if (cv_bananthrowroll.value == 2)
-						mo->rollangle = FixedAngle(M_RandomRange(-180, 180) << FRACBITS);
+						mo->rollangle = (angle_t)FixedAngle(M_RandomRange(-180, 180) << FRACBITS);
 				}
 			}
 

@@ -63,6 +63,7 @@ void K_ExplodePlayer(player_t *player, mobj_t *source, mobj_t *inflictor);
 void K_StealBumper(player_t *player, player_t *victim, boolean force);
 void K_SpawnKartExplosion(fixed_t x, fixed_t y, fixed_t z, fixed_t radius, INT32 number, mobjtype_t type, angle_t rotangle, boolean spawncenter, boolean ghostit, mobj_t *source);
 void K_SpawnMineExplosion(mobj_t *source, UINT8 color);
+boolean K_CheckSlopeRollDist(mobj_t *mobj);
 boolean K_ShouldSlopeRoll(mobj_t *mobj);
 void K_RollMobjBySlopes(mobj_t *mo, pslope_t *slope);
 void K_SpawnBoostTrail(player_t *player);
