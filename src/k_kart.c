@@ -3585,6 +3585,10 @@ boolean K_ShouldSlopeRoll(mobj_t *mobj)
 	if (!cv_sloperoll.value || (!mobj->player && cv_sloperoll.value != 2)) // not a player and sloperoll not set to "Everything"
 		return false;
 
+	// seeing a character rotate mid-hop looks really janky
+	if (mobj->player && mobj->player->mo->salty_jump)
+		return false;
+
 	const boolean usedistance = cv_sloperolldist.value && !splitscreen;
 
 	// always roll from any distance
@@ -7212,12 +7216,9 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 			player->sliproll -= (4*ANG1);
 	}
 
+	// funneh Saturn sprite stuff
 	K_StretchPlayerGravity(player);
-
-	if (!player->mo->salty_jump) // seeing a character rotate mid-hop looks really janky
-	{
-		K_RollMobjBySlopes(player->mo, player->mo->standingslope);
-	}
+	K_RollMobjBySlopes(player->mo, player->mo->standingslope);
 
 	// Quick Turning
 	// You can't turn your kart when you're not moving.
