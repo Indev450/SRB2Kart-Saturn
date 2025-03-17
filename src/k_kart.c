@@ -3530,30 +3530,47 @@ static void K_QuiteSaltyHop(player_t *p)
 	}
 }
 
+// checks if slope rotation should be applied
+boolean K_ShouldSlopeRoll(mobj_t *mobj)
+{
+	if (!cv_sloperoll.value || (!mobj->player && cv_sloperoll.value != 2)) // not a player and sloperoll not set to "Everything"
+		return false;
+
+	const boolean usedistance = cv_sloperolldist.value && !splitscreen;
+
+	// always roll from any distance
+	if (!usedistance)
+		return true;
+
+	const fixed_t rolldist = cv_sloperolldist.value * mapobjectscale;
+	const fixed_t m_dist = (R_QuickCamDist(mobj->x, mobj->y)*FRACUNIT);
+
+	return (m_dist <= rolldist);
+}
+
 #define SLOPEROLL_DIV 3
 void K_RollMobjBySlopes(mobj_t* mo, pslope_t *slope)
 {
+	// save one P_MobjWasRemoved check for dedis lel
+	if (rendermode == render_none)
+		return;
+
 	if (P_MobjWasRemoved(mo))
 		return;
 
 	I_Assert(mo->subsector != NULL);
 	I_Assert(mo->subsector->sector != NULL);
 
+	if (!K_ShouldSlopeRoll(mo))
+	{
+		mo->pitch_sprite = mo->roll_sprite = 0;
+		mo->sloperoll = mo->slopepitch = 0;
+		return;
+	}
+
 	// lifted from hw_md2
 	if (slope)
 	{
-		const boolean usedistance = cv_sloperolldist.value && !splitscreen;
-		const fixed_t rolldist = cv_sloperolldist.value * mapobjectscale;
-		const fixed_t m_dist = usedistance ? (R_QuickCamDist(mo->x, mo->y)*FRACUNIT) : 0;
-		const boolean usepitchnroll = (!usedistance || (m_dist <= rolldist));
-
-		if (!usepitchnroll)
-		{
-			mo->pitch_sprite = mo->roll_sprite = 0;
-			mo->sloperoll = mo->slopepitch = 0;
-			return;
-		}
-
 		angle_t an;
 		const boolean flip = (mo->eflags & MFE_VERTICALFLIP);
 		fixed_t tempz = slope->normal.z;
@@ -3953,7 +3970,7 @@ static mobj_t *K_ThrowKartItem(player_t *player, boolean missile, mobjtype_t map
 				if (mo->eflags & MFE_UNDERWATER)
 					mo->momz = (117 * mo->momz) / 200;
 
-				if (cv_sloperoll.value == 2 && cv_bananthrowroll.value && mapthing == MT_BANANA)
+				if (cv_bananthrowroll.value && (mapthing == MT_BANANA) && K_ShouldSlopeRoll(mo))
 				{
 					//mo->angle = FixedAngle(M_RandomRange(-180, 180) << FRACBITS);
 					if (cv_bananthrowroll.value == 1)
@@ -5035,7 +5052,7 @@ static void K_MoveHeldObjects(player_t *player)
 					if (R_PointToDist2(cur->x, cur->y, targx, targy) > 768*FRACUNIT)
 						P_MoveOrigin(cur, targx, targy, cur->z);
 
-					if (cv_sloperoll.value == 2 && P_IsObjectOnGround(cur))
+					if (P_IsObjectOnGround(cur) && K_ShouldSlopeRoll(cur))
 					{
 						K_CalculateBananaSlope(cur, cur->x, cur->y, cur->z,
 											   cur->radius, cur->height, (cur->eflags & MFE_VERTICALFLIP), false);
@@ -6920,14 +6937,9 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 
 	K_StretchPlayerGravity(player);
 
-	if (cv_sloperoll.value && !player->mo->salty_jump) // seeing a character rotate mid-hop looks really janky
+	if (!player->mo->salty_jump) // seeing a character rotate mid-hop looks really janky
 	{
 		K_RollMobjBySlopes(player->mo, player->mo->standingslope);
-	}
-	else
-	{
-		player->mo->sloperoll = 0;
-		player->mo->slopepitch = 0;
 	}
 
 	// Quick Turning

@@ -6038,20 +6038,6 @@ static void P_KoopaThinker(mobj_t *koopa)
 //
 void P_RollPitchMobj(mobj_t* mobj)
 {
-	// we dont need this in dedi do we?
-	if (rendermode == render_none)
-		return;
-
-	if (P_MobjWasRemoved(mobj))
-		return;
-
-	if (cv_sloperoll.value != 2)
-	{
-		mobj->sloperoll = 0;
-		mobj->slopepitch = 0;
-		return;
-	}
-
 	K_RollMobjBySlopes(mobj, mobj->standingslope);
 }
 
@@ -6062,9 +6048,6 @@ angle_t P_MobjPitchAndRoll(mobj_t *mobj)
 	angle_t ang = 0;
 	angle_t camang = 0;
 	angle_t return_angle = 0;
-
-	if (!cv_sloperoll.value)
-		return 0;
 
 	if (P_MobjWasRemoved(mobj))
 		return 0;
@@ -6269,6 +6252,7 @@ void P_MobjThinker(mobj_t *mobj)
 					return;
 				}
 
+				// dont need to extra check with K_ShouldSlopeRoll
 				if (cv_sloperoll.value == 2 && mobj->state == &states[S_SHADOW])
 				{
 					mobj->slopepitch = mobj->target->slopepitch;
@@ -7064,7 +7048,7 @@ void P_MobjThinker(mobj_t *mobj)
 			break;
 		//{ SRB2kart Items - Death States
 		case MT_BANANA:
-			if (cv_sloperoll.value == 2 && cv_bananthrowroll.value)
+			if (cv_bananthrowroll.value && K_ShouldSlopeRoll(mobj))
 			{
 				angle_t spin = FixedMul(FixedDiv(abs(mobj->momz), 8 * mobj->scale), ANGLE_67h);
 				//mobj->angle -= spin;
@@ -7819,7 +7803,7 @@ void P_MobjThinker(mobj_t *mobj)
 		}
 		case MT_BANANA:
 		case MT_EGGMANITEM:
-			if (cv_sloperoll.value == 2 && cv_bananthrowroll.value && !P_IsObjectOnGround(mobj))
+			if (cv_bananthrowroll.value && !P_IsObjectOnGround(mobj) && K_ShouldSlopeRoll(mobj))
 			{
 				// tilt n tumble
 				angle_t spin = FixedMul(FixedDiv(mobj->momz, 8 * mobj->scale), ANGLE_67h);
