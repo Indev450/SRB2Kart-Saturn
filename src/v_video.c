@@ -627,6 +627,9 @@ void V_DrawStretchyFixedPatch(fixed_t x, fixed_t y, fixed_t pscale, fixed_t vsca
 	if (rendermode == render_none)
 		return;
 
+	if (!patch)
+		return;
+
 #ifdef HWRENDER
 	//if (rendermode != render_soft && !con_startup)		// Why?
 	if (rendermode == render_opengl)
@@ -855,6 +858,9 @@ void V_DrawCroppedPatch(fixed_t x, fixed_t y, fixed_t pscale, INT32 scrn, patch_
 	const UINT8 *source, *deststop;
 
 	if (rendermode == render_none)
+		return;
+
+	if (!patch)
 		return;
 
 #ifdef HWRENDER
