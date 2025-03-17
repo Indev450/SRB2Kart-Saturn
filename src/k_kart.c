@@ -3544,7 +3544,7 @@ void K_RollMobjBySlopes(mobj_t* mo, pslope_t *slope)
 	{
 		const boolean usedistance = cv_sloperolldist.value && !splitscreen;
 		const fixed_t rolldist = cv_sloperolldist.value * mapobjectscale;
-		const fixed_t m_dist = usedistance ? R_PointToDist(mo->x, mo->y) : 0;
+		const fixed_t m_dist = usedistance ? (R_QuickCamDist(mo->x, mo->y)*FRACUNIT) : 0;
 		const boolean usepitchnroll = (!usedistance || (m_dist <= rolldist));
 
 		if (!usepitchnroll)
