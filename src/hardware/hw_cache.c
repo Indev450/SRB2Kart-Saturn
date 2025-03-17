@@ -1005,8 +1005,7 @@ void HWR_GetMappedPatch(GLPatch_t *glPatch, const UINT8 *colormap)
 {
 	GLMipmap_t *glMipmap, *newMipmap;
 
-	// Blatant hack for encore colormapping aside...
-	if (colormap == colormaps || colormap == NULL || colormap == (const UINT8*)(COLORMAP_REMAPOFFSET))
+	if (colormap == colormaps || colormap == NULL)
 	{
 		// Load the default (green) color in doom cache (temporary?) AND hardware cache
 		HWR_GetPatch(glPatch);
