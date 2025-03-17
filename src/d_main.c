@@ -688,6 +688,55 @@ static boolean D_Display(void)
 	return ranwipe;
 }
 
+//TODO: this is absolutely fucking horrific
+static void DoFunnyDance (void)
+{
+	thinker_t *th;
+	static tic_t time = 0;
+	fixed_t bounce = 0;
+	fixed_t work, bpm = FLOAT_TO_FIXED(150.f); // FLOAT_TO_FIXED(mapmusic.bpm)
+	angle_t ang;
+
+	if (S_MapMusPlaying())
+	{
+		bpm = FixedDiv((60*TICRATE)<<FRACBITS, bpm);
+
+		work = time;
+		work %= bpm;
+
+		if (time >= (FRACUNIT << (FRACBITS - 2))) // prevent overflow jump - takes about 15 minutes of loop on the same song to reach
+			time = work;
+
+		work = FixedDiv(work*180, bpm);
+
+		ang = (FixedAngle(work)>>ANGLETOFINESHIFT) & FINEMASK;
+		bounce = (FINESINE(ang) - FRACUNIT/2);
+
+		if (!paused && !P_AutoPause())
+		{
+			for (th = thinkercap.next; th != &thinkercap; th = th->next)
+			{
+				mobj_t *mo;
+
+				if (th->function.acp1 != (actionf_p1)P_MobjThinker) // not a mobj
+					continue;
+
+				mo = (mobj_t *)th;
+
+				if (!mo->player)
+					continue;
+
+				mo->spritexscale -= bounce/32;
+				mo->spriteyscale += bounce/32;
+			}
+		}
+
+		time += renderdeltatics;
+	}
+	else
+		time = 0;
+}
+
 // =========================================================================
 // D_SRB2Loop
 // =========================================================================

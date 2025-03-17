@@ -1960,6 +1960,12 @@ void S_ResetKeepAndSpecialMus(void)
 	keepmapmusic = skipintromus = false;
 }
 
+boolean S_MapMusPlaying(void)
+{
+	return S_MusicPlaying() && (strcasecmp(music.name, mapmusic.name) == 0);
+}
+
+
 // saves the current song position everytime a song stops
 // so we can resume it in some cases
 static void S_SetKeepMusResume(void)
