@@ -3482,13 +3482,14 @@ static void K_QuiteSaltyHop(player_t *p)
 
 		if (p->mo->salty_zoffset <= 0)
 		{
-			if (!(p->mo->eflags & MFE_JUSTHITFLOOR) && P_IsObjectOnGround(p->mo) && cv_saltyhopsfx.value)
+			if (cv_saltyhopsfx.value && !(p->mo->eflags & MFE_JUSTHITFLOOR) && P_IsObjectOnGround(p->mo))
 				S_StartSound(p->mo, sfx_s268);
 			p->mo->salty_jump = false;
 			p->mo->salty_zoffset = 0;
 			p->mo->salty_momz = 0;
 			// shlamma damma
-			p->mo->stretchslam += cv_saltysquish.value ? (8*mos) : 0;
+			if (cv_saltysquish.value)
+				p->mo->stretchslam += 8*mos;
 		}
 		else if (p->mo->salty_zoffset >= 0 && cv_saltysquish.value)
 		{
@@ -3499,10 +3500,13 @@ static void K_QuiteSaltyHop(player_t *p)
 
 		p->mo->spriteyoffset = p->mo->salty_zoffset;
 
-		if (S_SoundPlaying(p->mo, sfx_screec))
-			S_StopSoundByID(p->mo, sfx_screec);
-		if (S_SoundPlaying(p->mo, sfx_drift))
-			S_StopSoundByID(p->mo, sfx_drift);
+		if (cv_saltyhopsfx.value)
+		{
+			if (S_SoundPlaying(p->mo, sfx_screec))
+				S_StopSoundByID(p->mo, sfx_screec);
+			if (S_SoundPlaying(p->mo, sfx_drift))
+				S_StopSoundByID(p->mo, sfx_drift);
+		}
 	}
 	else if (p->mo->salty_tapping && P_IsObjectOnGround(p->mo) && !p->kartstuff[k_spinouttimer] && !p->kartstuff[k_squishedtimer])
 	{
