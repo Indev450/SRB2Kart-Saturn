@@ -3257,8 +3257,13 @@ static void K_SpawnDriftSparks(player_t *player)
 	if (leveltime % 2 == 1)
 		return;
 
-	if (!cv_airsparks.value && !P_IsObjectOnGround(player->mo))
+	if (cv_airsparks.value)
+		goto skipground;
+
+	if (!P_IsObjectOnGround(player->mo))
 		return;
+
+skipground: // idk im sleepy
 
 	if (!player->kartstuff[k_drift] || player->kartstuff[k_driftcharge] < K_GetKartDriftSparkValue(player))
 		return;
@@ -6051,59 +6056,68 @@ static void K_KartDrift(player_t *player, boolean onground)
 	}
 
 	// Incease/decrease the drift value to continue drifting in that direction
-	if (player->kartstuff[k_spinouttimer] == 0 && player->kartstuff[k_jmp] == 1 && onground && player->kartstuff[k_drift] != 0)
+	if (player->kartstuff[k_spinouttimer] == 0 && player->kartstuff[k_jmp] == 1 && player->kartstuff[k_drift] != 0)
 	{
 		fixed_t driftadditive = 24;
 
-		if (player->kartstuff[k_drift] >= 1) // Drifting to the left
+		// well this is kinda dumb but we cannot modify a drift in midair so
+		if (onground)
 		{
-			player->kartstuff[k_drift]++;
-			if (player->kartstuff[k_drift] > 5)
-				player->kartstuff[k_drift] = 5;
+			if (player->kartstuff[k_drift] >= 1) // Drifting to the left
+			{
+				player->kartstuff[k_drift]++;
+				if (player->kartstuff[k_drift] > 5)
+					player->kartstuff[k_drift] = 5;
 
-			if (player->cmd.driftturn > 0) // Inward
-				driftadditive += abs(player->cmd.driftturn)/100;
-			if (player->cmd.driftturn < 0) // Outward
-				driftadditive -= abs(player->cmd.driftturn)/75;
+				if (player->cmd.driftturn > 0) // Inward
+					driftadditive += abs(player->cmd.driftturn)/100;
+				if (player->cmd.driftturn < 0) // Outward
+					driftadditive -= abs(player->cmd.driftturn)/75;
+			}
+			else if (player->kartstuff[k_drift] <= -1) // Drifting to the right
+			{
+				player->kartstuff[k_drift]--;
+				if (player->kartstuff[k_drift] < -5)
+					player->kartstuff[k_drift] = -5;
+
+				if (player->cmd.driftturn < 0) // Inward
+					driftadditive += abs(player->cmd.driftturn)/100;
+				if (player->cmd.driftturn > 0) // Outward
+					driftadditive -= abs(player->cmd.driftturn)/75;
+			}
+
+			// Disable drift-sparks until you're going fast enough
+			if (player->kartstuff[k_getsparks] == 0 || (player->kartstuff[k_offroad] && !player->kartstuff[k_invincibilitytimer] && !player->kartstuff[k_hyudorotimer] && !player->kartstuff[k_sneakertimer]))
+				driftadditive = 0;
+			if (player->speed > minspeed*2)
+				player->kartstuff[k_getsparks] = 1;
+
+			// Sound whenever you get a different tier of sparks
+			if ((player->kartstuff[k_driftcharge] < dsone && player->kartstuff[k_driftcharge]+driftadditive >= dsone)
+				|| (player->kartstuff[k_driftcharge] < dstwo && player->kartstuff[k_driftcharge]+driftadditive >= dstwo)
+				|| (player->kartstuff[k_driftcharge] < dsthree && player->kartstuff[k_driftcharge]+driftadditive >= dsthree))
+			{
+				//S_StartSound(player->mo, sfx_s3ka2);
+				if (P_IsLocalPlayer(player)) // UGHGHGH...
+					S_StartSoundAtVolume(player->mo, sfx_s3ka2, 192); // Ugh...
+
+				player->driftsparkGrowTimer = DRIFTSPARKGROWTICS;
+			}
 		}
-		else if (player->kartstuff[k_drift] <= -1) // Drifting to the right
+		else
 		{
-			player->kartstuff[k_drift]--;
-			if (player->kartstuff[k_drift] < -5)
-				player->kartstuff[k_drift] = -5;
-
-			if (player->cmd.driftturn < 0) // Inward
-				driftadditive += abs(player->cmd.driftturn)/100;
-			if (player->cmd.driftturn > 0) // Outward
-				driftadditive -= abs(player->cmd.driftturn)/75;
-		}
-
-		// Disable drift-sparks until you're going fast enough
-		if (player->kartstuff[k_getsparks] == 0 || (player->kartstuff[k_offroad] && !player->kartstuff[k_invincibilitytimer] && !player->kartstuff[k_hyudorotimer] && !player->kartstuff[k_sneakertimer]))
 			driftadditive = 0;
-		if (player->speed > minspeed*2)
-			player->kartstuff[k_getsparks] = 1;
-
-		// Sound whenever you get a different tier of sparks
-		if ((player->kartstuff[k_driftcharge] < dsone && player->kartstuff[k_driftcharge]+driftadditive >= dsone)
-			|| (player->kartstuff[k_driftcharge] < dstwo && player->kartstuff[k_driftcharge]+driftadditive >= dstwo)
-			|| (player->kartstuff[k_driftcharge] < dsthree && player->kartstuff[k_driftcharge]+driftadditive >= dsthree))
-		{
-			//S_StartSound(player->mo, sfx_s3ka2);
-			if (P_IsLocalPlayer(player)) // UGHGHGH...
-				S_StartSoundAtVolume(player->mo, sfx_s3ka2, 192); // Ugh...
-
-			player->driftsparkGrowTimer = DRIFTSPARKGROWTICS;
 		}
 
-
-		// moved this below sounds to help with scaling
 		// This spawns the drift sparks
 		if (player->kartstuff[k_driftcharge] + driftadditive >= dsone)
 			K_SpawnDriftSparks(player);
 
-		player->kartstuff[k_driftcharge] += driftadditive;
-		player->kartstuff[k_driftend] = 0;
+		if (onground)
+		{
+			player->kartstuff[k_driftcharge] += driftadditive;
+			player->kartstuff[k_driftend] = 0;
+		}
 	}
 
 	if (player->driftsparkGrowTimer)
