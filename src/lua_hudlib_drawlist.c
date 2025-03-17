@@ -651,18 +651,12 @@ void LUA_HUD_DrawList(huddrawlist_h list)
 		switch (item->type)
 		{
 			case DI_Draw:
-				if (!item->patch || item->patch == NULL)
-					return;
 				V_DrawBlendingFixedPatch(LERPS(x), LERPS(y), FRACUNIT, item->flags, item->patch, item->colormap, item->blend);
 				break;
 			case DI_DrawScaled:
-				if (!item->patch || item->patch == NULL)
-					return;
 				V_DrawBlendingFixedPatch(LERPS(x), LERPS(y), LERP(scale), item->flags, item->patch, item->colormap, item->blend);
 				break;
 			case DI_DrawStretched:
-				if (!item->patch || item->patch == NULL)
-					return;
 				V_DrawStretchyFixedPatch(LERPS(x), LERPS(y), LERP(hscale), LERP(vscale), item->flags, item->patch, item->colormap, item->blend);
 				break;
 			case DI_DrawNum:
