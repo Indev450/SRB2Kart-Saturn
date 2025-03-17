@@ -3268,8 +3268,12 @@ static void K_SpawnDriftSparks(player_t *player)
 	for (i = 0; i < 2; i++)
 	{
 		fixed_t driftExtraScale = 0;
-		newx = player->mo->x + P_ReturnThrustX(player->mo, travelangle + ((i&1) ? -1 : 1)*ANGLE_135, FixedMul(32*FRACUNIT, player->mo->scale));
-		newy = player->mo->y + P_ReturnThrustY(player->mo, travelangle + ((i&1) ? -1 : 1)*ANGLE_135, FixedMul(32*FRACUNIT, player->mo->scale));
+
+		angle_t thrustangle = (travelangle + ((i&1) ? -1 : 1)*ANGLE_135);
+		fixed_t smolscale = FixedMul(32*FRACUNIT, player->mo->scale);
+
+		newx = player->mo->x + P_ReturnThrustX(player->mo, thrustangle, smolscale);
+		newy = player->mo->y + P_ReturnThrustY(player->mo, thrustangle, smolscale);
 		spark = P_SpawnMobj(newx, newy, player->mo->z, MT_DRIFTSPARK);
 
 		P_SetTarget(&spark->target, player->mo);
@@ -3278,7 +3282,7 @@ static void K_SpawnDriftSparks(player_t *player)
 		// scale increase while driftspark level gained timer is running
 		driftExtraScale = FixedDiv(player->driftsparkGrowTimer, DRIFTSPARKGROWTICS);
 		spark->destscale = FixedMul(player->mo->scale, FRACUNIT + FixedMul(driftExtraScale, cv_driftsparkpulse.value));
-		P_SetScale(spark, FixedMul(player->mo->scale, FRACUNIT + FixedMul(driftExtraScale, cv_driftsparkpulse.value)));
+		P_SetScale(spark, spark->destscale); // why not use what we calculated above?
 
 		spark->momx = player->mo->momx/2;
 		spark->momy = player->mo->momy/2;
@@ -3342,8 +3346,11 @@ static void K_SpawnAIZDust(player_t *player)
 	//S_StartSound(player->mo, sfx_s3k47);
 
 	{
-		newx = player->mo->x + P_ReturnThrustX(player->mo, travelangle - (player->kartstuff[k_aizdriftstrat]*ANGLE_45), FixedMul(24*FRACUNIT, player->mo->scale));
-		newy = player->mo->y + P_ReturnThrustY(player->mo, travelangle - (player->kartstuff[k_aizdriftstrat]*ANGLE_45), FixedMul(24*FRACUNIT, player->mo->scale));
+		angle_t thrustangle = (travelangle - (player->kartstuff[k_aizdriftstrat]*ANGLE_45));
+		fixed_t smolscale = FixedMul(24*FRACUNIT, player->mo->scale);
+
+		newx = player->mo->x + P_ReturnThrustX(player->mo, thrustangle, smolscale);
+		newy = player->mo->y + P_ReturnThrustY(player->mo, thrustangle, smolscale);
 		spark = P_SpawnMobj(newx, newy, player->mo->z, MT_AIZDRIFTSTRAT);
 
 		spark->angle = travelangle+(player->kartstuff[k_aizdriftstrat]*ANGLE_90);
@@ -3599,14 +3606,19 @@ void K_SpawnBoostTrail(player_t *player)
 
 	for (i = 0; i < 2; i++)
 	{
-		newx = player->mo->x + P_ReturnThrustX(player->mo, travelangle + ((i&1) ? -1 : 1)*ANGLE_135, FixedMul(24*FRACUNIT, player->mo->scale));
-		newy = player->mo->y + P_ReturnThrustY(player->mo, travelangle + ((i&1) ? -1 : 1)*ANGLE_135, FixedMul(24*FRACUNIT, player->mo->scale));
+		angle_t thrustangle = (travelangle + ((i&1) ? -1 : 1)*ANGLE_135);
+		fixed_t smolscale = FixedMul(24*FRACUNIT, player->mo->scale);
+
+		newx = player->mo->x + P_ReturnThrustX(player->mo, thrustangle, smolscale);
+		newy = player->mo->y + P_ReturnThrustY(player->mo, thrustangle, smolscale);
+
 		if (player->mo->standingslope)
 		{
 			ground = P_GetZAt(player->mo->standingslope, newx, newy);
 			if (player->mo->eflags & MFE_VERTICALFLIP)
 				ground -= FixedMul(mobjinfo[MT_SNEAKERTRAIL].height, player->mo->scale);
 		}
+
 		flame = P_SpawnMobj(newx, newy, ground, MT_SNEAKERTRAIL);
 
 		P_SetTarget(&flame->target, player->mo);
