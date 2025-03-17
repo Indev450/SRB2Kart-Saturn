@@ -3530,13 +3530,20 @@ void K_RollMobjBySlopes(mobj_t* mo, pslope_t *slope)
 	// lifted from hw_md2
 	if (slope)
 	{
-		angle_t an;
-		const boolean flip = (mo->eflags & MFE_VERTICALFLIP);
 		const boolean usedistance = cv_sloperolldist.value && !splitscreen;
 		const fixed_t rolldist = cv_sloperolldist.value * mapobjectscale;
 		const fixed_t m_dist = usedistance ? R_PointToDist(mo->x, mo->y) : 0;
 		const boolean usepitchnroll = (!usedistance || (m_dist <= rolldist));
 
+		if (!usepitchnroll)
+		{
+			mo->pitch_sprite = mo->roll_sprite = 0;
+			mo->sloperoll = mo->slopepitch = 0;
+			return;
+		}
+
+		angle_t an;
+		const boolean flip = (mo->eflags & MFE_VERTICALFLIP);
 		fixed_t tempz = slope->normal.z;
 		fixed_t tempy = slope->normal.y;
 		fixed_t tempx = slope->normal.x;
@@ -3545,29 +3552,14 @@ void K_RollMobjBySlopes(mobj_t* mo, pslope_t *slope)
 		// admittedly this is a very hacky way to do the pitch and roll easing
 
 		// pitch
-		if (usepitchnroll)
-		{
-			an = (INT32)((angle_t)tempangle - mo->pitch_sprite) / SLOPEROLL_DIV;
-
-			mo->pitch_sprite = an ? mo->pitch_sprite + an : (angle_t)tempangle;
-		}
-		else
-			mo->pitch_sprite = 0;
-
+		an = (INT32)((angle_t)tempangle - mo->pitch_sprite) / SLOPEROLL_DIV;
+		mo->pitch_sprite = an ? mo->pitch_sprite + an : (angle_t)tempangle;
 		mo->slopepitch = flip ? InvAngle(mo->pitch_sprite) : mo->pitch_sprite;
 
 		// roll
-		tempangle = (R_PointToAngle2(0, 0, tempz, tempy));
-
-		if (usepitchnroll)
-		{
-			an = (INT32)((angle_t)tempangle - mo->roll_sprite) / SLOPEROLL_DIV;
-
-			mo->roll_sprite = an ? mo->roll_sprite + an : (angle_t)tempangle;
-		}
-		else
-			mo->roll_sprite = 0;
-
+		tempangle = R_PointToAngle2(0, 0, tempz, tempy);
+		an = (INT32)((angle_t)tempangle - mo->roll_sprite) / SLOPEROLL_DIV;
+		mo->roll_sprite = an ? mo->roll_sprite + an : (angle_t)tempangle;
 		mo->sloperoll = flip ? InvAngle(mo->roll_sprite) : mo->roll_sprite;
 	}
 	else if (P_IsObjectOnGround(mo))
