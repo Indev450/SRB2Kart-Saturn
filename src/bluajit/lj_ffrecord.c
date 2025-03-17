@@ -378,6 +378,10 @@ static void LJ_FASTCALL recff_tonumber(jit_State *J, RecordFFData *rd)
 	return;
       }
       tr = emitir(IRTG(IR_STRTO, IRT_NUM), tr, 0);
+#if LJ_INTONLY
+      /* x86 assembler can't handle STRTO with int type, have to CONV it instead */
+      tr = emitir(IRTI(IR_CONV), tr, IRCONV_INT_NUM);
+#endif
     }
 #if LJ_HASFFI
   } else if (tref_iscdata(tr)) {
