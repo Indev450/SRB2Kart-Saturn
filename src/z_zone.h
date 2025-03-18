@@ -32,6 +32,19 @@ extern "C" {
 #define FUNCALLOC(x)
 #endif
 
+#if defined(__SANITIZE_ADDRESS__)
+#   include <sanitizer/asan_interface.h>
+#elif defined(__has_feature)
+#   if __has_feature(address_sanitizer)
+#       include <sanitizer/asan_interface.h>
+#   endif
+#endif
+
+#if !defined(ASAN_POISON_MEMORY_REGION)
+#    define ASAN_POISON_MEMORY_REGION(a, b) {}
+#    define ASAN_UNPOISON_MEMORY_REGION(a, b) {}
+#endif
+
 #define ZDEBUG
 
 //
