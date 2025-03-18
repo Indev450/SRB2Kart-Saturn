@@ -702,11 +702,11 @@ static void DoFunnyDance (void)
 	{
 		bpm = FixedDiv((60*TICRATE)<<FRACBITS, bpm);
 
-		work = time;
+		work = time<<FRACBITS;
 		work %= bpm;
 
-		if (time >= (FRACUNIT << (FRACBITS - 2))) // prevent overflow jump - takes about 15 minutes of loop on the same song to reach
-			time = work;
+		if (time >= (FRACUNIT>>1)) // prevent overflow jump - takes about 15 minutes of loop on the same song to reach
+			time = (work>>FRACBITS);
 
 		work = FixedDiv(work*180, bpm);
 
@@ -731,12 +731,12 @@ static void DoFunnyDance (void)
 				if (!mo->player)
 					continue;
 
-				mo->spritexscale -= bounce/32;
-				mo->spriteyscale += bounce/32;
+				mo->spritexscale -= bounce/2;
+				mo->spriteyscale += bounce/2;
 			}
 		}
 
-		time += renderdeltatics; // bruh
+		time++; // bruh
 	}
 	else
 		time = 0;
