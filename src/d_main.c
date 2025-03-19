@@ -689,15 +689,20 @@ static boolean D_Display(void)
 }
 
 //TODO: this is absolutely fucking horrific
-// needs to be put out of this and somewhere else
+//TODO: pass a mobj to it so we dont have to do this terrible thing
 static void DoFunnyDance (void)
 {
 	thinker_t *th;
 	static tic_t time = 0;
 	fixed_t bounce = 0;
-	fixed_t work, bpm = FLOAT_TO_FIXED(150.f); // FLOAT_TO_FIXED(mapmusic.bpm)
+	fixed_t work, bpm = FLOAT_TO_FIXED(150.f); // FLOAT_TO_FIXED(mapmusic.bpm) << maybe can get the tempo and beat detection lib to work for autodetection
 	angle_t ang;
 
+	if (gamestate != GS_LEVEL)
+		return;
+
+	// dumb hack, preferrably would use beat detection so it starts ON the first beat
+	// since some songs have weird intros or begin slightly offbeat
 	if (S_MapMusPlaying())
 	{
 		bpm = FixedDiv((60*TICRATE)<<FRACBITS, bpm);
@@ -713,27 +718,28 @@ static void DoFunnyDance (void)
 		ang = (FixedAngle(work)>>ANGLETOFINESHIFT) & FINEMASK;
 		bounce = (FINESINE(ang) - FRACUNIT/2);
 
-		// this is ass
-		// stuff should be stored in a temp var that still runs even when paused
-		// so the squish still is in sync with the music
-		if (!paused && !P_AutoPause())
+		for (th = thinkercap.next; th != &thinkercap; th = th->next)
 		{
-			// would be cool if we could just run this in player thinker or some crap
-			for (th = thinkercap.next; th != &thinkercap; th = th->next)
+			mobj_t *mo;
+
+			if (th->function.acp1 != (actionf_p1)P_MobjThinker) // not a mobj
+				continue;
+
+			mo = (mobj_t *)th;
+
+			if (!mo->player)
+				continue;
+
+			// plan is same as above, continue on the next beat of the song to stay in sync
+			if (paused || P_AutoPause())
 			{
-				mobj_t *mo;
-
-				if (th->function.acp1 != (actionf_p1)P_MobjThinker) // not a mobj
-					continue;
-
-				mo = (mobj_t *)th;
-
-				if (!mo->player)
-					continue;
-
-				mo->spritexscale -= bounce/2;
-				mo->spriteyscale += bounce/2;
+				mo->spritexscale = mo->realxscale;
+				mo->spriteyscale = mo->realyscale;
+				continue;
 			}
+
+			mo->spritexscale -= bounce/2;
+			mo->spriteyscale += bounce/2;
 		}
 
 		time++; // bruh
