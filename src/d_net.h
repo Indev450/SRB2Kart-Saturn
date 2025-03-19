@@ -18,8 +18,6 @@
 #ifndef __D_NET__
 #define __D_NET__
 
-#include "doomtype.h"
-
 // Max computers in a game
 // 127 is probably as high as this can go, because
 // SINT8 is used for nodes sometimes >:(
@@ -47,6 +45,7 @@ extern boolean nodeingame[MAXNETNODES]; // Set false as nodes leave game
 
 extern boolean serverrunning;
 
+INT32 Net_GetFreeAcks(boolean urgent);
 void Net_AckTicker(void);
 
 // If reliable return true if packet sent, 0 else
@@ -63,6 +62,7 @@ void Net_UnAcknowledgePacket(INT32 node);
 void Net_CloseConnection(INT32 node);
 void Net_ConnectionTimeout(INT32 node);
 void Net_AbortPacketType(UINT8 packettype);
+void Net_SendAcks(INT32 node);
 void Net_WaitAllAckReceived(UINT32 timeout);
 const char *Net_GetPacketName(UINT8 packettype);
 

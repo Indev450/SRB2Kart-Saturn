@@ -1052,9 +1052,7 @@ void Got_Filetxpak(void)
 	// Send ack back quickly
 	if (++filetime == 3)
 	{
-		// send a PT_NOTHING back to acknowledge the packet
-		netbuffer->packettype = PT_NOTHING;
-		HSendPacket(servernode, false, 0, 0);
+		Net_SendAcks(servernode);
 		filetime = 0;
 	}
 
