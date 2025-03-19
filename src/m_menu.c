@@ -6887,9 +6887,8 @@ void M_ReplayHut(INT32 choice)
 	{
 		snprintf(menupath, 1024, "%s"PATHSEP"replay"PATHSEP"online"PATHSEP, srb2home);
 		menupathindex[(menudepthleft = menudepth-1)] = strlen(menupath);
+		ResetReplayQuery();
 	}
-
-	ResetReplayQuery();
 
 	if (!preparefilemenu(false, true))
 	{
