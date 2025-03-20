@@ -155,7 +155,6 @@ static UINT32 resynch_status[MAXNETNODES]; // 0 bit means synched for that playe
 static UINT8 resynch_sent[MAXNETNODES][MAXPLAYERS]; // what synch packets have we attempted to send to the player
 static UINT8 resynch_inprogress[MAXNETNODES];
 static UINT8 resynch_local_inprogress = false; // WE are desynched and getting packets to fix it.
-static UINT8 player_joining = false;
 UINT8 hu_resynching = 0;
 
 #ifdef SATURNSYNCH
@@ -4886,7 +4885,6 @@ static void HandleConnect(SINT8 node)
 				DEBFILE("send savegame\n");
 			}
 			SV_AddWaitingPlayers();
-			player_joining = true;
 		}
 #else
 #ifndef NONET
@@ -5847,8 +5845,6 @@ static void GetPackets(void)
 {
 	SINT8 node; // The packet sender
 
-	player_joining = false;
-
 	while (HGetPacket())
 	{
 		node = (SINT8)doomcom->remotenode;
@@ -6498,21 +6494,12 @@ boolean TryRunTics(tic_t realtics)
 	}
 #endif
 
-	if (neededtic > gametic)
-	{
-		hu_stopped = false;
-	}
-
-	if (player_joining)
-	{
-		hu_stopped = true;
-		return false;
-	}
-
 	ticking = neededtic > gametic;
 
 	if (ticking)
 	{
+		hu_stopped = false;
+
 		// run the count * tics
 		while (neededtic > gametic)
 		{
