@@ -6367,9 +6367,11 @@ static void Local_Maketic(INT32 realtics)
 	INT32 i;
 
 	I_OsPolling(); // I_Getevent
-	D_ProcessEvents(); // menu responder, cons responder,
-	                   // game responder calls HU_Responder, AM_Responder, F_Responder,
-	                   // and G_MapEventsToControls
+
+	if (renderisnewtic)
+		D_ProcessEvents(); // menu responder, cons responder,
+						// game responder calls HU_Responder, AM_Responder, F_Responder,
+						// and G_MapEventsToControls
 	if (!dedicated) rendergametic = gametic;
 
 	// translate inputs (keyboard/mouse/joystick) into game controls
@@ -6802,9 +6804,6 @@ void NetUpdate(void)
 
 	Net_GetNetStat();
 	netticbuffer = (((gamelostpercent > 1.f) || (playerpingtable[consoleplayer] == 1)) ? CLAMP(cv_netticbuffer.value, 1, 3) : cv_netticbuffer.value);
-
-
-
 
 #ifdef DEDICATEDIDLETIME
 	if (server && dedicated && gamestate == GS_LEVEL && renderisnewtic)
