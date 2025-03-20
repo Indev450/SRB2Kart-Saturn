@@ -924,7 +924,8 @@ void D_SRB2Loop(void)
 		NetUpdate();
 
 		// consoleplayer -> displayplayers (hear sounds from viewpoint)
-		S_UpdateSounds(); // move positional sounds
+		if (renderisnewtic)
+			S_UpdateSounds(); // move positional sounds
 
 #ifdef HAVE_DISCORDRPC
 		if (!dedicated)
