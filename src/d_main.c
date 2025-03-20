@@ -928,7 +928,7 @@ void D_SRB2Loop(void)
 			S_UpdateSounds(); // move positional sounds
 
 #ifdef HAVE_DISCORDRPC
-		if (!dedicated)
+		if (!dedicated && renderisnewtic)
 		{
 			Discord_RunCallbacks();
 		}
