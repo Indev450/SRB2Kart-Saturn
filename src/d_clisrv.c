@@ -6803,11 +6803,11 @@ void NetUpdate(void)
 	Net_GetNetStat();
 	netticbuffer = (((gamelostpercent > 1.f) || (playerpingtable[consoleplayer] == 1)) ? CLAMP(cv_netticbuffer.value, 1, 3) : cv_netticbuffer.value);
 
-	if (realtics <= 0) // nothing new to update
-		return;
+
+
 
 #ifdef DEDICATEDIDLETIME
-	if (server && dedicated && gamestate == GS_LEVEL)
+	if (server && dedicated && gamestate == GS_LEVEL && renderisnewtic)
 	{
 		static tic_t dedicatedidle = 0;
 
