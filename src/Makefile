@@ -533,6 +533,8 @@ OBJS:=$(i_main_o) \
 		$(OBJDIR)/m_random.o \
 		$(OBJDIR)/m_queue.o  \
 		$(OBJDIR)/info.o     \
+		$(OBJDIR)/p_sweep.o  \
+		$(OBJDIR)/p_test.o   \
 		$(OBJDIR)/p_ceilng.o \
 		$(OBJDIR)/p_enemy.o  \
 		$(OBJDIR)/p_floor.o  \
@@ -644,7 +646,7 @@ endif
 $(BIN)/$(EXENAME): $(POS) $(OBJS)
 	-$(MKDIR) $(BIN)
 	@echo Linking $(EXENAME)...
-	$(LD) $(LDFLAGS) $(OBJS) -o $(BIN)/$(EXENAME) $(LIBS)
+	$(LD) $(LDFLAGS) $(OBJS) -o $(BIN)/$(EXENAME) $(LIBS) -lstdc++
 ifndef VALGRIND
 ifndef NOOBJDUMP
 	@echo Dumping debugging info
@@ -744,6 +746,7 @@ $(OBJDIR)/depend.dep:
 	@echo > comptime.h
 	-$(MKDIR) $(OBJDIR)
 	$(CC) $(CFLAGS) -MM *.c > $(OBJDIR)/depend.ped
+	$(CXX) $(CXXFLAGS) -MM *.cpp >> $(OBJDIR)/depend.ped
 	$(CC) $(CFLAGS) -MM $(INTERFACE)/*.c >> $(OBJDIR)/depend.ped
 ifndef NOHW
 	$(CC) $(CFLAGS) -MM hardware/*.c >> $(OBJDIR)/depend.ped
@@ -801,6 +804,10 @@ $(OBJDIR)/%.o: blua/%.c
 else
 include bluajit/Makefile.cfg2
 endif
+
+# C++
+$(OBJDIR)/%.o: %.cpp
+	$(CXX) $(CXXFLAGS) $(WFLAGS) -c $< -o $@
 
 $(OBJDIR)/%.o: %.s
 	$(CC) $(OPTS) -x assembler-with-cpp -c $< -o $@

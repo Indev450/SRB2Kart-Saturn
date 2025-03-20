@@ -32,3 +32,7 @@ and don't forget to build r_opengl.dll for srb2dd.
 Updated 2/17/2024 (v1.6 Saturn)
 No i threw everthing into dll-binaries
 theres no reason at all to have stuff spread across multiple directories
+
+Updated 3/19/2025 (v1.6; Neptune)
+We're using some C++ code now, so we need to have a few more DLLs.
+Otherwise, it's about the same as prior.
