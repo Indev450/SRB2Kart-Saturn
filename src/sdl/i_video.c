@@ -138,6 +138,8 @@ static void I_CheckDesktopRes(void);
 consvar_t cv_vidwait = {"vid_wait", "Off", CV_SAVE|CV_CALL|CV_NOINIT, CV_OnOff, Impl_SetVsync, 0, NULL, NULL, 0, 0, NULL};
 static consvar_t cv_stretch = {"stretch", "Off", CV_SAVE|CV_NOSHOWHELP, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
+consvar_t cv_alwaysgrabmouse = {"alwaysgrabmouse", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+
 // these cant be used since config is read after window creation, so need to use command line parameter instead
 //static CV_PossibleValue_t msaa_cons_t[] = {{0, "Off"}, {2, "2X"}, {4, "4X"}, {8, "8X"}, {16, "16X"}, {0, NULL}};
 //consvar_t cv_msaa = {"msaa", "Off", CV_SAVE, msaa_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
@@ -888,7 +890,9 @@ static void Impl_HandleMouseMotionEvent(SDL_MouseMotionEvent evt)
 {
 	if (USE_MOUSEINPUT)
 	{
-		if ((SDL_GetMouseFocus() != window && SDL_GetKeyboardFocus() != window))
+		const boolean windowinfocus = (SDL_GetMouseFocus() == window && SDL_GetKeyboardFocus() == window);
+
+		if (!windowinfocus)
 		{
 			SDLdoUngrabMouse();
 			return;
@@ -898,7 +902,7 @@ static void Impl_HandleMouseMotionEvent(SDL_MouseMotionEvent evt)
 		// add on the offsets so we can make an overall event later.
 		if (SDL_GetRelativeMouseMode())
 		{
-			if (SDL_GetMouseFocus() == window && SDL_GetKeyboardFocus() == window)
+			if (windowinfocus)
 			{
 				mousemovex +=  evt.xrel;
 				mousemovey += -evt.yrel;
@@ -918,7 +922,21 @@ static void Impl_HandleMouseMotionEvent(SDL_MouseMotionEvent evt)
 		// just grab and set relative mode
 		// this fixes the stupid camera jerk on mouse entering bug
 		// -- Monster Iestyn
-		if (SDL_GetMouseFocus() == window && SDL_GetKeyboardFocus() == window)
+		if (windowinfocus)
+		{
+			SDLdoGrabMouse();
+		}
+	}
+	else if (cv_alwaysgrabmouse.value)
+	{
+		const boolean windowinfocus = (SDL_GetMouseFocus() == window && SDL_GetKeyboardFocus() == window);
+
+		if (!windowinfocus)
+		{
+			SDLdoUngrabMouse();
+			return;
+		}
+		else if (windowinfocus)
 		{
 			SDLdoGrabMouse();
 		}
@@ -1368,7 +1386,7 @@ void I_StartupMouse(void)
 	}
 	else
 		firsttimeonmouse = SDL_FALSE;
-	if (cv_usemouse.value)
+	if (cv_usemouse.value || cv_alwaysgrabmouse.value)
 		SDLdoGrabMouse();
 	else
 		SDLdoUngrabMouse();
@@ -1964,6 +1982,7 @@ void I_StartupGraphics(void)
 	COM_AddCommand ("vid_mode", VID_Command_Mode_f);
 	CV_RegisterVar (&cv_vidwait);
 	CV_RegisterVar (&cv_stretch);
+	CV_RegisterVar (&cv_alwaysgrabmouse);
 	disable_mouse = M_CheckParm("-nomouse");
 	disable_fullscreen = M_CheckParm("-win") ? 1 : 0;
 
@@ -2180,10 +2199,7 @@ void I_StartupGraphics(void)
 
 	if (mousegrabok && !disable_mouse)
 	{
-		SDL_ShowCursor(SDL_DISABLE);
-		SDL_SetRelativeMouseMode(SDL_TRUE);
-		wrapmouseok = SDL_TRUE;
-		SDL_SetWindowGrab(window, SDL_TRUE);
+		SDLdoGrabMouse();
 	}
 
 	graphics_started = true;

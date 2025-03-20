@@ -43,11 +43,15 @@ typedef struct gl_vissprite_s
 	INT32 dispoffset; // copy of info->dispoffset, affects ordering but not drawing
 } gl_vissprite_t;
 
+void HWR_ObjectLightLevelPost(gl_vissprite_t *spr, const sector_t *sector, INT32 *lightlevel, boolean model);
+
 // --------
 // hw_bsp.c
 // --------
 extern extrasubsector_t *extrasubsectors;
 extern size_t addsubsector;
+
+void HWR_FreeExtraSubsectors(void);
 
 // --------
 // hw_cache.c
@@ -55,7 +59,8 @@ extern size_t addsubsector;
 void HWR_InitTextureCache(void);
 void HWR_FreeTextureCache(void);
 void HWR_FreeMipmapCache(void);
-void HWR_FreeExtraSubsectors(void);
+
+void HWR_PrecacheLevel(void);
 
 void HWR_GetFlat(lumpnum_t flatlumpnum, boolean noencoremap);
 // ^ some flats must NOT be remapped to encore, since we remap them as we cache them for ease, adding a toggle here seems wise.

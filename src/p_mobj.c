@@ -172,20 +172,28 @@ boolean P_SetPlayerMobjState(mobj_t *mobj, statenum_t state)
 	{
 		// Start flashing, since you've landed.
 		player->powers[pw_flashing] = K_GetKartFlashing(player)-1;
-		//P_DoPityCheck(player);
 	}
 
 	// Set animation state
 	// The pflags version of this was just as convoluted.
 	// Rewriten for SRB2kart ... though I don't know what this is.
-	if ((state >= S_KART_STND1 && state <= S_KART_STND2_R) || state == S_KART_SQUISH || state == S_KART_SPIN)
-		player->panim = PA_IDLE;
-	else if (state >= S_KART_WALK1 && state <= S_KART_WALK2_R)
-		player->panim = PA_WALK;
-	else if (state >= S_KART_RUN1 && state <= S_KART_DRIFT2_R)
-		player->panim = PA_RUN;
-	else
-		player->panim = PA_ETC;
+	switch(state)
+	{
+		case S_KART_STND1...S_KART_STND2_R:
+		case S_KART_SQUISH:
+		case S_KART_SPIN:
+			player->panim = PA_IDLE;
+			break;
+		case S_KART_WALK1...S_KART_WALK2_R:
+			player->panim = PA_WALK;
+			break;
+		case S_KART_RUN1...S_KART_DRIFT2_R:
+			player->panim = PA_RUN;
+			break;
+		default:
+			player->panim = PA_ETC;
+			break;
+	}
 
 	if (recursion++) // if recursion detected,
 		memset(seenstate = tempstate, 0, sizeof tempstate); // clear state table
@@ -582,6 +590,7 @@ fixed_t P_MobjFloorZ(mobj_t *mobj, sector_t *sector, sector_t *boundsec, fixed_t
 {
 	I_Assert(mobj != NULL);
 	I_Assert(sector != NULL);
+
 	if (sector->f_slope)
 	{
 		fixed_t testx, testy;
@@ -651,7 +660,8 @@ fixed_t P_MobjFloorZ(mobj_t *mobj, sector_t *sector, sector_t *boundsec, fixed_t
 			return P_GetZAt(slope, x, y);
 
 		return HighestOnLine(mobj->radius, x, y, line, slope, lowest);
-	} else // Well, that makes it easy. Just get the floor height
+	}
+	else // Well, that makes it easy. Just get the floor height
 		return sector->floorheight;
 }
 
@@ -659,6 +669,7 @@ fixed_t P_MobjCeilingZ(mobj_t *mobj, sector_t *sector, sector_t *boundsec, fixed
 {
 	I_Assert(mobj != NULL);
 	I_Assert(sector != NULL);
+
 	if (sector->c_slope)
 	{
 		fixed_t testx, testy;
@@ -728,7 +739,8 @@ fixed_t P_MobjCeilingZ(mobj_t *mobj, sector_t *sector, sector_t *boundsec, fixed
 			return P_GetZAt(slope, x, y);
 
 		return HighestOnLine(mobj->radius, x, y, line, slope, lowest);
-	} else // Well, that makes it easy. Just get the ceiling height
+	}
+	else // Well, that makes it easy. Just get the ceiling height
 		return sector->ceilingheight;
 }
 
@@ -807,7 +819,8 @@ fixed_t P_CameraFloorZ(camera_t *mobj, sector_t *sector, sector_t *boundsec, fix
 			return P_GetZAt(slope, x, y);
 
 		return HighestOnLine(mobj->radius, x, y, line, slope, lowest);
-	} else // Well, that makes it easy. Just get the floor height
+	}
+	else // Well, that makes it easy. Just get the floor height
 		return sector->floorheight;
 }
 
@@ -885,7 +898,8 @@ fixed_t P_CameraCeilingZ(camera_t *mobj, sector_t *sector, sector_t *boundsec, f
 			return P_GetZAt(slope, x, y);
 
 		return HighestOnLine(mobj->radius, x, y, line, slope, lowest);
-	} else // Well, that makes it easy. Just get the ceiling height
+	}
+	else // Well, that makes it easy. Just get the ceiling height
 		return sector->ceilingheight;
 }
 static void P_PlayerFlip(mobj_t *mo)
@@ -2400,9 +2414,6 @@ static void P_PlayerZMovement(mobj_t *mo)
 			mo->player->viewheight -= (mo->z+mo->height) - mo->ceilingz;
 		else
 			mo->player->viewheight -= mo->floorz - mo->z;
-
-		/*mo->player->deltaviewheight =
-			(FixedMul(cv_viewheight.value<<FRACBITS, mo->scale) - mo->player->viewheight)>>3;*/
 	}
 
 	// adjust height
@@ -2467,11 +2478,6 @@ static void P_PlayerZMovement(mobj_t *mo)
 		if (P_MobjFlip(mo)*mo->momz < 0) // falling
 		{
 			mo->pmomz = 0; // We're on a new floor, don't keep doing platform movement.
-
-			// Squat down. Decrease viewheight for a moment after hitting the ground (hard),
-			/*if (P_MobjFlip(mo)*mo->momz < -FixedMul(8*FRACUNIT, mo->scale))
-				mo->player->deltaviewheight = (P_MobjFlip(mo)*mo->momz)>>3; // make sure momz is negative
-			*/
 
 			if (!tmfloorthing || tmfloorthing->flags & (MF_PUSHABLE|MF_MONITOR)
 				|| tmfloorthing->flags2 & MF2_STANDONME || tmfloorthing->type == MT_PLAYER) // Spin Attack
@@ -2580,7 +2586,6 @@ static void P_PlayerZMovement(mobj_t *mo)
 					if (!(mo->player->pflags & PF_GLIDING))
 						mo->player->pflags &= ~PF_JUMPED;
 					mo->player->pflags &= ~PF_THOKKED;
-					//mo->player->pflags &= ~PF_GLIDING;
 					mo->player->jumping = 0;
 					mo->player->secondjump = 0;
 					mo->player->glidetime = 0;
@@ -6033,20 +6038,6 @@ static void P_KoopaThinker(mobj_t *koopa)
 //
 void P_RollPitchMobj(mobj_t* mobj)
 {
-	// we dont need this in dedi do we?
-	if (rendermode == render_none)
-		return;
-
-	if (P_MobjWasRemoved(mobj))
-		return;
-
-	if (cv_sloperoll.value != 2)
-	{
-		mobj->sloperoll = 0;
-		mobj->slopepitch = 0;
-		return;
-	}
-
 	K_RollMobjBySlopes(mobj, mobj->standingslope);
 }
 
@@ -6057,9 +6048,6 @@ angle_t P_MobjPitchAndRoll(mobj_t *mobj)
 	angle_t ang = 0;
 	angle_t camang = 0;
 	angle_t return_angle = 0;
-
-	if (!cv_sloperoll.value)
-		return 0;
 
 	if (P_MobjWasRemoved(mobj))
 		return 0;
@@ -6100,9 +6088,9 @@ angle_t P_MobjPitchAndRoll(mobj_t *mobj)
 	}
 
 	return_angle = FixedMul(FINECOSINE((ang) >> ANGLETOFINESHIFT), mobj->roll)
-			        + FixedMul(FINESINE((ang) >> ANGLETOFINESHIFT), mobj->pitch)
-					+ FixedMul(FINECOSINE((camang) >> ANGLETOFINESHIFT), mobj->sloperoll)
-					+ FixedMul(FINESINE((camang) >> ANGLETOFINESHIFT), mobj->slopepitch);
+				+ FixedMul(FINESINE((ang) >> ANGLETOFINESHIFT), mobj->pitch)
+				+ FixedMul(FINECOSINE((camang) >> ANGLETOFINESHIFT), mobj->sloperoll)
+				+ FixedMul(FINESINE((camang) >> ANGLETOFINESHIFT), mobj->slopepitch);
 
 	return return_angle;
 }
@@ -6264,6 +6252,7 @@ void P_MobjThinker(mobj_t *mobj)
 					return;
 				}
 
+				// dont need to extra check with K_ShouldSlopeRoll
 				if (cv_sloperoll.value == 2 && mobj->state == &states[S_SHADOW])
 				{
 					mobj->slopepitch = mobj->target->slopepitch;
@@ -7059,15 +7048,14 @@ void P_MobjThinker(mobj_t *mobj)
 			break;
 		//{ SRB2kart Items - Death States
 		case MT_BANANA:
-			if (cv_sloperoll.value == 2 && cv_bananthrowroll.value)
+			if (cv_bananthrowroll.value)
 			{
-				angle_t spin = FixedMul(FixedDiv(abs(mobj->momz), 8 * mobj->scale), ANGLE_67h);
 				//mobj->angle -= spin;
 
-				if (cv_bananthrowroll.value == 1)
-					mobj->sloperoll += spin; // im lazy but this makes sure the banan goes back to upright when it lands lmao
+				if (cv_bananthrowroll.value == 1 && K_CheckSlopeRollDist(mobj))
+					mobj->sloperoll += (angle_t)FixedMul(FixedDiv(abs(mobj->momz), 8 * mobj->scale), ANGLE_67h); // im lazy but this makes sure the banan goes back to upright when it lands lmao
 				else if (cv_bananthrowroll.value == 2)
-					mobj->rollangle += spin;
+					mobj->rollangle += (angle_t)FixedMul(FixedDiv(abs(mobj->momz), 8 * mobj->scale), ANGLE_67h);
 
 				//if (P_IsObjectOnGround(mobj) && mobj->momz * P_MobjFlip(mobj) <= 0)
 			}
@@ -7814,16 +7802,15 @@ void P_MobjThinker(mobj_t *mobj)
 		}
 		case MT_BANANA:
 		case MT_EGGMANITEM:
-			if (cv_sloperoll.value == 2 && cv_bananthrowroll.value && !P_IsObjectOnGround(mobj))
+			if (cv_bananthrowroll.value && !P_IsObjectOnGround(mobj))
 			{
 				// tilt n tumble
-				angle_t spin = FixedMul(FixedDiv(mobj->momz, 8 * mobj->scale), ANGLE_67h);
 				//mobj->angle += spin;
 
-				if (cv_bananthrowroll.value == 1)
-					mobj->sloperoll -= spin; // im lazy but this makes sure the banan goes back to upright when it lands lmao
+				if (cv_bananthrowroll.value == 1 && K_CheckSlopeRollDist(mobj))
+					mobj->sloperoll -= (angle_t)FixedMul(FixedDiv(mobj->momz, 8 * mobj->scale), ANGLE_67h); // im lazy but this makes sure the banan goes back to upright when it lands lmao
 				else if (cv_bananthrowroll.value == 2)
-					mobj->rollangle -= spin;
+					mobj->rollangle -= (angle_t)FixedMul(FixedDiv(mobj->momz, 8 * mobj->scale), ANGLE_67h);
 			}
 
 			mobj->friction = ORIG_FRICTION/4;

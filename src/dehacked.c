@@ -690,6 +690,20 @@ static const struct {
 	{NULL, 0}
 };
 
+static mapheader_lighting_t *usemaplighting(INT32 mapnum, const char *word)
+{
+	if (fastncmp(word, "ENCORE", 6))
+	{
+		mapheaderinfo[mapnum]->use_encore_lighting = true;
+
+		return &mapheaderinfo[mapnum]->lighting_encore;
+	}
+	else
+	{
+		return &mapheaderinfo[mapnum]->lighting;
+	}
+}
+
 static void readlevelheader(MYFILE *f, INT32 num, INT32 wadnum)
 {
 	char *s = Z_Malloc(MAXLINELEN, PU_STATIC, NULL);
@@ -983,6 +997,35 @@ static void readlevelheader(MYFILE *f, INT32 num, INT32 wadnum)
 			}*/
 			else if (fastcmp(word, "MOBJSCALE"))
 				mapheaderinfo[num-1]->mobj_scale = get_number(word2);
+			else if (fastcmp(word, "LIGHTCONTRAST") || fastcmp(word, "ENCORELIGHTCONTRAST"))
+			{
+				mapheader_lighting_t *lighting = usemaplighting(num-1, word);
+				lighting->light_contrast = (UINT8)i;
+				lighting->use_custom_light = true;
+			}
+			else if (fastcmp(word, "SPRITEBACKLIGHT") || fastcmp(word, "ENCORESPRITEBACKLIGHT"))
+			{
+				mapheader_lighting_t *lighting = usemaplighting(num-1, word);
+				lighting->sprite_backlight = (SINT8)i;
+				lighting->use_custom_light = true;
+			}
+			else if (fastcmp(word, "LIGHTANGLE") || fastcmp(word, "ENCORELIGHTANGLE"))
+			{
+				mapheader_lighting_t *lighting = usemaplighting(num-1, word);
+
+				if (fastcmp(word2, "EVEN"))
+				{
+					lighting->use_light_angle = false;
+					lighting->light_angle = 0;
+				}
+				else
+				{
+					lighting->use_light_angle = true;
+					lighting->light_angle = FixedAngle(FloatToFixed(atof(word2)));
+				}
+
+				lighting->use_custom_light = true;
+			}
 
 			// Individual triggers for level flags, for ease of use (and 2.0 compatibility)
 			else if (fastcmp(word, "SCRIPTISFILE"))
@@ -1756,7 +1799,7 @@ static void readsound(MYFILE *f, INT32 num, const char *savesfxnames[])
  * \sa readmaincfg()
  * \author Graue <graue@oceanbase.org>
  */
-static boolean GoodDataFileName(const char *s)
+/*static boolean GoodDataFileName(const char *s)
 {
 	const char *p;
 	const char *tail = ".dat";
@@ -1776,7 +1819,7 @@ static boolean GoodDataFileName(const char *s)
 	if (fasticmp(s, "online.dat")) return false; // SRB2Kart online replay folder
 
 	return true;
-}
+}*/
 
 static void reademblemdata(MYFILE *f, INT32 num)
 {
@@ -2554,10 +2597,10 @@ static void readmaincfg(MYFILE *f)
 			{
 				maxXtraLife = (UINT8)get_number(word2);
 			}
-
 			else if (fastcmp(word, "GAMEDATA"))
 			{
-				size_t filenamelen;
+				// just ignore it but dont throw a warning
+				/*size_t filenamelen;
 
 				// Check the data filename so that mods
 				// can't write arbitrary files.
@@ -2581,7 +2624,7 @@ static void readmaincfg(MYFILE *f)
 				// can't use sprintf since there is %u in savegamename
 				strcatbf(savegamename, srb2home, PATHSEP);
 
-				refreshdirmenu |= REFRESHDIR_GAMEDATA;
+				refreshdirmenu |= REFRESHDIR_GAMEDATA;*/
 			}
 			else if (fastcmp(word, "RESETDATA"))
 			{

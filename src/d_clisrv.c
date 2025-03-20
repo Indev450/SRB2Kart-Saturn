@@ -540,6 +540,11 @@ void D_ResetTiccmds(void)
 			D_Clearticcmd(textcmds[i]->tic);
 }
 
+ticcmd_t *D_LocalTiccmd(UINT8 ss)
+{
+	return &localcmds[ss][0];
+}
+
 // -----------------------------------------------------------------
 // end of extra data function
 // -----------------------------------------------------------------
@@ -6913,14 +6918,19 @@ void NetUpdate(void)
 #ifdef SATURNSYNCH
 			hu_redownloadinggamestate = false;
 #endif
+			// Don't erase tics not acknowledged
+			counts = realtics;
 
 			firstticstosend = gametic;
 			for (i = 0; i < MAXNETNODES; i++)
-				if (nodeingame[i] && nettics[i] < firstticstosend)
+			{
+				if (!nodeingame[i])
+					continue;
+				if (nettics[i] < firstticstosend)
 					firstticstosend = nettics[i];
-
-			// Don't erase tics not acknowledged
-			counts = realtics;
+				if (maketic + counts >= nettics[i] + (TICQUEUE - TICRATE))
+					Net_ConnectionTimeout(i);
+			}
 
 			for (i = 0; i < MAXNETNODES; ++i)
 				if (resynch_inprogress[i])

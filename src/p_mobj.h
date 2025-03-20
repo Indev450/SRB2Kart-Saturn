@@ -294,6 +294,7 @@ typedef struct mobj_s
 	fixed_t spritexoffset, spriteyoffset;
 	fixed_t old_spritexscale, old_spriteyscale;
 	fixed_t old_spritexoffset, old_spriteyoffset;
+	INT16 lightlevel; // Add to sector lightlevel, -255 - 255
 
 	fixed_t realxscale, realyscale; // funn-E streeetch
 	fixed_t realxoffset, realyoffset;
@@ -447,6 +448,7 @@ typedef struct precipmobj_s
 	fixed_t spritexoffset, spriteyoffset;
 	fixed_t old_spritexscale, old_spriteyscale;
 	fixed_t old_spritexoffset, old_spriteyoffset;
+	INT16 lightlevel; // Add to sector lightlevel, -255 - 255
 
 	fixed_t realxscale, realyscale; // funn-E streeetch
 	fixed_t realxoffset, realyoffset;

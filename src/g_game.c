@@ -52,6 +52,7 @@
 #include "md5.h" // demo checksums
 #include "k_director.h" // SRB2kart
 #include "k_kart.h" // SRB2kart
+#include "k_stats.h" // SRB2kart
 #include "r_fps.h" // frame interpolation/uncapped
 
 #ifdef HAVE_DISCORDRPC
@@ -172,8 +173,6 @@ INT32 tokenbits; // Used for setting token bits
 // Old Special Stage
 INT32 sstimer; // Time allotted in the special stage
 
-tic_t totalplaytime;
-UINT32 matchesplayed; // SRB2Kart
 boolean gamedataloaded = false;
 
 // Time attack data for levels
@@ -239,6 +238,8 @@ tic_t racecountdown, exitcountdown; // for racing
 
 fixed_t gravity;
 fixed_t mapobjectscale;
+
+struct maplighting maplighting;
 
 INT16 autobalance; //for CTF team balance
 INT16 teamscramble; //for CTF team scramble
@@ -324,8 +325,6 @@ static struct {
 // Your naming conventions are stupid and useless.
 // There is no conflict here.
 demoghost *ghosts = NULL;
-
-boolean precache = true; // if true, load all graphics at start
 
 INT16 prevmap, nextmap;
 
@@ -591,6 +590,36 @@ tic_t G_GetBestTime(INT16 map)
 	return mainrecords[map-1]->time;
 }
 
+// kinda hacky way to do this, but this sets the game to use a seperate savefile if you have addons loaded
+static void G_SetSaveGameModified(void)
+{
+	size_t filenamelen;
+
+	if (savemoddata)
+		return;
+
+	// save vanilla data just to be sure
+	G_SaveGameData(true);
+
+	savemoddata = true;
+
+	strlcpy(gamedatafilename, "modkartdata.dat", sizeof (gamedatafilename));
+	strlwr(gamedatafilename);
+
+	// Also save a time attack folder
+	filenamelen = strlen(gamedatafilename)-4;  // Strip off the extension
+	filenamelen = min(filenamelen, sizeof (timeattackfolder));
+	memcpy(timeattackfolder, gamedatafilename, filenamelen);
+	timeattackfolder[min(filenamelen, sizeof (timeattackfolder) - 1)] = '\0';
+
+	strcpy(savegamename, timeattackfolder);
+	strlcat(savegamename, "%u.ssg", sizeof(savegamename));
+	// can't use sprintf since there is %u in savegamename
+	strcatbf(savegamename, srb2home, PATHSEP);
+
+	G_LoadGameData();
+}
+
 // for consistency among messages: this modifies the game and removes savemoddata.
 void G_SetGameModified(boolean silent, boolean major)
 {
@@ -605,8 +634,11 @@ void G_SetGameModified(boolean silent, boolean major)
 	//savemoddata = false; -- there is literally no reason to do this anymore.
 	majormods = true;
 
+	// should this only be done when you load a "major" gameplay modifieng addon?
+	G_SetSaveGameModified();
+
 	if (!silent)
-		CONS_Alert(CONS_NOTICE, M_GetText("Game must be restarted to play Record Attack.\n"));
+		CONS_Alert(CONS_NOTICE, M_GetText("Record Attack data will be saved to seperate save.\n"));
 
 	// If in record attack recording, cancel it.
 	if (modeattacking)
@@ -2010,7 +2042,7 @@ static inline void G_PlayerFinishLevel(INT32 player)
 	{
 		if (legitimateexit && !demo.playback && !mapreset) // (yes you're allowed to unlock stuff this way when the game is modified)
 		{
-			matchesplayed++;
+			kartstats.matchesplayed++;
 			if (M_UpdateUnlockablesAndExtraEmblems(true))
 				S_StartSound(NULL, sfx_ncitem);
 			G_SaveGameData(true);
@@ -2679,6 +2711,9 @@ void G_DoReborn(INT32 playernum)
 		G_SpawnPlayer(playernum, starpost);
 		if (oldmo)
 			G_ChangePlayerReferences(oldmo, players[playernum].mo);
+
+		if (!demo.playback && playernum == consoleplayer)
+			kartstats.respawns++;
 	}
 }
 
@@ -3108,6 +3143,8 @@ static void G_DoCompleted(void)
 	if (metalrecording)
 		G_StopMetalRecording();
 
+	K_StatRound();
+
 	for (i = 0; i < MAXPLAYERS; i++)
 		if (playeringame[i])
 		{
@@ -3477,8 +3514,7 @@ void G_LoadGameData(void)
 	// to new gamedata
 	G_ClearRecords(); // main and nights records
 	M_ClearSecrets(); // emblems, unlocks, maps visited, etc
-	totalplaytime = 0; // total play time (separate from all)
-	matchesplayed = 0; // SRB2Kart: matches played & finished
+	K_EraseStats(); // stats
 
 	if (M_CheckParm("-nodata"))
 		return; // Don't load.
@@ -3507,8 +3543,8 @@ void G_LoadGameData(void)
 		I_Error("Game data is from another version of SRB2.\nDelete %s(maybe in %s) and try again.", gamedatafilename, gdfolder);
 	}
 
-	totalplaytime = READUINT32(save.p);
-	matchesplayed = READUINT32(save.p);
+	// well no clue but dont think it would like reading garbage from vanilla files
+	K_ReadStats(&save, !savemoddata);
 
 	modded = READUINT8(save.p);
 
@@ -3601,6 +3637,7 @@ void G_SaveGameData(boolean force)
 	INT32 i, j;
 	UINT8 btemp;
 	savebuffer_t save;
+	(void)force;
 
 	if (!gamedataloaded)
 		return; // If never loaded (-nodata), don't save
@@ -3612,18 +3649,10 @@ void G_SaveGameData(boolean force)
 		return;
 	}
 
-	if (majormods && !force)
-	{
-		free(save.buffer);
-		save.p = save.buffer = NULL;
-		return;
-	}
-
 	// Version test
 	WRITEUINT32(save.p, 0xFCAFE211);
 
-	WRITEUINT32(save.p, totalplaytime);
-	WRITEUINT32(save.p, matchesplayed);
+	K_WriteStats(&save, !savemoddata);
 
 	btemp = (UINT8)(savemoddata); // what used to be here was profoundly dunderheaded
 	WRITEUINT8(save.p, btemp);

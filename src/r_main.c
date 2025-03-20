@@ -29,6 +29,7 @@
 #include "d_main.h"
 #include "v_video.h"
 #include "p_spec.h" // skyboxmo
+#include "p_setup.h"
 #include "z_zone.h"
 #include "m_random.h" // quake camera shake
 #include "r_portal.h"
@@ -160,9 +161,14 @@ void SendWeaponPref2(void);
 void SendWeaponPref3(void);
 void SendWeaponPref4(void);
 
+static void DirLight_OnChange(void);
+
 static void Precipstuff_OnChange(void);
 
 consvar_t cv_tailspickup = {"tailspickup", "On", CV_NETVAR|CV_NOSHOWHELP, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+
+// if enabled, load all graphics at level load
+consvar_t cv_precachetextures = {"precachetextures", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 consvar_t cv_chasecam[MAXSPLITSCREENPLAYERS] = {
 	{"chasecam", "On", 0, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL},
@@ -207,6 +213,15 @@ consvar_t cv_fovchange = {"fovchange", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, 
 consvar_t cv_homremoval = {"homremoval", "Yes", CV_SAVE, homremoval_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 consvar_t cv_maxportals = {"maxportals", "2", CV_SAVE, maxportals_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+
+// randomized directional lightning
+consvar_t cv_randomdirlight = {"randomdirectionallight", "Off", CV_SAVE|CV_CALL|CV_NOINIT, CV_OnOff, DirLight_OnChange, 0, NULL, NULL, 0, 0, NULL};
+
+// tells to reset the maplight at next map change
+static void DirLight_OnChange(void)
+{
+	reinitmaplight = true;
+}
 
 void SplitScreen_OnChange(void)
 {
@@ -1038,34 +1053,6 @@ void R_Init(void)
 }
 
 //
-// R_IsPointInSubsector, same as above but returns 0 if not in subsector
-//
-subsector_t *R_IsPointInSubsector(fixed_t x, fixed_t y)
-{
-	node_t *node;
-	INT32 side, i;
-	size_t nodenum;
-	subsector_t *ret;
-
-	nodenum = numnodes - 1;
-
-	while (!(nodenum & NF_SUBSECTOR))
-	{
-		node = &nodes[nodenum];
-		//side = R_PointOnSide(x, y, node);
-		side = R_PointOnSideFast(x, y, node); // this is fine since R_IsPointInSubsector is only used for precip spawn unless you disable noclipcam lol
-		nodenum = node->children[side];
-	}
-
-	ret = &subsectors[nodenum & ~NF_SUBSECTOR];
-	for (i = 0; i < ret->numlines; i++)
-		if (P_PointOnLineSide(x, y, segs[ret->firstline + i].linedef) != segs[ret->firstline + i].side)
-			return 0;
-
-	return ret;
-}
-
-//
 // R_SetupFrame
 //
 
@@ -1086,7 +1073,7 @@ static void R_SetupCommonFrame(player_t * player, sector_t * sector)
 	else
 		newview->sector = R_PointInSubsector(newview->x, newview->y)->sector;
 
-	R_InterpolateView(R_UsingFrameInterpolation() ? rendertimefrac_unpaused : FRACUNIT, false);
+	R_InterpolateView(rendertimefrac_unpaused, false);
 }
 
 static void R_SetupAimingFrame(player_t *player, camera_t *thiscam)
@@ -1534,6 +1521,8 @@ void R_RegisterEngineStuff(void)
 	if (dedicated)
 		return;
 
+	CV_RegisterVar(&cv_precachetextures);
+
 	CV_RegisterVar(&cv_translucency);
 	CV_RegisterVar(&cv_drawdist);
 	CV_RegisterVar(&cv_drawdist_precip);
@@ -1584,6 +1573,8 @@ void R_RegisterEngineStuff(void)
 	CV_RegisterVar(&cv_uncappedhud);
 
 	CV_RegisterVar(&cv_maxportals);
+
+	CV_RegisterVar(&cv_randomdirlight);
 
 	CV_RegisterVar(&cv_maxinterpdist);
 

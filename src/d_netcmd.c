@@ -652,7 +652,6 @@ void D_RegisterServerCommands(void)
 	COM_AddCommand("addfilelocal", Command_Addfilelocal);
 	COM_AddCommand("addfile", Command_Addfile);
 	COM_AddCommand("addskins", Command_Addskins);
-	COM_AddCommand("localskin", Command_GLocalSkin);
 	COM_AddCommand("listwad", Command_ListWADS_f);
 	COM_AddCommand("listmapthings", Command_ListDoomednums_f);
 	COM_AddCommand("listunusedsprites", Command_ListUnusedSprites_f);
@@ -717,7 +716,7 @@ void D_RegisterServerCommands(void)
 	CV_RegisterVar(&cv_competitionboxes);
 	CV_RegisterVar(&cv_matchboxes);
 
-	K_RegisterKartStuff(); // SRB2kart
+	K_RegisterServerKartStuff(); // SRB2kart
 
 	CV_RegisterVar(&cv_ringslinger);
 
@@ -796,7 +795,9 @@ void D_RegisterServerCommands(void)
 	CV_RegisterVar(&cv_maxdemosize);
 	CV_RegisterVar(&cv_demochangemap);
 
-	CV_RegisterVar(&cv_keyboardlayout);
+#ifndef NOBLUAJIT
+	CV_RegisterVar(&cv_luajit);
+#endif
 }
 
 // =========================================================================
@@ -855,6 +856,10 @@ void D_RegisterClientCommands(void)
 	COM_AddCommand("stopmovie", Command_StopMovie_f);
 	COM_AddCommand("minigen", M_MinimapGenerate);
 
+	COM_AddCommand("localskin", Command_GLocalSkin);
+
+	K_RegisterClientKartStuff(); // SRB2kart
+
 	CV_RegisterVar(&cv_screenshot_option);
 	CV_RegisterVar(&cv_screenshot_folder);
 	CV_RegisterVar(&cv_moviemode);
@@ -905,7 +910,9 @@ void D_RegisterClientCommands(void)
 #ifdef SEENAMES
 	CV_RegisterVar(&cv_seenames);
 #endif
+
 	CV_RegisterVar(&cv_rollingdemos);
+
 	CV_RegisterVar(&cv_netstat);
 	CV_RegisterVar(&cv_netticbuffer);
 	CV_RegisterVar(&cv_mindelay);
@@ -923,6 +930,8 @@ void D_RegisterClientCommands(void)
 	CV_RegisterVar(&cv_pingstyle);
 
 	CV_RegisterVar(&cv_cechotoggle);
+
+	CV_RegisterVar(&cv_keyboardlayout);
 
 	// time attack ghost options are also saved to config
 	CV_RegisterVar(&cv_ghost_besttime);
@@ -2944,9 +2953,6 @@ static void Got_Mapcmd(UINT8 **cp, INT32 playernum)
 		CON_LogMessage(M_GetText("Speeding off to level...\n"));
 	}
 
-	if (demo.playback && !demo.timing)
-		precache = false;
-
 	if (resetplayer)
 	{
 		if (!FLS || (netgame || multiplayer))
@@ -2962,8 +2968,7 @@ static void Got_Mapcmd(UINT8 **cp, INT32 playernum)
 	demo.savemode = (cv_recordmultiplayerdemos.value == 2) ? DSM_WILLAUTOSAVE : DSM_NOTSAVING;
 	demo.savebutton = 0;
 	G_InitNew(pencoremode, mapname, resetplayer, skipprecutscene);
-	if (demo.playback && !demo.timing)
-		precache = true;
+
 	if (demo.timing)
 		G_DoneLevelLoad();
 
@@ -5732,6 +5737,7 @@ void Command_ExitGame_f(void)
 	botskin = 0;
 	cv_debug = 0;
 	emeralds = 0;
+	automapactive = false;
 
 	if (dirmenu)
 		closefilemenu(true);
@@ -5778,12 +5784,8 @@ static void Fishcake_OnChange(void)
   */
 static void Command_Isgamemodified_f(void)
 {
-	if (majormods)
-		CONS_Printf("The game has been modified with major addons, so you cannot play Record Attack.\n");
-	else if (savemoddata)
-		CONS_Printf("The game has been modified with an addon with its own save data, so you can play Record Attack and earn medals.\n");
-	else if (modifiedgame)
-		CONS_Printf("The game has been modified with only minor addons. You can play Record Attack, earn medals and unlock extras.\n");
+	if (majormods || modifiedgame)
+		CONS_Printf("The game has been modified, Record Attack data will be saved to a seperate savegame.\n");
 	else
 		CONS_Printf("The game has not been modified. You can play Record Attack, earn medals and unlock extras.\n");
 }

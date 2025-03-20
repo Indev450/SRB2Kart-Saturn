@@ -70,6 +70,7 @@
 #include "st_stuff.h"
 #include "i_sound.h"
 #include "k_kart.h" // SRB2kart
+#include "k_stats.h" // SRB2kart
 #include "d_player.h" // KITEM_ constants
 
 #include "i_joy.h" // for joystick menu controls
@@ -473,6 +474,12 @@ static void Dummystaff_OnChange(void);
 
 // crap to force hud to show when in saturns hud options
 boolean forceshowhud = false;
+
+// smol text indicating if game is modified
+// so ppl dont wonder where their ra times went and stuff
+#define SHOWMODDEDGAME \
+	if (savemoddata) \
+		V_DrawThinString(0, 0, V_REDMAP|V_SNAPTOTOP|V_SNAPTOLEFT|V_TRANSLUCENT|V_ALLOWLOWERCASE, ("Modified Game"));
 
 // ==========================================================================
 // CONSOLE VARIABLES AND THEIR POSSIBLE VALUES GO HERE.
@@ -1393,31 +1400,30 @@ static const char* OP_MouseTooltips[] =
 
 static menuitem_t OP_VideoOptionsMenu[] =
 {
-	{IT_STRING | IT_CALL,	NULL,	"Set Resolution...",	M_VideoModeMenu,		  10},
+	{IT_STRING | IT_CALL,	NULL,	"Set Resolution...",		  M_VideoModeMenu,		  10},
 #if defined (__unix__) || defined (UNIXCOMMON) || defined (HAVE_SDL)
-	{IT_STRING|IT_CVAR,		NULL,	"Fullscreen",			&cv_fullscreen,			  20},
+	{IT_STRING|IT_CVAR,		NULL,	"Fullscreen",				  &cv_fullscreen,		  20},
 #endif
 	{IT_STRING | IT_CVAR | IT_CV_SLIDER,
-							NULL,	"Brightness",			&cv_globalgamma,		  30},
+							NULL,	"Brightness",				  &cv_globalgamma,		  30},
 
 	{IT_STRING | IT_CVAR | IT_CV_SLIDER,
-	                        NULL, 	"Saturation",      		&cv_globalsaturation ,    40},
+	                        NULL, 	"Saturation",      			  &cv_globalsaturation ,  40},
 
-	{IT_SUBMENU|IT_STRING, NULL, "Advanced Color Settings...", &OP_ColorOptionsDef,   50},
+	{IT_SUBMENU|IT_STRING, NULL, 	"Advanced Color Settings...", &OP_ColorOptionsDef,    50},
 
-	{IT_STRING | IT_CVAR,	NULL,					"Draw Distance",		&cv_drawdist,			  65},
-	{IT_STRING | IT_CVAR,	NULL,					"Weather Draw Distance",&cv_drawdist_precip,	  75},
+	{IT_STRING | IT_CVAR,	NULL,	"Draw Distance",			  &cv_drawdist,			  65},
+	{IT_STRING | IT_CVAR,	NULL,	"Weather Draw Distance",	  &cv_drawdist_precip,	  75},
 
-	{IT_STRING | IT_CVAR,	NULL,	"Show FPS",				&cv_ticrate,			 95},
-	{IT_STRING | IT_CVAR,	NULL,	"Vertical Sync",		&cv_vidwait,			 105},
-	{IT_STRING | IT_CVAR,   NULL,   "FPS Cap",              &cv_fpscap,              115},
-	{IT_STRING | IT_CVAR,   NULL,   "Drift spark pulse size",&cv_driftsparkpulse,    125},
-	{IT_STRING | IT_CVAR, 	NULL, 	"VHS effect", 			&cv_vhseffect, 		 	 135},
+	{IT_STRING | IT_CVAR,	NULL,	"Show FPS",					  &cv_ticrate,			  95},
+	{IT_STRING | IT_CVAR,	NULL,	"Vertical Sync",			  &cv_vidwait,			 105},
+	{IT_STRING | IT_CVAR,   NULL,   "FPS Cap",              	  &cv_fpscap,            115},
+	{IT_STRING | IT_CVAR,   NULL,   "Drift spark pulse size",	  &cv_driftsparkpulse,   125},
+	{IT_STRING | IT_CVAR, 	NULL, 	"VHS effect", 				  &cv_vhseffect, 		 135},
 #ifdef HWRENDER
-	{IT_SUBMENU|IT_STRING,	NULL,	"OpenGL Options...",	&OP_OpenGLOptionsDef,	 145},
+	{IT_SUBMENU|IT_STRING,	NULL,	"OpenGL Options...",		  &OP_OpenGLOptionsDef,	 145},
 #endif
-	{IT_SUBMENU|IT_STRING,  NULL,   "Advanced Video Options...", &OP_ExpOptionsDef,    155},
-
+	{IT_SUBMENU|IT_STRING,  NULL,   "Advanced Video Options...",  &OP_ExpOptionsDef,     155},
 };
 
 static const char* OP_VideoTooltips[] =
@@ -1513,23 +1519,25 @@ static menuitem_t OP_ColorOptionsMenu[] =
 
 static menuitem_t OP_ExpOptionsMenu[] =
 {
-	{IT_HEADER, NULL, "Advanced Video Options", NULL, 10},
-	{IT_STRING|IT_CVAR,		NULL, "Interpolation Distance",			&cv_maxinterpdist,		 	 30},
-	{IT_STRING | IT_CVAR, 	NULL, "Weather Interpolation", 			&cv_precipinterp, 		 	 40},
+	{IT_HEADER, NULL, "Advanced Video Options", NULL, 15},
+	{IT_STRING|IT_CVAR,		NULL, "Interpolation Distance",			&cv_maxinterpdist,		 	 25},
+	{IT_STRING | IT_CVAR, 	NULL, "Weather Interpolation", 			&cv_precipinterp, 		 	 30},
 
-	{IT_STRING | IT_CVAR, 	NULL, "Scale Weather with Mobjscale", 	&cv_mobjscaleprecip, 		 60},
-	{IT_STRING | IT_CVAR, 	NULL, "Less Weather Effects", 			&cv_lessprecip, 		 	 70},
+	{IT_STRING | IT_CVAR, 	NULL, "Scale Weather with Mobjscale", 	&cv_mobjscaleprecip, 		 40},
+	{IT_STRING | IT_CVAR, 	NULL, "Less Weather Effects", 			&cv_lessprecip, 		 	 45},
 
-	{IT_STRING | IT_CVAR,	NULL, "Skyboxes",						&cv_skybox,				 	 80},
+	{IT_STRING | IT_CVAR,  NULL, "Randomized Directional Light",	&cv_randomdirlight,	  		 55},
 
-	{IT_STRING | IT_CVAR,	NULL, "FPS counter sampling",			&cv_accuratefps,			 90},
+	{IT_STRING | IT_CVAR,	NULL, "Skyboxes",						&cv_skybox,				 	 65},
+
+	{IT_STRING | IT_CVAR,	NULL, "FPS counter sampling",			&cv_accuratefps,			 75},
 
 #ifdef HWRENDER
-	{IT_STRING | IT_CVAR, 	NULL, "Screen Textures", 				&cv_glscreentextures, 		 110},
+	{IT_STRING | IT_CVAR, 	NULL, "Screen Textures", 				&cv_glscreentextures, 		 85},
 #ifdef USE_FBO_OGL
-	{IT_STRING | IT_CVAR, 	NULL, "FBO Downsampling support", 		&cv_glframebuffer, 			 120},
+	{IT_STRING | IT_CVAR, 	NULL, "FBO Downsampling support", 		&cv_glframebuffer, 			 90},
 #endif
-	{IT_STRING | IT_CVAR, 	NULL, "Palette Depth", 					&cv_glpalettedepth, 		 140},
+	{IT_STRING | IT_CVAR, 	NULL, "Palette Depth", 					&cv_glpalettedepth, 		100},
 #endif
 };
 
@@ -1540,6 +1548,7 @@ static const char* OP_ExpTooltips[] =
 	"Should weather be interpolated? Weather should look about the\nsame but perform a bit better when disabled.",
 	"Should weather be scaled with Mapobjectscale?.",
 	"When weather is on this will cut the object amount used in half.",
+	"Should the directional lightning be randomized each map?\nTakes effect on next map load.",
 	"Toggle being able to see the sky.",
 	"Change the FPS counter sampling method\nInaccurate updates slower and might miss frame drops and such\nAccurate updates faster and is more accurate, but might be less readable", // how to ingles??
 #ifdef HWRENDER
@@ -1558,6 +1567,7 @@ enum
 	op_exp_precipinter,
 	op_exp_precipmoscale,
 	op_exp_lessprecip,
+	op_exp_dirlight,
 	op_exp_skybox,
 	op_exp_accuratefps,
 #ifdef HWRENDER
@@ -2224,16 +2234,18 @@ static menuitem_t OP_SaturnMenu[] =
 
 	{IT_STRING | IT_CVAR, NULL, "Bananadrag Jitter", 					&cv_bananajitter, 	 		 45},
 
-	{IT_STRING | IT_CVAR, NULL, "Show Localskin Menus", 				&cv_showlocalskinmenus, 	 55},
-	{IT_STRING | IT_CVAR, NULL, "Uppercase Menu",						&cv_menucaps,   		     65},
+	{IT_STRING | IT_CVAR, NULL, "Midair Driftsparks", 					&cv_airsparks, 	 		 	 55},
 
-	{IT_STRING | IT_CVAR, NULL, "Keyboard Layout",						&cv_keyboardlayout,   	   	 70},
+	{IT_STRING | IT_CVAR, NULL, "Show Localskin Menus", 				&cv_showlocalskinmenus, 	 65},
+	{IT_STRING | IT_CVAR, NULL, "Uppercase Menu",						&cv_menucaps,   		     75},
 
-	{IT_STRING | IT_CVAR, NULL, "Less Midnight Channel Flicker", 		&cv_lessflicker, 		   	 80},
+	{IT_STRING | IT_CVAR, NULL, "Keyboard Layout",						&cv_keyboardlayout,   	   	 80},
 
-	{IT_SUBMENU|IT_STRING,	NULL,	"Saturn Hud...", 					&OP_SaturnHudDef,		   	 90},
-	{IT_SUBMENU|IT_STRING,	NULL,	"Sprite Distortion...", 			&OP_PlayerDistortDef,	   	 95},
-	{IT_SUBMENU|IT_STRING,	NULL,	"Saturn Credits", 					&OP_SaturnCreditsDef,	   	105}, // uwu
+	{IT_STRING | IT_CVAR, NULL, "Less Midnight Channel Flicker", 		&cv_lessflicker, 		   	 90},
+
+	{IT_SUBMENU|IT_STRING,	NULL,	"Saturn Hud...", 					&OP_SaturnHudDef,		   	100},
+	{IT_SUBMENU|IT_STRING,	NULL,	"Sprite Distortion...", 			&OP_PlayerDistortDef,	   	105},
+	{IT_SUBMENU|IT_STRING,	NULL,	"Saturn Credits", 					&OP_SaturnCreditsDef,	   	115}, // uwu
 };
 
 static const char* OP_SaturnTooltips[] =
@@ -2244,6 +2256,7 @@ static const char* OP_SaturnTooltips[] =
 	"Colourize the speedlines in your skincolor if you go fast enough!",
 	"Colourize the sneaker flame trails in your skincolor!",
 	"Makes bananas and other items jump and jitter\nwhen dragged behind.",
+	"Keep your driftsparks going while in air.",
 	"Show Localskin Menus.",
 	"Force menu to only use uppercase.",
 	"Use your desired Keyboard Layout for Text Input\nthis is either the Default, Native or Azerty\nNative does not affect Gameplay only Text!",
@@ -2261,6 +2274,7 @@ enum
 	sm_colorlines,
 	sm_colorflames,
 	sm_bananjumpy,
+	sm_airsparks,
 	sm_showlocalskin,
 	op_uppercase_menu,
 	sm_nativkey,
@@ -3178,7 +3192,7 @@ menu_t OP_MonitorToggleDef =
 menu_t OP_OpenGLOptionsDef = DEFAULTSCROLLSTYLE("M_VIDEO", OP_OpenGLOptionsMenu, &OP_VideoOptionsDef, 30, 30);
 #endif
 
-menu_t OP_ExpOptionsDef = DEFAULTMENUSTYLE("M_VIDEO", OP_ExpOptionsMenu, &OP_VideoOptionsDef, 30, 30);
+menu_t OP_ExpOptionsDef = DEFAULTSCROLLSTYLE("M_VIDEO", OP_ExpOptionsMenu, &OP_VideoOptionsDef, 30, 25);
 
 menu_t OP_DataOptionsDef = DEFAULTMENUSTYLE("M_DATA", OP_DataOptionsMenu, &OP_MainDef, 60, 30);
 menu_t OP_ScreenshotOptionsDef = DEFAULTMENUSTYLE("M_SCSHOT", OP_ScreenshotOptionsMenu, &OP_DataOptionsDef, 30, 30);
@@ -4151,17 +4165,6 @@ boolean M_Responder(event_t *ev)
 
 			if (routine)
 			{
-				if (((currentMenu->menuitems[itemOn].status & IT_TYPE)==IT_CALL
-				 || (currentMenu->menuitems[itemOn].status & IT_TYPE)==IT_SUBMENU)
-                 && (currentMenu->menuitems[itemOn].status & IT_CALLTYPE))
-				{
-					if (((currentMenu->menuitems[itemOn].status & IT_CALLTYPE) & IT_CALL_NOTMODIFIED) && majormods)
-					{
-						S_StartSound(NULL, sfx_menu1);
-						M_StartMessage(M_GetText("This cannot be done with complex addons\nor in a cheated game.\n\n(Press a key)\n"), NULL, MM_NOTHING);
-						return true;
-					}
-				}
 				S_StartSound(NULL, sfx_menu1);
 				switch (currentMenu->menuitems[itemOn].status & IT_TYPE)
 				{
@@ -4394,6 +4397,7 @@ void M_Drawer(void)
 				V_DrawThinString(vid.dupx, vid.height - 20*vid.dupy, V_NOSCALESTART|V_TRANSLUCENT|V_ALLOWLOWERCASE, compbranch);
 				V_DrawThinString(vid.dupx, vid.height - 10*vid.dupy, V_NOSCALESTART|V_TRANSLUCENT|V_ALLOWLOWERCASE, comprevision);
 #else // Regular build
+				V_DrawThinString(vid.dupx, vid.height - 20*vid.dupy, V_NOSCALESTART|V_TRANSLUCENT|V_ALLOWLOWERCASE, comprevision); // Removeur this for release! im just lazy to make a new flag or smth
 				V_DrawThinString(vid.dupx, vid.height - 10*vid.dupy, V_NOSCALESTART|V_TRANSLUCENT|V_ALLOWLOWERCASE, va("%s", VERSIONSTRING));
 #endif
 
@@ -5322,7 +5326,6 @@ static void M_DrawGenericMenu(void)
 	DoToolTips(OP_ControlsDef, OP_ControlsTooltips);
 	DoToolTips(OP_MouseOptionsDef, OP_MouseTooltips);
 	DoToolTips(OP_VideoOptionsDef, OP_VideoTooltips);
-	DoToolTips(OP_ExpOptionsDef, OP_ExpTooltips);
 	DoToolTips(OP_SoundOptionsDef, OP_SoundTooltips);
 	DoToolTips(OP_SoundAdvancedDef, OP_SoundAdvancedTooltips);
 	DoToolTips(OP_ChatOptionsDef, OP_ChatOptionsTooltips);
@@ -5468,6 +5471,7 @@ static void M_DrawGenericScrollMenu(void)
 	// dumb hack
 	// tooltips
 	// same macro here
+	DoToolTips(OP_ExpOptionsDef, OP_ExpTooltips);
 #ifdef HWRENDER
 	DoToolTips(OP_OpenGLOptionsDef, OP_OpenGLTooltips);
 #endif
@@ -6249,7 +6253,7 @@ static boolean M_AddonsRefresh(void)
 		else if (majormods && !prevmajormods)
 		{
 			S_StartSound(NULL, sfx_s221);
-			message = va("%c%s\x80\nYou've loaded a gameplay-modifying addon.\n\nRecord Attack has been disabled, but you\ncan still play alone in local Multiplayer.\n\nIf you wish to play Record Attack mode, restart the game to disable loaded addons.\n\n(Press a key)\n", ('\x80' + (highlightflags>>V_CHARCOLORSHIFT)), refreshdirname);
+			message = va("%c%s\x80\nYou've loaded a gameplay-modifying addon.\n\nRecord Attack data will be saved to seperate save.\n\n(Press a key)\n", ('\x80' + (highlightflags>>V_CHARCOLORSHIFT)), refreshdirname);
 			prevmajormods = majormods;
 		}
 
@@ -6883,9 +6887,8 @@ void M_ReplayHut(INT32 choice)
 	{
 		snprintf(menupath, 1024, "%s"PATHSEP"replay"PATHSEP"online"PATHSEP, srb2home);
 		menupathindex[(menudepthleft = menudepth-1)] = strlen(menupath);
+		ResetReplayQuery();
 	}
-
-	ResetReplayQuery();
 
 	if (!preparefilemenu(false, true))
 	{
@@ -8659,9 +8662,28 @@ static void M_Credits(INT32 choice)
 // STATISTICS MENU
 // ===============
 
+static void M_DrawStatsMaps(void);
+static void M_DrawStatsPlaytime(void);
+static void M_DrawStatsExtra(void); // dunno how to name this one
+
 static INT32 statsLocation;
 static INT32 statsMax;
 static INT16 statsMapList[NUMMAPS+1];
+static UINT8 statsCurrentPage = 0;
+
+typedef struct statpage_s {
+	const char *title;
+	void (*drawer)(void);
+} statpage_t;
+
+static statpage_t statsPages[] = {
+	{ "Play Time Statistics", M_DrawStatsPlaytime, },
+	{ "Level Statistics", M_DrawStatsMaps, },
+	{ "Extra Statistics", M_DrawStatsExtra, },
+};
+
+#define LENSTATSPAGES (sizeof(statsPages)/sizeof(statsPages[0]))
+#define NUMSTATSPAGES (kartstats.vanilla ? 2 : LENSTATSPAGES)
 
 static void M_Statistics(INT32 choice)
 {
@@ -8688,6 +8710,7 @@ static void M_Statistics(INT32 choice)
 	statsMapList[j] = -1;
 	statsMax = j - 11 + numextraemblems;
 	statsLocation = 0;
+	statsCurrentPage = 0;
 
 	if (statsMax < 0)
 		statsMax = 0;
@@ -8695,12 +8718,46 @@ static void M_Statistics(INT32 choice)
 	M_SetupNextMenu(&SP_LevelStatsDef);
 }
 
-static void M_DrawStatsMaps(int location)
+static void M_DrawStatsMaps(void)
 {
-	INT32 y = 80, i = -1;
+	char beststr[40];
+	tic_t besttime = 0;
+	INT32 mapsunfinished = 0;
+
+	int location = statsLocation;
+	INT32 y = 62, i = -1, j;
 	INT16 mnum;
 	extraemblem_t *exemblem;
 	boolean dotopname = true, dobottomarrow = (location < statsMax);
+
+	SHOWMODDEDGAME
+
+	for (j = 0; j < NUMMAPS; j++)
+	{
+		if (!mapheaderinfo[j] || !(mapheaderinfo[j]->menuflags & LF2_RECORDATTACK))
+			continue;
+
+		if (!mainrecords[j] || mainrecords[j]->time <= 0)
+		{
+			mapsunfinished++;
+			continue;
+		}
+
+		besttime += mainrecords[j]->time;
+	}
+
+	V_DrawString(20, 42, highlightflags|MENUCAPS, "Combined time records:");
+
+	sprintf(beststr, "%i:%02i:%02i.%02i", G_TicsToHours(besttime), G_TicsToMinutes(besttime, false), G_TicsToSeconds(besttime), G_TicsToCentiseconds(besttime));
+	V_DrawRightAlignedString(BASEVIDWIDTH-16, 42, (mapsunfinished ? warningflags : 0), beststr);
+
+	if (mapsunfinished)
+		V_DrawRightAlignedString(BASEVIDWIDTH-16, 50, warningflags|MENUCAPS, va("(%d unfinished)", mapsunfinished));
+	else
+		V_DrawRightAlignedString(BASEVIDWIDTH-16, 50, recommendedflags|MENUCAPS, "(complete)");
+
+	V_DrawString(32, 50, MENUCAPS, va("x %d/%d", M_CountEmblems(), numemblems+numextraemblems));
+	V_DrawSmallScaledPatch(20, 50, 0, W_CachePatchName("GOTITA", PU_STATIC));
 
 	if (location)
 		V_DrawCharacter(10, y-(skullAnimCounter/5),
@@ -8790,53 +8847,78 @@ bottomarrow:
 			'\x1B' | highlightflags, false); // down arrow
 }
 
-static void M_DrawLevelStats(void)
-{
-	char beststr[40];
-
-	tic_t besttime = 0;
-
-	INT32 i;
-	INT32 mapsunfinished = 0;
-
-	M_DrawMenuTitle();
-
-	V_DrawString(20, 24, highlightflags|MENUCAPS, "Total Play Time:");
-	V_DrawCenteredString(BASEVIDWIDTH/2, 32, MENUCAPS, va("%i hours, %i minutes, %i seconds",
-	                         G_TicsToHours(totalplaytime),
-	                         G_TicsToMinutes(totalplaytime, false),
-	                         G_TicsToSeconds(totalplaytime)));
-	V_DrawString(20, 42, highlightflags|MENUCAPS, "Total Matches:");
-	V_DrawRightAlignedString(BASEVIDWIDTH-16, 42, MENUCAPS, va("%i played", matchesplayed));
-
-	for (i = 0; i < NUMMAPS; i++)
-	{
-		if (!mapheaderinfo[i] || !(mapheaderinfo[i]->menuflags & LF2_RECORDATTACK))
-			continue;
-
-		if (!mainrecords[i] || mainrecords[i]->time <= 0)
-		{
-			mapsunfinished++;
-			continue;
-		}
-
-		besttime += mainrecords[i]->time;
+#define DRAWTIMESTAT(y, title, field) { \
+		char timebuf[80]; \
+		V_DrawString(20, (y), highlightflags|MENUCAPS, title); \
+		tic_t timeval = kartstats.field; \
+		snprintf(timebuf, 80, "%02i:%02i:%02i", G_TicsToHours(timeval), G_TicsToMinutes(timeval, false), G_TicsToSeconds(timeval)); \
+		V_DrawRightAlignedString(BASEVIDWIDTH-16, (y), MENUCAPS, timebuf); \
 	}
 
-	V_DrawString(20, 62, highlightflags|MENUCAPS, "Combined time records:");
+#define DRAWAMOUNTSTAT(y, title, field) { \
+		V_DrawString(20, (y), highlightflags|MENUCAPS, title); \
+		unsigned amountval = kartstats.field; \
+		V_DrawRightAlignedString(BASEVIDWIDTH-16, (y), MENUCAPS, va("%u", amountval)); \
+	}
 
-	sprintf(beststr, "%i:%02i:%02i.%02i", G_TicsToHours(besttime), G_TicsToMinutes(besttime, false), G_TicsToSeconds(besttime), G_TicsToCentiseconds(besttime));
-	V_DrawRightAlignedString(BASEVIDWIDTH-16, 62, (mapsunfinished ? warningflags : 0), beststr);
+static void M_DrawStatsPlaytime(void)
+{
+	V_DrawString(20, 42, highlightflags|MENUCAPS, "Total Play Time:");
+	V_DrawCenteredString(BASEVIDWIDTH/2, 52, MENUCAPS, va("%i hours, %i minutes, %i seconds",
+	                         G_TicsToHours(kartstats.totalplaytime),
+	                         G_TicsToMinutes(kartstats.totalplaytime, false),
+	                         G_TicsToSeconds(kartstats.totalplaytime)));
+	V_DrawString(20, 62, highlightflags|MENUCAPS, "Total Matches:");
+	V_DrawRightAlignedString(BASEVIDWIDTH-16, 62, MENUCAPS, va("%i played", kartstats.matchesplayed));
 
-	if (mapsunfinished)
-		V_DrawRightAlignedString(BASEVIDWIDTH-16, 70, warningflags|MENUCAPS, va("(%d unfinished)", mapsunfinished));
-	else
-		V_DrawRightAlignedString(BASEVIDWIDTH-16, 70, recommendedflags|MENUCAPS, "(complete)");
+	// Nothing else to draw
+	if (kartstats.vanilla)
+		return;
 
-	V_DrawString(32, 70, MENUCAPS, va("x %d/%d", M_CountEmblems(), numemblems+numextraemblems));
-	V_DrawSmallScaledPatch(20, 70, 0, W_CachePatchName("GOTITA", PU_STATIC));
+	SHOWMODDEDGAME
 
-	M_DrawStatsMaps(statsLocation);
+	DRAWTIMESTAT(82, "RA Play Time:", raplaytime);
+	DRAWTIMESTAT(92, "Online Play Time:", onlineplaytime);
+	DRAWTIMESTAT(102, "Race Play Time:", raceplaytime);
+	DRAWTIMESTAT(112, "Battle Play Time:", battleplaytime);
+}
+
+// Note: only available with non-vanilla stats loaded, so it doesn't check for that
+static void M_DrawStatsExtra(void)
+{
+	SHOWMODDEDGAME
+
+	DRAWTIMESTAT(42, "Time being SPB target:", spbtargettime);
+	DRAWTIMESTAT(52, "Time spent in spinout:", spinouttime);
+
+	DRAWAMOUNTSTAT(72, "Total wins:", totalwins);
+	DRAWAMOUNTSTAT(82, "Total podium (2nd/3rd place):", totalpodium);
+
+	DRAWAMOUNTSTAT(102, "Hits landed:", hits);
+	DRAWAMOUNTSTAT(112, "Self-hits landed:", selfhits);
+
+	DRAWAMOUNTSTAT(132, "Sinks landed:", sinks);
+	DRAWAMOUNTSTAT(142, "Times hit by sink:", sinked);
+
+	DRAWAMOUNTSTAT(162, "Total respawns:", respawns);
+}
+
+#undef DRAWAMOUNTSTAT
+#undef DRAWTIMESTAT
+
+static void M_DrawLevelStats(void)
+{
+	M_DrawMenuTitle();
+
+	V_DrawCenteredString(BASEVIDWIDTH/2, 28, highlightflags|MENUCAPS, statsPages[statsCurrentPage].title);
+
+	INT32 w = V_StringWidth(statsPages[statsCurrentPage].title, highlightflags|MENUCAPS);
+	V_DrawCharacter(BASEVIDWIDTH/2 - w/2 - 10 - (skullAnimCounter/5), 28,
+			'\x1C' | highlightflags, false); // left arrow
+	V_DrawCharacter(BASEVIDWIDTH/2 + w/2 + 2 + (skullAnimCounter/5), 28,
+			'\x1D' | highlightflags, false); // right arrow
+
+	statsPages[statsCurrentPage].drawer();
 }
 
 // Handle statistics.
@@ -8847,23 +8929,46 @@ static void M_HandleLevelStats(INT32 choice)
 	switch (choice)
 	{
 		case KEY_DOWNARROW:
+			if (statsCurrentPage != 1) // Must be on level stats page
+				break;
 			S_StartSound(NULL, sfx_menu1);
 			if (statsLocation < statsMax)
 				++statsLocation;
 			break;
 
 		case KEY_UPARROW:
+			if (statsCurrentPage != 1) // Must be on level stats page
+				break;
 			S_StartSound(NULL, sfx_menu1);
 			if (statsLocation)
 				--statsLocation;
 			break;
 
+		case KEY_RIGHTARROW:
+			S_StartSound(NULL, sfx_menu1);
+			statsCurrentPage++;
+			if (statsCurrentPage >= NUMSTATSPAGES)
+				statsCurrentPage = 0;
+			break;
+
+		case KEY_LEFTARROW:
+			S_StartSound(NULL, sfx_menu1);
+			if (statsCurrentPage == 0)
+				statsCurrentPage = NUMSTATSPAGES-1;
+			else
+				--statsCurrentPage;
+			break;
+
 		case KEY_PGDN:
+			if (statsCurrentPage != 1) // Must be on level stats page
+				break;
 			S_StartSound(NULL, sfx_menu1);
 			statsLocation += (statsLocation+13 >= statsMax) ? statsMax-statsLocation : 13;
 			break;
 
 		case KEY_PGUP:
+			if (statsCurrentPage != 1) // Must be on level stats page
+				break;
 			S_StartSound(NULL, sfx_menu1);
 			statsLocation -= (statsLocation < 13) ? statsLocation : 13;
 			break;
@@ -8903,6 +9008,8 @@ void M_DrawTimeAttackMenu(void)
 	// Sadly we can't just use generic mode menus because we need some extra hacks
 	x = currentMenu->x;
 	y = currentMenu->y;
+
+	SHOWMODDEDGAME
 
 	// Character face!
 	if (W_CheckNumForName(skins[cv_chooseskin.value-1].facewant) != LUMPERROR)
@@ -11790,8 +11897,7 @@ static void M_EraseDataResponse(INT32 ch)
 	if (erasecontext == 2)
 	{
 		// SRB2Kart: This actually needs to be done FIRST, so that you don't immediately regain playtime/matches secrets
-		totalplaytime = 0;
-		matchesplayed = 0;
+		K_EraseStats();
 		F_StartIntro();
 	}
 	if (erasecontext != 1)

@@ -20,6 +20,8 @@
 #include "p_local.h"
 #include "st_stuff.h"
 
+#include "r_fps.h"
+
 #define SWITCHTIME TICRATE * 5		// cooldown between unforced switches
 #define BOREDOMTIME 3 * TICRATE / 2 // how long until players considered far apart?
 #define TRANSFERTIME TICRATE		// how long to delay reaction shots?

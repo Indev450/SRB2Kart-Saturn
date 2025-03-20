@@ -589,28 +589,22 @@ static UINT8 hudplusalpha[11]  = { 10,  8,  6,  4,  2,  0,  0,  0,  0,  0,  0};
 static UINT8 hudminusalpha[11] = { 10,  9,  9,  8,  8,  7,  7,  6,  6,  5,  5};
 UINT8 hudtrans = 0;
 
-// this is pretty dumb, but has to be done like this, otherwise the fps counter just disappears sometimes for no reason lol
-INT32 V_LocalTransFlag(void)
-{
-	return ((10-cv_translucenthud.value)*V_10TRANS);
-}
-
 static const UINT8 *v_colormap = NULL;
 static const UINT8 *v_translevel = NULL;
 
-static inline UINT8 standardpdraw(const UINT8 *dest, const UINT8 *source, fixed_t ofs)
+FUNCINLINE static ATTRINLINE UINT8 standardpdraw(const UINT8 *dest, const UINT8 *source, fixed_t ofs)
 {
 	(void)dest; return source[ofs>>FRACBITS];
 }
-static inline UINT8 mappedpdraw(const UINT8 *dest, const UINT8 *source, fixed_t ofs)
+FUNCINLINE static ATTRINLINE UINT8 mappedpdraw(const UINT8 *dest, const UINT8 *source, fixed_t ofs)
 {
 	(void)dest; return *(v_colormap + source[ofs>>FRACBITS]);
 }
-static inline UINT8 translucentpdraw(const UINT8 *dest, const UINT8 *source, fixed_t ofs)
+FUNCINLINE static ATTRINLINE UINT8 translucentpdraw(const UINT8 *dest, const UINT8 *source, fixed_t ofs)
 {
 	return *(v_translevel + ((source[ofs>>FRACBITS]<<8)&0xff00) + (*dest&0xff));
 }
-static inline UINT8 transmappedpdraw(const UINT8 *dest, const UINT8 *source, fixed_t ofs)
+FUNCINLINE static ATTRINLINE UINT8 transmappedpdraw(const UINT8 *dest, const UINT8 *source, fixed_t ofs)
 {
 	return *(v_translevel + (((*(v_colormap + source[ofs>>FRACBITS]))<<8)&0xff00) + (*dest&0xff));
 }
@@ -631,6 +625,9 @@ void V_DrawStretchyFixedPatch(fixed_t x, fixed_t y, fixed_t pscale, fixed_t vsca
 	fixed_t offx = 0; // x offset
 
 	if (rendermode == render_none)
+		return;
+
+	if (!patch)
 		return;
 
 #ifdef HWRENDER
@@ -861,6 +858,9 @@ void V_DrawCroppedPatch(fixed_t x, fixed_t y, fixed_t pscale, INT32 scrn, patch_
 	const UINT8 *source, *deststop;
 
 	if (rendermode == render_none)
+		return;
+
+	if (!patch)
 		return;
 
 #ifdef HWRENDER

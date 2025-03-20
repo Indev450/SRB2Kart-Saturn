@@ -23,6 +23,7 @@
 #include "d_netcmd.h"
 #include "m_misc.h"
 #include "p_local.h" // Camera...
+#include "p_setup.h"
 #include "p_slopes.h"
 #include "console.h" // con_clipviewtop
 
@@ -434,7 +435,7 @@ void R_RenderMaskedSegRange(drawseg_t *ds, INT32 x1, INT32 x2)
 
 			if (rlight->extra_colormap && rlight->extra_colormap->fog)
 				;
-			else
+			else if (P_ApplyLightOffset(lightnum, frontsector))
 				lightnum += curline->lightOffset;
 
 			rlight->lightnum = lightnum;
@@ -455,7 +456,7 @@ void R_RenderMaskedSegRange(drawseg_t *ds, INT32 x1, INT32 x2)
 		if (colfunc == R_DrawFogColumn_8
 			|| (frontsector->extra_colormap && frontsector->extra_colormap->fog))
 			;
-		else
+		else if (P_ApplyLightOffset(lightnum, frontsector))
 			lightnum += curline->lightOffset;
 
 		if (lightnum < 0)
@@ -849,7 +850,7 @@ void R_RenderThickSideRange(drawseg_t *ds, INT32 x1, INT32 x2, ffloor_t *pfloor)
 
 			if (pfloor->flags & FF_FOG || rlight->flags & FF_FOG || (rlight->extra_colormap && rlight->extra_colormap->fog))
 				;
-			else
+			else if (P_ApplyLightOffset(rlight->lightnum, frontsector))
 				rlight->lightnum += curline->lightOffset;
 
 			p++;
@@ -872,7 +873,7 @@ void R_RenderThickSideRange(drawseg_t *ds, INT32 x1, INT32 x2, ffloor_t *pfloor)
 
 		if (pfloor->flags & FF_FOG || (frontsector->extra_colormap && frontsector->extra_colormap->fog))
 			;
-		else
+		else if (P_ApplyLightOffset(lightnum, frontsector))
 			lightnum += curline->lightOffset;
 
 		if (lightnum < 0)
@@ -1427,7 +1428,7 @@ static void R_RenderSegLoop (void)
 
 				if (dc_lightlist[i].extra_colormap)
 					;
-				else
+				else if (P_ApplyLightOffset(lightnum, curline->frontsector))
 					lightnum += curline->lightOffset;
 
 				if (lightnum < 0)
@@ -2426,7 +2427,8 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 		// OPTIMIZE: get rid of LIGHTSEGSHIFT globally
 		lightnum = (frontsector->lightlevel >> LIGHTSEGSHIFT);
 
-		lightnum += curline->lightOffset;
+		if (P_ApplyLightOffset(lightnum, frontsector))
+			lightnum += curline->lightOffset;
 
 		if (lightnum < 0)
 			walllights = scalelight[0];
@@ -2465,7 +2467,7 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 	worldtopslope >>= 4;
 	worldbottomslope >>= 4;
 
-	if (linedef->special == 41) // HORIZON LINES
+	if (linedef->special == HORIZONSPECIAL) // HORIZON LINES
 	{
 		topstep = bottomstep = 0;
 		topfrac = bottomfrac = (centeryfrac>>4);
@@ -2575,7 +2577,8 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 		{
 			ffloor[i].f_pos >>= 4;
 			ffloor[i].f_pos_slope >>= 4;
-			if (linedef->special == 41) // Horizon lines extend FOFs in contact with them too.
+
+			if (linedef->special == HORIZONSPECIAL) // Horizon lines extend FOFs in contact with them too.
 			{
 				ffloor[i].f_step = 0;
 				ffloor[i].f_frac = (centeryfrac>>4);

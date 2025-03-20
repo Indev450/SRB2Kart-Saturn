@@ -294,7 +294,7 @@ void HWR_DrawStretchyFixedPatch(GLPatch_t *gpatch, fixed_t x, fixed_t y, fixed_t
 	v[0].t = v[1].t = 0.0f;
 	v[2].t = v[3].t = gpatch->max_t;
 
-	// whoops
+	// clip it since it is used for bunny scroll in doom I
 	if (blendmode)
 		flags = HWR_GetBlendModeFlag(blendmode+1)|PF_NoDepthTest;
 	else
@@ -304,8 +304,6 @@ void HWR_DrawStretchyFixedPatch(GLPatch_t *gpatch, fixed_t x, fixed_t y, fixed_t
 		flags |= PF_ForceWrapX;
 	if (option & V_WRAPY)
 		flags |= PF_ForceWrapY;
-
-	// clip it since it is used for bunny scroll in doom I
 
 	if (alphalevel)
 	{
@@ -614,7 +612,7 @@ void HWR_FadeScreenMenuBack(UINT16 color, UINT8 strength)
 		RGBA_t *palette = HWR_GetTexturePalette();
 		Surf.PolyColor.rgba = palette[color&0xFF].rgba;
 
-        if (HWR_ShouldUsePaletteRendering())
+		if (HWR_ShouldUsePaletteRendering())
 			Surf.PolyColor.s.alpha = softwaretranstogl[strength];
 		else
 			Surf.PolyColor.s.alpha = (UINT8)(strength*25.5f);

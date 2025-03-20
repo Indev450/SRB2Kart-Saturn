@@ -81,18 +81,19 @@ ALL_SYSTEMS=\
 ifeq (,$(filter $(ALL_SYSTEMS),$(.VARIABLES)))
 ifeq ($(OS),Windows_NT) # all windows are Windows_NT...
 
- $(info Detected a Windows system, compiling for 32-bit MinGW SDL2...)
-
- # go for a 32-bit sdl mingw exe by default
- MINGW=1
+ ifeq ($(shell uname -s | grep -o MINGW64),MINGW64) # 64-bit MinGW
+  $(info Detected a Windows system, compiling for 64-bit MinGW SDL2...)
+  MINGW64=1
+ else # 32-bit MinGW
+  $(info Detected a Windows system, compiling for 32-bit MinGW SDL2...)
+  MINGW=1
+ endif
+ 
  SDL=1
  WINDOWSHELL=1
- NOUPX=1
+ NOOBJDUMP=1
 
 else # if you on the *nix
-
- NOUPX=1
-
  system:=$(shell uname -s)
 
  ifeq ($(system),Linux)
@@ -116,6 +117,7 @@ else # if you on the *nix
 endif
 endif
 
+NOUPX=1
 
 # SRB2 data files
 D_DIR?=../bin/Resources
@@ -245,6 +247,10 @@ ifdef CCACHE
 endif
 
 MSGFMT?=msgfmt
+
+ifndef NOBLUAJIT
+	include bluajit/Makefile.cfg
+endif
 
 ifndef ECHO
 	REMOVE:=@$(REMOVE)
@@ -414,7 +420,10 @@ CFLAGS+=-DHAVE_DISCORDRPC -DUSE_STUN
 OBJS+=$(OBJDIR)/discord.o $(OBJDIR)/stun.o
 endif
 
+ifdef NOBLUAJIT
+	OPTS+=-DNOBLUAJIT
 	include blua/Makefile.cfg
+endif
 
 ifdef NOMD5
 	OPTS+=-DNOMD5
@@ -506,6 +515,7 @@ OBJS:=$(i_main_o) \
 		$(OBJDIR)/st_stuff.o \
 		$(OBJDIR)/k_director.o   \
 		$(OBJDIR)/k_kart.o   \
+		$(OBJDIR)/k_stats.o  \
 		$(OBJDIR)/m_aatree.o \
 		$(OBJDIR)/m_anigif.o \
 		$(OBJDIR)/m_argv.o   \
@@ -609,6 +619,13 @@ endif
 clean:
 	$(REMOVE) *~ *.flc
 	$(REMOVE) $(OBJDIR)/*.o
+ifndef NOBLUAJIT
+	$(REMOVE) $(OBJDIR)/buildvm* $(OBJDIR)/minilua* $(OBJDIR)/lj_vm* $(ALL_HDRGEN)
+
+cleanjit:
+	$(REMOVE) $(LJVMCORE_O) $(ALL_GEN)
+	$(REMOVE) $(OBJDIR)/buildvm* $(OBJDIR)/minilua* $(OBJDIR)/lj_vm* $(ALL_HDRGEN)
+endif
 
 ifdef MINGW
 	$(REMOVE) $(OBJDIR)/*.res
@@ -729,7 +746,21 @@ ifndef NOHW
 	$(CC) $(CFLAGS) -MM hardware/*.c >> $(OBJDIR)/depend.ped
 endif
 
+ifdef NOBLUAJIT
 	$(CC) $(CFLAGS) -MM blua/*.c >> $(OBJDIR)/depend.ped
+else
+	@for file in $(ALL_HDRGEN); do \
+	  test -f $$file || touch $$file; \
+	  done
+	@$(HOST_CC) $(HOST_ACFLAGS) -MM bluajit/*.c bluajit/host/*.c | \
+	  sed -e "s| [^ ]*/dasm_\S*\.h||g" \
+	      -e "s| lj_target_\S*\.h| lj_target_*.h|g" \
+	      -e "s| lj_emit_\S*\.h| lj_emit_*.h|g" \
+	      -e "s| lj_asm_\S*\.h| lj_asm_*.h|g" >>$(OBJDIR)/depend.ped
+	@for file in $(ALL_HDRGEN); do \
+	  test -s $$file || $(HOST_RM) $$file; \
+	  done
+endif
 
 	@sed -e 's,\(.*\)\.o: ,$(subst /,\/,$(OBJDIR))\/&,g' < $(OBJDIR)/depend.ped > $(OBJDIR)/depend.dep
 	$(REMOVE) $(OBJDIR)/depend.ped
@@ -761,8 +792,12 @@ endif
 $(OBJDIR)/%.o: hardware/%.c
 	$(CC) $(CFLAGS) $(WFLAGS) -c $< -o $@
 
+ifdef NOBLUAJIT
 $(OBJDIR)/%.o: blua/%.c
 	$(CC) $(CFLAGS) $(LUA_CFLAGS) $(WFLAGS) -c $< -o $@
+else
+include bluajit/Makefile.cfg2
+endif
 
 $(OBJDIR)/%.o: %.s
 	$(CC) $(OPTS) -x assembler-with-cpp -c $< -o $@

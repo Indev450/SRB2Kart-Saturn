@@ -301,7 +301,8 @@ static boolean P_CrossBSPNode(INT32 bspnum, register los_t *los, boolean fast)
 
 		if (side == side2)
 		{
-			bspnum = bsp->children[side]; // doesn't touch the other side
+			// doesn't touch the other side
+			bspnum = bsp->children[side];
 		}
 		else // the partition plane is crossed here
 		{

@@ -372,30 +372,11 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec, INT32 *floorlightlevel,
 	return sec;
 }
 
-boolean R_IsEmptyLine(seg_t *line, sector_t *front, sector_t *back)
+boolean R_IsEmptyLine(seg_t *line, const sector_t *front, const sector_t *back)
 {
-	return (
-		!line->polyseg &&
-		back->ceilingpic == front->ceilingpic
-		&& back->floorpic == front->floorpic
-		&& back->f_slope == front->f_slope
-		&& back->c_slope == front->c_slope
-		&& back->lightlevel == front->lightlevel
-		&& !line->sidedef->midtexture
-		// Check offsets too!
-		&& back->floor_xoffs == front->floor_xoffs
-		&& back->floor_yoffs == front->floor_yoffs
-		&& back->floorpic_angle == front->floorpic_angle
-		&& back->ceiling_xoffs == front->ceiling_xoffs
-		&& back->ceiling_yoffs == front->ceiling_yoffs
-		&& back->ceilingpic_angle == front->ceilingpic_angle
-		// Consider altered lighting.
-		&& back->floorlightsec == front->floorlightsec
-		&& back->ceilinglightsec == front->ceilinglightsec
-		// Consider colormaps
-		&& back->extra_colormap == front->extra_colormap
-		&& ((!front->ffloors && !back->ffloors)
-		|| front->tag == back->tag));
+	return (!line->polyseg && !line->sidedef->midtexture
+	&& ((!front->ffloors && !back->ffloors) || front->tag == back->tag)
+	&& (memcmp(front, back, (offsetof(sector_t, extra_colormap) + sizeof(extracolormap_t *))) == 0));
 }
 
 //
@@ -928,7 +909,7 @@ static void R_Subsector(size_t num)
 			frontsector->floor_xoffs, frontsector->floor_yoffs, frontsector->floorpic_angle, floorcolormap, NULL
 			, NULL
 			, frontsector->f_slope
-			, R_NoEncore(frontsector, false));
+			, R_NoEncore(frontsector, false), false, frontsector);
 	}
 	else
 		floorplane = NULL;
@@ -944,7 +925,7 @@ static void R_Subsector(size_t num)
 			ceilingcolormap, NULL
 			, NULL
 			, frontsector->c_slope
-			, R_NoEncore(frontsector, true));
+			, R_NoEncore(frontsector, true), true, frontsector);
 	}
 	else
 		ceilingplane = NULL;
@@ -959,7 +940,7 @@ static void R_Subsector(size_t num)
 
 		for (rover = frontsector->ffloors; rover && numffloors < MAXFFLOORS; rover = rover->next)
 		{
-			if (!(rover->flags & FF_EXISTS) || !(rover->flags & FF_RENDERPLANES))
+			if (!(rover->flags & FF_EXISTS) || !(rover->flags & FF_RENDERPLANES) || !(rover->flags & FF_RENDERALL))
 				continue;
 
 			if (frontsector->cullheight)
@@ -994,7 +975,7 @@ static void R_Subsector(size_t num)
 					*rover->bottomyoffs, *rover->bottomangle, frontsector->lightlist[light].extra_colormap, rover
 					, NULL
 					, *rover->b_slope
-					, R_NoEncore(rover->master->frontsector, true));
+					, R_NoEncore(rover->master->frontsector, true), true, frontsector);
 
 				ffloor[numffloors].slope = *rover->b_slope;
 
@@ -1030,7 +1011,7 @@ static void R_Subsector(size_t num)
 					frontsector->lightlist[light].extra_colormap, rover
 					, NULL
 					, *rover->t_slope
-					, R_NoEncore(rover->master->frontsector, false));
+					, R_NoEncore(rover->master->frontsector, false), false, frontsector);
 
 				ffloor[numffloors].slope = *rover->t_slope;
 
@@ -1075,7 +1056,7 @@ static void R_Subsector(size_t num)
 					polysec->floorpic_angle-po->angle,
 					(light == -1 ? frontsector->extra_colormap : frontsector->lightlist[light].extra_colormap), NULL, po
 					,NULL // will ffloors be slopable eventually?
-					, R_NoEncore(polysec, false));
+					, R_NoEncore(polysec, false), false, frontsector);
 
 				ffloor[numffloors].height = polysec->floorheight;
 				ffloor[numffloors].polyobj = po;
@@ -1099,7 +1080,7 @@ static void R_Subsector(size_t num)
 					(light == -1 ? frontsector->lightlevel : *frontsector->lightlist[light].lightlevel), polysec->ceiling_xoffs, polysec->ceiling_yoffs, polysec->ceilingpic_angle-po->angle,
 					(light == -1 ? frontsector->extra_colormap : frontsector->lightlist[light].extra_colormap), NULL, po
 					,NULL // will ffloors be slopable eventually?
-					, R_NoEncore(polysec, true));
+					, R_NoEncore(polysec, true), false, frontsector);
 
 				ffloor[numffloors].polyobj = po;
 				ffloor[numffloors].height = polysec->ceilingheight;
@@ -1317,7 +1298,6 @@ void R_RenderBSPNode(INT32 bspnum)
 
 		// Decide which side the view point is on.
 		side = R_PointOnSideFast(viewx, viewy, bsp);
-
 		// Recursively divide front space.
 		R_RenderBSPNode(bsp->children[side]);
 

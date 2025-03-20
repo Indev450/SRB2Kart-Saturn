@@ -12,7 +12,11 @@
 
 #include "lua_hudlib_drawlist.h"
 #include "lua_hud.h"
+#ifdef NOBLUAJIT
 #include "blua/lstate.h" // shhhhhh
+#else
+#include "lua_script.h"
+#endif
 #include "lua_libs.h"
 
 #include <string.h>
@@ -326,8 +330,16 @@ static UINT64 GetItemId(void)
 	if (!hud_interpolate)
 		return 0;
 
+#ifdef NOBLUAJIT
+	UINT64 id = (uintptr_t)gL->savedpc;
+#else
+	// he who controls the JIT controls the API
+	const void *p = lua_getpc(gL, 1);
+	I_Assert(p != NULL);
+	UINT64 id = (uintptr_t)p;
+#endif
 	// leave bits 0 and 1 free for the string mode
-	UINT64 id = ((UINT64)(uintptr_t)gL->savedpc << 32) | (hud_interpcounter << 10) | (hud_interptag << 2);
+	id = (id << 32) | (hud_interpcounter << 10) | (hud_interptag << 2);
 
 	if (hud_interplatch)
 	{
@@ -639,18 +651,12 @@ void LUA_HUD_DrawList(huddrawlist_h list)
 		switch (item->type)
 		{
 			case DI_Draw:
-				if (!item->patch || item->patch == NULL)
-					return;
 				V_DrawBlendingFixedPatch(LERPS(x), LERPS(y), FRACUNIT, item->flags, item->patch, item->colormap, item->blend);
 				break;
 			case DI_DrawScaled:
-				if (!item->patch || item->patch == NULL)
-					return;
 				V_DrawBlendingFixedPatch(LERPS(x), LERPS(y), LERP(scale), item->flags, item->patch, item->colormap, item->blend);
 				break;
 			case DI_DrawStretched:
-				if (!item->patch || item->patch == NULL)
-					return;
 				V_DrawStretchyFixedPatch(LERPS(x), LERPS(y), LERP(hscale), LERP(vscale), item->flags, item->patch, item->colormap, item->blend);
 				break;
 			case DI_DrawNum:
