@@ -6528,8 +6528,7 @@ boolean TryRunTics(tic_t realtics)
 	}
 	else
 	{
-		if (realtics)
-			hu_stopped = true;
+		hu_stopped = true;
 	}
 	
 	Detach_async_addfile();
