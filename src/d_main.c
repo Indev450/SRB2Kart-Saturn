@@ -862,7 +862,8 @@ void D_SRB2Loop(void)
 			M_DoScreenShot();
 
 		// consoleplayer -> displayplayers (hear sounds from viewpoint)
-		S_UpdateSounds(); // move positional sounds
+		if (renderisnewtic)
+			S_UpdateSounds(); // move positional sounds
 
 		LUA_Step();
 
