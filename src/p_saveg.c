@@ -1680,8 +1680,10 @@ static void P_NetArchiveThinkers(savebuffer_t *save)
 	// save off the current thinkers
 	for (th = thinkercap.next; th != &thinkercap; th = th->next)
 	{
-		if (th->function.acp1 != (actionf_p1)P_RemoveThinkerDelayed)
-			numsaved++;
+		if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
+			continue;
+
+		numsaved++;
 
 		if (th->function.acp1 == (actionf_p1)P_MobjThinker)
 		{
@@ -1864,7 +1866,7 @@ static void P_NetArchiveThinkers(savebuffer_t *save)
 			continue;
 		}
 #ifdef PARANOIA
-		else if (th->function.acp1 != P_RemoveThinkerDelayed) // wait garbage collection
+		else // wait garbage collection
 			I_Error("unknown thinker type %p", th->function.acp1);
 #endif
 	}
@@ -3459,7 +3461,7 @@ void P_SaveNetGame(savebuffer_t *save, boolean resending)
 {
 	thinker_t *th;
 	mobj_t *mobj;
-	INT32 i = 1; // don't start from 0, it'd be confused with a blank pointer otherwise
+	UINT32 i = 1; // don't start from 0, it'd be confused with a blank pointer otherwise
 
 	CV_SaveNetVars(&save->p, false);
 	P_NetArchiveMisc(save, resending);
