@@ -868,7 +868,7 @@ void D_SRB2Loop(void)
 		LUA_Step();
 
 #ifdef HAVE_DISCORDRPC
-		if (!dedicated)
+		if (!dedicated && renderisnewtic)
 		{
 			Discord_RunCallbacks();
 		}
