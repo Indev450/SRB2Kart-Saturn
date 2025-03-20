@@ -6864,7 +6864,8 @@ void NetUpdate(void)
 
 	gametime = nowtime;
 
-	UpdatePingTable();
+	if (renderisnewtic)
+		UpdatePingTable();
 
 	if (client)
 		maketic = neededtic;
@@ -6880,11 +6881,12 @@ void NetUpdate(void)
 	// the server send before because in single player is beter
 
 #ifdef MASTERSERVER
-	MasterClient_Ticker(); // Acking the Master Server
+	if (renderisnewtic)
+		MasterClient_Ticker(); // Acking the Master Server
 #endif
 
 #ifdef HOLEPUNCH
-	if (netgame && serverrunning)
+	if (netgame && serverrunning && renderisnewtic)
 	{
 		RenewHolePunch();
 	}
@@ -6958,9 +6960,11 @@ void NetUpdate(void)
 		}
 	}
 	Net_AckTicker();
-	HandleNodeTimeouts();
 
-	if (nowtime > resptime)
+	if (renderisnewtic)
+		HandleNodeTimeouts();
+
+	if ((nowtime > resptime) && renderisnewtic)
 	{
 		resptime = nowtime;
 #ifdef HAVE_THREADS
@@ -6972,6 +6976,7 @@ void NetUpdate(void)
 #endif
 		CON_Ticker();
 	}
+
 	SV_FileSendTicker();
 }
 
