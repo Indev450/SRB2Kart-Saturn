@@ -10545,6 +10545,7 @@ static void K_drawKartMinimap(void)
 	if (gamestate != GS_LEVEL)
 		return;
 
+	// Only draw for the first player
 	if (stplyrnum != 0)
 		return;
 
@@ -10566,10 +10567,12 @@ static void K_drawKartMinimap(void)
 		minimaptrans = cv_kartminimap.value;
 		if (timeinmap <= 113)
 			minimaptrans = ((((INT32)timeinmap) - 105)*minimaptrans)/(113-105);
-		if (!minimaptrans)
-			return;
 	}
 	else
+		return;
+
+	// Exit early if it wouldn't draw anyway.
+	if (!minimaptrans)
 		return;
 
 	minimaptrans = ((10-minimaptrans)<<FF_TRANSSHIFT);
@@ -11434,7 +11437,7 @@ void K_drawKartHUD(void)
 			&& stplyr->kartstuff[k_lapanimation]
 			&& !stplyr->exiting
 			&& stplyr->laptime[LAP_LAST] != 0
-			&& !midgamejoin)
+			&& !midgamejoin) // due to vanilla compat, we cannot synch this oh well
 		{
 			if ((stplyr->kartstuff[k_lapanimation] / 5) & 1)
 			{
