@@ -11063,7 +11063,7 @@ static void K_drawInput(void)
 		INT32 hudforward = 0; // for the stick input display :chaosleep:
 
 		// this is horrid but we cant get actual input in replays so uhh
-		if (demo.playback || stplyr != &players[consoleplayer]) // yeah...........
+		if (demo.playback || !P_IsLocalPlayer(stplyr)) // yeah...........
 		{
 			hudforward = stplyr->kartstuff[k_throwdir] * KART_FULLTURN;
 		}
