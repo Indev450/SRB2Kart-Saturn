@@ -10769,7 +10769,12 @@ static void K_drawInput(void)
 		// during normal gameplay, so replicate shit here
 		INT32 hudforward = 0; // for the stick input display :chaosleep:
 
-		if (!demo.playback)
+		// this is horrid but we cant get actual input in replays so uhh
+		if (demo.playback || stplyr != &players[consoleplayer]) // yeah...........
+		{
+			hudforward = stplyr->kartstuff[k_throwdir] * KART_FULLTURN;
+		}
+		else
 		{
 			const boolean analogjoystickmove = cv_usejoystick[stplyrnum].value && !Joystick[stplyrnum].bGamepadStyle;
 			const boolean gamepadjoystickmove = cv_usejoystick[stplyrnum].value && Joystick[stplyrnum].bGamepadStyle;
@@ -10793,10 +10798,6 @@ static void K_drawInput(void)
 					hudforward-= KART_FULLTURN;
 				}
 			}
-		}
-		else // this is horrid but we cant get actual input in replays so uhh
-		{
-			hudforward = stplyr->kartstuff[k_throwdir] * KART_FULLTURN;
 		}
 
 		hudforward = CLAMP(hudforward, -KART_FULLTURN, KART_FULLTURN);
