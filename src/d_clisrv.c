@@ -6802,11 +6802,13 @@ void NetUpdate(void)
 	nowtime = I_GetTime();
 	realtics = nowtime - gametime;
 
+	const boolean noupdate = (realtics <= 0); // nothing new to update
+
 	Net_GetNetStat();
 	netticbuffer = (((gamelostpercent > 1.f) || (playerpingtable[consoleplayer] == 1)) ? CLAMP(cv_netticbuffer.value, 1, 3) : cv_netticbuffer.value);
 
 #ifdef DEDICATEDIDLETIME
-	if (server && dedicated && gamestate == GS_LEVEL && renderisnewtic)
+	if (server && dedicated && gamestate == GS_LEVEL && !noupdate)
 	{
 		static tic_t dedicatedidle = 0;
 
@@ -6863,7 +6865,7 @@ void NetUpdate(void)
 
 	gametime = nowtime;
 
-	if (renderisnewtic)
+	if (!noupdate)
 		UpdatePingTable();
 
 	if (client)
@@ -6880,12 +6882,12 @@ void NetUpdate(void)
 	// the server send before because in single player is beter
 
 #ifdef MASTERSERVER
-	if (renderisnewtic)
+	if (!noupdate)
 		MasterClient_Ticker(); // Acking the Master Server
 #endif
 
 #ifdef HOLEPUNCH
-	if (netgame && serverrunning && renderisnewtic)
+	if (netgame && serverrunning && !noupdate)
 	{
 		RenewHolePunch();
 	}
@@ -6960,23 +6962,25 @@ void NetUpdate(void)
 	}
 	Net_AckTicker();
 
-	if (renderisnewtic)
+	if (!noupdate)
+	{
 		HandleNodeTimeouts();
 
-	if ((nowtime > resptime) && renderisnewtic)
-	{
-		resptime = nowtime;
+		if (nowtime > resptime)
+		{
+			resptime = nowtime;
 #ifdef HAVE_THREADS
-		I_lock_mutex(&m_menu_mutex);
+			I_lock_mutex(&m_menu_mutex);
 #endif
-		M_Ticker();
+			M_Ticker();
 #ifdef HAVE_THREADS
-		I_unlock_mutex(m_menu_mutex);
+			I_unlock_mutex(m_menu_mutex);
 #endif
-		CON_Ticker();
-	}
+			CON_Ticker();
+		}
 
-	SV_FileSendTicker();
+		SV_FileSendTicker();
+	}
 }
 
 /** Returns the number of players playing.
