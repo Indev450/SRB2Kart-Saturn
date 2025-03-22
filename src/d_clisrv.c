@@ -6368,10 +6368,9 @@ static void Local_Maketic(INT32 realtics)
 
 	I_OsPolling(); // I_Getevent
 
-	if (renderisnewtic)
-		D_ProcessEvents(); // menu responder, cons responder,
-						// game responder calls HU_Responder, AM_Responder, F_Responder,
-						// and G_MapEventsToControls
+	D_ProcessEvents(); // menu responder, cons responder,
+					// game responder calls HU_Responder, AM_Responder, F_Responder,
+					// and G_MapEventsToControls
 	if (!dedicated) rendergametic = gametic;
 
 	// translate inputs (keyboard/mouse/joystick) into game controls
@@ -6871,7 +6870,8 @@ void NetUpdate(void)
 	if (client)
 		maketic = neededtic;
 
-	Local_Maketic(realtics); // make local tic, and call menu?
+	if (!noupdate)
+		Local_Maketic(realtics); // make local tic, and call menu?
 
 	if (server)
 		CL_SendClientCmd(); // send it
