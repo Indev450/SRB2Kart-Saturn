@@ -183,6 +183,8 @@ extern consvar_t cv_sloperolldist;
 extern consvar_t cv_sparkroll;
 extern consvar_t cv_spinoutroll;
 
+extern consvar_t cv_playerblendeffects;
+
 extern consvar_t cv_cechotoggle;
 
 #ifndef NONET
