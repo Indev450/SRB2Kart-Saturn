@@ -3938,7 +3938,7 @@ void K_DriftDustHandling(mobj_t *spawner)
 			else
 				dust->color = SKINCOLOR_SILVER; // fallback
 
-			if (cv_blendeffects.value)
+			if (cv_playerblendeffects.value && spawner->player->kartstuff[k_sneakertimer])
 				dust->blendmode = AST_ADD;
 		}
 		else
