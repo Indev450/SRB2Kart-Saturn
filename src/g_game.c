@@ -900,6 +900,7 @@ static void G_BuildLocalTiccmd(ticcmd_t *cmd, UINT8 ssplayer, boolean freecam)
 
 		displayplayers[0] = consoleplayer;
 		R_ResetViewInterpolation(0);
+		R_ResetViewInterpolation(0);
 		camera[0].reset_aiming = true;
 	}
 }
