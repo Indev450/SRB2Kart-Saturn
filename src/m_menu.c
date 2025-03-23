@@ -3589,9 +3589,10 @@ static void M_ChangeCvar(INT32 choice)
 
 	choice = (choice<<1) - 1;
 
-	if (((currentMenu->menuitems[itemOn].status & IT_CVARTYPE) == IT_CV_SLIDER)
+	if (!(cv->flags & CV_FLOAT) &&
+		(((currentMenu->menuitems[itemOn].status & IT_CVARTYPE) == IT_CV_SLIDER)
 	    ||((currentMenu->menuitems[itemOn].status & IT_CVARTYPE) == IT_CV_INVISSLIDER)
-	    ||((currentMenu->menuitems[itemOn].status & IT_CVARTYPE) == IT_CV_NOMOD))
+	    ||((currentMenu->menuitems[itemOn].status & IT_CVARTYPE) == IT_CV_NOMOD)))
 	{
 		CV_SetValue(cv,cv->value+choice);
 	}
@@ -3600,10 +3601,9 @@ static void M_ChangeCvar(INT32 choice)
 		char s[20];
 		float increment;
 
-		increment = (currentMenu->menuitems[itemOn].status & IT_CV_BIGFLOAT) ? 0.5 : (1.f/16);
-
-		sprintf(s,"%f",FIXED_TO_FLOAT(cv->value)+(choice)*increment);
-		CV_Set(cv,s);
+		increment = (currentMenu->menuitems[itemOn].status & IT_CV_BIGFLOAT) ? 0.5f : (1.0f/16.0f);
+		sprintf(s, "%f",FIXED_TO_FLOAT(cv->value)+(choice)*increment);
+		CV_Set(cv, s);
 	}
 	else
 	{
