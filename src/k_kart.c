@@ -3733,7 +3733,7 @@ void K_SpawnBoostTrail(player_t *player)
 		{
 			flame->colorized = true;
 			flame->color = player->skincolor;
-			if (cv_playerblendeffects.value && player->kartstuff[k_sneakertimer])
+			if (cv_playerblendeffects.value)
 				flame->blendmode = AST_ADD;
 		}
 
