@@ -2298,8 +2298,9 @@ static menuitem_t OP_PlayerDistortMenu[] =
 	{IT_STRING | IT_CVAR,	NULL,	"Player Stretch Factor",	      &cv_gravstretch,      90},
 	{IT_STRING | IT_CVAR,	NULL,	"Squish Sound Effect",	      	  &cv_slamsound,        105},
 	{IT_STRING | IT_CVAR, 	NULL, 	"Saltyhop", 					  &cv_saltyhop, 		120},
-	{IT_STRING | IT_CVAR,	NULL,	"Saltyhop Sound Effect",	      &cv_saltyhopsfx,      135},
-	{IT_STRING | IT_CVAR,	NULL,	"Saltyhop Squish",	      	  	  &cv_saltysquish,      150},
+	{IT_STRING | IT_CVAR, 	NULL, 	"Saltyhop Height", 				  &cv_saltyheight, 		135},
+	{IT_STRING | IT_CVAR,	NULL,	"Saltyhop Sound Effect",	      &cv_saltyhopsfx,      150},
+	{IT_STRING | IT_CVAR,	NULL,	"Saltyhop Squish",	      	  	  &cv_saltysquish,      175},
 };
 
 static const char* OP_PlayerDistortTooltips[] =
@@ -2313,6 +2314,7 @@ static const char* OP_PlayerDistortTooltips[] =
 	"Player squash and stretch.",
 	"Player landing sound effect.",
 	"Kart hopping while drifting. This is purely visual.",
+	"Jump Height for Kart hopping.",
 	"Player hop sound effect.",
 	"Player hop squash and stretch.",
 };
@@ -2328,6 +2330,7 @@ enum
 	stretchyplayer,
 	squishsound,
 	salthmmm,
+	saltheight,
 	saltsound,
 	saltsquishy,
 };

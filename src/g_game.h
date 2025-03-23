@@ -170,6 +170,7 @@ extern consvar_t cv_smallposnum;
 extern consvar_t cv_newspeedometer;
 
 extern consvar_t cv_saltyhop;
+extern consvar_t cv_saltyheight;
 extern consvar_t cv_saltyhopsfx;
 extern consvar_t cv_saltysquish;
 
