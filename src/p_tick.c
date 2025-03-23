@@ -456,7 +456,7 @@ void P_RunChaseCameras(void)
 			player_t *p = &players[displayplayers[i]];
 			camera_t *cam = &camera[i];
 
-			if (cv_verticallook.value && leveltime > starttime && p->mo && p->kartstuff[k_respawn] == 0 && p->kartstuff[k_throwdir] != 0)
+			if (cv_verticallook[i].value && leveltime > starttime && p->mo && p->kartstuff[k_respawn] == 0 && p->kartstuff[k_throwdir] != 0)
 			{
 				if (p->speed < 6 * p->mo->scale && abs(cam->dpad_y_held) < 2*TICRATE)
 					cam->dpad_y_held += intsign(p->kartstuff[k_throwdir]);

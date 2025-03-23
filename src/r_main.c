@@ -1551,14 +1551,14 @@ void R_RegisterEngineStuff(void)
 		CV_RegisterVar(&cv_cam_rotate[i]);
 		CV_RegisterVar(&cv_cam_timeover[i]);
 		CV_RegisterVar(&cv_freecam_speed[i]);
+
+		CV_RegisterVar(&cv_lookbackmom[i]);
 	}
 
 	CV_RegisterVar(&cv_tilting);
 	CV_RegisterVar(&cv_quaketilt);
 	CV_RegisterVar(&cv_tiltsmoothing);
 	CV_RegisterVar(&cv_actionmovie);
-
-	CV_RegisterVar(&cv_lookbackmom);
 
 	CV_RegisterVar(&cv_driftsparkpulse);
 	CV_RegisterVar(&cv_gravstretch);
