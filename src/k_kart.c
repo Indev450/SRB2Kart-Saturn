@@ -186,9 +186,12 @@ consvar_t cv_spinoutroll = {"spinoutroll", "Off", CV_SAVE, CV_OnOff, NULL, 0, NU
 
 //hardcode saltyhop mhhm
 static void saltyhop_onchange(void);
+static void saltyheight_onchange(void);
 consvar_t cv_saltyhop = {"hardcodehop", "Off", CV_SAVE|CV_CALL|CV_NOINIT, CV_OnOff, saltyhop_onchange, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_saltyhopsfx = {"hardcodehopsfx", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_saltysquish = {"hardcodehopsquish", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+static CV_PossibleValue_t saltyheight_t[] = {{FRACUNIT/4, "MIN"}, {2*FRACUNIT, "MAX"}, {0, NULL}};
+consvar_t cv_saltyheight = {"hardcodehopheight", "1", CV_FLOAT|CV_SAVE|CV_CALL|CV_NOINIT, saltyheight_t, saltyheight_onchange, 0, NULL, NULL, 0, 0, NULL};
 
 static void saltyhop_onchange(void)
 {
@@ -202,7 +205,7 @@ static void saltyhop_onchange(void)
 		{
 			player_t *player = &players[i];
 
-			if (!playeringame[i] || P_MobjWasRemoved(player->mo))
+			if (!player || !playeringame[i] || P_MobjWasRemoved(player->mo))
 				continue;
 
 			player->mo->salty_jump = false;
@@ -216,7 +219,30 @@ static void saltyhop_onchange(void)
 	}
 }
 
-//Colourized HUD
+static void saltyheight_onchange(void)
+{
+	// reset everything when toggling saltyhop height
+	if (gamestate != GS_LEVEL)
+		return;
+
+	for (INT32 i = 0; i < MAXPLAYERS; i++)
+	{
+		player_t *player = &players[i];
+
+		if (!player || !playeringame[i] || P_MobjWasRemoved(player->mo))
+			continue;
+
+		player->mo->salty_jump = false;
+		player->mo->salty_zoffset = 0;
+		player->mo->salty_momz = 0;
+
+		player->mo->salty_ready = false;
+		player->mo->salty_tapping = false;
+		player->mo->init_salty = false;
+	}
+}
+
+// Colourized HUD
 consvar_t cv_colorizedhud = {"colorizedhud", "Off", CV_SAVE|CV_CALL, CV_OnOff, SaturnHud_menu_Onchange, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_colorizeditembox = {"colorizeditembox", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
@@ -959,6 +985,7 @@ void K_RegisterClientKartStuff(void)
 	CV_RegisterVar(&cv_saltyhop);
 	CV_RegisterVar(&cv_saltyhopsfx);
 	CV_RegisterVar(&cv_saltysquish);
+	CV_RegisterVar(&cv_saltyheight);
 	CV_RegisterVar(&cv_slamsound);
 
 	CV_RegisterVar(&cv_lessflicker);
@@ -3559,7 +3586,7 @@ static void K_QuiteSaltyHop(player_t *p)
 			p->mo->spritexscale -= (mos/8);
 		}
 
-		p->mo->spriteyoffset = p->mo->salty_zoffset;
+		p->mo->spriteyoffset = FixedMul(p->mo->salty_zoffset, cv_saltyheight.value);
 
 		if (cv_saltyhopsfx.value)
 		{
