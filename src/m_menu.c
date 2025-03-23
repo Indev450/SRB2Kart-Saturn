@@ -1891,12 +1891,11 @@ static menuitem_t OP_CamOptionsMenu[] =
 	{IT_STRING | IT_CVAR | IT_CV_BIGFLOAT,	NULL,	"Field of View",&cv_fov,				  	 30},
 
 	{IT_STRING | IT_CVAR, 		NULL, "Lagless Camera",   			&cv_laglesscam, 			 50},
-	{IT_STRING | IT_CVAR, 		NULL, "Camera Lookback Momentum",   &cv_lookbackmom, 			 60},
 
-	{IT_STRING | IT_SUBMENU,	NULL, "Player 1 Camera options...",	&OP_Player1CamOptionsDef,	 80},
-	{IT_STRING | IT_SUBMENU,	NULL, "Player 2 Camera options...",	&OP_Player2CamOptionsDef,	 90},
-	{IT_STRING | IT_SUBMENU,	NULL, "Player 3 Camera options...",	&OP_Player3CamOptionsDef,	 100},
-	{IT_STRING | IT_SUBMENU,	NULL, "Player 4 Camera options...",	&OP_Player4CamOptionsDef,	 110},
+	{IT_STRING | IT_SUBMENU,	NULL, "Player 1 Camera options...",	&OP_Player1CamOptionsDef,	 70},
+	{IT_STRING | IT_SUBMENU,	NULL, "Player 2 Camera options...",	&OP_Player2CamOptionsDef,	 80},
+	{IT_STRING | IT_SUBMENU,	NULL, "Player 3 Camera options...",	&OP_Player3CamOptionsDef,	 90},
+	{IT_STRING | IT_SUBMENU,	NULL, "Player 4 Camera options...",	&OP_Player4CamOptionsDef,	 100},
 };
 
 static const char* OP_CamOptionsTooltips[] =
@@ -1919,13 +1918,13 @@ static menuitem_t OP_Player1CamOptionsMenu[] =
 	{IT_STRING | IT_CVAR | IT_CV_BIGFLOAT, NULL,	"Camera Height",   			&cv_cam_height[0],		60},
 	{IT_STRING | IT_CVAR, NULL,						"Camera Speed",   			&cv_cam_speed[0],		70},
 
-	{IT_STRING | IT_CVAR, NULL, 					"Camera Lookback Momentum", &cv_lookbackmom[0], 	80},
+	{IT_STRING | IT_CVAR, NULL, 					"Camera Lookback Momentum", &cv_lookbackmom[0], 	90},
 
-	{IT_STRING | IT_CVAR, NULL, 					"Camera Vertical Look",     &cv_verticallook[0], 	90},
+	{IT_STRING | IT_CVAR, NULL, 					"Camera Vertical Look",     &cv_verticallook[0],   100},
 
-	{IT_STRING | IT_CVAR, NULL,						"Freecam Speed",   			&cv_freecam_speed[0],	90},
+	{IT_STRING | IT_CVAR, NULL,						"Freecam Speed",   			&cv_freecam_speed[0],  120},
 
-	{IT_STRING | IT_CVAR, NULL,						"Third Person Camera",   	&cv_chasecam[0],		105},
+	{IT_STRING | IT_CVAR, NULL,						"Third Person Camera",   	&cv_chasecam[0],	   135},
 };
 
 static menuitem_t OP_Player2CamOptionsMenu[] =
@@ -1937,13 +1936,13 @@ static menuitem_t OP_Player2CamOptionsMenu[] =
 	{IT_STRING | IT_CVAR | IT_CV_BIGFLOAT, NULL,	"Camera Height",   			&cv_cam_height[1],		60},
 	{IT_STRING | IT_CVAR, NULL,						"Camera Speed",   			&cv_cam_speed[1],		70},
 
-	{IT_STRING | IT_CVAR, NULL, 					"Camera Lookback Momentum", &cv_lookbackmom[1], 	80},
+	{IT_STRING | IT_CVAR, NULL, 					"Camera Lookback Momentum", &cv_lookbackmom[1], 	90},
 
-	{IT_STRING | IT_CVAR, NULL, 					"Camera Vertical Look",     &cv_verticallook[1], 	90},
+	{IT_STRING | IT_CVAR, NULL, 					"Camera Vertical Look",     &cv_verticallook[1], 	100},
 
-	{IT_STRING | IT_CVAR, NULL,						"Freecam Speed",   			&cv_freecam_speed[1],	90},
+	{IT_STRING | IT_CVAR, NULL,						"Freecam Speed",   			&cv_freecam_speed[1],	120},
 
-	{IT_STRING | IT_CVAR, NULL,						"Third Person Camera",   	&cv_chasecam[1],		105},
+	{IT_STRING | IT_CVAR, NULL,						"Third Person Camera",   	&cv_chasecam[1],		135},
 };
 
 static menuitem_t OP_Player3CamOptionsMenu[] =
@@ -1955,13 +1954,13 @@ static menuitem_t OP_Player3CamOptionsMenu[] =
 	{IT_STRING | IT_CVAR | IT_CV_BIGFLOAT, NULL,	"Camera Height",   			&cv_cam_height[2],		60},
 	{IT_STRING | IT_CVAR, NULL,						"Camera Speed",   			&cv_cam_speed[2],		70},
 
-	{IT_STRING | IT_CVAR, NULL, 					"Camera Lookback Momentum", &cv_lookbackmom[2], 	80},
+	{IT_STRING | IT_CVAR, NULL, 					"Camera Lookback Momentum", &cv_lookbackmom[2], 	90},
 
-	{IT_STRING | IT_CVAR, NULL, 					"Camera Vertical Look",     &cv_verticallook[2], 	90},
+	{IT_STRING | IT_CVAR, NULL, 					"Camera Vertical Look",     &cv_verticallook[2], 	100},
 
-	{IT_STRING | IT_CVAR, NULL,						"Freecam Speed",   			&cv_freecam_speed[2],	90},
+	{IT_STRING | IT_CVAR, NULL,						"Freecam Speed",   			&cv_freecam_speed[2],	120},
 
-	{IT_STRING | IT_CVAR, NULL,						"Third Person Camera",   	&cv_chasecam[2],		105},
+	{IT_STRING | IT_CVAR, NULL,						"Third Person Camera",   	&cv_chasecam[2],		135},
 };
 
 static menuitem_t OP_Player4CamOptionsMenu[] =
@@ -1973,13 +1972,13 @@ static menuitem_t OP_Player4CamOptionsMenu[] =
 	{IT_STRING | IT_CVAR | IT_CV_BIGFLOAT, NULL,	"Camera Height",   			&cv_cam_height[3],		60},
 	{IT_STRING | IT_CVAR, NULL,						"Camera Speed",   			&cv_cam_speed[3],		70},
 
-	{IT_STRING | IT_CVAR, NULL, 					"Camera Lookback Momentum", &cv_lookbackmom[3], 	80},
+	{IT_STRING | IT_CVAR, NULL, 					"Camera Lookback Momentum", &cv_lookbackmom[3], 	90},
 
-	{IT_STRING | IT_CVAR, NULL, 					"Camera Vertical Look",     &cv_verticallook[3], 	90},
+	{IT_STRING | IT_CVAR, NULL, 					"Camera Vertical Look",     &cv_verticallook[3], 	100},
 
-	{IT_STRING | IT_CVAR, NULL,						"Freecam Speed",   			&cv_freecam_speed[3],	100},
+	{IT_STRING | IT_CVAR, NULL,						"Freecam Speed",   			&cv_freecam_speed[3],	120},
 
-	{IT_STRING | IT_CVAR, NULL,						"Third Person Camera",   	&cv_chasecam[3],		115},
+	{IT_STRING | IT_CVAR, NULL,						"Third Person Camera",   	&cv_chasecam[3],		135},
 };
 
 static const char* OP_PlayerCamOptionsTooltips[] =
