@@ -2455,7 +2455,6 @@ static void P_ProcessLineSpecial(line_t *line, mobj_t *mo, sector_t *callsec)
 						if (displayplayers[i] == (mo->player - players))
 						{
 							R_ResetViewInterpolation(i + 1);
-							R_ResetViewInterpolation(i + 1);
 						}
 					}
 				}

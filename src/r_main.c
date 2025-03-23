@@ -1216,7 +1216,6 @@ void R_SetupFrame(int s, boolean skybox)
 	if (thiscam->reset)
 	{
 		R_ResetViewInterpolation(s);
-		R_ResetViewInterpolation(s);
 		thiscam->reset = false;
 	}
 

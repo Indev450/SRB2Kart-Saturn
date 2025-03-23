@@ -89,7 +89,6 @@ void P_MixUp(mobj_t *thing, fixed_t x, fixed_t y, fixed_t z, angle_t angle,
 				P_ResetCamera(thing->player, &camera[i]);
 
 			R_ResetViewInterpolation(i + 1);
-			R_ResetViewInterpolation(i + 1);
 		}
 
 		// don't run in place after a teleport
@@ -166,7 +165,6 @@ boolean P_Teleport(mobj_t *thing, fixed_t x, fixed_t y, fixed_t z, angle_t angle
 			if (camera[i].chase)
 				P_ResetCamera(thing->player, &camera[i]);
 
-			R_ResetViewInterpolation(i + 1);
 			R_ResetViewInterpolation(i + 1);
 			break;
 		}
