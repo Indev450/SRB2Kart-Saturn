@@ -159,7 +159,7 @@ CV_PossibleValue_t speedo_cons_t[NUMSPEEDOSTUFF];
 consvar_t cv_newspeedometer = {"newspeedometer", "Default", CV_SAVE, speedo_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_battlespeedo = {"battlespeedo", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL}; // toggle for showing the speedometer in battlemode
 
-consvar_t cv_blendeffects = {"testblendeffects", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_playerblendeffects = {"playerblendeffects", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 // funn-E streeetch
 static CV_PossibleValue_t stretchfactor_t[] = {{0, "MIN"}, {FRACUNIT, "MAX"}, {0, NULL}};
@@ -283,6 +283,7 @@ consvar_t cv_smallnametags = {"kartnametagsmall", "Off", CV_SAVE, nametagsize_co
 consvar_t cv_nametagscore = {"kartnametagscore", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_shownametagspectator = {"kartshownametagspectator", "No", CV_SAVE, CV_YesNo, NULL, 0, NULL, NULL, 0, 0, NULL};
 
+static boolean K_SpeedLinesShouldBlend(player_t *player);
 
 // SOME IMPORTANT VARIABLES DEFINED IN DOOMDEF.H:
 // gamespeed is cc (0 for easy, 1 for normal, 2 for hard)
@@ -813,8 +814,6 @@ boolean K_UseColorHud(void)
 	return (cv_colorizedhud.value && clr_hud);
 }
 
-extern consvar_t cv_blendeffects;
-
 //}
 
 //{ SRB2kart Net Variables
@@ -945,7 +944,7 @@ void K_RegisterClientKartStuff(void)
 
 	CV_RegisterVar(&cv_stagetitle);
 
-	CV_RegisterVar(&cv_blendeffects);
+	CV_RegisterVar(&cv_playerblendeffects);
 
 	// Colourized HUD
 	CV_RegisterVar(&cv_colorizedhud);
@@ -1747,7 +1746,7 @@ void K_KartBouncing(mobj_t *mobj1, mobj_t *mobj2, boolean bounce, boolean solid)
 	else
 		fx->eflags &= ~MFE_VERTICALFLIP;
 
-	if (cv_blendeffects.value)
+	if (cv_playerblendeffects.value)
 		fx->blendmode = AST_ADD;
 
 	P_SetScale(fx, mobj1->scale);
@@ -3395,7 +3394,7 @@ skipground: // idk im sleepy
 				P_SetMobjState(spark, S_DRIFTSPARK_A1);
 		}
 
-		if (cv_blendeffects.value)
+		if (cv_playerblendeffects.value && player->kartstuff[k_sneakertimer])
 			spark->blendmode = AST_ADD;
 
 		K_MatchGenericExtraFlags(spark, player->mo);
@@ -3734,7 +3733,7 @@ void K_SpawnBoostTrail(player_t *player)
 		{
 			flame->colorized = true;
 			flame->color = player->skincolor;
-			if (cv_blendeffects.value)
+			if (cv_playerblendeffects.value && player->kartstuff[k_sneakertimer])
 				flame->blendmode = AST_ADD;
 		}
 
@@ -3798,7 +3797,7 @@ void K_SpawnSparkleTrail(mobj_t *mo)
 
 		sparkle->color = mo->color;
 
-		if (mo->player && cv_blendeffects.value)
+		if (cv_playerblendeffects.value && mo->player && K_SpeedLinesShouldBlend(mo->player))
 			sparkle->blendmode = AST_ADD;
 	}
 
@@ -5588,7 +5587,7 @@ static boolean K_SpeedLinesShouldBlend(player_t *player)
 {
 	fixed_t percentspeed = 0;
 
-	if (!cv_blendeffects.value)
+	if (!cv_playerblendeffects.value)
 		return false;
 
 	if (!player->mo)
