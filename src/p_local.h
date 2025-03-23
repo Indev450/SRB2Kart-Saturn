@@ -158,7 +158,9 @@ extern consvar_t cv_tiltsmoothing;
 
 extern consvar_t cv_actionmovie;
 
-extern consvar_t cv_lookbackmom;
+extern consvar_t cv_lookbackmom[MAXSPLITSCREENPLAYERS];
+
+extern consvar_t cv_verticallook[MAXSPLITSCREENPLAYERS];
 
 extern fixed_t t_cam_rotate[MAXSPLITSCREENPLAYERS];
 
