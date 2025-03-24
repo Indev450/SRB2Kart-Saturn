@@ -45,6 +45,7 @@ typedef struct
 	UINT32 currentsize;
 	UINT32 totalsize;
 	filestatus_t status; // The value returned by recsearch
+	boolean justdownloaded; // To prevent late fragments from causing an I_Error
 } fileneeded_t;
 
 extern INT32 fileneedednum;
