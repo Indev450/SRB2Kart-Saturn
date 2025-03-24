@@ -2319,6 +2319,7 @@ static menuitem_t OP_PlayerDistortMenu[] =
 	{IT_STRING | IT_CVAR | IT_CV_SLIDER, NULL, "Saltyhop Height",				 &cv_saltyheight,	 135},
 	{IT_STRING | IT_CVAR,				 NULL, "Saltyhop Sound Effect",			 &cv_saltyhopsfx,	 150},
 	{IT_STRING | IT_CVAR,				 NULL, "Saltyhop Squish",				 &cv_saltysquish,	 165},
+	{IT_STRING | IT_CVAR,				 NULL, "Saltyhop Roll",				 	 &cv_saltyroll,	 	 180},
 };
 
 static const char* OP_PlayerDistortTooltips[] =
@@ -2335,6 +2336,7 @@ static const char* OP_PlayerDistortTooltips[] =
 	"Jump Height for Kart hopping.",
 	"Player hop sound effect.",
 	"Player hop squash and stretch.",
+	"Should the player rotation be kept during player hop.",
 };
 
 enum
@@ -2351,6 +2353,7 @@ enum
 	saltheight,
 	saltsound,
 	saltsquishy,
+	saltroll,
 };
 
 static menuitem_t OP_SaturnHudMenu[] =

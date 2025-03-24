@@ -189,6 +189,7 @@ consvar_t cv_saltyhopsfx = {"hardcodehopsfx", "On", CV_SAVE, CV_OnOff, NULL, 0, 
 consvar_t cv_saltysquish = {"hardcodehopsquish", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 static CV_PossibleValue_t saltyheight_t[] = {{FRACUNIT/4, "MIN"}, {2*FRACUNIT, "MAX"}, {0, NULL}};
 consvar_t cv_saltyheight = {"hardcodehopheight", "1", CV_FLOAT|CV_SAVE|CV_CALL|CV_NOINIT, saltyheight_t, saltyheight_onchange, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_saltyroll = {"hardcodehoproll", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 static void saltyhop_onchange(void)
 {
@@ -982,6 +983,8 @@ void K_RegisterClientKartStuff(void)
 	CV_RegisterVar(&cv_saltyhopsfx);
 	CV_RegisterVar(&cv_saltysquish);
 	CV_RegisterVar(&cv_saltyheight);
+	CV_RegisterVar(&cv_saltyroll);
+
 	CV_RegisterVar(&cv_slamsound);
 
 	CV_RegisterVar(&cv_lessflicker);
@@ -3623,7 +3626,7 @@ boolean K_ShouldSlopeRoll(mobj_t *mobj)
 		return false;
 
 	// seeing a character rotate mid-hop looks really janky
-	if (mobj->player && mobj->player->mo->salty_jump)
+	if (!cv_saltyroll.value && mobj->player && mobj->player->mo->salty_jump)
 		return false;
 
 	return K_CheckSlopeRollDist(mobj);
