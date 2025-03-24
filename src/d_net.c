@@ -64,9 +64,6 @@ static doomdata_t reboundstore[MAXREBOUND];
 static INT16 reboundsize[MAXREBOUND];
 static INT32 rebound_head, rebound_tail;
 
-/// \brief bandwith of netgame
-INT32 net_bandwidth;
-
 /// \brief max length per packet
 INT16 hardware_MAXPACKETLENGTH;
 
@@ -1294,7 +1291,7 @@ boolean D_CheckNetGame(void)
 	I_NetMakeNodewPort = NULL;
 
 	hardware_MAXPACKETLENGTH = MAXPACKETLENGTH;
-	net_bandwidth = 30000;
+
 	// I_InitNetwork sets doomcom and netgame
 	// check and initialize the network driver
 	multiplayer = false;
@@ -1323,21 +1320,6 @@ boolean D_CheckNetGame(void)
 		else
 			doomcom->extratics = 1;
 		CONS_Printf(M_GetText("Set extratics to %d\n"), doomcom->extratics);
-	}
-
-	if (M_CheckParm("-bandwidth"))
-	{
-		if (M_IsNextParm())
-		{
-			net_bandwidth = atoi(M_GetNextParm());
-			if (net_bandwidth < 1000)
-				net_bandwidth = 1000;
-			if (net_bandwidth > 100000)
-				hardware_MAXPACKETLENGTH = MAXPACKETLENGTH;
-			CONS_Printf(M_GetText("Network bandwidth set to %d\n"), net_bandwidth);
-		}
-		else
-			I_Error("usage: -bandwidth <byte_per_sec>");
 	}
 
 	software_MAXPACKETLENGTH = hardware_MAXPACKETLENGTH;
