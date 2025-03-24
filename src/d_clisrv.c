@@ -492,11 +492,7 @@ static void ExtraDataTicker(void)
 					{
 						if (server)
 						{
-							UINT8 buf[3];
-
-							buf[0] = (UINT8)i;
-							buf[1] = KICK_MSG_CON_FAIL;
-							SendNetXCmd(XD_KICK, &buf, 2);
+							SendKick(i, KICK_MSG_CON_FAIL);
 							DEBFILE(va("player %d kicked [gametic=%u] reason as follows:\n", i, gametic));
 						}
 						CONS_Alert(CONS_WARNING, M_GetText("Got unknown net command [%s]=%d (max %d)\n"), sizeu1(curpos - bufferstart), *curpos, bufferstart[0]);
@@ -546,6 +542,15 @@ void D_ResetTiccmds(void)
 ticcmd_t *D_LocalTiccmd(UINT8 ss)
 {
 	return &localcmds[ss][0];
+}
+
+void SendKick(UINT8 playernum, UINT8 msg)
+{
+	UINT8 buf[2];
+
+	buf[0] = playernum;
+	buf[1] = msg;
+	SendNetXCmd(XD_KICK, &buf, 2);
 }
 
 // -----------------------------------------------------------------
@@ -1121,10 +1126,7 @@ static void SV_SendResynch(INT32 node)
 
 	if (resynch_score[node] > (unsigned)cv_resynchattempts.value*250)
 	{
-		UINT8 buf[2];
-		buf[0] = (UINT8)nodetoplayer[node];
-		buf[1] = KICK_MSG_CON_FAIL;
-		SendNetXCmd(XD_KICK, &buf, 2);
+		SendKick(nodetoplayer[node], KICK_MSG_CON_FAIL);
 		resynch_score[node] = 0;
 	}
 }
@@ -4436,11 +4438,7 @@ static void Got_AddPlayer(UINT8 **p, INT32 playernum)
 		CONS_Alert(CONS_WARNING, M_GetText("Illegal add player command received from %s\n"), player_names[playernum]);
 		if (server)
 		{
-			UINT8 buf[2];
-
-			buf[0] = (UINT8)playernum;
-			buf[1] = KICK_MSG_CON_FAIL;
-			SendNetXCmd(XD_KICK, &buf, 2);
+			SendKick(playernum, KICK_MSG_CON_FAIL);
 		}
 		return;
 	}
@@ -4524,11 +4522,7 @@ static void Got_RemovePlayer(UINT8 **p, INT32 playernum)
 		CONS_Alert(CONS_WARNING, M_GetText("Illegal remove player command received from %s\n"), player_names[playernum]);
 		if (server)
 		{
-			UINT8 buf[2];
-
-			buf[0] = (UINT8)playernum;
-			buf[1] = KICK_MSG_CON_FAIL;
-			SendNetXCmd(XD_KICK, &buf, 2);
+			SendKick(playernum, KICK_MSG_CON_FAIL);
 		}
 		return;
 	}
@@ -4635,14 +4629,10 @@ void CL_AddSplitscreenPlayer(void)
 
 void CL_RemoveSplitscreenPlayer(UINT8 p)
 {
-	UINT8 buf[2];
-
 	if (cl_mode != CL_CONNECTED)
 		return;
 
-	buf[0] = p;
-	buf[1] = KICK_MSG_PLAYER_QUIT;
-	SendNetXCmd(XD_KICK, &buf, 2);
+	SendKick(p, KICK_MSG_PLAYER_QUIT);
 }
 
 // is there a game running
@@ -5267,13 +5257,8 @@ static boolean CheckForSpeedHacks(UINT8 p)
 		|| netcmds[maketic%TICQUEUE][p].sidemove > MAXPLMOVE || netcmds[maketic%TICQUEUE][p].sidemove < -MAXPLMOVE
 		|| netcmds[maketic%TICQUEUE][p].driftturn > KART_FULLTURN || netcmds[maketic%TICQUEUE][p].driftturn < -KART_FULLTURN)
 	{
-		char buf[2];
 		CONS_Alert(CONS_WARNING, M_GetText("Illegal movement value received from node %d\n"), playernode[p]);
-		//D_Clearticcmd(k);
-
-		buf[0] = (char)p;
-		buf[1] = KICK_MSG_CON_FAIL;
-		SendNetXCmd(XD_KICK, &buf, 2);
+		SendKick(p, KICK_MSG_CON_FAIL);
 		return true;
 	}
 
@@ -5486,11 +5471,7 @@ static void HandlePacketFromPlayer(SINT8 node)
 				}
 				else
 				{
-					UINT8 buf[3];
-
-					buf[0] = (UINT8)netconsole;
-					buf[1] = KICK_MSG_CON_FAIL;
-					SendNetXCmd(XD_KICK, &buf, 2);
+					SendKick(netconsole, KICK_MSG_CON_FAIL);
 					DEBFILE(va("player %d kicked (synch failure) [%u] %d!=%d\n",
 						netconsole, realstart, consistancy[realstart%TICQUEUE],
 						SHORT(netbuffer->u.clientpak.consistancy)));
@@ -5521,11 +5502,7 @@ static void HandlePacketFromPlayer(SINT8 node)
 				}
 				else
 				{
-					UINT8 buf[3];
-
-					buf[0] = (UINT8)netconsole;
-					buf[1] = KICK_MSG_CON_FAIL;
-					SendNetXCmd(XD_KICK, &buf, 2);
+					SendKick(netconsole, KICK_MSG_CON_FAIL);
 					DEBFILE(va("player %d kicked (synch failure) [%u] %d!=%d\n",
 						netconsole, realstart, consistancy[realstart%TICQUEUE],
 						SHORT(netbuffer->u.clientpak.consistancy)));
@@ -5636,13 +5613,7 @@ static void HandlePacketFromPlayer(SINT8 node)
 			nodewaiting[node] = 0;
 			if (netconsole != -1 && playeringame[netconsole])
 			{
-				UINT8 buf[2];
-				buf[0] = (UINT8)netconsole;
-				if (netbuffer->packettype == PT_NODETIMEOUT)
-					buf[1] = KICK_MSG_TIMEOUT;
-				else
-					buf[1] = KICK_MSG_PLAYER_QUIT;
-				SendNetXCmd(XD_KICK, &buf, 2);
+				SendKick(netconsole, (netbuffer->packettype == PT_NODETIMEOUT) ? KICK_MSG_TIMEOUT : KICK_MSG_PLAYER_QUIT);
 			}
 			Net_CloseConnection(node);
 			nodeingame[node] = false;
@@ -5656,10 +5627,7 @@ static void HandlePacketFromPlayer(SINT8 node)
 
 				if (server)
 				{
-					UINT8 buf[2];
-					buf[0] = (UINT8)node;
-					buf[1] = KICK_MSG_CON_FAIL;
-					SendNetXCmd(XD_KICK, &buf, 2);
+					SendKick(node, KICK_MSG_CON_FAIL);
 				}
 
 				break;
@@ -5681,10 +5649,7 @@ static void HandlePacketFromPlayer(SINT8 node)
 
 				if (server)
 				{
-					UINT8 buf[2];
-					buf[0] = (UINT8)node;
-					buf[1] = KICK_MSG_CON_FAIL;
-					SendNetXCmd(XD_KICK, &buf, 2);
+					SendKick(node, KICK_MSG_CON_FAIL);
 				}
 
 				break;
@@ -5748,10 +5713,7 @@ static void HandlePacketFromPlayer(SINT8 node)
 
 				if (server)
 				{
-					char buf[2];
-					buf[0] = (char)node;
-					buf[1] = KICK_MSG_CON_FAIL;
-					SendNetXCmd(XD_KICK, &buf, 2);
+					SendKick(node, KICK_MSG_CON_FAIL);
 				}
 
 				break;
@@ -5767,10 +5729,7 @@ static void HandlePacketFromPlayer(SINT8 node)
 
 				if (server)
 				{
-					char buf[2];
-					buf[0] = (char)node;
-					buf[1] = KICK_MSG_CON_FAIL;
-					SendNetXCmd(XD_KICK, &buf, 2);
+					SendKick(node, KICK_MSG_CON_FAIL);
 				}
 
 				break;
@@ -5798,10 +5757,7 @@ static void HandlePacketFromPlayer(SINT8 node)
 
 				if (server)
 				{
-					UINT8 buf[2];
-					buf[0] = (UINT8)node;
-					buf[1] = KICK_MSG_CON_FAIL;
-					SendNetXCmd(XD_KICK, &buf, 2);
+					SendKick(node, KICK_MSG_CON_FAIL);
 				}
 
 				break;
@@ -6603,8 +6559,6 @@ static inline void PingUpdate(void)
 			UINT8 minimumkicklevel = (nonlaggers > 0) ? PINGKICK_LIMIT : PINGKICK_TICQUEUE;
 			for (i = 0; i < MAXPLAYERS; i++)
 			{
-				char buf[2];
-
 				if (!playeringame[i] || pingkick[i] < minimumkicklevel)
 					continue;
 
@@ -6616,10 +6570,7 @@ static inline void PingUpdate(void)
 				}
 
 				pingtimeout[i] = 0;
-
-				buf[0] = (char)i;
-				buf[1] = KICK_MSG_PING_HIGH;
-				SendNetXCmd(XD_KICK, &buf, 2);
+				SendKick(i, KICK_MSG_PING_HIGH);
 			}
 		}
 	}
