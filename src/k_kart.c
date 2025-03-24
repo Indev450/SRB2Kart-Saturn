@@ -3408,7 +3408,7 @@ static void K_StretchPlayerGravity(player_t *p)
 	fixed_t mos = FRACUNIT;
 	fixed_t rzs = abs(p->mo->momz);
 	fixed_t zspd = abs(rzs/mos);
-	fixed_t stretchScaleFactor = FixedDiv(FRACUNIT*60, FLOAT_TO_FIXED(cv_gravstretch.value));
+	fixed_t stretchScaleFactor = FixedDiv(FRACUNIT*60, cv_gravstretch.value);
 	fixed_t rzsDiv, slamDiv;
 
 	fixed_t dxs = p->mo->realxscale;
