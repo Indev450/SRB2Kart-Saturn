@@ -775,7 +775,7 @@ static inline ssize_t SOCK_SendToAddr(SOCKET_TYPE socket, mysockaddr_t *sockaddr
 static void SOCK_Send(void)
 {
 	ssize_t c = ERRSOCKET;
-	int e = -1; // save error code so it can't be modified later code and avoid calling WSAGetLastError() more then once
+	int e = 0; // save error code so it can't be modified later code and avoid calling WSAGetLastError() more then once
 	size_t i, j;
 
 	if (!nodeconnected[doomcom->remotenode])
