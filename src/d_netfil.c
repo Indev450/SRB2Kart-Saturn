@@ -222,6 +222,7 @@ void D_ParseFileneeded(INT32 fileneedednum_parm, UINT8 *fileneededstr, UINT16 fi
 	for (i = firstfile; i < fileneedednum; i++)
 	{
 		fileneeded[i].status = FS_NOTCHECKED; // We haven't even started looking for the file yet
+		fileneeded[i].justdownloaded = false;
 		filestatus = READUINT8(p); // The first byte is the file status
 		fileneeded[i].willsend = (UINT8)(filestatus >> 4);
 		fileneeded[i].totalsize = READUINT32(p); // The four next bytes are the file size
@@ -238,6 +239,7 @@ void CL_PrepareDownloadSaveGame(const char *tmpsave)
 #endif
 	fileneedednum = 1;
 	fileneeded[0].status = FS_REQUESTED;
+	fileneeded[0].justdownloaded = false;
 	fileneeded[0].totalsize = UINT32_MAX;
 	fileneeded[0].file = NULL;
 	memset(fileneeded[0].md5sum, 0, 16);
@@ -998,6 +1000,7 @@ void Got_Filetxpak(void)
 	{
 		UINT32 pos = LONG(netbuffer->u.filetxpak.position);
 		UINT16 size = SHORT(netbuffer->u.filetxpak.size);
+
 		// Use a special trick to know when the file is complete (not always used)
 		// WARNING: file fragments can arrive out of order so don't stop yet!
 		if (pos & 0x80000000)
@@ -1017,6 +1020,7 @@ void Got_Filetxpak(void)
 			fclose(file->file);
 			file->file = NULL;
 			file->status = FS_FOUND;
+			file->justdownloaded = true;
 			CONS_Printf(M_GetText("Downloading %s...(done)\n"),
 				filename);
 #ifndef NONET
@@ -1025,7 +1029,7 @@ void Got_Filetxpak(void)
 #endif
 		}
 	}
-	else
+	else if (!file->justdownloaded)
 	{
 		const char *s;
 		switch(file->status)
