@@ -799,7 +799,6 @@ static void SOCK_Send(void)
 				}
 			}
 		}
-		return;
 	}
 	else if (nodesocket[doomcom->remotenode] == (SOCKET_TYPE)ERRSOCKET)
 	{
@@ -816,7 +815,6 @@ static void SOCK_Send(void)
 				}
 			}
 		}
-		return;
 	}
 	else
 	{
@@ -830,7 +828,7 @@ static void SOCK_Send(void)
 	if (c == ERRSOCKET && e != 0) // 0 means no socket for the address family was found
 	{
 		if (!ALLOWEDERROR(e))
-			I_Error("SOCK_Send, error sending to node %d (%s) #%u: %s", doomcom->remotenode,
+			CONS_Alert(CONS_ERROR, "SOCK_Send, error sending to node %d (%s) #%u: %s \n", doomcom->remotenode,
 				SOCK_GetNodeAddress(doomcom->remotenode), e, strerror(e));
 	}
 }
