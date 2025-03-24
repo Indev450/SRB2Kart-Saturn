@@ -775,16 +775,17 @@ static inline ssize_t SOCK_SendToAddr(SOCKET_TYPE socket, mysockaddr_t *sockaddr
 static void SOCK_Send(void)
 {
 	ssize_t c = ERRSOCKET;
-	int e = 0; // save error code so it can't be modified later code and avoid calling WSAGetLastError() more then once
+	int e = -1; // save error code so it can't be modified later code and avoid calling WSAGetLastError() more then once
+	size_t i, j;
 
 	if (!nodeconnected[doomcom->remotenode])
 		return;
 
 	if (doomcom->remotenode == BROADCASTADDR)
 	{
-		for (size_t i = 0; i < mysocketses; i++)
+		for (i = 0; i < mysocketses; i++)
 		{
-			for (size_t j = 0; j < broadcastaddresses; j++)
+			for (j = 0; j < broadcastaddresses; j++)
 			{
 				if (myfamily[i] == broadcastaddress[j].any.sa_family)
 				{
@@ -798,10 +799,11 @@ static void SOCK_Send(void)
 				}
 			}
 		}
+		return;
 	}
 	else if (nodesocket[doomcom->remotenode] == (SOCKET_TYPE)ERRSOCKET)
 	{
-		for (size_t i = 0; i < mysocketses; i++)
+		for (i = 0; i < mysocketses; i++)
 		{
 			if (myfamily[i] == clientaddress[doomcom->remotenode].any.sa_family)
 			{
@@ -814,6 +816,7 @@ static void SOCK_Send(void)
 				}
 			}
 		}
+		return;
 	}
 	else
 	{
@@ -827,11 +830,10 @@ static void SOCK_Send(void)
 	if (c == ERRSOCKET && e != 0) // 0 means no socket for the address family was found
 	{
 		if (!ALLOWEDERROR(e))
-			I_Error("SOCK_Send, error sending to node %d (%s) #%u, %s", doomcom->remotenode,
+			I_Error("SOCK_Send, error sending to node %d (%s) #%u: %s", doomcom->remotenode,
 				SOCK_GetNodeAddress(doomcom->remotenode), e, strerror(e));
 	}
 }
-
 #undef ALLOWEDERROR
 #endif //NONET
 
