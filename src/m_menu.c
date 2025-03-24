@@ -3506,8 +3506,16 @@ void Moviemode_option_Onchange(void)
 
 void PDistort_menu_Onchange(void)
 {
-	OP_PlayerDistortMenu[slrotatedist].status =
-		(cv_sloperoll.value) ? IT_STRING | IT_CVAR : IT_GRAYEDOUT;
+	if (cv_sloperoll.value)
+	{
+		OP_PlayerDistortMenu[slrotatedist].status = IT_STRING | IT_CVAR;
+		OP_PlayerDistortMenu[saltroll].status = IT_STRING | IT_CVAR;
+	}
+	else
+	{
+		OP_PlayerDistortMenu[slrotatedist].status = IT_GRAYEDOUT;
+		OP_PlayerDistortMenu[saltroll].status = IT_GRAYEDOUT;
+	}
 }
 
 void Bird_menu_Onchange(void)
