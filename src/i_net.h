@@ -34,7 +34,6 @@
 #define NO_BAN_TIME (time_t)(-1)
 
 extern INT16 hardware_MAXPACKETLENGTH;
-extern INT32 net_bandwidth; // in byte/s
 
 #if defined(_MSC_VER)
 #pragma pack(1)
