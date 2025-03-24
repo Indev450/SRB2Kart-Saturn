@@ -4399,6 +4399,9 @@ void D_QuitNetGame(void)
 		HSendPacket(servernode, true, 0, 0);
 	}
 
+#ifdef SEENAMES
+	seenplayer = NULL;
+#endif
 	D_CloseConnection();
 	ClearAdminPlayers();
 
