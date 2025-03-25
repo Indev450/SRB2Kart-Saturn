@@ -138,7 +138,8 @@ static void I_CheckDesktopRes(void);
 consvar_t cv_vidwait = {"vid_wait", "Off", CV_SAVE|CV_CALL|CV_NOINIT, CV_OnOff, Impl_SetVsync, 0, NULL, NULL, 0, 0, NULL};
 static consvar_t cv_stretch = {"stretch", "Off", CV_SAVE|CV_NOSHOWHELP, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
-consvar_t cv_alwaysgrabmouse = {"alwaysgrabmouse", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+static void mousegrabOnChange(void);
+consvar_t cv_alwaysgrabmouse = {"alwaysgrabmouse", "Off", CV_SAVE|CV_CALL, CV_OnOff, mousegrabOnChange, 0, NULL, NULL, 0, 0, NULL};
 
 // these cant be used since config is read after window creation, so need to use command line parameter instead
 //static CV_PossibleValue_t msaa_cons_t[] = {{0, "Off"}, {2, "2X"}, {4, "4X"}, {8, "8X"}, {16, "16X"}, {0, NULL}};
@@ -224,6 +225,9 @@ static SDL_bool Impl_CreateWindow(SDL_bool fullscreen);
 //static void Impl_SetWindowName(const char *title);
 static void Impl_SetWindowIcon(void);
 
+static void SDLdoGrabMouse(void);
+static void SDLdoUngrabMouse(void);
+
 #ifdef USE_FBO_OGL
 boolean downsample = false;
 void RefreshOGLSDLSurface(void)
@@ -232,6 +236,23 @@ void RefreshOGLSDLSurface(void)
 		OglSdlSurface(vid.width, vid.height);
 }
 #endif
+
+static void mousegrabOnChange(void)
+{
+	static SDL_bool firsttimeonmouse = SDL_TRUE;
+
+	if (!firsttimeonmouse)
+	{
+		HalfWarpMouse(realwidth, realheight); // warp to center
+	}
+	else
+		firsttimeonmouse = SDL_FALSE;
+
+	if (cv_usemouse.value || cv_alwaysgrabmouse.value)
+		SDLdoGrabMouse();
+	else
+		SDLdoUngrabMouse();
+}
 
 static void SDLSetMode(INT32 width, INT32 height, SDL_bool fullscreen)
 {
