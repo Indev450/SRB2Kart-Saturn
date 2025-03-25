@@ -1121,18 +1121,21 @@ static void D_AutoloadFile(const char *file, char **filearray)
 		COM_BufAddText(va("exec %s\n", newfile));
 }
 
-static char *strremove(char *str, const char *sub) {
-    char *p, *q, *r;
-    if (*sub && (q = r = strstr(str, sub)) != NULL) {
-        size_t len = strlen(sub);
-        while ((r = strstr(p = r + len, sub)) != NULL) {
-            while (p < r)
-                *q++ = *p++;
-        }
-        while ((*q++ = *p++) != '\0')
-            continue;
-    }
-    return str;
+static char *strremove(char *str, const char *sub)
+{
+	char *p, *q, *r;
+	if (*sub && (q = r = strstr(str, sub)) != NULL)
+	{
+		size_t len = strlen(sub);
+		while ((r = strstr(p = r + len, sub)) != NULL)
+		{
+			while (p < r)
+				*q++ = *p++;
+		}
+		while ((*q++ = *p++) != '\0')
+			continue;
+	}
+	return str;
 }
 
 // FIND THEM
