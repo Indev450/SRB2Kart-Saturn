@@ -290,7 +290,14 @@ consvar_t cv_skipmapcheck = {"skipmapcheck", "Off", CV_SAVE, CV_OnOff, NULL, 0, 
 
 INT32 cv_debug;
 
-consvar_t cv_usemouse = {"use_mouse", "Off", CV_SAVE|CV_CALL,usemouse_cons_t, I_StartupMouse, 0, NULL, NULL, 0, 0, NULL};
+static void UseMouse_OnChange(void);
+consvar_t cv_usemouse = {"use_mouse", "Off", CV_SAVE|CV_CALL,usemouse_cons_t, UseMouse_OnChange, 0, NULL, NULL, 0, 0, NULL};
+
+static void UseMouse_OnChange(void)
+{
+	GameFocus_menu_Onchange();
+	I_StartupMouse();
+}
 
 //WTF
 consvar_t cv_mouseturn = {"mouseturn", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};

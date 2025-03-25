@@ -1768,7 +1768,7 @@ static menuitem_t OP_FocusOptionsMenu[] =
 
 	{IT_STRING|IT_CVAR,	NULL, "Show \"FOCUS LOST\"",						&cv_showfocuslost,			80},
 
-	{IT_STRING|IT_CVAR,	NULL, "Hide mouse While Focused",					&cv_alwaysgrabmouse,	   100},
+	{IT_STRING|IT_CVAR,	NULL, "Always Grab Mouse While Focused",			&cv_alwaysgrabmouse,	   100},
 };
 
 static const char* OP_FocusOptionsTooltips[] =
@@ -3588,6 +3588,11 @@ void SaturnHud_menu_Onchange(void)
 
 	OP_SaturnHudMenu[sh_coloritem].status = status;
 	OP_SaturnHudMenu[sh_colorhud_customcolor].status = status;
+}
+
+void GameFocus_menu_Onchange(void)
+{
+	OP_FocusOptionsMenu[5].status = cv_usemouse.value ? IT_GRAYEDOUT : IT_STRING | IT_CVAR;
 }
 
 #ifdef HWRENDER
