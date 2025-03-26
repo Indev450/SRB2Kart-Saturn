@@ -6492,7 +6492,7 @@ static void M_AddonAutoLoad(INT32 ch)
 	FILE *autoloadconfigfile;
 
 	// check our controls //
-	if (ch != 'y' && ch != KEY_ENTER && ch != KEY_RSHIFT)
+	if (ch != 'y' && ch != KEY_ENTER && ch != KEY_END)
 	{
 		S_StartSound(NULL, sfx_s26d);
 		return;
@@ -6679,7 +6679,7 @@ static void M_HandleAddons(INT32 choice)
 			}
 			break;
 
-		case KEY_RSHIFT:
+		case KEY_END:
 			{
 				boolean refresh = true;
 				if (!dirmenu[dir_on[menudepthleft]])
