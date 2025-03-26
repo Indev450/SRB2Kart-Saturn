@@ -2061,7 +2061,7 @@ void R_AddSprites(sector_t *sec, INT32 lightlevel)
 
 	// Handle all things in sector.
 	// If a limit exists, handle things a tiny bit different.
-	const fixed_t limit_dist = (fixed_t)(cv_drawdist.value) * mapobjectscale;
+	const INT32 limit_dist = cv_drawdist.value;
 
 	for (thing = sec->thinglist; thing; thing = thing->snext)
 	{
@@ -2900,11 +2900,11 @@ boolean R_ThingVisible (mobj_t *thing)
 	return true;
 }
 
-boolean R_ThingWithinDist(mobj_t *thing, fixed_t limit_dist)
+boolean R_ThingWithinDist(mobj_t *thing, INT32 limit_dist)
 {
 	if (limit_dist)
 	{
-		if (P_AproxDistance(viewx-thing->x, viewy-thing->y) > limit_dist)
+		if (P_AproxDistance(viewx-thing->x, viewy-thing->y)/mapobjectscale > limit_dist)
 		{
 			return false;
 		}
