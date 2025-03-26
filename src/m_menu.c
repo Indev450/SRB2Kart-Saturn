@@ -1737,23 +1737,23 @@ static menuitem_t OP_SoundAdvancedMenu[] =
 #ifdef HAVE_OPENMPT
 	{IT_HEADER, NULL, "Tracker Module Options", NULL, 0},
 
-	{IT_STRING | IT_CVAR, 	NULL, "Instrument Filter", 			&cv_modfilter, 		 20},
-	{IT_STRING | IT_CVAR,	NULL, "Amiga Resampler", 			&cv_amigafilter, 	 30},
+	{IT_STRING | IT_CVAR, 	NULL, "Instrument Filter", 			&cv_modfilter, 		 10},
+	{IT_STRING | IT_CVAR,	NULL, "Amiga Resampler", 			&cv_amigafilter, 	 20},
 #if OPENMPT_API_VERSION_MAJOR < 1 && OPENMPT_API_VERSION_MINOR > 4
-	{IT_STRING | IT_CVAR, 	NULL, "Amiga Type", 				&cv_amigatype, 		 40},
+	{IT_STRING | IT_CVAR, 	NULL, "Amiga Type", 				&cv_amigatype, 		 25},
 #endif
-	{IT_STRING | IT_CVAR, 	NULL, "Stereo Seperation", 			&cv_stereosep, 		 50},
+	{IT_STRING | IT_CVAR, 	NULL, "Stereo Seperation", 			&cv_stereosep, 		 35},
 #endif
 
-	{IT_HEADER, 			NULL, "Misc", 						NULL, 				70},
+	{IT_HEADER, 			NULL, "Misc", 						NULL, 				45},
 
-	{IT_STRING | IT_CVAR, 	NULL, "Grow Music", 				&cv_growmusic, 		90},
-	{IT_STRING | IT_CVAR, 	NULL, "Invulnerability Music", 		&cv_supermusic, 	100},
+	{IT_STRING | IT_CVAR, 	NULL, "Grow Music", 				&cv_growmusic, 		55},
+	{IT_STRING | IT_CVAR, 	NULL, "Invulnerability Music", 		&cv_supermusic, 	60},
 
-	{IT_STRING | IT_CVAR, 	NULL, "Keep Map Music", 			&cv_keepmusic, 		120},
-	{IT_STRING | IT_CVAR, 	NULL, "Skip Intro Music", 			&cv_skipintromusic, 130},
+	{IT_STRING | IT_CVAR, 	NULL, "Keep Map Music", 			&cv_keepmusic, 		70},
+	{IT_STRING | IT_CVAR, 	NULL, "Skip Intro Music", 			&cv_skipintromusic, 75},
 
-	{IT_STRING | IT_CVAR, 	NULL, "Audio Buffer Size", 			&cv_audbuffersize, 	150},
+	{IT_STRING | IT_CVAR, 	NULL, "Audio Buffer Size", 			&cv_audbuffersize, 	80},
 };
 
 static const char* OP_SoundAdvancedTooltips[] =
@@ -3227,7 +3227,7 @@ menu_t OP_Player4CamOptionsDef = DEFAULTMENUSTYLE(NULL, OP_Player4CamOptionsMenu
 
 menu_t OP_ChatOptionsDef = DEFAULTMENUSTYLE("M_HUD", OP_ChatOptionsMenu, &OP_HUDOptionsDef, 30, 30);
 
-menu_t OP_SoundAdvancedDef = DEFAULTMENUSTYLE("M_SOUND", OP_SoundAdvancedMenu, &OP_SoundOptionsDef, 30, 30);
+menu_t OP_SoundAdvancedDef = DEFAULTSCROLLSTYLE("M_SOUND", OP_SoundAdvancedMenu, &OP_SoundOptionsDef, 30, 30);
 
 menu_t OP_FocusOptionsDef = DEFAULTMENUSTYLE(NULL, OP_FocusOptionsMenu, &OP_MainDef, 25, 30);
 
@@ -5407,7 +5407,6 @@ static void M_DrawGenericMenu(void)
 	DoToolTips(OP_MouseOptionsDef, OP_MouseTooltips);
 	DoToolTips(OP_VideoOptionsDef, OP_VideoTooltips);
 	DoToolTips(OP_SoundOptionsDef, OP_SoundTooltips);
-	DoToolTips(OP_SoundAdvancedDef, OP_SoundAdvancedTooltips);
 	DoToolTips(OP_FocusOptionsDef, OP_FocusOptionsTooltips);
 	DoToolTips(OP_ChatOptionsDef, OP_ChatOptionsTooltips);
 	DoToolTips(OP_GameOptionsDef, OP_GameTooltips);
@@ -5559,6 +5558,7 @@ static void M_DrawGenericScrollMenu(void)
 	DoToolTips(OP_SaturnDef, OP_SaturnTooltips);
 	DoToolTips(OP_SaturnHudDef, OP_SaturnHudTooltips);
 	DoToolTips(OP_AdvServerOptionsDef, OP_AdvServerOptionsTooltips);
+	DoToolTips(OP_SoundAdvancedDef, OP_SoundAdvancedTooltips);
 }
 
 static void M_DrawPauseMenu(void)
