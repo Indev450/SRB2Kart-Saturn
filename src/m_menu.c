@@ -1818,25 +1818,25 @@ static menuitem_t OP_DataOptionsMenu[] =
 static menuitem_t OP_ScreenshotOptionsMenu[] =
 {
 	{IT_HEADER, NULL, "Screenshots (F8)", NULL, 5},
-	{IT_STRING|IT_CVAR, NULL, "Storage Location",  &cv_screenshot_option,          15},
-	{IT_STRING|IT_CVAR|IT_CV_STRING, NULL, "Custom Folder", &cv_screenshot_folder, 25},
-	{IT_STRING|IT_CVAR, NULL, "Memory Level",      &cv_zlib_memory,                55},
-	{IT_STRING|IT_CVAR, NULL, "Compression Level", &cv_zlib_level,                 65},
-	{IT_STRING|IT_CVAR, NULL, "Strategy",          &cv_zlib_strategy,              75},
-	{IT_STRING|IT_CVAR, NULL, "Window Size",       &cv_zlib_window_bits,           85},
+	{IT_STRING|IT_CVAR, NULL, "Storage Location",  &cv_screenshot_option,          10},
+	{IT_STRING|IT_CVAR|IT_CV_STRING, NULL, "Custom Folder", &cv_screenshot_folder, 15},
+	{IT_STRING|IT_CVAR, NULL, "Memory Level",      &cv_zlib_memory,                30},
+	{IT_STRING|IT_CVAR, NULL, "Compression Level", &cv_zlib_level,                 35},
+	{IT_STRING|IT_CVAR, NULL, "Strategy",          &cv_zlib_strategy,              40},
+	{IT_STRING|IT_CVAR, NULL, "Window Size",       &cv_zlib_window_bits,           45},
 
-	{IT_HEADER, NULL, "Movie Mode (F9)", NULL, 100},
-	{IT_STRING|IT_CVAR, NULL, "Storage Location",  &cv_movie_option,              110},
-	{IT_STRING|IT_CVAR|IT_CV_STRING, NULL, "Custom Folder", &cv_movie_folder, 	  120},
-	{IT_STRING|IT_CVAR, NULL, "Capture Mode",      &cv_moviemode,                 150},
+	{IT_HEADER, NULL, "Movie Mode (F9)", NULL, 55},
+	{IT_STRING|IT_CVAR, NULL, "Storage Location",  &cv_movie_option,              60},
+	{IT_STRING|IT_CVAR|IT_CV_STRING, NULL, "Custom Folder", &cv_movie_folder, 	  65},
+	{IT_STRING|IT_CVAR, NULL, "Capture Mode",      &cv_moviemode,                 80},
 
-	{IT_STRING|IT_CVAR, NULL, "Region Optimizing", &cv_gif_optimize,              160},
-	{IT_STRING|IT_CVAR, NULL, "Downscaling",       &cv_gif_downscale,             170},
+	{IT_STRING|IT_CVAR, NULL, "Region Optimizing", &cv_gif_optimize,              90},
+	{IT_STRING|IT_CVAR, NULL, "Downscaling",       &cv_gif_downscale,             95},
 
-	{IT_STRING|IT_CVAR, NULL, "Memory Level",      &cv_zlib_memorya,              160},
-	{IT_STRING|IT_CVAR, NULL, "Compression Level", &cv_zlib_levela,               170},
-	{IT_STRING|IT_CVAR, NULL, "Strategy",          &cv_zlib_strategya,            180},
-	{IT_STRING|IT_CVAR, NULL, "Window Size",       &cv_zlib_window_bitsa,         190},
+	{IT_STRING|IT_CVAR, NULL, "Memory Level",      &cv_zlib_memorya,              90},
+	{IT_STRING|IT_CVAR, NULL, "Compression Level", &cv_zlib_levela,               95},
+	{IT_STRING|IT_CVAR, NULL, "Strategy",          &cv_zlib_strategya,            100},
+	{IT_STRING|IT_CVAR, NULL, "Window Size",       &cv_zlib_window_bitsa,         105},
 };
 
 enum
@@ -3259,7 +3259,7 @@ menu_t OP_OpenGLOptionsDef = DEFAULTSCROLLSTYLE("M_VIDEO", OP_OpenGLOptionsMenu,
 menu_t OP_ExpOptionsDef = DEFAULTSCROLLSTYLE("M_VIDEO", OP_ExpOptionsMenu, &OP_VideoOptionsDef, 30, 25);
 
 menu_t OP_DataOptionsDef = DEFAULTMENUSTYLE("M_DATA", OP_DataOptionsMenu, &OP_MainDef, 60, 30);
-menu_t OP_ScreenshotOptionsDef = DEFAULTMENUSTYLE("M_SCSHOT", OP_ScreenshotOptionsMenu, &OP_DataOptionsDef, 30, 30);
+menu_t OP_ScreenshotOptionsDef = DEFAULTSCROLLSTYLE("M_SCSHOT", OP_ScreenshotOptionsMenu, &OP_DataOptionsDef, 30, 30);
 menu_t OP_AddonsOptionsDef = DEFAULTMENUSTYLE("M_ADDONS", OP_AddonsOptionsMenu, &OP_DataOptionsDef, 30, 30);
 menu_t OP_ProtocolDef = DEFAULTMENUSTYLE(NULL, OP_ProtocolMenu, &OP_DataOptionsDef, 30, 30);
 #ifdef HAVE_DISCORDRPC
