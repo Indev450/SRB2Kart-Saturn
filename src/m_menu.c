@@ -1589,7 +1589,7 @@ enum
 	op_exp_precipinter,
 	op_exp_precipmoscale,
 	op_exp_lessprecip,
-	op_exp_dirlight,
+	//op_exp_dirlight,
 	op_exp_skybox,
 	op_exp_accuratefps,
 #ifdef HWRENDER
