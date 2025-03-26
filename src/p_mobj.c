@@ -6359,12 +6359,8 @@ void P_MobjThinker(mobj_t *mobj)
 					return;
 				}
 
-				// dont need to extra check with K_ShouldSlopeRoll
-				if (cv_sloperoll.value == 2 && mobj->state == &states[S_SHADOW])
-				{
-					mobj->slopepitch = mobj->target->slopepitch;
-					mobj->sloperoll = mobj->target->sloperoll;
-				}
+				K_RollMobjBySlopes(mobj, mobj->target->standingslope);
+
 				P_AddShadow(mobj);
 				break;
 			//{ SRB2kart mobs
