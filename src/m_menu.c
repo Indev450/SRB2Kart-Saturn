@@ -5411,7 +5411,6 @@ static void M_DrawGenericMenu(void)
 	DoToolTips(OP_ChatOptionsDef, OP_ChatOptionsTooltips);
 	DoToolTips(OP_GameOptionsDef, OP_GameTooltips);
 	DoToolTips(OP_ServerOptionsDef, OP_ServerOptionsTooltips);
-	DoToolTips(OP_PlayerDistortDef, OP_PlayerDistortTooltips);
 	DoToolTips(OP_SaturnCreditsDef, OP_CreditTooltips); // C:
 	DoToolTips(OP_BirdDef, OP_BirdTooltips);
 	DoToolTips(OP_TiltDef, OP_TiltTooltips);
@@ -5559,6 +5558,7 @@ static void M_DrawGenericScrollMenu(void)
 	DoToolTips(OP_SaturnHudDef, OP_SaturnHudTooltips);
 	DoToolTips(OP_AdvServerOptionsDef, OP_AdvServerOptionsTooltips);
 	DoToolTips(OP_SoundAdvancedDef, OP_SoundAdvancedTooltips);
+	DoToolTips(OP_PlayerDistortDef, OP_PlayerDistortTooltips);
 }
 
 static void M_DrawPauseMenu(void)
