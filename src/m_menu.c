@@ -6471,6 +6471,8 @@ static void M_DrawAddons(void)
 
 	if (modifiedgame)
 		V_DrawSmallScaledPatch(x, y + 4, 0, addonsp[NUM_EXT+2]);
+
+	V_DrawThinString(0, BASEVIDHEIGHT-10, V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_TRANSLUCENT|V_ALLOWLOWERCASE, ("END Key - Add addon to autoload"));
 }
 
 static void M_AddonExec(INT32 ch)
