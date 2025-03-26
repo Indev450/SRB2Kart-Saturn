@@ -1157,10 +1157,10 @@ static menuitem_t OP_MainMenu[] =
 	{IT_CALL|IT_STRING,			NULL, "Tricks & Secrets (F1)",	M_Manual,					115},
 	{IT_CALL|IT_STRING,			NULL, "Play Credits",			M_Credits,					125},
 
-	{IT_SUBMENU|IT_STRING,		NULL, "Saturn Options...",		&OP_SaturnDef,				145},
+	{IT_SUBMENU|IT_STRING,		NULL, "Saturn Options...",		&OP_SaturnDef,				140},
 
-	{IT_SUBMENU|IT_STRING,		NULL, "Bird...",				&OP_BirdDef,				155},
-	{IT_CALL|IT_STRING,			NULL, "Local Skin Options...",	M_LocalSkinMenu,			165},
+	{IT_SUBMENU|IT_STRING,		NULL, "Bird...",				&OP_BirdDef,				150},
+	{IT_CALL|IT_STRING,			NULL, "Local Skin Options...",	M_LocalSkinMenu,			160},
 };
 
 enum
@@ -3125,7 +3125,7 @@ menu_t OP_MainDef =
 	&MainDef,
 	OP_MainMenu,
 	M_DrawGenericMenu,
-	60, 30,
+	60, 25,
 	0,
 	NULL,
 	{NULL}
