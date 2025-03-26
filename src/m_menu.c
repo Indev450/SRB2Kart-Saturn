@@ -5585,16 +5585,15 @@ static void M_DrawCenteredMenu(void)
 			case IT_PATCH:
 				if (currentMenu->menuitems[i].patch && currentMenu->menuitems[i].patch[0])
 				{
+					patch_t *p = W_CachePatchName(currentMenu->menuitems[i].patch, PU_CACHE);
+
 					if (currentMenu->menuitems[i].status & IT_CENTER)
 					{
-						patch_t *p;
-						p = W_CachePatchName(currentMenu->menuitems[i].patch, PU_CACHE);
 						V_DrawScaledPatch((BASEVIDWIDTH - SHORT(p->width))/2, y, 0, p);
 					}
 					else
 					{
-						V_DrawScaledPatch(x, y, 0,
-							W_CachePatchName(currentMenu->menuitems[i].patch, PU_CACHE));
+						V_DrawScaledPatch(x, y, 0, p);
 					}
 				}
 				/* FALLTHRU */
