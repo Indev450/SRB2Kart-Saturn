@@ -1558,9 +1558,12 @@ static menuitem_t OP_ExpOptionsMenu[] =
 	{IT_STRING | IT_CVAR, 	NULL, "Screen Textures", 				&cv_glscreentextures, 		 60},
 #ifdef USE_FBO_OGL
 	{IT_STRING | IT_CVAR, 	NULL, "FBO Downsampling support", 		&cv_glframebuffer, 			 65},
-#endif
 	{IT_STRING | IT_CVAR, 	NULL, "Palette Depth", 					&cv_glpalettedepth, 		 75},
 	{IT_DISABLED, 			NULL, "", 								NULL,     			 		 85},	// dummy text
+#else
+	{IT_STRING | IT_CVAR, 	NULL, "Palette Depth", 					&cv_glpalettedepth, 		 70},
+	{IT_DISABLED, 			NULL, "", 								NULL,     			 		 80},	// dummy text
+#endif
 #endif
 };
 
