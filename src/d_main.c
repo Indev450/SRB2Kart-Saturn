@@ -1210,6 +1210,7 @@ boolean achi_speedo_clr = false;   // extra speedometer colour check
 boolean kartz_speedo = false;      // kartZ speedo
 
 boolean clr_hud = false;           // colour hud check
+boolean driftgaugegfx_clr = false; // driftgauge colour check
 boolean big_lap = false;           // bigger lap counter
 boolean big_lap_color = false;     // bigger lap counter but colour
 boolean statdp = false;            // stat display for extended player setup
@@ -1391,7 +1392,8 @@ static void D_CheckSaturnExtraFiles(void)
 			nametaggfx = true;
 		}
 
-		if (W_CheckMultipleLumps("K_DGAU","K_DCAU","K_DGSU","K_DCSU", NULL))
+		// driftgauge
+		if (W_CheckMultipleLumps("K_DGAU","K_DGSU", NULL))
 		{
 			driftgaugegfx = true;
 		}
@@ -1402,6 +1404,7 @@ static void D_CheckSaturnExtraFiles(void)
 			multiitem_icon = true;
 		}
 
+		// extra round joystick inputdisplay sprites
 		if (W_CheckMultipleLumps("JOYBCK","JOYKNB","JOYSHD", NULL))
 		{
 			joystickicon = true;
@@ -1409,25 +1412,34 @@ static void D_CheckSaturnExtraFiles(void)
 		}
 	}
 
+	// now check for colour hud stuff
 	if (found_extra2_kart)
 	{
 		mainwads++;
 
+		// kart vanilla hud patches but colourizable
+		if (W_CheckMultipleLumps("K_SCTIME", "K_SCTIMW", "K_SCLAPS", "K_SCLAPW","K_SCBALN", "K_SCBALW",
+			"K_SCKARM", "K_SCTOUT", "K_ISMULC", "K_ITMULC", "K_ITBC", "K_ITBCD", "K_ISBC", "K_ISBCD", NULL))
+		{
+			clr_hud = true;
+		}
+
+		// extra speedo but colour
 		if (W_LumpExists("SC_SMSTC"))
 		{
 			xtra_speedo_clr = true;
 		}
 
+		// achii speedo but colour
 		if (W_CheckMultipleLumps("SC_AMSTC", "K_TRNULL", "SC_AKMH", "SC_AMPH", "SC_AFRAC", "SC_APERC", NULL))
 		{
 			achi_speedo_clr = true;
 		}
 
-		// now check for colour hud stuff
-		if (W_CheckMultipleLumps("K_SCTIME", "K_SCTIMW", "K_SCLAPS", "K_SCLAPW","K_SCBALN", "K_SCBALW",
-		"K_SCKARM", "K_SCTOUT", "K_ISMULC", "K_ITMULC", "K_ITBC", "K_ITBCD", "K_ISBC", "K_ISBCD", NULL))
+		// driftgauge but colour
+		if (W_CheckMultipleLumps("K_DCAU","K_DCSU", NULL))
 		{
-			clr_hud = true;
+			driftgaugegfx_clr = true;
 		}
 
 		// check for bigger lap count but color** its color bitch
@@ -1437,6 +1449,8 @@ static void D_CheckSaturnExtraFiles(void)
 		}
 	}
 
+	// can be used for custom hud stuff
+	// currently used for the v1 beta hud
 	if (found_extra3_kart)
 	{
 		mainwads++;
@@ -1449,6 +1463,7 @@ static void D_CheckSaturnExtraFiles(void)
 			PUSHCONS(driftgaugestyle_cons_temp, last_driftgauge_i, 5, "Extra");
 		}
 
+		// 80x11 speedometer crap but colour
 		if (W_LumpExists("SC_SM3TC"))
 		{
 			xtra_speedo_clr3 = true;
