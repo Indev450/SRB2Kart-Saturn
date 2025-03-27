@@ -252,16 +252,8 @@ void HWR_DrawStretchyFixedPatch(GLPatch_t *gpatch, fixed_t x, fixed_t y, fixed_t
 		}
 	}
 
-	if (pscale != FRACUNIT)
-	{
-		fwidth = (float)SHORT(gpatch->width) * fscalew * dupx;
-		fheight = (float)SHORT(gpatch->height) * fscaleh * dupy;
-	}
-	else
-	{
-		fwidth = (float)SHORT(gpatch->width) * dupx;
-		fheight = (float)SHORT(gpatch->height) * dupy;
-	}
+	fwidth = (float)SHORT(gpatch->width) * fscalew * dupx;
+	fheight = (float)SHORT(gpatch->height) * fscaleh * dupy;
 
 	// positions of the cx, cy, are between 0 and vid.width/vid.height now, we need them to be between -1 and 1
 	cx = -1.0f + (cx / (vid.width / 2.0f));
