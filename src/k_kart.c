@@ -2476,14 +2476,19 @@ void K_SpawnBattlePoints(player_t *source, player_t *victim, UINT8 amount)
 	if (!source || !source->mo)
 		return;
 
-	if (amount == 1)
-		st = S_BATTLEPOINT1A;
-	else if (amount == 2)
-		st = S_BATTLEPOINT2A;
-	else if (amount == 3)
-		st = S_BATTLEPOINT3A;
-	else
-		return; // NO STATE!
+	switch (amount)
+	{
+		case 1:
+			st = S_BATTLEPOINT1A;
+			break;
+		case 2:
+			st = S_BATTLEPOINT2A;
+			break;
+		case 3:
+			st = S_BATTLEPOINT3A;
+		default:
+			return; // NO STATE!
+	}
 
 	pt = P_SpawnMobj(source->mo->x, source->mo->y, source->mo->z, MT_BATTLEPOINT);
 	P_SetTarget(&pt->target, source->mo);
