@@ -2411,7 +2411,7 @@ static menuitem_t OP_SaturnHudMenu[] =
 	{IT_STRING | IT_CVAR, NULL, "Colourized Itembox",					&cv_colorizeditembox,		 30},
 	{IT_STRING | IT_CVAR, NULL, "Colourized HUD Color",					&cv_colorizedhudcolor,		 35},
 
-	{IT_STRING | IT_CVAR, NULL, "Input Display outside of RA",		 	&cv_showinput, 	 			 45},
+	{IT_STRING | IT_CVAR, NULL, "Input Display",		 				&cv_showinput, 	 			 45},
 
 	{IT_STRING | IT_CVAR, NULL, "Stat Display",		 					&cv_showstats, 	 			 55},
 
@@ -2451,7 +2451,7 @@ static const char* OP_SaturnHudTooltips[] =
 	"Enable colourized hud.",
 	"Enable the colourized itembox when colourized hud is enabled.",
 	"The color to use instead of the player color when\ncolourized hud is enabled.",
-	"Displays the input display outside of Record Attack. Also adjusts the\nposition scale to match.",
+	"Displays the input display and lets you choose its style.",
 	"Enable the stat display.",
 	"Enable the use of the higher resolution want icons instead of rank\nfor some places.",
 	"Make the Postionnumber half the size.",

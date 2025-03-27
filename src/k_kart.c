@@ -10738,7 +10738,7 @@ static void K_drawInput(void)
 	static INT32 pn = 0;
 	INT32 offs, col;
 
-	if (!cv_showinput.value && !modeattacking) // dont bother
+	if (!cv_showinput.value) // dont bother
 		return;
 
 	if (timeinmap <= 105)
