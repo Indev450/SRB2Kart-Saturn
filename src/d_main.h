@@ -17,9 +17,9 @@
 #include "d_event.h"
 #include "w_wad.h"   // for MAX_WADFILES
 
-// make sure not to write back the config until it's been correctly loaded
 extern tic_t rendergametic;
 
+// make sure not to write back the config until it's been correctly loaded
 extern boolean loaded_config;
 
 extern char srb2home[256]; //Alam: My Home
