@@ -1329,18 +1329,21 @@ static void IdentifyVersion(void)
 	D_AddFile(va(pandf,srb2waddir,"patch.kart"), startupwadfiles);
 #endif
 	// completely optional
-	if (FIL_ReadFileOK(va(pandf,srb2waddir,"extra.kart"))) {
+	if (FIL_ReadFileOK(va(pandf,srb2waddir,"extra.kart")))
+	{
 		D_AddFile(va(pandf,srb2waddir,"extra.kart"), startupwadfiles);
 		found_extra_kart = true;
 	}
 
 	// completely optional 2: Back with a vengence
-	if (FIL_ReadFileOK(va(pandf,srb2waddir,"extra2.kart"))) {
+	if (FIL_ReadFileOK(va(pandf,srb2waddir,"extra2.kart")))
+	{
 		D_AddFile(va(pandf,srb2waddir,"extra2.kart"), startupwadfiles);
 		found_extra2_kart = true;
 	}
 
-	if (FIL_ReadFileOK(va(pandf,srb2waddir,"extra3.kart"))) {
+	if (FIL_ReadFileOK(va(pandf,srb2waddir,"extra3.kart")))
+	{
 		D_AddFile(va(pandf,srb2waddir,"extra3.kart"), startupwadfiles);
 		found_extra3_kart = true;
 	}
@@ -1386,6 +1389,136 @@ static inline void D_MakeTitleString(char *s)
 
 	temp[80] = '\0';
 	strcpy(s, temp);
+}
+
+static void D_CheckSaturnExtraFiles(void)
+{
+	// Possible value that changes depending on whether required files for speedometer are found or not
+	CV_PossibleValue_t speedo_cons_temp[NUMSPEEDOSTUFF] = {{1, "Default"}, {0, NULL}, {0, NULL}, {0, NULL}, {0, NULL}, {0, NULL}};
+	CV_PossibleValue_t driftgaugestyle_cons_temp[NUMSPEEDOSTUFF] = {{1, "Default"}, {2, "Small"}, {3, "Big Numbers"}, {4, "Numbers Only"}, {0, NULL}, {0, NULL}};
+	CV_PossibleValue_t inputdisplay_cons_temp[NUMINPUTDISPLAYSTUFF] = {{0, "Off"}, {1, "Wheel"}, {2, "Stick"}, {0, NULL}, {0, NULL}};
+
+	unsigned last_speedo_i = 0;
+	unsigned last_driftgauge_i = 0;
+	unsigned last_inputdisplay_i = 2;
+#define PUSHCONS(cons, i, id, name) { ++i; cons[i].value = id; cons[i].strvalue = name; }
+
+	// found the funny, add it in!
+	if (found_extra_kart)
+	{
+		mainwads++;
+
+		// now check for extra speedometer stuff
+		if (W_CheckMultipleLumps("SP_SMSTC", "K_TRNULL", "SP_MKMH", "SP_MMPH", "SP_MFRAC", "SP_MPERC", NULL))
+		{
+			xtra_speedo = true;
+			PUSHCONS(speedo_cons_temp, last_speedo_i, 2, "Small");
+		}
+
+		// now check for achii speedometer stuff
+		if (W_CheckMultipleLumps("SP_AMSTC", "K_TRNULL", "SP_AKMH", "SP_AMPH", "SP_AFRAC", "SP_APERC", NULL))
+		{
+			achi_speedo = true;
+			PUSHCONS(speedo_cons_temp, last_speedo_i, 3, "Achii");
+		}
+
+		// check for bigger lap count
+		if (W_CheckMultipleLumps("K_STLAPB", "K_STLA2B", NULL))
+		{
+			big_lap = true;
+		}
+
+		// kartzspeedo
+		if (W_CheckMultipleLumps("K_KZSP1", "K_KZSP2", "K_KZSP3", "K_KZSP4", "K_KZSP5",
+			"K_KZSP6", "K_KZSP7", "K_KZSP8", "K_KZSP9", "K_KZSP10", "K_KZSP11", "K_KZSP12",
+			"K_KZSP13", "K_KZSP14", "K_KZSP15", "K_KZSP16", "K_KZSP17", "K_KZSP18", "K_KZSP19",
+			"K_KZSP20", "K_KZSP21", "K_KZSP22", "K_KZSP23", "K_KZSP24", "K_KZSP25", NULL))
+		{
+			kartz_speedo = true;
+			PUSHCONS(speedo_cons_temp, last_speedo_i, 4, "P-Meter");
+		}
+
+		// stat display for extended player setup
+		if (W_CheckMultipleLumps("K_STATNB", "K_STATN1", "K_STATN2",
+			"K_STATN3", "K_STATN4", "K_STATN5", "K_STATN6", NULL))
+		{
+			statdp = true;
+		}
+
+		// Nametag stuffs
+		if (W_CheckMultipleLumps("NTLINE", "NTLINEV", "NTSP", "NTWH", NULL))
+		{
+			nametaggfx = true;
+		}
+
+		if (W_CheckMultipleLumps("K_DGAU","K_DCAU","K_DGSU","K_DCSU", NULL))
+		{
+			driftgaugegfx = true;
+		}
+
+		// extra item icons
+		if (W_CheckMultipleLumps("K_ITSHO2", "K_ITSHO3", "K_ITBAN2", "K_ITBAN3", "K_ITBAN4", "K_ITJAW2", NULL))
+		{
+			multiitem_icon = true;
+		}
+
+		if (W_CheckMultipleLumps("JOYBCK","JOYKNB","JOYSHD", NULL))
+		{
+			joystickicon = true;
+			PUSHCONS(inputdisplay_cons_temp, last_inputdisplay_i, 3, "StickGFX");
+		}
+	}
+
+	if (found_extra2_kart)
+	{
+		mainwads++;
+
+		if (W_LumpExists("SC_SMSTC"))
+		{
+			xtra_speedo_clr = true;
+		}
+
+		if (W_CheckMultipleLumps("SC_AMSTC", "K_TRNULL", "SC_AKMH", "SC_AMPH", "SC_AFRAC", "SC_APERC", NULL))
+		{
+			achi_speedo_clr = true;
+		}
+
+		// now check for colour hud stuff
+		if (W_CheckMultipleLumps("K_SCTIME", "K_SCTIMW", "K_SCLAPS", "K_SCLAPW","K_SCBALN", "K_SCBALW",
+		"K_SCKARM", "K_SCTOUT", "K_ISMULC", "K_ITMULC", "K_ITBC", "K_ITBCD", "K_ISBC", "K_ISBCD", NULL))
+		{
+			clr_hud = true;
+		}
+
+		// check for bigger lap count but color** its color bitch
+		if (W_CheckMultipleLumps("K_SCLAPB", "K_SCLA2B", NULL))
+		{
+			big_lap_color = true;
+		}
+	}
+
+	if (found_extra3_kart)
+	{
+		mainwads++;
+
+		// 80x11 speedometer crap
+		if (W_LumpExists("SP_SM3TC"))
+		{
+			xtra_speedo3 = true;
+			PUSHCONS(speedo_cons_temp, last_speedo_i, 5, "Extra");
+			PUSHCONS(driftgaugestyle_cons_temp, last_driftgauge_i, 5, "Extra");
+		}
+
+		if (W_LumpExists("SC_SM3TC"))
+		{
+			xtra_speedo_clr3 = true;
+		}
+	}
+
+#undef PUSHCONS
+	memcpy(speedo_cons_t, speedo_cons_temp, sizeof(speedo_cons_t));
+	memcpy(driftgaugestyle_cons_t, driftgaugestyle_cons_temp, sizeof(driftgaugestyle_cons_t));
+	memcpy(inputdisplay_cons_t, inputdisplay_cons_temp, sizeof(inputdisplay_cons_t));
 }
 
 //
@@ -1636,112 +1769,7 @@ void D_SRB2Main(void)
 
 #endif //ifndef DEVELOP
 
-	// Possible value that changes depending on whether required files for speedometer are found or not
-	CV_PossibleValue_t speedo_cons_temp[NUMSPEEDOSTUFF] = {{1, "Default"}, {0, NULL}, {0, NULL}, {0, NULL}, {0, NULL}, {0, NULL}};
-	CV_PossibleValue_t driftgaugestyle_cons_temp[NUMSPEEDOSTUFF] = {{1, "Default"}, {2, "Small"}, {3, "Big Numbers"}, {4, "Numbers Only"}, {0, NULL}, {0, NULL}}; // ugh i dont want this but bleh
-	CV_PossibleValue_t inputdisplay_cons_temp[NUMINPUTDISPLAYSTUFF] = {{0, "Off"}, {1, "Wheel"}, {2, "Stick"}, {0, NULL}, {0, NULL}};
-
-	unsigned last_speedo_i = 0;
-	unsigned last_driftgauge_i = 0;
-	unsigned last_inputdisplay_i = 2;
-#define PUSHCONS(cons, i, id, name) { ++i; cons[i].value = id; cons[i].strvalue = name; }
-
-	if (found_extra_kart || found_extra2_kart || found_extra3_kart) // found the funny, add it in!
-	{
-		// HAYA: These are seperated for a reason lmao
-		if (found_extra_kart)
-			mainwads++;
-		if (found_extra2_kart)
-			mainwads++;
-		if (found_extra3_kart)
-			mainwads++;
-
-		// now check for extra speedometer stuff
-		if (W_CheckMultipleLumps("SP_SMSTC", "K_TRNULL", "SP_MKMH", "SP_MMPH", "SP_MFRAC", "SP_MPERC", NULL))
-		{
-			xtra_speedo = true;
-			PUSHCONS(speedo_cons_temp, last_speedo_i, 2, "Small");
-		}
-
-		if (W_LumpExists("SC_SMSTC"))
-			xtra_speedo_clr = true;
-
-		// now check for achii speedometer stuff
-		if (W_CheckMultipleLumps("SP_AMSTC", "K_TRNULL", "SP_AKMH", "SP_AMPH", "SP_AFRAC", "SP_APERC", NULL))
-		{
-			achi_speedo = true;
-			PUSHCONS(speedo_cons_temp, last_speedo_i, 3, "Achii");
-		}
-
-		if (W_CheckMultipleLumps("SC_AMSTC", "K_TRNULL", "SC_AKMH", "SC_AMPH", "SC_AFRAC", "SC_APERC", NULL))
-			achi_speedo_clr = true;
-
-		// check for bigger lap count
-		if (W_CheckMultipleLumps("K_STLAPB", "K_STLA2B", NULL))
-			big_lap = true;
-
-		// now check for colour hud stuff
-		if (W_CheckMultipleLumps("K_SCTIME", "K_SCTIMW", "K_SCLAPS", "K_SCLAPW", \
-			"K_SCBALN", "K_SCBALW", "K_SCKARM", "K_SCTOUT", "K_ISMULC", "K_ITMULC", "K_ITBC", "K_ITBCD", "K_ISBC", "K_ISBCD", NULL))
-			clr_hud = true;
-
-		// check for bigger lap count but color** its color bitch
-		if (W_CheckMultipleLumps("K_SCLAPB", "K_SCLA2B", NULL))
-			big_lap_color = true;
-
-		// kartzspeedo
-		if (W_CheckMultipleLumps("K_KZSP1", "K_KZSP2", "K_KZSP3", "K_KZSP4", "K_KZSP5", \
-			"K_KZSP6", "K_KZSP7", "K_KZSP8", "K_KZSP9", "K_KZSP10", "K_KZSP11", "K_KZSP12", \
-			"K_KZSP13", "K_KZSP14", "K_KZSP15", "K_KZSP16", "K_KZSP17", "K_KZSP18", "K_KZSP19", \
-			"K_KZSP20", "K_KZSP21", "K_KZSP22", "K_KZSP23", "K_KZSP24", "K_KZSP25", NULL))
-		{
-			kartz_speedo = true;
-			PUSHCONS(speedo_cons_temp, last_speedo_i, 4, "P-Meter");
-		}
-
-		// stat display for extended player setup
-		if (W_CheckMultipleLumps("K_STATNB", "K_STATN1", "K_STATN2", "K_STATN3", "K_STATN4", \
-			"K_STATN5", "K_STATN6", NULL))
-			statdp = true;
-
-		// Nametag stuffs
-		if (W_CheckMultipleLumps("NTLINE", "NTLINEV", "NTSP", "NTWH", NULL))
-			nametaggfx = true;
-
-		if (W_CheckMultipleLumps("K_DGAU","K_DCAU","K_DGSU","K_DCSU", NULL))
-		{
-			driftgaugegfx = true;
-			PUSHCONS(inputdisplay_cons_temp, last_inputdisplay_i, 3, "StickGFX");
-		}
-
-		if (W_CheckMultipleLumps("JOYBCK","JOYKNB","JOYSHD", NULL))
-		{
-			joystickicon = true;
-		}
-
-		// extra item icons
-		if (W_CheckMultipleLumps("K_ITSHO2", "K_ITSHO3", "K_ITBAN2", "K_ITBAN3", "K_ITBAN4", "K_ITJAW2", NULL))
-			multiitem_icon = true;
-
-		if (found_extra3_kart)
-		{
-			// 80x11 speedometer crap
-			if (W_LumpExists("SP_SM3TC"))
-			{
-				xtra_speedo3 = true;
-				PUSHCONS(speedo_cons_temp, last_speedo_i, 5, "Extra");
-				PUSHCONS(driftgaugestyle_cons_temp, last_driftgauge_i, 5, "Extra");
-			}
-
-			if (W_LumpExists("SC_SM3TC"))
-				xtra_speedo_clr3 = true;
-		}
-	}
-
-#undef PUSHCONS
-	memcpy(speedo_cons_t, speedo_cons_temp, sizeof(speedo_cons_t));
-	memcpy(driftgaugestyle_cons_t, driftgaugestyle_cons_temp, sizeof(driftgaugestyle_cons_t));
-	memcpy(inputdisplay_cons_t, inputdisplay_cons_temp, sizeof(inputdisplay_cons_t));
+	D_CheckSaturnExtraFiles(); // check all the saturn stuff :3
 
 	// Do it before P_InitMapData because PNG patch
 	// conversion sometimes needs the palette
