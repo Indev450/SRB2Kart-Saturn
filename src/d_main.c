@@ -1216,6 +1216,7 @@ boolean statdp;            // stat display for extended player setup
 boolean nametaggfx;        // Nametag stuffs
 boolean driftgaugegfx;     // Driftgauge stuffs
 boolean multiitem_icon;    // Extra icons for Sneakers, Banana and Jawz
+boolean joystickicon;      // Extra icons for the joystick input display
 //
 
 static void IdentifyVersion(void)
@@ -1649,6 +1650,11 @@ void D_SRB2Main(void)
 
 		if (W_CheckMultipleLumps("K_DGAU","K_DCAU","K_DGSU","K_DCSU", NULL))
 			driftgaugegfx = true;
+
+		if (W_CheckMultipleLumps("JOYBCK","JOYKNB","JOYSHD", NULL))
+		{
+			joystickicon = true;
+		}
 
 		// extra item icons
 		if (W_CheckMultipleLumps("K_ITSHO2", "K_ITSHO3", "K_ITBAN2", "K_ITBAN3", "K_ITBAN4", "K_ITJAW2", NULL))
