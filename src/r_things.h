@@ -41,6 +41,7 @@
 // It is very rough, tho it is used only for optimizing out unnecessary
 // interpolation, so it is kinda ok on big distances.
 #define R_QuickCamDist(x, y) max(abs(((x)>>FRACBITS) - (viewx>>FRACBITS)), abs(((y)>>FRACBITS) - (viewy>>FRACBITS)))
+#define R_QuickCamDistFixed(x, y) (max(abs(((x)>>FRACBITS) - (viewx>>FRACBITS)), abs(((y)>>FRACBITS) - (viewy>>FRACBITS))) << FRACBITS)
 
 // Constant arrays used for psprite clipping
 //  and initializing clipping.
