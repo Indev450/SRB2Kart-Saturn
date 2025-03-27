@@ -47,6 +47,7 @@ extern boolean statdp;            // stat display for extended player setup
 extern boolean nametaggfx;        // Nametag stuffs
 extern boolean driftgaugegfx;     // Driftgauge stuffs
 extern boolean multiitem_icon;    // Extra icons for Sneakers, Banana and Jawz
+extern boolean joystickicon;      // Extra icons for the joystick input display
 //
 
 // autoload stuff

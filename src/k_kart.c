@@ -7818,6 +7818,10 @@ static patch_t *skp_speedpatchesachi[5];
 static patch_t *skp_smallstickerachiclr;
 static patch_t *skp_speedpatchesachiclr[5];
 
+static patch_t *joybacking;
+static patch_t *joyknob;
+static patch_t *joyshadow;
+
 void K_LoadKartHUDGraphics(void)
 {
 	INT32 i, j;
@@ -7942,6 +7946,13 @@ void K_LoadKartHUDGraphics(void)
 		driftgaugecolor =  W_CachePatchName("K_DCAU", PU_HUDGFX);
 		driftgaugesmall =  W_CachePatchName("K_DGSU", PU_HUDGFX);
 		driftgaugesmallcolor =  W_CachePatchName("K_DCSU", PU_HUDGFX);
+	}
+
+	if (joystickicon)
+	{
+		joybacking = W_CachePatchName("JOYBCK", PU_HUDGFX);
+		joyknob = W_CachePatchName("JOYKNB", PU_HUDGFX);
+		joyshadow = W_CachePatchName("JOYSHD", PU_HUDGFX);
 	}
 
 	// Starting countdown
@@ -11021,19 +11032,24 @@ static void K_drawKartFirstPerson(void)
 // doesn't need to ever support 4p
 static void K_drawInput(void)
 {
+	static INT32 pn = 0;
+	INT32 offs, col;
+
 	if (!cv_showinput.value && !modeattacking) // dont bother
 		return;
 
-	static INT32 pn = 0;
-	INT32 target = 0, splitflags = (V_SNAPTOBOTTOM|V_SNAPTORIGHT|V_HUDTRANS);
-	INT32 x = (BASEVIDWIDTH - 32 + cv_wheel_xoffset.value)*FRACUNIT, y = (BASEVIDHEIGHT - 24 + cv_wheel_yoffset.value)*FRACUNIT;
-	INT32 offs, col;
-	const INT32 accent1 = splitflags|colortranslations[K_GetHudColor()][5];
-	const INT32 accent2 = splitflags|colortranslations[K_GetHudColor()][9];
-	ticcmd_t *cmd = &stplyr->cmd;
-
 	if (timeinmap <= 105)
 		return;
+
+	INT32 target = 0, splitflags = (V_SNAPTOBOTTOM|V_SNAPTORIGHT|V_HUDTRANS);
+	INT32 x = (BASEVIDWIDTH - 32 + cv_wheel_xoffset.value)*FRACUNIT, y = (BASEVIDHEIGHT - 24 + cv_wheel_yoffset.value)*FRACUNIT;
+
+	const UINT8 hudcolor = K_GetHudColor();
+	const INT32 accent1 = splitflags|colortranslations[hudcolor][5];
+	const INT32 accent2 = splitflags|colortranslations[hudcolor][9];
+	const UINT8 *hudcolormap = R_GetTranslationColormap(0, hudcolor, GTC_CACHE);
+
+	ticcmd_t *cmd = &stplyr->cmd;
 
 	if (timeinmap < 113)
 	{
@@ -11081,10 +11097,19 @@ static void K_drawInput(void)
 		INT32 joyx, joyxoffs, joyy, joyyoffs, axis;
 		joyxoffs = -8, joyyoffs = -24;
 		joyx = x>>FRACBITS, joyy = y>>FRACBITS;
+		UINT8 *shadowcolormap = NULL;
 
 		// O backing
-		V_DrawFill(joyx+joyxoffs, joyy+joyyoffs-1, 16, 16, splitflags|accent2);
-		V_DrawFill(joyx+joyxoffs, joyy+joyyoffs+15, 16, 1, splitflags|31);
+		if (joystickicon)
+		{
+			shadowcolormap = R_GetTranslationColormap(0, SKINCOLOR_BLACK, GTC_CACHE);
+			V_DrawFixedPatch((joyx+joyxoffs)<<FRACBITS, (joyy+joyyoffs-1)<<FRACBITS, FRACUNIT, splitflags, joybacking, hudcolormap);
+		}
+		else
+		{
+			V_DrawFill(joyx+joyxoffs, joyy+joyyoffs-1, 16, 16, splitflags|accent2);
+			V_DrawFill(joyx+joyxoffs, joyy+joyyoffs+15, 16, 1, splitflags|31);
+		}
 
 		// time for pain and suffering
 		// kart does not have anything we can get analogue joystick y axis values from
@@ -11127,28 +11152,43 @@ static void K_drawInput(void)
 		if (cmd->driftturn || hudforward)
 		{
 			INT16 turning = encoremode ? -cmd->driftturn : cmd->driftturn;
-			// joystick hole
-			V_DrawFill(joyx+joyxoffs+5, joyy+joyyoffs+4, 6, 6, splitflags|accent1);
-			// joystick top and back
-			V_DrawFill(joyx+joyxoffs+3-turning/80,
-				joyy+joyyoffs+2-hudforward/80,
-				10, 10, splitflags|31);
-			V_DrawFill(joyx+joyxoffs+3-turning/64,
-				joyy+joyyoffs+1-hudforward/64,
-				10, 10, splitflags|accent1);
+
+			if (joystickicon)
+			{
+				V_DrawFixedPatch((joyx+joyxoffs+3-turning/80)<<FRACBITS, (joyy+joyyoffs+2-hudforward/80)<<FRACBITS, FRACUNIT, splitflags, joyknob, shadowcolormap);
+				V_DrawFixedPatch((joyx+joyxoffs+3-turning/64)<<FRACBITS, (joyy+joyyoffs+1-hudforward/64)<<FRACBITS, FRACUNIT, splitflags, joyknob, hudcolormap);
+			}
+			else
+			{
+				// joystick hole
+				V_DrawFill(joyx+joyxoffs+5, joyy+joyyoffs+4, 6, 6, splitflags|accent1);
+				// joystick top and back
+				V_DrawFill(joyx+joyxoffs+3-turning/80,
+					joyy+joyyoffs+2-hudforward/80,
+					10, 10, splitflags|31);
+				V_DrawFill(joyx+joyxoffs+3-turning/64,
+					joyy+joyyoffs+1-hudforward/64,
+					10, 10, splitflags|accent1);
+			}
 		}
 		else
 		{
-			V_DrawFill(joyx+joyxoffs+3, joyy+joyyoffs+11, 10, 1, splitflags|accent2);
-			V_DrawFill(joyx+joyxoffs+3,
-				joyy+joyyoffs+1,
-				10, 10,splitflags|accent1);
+			if (joystickicon)
+			{
+				V_DrawFixedPatch((joyx+joyxoffs+3)<<FRACBITS, (joyy+joyyoffs+8)<<FRACBITS, FRACUNIT, splitflags, joyshadow, shadowcolormap);
+				V_DrawFixedPatch((joyx+joyxoffs+3)<<FRACBITS, (joyy+joyyoffs+1)<<FRACBITS, FRACUNIT, splitflags, joyknob, hudcolormap);
+			}
+			else
+			{
+				V_DrawFill(joyx+joyxoffs+3, joyy+joyyoffs+11, 10, 1, splitflags|accent2);
+				V_DrawFill(joyx+joyxoffs+3,
+					joyy+joyyoffs+1,
+					10, 10,splitflags|accent1);
+			}
 		}
 	}
 	else
 	{
-		UINT8 *colormap = NULL;
-
 		if (!cmd->driftturn) // no turn
 			target = 0;
 		else // turning of multiple strengths!
@@ -11180,10 +11220,7 @@ static void K_drawInput(void)
 		if (target > 4)
 			target = 4;
 
-		if (K_GetHudColor())
-			colormap = R_GetTranslationColormap(0, K_GetHudColor(), GTC_CACHE);
-
-		V_DrawFixedPatch(x, y, FRACUNIT, splitflags, kp_inputwheel[target], colormap);
+		V_DrawFixedPatch(x, y, FRACUNIT, splitflags, kp_inputwheel[target], hudcolormap);
 	}
 }
 
