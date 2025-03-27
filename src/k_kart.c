@@ -7944,6 +7944,10 @@ void K_LoadKartHUDGraphics(void)
 	{
 		driftgauge =  W_CachePatchName("K_DGAU", PU_HUDGFX);
 		driftgaugecolor =  W_CachePatchName("K_DCAU", PU_HUDGFX);
+	}
+
+	if (driftgaugegfx_clr)
+	{
 		driftgaugesmall =  W_CachePatchName("K_DGSU", PU_HUDGFX);
 		driftgaugesmallcolor =  W_CachePatchName("K_DCSU", PU_HUDGFX);
 	}
