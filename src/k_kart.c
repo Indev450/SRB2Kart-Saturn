@@ -250,7 +250,7 @@ consvar_t cv_colorizedhudcolor = {"colorizedhudcolor", "Skin Color", CV_SAVE, Hu
 // driftgauge stuffs
 static CV_PossibleValue_t driftgaugeoffset_cons_t[] = {
 	{-FRACUNIT*128, "MIN"}, {FRACUNIT*128, "MAX"}, {0, NULL}};
-CV_PossibleValue_t driftgaugestyle_cons_t[NUMSPEEDOSTUFF];
+CV_PossibleValue_t driftgaugestyle_cons_t[NUMDGAUGESTUFF];
 
 consvar_t cv_driftgauge = {"kartdriftgauge", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_driftgaugeofs = {"kartdriftgaugeoffset", "-20", CV_FLOAT|CV_SAVE, driftgaugeoffset_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
@@ -7733,6 +7733,7 @@ static patch_t *kp_itembgclr[4];
 
 //Kartz speedo
 static patch_t *kp_kartzspeedo[25];
+static patch_t *kp_kartzspeedo_smol[25];
 
 static patch_t *kp_startcountdown[16];
 static patch_t *kp_racefinish[6];
@@ -7907,7 +7908,7 @@ void K_LoadKartHUDGraphics(void)
 
 	if (achi_speedo && achi_speedo_clr)
 	{
-		skp_smallstickerachiclr = 	  W_CachePatchName("SC_AMSTC", PU_HUDGFX);
+		skp_smallstickerachiclr    = W_CachePatchName("SC_AMSTC", PU_HUDGFX);
 		skp_speedpatchesachiclr[0] = W_CachePatchName("K_TRNULL", PU_HUDGFX); // lolxd
 		skp_speedpatchesachiclr[1] = W_CachePatchName("SC_AKMH",  PU_HUDGFX);
 		skp_speedpatchesachiclr[2] = W_CachePatchName("SC_AMPH",  PU_HUDGFX);
@@ -7929,6 +7930,22 @@ void K_LoadKartHUDGraphics(void)
 		for (size_t m = 0; m < sizeof(patchNames) / sizeof(patchNames[0]); ++m)
 		{
 			kp_kartzspeedo[m] = W_CachePatchName(patchNames[m], PU_HUDGFX);
+		}
+	}
+
+	if (kartz_speedo_smol)
+	{
+		const char* patchNames[] = {
+			"K_KZSS1", "K_KZSS2", "K_KZSS3", "K_KZSS4", "K_KZSS5",
+			"K_KZSS6", "K_KZSS7", "K_KZSS8", "K_KZSS9", "K_KZSS10",
+			"K_KZSS11", "K_KZSS12", "K_KZSS13", "K_KZSS14", "K_KZSS15",
+			"K_KZSS16", "K_KZSS17", "K_KZSS18", "K_KZSS19", "K_KZSS20",
+			"K_KZSS21", "K_KZSS22", "K_KZSS23", "K_KZSS24", "K_KZSS25"
+		};
+
+		for (size_t m = 0; m < sizeof(patchNames) / sizeof(patchNames[0]); ++m)
+		{
+			kp_kartzspeedo_smol[m] = W_CachePatchName(patchNames[m], PU_HUDGFX);
 		}
 	}
 
@@ -8548,7 +8565,7 @@ static void K_drawKartStats(void)
 	//Internal offset for speedometer
 	if (cv_kartspeedometer.value)
 	{
-		if ((cv_newspeedometer.value == 2 && xtra_speedo) || (cv_newspeedometer.value == 3 && achi_speedo) || (cv_newspeedometer.value == 5 && xtra_speedo3))
+		if ((cv_newspeedometer.value == 2 && xtra_speedo) || (cv_newspeedometer.value == 3 && achi_speedo) || (cv_newspeedometer.value == 6 && xtra_speedo3))
 			spdoffset = -10;
 		else
 			spdoffset = -14;
@@ -9630,7 +9647,7 @@ static void K_drawKartSpeedometer(void)
 	INT32 splitflags = K_calcSplitFlags(V_SNAPTOBOTTOM|V_SNAPTOLEFT);
 
 	// man.
-	const boolean useoldspeedo = ((cv_newspeedometer.value == 1) || (cv_newspeedometer.value == 2 && !xtra_speedo) || (cv_newspeedometer.value == 3 && !achi_speedo) || (cv_newspeedometer.value == 4 && !kartz_speedo) || (cv_newspeedometer.value == 5 && !xtra_speedo3));
+	const boolean useoldspeedo = ((cv_newspeedometer.value == 1) || (cv_newspeedometer.value == 2 && !xtra_speedo) || (cv_newspeedometer.value == 3 && !achi_speedo) || (cv_newspeedometer.value == 4 && !kartz_speedo) || (cv_newspeedometer.value == 5 && !kartz_speedo_smol) ||(cv_newspeedometer.value == 6 && !xtra_speedo3));
 
 	switch (cv_kartspeedometer.value)
 	{
@@ -9708,7 +9725,7 @@ static void K_drawKartSpeedometer(void)
 			V_DrawScaledPatch(SPDM_X + 31, SPDM_Y + 4, V_HUDTRANS|splitflags, skp_speedpatchesachi[cv_kartspeedometer.value]);
 		}
 		}
-	else if (cv_newspeedometer.value == 5 && xtra_speedo3) // why bother if we dont?
+	else if (cv_newspeedometer.value == 6 && xtra_speedo3) // why bother if we dont?
 	{
 		if (K_UseColorHud() && xtra_speedo_clr3) //Colourized hud
 		{
@@ -9723,7 +9740,7 @@ static void K_drawKartSpeedometer(void)
 	}
 	// Kart Z speedo bullshit...
 	// Draw the Speed counter.
-	else if (cv_newspeedometer.value == 4 && kartz_speedo)
+	else if ((cv_newspeedometer.value == 4 && kartz_speedo) || (cv_newspeedometer.value == 5 && kartz_speedo_smol))
 	{
 		fixed_t fuspeed = 0;
 		INT32 spdpatch = 0;
@@ -9748,7 +9765,14 @@ static void K_drawKartSpeedometer(void)
 		else if (((fuspeed < 57 && fuspeed > 54) || (fuspeed < 60 && fuspeed > 56) || (fuspeed > 59)) && !(leveltime & 4))
 			spdpatch = 23;
 
-		V_DrawScaledPatch(SPDM_X, SPDM_Y, V_HUDTRANS|splitflags, kp_kartzspeedo[spdpatch]);
+		patch_t *patch = NULL;
+
+		if (cv_newspeedometer.value == 4 && kartz_speedo)
+			patch = kp_kartzspeedo[spdpatch];
+		else if (cv_newspeedometer.value == 5 && kartz_speedo_smol)
+			patch = kp_kartzspeedo_smol[spdpatch];
+
+		V_DrawScaledPatch(SPDM_X, SPDM_Y, V_HUDTRANS|splitflags, patch);
 	}
 }
 
@@ -9768,7 +9792,7 @@ static void K_drawKartBumpersOrKarma(void)
 
 	if (cv_battlespeedo.value && !splitscreen)
 	{
-		if ((cv_newspeedometer.value == 2 && xtra_speedo) || (cv_newspeedometer.value == 3 && achi_speedo) || (cv_newspeedometer.value == 5 && xtra_speedo3))
+		if ((cv_newspeedometer.value == 2 && xtra_speedo) || (cv_newspeedometer.value == 3 && achi_speedo) || (cv_newspeedometer.value == 6 && xtra_speedo3))
 			fy += 5;
 		else
 			fy += 7;

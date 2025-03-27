@@ -39,6 +39,7 @@ extern boolean xtra_speedo_clr3;  // 80x11 extra speedometer colour check
 extern boolean achi_speedo;       // achiiro speedometer check
 extern boolean achi_speedo_clr;   // extra speedometer colour check
 extern boolean kartz_speedo;      // kartZ speedo
+extern boolean kartz_speedo_smol; // kartZ speedo but smol
 
 extern boolean clr_hud;           // colour hud check
 extern boolean driftgaugegfx_clr; // driftgauge colour check

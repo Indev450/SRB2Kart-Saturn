@@ -1268,6 +1268,7 @@ boolean xtra_speedo_clr3 = false;  // 80x 11 extra speedometer colour check
 boolean achi_speedo = false;       // achiiro speedometer check
 boolean achi_speedo_clr = false;   // extra speedometer colour check
 boolean kartz_speedo = false;      // kartZ speedo
+boolean kartz_speedo_smol = false; // kartZ speedo but smol
 
 boolean clr_hud = false;           // colour hud check
 boolean driftgaugegfx_clr = false; // driftgauge colour check
@@ -1395,8 +1396,8 @@ static inline void D_MakeTitleString(char *s)
 static void D_CheckSaturnExtraFiles(void)
 {
 	// Possible value that changes depending on whether required files for speedometer are found or not
-	CV_PossibleValue_t speedo_cons_temp[NUMSPEEDOSTUFF] = {{1, "Default"}, {0, NULL}, {0, NULL}, {0, NULL}, {0, NULL}, {0, NULL}};
-	CV_PossibleValue_t driftgaugestyle_cons_temp[NUMSPEEDOSTUFF] = {{1, "Default"}, {2, "Small"}, {3, "Big Numbers"}, {4, "Numbers Only"}, {0, NULL}, {0, NULL}};
+	CV_PossibleValue_t speedo_cons_temp[NUMSPEEDOSTUFF] = {{1, "Default"}, {0, NULL}, {0, NULL}, {0, NULL}, {0, NULL}, {0, NULL}, {0, NULL}};
+	CV_PossibleValue_t driftgaugestyle_cons_temp[NUMDGAUGESTUFF] = {{1, "Default"}, {2, "Small"}, {3, "Big Numbers"}, {4, "Numbers Only"}, {0, NULL}, {0, NULL}};
 	CV_PossibleValue_t inputdisplay_cons_temp[NUMINPUTDISPLAYSTUFF] = {{0, "Off"}, {1, "Wheel"}, {2, "Stick"}, {0, NULL}, {0, NULL}};
 
 	unsigned last_speedo_i = 0;
@@ -1437,6 +1438,15 @@ static void D_CheckSaturnExtraFiles(void)
 		{
 			kartz_speedo = true;
 			PUSHCONS(speedo_cons_temp, last_speedo_i, 4, "P-Meter");
+		}
+
+		if (W_CheckMultipleLumps("K_KZSS1", "K_KZSS2", "K_KZSS3", "K_KZSS4", "K_KZSS5",
+			"K_KZSS6", "K_KZSS7", "K_KZSS8", "K_KZSS9", "K_KZSS10", "K_KZSS11", "K_KZSS12",
+			"K_KZSS13", "K_KZSS14", "K_KZSS15", "K_KZSS16", "K_KZSS17", "K_KZSS18", "K_KZSS19",
+			"K_KZSS20", "K_KZSS21", "K_KZSS22", "K_KZSS23", "K_KZSS24", "K_KZSS25", NULL))
+		{
+			kartz_speedo_smol = true;
+			PUSHCONS(speedo_cons_temp, last_speedo_i, 5, "P-Meter Small");
 		}
 
 		// stat display for extended player setup
@@ -1519,7 +1529,7 @@ static void D_CheckSaturnExtraFiles(void)
 		if (W_LumpExists("SP_SM3TC"))
 		{
 			xtra_speedo3 = true;
-			PUSHCONS(speedo_cons_temp, last_speedo_i, 5, "Extra");
+			PUSHCONS(speedo_cons_temp, last_speedo_i, 6, "Extra");
 			PUSHCONS(driftgaugestyle_cons_temp, last_driftgauge_i, 5, "Extra");
 		}
 

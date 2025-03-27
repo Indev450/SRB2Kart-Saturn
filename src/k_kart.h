@@ -41,10 +41,10 @@ extern consvar_t cv_battlespeedo;
 extern consvar_t cv_multiitemicon;
 extern consvar_t cv_huditemamount;
 
-#define NUMSPEEDOSTUFF 6
+#define NUMSPEEDOSTUFF 7
 extern CV_PossibleValue_t speedo_cons_t[NUMSPEEDOSTUFF];
-extern CV_PossibleValue_t driftgaugestyle_cons_t[NUMSPEEDOSTUFF];
-
+#define NUMDGAUGESTUFF 6
+extern CV_PossibleValue_t driftgaugestyle_cons_t[NUMDGAUGESTUFF];
 #define NUMINPUTDISPLAYSTUFF 5
 extern CV_PossibleValue_t inputdisplay_cons_t[NUMINPUTDISPLAYSTUFF];
 
