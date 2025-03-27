@@ -141,43 +141,16 @@ consvar_t cv_spinoutroll = {"spinoutroll", "Off", CV_SAVE, CV_OnOff, NULL, 0, NU
 
 //hardcode saltyhop mhhm
 static void saltyhop_onchange(void);
-static void saltyheight_onchange(void);
 consvar_t cv_saltyhop = {"hardcodehop", "Off", CV_SAVE|CV_CALL|CV_NOINIT, CV_OnOff, saltyhop_onchange, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_saltyhopsfx = {"hardcodehopsfx", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_saltysquish = {"hardcodehopsquish", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 static CV_PossibleValue_t saltyheight_t[] = {{FRACUNIT/4, "MIN"}, {2*FRACUNIT, "MAX"}, {0, NULL}};
-consvar_t cv_saltyheight = {"hardcodehopheight", "1", CV_FLOAT|CV_SAVE|CV_CALL|CV_NOINIT, saltyheight_t, saltyheight_onchange, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_saltyheight = {"hardcodehopheight", "1", CV_FLOAT|CV_SAVE|CV_CALL|CV_NOINIT, saltyheight_t, saltyhop_onchange, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_saltyroll = {"hardcodehoproll", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 static void saltyhop_onchange(void)
 {
-	// reset everything when toggling saltyhop off
-	if (!cv_saltyhop.value)
-	{
-		if (gamestate != GS_LEVEL)
-			return;
-
-		for (INT32 i = 0; i < MAXPLAYERS; i++)
-		{
-			player_t *player = &players[i];
-
-			if (!player || !playeringame[i] || P_MobjWasRemoved(player->mo))
-				continue;
-
-			player->mo->salty_jump = false;
-			player->mo->salty_zoffset = 0;
-			player->mo->salty_momz = 0;
-
-			player->mo->salty_ready = false;
-			player->mo->salty_tapping = false;
-			player->mo->init_salty = false;
-		}
-	}
-}
-
-static void saltyheight_onchange(void)
-{
-	// reset everything when toggling saltyhop height
+	// reset everything when toggling saltyhop
 	if (gamestate != GS_LEVEL)
 		return;
 
