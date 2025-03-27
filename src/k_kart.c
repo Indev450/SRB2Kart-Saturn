@@ -8381,8 +8381,7 @@ static void K_drawKartItem(void)
 
 	if (stplyr->kartstuff[k_itemroulette])
 	{
-		if (K_GetHudColor())
-			localcolor = K_GetHudColor();
+		localcolor = K_GetHudColor();
 
 		switch((stplyr->kartstuff[k_itemroulette] % (14*3)) / 3)
 		{
