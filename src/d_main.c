@@ -1257,34 +1257,31 @@ static boolean AddIWAD(void)
 }
 
 // extra graphic patches for saturn specific thingies
-boolean found_extra_kart;
-boolean found_extra2_kart;
-boolean found_extra3_kart;
+boolean found_extra_kart = false;
+boolean found_extra2_kart = false;
+boolean found_extra3_kart = false;
 
-boolean xtra_speedo;       // extra speedometer check
-boolean xtra_speedo_clr;   // extra speedometer colour check
-boolean xtra_speedo3;      // 80x 11 extra speedometer check
-boolean xtra_speedo_clr3;  // 80x 11 extra speedometer colour check
-boolean achi_speedo;       // achiiro speedometer check
-boolean achi_speedo_clr;   // extra speedometer colour check
-boolean kartz_speedo;       // kartZ speedo
+boolean xtra_speedo = false;       // extra speedometer check
+boolean xtra_speedo_clr = false;   // extra speedometer colour check
+boolean xtra_speedo3 = false;      // 80x 11 extra speedometer check
+boolean xtra_speedo_clr3 = false;  // 80x 11 extra speedometer colour check
+boolean achi_speedo = false;       // achiiro speedometer check
+boolean achi_speedo_clr = false;   // extra speedometer colour check
+boolean kartz_speedo = false;      // kartZ speedo
 
-boolean clr_hud;           // colour hud check
-boolean big_lap;           // bigger lap counter
-boolean big_lap_color;     // bigger lap counter but colour
-boolean statdp;            // stat display for extended player setup
-boolean nametaggfx;        // Nametag stuffs
-boolean driftgaugegfx;     // Driftgauge stuffs
-boolean multiitem_icon;    // Extra icons for Sneakers, Banana and Jawz
-boolean joystickicon;      // Extra icons for the joystick input display
+boolean clr_hud = false;           // colour hud check
+boolean big_lap = false;           // bigger lap counter
+boolean big_lap_color = false;     // bigger lap counter but colour
+boolean statdp = false;            // stat display for extended player setup
+boolean nametaggfx = false;        // Nametag stuffs
+boolean driftgaugegfx = false;     // Driftgauge stuffs
+boolean multiitem_icon = false;    // Extra icons for Sneakers, Banana and Jawz
+boolean joystickicon = false;      // Extra icons for the joystick input display
 //
 
 static void IdentifyVersion(void)
 {
 	const char *srb2waddir = NULL;
-	found_extra_kart = false;
-	found_extra2_kart = false;
-	found_extra3_kart = false;
 
 #if defined (__unix__) || defined (UNIXCOMMON) || defined (HAVE_SDL)
 	// change to the directory where 'srb2.srb' is found
