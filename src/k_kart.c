@@ -7891,27 +7891,28 @@ void K_LoadKartHUDGraphics(void)
 		kp_itembgclr[3] = 				W_CachePatchName("K_ISBCD", PU_HUDGFX);
 		kp_itemmulstickerclr[1] = 		W_CachePatchName("K_ISMULC", PU_HUDGFX);
 		kp_itemmulstickerclr[0] = 		W_CachePatchName("K_ITMULC", PU_HUDGFX);
+	}
 
-		if (big_lap_color){
-			kp_lapstickerbigclr = 		W_CachePatchName("K_SCLAPB", PU_HUDGFX);
-			kp_lapstickerbig2clr = 		W_CachePatchName("K_SCLA2B", PU_HUDGFX);
-		}
+	if (big_lap_color)
+	{
+		kp_lapstickerbigclr = 		W_CachePatchName("K_SCLAPB", PU_HUDGFX);
+		kp_lapstickerbig2clr = 		W_CachePatchName("K_SCLA2B", PU_HUDGFX);
+	}
 
-		if (xtra_speedo && xtra_speedo_clr)
-			skp_smallstickerclr = 	  	W_CachePatchName("SC_SMSTC", PU_HUDGFX);
+	if (xtra_speedo && xtra_speedo_clr)
+		skp_smallstickerclr = 	  	W_CachePatchName("SC_SMSTC", PU_HUDGFX);
 
-		if (xtra_speedo3 && xtra_speedo_clr3) // 80x11 patch scaled to size
-			skp_smallstickerclr3 = 	  	W_CachePatchName("SC_SM3TC", PU_HUDGFX);
+	if (xtra_speedo3 && xtra_speedo_clr3) // 80x11 patch scaled to size
+		skp_smallstickerclr3 = 	  	W_CachePatchName("SC_SM3TC", PU_HUDGFX);
 
-		if (achi_speedo && achi_speedo_clr)
-		{
-			skp_smallstickerachiclr = 	  W_CachePatchName("SC_AMSTC", PU_HUDGFX);
-			skp_speedpatchesachiclr[0] = W_CachePatchName("K_TRNULL", PU_HUDGFX); // lolxd
-			skp_speedpatchesachiclr[1] = W_CachePatchName("SC_AKMH",  PU_HUDGFX);
-			skp_speedpatchesachiclr[2] = W_CachePatchName("SC_AMPH",  PU_HUDGFX);
-			skp_speedpatchesachiclr[3] = W_CachePatchName("SC_AFRAC", PU_HUDGFX);
-			skp_speedpatchesachiclr[4] = W_CachePatchName("SC_APERC", PU_HUDGFX);
-		}
+	if (achi_speedo && achi_speedo_clr)
+	{
+		skp_smallstickerachiclr = 	  W_CachePatchName("SC_AMSTC", PU_HUDGFX);
+		skp_speedpatchesachiclr[0] = W_CachePatchName("K_TRNULL", PU_HUDGFX); // lolxd
+		skp_speedpatchesachiclr[1] = W_CachePatchName("SC_AKMH",  PU_HUDGFX);
+		skp_speedpatchesachiclr[2] = W_CachePatchName("SC_AMPH",  PU_HUDGFX);
+		skp_speedpatchesachiclr[3] = W_CachePatchName("SC_AFRAC", PU_HUDGFX);
+		skp_speedpatchesachiclr[4] = W_CachePatchName("SC_APERC", PU_HUDGFX);
 	}
 
 	// KartZ speedo
