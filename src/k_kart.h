@@ -44,6 +44,9 @@ extern consvar_t cv_huditemamount;
 extern CV_PossibleValue_t speedo_cons_t[NUMSPEEDOSTUFF];
 extern CV_PossibleValue_t driftgaugestyle_cons_t[NUMSPEEDOSTUFF];
 
+#define NUMINPUTDISPLAYSTUFF 5
+extern CV_PossibleValue_t inputdisplay_cons_t[NUMINPUTDISPLAYSTUFF];
+
 boolean K_IsPlayerLosing(player_t *player);
 boolean K_IsPlayerWanted(player_t *player);
 void K_KartBouncing(mobj_t *mobj1, mobj_t *mobj2, boolean bounce, boolean solid);

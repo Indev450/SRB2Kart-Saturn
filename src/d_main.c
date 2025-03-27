@@ -1579,8 +1579,11 @@ void D_SRB2Main(void)
 	// Possible value that changes depending on whether required files for speedometer are found or not
 	CV_PossibleValue_t speedo_cons_temp[NUMSPEEDOSTUFF] = {{1, "Default"}, {0, NULL}, {0, NULL}, {0, NULL}, {0, NULL}, {0, NULL}};
 	CV_PossibleValue_t driftgaugestyle_cons_temp[NUMSPEEDOSTUFF] = {{1, "Default"}, {2, "Small"}, {3, "Big Numbers"}, {4, "Numbers Only"}, {0, NULL}, {0, NULL}}; // ugh i dont want this but bleh
+	CV_PossibleValue_t inputdisplay_cons_temp[NUMINPUTDISPLAYSTUFF] = {{0, "Off"}, {1, "Wheel"}, {2, "Stick"}, {0, NULL}, {0, NULL}};
+
 	unsigned last_speedo_i = 0;
 	unsigned last_driftgauge_i = 0;
+	unsigned last_inputdisplay_i = 2;
 #define PUSHCONS(cons, i, id, name) { ++i; cons[i].value = id; cons[i].strvalue = name; }
 
 	if (found_extra_kart || found_extra2_kart || found_extra3_kart) // found the funny, add it in!
@@ -1651,6 +1654,7 @@ void D_SRB2Main(void)
 		if (W_CheckMultipleLumps("JOYBCK","JOYKNB","JOYSHD", NULL))
 		{
 			joystickicon = true;
+			PUSHCONS(inputdisplay_cons_temp, last_inputdisplay_i, 3, "StickGFX");
 		}
 
 		// extra item icons
@@ -1675,6 +1679,7 @@ void D_SRB2Main(void)
 #undef PUSHCONS
 	memcpy(speedo_cons_t, speedo_cons_temp, sizeof(speedo_cons_t));
 	memcpy(driftgaugestyle_cons_t, driftgaugestyle_cons_temp, sizeof(driftgaugestyle_cons_t));
+	memcpy(inputdisplay_cons_t, inputdisplay_cons_temp, sizeof(inputdisplay_cons_t));
 
 	// Do it before P_InitMapData because PNG patch
 	// conversion sometimes needs the palette

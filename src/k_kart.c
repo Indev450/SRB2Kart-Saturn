@@ -91,7 +91,7 @@ consvar_t cv_airsparks = {"airdriftsparks", "Off", CV_SAVE, CV_OnOff, NULL, 0, N
 
 //extra hud things
 consvar_t cv_showstats = {"showstats", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
-static CV_PossibleValue_t inputdisplay_cons_t[] = {{0, "Off"}, {1, "Wheel"}, {2, "Stick"}, {0, NULL}};
+CV_PossibleValue_t inputdisplay_cons_t[NUMINPUTDISPLAYSTUFF];
 consvar_t cv_showinput = {"showinput", "Off", CV_SAVE, inputdisplay_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_showlaptimes = {"showlaptimes", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
@@ -10795,7 +10795,7 @@ static void K_drawInput(void)
 
 	y -= FRACUNIT;
 
-	if (cv_showinput.value == 2)
+	if (cv_showinput.value == 3)
 	{
 		INT32 joyx, joyxoffs, joyy, joyyoffs, axis;
 		joyxoffs = -8, joyyoffs = -24;
