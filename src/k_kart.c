@@ -10795,7 +10795,7 @@ static void K_drawInput(void)
 
 	y -= FRACUNIT;
 
-	if (cv_showinput.value == 3)
+	if (cv_showinput.value == 2 || cv_showinput.value == 3)
 	{
 		INT32 joyx, joyxoffs, joyy, joyyoffs, axis;
 		joyxoffs = -8, joyyoffs = -24;
@@ -10803,7 +10803,7 @@ static void K_drawInput(void)
 		UINT8 *shadowcolormap = NULL;
 
 		// O backing
-		if (joystickicon)
+		if (cv_showinput.value == 3 && joystickicon)
 		{
 			shadowcolormap = R_GetTranslationColormap(0, SKINCOLOR_BLACK, GTC_CACHE);
 			V_DrawFixedPatch((joyx+joyxoffs)<<FRACBITS, (joyy+joyyoffs-1)<<FRACBITS, FRACUNIT, splitflags, joybacking, hudcolormap);
@@ -10856,7 +10856,7 @@ static void K_drawInput(void)
 		{
 			INT16 turning = encoremode ? -cmd->driftturn : cmd->driftturn;
 
-			if (joystickicon)
+			if (cv_showinput.value == 3 && joystickicon)
 			{
 				V_DrawFixedPatch((joyx+joyxoffs+3-turning/80)<<FRACBITS, (joyy+joyyoffs+2-hudforward/80)<<FRACBITS, FRACUNIT, splitflags, joyknob, shadowcolormap);
 				V_DrawFixedPatch((joyx+joyxoffs+3-turning/64)<<FRACBITS, (joyy+joyyoffs+1-hudforward/64)<<FRACBITS, FRACUNIT, splitflags, joyknob, hudcolormap);
@@ -10876,7 +10876,7 @@ static void K_drawInput(void)
 		}
 		else
 		{
-			if (joystickicon)
+			if (cv_showinput.value == 3 && joystickicon)
 			{
 				V_DrawFixedPatch((joyx+joyxoffs+3)<<FRACBITS, (joyy+joyyoffs+8)<<FRACBITS, FRACUNIT, splitflags, joyshadow, shadowcolormap);
 				V_DrawFixedPatch((joyx+joyxoffs+3)<<FRACBITS, (joyy+joyyoffs+1)<<FRACBITS, FRACUNIT, splitflags, joyknob, hudcolormap);
