@@ -1399,7 +1399,7 @@ static void D_CheckSaturnExtraFiles(void)
 	CV_PossibleValue_t inputdisplay_cons_temp[NUMINPUTDISPLAYSTUFF] = {{0, "Off"}, {1, "Wheel"}, {2, "Stick"}, {0, NULL}, {0, NULL}};
 
 	unsigned last_speedo_i = 0;
-	unsigned last_driftgauge_i = 0;
+	unsigned last_driftgauge_i = 3;
 	unsigned last_inputdisplay_i = 2;
 #define PUSHCONS(cons, i, id, name) { ++i; cons[i].value = id; cons[i].strvalue = name; }
 
