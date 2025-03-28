@@ -69,7 +69,7 @@ static fixed_t ScaleFromMap(fixed_t n, fixed_t scale)
 
 boolean K_DirectorIsAvailable(void)
 {
-	if (splitscreen || (demo.playback && demo.title) || modeattacking)
+	if (splitscreen || dedicated || (demo.playback && demo.title) || modeattacking)
 		return false;
 	return ((gamestate == GS_LEVEL) && ((demo.playback && !camera[0].freecam) || (players[consoleplayer].spectator && (K_PlayersPlaying() > 1))));
 }
