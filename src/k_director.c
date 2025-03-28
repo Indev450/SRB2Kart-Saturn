@@ -34,6 +34,7 @@ struct directorinfo
 {
 	player_t* viewplayer;
 	tic_t cooldown; // how long has it been since we last switched?
+	tic_t chaosleep;// how long did we watch the same player?
 	tic_t freeze;   // when nonzero, fixed switch pending, freeze logic!
 	INT32 attacker; // who to switch to when freeze delay elapses
 	INT32 maxdist;  // how far is the closest player from finishing?
@@ -129,6 +130,7 @@ void K_InitDirector(void)
 	directorinfo.attacker = 0;
 	directorinfo.maxdist = 0;
 	directorinfo.viewplayer = NULL;
+	directorinfo.chaosleep = 0;
 
 	for (playernum = 0; playernum < MAXPLAYERS; playernum++)
 	{
@@ -246,6 +248,7 @@ static void K_DirectorSwitch(INT32 player, boolean force)
 
 	G_ResetView(1, player, true);
 	directorinfo.cooldown = SWITCHTIME;
+	directorinfo.chaosleep = 0;
 }
 
 static void K_DirectorForceSwitch(INT32 player, INT32 time)
@@ -257,6 +260,7 @@ static void K_DirectorForceSwitch(INT32 player, INT32 time)
 
 	directorinfo.attacker = player;
 	directorinfo.freeze = time;
+	directorinfo.chaosleep = 0;
 }
 
 static void K_DirectorSwitchRandom(void)
@@ -318,6 +322,7 @@ void K_DrawDirectorDebugger(void)
 	V_DrawThinString(120, 0, V_70TRANS, va("BORED"));
 	V_DrawThinString(150, 0, V_70TRANS, va("COOLDOWN: %d", directorinfo.cooldown));
 	V_DrawThinString(230, 0, V_70TRANS, va("MAXDIST: %d", directorinfo.maxdist));
+	V_DrawThinString(310, 0, V_70TRANS, va("SLEEPTIME: %d", directorinfo.chaosleep));
 
 	for (position = 0; position < MAXPLAYERS - 1; position++)
 	{
@@ -389,6 +394,20 @@ void K_UpdateDirector(void)
 
 	// insta switch if the player were watching finishes
 	if (players[displayplayers[0]].exiting)
+	{
+		K_DirectorSwitchRandom();
+		return;
+	}
+
+	// begin counting when cooldown wore off
+	if (!directorinfo.cooldown)
+	{
+		directorinfo.chaosleep++;
+	}
+
+	// force switch 10 seconds after the cooldown has ended
+	// otherwise i fall asleeb zzz...
+	if (directorinfo.chaosleep > TICRATE*10)
 	{
 		K_DirectorSwitchRandom();
 		return;
