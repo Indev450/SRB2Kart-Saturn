@@ -1128,6 +1128,10 @@ UINT16 W_CheckNumForFolderEndPK3(const char *name, UINT16 wad, UINT16 startlump)
 	size_t name_length = strlen(name);
 	UINT32 hash = quickncasehash(name, name_length);
 
+	void *val = M_AATreeGet(wadfiles[wad]->endfolders, hash);
+	if (val != NULL)
+		return (uintptr_t)val;
+
 	for (i = startlump; i < wadfiles[wad]->numlumps; i++, lump_p++)
 	{
 		if (strnicmp(name, lump_p->fullname, name_length))
