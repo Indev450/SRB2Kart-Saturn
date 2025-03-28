@@ -788,6 +788,32 @@ boolean K_UseColorHud(void)
 	return (cv_colorizedhud.value && clr_hud);
 }
 
+enum
+{
+	SPEEDO_VANILLA,
+	SPEEDO_EXTRA,
+	SPEEDO_ACHII,
+	SPEEDO_PMETER,
+	SPEEDO_PMETERSMOL,
+	SPEEDO_EXTRA3,
+};
+
+static UINT8 K_GetSpeedometerStyle(void)
+{
+	if (cv_newspeedometer.value == 2 && xtra_speedo)
+		return SPEEDO_EXTRA;
+	else if (cv_newspeedometer.value == 3 && achi_speedo)
+		return SPEEDO_ACHII;
+	else if (cv_newspeedometer.value == 4 && kartz_speedo)
+		return SPEEDO_PMETER;
+	else if (cv_newspeedometer.value == 5 && kartz_speedo_smol)
+		return SPEEDO_PMETERSMOL;
+	else if (cv_newspeedometer.value == 6 && xtra_speedo3)
+		return SPEEDO_EXTRA3;
+	else
+		return SPEEDO_VANILLA;
+}
+
 //}
 
 //{ SRB2kart Net Variables
@@ -8543,7 +8569,9 @@ static void K_drawKartStats(void)
 	//Internal offset for speedometer
 	if (cv_kartspeedometer.value)
 	{
-		if ((cv_newspeedometer.value == 2 && xtra_speedo) || (cv_newspeedometer.value == 3 && achi_speedo) || (cv_newspeedometer.value == 6 && xtra_speedo3))
+		const UINT8 speedostyle = K_GetSpeedometerStyle();
+
+		if ((speedostyle == SPEEDO_EXTRA) || (speedostyle == SPEEDO_ACHII) || (speedostyle == SPEEDO_EXTRA3))
 			spdoffset = -10;
 		else
 			spdoffset = -14;
@@ -9625,7 +9653,7 @@ static void K_drawKartSpeedometer(void)
 	INT32 splitflags = K_calcSplitFlags(V_SNAPTOBOTTOM|V_SNAPTOLEFT);
 
 	// man.
-	const boolean useoldspeedo = ((cv_newspeedometer.value == 1) || (cv_newspeedometer.value == 2 && !xtra_speedo) || (cv_newspeedometer.value == 3 && !achi_speedo) || (cv_newspeedometer.value == 4 && !kartz_speedo) || (cv_newspeedometer.value == 5 && !kartz_speedo_smol) ||(cv_newspeedometer.value == 6 && !xtra_speedo3));
+	const UINT8 speedostyle = K_GetSpeedometerStyle();
 
 	switch (cv_kartspeedometer.value)
 	{
@@ -9646,7 +9674,7 @@ static void K_drawKartSpeedometer(void)
 			break;
 	}
 
-	if (useoldspeedo)
+	if (speedostyle == SPEEDO_VANILLA)
 	{
 		const char *metric = "";
 
@@ -9674,7 +9702,7 @@ static void K_drawKartSpeedometer(void)
 
 		V_DrawKartString(SPDM_X, SPDM_Y, V_HUDTRANS|splitflags, metric);
 	}
-	else if (cv_newspeedometer.value == 2 && xtra_speedo) // why bother if we dont?
+	else if (speedostyle == SPEEDO_EXTRA) // why bother if we dont?
 	{
 		if (K_UseColorHud() && xtra_speedo_clr) //Colourized hud
 		{
@@ -9687,7 +9715,7 @@ static void K_drawKartSpeedometer(void)
 		V_DrawRankNum(SPDM_X + 26, SPDM_Y + 4, V_HUDTRANS|splitflags, convSpeed, 3, NULL);
 		V_DrawScaledPatch(SPDM_X + 31, SPDM_Y + 4, V_HUDTRANS|splitflags, skp_speedpatches[cv_kartspeedometer.value]);
 	}
-	else if (cv_newspeedometer.value == 3 && achi_speedo) // why bother if we dont?
+	else if (speedostyle == SPEEDO_ACHII) // why bother if we dont?
 	{
 		if (K_UseColorHud() && achi_speedo_clr) //Colourized hud
 		{
@@ -9703,7 +9731,7 @@ static void K_drawKartSpeedometer(void)
 			V_DrawScaledPatch(SPDM_X + 31, SPDM_Y + 4, V_HUDTRANS|splitflags, skp_speedpatchesachi[cv_kartspeedometer.value]);
 		}
 		}
-	else if (cv_newspeedometer.value == 6 && xtra_speedo3) // why bother if we dont?
+	else if (speedostyle == SPEEDO_EXTRA3) // why bother if we dont?
 	{
 		if (K_UseColorHud() && xtra_speedo_clr3) //Colourized hud
 		{
@@ -9718,7 +9746,7 @@ static void K_drawKartSpeedometer(void)
 	}
 	// Kart Z speedo bullshit...
 	// Draw the Speed counter.
-	else if ((cv_newspeedometer.value == 4 && kartz_speedo) || (cv_newspeedometer.value == 5 && kartz_speedo_smol))
+	else if ((speedostyle == SPEEDO_PMETER) || (speedostyle == SPEEDO_PMETERSMOL))
 	{
 		fixed_t fuspeed = 0;
 		INT32 spdpatch = 0;
@@ -9745,9 +9773,9 @@ static void K_drawKartSpeedometer(void)
 
 		patch_t *patch = NULL;
 
-		if (cv_newspeedometer.value == 4 && kartz_speedo)
+		if (speedostyle == SPEEDO_PMETER)
 			patch = kp_kartzspeedo[spdpatch];
-		else if (cv_newspeedometer.value == 5 && kartz_speedo_smol)
+		else if (speedostyle == SPEEDO_PMETERSMOL)
 			patch = kp_kartzspeedo_smol[spdpatch];
 
 		V_DrawScaledPatch(SPDM_X, SPDM_Y, V_HUDTRANS|splitflags, patch);
@@ -9770,7 +9798,9 @@ static void K_drawKartBumpersOrKarma(void)
 
 	if (cv_battlespeedo.value && !splitscreen)
 	{
-		if ((cv_newspeedometer.value == 2 && xtra_speedo) || (cv_newspeedometer.value == 3 && achi_speedo) || (cv_newspeedometer.value == 6 && xtra_speedo3))
+		const UINT8 speedostyle = K_GetSpeedometerStyle();
+
+		if ((speedostyle == SPEEDO_EXTRA) || (speedostyle == SPEEDO_ACHII) || (speedostyle == SPEEDO_EXTRA3))
 			fy += 5;
 		else
 			fy += 7;
