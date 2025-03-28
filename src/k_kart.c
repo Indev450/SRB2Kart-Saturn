@@ -10808,12 +10808,13 @@ static void K_drawInput(void)
 		joyxoffs = -8, joyyoffs = -24;
 		joyx = x>>FRACBITS, joyy = y>>FRACBITS;
 		UINT8 *shadowcolormap = NULL;
+		const boolean usejoysprite = (cv_showinput.value == 3 && joystickicon);
 
 		// O backing
-		if (cv_showinput.value == 3 && joystickicon)
+		if (usejoysprite)
 		{
 			shadowcolormap = R_GetTranslationColormap(0, SKINCOLOR_BLACK, GTC_CACHE);
-			V_DrawFixedPatch((joyx+joyxoffs)<<FRACBITS, (joyy+joyyoffs-1)<<FRACBITS, FRACUNIT, splitflags, joybacking, hudcolormap);
+			V_DrawMappedPatch(joyx+joyxoffs, joyy+joyyoffs-1, splitflags, joybacking, hudcolormap);
 		}
 		else
 		{
@@ -10863,37 +10864,31 @@ static void K_drawInput(void)
 		{
 			INT16 turning = encoremode ? -cmd->driftturn : cmd->driftturn;
 
-			if (cv_showinput.value == 3 && joystickicon)
+			if (usejoysprite)
 			{
-				V_DrawFixedPatch((joyx+joyxoffs+3-turning/80)<<FRACBITS, (joyy+joyyoffs+2-hudforward/80)<<FRACBITS, FRACUNIT, splitflags, joyknob, shadowcolormap);
-				V_DrawFixedPatch((joyx+joyxoffs+3-turning/64)<<FRACBITS, (joyy+joyyoffs+1-hudforward/64)<<FRACBITS, FRACUNIT, splitflags, joyknob, hudcolormap);
+				V_DrawMappedPatch(joyx+joyxoffs+3-turning/80, joyy+joyyoffs+2-hudforward/80, splitflags, joyknob, shadowcolormap);
+				V_DrawMappedPatch(joyx+joyxoffs+3-turning/64, joyy+joyyoffs+1-hudforward/64, splitflags, joyknob, hudcolormap);
 			}
 			else
 			{
 				// joystick hole
 				V_DrawFill(joyx+joyxoffs+5, joyy+joyyoffs+4, 6, 6, splitflags|accent1);
 				// joystick top and back
-				V_DrawFill(joyx+joyxoffs+3-turning/80,
-					joyy+joyyoffs+2-hudforward/80,
-					10, 10, splitflags|31);
-				V_DrawFill(joyx+joyxoffs+3-turning/64,
-					joyy+joyyoffs+1-hudforward/64,
-					10, 10, splitflags|accent1);
+				V_DrawFill(joyx+joyxoffs+3-turning/80, joyy+joyyoffs+2-hudforward/80, 10, 10, splitflags|31);
+				V_DrawFill(joyx+joyxoffs+3-turning/64, joyy+joyyoffs+1-hudforward/64, 10, 10, splitflags|accent1);
 			}
 		}
 		else
 		{
-			if (cv_showinput.value == 3 && joystickicon)
+			if (usejoysprite)
 			{
-				V_DrawFixedPatch((joyx+joyxoffs+3)<<FRACBITS, (joyy+joyyoffs+8)<<FRACBITS, FRACUNIT, splitflags, joyshadow, shadowcolormap);
-				V_DrawFixedPatch((joyx+joyxoffs+3)<<FRACBITS, (joyy+joyyoffs+1)<<FRACBITS, FRACUNIT, splitflags, joyknob, hudcolormap);
+				V_DrawMappedPatch(joyx+joyxoffs+3, joyy+joyyoffs+8, splitflags, joyshadow, shadowcolormap);
+				V_DrawMappedPatch(joyx+joyxoffs+3, joyy+joyyoffs+1, splitflags, joyknob, hudcolormap);
 			}
 			else
 			{
 				V_DrawFill(joyx+joyxoffs+3, joyy+joyyoffs+11, 10, 1, splitflags|accent2);
-				V_DrawFill(joyx+joyxoffs+3,
-					joyy+joyyoffs+1,
-					10, 10,splitflags|accent1);
+				V_DrawFill(joyx+joyxoffs+3, joyy+joyyoffs+1, 10, 10,splitflags|accent1);
 			}
 		}
 	}
