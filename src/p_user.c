@@ -4439,6 +4439,37 @@ DoABarrelRoll (player_t *player)
 #define SPINOUTROTSPEED (24 * FRACUNIT)
 #define MAXSPINROT (360 * FRACUNIT)
 
+static void P_DoFunnyDance (player_t *player)
+{
+	static tic_t time = 0;
+	fixed_t bounce;
+	fixed_t work, bpm;
+	angle_t ang;
+
+	if (player->spectator || !player->mo || player->kartstuff[k_respawn] || player->mo->salty_jump) // this looks jank as hell during hop
+		return;
+
+	bounce = 0;
+
+	// bpm = FLOAT_TO_FIXED(mapmusic.bpm) << maybe can get the tempo and beat detection lib to work for bpm autodetection
+	bpm = FixedDiv((60*TICRATE)<<FRACBITS, 9175040); // 140bpm ish
+
+	work = (time << FRACBITS) % bpm;
+
+	if (time >= (FRACUNIT>>1)) // prevent overflow jump - takes about 15 minutes
+		time = (work>>FRACBITS);
+
+	work = FixedDiv(work*180, bpm);
+
+	ang = (FixedAngle(work)>>ANGLETOFINESHIFT) & FINEMASK;
+	bounce = (FINESINE(ang) - FRACUNIT/2);
+
+	player->mo->spritexscale -= bounce/2;
+	player->mo->spriteyscale += bounce/2;
+
+	time++; // bruh
+}
+
 //
 // P_PlayerThink
 //
@@ -4975,6 +5006,16 @@ void P_PlayerThink(player_t *player)
 
 	if (player->losstime && !player->powers[pw_flashing])
 		player->losstime--;
+
+	if (cmd->buttons & BT_CUSTOM3)
+	{
+		player->dancetime++;
+
+		if (player->dancetime > TICRATE*2)
+			P_DoFunnyDance(player);
+	}
+	else
+		player->dancetime = 0;
 
 	// Flash player after being hit.
 	if (!(player->kartstuff[k_hyudorotimer] // SRB2kart - fixes Hyudoro not flashing when it should.
