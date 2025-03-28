@@ -3126,7 +3126,9 @@ boolean P_SetupLevel(boolean fromnetsave, boolean reloadinggamestate)
 	{
 		P_InitCamera();
 		memset(localaiming, 0, sizeof(localaiming));
-		K_InitDirector();
+
+		if (!dedicated)
+			K_InitDirector();
 	}
 
 	// clear special respawning que
