@@ -156,8 +156,12 @@ static void K_UpdateDirectorPositions(void)
 	INT32 playernum;
 	INT32 position;
 	player_t* target;
+	INT32 i;
 
-	memset(directorinfo.sortedplayers, -1, sizeof(directorinfo.sortedplayers));
+	for (i = 0; i < MAXPLAYERS; i++)
+	{
+		directorinfo.sortedplayers[i] = -1;
+	}
 
 	for (playernum = 0; playernum < MAXPLAYERS; playernum++)
 	{
