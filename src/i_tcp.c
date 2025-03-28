@@ -970,7 +970,28 @@ static SOCKET_TYPE UDP_Bind(int family, struct sockaddr *addr, socklen_t addrlen
 	getsockopt(s, SOL_SOCKET, SO_RCVBUF, (char *)&opt, &opts);
 	CONS_Printf(M_GetText("Network system buffer: %dKb\n"), opt>>10);
 
-	if (opt < 64<<10) // 64k
+	if (opt < 208<<10) // 208k this is what i have on my arch system
+	{
+		opt = 208<<10;
+		opts = (socklen_t)sizeof(opt);
+		setsockopt(s, SOL_SOCKET, SO_RCVBUF, (char *)&opt, opts);
+		getsockopt(s, SOL_SOCKET, SO_RCVBUF, (char *)&opt, &opts);
+		if (opt < 208<<10)
+		{
+			CONS_Alert(CONS_WARNING, M_GetText("Can't set buffer length to 208k, retrying with 128k\n"));
+			opt = 128<<10;
+			opts = (socklen_t)sizeof(opt);
+			setsockopt(s, SOL_SOCKET, SO_RCVBUF, (char *)&opt, opts);
+			getsockopt(s, SOL_SOCKET, SO_RCVBUF, (char *)&opt, &opts);
+
+			if (opt < 128<<10)
+				CONS_Alert(CONS_WARNING, M_GetText("Can't set buffer length to 128k, file transfer will be bad\n"));
+			else
+				CONS_Printf(M_GetText("Network system buffer set to: %dKb\n"), opt>>10);
+		}
+	}
+
+	/*if (opt < 64<<10) // 64k
 	{
 		opt = 64<<10;
 		opts = (socklen_t)sizeof(opt);
@@ -980,7 +1001,7 @@ static SOCKET_TYPE UDP_Bind(int family, struct sockaddr *addr, socklen_t addrlen
 			CONS_Alert(CONS_WARNING, M_GetText("Can't set buffer length to 64k, file transfer will be bad\n"));
 		else
 			CONS_Printf(M_GetText("Network system buffer set to: %dKb\n"), opt>>10);
-	}
+	}*/
 
 	if (getsockname(s, (struct sockaddr *)&sin, &len) == -1)
 		CONS_Alert(CONS_WARNING, M_GetText("Failed to get port number\n"));
