@@ -90,7 +90,7 @@ static void K_SetupFinishMo(void)
 	INT16 maxMoveCount = -1;
 	INT16 maxAngle = -1;
 
-	P_SetTarget(&finishmo, NULL);
+	finishmo = NULL;
 
 	if (!(mapheaderinfo[gamemap - 1]->levelflags & LF_SECTIONRACE)) // not a sprint map
 	{
