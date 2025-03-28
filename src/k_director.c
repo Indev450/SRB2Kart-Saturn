@@ -64,6 +64,48 @@ static boolean K_DirectorIsEnabled(void)
 	return (cv_director.value && K_DirectorIsAvailable());
 }
 
+static mobj_t *finishmo = NULL;
+
+// scan for the waypoint on the finish line
+// used to get a very approximate distance from player to finishline
+// we probably should like, do some maths to find the middle point between multiplayer
+// waypoints with the same values, but idk if its really worth it
+static void K_SetupFinishMo(void)
+{
+	INT16 maxMoveCount = -1;
+	INT16 maxAngle = -1;
+
+	P_SetTarget(&finishmo, NULL);
+
+	if (!(mapheaderinfo[gamemap - 1]->levelflags & LF_SECTIONRACE)) // not a sprint map
+	{
+		// waypoint with angle 0 should always be at the finish line
+		for (finishmo = waypointcap; finishmo != NULL; finishmo = finishmo->tracer)
+		{
+			if (finishmo->spawnpoint->angle == 0)
+				break;
+		}
+	}
+	else // crappy optimization weeeee
+	{
+		// sprint maps finishline waypoint is the one with highest movecount AND angle
+		for (finishmo = waypointcap; finishmo != NULL; finishmo = finishmo->tracer)
+		{
+			if (finishmo->movecount > maxMoveCount)
+				maxMoveCount = finishmo->movecount;
+			if (finishmo->spawnpoint->angle > maxAngle)
+				maxAngle = finishmo->spawnpoint->angle;
+		}
+
+		// now actually get the one
+		for (finishmo = waypointcap; finishmo != NULL; finishmo = finishmo->tracer)
+		{
+			if (finishmo->movecount == maxMoveCount && finishmo->spawnpoint->angle == maxAngle)
+				break; // found it
+		}
+	}
+}
+
 void K_InitDirector(void)
 {
 	INT32 playernum;
@@ -80,50 +122,18 @@ void K_InitDirector(void)
 		directorinfo.gap[playernum] = INT32_MAX;
 		directorinfo.boredom[playernum] = 0;
 	}
+
+	K_SetupFinishMo();
 }
 
 static fixed_t K_GetDistanceToFinish(player_t player)
 {
-	mobj_t *mo;
-	fixed_t dist = 0;
-	INT16 maxMoveCount = -1;
-	INT16 maxAngle = -1;
+	if (P_MobjWasRemoved(finishmo))
+		return 0;
 
-	if (!(mapheaderinfo[gamemap - 1]->levelflags & LF_SECTIONRACE))
-	{
-		for (mo = waypointcap; mo != NULL; mo = mo->tracer)
-		{
-			if (mo->spawnpoint->angle != 0)
-				continue;
-
-			dist = P_AproxDistance(P_AproxDistance(mo->x - player.mo->x,
-												   mo->y - player.mo->y),
-												   mo->z - player.mo->z) / FRACUNIT;
-
-			break;
-		}
-	}
-	else // crappy optimization weeeee
-	{
-		for (mo = waypointcap; mo != NULL; mo = mo->tracer)
-		{
-			if (mo->movecount > maxMoveCount)
-				maxMoveCount = mo->movecount;
-			if (mo->spawnpoint->angle > maxAngle)
-				maxAngle = mo->spawnpoint->angle;
-
-			if (!(mo->movecount == maxMoveCount && mo->spawnpoint->angle == maxAngle)) // sprint maps finishline waypoint is the one with highest movecount AND angle
-				continue;
-
-			dist = P_AproxDistance(P_AproxDistance(mo->x - player.mo->x,
-												   mo->y - player.mo->y),
-												   mo->z - player.mo->z) / FRACUNIT;
-
-			break;
-		}
-	}
-
-	return dist;
+	return P_AproxDistance(P_AproxDistance(finishmo->x - player.mo->x,
+										   finishmo->y - player.mo->y),
+										   finishmo->z - player.mo->z) / FRACUNIT;
 }
 
 static fixed_t K_GetFinishGap(INT32 leader, INT32 follower)
