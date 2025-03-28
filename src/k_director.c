@@ -14,6 +14,7 @@
 #include "doomdef.h"
 #include "doomstat.h"
 #include "g_game.h"
+#include "m_random.h"
 #include "v_video.h"
 #include "k_director.h"
 #include "d_netcmd.h"
