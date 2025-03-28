@@ -42,6 +42,19 @@ struct directorinfo
 	INT32 boredom[MAXPLAYERS];       // how long has a given position had no credible attackers?
 } directorinfo;
 
+static INT32 K_PlayersPlaying(void)
+{
+	INT32 num = 0, i;
+	for (i = 0; i < MAXPLAYERS; i++)
+	{
+		if (!playeringame[i] || players[i].spectator || !players[i].mo)
+			continue;
+
+		num++;
+	}
+	return num;
+}
+
 static inline boolean race_rules(void)
 {
 	return gametype == GT_RACE;
@@ -56,7 +69,7 @@ boolean K_DirectorIsAvailable(void)
 {
 	if (splitscreen || (demo.playback && demo.title) || modeattacking)
 		return false;
-	return ((gamestate == GS_LEVEL) && ((demo.playback && !camera[0].freecam) || (players[consoleplayer].spectator && (D_NumPlayers() > 1))));
+	return ((gamestate == GS_LEVEL) && ((demo.playback && !camera[0].freecam) || (players[consoleplayer].spectator && (K_PlayersPlaying() > 1))));
 }
 
 static boolean K_DirectorIsEnabled(void)
