@@ -113,6 +113,8 @@ tic_t lowest_lag;
 tic_t simulated_lag;
 boolean server_lagless;
 
+tic_t netticbuffer = 0;
+
 static void Lagless_OnChange(void)
 {
 	/* don't back out of dishonesty, or go lagless after playing honestly */
@@ -6480,7 +6482,7 @@ boolean TryRunTics(tic_t realtics)
 			}
 
 			// Leave a certain amount of tics present in the net buffer as long as we've ran at least one tic this frame.
-			if (client && gamestate == GS_LEVEL && leveltime > 3 && neededtic <= gametic + cv_netticbuffer.value)
+			if (client && gamestate == GS_LEVEL && leveltime > 3 && neededtic <= gametic + netticbuffer)
 				break;
 		}
 	}
@@ -6753,11 +6755,13 @@ void NetUpdate(void)
 	nowtime = I_GetTime();
 	realtics = nowtime - gametime;
 
-	if (realtics <= 0) // nothing new to update
-		return;
+	const boolean noupdate = (realtics <= 0); // nothing new to update
+
+	Net_GetNetStat();
+	netticbuffer = (((gamelostpercent > 1.f) || (playerpingtable[consoleplayer] == 1)) ? CLAMP(cv_netticbuffer.value, 1, 3) : cv_netticbuffer.value);
 
 #ifdef DEDICATEDIDLETIME
-	if (server && dedicated && gamestate == GS_LEVEL)
+	if (server && dedicated && gamestate == GS_LEVEL && !noupdate)
 	{
 		static tic_t dedicatedidle = 0;
 
@@ -6814,12 +6818,14 @@ void NetUpdate(void)
 
 	gametime = nowtime;
 
-	UpdatePingTable();
+	if (!noupdate)
+		UpdatePingTable();
 
 	if (client)
 		maketic = neededtic;
 
-	Local_Maketic(realtics); // make local tic, and call menu?
+	if (!noupdate)
+		Local_Maketic(realtics); // make local tic, and call menu?
 
 	if (server)
 		CL_SendClientCmd(); // send it
@@ -6830,11 +6836,12 @@ void NetUpdate(void)
 	// the server send before because in single player is beter
 
 #ifdef MASTERSERVER
-	MasterClient_Ticker(); // Acking the Master Server
+	if (!noupdate)
+		MasterClient_Ticker(); // Acking the Master Server
 #endif
 
 #ifdef HOLEPUNCH
-	if (netgame && serverrunning)
+	if (netgame && serverrunning && !noupdate)
 	{
 		RenewHolePunch();
 	}
@@ -6908,21 +6915,26 @@ void NetUpdate(void)
 		}
 	}
 	Net_AckTicker();
-	HandleNodeTimeouts();
 
-	if (nowtime > resptime)
+	if (!noupdate)
 	{
-		resptime = nowtime;
+		HandleNodeTimeouts();
+
+		if (nowtime > resptime)
+		{
+			resptime = nowtime;
 #ifdef HAVE_THREADS
-		I_lock_mutex(&m_menu_mutex);
+			I_lock_mutex(&m_menu_mutex);
 #endif
-		M_Ticker();
+			M_Ticker();
 #ifdef HAVE_THREADS
-		I_unlock_mutex(m_menu_mutex);
+			I_unlock_mutex(m_menu_mutex);
 #endif
-		CON_Ticker();
+			CON_Ticker();
+		}
+
+		SV_FileSendTicker();
 	}
-	SV_FileSendTicker();
 }
 
 /** Returns the number of players playing.
