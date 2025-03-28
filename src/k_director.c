@@ -258,6 +258,25 @@ static void K_DirectorForceSwitch(INT32 player, INT32 time)
 	directorinfo.freeze = time;
 }
 
+static void K_DirectorSwitchRandom(void)
+{
+	INT32 randomplayer = -1;
+
+	// kinda dumb but just check if the random player is existing lmao
+	for (INT32 h = 0; h < MAXPLAYERS; h++)
+	{
+		randomplayer = directorinfo.sortedplayers[M_RandomRange(0, K_PlayersPlaying()-1)]; // switch to someone random
+
+		if (randomplayer != -1 && randomplayer != displayplayers[0]) // dont switch to ourselves Zzz...
+		{
+			break;
+		}
+	}
+
+	if (randomplayer != -1)
+		K_DirectorSwitch(randomplayer, true);
+}
+
 void K_DirectorFollowAttack(player_t *player, mobj_t *inflictor, mobj_t *source)
 {
 	if (!K_DirectorIsEnabled())
@@ -344,7 +363,8 @@ void K_UpdateDirector(void)
 
 	K_UpdateDirectorPositions();
 
-	if (directorinfo.cooldown > 0) {
+	if (directorinfo.cooldown > 0)
+	{
 		directorinfo.cooldown--;
 	}
 
@@ -363,6 +383,13 @@ void K_UpdateDirector(void)
 		!race_rules()))
 	{
 		K_DirectorSwitch(directorinfo.sortedplayers[0], false);
+		return;
+	}
+
+	// insta switch if the player were watching finishes
+	if (players[displayplayers[0]].exiting)
+	{
+		K_DirectorSwitchRandom();
 		return;
 	}
 
