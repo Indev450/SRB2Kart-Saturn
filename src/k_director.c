@@ -172,15 +172,11 @@ static void K_UpdateDirectorPositions(void)
 	INT32 playernum;
 	INT32 position;
 	player_t* target;
-	INT32 i;
-
-	for (i = 0; i < MAXPLAYERS; i++)
-	{
-		directorinfo.sortedplayers[i] = -1;
-	}
 
 	for (playernum = 0; playernum < MAXPLAYERS; playernum++)
 	{
+		directorinfo.sortedplayers[playernum] = -1;
+
 		target = &players[playernum];
 
 		if (playeringame[playernum] && !target->spectator && target->kartstuff[k_position] > 0)
