@@ -5502,6 +5502,9 @@ static void HWR_RenderFrame(player_t *player, boolean skybox)
 		}
 	}
 
+	// check for new console commands.
+	NetUpdate();
+
 	// Clear view, set viewport (glViewport), set perspective...
 	HWR_ClearView();
 
@@ -5534,6 +5537,9 @@ static void HWR_RenderFrame(player_t *player, boolean skybox)
 	// Run post processor effects
 	if (!skybox)
 		HWR_DoPostProcessor(player);
+
+	// Check for new console commands.
+	NetUpdate();
 
 	// added by Hurdler for correct splitscreen
 	// moved here by hurdler so it works with the new near clipping plane
