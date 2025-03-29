@@ -234,6 +234,14 @@ consvar_t cv_httpsource = {"http_source", "", CV_SAVE, NULL, NULL, 0, NULL, NULL
 
 consvar_t cv_kicktime = {"kicktime", "10", CV_SAVE, CV_Unsigned, NULL, 0, NULL, NULL, 0, 0, NULL};
 
+static boolean UseLocalDelay(void)
+{
+	if (dedicated || (server && server_lagless && !cv_mindelay.value))
+		return false;
+
+	return (cv_mindelay.value || (server && !server_lagless));
+}
+
 static inline void *G_DcpyTiccmd(void* dest, const ticcmd_t* src, const size_t n)
 {
 	const size_t d = n / sizeof(ticcmd_t);
@@ -6058,7 +6066,7 @@ static void CL_SendClientCmd(void)
 	{
 		UINT8 lagDelay = 0;
 
-		if (lowest_lag > 0)
+		if (UseLocalDelay() && (lowest_lag > 0))
 		{
 			// Gentlemens' ping.
 			lagDelay = min(lowest_lag, MAXGENTLEMENDELAY);
@@ -6305,9 +6313,12 @@ static inline void CreateNewLocalCMD(UINT8 p, INT32 realtics)
 {
 	INT32 i;
 
-	for (i = MAXGENTLEMENDELAY-1; i > 0; i--)
+	if (UseLocalDelay())
 	{
-		G_MoveTiccmd(&localcmds[p][i], &localcmds[p][i-1], 1);
+		for (i = MAXGENTLEMENDELAY-1; i > 0; i--)
+		{
+			G_MoveTiccmd(&localcmds[p][i], &localcmds[p][i-1], 1);
+		}
 	}
 
 	G_BuildTiccmd(&localcmds[p][0], realtics, p+1);
@@ -6625,30 +6636,40 @@ static void UpdatePingTable(void)
 			}
 		}
 
-		if (server_lagless)
-			lowest_lag = 0;
+		if (UseLocalDelay())
+		{
+			if (server_lagless)
+				lowest_lag = 0;
+			else
+				lowest_lag = fastest;
+
+			// Don't gentleman below your mindelay
+			if (lowest_lag < (tic_t)cv_mindelay.value)
+				lowest_lag = (tic_t)cv_mindelay.value;
+
+			simulated_lag = lowest_lag;
+		}
 		else
-			lowest_lag = fastest;
-
-		// Don't gentleman below your mindelay
-		if (lowest_lag < (tic_t)cv_mindelay.value)
-			lowest_lag = (tic_t)cv_mindelay.value;
-
-		simulated_lag = lowest_lag;
+			lowest_lag = simulated_lag = 0;
 
 		pingmeasurecount++;
 	}
 	else // We're a client, handle mindelay on the way out.
 	{
-		// Previously (neededtic - gametic) - WRONG VALUE!
-		// Pretty sure that's measuring jitter, not RTT.
-		// Stable connections would be punished by adding their mindelay to network delay!
-		tic_t mydelay = playerpingtable[consoleplayer];
-
-		if (mydelay < (tic_t)cv_mindelay.value)
+		if (UseLocalDelay())
 		{
-			lowest_lag = ((tic_t)cv_mindelay.value - mydelay);
-			simulated_lag = (tic_t)cv_mindelay.value;
+			// Previously (neededtic - gametic) - WRONG VALUE!
+			// Pretty sure that's measuring jitter, not RTT.
+			// Stable connections would be punished by adding their mindelay to network delay!
+			tic_t mydelay = playerpingtable[consoleplayer];
+
+			if (mydelay < (tic_t)cv_mindelay.value)
+			{
+				lowest_lag = ((tic_t)cv_mindelay.value - mydelay);
+				simulated_lag = (tic_t)cv_mindelay.value;
+			}
+			else
+				lowest_lag = simulated_lag = 0;
 		}
 		else
 			lowest_lag = simulated_lag = 0;
