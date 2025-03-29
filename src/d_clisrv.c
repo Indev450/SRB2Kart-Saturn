@@ -6627,7 +6627,7 @@ static void UpdatePingTable(void)
 	if (server)
 	{
 		//if (Playing() && !(gametime % 8)) // Value chosen based on _my vibes man_ << dont do this for v8 atleast, this is placeboeing ppl to hell and back
-		if (netgame && !(gametime % 35))	// update once per second.
+		if (Playing() && !(gametime % 35))	// update once per second.
 			PingUpdate();
 
 		fastest = 0;
