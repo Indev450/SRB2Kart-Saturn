@@ -1053,11 +1053,31 @@ static SOCKET_TYPE UDP_Bind(int family, struct sockaddr *addr, socklen_t addrlen
 			}
 
 			if (opt < 128<<10)
-				CONS_Alert(CONS_WARNING, M_GetText("Can't set buffer length to 128k, file transfer will be bad\n"));
-			else
-				CONS_Printf(M_GetText("Network system buffer set to: %dKb\n"), opt>>10);
+			{
+				CONS_Alert(CONS_WARNING, M_GetText("Can't set buffer length to 128k, retrying with 64k\n"));
+				opt = 64<<10;
+				opts = (socklen_t)sizeof(opt);
+				rc = setsockopt(s, SOL_SOCKET, SO_RCVBUF, (char *)&opt, opts);
+				if (rc <= -1)
+				{
+					e = errno;
+					I_OutputMsg("setting SO_RCVBUF failed: #%u, %s\n", e, strerror(e));
+				}
+				opt = 0;
+				rc = getsockopt(s, SOL_SOCKET, SO_RCVBUF, (char *)&opt, &opts);
+				if (rc <= -1)
+				{
+					e = errno;
+					I_OutputMsg("getting SO_RCVBUF failed: #%u, %s\n", e, strerror(e));
+				}
+
+				if (opt < 64<<10)
+					CONS_Alert(CONS_WARNING, M_GetText("Can't set buffer length to 64k, file transfer will be bad\n"));
+			}
 		}
 	}
+
+	CONS_Printf(M_GetText("Network system buffer set to: %dKb\n"), opt>>10);
 
 	rc = getsockname(s, (struct sockaddr *)&sin, &len);
 	if (rc != 0)
