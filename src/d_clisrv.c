@@ -6627,7 +6627,7 @@ static void UpdatePingTable(void)
 			{
 				realpingtable[i] += GetLag(playernode[i]);
 
-				if (!server_lagless && !players[i].spectator)
+				if (UseLocalDelay() && !server_lagless && !players[i].spectator)
 				{
 					lag = playerpingtable[i];
 					if (! fastest || lag < fastest)
