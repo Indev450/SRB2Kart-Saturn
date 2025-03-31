@@ -221,7 +221,7 @@ HMS_connect (const char *format, ...)
 	curl_easy_setopt(curl, CURLOPT_URL, url);
 	curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
 
-#ifndef NO_IPV6
+#ifdef HAVE_IPV6
 	if (!M_CheckParm("-ipv6"))
 #endif
 		curl_easy_setopt(curl, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4);
