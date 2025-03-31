@@ -297,7 +297,7 @@ static boolean Processackpak(void)
 		node->remotefirstack = netbuffer->ackreturn;
 		// Search the ackbuffer and free it
 		for (i = 0; i < MAXACKPACKETS; i++)
-			if (ackpak[i].acknum && ackpak[i].destinationnode == node - nodes
+			if (ackpak[i].acknum && ackpak[i].destinationnode == doomcom->remotenode
 				&& cmpack(ackpak[i].acknum, netbuffer->ackreturn) <= 0)
 			{
 				RemoveAck(i);
