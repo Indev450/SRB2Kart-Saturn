@@ -988,6 +988,7 @@ void D_SRB2Loop(void)
 void D_StartTitle(void)
 {
 	INT32 i;
+
 	if (netgame)
 	{
 		if (gametype == GT_RACE) // SRB2kart

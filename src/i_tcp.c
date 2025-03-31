@@ -378,8 +378,16 @@ static inline void I_UPnP_rem(const char *port, const char * servicetype)
 
 static const char *SOCK_AddrToStr(mysockaddr_t *sk)
 {
-	static char s[64]; // 255.255.255.255:65535 or IPv6:65535
+	static char s[64]; // 255.255.255.255:65535 or
+	// [ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff]:65535
+
 #ifdef HAVE_NTOP
+#ifdef HAVE_IPV6
+	int v6 = (sk->any.sa_family == AF_INET6);
+#else
+	int v6 = 0;
+#endif
+
 	void *addr;
 	int e = 0; // save error code so it can't be modified later code and avoid calling WSAGetLastError() more then once
 
@@ -394,14 +402,20 @@ static const char *SOCK_AddrToStr(mysockaddr_t *sk)
 
 	if(addr == NULL)
 		sprintf(s, "No address");
-	else if(inet_ntop(sk->any.sa_family, addr, s, sizeof (s)) == NULL)
+	else if(inet_ntop(sk->any.sa_family, addr, &s[v6], sizeof (s) - v6) == NULL)
 	{
 		e = errno;
 		sprintf(s, "Unknown family type, error #%u: %s", e, strerror(e));
 	}
 #ifdef HAVE_IPV6
-	else if(sk->any.sa_family == AF_INET6 && sk->ip6.sin6_port != 0)
-		strcat(s, va(":%d", ntohs(sk->ip6.sin6_port)));
+	else if(sk->any.sa_family == AF_INET6)
+	{
+		s[0] = '[';
+		strcat(s, "]");
+
+		if (sk->ip6.sin6_port != 0)
+			strcat(s, va(":%d", ntohs(sk->ip6.sin6_port)));
+	}
 #endif
 	else if(sk->any.sa_family == AF_INET  && sk->ip4.sin_port  != 0)
 		strcat(s, va(":%d", ntohs(sk->ip4.sin_port)));
@@ -493,9 +507,29 @@ static time_t SOCK_GetUnbanTime(size_t ban)
 }
 
 #ifndef NONET
+
+#ifdef HAVE_IPV6
+static boolean SOCK_cmpipv6(mysockaddr_t *a, mysockaddr_t *b, UINT8 mask)
+{
+	UINT8 bitmask;
+	I_Assert(mask <= 128);
+	if (mask == 0)
+		mask = 128;
+	if (memcmp(&a->ip6.sin6_addr.s6_addr, &b->ip6.sin6_addr.s6_addr, mask / 8) != 0)
+		return false;
+	if (mask % 8 == 0)
+		return true;
+	bitmask = 255 << (mask % 8);
+	return (a->ip6.sin6_addr.s6_addr[mask / 8] & bitmask) == (b->ip6.sin6_addr.s6_addr[mask / 8] & bitmask);
+}
+#endif
+
 static boolean SOCK_cmpaddr(mysockaddr_t *a, mysockaddr_t *b, UINT8 mask)
 {
 	UINT32 bitmask = INADDR_NONE;
+
+	if (a->any.sa_family != b->any.sa_family)
+		return false;
 
 	if (mask && mask < 32)
 		bitmask = htonl((UINT32)(-1) << (32 - mask));
@@ -505,12 +539,13 @@ static boolean SOCK_cmpaddr(mysockaddr_t *a, mysockaddr_t *b, UINT8 mask)
 			&& (b->ip4.sin_port == 0 || (a->ip4.sin_port == b->ip4.sin_port));
 #ifdef HAVE_IPV6
 	else if (b->any.sa_family == AF_INET6)
-		return memcmp(&a->ip6.sin6_addr, &b->ip6.sin6_addr, sizeof(b->ip6.sin6_addr))
+		return SOCK_cmpipv6(a, b, mask)
 			&& (b->ip6.sin6_port == 0 || (a->ip6.sin6_port == b->ip6.sin6_port));
 #endif
 	else
 		return false;
 }
+
 
 // This is a hack. For some reason, nodes aren't being freed properly.
 // This goes through and cleans up what nodes were supposed to be freed.
@@ -627,7 +662,6 @@ is_external_address (UINT32 p)
 #ifdef HOLEPUNCH
 static boolean hole_punch(ssize_t c)
 {
-
 	/* See ../doc/Holepunch-Protocol.txt */
 	if (cv_rendezvousserver.string[0] &&
 			c == 10 && holepunchpacket->magic == hole_punch_magic &&
@@ -666,6 +700,7 @@ static boolean SOCK_Get(void)
 		fromlen = (socklen_t)sizeof(fromaddress);
 		c = recvfrom(mysockets[n], (char *)&doomcom->data, MAXPACKETLENGTH, 0,
 			(void *)&fromaddress, &fromlen);
+
 		if (c > 0)
 		{
 #ifdef USE_STUN
@@ -875,11 +910,11 @@ static SOCKET_TYPE UDP_Bind(int family, struct sockaddr *addr, socklen_t addrlen
 	unsigned long trueval = true;
 #endif
 	mysockaddr_t straddr;
-	struct sockaddr_in sin;
-	socklen_t len = sizeof(sin);
+	socklen_t len = sizeof(straddr);
 
 	if (s == (SOCKET_TYPE)ERRSOCKET)
 		return (SOCKET_TYPE)ERRSOCKET;
+
 #ifdef USE_WINSOCK
 	{ // Alam_GBC: disable the new UDP connection reset behavior for Win2k and up
 #ifdef USE_WINSOCK2
@@ -899,14 +934,12 @@ static SOCKET_TYPE UDP_Bind(int family, struct sockaddr *addr, socklen_t addrlen
 	}
 #endif
 
-	straddr.any = *addr;
+	memcpy(&straddr, addr, addrlen);
 	I_OutputMsg("Binding to %s\n", SOCK_AddrToStr(&straddr));
 
 	if (family == AF_INET)
 	{
-		mysockaddr_t tmpaddr;
-		tmpaddr.any = *addr ;
-		if (tmpaddr.ip4.sin_addr.s_addr == htonl(INADDR_ANY))
+		if (straddr.ip4.sin_addr.s_addr == htonl(INADDR_ANY))
 		{
 			opt = true;
 			opts = (socklen_t)sizeof(opt);
@@ -931,7 +964,7 @@ static SOCKET_TYPE UDP_Bind(int family, struct sockaddr *addr, socklen_t addrlen
 #ifdef HAVE_IPV6
 	else if (family == AF_INET6)
 	{
-		if (memcmp(addr, &in6addr_any, sizeof(in6addr_any)) == 0) //IN6_ARE_ADDR_EQUAL
+		if (memcmp(&straddr.ip6.sin6_addr, &in6addr_any, sizeof(in6addr_any)) == 0) //IN6_ARE_ADDR_EQUAL
 		{
 			opt = true;
 			opts = (socklen_t)sizeof(opt);
@@ -946,7 +979,7 @@ static SOCKET_TYPE UDP_Bind(int family, struct sockaddr *addr, socklen_t addrlen
 		// make it IPv6 ony
 		opt = true;
 		opts = (socklen_t)sizeof(opt);
-		rc = setsockopt(s, SOL_SOCKET, IPV6_V6ONLY, (char *)&opt, opts);
+		rc = setsockopt(s, IPPROTO_IPV6, IPV6_V6ONLY, (char *)&opt, opts);
 		if (rc <= -1)
 		{
 			e = errno;
@@ -976,7 +1009,7 @@ static SOCKET_TYPE UDP_Bind(int family, struct sockaddr *addr, socklen_t addrlen
 
 			inet_pton(AF_INET6, IPV6_MULTICAST_ADDRESS, &maddr.ipv6mr_multiaddr);
 			maddr.ipv6mr_interface = 0;
-			rc = setsockopt(s, SOL_SOCKET, IPV6_JOIN_GROUP, (const char *)&maddr, sizeof(maddr));
+			rc = setsockopt(s, IPPROTO_IPV6, IPV6_JOIN_GROUP, (const char *)&maddr, sizeof(maddr));
 			if (rc <= -1)
 			{
 				e = errno;
@@ -1057,9 +1090,7 @@ static SOCKET_TYPE UDP_Bind(int family, struct sockaddr *addr, socklen_t addrlen
 		}
 	}
 
-	CONS_Printf(M_GetText("Network system buffer set to: %dKb\n"), opt>>10);
-
-	rc = getsockname(s, (struct sockaddr *)&sin, &len);
+	rc = getsockname(s, &straddr.any, &len);
 	if (rc != 0)
 	{
 		e = errno;
@@ -1067,7 +1098,14 @@ static SOCKET_TYPE UDP_Bind(int family, struct sockaddr *addr, socklen_t addrlen
 		I_OutputMsg("getsockname failed: #%u, %s\n", e, strerror(e));
 	}
 	else
-		current_port = (UINT16)ntohs(sin.sin_port);
+	{
+		if (family == AF_INET)
+			current_port = (UINT16)ntohs(straddr.ip4.sin_port);
+#ifdef HAVE_IPV6
+		else if (family == AF_INET6)
+			current_port = (UINT16)ntohs(straddr.ip6.sin6_port);
+#endif
+	}
 
 	return s;
 }
@@ -1148,6 +1186,7 @@ static boolean UDP_Socket(void)
 			I_freeaddrinfo(ai);
 		}
 	}
+
 #ifdef HAVE_IPV6
 	if (b_ipv6)
 	{
@@ -1346,12 +1385,13 @@ static boolean SOCK_GetAddr(struct sockaddr_in *sin, const char *address, const 
 {
 	struct my_addrinfo *ai = NULL, *runp, hints;
 	int gaie;
+	size_t i;
 
 	if (!port || !port[0])
 		port = DEFAULTPORT;
 
 	memset (&hints, 0x00, sizeof (hints));
-	hints.ai_flags = 0;
+	hints.ai_flags = AI_ADDRCONFIG;
 	hints.ai_family = AF_UNSPEC;
 	hints.ai_socktype = SOCK_DGRAM;
 	hints.ai_protocol = IPPROTO_UDP;
@@ -1370,10 +1410,19 @@ static boolean SOCK_GetAddr(struct sockaddr_in *sin, const char *address, const 
 	{
 		while (runp != NULL)
 		{
-			if (sendto(mysockets[0], NULL, 0, 0, runp->ai_addr, runp->ai_addrlen) == 0)
-				break;
+			// test ip address of server
+			for (i = 0; i < mysocketses; ++i)
+			{
+				if (runp->ai_addr->sa_family == myfamily[i])
+				{
+					break;
+				}
+			}
 
-			runp = runp->ai_next;
+			if (i >= mysocketses)
+				runp = runp->ai_next;
+			else
+				break;
 		}
 	}
 
