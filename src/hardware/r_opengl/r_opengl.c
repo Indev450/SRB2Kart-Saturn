@@ -1700,6 +1700,114 @@ static void GL_AllocTextureBuffer(GLMipmap_t *pTexInfo)
 	}
 }
 
+#define PADDING_CHECK(offset, alphaCheck) { from = to + (offset); if ((alphaCheck)) from = NULL; else goto foundFrom; }
+
+static void PadRGBABitmap(RGBA_t *tex, UINT16 w, UINT16 h)
+{
+	INT32 i;
+	boolean notLeft, notRight, notTop, notBottom;
+	RGBA_t *to = tex - 1, *from;
+
+	for (i = 0; i < w * h; i++)
+	{
+		to++;
+		if (to->rgba != 0)
+			continue;
+		from = NULL;
+
+		notLeft = i % w != 0;
+		notRight = i % w != w - 1;
+		notTop = i / w != 0;
+		notBottom = i / w != h - 1;
+
+		if (notRight) PADDING_CHECK(1, from->s.alpha == 0) // Check +X
+		if (notBottom) PADDING_CHECK(w, from->s.alpha == 0) // Check +Y
+		if (notLeft) PADDING_CHECK(-1, from->s.alpha == 0) // Check -X
+		if (notTop) PADDING_CHECK(-w, from->s.alpha == 0) // Check -Y
+		if (notRight && notBottom) PADDING_CHECK(1 + w, from->s.alpha == 0) // Check +X+Y
+		if (notLeft && notBottom) PADDING_CHECK(-1 + w, from->s.alpha == 0) // Check -X+Y
+		if (notLeft && notTop) PADDING_CHECK(-1 - w, from->s.alpha == 0) // Check -X-Y
+		if (notRight && notTop) PADDING_CHECK(1 - w, from->s.alpha == 0) // Check +X-Y
+
+foundFrom:
+		if (from != NULL)
+		{
+			*to = *from;
+			to->s.alpha = 0;
+		}
+	}
+}
+
+#undef PADDING_CHECK
+
+static void GenerateMipmaps(INT32 w, INT32 h, RGBA_t *tex, INT32 maxLOD)
+{
+	if (tex == NULL)
+	{
+		GL_MSG_Warning("GenerateMipmaps: attempted to generate mipmaps without texture data");
+		return;
+	}
+
+	RGBA_t samplePoint[4];
+	boolean padTexture;
+	INT32 pointsSampled = 0;
+	INT32 m, j, i, p;
+	UINT16 sumR, sumG, sumB, sumA;
+
+	for (m = 0; m < maxLOD; m++)
+	{
+		if (w <= 1 || h <= 1)
+			return;
+
+		padTexture = false;
+
+		for (j = 0; j < h / 2; j++)
+		{
+			for (i = 0; i < w / 2; i++)
+			{
+				samplePoint[0] = tex[w*j*2 + i*2];
+				samplePoint[1] = tex[w*j*2 + i*2+1];
+				samplePoint[2] = tex[w*(j*2+1) + i*2];
+				samplePoint[3] = tex[w*(j*2+1) + i*2+1];
+
+				pointsSampled = sumR = sumG = sumB = sumA = 0;
+
+				for (p = 0; p < 4; p++)
+				{
+					if (samplePoint[p].s.alpha == 0)
+						continue;
+					sumR += samplePoint[p].s.red;
+					sumG += samplePoint[p].s.green;
+					sumB += samplePoint[p].s.blue;
+					sumA += samplePoint[p].s.alpha;
+					pointsSampled++;
+				}
+
+				if (pointsSampled > 0)
+				{
+					tex[(w/2)*j+i].s.red   = sumR / pointsSampled;
+					tex[(w/2)*j+i].s.green = sumG / pointsSampled;
+					tex[(w/2)*j+i].s.blue  = sumB / pointsSampled;
+					tex[(w/2)*j+i].s.alpha = sumA / pointsSampled;
+				}
+				else
+				{
+					tex[(w/2)*j+i].rgba = 0;
+					padTexture = true;
+				}
+			}
+		}
+
+		w /= 2;
+		h /= 2;
+
+		if (padTexture)
+			PadRGBABitmap(tex, w, h);
+
+		pglTexSubImage2D(GL_TEXTURE_2D, m + 1, 0, 0, w, h, GL_RGBA, GL_UNSIGNED_BYTE, tex);
+	}
+}
+
 // -----------------+
 // UpdateTexture    : Updates texture data.
 // -----------------+
@@ -1708,6 +1816,7 @@ void GL_UpdateTexture(GLMipmap_t *pTexInfo)
 	// Upload a texture
 	GLuint num = pTexInfo->downloaded;
 	boolean update = true;
+	const boolean applyPadding = mag_filter == GL_LINEAR || min_filter == GL_LINEAR;
 
 	INT32 w = pTexInfo->width, h = pTexInfo->height;
 	INT32 i, j;
@@ -1766,10 +1875,27 @@ void GL_UpdateTexture(GLMipmap_t *pTexInfo)
 					pImgData++;
 				}
 			}
+
+			if (applyPadding)
+				PadRGBABitmap(tex, w, h);
+
 			break;
 		case GL_TEXFMT_RGBA:
 			// Directly upload the texture data without any kind of conversion.
 			ptex = pImgData;
+
+			// However, it does need to be copied to a buffer for generating mipmaps and padding
+			if (MipMap || applyPadding)
+			{
+				AllocTextureBuffer(pTexInfo);
+				tex = textureBuffer;
+				memcpy(tex, ptex, w * h * 4);
+				ptex = tex;
+
+				if (applyPadding)
+					PadRGBABitmap(tex, w, h);
+			}
+
 			break;
 		case GL_TEXFMT_ALPHA_INTENSITY_88:
 			GL_AllocTextureBuffer(pTexInfo);
@@ -1838,6 +1964,7 @@ void GL_UpdateTexture(GLMipmap_t *pTexInfo)
 		// Control the mipmap level of detail
 		pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_LOD, 0);
 		pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LOD, 5);
+		GenerateMipmaps(w, h, tex, 5);
 	}
 	else
 	{
