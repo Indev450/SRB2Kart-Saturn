@@ -137,7 +137,6 @@ extern boolean 			supportMipMap;
 /**	\brief OpenGL flags for video driver
 */
 extern INT32            oglflags;
-extern GLint            textureformatGL;
 
 extern GLfloat projMatrix[16];
 

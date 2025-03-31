@@ -320,6 +320,8 @@ enum hwdsetspecialstate
 	HWD_SET_PORTAL_MODE,// new portal thing
 	HWD_SET_STENCIL_LEVEL,
 
+	HWD_SET_TEXTURE_FORMAT,
+
 	HWD_NUMSTATE
 };
 typedef enum hwdsetspecialstate hwdspecialstate_t;

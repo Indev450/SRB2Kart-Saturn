@@ -161,6 +161,7 @@ static void CV_glshaders_OnChange(void);
 static void CV_gllightdithering_OnChange(void);
 static void CV_filtermode_OnChange(void);
 static void CV_anisotropic_OnChange(void);
+static void CV_gltextureformat_OnChange(void);
 static void CV_glpaletterendering_OnChange(void);
 static void CV_glpalettedepth_OnChange(void);
 
@@ -182,6 +183,8 @@ CV_PossibleValue_t glanisotropicmode_cons_t[] = {{1, "MIN"}, {16, "MAX"}, {0, NU
 static CV_PossibleValue_t glrenderdistance_cons_t[] = {
 	{0, "Max"}, {1, "1024"}, {2, "2048"}, {3, "4096"}, {4, "6144"}, {5, "8192"},
 	{6, "12288"}, {7, "16384"}, {0, NULL}};
+
+static CV_PossibleValue_t gltexdepth_cons_t[] = {{16, "16 bits"}, {32, "32 bits"}, {0, NULL}};
 
 static CV_PossibleValue_t glpalettedepth_cons_t[] = {{16, "16 bits"}, {24, "24 bits"}, {0, NULL}};
 
@@ -231,6 +234,8 @@ consvar_t cv_glportals = {"gr_portals", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, 
 consvar_t cv_glpaletterendering = {"gr_paletteshader", "Off", CV_CALL|CV_SAVE, CV_OnOff, CV_glpaletterendering_OnChange, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_glpalettedepth = {"gr_palettedepth", "16 bits", CV_SAVE|CV_CALL, glpalettedepth_cons_t, CV_glpalettedepth_OnChange, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_glflashpal = {"gr_flashpal", "On", CV_CALL|CV_SAVE, CV_OnOff, CV_glpaletterendering_OnChange, 0, NULL, NULL, 0, 0, NULL};
+
+consvar_t cv_gltexturedepth = {"gr_texturedepth", "32 bits", CV_CALL|CV_SAVE, gltexdepth_cons_t, CV_gltextureformat_OnChange, 0, NULL, NULL, 0, 0, NULL};
 
 #define ONLY_IF_GL_LOADED if (vid.glstate != VID_GL_LIBRARY_LOADED) return;
 
@@ -283,6 +288,12 @@ static void CV_gllightdithering_OnChange(void)
 	{
 		HWR_CompileShaders();
 	}
+}
+
+static void CV_gltextureformat_OnChange(void)
+{
+	ONLY_IF_GL_LOADED
+	GL_SetSpecialState(HWD_SET_TEXTURE_FORMAT, cv_gltexturedepth.value);
 }
 
 static void CV_filtermode_OnChange(void)
@@ -5712,6 +5723,8 @@ static void HWR_TogglePaletteRendering(void)
 //added by Hurdler: console varibale that are saved
 void HWR_AddCommands(void)
 {
+	CV_RegisterVar(&cv_gltexturedepth);
+
 	CV_RegisterVar(&cv_glscreentextures);
 
 #ifdef USE_FBO_OGL
