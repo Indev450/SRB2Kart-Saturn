@@ -220,7 +220,7 @@ FUNCMATH static INT32 cmpack(UINT8 a, UINT8 b)
   * \param lowtimer ???
   * \return True if a free acknum was found
   */
-static boolean GetFreeAcknum(UINT8 *freeack, boolean lowtimer)
+static boolean GetFreeAcknum(UINT8 *freeack)
 {
 	node_t *node = &nodes[doomcom->remotenode];
 	INT32 i, numfreeslot = 0;
@@ -249,17 +249,8 @@ static boolean GetFreeAcknum(UINT8 *freeack, boolean lowtimer)
 				node->nextacknum++;
 			ackpak[i].destinationnode = (UINT8)(node - nodes);
 			ackpak[i].length = doomcom->datalength;
-			if (lowtimer)
-			{
-				// Lowtime means can't be sent now so try it as soon as possible
-				ackpak[i].senttime = 0;
-				ackpak[i].resentnum = 1;
-			}
-			else
-			{
-				ackpak[i].senttime = I_GetTime();
-				ackpak[i].resentnum = 0;
-			}
+			ackpak[i].senttime = I_GetTime();
+			ackpak[i].resentnum = 0;
 			M_Memcpy(ackpak[i].pak.raw, netbuffer, ackpak[i].length);
 
 			*freeack = ackpak[i].acknum;
@@ -268,44 +259,13 @@ static boolean GetFreeAcknum(UINT8 *freeack, boolean lowtimer)
 
 			return true;
 		}
+
 #ifdef PARANOIA
 	CONS_Debug(DBG_NETPLAY, "No more free ackpacket\n");
 #endif
 	if (netbuffer->packettype < PT_CANFAIL)
 		I_Error("Connection lost\n");
 	return false;
-}
-
-/** Counts how many acks are free
-  *
-  * \param urgent True if the type of the packet meant to
-  *               use an ack is lower than PT_CANFAIL
-  *               If for some reason you don't want use it
-  *               for any packet type in particular,
-  *               just set to false
-  * \return The number of free acks
-  *
-  */
-INT32 Net_GetFreeAcks(boolean urgent)
-{
-	INT32 i, numfreeslot = 0;
-	INT32 n = 0; // Number of free acks found
-
-	for (i = 0; i < MAXACKPACKETS; i++)
-		if (!ackpak[i].acknum)
-		{
-			// For low priority packets, make sure to let freeslots so urgent packets can be sent
-			if (!urgent)
-			{
-				numfreeslot++;
-				if (numfreeslot <= URGENTFREESLOTNUM)
-					continue;
-			}
-
-			n++;
-		}
-
-	return n;
 }
 
 // Get a ack to send in the queue of this node
@@ -1084,9 +1044,10 @@ boolean HSendPacket(INT32 node, boolean reliable, UINT8 acknum, size_t packetlen
 		netbuffer->ackreturn = GetAcktosend(node);
 	else
 		netbuffer->ackreturn = 0;
+
 	if (reliable)
 	{
-		if (!GetFreeAcknum(&netbuffer->ack, false))
+		if (!GetFreeAcknum(&netbuffer->ack))
 			return false;
 	}
 	else
