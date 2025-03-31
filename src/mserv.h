@@ -30,8 +30,11 @@ typedef union
 typedef struct
 {
 	msg_header_t header;
+#ifndef HAVE_IPV6
 	char ip[16];
-	//char ip[sizeof "ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff"];
+#else
+	char ip[sizeof "ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff"];
+#endif
 	char port[8];
 	char contact[32];
 	char version[8]; // format is: x.yy.z (like 1.30.2 or 1.31)
