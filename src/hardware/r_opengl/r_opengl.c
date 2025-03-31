@@ -1658,6 +1658,7 @@ static void GL_UpdateTexture(GLMipmap_t *pTexInfo)
 	RGBA_t *tex = NULL;
 
 	GLint texformat = 0;
+	GLTextureFormat_t texinfoformat = 0;
 
 	// Generate a new texture name.
 	if (!num)
@@ -1670,8 +1671,9 @@ static void GL_UpdateTexture(GLMipmap_t *pTexInfo)
 	//GL_DBG_Printf("UpdateTexture %d %x\n", (INT32)num, pImgData);
 
 	texformat = textureformatGL;
+	texinfoformat = pTexInfo->format;
 
-	switch (pTexInfo->format)
+	switch (texinfoformat)
 	{
 		case GL_TEXFMT_P_8:
 		case GL_TEXFMT_AP_88:
@@ -1696,7 +1698,7 @@ static void GL_UpdateTexture(GLMipmap_t *pTexInfo)
 
 					pImgData++;
 
-					if (pTexInfo->format != GL_TEXFMT_AP_88)
+					if (texinfoformat != GL_TEXFMT_AP_88)
 						continue;
 					if (chromakeyed)
 						continue;
@@ -1744,7 +1746,7 @@ static void GL_UpdateTexture(GLMipmap_t *pTexInfo)
 			}
 			break;
 		default:
-			GL_MSG_Warning("UpdateTexture: bad format %d\n", pTexInfo->format);
+			GL_MSG_Warning("UpdateTexture: bad format %d\n", texinfoformat);
 			break;
 	}
 
@@ -1767,6 +1769,8 @@ static void GL_UpdateTexture(GLMipmap_t *pTexInfo)
 
 	if (MipMap && !transparent) // No mipmaps on transparent stuff
 	{
+		int maxlod = (texformat == GL_LUMINANCE_ALPHA || texformat == GL_ALPHA) ? 4 : 5;
+
 		pglTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, GL_TRUE);
 
 		if (update)
@@ -1776,7 +1780,7 @@ static void GL_UpdateTexture(GLMipmap_t *pTexInfo)
 
 		// Control the mipmap level of detail
 		pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_LOD, 0);
-		pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LOD, 4);
+		pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LOD, maxlod);
 	}
 	else
 	{
