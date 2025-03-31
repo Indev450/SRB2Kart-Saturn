@@ -99,14 +99,14 @@ static GLuint screenPaletteTex = 0; // 1D texture containing the screen palette
 static GLuint paletteLookupTex = 0; // 3D texture containing RGB -> palette index lookup table
 RGBA_t  myPaletteData[256]; // the palette for converting textures to RGBA
 
-GLint   screen_width    = 0;               // used by Draw2DLine()
-GLint   screen_height   = 0;
-GLbyte  screen_depth    = 0;
-GLint   textureformatGL = 0;
-GLint maximumAnisotropy = 0;
-static GLboolean MipMap = GL_FALSE;
-static GLint min_filter = GL_LINEAR;
-static GLint mag_filter = GL_LINEAR;
+static GLint gltexformat = GL_RGB5_A1;
+GLint   screen_width     = 0;               // used by Draw2DLine()
+GLint   screen_height    = 0;
+GLbyte  screen_depth     = 0;
+GLint maximumAnisotropy  = 0;
+static GLboolean MipMap  = GL_FALSE;
+static GLint min_filter  = GL_LINEAR;
+static GLint mag_filter  = GL_LINEAR;
 static GLint anisotropic_filter = 0;
 boolean supportMipMap = false;
 
@@ -1658,7 +1658,6 @@ static void GL_UpdateTexture(GLMipmap_t *pTexInfo)
 	RGBA_t *tex = NULL;
 
 	GLint texformat = 0;
-	GLTextureFormat_t texinfoformat = 0;
 
 	// Generate a new texture name.
 	if (!num)
@@ -1670,8 +1669,8 @@ static void GL_UpdateTexture(GLMipmap_t *pTexInfo)
 
 	//GL_DBG_Printf("UpdateTexture %d %x\n", (INT32)num, pImgData);
 
-	texformat = textureformatGL;
-	texinfoformat = pTexInfo->format;
+	texformat = gltexformat;
+	const GLTextureFormat_t texinfoformat = pTexInfo->format;
 
 	switch (texinfoformat)
 	{
@@ -2308,6 +2307,11 @@ void GL_SetSpecialState(hwdspecialstate_t IdState, INT32 Value)
 			}
 
 			GL_Flush(); //??? if we want to change filter mode by texture, remove this
+			break;
+
+		case HWD_SET_TEXTURE_FORMAT:
+			gltexformat = (Value == 32) ? GL_RGBA : GL_RGB5_A1;
+			GL_Flush();
 			break;
 			
 		case HWD_SET_MSAA:
