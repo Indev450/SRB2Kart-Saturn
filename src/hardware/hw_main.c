@@ -1513,10 +1513,9 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 		}
 
 		gl_toptexture = R_GetTextureNum(gl_sidedef->toptexture);
-		gl_bottomtexture = R_GetTextureNum(gl_sidedef->bottomtexture);
 
 		// check TOP TEXTURE
-		if ((worldhighslope < worldtopslope || worldhigh < worldtop) && gl_toptexture)
+		if (gl_toptexture && (worldhighslope < worldtopslope || worldhigh < worldtop))
 		{
 			// PEGGING
 			if (gl_linedef->flags & ML_DONTPEGTOP)
@@ -1575,8 +1574,10 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 				HWR_ProjectWall(wallVerts, &Surf, PF_Masked, lightnum, colormap);
 		}
 
+		gl_bottomtexture = R_GetTextureNum(gl_sidedef->bottomtexture);
+
 		// check BOTTOM TEXTURE
-		if ((worldlowslope > worldbottomslope || worldlow > worldbottom) && gl_bottomtexture)
+		if (gl_bottomtexture && (worldlowslope > worldbottomslope || worldlow > worldbottom))
 		{
 			// PEGGING
 			if (!(gl_linedef->flags & ML_DONTPEGBOTTOM))
