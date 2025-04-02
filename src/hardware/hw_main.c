@@ -1390,6 +1390,13 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 	SLOPEPARAMS(gl_frontsector->c_slope, worldtop,    worldtopslope,    gl_frontsector->ceilingheight)
 	SLOPEPARAMS(gl_frontsector->f_slope, worldbottom, worldbottomslope, gl_frontsector->floorheight)
 
+	float worldtopf = FixedToFloat(worldtop);
+	float worldbottomf = FixedToFloat(worldbottom);
+	float worldtopslopef = FixedToFloat(worldtopslope);
+	float worldbottomslopef = FixedToFloat(worldbottomslope);
+	float worldhighf = 0.0f, worldlowf = 0.0f;
+	float worldhighslopef = 0.0f, worldlowslopef = 0.0f;
+
 	// remember vertices ordering
 	//  3--2
 	//  | /|
@@ -1429,6 +1436,11 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 		SLOPEPARAMS(gl_backsector->c_slope, worldhigh, worldhighslope, gl_backsector->ceilingheight)
 		SLOPEPARAMS(gl_backsector->f_slope, worldlow,  worldlowslope,  gl_backsector->floorheight)
 
+		worldhighf = FixedToFloat(worldhigh);
+		worldlowf = FixedToFloat(worldlow);
+		worldhighslopef = FixedToFloat(worldhighslope);
+		worldlowslopef = FixedToFloat(worldlowslope);
+
 		// Sky culling
 		if (!gl_curline->polyseg) // Don't do it for polyobjects
 		{
@@ -1445,24 +1457,24 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 						&& (worldhigh != worldtop || worldhighslope != worldtopslope))
 					// Removing the second line above will render more rarely visible skywalls. Example: Cave garden ceiling in Dark race
 					{
-						wallVerts[0].y = FIXED_TO_FLOAT(worldhigh);
-						wallVerts[1].y = FIXED_TO_FLOAT(worldhighslope);
+						wallVerts[0].y = worldhighf;
+						wallVerts[1].y = worldhighslopef;
 						HWR_DrawSkyWall(wallVerts, &Surf);
 					}
 				}
 				else
 				{
 					// Only the frontsector is sky, just draw a skywall from the front ceiling
-					wallVerts[0].y = FIXED_TO_FLOAT(worldtop);
-					wallVerts[1].y = FIXED_TO_FLOAT(worldtopslope);
+					wallVerts[0].y = worldtopf;
+					wallVerts[1].y = worldtopslopef;
 					HWR_DrawSkyWall(wallVerts, &Surf);
 				}
 			}
 			else if (gl_backsector->ceilingpic == skyflatnum)
 			{
 				// Only the backsector is sky, just draw a skywall from the front ceiling
-				wallVerts[0].y = FIXED_TO_FLOAT(worldtop);
-				wallVerts[1].y = FIXED_TO_FLOAT(worldtopslope);
+				wallVerts[0].y = worldtopf;
+				wallVerts[1].y = worldtopslopef;
 				HWR_DrawSkyWall(wallVerts, &Surf);
 			}
 
@@ -1481,24 +1493,24 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 					// Removing the second line above will render more rarely visible skywalls. Example: Cave garden ceiling in Dark race
 					&& !(gl_sidedef->bottomtexture))
 					{
-						wallVerts[3].y = FIXED_TO_FLOAT(worldlow);
-						wallVerts[2].y = FIXED_TO_FLOAT(worldlowslope);
+						wallVerts[3].y = worldlowf;
+						wallVerts[2].y = worldlowslopef;
 						HWR_DrawSkyWall(wallVerts, &Surf);
 					}
 				}
 				else
 				{
 					// Only the backsector has sky, just draw a skywall from the back floor
-					wallVerts[3].y = FIXED_TO_FLOAT(worldbottom);
-					wallVerts[2].y = FIXED_TO_FLOAT(worldbottomslope);
+					wallVerts[3].y = worldbottomf;
+					wallVerts[2].y = worldbottomslopef;
 					HWR_DrawSkyWall(wallVerts, &Surf);
 				}
 			}
 			else if ((gl_backsector->floorpic == skyflatnum) && !(gl_sidedef->bottomtexture))
 			{
 				// Only the backsector has sky, just draw a skywall from the back floor if there's no bottomtexture
-				wallVerts[3].y = FIXED_TO_FLOAT(worldlow);
-				wallVerts[2].y = FIXED_TO_FLOAT(worldlowslope);
+				wallVerts[3].y = worldlowf;
+				wallVerts[2].y = worldlowslopef;
 				HWR_DrawSkyWall(wallVerts, &Surf);
 			}
 		}
@@ -1506,10 +1518,12 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 		// hack to allow height changes in outdoor areas
 		// This is what gets rid of the upper textures if there should be sky
 		if (gl_frontsector->ceilingpic == skyflatnum
-			&& gl_backsector->ceilingpic  == skyflatnum)
+			&& gl_backsector->ceilingpic == skyflatnum)
 		{
 			worldtop = worldhigh;
+			worldtopf = FixedToFloat(worldtop);
 			worldtopslope = worldhighslope;
+			worldtopslopef = FixedToFloat(worldtopslope);
 		}
 
 		gl_toptexture = R_GetTextureNum(gl_sidedef->toptexture);
@@ -1561,10 +1575,10 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 			}
 
 			// set top/bottom coords
-			wallVerts[3].y = FIXED_TO_FLOAT(worldtop);
-			wallVerts[0].y = FIXED_TO_FLOAT(worldhigh);
-			wallVerts[2].y = FIXED_TO_FLOAT(worldtopslope);
-			wallVerts[1].y = FIXED_TO_FLOAT(worldhighslope);
+			wallVerts[3].y = worldtopf;
+			wallVerts[0].y = worldhighf;
+			wallVerts[2].y = worldtopslopef;
+			wallVerts[1].y = worldhighslopef;
 
 			if (!gl_drawing_stencil && gl_frontsector->numlights)
 				HWR_SplitWall(gl_frontsector, wallVerts, gl_toptexture, noencore, &Surf, FF_CUTLEVEL, NULL, 0);
@@ -1622,10 +1636,10 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 			}
 
 			// set top/bottom coords
-			wallVerts[3].y = FIXED_TO_FLOAT(worldlow);
-			wallVerts[0].y = FIXED_TO_FLOAT(worldbottom);
-			wallVerts[2].y = FIXED_TO_FLOAT(worldlowslope);
-			wallVerts[1].y = FIXED_TO_FLOAT(worldbottomslope);
+			wallVerts[3].y = worldlowf;
+			wallVerts[0].y = worldbottomf;
+			wallVerts[2].y = worldlowslopef;
+			wallVerts[1].y = worldbottomslopef;
 
 			if (!gl_drawing_stencil && gl_frontsector->numlights)
 				HWR_SplitWall(gl_frontsector, wallVerts, gl_bottomtexture, noencore, &Surf, FF_CUTLEVEL, NULL, 0);
@@ -1848,10 +1862,10 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 			}
 
 			//Set textures properly on single sided walls that are sloped
-			wallVerts[3].y = FIXED_TO_FLOAT(worldtop);
-			wallVerts[0].y = FIXED_TO_FLOAT(worldbottom);
-			wallVerts[2].y = FIXED_TO_FLOAT(worldtopslope);
-			wallVerts[1].y = FIXED_TO_FLOAT(worldbottomslope);
+			wallVerts[3].y = worldtopf;
+			wallVerts[0].y = worldbottomf;
+			wallVerts[2].y = worldtopslopef;
+			wallVerts[1].y = worldbottomslopef;
 
 			if (gl_frontsector->numlights)
 			{
@@ -1868,10 +1882,10 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 		else
 		{
 			//Set textures properly on single sided walls that are sloped
-			wallVerts[3].y = FIXED_TO_FLOAT(worldtop);
-			wallVerts[0].y = FIXED_TO_FLOAT(worldbottom);
-			wallVerts[2].y = FIXED_TO_FLOAT(worldtopslope);
-			wallVerts[1].y = FIXED_TO_FLOAT(worldbottomslope);
+			wallVerts[3].y = worldtopf;
+			wallVerts[0].y = worldbottomf;
+			wallVerts[2].y = worldtopslopef;
+			wallVerts[1].y = worldbottomslopef;
 
 			// When there's no midtexture, draw a skywall to prevent rendering behind it
 			HWR_DrawSkyWall(wallVerts, &Surf);
@@ -1882,15 +1896,15 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 			if (gl_frontsector->ceilingpic == skyflatnum) // It's a single-sided line with sky for its sector
 			{
 				wallVerts[2].y = wallVerts[3].y = FIXED_TO_FLOAT(INT32_MAX); // draw to top of map space
-				wallVerts[0].y = FIXED_TO_FLOAT(worldtop);
-				wallVerts[1].y = FIXED_TO_FLOAT(worldtopslope);
+				wallVerts[0].y = worldtopf;
+				wallVerts[1].y = worldtopslopef;
 
 				HWR_DrawSkyWall(wallVerts, &Surf);
 			}
 			if (gl_frontsector->floorpic == skyflatnum)
 			{
-				wallVerts[3].y = FIXED_TO_FLOAT(worldbottom);
-				wallVerts[2].y = FIXED_TO_FLOAT(worldbottomslope);
+				wallVerts[3].y = worldbottomf;
+				wallVerts[2].y = worldbottomslopef;
 				wallVerts[0].y = wallVerts[1].y = FIXED_TO_FLOAT(INT32_MIN); // draw to bottom of map space
 
 				HWR_DrawSkyWall(wallVerts, &Surf);
