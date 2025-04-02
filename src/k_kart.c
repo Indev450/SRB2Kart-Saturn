@@ -8256,6 +8256,25 @@ void K_getMinimapDrawinfo(drawinfo_t *out)
 	out->flags = fflags;
 }
 
+INT32 K_getMinimapTrans(void)
+{
+	INT32 minimaptrans = cv_kartminimap.value;
+
+	if (!minimaptrans)
+		return 0;
+
+	if (forceshowhud)
+		return (10-minimaptrans)<<FF_TRANSSHIFT;
+
+	if (timeinmap <= 105)
+		return 0;
+
+	if (timeinmap <= 113)
+		minimaptrans = ((((INT32)timeinmap) - 105)*minimaptrans)/(113-105);
+
+	return (10-minimaptrans)<<FF_TRANSSHIFT;
+}
+
 patch_t *K_getItemBoxPatch(boolean small, boolean dark)
 {
 	UINT8 ofs = (cv_darkitembox.value && dark ? 1 : 0) + (small ? 2 : 0);
@@ -10333,26 +10352,18 @@ static void K_drawKartMinimap(void)
 		return; // no pic, just get outta here
 	}
 
+	minimaptrans = K_getMinimapTrans();
+
+	// Exit early if it wouldn't draw anyway.
+	if (!minimaptrans)
+		return;
+
 	drawinfo_t info;
 	K_getMinimapDrawinfo(&info);
 	x = info.x - (SHORT(minimapinfo.minimap_pic->width)/2);
 	y = info.y - (SHORT(minimapinfo.minimap_pic->height)/2);
 	splitflags = info.flags;
 
-	if (forceshowhud)
-		minimaptrans = cv_kartminimap.value;
-	else if (timeinmap > 105)
-	{
-		minimaptrans = cv_kartminimap.value;
-		if (timeinmap <= 113)
-			minimaptrans = ((((INT32)timeinmap) - 105)*minimaptrans)/(113-105);
-		if (!minimaptrans)
-			return;
-	}
-	else
-		return;
-
-	minimaptrans = ((10-minimaptrans)<<FF_TRANSSHIFT);
 	splitflags |= minimaptrans;
 
 	if (encoremode)
