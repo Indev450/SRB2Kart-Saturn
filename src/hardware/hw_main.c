@@ -1893,7 +1893,7 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 				SLOPEPARAMS(*rover->t_slope, high1, highslope1, *rover->topheight)
 				SLOPEPARAMS(*rover->b_slope, low1,  lowslope1,  *rover->bottomheight)
 
-				if ((high1 < lowcut && highslope1 < lowcutslope) || (low1 > highcut && lowslope1 > highcutslope))
+				if ((high1 < lowcut || highslope1 < lowcutslope) || (low1 > highcut || lowslope1 > highcutslope))
 					continue;
 
 				texnum = R_GetTextureNum(sides[rover->master->sidenum[0]].midtexture);
@@ -2041,7 +2041,7 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 				SLOPEPARAMS(*rover->t_slope, high1, highslope1, *rover->topheight)
 				SLOPEPARAMS(*rover->b_slope, low1,  lowslope1,  *rover->bottomheight)
 
-				if ((high1 < lowcut && highslope1 < lowcutslope) || (low1 > highcut && lowslope1 > highcutslope))
+				if ((high1 < lowcut || highslope1 < lowcutslope) || (low1 > highcut || lowslope1 > highcutslope))
 					continue;
 
 				texnum = R_GetTextureNum(sides[rover->master->sidenum[0]].midtexture);
