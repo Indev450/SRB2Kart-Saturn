@@ -320,36 +320,27 @@ static void HWR_GenerateTexture(INT32 texnum, GLMapTexture_t *gltex, boolean noe
 	INT32 blockwidth, blockheight, blocksize;
 
 	INT32 i, idx;
-	boolean skyspecial = false; //poor hack for Legacy large skies..
+	boolean skyspecial = false; // poor hack for Legacy large skies..
 
 	RGBA_t *palette;
 	palette = HWR_GetTexturePalette();
 
 	texture = textures[texnum];
 
-	// hack the Legacy skies..
-	if (texture->name[0] == 'S' &&
-	    texture->name[1] == 'K' &&
-	    texture->name[2] == 'Y' &&
-	    (texture->name[4] == 0 ||
-	     texture->name[5] == 0)
-	   )
-	{
-		skyspecial = true;
-		gltex->mipmap.flags = TF_WRAPXY; // don't use the chromakey for sky
-	}
-	else
-		gltex->mipmap.flags = TF_CHROMAKEYED | TF_WRAPXY;
-
+	gltex->mipmap.flags = TF_CHROMAKEYED | TF_WRAPXY;
 	gltex->mipmap.width = (UINT16)(texture->width);
 	gltex->mipmap.height = (UINT16)(texture->height);
-
-	if (skyspecial)
-		gltex->mipmap.format = GL_TEXFMT_RGBA; // that skyspecial code below assumes this format ...
-	else
-		gltex->mipmap.format = textureformat;
-
 	gltex->mipmap.colormap = colormaps;
+	gltex->mipmap.format = textureformat;
+
+	// hack the Legacy skies..
+	if (strncmp(texture->name, "SKY", 3) == 0 &&
+		(texture->name[4] == 0 || texture->name[5] == 0))
+	{
+		skyspecial = true;
+		gltex->mipmap.flags &= ~TF_CHROMAKEYED; // don't use the chromakey for sky
+		gltex->mipmap.format = GL_TEXFMT_RGBA; // that skyspecial code below assumes this format ...
+	}
 
 #ifdef GLENCORE
 	if (encoremap && !noencore)
@@ -361,7 +352,7 @@ static void HWR_GenerateTexture(INT32 texnum, GLMapTexture_t *gltex, boolean noe
 	blocksize = (blockwidth * blockheight);
 	block = MakeBlock(&gltex->mipmap);
 
-	if (skyspecial) //Hurdler: not efficient, but better than holes in the sky (and it's done only at level loading)
+	if (skyspecial) // Hurdler: not efficient, but better than holes in the sky (and it's done only at level loading)
 	{
 		INT32 j;
 		RGBA_t col;
@@ -939,6 +930,7 @@ static void HWR_LoadMappedPatch(GLMipmap_t *glMipmap, GLPatch_t *glPatch)
 		patch_t *patch = glPatch->rawpatch;
 		if (!patch)
 			patch = W_CacheLumpNumPwad(glPatch->wadnum, glPatch->lumpnum, PU_STATIC);
+
 		HWR_MakePatch(patch, glPatch, glMipmap, true);
 
 		// You can't free rawpatch for some reason?
@@ -970,6 +962,7 @@ void HWR_GetPatch(GLPatch_t *glPatch)
 		patch_t *ptr = glPatch->rawpatch;
 		if (!ptr)
 			ptr = W_CacheLumpNumPwad(glPatch->wadnum, glPatch->lumpnum, PU_STATIC);
+
 		HWR_MakePatch(ptr, glPatch, glPatch->mipmap, true);
 
 		// this is inefficient.. but the hardware patch in heap is purgeable so it should
@@ -1331,6 +1324,7 @@ UINT32 HWR_GetLightTableID(extracolormap_t *colormap)
 			colormap_pointer = colormaps; // don't actually use the data from the "default colormap"
 		else
 			colormap_pointer = colormap->colormap;
+
 		colormap->gl_lighttable_id = HWR_CreateLightTable(colormap_pointer);
 	}
 
