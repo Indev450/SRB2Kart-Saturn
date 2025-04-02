@@ -98,10 +98,7 @@ static void HWR_DrawColumnInCache(const column_t *patchcol, UINT8 *block, GLMipm
 			position = 0;
 		}
 
-		position = ((position * scale_y) + (FRACUNIT/2)) >> FRACBITS;
-
-		if (position < 0)
-			position = 0;
+		position = max(((position * scale_y) + (FRACUNIT/2)) >> FRACBITS, 0);
 
 		if (position + count >= pblockheight)
 			count = pblockheight - position;
