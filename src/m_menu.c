@@ -2548,7 +2548,7 @@ static menuitem_t OP_SaturnCreditsMenu[] =
 {
 	{IT_HEADER, NULL, "Saturn Credits", 												NULL,       0},
 
-	{IT_HEADER, NULL, "Thanks to all contributers <3", 									NULL,      15},
+	{IT_HEADER, NULL, "Thanks to all contributers <3", 									NULL,      10},
 
 	{IT_STRING2+IT_SPACE, NULL, 	"Alug",      										NULL, 	   20},
 	{IT_STRING2+IT_SPACE, NULL, 	"Indev",        									NULL,      30},
@@ -2558,29 +2558,34 @@ static menuitem_t OP_SaturnCreditsMenu[] =
 	{IT_STRING2+IT_SPACE, NULL, 	"xyzzy",     										NULL, 	   70},
 	{IT_STRING2+IT_SPACE, NULL, 	"Chearii", 		 									NULL, 	   80},
 
-	{IT_STRING+IT_SPACE, NULL, 		"", 												NULL,      83},	// dummy text
-
 	{IT_STRING2+IT_SPACE, NULL, 	"Sunflower aka AnimeSonic", 		 				NULL, 	   90},
 	{IT_STRING2+IT_SPACE, NULL, 	"Yuz aka Yuzler", 		  							NULL, 	  100},
 	{IT_STRING2+IT_SPACE, NULL, 	"Democrab", 		  								NULL, 	  110},
-	{IT_STRING2+IT_SPACE, NULL, 	"EXpand aka Maver", 		 						NULL, 	  120},
+	{IT_STRING2+IT_SPACE, NULL, 	"EXpand", 		 									NULL, 	  120},
 	{IT_STRING2+IT_SPACE, NULL, 	"Nexit", 		 									NULL, 	  130},
+	{IT_STRING2+IT_SPACE, NULL, 	"Spee", 		 									NULL, 	  140},
+	{IT_STRING2+IT_SPACE, NULL, 	"Jin", 		 										NULL, 	  150},
+	{IT_STRING2+IT_SPACE, NULL, 	"chromaticpipe", 		 							NULL, 	  160},
+	{IT_STRING2+IT_SPACE, NULL, 	"Achii", 		 									NULL, 	  170},
+	{IT_STRING2+IT_SPACE, NULL, 	"Anonimus", 		 								NULL, 	  180},
+	{IT_STRING2+IT_SPACE, NULL, 	"scizor300", 		 								NULL, 	  190},
 
-	{IT_HEADER, 		  NULL, 	"Special Thanks <3", 								NULL,     140},
+	{IT_HEADER, 		  NULL, 	"Special Thanks <3", 								NULL,     163},
 
-	{IT_STRING2+IT_SPACE, NULL,		"All of Sunflower's Garden",	      				NULL,     160},
-	{IT_STRING2+IT_SPACE, NULL, 	"The Moe Mansion and Birdhouse Team",       		NULL,     170},
-	{IT_STRING2+IT_SPACE, NULL, 	"Galactice for Galaxy",       						NULL,     180},
+	{IT_STRING2+IT_SPACE, NULL,		"All of Sunflower's Garden",	      				NULL,     173},
+	{IT_STRING2+IT_SPACE, NULL, 	"The Moe Mansion and Birdhouse Team",       		NULL,     183},
+	{IT_STRING2+IT_SPACE, NULL, 	"Galactice for Galaxy",       						NULL,     193},
 
-	{IT_STRING+IT_SPACE, NULL, "", 														NULL,     190},	// dummy text II
-	{IT_STRING, NULL, "", 																NULL,     250},	// dummy text III
+	{IT_STRING+IT_SPACE, NULL, "", 														NULL,     203},	// dummy text I
+	{IT_STRING, NULL, "", 																NULL,     263},	// dummy text II
 };
 
-static const char* OP_CreditTooltips[] =
+// sry we dont have space for this anymore :/
+/*static const char* OP_CreditTooltips[] =
 {
-	NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,
+	NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,
 	"Thanks everyone! <3"
-};
+};*/
 
 
 static menuitem_t OP_BirdMenu[] =
@@ -3278,7 +3283,7 @@ menu_t OP_PlayerDistortDef = DEFAULTSCROLLSTYLE("M_VIDEO", OP_PlayerDistortMenu,
 menu_t OP_HudOffsetDef = DEFAULTSCROLLSTYLE(NULL, OP_HudOffsetMenu, &OP_SaturnHudDef, 30, 30);
 menu_t OP_SaturnHudDef = DEFAULTSCROLLSTYLE(NULL, OP_SaturnHudMenu, &OP_SaturnDef, 30, 30);
 
-menu_t OP_SaturnCreditsDef = DEFAULTMENUSTYLE(NULL, OP_SaturnCreditsMenu, &OP_SaturnDef, 30, 10);
+menu_t OP_SaturnCreditsDef = DEFAULTMENUSTYLE(NULL, OP_SaturnCreditsMenu, &OP_SaturnDef, 30, 3);
 
 menu_t OP_BirdDef = DEFAULTMENUSTYLE(NULL, OP_BirdMenu, &OP_MainDef, 30, 30);
 
@@ -5416,7 +5421,7 @@ static void M_DrawGenericMenu(void)
 	DoToolTips(OP_ChatOptionsDef, OP_ChatOptionsTooltips);
 	DoToolTips(OP_GameOptionsDef, OP_GameTooltips);
 	DoToolTips(OP_ServerOptionsDef, OP_ServerOptionsTooltips);
-	DoToolTips(OP_SaturnCreditsDef, OP_CreditTooltips); // C:
+	//DoToolTips(OP_SaturnCreditsDef, OP_CreditTooltips); // C:
 	DoToolTips(OP_BirdDef, OP_BirdTooltips);
 	DoToolTips(OP_TiltDef, OP_TiltTooltips);
 	DoToolTips(OP_AdvancedBirdDef, OP_AdvancedBirdTooltips);
