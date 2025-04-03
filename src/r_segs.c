@@ -276,7 +276,7 @@ static void R_Render2sidedMultiPatchColumn(column_t *column)
 	if (dc_yl <= dc_yh && dc_yh < vid.height && dc_yh > 0)
 	{
 		dc_source = (UINT8 *)column + 3;
-		dc_sourcelength = column2s_length;
+		dc_sourcelength = lengthcol;
 
 		if (colfunc == wallcolfunc)
 			twosmultipatchfunc();
