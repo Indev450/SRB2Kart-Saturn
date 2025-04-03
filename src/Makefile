@@ -202,7 +202,6 @@ ifndef NOSATURNPAK
 DOSATURNPAK=1
 endif
 endif
-endif
 
 ifdef MINGW
 include win32/Makefile.cfg
