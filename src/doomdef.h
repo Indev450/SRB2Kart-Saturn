@@ -576,7 +576,6 @@ extern const char *compdate, *comptime, *comprevision, *compbranch;
 #ifdef DOSATURNJOIN
 #define SATURNJOIN
 #endif
-#endif
 
 /// Server detection for if a connecting client is on Saturn.
 /// This also enables gamestate resynching between Saturn servers and clients
