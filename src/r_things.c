@@ -689,13 +689,13 @@ static void R_DrawFlippedMaskedColumn(column_t *column)
 			dc_yl = mceilingclip[dc_x]+1;
 		if (dc_yl < 0)
 			dc_yl = 0;
-		if (dc_yh >= vid.height)
+		if (dc_yh >= vid.height) // dc_yl must be < vid.height, so reduces number of checks in tight loop
 			dc_yh = vid.height - 1;
 
 		if (dc_yl <= dc_yh && dc_yh > 0 && column->length != 0)
 		{
 			dc_source = ZZ_Alloc(column->length);
-			dc_sourcelength = column->length;
+			dc_sourcelength = dc_texheight = column->length;
 
 			for (s = (UINT8 *)column+2+column->length, d = dc_source; d < dc_source+column->length; --s)
 				*d++ = *s;
@@ -704,6 +704,10 @@ static void R_DrawFlippedMaskedColumn(column_t *column)
 			// Still drawn by R_DrawColumn.
 			if (ylookup[dc_yl])
 				colfunc();
+#ifdef PARANOIA
+			else
+				I_Error("R_DrawMaskedColumn: Invalid ylookup for dc_yl %d", dc_yl);
+#endif
 			Z_Free(dc_source);
 		}
 		column = (column_t *)((UINT8 *)column + column->length + 4);
