@@ -3355,7 +3355,7 @@ void CL_RemovePlayer(INT32 playernum, INT32 reason)
 	// remove avatar of player
 	playeringame[playernum] = false;
 	playernode[playernum] = UINT8_MAX;
-	while (!playeringame[doomcom->numslots-1] && doomcom->numslots > 1)
+	while ((doomcom->numslots > 1) && !playeringame[doomcom->numslots-1])
 		doomcom->numslots--;
 
 	// Reset the name
