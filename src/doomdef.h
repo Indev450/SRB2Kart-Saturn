@@ -571,12 +571,6 @@ extern const char *compdate, *comptime, *comprevision, *compbranch;
 
 #ifndef NONET
 //-- SATURN __
-/// Enable gamestate resynching between Saturn servers and clients
-/// Like SRB2 and RR does
-/// Still highly experimental
-#ifdef DOSATURNSYNCH
-#define SATURNSYNCH
-
 /// Detect if a client is on Saturn in the clientconfig.
 /// To seperately allow them to join or block joining from vanilla clients.
 #ifdef DOSATURNJOIN
@@ -585,7 +579,8 @@ extern const char *compdate, *comptime, *comprevision, *compbranch;
 #endif
 
 /// Server detection for if a connecting client is on Saturn.
-/// For stuff like extra synching, etc.
+/// This also enables gamestate resynching between Saturn servers and clients
+/// Like SRB2 and RR does
 #ifdef DOSATURNPAK
 #define SATURNPAK
 #endif

@@ -792,15 +792,14 @@ const char *packettypename[NUMPACKETTYPE] =
 	"MOREFILESNEEDED",
 
 	"PING"
-#ifdef SATURNSYNCH
+#ifdef SATURNPAK
 	,
 
 	"WILLRESENDGAMESTATE",
 	"CANRECEIVEGAMESTATE",
 	"RECEIVEDGAMESTATE",
 
-	// we will reserve this for now even if unused, so order wont get mangled
-	"ISSATURN"
+	"ISSATURN" // special packet to identify saturn clients
 #endif
 };
 
