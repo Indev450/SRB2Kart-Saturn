@@ -383,7 +383,7 @@ UINT8 *R_GetBlendTable(int style, INT32 alphalevel)
 	size_t offs;
 
 	if (style <= AST_COPY || style >= AST_OVERLAY)
-		return NULL;
+		return transtables + (ClipTransLevel(alphalevel) << FF_TRANSSHIFT);
 
 	offs = (ClipBlendLevel(style, alphalevel) << FF_TRANSSHIFT);
 
