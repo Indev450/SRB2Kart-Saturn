@@ -754,7 +754,7 @@ void D_RegisterServerCommands(void)
 	// d_clisrv
 	CV_RegisterVar(&cv_maxplayers);
 	CV_RegisterVar(&cv_resynchattempts);
-#ifdef SATURNSYNCH
+#ifdef SATURNPAK
 	CV_RegisterVar(&cv_gamestateattempts);
 	CV_RegisterVar(&cv_resynchcooldown);
 #endif

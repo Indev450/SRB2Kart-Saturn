@@ -1143,7 +1143,7 @@ void HU_Ticker(void)
 	
 	// Animate the desynch dots
 	if (hu_resynching
-#ifdef SATURNSYNCH
+#ifdef SATURNPAK
 		|| hu_redownloadinggamestate
 #endif
 		)
@@ -2244,7 +2244,7 @@ void HU_Drawer(void)
 
 	// draw desynch text
 	if (hu_resynching
-#ifdef SATURNSYNCH
+#ifdef SATURNPAK
 		|| hu_redownloadinggamestate
 #endif
 		)
