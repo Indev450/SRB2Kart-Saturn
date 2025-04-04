@@ -695,7 +695,7 @@ static void R_DrawFlippedMaskedColumn(column_t *column)
 		if (dc_yl <= dc_yh && dc_yh > 0 && column->length != 0)
 		{
 			dc_source = ZZ_Alloc(column->length);
-			dc_sourcelength = dc_texheight = column->length;
+			dc_sourcelength = column->length;
 
 			for (s = (UINT8 *)column+2+column->length, d = dc_source; d < dc_source+column->length; --s)
 				*d++ = *s;
