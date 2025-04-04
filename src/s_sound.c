@@ -430,7 +430,7 @@ void S_StartSoundAtVolume(const void *origin_p, sfxenum_t sfx_id, INT32 volume)
 {
 	const mobj_t *origin = (const mobj_t *)origin_p;
 	const boolean reverse = (stereoreverse.value ^ encoremode);
-	const INT32 initial_volume = (origin ? S_ScaleVolumeWithSplitscreen(volume) : volume);
+	INT32 initial_volume;
 
 	sfxinfo_t *sfx;
 	INT32 sep, pitch, priority, cnum;
@@ -447,6 +447,8 @@ void S_StartSoundAtVolume(const void *origin_p, sfxenum_t sfx_id, INT32 volume)
 	// Don't want a sound? Okay then...
 	if (sfx_id == sfx_None)
 		return;
+
+	initial_volume = (origin ? S_ScaleVolumeWithSplitscreen(volume) : volume);
 
 	for (i = 0; i <= splitscreen; i++)
 	{
