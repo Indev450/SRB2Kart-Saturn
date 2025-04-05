@@ -170,14 +170,7 @@ void R_InterpolateView(fixed_t frac, boolean forceinvalid)
 	if (frac > FRACUNIT)
 		frac = FRACUNIT;
 
-	if (viewcontext >= VIEWCONTEXT_SKY1)
-	{
-		i = viewcontext - VIEWCONTEXT_SKY1;
-	}
-	else
-	{
-		i = viewcontext - VIEWCONTEXT_PLAYER1;
-	}
+	i = R_GetViewNumber();
 
 	if (oldview_invalid[i] != 0 || forceinvalid)
 	{
@@ -210,8 +203,7 @@ void R_UpdateViewInterpolation(void)
 	{
 		pview_old[i] = pview_new[i];
 		skyview_old[i] = skyview_new[i];
-
-		if (oldview_invalid[i]) oldview_invalid[i]--;
+		if (oldview_invalid[i] > 0) oldview_invalid[i]--;
 	}
 }
 
