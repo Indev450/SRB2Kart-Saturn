@@ -61,6 +61,7 @@ static const char *const hud_disable_options[] = {
 	"wanted",
 	"speedometer",
 	"statdisplay",
+	"inputdisplay",
 	"nametags",
 	"driftgauge",
 	"freeplay",
@@ -187,7 +188,8 @@ enum hudoffsets {
 	hudoffsets_check,
 	hudoffsets_minimap,
 	hudoffsets_wanted,
-	hudoffsets_statdisplay
+	hudoffsets_statdisplay,
+	hudoffsets_inputdisplay,
 };
 
 static const char *const hud_offsets_options[] = {
@@ -203,6 +205,7 @@ static const char *const hud_offsets_options[] = {
 	"minimap",
 	"wanted",
 	"statdisplay",
+	"inputdisplay",
 	NULL};
 
 enum huddrawinfo {
@@ -1290,6 +1293,7 @@ static int lib_hudgetoffsets(lua_State *L)
 		case hudoffsets_minimap:        OFS(mini)
 		case hudoffsets_wanted:         OFS(want)
 		case hudoffsets_statdisplay:    OFS(stat)
+		case hudoffsets_inputdisplay:   OFS(wheel)
 		default:
 			return 0; // unreachable
 	}
