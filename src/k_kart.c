@@ -11580,7 +11580,7 @@ void K_drawKartHUD(void)
 	{
 		if (!(splitscreen || demo.title))
 		{
-			if (LUA_HudEnabled(hud_position))
+			if (LUA_HudEnabled(hud_inputdisplay))
 				K_drawInput();
 		}
 
@@ -11636,12 +11636,6 @@ void K_drawKartHUD(void)
 				// Draw the numerical position
 				if (LUA_HudEnabled(hud_position))
 					K_DrawKartPositionNum(stplyr->kartstuff[k_position]);
-			}
-			else //if (!(demo.playback && hu_showscores))
-			{
-				// Draw the input UI
-				if (LUA_HudEnabled(hud_position))
-					K_drawInput();
 			}
 		}
 		else if (G_BattleGametype()) // Battle-only
