@@ -1281,7 +1281,7 @@ static inline boolean HWR_BlendMidtextureSurface(FSurfaceInfo *pSurf)
 
 	pSurf->PolyColor.s.alpha = 0xFF;
 
-	if (!gl_curline->polyseg)
+	if (LIKELY(!gl_curline->polyseg))
 	{
 		// set alpha for transparent walls
 		switch (gl_linedef->special)
@@ -1362,7 +1362,7 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 
 	const boolean noencore = (gl_linedef->flags & ML_TFERLINE);
 
-	if (gl_curline->pv1)
+	if (LIKELY(gl_curline->pv1))
 	{
 		vs.x = ((polyvertex_t *)gl_curline->pv1)->x;
 		vs.y = ((polyvertex_t *)gl_curline->pv1)->y;
@@ -1377,7 +1377,7 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 		v1y = gl_curline->v1->y;
 	}
 
-	if (gl_curline->pv2)
+	if (LIKELY(gl_curline->pv2))
 	{
 		ve.x = ((polyvertex_t *)gl_curline->pv2)->x;
 		ve.y = ((polyvertex_t *)gl_curline->pv2)->y;
@@ -2232,7 +2232,7 @@ static boolean CheckClip(sector_t * afrontsector, sector_t * abacksector)
 	{
 		fixed_t v1x, v1y, v2x, v2y; // the seg's vertexes as fixed_t
 
-		if (gl_curline->pv1)
+		if (LIKELY(gl_curline->pv1))
 		{
 			v1x = FLOAT_TO_FIXED(((polyvertex_t *)gl_curline->pv1)->x);
 			v1y = FLOAT_TO_FIXED(((polyvertex_t *)gl_curline->pv1)->y);
@@ -2242,7 +2242,8 @@ static boolean CheckClip(sector_t * afrontsector, sector_t * abacksector)
 			v1x = gl_curline->v1->x;
 			v1y = gl_curline->v1->y;
 		}
-		if (gl_curline->pv2)
+
+		if (LIKELY(gl_curline->pv2))
 		{
 			v2x = FLOAT_TO_FIXED(((polyvertex_t *)gl_curline->pv2)->x);
 			v2y = FLOAT_TO_FIXED(((polyvertex_t *)gl_curline->pv2)->y);
@@ -2373,7 +2374,7 @@ static void HWR_AddLine(seg_t *line)
 
 	gl_curline = line;
 
-	if (gl_curline->pv1)
+	if (LIKELY(gl_curline->pv1))
 	{
 		v1x = FLOAT_TO_FIXED(((polyvertex_t *)gl_curline->pv1)->x);
 		v1y = FLOAT_TO_FIXED(((polyvertex_t *)gl_curline->pv1)->y);
@@ -2384,7 +2385,7 @@ static void HWR_AddLine(seg_t *line)
 		v1y = gl_curline->v1->y;
 	}
 
-	if (gl_curline->pv2)
+	if (LIKELY(gl_curline->pv2))
 	{
 		v2x = FLOAT_TO_FIXED(((polyvertex_t *)gl_curline->pv2)->x);
 		v2y = FLOAT_TO_FIXED(((polyvertex_t *)gl_curline->pv2)->y);
@@ -2411,7 +2412,7 @@ static void HWR_AddLine(seg_t *line)
 
 	gl_backsector = line->backsector;
 
-	if (!cv_glportals.value || !gl_maphasportals)
+	if (!cv_glportals.value || LIKELY(!gl_maphasportals))
 		goto doaddline;
 
 	// do extra checks on the seg when rendering portals:
@@ -2472,7 +2473,7 @@ doaddline:
 			return;
     }
 
-	if (gl_portal_state != GLPORTAL_SEARCH && !dont_draw)// no need to do this during the portal check
+	if (LIKELY(gl_portal_state != GLPORTAL_SEARCH && !dont_draw))// no need to do this during the portal check
 		HWR_ProcessSeg(); // Doesn't need arguments because they're defined globally :D
 
 	return;
@@ -2960,7 +2961,7 @@ static void HWR_Subsector(size_t num)
 
 				sector_t *controlSec = &sectors[rover->secnum];
 
-				if (controlSec->moved != true)
+				if (!controlSec->moved)
 					continue;
 
 				anyMoved = true;
@@ -3191,7 +3192,7 @@ doaddline:
 
 		while (count--)
 		{
-			if (!line->polyseg) // ignore segs that belong to polyobjects
+			if (LIKELY(!line->polyseg)) // ignore segs that belong to polyobjects
 				HWR_AddLine(line);
 			line++;
 		}
