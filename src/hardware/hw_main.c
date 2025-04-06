@@ -734,7 +734,10 @@ static void HWR_RenderPlane(subsector_t *subsector, extrasubsector_t *xsub, bool
 
 		for (i = 0; i < subsector->numlines; i++, line++)
 		{
-			if (!(line->linedef->special == HORIZONSPECIAL && R_PointOnSegSide(viewx, viewy, line) == 0))
+			if (line->linedef->special != HORIZONSPECIAL)
+				continue;
+
+			if (R_PointOnSegSide(viewx, viewy, line) != 0)
 				continue;
 
 			P_ClosestPointOnLine(viewx, viewy, line->linedef, &v);
