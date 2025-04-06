@@ -2366,9 +2366,6 @@ static void HWR_AddLine(seg_t *line)
 
 	gl_curline = line;
 
-	if (!gl_curline->linedef)
-		return;
-
 	if (gl_curline->pv1)
 	{
 		v1x = FLOAT_TO_FIXED(((polyvertex_t *)gl_curline->pv1)->x);
