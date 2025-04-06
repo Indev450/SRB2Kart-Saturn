@@ -5668,9 +5668,6 @@ static void HWR_CheckForHorizonLines(void)
 			if (line->linedef->special != HORIZONSPECIAL)
 				continue;
 
-			if (R_PointOnSegSide(viewx, viewy, line) != 0)
-				continue;
-
 			gl_maphashorizonlines = true;
 			break;
 		}
