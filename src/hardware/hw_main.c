@@ -791,6 +791,7 @@ static void HWR_RenderPlane(subsector_t *subsector, extrasubsector_t *xsub, bool
 				x1 = FIXED_TO_FLOAT(line->v1->x);
 				y1 = FIXED_TO_FLOAT(line->v1->x);
 			}
+
 			if (line->pv2)
 			{
 				xd = ((polyvertex_t *)line->pv2)->x - x1;
@@ -4633,7 +4634,7 @@ static void HWR_ProjectSprite(mobj_t *thing)
 	angle_t sliptiderollangle = 0;
 #endif
 
-	if (P_MobjWasRemoved(thing) || thing->subsector == NULL)
+	if (!thing || thing->subsector == NULL)
 		return;
 
 	// uncapped/interpolation
