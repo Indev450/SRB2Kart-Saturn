@@ -1330,27 +1330,31 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 	{
 		vs.x = ((polyvertex_t *)gl_curline->pv1)->x;
 		vs.y = ((polyvertex_t *)gl_curline->pv1)->y;
+		v1x = FLOAT_TO_FIXED(vs.x);
+		v1y = FLOAT_TO_FIXED(vs.y);
 	}
 	else
 	{
 		vs.x = FIXED_TO_FLOAT(gl_curline->v1->x);
 		vs.y = FIXED_TO_FLOAT(gl_curline->v1->y);
+		v1x = gl_curline->v1->x;
+		v1y = gl_curline->v1->y;
 	}
+
 	if (gl_curline->pv2)
 	{
 		ve.x = ((polyvertex_t *)gl_curline->pv2)->x;
 		ve.y = ((polyvertex_t *)gl_curline->pv2)->y;
+		v2x = FLOAT_TO_FIXED(ve.x);
+		v2y = FLOAT_TO_FIXED(ve.y);
 	}
 	else
 	{
 		ve.x = FIXED_TO_FLOAT(gl_curline->v2->x);
 		ve.y = FIXED_TO_FLOAT(gl_curline->v2->y);
+		v2x = gl_curline->v2->x;
+		v2y = gl_curline->v2->y;
 	}
-
-	v1x = FLOAT_TO_FIXED(vs.x);
-	v1y = FLOAT_TO_FIXED(vs.y);
-	v2x = FLOAT_TO_FIXED(ve.x);
-	v2y = FLOAT_TO_FIXED(ve.y);
 
 #define SLOPEPARAMS(slope, end1, end2, normalheight) \
 	if (slope) { \
@@ -2315,6 +2319,9 @@ static void HWR_AddLine(seg_t *line)
 
 	gl_curline = line;
 
+	if (!gl_curline->linedef)
+		return;
+
 	if (gl_curline->pv1)
 	{
 		v1x = FLOAT_TO_FIXED(((polyvertex_t *)gl_curline->pv1)->x);
@@ -2325,6 +2332,7 @@ static void HWR_AddLine(seg_t *line)
 		v1x = gl_curline->v1->x;
 		v1y = gl_curline->v1->y;
 	}
+
 	if (gl_curline->pv2)
 	{
 		v2x = FLOAT_TO_FIXED(((polyvertex_t *)gl_curline->pv2)->x);
@@ -2341,7 +2349,7 @@ static void HWR_AddLine(seg_t *line)
 	angle2 = R_PointToAngle64(v2x, v2y);
 
 	 // PrBoom: Back side, i.e. backface culling - read: endAngle >= startAngle!
-	if (angle2 - angle1 < ANGLE_180 || !gl_curline->linedef)
+	if (angle2 - angle1 < ANGLE_180)
 		return;
 
 	// PrBoom: use REAL clipping math YAYYYYYYY!!!
