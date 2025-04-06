@@ -994,7 +994,7 @@ void HWR_GetMappedPatch(GLPatch_t *glPatch, const UINT8 *colormap)
 
 	// search for the mipmap
 	// skip the first (no colormap translated)
-	for (glMipmap = glPatch->mipmap; glMipmap->nextcolormap; )
+	for (glMipmap = glPatch->mipmap; glMipmap->nextcolormap;)
 	{
 		glMipmap = glMipmap->nextcolormap;
 

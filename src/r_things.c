@@ -2894,7 +2894,7 @@ void R_ClipSprites(void)
 /* Check if thing may be drawn from our current view. */
 boolean R_ThingVisible (mobj_t *thing)
 {
-	if (thing->sprite == SPR_NULL || thing->flags2 & MF2_DONTDRAW)
+	if (thing->sprite == SPR_NULL || (thing->flags2 & MF2_DONTDRAW))
 		return false;
 
 	if (splitscreen)
