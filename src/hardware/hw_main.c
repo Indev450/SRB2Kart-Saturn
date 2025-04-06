@@ -94,6 +94,8 @@ line_t *gl_linedef;
 sector_t *gl_frontsector;
 sector_t *gl_backsector;
 
+static boolean gl_maphashorizonlines = false;
+
 // values for the far clipping plane
 static float clipping_distances[] = {1024.0f, 2048.0f, 4096.0f, 6144.0f, 8192.0f, 12288.0f, 16384.0f};
 // values for bsp culling
@@ -752,7 +754,7 @@ static void HWR_RenderPlane(subsector_t *subsector, extrasubsector_t *xsub, bool
 
 	HWR_ProcessPolygon(&Surf, planeVerts, nrPlaneVerts, PolyFlags, shader, false);
 
-	if (subsector && cv_glhorizonlines.value)
+	if (gl_maphashorizonlines && subsector && cv_glhorizonlines.value)
 	{
 		// Horizon lines
 		FOutVector horizonpts[6];
@@ -5672,6 +5674,42 @@ void HWR_RenderPlayerView(void)
 	HWR_RenderFrame(player, false);
 }
 
+static void HWR_CheckForHorizonLines(void)
+{
+	size_t i;
+	INT32 h;
+
+	gl_maphashorizonlines = false;
+
+	if (!cv_glhorizonlines.value)
+		return;
+
+	for (i = 0; i < numsubsectors; i++)
+	{
+		subsector_t *subsec = &subsectors[i];
+
+		// sector checked already?
+		if (subsec->validcount == validcount)
+			continue;
+
+		subsec->validcount = validcount;
+
+		seg_t *line = &segs[subsec->firstline];
+
+		for (h = 0; h < subsec->numlines; h++, line++)
+		{
+			if (line->linedef->special != HORIZONSPECIAL)
+				continue;
+
+			if (R_PointOnSegSide(viewx, viewy, line) != 0)
+				continue;
+
+			gl_maphashorizonlines = true;
+			break;
+		}
+	}
+}
+
 void HWR_LoadLevel(void)
 {
 	// Lactozilla (December 8, 2019)
@@ -5690,6 +5728,8 @@ void HWR_LoadLevel(void)
 	// Build the sky dome
 	HWR_ClearSkyDome();
 	HWR_BuildSkyDome();
+
+	HWR_CheckForHorizonLines();
 
 	if (HWR_ShouldUsePaletteRendering())
 		HWR_SetMapPalette();
@@ -5842,7 +5882,7 @@ static void COM_HWR_glinfo(void)
 			CONS_Printf("Unrecognized argument: %s\n", argv);
 			return;
 		}
-		
+
 	}
 
 	CONS_Printf("\x88OpenGL %s\x80\n", gl_version);
