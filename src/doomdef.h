@@ -547,6 +547,19 @@ UINT32 quickncasehash (const char *p, size_t n)
 #define DBL_EPSILON 2.2204460492503131e-16l
 #endif
 
+#if defined(__GNUC__) || defined(__clang__)
+#ifndef LIKELY
+#define LIKELY(x)   __builtin_expect(!!(x), 1)
+#endif
+
+#ifndef UNLIKELY
+#define UNLIKELY(x) __builtin_expect(!!(x), 0)
+#endif
+#else
+#define LIKELY(x)       (x)
+#define UNLIKELY(x)     (x)
+#endif
+
 // An assert-type mechanism.
 #ifdef PARANOIA
 #define I_Assert(e) ((e) ? (void)0 : I_Error("assert failed: %s, file %s, line %d", #e, __FILE__, __LINE__))

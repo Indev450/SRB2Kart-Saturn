@@ -331,8 +331,8 @@ static void HWR_GenerateTexture(INT32 texnum, GLMapTexture_t *gltex, boolean noe
 	gltex->mipmap.format = textureformat;
 
 	// hack the Legacy skies..
-	if (strncmp(texture->name, "SKY", 3) == 0 &&
-		(texture->name[4] == 0 || texture->name[5] == 0))
+	if (UNLIKELY(strncmp(texture->name, "SKY", 3) == 0 &&
+		(texture->name[4] == 0 || texture->name[5] == 0)))
 	{
 		skyspecial = true;
 		gltex->mipmap.flags &= ~TF_CHROMAKEYED; // don't use the chromakey for sky
@@ -349,7 +349,7 @@ static void HWR_GenerateTexture(INT32 texnum, GLMapTexture_t *gltex, boolean noe
 	blocksize = (blockwidth * blockheight);
 	block = MakeBlock(&gltex->mipmap);
 
-	if (skyspecial) // Hurdler: not efficient, but better than holes in the sky (and it's done only at level loading)
+	if (UNLIKELY(skyspecial)) // Hurdler: not efficient, but better than holes in the sky (and it's done only at level loading)
 	{
 		INT32 j;
 		RGBA_t col;
@@ -994,11 +994,11 @@ void HWR_GetMappedPatch(GLPatch_t *glPatch, const UINT8 *colormap)
 
 	// search for the mipmap
 	// skip the first (no colormap translated)
-	for (glMipmap = glPatch->mipmap; glMipmap->nextcolormap;)
+	for (glMipmap = glPatch->mipmap; LIKELY(glMipmap->nextcolormap);)
 	{
 		glMipmap = glMipmap->nextcolormap;
 
-		if (glMipmap->colormap == colormap)
+		if (UNLIKELY(glMipmap->colormap == colormap))
 		{
 			HWR_LoadMappedPatch(glMipmap, glPatch);
 			return;
