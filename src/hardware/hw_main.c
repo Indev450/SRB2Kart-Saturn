@@ -544,11 +544,13 @@ static void HWR_RenderPlane(subsector_t *subsector, extrasubsector_t *xsub, bool
 	static FOutVector *planeVerts = NULL;
 	static UINT16 numAllocedPlaneVerts = 0;
 
+	poly_t *planepoly = xsub->planepoly;
+
 	// no convex poly were generated for this subsector
-	if (!xsub->planepoly)
+	if (!planepoly)
 		return;
 
-	nrPlaneVerts = xsub->planepoly->numpts;
+	nrPlaneVerts = planepoly->numpts;
 
 	if (nrPlaneVerts < 3)   //not even a triangle ?
 		return;
@@ -617,7 +619,7 @@ static void HWR_RenderPlane(subsector_t *subsector, extrasubsector_t *xsub, bool
 			break;
 	}
 
-	pv = xsub->planepoly->pts;
+	pv = planepoly->pts;
 
 	// reference point for flat texture coord for each vertex around the polygon
 	flatxref = (float)(((fixed_t)pv->x & (~flatflag)) / fflatsize);
