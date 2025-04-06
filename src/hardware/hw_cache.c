@@ -998,11 +998,11 @@ void HWR_GetMappedPatch(GLPatch_t *glPatch, const UINT8 *colormap)
 	{
 		glMipmap = glMipmap->nextcolormap;
 
-		if (glMipmap->colormap != colormap)
-			continue;
-
-		HWR_LoadMappedPatch(glMipmap, glPatch);
-		return;
+		if (glMipmap->colormap == colormap)
+		{
+			HWR_LoadMappedPatch(glMipmap, glPatch);
+			return;
+		}
 	}
 	// not found, create it!
 	// If we are here, the sprite with the current colormap is not already in hardware memory
