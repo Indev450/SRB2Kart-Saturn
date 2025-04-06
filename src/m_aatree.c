@@ -138,7 +138,7 @@ static void *M_AATreeGet_Node(aatree_node_t *node, INT32 key)
 	{
 		if (node->key == key)
 			return node->value;
-		else if(node->key < key)
+		else if (node->key < key)
 			return M_AATreeGet_Node(node->right, key);
 		else
 			return M_AATreeGet_Node(node->left, key);

@@ -3843,15 +3843,13 @@ static void HWR_DrawSprite(gl_vissprite_t *spr)
 
 	INT32 shader = SHADER_NONE;
 
-	if (P_MobjWasRemoved(spr->mobj))
-		return;
-
-	if (!spr->mobj->subsector)
+	if (!spr->mobj || !spr->mobj->subsector)
 		return;
 
 	const boolean papersprite = (spr->mobj->frame & FF_PAPERSPRITE);
+	sector_t *sector = spr->mobj->subsector->sector;
 
-	if (spr->mobj->subsector->sector->numlights)
+	if (sector->numlights)
 	{
 		HWR_SplitSprite(spr, papersprite);
 		return;
@@ -3887,7 +3885,9 @@ static void HWR_DrawSprite(gl_vissprite_t *spr)
 	{
 		wallVerts[0].s = wallVerts[3].s = gpatch->max_s;
 		wallVerts[2].s = wallVerts[1].s = 0;
-	}else{
+	}
+	else
+	{
 		wallVerts[0].s = wallVerts[3].s = 0;
 		wallVerts[2].s = wallVerts[1].s = gpatch->max_s;
 	}
@@ -3897,7 +3897,9 @@ static void HWR_DrawSprite(gl_vissprite_t *spr)
 	{
 		wallVerts[3].t = wallVerts[2].t = gpatch->max_t;
 		wallVerts[0].t = wallVerts[1].t = 0;
-	}else{
+	}
+	else
+	{
 		wallVerts[3].t = wallVerts[2].t = 0;
 		wallVerts[0].t = wallVerts[1].t = gpatch->max_t;
 	}
@@ -3927,17 +3929,16 @@ static void HWR_DrawSprite(gl_vissprite_t *spr)
 	/// \todo coloured
 
 	// colormap test
-	sector_t *sector = spr->mobj->subsector->sector;
 	INT32 lightlevel = 255;
 	boolean lightset = HWR_OverrideObjectLightLevel(spr->mobj, &lightlevel);
 	extracolormap_t *colormap = sector->extra_colormap;
 	const boolean fullbright = R_ThingIsFullBright(spr->mobj);
 
 	if (!lightset)
+	{
 		lightlevel = min(sector->lightlevel, 255);
-
-	if (!lightset)
 		HWR_ObjectLightLevelPost(spr, sector, &lightlevel, false);
+	}
 
 	HWR_Lighting(&Surf, lightlevel, colormap, P_SectorUsesDirectionalLighting(sector) && !fullbright);
 
