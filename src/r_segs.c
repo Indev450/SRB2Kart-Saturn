@@ -322,7 +322,7 @@ void R_RenderMaskedSegRange(drawseg_t *ds, INT32 x1, INT32 x2)
 
 	if (!ldef->alpha)
 		return;
-	
+
 	if (ldef->blendmode)
 	{
 		if (ldef->alpha == NUMTRANSMAPS || ldef->blendmode == AST_MODULATE)
@@ -628,7 +628,7 @@ void R_RenderMaskedSegRange(drawseg_t *ds, INT32 x1, INT32 x2)
 
 				// draw the texture
 				col = (column_t *)((UINT8 *)R_GetColumn(texnum, maskedtexturecol[dc_x]) - 3);
-				
+
 				colfunc_2s(col);
 			}
 			spryscale += rw_scalestep;
@@ -1581,7 +1581,7 @@ static void R_RenderSegLoop (void)
 		{
 			if (curline->polyseg && (ffloor[i].polyobj != curline->polyseg))
 				continue;
-			
+
 			ffloor[i].f_clip[rw_x] = ffloor[i].c_clip[rw_x] = (INT16)((ffloor[i].b_frac >> HEIGHTBITS) & 0xFFFF);
 			ffloor[i].b_frac += ffloor[i].b_step;
 		}
@@ -1590,7 +1590,7 @@ static void R_RenderSegLoop (void)
 		topfrac += topstep;
 		bottomfrac += bottomstep;
 	}
-	
+
 	//colfunc = wallcolfunc;
 }
 
@@ -1690,7 +1690,7 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 			while (need > maxopenings);
 			openings = Z_Realloc(openings, maxopenings * sizeof (*openings), PU_STATIC, NULL);
 			lastopening = openings + pos;
-			
+
 			if (oldopenings == NULL)
 				return;
 
@@ -2817,7 +2817,7 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 				R_ExpandPlane(ffloor[i].plane, rw_x, rw_stopx - 1);
 		}
 	}
-	
+
 	rw_silhouette = &(ds_p->silhouette);
 	rw_tsilheight = &(ds_p->tsilheight);
 	rw_bsilheight = &(ds_p->bsilheight);

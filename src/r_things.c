@@ -897,7 +897,7 @@ static void R_DrawVisSprite(vissprite_t *vis)
 	else
 	{
 		// Non-paper drawing loop
-		for (dc_x = vis->x1; dc_x <= vis->x2; dc_x++, frac += vis->xiscale)
+		for (dc_x = vis->x1; dc_x <= vis->x2 && (frac>>FRACBITS) < patch->width; dc_x++, frac += vis->xiscale)
 		{
 			texturecolumn = CLAMP(frac >> FRACBITS, 0, SHORT(patch->width) - 1);
 			column = (column_t *)((UINT8 *)patch + LONG(patch->columnofs[texturecolumn]));
