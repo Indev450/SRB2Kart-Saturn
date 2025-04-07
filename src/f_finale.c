@@ -538,6 +538,7 @@ static const char *credits[] = {
 	"\"Nexit\"",
 	"\"Spee\"",
 	"\"Jin\"",
+	"\"riomccloud\"",
 	"\"chromaticpipe\"",
 	"\"Achii\"",
 	"\"Anonimus\"",
@@ -1012,7 +1013,7 @@ void F_TitleScreenDrawer(void)
 	else
 	{
 		INT32 transval = 0;
-		
+
 		if (finalecount <= (50+(9<<1)))
 			transval = (finalecount - 50)>>1;
 
