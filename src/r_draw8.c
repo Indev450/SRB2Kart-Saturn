@@ -737,9 +737,9 @@ void R_DrawSpan_8 (void)
 	uintptr_t xstep, ystep;
 	register UINT32 bit;
 
-	UINT8 *restrict source;
-	UINT8 *restrict colormap;
-	UINT8 *restrict dest;
+	UINT8 *restrict source = ds_source;
+	UINT8 *restrict colormap = ds_colormap;
+	UINT8 *restrict dest = ylookup[ds_y] + columnofs[ds_x1];
 	const UINT8 *restrict deststop = screens[0] + vid.rowbytes * vid.height;
 
 	register size_t count = (ds_x2 - ds_x1 + 1);
