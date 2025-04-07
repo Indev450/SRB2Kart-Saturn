@@ -33,24 +33,17 @@ typedef struct {
 
 static INT32 sightcounts[2];
 
+typedef INT32 (*divlinefunc)(fixed_t x, fixed_t y, const divline_t *node);
+
 //
 // P_DivlineSide
 //
 // Returns side 0 (front), 1 (back), or 2 (on).
 //
 // killough 4/19/98: made static, cleaned up
-static INT32 P_DivlineSide(fixed_t x, fixed_t y, const divline_t *node, boolean fast)
+static INT32 P_DivlineSide(fixed_t x, fixed_t y, const divline_t *node)
 {
 	fixed_t left, right;
-
-	if (fast)
-	{
-		INT64 v = ((INT64)y - node->y) * node->dx - ((INT64)x - node->x) * node->dy;
-
-		if (v == 0)
-			return 2;
-		return v > 0;
-	}
 
 	return(
 		!node->dx ? x == node->x ? 2 : x <= node->x ? node->dy > 0 : node->dy < 0 :
@@ -60,9 +53,18 @@ static INT32 P_DivlineSide(fixed_t x, fixed_t y, const divline_t *node, boolean 
 		right == left ? 2 : 1);
 }
 
+static inline INT32 P_DivlineSideFast(fixed_t x, fixed_t y, const divline_t *node)
+{
+	INT64 v = ((INT64)y - node->y) * node->dx - ((INT64)x - node->x) * node->dy;
+
+	if (v == 0)
+		return 2;
+	return v > 0;
+}
+
 static inline INT32 P_DivlineCrossed(fixed_t x1, fixed_t y1, fixed_t x2, fixed_t y2, const divline_t *node)
 {
-	return (P_DivlineSide(x1, y1, node, false) == P_DivlineSide(x2, y2, node, false));
+	return (P_DivlineSide(x1, y1, node) == P_DivlineSide(x2, y2, node));
 }
 
 static boolean P_CrossSubsecPolyObj(polyobj_t *po, register los_t *los)
@@ -301,12 +303,14 @@ static boolean P_CrossSubsector(size_t num, register los_t *los)
 // killough 4/20/98: rewritten to remove tail recursion, clean up, and optimize
 static boolean P_CrossBSPNode(INT32 bspnum, register los_t *los, boolean fast)
 {
+	const divlinefunc divlineFunc = fast ? P_DivlineSideFast : P_DivlineSide;
+
 	while (!(bspnum & NF_SUBSECTOR))
 	{
 		register node_t *bsp = nodes + bspnum;
 
-		INT32 side = P_DivlineSide(los->strace.x, los->strace.y, (divline_t *)bsp, fast) & 1;
-		INT32 side2 = P_DivlineSide(los->t2x, los->t2y, (divline_t *) bsp, fast);
+		INT32 side = divlineFunc(los->strace.x, los->strace.y, (divline_t *)bsp) & 1;
+		INT32 side2 = divlineFunc(los->t2x, los->t2y, (divline_t *) bsp);
 
 		if (side == side2)
 		{

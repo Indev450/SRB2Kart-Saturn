@@ -1699,6 +1699,7 @@ void V_DrawCharacter(INT32 x, INT32 y, INT32 c, boolean lowercaseallowed)
 		c -= HU_FONTSTART;
 	else
 		c = toupper(c) - HU_FONTSTART;
+
 	if (c < 0 || c >= HU_FONTSIZE || !hu_font[c])
 		return;
 
