@@ -2286,8 +2286,8 @@ static menuitem_t OP_SaturnMenu[] =
 
 	{IT_STRING | IT_CVAR, NULL, "Skin Select Spinning Speed",		 	&cv_skinselectspin, 	 	 20},
 
-	{IT_STRING | IT_CVAR, NULL, "Colourized Speedlines", 				&cv_coloredspeedlines, 		 30},
-	{IT_STRING | IT_CVAR, NULL, "Colourized Sneakertrails", 			&cv_coloredsneakertrail, 	 35},
+	{IT_STRING | IT_CVAR, NULL, "Colorized Speedlines", 				&cv_coloredspeedlines, 		 30},
+	{IT_STRING | IT_CVAR, NULL, "Colorized Sneakertrails", 				&cv_coloredsneakertrail, 	 35},
 
 	{IT_STRING | IT_CVAR, NULL, "Player Blendeffects", 					&cv_playerblendeffects, 	 45},
 
@@ -2300,7 +2300,7 @@ static menuitem_t OP_SaturnMenu[] =
 
 	{IT_STRING | IT_CVAR, NULL, "Keyboard Layout",						&cv_keyboardlayout,   	   	 90},
 
-	{IT_STRING | IT_CVAR, NULL, "Less Midnight Channel Flicker", 		&cv_lessflicker, 		   	 100},
+	{IT_STRING | IT_CVAR, NULL, "Less Midnight Channel Flicker", 		&cv_lessflicker, 		   	100},
 
 	{IT_SUBMENU|IT_STRING,	NULL,	"Saturn Hud...", 					&OP_SaturnHudDef,		   	110},
 	{IT_SUBMENU|IT_STRING,	NULL,	"Sprite Distortion...", 			&OP_PlayerDistortDef,	   	115},
@@ -2548,36 +2548,37 @@ static menuitem_t OP_SaturnCreditsMenu[] =
 {
 	{IT_HEADER, NULL, "Saturn Credits", 												NULL,       0},
 
-	{IT_HEADER, NULL, "Thanks to all contributers <3", 									NULL,      10},
+	{IT_HEADER, NULL, "Thanks to all contributers <3", 									NULL,      7},
 
-	{IT_STRING2+IT_SPACE, NULL, 	"Alug",      										NULL, 	   20},
-	{IT_STRING2+IT_SPACE, NULL, 	"Indev",        									NULL,      30},
-	{IT_STRING2+IT_SPACE, NULL, 	"Haya",       										NULL,      40},
-	{IT_STRING2+IT_SPACE, NULL, 	"Nepdisk", 		 									NULL, 	   50},
-	{IT_STRING2+IT_SPACE, NULL, 	"GenericHeroGuy", 		 							NULL, 	   60},
-	{IT_STRING2+IT_SPACE, NULL, 	"xyzzy",     										NULL, 	   70},
-	{IT_STRING2+IT_SPACE, NULL, 	"Chearii", 		 									NULL, 	   80},
+	{IT_STRING2+IT_SPACE, NULL, 	"Alug",      										NULL, 	   17},
+	{IT_STRING2+IT_SPACE, NULL, 	"Indev",        									NULL,      27},
+	{IT_STRING2+IT_SPACE, NULL, 	"Haya",       										NULL,      37},
+	{IT_STRING2+IT_SPACE, NULL, 	"Nepdisk", 		 									NULL, 	   47},
+	{IT_STRING2+IT_SPACE, NULL, 	"GenericHeroGuy", 		 							NULL, 	   57},
+	{IT_STRING2+IT_SPACE, NULL, 	"xyzzy",     										NULL, 	   67},
+	{IT_STRING2+IT_SPACE, NULL, 	"Chearii", 		 									NULL, 	   77},
 
-	{IT_STRING2+IT_SPACE, NULL, 	"Sunflower aka AnimeSonic", 		 				NULL, 	   90},
-	{IT_STRING2+IT_SPACE, NULL, 	"Yuz aka Yuzler", 		  							NULL, 	  100},
-	{IT_STRING2+IT_SPACE, NULL, 	"Democrab", 		  								NULL, 	  110},
-	{IT_STRING2+IT_SPACE, NULL, 	"EXpand", 		 									NULL, 	  120},
-	{IT_STRING2+IT_SPACE, NULL, 	"Nexit", 		 									NULL, 	  130},
-	{IT_STRING2+IT_SPACE, NULL, 	"Spee", 		 									NULL, 	  140},
-	{IT_STRING2+IT_SPACE, NULL, 	"Jin", 		 										NULL, 	  150},
-	{IT_STRING2+IT_SPACE, NULL, 	"chromaticpipe", 		 							NULL, 	  160},
-	{IT_STRING2+IT_SPACE, NULL, 	"Achii", 		 									NULL, 	  170},
-	{IT_STRING2+IT_SPACE, NULL, 	"Anonimus", 		 								NULL, 	  180},
-	{IT_STRING2+IT_SPACE, NULL, 	"scizor300", 		 								NULL, 	  190},
+	{IT_STRING2+IT_SPACE, NULL, 	"Sunflower aka AnimeSonic", 		 				NULL, 	   87},
+	{IT_STRING2+IT_SPACE, NULL, 	"Yuz aka Yuzler", 		  							NULL, 	   97},
+	{IT_STRING2+IT_SPACE, NULL, 	"Democrab", 		  								NULL, 	  107},
+	{IT_STRING2+IT_SPACE, NULL, 	"EXpand", 		 									NULL, 	  117},
+	{IT_STRING2+IT_SPACE, NULL, 	"Nexit", 		 									NULL, 	  127},
+	{IT_STRING2+IT_SPACE, NULL, 	"Spee", 		 									NULL, 	  137},
+	{IT_STRING2+IT_SPACE, NULL, 	"Jin", 		 										NULL, 	  147},
+	{IT_STRING2+IT_SPACE, NULL, 	"riomccloud", 		 								NULL, 	  157},
+	{IT_STRING2+IT_SPACE, NULL, 	"chromaticpipe", 		 							NULL, 	  167},
+	{IT_STRING2+IT_SPACE, NULL, 	"Achii", 		 									NULL, 	  177},
+	{IT_STRING2+IT_SPACE, NULL, 	"Anonimus", 		 								NULL, 	  187},
+	{IT_STRING2+IT_SPACE, NULL, 	"scizor300", 		 								NULL, 	  197},
 
-	{IT_HEADER, 		  NULL, 	"Special Thanks <3", 								NULL,     163},
+	{IT_HEADER, 		  NULL, 	"Special Thanks <3", 								NULL,     167},
 
-	{IT_STRING2+IT_SPACE, NULL,		"All of Sunflower's Garden",	      				NULL,     173},
-	{IT_STRING2+IT_SPACE, NULL, 	"The Moe Mansion and Birdhouse Team",       		NULL,     183},
-	{IT_STRING2+IT_SPACE, NULL, 	"Galactice for Galaxy",       						NULL,     193},
+	{IT_STRING2+IT_SPACE, NULL,		"All of Sunflower's Garden",	      				NULL,     177},
+	{IT_STRING2+IT_SPACE, NULL, 	"The Moe Mansion and Birdhouse Team",       		NULL,     187},
+	{IT_STRING2+IT_SPACE, NULL, 	"Galactice for Galaxy",       						NULL,     197},
 
-	{IT_STRING+IT_SPACE, NULL, "", 														NULL,     203},	// dummy text I
-	{IT_STRING, NULL, "", 																NULL,     263},	// dummy text II
+	{IT_STRING+IT_SPACE, NULL, "", 														NULL,     207},	// dummy text I
+	{IT_STRING, NULL, "", 																NULL,     267},	// dummy text II
 };
 
 // sry we dont have space for this anymore :/
@@ -3283,7 +3284,7 @@ menu_t OP_PlayerDistortDef = DEFAULTSCROLLSTYLE("M_VIDEO", OP_PlayerDistortMenu,
 menu_t OP_HudOffsetDef = DEFAULTSCROLLSTYLE(NULL, OP_HudOffsetMenu, &OP_SaturnHudDef, 30, 30);
 menu_t OP_SaturnHudDef = DEFAULTSCROLLSTYLE(NULL, OP_SaturnHudMenu, &OP_SaturnDef, 30, 30);
 
-menu_t OP_SaturnCreditsDef = DEFAULTMENUSTYLE(NULL, OP_SaturnCreditsMenu, &OP_SaturnDef, 30, 3);
+menu_t OP_SaturnCreditsDef = DEFAULTMENUSTYLE(NULL, OP_SaturnCreditsMenu, &OP_SaturnDef, 30, 0);
 
 menu_t OP_BirdDef = DEFAULTMENUSTYLE(NULL, OP_BirdMenu, &OP_MainDef, 30, 30);
 
@@ -4618,7 +4619,7 @@ void M_StartControlPanel(void)
 		{
 			MPauseMenu[mpause_switchmap].status = IT_STRING | IT_CALL;
 			MPauseMenu[mpause_addons].status = IT_STRING | IT_CALL;
-			
+
 			if (G_GametypeHasTeams())
 				MPauseMenu[mpause_scramble].status = IT_STRING | IT_SUBMENU;
 		}
