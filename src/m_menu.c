@@ -11376,9 +11376,9 @@ static void M_DrawSetupMultiPlayerMenu(void)
 
 	//this is a very shitty solution for checking if a sprite needs flipping
 	//but it works
-	if ((sprframe->lumppat[speenframe] == sprframe->lumppat[8-speenframe]) && (speenframe > 4)) {
+	if ((sprframe->lumppat[speenframe] == sprframe->lumppat[8-speenframe]) && (speenframe > 4))
 		flags = V_FLIP; // This sprite is left/right flipped!
-	}
+
 	patch = W_CachePatchNum(sprframe->lumppat[speenframe], PU_CACHE);
 
 	// draw box around guy
@@ -11405,9 +11405,10 @@ static void M_DrawSetupMultiPlayerMenu(void)
 // Handle 1P/2P MP Setup
 static void M_HandleSetupMultiPlayer(INT32 choice)
 {
-	boolean  exitmenu = false;  // exit to previous menu and send name change
+	boolean exitmenu = false;  // exit to previous menu and send name change
+	const boolean gridselect = (cv_skinselectmenu.value == SKINMENUTYPE_GRID || cv_skinselectmenu.value == SKINMENUTYPE_EXTENDED); // menus with "grids"
 
-	if ((choice == gamecontrol[gc_fire][0] || choice == gamecontrol[gc_fire][1]) && itemOn == 2)
+	if ((choice == gamecontrol[gc_fire][0] || choice == gamecontrol[gc_fire][1]) && (itemOn == 2 || (gridselect && itemOn == 1)))
 		choice = KEY_BACKSPACE; // Hack to allow resetting prefcolor on controllers
 
 #define BREAKWHENLOCKED {\
@@ -11432,7 +11433,7 @@ static void M_HandleSetupMultiPlayer(INT32 choice)
 				S_StartSound(NULL,sfx_menu1); // Tails
 				break;
 			}
-			else if (cv_skinselectmenu.value == SKINMENUTYPE_GRID || cv_skinselectmenu.value == SKINMENUTYPE_EXTENDED) //grid skin select menu
+			else if (gridselect) //grid skin select menu
 			{
 				if (itemOn == 1) //if we are on the skin select menu
 				{
@@ -11440,11 +11441,13 @@ static void M_HandleSetupMultiPlayer(INT32 choice)
 					{
 						setupm_skinselect += SKINGRIDWIDTH;
 
-						if (cv_skinselectmenu.value == SKINMENUTYPE_GRID){
+						if (cv_skinselectmenu.value == SKINMENUTYPE_GRID)
+						{
 							if (setupm_skinselect >= ((setupm_skinypos-1)+SKINGRIDHEIGHT)*8 && setupm_skinypos < (ROUNDSKINSUPTO8/8)-SKINGRIDHEIGHT)
 								setupm_skinypos++;
 						}
-						else if (cv_skinselectmenu.value == SKINMENUTYPE_EXTENDED){
+						else if (cv_skinselectmenu.value == SKINMENUTYPE_EXTENDED)
+						{
 							if (setupm_skinselect >= ((setupm_skinypos-1)+SKINGRIDHEIGHT)*8+24 && setupm_skinypos < (ROUNDSKINSUPTO8/8)-SKINGRIDHEIGHT+24)
 								setupm_skinypos++;
 						}
@@ -11486,13 +11489,14 @@ static void M_HandleSetupMultiPlayer(INT32 choice)
 				S_StartSound(NULL,sfx_menu1); // Tails
 				break;
 			}
-			else if (cv_skinselectmenu.value == SKINMENUTYPE_GRID || cv_skinselectmenu.value == SKINMENUTYPE_EXTENDED)
+			else if (gridselect)
 			{
 				if (itemOn == 1)
 				{
 					if (setupm_skinselect >= SKINGRIDWIDTH) //if we arent at the top of the menu
 					{
 						setupm_skinselect -= SKINGRIDWIDTH;
+
 						if (setupm_skinselect < ((setupm_skinypos+1)*SKINGRIDWIDTH) && setupm_skinypos > 0)
 							setupm_skinypos--;
 					}
@@ -11505,14 +11509,15 @@ static void M_HandleSetupMultiPlayer(INT32 choice)
 				else if (itemOn == 2)
 				{
 					setupm_skinselect = numskins - 1;
-					if (cv_skinselectmenu.value == SKINMENUTYPE_GRID){
+					if (cv_skinselectmenu.value == SKINMENUTYPE_GRID)
+					{
 						setupm_skinypos = (((numskins / SKINGRIDWIDTH) - (SKINGRIDHEIGHT-1)) > 0 ? ((numskins / SKINGRIDWIDTH) - (SKINGRIDHEIGHT-1)) : 0);
 						M_PrevOpt();
 					}
-					else if (cv_skinselectmenu.value == SKINMENUTYPE_EXTENDED){
-							setupm_skinypos = (((numskins / SKINGRIDWIDTH) - (SKINGRIDHEIGHT-1)-2) > 0 ? ((numskins / SKINGRIDWIDTH) - (SKINGRIDHEIGHT-1)-2) : 0);
-							M_PrevOpt();
-
+					else if (cv_skinselectmenu.value == SKINMENUTYPE_EXTENDED)
+					{
+						setupm_skinypos = (((numskins / SKINGRIDWIDTH) - (SKINGRIDHEIGHT-1)-2) > 0 ? ((numskins / SKINGRIDWIDTH) - (SKINGRIDHEIGHT-1)-2) : 0);
+						M_PrevOpt();
 					}
 
 				}
@@ -11544,6 +11549,7 @@ static void M_HandleSetupMultiPlayer(INT32 choice)
 				else       //player skin
 				{
 					S_StartSound(NULL,sfx_menu1); // Tails
+
 					if (setupm_skinxpos > 0)
 						setupm_skinxpos--;
 					else
@@ -11551,11 +11557,12 @@ static void M_HandleSetupMultiPlayer(INT32 choice)
 				}
 				break;
 			}
-			else if ((cv_skinselectmenu.value == SKINMENUTYPE_GRID || cv_skinselectmenu.value == SKINMENUTYPE_EXTENDED) && itemOn == 1)
+			else if (gridselect && itemOn == 1)
 			{
 				if (setupm_skinselect > 0)
 				{
 					setupm_skinselect--;
+
 					if (setupm_skinselect < ((setupm_skinypos+1)*SKINGRIDWIDTH) && setupm_skinypos > 0)
 						setupm_skinypos--;
 				}
@@ -11563,6 +11570,7 @@ static void M_HandleSetupMultiPlayer(INT32 choice)
 				{
 					INT32 roundedskins = ROUNDSKINSUPTO8;
 					setupm_skinselect = roundedskins-1;
+
 					if (cv_skinselectmenu.value == SKINMENUTYPE_GRID)
 						setupm_skinypos = (((roundedskins/8) - SKINGRIDHEIGHT) > 0 ? (roundedskins/8) - SKINGRIDHEIGHT : 0);
 					else if (cv_skinselectmenu.value == SKINMENUTYPE_EXTENDED)
@@ -11610,16 +11618,19 @@ static void M_HandleSetupMultiPlayer(INT32 choice)
 				}
 				break;
 			}
-			else if ((cv_skinselectmenu.value == SKINMENUTYPE_GRID || cv_skinselectmenu.value == SKINMENUTYPE_EXTENDED) && itemOn == 1)
+			else if (gridselect && itemOn == 1)
 			{
 				if (setupm_skinselect < ROUNDSKINSUPTO8 - 1)
 				{
 					setupm_skinselect++;
-					if (cv_skinselectmenu.value == SKINMENUTYPE_GRID){
+
+					if (cv_skinselectmenu.value == SKINMENUTYPE_GRID)
+					{
 						if (setupm_skinselect >= ((setupm_skinypos-1)+SKINGRIDHEIGHT)*8 && setupm_skinypos < (ROUNDSKINSUPTO8/8)-SKINGRIDHEIGHT)
 							setupm_skinypos++;
 					}
-					else if (cv_skinselectmenu.value == SKINMENUTYPE_EXTENDED){
+					else if (cv_skinselectmenu.value == SKINMENUTYPE_EXTENDED)
+					{
 						if (setupm_skinselect >= ((setupm_skinypos-1)+SKINGRIDHEIGHT)*8+24 && setupm_skinypos < (ROUNDSKINSUPTO8/8)-SKINGRIDHEIGHT+24)
 							setupm_skinypos++;
 					}
@@ -11662,7 +11673,7 @@ static void M_HandleSetupMultiPlayer(INT32 choice)
 				M_TextInputHandle(&setupm_input, choice);
 				S_StartSound(NULL,sfx_menu1); // Tails
 			}
-			else if ((cv_skinselectmenu.value == SKINMENUTYPE_GRID || cv_skinselectmenu.value == SKINMENUTYPE_EXTENDED) && itemOn == 1)
+			else if (gridselect && itemOn == 1)
 			{
 				// change sort for select menu (damn now i have to add another cvar...)
 				// now we have the cvar
@@ -11717,7 +11728,7 @@ static void M_HandleSetupMultiPlayer(INT32 choice)
 					S_StartSound(NULL,sfx_menu1);
 				}
 			}
-			else if ((cv_skinselectmenu.value == SKINMENUTYPE_GRID || cv_skinselectmenu.value == SKINMENUTYPE_EXTENDED ) && itemOn == 1 && setupm_skinselect < numskins)
+			else if (gridselect && itemOn == 1 && setupm_skinselect < numskins)
 			{
 				setupm_fakeskin = skinsorted[setupm_skinselect];
 				S_StartSound(NULL, sfx_s221);
