@@ -25,9 +25,9 @@
 void R_DrawColumn_8(void)
 {
 	INT32 count;
-	register UINT8 *dest;
-	register fixed_t frac;
-	fixed_t fracstep;
+	UINT8 *restrict dest;
+	intptr_t frac;
+	intptr_t fracstep;
 	INT32 npow2min;
 	INT32 npow2max;
 
@@ -57,10 +57,10 @@ void R_DrawColumn_8(void)
 
 	// Inner loop that does the actual texture mapping, e.g. a DDA-like scaling.
 	// This is as fast as it gets.
-	register const UINT8 *source = dc_source;
-	register const lighttable_t *colormap = dc_colormap;
+	const UINT8 *restrict source = dc_source;
+	const lighttable_t *restrict colormap = dc_colormap;
 
-	register INT32 heightmask = dc_sourcelength-1;
+	intptr_t heightmask = dc_sourcelength-1;
 	npow2min = -1;
 	npow2max = dc_sourcelength;
 
@@ -77,10 +77,7 @@ void R_DrawColumn_8(void)
 		}
 		else
 		{
-			while (frac >= heightmask)
-			{
-				frac -= heightmask;
-			}
+			frac %= heightmask;
 		}
 
 		do
@@ -105,20 +102,20 @@ void R_DrawColumn_8(void)
 
 			dest += vid.width;
 
+
+#if __SIZEOF_POINTER__ < 8 // 64-bit systems have large enough numbers for this to be a non-issue
 			// Avoid overflow.
 			if (fracstep > 0x7FFFFFFF - frac)
 			{
 				frac += fracstep - heightmask;
 			}
 			else
+#endif
 			{
 				frac += fracstep;
 			}
 
-			while (frac >= heightmask)
-			{
-				frac -= heightmask;
-			}
+			frac %= heightmask;
 		} while (--count);
 	}
 	else
@@ -147,9 +144,10 @@ void R_DrawColumn_8(void)
 void R_Draw2sMultiPatchColumn_8(void)
 {
 	INT32 count;
-	register UINT8 *dest;
-	register fixed_t frac;
-	fixed_t fracstep;
+	UINT8 *restrict dest;
+	intptr_t frac;
+	intptr_t fracstep;
+
 	INT32 npow2min;
 	INT32 npow2max;
 
@@ -178,10 +176,11 @@ void R_Draw2sMultiPatchColumn_8(void)
 
 	// Inner loop that does the actual texture mapping, e.g. a DDA-like scaling.
 	// This is as fast as it gets.
-	register const UINT8 *source = dc_source;
-	register const lighttable_t *colormap = dc_colormap;
-	register INT32 heightmask = dc_sourcelength-1;
-	register UINT8 val;
+	const UINT8 *restrict source = dc_source;
+	const lighttable_t *restrict colormap = dc_colormap;
+	intptr_t heightmask = dc_sourcelength-1;
+	UINT8 val;
+
 	npow2min = -1;
 	npow2max = dc_sourcelength;
 
@@ -198,10 +197,7 @@ void R_Draw2sMultiPatchColumn_8(void)
 		}
 		else
 		{
-			while (frac >= heightmask)
-			{
-				frac -= heightmask;
-			}
+			frac %= heightmask;
 		}
 
 		do
@@ -233,19 +229,18 @@ void R_Draw2sMultiPatchColumn_8(void)
 			dest += vid.width;
 
 			// Avoid overflow.
+#if __SIZEOF_POINTER__ < 8
 			if (fracstep > 0x7FFFFFFF - frac)
 			{
 				frac += fracstep - heightmask;
 			}
 			else
+#endif
 			{
 				frac += fracstep;
 			}
 
-			while (frac >= heightmask)
-			{
-				frac -= heightmask;
-			}
+			frac %= heightmask;
 		} while (--count);
 	}
 	else
@@ -285,9 +280,10 @@ void R_Draw2sMultiPatchColumn_8(void)
 void R_Draw2sMultiPatchTranslucentColumn_8(void)
 {
 	INT32 count;
-	register UINT8 *dest;
-	register fixed_t frac;
-	fixed_t fracstep;
+	UINT8 *restrict dest;
+	intptr_t frac;
+	intptr_t fracstep;
+
 	INT32 npow2min;
 	INT32 npow2max;
 
@@ -316,11 +312,12 @@ void R_Draw2sMultiPatchTranslucentColumn_8(void)
 
 	// Inner loop that does the actual texture mapping, e.g. a DDA-like scaling.
 	// This is as fast as it gets.
-	register const UINT8 *source = dc_source;
-	register const UINT8 *transmap = dc_transmap;
-	register const lighttable_t *colormap = dc_colormap;
-	register INT32 heightmask = dc_sourcelength-1;
+	const UINT8 *restrict source = dc_source;
+	const UINT8 *transmap = dc_transmap;
+	const lighttable_t *restrict colormap = dc_colormap;
+	intptr_t heightmask = dc_sourcelength-1;
 	register UINT8 val;
+
 	npow2min = -1;
 	npow2max = dc_sourcelength;
 
@@ -337,10 +334,7 @@ void R_Draw2sMultiPatchTranslucentColumn_8(void)
 		}
 		else
 		{
-			while (frac >= heightmask)
-			{
-				frac -= heightmask;
-			}
+			frac %= heightmask;
 		}
 
 		do
@@ -372,19 +366,18 @@ void R_Draw2sMultiPatchTranslucentColumn_8(void)
 			dest += vid.width;
 
 			// Avoid overflow.
+#if __SIZEOF_POINTER__ < 8
 			if (fracstep > 0x7FFFFFFF - frac)
 			{
 				frac += fracstep - heightmask;
 			}
 			else
+#endif
 			{
 				frac += fracstep;
 			}
 
-			while (frac >= heightmask)
-			{
-				frac -= heightmask;
-			}
+			frac %= heightmask;
 		} while (--count);
 	}
 	else
@@ -470,8 +463,10 @@ void R_DrawShadeColumn_8(void)
 void R_DrawTranslucentColumn_8(void)
 {
 	register INT32 count;
-	register UINT8 *dest;
-	register fixed_t frac, fracstep;
+	UINT8 *restrict dest;
+	intptr_t frac;
+	intptr_t fracstep;
+
 	INT32 npow2min;
 	INT32 npow2max;
 
@@ -496,10 +491,11 @@ void R_DrawTranslucentColumn_8(void)
 
 	// Inner loop that does the actual texture mapping, e.g. a DDA-like scaling.
 	// This is as fast as it gets.
-	register const UINT8 *source = dc_source;
-	register const UINT8 *transmap = dc_transmap;
-	register const lighttable_t *colormap = dc_colormap;
-	register INT32 heightmask = dc_sourcelength-1;
+	const UINT8 *restrict source = dc_source;
+	const UINT8 *transmap = dc_transmap;
+	const lighttable_t *restrict colormap = dc_colormap;
+	intptr_t heightmask = dc_sourcelength-1;
+
 	npow2min = -1;
 	npow2max = dc_sourcelength;
 
@@ -516,10 +512,7 @@ void R_DrawTranslucentColumn_8(void)
 		}
 		else
 		{
-			while (frac >= heightmask)
-			{
-				frac -= heightmask;
-			}
+			frac %= heightmask;
 		}
 
 		do
@@ -579,8 +572,10 @@ void R_DrawTranslucentColumn_8(void)
 void R_DrawTranslatedTranslucentColumn_8(void)
 {
 	register INT32 count;
-	register UINT8 *dest;
-	register fixed_t frac, fracstep;
+	UINT8 *restrict dest;
+	intptr_t frac;
+	intptr_t fracstep;
+
 	INT32 npow2min;
 	INT32 npow2max;
 
@@ -605,7 +600,8 @@ void R_DrawTranslatedTranslucentColumn_8(void)
 
 	// Inner loop that does the actual texture mapping, e.g. a DDA-like scaling.
 	// This is as fast as it gets.
-	register INT32 heightmask = dc_sourcelength-1;
+	intptr_t heightmask = dc_sourcelength-1;
+
 	npow2min = -1;
 	npow2max = dc_sourcelength;
 
@@ -622,10 +618,7 @@ void R_DrawTranslatedTranslucentColumn_8(void)
 		}
 		else
 		{
-			while (frac >= heightmask)
-			{
-				frac -= heightmask;
-			}
+			frac %= heightmask;
 		}
 
 		do
@@ -739,15 +732,15 @@ void R_DrawTranslatedColumn_8(void)
 */
 void R_DrawSpan_8 (void)
 {
-	fixed_t xposition;
-	fixed_t yposition;
-	fixed_t xstep, ystep;
+	uintptr_t xposition;
+	uintptr_t yposition;
+	uintptr_t xstep, ystep;
 	register UINT32 bit;
 
-	const UINT8 *source = ds_source;
-	const UINT8 *colormap = ds_colormap;
-	register UINT8 *dest = ylookup[ds_y] + columnofs[ds_x1];
-	const UINT8 *deststop = screens[0] + vid.rowbytes * vid.height;
+	UINT8 *restrict source;
+	UINT8 *restrict colormap;
+	UINT8 *restrict dest;
+	const UINT8 *restrict deststop = screens[0] + vid.rowbytes * vid.height;
 
 	register size_t count = (ds_x2 - ds_x1 + 1);
 	size_t i;
