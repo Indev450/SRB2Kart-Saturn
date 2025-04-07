@@ -1444,7 +1444,7 @@ static void P_LoadRawSideDefs2(void *data)
 							// encore mode colormaps!
 							// do it like software by aproximating a color to a palette index, and then convert it to its encore variant and then back to a color code.
 							// do this for both the start and fade colormaps.
-							
+
 							color.s.red = (HEX2INT(col[1]) << 4) + HEX2INT(col[2]);
 							color.s.green = (HEX2INT(col[3]) << 4) + HEX2INT(col[4]);
 							color.s.blue = (HEX2INT(col[5]) << 4) + HEX2INT(col[6]);
@@ -1485,7 +1485,7 @@ static void P_LoadRawSideDefs2(void *data)
 							col = msd->bottomtexture;
 
 							// do the exact same thing as above here.
-							
+
 							color.s.red = (HEX2INT(col[1]) << 4) + HEX2INT(col[2]);
 							color.s.green = (HEX2INT(col[3]) << 4) + HEX2INT(col[4]);
 							color.s.blue = (HEX2INT(col[5]) << 4) + HEX2INT(col[6]);
@@ -3046,6 +3046,11 @@ boolean P_SetupLevel(boolean fromnetsave, boolean reloadinggamestate)
 
 	// Clear pointers that would be left dangling by the purge
 	R_FlushTranslationColormapCache();
+
+#ifdef HWRENDER
+	// Delete light table textures
+	HWR_ClearLightTables();
+#endif
 
 	Z_FreeTags(PU_LEVEL, PU_PURGELEVEL - 1);
 
