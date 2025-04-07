@@ -18,6 +18,8 @@
 #include "hardware/hw_data.h"
 #endif
 
+#include "m_aatree.h"
+
 #ifdef __GNUG__
 #pragma interface
 #endif
@@ -132,6 +134,8 @@ typedef struct wadfile_s
 #ifdef ROTSPRITE
 	aatree_t *rotcache; // Cache rotsprites for rotating patches.
 #endif
+	aatree_t *startfolders;
+	aatree_t *endfolders;
 	UINT16 numlumps; // this wad's number of resources
 	FILE *handle;
 	UINT32 filesize; // for network
