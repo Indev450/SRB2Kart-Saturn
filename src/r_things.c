@@ -865,14 +865,13 @@ static void R_DrawVisSprite(vissprite_t *vis)
 
 	localcolfunc = (vis->vflip) ? R_DrawFlippedMaskedColumn : R_DrawMaskedColumn;
 	lengthcol = SHORT(patch->height);
+	pwidth = SHORT(patch->width);
 
 	// Split drawing loops for paper and non-paper to reduce conditional checks per sprite
 	if (vis->scalestep)
 	{
 		fixed_t horzscale = FixedMul(vis->spritexscale, this_scale);
 		fixed_t scalestep = FixedMul(vis->scalestep, vis->spriteyscale);
-
-		pwidth = SHORT(patch->width);
 
 		// Papersprite drawing loop
 		for (dc_x = vis->x1; dc_x <= vis->x2; dc_x++, spryscale += scalestep)
@@ -897,9 +896,9 @@ static void R_DrawVisSprite(vissprite_t *vis)
 	else
 	{
 		// Non-paper drawing loop
-		for (dc_x = vis->x1; dc_x <= vis->x2 && (frac>>FRACBITS) < patch->width; dc_x++, frac += vis->xiscale)
+		for (dc_x = vis->x1; dc_x <= vis->x2 && (frac>>FRACBITS) < pwidth; dc_x++, frac += vis->xiscale)
 		{
-			texturecolumn = CLAMP(frac >> FRACBITS, 0, SHORT(patch->width) - 1);
+			texturecolumn = CLAMP(frac >> FRACBITS, 0, pwidth - 1);
 			column = (column_t *)((UINT8 *)patch + LONG(patch->columnofs[texturecolumn]));
 
 			localcolfunc (column);
