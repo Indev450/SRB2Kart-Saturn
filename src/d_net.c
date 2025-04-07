@@ -49,11 +49,6 @@ tic_t connectiontimeout = (10*TICRATE);
 /// \brief network packet
 doomcom_t *doomcom = NULL;
 
-/// \brief hole punching packet, also points inside doomcom
-#ifdef HOLEPUNCH
-holepunch_t *holepunchpacket = NULL;
-#endif
-
 #ifdef DEBUGFILE
 FILE *debugfile = NULL; // put some net info in a file during the game
 #endif
@@ -1309,10 +1304,6 @@ boolean D_CheckNetGame(void)
 		I_Error("Doomcom buffer invalid!");
 	if (doomcom->numnodes > MAXNETNODES)
 		I_Error("Too many nodes (%d), max:%d", doomcom->numnodes, MAXNETNODES);
-
-#ifdef HOLEPUNCH
-	holepunchpacket = (holepunch_t *)(void *)&doomcom->data;
-#endif
 
 #ifdef DEBUGFILE
 	if (M_CheckParm("-debugfile"))

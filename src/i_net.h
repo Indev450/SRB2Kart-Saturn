@@ -87,6 +87,8 @@ typedef struct
 	INT32 addr;
 	INT16 port;
 } ATTRPACK holepunch_t;
+
+#define HOLEPUNCH_DATA(d) (holepunch_t *)&(d)->data
 #endif
 
 #if defined(_MSC_VER)
@@ -94,10 +96,6 @@ typedef struct
 #endif
 
 extern doomcom_t *doomcom;
-
-#ifdef HOLEPUNCH
-extern holepunch_t *holepunchpacket;
-#endif
 
 /**	\brief return packet in doomcom struct
 */
