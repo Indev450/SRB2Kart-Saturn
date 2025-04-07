@@ -134,9 +134,9 @@ void M_AATreeSet(aatree_t *aatree, INT32 key, void* value)
 // and nodes with value == NULL.
 static void *M_AATreeGet_Node(aatree_node_t *node, INT32 key)
 {
-	if (node)
+	if (LIKELY(node))
 	{
-		if (node->key == key)
+		if (UNLIKELY(node->key == key))
 			return node->value;
 		else if (node->key < key)
 			return M_AATreeGet_Node(node->right, key);

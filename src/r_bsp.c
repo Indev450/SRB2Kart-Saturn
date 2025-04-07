@@ -374,7 +374,7 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec, INT32 *floorlightlevel,
 
 boolean R_IsEmptyLine(seg_t *line, const sector_t *front, const sector_t *back)
 {
-	return (!line->polyseg && !line->sidedef->midtexture
+	return (!line->sidedef->midtexture && !line->polyseg
 	&& ((!front->ffloors && !back->ffloors) || front->tag == back->tag)
 	&& (memcmp(front, back, (offsetof(sector_t, extra_colormap) + sizeof(extracolormap_t *))) == 0));
 }
@@ -794,7 +794,7 @@ static void R_AddPolyObjects(subsector_t *sub)
 		++numpolys;
 		po = (polyobj_t *)(po->link.next);
 	}
-	
+
 	// for render stats
 	ps_numpolyobjects.value.i += numpolys;
 
