@@ -150,6 +150,7 @@ UINT8 *PutFileNeeded(UINT16 firstfile)
 {
 	size_t i;
 	UINT8 count = 0;
+	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
 	UINT8 *p_start = netbuffer->packettype == PT_MOREFILESNEEDED ? netbuffer->u.filesneededcfg.files : netbuffer->u.serverinfo.fileneeded;
 	UINT8 *p = p_start;
 	char wadfilename[MAX_WADPATH] = "";
@@ -331,6 +332,7 @@ boolean CL_SendRequestFile(void)
 #ifdef MORELEGACYDOWNLOADER
 	boolean firstloop = true;
 #endif
+	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
 
 #ifdef PARANOIA
 	if (M_CheckParm("-nodownload"))
@@ -459,9 +461,11 @@ tryagain:
 // returns false if a requested file was not found or cannot be sent
 boolean Got_RequestFilePak(INT32 node)
 {
+	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
 	char wad[MAX_WADPATH+1];
 	UINT8 *p = netbuffer->u.textcmd;
 	UINT8 id;
+
 	while (p < netbuffer->u.textcmd + MAXTEXTCMD) // Don't allow hacked client to overflow
 	{
 		id = READUINT8(p);
@@ -554,13 +558,13 @@ INT32 CL_CheckFiles(void)
 	{
 		if (fileneeded[i].status == FS_NOTFOUND || fileneeded[i].status == FS_MD5SUMBAD || fileneeded[i].status == FS_FALLBACK)
 			downloadrequired = true;
-		
+
 		if (fileneeded[i].status != FS_OPEN)
 			filestoload++;
 
 		if (fileneeded[i].status != FS_NOTCHECKED) //since we're running this over multiple tics now, its possible for us to come across files checked in previous tics
 			continue;
-		
+
 		CONS_Debug(DBG_NETPLAY, "searching for '%s' ", fileneeded[i].filename);
 
 		// Check in already loaded files
@@ -831,6 +835,7 @@ void SV_FileSendTicker(void)
 	size_t size;
 	filetx_t *f;
 	INT32 packetsent, ram, i, j;
+	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
 
 	if (!filestosend) // No file to send
 		return;
@@ -959,6 +964,7 @@ void SV_FileSendTicker(void)
 
 void Got_Filetxpak(void)
 {
+	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
 	INT32 filenum = netbuffer->u.filetxpak.fileid;
 	fileneeded_t *file = &fileneeded[filenum];
 	char *filename = file->filename;

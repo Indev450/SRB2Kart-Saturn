@@ -48,8 +48,7 @@ tic_t connectiontimeout = (10*TICRATE);
 
 /// \brief network packet
 doomcom_t *doomcom = NULL;
-/// \brief network packet data, points inside doomcom
-doomdata_t *netbuffer = NULL;
+
 /// \brief hole punching packet, also points inside doomcom
 #ifdef HOLEPUNCH
 holepunch_t *holepunchpacket = NULL;
@@ -225,6 +224,8 @@ static boolean GetFreeAcknum(UINT8 *freeack)
 	node_t *node = &nodes[doomcom->remotenode];
 	INT32 i, numfreeslot = 0;
 
+	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
+
 	if (cmpack((UINT8)((node->remotefirstack + MAXACKTOSEND) % 256), node->nextacknum) < 0)
 	{
 		DEBFILE(va("too fast %d %d\n",node->remotefirstack,node->nextacknum));
@@ -290,6 +291,7 @@ static boolean Processackpak(void)
 	INT32 i;
 	boolean goodpacket = true;
 	node_t *node = &nodes[doomcom->remotenode];
+	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
 
 	// Received an ack return, so remove the ack in the list
 	if (netbuffer->ackreturn && cmpack(node->remotefirstack, netbuffer->ackreturn) < 0)
@@ -403,6 +405,7 @@ void Net_SendAcks(INT32 node)
 #ifdef NONET
 	(void)node;
 #else
+	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
 	netbuffer->packettype = PT_NOTHING;
 	M_Memcpy(netbuffer->u.textcmd, nodes[node].acktosend, MAXACKTOSEND);
 	HSendPacket(node, false, 0, MAXACKTOSEND);
@@ -413,6 +416,8 @@ void Net_SendAcks(INT32 node)
 static void GotAcks(void)
 {
 	INT32 i, j;
+
+	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
 
 	for (j = 0; j < MAXACKTOSEND; j++)
 		if (netbuffer->u.textcmd[j])
@@ -460,6 +465,8 @@ void Net_AckTicker(void)
 {
 #ifndef NONET
 	INT32 i;
+
+	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
 
 	for (i = 0; i < MAXACKPACKETS; i++)
 	{
@@ -515,6 +522,7 @@ void Net_UnAcknowledgePacket(INT32 node)
 #ifdef NONET
 	(void)node;
 #else
+	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
 	INT32 hm1 = (nodes[node].acktosend_head-1+MAXACKTOSEND) % MAXACKTOSEND;
 	DEBFILE(va("UnAcknowledge node %d\n", node));
 	if (!node)
@@ -699,6 +707,7 @@ void Net_CloseConnection(INT32 node)
 //
 static UINT32 NetbufferChecksum(void)
 {
+	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
 	UINT32 c = 0x1234567;
 	const INT32 l = doomcom->datalength - 4;
 	const UINT8 *buf = (UINT8 *)netbuffer + 4;
@@ -813,6 +822,8 @@ const char *Net_GetPacketName(UINT8 packettype)
 
 static void DebugPrintpacket(const char *header)
 {
+	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
+
 	fprintf(debugfile, "%-12s (node %d,ack %d,ackret %d,size %d) type(%d) : %s\n",
 		header, doomcom->remotenode, netbuffer->ack, netbuffer->ackreturn, doomcom->datalength,
 		netbuffer->packettype, Net_GetPacketName(netbuffer->packettype));
@@ -982,6 +993,7 @@ void Command_Droprate(void)
 #ifndef NONET
 static boolean ShouldDropPacket(void)
 {
+	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
 	return (packetdropquantity[netbuffer->packettype])
 		|| (packetdroprate != 0 && rand() < (((double)RAND_MAX) * (packetdroprate / 100.f))) || packetdroprate == 100;
 }
@@ -993,7 +1005,9 @@ static boolean ShouldDropPacket(void)
 //
 boolean HSendPacket(INT32 node, boolean reliable, UINT8 acknum, size_t packetlength)
 {
+	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
 	doomcom->datalength = (INT16)(packetlength + BASEPACKETSIZE);
+
 	if (node == 0) // Packet is to go back to us
 	{
 		if ((rebound_head+1) % MAXREBOUND == rebound_tail)
@@ -1091,7 +1105,7 @@ boolean HSendPacket(INT32 node, boolean reliable, UINT8 acknum, size_t packetlen
 //
 boolean HGetPacket(void)
 {
-	//boolean nodejustjoined;
+	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
 
 	// Get a packet from self
 	if (rebound_tail != rebound_head)
@@ -1118,7 +1132,6 @@ boolean HGetPacket(void)
 
 	while(true)
 	{
-		//nodejustjoined = I_NetGet();
 		I_NetGet();
 
 		if (doomcom->remotenode == -1) // No packet received
@@ -1146,21 +1159,6 @@ boolean HGetPacket(void)
 		if (debugfile)
 			DebugPrintpacket("GET");
 #endif
-
-		/*// If a new node sends an unexpected packet, just ignore it
-		if (nodejustjoined && server
-			&& !(netbuffer->packettype == PT_ASKINFO
-				|| netbuffer->packettype == PT_SERVERINFO
-				|| netbuffer->packettype == PT_PLAYERINFO
-				|| netbuffer->packettype == PT_REQUESTFILE
-				|| netbuffer->packettype == PT_ASKINFOVIAMS
-				|| netbuffer->packettype == PT_CLIENTJOIN))
-		{
-			DEBFILE(va("New node sent an unexpected %s packet\n", packettypename[netbuffer->packettype]));
-			//CONS_Alert(CONS_NOTICE, "New node sent an unexpected %s packet\n", packettypename[netbuffer->packettype]);
-			Net_CloseConnection(doomcom->remotenode | FORCECLOSE);
-			continue;
-		}*/
 
 		// Proceed the ack and ackreturn field
 		if (!Processackpak())
@@ -1312,7 +1310,6 @@ boolean D_CheckNetGame(void)
 	if (doomcom->numnodes > MAXNETNODES)
 		I_Error("Too many nodes (%d), max:%d", doomcom->numnodes, MAXNETNODES);
 
-	netbuffer = (doomdata_t *)(void *)&doomcom->data;
 #ifdef HOLEPUNCH
 	holepunchpacket = (holepunch_t *)(void *)&doomcom->data;
 #endif

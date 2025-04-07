@@ -1079,6 +1079,8 @@ static void SV_SendResynch(INT32 node)
 {
 	INT32 i, j;
 
+	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
+
 	if (!nodeingame[node])
 	{
 		// player left during resynch
@@ -1137,6 +1139,7 @@ static void SV_SendResynch(INT32 node)
 
 static void CL_AcknowledgeResynch(resynch_pak *rsp)
 {
+	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
 	resynch_read_player(rsp);
 
 	netbuffer->packettype = PT_RESYNCHGET;
@@ -1463,6 +1466,7 @@ static inline void CL_DrawConnectionStatus(void)
 
 static boolean CL_AskFileList(INT32 firstfile)
 {
+	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
 	netbuffer->packettype = PT_TELLFILESNEEDED;
 	netbuffer->u.filesneedednum = firstfile;
 
@@ -1482,6 +1486,9 @@ static boolean CL_AskFileList(INT32 firstfile)
 static boolean CL_SendJoin(void)
 {
 	UINT8 localplayers = 1;
+
+	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
+
 	if (netgame)
 		CONS_Printf(M_GetText("Sending join request...\n"));
 	netbuffer->packettype = PT_CLIENTJOIN;
@@ -1577,6 +1584,8 @@ static void SV_SendServerInfo(INT32 node, tic_t servertime)
 	UINT8 gt = (cv_kartgametypepreference.value == -1)
 		? gametype
 		: cv_kartgametypepreference.value;
+
+	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
 
 	netbuffer->packettype = PT_SERVERINFO;
 	netbuffer->u.serverinfo._255 = 255;
@@ -1685,6 +1694,8 @@ static void SV_SendServerInfo(INT32 node, tic_t servertime)
 static void SV_SendPlayerInfo(INT32 node)
 {
 	UINT8 i;
+	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
+
 	netbuffer->packettype = PT_PLAYERINFO;
 
 	for (i = 0; i < MSCOMPAT_MAXPLAYERS; i++)
@@ -1761,6 +1772,8 @@ static boolean SV_SendServerConfig(INT32 node)
 	INT32 i;
 	UINT8 *p, *op;
 	boolean waspacketsent;
+
+	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
 
 	netbuffer->packettype = PT_SERVERCFG;
 
@@ -1966,6 +1979,8 @@ static void CL_LoadReceivedSavegame(boolean reloading)
 	size_t length, decompressedlen;
 	char tmpsave[264];
 
+	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
+
 	sprintf(tmpsave, "%s" PATHSEP TMPSAVENAME, srb2home);
 
 	length = FIL_ReadFile(tmpsave, &save.buffer);
@@ -2082,6 +2097,8 @@ static void SendAskInfo(INT32 node)
 #endif
 
 	asktime = I_GetTime();
+
+	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
 
 	netbuffer->packettype = PT_ASKINFO;
 	netbuffer->u.askinfo.version = VERSION;
@@ -4102,6 +4119,8 @@ static void Command_ResendGamestate(void)
 {
 	SINT8 playernum;
 
+	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
+
 	if (COM_Argc() == 1)
 	{
 		CONS_Printf(M_GetText("resendgamestate <playername/playernum>: resend the game state to a player\n"));
@@ -4119,6 +4138,7 @@ static void Command_ResendGamestate(void)
 
 	// Send a PT_WILLRESENDGAMESTATE packet to the client so they know what's going on
 	netbuffer->packettype = PT_WILLRESENDGAMESTATE;
+
 	if (!HSendPacket(playernode[playernum], true, 0, 0))
 	{
 		CONS_Alert(CONS_ERROR, M_GetText("A problem occured, please try again.\n"));
@@ -4370,6 +4390,8 @@ static inline void SV_GenContext(void)
 //
 void D_QuitNetGame(void)
 {
+	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
+
 	if (!netgame || !netbuffer)
 		return;
 
@@ -4619,6 +4641,7 @@ static boolean SV_AddWaitingPlayers(void)
 #ifdef SATURNPAK
 static inline void SendSaturnInfo(INT32 node)
 {
+	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
 	netbuffer->packettype = PT_ISSATURN;
 	HSendPacket(node, true, 0, 0);
 }
@@ -4711,6 +4734,8 @@ void SV_StartSinglePlayerServer(void)
 
 static void SV_SendRefuse(INT32 node, const char *reason)
 {
+	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
+
 	strcpy(netbuffer->u.serverrefuse.reason, reason);
 
 	netbuffer->packettype = PT_SERVERREFUSE;
@@ -4750,6 +4775,8 @@ static void HandleConnect(SINT8 node)
 	for (UINT8 i = dedicated ? 1 : 0; i < MAXPLAYERS; i++)
 		if (playernode[i] != UINT8_MAX) // We use this to count players because it is affected by SV_AddWaitingPlayers when more than one client joins on the same tic, unlike playeringame and D_NumPlayers. UINT8_MAX denotes no node for that player
 			connectedplayers++;
+
+	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
 
 	if (bannednode && bannednode[node].banid != SIZE_MAX)
 	{
@@ -4926,6 +4953,8 @@ static void HandleTimeout(SINT8 node)
 static void HandleServerInfo(SINT8 node)
 {
 	char servername[MAXSERVERNAME];
+	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
+
 	// compute ping in ms
 	const tic_t ticnow = I_GetTime();
 	const tic_t ticthen = (tic_t)LONG(netbuffer->u.serverinfo.time);
@@ -4943,6 +4972,198 @@ static void HandleServerInfo(SINT8 node)
 	if (client && cl_mode > CL_SEARCHING && node == servernode)
 		memcpy(connectedservername, netbuffer->u.serverinfo.servername, MAXSERVERNAME);
 }
+
+// Helper function for packets that should only be sent by the server
+// If it is NOT from the server, bail out and close the connection!
+static boolean ServerOnly(SINT8 node)
+{
+	if (node == servernode)
+		return false;
+
+	Net_CloseConnection(node);
+	return true;
+}
+
+static void PT_TellFilesNeeded(SINT8 node)
+{
+	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
+
+	if (server && serverrunning)
+	{
+		UINT8 *p;
+		INT32 firstfile = netbuffer->u.filesneedednum;
+
+		netbuffer->packettype = PT_MOREFILESNEEDED;
+		netbuffer->u.filesneededcfg.first = firstfile;
+		netbuffer->u.filesneededcfg.more = 0;
+
+		p = PutFileNeeded(firstfile);
+
+		HSendPacket(node, false, 0, p - ((UINT8 *)&netbuffer->u));
+	}
+	else // Shouldn't get this if you aren't the server...?
+		Net_CloseConnection(node);
+}
+
+static void PT_MoreFilesNeeded(SINT8 node)
+{
+	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
+
+	if (server && serverrunning)
+	{ // But wait I thought I'm the server?
+		Net_CloseConnection(node);
+		return;
+	}
+
+	if (ServerOnly(node))
+		return;
+
+	if (cl_mode == CL_ASKFULLFILELIST && netbuffer->u.filesneededcfg.first == fileneedednum)
+	{
+		D_ParseFileneeded(netbuffer->u.filesneededcfg.num, netbuffer->u.filesneededcfg.files, netbuffer->u.filesneededcfg.first);
+		if (!netbuffer->u.filesneededcfg.more)
+			cl_lastcheckedfilecount = UINT16_MAX; // Got the whole file list
+	}
+}
+
+// Negative response of client join request
+static void PT_ServerRefuse(SINT8 node)
+{
+	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
+
+	if (server && serverrunning)
+	{ // But wait I thought I'm the server?
+		Net_CloseConnection(node);
+		return;
+	}
+
+	if (ServerOnly(node))
+		return;
+
+	if (cl_mode == CL_WAITJOINRESPONSE)
+	{
+		// Save the reason so it can be displayed after quitting the netgame
+		char *reason = strdup(netbuffer->u.serverrefuse.reason);
+		if (!reason)
+			I_Error("Out of memory!\n");
+
+		if (strstr(reason, "Maximum players reached"))
+		{
+			serverisfull = true;
+			//Special timeout for when refusing due to player cap. The client will wait 3 seconds between join requests when waiting for a slot, so we need this to be much longer
+			//We set it back to the value of cv_nettimeout.value in CL_Reset
+			connectiontimeout = NEWTICRATE*7;
+			cl_mode = CL_ASKJOIN;
+			free(reason);
+			return;
+		}
+
+		D_QuitNetGame();
+		CL_Reset();
+		D_StartTitle();
+
+		if (reason[1] == '|')
+		{
+			M_StartMessage(va("You have been %sfrom the server\n\nReason:\n%s",
+							  (reason[0] == 'B') ? "banned\n" : "temporarily\nkicked ",
+							  reason+2), NULL, MM_NOTHING);
+		}
+		else
+		{
+			M_StartMessage(va(M_GetText("Server refuses connection\n\nReason:\n%s"),
+							  reason), NULL, MM_NOTHING);
+		}
+
+		free(reason);
+
+		// Will be reset by caller. Signals refusal.
+		cl_mode = CL_ABORTED;
+	}
+}
+
+// Positive response of client join request
+static void PT_ServerCFG(SINT8 node)
+{
+	INT32 j;
+	UINT8 *scp;
+
+	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
+
+	if (server && serverrunning && node != servernode)
+	{ // but wait I thought I'm the server?
+		Net_CloseConnection(node);
+		return;
+	}
+
+	if (ServerOnly(node))
+		return;
+
+	/// \note how would this happen? and is it doing the right thing if it does?
+	if (!(cl_mode == CL_WAITJOINRESPONSE || cl_mode == CL_ASKJOIN))
+		return;
+
+	if (client)
+	{
+		maketic = gametic = neededtic = (tic_t)LONG(netbuffer->u.servercfg.gametic);
+		if ((gametype = netbuffer->u.servercfg.gametype) >= NUMGAMETYPES)
+			I_Error("Bad gametype in cliserv!");
+		modifiedgame = netbuffer->u.servercfg.modifiedgame;
+		for (j = 0; j < MAXPLAYERS; j++)
+			adminplayers[j] = netbuffer->u.servercfg.adminplayers[j];
+		memcpy(server_context, netbuffer->u.servercfg.server_context, 8);
+	}
+
+#ifdef HAVE_DISCORDRPC
+	discordInfo.maxPlayers = netbuffer->u.servercfg.maxplayer;
+	discordInfo.joinsAllowed = netbuffer->u.servercfg.allownewplayer;
+	discordInfo.everyoneCanInvite = netbuffer->u.servercfg.discordinvites;
+#endif
+
+	nodeingame[(UINT8)servernode] = true;
+	serverplayer = netbuffer->u.servercfg.serverplayer;
+	doomcom->numslots = SHORT(netbuffer->u.servercfg.totalslotnum);
+	mynode = netbuffer->u.servercfg.clientnode;
+	if (serverplayer >= 0)
+		playernode[(UINT8)serverplayer] = servernode;
+
+	if (netgame)
+#ifdef JOININGAME
+		CONS_Printf(M_GetText("Join accepted, waiting for complete game state...\n"));
+#else
+		CONS_Printf(M_GetText("Join accepted, waiting for next level change...\n"));
+#endif
+	DEBFILE(va("Server accept join gametic=%u mynode=%d\n", gametic, mynode));
+
+#ifdef SATURNPAK
+	SendSaturnInfo(node);
+#endif
+	memset(playeringame, 0, sizeof(playeringame));
+	for (j = 0; j < MAXPLAYERS; j++)
+	{
+		if (netbuffer->u.servercfg.playerskins[j] == 0xFF
+			&& netbuffer->u.servercfg.playercolor[j] == 0xFF)
+			continue; // not in game
+
+		playeringame[j] = true;
+		SetPlayerSkinByNum(j, (INT32)netbuffer->u.servercfg.playerskins[j]);
+		players[j].skincolor = netbuffer->u.servercfg.playercolor[j];
+	}
+
+	scp = netbuffer->u.servercfg.varlengthinputs;
+	CV_LoadPlayerNames(&scp);
+	CV_LoadNetVars(&scp);
+#ifdef JOININGAME
+	/// \note Wait. What if a Lua script uses some global custom variables synched with the NetVars hook?
+	///       Shouldn't them be downloaded even at intermission time?
+	///       Also, according to HandleConnect, the server will send the savegame even during intermission...
+	/// Sryder 2018-07-05: If we don't want to send the player config another way we need to send the gamestate
+	///                    At almost any gamestate there could be joiners... So just always send gamestate?
+	cl_mode = ((server) ? CL_CONNECTED : CL_DOWNLOADSAVEGAME);
+#else
+	cl_mode = CL_CONNECTED;
+#endif
+}
+
 #endif
 
 #ifdef SATURNPAK
@@ -4952,6 +5173,8 @@ static void PT_WillResendGamestate(void)
 
 	if (server || cl_redownloadinggamestate)
 		return;
+
+	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
 
 	// Send back a PT_CANRECEIVEGAMESTATE packet to the server
 	// so they know they can start sending the game state
@@ -4996,75 +5219,20 @@ static void HandlePacketFromAwayNode(SINT8 node)
 	if (node != servernode)
 		DEBFILE(va("Received packet from unknown host %d\n", node));
 
-// macro for packets that should only be sent by the server
-// if it is NOT from the server, bail out and close the connection!
-#define SERVERONLY \
-			if (node != servernode) \
-			{ \
-				Net_CloseConnection(node); \
-				break; \
-			}
+	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
+
 	switch (netbuffer->packettype)
 	{
 		case PT_ASKINFOVIAMS:
-#if 0
-			if (server && serverrunning)
-			{
-				INT32 clientnode;
-				if (ms_RoomId < 0) // ignore if we're not actually on the MS right now
-				{
-					Net_CloseConnection(node); // and yes, close connection
-					return;
-				}
-				clientnode = I_NetMakeNode(netbuffer->u.msaskinfo.clientaddr);
-				if (clientnode != -1)
-				{
-					SV_SendServerInfo(clientnode, (tic_t)LONG(netbuffer->u.msaskinfo.time));
-					SV_SendPlayerInfo(clientnode); // Send extra info
-					Net_CloseConnection(clientnode);
-					// Don't close connection to MS...
-				}
-				else
-					Net_CloseConnection(node); // ...unless the IP address is not valid
-			}
-			else
-				Net_CloseConnection(node); // you're not supposed to get it, so ignore it
-#else
 			Net_CloseConnection(node);
-#endif
 			break;
 
 		case PT_TELLFILESNEEDED:
-			if (server && serverrunning)
-			{
-				UINT8 *p;
-				INT32 firstfile = netbuffer->u.filesneedednum;
-
-				netbuffer->packettype = PT_MOREFILESNEEDED;
-				netbuffer->u.filesneededcfg.first = firstfile;
-				netbuffer->u.filesneededcfg.more = 0;
-
-				p = PutFileNeeded(firstfile);
-
-				HSendPacket(node, false, 0, p - ((UINT8 *)&netbuffer->u));
-			}
-			else // Shouldn't get this if you aren't the server...?
-				Net_CloseConnection(node);
+			PT_TellFilesNeeded(node);
 			break;
 
 		case PT_MOREFILESNEEDED:
-			if (server && serverrunning)
-			{ // But wait I thought I'm the server?
-				Net_CloseConnection(node);
-				break;
-			}
-			SERVERONLY
-			if (cl_mode == CL_ASKFULLFILELIST && netbuffer->u.filesneededcfg.first == fileneedednum)
-			{
-				D_ParseFileneeded(netbuffer->u.filesneededcfg.num, netbuffer->u.filesneededcfg.files, netbuffer->u.filesneededcfg.first);
-				if (!netbuffer->u.filesneededcfg.more)
-					cl_lastcheckedfilecount = UINT16_MAX; // Got the whole file list
-			}
+			PT_MoreFilesNeeded(node);
 			break;
 
 		case PT_ASKINFO:
@@ -5077,131 +5245,12 @@ static void HandlePacketFromAwayNode(SINT8 node)
 			break;
 
 		case PT_SERVERREFUSE: // Negative response of client join request
-			if (server && serverrunning)
-			{ // But wait I thought I'm the server?
-				Net_CloseConnection(node);
-				break;
-			}
-			SERVERONLY
-			if (cl_mode == CL_WAITJOINRESPONSE)
-			{
-				// Save the reason so it can be displayed after quitting the netgame
-				char *reason = strdup(netbuffer->u.serverrefuse.reason);
-				if (!reason)
-					I_Error("Out of memory!\n");
-
-				if (strstr(reason, "Maximum players reached"))
-				{
-					serverisfull = true;
-					//Special timeout for when refusing due to player cap. The client will wait 3 seconds between join requests when waiting for a slot, so we need this to be much longer
-					//We set it back to the value of cv_nettimeout.value in CL_Reset
-					connectiontimeout = NEWTICRATE*7;
-					cl_mode = CL_ASKJOIN;
-					free(reason);
-					break;
-				}
-
-				D_QuitNetGame();
-				CL_Reset();
-				D_StartTitle();
-
-				if (reason[1] == '|')
-				{
-					M_StartMessage(va("You have been %sfrom the server\n\nReason:\n%s",
-						(reason[0] == 'B') ? "banned\n" : "temporarily\nkicked ",
-						reason+2), NULL, MM_NOTHING);
-				}
-				else
-				{
-					M_StartMessage(va(M_GetText("Server refuses connection\n\nReason:\n%s"),
-						reason), NULL, MM_NOTHING);
-				}
-
-				free(reason);
-
-				// Will be reset by caller. Signals refusal.
-				cl_mode = CL_ABORTED;
-			}
+			PT_ServerRefuse(node);
 			break;
 
 		case PT_SERVERCFG: // Positive response of client join request
-		{
-			INT32 j;
-			UINT8 *scp;
-
-			if (server && serverrunning && node != servernode)
-			{ // but wait I thought I'm the server?
-				Net_CloseConnection(node);
-				break;
-			}
-			SERVERONLY
-			/// \note how would this happen? and is it doing the right thing if it does?
-			if (!(cl_mode == CL_WAITJOINRESPONSE || cl_mode == CL_ASKJOIN))
-				break;
-
-			if (client)
-			{
-				maketic = gametic = neededtic = (tic_t)LONG(netbuffer->u.servercfg.gametic);
-				if ((gametype = netbuffer->u.servercfg.gametype) >= NUMGAMETYPES)
-					I_Error("Bad gametype in cliserv!");
-				modifiedgame = netbuffer->u.servercfg.modifiedgame;
-				for (j = 0; j < MAXPLAYERS; j++)
-					adminplayers[j] = netbuffer->u.servercfg.adminplayers[j];
-				memcpy(server_context, netbuffer->u.servercfg.server_context, 8);
-			}
-
-#ifdef HAVE_DISCORDRPC
-			discordInfo.maxPlayers = netbuffer->u.servercfg.maxplayer;
-			discordInfo.joinsAllowed = netbuffer->u.servercfg.allownewplayer;
-			discordInfo.everyoneCanInvite = netbuffer->u.servercfg.discordinvites;
-#endif
-
-			nodeingame[(UINT8)servernode] = true;
-			serverplayer = netbuffer->u.servercfg.serverplayer;
-			doomcom->numslots = SHORT(netbuffer->u.servercfg.totalslotnum);
-			mynode = netbuffer->u.servercfg.clientnode;
-			if (serverplayer >= 0)
-				playernode[(UINT8)serverplayer] = servernode;
-
-			if (netgame)
-#ifdef JOININGAME
-				CONS_Printf(M_GetText("Join accepted, waiting for complete game state...\n"));
-#else
-				CONS_Printf(M_GetText("Join accepted, waiting for next level change...\n"));
-#endif
-			DEBFILE(va("Server accept join gametic=%u mynode=%d\n", gametic, mynode));
-
-#ifdef SATURNPAK
-			SendSaturnInfo(node);
-#endif
-			memset(playeringame, 0, sizeof(playeringame));
-			for (j = 0; j < MAXPLAYERS; j++)
-			{
-				if (netbuffer->u.servercfg.playerskins[j] == 0xFF
-				 && netbuffer->u.servercfg.playercolor[j] == 0xFF)
-					continue; // not in game
-
-				playeringame[j] = true;
-				SetPlayerSkinByNum(j, (INT32)netbuffer->u.servercfg.playerskins[j]);
-				players[j].skincolor = netbuffer->u.servercfg.playercolor[j];
-			}
-
-			scp = netbuffer->u.servercfg.varlengthinputs;
-			CV_LoadPlayerNames(&scp);
-			CV_LoadNetVars(&scp);
-#ifdef JOININGAME
-			/// \note Wait. What if a Lua script uses some global custom variables synched with the NetVars hook?
-			///       Shouldn't them be downloaded even at intermission time?
-			///       Also, according to HandleConnect, the server will send the savegame even during intermission...
-			/// Sryder 2018-07-05: If we don't want to send the player config another way we need to send the gamestate
-			///                    At almost any gamestate there could be joiners... So just always send gamestate?
-			cl_mode = ((server) ? CL_CONNECTED : CL_DOWNLOADSAVEGAME);
-#else
-			cl_mode = CL_CONNECTED;
-#endif
+			PT_ServerCFG(node);
 			break;
-		}
-
 		// Handled in d_netfil.c
 		case PT_FILEFRAGMENT:
 			if (server)
@@ -5209,7 +5258,10 @@ static void HandlePacketFromAwayNode(SINT8 node)
 				Net_CloseConnection(node);
 				break;
 			}
-			SERVERONLY
+
+			if (ServerOnly(node))
+				break;
+
 			Got_Filetxpak();
 			break;
 
@@ -5244,7 +5296,6 @@ static void HandlePacketFromAwayNode(SINT8 node)
 			break; // Ignore it
 
 	}
-#undef SERVERONLY
 }
 
 /** Checks ticcmd for "speed hacks"
@@ -5283,6 +5334,8 @@ static void HandlePacketFromPlayer(SINT8 node)
 	UINT8 *pak, *txtpak, numtxtpak;
 
 	txtpak = NULL;
+
+	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
 
 	if (dedicated && node == 0)
 		netconsole = 0;
@@ -5788,6 +5841,8 @@ static void GetPackets(void)
 {
 	SINT8 node; // The packet sender
 
+	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
+
 	while (HGetPacket())
 	{
 		node = (SINT8)doomcom->remotenode;
@@ -6002,14 +6057,16 @@ static INT16 Consistancy(void)
 // used during wipes to tell the server that a node is still connected
 static void CL_SendClientKeepAlive(void)
 {
+	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
 	netbuffer->packettype = PT_BASICKEEPALIVE;
-
 	HSendPacket(servernode, false, 0, 0);
 }
 
 static void SV_SendServerKeepAlive(void)
 {
 	INT32 n;
+
+	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
 
 	for (n = 1; n < MAXNETNODES; n++)
 	{
@@ -6026,6 +6083,8 @@ static void CL_SendClientCmd(void)
 {
 	size_t packetsize = 0;
 	boolean mis = false;
+
+	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
 
 	netbuffer->packettype = PT_CLIENTCMD;
 
@@ -6178,6 +6237,8 @@ static void SV_SendTics(void)
 	size_t packsize;
 	UINT8 *bufpos;
 	UINT8 *ntextcmd;
+
+	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
 
 	// send to all client but not to me
 	// for each node create a packet with x tics and send it
@@ -6407,7 +6468,7 @@ boolean TryRunTics(tic_t realtics)
 
 	if (singletics)
 		realtics = 1;
-	
+
 	Finish_async_addfile();
 
 	if (realtics >= 1)
@@ -6477,7 +6538,7 @@ boolean TryRunTics(tic_t realtics)
 	{
 		hu_stopped = true;
 	}
-	
+
 	Detach_async_addfile();
 
 	return ticking;
@@ -6504,6 +6565,8 @@ static inline void PingUpdate(void)
 	UINT8 pingkick[MAXPLAYERS];
 	UINT8 nonlaggers = 0;
 	memset(pingkick, 0, sizeof(pingkick));
+
+	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
 
 	netbuffer->packettype = PT_PING;
 
