@@ -1374,7 +1374,7 @@ void R_RenderPlayerView(player_t *player)
 	}
 
 	Portal_InitList();
-	
+
 	PS_START_TIMING(ps_skyboxtime);
 	if (skybox && skyVisible)
 	{
@@ -1438,7 +1438,7 @@ void R_RenderPlayerView(player_t *player)
 	PS_START_TIMING(ps_sw_spritecliptime);
 	R_ClipSprites();
 	PS_STOP_TIMING(ps_sw_spritecliptime);
-	
+
 	ps_numsprites.value.i = numvisiblesprites;
 
 	PS_START_TIMING(ps_sw_portaltime);
