@@ -62,7 +62,7 @@ void HWR_FreeMipmapCache(void);
 
 void HWR_PrecacheLevel(void);
 
-void HWR_GetFlat(lumpnum_t flatlumpnum, boolean noencoremap);
+void HWR_GetFlat(lumpnum_t flatlumpnum, boolean noencoremap, boolean chromakeyed);
 // ^ some flats must NOT be remapped to encore, since we remap them as we cache them for ease, adding a toggle here seems wise.
 
 GLMapTexture_t *HWR_GetTexture(INT32 tex, boolean noencore);
