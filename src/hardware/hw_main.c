@@ -5269,6 +5269,8 @@ void HWR_BuildSkyDome(void)
 
 static boolean drewsky = false;
 
+#define FINEDEGREE (0.04394531250f) // (360.0f/(float)FINEANGLES)
+
 static void HWR_DrawSkyBackground(void)
 {
 	FTransform dometransform;
@@ -5287,7 +5289,7 @@ static void HWR_DrawSkyBackground(void)
 	//04/01/2000: Hurdler: added for T&L
 	//                     It should replace all other gl_viewxxx when finished
 	HWR_SetTransformAiming(&dometransform);
-	dometransform.angley = (float)((viewangle-ANGLE_270)>>ANGLETOFINESHIFT)*(360.0f/(float)FINEANGLES);
+	dometransform.angley = (float)((viewangle-ANGLE_270)>>ANGLETOFINESHIFT)*(FINEDEGREE);
 
 	HWR_GetTexture(texturetranslation[skytexture], false);
 
@@ -5354,7 +5356,7 @@ static void HWR_SetTransformAiming(FTransform *trans)
 		trans->shearing = false;
 		gl_aimingangle = aimingangle;
 	}
-	trans->anglex = (float)(gl_aimingangle>>ANGLETOFINESHIFT)*(360.0f/(float)FINEANGLES);
+	trans->anglex = (float)(gl_aimingangle>>ANGLETOFINESHIFT)*(FINEDEGREE);
 }
 
 void HWR_SetTransform(float fpov)
@@ -5380,7 +5382,7 @@ void HWR_SetTransform(float fpov)
 	atransform.scalez = 1;
 
 	HWR_SetTransformAiming(&atransform);
-	atransform.angley = (float)(viewangle>>ANGLETOFINESHIFT)*(360.0f/(float)FINEANGLES);
+	atransform.angley = (float)(viewangle>>ANGLETOFINESHIFT)*(FINEDEGREE);
 
 	gl_viewludsin = FIXED_TO_FLOAT(FINECOSINE(gl_aimingangle>>ANGLETOFINESHIFT));
 	gl_viewludcos = FIXED_TO_FLOAT(-FINESINE(gl_aimingangle>>ANGLETOFINESHIFT));
