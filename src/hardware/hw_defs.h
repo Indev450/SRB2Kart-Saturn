@@ -128,7 +128,6 @@ typedef struct
 {
 	FLOAT       x,y,z;           // position
 	FLOAT       anglex, angley, anglez;   // aimingangle / viewangle
-	FLOAT       anglex2, anglez2;        // secondaries
 	FLOAT       scalex, scaley, scalez;
 	FLOAT       fovangle;
 	UINT8       splitscreen;
@@ -311,7 +310,7 @@ enum hwdsetspecialstate
 
 	HWD_SET_TEXTUREFILTERMODE,
 	HWD_SET_TEXTUREANISOTROPICMODE,
-	
+
 	HWD_SET_MSAA,
 
 	HWD_SET_SCREEN_TEXTURES,
