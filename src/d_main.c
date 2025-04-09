@@ -883,7 +883,7 @@ void D_SRB2Loop(void)
 
 		if (interp)
 		{
-			renderdeltatics = DoubleToFixed(deltatics);
+			renderdeltatics = FloatToFixed(deltatics);
 
 			if (!(paused || P_AutoPause()) && deltatics < 1.0 && !hu_stopped)
 			{
