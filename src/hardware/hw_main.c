@@ -4473,16 +4473,16 @@ static void HWR_AddSprites(sector_t *sec)
 	// Well, now it will be done.
 	sec->validcount = validcount;
 
+	limit_dist = cv_drawdist.value;
+
 	if (current_bsp_culling_distance)
 	{
 		// Use the smaller setting
-		if (cv_drawdist.value)
-			limit_dist = min(current_bsp_culling_distance/mapobjectscale, cv_drawdist.value);
+		if (limit_dist)
+			limit_dist = min(current_bsp_culling_distance/mapobjectscale, limit_dist);
 		else
 			limit_dist = current_bsp_culling_distance/mapobjectscale;
 	}
-	else
-		limit_dist = cv_drawdist.value;
 
 	// Handle all things in sector.
 	for (thing = sec->thinglist; thing; thing = thing->snext)
@@ -4516,19 +4516,16 @@ static void HWR_AddPrecipitationSprites(void)
 		return;
 	}
 
-	const fixed_t precipscale = (cv_mobjscaleprecip.value ? mapobjectscale : FRACUNIT);
-	//const fixed_t drawdist = cv_drawdist_precip.value * mapobjectscale;
-
-	if (current_bsp_culling_distance)
-		drawdist = min((fixed_t)current_bsp_culling_distance, (fixed_t)(cv_drawdist_precip.value) * precipscale);
-	else
-		drawdist = ((fixed_t)(cv_drawdist_precip.value) * precipscale);
+	drawdist = ((fixed_t)(cv_drawdist_precip.value) * (cv_mobjscaleprecip.value ? mapobjectscale : FRACUNIT));
 
 	// No to infinite precipitation draw distance.
 	if (drawdist == 0)
 	{
 		return;
 	}
+
+	if (current_bsp_culling_distance)
+		drawdist = min((fixed_t)current_bsp_culling_distance, drawdist);
 
 	R_GetRenderBlockMapDimensions(drawdist, &xl, &xh, &yl, &yh);
 
