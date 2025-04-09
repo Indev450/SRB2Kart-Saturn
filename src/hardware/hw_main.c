@@ -5269,7 +5269,8 @@ void HWR_BuildSkyDome(void)
 
 static boolean drewsky = false;
 
-#define FINEDEGREE (0.04394531250f) // (360.0f/(float)FINEANGLES)
+// precompute to save a bit of division
+static const float FINEDEGREE = (360.0f/(float)FINEANGLES);
 
 static void HWR_DrawSkyBackground(void)
 {
