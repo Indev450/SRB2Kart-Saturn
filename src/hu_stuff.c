@@ -2773,16 +2773,31 @@ void HU_SetCEchoFlags(INT32 flags)
 
 void HU_DoCEcho(const char *msg)
 {
-	if (!cv_cechotoggle.value)
-		return
-
-	I_OutputMsg("%s\n", msg); // print to log
-
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wstringop-truncation" // This is fine, we set null byte later
 	strncpy(cechotext, msg, sizeof(cechotext));
 #pragma GCC diagnostic pop
 	strncat(cechotext, "\\", sizeof(cechotext) - strlen(cechotext) - 1);
 	cechotext[sizeof(cechotext) - 1] = '\0';
+
+	// just print it to console
+	if (cv_cechotoggle.value == 2)
+	{
+		char temp[1024];
+		strncpy(temp, cechotext, sizeof(temp));
+
+		for (char *p = temp; *p != '\0'; ++p)
+			if (*p == '\\')
+				*p = '\n';
+
+		CONS_Printf("%s\n", temp);
+		return;
+	}
+
+	I_OutputMsg("%s\n", msg); // print to log
+
+	if (!cv_cechotoggle.value)
+		return;
+
 	cechotimer = cechoduration;
 }
