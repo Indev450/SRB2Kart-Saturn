@@ -169,7 +169,7 @@ char french_shiftxform[] =
 	31,
 	' ','$', //shift-!
 	'3', //shift-"
-	'#', '$', '%', 
+	'#', '$', '%',
 	'1', //shift-&
 	'4', // shift-'
 	'5', // shift-(
@@ -179,7 +179,7 @@ char french_shiftxform[] =
 	'6', // shift--
 	'.', '/',
 	'0', '1', '2', '3', '4', '5',
-	'6', '7', '8', '9', 
+	'6', '7', '8', '9',
 	'/', // shitf-:
 	'.', // shift-;
 	'>', // shift-<
@@ -222,7 +222,7 @@ char french_altgrxform[] =
 	'|', //altg--
 	'.', '/',
 	'0', '1', '2', '3', '4', '5',
-	'6', '7', '8', '9', 
+	'6', '7', '8', '9',
 	':', ';', '<',
 	'}', //altgr-=
 	'>', '?', '@',
@@ -1140,7 +1140,7 @@ void HU_Ticker(void)
 	}
 
 	if (cechotimer > 0) --cechotimer;
-	
+
 	// Animate the desynch dots
 	if (hu_resynching
 #ifdef SATURNPAK
@@ -2434,7 +2434,7 @@ void HU_drawPlayerPing(INT32 x, INT32 y, INT32 pnum, INT32 flags)
 
 		if (measureid == 1)
 			V_DrawScaledPatch(x+11 - pingmeasure[measureid]->width, y+9, flags, pingmeasure[measureid]);
-		
+
 		if (cv_pingicon.value)
 			V_DrawScaledPatch(x+2, y, flags, pinggfx[gfxnum]);
 
@@ -2563,24 +2563,19 @@ static inline void HU_DrawSpectatorTicker(void)
 
 			if (cv_showspecstuff.value)
 			{
-				if (players[i].mo)
+				player_t *player;
+				player = &players[i];
+
+				if (player->mo && player->mo->color)
 				{
-					player_t *p;
-					p = &players[i];
+					const UINT8 *colormap = R_GetTranslationColormap(player->skin, player->mo->color, GTC_CACHE);
+					if (player->mo->colorized)
+						colormap = R_GetTranslationColormap(TC_RAINBOW, player->mo->color, GTC_CACHE);
 
-					if (players[i].mo->color)
-					{
-						const UINT8 *colormap;
-						if (players[i].mo->colorized)
-							colormap = R_GetTranslationColormap(TC_RAINBOW, players[i].mo->color, GTC_CACHE);
-						else
-							colormap = R_GetTranslationColormap(players[i].skin, players[i].mo->color, GTC_CACHE);
-
-						if (cv_highresportrait.value)
-							V_DrawSmallMappedPatch((templength - duptweak), height+10, V_TRANSLUCENT, R_GetSkinFaceWant(p), colormap);
-						else	
-							V_DrawMappedPatch((templength - duptweak), height+10, V_TRANSLUCENT, R_GetSkinFaceRank(p), colormap);
-					}
+					if (K_UseHighResPortraits())
+						V_DrawSmallMappedPatch((templength - duptweak), height+10, V_TRANSLUCENT, R_GetSkinFaceWant(player), colormap);
+					else
+						V_DrawMappedPatch((templength - duptweak), height+10, V_TRANSLUCENT, R_GetSkinFaceRank(player), colormap);
 				}
 
 				if ((netgame && i != serverplayer) || (cv_mindelay.value && P_IsLocalPlayer(&players[i])))
@@ -2594,7 +2589,6 @@ static inline void HU_DrawSpectatorTicker(void)
 		}
 	}
 }
-
 
 //
 // HU_DrawRankings
@@ -2781,7 +2775,7 @@ void HU_DoCEcho(const char *msg)
 {
 	if (!cv_cechotoggle.value)
 		return
-	
+
 	I_OutputMsg("%s\n", msg); // print to log
 
 #pragma GCC diagnostic push

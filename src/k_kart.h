@@ -21,6 +21,7 @@ void K_GenerateKartColormap(UINT8 *dest_colormap, INT32 skinnum, UINT8 color, bo
 UINT8 K_GetKartColorByName(const char *name);
 UINT8 K_GetHudColor(void);
 boolean K_UseColorHud(void);
+boolean K_UseHighResPortraits(void);
 
 void K_RegisterServerKartStuff(void);
 void K_RegisterClientKartStuff(void);

@@ -814,6 +814,16 @@ static UINT8 K_GetSpeedometerStyle(void)
 		return SPEEDO_VANILLA;
 }
 
+static boolean K_IsHighResolution(void)
+{
+	return (vid.width >= 640 && vid.height >= 400);
+}
+
+boolean K_UseHighResPortraits(void)
+{
+	return (cv_highresportrait.value && K_IsHighResolution());
+}
+
 //}
 
 //{ SRB2kart Net Variables
@@ -8669,10 +8679,17 @@ static void K_drawKartStats(void)
 	if (!splitscreen)
 	{
 		// Skin name
-		V_DrawSmallString(x+20, y+12, flags|V_ALLOWLOWERCASE|V_SkinColorToHighlightcolor(stplyr->skincolor), fakeskin->realname);
+		if (K_IsHighResolution()) // V_DrawSmallString becomes a mess at low resolutions lel
+		{
+			V_DrawSmallString(x+20, y+12, flags|V_ALLOWLOWERCASE|V_SkinColorToHighlightcolor(stplyr->skincolor), fakeskin->realname);
+		}
+		else
+		{
+			V_DrawThinString(x+20, y+7, flags|V_ALLOWLOWERCASE|V_SkinColorToHighlightcolor(stplyr->skincolor), fakeskin->realname);
+		}
 
 		// Icon and stats
-		if (cv_highresportrait.value)
+		if (K_UseHighResPortraits())
 			V_DrawSmallMappedPatch(x, y, flags, R_GetSkinFaceWant(stplyr), R_GetLocalTranslationColormap(fakeskin, fakeskin, stplyr->skincolor, GTC_CACHE, stplyr->skinlocal));
 		else
 			V_DrawMappedPatch(x, y, flags, R_GetSkinFaceRank(stplyr), R_GetLocalTranslationColormap(fakeskin, fakeskin, stplyr->skincolor, GTC_CACHE, stplyr->skinlocal));
@@ -9439,39 +9456,37 @@ static boolean K_drawKartPositionFaces(void)
 
 	for (; i < ranklines; i++)
 	{
+		player_t *player;
+		player = &players[rankplayer[i]];
+
 		if (!playeringame[rankplayer[i]])
 			continue;
-		if (players[rankplayer[i]].spectator)
+		if (player->spectator)
 			continue;
-		if (!players[rankplayer[i]].mo)
+		if (!player->mo)
 			continue;
 
-		const UINT8 mocolor = players[rankplayer[i]].mo->color;
+		const UINT8 mocolor = player->mo->color;
 
 		bumperx = FACE_X+19;
 
 		if (mocolor)
 		{
-			player_t *p;
-
-			colormap = R_GetTranslationColormap(players[rankplayer[i]].skin, mocolor, GTC_CACHE);
-
-			if (players[rankplayer[i]].mo->colorized)
+			colormap = R_GetTranslationColormap(player->skin, mocolor, GTC_CACHE);
+			if (player->mo->colorized)
 				colormap = R_GetTranslationColormap(TC_RAINBOW, mocolor, GTC_CACHE);
 
-			p = &players[rankplayer[i]];
-
-			if (cv_highresportrait.value)
-				V_DrawSmallMappedPatch(FACE_X, Y, V_HUDTRANS|V_SNAPTOLEFT, R_GetSkinFaceWant(p), colormap);
+			if (K_UseHighResPortraits())
+				V_DrawSmallMappedPatch(FACE_X, Y, V_HUDTRANS|V_SNAPTOLEFT, R_GetSkinFaceWant(player), colormap);
 			else
-				V_DrawMappedPatch(FACE_X, Y, V_HUDTRANS|V_SNAPTOLEFT, R_GetSkinFaceRank(p), colormap);
+				V_DrawMappedPatch(FACE_X, Y, V_HUDTRANS|V_SNAPTOLEFT, R_GetSkinFaceRank(player), colormap);
 
 			if (LUA_HudEnabled(hud_battlebumpers))
 			{
-				if (G_BattleGametype() && players[rankplayer[i]].kartstuff[k_bumper] > 0)
+				if (G_BattleGametype() && player->kartstuff[k_bumper] > 0)
 				{
 					V_DrawMappedPatch(bumperx-2, Y, V_HUDTRANS|V_SNAPTOLEFT, kp_tinybumper[0], colormap);
-					for (j = 1; j < players[rankplayer[i]].kartstuff[k_bumper]; j++)
+					for (j = 1; j < player->kartstuff[k_bumper]; j++)
 					{
 						bumperx += 5;
 						V_DrawMappedPatch(bumperx, Y, V_HUDTRANS|V_SNAPTOLEFT, kp_tinybumper[1], colormap);
@@ -9483,11 +9498,11 @@ static boolean K_drawKartPositionFaces(void)
 		if (i == strank)
 			V_DrawScaledPatch(FACE_X, Y, V_HUDTRANS|V_SNAPTOLEFT, kp_facehighlight[(leveltime / 4) % 8]);
 
-		if (G_BattleGametype() && players[rankplayer[i]].kartstuff[k_bumper] <= 0)
+		if (G_BattleGametype() && player->kartstuff[k_bumper] <= 0)
 			V_DrawScaledPatch(FACE_X-4, Y-3, V_HUDTRANS|V_SNAPTOLEFT, kp_ranknobumpers);
 		else
 		{
-			INT32 pos = players[rankplayer[i]].kartstuff[k_position];
+			INT32 pos = player->kartstuff[k_position];
 			if (pos < 0 || pos > MAXPLAYERS)
 				pos = 0;
 			// Draws the little number over the face
@@ -9553,7 +9568,7 @@ void HU_DrawTabRankings(INT32 x, INT32 y, playersort_t *tab, INT32 scorelines, I
 			else
 				colormap = R_GetTranslationColormap(player->skin, player->mo->color, GTC_CACHE);
 
-			if (cv_highresportrait.value)
+			if (K_UseHighResPortraits())
 				V_DrawSmallMappedPatch(x, y-4, 0, R_GetSkinFaceWant(player), colormap);
 			else
 				V_DrawMappedPatch(x, y-4, 0, R_GetSkinFaceRank(player), colormap);
