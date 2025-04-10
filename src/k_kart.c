@@ -9449,6 +9449,7 @@ static void K_drawKartLaps(void)
 #ifdef ROTSPRITE
 
 #define DIALSPDDIV 97090 // 1.48148; converts 200 to 135
+#define MPHDIV 68283 // 1.04192; converts 141 to 135
 
 static void K_DrawDialNum(INT32 x, INT32 y, boolean colorized, INT32 flags, INT32 num, INT32 digits, const UINT8 *colormap)
 {
@@ -9489,6 +9490,7 @@ static void K_DrawDialLaps(INT32 x, INT32 y, INT32 num, INT32 total, INT32 flags
 }
 
 static void K_DrawDialSpeedometer(fixed_t speed,
+								  fixed_t divisor,
 								  INT32 splitflags,
 								  boolean battlemode,
 								  boolean infoactive,
@@ -9501,7 +9503,7 @@ static void K_DrawDialSpeedometer(fixed_t speed,
 	patch_t* dialpatch;
 
 	angle_t speedangle =
-		FixedAngle(((FixedDiv(min(200 * FRACUNIT, speed), DIALSPDDIV) - (45 * FRACUNIT))));
+		FixedAngle(((min(135 * FRACUNIT, FixedDiv(speed, divisor)) - (45 * FRACUNIT))));
 
 	rot = R_GetRollAngle(speedangle);
 
@@ -9590,8 +9592,6 @@ static void K_DrawDialSpeedometer(fixed_t speed,
 	}
 }
 
-#undef DIALSPDDIV
-
 #endif
 
 static void K_drawKartSpeedometer(void)
@@ -9602,6 +9602,7 @@ static void K_drawKartSpeedometer(void)
 
 	// index 0 is the raw value, index 1 is the converted value
 	fixed_t convSpeed[2] = {0,0};
+	fixed_t dial_divisor = DIALSPDDIV;
 
 	INT32 splitflags = K_calcSplitFlags(V_SNAPTOBOTTOM|V_SNAPTOLEFT);
 
@@ -9617,10 +9618,12 @@ static void K_drawKartSpeedometer(void)
 		case 2:
 			convSpeed[0] = FixedDiv(FixedMul(stplyr->speed, 88465), mapobjectscale); // 1.349868774
 			convSpeed[1] = convSpeed[0] / FRACUNIT;
+			dial_divisor = MPHDIV;
 			break;
 		case 3:
 			convSpeed[0] = FixedDiv(stplyr->speed, mapobjectscale);
 			convSpeed[1] = convSpeed[0] / FRACUNIT;
+			dial_divisor = MPHDIV;
 			break;
 		case 4:
 			if (stplyr->mo)
@@ -9694,6 +9697,7 @@ static void K_drawKartSpeedometer(void)
 	else if (speedostyle == SPEEDO_DIAL)  // why bother if we dont?
 	{
 		K_DrawDialSpeedometer(convSpeed[0],
+							dial_divisor,
 							splitflags,
 							(boolean)(G_BattleGametype()),
 							(LUA_HudEnabled(hud_gametypeinfo)),
@@ -9750,6 +9754,11 @@ static void K_drawKartSpeedometer(void)
 		V_DrawScaledPatch(SPDM_X, SPDM_Y, V_HUDTRANS|splitflags, patch);
 	}
 }
+
+#ifdef ROTSPRITE
+#undef DIALSPDDIV
+#undef MPHDIV
+#endif
 
 static void K_drawKartBumpersOrKarma(void)
 {
