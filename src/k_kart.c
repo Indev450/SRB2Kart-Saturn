@@ -8393,7 +8393,7 @@ static void K_drawKartStats(void)
 	else
 		spdoffset = 0;
 
-	if (speedostyle != SPEEDO_DIAL)
+	if ((speedostyle != SPEEDO_DIAL) || (splitscreen))
 		spdoffset += (G_BattleGametype() ? (stplyr->kartstuff[k_bumper] ? -5 : -8) : 0);
 
 	// Customizations c:
@@ -11412,11 +11412,45 @@ static void K_drawCheckpointDebugger(void)
 	V_DrawString(8, 192, 0, va("Waypoint dist: Prev %d, Next %d", stplyr->kartstuff[k_prevcheck], stplyr->kartstuff[k_nextcheck]));
 }
 
+// determines if gametype info (laps/bumpers) should be hidden
+static boolean K_DisableGametypeInfo(void)
+{
+	if (!LUA_HudEnabled(hud_gametypeinfo))
+	{
+		return true;
+	}
+
+#ifdef ROTSPRITE
+	if (splitscreen || (!cv_kartspeedometer.value))
+	{
+		// don't need to run checks if we're in splitscreen, or not using the speedometer
+		return false;
+	}
+
+	const UINT8 speedostyle = K_GetSpeedometerStyle();
+
+	if (G_RaceGametype())
+	{
+		if (speedostyle == SPEEDO_DIAL)
+			return true;
+	}
+	else if (G_BattleGametype())
+	{
+		if ((cv_battlespeedo.value) && (speedostyle == SPEEDO_DIAL))
+			return true;
+	}
+#endif
+
+	return false;
+}
+
+
 void K_drawKartHUD(void)
 {
 	boolean isfreeplay = false;
 	boolean battlefullscreen = false;
 	boolean freecam = camera[stplyrnum].freecam;	//disable some hud elements w/ freecam
+	boolean gameinfovisible = false;
 
 	// Define the X and Y for each drawn object
 	// This is handled by console/menu values
@@ -11432,8 +11466,6 @@ void K_drawKartHUD(void)
 		K_drawChallengerScreen();
 		return;
 	}
-
-	const UINT8 speedostyle = K_GetSpeedometerStyle();
 
 	battlefullscreen = ((G_BattleGametype())
 		&& (stplyr->exiting
@@ -11524,6 +11556,9 @@ void K_drawKartHUD(void)
 
 	if (!stplyr->spectator && !freecam) // Bottom of the screen elements, don't need in spectate mode
 	{
+		// get gametype info visibility ahead of time
+		gameinfovisible = (!K_DisableGametypeInfo());
+
 		if (!(splitscreen || demo.title))
 		{
 			if (LUA_HudEnabled(hud_inputdisplay))
@@ -11564,7 +11599,7 @@ void K_drawKartHUD(void)
 		else if (G_RaceGametype()) // Race-only elements
 		{
 			// Draw the lap counter
-			if ((LUA_HudEnabled(hud_gametypeinfo)) && ((!cv_kartspeedometer.value) || (speedostyle != SPEEDO_DIAL)))
+			if (gameinfovisible)
 				K_drawKartLaps();
 
 			if (!splitscreen)
@@ -11587,7 +11622,7 @@ void K_drawKartHUD(void)
 		else if (G_BattleGametype()) // Battle-only
 		{
 			// Draw the hits left!
-			if ((LUA_HudEnabled(hud_gametypeinfo)) && ((!cv_battlespeedo.value) || (speedostyle != SPEEDO_DIAL)))
+			if (gameinfovisible)
 				K_drawKartBumpersOrKarma();
 
 			if ((!splitscreen) && cv_battlespeedo.value)
