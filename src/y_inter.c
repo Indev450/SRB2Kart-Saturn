@@ -412,11 +412,11 @@ static void Y_PlayerStandingsDrawer(y_data_t *standings, INT32 x, INT32 hilicol)
 				patch_t *faceprefix = NULL;
 
 				if (!player->skinlocal)
-					faceprefix = (cv_highresportrait.value ? facewantprefix[skinnum] : facerankprefix[skinnum]);
+					faceprefix = (K_UseHighResPortraits() ? facewantprefix[skinnum] : facerankprefix[skinnum]);
 				else
-					faceprefix = (cv_highresportrait.value ? localfacewantprefix[skinnum] : localfacerankprefix[skinnum]);
+					faceprefix = (K_UseHighResPortraits() ? localfacewantprefix[skinnum] : localfacerankprefix[skinnum]);
 
-				if (cv_highresportrait.value)
+				if (K_UseHighResPortraits())
 					V_DrawSmallMappedPatch(x + 16, y - 4, 0, faceprefix, colormap);
 				else
 					V_DrawMappedPatch(x + 16, y - 4, 0, faceprefix, colormap);
@@ -513,7 +513,7 @@ void Y_IntermissionDrawer(void)
 		return;
 
 	if (cv_betainterscreen.value == 1
-#ifdef HWRENDER	
+#ifdef HWRENDER
 	|| (rendermode == render_opengl && cv_glscreentextures.value != 2) // use the neato kart bg for intermission on disabled screen textures
 #endif
 	)
@@ -1178,7 +1178,7 @@ void Y_VoteDrawer(void)
 			if (players[i].skincolor)
 			{
 				UINT8 *colormap = R_GetTranslationColormap(players[i].skin, players[i].skincolor, GTC_CACHE);
-				if (cv_highresportrait.value)
+				if (K_UseHighResPortraits())
 					V_DrawSmallMappedPatch(x+24, y+9, V_SNAPTOLEFT, (players[i].skinlocal ? localfacewantprefix : facewantprefix)[((players[i].localskin) ? players[i].localskin-1 : players[i].skin)], colormap);
 				else
 					V_DrawMappedPatch(x+24, y+9, V_SNAPTOLEFT, (players[i].skinlocal ? localfacerankprefix : facerankprefix)[((players[i].localskin) ? players[i].localskin-1 : players[i].skin)], colormap);
