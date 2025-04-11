@@ -42,6 +42,7 @@ extern savebuffer_t demobuf;
 
 // demoplaying back and demo recording
 extern consvar_t cv_recordmultiplayerdemos, cv_netdemosyncquality, cv_maxdemosize, cv_demochangemap;
+extern consvar_t cv_demodateformat;
 
 // Publicly-accessible demo vars
 struct demovars_s {
