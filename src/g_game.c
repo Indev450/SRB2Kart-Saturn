@@ -341,6 +341,9 @@ consvar_t cv_maxdemosize = {"maxdemosize", "10", CV_SAVE, maxdemosize_cons_t, NU
 static CV_PossibleValue_t demochangemap_cons_t[] = {{0, "Disabled"}, {1, "Diff Map"}, {2, "Always"}, {0, NULL}};
 consvar_t cv_demochangemap = {"netdemo_savemapchange", "Disabled", CV_SAVE, demochangemap_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
+static CV_PossibleValue_t demodateformat_cons_t[] = {{0, "Automatic"}, {1, "EU"}, {2, "US"}, {0, NULL}};
+consvar_t cv_demodateformat = {"netdemo_dateformat", "Automatic", CV_SAVE, demodateformat_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+
 // Analog Control
 void SendWeaponPref(void);
 void SendWeaponPref2(void);
@@ -6890,10 +6893,12 @@ gotcreationtime:
 	const char *format;
 
 	// US ppl are special (:
-	if (strstr(setlocale(LC_TIME, NULL), "en_US"))
+	if (cv_demodateformat.value == 2)
 		format = "%m.%d.%Y";
-	else
+	else if (cv_demodateformat.value == 1)
 		format = "%d.%m.%Y";
+	else
+		format = strstr(setlocale(LC_TIME, NULL), "en_US") ? "%m.%d.%Y" : "%d.%m.%Y";
 
 	strftime(datetime, sizeof(pdemo->date), format, &tm_buf);
 
