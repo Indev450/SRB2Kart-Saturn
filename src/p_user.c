@@ -557,14 +557,9 @@ void P_PlayRinglossSound(mobj_t *source, mobj_t *damager)
 		{
 			sfxenum_t sfx = sfx_khurt1 + key;
 
-			INT32 skinnum = -1;
-
 			// I HATE LOCALSKINS! I HATE LOCALSKINS! :AAAAAAAAAA:
 			if (source->player)
-				skinnum = source->player->skinlocal ? (source->player->localskin - 1) : source->player->skin;
-
-			if (skinnum >= 0)
-				sfx = (source->player->skinlocal ? localskins : skins)[skinnum].soundsid[SKSKPAN1 + key];
+				sfx = K_GetPlayerSkin(source->player)->soundsid[SKSKPAN1 + key];
 
 			S_StartSound(NULL, sfx);
 		}
@@ -1195,9 +1190,9 @@ mobj_t *P_SpawnGhostMobj(mobj_t *mobj)
 	ghost->tics = -1;
 	ghost->frame &= ~FF_TRANSMASK;
 	ghost->frame |= tr_trans50<<FF_TRANSSHIFT;
-	ghost->slopepitch = mobj->slopepitch; 
+	ghost->slopepitch = mobj->slopepitch;
 	ghost->sloperoll = mobj->sloperoll;
-	
+
 	ghost->fuse = ghost->info->damage;
 	ghost->skin = mobj->skin;
 	ghost->localskin = mobj->localskin;
@@ -1254,17 +1249,13 @@ void P_DoPlayerExit(player_t *player)
 			{
 				sfxenum_t sfx_id;
 				// fix godjjsa win sounds
-				if (K_IsPlayerLosing(player)) {
-					if (player->mo->localskin)
-						sfx_id = ((skin_t *)player->mo->localskin)->soundsid[S_sfx[sfx_klose].skinsound];
-					else
-						sfx_id = ((skin_t *)player->mo->skin)->soundsid[S_sfx[sfx_klose].skinsound];
+				if (K_IsPlayerLosing(player))
+				{
+					sfx_id = K_GetMobjSkin(player->mo)->soundsid[S_sfx[sfx_klose].skinsound];
 				}
-				else {
-					if (player->mo->localskin)
-						sfx_id = ((skin_t *)player->mo->localskin)->soundsid[S_sfx[sfx_kwin].skinsound];
-					else
-						sfx_id = ((skin_t *)player->mo->skin)->soundsid[S_sfx[sfx_kwin].skinsound];
+				else
+				{
+					sfx_id = K_GetMobjSkin(player->mo)->soundsid[S_sfx[sfx_kwin].skinsound];
 				}
 				S_StartSound(NULL, sfx_id);
 			}
@@ -4715,7 +4706,7 @@ void P_PlayerThink(player_t *player)
 				continue;
 			break;
 		}
-		
+
 		if (i < MAXPLAYERS && !player->spectator && !player->exiting && !(player->pflags & PF_TIMEOVER))
 		{
 			const tic_t griefval = cv_antigrief.value * TICRATE;
