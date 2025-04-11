@@ -1487,6 +1487,8 @@ static void D_CheckSaturnExtraFiles(void)
 	memcpy(inputdisplay_cons_t, inputdisplay_cons_temp, sizeof(inputdisplay_cons_t));
 }
 
+#include <locale.h>
+
 //
 // D_SRB2Main
 //
@@ -1684,6 +1686,7 @@ void D_SRB2Main(void)
 
 	CONS_Printf("I_InitializeTime()...\n");
 	I_InitializeTime();
+	setlocale(LC_TIME, "");
 
 	// Make backups of some SOCcable tables.
 	P_BackupTables();
