@@ -237,7 +237,6 @@ void P_PlayRinglossSound(mobj_t *source, mobj_t *damager);
 void P_PlayDeathSound(mobj_t *source);
 void P_PlayVictorySound(mobj_t *source);
 
-
 //
 // P_MOBJ
 //

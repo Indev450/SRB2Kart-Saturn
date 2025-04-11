@@ -823,10 +823,8 @@ static void R_DrawVisSprite(vissprite_t *vis)
 	frac = vis->startfrac;
 	windowtop = windowbottom = sprbotscreen = INT32_MAX;
 
-	if (vis->mobj->localskin && ((skin_t *)vis->mobj->localskin)->flags & SF_HIRES)
-		this_scale = FixedMul(this_scale, ((skin_t *)vis->mobj->localskin)->highresscale);
-	else if (vis->mobj->skin && ((skin_t *)vis->mobj->skin)->flags & SF_HIRES)
-		this_scale = FixedMul(this_scale, ((skin_t *)vis->mobj->skin)->highresscale);
+	if ((vis->mobj->skin || vis->mobj->localskin) && K_GetMobjSkin(vis->mobj)->flags & SF_HIRES)
+		this_scale = FixedMul(this_scale, K_GetMobjSkin(vis->mobj)->highresscale);
 
 	if (this_scale <= 0)
 		this_scale = 1;
@@ -1274,9 +1272,9 @@ static void R_ProjectSprite(mobj_t *thing)
 	//Fab : 02-08-98: 'skin' override spritedef currently used for skin
 	if ((thing->skin || thing->localskin) && thing->sprite == SPR_PLAY)
 	{
-		sprdef = &((skin_t *)( (thing->localskin) ? thing->localskin : thing->skin ))->spritedef;
+		sprdef = &K_GetMobjSkin(thing)->spritedef;
 #ifdef ROTSPRITE
-		sprinfo = &((skin_t *)( (thing->localskin) ? thing->localskin : thing->skin ))->sprinfo;
+		sprinfo = &K_GetMobjSkin(thing)->sprinfo;
 #endif
 
 		if (rot >= sprdef->numframes)
@@ -1357,10 +1355,8 @@ static void R_ProjectSprite(mobj_t *thing)
 
 	I_Assert(lump < max_spritelumps);
 
-	if (thing->localskin && ((skin_t *)thing->localskin)->flags & SF_HIRES)
-		this_scale = FixedMul(this_scale, ((skin_t *)thing->localskin)->highresscale);
-	else if (thing->skin && ((skin_t *)thing->skin)->flags & SF_HIRES)
-		this_scale = FixedMul(this_scale, ((skin_t *)thing->skin)->highresscale);
+	if ((thing->skin || thing->localskin) && K_GetMobjSkin(thing)->flags & SF_HIRES)
+		this_scale = FixedMul(this_scale, K_GetMobjSkin(thing)->highresscale);
 
 	spr_width = spritecachedinfo[lump].width;
 	spr_height = spritecachedinfo[lump].height;
@@ -3027,8 +3023,7 @@ static void Sk_SetDefaultValue(skin_t *skin, boolean local)
 	// set default skin values
 	//
 	memset(skin, 0, sizeof (skin_t));
-	snprintf(skin->name,
-		sizeof skin->name, "skin %u", (UINT32)(skin-(local ? localskins : skins)));
+	snprintf(skin->name, sizeof skin->name, "skin %u", K_GetMobjSkinNum(skin, local));
 	skin->name[sizeof skin->name - 1] = '\0';
 	skin->wadnum = INT16_MAX;
 	strcpy(skin->sprite, "");
@@ -3249,8 +3244,9 @@ void SetLocalPlayerSkin(INT32 playernum, const char *skinname, consvar_t *cvar)
 	{
 		if (player->localskin > 0)
 		{
-			CV_StealthSet(&cv_fakelocalskin, (player->skinlocal ? localskins : skins)[player->localskin-1].name);
-			CV_StealthSet(cvar, (player->skinlocal ? localskins : skins)[player->localskin-1].name);
+			CV_StealthSet(&cv_fakelocalskin, K_GetSkinArray(player->skinlocal)[player->localskin-1].name);
+			CV_StealthSet(cvar, K_GetSkinArray(player->skinlocal)[player->localskin-1].name);
+
 		}
 		else
 		{
@@ -3439,7 +3435,6 @@ void R_AddSkins(UINT16 wadnum, boolean local)
 	skin_t *skin;
 	boolean hudname, realname;
 
-#define lskin (local ? localskins : skins)
 #define lnumskins (local ? numlocalskins : numskins)
 
 	//
@@ -3473,7 +3468,7 @@ void R_AddSkins(UINT16 wadnum, boolean local)
 		buf2[size] = '\0';
 
 		// set defaults
-		skin = &lskin[lnumskins];
+		skin = &K_GetSkinArray(local)[lnumskins];
 		Sk_SetDefaultValue(skin, local);
 		skin->wadnum = wadnum;
 		hudname = realname = false;
@@ -3508,10 +3503,10 @@ void R_AddSkins(UINT16 wadnum, boolean local)
 				else
 				{
 					const size_t stringspace =
-						strlen(value) + sizeof (( (local) ? numlocalskins : numskins )) + 1;
+						strlen(value) + sizeof lnumskins + 1;
 					char *value2 = Z_Malloc(stringspace, PU_STATIC, NULL);
 					snprintf(value2, stringspace,
-						"%s%d", value, ( (local) ? numlocalskins : numskins ));
+						"%s%d", value, lnumskins);
 					value2[stringspace - 1] = '\0';
 					if (R_LocalSkinAvailable(value2, local) == -1)
 					{
@@ -3732,7 +3727,7 @@ next_token:
 			skinsorted[numskins] = numskins;
 		}
 
-		allskins[numallskins] = lskin[lnumskins];
+		allskins[numallskins] = K_GetSkinArray(local)[lnumskins];
 
 		local ? numlocalskins++ : numskins++;
 		numallskins++;

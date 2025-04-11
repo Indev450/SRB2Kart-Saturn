@@ -797,6 +797,7 @@ static UINT8 ArchiveValue(UINT8 **p, int TABLESINDEX, int myindex)
 			}
 			lua_pop(gL, 1);
 		}
+
 		if (!found)
 		{
 			t++;

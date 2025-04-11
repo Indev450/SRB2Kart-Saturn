@@ -742,7 +742,7 @@ void K_GenerateKartColormap(UINT8 *dest_colormap, INT32 skinnum, UINT8 color, bo
 		return;
 	}
 
-	starttranscolor = (skinnum != TC_DEFAULT) ? ((local) ? localskins : skins)[skinnum].starttranscolor : DEFAULT_STARTTRANSCOLOR;
+	starttranscolor = (skinnum != TC_DEFAULT) ? K_GetSkinArray(local)[skinnum].starttranscolor : DEFAULT_STARTTRANSCOLOR;
 
 	// Fill in the entries of the palette that are fixed
 	for (i = 0; i < starttranscolor; i++)
@@ -822,6 +822,51 @@ static boolean K_IsHighResolution(void)
 boolean K_UseHighResPortraits(void)
 {
 	return (cv_highresportrait.value && K_IsHighResolution());
+}
+
+// returns the players skinnumber
+// accounts for localskins
+INT32 K_GetSkinNum(player_t *player)
+{
+	return player->localskin ? (player->localskin - 1) : player->skin;
+}
+
+// returns the mobj skinnumber
+// accounts for localskins
+INT32 K_GetMobjSkinNum(const skin_t *skin, boolean local)
+{
+	return skin - K_GetSkinArray(local);
+}
+
+// returns the players skinnumber
+// accounts for localskins
+skin_t *K_GetMobjSkin(const mobj_t *mobj)
+{
+	return mobj->localskin ? mobj->localskin : mobj->skin;
+}
+
+// returns the skin array to use
+// accounts for localskins
+skin_t *K_GetSkinArray(boolean local)
+{
+	return local ? localskins : skins;
+}
+
+// returns the players skin
+// accounts for localskins
+skin_t *K_GetPlayerSkin(player_t *player)
+{
+	return &K_GetSkinArray(player->skinlocal)[K_GetSkinNum(player)];
+}
+
+// returns the players faceprefix
+// accounts for localskins
+patch_t *K_GetFacePrefix(player_t *player, INT32 skinnum)
+{
+	if (!player->skinlocal)
+		return (K_UseHighResPortraits() ? facewantprefix[skinnum] : facerankprefix[skinnum]);
+	else
+		return (K_UseHighResPortraits() ? localfacewantprefix[skinnum] : localfacerankprefix[skinnum]);
 }
 
 //}
@@ -2156,8 +2201,7 @@ static void K_PlayGenericCombatSound(mobj_t *source, mobj_t *other, sfxenum_t sf
 	// I HATE LOCALSKINS! I HATE LOCALSKINS! :AAAAAAAAAA:
 	if (source->player)
 	{
-		INT32 skinnum = source->player->skinlocal ? (source->player->localskin - 1) : source->player->skin;
-		skin = &(source->player->skinlocal ? localskins : skins)[skinnum];
+		skin = K_GetPlayerSkin(source->player);
 	}
 
 	if (!skin)
@@ -8665,16 +8709,7 @@ static void K_drawKartStats(void)
 	flags |= V_HUDTRANS;
 
 	skin_t *fakeskin;
-	fakeskin = &skins[stplyr->skin];
-
-	// local skinner
-	if (stplyr->localskin)
-	{
-		if (stplyr->skinlocal)
-			fakeskin = &localskins[stplyr->localskin - 1];
-		else
-			fakeskin = &skins[stplyr->localskin - 1];
-	}
+	fakeskin = K_GetPlayerSkin(stplyr);
 
 	if (!splitscreen)
 	{
@@ -10567,11 +10602,9 @@ static void K_drawKartMinimapHead(mobj_t *mo, INT32 x, INT32 y, INT32 flags)
 	// am xpos & ypos are the icon's starting position. Without
 	// it, they wouldn't 'spawn' on the top-right side of the HUD.
 
+	const skin_t *skin;
 	player_t *player = mo->player;
-
-	UINT8 skinnum = 0;
 	const boolean skinlocal = mo->skinlocal;
-	const skin_t *skin = (skin_t*)(mo->localskin ? mo->localskin : mo->skin);
 
 	fixed_t amnumxpos, amnumypos;
 	INT32 amxpos, amypos, wntdamxpos, wntdamypos;
@@ -10583,10 +10616,8 @@ static void K_drawKartMinimapHead(mobj_t *mo, INT32 x, INT32 y, INT32 flags)
 	INT32 rot = 0;
 #endif
 
-	if (mo->skin)
-		skinnum = (skin-(skinlocal ? localskins : skins));
-
-	minimaphead = (skinlocal ? localfacemmapprefix : facemmapprefix)[skinnum];
+	skin = K_GetMobjSkin(mo);
+	minimaphead = (skinlocal ? localfacemmapprefix : facemmapprefix)[K_GetMobjSkinNum(skin, skinlocal)];
 
 	amnumxpos = (FixedMul(lerp(mo->old_x, mo->x), minimapinfo.zoom) - minimapinfo.offs_x);
 	amnumypos = -(FixedMul(lerp(mo->old_y, mo->y), minimapinfo.zoom) - minimapinfo.offs_y);
