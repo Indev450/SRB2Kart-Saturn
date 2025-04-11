@@ -84,7 +84,7 @@ typedef struct menudemo_s {
 
 	char title[65]; // Null-terminated for string prints
 	char date[11]; // date when replay was recorded
-	char version[6]; // combined version and subversion
+	char version[12]; // combined version and subversion
 	UINT16 map;
 	UINT8 addonstatus; // What do we need to do addon-wise to play this demo?
 	UINT8 gametype;

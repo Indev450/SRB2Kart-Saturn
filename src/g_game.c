@@ -6574,7 +6574,7 @@ void G_LoadDemoInfo(menudemo_t *pdemo)
 	pdemoversion = READUINT16(info_p);
 
 	memset(pdemo->version, 0, sizeof(pdemo->version));
-	sprintf(pdemo->version, "v%d.%d", version, subversion);
+	snprintf(pdemo->version, sizeof(pdemo->version), "v%d.%d", version, subversion);
 
 	switch(pdemoversion)
 	{
