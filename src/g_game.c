@@ -6799,6 +6799,17 @@ void G_LoadDemoInfo(menudemo_t *pdemo)
 
 #if defined (_WIN32)
 #define PATHSEPSTR '\\'
+// return the file creation time
+// useful for demos that were renamed
+static long G_GetCreationTime(char *filepath)
+{
+	struct stat fileinfo;
+
+	if (stat(filepath, &fileinfo) == 0)
+		return fileinfo.st_ctime;
+
+	return 0;
+}
 #else
 #define PATHSEPSTR '/'
 #endif
@@ -6811,7 +6822,6 @@ static char *G_GetDemoDate(menudemo_t *pdemo)
 	// no mallocma balls... :c
 	if (!datetime)
 	{
-		free(datetime);
 		return NULL;
 	}
 
@@ -6822,11 +6832,20 @@ static char *G_GetDemoDate(menudemo_t *pdemo)
 
 	filename = strrchr(pdemo->filepath, PATHSEPSTR);
 
+#if defined (_WIN32)
+	if (!filename)
+	{
+		// if we cant get a filename try just getting the file create time
+		file_time = G_GetCreationTime(pdemo->filepath);
+		goto skipfilenametime;
+	}
+#else
 	if (!filename)
 	{
 		free(datetime);
 		return NULL;
 	}
+#endif
 
 	filename = filename + 1; // filename, filename, filename, filename.....
 
@@ -6837,6 +6856,10 @@ static char *G_GetDemoDate(menudemo_t *pdemo)
 	// convert it to long Zzz....
 	file_time = strtol(timestr, NULL, 10);
 
+#if defined (_WIN32)
+skipfilenametime:
+#endif
+
 	// then throw it into localtime to get an actual human readable format lmao
 	struct tm tm_buf;
 	localtime_r(&file_time, &tm_buf);
@@ -6844,9 +6867,28 @@ static char *G_GetDemoDate(menudemo_t *pdemo)
 	// cant believe we ended up in 1970
 	if (tm_buf.tm_year <= 110)
 	{
+#if defined (_WIN32)
+		// uh ohh, we got an invalid time
+		// try one more time getting the creation time
+		file_time = G_GetCreationTime(pdemo->filepath);
+		localtime_r(&file_time, &tm_buf);
+
+		if (tm_buf.tm_year <= 110)
+		{
+			free(datetime);
+			return NULL;
+		}
+		else
+			goto gotcreationtime;
+#else
 		free(datetime);
 		return NULL;
+#endif
 	}
+
+#if defined (_WIN32)
+gotcreationtime:
+#endif
 
 	const char *format;
 
