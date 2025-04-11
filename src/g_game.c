@@ -6798,7 +6798,6 @@ void G_LoadDemoInfo(menudemo_t *pdemo)
 #include <locale.h>
 
 #if defined (_WIN32)
-#define PATHSEPSTR '\\'
 // return the file creation time
 // useful for demos that were renamed
 static long G_GetCreationTime(char *filepath)
@@ -6810,8 +6809,6 @@ static long G_GetCreationTime(char *filepath)
 
 	return 0;
 }
-#else
-#define PATHSEPSTR '/'
 #endif
 
 static char *G_GetDemoDate(menudemo_t *pdemo)
@@ -6827,10 +6824,9 @@ static char *G_GetDemoDate(menudemo_t *pdemo)
 
 	time_t file_time = 0;
 
-	// get the actual filename Zzz...
-	const char *filename;
-
-	filename = strrchr(pdemo->filepath, PATHSEPSTR);
+	// get le filepath
+	char *filename;
+	filename = strdup(pdemo->filepath);
 
 #if defined (_WIN32)
 	if (!filename)
@@ -6847,11 +6843,13 @@ static char *G_GetDemoDate(menudemo_t *pdemo)
 	}
 #endif
 
-	filename = filename + 1; // filename, filename, filename, filename.....
+	// get the actual filename Zzz...
+	nameonly(filename);
 
 	// get only the first 10 characters (time before conversion)
 	char timestr[10];
 	strncpy(timestr , filename, 10);
+	free(filename); // dont need this anymore a
 
 	// convert it to long Zzz....
 	file_time = strtol(timestr, NULL, 10);
