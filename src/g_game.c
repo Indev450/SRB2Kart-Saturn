@@ -6735,6 +6735,8 @@ static char *G_GetDemoDate(menudemo_t *pdemo)
 		return NULL;
 	}
 
+	time_t file_time = 0;
+
 	// get the actual filename Zzz...
 	const char *filename;
 
@@ -6753,18 +6755,14 @@ static char *G_GetDemoDate(menudemo_t *pdemo)
 	strncpy(timestr , filename, 10);
 
 	// convert it to long Zzz....
-	long longtime = 0;
-	longtime = strtol(timestr, NULL, 10);
+	file_time = strtol(timestr, NULL, 10);
 
 	// then throw it into localtime to get an actual human readable format lmao
 	struct tm tm_buf;
-	time_t demo_date = 0;
-
-	demo_date = longtime;
-	localtime_r(&demo_date, &tm_buf);
+	localtime_r(&file_time, &tm_buf);
 
 	// cant believe we ended up in 1970
-	if (tm_buf.tm_year == 70)
+	if (tm_buf.tm_year <= 110)
 	{
 		free(datetime);
 		return NULL;
