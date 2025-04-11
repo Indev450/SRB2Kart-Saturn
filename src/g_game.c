@@ -6846,13 +6846,9 @@ static char *G_GetDemoDate(menudemo_t *pdemo)
 	// get the actual filename Zzz...
 	nameonly(filename);
 
-	// get only the first 10 characters (time before conversion)
-	char timestr[10];
-	strncpy(timestr , filename, 10);
-	free(filename); // dont need this anymore a
-
 	// convert it to long Zzz....
-	file_time = strtol(timestr, NULL, 10);
+	file_time = strtol(filename, NULL, 10);
+	free(filename); // dont need this anymore a
 
 #if defined (_WIN32)
 skipfilenametime:
