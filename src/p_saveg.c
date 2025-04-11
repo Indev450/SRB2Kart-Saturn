@@ -1991,7 +1991,9 @@ static void LoadMobjThinker(savebuffer_t *save, actionf_p1 thinker)
 		}
 		mobj->type = i;
 	}
+
 	mobj->info = &mobjinfo[mobj->type];
+
 	if (diff & MD_POS)
 	{
 		mobj->x = READFIXED(save->p);
@@ -2004,6 +2006,7 @@ static void LoadMobjThinker(savebuffer_t *save, actionf_p1 thinker)
 		mobj->y = mobj->spawnpoint->y << FRACBITS;
 		mobj->angle = FixedAngle(mobj->spawnpoint->angle*FRACUNIT);
 	}
+
 	if (diff & MD_MOM)
 	{
 		mobj->momx = READFIXED(save->p);
@@ -2135,33 +2138,10 @@ static void LoadMobjThinker(savebuffer_t *save, actionf_p1 thinker)
 		mobj->colorized = READUINT8(save->p);
 
 	//{ Saturn stuff, needs to be set, but shouldnt be synched
-
-	// Sprite Rotation
-	mobj->rollangle = 0;
-	mobj->pitch = 0;
-	mobj->roll = 0;
-	mobj->sloperoll = 0;
-	mobj->slopepitch = 0;
-	mobj->pitch_sprite = 0;
-	mobj->roll_sprite = 0;
-
-	// Horizontal flip
-	mobj->mirrored = 0;
-
 	// Sprite Rendering stuff
 	mobj->blendmode = AST_TRANSLUCENT;
-	mobj->spritexoffset = mobj->realxoffset = 0;
-	mobj->spriteyoffset = mobj->realxoffset = 0;
 	mobj->spritexscale = mobj->realxscale = FRACUNIT;
 	mobj->spriteyscale = mobj->realyscale = FRACUNIT;
-	mobj->stretchslam = 0;
-
-	// Timer for slam sound effect
-	mobj->slamsoundtimer = 0;
-
-	// extra mobjlightlevel
-	mobj->lightlevel = 0;
-
 	//}
 
 	if (diff & MD_REDFLAG)
