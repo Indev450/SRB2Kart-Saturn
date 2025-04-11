@@ -6717,6 +6717,12 @@ void G_LoadDemoInfo(menudemo_t *pdemo)
 #include <time.h>
 #include <locale.h>
 
+#if defined (_WIN32)
+#define PATHSEPSTR '\\'
+#else
+#define PATHSEPSTR '/'
+#endif
+
 static char *G_GetDemoDate(menudemo_t *pdemo)
 {
 	char *datetime;
@@ -6732,9 +6738,7 @@ static char *G_GetDemoDate(menudemo_t *pdemo)
 	// get the actual filename Zzz...
 	const char *filename;
 
-	filename = strrchr(pdemo->filepath, '/');
-	if (!filename)
-		filename = strrchr(pdemo->filepath, '\\');
+	filename = strrchr(pdemo->filepath, PATHSEPSTR);
 
 	if (!filename)
 	{
@@ -6778,6 +6782,7 @@ static char *G_GetDemoDate(menudemo_t *pdemo)
 
 	return datetime;
 }
+#undef PATHSEPSTR
 
 void G_LoadDemoTitle(menudemo_t *pdemo)
 {
