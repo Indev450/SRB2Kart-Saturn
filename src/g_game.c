@@ -6714,6 +6714,71 @@ void G_LoadDemoInfo(menudemo_t *pdemo)
 	Z_Free(infobuffer);
 }
 
+#include <time.h>
+#include <locale.h>
+
+static char *G_GetDemoDate(menudemo_t *pdemo)
+{
+	char *datetime;
+	datetime = malloc(sizeof(pdemo->date)); // mallocma balls
+
+	// no mallocma balls... :c
+	if (!datetime)
+	{
+		free(datetime);
+		return NULL;
+	}
+
+	// get the actual filename Zzz...
+	const char *filename;
+
+	filename = strrchr(pdemo->filepath, '/');
+	if (!filename)
+		filename = strrchr(pdemo->filepath, '\\');
+
+	if (!filename)
+	{
+		free(datetime);
+		return NULL;
+	}
+
+	filename = filename + 1; // filename, filename, filename, filename.....
+
+	// get only the first 10 characters (time before conversion)
+	char timestr[10];
+	strncpy(timestr , filename, 10);
+
+	// convert it to long Zzz....
+	long longtime = 0;
+	longtime = strtol(timestr, NULL, 10);
+
+	// then throw it into localtime to get an actual human readable format lmao
+	struct tm tm_buf;
+	time_t demo_date = 0;
+
+	demo_date = longtime;
+	localtime_r(&demo_date, &tm_buf);
+
+	// cant believe we ended up in 1970
+	if (tm_buf.tm_year == 70)
+	{
+		free(datetime);
+		return NULL;
+	}
+
+	const char *format;
+
+	// US ppl are special (:
+	if (strstr(setlocale(LC_TIME, NULL), "en_US"))
+		format = "%m.%d.%Y";
+	else
+		format = "%d.%m.%Y";
+
+	strftime(datetime, sizeof(pdemo->date), format, &tm_buf);
+
+	return datetime;
+}
+
 void G_LoadDemoTitle(menudemo_t *pdemo)
 {
 	UINT8 infobuffer[96], *info_p;
@@ -6747,11 +6812,20 @@ void G_LoadDemoTitle(menudemo_t *pdemo)
 	READUINT8(info_p);
 	pdemoversion = READUINT16(info_p);
 
+	memset(pdemo->date, 0, sizeof(pdemo->date));
+
 	switch(pdemoversion)
 	{
 	case DEMOVERSION: // latest always supported
 		// demo title
 		M_Memcpy(pdemo->title, info_p, 64);
+
+		// demo date
+		char *demodate;
+		demodate = G_GetDemoDate(pdemo);
+		if (demodate)
+			strncpy(pdemo->date, demodate, sizeof(pdemo->date));
+		free(demodate);
 		break;
 #ifdef DEMO_COMPAT_100
 	case 0x0001:
