@@ -8802,13 +8802,15 @@ static void P_IceBlockFuseThink(mobj_t *mobj)
 
 static boolean P_FuseThink(mobj_t *mobj)
 {
-	if (((mobj->type == MT_RANDOMITEM && mobj->threshold == 69) || mobj->type == MT_EGGMANITEM || mobj->type == MT_FALLINGROCK) && mobj->fuse <= TICRATE)
-		mobj->flags2 ^= MF2_DONTDRAW;
-
 	mobj->fuse--;
 
 	if (mobj->fuse)
+	{
+		if (((mobj->type == MT_RANDOMITEM && mobj->threshold == 69) || mobj->type == MT_EGGMANITEM || mobj->type == MT_FALLINGROCK) && mobj->fuse <= TICRATE)
+			mobj->flags2 ^= MF2_DONTDRAW;
+
 		return true;
+	}
 
 	if (LUA_HookMobj(mobj, MOBJ_HOOK(MobjFuse)) || P_MobjWasRemoved(mobj))
 		;
