@@ -3010,6 +3010,7 @@ static void P_RelinkPointers(void)
 {
 	thinker_t *currentthinker;
 	mobj_t *mobj;
+	player_t *player;
 
 	// use info field (value = oldposition) to relink mobjs
 	for (currentthinker = thinkercap.next; currentthinker != &thinkercap;
@@ -3023,46 +3024,24 @@ static void P_RelinkPointers(void)
 		if (mobj->type == MT_HOOP || mobj->type == MT_HOOPCOLLIDE || mobj->type == MT_HOOPCENTER)
 			continue;
 
-		if (mobj->tracer)
+#define RELINK(obj, name) if ((obj) && !RelinkMobj(&(obj))) \
+		CONS_Debug(DBG_GAMELOGIC, name " not found on %d\n", obj->type);
+
+		RELINK(mobj->tracer, "tracer");
+		RELINK(mobj->target, "target");
+		RELINK(mobj->hnext, "hnext");
+		RELINK(mobj->hprev, "hprev");
+
+		player = mobj->player;
+
+		if (player)
 		{
-			if (!RelinkMobj(&mobj->tracer))
-				CONS_Debug(DBG_GAMELOGIC, "tracer not found on %d\n", mobj->type);
+			RELINK(player->capsule, "capsule");
+			RELINK(player->axis1, "axis1");
+			RELINK(player->axis2, "axis2");
+			RELINK(player->awayviewmobj, "awayviewmobj");
 		}
-		if (mobj->target)
-		{
-			if (!RelinkMobj(&mobj->target))
-				CONS_Debug(DBG_GAMELOGIC, "target not found on %d\n", mobj->type);
-		}
-		if (mobj->hnext)
-		{
-			if (!RelinkMobj(&mobj->hnext))
-				CONS_Debug(DBG_GAMELOGIC, "hnext not found on %d\n", mobj->type);
-		}
-		if (mobj->hprev)
-		{
-			if (!RelinkMobj(&mobj->hprev))
-				CONS_Debug(DBG_GAMELOGIC, "hprev not found on %d\n", mobj->type);
-		}
-		if (mobj->player && mobj->player->capsule)
-		{
-			if (!RelinkMobj(&mobj->player->capsule))
-				CONS_Debug(DBG_GAMELOGIC, "capsule not found on %d\n", mobj->type);
-		}
-		if (mobj->player && mobj->player->axis1)
-		{
-			if (!RelinkMobj(&mobj->player->axis1))
-				CONS_Debug(DBG_GAMELOGIC, "axis1 not found on %d\n", mobj->type);
-		}
-		if (mobj->player && mobj->player->axis2)
-		{
-			if (!RelinkMobj(&mobj->player->axis2))
-				CONS_Debug(DBG_GAMELOGIC, "axis2 not found on %d\n", mobj->type);
-		}
-		if (mobj->player && mobj->player->awayviewmobj)
-		{
-			if (!RelinkMobj(&mobj->player->awayviewmobj))
-				CONS_Debug(DBG_GAMELOGIC, "awayviewmobj not found on %d\n", mobj->type);
-		}
+#undef RELINK
 	}
 }
 
