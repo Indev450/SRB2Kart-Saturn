@@ -3190,11 +3190,22 @@ doaddline:
 		//         without talking about the overdraw of course.
 		sub->sector->validcount = validcount;/// \todo fix that in a better way
 
-		while (count--)
+		if (numPolyObjects)
 		{
-			if (LIKELY(!line->polyseg)) // ignore segs that belong to polyobjects
+			while (count--)
+			{
+				if (LIKELY(!line->polyseg)) // ignore segs that belong to polyobjects
+					HWR_AddLine(line);
+				line++;
+			}
+		}
+		else
+		{
+			while (count--)
+			{
 				HWR_AddLine(line);
-			line++;
+				line++;
+			}
 		}
 	}
 
