@@ -1928,6 +1928,25 @@ static inline player_t *LoadPlayer(UINT32 player)
 //
 // Loads a mobj_t from a save game
 //
+
+FUNCINLINE static ATTRINLINE mobj_t *AllocMobj(void)
+{
+	mobj_t *mobj;
+
+	if (mobjcache != NULL)
+	{
+		mobj = mobjcache;
+		mobjcache = mobjcache->hnext;
+		memset(mobj, 0, sizeof(*mobj));
+	}
+	else
+	{
+		mobj = Z_Calloc(sizeof (*mobj), PU_LEVEL, NULL);
+	}
+
+	return mobj;
+}
+
 static void LoadMobjThinker(savebuffer_t *save, actionf_p1 thinker)
 {
 	thinker_t *next;
@@ -1959,13 +1978,12 @@ static void LoadMobjThinker(savebuffer_t *save, actionf_p1 thinker)
 			return;
 		}
 
-		mobj = Z_Calloc(sizeof (*mobj), PU_LEVEL, NULL);
-
+		mobj = AllocMobj();
 		mobj->spawnpoint = &mapthings[spawnpointnum];
 		mapthings[spawnpointnum].mobj = mobj;
 	}
 	else
-		mobj = Z_Calloc(sizeof (*mobj), PU_LEVEL, NULL);
+		mobj = AllocMobj();
 
 	// declare this as a valid mobj as soon as possible.
 	mobj->thinker.function.acp1 = thinker;
