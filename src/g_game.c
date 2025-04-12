@@ -59,6 +59,10 @@
 #include "discord.h"
 #endif
 
+// for replay dates
+#include <time.h>
+#include <locale.h>
+
 gameaction_t gameaction;
 gamestate_t gamestate = GS_NULL;
 UINT8 ultimatemode = false;
@@ -340,6 +344,9 @@ consvar_t cv_maxdemosize = {"maxdemosize", "10", CV_SAVE, maxdemosize_cons_t, NU
 
 static CV_PossibleValue_t demochangemap_cons_t[] = {{0, "Disabled"}, {1, "Diff Map"}, {2, "Always"}, {0, NULL}};
 consvar_t cv_demochangemap = {"netdemo_savemapchange", "Disabled", CV_SAVE, demochangemap_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+
+static CV_PossibleValue_t demodateformat_cons_t[] = {{0, "Automatic"}, {1, "EU"}, {2, "US"}, {0, NULL}};
+consvar_t cv_demodateformat = {"netdemo_dateformat", "Automatic", CV_SAVE, demodateformat_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 // Analog Control
 void SendWeaponPref(void);
@@ -6653,6 +6660,9 @@ void G_LoadDemoInfo(menudemo_t *pdemo)
 	subversion = READUINT8(info_p);
 	pdemoversion = READUINT16(info_p);
 
+	memset(pdemo->version, 0, sizeof(pdemo->version));
+	snprintf(pdemo->version, sizeof(pdemo->version), "v%d.%d", version, subversion);
+
 	switch(pdemoversion)
 	{
 	case DEMOVERSION: // latest always supported
@@ -6794,6 +6804,108 @@ void G_LoadDemoInfo(menudemo_t *pdemo)
 	Z_Free(infobuffer);
 }
 
+#if defined (_WIN32)
+// return the file creation time
+// useful for demos that were renamed
+static long G_GetCreationTime(char *filepath)
+{
+	struct stat fileinfo;
+
+	if (stat(filepath, &fileinfo) == 0)
+		return fileinfo.st_ctime;
+
+	return 0;
+}
+#endif
+
+static char *G_GetDemoDate(menudemo_t *pdemo)
+{
+	char *datetime;
+	datetime = malloc(sizeof(pdemo->date)); // mallocma balls
+
+	// no mallocma balls... :c
+	if (!datetime)
+	{
+		return NULL;
+	}
+
+	time_t file_time = 0;
+
+	// get le filepath
+	char *filename;
+	filename = strdup(pdemo->filepath);
+
+#if defined (_WIN32)
+	if (!filename)
+	{
+		// if we cant get a filename try just getting the file create time
+		file_time = G_GetCreationTime(pdemo->filepath);
+		goto skipfilenametime;
+	}
+#else
+	if (!filename)
+	{
+		free(datetime);
+		return NULL;
+	}
+#endif
+
+	// get the actual filename Zzz...
+	nameonly(filename);
+
+	// convert it to long Zzz....
+	file_time = strtol(filename, NULL, 10);
+	free(filename); // dont need this anymore a
+
+#if defined (_WIN32)
+skipfilenametime:
+#endif
+
+	// then throw it into localtime to get an actual human readable format lmao
+	struct tm *tm_buf = NULL;
+	tm_buf = localtime(&file_time);
+
+	// cant believe we ended up in 1970
+	if (tm_buf == NULL || tm_buf->tm_year <= 110)
+	{
+#if defined (_WIN32)
+		// uh ohh, we got an invalid time
+		// try one more time getting the creation time
+		file_time = G_GetCreationTime(pdemo->filepath);
+		tm_buf = localtime(&file_time);
+
+		if (tm_buf == NULL || tm_buf->tm_year <= 110)
+		{
+			free(datetime);
+			return NULL;
+		}
+
+		goto gotcreationtime;
+#else
+		free(datetime);
+		return NULL;
+#endif
+	}
+
+#if defined (_WIN32)
+gotcreationtime:
+#endif
+
+	const char *format;
+
+	// US ppl are special (:
+	if (cv_demodateformat.value == 2)
+		format = "%m.%d.%Y";
+	else if (cv_demodateformat.value == 1)
+		format = "%d.%m.%Y";
+	else
+		format = strstr(setlocale(LC_TIME, NULL), "en_US") ? "%m.%d.%Y" : "%d.%m.%Y";
+
+	strftime(datetime, sizeof(pdemo->date), format, tm_buf);
+
+	return datetime;
+}
+
 void G_LoadDemoTitle(menudemo_t *pdemo)
 {
 	UINT8 infobuffer[96], *info_p;
@@ -6827,11 +6939,20 @@ void G_LoadDemoTitle(menudemo_t *pdemo)
 	READUINT8(info_p);
 	pdemoversion = READUINT16(info_p);
 
+	memset(pdemo->date, 0, sizeof(pdemo->date));
+
 	switch(pdemoversion)
 	{
 	case DEMOVERSION: // latest always supported
 		// demo title
 		M_Memcpy(pdemo->title, info_p, 64);
+
+		// demo date
+		char *demodate;
+		demodate = G_GetDemoDate(pdemo);
+		if (demodate)
+			strncpy(pdemo->date, demodate, sizeof(pdemo->date));
+		free(demodate);
 		break;
 #ifdef DEMO_COMPAT_100
 	case 0x0001:

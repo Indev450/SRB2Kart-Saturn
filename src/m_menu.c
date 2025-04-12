@@ -647,6 +647,7 @@ static menuitem_t MISC_ReplayOptionsMenu[] =
 	{IT_CVAR|IT_STRING, NULL, "Sync Check Interval",			&cv_netdemosyncquality,     20},
 	{IT_CVAR|IT_STRING, NULL, "Max demo size (MiB)",			&cv_maxdemosize,			30},
 	{IT_CVAR|IT_STRING, NULL, "Replay Search Rate",				&cv_replaysearchrate,       40},
+	{IT_CVAR|IT_STRING, NULL, "Replay Date Format",				&cv_demodateformat,         50},
 };
 
 static tic_t playback_last_menu_interaction_leveltime = 0;
@@ -6826,7 +6827,15 @@ static void ReplayNamesLoadThread(void* userdata)
 	for (size_t i = 0; i < demolist_all_size; ++i)
 	{
 		if (demolist_all_local[i].type != MD_SUBDIR)
+		{
 			G_LoadDemoTitle(&demolist_all_local[i]);
+
+			// this is fucking horrid, but i wanna be able to search for dates
+			/*if (demolist_all_local[i].date[0] != '\0')
+			{
+				snprintf(demolist_all_local[i].title, sizeof(demolist_all_local[i].title), "%s %s", demolist_all_local[i].title, demolist_all_local[i].date);
+			}*/
+		}
 	}
 
 	Lock_search_state();
@@ -7195,7 +7204,7 @@ static void DrawReplayHutReplayInfo(void)
 		break; // Can't think of anything to draw here right now
 
 	case MD_OUTDATED:
-		V_DrawThinString(17, 64, V_SNAPTOTOP|V_ALLOWLOWERCASE|V_TRANSLUCENT|highlightflags, "Recorded on an outdated version.");
+		V_DrawThinString(17, 64, V_SNAPTOTOP|V_ALLOWLOWERCASE|V_TRANSLUCENT|highlightflags, va("Recorded on an outdated version. %s", demolist[dir_on[menudepthleft]].version));
 		/*fallthru*/
 	default:
 		// Draw level stuff
@@ -7236,8 +7245,16 @@ static void DrawReplayHutReplayInfo(void)
 		else
 			V_DrawString(x, y, V_SNAPTOTOP|V_ALLOWLOWERCASE|V_TRANSLUCENT, "Level is not loaded.");
 
+		INT32 datew = 0;
+
+		if (demolist[dir_on[menudepthleft]].date[0] != '\0')
+		{
+			datew = V_StringWidth(demolist[dir_on[menudepthleft]].date, 0);
+			V_DrawThinString(x, y+9, V_SNAPTOTOP|V_ALLOWLOWERCASE, va("%s", demolist[dir_on[menudepthleft]].date));
+		}
+
 		if (demolist[dir_on[menudepthleft]].numlaps)
-			V_DrawThinString(x, y+9, V_SNAPTOTOP|V_ALLOWLOWERCASE, va("(%d laps)", demolist[dir_on[menudepthleft]].numlaps));
+			V_DrawThinString(x+datew, y+9, V_SNAPTOTOP|V_ALLOWLOWERCASE, va("(%d laps)", demolist[dir_on[menudepthleft]].numlaps));
 
 		V_DrawString(x, y+20, V_SNAPTOTOP|V_ALLOWLOWERCASE, demolist[dir_on[menudepthleft]].gametype == GT_RACE ?
 			va("Race (%s speed)", kartspeed_cons_t[demolist[dir_on[menudepthleft]].kartspeed & ~DF_ENCORE].strvalue) :

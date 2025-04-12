@@ -954,7 +954,7 @@ void D_RegisterClientCommands(void)
 
 	COM_AddCommand("displayplayer", Command_Displayplayer_f);
 
-	CV_RegisterVar(&cv_audbuffersize); 
+	CV_RegisterVar(&cv_audbuffersize);
 
 	// m_menu.c
 	CV_RegisterVar(&cv_chatheight);
@@ -965,10 +965,10 @@ void D_RegisterClientCommands(void)
 	CV_RegisterVar(&cv_chatnotifications);
 	CV_RegisterVar(&cv_chatbacktint);
 	CV_RegisterVar(&cv_songcredits);
-	CV_RegisterVar(&cv_showfreeplay);	
+	CV_RegisterVar(&cv_showfreeplay);
 	CV_RegisterVar(&cv_skinselectspin);
 	CV_RegisterVar(&cv_showallmaps);
-	
+
 	CV_RegisterVar(&cv_growmusic);
 	CV_RegisterVar(&cv_supermusic);
 
@@ -1054,7 +1054,7 @@ void D_RegisterClientCommands(void)
 	CV_RegisterVar(&cv_midimusicvolume);
 #endif
 	CV_RegisterVar(&cv_numChannels);
-	
+
 #ifdef HAVE_OPENMPT
 	CV_RegisterVar(&cv_modfilter);
 	CV_RegisterVar(&cv_stereosep);
@@ -1092,6 +1092,8 @@ void D_RegisterClientCommands(void)
 	{
 		CV_RegisterVar(&cv_verticallook[i]);
 	}
+
+	CV_RegisterVar(&cv_demodateformat);
 
 	// ingame object placing
 	COM_AddCommand("objectplace", Command_ObjectPlace_f);
@@ -3074,18 +3076,25 @@ static void Command_ReplayMarker(void)
 		CONS_Printf(M_GetText("You must be in a level to use this.\n"));
 		return;
 	}
-	if (demo.savemode == DSM_WILLAUTOSAVE) {
+	if (demo.savemode == DSM_WILLAUTOSAVE)
+	{
 		demo.savemode = DSM_NOTSAVING;
 		CONS_Printf("Replay unmarked.\n");
-	} else {
-		int adjustedleveltime = leveltime - starttime;
+	}
+	else
+	{
 		demo.savemode = DSM_WILLAUTOSAVE;
+
+		int adjustedleveltime = leveltime - starttime;
+
 		if (adjustedleveltime < 0)
 			adjustedleveltime = 0;
+
 		char *title = G_BuildMapTitle(gamemap);
 		snprintf(demo.titlename, 64, "%s [%i:%02d/%.5s]", title, G_TicsToMinutes(adjustedleveltime, false), G_TicsToSeconds(adjustedleveltime), modeattacking ? "Record Attack" : connectedservername);
 		if (title)
 			Z_Free(title);
+
 		CONS_Printf("Replay will be saved!\n");
 	}
 }
@@ -4545,7 +4554,7 @@ Command_Addskins (void)
 	/*
 	if (fasticmp(COM_Argv(2), "-force") || fasticmp(COM_Argv(2), "-f")) {
 		CONS_Alert(CONS_NOTICE, M_GetText("Adding file %s. May or may not be a skin.\n"), COM_Argv(1));
-		P_AddWadFile(COM_Argv(1), 0, true);	
+		P_AddWadFile(COM_Argv(1), 0, true);
 	} else {
 		if (DumbStartsWith("KC_", COM_Argv(1))) {
 			P_AddWadFile(COM_Argv(1), 0, true);
@@ -4625,7 +4634,7 @@ static void Command_GLocalSkin (void)
 	{
 		int i;
 
-		for (i = 0; i < MAXPLAYERS; ++i) 
+		for (i = 0; i < MAXPLAYERS; ++i)
 		{
 			if (!playeringame[i])
 				continue;
@@ -6012,7 +6021,7 @@ static void Command_ListSkins(void)
 }
 
 static void Command_SkinSearch(void)
-{	
+{
 	size_t i;
 	UINT16 s;
 	UINT16 ic = 0;
@@ -6022,7 +6031,7 @@ static void Command_SkinSearch(void)
 		{
 			skin_t *skininput = &skins[s];
 			if (strcasestr(skininput->realname,COM_Argv(i)))
-			{	
+			{
 				ic++;
 				CONS_Printf("%d. %s%s:\x80 %s\n", ic,HU_SkinColorToConsoleColor(skininput->prefcolor),skininput->realname,skininput->name);
 			}

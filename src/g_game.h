@@ -42,6 +42,7 @@ extern savebuffer_t demobuf;
 
 // demoplaying back and demo recording
 extern consvar_t cv_recordmultiplayerdemos, cv_netdemosyncquality, cv_maxdemosize, cv_demochangemap;
+extern consvar_t cv_demodateformat;
 
 // Publicly-accessible demo vars
 struct demovars_s {
@@ -83,6 +84,8 @@ typedef struct menudemo_s {
 	menudemotype_e type;
 
 	char title[65]; // Null-terminated for string prints
+	char date[11]; // date when replay was recorded
+	char version[12]; // combined version and subversion
 	UINT16 map;
 	UINT8 addonstatus; // What do we need to do addon-wise to play this demo?
 	UINT8 gametype;
