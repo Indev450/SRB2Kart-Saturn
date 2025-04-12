@@ -59,6 +59,10 @@
 #include "discord.h"
 #endif
 
+// for replay dates
+#include <time.h>
+#include <locale.h>
+
 gameaction_t gameaction;
 gamestate_t gamestate = GS_NULL;
 UINT8 ultimatemode = false;
@@ -6800,9 +6804,6 @@ void G_LoadDemoInfo(menudemo_t *pdemo)
 	Z_Free(infobuffer);
 }
 
-#include <time.h>
-#include <locale.h>
-
 #if defined (_WIN32)
 // return the file creation time
 // useful for demos that were renamed
@@ -6861,25 +6862,25 @@ skipfilenametime:
 #endif
 
 	// then throw it into localtime to get an actual human readable format lmao
-	struct tm tm_buf;
-	localtime_r(&file_time, &tm_buf);
+	struct tm *tm_buf = NULL;
+	tm_buf = localtime(&file_time);
 
 	// cant believe we ended up in 1970
-	if (tm_buf.tm_year <= 110)
+	if (tm_buf == NULL || tm_buf->tm_year <= 110)
 	{
 #if defined (_WIN32)
 		// uh ohh, we got an invalid time
 		// try one more time getting the creation time
 		file_time = G_GetCreationTime(pdemo->filepath);
-		localtime_r(&file_time, &tm_buf);
+		tm_buf = localtime(&file_time);
 
-		if (tm_buf.tm_year <= 110)
+		if (tm_buf == NULL || tm_buf->tm_year <= 110)
 		{
 			free(datetime);
 			return NULL;
 		}
-		else
-			goto gotcreationtime;
+
+		goto gotcreationtime;
 #else
 		free(datetime);
 		return NULL;
@@ -6900,11 +6901,10 @@ gotcreationtime:
 	else
 		format = strstr(setlocale(LC_TIME, NULL), "en_US") ? "%m.%d.%Y" : "%d.%m.%Y";
 
-	strftime(datetime, sizeof(pdemo->date), format, &tm_buf);
+	strftime(datetime, sizeof(pdemo->date), format, tm_buf);
 
 	return datetime;
 }
-#undef PATHSEPSTR
 
 void G_LoadDemoTitle(menudemo_t *pdemo)
 {
