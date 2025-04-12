@@ -3318,11 +3318,11 @@ static void HWR_DrawSpriteShadow(gl_vissprite_t *spr, GLPatch_t *gpatch)
 	float offset = 0;
 
 	// technically this_scale gets multiplied and added to sprite y/x scale, but this thing needs it for some crap so ill just throw it in here again
-	const boolean hires = (spr->mobj && spr->mobj->skin && ((skin_t *)( (spr->mobj->localskin) ? spr->mobj->localskin : spr->mobj->skin ))->flags & SF_HIRES);
+	const boolean hires = (spr->mobj && spr->mobj->skin && K_GetMobjSkin(thing)->flags & SF_HIRES);
 	if (spr->mobj)
 		this_scale = FIXED_TO_FLOAT(spr->mobj->scale);
 	if (hires)
-		this_scale = this_scale * FIXED_TO_FLOAT(((skin_t *)( (spr->mobj->localskin) ? spr->mobj->localskin : spr->mobj->skin ))->highresscale);
+		this_scale = this_scale * FIXED_TO_FLOAT(K_GetMobjSkin(thing)->highresscale);
 
 	R_GetShadowZ(spr->mobj, &floorslope);
 
@@ -4660,9 +4660,9 @@ static void HWR_ProjectSprite(mobj_t *thing)
 	//Fab : 02-08-98: 'skin' override spritedef currently used for skin
 	if ((thing->skin || thing->localskin) && thing->sprite == SPR_PLAY)
 	{
-		sprdef = &((skin_t *)( (thing->localskin) ? thing->localskin : thing->skin ))->spritedef;
+		sprdef = &K_GetMobjSkin(thing)->spritedef;
 #ifdef ROTSPRITE
-		sprinfo = &((skin_t *)( (thing->localskin) ? thing->localskin : thing->skin ))->sprinfo;
+		sprinfo = &K_GetMobjSkin(thing)->sprinfo;
 #endif
 	}
 	else
@@ -4741,8 +4741,8 @@ static void HWR_ProjectSprite(mobj_t *thing)
 			flip ^= (1<<rot);
 	}
 
-	if (thing->skin && ((skin_t *)(thing->localskin ? thing->localskin : thing->skin))->flags & SF_HIRES)
-		this_scale *= FIXED_TO_FLOAT(((skin_t *)(thing->localskin ? thing->localskin : thing->skin))->highresscale);
+	if ((thing->skin || thing->localskin) && K_GetMobjSkin(thing)->flags & SF_HIRES)
+		this_scale *= FIXED_TO_FLOAT(K_GetMobjSkin(thing)->highresscale);
 
 	spr_width = spritecachedinfo[lumpoff].width;
 	spr_height = spritecachedinfo[lumpoff].height;

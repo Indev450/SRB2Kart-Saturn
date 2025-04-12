@@ -409,12 +409,7 @@ static void Y_PlayerStandingsDrawer(y_data_t *standings, INT32 x, INT32 hilicol)
 			{
 				UINT8 *colormap = R_GetTranslationColormap(*standings->character[i], *standings->color[i], GTC_CACHE);
 				INT32 skinnum = (player->localskin ? (player->localskin - 1) : *standings->character[i]);
-				patch_t *faceprefix = NULL;
-
-				if (!player->skinlocal)
-					faceprefix = (K_UseHighResPortraits() ? facewantprefix[skinnum] : facerankprefix[skinnum]);
-				else
-					faceprefix = (K_UseHighResPortraits() ? localfacewantprefix[skinnum] : localfacerankprefix[skinnum]);
+				patch_t *faceprefix = K_GetFacePrefix(player, skinnum);
 
 				if (K_UseHighResPortraits())
 					V_DrawSmallMappedPatch(x + 16, y - 4, 0, faceprefix, colormap);
@@ -1143,7 +1138,9 @@ void Y_VoteDrawer(void)
 		if (dedicated && i == 0) // While leaving blank spots for non-existent players is largely intentional, the first spot *always* being blank looks a tad silly :V
 			continue;
 
-		if ((playeringame[i] && !players[i].spectator) && votes[i] != -1)
+		player_t *player = &players[i];
+
+		if ((playeringame[i] && !player->spectator) && votes[i] != -1)
 		{
 			patch_t *pic;
 
@@ -1175,13 +1172,16 @@ void Y_VoteDrawer(void)
 				V_DrawDiag(x, y, 6, V_SNAPTOLEFT|levelinfo[votes[i]].gtc);
 			}
 
-			if (players[i].skincolor)
+			if (player->skincolor)
 			{
-				UINT8 *colormap = R_GetTranslationColormap(players[i].skin, players[i].skincolor, GTC_CACHE);
+				UINT8 *colormap = R_GetTranslationColormap(player->skin, player->skincolor, GTC_CACHE);
+
+				patch_t *faceprefix = K_GetFacePrefix(player, K_GetSkinNum(player));
+
 				if (K_UseHighResPortraits())
-					V_DrawSmallMappedPatch(x+24, y+9, V_SNAPTOLEFT, (players[i].skinlocal ? localfacewantprefix : facewantprefix)[((players[i].localskin) ? players[i].localskin-1 : players[i].skin)], colormap);
+					V_DrawSmallMappedPatch(x+24, y+9, V_SNAPTOLEFT, faceprefix, colormap);
 				else
-					V_DrawMappedPatch(x+24, y+9, V_SNAPTOLEFT, (players[i].skinlocal ? localfacerankprefix : facerankprefix)[((players[i].localskin) ? players[i].localskin-1 : players[i].skin)], colormap);
+					V_DrawMappedPatch(x+24, y+9, V_SNAPTOLEFT, faceprefix, colormap);
 			}
 
 			if (!splitscreen && i == consoleplayer)

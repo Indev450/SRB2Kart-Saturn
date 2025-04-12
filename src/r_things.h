@@ -118,12 +118,20 @@ typedef struct
 
 	// specific sounds per skin
 	sfxenum_t soundsid[NUMSKINSOUNDS]; // sound # in S_sfx table
-	
+
 	boolean localskin;
 	INT32 localnum;
 } skin_t;
 
 extern CV_PossibleValue_t Forceskin_cons_t[];
+
+// had to move those here Zzz...
+INT32 K_GetSkinNum(player_t *player);
+INT32 K_GetMobjSkinNum(const skin_t *skin, boolean local);
+skin_t *K_GetPlayerSkin(player_t *player);
+skin_t *K_GetMobjSkin(const mobj_t *mobj);
+patch_t *K_GetFacePrefix(player_t *player, INT32 skinnum);
+skin_t *K_GetSkinArray(boolean local);
 
 // -----------
 // NOT SKINS STUFF !
