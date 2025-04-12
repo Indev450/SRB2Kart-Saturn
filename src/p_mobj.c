@@ -9502,13 +9502,8 @@ void P_SceneryThinker(mobj_t *mobj)
 // GAME SPAWN FUNCTIONS
 //
 
-//
-// P_SpawnMobj
-//
-mobj_t *P_SpawnMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type)
+FUNCINLINE static ATTRINLINE mobj_t *P_AllocMobj(void)
 {
-	const mobjinfo_t *info = &mobjinfo[type];
-	state_t *st;
 	mobj_t *mobj;
 
 	if (mobjcache != NULL)
@@ -9521,6 +9516,20 @@ mobj_t *P_SpawnMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type)
 	{
 		mobj = Z_Calloc(sizeof (*mobj), PU_LEVEL, NULL);
 	}
+
+	return mobj;
+}
+
+//
+// P_SpawnMobj
+//
+mobj_t *P_SpawnMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type)
+{
+	const mobjinfo_t *info = &mobjinfo[type];
+	state_t *st;
+	mobj_t *mobj;
+
+	mobj = P_AllocMobj();
 
 	// this is officially a mobj, declared as soon as possible.
 	mobj->thinker.function.acp1 = (actionf_p1)P_MobjThinker;
@@ -9986,16 +9995,7 @@ mobj_t *P_SpawnShadowMobj(mobj_t * caster)
 	state_t *st;
 	mobj_t *mobj;
 
-	if (mobjcache != NULL)
-	{
-		mobj = mobjcache;
-		mobjcache = mobjcache->hnext;
-		memset(mobj, 0, sizeof(*mobj));
-	}
-	else
-	{
-		mobj = Z_Calloc(sizeof (*mobj), PU_LEVEL, NULL);
-	}
+	mobj = P_AllocMobj();
 
 	// this is officially a mobj, declared as soon as possible.
 	mobj->thinker.function.acp1 = (actionf_p1)P_MobjThinker;
