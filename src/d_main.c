@@ -1208,6 +1208,8 @@ boolean xtra_speedo3 = false;      // 80x 11 extra speedometer check
 boolean xtra_speedo_clr3 = false;  // 80x 11 extra speedometer colour check
 boolean achi_speedo = false;       // achiiro speedometer check
 boolean achi_speedo_clr = false;   // extra speedometer colour check
+boolean dial_speedo = false;       // dial speedometer check
+boolean dial_speedo_clr = false;   // dial speedometer colour check
 boolean kartz_speedo = false;      // kartZ speedo
 boolean kartz_speedo_smol = false; // kartZ speedo but smol
 
@@ -1337,7 +1339,7 @@ static inline void D_MakeTitleString(char *s)
 static void D_CheckSaturnExtraFiles(void)
 {
 	// Possible value that changes depending on whether required files for speedometer are found or not
-	CV_PossibleValue_t speedo_cons_temp[NUMSPEEDOSTUFF] = {{1, "Default"}, {0, NULL}, {0, NULL}, {0, NULL}, {0, NULL}, {0, NULL}, {0, NULL}};
+	CV_PossibleValue_t speedo_cons_temp[NUMSPEEDOSTUFF] = {{1, "Default"}, {0, NULL}, {0, NULL}, {0, NULL}, {0, NULL}, {0, NULL}, {0, NULL}, {0, NULL}};
 	CV_PossibleValue_t driftgaugestyle_cons_temp[NUMDGAUGESTUFF] = {{1, "Default"}, {2, "Small"}, {3, "Big Numbers"}, {4, "Numbers Only"}, {0, NULL}, {0, NULL}};
 	CV_PossibleValue_t inputdisplay_cons_temp[NUMINPUTDISPLAYSTUFF] = {{0, "Off"}, {1, "Wheel"}, {2, "Stick"}, {0, NULL}, {0, NULL}};
 
@@ -1365,6 +1367,17 @@ static void D_CheckSaturnExtraFiles(void)
 			PUSHCONS(speedo_cons_temp, last_speedo_i, 3, "Achii");
 		}
 
+		// now check for dial speedometer stuff
+		if (W_CheckMultipleLumps("K_DSPBS1", "K_DSPBS2", "K_DSDIAL",
+			"K_TRNULL", "SP_DKMH", "SP_DMPH", "SP_DFRAC", "SP_DPERC",
+			"K_DSPNM0", "K_DSPNM1", "K_DSPNM2", "K_DSPNM3", "K_DSPNM4",
+			"K_DSPNM5", "K_DSPNM6", "K_DSPNM7", "K_DSPNM8", "K_DSPNM9",
+			"RANKFIN", NULL))
+		{
+			dial_speedo = true;
+			PUSHCONS(speedo_cons_temp, last_speedo_i, 4, "Dial");
+		}
+
 		// check for bigger lap count
 		if (W_CheckMultipleLumps("K_STLAPB", "K_STLA2B", NULL))
 		{
@@ -1378,7 +1391,7 @@ static void D_CheckSaturnExtraFiles(void)
 			"K_KZSP20", "K_KZSP21", "K_KZSP22", "K_KZSP23", "K_KZSP24", "K_KZSP25", NULL))
 		{
 			kartz_speedo = true;
-			PUSHCONS(speedo_cons_temp, last_speedo_i, 4, "P-Meter");
+			PUSHCONS(speedo_cons_temp, last_speedo_i, 5, "P-Meter");
 		}
 
 		if (W_CheckMultipleLumps("K_KZSS1", "K_KZSS2", "K_KZSS3", "K_KZSS4", "K_KZSS5",
@@ -1387,7 +1400,7 @@ static void D_CheckSaturnExtraFiles(void)
 			"K_KZSS20", "K_KZSS21", "K_KZSS22", "K_KZSS23", "K_KZSS24", "K_KZSS25", NULL))
 		{
 			kartz_speedo_smol = true;
-			PUSHCONS(speedo_cons_temp, last_speedo_i, 5, "P-Meter Small");
+			PUSHCONS(speedo_cons_temp, last_speedo_i, 6, "P-Meter Small");
 		}
 
 		// stat display for extended player setup
@@ -1447,6 +1460,16 @@ static void D_CheckSaturnExtraFiles(void)
 			achi_speedo_clr = true;
 		}
 
+		// dial speedo but colour
+		if (W_CheckMultipleLumps("K_DSPBC1", "K_DSPBC2", "K_DSDIAL",
+			"K_TRNULL", "SC_DKMH", "SC_DMPH", "SC_DFRAC", "SC_DPERC",
+			"K_DSPNC0", "K_DSPNC1", "K_DSPNC2", "K_DSPNC3", "K_DSPNC4",
+			"K_DSPNC5", "K_DSPNC6", "K_DSPNC7", "K_DSPNC8", "K_DSPNC9",
+			"RANKFIN", NULL))
+		{
+			dial_speedo_clr = true;
+		}
+
 		// driftgauge but colour
 		if (W_CheckMultipleLumps("K_DCAU","K_DCSU", NULL))
 		{
@@ -1470,7 +1493,7 @@ static void D_CheckSaturnExtraFiles(void)
 		if (W_LumpExists("SP_SM3TC"))
 		{
 			xtra_speedo3 = true;
-			PUSHCONS(speedo_cons_temp, last_speedo_i, 6, "Extra");
+			PUSHCONS(speedo_cons_temp, last_speedo_i, 7, "Extra");
 			PUSHCONS(driftgaugestyle_cons_temp, last_driftgauge_i, 5, "Extra");
 		}
 
