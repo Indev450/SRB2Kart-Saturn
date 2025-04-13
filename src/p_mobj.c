@@ -8975,6 +8975,33 @@ static void P_MonitorFuseThink(mobj_t *mobj)
 	P_RemoveMobj(mobj); // make sure they disappear
 }
 
+static boolean P_RandomItemFuseThink(mobj_t *mobj)
+{
+	mobj_t *newmobj;
+
+	if (G_BattleGametype())
+	{
+		if (mobj->threshold != 69)
+			return false;
+	}
+	else
+	{
+		// Respawn from mapthing if you have one!
+		if (mobj->spawnpoint)
+		{
+			P_SpawnMapThing(mobj->spawnpoint);
+			newmobj = mobj->spawnpoint->mobj; // this is set to the new mobj in P_SpawnMapThing
+		}
+		else
+			newmobj = P_SpawnMobj(mobj->x, mobj->y, mobj->z, mobj->type);
+
+		// Transfer flags2 (strongbox, objectflip)
+		newmobj->flags2 = mobj->flags2 & ~MF2_DONTDRAW;
+	}
+
+	return true;
+}
+
 static void P_IceBlockFuseThink(mobj_t *mobj)
 {
 	mobj_t *cur = mobj->hnext, *next;
@@ -9044,6 +9071,11 @@ static boolean P_FuseThink(mobj_t *mobj)
 		case MT_GRAVITYBOX: // Gravity box
 		case MT_QUESTIONBOX:
 			P_MonitorFuseThink(mobj);
+			return false;
+		case MT_RANDOMITEM:
+			if (!P_RandomItemFuseThink(mobj))
+				break;
+			P_RemoveMobj(mobj); // make sure they disappear
 			return false;
 		case MT_METALSONIC_BATTLE:
 			break; // don't remove
