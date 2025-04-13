@@ -4926,7 +4926,7 @@ void M_Init(void)
 	}
 #endif
 
-	if (!xtra_speedo && !kartz_speedo && !achi_speedo) // why bother?
+	if (!xtra_speedo && !kartz_speedo && !achi_speedo && !dial_speedo) // why bother?
 		OP_SaturnHudMenu[sh_speedometer].status = IT_GRAYEDOUT;
 
 	//if (!xtra_speedo && kartz_speedo)

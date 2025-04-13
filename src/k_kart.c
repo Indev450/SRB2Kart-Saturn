@@ -793,6 +793,7 @@ enum
 	SPEEDO_VANILLA,
 	SPEEDO_EXTRA,
 	SPEEDO_ACHII,
+	SPEEDO_DIAL,
 	SPEEDO_PMETER,
 	SPEEDO_PMETERSMOL,
 	SPEEDO_EXTRA3,
@@ -804,11 +805,13 @@ static UINT8 K_GetSpeedometerStyle(void)
 		return SPEEDO_EXTRA;
 	else if (cv_newspeedometer.value == 3 && achi_speedo)
 		return SPEEDO_ACHII;
-	else if (cv_newspeedometer.value == 4 && kartz_speedo)
+		else if (cv_newspeedometer.value == 4 && dial_speedo)
+		return SPEEDO_DIAL;
+	else if (cv_newspeedometer.value == 5 && kartz_speedo)
 		return SPEEDO_PMETER;
-	else if (cv_newspeedometer.value == 5 && kartz_speedo_smol)
+	else if (cv_newspeedometer.value == 6 && kartz_speedo_smol)
 		return SPEEDO_PMETERSMOL;
-	else if (cv_newspeedometer.value == 6 && xtra_speedo3)
+	else if (cv_newspeedometer.value == 7 && xtra_speedo3)
 		return SPEEDO_EXTRA3;
 	else
 		return SPEEDO_VANILLA;
@@ -7874,6 +7877,16 @@ static patch_t *skp_speedpatchesachi[5];
 static patch_t *skp_smallstickerachiclr;
 static patch_t *skp_speedpatchesachiclr[5];
 
+// dial speedometer
+static patch_t *skp_rankfinish;
+static patch_t *skp_dialbase[2];
+static patch_t *skp_speedpatchesdial[5];
+static patch_t *skp_dialnum[10];
+//static patch_t *skp_dialclr;
+static patch_t *skp_dialbaseclr[2];
+static patch_t *skp_speedpatchesdialclr[5];
+static patch_t *skp_dialnumclr[10];
+
 static patch_t *joybacking;
 static patch_t *joyknob;
 static patch_t *joyshadow;
@@ -7924,6 +7937,26 @@ void K_LoadKartHUDGraphics(void)
 		skp_speedpatchesachi[4] = W_CachePatchName("SP_APERC", PU_HUDGFX);
 	}
 
+	if (dial_speedo)
+	{
+		skp_rankfinish =		  W_CachePatchName("RANKFIN",  PU_HUDGFX);
+		skp_dialbase[0] = 	      W_CachePatchName("K_DSPBS1", PU_HUDGFX);
+		skp_dialbase[1] = 	      W_CachePatchName("K_DSPBS2", PU_HUDGFX);
+
+		skp_speedpatchesdial[0] = W_CachePatchName("K_TRNULL", PU_HUDGFX); // lolxd
+		skp_speedpatchesdial[1] = W_CachePatchName("SP_DKMH",  PU_HUDGFX);
+		skp_speedpatchesdial[2] = W_CachePatchName("SP_DMPH",  PU_HUDGFX);
+		skp_speedpatchesdial[3] = W_CachePatchName("SP_DFRAC", PU_HUDGFX);
+		skp_speedpatchesdial[4] = W_CachePatchName("SP_DPERC", PU_HUDGFX);
+
+		sprintf(buffer, "K_DSPNMx");
+		for (i = 0; i < 10; i++)
+		{
+			buffer[7] = '0'+(i%10);
+			skp_dialnum[i] = (patch_t *) W_CachePatchName(buffer, PU_HUDGFX);
+		}
+	}
+
 	if (big_lap)
 	{
 		kp_lapstickerbig = 		W_CachePatchName("K_STLAPB", PU_HUDGFX);
@@ -7969,6 +8002,25 @@ void K_LoadKartHUDGraphics(void)
 		skp_speedpatchesachiclr[2] = W_CachePatchName("SC_AMPH",  PU_HUDGFX);
 		skp_speedpatchesachiclr[3] = W_CachePatchName("SC_AFRAC", PU_HUDGFX);
 		skp_speedpatchesachiclr[4] = W_CachePatchName("SC_APERC", PU_HUDGFX);
+	}
+
+	if (dial_speedo && dial_speedo_clr)
+	{
+		skp_dialbaseclr[0] = 	     W_CachePatchName("K_DSPBC1", PU_HUDGFX);
+		skp_dialbaseclr[1] = 	     W_CachePatchName("K_DSPBC2", PU_HUDGFX);
+
+		skp_speedpatchesdialclr[0] = W_CachePatchName("K_TRNULL", PU_HUDGFX); // lolxd
+		skp_speedpatchesdialclr[1] = W_CachePatchName("SC_DKMH",  PU_HUDGFX);
+		skp_speedpatchesdialclr[2] = W_CachePatchName("SC_DMPH",  PU_HUDGFX);
+		skp_speedpatchesdialclr[3] = W_CachePatchName("SC_DFRAC", PU_HUDGFX);
+		skp_speedpatchesdialclr[4] = W_CachePatchName("SC_DPERC", PU_HUDGFX);
+
+		sprintf(buffer, "K_DSPNCx");
+		for (i = 0; i < 10; i++)
+		{
+			buffer[7] = '0'+(i%10);
+			skp_dialnumclr[i] = (patch_t *) W_CachePatchName(buffer, PU_HUDGFX);
+		}
 	}
 
 	// KartZ speedo
@@ -8617,12 +8669,14 @@ patch_t *K_getItemMulPatch(boolean small)
 
 static void K_drawKartStats(void)
 {
-	INT32 x, y, spdoffset, flags;
+	INT32 x, y, spdxoffset, spdoffset, flags;
 
 	// For 1-player display
 	x = 15;
 	y = 150;
+	spdxoffset = 0;
 	spdoffset = 0;
+
 	flags = V_SNAPTOBOTTOM|V_SNAPTOLEFT;
 
 	UINT8 splitnum = 0;
@@ -8637,29 +8691,38 @@ static void K_drawKartStats(void)
 		return;
 
 	//Internal offset for speedometer
-	if (cv_kartspeedometer.value)
-	{
-		const UINT8 speedostyle = K_GetSpeedometerStyle();
 
+	const UINT8 speedostyle = K_GetSpeedometerStyle();
+
+	if (cv_kartspeedometer.value && (!splitscreen))
+	{
 		if ((speedostyle == SPEEDO_EXTRA) || (speedostyle == SPEEDO_ACHII) || (speedostyle == SPEEDO_EXTRA3))
 			spdoffset = -10;
+		else if (speedostyle == SPEEDO_DIAL)
+		{
+			spdxoffset = 11;
+			spdoffset = 14;
+		}
 		else
 			spdoffset = -14;
 	}
 	else
 		spdoffset = 0;
 
+	if ((speedostyle != SPEEDO_DIAL) || (splitscreen))
+		spdoffset += (G_BattleGametype() ? (stplyr->kartstuff[k_bumper] ? -5 : -8) : 0);
+
 	// Customizations c:
 	if (!splitscreen)
 	{
-		x += 18 + cv_stat_xoffset.value;
-		y += cv_stat_yoffset.value + (G_BattleGametype() ? (stplyr->kartstuff[k_bumper] ? -5 : -8) : 0) + spdoffset;
+		x += 18 + cv_stat_xoffset.value + spdxoffset;
+		y += cv_stat_yoffset.value + spdoffset;
 	}
 	else if (splitscreen == 1)	// I tried my best, but this is still mess :/ < :Blobcatpats: c:
 	{
 		x -= 10;
 		y -= 40;
-		y += (G_BattleGametype() ? (stplyr->kartstuff[k_bumper] ? -5 : -8) : 0);
+		y += spdoffset;
 
 		// If we are in 2-player splitscreen, for player 1 we move hud to up and remove snapping
 		// to bottom
@@ -9709,13 +9772,164 @@ static void K_drawKartLaps(void)
 	}
 }
 
+#ifdef ROTSPRITE
+
+#define DIALSPDDIV 97090 // 1.48148; converts 200 to 135
+#define MPHDIV 68283 // 1.04192; converts 141 to 135
+
+static void K_DrawDialNum(INT32 x, INT32 y, boolean colorized, INT32 flags, INT32 num, INT32 digits, const UINT8 *colormap)
+{
+	INT32 w;
+
+	if (colorized)
+		w = SHORT(skp_dialnumclr[0]->width);
+	else
+		w = SHORT(skp_dialnum[0]->width);
+
+	if (flags & V_NOSCALESTART)
+		w *= vid.dupx;
+
+	if (num < 0)
+		num = -num;
+
+	// draw the number
+	do
+	{
+		x -= (w);
+
+		if (colorized)
+			V_DrawFixedPatch(x << FRACBITS, y << FRACBITS, FRACUNIT, flags, skp_dialnumclr[num % 10], colormap);
+		else
+			V_DrawFixedPatch(x << FRACBITS, y << FRACBITS, FRACUNIT, flags, skp_dialnum[num % 10], colormap);
+
+		num /= 10;
+	} while (--digits);
+}
+
+static void K_DrawDialLaps(INT32 x, INT32 y, INT32 num, INT32 total, INT32 flags)
+{
+	INT32 fx;
+	fx = x + ((num < 10) ? 0 : 6);
+	V_DrawRankNum(fx, y, flags, num, (num < 10) ? 1 : 2, NULL);
+	V_DrawScaledPatch(fx + 2, y, flags, frameslash);
+	V_DrawRankNum(fx + 13 + ((total < 10) ? 0 : 6), y, flags, total, (total < 10) ? 1 : 2, NULL);
+}
+
+static void K_DrawDialSpeedometer(fixed_t speed,
+								  fixed_t divisor,
+								  INT32 splitflags,
+								  boolean battlemode,
+								  boolean infoactive,
+								  boolean colorized)
+{
+	UINT8* colormap = R_GetTranslationColormap(TC_DEFAULT, K_GetHudColor(), GTC_CACHE);
+
+	INT32 rot = 0;
+	UINT8 infoidx = (infoactive) ? 1 : 0;
+	patch_t* dialpatch;
+
+	angle_t speedangle =
+		FixedAngle(((min(135 * FRACUNIT, FixedDiv(speed, divisor)) - (45 * FRACUNIT))));
+
+	rot = R_GetRollAngle(speedangle);
+
+	if (rot)
+	{
+		dialpatch = W_CachePatchNameRotated("K_DSDIAL", rot, PU_STATIC);
+	}
+	else
+	{
+		dialpatch = W_CachePatchName("K_DSDIAL", PU_STATIC);
+	}
+
+	if (colorized)  // Colourized hud
+	{
+		V_DrawMappedPatch(
+			SPDM_X, SPDM_Y - 9, (V_HUDTRANS | splitflags), skp_dialbaseclr[infoidx], colormap);
+		V_DrawMappedPatch(SPDM_X,
+						  SPDM_Y + 30,
+						  V_HUDTRANS | splitflags,
+						  skp_speedpatchesdialclr[cv_kartspeedometer.value],
+						  colormap);
+	}
+	else
+	{
+		V_DrawScaledPatch(SPDM_X, SPDM_Y - 9, (V_HUDTRANS | splitflags), skp_dialbase[infoidx]);
+		V_DrawScaledPatch(SPDM_X,
+						  SPDM_Y + 30,
+						  V_HUDTRANS | splitflags,
+						  skp_speedpatchesdial[cv_kartspeedometer.value]);
+	}
+
+	K_DrawDialNum(SPDM_X + 10,
+				  SPDM_Y + 25,
+				  colorized,
+				  V_HUDTRANS | splitflags,
+				  speed / FRACUNIT,
+				  3,
+				  colormap);
+
+	// gotta center the dial manually
+	V_DrawMappedPatch(SPDM_X - 19, SPDM_Y + 15, (V_HUDTRANS | splitflags), (dialpatch), colormap);
+
+	if (!infoactive)
+	{
+		// no need to draw info if we're not supposed to
+		return;
+	}
+
+	// draw the info
+	if (battlemode)
+	{
+		if (stplyr->kartstuff[k_bumper] <= 0)
+		{
+			V_DrawMappedPatch(
+				SPDM_X + 28, SPDM_Y + 27, V_HUDTRANS | splitflags, kp_splitkarmabomb, colormap);
+			K_DrawDialLaps(SPDM_X + 46,
+						   SPDM_Y + 29,
+						   stplyr->kartstuff[k_comebackpoints],
+						   2,
+						   V_HUDTRANS | splitflags);
+		}
+		else  // the above doesn't need to account for weird stuff since the max amount of karma
+			  // necessary is always 2 ^^^^
+		{
+			V_DrawMappedPatch(
+				SPDM_X + 28, SPDM_Y + 27, V_HUDTRANS | splitflags, kp_rankbumper, colormap);
+			K_DrawDialLaps(SPDM_X + 46,
+						   SPDM_Y + 29,
+						   stplyr->kartstuff[k_bumper],
+						   cv_kartbumpers.value,
+						   V_HUDTRANS | splitflags);
+		}
+	}
+	else
+	{
+		V_DrawScaledPatch(SPDM_X + 28, SPDM_Y + 27, V_HUDTRANS | splitflags, kp_splitlapflag);
+
+		if (stplyr->exiting)
+			V_DrawScaledPatch(SPDM_X + 39, SPDM_Y + 29, V_HUDTRANS | splitflags, skp_rankfinish);
+		else
+			K_DrawDialLaps(SPDM_X + 46,
+						   SPDM_Y + 29,
+						   stplyr->laps + 1,
+						   cv_numlaps.value,
+						   V_HUDTRANS | splitflags);
+	}
+}
+
+#endif
+
 static void K_drawKartSpeedometer(void)
 {
 	// why?
 	if (cv_kartspeedometer.value == 0)
 		return;
 
-	fixed_t convSpeed = 0;
+	// index 0 is the raw value, index 1 is the converted value
+	fixed_t convSpeed[2] = {0,0};
+	fixed_t dial_divisor = DIALSPDDIV;
+
 	INT32 splitflags = K_calcSplitFlags(V_SNAPTOBOTTOM|V_SNAPTOLEFT);
 
 	// man.
@@ -9724,17 +9938,25 @@ static void K_drawKartSpeedometer(void)
 	switch (cv_kartspeedometer.value)
 	{
 		case 1:
-			convSpeed = FixedDiv(FixedMul(stplyr->speed, 142371), mapobjectscale)/FRACUNIT; // 2.172409058
+			convSpeed[0] = FixedDiv(FixedMul(stplyr->speed, 142371), mapobjectscale); // 2.172409058
+			convSpeed[1] = convSpeed[0] / FRACUNIT;
 			break;
 		case 2:
-			convSpeed = FixedDiv(FixedMul(stplyr->speed, 88465), mapobjectscale)/FRACUNIT; // 1.349868774
+			convSpeed[0] = FixedDiv(FixedMul(stplyr->speed, 88465), mapobjectscale); // 1.349868774
+			convSpeed[1] = convSpeed[0] / FRACUNIT;
+			dial_divisor = MPHDIV;
 			break;
 		case 3:
-			convSpeed = FixedDiv(stplyr->speed, mapobjectscale)/FRACUNIT;
+			convSpeed[0] = FixedDiv(stplyr->speed, mapobjectscale);
+			convSpeed[1] = convSpeed[0] / FRACUNIT;
+			dial_divisor = MPHDIV;
 			break;
 		case 4:
 			if (stplyr->mo)
-				convSpeed = (FixedDiv(stplyr->speed, FixedMul(K_GetKartSpeed(stplyr, false), ORIG_FRICTION))*100)>>FRACBITS;
+			{
+				convSpeed[0] = (FixedDiv(stplyr->speed, FixedMul(K_GetKartSpeed(stplyr, false), ORIG_FRICTION))*100);
+				convSpeed[1] = convSpeed[0] >> FRACBITS;
+			}
 			break;
 		default:
 			break;
@@ -9747,20 +9969,20 @@ static void K_drawKartSpeedometer(void)
 		switch (cv_kartspeedometer.value)
 		{
 			case 1:
-				metric = va("%3d km/h", convSpeed);
+				metric = va("%3d km/h", convSpeed[1]);
 				break;
 			case 2:
-				metric = va("%3d mph", convSpeed);
+				metric = va("%3d mph", convSpeed[1]);
 				break;
 			case 3:
-				metric = va("%3d fu/t", convSpeed);
+				metric = va("%3d fu/t", convSpeed[1]);
 				break;
 			case 4:
 				// if extra.kart is found, use its included % symbol
 				if (!xtra_speedo)
-					metric = va("%4d P", convSpeed);
+					metric = va("%4d P", convSpeed[1]);
 				else
-					metric = va("%4d %%", convSpeed);
+					metric = va("%4d %%", convSpeed[1]);
 			break;
 			default:
 				break;
@@ -9778,7 +10000,7 @@ static void K_drawKartSpeedometer(void)
 		else
 			V_DrawScaledPatch(SPDM_X + 1, SPDM_Y + 4, (V_HUDTRANS|splitflags), (skp_smallsticker));
 
-		V_DrawRankNum(SPDM_X + 26, SPDM_Y + 4, V_HUDTRANS|splitflags, convSpeed, 3, NULL);
+		V_DrawRankNum(SPDM_X + 26, SPDM_Y + 4, V_HUDTRANS|splitflags, convSpeed[1], 3, NULL);
 		V_DrawScaledPatch(SPDM_X + 31, SPDM_Y + 4, V_HUDTRANS|splitflags, skp_speedpatches[cv_kartspeedometer.value]);
 	}
 	else if (speedostyle == SPEEDO_ACHII) // why bother if we dont?
@@ -9787,16 +10009,27 @@ static void K_drawKartSpeedometer(void)
 		{
 			UINT8 *colormap = R_GetTranslationColormap(TC_DEFAULT, K_GetHudColor(), GTC_CACHE);
 			V_DrawMappedPatch(SPDM_X + 1, SPDM_Y + 4, (V_HUDTRANS|splitflags), (skp_smallstickerachiclr), colormap);
-			V_DrawRankNum(SPDM_X + 26, SPDM_Y + 4, V_HUDTRANS|splitflags, convSpeed, 3, NULL);
+			V_DrawRankNum(SPDM_X + 26, SPDM_Y + 4, V_HUDTRANS|splitflags, convSpeed[1], 3, NULL);
 			V_DrawMappedPatch(SPDM_X + 31, SPDM_Y + 4, V_HUDTRANS|splitflags, skp_speedpatchesachiclr[cv_kartspeedometer.value], colormap);
 		}
 		else
 		{
 			V_DrawScaledPatch(SPDM_X + 1, SPDM_Y + 4, (V_HUDTRANS|splitflags), (skp_smallstickerachi));
-			V_DrawRankNum(SPDM_X + 26, SPDM_Y + 4, V_HUDTRANS|splitflags, convSpeed, 3, NULL);
+			V_DrawRankNum(SPDM_X + 26, SPDM_Y + 4, V_HUDTRANS|splitflags, convSpeed[1], 3, NULL);
 			V_DrawScaledPatch(SPDM_X + 31, SPDM_Y + 4, V_HUDTRANS|splitflags, skp_speedpatchesachi[cv_kartspeedometer.value]);
 		}
 		}
+#ifdef ROTSPRITE
+	else if (speedostyle == SPEEDO_DIAL)  // why bother if we dont?
+	{
+		K_DrawDialSpeedometer(convSpeed[0],
+							dial_divisor,
+							splitflags,
+							(boolean)(G_BattleGametype()),
+							(LUA_HudEnabled(hud_gametypeinfo)),
+							(boolean)(K_UseColorHud() && dial_speedo_clr));
+	}
+#endif
 	else if (speedostyle == SPEEDO_EXTRA3) // why bother if we dont?
 	{
 		if (K_UseColorHud() && xtra_speedo_clr3) //Colourized hud
@@ -9807,7 +10040,7 @@ static void K_drawKartSpeedometer(void)
 		else
 			V_DrawStretchyFixedPatch((SPDM_X-1)<<FRACBITS, (SPDM_Y + 5)<<FRACBITS, FRACUNIT*0.765, FRACUNIT*0.55, (V_HUDTRANS|splitflags), (skp_smallsticker3), NULL, 0);
 
-		V_DrawRankNum(SPDM_X + 26, SPDM_Y + 4, V_HUDTRANS|splitflags, convSpeed, 3, NULL);
+		V_DrawRankNum(SPDM_X + 26, SPDM_Y + 4, V_HUDTRANS|splitflags, convSpeed[1], 3, NULL);
 		V_DrawScaledPatch(SPDM_X + 31, SPDM_Y + 4, V_HUDTRANS|splitflags, skp_speedpatches[cv_kartspeedometer.value]);
 	}
 	// Kart Z speedo bullshit...
@@ -9847,6 +10080,11 @@ static void K_drawKartSpeedometer(void)
 		V_DrawScaledPatch(SPDM_X, SPDM_Y, V_HUDTRANS|splitflags, patch);
 	}
 }
+
+#ifdef ROTSPRITE
+#undef DIALSPDDIV
+#undef MPHDIV
+#endif
 
 static void K_drawKartBumpersOrKarma(void)
 {
@@ -11499,11 +11737,45 @@ static void K_drawCheckpointDebugger(void)
 	V_DrawString(8, 192, 0, va("Waypoint dist: Prev %d, Next %d", stplyr->kartstuff[k_prevcheck], stplyr->kartstuff[k_nextcheck]));
 }
 
+// determines if gametype info (laps/bumpers) should be hidden
+static boolean K_DisableGametypeInfo(void)
+{
+	if (!LUA_HudEnabled(hud_gametypeinfo))
+	{
+		return true;
+	}
+
+#ifdef ROTSPRITE
+	if (splitscreen || (!cv_kartspeedometer.value))
+	{
+		// don't need to run checks if we're in splitscreen, or not using the speedometer
+		return false;
+	}
+
+	const UINT8 speedostyle = K_GetSpeedometerStyle();
+
+	if (G_RaceGametype())
+	{
+		if (speedostyle == SPEEDO_DIAL)
+			return true;
+	}
+	else if (G_BattleGametype())
+	{
+		if ((cv_battlespeedo.value) && (speedostyle == SPEEDO_DIAL))
+			return true;
+	}
+#endif
+
+	return false;
+}
+
+
 void K_drawKartHUD(void)
 {
 	boolean isfreeplay = false;
 	boolean battlefullscreen = false;
 	boolean freecam = camera[stplyrnum].freecam;	//disable some hud elements w/ freecam
+	boolean gameinfovisible = false;
 
 	// Define the X and Y for each drawn object
 	// This is handled by console/menu values
@@ -11609,6 +11881,9 @@ void K_drawKartHUD(void)
 
 	if (!stplyr->spectator && !freecam) // Bottom of the screen elements, don't need in spectate mode
 	{
+		// get gametype info visibility ahead of time
+		gameinfovisible = (!K_DisableGametypeInfo());
+
 		if (!(splitscreen || demo.title))
 		{
 			if (LUA_HudEnabled(hud_inputdisplay))
@@ -11649,7 +11924,7 @@ void K_drawKartHUD(void)
 		else if (G_RaceGametype()) // Race-only elements
 		{
 			// Draw the lap counter
-			if (LUA_HudEnabled(hud_gametypeinfo))
+			if (gameinfovisible)
 				K_drawKartLaps();
 
 			if (!splitscreen)
@@ -11672,7 +11947,7 @@ void K_drawKartHUD(void)
 		else if (G_BattleGametype()) // Battle-only
 		{
 			// Draw the hits left!
-			if (LUA_HudEnabled(hud_gametypeinfo))
+			if (gameinfovisible)
 				K_drawKartBumpersOrKarma();
 
 			if ((!splitscreen) && cv_battlespeedo.value)
