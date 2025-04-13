@@ -129,6 +129,7 @@ static boolean InitCube(void)
 			}
 		}
 	};
+
 	float desatur[3]; // grey
 	float globalgammamul, globalgammaoffs;
 	boolean doinggamma;
@@ -136,7 +137,9 @@ static boolean InitCube(void)
 	if (loaded_config == false)
 		return false;
 
-#define diffcons(cv) (cv.value != atoi(cv.defaultvalue))
+#define diffcons(cv) (strcmp(cv.string, cv.defaultvalue))
+#define diffconsgamma(cv) (cv.value != 0)
+#define diffconssat(cv) (cv.value != 10)
 
 #ifdef BACKWARDSCOMPATCORRECTION
 	doinggamma = (cv_globalgamma.value < 0); //dont mess up gamma when raising brightness pls
@@ -156,12 +159,12 @@ static boolean InitCube(void)
 		|| diffcons(cv_chue)
 		|| diffcons(cv_bhue)
 		|| diffcons(cv_mhue)
-		|| diffcons(cv_rgamma)
-		|| diffcons(cv_ygamma)
-		|| diffcons(cv_ggamma)
-		|| diffcons(cv_cgamma)
-		|| diffcons(cv_bgamma)
-		|| diffcons(cv_mgamma)) // set the gamma'd/hued positions (saturation is done later)
+		|| diffconsgamma(cv_rgamma)
+		|| diffconsgamma(cv_ygamma)
+		|| diffconsgamma(cv_ggamma)
+		|| diffconsgamma(cv_cgamma)
+		|| diffconsgamma(cv_bgamma)
+		|| diffconsgamma(cv_mgamma)) // set the gamma'd/hued positions (saturation is done later)
 	{
 		float mod, tempgammamul, tempgammaoffs;
 
@@ -219,7 +222,7 @@ static boolean InitCube(void)
 
 #define dosaturation(a, e) a = ((1 - work)*e + work*a)
 #define docvsat(cv_sat, hue, gamma, r, g, b) \
-	if diffcons(cv_sat)\
+	if diffconssat(cv_sat)\
 	{\
 		float work, mod, tempgammamul, tempgammaoffs;\
 		apply = true;\
@@ -244,7 +247,7 @@ static boolean InitCube(void)
 
 #undef gammascale
 
-	if diffcons(cv_globalsaturation)
+	if diffconssat(cv_globalsaturation)
 	{
 		float work = (cv_globalsaturation.value/10.0);
 
@@ -265,6 +268,8 @@ static boolean InitCube(void)
 #undef dosaturation
 
 #undef diffcons
+#undef diffconsgamma
+#undef diffconssat
 
 	if (!apply)
 		return false;
@@ -442,10 +447,6 @@ static void LoadPalette(const char *lumpname)
 		pLocalPalette[i].s.alpha = 0xFF;
 
 		// lerp of colour cubing! if you want, make it smoother yourself
-
-		if (!Cubeapply)
-			continue;
-
 		V_CubeApply(&pLocalPalette[i].s.red, &pLocalPalette[i].s.green, &pLocalPalette[i].s.blue);
 	}
 }
