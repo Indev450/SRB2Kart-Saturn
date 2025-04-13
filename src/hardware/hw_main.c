@@ -4328,12 +4328,15 @@ static void HWR_RenderDrawNodes(void)
 			{
 				if (drawnodes[sortindex[i]].type != DRAWNODE_PLANE) break;
 			}
+
 			run_end = i-1;
+
 			if (run_end > run_start) // if there are multiple consecutive planes, not just one
 			{
 				// consecutive run of planes found, now sort it
 				qs22j(sortindex + run_start, run_end - run_start + 1, sizeof(INT32), CompareDrawNodePlanes);
 			}
+
 			run_start = run_end + 1; // continue looking for runs coming right after this one
 		}
 		else
@@ -4354,41 +4357,49 @@ static void HWR_RenderDrawNodes(void)
 	{
 		gl_drawnode_t *drawnode = &drawnodes[sortindex[i]];
 
-		if (drawnode->type == DRAWNODE_PLANE)
+		switch (drawnode->type)
 		{
-			planeinfo_t *plane = &drawnode->u.plane;
+			case DRAWNODE_PLANE:
+			{
+				planeinfo_t *plane = &drawnode->u.plane;
 
-			// We aren't traversing the BSP tree, so make gl_frontsector null to avoid crashes.
-			gl_frontsector = NULL;
+				// We aren't traversing the BSP tree, so make gl_frontsector null to avoid crashes.
+				gl_frontsector = NULL;
 
-			if (!(plane->blend & PF_NoTexture))
-				HWR_GetFlat(plane->lumpnum,  R_NoEncore(plane->FOFSector, plane->isceiling));
+				if (!(plane->blend & PF_NoTexture))
+					HWR_GetFlat(plane->lumpnum,  R_NoEncore(plane->FOFSector, plane->isceiling));
 
-			HWR_RenderPlane(NULL, plane->xsub, plane->isceiling, plane->fixedheight, plane->blend, plane->lightlevel,
-							plane->lumpnum, plane->FOFSector, plane->alpha, plane->planecolormap);
-		}
-		else if (drawnode->type == DRAWNODE_POLYOBJECT_PLANE)
-		{
-			polyplaneinfo_t *polyplane = &drawnode->u.polyplane;
+				HWR_RenderPlane(NULL, plane->xsub, plane->isceiling, plane->fixedheight, plane->blend, plane->lightlevel,
+								plane->lumpnum, plane->FOFSector, plane->alpha, plane->planecolormap);
+				break;
+			}
+			case DRAWNODE_POLYOBJECT_PLANE:
+			{
+				polyplaneinfo_t *polyplane = &drawnode->u.polyplane;
 
-			// We aren't traversing the BSP tree, so make gl_frontsector null to avoid crashes.
-			gl_frontsector = NULL;
+				// We aren't traversing the BSP tree, so make gl_frontsector null to avoid crashes.
+				gl_frontsector = NULL;
 
-			if (!(polyplane->blend & PF_NoTexture))
-				HWR_GetFlat(polyplane->lumpnum,  R_NoEncore(polyplane->FOFSector, polyplane->isceiling));
+				if (!(polyplane->blend & PF_NoTexture))
+					HWR_GetFlat(polyplane->lumpnum,  R_NoEncore(polyplane->FOFSector, polyplane->isceiling));
 
-			HWR_RenderPolyObjectPlane(polyplane->polysector, polyplane->isceiling, polyplane->fixedheight, polyplane->blend, polyplane->lightlevel,
-									polyplane->lumpnum, polyplane->FOFSector, polyplane->alpha, polyplane->planecolormap);
-		}
-		else if (drawnode->type == DRAWNODE_WALL)
-		{
-			wallinfo_t *wall = &drawnode->u.wall;
+				HWR_RenderPolyObjectPlane(polyplane->polysector, polyplane->isceiling, polyplane->fixedheight, polyplane->blend, polyplane->lightlevel,
+										polyplane->lumpnum, polyplane->FOFSector, polyplane->alpha, polyplane->planecolormap);
+				break;
+			}
+			case DRAWNODE_WALL:
+			{
+				wallinfo_t *wall = &drawnode->u.wall;
 
-			if (!(wall->blend & PF_NoTexture))
-				HWR_GetTexture(wall->texnum, wall->noencore);
+				if (!(wall->blend & PF_NoTexture))
+					HWR_GetTexture(wall->texnum, wall->noencore);
 
-			HWR_RenderWall(wall->wallVerts, &wall->Surf, wall->blend, wall->fogwall,
-						wall->lightlevel, wall->wallcolormap);
+				HWR_RenderWall(wall->wallVerts, &wall->Surf, wall->blend, wall->fogwall,
+							wall->lightlevel, wall->wallcolormap);
+				break;
+			}
+			default:
+				break;
 		}
 	}
 
@@ -4954,14 +4965,14 @@ static void HWR_ProjectPrecipitationSprite(precipmobj_t *thing)
 	if (!thing)
 		return;
 
-	// uncapped/interpolation
-	interpmobjstate_t interp = {0};
-
 	// okay... this is a hack, but weather isn't networked, so it should be ok
 	if (!P_PrecipThinker(thing))
 	{
 		return;
 	}
+
+	// uncapped/interpolation
+	interpmobjstate_t interp = {0};
 
 	if (cv_maxinterpdist.value)
 		dist = R_QuickCamDist(thing->x, thing->y);
@@ -5027,6 +5038,7 @@ static void HWR_ProjectPrecipitationSprite(precipmobj_t *thing)
 
 	rightsin = FIXED_TO_FLOAT(FINESINE((viewangle + ANGLE_90)>>ANGLETOFINESHIFT));
 	rightcos = FIXED_TO_FLOAT(FINECOSINE((viewangle + ANGLE_90)>>ANGLETOFINESHIFT));
+
 	if (flip)
 	{
 		x1 = FIXED_TO_FLOAT(spritecachedinfo[lumpoff].width - spritecachedinfo[lumpoff].offset);
