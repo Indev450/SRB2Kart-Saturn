@@ -3718,11 +3718,12 @@ void K_RollMobjBySlopes(mobj_t* mo, pslope_t *slope)
 		fixed_t tempz = slope->normal.z;
 		fixed_t tempy = slope->normal.y;
 		fixed_t tempx = slope->normal.x;
-		fixed_t tempangle = -(R_PointToAngle2(0, 0, FixedSqrt(FixedMul(tempy, tempy) + FixedMul(tempz, tempz)), tempx));
+		fixed_t tempangle = 0;
 
 		// admittedly this is a very hacky way to do the pitch and roll easing
 
 		// pitch
+		tempangle = -(R_PointToAngle2(0, 0, FixedSqrt(FixedMul(tempy, tempy) + FixedMul(tempz, tempz)), tempx));
 		an = (INT32)((angle_t)tempangle - mo->pitch_sprite) / SLOPEROLL_DIV;
 		mo->pitch_sprite = an ? mo->pitch_sprite + an : (angle_t)tempangle;
 		mo->slopepitch = flip ? InvAngle(mo->pitch_sprite) : mo->pitch_sprite;
