@@ -1060,8 +1060,8 @@ void F_TitleScreenTicker(boolean run)
 		return;
 
 	// are demos disabled?
-	if (!cv_rollingdemos.value)
-		return;
+	if (!cv_rollingdemos.value || modifiedgame) // occasionally mappacks supply invalid replays which means the game crashes almost always when you idle on the titlescreen too long
+		return;									// we check for all addons since added luas/socs and stuff like that makes them desynch like crazy so why would you even watch them?
 
 	// Wait for a while (for the music to finish, preferably)
 	// before starting demos
