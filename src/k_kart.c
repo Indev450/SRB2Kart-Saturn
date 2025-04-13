@@ -3422,7 +3422,6 @@ static void K_SpawnAIZDust(player_t *player)
 	angle_t travelangle;
 
 	I_Assert(player != NULL);
-	I_Assert(player->mo != NULL);
 	I_Assert(!P_MobjWasRemoved(player->mo));
 
 	if (leveltime % 2 == 1)
@@ -3455,162 +3454,147 @@ static void K_SpawnAIZDust(player_t *player)
 
 #define MAXSTRETCHDIV 17476977
 
-static void K_StretchPlayerGravity(player_t *p)
+static void K_StretchPlayerGravity(player_t *player)
 {
-	if (cv_gravstretch.value == 0)
-	{
+	if (!cv_gravstretch.value)
 		return;
-	}
 
-	I_Assert(p != NULL);
-	I_Assert(p->mo != NULL);
-	I_Assert(!P_MobjWasRemoved(p->mo));
+	I_Assert(player != NULL);
+	I_Assert(!P_MobjWasRemoved(player->mo));
 
-	fixed_t mos = FRACUNIT;
-	fixed_t rzs = abs(p->mo->momz);
-	fixed_t zspd = abs(rzs/mos);
-	fixed_t stretchScaleFactor = FixedDiv(FRACUNIT*60, cv_gravstretch.value);
-	fixed_t rzsDiv, slamDiv;
+	mobj_t *pmo = player->mo;
 
-	fixed_t dxs = p->mo->realxscale;
-	fixed_t dys = p->mo->realyscale;
+	fixed_t tempxscale = pmo->realxscale;
+	fixed_t tempyscale = pmo->realyscale;
 
-	if (stretchScaleFactor > MAXSTRETCHDIV)
-		rzsDiv = 0;
-	else
-		rzsDiv = FixedDiv(rzs, stretchScaleFactor);
+	const fixed_t stretchScaleFactor = min(FixedDiv(FRACUNIT*60, cv_gravstretch.value), MAXSTRETCHDIV);
 
-	//CONS_Printf(M_GetText("div: %d, scale factor: %d, stretch value: %d\n"), rzsDiv, stretchScaleFactor, cv_gravstretch.value);
+	if (pmo->slamsoundtimer)
+		pmo->slamsoundtimer--;
 
-	if (p->mo->slamsoundtimer)
-		p->mo->slamsoundtimer--;
-
-	if (cv_slamsound.value && (p->mo->eflags & MFE_JUSTHITFLOOR) && !p->mo->slamsoundtimer && (p->mo->stretchslam > 4*mos))
+	if (!P_IsObjectOnGround(pmo))
 	{
-		S_StartSound(p->mo, sfx_s3k4c);
-		p->mo->slamsoundtimer = TICRATE;
-	}
+		fixed_t pzmom = abs(pmo->momz);
+		const fixed_t stretchDiv = FixedDiv(pzmom, stretchScaleFactor);
 
-	if (!P_IsObjectOnGround(p->mo))
-	{
-		if (zspd != 0)
+		if (abs(pzmom/FRACUNIT) != 0)
 		{
-			if (((dxs-(rzsDiv))) > (dxs/5))
+			if (((tempxscale-(stretchDiv))) > (tempxscale/5))
 			{
-				p->mo->spritexscale = ((dxs-(rzsDiv)));
-				p->mo->stretchslam = rzs;
+				pmo->spritexscale = (tempxscale - stretchDiv);
+				pmo->stretchslam = pzmom;
 			}
 			else
-				p->mo->spritexscale = (dxs/5);
+				pmo->spritexscale = (tempxscale/5);
 
-			p->mo->spriteyscale = (dys+((rzsDiv*2)/3));
+			pmo->spriteyscale = (tempyscale + ((stretchDiv*2)/3));
 		}
-		else
+	}
+	else if (pmo->stretchslam > 0)
+	{
+		// Funni slam sound when landing
+		if (cv_slamsound.value && (pmo->eflags & MFE_JUSTHITFLOOR) && !pmo->slamsoundtimer && (pmo->stretchslam > 4*FRACUNIT))
 		{
-			p->mo->spritexscale = (dxs);
-			p->mo->spriteyscale = (dys);
+			S_StartSound(pmo, sfx_s3k4c);
+			pmo->slamsoundtimer = TICRATE;
 		}
+
+		const fixed_t slamDiv = FixedDiv(pmo->stretchslam, stretchScaleFactor);
+
+		pmo->spritexscale = (tempxscale + (((slamDiv*2)/3)*2));
+		pmo->spriteyscale = (tempyscale - slamDiv);
+		pmo->stretchslam -= (4*FRACUNIT);
 	}
 	else
-	{
-		if (stretchScaleFactor > MAXSTRETCHDIV)
-			slamDiv = 0;
-		else
-			slamDiv = FixedDiv(p->mo->stretchslam, stretchScaleFactor);
-
-		p->mo->spritexscale = (dxs+(((slamDiv*2)/3)*2));
-		p->mo->spriteyscale = (dys-(slamDiv));
-		if (p->mo->stretchslam > 0)
-			p->mo->stretchslam -= (4*mos);
-		else
-			p->mo->stretchslam = 0;
-	}
+		pmo->stretchslam = 0;
 }
 
-static void K_QuiteSaltyHop(player_t *p)
+static void K_QuiteSaltyHop(player_t *player)
 {
 	if (!cv_saltyhop.value)
 		return;
 
 	// what the fuck is this haya
-	fixed_t mos = FRACUNIT; // doesnt work correctly if it isnt :/
+	//fixed_t mos = FRACUNIT; // doesnt work correctly if it isnt :/
+	mobj_t *pmo = player->mo;
+	const boolean onground = P_IsObjectOnGround(pmo);
 
 	// ready?
-	if (!p->kartstuff[k_jmp])
+	if (!player->kartstuff[k_jmp])
 	{
-		p->mo->salty_ready = true;
-		p->mo->salty_tapping = false;
+		pmo->salty_ready = true;
+		pmo->salty_tapping = false;
 	}
-	else if (p->mo->salty_ready)
+	else if (pmo->salty_ready)
 	{
-		p->mo->salty_ready = false;
-		p->mo->salty_tapping = true;
+		pmo->salty_ready = false;
+		pmo->salty_tapping = true;
 	}
 	else
 	{
-		p->mo->salty_tapping = false;
+		pmo->salty_tapping = false;
 	}
 
 	// GO!
-	if (!p->mo->init_salty)
+	if (!pmo->init_salty)
 	{
-		p->mo->salty_jump = false;
-		p->mo->salty_zoffset = 0;
-		p->mo->salty_momz = 0;
-		p->mo->init_salty = true;
+		pmo->salty_jump = false;
+		pmo->salty_zoffset = 0;
+		pmo->salty_momz = 0;
+		pmo->init_salty = true;
 	}
-	else if (p->mo->salty_jump)
+	else if (pmo->salty_jump)
 	{
-		if (p->mo->eflags & MFE_JUSTHITFLOOR)
+		if (pmo->eflags & MFE_JUSTHITFLOOR)
 		{
-			p->mo->salty_zoffset = 0;
+			pmo->salty_zoffset = 0;
 		}
-		else if (P_IsObjectOnGround(p->mo))
+		else if (onground)
 		{
-			p->mo->salty_zoffset += p->mo->salty_momz;
-			p->mo->salty_momz -= (mos*3/2);
+			pmo->salty_zoffset += pmo->salty_momz;
+			pmo->salty_momz -= (FRACUNIT*3/2);
 		}
 		else
 		{
-			p->mo->salty_zoffset *= (49/50)*mos;
-			p->mo->salty_momz = 0;
+			pmo->salty_zoffset *= (49/50)*FRACUNIT;
+			pmo->salty_momz = 0;
 		}
 
-		if (p->mo->salty_zoffset <= 0)
+		if (pmo->salty_zoffset <= 0)
 		{
-			if (cv_saltyhopsfx.value && !(p->mo->eflags & MFE_JUSTHITFLOOR) && P_IsObjectOnGround(p->mo))
-				S_StartSound(p->mo, sfx_s268);
-			p->mo->salty_jump = false;
-			p->mo->salty_zoffset = 0;
-			p->mo->salty_momz = 0;
+			if (cv_saltyhopsfx.value && !(pmo->eflags & MFE_JUSTHITFLOOR) && onground)
+				S_StartSound(pmo, sfx_s268);
+			pmo->salty_jump = false;
+			pmo->salty_zoffset = 0;
+			pmo->salty_momz = 0;
 			// shlamma damma
 			if (cv_saltysquish.value)
-				p->mo->stretchslam += 8*mos;
+				pmo->stretchslam += 8*FRACUNIT;
 		}
-		else if (p->mo->salty_zoffset >= 0 && cv_saltysquish.value)
+		else if (cv_saltysquish.value && pmo->salty_zoffset >= 0)
 		{
 			// goofy ahh hack
-			p->mo->spriteyscale += (mos/8);
-			p->mo->spritexscale -= (mos/8);
+			pmo->spriteyscale += (FRACUNIT/8);
+			pmo->spritexscale -= (FRACUNIT/8);
 		}
 
-		p->mo->spriteyoffset = FixedMul(p->mo->salty_zoffset, cv_saltyheight.value);
+		pmo->spriteyoffset = FixedMul(pmo->salty_zoffset, cv_saltyheight.value);
 
 		if (cv_saltyhopsfx.value)
 		{
-			if (S_SoundPlaying(p->mo, sfx_screec))
-				S_StopSoundByID(p->mo, sfx_screec);
-			if (S_SoundPlaying(p->mo, sfx_drift))
-				S_StopSoundByID(p->mo, sfx_drift);
+			if (S_SoundPlaying(pmo, sfx_screec))
+				S_StopSoundByID(pmo, sfx_screec);
+			if (S_SoundPlaying(pmo, sfx_drift))
+				S_StopSoundByID(pmo, sfx_drift);
 		}
 	}
-	else if (p->mo->salty_tapping && P_IsObjectOnGround(p->mo) && !p->kartstuff[k_spinouttimer] && !p->kartstuff[k_squishedtimer])
+	else if (pmo->salty_tapping && onground && !player->kartstuff[k_spinouttimer] && !player->kartstuff[k_squishedtimer])
 	{
-		p->mo->salty_jump = true;
-		p->mo->salty_zoffset = 0;
-		p->mo->salty_momz = 6*mos;
+		pmo->salty_jump = true;
+		pmo->salty_zoffset = 0;
+		pmo->salty_momz = 6*FRACUNIT;
 		if (cv_saltyhopsfx.value)
-			S_StartSound(p->mo, sfx_s25a);
+			S_StartSound(pmo, sfx_s25a);
 	}
 }
 
