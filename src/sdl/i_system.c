@@ -1096,7 +1096,7 @@ INT32 I_GetJoystickDeviceIndex(SDL_GameController *dev)
 	SDL_Joystick *joystick = NULL;
 
 	joystick = SDL_GameControllerGetJoystick(dev);
-	
+
 	if (joystick)
 	{
 		return SDL_JoystickInstanceID(joystick);
@@ -2473,7 +2473,7 @@ static const char *searchWad(const char *searchDir)
 	static char tempsw[MAX_WADPATH] = "";
 	filequery_t fsquery;
 	filestatus_t fstemp;
-	
+
 	fsquery.filename = tempsw;
 
 	strcpy(tempsw, WADKEYWORD1);

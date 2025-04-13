@@ -10883,7 +10883,7 @@ void P_SpawnPlayer(INT32 playernum)
 	// the dead body mobj retains the skin through the 'spritedef' override).
 	mobj->skin = &skins[p->skin];
 
-	mobj->localskin = ((p->localskin > 0) ? (p->skinlocal ? &localskins[p->localskin - 1] : &skins[p->localskin - 1]) : 0);
+	mobj->localskin = (p->localskin ? K_GetPlayerSkin(p) : 0);
 	mobj->skinlocal = p->skinlocal;
 
 	mobj->health = p->health;
