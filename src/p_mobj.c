@@ -9624,11 +9624,6 @@ mobj_t *P_SpawnMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type)
 	mobj->radius = info->radius;
 	mobj->height = info->height;
 	mobj->flags = info->flags;
-	mobj->sloperoll = 0;
-	mobj->slopepitch = 0;
-
-	mobj->pitch_sprite = 0;
-	mobj->roll_sprite = 0;
 
 	mobj->health = info->spawnhealth;
 
@@ -9666,12 +9661,6 @@ mobj_t *P_SpawnMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type)
 	mobj->realxscale = mobj->realyscale = mobj->scale;
 	mobj->spritexscale = mobj->realxscale;
 	mobj->spriteyscale = mobj->realyscale;
-	mobj->realxoffset = mobj->realyoffset = 0;
-	mobj->spritexoffset = mobj->realxoffset;
-	mobj->spriteyoffset = mobj->realyoffset;
-
-	// Funni slam sound when landing
-	mobj->slamsoundtimer = 0;
 
 	// set subsector and/or block links
 	P_SetThingPosition(mobj);
@@ -10127,7 +10116,6 @@ mobj_t *P_SpawnShadowMobj(mobj_t * caster)
 
 	// Sprite rendering
 	mobj->spritexscale = mobj->spriteyscale = mobj->scale;
-	mobj->spritexoffset = mobj->spriteyoffset = 0;
 
 	// set subsector and/or block links
 	P_SetThingPosition(mobj);

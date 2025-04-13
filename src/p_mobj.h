@@ -407,7 +407,7 @@ typedef struct mobj_s
 	boolean colorized; // Whether the mobj uses the rainbow colormap
 	boolean mirrored; // The object's rotations will be mirrored left to right, e.g., see frame AL from the right and AR from the left
 
-	tic_t slamsoundtimer;
+	tic_t slamsoundtimer; // Funni slam sound when landing
 
 	// saltyhop! hardcode edition
 	boolean salty_ready;
