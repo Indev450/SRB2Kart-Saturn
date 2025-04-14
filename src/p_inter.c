@@ -1905,7 +1905,7 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source)
 			}
 			break;
 
-		case MT_BANANA:
+		/*case MT_BANANA:
 		case MT_BANANA_SHIELD:
 		{
 			const UINT8 numParticles = 8;
@@ -1942,7 +1942,7 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source)
 
 			}
 			break;
-		}
+		}*/
 
 		default:
 			break;
