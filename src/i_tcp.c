@@ -634,6 +634,7 @@ void Command_Numnodes(void)
 #endif
 
 #ifndef NONET
+#ifdef HOLEPUNCH
 /* not one of the reserved "local" addresses */
 static boolean
 is_external_address (UINT32 p)
@@ -659,7 +660,6 @@ is_external_address (UINT32 p)
 	}
 }
 
-#ifdef HOLEPUNCH
 static boolean hole_punch(ssize_t c)
 {
 	holepunch_t *holepunchpacket = HOLEPUNCH_DATA(doomcom);
@@ -686,7 +686,7 @@ static boolean hole_punch(ssize_t c)
 	}
 
 }
-#endif
+#endif //ifdef HOLEPUNCH
 
 // Returns true if a packet was received from a new node, false in all other cases
 static boolean SOCK_Get(void)
