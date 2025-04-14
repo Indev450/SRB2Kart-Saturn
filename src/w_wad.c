@@ -1128,9 +1128,6 @@ lumpnum_t W_CheckNumForName(const char *name)
 	INT32 i;
 	lumpnum_t check = INT16_MAX;
 
-	if (name == NULL)
-		return LUMPERROR;
-
 	if (!*name) // some doofus gave us an empty string?
 		return LUMPERROR;
 
@@ -1180,9 +1177,6 @@ lumpnum_t W_CheckNumForLongName(const char *name)
 {
 	INT32 i;
 	lumpnum_t check = INT16_MAX;
-
-	if (name == NULL)
-		return LUMPERROR;
 
 	if (!*name) // some doofus gave us an empty string?
 		return LUMPERROR;
