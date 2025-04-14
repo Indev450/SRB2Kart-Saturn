@@ -1226,7 +1226,7 @@ static void HWR_DrawSkyWall(FOutVector *wallVerts, FSurfaceInfo *Surf)
 	wallVerts[0].s = wallVerts[3].s = 0;
 	wallVerts[2].s = wallVerts[1].s = 0;
 
-	if (gl_collect_skywalls)
+	if (UNLIKELY(gl_collect_skywalls))
 	{
 		HWR_SkyWallList_Add(wallVerts);
 	}
@@ -2229,7 +2229,7 @@ static boolean CheckClip(sector_t * afrontsector, sector_t * abacksector)
 	}
 
 	// using this check with portals causes weird culling issues on ante-station
-	if (!portalclipline && (afrontsector == viewsector || abacksector == viewsector))
+	if (LIKELY(!portalclipline) && (afrontsector == viewsector || abacksector == viewsector))
 	{
 		fixed_t viewf1, viewf2, viewc1, viewc2;
 		if (afrontsector == viewsector)
@@ -2259,10 +2259,7 @@ static boolean CheckClip(sector_t * afrontsector, sector_t * abacksector)
 	if (backc1 <= frontf1 && backc2 <= frontf2)
 	{
 		checkforemptylines = false;
-		if (portalclipline)// during portal rendering view position may cause undesired culling and the above code has some wrong side effects
-			return false;
-		else
-			return true;
+		return (!portalclipline); // during portal rendering view position may cause undesired culling and the above code has some wrong side effects
 	}
 
 	// here we're talking about floors higher than ceilings, don't even bother either.
@@ -3143,7 +3140,7 @@ doaddline:
 		//         without talking about the overdraw of course.
 		sub->sector->validcount = validcount;/// \todo fix that in a better way
 
-		if (numPolyObjects)
+		if (UNLIKELY(numPolyObjects))
 		{
 			while (count--)
 			{
@@ -5403,7 +5400,7 @@ void HWR_RenderViewpoint(gl_portal_t *rootportal, const float fpov, player_t *pl
 
 	const boolean skybox = (skyboxmo[0] && cv_skybox.value);
 	const boolean useportals = cv_glportals.value && gl_maphasportals && allow_portals;
-	bspfunc bspFunc = portalclipline ? HWR_RenderPortalBSPNode : HWR_RenderBSPNode;
+	bspfunc bspFunc = (useportals && portalclipline) ? HWR_RenderPortalBSPNode : HWR_RenderBSPNode;
 
 	portallist.base = portallist.cap = NULL;
 
@@ -5506,7 +5503,7 @@ void HWR_RenderViewpoint(gl_portal_t *rootportal, const float fpov, player_t *pl
 	HWR_SortVisSprites();
 	PS_STOP_TIMING(ps_hw_spritesorttime);
 	PS_START_TIMING(ps_hw_spritedrawtime);
-	if (!cv_glmdls.value)
+	if (LIKELY(!cv_glmdls.value))
 		HWR_DrawSprites();
 	else
 		HWR_DrawModels();
