@@ -2786,6 +2786,62 @@ INT32 G_GetGametypeByName(const char *gametypestr)
 }
 
 //
+// G_IsSpecialStage
+//
+// Returns TRUE if
+// the given map is a special stage.
+//
+boolean G_IsSpecialStage(INT32 mapnum)
+{
+	(void)mapnum;
+	return false;
+}
+
+//
+// G_GametypeUsesLives
+//
+// Returns true if the current gametype uses
+// the lives system.  False otherwise.
+//
+boolean G_GametypeUsesLives(void)
+{
+	// SRB2kart NEEDS no lives
+	return false;
+}
+
+//
+// G_GametypeHasTeams
+//
+// Returns true if the current gametype uses
+// Red/Blue teams.  False otherwise.
+//
+boolean G_GametypeHasTeams(void)
+{
+	return (gametype == GT_TEAMMATCH || gametype == GT_CTF);
+}
+
+//
+// G_GametypeHasSpectators
+//
+// Returns true if the current gametype supports
+// spectators.  False otherwise.
+//
+boolean G_GametypeHasSpectators(void)
+{
+	return (netgame || (multiplayer && demo.playback)); //true
+}
+
+//
+// G_BattleGametype
+//
+// Returns true in Battle gamemodes, previously was G_RingSlingerGametype.
+//
+boolean G_BattleGametype(void)
+{
+	return (gametype == GT_MATCH);
+}
+
+//
 // G_SometimesGetDifferentGametype
 //
 // Oh, yeah, and we sometimes flip encore mode on here too.
@@ -2869,6 +2925,27 @@ UINT8 G_GetGametypeColor(INT16 gt)
 	if (gt == GT_RACE)
 		return skymap[120];
 	return 247; // FALLBACK
+}
+
+//
+// G_RaceGametype
+//
+// Returns true in Race gamemodes, previously was G_PlatformGametype.
+//
+boolean G_RaceGametype(void)
+{
+	return (gametype == GT_RACE);
+}
+
+//
+// G_TagGametype
+//
+// For Jazz's Tag/HnS modes that have a lot of special cases...
+// SRB2Kart: do we actually want to add Kart tag later? :V
+//
+boolean G_TagGametype(void)
+{
+	return (gametype == GT_TAG || gametype == GT_HIDEANDSEEK);
 }
 
 /** Get the typeoflevel flag needed to indicate support of a gametype.
@@ -4391,7 +4468,10 @@ void G_LoadMetal(UINT8 **buffer)
 	metal_p = metalbuffer + READUINT32(*buffer);
 }
 
-//ticcmd_t *G_CopyTiccmd(ticcmd_t* dest, const ticcmd_t* src, const size_t n)
+ticcmd_t *G_CopyTiccmd(ticcmd_t* dest, const ticcmd_t* src, const size_t n)
+{
+	return M_Memcpy(dest, src, n*sizeof(*src));
+}
 
 ticcmd_t *G_MoveTiccmd(ticcmd_t* dest, const ticcmd_t* src, const size_t n)
 {

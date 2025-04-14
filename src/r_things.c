@@ -2118,6 +2118,9 @@ void R_AddPrecipitationSprites(void)
 				// Store this beforehand because R_ProjectPrecipitationSprite may free th (see P_PrecipThinker)
 				next = th->bnext;
 
+				if (th->precipflags & PCF_INVISIBLE)
+					continue;
+
 				R_ProjectPrecipitationSprite(th);
 			}
 		}

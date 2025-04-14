@@ -415,7 +415,7 @@ LUA_API lua_Integer lua_tointeger(lua_State *L, int idx)
     if (!(tvisstr(o) && lj_strscan_number(strV(o), &tmp)))
       return 0;
     if (tvisint(&tmp))
-      return (lua_Integer)intV(&tmp);
+      return intV(&tmp);
     n = numV(&tmp);
   }
 #if LJ_64

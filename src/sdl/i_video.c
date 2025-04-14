@@ -1903,8 +1903,6 @@ static SDL_bool Impl_CreateWindow(SDL_bool fullscreen)
         SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, msaa);
 	}
 
-	SDL_SetHint(SDL_HINT_VIDEO_DOUBLE_BUFFER, "1");
-
 	// Without a 24-bit depth buffer many visuals are ruined by z-fighting.
 	// Some GPU drivers may give us a 16-bit depth buffer since the
 	// default value for SDL_GL_DEPTH_SIZE is 16.
@@ -2291,22 +2289,14 @@ UINT32 I_GetRefreshRate(void)
 
 static void Impl_SetVsync(void)
 {
-	if (renderer && rendermode == render_soft)
-	{
-#if SDL_VERSION_ATLEAST(2, 0, 18)
-		SDL_RenderSetVSync(renderer, cv_vidwait.value ? 1 : 0);
+#if SDL_VERSION_ATLEAST(2,0,18)
+	if (renderer)
+		SDL_RenderSetVSync(renderer, cv_vidwait.value);
 #endif
-	}
 #ifdef HWRENDER
 	if (!renderer && rendermode == render_opengl && sdlglcontext != NULL && SDL_GL_GetCurrentContext() == sdlglcontext)
 	{
-		if (cv_vidwait.value)
-		{
-			if (SDL_GL_SetSwapInterval(-1) == -1) // try async vsync
-				SDL_GL_SetSwapInterval(1); // normal vsync
-		}
-		else
-			SDL_GL_SetSwapInterval(0);
+		SDL_GL_SetSwapInterval(cv_vidwait.value ? 1 : 0);
 	}
 #endif
 }

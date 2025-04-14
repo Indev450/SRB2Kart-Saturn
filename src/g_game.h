@@ -223,11 +223,8 @@ typedef enum
 const char *G_BuildMapName(INT32 map);
 void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer);
 
-// copy ticcmd_t to and from the normal way
-FUNCINLINE static ATTRINLINE ticcmd_t *G_CopyTiccmd(ticcmd_t* dest, const ticcmd_t* src, const size_t n)
-{
-	return M_Memcpy(dest, src, n*sizeof(*src));
-}
+// copy ticcmd_t to and fro the normal way
+ticcmd_t *G_CopyTiccmd(ticcmd_t* dest, const ticcmd_t* src, const size_t n);
 // copy ticcmd_t to and fro network packets
 ticcmd_t *G_MoveTiccmd(ticcmd_t* dest, const ticcmd_t* src, const size_t n);
 
@@ -389,86 +386,16 @@ boolean G_CheckDemoStatus(void);
 void G_SaveDemo(void);
 boolean G_DemoTitleResponder(event_t *ev);
 
-//
-// G_IsSpecialStage
-//
-// Returns TRUE if
-// the given map is a special stage.
-//
-FUNCINLINE static ATTRINLINE boolean G_IsSpecialStage(INT32 mapnum)
-{
-	(void)mapnum;
-	return false;
-}
-
-//
-// G_GametypeUsesLives
-//
-// Returns true if the current gametype uses
-// the lives system.  False otherwise.
-//
-FUNCINLINE static ATTRINLINE boolean G_GametypeUsesLives(void)
-{
-	// SRB2kart NEEDS no lives
-	return false;
-}
-
-//
-// G_GametypeHasTeams
-//
-// Returns true if the current gametype uses
-// Red/Blue teams.  False otherwise.
-//
-FUNCINLINE static ATTRINLINE boolean G_GametypeHasTeams(void)
-{
-	return (gametype == GT_TEAMMATCH || gametype == GT_CTF);
-}
-
-//
-// G_GametypeHasSpectators
-//
-// Returns true if the current gametype supports
-// spectators.  False otherwise.
-//
-FUNCINLINE static ATTRINLINE boolean G_GametypeHasSpectators(void)
-{
-	return (netgame || (multiplayer && demo.playback)); //true
-}
-
-//
-// G_BattleGametype
-//
-// Returns true in Battle gamemodes, previously was G_RingSlingerGametype.
-//
-FUNCINLINE static ATTRINLINE boolean G_BattleGametype(void)
-{
-	return (gametype == GT_MATCH);
-}
-
-//
-// G_RaceGametype
-//
-// Returns true in Race gamemodes, previously was G_PlatformGametype.
-//
-FUNCINLINE static ATTRINLINE boolean G_RaceGametype(void)
-{
-	return (gametype == GT_RACE);
-}
-
-//
-// G_TagGametype
-//
-// For Jazz's Tag/HnS modes that have a lot of special cases...
-// SRB2Kart: do we actually want to add Kart tag later? :V
-//
-FUNCINLINE static ATTRINLINE boolean G_TagGametype(void)
-{
-	return (gametype == GT_TAG || gametype == GT_HIDEANDSEEK);
-}
-
 INT32 G_GetGametypeByName(const char *gametypestr);
+boolean G_IsSpecialStage(INT32 mapnum);
+boolean G_GametypeUsesLives(void);
+boolean G_GametypeHasTeams(void);
+boolean G_GametypeHasSpectators(void);
+boolean G_BattleGametype(void);
 UINT8 G_SometimesGetDifferentGametype(UINT8 prefgametype);
 UINT8 G_GetGametypeColor(INT16 gt);
+boolean G_RaceGametype(void);
+boolean G_TagGametype(void);
 void G_ExitLevel(void);
 void G_NextLevel(void);
 void G_Continue(void);

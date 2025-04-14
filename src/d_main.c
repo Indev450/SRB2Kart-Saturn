@@ -68,7 +68,7 @@
 #include "fastcmp.h"
 #include "r_fps.h" // Frame interpolation/uncapped
 #include "keys.h"
-#include "filesrch.h" // pathisdirectory
+#include "filesrch.h" // refreshdirmenu, pathisdirectory
 #include "d_protocol.h"
 #include "m_perfstats.h"
 #include "k_kart.h"
@@ -641,6 +641,8 @@ static boolean D_Display(void)
 		}
 	}
 
+	NetUpdate(); // send out any new accumulation
+
 	// It's safe to end the game now.
 	if (G_GetExitGameFlag())
 	{
@@ -920,8 +922,6 @@ void D_SRB2Loop(void)
 			M_SaveFrame();
 		if (takescreenshot)
 			M_DoScreenShot();
-
-		NetUpdate();
 
 		// consoleplayer -> displayplayers (hear sounds from viewpoint)
 		if (renderisnewtic)

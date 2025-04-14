@@ -47,12 +47,10 @@
 #include "lua_script.h"
 #include "lua_hook.h"
 #include "k_kart.h"
-#include "d_async.h"
 #include "s_sound.h" // sfx_syfail
 #include "m_perfstats.h"
 #include "d_main.h"
 #include "r_fps.h"
-#include "filesrch.h" // refreshdirmenu
 
 #ifdef CLIENT_LOADINGSCREEN
 // cl loading screen
@@ -6374,10 +6372,9 @@ static void Local_Maketic(INT32 realtics)
 	INT32 i;
 
 	I_OsPolling(); // I_Getevent
-
 	D_ProcessEvents(); // menu responder, cons responder,
-					// game responder calls HU_Responder, AM_Responder, F_Responder,
-					// and G_MapEventsToControls
+	                   // game responder calls HU_Responder, AM_Responder, F_Responder,
+	                   // and G_MapEventsToControls
 	if (!dedicated) rendergametic = gametic;
 
 	// translate inputs (keyboard/mouse/joystick) into game controls
@@ -6469,8 +6466,6 @@ boolean TryRunTics(tic_t realtics)
 	if (singletics)
 		realtics = 1;
 
-	Finish_async_addfile();
-
 	if (realtics >= 1)
 	{
 		COM_BufTicker();
@@ -6538,8 +6533,6 @@ boolean TryRunTics(tic_t realtics)
 	{
 		hu_stopped = true;
 	}
-
-	Detach_async_addfile();
 
 	return ticking;
 }
