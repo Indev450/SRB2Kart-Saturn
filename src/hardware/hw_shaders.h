@@ -291,7 +291,7 @@
 #define GLSL_WATER_FRAGMENT_SHADER \
 	"#version 120\n" \
 	GLSL_FLOOR_FUDGES \
-	"const float freq = 0.03;\n" \
+	"const float freq = 0.025;\n" \
 	"const float amp = 0.025;\n" \
 	"const float speed = 2.0;\n" \
 	"const float pi = 3.14159;\n" \
