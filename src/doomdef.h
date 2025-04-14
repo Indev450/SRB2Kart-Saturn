@@ -652,7 +652,7 @@ extern const char *compdate, *comptime, *comprevision, *compbranch;
 
 #if defined (HAVE_CURL) && ! defined (NONET)
 #define MASTERSERVER
-#define HOLEPUNCH
+//#define HOLEPUNCH
 #else
 #undef UPDATE_ALERT
 #endif
