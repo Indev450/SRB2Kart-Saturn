@@ -692,7 +692,8 @@ static boolean D_Display(void)
 
 //TODO: this is absolutely fucking horrific
 //TODO: pass a mobj to it so we dont have to do this terrible thing
-static void DoFunnyDance (void)
+// maybe someday.................
+/*static void DoFunnyDance (void)
 {
 	thinker_t *th;
 	static tic_t time = 0;
@@ -748,7 +749,7 @@ static void DoFunnyDance (void)
 	}
 	else
 		time = 0;
-}
+}*/
 
 // =========================================================================
 // D_SRB2Loop
