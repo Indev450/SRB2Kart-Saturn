@@ -20,6 +20,7 @@
 
 typedef struct aatree_node_s
 {
+	INT32	level;
 	INT32	key;
 	void*	value;
 
@@ -98,6 +99,7 @@ static aatree_node_t *M_AATreeSet_Node(aatree_node_t *node, UINT32 flags, INT32 
 	{
 		// Nothing here, so just add where we are
 		node = Z_Malloc(sizeof (aatree_node_t), PU_STATIC, NULL);
+		node->level = 1;
 		node->key = key;
 		if (value && (flags & AATREE_ZUSER)) Z_SetUser(value, &node->value);
 		else node->value = value;
