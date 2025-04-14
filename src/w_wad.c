@@ -124,9 +124,6 @@ void W_Shutdown(void)
 			Z_Free(wad->lumpinfo[wad->numlumps].longname);
 			Z_Free(wad->lumpinfo[wad->numlumps].fullname);
 		}
-		M_AATreeFree(wad->startfolders);
-		M_AATreeFree(wad->endfolders);
-
 		Z_Free(wad->lumpinfo);
 		Z_Free(wad);
 	}
@@ -819,8 +816,6 @@ UINT16 W_InitFile(const char *filename, boolean local)
 	fseek(handle, 0, SEEK_END);
 	wadfile->filesize = (unsigned)ftell(handle);
 	wadfile->type = type;
-	wadfile->startfolders = M_AATreeAlloc(0);
-	wadfile->endfolders = M_AATreeAlloc(0);
 
 	// already generated, just copy it over
 	M_Memcpy(&wadfile->md5sum, &md5sum, 16);
@@ -1057,12 +1052,6 @@ UINT16 W_CheckNumForFolderStartPK3(const char *name, UINT16 wad, UINT16 startlum
 	INT32 i;
 	lumpinfo_t *lump_p = wadfiles[wad]->lumpinfo + startlump;
 	name_length = strlen(name);
-	UINT32 hash = quickncasehash(name, name_length);
-
-	void *val = M_AATreeGet(wadfiles[wad]->startfolders, hash);
-	if (val != NULL)
-		return (uintptr_t)val;
-
 	for (i = startlump; i < wadfiles[wad]->numlumps; i++, lump_p++)
 	{
 		if (strnicmp(name, lump_p->fullname, name_length) == 0)
@@ -1070,12 +1059,10 @@ UINT16 W_CheckNumForFolderStartPK3(const char *name, UINT16 wad, UINT16 startlum
 			/* SLADE is special and puts a single directory entry. Skip that. */
 			if (strlen(lump_p->fullname) == name_length)
 				i++;
-			M_AATreeSet(wadfiles[wad]->startfolders, hash, (void *)(uintptr_t)i);
-			return i;
+			break;
 		}
 	}
-	M_AATreeSet(wadfiles[wad]->startfolders, hash, (void *)INT16_MAX);
-	return INT16_MAX;
+	return i;
 }
 
 // In a PK3 type of resource file, it looks for the next lumpinfo entry that doesn't share the specified pathfile.
@@ -1086,18 +1073,11 @@ UINT16 W_CheckNumForFolderEndPK3(const char *name, UINT16 wad, UINT16 startlump)
 	INT32 i;
 	lumpinfo_t *lump_p = wadfiles[wad]->lumpinfo + startlump;
 	size_t name_length = strlen(name);
-	UINT32 hash = quickncasehash(name, name_length);
-
-	void *val = M_AATreeGet(wadfiles[wad]->endfolders, hash);
-	if (val != NULL)
-		return (uintptr_t)val;
-
 	for (i = startlump; i < wadfiles[wad]->numlumps; i++, lump_p++)
 	{
 		if (strnicmp(name, lump_p->fullname, name_length))
 			break;
 	}
-	M_AATreeSet(wadfiles[wad]->endfolders, hash, (void *)(uintptr_t)i);
 	return i;
 }
 
@@ -1341,15 +1321,15 @@ UINT8 W_LumpExists(const char *name)
 	return false;
 }
 
-UINT8 W_CheckMultipleLumps(const char* lump, ...)
+UINT8 W_CheckMultipleLumps(const char* lump, ...) 
 {
 	va_list lumps;
 	va_start(lumps, lump);
 	const char* lumpname = lump;
 
-	while (lumpname != NULL)
+	while (lumpname != NULL) 
 	{
-		if (!W_LumpExists(lumpname))
+		if (!W_LumpExists(lumpname)) 
 		{
 			va_end(lumps);
 			return false;

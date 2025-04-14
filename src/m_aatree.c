@@ -20,6 +20,7 @@
 
 typedef struct aatree_node_s
 {
+	INT32	level;
 	INT32	key;
 	void*	value;
 
@@ -55,51 +56,40 @@ void M_AATreeFree(aatree_t *aatree)
 	Z_Free(aatree);
 }
 
-static aatree_node_t *M_AATreeRotateRight(aatree_node_t *node)
+static aatree_node_t *M_AATreeSkew(aatree_node_t *node)
 {
-	aatree_node_t *newnode = node->left;
-	newnode->right = node;
-	node->left = NULL;
-	return newnode;
-}
-
-static aatree_node_t *M_AATreeRotateLeft(aatree_node_t *node)
-{
-	aatree_node_t *newnode = node->right;
-	newnode->left = node;
-	node->right = NULL;
-	return newnode;
-}
-
-static aatree_node_t *M_AATreeRebalance(aatree_node_t *node)
-{
-	if (node->right && !node->left)
+	if (node && node->left && node->left->level == node->level)
 	{
-		if (node->right->left && !node->right->right)
-		{
-			node->right = M_AATreeRotateRight(node->right);
-			return M_AATreeRotateLeft(node);
-		}
+		// Not allowed: horizontal left-link. Reverse the
+		// horizontal link and hook the orphan back in.
+		aatree_node_t *oldleft = node->left;
+		node->left = oldleft->right;
+		oldleft->right = node;
 
-		if (node->right->right && !node->right->left)
-		{
-			return M_AATreeRotateLeft(node);
-		}
-	}
-	else if (node->left && !node->right)
-	{
-		if (node->left->right && !node->left->left)
-		{
-			node->left = M_AATreeRotateLeft(node->left);
-			return M_AATreeRotateRight(node);
-		}
-
-		if (node->left->left && !node->left->right)
-		{
-			return M_AATreeRotateRight(node);
-		}
+		return oldleft;
 	}
 
+	// No change needed.
+	return node;
+}
+
+static aatree_node_t *M_AATreeSplit(aatree_node_t *node)
+{
+	if (node && node->right && node->right->right && node->level == node->right->right->level)
+	{
+		// Not allowed: two consecutive horizontal right-links.
+		// The middle one becomes the new root at this point,
+		// with suitable adjustments below.
+
+		aatree_node_t *oldright = node->right;
+		node->right = oldright->left;
+		oldright->left = node;
+		oldright->level++;
+
+		return oldright;
+	}
+
+	// No change needed.
 	return node;
 }
 
@@ -108,7 +98,9 @@ static aatree_node_t *M_AATreeSet_Node(aatree_node_t *node, UINT32 flags, INT32 
 	if (!node)
 	{
 		// Nothing here, so just add where we are
+
 		node = Z_Malloc(sizeof (aatree_node_t), PU_STATIC, NULL);
+		node->level = 1;
 		node->key = key;
 		if (value && (flags & AATREE_ZUSER)) Z_SetUser(value, &node->value);
 		else node->value = value;
@@ -126,7 +118,8 @@ static aatree_node_t *M_AATreeSet_Node(aatree_node_t *node, UINT32 flags, INT32 
 			else node->value = value;
 		}
 
-		node = M_AATreeRebalance(node);
+		node = M_AATreeSkew(node);
+		node = M_AATreeSplit(node);
 	}
 
 	return node;
@@ -158,6 +151,7 @@ void *M_AATreeGet(aatree_t *aatree, INT32 key)
 {
 	return M_AATreeGet_Node(aatree->root, key);
 }
+
 
 static void M_AATreeIterate_Node(aatree_node_t *node, aatree_iter_t callback)
 {
