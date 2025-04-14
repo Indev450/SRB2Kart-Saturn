@@ -77,7 +77,10 @@ void R_DrawColumn_8(void)
 		}
 		else
 		{
-			frac %= heightmask;
+			while (frac >= heightmask)
+			{
+				frac -= heightmask;
+			}
 		}
 
 		do
@@ -115,7 +118,10 @@ void R_DrawColumn_8(void)
 				frac += fracstep;
 			}
 
-			frac %= heightmask;
+			while (frac >= heightmask)
+			{
+				frac -= heightmask;
+			}
 		} while (--count);
 	}
 	else
@@ -197,7 +203,10 @@ void R_Draw2sMultiPatchColumn_8(void)
 		}
 		else
 		{
-			frac %= heightmask;
+			while (frac >= heightmask)
+			{
+				frac -= heightmask;
+			}
 		}
 
 		do
@@ -240,7 +249,10 @@ void R_Draw2sMultiPatchColumn_8(void)
 				frac += fracstep;
 			}
 
-			frac %= heightmask;
+			while (frac >= heightmask)
+			{
+				frac -= heightmask;
+			}
 		} while (--count);
 	}
 	else
@@ -334,7 +346,10 @@ void R_Draw2sMultiPatchTranslucentColumn_8(void)
 		}
 		else
 		{
-			frac %= heightmask;
+			while (frac >= heightmask)
+			{
+				frac -= heightmask;
+			}
 		}
 
 		do
@@ -377,7 +392,10 @@ void R_Draw2sMultiPatchTranslucentColumn_8(void)
 				frac += fracstep;
 			}
 
-			frac %= heightmask;
+			while (frac >= heightmask)
+			{
+				frac -= heightmask;
+			}
 		} while (--count);
 	}
 	else
@@ -512,7 +530,10 @@ void R_DrawTranslucentColumn_8(void)
 		}
 		else
 		{
-			frac %= heightmask;
+			while (frac >= heightmask)
+			{
+				frac -= heightmask;
+			}
 		}
 
 		do
@@ -618,7 +639,10 @@ void R_DrawTranslatedTranslucentColumn_8(void)
 		}
 		else
 		{
-			frac %= heightmask;
+			while (frac >= heightmask)
+			{
+				frac -= heightmask;
+			}
 		}
 
 		do
