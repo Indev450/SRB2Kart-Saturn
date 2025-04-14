@@ -872,8 +872,8 @@ void HWR_DrawDiag(INT32 x, INT32 y, INT32 wh, INT32 color)
 	if (fy + fh > vid.height)
 		fh = fvh - fy;
 
-	fx = -1.0f + fx / (vid.width / 2.0f);
-	fy = 1.0f - fy / (vid.height / 2.0f);
+	fx = -1.0f + fx / (fvw / 2.0f);
+	fy = 1.0f - fy / (fvh / 2.0f);
 	fw = fw / (fvw / 2.0f);
 	fh = fh / (fvh / 2.0f);
 
@@ -985,8 +985,8 @@ void HWR_DrawConsoleFill(INT32 x, INT32 y, INT32 w, INT32 h, UINT32 color, INT32
 	if (fy + fh > vid.height)
 		fh = fvh - fy;
 
-	fx = -1.0f + fx / (vid.width / 2.0f);
-	fy = 1.0f - fy / (vid.height / 2.0f);
+	fx = -1.0f + fx / (fvw / 2.0f);
+	fy = 1.0f - fy / (fvh / 2.0f);
 	fw = fw / (fvw / 2.0f);
 	fh = fh / (fvh / 2.0f);
 
@@ -1098,8 +1098,8 @@ void HWR_DrawFill(INT32 x, INT32 y, INT32 w, INT32 h, INT32 color)
 	if (fy + fh > vid.height)
 		fh = fvh - fy;
 
-	fx = -1.0f + fx / (vid.width / 2.0f);
-	fy = 1.0f - fy / (vid.height / 2.0f);
+	fx = -1.0f + fx / (fvw / 2.0f);
+	fy = 1.0f - fy / (fvh / 2.0f);
 	fw = fw / (fvw / 2.0f);
 	fh = fh / (fvh / 2.0f);
 
