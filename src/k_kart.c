@@ -9123,7 +9123,9 @@ static void K_DrawKartPositionNum(INT32 num)
 	while (num)
 	{
 		if (win) // 1st place winner? You get rainbows!!
+		{
 			localpatch = kp_winnernum[(leveltime % (NUMWINFRAMES*3)) / 3];
+		}
 		else if (stplyr->laps+1 >= cv_numlaps.value || stplyr->exiting) // Check for the final lap, or won
 		{
 			// Alternate frame every three frames
@@ -10627,6 +10629,7 @@ static void K_drawKartMinimap(void)
 	if (gamestate != GS_LEVEL)
 		return;
 
+	// Only draw for the first player
 	if (stplyrnum != 0)
 		return;
 
@@ -11563,7 +11566,7 @@ void K_drawKartHUD(void)
 			&& stplyr->kartstuff[k_lapanimation]
 			&& !stplyr->exiting
 			&& stplyr->laptime[LAP_LAST] != 0
-			&& !midgamejoin)
+			&& !midgamejoin) // due to vanilla compat, we cannot synch this oh well
 		{
 			if ((stplyr->kartstuff[k_lapanimation] / 5) & 1)
 			{

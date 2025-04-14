@@ -48,8 +48,7 @@ extern boolean serverrunning;
 void Net_AckTicker(void);
 
 // If reliable return true if packet sent, 0 else
-boolean HSendPacket(INT32 node, boolean reliable, UINT8 acknum,
-	size_t packetlength);
+boolean HSendPacket(INT32 node, boolean reliable, UINT8 acknum, size_t packetlength);
 boolean HGetPacket(void);
 void D_SetDoomcom(void);
 #ifndef NONET

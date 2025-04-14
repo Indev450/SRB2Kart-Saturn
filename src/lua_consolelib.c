@@ -476,13 +476,10 @@ static int lib_cvRegisterVar(lua_State *L)
 
 	if (!(((cvar->flags & CV_HIDEN)) || (cvar->flags & CV_NOSHOWHELP)) && (cvar->PossibleValue || !(cvar->value == 0 && stricmp(cvar->string, "0"))))
 	{
-		char *temp = NULL;
-
 		if (!category)
 		{
-			temp = strdup(wadfiles[numwadfiles - 1]->filename);
-			nameonly(temp);
-
+			char *temp = wadfiles[numwadfiles - 1]->filename;
+			temp += strlen(temp) - nameonlylength(temp);
 			category = temp;
 		}
 
@@ -490,8 +487,6 @@ static int lib_cvRegisterVar(lua_State *L)
 			M_SlotCvarIntoModMenu(cvar, category, menu_name);
 		else
 			M_SlotCvarIntoModMenu(cvar, category, cvar->name);
-
-		free (temp);
 	}
 
 	// return cvar userdata

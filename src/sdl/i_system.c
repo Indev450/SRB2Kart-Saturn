@@ -344,7 +344,7 @@ static void write_backtrace(bt_crash_reason_t reason)
 	fprintf(out, "Program name: %s %s\n", SRB2APPLICATION, VERSIONSTRING);
 
 	if (compdate && comptime && comprevision && compbranch)
-	fprintf(out, "Compiled: %s %s, commit %s, branch %s\n", compdate, comptime, comprevision, compbranch);
+		fprintf(out, "Compiled: %s %s, commit %s, branch %s\n", compdate, comptime, comprevision, compbranch);
 
 	if (gamestate == GS_LEVEL)
 	{
@@ -1248,8 +1248,6 @@ void I_GetJoystickEvents(UINT8 index)
 	\param	fname	name of joystick
 
 	\return	axises
-
-
 */
 static int joy_open(int playerIndex, int joyIndex)
 {

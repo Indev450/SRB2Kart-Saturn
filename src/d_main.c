@@ -825,7 +825,7 @@ void D_SRB2Loop(void)
 
 		if (interp)
 		{
-			renderdeltatics = FLOAT_TO_FIXED(deltatics);
+			renderdeltatics = FloatToFixed(deltatics);
 
 			if (!(paused || P_AutoPause()) && deltatics < 1.0 && !hu_stopped)
 			{
@@ -929,6 +929,7 @@ void D_SRB2Loop(void)
 void D_StartTitle(void)
 {
 	INT32 i;
+
 	if (netgame)
 	{
 		if (gametype == GT_RACE) // SRB2kart
@@ -1184,17 +1185,15 @@ void D_CleanFile(char **filearray)
 
 static boolean AddIWAD(void)
 {
-	char * path = va(pandf,srb2path,"srb2.srb");
+	char * path = va(pandf, srb2path, "srb2.srb");
 
 	if (FIL_ReadFileOK(path))
 	{
 		D_AddFile(path, startupwadfiles);
 		return true;
 	}
-	else
-	{
-		return false;
-	}
+
+	return false;
 }
 
 // extra graphic patches for saturn specific thingies
@@ -1236,11 +1235,11 @@ static void IdentifyVersion(void)
 	// get the current directory (possible problem on NT with "." as current dir)
 	if (srb2waddir)
 	{
-		strlcpy(srb2path,srb2waddir,sizeof (srb2path));
+		strlcpy(srb2path, srb2waddir, sizeof(srb2path));
 	}
 	else
 	{
-		if (getcwd(srb2path, 256) != NULL)
+		if (getcwd(srb2path, sizeof(srb2path)))
 			srb2waddir = srb2path;
 		else
 		{
@@ -1249,7 +1248,7 @@ static void IdentifyVersion(void)
 	}
 
 	// Load the IWAD
-	if (! AddIWAD())
+	if (!AddIWAD())
 	{
 		I_Error("SRB2.SRB not found! Expected in %s\n", srb2waddir);
 	}

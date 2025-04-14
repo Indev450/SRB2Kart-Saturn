@@ -554,13 +554,13 @@ INT32 CL_CheckFiles(void)
 	{
 		if (fileneeded[i].status == FS_NOTFOUND || fileneeded[i].status == FS_MD5SUMBAD || fileneeded[i].status == FS_FALLBACK)
 			downloadrequired = true;
-		
+
 		if (fileneeded[i].status != FS_OPEN)
 			filestoload++;
 
 		if (fileneeded[i].status != FS_NOTCHECKED) //since we're running this over multiple tics now, its possible for us to come across files checked in previous tics
 			continue;
-		
+
 		CONS_Debug(DBG_NETPLAY, "searching for '%s' ", fileneeded[i].filename);
 
 		// Check in already loaded files
@@ -1053,6 +1053,7 @@ void Got_Filetxpak(void)
 		}
 		I_Error("Received a file not requested (file id: %d, file status: %s)\n", filenum, s);
 	}
+
 	// Send ack back quickly
 	if (++filetime == 3)
 	{

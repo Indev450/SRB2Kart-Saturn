@@ -1118,7 +1118,6 @@ boolean HGetPacket(void)
 
 	while(true)
 	{
-		//nodejustjoined = I_NetGet();
 		I_NetGet();
 
 		if (doomcom->remotenode == -1) // No packet received
@@ -1146,21 +1145,6 @@ boolean HGetPacket(void)
 		if (debugfile)
 			DebugPrintpacket("GET");
 #endif
-
-		/*// If a new node sends an unexpected packet, just ignore it
-		if (nodejustjoined && server
-			&& !(netbuffer->packettype == PT_ASKINFO
-				|| netbuffer->packettype == PT_SERVERINFO
-				|| netbuffer->packettype == PT_PLAYERINFO
-				|| netbuffer->packettype == PT_REQUESTFILE
-				|| netbuffer->packettype == PT_ASKINFOVIAMS
-				|| netbuffer->packettype == PT_CLIENTJOIN))
-		{
-			DEBFILE(va("New node sent an unexpected %s packet\n", packettypename[netbuffer->packettype]));
-			//CONS_Alert(CONS_NOTICE, "New node sent an unexpected %s packet\n", packettypename[netbuffer->packettype]);
-			Net_CloseConnection(doomcom->remotenode | FORCECLOSE);
-			continue;
-		}*/
 
 		// Proceed the ack and ackreturn field
 		if (!Processackpak())
