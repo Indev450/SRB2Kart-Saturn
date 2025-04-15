@@ -453,9 +453,9 @@ else
 
 	# build a normal optimised version
 	WINDRESFLAGS = -DNDEBUG
-	CFLAGS+=-O3 -fsanitize=address
-	CPPFLAGS+=-O3 -fsanitize=address
-	LDFLAGS+=-fsanitize=address
+	CFLAGS+=-O3 -flto=auto
+	CPPFLAGS+=-O3 -flto=auto
+	#LDFLAGS+=-fsanitize=address
 endif
 	CFLAGS+=-g $(OPTS) $(ARCHOPTS) $(WINDRESFLAGS)
 
