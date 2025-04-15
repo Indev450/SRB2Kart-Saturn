@@ -324,7 +324,7 @@ static UINT8 *R_GenerateTexture(size_t texnum)
 	{
 		boolean holey = false;
 		patch = texture->patches;
-		pdata = W_CacheLumpNumPwad(patch->wad, patch->lump, PU_CACHE);
+		pdata = W_CacheLumpNumPwad(patch->wad, patch->lump, PU_LEVEL);
 		realpatch = (softwarepatch_t *)pdata;
 
 		// Check the patch for holes.
@@ -360,7 +360,7 @@ static UINT8 *R_GenerateTexture(size_t texnum)
 		{
 			texture->holes = true;
 			blocksize = W_LumpLengthPwad(patch->wad, patch->lump);
-			block = Z_Calloc(blocksize, PU_STATIC, // will change tag at end of this function
+			block = Z_Calloc(blocksize, PU_LEVEL, // will change tag at end of this function
 				&texturecache[texnum]);
 			M_Memcpy(block, realpatch, blocksize);
 			texturememory += blocksize;
@@ -381,7 +381,7 @@ static UINT8 *R_GenerateTexture(size_t texnum)
 	texture->holes = false;
 	blocksize = (texture->width * 4) + (texture->width * texture->height);
 	texturememory += blocksize;
-	block = Z_Malloc(blocksize+1, PU_STATIC, &texturecache[texnum]);
+	block = Z_Malloc(blocksize+1, PU_LEVEL, &texturecache[texnum]);
 
 	memset(block, TRANSPARENTPIXEL, blocksize+1); // Transparency hack
 
@@ -395,7 +395,7 @@ static UINT8 *R_GenerateTexture(size_t texnum)
 	// Composite the columns together.
 	for (i = 0, patch = texture->patches; i < texture->patchcount; i++, patch++)
 	{
-		pdata = W_CacheLumpNumPwad(patch->wad, patch->lump, PU_CACHE);
+		pdata = W_CacheLumpNumPwad(patch->wad, patch->lump, PU_LEVEL);
 		realpatch = (softwarepatch_t *)pdata;
 
 		// Well, it's not valid...
@@ -437,8 +437,6 @@ static UINT8 *R_GenerateTexture(size_t texnum)
 	}
 
 done:
-	// Now that the texture has been built in column cache, it is purgable from zone memory.
-	Z_ChangeTag(block, PU_CACHE);
 	return blocktex;
 }
 
@@ -488,7 +486,7 @@ UINT8 *R_GetColumn(fixed_t tex, INT32 col)
 //
 UINT8 *R_GetFlat(lumpnum_t flatlumpnum)
 {
-	return W_CacheLumpNum(flatlumpnum, PU_CACHE);
+	return W_CacheLumpNum(flatlumpnum, PU_LEVEL);
 }
 
 //
@@ -574,6 +572,8 @@ Rloadtextures (INT32 i, INT32 w)
 			patch->originx = patch->originy = 0;
 			patch->wad = (UINT16)w;
 			patch->lump = texstart + j;
+
+			Z_Free(patchlump);
 
 			k = 1;
 			while (k << 1 <= texture->width)
@@ -699,8 +699,7 @@ static void R_AllocateTextures(INT32 add)
 		// R_FlushTextureCache relies on the user for
 		// Z_Free, texturecache has been reallocated so the
 		// user is now garbage memory.
-		Z_SetUser(texturecache[i],
-				(void**)&texturecache[i]);
+		Z_SetUser(texturecache[i], (void**)&texturecache[i]);
 	}
 
 	while (i < newtextures)
