@@ -368,7 +368,6 @@ static void md2_loadTexture(md2_t *model)
 {
 	patch_t *patch;
 	GLPatch_t *glPatch = NULL;
-
 	const char *filename = model->filename;
 
 	if (model->glpatch)
@@ -1324,10 +1323,15 @@ void HWR_DrawMD2(gl_vissprite_t *spr)
 			|| ((!hwrBlendPatch->mipmap->format || !hwrBlendPatch->mipmap->downloaded) && !hwrPatch->notfound)))
 			md2_loadBlendTexture(md2);
 
+		// Load it again, because it isn't being loaded into blendgpatch after md2_loadblendtexture...
+		blendgpatch = md2->blendglpatch;
+		if (blendgpatch)
+			hwrBlendPatch = ((GLPatch_t *)blendgpatch->hardware);
+
 		if (gpatch && hwrPatch && hwrPatch->mipmap->format) // else if meant that if a texture couldn't be loaded, it would just end up using something else's texture
 		{
 			if ((skincolors_t)spr->mobj->color != SKINCOLOR_NONE &&
-				md2->blendglpatch && (hwrBlendPatch->mipmap->format
+				blendgpatch && (hwrBlendPatch->mipmap->format
 				&& gpatch->width == (blendgpatch->width && gpatch->height == (blendgpatch->height))))
 			{
 				INT32 tcskinnum = TC_DEFAULT;
@@ -1353,6 +1357,7 @@ void HWR_DrawMD2(gl_vissprite_t *spr)
 					}
 					else tcskinnum = TC_DEFAULT;
 				}
+
 				HWR_GetBlendedTexture(gpatch, blendgpatch, tcskinnum, spr->colormap, (skincolors_t)spr->mobj->color);
 			}
 			else
