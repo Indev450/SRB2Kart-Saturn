@@ -1330,9 +1330,7 @@ void HWR_DrawMD2(gl_vissprite_t *spr)
 
 		if (gpatch && hwrPatch && hwrPatch->mipmap->format) // else if meant that if a texture couldn't be loaded, it would just end up using something else's texture
 		{
-			if ((skincolors_t)spr->mobj->color != SKINCOLOR_NONE &&
-				blendgpatch && (hwrBlendPatch->mipmap->format
-				&& gpatch->width == (blendgpatch->width && gpatch->height == (blendgpatch->height))))
+			if ((skincolors_t)spr->mobj->color != SKINCOLOR_NONE)
 			{
 				INT32 tcskinnum = TC_DEFAULT;
 				if ((spr->mobj->flags & MF_BOSS) && (spr->mobj->flags2 & MF2_FRET) && (leveltime & 1)) // Bosses "flash"
