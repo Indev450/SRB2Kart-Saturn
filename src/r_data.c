@@ -516,7 +516,7 @@ Rloadtextures (INT32 i, INT32 w)
 	UINT16 j;
 	INT32 k;
 	UINT16 texstart, texend, texturesLumpPos;
-	softwarepatch_t patchlump;
+	softwarepatch_t *patchlump;
 	texpatch_t *patch;
 	texture_t *texture;
 
@@ -555,7 +555,7 @@ Rloadtextures (INT32 i, INT32 w)
 					continue; // If it is then SKIP IT
 			}
 
-			W_ReadLumpHeaderPwad(wadnum, lumpnum, &patchlump, 8, 0);
+			patchlump = W_CacheLumpNumPwad(wadnum, lumpnum, PU_STATIC);
 
 			//CONS_Printf("\n\"%s\" is a single patch, dimensions %d x %d",W_CheckNameForNumPwad((UINT16)w,texstart+j),patchlump->width, patchlump->height);
 			texture = textures[i] = Z_Calloc(sizeof(texture_t) + sizeof(texpatch_t), PU_STATIC, NULL);
@@ -563,8 +563,8 @@ Rloadtextures (INT32 i, INT32 w)
 			// Set texture properties.
 			M_Memcpy(texture->name, W_CheckNameForNumPwad((UINT16)w, texstart + j), sizeof(texture->name));
 			texture->hash = quickncasehash(texture->name, 8);
-			texture->width = SHORT(patchlump.width);
-			texture->height = SHORT(patchlump.height);
+			texture->width = SHORT(patchlump->width);
+			texture->height = SHORT(patchlump->height);
 			texture->patchcount = 1;
 			texture->holes = false;
 
