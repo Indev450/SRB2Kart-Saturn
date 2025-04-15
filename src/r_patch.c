@@ -667,7 +667,7 @@ void RotatedPatch_DoRotation(rotsprite_t *rotsprite, patch_t *patch, INT32 angle
 	size = (newwidth * newheight);
 	if (!size)
 		size = (width * height);
-	rawdst = Z_Calloc(size * sizeof(UINT16), PU_STATIC, NULL);
+	rawdst = Z_Malloc(size * sizeof(UINT16), PU_STATIC, NULL);
 
 	for (i = 0; i < size; i++)
 		rawdst[i] = 0xFF00;
@@ -686,21 +686,16 @@ void RotatedPatch_DoRotation(rotsprite_t *rotsprite, patch_t *patch, INT32 angle
 
 			if (sx >= 0 && sy >= 0 && sx < width && sy < height)
 			{
-				UINT16 input = GetPatchPixel(patch, sx, sy, bflip);
+				rawdst[(dy * newwidth) + dx] = GetPatchPixel(patch, sx, sy, bflip);
 
-				if (input != 0xFF00)
-				{
-					rawdst[(dy * newwidth) + dx] = input;
-
-					if (dx < minx)
-						minx = dx;
-					if (dy < miny)
-						miny = dy;
-					if (dx > maxx)
-						maxx = dx;
-					if (dy > maxy)
-						maxy = dy;
-				}
+				if (dx < minx)
+					minx = dx;
+				if (dy < miny)
+					miny = dy;
+				if (dx > maxx)
+					maxx = dx;
+				if (dy > maxy)
+					maxy = dy;
 			}
 		}
 	}
