@@ -1866,7 +1866,7 @@ static void P_NetArchiveThinkers(savebuffer_t *save)
 			continue;
 		}
 #ifdef PARANOIA
-		else if (th->function.acp1 != P_RemoveThinkerDelayed) // wait garbage collection
+		else if (th->function.acp1 != (actionf_p1)P_RemoveThinkerDelayed) // wait garbage collection
 			I_Error("unknown thinker type %p", th->function.acp1);
 #endif
 	}

@@ -158,7 +158,7 @@ FUNCPRINTF void GL_DBG_Printf(const char *format, ...)
 
 	if (!gllogstream)
 		gllogstream = fopen("ogllog.txt", "w");
-	
+
 	va_start(arglist, format);
 	vsnprintf(str, 4096, format, arglist);
 	va_end(arglist);
@@ -640,7 +640,7 @@ typedef enum
 	gluniform_light_dir,
 	gluniform_light_contrast,
 	gluniform_light_backlight,
-	
+
 	// palette rendering
 	gluniform_palette_tex, // 1d texture containing a palette
 	gluniform_palette_lookup_tex, // 3d texture containing the rgb->index lookup table
@@ -653,7 +653,7 @@ typedef enum
 
 	// supersampling crap
 	gluniform_inv_supersamplefactor,
-	
+
 	gluniform_max,
 } gluniform_t;
 
@@ -713,7 +713,7 @@ void SetupGLFunc4(void)
 	pglMultiTexCoord2f = GetGLFunc("glMultiTexCoord2f");
 	pglClientActiveTexture = GetGLFunc("glClientActiveTexture");
 	pglMultiTexCoord2fv = GetGLFunc("glMultiTexCoord2fv");
-	
+
 	/* 1.5 funcs */
 	pglGenBuffers = GetGLFunc("glGenBuffers");
 	pglBindBuffer = GetGLFunc("glBindBuffer");
@@ -723,7 +723,7 @@ void SetupGLFunc4(void)
 
 	/* 2.0 funcs */
 	pglBlendEquation = GetGLFunc("glBlendEquation");
-	
+
 	pglStencilFuncSeparate = GetGLFunc("glStencilFuncSeparate");
 	pglStencilOpSeparate = GetGLFunc("glStencilOpSeparate");
 
@@ -779,7 +779,7 @@ boolean GL_InitShaders(void)
 {
 	if (!pglUseProgram)
 		return false;
-	
+
 	gl_fallback_shader.vertex_shader = Z_StrDup(GLSL_FALLBACK_VERTEX_SHADER);
 	gl_fallback_shader.fragment_shader = Z_StrDup(GLSL_FALLBACK_FRAGMENT_SHADER);
 
@@ -1614,7 +1614,7 @@ static void GL_AllocTextureBuffer(GLMipmap_t *pTexInfo)
 // -----------------+
 // UpdateTexture    : Updates texture data.
 // -----------------+
-static void GL_UpdateTexture(GLMipmap_t *pTexInfo)
+void GL_UpdateTexture(GLMipmap_t *pTexInfo)
 {
 	// Upload a texture
 	GLuint num = pTexInfo->downloaded;
@@ -1995,7 +1995,7 @@ static boolean GL_Shader_CompileProgram(gl_shader_t *shader, GLint i)
 		pglDeleteShader(gl_vertShader);
 	if (frag_shader)
 		pglDeleteShader(gl_fragShader);
-	
+
 	// couldn't link?
 	if (result != GL_TRUE)
 	{
@@ -2296,7 +2296,7 @@ void GL_SetSpecialState(hwdspecialstate_t IdState, INT32 Value)
 			gltexformat = (Value == 32) ? GL_RGBA : GL_RGB5_A1;
 			GL_Flush();
 			break;
-			
+
 		case HWD_SET_MSAA:
 			if (Value)
 			{
@@ -2606,7 +2606,7 @@ void GL_DrawModelEx(model_t *model, INT32 frameIndex, float duration, float tics
 	scalex = hscale;
 	scaley = vscale;
 	scalez = hscale;
-	
+
 	if (duration > 0.0 && tics >= 0.0) // don't interpolate if instantaneous or infinite in length
 	{
 		float newtime = (duration - tics); // + 1;
@@ -2624,7 +2624,7 @@ void GL_DrawModelEx(model_t *model, INT32 frameIndex, float duration, float tics
 	poly.green  = byte2float(Surface->PolyColor.s.green);
 	poly.blue   = byte2float(Surface->PolyColor.s.blue);
 	poly.alpha  = byte2float(Surface->PolyColor.s.alpha);
-	
+
 	pglColor4ubv((GLubyte*)&Surface->PolyColor.s);
 
 	GL_SetBlend((poly.alpha < 1 ? Surface->PolyFlags : (PF_Masked|PF_Occlude))|PF_Modulated);
@@ -2638,7 +2638,7 @@ void GL_DrawModelEx(model_t *model, INT32 frameIndex, float duration, float tics
 	fade.green = byte2float(Surface->FadeColor.s.green);
 	fade.blue  = byte2float(Surface->FadeColor.s.blue);
 	fade.alpha = byte2float(Surface->FadeColor.s.alpha);
-	
+
 	if (Surface->LightTableId && Surface->LightTableId != lt_downloaded)
 	{
 		pglActiveTexture(GL_TEXTURE2);
@@ -2675,7 +2675,7 @@ void GL_DrawModelEx(model_t *model, INT32 frameIndex, float duration, float tics
 	pglRotatef(pos->anglez, 0.0f, 0.0f, -1.0f);
 	pglRotatef(pos->anglex, 1.0f, 0.0f, 0.0f);
 	pglRotatef(pos->angley, 0.0f, -1.0f, 0.0f);
-	
+
 	if (pos->roll)
 	{
 		pglTranslatef(pos->centerx, pos->centery, 0);
@@ -2878,7 +2878,7 @@ INT32 GL_GetTextureUsed(void)
 		res += tmp->height*tmp->width*bpp;
 		tmp = tmp->next;
 	}
-	
+
 	return res;
 }
 
@@ -2896,8 +2896,8 @@ void GL_PostImgRedraw(float points[SCREENVERTS][SCREENVERTS][2])
 		16.0f, 16.0f, 6.0f,
 		16.0f, -16.0f, 6.0f
 	};
-	
-	if (gl_enable_screen_textures != 2) 
+
+	if (gl_enable_screen_textures != 2)
 		return;
 
 	// look for power of two that is large enough for the screen
@@ -2993,8 +2993,8 @@ void GL_DrawScreenTexture(int tex, FSurfaceInfo *surf, FBITFIELD polyflags)
 	};
 
 	float fix[8];
-	
-	if (gl_enable_screen_textures != 2) 
+
+	if (gl_enable_screen_textures != 2)
 		return;
 
 	// look for power of two that is large enough for the screen
@@ -3022,7 +3022,7 @@ void GL_DrawScreenTexture(int tex, FSurfaceInfo *surf, FBITFIELD polyflags)
 	pglClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
 
 	pglBindTexture(GL_TEXTURE_2D, screenTextures[tex]);
-	
+
 	GL_PreparePolygon(surf, surf ? polyflags : (PF_NoDepthTest));
 	if (!surf)
 		pglColor4ubv(white);
@@ -3061,7 +3061,7 @@ void GL_DoScreenWipe(int wipeStart, int wipeEnd)
 		1.0f, 1.0f
 	};
 
-	if (!gl_enable_screen_textures) 
+	if (!gl_enable_screen_textures)
 		return;
 
 	// look for power of two that is large enough for the screen
@@ -3147,7 +3147,7 @@ void GL_RenderVhsEffect(fixed_t upbary, fixed_t downbary, UINT8 updistort, UINT8
 		1.0f, -1.0f, 1.0f
 	};
 
-	if (gl_enable_screen_textures != 2) 
+	if (gl_enable_screen_textures != 2)
 		return;
 
 	// look for power of two that is large enough for the screen
@@ -3244,7 +3244,7 @@ void GL_MakeScreenTexture(int tex)
 {
 	INT32 texsizew = 512, texsizey = 512;
 	boolean firstTime = (screenTextures[tex] == 0);
-	
+
 	if (!gl_enable_screen_textures)
 		return;
 
@@ -3284,7 +3284,7 @@ void GL_DrawScreenFinalTexture(int tex, INT32 width, INT32 height, boolean usesh
 
 	float off[12];
 	float fix[8];
-	
+
 	if (gl_enable_screen_textures != 2)
 		return;
 
@@ -3384,7 +3384,7 @@ void GL_SetPaletteLookup(UINT8 *lut)
 	{
 		internalFormat = GL_R8;
 	}
-	
+
 	if (!paletteLookupTex)
 		pglGenTextures(1, &paletteLookupTex);
 	pglActiveTexture(GL_TEXTURE1);
@@ -3433,7 +3433,7 @@ void GL_ClearLightTables(void)
 	}
 
 	LightTablesTail = NULL;
-	
+
 	// we no longer have a bound light table (if we had one), we just deleted it!
 	lt_downloaded = 0;
 }

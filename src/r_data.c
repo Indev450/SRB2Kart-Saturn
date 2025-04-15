@@ -303,8 +303,9 @@ static UINT8 *R_GenerateTexture(size_t texnum)
 	UINT8 *blocktex;
 	texture_t *texture;
 	texpatch_t *patch;
-	patch_t *realpatch;
-	int x, x1, x2, i;
+	softwarepatch_t *realpatch;
+	UINT8 *pdata;
+	int x, x1, x2, i, width, height;
 	size_t blocksize;
 	column_t *patchcol;
 	UINT8 *colofs;
@@ -323,16 +324,21 @@ static UINT8 *R_GenerateTexture(size_t texnum)
 	{
 		boolean holey = false;
 		patch = texture->patches;
-		realpatch = W_CacheLumpNumPwad(patch->wad, patch->lump, PU_CACHE);
+		pdata = W_CacheLumpNumPwad(patch->wad, patch->lump, PU_CACHE);
+		realpatch = (softwarepatch_t *)pdata;
 
 		// Check the patch for holes.
 		if (texture->width > SHORT(realpatch->width) || texture->height > SHORT(realpatch->height))
 			holey = true;
+
 		colofs = (UINT8 *)realpatch->columnofs;
+
 		for (x = 0; x < texture->width && !holey; x++)
 		{
 			column_t *col = (column_t *)((UINT8 *)realpatch + LONG(*(UINT32 *)&colofs[x<<2]));
+
 			INT32 topdelta, prevdelta = -1, y = 0;
+
 			while (col->topdelta != 0xff)
 			{
 				topdelta = col->topdelta;
@@ -344,6 +350,7 @@ static UINT8 *R_GenerateTexture(size_t texnum)
 				y = topdelta + col->length + 1;
 				col = (column_t *)((UINT8 *)col + col->length + 4);
 			}
+
 			if (y < texture->height)
 				holey = true; // this texture is HOLEy! D:
 		}
@@ -376,7 +383,7 @@ static UINT8 *R_GenerateTexture(size_t texnum)
 	texturememory += blocksize;
 	block = Z_Malloc(blocksize+1, PU_STATIC, &texturecache[texnum]);
 
-	memset(block, 0xF7, blocksize+1); // Transparency hack
+	memset(block, TRANSPARENTPIXEL, blocksize+1); // Transparency hack
 
 	// columns lookup table
 	colofs = block;
@@ -388,20 +395,34 @@ static UINT8 *R_GenerateTexture(size_t texnum)
 	// Composite the columns together.
 	for (i = 0, patch = texture->patches; i < texture->patchcount; i++, patch++)
 	{
-		realpatch = W_CacheLumpNumPwad(patch->wad, patch->lump, PU_CACHE);
+		pdata = W_CacheLumpNumPwad(patch->wad, patch->lump, PU_CACHE);
+		realpatch = (softwarepatch_t *)pdata;
 
 		// Well, it's not valid...
 		if (realpatch == NULL)
 			continue;
 
 		x1 = patch->originx;
-		x2 = x1 + SHORT(realpatch->width);
+		width = SHORT(realpatch->width);
+		height = SHORT(realpatch->height);
+		x2 = x1 + width;
 
+		if (x1 > texture->width || x2 < 0)
+			continue; // patch not located within texture's x bounds, ignore
+
+		if (patch->originy > texture->height || (patch->originy + height) < 0)
+			continue; // patch not located within texture's y bounds, ignore
+
+		// patch is actually inside the texture!
+		// now check if texture is partly off-screen and adjust accordingly
+
+		// left edge
 		if (x1 < 0)
 			x = 0;
 		else
 			x = x1;
 
+		// right edge
 		if (x2 > texture->width)
 			x2 = texture->width;
 
@@ -495,7 +516,7 @@ Rloadtextures (INT32 i, INT32 w)
 	UINT16 j;
 	INT32 k;
 	UINT16 texstart, texend, texturesLumpPos;
-	patch_t *patchlump;
+	softwarepatch_t patchlump;
 	texpatch_t *patch;
 	texture_t *texture;
 
@@ -534,7 +555,7 @@ Rloadtextures (INT32 i, INT32 w)
 					continue; // If it is then SKIP IT
 			}
 
-			patchlump = W_CacheLumpNumPwad(wadnum, lumpnum, PU_STATIC);
+			W_ReadLumpHeaderPwad(wadnum, lumpnum, &patchlump, 8, 0);
 
 			//CONS_Printf("\n\"%s\" is a single patch, dimensions %d x %d",W_CheckNameForNumPwad((UINT16)w,texstart+j),patchlump->width, patchlump->height);
 			texture = textures[i] = Z_Calloc(sizeof(texture_t) + sizeof(texpatch_t), PU_STATIC, NULL);
@@ -542,8 +563,8 @@ Rloadtextures (INT32 i, INT32 w)
 			// Set texture properties.
 			M_Memcpy(texture->name, W_CheckNameForNumPwad((UINT16)w, texstart + j), sizeof(texture->name));
 			texture->hash = quickncasehash(texture->name, 8);
-			texture->width = SHORT(patchlump->width);
-			texture->height = SHORT(patchlump->height);
+			texture->width = SHORT(patchlump.width);
+			texture->height = SHORT(patchlump.height);
 			texture->patchcount = 1;
 			texture->holes = false;
 
@@ -553,8 +574,6 @@ Rloadtextures (INT32 i, INT32 w)
 			patch->originx = patch->originy = 0;
 			patch->wad = (UINT16)w;
 			patch->lump = texstart + j;
-
-			Z_Free(patchlump);
 
 			k = 1;
 			while (k << 1 <= texture->width)
@@ -702,7 +721,7 @@ static void R_FinishLoadingTextures(INT32 add)
 
 #ifdef HWRENDER
 	if (rendermode == render_opengl)
-		HWR_LoadTextures(numtextures);
+		HWR_LoadMapTextures(numtextures);
 #endif
 }
 
@@ -1913,7 +1932,7 @@ static void R_PrecacheLevelSprites(void)
 				lump = sf->lumppat[a];\
 				if (devparm)\
 					spritememory += W_LumpLength(lump);\
-				W_CachePatchNum(lump, PU_CACHE);\
+				W_CachePatchNum(lump, PU_SPRITE);\
 			}
 			// see R_InitSprites for more about lumppat,lumpid
 			switch (sf->rotate)
