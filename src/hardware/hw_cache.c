@@ -551,8 +551,7 @@ static void HWR_FreePatchCache(boolean freeall)
 		callback = FreeColormapsCallback;
 
 	Z_IterateTags(PU_PATCH, PU_PATCH_ROTATED, callback);
-	//Z_IterateTags(PU_SPRITE, PU_HUDGFX, callback); // why would we want to free our hudgfx?
-	Z_IterateTags(PU_SPRITE, PU_SPRITE, callback);
+	Z_IterateTags(PU_SPRITE, PU_HUDGFX, callback);
 }
 
 // free all textures after each level
