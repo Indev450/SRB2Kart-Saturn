@@ -585,7 +585,11 @@ void HWR_FreeMapTextures(void)
 {
 	size_t i;
 
+#ifdef GLENCORE
+	for (i = 0; i < gl_numtextures*2; i++)
+#else
 	for (i = 0; i < gl_numtextures; i++)
+#endif
 	{
 		FreeMapTexture(&gl_textures[i]);
 	}
