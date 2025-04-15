@@ -653,7 +653,7 @@ typedef struct
 	INT16 height;
 	INT16 leftoffset;     // pixels to the left of origin
 	INT16 topoffset;      // pixels below the origin
-	INT32 columnofs[];     // only [width] used
+	INT32 columnofs[8];     // only [width] used
 	// the [0] is &columnofs[width]
 } patch_t;
 
@@ -720,9 +720,9 @@ typedef struct
 
 	// Flip bits (1 = flip) to use for view angles 0-7.
 	UINT8 flip;
-	
+
 #ifdef ROTSPRITE
-	rotsprite_t *rotated[2][16]; // Rotated patches
+	rotsprite_t *rotated[16]; // Rotated patches
 #endif
 } spriteframe_t;
 
