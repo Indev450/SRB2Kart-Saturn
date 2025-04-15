@@ -383,7 +383,7 @@ static void Patch_FreeData(patch_t *patch)
 #endif
 
 #ifdef ROTSPRITE
-	if (patch->rotated)
+	/*if (patch->rotated)
 	{
 		rotsprite_t *rotsprite = patch->rotated;
 		INT32 i = 0;
@@ -396,7 +396,7 @@ static void Patch_FreeData(patch_t *patch)
 
 		Z_Free(rotsprite->patches);
 		Z_Free(rotsprite);
-	}
+	}*/
 #endif
 
 	if (patch->columnofs)

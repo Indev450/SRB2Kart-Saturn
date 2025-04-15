@@ -656,7 +656,6 @@ typedef struct
 #ifdef ROTSPRITE
 	rotsprite_t *rotated; // Rotated patches
 #endif
-
 } patch_t;
 
 #if defined(_MSC_VER)
