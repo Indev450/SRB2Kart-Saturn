@@ -637,7 +637,7 @@ void R_DrawMaskedColumn(column_t *column)
 				colfunc();
 #ifdef PARANOIA
 			else
-				I_Error("R_DrawMaskedColumn: Invalid ylookup for dc_yl %d", dc->yl);
+				I_Error("R_DrawMaskedColumn: Invalid ylookup for dc_yl %d", dc_yl);
 #endif
 		}
 		column = (column_t *)((UINT8 *)column + column->length + 4);
