@@ -3040,10 +3040,16 @@ boolean P_SetupLevel(boolean fromnetsave, boolean reloadinggamestate)
 	R_FlushTranslationColormapCache();
 
 #ifdef HWRENDER
+	// Free GPU textures before freeing patches.
+	if (rendermode == render_opengl && (vid.glstate == VID_GL_LIBRARY_LOADED))
+		HWR_ClearAllTextures();
+
 	// Delete light table textures
 	HWR_ClearLightTables();
 #endif
 
+	Patch_FreeTag(PU_PATCH_LOWPRIORITY);
+	//Patch_FreeTag(PU_PATCH_ROTATED); // we keep those ty!
 	Z_FreeTags(PU_LEVEL, PU_PURGELEVEL - 1);
 
 #if defined (WALLSPLATS) || defined (FLOORSPLATS)
@@ -3114,7 +3120,7 @@ boolean P_SetupLevel(boolean fromnetsave, boolean reloadinggamestate)
 	{
 		HWR_FreeExtraSubsectors();
 
-		// stuff like HWR_CreatePlanePolygons is called there
+		// Create plane polygons.
 		HWR_LoadLevel();
 	}
 #endif
@@ -3329,12 +3335,23 @@ UINT16 P_PartialAddWadFile(const char *wadfilename, boolean local)
 	if (!devparm && digmreplaces)
 		CONS_Printf(M_GetText("%s digital musics replaced\n"), sizeu1(digmreplaces));
 
-	R_LoadTexturesPwad(wadnum);
+#ifdef HWRENDER
+	// Free GPU textures before freeing patches.
+	if (rendermode == render_opengl && (vid.glstate == VID_GL_LIBRARY_LOADED))
+		HWR_ClearAllTextures();
+#endif
 
 	//
 	// search for sprite replacements
 	//
+	Patch_FreeTag(PU_SPRITE);
+	Patch_FreeTag(PU_PATCH_ROTATED);
 	R_AddSpriteDefs(wadnum);
+
+	// Reload it all anyway, just in case they
+	// added some textures but didn't insert a
+	// TEXTURES/etc. list.
+	R_LoadTexturesPwad(wadnum);
 
 	// everything from MultiSetupWadFile until ST_Start was here originally
 

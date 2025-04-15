@@ -90,9 +90,9 @@ extern boolean havepazrcst;
 extern boolean havefaytpad;
 
 // hw_draw.c
-void HWR_DrawPatch(GLPatch_t *gpatch, INT32 x, INT32 y, INT32 option);
-void HWR_DrawStretchyFixedPatch(GLPatch_t *gpatch, fixed_t x, fixed_t y, fixed_t pscale, fixed_t vscale, INT32 option, const UINT8 *colormap, INT32 bflags);
-void HWR_DrawCroppedPatch(GLPatch_t *gpatch, fixed_t x, fixed_t y, fixed_t pscale, INT32 option, fixed_t sx, fixed_t sy, fixed_t w, fixed_t h);
+void HWR_DrawPatch(patch_t *gpatch, INT32 x, INT32 y, INT32 option);
+void HWR_DrawStretchyFixedPatch(patch_t *gpatch, fixed_t x, fixed_t y, fixed_t pscale, fixed_t vscale, INT32 option, const UINT8 *colormap, INT32 bflags);
+void HWR_DrawCroppedPatch(patch_t *gpatch, fixed_t x, fixed_t y, fixed_t pscale, INT32 option, fixed_t sx, fixed_t sy, fixed_t w, fixed_t h);
 void HWR_DrawFill(INT32 x, INT32 y, INT32 w, INT32 h, INT32 color);
 void HWR_DrawConsoleFill(INT32 x, INT32 y, INT32 w, INT32 h, UINT32 color, INT32 options);	// Lat: separate flags from color since color needs to be an uint to work right.
 void HWR_DrawDiag(INT32 x, INT32 y, INT32 wh, INT32 color);
@@ -175,10 +175,6 @@ void HWR_ProcessSeg(void); // Sort of like GLWall::Process in GZDoom
 // hw_bsp.c
 void HWR_CreatePlanePolygons(INT32 bspnum);
 extern boolean gl_maphasportals;
-
-// hw_cache.c
-void HWR_LoadTextures(size_t pnumtextures);
-RGBA_t *HWR_GetTexturePalette(void);
 
 // Console variables
 extern CV_PossibleValue_t glanisotropicmode_cons_t[];

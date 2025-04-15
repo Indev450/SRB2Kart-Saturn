@@ -420,7 +420,7 @@ static void Y_PlayerStandingsDrawer(y_data_t *standings, INT32 x, INT32 hilicol)
 			if (pnum == whiteplayer)
 			{
 				UINT8 cursorframe = (intertic / 4) % 8;
-				V_DrawScaledPatch(x+16, y-4, 0, W_CachePatchName(va("K_CHILI%d", cursorframe+1), PU_CACHE));
+				V_DrawScaledPatch(x+16, y-4, 0, W_CachePatchName(va("K_CHILI%d", cursorframe+1), PU_PATCH));
 			}
 
 			STRBUFCPY(strtime, standings->name[i]);
@@ -856,7 +856,7 @@ void Y_StartIntermission(void)
 			break;
 	}
 
-	bgtile = W_CachePatchName("SRB2BACK", PU_STATIC);
+	bgtile = W_CachePatchName("SRB2BACK", PU_PATCH);
 
 	LUA_HUD_DestroyDrawList(luahuddrawlist_intermission);
 	luahuddrawlist_intermission = LUA_HUD_CreateDrawList();
@@ -887,7 +887,7 @@ static void Y_FollowIntermission(void)
 	G_AfterIntermission();
 }
 
-#define UNLOAD(x) Z_ChangeTag(x, PU_CACHE); x = NULL
+#define UNLOAD(x) if (x) {Patch_Free(x);} x = NULL;
 
 //
 // Y_UnloadData
@@ -922,9 +922,9 @@ static void Y_DrawAnimatedVoteScreenPatch(boolean widePatch)
 	if (currentAnimFrame > tempFoundAnimVoteFrames - 1)
 		currentAnimFrame = 0;
 
-	patch_t *background = W_CachePatchName(va("%s%d", tempAnimPrefix, currentAnimFrame + 1), PU_CACHE);
-	V_DrawScaledPatch(((vid.width/2) / vid.dupx) - (SHORT(background->width)/2), // Keep the width/height adjustments, for screens that are less wide than 320(?)
-				(vid.height / vid.dupy) - SHORT(background->height),
+	patch_t *background = W_CachePatchName(va("%s%d", tempAnimPrefix, currentAnimFrame + 1), PU_PATCH);
+	V_DrawScaledPatch(((vid.width/2) / vid.dupx) - (background->width/2), // Keep the width/height adjustments, for screens that are less wide than 320(?)
+				(vid.height / vid.dupy) - background->height,
 				V_SNAPTOTOP|V_SNAPTOLEFT, background);
 
 	if (renderisnewtic && votetic % 2 == 0 && !paused)
@@ -954,8 +954,8 @@ static void Y_DrawVoteScreenPatch(void)
 		votebg = widebgpatch;
 	}
 
-	V_DrawScaledPatch(((vid.width/2) / vid.dupx) - (SHORT(votebg->width)/2),
-					  (vid.height / vid.dupy) - SHORT(votebg->height),
+	V_DrawScaledPatch(((vid.width/2) / vid.dupx) - (votebg->width/2),
+					  (vid.height / vid.dupy) - votebg->height,
 					  V_SNAPTOTOP|V_SNAPTOLEFT, votebg);
 }
 
@@ -1187,7 +1187,7 @@ void Y_VoteDrawer(void)
 			if (!splitscreen && i == consoleplayer)
 			{
 				UINT8 cursorframe = (votetic / 4) % 8;
-				V_DrawScaledPatch(x+24, y+9, V_SNAPTOLEFT, W_CachePatchName(va("K_CHILI%d", cursorframe+1), PU_CACHE));
+				V_DrawScaledPatch(x+24, y+9, V_SNAPTOLEFT, W_CachePatchName(va("K_CHILI%d", cursorframe+1), PU_PATCH));
 			}
 		}
 
@@ -1466,15 +1466,15 @@ void Y_StartVote(void)
 
 	Y_AnimatedVoteScreenCheck();
 
-	widebgpatch = W_CachePatchName(((prefgametype == GT_MATCH) ? "BATTLSCW" : "INTERSCW"), PU_STATIC);
-	bgpatch = W_CachePatchName(((prefgametype == GT_MATCH) ? "BATTLSCR" : "INTERSCR"), PU_STATIC);
-	cursor = W_CachePatchName("M_CURSOR", PU_STATIC);
-	cursor1 = W_CachePatchName("P1CURSOR", PU_STATIC);
-	cursor2 = W_CachePatchName("P2CURSOR", PU_STATIC);
-	cursor3 = W_CachePatchName("P3CURSOR", PU_STATIC);
-	cursor4 = W_CachePatchName("P4CURSOR", PU_STATIC);
-	randomlvl = W_CachePatchName("RANDOMLV", PU_STATIC);
-	rubyicon = W_CachePatchName("RUBYICON", PU_STATIC);
+	widebgpatch = W_CachePatchName(((prefgametype == GT_MATCH) ? "BATTLSCW" : "INTERSCW"), PU_PATCH);
+	bgpatch = W_CachePatchName(((prefgametype == GT_MATCH) ? "BATTLSCR" : "INTERSCR"), PU_PATCH);
+	cursor = W_CachePatchName("M_CURSOR", PU_PATCH);
+	cursor1 = W_CachePatchName("P1CURSOR", PU_PATCH);
+	cursor2 = W_CachePatchName("P2CURSOR", PU_PATCH);
+	cursor3 = W_CachePatchName("P3CURSOR", PU_PATCH);
+	cursor4 = W_CachePatchName("P4CURSOR", PU_PATCH);
+	randomlvl = W_CachePatchName("RANDOMLV", PU_PATCH);
+	rubyicon = W_CachePatchName("RUBYICON", PU_PATCH);
 
 	timer = cv_votetime.value*TICRATE;
 	pickedvote = -1;
@@ -1542,9 +1542,9 @@ void Y_StartVote(void)
 		// set up the pic
 		lumpnum = W_CheckNumForName(va("%sP", G_BuildMapName(votelevels[i][0]+1)));
 		if (lumpnum != LUMPERROR)
-			levelinfo[i].pic = W_CachePatchName(va("%sP", G_BuildMapName(votelevels[i][0]+1)), PU_STATIC);
+			levelinfo[i].pic = W_CachePatchName(va("%sP", G_BuildMapName(votelevels[i][0]+1)), PU_PATCH);
 		else
-			levelinfo[i].pic = W_CachePatchName("BLANKLVL", PU_STATIC);
+			levelinfo[i].pic = W_CachePatchName("BLANKLVL", PU_PATCH);
 	}
 
 	voteclient.loaded = true;
