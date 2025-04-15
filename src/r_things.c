@@ -254,7 +254,7 @@ static boolean R_AddSingleSpriteDef(const char *sprname, spritedef_t *spritedef,
 	UINT8 frame;
 	UINT8 rotation;
 	lumpinfo_t *lumpinfo;
-	patch_t patch;
+	softwarepatch_t patch;
 	UINT8 numadded = 0;
 
 	memset(sprtemp,0xFF, sizeof (sprtemp));
@@ -297,10 +297,10 @@ static boolean R_AddSingleSpriteDef(const char *sprname, spritedef_t *spritedef,
 		// store sprite info in lookup tables
 		//FIXME : numspritelumps do not duplicate sprite replacements
 		W_ReadLumpHeaderPwad(wadnum, l, &patch, sizeof (patch_t), 0);
-		spritecachedinfo[numspritelumps].width = SHORT(patch.width)<<FRACBITS;
-		spritecachedinfo[numspritelumps].offset = SHORT(patch.leftoffset)<<FRACBITS;
-		spritecachedinfo[numspritelumps].topoffset = SHORT(patch.topoffset)<<FRACBITS;
-		spritecachedinfo[numspritelumps].height = SHORT(patch.height)<<FRACBITS;
+		spritecachedinfo[numspritelumps].width = (patch.width)<<FRACBITS;
+		spritecachedinfo[numspritelumps].offset = (patch.leftoffset)<<FRACBITS;
+		spritecachedinfo[numspritelumps].topoffset = (patch.topoffset)<<FRACBITS;
+		spritecachedinfo[numspritelumps].height = (patch.height)<<FRACBITS;
 
 		//BP: we cannot use special tric in hardware mode because feet in ground caused by z-buffer
 		if (rendermode != render_none) // not for psprite
@@ -882,7 +882,7 @@ static void R_DrawVisSprite(vissprite_t *vis)
 			sprtopscreen = (centeryfrac - FixedMul(dc_texturemid, spryscale));
 			dc_iscale = (0xffffffffu / (unsigned)spryscale);
 
-			column = (column_t *)((UINT8 *)patch + LONG(patch->columnofs[texturecolumn]));
+			column = (column_t *)((UINT8 *)patch->columns + (patch->columnofs[texturecolumn]));
 
 			localcolfunc (column);
 		}
@@ -893,7 +893,7 @@ static void R_DrawVisSprite(vissprite_t *vis)
 		for (dc_x = vis->x1; dc_x <= vis->x2 && (frac>>FRACBITS) < pwidth; dc_x++, frac += vis->xiscale)
 		{
 			texturecolumn = CLAMP(frac >> FRACBITS, 0, pwidth - 1);
-			column = (column_t *)((UINT8 *)patch + LONG(patch->columnofs[texturecolumn]));
+			column = (column_t *)((UINT8 *)patch->columns + (patch->columnofs[texturecolumn]));
 
 			localcolfunc (column);
 		}
@@ -961,7 +961,7 @@ static void R_DrawPrecipitationVisSprite(vissprite_t *vis)
 			break;
 		}
 
-		column = (column_t *)((UINT8 *)patch + LONG(patch->columnofs[texturecolumn]));
+		column = (column_t *)((UINT8 *)patch->columns + (patch->columnofs[texturecolumn]));
 
 		R_DrawMaskedColumn(column);
 	}
