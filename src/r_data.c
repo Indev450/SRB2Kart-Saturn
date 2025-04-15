@@ -561,8 +561,8 @@ Rloadtextures (INT32 i, INT32 w)
 			// Set texture properties.
 			M_Memcpy(texture->name, W_CheckNameForNumPwad((UINT16)w, texstart + j), sizeof(texture->name));
 			texture->hash = quickncasehash(texture->name, 8);
-			texture->width = SHORT(patchlump->width);
-			texture->height = SHORT(patchlump->height);
+			texture->width = patchlump->width;
+			texture->height = patchlump->height;
 			texture->patchcount = 1;
 			texture->holes = false;
 

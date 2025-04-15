@@ -303,16 +303,16 @@ static int patch_get(lua_State *L)
 		lua_pushboolean(L, patch != NULL);
 		break;
 	case patch_width:
-		lua_pushinteger(L, SHORT(patch->width));
+		lua_pushinteger(L, patch->width);
 		break;
 	case patch_height:
-		lua_pushinteger(L, SHORT(patch->height));
+		lua_pushinteger(L, patch->height);
 		break;
 	case patch_leftoffset:
-		lua_pushinteger(L, SHORT(patch->leftoffset));
+		lua_pushinteger(L, patch->leftoffset);
 		break;
 	case patch_topoffset:
-		lua_pushinteger(L, SHORT(patch->topoffset));
+		lua_pushinteger(L, patch->topoffset);
 		break;
 	}
 	return 1;
@@ -657,27 +657,27 @@ static int libd_drawOnMinimap(lua_State *L)
 	splitflags |= V_HUDTRANS;
 
 	// Handle offsets and stuff.
-	mm_x = info.x - (SHORT(AutomapPic->width)/2);
-	mm_y = info.y - (SHORT(AutomapPic->height)/2);
+	mm_x = info.x - (AutomapPic->width/2);
+	mm_y = info.y - (AutomapPic->height/2);
 
 	// let offsets transfer to the heads, too!
 	if (encoremode)
 	{
-		mm_x += SHORT(AutomapPic->leftoffset);
+		mm_x += AutomapPic->leftoffset;
 	}
 	else
 	{
-		mm_x -= SHORT(AutomapPic->leftoffset);
+		mm_x -= AutomapPic->leftoffset;
 	}
 
-	mm_y -= SHORT(AutomapPic->topoffset);
+	mm_y -= AutomapPic->topoffset;
 
 	// patch is supposedly already centered, don't butt in.
 	if (!centered)
 	{
 		// scale patch coords
-		patchw = (SHORT(patch->width) * scale / 2);
-		patchh = (SHORT(patch->height) * scale / 2);
+		patchw = (patch->width * scale / 2);
+		patchh = (patch->height * scale / 2);
 	}
 
 	amnumxpos = (FixedMul(x, minimapinfo.zoom) - minimapinfo.offs_x);
@@ -688,8 +688,8 @@ static int libd_drawOnMinimap(lua_State *L)
 		amnumxpos = -amnumxpos;
 	}
 
-	amxpos = amnumxpos + ((mm_x + SHORT(AutomapPic->width) / 2)<<FRACBITS) - patchw;
-	amypos = amnumypos + ((mm_y + SHORT(AutomapPic->height) / 2)<<FRACBITS) - patchh;
+	amxpos = amnumxpos + ((mm_x + AutomapPic->width / 2)<<FRACBITS) - patchw;
+	amypos = amnumypos + ((mm_y + AutomapPic->height / 2)<<FRACBITS) - patchh;
 
 	if (cv_minihead.value)
 	{

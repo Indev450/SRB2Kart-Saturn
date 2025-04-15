@@ -170,8 +170,8 @@ static void F_SkyScroll(INT32 scrollspeed)
 	w = (vid.width / vid.dupx)<<FRACBITS;
 
 	// The scroll offset MUST be clamped before shifting by FRACBITS, or else it'll overflow in about 3 minutes
-	animtimer = ((((finalecount * scrollspeed) % (SHORT(pat->width)*16))<<FRACBITS) + (R_GetMenuUncap() * scrollspeed))/16;
-	anim2 = (SHORT(pat2->width)<<FRACBITS) - ((((finalecount * scrollspeed) % (SHORT(pat2->width)*16))<<FRACBITS) + (R_GetMenuUncap() * scrollspeed))/16;
+	animtimer = ((((finalecount * scrollspeed) % (pat->width*16))<<FRACBITS) + (R_GetMenuUncap() * scrollspeed))/16;
+	anim2 = (pat2->width<<FRACBITS) - ((((finalecount * scrollspeed) % (pat2->width*16))<<FRACBITS) + (R_GetMenuUncap() * scrollspeed))/16;
 
 	// SRB2Kart: F_DrawPatchCol is over-engineered; recoded to be less shitty and error-prone
 	if (rendermode != render_none)
@@ -183,15 +183,15 @@ static void F_SkyScroll(INT32 scrollspeed)
 		while (x < w)
 		{
 			V_DrawFixedPatch(x, y, FRACUNIT, V_SNAPTOTOP|V_SNAPTOLEFT, pat, NULL);
-			x += SHORT(pat->width)<<FRACBITS;
+			x += pat->width<<FRACBITS;
 		}
 
 		x = -anim2;
-		y = (BASEVIDHEIGHT - SHORT(pat2->height))<<FRACBITS;
+		y = (BASEVIDHEIGHT - pat2->height)<<FRACBITS;
 		while (x < w)
 		{
 			V_DrawFixedPatch(x, y, FRACUNIT, V_SNAPTOBOTTOM|V_SNAPTOLEFT, pat2, NULL);
-			x += SHORT(pat2->width)<<FRACBITS;
+			x += pat2->width<<FRACBITS;
 		}
 	}
 
@@ -1270,7 +1270,7 @@ void F_ContinueDrawer(void)
 	V_DrawCenteredString(BASEVIDWIDTH/2, 100, 0, "CONTINUE?");
 
 	// Draw a Sonic!
-	V_DrawScaledPatch((BASEVIDWIDTH - SHORT(contsonic->width))/2, 32, 0, contsonic);
+	V_DrawScaledPatch((BASEVIDWIDTH - contsonic->width)/2, 32, 0, contsonic);
 
 	// Draw the continue markers! Show continues minus one.
 	x -= ncontinues * 6;

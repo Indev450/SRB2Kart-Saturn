@@ -1823,7 +1823,6 @@ void *W_GetCachedRotPatchPwad(UINT16 wadnum, UINT16 lumpnum)
 
 	return (void *)rspr;
 }
-
 #endif // ROTSPRITE
 
 void W_UnlockCachedPatch(void *patch)

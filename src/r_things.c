@@ -297,10 +297,10 @@ static boolean R_AddSingleSpriteDef(const char *sprname, spritedef_t *spritedef,
 		// store sprite info in lookup tables
 		//FIXME : numspritelumps do not duplicate sprite replacements
 		W_ReadLumpHeaderPwad(wadnum, l, &patch, sizeof (patch_t), 0);
-		spritecachedinfo[numspritelumps].width = (patch.width)<<FRACBITS;
-		spritecachedinfo[numspritelumps].offset = (patch.leftoffset)<<FRACBITS;
-		spritecachedinfo[numspritelumps].topoffset = (patch.topoffset)<<FRACBITS;
-		spritecachedinfo[numspritelumps].height = (patch.height)<<FRACBITS;
+		spritecachedinfo[numspritelumps].width = (INT32)(SHORT(patch.width))<<FRACBITS;
+		spritecachedinfo[numspritelumps].offset = (INT32)(SHORT(patch.leftoffset))<<FRACBITS;
+		spritecachedinfo[numspritelumps].topoffset = (INT32)(SHORT(patch.topoffset))<<FRACBITS;
+		spritecachedinfo[numspritelumps].height = (INT32)(SHORT(patch.height))<<FRACBITS;
 
 		//BP: we cannot use special tric in hardware mode because feet in ground caused by z-buffer
 		if (rendermode != render_none) // not for psprite
@@ -746,7 +746,7 @@ static void R_DrawVisSprite(vissprite_t *vis)
 	// TODO This check should not be necessary. But Papersprites near to the camera will sometimes create invalid values
 	// for the vissprite's startfrac. This happens because they are not depth culled like other sprites.
 	// Someone who is more familiar with papersprites pls check and try to fix <3
-	if (vis->startfrac < 0 || vis->startfrac > (SHORT(patch->width) << FRACBITS))
+	if (vis->startfrac < 0 || vis->startfrac > (patch->width << FRACBITS))
 	{
 		// never draw vissprites with startfrac out of patch range
 		return;
@@ -814,7 +814,7 @@ static void R_DrawVisSprite(vissprite_t *vis)
 			dc_colormap += COLORMAP_REMAPOFFSET;
 
 	dc_texturemid = vis->texturemid;
-	dc_texheight = SHORT(patch->height);
+	dc_texheight = patch->height;
 
 	frac = vis->startfrac;
 	windowtop = windowbottom = sprbotscreen = INT32_MAX;
@@ -858,8 +858,8 @@ static void R_DrawVisSprite(vissprite_t *vis)
 		vis->x2 = vid.width-1;
 
 	localcolfunc = (vis->vflip) ? R_DrawFlippedMaskedColumn : R_DrawMaskedColumn;
-	lengthcol = SHORT(patch->height);
-	pwidth = SHORT(patch->width);
+	lengthcol = patch->height;
+	pwidth = patch->width;
 
 	// Split drawing loops for paper and non-paper to reduce conditional checks per sprite
 	if (vis->scalestep)
@@ -938,7 +938,7 @@ static void R_DrawPrecipitationVisSprite(vissprite_t *vis)
 
 	dc_iscale = FixedDiv(FRACUNIT, vis->scale);
 	dc_texturemid = FixedDiv(vis->texturemid, this_scale);
-	dc_texheight = SHORT(patch->height);
+	dc_texheight = patch->height;
 
 	frac = vis->startfrac;
 	spryscale = vis->scale;
@@ -1399,10 +1399,10 @@ static void R_ProjectSprite(mobj_t *thing)
 
 			if (rotsprite != NULL)
 			{
-				spr_width = SHORT(rotsprite->width) << FRACBITS;
-				spr_height = SHORT(rotsprite->height) << FRACBITS;
-				spr_offset = SHORT(rotsprite->leftoffset) << FRACBITS;
-				spr_topoffset = SHORT(rotsprite->topoffset) << FRACBITS;
+				spr_width = rotsprite->width << FRACBITS;
+				spr_height = rotsprite->height << FRACBITS;
+				spr_offset = rotsprite->leftoffset << FRACBITS;
+				spr_topoffset = rotsprite->topoffset << FRACBITS;
 				spr_topoffset += FEETADJUST;
 
 				// flip -> rotate, not rotate -> flip

@@ -344,10 +344,10 @@ patch_t *Patch_Create(softwarepatch_t *source, size_t srcsize, void *dest)
 		size_t size = sizeof(INT32) * source->width;
 		size_t offs = (sizeof(INT16) * 4) + size;
 
-		patch->width      = source->width;
-		patch->height     = source->height;
-		patch->leftoffset = source->leftoffset;
-		patch->topoffset  = source->topoffset;
+		patch->width      = SHORT(source->width);
+		patch->height     = SHORT(source->height);
+		patch->leftoffset = SHORT(source->leftoffset);
+		patch->topoffset  = SHORT(source->topoffset);
 		patch->columnofs  = Z_Calloc(size, PU_CACHE, NULL);
 
 		for (col = 0; col < source->width; col++)
@@ -800,7 +800,7 @@ void RotatedPatch_DoRotation(rotsprite_t *rotsprite, patch_t *patch, INT32 angle
 	}
 
 	ox = (newwidth / 2) + (leftoffset - xpivot);
-	oy = (newheight / 2) + (SHORT(patch->topoffset) - ypivot);
+	oy = (newheight / 2) + (patch->topoffset - ypivot);
 	width = (maxx - minx);
 	height = (maxy - miny);
 
