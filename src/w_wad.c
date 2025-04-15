@@ -1780,7 +1780,7 @@ void *W_CachePatchNumPwad(UINT16 wad, UINT16 lump, INT32 tag)
 	if (!TestValidLump(wad, lump))
 		return NULL;
 
-	patch = W_CacheSoftwarePatchNumPwad(wad, lump, tag);
+	patch = (patch_t *)W_CacheSoftwarePatchNumPwad(wad, lump, tag);
 
 #ifdef HWRENDER
 	// Software-only compile cache the data without conversion
@@ -1843,9 +1843,7 @@ void *W_CachePatchName(const char *name, INT32 tag)
 {
 	lumpnum_t num;
 
-	const char *finalname = name;
-
-	num = W_CheckNumForName(finalname);
+	num = W_CheckNumForName(name);
 
 	if (num == LUMPERROR)
 		return W_CachePatchNum(W_GetNumForName("MISSING"), tag);
