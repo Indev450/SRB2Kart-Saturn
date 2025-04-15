@@ -554,7 +554,7 @@ patch_t *Patch_GetRotatedSprite(spriteframe_t *sprite, size_t frame, size_t spri
 		if (lump == LUMPERROR)
 			return NULL;
 
-		patch = (patch_t *)W_CacheLumpNum(lump, PU_STATIC);
+		patch = (patch_t *)W_CachePatchNum(lump, PU_CACHE); // PU_LEVEL
 
 		if (sprinfo->available)
 		{
@@ -568,9 +568,6 @@ patch_t *Patch_GetRotatedSprite(spriteframe_t *sprite, size_t frame, size_t spri
 		}
 
 		RotatedPatch_DoRotation(rotsprite, patch, rotationangle, xpivot, ypivot, flip);
-
-		// free image data
-		Z_Free(patch);
 	}
 
 	return rotsprite->patches[idx];
