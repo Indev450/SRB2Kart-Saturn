@@ -151,8 +151,7 @@ static void R_InstallSpriteLump(UINT16 wad,            // graphics patch
 #ifdef ROTSPRITE
 	for (r = 0; r < 16; r++)
 	{
-		sprtemp[frame].rotated[0][r] = NULL;
-		sprtemp[frame].rotated[1][r] = NULL;
+		sprtemp[frame].rotated[r] = NULL;
 	}
 #endif/*ROTSPRITE*/
 
@@ -591,9 +590,6 @@ void R_DrawMaskedColumn(column_t *column)
 	INT32 topdelta, prevdelta = 0;
 
 	basetexturemid = dc_texturemid;
-
-	if (column == NULL)
-		return;
 
 	for (; column->topdelta != 0xff ;)
 	{
@@ -1397,7 +1393,7 @@ static void R_ProjectSprite(mobj_t *thing)
 				pitchnroll += rollangle;
 
 			rollangle = R_GetRollAngle(pitchnroll);
-			rotsprite = Patch_GetRotatedSprite(sprframe, (thing->frame & FF_FRAMEMASK), rot, flip, false, sprinfo, rollangle);
+			rotsprite = Patch_GetRotatedSprite(sprframe, (thing->frame & FF_FRAMEMASK), rot, flip, sprinfo, rollangle);
 
 			if (rotsprite != NULL)
 			{

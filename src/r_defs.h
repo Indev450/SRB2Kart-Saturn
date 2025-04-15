@@ -720,9 +720,9 @@ typedef struct
 
 	// Flip bits (1 = flip) to use for view angles 0-7.
 	UINT8 flip;
-	
+
 #ifdef ROTSPRITE
-	rotsprite_t *rotated[2][16]; // Rotated patches
+	rotsprite_t *rotated[16]; // Rotated patches
 #endif
 } spriteframe_t;
 

@@ -40,7 +40,6 @@ typedef struct
 
 // Conversions between patches / flats / textures...
 boolean R_CheckIfPatch(lumpnum_t lump);
-void *R_MaskedFlatToPatch(UINT16 *raw, UINT16 width, UINT16 height, UINT16 leftoffset, UINT16 topoffset, size_t *destsize);
 
 // SpriteInfo
 extern spriteinfo_t spriteinfo[NUMSPRITES];
@@ -52,11 +51,7 @@ void R_ParseSPRTINFOLump(UINT16 wadNum, UINT16 lumpNum);
 INT32 R_GetRollAngle(angle_t rollangle);
 angle_t R_RotationAngle(angle_t ang, angle_t camang, interpmobjstate_t *interp);
 
-patch_t *Patch_GetRotatedSprite(
-	spriteframe_t *sprite,
-	size_t frame, size_t spriteangle,
-	boolean flip, boolean adjustfeet,
-	void *info, INT32 rotationangle);	
+patch_t *Patch_GetRotatedSprite(spriteframe_t *sprite, size_t frame, size_t spriteangle, boolean flip, void *info, INT32 rotationangle);
 rotsprite_t *RotatedPatch_Create(INT32 numangles);
 void RotatedPatch_DoRotation(rotsprite_t *rotsprite, patch_t *patch, INT32 angle, INT32 xpivot, INT32 ypivot, boolean flip);
 

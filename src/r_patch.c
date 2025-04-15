@@ -335,9 +335,9 @@ static unsigned char imgbuf[1<<26];
 // Convert a masked flat to a patch.
 // Explanation of "masked" flats in R_PatchToMaskedFlat.
 //
-void *R_MaskedFlatToPatch(UINT16 *raw, UINT16 width, UINT16 height, UINT16 leftoffset, UINT16 topoffset, size_t *destsize)
+static void *R_MaskedFlatToPatch(UINT16 *raw, INT16 width, INT16 height, INT16 leftoffset, INT16 topoffset, size_t *destsize)
 {
-	UINT32 x, y;
+	INT16 x, y;
 	UINT8 *img;
 	UINT8 *imgptr = imgbuf;
 	UINT8 *colpointers, *startofspan;
@@ -440,7 +440,6 @@ void *R_MaskedFlatToPatch(UINT16 *raw, UINT16 width, UINT16 height, UINT16 lefto
 
 	if (destsize != NULL)
 		*destsize = size;
-
 	return img;
 }
 
@@ -448,24 +447,38 @@ static UINT16 GetPatchPixel(patch_t *patch, INT32 x, INT32 y, boolean flip)
 {
 	fixed_t ofs;
 	column_t *column;
-	UINT8 *source;
+	UINT8 *source = NULL;
+	INT16 width;
 
-	if (x >= 0 && x < SHORT(patch->width))
+	if (patch == NULL)
+		I_Error("GetPatchPixel: patch == NULL");
+
+	width = SHORT(patch->width);
+
+	if (x >= 0 && x < width)
 	{
+		INT32 colx = flip ? (width-1)-x : x;
 		INT32 topdelta, prevdelta = -1;
-		column = (column_t *)((UINT8 *)patch + LONG(patch->columnofs[flip ? (patch->width-1-x) : x]));
+
+		column = (column_t *)((UINT8 *)patch + LONG(patch->columnofs[colx]));
+
 		while (column->topdelta != 0xff)
 		{
 			topdelta = column->topdelta;
+
 			if (topdelta <= prevdelta)
 				topdelta += prevdelta;
+
 			prevdelta = topdelta;
-			source = (UINT8 *)(column) + 3;
-			for (ofs = 0; ofs < column->length; ofs++)
+
+			ofs = (y - topdelta);
+
+			if (y >= topdelta && ofs < column->length)
 			{
-				if ((topdelta + ofs) == y)
-					return source[ofs];
+				source = (UINT8 *)(column) + 3;
+				return source[ofs];
 			}
+
 			column = (column_t *)((UINT8 *)column + column->length + 4);
 		}
 	}
@@ -512,22 +525,21 @@ angle_t R_RotationAngle(angle_t ang, angle_t camang, interpmobjstate_t *interp)
 	FixedMul(FINESINE((camang) >> ANGLETOFINESHIFT), interp->slopepitch);
 }
 
-patch_t *Patch_GetRotatedSprite(spriteframe_t *sprite, size_t frame, size_t spriteangle, boolean flip, boolean adjustfeet, void *info, INT32 rotationangle)
+patch_t *Patch_GetRotatedSprite(spriteframe_t *sprite, size_t frame, size_t spriteangle, boolean flip, void *info, INT32 rotationangle)
 {
 	rotsprite_t *rotsprite;
 	spriteinfo_t *sprinfo = (spriteinfo_t *)info;
 	INT32 idx = rotationangle;
-	UINT8 type = (adjustfeet ? 1 : 0);
 
 	if (rotationangle < 1 || rotationangle >= ROTANGLES)
 		return NULL;
 
-	rotsprite = sprite->rotated[type][spriteangle];
+	rotsprite = sprite->rotated[spriteangle];
 
 	if (rotsprite == NULL)
 	{
 		rotsprite = RotatedPatch_Create(ROTANGLES);
-		sprite->rotated[type][spriteangle] = rotsprite;
+		sprite->rotated[spriteangle] = rotsprite;
 	}
 
 	if (flip)
@@ -557,10 +569,6 @@ patch_t *Patch_GetRotatedSprite(spriteframe_t *sprite, size_t frame, size_t spri
 
 		RotatedPatch_DoRotation(rotsprite, patch, rotationangle, xpivot, ypivot, flip);
 
-		//BP: we cannot use special tric in hardware mode because feet in ground caused by z-buffer
-		if (adjustfeet)
-			((patch_t *)rotsprite->patches[idx])->topoffset += FEETADJUST>>FRACBITS;
-
 		// free image data
 		Z_Free(patch);
 	}
@@ -575,6 +583,7 @@ rotsprite_t *RotatedPatch_Create(INT32 numangles)
 	rotsprite->patches = Z_Calloc(rotsprite->angles * 2 * sizeof(void *), PU_STATIC, NULL);
 	return rotsprite;
 }
+
 
 static void RotatedPatch_CalculateDimensions(
 	INT32 width, INT32 height,
@@ -601,6 +610,7 @@ static void RotatedPatch_CalculateDimensions(
 void RotatedPatch_DoRotation(rotsprite_t *rotsprite, patch_t *patch, INT32 angle, INT32 xpivot, INT32 ypivot, boolean flip)
 {
 	UINT32 i;
+
 	patch_t *rotated;
 
 	UINT16 *rawdst, *rawconv;
@@ -657,7 +667,7 @@ void RotatedPatch_DoRotation(rotsprite_t *rotsprite, patch_t *patch, INT32 angle
 	size = (newwidth * newheight);
 	if (!size)
 		size = (width * height);
-	rawdst = Z_Calloc(size * sizeof(UINT16), PU_STATIC, NULL);
+	rawdst = Z_Malloc(size * sizeof(UINT16), PU_STATIC, NULL);
 
 	for (i = 0; i < size; i++)
 		rawdst[i] = 0xFF00;
@@ -673,9 +683,20 @@ void RotatedPatch_DoRotation(rotsprite_t *rotsprite, patch_t *patch, INT32 angle
 
 			sx >>= FRACBITS;
 			sy >>= FRACBITS;
-		
+
 			if (sx >= 0 && sy >= 0 && sx < width && sy < height)
-					rawdst[(dy*newwidth)+dx] = GetPatchPixel(patch, sx, sy, bflip);
+			{
+				rawdst[(dy * newwidth) + dx] = GetPatchPixel(patch, sx, sy, bflip);
+
+				if (dx < minx)
+					minx = dx;
+				if (dy < miny)
+					miny = dy;
+				if (dx > maxx)
+					maxx = dx;
+				if (dy > maxy)
+					maxy = dy;
+			}
 		}
 	}
 
@@ -713,7 +734,7 @@ void RotatedPatch_DoRotation(rotsprite_t *rotsprite, patch_t *patch, INT32 angle
 		width = newwidth;
 		height = newheight;
 	}
-	
+
 	// make patch
 	rotated = (patch_t *)R_MaskedFlatToPatch(rawconv, width, height, 0, 0, &size);
 
