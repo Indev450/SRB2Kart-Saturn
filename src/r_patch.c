@@ -336,7 +336,7 @@ static unsigned char imgbuf[1<<26];
 
 patch_t *Patch_Create(softwarepatch_t *source, size_t srcsize, void *dest)
 {
-	patch_t *patch = (dest == NULL) ? Z_Calloc(sizeof(patch_t), PU_CACHE, NULL) : (patch_t *)(dest);
+	patch_t *patch = (dest == NULL) ? Z_Calloc(sizeof(patch_t), PU_PATCH, NULL) : (patch_t *)(dest);
 
 	if (source)
 	{
@@ -348,7 +348,7 @@ patch_t *Patch_Create(softwarepatch_t *source, size_t srcsize, void *dest)
 		patch->height     = SHORT(source->height);
 		patch->leftoffset = SHORT(source->leftoffset);
 		patch->topoffset  = SHORT(source->topoffset);
-		patch->columnofs  = Z_Calloc(size, PU_CACHE, NULL);
+		patch->columnofs  = Z_Calloc(size, PU_PATCH_DATA, NULL);
 
 		for (col = 0; col < source->width; col++)
 		{
@@ -364,7 +364,7 @@ patch_t *Patch_Create(softwarepatch_t *source, size_t srcsize, void *dest)
 		if (colsize <= 0)
 			I_Error("Patch_Create: no column data!");
 
-		patch->columns = Z_Calloc(colsize, PU_CACHE, NULL);
+		patch->columns = Z_Calloc(colsize, PU_PATCH_DATA, NULL);
 		M_Memcpy(patch->columns, ((UINT8 *)source + LONG(source->columnofs[0])), colsize);
 	}
 
