@@ -554,7 +554,7 @@ patch_t *Patch_GetRotatedSprite(spriteframe_t *sprite, size_t frame, size_t spri
 		if (lump == LUMPERROR)
 			return NULL;
 
-		patch = (patch_t *)W_CachePatchNum(lump, PU_CACHE); // PU_LEVEL
+		patch = (patch_t *)W_CacheLumpNum(lump, PU_CACHE); // PU_LEVEL
 
 		if (sprinfo->available)
 		{
