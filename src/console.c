@@ -1509,7 +1509,7 @@ static void CON_DrawConsole(void)
 	// draw console background
 	if (cons_backpic.value || con_forcepic)
 	{
-		patch_t *con_backpic = W_CachePatchName("KARTKREW", PU_CACHE);
+		patch_t *con_backpic = W_CachePatchName("KARTKREW", PU_PATCH_LOWPRIORITY);
 
 		// Jimita: CON_DrawBackpic just called V_DrawScaledPatch
 		V_DrawFixedPatch(0, 0, FRACUNIT/2, 0, con_backpic, NULL);

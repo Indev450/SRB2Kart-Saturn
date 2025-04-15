@@ -171,7 +171,7 @@ static void R_DrawWallSplats(void)
 		mfloorclip = floorclip;
 		mceilingclip = ceilingclip;
 
-		patch = W_CachePatchNum(splat->patch, PU_CACHE);
+		patch = W_CachePatchNum(splat->patch, PU_SPRITE);
 
 		dc_texturemid = splat->top + (patch->height<<(FRACBITS-1)) - viewz;
 		if (splat->yoffset)

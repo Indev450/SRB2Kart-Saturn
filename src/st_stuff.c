@@ -211,7 +211,7 @@ void ST_doPaletteStuff(void)
 
 void ST_UnloadGraphics(void)
 {
-	Z_FreeTags(PU_HUDGFX, PU_HUDGFX);
+	Patch_FreeTag(PU_HUDGFX);
 }
 
 void ST_LoadGraphics(void)
@@ -249,7 +249,7 @@ void ST_LoadFaceGraphics(char *rankstr, char *wantstr, char *mmapstr, INT32 skin
 	facerankprefix[skinnum] = W_CachePatchName(rankstr, PU_HUDGFX);
 	facewantprefix[skinnum] = W_CachePatchName(wantstr, PU_HUDGFX);
 	facemmapprefix[skinnum] = W_CachePatchName(mmapstr, PU_HUDGFX);
-	
+
 	/*facerankprefix_name[skinnum] = rankstr;
 	facewantprefix_name[skinnum] = wantstr;
 	facemmapprefix_name[skinnum] = mmapstr;*/
@@ -260,7 +260,7 @@ void ST_LoadLocalFaceGraphics(char *rankstr, char *wantstr, char *mmapstr, INT32
 	localfacerankprefix[skinnum] = W_CachePatchName(rankstr, PU_HUDGFX);
 	localfacewantprefix[skinnum] = W_CachePatchName(wantstr, PU_HUDGFX);
 	localfacemmapprefix[skinnum] = W_CachePatchName(mmapstr, PU_HUDGFX);
-	
+
 	/*localfacerankprefix_name[skinnum] = rankstr;
 	localfacewantprefix_name[skinnum] = wantstr;
 	localfacemmapprefix_name[skinnum] = mmapstr;*/
@@ -276,7 +276,7 @@ void ST_ReloadSkinFaceGraphics(void)
 
 	for (i = 0; i < numskins; i++)
 		ST_LoadFaceGraphics(skins[i].facerank, skins[i].facewant, skins[i].facemmap, i);
-	
+
 	for (i = 0; i < numlocalskins; i++)
 		ST_LoadLocalFaceGraphics(localskins[i].facerank, localskins[i].facewant, localskins[i].facemmap, i);
 }
@@ -432,7 +432,7 @@ static void ST_drawLevelTitle(void)
 		? BASEVIDHEIGHT/2
 		: 163;
 	INT32 lvlw;
-	
+
 	if (!cv_stagetitle.value)
 		return;
 

@@ -9259,7 +9259,7 @@ void K_drawKartTimestamp(tic_t drawtime, INT32 TX, INT32 TY, INT16 emblemmap, UI
 
 						if (emblem->collected)
 						{
-							emblempic[curemb] = W_CachePatchName(M_GetEmblemPatch(emblem), PU_CACHE);
+							emblempic[curemb] = W_CachePatchName(M_GetEmblemPatch(emblem), PU_PATCH);
 							emblemcol[curemb] = R_GetTranslationColormap(TC_DEFAULT, M_GetEmblemColor(emblem), GTC_CACHE);
 							if (++curemb == 3)
 								break;
@@ -9295,7 +9295,7 @@ void K_drawKartTimestamp(tic_t drawtime, INT32 TX, INT32 TY, INT16 emblemmap, UI
 
 			V_DrawRightAlignedString(workx, worky, splitflags, targettext);
 			workx -= 67;
-			V_DrawSmallScaledPatch(workx + 4, worky, splitflags, W_CachePatchName("NEEDIT", PU_CACHE));
+			V_DrawSmallScaledPatch(workx + 4, worky, splitflags, W_CachePatchName("NEEDIT", PU_PATCH));
 
 			break;
 
@@ -9835,11 +9835,11 @@ static void K_DrawDialSpeedometer(fixed_t speed,
 
 	if (rot)
 	{
-		dialpatch = W_CachePatchNameRotated("K_DSDIAL", rot, PU_STATIC);
+		dialpatch = W_CachePatchNameRotated("K_DSDIAL", rot, PU_PATCH);
 	}
 	else
 	{
-		dialpatch = W_CachePatchName("K_DSDIAL", PU_STATIC);
+		dialpatch = W_CachePatchName("K_DSDIAL", PU_PATCH);
 	}
 
 	if (colorized)  // Colourized hud
@@ -10876,7 +10876,7 @@ static void K_drawKartMinimapHead(mobj_t *mo, INT32 x, INT32 y, INT32 flags)
 
 		if (rot)
 		{
-			minimaphead = W_CachePatchNameRotated(skin->facemmap, rot, PU_STATIC);
+			minimaphead = W_CachePatchNameRotated(skin->facemmap, rot, PU_PATCH);
 		}
 	}
 #endif
@@ -11918,8 +11918,8 @@ void K_drawKartHUD(void)
 				x += offs - frac;
 			}
 
-			V_DrawSciencePatch(x - (54*FRACUNIT), y, logoflags, W_CachePatchName("TTKBANNR", PU_CACHE), FRACUNIT/4);
-			V_DrawSciencePatch(x - (54*FRACUNIT), y + (25*FRACUNIT), logoflags, W_CachePatchName("TTKART", PU_CACHE), FRACUNIT/4);
+			V_DrawSciencePatch(x - (54*FRACUNIT), y, logoflags, W_CachePatchName("TTKBANNR", PU_PATCH), FRACUNIT/4);
+			V_DrawSciencePatch(x - (54*FRACUNIT), y + (25*FRACUNIT), logoflags, W_CachePatchName("TTKART", PU_PATCH), FRACUNIT/4);
 		}
 		else if (G_RaceGametype()) // Race-only elements
 		{

@@ -1808,6 +1808,14 @@ void *W_CachePatchNum(lumpnum_t lumpnum, INT32 tag)
 	return W_CachePatchNumPwad(WADFILENUM(lumpnum),LUMPNUM(lumpnum),tag);
 }
 
+void *W_GetCachedPatchNumPwad(UINT16 wad, UINT16 lump)
+{
+	if (!TestValidLump(wad, lump))
+		return NULL;
+
+	return wadfiles[wad]->patchcache[lump];
+}
+
 #ifdef ROTSPRITE
 // Caches a rotsprite for patch rotation.
 void *W_GetCachedRotPatchPwad(UINT16 wadnum, UINT16 lumpnum)
@@ -1837,7 +1845,7 @@ void W_UnlockCachedPatch(void *patch)
 		HWR_UnlockCachedPatch((GLPatch_t *)((patch_t *)patch)->hardware);
 	else
 #endif
-	Z_ChangeTag(patch, PU_LEVEL);
+	Z_ChangeTag(patch, PU_PATCH);
 }
 
 void *W_CachePatchName(const char *name, INT32 tag)
@@ -1879,13 +1887,13 @@ void *W_CachePatchNameRotated(const char *name, INT32 rotationangle, INT32 tag)
 	{
 		INT32 xpivot = 0, ypivot = 0;
 
-		ptr = W_CachePatchNum(num, PU_STATIC); // PU_PATCH
+		ptr = W_CachePatchNum(num, PU_PATCH);
 
 		// >y pivot centered
 		// >x pivot not centered
 		// Why?
-		xpivot = SHORT(ptr->width) / 2;
-		ypivot = SHORT(ptr->height) / 2;
+		xpivot = ptr->width / 2;
+		ypivot = ptr->height / 2;
 
 		RotatedPatch_DoRotation(rspr, ptr, rotationangle, xpivot, ypivot, false);
 	}

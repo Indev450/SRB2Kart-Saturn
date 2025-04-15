@@ -394,7 +394,12 @@ static UINT8 *R_GenerateTexture(size_t texnum)
 	// Composite the columns together.
 	for (i = 0, patch = texture->patches; i < texture->patchcount; i++, patch++)
 	{
-		realpatch = (softwarepatch_t *)W_CacheLumpNumPwad(patch->wad, patch->lump, PU_CACHE);
+		// If this patch has already been loaded, we just use it from the cache.
+		realpatch = (softwarepatch_t *)W_GetCachedPatchNumPwad(patch->wad, patch->lump);
+
+		// Otherwise, we load it here.
+		if (realpatch == NULL)
+			realpatch = (softwarepatch_t *)W_CacheLumpNumPwad(patch->wad, patch->lump, PU_CACHE);
 
 		// Well, it's not valid...
 		if (realpatch == NULL)
@@ -1932,7 +1937,7 @@ static void R_PrecacheLevelSprites(void)
 				lump = sf->lumppat[a];\
 				if (devparm)\
 					spritememory += W_LumpLength(lump);\
-				W_CachePatchNum(lump, PU_CACHE);\
+				W_CachePatchNum(lump, PU_SPRITE);\
 			}
 			// see R_InitSprites for more about lumppat,lumpid
 			switch (sf->rotate)

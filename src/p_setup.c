@@ -3048,6 +3048,8 @@ boolean P_SetupLevel(boolean fromnetsave, boolean reloadinggamestate)
 	HWR_ClearLightTables();
 #endif
 
+	Patch_FreeTag(PU_PATCH_LOWPRIORITY);
+	//Patch_FreeTag(PU_PATCH_ROTATED); // we keep those ty!
 	Z_FreeTags(PU_LEVEL, PU_PURGELEVEL - 1);
 
 #if defined (WALLSPLATS) || defined (FLOORSPLATS)
@@ -3342,6 +3344,8 @@ UINT16 P_PartialAddWadFile(const char *wadfilename, boolean local)
 	//
 	// search for sprite replacements
 	//
+	Patch_FreeTag(PU_SPRITE);
+	Patch_FreeTag(PU_PATCH_ROTATED);
 	R_AddSpriteDefs(wadnum);
 
 	// Reload it all anyway, just in case they
@@ -3457,7 +3461,7 @@ boolean P_MultiSetupWadFiles(boolean fullsetup)
 	if (partadd_stage == 0)
 	{
 		// Flush and reload HUD graphics
-		ST_UnloadGraphics();
+		//ST_UnloadGraphics();
 		HU_LoadGraphics();
 		ST_LoadGraphics();
 		ST_ReloadSkinFaceGraphics();

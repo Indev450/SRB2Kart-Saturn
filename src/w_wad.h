@@ -217,6 +217,8 @@ void *W_CachePatchName(const char *name, INT32 tag);
 void *W_CachePatchNumPwad(UINT16 wad, UINT16 lump, INT32 tag);
 void *W_CachePatchNum(lumpnum_t lumpnum, INT32 tag);
 
+void *W_GetCachedPatchNumPwad(UINT16 wad, UINT16 lump);
+
 // Returns a Software patch.
 void *W_CacheSoftwarePatchNumPwad(UINT16 wad, UINT16 lump, INT32 tag);
 void *W_CacheSoftwarePatchNum(lumpnum_t lumpnum, INT32 tag);
