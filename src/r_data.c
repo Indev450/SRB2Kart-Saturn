@@ -618,7 +618,7 @@ void R_LoadTextures(void)
 		}
 		else
 		{
-			texstart = W_CheckNumForMarkerStartPwad(TX_START, (UINT16)w, 0);
+			texstart = W_CheckNumForNamePwad(TX_START, (UINT16)w, 0) + 1;
 			texend = W_CheckNumForNamePwad(TX_END, (UINT16)w, 0);
 			texturesLumpPos = W_CheckNumForNamePwad("TEXTURES", (UINT16)w, 0);
 			if (texturesLumpPos != INT16_MAX)
