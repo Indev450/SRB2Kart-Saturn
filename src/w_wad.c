@@ -1819,9 +1819,8 @@ void *W_GetCachedRotPatchPwad(UINT16 wadnum, UINT16 lumpnum)
 
 	if (!rotcache[lumpnum])
 	{
-		rotsprite_t *rspr = Z_Calloc(sizeof(rotsprite_t), PU_STATIC, &rotcache[lumpnum]);
-		rspr->angles = ROTANGLES;
-		rspr->patches = Z_Calloc(rspr->angles * 2 * sizeof(void *), PU_STATIC, NULL);
+		rotsprite_t *rspr = RotatedPatch_Create(ROTANGLES);
+		Z_SetUser(rspr, (void **)(&rotcache[lumpnum]));
 	}
 
 	return (void *)(rotcache[lumpnum]);
