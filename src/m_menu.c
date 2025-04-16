@@ -2432,17 +2432,17 @@ static menuitem_t OP_SaturnHudMenu[] =
 
 	{IT_STRING | IT_CVAR, NULL,	"Show Names on Minimap",   				&cv_showminimapnames, 		135},
 	{IT_STRING | IT_CVAR, NULL,	"Small Minimap Players",   				&cv_minihead, 				140},
-	{IT_STRING | IT_CVAR, NULL,	"Spin Minimap Icons", 			  		&cv_spinoutroll,      		150},
-	{IT_STRING | IT_CVAR, NULL,	"Player Angle Dot", 			  		&cv_showminimapangle,      	160},
+	{IT_STRING | IT_CVAR, NULL,	"Spin Minimap Icons", 			  		&cv_spinoutroll,      		145},
+	{IT_STRING | IT_CVAR, NULL,	"Player Angle Dot", 			  		&cv_showminimapangle,      	150},
 
-	{IT_STRING | IT_CVAR, NULL, "Beta Intermissionscreen", 				&cv_betainterscreen, 		170},
+	{IT_STRING | IT_CVAR, NULL, "Beta Intermissionscreen", 				&cv_betainterscreen, 		160},
 
-	{IT_STRING | IT_CVAR, NULL,	"Show Director Prompt",   				&cv_showdirectorhud, 		180},
+	{IT_STRING | IT_CVAR, NULL,	"Show Director Prompt",   				&cv_showdirectorhud, 		170},
 
-	{IT_STRING | IT_SUBMENU, NULL, "Nametags...", 						&OP_NametagDef, 		   	190},
-	{IT_STRING | IT_SUBMENU, NULL, "Driftgauge...", 					&OP_DriftGaugeDef, 		   	195},
+	{IT_STRING | IT_SUBMENU, NULL, "Nametags...", 						&OP_NametagDef, 		   	180},
+	{IT_STRING | IT_SUBMENU, NULL, "Driftgauge...", 					&OP_DriftGaugeDef, 		   	185},
 
-	{IT_SUBMENU|IT_STRING,	NULL,	"Hud Offsets...", 					&OP_HudOffsetDef,		   	205},
+	{IT_SUBMENU|IT_STRING,	NULL,	"Hud Offsets...", 					&OP_HudOffsetDef,		   	195},
 };
 
 static const char* OP_SaturnHudTooltips[] =
