@@ -5044,7 +5044,7 @@ static void M_DrawThermo(INT32 x, INT32 y, consvar_t *cv)
 	cursorlump = W_GetNumForName("M_THERMO");
 
 	V_DrawScaledPatch(xx, y, 0, p = W_CachePatchNum(leftlump,PU_CACHE));
-	xx += SHORT(p->width) - SHORT(p->leftoffset);
+	xx += p->width - p->leftoffset;
 	for (i = 0; i < 16; i++)
 	{
 		V_DrawScaledPatch(xx, y, V_WRAPX, W_CachePatchNum(centerlump[i & 1], PU_CACHE));
@@ -5192,8 +5192,8 @@ static void M_DrawMenuTitle(void)
 
 		if (p->height > 24) // title is larger than normal
 		{
-			INT32 xtitle = (BASEVIDWIDTH - (SHORT(p->width)/2))/2;
-			INT32 ytitle = (30 - (SHORT(p->height)/2))/2;
+			INT32 xtitle = (BASEVIDWIDTH - (p->width/2))/2;
+			INT32 ytitle = (30 - (p->height/2))/2;
 
 			if (xtitle < 0)
 				xtitle = 0;
@@ -5204,8 +5204,8 @@ static void M_DrawMenuTitle(void)
 		}
 		else
 		{
-			INT32 xtitle = (BASEVIDWIDTH - SHORT(p->width))/2;
-			INT32 ytitle = (30 - SHORT(p->height))/2;
+			INT32 xtitle = (BASEVIDWIDTH - p->width)/2;
+			INT32 ytitle = (30 - p->height)/2;
 
 			if (xtitle < 0)
 				xtitle = 0;
@@ -5293,7 +5293,7 @@ static void M_DrawGenericMenu(void)
 					{
 						patch_t *p;
 						p = W_CachePatchName(currentMenu->menuitems[i].patch, PU_CACHE);
-						V_DrawScaledPatch((BASEVIDWIDTH - SHORT(p->width))/2, y, 0, p);
+						V_DrawScaledPatch((BASEVIDWIDTH - p->width)/2, y, 0, p);
 					}
 					else
 					{
@@ -5621,7 +5621,7 @@ static void M_DrawCenteredMenu(void)
 
 					if (currentMenu->menuitems[i].status & IT_CENTER)
 					{
-						V_DrawScaledPatch((BASEVIDWIDTH - SHORT(p->width))/2, y, 0, p);
+						V_DrawScaledPatch((BASEVIDWIDTH - p->width)/2, y, 0, p);
 					}
 					else
 					{
@@ -6052,7 +6052,7 @@ static void M_DrawMessageMenu(void)
 		}
 
 		V_DrawString((BASEVIDWIDTH - V_StringWidth(string, 0))/2,y,V_ALLOWLOWERCASE,string);
-		y += 8; //SHORT(hu_font[0]->height);
+		y += 8; //hu_font[0]->height;
 	}
 }
 
@@ -7222,8 +7222,8 @@ static void DrawReplayHutReplayInfo(void)
 			V_DrawSmallScaledPatch(x, y, V_SNAPTOTOP, patch);
 		else
 		{
-			w = SHORT(patch->width);
-			h = SHORT(patch->height);
+			w = patch->width;
+			h = patch->height;
 			V_DrawSmallScaledPatch(x+(w>>1), y, V_SNAPTOTOP|V_FLIP, patch);
 
 			{
@@ -7314,7 +7314,7 @@ static void DrawReplayHutReplayInfo(void)
 				GTC_MENUCACHE);
 		}
 
-		V_DrawMappedPatch(BASEVIDWIDTH-15 - SHORT(patch->width), y+20, V_SNAPTOTOP, patch, colormap);
+		V_DrawMappedPatch(BASEVIDWIDTH-15 - patch->width, y+20, V_SNAPTOTOP, patch, colormap);
 
 		break;
 	}
@@ -7533,7 +7533,7 @@ static void M_DrawReplayStartMenu(void)
 				GTC_MENUCACHE);
 		}
 
-		V_DrawMappedPatch(BASEVIDWIDTH-5 - SHORT(patch->width), STARTY + i*20, V_SNAPTOTOP, patch, colormap);
+		V_DrawMappedPatch(BASEVIDWIDTH-5 - patch->width, STARTY + i*20, V_SNAPTOTOP, patch, colormap);
 	}
 #undef STARTY
 
@@ -9132,7 +9132,7 @@ void M_DrawTimeAttackMenu(void)
 	if (W_CheckNumForName(skins[cv_chooseskin.value-1].facewant) != LUMPERROR)
 	{
 		UINT8 *colormap = R_GetTranslationColormap(cv_chooseskin.value-1, cv_playercolor.value, GTC_MENUCACHE);
-		V_DrawMappedPatch(BASEVIDWIDTH-x - SHORT(facewantprefix[cv_chooseskin.value-1]->width), y, 0, facewantprefix[cv_chooseskin.value-1], colormap);
+		V_DrawMappedPatch(BASEVIDWIDTH-x - facewantprefix[cv_chooseskin.value-1]->width, y, 0, facewantprefix[cv_chooseskin.value-1], colormap);
 	}
 
 	for (i = 0; i < currentMenu->numitems; ++i)
@@ -10254,8 +10254,8 @@ static void M_DrawLevelSelectOnly(boolean leftfade, boolean rightfade)
 	else
 		PictureOfLevel = W_CachePatchName("RANDOMLV", PU_CACHE);
 
-	w = SHORT(PictureOfLevel->width)/2;
-	i = SHORT(PictureOfLevel->height)/2;
+	w = PictureOfLevel->width/2;
+	i = PictureOfLevel->height/2;
 	x = BASEVIDWIDTH/2 - w/2;
 	y = currentMenu->y + 130 + 8 - i;
 

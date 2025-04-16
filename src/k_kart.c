@@ -9045,7 +9045,7 @@ static void K_DrawKartPositionNum(INT32 num)
 	const boolean wheeloffs = (cv_showinput.value && cv_posi_xoffset.value == 0 && cv_posi_yoffset.value == 0 && cv_wheel_xoffset.value == 0 && cv_wheel_yoffset.value == 0);
 	boolean win = (stplyr->exiting && num == 1);
 	//INT32 X = POSI_X;
-	INT32 W = SHORT(kp_positionnum[0][0]->width);
+	INT32 W = kp_positionnum[0][0]->width;
 	fixed_t scale = FRACUNIT;
 	patch_t *localpatch = kp_positionnum[0][0];
 	//INT32 splitflags = K_calcSplitFlags(V_SNAPTOBOTTOM|V_SNAPTORIGHT);
@@ -9159,7 +9159,7 @@ static void K_DrawKartPositionNum(INT32 num)
 			localpatch = kp_positionnum[num % 10][0];
 		}
 
-		V_DrawFixedPatch((fx<<FRACBITS) + ((overtake && flipdraw) ? (SHORT(localpatch->width)*scale/2) : 0), (fy<<FRACBITS) + ((overtake && flipvdraw) ? (SHORT(localpatch->height)*scale/2) : 0), scale, V_HUDTRANSHALF|fflags, localpatch, NULL);
+		V_DrawFixedPatch((fx<<FRACBITS) + ((overtake && flipdraw) ? (localpatch->width*scale/2) : 0), (fy<<FRACBITS) + ((overtake && flipvdraw) ? (localpatch->height*scale/2) : 0), scale, V_HUDTRANSHALF|fflags, localpatch, NULL);
 		// ^ if we overtake as p1 or p3 in splitscren, we shift it so that it doesn't go off screen.
 		// ^ if we overtake as p1 in 2p splits, shift vertically so that this doesn't happen either.
 
@@ -9493,9 +9493,9 @@ static void K_DrawDialNum(INT32 x, INT32 y, boolean colorized, INT32 flags, INT3
 	INT32 w;
 
 	if (colorized)
-		w = SHORT(skp_dialnumclr[0]->width);
+		w = skp_dialnumclr[0]->width;
 	else
-		w = SHORT(skp_dialnum[0]->width);
+		w = skp_dialnum[0]->width;
 
 	if (flags & V_NOSCALESTART)
 		w *= vid.dupx;
@@ -10436,7 +10436,7 @@ static void K_drawKartWanted(void)
 	}
 	else if (splitscreen == 3)	// 4P splitscreen...
 	{
-		basex = BASEVIDWIDTH/2 - (SHORT(kp_wantedsplit->width)/2);	// center on screen
+		basex = BASEVIDWIDTH/2 - (kp_wantedsplit->width/2);	// center on screen
 		basey = BASEVIDHEIGHT - 55;
 		//basey2 = 4;
 	}
@@ -10559,8 +10559,8 @@ static void K_drawKartMinimapHead(mobj_t *mo, INT32 x, INT32 y, INT32 flags)
 	if (encoremode)
 		amnumxpos = -amnumxpos;
 
-	amxpos = amnumxpos + ((x + (SHORT(minimapinfo.minimap_pic->width)-SHORT(minimaphead->width)) / 2)<<FRACBITS);
-	amypos = amnumypos + ((y + (SHORT(minimapinfo.minimap_pic->height)-SHORT(minimaphead->height)) / 2)<<FRACBITS);
+	amxpos = amnumxpos + ((x + (minimapinfo.minimap_pic->width-minimaphead->width) / 2)<<FRACBITS);
+	amypos = amnumypos + ((y + (minimapinfo.minimap_pic->height-minimaphead->height) / 2)<<FRACBITS);
 
 	if (cv_showminimapnames.value && player && !(modeattacking || gamestate == GS_TIMEATTACK))
 	{
@@ -10573,8 +10573,8 @@ static void K_drawKartMinimapHead(mobj_t *mo, INT32 x, INT32 y, INT32 flags)
 
 	if (cv_minihead.value)
 	{
-		amxpos += (SHORT(minimaphead->width) / 4)<<FRACBITS;
-		amypos += (SHORT(minimaphead->height) / 4)<<FRACBITS;
+		amxpos += (minimaphead->width / 4)<<FRACBITS;
+		amypos += (minimaphead->height / 4)<<FRACBITS;
 		scale /= 2;
 	}
 
@@ -10646,14 +10646,14 @@ static void K_drawKartMinimap(void)
 
 	drawinfo_t info;
 	K_getMinimapDrawinfo(&info);
-	x = info.x - (SHORT(minimapinfo.minimap_pic->width)/2);
-	y = info.y - (SHORT(minimapinfo.minimap_pic->height)/2);
+	x = info.x - (minimapinfo.minimap_pic->width/2);
+	y = info.y - (minimapinfo.minimap_pic->height/2);
 	splitflags = info.flags;
 
 	splitflags |= minimaptrans;
 
 	if (encoremode)
-		V_DrawScaledPatch(x+SHORT(minimapinfo.minimap_pic->width), y, splitflags|V_FLIP, minimapinfo.minimap_pic);
+		V_DrawScaledPatch(x+minimapinfo.minimap_pic->width, y, splitflags|V_FLIP, minimapinfo.minimap_pic);
 	else
 		V_DrawScaledPatch(x, y, splitflags, minimapinfo.minimap_pic);
 
@@ -10665,10 +10665,10 @@ static void K_drawKartMinimap(void)
 
 	// let offsets transfer to the heads, too!
 	if (encoremode)
-		x += SHORT(minimapinfo.minimap_pic->leftoffset);
+		x += minimapinfo.minimap_pic->leftoffset;
 	else
-		x -= SHORT(minimapinfo.minimap_pic->leftoffset);
-	y -= SHORT(minimapinfo.minimap_pic->topoffset);
+		x -= minimapinfo.minimap_pic->leftoffset;
+	y -= minimapinfo.minimap_pic->topoffset;
 
 	// initialize
 	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
@@ -10749,7 +10749,7 @@ static void K_drawKartStartCountdown(void)
 	if (splitscreen) // splitscreen
 		pnum += 8;
 
-	V_DrawScaledPatch(STCD_X - (SHORT(kp_startcountdown[pnum]->width)/2), STCD_Y - (SHORT(kp_startcountdown[pnum]->height)/2), splitflags, kp_startcountdown[pnum]);
+	V_DrawScaledPatch(STCD_X - (kp_startcountdown[pnum]->width/2), STCD_Y - (kp_startcountdown[pnum]->height/2), splitflags, kp_startcountdown[pnum]);
 }
 
 static void K_drawKartFinish(void)
@@ -10765,7 +10765,7 @@ static void K_drawKartFinish(void)
 	if (splitscreen > 1) // 3/4p, stationary FIN
 	{
 		pnum += 2;
-		V_DrawScaledPatch(STCD_X - (SHORT(kp_racefinish[pnum]->width)/2), STCD_Y - (SHORT(kp_racefinish[pnum]->height)/2), splitflags, kp_racefinish[pnum]);
+		V_DrawScaledPatch(STCD_X - (kp_racefinish[pnum]->width/2), STCD_Y - (kp_racefinish[pnum]->height/2), splitflags, kp_racefinish[pnum]);
 		return;
 	}
 
@@ -10777,14 +10777,14 @@ static void K_drawKartFinish(void)
 			pnum += 4;
 
 		x = ((vid.width<<FRACBITS)/vid.dupx);
-		xval = (SHORT(kp_racefinish[pnum]->width)<<FRACBITS);
+		xval = (kp_racefinish[pnum]->width<<FRACBITS);
 		x = (FixedMul(((TICRATE - stplyr->kartstuff[k_cardanimation])<<FRACBITS) - R_GetHudUncap(), xval > x ? xval : x))/TICRATE;
 
 		if (splitscreen && stplyrnum == 1)
 			x = -x;
 
 		V_DrawFixedPatch(x + (STCD_X<<FRACBITS) - (xval>>1),
-			(STCD_Y<<FRACBITS) - (SHORT(kp_racefinish[pnum]->height)<<(FRACBITS-1)),
+			(STCD_Y<<FRACBITS) - (kp_racefinish[pnum]->height<<(FRACBITS-1)),
 			FRACUNIT,
 			splitflags, kp_racefinish[pnum], NULL);
 	}
@@ -11705,7 +11705,7 @@ void K_drawKartHUD(void)
 		return;
 
 	if (G_BattleGametype() && !splitscreen && (stplyr->kartstuff[k_yougotem] % 2)) // * YOU GOT EM *
-		V_DrawScaledPatch(BASEVIDWIDTH/2 - (SHORT(kp_yougotem->width)/2), 32, V_HUDTRANS, kp_yougotem);
+		V_DrawScaledPatch(BASEVIDWIDTH/2 - (kp_yougotem->width/2), 32, V_HUDTRANS, kp_yougotem);
 
 	// Draw FREE PLAY.
 	if (isfreeplay && !stplyr->spectator && timeinmap > 113)

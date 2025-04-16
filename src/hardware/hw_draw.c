@@ -108,10 +108,10 @@ void HWR_DrawPatch(patch_t *gpatch, INT32 x, INT32 y, INT32 option)
 	if (option & V_NOSCALESTART)
 		sdupx = sdupy = 2.0f;
 
-	v[0].x = v[3].x = (x*sdupx-(gpatch->leftoffset)*pdupx)/vid.width - 1;
-	v[2].x = v[1].x = (x*sdupx+((gpatch->width)-(gpatch->leftoffset))*pdupx)/vid.width - 1;
-	v[0].y = v[1].y = 1-(y*sdupy-(gpatch->topoffset)*pdupy)/vid.height;
-	v[2].y = v[3].y = 1-(y*sdupy+((gpatch->height)-(gpatch->topoffset))*pdupy)/vid.height;
+	v[0].x = v[3].x = (x*sdupx-gpatch->leftoffset*pdupx)/vid.width - 1;
+	v[2].x = v[1].x = (x*sdupx+(gpatch->width - gpatch->leftoffset)*pdupx)/vid.width - 1;
+	v[0].y = v[1].y = 1-(y*sdupy-gpatch->topoffset*pdupy)/vid.height;
+	v[2].y = v[3].y = 1-(y*sdupy+(gpatch->height - gpatch->topoffset)*pdupy)/vid.height;
 
 	v[0].z = v[1].z = v[2].z = v[3].z = 1.0f;
 
@@ -191,7 +191,7 @@ void HWR_DrawStretchyFixedPatch(patch_t *gpatch, fixed_t x, fixed_t y, fixed_t p
 
 		// left offset
 		if (option & V_FLIP)
-			offsetx = (float)((gpatch->width) - (gpatch->leftoffset)) * fscalew;
+			offsetx = (float)(gpatch->width - gpatch->leftoffset) * fscalew;
 		else
 			offsetx = (float)(gpatch->leftoffset) * fscalew;
 
@@ -225,7 +225,7 @@ void HWR_DrawStretchyFixedPatch(patch_t *gpatch, fixed_t x, fixed_t y, fixed_t p
 			// if it's meant to cover the whole screen, black out the rest
 			// cx and cy are possibly *slightly* off from float maths
 			// This is done before here compared to software because we directly alter cx and cy to centre
-			if (cx >= -0.1f && cx <= 0.1f && (gpatch->width) == BASEVIDWIDTH && cy >= -0.1f && cy <= 0.1f && (gpatch->height) == BASEVIDHEIGHT)
+			if (cx >= -0.1f && cx <= 0.1f && gpatch->width == BASEVIDWIDTH && cy >= -0.1f && cy <= 0.1f && gpatch->height == BASEVIDHEIGHT)
 			{
 				const column_t *column = (const column_t *)((const UINT8 *)(gpatch->columns) + (gpatch->columnofs[0]));
 
@@ -376,7 +376,7 @@ void HWR_DrawCroppedPatch(patch_t *gpatch, fixed_t x, fixed_t y, fixed_t pscale,
 			// if it's meant to cover the whole screen, black out the rest
 			// cx and cy are possibly *slightly* off from float maths
 			// This is done before here compared to software because we directly alter cx and cy to centre
-			if (cx >= -0.1f && cx <= 0.1f && (gpatch->width) == BASEVIDWIDTH && cy >= -0.1f && cy <= 0.1f && (gpatch->height) == BASEVIDHEIGHT)
+			if (cx >= -0.1f && cx <= 0.1f && gpatch->width == BASEVIDWIDTH && cy >= -0.1f && cy <= 0.1f && gpatch->height == BASEVIDHEIGHT)
 			{
 				const column_t *column = (const column_t *)((const UINT8 *)(gpatch->columns) + (gpatch->columnofs[0]));
 
@@ -415,11 +415,11 @@ void HWR_DrawCroppedPatch(patch_t *gpatch, fixed_t x, fixed_t y, fixed_t pscale,
 	if (fheight > h - sy)
 		fheight = h - sy;
 
-	if (fwidth > (gpatch->width))
-		fwidth = (gpatch->width);
+	if (fwidth > gpatch->width)
+		fwidth = gpatch->width;
 
-	if (fheight > (gpatch->height))
-		fheight = (gpatch->height);
+	if (fheight > gpatch->height)
+		fheight = gpatch->height;
 
 	if (pscale != FRACUNIT)
 	{

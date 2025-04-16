@@ -621,11 +621,11 @@ static void CON_MoveConsole(void)
 		con_curlines -= FixedInt(fracmovement);
 		if (con_curlines < con_destlines)
 			con_curlines = con_destlines;
-		
+
 		if (con_destlines == 0) // If the console is being closed, not just moved up...
 			con_tick = 0; // ...don't show the blinking cursor
 	}
-	
+
 	fracmovement %= FRACUNIT; // Reset fracmovement's integer value, but keep the fraction
 
 	Unlock_state();
@@ -635,7 +635,7 @@ INT32 CON_ShiftChar(INT32 ch)
 {
 	if (I_UseNativeKeyboard())
 		return ch;
-	
+
 	if ((ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z'))
 	{
 		if (cv_keyboardlayout.value == 3)
@@ -1244,7 +1244,7 @@ void CONS_Printf(const char *fmt, ...)
 
 	if (con_started)
 		CON_Print(txt);
-	
+
 	CON_LogMessage(txt);
 
 	Lock_state();
@@ -1474,7 +1474,7 @@ static void CON_DrawHudlines(void)
 				;//charwidth = 4 * con_scalefactor;
 			else
 			{
-				//charwidth = SHORT(hu_font['A'-HU_FONTSTART]->width) * con_scalefactor;
+				//charwidth = hu_font['A'-HU_FONTSTART]->width * con_scalefactor;
 				V_DrawCharacter(x, y, (INT32)(*p) | charflags | cv_constextsize.value | V_NOSCALESTART, !cv_allcaps.value);
 			}
 		}
@@ -1577,11 +1577,11 @@ void CON_Drawer(void)
 	if (con_recalc)
 	{
 		CON_RecalcSize();
-		
+
 		if (con_curlines <= 0)
 			CON_ClearHUD();
 	}
-	
+
 	// console movement
 	if (con_curlines != con_destlines)
 		CON_MoveConsole();

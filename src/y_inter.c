@@ -923,8 +923,8 @@ static void Y_DrawAnimatedVoteScreenPatch(boolean widePatch)
 		currentAnimFrame = 0;
 
 	patch_t *background = W_CachePatchName(va("%s%d", tempAnimPrefix, currentAnimFrame + 1), PU_CACHE);
-	V_DrawScaledPatch(((vid.width/2) / vid.dupx) - (SHORT(background->width)/2), // Keep the width/height adjustments, for screens that are less wide than 320(?)
-				(vid.height / vid.dupy) - SHORT(background->height),
+	V_DrawScaledPatch(((vid.width/2) / vid.dupx) - (background->width/2), // Keep the width/height adjustments, for screens that are less wide than 320(?)
+				(vid.height / vid.dupy) - background->height,
 				V_SNAPTOTOP|V_SNAPTOLEFT, background);
 
 	if (renderisnewtic && votetic % 2 == 0 && !paused)
@@ -954,8 +954,8 @@ static void Y_DrawVoteScreenPatch(void)
 		votebg = widebgpatch;
 	}
 
-	V_DrawScaledPatch(((vid.width/2) / vid.dupx) - (SHORT(votebg->width)/2),
-					  (vid.height / vid.dupy) - SHORT(votebg->height),
+	V_DrawScaledPatch(((vid.width/2) / vid.dupx) - (votebg->width/2),
+					  (vid.height / vid.dupy) - votebg->height,
 					  V_SNAPTOTOP|V_SNAPTOLEFT, votebg);
 }
 
