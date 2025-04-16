@@ -149,8 +149,9 @@ extern consvar_t cv_pingstyle;
 //extern consvar_t cv_smallpos;
 extern consvar_t cv_showminimapnames;
 extern consvar_t cv_minihead;
+extern consvar_t cv_showminimapangle;
 
-extern consvar_t cv_showlapemblem; 
+extern consvar_t cv_showlapemblem;
 
 extern consvar_t cv_showviewpointtext;
 extern consvar_t cv_showdownloadprompt;
