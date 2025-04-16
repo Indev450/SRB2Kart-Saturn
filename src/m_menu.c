@@ -2033,7 +2033,7 @@ static const char* OP_PlayerCamOptionsTooltips[] =
 	"Height of the Camera",
 	"Speed of the Camera",
 	"Should looking back inherit the Players Momentum?\nEither inherit Player Momentum or double of it\nmay make looking back while boosting or going in high speed less jarring",
-	"Allows looking up/down by holding aim forward/backward while standing still.",
+	"Allows looking up/down by holding\naim forward/backward while standing still.",
 	"Speed of the Freecam/Spectator Camera",
 	"Toggle between Third or First Person camera",
 };
