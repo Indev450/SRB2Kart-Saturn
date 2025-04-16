@@ -30,6 +30,10 @@
 #include "lua_hud.h"
 #include "lua_hook.h"
 
+#ifdef ROTSPRITE
+#include "r_patchrotation.h"
+#endif
+
 #define HUDONLY if (!hud_running) return luaL_error(L, "HUD rendering code should not be called outside of rendering hooks!");
 
 boolean hud_running = false;

@@ -897,6 +897,14 @@ SOURCE=..\r_patch.h
 # End Source File
 # Begin Source File
 
+SOURCE=..\r_patchrotation.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\r_patchrotation.h
+# End Source File
+# Begin Source File
+
 SOURCE=..\r_plane.c
 # End Source File
 # Begin Source File

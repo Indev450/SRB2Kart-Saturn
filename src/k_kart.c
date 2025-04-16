@@ -48,6 +48,10 @@
 #include "hardware/hw_main.h"
 #endif
 
+#ifdef ROTSPRITE
+#include "r_patchrotation.h"
+#endif
+
 // Not sure if thats best place for that
 static mobjtype_t stardust = 0;
 static mobjtype_t watertrailunderlay = 0, watertrail = 0;

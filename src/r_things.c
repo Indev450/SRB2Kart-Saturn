@@ -11,32 +11,36 @@
 /// \file  r_things.c
 /// \brief Refresh of things, i.e. objects represented by sprites
 
-#include "doomdef.h"
-#include "console.h"
-#include "g_game.h"
-#include "r_local.h"
-#include "st_stuff.h"
-#include "w_wad.h"
-#include "z_zone.h"
-#include "m_misc.h"
-#include "i_video.h" // rendermode
 #include "r_main.h" // stplyr
 #include "r_fps.h"
 #include "r_things.h"
-#include "r_patch.h"
 #include "r_plane.h"
+#include "r_portal.h"
+#include "r_local.h"
+
+#include "dehacked.h" // get_number (for thok)
+#include "doomdef.h"
+#include "d_netfil.h" // blargh. for nameonly().
+#include "console.h"
+#include "g_game.h"
+#include "k_kart.h" // SRB2kart
 #include "p_tick.h"
 #include "p_local.h"
 #include "p_setup.h"
 #include "p_slopes.h"
-#include "dehacked.h" // get_number (for thok)
-#include "d_netfil.h" // blargh. for nameonly().
+#include "st_stuff.h"
 #include "m_cheat.h" // objectplace
-#include "r_portal.h"
-#include "k_kart.h" // SRB2kart
-#include "p_local.h" // stplyr
+#include "m_misc.h"
+#include "i_video.h" // rendermode
+#include "w_wad.h"
+#include "z_zone.h"
+
 #ifdef HWRENDER
 #include "hardware/hw_md2.h"
+#endif
+
+#ifdef ROTSPRITE
+#include "r_patchrotation.h"
 #endif
 
 #include "qs22j.h"

@@ -39,7 +39,6 @@
 #include "../r_fps.h"
 #include "../r_local.h"
 #include "../r_main.h"		// cv_fov
-#include "../r_patch.h"		// a mystery as to what this is for
 #include "../r_portal.h"
 #ifdef WALLSPLATS
 #include "../r_splats.h"
@@ -56,7 +55,11 @@
 #include "../w_wad.h"
 #include "../z_zone.h"
 
-#include "../qs22j.h" // fast qsort
+#ifdef ROTSPRITE
+#include "../r_patchrotation.h"		// a mystery as to what this is for
+#endif
+
+#include "../qs22j.h" 		// fast qsort
 
 // ==========================================================================
 // Globals

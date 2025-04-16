@@ -15,8 +15,6 @@
 #define __R_PATCH__
 
 #include "r_defs.h"
-#include "r_fps.h"
-#include "doomdef.h"
 
 // Structs
 typedef enum
@@ -58,17 +56,7 @@ extern spriteinfo_t spriteinfo[NUMSPRITES];
 void R_LoadSpriteInfoLumps(UINT16 wadnum, UINT16 numlumps);
 void R_ParseSPRTINFOLump(UINT16 wadNum, UINT16 lumpNum);
 
-// Sprite rotation
-#ifdef ROTSPRITE
-INT32 R_GetRollAngle(angle_t rollangle);
-angle_t R_RotationAngle(angle_t ang, angle_t camang, interpmobjstate_t *interp);
-
-patch_t *Patch_GetRotatedSprite(spriteframe_t *sprite, size_t frame, size_t spriteangle, boolean flip, void *info, INT32 rotationangle);
-rotsprite_t *RotatedPatch_Create(INT32 numangles);
-void RotatedPatch_DoRotation(rotsprite_t *rotsprite, patch_t *patch, INT32 angle, INT32 xpivot, INT32 ypivot, boolean flip);
-
-extern fixed_t rollcosang[ROTANGLES];
-extern fixed_t rollsinang[ROTANGLES];
-#endif
+void *R_MaskedFlatToPatch(UINT16 *raw, INT16 width, INT16 height, INT16 leftoffset, INT16 topoffset, size_t *destsize);
+UINT16 R_GetPatchPixel(patch_t *patch, INT32 x, INT32 y, boolean flip);
 
 #endif // __R_PATCH__
