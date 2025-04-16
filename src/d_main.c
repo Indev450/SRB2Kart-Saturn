@@ -1281,6 +1281,7 @@ boolean nametaggfx = false;        // Nametag stuffs
 boolean driftgaugegfx = false;     // Driftgauge stuffs
 boolean multiitem_icon = false;    // Extra icons for Sneakers, Banana and Jawz
 boolean joystickicon = false;      // Extra icons for the joystick input display
+boolean minidoticon = false;        // Dot graphic for minimap player angle display
 //
 
 static void IdentifyVersion(void)
@@ -1490,6 +1491,11 @@ static void D_CheckSaturnExtraFiles(void)
 		{
 			joystickicon = true;
 			PUSHCONS(inputdisplay_cons_temp, last_inputdisplay_i, 3, "StickGFX");
+		}
+
+		if (W_LumpExists("MMAPDOT"))
+		{
+			minidoticon = true;
 		}
 	}
 

@@ -278,7 +278,7 @@ void R_SetViewContext(enum viewcontext_e _viewcontext)
 	}
 
 	return (R_LerpFixed(from, to, rendertimefrac));
-}
+}*/
 
 angle_t R_InterpolateAngle(angle_t from, angle_t to)
 {
@@ -288,7 +288,7 @@ angle_t R_InterpolateAngle(angle_t from, angle_t to)
 	}
 
 	return (R_LerpAngle(from, to, rendertimefrac));
-}*/
+}
 
 void R_InterpolateMobjState(mobj_t *mobj, fixed_t frac, interpmobjstate_t *out)
 {
