@@ -991,7 +991,7 @@ void HWR_GetFlat(lumpnum_t flatlumpnum, boolean noencoremap)
 	if (!glMipmap->downloaded && !glMipmap->data)
 		HWR_CacheFlat(glMipmap, flatlumpnum);
 
-	// If hardware does not have the texture, then call pfnSetTexture to upload it
+	// If hardware does not have the texture, then call GL_SetTexture to upload it
 	if (!glMipmap->downloaded)
 		GL_SetTexture(glMipmap);
 	HWR_SetCurrentTexture(glMipmap);
@@ -1010,7 +1010,7 @@ static void HWR_LoadPatchMipmap(patch_t *patch, GLMipmap_t *glMipmap)
 	if (!glMipmap->downloaded && !glMipmap->data)
 		HWR_MakePatch(patch, glPatch, glMipmap, true);
 
-	// If hardware does not have the texture, then call pfnSetTexture to upload it
+	// If hardware does not have the texture, then call GL_SetTexture to upload it
 	if (!glMipmap->downloaded)
 		GL_SetTexture(glMipmap);
 	HWR_SetCurrentTexture(glMipmap);
@@ -1027,8 +1027,8 @@ static void HWR_UpdatePatchMipmap(patch_t *patch, GLMipmap_t *glMipmap)
 	GLPatch_t *grPatch = patch->hardware;
 	HWR_MakePatch(patch, grPatch, glMipmap, true);
 
-	// If hardware does not have the texture, then call pfnSetTexture to upload it
-	// If it does have the texture, then call pfnUpdateTexture to update it
+	// If hardware does not have the texture, then call GL_SetTexture to upload it
+	// If it does have the texture, then call GL_UpdateTexture to update it
 	if (!glMipmap->downloaded)
 		GL_SetTexture(glMipmap);
 	else
