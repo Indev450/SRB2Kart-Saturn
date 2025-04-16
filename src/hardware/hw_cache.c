@@ -28,7 +28,7 @@
 #include "../v_video.h"
 #include "../r_draw.h"
 #include "../r_main.h"
-#include "../r_patch.h"    // patch rotation
+#include "../r_patch.h"
 #include "../p_setup.h" // levelflats
 #include "../p_spec.h" // anim_t
 #include "../r_sky.h"

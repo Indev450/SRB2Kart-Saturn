@@ -58,6 +58,7 @@
 #include "dehacked.h"
 #include "d_clisrv.h"
 #include "r_defs.h"
+#include "r_patch.h"
 #include "i_system.h"
 #include "md5.h"
 #include "lua_script.h"
@@ -72,7 +73,7 @@
 #endif
 
 #ifdef ROTSPRITE
-#include "r_patch.h" // RotatedPatch_Create
+#include "r_patchrotation.h" // RotatedPatch_Create
 #endif
 
 #ifndef O_BINARY

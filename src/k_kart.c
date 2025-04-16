@@ -48,6 +48,10 @@
 #include "hardware/hw_main.h"
 #endif
 
+#ifdef ROTSPRITE
+#include "r_patchrotation.h"
+#endif
+
 // Hud offset cvars
 #define IMPL_HUD_OFFSET_X(name)\
 consvar_t cv_##name##_xoffset = {"hud_" #name "_xoffset", "0", CV_SAVE, NULL, NULL, 0, NULL, NULL, 0, 0, NULL};
