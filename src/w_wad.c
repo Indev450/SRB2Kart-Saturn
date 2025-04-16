@@ -1747,7 +1747,6 @@ void *W_CacheLumpName(const char *name, INT32 tag)
 // Cache a patch into heap memory, convert the patch format as necessary
 //
 
-// Software-only compile cache the data without conversion
 void *W_CacheSoftwarePatchNumPwad(UINT16 wad, UINT16 lump, INT32 tag)
 {
 	lumpcache_t *lumpcache = NULL;
@@ -1793,14 +1792,11 @@ void *W_CachePatchNumPwad(UINT16 wad, UINT16 lump, INT32 tag)
 
 #ifdef HWRENDER
 	// Software-only compile cache the data without conversion
-	if (rendermode == render_soft || rendermode == render_none)
+	if (rendermode == render_opengl)
+		Patch_CreateGL(patch);
 #endif
-		return (void *)patch;
 
-#ifdef HWRENDER
-	Patch_CreateGL(patch);
 	return (void *)patch;
-#endif
 }
 
 void *W_CachePatchNum(lumpnum_t lumpnum, INT32 tag)
