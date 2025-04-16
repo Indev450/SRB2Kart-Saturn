@@ -827,8 +827,7 @@ UINT16 W_InitFile(const char *filename, boolean local)
 	Z_Calloc(numlumps * sizeof (*wadfile->patchcache), PU_STATIC, &wadfile->patchcache);
 
 #ifdef ROTSPRITE
-	// allocates rotsprite structures and store them in a tree
-	wadfile->rotcache = M_AATreeAlloc(AATREE_ZUSER);
+	Z_Calloc(numlumps * sizeof (*wadfile->rotcache), PU_STATIC, &wadfile->rotcache);
 #endif
 
 	//
@@ -1816,16 +1815,16 @@ void *W_GetCachedPatchNumPwad(UINT16 wad, UINT16 lump)
 // Caches a rotsprite for patch rotation.
 void *W_GetCachedRotPatchPwad(UINT16 wadnum, UINT16 lumpnum)
 {
-	aatree_t *rotcache = wadfiles[wadnum]->rotcache;
-	rotsprite_t *rspr;
+	lumpcache_t *rotcache = wadfiles[wadnum]->rotcache;
 
-	if (!(rspr = M_AATreeGet(rotcache, lumpnum)))
+	if (!rotcache[lumpnum])
 	{
-		rspr = RotatedPatch_Create(ROTANGLES);
-		M_AATreeSet(rotcache, lumpnum, rspr);
+		rotsprite_t *rspr = Z_Calloc(sizeof(rotsprite_t), PU_STATIC, &rotcache[lumpnum]);
+		rspr->angles = ROTANGLES;
+		rspr->patches = Z_Calloc(rspr->angles * 2 * sizeof(void *), PU_STATIC, NULL);
 	}
 
-	return (void *)rspr;
+	return (void *)(rotcache[lumpnum]);
 }
 #endif // ROTSPRITE
 
