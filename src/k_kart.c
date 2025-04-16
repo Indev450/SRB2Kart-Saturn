@@ -10565,13 +10565,13 @@ static void K_drawKartMinimapIcon(fixed_t objx, fixed_t objy, INT32 hudx, INT32 
 	if (encoremode)
 		amnumxpos = -amnumxpos;
 
-	amxpos = amnumxpos + ((hudx + (AutomapPic->width-icon->width)/2)<<FRACBITS);
-	amypos = amnumypos + ((hudy + (AutomapPic->height-icon->height)/2)<<FRACBITS);
+	amxpos = amnumxpos + ((hudx + (SHORT(AutomapPic->width)-SHORT(icon->width))/2)<<FRACBITS);
+	amypos = amnumypos + ((hudy + (SHORT(AutomapPic->height)-SHORT(icon->height))/2)<<FRACBITS);
 
 	if (cv_minihead.value && !(icon == kp_minimapdot))
 	{
-		amxpos += (icon->width / 4)<<FRACBITS;
-		amypos += (icon->height / 4)<<FRACBITS;
+		amxpos += (SHORT(icon->width) / 4)<<FRACBITS;
+		amypos += (SHORT(icon->height) / 4)<<FRACBITS;
 		scale /= 2;
 	}
 
