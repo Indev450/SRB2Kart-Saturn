@@ -314,6 +314,7 @@ static void HWR_GenerateTexture(INT32 texnum, GLMapTexture_t *gltex, boolean noe
 	texture_t *texture;
 	texpatch_t *patch;
 	softwarepatch_t *realpatch;
+	UINT8 *pdata;
 	INT32 blockwidth, blockheight, blocksize;
 
 	UINT8 *colormap = colormaps;
@@ -377,12 +378,8 @@ static void HWR_GenerateTexture(INT32 texnum, GLMapTexture_t *gltex, boolean noe
 	// Composite the columns together.
 	for (i = 0, patch = texture->patches; i < texture->patchcount; i++, patch++)
 	{
-		// If this patch has already been loaded, we just use it from the cache.
-		realpatch = (softwarepatch_t *)W_GetCachedPatchNumPwad(patch->wad, patch->lump);
-
-		// Otherwise, we load it here.
-		if (realpatch == NULL)
-			realpatch = (softwarepatch_t *)W_CacheLumpNumPwad(patch->wad, patch->lump, PU_CACHE);
+		pdata = W_CacheLumpNumPwad(patch->wad, patch->lump, PU_CACHE);
+		realpatch = (softwarepatch_t *)pdata;
 
 		if (realpatch != NULL)
 		{
@@ -516,10 +513,6 @@ void HWR_FreeTextureColormaps(patch_t *patch)
 
 		// Set the first colormap to the one that comes after it.
 		next = pat->mipmap->nextcolormap;
-
-		if (!next)
-			break;
-
 		pat->mipmap->nextcolormap = next->nextcolormap;
 
 		// Free image data from memory.
@@ -1232,7 +1225,6 @@ void HWR_GetFadeMask(lumpnum_t fademasklumpnum)
 
 	patch = HWR_GetCachedGLPatch(fademasklumpnum);
 	glMipmap = ((GLPatch_t *)Patch_AllocateHardwarePatch(patch))->mipmap;
-
 
 	if (!glMipmap->downloaded && !glMipmap->data)
 		HWR_CacheFadeMask(glMipmap, fademasklumpnum);
