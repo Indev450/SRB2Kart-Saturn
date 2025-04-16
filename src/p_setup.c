@@ -3340,12 +3340,6 @@ UINT16 P_PartialAddWadFile(const char *wadfilename, boolean local)
 	if (!devparm && digmreplaces)
 		CONS_Printf(M_GetText("%s digital musics replaced\n"), sizeu1(digmreplaces));
 
-#ifdef HWRENDER
-	// Free GPU textures before freeing patches.
-	if (rendermode == render_opengl && (vid.glstate == VID_GL_LIBRARY_LOADED))
-		HWR_ClearAllTextures();
-#endif
-
 	//
 	// search for sprite replacements
 	//
@@ -3482,6 +3476,11 @@ boolean P_MultiSetupWadFiles(boolean fullsetup)
 
 	if (partadd_stage == 1)
 	{
+#ifdef HWRENDER
+		// Free GPU textures before freeing patches.
+		if (rendermode == render_opengl && (vid.glstate == VID_GL_LIBRARY_LOADED))
+			HWR_ClearAllTextures();
+#endif
 		// Reload all textures, unconditionally for better or worse.
 		R_LoadTextures();
 
