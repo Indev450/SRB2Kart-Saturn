@@ -3358,6 +3358,9 @@ static void HWR_DrawSpriteShadow(gl_vissprite_t *spr, patch_t *gpatch)
 	pslope_t *floorslope;
 	fixed_t slopez;
 	float offset = 0;
+	GLPatch_t *hwrpatch;
+
+	hwrpatch = (GLPatch_t *)(gpatch->hardware);
 
 	// technically this_scale gets multiplied and added to sprite y/x scale, but this thing needs it for some crap so ill just throw it in here again
 	const boolean hires = (spr->mobj && spr->mobj->skin && K_GetMobjSkin(spr->mobj)->flags & SF_HIRES);
@@ -3473,25 +3476,25 @@ static void HWR_DrawSpriteShadow(gl_vissprite_t *spr, patch_t *gpatch)
 
 	if (spr->flip)
 	{
-		swallVerts[0].s = swallVerts[3].s = gpatch->max_s;
+		swallVerts[0].s = swallVerts[3].s = hwrpatch->max_s;
 		swallVerts[2].s = swallVerts[1].s = 0;
 	}
 	else
 	{
 		swallVerts[0].s = swallVerts[3].s = 0;
-		swallVerts[2].s = swallVerts[1].s = gpatch->max_s;
+		swallVerts[2].s = swallVerts[1].s = hwrpatch->max_s;
 	}
 
 	// flip the texture coords (look familiar?)
 	if (spr->vflip)
 	{
-		swallVerts[3].t = swallVerts[2].t = gpatch->max_t;
+		swallVerts[3].t = swallVerts[2].t = hwrpatch->max_t;
 		swallVerts[0].t = swallVerts[1].t = 0;
 	}
 	else
 	{
 		swallVerts[3].t = swallVerts[2].t = 0;
-		swallVerts[0].t = swallVerts[1].t = gpatch->max_t;
+		swallVerts[0].t = swallVerts[1].t = hwrpatch->max_t;
 	}
 
 	sSurf.PolyColor.s.red = 0x01;
