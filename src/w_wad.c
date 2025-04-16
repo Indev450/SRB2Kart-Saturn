@@ -1863,9 +1863,7 @@ void *W_CachePatchNameRotated(const char *name, INT32 rotationangle, INT32 tag)
 	rotsprite_t *rspr;
 	INT32 idx = rotationangle;
 
-	const char *finalname = name;
-
-	num = W_CheckNumForName(finalname);
+	num = W_CheckNumForName(name);
 
 	if (num == LUMPERROR)
 		num = W_GetNumForName("MISSING");
