@@ -65,7 +65,7 @@ patch_t *HWR_GetCachedGLPatch(lumpnum_t lumpnum);
 
 void HWR_GetPatch(patch_t *gpatch);
 void HWR_GetMappedPatch(patch_t *gpatch, const UINT8 *colormap);
-void HWR_MakePatch(patch_t *patch, GLPatch_t *glPatch, GLMipmap_t *glMipmap, boolean makebitmap);
+void HWR_MakePatch(const patch_t *patch, GLPatch_t *glPatch, GLMipmap_t *glMipmap, boolean makebitmap);
 void HWR_GetFadeMask(lumpnum_t fademasklumpnum);
 
 void HWR_PrecacheLevel(void);

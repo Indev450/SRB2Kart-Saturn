@@ -1800,7 +1800,7 @@ static void R_ProjectSprite(mobj_t *thing)
 		vis->patch = rotsprite;
 	else
 #endif
-		vis->patch = W_CachePatchNum(sprframe->lumppat[rot], PU_CACHE);
+		vis->patch = W_CachePatchNum(sprframe->lumppat[rot], PU_SPRITE);
 
 	vis->precip = false;
 
@@ -1985,7 +1985,7 @@ static void R_ProjectPrecipitationSprite(precipmobj_t *thing)
 
 	//Fab: lumppat is the lump number of the patch to use, this is different
 	//     than lumpid for sprites-in-pwad : the graphics are patched
-	vis->patch = W_CachePatchNum(sprframe->lumppat[0], PU_CACHE);
+	vis->patch = W_CachePatchNum(sprframe->lumppat[0], PU_SPRITE);
 
 	// specific translucency
 	if ((thing->blendmode != AST_COPY) && cv_translucency.value)

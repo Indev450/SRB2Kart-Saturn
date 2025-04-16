@@ -23,15 +23,23 @@
 
 typedef enum GLTextureFormat_e
 {
-	GL_TEXFMT_P_8                 = 0x01, /* 8-bit palette */
-	GL_TEXFMT_AP_88               = 0x02, /* 8-bit alpha, 8-bit palette */
+	GL_TEXFMT_P_8					= 0x01, /* 8-bit palette */
+	GL_TEXFMT_AP_88					= 0x02, /* 8-bit alpha, 8-bit palette */
 
-	GL_TEXFMT_RGBA                = 0x10, /* 32 bit RGBA! */
+	GL_TEXFMT_RGBA					= 0x10, /* 32 bit RGBA! */
 
-	GL_TEXFMT_ALPHA_8             = 0x20, /* (0..0xFF) alpha     */
-	GL_TEXFMT_INTENSITY_8         = 0x21, /* (0..0xFF) intensity */
-	GL_TEXFMT_ALPHA_INTENSITY_88  = 0x22,
+	GL_TEXFMT_ALPHA_8				= 0x20, /* (0..0xFF) alpha     */
+	GL_TEXFMT_INTENSITY_8			= 0x21, /* (0..0xFF) intensity */
+	GL_TEXFMT_ALPHA_INTENSITY_88	= 0x22,
 } GLTextureFormat_t;
+
+// Colormap structure for mipmaps.
+struct GLColormap_s
+{
+	const UINT8 *source;
+	UINT8 data[256];
+};
+typedef struct GLColormap_s GLColormap_t;
 
 // Texture information (misleadingly named "mipmap" all over the code.)
 // The *data pointer holds the address of the graphics data cached in heap memory.
@@ -39,15 +47,15 @@ typedef enum GLTextureFormat_e
 struct GLMipmap_s
 {
 	// for UpdateTexture
-	GLTextureFormat_t 		format;
-	void              		*data;
+	GLTextureFormat_t		format;
+	void					*data;
 
-	UINT32          		flags;
-	UINT16 					width, height;
+	UINT32					flags;
+	UINT16					width, height;
 	UINT32					downloaded; // The GPU has this texture.
 
-	struct	GLMipmap_s 		*nextcolormap;
-	const 	UINT8 			*colormap;
+	struct	GLMipmap_s		*nextcolormap;
+	struct GLColormap_s		*colormap;
 };
 typedef struct GLMipmap_s GLMipmap_t;
 
@@ -62,11 +70,11 @@ struct GLMapTexture_s
 };
 typedef struct GLMapTexture_s GLMapTexture_t;
 
-// a cached patch as converted to hardware format
+// Patch information for the hardware renderer.
 struct GLPatch_s
 {
-	float				max_s,max_t;
 	GLMipmap_t			*mipmap;
+	float				max_s,max_t;
 	boolean				notfound; // if the texture file was not found, mark it here (used in model texture loading)
 };
 typedef struct GLPatch_s GLPatch_t;

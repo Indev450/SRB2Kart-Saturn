@@ -369,7 +369,7 @@ static poly_t *CutOutSubsecPoly(seg_t *lseg, INT32 count, poly_t *poly)
 	{
 		//x,y,dx,dy (like a divline)
 		line_t *line = lseg->linedef;
-		
+
 		// portal check
 		if (!gl_maphasportals && line->special == 40 && lseg->side == 0)
 		{
@@ -380,7 +380,7 @@ static poly_t *CutOutSubsecPoly(seg_t *lseg, INT32 count, poly_t *poly)
 			if (line2 >= 0) // found it!
 				gl_maphasportals = 1;
 		}
-		
+
 		p1.x = FIXED_TO_FLOAT(lseg->side ? line->v2->x : line->v1->x);
 		p1.y = FIXED_TO_FLOAT(lseg->side ? line->v2->y : line->v1->y);
 		p2.x = FIXED_TO_FLOAT(lseg->side ? line->v1->x : line->v2->x);
@@ -523,7 +523,7 @@ static void loading_status(void)
 	x = BASEVIDWIDTH/2;
 	y = BASEVIDHEIGHT/2;
 	V_DrawFill(0, 0, BASEVIDWIDTH, BASEVIDHEIGHT, 31); // Black background to match fade in effect
-	//V_DrawPatchFill(W_CachePatchName("SRB2BACK",PU_CACHE)); // SRB2 background, ehhh too bright.
+	//V_DrawPatchFill(W_CachePatchName("SRB2BACK", PU_PATCH)); // SRB2 background, ehhh too bright.
 	M_DrawTextBox(x-58, y-8, 13, 1);
 	V_DrawString(x-50, y, V_YELLOWMAP, "Loading...");
 	V_DrawRightAlignedString(x+50, y, V_YELLOWMAP, s);

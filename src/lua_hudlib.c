@@ -396,7 +396,7 @@ static int libd_patchExists(lua_State *L)
 static int libd_cachePatch(lua_State *L)
 {
 	HUDONLY
-	LUA_PushUserdata(L, W_CachePatchName(luaL_checkstring(L, 1), PU_STATIC), META_PATCH);
+	LUA_PushUserdata(L, W_CachePatchName(luaL_checkstring(L, 1), PU_PATCH), META_PATCH);
 	return 1;
 }
 
@@ -406,7 +406,7 @@ static int libd_cachePatchRotated(lua_State *L)
 	HUDONLY
 	angle_t rollangle = luaL_checkangle(L, 2);
 	INT32 rot = R_GetRollAngle(rollangle);
-	LUA_PushUserdata(L, W_CachePatchNameRotated(luaL_checkstring(L, 1), rot, PU_STATIC), META_PATCH);
+	LUA_PushUserdata(L, W_CachePatchNameRotated(luaL_checkstring(L, 1), rot, PU_PATCH), META_PATCH);
 
 	return 1;
 }
@@ -526,7 +526,7 @@ static int libd_getSpritePatch(lua_State *L)
 #endif
 
 	// push both the patch and its "flip" value
-	LUA_PushUserdata(L, W_CachePatchNum(sprframe->lumppat[angle], PU_STATIC), META_PATCH);
+	LUA_PushUserdata(L, W_CachePatchNum(sprframe->lumppat[angle], PU_SPRITE), META_PATCH);
 	lua_pushboolean(L, (sprframe->flip & (1<<angle)) != 0);
 	return 2;
 }
