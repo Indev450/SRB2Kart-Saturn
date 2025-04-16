@@ -9643,7 +9643,9 @@ static void K_drawKartSpeedometer(void)
 
 	// index 0 is the raw value, index 1 is the converted value
 	fixed_t convSpeed[2] = {0,0};
+#ifdef ROTSPRITE
 	fixed_t dial_divisor = DIALSPDDIV;
+#endif
 
 	INT32 splitflags = K_calcSplitFlags(V_SNAPTOBOTTOM|V_SNAPTOLEFT);
 
@@ -9659,12 +9661,16 @@ static void K_drawKartSpeedometer(void)
 		case 2:
 			convSpeed[0] = FixedDiv(FixedMul(stplyr->speed, 88465), mapobjectscale); // 1.349868774
 			convSpeed[1] = convSpeed[0] / FRACUNIT;
+#ifdef ROTSPRITE
 			dial_divisor = MPHDIV;
+#endif
 			break;
 		case 3:
 			convSpeed[0] = FixedDiv(stplyr->speed, mapobjectscale);
 			convSpeed[1] = convSpeed[0] / FRACUNIT;
+#ifdef ROTSPRITE
 			dial_divisor = MPHDIV;
+#endif
 			break;
 		case 4:
 			if (stplyr->mo)
