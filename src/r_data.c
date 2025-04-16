@@ -541,7 +541,7 @@ void R_LoadTextures(void)
 	// but the alternative is to spend a ton of time checking and re-checking all previous entries just to skip any potentially patched textures.
 	for (w = 0, numtextures = 0; w < numwadfiles; w++)
 	{
-		if (wadfiles[w]->type == RET_PK3)
+		if (W_FileHasFolders(wadfiles[w]))
 		{
 			texstart = W_CheckNumForFolderStartPK3("textures/", (UINT16)w, 0);
 			texend = W_CheckNumForFolderEndPK3("textures/", (UINT16)w, texstart);
@@ -605,7 +605,7 @@ void R_LoadTextures(void)
 	for (i = 0, w = 0; w < numwadfiles; w++)
 	{
 		// Get the lump numbers for the markers in the WAD, if they exist.
-		if (wadfiles[w]->type == RET_PK3)
+		if (W_FileHasFolders(wadfiles[w]))
 		{
 			texstart = W_CheckNumForFolderStartPK3("textures/", (UINT16)w, 0);
 			texend = W_CheckNumForFolderEndPK3("textures/", (UINT16)w, texstart);
@@ -618,7 +618,7 @@ void R_LoadTextures(void)
 		}
 		else
 		{
-			texstart = W_CheckNumForNamePwad(TX_START, (UINT16)w, 0) + 1;
+			texstart = W_CheckNumForMarkerStartPwad(TX_START, (UINT16)w, 0);
 			texend = W_CheckNumForNamePwad(TX_END, (UINT16)w, 0);
 			texturesLumpPos = W_CheckNumForNamePwad("TEXTURES", (UINT16)w, 0);
 			if (texturesLumpPos != INT16_MAX)
@@ -631,20 +631,22 @@ void R_LoadTextures(void)
 		// Work through each lump between the markers in the WAD.
 		for (j = 0; j < (texend - texstart); j++)
 		{
+			UINT16 wadnum = (UINT16)w;
+			lumpnum_t lumpnum = texstart + j;
+
 			if (W_FileHasFolders(wadfiles[w]))
 			{
-				if (W_IsLumpFolder(w, texstart + j)) // Check if lump is a folder
+				if (W_IsLumpFolder(wadnum, lumpnum)) // Check if lump is a folder
 					continue; // If it is then SKIP IT
 			}
-			patchlump = W_CacheLumpNumPwad((UINT16)w, texstart + j, PU_CACHE);
 
 			patchlump = (softwarepatch_t *)W_CacheLumpNumPwad(wadnum, lumpnum, PU_STATIC);
 
-			//CONS_Printf("\n\"%s\" is a single patch, dimensions %d x %d",W_CheckNameForNumPwad((UINT16)w,texstart+j),patchlump->width, patchlump->height);
+			//CONS_Printf("\n\"%s\" is a single patch, dimensions %d x %d",W_CheckNameForNumPwad(wadnum, lumpnum), patchlump->width, patchlump->height);
 			texture = textures[i] = Z_Calloc(sizeof(texture_t) + sizeof(texpatch_t), PU_STATIC, NULL);
 
 			// Set texture properties.
-			M_Memcpy(texture->name, W_CheckNameForNumPwad((UINT16)w, texstart + j), sizeof(texture->name));
+			M_Memcpy(texture->name, W_CheckNameForNumPwad(wadnum, lumpnum), sizeof(texture->name));
 			texture->width = SHORT(patchlump->width);
 			texture->height = SHORT(patchlump->height);
 			texture->patchcount = 1;
@@ -654,8 +656,10 @@ void R_LoadTextures(void)
 			patch = &texture->patches[0];
 
 			patch->originx = patch->originy = 0;
-			patch->wad = (UINT16)w;
+			patch->wad = wadnum;
 			patch->lump = texstart + j;
+
+			Z_Free(patchlump);
 
 			k = 1;
 			while (k << 1 <= texture->width)
