@@ -887,7 +887,7 @@ static void Y_FollowIntermission(void)
 	G_AfterIntermission();
 }
 
-#define UNLOAD(x) Z_ChangeTag(x, PU_CACHE); x = NULL
+#define UNLOAD(x) if (x) {Patch_Free(x);} x = NULL;
 
 //
 // Y_UnloadData

@@ -38,6 +38,15 @@ typedef struct
 	boolean available;
 } spriteinfo_t;
 
+// Patch functions
+patch_t *Patch_Create(softwarepatch_t *source, size_t srcsize, void *dest);
+void Patch_Free(patch_t *patch);
+
+#ifdef HWRENDER
+void *Patch_AllocateHardwarePatch(patch_t *patch);
+void *Patch_CreateGL(patch_t *patch);
+#endif
+
 // Conversions between patches / flats / textures...
 boolean R_CheckIfPatch(lumpnum_t lump);
 

@@ -733,7 +733,7 @@ void D_SRB2Loop(void)
 	COM_ImmedExecute("cls;version");
 
 	if (rendermode == render_soft)
-		V_DrawFixedPatch(0, 0, FRACUNIT/2, 0, (patch_t *)W_CacheLumpNum(W_GetNumForName("KARTKREW"), PU_CACHE), NULL);
+		V_DrawFixedPatch(0, 0, FRACUNIT/2, 0, W_CachePatchNum(W_GetNumForName("KARTKREW"), PU_CACHE), NULL);
 	I_FinishUpdate(); // page flip or blit buffer
 
 	for (;;)

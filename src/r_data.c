@@ -302,8 +302,8 @@ static UINT8 *R_GenerateTexture(size_t texnum)
 	UINT8 *blocktex;
 	texture_t *texture;
 	texpatch_t *patch;
-	patch_t *realpatch;
-	int x, x1, x2, i;
+	softwarepatch_t *realpatch;
+	int x, x1, x2, i, width, height;
 	size_t blocksize;
 	column_t *patchcol;
 	UINT8 *colofs;
@@ -322,16 +322,21 @@ static UINT8 *R_GenerateTexture(size_t texnum)
 	{
 		boolean holey = false;
 		patch = texture->patches;
-		realpatch = W_CacheLumpNumPwad(patch->wad, patch->lump, PU_CACHE);
+
+		realpatch = (softwarepatch_t *)W_CacheLumpNumPwad(patch->wad, patch->lump, PU_CACHE);
 
 		// Check the patch for holes.
 		if (texture->width > SHORT(realpatch->width) || texture->height > SHORT(realpatch->height))
 			holey = true;
+
 		colofs = (UINT8 *)realpatch->columnofs;
+
 		for (x = 0; x < texture->width && !holey; x++)
 		{
 			column_t *col = (column_t *)((UINT8 *)realpatch + LONG(*(UINT32 *)&colofs[x<<2]));
+
 			INT32 topdelta, prevdelta = -1, y = 0;
+
 			while (col->topdelta != 0xff)
 			{
 				topdelta = col->topdelta;
@@ -343,6 +348,7 @@ static UINT8 *R_GenerateTexture(size_t texnum)
 				y = topdelta + col->length + 1;
 				col = (column_t *)((UINT8 *)col + col->length + 4);
 			}
+
 			if (y < texture->height)
 				holey = true; // this texture is HOLEy! D:
 		}
@@ -375,7 +381,7 @@ static UINT8 *R_GenerateTexture(size_t texnum)
 	texturememory += blocksize;
 	block = Z_Malloc(blocksize+1, PU_STATIC, &texturecache[texnum]);
 
-	memset(block, 0xF7, blocksize+1); // Transparency hack
+	memset(block, TRANSPARENTPIXEL, blocksize+1); // Transparency hack
 
 	// columns lookup table
 	colofs = block;
@@ -387,20 +393,33 @@ static UINT8 *R_GenerateTexture(size_t texnum)
 	// Composite the columns together.
 	for (i = 0, patch = texture->patches; i < texture->patchcount; i++, patch++)
 	{
-		realpatch = W_CacheLumpNumPwad(patch->wad, patch->lump, PU_CACHE);
+		realpatch = (softwarepatch_t *)W_CacheLumpNumPwad(patch->wad, patch->lump, PU_CACHE);
 
 		// Well, it's not valid...
 		if (realpatch == NULL)
 			continue;
 
 		x1 = patch->originx;
-		x2 = x1 + SHORT(realpatch->width);
+		width = SHORT(realpatch->width);
+		height = SHORT(realpatch->height);
+		x2 = x1 + width;
 
+		if (x1 > texture->width || x2 < 0)
+			continue; // patch not located within texture's x bounds, ignore
+
+		if (patch->originy > texture->height || (patch->originy + height) < 0)
+			continue; // patch not located within texture's y bounds, ignore
+
+		// patch is actually inside the texture!
+		// now check if texture is partly off-screen and adjust accordingly
+
+		// left edge
 		if (x1 < 0)
 			x = 0;
 		else
 			x = x1;
 
+		// right edge
 		if (x2 > texture->width)
 			x2 = texture->width;
 
@@ -649,7 +668,7 @@ void R_LoadTextures(void)
 
 #ifdef HWRENDER
 	if (rendermode == render_opengl)
-		HWR_LoadTextures(numtextures);
+		HWR_LoadMapTextures(numtextures);
 #endif
 }
 

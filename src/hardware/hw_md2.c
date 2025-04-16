@@ -366,43 +366,49 @@ static GLTextureFormat_t PCX_Load(const char *filename, int *w, int *h,
 // -----------------+
 static void md2_loadTexture(md2_t *model)
 {
-	GLPatch_t *glpatch;
+	patch_t *patch;
+	GLPatch_t *glPatch = NULL;
+
 	const char *filename = model->filename;
 
 	if (model->glpatch)
 	{
-		glpatch = model->glpatch;
-		Z_Free(glpatch->mipmap->data);
+		patch = model->glpatch;
+		glPatch = (GLPatch_t *)(patch->hardware);
+		if (glPatch)
+			Z_Free(glPatch->mipmap->data);
 	}
 	else
-	{
-		glpatch = Z_Calloc(sizeof *glpatch, PU_HWRPATCHINFO,
-		                   &(model->glpatch));
-		glpatch->mipmap = Z_Calloc(sizeof (GLMipmap_t), PU_HWRPATCHINFO, NULL);
-	}
+		model->glpatch = patch = Patch_Create(NULL, 0, NULL);
 
-	if (!glpatch->mipmap->downloaded && !glpatch->mipmap->data)
+	if (!patch->hardware)
+		Patch_AllocateHardwarePatch(patch);
+
+	if (glPatch == NULL)
+		glPatch = (GLPatch_t *)(patch->hardware);
+
+	if (!glPatch->mipmap->downloaded && !glPatch->mipmap->data)
 	{
 		int w = 0, h = 0;
 
 #ifdef HAVE_PNG
-		glpatch->mipmap->format = PNG_Load(filename, &w, &h, glpatch);
-		if (glpatch->mipmap->format == 0)
+		glPatch->mipmap->format = PNG_Load(filename, &w, &h, glPatch);
+		if (glPatch->mipmap->format == 0)
 #endif
-		glpatch->mipmap->format = PCX_Load(filename, &w, &h, glpatch);
-		if (glpatch->mipmap->format == 0)
+		glPatch->mipmap->format = PCX_Load(filename, &w, &h, glPatch);
+		if (glPatch->mipmap->format == 0)
 		{
-			glpatch->notfound = true;// mark it so its not searched for again repeatedly
+			glPatch->notfound = true;// mark it so its not searched for again repeatedly
 			return;
 		}
 
-		glpatch->mipmap->downloaded = 0;
-		glpatch->mipmap->flags = 0;
+		glPatch->mipmap->downloaded = 0;
+		glPatch->mipmap->flags = 0;
 
-		glpatch->width = (INT16)w;
-		glpatch->height = (INT16)h;
-		glpatch->mipmap->width = (UINT16)w;
-		glpatch->mipmap->height = (UINT16)h;
+		patch->width = (INT16)w;
+		patch->height = (INT16)h;
+		glPatch->mipmap->width = (UINT16)w;
+		glPatch->mipmap->height = (UINT16)h;
 
 		// for palette rendering, color cube is applied in post-processing instead of here
 		if (!HWR_ShouldUsePaletteRendering())
@@ -410,7 +416,7 @@ static void md2_loadTexture(md2_t *model)
 			UINT32 size;
 			RGBA_t *image;
 			// Lactozilla: Apply colour cube
-			image = glpatch->mipmap->data;
+			image = glPatch->mipmap->data;
 			size = w*h;
 			while (size--)
 			{
@@ -419,8 +425,8 @@ static void md2_loadTexture(md2_t *model)
 			}
 		}
 	}
-	GL_SetTexture(glpatch->mipmap);
-	HWR_UnlockCachedPatch(glpatch);
+	GL_SetTexture(glPatch->mipmap);
+	HWR_UnlockCachedPatch(glPatch);
 }
 
 // -----------------+
@@ -428,49 +434,56 @@ static void md2_loadTexture(md2_t *model)
 // -----------------+
 static void md2_loadBlendTexture(md2_t *model)
 {
-	GLPatch_t *glpatch;
+	patch_t *patch;
+	GLPatch_t *glPatch = NULL;
+
 	char *filename = Z_Malloc(strlen(model->filename)+7, PU_STATIC, NULL);
+
 	strcpy(filename, model->filename);
 
 	FIL_ForceExtension(filename, "_blend.png");
 
 	if (model->blendglpatch)
 	{
-		glpatch = model->blendglpatch;
-		Z_Free(glpatch->mipmap->data);
+		patch = model->blendglpatch;
+		glPatch = (GLPatch_t *)(patch->hardware);
+		if (glPatch)
+			Z_Free(glPatch->mipmap->data);
 	}
 	else
-	{
-		glpatch = Z_Calloc(sizeof *glpatch, PU_HWRPATCHINFO,
-		                   &(model->blendglpatch));
-		glpatch->mipmap = Z_Calloc(sizeof (GLMipmap_t), PU_HWRPATCHINFO, NULL);
-	}
+		model->blendglpatch = patch = Patch_Create(NULL, 0, NULL);
 
-	if (!glpatch->mipmap->downloaded && !glpatch->mipmap->data)
+	if (!patch->hardware)
+		Patch_AllocateHardwarePatch(patch);
+
+	if (glPatch == NULL)
+		glPatch = (GLPatch_t *)(patch->hardware);
+
+	if (!glPatch->mipmap->downloaded && !glPatch->mipmap->data)
 	{
 		int w = 0, h = 0;
 #ifdef HAVE_PNG
-		glpatch->mipmap->format = PNG_Load(filename, &w, &h, glpatch);
-		if (glpatch->mipmap->format == 0)
+		glPatch->mipmap->format = PNG_Load(filename, &w, &h, glPatch);
+		if (glPatch->mipmap->format == 0)
 #endif
-		glpatch->mipmap->format = PCX_Load(filename, &w, &h, glpatch);
-		if (glpatch->mipmap->format == 0)
+		glPatch->mipmap->format = PCX_Load(filename, &w, &h, glPatch);
+		if (glPatch->mipmap->format == 0)
 		{
-			glpatch->notfound = true;// mark it so its not searched for again repeatedly
+			glPatch->notfound = true;// mark it so its not searched for again repeatedly
 			Z_Free(filename);
 			return;
 		}
 
-		glpatch->mipmap->downloaded = 0;
-		glpatch->mipmap->flags = 0;
+		glPatch->mipmap->downloaded = 0;
+		glPatch->mipmap->flags = 0;
 
-		glpatch->width = (INT16)w;
-		glpatch->height = (INT16)h;
-		glpatch->mipmap->width = (UINT16)w;
-		glpatch->mipmap->height = (UINT16)h;
+		patch->width = (INT16)w;
+		patch->height = (INT16)h;
+		glPatch->mipmap->width = (UINT16)w;
+		glPatch->mipmap->height = (UINT16)h;
 	}
-	GL_SetTexture(glpatch->mipmap); // We do need to do this so that it can be cleared and knows to recreate it when necessary
-	HWR_UnlockCachedPatch(glpatch);
+	GL_SetTexture(glPatch->mipmap); // We do need to do this so that it can be cleared and knows to recreate it when necessary
+	HWR_UnlockCachedPatch(glPatch);
 
 	Z_Free(filename);
 }
@@ -682,8 +695,10 @@ spritemd2found:
 #define SETBRIGHTNESS(brightness,r,g,b) \
 	brightness = (UINT8)(((1063*(UINT32)(r))/5000) + ((3576*(UINT32)(g))/5000) + ((361*(UINT32)(b))/5000))
 
-static void HWR_CreateBlendedTexture(GLPatch_t *gpatch, GLPatch_t *blendgpatch, GLMipmap_t *glMipmap, INT32 skinnum, skincolors_t color)
+static void HWR_CreateBlendedTexture(patch_t *gpatch, patch_t *blendgpatch, GLMipmap_t *glMipmap, INT32 skinnum, skincolors_t color)
 {
+	GLPatch_t *hwrPatch = gpatch->hardware;
+	GLPatch_t *hwrBlendPatch = blendgpatch->hardware;
 	UINT16 w = gpatch->width, h = gpatch->height;
 	UINT32 size = w*h;
 	RGBA_t *image, *blendimage, *cur, blendcolor;
@@ -718,8 +733,8 @@ static void HWR_CreateBlendedTexture(GLPatch_t *gpatch, GLPatch_t *blendgpatch, 
 	cur = Z_Malloc(size*4, PU_HWRCACHE, &glMipmap->data);
 	memset(cur, 0x00, size*4);
 
-	image = gpatch->mipmap->data;
-	blendimage = blendgpatch->mipmap->data;
+	image = hwrPatch->mipmap->data;
+	blendimage = hwrBlendPatch->mipmap->data;
 
 	// TC_METALSONIC includes an actual skincolor translation, on top of its flashing.
 	if (skinnum == TC_METALSONIC)
@@ -1042,21 +1057,32 @@ skippixel:
 
 #undef SETBRIGHTNESS
 
-static void HWR_GetBlendedTexture(GLPatch_t *gpatch, GLPatch_t *blendgpatch, INT32 skinnum, const UINT8 *colormap, skincolors_t color)
+static void HWR_GetBlendedTexture(patch_t *patch, patch_t *blendgpatch, INT32 skinnum, const UINT8 *colormap, skincolors_t color)
 {
 	// mostly copied from HWR_GetMappedPatch, hence the similarities and comment
+	GLPatch_t *glPatch = patch->hardware;
+	GLPatch_t *glBlendPatch = NULL;
 	GLMipmap_t *glMipmap, *newMipmap;
 
-	if (colormap == colormaps || colormap == NULL)
+
+	if (blendgpatch == NULL || colormap == colormaps || colormap == NULL)
 	{
 		// Don't do any blending
-		GL_SetTexture(gpatch->mipmap);
+		GL_SetTexture(glPatch->mipmap);
+		return;
+	}
+
+	if ((blendgpatch && (glBlendPatch = blendgpatch->hardware) && glBlendPatch->mipmap->format)
+		&& (patch->width != blendgpatch->width || patch->height != blendgpatch->height))
+	{
+		// Blend image exists, but it's bad.
+		GL_SetTexture(glPatch->mipmap);
 		return;
 	}
 
 	// search for the Mipmap
 	// skip the first (no colormap translated)
-	for (glMipmap = gpatch->mipmap; glMipmap->nextcolormap; )
+	for (glMipmap = glPatch->mipmap; glMipmap->nextcolormap; )
 	{
 		glMipmap = glMipmap->nextcolormap;
 
@@ -1084,7 +1110,7 @@ static void HWR_GetBlendedTexture(GLPatch_t *gpatch, GLPatch_t *blendgpatch, INT
 	glMipmap->nextcolormap = newMipmap;
 	newMipmap->colormap = colormap;
 
-	HWR_CreateBlendedTexture(gpatch, blendgpatch, newMipmap, skinnum, color);
+	HWR_CreateBlendedTexture(patch, blendgpatch, newMipmap, skinnum, color);
 
 	GL_SetTexture(newMipmap);
 	Z_ChangeTag(newMipmap->data, PU_HWRCACHE_UNLOCKED);
@@ -1154,7 +1180,8 @@ void HWR_DrawMD2(gl_vissprite_t *spr)
 
 	// Look at HWR_ProjectSprite for more
 	{
-		GLPatch_t *gpatch;
+		patch_t *gpatch, *blendgpatch;
+		GLPatch_t *hwrPatch = NULL, *hwrBlendPatch = NULL;
 		INT32 durs = spr->mobj->state->tics;
 		INT32 tics = spr->mobj->tics;
 		//mdlframe_t *next = NULL;
@@ -1264,21 +1291,33 @@ void HWR_DrawMD2(gl_vissprite_t *spr)
 		}
 		//Hurdler: arf, I don't like that implementation at all... too much crappy
 		gpatch = md2->glpatch;
-		if (!gpatch || ((!gpatch->mipmap->format || !gpatch->mipmap->downloaded) && !gpatch->notfound))
-			md2_loadTexture(md2);
-		gpatch = md2->glpatch; // Load it again, because it isn't being loaded into gpatch after md2_loadtexture...
+		if (gpatch)
+			hwrPatch = ((GLPatch_t *)gpatch->hardware);
 
-		if ((gpatch && gpatch->mipmap->format) // don't load the blend texture if the base texture isn't available
-			&& (!md2->blendglpatch
-			|| ((!((GLPatch_t *)md2->blendglpatch)->mipmap->format || !((GLPatch_t *)md2->blendglpatch)->mipmap->downloaded)
-			&& !((GLPatch_t *)md2->blendglpatch)->notfound)))
+		if (!gpatch || !hwrPatch
+		|| ((!hwrPatch->mipmap->format || !hwrPatch->mipmap->downloaded) && !hwrPatch->notfound))
+			md2_loadTexture(md2);
+
+		// Load it again, because it isn't being loaded into gpatch after md2_loadtexture...
+		gpatch = md2->glpatch;
+		if (gpatch)
+			hwrPatch = ((GLPatch_t *)gpatch->hardware);
+
+		// Load blend texture
+		blendgpatch = md2->blendglpatch;
+		if (blendgpatch)
+			hwrBlendPatch = ((GLPatch_t *)blendgpatch->hardware);
+
+		if ((gpatch && hwrPatch && hwrPatch->mipmap->format) // don't load the blend texture if the base texture isn't available
+			&& (!blendgpatch || !hwrBlendPatch
+			|| ((!hwrBlendPatch->mipmap->format || !hwrBlendPatch->mipmap->downloaded) && !hwrPatch->notfound)))
 			md2_loadBlendTexture(md2);
 
-		if (gpatch && gpatch->mipmap->format) // else if meant that if a texture couldn't be loaded, it would just end up using something else's texture
+		if (gpatch && hwrPatch && hwrPatch->mipmap->format) // else if meant that if a texture couldn't be loaded, it would just end up using something else's texture
 		{
 			if ((skincolors_t)spr->mobj->color != SKINCOLOR_NONE &&
-				md2->blendglpatch && ((GLPatch_t *)md2->blendglpatch)->mipmap->format
-				&& gpatch->width == ((GLPatch_t *)md2->blendglpatch)->width && gpatch->height == ((GLPatch_t *)md2->blendglpatch)->height)
+				md2->blendglpatch && (hwrBlendPatch->mipmap->format
+				&& gpatch->width == (blendgpatch->width && gpatch->height == (blendgpatch->height))))
 			{
 				INT32 tcskinnum = TC_DEFAULT;
 				if ((spr->mobj->flags & MF_BOSS) && (spr->mobj->flags2 & MF2_FRET) && (leveltime & 1)) // Bosses "flash"
@@ -1303,19 +1342,18 @@ void HWR_DrawMD2(gl_vissprite_t *spr)
 					}
 					else tcskinnum = TC_DEFAULT;
 				}
-				HWR_GetBlendedTexture(gpatch, (GLPatch_t *)md2->blendglpatch, tcskinnum, spr->colormap, (skincolors_t)spr->mobj->color);
+				HWR_GetBlendedTexture(gpatch, blendgpatch, tcskinnum, spr->colormap, (skincolors_t)spr->mobj->color);
 			}
 			else
 			{
 				// This is safe, since we know the texture has been downloaded
-				GL_SetTexture(gpatch->mipmap);
+				GL_SetTexture(hwrPatch->mipmap);
 			}
 		}
 		else
 		{
 			// Sprite
-			gpatch = spr->gpatch; //gpatch = W_CachePatchNum(spr->patchlumpnum, PU_CACHE);
-			HWR_GetMappedPatch(gpatch, spr->colormap);
+			HWR_GetMappedPatch(spr->gpatch, spr->colormap);
 		}
 
 		if (spr->mobj->frame & FF_ANIMATE)
