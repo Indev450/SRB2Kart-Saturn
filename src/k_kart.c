@@ -8364,16 +8364,19 @@ INT32 K_getMinimapTrans(void)
 	INT32 minimaptrans = cv_kartminimap.value;
 
 	if (!minimaptrans)
-		return 0;
+		return -1;
 
 	if (forceshowhud)
 		return (10-minimaptrans)<<FF_TRANSSHIFT;
 
 	if (timeinmap <= 105)
-		return 0;
+		return -1;
 
 	if (timeinmap <= 113)
 		minimaptrans = ((((INT32)timeinmap) - 105)*minimaptrans)/(113-105);
+
+	if (!minimaptrans)
+		return -1;
 
 	return (10-minimaptrans)<<FF_TRANSSHIFT;
 }
@@ -10641,7 +10644,7 @@ static void K_drawKartMinimap(void)
 	minimaptrans = K_getMinimapTrans();
 
 	// Exit early if it wouldn't draw anyway.
-	if (!minimaptrans)
+	if (minimaptrans == -1)
 		return;
 
 	drawinfo_t info;

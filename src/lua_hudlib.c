@@ -611,7 +611,7 @@ static int libd_drawOnMinimap(lua_State *L)
 	INT32 mm_x, mm_y;
 	fixed_t patchw = 0, patchh = 0;
 
-	HUDONLY	// only run this function in hud hooks
+	HUDONLY // only run this function in hud hooks
 
 	// Draw the HUD only when playing in a level.
 	// hu_stuff needs this, unlike st_stuff.
@@ -631,7 +631,7 @@ static int libd_drawOnMinimap(lua_State *L)
 	minimaptrans = K_getMinimapTrans();
 
 	// Exit early if it wouldn't draw anyway.
-	if (!minimaptrans)
+	if (minimaptrans == -1)
 		return 0;
 
 	x = luaL_checkinteger(L, 1);
