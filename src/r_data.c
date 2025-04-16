@@ -329,29 +329,31 @@ static UINT8 *R_GenerateTexture(size_t texnum)
 		// Check the patch for holes.
 		if (texture->width > SHORT(realpatch->width) || texture->height > SHORT(realpatch->height))
 			holey = true;
-
-		colofs = (UINT8 *)realpatch->columnofs;
-
-		for (x = 0; x < texture->width && !holey; x++)
+		else
 		{
-			column_t *col = (column_t *)((UINT8 *)realpatch + LONG(*(UINT32 *)&colofs[x<<2]));
+			colofs = (UINT8 *)realpatch->columnofs;
 
-			INT32 topdelta, prevdelta = -1, y = 0;
-
-			while (col->topdelta != 0xff)
+			for (x = 0; x < texture->width; x++)
 			{
-				topdelta = col->topdelta;
-				if (topdelta <= prevdelta)
-					topdelta += prevdelta;
-				prevdelta = topdelta;
-				if (topdelta > y)
-					break;
-				y = topdelta + col->length + 1;
-				col = (column_t *)((UINT8 *)col + col->length + 4);
-			}
+				column_t *col = (column_t *)((UINT8 *)realpatch + LONG(*(UINT32 *)&colofs[x<<2]));
 
-			if (y < texture->height)
-				holey = true; // this texture is HOLEy! D:
+				INT32 topdelta, prevdelta = -1, y = 0;
+
+				while (col->topdelta != 0xff)
+				{
+					topdelta = col->topdelta;
+					if (topdelta <= prevdelta)
+						topdelta += prevdelta;
+					prevdelta = topdelta;
+					if (topdelta > y)
+						break;
+					y = topdelta + col->length + 1;
+					col = (column_t *)((UINT8 *)col + col->length + 4);
+				}
+
+				if (y < texture->height)
+					holey = true; // this texture is HOLEy! D:
+			}
 		}
 
 		// If the patch uses transparency, we have to save it this way.
@@ -359,8 +361,7 @@ static UINT8 *R_GenerateTexture(size_t texnum)
 		{
 			texture->holes = true;
 			blocksize = W_LumpLengthPwad(patch->wad, patch->lump);
-			block = Z_Calloc(blocksize, PU_LEVEL, // will change tag at end of this function
-				&texturecache[texnum]);
+			block = Z_Calloc(blocksize, PU_LEVEL, &texturecache[texnum]);
 			M_Memcpy(block, realpatch, blocksize);
 			texturememory += blocksize;
 
@@ -368,8 +369,12 @@ static UINT8 *R_GenerateTexture(size_t texnum)
 			colofs = (block + 8);
 			texturecolumnofs[texnum] = (UINT32 *)colofs;
 			blocktex = block;
+
 			for (x = 0; x < texture->width; x++)
+			{
 				*(UINT32 *)&colofs[x<<2] = LONG(LONG(*(UINT32 *)&colofs[x<<2]) + 3);
+			}
+
 			goto done;
 		}
 
@@ -396,10 +401,6 @@ static UINT8 *R_GenerateTexture(size_t texnum)
 	{
 		pdata = W_CacheLumpNumPwad(patch->wad, patch->lump, PU_LEVEL);
 		realpatch = (softwarepatch_t *)pdata;
-
-		// Well, it's not valid...
-		if (realpatch == NULL)
-			continue;
 
 		x1 = patch->originx;
 		width = SHORT(realpatch->width);

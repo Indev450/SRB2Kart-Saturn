@@ -378,13 +378,10 @@ static void HWR_GenerateTexture(INT32 texnum, GLMapTexture_t *gltex, boolean noe
 	// Composite the columns together.
 	for (i = 0, patch = texture->patches; i < texture->patchcount; i++, patch++)
 	{
-		pdata = W_CacheLumpNumPwad(patch->wad, patch->lump, PU_CACHE);
+		pdata = W_CacheLumpNumPwad(patch->wad, patch->lump, PU_LEVEL);
 		realpatch = (softwarepatch_t *)pdata;
 
-		if (realpatch != NULL)
-		{
-			HWR_DrawTexturePatchInCache(&gltex->mipmap, blockwidth, blockheight, texture, patch, realpatch);
-		}
+		HWR_DrawTexturePatchInCache(&gltex->mipmap, blockwidth, blockheight, texture, patch, realpatch);
 	}
 
 	//Hurdler: not efficient at all but I don't remember exactly how HWR_DrawPatchInCache works :(
@@ -863,9 +860,9 @@ void HWR_LoadMapTextures(size_t pnumtextures)
 
 	gl_numtextures = pnumtextures;
 #ifdef GLENCORE
-	gl_textures = calloc(pnumtextures, sizeof (*gl_textures)*2); // *2 - 1 for encore-remapped texture and another for noencore texture (unused when not in encore)
+	gl_textures = calloc(gl_numtextures, sizeof (*gl_textures)*2); // *2 - 1 for encore-remapped texture and another for noencore texture (unused when not in encore)
 #else
-	gl_textures = calloc(pnumtextures, sizeof (*gl_textures));
+	gl_textures = calloc(gl_numtextures, sizeof (*gl_textures));
 #endif
 	if (gl_textures == NULL)
 		I_Error("HWR_LoadMapTextures: ran out of memory for OpenGL textures. Sad!");
@@ -1121,6 +1118,7 @@ void HWR_UnlockCachedPatch(GLPatch_t *glPatch)
 patch_t *HWR_GetCachedGLPatchPwad(UINT16 wadnum, UINT16 lumpnum)
 {
 	lumpcache_t *lumpcache = wadfiles[wadnum]->patchcache;
+
 	if (!lumpcache[lumpnum])
 	{
 		void *ptr = Z_Calloc(sizeof(patch_t), PU_PATCH, &lumpcache[lumpnum]);
@@ -1393,6 +1391,7 @@ UINT32 HWR_CreateLightTable(UINT8 *lighttable)
 UINT32 HWR_GetLightTableID(extracolormap_t *colormap)
 {
 	boolean default_colormap = false;
+
 	if (!colormap)
 	{
 		colormap = &extra_colormaps[num_extra_colormaps]; // a place to store the hw lighttable id
