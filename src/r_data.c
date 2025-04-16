@@ -540,50 +540,50 @@ Rloadtextures (INT32 i, INT32 w)
 			R_ParseTEXTURESLump(w, texturesLumpPos, &i);
 	}
 
-	if (!( texstart == INT16_MAX || texend == INT16_MAX ))
+	if (texstart == INT16_MAX || texend == INT16_MAX)
+		return i;
+
+	// Work through each lump between the markers in the WAD.
+	for (j = 0; j < (texend - texstart); j++)
 	{
-		// Work through each lump between the markers in the WAD.
-		for (j = 0; j < (texend - texstart); j++)
+		UINT16 wadnum = (UINT16)w;
+		lumpnum_t lumpnum = texstart + j;
+
+		if (W_FileHasFolders(wadfiles[w]))
 		{
-			UINT16 wadnum = (UINT16)w;
-			lumpnum_t lumpnum = texstart + j;
-
-			if (W_FileHasFolders(wadfiles[w]))
-			{
-				if (W_IsLumpFolder(wadnum, lumpnum)) // Check if lump is a folder
-					continue; // If it is then SKIP IT
-			}
-
-			patchlump = (softwarepatch_t *)W_CacheLumpNumPwad(wadnum, lumpnum, PU_STATIC);
-
-			//CONS_Printf("\n\"%s\" is a single patch, dimensions %d x %d",W_CheckNameForNumPwad((UINT16)w,texstart+j),patchlump->width, patchlump->height);
-			texture = textures[i] = Z_Calloc(sizeof(texture_t) + sizeof(texpatch_t), PU_STATIC, NULL);
-
-			// Set texture properties.
-			M_Memcpy(texture->name, W_CheckNameForNumPwad((UINT16)w, texstart + j), sizeof(texture->name));
-			texture->hash = quickncasehash(texture->name, 8);
-			texture->width = SHORT(patchlump->width);
-			texture->height = SHORT(patchlump->height);
-			texture->patchcount = 1;
-			texture->holes = false;
-
-			// Allocate information for the texture's patches.
-			patch = &texture->patches[0];
-
-			patch->originx = patch->originy = 0;
-			patch->wad = (UINT16)w;
-			patch->lump = texstart + j;
-
-			Z_Free(patchlump);
-
-			k = 1;
-			while (k << 1 <= texture->width)
-				k <<= 1;
-
-			texturewidthmask[i] = k - 1;
-			textureheight[i] = texture->height << FRACBITS;
-			i++;
+			if (W_IsLumpFolder(wadnum, lumpnum)) // Check if lump is a folder
+				continue; // If it is then SKIP IT
 		}
+
+		patchlump = (softwarepatch_t *)W_CacheLumpNumPwad(wadnum, lumpnum, PU_STATIC);
+
+		//CONS_Printf("\n\"%s\" is a single patch, dimensions %d x %d",W_CheckNameForNumPwad((wadnum, lumpnum), patchlump->width, patchlump->height);
+		texture = textures[i] = Z_Calloc(sizeof(texture_t) + sizeof(texpatch_t), PU_STATIC, NULL);
+
+		// Set texture properties.
+		M_Memcpy(texture->name, W_CheckNameForNumPwad(wadnum, lumpnum), sizeof(texture->name));
+		texture->hash = quickncasehash(texture->name, 8);
+		texture->width = SHORT(patchlump->width);
+		texture->height = SHORT(patchlump->height);
+		texture->patchcount = 1;
+		texture->holes = false;
+
+		// Allocate information for the texture's patches.
+		patch = &texture->patches[0];
+
+		patch->originx = patch->originy = 0;
+		patch->wad = wadnum;
+		patch->lump = texstart + j;
+
+		Z_Free(patchlump);
+
+		k = 1;
+		while (k << 1 <= texture->width)
+			k <<= 1;
+
+		texturewidthmask[i] = k - 1;
+		textureheight[i] = texture->height << FRACBITS;
+		i++;
 	}
 
 	return i;
