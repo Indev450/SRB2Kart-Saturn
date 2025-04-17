@@ -1281,8 +1281,7 @@ static inline void AM_drawSpecialThingsOnly(UINT8 colors)
 		while (t)
 		{
 			if (t->type == MT_RANDOMITEM
-			|| t->type == MT_RING
-			|| t->type == MT_WAYPOINT
+			|| t->type == MT_STARPOST
 			|| (t->flags & MF_SPRING))
 				AM_drawLineCharacter(thintriangle_guy, NUMTHINTRIANGLEGUYLINES, 16<<FRACBITS, t->angle, colors, t->x, t->y);
 			t = t->snext;
