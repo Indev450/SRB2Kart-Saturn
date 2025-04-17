@@ -39,11 +39,9 @@ typedef UINT32 ufixed_t;
   \brief convert fixed_t into floating number
 */
 
-static const float FLOATUNIT = (1.0f / (float)FRACUNIT);
-
 FUNCMATH FUNCINLINE static ATTRINLINE float FixedToFloat(fixed_t x)
 {
-    return x * FLOATUNIT;
+	return x / (float)FRACUNIT;
 }
 
 FUNCMATH FUNCINLINE static ATTRINLINE fixed_t FloatToFixed(float f)
