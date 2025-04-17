@@ -1272,9 +1272,9 @@ static inline void AM_drawSpecialThingsOnly(UINT8 colors)
 		// this is fucking horrible
 		const INT32 special = GETSECSPECIAL(sectors[i].special, 1);
 
-		if (GetDamage(special) == 0
+		if (GetDamage(special) != 0
 		//|| sectors[i].friction < ORIG_FRICTION
-		|| GetOffroad(special) == 0)
+		|| GetOffroad(special) != 0)
 			continue;
 
 		t = sectors[i].thinglist;
