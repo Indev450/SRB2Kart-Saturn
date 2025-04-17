@@ -808,28 +808,8 @@ $(OBJDIR)/SRB2.res: win32/Srb2win.rc win32/afxres.h win32/resource.h
 	$(WINDRES) -i $< -O rc $(WINDRESFLAGS) --include-dir=win32 -o $@ -O coff
 
 ifdef SDL
-
 ifdef MINGW
 $(OBJDIR)/win_dbg.o: win32/win_dbg.c
-	$(CC) $(CFLAGS) $(WFLAGS) -c $< -o $@
-endif
-
-ifdef FILTERS
-$(OBJDIR)/%.o: $(INTERFACE)/filter/%.c
-	@echo $< needs deps
-	$(CC) $(CFLAGS) $(WFLAGS) -c $< -o $@
-
-$(OBJDIR)/filters.o: $(INTERFACE)/filter/filters.c $(INTERFACE)/filter/filters.c \
- $(INTERFACE)/filter/filters.h
-	$(CC) $(CFLAGS) $(WFLAGS) -c $< -o $@
-
-$(OBJDIR)/hq2x.o: $(INTERFACE)/filter/hq2x.c $(INTERFACE)/filter/hq2x.c \
- $(INTERFACE)/filter/filters.h
-	$(CC) $(CFLAGS) $(WFLAGS) -c $< -o $@
-
-$(OBJDIR)/lq2x.o: $(INTERFACE)/filter/lq2x.c $(INTERFACE)/filter/lq2x.c \
- $(INTERFACE)/filter/filters.h $(INTERFACE)/filter/interp.h \
- $(INTERFACE)/filter/hq2x.h $(INTERFACE)/filter/lq2x.h
 	$(CC) $(CFLAGS) $(WFLAGS) -c $< -o $@
 endif
 endif
