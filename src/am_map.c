@@ -265,9 +265,6 @@ static void AM_findMinMaxBoundaries(void)
 	max_w = minimapinfo.map_w << MAPBITS;
 	max_h = minimapinfo.map_h << MAPBITS;
 
-	max_w = (max_x >>= FRACTOMAPBITS) - (min_x >>= FRACTOMAPBITS);
-	max_h = (max_y >>= FRACTOMAPBITS) - (min_y >>= FRACTOMAPBITS);
-
 	a = FixedDiv(f_w<<FRACBITS, max_w);
 	b = FixedDiv(f_h<<FRACBITS, max_h);
 
@@ -425,6 +422,7 @@ static void AM_setWindowPanning(void)
 		m_paninc.y = -FTOM(F_PANINC);
 	else
 		m_paninc.y = 0;
+
 	// left and right
 	if (m_keydown[0]) // pan right
 		m_paninc.x = FTOM(F_PANINC);
@@ -910,28 +908,35 @@ static void AM_drawGrid(INT32 color)
 static ffloor_t *AM_CompareFOFs(size_t i, ffloor_t *rover, ffloor_t *secondarystore)
 {
 	ffloor_t *secondaryrover = NULL;
+
 	for (; rover; rover = rover->next)
 	{
 		fixed_t rovt1, rovt2;
 		fixed_t rovb1, rovb2;
+
 		if (!(rover->flags & FF_EXISTS))
 			continue;
 		if (!(rover->flags & FF_BLOCKPLAYER))
 			continue;
+
 		SLOPEPARAMS(*rover->t_slope, rovt1, rovt2, *rover->topheight)
 		SLOPEPARAMS(*rover->b_slope, rovb1, rovb2, *rover->bottomheight)
+
 		for (secondaryrover = secondarystore; secondaryrover; secondaryrover = secondaryrover->next)
 		{
 			fixed_t sect1, sect2;
 			fixed_t secb1, secb2;
+
 			if (!(secondaryrover->flags & FF_EXISTS))
 				continue;
 			if (!(secondaryrover->flags & FF_BLOCKPLAYER))
 				continue;
 			if (secondaryrover->secnum == rover->secnum)
 				break;
+
 			SLOPEPARAMS(*secondaryrover->t_slope, sect1, sect2, *secondaryrover->topheight)
 			SLOPEPARAMS(*secondaryrover->b_slope, secb1, secb2, *secondaryrover->bottomheight)
+
 			if (rovt1 != sect1)
 				continue;
 			if (rovt2 != sect2)
@@ -984,8 +989,10 @@ static void AM_drawWalls(UINT8 pass)
 			}
 			continue;
 		}
+
 		SLOPEPARAMS(lines[i].backsector->f_slope, backf1,  backf2,  lines[i].backsector->floorheight)
 		SLOPEPARAMS(lines[i].backsector->c_slope, backc1,  backc2,  lines[i].backsector->ceilingheight)
+
 		if ((backf1 == backc1 && backf2 == backc2) // Back is thok barrier
 				 || (frontf1 == frontc1 && frontf2 == frontc2)) // Front is thok barrier
 		{
@@ -1221,16 +1228,19 @@ static inline void AM_drawCrosshair(UINT8 color)
 	const fixed_t scale = 4<<FRACBITS;
 	size_t i;
 	fline_t fl;
+
 	for (i = 0; i < NUMCROSSMARKLINES; i++)
 	{
 		fl.a.x = FixedMul(cross_mark[i].a.x, scale) >> FRACBITS;
 		fl.a.y = FixedMul(cross_mark[i].a.y, scale) >> FRACBITS;
 		fl.b.x = FixedMul(cross_mark[i].b.x, scale) >> FRACBITS;
 		fl.b.y = FixedMul(cross_mark[i].b.y, scale) >> FRACBITS;
+
 		fl.a.x += f_x + (f_w / 2);
 		fl.a.y += f_y + (f_h / 2);
 		fl.b.x += f_x + (f_w / 2);
 		fl.b.y += f_y + (f_h / 2);
+
 		AM_drawFline(&fl, color);
 	}
 }
