@@ -455,7 +455,7 @@ void SCR_DisplayTicRate(void)
 		// draw "FPS"
 		if (cv_ticrate.value == 1)
 			V_DrawFixedPatch(306<<FRACBITS, 183<<FRACBITS, FRACUNIT, fpsflags, framecounter, R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_YELLOW, GTC_CACHE));
-			
+
 		if (fps > (benchmark - 5))
 			ticcntcolor = R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_MINT, GTC_CACHE);
 		else if (fps < 20)
@@ -474,10 +474,10 @@ void SCR_DisplayTicRate(void)
 
 			// draw total frame:
 			V_DrawPingNum(x, 190, fpsflags, cap, ticcntcolor);
-			
+
 			x -= digits * 4;
 
-			// draw "/"	
+			// draw "/"
 			V_DrawFixedPatch(x<<FRACBITS, 190<<FRACBITS, FRACUNIT, fpsflags, frameslash, ticcntcolor);
 		}
 
@@ -502,7 +502,7 @@ void SCR_DisplayTicRate(void)
 		// draw "FPS"
 		if (cv_ticrate.value == 3)
 			V_DrawRightAlignedString(319, 181, V_YELLOWMAP|fpsflags, "FPS");
-			
+
 		V_DrawRightAlignedString(319, 190, ticcntcolor2|fpsflags, fps_string);
 	}
 }
@@ -514,7 +514,7 @@ void SCR_DisplayLocalPing(void)
 {
 	UINT32 ping = playerpingtable[consoleplayer];
 	INT32 pingflags = V_LocalTransFlag()|V_SNAPTOBOTTOM|V_SNAPTORIGHT;
-	
+
 	if (cv_showping.value == 1 || (cv_showping.value == 2 && ping > servermaxping)) // only show 2 (warning) if our ping is at a bad level
 	{
 		INT32 dispy = (cv_ticrate.value == 1) ? 165 : ((cv_ticrate.value == 2 || cv_ticrate.value == 4) ? 172 : ((cv_ticrate.value == 3) ? 163 : 181)); // absolute buttpain

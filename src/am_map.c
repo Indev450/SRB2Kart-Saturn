@@ -898,6 +898,38 @@ static void AM_drawGrid(INT32 color)
 	}
 }
 
+static INT32 GetDamage(INT32 special)
+{
+	switch (special)
+	{
+		case 1: // Damage (Generic)
+			return 1;
+		case 6: // Death Pit (Camera Tilt)
+			return 6;
+		case 7: // Death Pit (No Camera Tilt)
+			return 7;
+		case 8: // Instant Kill
+			return 8;
+		default:
+			return 0;
+	}
+}
+
+static INT32 GetOffroad(INT32 special)
+{
+	switch (special)
+	{
+		case 2: // Offroad (Weak)
+			return 2;
+		case 3: // Offroad
+			return 3;
+		case 4: // Offroad (Strong)
+			return 4;
+		default:
+			return 0;
+	}
+}
+
 #define SLOPEPARAMS(slope, end1, end2, normalheight) \
 		if (slope) { \
 			end1 = (P_GetZAt(slope, lines[i].v1->x, lines[i].v1->y) + FRACUNIT/2) >> FRACBITS; \
@@ -945,8 +977,27 @@ static ffloor_t *AM_CompareFOFs(size_t i, ffloor_t *rover, ffloor_t *secondaryst
 				continue;
 			if (rovb2 != secb2)
 				continue;
+
+			// this is fucking horrible
+			INT32 damage1, damage2;
+			INT32 offroad1, offroad2;
+			INT32 special1, special2;
+			special1 = GETSECSPECIAL(sectors[rover->secnum].special, 1);
+			special2 = GETSECSPECIAL(sectors[secondaryrover->secnum].special, 1);
+
+			damage1 = GetDamage(special1);
+			damage2 = GetDamage(special2);
+			offroad1 = GetOffroad(special1);
+			offroad2 = GetOffroad(special2);
+
+			if (damage1 != damage2
+			//|| sectors[rover->secnum].friction != sectors[secondaryrover->secnum].friction
+			|| offroad1 != offroad2)
+				continue;
+
 			break;
 		}
+
 		if (secondaryrover == NULL)
 			break;
 	}
@@ -1011,29 +1062,28 @@ static void AM_drawWalls(UINT8 pass)
 		}
 		else
 		{
-			//dont think kart even supports those idk?
-			/*if (lines[i].flags & (ML_IMPASSABLE|ML_BLOCKPLAYERS))
+			if (lines[i].flags & ML_IMPASSIBLE) // (ML_IMPASSABLE|ML_BLOCKPLAYERS)
 			{
 				if (pass & PASS_SOLID)
 					AM_drawMline(&l, TSWALLCOLORS); // Completely solid course boundary
 			}
-			else if ((lines[i].flags & ML_MIDSOLID)
+			else if ((lines[i].flags & ML_EFFECT4) // ML_MIDSOLID
 				&& sides[lines->sidenum[0]].midtexture)
 			{
 				if (pass & PASS_SOLID)
 					AM_drawMline(&l, TSWALLCOLORS); // solid midtexture, likely a course boundary
-			}*/
+			}
 			if ((backf1 != frontf1 && abs(backf1 - frontf1) > maxstep)
 				|| (backf2 != frontf2 && abs(backf2 - frontf2) > maxstep))
 			{
 				if (pass & PASS_SOLID)
 					AM_drawMline(&l, TSWALLCOLORS); // floor-wall, likely a course boundary
 			}
-			/*else if (lines[i].special == 2001) // guh its a sector effect in kart idk how to make it work tbh lol
+			else if (GETSECSPECIAL(lines[i].frontsector->special, 4) == 10 || GETSECSPECIAL(lines[i].backsector->special, 4) == 10)
 			{
 				if (pass & PASS_SOLID)
 					AM_drawMline(&l, TSFINISHLINE); // finish line
-			}*/
+			}
 			else if (backf1 != frontf1 || backf2 != frontf2)
 			{
 				if (pass & PASS_INTANGIBLE)
@@ -1055,53 +1105,51 @@ static void AM_drawWalls(UINT8 pass)
 			}
 			else
 			{
-				{
-					ffloor_t *rover = NULL;
+				ffloor_t *rover = NULL;
 
-					if (lines[i].frontsector->ffloors || lines[i].backsector->ffloors)
+				if (lines[i].frontsector->ffloors || lines[i].backsector->ffloors)
+				{
+					if (lines[i].backsector->ffloors == NULL)
 					{
-						if (lines[i].backsector->ffloors == NULL)
+						// Check frontside for one solid
+						for (rover = lines[i].frontsector->ffloors; rover; rover = rover->next)
 						{
-							// Check frontside for one solid
-							for (rover = lines[i].frontsector->ffloors; rover; rover = rover->next)
-							{
-								if (!(rover->flags & FF_EXISTS))
-									continue;
-								if (!(rover->flags & FF_BLOCKPLAYER))
-									continue;
-								break;
-							}
-						}
-						else if (lines[i].frontsector->ffloors == NULL)
-						{
-							// Check backside for one solid
-							for (rover = lines[i].backsector->ffloors; rover; rover = rover->next)
-							{
-								if (!(rover->flags & FF_EXISTS))
-									continue;
-								if (!(rover->flags & FF_BLOCKPLAYER))
-									continue;
-								break;
-							}
-						}
-						else
-						{
-							// Check to see if any secnums exist in one but not the other.
-							rover = AM_CompareFOFs(i, lines[i].frontsector->ffloors, lines[i].backsector->ffloors);
-							if (rover == NULL)
-								rover = AM_CompareFOFs(i, lines[i].backsector->ffloors, lines[i].frontsector->ffloors);
+							if (!(rover->flags & FF_EXISTS))
+								continue;
+							if (!(rover->flags & FF_BLOCKPLAYER))
+								continue;
+							break;
 						}
 					}
-					if (rover != NULL)
+					else if (lines[i].frontsector->ffloors == NULL)
 					{
-						if (pass & PASS_FOF)
-							AM_drawMline(&l, TSFOFINFO); // a FOF is here but we don't know how to distinguish them yet
+						// Check backside for one solid
+						for (rover = lines[i].backsector->ffloors; rover; rover = rover->next)
+						{
+							if (!(rover->flags & FF_EXISTS))
+								continue;
+							if (!(rover->flags & FF_BLOCKPLAYER))
+								continue;
+							break;
+						}
 					}
-					else if (!am_minigen)
+					else
 					{
-						if (pass & PASS_INTANGIBLE)
-							AM_drawMline(&l, GRIDCOLORS); // likely low-relevance line
+						// Check to see if any secnums exist in one but not the other.
+						rover = AM_CompareFOFs(i, lines[i].frontsector->ffloors, lines[i].backsector->ffloors);
+						if (rover == NULL)
+							rover = AM_CompareFOFs(i, lines[i].backsector->ffloors, lines[i].frontsector->ffloors);
 					}
+				}
+				if (rover != NULL)
+				{
+					if (pass & PASS_FOF)
+						AM_drawMline(&l, TSFOFINFO); // a FOF is here but we don't know how to distinguish them yet
+				}
+				else if (!am_minigen)
+				{
+					if (pass & PASS_INTANGIBLE)
+						AM_drawMline(&l, GRIDCOLORS); // likely low-relevance line
 				}
 			}
 		}
@@ -1180,18 +1228,11 @@ static inline void AM_drawPlayers(void)
 	player_t *p;
 	INT32 color = GREENS;
 
-	if (!multiplayer)
-	{
-		AM_drawLineCharacter(player_arrow, NUMPLYRLINES, 16<<FRACBITS, plr->mo->angle, DWHITE, plr->mo->x, plr->mo->y);
-		return;
-	}
-
-	// multiplayer (how??)
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
 		if (!playeringame[i] || players[i].spectator)
 			continue;
-		
+
 		if (!players[i].mo)
 			continue;
 
@@ -1213,7 +1254,37 @@ static inline void AM_drawThings(UINT8 colors)
 		t = sectors[i].thinglist;
 		while (t)
 		{
-			AM_drawLineCharacter(thintriangle_guy, NUMTHINTRIANGLEGUYLINES, 16<<FRACBITS, t->angle, colors, t->x, t->y);
+			if (!t->player)
+				AM_drawLineCharacter(thintriangle_guy, NUMTHINTRIANGLEGUYLINES, 16<<FRACBITS, t->angle, colors, t->x, t->y);
+			t = t->snext;
+		}
+	}
+}
+
+static inline void AM_drawSpecialThingsOnly(UINT8 colors)
+{
+	size_t i;
+
+	for (i = 0; i < numsectors; i++)
+	{
+		mobj_t *t = NULL;
+
+		// this is fucking horrible
+		const INT32 special = GETSECSPECIAL(sectors[i].special, 1);
+
+		if (GetDamage(special) == 0
+		//|| sectors[i].friction < ORIG_FRICTION
+		|| GetOffroad(special) == 0)
+			continue;
+
+		t = sectors[i].thinglist;
+		while (t)
+		{
+			if (t->type == MT_RANDOMITEM
+			|| t->type == MT_RING
+			|| t->type == MT_WAYPOINT
+			|| (t->flags & MF_SPRING))
+				AM_drawLineCharacter(thintriangle_guy, NUMTHINTRIANGLEGUYLINES, 16<<FRACBITS, t->angle, colors, t->x, t->y);
 			t = t->snext;
 		}
 	}
@@ -1261,8 +1332,8 @@ void AM_Drawer(void)
 	AM_clearFB(BACKGROUND);
 	if (draw_grid) AM_drawGrid(GRIDCOLORS);
 	AM_drawWalls(PASS_FOF|PASS_INTANGIBLE|PASS_SOLID);
-	AM_drawPlayers();
 	AM_drawThings(THINGCOLORS);
+	AM_drawPlayers();
 
 	if (!followplayer) AM_drawCrosshair(XHAIRCOLORS);
 }
@@ -1318,6 +1389,7 @@ minigen_t *AM_MinimapGenerate(INT32 mul)
 
 	//AM_clearFB(BACKGROUND);
 	memset(am_buf, 0xff, (f_w*f_h));
+	AM_drawSpecialThingsOnly(BACKGROUND);
 	AM_drawWalls(PASS_FOF);
 	AM_drawWalls(PASS_INTANGIBLE);
 	AM_drawWalls(PASS_SOLID);
