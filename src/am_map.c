@@ -28,14 +28,15 @@
 #endif
 
 // For use if I do walls with outsides/insides
-static const UINT8 REDS        = (2*16);
+static const UINT8 REDS        = (8*16);
 static const UINT8 REDRANGE    = 16;
 static const UINT8 GRAYS       = (1*16);
 static const UINT8 GRAYSRANGE  = 16;
-static const UINT8 BROWNS      = (15*16);
-static const UINT8 YELLOWS     = (5*16)+8;
-static const UINT8 GREENS      = (6*16);
-static const UINT8 BLUES       = (9*16);
+static const UINT8 BROWNS      = (3*16);
+static const UINT8 YELLOWS     = (7*16);
+static const UINT8 GREENS      = (10*16);
+//static const UINT8 CYANS     = (13*16);
+static const UINT8 BLUES       = (14*16);
 static const UINT8 DBLACK      = 31;
 static const UINT8 DWHITE      = 0;
 
@@ -46,7 +47,7 @@ static const UINT8 DWHITE      = 0;
 #define THOKWALLCOLORS        REDS
 #define THOKWALLRANGE         REDRANGE
 #define TSWALLCOLORS          DWHITE
-#define TSFINISHLINE          GRAYS
+#define TSFINISHLINE          (GREENS + 2)
 #define TSFOFINFO             (BLUES + 4)
 #define FDWALLCOLORS          BROWNS
 #define CDWALLCOLORS          YELLOWS
