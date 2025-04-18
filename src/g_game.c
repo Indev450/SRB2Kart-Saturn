@@ -3643,6 +3643,7 @@ void G_SaveGameData(boolean force)
 	UINT8 btemp;
 	savebuffer_t save;
 	(void)force;
+	char backupfile[MAX_WADPATH+4];
 
 	if (!gamedataloaded)
 		return; // If never loaded (-nodata), don't save
@@ -3652,6 +3653,23 @@ void G_SaveGameData(boolean force)
 	{
 		CONS_Alert(CONS_ERROR, M_GetText("No more free memory for saving game data\n"));
 		return;
+	}
+
+	// Create backup of the save data
+	snprintf(backupfile, sizeof(backupfile), "%s.bak", gamedatafilename);
+	backupfile[sizeof(backupfile) - 1] = '\0';
+
+	FILE *gamedata = fopen(gamedatafilename, "r");
+
+	if (gamedata != NULL)
+	{
+		fclose(gamedata);
+
+		if (!FIL_CopyFile(gamedatafilename, backupfile))
+		{
+			CONS_Alert(CONS_WARNING,"Failed to create a backup of save data. Will not attempt to write to save data\n");
+			return;
+		}
 	}
 
 	// Version test
