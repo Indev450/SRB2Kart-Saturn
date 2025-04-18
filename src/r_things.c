@@ -282,7 +282,7 @@ static boolean R_AddSingleSpriteDef(const char *sprname, spritedef_t *spritedef,
 
 	for (l = startlump; l < endlump; l++)
 	{
-		if (memcmp(lumpinfo[l].name,sprname,4))
+		if (memcmp(lumpinfo[l].name, sprname, 4))
 			continue;
 
 		frame = R_Char2Frame(lumpinfo[l].name[4]);
@@ -295,12 +295,12 @@ static boolean R_AddSingleSpriteDef(const char *sprname, spritedef_t *spritedef,
 		}
 
 		// skip NULL sprites from very old dmadds pwads
-		if (W_LumpLengthPwad(wadnum,l)<=8)
+		if (W_LumpLengthPwad(wadnum, l) <= 8)
 			continue;
 
 		// store sprite info in lookup tables
 		//FIXME : numspritelumps do not duplicate sprite replacements
-		W_ReadLumpHeaderPwad(wadnum, l, &patch, sizeof (patch_t), 0);
+		W_ReadLumpHeaderPwad(wadnum, l, &patch, (sizeof(INT16) *4), 0);
 		spritecachedinfo[numspritelumps].width = (INT32)(SHORT(patch.width))<<FRACBITS;
 		spritecachedinfo[numspritelumps].offset = (INT32)(SHORT(patch.leftoffset))<<FRACBITS;
 		spritecachedinfo[numspritelumps].topoffset = (INT32)(SHORT(patch.topoffset))<<FRACBITS;
