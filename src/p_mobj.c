@@ -6202,6 +6202,42 @@ angle_t P_MobjPitchAndRoll(mobj_t *mobj)
 	}
 }*/
 
+static void P_MobjScaleThink(mobj_t *mobj)
+{
+	fixed_t oldheight = mobj->height;
+	UINT8 correctionType = 0; // Don't correct Z position, just gain height
+
+	if (mobj->z > mobj->floorz && mobj->z + mobj->height < mobj->ceilingz
+		&& mobj->type != MT_EGGMOBILE_FIRE)
+		correctionType = 1; // Correct Z position by centering
+	else if (mobj->eflags & MFE_VERTICALFLIP)
+		correctionType = 2; // Correct Z position by moving down
+
+	if (abs(mobj->scale - mobj->destscale) < mobj->scalespeed)
+		P_SetScale(mobj, mobj->destscale);
+	else if (mobj->scale < mobj->destscale)
+		P_SetScale(mobj, mobj->scale + mobj->scalespeed);
+	else if (mobj->scale > mobj->destscale)
+		P_SetScale(mobj, mobj->scale - mobj->scalespeed);
+
+	if (correctionType == 1)
+		mobj->z -= (mobj->height - oldheight)/2;
+	else if (correctionType == 2)
+		mobj->z -= mobj->height - oldheight;
+
+	if (mobj->scale == mobj->destscale)
+		/// \todo Lua hook for "reached destscale"?
+		switch(mobj->type)
+		{
+			case MT_EGGMOBILE_FIRE:
+				mobj->destscale = FRACUNIT;
+				mobj->scalespeed = FRACUNIT>>4;
+				break;
+			default:
+				break;
+		}
+}
+
 // Special thinker for scenery objects
 // this does not need to return anything
 static void P_MobjSceneryThink(mobj_t *mobj)
@@ -9198,42 +9234,8 @@ void P_MobjThinker(mobj_t *mobj)
 			P_LinedefExecute(sec2->tag, mobj, sec2);
 	}
 
-	// Slowly scale up/down to reach your destscale.
 	if (mobj->scale != mobj->destscale)
-	{
-		fixed_t oldheight = mobj->height;
-		UINT8 correctionType = 0; // Don't correct Z position, just gain height
-
-		if (mobj->z > mobj->floorz && mobj->z + mobj->height < mobj->ceilingz
-		&& mobj->type != MT_EGGMOBILE_FIRE)
-			correctionType = 1; // Correct Z position by centering
-		else if (mobj->eflags & MFE_VERTICALFLIP)
-			correctionType = 2; // Correct Z position by moving down
-
-		if (abs(mobj->scale - mobj->destscale) < mobj->scalespeed)
-			P_SetScale(mobj, mobj->destscale);
-		else if (mobj->scale < mobj->destscale)
-			P_SetScale(mobj, mobj->scale + mobj->scalespeed);
-		else if (mobj->scale > mobj->destscale)
-			P_SetScale(mobj, mobj->scale - mobj->scalespeed);
-
-		if (correctionType == 1)
-			mobj->z -= (mobj->height - oldheight)/2;
-		else if (correctionType == 2)
-			mobj->z -= mobj->height - oldheight;
-
-		if (mobj->scale == mobj->destscale)
-			/// \todo Lua hook for "reached destscale"?
-			switch(mobj->type)
-			{
-			case MT_EGGMOBILE_FIRE:
-				mobj->destscale = FRACUNIT;
-				mobj->scalespeed = FRACUNIT>>4;
-				break;
-			default:
-				break;
-			}
-	}
+		P_MobjScaleThink(mobj); // Slowly scale up/down to reach your destscale.
 
 	if (mobj->type == MT_GHOST && mobj->fuse > 0 // Not guaranteed to be MF_SCENERY or not MF_SCENERY!
 	&& (signed)(mobj->frame >> FF_TRANSSHIFT) < (NUMTRANSMAPS-1) - mobj->fuse / 2)
@@ -9292,7 +9294,9 @@ void P_MobjThinker(mobj_t *mobj)
 
 	if (mobj->flags & MF_AMBIENT)
 	{
-		if (!(leveltime % mobj->health) && mobj->info->seesound)
+		if (leveltime % mobj->health)
+			return;
+		if (mobj->info->seesound)
 			S_StartSound(mobj, mobj->info->seesound);
 		return;
 	}
@@ -9491,6 +9495,39 @@ void P_PushableThinker(mobj_t *mobj)
 	}
 }
 
+static void P_RandomAudienceThink(mobj_t *mobj)
+{
+	if (!mobj->colorized) // a fan of someone?
+		return;
+
+	if (mobj->threshold >= 0) // not already happy or sad?
+	{
+		if (!playeringame[mobj->threshold] || players[mobj->threshold].spectator) // focused on a valid player?
+			return;
+
+		if (!(players[mobj->threshold].exiting) && !(players[mobj->threshold].pflags & PF_TIMEOVER)) // not finished yet?
+			return;
+
+		if (K_IsPlayerLosing(&players[mobj->threshold]))
+			mobj->threshold = -2;
+		else
+		{
+			mobj->threshold = -1;
+			S_StartSound(mobj, sfx_chaooo);
+		}
+	}
+
+	if (mobj->threshold == -1)
+		mobj->angle += ANGLE_22h;
+
+	if (((statenum_t)(mobj->state-states) != S_AUDIENCE_CHAO_CHEER2) || (mobj->tics != states[S_AUDIENCE_CHAO_CHEER2].tics)) // not at the start of your cheer jump?
+		return;
+
+	mobj->momz = 0;
+
+	P_SetMobjState(mobj, ((mobj->threshold == -1) ? S_AUDIENCE_CHAO_WIN2 : S_AUDIENCE_CHAO_LOSE));
+}
+
 // Quick, optimized function for scenery
 void P_SceneryThinker(mobj_t *mobj)
 {
@@ -9544,40 +9581,8 @@ void P_SceneryThinker(mobj_t *mobj)
 
 	P_CycleMobjState(mobj);
 
-	if (mobj->type != MT_RANDOMAUDIENCE)
-		return;
-
-	{
-		if (!mobj->colorized) // a fan of someone?
-			return;
-
-		if (mobj->threshold >= 0) // not already happy or sad?
-		{
-			if (!playeringame[mobj->threshold] || players[mobj->threshold].spectator) // focused on a valid player?
-				return;
-
-			if (!(players[mobj->threshold].exiting) && !(players[mobj->threshold].pflags & PF_TIMEOVER)) // not finished yet?
-				return;
-
-			if (K_IsPlayerLosing(&players[mobj->threshold]))
-				mobj->threshold = -2;
-			else
-			{
-				mobj->threshold = -1;
-				S_StartSound(mobj, sfx_chaooo);
-			}
-		}
-
-		if (mobj->threshold == -1)
-			mobj->angle += ANGLE_22h;
-
-		if (((statenum_t)(mobj->state-states) != S_AUDIENCE_CHAO_CHEER2) || (mobj->tics != states[S_AUDIENCE_CHAO_CHEER2].tics)) // not at the start of your cheer jump?
-			return;
-
-		mobj->momz = 0;
-
-		P_SetMobjState(mobj, ((mobj->threshold == -1) ? S_AUDIENCE_CHAO_WIN2 : S_AUDIENCE_CHAO_LOSE));
-	}
+	if (mobj->type == MT_RANDOMAUDIENCE)
+		P_RandomAudienceThink(mobj);
 }
 
 //
