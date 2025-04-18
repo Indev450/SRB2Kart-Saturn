@@ -8136,6 +8136,8 @@ static void G_ResetDemoPlayback(char *pdemoname)
 		Z_Free(demobuf.buffer);
 	demobuf.buffer = NULL;
 	demo.playback = false;
+	if (demo.title)
+		modeattacking = ATTACKING_NONE;
 	demo.title = false;
 }
 
