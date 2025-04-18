@@ -8017,7 +8017,7 @@ void G_StopDemo(void)
 	demobuf.buffer = NULL;
 	demo.playback = false;
 	if (demo.title)
-		modeattacking = false;
+		modeattacking = ATTACKING_NONE;
 	demo.title = false;
 	demo.timing = false;
 	singletics = false;
@@ -8043,6 +8043,8 @@ void G_StopDemo(void)
 		Y_EndIntermission(); // cleanup
 	if (gamestate == GS_VOTING)
 		Y_EndVote();
+
+	M_ClearMenus(true);
 
 	G_SetGamestate(GS_NULL);
 	wipegamestate = GS_NULL;
@@ -8086,12 +8088,16 @@ boolean G_CheckDemoStatus(void)
 			I_Quit();
 
 		if (multiplayer && !demo.title)
+		{
 			G_ExitLevel();
+		}
 		else
 		{
+			UINT8 wasmodeattacking = modeattacking;
+
 			G_StopDemo();
 
-			if (modeattacking)
+			if (wasmodeattacking)
 				M_EndModeAttackRun();
 			else
 				D_StartTitle();
@@ -8130,6 +8136,8 @@ static void G_ResetDemoPlayback(char *pdemoname)
 		Z_Free(demobuf.buffer);
 	demobuf.buffer = NULL;
 	demo.playback = false;
+	if (demo.title)
+		modeattacking = ATTACKING_NONE;
 	demo.title = false;
 }
 
