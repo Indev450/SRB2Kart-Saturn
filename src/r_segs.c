@@ -1181,6 +1181,18 @@ static boolean R_FFloorCanClip(visffloor_t *pfloor)
 	return (cv_ffloorclip.value && !R_IsFFloorTranslucent(pfloor) && !pfloor->polyobj);
 }
 
+// R_ExpandPlaneY
+//
+// A simple function to modify a vsplane's top and bottom for a particular column
+// Sort of like R_ExpandPlane in r_plane.c, except this is vertical expansion
+static inline void R_ExpandPlaneY(visplane_t *pl, INT32 x, INT16 top, INT16 bottom)
+{
+	// Expand the plane, don't shrink it!
+	// note: top and bottom default to 0xFFFF and 0x0000 respectively, which is totally compatible with this
+	if (pl->top[x] > top)       pl->top[x] = top;
+	if (pl->bottom[x] < bottom) pl->bottom[x] = bottom;
+}
+
 //
 // R_RenderSegLoop
 // Draws zero, one, or two textures (and possibly a masked
@@ -1220,15 +1232,11 @@ static void R_RenderSegLoop (void)
 
 		if (markceiling)
 		{
-			bottom = yl-1;
+			bottom = yl > floorclip[rw_x] ? floorclip[rw_x] : yl;
 
-			if (bottom >= floorclip[rw_x])
-				bottom = floorclip[rw_x]-1;
-
-			if (top <= bottom && ceilingplane)
+			if (top <= --bottom && ceilingplane)
 			{
-				ceilingplane->top[rw_x] = (INT16)top;
-				ceilingplane->bottom[rw_x] = (INT16)bottom;
+				R_ExpandPlaneY(ceilingplane, rw_x, top, bottom);
 			}
 		}
 
@@ -1245,8 +1253,7 @@ static void R_RenderSegLoop (void)
 
 			if (++top <= bottom && floorplane)
 			{
-				floorplane->top[rw_x] = (INT16)top;
-				floorplane->bottom[rw_x] = (INT16)bottom;
+				R_ExpandPlaneY(floorplane, rw_x, top, bottom);
 			}
 		}
 
@@ -1266,14 +1273,6 @@ static void R_RenderSegLoop (void)
 				if (ffloor[i].polyobj && (!curline->polyseg || ffloor[i].polyobj != curline->polyseg))
 					continue;
 
-				// FIXME hack to fix planes disappearing when a seg goes behind the camera. This NEEDS to be changed to be done properly. -Red
-				if (curline->polyseg) {
-					if (ffloor[i].plane->minx > rw_x)
-						ffloor[i].plane->minx = rw_x;
-					else if (ffloor[i].plane->maxx < rw_x)
-						ffloor[i].plane->maxx = rw_x;
-				}
-
 				if (ffloor[i].height < viewz)
 				{
 					INT32 top_w = (ffloor[i].f_frac >> HEIGHTBITS) + 1;
@@ -1286,7 +1285,7 @@ static void R_RenderSegLoop (void)
 						bottom_w = bottom;
 
 					// Polyobject-specific hack to fix plane leaking -Red
-					if (curline->polyseg && ffloor[i].polyobj && ffloor[i].polyobj == curline->polyseg && top_w >= bottom_w) {
+					if (ffloor[i].polyobj && top_w >= bottom_w) {
 						ffloor[i].plane->top[rw_x] = ffloor[i].plane->bottom[rw_x] = 0xFFFF;
 					} else
 
@@ -1330,7 +1329,7 @@ static void R_RenderSegLoop (void)
 						bottom_w = bottom;
 
 					// Polyobject-specific hack to fix plane leaking -Red
-					if (curline->polyseg && ffloor[i].polyobj && ffloor[i].polyobj == curline->polyseg && top_w >= bottom_w) {
+					if (ffloor[i].polyobj && top_w >= bottom_w) {
 						ffloor[i].plane->top[rw_x] = ffloor[i].plane->bottom[rw_x] = 0xFFFF;
 					} else
 
@@ -2816,6 +2815,22 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 			for (i = 0; i < numffloors; i++)
 				R_ExpandPlane(ffloor[i].plane, rw_x, rw_stopx - 1);
 		}
+
+		// FIXME hack to fix planes disappearing when a seg goes behind the camera. This NEEDS to be changed to be done properly. -Red
+		if (curline->polyseg)
+		{
+			for (i = 0; i < numffloors; i++)
+			{
+				if (!ffloor[i].polyobj || ffloor[i].polyobj != curline->polyseg)
+					continue;
+				if (ffloor[i].plane->minx > rw_x)
+					ffloor[i].plane->minx = rw_x;
+
+				if (ffloor[i].plane->maxx < rw_stopx - 1)
+					ffloor[i].plane->maxx = rw_stopx - 1;
+			}
+		}
+
 	}
 
 	rw_silhouette = &(ds_p->silhouette);
