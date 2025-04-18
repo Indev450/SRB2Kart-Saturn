@@ -3167,9 +3167,9 @@ static void Command_connect(void)
 
 	M_ClearMenus(true);
 
-	if (Playing() || demo.title)
+	if (Playing() || demo.title || demo.playback)
 	{
-		if (demo.title)
+		if (demo.title || demo.playback)
 			G_CheckDemoStatus();
 
 		if (netgame)
