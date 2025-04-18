@@ -646,7 +646,7 @@ void G_SetGameModified(boolean silent, boolean major)
 	G_SetSaveGameModified();
 
 	if (!silent)
-		CONS_Alert(CONS_NOTICE, M_GetText("Record Attack data will be saved to seperate save.\n"));
+		CONS_Alert(CONS_NOTICE, M_GetText("Record Attack data will be saved to a seperate save file.\n"));
 
 	// If in record attack recording, cancel it.
 	if (modeattacking)
