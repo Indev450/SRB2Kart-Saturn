@@ -1241,7 +1241,7 @@ static void R_ProjectSprite(mobj_t *thing)
 	tx = FixedMul(tr_x, viewsin) - FixedMul(tr_y, viewcos); // sideways distance
 
 	// too far off the side?
-	if (!papersprite && abs(tx) > FixedMul(tz, fovtan)<<2) // papersprite clipping is handled later
+	if (!papersprite && abs(tx) > tz<<2) // papersprite clipping is handled later
 		return;
 
 	// aspect ratio stuff
@@ -1518,10 +1518,7 @@ static void R_ProjectSprite(mobj_t *thing)
 		}
 
 		// Compatibility with MSVC - SSNTails
-		scalestep = ((yscale2 - yscale) / range);
-		if (!scalestep)
-			scalestep = 1;
-
+		scalestep = ((yscale2 - yscale)/range) ?: 1;
 		xscale = FixedDiv(range<<FRACBITS, abs(offset2));
 
 		// The following two are alternate sorting methods which might be more applicable in some circumstances. TODO - maybe enable via MF2?
@@ -1883,7 +1880,7 @@ static void R_ProjectPrecipitationSprite(precipmobj_t *thing)
 	tx = -(gyt + gxt);
 
 	// too far off the side?
-	if (abs(tx) > FixedMul(tz, fovtan)<<2)
+	if (abs(tx) > tz<<2)
 		return;
 
 	// aspect ratio stuff :
