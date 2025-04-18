@@ -8044,6 +8044,8 @@ void G_StopDemo(void)
 	if (gamestate == GS_VOTING)
 		Y_EndVote();
 
+	M_ClearMenus(true);
+
 	G_SetGamestate(GS_NULL);
 	wipegamestate = GS_NULL;
 	SV_StopServer();
