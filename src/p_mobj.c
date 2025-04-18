@@ -5942,7 +5942,7 @@ void P_RunShadows(void)
 		next = mobj->hnext;
 		P_SetTarget(&mobj->hnext, NULL);
 
-		if (!mobj->target || P_MobjWasRemoved(mobj->target))
+		if (P_MobjWasRemoved(mobj->target))
 		{
 			mobj->flags2 |= MF2_DONTDRAW;
 			continue; // shouldn't you already be dead?
@@ -9457,6 +9457,9 @@ void P_PushableThinker(mobj_t *mobj)
 	if (mobj->flags & MF_PUSHABLE && !(mobj->momx || mobj->momy))
 		P_TryMove(mobj, mobj->x, mobj->y, true);
 
+	if (!mobj)
+		return;
+
 	if (mobj->fuse == 1) // it would explode in the MobjThinker code
 	{
 		mobj_t *spawnmo;
@@ -9481,12 +9484,16 @@ void P_PushableThinker(mobj_t *mobj)
 					z = ss->sector->floorheight;
 
 				spawnmo = P_SpawnMobj(x, y, z, mobj->type);
-				spawnmo->spawnpoint = mobj->spawnpoint;
-				P_UnsetThingPosition(spawnmo);
-				spawnmo->flags = mobj->flags;
-				P_SetThingPosition(spawnmo);
-				spawnmo->flags2 = mobj->flags2;
-				spawnmo->flags |= MF_PUSHABLE;
+				if (spawnmo)
+				{
+					spawnmo->spawnpoint = mobj->spawnpoint;
+					P_UnsetThingPosition(spawnmo);
+					spawnmo->flags = mobj->flags;
+					P_SetThingPosition(spawnmo);
+					spawnmo->flags2 = mobj->flags2;
+					spawnmo->flags |= MF_PUSHABLE;
+				}
+
 				P_RemoveMobj(mobj);
 				break;
 			default:
