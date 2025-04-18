@@ -3363,7 +3363,7 @@ static void HWR_DrawSpriteShadow(gl_vissprite_t *spr, patch_t *gpatch)
 	float offset = 0;
 	GLPatch_t *hwrpatch;
 
-	hwrpatch = (GLPatch_t *)(gpatch->hardware);
+	hwrpatch = ((GLPatch_t *)gpatch->hardware);
 
 	// technically this_scale gets multiplied and added to sprite y/x scale, but this thing needs it for some crap so ill just throw it in here again
 	const boolean hires = (spr->mobj && spr->mobj->skin && K_GetMobjSkin(spr->mobj)->flags & SF_HIRES);
@@ -3638,12 +3638,13 @@ static void HWR_SplitSprite(gl_vissprite_t *spr, const boolean papersprite)
 	INT32 shader = SHADER_NONE;
 
 	gpatch = spr->gpatch;
-	hwrpatch = (GLPatch_t *)(gpatch->hardware);
 
 	// cache the patch in the graphics card memory
 	//12/12/99: Hurdler: same comment as above (for md2)
 	//Hurdler: 25/04/2000: now support colormap in hardware mode
 	HWR_GetMappedPatch(gpatch, spr->colormap);
+
+	hwrpatch = ((GLPatch_t *)gpatch->hardware);
 
 	// Draw shadow BEFORE sprite
 	/*if (cv_shadow.value // Shadows enabled
@@ -3915,7 +3916,13 @@ static void HWR_DrawSprite(gl_vissprite_t *spr)
 	//          in memory and we add the md2 model if it exists for that sprite
 
 	gpatch = spr->gpatch;
-	hwrpatch = (GLPatch_t *)(gpatch->hardware);
+
+	// cache the patch in the graphics card memory
+	//12/12/99: Hurdler: same comment as above (for md2)
+	//Hurdler: 25/04/2000: now support colormap in hardware mode
+	HWR_GetMappedPatch(gpatch, spr->colormap);
+
+	hwrpatch = ((GLPatch_t *)gpatch->hardware);
 
 	// create the sprite billboard
 	//
@@ -3957,11 +3964,6 @@ static void HWR_DrawSprite(gl_vissprite_t *spr)
 		wallVerts[3].t = wallVerts[2].t = 0;
 		wallVerts[0].t = wallVerts[1].t = hwrpatch->max_t;
 	}
-
-	// cache the patch in the graphics card memory
-	//12/12/99: Hurdler: same comment as above (for md2)
-	//Hurdler: 25/04/2000: now support colormap in hardware mode
-	HWR_GetMappedPatch(gpatch, spr->colormap);
 
 	// Draw shadow BEFORE sprite
 	/*if (cv_shadow.value // Shadows enabled
@@ -4052,7 +4054,13 @@ static void HWR_DrawPrecipitationSprite(gl_vissprite_t *spr)
 
 	// cache sprite graphics
 	gpatch = spr->gpatch;
-	hwrpatch = (GLPatch_t *)(gpatch->hardware);
+
+	// cache the patch in the graphics card memory
+	//12/12/99: Hurdler: same comment as above (for md2)
+	//Hurdler: 25/04/2000: now support colormap in hardware mode
+	HWR_GetMappedPatch(gpatch, spr->colormap);
+
+	hwrpatch = ((GLPatch_t *)gpatch->hardware);
 
 	// create the sprite billboard
 	//
@@ -4077,11 +4085,6 @@ static void HWR_DrawPrecipitationSprite(gl_vissprite_t *spr)
 
 	wallVerts[3].t = wallVerts[2].t = 0;
 	wallVerts[0].t = wallVerts[1].t = hwrpatch->max_t;
-
-	// cache the patch in the graphics card memory
-	//12/12/99: Hurdler: same comment as above (for md2)
-	//Hurdler: 25/04/2000: now support colormap in hardware mode
-	HWR_GetMappedPatch(gpatch, spr->colormap);
 
 	// colormap test
 	sector_t *sector = spr->mobj->subsector->sector;
