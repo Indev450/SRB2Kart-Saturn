@@ -8017,7 +8017,7 @@ void G_StopDemo(void)
 	demobuf.buffer = NULL;
 	demo.playback = false;
 	if (demo.title)
-		modeattacking = false;
+		modeattacking = ATTACKING_NONE;
 	demo.title = false;
 	demo.timing = false;
 	singletics = false;
@@ -8088,12 +8088,16 @@ boolean G_CheckDemoStatus(void)
 			I_Quit();
 
 		if (multiplayer && !demo.title)
+		{
 			G_ExitLevel();
+		}
 		else
 		{
+			UINT8 wasmodeattacking = modeattacking;
+
 			G_StopDemo();
 
-			if (modeattacking)
+			if (wasmodeattacking)
 				M_EndModeAttackRun();
 			else
 				D_StartTitle();
