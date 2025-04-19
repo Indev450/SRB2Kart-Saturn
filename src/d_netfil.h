@@ -13,6 +13,7 @@
 #ifndef __D_NETFIL__
 #define __D_NETFIL__
 
+#include "d_clisrv.h"
 #include "w_wad.h"
 
 typedef enum
@@ -52,18 +53,28 @@ extern INT32 fileneedednum;
 extern fileneeded_t fileneeded[MAX_WADFILES];
 extern char downloaddir[512];
 
+typedef struct
+{
 #ifdef CLIENT_LOADINGSCREEN
-extern INT32 lastfilenum;
-extern INT32 downloadcompletednum;
-extern UINT32 downloadcompletedsize;
-extern INT32 totalfilesrequestednum;
-extern UINT32 totalfilesrequestedsize;
+	INT32 current;
+	INT32 completednum;
+	UINT32 completedsize;
+	INT32 totalnum;
+	UINT32 totalsize;
 #endif
 
 #ifdef HAVE_CURL
-extern boolean curl_failedwebdownload;
-extern boolean curl_running;
-extern INT32 curl_transfers;
+	INT32 remaining;
+	boolean http_failed;
+	boolean http_running;
+
+	char http_source[MAX_MIRROR_LENGTH+1];
+#endif
+} file_download_t;
+
+extern file_download_t filedownload;
+
+#ifdef HAVE_CURL
 
 typedef struct HTTP_login HTTP_login;
 

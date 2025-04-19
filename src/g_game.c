@@ -8070,6 +8070,29 @@ void G_StopDemo(void)
 	SV_ResetServer();
 }
 
+// Stops timing a demo.
+static void G_StopTimingDemo(void)
+{
+	INT32 demotime;
+	double f1, f2;
+	demotime = I_GetTime() - demostarttime;
+	if (!demotime)
+		return;
+	G_StopDemo();
+	demo.timing = false;
+	f1 = (double)demotime;
+	f2 = (double)framecount*TICRATE;
+
+	CONS_Printf(M_GetText("timed %u gametics in %d realtics - %u frames\n%f seconds, %f avg fps\n"),
+				leveltime, demotime, (UINT32)framecount, f1/TICRATE, f2/f1);
+
+	if (restorecv_vidwait != cv_vidwait.value)
+		CV_SetValue(&cv_vidwait, restorecv_vidwait);
+
+	D_StartTitle();
+}
+
+
 boolean G_CheckDemoStatus(void)
 {
 	while (ghosts)
@@ -8084,19 +8107,7 @@ boolean G_CheckDemoStatus(void)
 
 	if (demo.timing)
 	{
-		INT32 demotime;
-		double f1, f2;
-		demotime = I_GetTime() - demostarttime;
-		if (!demotime)
-			return true;
-		G_StopDemo();
-		demo.timing = false;
-		f1 = (double)demotime;
-		f2 = (double)framecount*TICRATE;
-		CONS_Printf(M_GetText("timed %u gametics in %d realtics\n%f seconds, %f avg fps\n"), leveltime,demotime,f1/TICRATE,f2/f1);
-		if (restorecv_vidwait != cv_vidwait.value)
-			CV_SetValue(&cv_vidwait, restorecv_vidwait);
-		D_StartTitle();
+		G_StopTimingDemo();
 		return true;
 	}
 
@@ -8109,16 +8120,15 @@ boolean G_CheckDemoStatus(void)
 		{
 			G_ExitLevel();
 		}
+		else if (modeattacking && !demo.title) // nooo dont crash our titledemos
+		{
+			G_StopDemo();
+			M_EndModeAttackRun();
+		}
 		else
 		{
-			UINT8 wasmodeattacking = modeattacking;
-
 			G_StopDemo();
-
-			if (wasmodeattacking)
-				M_EndModeAttackRun();
-			else
-				D_StartTitle();
+			D_StartTitle();
 		}
 
 		return true;

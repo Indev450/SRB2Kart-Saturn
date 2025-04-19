@@ -1189,11 +1189,6 @@ typedef enum
 static void GetPackets(void);
 
 static cl_mode_t cl_mode = CL_SEARCHING;
-
-#ifdef HAVE_CURL
-char http_source[MAX_MIRROR_LENGTH+1];
-#endif
-
 static UINT16 cl_lastcheckedfilecount = 0;	// used for full file list
 
 // Player name send/load
@@ -1267,10 +1262,10 @@ static inline void CL_DrawConnectionStatus(void)
 		{
 #ifdef JOININGAME
 			case CL_DOWNLOADSAVEGAME:
-				if (lastfilenum != -1)
+				if (filedownload.current != -1)
 				{
-					UINT32 currentsize = fileneeded[lastfilenum].currentsize;
-					UINT32 totalsize = fileneeded[lastfilenum].totalsize;
+					UINT32 currentsize = fileneeded[filedownload.current].currentsize;
+					UINT32 totalsize = fileneeded[filedownload.current].totalsize;
 					INT32 dldlength;
 
 					cltext = M_GetText("Downloading game state...");
@@ -1365,13 +1360,13 @@ static inline void CL_DrawConnectionStatus(void)
 			V_DrawCenteredString(BASEVIDWIDTH/2, BASEVIDHEIGHT-24, V_20TRANS|V_MONOSPACE|MENUCAPS,
 				va(" %2u/%2u Files",loadcompletednum,fileneedednum));
 		}
-		else if (lastfilenum != -1)
+		else if (filedownload.current != -1)
 		{
 			INT32 dldlength;
 			INT32 totalfileslength;
 			UINT32 totaldldsize;
 			static char tempname[28];
-			fileneeded_t *file = &fileneeded[lastfilenum];
+			fileneeded_t *file = &fileneeded[filedownload.current];
 			char *filename = file->filename;
 
 			// Draw the bottom box.
@@ -1410,32 +1405,32 @@ static inline void CL_DrawConnectionStatus(void)
 			V_DrawCenteredString(BASEVIDWIDTH/2, BASEVIDHEIGHT-58-22, V_YELLOWMAP|MENUCAPS,
 				va(M_GetText("\"%s\""), tempname));
 			V_DrawString(BASEVIDWIDTH/2-128, BASEVIDHEIGHT-58, V_20TRANS|V_MONOSPACE|MENUCAPS,
-				va(" %4uK/%4uK",fileneeded[lastfilenum].currentsize>>10,file->totalsize>>10));
+				va(" %4uK/%4uK",file->currentsize>>10,file->totalsize>>10));
 			V_DrawRightAlignedString(BASEVIDWIDTH/2+128, BASEVIDHEIGHT-58, V_20TRANS|V_MONOSPACE|MENUCAPS,
 				va("%3.1fK/s ", ((double)getbps)/1024));
 
 			// Download progress
 
-			if (fileneeded[lastfilenum].currentsize != fileneeded[lastfilenum].totalsize)
-				totaldldsize = downloadcompletedsize+fileneeded[lastfilenum].currentsize; //Add in single file progress download if applicable
+			if (file->currentsize != file->totalsize)
+				totaldldsize = filedownload.completedsize+file->currentsize; //Add in single file progress download if applicable
 			else
-				totaldldsize = downloadcompletedsize;
+				totaldldsize = filedownload.completedsize;
 
 			V_DrawCenteredString(BASEVIDWIDTH/2, BASEVIDHEIGHT-24-14, V_YELLOWMAP|MENUCAPS, "Overall Download Progress");
-			totalfileslength = (INT32)((totaldldsize/(double)totalfilesrequestedsize) * 256);
+			totalfileslength = (INT32)((totaldldsize/(double)filedownload.totalsize) * 256);
 			M_DrawTextBox(BASEVIDWIDTH/2-128-8, BASEVIDHEIGHT-24-8, 32, 1);
 			V_DrawFill(BASEVIDWIDTH/2-128, BASEVIDHEIGHT-24, 256, 8, 175);
 			V_DrawFill(BASEVIDWIDTH/2-128, BASEVIDHEIGHT-24, totalfileslength, 8, 160);
 
-			if (totalfilesrequestedsize>>20 >= 10) //display in MB if over 10MB
+			if (filedownload.totalsize>>20 >= 10) //display in MB if over 10MB
 				V_DrawString(BASEVIDWIDTH/2-128, BASEVIDHEIGHT-24, V_20TRANS|V_MONOSPACE|MENUCAPS,
-					va(" %4uM/%4uM",totaldldsize>>20,totalfilesrequestedsize>>20));
+					va(" %4uM/%4uM",totaldldsize>>20,filedownload.totalsize>>20));
 			else
 				V_DrawString(BASEVIDWIDTH/2-128, BASEVIDHEIGHT-24, V_20TRANS|V_MONOSPACE|MENUCAPS,
-					va(" %4uK/%4uK",totaldldsize>>10,totalfilesrequestedsize>>10));
+					va(" %4uK/%4uK",totaldldsize>>10,filedownload.totalsize>>10));
 
 			V_DrawRightAlignedString(BASEVIDWIDTH/2+128, BASEVIDHEIGHT-24, V_20TRANS|V_MONOSPACE|MENUCAPS,
-					va("%2u/%2u Files ",downloadcompletednum,totalfilesrequestednum));
+					va("%2u/%2u Files ", filedownload.completednum, filedownload.totalnum));
 		}
 		else
 		{
@@ -2241,10 +2236,10 @@ void CL_TimeoutServerList(void)
 
 static void CL_ConfirmConnect(void)
 {
-	if (totalfilesrequestednum > 0)
+	if (filedownload.totalnum > 0)
 	{
 #ifdef HAVE_CURL
-		if (http_source[0] == '\0' || curl_failedwebdownload)
+		if (filedownload.http_source[0] == '\0' || filedownload.http_failed)
 #endif
 		{
 			if (CL_SendRequestFile())
@@ -2357,7 +2352,7 @@ static boolean CL_FinishedFileList(void)
 		// must download something
 		// can we, though?
 #ifdef HAVE_CURL
-		if (http_source[0] == '\0' || curl_failedwebdownload)
+		if (filedownload.http_source[0] == '\0' || filedownload.http_failed)
 #endif
 		{
 			if (!CL_CheckDownloadable()) // nope!
@@ -2377,30 +2372,31 @@ static boolean CL_FinishedFileList(void)
 		}
 
 #ifdef HAVE_CURL
-		if (!curl_failedwebdownload)
+		if (!filedownload.http_failed)
 #endif
 		{
 #ifndef NONET
-			downloadcompletednum = 0;
-			downloadcompletedsize = 0;
-			totalfilesrequestednum = 0;
-			totalfilesrequestedsize = 0;
+			filedownload.completednum = 0;
+			filedownload.completedsize = 0;
+
+			filedownload.totalnum = 0;
+			filedownload.totalsize = 0;
 #endif
 
 			for (i = 0; i < fileneedednum; i++)
 				if (fileneeded[i].status == FS_NOTFOUND || fileneeded[i].status == FS_MD5SUMBAD)
 				{
 #ifndef NONET
-					totalfilesrequestednum++;
-					totalfilesrequestedsize += fileneeded[i].totalsize;
+					filedownload.totalnum++;
+					filedownload.totalsize += fileneeded[i].totalsize;
 #endif
 				}
 
 #ifndef NONET
-			if (totalfilesrequestedsize>>20 >= 10)
-				downloadsize = Z_StrDup(va("%uM",totalfilesrequestedsize>>20));
+			if (filedownload.totalsize>>20 >= 10)
+				downloadsize = Z_StrDup(va("%uM",filedownload.totalsize>>20));
 			else
-				downloadsize = Z_StrDup(va("%uK",totalfilesrequestedsize>>10));
+				downloadsize = Z_StrDup(va("%uK",filedownload.totalsize>>10));
 #endif
 
 			if (cv_showdownloadprompt.value)
@@ -2485,9 +2481,9 @@ static boolean CL_ServerConnectionSearchTicker(tic_t *asksent)
 		{
 #ifdef HAVE_CURL
 			if (serverlist[i].info.httpsource[0])
-				strncpy(http_source, serverlist[i].info.httpsource, MAX_MIRROR_LENGTH);
+				strncpy(filedownload.http_source, serverlist[i].info.httpsource, MAX_MIRROR_LENGTH);
 			else
-				http_source[0] = '\0';
+				filedownload.http_source[0] = '\0';
 #else
 			if (serverlist[i].info.httpsource[0])
 				CONS_Printf("We received a http url from the server, however it will not be used as this build lacks curl support (%s)\n", serverlist[i].info.httpsource);
@@ -2570,12 +2566,12 @@ static boolean CL_ServerConnectionTicker(const char *tmpsave, tic_t *oldtic, tic
 			break;
 #ifdef HAVE_CURL
 		case CL_PREPAREHTTPFILES:
-			if (http_source[0])
+			if (filedownload.http_source[0])
 			{
 				for (i = 0; i < fileneedednum; i++)
 					if (fileneeded[i].status == FS_NOTFOUND || fileneeded[i].status == FS_MD5SUMBAD)
 					{
-						curl_transfers++;
+						filedownload.remaining++;
 					}
 
 				cl_mode = CL_DOWNLOADHTTPFILES;
@@ -2587,8 +2583,8 @@ static boolean CL_ServerConnectionTicker(const char *tmpsave, tic_t *oldtic, tic
 			for (i = 0; i < fileneedednum; i++)
 				if (fileneeded[i].status == FS_NOTFOUND || fileneeded[i].status == FS_MD5SUMBAD)
 				{
-					if (!curl_running)
-						CURLPrepareFile(http_source, i);
+					if (!filedownload.http_running)
+						CURLPrepareFile(filedownload.http_source, i);
 					waitmore = true;
 					break;
 				}
@@ -2596,14 +2592,14 @@ static boolean CL_ServerConnectionTicker(const char *tmpsave, tic_t *oldtic, tic
 			if (waitmore)
 				break; // exit the case
 
-			if (curl_failedwebdownload && !curl_transfers)
+			if (filedownload.http_failed && !filedownload.remaining)
 			{
 				CONS_Printf("One or more files failed to download, falling back to internal downloader\n");
 				cl_mode = CL_CHECKFILES;
 				break;
 			}
 
-			if (!curl_transfers)
+			if (!filedownload.remaining)
 				cl_mode = CL_LOADFILES;
 
 			break;
@@ -2780,7 +2776,7 @@ static void CL_ConnectToServer(void)
 #endif
 
 #ifdef CLIENT_LOADINGSCREEN
-	lastfilenum = -1;
+	filedownload.current = -1;
 #endif
 
 	cl_mode = CL_SEARCHING;
@@ -3421,18 +3417,18 @@ void CL_Reset(void)
 	memset(packetstat, 0, sizeof(packetstat));
 
 #ifndef NONET
-	totalfilesrequestednum = 0;
-	totalfilesrequestedsize = 0;
+	filedownload.totalnum = 0;
+	filedownload.totalsize = 0;
 #endif
 	firstconnectattempttime = 0;
 	serverisfull = false;
 	connectiontimeout = (tic_t)cv_nettimeout.value; //reset this temporary hack
 
 #ifdef HAVE_CURL
-	curl_failedwebdownload = false;
-	curl_transfers = 0;
-	curl_running = false;
-	http_source[0] = '\0';
+	filedownload.remaining = 0;
+	filedownload.http_failed = false;
+	filedownload.http_running = false;
+	filedownload.http_source[0] = '\0';
 #endif
 	G_ResetAllDeviceRumbles();
 
