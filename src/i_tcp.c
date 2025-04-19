@@ -29,42 +29,36 @@
 
 #ifdef _WIN32
 #define USE_WINSOCK
-#if defined (_WIN64) || defined (HAVE_IPV6)
-#define USE_WINSOCK2
-#else //_WIN64/HAVE_IPV6
-#define USE_WINSOCK1
-#endif
 #endif //WIN32 OS
 
-#ifdef USE_WINSOCK2
+#ifdef USE_WINSOCK
 #include <ws2tcpip.h>
+#define addrinfo_t ADDRINFOA
+#else
+#define addrinfo_t struct addrinfo
 #endif
 
 #include "doomdef.h"
 
+#ifndef USE_WINSOCK
+	#include <arpa/inet.h>
+	#ifdef __APPLE_CC__
+		#ifndef _BSD_SOCKLEN_T_
+			#define _BSD_SOCKLEN_T_
+		#endif //_BSD_SOCKLEN_T_
+	#endif //__APPLE_CC__
+	#include <sys/socket.h>
+	#include <netinet/in.h>
+	#include <netdb.h>
+	#include <sys/ioctl.h>
+#endif //normal BSD API
+
+#include <errno.h>
 #include <time.h>
-#ifdef USE_WINSOCK1
-	#include <winsock.h>
-#else
-	#ifndef USE_WINSOCK
-		#include <arpa/inet.h>
-		#ifdef __APPLE_CC__
-			#ifndef _BSD_SOCKLEN_T_
-				#define _BSD_SOCKLEN_T_
-			#endif //_BSD_SOCKLEN_T_
-		#endif //__APPLE_CC__
-		#include <sys/socket.h>
-		#include <netinet/in.h>
-		#include <netdb.h>
-		#include <sys/ioctl.h>
-	#endif //normal BSD API
 
-	#include <errno.h>
-
-	#if defined (__unix__) || defined (__APPLE__) || defined (UNIXCOMMON)
-		#include <sys/time.h>
-	#endif // UNIXCOMMON
-#endif
+#if defined (__unix__) || defined (__APPLE__) || defined (UNIXCOMMON)
+	#include <sys/time.h>
+#endif // UNIXCOMMON
 
 #ifdef USE_WINSOCK
 	// some undefined under win32
@@ -152,7 +146,6 @@ static UINT8 UPNP_support = TRUE;
 	#define close closesocket
 #endif
 
-#include "i_addrinfo.h"
 #define DEFAULTPORT "5029"
 
 #if defined (USE_WINSOCK)
@@ -168,10 +161,6 @@ typedef unsigned long SOCKET_TYPE;
 #endif
 
 #define IPV6_MULTICAST_ADDRESS "ff15::57e1:1a12"
-
-#ifdef USE_WINSOCK1
-typedef int socklen_t;
-#endif
 
 typedef struct
 {
@@ -232,9 +221,8 @@ static char *get_WSAErrorStr(int e)
 #define strerror get_WSAErrorStr
 #endif
 
-#ifdef USE_WINSOCK2
+#ifdef USE_WINSOCK
 #define inet_ntop inet_ntopA
-#define HAVE_NTOP
 static const char* inet_ntopA(short af, const void *cp, char *buf, socklen_t len)
 {
 	DWORD Dlen = len, AFlen = 0;
@@ -278,8 +266,6 @@ static const char* inet_ntopA(short af, const void *cp, char *buf, socklen_t len
 		return NULL;
 	return buf;
 }
-#elif !defined (USE_WINSOCK1)
-#define HAVE_NTOP
 #endif
 
 #ifdef HAVE_MINIUPNPC // based on old XChat patch
@@ -360,7 +346,6 @@ static const char *SOCK_AddrToStr(mysockaddr_t *sk)
 	static char s[64]; // 255.255.255.255:65535 or
 	// [ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff]:65535
 
-#ifdef HAVE_NTOP
 #ifdef HAVE_IPV6
 	int v6 = (sk->any.sa_family == AF_INET6);
 #else
@@ -398,15 +383,7 @@ static const char *SOCK_AddrToStr(mysockaddr_t *sk)
 #endif
 	else if(sk->any.sa_family == AF_INET  && sk->ip4.sin_port  != 0)
 		strcat(s, va(":%d", ntohs(sk->ip4.sin_port)));
-#else
-	if (sk->any.sa_family == AF_INET)
-	{
-		strcpy(s, inet_ntoa(sk->ip4.sin_addr));
-		if (sk->ip4.sin_port != 0) strcat(s, va(":%d", ntohs(sk->ip4.sin_port)));
-	}
-	else
-		sprintf(s, "Unknown type");
-#endif
+
 	return s;
 }
 
@@ -868,15 +845,11 @@ static SOCKET_TYPE UDP_Bind(int family, struct sockaddr *addr, socklen_t addrlen
 
 #ifdef USE_WINSOCK
 	{ // Alam_GBC: disable the new UDP connection reset behavior for Win2k and up
-#ifdef USE_WINSOCK2
 		DWORD dwBytesReturned = 0;
 		BOOL bfalse = FALSE;
 		rc = WSAIoctl(s, SIO_UDP_CONNRESET, &bfalse, sizeof(bfalse),
 		         NULL, 0, &dwBytesReturned, NULL, NULL);
-#else
-		unsigned long falseval = false;
-		rc = ioctl(s, SIO_UDP_CONNRESET, &falseval);
-#endif
+
 		if (rc == -1)
 		{
 			e = errno;
@@ -1046,7 +1019,7 @@ static SOCKET_TYPE UDP_Bind(int family, struct sockaddr *addr, socklen_t addrlen
 static boolean UDP_Socket(void)
 {
 	size_t s;
-	struct my_addrinfo *ai, *runp, hints;
+	addrinfo_t *ai, *runp, hints;
 	int gaie;
 #ifdef HAVE_IPV6
 	const INT32 b_ipv6 = M_CheckParm("-ipv6");
@@ -1075,7 +1048,7 @@ static boolean UDP_Socket(void)
 	{
 		while (M_IsNextParm())
 		{
-			gaie = I_getaddrinfo(M_GetNextParm(), serv, &hints, &ai);
+			gaie = getaddrinfo(M_GetNextParm(), serv, &hints, &ai);
 			if (gaie == 0)
 			{
 				runp = ai;
@@ -1089,13 +1062,13 @@ static boolean UDP_Socket(void)
 					}
 					runp = runp->ai_next;
 				}
-				I_freeaddrinfo(ai);
+				freeaddrinfo(ai);
 			}
 		}
 	}
 	else
 	{
-		gaie = I_getaddrinfo("0.0.0.0", serv, &hints, &ai);
+		gaie = getaddrinfo("0.0.0.0", serv, &hints, &ai);
 		if (gaie == 0)
 		{
 			runp = ai;
@@ -1116,7 +1089,7 @@ static boolean UDP_Socket(void)
 				}
 				runp = runp->ai_next;
 			}
-			I_freeaddrinfo(ai);
+			freeaddrinfo(ai);
 		}
 	}
 
@@ -1128,7 +1101,7 @@ static boolean UDP_Socket(void)
 		{
 			while (M_IsNextParm())
 			{
-				gaie = I_getaddrinfo(M_GetNextParm(), serv, &hints, &ai);
+				gaie = getaddrinfo(M_GetNextParm(), serv, &hints, &ai);
 				if (gaie == 0)
 				{
 					runp = ai;
@@ -1142,13 +1115,13 @@ static boolean UDP_Socket(void)
 						}
 						runp = runp->ai_next;
 					}
-					I_freeaddrinfo(ai);
+					freeaddrinfo(ai);
 				}
 			}
 		}
 		else
 		{
-			gaie = I_getaddrinfo("::", serv, &hints, &ai);
+			gaie = getaddrinfo("::", serv, &hints, &ai);
 			if (gaie == 0)
 			{
 				runp = ai;
@@ -1162,7 +1135,7 @@ static boolean UDP_Socket(void)
 					}
 					runp = runp->ai_next;
 				}
-				I_freeaddrinfo(ai);
+				freeaddrinfo(ai);
 			}
 		}
 	}
@@ -1216,11 +1189,7 @@ boolean I_InitTcpDriver(void)
 	if (!init_tcp_driver)
 	{
 #ifdef USE_WINSOCK
-#ifdef USE_WINSOCK2
 		const WORD VerNeed = MAKEWORD(2,2);
-#else
-		const WORD VerNeed = MAKEWORD(1,1);
-#endif
 		WSADATA WSAData;
 		const int WSAresult = WSAStartup(VerNeed, &WSAData);
 		if (WSAresult != 0)
@@ -1247,21 +1216,14 @@ boolean I_InitTcpDriver(void)
 			if (WSAresult != WSAVERNOTSUPPORTED)
 				CONS_Debug(DBG_NETPLAY, "WinSock(TCP/IP) error: %s\n",WSError);
 		}
-#ifdef USE_WINSOCK2
-		if(LOBYTE(WSAData.wVersion) != 2 ||
+
+		if (LOBYTE(WSAData.wVersion) != 2 ||
 			HIBYTE(WSAData.wVersion) != 2)
 		{
 			WSACleanup();
 			CONS_Debug(DBG_NETPLAY, "No WinSock(TCP/IP) 2.2 driver detected\n");
 		}
-#else
-		if (LOBYTE(WSAData.wVersion) != 1 ||
-			HIBYTE(WSAData.wVersion) != 1)
-		{
-			WSACleanup();
-			CONS_Debug(DBG_NETPLAY, "No WinSock(TCP/IP) 1.1 driver detected\n");
-		}
-#endif
+
 		CONS_Debug(DBG_NETPLAY, "WinSock description: %s\n",WSAData.szDescription);
 		CONS_Debug(DBG_NETPLAY, "WinSock System Status: %s\n",WSAData.szSystemStatus);
 #endif
@@ -1301,7 +1263,6 @@ void I_ShutdownTcpDriver(void)
 
 	CONS_Printf("I_ShutdownTcpDriver: ");
 #ifdef USE_WINSOCK
-	WS_addrinfocleanup();
 	WSACleanup();
 #endif
 	CONS_Printf("shut down\n");
@@ -1310,24 +1271,24 @@ void I_ShutdownTcpDriver(void)
 
 static boolean SOCK_GetAddr(struct sockaddr_in *sin, const char *address, const char *port, boolean test)
 {
-	struct my_addrinfo *ai = NULL, *runp, hints;
+	addrinfo_t *ai = NULL, *runp, hints;
 	int gaie;
 	size_t i;
 
 	if (!port || !port[0])
 		port = DEFAULTPORT;
 
-	memset (&hints, 0x00, sizeof (hints));
+	memset(&hints, 0x00, sizeof (hints));
 	hints.ai_flags = AI_ADDRCONFIG;
 	hints.ai_family = AF_UNSPEC;
 	hints.ai_socktype = SOCK_DGRAM;
 	hints.ai_protocol = IPPROTO_UDP;
 
-	gaie = I_getaddrinfo(address, port, &hints, &ai);
+	gaie = getaddrinfo(address, port, &hints, &ai);
 
 	if (gaie != 0)
 	{
-		I_freeaddrinfo(ai);
+		freeaddrinfo(ai);
 		return false;
 	}
 
@@ -1356,7 +1317,7 @@ static boolean SOCK_GetAddr(struct sockaddr_in *sin, const char *address, const 
 	if (runp != NULL)
 		memcpy(sin, runp->ai_addr, runp->ai_addrlen);
 
-	I_freeaddrinfo(ai);
+	freeaddrinfo(ai);
 
 	return (runp != NULL);
 }
@@ -1554,7 +1515,7 @@ static boolean SOCK_SetUnbanTime(time_t timestamp)
 
 static boolean SOCK_SetBanAddress(const char *address, const char *mask)
 {
-	struct my_addrinfo *ai, *runp, hints;
+	addrinfo_t *ai, *runp, hints;
 	int gaie;
 
 	if (!address)
@@ -1566,7 +1527,7 @@ static boolean SOCK_SetBanAddress(const char *address, const char *mask)
 	hints.ai_socktype = SOCK_DGRAM;
 	hints.ai_protocol = IPPROTO_UDP;
 
-	gaie = I_getaddrinfo(address, "0", &hints, &ai);
+	gaie = getaddrinfo(address, "0", &hints, &ai);
 	if (gaie != 0)
 		return false;
 
@@ -1611,7 +1572,7 @@ static boolean SOCK_SetBanAddress(const char *address, const char *mask)
 		runp = runp->ai_next;
 	}
 
-	I_freeaddrinfo(ai);
+	freeaddrinfo(ai);
 
 	return true;
 }
@@ -1660,8 +1621,6 @@ boolean I_InitTcpNetwork(void)
 		// FIXME: for dedicated server, numnodes needs to be set to 0 upon start
 		if (dedicated)
 			doomcom->numnodes = 0;
-/*		else if (M_IsNextParm())
-			doomcom->numnodes = (INT16)atoi(M_GetNextParm());*/
 		else
 			doomcom->numnodes = 1;
 
@@ -1746,5 +1705,3 @@ boolean I_InitTcpNetwork(void)
 
 	return ret;
 }
-
-#include "i_addrinfo.c"
