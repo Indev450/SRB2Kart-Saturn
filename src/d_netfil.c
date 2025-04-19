@@ -64,11 +64,11 @@ static boolean SV_SendFile(INT32 node, const char *filename, UINT8 fileid);
 
 #ifdef HAVE_CURL
 size_t curlwrite_data(void *ptr, size_t size, size_t nmemb, FILE *stream);
-#if defined(CURL_AT_LEAST_VERSION) && CURL_AT_LEAST_VERSION(7, 35, 0)
+#if (LIBCURL_VERSION_MAJOR <= 7) && (LIBCURL_VERSION_MINOR < 35)
+static int curlprogress_callback(void *clientp, double dltotal, double dlnow, double ultotal, double ulnow);
+#else
 static int curlprogress_callbackx(void *clientp, curl_off_t dltotal, curl_off_t dlnow, curl_off_t ultotal, curl_off_t ulnow);
 #define XFERINFOFUNCTION
-#else
-static int curlprogress_callback(void *clientp, double dltotal, double dlnow, double ultotal, double ulnow);
 #endif
 #endif
 
@@ -114,24 +114,14 @@ fileneeded_t fileneeded[MAX_WADFILES]; // List of needed files
 static I_mutex downloadmutex;
 char downloaddir[512] = "DOWNLOAD";
 
-#ifdef CLIENT_LOADINGSCREEN
-// for cl loading screen
-INT32 lastfilenum = -1;
-INT32 downloadcompletednum = 0;
-UINT32 downloadcompletedsize = 0;
-INT32 totalfilesrequestednum = 0;
-UINT32 totalfilesrequestedsize = 0;
-#endif
+file_download_t filedownload;
 
 #ifdef HAVE_CURL
 static CURL *http_handle;
 static CURLM *multi_handle;
-boolean curl_running = false;
-boolean curl_failedwebdownload = false;
-static double curl_dlnow;
-static double curl_dltotal;
+static UINT32 curl_dlnow;
+static UINT32 curl_dltotal;
 static time_t curl_starttime;
-INT32 curl_transfers = 0;
 static int curl_runninghandles = 0;
 static UINT32 curl_origfilesize;
 static UINT32 curl_origtotalfilesize;
@@ -236,7 +226,7 @@ void D_ParseFileneeded(INT32 fileneedednum_parm, UINT8 *fileneededstr, UINT16 fi
 void CL_PrepareDownloadSaveGame(const char *tmpsave)
 {
 #ifdef CLIENT_LOADINGSCREEN
-	lastfilenum = -1;
+	filedownload.current = -1;
 #endif
 	fileneedednum = 1;
 	fileneeded[0].status = FS_REQUESTED;
@@ -1031,8 +1021,8 @@ void Got_Filetxpak(void)
 			CONS_Printf(M_GetText("Downloading %s...(done)\n"),
 				filename);
 #ifndef NONET
-			downloadcompletednum++;
-			downloadcompletedsize += file->totalsize;
+			filedownload.completednum++;
+			filedownload.completedsize += file->totalsize;
 #endif
 		}
 	}
@@ -1068,7 +1058,7 @@ void Got_Filetxpak(void)
 	}
 
 #ifdef CLIENT_LOADINGSCREEN
-	lastfilenum = filenum;
+	filedownload.current = filenum;
 #endif
 }
 
@@ -1217,9 +1207,7 @@ filestatus_t findfile(char *filename, const UINT8 *wantedmd5sum, boolean complet
 #ifdef HAVE_CURL
 size_t curlwrite_data(void *ptr, size_t size, size_t nmemb, FILE *stream)
 {
-    size_t written;
-    written = fwrite(ptr, size, nmemb, stream);
-    return written;
+   return fwrite(ptr, size, nmemb, stream);
 }
 
 #ifdef XFERINFOFUNCTION
@@ -1233,12 +1221,12 @@ static int curlprogress_callbackx(void *clientp, curl_off_t dltotal, curl_off_t 
 
 	curtime = time(NULL);
 
-	curl_dlnow = dlnow;
-	curl_dltotal = dltotal;
+	curl_dlnow = (UINT32)dlnow;
+	curl_dltotal = (UINT32)dltotal;
 
 	if (curtime > curl_starttime)
 	{
-		getbytes = curl_dlnow / (curtime - curl_starttime); // To-do: Make this more accurate???
+		getbytes = ((double)dlnow) / (curtime - curl_starttime); // To-do: Make this more accurate???
 	}
 	else
 	{
@@ -1258,12 +1246,12 @@ static int curlprogress_callback(void *clientp, double dltotal, double dlnow, do
 
 	curtime = time(NULL);
 
-	curl_dlnow = dlnow;
-	curl_dltotal = dltotal;
+	curl_dlnow = (UINT32)dlnow;
+	curl_dltotal = (UINT32)dltotal;
 
 	if (curtime > curl_starttime)
 	{
-		getbytes = curl_dlnow / (curtime - curl_starttime); // To-do: Make this more accurate???
+		getbytes = ((double)dlnow) / (curtime - curl_starttime); // To-do: Make this more accurate???
 	}
 	else
 	{
@@ -1305,10 +1293,10 @@ void CURLPrepareFile(const char* url, int dfilenum)
 		curl_easy_setopt(http_handle, CURLOPT_URL, va("%s/%s", url, curl_realname));
 
 		// Only allow HTTP and HTTPS
-#if defined(CURL_AT_LEAST_VERSION) && CURL_AT_LEAST_VERSION(7, 85, 0)
-		curl_easy_setopt(http_handle, CURLOPT_PROTOCOLS_STR, "http,https");
-#else
+#if (LIBCURL_VERSION_MAJOR <= 7) && (LIBCURL_VERSION_MINOR < 85)
 		curl_easy_setopt(http_handle, CURLOPT_PROTOCOLS, CURLPROTO_HTTP|CURLPROTO_HTTPS);
+#else
+		curl_easy_setopt(http_handle, CURLOPT_PROTOCOLS_STR, "http,https");
 #endif
 
 		curl_easy_setopt(http_handle, CURLOPT_USERAGENT, va("SRB2Kart/v%d.%d", VERSION, SUBVERSION)); // Set user agent as some servers won't accept invalid user agents.
@@ -1340,23 +1328,25 @@ void CURLPrepareFile(const char* url, int dfilenum)
 #endif
 
 		curl_curfile->status = FS_DOWNLOADING;
-		lastfilenum = dfilenum;
 		curl_multi_add_handle(multi_handle, http_handle);
 
 		curl_multi_perform(multi_handle, &curl_runninghandles);
 		curl_starttime = time(NULL);
 
-		curl_running = true;
+		filedownload.current = dfilenum;
+		filedownload.http_running = true;
 
 #ifdef HAVE_THREADS
 		I_spawn_thread("http-download", (I_thread_fn)CURLGetFile, NULL);
 #endif
 	}
+	else
+		filedownload.http_running = false;
 }
 
 void CURLAbortFile(void)
 {
-	curl_running = false;
+	filedownload.http_running = false;
 
 	// lock and unlock to wait for the download thread to exit
 	I_lock_mutex(&downloadmutex);
@@ -1373,10 +1363,8 @@ void CURLGetFile(void)
 	int msgs_left; /* how many messages are left */
 	const char *easy_handle_error;
 	boolean running = true;
-	long response_code = 0;
-	static char *filename;
 
-	while (running && curl_running)
+	while (running && filedownload.http_running)
     {
     	if (curl_runninghandles)
 		{
@@ -1403,11 +1391,13 @@ void CURLGetFile(void)
 				e = m->easy_handle;
 				easyres = m->data.result;
 
-				filename = Z_StrDup(curl_realname);
+				char *filename = Z_StrDup(curl_realname);
 				nameonly(filename);
 
 				if (easyres != CURLE_OK)
 				{
+					long response_code = 0;
+
 					if (easyres == CURLE_HTTP_RETURNED_ERROR)
 						curl_easy_getinfo(e, CURLINFO_RESPONSE_CODE, &response_code);
 
@@ -1415,7 +1405,7 @@ void CURLGetFile(void)
 					curl_curfile->status = FS_FALLBACK;
 					curl_curfile->currentsize = curl_origfilesize;
 					curl_curfile->totalsize = curl_origtotalfilesize;
-					curl_failedwebdownload = true;
+					filedownload.http_failed = true;
 					fclose(curl_curfile->file);
 					remove(curl_curfile->filename);
 					CONS_Printf(M_GetText("Failed to download %s (%s)\n"), filename, easy_handle_error);
@@ -1428,36 +1418,37 @@ void CURLGetFile(void)
 					{
 						CONS_Alert(CONS_ERROR, M_GetText("HTTP Download of %s finished but is corrupt or has been modified\n"), filename);
 						curl_curfile->status = FS_FALLBACK;
-						curl_failedwebdownload = true;
+						filedownload.http_failed = true;
 					}
 					else
 					{
 						CONS_Printf(M_GetText("Finished HTTP download of %s\n"), filename);
-						downloadcompletednum++;
-						downloadcompletedsize += curl_curfile->totalsize;
+						filedownload.completednum++;
+						filedownload.completedsize += curl_curfile->totalsize;
 						curl_curfile->status = FS_FOUND;
 					}
 				}
 
 				Z_Free(filename);
 				curl_curfile->file = NULL;
-				curl_transfers--;
+				filedownload.remaining--;
 				curl_multi_remove_handle(multi_handle, e);
 				curl_easy_cleanup(e);
 
-				if (!curl_transfers)
+				if (!filedownload.remaining)
 					break;
 			}
 		}
 	}
 
-    if (!curl_transfers || !curl_running)
+    if (!filedownload.remaining || !filedownload.http_running)
     {
 		curl_multi_cleanup(multi_handle);
 		curl_global_cleanup();
 		multi_handle = NULL;
     }
-	curl_running = false;
+
+	filedownload.http_running = false;
 	I_unlock_mutex(downloadmutex);
 }
 
