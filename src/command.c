@@ -113,18 +113,29 @@ static vsbuf_t com_text; // variable sized buffer
   * \param ptext The text to add.
   * \sa COM_BufInsertText
   */
-void COM_BufAddText(const char *ptext)
+void COM_BufAddTextEx(const char *ptext, size_t plen)
 {
 	size_t l;
+	char *text;
 
-	l = strlen(ptext);
+	if (plen == 0)
+		plen = strlen(ptext);
+
+	text = Z_Malloc(sizeof(char) * (plen+1), PU_STATIC, NULL);
+	memcpy(text, ptext, plen);
+	text[plen] = '\0';
+
+	l = strlen(text);
 
 	if (com_text.cursize + l >= com_text.maxsize)
 	{
 		CONS_Alert(CONS_WARNING, M_GetText("Command buffer full!\n"));
 		return;
 	}
-	VS_Write(&com_text, ptext, l);
+
+	VS_Write(&com_text, text, l);
+
+	Z_Free(text);
 }
 
 /** Adds command text and executes it immediately.
@@ -132,7 +143,7 @@ void COM_BufAddText(const char *ptext)
   * \param ptext The text to execute. A newline is automatically added.
   * \sa COM_BufAddText
   */
-void COM_BufInsertText(const char *ptext)
+void COM_BufInsertTextEx(const char *ptext, size_t plen)
 {
 	const INT32 old_wait = com_wait;
 
@@ -150,7 +161,7 @@ void COM_BufInsertText(const char *ptext)
 	com_wait = 0;
 
 	// add the entire text of the file (or alias)
-	COM_BufAddText(ptext);
+	COM_BufAddTextEx(ptext, plen);
 	COM_BufExecute(); // do it right away
 
 	com_wait += old_wait;
@@ -165,8 +176,7 @@ void COM_BufInsertText(const char *ptext)
 
 /** Progress the wait timer and flush waiting console commands when ready.
   */
-void
-COM_BufTicker(void)
+void COM_BufTicker(void)
 {
 	if (com_wait)
 	{

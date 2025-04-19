@@ -2425,7 +2425,8 @@ static void P_RunLevelScript(const char *scriptname)
 		lumpnum_t lumpnum;
 		char newname[9];
 
-		strlcpy(newname, scriptname, sizeof(newname));
+		strncpy(newname, scriptname, sizeof(newname)-1);
+		newname[sizeof(newname)-1] = '\0';
 
 		lumpnum = W_CheckNumForName(newname);
 
@@ -2435,7 +2436,7 @@ static void P_RunLevelScript(const char *scriptname)
 			return;
 		}
 
-		COM_BufInsertText(W_CacheLumpNum(lumpnum, PU_CACHE));
+		COM_BufInsertTextEx(W_CacheLumpNum(lumpnum, PU_CACHE), W_LumpLength(lumpnum));
 	}
 	else
 	{
