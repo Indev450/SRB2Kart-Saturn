@@ -8109,16 +8109,15 @@ boolean G_CheckDemoStatus(void)
 		{
 			G_ExitLevel();
 		}
+		else if (modeattacking && !demo.title) // nooo dont crash our titledemos
+		{
+			G_StopDemo();
+			M_EndModeAttackRun();
+		}
 		else
 		{
-			UINT8 wasmodeattacking = modeattacking;
-
 			G_StopDemo();
-
-			if (wasmodeattacking)
-				M_EndModeAttackRun();
-			else
-				D_StartTitle();
+			D_StartTitle();
 		}
 
 		return true;
