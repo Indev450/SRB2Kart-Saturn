@@ -57,15 +57,14 @@ typedef struct
 {
 #ifdef CLIENT_LOADINGSCREEN
 	INT32 current;
-	INT32 remaining;
 	INT32 completednum;
 	UINT32 completedsize;
-
 	INT32 totalnum;
 	UINT32 totalsize;
 #endif
 
 #ifdef HAVE_CURL
+	INT32 remaining;
 	boolean http_failed;
 	boolean http_running;
 
