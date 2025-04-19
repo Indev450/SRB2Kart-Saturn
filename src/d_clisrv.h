@@ -393,6 +393,7 @@ typedef struct
 #define MAXSERVERNAME 32
 #define MAXFILENEEDED 915
 #define MAX_MIRROR_LENGTH 256
+
 // This packet is too large
 typedef struct
 {
