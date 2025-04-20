@@ -303,7 +303,7 @@ static void UseMouse_OnChange(void)
 consvar_t cv_mouseturn = {"mouseturn", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 // Lagless camera! Yay!
-consvar_t cv_laglesscam = {"laglesscamera", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_laglesscam = {"lagless_camera", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 consvar_t cv_verticallook[MAXSPLITSCREENPLAYERS] = {
 	{"verticallook", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL},
@@ -928,7 +928,7 @@ void D_RegisterClientCommands(void)
 	CV_RegisterVar(&cv_netstat);
 	CV_RegisterVar(&cv_netticbuffer);
 	CV_RegisterVar(&cv_mindelay);
-	CV_RegisterVar(&cv_lagless);
+	CV_RegisterVar(&cv_gentlemens);
 
 #ifdef NETGAME_DEVMODE
 	CV_RegisterVar(&cv_fishcake);

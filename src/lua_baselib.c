@@ -1767,7 +1767,7 @@ static int lib_pGetZAt(lua_State *L)
 	if (!slope)
 		return LUA_ErrInvalid(L, "pslope_t");
 
-	lua_pushfixed(L, P_GetZAt(slope, x, y));
+	lua_pushfixed(L, P_GetSlopeZAt(slope, x, y));
 	return 1;
 }
 

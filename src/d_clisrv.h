@@ -588,7 +588,7 @@ extern tic_t servermaxping;
 extern boolean server_lagless;
 extern tic_t simulated_lag;
 extern tic_t lowest_lag;
-extern consvar_t cv_mindelay, cv_lagless;
+extern consvar_t cv_mindelay, cv_gentlemens;
 
 extern consvar_t
 #ifdef VANILLAJOINNEXTROUND

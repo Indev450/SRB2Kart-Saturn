@@ -988,13 +988,12 @@ static void R_SplitSprite(vissprite_t *sprite)
 
 	for (i = 1; i < sector->numlights; i++)
 	{
-		fixed_t testheight = sector->lightlist[i].height;
+		fixed_t testheight;
 
 		if (!(sector->lightlist[i].caster->flags & FF_CUTSPRITES))
 			continue;
 
-		if (sector->lightlist[i].slope)
-			testheight = P_GetZAt(sector->lightlist[i].slope, sprite->gx, sprite->gy);
+		testheight = P_GetLightZAt(&sector->lightlist[i], sprite->gx, sprite->gy);
 
 		if (testheight >= sprite->gzt)
 			continue;
@@ -1263,7 +1262,7 @@ static void R_ProjectSprite(mobj_t *thing)
 #ifdef ROTSPRITE
 	// determine here if sprite should rotate for optimization
 	const boolean sliprollrotate = (cv_sliptideroll.value && (thing->player && thing->player->sliproll));
-	const boolean shouldrotate = (interp.roll || interp.pitch || interp.sloperoll || interp.slopepitch || thing->rollangle || sliprollrotate);
+	const boolean shouldrotate = (interp.sloperoll || interp.slopepitch || interp.roll || interp.pitch || thing->rollangle || sliprollrotate);
 #endif
 
 	//Fab : 02-08-98: 'skin' override spritedef currently used for skin
@@ -1610,14 +1609,14 @@ static void R_ProjectSprite(mobj_t *thing)
 	}
 	else
 	{
-
 		if (thing->subsector->sector->numlights)
 		{
 			light = thing->subsector->sector->numlights - 1;
 
-			for (lightnum = 1; lightnum < thing->subsector->sector->numlights; lightnum++) {
-				fixed_t h = thing->subsector->sector->lightlist[lightnum].slope ? P_GetZAt(thing->subsector->sector->lightlist[lightnum].slope, interp.x, interp.y)
-						: thing->subsector->sector->lightlist[lightnum].height;
+			for (lightnum = 1; lightnum < thing->subsector->sector->numlights; lightnum++)
+			{
+				fixed_t h = P_GetLightZAt(&thing->subsector->sector->lightlist[lightnum], interp.x, interp.y);
+
 				if (h <= gzt)
 				{
 					light = lightnum - 1;
@@ -2287,6 +2286,7 @@ static void R_CreateDrawNodes(void)
 	{
 		if (!PolyObjects[i].visplane)
 			continue;
+
 		plane = PolyObjects[i].visplane;
 		R_PlaneBounds(plane);
 
@@ -2295,6 +2295,7 @@ static void R_CreateDrawNodes(void)
 			PolyObjects[i].visplane = NULL;
 			continue;
 		}
+
 		entry = R_CreateDrawNode(&nodehead);
 		entry->plane = plane;
 		// note: no seg is set, for what should be obvious reasons
@@ -2305,6 +2306,7 @@ static void R_CreateDrawNodes(void)
 		return;
 
 	R_SortVisSprites();
+
 	for (rover = vsprsortedhead.prev; rover != &vsprsortedhead; rover = rover->prev)
 	{
 		if (rover->szt > vid.height || rover->sz < 0)
@@ -2323,13 +2325,8 @@ static void R_CreateDrawNodes(void)
 					continue;
 
 				// Effective height may be different for each comparison in the case of slopes
-				if (r2->plane->slope)
-				{
-					planeobjectz = P_GetZAt(r2->plane->slope, rover->gx, rover->gy);
-					planecameraz = P_GetZAt(r2->plane->slope, viewx, viewy);
-				}
-				else
-					planeobjectz = planecameraz = r2->plane->height;
+				planeobjectz = P_GetZAt(r2->plane->slope, rover->gx, rover->gy, r2->plane->height);
+				planecameraz = P_GetZAt(r2->plane->slope, viewx, viewy, r2->plane->height);
 
 				if (rover->mobjflags & MF_NOCLIPHEIGHT)
 				{
@@ -2364,6 +2361,7 @@ static void R_CreateDrawNodes(void)
 						if (r2->seg->frontscale[i] > rover->sortscale)
 							break;
 					}
+
 					if (i > x2)
 						continue;
 				}
@@ -2377,31 +2375,22 @@ static void R_CreateDrawNodes(void)
 			else if (r2->thickseg)
 			{
 				fixed_t topplaneobjectz, topplanecameraz, botplaneobjectz, botplanecameraz;
+
 				if (rover->x1 > r2->thickseg->x2 || rover->x2 < r2->thickseg->x1)
 					continue;
 
 				scale = r2->thickseg->scale1 > r2->thickseg->scale2 ? r2->thickseg->scale1 : r2->thickseg->scale2;
 				if (scale <= rover->sortscale)
 					continue;
+
 				scale = r2->thickseg->scale1 + (r2->thickseg->scalestep * (sintersect - r2->thickseg->x1));
 				if (scale <= rover->sortscale)
 					continue;
 
-				if (*r2->ffloor->t_slope)
-				{
-					topplaneobjectz = P_GetZAt(*r2->ffloor->t_slope, rover->gx, rover->gy);
-					topplanecameraz = P_GetZAt(*r2->ffloor->t_slope, viewx, viewy);
-				}
-				else
-					topplaneobjectz = topplanecameraz = *r2->ffloor->topheight;
-
-				if (*r2->ffloor->b_slope)
-				{
-					botplaneobjectz = P_GetZAt(*r2->ffloor->b_slope, rover->gx, rover->gy);
-					botplanecameraz = P_GetZAt(*r2->ffloor->b_slope, viewx, viewy);
-				}
-				else
-					botplaneobjectz = botplanecameraz = *r2->ffloor->bottomheight;
+				topplaneobjectz = P_GetFFloorTopZAt   (r2->ffloor, rover->gx, rover->gy);
+				topplanecameraz = P_GetFFloorTopZAt   (r2->ffloor,     viewx,     viewy);
+				botplaneobjectz = P_GetFFloorBottomZAt(r2->ffloor, rover->gx, rover->gy);
+				botplanecameraz = P_GetFFloorBottomZAt(r2->ffloor,     viewx,     viewy);
 
 				if ((topplanecameraz > viewz && botplanecameraz < viewz) ||
 				    (topplanecameraz < viewz && rover->gzt < topplaneobjectz) ||

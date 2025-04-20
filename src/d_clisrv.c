@@ -114,10 +114,10 @@ boolean server_lagless;
 static void Lagless_OnChange(void)
 {
 	/* don't back out of dishonesty, or go lagless after playing honestly */
-	if (cv_lagless.value && gamestate == GS_LEVEL)
+	if (!cv_gentlemens.value && gamestate == GS_LEVEL)
 		server_lagless = true;
 
-	/*if (cv_lagless.value)
+	/*if (!cv_gentlemens.value)
 		HU_AddChatText(M_GetText("\x82*Gentlemans Delay has been disabled for Serverplayer."), false);
 	else
 		HU_AddChatText(M_GetText("\x82*Gentlemans Delay will be enabled for Serverplayer."), false);*/
@@ -125,7 +125,7 @@ static void Lagless_OnChange(void)
 
 static CV_PossibleValue_t mindelay_cons_t[] = {{0, "MIN"}, {30, "MAX"}, {0, NULL}};
 consvar_t cv_mindelay = {"mindelay", "0", CV_SAVE, mindelay_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_lagless = {"serverlagless", "On", CV_SAVE|CV_CALL|CV_NOINIT, CV_OnOff, Lagless_OnChange, 0, NULL, NULL, 0, 0, NULL}; // this should be a netvar Zzz...
+consvar_t cv_gentlemens = {"gentlemensdelay", "Off", CV_SAVE|CV_CALL|CV_NOINIT, CV_OnOff, Lagless_OnChange, 0, NULL, NULL, 0, 0, NULL}; // this should be a netvar Zzz...
 
 SINT8 nodetoplayer[MAXNETNODES];
 SINT8 nodetoplayer2[MAXNETNODES]; // say the numplayer for this node if any (splitscreen)
