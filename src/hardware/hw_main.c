@@ -5503,9 +5503,6 @@ void HWR_RenderViewpoint(gl_portal_t *rootportal, const float fpov, player_t *pl
 		HWR_PortalClipping(rootportal);
 	}
 
-	// Set transform.
-	GL_SetTransform(&atransform);
-
 	ps_numbspcalls.value.i = 0;
 	ps_numpolyobjects.value.i = 0;
 	PS_START_TIMING(ps_bsptime);
