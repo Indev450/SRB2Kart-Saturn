@@ -3720,7 +3720,8 @@ void K_SpawnBoostTrail(player_t *player)
 
 		if (player->mo->standingslope)
 		{
-			ground = P_GetZAt(player->mo->standingslope, newx, newy);
+			ground = P_GetSlopeZAt(player->mo->standingslope, newx, newy);
+
 			if (player->mo->eflags & MFE_VERTICALFLIP)
 				ground -= FixedMul(mobjinfo[MT_SNEAKERTRAIL].height, player->mo->scale);
 		}
@@ -4830,12 +4831,7 @@ static fixed_t K_BananaSlopeZ(pslope_t *slope, fixed_t x, fixed_t y, fixed_t z, 
 		testy += y;
 	}
 
-	if (slope)
-	{
-		slopez = P_GetZAt(slope, testx, testy);
-	}
-	else
-		slopez = z;
+	slopez = P_GetZAt(slope, testx, testy, z);
 
 	return slopez;
 }
