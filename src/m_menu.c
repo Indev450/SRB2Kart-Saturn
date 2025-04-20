@@ -2094,6 +2094,21 @@ static menuitem_t OP_GameOptionsMenu[] =
 	{IT_STRING | IT_CVAR, NULL, "Restrict Character Changes",	&cv_restrictskinchange, 150},
 };
 
+enum
+{
+	op_game_ittggl,
+	op_game_spd,
+	op_game_frantic,
+	op_game_encore,
+	op_game_numlaps,
+	op_game_countdown,
+	op_game_timelimit,
+	op_game_startbump,
+	op_game_karma,
+	op_game_forcechar,
+	op_game_restrictchar,
+};
+
 static const char* OP_GameTooltips[] =
 {
 	"Toggles for all in-game items.",
@@ -2282,33 +2297,39 @@ static menuitem_t OP_SaturnMenu[] =
 
 	{IT_STRING | IT_CVAR, NULL, "Serverqueue waittime", 				&cv_connectawaittime, 	 	 10},
 
-	{IT_STRING | IT_CVAR, NULL, "Skin Select Spinning Speed",		 	&cv_skinselectspin, 	 	 20},
+	{IT_STRING | IT_CVAR, NULL, "Minimum Input Delay", 					&cv_mindelay, 	 	 		 20},
+	{IT_STRING | IT_CVAR, NULL, "Gentlemens Ping", 						&cv_gentlemens, 	 	 	 25},
 
-	{IT_STRING | IT_CVAR, NULL, "Colorized Speedlines", 				&cv_coloredspeedlines, 		 30},
-	{IT_STRING | IT_CVAR, NULL, "Colorized Sneakertrails", 				&cv_coloredsneakertrail, 	 35},
+	{IT_STRING | IT_CVAR, NULL, "Skin Select Spinning Speed",		 	&cv_skinselectspin, 	 	 35},
 
-	{IT_STRING | IT_CVAR, NULL, "Player Blendeffects", 					&cv_playerblendeffects, 	 45},
+	{IT_STRING | IT_CVAR, NULL, "Colorized Speedlines", 				&cv_coloredspeedlines, 		 45},
+	{IT_STRING | IT_CVAR, NULL, "Colorized Sneakertrails", 				&cv_coloredsneakertrail, 	 40},
 
-	{IT_STRING | IT_CVAR, NULL, "Bananadrag Jitter", 					&cv_bananajitter, 	 		 55},
+	{IT_STRING | IT_CVAR, NULL, "Player Blendeffects", 					&cv_playerblendeffects, 	 50},
 
-	{IT_STRING | IT_CVAR, NULL, "Midair Driftsparks", 					&cv_airsparks, 	 		 	 65},
+	{IT_STRING | IT_CVAR, NULL, "Bananadrag Jitter", 					&cv_bananajitter, 	 		 60},
 
-	{IT_STRING | IT_CVAR, NULL, "Show Localskin Menus", 				&cv_showlocalskinmenus, 	 75},
-	{IT_STRING | IT_CVAR, NULL, "Uppercase Menu",						&cv_menucaps,   		     85},
+	{IT_STRING | IT_CVAR, NULL, "Midair Driftsparks", 					&cv_airsparks, 	 		 	 70},
 
-	{IT_STRING | IT_CVAR, NULL, "Keyboard Layout",						&cv_keyboardlayout,   	   	 90},
+	{IT_STRING | IT_CVAR, NULL, "Show Localskin Menus", 				&cv_showlocalskinmenus, 	 80},
 
-	{IT_STRING | IT_CVAR, NULL, "Less Midnight Channel Flicker", 		&cv_lessflicker, 		   	100},
+	{IT_STRING | IT_CVAR, NULL, "Uppercase Menu",						&cv_menucaps,   		     90},
 
-	{IT_SUBMENU|IT_STRING,	NULL,	"Saturn Hud...", 					&OP_SaturnHudDef,		   	110},
-	{IT_SUBMENU|IT_STRING,	NULL,	"Sprite Distortion...", 			&OP_PlayerDistortDef,	   	115},
-	{IT_SUBMENU|IT_STRING,	NULL,	"Saturn Credits", 					&OP_SaturnCreditsDef,	   	125}, // uwu
+	{IT_STRING | IT_CVAR, NULL, "Keyboard Layout",						&cv_keyboardlayout,   	   	100},
+
+	{IT_STRING | IT_CVAR, NULL, "Less Midnight Channel Flicker", 		&cv_lessflicker, 		   	110},
+
+	{IT_SUBMENU|IT_STRING,	NULL,	"Saturn Hud...", 					&OP_SaturnHudDef,		   	120},
+	{IT_SUBMENU|IT_STRING,	NULL,	"Sprite Distortion...", 			&OP_PlayerDistortDef,	   	125},
+	{IT_SUBMENU|IT_STRING,	NULL,	"Saturn Credits", 					&OP_SaturnCreditsDef,	   	130}, // uwu
 };
 
 static const char* OP_SaturnTooltips[] =
 {
 	NULL,
 	"How long can the game wait before it kicks you out from the server\nconnecting screen.",
+	"Practice for online play! 0 = instant response.",
+	"Simulate online input delay when hosting a server.\nValue choosen by Player with the lowest ping",
 	"How much speen do you want?",
 	"Colourize the speedlines in your skincolor if you go fast enough!",
 	"Colourize the sneaker flame trails in your skincolor!",
@@ -2328,6 +2349,8 @@ enum
 {
 	sm_header,
 	sm_waittime,
+	sm_mindelay,
+	sm_gentlemens,
 	sm_skinselspeed,
 	sm_colorlines,
 	sm_colorflames,
@@ -8030,7 +8053,7 @@ static void M_Options(INT32 choice)
 	OP_DataOptionsMenu[3].status = (Playing()) ? (IT_GRAYEDOUT) : (IT_STRING|IT_SUBMENU); // Erase data
 #endif
 
-	OP_GameOptionsMenu[3].status = (M_SecretUnlocked(SECRET_ENCORE)) ? (IT_CVAR|IT_STRING) : IT_SECRET; // cv_kartencore
+	OP_GameOptionsMenu[op_game_encore].status = (M_SecretUnlocked(SECRET_ENCORE)) ? (IT_CVAR|IT_STRING) : IT_SECRET; // cv_kartencore
 
 	OP_MainDef.prevMenu = currentMenu;
 	M_SetupNextMenu(&OP_MainDef);
