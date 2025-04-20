@@ -412,7 +412,7 @@ void P_SpawnSlope_Line(int linenum)
 			fslope->sourceline = line;
 
 			// To find the real highz/lowz of a slope, you need to check all the vertexes
-			// in the slope's sector with P_GetZAt to get the REAL lowz & highz
+			// in the slope's sector with P_GetSlopeZAt to get the REAL lowz & highz
 			// Although these slopes are set by floorheights the ANGLE is what a slope is,
 			// so technically any slope can extend on forever (they are just bound by sectors)
 			// *You can use sourceline as a reference to see if two slopes really are the same
@@ -426,7 +426,7 @@ void P_SpawnSlope_Line(int linenum)
 
 			for (l = 0; l < line->frontsector->linecount; l++)
 			{
-				fixed_t height = P_GetZAt(line->frontsector->f_slope, line->frontsector->lines[l]->v1->x, line->frontsector->lines[l]->v1->y);
+				fixed_t height = P_GetSlopeZAt(line->frontsector->f_slope, line->frontsector->lines[l]->v1->x, line->frontsector->lines[l]->v1->y);
 
 				if (height > highest)
 					highest = height;
@@ -473,7 +473,7 @@ void P_SpawnSlope_Line(int linenum)
 
 			for (l = 0; l < line->frontsector->linecount; l++)
 			{
-				fixed_t height = P_GetZAt(line->frontsector->c_slope, line->frontsector->lines[l]->v1->x, line->frontsector->lines[l]->v1->y);
+				fixed_t height = P_GetSlopeZAt(line->frontsector->c_slope, line->frontsector->lines[l]->v1->x, line->frontsector->lines[l]->v1->y);
 
 				if (height > highest)
 					highest = height;
@@ -542,7 +542,7 @@ void P_SpawnSlope_Line(int linenum)
 
 			for (l = 0; l < line->backsector->linecount; l++)
 			{
-				fixed_t height = P_GetZAt(line->backsector->f_slope, line->backsector->lines[l]->v1->x, line->backsector->lines[l]->v1->y);
+				fixed_t height = P_GetSlopeZAt(line->backsector->f_slope, line->backsector->lines[l]->v1->x, line->backsector->lines[l]->v1->y);
 
 				if (height > highest)
 					highest = height;
@@ -589,7 +589,7 @@ void P_SpawnSlope_Line(int linenum)
 
 			for (l = 0; l < line->backsector->linecount; l++)
 			{
-				fixed_t height = P_GetZAt(line->backsector->c_slope, line->backsector->lines[l]->v1->x, line->backsector->lines[l]->v1->y);
+				fixed_t height = P_GetSlopeZAt(line->backsector->c_slope, line->backsector->lines[l]->v1->x, line->backsector->lines[l]->v1->y);
 
 				if (height > highest)
 					highest = height;

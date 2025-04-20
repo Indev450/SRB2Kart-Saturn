@@ -931,11 +931,8 @@ static INT32 GetOffroad(INT32 special)
 }
 
 #define SLOPEPARAMS(slope, end1, end2, normalheight) \
-		if (slope) { \
-			end1 = (P_GetZAt(slope, lines[i].v1->x, lines[i].v1->y) + FRACUNIT/2) >> FRACBITS; \
-			end2 = (P_GetZAt(slope, lines[i].v2->x, lines[i].v2->y) + FRACUNIT/2) >> FRACBITS; \
-		} else \
-			end1 = end2 = (normalheight + FRACUNIT/2) >> FRACBITS;
+	end1 = (P_GetZAt(slope, lines[i].v1->x, lines[i].v1->y, ((normalheight + FRACUNIT/2) >> FRACBITS)) + FRACUNIT/2) >> FRACBITS; \
+	end2 = (P_GetZAt(slope, lines[i].v2->x, lines[i].v2->y, ((normalheight + FRACUNIT/2) >> FRACBITS)) + FRACUNIT/2) >> FRACBITS;
 
 static ffloor_t *AM_CompareFOFs(size_t i, ffloor_t *rover, ffloor_t *secondarystore)
 {
