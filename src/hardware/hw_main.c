@@ -3317,7 +3317,7 @@ static fixed_t HWR_OpaqueFloorAtPos(fixed_t x, fixed_t y, fixed_t z, fixed_t hei
 	return floorz;
 }
 
-static void HWR_DrawSpriteShadow(gl_vissprite_t *spr, patch_t *gpatch)
+static void HWR_DrawSpriteShadow(gl_vissprite_t *spr, patch_t *gpatch, GLPatch_t *hwrpatch)
 {
 	float this_scale = 1.0f;
 	FOutVector swallVerts[4];
@@ -3327,9 +3327,6 @@ static void HWR_DrawSpriteShadow(gl_vissprite_t *spr, patch_t *gpatch)
 	pslope_t *floorslope;
 	fixed_t slopez;
 	float offset = 0;
-	GLPatch_t *hwrpatch;
-
-	hwrpatch = ((GLPatch_t *)gpatch->hardware);
 
 	// technically this_scale gets multiplied and added to sprite y/x scale, but this thing needs it for some crap so ill just throw it in here again
 	const boolean hires = (spr->mobj && spr->mobj->skin && K_GetMobjSkin(spr->mobj)->flags & SF_HIRES);
@@ -3538,6 +3535,7 @@ static void HWR_RotateSpritePolyToAim(gl_vissprite_t *spr, FOutVector *wallVerts
 	{
 		basey = FIXED_TO_FLOAT(interp.z);
 	}
+
 	lowy = wallVerts[0].y;
 
 	// Rotate sprites to fully billboard with the camera
@@ -3621,7 +3619,7 @@ static void HWR_SplitSprite(gl_vissprite_t *spr, const boolean papersprite)
 		////////////////////
 		// SHADOW SPRITE! //
 		////////////////////
-		HWR_DrawSpriteShadow(spr, gpatch);
+		HWR_DrawSpriteShadow(spr, gpatch, hwrpatch);
 	}
 
 	baseWallVerts[0].x = baseWallVerts[3].x = spr->x1;
@@ -3940,7 +3938,7 @@ static void HWR_DrawSprite(gl_vissprite_t *spr)
 		////////////////////
 		// SHADOW SPRITE! //
 		////////////////////
-		HWR_DrawSpriteShadow(spr, gpatch);
+		HWR_DrawSpriteShadow(spr, gpatch, hwrpatch);
 	}
 
 	// push it toward the camera to mitigate floor-clipping sprites
@@ -5879,6 +5877,7 @@ static void COM_HWR_glinfo(void)
 	CONS_Printf("Vendor: %s\n", gl_vendor);
 
 	CONS_Printf("%u GL extensions present.\n", gl_num_extensions);
+
 	if (list_extensions)
 	{
 		// We need this strtok loop because we cannot write the extensions list directly
