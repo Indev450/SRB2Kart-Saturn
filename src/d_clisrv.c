@@ -3287,6 +3287,7 @@ void CL_ClearPlayer(INT32 playernum)
 			P_RemoveMobj(players[playernum].mo->tracer);
 		P_RemoveMobj(players[playernum].mo);
 	}
+
 	memset(&players[playernum], 0, sizeof (player_t));
 }
 
@@ -5136,6 +5137,7 @@ static void PT_ServerCFG(SINT8 node)
 	SendSaturnInfo(node);
 #endif
 	memset(playeringame, 0, sizeof(playeringame));
+
 	for (j = 0; j < MAXPLAYERS; j++)
 	{
 		if (netbuffer->u.servercfg.playerskins[j] == 0xFF
@@ -6557,6 +6559,7 @@ static inline void PingUpdate(void)
 	INT32 i;
 	UINT8 pingkick[MAXPLAYERS];
 	UINT8 nonlaggers = 0;
+
 	memset(pingkick, 0, sizeof(pingkick));
 
 	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);

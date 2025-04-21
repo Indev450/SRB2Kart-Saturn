@@ -658,12 +658,9 @@ static boolean SV_SendFile(INT32 node, const char *filename, UINT8 fileid)
 		q = &((*q)->next);
 
 	// Allocate a file request and append it to the file list
-	p = *q = (filetx_t *)malloc(sizeof (filetx_t));
+	p = *q = (filetx_t *)calloc(1, sizeof(filetx_t)); // Initialise with zeros
 	if (!p)
 		I_Error("SV_SendFile: No more memory\n");
-
-	// Initialise with zeros
-	memset(p, 0, sizeof (filetx_t));
 
 	// Allocate the file name
 	p->id.filename = (char *)malloc(MAX_WADPATH);
@@ -743,12 +740,9 @@ void SV_SendRam(INT32 node, void *data, size_t size, freemethod_t freemethod, UI
 		q = &((*q)->next);
 
 	// Allocate a file request and append it to the file list
-	p = *q = (filetx_t *)malloc(sizeof (filetx_t));
+	p = *q = (filetx_t *)calloc(1, sizeof(filetx_t)); // Initialise with zeros
 	if (!p)
 		I_Error("SV_SendRam: No more memory\n");
-
-	// Initialise with zeros
-	memset(p, 0, sizeof (filetx_t));
 
 	p->ram = freemethod; // Remember how to free the memory block for when we're done sending it
 	p->id.ram = data;

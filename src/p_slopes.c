@@ -181,54 +181,60 @@ void P_RunDynamicSlopes(void)
 {
 	pslope_t *slope;
 
-	for (slope = slopelist; slope; slope = slope->next) {
+	for (slope = slopelist; slope; slope = slope->next)
+	{
 		fixed_t zdelta;
 
 		if (slope->flags & SL_NODYNAMIC)
 			continue;
 
-		switch(slope->refpos) {
-		case 1: // front floor
-			zdelta = slope->sourceline->backsector->floorheight - slope->sourceline->frontsector->floorheight;
-			slope->o.z = slope->sourceline->frontsector->floorheight;
-			break;
-		case 2: // front ceiling
-			zdelta = slope->sourceline->backsector->ceilingheight - slope->sourceline->frontsector->ceilingheight;
-			slope->o.z = slope->sourceline->frontsector->ceilingheight;
-			break;
-		case 3: // back floor
-			zdelta = slope->sourceline->frontsector->floorheight - slope->sourceline->backsector->floorheight;
-			slope->o.z = slope->sourceline->backsector->floorheight;
-			break;
-		case 4: // back ceiling
-			zdelta = slope->sourceline->frontsector->ceilingheight - slope->sourceline->backsector->ceilingheight;
-			slope->o.z = slope->sourceline->backsector->ceilingheight;
-			break;
-		case 5: // vertices
-			{
-				mapthing_t *mt;
-				size_t i;
-				INT32 l;
-				line_t *line;
+		switch(slope->refpos)
+		{
+			case 1: // front floor
+				zdelta = slope->sourceline->backsector->floorheight - slope->sourceline->frontsector->floorheight;
+				slope->o.z = slope->sourceline->frontsector->floorheight;
+				break;
+			case 2: // front ceiling
+				zdelta = slope->sourceline->backsector->ceilingheight - slope->sourceline->frontsector->ceilingheight;
+				slope->o.z = slope->sourceline->frontsector->ceilingheight;
+				break;
+			case 3: // back floor
+				zdelta = slope->sourceline->frontsector->floorheight - slope->sourceline->backsector->floorheight;
+				slope->o.z = slope->sourceline->backsector->floorheight;
+				break;
+			case 4: // back ceiling
+				zdelta = slope->sourceline->frontsector->ceilingheight - slope->sourceline->backsector->ceilingheight;
+				slope->o.z = slope->sourceline->backsector->ceilingheight;
+				break;
+			case 5: // vertices
+				{
+					mapthing_t *mt;
+					size_t i;
+					INT32 l;
+					line_t *line;
 
-				for (i = 0; i < 3; i++) {
-					mt = slope->vertices[i];
-					l = P_FindSpecialLineFromTag(799, mt->angle, -1);
-					if (l != -1) {
-						line = &lines[l];
-						mt->z = line->frontsector->floorheight >> FRACBITS;
+					for (i = 0; i < 3; i++)
+					{
+						mt = slope->vertices[i];
+						l = P_FindSpecialLineFromTag(799, mt->angle, -1);
+
+						if (l != -1)
+						{
+							line = &lines[l];
+							mt->z = line->frontsector->floorheight >> FRACBITS;
+						}
 					}
+
+					P_ReconfigureVertexSlope(slope);
 				}
+				continue; // TODO
 
-				P_ReconfigureVertexSlope(slope);
-			}
-			continue; // TODO
-
-		default:
-			I_Error("P_RunDynamicSlopes: slope has invalid type!");
+			default:
+				I_Error("P_RunDynamicSlopes: slope has invalid type!");
 		}
 
-		if (slope->zdelta != FixedDiv(zdelta, slope->extent)) {
+		if (slope->zdelta != FixedDiv(zdelta, slope->extent))
+		{
 			slope->zdelta = FixedDiv(zdelta, slope->extent);
 			slope->zangle = R_PointToAngle2(0, 0, slope->extent, -zdelta);
 			slope->real_zangle = slope->zangle;
@@ -245,8 +251,7 @@ void P_RunDynamicSlopes(void)
 static pslope_t *P_MakeSlope(const vector3_t *o, const vector2_t *d,
                              const fixed_t zdelta, UINT8 flags)
 {
-	pslope_t *ret = Z_Malloc(sizeof(pslope_t), PU_LEVEL, NULL);
-	memset(ret, 0, sizeof(*ret));
+	pslope_t *ret = Z_Calloc(sizeof(pslope_t), PU_LEVEL, NULL);
 
 	ret->o.x = o->x;
 	ret->o.y = o->y;
@@ -340,13 +345,13 @@ void P_SpawnSlope_Line(int linenum)
 	if (line->flags & ML_NOKNUX)
 		flags |= SL_ANCHORVERTEX;
 
-	if(!frontfloor && !backfloor && !frontceil && !backceil)
+	if (!frontfloor && !backfloor && !frontceil && !backceil)
 	{
 		CONS_Printf("P_SpawnSlope_Line called with non-slope line special.\n");
 		return;
 	}
 
-	if(!line->frontsector || !line->backsector)
+	if (!line->frontsector || !line->backsector)
 	{
 		CONS_Debug(DBG_SETUP, "P_SpawnSlope_Line used on a line without two sides. (line number %i)\n", linenum);
 		return;
@@ -626,15 +631,13 @@ static pslope_t *P_NewVertexSlope(INT16 tag1, INT16 tag2, INT16 tag3, UINT8 flag
 	size_t i;
 	mapthing_t *mt = mapthings;
 
-	pslope_t *ret = Z_Malloc(sizeof(pslope_t), PU_LEVEL, NULL);
-	memset(ret, 0, sizeof(*ret));
+	pslope_t *ret = Z_Calloc(sizeof(pslope_t), PU_LEVEL, NULL);
 
 	// Start by setting flags
 	ret->flags = flags;
 
 	// Now set up the vertex list
-	ret->vertices = Z_Malloc(3*sizeof(mapthing_t), PU_LEVEL, NULL);
-	memset(ret->vertices, 0, 3*sizeof(mapthing_t));
+	ret->vertices = Z_Calloc(3*sizeof(mapthing_t), PU_LEVEL, NULL);
 
 	// And... look for the vertices in question.
 	for (i = 0; i < nummapthings; i++, mt++)
@@ -688,7 +691,7 @@ void P_CopySectorSlope(line_t *line)
 	int i, special = line->special;
 
 	// Check for copy linedefs
-	for(i = -1; (i = P_FindSectorFromLineTag(line, i)) >= 0;)
+	for (i = -1; (i = P_FindSectorFromLineTag(line, i)) >= 0;)
 	{
 		sector_t *srcsec = sectors + i;
 
@@ -899,11 +902,14 @@ void P_HandleSlopeLanding(mobj_t *thing, pslope_t *slope)
 {
 	vector3_t mom; // Ditto.
 
-	if (slope->flags & SL_NOPHYSICS) { // No physics, no need to make anything complicated.
-		if (P_MobjFlip(thing)*(thing->momz) < 0) { // falling, land on slope
+	if (slope->flags & SL_NOPHYSICS) // No physics, no need to make anything complicated.
+	{
+		if (P_MobjFlip(thing)*(thing->momz) < 0) // falling, land on slope
+		{
 			thing->momz = -P_MobjFlip(thing);
 			thing->standingslope = slope;
 		}
+
 		return;
 	}
 
@@ -913,11 +919,11 @@ void P_HandleSlopeLanding(mobj_t *thing, pslope_t *slope)
 
 	P_ReverseQuantizeMomentumToSlope(&mom, slope);
 
-	if (P_MobjFlip(thing)*mom.z < 0) { // falling, land on slope
+	if (P_MobjFlip(thing)*mom.z < 0) // falling, land on slope
+	{
 		thing->momx = mom.x;
 		thing->momy = mom.y;
 		thing->momz = -P_MobjFlip(thing);
-
 		thing->standingslope = slope;
 	}
 }
@@ -937,7 +943,8 @@ void P_ButteredSlope(mobj_t *mo)
 	if (mo->flags & (MF_NOCLIPHEIGHT|MF_NOGRAVITY))
 		return; // don't slide down slopes if you can't touch them or you're not affected by gravity
 
-	if (mo->player) {
+	if (mo->player)
+	{
 		if (abs(mo->standingslope->zdelta) < FRACUNIT/4 && !(mo->player->pflags & PF_SPINNING))
 			return; // Don't slide on non-steep slopes unless spinning
 
@@ -947,9 +954,12 @@ void P_ButteredSlope(mobj_t *mo)
 
 	thrust = FINESINE(mo->standingslope->zangle>>ANGLETOFINESHIFT) * 15 / 16 * (mo->eflags & MFE_VERTICALFLIP ? 1 : -1);
 
-	if (mo->player && (mo->player->pflags & PF_SPINNING)) {
+	if (mo->player && (mo->player->pflags & PF_SPINNING))
+	{
 		fixed_t mult = 0;
-		if (mo->momx || mo->momy) {
+
+		if (mo->momx || mo->momy)
+		{
 			angle_t angle = R_PointToAngle2(0, 0, mo->momx, mo->momy) - mo->standingslope->xydirection;
 
 			if (P_MobjFlip(mo) * mo->standingslope->zdelta < 0)
