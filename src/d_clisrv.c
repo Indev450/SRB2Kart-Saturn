@@ -2210,7 +2210,7 @@ void CL_QueryServerList (msg_server_t *server_list)
 		{
 			INT32 node = I_NetMakeNodewPort(server_list[i].ip, server_list[i].port);
 			if (node == -1)
-				break; // no more node free
+				continue; // no more node free, or resolution failure
 			SendAskInfo(node);
 			resendserverlistnode[node] = true;
 			// Leave this node open. It'll be closed if the
