@@ -8011,10 +8011,10 @@ void K_LoadKartHUDGraphics(void)
 		kp_bumperstickerwideclr = 		W_CachePatchName("K_SCBALW", PU_HUDGFX);
 		kp_karmastickerclr = 			W_CachePatchName("K_SCKARM", PU_HUDGFX);
 		kp_timeoutstickerclr = 			W_CachePatchName("K_SCTOUT", PU_HUDGFX);
-		kp_itembgclr[0] = 				W_CachePatchName("K_ITBC", PU_HUDGFX);
-		kp_itembgclr[1] = 				W_CachePatchName("K_ITBCD", PU_HUDGFX);
-		kp_itembgclr[2] = 				W_CachePatchName("K_ISBC", PU_HUDGFX);
-		kp_itembgclr[3] = 				W_CachePatchName("K_ISBCD", PU_HUDGFX);
+		kp_itembgclr[0] = 				W_CachePatchName("K_ITBC"  , PU_HUDGFX);
+		kp_itembgclr[1] = 				W_CachePatchName("K_ITBCD" , PU_HUDGFX);
+		kp_itembgclr[2] = 				W_CachePatchName("K_ISBC"  , PU_HUDGFX);
+		kp_itembgclr[3] = 				W_CachePatchName("K_ISBCD" , PU_HUDGFX);
 		kp_itemmulstickerclr[1] = 		W_CachePatchName("K_ISMULC", PU_HUDGFX);
 		kp_itemmulstickerclr[0] = 		W_CachePatchName("K_ITMULC", PU_HUDGFX);
 	}

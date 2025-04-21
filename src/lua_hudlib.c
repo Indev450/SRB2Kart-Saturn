@@ -297,9 +297,13 @@ static int patch_get(lua_State *L)
 	patch_t *patch = *((patch_t **)luaL_checkudata(L, 1, META_PATCH));
 	enum patch field = Lua_optoption(L, 2, -1, patch_fields_ref);
 
-	// patches are CURRENTLY always valid, expected to be cached with PU_STATIC
-	// this may change in the future, so patch.valid still exists
-	I_Assert(patch != NULL);
+	if (!patch) {
+		if (field == patch_valid) {
+			lua_pushboolean(L, 0);
+			return 1;
+		}
+		return LUA_ErrInvalid(L, "patch_t");
+	}
 
 	switch (field)
 	{
@@ -546,6 +550,8 @@ static int libd_draw(lua_State *L)
 	x = luaL_checkinteger(L, 1);
 	y = luaL_checkinteger(L, 2);
 	patch = *((patch_t **)luaL_checkudata(L, 3, META_PATCH));
+	if (!patch)
+		return LUA_ErrInvalid(L, "patch_t");
 	flags = luaL_optinteger(L, 4, 0);
 	if (!lua_isnoneornil(L, 5))
 		colormap = *((UINT8 **)luaL_checkudata(L, 5, META_COLORMAP));
@@ -579,6 +585,8 @@ static int libd_drawScaled(lua_State *L)
 	if (scale < 0)
 		return luaL_error(L, "negative scale");
 	patch = *((patch_t **)luaL_checkudata(L, 4, META_PATCH));
+	if (!patch)
+		return LUA_ErrInvalid(L, "patch_t");
 	flags = luaL_optinteger(L, 5, 0);
 	if (!lua_isnoneornil(L, 6))
 		colormap = *((UINT8 **)luaL_checkudata(L, 6, META_COLORMAP));
@@ -642,6 +650,8 @@ static int libd_drawOnMinimap(lua_State *L)
 	y = luaL_checkinteger(L, 2);
 	scale = luaL_checkinteger(L, 3);
 	patch = *((patch_t **)luaL_checkudata(L, 4, META_PATCH));
+	if (!patch)
+		return LUA_ErrInvalid(L, "patch_t");
 	if (!lua_isnoneornil(L, 5))
 		colormap = *((UINT8 **)luaL_checkudata(L, 5, META_COLORMAP));
 	centered = lua_optboolean(L, 6);
@@ -737,6 +747,8 @@ static int libd_drawStretched(lua_State *L)
 	if (vscale < 0)
 		return luaL_error(L, "negative vertical scale");
 	patch = *((patch_t **)luaL_checkudata(L, 5, META_PATCH));
+	if (!patch)
+		return LUA_ErrInvalid(L, "patch_t");
 	flags = luaL_optinteger(L, 6, 0);
 	if (!lua_isnoneornil(L, 7))
 		colormap = *((UINT8 **)luaL_checkudata(L, 7, META_COLORMAP));
@@ -910,35 +922,37 @@ static int libd_drawString(lua_State *L)
 	if (LUA_HUD_IsDrawListValid(list))
 		LUA_HUD_AddDrawString(list, x, y, str, flags, align);
 	else
-	switch(align)
 	{
-	// hu_font
-	case align_left:
-		V_DrawString(x, y, flags, str);
-		break;
-	case align_center:
-		V_DrawCenteredString(x, y, flags, str);
-		break;
-	case align_right:
-		V_DrawRightAlignedString(x, y, flags, str);
-		break;
-	case align_fixed:
-		V_DrawStringAtFixed(x, y, flags, str);
-		break;
-	// hu_font, 0.5x scale
-	case align_small:
-		V_DrawSmallString(x, y, flags, str);
-		break;
-	case align_smallright:
-		V_DrawRightAlignedSmallString(x, y, flags, str);
-		break;
-	// tny_font
-	case align_thin:
-		V_DrawThinString(x, y, flags, str);
-		break;
-	case align_thinright:
-		V_DrawRightAlignedThinString(x, y, flags, str);
-		break;
+		switch(align)
+		{
+			// hu_font
+			case align_left:
+				V_DrawString(x, y, flags, str);
+				break;
+			case align_center:
+				V_DrawCenteredString(x, y, flags, str);
+				break;
+			case align_right:
+				V_DrawRightAlignedString(x, y, flags, str);
+				break;
+			case align_fixed:
+				V_DrawStringAtFixed(x, y, flags, str);
+				break;
+			// hu_font, 0.5x scale
+			case align_small:
+				V_DrawSmallString(x, y, flags, str);
+				break;
+			case align_smallright:
+				V_DrawRightAlignedSmallString(x, y, flags, str);
+				break;
+			// tny_font
+			case align_thin:
+				V_DrawThinString(x, y, flags, str);
+				break;
+			case align_thinright:
+				V_DrawRightAlignedThinString(x, y, flags, str);
+				break;
+		}
 	}
 	return 0;
 }
@@ -1025,7 +1039,8 @@ static int libd_getColorHudPatch(lua_State *L)
 	UINT8 *colormap = R_GetTranslationColormap(TC_DEFAULT, K_GetHudColor(), GTC_CACHE);
 	boolean small, dark;
 
-	switch (option) {
+	switch (option)
+	{
 		case hudpatch_item:
 			small = lua_optboolean(L, 2);
 			dark = lua_optboolean(L, 3);
