@@ -3458,7 +3458,7 @@ boolean P_MultiSetupWadFiles(boolean fullsetup)
 	if (partadd_stage == 0)
 	{
 		// Flush and reload HUD graphics
-		ST_UnloadGraphics();
+		//ST_UnloadGraphics();
 		HU_LoadGraphics();
 		ST_LoadGraphics();
 		ST_ReloadSkinFaceGraphics();
