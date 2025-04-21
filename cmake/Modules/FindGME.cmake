@@ -1,6 +1,6 @@
 include(LibFindMacros)
 
-libfind_pkg_check_modules(GME_PKGCONF GME)
+libfind_pkg_check_modules(GME_PKGCONF LIBGME)
 
 find_path(GME_INCLUDE_DIR
 	NAMES gme.h
