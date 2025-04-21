@@ -198,17 +198,10 @@ tic_t firstconnectattempttime = 0;
 // Must be a power of two
 #define TEXTCMD_HASH_SIZE 4
 
-typedef struct textcmdplayer_s
-{
-	INT32 playernum;
-	UINT8 cmd[MAXTEXTCMD];
-	struct textcmdplayer_s *next;
-} textcmdplayer_t;
-
 typedef struct textcmdtic_s
 {
 	tic_t tic;
-	textcmdplayer_t *playercmds[TEXTCMD_HASH_SIZE];
+	UINT8 *playercmds[MAXPLAYERS];
 	struct textcmdtic_s *next;
 } textcmdtic_t;
 
@@ -400,22 +393,13 @@ static void D_FreeTextcmd(tic_t tic)
 
 	if (textcmdtic)
 	{
-		INT32 i;
-
 		// Remove this tic from the list.
 		*tctprev = textcmdtic->next;
 
 		// Free all players.
-		for (i = 0; i < TEXTCMD_HASH_SIZE; i++)
+		for (INT32 i = 0; i < MAXPLAYERS; i++)
 		{
-			textcmdplayer_t *textcmdplayer = textcmdtic->playercmds[i];
-
-			while (textcmdplayer)
-			{
-				textcmdplayer_t *tcpnext = textcmdplayer->next;
-				Z_Free(textcmdplayer);
-				textcmdplayer = tcpnext;
-			}
+			Z_Free(textcmdtic->playercmds[i]);
 		}
 
 		// Free this tic's own memory.
@@ -432,10 +416,8 @@ static UINT8* D_GetExistingTextcmd(tic_t tic, INT32 playernum)
 	// Do we have an entry for the tic? If so, look for player.
 	if (textcmdtic)
 	{
-		textcmdplayer_t *textcmdplayer = textcmdtic->playercmds[playernum & (TEXTCMD_HASH_SIZE - 1)];
-		while (textcmdplayer && textcmdplayer->playernum != playernum) textcmdplayer = textcmdplayer->next;
-
-		if (textcmdplayer) return textcmdplayer->cmd;
+		UINT8 *cmd = textcmdtic->playercmds[playernum];
+		if (cmd) return cmd;
 	}
 
 	return NULL;
@@ -446,7 +428,6 @@ static UINT8* D_GetTextcmd(tic_t tic, INT32 playernum)
 {
 	textcmdtic_t *textcmdtic = textcmds[tic & (TEXTCMD_HASH_SIZE - 1)];
 	textcmdtic_t **tctprev = &textcmds[tic & (TEXTCMD_HASH_SIZE - 1)];
-	textcmdplayer_t *textcmdplayer, **tcpprev;
 
 	// Look for the tic.
 	while (textcmdtic && textcmdtic->tic != tic)
@@ -462,24 +443,11 @@ static UINT8* D_GetTextcmd(tic_t tic, INT32 playernum)
 		textcmdtic->tic = tic;
 	}
 
-	tcpprev = &textcmdtic->playercmds[playernum & (TEXTCMD_HASH_SIZE - 1)];
-	textcmdplayer = *tcpprev;
-
-	// Look for the player.
-	while (textcmdplayer && textcmdplayer->playernum != playernum)
-	{
-		tcpprev = &textcmdplayer->next;
-		textcmdplayer = textcmdplayer->next;
-	}
-
 	// If we don't have an entry for the player, make it.
-	if (!textcmdplayer)
-	{
-		textcmdplayer = *tcpprev = Z_Calloc(sizeof (textcmdplayer_t), PU_STATIC, NULL);
-		textcmdplayer->playernum = playernum;
-	}
+	if (!textcmdtic->playercmds[playernum])
+		textcmdtic->playercmds[playernum] = Z_Calloc(MAXTEXTCMD, PU_STATIC, NULL);
 
-	return textcmdplayer->cmd;
+	return textcmdtic->playercmds[playernum];
 }
 
 static void ExtraDataTicker(void)
