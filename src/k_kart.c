@@ -685,6 +685,7 @@ void K_RainbowColormap(UINT8 *dest_colormap, UINT8 skincolor)
 			dest_colormap[i] = (UINT8)i;
 			continue;
 		}
+
 		color = V_GetColor(i);
 		SETBRIGHTNESS(brightness, color.s.red, color.s.green, color.s.blue);
 		brightdif = 256;
@@ -713,51 +714,82 @@ void K_RainbowColormap(UINT8 *dest_colormap, UINT8 skincolor)
 */
 void K_GenerateKartColormap(UINT8 *dest_colormap, INT32 skinnum, UINT8 color, boolean local)
 {
-	INT32 i;
-	INT32 starttranscolor;
+	INT32 i, starttranscolor, skinramplength;
 
 	// Handle a couple of simple special cases
-	if (skinnum == TC_BOSS
-		|| skinnum == TC_ALLWHITE
-		|| skinnum == TC_METALSONIC
-		|| skinnum == TC_BLINK
-		|| color == SKINCOLOR_NONE)
+	if (skinnum < TC_DEFAULT)
 	{
-		for (i = 0; i < NUM_PALETTE_ENTRIES; i++)
+		switch (skinnum)
 		{
-			if (skinnum == TC_ALLWHITE)
-				dest_colormap[i] = 0;
-			else if (skinnum == TC_BLINK)
-				dest_colormap[i] = colortranslations[color][3];
-			else
-				dest_colormap[i] = (UINT8)i;
+			case TC_ALLWHITE:
+				memset(dest_colormap, 0, NUM_PALETTE_ENTRIES * sizeof(UINT8));
+				return;
+			case TC_RAINBOW:
+				if (color >= MAXTRANSLATIONS)
+					I_Error("Invalid skin color #%hu.", (UINT16)color);
+				if (color != SKINCOLOR_NONE)
+				{
+					K_RainbowColormap(dest_colormap, color);
+					return;
+				}
+				break;
+			case TC_BLINK:
+				if (color >= MAXTRANSLATIONS)
+					I_Error("Invalid skin color #%hu.", (UINT16)color);
+				if (color != SKINCOLOR_NONE)
+				{
+					memset(dest_colormap, colortranslations[color][3], NUM_PALETTE_ENTRIES * sizeof(UINT8));
+					return;
+				}
+				break;
+			default:
+				break;
 		}
+
+		for (i = 0; i < NUM_PALETTE_ENTRIES; i++)
+			dest_colormap[i] = (UINT8)i;
 
 		// White!
 		if (skinnum == TC_BOSS)
 			dest_colormap[31] = 0;
 		else if (skinnum == TC_METALSONIC)
 			dest_colormap[239] = 0;
-
 		return;
 	}
-	else if (skinnum == TC_RAINBOW)
+	else if (color == SKINCOLOR_NONE)
 	{
-		K_RainbowColormap(dest_colormap, color);
+		for (i = 0; i < NUM_PALETTE_ENTRIES; i++)
+			dest_colormap[i] = (UINT8)i;
 		return;
 	}
+
+	if (color >= MAXTRANSLATIONS)
+		I_Error("Invalid skin color #%hu.", (UINT16)color);
+
+	if (skinnum < 0 && skinnum > TC_DEFAULT)
+		I_Error("Invalid translation colormap index %d.", skinnum);
 
 	starttranscolor = (skinnum != TC_DEFAULT) ? K_GetSkinArray(local)[skinnum].starttranscolor : DEFAULT_STARTTRANSCOLOR;
+
+	if (starttranscolor >= NUM_PALETTE_ENTRIES)
+		I_Error("Invalid startcolor #%d.", starttranscolor);
 
 	// Fill in the entries of the palette that are fixed
 	for (i = 0; i < starttranscolor; i++)
 		dest_colormap[i] = (UINT8)i;
 
-	for (i = (UINT8)(starttranscolor + 16); i < NUM_PALETTE_ENTRIES; i++)
-		dest_colormap[i] = (UINT8)i;
+	i = starttranscolor + 16;
+	if (i < NUM_PALETTE_ENTRIES)
+	{
+		for (i = (UINT8)i; i < NUM_PALETTE_ENTRIES; i++)
+			dest_colormap[i] = (UINT8)i;
+		skinramplength = 16;
+	}
+	else
+		skinramplength = i - NUM_PALETTE_ENTRIES; // shouldn't this be NUM_PALETTE_ENTRIES - starttranscolor?
 
 	// Build the translated ramp
-	for (i = 0; i < SKIN_RAMP_LENGTH; i++)
+	for (i = 0; i < skinramplength; i++)
 	{
 		// Sryder 2017-10-26: What was here before was most definitely not particularly readable, check above for new color translation table
 		dest_colormap[starttranscolor + i] = colortranslations[color][i];
@@ -810,7 +842,7 @@ static UINT8 K_GetSpeedometerStyle(void)
 		return SPEEDO_EXTRA;
 	else if (cv_newspeedometer.value == 3 && achi_speedo)
 		return SPEEDO_ACHII;
-		else if (cv_newspeedometer.value == 4 && dial_speedo)
+	else if (cv_newspeedometer.value == 4 && dial_speedo)
 		return SPEEDO_DIAL;
 	else if (cv_newspeedometer.value == 5 && kartz_speedo)
 		return SPEEDO_PMETER;
