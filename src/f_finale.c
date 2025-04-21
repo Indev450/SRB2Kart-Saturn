@@ -149,7 +149,7 @@ static UINT8 F_WriteText(void)
 static void F_NewCutscene(const char *basetext)
 {
 	cutscene_basetext = basetext;
-	memset(cutscene_disptext,0,sizeof(cutscene_disptext));
+	memset(cutscene_disptext, 0, sizeof(cutscene_disptext));
 	cutscene_writeptr = cutscene_baseptr = 0;
 	cutscene_textspeed = 9;
 	cutscene_textcount = TICRATE/2;

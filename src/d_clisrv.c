@@ -3268,6 +3268,7 @@ void CL_ClearPlayer(INT32 playernum)
 			P_RemoveMobj(players[playernum].mo->tracer);
 		P_RemoveMobj(players[playernum].mo);
 	}
+
 	memset(&players[playernum], 0, sizeof (player_t));
 }
 
@@ -6491,6 +6492,7 @@ static inline void PingUpdate(void)
 	INT32 i;
 	UINT8 pingkick[MAXPLAYERS];
 	UINT8 nonlaggers = 0;
+
 	memset(pingkick, 0, sizeof(pingkick));
 
 	netbuffer->packettype = PT_PING;

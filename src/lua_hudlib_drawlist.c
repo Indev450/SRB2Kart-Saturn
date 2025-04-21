@@ -303,6 +303,7 @@ static void CalcFillCoords(drawitem_t *item)
 			else if (!(c & V_SNAPTOLEFT))
 				x += (vid.width - (BASEVIDWIDTH * dupx)) / 2;
 		}
+
 		if (vid.height != BASEVIDHEIGHT * dupy)
 		{
 			// same thing here
@@ -311,6 +312,7 @@ static void CalcFillCoords(drawitem_t *item)
 			else if (!(c & V_SNAPTOTOP))
 				y += (vid.height - (BASEVIDHEIGHT * dupy)) / 2;
 		}
+
 		if (c & V_SPLITSCREEN)
 			y += (BASEVIDHEIGHT * dupy)/2;
 		if (c & V_HORZSCREEN)
@@ -346,6 +348,7 @@ static UINT64 GetItemId(void)
 		id |= INTERP_LATCH;
 		hud_interplatch = false;
 	}
+
 	if (hud_interpstring)
 		id |= INTERP_STRING;
 

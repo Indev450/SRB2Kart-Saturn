@@ -848,8 +848,7 @@ static polymaplink_t *Polyobj_getLink(void)
 	}
 	else
 	{
-		l = Z_Malloc(sizeof(*l), PU_LEVEL, NULL);
-		memset(l, 0, sizeof(*l));
+		l = Z_Calloc(sizeof(*l), PU_LEVEL, NULL);
 	}
 
 	return l;
@@ -1565,8 +1564,7 @@ void Polyobj_InitLevel(void)
 		{
 			++numPolyObjects;
 
-			qitem = malloc(sizeof(mobjqitem_t));
-			memset(qitem, 0, sizeof(mobjqitem_t));
+			qitem = calloc(1, sizeof(mobjqitem_t));
 			qitem->mo = mo;
 			M_QueueInsert(&(qitem->mqitem), &spawnqueue);
 		}
@@ -1574,8 +1572,7 @@ void Polyobj_InitLevel(void)
 		{
 			++numAnchors;
 
-			qitem = malloc(sizeof(mobjqitem_t));
-			memset(qitem, 0, sizeof(mobjqitem_t));
+			qitem = calloc(1, sizeof(mobjqitem_t));
 			qitem->mo = mo;
 			M_QueueInsert(&(qitem->mqitem), &anchorqueue);
 		}
@@ -2466,7 +2463,7 @@ INT32 EV_DoPolyObjWaypoint(polywaypointdata_t *pwdata)
 	R_CreateInterpolator_Polyobj(&th->thinker, po);
 	// T_PolyObjWaypoint is the only polyobject movement
 	// that can adjust z, so we add these ones too.
-	R_CreateInterpolator_SectorPlane(&th->thinker, po->lines[0]->backsector, false); 
+	R_CreateInterpolator_SectorPlane(&th->thinker, po->lines[0]->backsector, false);
 	R_CreateInterpolator_SectorPlane(&th->thinker, po->lines[0]->backsector, true);
 
 	// Most other polyobject functions handle children by recursively
