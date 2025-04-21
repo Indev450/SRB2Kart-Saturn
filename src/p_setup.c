@@ -3348,35 +3348,38 @@ UINT16 P_PartialAddWadFile(const char *wadfilename, boolean local)
 	//
 	// check for votescreen replacements
 	//
-	lumpinfo = wadfiles[wadnum]->lumpinfo;
-	for (i = 0; i < numlumps; i++, lumpinfo++)
+	if (!wideracereplaced && !racereplaced && !widebattlereplaced && !battlereplaced)
 	{
-		name = lumpinfo->name;
-
-		// widescreen patch Race
-		if (!wideracereplaced && !strncmp(name, "INTERSCW", 8))
+		lumpinfo = wadfiles[wadnum]->lumpinfo;
+		for (i = 0; i < numlumps; i++, lumpinfo++)
 		{
-			wideracereplaced = true;
-			continue;
-		}
+			name = lumpinfo->name;
 
-		if (!racereplaced && !strncmp(name, "INTERSCR", 8))
-		{
-			racereplaced = true;
-			continue;
-		}
+			// widescreen patch Race
+			if (!wideracereplaced && !strncmp(name, "INTERSCW", 8))
+			{
+				wideracereplaced = true;
+				continue;
+			}
 
-		// widescreen patch Battle
-		if (!widebattlereplaced && !strncmp(name, "BATTLSCW", 8))
-		{
-			widebattlereplaced = true;
-			continue;
-		}
+			if (!racereplaced && !strncmp(name, "INTERSCR", 8))
+			{
+				racereplaced = true;
+				continue;
+			}
 
-		if (!battlereplaced && !strncmp(name, "BATTLSCR", 8))
-		{
-			battlereplaced = true;
-			continue;
+			// widescreen patch Battle
+			if (!widebattlereplaced && !strncmp(name, "BATTLSCW", 8))
+			{
+				widebattlereplaced = true;
+				continue;
+			}
+
+			if (!battlereplaced && !strncmp(name, "BATTLSCR", 8))
+			{
+				battlereplaced = true;
+				continue;
+			}
 		}
 	}
 
