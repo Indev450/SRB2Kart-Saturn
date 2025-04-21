@@ -770,6 +770,7 @@ INT32 P_AddLevelFlat(const char *flatname, levelflat_t *levelflat)
 		levelflat->lumpnum = R_GetFlatNumForName(flatname);
 		levelflat->baselumpnum = LUMPERROR;
 
+#ifdef HWRENDER
 		if (!havesnakerpad && memcmp(levelflat->name, "BOST", 4) == 0)
 		{
 			havesnakerpad = true;
@@ -782,6 +783,7 @@ INT32 P_AddLevelFlat(const char *flatname, levelflat_t *levelflat)
 		{
 			havefaytpad = true;
 		}
+#endif
 
 #ifndef ZDEBUG
 		CONS_Debug(DBG_SETUP, "flat #%03d: %s\n", atoi(sizeu1(numlevelflats)), levelflat->name);
@@ -895,9 +897,11 @@ static void P_LoadRawSectors(UINT8 *data)
 
 	numlevelflats = 0;
 
+#ifdef HWRENDER
 	havesnakerpad = false;
 	havepazrcst = false;
 	havefaytpad = false;
+#endif
 
 	memset(ss, 0, sizeof(sector_t) * numsectors);
 
