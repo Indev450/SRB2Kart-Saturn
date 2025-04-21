@@ -452,7 +452,6 @@ static UINT8* RGetTranslationColormap(INT32 skinnum, skincolors_t color, UINT8 f
 
 	if (flags & GTC_CACHE)
 	{
-
 		// Allocate table for skin if necessary
 		if (!tt[skintableindex])
 			tt[skintableindex] = Z_Calloc(MAXTRANSLATIONS * sizeof(UINT8**), PU_STATIC, NULL);

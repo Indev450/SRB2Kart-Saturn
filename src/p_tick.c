@@ -835,6 +835,7 @@ void P_PreTicker(INT32 frames)
 		LUA_HOOK(PreThinkFrame);
 
 		for (i = 0; i < MAXPLAYERS; i++)
+		{
 			if (playeringame[i] && players[i].mo && !P_MobjWasRemoved(players[i].mo))
 			{
 				// stupid fucking cmd hack
@@ -849,6 +850,7 @@ void P_PreTicker(INT32 frames)
 
 				memcpy(&players[i].cmd, &temptic, sizeof(ticcmd_t));
 			}
+		}
 
 		// Dynamic slopeness
 		if (midgamejoin)

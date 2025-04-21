@@ -2191,7 +2191,7 @@ void CL_QueryServerList (msg_server_t *server_list)
 		{
 			INT32 node = I_NetMakeNodewPort(server_list[i].ip, server_list[i].port);
 			if (node == -1)
-				break; // no more node free
+				continue; // no more node free, or resolution failure
 			SendAskInfo(node);
 			resendserverlistnode[node] = true;
 			// Leave this node open. It'll be closed if the
@@ -3268,6 +3268,7 @@ void CL_ClearPlayer(INT32 playernum)
 			P_RemoveMobj(players[playernum].mo->tracer);
 		P_RemoveMobj(players[playernum].mo);
 	}
+
 	memset(&players[playernum], 0, sizeof (player_t));
 }
 
@@ -6491,6 +6492,7 @@ static inline void PingUpdate(void)
 	INT32 i;
 	UINT8 pingkick[MAXPLAYERS];
 	UINT8 nonlaggers = 0;
+
 	memset(pingkick, 0, sizeof(pingkick));
 
 	netbuffer->packettype = PT_PING;
