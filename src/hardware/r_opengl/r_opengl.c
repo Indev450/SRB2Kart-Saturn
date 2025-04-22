@@ -1500,7 +1500,7 @@ void GL_SetBlend(FBITFIELD PolyFlags)
 {
 	const FBITFIELD Xor = CurrentPolyFlags^PolyFlags;;
 
-	if (Xor & (PF_Blending|PF_RemoveYWrap|PF_ForceWrapX|PF_ForceWrapY|PF_Occlude|PF_NoTexture|PF_Modulated|PF_NoDepthTest|PF_Decal|PF_Invisible))
+	if (Xor & (PF_Blending|PF_RemoveYWrap|PF_ForceWrapX|PF_ForceWrapY|PF_Occlude|PF_NoTexture|PF_Modulated|PF_NoDepthTest|PF_Decal|PF_Skydecal|PF_Invisible))
 	{
 		if (Xor & PF_Blending) // if blending mode must be changed
 			GL_SetBlendMode(PolyFlags & PF_Blending);
@@ -1516,7 +1516,21 @@ void GL_SetBlend(FBITFIELD PolyFlags)
 		if (Xor & PF_Decal)
 		{
 			if (PolyFlags & PF_Decal)
+			{
+				pglPolygonOffset(-1.0f, -1.0f);
 				pglEnable(GL_POLYGON_OFFSET_FILL);
+			}
+			else
+				pglDisable(GL_POLYGON_OFFSET_FILL);
+		}
+
+		if (Xor & PF_Skydecal)
+		{
+			if (PolyFlags & PF_Skydecal)
+			{
+				pglPolygonOffset(-0.45f, -0.45f); // dont let skywalls draw over actual walls tho
+				pglEnable(GL_POLYGON_OFFSET_FILL);
+			}
 			else
 				pglDisable(GL_POLYGON_OFFSET_FILL);
 		}
