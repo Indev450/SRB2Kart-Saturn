@@ -255,7 +255,8 @@ enum EPolyFlags
 	PF_RemoveYWrap      = 0x00010000,   // Force clamp texture on Y
 	PF_ForceWrapX       = 0x00020000,   // Force repeat texture on X
 	PF_ForceWrapY       = 0x00040000,   // Forces repeat texture on Y
-	PF_Ripple           = 0x00100000    // Water ripple effect. The current backend doesn't use it for anything.
+	PF_Ripple           = 0x00100000,   // Water ripple effect. The current backend doesn't use it for anything.
+	PF_Skydecal         = 0x20000000    // Enables smaller polygon offset, to be used for skywalls only
 	//                    0x20000000
 	//                    0x40000000
 	//                    0x80000000
