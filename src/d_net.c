@@ -1367,7 +1367,7 @@ void Command_Ping_f(void)
 	pingc = 0;
 	for (i = 1; i < MAXPLAYERS; ++i)
 	{
-		if (playeringame[i])
+		if (players[i].ingame)
 		{
 			INT32 ms;
 
@@ -1416,7 +1416,7 @@ void Command_Ping_f(void)
 				ms_width,   pingv[i].ms);
 	}
 
-	if (!server && playeringame[consoleplayer])
+	if (!server && players[consoleplayer].ingame)
 	{
 		CONS_Printf("\nYour ping is %d frames (%d ms)\n", playerpingtable[consoleplayer], (INT32)(playerpingtable[consoleplayer] * (1000.00f / TICRATE)));
 	}

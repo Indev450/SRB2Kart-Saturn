@@ -49,7 +49,7 @@ static INT32 K_PlayersPlaying(void)
 	INT32 num = 0, i;
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
-		if (!playeringame[i] || players[i].spectator || !players[i].mo)
+		if (!players[i].ingame || players[i].spectator || !players[i].mo)
 			continue;
 
 		num++;
@@ -179,7 +179,7 @@ static void K_UpdateDirectorPositions(void)
 
 		target = &players[playernum];
 
-		if (playeringame[playernum] && !target->spectator && target->kartstuff[k_position] > 0)
+		if (players[playernum].ingame && !target->spectator && target->kartstuff[k_position] > 0)
 		{
 			directorinfo.sortedplayers[target->kartstuff[k_position] - 1] = playernum;
 		}

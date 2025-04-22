@@ -1260,7 +1260,7 @@ static boolean EnsurePlayerNameIsGood(char *name, INT32 playernum)
 	// Check if a player is currently using the name, case-insensitively.
 	for (ix = 0; ix < MAXPLAYERS; ix++)
 	{
-		if (ix != playernum && playeringame[ix]
+		if (ix != playernum && players[ix].ingame
 			&& strcasecmp(name, player_names[ix]) == 0)
 		{
 			// We shouldn't kick people out just because
@@ -1377,7 +1377,7 @@ static void CleanupPlayerName(INT32 playernum, const char *newname)
 		// no stealing another player's name
 		for (i = 0; i < MAXPLAYERS; i++)
 		{
-			if (i != playernum && playeringame[i]
+			if (i != playernum && players[i].ingame
 				&& strcasecmp(tmpname, player_names[i]) == 0)
 			{
 				break;
@@ -1498,7 +1498,7 @@ static void ForceAllSkins(INT32 forcedskin)
 	INT32 i;
 	for (i = 0; i < MAXPLAYERS; ++i)
 	{
-		if (!playeringame[i])
+		if (!players[i].ingame)
 			continue;
 
 		SetPlayerSkinByNum(i, forcedskin);
@@ -2160,7 +2160,7 @@ static INT32 LookupPlayer(const char *s)
 	for (playernum = 0; playernum < MAXPLAYERS; ++playernum)
 	{
 		/* Match name case-insensitively: fully, or partially the start. */
-		if (playeringame[playernum])
+		if (players[playernum].ingame)
 			if (strnicmp(player_names[playernum], s, strlen(s)) == 0)
 		{
 			return playernum;
@@ -2173,13 +2173,13 @@ static INT32 FindPlayerByPlace(INT32 place)
 {
 	INT32 playernum;
 	for (playernum = 0; playernum < MAXPLAYERS; ++playernum)
-		if (playeringame[playernum])
-	{
-		if (players[playernum].kartstuff[k_position] == place)
+		if (players[playernum].ingame)
 		{
-			return playernum;
+			if (players[playernum].kartstuff[k_position] == place)
+			{
+				return playernum;
+			}
 		}
-	}
 	return -1;
 }
 
@@ -2245,13 +2245,16 @@ static void Command_View_f(void)
 	if (COM_Argc() > 1)/* switch to player */
 	{
 		playerparam = COM_Argv(1);
+
 		if (playerparam[0] == '#')/* search by placement */
 		{
 			placenum = atoi(&playerparam[1]);
 			playernum = FindPlayerByPlace(placenum);
+
 			if (playernum == -1 || !G_CouldView(playernum))
 			{
 				GetViewablePlayerPlaceRange(&firstplace, &lastplace);
+
 				if (playernum == -1)
 				{
 					CONS_Alert(CONS_WARNING, "There is no player in that place! ");
@@ -2263,18 +2266,20 @@ static void Command_View_f(void)
 							"The first player that you can view is \x82#%d\x80; ",
 							firstplace);
 				}
+
 				CONS_Printf("Last place is \x82#%d\x80.\n", lastplace);
 				return;
 			}
 		}
 		else
 		{
-			if (( playernum = LookupPlayer(COM_Argv(1)) ) == -1)
+			if ((playernum = LookupPlayer(COM_Argv(1)) ) == -1)
 			{
 				CONS_Alert(CONS_WARNING, "There is no player by that name!\n");
 				return;
 			}
-			if (!playeringame[playernum])
+
+			if (!players[playernum].ingame)
 			{
 				CONS_Alert(CONS_WARNING, "There is no player using that slot!\n");
 				return;
@@ -2539,7 +2544,7 @@ void D_MapChange(INT32 mapnum, INT32 newgametype, boolean pencoremode, boolean r
 				{
 					//CL_RemoveSplitscreenPlayer();
 					botingame = false;
-					playeringame[1] = false;
+					players[1].ingame = false;
 				}
 			}
 			else if (!botingame)
@@ -2547,7 +2552,7 @@ void D_MapChange(INT32 mapnum, INT32 newgametype, boolean pencoremode, boolean r
 				//CL_AddSplitscreenPlayer();
 				botingame = true;
 				displayplayers[1] = 1;
-				playeringame[1] = true;
+				players[1].ingame = true;
 				players[1].bot = 1;
 				SendNameAndColor2();
 			}
@@ -2615,8 +2620,9 @@ void D_PickVote(void)
 
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
-		if (!playeringame[i] || players[i].spectator)
+		if (!players[i].ingame || players[i].spectator)
 			continue;
+
 		if (votes[i] != -1)
 		{
 			temppicks[numvotes] = i;
@@ -3682,7 +3688,7 @@ static void Command_ServerTeamChange_f(void)
 
 	NetPacket.packet.playernum = atoi(COM_Argv(1));
 
-	if (!playeringame[NetPacket.packet.playernum])
+	if (!players[NetPacket.packet.playernum].ingame)
 	{
 		CONS_Alert(CONS_NOTICE, M_GetText("There is no player %d!\n"), NetPacket.packet.playernum);
 		return;
@@ -4196,7 +4202,7 @@ static void Command_Verify_f(void)
 
 	WRITEUINT8(temp, playernum);
 
-	if (playeringame[playernum])
+	if (players[playernum].ingame)
 		SendNetXCmd(XD_VERIFIED, buf, 1);
 }
 
@@ -4248,7 +4254,7 @@ static void Command_RemoveAdmin_f(void)
 
 	WRITEUINT8(temp, playernum);
 
-	if (playeringame[playernum])
+	if (players[playernum].ingame)
 		SendNetXCmd(XD_DEMOTED, buf, 1);
 }
 
@@ -4640,7 +4646,7 @@ static void Command_GLocalSkin (void)
 
 		for (i = 0; i < MAXPLAYERS; ++i)
 		{
-			if (!playeringame[i])
+			if (!players[i].ingame)
 				continue;
 			SetLocalPlayerSkin(i, fuck, NULL);
 		}
@@ -5269,7 +5275,7 @@ void D_GameTypeChanged(INT32 lastgametype)
 	{
 		INT32 i;
 		for (i = 0; i < MAXPLAYERS; i++)
-			if (playeringame[i])
+			if (players[i].ingame)
 				players[i].ctfteam = 0;
 
 		if (server || (IsPlayerAdmin(consoleplayer)))
@@ -5378,7 +5384,7 @@ retryscramble:
 	// Put each player's node in the array.
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
-		if (playeringame[i] && !players[i].spectator)
+		if (players[i].ingame && !players[i].spectator)
 		{
 			scrambleplayers[playercount] = i;
 			playercount++;
@@ -6184,7 +6190,7 @@ static void Command_ShowScores_f(void)
 
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
-		if (playeringame[i])
+		if (players[i].ingame)
 			// FIXME: %lu? what's wrong with %u? ~Callum (produces warnings...)
 			CONS_Printf(M_GetText("%s's score is %u\n"), player_names[i], players[i].score);
 	}

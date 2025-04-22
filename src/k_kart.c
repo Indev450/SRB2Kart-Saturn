@@ -205,7 +205,7 @@ static void saltyhop_onchange(void)
 	{
 		player_t *player = &players[i];
 
-		if (!player || !playeringame[i] || P_MobjWasRemoved(player->mo))
+		if (!player || !players[i].ingame || P_MobjWasRemoved(player->mo))
 			continue;
 
 		player->mo->salty_jump = false;
@@ -1100,7 +1100,7 @@ boolean K_IsPlayerLosing(player_t *player)
 
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
-		if (!playeringame[i] || players[i].spectator)
+		if (!players[i].ingame || players[i].spectator)
 			continue;
 		if (players[i].kartstuff[k_position] > pcount)
 			pcount = players[i].kartstuff[k_position];
@@ -1301,7 +1301,7 @@ static INT32 K_KartGetItemOdds(UINT8 pos, SINT8 item, fixed_t mashed, boolean sp
 
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
-		if (!playeringame[i] || players[i].spectator)
+		if (!players[i].ingame || players[i].spectator)
 			continue;
 
 		if (!G_BattleGametype() || players[i].kartstuff[k_bumper])
@@ -1448,7 +1448,7 @@ static INT32 K_FindUseodds(player_t *player, fixed_t mashed, INT32 pingame, INT3
 
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
-		if (playeringame[i] && !players[i].spectator && players[i].mo
+		if (players[i].ingame && !players[i].spectator && players[i].mo
 			&& players[i].kartstuff[k_position] != 0
 			&& players[i].kartstuff[k_position] < player->kartstuff[k_position])
 			pdis += P_AproxDistance(P_AproxDistance(players[i].mo->x - player->mo->x,
@@ -1550,7 +1550,7 @@ static void K_KartItemRoulette(player_t *player, ticcmd_t *cmd)
 	// Gotta check how many players are active at this moment.
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
-		if (!playeringame[i] || players[i].spectator)
+		if (!players[i].ingame || players[i].spectator)
 			continue;
 		pingame++;
 		if (players[i].exiting)
@@ -2363,7 +2363,7 @@ static void K_HandleDelayedHitByEm(player_t *player)
 	{
 		mobj_t *victim = NULL;
 
-		if (player->hitemvictim < MAXPLAYERS && playeringame[player->hitemvictim])
+		if (player->hitemvictim < MAXPLAYERS && players[player->hitemvictim].ingame)
 		{
 			player_t *victimPlayer = &players[player->hitemvictim];
 
@@ -3360,7 +3360,7 @@ static mobj_t *K_SpawnKartMissile(mobj_t *source, mobjtype_t type, angle_t an, I
 				INT32 lasttarg = source->player->kartstuff[k_lastjawztarget];
 				th->cvmem = source->player->skincolor;
 				if ((lasttarg >= 0 && lasttarg < MAXPLAYERS)
-					&& playeringame[lasttarg]
+					&& players[lasttarg].ingame
 					&& !players[lasttarg].spectator
 					&& players[lasttarg].mo)
 				{
@@ -4391,7 +4391,7 @@ static void K_DoHyudoroSteal(player_t *player)
 
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
-		if (playeringame[i] && players[i].mo && players[i].mo->health > 0 && players[i].playerstate == PST_LIVE
+		if (players[i].ingame && players[i].mo && players[i].mo->health > 0 && players[i].playerstate == PST_LIVE
 			&& player != &players[i] && !players[i].exiting && !players[i].spectator // Player in-game
 
 			// Can steal from this player
@@ -4519,7 +4519,7 @@ static void K_DoShrink(player_t *user)
 
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
-		if (!playeringame[i] || players[i].spectator || !players[i].mo)
+		if (!players[i].ingame || players[i].spectator || !players[i].mo)
 			continue;
 		if (&players[i] == user)
 			continue;
@@ -5379,7 +5379,7 @@ player_t *K_FindJawzTarget(mobj_t *actor, player_t *source)
 		angle_t thisang;
 		player_t *player;
 
-		if (!playeringame[i])
+		if (!players[i].ingame)
 			continue;
 
 		player = &players[i];
@@ -5542,7 +5542,7 @@ static void K_UpdateEngineSounds(player_t *player, ticcmd_t *cmd)
 		UINT8 thisvol = 0;
 		fixed_t dist;
 
-		if (!playeringame[i] || !players[i].mo)
+		if (!players[i].ingame || !players[i].mo)
 		{
 			// This player doesn't exist.
 			continue;
@@ -6003,7 +6003,7 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 				eggsexplode = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_SPBEXPLOSION);
 				if (player->kartstuff[k_eggmanblame] >= 0
 				&& player->kartstuff[k_eggmanblame] < MAXPLAYERS
-				&& playeringame[player->kartstuff[k_eggmanblame]]
+				&& players[player->kartstuff[k_eggmanblame]].ingame
 				&& !players[player->kartstuff[k_eggmanblame]].spectator
 				&& players[player->kartstuff[k_eggmanblame]].mo)
 					P_SetTarget(&eggsexplode->target, players[player->kartstuff[k_eggmanblame]].mo);
@@ -6078,7 +6078,7 @@ void K_KartPlayerAfterThink(player_t *player)
 		player_t *targ;
 		mobj_t *ret;
 
-		if (player->kartstuff[k_jawztargetdelay] && playeringame[lasttarg] && !players[lasttarg].spectator)
+		if (player->kartstuff[k_jawztargetdelay] && players[lasttarg].ingame && !players[lasttarg].spectator)
 		{
 			targ = &players[lasttarg];
 			player->kartstuff[k_jawztargetdelay]--;
@@ -6129,7 +6129,7 @@ boolean K_CheckPlayersRespawnColliding(INT32 playernum, fixed_t x, fixed_t y)
 	fixed_t p1radius = players[playernum].mo->radius;
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
-		if (playernum == i || !playeringame[i] || players[i].spectator || !players[i].mo || players[i].mo->health <= 0
+		if (playernum == i || !players[i].ingame || players[i].spectator || !players[i].mo || players[i].mo->health <= 0
 			|| players[i].playerstate != PST_LIVE || (players[i].mo->flags & MF_NOCLIP) || (players[i].mo->flags & MF_NOCLIPTHING))
 			continue;
 
@@ -6419,7 +6419,7 @@ void K_KartUpdatePosition(player_t *player)
 
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
-		if (!playeringame[i] || players[i].spectator || !players[i].mo)
+		if (!players[i].ingame || players[i].spectator || !players[i].mo)
 			continue;
 
 		if (G_RaceGametype())
@@ -6795,7 +6795,7 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 				newitem = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_EGGMANITEM);
 				if (player->kartstuff[k_eggmanblame] >= 0
 				&& player->kartstuff[k_eggmanblame] < MAXPLAYERS
-				&& playeringame[player->kartstuff[k_eggmanblame]]
+				&& players[player->kartstuff[k_eggmanblame]].ingame
 				&& !players[player->kartstuff[k_eggmanblame]].spectator
 				&& players[player->kartstuff[k_eggmanblame]].mo)
 					P_SetTarget(&newitem->target, players[player->kartstuff[k_eggmanblame]].mo);
@@ -7475,7 +7475,7 @@ void K_CalculateBattleWanted(void)
 	{
 		UINT8 position = 1;
 
-		if (!playeringame[i] || players[i].spectator) // Not playing
+		if (!players[i].ingame || players[i].spectator) // Not playing
 			continue;
 
 		if (players[i].exiting) // We're done, don't calculate.
@@ -7498,7 +7498,7 @@ void K_CalculateBattleWanted(void)
 
 		for (j = 0; j < MAXPLAYERS; j++)
 		{
-			if (!playeringame[j] || players[j].spectator)
+			if (!players[j].ingame || players[j].spectator)
 				continue;
 			if (players[j].kartstuff[k_bumper] <= 0)
 				continue;
@@ -7591,7 +7591,7 @@ void K_CheckBumpers(void)
 
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
-		if (!playeringame[i] || players[i].spectator) // not even in-game
+		if (!players[i].ingame || players[i].spectator) // not even in-game
 			continue;
 
 		if (players[i].exiting) // we're already exiting! stop!
@@ -7612,7 +7612,7 @@ void K_CheckBumpers(void)
 	if (numingame <= 1)
 		return;
 
-	if (winnernum > -1 && playeringame[winnernum])
+	if (winnernum > -1 && players[winnernum].ingame)
 	{
 		players[winnernum].marescore += winnerscoreadd;
 		CONS_Printf(M_GetText("%s received %d point%s for winning!\n"), player_names[winnernum], winnerscoreadd, (winnerscoreadd == 1 ? "" : "s"));
@@ -7634,7 +7634,7 @@ void K_CheckSpectateStatus(void)
 	// Maintain spectate wait timer
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
-		if (!playeringame[i])
+		if (!players[i].ingame)
 			continue;
 
 		if (players[i].spectator && (players[i].pflags & PF_WANTSTOJOIN))
@@ -7655,7 +7655,7 @@ void K_CheckSpectateStatus(void)
 	// Get the number of players in game, and the players to be de-spectated.
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
-		if (!playeringame[i])
+		if (!players[i].ingame)
 			continue;
 
 		if (!players[i].spectator)
@@ -7773,7 +7773,7 @@ void K_UpdateSpectateGrief(void)
 
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
-		if (!playeringame[i] || players[i].spectator)
+		if (!players[i].ingame || players[i].spectator)
 			continue;
 
 		numingame++;
@@ -9520,7 +9520,7 @@ static boolean K_drawKartPositionFaces(void)
 	{
 		rankplayer[i] = -1;
 
-		if (!playeringame[i] || players[i].spectator || !players[i].mo)
+		if (!players[i].ingame || players[i].spectator || !players[i].mo)
 			continue;
 
 		numplayersingame++;
@@ -9537,7 +9537,7 @@ static boolean K_drawKartPositionFaces(void)
 		UINT8 lowestposition = MAXPLAYERS+1;
 		for (i = 0; i < MAXPLAYERS; i++)
 		{
-			if (completed[i] || !playeringame[i] || players[i].spectator || !players[i].mo)
+			if (completed[i] || !players[i].ingame || players[i].spectator || !players[i].mo)
 				continue;
 
 			if (players[i].kartstuff[k_position] >= lowestposition)
@@ -9585,7 +9585,7 @@ static boolean K_drawKartPositionFaces(void)
 		player_t *player;
 		player = &players[rankplayer[i]];
 
-		if (!playeringame[rankplayer[i]])
+		if (!players[rankplayer[i]].ingame)
 			continue;
 		if (player->spectator)
 			continue;
@@ -10379,7 +10379,7 @@ static void K_drawNameTags(void)
 	{
 		if (i > PLAYERSMASK)
 			continue;
-		if (P_MobjWasRemoved(players[i].mo) || players[i].spectator || !playeringame[i])
+		if (P_MobjWasRemoved(players[i].mo) || players[i].spectator || !players[i].ingame)
 			continue;
 		if (i == displayplayers[stplyrnum] && !cv_showownnametag.value && !(leveltime < 130))
 			continue;
@@ -10838,7 +10838,7 @@ static void K_drawKartPlayerCheck(void)
 
 		if (&players[i] == stplyr)
 			continue;
-		if (!playeringame[i] || players[i].spectator)
+		if (!players[i].ingame || players[i].spectator)
 			continue;
 		if (!players[i].mo)
 			continue;
@@ -11072,7 +11072,7 @@ static void K_drawKartMinimap(void)
 	{
 		for (i = MAXPLAYERS-1; i >= 0; i--)
 		{
-			if (!playeringame[i])
+			if (!players[i].ingame)
 				continue;
 
 			if (!players[i].mo || players[i].spectator)
@@ -11331,7 +11331,7 @@ static void K_drawBattleFullscreen(void)
 		{
 			if (i == displayplayers[0])
 				continue;
-			if (playeringame[i] && !stplyr->spectator)
+			if (players[i].ingame && !stplyr->spectator)
 				return;
 		}
 
@@ -11796,7 +11796,7 @@ static void K_drawDistributionDebugger(void)
 	// The only code duplication from the Kart, just to avoid the actual item function from calculating pingame twice
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
-		if (!playeringame[i] || players[i].spectator)
+		if (!players[i].ingame || players[i].spectator)
 			continue;
 		pingame++;
 		if (players[i].exiting)

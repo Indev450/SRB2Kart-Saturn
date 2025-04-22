@@ -70,7 +70,7 @@ void K_StatRound(void)
 
 	for (int i = 0; i < MAXPLAYERS; ++i)
 	{
-		if (playeringame[i] && !players[i].spectator)
+		if (players[i].ingame && !players[i].spectator)
 			++numplayers;
 	}
 

@@ -242,7 +242,7 @@ void P_GiveEmerald(boolean spawnObj)
 	if (spawnObj)
 	{
 		for (i = 0; i < MAXPLAYERS; i++)
-			if (playeringame[i])
+			if (players[i].ingame)
 				P_SetMobjState(P_SpawnMobj(players[i].mo->x, players[i].mo->y, players[i].mo->z + players[i].mo->info->height, MT_GOTEMERALD),
 				mobjinfo[MT_GOTEMERALD].spawnstate + em);
 
@@ -275,7 +275,7 @@ UINT8 P_FindLowestLap(void)
 
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
-		if (!playeringame[i] || players[i].spectator)
+		if (!players[i].ingame || players[i].spectator)
 			continue;
 
 		if (lowest == 255)
@@ -302,7 +302,7 @@ UINT8 P_FindHighestLap(void)
 
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
-		if (!playeringame[i] || players[i].spectator)
+		if (!players[i].ingame || players[i].spectator)
 			continue;
 
 		if (players[i].laps > highest)
@@ -589,7 +589,7 @@ static UINT8 getPlayerPos(player_t *player)
 		UINT8 pos = 1;
 
 		for (int i = 0; i < MAXPLAYERS; ++i) {
-			if (!playeringame[i] || players[i].spectator) continue;
+			if (!players[i].ingame || players[i].spectator) continue;
 			if (players[i].marescore > player->marescore) ++pos;
 		}
 
@@ -607,7 +607,7 @@ static boolean isPlayerLosing(player_t *player)
 		UINT8 maxpos = 1;
 
 		for (int i = 0; i < MAXPLAYERS; ++i) {
-			if (!playeringame[i] || players[i].spectator) continue;
+			if (!players[i].ingame || players[i].spectator) continue;
 			if (players[i].marescore > player->marescore) ++pos;
 			maxpos = max(getPlayerPos(&players[i]), maxpos);
 		}
@@ -1293,7 +1293,7 @@ void P_DoPlayerExit(player_t *player)
 	if (player == &players[consoleplayer])
 		demo.savebutton = leveltime;
 
-	/*if (playeringame[player-players] && netgame && !circuitmap)
+	/*if (players[player-players].ingame && netgame && !circuitmap)
 		CONS_Printf(M_GetText("%s has completed the level.\n"), player_names[player-players]);*/
 }
 
@@ -2138,7 +2138,7 @@ void P_BlackOw(player_t *player)
 
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
-		if (!playeringame[i])
+		if (!players[i].ingame)
 			continue;
 
 		if (P_AproxDistance(player->mo->x - players[i].mo->x, player->mo->y - players[i].mo->y) < 1536*FRACUNIT)
@@ -2994,7 +2994,7 @@ static void CV_PlayerCam1_OnChange(void)
 	if (gamestate != GS_LEVEL)
 		return;
 
-	if (!playeringame[displayplayers[0]] || players[displayplayers[0]].spectator)
+	if (!players[displayplayers[0]].ingame || players[displayplayers[0]].spectator)
 		return;
 
 	// dont do stuff when cam speeen at map start
@@ -3010,7 +3010,7 @@ static void CV_PlayerCam2_OnChange(void)
 	if (gamestate != GS_LEVEL)
 		return;
 
-	if (!playeringame[displayplayers[1]] || players[displayplayers[1]].spectator)
+	if (!players[displayplayers[1]].ingame || players[displayplayers[1]].spectator)
 		return;
 
 	// dont do stuff when cam speeen at map start
@@ -3026,7 +3026,7 @@ static void CV_PlayerCam3_OnChange(void)
 	if (gamestate != GS_LEVEL)
 		return;
 
-	if (!playeringame[displayplayers[2]] || players[displayplayers[2]].spectator)
+	if (!players[displayplayers[2]].ingame || players[displayplayers[2]].spectator)
 		return;
 
 	// dont do stuff when cam speeen at map start
@@ -3042,7 +3042,7 @@ static void CV_PlayerCam4_OnChange(void)
 	if (gamestate != GS_LEVEL)
 		return;
 
-	if (!playeringame[displayplayers[3]] || players[displayplayers[3]].spectator)
+	if (!players[displayplayers[3]].ingame || players[displayplayers[3]].spectator)
 		return;
 
 	// dont do stuff when cam speeen at map start
@@ -4116,7 +4116,7 @@ boolean P_SpectatorJoinGame(player_t *player)
 
 		//find a team by num players, score, or random if all else fails.
 		for (z = 0; z < MAXPLAYERS; ++z)
-			if (playeringame[z])
+			if (players[z].ingame)
 			{
 				if (players[z].ctfteam == 1)
 					++numplayersred;
@@ -4589,7 +4589,7 @@ void P_PlayerThink(player_t *player)
 			// Check if all the players in the race have finished. If so, end the level.
 			for (i = 0; i < MAXPLAYERS; i++)
 			{
-				if (playeringame[i] && !players[i].spectator)
+				if (players[i].ingame && !players[i].spectator)
 				{
 					if (!players[i].exiting && players[i].lives > 0)
 						break;
@@ -4654,7 +4654,7 @@ void P_PlayerThink(player_t *player)
 
 				for (i = 0; i < MAXPLAYERS; i++)
 				{
-					if (!playeringame[i] || players[i].spectator || players[i].bot)
+					if (!players[i].ingame || players[i].spectator || players[i].bot)
 						continue;
 					if (players[i].lives <= 0)
 						continue;
@@ -4740,7 +4740,7 @@ void P_PlayerThink(player_t *player)
 		INT32 i;
 		for (i = 0; i < MAXPLAYERS; i++)
 		{
-			if (!playeringame[i] || players[i].spectator)
+			if (!players[i].ingame || players[i].spectator)
 				continue;
 			if (&players[i] == player)
 				continue;

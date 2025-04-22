@@ -658,7 +658,7 @@ static void DoSayCommand(SINT8 target, size_t usedargs, UINT8 flags)
 		//CONS_Printf("%d\n", target);
 
 		// check for target player, if it doesn't exist then we can't send the message!
-		if (target < MAXPLAYERS && playeringame[target]) // player exists
+		if (target < MAXPLAYERS && players[target].ingame) // player exists
 			target++; // even though playernums are from 0 to 31, target is 1 to 32, so up that by 1 to have it work!
 		else
 		{
@@ -1255,7 +1255,7 @@ static void HU_SendChatMessage(void)
 		//CONS_Printf("%d\n", target);
 
 		// check for target player, if it doesn't exist then we can't send the message!
-		if (target < MAXPLAYERS && playeringame[target]) // player exists
+		if (target < MAXPLAYERS && players[target].ingame) // player exists
 			target++; // even though playernums are from 0 to 31, target is 1 to 32, so up that by 1 to have it work!
 		else
 		{
@@ -1921,7 +1921,7 @@ static void HU_DrawChat(void)
 				}
 			}
 
-			if (playeringame[i])
+			if (players[i].ingame)
 			{
 				char name[MAXPLAYERNAME+1];
 				strlcpy(name, player_names[i], 7); // shorten name to 7 characters.
@@ -2506,7 +2506,7 @@ static inline void HU_DrawSpectatorTicker(void)
 	INT32 dupadjust = (vid.width/vid.dupx), duptweak = (dupadjust - BASEVIDWIDTH)/2;
 
 	for (i = 0; i < MAXPLAYERS; i++)
-		if (playeringame[i] && players[i].spectator)
+		if (players[i].ingame && players[i].spectator)
 			totallength += (signed)strlen(player_names[i]) * 8 + 16;
 
 	length -= (leveltime % (totallength + dupadjust+8));
@@ -2514,7 +2514,7 @@ static inline void HU_DrawSpectatorTicker(void)
 
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
-		if (playeringame[i] && players[i].spectator)
+		if (players[i].ingame && players[i].spectator)
 		{
 			char *pos;
 			char initial[MAXPLAYERNAME+1];
@@ -2695,7 +2695,7 @@ static void HU_DrawRankings(void)
 		tab[i].name = NULL;
 		tab[i].count = INT32_MAX;
 
-		if (!playeringame[i] || players[i].spectator || !players[i].mo)
+		if (!players[i].ingame || players[i].spectator || !players[i].mo)
 			continue;
 
 		numplayersingame++;
@@ -2706,7 +2706,7 @@ static void HU_DrawRankings(void)
 		UINT8 lowestposition = MAXPLAYERS+1;
 		for (i = 0; i < MAXPLAYERS; i++)
 		{
-			if (completed[i] || !playeringame[i] || players[i].spectator || !players[i].mo)
+			if (completed[i] || !players[i].ingame|| players[i].spectator || !players[i].mo)
 				continue;
 
 			if (players[i].kartstuff[k_position] >= lowestposition)

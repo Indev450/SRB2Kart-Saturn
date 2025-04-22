@@ -624,7 +624,7 @@ static void ST_overlayDrawer(void)
 				UINT8 i;
 
 				for (i = 0; i < MAXPLAYERS; i++)
-					if (playeringame[i] && !players[i].spectator)
+					if (players[i].ingame && !players[i].spectator)
 						numingame++;
 
 				itemtxt = va("%s (%s: %d)", itemtxt, M_GetText("Slots left"), max(0, cv_ingamecap.value - numingame));

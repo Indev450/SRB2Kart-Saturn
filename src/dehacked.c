@@ -8646,7 +8646,7 @@ static int lua_enumlib_modifiedgame_get(lua_State *L)
 
 static int lua_enumlib_server_get(lua_State *L)
 {
-	if ((!multiplayer || !(netgame || demo.playback)) && !playeringame[serverplayer])
+	if ((!multiplayer || !(netgame || demo.playback)) && !players[serverplayer].ingame)
 		return 0;
 	LUA_PushUserdata(L, &players[serverplayer], META_PLAYER);
 	return 1;
@@ -8654,7 +8654,7 @@ static int lua_enumlib_server_get(lua_State *L)
 
 static int lua_enumlib_consoleplayer_get(lua_State *L)
 {
-	if (consoleplayer < 0 || !playeringame[consoleplayer])
+	if (consoleplayer < 0 || !players[consoleplayer].ingame)
 		return 0;
 	LUA_PushUserdata(L, &players[consoleplayer], META_PLAYER);
 	return 1;

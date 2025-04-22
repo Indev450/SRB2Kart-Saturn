@@ -655,7 +655,7 @@ boolean P_LookForPlayers(mobj_t *actor, boolean allaround, boolean tracer, fixed
 		if (actor->lastlook == stop)
 			return false;
 
-		if (!playeringame[actor->lastlook])
+		if (!players[actor->lastlook].ingame)
 			continue;
 
 		if (c++ == 2)
@@ -730,7 +730,7 @@ static boolean P_LookForShield(mobj_t *actor)
 		if (actor->lastlook == stop)
 			return false;
 
-		if (!playeringame[actor->lastlook])
+		if (!players[actor->lastlook].ingame)
 			continue;
 
 		if (c++ == 2)
@@ -1072,7 +1072,7 @@ void A_PointyThink(mobj_t *actor)
 	// Find nearest player
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
-		if (!playeringame[i] || players[i].spectator)
+		if (!players[i].ingame || players[i].spectator)
 			continue;
 
 		if (!players[i].mo)
@@ -2391,7 +2391,7 @@ void A_1upThinker(mobj_t *actor)
 
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
-		if (!playeringame[i] || players[i].bot || players[i].spectator)
+		if (!players[i].ingame || players[i].bot || players[i].spectator)
 			continue;
 
 		if (!players[i].mo)
@@ -2614,7 +2614,7 @@ void A_BossDeath(mobj_t *mo)
 
 	// make sure there is a player alive for victory
 	for (i = 0; i < MAXPLAYERS; i++)
-		if (playeringame[i] && (players[i].health > 0
+		if (players[i].ingame && (players[i].health > 0
 			|| ((netgame || multiplayer) && (players[i].lives > 0 || players[i].continues > 0))))
 			break;
 
@@ -3327,7 +3327,7 @@ void A_BubbleSpawn(mobj_t *actor)
 		// Quick! Look through players!
 		// Don't spawn bubbles unless a player is relatively close by (var2).
 		for (i = 0; i < MAXPLAYERS; ++i)
-			if (playeringame[i] && players[i].mo
+			if (players[i].ingame && players[i].mo
 			 && P_AproxDistance(actor->x - players[i].mo->x, actor->y - players[i].mo->y) < (locvar1<<FRACBITS))
 				break; // Stop looking.
 		if (i == MAXPLAYERS)
@@ -3375,7 +3375,7 @@ void A_FanBubbleSpawn(mobj_t *actor)
 	// Quick! Look through players!
 	// Don't spawn bubbles unless a player is relatively close by (var2).
 		for (i = 0; i < MAXPLAYERS; ++i)
-			if (playeringame[i] && players[i].mo
+			if (players[i].ingame && players[i].mo
 			 && P_AproxDistance(actor->x - players[i].mo->x, actor->y - players[i].mo->y) < (locvar1<<FRACBITS))
 				break; // Stop looking.
 		if (i == MAXPLAYERS)
@@ -3713,7 +3713,7 @@ void A_ThrownRing(mobj_t *actor)
 		if (actor->lastlook == stop)
 			return;
 
-		if (!playeringame[actor->lastlook])
+		if (!players[actor->lastlook].ingame)
 			continue;
 
 		if (c++ == 2)
@@ -5421,7 +5421,7 @@ void A_MixUp(mobj_t *actor)
 	// Count the number of players in the game
 	// and grab their xyz coords
 	for (i = 0; i < MAXPLAYERS; i++)
-		if (playeringame[i] && players[i].mo && players[i].mo->health > 0 && players[i].playerstate == PST_LIVE
+		if (players[i].ingame && players[i].mo && players[i].mo->health > 0 && players[i].playerstate == PST_LIVE
 			&& !players[i].exiting && !players[i].powers[pw_super])
 		{
 			if ((netgame || multiplayer) && players[i].spectator) // Ignore spectators
@@ -5452,7 +5452,7 @@ void A_MixUp(mobj_t *actor)
 		INT32 mflags2;
 
 		for (i = 0; i < MAXPLAYERS; i++)
-			if (playeringame[i] && players[i].mo && players[i].mo->health > 0 && players[i].playerstate == PST_LIVE
+			if (players[i].ingame && players[i].mo && players[i].mo->health > 0 && players[i].playerstate == PST_LIVE
 				&& !players[i].exiting && !players[i].powers[pw_super])
 			{
 				if ((netgame || multiplayer) && players[i].spectator) // Ignore spectators
@@ -5541,7 +5541,7 @@ void A_MixUp(mobj_t *actor)
 
 		for (i = 0; i < MAXPLAYERS; i++)
 		{
-			if (playeringame[i] && players[i].playerstate == PST_LIVE
+			if (players[i].ingame && players[i].playerstate == PST_LIVE
 				&& players[i].mo && players[i].mo->health > 0 && !players[i].exiting && !players[i].powers[pw_super])
 			{
 				if ((netgame || multiplayer) && players[i].spectator)// Ignore spectators
@@ -5591,7 +5591,7 @@ void A_MixUp(mobj_t *actor)
 
 		for (i = 0; i < MAXPLAYERS; i++)
 		{
-			if (playeringame[i] && players[i].playerstate == PST_LIVE
+			if (players[i].ingame && players[i].playerstate == PST_LIVE
 				&& players[i].mo && players[i].mo->health > 0 && !players[i].exiting && !players[i].powers[pw_super])
 			{
 				if ((netgame || multiplayer) && players[i].spectator)// Ignore spectators
@@ -5622,7 +5622,7 @@ void A_MixUp(mobj_t *actor)
 	{
 		if (teleported[i])
 		{
-			if (playeringame[i] && players[i].playerstate == PST_LIVE
+			if (players[i].ingame && players[i].playerstate == PST_LIVE
 				&& players[i].mo && players[i].mo->health > 0 && !players[i].exiting && !players[i].powers[pw_super])
 			{
 				if ((netgame || multiplayer) && players[i].spectator)// Ignore spectators
@@ -5671,7 +5671,7 @@ void A_RecyclePowers(mobj_t *actor)
 	// Count the number of players in the game
 	for (i = 0, j = 0; i < MAXPLAYERS; i++)
 	{
-		if (playeringame[i] && players[i].mo && players[i].mo->health > 0 && players[i].playerstate == PST_LIVE
+		if (players[i].ingame && players[i].mo && players[i].mo->health > 0 && players[i].playerstate == PST_LIVE
 			&& !players[i].exiting && !((netgame || multiplayer) && players[i].spectator))
 		{
 			if (players[i].powers[pw_super])
@@ -6106,7 +6106,7 @@ void A_Boss7Chase(mobj_t *actor)
 	// Is a player on top of us?
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
-		if (!playeringame[i] || players[i].spectator)
+		if (!players[i].ingame || players[i].spectator)
 			continue;
 
 		if (!players[i].mo)
@@ -6722,7 +6722,7 @@ void A_EggShield(mobj_t *actor)
 	// Search for players to push
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
-		if (!playeringame[i] || players[i].spectator)
+		if (!players[i].ingame || players[i].spectator)
 			continue;
 
 		player = &players[i];
@@ -8093,7 +8093,7 @@ void A_SPBChase(mobj_t *actor)
 	// Find the player with the best rank
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
-		if (!playeringame[i] || players[i].spectator || players[i].exiting)
+		if (!players[i].ingame || players[i].spectator || players[i].exiting)
 			continue; // not in-game
 
 		/*if (!players[i].mo)
@@ -8256,7 +8256,7 @@ void A_SPBChase(mobj_t *actor)
 		actor->flags |= MF_NOCLIPTHING;
 
 		if (actor->lastlook != -1
-			&& playeringame[actor->lastlook]
+			&& players[actor->lastlook].ingame
 			&& !players[actor->lastlook].spectator
 			&& !players[actor->lastlook].exiting)
 		{
@@ -8405,7 +8405,7 @@ void A_FZBoomFlash(mobj_t *actor)
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
 		fixed_t dist;
-		if (!playeringame[i] || !players[i].mo)
+		if (!players[i].ingame || !players[i].mo)
 			continue;
 		dist = P_AproxDistance(P_AproxDistance(actor->x-players[i].mo->x, actor->y-players[i].mo->y), actor->z-players[i].mo->z);
 		if (dist < 1536<<FRACBITS)
@@ -8736,7 +8736,7 @@ void A_ReaperThinker(mobj_t *actor)
 		for (i=0; i<MAXPLAYERS; i++)
 		{
 
-			if (!playeringame[i])
+			if (!players[i].ingame)
 				continue;
 
 			player = &players[i];
@@ -9256,7 +9256,7 @@ void A_Custom3DRotate(mobj_t *actor)
 		P_RemoveMobj(actor);
 		return;
 	}
-	
+
 	if (hspeed==0 && vspeed==0)
 	{
 		if (cv_debug)
@@ -9938,7 +9938,7 @@ void A_ForceWin(mobj_t *actor)
 
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
-		if (playeringame[i] && (players[i].health > 0
+		if (players[i].ingame && (players[i].health > 0
 		    || ((netgame || multiplayer) && (players[i].lives > 0 || players[i].continues > 0))))
 			break;
 	}
@@ -10309,7 +10309,7 @@ void A_VileTarget(mobj_t *actor)
 		// Our "Archvile" here is actually Oprah. "YOU GET A TARGET! YOU GET A TARGET! YOU ALL GET A TARGET!"
 		for (i = 0; i < MAXPLAYERS; i++)
 		{
-			if (!playeringame[i] || players[i].spectator)
+			if (!players[i].ingame || players[i].spectator)
 				continue;
 
 			if (!players[i].mo)
@@ -10409,7 +10409,7 @@ void A_VileAttack(mobj_t *actor)
 		// Oprahvile strikes again, but this time, she brings HOT PAIN
 		for (i = 0; i < MAXPLAYERS; i++)
 		{
-			if (!playeringame[i] || players[i].spectator)
+			if (!players[i].ingame || players[i].spectator)
 				continue;
 
 			if (!players[i].mo)

@@ -391,7 +391,7 @@ static void DRPC_GotServerIP(UINT32 address)
 --------------------------------------------------*/
 static const char *DRPC_GetServerIP(void)
 {
-	const char *address; 
+	const char *address;
 
 	// If you're connected
 	if (I_GetNodeAddress && (address = I_GetNodeAddress(servernode)) != NULL)
@@ -466,13 +466,13 @@ static void DRPC_UpdateGameModes(void)
 		append_to_string(gamemodes, "DriftNitro");
 	else if (techactive)
 		append_to_string(gamemodes, "Tech");
-	
+
 	if (weathermodactive && weathermodactive->value)
 		append_to_string(gamemodes, "Weathermod");
 
 	if (friendmodactive && friendmodactive->value)
 		append_to_string(gamemodes, "Friendmod");
-		
+
 	if (eliminationactive && eliminationactive->value)
 		append_to_string(gamemodes, "Elimination");
 
@@ -540,7 +540,7 @@ void DRPC_UpdatePresence(void)
 		{
 #endif
 			discordPresence.state = "Private";
-#ifdef MASTERSERVER			
+#ifdef MASTERSERVER
 		}
 #endif
 
@@ -655,7 +655,7 @@ void DRPC_UpdatePresence(void)
 	}
 
 	// Character info
-	if (Playing() && playeringame[consoleplayer] && !players[consoleplayer].spectator)
+	if (Playing() && players[consoleplayer].ingame && !players[consoleplayer].spectator)
 	{
 		// Supported skin names
 		static const char *supportedSkins[] = {

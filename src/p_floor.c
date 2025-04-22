@@ -2151,7 +2151,7 @@ void T_EachTimeThinker(levelspecthink_t *eachtime)
 
 				for (j = 0; j < MAXPLAYERS; j++)
 				{
-					if (!playeringame[j])
+					if (!players[j].ingame)
 						continue;
 
 					if (!players[j].mo)
@@ -2217,7 +2217,7 @@ void T_EachTimeThinker(levelspecthink_t *eachtime)
 		{
 			for (i = 0; i < MAXPLAYERS; i++)
 			{
-				if (!playeringame[i])
+				if (!players[i].ingame)
 					continue;
 
 				if (!players[i].mo)
@@ -2299,7 +2299,7 @@ void T_EachTimeThinker(levelspecthink_t *eachtime)
 		{
 			for (i = 0; i < MAXPLAYERS; i++)
 			{
-				if (!playeringame[i])
+				if (!players[i].ingame)
 					continue;
 
 				if (!players[i].mo)

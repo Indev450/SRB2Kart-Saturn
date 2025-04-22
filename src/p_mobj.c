@@ -3801,7 +3801,7 @@ boolean P_BossTargetPlayer(mobj_t *actor, boolean closest)
 		else if (actor->lastlook == stop)
 			return (closest && lastdist > 0);
 
-		if (!playeringame[actor->lastlook])
+		if (!players[actor->lastlook].ingame)
 			continue;
 
 		if (!closest && c++ == 2)
@@ -3845,7 +3845,7 @@ boolean P_SupermanLook4Players(mobj_t *actor)
 
 	for (c = 0; c < MAXPLAYERS; c++)
 	{
-		if (!playeringame[c])
+		if (!players[c].ingame)
 			continue;
 
 		if (players[c].health <= 0)
@@ -4042,7 +4042,7 @@ static void P_Boss3Thinker(mobj_t *mobj)
 			// Shock the water
 			for (i = 0; i < MAXPLAYERS; i++)
 			{
-				if (!playeringame[i] || players[i].spectator)
+				if (!players[i].ingame || players[i].spectator)
 					continue;
 
 				if (!players[i].mo)
@@ -4084,7 +4084,7 @@ static void P_Boss3Thinker(mobj_t *mobj)
 			// none of the players are in the water
 			for (i = 0; i < MAXPLAYERS; i++)
 			{
-				if (!playeringame[i] || players[i].spectator)
+				if (!players[i].ingame || players[i].spectator)
 					continue;
 
 				if (!players[i].mo || players[i].bot)
@@ -4159,7 +4159,7 @@ static void P_Boss3Thinker(mobj_t *mobj)
 		// Are there any players underwater? If so, shock them!
 		for (i = 0; i < MAXPLAYERS; i++)
 		{
-			if (!playeringame[i] || players[i].spectator)
+			if (!players[i].ingame || players[i].spectator)
 				continue;
 
 			if (!players[i].mo || players[i].bot)
@@ -4712,7 +4712,7 @@ static void P_Boss7Thinker(mobj_t *mobj)
 			// It was a team effort
 			for (i = 0; i < MAXPLAYERS; i++)
 			{
-				if (!playeringame[i])
+				if (!players[i].ingame)
 					continue;
 
 				P_AddPlayerScore(&players[i], 1000);
@@ -4742,7 +4742,7 @@ static void P_Boss7Thinker(mobj_t *mobj)
 
 		for (i = 0; i < MAXPLAYERS; i++)
 		{
-			if (!playeringame[i] || players[i].spectator)
+			if (!players[i].ingame || players[i].spectator)
 				continue;
 
 			if (!players[i].mo)
@@ -4824,7 +4824,7 @@ static void P_Boss7Thinker(mobj_t *mobj)
 		// Looks for players in goop. If you find one, try to jump on him.
 		for (i = 0; i < MAXPLAYERS; i++)
 		{
-			if (!playeringame[i] || players[i].spectator)
+			if (!players[i].ingame || players[i].spectator)
 				continue;
 
 			if (!players[i].mo)
@@ -4969,7 +4969,7 @@ static void P_Boss7Thinker(mobj_t *mobj)
 		// Hurt player??
 		for (i = 0; i < MAXPLAYERS; i++)
 		{
-			if (!playeringame[i] || players[i].spectator)
+			if (!players[i].ingame || players[i].spectator)
 				continue;
 
 			if (!players[i].mo)
@@ -7260,7 +7260,7 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 				P_SetTarget(&mobj->target, NULL);
 				for (i = 0; i < MAXPLAYERS; i++)
 				{
-					if (!playeringame[i] || !players[i].mo)
+					if (!players[i].ingame || !players[i].mo)
 						continue;
 
 					if (players[i].mare != mobj->threshold)
@@ -7446,7 +7446,7 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 					INT32 i;
 					boolean bonustime = false;
 					for (i = 0; i < MAXPLAYERS; i++)
-						if (playeringame[i] && players[i].bonustime)
+						if (players[i].ingame && players[i].bonustime)
 						{
 							bonustime = true;
 							break;
@@ -7481,7 +7481,7 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 
 					boolean bonustime = false;
 					for (i = 0; i < MAXPLAYERS; i++)
-						if (playeringame[i] && players[i].bonustime)
+						if (players[i].ingame && players[i].bonustime)
 						{
 							bonustime = true;
 							break;
@@ -9489,7 +9489,7 @@ static void P_RandomAudienceThink(mobj_t *mobj)
 
 	if (mobj->threshold >= 0) // not already happy or sad?
 	{
-		if (!playeringame[mobj->threshold] || players[mobj->threshold].spectator) // focused on a valid player?
+		if (!players[mobj->threshold].ingame || players[mobj->threshold].spectator) // focused on a valid player?
 			return;
 
 		if (!(players[mobj->threshold].exiting) && !(players[mobj->threshold].pflags & PF_TIMEOVER)) // not finished yet?
@@ -9850,7 +9850,7 @@ mobj_t *P_SpawnMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type)
 
 				for (i = 0; i < MAXPLAYERS; i++)
 				{
-					if (!playeringame[i])
+					if (!players[i].ingame)
 						continue;
 
 					pnum[pcount] = i;
@@ -10545,7 +10545,7 @@ void P_PrecipitationEffects(void)
 
 	// Local effects from here on out!
 	// If we're not in game fully yet, we don't worry about them.
-	if (!playeringame[displayplayers[0]] || !players[displayplayers[0]].mo)
+	if (!players[displayplayers[0]].ingame || !players[displayplayers[0]].mo)
 		return;
 
 	if (sound_disabled)
@@ -10776,7 +10776,7 @@ void P_SpawnPlayer(INT32 playernum)
 	{
 		if (i == playernum)
 			continue;
-		if (!playeringame[i] || players[i].spectator)
+		if (!players[i].ingame || players[i].spectator)
 			continue;
 		if (players[i].jointime <= 1) // Prevent splitscreen hosters/joiners from only adding 1 player at a time in empty servers
 			continue;

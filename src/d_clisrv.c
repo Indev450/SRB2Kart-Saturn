@@ -471,7 +471,7 @@ static void ExtraDataTicker(void)
 	INT32 i;
 
 	for (i = 0; i < MAXPLAYERS; i++)
-		if (playeringame[i] || i == 0)
+		if (players[i].ingame || i == 0)
 		{
 			UINT8 *bufferstart = D_GetExistingTextcmd(gametic, i);
 
@@ -841,7 +841,7 @@ static void resynch_read_player(resynch_pak *rsp)
 	players[i].splitscreenindex = rsp->splitscreenindex;
 
 	//We get a packet for each player in game.
-	if (!playeringame[i])
+	if (!players[i].ingame)
 		return;
 
 	//...but keep old mo even if it is corrupt or null!
@@ -910,7 +910,7 @@ static inline void resynch_write_ctf(resynchend_pak *rst)
 				// GF_REDFLAG is 1, GF_BLUEFLAG is 2
 				// redflag handling is i=0, blueflag is i=1
 				// so check for gotflag == (i+1)
-				if (!playeringame[j] || players[j].gotflag != (i+1))
+				if (!players[j].ingame || players[j].gotflag != (i+1))
 					continue;
 				rst->flagplayer[i] = (SINT8)j;
 				break;
@@ -943,7 +943,7 @@ static inline void resynch_read_ctf(resynchend_pak *p)
 		; // The server doesn't even know what happened to it...
 	else if (p->flagplayer[0] != -1) // Held by a player
 	{
-		if (!playeringame[p->flagplayer[0]])
+		if (!players[p->flagplayer[0]].ingame)
 			 I_Error("Invalid red flag player %d who isn't in the game!", (INT32)p->flagplayer[0]);
 		players[p->flagplayer[0]].gotflag = GF_REDFLAG;
 		if (redflag)
@@ -971,7 +971,7 @@ static inline void resynch_read_ctf(resynchend_pak *p)
 		; // The server doesn't even know what happened to it...
 	else if (p->flagplayer[1] != -1) // Held by a player
 	{
-		if (!playeringame[p->flagplayer[1]])
+		if (!players[p->flagplayer[1]].ingame)
 			 I_Error("Invalid blue flag player %d who isn't in the game!", (INT32)p->flagplayer[1]);
 		players[p->flagplayer[1]].gotflag = GF_BLUEFLAG;
 		if (blueflag)
@@ -1003,7 +1003,7 @@ static inline void resynch_write_others(resynchend_pak *rst)
 
 	for (i = 0; i < MAXPLAYERS; ++i)
 	{
-		if (!playeringame[i])
+		if (!players[i].ingame)
 		{
 			rst->ctfteam[i] = 0;
 			rst->score[i] = 0;
@@ -1066,7 +1066,7 @@ static void SV_RequireResynch(INT32 node)
 	memset(resynch_sent[node], 0, MAXPLAYERS);
 	for (i = 0; i < MAXPLAYERS; ++i)
 	{
-		if (!playeringame[i]) // Player not in game so just drop it from required synch
+		if (!players[i].ingame) // Player not in game so just drop it from required synch
 			resynch_status[node] &= ~(1<<i);
 		else if (playernode[i] == node); // instantly update THEIR position
 		else // Send at random times based on num players
@@ -1205,7 +1205,7 @@ static void CV_SavePlayerNames(UINT8 **p)
 	// Players in game only.
 	for (; i < MAXPLAYERS; ++i)
 	{
-		if (!playeringame[i])
+		if (!players[i].ingame)
 		{
 			WRITEUINT8(*p, 0);
 			continue;
@@ -1700,7 +1700,7 @@ static void SV_SendPlayerInfo(INT32 node)
 			continue;
 		}
 
-		if (playeringame[i] == UINT8_MAX || !playeringame[i])
+		if (players[i].ingame == UINT8_MAX || !players[i].ingame)
 		{
 			netbuffer->u.playerinfo[i].node = 255; // This slot is empty.
 			continue;
@@ -1793,7 +1793,7 @@ static boolean SV_SendServerConfig(INT32 node)
 	{
 		netbuffer->u.servercfg.adminplayers[i] = (SINT8)adminplayers[i];
 
-		if (!playeringame[i])
+		if (!players[i].ingame)
 			continue;
 
 		netbuffer->u.servercfg.playerskins[i] = (UINT8)players[i].skin;
@@ -3301,7 +3301,7 @@ void CL_RemovePlayer(INT32 playernum, INT32 reason)
 {
 	// Sanity check: exceptional cases (i.e. c-fails) can cause multiple
 	// kick commands to be issued for the same player.
-	if (!playeringame[playernum])
+	if (!players[playernum].ingame)
 		return;
 
 	demo_extradata[playernum] |= DXD_PLAYSTATE;
@@ -3335,7 +3335,7 @@ void CL_RemovePlayer(INT32 playernum, INT32 reason)
 
 		for (i = 0, count = 0; i < MAXPLAYERS; i++)
 		{
-			if (playeringame[i])
+			if (players[i].ingame)
 				count++;
 		}
 
@@ -3345,7 +3345,7 @@ void CL_RemovePlayer(INT32 playernum, INT32 reason)
 
 		for (i = 0; i < MAXPLAYERS; i++)
 		{
-			if (playeringame[i] && i != playernum)
+			if (players[i].ingame && i != playernum)
 			{
 				if (rings < increment)
 					P_GivePlayerRings(&players[i], rings);
@@ -3366,9 +3366,9 @@ void CL_RemovePlayer(INT32 playernum, INT32 reason)
 	CL_ClearPlayer(playernum);
 
 	// remove avatar of player
-	playeringame[playernum] = false;
+	players[playernum].ingame = false;
 	playernode[playernum] = UINT8_MAX;
-	while ((doomcom->numslots > 1) && !playeringame[doomcom->numslots-1])
+	while ((doomcom->numslots > 1) && !players[doomcom->numslots-1].ingame)
 		doomcom->numslots--;
 
 	// Reset the name
@@ -3394,7 +3394,7 @@ void CL_RemovePlayer(INT32 playernum, INT32 reason)
 
 		for (i = 0; i < MAXPLAYERS; i++)
 		{
-			if (playeringame[i] && !players[i].spectator)
+			if (players[i].ingame && !players[i].spectator)
 				break;
 		}
 
@@ -3462,7 +3462,7 @@ static void Command_GetPlayerNum(void)
 	INT32 i;
 
 	for (i = 0; i < MAXPLAYERS; i++)
-		if (playeringame[i])
+		if (players[i].ingame)
 		{
 			if (serverplayer == i)
 				CONS_Printf(M_GetText("num:%2d  node:%2d  %s\n"), i, playernode[i], player_names[i]);
@@ -3485,14 +3485,14 @@ SINT8 nametonum(const char *name)
 
 	if (playernum)
 	{
-		if (playeringame[playernum])
+		if (players[playernum].ingame)
 			return (SINT8)playernum;
 		else
 			return -1;
 	}
 
 	for (i = 0; i < MAXPLAYERS; i++)
-		if (playeringame[i] && !stricmp(player_names[i], name))
+		if (players[i].ingame && !stricmp(player_names[i], name))
 			return (SINT8)i;
 
 	CONS_Printf(M_GetText("There is no player named \"%s\"\n"), name);
@@ -3513,13 +3513,13 @@ static void Command_Nodes(void)
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
 		const size_t plen = strlen(player_names[i]);
-		if (playeringame[i] && plen > maxlen)
+		if (players[i].ingame && plen > maxlen)
 			maxlen = plen;
 	}
 
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
-		if (playeringame[i])
+		if (players[i].ingame)
 		{
 			CONS_Printf("%.2u: %*s", i, (int)maxlen, player_names[i]);
 			CONS_Printf(" - %.2d", playernode[i]);
@@ -3563,7 +3563,7 @@ static void Command_Listplayers(void)
 	int n;
 
 	for (i = 0; i < MAXPLAYERS; ++i)
-		if (playeringame[i])
+		if (players[i].ingame)
 	{
 		n = strlen(player_names[i]);
 		if (n > width)
@@ -3584,7 +3584,7 @@ static void Command_Listplayers(void)
 	}
 
 	for (i = 0; i < MAXPLAYERS; ++i)
-		if (playeringame[i])
+		if (players[i].ingame)
 	{
 		admin     = IsPlayerAdmin(i);
 		spectator = players[i].spectator;
@@ -3941,7 +3941,7 @@ static void Got_KickCmd(UINT8 **p, INT32 playernum)
 
 				for (i = 0; i < MAXPLAYERS; i++)
 				{
-					if (!playeringame[i])
+					if (!players[i].ingame)
 						continue;
 					CONS_Printf("-------------------------------------\n");
 					CONS_Printf("Player %d: %s\n", i, player_names[i]);
@@ -4333,7 +4333,9 @@ void SV_ResetServer(void)
 
 	memset(player_name_changes, 0, sizeof player_name_changes);
 
-	memset(playeringame, false, sizeof playeringame);
+	for (INT32 j = 0; j < MAXPLAYERS; j++)
+		players[j].ingame = false;
+
 	memset(playernode, UINT8_MAX, sizeof playernode);
 
 	pingmeasurecount = 1;
@@ -4476,7 +4478,7 @@ static void Got_AddPlayer(UINT8 **p, INT32 playernum)
 	// Clear player before joining, lest some things get set incorrectly
 	CL_ClearPlayer(newplayernum);
 
-	playeringame[newplayernum] = true;
+	players[newplayernum].ingame = true;
 	G_AddPlayer(newplayernum);
 	if (newplayernum+1 > doomcom->numslots)
 		doomcom->numslots = (INT16)(newplayernum+1);
@@ -4587,7 +4589,7 @@ static boolean SV_AddWaitingPlayers(void)
 			newplayer = true;
 
 			// search for a free playernum
-			// we can't use playeringame since it is not updated here
+			// we can't use players since it is not updated here
 			for (; newplayernum < MAXPLAYERS; newplayernum++)
 			{
 				for (n = 0; n < MAXNETNODES; n++)
@@ -4630,7 +4632,7 @@ static boolean SV_AddWaitingPlayers(void)
 			SendNetXCmd(XD_ADDPLAYER, &buf, 2);
 
 			DEBFILE(va("Server added player %d node %d\n", newplayernum, node));
-			// use the next free slot (we can't put playeringame[newplayernum] = true here)
+			// use the next free slot (we can't put players[newplayernum].ingame = true here)
 			newplayernum++;
 		}
 	}
@@ -4752,7 +4754,7 @@ static size_t TotalTextCmdPerTic(tic_t tic)
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
 		UINT8 *textcmd = D_GetExistingTextcmd(tic, i);
-		if ((!i || playeringame[i]) && textcmd)
+		if ((!i || players[i].ingame) && textcmd)
 			total += 2 + textcmd[0]; // "+2" for size and playernum
 	}
 
@@ -4773,7 +4775,7 @@ static void HandleConnect(SINT8 node)
 	UINT8 connectedplayers = 0;
 
 	for (UINT8 i = dedicated ? 1 : 0; i < MAXPLAYERS; i++)
-		if (playernode[i] != UINT8_MAX) // We use this to count players because it is affected by SV_AddWaitingPlayers when more than one client joins on the same tic, unlike playeringame and D_NumPlayers. UINT8_MAX denotes no node for that player
+		if (playernode[i] != UINT8_MAX) // We use this to count players because it is affected by SV_AddWaitingPlayers when more than one client joins on the same tic, unlike players and D_NumPlayers. UINT8_MAX denotes no node for that player
 			connectedplayers++;
 
 	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
@@ -5137,7 +5139,9 @@ static void PT_ServerCFG(SINT8 node)
 #ifdef SATURNPAK
 	SendSaturnInfo(node);
 #endif
-	memset(playeringame, 0, sizeof(playeringame));
+
+	for (j = 0; j < MAXPLAYERS; j++)
+		players[j].ingame = false;
 
 	for (j = 0; j < MAXPLAYERS; j++)
 	{
@@ -5145,7 +5149,7 @@ static void PT_ServerCFG(SINT8 node)
 			&& netbuffer->u.servercfg.playercolor[j] == 0xFF)
 			continue; // not in game
 
-		playeringame[j] = true;
+		players[j].ingame = true;
 		SetPlayerSkinByNum(j, (INT32)netbuffer->u.servercfg.playerskins[j]);
 		players[j].skincolor = netbuffer->u.servercfg.playercolor[j];
 	}
@@ -5648,7 +5652,7 @@ static void HandlePacketFromPlayer(SINT8 node)
 			// nodeingame will be put false in the execution of kick command
 			// this allow to send some packets to the quitting client to have their ack back
 			nodewaiting[node] = 0;
-			if (netconsole != -1 && playeringame[netconsole])
+			if (netconsole != -1 && players[netconsole].ingame)
 			{
 				SendKick(netconsole, (netbuffer->packettype == PT_NODETIMEOUT) ? KICK_MSG_TIMEOUT : KICK_MSG_PLAYER_QUIT);
 			}
@@ -5777,7 +5781,7 @@ static void HandlePacketFromPlayer(SINT8 node)
 			{
 				UINT8 i;
 				for (i = 0; i < MAXPLAYERS; i++)
-					if (playeringame[i])
+					if (players[i].ingame)
 						playerpingtable[i] = (tic_t)netbuffer->u.pingtable[i];
 
 				servermaxping = (tic_t)netbuffer->u.pingtable[MAXPLAYERS];
@@ -5907,7 +5911,7 @@ static INT16 Consistancy(void)
 
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
-		if (!playeringame[i])
+		if (!players[i].ingame)
 			ret ^= 0xCCCC;
 		else if (!players[i].mo || gamestate != GS_LEVEL);
 		else
@@ -6320,7 +6324,7 @@ static void SV_SendTics(void)
 				UINT8 *textcmd = D_GetExistingTextcmd(i, j);
 				INT32 size = textcmd ? textcmd[0] : 0;
 
-				if ((!j || playeringame[j]) && size)
+				if ((!j || players[j].ingame) && size)
 				{
 					(*ntextcmd)++;
 					WRITEUINT8(bufpos, j);
@@ -6535,7 +6539,7 @@ static inline void PingUpdate(void)
 	{
 		for (i = 0; i < MAXPLAYERS; i++)
 		{
-			if (!playeringame[i] || P_IsLocalPlayer(&players[i])) // should be P_IsMachineLocalPlayer for DRRR
+			if (!players[i].ingame || P_IsLocalPlayer(&players[i])) // should be P_IsMachineLocalPlayer for DRRR
 			{
 				pingtimeout[i] = 0;
 				continue;
@@ -6572,7 +6576,7 @@ static inline void PingUpdate(void)
 			UINT8 minimumkicklevel = (nonlaggers > 0) ? PINGKICK_LIMIT : PINGKICK_TICQUEUE;
 			for (i = 0; i < MAXPLAYERS; i++)
 			{
-				if (!playeringame[i] || pingkick[i] < minimumkicklevel)
+				if (!players[i].ingame || pingkick[i] < minimumkicklevel)
 					continue;
 
 				if (pingkick[i] == PINGKICK_LIMIT)
@@ -6634,7 +6638,7 @@ static void UpdatePingTable(void)
 		// update node latency values so we can take an average later.
 		for (i = 0; i < MAXPLAYERS; i++)
 		{
-			if (playeringame[i] && playernode[i] > 0 && playernode[i] != UINT8_MAX)
+			if (players[i].ingame && playernode[i] > 0 && playernode[i] != UINT8_MAX)
 			{
 				realpingtable[i] += GetLag(playernode[i]);
 
@@ -6967,7 +6971,7 @@ INT32 D_NumPlayers(void)
 {
 	INT32 num = 0, ix;
 	for (ix = 0; ix < MAXPLAYERS; ix++)
-		if (playeringame[ix])
+		if (players[ix].ingame)
 			num++;
 	return num;
 }

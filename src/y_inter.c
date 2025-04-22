@@ -226,7 +226,7 @@ static void Y_CalculateMatchData(UINT8 rankingsmode, void (*comparison)(INT32))
 	{
 		data.val[i] = UINT32_MAX;
 
-		if (!playeringame[i] || players[i].spectator)
+		if (!players[i].ingame || players[i].spectator)
 		{
 			data.increase[i] = UINT8_MAX;
 			continue;
@@ -249,7 +249,7 @@ static void Y_CalculateMatchData(UINT8 rankingsmode, void (*comparison)(INT32))
 
 		for (i = 0; i < MAXPLAYERS; i++)
 		{
-			if (!playeringame[i] || players[i].spectator || completed[i])
+			if (!players[i].ingame || players[i].spectator || completed[i])
 				continue;
 
 			comparison(i);
@@ -389,7 +389,7 @@ static void Y_PlayerStandingsDrawer(y_data_t *standings, INT32 x, INT32 hilicol)
 
 		if (pnum == MAXPLAYERS)
 			;
-		else if (!playeringame[pnum] || player->spectator)
+		else if (!players[pnum].ingame || player->spectator)
 			standings->num[i] = MAXPLAYERS; // this should be the only field setting in this function
 		else
 		{
@@ -1140,7 +1140,7 @@ void Y_VoteDrawer(void)
 
 		player_t *player = &players[i];
 
-		if ((playeringame[i] && !player->spectator) && votes[i] != -1)
+		if ((players[i].ingame && !player->spectator) && votes[i] != -1)
 		{
 			patch_t *pic;
 
@@ -1276,7 +1276,7 @@ void Y_VoteTicker(void)
 
 	for (i = 0; i < MAXPLAYERS; i++) // Correct votes as early as possible, before they're processed by the game at all
 	{
-		if (!playeringame[i] || players[i].spectator)
+		if (!players[i].ingame || players[i].spectator)
 			votes[i] = -1; // Spectators are the lower class, and have effectively no voice in the government. Democracy sucks.
 		else if (pickedvote != -1 && votes[i] == -1)
 			votes[i] = 3; // Slow people get random
@@ -1386,7 +1386,7 @@ void Y_VoteTicker(void)
 			if (voteclient.playerinfo[i].delay)
 				voteclient.playerinfo[i].delay--;
 
-			if ((playeringame[p] && !players[p].spectator)
+			if ((players[p].ingame && !players[p].spectator)
 				&& !voteclient.playerinfo[i].delay
 				&& pickedvote == -1 && votes[p] == -1)
 			{
@@ -1427,7 +1427,7 @@ void Y_VoteTicker(void)
 			{
 				for (i = 0; i < MAXPLAYERS; i++)
 				{
-					if ((playeringame[i] && !players[i].spectator) && votes[i] == -1)
+					if ((players[i].ingame && !players[i].spectator) && votes[i] == -1)
 						votes[i] = 3;
 				}
 			}
@@ -1435,7 +1435,7 @@ void Y_VoteTicker(void)
 			{
 				for (i = 0; i < MAXPLAYERS; i++)
 				{
-					if ((playeringame[i] && !players[i].spectator) && votes[i] == -1)
+					if ((players[i].ingame && !players[i].spectator) && votes[i] == -1)
 						return;
 				}
 			}
@@ -1613,7 +1613,7 @@ void Y_SetupVoteFinish(SINT8 pick, SINT8 level)
 
 		for (i = 0; i < MAXPLAYERS; i++)
 		{
-			if ((playeringame[i] && !players[i].spectator) && votes[i] == -1)
+			if ((players[i].ingame && !players[i].spectator) && votes[i] == -1)
 				votes[i] = 3;
 
 			if (votes[i] == -1 || endtype > 1) // Don't need to go on

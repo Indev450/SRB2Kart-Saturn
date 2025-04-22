@@ -250,7 +250,7 @@ void SplitScreen_OnChange(void)
 
 		for (i = 0; i < MAXPLAYERS; i++)
 		{
-			if (playeringame[i] && i != consoleplayer)
+			if (players[i].ingame && i != consoleplayer)
 			{
 				UINT8 j;
 				for (j = 1; j < MAXSPLITSCREENPLAYERS; j++)

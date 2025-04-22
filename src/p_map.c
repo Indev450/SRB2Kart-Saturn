@@ -1964,7 +1964,7 @@ void P_CheckHoopPosition(mobj_t *hoopthing, fixed_t x, fixed_t y, fixed_t z, fix
 	(void)radius; //unused
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
-		if (!playeringame[i] || !players[i].mo || players[i].spectator)
+		if (!players[i].ingame || !players[i].mo || players[i].spectator)
 			continue;
 
 		if (abs(players[i].mo->x - x) >= hoopblockdist ||

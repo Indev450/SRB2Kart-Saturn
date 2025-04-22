@@ -1343,7 +1343,7 @@ boolean P_RunTriggerLinedef(line_t *triggerline, mobj_t *actor, sector_t *caller
 		{
 			for (i = 0; i < MAXPLAYERS; i++)
 			{
-				if (!playeringame[i] || players[i].spectator)
+				if (!players[i].ingame || players[i].spectator)
 					continue;
 
 				if (!players[i].mo || players[i].mo->health < 1)
@@ -3357,7 +3357,7 @@ void P_ProcessSpecialSector(player_t *player, sector_t *sector, sector_t *rovers
 		case 3: // Linedef executor requires all players present // Trigger Linedef Exec (Floor Touch, All Players)
 			/// \todo check continues for proper splitscreen support?
 			for (i = 0; i < MAXPLAYERS; i++)
-				if (playeringame[i] && !players[i].bot && players[i].mo && (gametype != GT_COOP || players[i].lives > 0))
+				if (players[i].ingame && !players[i].bot && players[i].mo && (gametype != GT_COOP || players[i].lives > 0))
 				{
 					if (roversector)
 					{
@@ -3869,7 +3869,7 @@ DoneSection2:
 
 					for (i = 0; i < MAXPLAYERS; i++)
 					{
-						if (!playeringame[i] || players[i].spectator)
+						if (!players[i].ingame || players[i].spectator)
 							continue;
 						nump++;
 					}

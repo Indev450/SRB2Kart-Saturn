@@ -1297,7 +1297,7 @@ void LUA_Archive(savebuffer_t *save, boolean network)
 
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
-		if (!playeringame[i] && i > 0)	// NEVER skip player 0, this is for dedi servs.
+		if (!players[i].ingame && i > 0) // NEVER skip player 0, this is for dedi servs.
 			continue;
 		// all players in game will be archived, even if they just add a 0.
 		ArchiveExtVars(&save->p, &players[i], "player");
@@ -1339,7 +1339,7 @@ void LUA_UnArchive(savebuffer_t *save, boolean network)
 
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
-		if (!playeringame[i] && i > 0)	// same here, this is to synch dediservs properly.
+		if (!players[i].ingame && i > 0) // same here, this is to synch dediservs properly.
 			continue;
 
 		UnArchiveExtVars(&save->p, &players[i], network);

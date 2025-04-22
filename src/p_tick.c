@@ -535,7 +535,7 @@ void P_Ticker(boolean run)
 	// Increment jointime even if paused
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
-		if (playeringame[i])
+		if (players[i].ingame)
 		{
 			players[i].jointime++;
 		}
@@ -588,7 +588,7 @@ void P_Ticker(boolean run)
 		{
 			G_WriteDemoExtraData();
 			for (i = 0; i < MAXPLAYERS; i++)
-				if (playeringame[i])
+				if (players[i].ingame)
 					G_WriteDemoTiccmd(&players[i].cmd, i);
 		}
 		if (demo.playback)
@@ -604,7 +604,7 @@ void P_Ticker(boolean run)
 #endif
 				G_ReadDemoExtraData();
 				for (i = 0; i < MAXPLAYERS; i++)
-					if (playeringame[i])
+					if (players[i].ingame)
 					{
 						//@TODO all this throwdir stuff shouldn't be here! But it's added to maintain 1.0.4 compat for now...
 						// Remove for 1.1!
@@ -633,7 +633,7 @@ void P_Ticker(boolean run)
 
 		PS_START_TIMING(ps_playerthink_time);
 		for (i = 0; i < MAXPLAYERS; i++)
-			if (playeringame[i] && players[i].mo && !P_MobjWasRemoved(players[i].mo))
+			if (players[i].ingame && players[i].mo && !P_MobjWasRemoved(players[i].mo))
 				P_PlayerThink(&players[i]);
 		PS_STOP_TIMING(ps_playerthink_time);
 	}
@@ -653,7 +653,7 @@ void P_Ticker(boolean run)
 
 		// Run any "after all the other thinkers" stuff
 		for (i = 0; i < MAXPLAYERS; i++)
-			if (playeringame[i] && players[i].mo && !P_MobjWasRemoved(players[i].mo))
+			if (players[i].ingame && players[i].mo && !P_MobjWasRemoved(players[i].mo))
 				P_PlayerAfterThink(&players[i]);
 
 		// Apply rumble to local players
@@ -691,7 +691,7 @@ void P_Ticker(boolean run)
 			countdowntimeup = true;
 			for (i = 0; i < MAXPLAYERS; i++)
 			{
-				if (!playeringame[i] || players[i].spectator)
+				if (!players[i].ingame || players[i].spectator)
 					continue;
 
 				if (!players[i].mo)
@@ -828,7 +828,7 @@ void P_PreTicker(INT32 frames)
 
 		for (i = 0; i < MAXPLAYERS; i++)
 		{
-			if (playeringame[i] && players[i].mo && !P_MobjWasRemoved(players[i].mo))
+			if (players[i].ingame && players[i].mo && !P_MobjWasRemoved(players[i].mo))
 			{
 				// stupid fucking cmd hack
 				// if it isn't for this, players can move in preticker time
@@ -853,7 +853,7 @@ void P_PreTicker(INT32 frames)
 		// Run any "after all the other thinkers" stuff
 		for (i = 0; i < MAXPLAYERS; i++)
 		{
-			if (!playeringame[i])
+			if (!players[i].ingame)
 				continue;
 
 			if (!players[i].mo || P_MobjWasRemoved(players[i].mo))

@@ -119,7 +119,6 @@ static tic_t demostarttime; // for comparative timing purposes
 
 boolean netgame; // only true if packets are broadcast
 boolean multiplayer;
-boolean playeringame[MAXPLAYERS];
 boolean addedtogame;
 player_t players[MAXPLAYERS];
 
@@ -1241,7 +1240,7 @@ static void G_DoLoadLevel(boolean resetplayer)
 
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
-		if (resetplayer || (playeringame[i] && players[i].playerstate == PST_DEAD))
+		if (resetplayer || (players[i].ingame && players[i].playerstate == PST_DEAD))
 			players[i].playerstate = PST_REBORN;
 	}
 
@@ -1607,7 +1606,7 @@ boolean G_CouldView(INT32 playernum)
 	if (playernum < 0 || playernum > MAXPLAYERS-1)
 		return false;
 
-	if (!playeringame[playernum])
+	if (!players[playernum].ingame)
 		return false;
 
 	player = &players[playernum];
@@ -1641,7 +1640,7 @@ boolean G_CanView(INT32 playernum, UINT8 viewnum, boolean onlyactive)
 	UINT8 viewd;
 	INT32 *displayplayerp;
 
-	if (!(onlyactive ? G_CouldView(playernum) : (playeringame[playernum] && !players[playernum].spectator)))
+	if (!(onlyactive ? G_CouldView(playernum) : (players[playernum].ingame && !players[playernum].spectator)))
 		return false;
 
 	splits = splitscreen+1;
@@ -1692,7 +1691,7 @@ INT32 G_CountPlayersPotentiallyViewable(boolean active)
 	INT32 i;
 	for (i = 0; i < MAXPLAYERS; ++i)
 	{
-		if (active ? G_CouldView(i) : (playeringame[i] && !players[i].spectator))
+		if (active ? G_CouldView(i) : (players[i].ingame && !players[i].spectator))
 			total++;
 	}
 	return total;
@@ -1863,7 +1862,7 @@ void G_Ticker(boolean run)
 		}
 
 		for (i = 0; i < MAXPLAYERS; i++)
-			if (playeringame[i] && players[i].playerstate == PST_REBORN)
+			if (players[i].ingame && players[i].playerstate == PST_REBORN)
 				G_DoReborn(i);
 	}
 	P_MapEnd();
@@ -1889,7 +1888,7 @@ void G_Ticker(boolean run)
 		{
 			cmd = &players[i].cmd;
 
-			if (!playeringame[i])
+			if (!players[i].ingame)
 				continue;
 
 			//@TODO all this throwdir stuff shouldn't be here! But it stays for now to maintain 1.0.4 compat...
@@ -2094,6 +2093,7 @@ void G_PlayerReborn(INT32 player)
 	boolean skinlocal;
 	tic_t jointime;
 	UINT8 splitscreenindex;
+	boolean pingame;
 	boolean spectator;
 	INT16 bot;
 	SINT8 pity;
@@ -2129,6 +2129,7 @@ void G_PlayerReborn(INT32 player)
 	exiting = players[player].exiting;
 	jointime = players[player].jointime;
 	splitscreenindex = players[player].splitscreenindex;
+	pingame = players[player].ingame;
 	spectator = players[player].spectator;
 	pflags = (players[player].pflags & (PF_TIMEOVER|PF_FLIPCAM|PF_TAGIT|PF_TAGGED|PF_ANALOGMODE|PF_WANTSTOJOIN));
 
@@ -2238,6 +2239,7 @@ void G_PlayerReborn(INT32 player)
 	p->ctfteam = ctfteam;
 	p->jointime = jointime;
 	p->splitscreenindex = splitscreenindex;
+	p->ingame = pingame;
 	p->spectator = spectator;
 
 	// save player config truth reborn
@@ -2372,7 +2374,7 @@ static boolean G_CheckSpot(INT32 playernum, mapthing_t *mthing)
 	{
 		// first spawn of level
 		for (i = 0; i < playernum; i++)
-			if (playeringame[i] && players[i].mo
+			if (players[i].ingame && players[i].mo
 				&& players[i].mo->x == mthing->x << FRACBITS
 				&& players[i].mo->y == mthing->y << FRACBITS)
 			{
@@ -2403,7 +2405,7 @@ void G_SpawnPlayer(INT32 playernum, boolean starpost)
 {
 	mapthing_t *spawnpoint;
 
-	if (!playeringame[playernum])
+	if (!players[playernum].ingame)
 		return;
 
 	P_SpawnPlayer(playernum);
@@ -2575,12 +2577,12 @@ mapthing_t *G_FindRaceStart(INT32 playernum)
 		UINT8 pos = 0;
 
 		// SRB2Kart: figure out player spawn pos from points
-		if (!playeringame[playernum] || players[playernum].spectator)
+		if (!players[playernum].ingame || players[playernum].spectator)
 			return playerstarts[0]; // go to first spot if you're a spectator
 
 		for (i = 0; i < MAXPLAYERS; i++)
 		{
-			if (!playeringame[i] || players[i].spectator)
+			if (!players[i].ingame || players[i].spectator)
 				continue;
 			if (i == playernum)
 				continue;
@@ -2592,7 +2594,7 @@ mapthing_t *G_FindRaceStart(INT32 playernum)
 
 				for (j = 0; j < MAXPLAYERS; j++) // I hate similar loops inside loops... :<
 				{
-					if (!playeringame[j] || players[j].spectator)
+					if (!players[j].ingame || players[j].spectator)
 						continue;
 					if (j == playernum)
 						continue;
@@ -3154,7 +3156,7 @@ static void G_DoCompleted(void)
 	K_StatRound();
 
 	for (i = 0; i < MAXPLAYERS; i++)
-		if (playeringame[i])
+		if (players[i].ingame)
 		{
 			// SRB2Kart: exitlevel shouldn't get you the points
 			if (!players[i].exiting && !(players[i].pflags & PF_TIMEOVER))
@@ -3352,7 +3354,7 @@ void G_NextLevel(void)
 			UINT8 i;
 			for (i = 0; i < MAXPLAYERS; i++)
 			{
-				if (playeringame[i] && !players[i].spectator)
+				if (players[i].ingame && !players[i].spectator)
 				{
 					gameaction = ga_startvote;
 					return;
@@ -3945,7 +3947,7 @@ void G_SaveGame(UINT32 savegameslot)
 //
 // G_DeferedInitNew
 // Can be called by the startup code or the menu task,
-// consoleplayer, displayplayers[], playeringame[] should be set.
+// consoleplayer, displayplayers[], players[].ingame should be set.
 //
 void G_DeferedInitNew(boolean pencoremode, const char *mapname, INT32 pickedchar, UINT8 ssplayers, boolean FLS)
 {
@@ -4611,10 +4613,10 @@ void G_ReadDemoExtraData(void)
 
 			case DXD_PST_SPECTATING:
 				players[p].pflags &= ~PF_WANTSTOJOIN; // double-fuck you
-				if (!playeringame[p])
+				if (!players[p].ingame)
 				{
 					CL_ClearPlayer(p);
-					playeringame[p] = true;
+					players[p].ingame = true;
 					G_AddPlayer(p);
 					players[p].spectator = true;
 
@@ -4727,7 +4729,7 @@ void G_WriteDemoExtraData(void)
 			if (demo_extradata[i] & DXD_PLAYSTATE)
 			{
 				demo_writerng = 1;
-				if (!playeringame[i])
+				if (!players[i].ingame)
 					WRITEUINT8(demobuf.p, DXD_PST_LEFT);
 				else if (
 					players[i].spectator &&
@@ -4951,7 +4953,7 @@ void G_WriteAllGhostTics(void)
 
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
-		if (!playeringame[i] || players[i].spectator)
+		if (!players[i].ingame || players[i].spectator)
 			continue;
 
 		if (!players[i].mo)
@@ -5680,7 +5682,7 @@ void G_StoreRewindInfo(void)
 
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
-		if (!playeringame[i] || players[i].spectator)
+		if (!players[i].ingame || players[i].spectator)
 		{
 			info->playerinfo[i].ingame = false;
 			continue;
@@ -5718,7 +5720,7 @@ void G_PreviewRewind(tic_t previewtime)
 
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
-		if (!playeringame[i] || players[i].spectator)
+		if (!players[i].ingame || players[i].spectator)
 		{
 			if (info->playerinfo[i].player.mo)
 			{
@@ -6202,8 +6204,10 @@ void G_BeginRecording(void)
 	CV_SaveNetVars(&demobuf.p, true);
 
 	// Now store some info for each in-game player
-	for (p = 0; p < MAXPLAYERS; p++) {
-		if (playeringame[p]) {
+	for (p = 0; p < MAXPLAYERS; p++)
+	{
+		if (players[p].ingame)
+		{
 			player = &players[p];
 
 			WRITEUINT8(demobuf.p, p | (player->spectator ? DEMO_SPECTATOR : 0));
@@ -7300,8 +7304,10 @@ void G_DoPlayDemo(char *defdemoname)
 
 		consoleplayer = 0;
 		memset(displayplayers, 0, sizeof(displayplayers));
-		memset(playeringame, 0, sizeof(playeringame));
-		playeringame[0] = true;
+
+		for (INT32 j = 0; j < MAXPLAYERS; j++)
+			players[j].ingame = false;
+		players[0].ingame = true;
 
 		goto post_compat;
 	}
@@ -7346,9 +7352,12 @@ void G_DoPlayDemo(char *defdemoname)
 	//LUA_HookInt(gamemap, HOOK(MapChange));
 
 	consoleplayer = 0;
-	memset(playeringame,0,sizeof(playeringame));
-	memset(displayplayers,0,sizeof(displayplayers));
-	memset(camera,0,sizeof(camera)); // reset freecam
+
+	for (INT32 j = 0; j < MAXPLAYERS; j++)
+		players[j].ingame = false;
+
+	memset(displayplayers, 0, sizeof(displayplayers));
+	memset(camera, 0, sizeof(camera)); // reset freecam
 
 	// Load players that were in-game when the map started
 	p = READUINT8(demobuf.p);
@@ -7381,10 +7390,10 @@ void G_DoPlayDemo(char *defdemoname)
 			return;
 		}
 
-		if (!playeringame[displayplayers[0]] || players[displayplayers[0]].spectator)
+		if (!players[displayplayers[0]].ingame || players[displayplayers[0]].spectator)
 			displayplayers[0] = consoleplayer = serverplayer = p;
 
-		playeringame[p] = true;
+		players[p].ingame = true;
 		players[p].spectator = spectator;
 
 		// Name
