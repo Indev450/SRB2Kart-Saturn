@@ -1843,7 +1843,7 @@ void S_ResumeAudio(void)
 	if (S_MusicNotInFocus())
 		return;
 
-	if (I_SongPlaying() && I_SongPaused())
+	if (!paused && I_SongPlaying() && I_SongPaused())
 		I_ResumeSong();
 }
 
