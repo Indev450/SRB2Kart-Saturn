@@ -139,7 +139,7 @@ static boolean InitCube(void)
 	float globalgammamul, globalgammaoffs;
 	boolean doinggamma;
 
-	if (loaded_config == false)
+	if (!loaded_config)
 		return false;
 
 #define diffcons(cv) (strcmp(cv.string, cv.defaultvalue))
@@ -586,12 +586,25 @@ void V_SetPaletteLump(const char *pal)
 
 static void CV_palette_OnChange(void)
 {
-	if (loaded_config == false)
+	if (!loaded_config)
 		return;
 	// reload palette
 	// recalculate Color Cube
 	V_ReloadPalette();
 	V_SetPalette(0);
+}
+
+void V_ResetPaletteCVars(void)
+{
+	if (!loaded_config)
+		return;
+
+#define diffcons(cv) (strcmp(cv.string, cv.defaultvalue))
+	if diffcons(cv_palette)
+		CV_StealthSetValue(&cv_palette, atoi(cv_palette.defaultvalue));
+	if diffcons(cv_palettenum)
+		CV_StealthSetValue(&cv_palettenum, atoi(cv_palettenum.defaultvalue));
+#undef diffcons
 }
 
 static void CV_constextsize_OnChange(void)

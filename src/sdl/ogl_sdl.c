@@ -134,7 +134,7 @@ boolean OglSdlSurface(INT32 w, INT32 h)
 
 	if (!first_init)
 	{
-		if (!gllogstream) 
+		if (!gllogstream)
 		{
 			gllogdir = D_Home();
 
@@ -147,7 +147,7 @@ boolean OglSdlSurface(INT32 w, INT32 h)
 				gllogstream = fopen("./ogllog.txt", "wt");
 #endif
 		}
-			
+
 		gl_version = pglGetString(GL_VERSION);
 		gl_renderer = pglGetString(GL_RENDERER);
 		gl_extensions = pglGetString(GL_EXTENSIONS);
@@ -220,7 +220,7 @@ boolean OglSdlSurface(INT32 w, INT32 h)
 	}
 
 	SDL_GL_SetSwapInterval(cv_vidwait.value ? 1 : 0);
-	
+
 	// The screen textures need to be flushed if the width or height change so that they be remade for the correct size
 	if (screen_width != w || screen_height != h)
 	{
@@ -322,7 +322,7 @@ void OglSdlFinishUpdate(boolean waitvbl)
 
 #if defined (__unix__)
 #ifdef USE_FBO_OGL
-	if (loaded_config == true)
+	if (loaded_config)
 		xwaylandcrap = false;
 #endif
 #endif

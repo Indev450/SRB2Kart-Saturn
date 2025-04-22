@@ -5760,6 +5760,8 @@ void HWR_LoadLevel(void)
 // shader recompilation is done in the cvar callback
 static void HWR_TogglePaletteRendering(void)
 {
+	V_ResetPaletteCVars(); // dont carry over changed palettes
+
 	// which state should we go to?
 	if (HWR_ShouldUsePaletteRendering())
 	{
