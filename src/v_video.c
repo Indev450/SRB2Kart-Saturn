@@ -48,6 +48,9 @@ consvar_t cv_ticrate = {"showfps", "No", CV_SAVE, fps_cons_t, NULL, 0, NULL, NUL
 
 static void CV_palette_OnChange(void);
 
+consvar_t cv_palette = {"palette", "", CV_CALL|CV_NOINIT, NULL, CV_palette_OnChange, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_palettenum = {"palettenum", "0", CV_CALL|CV_NOINIT, CV_Unsigned, CV_palette_OnChange, 0, NULL, NULL, 0, 0, NULL};
+
 static CV_PossibleValue_t gamma_cons_t[] = {{-15, "MIN"}, {4, "MAX"}, {0, NULL}};
 consvar_t cv_globalgamma = {"gamma", "0", CV_SAVE|CV_CALL, gamma_cons_t, CV_palette_OnChange, 0, NULL, NULL, 0, 0, NULL};
 
@@ -90,6 +93,8 @@ consvar_t cv_menucaps = {"menucaps", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NUL
 
 // local copy of the palette for V_GetColor()
 RGBA_t *pLocalPalette = NULL;
+
+static size_t currentPaletteSize;
 
 /*
 The following was an extremely helpful resource when developing my Colour Cube LUT.
@@ -411,13 +416,19 @@ const UINT8 gammatable[5][256] =
 // keep a copy of the palette so that we can get the RGB value for a color index at any time.
 static void LoadPalette(const char *lumpname)
 {
+	UINT8 *pal;
+	size_t i, palsize;
+	lumpnum_t lumpnum;
+
 #ifdef BACKWARDSCOMPATCORRECTION
 	const UINT8 *usegamma = gammatable[min(max(cv_globalgamma.value, 0), 4)];
 #endif
 	Cubeapply = InitCube();
-	lumpnum_t lumpnum = W_GetNumForName(lumpname);
-	size_t i, palsize = W_LumpLength(lumpnum)/3;
-	UINT8 *pal;
+
+	lumpnum = W_GetNumForName(lumpname);
+
+	currentPaletteSize = W_LumpLength(lumpnum);
+	palsize = currentPaletteSize / 3;
 
 	Z_Free(pLocalPalette);
 
@@ -505,8 +516,23 @@ const char *R_GetPalname(UINT16 num)
 
 const char *GetPalette(void)
 {
+	const char *user = cv_palette.string;
+
+	if (user && user[0])
+	{
+		if (W_CheckNumForName(user) == LUMPERROR)
+		{
+			CONS_Alert(CONS_WARNING, "cv_palette %s lump does not exist\n", user);
+		}
+		else
+		{
+			return cv_palette.string;
+		}
+	}
+
 	if (gamestate == GS_LEVEL)
 		return R_GetPalname((encoremode ? mapheaderinfo[gamemap-1]->encorepal : mapheaderinfo[gamemap-1]->palette));
+
 	return "PLAYPAL";
 }
 
@@ -524,6 +550,20 @@ void V_SetPalette(INT32 palettenum)
 	if (!pLocalPalette)
 		V_ReloadPalette();
 
+	if (rendermode == render_soft || (rendermode == render_opengl && HWR_ShouldUsePaletteRendering())) // opengl without paletterendering hates subpalettes
+	{
+		if (palettenum == 0)
+		{
+			palettenum = cv_palettenum.value;
+
+			if (palettenum * 256U > currentPaletteSize - 256)
+			{
+				CONS_Alert(CONS_WARNING, "cv_palettenum %d out of range\n", palettenum);
+				palettenum = 0;
+			}
+		}
+	}
+
 #ifdef HWRENDER
 	if (rendermode == render_opengl)
 		HWR_SetPalette(&pLocalPalette[palettenum*256]);
@@ -538,18 +578,7 @@ void V_SetPalette(INT32 palettenum)
 void V_SetPaletteLump(const char *pal)
 {
 	LoadPalette(pal);
-#ifdef HWRENDER
-	if (rendermode == render_opengl)
-		HWR_SetPalette(pLocalPalette);
-#if defined (__unix__) || defined (UNIXCOMMON) || defined (HAVE_SDL)
-	else
-#endif
-#endif
-	if (rendermode != render_none)
-		I_SetPalette(pLocalPalette);
-#ifdef HASINVERT
-	R_MakeInvertmap();
-#endif
+	V_SetPalette(0);
 }
 
 static void CV_palette_OnChange(void)
@@ -557,6 +586,7 @@ static void CV_palette_OnChange(void)
 	if (loaded_config == false)
 		return;
 	// reload palette
+	// recalculate Color Cube
 	V_ReloadPalette();
 	V_SetPalette(0);
 }

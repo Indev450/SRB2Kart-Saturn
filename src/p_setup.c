@@ -3014,7 +3014,7 @@ boolean P_SetupLevel(boolean fromnetsave, boolean reloadinggamestate)
 
 	// Reset the palette now all fades have been done
 	if (rendermode != render_none)
-		V_SetPaletteLump(GetPalette()); // Set the level palette
+		V_ReloadPalette(); // Set the level palette
 
 	// Print "SPEEDING OFF TO [ZONE] [ACT 1]..."
 	/*if (rendermode != render_none)
@@ -3300,6 +3300,7 @@ UINT16 P_PartialAddWadFile(const char *wadfilename, boolean local)
 	{
 		name = lumpinfo->name;
 		lumpnum_t lumpnum = i|(wadnum<<16);
+
 		if (name[0] == 'D')
 		{
 			if (name[1] == 'S') for (j = 1; j < NUMSFX; j++)
