@@ -579,6 +579,9 @@ void V_SetPaletteLump(const char *pal)
 {
 	LoadPalette(pal);
 	V_SetPalette(0);
+#ifdef HASINVERT
+	R_MakeInvertmap();
+#endif
 }
 
 static void CV_palette_OnChange(void)
