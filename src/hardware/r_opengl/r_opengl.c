@@ -683,7 +683,7 @@ typedef enum
 	gluniform_leveltime,
 
 	gluniform_scr_resolution,
-	
+
 	gluniform_max,
 } gluniform_t;
 
@@ -1328,14 +1328,13 @@ void GL_ReadScreenTexture(int tex, UINT16 *dst_data)
 // -----------------+
 void GL_SetPalette(RGBA_t *palette)
 {
-	INT32 i;
-
-	for (i = 0; i < 256; i++)
+	size_t palsize = (sizeof(RGBA_t) * 256);
+	// on a palette change, you have to reload all of the textures
+	if (memcmp(&myPaletteData, palette, palsize))
 	{
-		myPaletteData[i].s = palette[i].s;
+		memcpy(&myPaletteData, palette, palsize);
+		GL_Flush();
 	}
-
-	GL_Flush();
 }
 
 // -----------------+
@@ -2641,7 +2640,7 @@ void GL_DrawModelEx(model_t *model, INT32 frameIndex, float duration, float tics
 	poly.green  = byte2float[Surface->PolyColor.s.green];
 	poly.blue   = byte2float[Surface->PolyColor.s.blue];
 	poly.alpha  = byte2float[Surface->PolyColor.s.alpha];
-	
+
 	pglColor4ubv((GLubyte*)&Surface->PolyColor.s);
 
 	GL_SetBlend((poly.alpha < 1 ? Surface->PolyFlags : (PF_Masked|PF_Occlude))|PF_Modulated);
@@ -2655,7 +2654,7 @@ void GL_DrawModelEx(model_t *model, INT32 frameIndex, float duration, float tics
 	fade.green = byte2float[Surface->FadeColor.s.green];
 	fade.blue  = byte2float[Surface->FadeColor.s.blue];
 	fade.alpha = byte2float[Surface->FadeColor.s.alpha];
-	
+
 	if (Surface->LightTableId && Surface->LightTableId != lt_downloaded)
 	{
 		pglActiveTexture(GL_TEXTURE2);
