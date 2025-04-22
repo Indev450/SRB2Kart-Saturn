@@ -3466,9 +3466,6 @@ static void K_SpawnAIZDust(player_t *player)
 
 static void K_StretchPlayerGravity(player_t *player)
 {
-	if (!cv_gravstretch.value)
-		return;
-
 	I_Assert(player != NULL);
 	I_Assert(!P_MobjWasRemoved(player->mo));
 
@@ -3510,6 +3507,30 @@ static void K_StretchPlayerGravity(player_t *player)
 		}
 
 		const fixed_t slamDiv = FixedDiv(pmo->stretchslam, stretchScaleFactor);
+
+		pmo->spritexscale = (tempxscale + (((slamDiv*2)/3)*2));
+		pmo->spriteyscale = (tempyscale - slamDiv);
+		pmo->stretchslam -= (4*FRACUNIT);
+	}
+	else
+		pmo->stretchslam = 0;
+}
+
+// copy pasted from above
+// but here to allow salty squish to work when gravstretch is disabled
+static void K_SaltySquish(player_t *player)
+{
+	I_Assert(player != NULL);
+	I_Assert(!P_MobjWasRemoved(player->mo));
+
+	mobj_t *pmo = player->mo;
+
+	fixed_t tempxscale = pmo->realxscale;
+	fixed_t tempyscale = pmo->realyscale;
+
+	if (pmo->stretchslam > 0)
+	{
+		const fixed_t slamDiv = FixedDiv(pmo->stretchslam, 3932160); // stretchScaleFactor = FixedDiv(FRACUNIT*60, FRACUNIT)
 
 		pmo->spritexscale = (tempxscale + (((slamDiv*2)/3)*2));
 		pmo->spriteyscale = (tempyscale - slamDiv);
@@ -7032,7 +7053,11 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 	}
 
 	// funneh Saturn sprite stuff
-	K_StretchPlayerGravity(player);
+	if (cv_gravstretch.value)
+		K_StretchPlayerGravity(player);
+	else if (cv_saltyhop.value && cv_saltysquish.value)
+		K_SaltySquish(player);
+
 	K_RollMobjBySlopes(player->mo, player->mo->standingslope);
 
 	// Quick Turning
