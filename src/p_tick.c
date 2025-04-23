@@ -243,14 +243,19 @@ static thinker_t *currentthinker;
 void P_RemoveThinkerDelayed(thinker_t *thinker)
 {
 #ifdef PARANOIA
-	if (thinker->next)
-		thinker->next = NULL;
-	else if (thinker->references) // Usually gets cleared up in one frame; what's going on here, then?
-		CONS_Printf("Number of potentially faulty references: %d\n", thinker->references);
-#endif
-
+#define BEENAROUNDBIT (0x40000000) // has to be sufficiently high that it's unlikely to happen in regular gameplay. If you change this, pay attention to the bit pattern of INT32_MIN.
+	if (thinker->references & ~BEENAROUNDBIT)
+	{
+		if (thinker->references & BEENAROUNDBIT) // Usually gets cleared up in one frame; what's going on here, then?
+			CONS_Printf("Number of potentially faulty references: %d\n", (thinker->references & ~BEENAROUNDBIT));
+		thinker->references |= BEENAROUNDBIT;
+		return;
+	}
+#undef BEENAROUNDBIT
+#else
 	if (thinker->references != 0)
 		return;
+#endif
 
 	R_DestroyLevelInterpolators(thinker);
 
