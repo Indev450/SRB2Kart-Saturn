@@ -1214,7 +1214,7 @@ static void HWR_DrawSkyWallList(void)
 	GL_UnSetShader();
 	for (i = 0; i < skyWallVertexArraySize; i++)
 	{
-		GL_DrawPolygon(&surf, skyWallVertexArray + i * 4, 4, PF_Occlude|PF_Invisible|PF_NoTexture);
+		GL_DrawPolygon(&surf, skyWallVertexArray + i * 4, 4, PF_Occlude|PF_Invisible|PF_NoTexture|PF_Skydecal);
 	}
 }
 
@@ -1236,7 +1236,7 @@ static void HWR_DrawSkyWall(FOutVector *wallVerts, FSurfaceInfo *Surf)
 	else
 	{
 		HWR_SetCurrentTexture(NULL);
-		HWR_ProjectWall(wallVerts, Surf, PF_Invisible|PF_NoTexture, 255, NULL);
+		HWR_ProjectWall(wallVerts, Surf, PF_Invisible|PF_NoTexture|PF_Skydecal, 255, NULL);
 	}
 	// PF_Invisible so it's not drawn into the colour buffer
 	// PF_NoTexture for no texture

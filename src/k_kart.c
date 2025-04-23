@@ -153,6 +153,8 @@ static CV_PossibleValue_t saltyheight_t[] = {{FRACUNIT/4, "MIN"}, {2*FRACUNIT, "
 consvar_t cv_saltyheight = {"hardcodehopheight", "1", CV_FLOAT|CV_SAVE|CV_CALL|CV_NOINIT, saltyheight_t, saltyhop_onchange, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_saltyroll = {"hardcodehoproll", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
+consvar_t cv_squishdance = {"squishdance", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+
 static void saltyhop_onchange(void)
 {
 	// reset everything when toggling saltyhop
@@ -1004,6 +1006,8 @@ void K_RegisterClientKartStuff(void)
 	CV_RegisterVar(&cv_saltyroll);
 
 	CV_RegisterVar(&cv_slamsound);
+
+	CV_RegisterVar(&cv_squishdance);
 
 	CV_RegisterVar(&cv_lessflicker);
 

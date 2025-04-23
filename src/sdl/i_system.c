@@ -501,9 +501,6 @@ FUNCNORETURN static ATTRNORETURN void signal_handler(INT32 num)
 	write_backtrace(BT_CRASH_REASON_SIGNAL(num));
 #endif
 
-	if (demo.recording)
-		G_SaveDemo();
-
 	I_ReportSignal(num, 0);
 	I_ShutdownSystem();
 	signal(num, SIG_DFL);               //default signal action
@@ -883,9 +880,6 @@ static void signal_handler_child(INT32 num)
 #ifdef HAVE_LIBBACKTRACE
 	write_backtrace(BT_CRASH_REASON_SIGNAL(num));
 #endif
-
-	if (demo.recording)
-		G_SaveDemo();
 
 	signal(num, SIG_DFL);               //default signal action
 	raise(num);

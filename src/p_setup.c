@@ -615,10 +615,10 @@ static void P_SetupDirectionalLight(void)
 
 		if (gamemap != oldmap || encoremode != oldencore || reinitmaplight)
 		{
-			maplighting.contrast = M_RandomRange(0, 58);
-			maplighting.backlight = 0;
-			maplighting.directional = M_RandomRange(0, 1); // either on or off
-			maplighting.angle = M_RandomRange(-382, 382);
+			lighting->light_contrast = M_RandomRange(0, 58);
+			lighting->sprite_backlight = 0;
+			lighting->use_light_angle = M_RandomRange(0, 1); // either on or off
+			lighting->light_angle = M_RandomRange(-382, 382);
 
 			reinitmaplight = false;
 		}
@@ -626,13 +626,6 @@ static void P_SetupDirectionalLight(void)
 		oldmap = gamemap;
 		oldencore = encoremode;
 		return;
-	}
-	else if (lighting->use_custom_light == false)
-	{
-		maplighting.contrast = 8;
-		maplighting.backlight = 0;
-		maplighting.directional = false;
-		maplighting.angle = 0;
 	}
 
 	maplighting.contrast = lighting->light_contrast;

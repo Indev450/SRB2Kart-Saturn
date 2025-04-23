@@ -555,6 +555,8 @@ typedef struct player_s
 
 	fixed_t spinoutrot; // When a player spins out, this value increments modulus 360.
 
+	tic_t dancetime;
+
 	fixed_t fovadd; // adjust FOV for hw rendering
 } player_t;
 
