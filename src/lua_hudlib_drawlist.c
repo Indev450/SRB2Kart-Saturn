@@ -337,7 +337,6 @@ static UINT64 GetItemId(void)
 #else
 	// he who controls the JIT controls the API
 	const void *p = lua_getpc(gL, 1);
-	I_Assert(p != NULL);
 	UINT64 id = (uintptr_t)p;
 #endif
 	// leave bits 0 and 1 free for the string mode
