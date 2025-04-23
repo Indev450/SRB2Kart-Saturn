@@ -147,7 +147,7 @@ INT32 eventhead, eventtail;
 
 boolean dedicated = false;
 
-boolean loaded_config = false;
+boolean loaded_config = false; // true once config.cfg loaded AND executed
 
 //
 // D_PostEvent
@@ -1881,7 +1881,9 @@ void D_SRB2Main(void)
 
 	savedata.lives = 0; // flag this as not-used
 
-	loaded_config = true; // so pallettechange doesent get called 500 times at startup lol
+	// make sure I_Quit() will write back the correct config
+	// (do not write back the config if it crash before)
+	loaded_config = true; // so palettechange doesent get called 500 times at startup lol
 
 	//------------------------------------------------ COMMAND LINE PARAMS
 
