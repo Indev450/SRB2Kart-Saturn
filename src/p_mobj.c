@@ -10132,6 +10132,10 @@ void P_RemoveMobj(mobj_t *mobj)
 		{ // Add thinker just to delay removing it until refrences are gone.
 			mobj->flags &= ~MF_NOTHINK;
 			P_AddThinker((thinker_t *)mobj);
+#ifdef PARANOIA
+			// Saved to avoid being scrambled like below...
+			mobj->thinker.debug_mobjtype = mobj->type;
+#endif
 #ifdef SCRAMBLE_REMOVED
 			// Invalidate mobj_t data to cause crashes if accessed!
 			memset((UINT8 *)mobj + sizeof(thinker_t), 0xff, sizeof(mobj_t) - sizeof(thinker_t));
@@ -10141,6 +10145,10 @@ void P_RemoveMobj(mobj_t *mobj)
 	}
 	else
 	{
+#ifdef PARANOIA
+		// Saved to avoid being scrambled like below...
+		mobj->thinker.debug_mobjtype = mobj->type;
+#endif
 #ifdef SCRAMBLE_REMOVED
 		// Invalidate mobj_t data to cause crashes if accessed!
 		memset((UINT8 *)mobj + sizeof(thinker_t), 0xff, sizeof(mobj_t) - sizeof(thinker_t));
