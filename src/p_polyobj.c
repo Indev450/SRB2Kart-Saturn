@@ -156,6 +156,9 @@ FUNCINLINE static ATTRINLINE void PolyObj_AddThinker(thinker_t *th)
 
 	th->references = 0;
 	th->cachable = false; // not initialising this made the mobjcache die thx!
+#ifdef PARANOIA
+	th->debug_mobjtype = MT_NULL;
+#endif
 }
 
 static void FreeSideLists(void)

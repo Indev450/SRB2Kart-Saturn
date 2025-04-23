@@ -11,6 +11,10 @@
 /// \file  p_tick.c
 /// \brief Archiving: SaveGame I/O, Thinker, Ticker
 
+#ifdef PARANOIA
+#include "dehacked.h" // MOBJTYPE_LIST
+#endif
+
 #include "doomstat.h"
 #include "g_game.h"
 #include "g_input.h"
@@ -204,6 +208,9 @@ void P_AddThinker(thinker_t *thinker)
 	thinker->references = 0;    // killough 11/98: init reference counter to 0
 
 	thinker->cachable = (thinker->function.acp1 == (actionf_p1)P_MobjThinker);
+#ifdef PARANOIA
+	thinker->debug_mobjtype = MT_NULL;
+#endif
 }
 
 //
@@ -220,7 +227,47 @@ void P_AddPrecipThinker(thinker_t *thinker)
 	thinker->references = 0;    // killough 11/98: init reference counter to 0
 
 	thinker->cachable = false;
+#ifdef PARANOIA
+	thinker->debug_mobjtype = MT_NULL;
+#endif
 }
+
+#ifdef PARANOIA
+static const char *MobjTypeName(const mobj_t *mobj)
+{
+	actionf_p1 p1 = mobj->thinker.function.acp1;
+
+	if (p1 == (actionf_p1)P_MobjThinker)
+	{
+		return MOBJTYPE_LIST[mobj->type];
+	}
+	else if (p1 == (actionf_p1)P_RemoveThinkerDelayed)
+	{
+		if (mobj->thinker.debug_mobjtype != MT_NULL)
+		{
+			return MOBJTYPE_LIST[mobj->thinker.debug_mobjtype];
+		}
+	}
+
+	return "<Not a mobj>";
+}
+
+static const char *MobjThinkerName(const mobj_t *mobj)
+{
+	actionf_p1 p1 = mobj->thinker.function.acp1;
+
+	if (p1 == (actionf_p1)P_MobjThinker)
+	{
+		return "P_MobjThinker";
+	}
+	else if (p1 == (actionf_p1)P_RemoveThinkerDelayed)
+	{
+		return "P_RemoveThinkerDelayed";
+	}
+
+	return "<Unknown Thinker>";
+}
+#endif
 
 //
 // killough 11/98:
@@ -242,27 +289,42 @@ static thinker_t *currentthinker;
 //
 void P_RemoveThinkerDelayed(thinker_t *thinker)
 {
-#ifdef PARANOIA
-#define BEENAROUNDBIT (0x40000000) // has to be sufficiently high that it's unlikely to happen in regular gameplay. If you change this, pay attention to the bit pattern of INT32_MIN.
-	if (thinker->references & ~BEENAROUNDBIT)
+	if (thinker->references != 0)
 	{
-		if (thinker->references & BEENAROUNDBIT) // Usually gets cleared up in one frame; what's going on here, then?
-			CONS_Printf("Number of potentially faulty references: %d\n", (thinker->references & ~BEENAROUNDBIT));
-		thinker->references |= BEENAROUNDBIT;
+#ifdef PARANOIA
+		// Removed mobjs can be the target of another mobj. In
+		// that case, the other mobj will manage its reference
+		// to the removed mobj in P_MobjThinker. However, if
+		// the removed mobj is removed after the other object
+		// thinks, the reference management is delayed by one
+		// tic (or two?)
+		const UINT8 delay = 2;
+
+		if (thinker->debug_time > leveltime)
+		{
+			thinker->debug_time = leveltime + delay + 1; // do not print errors again
+		}
+		else if ((thinker->debug_time + delay) <= leveltime)
+		{
+			CONS_Printf(
+					"PARANOIA/P_RemoveThinkerDelayed: %p %s references=%d\n",
+					(void*)thinker,
+					MobjTypeName((mobj_t*)thinker),
+					thinker->references
+			);
+
+			thinker->debug_time = leveltime + delay + 1; // do not print this error again
+		}
+#endif
 		return;
 	}
-#undef BEENAROUNDBIT
-#else
-	if (thinker->references != 0)
-		return;
-#endif
 
 	R_DestroyLevelInterpolators(thinker);
 
 	/* Note that currentthinker is guaranteed to point to us,
-	 * and since we're freeing our memory, we had better change that. So
-	 * point it to thinker->prev, so the iterator will correctly move on to
-	 * thinker->prev->next = thinker->next */
+	* and since we're freeing our memory, we had better change that. So
+	* point it to thinker->prev, so the iterator will correctly move on to
+	* thinker->prev->next = thinker->next */
 	currentthinker = thinker->prev;
 
 	/* Remove from main thinker list */
@@ -324,12 +386,45 @@ void P_RemoveThinker(thinker_t *thinker)
  * references, and delay removal until the count is 0.
  */
 
-mobj_t *P_SetTarget(mobj_t **mop, mobj_t *targ)
+mobj_t *P_SetTarget2(mobj_t **mop, mobj_t *targ
+#ifdef PARANOIA
+		, const char *source_file, int source_line
+#endif
+)
 {
-	if (*mop)              // If there was a target already, decrease its refcount
+	if (*mop) // If there was a target already, decrease its refcount
+	{
 		(*mop)->thinker.references--;
-	if ((*mop = targ) != NULL) // Set new target and if non-NULL, increase its counter
+
+#ifdef PARANOIA
+		if ((*mop)->thinker.references < 0)
+		{
+			CONS_Printf(
+					"PARANOIA/P_SetTarget: %p %s %s references=%d, references go negative! (%s:%d)\n",
+					(void*)*mop,
+					MobjTypeName(*mop),
+					MobjThinkerName(*mop),
+					(*mop)->thinker.references,
+					source_file,
+					source_line
+			);
+		}
+
+		(*mop)->thinker.debug_time = leveltime;
+#endif
+	}
+
+	if (targ != NULL) // Set new target and if non-NULL, increase its counter
+	{
 		targ->thinker.references++;
+
+#ifdef PARANOIA
+		targ->thinker.debug_time = leveltime;
+#endif
+	}
+
+	*mop = targ;
+
 	return targ;
 }
 
