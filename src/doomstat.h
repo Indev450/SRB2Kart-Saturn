@@ -550,9 +550,6 @@ extern FILE *debugfile;
 extern INT32 debugload;
 #endif
 
-// if true, load all graphics at level load
-extern boolean precache;
-
 // wipegamestate can be set to -1
 //  to force a wipe on the next draw
 extern gamestate_t wipegamestate;

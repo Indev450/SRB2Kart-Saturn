@@ -29,6 +29,9 @@
 #include "../r_draw.h"
 #include "../r_main.h"
 #include "../r_patch.h"    // patch rotation
+#include "../p_setup.h" // levelflats
+#include "../p_spec.h" // anim_t
+#include "../r_sky.h"
 
 INT32 patchformat = GL_TEXFMT_AP_88; // use alpha for holes
 INT32 textureformat = GL_TEXFMT_P_8; // use chromakey for hole
@@ -547,6 +550,260 @@ void HWR_FreeTextureCache(void)
 		free(gl_textures);
 	gl_textures = NULL;
 	gl_numtextures = 0;
+}
+
+static void HWR_PrecacheLevelFlats(void)
+{
+	levelflat_t levelflat;
+	lumpnum_t lump;
+	size_t i, j;
+	INT32 k;
+
+	// special case for encore
+#ifdef GLENCORE
+	if (encoremode)
+	{
+		// go through all sectors to determine if it should be remapped for encore
+		for (i = 0; i < numsectors; i++)
+		{
+			sector_t *sec = &sectors[i];
+
+			// sector checked already?
+			if (sec->validcount == validcount)
+				continue;
+
+			sec->validcount = validcount;
+
+			// gotta check sector floor and ceiling
+			for (j = 0; j < 2; j++)
+			{
+				const boolean ceiling = (j == 1);
+				INT32 pic = ceiling ? sec->ceilingpic : sec->floorpic;
+
+				levelflat = levelflats[pic];
+
+				lump = levelflat.lumpnum;
+				HWR_GetFlat(lump, R_NoEncore(sec, ceiling));
+
+				if (levelflat.speed) // it is an animated flat
+				{
+					for (k = 1; k < levelflat.numpics; k++)
+					{
+						lump = levelflat.baselumpnum + k;
+						HWR_GetFlat(lump, R_NoEncore(sec, ceiling));
+					}
+				}
+			}
+		}
+	}
+	else
+#endif
+	{
+		// on non encore we have it simple
+		// just load every flat in the level
+		for (i = 0; i < numlevelflats; i++)
+		{
+			levelflat = levelflats[i];
+			lump = levelflat.lumpnum;
+
+			HWR_GetFlat(lump, false);
+
+			if (levelflat.speed) // it is an animated flat
+			{
+				for (k = 1; k < levelflat.numpics; k++)
+				{
+					lump = levelflat.baselumpnum + k;
+					HWR_GetFlat(lump, false);
+				}
+			}
+		}
+	}
+}
+
+static void HWR_PrecacheLevelTextures(void)
+{
+	char *texturepresent;
+	anim_t *anim;
+	size_t i, j;
+	INT32 h;
+
+	texturepresent = calloc(numtextures, sizeof (*texturepresent));
+	if (texturepresent == NULL) I_Error("%s: Out of memory looking up textures", "HWR_PrecacheLevel");
+
+	for (i = 0; i < numlines; i++)
+	{
+		line_t *line = &lines[i];
+#ifdef GLENCORE
+		const int noencoremap = ((line->flags & ML_TFERLINE) ? 2 : 1);
+#else
+		const int noencoremap = 1;
+#endif
+
+		// line checked already?
+		if (line->validcount == validcount)
+			continue;
+
+		line->validcount = validcount;
+
+		// two sides
+		for (j = 0; j < 2; j++)
+		{
+			side_t *side = &sides[line->sidenum[j]];
+
+			// Single-side linedef
+			if (line->sidenum[j] == 0xffff)
+				continue;
+
+			if (side->toptexture >= 0 && side->toptexture < numtextures)
+			{
+				texturepresent[side->toptexture] = 1|noencoremap;
+			}
+			if (side->midtexture >= 0 && side->midtexture < numtextures)
+			{
+				texturepresent[side->midtexture] = 1|noencoremap;
+			}
+			if (side->bottomtexture >= 0 && side->bottomtexture < numtextures)
+			{
+				texturepresent[side->bottomtexture] = 1|noencoremap;
+			}
+		}
+	}
+
+	// check for animated textures
+	for (anim = anims; anim < lastanim; anim++)
+	{
+		if (!anim->istexture)
+			continue;
+
+		const char texpresent = texturepresent[anim->basepic];
+
+		if (!texpresent)
+			continue;
+
+		if (texpresent & 1)
+		{
+			for (h = 1; h < anim->numpics; h++)
+			{
+				HWR_GetTexture(anim->basepic+h, false);
+			}
+		}
+#ifdef GLENCORE
+		if (texpresent & 2)
+		{
+			for (h = 1; h < anim->numpics; h++)
+			{
+				HWR_GetTexture(anim->basepic+h, true);
+			}
+		}
+#endif
+	}
+
+	// Sky texture is always present.
+	// Note that F_SKY1 is the name used to indicate a sky floor/ceiling as a flat,
+	// while the sky texture is stored like a wall texture, with a skynum dependent name.
+	texturepresent[skytexture] = 1;
+
+	for (i = 0; i < (unsigned)numtextures; i++)
+	{
+		const char texpresent = texturepresent[i];
+
+		if (!texpresent)
+			continue;
+
+		if (texpresent & 1)
+		{
+			HWR_GetTexture(i, false);
+		}
+#ifdef GLENCORE
+		if (texpresent & 2)
+		{
+			HWR_GetTexture(i, true);
+		}
+#endif
+	}
+	free(texturepresent);
+}
+
+static void HWR_PrecacheLevelSprites(void)
+{
+	GLPatch_t *spritepatch;
+	char *spritepresent;
+	size_t i, j, k;
+	lumpnum_t lump;
+
+	thinker_t *th;
+	mobj_t *mo;
+	spriteframe_t *sf;
+
+	spritepresent = calloc(numsprites, sizeof (*spritepresent));
+	if (spritepresent == NULL) I_Error("%s: Out of memory looking up sprites", "HWR_PrecacheLevel");
+
+	for (th = thinkercap.next; th != &thinkercap; th = th->next)
+	{
+		if (th->function.acp1 != (actionf_p1)P_MobjThinker)
+			continue;
+
+		mo = (mobj_t *)th;
+
+		// ogl is weird
+		// for some reason it does not want to preload sprites with colormaps
+		// so just save us the work
+		if (mo->color || mo->colorized)
+			continue;
+
+		spritepresent[mo->sprite] = 1;
+	}
+
+	for (i = 0; i < numsprites; i++)
+	{
+		if (!spritepresent[i])
+			continue;
+
+		for (j = 0; j < sprites[i].numframes; j++)
+		{
+			sf = &sprites[i].spriteframes[j];
+
+#define cacheang(a) {\
+				lump = sf->lumppat[a];\
+				spritepatch = (GLPatch_t *)W_CachePatchNum(lump, PU_CACHE);\
+				if (spritepatch != NULL)\
+					HWR_GetPatch(spritepatch);\
+			}
+			// see R_InitSprites for more about lumppat,lumpid
+			switch (sf->rotate)
+			{
+				case SRF_SINGLE:
+					cacheang(0);
+					break;
+				case SRF_2D:
+					cacheang(2);
+					cacheang(6);
+					break;
+				default:
+					k = 8;
+					while (k--)
+						cacheang(k);
+					break;
+			}
+#undef cacheang
+		}
+	}
+	free(spritepresent);
+}
+
+void HWR_PrecacheLevel(void)
+{
+	if (rendermode != render_opengl)
+		return;
+
+	// Precache flats.
+	HWR_PrecacheLevelFlats();
+
+	// Precache textures.
+	HWR_PrecacheLevelTextures();
+
+	// Precache sprites.
+	HWR_PrecacheLevelSprites();
 }
 
 void HWR_LoadTextures(size_t pnumtextures)
