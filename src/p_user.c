@@ -5007,7 +5007,7 @@ void P_PlayerThink(player_t *player)
 	if (player->losstime && !player->powers[pw_flashing])
 		player->losstime--;
 
-	if (cmd->buttons & BT_CUSTOM3)
+	if (cv_squishdance.value && (cmd->buttons & BT_CUSTOM3))
 	{
 		player->dancetime++;
 
