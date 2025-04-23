@@ -34,6 +34,7 @@ typedef struct {
 static INT32 sightcounts[2];
 
 typedef INT32 (*divlinefunc)(fixed_t x, fixed_t y, const divline_t *node);
+typedef INT32 (*divlinecrossfunc)(fixed_t x1, fixed_t y1, fixed_t x2, fixed_t y2, const divline_t *node);
 
 //
 // P_DivlineSide
@@ -65,6 +66,11 @@ static inline INT32 P_DivlineSideFast(fixed_t x, fixed_t y, const divline_t *nod
 static inline INT32 P_DivlineCrossed(fixed_t x1, fixed_t y1, fixed_t x2, fixed_t y2, const divline_t *node)
 {
 	return (P_DivlineSide(x1, y1, node) == P_DivlineSide(x2, y2, node));
+}
+
+static inline INT32 P_DivlineCrossedFast(fixed_t x1, fixed_t y1, fixed_t x2, fixed_t y2, const divline_t *node)
+{
+	return (P_DivlineSideFast(x1, y1, node) == P_DivlineSideFast(x2, y2, node));
 }
 
 static boolean P_CrossSubsecPolyObj(polyobj_t *po, register los_t *los)
@@ -130,7 +136,7 @@ static boolean P_CrossSubsecPolyObj(polyobj_t *po, register los_t *los)
 //
 // Returns true if strace crosses the given subsector successfully.
 //
-static boolean P_CrossSubsector(size_t num, register los_t *los)
+static boolean P_CrossSubsector(size_t num, register los_t *los, boolean fast)
 {
 	seg_t *seg;
 	INT32 count;
@@ -158,6 +164,8 @@ static boolean P_CrossSubsector(size_t num, register los_t *los)
 			po = (polyobj_t *)(po->link.next);
 		}
 	}
+
+	const divlinecrossfunc divlinecrossFunc = fast ? P_DivlineCrossedFast : P_DivlineCrossed;
 
 	for (count = subsectors[num].numlines; --count >= 0; seg++)  // check lines
 	{
@@ -187,14 +195,14 @@ static boolean P_CrossSubsector(size_t num, register los_t *los)
 		v2 = line->v2;
 
 		// line isn't crossed?
-		if (P_DivlineCrossed(v1->x, v1->y, v2->x, v2->y, &los->strace))
+		if (divlinecrossFunc(v1->x, v1->y, v2->x, v2->y, &los->strace))
 			continue;
 
 		divl.dx = v2->x - (divl.x = v1->x);
 		divl.dy = v2->y - (divl.y = v1->y);
 
 		// line isn't crossed?
-		if (P_DivlineCrossed(los->strace.x, los->strace.y, los->t2x, los->t2y, &divl))
+		if (divlinecrossFunc(los->strace.x, los->strace.y, los->t2x, los->t2y, &divl))
 			continue;
 
 		// stop because it is not two sided anyway
@@ -326,7 +334,7 @@ static boolean P_CrossBSPNode(INT32 bspnum, register los_t *los, boolean fast)
 		}
 	}
 
-	return P_CrossSubsector((bspnum == -1 ? 0 : bspnum & ~NF_SUBSECTOR), los);
+	return P_CrossSubsector((bspnum == -1 ? 0 : bspnum & ~NF_SUBSECTOR), los, fast);
 }
 
 //
