@@ -17,6 +17,8 @@
 #ifndef __D_THINK__
 #define __D_THINK__
 
+#include "doomdef.h"
+
 #ifdef __GNUG__
 #pragma interface
 #endif
@@ -50,6 +52,10 @@ typedef struct thinker_s
 	// this one using pointers. Used for garbage collection.
 	INT32 references;
 	boolean cachable;
+#ifdef PARANOIA
+	INT32 debug_mobjtype;
+	tic_t debug_time;
+#endif
 } thinker_t;
 
 #endif
