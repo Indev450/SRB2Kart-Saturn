@@ -1003,7 +1003,7 @@ static inline void P_SpawnEmblems(void)
 static void P_SpawnSecretItems(boolean loademblems)
 {
 	// Now let's spawn those funky emblem things! Tails 12-08-2002
-	if (netgame || multiplayer || majormods) // No cheating!!
+	if (netgame || multiplayer) // No cheating!!
 		return;
 
 	if (loademblems)
@@ -3020,7 +3020,7 @@ boolean P_SetupLevel(boolean fromnetsave, boolean reloadinggamestate)
 	nextmapoverride = 0;
 	skipstats = false;
 
-	if (!(netgame || multiplayer) && !majormods)
+	if (!(netgame || multiplayer))
 		mapvisited[gamemap-1] |= MV_VISITED;
 
 	levelloading = false;

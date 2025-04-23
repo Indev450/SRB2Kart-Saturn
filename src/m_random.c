@@ -14,7 +14,7 @@
 
 #include "doomdef.h"
 #include "doomtype.h"
-#include "doomstat.h" // totalplaytime
+#include "k_stats.h" // kartstats.totalplaytime
 
 #include "m_random.h"
 #include "m_fixed.h"
@@ -252,5 +252,5 @@ void P_SetRandSeedD(const char *rfile, INT32 rline, UINT32 seed)
   */
 UINT32 M_RandomizedSeed(void)
 {
-	return ((totalplaytime & 0xFFFF) << 16)|M_RandomFixed();
+	return ((kartstats.totalplaytime & 0xFFFF) << 16)|M_RandomFixed();
 }

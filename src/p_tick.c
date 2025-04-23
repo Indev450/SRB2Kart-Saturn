@@ -25,6 +25,7 @@
 #include "lua_hook.h"
 #include "k_director.h"
 #include "k_kart.h"
+#include "k_stats.h"
 #include "i_system.h"
 #include "r_main.h"
 #include "r_fps.h"
@@ -647,8 +648,7 @@ void P_Ticker(boolean run)
 	}
 
 	// Keep track of how long they've been playing!
-	if (!demo.playback) // Don't increment if a demo is playing.
-		totalplaytime++;
+	K_StatTicker();
 
 	if (run)
 	{
