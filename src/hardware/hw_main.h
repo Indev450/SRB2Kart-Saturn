@@ -118,7 +118,7 @@ void HWR_SetStencilState(int state, int level);
 // into files like hw_bsp.c, hw_sprites.c...
 
 // hw_main.c: Lighting and fog
-void HWR_Lighting(FSurfaceInfo *Surface, INT32 light_level, extracolormap_t *colormap);
+void HWR_Lighting(FSurfaceInfo *Surface, INT32 light_level, extracolormap_t *colormap, const boolean directional);
 
 UINT8 HWR_GetTranstableAlpha(INT32 transtablenum);
 FBITFIELD HWR_GetBlendModeFlag(INT32 ast);
@@ -177,6 +177,8 @@ RGBA_t *HWR_GetTexturePalette(void);
 
 // Console variables
 extern CV_PossibleValue_t glanisotropicmode_cons_t[];
+
+extern consvar_t cv_gltexturedepth;
 
 extern consvar_t cv_glscreentextures;
 #ifdef USE_FBO_OGL

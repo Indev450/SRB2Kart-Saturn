@@ -45,12 +45,10 @@ extern boolean nodeingame[MAXNETNODES]; // Set false as nodes leave game
 
 extern boolean serverrunning;
 
-INT32 Net_GetFreeAcks(boolean urgent);
 void Net_AckTicker(void);
 
 // If reliable return true if packet sent, 0 else
-boolean HSendPacket(INT32 node, boolean reliable, UINT8 acknum,
-	size_t packetlength);
+boolean HSendPacket(INT32 node, boolean reliable, UINT8 acknum, size_t packetlength);
 boolean HGetPacket(void);
 void D_SetDoomcom(void);
 #ifndef NONET

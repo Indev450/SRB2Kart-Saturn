@@ -56,14 +56,11 @@ void (*twosmultipatchtransfunc)(void); // for cols with transparent pixels AND t
 viddef_t vid;
 INT32 setmodeneeded; //video mode change needed if > 0 (the mode number to set + 1)
 
-static CV_PossibleValue_t scr_depth_cons_t[] = {{8, "8 bits"}, {16, "16 bits"}, {24, "24 bits"}, {32, "32 bits"}, {0, NULL}};
-
 static CV_PossibleValue_t shittyscreen_cons_t[] = {{0, "Okay"}, {1, "Shitty"}, {2, "Extra Shitty"}, {0, NULL}};
 
 //added : 03-02-98: default screen mode, as loaded/saved in config
 consvar_t cv_scr_width = {"scr_width", "1280", CV_SAVE, CV_Unsigned, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_scr_height = {"scr_height", "800", CV_SAVE, CV_Unsigned, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_scr_depth = {"scr_depth", "16 bits", CV_SAVE, scr_depth_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_renderview = {"renderview", "On", 0, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_vhseffect = {"vhspause", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_shittyscreen = {"televisionsignal", "Okay", CV_NOSHOWHELP, shittyscreen_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
@@ -322,8 +319,7 @@ void SCR_CheckDefaultMode(void)
 	}
 	else
 	{
-		CONS_Printf(M_GetText("Default resolution: %d x %d (%d bits)\n"), cv_scr_width.value,
-			cv_scr_height.value, cv_scr_depth.value);
+		CONS_Printf(M_GetText("Default resolution: %d x %d\n"), cv_scr_width.value, cv_scr_height.value);
 		// see note above
 		setmodeneeded = VID_GetModeForSize(cv_scr_width.value, cv_scr_height.value) + 1;
 	}
@@ -335,7 +331,6 @@ void SCR_SetDefaultMode(void)
 	// remember the default screen size
 	CV_SetValue(&cv_scr_width, vid.width);
 	CV_SetValue(&cv_scr_height, vid.height);
-	//CV_SetValue(&cv_scr_depth, vid.bpp*8);
 }
 
 // Change fullscreen on/off according to cv_fullscreen
@@ -460,7 +455,7 @@ void SCR_DisplayTicRate(void)
 		// draw "FPS"
 		if (cv_ticrate.value == 1)
 			V_DrawFixedPatch(306<<FRACBITS, 183<<FRACBITS, FRACUNIT, fpsflags, framecounter, R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_YELLOW, GTC_CACHE));
-			
+
 		if (fps > (benchmark - 5))
 			ticcntcolor = R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_MINT, GTC_CACHE);
 		else if (fps < 20)
@@ -479,10 +474,10 @@ void SCR_DisplayTicRate(void)
 
 			// draw total frame:
 			V_DrawPingNum(x, 190, fpsflags, cap, ticcntcolor);
-			
+
 			x -= digits * 4;
 
-			// draw "/"	
+			// draw "/"
 			V_DrawFixedPatch(x<<FRACBITS, 190<<FRACBITS, FRACUNIT, fpsflags, frameslash, ticcntcolor);
 		}
 
@@ -507,7 +502,7 @@ void SCR_DisplayTicRate(void)
 		// draw "FPS"
 		if (cv_ticrate.value == 3)
 			V_DrawRightAlignedString(319, 181, V_YELLOWMAP|fpsflags, "FPS");
-			
+
 		V_DrawRightAlignedString(319, 190, ticcntcolor2|fpsflags, fps_string);
 	}
 }
@@ -519,7 +514,7 @@ void SCR_DisplayLocalPing(void)
 {
 	UINT32 ping = playerpingtable[consoleplayer];
 	INT32 pingflags = V_LocalTransFlag()|V_SNAPTOBOTTOM|V_SNAPTORIGHT;
-	
+
 	if (cv_showping.value == 1 || (cv_showping.value == 2 && ping > servermaxping)) // only show 2 (warning) if our ping is at a bad level
 	{
 		INT32 dispy = (cv_ticrate.value == 1) ? 165 : ((cv_ticrate.value == 2 || cv_ticrate.value == 4) ? 172 : ((cv_ticrate.value == 3) ? 163 : 181)); // absolute buttpain

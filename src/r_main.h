@@ -128,8 +128,6 @@ angle_t R_PlayerSliptideAngle(player_t *player);
 
 fixed_t R_ScaleFromGlobalAngle(angle_t visangle);
 
-subsector_t *R_IsPointInSubsector(fixed_t x, fixed_t y);
-
 //
 // R_PointInSubsector
 //
@@ -143,6 +141,32 @@ FUNCINLINE static ATTRINLINE subsector_t *R_PointInSubsector(fixed_t x, fixed_t 
 	return &subsectors[nodenum & ~NF_SUBSECTOR];
 }
 
+//
+// R_IsPointInSubsector, same as above but returns 0 if not in subsector
+//
+FUNCINLINE static ATTRINLINE subsector_t *R_IsPointInSubsector(fixed_t x, fixed_t y)
+{
+	node_t *node;
+	INT32 side, i;
+	size_t nodenum;
+	subsector_t *ret;
+
+	nodenum = numnodes - 1;
+
+	while (!(nodenum & NF_SUBSECTOR))
+	{
+		node = &nodes[nodenum];
+		side = R_PointOnSide(x, y, node);
+		nodenum = node->children[side];
+	}
+
+	ret = &subsectors[nodenum & ~NF_SUBSECTOR];
+	for (i = 0; i < ret->numlines; i++)
+		if (P_PointOnLineSide(x, y, segs[ret->firstline + i].linedef) != segs[ret->firstline + i].side)
+			return 0;
+
+	return ret;
+}
 
 #define R_PointToDist(x, y) R_PointToDist2(viewx, viewy, x, y)
 #define R_PointToDist2(px2, py2, px1, py1) FixedHypot((px1) - (px2), (py1) - (py2))
@@ -188,6 +212,8 @@ extern consvar_t cv_skybox;
 extern consvar_t cv_tailspickup;
 extern consvar_t cv_maxinterpdist;
 extern consvar_t cv_ripplewater;
+
+extern consvar_t cv_randomdirlight;
 
 // Called by startup code.
 void R_Init(void);

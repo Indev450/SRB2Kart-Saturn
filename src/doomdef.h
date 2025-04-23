@@ -547,6 +547,19 @@ UINT32 quickncasehash (const char *p, size_t n)
 #define DBL_EPSILON 2.2204460492503131e-16l
 #endif
 
+#if defined(__GNUC__) || defined(__clang__)
+#ifndef LIKELY
+#define LIKELY(x)   __builtin_expect(!!(x), 1)
+#endif
+
+#ifndef UNLIKELY
+#define UNLIKELY(x) __builtin_expect(!!(x), 0)
+#endif
+#else
+#define LIKELY(x)       (x)
+#define UNLIKELY(x)     (x)
+#endif
+
 // An assert-type mechanism.
 #ifdef PARANOIA
 #define I_Assert(e) ((e) ? (void)0 : I_Error("assert failed: %s, file %s, line %d", #e, __FILE__, __LINE__))
@@ -571,21 +584,15 @@ extern const char *compdate, *comptime, *comprevision, *compbranch;
 
 #ifndef NONET
 //-- SATURN __
-/// Enable gamestate resynching between Saturn servers and clients
-/// Like SRB2 and RR does
-/// Still highly experimental
-#ifdef DOSATURNSYNCH
-#define SATURNSYNCH
-
 /// Detect if a client is on Saturn in the clientconfig.
 /// To seperately allow them to join or block joining from vanilla clients.
 #ifdef DOSATURNJOIN
 #define SATURNJOIN
 #endif
-#endif
 
 /// Server detection for if a connecting client is on Saturn.
-/// For stuff like extra synching, etc.
+/// This also enables gamestate resynching between Saturn servers and clients
+/// Like SRB2 and RR does
 #ifdef DOSATURNPAK
 #define SATURNPAK
 #endif

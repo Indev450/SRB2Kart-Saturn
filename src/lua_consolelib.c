@@ -94,11 +94,7 @@ deny:
 	CONS_Alert(CONS_WARNING, M_GetText("Illegal lua command received from %s\n"), player_names[playernum]);
 	if (server)
 	{
-		UINT8 bufn[2];
-
-		bufn[0] = (UINT8)playernum;
-		bufn[1] = KICK_MSG_CON_FAIL;
-		SendNetXCmd(XD_KICK, &bufn, 2);
+		SendKick(playernum, KICK_MSG_CON_FAIL);
 	}
 }
 
@@ -458,13 +454,10 @@ static int lib_cvRegisterVar(lua_State *L)
 
 	if (!(((cvar->flags & CV_HIDEN)) || (cvar->flags & CV_NOSHOWHELP)) && (cvar->PossibleValue || !(cvar->value == 0 && stricmp(cvar->string, "0"))))
 	{
-		char *temp = NULL;
-
 		if (!category)
 		{
-			temp = strdup(wadfiles[numwadfiles - 1]->filename);
-			nameonly(temp);
-
+			char *temp = wadfiles[numwadfiles - 1]->filename;
+			temp += strlen(temp) - nameonlylength(temp);
 			category = temp;
 		}
 
@@ -472,8 +465,6 @@ static int lib_cvRegisterVar(lua_State *L)
 			M_SlotCvarIntoModMenu(cvar, category, menu_name);
 		else
 			M_SlotCvarIntoModMenu(cvar, category, cvar->name);
-
-		free (temp);
 	}
 
 	// return cvar userdata

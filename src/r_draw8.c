@@ -25,9 +25,9 @@
 void R_DrawColumn_8(void)
 {
 	INT32 count;
-	register UINT8 *dest;
-	register fixed_t frac;
-	fixed_t fracstep;
+	UINT8 *restrict dest;
+	intptr_t frac;
+	intptr_t fracstep;
 	INT32 npow2min;
 	INT32 npow2max;
 
@@ -57,12 +57,12 @@ void R_DrawColumn_8(void)
 
 	// Inner loop that does the actual texture mapping, e.g. a DDA-like scaling.
 	// This is as fast as it gets.
-	register const UINT8 *source = dc_source;
-	register const lighttable_t *colormap = dc_colormap;
+	const UINT8 *restrict source = dc_source;
+	const lighttable_t *restrict colormap = dc_colormap;
 
-	register INT32 heightmask = dc_sourcelength-1;
+	intptr_t heightmask = dc_sourcelength-1;
 	npow2min = -1;
-	npow2max = dc_sourcelength-1;
+	npow2max = dc_sourcelength;
 
 	if (dc_sourcelength & heightmask)   // not a power of 2 -- killough
 	{
@@ -105,12 +105,15 @@ void R_DrawColumn_8(void)
 
 			dest += vid.width;
 
+
+#if __SIZEOF_POINTER__ < 8 // 64-bit systems have large enough numbers for this to be a non-issue
 			// Avoid overflow.
 			if (fracstep > 0x7FFFFFFF - frac)
 			{
 				frac += fracstep - heightmask;
 			}
 			else
+#endif
 			{
 				frac += fracstep;
 			}
@@ -147,9 +150,10 @@ void R_DrawColumn_8(void)
 void R_Draw2sMultiPatchColumn_8(void)
 {
 	INT32 count;
-	register UINT8 *dest;
-	register fixed_t frac;
-	fixed_t fracstep;
+	UINT8 *restrict dest;
+	intptr_t frac;
+	intptr_t fracstep;
+
 	INT32 npow2min;
 	INT32 npow2max;
 
@@ -178,12 +182,13 @@ void R_Draw2sMultiPatchColumn_8(void)
 
 	// Inner loop that does the actual texture mapping, e.g. a DDA-like scaling.
 	// This is as fast as it gets.
-	register const UINT8 *source = dc_source;
-	register const lighttable_t *colormap = dc_colormap;
-	register INT32 heightmask = dc_sourcelength-1;
-	register UINT8 val;
+	const UINT8 *restrict source = dc_source;
+	const lighttable_t *restrict colormap = dc_colormap;
+	intptr_t heightmask = dc_sourcelength-1;
+	UINT8 val;
+
 	npow2min = -1;
-	npow2max = dc_sourcelength-1;
+	npow2max = dc_sourcelength;
 
 	if (dc_sourcelength & heightmask)   // not a power of 2 -- killough
 	{
@@ -233,11 +238,13 @@ void R_Draw2sMultiPatchColumn_8(void)
 			dest += vid.width;
 
 			// Avoid overflow.
+#if __SIZEOF_POINTER__ < 8
 			if (fracstep > 0x7FFFFFFF - frac)
 			{
 				frac += fracstep - heightmask;
 			}
 			else
+#endif
 			{
 				frac += fracstep;
 			}
@@ -285,9 +292,10 @@ void R_Draw2sMultiPatchColumn_8(void)
 void R_Draw2sMultiPatchTranslucentColumn_8(void)
 {
 	INT32 count;
-	register UINT8 *dest;
-	register fixed_t frac;
-	fixed_t fracstep;
+	UINT8 *restrict dest;
+	intptr_t frac;
+	intptr_t fracstep;
+
 	INT32 npow2min;
 	INT32 npow2max;
 
@@ -316,13 +324,14 @@ void R_Draw2sMultiPatchTranslucentColumn_8(void)
 
 	// Inner loop that does the actual texture mapping, e.g. a DDA-like scaling.
 	// This is as fast as it gets.
-	register const UINT8 *source = dc_source;
-	register const UINT8 *transmap = dc_transmap;
-	register const lighttable_t *colormap = dc_colormap;
-	register INT32 heightmask = dc_sourcelength-1;
+	const UINT8 *restrict source = dc_source;
+	const UINT8 *transmap = dc_transmap;
+	const lighttable_t *restrict colormap = dc_colormap;
+	intptr_t heightmask = dc_sourcelength-1;
 	register UINT8 val;
+
 	npow2min = -1;
-	npow2max = dc_sourcelength-1;
+	npow2max = dc_sourcelength;
 
 	if (dc_sourcelength & heightmask)   // not a power of 2 -- killough
 	{
@@ -372,11 +381,13 @@ void R_Draw2sMultiPatchTranslucentColumn_8(void)
 			dest += vid.width;
 
 			// Avoid overflow.
+#if __SIZEOF_POINTER__ < 8
 			if (fracstep > 0x7FFFFFFF - frac)
 			{
 				frac += fracstep - heightmask;
 			}
 			else
+#endif
 			{
 				frac += fracstep;
 			}
@@ -470,8 +481,10 @@ void R_DrawShadeColumn_8(void)
 void R_DrawTranslucentColumn_8(void)
 {
 	register INT32 count;
-	register UINT8 *dest;
-	register fixed_t frac, fracstep;
+	UINT8 *restrict dest;
+	intptr_t frac;
+	intptr_t fracstep;
+
 	INT32 npow2min;
 	INT32 npow2max;
 
@@ -496,12 +509,13 @@ void R_DrawTranslucentColumn_8(void)
 
 	// Inner loop that does the actual texture mapping, e.g. a DDA-like scaling.
 	// This is as fast as it gets.
-	register const UINT8 *source = dc_source;
-	register const UINT8 *transmap = dc_transmap;
-	register const lighttable_t *colormap = dc_colormap;
-	register INT32 heightmask = dc_sourcelength-1;
+	const UINT8 *restrict source = dc_source;
+	const UINT8 *transmap = dc_transmap;
+	const lighttable_t *restrict colormap = dc_colormap;
+	intptr_t heightmask = dc_sourcelength-1;
+
 	npow2min = -1;
-	npow2max = dc_sourcelength-1;
+	npow2max = dc_sourcelength;
 
 	if (dc_sourcelength & heightmask)
 	{
@@ -579,8 +593,10 @@ void R_DrawTranslucentColumn_8(void)
 void R_DrawTranslatedTranslucentColumn_8(void)
 {
 	register INT32 count;
-	register UINT8 *dest;
-	register fixed_t frac, fracstep;
+	UINT8 *restrict dest;
+	intptr_t frac;
+	intptr_t fracstep;
+
 	INT32 npow2min;
 	INT32 npow2max;
 
@@ -605,9 +621,10 @@ void R_DrawTranslatedTranslucentColumn_8(void)
 
 	// Inner loop that does the actual texture mapping, e.g. a DDA-like scaling.
 	// This is as fast as it gets.
-	register INT32 heightmask = dc_sourcelength-1;
+	intptr_t heightmask = dc_sourcelength-1;
+
 	npow2min = -1;
-	npow2max = dc_sourcelength-1;
+	npow2max = dc_sourcelength;
 
 	if (dc_sourcelength & heightmask)
 	{
@@ -739,18 +756,21 @@ void R_DrawTranslatedColumn_8(void)
 */
 void R_DrawSpan_8 (void)
 {
-	fixed_t xposition;
-	fixed_t yposition;
-	fixed_t xstep, ystep;
+	uintptr_t xposition;
+	uintptr_t yposition;
+	uintptr_t xstep, ystep;
 	register UINT32 bit;
 
-	const UINT8 *source = ds_source;
-	const UINT8 *colormap = ds_colormap;
-	register UINT8 *dest = ylookup[ds_y] + columnofs[ds_x1];
-	const UINT8 *deststop = screens[0] + vid.rowbytes * vid.height;
+	UINT8 *restrict source = ds_source;
+	UINT8 *restrict colormap = ds_colormap;
+	UINT8 *restrict dest = ylookup[ds_y] + columnofs[ds_x1];
+	const UINT8 *restrict deststop = screens[0] + vid.rowbytes * vid.height;
 
 	register size_t count = (ds_x2 - ds_x1 + 1);
 	size_t i;
+
+	xposition = ds_xfrac; yposition = ds_yfrac;
+	xstep = ds_xstep; ystep = ds_ystep;
 
 	// SoM: we only need 6 bits for the integer part (0 thru 63) so the rest
 	// can be used for the fraction part. This allows calculation of the memory address in the
@@ -759,8 +779,12 @@ void R_DrawSpan_8 (void)
 	// bit per power of two (obviously)
 	// Ok, because I was able to eliminate the variable spot below, this function is now FASTER
 	// than the original span renderer. Whodathunkit?
-	xposition = ds_xfrac << nflatshiftup; yposition = ds_yfrac << nflatshiftup;
-	xstep = ds_xstep << nflatshiftup; ystep = ds_ystep << nflatshiftup;
+	xposition <<= nflatshiftup; yposition <<= nflatshiftup;
+	xstep <<= nflatshiftup; ystep <<= nflatshiftup;
+
+	source = ds_source;
+	colormap = ds_colormap;
+	dest = ylookup[ds_y] + columnofs[ds_x1];
 
 	if (dest+8 > deststop)
 	{
@@ -801,13 +825,14 @@ void R_CalcTiltedLighting(fixed_t start, fixed_t end)
 {
 	// ZDoom uses a different lighting setup to us, and I couldn't figure out how to adapt their version
 	// of this function. Here's my own.
-	INT32 i;
+	INT32 left = ds_x1, right = ds_x2;
 	fixed_t step = (end-start)/(ds_x2-ds_x1+1);
+	INT32 i;
 
 	// I wanna do some optimizing by checking for out-of-range segments on either side to fill in all at once,
 	// but I'm too bad at coding to not crash the game trying to do that. I guess this is fast enough for now...
 
-	for (i = ds_x1; i <= ds_x2; i++)
+	for (i = left; i <= right; i++)
 	{
 		tiltlighting[i] = (start += step) >> FRACBITS;
 
@@ -1541,13 +1566,16 @@ void R_DrawTranslucentSpan_8 (void)
 	fixed_t xstep, ystep;
 	register UINT32 bit;
 
-	const UINT8 *source = ds_source;
-	const UINT8 *colormap = ds_colormap;
-	register UINT8 *dest = ylookup[ds_y] + columnofs[ds_x1];
+	UINT8 *source;
+	UINT8 *colormap;
+	register UINT8 *dest;
 	const UINT8 *deststop = screens[0] + vid.rowbytes * vid.height;
 
 	register size_t count = (ds_x2 - ds_x1 + 1);
 	size_t i;
+
+	xposition = ds_xfrac; yposition = ds_yfrac;
+	xstep = ds_xstep; ystep = ds_ystep;
 
 	// SoM: we only need 6 bits for the integer part (0 thru 63) so the rest
 	// can be used for the fraction part. This allows calculation of the memory address in the
@@ -1556,8 +1584,12 @@ void R_DrawTranslucentSpan_8 (void)
 	// bit per power of two (obviously)
 	// Ok, because I was able to eliminate the variable spot below, this function is now FASTER
 	// than the original span renderer. Whodathunkit?
-	xposition = ds_xfrac << nflatshiftup; yposition = ds_yfrac << nflatshiftup;
-	xstep = ds_xstep << nflatshiftup; ystep = ds_ystep << nflatshiftup;
+	xposition <<= nflatshiftup; yposition <<= nflatshiftup;
+	xstep <<= nflatshiftup; ystep <<= nflatshiftup;
+
+	source = ds_source;
+	colormap = ds_colormap;
+	dest = ylookup[ds_y] + columnofs[ds_x1];
 
 	while (count >= 8)
 	{
@@ -1593,10 +1625,10 @@ void R_DrawTranslucentWaterSpan_8(void)
 	UINT32 xstep, ystep;
 	register UINT32 bit;
 
-	const UINT8 *source = ds_source;
-	const UINT8 *colormap = ds_colormap;
-	register UINT8 *dest = ylookup[ds_y] + columnofs[ds_x1];
-	register UINT8 *dsrc;
+	UINT8 *source;
+	UINT8 *colormap;
+	register UINT8 *dest;
+	UINT8 *dsrc;
 
 	register size_t count;
 	size_t i;
@@ -1611,6 +1643,9 @@ void R_DrawTranslucentWaterSpan_8(void)
 	xposition = ds_xfrac << nflatshiftup; yposition = (ds_yfrac + ds_waterofs) << nflatshiftup;
 	xstep = ds_xstep << nflatshiftup; ystep = ds_ystep << nflatshiftup;
 
+	source = ds_source;
+	colormap = ds_colormap;
+	dest = ylookup[ds_y] + columnofs[ds_x1];
 	dsrc = screens[1] + (ds_y+ds_bgofs)*vid.width + ds_x1;
 	count = ds_x2 - ds_x1 + 1;
 

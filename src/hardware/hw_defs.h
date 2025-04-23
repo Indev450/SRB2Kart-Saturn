@@ -128,7 +128,6 @@ typedef struct
 {
 	FLOAT       x,y,z;           // position
 	FLOAT       anglex, angley, anglez;   // aimingangle / viewangle
-	FLOAT       anglex2, anglez2;        // secondaries
 	FLOAT       scalex, scaley, scalez;
 	FLOAT       fovangle;
 	UINT8       splitscreen;
@@ -256,7 +255,8 @@ enum EPolyFlags
 	PF_RemoveYWrap      = 0x00010000,   // Force clamp texture on Y
 	PF_ForceWrapX       = 0x00020000,   // Force repeat texture on X
 	PF_ForceWrapY       = 0x00040000,   // Forces repeat texture on Y
-	PF_Ripple           = 0x00100000    // Water ripple effect. The current backend doesn't use it for anything.
+	PF_Ripple           = 0x00100000,   // Water ripple effect. The current backend doesn't use it for anything.
+	PF_Skydecal         = 0x20000000    // Enables smaller polygon offset, to be used for skywalls only
 	//                    0x20000000
 	//                    0x40000000
 	//                    0x80000000
@@ -289,6 +289,7 @@ struct FLightInfo
 	FUINT			light_level;
 	FUINT			fade_start;
 	FUINT			fade_end;
+	boolean			directional;
 };
 typedef struct FLightInfo FLightInfo;
 
@@ -310,13 +311,15 @@ enum hwdsetspecialstate
 
 	HWD_SET_TEXTUREFILTERMODE,
 	HWD_SET_TEXTUREANISOTROPICMODE,
-	
+
 	HWD_SET_MSAA,
 
 	HWD_SET_SCREEN_TEXTURES,
 
 	HWD_SET_PORTAL_MODE,// new portal thing
 	HWD_SET_STENCIL_LEVEL,
+
+	HWD_SET_TEXTURE_FORMAT,
 
 	HWD_NUMSTATE
 };
@@ -327,6 +330,11 @@ typedef enum hwdsetspecialstate hwdspecialstate_t;
 enum hwdshaderinfo
 {
 	HWD_SHADERINFO_LEVELTIME = 1,
+	HWD_SHADERINFO_LIGHT_X,
+	HWD_SHADERINFO_LIGHT_Y,
+	HWD_SHADERINFO_LIGHT_Z,
+	HWD_SHADERINFO_LIGHT_CONTRAST,
+	HWD_SHADERINFO_LIGHT_BACKLIGHT,
 };
 
 typedef enum hwdshaderinfo hwdshaderinfo_t;

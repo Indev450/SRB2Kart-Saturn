@@ -169,7 +169,7 @@ char french_shiftxform[] =
 	31,
 	' ','$', //shift-!
 	'3', //shift-"
-	'#', '$', '%', 
+	'#', '$', '%',
 	'1', //shift-&
 	'4', // shift-'
 	'5', // shift-(
@@ -179,7 +179,7 @@ char french_shiftxform[] =
 	'6', // shift--
 	'.', '/',
 	'0', '1', '2', '3', '4', '5',
-	'6', '7', '8', '9', 
+	'6', '7', '8', '9',
 	'/', // shitf-:
 	'.', // shift-;
 	'>', // shift-<
@@ -222,7 +222,7 @@ char french_altgrxform[] =
 	'|', //altg--
 	'.', '/',
 	'0', '1', '2', '3', '4', '5',
-	'6', '7', '8', '9', 
+	'6', '7', '8', '9',
 	':', ';', '<',
 	'}', //altgr-=
 	'>', '?', '@',
@@ -914,12 +914,9 @@ static void Got_Saycmd(UINT8 **p, INT32 playernum)
 			player_names[playernum]);
 		if (server)
 		{
-			UINT8 buf[2];
-
-			buf[0] = (UINT8)playernum;
-			buf[1] = KICK_MSG_CON_FAIL;
-			SendNetXCmd(XD_KICK, &buf, 2);
+			SendKick(playernum, KICK_MSG_CON_FAIL);
 		}
+
 		return;
 	}
 
@@ -934,11 +931,7 @@ static void Got_Saycmd(UINT8 **p, INT32 playernum)
 				CONS_Alert(CONS_WARNING, M_GetText("Illegal say command received from %s containing invalid characters\n"), player_names[playernum]);
 				if (server)
 				{
-					char buf[2];
-
-					buf[0] = (char)playernum;
-					buf[1] = KICK_MSG_CON_FAIL;
-					SendNetXCmd(XD_KICK, &buf, 2);
+					SendKick(playernum, KICK_MSG_CON_FAIL);
 				}
 				return;
 			}
@@ -1147,10 +1140,10 @@ void HU_Ticker(void)
 	}
 
 	if (cechotimer > 0) --cechotimer;
-	
+
 	// Animate the desynch dots
 	if (hu_resynching
-#ifdef SATURNSYNCH
+#ifdef SATURNPAK
 		|| hu_redownloadinggamestate
 #endif
 		)
@@ -2251,7 +2244,7 @@ void HU_Drawer(void)
 
 	// draw desynch text
 	if (hu_resynching
-#ifdef SATURNSYNCH
+#ifdef SATURNPAK
 		|| hu_redownloadinggamestate
 #endif
 		)
@@ -2357,7 +2350,7 @@ Ping_gfx_num (int lag)
 }
 
 static int
-Ping_gfx_color (int lag)
+Ping_gfx_color (UINT32 lag)
 {
 	if (lag < 2)
 		return SKINCOLOR_JAWZ;
@@ -2367,8 +2360,17 @@ Ping_gfx_color (int lag)
 		return SKINCOLOR_GOLD;
 	else if (lag < 10)
 		return SKINCOLOR_RED;
+	else if (lag < servermaxping)
+	{
+		if (hu_tick & 2)
+			return SKINCOLOR_GREEN;
+		else if (hu_tick & 4)
+			return SKINCOLOR_YELLOW;
+		else
+			return SKINCOLOR_BLUEBERRY;
+	}
 	else
-		return SKINCOLOR_WHITE; // SKINCOLOR_MAGENTA
+		return SKINCOLOR_WHITE; // to make the flashing work
 }
 
 static const UINT8 *
@@ -2432,7 +2434,7 @@ void HU_drawPlayerPing(INT32 x, INT32 y, INT32 pnum, INT32 flags)
 
 		if (measureid == 1)
 			V_DrawScaledPatch(x+11 - pingmeasure[measureid]->width, y+9, flags, pingmeasure[measureid]);
-		
+
 		if (cv_pingicon.value)
 			V_DrawScaledPatch(x+2, y, flags, pinggfx[gfxnum]);
 
@@ -2561,24 +2563,19 @@ static inline void HU_DrawSpectatorTicker(void)
 
 			if (cv_showspecstuff.value)
 			{
-				if (players[i].mo)
+				player_t *player;
+				player = &players[i];
+
+				if (player->mo && player->mo->color)
 				{
-					player_t *p;
-					p = &players[i];
+					const UINT8 *colormap = R_GetTranslationColormap(player->skin, player->mo->color, GTC_CACHE);
+					if (player->mo->colorized)
+						colormap = R_GetTranslationColormap(TC_RAINBOW, player->mo->color, GTC_CACHE);
 
-					if (players[i].mo->color)
-					{
-						const UINT8 *colormap;
-						if (players[i].mo->colorized)
-							colormap = R_GetTranslationColormap(TC_RAINBOW, players[i].mo->color, GTC_CACHE);
-						else
-							colormap = R_GetTranslationColormap(players[i].skin, players[i].mo->color, GTC_CACHE);
-
-						if (cv_highresportrait.value)
-							V_DrawSmallMappedPatch((templength - duptweak), height+10, V_TRANSLUCENT, R_GetSkinFaceWant(p), colormap);
-						else	
-							V_DrawMappedPatch((templength - duptweak), height+10, V_TRANSLUCENT, R_GetSkinFaceRank(p), colormap);
-					}
+					if (K_UseHighResPortraits())
+						V_DrawSmallMappedPatch((templength - duptweak), height+10, V_TRANSLUCENT, R_GetSkinFaceWant(player), colormap);
+					else
+						V_DrawMappedPatch((templength - duptweak), height+10, V_TRANSLUCENT, R_GetSkinFaceRank(player), colormap);
 				}
 
 				if ((netgame && i != serverplayer) || (cv_mindelay.value && P_IsLocalPlayer(&players[i])))
@@ -2592,7 +2589,6 @@ static inline void HU_DrawSpectatorTicker(void)
 		}
 	}
 }
-
 
 //
 // HU_DrawRankings
@@ -2777,16 +2773,31 @@ void HU_SetCEchoFlags(INT32 flags)
 
 void HU_DoCEcho(const char *msg)
 {
-	if (!cv_cechotoggle.value)
-		return
-	
-	I_OutputMsg("%s\n", msg); // print to log
-
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wstringop-truncation" // This is fine, we set null byte later
 	strncpy(cechotext, msg, sizeof(cechotext));
 #pragma GCC diagnostic pop
 	strncat(cechotext, "\\", sizeof(cechotext) - strlen(cechotext) - 1);
 	cechotext[sizeof(cechotext) - 1] = '\0';
+
+	// just print it to console
+	if (cv_cechotoggle.value == 2)
+	{
+		char temp[1024];
+		strncpy(temp, cechotext, sizeof(temp));
+
+		for (char *p = temp; *p != '\0'; ++p)
+			if (*p == '\\')
+				*p = '\n';
+
+		CONS_Printf("%s\n", temp);
+		return;
+	}
+
+	I_OutputMsg("%s\n", msg); // print to log
+
+	if (!cv_cechotoggle.value)
+		return;
+
 	cechotimer = cechoduration;
 }

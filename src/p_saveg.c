@@ -1866,7 +1866,7 @@ static void P_NetArchiveThinkers(savebuffer_t *save)
 			continue;
 		}
 #ifdef PARANOIA
-		else // wait garbage collection
+		else if (th->function.acp1 != (actionf_p1)P_RemoveThinkerDelayed) // wait garbage collection
 			I_Error("unknown thinker type %p", th->function.acp1);
 #endif
 	}
@@ -1895,7 +1895,7 @@ mobj_t *P_FindNewPosition(UINT32 oldposition)
 		if (mobj->mobjnum == oldposition)
 			return mobj;
 	}
-	CONS_Debug(DBG_GAMELOGIC, "mobj not found\n");
+	CONS_Debug(DBG_GAMELOGIC, "mobj %d not found\n", oldposition);
 	return NULL;
 }
 
@@ -1928,6 +1928,25 @@ static inline player_t *LoadPlayer(UINT32 player)
 //
 // Loads a mobj_t from a save game
 //
+
+FUNCINLINE static ATTRINLINE mobj_t *AllocMobj(void)
+{
+	mobj_t *mobj;
+
+	if (mobjcache != NULL)
+	{
+		mobj = mobjcache;
+		mobjcache = mobjcache->hnext;
+		memset(mobj, 0, sizeof(*mobj));
+	}
+	else
+	{
+		mobj = Z_Calloc(sizeof (*mobj), PU_LEVEL, NULL);
+	}
+
+	return mobj;
+}
+
 static void LoadMobjThinker(savebuffer_t *save, actionf_p1 thinker)
 {
 	thinker_t *next;
@@ -1959,13 +1978,12 @@ static void LoadMobjThinker(savebuffer_t *save, actionf_p1 thinker)
 			return;
 		}
 
-		mobj = Z_Calloc(sizeof (*mobj), PU_LEVEL, NULL);
-
+		mobj = AllocMobj();
 		mobj->spawnpoint = &mapthings[spawnpointnum];
 		mapthings[spawnpointnum].mobj = mobj;
 	}
 	else
-		mobj = Z_Calloc(sizeof (*mobj), PU_LEVEL, NULL);
+		mobj = AllocMobj();
 
 	// declare this as a valid mobj as soon as possible.
 	mobj->thinker.function.acp1 = thinker;
@@ -1991,7 +2009,9 @@ static void LoadMobjThinker(savebuffer_t *save, actionf_p1 thinker)
 		}
 		mobj->type = i;
 	}
+
 	mobj->info = &mobjinfo[mobj->type];
+
 	if (diff & MD_POS)
 	{
 		mobj->x = READFIXED(save->p);
@@ -2004,6 +2024,7 @@ static void LoadMobjThinker(savebuffer_t *save, actionf_p1 thinker)
 		mobj->y = mobj->spawnpoint->y << FRACBITS;
 		mobj->angle = FixedAngle(mobj->spawnpoint->angle*FRACUNIT);
 	}
+
 	if (diff & MD_MOM)
 	{
 		mobj->momx = READFIXED(save->p);
@@ -2135,30 +2156,10 @@ static void LoadMobjThinker(savebuffer_t *save, actionf_p1 thinker)
 		mobj->colorized = READUINT8(save->p);
 
 	//{ Saturn stuff, needs to be set, but shouldnt be synched
-
-	// Sprite Rotation
-	mobj->rollangle = 0;
-	mobj->pitch = 0;
-	mobj->roll = 0;
-	mobj->sloperoll = 0;
-	mobj->slopepitch = 0;
-	mobj->pitch_sprite = 0;
-	mobj->roll_sprite = 0;
-
-	// Horizontal flip
-	mobj->mirrored = 0;
-
 	// Sprite Rendering stuff
 	mobj->blendmode = AST_TRANSLUCENT;
-	mobj->spritexoffset = mobj->realxoffset = 0;
-	mobj->spriteyoffset = mobj->realxoffset = 0;
 	mobj->spritexscale = mobj->realxscale = FRACUNIT;
 	mobj->spriteyscale = mobj->realyscale = FRACUNIT;
-	mobj->stretchslam = 0;
-
-	// Timer for slam sound effect
-	mobj->slamsoundtimer = 0;
-
 	//}
 
 	if (diff & MD_REDFLAG)
@@ -3027,6 +3028,7 @@ static void P_RelinkPointers(void)
 {
 	thinker_t *currentthinker;
 	mobj_t *mobj;
+	player_t *player;
 
 	// use info field (value = oldposition) to relink mobjs
 	for (currentthinker = thinkercap.next; currentthinker != &thinkercap;
@@ -3040,46 +3042,24 @@ static void P_RelinkPointers(void)
 		if (mobj->type == MT_HOOP || mobj->type == MT_HOOPCOLLIDE || mobj->type == MT_HOOPCENTER)
 			continue;
 
-		if (mobj->tracer)
+#define RELINK(obj, name) if ((obj) && !RelinkMobj(&(obj))) \
+		CONS_Debug(DBG_GAMELOGIC, name " not found on %d\n", obj->type);
+
+		RELINK(mobj->tracer, "tracer");
+		RELINK(mobj->target, "target");
+		RELINK(mobj->hnext, "hnext");
+		RELINK(mobj->hprev, "hprev");
+
+		player = mobj->player;
+
+		if (player)
 		{
-			if (!RelinkMobj(&mobj->tracer))
-				CONS_Debug(DBG_GAMELOGIC, "tracer not found on %d\n", mobj->type);
+			RELINK(player->capsule, "capsule");
+			RELINK(player->axis1, "axis1");
+			RELINK(player->axis2, "axis2");
+			RELINK(player->awayviewmobj, "awayviewmobj");
 		}
-		if (mobj->target)
-		{
-			if (!RelinkMobj(&mobj->target))
-				CONS_Debug(DBG_GAMELOGIC, "target not found on %d\n", mobj->type);
-		}
-		if (mobj->hnext)
-		{
-			if (!RelinkMobj(&mobj->hnext))
-				CONS_Debug(DBG_GAMELOGIC, "hnext not found on %d\n", mobj->type);
-		}
-		if (mobj->hprev)
-		{
-			if (!RelinkMobj(&mobj->hprev))
-				CONS_Debug(DBG_GAMELOGIC, "hprev not found on %d\n", mobj->type);
-		}
-		if (mobj->player && mobj->player->capsule)
-		{
-			if (!RelinkMobj(&mobj->player->capsule))
-				CONS_Debug(DBG_GAMELOGIC, "capsule not found on %d\n", mobj->type);
-		}
-		if (mobj->player && mobj->player->axis1)
-		{
-			if (!RelinkMobj(&mobj->player->axis1))
-				CONS_Debug(DBG_GAMELOGIC, "axis1 not found on %d\n", mobj->type);
-		}
-		if (mobj->player && mobj->player->axis2)
-		{
-			if (!RelinkMobj(&mobj->player->axis2))
-				CONS_Debug(DBG_GAMELOGIC, "axis2 not found on %d\n", mobj->type);
-		}
-		if (mobj->player && mobj->player->awayviewmobj)
-		{
-			if (!RelinkMobj(&mobj->player->awayviewmobj))
-				CONS_Debug(DBG_GAMELOGIC, "awayviewmobj not found on %d\n", mobj->type);
-		}
+#undef RELINK
 	}
 }
 

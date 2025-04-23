@@ -436,6 +436,7 @@ boolean I_InitNetwork(void)
 		I_Error("-net not supported, use -server and -connect\n"
 			"see docs for more\n");
 	}
+
 	return false;
 #endif
 }

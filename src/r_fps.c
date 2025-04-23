@@ -171,14 +171,7 @@ void R_InterpolateView(fixed_t frac, boolean forceinvalid)
 	if (frac > FRACUNIT)
 		frac = FRACUNIT;
 
-	if (viewcontext >= VIEWCONTEXT_SKY1)
-	{
-		i = viewcontext - VIEWCONTEXT_SKY1;
-	}
-	else
-	{
-		i = viewcontext - VIEWCONTEXT_PLAYER1;
-	}
+	i = R_GetViewNumber();
 
 	if (oldview_invalid[i] != 0 || forceinvalid)
 	{
@@ -211,8 +204,7 @@ void R_UpdateViewInterpolation(void)
 	{
 		pview_old[i] = pview_new[i];
 		skyview_old[i] = skyview_new[i];
-
-		if (oldview_invalid[i]) oldview_invalid[i]--;
+		if (oldview_invalid[i] > 0) oldview_invalid[i]--;
 	}
 
 	last_view_update = I_GetTime();
@@ -286,7 +278,7 @@ void R_SetViewContext(enum viewcontext_e _viewcontext)
 	}
 
 	return (R_LerpFixed(from, to, rendertimefrac));
-}
+}*/
 
 angle_t R_InterpolateAngle(angle_t from, angle_t to)
 {
@@ -296,7 +288,7 @@ angle_t R_InterpolateAngle(angle_t from, angle_t to)
 	}
 
 	return (R_LerpAngle(from, to, rendertimefrac));
-}*/
+}
 
 void R_InterpolateMobjState(mobj_t *mobj, fixed_t frac, interpmobjstate_t *out)
 {
@@ -364,11 +356,7 @@ void R_InterpolatePrecipMobjState(precipmobj_t *mobj, fixed_t frac, interpmobjst
 		out->z = mobj->z;
 		out->scale = cv_mobjscaleprecip.value ? mapobjectscale : FRACUNIT;
 		//out->subsector = mobj->subsector;
-		out->angle = mobj->angle;
-		out->spritexscale = mobj->spritexscale;
-		out->spriteyscale = mobj->spriteyscale;
-		out->spritexoffset = mobj->spritexoffset;
-		out->spriteyoffset = mobj->spriteyoffset;
+		//out->angle = mobj->angle;
 		return;
 	}
 
@@ -376,13 +364,8 @@ void R_InterpolatePrecipMobjState(precipmobj_t *mobj, fixed_t frac, interpmobjst
 		out->y = R_LerpFixed(mobj->old_y, mobj->y, frac);
 		out->z = R_LerpFixed(mobj->old_z, mobj->z, frac);
 		out->scale = cv_mobjscaleprecip.value ? mapobjectscale : FRACUNIT;
-		out->spritexscale = mobj->spritexscale;
-		out->spriteyscale = mobj->spriteyscale;
-		out->spritexoffset = mobj->spritexoffset;
-		out->spriteyoffset = mobj->spriteyoffset;
 		//out->subsector = R_PointInSubsector(out->x, out->y); // this is unused
-
-		out->angle = R_LerpAngle(mobj->old_angle, mobj->angle, frac);
+		//out->angle = R_LerpAngle(mobj->old_angle, mobj->angle, frac);
 }
 
 static void AddInterpolator(levelinterpolator_t* interpolator)

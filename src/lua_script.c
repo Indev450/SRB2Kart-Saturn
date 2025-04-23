@@ -696,6 +696,7 @@ static UINT8 ArchiveValue(UINT8 **p, int TABLESINDEX, int myindex)
 			}
 			lua_pop(gL, 1);
 		}
+
 		if (!found)
 		{
 			t++;
@@ -1231,7 +1232,6 @@ void LUA_Archive(savebuffer_t *save, boolean network)
 		WRITEUINT32(save->p, UINT32_MAX); // end of mobjs marker, replaces mobjnum.
 
 		LUA_HookNetArchive(NetArchive, save); // call the NetArchive hook in archive mode
-		//LUA_HookNetArchive(NetArchive); // call the NetArchive hook in archive mode
 	}
 
 	ArchiveTables(&save->p);
@@ -1272,7 +1272,6 @@ void LUA_UnArchive(savebuffer_t *save, boolean network)
 		} while(mobjnum != UINT32_MAX); // repeat until end of mobjs marker.
 
 		LUA_HookNetArchive(NetUnArchive, save); // call the NetArchive hook in unarchive mode
-		//LUA_HookNetArchive(NetUnArchive); // call the NetArchive hook in unarchive mode
 	}
 
 	UnArchiveTables(&save->p, network);

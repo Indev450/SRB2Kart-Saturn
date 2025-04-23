@@ -99,6 +99,7 @@ static const udata_field_t mobj_fields[] = {
     FIELD(mobj_t, spritexoffset,       udatalib_getter_fixed,      mobj_spriteoffset_setter),
     FIELD(mobj_t, spriteyoffset,       udatalib_getter_fixed,      mobj_spriteoffset_setter),
     FIELD(mobj_t, touching_sectorlist, mobj_touching_sectorlist_unimplemented, mobj_touching_sectorlist_unimplemented),
+    FIELD(mobj_t, lightlevel,          udatalib_getter_int16,      udatalib_setter_int16),
     FIELD(mobj_t, subsector,           udatalib_getter_subsector,  mobj_nosetpos_subsector),
     FIELD(mobj_t, floorz,              udatalib_getter_fixed,      mobj_nosetpos_floorz),
     FIELD(mobj_t, ceilingz,            udatalib_getter_fixed,      mobj_nosetpos_ceilingz),
@@ -391,16 +392,16 @@ int mobj_skin_getter(lua_State *L)
     mobj_t *mo = GETMO();
 
     if (!mo->skin)
-		return 0;
+        return 0;
 
-	if (hud_running && cv_luaimmersion.value) {
-			if (mo->localskin) // HUD ONLY!!!!!!!!!!
-				lua_pushstring(L, ((skin_t *)mo->localskin)->name);
-			else
-				lua_pushstring(L, ((skin_t *)mo->skin)->name);
-		} else {
-			lua_pushstring(L, ((skin_t *)mo->skin)->name);
-		}
+    // HUD ONLY!!!!!!!!!!
+    if (hud_running && cv_luaimmersion.value)
+    {
+        lua_pushstring(L, K_GetMobjSkin(mo)->name);
+    }
+    else
+        lua_pushstring(L, ((skin_t *)mo->skin)->name);
+
     return 1;
 }
 
@@ -501,12 +502,12 @@ int mobj_color_setter(lua_State *L)
 int mobj_blendmode_setter(lua_State *L)
 {
     mobj_t *mo = GETMO();
-    
+
 	INT32 blendmode = (INT32)luaL_checkinteger(L, 2);
 	if (blendmode < 0 || blendmode > AST_OVERLAY)
 		return luaL_error(L, "mobj.blendmode %d out of range (0 - %d).", blendmode, AST_OVERLAY);
 	mo->blendmode = blendmode;
-	
+
     return 0;
 }
 

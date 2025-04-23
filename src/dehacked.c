@@ -690,6 +690,20 @@ static const struct {
 	{NULL, 0}
 };
 
+static mapheader_lighting_t *usemaplighting(INT32 mapnum, const char *word)
+{
+	if (fastncmp(word, "ENCORE", 6))
+	{
+		mapheaderinfo[mapnum]->use_encore_lighting = true;
+
+		return &mapheaderinfo[mapnum]->lighting_encore;
+	}
+	else
+	{
+		return &mapheaderinfo[mapnum]->lighting;
+	}
+}
+
 static void readlevelheader(MYFILE *f, INT32 num, INT32 wadnum)
 {
 	char *s = Z_Malloc(MAXLINELEN, PU_STATIC, NULL);
@@ -983,6 +997,35 @@ static void readlevelheader(MYFILE *f, INT32 num, INT32 wadnum)
 			}*/
 			else if (fastcmp(word, "MOBJSCALE"))
 				mapheaderinfo[num-1]->mobj_scale = get_number(word2);
+			else if (fastcmp(word, "LIGHTCONTRAST") || fastcmp(word, "ENCORELIGHTCONTRAST"))
+			{
+				mapheader_lighting_t *lighting = usemaplighting(num-1, word);
+				lighting->light_contrast = (UINT8)i;
+				lighting->use_custom_light = true;
+			}
+			else if (fastcmp(word, "SPRITEBACKLIGHT") || fastcmp(word, "ENCORESPRITEBACKLIGHT"))
+			{
+				mapheader_lighting_t *lighting = usemaplighting(num-1, word);
+				lighting->sprite_backlight = (SINT8)i;
+				lighting->use_custom_light = true;
+			}
+			else if (fastcmp(word, "LIGHTANGLE") || fastcmp(word, "ENCORELIGHTANGLE"))
+			{
+				mapheader_lighting_t *lighting = usemaplighting(num-1, word);
+
+				if (fastcmp(word2, "EVEN"))
+				{
+					lighting->use_light_angle = false;
+					lighting->light_angle = 0;
+				}
+				else
+				{
+					lighting->use_light_angle = true;
+					lighting->light_angle = FixedAngle(FloatToFixed(atof(word2)));
+				}
+
+				lighting->use_custom_light = true;
+			}
 
 			// Individual triggers for level flags, for ease of use (and 2.0 compatibility)
 			else if (fastcmp(word, "SCRIPTISFILE"))

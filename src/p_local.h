@@ -158,7 +158,9 @@ extern consvar_t cv_tiltsmoothing;
 
 extern consvar_t cv_actionmovie;
 
-extern consvar_t cv_lookbackmom;
+extern consvar_t cv_lookbackmom[MAXSPLITSCREENPLAYERS];
+
+extern consvar_t cv_verticallook[MAXSPLITSCREENPLAYERS];
 
 extern fixed_t t_cam_rotate[MAXSPLITSCREENPLAYERS];
 
@@ -234,7 +236,6 @@ void P_PlayLivesJingle(player_t *player);
 void P_PlayRinglossSound(mobj_t *source, mobj_t *damager);
 void P_PlayDeathSound(mobj_t *source);
 void P_PlayVictorySound(mobj_t *source);
-
 
 //
 // P_MOBJ

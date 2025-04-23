@@ -17,6 +17,7 @@
 #include "doomdef.h"
 #include "doomtype.h"
 #include "r_defs.h"
+#include "r_main.h"
 
 //
 // VIDEO
@@ -65,8 +66,6 @@ const char *GetPalette(void);
 extern RGBA_t *pLocalPalette;
 
 extern UINT8 hudtrans;
-
-extern INT32 V_LocalTransFlag(void);
 
 void V_CubeApply(UINT8 *red, UINT8 *green, UINT8 *blue);
 
@@ -269,6 +268,12 @@ INT32 V_SubStringLengthToFit(const char *string, INT32 width, INT32 option);
 char V_GetSkincolorChar(INT32 color);
 
 INT32 V_SkinColorToHighlightcolor(skincolors_t color);
+
+// this is pretty dumb, but has to be done like this, otherwise the fps counter just disappears sometimes for no reason lol
+FUNCINLINE static ATTRINLINE INT32 V_LocalTransFlag(void)
+{
+	return ((10-cv_translucenthud.value)*V_10TRANS);
+}
 
 typedef struct player_s player_t;
 

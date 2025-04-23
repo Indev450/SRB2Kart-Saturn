@@ -108,12 +108,11 @@ typedef enum
 
 	PT_PING,          // Packet sent to tell clients the other client's latency to server.
 
-#ifdef SATURNSYNCH
+#ifdef SATURNPAK
 	PT_WILLRESENDGAMESTATE, // Hey Client, I am about to resend you the gamestate!
 	PT_CANRECEIVEGAMESTATE, // Okay Server, I'm ready to receive it, you can go ahead.
 	PT_RECEIVEDGAMESTATE,   // Thank you Server, I am ready to play again!
 
-	// we will reserve this for now even if unused, so order wont get mangled
 	PT_ISSATURN, 			// Saturn specific identifier packet
 #endif
 
@@ -394,6 +393,7 @@ typedef struct
 #define MAXSERVERNAME 32
 #define MAXFILENEEDED 915
 #define MAX_MIRROR_LENGTH 256
+
 // This packet is too large
 typedef struct
 {
@@ -588,7 +588,7 @@ extern tic_t servermaxping;
 extern boolean server_lagless;
 extern tic_t simulated_lag;
 extern tic_t lowest_lag;
-extern consvar_t cv_mindelay, cv_lagless;
+extern consvar_t cv_mindelay, cv_gentlemens;
 
 extern consvar_t
 #ifdef VANILLAJOINNEXTROUND
@@ -599,7 +599,7 @@ extern consvar_t
 	cv_allownewsaturnplayer,
 #endif
 	cv_joinrefusemessage, cv_maxplayers, cv_resynchattempts,
-#ifdef SATURNSYNCH
+#ifdef SATURNPAK
 	cv_resynchcooldown, cv_gamestateattempts,
 #endif
 	cv_blamecfail, cv_maxsend, cv_noticedownload, cv_downloadspeed;
@@ -616,6 +616,7 @@ void D_ClientServerInit(void);
 void RegisterNetXCmd(netxcmd_t id, void (*cmd_f)(UINT8 **p, INT32 playernum));
 void SendNetXCmdForPlayer(UINT8 playerid, netxcmd_t id, const void *param, size_t nparam);
 #define SendNetXCmd(id, param, nparam) SendNetXCmdForPlayer(0, id, param, nparam) // Shortcut for P1
+void SendKick(UINT8 playernum, UINT8 msg);
 
 // Create any new ticcmds and broadcast to other players.
 void NetKeepAlive(void);
@@ -666,7 +667,7 @@ tic_t GetLag(INT32 node);
 //UINT8 GetFreeXCmdSize(UINT8 playerid);
 
 extern UINT8 hu_resynching;
-#ifdef SATURNSYNCH
+#ifdef SATURNPAK
 extern UINT8 hu_redownloadinggamestate;
 #endif
 extern boolean hu_stopped; // kart, true when the game is stopped for players due to a disconnecting or connecting player

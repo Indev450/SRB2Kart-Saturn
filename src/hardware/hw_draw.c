@@ -252,20 +252,12 @@ void HWR_DrawStretchyFixedPatch(GLPatch_t *gpatch, fixed_t x, fixed_t y, fixed_t
 		}
 	}
 
-	if (pscale != FRACUNIT)
-	{
-		fwidth = (float)SHORT(gpatch->width) * fscalew * dupx;
-		fheight = (float)SHORT(gpatch->height) * fscaleh * dupy;
-	}
-	else
-	{
-		fwidth = (float)SHORT(gpatch->width) * dupx;
-		fheight = (float)SHORT(gpatch->height) * dupy;
-	}
+	fwidth = (float)SHORT(gpatch->width) * fscalew * dupx;
+	fheight = (float)SHORT(gpatch->height) * fscaleh * dupy;
 
 	// positions of the cx, cy, are between 0 and vid.width/vid.height now, we need them to be between -1 and 1
-	cx = -1.0f + (cx / (vid.width / 2.0f));
-	cy = 1.0f - (cy / (vid.height / 2.0f));
+	cx = -1.0f + (cx / (fvw / 2.0f));
+	cy = 1.0f - (cy / (fvh / 2.0f));
 
 	// fwidth and fheight are similar
 	fwidth /= fvw / 2.0f;
@@ -294,7 +286,7 @@ void HWR_DrawStretchyFixedPatch(GLPatch_t *gpatch, fixed_t x, fixed_t y, fixed_t
 	v[0].t = v[1].t = 0.0f;
 	v[2].t = v[3].t = gpatch->max_t;
 
-	// whoops
+	// clip it since it is used for bunny scroll in doom I
 	if (blendmode)
 		flags = HWR_GetBlendModeFlag(blendmode+1)|PF_NoDepthTest;
 	else
@@ -305,13 +297,11 @@ void HWR_DrawStretchyFixedPatch(GLPatch_t *gpatch, fixed_t x, fixed_t y, fixed_t
 	if (option & V_WRAPY)
 		flags |= PF_ForceWrapY;
 
-	// clip it since it is used for bunny scroll in doom I
-
 	if (alphalevel)
 	{
 		FSurfaceInfo Surf;
 		Surf.PolyColor.s.red = Surf.PolyColor.s.green = Surf.PolyColor.s.blue = 0xff;
-		
+
 		if (alphalevel == 13) Surf.PolyColor.s.alpha = softwaretranstogl_lo[hudtrans];
 		else if (alphalevel == 14) Surf.PolyColor.s.alpha = softwaretranstogl[hudtrans];
 		else if (alphalevel == 15) Surf.PolyColor.s.alpha = softwaretranstogl_hi[hudtrans];
@@ -440,8 +430,8 @@ void HWR_DrawCroppedPatch(GLPatch_t *gpatch, fixed_t x, fixed_t y, fixed_t pscal
 	}
 
 	// positions of the cx, cy, are between 0 and vid.width/vid.height now, we need them to be between -1 and 1
-	cx = -1.0f + (cx / (vid.width / 2.0f));
-	cy = 1.0f - (cy / (vid.height / 2.0f));
+	cx = -1.0f + (cx / (fvw / 2.0f));
+	cy = 1.0f - (cy / (fvh / 2.0f));
 
 	// fwidth and fheight are similar
 	fwidth /= fvw / 2.0f;
@@ -478,7 +468,7 @@ void HWR_DrawCroppedPatch(GLPatch_t *gpatch, fixed_t x, fixed_t y, fixed_t pscal
 		else if (alphalevel == 14) Surf.PolyColor.s.alpha = softwaretranstogl[cv_translucenthud.value];
 		else if (alphalevel == 15) Surf.PolyColor.s.alpha = softwaretranstogl_hi[cv_translucenthud.value];
 		else Surf.PolyColor.s.alpha = softwaretranstogl[10-alphalevel];
-		
+
 		flags |= PF_Modulated;
 		GL_DrawPolygon(&Surf, v, 4, flags);
 	}
@@ -614,7 +604,7 @@ void HWR_FadeScreenMenuBack(UINT16 color, UINT8 strength)
 		RGBA_t *palette = HWR_GetTexturePalette();
 		Surf.PolyColor.rgba = palette[color&0xFF].rgba;
 
-        if (HWR_ShouldUsePaletteRendering())
+		if (HWR_ShouldUsePaletteRendering())
 			Surf.PolyColor.s.alpha = softwaretranstogl[strength];
 		else
 			Surf.PolyColor.s.alpha = (UINT8)(strength*25.5f);
@@ -882,8 +872,8 @@ void HWR_DrawDiag(INT32 x, INT32 y, INT32 wh, INT32 color)
 	if (fy + fh > vid.height)
 		fh = fvh - fy;
 
-	fx = -1.0f + fx / (vid.width / 2.0f);
-	fy = 1.0f - fy / (vid.height / 2.0f);
+	fx = -1.0f + fx / (fvw / 2.0f);
+	fy = 1.0f - fy / (fvh / 2.0f);
 	fw = fw / (fvw / 2.0f);
 	fh = fh / (fvh / 2.0f);
 
@@ -995,8 +985,8 @@ void HWR_DrawConsoleFill(INT32 x, INT32 y, INT32 w, INT32 h, UINT32 color, INT32
 	if (fy + fh > vid.height)
 		fh = fvh - fy;
 
-	fx = -1.0f + fx / (vid.width / 2.0f);
-	fy = 1.0f - fy / (vid.height / 2.0f);
+	fx = -1.0f + fx / (fvw / 2.0f);
+	fy = 1.0f - fy / (fvh / 2.0f);
 	fw = fw / (fvw / 2.0f);
 	fh = fh / (fvh / 2.0f);
 
@@ -1108,8 +1098,8 @@ void HWR_DrawFill(INT32 x, INT32 y, INT32 w, INT32 h, INT32 color)
 	if (fy + fh > vid.height)
 		fh = fvh - fy;
 
-	fx = -1.0f + fx / (vid.width / 2.0f);
-	fy = 1.0f - fy / (vid.height / 2.0f);
+	fx = -1.0f + fx / (fvw / 2.0f);
+	fy = 1.0f - fy / (fvh / 2.0f);
 	fw = fw / (fvw / 2.0f);
 	fh = fh / (fvh / 2.0f);
 

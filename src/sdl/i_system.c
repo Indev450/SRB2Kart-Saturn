@@ -344,7 +344,7 @@ static void write_backtrace(bt_crash_reason_t reason)
 	fprintf(out, "Program name: %s %s\n", SRB2APPLICATION, VERSIONSTRING);
 
 	if (compdate && comptime && comprevision && compbranch)
-	fprintf(out, "Compiled: %s %s, commit %s, branch %s\n", compdate, comptime, comprevision, compbranch);
+		fprintf(out, "Compiled: %s %s, commit %s, branch %s\n", compdate, comptime, comprevision, compbranch);
 
 	if (gamestate == GS_LEVEL)
 	{
@@ -877,7 +877,6 @@ static void I_RegisterSignals (void)
 #ifdef NEWSIGNALHANDLER
 static void signal_handler_child(INT32 num)
 {
-
 #ifdef HAVE_LIBBACKTRACE
 	write_backtrace(BT_CRASH_REASON_SIGNAL(num));
 #endif
@@ -1090,7 +1089,7 @@ INT32 I_GetJoystickDeviceIndex(SDL_GameController *dev)
 	SDL_Joystick *joystick = NULL;
 
 	joystick = SDL_GameControllerGetJoystick(dev);
-	
+
 	if (joystick)
 	{
 		return SDL_JoystickInstanceID(joystick);
@@ -1243,8 +1242,6 @@ void I_GetJoystickEvents(UINT8 index)
 	\param	fname	name of joystick
 
 	\return	axises
-
-
 */
 static int joy_open(int playerIndex, int joyIndex)
 {

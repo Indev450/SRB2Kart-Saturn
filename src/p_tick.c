@@ -297,7 +297,6 @@ void P_UnlinkThinker(thinker_t *thinker)
 	}
 }
 
-
 //
 // P_RemoveThinker
 //
@@ -364,7 +363,7 @@ static inline void P_RunThinkers(void)
 	for (currentthinker = thinkercap.next; currentthinker != &thinkercap; currentthinker = currentthinker->next)
 	{
 #ifdef PARANOIA
-		I_Assert(currentthinker->function.acp1 != NULL)
+		I_Assert(currentthinker->function.acp1 != NULL);
 #endif
 		currentthinker->function.acp1(currentthinker);
 	}
@@ -465,10 +464,10 @@ void P_RunChaseCameras(void)
 			player_t *p = &players[displayplayers[i]];
 			camera_t *cam = &camera[i];
 
-			if (cv_verticallook.value && leveltime > starttime && p->mo && p->kartstuff[k_respawn] == 0 && p->kartstuff[k_throwdir] != 0)
+			if (cv_verticallook[i].value && leveltime > starttime && p->mo && p->kartstuff[k_respawn] == 0 && p->kartstuff[k_throwdir] != 0)
 			{
 				if (p->speed < 6 * p->mo->scale && abs(cam->dpad_y_held) < 2*TICRATE)
-					cam->dpad_y_held += intsign(p->kartstuff[k_throwdir]);
+					cam->dpad_y_held += p->kartstuff[k_throwdir];
 			}
 			else
 				cam->dpad_y_held = 0;
@@ -524,7 +523,7 @@ static inline void P_ResetSpriteStuff(void)
 
 		mo = (mobj_t *)th;
 
-		if (mo->sprite == SPR_NULL || mo->flags2 & MF2_DONTDRAW || mo->type == MT_SHADOW)
+		if (!mo || (mo->sprite == SPR_NULL) || (mo->flags2 & MF2_DONTDRAW) || (mo->type == MT_SHADOW))
 			continue;
 
 		mo->spritexscale = mo->realxscale;
@@ -630,7 +629,7 @@ void P_Ticker(boolean run)
 			}
 #endif
 		}
-		
+
 		ps_lua_mobjhooks.value.i = 0;
 		ps_checkposition_calls.value.i = 0;
 
@@ -836,6 +835,7 @@ void P_PreTicker(INT32 frames)
 		LUA_HOOK(PreThinkFrame);
 
 		for (i = 0; i < MAXPLAYERS; i++)
+		{
 			if (playeringame[i] && players[i].mo && !P_MobjWasRemoved(players[i].mo))
 			{
 				// stupid fucking cmd hack
@@ -850,6 +850,7 @@ void P_PreTicker(INT32 frames)
 
 				memcpy(&players[i].cmd, &temptic, sizeof(ticcmd_t));
 			}
+		}
 
 		// Dynamic slopeness
 		if (midgamejoin)

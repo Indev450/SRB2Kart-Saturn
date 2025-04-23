@@ -149,7 +149,7 @@ static UINT8 F_WriteText(void)
 static void F_NewCutscene(const char *basetext)
 {
 	cutscene_basetext = basetext;
-	memset(cutscene_disptext,0,sizeof(cutscene_disptext));
+	memset(cutscene_disptext, 0, sizeof(cutscene_disptext));
 	cutscene_writeptr = cutscene_baseptr = 0;
 	cutscene_textspeed = 9;
 	cutscene_textcount = TICRATE/2;
@@ -534,8 +534,15 @@ static const char *credits[] = {
 	"\"Sunflower\" aka \"AnimeSonic\"",
 	"\"Yuz\" aka \"Yuzler\"",
 	"\"Democrab\"",
-	"\"Expand\" aka \"Maver\"",
+	"\"EXpand\"",
 	"\"Nexit\"",
+	"\"Spee\"",
+	"\"Jin\"",
+	"\"riomccloud\"",
+	"\"chromaticpipe\"",
+	"\"Achii\"",
+	"\"Anonimus\"",
+	"\"scizor300\"",
 	"",
 	"\1Special Thanks",
 	"SEGA",
@@ -1006,7 +1013,7 @@ void F_TitleScreenDrawer(void)
 	else
 	{
 		INT32 transval = 0;
-		
+
 		if (finalecount <= (50+(9<<1)))
 			transval = (finalecount - 50)>>1;
 
@@ -1053,8 +1060,8 @@ void F_TitleScreenTicker(boolean run)
 		return;
 
 	// are demos disabled?
-	if (!cv_rollingdemos.value)
-		return;
+	if (!cv_rollingdemos.value || modifiedgame) // occasionally mappacks supply invalid replays which means the game crashes almost always when you idle on the titlescreen too long
+		return;									// we check for all addons since added luas/socs and stuff like that makes them desynch like crazy so why would you even watch them?
 
 	// Wait for a while (for the music to finish, preferably)
 	// before starting demos

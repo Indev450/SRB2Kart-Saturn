@@ -77,9 +77,6 @@ static void HWR_DrawColumnInCache(const column_t *patchcol, UINT8 *block, GLMipm
 
 	(void)patchheight; // This parameter is unused
 
-	if (!mipmap)
-		return;
-
 	if (originPatch) // originPatch can be NULL here, unlike in the software version
 		originy = originPatch->originy;
 
@@ -101,10 +98,7 @@ static void HWR_DrawColumnInCache(const column_t *patchcol, UINT8 *block, GLMipm
 			position = 0;
 		}
 
-		position = ((position * scale_y) + (FRACUNIT/2)) >> FRACBITS;
-
-		if (position < 0)
-			position = 0;
+		position = max(((position * scale_y) + (FRACUNIT/2)) >> FRACBITS, 0);
 
 		if (position + count >= pblockheight)
 			count = pblockheight - position;
@@ -118,11 +112,11 @@ static void HWR_DrawColumnInCache(const column_t *patchcol, UINT8 *block, GLMipm
 			alpha = 0xFF;
 
 			// Make pixel transparent if chroma keyed
-			if ((mipmap && mipmap->flags & TF_CHROMAKEYED) && (texel == HWR_PATCHES_CHROMAKEY_COLORINDEX))
+			if ((mipmap->flags & TF_CHROMAKEYED) && (texel == HWR_PATCHES_CHROMAKEY_COLORINDEX))
 				alpha = 0x00;
 
 			//Hurdler: 25/04/2000: now support colormap in hardware mode
-			if (mipmap && mipmap->colormap)
+			if (mipmap->colormap)
 				texel = mipmap->colormap[texel];
 
 			// hope compiler will get this switch out of the loops (dreams...)
@@ -323,36 +317,27 @@ static void HWR_GenerateTexture(INT32 texnum, GLMapTexture_t *gltex, boolean noe
 	INT32 blockwidth, blockheight, blocksize;
 
 	INT32 i, idx;
-	boolean skyspecial = false; //poor hack for Legacy large skies..
+	boolean skyspecial = false; // poor hack for Legacy large skies..
 
 	RGBA_t *palette;
 	palette = HWR_GetTexturePalette();
 
 	texture = textures[texnum];
 
-	// hack the Legacy skies..
-	if (texture->name[0] == 'S' &&
-	    texture->name[1] == 'K' &&
-	    texture->name[2] == 'Y' &&
-	    (texture->name[4] == 0 ||
-	     texture->name[5] == 0)
-	   )
-	{
-		skyspecial = true;
-		gltex->mipmap.flags = TF_WRAPXY; // don't use the chromakey for sky
-	}
-	else
-		gltex->mipmap.flags = TF_CHROMAKEYED | TF_WRAPXY;
-
+	gltex->mipmap.flags = TF_CHROMAKEYED | TF_WRAPXY;
 	gltex->mipmap.width = (UINT16)(texture->width);
 	gltex->mipmap.height = (UINT16)(texture->height);
-
-	if (skyspecial)
-		gltex->mipmap.format = GL_TEXFMT_RGBA; // that skyspecial code below assumes this format ...
-	else
-		gltex->mipmap.format = textureformat;
-
 	gltex->mipmap.colormap = colormaps;
+	gltex->mipmap.format = textureformat;
+
+	// hack the Legacy skies..
+	if (UNLIKELY(strncmp(texture->name, "SKY", 3) == 0 &&
+		(texture->name[4] == 0 || texture->name[5] == 0)))
+	{
+		skyspecial = true;
+		gltex->mipmap.flags &= ~TF_CHROMAKEYED; // don't use the chromakey for sky
+		gltex->mipmap.format = GL_TEXFMT_RGBA; // that skyspecial code below assumes this format ...
+	}
 
 #ifdef GLENCORE
 	if (encoremap && !noencore)
@@ -364,7 +349,7 @@ static void HWR_GenerateTexture(INT32 texnum, GLMapTexture_t *gltex, boolean noe
 	blocksize = (blockwidth * blockheight);
 	block = MakeBlock(&gltex->mipmap);
 
-	if (skyspecial) //Hurdler: not efficient, but better than holes in the sky (and it's done only at level loading)
+	if (UNLIKELY(skyspecial)) // Hurdler: not efficient, but better than holes in the sky (and it's done only at level loading)
 	{
 		INT32 j;
 		RGBA_t col;
@@ -387,10 +372,11 @@ static void HWR_GenerateTexture(INT32 texnum, GLMapTexture_t *gltex, boolean noe
 	for (i = 0, patch = texture->patches; i < texture->patchcount; i++, patch++)
 	{
 		realpatch = W_CacheLumpNumPwad(patch->wad, patch->lump, PU_CACHE);
+
 		if (realpatch != NULL)
 		{
 			HWR_DrawTexturePatchInCache(&gltex->mipmap, blockwidth, blockheight, texture, patch, realpatch);
-			Z_ChangeTag(realpatch, PU_HWRCACHE_UNLOCKED);
+			//Z_ChangeTag(realpatch, PU_HWRCACHE_UNLOCKED);
 		}
 	}
 
@@ -414,16 +400,6 @@ static void HWR_GenerateTexture(INT32 texnum, GLMapTexture_t *gltex, boolean noe
 // patch may be NULL if glMipmap has been initialised already and makebitmap is false
 void HWR_MakePatch (patch_t *patch, GLPatch_t *glPatch, GLMipmap_t *glMipmap, boolean makebitmap)
 {
-	if (glMipmap == NULL)
-		return;
-
-	if (patch == NULL || glPatch == NULL)
-	{
-		Z_Free(glMipmap->data);
-		glMipmap->data = NULL;
-		return;
-	}
-
 	// don't do it twice (like a cache)
 	if (glMipmap->width == 0)
 	{
@@ -951,6 +927,7 @@ static void HWR_LoadMappedPatch(GLMipmap_t *glMipmap, GLPatch_t *glPatch)
 		patch_t *patch = glPatch->rawpatch;
 		if (!patch)
 			patch = W_CacheLumpNumPwad(glPatch->wadnum, glPatch->lumpnum, PU_STATIC);
+
 		HWR_MakePatch(patch, glPatch, glMipmap, true);
 
 		// You can't free rawpatch for some reason?
@@ -982,6 +959,7 @@ void HWR_GetPatch(GLPatch_t *glPatch)
 		patch_t *ptr = glPatch->rawpatch;
 		if (!ptr)
 			ptr = W_CacheLumpNumPwad(glPatch->wadnum, glPatch->lumpnum, PU_STATIC);
+
 		HWR_MakePatch(ptr, glPatch, glPatch->mipmap, true);
 
 		// this is inefficient.. but the hardware patch in heap is purgeable so it should
@@ -1007,8 +985,7 @@ void HWR_GetMappedPatch(GLPatch_t *glPatch, const UINT8 *colormap)
 {
 	GLMipmap_t *glMipmap, *newMipmap;
 
-	// Blatant hack for encore colormapping aside...
-	if (colormap == colormaps || colormap == NULL || colormap == (const UINT8*)(COLORMAP_REMAPOFFSET))
+	if (colormap == colormaps || colormap == NULL)
 	{
 		// Load the default (green) color in doom cache (temporary?) AND hardware cache
 		HWR_GetPatch(glPatch);
@@ -1017,15 +994,15 @@ void HWR_GetMappedPatch(GLPatch_t *glPatch, const UINT8 *colormap)
 
 	// search for the mipmap
 	// skip the first (no colormap translated)
-	for (glMipmap = glPatch->mipmap; glMipmap->nextcolormap; )
+	for (glMipmap = glPatch->mipmap; LIKELY(glMipmap->nextcolormap);)
 	{
 		glMipmap = glMipmap->nextcolormap;
 
-		if (glMipmap->colormap != colormap)
-			continue;
-
-		HWR_LoadMappedPatch(glMipmap, glPatch);
-		return;
+		if (UNLIKELY(glMipmap->colormap == colormap))
+		{
+			HWR_LoadMappedPatch(glMipmap, glPatch);
+			return;
+		}
 	}
 	// not found, create it!
 	// If we are here, the sprite with the current colormap is not already in hardware memory
@@ -1344,6 +1321,7 @@ UINT32 HWR_GetLightTableID(extracolormap_t *colormap)
 			colormap_pointer = colormaps; // don't actually use the data from the "default colormap"
 		else
 			colormap_pointer = colormap->colormap;
+
 		colormap->gl_lighttable_id = HWR_CreateLightTable(colormap_pointer);
 	}
 

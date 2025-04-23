@@ -641,6 +641,8 @@ static boolean D_Display(void)
 		}
 	}
 
+	NetUpdate(); // send out any new accumulation
+
 	// It's safe to end the game now.
 	if (G_GetExitGameFlag())
 	{
@@ -823,7 +825,7 @@ void D_SRB2Loop(void)
 
 		if (interp)
 		{
-			renderdeltatics = FLOAT_TO_FIXED(deltatics);
+			renderdeltatics = FloatToFixed(deltatics);
 
 			if (!(paused || P_AutoPause()) && deltatics < 1.0 && !hu_stopped)
 			{
@@ -867,7 +869,7 @@ void D_SRB2Loop(void)
 		LUA_Step();
 
 #ifdef HAVE_DISCORDRPC
-		if (!dedicated)
+		if (!dedicated && renderisnewtic)
 		{
 			Discord_RunCallbacks();
 		}
@@ -927,6 +929,7 @@ void D_SRB2Loop(void)
 void D_StartTitle(void)
 {
 	INT32 i;
+
 	if (netgame)
 	{
 		if (gametype == GT_RACE) // SRB2kart
@@ -1060,18 +1063,21 @@ static void D_AutoloadFile(const char *file, char **filearray)
 		COM_BufAddText(va("exec %s\n", newfile));
 }
 
-static char *strremove(char *str, const char *sub) {
-    char *p, *q, *r;
-    if (*sub && (q = r = strstr(str, sub)) != NULL) {
-        size_t len = strlen(sub);
-        while ((r = strstr(p = r + len, sub)) != NULL) {
-            while (p < r)
-                *q++ = *p++;
-        }
-        while ((*q++ = *p++) != '\0')
-            continue;
-    }
-    return str;
+static char *strremove(char *str, const char *sub)
+{
+	char *p, *q, *r;
+	if (*sub && (q = r = strstr(str, sub)) != NULL)
+	{
+		size_t len = strlen(sub);
+		while ((r = strstr(p = r + len, sub)) != NULL)
+		{
+			while (p < r)
+				*q++ = *p++;
+		}
+		while ((*q++ = *p++) != '\0')
+			continue;
+	}
+	return str;
 }
 
 // FIND THEM
@@ -1179,47 +1185,48 @@ void D_CleanFile(char **filearray)
 
 static boolean AddIWAD(void)
 {
-	char * path = va(pandf,srb2path,"srb2.srb");
+	char * path = va(pandf, srb2path, "srb2.srb");
 
 	if (FIL_ReadFileOK(path))
 	{
 		D_AddFile(path, startupwadfiles);
 		return true;
 	}
-	else
-	{
-		return false;
-	}
+
+	return false;
 }
 
 // extra graphic patches for saturn specific thingies
-boolean found_extra_kart;
-boolean found_extra2_kart;
-boolean found_extra3_kart;
+boolean found_extra_kart = false;
+boolean found_extra2_kart = false;
+boolean found_extra3_kart = false;
 
-boolean xtra_speedo;       // extra speedometer check
-boolean xtra_speedo_clr;   // extra speedometer colour check
-boolean xtra_speedo3;      // 80x 11 extra speedometer check
-boolean xtra_speedo_clr3;  // 80x 11 extra speedometer colour check
-boolean achi_speedo;       // achiiro speedometer check
-boolean achi_speedo_clr;   // extra speedometer colour check
-boolean kartz_speedo;       // kartZ speedo
+boolean xtra_speedo = false;       // extra speedometer check
+boolean xtra_speedo_clr = false;   // extra speedometer colour check
+boolean xtra_speedo3 = false;      // 80x 11 extra speedometer check
+boolean xtra_speedo_clr3 = false;  // 80x 11 extra speedometer colour check
+boolean achi_speedo = false;       // achiiro speedometer check
+boolean achi_speedo_clr = false;   // extra speedometer colour check
+boolean dial_speedo = false;       // dial speedometer check
+boolean dial_speedo_clr = false;   // dial speedometer colour check
+boolean kartz_speedo = false;      // kartZ speedo
+boolean kartz_speedo_smol = false; // kartZ speedo but smol
 
-boolean clr_hud;           // colour hud check
-boolean big_lap;           // bigger lap counter
-boolean big_lap_color;     // bigger lap counter but colour
-boolean statdp;            // stat display for extended player setup
-boolean nametaggfx;        // Nametag stuffs
-boolean driftgaugegfx;     // Driftgauge stuffs
-boolean multiitem_icon;    // Extra icons for Sneakers, Banana and Jawz
+boolean clr_hud = false;           // colour hud check
+boolean driftgaugegfx_clr = false; // driftgauge colour check
+boolean big_lap = false;           // bigger lap counter
+boolean big_lap_color = false;     // bigger lap counter but colour
+boolean statdp = false;            // stat display for extended player setup
+boolean nametaggfx = false;        // Nametag stuffs
+boolean driftgaugegfx = false;     // Driftgauge stuffs
+boolean multiitem_icon = false;    // Extra icons for Sneakers, Banana and Jawz
+boolean joystickicon = false;      // Extra icons for the joystick input display
+boolean minidoticon = false;        // Dot graphic for minimap player angle display
 //
 
 static void IdentifyVersion(void)
 {
 	const char *srb2waddir = NULL;
-	found_extra_kart = false;
-	found_extra2_kart = false;
-	found_extra3_kart = false;
 
 #if defined (__unix__) || defined (UNIXCOMMON) || defined (HAVE_SDL)
 	// change to the directory where 'srb2.srb' is found
@@ -1229,11 +1236,11 @@ static void IdentifyVersion(void)
 	// get the current directory (possible problem on NT with "." as current dir)
 	if (srb2waddir)
 	{
-		strlcpy(srb2path,srb2waddir,sizeof (srb2path));
+		strlcpy(srb2path, srb2waddir, sizeof(srb2path));
 	}
 	else
 	{
-		if (getcwd(srb2path, 256) != NULL)
+		if (getcwd(srb2path, sizeof(srb2path)))
 			srb2waddir = srb2path;
 		else
 		{
@@ -1242,7 +1249,7 @@ static void IdentifyVersion(void)
 	}
 
 	// Load the IWAD
-	if (! AddIWAD())
+	if (!AddIWAD())
 	{
 		I_Error("SRB2.SRB not found! Expected in %s\n", srb2waddir);
 	}
@@ -1267,18 +1274,21 @@ static void IdentifyVersion(void)
 	D_AddFile(va(pandf,srb2waddir,"patch.kart"), startupwadfiles);
 #endif
 	// completely optional
-	if (FIL_ReadFileOK(va(pandf,srb2waddir,"extra.kart"))) {
+	if (FIL_ReadFileOK(va(pandf,srb2waddir,"extra.kart")))
+	{
 		D_AddFile(va(pandf,srb2waddir,"extra.kart"), startupwadfiles);
 		found_extra_kart = true;
 	}
 
 	// completely optional 2: Back with a vengence
-	if (FIL_ReadFileOK(va(pandf,srb2waddir,"extra2.kart"))) {
+	if (FIL_ReadFileOK(va(pandf,srb2waddir,"extra2.kart")))
+	{
 		D_AddFile(va(pandf,srb2waddir,"extra2.kart"), startupwadfiles);
 		found_extra2_kart = true;
 	}
 
-	if (FIL_ReadFileOK(va(pandf,srb2waddir,"extra3.kart"))) {
+	if (FIL_ReadFileOK(va(pandf,srb2waddir,"extra3.kart")))
+	{
 		D_AddFile(va(pandf,srb2waddir,"extra3.kart"), startupwadfiles);
 		found_extra3_kart = true;
 	}
@@ -1325,6 +1335,187 @@ static inline void D_MakeTitleString(char *s)
 	temp[80] = '\0';
 	strcpy(s, temp);
 }
+
+static void D_CheckSaturnExtraFiles(void)
+{
+	// Possible value that changes depending on whether required files for speedometer are found or not
+	CV_PossibleValue_t speedo_cons_temp[NUMSPEEDOSTUFF] = {{1, "Default"}, {0, NULL}, {0, NULL}, {0, NULL}, {0, NULL}, {0, NULL}, {0, NULL}, {0, NULL}};
+	CV_PossibleValue_t driftgaugestyle_cons_temp[NUMDGAUGESTUFF] = {{1, "Default"}, {2, "Small"}, {3, "Big Numbers"}, {4, "Numbers Only"}, {0, NULL}, {0, NULL}};
+	CV_PossibleValue_t inputdisplay_cons_temp[NUMINPUTDISPLAYSTUFF] = {{0, "Off"}, {1, "Wheel"}, {2, "Stick"}, {0, NULL}, {0, NULL}};
+
+	unsigned last_speedo_i = 0;
+	unsigned last_driftgauge_i = 3;
+	unsigned last_inputdisplay_i = 2;
+#define PUSHCONS(cons, i, id, name) { ++i; cons[i].value = id; cons[i].strvalue = name; }
+
+	// found the funny, add it in!
+	if (found_extra_kart)
+	{
+		mainwads++;
+
+		// now check for extra speedometer stuff
+		if (W_CheckMultipleLumps("SP_SMSTC", "K_TRNULL", "SP_MKMH", "SP_MMPH", "SP_MFRAC", "SP_MPERC", NULL))
+		{
+			xtra_speedo = true;
+			PUSHCONS(speedo_cons_temp, last_speedo_i, 2, "Small");
+		}
+
+		// now check for achii speedometer stuff
+		if (W_CheckMultipleLumps("SP_AMSTC", "K_TRNULL", "SP_AKMH", "SP_AMPH", "SP_AFRAC", "SP_APERC", NULL))
+		{
+			achi_speedo = true;
+			PUSHCONS(speedo_cons_temp, last_speedo_i, 3, "Achii");
+		}
+
+		// now check for dial speedometer stuff
+		if (W_CheckMultipleLumps("K_DSPBS1", "K_DSPBS2", "K_DSDIAL",
+			"K_TRNULL", "SP_DKMH", "SP_DMPH", "SP_DFRAC", "SP_DPERC",
+			"K_DSPNM0", "K_DSPNM1", "K_DSPNM2", "K_DSPNM3", "K_DSPNM4",
+			"K_DSPNM5", "K_DSPNM6", "K_DSPNM7", "K_DSPNM8", "K_DSPNM9",
+			"RANKFIN", NULL))
+		{
+			dial_speedo = true;
+			PUSHCONS(speedo_cons_temp, last_speedo_i, 4, "Dial");
+		}
+
+		// check for bigger lap count
+		if (W_CheckMultipleLumps("K_STLAPB", "K_STLA2B", NULL))
+		{
+			big_lap = true;
+		}
+
+		// kartzspeedo
+		if (W_CheckMultipleLumps("K_KZSP1", "K_KZSP2", "K_KZSP3", "K_KZSP4", "K_KZSP5",
+			"K_KZSP6", "K_KZSP7", "K_KZSP8", "K_KZSP9", "K_KZSP10", "K_KZSP11", "K_KZSP12",
+			"K_KZSP13", "K_KZSP14", "K_KZSP15", "K_KZSP16", "K_KZSP17", "K_KZSP18", "K_KZSP19",
+			"K_KZSP20", "K_KZSP21", "K_KZSP22", "K_KZSP23", "K_KZSP24", "K_KZSP25", NULL))
+		{
+			kartz_speedo = true;
+			PUSHCONS(speedo_cons_temp, last_speedo_i, 5, "P-Meter");
+		}
+
+		if (W_CheckMultipleLumps("K_KZSS1", "K_KZSS2", "K_KZSS3", "K_KZSS4", "K_KZSS5",
+			"K_KZSS6", "K_KZSS7", "K_KZSS8", "K_KZSS9", "K_KZSS10", "K_KZSS11", "K_KZSS12",
+			"K_KZSS13", "K_KZSS14", "K_KZSS15", "K_KZSS16", "K_KZSS17", "K_KZSS18", "K_KZSS19",
+			"K_KZSS20", "K_KZSS21", "K_KZSS22", "K_KZSS23", "K_KZSS24", "K_KZSS25", NULL))
+		{
+			kartz_speedo_smol = true;
+			PUSHCONS(speedo_cons_temp, last_speedo_i, 6, "P-Meter Small");
+		}
+
+		// stat display for extended player setup
+		if (W_CheckMultipleLumps("K_STATNB", "K_STATN1", "K_STATN2",
+			"K_STATN3", "K_STATN4", "K_STATN5", "K_STATN6", NULL))
+		{
+			statdp = true;
+		}
+
+		// Nametag stuffs
+		if (W_CheckMultipleLumps("NTLINE", "NTLINEV", "NTSP", "NTWH", NULL))
+		{
+			nametaggfx = true;
+		}
+
+		// driftgauge
+		if (W_CheckMultipleLumps("K_DGAU","K_DGSU", NULL))
+		{
+			driftgaugegfx = true;
+		}
+
+		// extra item icons
+		if (W_CheckMultipleLumps("K_ITSHO2", "K_ITSHO3", "K_ITBAN2", "K_ITBAN3", "K_ITBAN4", "K_ITJAW2", NULL))
+		{
+			multiitem_icon = true;
+		}
+
+		// extra round joystick inputdisplay sprites
+		if (W_CheckMultipleLumps("JOYBCK","JOYKNB","JOYSHD", NULL))
+		{
+			joystickicon = true;
+			PUSHCONS(inputdisplay_cons_temp, last_inputdisplay_i, 3, "StickGFX");
+		}
+
+		if (W_LumpExists("MMAPDOT"))
+		{
+			minidoticon = true;
+		}
+	}
+
+	// now check for colour hud stuff
+	if (found_extra2_kart)
+	{
+		mainwads++;
+
+		// kart vanilla hud patches but colourizable
+		if (W_CheckMultipleLumps("K_SCTIME", "K_SCTIMW", "K_SCLAPS", "K_SCLAPW","K_SCBALN", "K_SCBALW",
+			"K_SCKARM", "K_SCTOUT", "K_ISMULC", "K_ITMULC", "K_ITBC", "K_ITBCD", "K_ISBC", "K_ISBCD", NULL))
+		{
+			clr_hud = true;
+		}
+
+		// extra speedo but colour
+		if (W_LumpExists("SC_SMSTC"))
+		{
+			xtra_speedo_clr = true;
+		}
+
+		// achii speedo but colour
+		if (W_CheckMultipleLumps("SC_AMSTC", "K_TRNULL", "SC_AKMH", "SC_AMPH", "SC_AFRAC", "SC_APERC", NULL))
+		{
+			achi_speedo_clr = true;
+		}
+
+		// dial speedo but colour
+		if (W_CheckMultipleLumps("K_DSPBC1", "K_DSPBC2", "K_DSDIAL",
+			"K_TRNULL", "SC_DKMH", "SC_DMPH", "SC_DFRAC", "SC_DPERC",
+			"K_DSPNC0", "K_DSPNC1", "K_DSPNC2", "K_DSPNC3", "K_DSPNC4",
+			"K_DSPNC5", "K_DSPNC6", "K_DSPNC7", "K_DSPNC8", "K_DSPNC9",
+			"RANKFIN", NULL))
+		{
+			dial_speedo_clr = true;
+		}
+
+		// driftgauge but colour
+		if (W_CheckMultipleLumps("K_DCAU","K_DCSU", NULL))
+		{
+			driftgaugegfx_clr = true;
+		}
+
+		// check for bigger lap count but color** its color bitch
+		if (W_CheckMultipleLumps("K_SCLAPB", "K_SCLA2B", NULL))
+		{
+			big_lap_color = true;
+		}
+	}
+
+	// can be used for custom hud stuff
+	// currently used for the v1 beta hud
+	if (found_extra3_kart)
+	{
+		mainwads++;
+
+		// 80x11 speedometer crap
+		if (W_LumpExists("SP_SM3TC"))
+		{
+			xtra_speedo3 = true;
+			PUSHCONS(speedo_cons_temp, last_speedo_i, 7, "Extra");
+			PUSHCONS(driftgaugestyle_cons_temp, last_driftgauge_i, 5, "Extra");
+		}
+
+		// 80x11 speedometer crap but colour
+		if (W_LumpExists("SC_SM3TC"))
+		{
+			xtra_speedo_clr3 = true;
+		}
+	}
+
+#undef PUSHCONS
+	memcpy(speedo_cons_t, speedo_cons_temp, sizeof(speedo_cons_t));
+	memcpy(driftgaugestyle_cons_t, driftgaugestyle_cons_temp, sizeof(driftgaugestyle_cons_t));
+	memcpy(inputdisplay_cons_t, inputdisplay_cons_temp, sizeof(inputdisplay_cons_t));
+}
+
+#include <locale.h>
 
 //
 // D_SRB2Main
@@ -1523,6 +1714,7 @@ void D_SRB2Main(void)
 
 	CONS_Printf("I_InitializeTime()...\n");
 	I_InitializeTime();
+	setlocale(LC_TIME, "");
 
 	// Make backups of some SOCcable tables.
 	P_BackupTables();
@@ -1574,100 +1766,7 @@ void D_SRB2Main(void)
 
 #endif //ifndef DEVELOP
 
-	// Possible value that changes depending on whether required files for speedometer are found or not
-	CV_PossibleValue_t speedo_cons_temp[NUMSPEEDOSTUFF] = {{1, "Default"}, {0, NULL}, {0, NULL}, {0, NULL}, {0, NULL}, {0, NULL}};
-	CV_PossibleValue_t driftgaugestyle_cons_temp[NUMSPEEDOSTUFF] = {{1, "Default"}, {2, "Small"}, {3, "Big Numbers"}, {4, "Numbers Only"}, {0, NULL}, {0, NULL}}; // ugh i dont want this but bleh
-	unsigned last_speedo_i = 0;
-	unsigned last_driftgauge_i = 0;
-#define PUSHCONS(cons, i, id, name) { ++i; cons[i].value = id; cons[i].strvalue = name; }
-
-	if (found_extra_kart || found_extra2_kart || found_extra3_kart) // found the funny, add it in!
-	{
-		// HAYA: These are seperated for a reason lmao
-		if (found_extra_kart)
-			mainwads++;
-		if (found_extra2_kart)
-			mainwads++;
-		if (found_extra3_kart)
-			mainwads++;
-
-		// now check for extra speedometer stuff
-		if (W_CheckMultipleLumps("SP_SMSTC", "K_TRNULL", "SP_MKMH", "SP_MMPH", "SP_MFRAC", "SP_MPERC", NULL))
-		{
-			xtra_speedo = true;
-			PUSHCONS(speedo_cons_temp, last_speedo_i, 2, "Small");
-		}
-
-		if (W_LumpExists("SC_SMSTC"))
-			xtra_speedo_clr = true;
-
-		// now check for achii speedometer stuff
-		if (W_CheckMultipleLumps("SP_AMSTC", "K_TRNULL", "SP_AKMH", "SP_AMPH", "SP_AFRAC", "SP_APERC", NULL))
-		{
-			achi_speedo = true;
-			PUSHCONS(speedo_cons_temp, last_speedo_i, 3, "Achii");
-		}
-
-		if (W_CheckMultipleLumps("SC_AMSTC", "K_TRNULL", "SC_AKMH", "SC_AMPH", "SC_AFRAC", "SC_APERC", NULL))
-			achi_speedo_clr = true;
-
-		// check for bigger lap count
-		if (W_CheckMultipleLumps("K_STLAPB", "K_STLA2B", NULL))
-			big_lap = true;
-
-		// now check for colour hud stuff
-		if (W_CheckMultipleLumps("K_SCTIME", "K_SCTIMW", "K_SCLAPS", "K_SCLAPW", \
-			"K_SCBALN", "K_SCBALW", "K_SCKARM", "K_SCTOUT", "K_ISMULC", "K_ITMULC", "K_ITBC", "K_ITBCD", "K_ISBC", "K_ISBCD", NULL))
-			clr_hud = true;
-
-		// check for bigger lap count but color** its color bitch
-		if (W_CheckMultipleLumps("K_SCLAPB", "K_SCLA2B", NULL))
-			big_lap_color = true;
-
-		// kartzspeedo
-		if (W_CheckMultipleLumps("K_KZSP1", "K_KZSP2", "K_KZSP3", "K_KZSP4", "K_KZSP5", \
-			"K_KZSP6", "K_KZSP7", "K_KZSP8", "K_KZSP9", "K_KZSP10", "K_KZSP11", "K_KZSP12", \
-			"K_KZSP13", "K_KZSP14", "K_KZSP15", "K_KZSP16", "K_KZSP17", "K_KZSP18", "K_KZSP19", \
-			"K_KZSP20", "K_KZSP21", "K_KZSP22", "K_KZSP23", "K_KZSP24", "K_KZSP25", NULL))
-		{
-			kartz_speedo = true;
-			PUSHCONS(speedo_cons_temp, last_speedo_i, 4, "P-Meter");
-		}
-
-		// stat display for extended player setup
-		if (W_CheckMultipleLumps("K_STATNB", "K_STATN1", "K_STATN2", "K_STATN3", "K_STATN4", \
-			"K_STATN5", "K_STATN6", NULL))
-			statdp = true;
-
-		// Nametag stuffs
-		if (W_CheckMultipleLumps("NTLINE", "NTLINEV", "NTSP", "NTWH", NULL))
-			nametaggfx = true;
-
-		if (W_CheckMultipleLumps("K_DGAU","K_DCAU","K_DGSU","K_DCSU", NULL))
-			driftgaugegfx = true;
-
-		// extra item icons
-		if (W_CheckMultipleLumps("K_ITSHO2", "K_ITSHO3", "K_ITBAN2", "K_ITBAN3", "K_ITBAN4", "K_ITJAW2", NULL))
-			multiitem_icon = true;
-
-		if (found_extra3_kart)
-		{
-			// 80x11 speedometer crap
-			if (W_LumpExists("SP_SM3TC"))
-			{
-				xtra_speedo3 = true;
-				PUSHCONS(speedo_cons_temp, last_speedo_i, 5, "Extra");
-				PUSHCONS(driftgaugestyle_cons_temp, last_driftgauge_i, 5, "Extra");
-			}
-
-			if (W_LumpExists("SC_SM3TC"))
-				xtra_speedo_clr3 = true;
-		}
-	}
-
-#undef PUSHCONS
-	memcpy(speedo_cons_t, speedo_cons_temp, sizeof(speedo_cons_t));
-	memcpy(driftgaugestyle_cons_t, driftgaugestyle_cons_temp, sizeof(driftgaugestyle_cons_t));
+	D_CheckSaturnExtraFiles(); // check all the saturn stuff :3
 
 	// Do it before P_InitMapData because PNG patch
 	// conversion sometimes needs the palette

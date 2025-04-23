@@ -81,18 +81,19 @@ ALL_SYSTEMS=\
 ifeq (,$(filter $(ALL_SYSTEMS),$(.VARIABLES)))
 ifeq ($(OS),Windows_NT) # all windows are Windows_NT...
 
- $(info Detected a Windows system, compiling for 32-bit MinGW SDL2...)
+ ifeq ($(shell uname -s | grep -o MINGW64),MINGW64) # 64-bit MinGW
+  $(info Detected a Windows system, compiling for 64-bit MinGW SDL2...)
+  MINGW64=1
+ else # 32-bit MinGW
+  $(info Detected a Windows system, compiling for 32-bit MinGW SDL2...)
+  MINGW=1
+ endif
 
- # go for a 32-bit sdl mingw exe by default
- MINGW=1
  SDL=1
  WINDOWSHELL=1
- NOUPX=1
+ NOOBJDUMP=1
 
 else # if you on the *nix
-
- NOUPX=1
-
  system:=$(shell uname -s)
 
  ifeq ($(system),Linux)
@@ -116,6 +117,7 @@ else # if you on the *nix
 endif
 endif
 
+NOUPX=1
 
 # SRB2 data files
 D_DIR?=../bin/Resources
@@ -193,14 +195,11 @@ endif
 endif
 
 ifndef NONET
-ifndef NOSATURNSYNCH
-DOSATURNSYNCH=1
 ifndef NOSATURNJOIN
 DOSATURNJOIN=1
 endif
 ifndef NOSATURNPAK
 DOSATURNPAK=1
-endif
 endif
 endif
 
@@ -385,14 +384,11 @@ endif
 endif
 
 ifndef NONET
-ifndef NOSATURNSYNCH
-OPTS+=-DDOSATURNSYNCH
 ifndef NOSATURNJOIN
 OPTS+=-DDOSATURNJOIN
 endif
 ifndef NOSATURNPAK
 OPTS+=-DDOSATURNPAK
-endif
 endif
 endif
 
@@ -772,28 +768,8 @@ $(OBJDIR)/SRB2.res: win32/Srb2win.rc win32/afxres.h win32/resource.h
 	$(WINDRES) -i $< -O rc $(WINDRESFLAGS) --include-dir=win32 -o $@ -O coff
 
 ifdef SDL
-
 ifdef MINGW
 $(OBJDIR)/win_dbg.o: win32/win_dbg.c
-	$(CC) $(CFLAGS) $(WFLAGS) -c $< -o $@
-endif
-
-ifdef FILTERS
-$(OBJDIR)/%.o: $(INTERFACE)/filter/%.c
-	@echo $< needs deps
-	$(CC) $(CFLAGS) $(WFLAGS) -c $< -o $@
-
-$(OBJDIR)/filters.o: $(INTERFACE)/filter/filters.c $(INTERFACE)/filter/filters.c \
- $(INTERFACE)/filter/filters.h
-	$(CC) $(CFLAGS) $(WFLAGS) -c $< -o $@
-
-$(OBJDIR)/hq2x.o: $(INTERFACE)/filter/hq2x.c $(INTERFACE)/filter/hq2x.c \
- $(INTERFACE)/filter/filters.h
-	$(CC) $(CFLAGS) $(WFLAGS) -c $< -o $@
-
-$(OBJDIR)/lq2x.o: $(INTERFACE)/filter/lq2x.c $(INTERFACE)/filter/lq2x.c \
- $(INTERFACE)/filter/filters.h $(INTERFACE)/filter/interp.h \
- $(INTERFACE)/filter/hq2x.h $(INTERFACE)/filter/lq2x.h
 	$(CC) $(CFLAGS) $(WFLAGS) -c $< -o $@
 endif
 endif

@@ -99,14 +99,14 @@ static GLuint screenPaletteTex = 0; // 1D texture containing the screen palette
 static GLuint paletteLookupTex = 0; // 3D texture containing RGB -> palette index lookup table
 RGBA_t  myPaletteData[256]; // the palette for converting textures to RGBA
 
-GLint   screen_width    = 0;               // used by Draw2DLine()
-GLint   screen_height   = 0;
-GLbyte  screen_depth    = 0;
-GLint   textureformatGL = 0;
-GLint maximumAnisotropy = 0;
-static GLboolean MipMap = GL_FALSE;
-static GLint min_filter = GL_LINEAR;
-static GLint mag_filter = GL_LINEAR;
+static GLint gltexformat = GL_RGB5_A1;
+GLint   screen_width     = 0;               // used by Draw2DLine()
+GLint   screen_height    = 0;
+GLbyte  screen_depth     = 0;
+GLint maximumAnisotropy  = 0;
+static GLboolean MipMap  = GL_FALSE;
+static GLint min_filter  = GL_LINEAR;
+static GLint mag_filter  = GL_LINEAR;
 static GLint anisotropic_filter = 0;
 boolean supportMipMap = false;
 
@@ -670,6 +670,9 @@ typedef enum
 	gluniform_lighting,
 	gluniform_fade_start,
 	gluniform_fade_end,
+	gluniform_light_dir,
+	gluniform_light_contrast,
+	gluniform_light_backlight,
 	
 	// palette rendering
 	gluniform_palette_tex, // 1d texture containing a palette
@@ -707,6 +710,11 @@ static gl_shaderstate_t gl_shaderstate;
 
 // Shader info
 static float shader_leveltime = 0;
+static float shader_light_x = 0.0f;
+static float shader_light_y = 0.0f;
+static float shader_light_z = 0.0f;
+static INT32 shader_light_contrast = 0;
+static INT32 shader_light_backlight = 0;
 
 // Lactozilla: Shader functions
 static boolean GL_Shader_CompileProgram(gl_shader_t *shader, GLint i);
@@ -866,6 +874,21 @@ void GL_SetShaderInfo(hwdshaderinfo_t info, INT32 value)
 	{
 		case HWD_SHADERINFO_LEVELTIME:
 			shader_leveltime = (((float)(value-1)) + FIXED_TO_FLOAT(rendertimefrac)) / TICRATE;
+			break;
+		case HWD_SHADERINFO_LIGHT_X:
+			shader_light_x = FixedToFloat(value);
+			break;
+		case HWD_SHADERINFO_LIGHT_Y:
+			shader_light_y = FixedToFloat(value);
+			break;
+		case HWD_SHADERINFO_LIGHT_Z:
+			shader_light_z = FixedToFloat(value);
+			break;
+		case HWD_SHADERINFO_LIGHT_CONTRAST:
+			shader_light_contrast = value;
+			break;
+		case HWD_SHADERINFO_LIGHT_BACKLIGHT:
+			shader_light_backlight = value;
 			break;
 		default:
 			break;
@@ -1506,7 +1529,7 @@ void GL_SetBlend(FBITFIELD PolyFlags)
 {
 	const FBITFIELD Xor = CurrentPolyFlags^PolyFlags;;
 
-	if (Xor & (PF_Blending|PF_RemoveYWrap|PF_ForceWrapX|PF_ForceWrapY|PF_Occlude|PF_NoTexture|PF_Modulated|PF_NoDepthTest|PF_Decal|PF_Invisible))
+	if (Xor & (PF_Blending|PF_RemoveYWrap|PF_ForceWrapX|PF_ForceWrapY|PF_Occlude|PF_NoTexture|PF_Modulated|PF_NoDepthTest|PF_Decal|PF_Skydecal|PF_Invisible))
 	{
 		if (Xor & PF_Blending) // if blending mode must be changed
 			GL_SetBlendMode(PolyFlags & PF_Blending);
@@ -1522,7 +1545,21 @@ void GL_SetBlend(FBITFIELD PolyFlags)
 		if (Xor & PF_Decal)
 		{
 			if (PolyFlags & PF_Decal)
+			{
+				pglPolygonOffset(-1.0f, -1.0f);
 				pglEnable(GL_POLYGON_OFFSET_FILL);
+			}
+			else
+				pglDisable(GL_POLYGON_OFFSET_FILL);
+		}
+
+		if (Xor & PF_Skydecal)
+		{
+			if (PolyFlags & PF_Skydecal)
+			{
+				pglPolygonOffset(-0.45f, -0.45f); // dont let skywalls draw over actual walls tho
+				pglEnable(GL_POLYGON_OFFSET_FILL);
+			}
 			else
 				pglDisable(GL_POLYGON_OFFSET_FILL);
 		}
@@ -1600,8 +1637,8 @@ void GL_SetBlend(FBITFIELD PolyFlags)
 			GL_SetNoTexture();
 		}
 	}
-
 	CurrentPolyFlags = PolyFlags;
+
 }
 
 static void GL_AllocTextureBuffer(GLMipmap_t *pTexInfo)
@@ -1646,9 +1683,10 @@ static void GL_UpdateTexture(GLMipmap_t *pTexInfo)
 
 	//GL_DBG_Printf("UpdateTexture %d %x\n", (INT32)num, pImgData);
 
-	texformat = textureformatGL;
+	texformat = gltexformat;
+	const GLTextureFormat_t texinfoformat = pTexInfo->format;
 
-	switch (pTexInfo->format)
+	switch (texinfoformat)
 	{
 		case GL_TEXFMT_P_8:
 		case GL_TEXFMT_AP_88:
@@ -1673,7 +1711,7 @@ static void GL_UpdateTexture(GLMipmap_t *pTexInfo)
 
 					pImgData++;
 
-					if (pTexInfo->format != GL_TEXFMT_AP_88)
+					if (texinfoformat != GL_TEXFMT_AP_88)
 						continue;
 					if (chromakeyed)
 						continue;
@@ -1721,7 +1759,7 @@ static void GL_UpdateTexture(GLMipmap_t *pTexInfo)
 			}
 			break;
 		default:
-			GL_MSG_Warning("UpdateTexture: bad format %d\n", pTexInfo->format);
+			GL_MSG_Warning("UpdateTexture: bad format %d\n", texinfoformat);
 			break;
 	}
 
@@ -1744,6 +1782,8 @@ static void GL_UpdateTexture(GLMipmap_t *pTexInfo)
 
 	if (MipMap && !transparent) // No mipmaps on transparent stuff
 	{
+		int maxlod = (texformat == GL_LUMINANCE_ALPHA || texformat == GL_ALPHA) ? 4 : 5;
+
 		pglTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, GL_TRUE);
 
 		if (update)
@@ -1753,7 +1793,7 @@ static void GL_UpdateTexture(GLMipmap_t *pTexInfo)
 
 		// Control the mipmap level of detail
 		pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_LOD, 0);
-		pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LOD, 4);
+		pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LOD, maxlod);
 	}
 	else
 	{
@@ -1868,11 +1908,32 @@ static void GL_Shader_SetUniforms(FSurfaceInfo *Surface, GLRGBAFloat *poly, GLRG
 		UNIFORM_4(shader->uniforms[gluniform_tint_color], tint->red, tint->green, tint->blue, tint->alpha, pglUniform4f);
 		UNIFORM_4(shader->uniforms[gluniform_fade_color], fade->red, fade->green, fade->blue, fade->alpha, pglUniform4f);
 
+		boolean directional = false;
 		if (Surface != NULL)
 		{
 			UNIFORM_1(shader->uniforms[gluniform_lighting], (GLfloat)Surface->LightInfo.light_level, pglUniform1f);
 			UNIFORM_1(shader->uniforms[gluniform_fade_start], (GLfloat)Surface->LightInfo.fade_start, pglUniform1f);
 			UNIFORM_1(shader->uniforms[gluniform_fade_end], (GLfloat)Surface->LightInfo.fade_end, pglUniform1f);
+			directional = Surface->LightInfo.directional;
+		}
+		else
+		{
+			UNIFORM_1(shader->uniforms[gluniform_lighting], 255, pglUniform1f);
+			UNIFORM_1(shader->uniforms[gluniform_fade_start], 0, pglUniform1f);
+			UNIFORM_1(shader->uniforms[gluniform_fade_end], 31, pglUniform1f);
+		}
+
+		if (directional)
+		{
+			UNIFORM_3(shader->uniforms[gluniform_light_dir], shader_light_x, shader_light_y, shader_light_z, pglUniform3f);
+			UNIFORM_1(shader->uniforms[gluniform_light_contrast], shader_light_contrast, pglUniform1f);
+			UNIFORM_1(shader->uniforms[gluniform_light_backlight], shader_light_backlight, pglUniform1f);
+		}
+		else
+		{
+			UNIFORM_3(shader->uniforms[gluniform_light_dir], 0, 0, 0, pglUniform3f);
+			UNIFORM_1(shader->uniforms[gluniform_light_contrast], 0, pglUniform1f);
+			UNIFORM_1(shader->uniforms[gluniform_light_backlight], 0, pglUniform1f);
 		}
 
 		UNIFORM_1(shader->uniforms[gluniform_leveltime], shader_leveltime, pglUniform1f);
@@ -1997,6 +2058,9 @@ static boolean GL_Shader_CompileProgram(gl_shader_t *shader, GLint i)
 	shader->uniforms[gluniform_lighting] = GETUNI("lighting");
 	shader->uniforms[gluniform_fade_start] = GETUNI("fade_start");
 	shader->uniforms[gluniform_fade_end] = GETUNI("fade_end");
+	shader->uniforms[gluniform_light_dir] = GETUNI("light_dir");
+	shader->uniforms[gluniform_light_contrast] = GETUNI("light_contrast");
+	shader->uniforms[gluniform_light_backlight] = GETUNI("light_backlight");
 
 	// palette rendering
 	shader->uniforms[gluniform_palette_tex] = GETUNI("palette_tex");
@@ -2257,6 +2321,11 @@ void GL_SetSpecialState(hwdspecialstate_t IdState, INT32 Value)
 			}
 
 			GL_Flush(); //??? if we want to change filter mode by texture, remove this
+			break;
+
+		case HWD_SET_TEXTURE_FORMAT:
+			gltexformat = (Value == 32) ? GL_RGBA : GL_RGB5_A1;
+			GL_Flush();
 			break;
 			
 		case HWD_SET_MSAA:
@@ -2875,6 +2944,7 @@ void GL_PostImgRedraw(float points[SCREENVERTS][SCREENVERTS][2])
 
 	pglDisable(GL_DEPTH_TEST);
 	pglDisable(GL_BLEND);
+	pglDisableClientState(GL_TEXTURE_COORD_ARRAY);
 
 	// Draw a black square behind the screen texture,
 	// so nothing shows through the edges
@@ -2882,8 +2952,8 @@ void GL_PostImgRedraw(float points[SCREENVERTS][SCREENVERTS][2])
 
 	pglVertexPointer(3, GL_FLOAT, 0, blackBack);
 	pglDrawArrays(GL_TRIANGLE_FAN, 0, 4);
-
 	pglEnableClientState(GL_TEXTURE_COORD_ARRAY);
+
 	for(x = 0; x < SCREENVERTS-1;x ++)
 	{
 		for(y = 0; y < SCREENVERTS-1; y++)
@@ -3073,8 +3143,6 @@ void GL_DoScreenWipe(int wipeStart, int wipeEnd)
 	pglBindTexture(GL_TEXTURE_2D, fademaskdownloaded);
 
 	pglTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-
-	// const float defaultST[8]
 
 	pglClientActiveTexture(GL_TEXTURE0);
 	pglTexCoordPointer(2, GL_FLOAT, 0, fix);

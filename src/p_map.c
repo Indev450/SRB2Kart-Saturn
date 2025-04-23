@@ -1699,7 +1699,7 @@ boolean P_CheckPosition(mobj_t *thing, fixed_t x, fixed_t y)
 	INT32 xl, xh, yl, yh, bx, by;
 	subsector_t *newsubsec;
 	boolean blockval = true;
-	
+
 	ps_checkposition_calls.value.i++;
 
 	I_Assert(thing != NULL);
@@ -4102,10 +4102,7 @@ void P_MapEnd(void)
 fixed_t P_FloorzAtPos(fixed_t x, fixed_t y, fixed_t z, fixed_t height)
 {
 	sector_t *sec = R_PointInSubsector(x, y)->sector;
-	fixed_t floorz = sec->floorheight;
-
-	if (sec->f_slope)
-		floorz = P_GetZAt(sec->f_slope, x, y);
+	fixed_t floorz = P_GetSectorFloorZAt(sec, x, y);
 
 	// Intercept the stupid 'fall through 3dfloors' bug Tails 03-17-2002
 	if (sec->ffloors)
@@ -4116,19 +4113,15 @@ fixed_t P_FloorzAtPos(fixed_t x, fixed_t y, fixed_t z, fixed_t height)
 		for (rover = sec->ffloors; rover; rover = rover->next)
 		{
 			fixed_t topheight, bottomheight;
+
 			if (!(rover->flags & FF_EXISTS))
 				continue;
 
 			if ((!(rover->flags & FF_SOLID || rover->flags & FF_QUICKSAND) || (rover->flags & FF_SWIMMABLE)))
 				continue;
 
-			topheight = *rover->topheight;
-			bottomheight = *rover->bottomheight;
-
-			if (*rover->t_slope)
-				topheight = P_GetZAt(*rover->t_slope, x, y);
-			if (*rover->b_slope)
-				bottomheight = P_GetZAt(*rover->b_slope, x, y);
+			topheight    = P_GetFFloorTopZAt   (rover, x, y);
+			bottomheight = P_GetFFloorBottomZAt(rover, x, y);
 
 			if (rover->flags & FF_QUICKSAND)
 			{
@@ -4142,6 +4135,7 @@ fixed_t P_FloorzAtPos(fixed_t x, fixed_t y, fixed_t z, fixed_t height)
 
 			delta1 = z - (bottomheight + ((topheight - bottomheight)/2));
 			delta2 = thingtop - (bottomheight + ((topheight - bottomheight)/2));
+
 			if (topheight > floorz && abs(delta1) < abs(delta2))
 				floorz = topheight;
 		}

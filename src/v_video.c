@@ -129,6 +129,7 @@ static boolean InitCube(void)
 			}
 		}
 	};
+
 	float desatur[3]; // grey
 	float globalgammamul, globalgammaoffs;
 	boolean doinggamma;
@@ -136,7 +137,9 @@ static boolean InitCube(void)
 	if (loaded_config == false)
 		return false;
 
-#define diffcons(cv) (cv.value != atoi(cv.defaultvalue))
+#define diffcons(cv) (strcmp(cv.string, cv.defaultvalue))
+#define diffconsgamma(cv) (cv.value != 0)
+#define diffconssat(cv) (cv.value != 10)
 
 #ifdef BACKWARDSCOMPATCORRECTION
 	doinggamma = (cv_globalgamma.value < 0); //dont mess up gamma when raising brightness pls
@@ -156,12 +159,12 @@ static boolean InitCube(void)
 		|| diffcons(cv_chue)
 		|| diffcons(cv_bhue)
 		|| diffcons(cv_mhue)
-		|| diffcons(cv_rgamma)
-		|| diffcons(cv_ygamma)
-		|| diffcons(cv_ggamma)
-		|| diffcons(cv_cgamma)
-		|| diffcons(cv_bgamma)
-		|| diffcons(cv_mgamma)) // set the gamma'd/hued positions (saturation is done later)
+		|| diffconsgamma(cv_rgamma)
+		|| diffconsgamma(cv_ygamma)
+		|| diffconsgamma(cv_ggamma)
+		|| diffconsgamma(cv_cgamma)
+		|| diffconsgamma(cv_bgamma)
+		|| diffconsgamma(cv_mgamma)) // set the gamma'd/hued positions (saturation is done later)
 	{
 		float mod, tempgammamul, tempgammaoffs;
 
@@ -219,7 +222,7 @@ static boolean InitCube(void)
 
 #define dosaturation(a, e) a = ((1 - work)*e + work*a)
 #define docvsat(cv_sat, hue, gamma, r, g, b) \
-	if diffcons(cv_sat)\
+	if diffconssat(cv_sat)\
 	{\
 		float work, mod, tempgammamul, tempgammaoffs;\
 		apply = true;\
@@ -244,7 +247,7 @@ static boolean InitCube(void)
 
 #undef gammascale
 
-	if diffcons(cv_globalsaturation)
+	if diffconssat(cv_globalsaturation)
 	{
 		float work = (cv_globalsaturation.value/10.0);
 
@@ -265,6 +268,8 @@ static boolean InitCube(void)
 #undef dosaturation
 
 #undef diffcons
+#undef diffconsgamma
+#undef diffconssat
 
 	if (!apply)
 		return false;
@@ -442,10 +447,6 @@ static void LoadPalette(const char *lumpname)
 		pLocalPalette[i].s.alpha = 0xFF;
 
 		// lerp of colour cubing! if you want, make it smoother yourself
-
-		if (!Cubeapply)
-			continue;
-
 		V_CubeApply(&pLocalPalette[i].s.red, &pLocalPalette[i].s.green, &pLocalPalette[i].s.blue);
 	}
 }
@@ -589,28 +590,22 @@ static UINT8 hudplusalpha[11]  = { 10,  8,  6,  4,  2,  0,  0,  0,  0,  0,  0};
 static UINT8 hudminusalpha[11] = { 10,  9,  9,  8,  8,  7,  7,  6,  6,  5,  5};
 UINT8 hudtrans = 0;
 
-// this is pretty dumb, but has to be done like this, otherwise the fps counter just disappears sometimes for no reason lol
-INT32 V_LocalTransFlag(void)
-{
-	return ((10-cv_translucenthud.value)*V_10TRANS);
-}
-
 static const UINT8 *v_colormap = NULL;
 static const UINT8 *v_translevel = NULL;
 
-static inline UINT8 standardpdraw(const UINT8 *dest, const UINT8 *source, fixed_t ofs)
+FUNCINLINE static ATTRINLINE UINT8 standardpdraw(const UINT8 *dest, const UINT8 *source, fixed_t ofs)
 {
 	(void)dest; return source[ofs>>FRACBITS];
 }
-static inline UINT8 mappedpdraw(const UINT8 *dest, const UINT8 *source, fixed_t ofs)
+FUNCINLINE static ATTRINLINE UINT8 mappedpdraw(const UINT8 *dest, const UINT8 *source, fixed_t ofs)
 {
 	(void)dest; return *(v_colormap + source[ofs>>FRACBITS]);
 }
-static inline UINT8 translucentpdraw(const UINT8 *dest, const UINT8 *source, fixed_t ofs)
+FUNCINLINE static ATTRINLINE UINT8 translucentpdraw(const UINT8 *dest, const UINT8 *source, fixed_t ofs)
 {
 	return *(v_translevel + ((source[ofs>>FRACBITS]<<8)&0xff00) + (*dest&0xff));
 }
-static inline UINT8 transmappedpdraw(const UINT8 *dest, const UINT8 *source, fixed_t ofs)
+FUNCINLINE static ATTRINLINE UINT8 transmappedpdraw(const UINT8 *dest, const UINT8 *source, fixed_t ofs)
 {
 	return *(v_translevel + (((*(v_colormap + source[ofs>>FRACBITS]))<<8)&0xff00) + (*dest&0xff));
 }
@@ -631,6 +626,9 @@ void V_DrawStretchyFixedPatch(fixed_t x, fixed_t y, fixed_t pscale, fixed_t vsca
 	fixed_t offx = 0; // x offset
 
 	if (rendermode == render_none)
+		return;
+
+	if (!patch)
 		return;
 
 #ifdef HWRENDER
@@ -665,6 +663,7 @@ void V_DrawStretchyFixedPatch(fixed_t x, fixed_t y, fixed_t pscale, fixed_t vsca
 	}
 
 	v_colormap = NULL;
+
 	if (colormap)
 	{
 		v_colormap = colormap;
@@ -673,21 +672,25 @@ void V_DrawStretchyFixedPatch(fixed_t x, fixed_t y, fixed_t pscale, fixed_t vsca
 
 	dupx = vid.dupx;
 	dupy = vid.dupy;
-	if (scrn & V_SCALEPATCHMASK) switch ((scrn & V_SCALEPATCHMASK) >> V_SCALEPATCHSHIFT)
+
+	if (scrn & V_SCALEPATCHMASK)
 	{
-		case 1: // V_NOSCALEPATCH
-			dupx = dupy = 1;
-			break;
-		case 2: // V_SMALLSCALEPATCH
-			dupx = vid.smalldupx;
-			dupy = vid.smalldupy;
-			break;
-		case 3: // V_MEDSCALEPATCH
-			dupx = vid.meddupx;
-			dupy = vid.meddupy;
-			break;
-		default:
-			break;
+		switch ((scrn & V_SCALEPATCHMASK) >> V_SCALEPATCHSHIFT)
+		{
+			case 1: // V_NOSCALEPATCH
+				dupx = dupy = 1;
+				break;
+			case 2: // V_SMALLSCALEPATCH
+				dupx = vid.smalldupx;
+				dupy = vid.smalldupy;
+				break;
+			case 3: // V_MEDSCALEPATCH
+				dupx = vid.meddupx;
+				dupy = vid.meddupy;
+				break;
+			default:
+				break;
+		}
 	}
 
 	// only use one dup, to avoid stretching (har har)
@@ -863,6 +866,9 @@ void V_DrawCroppedPatch(fixed_t x, fixed_t y, fixed_t pscale, INT32 scrn, patch_
 	if (rendermode == render_none)
 		return;
 
+	if (!patch)
+		return;
+
 #ifdef HWRENDER
 	if (rendermode == render_opengl)
 	{
@@ -909,7 +915,8 @@ void V_DrawCroppedPatch(fixed_t x, fixed_t y, fixed_t pscale, INT32 scrn, patch_
 
 	deststop = desttop + vid.rowbytes * vid.height;
 
-	if (scrn & V_NOSCALESTART) {
+	if (scrn & V_NOSCALESTART)
+	{
 		x >>= FRACBITS;
 		y >>= FRACBITS;
 		desttop += (y*vid.width) + x;
@@ -1695,6 +1702,7 @@ void V_DrawCharacter(INT32 x, INT32 y, INT32 c, boolean lowercaseallowed)
 		c -= HU_FONTSTART;
 	else
 		c = toupper(c) - HU_FONTSTART;
+
 	if (c < 0 || c >= HU_FONTSIZE || !hu_font[c])
 		return;
 

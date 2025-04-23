@@ -59,6 +59,10 @@
 #include "discord.h"
 #endif
 
+// for replay dates
+#include <time.h>
+#include <locale.h>
+
 gameaction_t gameaction;
 gamestate_t gamestate = GS_NULL;
 UINT8 ultimatemode = false;
@@ -239,6 +243,8 @@ tic_t racecountdown, exitcountdown; // for racing
 fixed_t gravity;
 fixed_t mapobjectscale;
 
+struct maplighting maplighting;
+
 INT16 autobalance; //for CTF team balance
 INT16 teamscramble; //for CTF team scramble
 INT16 scrambleplayers[MAXPLAYERS]; //for CTF team scramble
@@ -338,6 +344,9 @@ consvar_t cv_maxdemosize = {"maxdemosize", "10", CV_SAVE, maxdemosize_cons_t, NU
 
 static CV_PossibleValue_t demochangemap_cons_t[] = {{0, "Disabled"}, {1, "Diff Map"}, {2, "Always"}, {0, NULL}};
 consvar_t cv_demochangemap = {"netdemo_savemapchange", "Disabled", CV_SAVE, demochangemap_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+
+static CV_PossibleValue_t demodateformat_cons_t[] = {{0, "Automatic"}, {1, "EU"}, {2, "US"}, {0, NULL}};
+consvar_t cv_demodateformat = {"netdemo_dateformat", "Automatic", CV_SAVE, demodateformat_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 // Analog Control
 void SendWeaponPref(void);
@@ -515,7 +524,8 @@ consvar_t cv_ydeadzone[MAXSPLITSCREENPLAYERS] = {
 static CV_PossibleValue_t driftsparkpulse_t[] = {{0, "MIN"}, {FRACUNIT*3, "MAX"}, {0, NULL}};
 consvar_t cv_driftsparkpulse = {"driftsparkpulse", "1.4", CV_FLOAT | CV_SAVE, driftsparkpulse_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
-consvar_t cv_cechotoggle = {"show_cecho", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+static CV_PossibleValue_t cechotoggle_t[] = {{0, "Off"}, {1, "On"}, {2, "Console"}, {0, NULL}};
+consvar_t cv_cechotoggle = {"show_cecho", "On", CV_SAVE, cechotoggle_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 #if MAXPLAYERS > 16
 #error "please update player_name table using the new value for MAXPLAYERS"
@@ -1279,7 +1289,7 @@ static void G_DoLoadLevel(boolean resetplayer)
 	// clear hud messages remains (usually from game startup)
 	CON_ClearHUD();
 
-	server_lagless = cv_lagless.value;
+	server_lagless = !cv_gentlemens.value;
 
 	G_ResetAllDeviceRumbles();
 }
@@ -6668,6 +6678,9 @@ void G_LoadDemoInfo(menudemo_t *pdemo)
 	subversion = READUINT8(info_p);
 	pdemoversion = READUINT16(info_p);
 
+	memset(pdemo->version, 0, sizeof(pdemo->version));
+	snprintf(pdemo->version, sizeof(pdemo->version), "v%d.%d", version, subversion);
+
 	switch(pdemoversion)
 	{
 	case DEMOVERSION: // latest always supported
@@ -6809,6 +6822,108 @@ void G_LoadDemoInfo(menudemo_t *pdemo)
 	Z_Free(infobuffer);
 }
 
+#if defined (_WIN32)
+// return the file creation time
+// useful for demos that were renamed
+static long G_GetCreationTime(char *filepath)
+{
+	struct stat fileinfo;
+
+	if (stat(filepath, &fileinfo) == 0)
+		return fileinfo.st_ctime;
+
+	return 0;
+}
+#endif
+
+static char *G_GetDemoDate(menudemo_t *pdemo)
+{
+	char *datetime;
+	datetime = malloc(sizeof(pdemo->date)); // mallocma balls
+
+	// no mallocma balls... :c
+	if (!datetime)
+	{
+		return NULL;
+	}
+
+	time_t file_time = 0;
+
+	// get le filepath
+	char *filename;
+	filename = strdup(pdemo->filepath);
+
+#if defined (_WIN32)
+	if (!filename)
+	{
+		// if we cant get a filename try just getting the file create time
+		file_time = G_GetCreationTime(pdemo->filepath);
+		goto skipfilenametime;
+	}
+#else
+	if (!filename)
+	{
+		free(datetime);
+		return NULL;
+	}
+#endif
+
+	// get the actual filename Zzz...
+	nameonly(filename);
+
+	// convert it to long Zzz....
+	file_time = strtol(filename, NULL, 10);
+	free(filename); // dont need this anymore a
+
+#if defined (_WIN32)
+skipfilenametime:
+#endif
+
+	// then throw it into localtime to get an actual human readable format lmao
+	struct tm *tm_buf = NULL;
+	tm_buf = localtime(&file_time);
+
+	// cant believe we ended up in 1970
+	if (tm_buf == NULL || tm_buf->tm_year <= 110)
+	{
+#if defined (_WIN32)
+		// uh ohh, we got an invalid time
+		// try one more time getting the creation time
+		file_time = G_GetCreationTime(pdemo->filepath);
+		tm_buf = localtime(&file_time);
+
+		if (tm_buf == NULL || tm_buf->tm_year <= 110)
+		{
+			free(datetime);
+			return NULL;
+		}
+
+		goto gotcreationtime;
+#else
+		free(datetime);
+		return NULL;
+#endif
+	}
+
+#if defined (_WIN32)
+gotcreationtime:
+#endif
+
+	const char *format;
+
+	// US ppl are special (:
+	if (cv_demodateformat.value == 2)
+		format = "%m.%d.%Y";
+	else if (cv_demodateformat.value == 1)
+		format = "%d.%m.%Y";
+	else
+		format = strstr(setlocale(LC_TIME, NULL), "en_US") ? "%m.%d.%Y" : "%d.%m.%Y";
+
+	strftime(datetime, sizeof(pdemo->date), format, tm_buf);
+
+	return datetime;
+}
+
 void G_LoadDemoTitle(menudemo_t *pdemo)
 {
 	UINT8 infobuffer[96], *info_p;
@@ -6842,11 +6957,20 @@ void G_LoadDemoTitle(menudemo_t *pdemo)
 	READUINT8(info_p);
 	pdemoversion = READUINT16(info_p);
 
+	memset(pdemo->date, 0, sizeof(pdemo->date));
+
 	switch(pdemoversion)
 	{
 	case DEMOVERSION: // latest always supported
 		// demo title
 		M_Memcpy(pdemo->title, info_p, 64);
+
+		// demo date
+		char *demodate;
+		demodate = G_GetDemoDate(pdemo);
+		if (demodate)
+			strncpy(pdemo->date, demodate, sizeof(pdemo->date));
+		free(demodate);
 		break;
 #ifdef DEMO_COMPAT_100
 	case 0x0001:
@@ -7911,7 +8035,7 @@ void G_StopDemo(void)
 	demobuf.buffer = NULL;
 	demo.playback = false;
 	if (demo.title)
-		modeattacking = false;
+		modeattacking = ATTACKING_NONE;
 	demo.title = false;
 	demo.timing = false;
 	singletics = false;
@@ -7938,11 +8062,36 @@ void G_StopDemo(void)
 	if (gamestate == GS_VOTING)
 		Y_EndVote();
 
+	M_ClearMenus(true);
+
 	G_SetGamestate(GS_NULL);
 	wipegamestate = GS_NULL;
 	SV_StopServer();
 	SV_ResetServer();
 }
+
+// Stops timing a demo.
+static void G_StopTimingDemo(void)
+{
+	INT32 demotime;
+	double f1, f2;
+	demotime = I_GetTime() - demostarttime;
+	if (!demotime)
+		return;
+	G_StopDemo();
+	demo.timing = false;
+	f1 = (double)demotime;
+	f2 = (double)framecount*TICRATE;
+
+	CONS_Printf(M_GetText("timed %u gametics in %d realtics - %u frames\n%f seconds, %f avg fps\n"),
+				leveltime, demotime, (UINT32)framecount, f1/TICRATE, f2/f1);
+
+	if (restorecv_vidwait != cv_vidwait.value)
+		CV_SetValue(&cv_vidwait, restorecv_vidwait);
+
+	D_StartTitle();
+}
+
 
 boolean G_CheckDemoStatus(void)
 {
@@ -7958,19 +8107,7 @@ boolean G_CheckDemoStatus(void)
 
 	if (demo.timing)
 	{
-		INT32 demotime;
-		double f1, f2;
-		demotime = I_GetTime() - demostarttime;
-		if (!demotime)
-			return true;
-		G_StopDemo();
-		demo.timing = false;
-		f1 = (double)demotime;
-		f2 = (double)framecount*TICRATE;
-		CONS_Printf(M_GetText("timed %u gametics in %d realtics\n%f seconds, %f avg fps\n"), leveltime,demotime,f1/TICRATE,f2/f1);
-		if (restorecv_vidwait != cv_vidwait.value)
-			CV_SetValue(&cv_vidwait, restorecv_vidwait);
-		D_StartTitle();
+		G_StopTimingDemo();
 		return true;
 	}
 
@@ -7980,15 +8117,18 @@ boolean G_CheckDemoStatus(void)
 			I_Quit();
 
 		if (multiplayer && !demo.title)
+		{
 			G_ExitLevel();
+		}
+		else if (modeattacking && !demo.title) // nooo dont crash our titledemos
+		{
+			G_StopDemo();
+			M_EndModeAttackRun();
+		}
 		else
 		{
 			G_StopDemo();
-
-			if (modeattacking)
-				M_EndModeAttackRun();
-			else
-				D_StartTitle();
+			D_StartTitle();
 		}
 
 		return true;
@@ -8024,6 +8164,8 @@ static void G_ResetDemoPlayback(char *pdemoname)
 		Z_Free(demobuf.buffer);
 	demobuf.buffer = NULL;
 	demo.playback = false;
+	if (demo.title)
+		modeattacking = ATTACKING_NONE;
 	demo.title = false;
 }
 

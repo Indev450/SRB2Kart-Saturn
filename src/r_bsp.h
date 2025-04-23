@@ -55,7 +55,7 @@ extern polyobj_t **po_ptrs; // temp ptr array to sort polyobject pointers
 
 sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec, INT32 *floorlightlevel,
 	INT32 *ceilinglightlevel, boolean back);
-boolean R_IsEmptyLine(seg_t *line, sector_t *front, sector_t *back);
+boolean R_IsEmptyLine(seg_t *line, const sector_t *front, const sector_t *back);
 
 INT32 R_GetPlaneLight(sector_t *sector, fixed_t planeheight, boolean underside);
 void R_Prep3DFloors(sector_t *sector);

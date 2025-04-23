@@ -1780,7 +1780,7 @@ void W_UnlockCachedPatch(void *patch)
 	// The hardware code does its own memory management, as its patches
 	// have different lifetimes from software's.
 #ifdef HWRENDER
-	if (rendermode != render_soft && rendermode != render_none)
+	if (rendermode == render_opengl)
 		HWR_UnlockCachedPatch((GLPatch_t*)patch);
 	else
 #endif

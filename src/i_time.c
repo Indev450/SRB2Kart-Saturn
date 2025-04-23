@@ -58,7 +58,7 @@ void I_UpdateTime(fixed_t timescale)
 	tic_t realtics;
 
 	// get real tics
-	ticratescaled = (double)TICRATE * FIXED_TO_FLOAT(timescale);
+	ticratescaled = (double)TICRATE * FixedToFloat(timescale);
 
 	enterprecise = I_GetPreciseTime();
 	elapsedseconds = (double)((INT64)enterprecise - oldenterprecise) / I_GetPrecisePrecision();
@@ -77,6 +77,6 @@ void I_UpdateTime(fixed_t timescale)
 	{
 		double fractional, integral;
 		fractional = modf(tictimer * ticratescaled, &integral);
-		g_time.timefrac = FLOAT_TO_FIXED(fractional);
+		g_time.timefrac = FloatToFixed(fractional);
 	}
 }

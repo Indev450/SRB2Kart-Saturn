@@ -403,7 +403,7 @@ static void md2_loadTexture(md2_t *model)
 		glpatch->height = (INT16)h;
 		glpatch->mipmap->width = (UINT16)w;
 		glpatch->mipmap->height = (UINT16)h;
-		
+
 		// for palette rendering, color cube is applied in post-processing instead of here
 		if (!HWR_ShouldUsePaletteRendering())
 		{
@@ -607,7 +607,7 @@ void HWR_AddPlayerMD2(int skin, boolean local) // For MD2's that were added afte
 	// Check for any MD2s that match the names of player skins!
 	while (fscanf(f, "%19s %31s %f %f", name, filename, &scale, &offset) == 4)
 	{
-		if (stricmp(name, ( (local) ? localskins : skins )[skin].name) == 0)
+		if (stricmp(name, K_GetSkinArray(local)[skin].name) == 0)
 		{
 			md2s[skin].skin = skin;
 			md2s[skin].scale = scale;
@@ -1120,7 +1120,7 @@ void HWR_DrawMD2(gl_vissprite_t *spr)
 	{
 		sector_t *sector = spr->mobj->subsector->sector;
 		extracolormap_t *colormap = sector->extra_colormap;
-		UINT8 lightlevel = 255;
+		INT32 lightlevel = 255;
 
 		if (sector->numlights)
 		{
@@ -1143,7 +1143,9 @@ void HWR_DrawMD2(gl_vissprite_t *spr)
 				colormap = sector->extra_colormap;
 		}
 
-		HWR_Lighting(&Surf, lightlevel, colormap);
+		HWR_ObjectLightLevelPost(spr, sector, &lightlevel, true);
+
+		HWR_Lighting(&Surf, lightlevel, colormap, P_SectorUsesDirectionalLighting(sector) && !(spr->mobj->frame & FF_FULLBRIGHT));
 	}
 	else
 	{
@@ -1177,13 +1179,13 @@ void HWR_DrawMD2(gl_vissprite_t *spr)
 		// Apparently people don't like jump frames like that, so back it goes
 		//if (tics > durs)
 			//durs = tics;
-		
+
 		INT32 blendmode;
 		if (spr->mobj->frame & FF_BLENDMASK)
 			blendmode = ((spr->mobj->frame & FF_BLENDMASK) >> FF_BLENDSHIFT) + 1;
 		else
 			blendmode = spr->mobj->blendmode;
-		
+
 		blendmode = min(AST_MODULATE, blendmode);
 
 		if (spr->mobj->flags2 & MF2_SHADOW)
@@ -1205,7 +1207,7 @@ void HWR_DrawMD2(gl_vissprite_t *spr)
 
 		// dont forget to enabled the depth test because we can't do this like
 		// before: polygons models are not sorted
-		
+
 		/* fuck you */
 		if (spr->mobj->localskin)
 		{
@@ -1296,7 +1298,7 @@ void HWR_DrawMD2(gl_vissprite_t *spr)
 							tcskinnum = TC_RAINBOW;
 						else
 						{
-							tcskinnum = (INT32)((skin_t*)( (spr->mobj->localskin) ? spr->mobj->localskin : spr->mobj->skin ) - ( (spr->mobj->skinlocal) ? localskins : skins ));
+							tcskinnum = (INT32)(K_GetMobjSkinNum(K_GetMobjSkin(spr->mobj), spr->mobj->skinlocal));
 						}
 					}
 					else tcskinnum = TC_DEFAULT;
@@ -1362,8 +1364,8 @@ void HWR_DrawMD2(gl_vissprite_t *spr)
 		else
 			p.z = FIXED_TO_FLOAT(interp.z);
 
-		if (spr->mobj->skin && spr->mobj->sprite == SPR_PLAY)
-			sprdef = &((skin_t *)( (spr->mobj->localskin) ? spr->mobj->localskin : spr->mobj->skin ))->spritedef;
+		if ((spr->mobj->skin || spr->mobj->localskin) && spr->mobj->sprite == SPR_PLAY)
+			sprdef = &K_GetMobjSkin(spr->mobj)->spritedef;
 		else
 			sprdef = &sprites[spr->mobj->sprite];
 

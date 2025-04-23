@@ -3287,9 +3287,10 @@ void P_ProcessSpecialSector(player_t *player, sector_t *sector, sector_t *rovers
 			if (roversector || P_MobjReadyToTrigger(player->mo, sector))
 				P_DamageMobj(player->mo, NULL, NULL, 1);
 			break;
-		case 2: // Damage (Water) // SRB2kart - These three damage types are now offroad sectors
-		case 3: // Damage (Fire)
-		case 4: // Damage (Electrical)
+		// SRB2kart - These three damage types are now offroad sectors
+		case 2: // Offroad (Weak)
+		case 3: // Offroad
+		case 4: // Offroad (Strong)
 			break;
 		case 5: // Spikes
 			// Don't do anything. In Soviet Russia, spikes find you.
@@ -5124,11 +5125,10 @@ void T_LaserFlash(laserthink_t *flash)
 
 	sourcesec = ffloor->master->frontsector; // Less to type!
 
-	top = (*ffloor->t_slope) ? P_GetZAt(*ffloor->t_slope, sector->soundorg.x, sector->soundorg.y)
-			: *ffloor->topheight;
-	bottom = (*ffloor->b_slope) ? P_GetZAt(*ffloor->b_slope, sector->soundorg.x, sector->soundorg.y)
-			: *ffloor->bottomheight;
+	top    = P_GetFFloorTopZAt   (ffloor, sector->soundorg.x, sector->soundorg.y);
+	bottom = P_GetFFloorBottomZAt(ffloor, sector->soundorg.x, sector->soundorg.y);
 	sector->soundorg.z = (top + bottom)/2;
+
 	S_StartSound(&sector->soundorg, sfx_laser);
 
 	// Seek out objects to DESTROY! MUAHAHHAHAHAA!!!*cough*
@@ -6764,10 +6764,7 @@ void T_Disappear(disappear_t *d)
 
 					if (!(lines[d->sourceline].flags & ML_NOCLIMB))
 					{
-						if (*rover->t_slope)
-							sectors[s].soundorg.z = P_GetZAt(*rover->t_slope, sectors[s].soundorg.x, sectors[s].soundorg.y);
-						else
-							sectors[s].soundorg.z = *rover->topheight;
+						sectors[s].soundorg.z = P_GetFFloorTopZAt(rover, sectors[s].soundorg.x, sectors[s].soundorg.y);
 						S_StartSound(&sectors[s].soundorg, sfx_appear);
 					}
 				}

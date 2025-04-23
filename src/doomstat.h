@@ -222,6 +222,15 @@ typedef struct
 	char value[256]; // 255 usable characters. If this seriously isn't enough then wtf.
 } customoption_t;
 
+typedef struct
+{
+	boolean use_custom_light;
+	UINT8 light_contrast;				///< Range of wall lighting. 0 is no lighting.
+	SINT8 sprite_backlight;				///< Subtract from wall lighting for sprites only.
+	boolean use_light_angle;			///< When false, wall lighting is evenly distributed. When true, wall lighting is directional.
+	angle_t light_angle;				///< Angle of directional wall lighting.
+} mapheader_lighting_t;
+
 /** Map header information.
   */
 typedef struct
@@ -268,6 +277,10 @@ typedef struct
 	// SRB2kart
 	//boolean automap;    ///< Displays a level's white map outline in modified games
 	fixed_t mobj_scale; ///< Replacement for TOL_ERZ3
+
+	mapheader_lighting_t lighting;			///< Wall and sprite lighting
+	mapheader_lighting_t lighting_encore;	///< Alternative lighting for Encore mode
+	boolean use_encore_lighting;			///< Whether to use separate Encore lighting
 
 	// Music stuff.
 	UINT32 musinterfadeout;  ///< Fade out level music on intermission screen in milliseconds
@@ -460,6 +473,14 @@ extern tic_t racecountdown, exitcountdown;
 
 extern fixed_t gravity;
 extern fixed_t mapobjectscale;
+
+extern struct maplighting
+{
+	UINT8 contrast;
+	SINT8 backlight;
+	boolean directional;
+	angle_t angle;
+} maplighting;
 
 //for CTF balancing
 extern INT16 autobalance;

@@ -279,6 +279,15 @@ FUNCNORETURN static ATTRNORETURN void CorruptMapError(const char *msg)
 
 #define NUMLAPS_DEFAULT 3
 
+static void P_ClearMapHeaderLighting(mapheader_lighting_t *lighting)
+{
+	lighting->light_contrast = 8;
+	lighting->sprite_backlight = 0;
+	lighting->use_light_angle = false;
+	lighting->light_angle = 0;
+	lighting->use_custom_light = false;
+}
+
 /** Clears the data from a single map header.
   *
   * \param i Map number to clear header for.
@@ -325,9 +334,13 @@ static void P_ClearSingleMapHeaderInfo(INT16 i)
 	// SRB2Kart
 	//mapheaderinfo[num]->automap = false;
 	mapheaderinfo[num]->mobj_scale = FRACUNIT;
-	// an even further impossibility, delfile custom opts support
+
 	mapheaderinfo[num]->customopts = NULL;
 	mapheaderinfo[num]->numCustomOptions = 0;
+
+	P_ClearMapHeaderLighting(&mapheaderinfo[num]->lighting);
+	P_ClearMapHeaderLighting(&mapheaderinfo[num]->lighting_encore);
+	mapheaderinfo[num]->use_encore_lighting = false;
 }
 
 /** Allocates a new map-header structure.
@@ -497,19 +510,128 @@ static inline float P_SegLengthFloat(seg_t *seg)
   */
 void P_UpdateSegLightOffset(seg_t *li)
 {
-	const UINT8 contrast = 8;
+	const UINT8 contrast = maplighting.contrast;
 	const fixed_t contrastFixed = ((fixed_t)contrast) * FRACUNIT;
 	fixed_t light = FRACUNIT;
 	fixed_t extralight = 0;
 
-	light = FixedDiv(R_PointToAngle2(0, 0, abs(li->v1->x - li->v2->x), abs(li->v1->y - li->v2->y)), ANGLE_90);
+	if (maplighting.directional == true)
+	{
+		angle_t liAngle = R_PointToAngle2(0, 0, (li->v1->x - li->v2->x), (li->v1->y - li->v2->y)) - ANGLE_90;
+
+		light = FixedMul(FINECOSINE(liAngle >> ANGLETOFINESHIFT), FINECOSINE(maplighting.angle >> ANGLETOFINESHIFT))
+		+ FixedMul(FINESINE(liAngle >> ANGLETOFINESHIFT), FINESINE(maplighting.angle >> ANGLETOFINESHIFT));
+		light = (light + FRACUNIT) / 2;
+	}
+	else
+	{
+		light = FixedDiv(R_PointToAngle2(0, 0, abs(li->v1->x - li->v2->x), abs(li->v1->y - li->v2->y)), ANGLE_90);
+	}
+
 	extralight = -contrastFixed + FixedMul(light, contrastFixed * 2);
 
 	// Between -2 and 2 for software, -8 and 8 for hardware
-	li->lightOffset = FixedFloor((extralight / contrast) + (FRACUNIT / 2)) / FRACUNIT;
+	li->lightOffset = FixedFloor((extralight / 8) + (FRACUNIT / 2)) / FRACUNIT;
 #ifdef HWRENDER
 	li->hwLightOffset = FixedFloor(extralight + (FRACUNIT / 2)) / FRACUNIT;
 #endif
+}
+
+boolean P_SectorUsesDirectionalLighting(const sector_t *sector)
+{
+	if (sector != NULL)
+	{
+		// automatically turned on
+		if (sector->ceilingpic == skyflatnum || sector->floorpic == skyflatnum)
+		{
+			// sky is visible
+			return true;
+		}
+	}
+
+	// default is off, for indoors
+	return false;
+}
+
+boolean P_ApplyLightOffset(UINT8 baselightnum, const sector_t *sector)
+{
+	mapheader_lighting_t *lighting = &mapheaderinfo[gamemap-1]->lighting;
+
+	if (encoremode && mapheaderinfo[gamemap-1]->use_encore_lighting)
+	{
+		lighting = &mapheaderinfo[gamemap-1]->lighting_encore;
+	}
+
+	if (!cv_randomdirlight.value && lighting->use_custom_light == false)
+		return (baselightnum < LIGHTLEVELS-1 && baselightnum > 0);
+
+	if (!P_SectorUsesDirectionalLighting(sector))
+	{
+		return false;
+	}
+
+	// Don't apply light offsets at full bright or full dark.
+	// Is in steps of light num .
+	return (baselightnum < LIGHTLEVELS-1 && baselightnum > 0);
+}
+
+boolean P_ApplyLightOffsetFine(UINT8 baselightlevel, const sector_t *sector)
+{
+	mapheader_lighting_t *lighting = &mapheaderinfo[gamemap-1]->lighting;
+
+	if (encoremode && mapheaderinfo[gamemap-1]->use_encore_lighting)
+	{
+		lighting = &mapheaderinfo[gamemap-1]->lighting_encore;
+	}
+
+	if (!cv_randomdirlight.value && lighting->use_custom_light == false)
+		return (baselightlevel < 255 && baselightlevel > 0);
+
+	if (!P_SectorUsesDirectionalLighting(sector))
+	{
+		return false;
+	}
+
+	// Don't apply light offsets at full bright or full dark.
+	// Uses exact light levels for more smoothness.
+	return (baselightlevel < 255 && baselightlevel > 0);
+}
+
+// dumb thing to reset maplight on next map change when its toggled
+boolean reinitmaplight = false;
+static void P_SetupDirectionalLight(void)
+{
+	mapheader_lighting_t *lighting = &mapheaderinfo[gamemap-1]->lighting;
+
+	if (encoremode && mapheaderinfo[gamemap-1]->use_encore_lighting)
+	{
+		lighting = &mapheaderinfo[gamemap-1]->lighting_encore;
+	}
+
+	if (cv_randomdirlight.value && lighting->use_custom_light == false)
+	{
+		static INT16 oldmap = 0; // dont reset stuff when you restart a map
+		static boolean oldencore = false;
+
+		if (gamemap != oldmap || encoremode != oldencore || reinitmaplight)
+		{
+			lighting->light_contrast = M_RandomRange(0, 58);
+			lighting->sprite_backlight = 0;
+			lighting->use_light_angle = M_RandomRange(0, 1); // either on or off
+			lighting->light_angle = M_RandomRange(-382, 382);
+
+			reinitmaplight = false;
+		}
+
+		oldmap = gamemap;
+		oldencore = encoremode;
+		return;
+	}
+
+	maplighting.contrast = lighting->light_contrast;
+	maplighting.backlight = lighting->sprite_backlight;
+	maplighting.directional = lighting->use_light_angle;
+	maplighting.angle = lighting->light_angle;
 }
 
 // Loads the SEGS resource from a level.
@@ -520,6 +642,9 @@ static void P_LoadRawSegs(UINT8 *data)
 	seg_t *li = segs;
 	line_t *ldef;
 	size_t i;
+
+	// Set map lighting settings.
+	P_SetupDirectionalLight();
 
 	for (i = 0; i < numsegs; i++, li++, ml++)
 	{
@@ -877,14 +1002,13 @@ static void P_LoadThings(void)
 
 	mt = mapthings;
 	numhuntemeralds = 0;
+
 	for (i = 0; i < nummapthings; i++, mt++)
 	{
-		sector_t *mtsector = R_PointInSubsector(mt->x << FRACBITS, mt->y << FRACBITS)->sector;
+		sector_t *mtsector = R_PointInSubsector((mt->x << FRACBITS), (mt->y << FRACBITS))->sector;
 
 		// Z for objects
-		mt->z = (INT16)(
-				mtsector->f_slope ? P_GetZAt(mtsector->f_slope, mt->x << FRACBITS, mt->y << FRACBITS) :
-				mtsector->floorheight)>>FRACBITS;
+		mt->z = (INT16)(P_GetSectorFloorZAt(mtsector, (mt->x << FRACBITS), (mt->y << FRACBITS))) >> FRACBITS;
 
 		if (mt->type == 1700 // MT_AXIS
 			|| mt->type == 1701 // MT_AXISTRANSFER
@@ -1312,7 +1436,7 @@ static void P_LoadRawSideDefs2(void *data)
 							// encore mode colormaps!
 							// do it like software by aproximating a color to a palette index, and then convert it to its encore variant and then back to a color code.
 							// do this for both the start and fade colormaps.
-							
+
 							color.s.red = (HEX2INT(col[1]) << 4) + HEX2INT(col[2]);
 							color.s.green = (HEX2INT(col[3]) << 4) + HEX2INT(col[4]);
 							color.s.blue = (HEX2INT(col[5]) << 4) + HEX2INT(col[6]);
@@ -1353,7 +1477,7 @@ static void P_LoadRawSideDefs2(void *data)
 							col = msd->bottomtexture;
 
 							// do the exact same thing as above here.
-							
+
 							color.s.red = (HEX2INT(col[1]) << 4) + HEX2INT(col[2]);
 							color.s.green = (HEX2INT(col[3]) << 4) + HEX2INT(col[4]);
 							color.s.blue = (HEX2INT(col[5]) << 4) + HEX2INT(col[6]);
@@ -2915,6 +3039,11 @@ boolean P_SetupLevel(boolean fromnetsave, boolean reloadinggamestate)
 	// Clear pointers that would be left dangling by the purge
 	R_FlushTranslationColormapCache();
 
+#ifdef HWRENDER
+	// Delete light table textures
+	HWR_ClearLightTables();
+#endif
+
 	Z_FreeTags(PU_LEVEL, PU_PURGELEVEL - 1);
 
 #if defined (WALLSPLATS) || defined (FLOORSPLATS)
@@ -2939,7 +3068,7 @@ boolean P_SetupLevel(boolean fromnetsave, boolean reloadinggamestate)
 	curmapvirt = vres_GetMap(lastloadedmaplumpnum);
 
 	R_ReInitColormaps(mapheaderinfo[gamemap-1]->palette,
-		(encoremode ? W_CheckNumForName(va("%sE", maplumpname)) : LUMPERROR));
+		W_CheckNumForName(va("%s%c", maplumpname, (encoremode ? 'E' : 'T'))));
 	CON_SetupBackColormap();
 
 	// SRB2 determines the sky texture to be used depending on the map header.
@@ -3002,7 +3131,9 @@ boolean P_SetupLevel(boolean fromnetsave, boolean reloadinggamestate)
 	{
 		P_InitCamera();
 		memset(localaiming, 0, sizeof(localaiming));
-		K_InitDirector();
+
+		if (!dedicated)
+			K_InitDirector();
 	}
 
 	// clear special respawning que

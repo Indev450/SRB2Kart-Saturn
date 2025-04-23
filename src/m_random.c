@@ -19,8 +19,6 @@
 #include "m_random.h"
 #include "m_fixed.h"
 
-
-
 // ---------------------------
 // RNG functions (not synched)
 // ---------------------------
