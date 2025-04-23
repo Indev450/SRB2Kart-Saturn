@@ -10132,6 +10132,10 @@ void P_RemoveMobj(mobj_t *mobj)
 		{ // Add thinker just to delay removing it until refrences are gone.
 			mobj->flags &= ~MF_NOTHINK;
 			P_AddThinker((thinker_t *)mobj);
+#ifdef PARANOIA
+			// Saved to avoid being scrambled like below...
+			mobj->thinker.debug_mobjtype = mobj->type;
+#endif
 #ifdef SCRAMBLE_REMOVED
 			// Invalidate mobj_t data to cause crashes if accessed!
 			memset((UINT8 *)mobj + sizeof(thinker_t), 0xff, sizeof(mobj_t) - sizeof(thinker_t));
@@ -10141,6 +10145,10 @@ void P_RemoveMobj(mobj_t *mobj)
 	}
 	else
 	{
+#ifdef PARANOIA
+		// Saved to avoid being scrambled like below...
+		mobj->thinker.debug_mobjtype = mobj->type;
+#endif
 #ifdef SCRAMBLE_REMOVED
 		// Invalidate mobj_t data to cause crashes if accessed!
 		memset((UINT8 *)mobj + sizeof(thinker_t), 0xff, sizeof(mobj_t) - sizeof(thinker_t));
@@ -10163,8 +10171,10 @@ void P_FreePrecipMobj(precipmobj_t *mobj)
 // Clearing out stuff for savegames
 void P_RemoveSavegameMobj(mobj_t *mobj)
 {
+	thinker_t *th = (thinker_t*)mobj;
+
 	// unlink from sector and block lists
-	if (((thinker_t *)mobj)->function.acp1 == (actionf_p1)P_NullPrecipThinker)
+	if (th->function.acp1 == (actionf_p1)P_NullPrecipThinker)
 	{
 		P_UnsetPrecipThingPosition((precipmobj_t *)mobj);
 	}
@@ -10185,9 +10195,13 @@ void P_RemoveSavegameMobj(mobj_t *mobj)
 	S_StopSound(mobj);
 	R_RemoveMobjInterpolator(mobj);
 
+	// just set its reference count to 0 to not trigger the assert in P_UnlinkThinker
+	if (th->references != 0)
+		th->references = 0;
+
 	// free block
 	// Here we use the same code as R_RemoveThinkerDelayed, but without reference counting (we're removing everything so it shouldn't matter) and without touching currentthinker since we aren't in P_RunThinkers
-	P_UnlinkThinker((thinker_t*)mobj);
+	P_UnlinkThinker(th);
 }
 
 static CV_PossibleValue_t respawnitemtime_cons_t[] = {{1, "MIN"}, {300, "MAX"}, {0, NULL}};

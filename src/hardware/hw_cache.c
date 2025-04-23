@@ -624,7 +624,7 @@ static void HWR_PrecacheLevelFlats(void)
 			// gotta check sector floor and ceiling
 			for (j = 0; j < 2; j++)
 			{
-				const boolean ceiling = (j == 1);
+				const boolean ceiling = (j == 0);
 				INT32 pic = ceiling ? sec->ceilingpic : sec->floorpic;
 
 				levelflat = levelflats[pic];
