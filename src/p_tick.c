@@ -319,25 +319,16 @@ void P_RemoveThinkerDelayed(thinker_t *thinker)
 		return;
 	}
 
-	/* Remove from main thinker list */
-	thinker_t *next = thinker->next;
+	R_DestroyLevelInterpolators(thinker);
+
 	/* Note that currentthinker is guaranteed to point to us,
 	* and since we're freeing our memory, we had better change that. So
 	* point it to thinker->prev, so the iterator will correctly move on to
 	* thinker->prev->next = thinker->next */
-	(next->prev = currentthinker = thinker->prev)->next = next;
-	R_DestroyLevelInterpolators(thinker);
+	currentthinker = thinker->prev;
 
-	if (thinker->cachable == true)
-	{
-		// put cachable thinkers in the mobj cache, so we can avoid allocations
-		((mobj_t *)thinker)->hnext = mobjcache;
-		mobjcache = (mobj_t *)thinker;
-	}
-	else
-	{
-		Z_Free(thinker);
-	}
+	/* Remove from main thinker list */
+	P_UnlinkThinker(thinker);
 }
 
 //
