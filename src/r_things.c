@@ -2860,7 +2860,7 @@ void R_ClipSprites(void)
 /* Check if thing may be drawn from our current view. */
 boolean R_ThingVisible (mobj_t *thing)
 {
-	if (UNLIKELY(thing->sprite == SPR_NULL) || UNLIKELY((thing->flags2 & MF2_DONTDRAW)))
+	if (UNLIKELY((thing->sprite == SPR_NULL) || (thing->flags2 & MF2_DONTDRAW)))
 		return false;
 
 	if (splitscreen)
@@ -3100,7 +3100,7 @@ INT32 R_SkinAvailable(const char *name)
 
 	for (i = 0; i < numskins; i++)
 	{
-		if (stricmp(skins[i].name,name)==0)
+		if (stricmp(skins[i].name,name) == 0)
 			return i;
 	}
 	return -1;
@@ -3114,7 +3114,7 @@ INT32 R_AnySkinAvailable(const char *name)
 
 	for (i = 0; i < numallskins; i++)
 	{
-		if (stricmp(allskins[i].name,name)==0)
+		if (stricmp(allskins[i].name,name) == 0)
 			return i;
 	}
 	return -1;
@@ -3128,7 +3128,7 @@ INT32 R_LocalSkinAvailable(const char *name, boolean local)
 	{
 		for (i = 0; i < numlocalskins; i++)
 		{
-			if (stricmp(localskins[i].name,name)==0)
+			if (stricmp(localskins[i].name,name) == 0)
 				return i;
 		}
 		return -1;
@@ -3167,11 +3167,11 @@ void SetLocalPlayerSkin(INT32 playernum, const char *skinname, consvar_t *cvar)
 	INT32 i;
 	player_t *player = &players[playernum];
 
-	if (strcasecmp(skinname, "none"))
+	if (stricmp(skinname, "none"))
 	{
 		for (i = 0; i < numlocalskins; i++)
 		{
-			// search in the skin list
+			// search in the localskin list
 			if (stricmp(localskins[i].name, skinname) == 0)
 			{
 				player->localskin = 1 + i;
@@ -3181,9 +3181,11 @@ void SetLocalPlayerSkin(INT32 playernum, const char *skinname, consvar_t *cvar)
 					player->mo->localskin = &localskins[i];
 					player->mo->skinlocal = true;
 				}
-				break;
+
+				goto setcvar;
 			}
 		}
+
 		for (i = 0; i < numskins; i++)
 		{
 			// search in the skin list
@@ -3196,7 +3198,8 @@ void SetLocalPlayerSkin(INT32 playernum, const char *skinname, consvar_t *cvar)
 					player->mo->localskin = &skins[i];
 					player->mo->skinlocal = false;
 				}
-				break;
+
+				goto setcvar;
 			}
 		}
 	}
@@ -3211,6 +3214,7 @@ void SetLocalPlayerSkin(INT32 playernum, const char *skinname, consvar_t *cvar)
 		}
 	}
 
+setcvar:
 	if (cvar != NULL)
 	{
 		if (player->localskin > 0)
@@ -3258,6 +3262,7 @@ void SetPlayerSkinByNum(INT32 playernum, INT32 skinnum)
 		CONS_Alert(CONS_WARNING, M_GetText("Skin %d not found\n"), skinnum);
 	else if(server || IsPlayerAdmin(consoleplayer))
 		CONS_Alert(CONS_WARNING, "Player %d (%s) skin %d not found\n", playernum, player_names[playernum], skinnum);
+
 	SetPlayerSkinByNum(playernum, 0); // not found put the sonic skin
 }
 
@@ -3704,7 +3709,6 @@ next_token:
 		numallskins++;
 	}
 
-#undef lskin
 #undef lnumskins
 	//sortSkinGrid();
 

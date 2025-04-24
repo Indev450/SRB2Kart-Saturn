@@ -452,7 +452,7 @@ int mobj_localskin_setter(lua_State *L)
 		strlcpy(skin, luaL_optstring(L, 2, "none"), sizeof skin);
 		strlwr(skin); // all skin names are lowercase
 
-		if (strcasecmp(skin, "none"))
+		if (stricmp(skin, "none"))
 		{
 			// Try localskins
 			for (i = 0; i < numlocalskins; i++)
@@ -468,7 +468,7 @@ int mobj_localskin_setter(lua_State *L)
 			// Try other skins
 			for (i = 0; i < numskins; i++)
 			{
-				if (fastcmp(skins[i].name, skin))
+				if (stricmp(skins[i].name, skin) == 0)
 				{
 					mo->localskin = &skins[i];
 					mo->skinlocal = false;
@@ -482,7 +482,6 @@ int mobj_localskin_setter(lua_State *L)
 			mo->skinlocal = false;
 		}
 	}
-
 
 	return 0;
 }

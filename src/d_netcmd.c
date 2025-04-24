@@ -4453,7 +4453,7 @@ static void Command_Addfilelocal(void)
 	// Add any wad file, ignoring checks for if it contains complex things like
 	// lua. Great for complex but client-side customizations, like different
 	// level cards or anything like that.
-	P_AddWadFileLocal(fn);
+	P_AddWadFile(fn, true);
 }
 
 
@@ -4548,38 +4548,9 @@ static void Command_Addfile(void)
 
 /** Adds something at runtime.
   */
-static void
-Command_Addskins (void)
+static void Command_Addskins(void)
 {
-	if (COM_Argc() > 3)
-	{
-		CONS_Printf(
-				"addskins <file>: Load a skin file.\n");
-		return;
-	}
-	// no forcing?
-	/*
-	if (fasticmp(COM_Argv(2), "-force") || fasticmp(COM_Argv(2), "-f")) {
-		CONS_Alert(CONS_NOTICE, M_GetText("Adding file %s. May or may not be a skin.\n"), COM_Argv(1));
-		P_AddWadFile(COM_Argv(1), 0, true);
-	} else {
-		if (DumbStartsWith("KC_", COM_Argv(1))) {
-			P_AddWadFile(COM_Argv(1), 0, true);
-		} else if (DumbStartsWith("KCL_", COM_Argv(1))) {
-			if (!demo.playback) {
-				CONS_Alert(CONS_ERROR, M_GetText("Cannot add file %s as it is a skin with lua. Include -force or -f to force it to load.\n"), COM_Argv(1));
-				return;
-			} else {
-	*/
-				P_AddWadFile(COM_Argv(1), true);
-	/*
-			}
-		} else {
-			CONS_Alert(CONS_ERROR, M_GetText("Cannot add file %s as it is not a skin.\n"), COM_Argv(1));
-			return;
-		}
-	}
-	*/
+	CONS_Printf("addskins has been deprecated\nuse addfilelocal instead!\n");
 }
 
 static void Command_GLocalSkin (void)
@@ -4595,7 +4566,7 @@ static void Command_GLocalSkin (void)
 
 	char* fuck; // local skin name
 
-	if (!( first_option = COM_FirstOption() ))
+	if (!(first_option = COM_FirstOption()))
 		first_option = COM_Argc();
 
 	if (first_option < 2)
@@ -4603,14 +4574,14 @@ static void Command_GLocalSkin (void)
 		/* holy fucking shit */
 		CONS_Printf("localskin <name> [-player <name>] [-display <number>] [-all]:\n");
 		CONS_Printf(M_GetText("Set a localskin via its internal name (usually printed on the console).\n\n\
-* Using \"-player\" will set a localskin to a specified player.\n\
-  Defaults to yourself.\n\
-* Using \"-display\" will set a localskin to the displayed player.\n\
-  Defaults to 0, which is the first player displayed.\n\
-  Can go up to 3 for splitscreen.\n\
-* Using \"-all\" will set a localskin to ALL players.\n\
-* \"localskin none\" removes the localskin, just like how\n\
-  \"forceskin none\" does.\n"));
+		* Using \"-player\" will set a localskin to a specified player.\n\
+		Defaults to yourself.\n\
+		* Using \"-display\" will set a localskin to the displayed player.\n\
+		Defaults to 0, which is the first player displayed.\n\
+		Can go up to 3 for splitscreen.\n\
+		* Using \"-all\" will set a localskin to ALL players.\n\
+		* \"localskin none\" removes the localskin, just like how\n\
+		\"forceskin none\" does.\n"));
 		return;
 	}
 
