@@ -3108,7 +3108,7 @@ INT32 R_SkinAvailable(const char *name)
 
 	for (i = 0; i < numskins; i++)
 	{
-		if (stricmp(skins[i].name,name)==0)
+		if (stricmp(skins[i].name,name) == 0)
 			return i;
 	}
 	return -1;
@@ -3122,7 +3122,7 @@ INT32 R_AnySkinAvailable(const char *name)
 
 	for (i = 0; i < numallskins; i++)
 	{
-		if (stricmp(allskins[i].name,name)==0)
+		if (stricmp(allskins[i].name,name) == 0)
 			return i;
 	}
 	return -1;
@@ -3136,7 +3136,7 @@ INT32 R_LocalSkinAvailable(const char *name, boolean local)
 	{
 		for (i = 0; i < numlocalskins; i++)
 		{
-			if (stricmp(localskins[i].name,name)==0)
+			if (stricmp(localskins[i].name,name) == 0)
 				return i;
 		}
 		return -1;
@@ -3270,6 +3270,7 @@ void SetPlayerSkinByNum(INT32 playernum, INT32 skinnum)
 		CONS_Alert(CONS_WARNING, M_GetText("Skin %d not found\n"), skinnum);
 	else if(server || IsPlayerAdmin(consoleplayer))
 		CONS_Alert(CONS_WARNING, "Player %d (%s) skin %d not found\n", playernum, player_names[playernum], skinnum);
+
 	SetPlayerSkinByNum(playernum, 0); // not found put the sonic skin
 }
 

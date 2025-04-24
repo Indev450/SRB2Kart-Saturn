@@ -296,6 +296,7 @@ static void P_ClearMapHeaderLighting(mapheader_lighting_t *lighting)
 static void P_ClearSingleMapHeaderInfo(INT16 i)
 {
 	const INT16 num = (INT16)(i-1);
+
 	mapheaderinfo[num]->lvlttl[0] = '\0';
 	mapheaderinfo[num]->subttl[0] = '\0';
 	mapheaderinfo[num]->zonttl[0] = '\0';
@@ -329,8 +330,10 @@ static void P_ClearSingleMapHeaderInfo(INT16 i)
 	mapheaderinfo[num]->saveoverride = SAVE_DEFAULT;
 	mapheaderinfo[num]->levelflags = 0;
 	mapheaderinfo[num]->menuflags = (mainwads ? 0 : LF2_EXISTSHACK); // see p_setup.c - prevents replacing maps in addons with easier versions
+
 	// TODO grades support for delfile (pfft yeah right)
 	P_DeleteGrades(num);
+
 	// SRB2Kart
 	//mapheaderinfo[num]->automap = false;
 	mapheaderinfo[num]->mobj_scale = FRACUNIT;
@@ -749,7 +752,7 @@ INT32 P_AddLevelFlat(const char *flatname, levelflat_t *levelflat)
 	//  first scan through the already found flats
 	//
 	for (i = 0; i < numlevelflats; i++, levelflat++)
-		if (strnicmp(levelflat->name,flatname,8)==0)
+		if (strnicmp(levelflat->name,flatname,8) == 0)
 			break;
 
 	// that flat was already found in the level, return the id
@@ -942,6 +945,7 @@ static void P_LoadRawNodes(UINT8 *data)
 		no->y = SHORT(mn->y)<<FRACBITS;
 		no->dx = SHORT(mn->dx)<<FRACBITS;
 		no->dy = SHORT(mn->dy)<<FRACBITS;
+
 		for (j = 0; j < 2; j++)
 		{
 			no->children[j] = SHORT(mn->children[j]);
@@ -2371,10 +2375,14 @@ static INT32 P_MakeBufferMD5(const char *buffer, size_t len, void *resblock)
 	return 1;
 #else
 	tic_t t = I_GetTime();
+
 	CONS_Debug(DBG_SETUP, "Making MD5\n");
+
 	if (md5_buffer(buffer, len, resblock) == NULL)
 		return 1;
+
 	CONS_Debug(DBG_SETUP, "MD5 calc took %f seconds\n", (float)(I_GetTime() - t)/NEWTICRATE);
+
 	return 0;
 #endif
 }
@@ -2455,6 +2463,7 @@ static void P_RunLevelScript(const char *scriptname)
 	{
 		COM_BufAddText(va("exec %s\n", scriptname));
 	}
+
 	COM_BufExecute(); // Run it!
 }
 
@@ -2756,7 +2765,7 @@ static boolean P_RunSpecialWipe(boolean reloadinggamestate)
 			F_WipeEndScreen();
 			F_RunWipe(wipedefs[wipe_level_final], false);
 		}
-		else //dedicated servers can call this now, to wait the appropriate amount of time for clients to wipe
+		else // dedicated servers can call this now, to wait the appropriate amount of time for clients to wipe
 		{
 			F_RunWipe(wipedefs[wipe_speclevel_towhite], false);
 			F_RunWipe(wipedefs[wipe_level_final], false);
@@ -2774,7 +2783,9 @@ static boolean P_RunSpecialWipe(boolean reloadinggamestate)
 				I_Sleep(cv_sleep.value);
 				I_UpdateTime(cv_timescale.value);
 			}
+
 			lastwipetic = nowtime;
+
 			if (moviemode) // make sure we save frames for the white hold too
 				M_SaveFrame();
 
@@ -2793,6 +2804,7 @@ static void P_SetupPlayer(void)
 	INT32 i;
 
 	for (i = 0; i < MAXPLAYERS; i++)
+	{
 		if (players[i].ingame)
 		{
 			players[i].pflags &= ~PF_NIGHTSMODE;
@@ -2817,6 +2829,7 @@ static void P_SetupPlayer(void)
 					G_SpawnPlayer(i, false);
 			}
 		}
+	}
 
 	if (modeattacking == ATTACKING_RECORD && !demo.playback)
 		P_LoadRecordGhosts();
@@ -3082,10 +3095,8 @@ boolean P_SetupLevel(boolean fromnetsave, boolean reloadinggamestate)
 	numdmstarts = numredctfstarts = numbluectfstarts = 0;
 
 	// reset the player starts
-	for (i = 0; i < MAXPLAYERS; i++)
-		playerstarts[i] = NULL;
-	for (i = 0; i < 2; i++)
-		skyboxmo[i] = NULL;
+	memset(playerstarts, 0, sizeof(playerstarts));
+	memset(skyboxmo, 0, sizeof(skyboxmo));
 
 	P_ResetWaypoints();
 
@@ -3185,12 +3196,15 @@ boolean P_SetupLevel(boolean fromnetsave, boolean reloadinggamestate)
 	if (!fromnetsave) // uglier hack
 	{ // to make a newly loaded level start on the second frame.
 		INT32 buf = gametic % TICQUEUE;
+
 		for (i = 0; i < MAXPLAYERS; i++)
 		{
 			if (players[i].ingame)
 				G_CopyTiccmd(&players[i].cmd, &netcmds[buf][i], 1);
 		}
+
 		P_PreTicker(2);
+
 		if (!reloadinggamestate)
 			LUA_HookInt(gamemap, HOOK(MapLoad));
 	}
