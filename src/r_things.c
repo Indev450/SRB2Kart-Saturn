@@ -3163,11 +3163,11 @@ void SetLocalPlayerSkin(INT32 playernum, const char *skinname, consvar_t *cvar)
 	INT32 i;
 	player_t *player = &players[playernum];
 
-	if (strcasecmp(skinname, "none"))
+	if (stricmp(skinname, "none"))
 	{
 		for (i = 0; i < numlocalskins; i++)
 		{
-			// search in the skin list
+			// search in the localskin list
 			if (stricmp(localskins[i].name, skinname) == 0)
 			{
 				player->localskin = 1 + i;
@@ -3177,9 +3177,11 @@ void SetLocalPlayerSkin(INT32 playernum, const char *skinname, consvar_t *cvar)
 					player->mo->localskin = &localskins[i];
 					player->mo->skinlocal = true;
 				}
-				break;
+
+				goto setcvar;
 			}
 		}
+
 		for (i = 0; i < numskins; i++)
 		{
 			// search in the skin list
@@ -3192,7 +3194,8 @@ void SetLocalPlayerSkin(INT32 playernum, const char *skinname, consvar_t *cvar)
 					player->mo->localskin = &skins[i];
 					player->mo->skinlocal = false;
 				}
-				break;
+
+				goto setcvar;
 			}
 		}
 	}
@@ -3207,6 +3210,7 @@ void SetLocalPlayerSkin(INT32 playernum, const char *skinname, consvar_t *cvar)
 		}
 	}
 
+setcvar:
 	if (cvar != NULL)
 	{
 		if (player->localskin > 0)
