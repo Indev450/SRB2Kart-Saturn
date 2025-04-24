@@ -4459,7 +4459,7 @@ static void Command_Addfilelocal(void)
 	// Add any wad file, ignoring checks for if it contains complex things like
 	// lua. Great for complex but client-side customizations, like different
 	// level cards or anything like that.
-	P_AddWadFileLocal(fn);
+	P_AddWadFile(fn, true);
 }
 
 
@@ -4554,38 +4554,9 @@ static void Command_Addfile(void)
 
 /** Adds something at runtime.
   */
-static void
-Command_Addskins (void)
+static void Command_Addskins(void)
 {
-	if (COM_Argc() > 3)
-	{
-		CONS_Printf(
-				"addskins <file>: Load a skin file.\n");
-		return;
-	}
-	// no forcing?
-	/*
-	if (fasticmp(COM_Argv(2), "-force") || fasticmp(COM_Argv(2), "-f")) {
-		CONS_Alert(CONS_NOTICE, M_GetText("Adding file %s. May or may not be a skin.\n"), COM_Argv(1));
-		P_AddWadFile(COM_Argv(1), 0, true);
-	} else {
-		if (DumbStartsWith("KC_", COM_Argv(1))) {
-			P_AddWadFile(COM_Argv(1), 0, true);
-		} else if (DumbStartsWith("KCL_", COM_Argv(1))) {
-			if (!demo.playback) {
-				CONS_Alert(CONS_ERROR, M_GetText("Cannot add file %s as it is a skin with lua. Include -force or -f to force it to load.\n"), COM_Argv(1));
-				return;
-			} else {
-	*/
-				P_AddWadFile(COM_Argv(1), true);
-	/*
-			}
-		} else {
-			CONS_Alert(CONS_ERROR, M_GetText("Cannot add file %s as it is not a skin.\n"), COM_Argv(1));
-			return;
-		}
-	}
-	*/
+	CONS_Printf("addskins has been deprecated\nuse addfilelocal instead!\n");
 }
 
 static void Command_GLocalSkin (void)

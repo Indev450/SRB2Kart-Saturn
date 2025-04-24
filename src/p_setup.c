@@ -3246,17 +3246,6 @@ boolean P_AddWadFile(const char *wadfilename, boolean local)
 	return true;
 }
 
-boolean P_AddWadFileLocal(const char *wadfilename)
-{
-	UINT16 wadnum;
-
-	if ((wadnum = P_PartialAddWadFile(wadfilename, true)) == UINT16_MAX)
-		return false;
-
-	P_MultiSetupWadFiles(true);
-	return true;
-}
-
 // check for replacement votescreen backgrounds
 boolean wideracereplaced = false;
 boolean racereplaced = false;
