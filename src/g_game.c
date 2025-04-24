@@ -1298,6 +1298,25 @@ static INT32 pausedelay = 0;
 static INT32 camtoggledelay[MAXSPLITSCREENPLAYERS] = {0,0,0,0};
 static INT32 spectatedelay[MAXSPLITSCREENPLAYERS] = {0,0,0,0};
 
+static void G_ToggleSpectate(INT32 player)
+{
+	switch (player)
+	{
+		case 0:
+			COM_ImmedExecute("changeteam spectator");
+			break;
+		case 1:
+			COM_ImmedExecute("changeteam2 spectator");
+			break;
+		case 2:
+			COM_ImmedExecute("changeteam3 spectator");
+			break;
+		case 3:
+			COM_ImmedExecute("changeteam4 spectator");
+			break;
+	}
+}
+
 static boolean G_LevelResponder(event_t *ev)
 {
 	// allow spy mode changes even during the demo
@@ -1499,7 +1518,7 @@ boolean G_Responder(event_t *ev)
 					if (!spectatedelay[i])
 					{
 						spectatedelay[i] = NEWTICRATE / 7;
-						COM_ImmedExecute("changeteam spectator");
+						G_ToggleSpectate(i);
 					}
 				}
 
