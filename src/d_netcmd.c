@@ -4601,7 +4601,7 @@ static void Command_GLocalSkin (void)
 
 	char* fuck; // local skin name
 
-	if (!( first_option = COM_FirstOption() ))
+	if (!(first_option = COM_FirstOption()))
 		first_option = COM_Argc();
 
 	if (first_option < 2)
@@ -4609,14 +4609,14 @@ static void Command_GLocalSkin (void)
 		/* holy fucking shit */
 		CONS_Printf("localskin <name> [-player <name>] [-display <number>] [-all]:\n");
 		CONS_Printf(M_GetText("Set a localskin via its internal name (usually printed on the console).\n\n\
-* Using \"-player\" will set a localskin to a specified player.\n\
-  Defaults to yourself.\n\
-* Using \"-display\" will set a localskin to the displayed player.\n\
-  Defaults to 0, which is the first player displayed.\n\
-  Can go up to 3 for splitscreen.\n\
-* Using \"-all\" will set a localskin to ALL players.\n\
-* \"localskin none\" removes the localskin, just like how\n\
-  \"forceskin none\" does.\n"));
+		* Using \"-player\" will set a localskin to a specified player.\n\
+		Defaults to yourself.\n\
+		* Using \"-display\" will set a localskin to the displayed player.\n\
+		Defaults to 0, which is the first player displayed.\n\
+		Can go up to 3 for splitscreen.\n\
+		* Using \"-all\" will set a localskin to ALL players.\n\
+		* \"localskin none\" removes the localskin, just like how\n\
+		\"forceskin none\" does.\n"));
 		return;
 	}
 
