@@ -1721,6 +1721,19 @@ static boolean is_rain_type (INT32 weathernum)
 	}
 }
 
+void P_PurgePrecipitation(void)
+{
+	thinker_t *think;
+	thinker_t *next;
+
+	for (think = precipcap.next; think != NULL && think != &precipcap;)
+	{
+		next = think->next;
+		P_FreePrecipMobj((precipmobj_t *)think);
+		think = next;
+	}
+}
+
 //
 // P_SwitchWeather
 //
@@ -1729,6 +1742,7 @@ static boolean is_rain_type (INT32 weathernum)
 void P_SwitchWeather(INT32 weathernum)
 {
 	boolean purge = true;
+	boolean spawnprecip = false;
 
 	if (weathernum == curWeather)
 		return;
@@ -1739,22 +1753,7 @@ void P_SwitchWeather(INT32 weathernum)
 
 	if (purge)
 	{
-		thinker_t *think;
-		thinker_t *next;
-		precipmobj_t *precipmobj;
-
-		for (think = precipcap.next; think != &precipcap; think = next)
-		{
-			next = think->next;
-
-#ifdef PARANOIA
-			if (think->function.acp1 != (actionf_p1)P_NullPrecipThinker)
-				continue; // not a precipmobj thinker
-#endif
-
-			precipmobj = (precipmobj_t *)think;
-			P_FreePrecipMobj(precipmobj);
-		}
+		P_PurgePrecipitation();
 	}
 	else // Rather than respawn all that crap, reuse it!
 	{
@@ -1764,11 +1763,6 @@ void P_SwitchWeather(INT32 weathernum)
 
 		for (think = precipcap.next; think != &precipcap; think = think->next)
 		{
-#ifdef PARANOIA
-			if (think->function.acp1 != (actionf_p1)P_NullPrecipThinker)
-				continue; // not a precipmobj thinker
-#endif
-
 			precipmobj = (precipmobj_t *)think;
 
 			INT32 z = 0;
@@ -1813,8 +1807,6 @@ void P_SwitchWeather(INT32 weathernum)
 		}
 	}
 
-	boolean spawnprecip = false;
-
 	switch (weathernum)
 	{
 		case PRECIP_SNOW: // snow
@@ -1822,23 +1814,17 @@ void P_SwitchWeather(INT32 weathernum)
 			spawnprecip = true;
 		break;
 		case PRECIP_RAIN: // rain
-		{
 			curWeather = PRECIP_RAIN;
 			spawnprecip = true;
 			break;
-		}
 		case PRECIP_STORM: // storm
-		{
 			curWeather = PRECIP_STORM;
 			spawnprecip = true;
 			break;
-		}
 		case PRECIP_STORM_NOSTRIKES: // storm w/o lightning
-		{
 			curWeather = PRECIP_STORM_NOSTRIKES;
 			spawnprecip = true;
 			break;
-		}
 		case PRECIP_STORM_NORAIN: // storm w/o rain
 			curWeather = PRECIP_STORM_NORAIN;
 			break;
