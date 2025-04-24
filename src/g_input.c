@@ -136,6 +136,14 @@ INT32 gamecontrolbis[num_gamecontrols][2]; // secondary splitscreen player
 INT32 gamecontrol3[num_gamecontrols][2]; // tertiary splitscreen player
 INT32 gamecontrol4[num_gamecontrols][2]; // quarternary splitscreen player
 
+// TODO: this is dumb as hell
+INT32 (*gamecontrols[MAXSPLITSCREENPLAYERS])[2] = {
+	gamecontrol,
+	gamecontrolbis,
+	gamecontrol3,
+	gamecontrol4
+};
+
 typedef struct
 {
 	UINT8 time;

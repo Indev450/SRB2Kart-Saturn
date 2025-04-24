@@ -1276,7 +1276,8 @@ static void G_DoLoadLevel(boolean resetplayer)
 
 	// clear cmd building stuff
 	memset(gamekeydown, 0, sizeof (gamekeydown));
-	for (i = 0;i < JOYAXISSET; i++)
+
+	for (i = 0; i < JOYAXISSET; i++)
 	{
 		joyxmove[i] = joyymove[i] = 0;
 		joy2xmove[i] = joy2ymove[i] = 0;
@@ -1297,91 +1298,10 @@ static INT32 pausedelay = 0;
 static INT32 camtoggledelay[MAXSPLITSCREENPLAYERS] = {0,0,0,0};
 static INT32 spectatedelay[MAXSPLITSCREENPLAYERS] = {0,0,0,0};
 
-//
-// G_Responder
-// Get info needed to make ticcmd_ts for the players.
-//
-boolean G_Responder(event_t *ev)
+static boolean G_LevelResponder(event_t *ev)
 {
-	// any other key pops up menu if in demos
-	if (gameaction == ga_nothing && !demo.quitafterplaying &&
-		((demo.playback && !modeattacking && !demo.title && !multiplayer) || gamestate == GS_TITLESCREEN))
-	{
-		if (ev->type == ev_keydown && ev->data1 != 301)
-		{
-			M_StartControlPanel();
-			return true;
-		}
-		return false;
-	}
-	else if (demo.playback && demo.title)
-	{
-		// Title demo uses intro responder
-		if (F_IntroResponder(ev))
-		{
-			// stop the title demo
-			G_CheckDemoStatus();
-			return true;
-		}
-		return false;
-	}
-
-	if (gamestate == GS_LEVEL)
-	{
-		if (HU_Responder(ev))
-			return true; // chat ate the event
-		if (AM_Responder(ev))
-			return true; // automap ate it
-		// map the event (key/mouse/joy) to a gamecontrol
-	}
-	// Intro
-	else if (gamestate == GS_INTRO)
-	{
-		if (F_IntroResponder(ev))
-		{
-			D_StartTitle();
-			return true;
-		}
-	}
-	else if (gamestate == GS_CUTSCENE)
-	{
-		if (HU_Responder(ev))
-			return true; // chat ate the event
-
-		if (F_CutsceneResponder(ev))
-		{
-			D_StartTitle();
-			return true;
-		}
-	}
-
-	else if (gamestate == GS_CREDITS)
-	{
-		if (HU_Responder(ev))
-			return true; // chat ate the event
-
-		if (F_CreditResponder(ev))
-		{
-			F_StartGameEvaluation();
-			return true;
-		}
-	}
-
-	else if (gamestate == GS_CONTINUING)
-	{
-		if (F_ContinueResponder(ev))
-			return true;
-	}
-	// Demo End
-	else if (gamestate == GS_GAMEEND || gamestate == GS_EVALUATION || gamestate == GS_CREDITS)
-		return true;
-
-	else if (gamestate == GS_INTERMISSION || gamestate == GS_VOTING || gamestate == GS_WAITINGPLAYERS)
-		if (HU_Responder(ev))
-			return true; // chat ate the event
-
 	// allow spy mode changes even during the demo
-	if (gamestate == GS_LEVEL && ev->type == ev_keydown
+	if (ev->type == ev_keydown
 		&& (ev->data1 == KEY_F12 || ev->data1 == gamecontrol[gc_viewpoint][0] || ev->data1 == gamecontrol[gc_viewpoint][1]))
 	{
 		if (!demo.playback && (splitscreen || !netgame))
@@ -1398,30 +1318,20 @@ boolean G_Responder(event_t *ev)
 		}
 	}
 
-	if (gamestate == GS_LEVEL && ev->type == ev_keydown && multiplayer && demo.playback)
+	if (ev->type == ev_keydown && multiplayer && demo.playback)
 	{
-		if (ev->data1 == gamecontrolbis[gc_viewpoint][0] || ev->data1 == gamecontrolbis[gc_viewpoint][1])
+		for (INT32 i = 1; i <= splitscreen; i++)
 		{
-			G_AdjustView(2, 1, true);
-
-			return true;
-		}
-		else if (ev->data1 == gamecontrol3[gc_viewpoint][0] || ev->data1 == gamecontrol3[gc_viewpoint][1])
-		{
-			G_AdjustView(3, 1, true);
-
-			return true;
-		}
-		else if (ev->data1 == gamecontrol4[gc_viewpoint][0] || ev->data1 == gamecontrol4[gc_viewpoint][1])
-		{
-			G_AdjustView(4, 1, true);
-
-			return true;
+			if (ev->data1 == gamecontrols[i][gc_viewpoint][0]
+				|| ev->data1 == gamecontrols[i][gc_viewpoint][1])
+			{
+				G_AdjustView(i+1, 1, true);
+				return true;
+			}
 		}
 
 		// Allow pausing
-		if (
-			ev->data1 == gamecontrol[gc_pause][0]
+		if (ev->data1 == gamecontrol[gc_pause][0]
 			|| ev->data1 == gamecontrol[gc_pause][1]
 			|| ev->data1 == KEY_PAUSE
 		)
@@ -1446,9 +1356,96 @@ boolean G_Responder(event_t *ev)
 		if (ev->data1 == 32)
 		{
 			M_StartControlPanel();
-
 			return true;
 		}
+	}
+
+	return false;
+}
+
+//
+// G_Responder
+// Get info needed to make ticcmd_ts for the players.
+//
+boolean G_Responder(event_t *ev)
+{
+	if (demo.playback && demo.title)
+	{
+		// Title demo uses intro responder
+		if (F_IntroResponder(ev))
+		{
+			// stop the title demo
+			G_CheckDemoStatus();
+			return true;
+		}
+
+		return false;
+	}
+	else if (gameaction == ga_nothing
+		&& !demo.quitafterplaying
+		&& ((demo.playback && !modeattacking && !multiplayer) || gamestate == GS_TITLESCREEN))
+	{
+		// any other key pops up menu if in demos
+		if (ev->type == ev_keydown && ev->data1 != 301)
+		{
+			M_StartControlPanel();
+			return true;
+		}
+
+		return false;
+	}
+
+	if (Playing())
+	{
+		// If you're playing, chat is real.
+		// Neatly sidesteps a class of bugs where whenever we add a
+		// new gamestate accessible in netplay, chat was console-only.
+		if (HU_Responder(ev))
+		{
+			return true; // chat ate the event
+		}
+	}
+
+	switch (gamestate)
+	{
+		case GS_LEVEL:
+			if (AM_Responder(ev))
+				return true; // automap ate it
+			// map the event (key/mouse/joy) to a gamecontrol
+			if (G_LevelResponder(ev))
+				return true;
+			break;
+		case GS_INTRO:
+			if (F_IntroResponder(ev))
+			{
+				D_StartTitle();
+				return true;
+			}
+			break;
+		case GS_CUTSCENE:
+			if (F_CutsceneResponder(ev))
+			{
+				D_StartTitle();
+				return true;
+			}
+			break;
+		case GS_CREDITS:
+			if (F_CreditResponder(ev))
+			{
+				F_StartGameEvaluation();
+				return true;
+			}
+			break;
+		case GS_CONTINUING:
+			if (F_ContinueResponder(ev))
+				return true;
+			break;
+		case GS_GAMEEND:
+		case GS_EVALUATION:
+			return true; // Demo End
+			break;
+		default:
+			break;
 	}
 
 	// update keys current state
@@ -1473,121 +1470,58 @@ boolean G_Responder(event_t *ev)
 				else
 					pausedelay = NEWTICRATE/7;
 			}
-			if (ev->data1 == gamecontrol[gc_camtoggle][0]
-				|| ev->data1 == gamecontrol[gc_camtoggle][1])
-			{
-				if (!camtoggledelay[0])
-				{
-					camtoggledelay[0] = NEWTICRATE / 7;
-					CV_SetValue(&cv_chasecam[0], cv_chasecam[0].value ? 0 : 1);
-				}
-			}
-			if (ev->data1 == gamecontrolbis[gc_camtoggle][0]
-				|| ev->data1 == gamecontrolbis[gc_camtoggle][1])
-			{
-				if (!camtoggledelay[1])
-				{
-					camtoggledelay[1] = NEWTICRATE / 7;
-					CV_SetValue(&cv_chasecam[1], cv_chasecam[1].value ? 0 : 1);
-				}
-			}
-			if (ev->data1 == gamecontrol3[gc_camtoggle][0]
-				|| ev->data1 == gamecontrol3[gc_camtoggle][1])
-			{
-				if (!camtoggledelay[2])
-				{
-					camtoggledelay[2] = NEWTICRATE / 7;
-					CV_SetValue(&cv_chasecam[2], cv_chasecam[2].value ? 0 : 1);
-				}
-			}
-			if (ev->data1 == gamecontrol4[gc_camtoggle][0]
-				|| ev->data1 == gamecontrol4[gc_camtoggle][1])
-			{
-				if (!camtoggledelay[3])
-				{
-					camtoggledelay[3] = NEWTICRATE / 7;
-					CV_SetValue(&cv_chasecam[3], cv_chasecam[3].value ? 0 : 1);
-				}
-			}
-			if (ev->data1 == gamecontrol[gc_spectate][0]
-				|| ev->data1 == gamecontrol[gc_spectate][1])
-			{
-				if (!spectatedelay[0])
-				{
-					spectatedelay[0] = NEWTICRATE / 7;
-					COM_ImmedExecute("changeteam spectator");
-				}
-			}
-			if (ev->data1 == gamecontrolbis[gc_spectate][0]
-				|| ev->data1 == gamecontrolbis[gc_spectate][1])
-			{
-				if (!spectatedelay[1])
-				{
-					spectatedelay[1] = NEWTICRATE / 7;
-					COM_ImmedExecute("changeteam2 spectator");
-				}
-			}
-			if (ev->data1 == gamecontrol3[gc_spectate][0]
-				|| ev->data1 == gamecontrol3[gc_spectate][1])
-			{
-				if (!spectatedelay[2])
-				{
-					spectatedelay[2] = NEWTICRATE / 7;
-					COM_ImmedExecute("changeteam3 spectator");
-				}
-			}
-			if (ev->data1 == gamecontrol4[gc_spectate][0]
-				|| ev->data1 == gamecontrol4[gc_spectate][1])
-			{
-				if (!spectatedelay[3])
-				{
-					spectatedelay[3] = NEWTICRATE / 7;
-					COM_ImmedExecute("changeteam4 spectator");
-				}
-			}
 
-			if (ev->data1 == gamecontrol[gc_director][0] || ev->data1 == gamecontrol[gc_director][1])
+			// no splitscreen support for director here
+			if (ev->data1 == gamecontrol[gc_director][0]
+				|| ev->data1 == gamecontrol[gc_director][1])
 			{
 				K_ToggleDirector();
 			}
 
-			if (ev->data1 == gamecontrol[gc_freecam][0] || ev->data1 == gamecontrol[gc_freecam][1])
+			// absolutely horrid
+			for (INT32 i = 0; i <= splitscreen; i++)
 			{
-				P_ToggleDemoCamera(0);
-			}
-			else if (ev->data1 == gamecontrolbis[gc_freecam][0] || ev->data1 == gamecontrolbis[gc_freecam][1])
-			{
-				P_ToggleDemoCamera(1);
-			}
-			else if (ev->data1 == gamecontrol3[gc_freecam][0] || ev->data1 == gamecontrol3[gc_freecam][1])
-			{
-				P_ToggleDemoCamera(2);
-			}
-			else if (ev->data1 == gamecontrol4[gc_freecam][0] || ev->data1 == gamecontrol4[gc_freecam][1])
-			{
-				P_ToggleDemoCamera(3);
+				if (ev->data1 == gamecontrols[i][gc_camtoggle][0]
+					|| ev->data1 == gamecontrols[i][gc_camtoggle][1])
+				{
+					if (!camtoggledelay[i])
+					{
+						camtoggledelay[i] = NEWTICRATE / 7;
+						CV_SetValue(&cv_chasecam[i], (cv_chasecam[i].value ^ 1));
+					}
+				}
+
+				if (ev->data1 == gamecontrols[i][gc_spectate][0]
+					|| ev->data1 == gamecontrols[i][gc_spectate][1])
+				{
+					if (!spectatedelay[i])
+					{
+						spectatedelay[i] = NEWTICRATE / 7;
+						COM_ImmedExecute("changeteam spectator");
+					}
+				}
+
+				if (ev->data1 == gamecontrols[i][gc_freecam][0]
+					|| ev->data1 == gamecontrols[i][gc_freecam][1])
+				{
+					P_ToggleDemoCamera(i);
+				}
 			}
 
 			return true;
 
 		case ev_keyup:
 			return false; // always let key up events filter down
-
 		case ev_mouse:
 			return true; // eat events
-
 		case ev_joystick:
 			return true; // eat events
-
 		case ev_joystick2:
 			return true; // eat events
-
 		case ev_joystick3:
 			return true; // eat events
-
 		case ev_joystick4:
 			return true; // eat events
-
 		default:
 			break;
 	}
