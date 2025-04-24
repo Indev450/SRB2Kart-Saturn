@@ -506,8 +506,8 @@ static void ST_drawLevelTitle(void)
 static const char *ST_GetButtonName(INT32 control, const char *inputtext, boolean unbound, boolean gamectrl)
 {
 	static char buttname[32] = "";
-	const char *butt1 = (gamecontrol[control][0] != 0 ? G_KeynumToString(gamecontrol[control][0]) : NULL);
-	const char *butt2 = (gamecontrol[control][1] != 0 ? G_KeynumToString(gamecontrol[control][1]) : NULL); // alternative bind
+	const char *butt1 = (gamecontrol[0][control][0] != 0 ? G_KeynumToString(gamecontrol[0][control][0]) : NULL);
+	const char *butt2 = (gamecontrol[0][control][1] != 0 ? G_KeynumToString(gamecontrol[0][control][1]) : NULL); // alternative bind
 
 	if (butt1 == NULL && butt2 == NULL) // not bound to a button
 		snprintf(buttname, 32, (unbound ? "%s - %s" : (gamectrl ? "-%s - %s" : "%s - %s")), (unbound ? "Unbound" : ""), inputtext);

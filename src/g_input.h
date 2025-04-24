@@ -121,16 +121,12 @@ extern INT32 joyxmove[JOYAXISSET], joyymove[JOYAXISSET], joy2xmove[JOYAXISSET], 
 extern UINT8 gamekeydown[NUMINPUTS];
 
 // two key codes (or virtual key) per game control
-extern INT32 gamecontrol[num_gamecontrols][2];
-extern INT32 gamecontrolbis[num_gamecontrols][2]; // secondary splitscreen player
-extern INT32 gamecontrol3[num_gamecontrols][2];
-extern INT32 gamecontrol4[num_gamecontrols][2];
-extern INT32 (*gamecontrols[MAXSPLITSCREENPLAYERS])[2];
+extern INT32 gamecontrol[MAXSPLITSCREENPLAYERS][num_gamecontrols][2];
 
-#define PLAYER1INPUTDOWN(gc) (gamekeydown[gamecontrol[gc][0]] || gamekeydown[gamecontrol[gc][1]])
-#define PLAYER2INPUTDOWN(gc) (gamekeydown[gamecontrolbis[gc][0]] || gamekeydown[gamecontrolbis[gc][1]])
-#define PLAYER3INPUTDOWN(gc) (gamekeydown[gamecontrol3[gc][0]] || gamekeydown[gamecontrol3[gc][1]])
-#define PLAYER4INPUTDOWN(gc) (gamekeydown[gamecontrol4[gc][0]] || gamekeydown[gamecontrol4[gc][1]])
+#define PLAYER1INPUTDOWN(gc) (gamekeydown[gamecontrol[0][gc][0]] || gamekeydown[gamecontrol[0][gc][1]])
+#define PLAYER2INPUTDOWN(gc) (gamekeydown[gamecontrol[1][gc][0]] || gamekeydown[gamecontrol[1][gc][1]])
+#define PLAYER3INPUTDOWN(gc) (gamekeydown[gamecontrol[2][gc][0]] || gamekeydown[gamecontrol[2][gc][1]])
+#define PLAYER4INPUTDOWN(gc) (gamekeydown[gamecontrol[3][gc][0]] || gamekeydown[gamecontrol[3][gc][1]])
 
 // peace to my little coder fingers!
 // check a gamecontrol being active or not

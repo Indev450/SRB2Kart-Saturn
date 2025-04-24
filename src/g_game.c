@@ -1302,7 +1302,9 @@ static boolean G_LevelResponder(event_t *ev)
 {
 	// allow spy mode changes even during the demo
 	if (ev->type == ev_keydown
-		&& (ev->data1 == KEY_F12 || ev->data1 == gamecontrol[gc_viewpoint][0] || ev->data1 == gamecontrol[gc_viewpoint][1]))
+		&& (ev->data1 == KEY_F12
+		|| ev->data1 == gamecontrol[0][gc_viewpoint][0]
+		|| ev->data1 == gamecontrol[0][gc_viewpoint][1]))
 	{
 		if (!demo.playback && (splitscreen || !netgame))
 			displayplayers[0] = consoleplayer;
@@ -1322,8 +1324,8 @@ static boolean G_LevelResponder(event_t *ev)
 	{
 		for (INT32 i = 1; i <= splitscreen; i++)
 		{
-			if (ev->data1 == gamecontrols[i][gc_viewpoint][0]
-				|| ev->data1 == gamecontrols[i][gc_viewpoint][1])
+			if (ev->data1 == gamecontrol[i][gc_viewpoint][0]
+				|| ev->data1 == gamecontrol[i][gc_viewpoint][1])
 			{
 				G_AdjustView(i+1, 1, true);
 				return true;
@@ -1331,8 +1333,8 @@ static boolean G_LevelResponder(event_t *ev)
 		}
 
 		// Allow pausing
-		if (ev->data1 == gamecontrol[gc_pause][0]
-			|| ev->data1 == gamecontrol[gc_pause][1]
+		if (ev->data1 == gamecontrol[0][gc_pause][0]
+			|| ev->data1 == gamecontrol[0][gc_pause][1]
 			|| ev->data1 == KEY_PAUSE
 		)
 		{
@@ -1454,8 +1456,8 @@ boolean G_Responder(event_t *ev)
 	switch (ev->type)
 	{
 		case ev_keydown:
-			if (ev->data1 == gamecontrol[gc_pause][0]
-				|| ev->data1 == gamecontrol[gc_pause][1]
+			if (ev->data1 == gamecontrol[0][gc_pause][0]
+				|| ev->data1 == gamecontrol[0][gc_pause][1]
 				|| ev->data1 == KEY_PAUSE)
 			{
 				if (!pausedelay)
@@ -1472,8 +1474,8 @@ boolean G_Responder(event_t *ev)
 			}
 
 			// no splitscreen support for director here
-			if (ev->data1 == gamecontrol[gc_director][0]
-				|| ev->data1 == gamecontrol[gc_director][1])
+			if (ev->data1 == gamecontrol[0][gc_director][0]
+				|| ev->data1 == gamecontrol[0][gc_director][1])
 			{
 				K_ToggleDirector();
 			}
@@ -1481,8 +1483,8 @@ boolean G_Responder(event_t *ev)
 			// absolutely horrid
 			for (INT32 i = 0; i <= splitscreen; i++)
 			{
-				if (ev->data1 == gamecontrols[i][gc_camtoggle][0]
-					|| ev->data1 == gamecontrols[i][gc_camtoggle][1])
+				if (ev->data1 == gamecontrol[i][gc_camtoggle][0]
+					|| ev->data1 == gamecontrol[i][gc_camtoggle][1])
 				{
 					if (!camtoggledelay[i])
 					{
@@ -1491,8 +1493,8 @@ boolean G_Responder(event_t *ev)
 					}
 				}
 
-				if (ev->data1 == gamecontrols[i][gc_spectate][0]
-					|| ev->data1 == gamecontrols[i][gc_spectate][1])
+				if (ev->data1 == gamecontrol[i][gc_spectate][0]
+					|| ev->data1 == gamecontrol[i][gc_spectate][1])
 				{
 					if (!spectatedelay[i])
 					{
@@ -1501,8 +1503,8 @@ boolean G_Responder(event_t *ev)
 					}
 				}
 
-				if (ev->data1 == gamecontrols[i][gc_freecam][0]
-					|| ev->data1 == gamecontrols[i][gc_freecam][1])
+				if (ev->data1 == gamecontrol[i][gc_freecam][0]
+					|| ev->data1 == gamecontrol[i][gc_freecam][1])
 				{
 					P_ToggleDemoCamera(i);
 				}
