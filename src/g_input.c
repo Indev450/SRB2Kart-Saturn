@@ -1022,7 +1022,7 @@ INT32 G_KeyStringtoNum(const char *keystr)
 	if (!keystr[0])
 		return 0;
 
-	if (!keystr[1] && keystr[0] > ' ' && keystr[0] <= 'z')
+	if (!keystr[0] || (!keystr[1] && keystr[0] > ' ' && keystr[0] <= 'z'))
 		return keystr[0];
 
 	if (!strncmp(keystr, "KEY", 3) && keystr[3] >= '0' && keystr[3] <= '9')
