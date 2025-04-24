@@ -3700,7 +3700,6 @@ next_token:
 		numallskins++;
 	}
 
-#undef lskin
 #undef lnumskins
 	//sortSkinGrid();
 
