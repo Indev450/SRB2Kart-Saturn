@@ -10448,7 +10448,7 @@ void P_SpawnPrecipitation(void)
 				continue;
 
 			// Exists, but is too small for reasonable precipitation.
-			if (!(precipsector->sector->floorheight <= precipsector->sector->ceilingheight - (32<<FRACBITS)))
+			if (FixedDiv(precipsector->sector->ceilingheight - precipsector->sector->floorheight, mapobjectscale) < 64<<FRACBITS)
 				continue;
 
 			// Don't set z properly yet...
