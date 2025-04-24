@@ -295,27 +295,11 @@ static void FlipCam4_OnChange(void)
 
 static void Precipstuff_OnChange(void)
 {
-	if (gamestate != GS_LEVEL)
-		return;
-
-	thinker_t *think;
-	thinker_t *next;
-	precipmobj_t *precipmobj;
-
-	for (think = precipcap.next; think != &precipcap; think = next)
+	if (gamestate == GS_LEVEL)
 	{
-		next = think->next;
-
-#ifdef PARANOIA
-		if (think->function.acp1 != (actionf_p1)P_NullPrecipThinker)
-			continue; // not a precipmobj thinker
-#endif
-
-		precipmobj = (precipmobj_t *)think;
-		P_FreePrecipMobj(precipmobj);
+		P_PurgePrecipitation();
+		P_SpawnPrecipitation();
 	}
-
-	P_SpawnPrecipitation();
 }
 
 //

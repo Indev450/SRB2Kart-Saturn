@@ -2669,8 +2669,6 @@ static void P_NetUnArchiveThinkers(savebuffer_t *save)
 {
 	thinker_t *currentthinker;
 	thinker_t *next;
-	thinker_t *currentprecipthinker;
-	thinker_t *nextprecip;
 	UINT8 tclass;
 	UINT8 restoreNum = false;
 	UINT32 i;
@@ -2696,22 +2694,7 @@ static void P_NetUnArchiveThinkers(savebuffer_t *save)
 	}
 
 	// remove all the current precip thinkers
-	currentprecipthinker = precipcap.next;
-	for (currentprecipthinker = precipcap.next; currentprecipthinker != &precipcap; currentprecipthinker = nextprecip)
-	{
-		nextprecip = currentprecipthinker->next;
-
-#ifdef PARANOIA
-		if (currentprecipthinker->function.acp1 != (actionf_p1)P_NullPrecipThinker)
-		{
-			(next->prev = currentprecipthinker->prev)->next = nextprecip;
-			R_DestroyLevelInterpolators(currentprecipthinker);
-			Z_Free(currentprecipthinker);
-		}
-		else
-#endif
-			P_RemoveSavegameMobj((mobj_t *)currentprecipthinker); // item isn't saved, don't remove it
-	}
+	P_PurgePrecipitation();
 
 	// we don't want the removed mobjs to come back
 	iquetail = iquehead = 0;
