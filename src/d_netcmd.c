@@ -2691,7 +2691,8 @@ static tic_t last_map_cmd = 0;
 //
 static void Command_Map_f(void)
 {
-	if (I_GetTime() - last_map_cmd < 20) {
+	if (I_GetTime() - last_map_cmd < 20)
+	{
 		CONS_Alert(CONS_WARNING, "Map command is used too frequently!\n");
 		return;
 	}
@@ -2749,8 +2750,7 @@ static void Command_Map_f(void)
 	{
 		if (!multiplayer)
 		{
-			CONS_Printf(M_GetText(
-						"You can't switch gametypes in single player!\n"));
+			CONS_Printf(M_GetText("You can't switch gametypes in single player!\n"));
 			return;
 		}
 		else if (COM_Argc() < option_gametype + 2)/* no argument after? */

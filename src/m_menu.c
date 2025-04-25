@@ -9290,7 +9290,7 @@ static void M_TimeAttack(INT32 choice)
 
 	if (M_CountLevelsToShowInList() == 0)
 	{
-		M_StartMessage(M_GetText("No record-attackable levels found.\n"),NULL,MM_NOTHING);
+		M_StartMessage(M_GetText("No record-attackable levels found.\n"), NULL, MM_NOTHING);
 		return;
 	}
 
