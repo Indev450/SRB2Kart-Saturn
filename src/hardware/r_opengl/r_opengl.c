@@ -1528,7 +1528,7 @@ void GL_SetBlend(FBITFIELD PolyFlags)
 		{
 			if (PolyFlags & PF_Skydecal)
 			{
-				pglPolygonOffset(-0.45f, -0.45f); // dont let skywalls draw over actual walls tho
+				pglPolygonOffset(0.45f, 0.45f);
 				pglEnable(GL_POLYGON_OFFSET_FILL);
 			}
 			else
