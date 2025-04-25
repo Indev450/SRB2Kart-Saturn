@@ -4012,7 +4012,7 @@ void G_InitNew(UINT8 pencoremode, const char *mapname, boolean resetplayer, bool
 		unlocktriggers = 0;
 
 		// clear itemfinder, just in case
-		if (!dedicated)	// except in dedicated servers, where it is not registered and can actually I_Error debug builds
+		if (!dedicated) // except in dedicated servers, where it is not registered and can actually I_Error debug builds
 			CV_StealthSetValue(&cv_itemfinder, 0);
 	}
 
@@ -4030,7 +4030,7 @@ void G_InitNew(UINT8 pencoremode, const char *mapname, boolean resetplayer, bool
 
 	// gamemap changed; we assume that its map header is always valid,
 	// so make it so
-	if(!mapheaderinfo[gamemap-1])
+	if (!mapheaderinfo[gamemap-1])
 		P_AllocMapHeader(gamemap-1);
 
 	maptol = mapheaderinfo[gamemap-1]->typeoflevel;
@@ -5347,7 +5347,8 @@ void G_ConsGhostTic(INT32 playernum)
 void G_GhostTicker(void)
 {
 	demoghost *g,*p;
-	for(g = ghosts, p = NULL; g; g = g->next)
+
+	for (g = ghosts, p = NULL; g; g = g->next)
 	{
 		// Skip normal demo data.
 		UINT8 ziptic = READUINT8(g->p);
