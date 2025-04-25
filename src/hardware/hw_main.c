@@ -2474,8 +2474,8 @@ static boolean HWR_CheckBBox(const fixed_t *bspcoord)
 
 	// Find the corners of the box
 	// that define the edges from current viewpoint.
-	const INT32 boxpos = (viewx <= bspcoord[BOXLEFT] ? 0 : viewx < bspcoord[BOXRIGHT ] ? 1 : 2) +
-	(viewy >= bspcoord[BOXTOP ] ? 0 : viewy > bspcoord[BOXBOTTOM] ? 4 : 8);
+	const INT32 boxpos = (viewx <= bspcoord[BOXLEFT] ? 0 : viewx < bspcoord[BOXRIGHT] ? 1 : 2) +
+	(viewy >= bspcoord[BOXTOP] ? 0 : viewy > bspcoord[BOXBOTTOM] ? 4 : 8);
 
 	if (boxpos == 5)
 		return true;
@@ -2914,7 +2914,7 @@ static void HWR_Subsector(size_t num)
 	gl_frontsector = R_FakeFlat(gl_frontsector, &tempsec, &floorlightlevel,
 								&ceilinglightlevel, false);
 
-	if (gl_portal_state == GLPORTAL_SEARCH)
+	if (UNLIKELY(gl_portal_state == GLPORTAL_SEARCH))
 	{
 		goto doaddline;
 	}
@@ -3040,37 +3040,37 @@ static void HWR_Subsector(size_t num)
 				{
 					UINT8 alpha;
 
-					light = R_GetPlaneLight(gl_frontsector, centerHeight, viewz < bottomCullHeight  ? true : false);
+					light = R_GetPlaneLight(gl_frontsector, centerHeight, (viewz < bottomCullHeight));
 
 					alpha = HWR_FogBlockAlpha(*gl_frontsector->lightlist[light].lightlevel, rover->master->frontsector->extra_colormap);
 
 					HWR_AddTransparentFloor(0,
-					                       &extrasubsectors[num],
-										   false,
-					                       *rover->bottomheight,
-					                       *gl_frontsector->lightlist[light].lightlevel,
-					                       alpha, rover->master->frontsector, PF_Fog|PF_NoTexture,
-										   true, rover->master->frontsector->extra_colormap);
+											&extrasubsectors[num],
+											false,
+											*rover->bottomheight,
+											*gl_frontsector->lightlist[light].lightlevel,
+											alpha, rover->master->frontsector, PF_Fog|PF_NoTexture,
+											true, rover->master->frontsector->extra_colormap);
 				}
 				else if ((rover->flags & FF_TRANSLUCENT && rover->alpha < 256) || rover->blend) // SoM: Flags are more efficient
 				{
-					light = R_GetPlaneLight(gl_frontsector, centerHeight, viewz < bottomCullHeight  ? true : false);
+					light = R_GetPlaneLight(gl_frontsector, centerHeight, (viewz < bottomCullHeight));
 
 					HWR_AddTransparentFloor(levelflats[*rover->bottompic].lumpnum,
-					                       &extrasubsectors[num],
-										   false,
-					                       *rover->bottomheight,
-					                       *gl_frontsector->lightlist[light].lightlevel,
-					                       CLAMP(rover->alpha, 0 ,255), rover->master->frontsector, HWR_RippleBlend(gl_frontsector, rover, false) | (rover->blend ? HWR_GetBlendModeFlag(rover->blend) : PF_Translucent),
-					                       false, gl_frontsector->lightlist[light].extra_colormap);
+											&extrasubsectors[num],
+											false,
+											*rover->bottomheight,
+											*gl_frontsector->lightlist[light].lightlevel,
+											CLAMP(rover->alpha, 0 ,255), rover->master->frontsector, HWR_RippleBlend(gl_frontsector, rover, false) | (rover->blend ? HWR_GetBlendModeFlag(rover->blend) : PF_Translucent),
+											false, gl_frontsector->lightlist[light].extra_colormap);
 				}
 				else
 				{
 					HWR_GetFlat(levelflats[*rover->bottompic].lumpnum, R_NoEncore(gl_frontsector, false));
-					light = R_GetPlaneLight(gl_frontsector, centerHeight, viewz < bottomCullHeight  ? true : false);
+					light = R_GetPlaneLight(gl_frontsector, centerHeight, (viewz < bottomCullHeight));
 
 					HWR_RenderPlane(sub, &extrasubsectors[num], false, *rover->bottomheight, HWR_RippleBlend(gl_frontsector, rover, false)|PF_Occlude, *gl_frontsector->lightlist[light].lightlevel, levelflats[*rover->bottompic].lumpnum,
-					                rover->master->frontsector, 255, gl_frontsector->lightlist[light].extra_colormap);
+									rover->master->frontsector, 255, gl_frontsector->lightlist[light].extra_colormap);
 				}
 			}
 
@@ -3086,21 +3086,21 @@ static void HWR_Subsector(size_t num)
 				{
 					UINT8 alpha;
 
-					light = R_GetPlaneLight(gl_frontsector, centerHeight, viewz < topCullHeight  ? true : false);
+					light = R_GetPlaneLight(gl_frontsector, centerHeight, (viewz < topCullHeight));
 
 					alpha = HWR_FogBlockAlpha(*gl_frontsector->lightlist[light].lightlevel, rover->master->frontsector->extra_colormap);
 
 					HWR_AddTransparentFloor(0,
-					                       &extrasubsectors[num],
-										   true,
-					                       *rover->topheight,
-					                       *gl_frontsector->lightlist[light].lightlevel,
-					                       alpha, rover->master->frontsector, PF_Fog|PF_NoTexture,
-										   true, rover->master->frontsector->extra_colormap);
+											&extrasubsectors[num],
+											true,
+											*rover->topheight,
+											*gl_frontsector->lightlist[light].lightlevel,
+											alpha, rover->master->frontsector, PF_Fog|PF_NoTexture,
+											true, rover->master->frontsector->extra_colormap);
 				}
 				else if ((rover->flags & FF_TRANSLUCENT && rover->alpha < 256) || rover->blend)
 				{
-					light = R_GetPlaneLight(gl_frontsector, centerHeight, viewz < topCullHeight  ? true : false);
+					light = R_GetPlaneLight(gl_frontsector, centerHeight, (viewz < topCullHeight));
 
 					HWR_AddTransparentFloor(levelflats[*rover->toppic].lumpnum,
 											&extrasubsectors[num],
@@ -3113,10 +3113,10 @@ static void HWR_Subsector(size_t num)
 				else
 				{
 					HWR_GetFlat(levelflats[*rover->toppic].lumpnum, R_NoEncore(gl_frontsector, true));
-					light = R_GetPlaneLight(gl_frontsector, centerHeight, viewz < topCullHeight  ? true : false);
+					light = R_GetPlaneLight(gl_frontsector, centerHeight, (viewz < topCullHeight));
 
 					HWR_RenderPlane(sub, &extrasubsectors[num], true, *rover->topheight, HWR_RippleBlend(gl_frontsector, rover, false)|PF_Occlude, *gl_frontsector->lightlist[light].lightlevel, levelflats[*rover->toppic].lumpnum,
-									  rover->master->frontsector, 255, gl_frontsector->lightlist[light].extra_colormap);
+									rover->master->frontsector, 255, gl_frontsector->lightlist[light].extra_colormap);
 				}
 			}
 		}
@@ -3496,7 +3496,7 @@ static void HWR_DrawSpriteShadow(gl_vissprite_t *spr, patch_t *gpatch, GLPatch_t
 	sSurf.PolyColor.s.green = 0x01;
 
 	// shadow is always half as translucent as the sprite itself
-	if (!cv_translucency.value) // use default translucency (main sprite won't have any translucency)
+	if (UNLIKELY(!cv_translucency.value)) // use default translucency (main sprite won't have any translucency)
 		sSurf.PolyColor.s.alpha = 0x80; // default
 	else if (spr->mobj->flags2 & MF2_SHADOW)
 		sSurf.PolyColor.s.alpha = 0x20;
@@ -3709,7 +3709,7 @@ static void HWR_SplitSprite(gl_vissprite_t *spr, const boolean papersprite)
 	else
 		blendmode = spr->mobj->blendmode;
 
-	if (!cv_translucency.value) // translucency disabled
+	if (UNLIKELY(!cv_translucency.value)) // translucency disabled
 	{
 		Surf.PolyColor.s.alpha = 0xFF;
 		blend = PF_Translucent|PF_Occlude;
@@ -3996,7 +3996,7 @@ static void HWR_DrawSprite(gl_vissprite_t *spr)
 	else
 		blendmode = spr->mobj->blendmode;
 
-	if (!cv_translucency.value) // translucency disabled
+	if (UNLIKELY(!cv_translucency.value)) // translucency disabled
 	{
 		Surf.PolyColor.s.alpha = 0xFF;
 		blend = PF_Translucent|PF_Occlude;
@@ -5371,6 +5371,7 @@ static void HWR_SetTransformAiming(FTransform *trans)
 		trans->shearing = false;
 		gl_aimingangle = aimingangle;
 	}
+
 	trans->anglex = (float)(gl_aimingangle>>ANGLETOFINESHIFT)*(FINEDEGREE);
 }
 
@@ -5503,7 +5504,7 @@ void HWR_RenderViewpoint(gl_portal_t *rootportal, const float fpov, player_t *pl
 
 	validcount++;
 
-	if (cv_glbatching.value)
+	if (LIKELY(cv_glbatching.value))
 		HWR_StartBatching();
 
 	if (useportals && !rootportal && portallist.base && !skybox) // if portals have been drawn in the main view, then render skywalls differently
@@ -5527,7 +5528,7 @@ void HWR_RenderViewpoint(gl_portal_t *rootportal, const float fpov, player_t *pl
 
 	PS_STOP_TIMING(ps_bsptime);
 
-	if (cv_glbatching.value)
+	if (LIKELY(cv_glbatching.value))
 		HWR_RenderBatches();
 
 	if (skyWallVertexArraySize) // if there are skywalls to draw using the alternate method

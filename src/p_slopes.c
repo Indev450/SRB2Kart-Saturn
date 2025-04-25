@@ -500,6 +500,7 @@ void P_SpawnSlope_Line(int linenum)
 			P_CalculateSlopeNormal(cslope);
 		}
 	}
+
 	if (backfloor || backceil)
 	{
 		line->backsector->hasslope = true; // Tell the software renderer that we're sloped
@@ -511,7 +512,7 @@ void P_SpawnSlope_Line(int linenum)
 
 		extent = P_GetExtent(line->backsector, line);
 
-		if(extent < 0)
+		if (extent < 0)
 		{
 			CONS_Printf("P_SpawnSlope_Line failed to get backsector extent on line number %i\n", linenum);
 			return;
@@ -677,8 +678,6 @@ static pslope_t *P_NewVertexSlope(INT16 tag1, INT16 tag2, INT16 tag3, UINT8 flag
 
 	return ret;
 }
-
-
 
 //
 // P_CopySectorSlope
