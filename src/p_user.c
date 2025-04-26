@@ -4440,28 +4440,27 @@ DoABarrelRoll (player_t *player)
 // TODO: make this sane lmao
 static void P_DoFunnyDance(player_t *player)
 {
-	fixed_t bpm;
+	static const fixed_t bpm = 983040; // 140bpm ish
 
 	if (player->spectator || !player->mo || player->kartstuff[k_respawn] || player->mo->salty_jump) // this looks jank as hell during hop
 		return;
 
 	player->squishdance.bounce = 0;
 
-	// bpm = FLOAT_TO_FIXED(mapmusic.bpm) << maybe can get the tempo and beat detection lib to work for bpm autodetection
-	bpm = FixedDiv((60*TICRATE)<<FRACBITS, 9175040); // 140bpm ish
+	// bpm = FixedDiv((60*TICRATE)<<FRACBITS, FLOAT_TO_FIXED(mapmusic.bpm)); << maybe can get the tempo and beat detection lib to work for bpm autodetection
 
 	player->squishdance.work = (player->squishdance.time << FRACBITS) % bpm;
 
-	if (player->squishdance.time >= (FRACUNIT>>1)) // prevent overflow jump - takes about 15 minutes
-		player->squishdance.time = (player->squishdance.work>>FRACBITS);
+	if (player->squishdance.time >= (FRACUNIT >> 1)) // prevent overflow jump - takes about 15 minutes
+		player->squishdance.time = (player->squishdance.work >> FRACBITS);
 
 	player->squishdance.work = FixedDiv(player->squishdance.work*180, bpm);
 
-	player->squishdance.ang = ((FixedAngle(player->squishdance.work)>>ANGLETOFINESHIFT) & FINEMASK);
-	player->squishdance.bounce = (FINESINE(player->squishdance.ang) - FRACUNIT/2);
+	player->squishdance.ang = ((FixedAngle(player->squishdance.work) >> ANGLETOFINESHIFT) & FINEMASK);
+	player->squishdance.bounce = ((FINESINE(player->squishdance.ang) - FRACUNIT/2) / 2);
 
-	player->mo->spritexscale -= player->squishdance.bounce/2;
-	player->mo->spriteyscale += player->squishdance.bounce/2;
+	player->mo->spritexscale -= player->squishdance.bounce;
+	player->mo->spriteyscale += player->squishdance.bounce;
 
 	player->squishdance.time++;
 }
