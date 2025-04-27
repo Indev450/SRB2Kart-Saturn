@@ -5694,11 +5694,8 @@ static void HandlePacketFromPlayer(SINT8 node)
 			realend = realstart + netbuffer->u.serverpak.numtics;
 
 			if (!txtpak)
-				txtpak = (UINT8 *)&netbuffer->u.serverpak.cmds[netbuffer->u.serverpak.numslots
-					* netbuffer->u.serverpak.numtics];
+				txtpak = (UINT8 *)&netbuffer->u.serverpak.cmds[netbuffer->u.serverpak.numslots * netbuffer->u.serverpak.numtics];
 
-			if (realend > gametic + CLIENTBACKUPTICS)
-				realend = gametic + CLIENTBACKUPTICS;
 			cl_packetmissed = realstart > neededtic;
 
 			if (realstart <= neededtic && realend > neededtic)
@@ -6242,22 +6239,6 @@ static void SV_SendTics(void)
 		// assert supposedtics[n]>=nettics[n]
 		realfirsttic = max(supposedtics[n], firstticstosend);
 		lasttictosend = min(maketic, nettics[n] + CLIENTBACKUPTICS);
-
-		if (realfirsttic >= lasttictosend)
-		{
-			// well we have sent all tics we will so use extrabandwidth
-			// to resent packet that are supposed lost (this is necessary since lost
-			// packet detection work when we have received packet with firsttic > neededtic
-			// (getpacket servertics case)
-			DEBFILE(va("Nothing to send node %u mak=%u sup=%u net=%u \n",
-					   n, lasttictosend, supposedtics[n], nettics[n]));
-			realfirsttic = nettics[n];
-			if (realfirsttic >= lasttictosend || (I_GetTime() + n)&3)
-				// all tic are ok
-				continue;
-			DEBFILE(va("Sent %d anyway\n", realfirsttic));
-		}
-		realfirsttic = max(realfirsttic, firstticstosend);
 
 		// compute the length of the packet and cut it if too large
 		packsize = BASESERVERTICSSIZE;
