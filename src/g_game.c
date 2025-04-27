@@ -4833,6 +4833,7 @@ void G_GhostAddThok(INT32 playernum)
 {
 	if (!demo.recording || !(demoflags & DF_GHOST))
 		return;
+
 	ghostext[playernum].flags = (ghostext[playernum].flags & ~EZT_THOKMASK) | EZT_THOK;
 }
 
@@ -4840,6 +4841,7 @@ void G_GhostAddSpin(INT32 playernum)
 {
 	if (!demo.recording || !(demoflags & DF_GHOST))
 		return;
+
 	ghostext[playernum].flags = (ghostext[playernum].flags & ~EZT_THOKMASK) | EZT_SPIN;
 }
 
@@ -4847,6 +4849,7 @@ void G_GhostAddRev(INT32 playernum)
 {
 	if (!demo.recording || !(demoflags & DF_GHOST))
 		return;
+
 	ghostext[playernum].flags = (ghostext[playernum].flags & ~EZT_THOKMASK) | EZT_REV;
 }
 
@@ -4854,6 +4857,7 @@ void G_GhostAddFlip(INT32 playernum)
 {
 	if (!demo.recording || !(demoflags & DF_GHOST))
 		return;
+
 	ghostext[playernum].flags |= EZT_FLIP;
 }
 
@@ -4861,11 +4865,13 @@ void G_GhostAddColor(INT32 playernum, ghostcolor_t color)
 {
 	if (!demo.recording || !(demoflags & DF_GHOST))
 		return;
+
 	if (ghostext[playernum].lastcolor == (UINT8)color)
 	{
 		ghostext[playernum].flags &= ~EZT_COLOR;
 		return;
 	}
+
 	ghostext[playernum].flags |= EZT_COLOR;
 	ghostext[playernum].color = (UINT8)color;
 }
@@ -4874,11 +4880,13 @@ void G_GhostAddScale(INT32 playernum, fixed_t scale)
 {
 	if (!demo.recording || !(demoflags & DF_GHOST))
 		return;
+
 	if (ghostext[playernum].lastscale == scale)
 	{
 		ghostext[playernum].flags &= ~EZT_SCALE;
 		return;
 	}
+
 	ghostext[playernum].flags |= EZT_SCALE;
 	ghostext[playernum].scale = scale;
 }
@@ -4887,9 +4895,10 @@ void G_GhostAddHit(INT32 playernum, mobj_t *victim)
 {
 	if (!demo.recording || !(demoflags & DF_GHOST))
 		return;
+
 	ghostext[playernum].flags |= EZT_HIT;
 	ghostext[playernum].hits++;
-	ghostext[playernum].hitlist = Z_Realloc(ghostext[playernum].hitlist, ghostext[playernum].hits * sizeof(mobj_t *), PU_LEVEL, NULL);
+	ghostext[playernum].hitlist = Z_Realloc(ghostext[playernum].hitlist, ghostext[playernum].hits * sizeof(mobj_t *), PU_LEVEL, &ghostext[playernum].hitlist);
 	P_SetTarget(ghostext[playernum].hitlist + (ghostext[playernum].hits-1), victim);
 }
 
@@ -4909,7 +4918,7 @@ void G_WriteAllGhostTics(void)
 		if (!playeringame[i] || players[i].spectator)
 			continue;
 
-		if (!players[i].mo)
+		if (P_MobjWasRemoved(players[i].mo))
 			continue;
 
 		counter++;
@@ -4993,6 +5002,7 @@ void G_WriteGhostTic(mobj_t *ghost, INT32 playernum)
 		// Store one full byte of movement, plus one byte of fractional movement.
 		INT16 momx = (INT16)((ghost->x-oldghost[playernum].x + (1<<4))>>8);
 		INT16 momy = (INT16)((ghost->y-oldghost[playernum].y + (1<<4))>>8);
+
 		if (momx != oldghost[playernum].momx
 		|| momy != oldghost[playernum].momy)
 		{
@@ -5005,7 +5015,9 @@ void G_WriteGhostTic(mobj_t *ghost, INT32 playernum)
 			WRITEINT16(demobuf.p,momx);
 			WRITEINT16(demobuf.p,momy);
 		}
+
 		momx = (INT16)((ghost->z-oldghost[playernum].z + (1<<4))>>8);
+
 		if (momx != oldghost[playernum].momz)
 		{
 			oldghost[playernum].momz = momx;
@@ -5077,6 +5089,7 @@ void G_WriteGhostTic(mobj_t *ghost, INT32 playernum)
 
 	if (ghostext[playernum].color == ghostext[playernum].lastcolor)
 		ghostext[playernum].flags &= ~EZT_COLOR;
+
 	if (ghostext[playernum].scale == ghostext[playernum].lastscale)
 		ghostext[playernum].flags &= ~EZT_SCALE;
 
@@ -5091,16 +5104,19 @@ void G_WriteGhostTic(mobj_t *ghost, INT32 playernum)
 			WRITEUINT8(demobuf.p,ghostext[playernum].color);
 			ghostext[playernum].lastcolor = ghostext[playernum].color;
 		}
+
 		if (ghostext[playernum].flags & EZT_SCALE)
 		{
 			CHECKSPACE(sizeof(fixed_t));
 			WRITEFIXED(demobuf.p,ghostext[playernum].scale);
 			ghostext[playernum].lastscale = ghostext[playernum].scale;
 		}
+
 		if (ghostext[playernum].flags & EZT_HIT)
 		{
 			CHECKSPACE(2);
 			WRITEUINT16(demobuf.p,ghostext[playernum].hits);
+
 			for (i = 0; i < ghostext[playernum].hits; i++)
 			{
 				mobj_t *mo = ghostext[playernum].hitlist[i];
@@ -5116,23 +5132,24 @@ void G_WriteGhostTic(mobj_t *ghost, INT32 playernum)
 				WRITEANGLE(demobuf.p,mo->angle);
 				P_SetTarget(ghostext[playernum].hitlist+i, NULL);
 			}
-			Z_Free(ghostext[playernum].hitlist);
+
 			ghostext[playernum].hits = 0;
-			ghostext[playernum].hitlist = NULL;
 		}
+
 		if (ghostext[playernum].flags & EZT_SPRITE)
 		{
 			CHECKSPACE(1);
 			WRITEUINT8(demobuf.p,sprite);
 		}
+
 		if (ghostext[playernum].flags & EZT_KART)
 		{
 			CHECKSPACE(12);
-
 			WRITEINT32(demobuf.p, ghostext[playernum].kartitem);
 			WRITEINT32(demobuf.p, ghostext[playernum].kartamount);
 			WRITEINT32(demobuf.p, ghostext[playernum].kartbumpers);
 		}
+
 		ghostext[playernum].flags = 0;
 	}
 
@@ -5180,6 +5197,7 @@ void G_ConsGhostTic(INT32 playernum)
 
 	// Grab ghost data.
 	ziptic = READUINT8(demobuf.p);
+
 	if (ziptic & GZT_XYZ)
 	{
 		oldghost[playernum].x = READFIXED(demobuf.p);
@@ -5194,17 +5212,22 @@ void G_ConsGhostTic(INT32 playernum)
 			oldghost[playernum].momx = READINT16(demobuf.p)<<8;
 			oldghost[playernum].momy = READINT16(demobuf.p)<<8;
 		}
+
 		if (ziptic & GZT_MOMZ)
 			oldghost[playernum].momz = READINT16(demobuf.p)<<8;
+
 		oldghost[playernum].x += oldghost[playernum].momx;
 		oldghost[playernum].y += oldghost[playernum].momy;
 		oldghost[playernum].z += oldghost[playernum].momz;
 		syncleeway = FRACUNIT;
 	}
+
 	if (ziptic & GZT_ANGLE)
 		demobuf.p++;
+
 	if (ziptic & GZT_SPRITE)
 		demobuf.p++;
+
 	if (ziptic & GZT_NIGHTS)
 	{
 		if (!testmo || !testmo->player || !(testmo->player->pflags & PF_NIGHTSMODE) || !testmo->tracer)
@@ -5218,8 +5241,10 @@ void G_ConsGhostTic(INT32 playernum)
 		ziptic = READUINT8(demobuf.p);
 		if (ziptic & EZT_COLOR)
 			demobuf.p++;
+
 		if (ziptic & EZT_SCALE)
 			demobuf.p += sizeof(fixed_t);
+
 		if (ziptic & EZT_HIT)
 		{ // Resync mob damage.
 			UINT16 i, count = READUINT16(demobuf.p);
@@ -5252,6 +5277,7 @@ void G_ConsGhostTic(INT32 playernum)
 						break;
 					mobj = NULL; // wasn't this one, keep searching.
 				}
+
 				if (mobj && mobj->health != health) // Wasn't damaged?! This is desync! Fix it!
 				{
 					if (demosynced)
@@ -5259,13 +5285,16 @@ void G_ConsGhostTic(INT32 playernum)
 						CONS_Alert(CONS_WARNING, M_GetText("Demo playback has desynced (health)!\n"));
 						CONS_Printf("expected health %d got %d\n", health, mobj->health);
 					}
+
 					demosynced = false;
 					P_DamageMobj(mobj, players[0].mo, players[0].mo, 1);
 				}
 			}
 		}
+
 		if (ziptic & EZT_SPRITE)
 			demobuf.p++;
+
 		if (ziptic & EZT_KART)
 		{
 			ghostext[playernum].kartitem = READINT32(demobuf.p);
