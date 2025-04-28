@@ -2394,7 +2394,35 @@ static void HWR_AddLine(seg_t *line)
 	gl_backsector = line->backsector;
 
 	if (!cv_glportals.value || LIKELY(!gl_maphasportals))
-		goto doaddline;
+	{
+doaddline:
+		if (!line->backsector)
+		{
+			gld_clipper_SafeAddClipRange(angle2, angle1);
+		}
+		else
+		{
+			gl_backsector = R_FakeFlat(gl_backsector, &tempsec, NULL, NULL, true);
+
+			if (CheckClip(gl_frontsector, gl_backsector))
+			{
+				gld_clipper_SafeAddClipRange(angle2, angle1);
+				checkforemptylines = false;
+			}
+
+			// Reject empty lines used for triggers and special events.
+			// Identical floor and ceiling on both sides,
+			//  identical light levels on both sides,
+			//  and no middle texture.
+			if (checkforemptylines && R_IsEmptyLine(line, gl_frontsector, gl_backsector))
+				return;
+		}
+
+		if (LIKELY(gl_portal_state != GLPORTAL_SEARCH && !dont_draw))// no need to do this during the portal check
+			HWR_ProcessSeg(); // Doesn't need arguments because they're defined globally :D
+
+		return;
+	}
 
 	// do extra checks on the seg when rendering portals:
 	// don't render segs that are behind the portal destination line
@@ -2430,34 +2458,7 @@ static void HWR_AddLine(seg_t *line)
 			return;// dont do anything with the other side i guess?
 	}
 
-doaddline:
-
-	if (!line->backsector)
-	{
-		gld_clipper_SafeAddClipRange(angle2, angle1);
-	}
-	else
-	{
-		gl_backsector = R_FakeFlat(gl_backsector, &tempsec, NULL, NULL, true);
-
-		if (CheckClip(gl_frontsector, gl_backsector))
-		{
-			gld_clipper_SafeAddClipRange(angle2, angle1);
-			checkforemptylines = false;
-		}
-
-		// Reject empty lines used for triggers and special events.
-		// Identical floor and ceiling on both sides,
-		//  identical light levels on both sides,
-		//  and no middle texture.
-		if (checkforemptylines && R_IsEmptyLine(line, gl_frontsector, gl_backsector))
-			return;
-    }
-
-	if (LIKELY(gl_portal_state != GLPORTAL_SEARCH && !dont_draw))// no need to do this during the portal check
-		HWR_ProcessSeg(); // Doesn't need arguments because they're defined globally :D
-
-	return;
+	goto doaddline;
 }
 
 // HWR_CheckBBox
