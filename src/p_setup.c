@@ -3081,9 +3081,8 @@ boolean P_SetupLevel(boolean fromnetsave, boolean reloadinggamestate)
 	if (rendermode == render_opengl)
 	{
 		HWR_FreeExtraSubsectors();
-
 		// Create plane polygons.
-		HWR_LoadLevel();
+		HWR_LoadLevel(reloadinggamestate);
 	}
 #endif
 

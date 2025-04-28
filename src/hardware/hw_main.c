@@ -5742,7 +5742,7 @@ static void HWR_CheckForHorizonLines(void)
 	}
 }
 
-void HWR_LoadLevel(void)
+void HWR_LoadLevel(boolean reloadinggamestate)
 {
 	HWR_CreatePlanePolygons((INT32)numnodes - 1);
 
@@ -5750,7 +5750,8 @@ void HWR_LoadLevel(void)
 	HWR_ClearSkyDome();
 	HWR_BuildSkyDome();
 
-	HWR_CheckForHorizonLines();
+	if (!reloadinggamestate)
+		HWR_CheckForHorizonLines();
 
 	if (HWR_ShouldUsePaletteRendering())
 		HWR_SetMapPalette();
