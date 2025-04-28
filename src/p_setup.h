@@ -60,8 +60,8 @@ extern size_t nummapthings;
 extern mapthing_t *mapthings;
 
 void P_SetupLevelSky(INT32 skynum, boolean global);
-void P_LoadThingsOnly(void);
 boolean P_SetupLevel(boolean fromnetsave, boolean reloadinggamestate);
+
 #ifdef HWRENDER
 void HWR_LoadLevel(void);
 #endif

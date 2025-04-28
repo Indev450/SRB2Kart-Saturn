@@ -1009,13 +1009,13 @@ static inline UINT32 SaveMobjnum(const mobj_t *mobj)
 	return 0;
 }
 
-static UINT32 SaveSector(const sector_t *sector)
+static inline UINT32 SaveSector(const sector_t *sector)
 {
 	if (sector) return (UINT32)(sector - sectors);
 	return 0xFFFFFFFF;
 }
 
-static UINT32 SaveLine(const line_t *line)
+static inline UINT32 SaveLine(const line_t *line)
 {
 	if (line) return (UINT32)(line - lines);
 	return 0xFFFFFFFF;
@@ -1040,11 +1040,7 @@ static void SaveMobjThinker(savebuffer_t *save, const thinker_t *th, const UINT8
 	UINT16 diff2;
 
 	// Ignore stationary hoops - these will be respawned from mapthings.
-	if (mobj->type == MT_HOOP)
-		return;
-
-	// These are NEVER saved.
-	if (mobj->type == MT_HOOPCOLLIDE)
+	if (mobj->type == MT_HOOP || mobj->type == MT_HOOPCOLLIDE) // These are NEVER saved.
 		return;
 
 	// This hoop has already been collected.
@@ -1905,13 +1901,13 @@ static inline mobj_t *LoadMobj(UINT32 mobjnum)
 	return (mobj_t *)(size_t)mobjnum;
 }
 
-static sector_t *LoadSector(UINT32 sector)
+static inline sector_t *LoadSector(UINT32 sector)
 {
 	if (sector >= numsectors) return NULL;
 	return &sectors[sector];
 }
 
-static line_t *LoadLine(UINT32 line)
+static inline line_t *LoadLine(UINT32 line)
 {
 	if (line >= numlines) return NULL;
 	return &lines[line];
@@ -3022,7 +3018,7 @@ static void P_RelinkPointers(void)
 
 		mobj = (mobj_t *)currentthinker;
 
-		if (mobj->type == MT_HOOP || mobj->type == MT_HOOPCOLLIDE || mobj->type == MT_HOOPCENTER)
+		if (UNLIKELY(mobj->type == MT_HOOP || mobj->type == MT_HOOPCOLLIDE || mobj->type == MT_HOOPCENTER))
 			continue;
 
 #define RELINK(obj, name) if ((obj) && !RelinkMobj(&(obj))) \
@@ -3440,7 +3436,7 @@ void P_SaveNetGame(savebuffer_t *save, boolean resending)
 
 			mobj = (mobj_t *)th;
 
-			if (mobj->type == MT_HOOP || mobj->type == MT_HOOPCOLLIDE || mobj->type == MT_HOOPCENTER)
+			if (UNLIKELY(mobj->type == MT_HOOP || mobj->type == MT_HOOPCOLLIDE || mobj->type == MT_HOOPCENTER))
 				continue;
 
 			mobj->mobjnum = i++;
