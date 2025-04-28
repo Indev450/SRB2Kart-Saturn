@@ -357,6 +357,7 @@ void P_AllocMapHeader(INT16 i)
 		mapheaderinfo[i] = Z_Malloc(sizeof(mapheader_t), PU_STATIC, NULL);
 		mapheaderinfo[i]->grades = NULL;
 	}
+
 	P_ClearSingleMapHeaderInfo(i + 1);
 }
 
@@ -434,8 +435,10 @@ UINT8 P_GetGrade(UINT32 pscore, INT16 map, UINT8 mare)
 			if (pscore >= mapheaderinfo[map-1]->grades[mare].grade[i])
 				++pgrade;
 		}
+
 		return (UINT8)pgrade;
 	}
+
 	return 0;
 }
 
@@ -443,10 +446,8 @@ UINT8 P_HasGrades(INT16 map, UINT8 mare)
 {
 	// Determining the grade
 	// Mare 0 is treated as overall and is true if ANY grades exist
-	if (mapheaderinfo[map-1] && mapheaderinfo[map-1]->grades
-		&& (mare == 0 || mapheaderinfo[map-1]->numGradedMares >= mare))
-		return true;
-	return false;
+	return (mapheaderinfo[map-1] && mapheaderinfo[map-1]->grades
+	&& (mare == 0 || mapheaderinfo[map-1]->numGradedMares >= mare));
 }
 
 UINT32 P_GetScoreForGrade(INT16 map, UINT8 mare, UINT8 grade)
@@ -796,7 +797,7 @@ INT32 P_AddLevelFlatRuntime(const char *flatname)
 	//  first scan through the already found flats
 	//
 	for (i = 0; i < numlevelflats; i++, levelflat++)
-		if (strnicmp(levelflat->name,flatname,8)==0)
+		if (strnicmp(levelflat->name, flatname, 8) == 0)
 			break;
 
 	// that flat was already found in the level, return the id
@@ -837,7 +838,7 @@ INT32 P_CheckLevelFlat(const char *flatname)
 	//  scan through the already found flats
 	//
 	for (i = 0; i < numlevelflats; i++, levelflat++)
-		if (strnicmp(levelflat->name,flatname,8)==0)
+		if (strnicmp(levelflat->name, flatname, 8) == 0)
 			break;
 
 	if (i == numlevelflats)
@@ -1351,10 +1352,180 @@ static void P_LoadLineDefs2(void)
 	}
 }
 
+static void P_LoadSideColormaps(mapsidedef_t *msd, side_t *sd, sector_t *sec)
+{
+	INT32 num;
+
+#ifdef HWRENDER
+	if (rendermode == render_opengl)
+	{
+		// for now, full support of toptexture only
+		if ((msd->toptexture[0] == '#' && msd->toptexture[1] && msd->toptexture[2] && msd->toptexture[3] && msd->toptexture[4] && msd->toptexture[5] && msd->toptexture[6])
+			|| (msd->bottomtexture[0] == '#' && msd->bottomtexture[1] && msd->bottomtexture[2] && msd->bottomtexture[3] && msd->bottomtexture[4] && msd->bottomtexture[5] && msd->bottomtexture[6]))
+		{
+			char *col;
+			RGBA_t color;
+			size_t j;
+
+			sec->midmap = R_CreateColormap(msd->toptexture, msd->midtexture,
+				msd->bottomtexture);
+			sd->toptexture = sd->bottomtexture = 0;
+#define HEX2INT(x) (x >= '0' && x <= '9' ? x - '0' : x >= 'a' && x <= 'f' ? x - 'a' + 10 : x >= 'A' && x <= 'F' ? x - 'A' + 10 : 0)
+#define ALPHA2INT(x) (x >= 'a' && x <= 'z' ? x - 'a' : x >= 'A' && x <= 'Z' ? x - 'A' : x >= '0' && x <= '9' ? 25 : 0)
+			sec->extra_colormap = &extra_colormaps[sec->midmap];
+
+			if (msd->toptexture[0] == '#' && msd->toptexture[1] && msd->toptexture[2] && msd->toptexture[3] && msd->toptexture[4] && msd->toptexture[5] && msd->toptexture[6])
+			{
+				col = msd->toptexture;
+
+				// encore mode colormaps!
+				// do it like software by aproximating a color to a palette index, and then convert it to its encore variant and then back to a color code.
+				// do this for both the start and fade colormaps.
+
+				color.s.red = (HEX2INT(col[1]) << 4) + HEX2INT(col[2]);
+				color.s.green = (HEX2INT(col[3]) << 4) + HEX2INT(col[4]);
+				color.s.blue = (HEX2INT(col[5]) << 4) + HEX2INT(col[6]);
+
+#ifdef GLENCORE
+				if (encoremap)
+				{
+					j = encoremap[NearestColor(color.s.red, color.s.green, color.s.blue)];
+					color = pLocalPalette[j]; // note: this sets alpha to 255, we will reset it below
+				}
+#endif
+				color.s.alpha = 0; // reset/init the alpha, so the addition below will work correctly
+				sec->extra_colormap->rgba = color.rgba;
+
+				// alpha
+				if (msd->toptexture[7])
+					sec->extra_colormap->rgba += (ALPHA2INT(col[7]) << 24);
+				else
+					sec->extra_colormap->rgba += (25 << 24);
+			}
+			else
+				sec->extra_colormap->rgba = 0;
+
+			if (msd->bottomtexture[0] == '#' && msd->bottomtexture[1] && msd->bottomtexture[2] && msd->bottomtexture[3] && msd->bottomtexture[4] && msd->bottomtexture[5] && msd->bottomtexture[6])
+			{
+				col = msd->bottomtexture;
+
+				// do the exact same thing as above here.
+
+				color.s.red = (HEX2INT(col[1]) << 4) + HEX2INT(col[2]);
+				color.s.green = (HEX2INT(col[3]) << 4) + HEX2INT(col[4]);
+				color.s.blue = (HEX2INT(col[5]) << 4) + HEX2INT(col[6]);
+
+#ifdef GLENCORE
+				if (encoremap)
+				{
+					j = encoremap[NearestColor(color.s.red, color.s.green, color.s.blue)];
+					color = pLocalPalette[j]; // note: this sets alpha to 255, we will reset it below
+				}
+#endif
+				color.s.alpha = 0; // reset/init the alpha, so the addition below will work correctly
+				sec->extra_colormap->fadergba = color.rgba;
+
+				// alpha
+				if (msd->bottomtexture[7])
+					sec->extra_colormap->fadergba += (ALPHA2INT(col[7]) << 24);
+				else
+					sec->extra_colormap->fadergba += (25 << 24);
+			}
+			else
+				sec->extra_colormap->fadergba = 0x19000000; // default alpha, (25 << 24)
+#undef ALPHA2INT
+#undef HEX2INT
+		}
+		else
+		{
+			if ((num = R_CheckTextureNumForName(msd->toptexture)) == -1)
+				sd->toptexture = 0;
+			else
+				sd->toptexture = num;
+
+			if ((num = R_CheckTextureNumForName(msd->midtexture)) == -1)
+				sd->midtexture = 0;
+			else
+				sd->midtexture = num;
+
+			if ((num = R_CheckTextureNumForName(msd->bottomtexture)) == -1)
+				sd->bottomtexture = 0;
+			else
+				sd->bottomtexture = num;
+		}
+	}
+#endif
+#ifdef HWRENDER
+	else
+#endif
+	{
+		if (msd->toptexture[0] == '#' || msd->bottomtexture[0] == '#')
+		{
+			sec->midmap = R_CreateColormap(msd->toptexture, msd->midtexture,
+				msd->bottomtexture);
+			sd->toptexture = sd->bottomtexture = 0;
+		}
+		else
+		{
+			if ((num = R_CheckTextureNumForName(msd->toptexture)) == -1)
+				sd->toptexture = 0;
+			else
+				sd->toptexture = num;
+			if ((num = R_CheckTextureNumForName(msd->midtexture)) == -1)
+				sd->midtexture = 0;
+			else
+				sd->midtexture = num;
+			if ((num = R_CheckTextureNumForName(msd->bottomtexture)) == -1)
+				sd->bottomtexture = 0;
+			else
+				sd->bottomtexture = num;
+		}
+	}
+}
+
+static void P_LoadSideChangeMusic(boolean firstside, mapsidedef_t *msd, side_t *sd)
+{
+	char process[8+1];
+
+	sd->toptexture = sd->midtexture = sd->bottomtexture = 0;
+
+	if (msd->bottomtexture[0] != '-' || msd->bottomtexture[1] != '\0')
+	{
+		M_Memcpy(process,msd->bottomtexture,8);
+		process[8] = '\0';
+		sd->bottomtexture = get_number(process);
+	}
+
+	if (!(msd->midtexture[0] == '-' && msd->midtexture[1] == '\0') || msd->midtexture[1] != '\0')
+	{
+		M_Memcpy(process,msd->midtexture,8);
+		process[8] = '\0';
+		sd->midtexture = get_number(process);
+	}
+
+	// always process if back sidedef, because we need that - symbol
+	sd->text = Z_Malloc(7, PU_LEVEL, NULL);
+
+	if (firstside || msd->toptexture[0] != '-' || msd->toptexture[1] != '\0')
+	{
+		M_Memcpy(process,msd->toptexture,8);
+		process[8] = '\0';
+
+		// If they type in O_ or D_ and their music name, just shrug,
+		// then copy the rest instead.
+		if ((process[0] == 'O' || process[0] == 'D') && process[7])
+			M_Memcpy(sd->text, process+2, 6);
+		else // Assume it's a proper music name.
+			M_Memcpy(sd->text, process, 6);
+		sd->text[6] = 0;
+	}
+	else
+		sd->text[0] = 0;
+}
+
 static void P_LoadRawSideDefs2(void *data)
 {
 	UINT16 i;
-	INT32 num;
 
 	for (i = 0; i < numsides; i++)
 	{
@@ -1388,186 +1559,11 @@ static void P_LoadRawSideDefs2(void *data)
 			case 606: //SoM: 4/4/2000: Just colormap transfer
 				// SoM: R_CreateColormap will only create a colormap in software mode...
 				// Perhaps we should just call it instead of doing the calculations here.
-#ifdef HWRENDER
-				if (rendermode != render_opengl)
-#endif
-				{
-					if (msd->toptexture[0] == '#' || msd->bottomtexture[0] == '#')
-					{
-						sec->midmap = R_CreateColormap(msd->toptexture, msd->midtexture,
-							msd->bottomtexture);
-						sd->toptexture = sd->bottomtexture = 0;
-					}
-					else
-					{
-						if ((num = R_CheckTextureNumForName(msd->toptexture)) == -1)
-							sd->toptexture = 0;
-						else
-							sd->toptexture = num;
-						if ((num = R_CheckTextureNumForName(msd->midtexture)) == -1)
-							sd->midtexture = 0;
-						else
-							sd->midtexture = num;
-						if ((num = R_CheckTextureNumForName(msd->bottomtexture)) == -1)
-							sd->bottomtexture = 0;
-						else
-							sd->bottomtexture = num;
-					}
-					break;
-				}
-#ifdef HWRENDER
-				else
-				{
-					// for now, full support of toptexture only
-					if ((msd->toptexture[0] == '#' && msd->toptexture[1] && msd->toptexture[2] && msd->toptexture[3] && msd->toptexture[4] && msd->toptexture[5] && msd->toptexture[6])
-						|| (msd->bottomtexture[0] == '#' && msd->bottomtexture[1] && msd->bottomtexture[2] && msd->bottomtexture[3] && msd->bottomtexture[4] && msd->bottomtexture[5] && msd->bottomtexture[6]))
-					{
-						char *col;
-						RGBA_t color;
-						size_t j;
-
-						sec->midmap = R_CreateColormap(msd->toptexture, msd->midtexture,
-							msd->bottomtexture);
-						sd->toptexture = sd->bottomtexture = 0;
-#define HEX2INT(x) (x >= '0' && x <= '9' ? x - '0' : x >= 'a' && x <= 'f' ? x - 'a' + 10 : x >= 'A' && x <= 'F' ? x - 'A' + 10 : 0)
-#define ALPHA2INT(x) (x >= 'a' && x <= 'z' ? x - 'a' : x >= 'A' && x <= 'Z' ? x - 'A' : x >= '0' && x <= '9' ? 25 : 0)
-						sec->extra_colormap = &extra_colormaps[sec->midmap];
-
-						if (msd->toptexture[0] == '#' && msd->toptexture[1] && msd->toptexture[2] && msd->toptexture[3] && msd->toptexture[4] && msd->toptexture[5] && msd->toptexture[6])
-						{
-							col = msd->toptexture;
-
-							// encore mode colormaps!
-							// do it like software by aproximating a color to a palette index, and then convert it to its encore variant and then back to a color code.
-							// do this for both the start and fade colormaps.
-
-							color.s.red = (HEX2INT(col[1]) << 4) + HEX2INT(col[2]);
-							color.s.green = (HEX2INT(col[3]) << 4) + HEX2INT(col[4]);
-							color.s.blue = (HEX2INT(col[5]) << 4) + HEX2INT(col[6]);
-
-#ifdef GLENCORE
-							if (encoremap)
-							{
-								j = encoremap[NearestColor(color.s.red, color.s.green, color.s.blue)];
-								//CONS_Printf("R_CreateColormap: encoremap[%d] = %d\n", j, encoremap[j]); -- moved encoremap upwards for optimisation
-								color = pLocalPalette[j]; // note: this sets alpha to 255, we will reset it below
-							}
-#endif
-							color.s.alpha = 0; // reset/init the alpha, so the addition below will work correctly
-							sec->extra_colormap->rgba = color.rgba;
-
-							// alpha
-							if (msd->toptexture[7])
-								sec->extra_colormap->rgba += (ALPHA2INT(col[7]) << 24);
-							else
-								sec->extra_colormap->rgba += (25 << 24);
-
-							/*nearest = NearestColor(
-								(HEX2INT(col[1]) << 4) + (HEX2INT(col[2]) << 0),
-								(HEX2INT(col[3]) << 4) + (HEX2INT(col[4]) << 0),
-								(HEX2INT(col[5]) << 4) + (HEX2INT(col[6]) << 0)
-							);
-
-							sec->extra_colormap->rgba =
-								pLocalPalette[nearest].s.red +
-								(pLocalPalette[nearest].s.green << 8) +
-								(pLocalPalette[nearest].s.blue << 16);*/
-						}
-						else
-							sec->extra_colormap->rgba = 0;
-
-						if (msd->bottomtexture[0] == '#' && msd->bottomtexture[1] && msd->bottomtexture[2] && msd->bottomtexture[3] && msd->bottomtexture[4] && msd->bottomtexture[5] && msd->bottomtexture[6])
-						{
-							col = msd->bottomtexture;
-
-							// do the exact same thing as above here.
-
-							color.s.red = (HEX2INT(col[1]) << 4) + HEX2INT(col[2]);
-							color.s.green = (HEX2INT(col[3]) << 4) + HEX2INT(col[4]);
-							color.s.blue = (HEX2INT(col[5]) << 4) + HEX2INT(col[6]);
-
-#ifdef GLENCORE
-							if (encoremap)
-							{
-								j = encoremap[NearestColor(color.s.red, color.s.green, color.s.blue)];
-								//CONS_Printf("R_CreateColormap: encoremap[%d] = %d\n", j, encoremap[j]); -- moved encoremap upwards for optimisation
-								color = pLocalPalette[j]; // note: this sets alpha to 255, we will reset it below
-							}
-#endif
-							color.s.alpha = 0; // reset/init the alpha, so the addition below will work correctly
-							sec->extra_colormap->fadergba = color.rgba;
-
-							// alpha
-							if (msd->bottomtexture[7])
-								sec->extra_colormap->fadergba += (ALPHA2INT(col[7]) << 24);
-							else
-								sec->extra_colormap->fadergba += (25 << 24);
-						}
-						else
-							sec->extra_colormap->fadergba = 0x19000000; // default alpha, (25 << 24)
-#undef ALPHA2INT
-#undef HEX2INT
-					}
-					else
-					{
-						if ((num = R_CheckTextureNumForName(msd->toptexture)) == -1)
-							sd->toptexture = 0;
-						else
-							sd->toptexture = num;
-
-						if ((num = R_CheckTextureNumForName(msd->midtexture)) == -1)
-							sd->midtexture = 0;
-						else
-							sd->midtexture = num;
-
-						if ((num = R_CheckTextureNumForName(msd->bottomtexture)) == -1)
-							sd->bottomtexture = 0;
-						else
-							sd->bottomtexture = num;
-					}
-					break;
-				}
-#endif
-
-			case 413: // Change music
-			{
-				char process[8+1];
-
-				sd->toptexture = sd->midtexture = sd->bottomtexture = 0;
-				if (msd->bottomtexture[0] != '-' || msd->bottomtexture[1] != '\0')
-				{
-					M_Memcpy(process,msd->bottomtexture,8);
-					process[8] = '\0';
-					sd->bottomtexture = get_number(process);
-				}
-
-				if (!(msd->midtexture[0] == '-' && msd->midtexture[1] == '\0') || msd->midtexture[1] != '\0')
-				{
-					M_Memcpy(process,msd->midtexture,8);
-					process[8] = '\0';
-					sd->midtexture = get_number(process);
-				}
-
-				// always process if back sidedef, because we need that - symbol
- 				sd->text = Z_Malloc(7, PU_LEVEL, NULL);
-				if (i == 1 || msd->toptexture[0] != '-' || msd->toptexture[1] != '\0')
-				{
-					M_Memcpy(process,msd->toptexture,8);
-					process[8] = '\0';
-
-					// If they type in O_ or D_ and their music name, just shrug,
-					// then copy the rest instead.
-					if ((process[0] == 'O' || process[0] == 'D') && process[7])
-						M_Memcpy(sd->text, process+2, 6);
-					else // Assume it's a proper music name.
-						M_Memcpy(sd->text, process, 6);
-					sd->text[6] = 0;
-				}
-				else
-					sd->text[0] = 0;
+				P_LoadSideColormaps(msd, sd, sec);
 				break;
-			}
-
+			case 413: // Change music
+				P_LoadSideChangeMusic((i == 1), msd, sd);
+				break;
 			case 4: // Speed pad parameters
 			case 414: // Play SFX
 			{
@@ -1581,7 +1577,6 @@ static void P_LoadRawSideDefs2(void *data)
 				}
 				break;
 			}
-
 			case 9: // Mace parameters
 			case 14: // Bustable block parameters
 			case 15: // Fan particle spawner parameters
@@ -1601,9 +1596,9 @@ static void P_LoadRawSideDefs2(void *data)
 				if (msd->bottomtexture[0] != '-' || msd->bottomtexture[1] != '\0')
 					M_Memcpy(process+strlen(process), msd->bottomtexture, 8);
 				sd->toptexture = get_number(process);
+
 				break;
 			}
-
 			case 443: // Calls a named Lua function
 			{
 				char process[8*3+1];
@@ -1619,9 +1614,9 @@ static void P_LoadRawSideDefs2(void *data)
 					M_Memcpy(process+strlen(process), msd->bottomtexture, 8);
 				sd->text = Z_Malloc(strlen(process)+1, PU_LEVEL, NULL);
 				M_Memcpy(sd->text, process, strlen(process)+1);
+
 				break;
 			}
-
 			default: // normal cases
 				if (msd->toptexture[0] == '#')
 				{
@@ -1641,6 +1636,7 @@ static void P_LoadRawSideDefs2(void *data)
 				break;
 		}
 	}
+
 	R_ClearTextureNumCache(true);
 }
 
@@ -2317,49 +2313,13 @@ static void P_LevelInitStuff(boolean reloadinggamestate)
 			gamespeed = 0;
 		else
 			gamespeed = (UINT8)cv_kartspeed.value;
+
 		franticitems = (boolean)cv_kartfrantic.value;
 		comeback = (boolean)cv_kartcomeback.value;
 	}
 
 	for (i = 0; i < 4; i++)
 		battlewanted[i] = -1;
-}
-
-//
-// P_LoadThingsOnly
-//
-// "Reloads" a level, but only reloads all of the mobjs.
-//
-void P_LoadThingsOnly(void)
-{
-	// Search through all the thinkers.
-	mobj_t *mo;
-	thinker_t *think;
-
-	virtres_t* virt = vres_GetMap(lastloadedmaplumpnum);
-	virtlump_t* vth = vres_Find(virt, "THINGS");
-
-	for (think = thinkercap.next; think != &thinkercap; think = think->next)
-	{
-		if (think->function.acp1 != (actionf_p1)P_MobjThinker)
-			continue; // not a mobj thinker
-
-		mo = (mobj_t *)think;
-
-		if (mo)
-			P_RemoveMobj(mo);
-	}
-
-	P_LevelInitStuff(false);
-
-	memset(localaiming, 0, sizeof(localaiming));
-
-	P_PrepareRawThings(vth->data);
-	P_LoadThings();
-
-	vres_Free(virt);
-
-	P_SpawnSecretItems(true);
 }
 
 /** Compute MD5 message digest for bytes read from memory source
@@ -2672,11 +2632,6 @@ static void P_InitCamera(void)
 	displayplayers[0] = consoleplayer; // Start with your OWN view, please!
 }
 
-static boolean P_CanSave(void)
-{
-	return false; // SRB2Kart: no SP, no saving.
-}
-
 struct minimapinfo minimapinfo;
 static void P_InitMinimapInfo(void)
 {
@@ -2824,13 +2779,7 @@ static void P_SetupPlayer(void)
 			else // gametype is GT_COOP or GT_RACE
 			{
 				players[i].mo = NULL;
-
-				if (players[i].starposttime)
-				{
-					G_SpawnPlayer(i, true);
-				}
-				else
-					G_SpawnPlayer(i, false);
+				G_SpawnPlayer(i, (players[i].starposttime));
 			}
 		}
 	}
@@ -3133,9 +3082,8 @@ boolean P_SetupLevel(boolean fromnetsave, boolean reloadinggamestate)
 	if (rendermode == render_opengl)
 	{
 		HWR_FreeExtraSubsectors();
-
 		// Create plane polygons.
-		HWR_LoadLevel();
+		HWR_LoadLevel(reloadinggamestate);
 	}
 #endif
 
@@ -3177,9 +3125,6 @@ boolean P_SetupLevel(boolean fromnetsave, boolean reloadinggamestate)
 	levelloading = false;
 
 	P_RunCachedActions();
-
-	if (P_CanSave())
-		G_SaveGame((UINT32)cursaveslot);
 
 	if (savedata.lives > 0)
 	{
@@ -3285,7 +3230,8 @@ UINT16 P_PartialAddWadFile(const char *wadfilename, boolean local)
 		CONS_Printf(M_GetText("Errors occurred while loading %s; not added.\n"), wadfilename);
 		return UINT16_MAX;
 	}
-	else wadnum = (UINT16)(numwadfiles-1);
+
+	wadnum = (UINT16)(numwadfiles-1);
 
 	if (wadfiles[wadnum]->important)
 		partadd_important = true;

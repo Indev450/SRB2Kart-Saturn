@@ -274,7 +274,7 @@ boolean FV2_InsidePolygon(const vector2_t *vIntersection, const vector2_t *Poly,
 	// with floating point numbers.  It usually won't always be perfectly 2 * PI, so we need
 	// to use a little twiddling.  I use .9999, but you can change this to fit your own desired accuracy.
 
-	if(Angle >= ANGLE_MAX)	// If the angle is greater than 2 PI, (360 degrees)
+	if (Angle >= ANGLE_MAX) // If the angle is greater than 2 PI, (360 degrees)
 		return 1; // The point is inside of the polygon
 
 	return 0; // If you get here, it obviously wasn't inside the polygon.
