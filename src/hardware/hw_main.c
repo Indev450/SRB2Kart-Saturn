@@ -5690,7 +5690,7 @@ static void HWR_CheckForHorizonLines(void)
 	}
 }
 
-void HWR_LoadLevel(void)
+void HWR_LoadLevel(boolean reloadinggamestate)
 {
 	// Lactozilla (December 8, 2019)
 	// Level setup used to free EVERY mipmap from memory.
@@ -5709,7 +5709,8 @@ void HWR_LoadLevel(void)
 	HWR_ClearSkyDome();
 	HWR_BuildSkyDome();
 
-	HWR_CheckForHorizonLines();
+	if (!reloadinggamestate)
+		HWR_CheckForHorizonLines();
 
 	if (HWR_ShouldUsePaletteRendering())
 		HWR_SetMapPalette();
