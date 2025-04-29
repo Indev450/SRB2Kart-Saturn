@@ -207,6 +207,8 @@ extern consvar_t cv_glsolvetjoin;
 
 extern consvar_t cv_glbatching;
 
+extern consvar_t cv_glwireframe;
+
 extern consvar_t cv_glrenderdistance;
 
 extern consvar_t cv_glhorizonlines;

@@ -231,6 +231,8 @@ consvar_t cv_glsolvetjoin = {"gr_solvetjoin", "On", 0, CV_OnOff, NULL, 0, NULL, 
 
 consvar_t cv_glbatching = {"gr_batching", "On", 0, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
+consvar_t cv_glwireframe = {"gr_wireframe", "Off", 0, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+
 consvar_t cv_glrenderdistance = {"gr_renderdistance", "Max", CV_SAVE, glrenderdistance_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 consvar_t cv_glhorizonlines = {"gr_horizonlines", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
@@ -341,6 +343,12 @@ static void CV_glpalettedepth_OnChange(void)
 static void HWR_SetShaderState(void)
 {
 	GL_SetSpecialState(HWD_SET_SHADERS, HWR_UseShader() ? 1 : 0);
+}
+
+
+static boolean HWR_IsWireframeMode(void)
+{
+	return (cv_glwireframe.value /*&& cv_debug*/);
 }
 
 static boolean HWR_OverrideObjectLightLevel(mobj_t *thing, INT32 *lightlevel)
@@ -5294,6 +5302,9 @@ static void HWR_DrawSkyBackground(void)
 	if (drewsky)
 		return;
 
+	if (HWR_IsWireframeMode())
+		return;
+
 	GL_SetBlend(PF_Translucent|PF_NoDepthTest|PF_Modulated);
 
 	memcpy(&dometransform, &atransform, sizeof(FTransform));
@@ -5499,6 +5510,9 @@ void HWR_RenderViewpoint(gl_portal_t *rootportal, const float fpov, player_t *pl
 		HWR_PortalClipping(rootportal);
 	}
 
+	if (HWR_IsWireframeMode())
+		GL_SetSpecialState(HWD_SET_WIREFRAME, 1);
+
 	ps_numbspcalls.value.i = 0;
 	ps_numpolyobjects.value.i = 0;
 	PS_START_TIMING(ps_bsptime);
@@ -5561,6 +5575,9 @@ void HWR_RenderViewpoint(gl_portal_t *rootportal, const float fpov, player_t *pl
 	ps_hw_nodesorttime.value.p = 0;
 	ps_hw_nodedrawtime.value.p = 0;
 	HWR_RenderDrawNodes();
+
+	if (HWR_IsWireframeMode())
+		GL_SetSpecialState(HWD_SET_WIREFRAME, 0);
 
 	HWR_FreePortalList(portallist);
 }
@@ -5834,6 +5851,8 @@ void HWR_AddCommands(void)
 	CV_RegisterVar(&cv_glsolvetjoin);
 
 	CV_RegisterVar(&cv_glbatching);
+
+	CV_RegisterVar(&cv_glwireframe);
 
 	CV_RegisterVar(&cv_glrenderdistance);
 
