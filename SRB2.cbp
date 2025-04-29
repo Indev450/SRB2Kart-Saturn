@@ -1726,11 +1726,6 @@ HW3SOUND for 3D hardware sound  support
 			<Option compilerVar="CC" />
 		</Unit>
 		<Unit filename="src/r_draw.h" />
-		<Unit filename="src/r_draw16.c">
-			<Option compilerVar="CC" />
-			<Option compile="0" />
-			<Option link="0" />
-		</Unit>
 		<Unit filename="src/r_draw8.c">
 			<Option compilerVar="CC" />
 			<Option compile="0" />
