@@ -10588,7 +10588,7 @@ static void K_drawKartPlayerCheck(void)
 	}
 }
 
-static void K_drawKartMinimapIcon(fixed_t objx, fixed_t objy, INT32 hudx, INT32 hudy, INT32 flags, INT32 blend, patch_t *icon, UINT8 *colormap, drawinfo_t *dims)
+static void K_drawKartMinimapIcon(fixed_t objx, fixed_t objy, INT32 hudx, INT32 hudy, INT32 flags, INT32 blend, patch_t *icon, UINT8 *colormap, drawinfo_t *dims, boolean scaleme)
 {
 	// amnum xpos & ypos are the icon's speed around the HUD.
 	// The number being divided by is for how fast it moves.
@@ -10623,19 +10623,19 @@ static void K_drawKartMinimapIcon(fixed_t objx, fixed_t objy, INT32 hudx, INT32 
 	}
 	else
 	{
-		w = SHORT(icon->width);
-		h = SHORT(icon->height);
+		w = icon->width;
+		h = icon->height;
 	}
 
-	amxpos = amnumxpos + ((hudx + (SHORT(AutomapPic->width)-w)/2)<<FRACBITS);
-	amypos = amnumypos + ((hudy + (SHORT(AutomapPic->height)-h)/2)<<FRACBITS);
+	amxpos = amnumxpos + ((hudx + (AutomapPic->width-w)/2)<<FRACBITS);
+	amypos = amnumypos + ((hudy + (AutomapPic->height-h)/2)<<FRACBITS);
 
-	/*if (cv_minihead.value && !(icon == kp_minimapdot))
+	if (cv_minihead.value && (scaleme))
 	{
-		amxpos += (icon->width / 4)<<FRACBITS;
-		amypos += (icon->height / 4)<<FRACBITS;
+		amxpos += (w / 4)<<FRACBITS;
+		amypos += (h / 4)<<FRACBITS;
 		scale /= 2;
-	}*/
+	}
 
 	V_DrawBlendingFixedPatch(amxpos, amypos, scale, flags, icon, colormap, blend);
 }
@@ -10911,7 +10911,8 @@ static void K_drawKartMinimap(void)
 					blending,
 					minipatch,
 					colormap,
-					&dims
+					&dims,
+					false
 			);
 		}
 
