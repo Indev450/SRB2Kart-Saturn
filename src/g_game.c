@@ -1277,7 +1277,8 @@ static void G_DoLoadLevel(boolean resetplayer)
 
 	// clear cmd building stuff
 	memset(gamekeydown, 0, sizeof (gamekeydown));
-	for (i = 0;i < JOYAXISSET; i++)
+
+	for (i = 0; i < JOYAXISSET; i++)
 	{
 		joyxmove[i] = joyymove[i] = 0;
 		joy2xmove[i] = joy2ymove[i] = 0;
@@ -1298,92 +1299,32 @@ static INT32 pausedelay = 0;
 static INT32 camtoggledelay[MAXSPLITSCREENPLAYERS] = {0,0,0,0};
 static INT32 spectatedelay[MAXSPLITSCREENPLAYERS] = {0,0,0,0};
 
-//
-// G_Responder
-// Get info needed to make ticcmd_ts for the players.
-//
-boolean G_Responder(event_t *ev)
+static void G_ToggleSpectate(INT32 player)
 {
-	// any other key pops up menu if in demos
-	if (gameaction == ga_nothing && !demo.quitafterplaying &&
-		((demo.playback && !modeattacking && !demo.title && !multiplayer) || gamestate == GS_TITLESCREEN))
+	switch (player)
 	{
-		if (ev->type == ev_keydown && ev->data1 != 301)
-		{
-			M_StartControlPanel();
-			return true;
-		}
-		return false;
+		case 0:
+			COM_ImmedExecute("changeteam spectator");
+			break;
+		case 1:
+			COM_ImmedExecute("changeteam2 spectator");
+			break;
+		case 2:
+			COM_ImmedExecute("changeteam3 spectator");
+			break;
+		case 3:
+			COM_ImmedExecute("changeteam4 spectator");
+			break;
 	}
-	else if (demo.playback && demo.title)
-	{
-		// Title demo uses intro responder
-		if (F_IntroResponder(ev))
-		{
-			// stop the title demo
-			G_CheckDemoStatus();
-			return true;
-		}
-		return false;
-	}
+}
 
-	if (gamestate == GS_LEVEL)
-	{
-		if (HU_Responder(ev))
-			return true; // chat ate the event
-		if (AM_Responder(ev))
-			return true; // automap ate it
-		// map the event (key/mouse/joy) to a gamecontrol
-	}
-	// Intro
-	else if (gamestate == GS_INTRO)
-	{
-		if (F_IntroResponder(ev))
-		{
-			D_StartTitle();
-			return true;
-		}
-	}
-	else if (gamestate == GS_CUTSCENE)
-	{
-		if (HU_Responder(ev))
-			return true; // chat ate the event
-
-		if (F_CutsceneResponder(ev))
-		{
-			D_StartTitle();
-			return true;
-		}
-	}
-
-	else if (gamestate == GS_CREDITS)
-	{
-		if (HU_Responder(ev))
-			return true; // chat ate the event
-
-		if (F_CreditResponder(ev))
-		{
-			F_StartGameEvaluation();
-			return true;
-		}
-	}
-
-	else if (gamestate == GS_CONTINUING)
-	{
-		if (F_ContinueResponder(ev))
-			return true;
-	}
-	// Demo End
-	else if (gamestate == GS_GAMEEND || gamestate == GS_EVALUATION || gamestate == GS_CREDITS)
-		return true;
-
-	else if (gamestate == GS_INTERMISSION || gamestate == GS_VOTING || gamestate == GS_WAITINGPLAYERS)
-		if (HU_Responder(ev))
-			return true; // chat ate the event
-
+static boolean G_LevelResponder(event_t *ev)
+{
 	// allow spy mode changes even during the demo
-	if (gamestate == GS_LEVEL && ev->type == ev_keydown
-		&& (ev->data1 == KEY_F12 || ev->data1 == gamecontrol[gc_viewpoint][0] || ev->data1 == gamecontrol[gc_viewpoint][1]))
+	if (ev->type == ev_keydown
+		&& (ev->data1 == KEY_F12
+		|| ev->data1 == gamecontrol[0][gc_viewpoint][0]
+		|| ev->data1 == gamecontrol[0][gc_viewpoint][1]))
 	{
 		if (!demo.playback && (splitscreen || !netgame))
 			displayplayers[0] = consoleplayer;
@@ -1399,31 +1340,21 @@ boolean G_Responder(event_t *ev)
 		}
 	}
 
-	if (gamestate == GS_LEVEL && ev->type == ev_keydown && multiplayer && demo.playback)
+	if (ev->type == ev_keydown && multiplayer && demo.playback)
 	{
-		if (ev->data1 == gamecontrolbis[gc_viewpoint][0] || ev->data1 == gamecontrolbis[gc_viewpoint][1])
+		for (INT32 i = 1; i <= splitscreen; i++)
 		{
-			G_AdjustView(2, 1, true);
-
-			return true;
-		}
-		else if (ev->data1 == gamecontrol3[gc_viewpoint][0] || ev->data1 == gamecontrol3[gc_viewpoint][1])
-		{
-			G_AdjustView(3, 1, true);
-
-			return true;
-		}
-		else if (ev->data1 == gamecontrol4[gc_viewpoint][0] || ev->data1 == gamecontrol4[gc_viewpoint][1])
-		{
-			G_AdjustView(4, 1, true);
-
-			return true;
+			if (ev->data1 == gamecontrol[i][gc_viewpoint][0]
+				|| ev->data1 == gamecontrol[i][gc_viewpoint][1])
+			{
+				G_AdjustView(i+1, 1, true);
+				return true;
+			}
 		}
 
 		// Allow pausing
-		if (
-			ev->data1 == gamecontrol[gc_pause][0]
-			|| ev->data1 == gamecontrol[gc_pause][1]
+		if (ev->data1 == gamecontrol[0][gc_pause][0]
+			|| ev->data1 == gamecontrol[0][gc_pause][1]
 			|| ev->data1 == KEY_PAUSE
 		)
 		{
@@ -1447,9 +1378,96 @@ boolean G_Responder(event_t *ev)
 		if (ev->data1 == 32)
 		{
 			M_StartControlPanel();
-
 			return true;
 		}
+	}
+
+	return false;
+}
+
+//
+// G_Responder
+// Get info needed to make ticcmd_ts for the players.
+//
+boolean G_Responder(event_t *ev)
+{
+	if (demo.playback && demo.title)
+	{
+		// Title demo uses intro responder
+		if (F_IntroResponder(ev))
+		{
+			// stop the title demo
+			G_CheckDemoStatus();
+			return true;
+		}
+
+		return false;
+	}
+	else if (gameaction == ga_nothing
+		&& !demo.quitafterplaying
+		&& ((demo.playback && !modeattacking && !multiplayer) || gamestate == GS_TITLESCREEN))
+	{
+		// any other key pops up menu if in demos
+		if (ev->type == ev_keydown && ev->data1 != 301)
+		{
+			M_StartControlPanel();
+			return true;
+		}
+
+		return false;
+	}
+
+	if (Playing())
+	{
+		// If you're playing, chat is real.
+		// Neatly sidesteps a class of bugs where whenever we add a
+		// new gamestate accessible in netplay, chat was console-only.
+		if (HU_Responder(ev))
+		{
+			return true; // chat ate the event
+		}
+	}
+
+	switch (gamestate)
+	{
+		case GS_LEVEL:
+			if (AM_Responder(ev))
+				return true; // automap ate it
+			// map the event (key/mouse/joy) to a gamecontrol
+			if (G_LevelResponder(ev))
+				return true;
+			break;
+		case GS_INTRO:
+			if (F_IntroResponder(ev))
+			{
+				D_StartTitle();
+				return true;
+			}
+			break;
+		case GS_CUTSCENE:
+			if (F_CutsceneResponder(ev))
+			{
+				D_StartTitle();
+				return true;
+			}
+			break;
+		case GS_CREDITS:
+			if (F_CreditResponder(ev))
+			{
+				F_StartGameEvaluation();
+				return true;
+			}
+			break;
+		case GS_CONTINUING:
+			if (F_ContinueResponder(ev))
+				return true;
+			break;
+		case GS_GAMEEND:
+		case GS_EVALUATION:
+			return true; // Demo End
+			break;
+		default:
+			break;
 	}
 
 	// update keys current state
@@ -1458,8 +1476,8 @@ boolean G_Responder(event_t *ev)
 	switch (ev->type)
 	{
 		case ev_keydown:
-			if (ev->data1 == gamecontrol[gc_pause][0]
-				|| ev->data1 == gamecontrol[gc_pause][1]
+			if (ev->data1 == gamecontrol[0][gc_pause][0]
+				|| ev->data1 == gamecontrol[0][gc_pause][1]
 				|| ev->data1 == KEY_PAUSE)
 			{
 				if (!pausedelay)
@@ -1474,121 +1492,58 @@ boolean G_Responder(event_t *ev)
 				else
 					pausedelay = NEWTICRATE/7;
 			}
-			if (ev->data1 == gamecontrol[gc_camtoggle][0]
-				|| ev->data1 == gamecontrol[gc_camtoggle][1])
-			{
-				if (!camtoggledelay[0])
-				{
-					camtoggledelay[0] = NEWTICRATE / 7;
-					CV_SetValue(&cv_chasecam[0], cv_chasecam[0].value ? 0 : 1);
-				}
-			}
-			if (ev->data1 == gamecontrolbis[gc_camtoggle][0]
-				|| ev->data1 == gamecontrolbis[gc_camtoggle][1])
-			{
-				if (!camtoggledelay[1])
-				{
-					camtoggledelay[1] = NEWTICRATE / 7;
-					CV_SetValue(&cv_chasecam[1], cv_chasecam[1].value ? 0 : 1);
-				}
-			}
-			if (ev->data1 == gamecontrol3[gc_camtoggle][0]
-				|| ev->data1 == gamecontrol3[gc_camtoggle][1])
-			{
-				if (!camtoggledelay[2])
-				{
-					camtoggledelay[2] = NEWTICRATE / 7;
-					CV_SetValue(&cv_chasecam[2], cv_chasecam[2].value ? 0 : 1);
-				}
-			}
-			if (ev->data1 == gamecontrol4[gc_camtoggle][0]
-				|| ev->data1 == gamecontrol4[gc_camtoggle][1])
-			{
-				if (!camtoggledelay[3])
-				{
-					camtoggledelay[3] = NEWTICRATE / 7;
-					CV_SetValue(&cv_chasecam[3], cv_chasecam[3].value ? 0 : 1);
-				}
-			}
-			if (ev->data1 == gamecontrol[gc_spectate][0]
-				|| ev->data1 == gamecontrol[gc_spectate][1])
-			{
-				if (!spectatedelay[0])
-				{
-					spectatedelay[0] = NEWTICRATE / 7;
-					COM_ImmedExecute("changeteam spectator");
-				}
-			}
-			if (ev->data1 == gamecontrolbis[gc_spectate][0]
-				|| ev->data1 == gamecontrolbis[gc_spectate][1])
-			{
-				if (!spectatedelay[1])
-				{
-					spectatedelay[1] = NEWTICRATE / 7;
-					COM_ImmedExecute("changeteam2 spectator");
-				}
-			}
-			if (ev->data1 == gamecontrol3[gc_spectate][0]
-				|| ev->data1 == gamecontrol3[gc_spectate][1])
-			{
-				if (!spectatedelay[2])
-				{
-					spectatedelay[2] = NEWTICRATE / 7;
-					COM_ImmedExecute("changeteam3 spectator");
-				}
-			}
-			if (ev->data1 == gamecontrol4[gc_spectate][0]
-				|| ev->data1 == gamecontrol4[gc_spectate][1])
-			{
-				if (!spectatedelay[3])
-				{
-					spectatedelay[3] = NEWTICRATE / 7;
-					COM_ImmedExecute("changeteam4 spectator");
-				}
-			}
 
-			if (ev->data1 == gamecontrol[gc_director][0] || ev->data1 == gamecontrol[gc_director][1])
+			// no splitscreen support for director here
+			if (ev->data1 == gamecontrol[0][gc_director][0]
+				|| ev->data1 == gamecontrol[0][gc_director][1])
 			{
 				K_ToggleDirector();
 			}
 
-			if (ev->data1 == gamecontrol[gc_freecam][0] || ev->data1 == gamecontrol[gc_freecam][1])
+			// absolutely horrid
+			for (INT32 i = 0; i <= splitscreen; i++)
 			{
-				P_ToggleDemoCamera(0);
-			}
-			else if (ev->data1 == gamecontrolbis[gc_freecam][0] || ev->data1 == gamecontrolbis[gc_freecam][1])
-			{
-				P_ToggleDemoCamera(1);
-			}
-			else if (ev->data1 == gamecontrol3[gc_freecam][0] || ev->data1 == gamecontrol3[gc_freecam][1])
-			{
-				P_ToggleDemoCamera(2);
-			}
-			else if (ev->data1 == gamecontrol4[gc_freecam][0] || ev->data1 == gamecontrol4[gc_freecam][1])
-			{
-				P_ToggleDemoCamera(3);
+				if (ev->data1 == gamecontrol[i][gc_camtoggle][0]
+					|| ev->data1 == gamecontrol[i][gc_camtoggle][1])
+				{
+					if (!camtoggledelay[i])
+					{
+						camtoggledelay[i] = NEWTICRATE / 7;
+						CV_SetValue(&cv_chasecam[i], (cv_chasecam[i].value ^ 1));
+					}
+				}
+
+				if (ev->data1 == gamecontrol[i][gc_spectate][0]
+					|| ev->data1 == gamecontrol[i][gc_spectate][1])
+				{
+					if (!spectatedelay[i])
+					{
+						spectatedelay[i] = NEWTICRATE / 7;
+						G_ToggleSpectate(i);
+					}
+				}
+
+				if (ev->data1 == gamecontrol[i][gc_freecam][0]
+					|| ev->data1 == gamecontrol[i][gc_freecam][1])
+				{
+					P_ToggleDemoCamera(i);
+				}
 			}
 
 			return true;
 
 		case ev_keyup:
 			return false; // always let key up events filter down
-
 		case ev_mouse:
 			return true; // eat events
-
 		case ev_joystick:
 			return true; // eat events
-
 		case ev_joystick2:
 			return true; // eat events
-
 		case ev_joystick3:
 			return true; // eat events
-
 		case ev_joystick4:
 			return true; // eat events
-
 		default:
 			break;
 	}
@@ -4055,7 +4010,7 @@ void G_InitNew(UINT8 pencoremode, const char *mapname, boolean resetplayer, bool
 		unlocktriggers = 0;
 
 		// clear itemfinder, just in case
-		if (!dedicated)	// except in dedicated servers, where it is not registered and can actually I_Error debug builds
+		if (!dedicated) // except in dedicated servers, where it is not registered and can actually I_Error debug builds
 			CV_StealthSetValue(&cv_itemfinder, 0);
 	}
 
@@ -4073,7 +4028,7 @@ void G_InitNew(UINT8 pencoremode, const char *mapname, boolean resetplayer, bool
 
 	// gamemap changed; we assume that its map header is always valid,
 	// so make it so
-	if(!mapheaderinfo[gamemap-1])
+	if (!mapheaderinfo[gamemap-1])
 		P_AllocMapHeader(gamemap-1);
 
 	maptol = mapheaderinfo[gamemap-1]->typeoflevel;
@@ -4878,6 +4833,7 @@ void G_GhostAddThok(INT32 playernum)
 {
 	if (!demo.recording || !(demoflags & DF_GHOST))
 		return;
+
 	ghostext[playernum].flags = (ghostext[playernum].flags & ~EZT_THOKMASK) | EZT_THOK;
 }
 
@@ -4885,6 +4841,7 @@ void G_GhostAddSpin(INT32 playernum)
 {
 	if (!demo.recording || !(demoflags & DF_GHOST))
 		return;
+
 	ghostext[playernum].flags = (ghostext[playernum].flags & ~EZT_THOKMASK) | EZT_SPIN;
 }
 
@@ -4892,6 +4849,7 @@ void G_GhostAddRev(INT32 playernum)
 {
 	if (!demo.recording || !(demoflags & DF_GHOST))
 		return;
+
 	ghostext[playernum].flags = (ghostext[playernum].flags & ~EZT_THOKMASK) | EZT_REV;
 }
 
@@ -4899,6 +4857,7 @@ void G_GhostAddFlip(INT32 playernum)
 {
 	if (!demo.recording || !(demoflags & DF_GHOST))
 		return;
+
 	ghostext[playernum].flags |= EZT_FLIP;
 }
 
@@ -4906,11 +4865,13 @@ void G_GhostAddColor(INT32 playernum, ghostcolor_t color)
 {
 	if (!demo.recording || !(demoflags & DF_GHOST))
 		return;
+
 	if (ghostext[playernum].lastcolor == (UINT8)color)
 	{
 		ghostext[playernum].flags &= ~EZT_COLOR;
 		return;
 	}
+
 	ghostext[playernum].flags |= EZT_COLOR;
 	ghostext[playernum].color = (UINT8)color;
 }
@@ -4919,11 +4880,13 @@ void G_GhostAddScale(INT32 playernum, fixed_t scale)
 {
 	if (!demo.recording || !(demoflags & DF_GHOST))
 		return;
+
 	if (ghostext[playernum].lastscale == scale)
 	{
 		ghostext[playernum].flags &= ~EZT_SCALE;
 		return;
 	}
+
 	ghostext[playernum].flags |= EZT_SCALE;
 	ghostext[playernum].scale = scale;
 }
@@ -4932,9 +4895,10 @@ void G_GhostAddHit(INT32 playernum, mobj_t *victim)
 {
 	if (!demo.recording || !(demoflags & DF_GHOST))
 		return;
+
 	ghostext[playernum].flags |= EZT_HIT;
 	ghostext[playernum].hits++;
-	ghostext[playernum].hitlist = Z_Realloc(ghostext[playernum].hitlist, ghostext[playernum].hits * sizeof(mobj_t *), PU_LEVEL, NULL);
+	ghostext[playernum].hitlist = Z_Realloc(ghostext[playernum].hitlist, ghostext[playernum].hits * sizeof(mobj_t *), PU_LEVEL, &ghostext[playernum].hitlist);
 	P_SetTarget(ghostext[playernum].hitlist + (ghostext[playernum].hits-1), victim);
 }
 
@@ -4954,7 +4918,7 @@ void G_WriteAllGhostTics(void)
 		if (!playeringame[i] || players[i].spectator)
 			continue;
 
-		if (!players[i].mo)
+		if (P_MobjWasRemoved(players[i].mo))
 			continue;
 
 		counter++;
@@ -5038,6 +5002,7 @@ void G_WriteGhostTic(mobj_t *ghost, INT32 playernum)
 		// Store one full byte of movement, plus one byte of fractional movement.
 		INT16 momx = (INT16)((ghost->x-oldghost[playernum].x + (1<<4))>>8);
 		INT16 momy = (INT16)((ghost->y-oldghost[playernum].y + (1<<4))>>8);
+
 		if (momx != oldghost[playernum].momx
 		|| momy != oldghost[playernum].momy)
 		{
@@ -5050,7 +5015,9 @@ void G_WriteGhostTic(mobj_t *ghost, INT32 playernum)
 			WRITEINT16(demobuf.p,momx);
 			WRITEINT16(demobuf.p,momy);
 		}
+
 		momx = (INT16)((ghost->z-oldghost[playernum].z + (1<<4))>>8);
+
 		if (momx != oldghost[playernum].momz)
 		{
 			oldghost[playernum].momz = momx;
@@ -5122,6 +5089,7 @@ void G_WriteGhostTic(mobj_t *ghost, INT32 playernum)
 
 	if (ghostext[playernum].color == ghostext[playernum].lastcolor)
 		ghostext[playernum].flags &= ~EZT_COLOR;
+
 	if (ghostext[playernum].scale == ghostext[playernum].lastscale)
 		ghostext[playernum].flags &= ~EZT_SCALE;
 
@@ -5136,16 +5104,19 @@ void G_WriteGhostTic(mobj_t *ghost, INT32 playernum)
 			WRITEUINT8(demobuf.p,ghostext[playernum].color);
 			ghostext[playernum].lastcolor = ghostext[playernum].color;
 		}
+
 		if (ghostext[playernum].flags & EZT_SCALE)
 		{
 			CHECKSPACE(sizeof(fixed_t));
 			WRITEFIXED(demobuf.p,ghostext[playernum].scale);
 			ghostext[playernum].lastscale = ghostext[playernum].scale;
 		}
+
 		if (ghostext[playernum].flags & EZT_HIT)
 		{
 			CHECKSPACE(2);
 			WRITEUINT16(demobuf.p,ghostext[playernum].hits);
+
 			for (i = 0; i < ghostext[playernum].hits; i++)
 			{
 				mobj_t *mo = ghostext[playernum].hitlist[i];
@@ -5161,23 +5132,24 @@ void G_WriteGhostTic(mobj_t *ghost, INT32 playernum)
 				WRITEANGLE(demobuf.p,mo->angle);
 				P_SetTarget(ghostext[playernum].hitlist+i, NULL);
 			}
-			Z_Free(ghostext[playernum].hitlist);
+
 			ghostext[playernum].hits = 0;
-			ghostext[playernum].hitlist = NULL;
 		}
+
 		if (ghostext[playernum].flags & EZT_SPRITE)
 		{
 			CHECKSPACE(1);
 			WRITEUINT8(demobuf.p,sprite);
 		}
+
 		if (ghostext[playernum].flags & EZT_KART)
 		{
 			CHECKSPACE(12);
-
 			WRITEINT32(demobuf.p, ghostext[playernum].kartitem);
 			WRITEINT32(demobuf.p, ghostext[playernum].kartamount);
 			WRITEINT32(demobuf.p, ghostext[playernum].kartbumpers);
 		}
+
 		ghostext[playernum].flags = 0;
 	}
 
@@ -5225,6 +5197,7 @@ void G_ConsGhostTic(INT32 playernum)
 
 	// Grab ghost data.
 	ziptic = READUINT8(demobuf.p);
+
 	if (ziptic & GZT_XYZ)
 	{
 		oldghost[playernum].x = READFIXED(demobuf.p);
@@ -5239,17 +5212,22 @@ void G_ConsGhostTic(INT32 playernum)
 			oldghost[playernum].momx = READINT16(demobuf.p)<<8;
 			oldghost[playernum].momy = READINT16(demobuf.p)<<8;
 		}
+
 		if (ziptic & GZT_MOMZ)
 			oldghost[playernum].momz = READINT16(demobuf.p)<<8;
+
 		oldghost[playernum].x += oldghost[playernum].momx;
 		oldghost[playernum].y += oldghost[playernum].momy;
 		oldghost[playernum].z += oldghost[playernum].momz;
 		syncleeway = FRACUNIT;
 	}
+
 	if (ziptic & GZT_ANGLE)
 		demobuf.p++;
+
 	if (ziptic & GZT_SPRITE)
 		demobuf.p++;
+
 	if (ziptic & GZT_NIGHTS)
 	{
 		if (!testmo || !testmo->player || !(testmo->player->pflags & PF_NIGHTSMODE) || !testmo->tracer)
@@ -5263,8 +5241,10 @@ void G_ConsGhostTic(INT32 playernum)
 		ziptic = READUINT8(demobuf.p);
 		if (ziptic & EZT_COLOR)
 			demobuf.p++;
+
 		if (ziptic & EZT_SCALE)
 			demobuf.p += sizeof(fixed_t);
+
 		if (ziptic & EZT_HIT)
 		{ // Resync mob damage.
 			UINT16 i, count = READUINT16(demobuf.p);
@@ -5297,6 +5277,7 @@ void G_ConsGhostTic(INT32 playernum)
 						break;
 					mobj = NULL; // wasn't this one, keep searching.
 				}
+
 				if (mobj && mobj->health != health) // Wasn't damaged?! This is desync! Fix it!
 				{
 					if (demosynced)
@@ -5304,13 +5285,16 @@ void G_ConsGhostTic(INT32 playernum)
 						CONS_Alert(CONS_WARNING, M_GetText("Demo playback has desynced (health)!\n"));
 						CONS_Printf("expected health %d got %d\n", health, mobj->health);
 					}
+
 					demosynced = false;
 					P_DamageMobj(mobj, players[0].mo, players[0].mo, 1);
 				}
 			}
 		}
+
 		if (ziptic & EZT_SPRITE)
 			demobuf.p++;
+
 		if (ziptic & EZT_KART)
 		{
 			ghostext[playernum].kartitem = READINT32(demobuf.p);
@@ -5390,7 +5374,8 @@ void G_ConsGhostTic(INT32 playernum)
 void G_GhostTicker(void)
 {
 	demoghost *g,*p;
-	for(g = ghosts, p = NULL; g; g = g->next)
+
+	for (g = ghosts, p = NULL; g; g = g->next)
 	{
 		// Skip normal demo data.
 		UINT8 ziptic = READUINT8(g->p);

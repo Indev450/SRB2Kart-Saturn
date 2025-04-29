@@ -10174,21 +10174,13 @@ void P_RemoveSavegameMobj(mobj_t *mobj)
 	thinker_t *th = (thinker_t*)mobj;
 
 	// unlink from sector and block lists
-	if (th->function.acp1 == (actionf_p1)P_NullPrecipThinker)
-	{
-		P_UnsetPrecipThingPosition((precipmobj_t *)mobj);
-	}
-	else
-	{
-		// unlink from sector and block lists
-		P_UnsetThingPosition(mobj);
+	P_UnsetThingPosition(mobj);
 
-		// Remove touching_sectorlist from mobj.
-		if (sector_list)
-		{
-			P_DelSeclist(sector_list);
-			sector_list = NULL;
-		}
+	// Remove touching_sectorlist from mobj.
+	if (sector_list)
+	{
+		P_DelSeclist(sector_list);
+		sector_list = NULL;
 	}
 
 	// stop any playing sound
@@ -10252,7 +10244,7 @@ void P_SpawnPrecipitation(void)
 				continue;
 
 			// Exists, but is too small for reasonable precipitation.
-			if (!(precipsector->sector->floorheight <= precipsector->sector->ceilingheight - (32<<FRACBITS)))
+			if (FixedDiv(precipsector->sector->ceilingheight - precipsector->sector->floorheight, mapobjectscale) < 64<<FRACBITS)
 				continue;
 
 			// Don't set z properly yet...

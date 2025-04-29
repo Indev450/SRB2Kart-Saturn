@@ -60,13 +60,13 @@ extern size_t nummapthings;
 extern mapthing_t *mapthings;
 
 void P_SetupLevelSky(INT32 skynum, boolean global);
-void P_LoadThingsOnly(void);
 boolean P_SetupLevel(boolean fromnetsave, boolean reloadinggamestate);
+
 #ifdef HWRENDER
-void HWR_LoadLevel(void);
+void HWR_LoadLevel(boolean reloadinggamestate);
 #endif
+
 boolean P_AddWadFile(const char *wadfilename, boolean local);
-boolean P_AddWadFileLocal(const char *wadfilename);
 
 extern boolean wideracereplaced;
 extern boolean racereplaced;

@@ -3887,8 +3887,8 @@ boolean M_Responder(event_t *ev)
 		{
 			if (currentMenu == &MISC_ChangeLevelDef || currentMenu == &MP_OfflineServerDef || currentMenu == &MP_ServerDef)
 			{
-				if (ch == gamecontrol[gc_fire][0]
-					|| ch == gamecontrol[gc_fire][1])
+				if (ch == gamecontrol[0][gc_fire][0]
+					|| ch == gamecontrol[0][gc_fire][1])
 				{
 					COM_ImmedExecute("add kartencore 1");
 				}
@@ -4021,9 +4021,9 @@ boolean M_Responder(event_t *ev)
 
 	if (ch == -1)
 		return false;
-	else if (ch == gamecontrol[gc_systemmenu][0] || ch == gamecontrol[gc_systemmenu][1]) // allow remappable ESC key
+	else if (ch == gamecontrol[0][gc_systemmenu][0] || ch == gamecontrol[0][gc_systemmenu][1]) // allow remappable ESC key
 		ch = KEY_ESCAPE;
-	else if ((ch == gamecontrol[gc_accelerate][0] || ch == gamecontrol[gc_accelerate][1])  && ch >= KEY_MOUSE1)
+	else if ((ch == gamecontrol[0][gc_accelerate][0] || ch == gamecontrol[0][gc_accelerate][1])  && ch >= KEY_MOUSE1)
 		ch = KEY_ENTER;
 
 	// F-Keys
@@ -4099,7 +4099,7 @@ boolean M_Responder(event_t *ev)
 		return false;
 	}
 
-	if ((ch == gamecontrol[gc_brake][0] || ch == gamecontrol[gc_brake][1]) && ch >= KEY_MOUSE1) // do this here, otherwise brake opens the menu mid-game
+	if ((ch == gamecontrol[0][gc_brake][0] || ch == gamecontrol[0][gc_brake][1]) && ch >= KEY_MOUSE1) // do this here, otherwise brake opens the menu mid-game
 		ch = KEY_ESCAPE;
 
 	routine = currentMenu->menuitems[itemOn].itemaction;
@@ -6719,7 +6719,7 @@ static void M_HandleAddons(INT32 choice)
 							{
 								if (DumbStartsWith("KC_", dirmenu[dir_on[menudepthleft]]+DIR_STRING) || DumbStartsWith("kc_", dirmenu[dir_on[menudepthleft]]+DIR_STRING)) {
 									M_StartMessage(va("%c%s\x80\nYou are loading a local skin.\nLocal skins will not be usable\nafter going back from\nthe title screen.\n\n(Press a key)\n", ('\x80' + (highlightflags>>V_CHARCOLORSHIFT)), dirmenu[dir_on[menudepthleft]]+DIR_STRING),NULL,MM_NOTHING);
-									COM_BufAddText(va("addskins \"%s%s\"", menupath, dirmenu[dir_on[menudepthleft]]+DIR_STRING));
+									COM_BufAddText(va("addfilelocal \"%s%s\"", menupath, dirmenu[dir_on[menudepthleft]]+DIR_STRING));
 								}
 								else
 									S_StartSound(NULL, sfx_s26d);
@@ -9290,7 +9290,7 @@ static void M_TimeAttack(INT32 choice)
 
 	if (M_CountLevelsToShowInList() == 0)
 	{
-		M_StartMessage(M_GetText("No record-attackable levels found.\n"),NULL,MM_NOTHING);
+		M_StartMessage(M_GetText("No record-attackable levels found.\n"), NULL, MM_NOTHING);
 		return;
 	}
 
@@ -10097,7 +10097,7 @@ static void M_HandleMasterServerResetChoice(event_t *ev)
 
 	if (ev->type == ev_keydown)
 	{
-		if (choice == ' ' || choice == 'y' || choice == KEY_ENTER || choice == gamecontrol[gc_accelerate][0] || choice == gamecontrol[gc_accelerate][1])
+		if (choice == ' ' || choice == 'y' || choice == KEY_ENTER || choice == gamecontrol[0][gc_accelerate][0] || choice == gamecontrol[0][gc_accelerate][1])
 		{
 			CV_Set(&cv_masterserver, cv_masterserver.defaultvalue);
 			CV_Set(&cv_masterserver_nagattempts, cv_masterserver_nagattempts.defaultvalue);
@@ -10251,8 +10251,8 @@ static void M_DrawLevelSelectOnly(boolean leftfade, boolean rightfade)
 	if (levellistmode != LLM_RECORDATTACK) // so it doesent show in record attack menu
 	{
 		char encoretoggle[32] = {0};
-		const char *item1 = gamecontrol[gc_fire][0] != 0 ? G_KeynumToString(gamecontrol[gc_fire][0]) : NULL;
-		const char *item2 = gamecontrol[gc_fire][1] != 0 ? G_KeynumToString(gamecontrol[gc_fire][1]) : NULL;
+		const char *item1 = gamecontrol[0][gc_fire][0] != 0 ? G_KeynumToString(gamecontrol[0][gc_fire][0]) : NULL;
+		const char *item2 = gamecontrol[0][gc_fire][1] != 0 ? G_KeynumToString(gamecontrol[0][gc_fire][1]) : NULL;
 
 		if (item1 != NULL && item2 != NULL)
 			snprintf(encoretoggle, 32, "%s/%s - Toggle Encore", item1, item2);
@@ -11445,7 +11445,7 @@ static void M_HandleSetupMultiPlayer(INT32 choice)
 	boolean exitmenu = false;  // exit to previous menu and send name change
 	const boolean gridselect = (cv_skinselectmenu.value == SKINMENUTYPE_GRID || cv_skinselectmenu.value == SKINMENUTYPE_EXTENDED); // menus with "grids"
 
-	if ((choice == gamecontrol[gc_fire][0] || choice == gamecontrol[gc_fire][1]) && (itemOn == 2 || (gridselect && itemOn == 1)))
+	if ((choice == gamecontrol[0][gc_fire][0] || choice == gamecontrol[0][gc_fire][1]) && (itemOn == 2 || (gridselect && itemOn == 1)))
 		choice = KEY_BACKSPACE; // Hack to allow resetting prefcolor on controllers
 
 #define BREAKWHENLOCKED {\
@@ -11741,8 +11741,8 @@ static void M_HandleSetupMultiPlayer(INT32 choice)
 			break;
 
 		//c why?????
-		//case gamecontrol[gc_accelerate][0]:
-		//case gamecontrol[gc_accelerate][1]:
+		//case gamecontrol[0][gc_accelerate][0]:
+		//case gamecontrol[0][gc_accelerate][1]:
 		case KEY_ENTER:
 			if (cv_skinselectmenu.value == SKINMENUTYPE_2D)
 			{
@@ -12356,7 +12356,7 @@ static void M_Setup1PControlsMenu(INT32 choice)
 {
 	(void)choice;
 	setupcontrolplayer = 1;
-	setupcontrols = gamecontrol;        // was called from main Options (for console player, then)
+	setupcontrols = gamecontrol[0];        // was called from main Options (for console player, then)
 	currentMenu->lastOn = itemOn;
 
 	// Set proper gamepad options
@@ -12379,7 +12379,7 @@ static void M_Setup2PControlsMenu(INT32 choice)
 {
 	(void)choice;
 	setupcontrolplayer = 2;
-	setupcontrols = gamecontrolbis;
+	setupcontrols = gamecontrol[1];
 	currentMenu->lastOn = itemOn;
 
 	// Set proper gamepad options
@@ -12402,7 +12402,7 @@ static void M_Setup3PControlsMenu(INT32 choice)
 {
 	(void)choice;
 	setupcontrolplayer = 3;
-	setupcontrols = gamecontrol3;
+	setupcontrols = gamecontrol[2];
 	currentMenu->lastOn = itemOn;
 
 	// Set proper gamepad options
@@ -12425,7 +12425,7 @@ static void M_Setup4PControlsMenu(INT32 choice)
 {
 	(void)choice;
 	setupcontrolplayer = 4;
-	setupcontrols = gamecontrol4;
+	setupcontrols = gamecontrol[3];
 	currentMenu->lastOn = itemOn;
 
 	// Set proper gamepad options
@@ -12673,17 +12673,17 @@ static void M_ResetControlsResponse(INT32 ch)
 		switch (setupcontrolplayer)
 		{
 			case 4:
-				G_ClearControlKeys(gamecontrol4, i);
+				G_ClearControlKeys(gamecontrol[3], i);
 				break;
 			case 3:
-				G_ClearControlKeys(gamecontrol3, i);
+				G_ClearControlKeys(gamecontrol[2], i);
 				break;
 			case 2:
-				G_ClearControlKeys(gamecontrolbis, i);
+				G_ClearControlKeys(gamecontrol[1], i);
 				break;
 			case 1:
 			default:
-				G_ClearControlKeys(gamecontrol, i);
+				G_ClearControlKeys(gamecontrol[0], i);
 				break;
 		}
 	}

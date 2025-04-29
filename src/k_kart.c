@@ -230,6 +230,8 @@ static boolean K_SpeedLinesShouldBlend(player_t *player);
 // mapreset is set when enough players fill an empty server
 // nospectategrief is the players in-game needed to eliminate the person in last
 
+#define XTRA3PSCALE 50135 //0.765
+#define XTRA3VSCALE 35344 //0.55
 
 //{ SRB2kart Color Code
 
@@ -772,6 +774,26 @@ static UINT8 K_GetSpeedometerStyle(void)
 		return SPEEDO_EXTRA3;
 	else
 		return SPEEDO_VANILLA;
+}
+
+static boolean K_UseColorSpeedo(int speedostyle)
+{
+	if (!K_UseColorHud())
+		return false;
+
+	switch (speedostyle)
+	{
+		case SPEEDO_EXTRA:
+			return xtra_speedo_clr;
+		case SPEEDO_ACHII:
+			return achi_speedo_clr;
+		case SPEEDO_DIAL:
+			return dial_speedo_clr;
+		case SPEEDO_EXTRA3:
+			return xtra_speedo_clr3;
+		default:
+			return false;
+	}
 }
 
 static boolean K_IsHighResolution(void)
@@ -9739,33 +9761,33 @@ static void K_drawKartSpeedometer(void)
 	}
 	else if (speedostyle == SPEEDO_EXTRA) // why bother if we dont?
 	{
-		if (K_UseColorHud() && xtra_speedo_clr) //Colourized hud
+		if (K_UseColorSpeedo(SPEEDO_EXTRA)) //Colourized hud
 		{
 			UINT8 *colormap = R_GetTranslationColormap(TC_DEFAULT, K_GetHudColor(), GTC_CACHE);
-			V_DrawMappedPatch(SPDM_X + 1, SPDM_Y + 4, (V_HUDTRANS|splitflags), (skp_smallstickerclr), colormap);
+			V_DrawMappedPatch(SPDM_X + 1, SPDM_Y + 4, V_HUDTRANS|splitflags, skp_smallstickerclr, colormap);
 		}
 		else
-			V_DrawScaledPatch(SPDM_X + 1, SPDM_Y + 4, (V_HUDTRANS|splitflags), (skp_smallsticker));
+			V_DrawScaledPatch(SPDM_X + 1, SPDM_Y + 4, V_HUDTRANS|splitflags, skp_smallsticker);
 
 		V_DrawRankNum(SPDM_X + 26, SPDM_Y + 4, V_HUDTRANS|splitflags, convSpeed[1], 3, NULL);
 		V_DrawScaledPatch(SPDM_X + 31, SPDM_Y + 4, V_HUDTRANS|splitflags, skp_speedpatches[cv_kartspeedometer.value]);
 	}
 	else if (speedostyle == SPEEDO_ACHII) // why bother if we dont?
 	{
-		if (K_UseColorHud() && achi_speedo_clr) //Colourized hud
+		if (K_UseColorSpeedo(SPEEDO_ACHII)) //Colourized hud
 		{
 			UINT8 *colormap = R_GetTranslationColormap(TC_DEFAULT, K_GetHudColor(), GTC_CACHE);
-			V_DrawMappedPatch(SPDM_X + 1, SPDM_Y + 4, (V_HUDTRANS|splitflags), (skp_smallstickerachiclr), colormap);
+			V_DrawMappedPatch(SPDM_X + 1, SPDM_Y + 4, V_HUDTRANS|splitflags, skp_smallstickerachiclr, colormap);
 			V_DrawRankNum(SPDM_X + 26, SPDM_Y + 4, V_HUDTRANS|splitflags, convSpeed[1], 3, NULL);
 			V_DrawMappedPatch(SPDM_X + 31, SPDM_Y + 4, V_HUDTRANS|splitflags, skp_speedpatchesachiclr[cv_kartspeedometer.value], colormap);
 		}
 		else
 		{
-			V_DrawScaledPatch(SPDM_X + 1, SPDM_Y + 4, (V_HUDTRANS|splitflags), (skp_smallstickerachi));
+			V_DrawScaledPatch(SPDM_X + 1, SPDM_Y + 4, V_HUDTRANS|splitflags, skp_smallstickerachi);
 			V_DrawRankNum(SPDM_X + 26, SPDM_Y + 4, V_HUDTRANS|splitflags, convSpeed[1], 3, NULL);
 			V_DrawScaledPatch(SPDM_X + 31, SPDM_Y + 4, V_HUDTRANS|splitflags, skp_speedpatchesachi[cv_kartspeedometer.value]);
 		}
-		}
+	}
 #ifdef ROTSPRITE
 	else if (speedostyle == SPEEDO_DIAL)  // why bother if we dont?
 	{
@@ -9774,18 +9796,18 @@ static void K_drawKartSpeedometer(void)
 							splitflags,
 							(boolean)(G_BattleGametype()),
 							(LUA_HudEnabled(hud_gametypeinfo)),
-							(boolean)(K_UseColorHud() && dial_speedo_clr));
+							(K_UseColorSpeedo(SPEEDO_DIAL)));
 	}
 #endif
 	else if (speedostyle == SPEEDO_EXTRA3) // why bother if we dont?
 	{
-		if (K_UseColorHud() && xtra_speedo_clr3) //Colourized hud
+		if (K_UseColorSpeedo(SPEEDO_EXTRA3)) //Colourized hud
 		{
 			UINT8 *colormap = R_GetTranslationColormap(TC_DEFAULT, K_GetHudColor(), GTC_CACHE);
-			V_DrawStretchyFixedPatch((SPDM_X-1)<<FRACBITS, (SPDM_Y + 5)<<FRACBITS, FRACUNIT*0.765, FRACUNIT*0.55, (V_HUDTRANS|splitflags), (skp_smallstickerclr3), colormap, 0);
+			V_DrawStretchyFixedPatch((SPDM_X-1)<<FRACBITS, (SPDM_Y + 5)<<FRACBITS, XTRA3PSCALE, XTRA3VSCALE, V_HUDTRANS|splitflags, skp_smallstickerclr3, colormap, 0);
 		}
 		else
-			V_DrawStretchyFixedPatch((SPDM_X-1)<<FRACBITS, (SPDM_Y + 5)<<FRACBITS, FRACUNIT*0.765, FRACUNIT*0.55, (V_HUDTRANS|splitflags), (skp_smallsticker3), NULL, 0);
+			V_DrawStretchyFixedPatch((SPDM_X-1)<<FRACBITS, (SPDM_Y + 5)<<FRACBITS, XTRA3PSCALE, XTRA3VSCALE, V_HUDTRANS|splitflags, skp_smallsticker3, NULL, 0);
 
 		V_DrawRankNum(SPDM_X + 26, SPDM_Y + 4, V_HUDTRANS|splitflags, convSpeed[1], 3, NULL);
 		V_DrawScaledPatch(SPDM_X + 31, SPDM_Y + 4, V_HUDTRANS|splitflags, skp_speedpatches[cv_kartspeedometer.value]);
@@ -9817,14 +9839,7 @@ static void K_drawKartSpeedometer(void)
 		else if (((fuspeed < 57 && fuspeed > 54) || (fuspeed < 60 && fuspeed > 56) || (fuspeed > 59)) && !(leveltime & 4))
 			spdpatch = 23;
 
-		patch_t *patch = NULL;
-
-		if (speedostyle == SPEEDO_PMETER)
-			patch = kp_kartzspeedo[spdpatch];
-		else if (speedostyle == SPEEDO_PMETERSMOL)
-			patch = kp_kartzspeedo_smol[spdpatch];
-
-		V_DrawScaledPatch(SPDM_X, SPDM_Y, V_HUDTRANS|splitflags, patch);
+		V_DrawScaledPatch(SPDM_X, SPDM_Y, V_HUDTRANS|splitflags, (speedostyle == SPEEDO_PMETER) ? kp_kartzspeedo[spdpatch] : kp_kartzspeedo_smol[spdpatch]);
 	}
 }
 
@@ -10346,13 +10361,13 @@ skipcrap:
 
 				if (usescaledpatch) // i hate hud code i hate hud code i hate hud code i hate hud code i hate hud code.....
 				{
-					if (K_UseColorHud() && xtra_speedo_clr3) // Colourized hud
+					if (K_UseColorSpeedo(SPEEDO_EXTRA3)) // Colourized hud
 					{
 						UINT8 *colormap = R_GetTranslationColormap(TC_DEFAULT, K_GetHudColor(), GTC_CACHE);
-						V_DrawStretchyFixedPatch((basex - dup*30)<<FRACBITS, ((basey<<FRACBITS) - FixedMul(dup<<FRACBITS, 21*FRACUNIT/10)), FRACUNIT*0.765, FRACUNIT*0.55, V_NOSCALESTART|V_OFFSET|drifttrans, skp_smallstickerclr3, colormap, 0);
+						V_DrawStretchyFixedPatch((basex - dup*30)<<FRACBITS, ((basey<<FRACBITS) - FixedMul(dup<<FRACBITS, 21*FRACUNIT/10)), XTRA3PSCALE, XTRA3VSCALE, V_NOSCALESTART|V_OFFSET|drifttrans, skp_smallstickerclr3, colormap, 0);
 					}
 					else
-						V_DrawStretchyFixedPatch((basex - dup*30)<<FRACBITS, ((basey<<FRACBITS) - FixedMul(dup<<FRACBITS, 21*FRACUNIT/10)), FRACUNIT*0.765, FRACUNIT*0.55, V_NOSCALESTART|V_OFFSET|drifttrans, skp_smallsticker3, NULL, 0);
+						V_DrawStretchyFixedPatch((basex - dup*30)<<FRACBITS, ((basey<<FRACBITS) - FixedMul(dup<<FRACBITS, 21*FRACUNIT/10)), XTRA3PSCALE, XTRA3VSCALE, V_NOSCALESTART|V_OFFSET|drifttrans, skp_smallsticker3, NULL, 0);
 				}
 				else
 				{
