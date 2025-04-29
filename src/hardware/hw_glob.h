@@ -32,7 +32,7 @@ typedef struct gl_vissprite_s
 	float scale;
 	float spritexscale, spriteyscale;
 	float spritexoffset, spriteyoffset;
-	GLPatch_t *gpatch;
+	patch_t *gpatch;
 	boolean flip;
 	UINT8 translucency;       //alpha level 0-255
 	mobj_t *mobj;
@@ -56,29 +56,38 @@ void HWR_FreeExtraSubsectors(void);
 // --------
 // hw_cache.c
 // --------
-void HWR_InitTextureCache(void);
-void HWR_FreeTextureCache(void);
-void HWR_FreeMipmapCache(void);
+void HWR_InitMapTextures(void);
+void HWR_LoadMapTextures(size_t pnumtextures);
+void HWR_FreeMapTextures(void);
+
+patch_t *HWR_GetCachedGLPatchPwad(UINT16 wad, UINT16 lump);
+patch_t *HWR_GetCachedGLPatch(lumpnum_t lumpnum);
+
+void HWR_GetPatch(patch_t *gpatch);
+void HWR_GetMappedPatch(patch_t *gpatch, const UINT8 *colormap);
+void HWR_MakePatch(const patch_t *patch, GLPatch_t *glPatch, GLMipmap_t *glMipmap, boolean makebitmap);
+void HWR_GetFadeMask(lumpnum_t fademasklumpnum);
 
 void HWR_PrecacheLevel(void);
 
+GLMapTexture_t *HWR_GetTexture(INT32 tex, boolean noencore);
 void HWR_GetFlat(lumpnum_t flatlumpnum, boolean noencoremap);
 // ^ some flats must NOT be remapped to encore, since we remap them as we cache them for ease, adding a toggle here seems wise.
 
-GLMapTexture_t *HWR_GetTexture(INT32 tex, boolean noencore);
-void HWR_GetPatch(GLPatch_t *gpatch);
-void HWR_GetMappedPatch(GLPatch_t *gpatch, const UINT8 *colormap);
-void HWR_MakePatch(patch_t *patch, GLPatch_t *glPatch, GLMipmap_t *glMipmap, boolean makebitmap);
+void HWR_FreeTexture(patch_t *patch);
+void HWR_FreeTextureData(patch_t *patch);
+void HWR_FreeTextureColormaps(patch_t *patch);
+void HWR_ClearAllTextures(void);
+void HWR_FreeColormapCache(void);
 void HWR_UnlockCachedPatch(GLPatch_t *gpatch);
-void HWR_SetPalette(RGBA_t *palette);
 
+RGBA_t *HWR_GetTexturePalette(void);
+void HWR_SetPalette(RGBA_t *palette);
 void HWR_SetMapPalette(void);
 UINT32 HWR_CreateLightTable(UINT8 *lighttable);
 UINT32 HWR_GetLightTableID(extracolormap_t *colormap);
 void HWR_ClearLightTables(void);
-GLPatch_t *HWR_GetCachedGLPatchPwad(UINT16 wad, UINT16 lump);
-GLPatch_t *HWR_GetCachedGLPatch(lumpnum_t lumpnum);
-void HWR_GetFadeMask(lumpnum_t fademasklumpnum);
+
 
 // --------
 // hw_draw.c

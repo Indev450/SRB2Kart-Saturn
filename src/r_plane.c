@@ -128,7 +128,7 @@ static void R_CalculatePlaneRipple(visplane_t *plane, INT32 y, fixed_t plheight,
 {
 	fixed_t distance = FixedMul(plheight, yslope[y]);
 	const INT32 yay = (planeripple.offset + (distance>>9)) & 8191;
-	
+
 	// ripples da water texture
 	ds_bgofs = FixedDiv(FINESINE(yay), (1<<12) + (distance>>11))>>FRACBITS;
 
@@ -630,7 +630,7 @@ void R_DrawPlanes(void)
 			R_DrawSinglePlane(pl);
 		}
 	}
-	
+
 #ifndef NOWATER
 	R_UpdatePlaneRipple();
 #endif
@@ -1050,7 +1050,7 @@ void R_DrawSinglePlane(visplane_t *pl)
 
 		xoffs = (fixed_t)(xoffs*fudgecanyon);
 		yoffs = (fixed_t)(yoffs/fudgecanyon);
-		
+
 #ifndef NOWATER
 		if (planeripple.active)
 		{

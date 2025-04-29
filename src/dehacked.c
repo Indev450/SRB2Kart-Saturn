@@ -28,7 +28,7 @@
 #include "p_local.h" // for var1 and var2, and some constants
 #include "p_setup.h"
 #include "r_data.h"
-#include "r_patch.h"
+#include "r_fps.h"
 #include "r_sky.h"
 #include "r_draw.h" // translation colormap consts (for lua)
 #include "fastcmp.h"

@@ -2973,7 +2973,10 @@ boolean P_SetupLevel(boolean fromnetsave, boolean reloadinggamestate)
 
 	// Reset the palette now all fades have been done
 	if (rendermode != render_none)
+	{
+		//V_ResetPaletteCVars(); // dont carry over changed palettes
 		V_SetPaletteLump(GetPalette()); // Set the level palette
+	}
 
 	// Print "SPEEDING OFF TO [ZONE] [ACT 1]..."
 	/*if (rendermode != render_none)
@@ -3002,10 +3005,16 @@ boolean P_SetupLevel(boolean fromnetsave, boolean reloadinggamestate)
 	R_FlushTranslationColormapCache();
 
 #ifdef HWRENDER
+	// Free GPU textures before freeing patches.
+	if (rendermode == render_opengl && (vid.glstate == VID_GL_LIBRARY_LOADED))
+		HWR_ClearAllTextures();
+
 	// Delete light table textures
 	HWR_ClearLightTables();
 #endif
 
+	Patch_FreeTag(PU_PATCH_LOWPRIORITY);
+	//Patch_FreeTag(PU_PATCH_ROTATED); // we keep those ty!
 	Z_FreeTags(PU_LEVEL, PU_PURGELEVEL - 1);
 
 #if defined (WALLSPLATS) || defined (FLOORSPLATS)
@@ -3237,6 +3246,7 @@ UINT16 P_PartialAddWadFile(const char *wadfilename, boolean local)
 	{
 		name = lumpinfo->name;
 		lumpnum_t lumpnum = i|(wadnum<<16);
+
 		if (name[0] == 'D')
 		{
 			if (name[1] == 'S') for (j = 1; j < NUMSFX; j++)
@@ -3278,7 +3288,14 @@ UINT16 P_PartialAddWadFile(const char *wadfilename, boolean local)
 	//
 	// search for sprite replacements
 	//
+	//Patch_FreeTag(PU_SPRITE);
+	//Patch_FreeTag(PU_PATCH_ROTATED);
 	R_AddSpriteDefs(wadnum);
+
+	// Reload it all anyway, just in case they
+	// added some textures but didn't insert a
+	// TEXTURES/etc. list.
+	//R_LoadTexturesPwad(wadnum);
 
 	// everything from MultiSetupWadFile until ST_Start was here originally
 
@@ -3387,7 +3404,7 @@ boolean P_MultiSetupWadFiles(boolean fullsetup)
 	if (partadd_stage == 0)
 	{
 		// Flush and reload HUD graphics
-		ST_UnloadGraphics();
+		//ST_UnloadGraphics();
 		HU_LoadGraphics();
 		ST_LoadGraphics();
 		ST_ReloadSkinFaceGraphics();
@@ -3404,6 +3421,11 @@ boolean P_MultiSetupWadFiles(boolean fullsetup)
 
 	if (partadd_stage == 1)
 	{
+#ifdef HWRENDER
+		// Free GPU textures before freeing patches.
+		if (rendermode == render_opengl && (vid.glstate == VID_GL_LIBRARY_LOADED))
+			HWR_ClearAllTextures();
+#endif
 		// Reload all textures, unconditionally for better or worse.
 		R_LoadTextures();
 

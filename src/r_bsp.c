@@ -13,12 +13,13 @@
 
 #include "doomdef.h"
 #include "g_game.h"
+
+#include "r_fps.h"
 #include "r_local.h"
 #include "r_state.h"
 #include "r_portal.h" // Add seg portals
-
-
 #include "r_splats.h"
+
 #include "p_local.h" // camera
 #include "p_slopes.h"
 #include "z_zone.h" // Check R_Prep3DFloors

@@ -11,32 +11,36 @@
 /// \file  r_things.c
 /// \brief Refresh of things, i.e. objects represented by sprites
 
-#include "doomdef.h"
-#include "console.h"
-#include "g_game.h"
-#include "r_local.h"
-#include "st_stuff.h"
-#include "w_wad.h"
-#include "z_zone.h"
-#include "m_misc.h"
-#include "i_video.h" // rendermode
 #include "r_main.h" // stplyr
 #include "r_fps.h"
 #include "r_things.h"
-#include "r_patch.h"
 #include "r_plane.h"
+#include "r_portal.h"
+#include "r_local.h"
+
+#include "dehacked.h" // get_number (for thok)
+#include "doomdef.h"
+#include "d_netfil.h" // blargh. for nameonly().
+#include "console.h"
+#include "g_game.h"
+#include "k_kart.h" // SRB2kart
 #include "p_tick.h"
 #include "p_local.h"
 #include "p_setup.h"
 #include "p_slopes.h"
-#include "dehacked.h" // get_number (for thok)
-#include "d_netfil.h" // blargh. for nameonly().
+#include "st_stuff.h"
 #include "m_cheat.h" // objectplace
-#include "r_portal.h"
-#include "k_kart.h" // SRB2kart
-#include "p_local.h" // stplyr
+#include "m_misc.h"
+#include "i_video.h" // rendermode
+#include "w_wad.h"
+#include "z_zone.h"
+
 #ifdef HWRENDER
 #include "hardware/hw_md2.h"
+#endif
+
+#ifdef ROTSPRITE
+#include "r_patchrotation.h"
 #endif
 
 #include "qs22j.h"
@@ -254,7 +258,7 @@ static boolean R_AddSingleSpriteDef(const char *sprname, spritedef_t *spritedef,
 	UINT8 frame;
 	UINT8 rotation;
 	lumpinfo_t *lumpinfo;
-	patch_t patch;
+	softwarepatch_t patch;
 	UINT8 numadded = 0;
 
 	memset(sprtemp,0xFF, sizeof (sprtemp));
@@ -278,7 +282,7 @@ static boolean R_AddSingleSpriteDef(const char *sprname, spritedef_t *spritedef,
 
 	for (l = startlump; l < endlump; l++)
 	{
-		if (memcmp(lumpinfo[l].name,sprname,4))
+		if (memcmp(lumpinfo[l].name, sprname, 4))
 			continue;
 
 		frame = R_Char2Frame(lumpinfo[l].name[4]);
@@ -291,16 +295,16 @@ static boolean R_AddSingleSpriteDef(const char *sprname, spritedef_t *spritedef,
 		}
 
 		// skip NULL sprites from very old dmadds pwads
-		if (W_LumpLengthPwad(wadnum,l)<=8)
+		if (W_LumpLengthPwad(wadnum, l) <= 8)
 			continue;
 
 		// store sprite info in lookup tables
 		//FIXME : numspritelumps do not duplicate sprite replacements
-		W_ReadLumpHeaderPwad(wadnum, l, &patch, sizeof (patch_t), 0);
-		spritecachedinfo[numspritelumps].width = SHORT(patch.width)<<FRACBITS;
-		spritecachedinfo[numspritelumps].offset = SHORT(patch.leftoffset)<<FRACBITS;
-		spritecachedinfo[numspritelumps].topoffset = SHORT(patch.topoffset)<<FRACBITS;
-		spritecachedinfo[numspritelumps].height = SHORT(patch.height)<<FRACBITS;
+		W_ReadLumpHeaderPwad(wadnum, l, &patch, (sizeof(INT16) *4), 0);
+		spritecachedinfo[numspritelumps].width = (INT32)(SHORT(patch.width))<<FRACBITS;
+		spritecachedinfo[numspritelumps].offset = (INT32)(SHORT(patch.leftoffset))<<FRACBITS;
+		spritecachedinfo[numspritelumps].topoffset = (INT32)(SHORT(patch.topoffset))<<FRACBITS;
+		spritecachedinfo[numspritelumps].height = (INT32)(SHORT(patch.height))<<FRACBITS;
 
 		//BP: we cannot use special tric in hardware mode because feet in ground caused by z-buffer
 		if (rendermode != render_none) // not for psprite
@@ -746,7 +750,7 @@ static void R_DrawVisSprite(vissprite_t *vis)
 	// TODO This check should not be necessary. But Papersprites near to the camera will sometimes create invalid values
 	// for the vissprite's startfrac. This happens because they are not depth culled like other sprites.
 	// Someone who is more familiar with papersprites pls check and try to fix <3
-	if (vis->startfrac < 0 || vis->startfrac > (SHORT(patch->width) << FRACBITS))
+	if (vis->startfrac < 0 || vis->startfrac > (patch->width << FRACBITS))
 	{
 		// never draw vissprites with startfrac out of patch range
 		return;
@@ -814,7 +818,7 @@ static void R_DrawVisSprite(vissprite_t *vis)
 			dc_colormap += COLORMAP_REMAPOFFSET;
 
 	dc_texturemid = vis->texturemid;
-	dc_texheight = SHORT(patch->height);
+	dc_texheight = patch->height;
 
 	frac = vis->startfrac;
 	windowtop = windowbottom = sprbotscreen = INT32_MAX;
@@ -858,8 +862,8 @@ static void R_DrawVisSprite(vissprite_t *vis)
 		vis->x2 = vid.width-1;
 
 	localcolfunc = (vis->vflip) ? R_DrawFlippedMaskedColumn : R_DrawMaskedColumn;
-	lengthcol = SHORT(patch->height);
-	pwidth = SHORT(patch->width);
+	lengthcol = patch->height;
+	pwidth = patch->width;
 
 	// Split drawing loops for paper and non-paper to reduce conditional checks per sprite
 	if (vis->scalestep)
@@ -882,7 +886,7 @@ static void R_DrawVisSprite(vissprite_t *vis)
 			sprtopscreen = (centeryfrac - FixedMul(dc_texturemid, spryscale));
 			dc_iscale = (0xffffffffu / (unsigned)spryscale);
 
-			column = (column_t *)((UINT8 *)patch + LONG(patch->columnofs[texturecolumn]));
+			column = (column_t *)((UINT8 *)patch->columns + (patch->columnofs[texturecolumn]));
 
 			localcolfunc (column);
 		}
@@ -893,7 +897,7 @@ static void R_DrawVisSprite(vissprite_t *vis)
 		for (dc_x = vis->x1; dc_x <= vis->x2 && (frac>>FRACBITS) < pwidth; dc_x++, frac += vis->xiscale)
 		{
 			texturecolumn = CLAMP(frac >> FRACBITS, 0, pwidth - 1);
-			column = (column_t *)((UINT8 *)patch + LONG(patch->columnofs[texturecolumn]));
+			column = (column_t *)((UINT8 *)patch->columns + (patch->columnofs[texturecolumn]));
 
 			localcolfunc (column);
 		}
@@ -938,7 +942,7 @@ static void R_DrawPrecipitationVisSprite(vissprite_t *vis)
 
 	dc_iscale = FixedDiv(FRACUNIT, vis->scale);
 	dc_texturemid = FixedDiv(vis->texturemid, this_scale);
-	dc_texheight = SHORT(patch->height);
+	dc_texheight = patch->height;
 
 	frac = vis->startfrac;
 	spryscale = vis->scale;
@@ -961,7 +965,7 @@ static void R_DrawPrecipitationVisSprite(vissprite_t *vis)
 			break;
 		}
 
-		column = (column_t *)((UINT8 *)patch + LONG(patch->columnofs[texturecolumn]));
+		column = (column_t *)((UINT8 *)patch->columns + (patch->columnofs[texturecolumn]));
 
 		R_DrawMaskedColumn(column);
 	}
@@ -1390,10 +1394,10 @@ static void R_ProjectSprite(mobj_t *thing)
 
 			if (rotsprite != NULL)
 			{
-				spr_width = SHORT(rotsprite->width) << FRACBITS;
-				spr_height = SHORT(rotsprite->height) << FRACBITS;
-				spr_offset = SHORT(rotsprite->leftoffset) << FRACBITS;
-				spr_topoffset = SHORT(rotsprite->topoffset) << FRACBITS;
+				spr_width = rotsprite->width << FRACBITS;
+				spr_height = rotsprite->height << FRACBITS;
+				spr_offset = rotsprite->leftoffset << FRACBITS;
+				spr_topoffset = rotsprite->topoffset << FRACBITS;
 				spr_topoffset += FEETADJUST;
 
 				// flip -> rotate, not rotate -> flip
@@ -1800,7 +1804,7 @@ static void R_ProjectSprite(mobj_t *thing)
 		vis->patch = rotsprite;
 	else
 #endif
-		vis->patch = W_CachePatchNum(sprframe->lumppat[rot], PU_CACHE);
+		vis->patch = W_CachePatchNum(sprframe->lumppat[rot], PU_SPRITE);
 
 	vis->precip = false;
 
@@ -1985,7 +1989,7 @@ static void R_ProjectPrecipitationSprite(precipmobj_t *thing)
 
 	//Fab: lumppat is the lump number of the patch to use, this is different
 	//     than lumpid for sprites-in-pwad : the graphics are patched
-	vis->patch = W_CachePatchNum(sprframe->lumppat[0], PU_CACHE);
+	vis->patch = W_CachePatchNum(sprframe->lumppat[0], PU_SPRITE);
 
 	// specific translucency
 	if ((thing->blendmode != AST_COPY) && cv_translucency.value)

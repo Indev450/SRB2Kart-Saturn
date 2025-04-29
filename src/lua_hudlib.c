@@ -30,6 +30,10 @@
 #include "lua_hud.h"
 #include "lua_hook.h"
 
+#ifdef ROTSPRITE
+#include "r_patchrotation.h"
+#endif
+
 #define HUDONLY if (!hud_running) return luaL_error(L, "HUD rendering code should not be called outside of rendering hooks!");
 
 boolean hud_running = false;
@@ -293,9 +297,13 @@ static int patch_get(lua_State *L)
 	patch_t *patch = *((patch_t **)luaL_checkudata(L, 1, META_PATCH));
 	enum patch field = Lua_optoption(L, 2, -1, patch_fields_ref);
 
-	// patches are CURRENTLY always valid, expected to be cached with PU_STATIC
-	// this may change in the future, so patch.valid still exists
-	I_Assert(patch != NULL);
+	if (!patch) {
+		if (field == patch_valid) {
+			lua_pushboolean(L, 0);
+			return 1;
+		}
+		return LUA_ErrInvalid(L, "patch_t");
+	}
 
 	switch (field)
 	{
@@ -303,16 +311,16 @@ static int patch_get(lua_State *L)
 		lua_pushboolean(L, patch != NULL);
 		break;
 	case patch_width:
-		lua_pushinteger(L, SHORT(patch->width));
+		lua_pushinteger(L, patch->width);
 		break;
 	case patch_height:
-		lua_pushinteger(L, SHORT(patch->height));
+		lua_pushinteger(L, patch->height);
 		break;
 	case patch_leftoffset:
-		lua_pushinteger(L, SHORT(patch->leftoffset));
+		lua_pushinteger(L, patch->leftoffset);
 		break;
 	case patch_topoffset:
-		lua_pushinteger(L, SHORT(patch->topoffset));
+		lua_pushinteger(L, patch->topoffset);
 		break;
 	}
 	return 1;
@@ -396,7 +404,7 @@ static int libd_patchExists(lua_State *L)
 static int libd_cachePatch(lua_State *L)
 {
 	HUDONLY
-	LUA_PushUserdata(L, W_CachePatchName(luaL_checkstring(L, 1), PU_STATIC), META_PATCH);
+	LUA_PushUserdata(L, W_CachePatchName(luaL_checkstring(L, 1), PU_PATCH), META_PATCH);
 	return 1;
 }
 
@@ -406,7 +414,7 @@ static int libd_cachePatchRotated(lua_State *L)
 	HUDONLY
 	angle_t rollangle = luaL_checkangle(L, 2);
 	INT32 rot = R_GetRollAngle(rollangle);
-	LUA_PushUserdata(L, W_CachePatchNameRotated(luaL_checkstring(L, 1), rot, PU_STATIC), META_PATCH);
+	LUA_PushUserdata(L, W_CachePatchNameRotated(luaL_checkstring(L, 1), rot, PU_PATCH), META_PATCH);
 
 	return 1;
 }
@@ -526,7 +534,7 @@ static int libd_getSpritePatch(lua_State *L)
 #endif
 
 	// push both the patch and its "flip" value
-	LUA_PushUserdata(L, W_CachePatchNum(sprframe->lumppat[angle], PU_STATIC), META_PATCH);
+	LUA_PushUserdata(L, W_CachePatchNum(sprframe->lumppat[angle], PU_SPRITE), META_PATCH);
 	lua_pushboolean(L, (sprframe->flip & (1<<angle)) != 0);
 	return 2;
 }
@@ -542,6 +550,8 @@ static int libd_draw(lua_State *L)
 	x = luaL_checkinteger(L, 1);
 	y = luaL_checkinteger(L, 2);
 	patch = *((patch_t **)luaL_checkudata(L, 3, META_PATCH));
+	if (!patch)
+		return LUA_ErrInvalid(L, "patch_t");
 	flags = luaL_optinteger(L, 4, 0);
 	if (!lua_isnoneornil(L, 5))
 		colormap = *((UINT8 **)luaL_checkudata(L, 5, META_COLORMAP));
@@ -575,6 +585,8 @@ static int libd_drawScaled(lua_State *L)
 	if (scale < 0)
 		return luaL_error(L, "negative scale");
 	patch = *((patch_t **)luaL_checkudata(L, 4, META_PATCH));
+	if (!patch)
+		return LUA_ErrInvalid(L, "patch_t");
 	flags = luaL_optinteger(L, 5, 0);
 	if (!lua_isnoneornil(L, 6))
 		colormap = *((UINT8 **)luaL_checkudata(L, 6, META_COLORMAP));
@@ -638,6 +650,8 @@ static int libd_drawOnMinimap(lua_State *L)
 	y = luaL_checkinteger(L, 2);
 	scale = luaL_checkinteger(L, 3);
 	patch = *((patch_t **)luaL_checkudata(L, 4, META_PATCH));
+	if (!patch)
+		return LUA_ErrInvalid(L, "patch_t");
 	if (!lua_isnoneornil(L, 5))
 		colormap = *((UINT8 **)luaL_checkudata(L, 5, META_COLORMAP));
 	centered = lua_optboolean(L, 6);
@@ -657,27 +671,27 @@ static int libd_drawOnMinimap(lua_State *L)
 	splitflags |= V_HUDTRANS;
 
 	// Handle offsets and stuff.
-	mm_x = info.x - (SHORT(AutomapPic->width)/2);
-	mm_y = info.y - (SHORT(AutomapPic->height)/2);
+	mm_x = info.x - (AutomapPic->width/2);
+	mm_y = info.y - (AutomapPic->height/2);
 
 	// let offsets transfer to the heads, too!
 	if (encoremode)
 	{
-		mm_x += SHORT(AutomapPic->leftoffset);
+		mm_x += AutomapPic->leftoffset;
 	}
 	else
 	{
-		mm_x -= SHORT(AutomapPic->leftoffset);
+		mm_x -= AutomapPic->leftoffset;
 	}
 
-	mm_y -= SHORT(AutomapPic->topoffset);
+	mm_y -= AutomapPic->topoffset;
 
 	// patch is supposedly already centered, don't butt in.
 	if (!centered)
 	{
 		// scale patch coords
-		patchw = (SHORT(patch->width) * scale / 2);
-		patchh = (SHORT(patch->height) * scale / 2);
+		patchw = (patch->width * scale / 2);
+		patchh = (patch->height * scale / 2);
 	}
 
 	amnumxpos = (FixedMul(x, minimapinfo.zoom) - minimapinfo.offs_x);
@@ -688,8 +702,8 @@ static int libd_drawOnMinimap(lua_State *L)
 		amnumxpos = -amnumxpos;
 	}
 
-	amxpos = amnumxpos + ((mm_x + SHORT(AutomapPic->width) / 2)<<FRACBITS) - patchw;
-	amypos = amnumypos + ((mm_y + SHORT(AutomapPic->height) / 2)<<FRACBITS) - patchh;
+	amxpos = amnumxpos + ((mm_x + AutomapPic->width / 2)<<FRACBITS) - patchw;
+	amypos = amnumypos + ((mm_y + AutomapPic->height / 2)<<FRACBITS) - patchh;
 
 	if (cv_minihead.value)
 	{
@@ -733,6 +747,8 @@ static int libd_drawStretched(lua_State *L)
 	if (vscale < 0)
 		return luaL_error(L, "negative vertical scale");
 	patch = *((patch_t **)luaL_checkudata(L, 5, META_PATCH));
+	if (!patch)
+		return LUA_ErrInvalid(L, "patch_t");
 	flags = luaL_optinteger(L, 6, 0);
 	if (!lua_isnoneornil(L, 7))
 		colormap = *((UINT8 **)luaL_checkudata(L, 7, META_COLORMAP));
@@ -906,35 +922,37 @@ static int libd_drawString(lua_State *L)
 	if (LUA_HUD_IsDrawListValid(list))
 		LUA_HUD_AddDrawString(list, x, y, str, flags, align);
 	else
-	switch(align)
 	{
-	// hu_font
-	case align_left:
-		V_DrawString(x, y, flags, str);
-		break;
-	case align_center:
-		V_DrawCenteredString(x, y, flags, str);
-		break;
-	case align_right:
-		V_DrawRightAlignedString(x, y, flags, str);
-		break;
-	case align_fixed:
-		V_DrawStringAtFixed(x, y, flags, str);
-		break;
-	// hu_font, 0.5x scale
-	case align_small:
-		V_DrawSmallString(x, y, flags, str);
-		break;
-	case align_smallright:
-		V_DrawRightAlignedSmallString(x, y, flags, str);
-		break;
-	// tny_font
-	case align_thin:
-		V_DrawThinString(x, y, flags, str);
-		break;
-	case align_thinright:
-		V_DrawRightAlignedThinString(x, y, flags, str);
-		break;
+		switch(align)
+		{
+			// hu_font
+			case align_left:
+				V_DrawString(x, y, flags, str);
+				break;
+			case align_center:
+				V_DrawCenteredString(x, y, flags, str);
+				break;
+			case align_right:
+				V_DrawRightAlignedString(x, y, flags, str);
+				break;
+			case align_fixed:
+				V_DrawStringAtFixed(x, y, flags, str);
+				break;
+			// hu_font, 0.5x scale
+			case align_small:
+				V_DrawSmallString(x, y, flags, str);
+				break;
+			case align_smallright:
+				V_DrawRightAlignedSmallString(x, y, flags, str);
+				break;
+			// tny_font
+			case align_thin:
+				V_DrawThinString(x, y, flags, str);
+				break;
+			case align_thinright:
+				V_DrawRightAlignedThinString(x, y, flags, str);
+				break;
+		}
 	}
 	return 0;
 }
@@ -1021,7 +1039,8 @@ static int libd_getColorHudPatch(lua_State *L)
 	UINT8 *colormap = R_GetTranslationColormap(TC_DEFAULT, K_GetHudColor(), GTC_CACHE);
 	boolean small, dark;
 
-	switch (option) {
+	switch (option)
+	{
 		case hudpatch_item:
 			small = lua_optboolean(L, 2);
 			dark = lua_optboolean(L, 3);

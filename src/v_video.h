@@ -28,12 +28,12 @@
 
 extern UINT8 *screens[5];
 
-extern consvar_t cv_ticrate, cv_accuratefps, cv_allcaps, cv_constextsize, cv_menucaps,\
-cv_globalgamma, cv_globalsaturation,\
-cv_rhue, cv_yhue, cv_ghue, cv_chue, cv_bhue, cv_mhue,\
-cv_rgamma, cv_ygamma, cv_ggamma, cv_cgamma, cv_bgamma, cv_mgamma, \
-cv_rsaturation, cv_ysaturation, cv_gsaturation, cv_csaturation, cv_bsaturation, cv_msaturation;
-
+extern consvar_t cv_ticrate, cv_accuratefps, cv_allcaps, cv_constextsize, cv_menucaps,
+cv_globalgamma, cv_globalsaturation,
+cv_rhue, cv_yhue, cv_ghue, cv_chue, cv_bhue, cv_mhue,
+cv_rgamma, cv_ygamma, cv_ggamma, cv_cgamma, cv_bgamma, cv_mgamma,
+cv_rsaturation, cv_ysaturation, cv_gsaturation, cv_csaturation, cv_bsaturation, cv_msaturation,
+cv_palette, cv_palettenum;
 
 // Allocates buffer screens, call before R_Init.
 void V_Init(void);
@@ -59,6 +59,8 @@ void V_ReloadPalette(void);
 void V_SetPalette(INT32 palettenum);
 
 void V_SetPaletteLump(const char *pal);
+
+void V_ResetPaletteCVars(void);
 
 const char *R_GetPalname(UINT16 num);
 const char *GetPalette(void);

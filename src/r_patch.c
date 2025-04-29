@@ -13,12 +13,7 @@
 /// \brief Patch generation.
 
 #include "byteptr.h"
-#include "dehacked.h"
 #include "doomdef.h"
-#include "i_video.h"
-#include "r_data.h"
-#include "r_draw.h"
-#include "r_fps.h"
 #include "r_patch.h"
 #include "r_things.h"
 #include "z_zone.h"
@@ -330,12 +325,139 @@ void R_LoadSpriteInfoLumps(UINT16 wadnum, UINT16 numlumps)
 static unsigned char imgbuf[1<<26];
 
 //
+// Creates a patch.
+// Assumes a PU_PATCH zone memory tag and no user, but can always be set later
+//
+
+patch_t *Patch_Create(softwarepatch_t *source, size_t srcsize, void *dest)
+{
+	patch_t *patch = (dest == NULL) ? Z_Calloc(sizeof(patch_t), PU_PATCH, NULL) : (patch_t *)(dest);
+
+	if (source)
+	{
+		INT32 col, colsize;
+		size_t size = sizeof(INT32) * SHORT(source->width);
+		size_t offs = (sizeof(INT16) * 4) + size;
+
+		patch->width      = SHORT(source->width);
+		patch->height     = SHORT(source->height);
+		patch->leftoffset = SHORT(source->leftoffset);
+		patch->topoffset  = SHORT(source->topoffset);
+		patch->columnofs  = Z_Calloc(size, PU_PATCH_DATA, NULL);
+
+		for (col = 0; col < source->width; col++)
+		{
+			// This makes the column offsets relative to the column data itself,
+			// instead of the entire patch data
+			patch->columnofs[col] = LONG(source->columnofs[col]) - offs;
+		}
+
+		if (!srcsize)
+			I_Error("Patch_Create: no source size!");
+
+		colsize = (INT32)(srcsize) - (INT32)offs;
+		if (colsize <= 0)
+			I_Error("Patch_Create: no column data!");
+
+		patch->columns = Z_Calloc(colsize, PU_PATCH_DATA, NULL);
+		M_Memcpy(patch->columns, ((UINT8 *)source + LONG(source->columnofs[0])), colsize);
+	}
+
+	return patch;
+}
+
+//
+// Frees a patch from memory.
+//
+
+static void Patch_FreeData(patch_t *patch)
+{
+#ifdef HWRENDER
+	if (patch->hardware)
+		HWR_FreeTexture(patch);
+#endif
+
+#ifdef ROTSPRITE
+	/*if (patch->rotated)
+	{
+		rotsprite_t *rotsprite = patch->rotated;
+		INT32 i = 0;
+
+		for (; i < rotsprite->angles; i++)
+		{
+			if (rotsprite->patches[i])
+				Patch_Free(rotsprite->patches[i]);
+		}
+
+		Z_Free(rotsprite->patches);
+		Z_Free(rotsprite);
+	}*/
+#endif
+
+	if (patch->columnofs)
+		Z_Free(patch->columnofs);
+	if (patch->columns)
+		Z_Free(patch->columns);
+}
+
+void Patch_Free(patch_t *patch)
+{
+	Patch_FreeData(patch);
+	Z_Free(patch);
+}
+
+//
+// Frees patches with a tag range.
+//
+
+static boolean Patch_FreeTagsCallback(void *mem)
+{
+	patch_t *patch = (patch_t *)mem;
+	Patch_FreeData(patch);
+	return true;
+}
+
+void Patch_FreeTags(INT32 lowtag, INT32 hightag)
+{
+	Z_IterateTags(lowtag, hightag, Patch_FreeTagsCallback);
+}
+
+#ifdef HWRENDER
+//
+// Allocates a hardware patch.
+//
+
+void *Patch_AllocateHardwarePatch(patch_t *patch)
+{
+	if (!patch->hardware)
+	{
+		GLPatch_t *glPatch = Z_Calloc(sizeof(GLPatch_t), PU_HWRPATCHINFO, &patch->hardware);
+		glPatch->mipmap = Z_Calloc(sizeof(GLMipmap_t), PU_HWRPATCHINFO, &glPatch->mipmap);
+	}
+	return (void *)(patch->hardware);
+}
+
+//
+// Creates a hardware patch.
+//
+
+void *Patch_CreateGL(patch_t *patch)
+{
+	GLPatch_t *glPatch = (GLPatch_t *)Patch_AllocateHardwarePatch(patch);
+	if (!glPatch->mipmap->data) // Run HWR_MakePatch in all cases, to recalculate some things
+		HWR_MakePatch(patch, glPatch, glPatch->mipmap, false);
+	return glPatch;
+}
+#endif // HWRENDER
+
+
+//
 // R_MaskedFlatToPatch
 //
 // Convert a masked flat to a patch.
 // Explanation of "masked" flats in R_PatchToMaskedFlat.
 //
-static void *R_MaskedFlatToPatch(UINT16 *raw, INT16 width, INT16 height, INT16 leftoffset, INT16 topoffset, size_t *destsize)
+void *R_MaskedFlatToPatch(UINT16 *raw, INT16 width, INT16 height, INT16 leftoffset, INT16 topoffset, size_t *destsize)
 {
 	INT16 x, y;
 	UINT8 *img;
@@ -440,10 +562,17 @@ static void *R_MaskedFlatToPatch(UINT16 *raw, INT16 width, INT16 height, INT16 l
 
 	if (destsize != NULL)
 		*destsize = size;
-	return img;
+
+	patch_t *converted = Patch_Create((softwarepatch_t *)img, size, NULL);
+#ifdef HWRENDER
+	Patch_CreateGL(converted);
+#endif
+	Z_Free(img);
+
+	return converted;
 }
 
-static UINT16 GetPatchPixel(patch_t *patch, INT32 x, INT32 y, boolean flip)
+UINT16 R_GetPatchPixel(patch_t *patch, INT32 x, INT32 y, boolean flip)
 {
 	fixed_t ofs;
 	column_t *column;
@@ -453,14 +582,14 @@ static UINT16 GetPatchPixel(patch_t *patch, INT32 x, INT32 y, boolean flip)
 	if (patch == NULL)
 		I_Error("GetPatchPixel: patch == NULL");
 
-	width = SHORT(patch->width);
+	width = patch->width;
 
 	if (x >= 0 && x < width)
 	{
 		INT32 colx = flip ? (width-1)-x : x;
 		INT32 topdelta, prevdelta = -1;
 
-		column = (column_t *)((UINT8 *)patch + LONG(patch->columnofs[colx]));
+		column = (column_t *)((UINT8 *)patch->columns + (patch->columnofs[colx]));
 
 		while (column->topdelta != 0xff)
 		{
@@ -485,268 +614,3 @@ static UINT16 GetPatchPixel(patch_t *patch, INT32 x, INT32 y, boolean flip)
 
 	return 0xFF00;
 }
-
-#ifdef HWRENDER
-static patch_t *R_CreateHardwarePatch(patch_t *patch)
-{
-	GLPatch_t *glPatch = Z_Calloc(sizeof(GLPatch_t), PU_HWRPATCHINFO, NULL);
-	glPatch->mipmap = Z_Calloc(sizeof(GLMipmap_t), PU_HWRPATCHINFO, NULL);
-	glPatch->rawpatch = patch;
-	HWR_MakePatch(patch, glPatch, glPatch->mipmap, false);
-    return (patch_t *)glPatch;
-}
-#endif
-
-#ifdef ROTSPRITE
-//
-// R_GetRollAngle
-//
-// Angles precalculated in R_InitSprites.
-//
-fixed_t rollcosang[ROTANGLES];
-fixed_t rollsinang[ROTANGLES];
-
-INT32 R_GetRollAngle(angle_t rollangle)
-{
-	INT32 ra = AngleFixed(rollangle)>>FRACBITS;
-#if (ROTANGDIFF > 1)
-	ra += (ROTANGDIFF/2);
-#endif
-	ra /= ROTANGDIFF;
-	ra %= ROTANGLES;
-	return ra;
-}
-
-angle_t R_RotationAngle(angle_t ang, angle_t camang, interpmobjstate_t *interp)
-{
-	return FixedMul(FINECOSINE((ang) >> ANGLETOFINESHIFT), interp->roll) +
-	FixedMul(FINESINE((ang) >> ANGLETOFINESHIFT), interp->pitch) +
-	FixedMul(FINECOSINE((camang) >> ANGLETOFINESHIFT), interp->sloperoll) +
-	FixedMul(FINESINE((camang) >> ANGLETOFINESHIFT), interp->slopepitch);
-}
-
-patch_t *Patch_GetRotatedSprite(spriteframe_t *sprite, size_t frame, size_t spriteangle, boolean flip, void *info, INT32 rotationangle)
-{
-	rotsprite_t *rotsprite;
-	spriteinfo_t *sprinfo = (spriteinfo_t *)info;
-	INT32 idx = rotationangle;
-
-	if (rotationangle < 1 || rotationangle >= ROTANGLES)
-		return NULL;
-
-	rotsprite = sprite->rotated[spriteangle];
-
-	if (rotsprite == NULL)
-	{
-		rotsprite = RotatedPatch_Create(ROTANGLES);
-		sprite->rotated[spriteangle] = rotsprite;
-	}
-
-	if (flip)
-		idx += rotsprite->angles;
-
-	if (rotsprite->patches[idx] == NULL)
-	{
-		patch_t *patch;
-		INT32 xpivot = 0, ypivot = 0;
-		lumpnum_t lump = sprite->lumppat[spriteangle];
-
-		if (lump == LUMPERROR)
-			return NULL;
-
-		patch = (patch_t *)W_CacheLumpNum(lump, PU_CACHE); // PU_LEVEL
-
-		if (sprinfo->available)
-		{
-			xpivot = sprinfo->pivot[frame].x;
-			ypivot = sprinfo->pivot[frame].y;
-		}
-		else
-		{
-			xpivot = SHORT(patch->leftoffset);
-			ypivot = SHORT(patch->height) / 2;
-		}
-
-		RotatedPatch_DoRotation(rotsprite, patch, rotationangle, xpivot, ypivot, flip);
-	}
-
-	return rotsprite->patches[idx];
-}
-
-rotsprite_t *RotatedPatch_Create(INT32 numangles)
-{
-	rotsprite_t *rotsprite = Z_Calloc(sizeof(rotsprite_t), PU_STATIC, NULL);
-	rotsprite->angles = numangles;
-	rotsprite->patches = Z_Calloc(rotsprite->angles * 2 * sizeof(void *), PU_STATIC, NULL);
-	return rotsprite;
-}
-
-
-static void RotatedPatch_CalculateDimensions(
-	INT32 width, INT32 height,
-	fixed_t ca, fixed_t sa,
-	INT32 *newwidth, INT32 *newheight)
-{
-	fixed_t fixedwidth = (width * FRACUNIT);
-	fixed_t fixedheight = (height * FRACUNIT);
-
-	fixed_t w1 = abs(FixedMul(fixedwidth, ca) - FixedMul(fixedheight, sa));
-	fixed_t w2 = abs(FixedMul(-fixedwidth, ca) - FixedMul(fixedheight, sa));
-	fixed_t h1 = abs(FixedMul(fixedwidth, sa) + FixedMul(fixedheight, ca));
-	fixed_t h2 = abs(FixedMul(-fixedwidth, sa) + FixedMul(fixedheight, ca));
-
-	w1 = FixedInt(FixedCeil(w1 + (FRACUNIT/2)));
-	w2 = FixedInt(FixedCeil(w2 + (FRACUNIT/2)));
-	h1 = FixedInt(FixedCeil(h1 + (FRACUNIT/2)));
-	h2 = FixedInt(FixedCeil(h2 + (FRACUNIT/2)));
-
-	*newwidth = max(width, max(w1, w2));
-	*newheight = max(height, max(h1, h2));
-}
-
-void RotatedPatch_DoRotation(rotsprite_t *rotsprite, patch_t *patch, INT32 angle, INT32 xpivot, INT32 ypivot, boolean flip)
-{
-	UINT32 i;
-
-	patch_t *rotated;
-
-	UINT16 *rawdst, *rawconv;
-	size_t size;
-	INT32 bflip = (flip != 0x00);
-
-	INT32 width = SHORT(patch->width);
-	INT32 height = SHORT(patch->height);
-	INT32 leftoffset = SHORT(patch->leftoffset);
-	INT32 newwidth, newheight;
-
-	fixed_t ca = rollcosang[angle];
-	fixed_t sa = rollsinang[angle];
-	fixed_t xcenter, ycenter;
-	INT32 idx = angle;
-	INT32 x, y;
-	INT32 sx, sy;
-	INT32 dx, dy;
-	INT32 ox, oy;
-	INT32 minx, miny, maxx, maxy;
-
-	// Don't cache angle = 0
-	if (angle < 1 || angle >= ROTANGLES)
-		return;
-
-	if (flip)
-	{
-		idx += rotsprite->angles;
-		xpivot = width - xpivot;
-		leftoffset = width - leftoffset;
-	}
-
-	if (rotsprite->patches[idx])
-		return;
-
-	// Find the dimensions of the rotated patch.
-	RotatedPatch_CalculateDimensions(width, height, ca, sa, &newwidth, &newheight);
-
-	xcenter = (xpivot * FRACUNIT);
-	ycenter = (ypivot * FRACUNIT);
-
-	if (xpivot != width / 2 || ypivot != height / 2)
-	{
-		newwidth *= 2;
-		newheight *= 2;
-	}
-
-	minx = newwidth;
-	miny = newheight;
-	maxx = 0;
-	maxy = 0;
-
-	// Draw the rotated sprite to a temporary buffer.
-	size = (newwidth * newheight);
-	if (!size)
-		size = (width * height);
-	rawdst = Z_Malloc(size * sizeof(UINT16), PU_STATIC, NULL);
-
-	for (i = 0; i < size; i++)
-		rawdst[i] = 0xFF00;
-
-	for (dy = 0; dy < newheight; dy++)
-	{
-		for (dx = 0; dx < newwidth; dx++)
-		{
-			x = (dx - (newwidth / 2)) * FRACUNIT;
-			y = (dy - (newheight / 2)) * FRACUNIT;
-			sx = FixedMul(x, ca) + FixedMul(y, sa) + xcenter;
-			sy = -FixedMul(x, sa) + FixedMul(y, ca) + ycenter;
-
-			sx >>= FRACBITS;
-			sy >>= FRACBITS;
-
-			if (sx >= 0 && sy >= 0 && sx < width && sy < height)
-			{
-				rawdst[(dy * newwidth) + dx] = GetPatchPixel(patch, sx, sy, bflip);
-
-				if (dx < minx)
-					minx = dx;
-				if (dy < miny)
-					miny = dy;
-				if (dx > maxx)
-					maxx = dx;
-				if (dy > maxy)
-					maxy = dy;
-			}
-		}
-	}
-
-	ox = (newwidth / 2) + (leftoffset - xpivot);
-	oy = (newheight / 2) + (SHORT(patch->topoffset) - ypivot);
-	width = (maxx - minx);
-	height = (maxy - miny);
-
-	if ((unsigned)(width * height) > size)
-	{
-		UINT16 *src, *dest;
-
-		size = (width * height);
-		rawconv = Z_Calloc(size * sizeof(UINT16), PU_STATIC, NULL);
-
-		src = &rawdst[(miny * newwidth) + minx];
-		dest = rawconv;
-		dy = height;
-
-		while (dy--)
-		{
-			M_Memcpy(dest, src, width * sizeof(UINT16));
-			dest += width;
-			src += newwidth;
-		}
-
-		ox -= minx;
-		oy -= miny;
-
-		Z_Free(rawdst);
-	}
-	else
-	{
-		rawconv = rawdst;
-		width = newwidth;
-		height = newheight;
-	}
-
-	// make patch
-	rotated = (patch_t *)R_MaskedFlatToPatch(rawconv, width, height, 0, 0, &size);
-
-	rotated->leftoffset = ox;
-	rotated->topoffset = oy;
-
-#ifdef HWRENDER
-	if (rendermode == render_opengl)
-	{
-		rotated = R_CreateHardwarePatch(rotated);
-	}
-#endif // HWRENDER
-
-	//Z_ChangeTag(rotated, PU_LEVEL);
-	Z_SetUser(rotated, (void **)(&rotsprite->patches[idx]));
-	Z_Free(rawconv);
-}
-#endif

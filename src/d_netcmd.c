@@ -39,6 +39,7 @@
 #include "d_main.h"
 #include "m_random.h"
 #include "f_finale.h"
+#include "v_video.h"
 #include "filesrch.h"
 #include "mserv.h"
 #include "md5.h"
@@ -954,6 +955,9 @@ void D_RegisterClientCommands(void)
 	COM_AddCommand("displayplayer", Command_Displayplayer_f);
 
 	CV_RegisterVar(&cv_audbuffersize);
+
+	CV_RegisterVar(&cv_palette);
+	CV_RegisterVar(&cv_palettenum);
 
 	// m_menu.c
 	CV_RegisterVar(&cv_chatheight);

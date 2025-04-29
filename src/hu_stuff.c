@@ -1949,17 +1949,11 @@ static void HU_DrawChat_Old(void)
 	const char *ntalk = "Say: ", *ttalk = "Say-Team: ";
 	const char *talk = ntalk;
 	size_t select_start = 0, select_end = 0;
-	INT32 charwidth = 8 * con_scalefactor; //SHORT(hu_font['A'-HU_FONTSTART]->width) * con_scalefactor;
-	INT32 charheight = 8 * con_scalefactor; //SHORT(hu_font['A'-HU_FONTSTART]->height) * con_scalefactor;
+	INT32 charwidth = 8 * con_scalefactor; //hu_font['A'-HU_FONTSTART]->width * con_scalefactor;
+	INT32 charheight = 8 * con_scalefactor; //hu_font['A'-HU_FONTSTART]->height * con_scalefactor;
 	if (teamtalk)
 	{
 		talk = ttalk;
-#if 0
-		if (players[consoleplayer].ctfteam == 1)
-			t = 0x500;  // Red
-		else if (players[consoleplayer].ctfteam == 2)
-			t = 0x400; // Blue
-#endif
 	}
 
 	while (talk[i])
@@ -1971,7 +1965,7 @@ static void HU_DrawChat_Old(void)
 		}
 		else
 		{
-			//charwidth = SHORT(hu_font[talk[i]-HU_FONTSTART]->width) * con_scalefactor;
+			//charwidth = hu_font[talk[i]-HU_FONTSTART]->width * con_scalefactor;
 			V_DrawCharacter(HU_INPUTX + c, y, talk[i++] | cv_constextsize.value | V_NOSCALESTART, !cv_allcaps.value);
 		}
 		c += charwidth;
@@ -1999,7 +1993,7 @@ static void HU_DrawChat_Old(void)
 		//Hurdler: isn't it better like that?
 		if (w_chat_buf[i] >= HU_FONTSTART)
 		{
-			//charwidth = SHORT(hu_font[w_chat[i]-HU_FONTSTART]->width) * con_scalefactor;
+			//charwidth = hu_font[w_chat[i]-HU_FONTSTART]->width * con_scalefactor;
 			V_DrawCharacter(HU_INPUTX + c, y, w_chat_buf[i] | cv_constextsize.value | V_NOSCALESTART | t, !cv_allcaps.value);
 		}
 
@@ -2638,7 +2632,7 @@ static void HU_DrawRankings(void)
 		else
 			p = bmatcico;
 
-		V_DrawSmallScaledPatch(128 - SHORT(p->width)/4, 4, 0, p);
+		V_DrawSmallScaledPatch(128 - p->width/4, 4, 0, p);
 		V_DrawCenteredString(128, 16, 0, va("%u", bluescore));
 
 		if (gametype == GT_CTF)
@@ -2646,7 +2640,7 @@ static void HU_DrawRankings(void)
 		else
 			p = rmatcico;
 
-		V_DrawSmallScaledPatch(192 - SHORT(p->width)/4, 4, 0, p);
+		V_DrawSmallScaledPatch(192 - p->width/4, 4, 0, p);
 		V_DrawCenteredString(192, 16, 0, va("%u", redscore));
 	}
 

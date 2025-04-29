@@ -171,9 +171,9 @@ static void R_DrawWallSplats(void)
 		mfloorclip = floorclip;
 		mceilingclip = ceilingclip;
 
-		patch = W_CachePatchNum(splat->patch, PU_CACHE);
+		patch = W_CachePatchNum(splat->patch, PU_SPRITE);
 
-		dc_texturemid = splat->top + (SHORT(patch->height)<<(FRACBITS-1)) - viewz;
+		dc_texturemid = splat->top + (patch->height<<(FRACBITS-1)) - viewz;
 		if (splat->yoffset)
 			dc_texturemid += *splat->yoffset;
 
@@ -225,11 +225,11 @@ static void R_DrawWallSplats(void)
 
 			// FIXME!
 			texturecolumn >>= FRACBITS;
-			if (texturecolumn < 0 || texturecolumn >= SHORT(patch->width))
+			if (texturecolumn < 0 || texturecolumn >= patch->width)
 				continue;
 
 			// draw the texture
-			col = (column_t *)((UINT8 *)patch + LONG(patch->columnofs[texturecolumn]));
+			col = (column_t *)((UINT8 *)patch->columns + (patch->columnofs[texturecolumn]));
 			R_DrawSplatColumn(col);
 		}
 	} // next splat

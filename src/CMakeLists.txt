@@ -129,6 +129,7 @@ set(SRB2_CORE_RENDER_SOURCES
 	r_fps.c
 	r_main.c
 	r_patch.c
+	r_patchrotation.c
 	r_plane.c
 	r_segs.c
 	r_sky.c
@@ -143,7 +144,8 @@ set(SRB2_CORE_RENDER_SOURCES
 	r_fps.h
 	r_local.h
 	r_main.h
-	r_patch
+	r_patch.h
+	r_patchrotation.h
 	r_plane.h
 	r_segs.h
 	r_sky.h

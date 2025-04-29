@@ -48,6 +48,10 @@
 #include "hardware/hw_main.h"
 #endif
 
+#ifdef ROTSPRITE
+#include "r_patchrotation.h"
+#endif
+
 // Hud offset cvars
 #define IMPL_HUD_OFFSET_X(name)\
 consvar_t cv_##name##_xoffset = {"hud_" #name "_xoffset", "0", CV_SAVE, NULL, NULL, 0, NULL, NULL, 0, 0, NULL};
@@ -7749,10 +7753,10 @@ void K_LoadKartHUDGraphics(void)
 		kp_bumperstickerwideclr = 		W_CachePatchName("K_SCBALW", PU_HUDGFX);
 		kp_karmastickerclr = 			W_CachePatchName("K_SCKARM", PU_HUDGFX);
 		kp_timeoutstickerclr = 			W_CachePatchName("K_SCTOUT", PU_HUDGFX);
-		kp_itembgclr[0] = 				W_CachePatchName("K_ITBC", PU_HUDGFX);
-		kp_itembgclr[1] = 				W_CachePatchName("K_ITBCD", PU_HUDGFX);
-		kp_itembgclr[2] = 				W_CachePatchName("K_ISBC", PU_HUDGFX);
-		kp_itembgclr[3] = 				W_CachePatchName("K_ISBCD", PU_HUDGFX);
+		kp_itembgclr[0] = 				W_CachePatchName("K_ITBC"  , PU_HUDGFX);
+		kp_itembgclr[1] = 				W_CachePatchName("K_ITBCD" , PU_HUDGFX);
+		kp_itembgclr[2] = 				W_CachePatchName("K_ISBC"  , PU_HUDGFX);
+		kp_itembgclr[3] = 				W_CachePatchName("K_ISBCD" , PU_HUDGFX);
 		kp_itemmulstickerclr[1] = 		W_CachePatchName("K_ISMULC", PU_HUDGFX);
 		kp_itemmulstickerclr[0] = 		W_CachePatchName("K_ITMULC", PU_HUDGFX);
 	}
@@ -9040,7 +9044,7 @@ void K_drawKartTimestamp(tic_t drawtime, INT32 TX, INT32 TY, INT16 emblemmap, UI
 
 						if (emblem->collected)
 						{
-							emblempic[curemb] = W_CachePatchName(M_GetEmblemPatch(emblem), PU_CACHE);
+							emblempic[curemb] = W_CachePatchName(M_GetEmblemPatch(emblem), PU_PATCH);
 							emblemcol[curemb] = R_GetTranslationColormap(TC_DEFAULT, M_GetEmblemColor(emblem), GTC_CACHE);
 							if (++curemb == 3)
 								break;
@@ -9076,7 +9080,7 @@ void K_drawKartTimestamp(tic_t drawtime, INT32 TX, INT32 TY, INT16 emblemmap, UI
 
 			V_DrawRightAlignedString(workx, worky, splitflags, targettext);
 			workx -= 67;
-			V_DrawSmallScaledPatch(workx + 4, worky, splitflags, W_CachePatchName("NEEDIT", PU_CACHE));
+			V_DrawSmallScaledPatch(workx + 4, worky, splitflags, W_CachePatchName("NEEDIT", PU_PATCH));
 
 			break;
 
@@ -9103,7 +9107,7 @@ static void K_DrawKartPositionNum(INT32 num)
 	const boolean wheeloffs = (cv_showinput.value && cv_posi_xoffset.value == 0 && cv_posi_yoffset.value == 0 && cv_wheel_xoffset.value == 0 && cv_wheel_yoffset.value == 0);
 	boolean win = (stplyr->exiting && num == 1);
 	//INT32 X = POSI_X;
-	INT32 W = SHORT(kp_positionnum[0][0]->width);
+	INT32 W = kp_positionnum[0][0]->width;
 	fixed_t scale = FRACUNIT;
 	patch_t *localpatch = kp_positionnum[0][0];
 	//INT32 splitflags = K_calcSplitFlags(V_SNAPTOBOTTOM|V_SNAPTORIGHT);
@@ -9217,7 +9221,7 @@ static void K_DrawKartPositionNum(INT32 num)
 			localpatch = kp_positionnum[num % 10][0];
 		}
 
-		V_DrawFixedPatch((fx<<FRACBITS) + ((overtake && flipdraw) ? (SHORT(localpatch->width)*scale/2) : 0), (fy<<FRACBITS) + ((overtake && flipvdraw) ? (SHORT(localpatch->height)*scale/2) : 0), scale, V_HUDTRANSHALF|fflags, localpatch, NULL);
+		V_DrawFixedPatch((fx<<FRACBITS) + ((overtake && flipdraw) ? (localpatch->width*scale/2) : 0), (fy<<FRACBITS) + ((overtake && flipvdraw) ? (localpatch->height*scale/2) : 0), scale, V_HUDTRANSHALF|fflags, localpatch, NULL);
 		// ^ if we overtake as p1 or p3 in splitscren, we shift it so that it doesn't go off screen.
 		// ^ if we overtake as p1 in 2p splits, shift vertically so that this doesn't happen either.
 
@@ -9551,9 +9555,9 @@ static void K_DrawDialNum(INT32 x, INT32 y, boolean colorized, INT32 flags, INT3
 	INT32 w;
 
 	if (colorized)
-		w = SHORT(skp_dialnumclr[0]->width);
+		w = skp_dialnumclr[0]->width;
 	else
-		w = SHORT(skp_dialnum[0]->width);
+		w = skp_dialnum[0]->width;
 
 	if (flags & V_NOSCALESTART)
 		w *= vid.dupx;
@@ -9604,11 +9608,11 @@ static void K_DrawDialSpeedometer(fixed_t speed,
 
 	if (rot)
 	{
-		dialpatch = W_CachePatchNameRotated("K_DSDIAL", rot, PU_STATIC);
+		dialpatch = W_CachePatchNameRotated("K_DSDIAL", rot, PU_PATCH);
 	}
 	else
 	{
-		dialpatch = W_CachePatchName("K_DSDIAL", PU_STATIC);
+		dialpatch = W_CachePatchName("K_DSDIAL", PU_PATCH);
 	}
 
 	if (colorized)  // Colourized hud
@@ -9697,7 +9701,9 @@ static void K_drawKartSpeedometer(void)
 
 	// index 0 is the raw value, index 1 is the converted value
 	fixed_t convSpeed[2] = {0,0};
+#ifdef ROTSPRITE
 	fixed_t dial_divisor = DIALSPDDIV;
+#endif
 
 	INT32 splitflags = K_calcSplitFlags(V_SNAPTOBOTTOM|V_SNAPTOLEFT);
 
@@ -9713,12 +9719,16 @@ static void K_drawKartSpeedometer(void)
 		case 2:
 			convSpeed[0] = FixedDiv(FixedMul(stplyr->speed, 88465), mapobjectscale); // 1.349868774
 			convSpeed[1] = convSpeed[0] / FRACUNIT;
+#ifdef ROTSPRITE
 			dial_divisor = MPHDIV;
+#endif
 			break;
 		case 3:
 			convSpeed[0] = FixedDiv(stplyr->speed, mapobjectscale);
 			convSpeed[1] = convSpeed[0] / FRACUNIT;
+#ifdef ROTSPRITE
 			dial_divisor = MPHDIV;
+#endif
 			break;
 		case 4:
 			if (stplyr->mo)
@@ -10487,7 +10497,7 @@ static void K_drawKartWanted(void)
 	}
 	else if (splitscreen == 3)	// 4P splitscreen...
 	{
-		basex = BASEVIDWIDTH/2 - (SHORT(kp_wantedsplit->width)/2);	// center on screen
+		basex = BASEVIDWIDTH/2 - (kp_wantedsplit->width/2);	// center on screen
 		basey = BASEVIDHEIGHT - 55;
 		//basey2 = 4;
 	}
@@ -10605,13 +10615,13 @@ static void K_drawKartMinimapIcon(fixed_t objx, fixed_t objy, INT32 hudx, INT32 
 	if (encoremode)
 		amnumxpos = -amnumxpos;
 
-	amxpos = amnumxpos + ((hudx + (SHORT(AutomapPic->width)-SHORT(icon->width))/2)<<FRACBITS);
-	amypos = amnumypos + ((hudy + (SHORT(AutomapPic->height)-SHORT(icon->height))/2)<<FRACBITS);
+	amxpos = amnumxpos + ((hudx + (AutomapPic->width-icon->width)/2)<<FRACBITS);
+	amypos = amnumypos + ((hudy + (AutomapPic->height-icon->height)/2)<<FRACBITS);
 
 	if (cv_minihead.value && !(icon == kp_minimapdot))
 	{
-		amxpos += (SHORT(icon->width) / 4)<<FRACBITS;
-		amypos += (SHORT(icon->height) / 4)<<FRACBITS;
+		amxpos += (icon->width / 4)<<FRACBITS;
+		amypos += (icon->height / 4)<<FRACBITS;
 		scale /= 2;
 	}
 
@@ -10650,8 +10660,8 @@ static void K_drawKartMinimapHead(mobj_t *mo, INT32 x, INT32 y, INT32 flags)
 	if (encoremode)
 		amnumxpos = -amnumxpos;
 
-	amxpos = amnumxpos + ((x + (SHORT(minimapinfo.minimap_pic->width)-SHORT(minimaphead->width)) / 2)<<FRACBITS);
-	amypos = amnumypos + ((y + (SHORT(minimapinfo.minimap_pic->height)-SHORT(minimaphead->height)) / 2)<<FRACBITS);
+	amxpos = amnumxpos + ((x + (minimapinfo.minimap_pic->width-minimaphead->width) / 2)<<FRACBITS);
+	amypos = amnumypos + ((y + (minimapinfo.minimap_pic->height-minimaphead->height) / 2)<<FRACBITS);
 
 	if (cv_showminimapnames.value && player && !(modeattacking || gamestate == GS_TIMEATTACK))
 	{
@@ -10664,8 +10674,8 @@ static void K_drawKartMinimapHead(mobj_t *mo, INT32 x, INT32 y, INT32 flags)
 
 	if (cv_minihead.value)
 	{
-		amxpos += (SHORT(minimaphead->width) / 4)<<FRACBITS;
-		amypos += (SHORT(minimaphead->height) / 4)<<FRACBITS;
+		amxpos += (minimaphead->width / 4)<<FRACBITS;
+		amypos += (minimaphead->height / 4)<<FRACBITS;
 		scale /= 2;
 	}
 
@@ -10678,7 +10688,7 @@ static void K_drawKartMinimapHead(mobj_t *mo, INT32 x, INT32 y, INT32 flags)
 
 		if (rot)
 		{
-			minimaphead = W_CachePatchNameRotated(skin->facemmap, rot, PU_STATIC);
+			minimaphead = W_CachePatchNameRotated(skin->facemmap, rot, PU_PATCH);
 		}
 	}
 #endif
@@ -10735,14 +10745,14 @@ static void K_drawKartMinimap(void)
 
 	drawinfo_t info;
 	K_getMinimapDrawinfo(&info);
-	x = info.x - (SHORT(minimapinfo.minimap_pic->width)/2);
-	y = info.y - (SHORT(minimapinfo.minimap_pic->height)/2);
+	x = info.x - (minimapinfo.minimap_pic->width/2);
+	y = info.y - (minimapinfo.minimap_pic->height/2);
 	splitflags = info.flags;
 
 	splitflags |= minimaptrans;
 
 	if (encoremode)
-		V_DrawScaledPatch(x+SHORT(minimapinfo.minimap_pic->width), y, splitflags|V_FLIP, minimapinfo.minimap_pic);
+		V_DrawScaledPatch(x+minimapinfo.minimap_pic->width, y, splitflags|V_FLIP, minimapinfo.minimap_pic);
 	else
 		V_DrawScaledPatch(x, y, splitflags, minimapinfo.minimap_pic);
 
@@ -10754,10 +10764,10 @@ static void K_drawKartMinimap(void)
 
 	// let offsets transfer to the heads, too!
 	if (encoremode)
-		x += SHORT(minimapinfo.minimap_pic->leftoffset);
+		x += minimapinfo.minimap_pic->leftoffset;
 	else
-		x -= SHORT(minimapinfo.minimap_pic->leftoffset);
-	y -= SHORT(minimapinfo.minimap_pic->topoffset);
+		x -= minimapinfo.minimap_pic->leftoffset;
+	y -= minimapinfo.minimap_pic->topoffset;
 
 	// initialize
 	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
@@ -10875,7 +10885,7 @@ static void K_drawKartStartCountdown(void)
 	if (splitscreen) // splitscreen
 		pnum += 8;
 
-	V_DrawScaledPatch(STCD_X - (SHORT(kp_startcountdown[pnum]->width)/2), STCD_Y - (SHORT(kp_startcountdown[pnum]->height)/2), splitflags, kp_startcountdown[pnum]);
+	V_DrawScaledPatch(STCD_X - (kp_startcountdown[pnum]->width/2), STCD_Y - (kp_startcountdown[pnum]->height/2), splitflags, kp_startcountdown[pnum]);
 }
 
 static void K_drawKartFinish(void)
@@ -10891,7 +10901,7 @@ static void K_drawKartFinish(void)
 	if (splitscreen > 1) // 3/4p, stationary FIN
 	{
 		pnum += 2;
-		V_DrawScaledPatch(STCD_X - (SHORT(kp_racefinish[pnum]->width)/2), STCD_Y - (SHORT(kp_racefinish[pnum]->height)/2), splitflags, kp_racefinish[pnum]);
+		V_DrawScaledPatch(STCD_X - (kp_racefinish[pnum]->width/2), STCD_Y - (kp_racefinish[pnum]->height/2), splitflags, kp_racefinish[pnum]);
 		return;
 	}
 
@@ -10903,14 +10913,14 @@ static void K_drawKartFinish(void)
 			pnum += 4;
 
 		x = ((vid.width<<FRACBITS)/vid.dupx);
-		xval = (SHORT(kp_racefinish[pnum]->width)<<FRACBITS);
+		xval = (kp_racefinish[pnum]->width<<FRACBITS);
 		x = (FixedMul(((TICRATE - stplyr->kartstuff[k_cardanimation])<<FRACBITS) - R_GetHudUncap(), xval > x ? xval : x))/TICRATE;
 
 		if (splitscreen && stplyrnum == 1)
 			x = -x;
 
 		V_DrawFixedPatch(x + (STCD_X<<FRACBITS) - (xval>>1),
-			(STCD_Y<<FRACBITS) - (SHORT(kp_racefinish[pnum]->height)<<(FRACBITS-1)),
+			(STCD_Y<<FRACBITS) - (kp_racefinish[pnum]->height<<(FRACBITS-1)),
 			FRACUNIT,
 			splitflags, kp_racefinish[pnum], NULL);
 	}
@@ -11755,8 +11765,8 @@ void K_drawKartHUD(void)
 				x += offs - frac;
 			}
 
-			V_DrawSciencePatch(x - (54*FRACUNIT), y, logoflags, W_CachePatchName("TTKBANNR", PU_CACHE), FRACUNIT/4);
-			V_DrawSciencePatch(x - (54*FRACUNIT), y + (25*FRACUNIT), logoflags, W_CachePatchName("TTKART", PU_CACHE), FRACUNIT/4);
+			V_DrawSciencePatch(x - (54*FRACUNIT), y, logoflags, W_CachePatchName("TTKBANNR", PU_PATCH), FRACUNIT/4);
+			V_DrawSciencePatch(x - (54*FRACUNIT), y + (25*FRACUNIT), logoflags, W_CachePatchName("TTKART", PU_PATCH), FRACUNIT/4);
 		}
 		else if (G_RaceGametype()) // Race-only elements
 		{
@@ -11831,7 +11841,7 @@ void K_drawKartHUD(void)
 		return;
 
 	if (G_BattleGametype() && !splitscreen && (stplyr->kartstuff[k_yougotem] % 2)) // * YOU GOT EM *
-		V_DrawScaledPatch(BASEVIDWIDTH/2 - (SHORT(kp_yougotem->width)/2), 32, V_HUDTRANS, kp_yougotem);
+		V_DrawScaledPatch(BASEVIDWIDTH/2 - (kp_yougotem->width/2), 32, V_HUDTRANS, kp_yougotem);
 
 	// Draw FREE PLAY.
 	if (isfreeplay && !stplyr->spectator && timeinmap > 113)

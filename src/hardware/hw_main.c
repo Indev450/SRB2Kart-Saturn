@@ -39,7 +39,6 @@
 #include "../r_fps.h"
 #include "../r_local.h"
 #include "../r_main.h"		// cv_fov
-#include "../r_patch.h"		// a mystery as to what this is for
 #include "../r_portal.h"
 #ifdef WALLSPLATS
 #include "../r_splats.h"
@@ -56,7 +55,11 @@
 #include "../w_wad.h"
 #include "../z_zone.h"
 
-#include "../qs22j.h" // fast qsort
+#ifdef ROTSPRITE
+#include "../r_patchrotation.h"		// a mystery as to what this is for
+#endif
+
+#include "../qs22j.h" 		// fast qsort
 
 // ==========================================================================
 // Globals
@@ -821,7 +824,7 @@ static void HWR_DrawSegsSplats(FSurfaceInfo * pSurf)
 {
 	FOutVector wallVerts[4];
 	wallsplat_t *splat;
-	GLPatch_t *gpatch;
+	patch_t *gpatch;
 	fixed_t i;
 	// seg bbox
 	fixed_t segbbox[4];
@@ -844,7 +847,7 @@ static void HWR_DrawSegsSplats(FSurfaceInfo * pSurf)
 		if (!M_PointInBox(segbbox,splat->v1.x,splat->v1.y) && !M_PointInBox(segbbox,splat->v2.x,splat->v2.y))
 			continue;
 
-		gpatch = W_CachePatchNum(splat->patch, PU_CACHE);
+		gpatch = W_CachePatchNum(splat->patch, PU_SPRITE);
 		HWR_GetPatch(gpatch);
 
 		wallVerts[0].x = wallVerts[3].x = FixedToFloat(splat->v1.x);
@@ -3309,7 +3312,7 @@ static fixed_t HWR_OpaqueFloorAtPos(fixed_t x, fixed_t y, fixed_t z, fixed_t hei
 	return floorz;
 }
 
-static void HWR_DrawSpriteShadow(gl_vissprite_t *spr, GLPatch_t *gpatch)
+static void HWR_DrawSpriteShadow(gl_vissprite_t *spr, patch_t *gpatch, GLPatch_t *hwrpatch)
 {
 	float this_scale = 1.0f;
 	FOutVector swallVerts[4];
@@ -3434,25 +3437,25 @@ static void HWR_DrawSpriteShadow(gl_vissprite_t *spr, GLPatch_t *gpatch)
 
 	if (spr->flip)
 	{
-		swallVerts[0].s = swallVerts[3].s = gpatch->max_s;
+		swallVerts[0].s = swallVerts[3].s = hwrpatch->max_s;
 		swallVerts[2].s = swallVerts[1].s = 0;
 	}
 	else
 	{
 		swallVerts[0].s = swallVerts[3].s = 0;
-		swallVerts[2].s = swallVerts[1].s = gpatch->max_s;
+		swallVerts[2].s = swallVerts[1].s = hwrpatch->max_s;
 	}
 
 	// flip the texture coords (look familiar?)
 	if (spr->vflip)
 	{
-		swallVerts[3].t = swallVerts[2].t = gpatch->max_t;
+		swallVerts[3].t = swallVerts[2].t = hwrpatch->max_t;
 		swallVerts[0].t = swallVerts[1].t = 0;
 	}
 	else
 	{
 		swallVerts[3].t = swallVerts[2].t = 0;
-		swallVerts[0].t = swallVerts[1].t = gpatch->max_t;
+		swallVerts[0].t = swallVerts[1].t = hwrpatch->max_t;
 	}
 
 	sSurf.PolyColor.s.red = 0x01;
@@ -3527,6 +3530,7 @@ static void HWR_RotateSpritePolyToAim(gl_vissprite_t *spr, FOutVector *wallVerts
 	{
 		basey = FixedToFloat(interp.z);
 	}
+
 	lowy = wallVerts[0].y;
 
 	// Rotate sprites to fully billboard with the camera
@@ -3569,7 +3573,8 @@ static void HWR_SplitSprite(gl_vissprite_t *spr, const boolean papersprite)
 {
 	FOutVector wallVerts[4];
 	FOutVector baseWallVerts[4]; // This is what the verts should end up as
-	GLPatch_t *gpatch;
+	patch_t *gpatch;
+	GLPatch_t *hwrpatch;
 	FSurfaceInfo Surf;
 	extracolormap_t *colormap;
 	INT32 lightlevel;
@@ -3591,12 +3596,14 @@ static void HWR_SplitSprite(gl_vissprite_t *spr, const boolean papersprite)
 	fixed_t v1x, v1y, v2x, v2y;
 	INT32 shader = SHADER_NONE;
 
-	gpatch = spr->gpatch; //W_CachePatchNum(spr->patchlumpnum, PU_CACHE);
+	gpatch = spr->gpatch;
 
 	// cache the patch in the graphics card memory
 	//12/12/99: Hurdler: same comment as above (for md2)
 	//Hurdler: 25/04/2000: now support colormap in hardware mode
 	HWR_GetMappedPatch(gpatch, spr->colormap);
+
+	hwrpatch = ((GLPatch_t *)gpatch->hardware);
 
 	// Draw shadow BEFORE sprite
 	if (cv_shadow.value // Shadows enabled
@@ -3607,7 +3614,7 @@ static void HWR_SplitSprite(gl_vissprite_t *spr, const boolean papersprite)
 		////////////////////
 		// SHADOW SPRITE! //
 		////////////////////
-		HWR_DrawSpriteShadow(spr, gpatch);
+		HWR_DrawSpriteShadow(spr, gpatch, hwrpatch);
 	}
 
 	baseWallVerts[0].x = baseWallVerts[3].x = spr->x1;
@@ -3625,25 +3632,25 @@ static void HWR_SplitSprite(gl_vissprite_t *spr, const boolean papersprite)
 
 	if (spr->flip)
 	{
-		baseWallVerts[0].s = baseWallVerts[3].s = gpatch->max_s;
+		baseWallVerts[0].s = baseWallVerts[3].s = hwrpatch->max_s;
 		baseWallVerts[2].s = baseWallVerts[1].s = 0;
 	}
 	else
 	{
 		baseWallVerts[0].s = baseWallVerts[3].s = 0;
-		baseWallVerts[2].s = baseWallVerts[1].s = gpatch->max_s;
+		baseWallVerts[2].s = baseWallVerts[1].s = hwrpatch->max_s;
 	}
 
 	// flip the texture coords (look familiar?)
 	if (spr->vflip)
 	{
-		baseWallVerts[3].t = baseWallVerts[2].t = gpatch->max_t;
+		baseWallVerts[3].t = baseWallVerts[2].t = hwrpatch->max_t;
 		baseWallVerts[0].t = baseWallVerts[1].t = 0;
 	}
 	else
 	{
 		baseWallVerts[3].t = baseWallVerts[2].t = 0;
-		baseWallVerts[0].t = baseWallVerts[1].t = gpatch->max_t;
+		baseWallVerts[0].t = baseWallVerts[1].t = hwrpatch->max_t;
 	}
 
 	// push it toward the camera to mitigate floor-clipping sprites
@@ -3842,7 +3849,8 @@ static void HWR_SplitSprite(gl_vissprite_t *spr, const boolean papersprite)
 static void HWR_DrawSprite(gl_vissprite_t *spr)
 {
 	FOutVector wallVerts[4];
-	GLPatch_t *gpatch; // sprite patch converted to hardware
+	patch_t *gpatch; // sprite patch converted to hardware
+	GLPatch_t *hwrpatch;
 	FSurfaceInfo Surf;
 	FBITFIELD blend = 0;
 
@@ -3866,7 +3874,14 @@ static void HWR_DrawSprite(gl_vissprite_t *spr)
 	//          sure to do it the right way. So actually, we keep normal sprite
 	//          in memory and we add the md2 model if it exists for that sprite
 
-	gpatch = spr->gpatch; //W_CachePatchNum(spr->patchlumpnum, PU_CACHE);
+	gpatch = spr->gpatch;
+
+	// cache the patch in the graphics card memory
+	//12/12/99: Hurdler: same comment as above (for md2)
+	//Hurdler: 25/04/2000: now support colormap in hardware mode
+	HWR_GetMappedPatch(gpatch, spr->colormap);
+
+	hwrpatch = ((GLPatch_t *)gpatch->hardware);
 
 	// create the sprite billboard
 	//
@@ -3888,31 +3903,26 @@ static void HWR_DrawSprite(gl_vissprite_t *spr)
 
 	if (spr->flip)
 	{
-		wallVerts[0].s = wallVerts[3].s = gpatch->max_s;
+		wallVerts[0].s = wallVerts[3].s = hwrpatch->max_s;
 		wallVerts[2].s = wallVerts[1].s = 0;
 	}
 	else
 	{
 		wallVerts[0].s = wallVerts[3].s = 0;
-		wallVerts[2].s = wallVerts[1].s = gpatch->max_s;
+		wallVerts[2].s = wallVerts[1].s = hwrpatch->max_s;
 	}
 
 	// flip the texture coords (look familiar?)
 	if (spr->vflip)
 	{
-		wallVerts[3].t = wallVerts[2].t = gpatch->max_t;
+		wallVerts[3].t = wallVerts[2].t = hwrpatch->max_t;
 		wallVerts[0].t = wallVerts[1].t = 0;
 	}
 	else
 	{
 		wallVerts[3].t = wallVerts[2].t = 0;
-		wallVerts[0].t = wallVerts[1].t = gpatch->max_t;
+		wallVerts[0].t = wallVerts[1].t = hwrpatch->max_t;
 	}
-
-	// cache the patch in the graphics card memory
-	//12/12/99: Hurdler: same comment as above (for md2)
-	//Hurdler: 25/04/2000: now support colormap in hardware mode
-	HWR_GetMappedPatch(gpatch, spr->colormap);
 
 	// Draw shadow BEFORE sprite
 	if (cv_shadow.value // Shadows enabled
@@ -3923,7 +3933,7 @@ static void HWR_DrawSprite(gl_vissprite_t *spr)
 		////////////////////
 		// SHADOW SPRITE! //
 		////////////////////
-		HWR_DrawSpriteShadow(spr, gpatch);
+		HWR_DrawSpriteShadow(spr, gpatch, hwrpatch);
 	}
 
 	// push it toward the camera to mitigate floor-clipping sprites
@@ -3992,7 +4002,8 @@ static void HWR_DrawPrecipitationSprite(gl_vissprite_t *spr)
 {
 	FBITFIELD blend = 0;
 	FOutVector wallVerts[4];
-	GLPatch_t *gpatch; // sprite patch converted to hardware
+	patch_t *gpatch; // sprite patch converted to hardware
+	GLPatch_t *hwrpatch;
 	FSurfaceInfo Surf;
 
 	INT32 shader = SHADER_NONE;
@@ -4001,7 +4012,14 @@ static void HWR_DrawPrecipitationSprite(gl_vissprite_t *spr)
 		return;
 
 	// cache sprite graphics
-	gpatch = spr->gpatch; //W_CachePatchNum(spr->patchlumpnum, PU_CACHE);
+	gpatch = spr->gpatch;
+
+	// cache the patch in the graphics card memory
+	//12/12/99: Hurdler: same comment as above (for md2)
+	//Hurdler: 25/04/2000: now support colormap in hardware mode
+	HWR_GetMappedPatch(gpatch, spr->colormap);
+
+	hwrpatch = ((GLPatch_t *)gpatch->hardware);
 
 	// create the sprite billboard
 	//
@@ -4022,15 +4040,10 @@ static void HWR_DrawPrecipitationSprite(gl_vissprite_t *spr)
 	HWR_RotateSpritePolyToAim(spr, wallVerts, true, false);
 
 	wallVerts[0].s = wallVerts[3].s = 0;
-	wallVerts[2].s = wallVerts[1].s = gpatch->max_s;
+	wallVerts[2].s = wallVerts[1].s = hwrpatch->max_s;
 
 	wallVerts[3].t = wallVerts[2].t = 0;
-	wallVerts[0].t = wallVerts[1].t = gpatch->max_t;
-
-	// cache the patch in the graphics card memory
-	//12/12/99: Hurdler: same comment as above (for md2)
-	//Hurdler: 25/04/2000: now support colormap in hardware mode
-	HWR_GetMappedPatch(gpatch, spr->colormap);
+	wallVerts[0].t = wallVerts[1].t = hwrpatch->max_t;
 
 	// colormap test
 	sector_t *sector = spr->mobj->subsector->sector;
@@ -4786,10 +4799,10 @@ static void HWR_ProjectSprite(mobj_t *thing)
 
 			if (rotsprite != NULL)
 			{
-				spr_width = SHORT(rotsprite->width) << FRACBITS;
-				spr_height = SHORT(rotsprite->height) << FRACBITS;
-				spr_offset = SHORT(rotsprite->leftoffset) << FRACBITS;
-				spr_topoffset = SHORT(rotsprite->topoffset) << FRACBITS;
+				spr_width = rotsprite->width << FRACBITS;
+				spr_height = rotsprite->height << FRACBITS;
+				spr_offset = rotsprite->leftoffset << FRACBITS;
+				spr_topoffset = rotsprite->topoffset << FRACBITS;
 				spr_topoffset += FEETADJUST;
 
 				// flip -> rotate, not rotate -> flip
@@ -4889,10 +4902,10 @@ static void HWR_ProjectSprite(mobj_t *thing)
 
 #ifdef ROTSPRITE
 	if (rotsprite != NULL)
-		vis->gpatch = (GLPatch_t *)rotsprite;
+		vis->gpatch = (patch_t *)rotsprite;
 	else
 #endif
-		vis->gpatch = (GLPatch_t *)W_CachePatchNum(sprframe->lumppat[rot], PU_CACHE);
+		vis->gpatch = (patch_t *)W_CachePatchNum(sprframe->lumppat[rot], PU_SPRITE);
 
 	vis->mobj = thing;
 
@@ -5060,15 +5073,15 @@ static void HWR_ProjectPrecipitationSprite(precipmobj_t *thing)
 	vis->z2 = z2;
 	vis->tz = tz;
 	vis->dispoffset = 0; // Monster Iestyn: 23/11/15: HARDWARE SUPPORT AT LAST
-	vis->gpatch = (GLPatch_t *)W_CachePatchNum(sprframe->lumppat[rot], PU_CACHE);
+	vis->gpatch = (patch_t *)W_CachePatchNum(sprframe->lumppat[rot], PU_SPRITE);
 	vis->flip = flip;
 	vis->mobj = (mobj_t *)thing;
 
-	vis->colormap = colormaps;
+	vis->colormap = NULL;
 
 #ifdef GLENCORE
-	if (encoremap && !(thing->flags & MF_DONTENCOREMAP))
-		vis->colormap += COLORMAP_REMAPOFFSET;
+	//if (encoremap && !(thing->flags & MF_DONTENCOREMAP))
+		//vis->colormap += COLORMAP_REMAPOFFSET;
 #endif
 
 	// set top/bottom coords
@@ -5538,13 +5551,13 @@ static void HWR_RenderFrame(player_t *player, boolean skybox)
 	if (splitscreen == 2 && player == &players[displayplayers[2]])
 	{
 		// V_DrawPatchFill, but for the fourth screen only
-		GLPatch_t *gpatch = W_CachePatchName("SRB2BACK", PU_CACHE);
+		patch_t *gpatch = W_CachePatchName("SRB2BACK", PU_PATCH);
 		INT32 dupz = (vid.dupx < vid.dupy ? vid.dupx : vid.dupy);
-		INT32 x, y, pw = SHORT(gpatch->width) * dupz, ph = SHORT(gpatch->height) * dupz;
+		INT32 x, y, pw = (gpatch->width * dupz), ph = (gpatch->height * dupz);
 
-		for (x = vid.width>>1; x < vid.width; x += pw)
+		for (x = vid.width >> 1; x < vid.width; x += pw)
 		{
-			for (y = vid.height>>1; y < vid.height; y += ph)
+			for (y = vid.height >> 1; y < vid.height; y += ph)
 				HWR_DrawStretchyFixedPatch(gpatch, (x)<<FRACBITS, (y)<<FRACBITS, FRACUNIT, FRACUNIT, V_NOSCALESTART, NULL, 0);
 		}
 	}
@@ -5693,17 +5706,6 @@ static void HWR_CheckForHorizonLines(void)
 
 void HWR_LoadLevel(boolean reloadinggamestate)
 {
-	// Lactozilla (December 8, 2019)
-	// Level setup used to free EVERY mipmap from memory.
-	// Even mipmaps that aren't related to level textures.
-	// Presumably, the hardware render code used to store textures as level data.
-	// Meaning, they had memory allocated and marked with the PU_LEVEL tag.
-	// Level textures are only reloaded after R_LoadTextures, which is
-	// when the texture list is loaded.
-
-	// Sal: Unfortunately, NOT freeing them causes the dreaded Color Bug.
-	HWR_FreeMipmapCache();
-
 	HWR_CreatePlanePolygons((INT32)numnodes - 1);
 
 	// Build the sky dome
@@ -5722,6 +5724,8 @@ void HWR_LoadLevel(boolean reloadinggamestate)
 // shader recompilation is done in the cvar callback
 static void HWR_TogglePaletteRendering(void)
 {
+	V_ResetPaletteCVars(); // dont carry over changed palettes
+
 	// which state should we go to?
 	if (HWR_ShouldUsePaletteRendering())
 	{
@@ -5815,7 +5819,7 @@ void HWR_Startup(void)
 		CONS_Printf("HWR_Startup()...\n");
 		textureformat = patchformat = GL_TEXFMT_RGBA;
 
-		HWR_InitTextureCache();
+		HWR_InitMapTextures();
 		HWR_InitMD2();
 
 		gl_shadersavailable = HWR_InitShaders();
@@ -5872,6 +5876,7 @@ static void COM_HWR_glinfo(void)
 	CONS_Printf("Vendor: %s\n", gl_vendor);
 
 	CONS_Printf("%u GL extensions present.\n", gl_num_extensions);
+
 	if (list_extensions)
 	{
 		// We need this strtok loop because we cannot write the extensions list directly
@@ -5907,8 +5912,7 @@ void HWR_Shutdown(void)
 {
 	CONS_Printf("HWR_Shutdown()\n");
 	HWR_FreeExtraSubsectors();
-	HWR_FreeMipmapCache();
-	HWR_FreeTextureCache();
+	HWR_FreeMapTextures();
 	GL_FlushScreenTextures();
 #ifdef USE_FBO_OGL
 	GL_Framebuffer_Disable();
