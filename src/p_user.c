@@ -1214,6 +1214,10 @@ mobj_t *P_SpawnGhostMobj(mobj_t *mobj)
 	ghost->old_y = mobj->old_y2;
 	ghost->old_z = mobj->old_z2;
 	ghost->old_angle = (mobj->player ? mobj->player->old_frameangle2 : mobj->old_angle2);
+	ghost->old_pitch = mobj->old_pitch2;
+	ghost->old_roll = mobj->old_roll2;
+	ghost->old_sloperoll = mobj->old_sloperoll2;
+	ghost->old_slopepitch = mobj->old_slopepitch2;
 	ghost->old_scale = mobj->old_scale2;
 	ghost->old_spritexscale = mobj->old_spritexscale2;
 	ghost->old_spriteyscale = mobj->old_spriteyscale2;
@@ -5005,7 +5009,7 @@ void P_PlayerThink(player_t *player)
 	if (player->losstime && !player->powers[pw_flashing])
 		player->losstime--;
 
-	if (cmd->buttons & BT_CUSTOM3)
+	if (cv_squishdance.value && (cmd->buttons & BT_CUSTOM3))
 	{
 		player->squishdance.countdown++;
 

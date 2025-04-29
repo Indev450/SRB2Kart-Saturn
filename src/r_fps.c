@@ -775,17 +775,19 @@ void R_ResetMobjInterpolationState(mobj_t *mobj)
 	mobj->old_z2 = mobj->old_z;
 	mobj->old_angle2 = mobj->old_angle;
 	mobj->old_scale2 = mobj->old_scale;
-	mobj->old_spritexscale2 = mobj->old_spritexscale;
-	mobj->old_spriteyscale2 = mobj->old_spriteyscale;
-	mobj->old_spritexoffset2 = mobj->old_spritexoffset;
-	mobj->old_spriteyoffset2 = mobj->old_spriteyoffset;
+
+	// rotation humor
+	mobj->old_pitch2 = mobj->old_pitch;
+	mobj->old_roll2 = mobj->old_roll;
+	mobj->old_slopepitch2 = mobj->old_slopepitch;
+	mobj->old_sloperoll2 = mobj->old_sloperoll;
 
 	mobj->old_x = mobj->x;
 	mobj->old_y = mobj->y;
 	mobj->old_z = mobj->z;
 	mobj->old_angle = mobj->angle;
 
-	// rotation humor
+	// rotation humor, again
 
 	// pitch and roll first
 	mobj->old_pitch = mobj->pitch;
@@ -799,6 +801,11 @@ void R_ResetMobjInterpolationState(mobj_t *mobj)
 	mobj->old_spriteyscale = mobj->spriteyscale;
 	mobj->old_spritexoffset = mobj->spritexoffset;
 	mobj->old_spriteyoffset = mobj->spriteyoffset;
+
+	mobj->old_spritexscale2 = mobj->old_spritexscale;
+	mobj->old_spriteyscale2 = mobj->old_spriteyscale;
+	mobj->old_spritexoffset2 = mobj->old_spritexoffset;
+	mobj->old_spriteyoffset2 = mobj->old_spriteyoffset;
 
 	if (mobj->player)
 	{

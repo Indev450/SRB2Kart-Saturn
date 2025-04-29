@@ -98,7 +98,6 @@ static aatree_node_t *M_AATreeSet_Node(aatree_node_t *node, UINT32 flags, INT32 
 	if (!node)
 	{
 		// Nothing here, so just add where we are
-
 		node = Z_Malloc(sizeof (aatree_node_t), PU_STATIC, NULL);
 		node->level = 1;
 		node->key = key;
@@ -151,7 +150,6 @@ void *M_AATreeGet(aatree_t *aatree, INT32 key)
 {
 	return M_AATreeGet_Node(aatree->root, key);
 }
-
 
 static void M_AATreeIterate_Node(aatree_node_t *node, aatree_iter_t callback)
 {

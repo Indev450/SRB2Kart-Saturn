@@ -292,7 +292,7 @@ typedef struct mobj_s
 	// More drawing info: to determine current sprite.
 	angle_t angle, pitch, roll; // orientation
 	angle_t old_angle, old_pitch, old_roll; // orientation interpolation
-	angle_t old_angle2;
+	angle_t old_angle2, old_pitch2, old_roll2;
 	angle_t rollangle;
 	spritenum_t sprite; // used to find patch_t and flip value
 	UINT32 frame; // frame number, plus bits see p_pspr.h
@@ -315,6 +315,7 @@ typedef struct mobj_s
 	//sloperollangle
 	angle_t sloperoll, slopepitch;
 	angle_t old_sloperoll, old_slopepitch;
+	angle_t old_sloperoll2, old_slopepitch2;
 	angle_t pitch_sprite, roll_sprite;
 
 	struct msecnode_s *touching_sectorlist; // a linked list of sectors where this object appears
@@ -448,7 +449,7 @@ typedef struct precipmobj_s
 	// More drawing info: to determine current sprite.
 	angle_t angle, pitch, roll; // orientation
 	angle_t old_angle, old_pitch, old_roll; // orientation interpolation
-	angle_t old_angle2;
+	angle_t old_angle2, old_pitch2, old_roll2;
 	angle_t rollangle;
 	spritenum_t sprite; // used to find patch_t and flip value
 	UINT32 frame; // frame number, plus bits see p_pspr.h
@@ -471,6 +472,7 @@ typedef struct precipmobj_s
 	//sloperollangle
 	angle_t sloperoll, slopepitch;
 	angle_t old_sloperoll, old_slopepitch;
+	angle_t old_sloperoll2, old_slopepitch2;
 	angle_t pitch_sprite, roll_sprite;
 
 	struct mprecipsecnode_s *touching_sectorlist; // a linked list of sectors where this object appears

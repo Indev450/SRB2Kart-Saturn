@@ -854,7 +854,6 @@ void R_CalcTiltedLighting(fixed_t start, fixed_t end)
 */
 void R_DrawTiltedSpan_8(void)
 {
-	// x1, x2 = ds_x1, ds_x2
 	int width = ds_x2 - ds_x1;
 	double iz, uz, vz;
 	UINT32 u, v;
@@ -890,7 +889,6 @@ void R_DrawTiltedSpan_8(void)
 	dest = ylookup[ds_y] + columnofs[ds_x1];
 
 	source = ds_source;
-	//colormap = ds_colormap;
 
 #if 0	// The "perfect" reference version of this routine. Pretty slow.
 		// Use it only to see how things are supposed to look.
@@ -918,7 +916,6 @@ void R_DrawTiltedSpan_8(void)
 	izstep = ds_szp->x * SPANSIZE;
 	uzstep = ds_sup->x * SPANSIZE;
 	vzstep = ds_svp->x * SPANSIZE;
-	//x1 = 0;
 	width++;
 
 	while (width >= SPANSIZE)
@@ -995,7 +992,6 @@ void R_DrawTiltedSpan_8(void)
 */
 void R_DrawTiltedTranslucentSpan_8(void)
 {
-	// x1, x2 = ds_x1, ds_x2
 	int width = ds_x2 - ds_x1;
 	double iz, uz, vz;
 	UINT32 u, v;
@@ -1031,7 +1027,6 @@ void R_DrawTiltedTranslucentSpan_8(void)
 	dest = ylookup[ds_y] + columnofs[ds_x1];
 
 	source = ds_source;
-	//colormap = ds_colormap;
 
 #if 0	// The "perfect" reference version of this routine. Pretty slow.
 		// Use it only to see how things are supposed to look.
@@ -1059,7 +1054,6 @@ void R_DrawTiltedTranslucentSpan_8(void)
 	izstep = ds_szp->x * SPANSIZE;
 	uzstep = ds_sup->x * SPANSIZE;
 	vzstep = ds_svp->x * SPANSIZE;
-	//x1 = 0;
 	width++;
 
 	while (width >= SPANSIZE)
@@ -1137,7 +1131,6 @@ void R_DrawTiltedTranslucentSpan_8(void)
 */
 void R_DrawTiltedTranslucentWaterSpan_8(void)
 {
-	// x1, x2 = ds_x1, ds_x2
 	int width = ds_x2 - ds_x1;
 	double iz, uz, vz;
 	UINT32 u, v;
@@ -1175,7 +1168,6 @@ void R_DrawTiltedTranslucentWaterSpan_8(void)
 	dsrc = screens[1] + (ds_y+ds_bgofs)*vid.width + ds_x1;
 
 	source = ds_source;
-	//colormap = ds_colormap;
 
 #if 0	// The "perfect" reference version of this routine. Pretty slow.
 		// Use it only to see how things are supposed to look.
@@ -1203,7 +1195,6 @@ void R_DrawTiltedTranslucentWaterSpan_8(void)
 	izstep = ds_szp->x * SPANSIZE;
 	uzstep = ds_sup->x * SPANSIZE;
 	vzstep = ds_svp->x * SPANSIZE;
-	//x1 = 0;
 	width++;
 
 	while (width >= SPANSIZE)
@@ -1696,7 +1687,6 @@ void R_DrawFogSpan_8(void)
 	register size_t count;
 
 	colormap = ds_colormap;
-	//dest = ylookup[ds_y] + columnofs[ds_x1];
 	dest = &topleft[ds_y *vid.width + ds_x1];
 
 	count = ds_x2 - ds_x1 + 1;

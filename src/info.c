@@ -69,6 +69,8 @@ char sprnames[NUMSPRITES + 1][5] =
 };
 
 // Doesn't work with g++, needs actionf_p1 (don't modify this comment)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wincompatible-pointer-types"
 state_t states[NUMSTATES] =
 {
 	// frame is masked through FF_FRAMEMASK
@@ -3410,6 +3412,7 @@ state_t states[NUMSTATES] =
 	{SPR_NULL, 0, 1, {NULL}, 0, 0, S_NULL}, // S_NAMECHECK
 #endif
 };
+#pragma GCC diagnostic pop
 
 mobjinfo_t mobjinfo[NUMMOBJTYPES] =
 {
