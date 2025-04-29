@@ -188,7 +188,7 @@ void P_RunDynamicSlopes(void)
 		if (slope->flags & SL_NODYNAMIC)
 			continue;
 
-		switch(slope->refpos)
+		switch (slope->refpos)
 		{
 			case 1: // front floor
 				zdelta = slope->sourceline->backsector->floorheight - slope->sourceline->frontsector->floorheight;

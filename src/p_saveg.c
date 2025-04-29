@@ -3159,7 +3159,7 @@ static inline void P_UnArchiveSPGame(savebuffer_t *save, INT16 mapoverride)
 
 	// gamemap changed; we assume that its map header is always valid,
 	// so make it so
-	if(!mapheaderinfo[gamemap-1])
+	if (!mapheaderinfo[gamemap-1])
 		P_AllocMapHeader(gamemap-1);
 
 	lastmapsaved = gamemap;

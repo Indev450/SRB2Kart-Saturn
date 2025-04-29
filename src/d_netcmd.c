@@ -2244,13 +2244,16 @@ static void Command_View_f(void)
 	if (COM_Argc() > 1)/* switch to player */
 	{
 		playerparam = COM_Argv(1);
+
 		if (playerparam[0] == '#')/* search by placement */
 		{
 			placenum = atoi(&playerparam[1]);
 			playernum = FindPlayerByPlace(placenum);
+
 			if (playernum == -1 || !G_CouldView(playernum))
 			{
 				GetViewablePlayerPlaceRange(&firstplace, &lastplace);
+
 				if (playernum == -1)
 				{
 					CONS_Alert(CONS_WARNING, "There is no player in that place! ");
@@ -2262,6 +2265,7 @@ static void Command_View_f(void)
 							"The first player that you can view is \x82#%d\x80; ",
 							firstplace);
 				}
+
 				CONS_Printf("Last place is \x82#%d\x80.\n", lastplace);
 				return;
 			}
@@ -2616,6 +2620,7 @@ void D_PickVote(void)
 	{
 		if (!playeringame[i] || players[i].spectator)
 			continue;
+
 		if (votes[i] != -1)
 		{
 			temppicks[numvotes] = i;

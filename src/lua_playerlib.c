@@ -485,6 +485,7 @@ static int lib_iterateDisplayplayers(lua_State *L)
 
 		if (!players[displayplayers[i]].mo)
 			continue;
+
 		LUA_PushUserdata(L, &players[displayplayers[i]], META_PLAYER);
 		lua_pushinteger(L, i);	// push this to recall what number we were on for the next function call. I suppose this also means you can retrieve the splitscreen player number with 'for p, n in displayplayers.iterate'!
 		return 2;

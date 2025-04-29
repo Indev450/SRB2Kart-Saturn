@@ -22,7 +22,6 @@
 #define SCREENVERTS 10
 
 boolean GL_Init(void);
-void GL_FinishUpdate(INT32 waitvbl);
 void SetupGLInfo(void);
 
 void GL_SetSpecialState(hwdspecialstate_t IdState, INT32 Value);

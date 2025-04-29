@@ -412,7 +412,7 @@ typedef struct player_s
 	INT32 kartstuff[NUMKARTSTUFF];
 	angle_t frameangle; // for the player add the ability to have the sprite only face other angles
 	angle_t old_frameangle, old_frameangle2;
-	
+
 	// SRB2Kart CEP: Sliptide rolling
 	angle_t sliproll;
 

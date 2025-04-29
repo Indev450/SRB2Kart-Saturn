@@ -9255,7 +9255,7 @@ void A_Custom3DRotate(mobj_t *actor)
 		P_RemoveMobj(actor);
 		return;
 	}
-	
+
 	if (hspeed==0 && vspeed==0)
 	{
 		if (cv_debug)

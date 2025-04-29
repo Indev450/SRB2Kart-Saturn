@@ -768,7 +768,7 @@ static UINT8 K_GetSpeedometerStyle(void)
 		return SPEEDO_EXTRA;
 	else if (cv_newspeedometer.value == 3 && achi_speedo)
 		return SPEEDO_ACHII;
-		else if (cv_newspeedometer.value == 4 && dial_speedo)
+	else if (cv_newspeedometer.value == 4 && dial_speedo)
 		return SPEEDO_DIAL;
 	else if (cv_newspeedometer.value == 5 && kartz_speedo)
 		return SPEEDO_PMETER;
@@ -10722,6 +10722,7 @@ static void K_drawKartMinimap(void)
 	INT32 minimaptrans, splitflags;
 	SINT8 localplayers[MAXSPLITSCREENPLAYERS];
 	SINT8 numlocalplayers = 0;
+	patch_t *AutomapPic = NULL;
 
 	// Draw the HUD only when playing in a level.
 	// hu_stuff needs this, unlike st_stuff.
@@ -10732,7 +10733,9 @@ static void K_drawKartMinimap(void)
 	if (stplyrnum != 0)
 		return;
 
-	if (minimapinfo.minimap_pic == NULL)
+	AutomapPic = minimapinfo.minimap_pic;
+
+	if (AutomapPic == NULL)
 	{
 		return; // no pic, just get outta here
 	}
@@ -10745,16 +10748,16 @@ static void K_drawKartMinimap(void)
 
 	drawinfo_t info;
 	K_getMinimapDrawinfo(&info);
-	x = info.x - (minimapinfo.minimap_pic->width/2);
-	y = info.y - (minimapinfo.minimap_pic->height/2);
+	x = info.x - (AutomapPic->width/2);
+	y = info.y - (AutomapPic->height/2);
 	splitflags = info.flags;
 
 	splitflags |= minimaptrans;
 
 	if (encoremode)
-		V_DrawScaledPatch(x+minimapinfo.minimap_pic->width, y, splitflags|V_FLIP, minimapinfo.minimap_pic);
+		V_DrawScaledPatch(x+AutomapPic->width, y, splitflags|V_FLIP, AutomapPic);
 	else
-		V_DrawScaledPatch(x, y, splitflags, minimapinfo.minimap_pic);
+		V_DrawScaledPatch(x, y, splitflags, AutomapPic);
 
 	if (!(splitscreen == 2))
 	{
@@ -10764,10 +10767,10 @@ static void K_drawKartMinimap(void)
 
 	// let offsets transfer to the heads, too!
 	if (encoremode)
-		x += minimapinfo.minimap_pic->leftoffset;
+		x += AutomapPic->leftoffset;
 	else
-		x -= minimapinfo.minimap_pic->leftoffset;
-	y -= minimapinfo.minimap_pic->topoffset;
+		x -= AutomapPic->leftoffset;
+	y -= AutomapPic->topoffset;
 
 	// initialize
 	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)

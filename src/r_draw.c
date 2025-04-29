@@ -144,8 +144,8 @@ UINT32 nflatxshift, nflatyshift, nflatshiftup, nflatmask;
 #define DEFAULT_STARTTRANSCOLOR 160
 #define NUM_PALETTE_ENTRIES 256
 
-static UINT8** translationtablecache[TT_CACHE_SIZE] = {NULL};
-static UINT8** localtranslationtablecache[MAXLOCALSKINS] = {NULL};
+static UINT8 **translationtablecache[TT_CACHE_SIZE] = {NULL};
+static UINT8 **localtranslationtablecache[MAXLOCALSKINS] = {NULL};
 
 
 // See also the enum skincolors_t
@@ -420,9 +420,9 @@ boolean R_BlendLevelVisible(INT32 blendmode, INT32 alphalevel)
 
 /**	\brief	Retrieves a translation colormap from the cache.
 
-	\param	skinnum	number of skin, TC_DEFAULT or TC_BOSS
-	\param	color	translation color
-	\param	flags	set GTC_CACHE to use the cache
+	\param	skinnum		skin number, or a translation mode
+	\param	color		translation color
+	\param	flags		set GTC_CACHE to use the cache
 
 	\return	Colormap. If not cached, caller should Z_Free.
 */
@@ -440,14 +440,18 @@ static UINT8* RGetTranslationColormap(INT32 skinnum, skincolors_t color, UINT8 f
 	else
 	{
 		tt = translationtablecache;
+
 		// Adjust if we want the default colormap
-		if (skinnum == TC_DEFAULT) skintableindex = DEFAULT_TT_CACHE_INDEX;
-		else if (skinnum == TC_BOSS) skintableindex = BOSS_TT_CACHE_INDEX;
-		else if (skinnum == TC_METALSONIC) skintableindex = METALSONIC_TT_CACHE_INDEX;
-		else if (skinnum == TC_ALLWHITE) skintableindex = ALLWHITE_TT_CACHE_INDEX;
-		else if (skinnum == TC_RAINBOW) skintableindex = RAINBOW_TT_CACHE_INDEX;
-		else if (skinnum == TC_BLINK) skintableindex = BLINK_TT_CACHE_INDEX;
-		else skintableindex = skinnum;
+		switch (skinnum)
+		{
+			case TC_DEFAULT:    skintableindex = DEFAULT_TT_CACHE_INDEX; break;
+			case TC_BOSS:       skintableindex = BOSS_TT_CACHE_INDEX; break;
+			case TC_METALSONIC: skintableindex = METALSONIC_TT_CACHE_INDEX; break;
+			case TC_ALLWHITE:   skintableindex = ALLWHITE_TT_CACHE_INDEX; break;
+			case TC_RAINBOW:    skintableindex = RAINBOW_TT_CACHE_INDEX; break;
+			case TC_BLINK:      skintableindex = BLINK_TT_CACHE_INDEX; break;
+			default:       skintableindex = skinnum; break;
+		}
 	}
 
 	if (flags & GTC_CACHE)
