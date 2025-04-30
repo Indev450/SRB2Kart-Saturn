@@ -1421,9 +1421,6 @@ static void readhuditem(MYFILE *f, INT32 num)
 
 // IMPORTANT!
 // DO NOT FORGET TO SYNC THIS LIST WITH THE ACTIONNUM ENUM IN INFO.H
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wincompatible-pointer-types"
 actionpointer_t actionpointers[] =
 {
 	{{A_Explode},              "A_EXPLODE"},
@@ -1633,7 +1630,6 @@ actionpointer_t actionpointers[] =
 	// This NULL entry must be the last in the list
 	{{NULL},                   NULL},
 };
-#pragma GCC diagnostic pop
 
 static void readframe(MYFILE *f, INT32 num)
 {
