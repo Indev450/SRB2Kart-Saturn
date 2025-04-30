@@ -9945,22 +9945,23 @@ static void K_drawKartBumpersOrKarma(void)
 // original code by Lat'
 static boolean K_GetScreenCoords(vector2_t *vec, player_t *player, mobj_t *target, fixed_t hofs, boolean dontclip)
 {
+	fixed_t y, x;
+	fixed_t targx, targy, targz;
+
+	fixed_t dist;
 	fixed_t distfact;
 	fixed_t offset;
-	fixed_t y;
-	fixed_t x;
+
+	fixed_t yres, xres;
+	fixed_t fov;
 
 	// this should never happen but its also kart so ¯\_(ツ)_/¯
 	if (!player || P_MobjWasRemoved(target))
 		return false;
 
-	const fixed_t xres = vid.width<<(FRACBITS-1);
-	const fixed_t yres = vid.height<<(FRACBITS-1);
-	const fixed_t fov = FixedDiv(xres, FINETANGENT(((FixedAngle(cv_fov.value/2)+ANGLE_90)>>ANGLETOFINESHIFT) & 4095));
-
-	const fixed_t targx = lerp(target->old_x, target->x);
-	const fixed_t targy = lerp(target->old_y, target->y);
-	const fixed_t targz = lerp(target->old_z, target->z);
+	targx = lerp(target->old_x, target->x);
+	targy = lerp(target->old_y, target->y);
+	targz = lerp(target->old_z, target->z);
 
 	// X coordinate
 	// get difference between camangle and angle towards target
@@ -9974,6 +9975,10 @@ static boolean K_GetScreenCoords(vector2_t *vec, player_t *player, mobj_t *targe
 	if (x < (fixed_t)ANGLE_270 || x > (fixed_t)ANGLE_90)
 		return false;
 
+	xres = vid.width<<(FRACBITS-1);
+	yres = vid.height<<(FRACBITS-1);
+	fov = FixedDiv(xres, FINETANGENT(((FixedAngle(cv_fov.value/2)+ANGLE_90)>>ANGLETOFINESHIFT) & 4095));
+
 	// flipping
 	const boolean targflip = target->eflags & MFE_VERTICALFLIP;
 	const boolean srcflip = player->pflags & PF_FLIPCAM && player->mo->eflags & MFE_VERTICALFLIP;
@@ -9981,16 +9986,17 @@ static boolean K_GetScreenCoords(vector2_t *vec, player_t *player, mobj_t *targe
 	// Y coordinate
 	// getting the angle difference here is a bit more involved...
 	// start by getting the height difference between the camera and target
-	y = viewz - targz - (targflip ? target->height/1.5 : 0); // for some reason needs to be divided by 1.5 idk
+	y = viewz - targz - (targflip ? ((target->height * 2) / 3) : 0); // for some reason needs to be divided by "1.5" idk
+
 	if (hofs)
 		y = y - (targflip ? -hofs : hofs);
 
 	// then get the distance between camera and target
-	const fixed_t dist = R_PointToDist(targx, targy);
+	dist = R_PointToDist(targx, targy);
 
 #ifdef HWRENDER
 	// NOW we can get the angle differnce
-	if (rendermode == render_opengl && cv_glshearing.value == 0)
+	if (rendermode == render_opengl && !cv_glshearing.value)
 	{
 		angle_t yang = R_PointToAngle2(0, 0, dist, y); // not perspective
 		x = FixedMul(x, FINECOSINE((yang>>ANGLETOFINESHIFT) & FINEMASK)); // perspective
@@ -10018,14 +10024,11 @@ static boolean K_GetScreenCoords(vector2_t *vec, player_t *player, mobj_t *targe
 		//else print("NOPE!")
 
 		offset = FixedMul(FINETANGENT(((aimingangle+ANGLE_90)>>ANGLETOFINESHIFT) & 4095), xres);
+
 		// this isn't fovtan... what am i even doing anymore
 		if (splitscreen == 1)
 			offset = 17*offset/120;
-#ifdef HWRENDER
-		// OpenGL with software perspective is miscentered on non-16:10 resolutions
-		//if (rendermode == render_opengl)
-			//offset = FixedMul(offset, FixedDiv(104857, FixedDiv(xres, yres)));
-#endif
+
 		// thanks fickle
 		offset = FixedDiv(offset, fovratio);
 		if (srcflip)
@@ -10043,23 +10046,20 @@ static boolean K_GetScreenCoords(vector2_t *vec, player_t *player, mobj_t *targe
 	if (!dontclip && (x < 0 || x > xres*2 || y < 0 || y > yres*2))
 		return false;
 
-	// get splitscreen index
-	int splitindex = stplyrnum;
-
 	// adjust coords for splitscreen
 	if (splitscreen == 1) // 2P
 	{
 		y = y>>1;
-		if (splitindex)
+		if (stplyrnum > 0)
 			y = y + yres;
 	}
 	if (splitscreen >= 2) // 3P or 4P
 	{
 		x = x>>1;
 		y = y>>1;
-		if (splitindex & 1)
+		if (stplyrnum & 1)
 			x = x + xres;
-		if (splitindex >= 2)
+		if (stplyrnum >= 2)
 			y = y + yres;
 	}
 
@@ -10072,10 +10072,10 @@ static boolean K_GetScreenCoords(vector2_t *vec, player_t *player, mobj_t *targe
 //Decided to port and highly modify sunflower version for the main nametag drawing with additions by NepDisk. My previous one was broken anyway due to the changed screencoords and noscalestart
 static void K_drawNameTags(void)
 {
-	UINT8 i,j;
-	INT32 trans = 0;
+	UINT8 i, j;
+	INT32 trans;
 	vector2_t pos = {0};
-	fixed_t namex,namey;
+	fixed_t namex, namey;
 	int tagsdisplayed = 0;
 	fixed_t distance = 0;
 	fixed_t maxdistance = 0;
@@ -10083,9 +10083,9 @@ static void K_drawNameTags(void)
 	fixed_t z;
 
 	char *tag;
-	patch_t *icon;
+	patch_t *icon = NULL;
 
-	INT32 dup = 0;
+	INT32 dup;
 	UINT8 *cm = NULL;
 	UINT8 tagcolor = 0;
 	INT32 vflags = 0;
@@ -10102,7 +10102,7 @@ static void K_drawNameTags(void)
 	{
 		if (i > PLAYERSMASK)
 			continue;
-		if (P_MobjWasRemoved(players[i].mo) || players[i].spectator || !playeringame[i])
+		if (players[i].spectator || !playeringame[i] || P_MobjWasRemoved(players[i].mo))
 			continue;
 		if (i == displayplayers[stplyrnum] && !cv_showownnametag.value && !(leveltime < 130))
 			continue;
@@ -10125,21 +10125,18 @@ static void K_drawNameTags(void)
 		if (!K_GetScreenCoords(&pos, stplyr, players[i].mo, z, false))
 			continue;
 
-		tagsdisplayed += 1;
+		tagsdisplayed++;
 
 		if (tagsdisplayed > cv_nametagmaxplayers.value)
 			break;
 
+		trans = 0;
+
 		switch (cv_nametagtrans.value)
 		{
-			case 0:
-				trans = 0;
-				break;
 			case 1:
 				if (distance > (maxdistance*3/4))
 					trans = V_60TRANS;
-				else
-					trans = 0;
 				break;
 			case 2:
 				if (distance > (maxdistance*3/1))
@@ -10152,8 +10149,6 @@ static void K_drawNameTags(void)
 					trans = V_40TRANS;
 				else if (distance > (maxdistance*3/5))
 					trans = V_20TRANS;
-				else
-					trans = 0;
 				break;
 			case 3:
 				trans =  V_40TRANS;
@@ -10161,6 +10156,7 @@ static void K_drawNameTags(void)
 			case 4:
 				trans = V_LocalTransFlag();
 				break;
+			case 0:
 			default:
 				break;
 		}
@@ -10168,7 +10164,7 @@ static void K_drawNameTags(void)
 		namex = pos.x>>FRACBITS;
 		namey = pos.y>>FRACBITS;
 
-		tag = va("%s%s ", HU_SkinColorToConsoleColor(players[i].mo->color),player_names[i]);
+		tag = va("%s%s ", HU_SkinColorToConsoleColor(players[i].mo->color), player_names[i]);
 		icon = R_GetSkinFaceMini(players[i].mo->player);
 
 		dup = vid.dupx;
@@ -10318,7 +10314,7 @@ static void K_drawDriftGauge(void)
 	if (camera[stplyrnum].freecam)
 		return;
 
-	if (P_MobjWasRemoved(stplyr->mo) || (!splitscreen && !camera->chase))
+	if (!splitscreen && !camera->chase)
 		return;
 
 	if (forceshowhud)
@@ -10328,6 +10324,9 @@ static void K_drawDriftGauge(void)
 		return;
 
 skipcrap:
+
+	if (P_MobjWasRemoved(stplyr->mo))
+		return;
 
 	if (!K_GetScreenCoords(&pos, stplyr, stplyr->mo, FixedMul(cv_driftgaugeofs.value, cv_driftgaugeofs.value > 0 ? stplyr->mo->scale : mapobjectscale), false))
 		return;
