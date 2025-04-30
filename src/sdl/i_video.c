@@ -864,6 +864,7 @@ static void Impl_HandleWindowEvent(SDL_WindowEvent evt)
 		{
 			SDLforceUngrabMouse();
 		}
+
 		memset(gamekeydown, 0, NUMKEYS); // TODO this is a scary memset
 
 		if (MOUSE_MENU)
@@ -1903,7 +1904,7 @@ static SDL_bool Impl_CreateWindow(SDL_bool fullscreen)
 	// Some GPU drivers may give us a 16-bit depth buffer since the
 	// default value for SDL_GL_DEPTH_SIZE is 16.
 	SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
-	
+
 	// request stencil buffer. If there are problems on weaker hw the bit count could be reduced
 	// If only something like 1-bit or 2-bit stencil is available on some gpus then should implement limit for maxportals based on that.
 	// 4 bits would be enough for current limit in maxportals (12)

@@ -296,6 +296,11 @@ ifdef X86_64
 endif
 endif
 
+# we just force c17 for now with gcc15
+ifdef GCC150
+ CFLAGS+=-std=gnu17
+ CPPFLAGS+=-std=gnu17
+endif
 
 ifndef NOPNG
 OPTS+=-DHAVE_PNG
