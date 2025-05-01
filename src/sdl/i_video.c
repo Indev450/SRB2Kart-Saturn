@@ -1191,7 +1191,7 @@ void I_GetEvent(void)
 				Impl_HandleWindowEvent(evt.window);
 #ifdef _WIN32
 				// Hack: on windows, when moving game window, sdl gets stuck handling those events, which may cause timeouts in netgames
-				if (evt.window.event == SDL_WINDOWEVENT_MOVED || evt.window.event == SDL_WINDOWEVENT_RESIZED || evt.window.event == SDL_WINDOWEVENT_SIZE_CHANGED)
+				if (evt.window == SDL_WINDOWEVENT_MOVED || evt.window == SDL_WINDOWEVENT_RESIZED || evt.window == SDL_WINDOWEVENT_SIZE_CHANGED)
 					goto exitpoolevent;
 #endif
 				break;
