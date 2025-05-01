@@ -1861,7 +1861,8 @@ static void HU_DrawChat(void)
 	if (strnicmp(w_chat_buf, "/pm", 3) == 0 && vid.width >= 400 && !teamtalk) // 320x200 unsupported kthxbai
 	{
 		INT32 count = 0;
-		INT32 p_dispy = chaty - charheight -1;
+		INT32 p_dispy = chaty - charheight - 1;
+		size_t longest_name_length = 0;
 #ifdef NETSPLITSCREEN
 		if (splitscreen)
 		{
@@ -1873,27 +1874,33 @@ static void HU_DrawChat(void)
 #endif
 			p_dispy -= (cv_kartspeedometer.value ? 16 : 0);
 
-		i = 0;
-		for(i=0; (i<MAXPLAYERS); i++)
+		// Find longest player name, for drawing background for /pm list later
+		for (i = 0; i < MAXPLAYERS; i++)
 		{
+			if (!playeringame[i]) continue;
+
+			longest_name_length = max(longest_name_length, strlen(player_names[i]));
+		}
+
+		for(i = 0; i < MAXPLAYERS; i++)
+		{
+			if (!playeringame[i])
+				continue;
 
 			// filter: (code needs optimization pls help I'm bad with C)
 			if (w_chat_buf[3])
 			{
-				char *nodenum;
+				char nodenum[3];
 				UINT32 n;
 				// right, that's half important: (w_chat_buf[4] may be a space since /pm0 msg is perfectly acceptable!)
-				if ( ( ((w_chat_buf[3] != 0) && ((w_chat_buf[3] < '0') || (w_chat_buf[3] > '9'))) || ((w_chat_buf[4] != 0) && (((w_chat_buf[4] < '0') || (w_chat_buf[4] > '9'))))) && (w_chat_buf[4] != ' '))
+				if (!isdigit(w_chat_buf[3]) || !(isdigit(w_chat_buf[4]) || (w_chat_buf[4] == ' ') || (w_chat_buf[4] == 0)))
 					break;
 
-
-				nodenum = (char*) malloc(3);
 				memcpy(nodenum, w_chat_buf+3, 2);
 				nodenum[2] = '\0';
-				n = atoi((const char*) nodenum); // turn that into a number
-				free(nodenum);
-				// special cases:
+				n = atoi(nodenum); // turn that into a number
 
+				// special cases:
 				if ((n == 0) && !(w_chat_buf[4] == '0'))
 				{
 					if (!(i<10))
@@ -1921,23 +1928,20 @@ static void HU_DrawChat(void)
 				}
 			}
 
-			if (playeringame[i])
-			{
-				char name[MAXPLAYERNAME+1];
-				strlcpy(name, player_names[i], 7); // shorten name to 7 characters.
-				V_DrawFillConsoleMap(chatx+ boxw + 2, p_dispy- (6*count), 48, 6, 239 | V_SNAPTOBOTTOM | V_SNAPTOLEFT); // fill it like the chat so the text doesn't become hard to read because of the hud.
-				V_DrawSmallString(chatx+ boxw + 4, p_dispy- (6*count), V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_ALLOWLOWERCASE, va("\x82%d\x80 - %s", i, name));
-				count++;
-			}
+			// fill it like the chat so the text doesn't become hard to read because of the hud.
+			V_DrawFillConsoleMap(chatx + boxw + 2, p_dispy - (6*count), (longest_name_length+4)*4, 6, 239 | V_SNAPTOBOTTOM | V_SNAPTOLEFT);
+
+			V_DrawSmallString(chatx + boxw + 4, p_dispy - (6*count), V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_ALLOWLOWERCASE, va("\x82%d\x80 - %s", i, player_names[i]));
+			count++;
 		}
 		if (count == 0) // no results.
 		{
-			V_DrawFillConsoleMap(chatx+boxw+2, p_dispy- (6*count), 48, 6, 239 | V_SNAPTOBOTTOM | V_SNAPTOLEFT); // fill it like the chat so the text doesn't become hard to read because of the hud.
-			V_DrawSmallString(chatx+boxw+4, p_dispy- (6*count), V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_ALLOWLOWERCASE, "NO RESULT.");
+			V_DrawFillConsoleMap(chatx + boxw + 2, p_dispy - (6*count), 48, 6, 239 | V_SNAPTOBOTTOM | V_SNAPTOLEFT); // fill it like the chat so the text doesn't become hard to read because of the hud.
+			V_DrawSmallString(chatx + boxw + 4, p_dispy - (6*count), V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_ALLOWLOWERCASE, "NO RESULT.");
 		}
 	}
 
-	HU_drawChatLog(typelines-1); // typelines is the # of lines we're typing. If there's more than 1 then the log should scroll up to give us more space.
+	HU_drawChatLog(typelines - 1); // typelines is the # of lines we're typing. If there's more than 1 then the log should scroll up to give us more space.
 }
 
 
