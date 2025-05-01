@@ -1189,11 +1189,6 @@ void I_GetEvent(void)
 		{
 			case SDL_WINDOWEVENT:
 				Impl_HandleWindowEvent(evt.window);
-#ifdef _WIN32
-				// Hack: on windows, when moving game window, sdl gets stuck handling those events, which may cause timeouts in netgames
-				if (evt.window == SDL_WINDOWEVENT_MOVED || evt.window == SDL_WINDOWEVENT_RESIZED || evt.window == SDL_WINDOWEVENT_SIZE_CHANGED)
-					goto exitpoolevent;
-#endif
 				break;
 			case SDL_KEYUP:
 			case SDL_KEYDOWN:
@@ -1380,10 +1375,6 @@ void I_GetEvent(void)
 				break;
 		}
 	}
-
-#ifdef _WIN32
-exitpoolevent:
-#endif
 
 	// Send all relative mouse movement as one single mouse event.
 	if (mousemovex || mousemovey)
