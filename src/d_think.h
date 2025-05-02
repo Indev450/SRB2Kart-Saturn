@@ -28,7 +28,8 @@
 // To compile this as "ANSI C with classes" we will need to handle the various
 //  action functions cleanly.
 //
-typedef void (*actionf_v)();
+struct mobj_s;
+typedef void (*actionf_v)(struct mobj_s *);
 typedef void (*actionf_p1)(void *);
 
 typedef union

@@ -300,11 +300,6 @@ ifdef X86_64
 endif
 endif
 
-# apparently MingW just completely ignores everything so just always force this shit
-# FIXME: we should port our code to c24
-CFLAGS+=-std=gnu17
-CPPFLAGS+=-std=gnu17
-
 ifndef NOPNG
 OPTS+=-DHAVE_PNG
 
