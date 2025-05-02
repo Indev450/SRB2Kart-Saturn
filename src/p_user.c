@@ -4452,7 +4452,7 @@ static void P_DoFunnyDance(player_t *player)
 	player->squishdance.bounce = 0;
 
 	// bpm = FixedDiv((60*TICRATE)<<FRACBITS, FLOAT_TO_FIXED(mapmusic.bpm)); << maybe can get the tempo and beat detection lib to work for bpm autodetection
-	bpm = FixedDiv((60*TICRATE)<<FRACBITS, FLOAT_TO_FIXED(cv_squishdancespeed.value));
+	bpm = FixedDiv((60*TICRATE)<<FRACBITS, FLOAT_TO_FIXED((float)cv_squishdancespeed.value));
 
 	player->squishdance.work = (player->squishdance.time << FRACBITS) % bpm;
 
