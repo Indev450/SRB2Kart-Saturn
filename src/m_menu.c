@@ -2453,7 +2453,7 @@ static menuitem_t OP_SaturnHudMenu[] =
 	{IT_STRING | IT_CVAR, NULL,	"Show Names on Minimap",   				&cv_showminimapnames, 		135},
 	{IT_STRING | IT_CVAR, NULL,	"Small Minimap Players",   				&cv_minihead, 				140},
 	{IT_STRING | IT_CVAR, NULL,	"Spin Minimap Icons", 			  		&cv_spinoutroll,      		145},
-	{IT_STRING | IT_CVAR, NULL,	"Player Angle Dot", 			  		&cv_showminimapangle,      	150},
+	{IT_STRING | IT_CVAR, NULL,	"Player Angle Visual", 			  		&cv_showminimapangle,      	150},
 
 	{IT_STRING | IT_CVAR, NULL, "Beta Intermissionscreen", 				&cv_betainterscreen, 		160},
 
@@ -2487,7 +2487,7 @@ static const char* OP_SaturnHudTooltips[] =
 	"Show player names on the minimap.",
 	"Minimize the player icons on the minimap.",
 	"Erratically rotate player icons during spinouts.",
-	"Show a dot showing the player facing angle.",
+	"Visualize the player facing angle.",
 	"Make the Intermission screen look like in beta versions of Kart!\nEither with background or just the rest.",
 	"Show the Director Toggle prompt when spectating.",
 	"Nametag Options.",
@@ -4969,7 +4969,7 @@ void M_Init(void)
 	if (!nametaggfx)
 		OP_NametagMenu[nt_ntchar].status = IT_GRAYEDOUT;
 
-	if (!minidoticon)
+	if (!minidoticon && !minilighticon)
 		OP_SaturnHudMenu[sh_minidot].status = IT_GRAYEDOUT;
 
 #ifndef NONET
