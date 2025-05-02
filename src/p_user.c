@@ -4444,7 +4444,7 @@ DoABarrelRoll (player_t *player)
 // TODO: make this sane lmao
 static void P_DoFunnyDance(player_t *player)
 {
-	static const fixed_t bpm = 983040; // 140bpm ish
+	fixed_t bpm; // 140bpm ish
 
 	if (player->spectator || !player->mo || player->kartstuff[k_respawn] || player->mo->salty_jump) // this looks jank as hell during hop
 		return;
@@ -4452,6 +4452,7 @@ static void P_DoFunnyDance(player_t *player)
 	player->squishdance.bounce = 0;
 
 	// bpm = FixedDiv((60*TICRATE)<<FRACBITS, FLOAT_TO_FIXED(mapmusic.bpm)); << maybe can get the tempo and beat detection lib to work for bpm autodetection
+	bpm = FixedDiv((60*TICRATE)<<FRACBITS, FLOAT_TO_FIXED(cv_squishdancespeed.value));
 
 	player->squishdance.work = (player->squishdance.time << FRACBITS) % bpm;
 

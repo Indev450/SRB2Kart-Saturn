@@ -198,6 +198,9 @@ consvar_t cv_saltyroll = {"hardcodehoproll", "Off", CV_SAVE, CV_OnOff, NULL, 0, 
 
 consvar_t cv_squishdance = {"squishdance", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
+static CV_PossibleValue_t squishdancespeed_cons_t[] = {{20, "MIN"}, {280, "MAX"}, {0, NULL}};
+consvar_t cv_squishdancespeed = {"squishdance_speed", "140", CV_SAVE, squishdancespeed_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+
 static void saltyhop_onchange(void)
 {
 	// reset everything when toggling saltyhop
@@ -1109,6 +1112,7 @@ void K_RegisterClientKartStuff(void)
 	CV_RegisterVar(&cv_slamsound);
 
 	CV_RegisterVar(&cv_squishdance);
+	CV_RegisterVar(&cv_squishdancespeed);
 
 	CV_RegisterVar(&cv_lessflicker);
 
