@@ -782,6 +782,11 @@ void R_ResetMobjInterpolationState(mobj_t *mobj)
 	mobj->old_slopepitch2 = mobj->old_slopepitch;
 	mobj->old_sloperoll2 = mobj->old_sloperoll;
 
+	mobj->old_spritexscale2 = mobj->old_spritexscale;
+	mobj->old_spriteyscale2 = mobj->old_spriteyscale;
+	mobj->old_spritexoffset2 = mobj->old_spritexoffset;
+	mobj->old_spriteyoffset2 = mobj->old_spriteyoffset;
+
 	mobj->old_x = mobj->x;
 	mobj->old_y = mobj->y;
 	mobj->old_z = mobj->z;
@@ -801,11 +806,6 @@ void R_ResetMobjInterpolationState(mobj_t *mobj)
 	mobj->old_spriteyscale = mobj->spriteyscale;
 	mobj->old_spritexoffset = mobj->spritexoffset;
 	mobj->old_spriteyoffset = mobj->spriteyoffset;
-
-	mobj->old_spritexscale2 = mobj->old_spritexscale;
-	mobj->old_spriteyscale2 = mobj->old_spriteyscale;
-	mobj->old_spritexoffset2 = mobj->old_spritexoffset;
-	mobj->old_spriteyoffset2 = mobj->old_spriteyoffset;
 
 	if (mobj->player)
 	{
