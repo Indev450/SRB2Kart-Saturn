@@ -1222,6 +1222,7 @@ boolean driftgaugegfx = false;     // Driftgauge stuffs
 boolean multiitem_icon = false;    // Extra icons for Sneakers, Banana and Jawz
 boolean joystickicon = false;      // Extra icons for the joystick input display
 boolean minidoticon = false;        // Dot graphic for minimap player angle display
+boolean minilighticon = false;     // mkwii-style minimap headlight
 //
 
 static void IdentifyVersion(void)
@@ -1342,10 +1343,12 @@ static void D_CheckSaturnExtraFiles(void)
 	CV_PossibleValue_t speedo_cons_temp[NUMSPEEDOSTUFF] = {{1, "Default"}, {0, NULL}, {0, NULL}, {0, NULL}, {0, NULL}, {0, NULL}, {0, NULL}, {0, NULL}};
 	CV_PossibleValue_t driftgaugestyle_cons_temp[NUMDGAUGESTUFF] = {{1, "Default"}, {2, "Small"}, {3, "Big Numbers"}, {4, "Numbers Only"}, {0, NULL}, {0, NULL}};
 	CV_PossibleValue_t inputdisplay_cons_temp[NUMINPUTDISPLAYSTUFF] = {{0, "Off"}, {1, "Wheel"}, {2, "Stick"}, {0, NULL}, {0, NULL}};
+	CV_PossibleValue_t minimapdot_cons_temp[NUMMINIMAPDOTSTUFF] = {{0, "Off"}, {0, NULL}, {0, NULL}, {0, NULL}, {0, NULL}};
 
 	unsigned last_speedo_i = 0;
 	unsigned last_driftgauge_i = 3;
 	unsigned last_inputdisplay_i = 2;
+	unsigned last_minimapdot_i = 0;
 #define PUSHCONS(cons, i, id, name) { ++i; cons[i].value = id; cons[i].strvalue = name; }
 
 	// found the funny, add it in!
@@ -1438,6 +1441,13 @@ static void D_CheckSaturnExtraFiles(void)
 		if (W_LumpExists("MMAPDOT"))
 		{
 			minidoticon = true;
+			PUSHCONS(minimapdot_cons_temp, last_minimapdot_i, 1, "Dot");
+		}
+
+		if (W_LumpExists("MMAPHDLT"))
+		{
+			minilighticon = true;
+			PUSHCONS(minimapdot_cons_temp, last_minimapdot_i, 2, "Headlight");
 		}
 	}
 
@@ -1513,6 +1523,7 @@ static void D_CheckSaturnExtraFiles(void)
 	memcpy(speedo_cons_t, speedo_cons_temp, sizeof(speedo_cons_t));
 	memcpy(driftgaugestyle_cons_t, driftgaugestyle_cons_temp, sizeof(driftgaugestyle_cons_t));
 	memcpy(inputdisplay_cons_t, inputdisplay_cons_temp, sizeof(inputdisplay_cons_t));
+	memcpy(minimapdot_cons_t, minimapdot_cons_temp, sizeof(minimapdot_cons_t));
 }
 
 #include <locale.h>

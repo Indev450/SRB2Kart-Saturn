@@ -47,6 +47,9 @@ extern CV_PossibleValue_t speedo_cons_t[NUMSPEEDOSTUFF];
 extern CV_PossibleValue_t driftgaugestyle_cons_t[NUMDGAUGESTUFF];
 #define NUMINPUTDISPLAYSTUFF 5
 extern CV_PossibleValue_t inputdisplay_cons_t[NUMINPUTDISPLAYSTUFF];
+#define NUMMINIMAPDOTSTUFF 5
+extern CV_PossibleValue_t minimapdot_cons_t[NUMMINIMAPDOTSTUFF];
+
 
 boolean K_IsPlayerLosing(player_t *player);
 boolean K_IsPlayerWanted(player_t *player);

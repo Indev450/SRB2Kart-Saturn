@@ -106,7 +106,8 @@ consvar_t cv_fancyroulette = {"animatedroulette", "Off", CV_SAVE, CV_OnOff, NULL
 
 consvar_t cv_minihead = {"smallminimapplayers", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_showminimapnames = {"showminimapnames", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_showminimapangle = {"showminimapangle", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+CV_PossibleValue_t minimapdot_cons_t[NUMMINIMAPDOTSTUFF];
+consvar_t cv_showminimapangle = {"showminimapangle", "Off", CV_SAVE, minimapdot_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 consvar_t cv_highresportrait = {"highresportrait", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL}; // make char potraits use their high-res version instead
 
@@ -10587,7 +10588,7 @@ static void K_drawKartPlayerCheck(void)
 	}
 }
 
-static void K_drawKartMinimapIcon(fixed_t objx, fixed_t objy, INT32 hudx, INT32 hudy, INT32 flags, patch_t *icon, UINT8 *colormap)
+static void K_drawKartMinimapIcon(fixed_t objx, fixed_t objy, INT32 hudx, INT32 hudy, INT32 flags, INT32 blend, patch_t *icon, UINT8 *colormap, drawinfo_t *dims, boolean scaleme)
 {
 	// amnum xpos & ypos are the icon's speed around the HUD.
 	// The number being divided by is for how fast it moves.
@@ -10600,6 +10601,7 @@ static void K_drawKartMinimapIcon(fixed_t objx, fixed_t objy, INT32 hudx, INT32 
 	INT32 amxpos, amypos;
 	fixed_t scale = FRACUNIT;
 	patch_t *AutomapPic;
+	INT16 w, h;
 
 	AutomapPic = minimapinfo.minimap_pic;
 
@@ -10614,17 +10616,28 @@ static void K_drawKartMinimapIcon(fixed_t objx, fixed_t objy, INT32 hudx, INT32 
 	if (encoremode)
 		amnumxpos = -amnumxpos;
 
-	amxpos = amnumxpos + ((hudx + (AutomapPic->width-icon->width)/2)<<FRACBITS);
-	amypos = amnumypos + ((hudy + (AutomapPic->height-icon->height)/2)<<FRACBITS);
-
-	if (cv_minihead.value && !(icon == kp_minimapdot))
+	if (dims && (dims->x != 0) && (dims->y != 0))
 	{
-		amxpos += (icon->width / 4)<<FRACBITS;
-		amypos += (icon->height / 4)<<FRACBITS;
+		w = dims->x;
+		h = dims->y;
+	}
+	else
+	{
+		w = icon->width;
+		h = icon->height;
+	}
+
+	amxpos = amnumxpos + ((hudx + (AutomapPic->width-w)/2)<<FRACBITS);
+	amypos = amnumypos + ((hudy + (AutomapPic->height-h)/2)<<FRACBITS);
+
+	if (cv_minihead.value && (scaleme))
+	{
+		amxpos += (w / 4)<<FRACBITS;
+		amypos += (h / 4)<<FRACBITS;
 		scale /= 2;
 	}
 
-	V_DrawFixedPatch(amxpos, amypos, scale, flags, icon, colormap);
+	V_DrawBlendingFixedPatch(amxpos, amypos, scale, flags, icon, colormap, blend);
 }
 
 static void K_drawKartMinimapHead(mobj_t *mo, INT32 x, INT32 y, INT32 flags)
@@ -10713,6 +10726,13 @@ static void K_drawKartMinimapHead(mobj_t *mo, INT32 x, INT32 y, INT32 flags)
 		}
 	}
 }
+
+enum
+{
+	MINIANGLE_NONE = 0,
+	MINIANGLE_DOT,
+	MINIANGLE_LIGHT
+};
 
 static void K_drawKartMinimap(void)
 {
@@ -10828,6 +10848,9 @@ static void K_drawKartMinimap(void)
 	splitflags |= V_HUDTRANS;
 
 	const SINT8 icondotradius = (cv_minihead.value && !cv_showminimapnames.value) ? 8 : 10;
+	patch_t* minipatch;
+	INT32 rot;
+	INT32 blending;
 
 	for (i = 0; i < numlocalplayers; i++)
 	{
@@ -10836,37 +10859,65 @@ static void K_drawKartMinimap(void)
 
 		mobj_t *mobj = players[localplayers[i]].mo;
 
-		K_drawKartMinimapHead(mobj, x, y, splitflags);
-
-		if (!cv_showminimapangle.value || !minidoticon)
-			continue;
-
 		// dont draw for no contestants
-		if (mobj->health <= 0 && players[localplayers[i]].pflags & PF_TIMEOVER)
-			continue;
+		boolean playertimedout = (mobj->health <= 0 && players[localplayers[i]].pflags & PF_TIMEOVER);
 
-		UINT8 *colormap;
-		fixed_t interpx, interpy;
+		if (cv_showminimapangle.value && (minidoticon || minilighticon) && !playertimedout)
+		{
+			UINT8 *colormap;
+			drawinfo_t dims;
+			fixed_t interpx, interpy;
+			fixed_t xoff = 0, yoff = 0;
+			blending = 0;
 
-		angle_t ang = R_InterpolateAngle(mobj->old_angle, mobj->angle);
+			angle_t ang = R_InterpolateAngle(mobj->old_angle, mobj->angle);
 
-		if (mobj->colorized)
-			colormap = R_GetTranslationColormap(TC_RAINBOW, mobj->color, GTC_CACHE);
-		else
-			colormap = R_GetLocalTranslationColormap(mobj->skin, mobj->localskin, mobj->color, GTC_CACHE, mobj->skinlocal);
+			if (mobj->colorized)
+				colormap = R_GetTranslationColormap(TC_RAINBOW, mobj->color, GTC_CACHE);
+			else
+				colormap = R_GetLocalTranslationColormap(mobj->skin, mobj->localskin, mobj->color, GTC_CACHE, mobj->skinlocal);
 
-		interpx = lerp(mobj->old_x, mobj->x);
-		interpy = lerp(mobj->old_y, mobj->y);
+			interpx = lerp(mobj->old_x, mobj->x);
+			interpy = lerp(mobj->old_y, mobj->y);
 
-		K_drawKartMinimapIcon(
-				interpx,
-				interpy,
-				x + FixedMul(FCOS(ang), icondotradius),
-				y - FixedMul(FSIN(ang), icondotradius),
-				splitflags,
-				kp_minimapdot,
-				colormap
-		);
+			minipatch = kp_minimapdot;
+
+			dims.x = 0;
+			dims.y = 0;
+
+			if (cv_showminimapangle.value == MINIANGLE_DOT)
+			{
+				xoff = FixedMul(FCOS(ang), icondotradius);
+				yoff = -FixedMul(FSIN(ang), icondotradius);
+			}
+			else if (cv_showminimapangle.value == MINIANGLE_LIGHT)
+			{
+				rot = R_GetRollAngle(ang);
+				minipatch = W_CachePatchNameRotated("MMAPHDLT", rot, PU_PATCH);
+
+				blending = B_ADD;
+				xoff = yoff = 0;
+
+				dims.x = 48;
+				dims.y = 24;
+			}
+
+			K_drawKartMinimapIcon(
+					interpx,
+					interpy,
+					x + xoff,
+					y + yoff,
+					splitflags,
+					blending,
+					minipatch,
+					colormap,
+					&dims,
+					false
+			);
+		}
+
+		// draw the minimap head after the nonsense above
+		K_drawKartMinimapHead(mobj, x, y, splitflags);
 	}
 }
 

@@ -53,6 +53,7 @@ extern boolean driftgaugegfx;     // Driftgauge stuffs
 extern boolean multiitem_icon;    // Extra icons for Sneakers, Banana and Jawz
 extern boolean joystickicon;      // Extra icons for the joystick input display
 extern boolean minidoticon;       // Dot icon for minimap player angle display
+extern boolean minilighticon;     // mkwii-style minimap headlight
 //
 
 // autoload stuff
