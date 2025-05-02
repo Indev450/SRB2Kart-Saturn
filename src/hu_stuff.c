@@ -1877,14 +1877,14 @@ static void HU_DrawChat(void)
 		// Find longest player name, for drawing background for /pm list later
 		for (i = 0; i < MAXPLAYERS; i++)
 		{
-			if (!playeringame[i]) continue;
+			if (!players[i].ingame) continue;
 
 			longest_name_length = max(longest_name_length, strlen(player_names[i]));
 		}
 
 		for(i = 0; i < MAXPLAYERS; i++)
 		{
-			if (!playeringame[i])
+			if (!players[i].ingame)
 				continue;
 
 			// filter: (code needs optimization pls help I'm bad with C)
