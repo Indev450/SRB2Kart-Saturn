@@ -733,8 +733,10 @@ void P_Ticker(boolean run)
 
 		PS_START_TIMING(ps_playerthink_time);
 		for (i = 0; i < MAXPLAYERS; i++)
-			if (players[i].ingame && players[i].mo && !P_MobjWasRemoved(players[i].mo))
+		{
+			if (players[i].ingame && !P_MobjWasRemoved(players[i].mo))
 				P_PlayerThink(&players[i]);
+		}
 		PS_STOP_TIMING(ps_playerthink_time);
 	}
 
@@ -753,8 +755,10 @@ void P_Ticker(boolean run)
 
 		// Run any "after all the other thinkers" stuff
 		for (i = 0; i < MAXPLAYERS; i++)
-			if (players[i].ingame && players[i].mo && !P_MobjWasRemoved(players[i].mo))
+		{
+			if (players[i].ingame && !P_MobjWasRemoved(players[i].mo))
 				P_PlayerAfterThink(&players[i]);
+		}
 
 		// Apply rumble to local players
 		if (!demo.playback)
@@ -928,7 +932,7 @@ void P_PreTicker(INT32 frames)
 
 		for (i = 0; i < MAXPLAYERS; i++)
 		{
-			if (players[i].ingame && players[i].mo && !P_MobjWasRemoved(players[i].mo))
+			if (players[i].ingame && !P_MobjWasRemoved(players[i].mo))
 			{
 				// stupid fucking cmd hack
 				// if it isn't for this, players can move in preticker time
@@ -956,7 +960,7 @@ void P_PreTicker(INT32 frames)
 			if (!players[i].ingame)
 				continue;
 
-			if (!players[i].mo || P_MobjWasRemoved(players[i].mo))
+			if (P_MobjWasRemoved(players[i].mo))
 				continue;
 
 			P_PlayerAfterThink(&players[i]);

@@ -66,7 +66,7 @@ void P_RunCachedActions(void)
 		var2 = states[ac->statenum].var2;
 		astate = &states[ac->statenum];
 
-		if (ac->mobj && !P_MobjWasRemoved(ac->mobj)) // just in case...
+		if (!P_MobjWasRemoved(ac->mobj)) // just in case...
 			states[ac->statenum].action(ac->mobj);
 		next = ac->next;
 		Z_Free(ac);
@@ -3309,7 +3309,7 @@ void P_CalcChasePostImg(player_t *player, camera_t *thiscam)
 	}
 #endif
 
-	if (player->awayviewtics && player->awayviewmobj && !P_MobjWasRemoved(player->awayviewmobj)) // Camera must obviously exist
+	if (player->awayviewtics && !P_MobjWasRemoved(player->awayviewmobj)) // Camera must obviously exist
 	{
 		camera_t dummycam;
 
@@ -3815,7 +3815,7 @@ boolean P_BossTargetPlayer(mobj_t *actor, boolean closest)
 		if (player->pflags & PF_INVIS || player->bot || player->spectator)
 			continue; // ignore notarget
 
-		if (!player->mo || P_MobjWasRemoved(player->mo))
+		if (P_MobjWasRemoved(player->mo))
 			continue;
 
 		if (!P_CheckSight(actor, player->mo))
@@ -6157,7 +6157,7 @@ angle_t P_MobjPitchAndRoll(mobj_t *mobj)
 		mobj_t *spark = P_SpawnMobj(mobj->x, mobj->y, mobj->z, MT_WIPEOUTTRAIL);
 		spark->angle = (diff * i) - (diff / 2);
 
-		if (mobj != NULL && P_MobjWasRemoved(mobj) == false)
+		if (!P_MobjWasRemoved(mobj))
 		{
 			// K_MomentumAngle
 			if (FixedHypot(mobj->momx, mobj->momy) >= mobj->scale)
@@ -6890,7 +6890,7 @@ static void P_MobjSceneryThink(mobj_t *mobj)
 			}
 			break;
 		case MT_FIREDITEM:
-			if (mobj->target && !P_MobjWasRemoved(mobj->target))
+			if (!P_MobjWasRemoved(mobj->target))
 			{
 				fixed_t x, y, z;
 				if (mobj->movecount)
@@ -8055,7 +8055,7 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 			P_MoveOrigin(mobj, mobj->target->x, mobj->target->y, mobj->target->z);
 			break;
 		case MT_BATTLEPOINT:
-			if (!mobj->target || P_MobjWasRemoved(mobj->target))
+			if (P_MobjWasRemoved(mobj->target))
 			{
 				P_RemoveMobj(mobj);
 				return false;
@@ -8198,7 +8198,7 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 					const fixed_t rad = FixedMul(mobjinfo[MT_PLAYER].radius, mobj->target->scale);
 					mobj_t *cur = mobj->hnext;
 
-					while (cur && !P_MobjWasRemoved(cur))
+					while (!P_MobjWasRemoved(cur))
 					{
 						fixed_t offx = rad;
 						fixed_t offy = rad;
@@ -8334,7 +8334,7 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 			{
 				mobj_t *cur = mobj->hnext;
 
-				while (cur && !P_MobjWasRemoved(cur))
+				while (!P_MobjWasRemoved(cur))
 				{
 					cur->angle += FixedAngle(mobj->info->speed);
 					P_MoveOrigin(cur, mobj->x + FINECOSINE((cur->angle*8)>>ANGLETOFINESHIFT),
@@ -8366,7 +8366,7 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 					if (mobj->hnext) // Clean hnext list
 					{
 						mobj_t *cur = mobj->hnext;
-						while (cur && !P_MobjWasRemoved(cur))
+						while (!P_MobjWasRemoved(cur))
 						{
 							mobj_t *next = cur->hnext;
 							P_RemoveMobj(cur);
@@ -8394,7 +8394,7 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 				}
 				else if (frogstate == S_FROGGER_ATTACK)
 				{
-					if (!mobj->tracer || P_MobjWasRemoved(mobj->tracer))
+					if (P_MobjWasRemoved(mobj->tracer))
 					{
 						mobj->reactiontime = mobj->info->reactiontime;
 						P_SetMobjState(mobj, S_FROGGER);
@@ -8444,7 +8444,7 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 						if (mobj->hnext) // Clean hnext list
 						{
 							mobj_t *cur = mobj->hnext;
-							while (cur && !P_MobjWasRemoved(cur))
+							while (!P_MobjWasRemoved(cur))
 							{
 								mobj_t *next = cur->hnext;
 								P_RemoveMobj(cur);
@@ -8469,7 +8469,7 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 							fixed_t wy = mobj->tracer->y + (joint * (mobj->y - mobj->tracer->y) / (numjoints+1));
 							fixed_t wz = mobj->tracer->z + (joint * ((mobj->z + (mobj->height/2)) - mobj->tracer->z) / (numjoints+1));
 
-							if (cur && !P_MobjWasRemoved(cur))
+							if (!P_MobjWasRemoved(cur))
 								P_MoveOrigin(cur, wx, wy, wz);
 							else
 								cur = P_SpawnMobj(wx, wy, wz, MT_FROGTONGUE_JOINT);
@@ -8534,14 +8534,14 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 					}
 				}
 
-				if ((mobj->extravalue1) && !(mobj->tracer && !P_MobjWasRemoved(mobj->tracer)))
+				if (mobj->extravalue1 && P_MobjWasRemoved(mobj->tracer))
 				{
 					mobj->reactiontime = 20*mobj->info->reactiontime;
 					P_SetTarget(&mobj->target, NULL);
 					mobj->extravalue1 = 0;
 				}
 
-				if ((mobj->tracer && !P_MobjWasRemoved(mobj->tracer)) && !(leveltime % 10))
+				if (!P_MobjWasRemoved(mobj->tracer) && !(leveltime % 10))
 				{
 					mobj_t *dust = P_SpawnMobj(mobj->x + (P_RandomRange(-4, 4)<<FRACBITS),
 						mobj->y + (P_RandomRange(-4, 4)<<FRACBITS),
@@ -8571,7 +8571,7 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 				{
 					fixed_t segz = mobj->z - ((i+1) * (32 * mobj->scale));
 
-					if (cur && !P_MobjWasRemoved(cur))
+					if (!P_MobjWasRemoved(cur))
 					{
 						if (i >= locnumsegs) // Remove extras
 						{
@@ -8627,7 +8627,7 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 			break;
 		case MT_ROBRA_JOINT:
 		case MT_BLUEROBRA_JOINT:
-			if (!mobj->target || P_MobjWasRemoved(mobj->target))
+			if (P_MobjWasRemoved(mobj->target))
 			{
 				P_RemoveMobj(mobj);
 				return false;
@@ -8640,7 +8640,7 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 				P_SetMobjStateNF(mobj, mobj->info->spawnstate);
 			break;
 		case MT_SMK_MOLESPAWNER:
-			if (!mobj->target || P_MobjWasRemoved(mobj->target))
+			if (P_MobjWasRemoved(mobj->target))
 			{
 				mobj_t *newmole = P_SpawnMobj(mobj->x, mobj->y, mobj->z, MT_SMK_MOLE);
 				P_SetTarget(&mobj->target, newmole);
@@ -8648,7 +8648,7 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 			}
 			break;
 		case MT_SMK_MOLE:
-			if (mobj->target && !P_MobjWasRemoved(mobj->target) && mobj->target->player)
+			if (!P_MobjWasRemoved(mobj->target) && mobj->target->player)
 			{
 				player_t *player = mobj->target->player;
 
@@ -9033,7 +9033,7 @@ static void P_IceBlockFuseThink(mobj_t *mobj)
 			S_StartSound(debris, sfx_s3k82);
 	}
 
-	while (cur && !P_MobjWasRemoved(cur))
+	while (!P_MobjWasRemoved(cur))
 	{
 		next = cur->hnext;
 		P_RemoveMobj(cur);
@@ -10258,7 +10258,7 @@ void P_RemoveMobj(mobj_t *mobj)
 	{
 		mobj_t *cur = mobj->hnext;
 
-		while (cur && !P_MobjWasRemoved(cur))
+		while (!P_MobjWasRemoved(cur))
 		{
 			mobj_t *prev = cur; // Kind of a dumb var, but we need to set cur before we remove the mobj
 			cur = cur->hnext;
@@ -10300,13 +10300,13 @@ void P_RemoveMobj(mobj_t *mobj)
 	// repair hnext chain
 	mobj_t *cachenext = mobj->hnext;
 
-	if (mobj->hnext && !P_MobjWasRemoved(mobj->hnext))
+	if (!P_MobjWasRemoved(mobj->hnext))
 	{
 		P_SetTarget(&mobj->hnext->hprev, mobj->hprev);
 		P_SetTarget(&mobj->hnext, NULL);
 	}
 
-	if (mobj->hprev && !P_MobjWasRemoved(mobj->hprev))
+	if (!P_MobjWasRemoved(mobj->hprev))
 	{
 		P_SetTarget(&mobj->hprev->hnext, cachenext);
 		P_SetTarget(&mobj->hprev, NULL);
@@ -11480,7 +11480,7 @@ void P_SpawnMapThing(mapthing_t *mthing)
 
 	mobj = P_SpawnMobj(x, y, z, i);
 
-	if (!mobj || P_MobjWasRemoved(mobj))
+	if (P_MobjWasRemoved(mobj))
 	{
 		CONS_Alert(CONS_ERROR, "Failed to spawn map thing #%d at %d, %d. This will crash vanilla clients!\n", mthing->type, x>>FRACBITS, y>>FRACBITS);
 		return;

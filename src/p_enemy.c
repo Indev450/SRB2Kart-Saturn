@@ -471,7 +471,7 @@ boolean P_LookForPlayers(mobj_t *actor, boolean allaround, boolean tracer, fixed
 		if (player->pflags & PF_INVIS)
 			continue; // ignore notarget
 
-		if (!player->mo || P_MobjWasRemoved(player->mo))
+		if (P_MobjWasRemoved(player->mo))
 			continue;
 
 		if (dist > 0
@@ -3713,7 +3713,7 @@ void A_GrenadeRing(void *thing)
 
 static inline boolean PIT_MineExplode(mobj_t *thing)
 {
-	if (!grenade || P_MobjWasRemoved(grenade))
+	if (P_MobjWasRemoved(grenade))
 		return false; // There's the possibility these can chain react onto themselves after they've already died if there are enough all in one spot
 
 	if (grenade->flags2 & MF2_DEBRIS)	// don't explode twice
@@ -8000,7 +8000,7 @@ void A_JawzChase(void *thing)
 	if (actor->extravalue1) // Disable looking by setting this
 		return;
 
-	if (!actor->target || P_MobjWasRemoved(actor->target)) // No source!
+	if (P_MobjWasRemoved(actor->target)) // No source!
 		return;
 
 	player = K_FindJawzTarget(actor, actor->target->player);
@@ -11033,7 +11033,7 @@ void A_InvincSparkleRotate(void *thing)
 	//if (LUA_CallAction(A_INVINCSPARKLEROTATE, actor))
 		//return;
 
-	if (!actor->target || P_MobjWasRemoved(actor->target))
+	if (P_MobjWasRemoved(actor->target))
 		return;
 
 	//CONS_Printf("%d\n", actor->movefactor/FRACUNIT);
