@@ -1573,7 +1573,8 @@ boolean G_CouldView(INT32 playernum)
 	// SRB2Kart: Only go through players who are actually playing
 	if (player->exiting)
 		return false;
-	if (( player->pflags & PF_TIMEOVER ))
+
+	if (player->pflags & PF_TIMEOVER)
 		return false;
 
 	// I don't know if we want this actually, but I'll humor the suggestion anyway
@@ -1609,6 +1610,7 @@ boolean G_CanView(INT32 playernum, UINT8 viewnum, boolean onlyactive)
 		if ((*displayplayerp) == playernum)
 			return false;
 	}
+
 	for (viewd = viewnum + 1; viewd <= splits; ++viewd)
 	{
 		displayplayerp = (&displayplayers[viewd-1]);
@@ -1628,16 +1630,19 @@ INT32 G_FindView(INT32 startview, UINT8 viewnum, boolean onlyactive, boolean rev
 {
 	INT32 i, dir = reverse ? -1 : 1;
 	startview = min(max(startview, 0), MAXPLAYERS);
+
 	for (i = startview; i < MAXPLAYERS && i >= 0; i += dir)
 	{
 		if (G_CanView(i, viewnum, onlyactive))
 			return i;
 	}
+
 	for (i = (reverse ? MAXPLAYERS-1 : 0); i != startview; i += dir)
 	{
 		if (G_CanView(i, viewnum, onlyactive))
 			return i;
 	}
+
 	return -1;
 }
 
@@ -1703,6 +1708,7 @@ void G_ResetView(UINT8 viewnum, INT32 playernum, boolean onlyactive)
 
 		if (viewnum > playersviewable)
 			viewnum = playersviewable;
+
 		splitscreen = viewnum-1;
 
 		R_ExecuteSetViewSize();
@@ -1807,6 +1813,7 @@ void G_Ticker(boolean run)
 	// also the -1 is to ensure that the thinker runs in the loop below.
 
 	P_MapStart();
+
 	// do player reborns if needed
 	if (gamestate == GS_LEVEL)
 	{
@@ -1821,10 +1828,12 @@ void G_Ticker(boolean run)
 			if (playeringame[i] && players[i].playerstate == PST_REBORN)
 				G_DoReborn(i);
 	}
+
 	P_MapEnd();
 
 	// do things to change the game state
 	while (gameaction != ga_nothing)
+	{
 		switch (gameaction)
 		{
 			case ga_completed: G_DoCompleted(); break;
@@ -1835,6 +1844,7 @@ void G_Ticker(boolean run)
 			case ga_nothing: break;
 			default: I_Error("gameaction = %d\n", gameaction);
 		}
+	}
 
 	buf = gametic % TICQUEUE;
 
@@ -3163,6 +3173,7 @@ static void G_DoCompleted(void)
 		while (!mapheaderinfo[cm] || !(mapheaderinfo[cm]->typeoflevel & tolflag))
 		{
 			visitedmap[cm/8] |= (1<<(cm&7));
+
 			if (!mapheaderinfo[cm])
 				cm = -1; // guarantee error execution
 			else
@@ -3172,10 +3183,11 @@ static void G_DoCompleted(void)
 			{
 				cm = nextmap; //Start the loop again so that the error checking below is executed.
 
-				//Make sure the map actually exists before you try to go to it!
+				// Make sure the map actually exists before you try to go to it!
 				if ((W_CheckNumForName(G_BuildMapName(cm + 1)) == LUMPERROR))
 				{
 					//CONS_Alert(CONS_ERROR, M_GetText("Next map given (MAP %d) doesn't exist! Reverting to MAP01.\n"), cm+1);
+					CON_LogMessage(va(M_GetText("Next map given (MAP %d) doesn't exist! Reverting to MAP01.\n"), cm+1));
 					cm = 0;
 					break;
 				}
@@ -3187,6 +3199,7 @@ static void G_DoCompleted(void)
 				// without finding one supporting the current gametype.
 				// Thus, print a warning, and just use this map anyways.
 				//CONS_Alert(CONS_WARNING, M_GetText("Can't find a compatible map after map %d; using map %d anyway\n"), prevmap+1, cm+1);
+				CON_LogMessage(va(M_GetText("Can't find a compatible map after map %d; using map %d anyway\n"), prevmap+1, cm+1));
 				break;
 			}
 		}
@@ -3235,7 +3248,6 @@ static void G_DoCompleted(void)
 		else if (cv_advancemap.value == 2) // Go to random map.
 			nextmap = G_RandMap(G_TOLFlag(gametype), prevmap, false, 0, false, NULL);
 	}
-
 
 	// We are committed to this map now.
 	// We may as well allocate its header if it doesn't exist
