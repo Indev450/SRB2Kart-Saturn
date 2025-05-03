@@ -2612,7 +2612,7 @@ void G_ChangePlayerReferences(mobj_t *oldmo, mobj_t *newmo)
 	// scan all thinkers
 	for (th = thinkercap.next; th != &thinkercap; th = th->next)
 	{
-		if (th->function.acp1 != (actionf_p1)P_MobjThinker)
+		if (th->function != (actionf_p1)P_MobjThinker)
 			continue;
 
 		mo2 = (mobj_t *)th;
@@ -5272,7 +5272,7 @@ void G_ConsGhostTic(INT32 playernum)
 				mobj = NULL;
 				for (th = thinkercap.next; th != &thinkercap; th = th->next)
 				{
-					if (th->function.acp1 != (actionf_p1)P_MobjThinker)
+					if (th->function != (actionf_p1)P_MobjThinker)
 						continue;
 					mobj = (mobj_t *)th;
 					if (mobj->type == (mobjtype_t)type && mobj->x == x && mobj->y == y && mobj->z == z)
@@ -7918,7 +7918,7 @@ void G_DoPlayMetal(void)
 	// find metal sonic
 	for (th = thinkercap.next; th != &thinkercap; th = th->next)
 	{
-		if (th->function.acp1 != (actionf_p1)P_MobjThinker)
+		if (th->function != (actionf_p1)P_MobjThinker)
 			continue;
 
 		mo = (mobj_t *)th;

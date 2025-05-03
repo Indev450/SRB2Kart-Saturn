@@ -725,7 +725,7 @@ static boolean D_Display(void)
 		{
 			mobj_t *mo;
 
-			if (th->function.acp1 != (actionf_p1)P_MobjThinker) // not a mobj
+			if (th->function != (actionf_p1)P_MobjThinker) // not a mobj
 				continue;
 
 			mo = (mobj_t *)th;

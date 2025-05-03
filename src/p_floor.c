@@ -2578,7 +2578,7 @@ INT32 EV_DoFloor(line_t *line, floor_e floortype)
 		sec->floordata = dofloor;
 
 		// set up some generic aspects of the floormove_t
-		dofloor->thinker.function.acp1 = (actionf_p1)T_MoveFloor;
+		dofloor->thinker.function = (actionf_p1)T_MoveFloor;
 		dofloor->type = floortype;
 		dofloor->crush = false; // default: types that crush will change this
 		dofloor->sector = sec;
@@ -2799,7 +2799,7 @@ INT32 EV_DoElevator(line_t *line, elevator_e elevtype, boolean customspeed)
 		P_AddThinker(&elevator->thinker);
 		sec->floordata = elevator;
 		sec->ceilingdata = elevator;
-		elevator->thinker.function.acp1 = (actionf_p1)T_MoveElevator;
+		elevator->thinker.function = (actionf_p1)T_MoveElevator;
 		elevator->type = elevtype;
 		elevator->sourceline = line;
 		elevator->distance = 1; // Always crush unless otherwise
@@ -2986,7 +2986,7 @@ INT32 EV_BounceSector(sector_t *sec, fixed_t momz, line_t *sourceline)
 	bouncer = Z_Calloc(sizeof (*bouncer), PU_LEVSPEC, NULL);
 	P_AddThinker(&bouncer->thinker);
 	sec->ceilingdata = bouncer;
-	bouncer->thinker.function.acp1 = (actionf_p1)T_BounceCheese;
+	bouncer->thinker.function = (actionf_p1)T_BounceCheese;
 
 	// set up the fields according to the type of elevator action
 	bouncer->sector = sec;
@@ -3023,7 +3023,7 @@ INT32 EV_DoContinuousFall(sector_t *sec, sector_t *backsector, fixed_t spd, bool
 	// create and initialize new thinker
 	faller = Z_Calloc(sizeof (*faller), PU_LEVSPEC, NULL);
 	P_AddThinker(&faller->thinker);
-	faller->thinker.function.acp1 = (actionf_p1)T_ContinuousFalling;
+	faller->thinker.function = (actionf_p1)T_ContinuousFalling;
 
 	// set up the fields
 	faller->sector = sec;
@@ -3076,7 +3076,7 @@ INT32 EV_StartCrumble(sector_t *sec, ffloor_t *rover, boolean floating,
 	// create and initialize new elevator thinker
 	elevator = Z_Calloc(sizeof (*elevator), PU_LEVSPEC, NULL);
 	P_AddThinker(&elevator->thinker);
-	elevator->thinker.function.acp1 = (actionf_p1)T_StartCrumble;
+	elevator->thinker.function = (actionf_p1)T_StartCrumble;
 
 	// Does this crumbler return?
 	if (crumblereturn)
@@ -3156,7 +3156,7 @@ INT32 EV_MarioBlock(sector_t *sec, sector_t *roversector, fixed_t topheight, mob
 		P_AddThinker(&block->thinker);
 		sec->floordata = block;
 		sec->ceilingdata = block;
-		block->thinker.function.acp1 = (actionf_p1)T_MarioBlock;
+		block->thinker.function = (actionf_p1)T_MarioBlock;
 
 		// Set up the fields
 		block->sector = sec;

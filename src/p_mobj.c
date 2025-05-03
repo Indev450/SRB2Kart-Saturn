@@ -67,7 +67,7 @@ void P_RunCachedActions(void)
 		astate = &states[ac->statenum];
 
 		if (ac->mobj && !P_MobjWasRemoved(ac->mobj)) // just in case...
-			states[ac->statenum].action.acp1(ac->mobj);
+			states[ac->statenum].action(ac->mobj);
 		next = ac->next;
 		Z_Free(ac);
 	}
@@ -219,13 +219,13 @@ boolean P_SetPlayerMobjState(mobj_t *mobj, statenum_t state)
 		// Modified handling.
 		// Call action functions when the state is set
 
-		if (st->action.acp1)
+		if (st->action)
 		{
 			var1 = st->var1;
 			var2 = st->var2;
 			astate = st;
 
-			st->action.acp1(mobj);
+			st->action(mobj);
 
 			// woah. a player was removed by an action.
 			// this sounds like a VERY BAD THING, but there's nothing we can do now...
@@ -289,13 +289,13 @@ boolean P_SetMobjState(mobj_t *mobj, statenum_t state)
 		// Modified handling.
 		// Call action functions when the state is set
 
-		if (st->action.acp1)
+		if (st->action)
 		{
 			var1 = st->var1;
 			var2 = st->var2;
 			astate = st;
 
-			st->action.acp1(mobj);
+			st->action(mobj);
 			if (P_MobjWasRemoved(mobj))
 				return false;
 		}
@@ -3275,7 +3275,7 @@ void P_DestroyRobots(void)
 
 	for (think = thinkercap.next; think != &thinkercap; think = think->next)
 	{
-		if (think->function.acp1 != (actionf_p1)P_MobjThinker)
+		if (think->function != (actionf_p1)P_MobjThinker)
 			continue; // not a mobj thinker
 
 		mo = (mobj_t *)think;
@@ -3373,7 +3373,7 @@ boolean P_CameraThinker(player_t *player, camera_t *thiscam, boolean resetcalled
 		{
 			mobj_t dummy;
 
-			dummy.thinker.function.acp1 = (actionf_p1)P_MobjThinker;
+			dummy.thinker.function = (actionf_p1)P_MobjThinker;
 			dummy.subsector = thiscam->subsector;
 			dummy.x = thiscam->x;
 			dummy.y = thiscam->y;
@@ -4115,7 +4115,7 @@ static void P_Boss3Thinker(mobj_t *mobj)
 			// this can happen if the boss was hurt earlier than expected
 			for (th = thinkercap.next; th != &thinkercap; th = th->next)
 			{
-				if (th->function.acp1 != (actionf_p1)P_MobjThinker)
+				if (th->function != (actionf_p1)P_MobjThinker)
 					continue;
 
 				mo2 = (mobj_t *)th;
@@ -4206,7 +4206,7 @@ static void P_Boss3Thinker(mobj_t *mobj)
 		// the number
 		for (th = thinkercap.next; th != &thinkercap; th = th->next)
 		{
-			if (th->function.acp1 != (actionf_p1)P_MobjThinker)
+			if (th->function != (actionf_p1)P_MobjThinker)
 				continue;
 
 			mo2 = (mobj_t *)th;
@@ -4841,7 +4841,7 @@ static void P_Boss7Thinker(mobj_t *mobj)
 				// Find waypoint he is closest to
 				for (th = thinkercap.next; th != &thinkercap; th = th->next)
 				{
-					if (th->function.acp1 != (actionf_p1)P_MobjThinker)
+					if (th->function != (actionf_p1)P_MobjThinker)
 						continue;
 
 					mo2 = (mobj_t *)th;
@@ -4896,7 +4896,7 @@ static void P_Boss7Thinker(mobj_t *mobj)
 		// the waypoint to use
 		for (th = thinkercap.next; th != &thinkercap; th = th->next)
 		{
-			if (th->function.acp1 != (actionf_p1)P_MobjThinker)
+			if (th->function != (actionf_p1)P_MobjThinker)
 				continue;
 
 			mo2 = (mobj_t *)th;
@@ -5025,7 +5025,7 @@ static void P_Boss9Thinker(mobj_t *mobj)
 		// Build a hoop linked list of 'em!
 		for (th = thinkercap.next; th != &thinkercap; th = th->next)
 		{
-			if (th->function.acp1 != (actionf_p1)P_MobjThinker)
+			if (th->function != (actionf_p1)P_MobjThinker)
 				continue;
 
 			mo2 = (mobj_t *)th;
@@ -5485,7 +5485,7 @@ mobj_t *P_GetClosestAxis(mobj_t *source)
 	// scan the thinkers to find the closest axis point
 	for (th = thinkercap.next; th != &thinkercap; th = th->next)
 	{
-		if (th->function.acp1 != (actionf_p1)P_MobjThinker)
+		if (th->function != (actionf_p1)P_MobjThinker)
 			continue;
 
 		mo2 = (mobj_t *)th;
@@ -6025,7 +6025,7 @@ static void P_RemoveShadow(mobj_t *thing)
 	}
 }
 
-void A_BossDeath(mobj_t *mo);
+void A_BossDeath(void *thing);
 // AI for the Koopa boss.
 static void P_KoopaThinker(mobj_t *koopa)
 {
@@ -9139,11 +9139,11 @@ static boolean P_MobjPushableThink(mobj_t *mobj)
 
 static void P_FiringThink(mobj_t *mobj)
 {
-	if (mobj->state->action.acp1 == (actionf_p1)A_Boss1Laser)
+	if (mobj->state->action == (actionf_p1)A_Boss1Laser)
 	{
 		var1 = mobj->state->var1;
 		var2 = mobj->state->var2;
-		mobj->state->action.acp1(mobj);
+		mobj->state->action(mobj);
 	}
 	else if (leveltime & 1) // Fire mode
 	{
@@ -9606,7 +9606,7 @@ mobj_t *P_SpawnMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type)
 	mobj = P_AllocMobj();
 
 	// this is officially a mobj, declared as soon as possible.
-	mobj->thinker.function.acp1 = (actionf_p1)P_MobjThinker;
+	mobj->thinker.function = (actionf_p1)P_MobjThinker;
 	mobj->type = type;
 	mobj->info = info;
 
@@ -9752,7 +9752,7 @@ mobj_t *P_SpawnMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type)
 				ball->threshold = ball->radius + mobj->radius + FixedMul(ball->info->painchance, ball->scale);
 
 				var1 = ball->state->var1, var2 = ball->state->var2;
-				ball->state->action.acp1(ball);
+				ball->state->action(ball);
 			}
 			break;
 		}
@@ -10012,7 +10012,7 @@ mobj_t *P_SpawnMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type)
 	}
 
 	// Call action functions when the state is set
-	if (st->action.acp1 && (mobj->flags & MF_RUNSPAWNFUNC))
+	if (st->action && (mobj->flags & MF_RUNSPAWNFUNC))
 	{
 		if (levelloading)
 		{
@@ -10028,7 +10028,7 @@ mobj_t *P_SpawnMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type)
 			var2 = st->var2;
 			astate = st;
 
-			st->action.acp1(mobj);
+			st->action(mobj);
 			// DANGER! This can cause P_SpawnMobj to return NULL!
 			// Avoid using MF_RUNSPAWNFUNC on mobjs whose spawn state expects target or tracer to already be set!
 			if (P_MobjWasRemoved(mobj))
@@ -10057,7 +10057,7 @@ mobj_t *P_SpawnShadowMobj(mobj_t * caster)
 	mobj = P_AllocMobj();
 
 	// this is officially a mobj, declared as soon as possible.
-	mobj->thinker.function.acp1 = (actionf_p1)P_MobjThinker;
+	mobj->thinker.function = (actionf_p1)P_MobjThinker;
 	mobj->type = MT_SHADOW;
 	mobj->info = info;
 
@@ -10128,7 +10128,7 @@ mobj_t *P_SpawnShadowMobj(mobj_t * caster)
 		P_AddThinker(&mobj->thinker);
 
 	// Call action functions when the state is set
-	if (st->action.acp1 && (mobj->flags & MF_RUNSPAWNFUNC))
+	if (st->action && (mobj->flags & MF_RUNSPAWNFUNC))
 	{
 		if (levelloading)
 		{
@@ -10144,7 +10144,7 @@ mobj_t *P_SpawnShadowMobj(mobj_t * caster)
 			var2 = st->var2;
 			astate = st;
 
-			st->action.acp1(mobj);
+			st->action(mobj);
 			// DANGER! This is the ONLY way for P_SpawnMobj to return NULL!
 			// Avoid using MF_RUNSPAWNFUNC on mobjs whose spawn state expects target or tracer to already be set!
 			if (P_MobjWasRemoved(mobj))
@@ -10195,7 +10195,7 @@ static precipmobj_t *P_SpawnPrecipMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype
 	mobj->z = z;
 	mobj->momz = cv_mobjscaleprecip.value ? FixedMul(info->speed, mapobjectscale) : info->speed;
 
-	mobj->thinker.function.acp1 = (actionf_p1)P_NullPrecipThinker;
+	mobj->thinker.function = (actionf_p1)P_NullPrecipThinker;
 	P_AddPrecipThinker(&mobj->thinker);
 
 	P_CalculatePrecipFloor(mobj, true);
@@ -10232,9 +10232,9 @@ void P_RemoveMobj(mobj_t *mobj)
 	if (P_MobjWasRemoved(mobj))
 		return; // something already removing this mobj.
 
-	mobj->thinker.function.acp1 = (actionf_p1)P_RemoveThinkerDelayed; // shh. no recursing.
+	mobj->thinker.function = (actionf_p1)P_RemoveThinkerDelayed; // shh. no recursing.
 	LUA_HookMobj(mobj, MOBJ_HOOK(MobjRemoved));
-	mobj->thinker.function.acp1 = (actionf_p1)P_MobjThinker; // needed for P_UnsetThingPosition, etc. to work.
+	mobj->thinker.function = (actionf_p1)P_MobjThinker; // needed for P_UnsetThingPosition, etc. to work.
 
 	// Rings only, please!
 	if (mobj->spawnpoint &&
@@ -10647,7 +10647,7 @@ void P_RespawnSpecials(void)
 			mobj_t *box;
 			mobj_t *newmobj;
 
-			if (th->function.acp1 != (actionf_p1)P_MobjThinker)	// not a mobj
+			if (th->function != (actionf_p1)P_MobjThinker)	// not a mobj
 				continue;
 
 			box = (mobj_t *)th;
@@ -11806,7 +11806,7 @@ ML_NOCLIMB : Direction not controllable
 		// See if other starposts exist in this level that have the same value.
 		for (th = thinkercap.next; th != &thinkercap; th = th->next)
 		{
-			if (th->function.acp1 != (actionf_p1)P_MobjThinker)
+			if (th->function != (actionf_p1)P_MobjThinker)
 				continue;
 
 			mo2 = (mobj_t *)th;
