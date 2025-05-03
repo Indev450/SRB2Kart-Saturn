@@ -3996,10 +3996,7 @@ void A_SignPlayer(mobj_t *actor)
 	if (LUA_CallAction(A_SIGNPLAYER, actor))
 		return;
 
-	if (!actor->target)
-		return;
-
-	if (!actor->target->player)
+	if (!actor->target || !actor->target->player)
 		return;
 
 	// Set the sign to be an appropriate background color for this player's skincolor.
@@ -4011,18 +4008,13 @@ void A_SignPlayer(mobj_t *actor)
 	P_SetTarget(&ov->target, actor);
 	ov->color = actor->target->player->skincolor;
 	ov->skin = &skins[actor->target->player->skin];
-	if (actor->target->skinlocal) {
-		// needs - 1 or else it pukes an error out
-		// same thing happens on p_mobj.c
-		ov->localskin = &localskins[actor->target->player->localskin - 1];
-		ov->skinlocal = actor->target->skinlocal;
-	} else {
-		// needs - 1 or else it pukes an error out
-		// same thing happens on p_mobj.c
-		if (actor->target->player->localskin)
-			ov->localskin = &skins[actor->target->player->localskin - 1];
-		ov->skinlocal = actor->target->skinlocal;
-	}
+
+	// needs - 1 or else it pukes an error out
+	// same thing happens on p_mobj.c
+	ov->skinlocal = actor->target->skinlocal;
+	if (ov->skinlocal || actor->target->player->localskin)
+		ov->localskin = &K_GetSkinArray(ov->skinlocal)[actor->target->player->localskin - 1];
+
 	P_SetMobjState(ov, actor->info->seestate); // S_PLAY_SIGN
 }
 
