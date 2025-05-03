@@ -451,7 +451,24 @@ else
 	# build a normal optimised version
 	WINDRESFLAGS = -DNDEBUG
 	CFLAGS+=-O3
+	CPPFLAGS+=-O3
 endif
+
+ifndef DEBUGMODE
+ifdef USELTO
+	# compile with LTO
+	CFLAGS+=-flto=auto
+	CPPFLAGS+=-flto=auto
+endif
+endif
+
+ifdef USEASAN
+	# compile with asan
+	CFLAGS+=-fsanitize=address
+	CPPFLAGS+=-fsanitize=address
+	LDFLAGS+=-fsanitize=address
+endif
+
 	CFLAGS+=-g $(OPTS) $(ARCHOPTS) $(WINDRESFLAGS)
 
 ifdef PROFILEMODE
