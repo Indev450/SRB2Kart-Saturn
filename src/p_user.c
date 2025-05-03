@@ -1247,37 +1247,23 @@ void P_DoPlayerExit(player_t *player)
 		player->exiting = raceexittime+2;
 		K_KartUpdatePosition(player);
 
-		if (!P_MobjWasRemoved(player->mo) && cv_kartvoices.value)
+		if (cv_kartvoices.value && !P_MobjWasRemoved(player->mo))
 		{
+			const int soundid = K_IsPlayerLosing(player) ? sfx_klose: sfx_kwin; // fix godjjsa win sounds
+
 			if (P_IsLocalPlayer(player))
 			{
-				sfxenum_t sfx_id;
-				// fix godjjsa win sounds
-				if (K_IsPlayerLosing(player))
-				{
-					sfx_id = K_GetMobjSkin(player->mo)->soundsid[S_sfx[sfx_klose].skinsound];
-				}
-				else
-				{
-					sfx_id = K_GetMobjSkin(player->mo)->soundsid[S_sfx[sfx_kwin].skinsound];
-				}
+				sfxenum_t sfx_id = K_GetMobjSkin(player->mo)->soundsid[S_sfx[soundid].skinsound];
 				S_StartSound(NULL, sfx_id);
 			}
 			else
 			{
-				if (K_IsPlayerLosing(player))
-					S_StartSound(player->mo, sfx_klose);
-				else
-					S_StartSound(player->mo, sfx_kwin);
+				S_StartSound(player->mo, soundid);
 			}
 		}
 
 		if (cv_inttime.value > 0)
 			P_EndingMusic(player);
-
-		// SRB2kart 120217
-		//if (!exitcountdown)
-			//exitcountdown = racecountdown + 8*TICRATE;
 
 		if (P_CheckRacers())
 			player->exiting = raceexittime+1;
@@ -1296,9 +1282,6 @@ void P_DoPlayerExit(player_t *player)
 
 	if (player == &players[consoleplayer])
 		demo.savebutton = leveltime;
-
-	/*if (players[player-players].ingame && netgame && !circuitmap)
-		CONS_Printf(M_GetText("%s has completed the level.\n"), player_names[player-players]);*/
 }
 
 #define SPACESPECIAL 12
