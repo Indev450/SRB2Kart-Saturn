@@ -232,7 +232,7 @@ consvar_t cv_kicktime = {"kicktime", "10", CV_SAVE, CV_Unsigned, NULL, 0, NULL, 
 
 static boolean UseLocalDelay(void)
 {
-	if (dedicated || (server && server_lagless && !cv_mindelay.value))
+	if (dedicated || (server && server_lagless && !cv_mindelay.value) || modeattacking == ATTACKING_RECORD)
 		return false;
 
 	return (cv_mindelay.value || (server && !server_lagless));
