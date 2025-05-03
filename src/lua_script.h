@@ -92,6 +92,15 @@ void COM_Lua_f(void);
 	}\
 }
 
+#define LUA_LogDeprecated(L,this_func,use_instead)\
+{\
+	static UINT8 seen = 0;\
+	if (!seen) {\
+		seen = 1;\
+		CON_LogMessage(va("\"%s\" is deprecated and will be removed.\nUse \"%s\" instead.\n", this_func, use_instead));\
+	}\
+}
+
 // Warnings about incorrect function usage.
 // Shows once, then never again, like deprecation
 #define LUA_UsageWarning(L, warningmsg)\
