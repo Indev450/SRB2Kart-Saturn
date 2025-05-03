@@ -11049,9 +11049,10 @@ void A_InvincSparkleRotate(void *thing)
 	actor->angle += ANG1*10*(actor->extravalue2);	// Arbitrary value, change this if you want, I suppose.
 
 	ghost = P_SpawnGhostMobj(actor);
-	if (ghost != NULL && P_MobjWasRemoved(ghost) == false)
+
+	if (!P_MobjWasRemoved(ghost))
 	{
-		//ghost->frame |= FF_ADD;
+		ghost->frame |= FF_ADD;
 		ghost->fuse = 4;
 	}
 }
