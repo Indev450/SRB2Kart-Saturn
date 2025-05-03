@@ -17,6 +17,8 @@
 #ifndef __DOOMTYPE__
 #define __DOOMTYPE__
 
+#include "stdbool.h"
+
 #if defined (_WIN32)
 //#define WIN32_LEAN_AND_MEAN
 #define RPC_NO_WINDOWS_H
@@ -155,8 +157,11 @@ size_t strlcpy(char *dst, const char *src, size_t siz);
 #define STRBUFCPY(dst,src) strlcpy(dst, src, sizeof dst)
 
 /* Boolean type definition */
-#include "stdbool.h"
+#ifdef _WIN32
+#define boolean bool
+#else
 typedef bool boolean;
+#endif
 
 /* 7.18.2.1  Limits of exact-width integer types */
 #ifndef INT8_MIN
