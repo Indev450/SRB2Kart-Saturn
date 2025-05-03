@@ -55,7 +55,6 @@ void PS_SetPreThinkFrameHookInfo(int index, precise_t time_taken, char* short_sr
 void PS_SetThinkFrameHookInfo(int index, precise_t time_taken, char* short_src);
 void PS_SetPostThinkFrameHookInfo(int index, precise_t time_taken, char* short_src);
 
-
 void PS_UpdateTickStats(void);
 
 void M_DrawPerfStats(void);

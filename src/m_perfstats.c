@@ -214,6 +214,7 @@ void PS_SetPreThinkFrameHookInfo(int index, precise_t time_taken, char* short_sr
 		// array needs to be initialized
 		prethinkframe_hooks = Z_Calloc(sizeof(ps_hookinfo_t) * prethinkframe_hooks_capacity, PU_STATIC, NULL);
 	}
+
 	if (index >= prethinkframe_hooks_capacity)
 	{
 		// array needs more space, realloc with double size
@@ -225,6 +226,7 @@ void PS_SetPreThinkFrameHookInfo(int index, precise_t time_taken, char* short_sr
 			sizeof(ps_hookinfo_t) * prethinkframe_hooks_capacity);
 		prethinkframe_hooks_capacity = new_capacity;
 	}
+
 	prethinkframe_hooks[index].time_taken.value.p = time_taken;
 	memcpy(prethinkframe_hooks[index].short_src, short_src, LUA_IDSIZE * sizeof(char));
 	// since the values are set sequentially from begin to end, the last call should leave
@@ -239,6 +241,7 @@ void PS_SetThinkFrameHookInfo(int index, precise_t time_taken, char* short_src)
 		// array needs to be initialized
 		thinkframe_hooks = Z_Calloc(sizeof(ps_hookinfo_t) * thinkframe_hooks_capacity, PU_STATIC, NULL);
 	}
+
 	if (index >= thinkframe_hooks_capacity)
 	{
 		// array needs more space, realloc with double size
@@ -250,6 +253,7 @@ void PS_SetThinkFrameHookInfo(int index, precise_t time_taken, char* short_src)
 			sizeof(ps_hookinfo_t) * thinkframe_hooks_capacity);
 		thinkframe_hooks_capacity = new_capacity;
 	}
+
 	thinkframe_hooks[index].time_taken.value.p = time_taken;
 	memcpy(thinkframe_hooks[index].short_src, short_src, LUA_IDSIZE * sizeof(char));
 	// since the values are set sequentially from begin to end, the last call should leave
@@ -264,6 +268,7 @@ void PS_SetPostThinkFrameHookInfo(int index, precise_t time_taken, char* short_s
 		// array needs to be initialized
 		postthinkframe_hooks = Z_Calloc(sizeof(ps_hookinfo_t) * postthinkframe_hooks_capacity, PU_STATIC, NULL);
 	}
+
 	if (index >= postthinkframe_hooks_capacity)
 	{
 		// array needs more space, realloc with double size
@@ -275,14 +280,13 @@ void PS_SetPostThinkFrameHookInfo(int index, precise_t time_taken, char* short_s
 			sizeof(ps_hookinfo_t) * postthinkframe_hooks_capacity);
 		postthinkframe_hooks_capacity = new_capacity;
 	}
+
 	postthinkframe_hooks[index].time_taken.value.p = time_taken;
 	memcpy(postthinkframe_hooks[index].short_src, short_src, LUA_IDSIZE * sizeof(char));
 	// since the values are set sequentially from begin to end, the last call should leave
 	// the correct value to this variable
 	postthinkframe_hooks_length = index + 1;
 }
-
-
 
 static boolean PS_HighResolution(void)
 {
@@ -349,6 +353,7 @@ static INT32 PS_GetMetricMinOrMax(ps_metric_t *metric, boolean time_metric, bool
 	for (i = 0; i < cv_ps_samplesize.value; i++)
 	{
 		INT32 value;
+
 		if (time_metric)
 			value = (*((precise_t*)history_read_pos)) / (I_GetPrecisePrecision() / 1000000);
 		else
@@ -359,6 +364,7 @@ static INT32 PS_GetMetricMinOrMax(ps_metric_t *metric, boolean time_metric, bool
 		{
 			found_value = value;
 		}
+
 		history_read_pos += value_size;
 	}
 
@@ -377,6 +383,7 @@ static INT32 PS_GetMetricSD(ps_metric_t *metric, boolean time_metric)
 	for (i = 0; i < cv_ps_samplesize.value; i++)
 	{
 		INT64 value;
+
 		if (time_metric)
 			value = (*((precise_t*)history_read_pos)) / (I_GetPrecisePrecision() / 1000000);
 		else
@@ -396,14 +403,17 @@ static INT32 PS_GetMetricScreenValue(ps_metric_t *metric, boolean time_metric)
 {
 	if (cv_ps_samplesize.value > 1 && metric->history)
 	{
-		if (cv_ps_descriptor.value == 1)
-			return PS_GetMetricAverage(metric, time_metric);
-		else if (cv_ps_descriptor.value == 2)
-			return PS_GetMetricSD(metric, time_metric);
-		else if (cv_ps_descriptor.value == 3)
-			return PS_GetMetricMinOrMax(metric, time_metric, false);
-		else
-			return PS_GetMetricMinOrMax(metric, time_metric, true);
+		switch (cv_ps_descriptor.value)
+		{
+			case 1:
+				return PS_GetMetricAverage(metric, time_metric);
+			case 2:
+				return PS_GetMetricSD(metric, time_metric);
+			case 3:
+				return PS_GetMetricMinOrMax(metric, time_metric, false);
+			default:
+				return PS_GetMetricMinOrMax(metric, time_metric, true);
+		}
 	}
 	else
 	{
@@ -575,6 +585,7 @@ static void PS_CountThinkers(void)
 	ps_precipcount.value.i = 0;
 	ps_otherthcount.value.i = 0;
 	ps_removecount.value.i = 0;
+
 	for (thinker = thinkercap.next; thinker != &thinkercap; thinker = thinker->next)
 	{
 		ps_thinkercount.value.i++;
@@ -644,6 +655,7 @@ void PS_UpdateTickStats(void)
 	{
 		PS_UpdateRowHistories(gamelogicbrief_row, false);
 	}
+
 	if (cv_perfstats.value == 2)
 	{
 		if (PS_IsLevelActive())
@@ -656,8 +668,6 @@ void PS_UpdateTickStats(void)
 				ps_lua_thinkframe_time.value.p -
 				ps_lua_postthinkframe_time.value.p;
 
-
-
 			PS_CountThinkers();
 		}
 
@@ -668,37 +678,47 @@ void PS_UpdateTickStats(void)
 			PS_UpdateRowHistories(misc_calls_rows, false);
 		}
 	}
+
 	if (cv_ps_samplesize.value > 1)
 	{
-		if(cv_perfstats.value >= 3 && PS_IsLevelActive())
+		if (cv_perfstats.value >= 3 && PS_IsLevelActive())
 		{
-						int i;
-			if (cv_perfstats.value == 3)
+			int i;
+
+			switch (cv_perfstats.value)
 			{
-				for (i = 0; i < thinkframe_hooks_length; i++)
-					PS_UpdateMetricHistory(&thinkframe_hooks[i].time_taken, true, false);
-			}
-			else if (cv_perfstats.value == 4)
-			{
-				for (i = 0; i < prethinkframe_hooks_length; i++)
-					PS_UpdateMetricHistory(&prethinkframe_hooks[i].time_taken, true, false);
-			}
-			else if (cv_perfstats.value == 5)
-			{
-				for (i = 0; i < postthinkframe_hooks_length; i++)
-					PS_UpdateMetricHistory(&postthinkframe_hooks[i].time_taken, true, false);
+				case 3:
+					for (i = 0; i < thinkframe_hooks_length; i++)
+					{
+						PS_UpdateMetricHistory(&thinkframe_hooks[i].time_taken, true, false);
+					}
+					break;
+				case 4:
+					for (i = 0; i < prethinkframe_hooks_length; i++)
+					{
+						PS_UpdateMetricHistory(&prethinkframe_hooks[i].time_taken, true, false);
+					}
+					break;
+				case 5:
+					for (i = 0; i < postthinkframe_hooks_length; i++)
+					{
+						PS_UpdateMetricHistory(&postthinkframe_hooks[i].time_taken, true, false);
+					}
+					break;
+				default:
+					break;
 			}
 		}
 		if (cv_perfstats.value)
 		{
 			ps_tick_index++;
+
 			if (ps_tick_index >= cv_ps_samplesize.value)
 				ps_tick_index = 0;
+
 			if (ps_tick_samples_left)
 				ps_tick_samples_left--;
-
 		}
-
 	}
 }
 
@@ -712,6 +732,7 @@ static void PS_DrawDescriptorHeader(void)
 			"minimum",
 			"maximum"
 		};
+
 		const boolean hires = PS_HighResolution();
 		char* str;
 		INT32 flags = V_MONOSPACE | V_ALLOWLOWERCASE;
@@ -819,12 +840,12 @@ static void PS_DrawGameLogicStats(void)
 
 static void draw_think_frame_stats(int hook_length, ps_hookinfo_t *hook)
 {
-    char s[100];
+	char s[100];
 	int i;
 	int maxpage = 0;
-    int page = 0;
-    int pagestart = 0;
-    int pageend = 0;
+	int page = 0;
+	int pagestart = 0;
+	int pageend = 0;
 	// text writing position
 	int x = START_X;
 	int y = START_Y;
@@ -832,57 +853,69 @@ static void draw_think_frame_stats(int hook_length, ps_hookinfo_t *hook)
 	char tempbuffer[LUA_IDSIZE];
 	char last_mod_name[LUA_IDSIZE];
 	last_mod_name[0] = '\0';
-    INT32 total = 0;
+	INT32 total = 0;
 
 	//Decide page length based and drawn text on choosen thinker type
-	if (cv_perfstats.value == 3){
-    	maxpage = thinkframe_hooks_length/PAGE_ENTRIES + 1;
-		page = max(1, min(cv_ps_thinkframe_page.value, maxpage));
-    	pagestart = min((page - 1)*PAGE_ENTRIES, thinkframe_hooks_length);
-    	pageend   = min(pagestart + PAGE_ENTRIES, thinkframe_hooks_length);
+	switch (cv_perfstats.value)
+	{
+		case 3:
+			{
+				maxpage = thinkframe_hooks_length/PAGE_ENTRIES + 1;
+				page = max(1, min(cv_ps_thinkframe_page.value, maxpage));
+				pagestart = min((page - 1)*PAGE_ENTRIES, thinkframe_hooks_length);
+				pageend   = min(pagestart + PAGE_ENTRIES, thinkframe_hooks_length);
 
-		V_DrawSmallString(MAX_X-50, MAX_Y+2*HEIGHT, V_MONOSPACE | V_GREENMAP, "ThinkFrame");
-	}
-	else if (cv_perfstats.value == 4){
-		maxpage = prethinkframe_hooks_length/PAGE_ENTRIES + 1;
-		page = max(1, min(cv_ps_thinkframe_page.value, maxpage));
-    	pagestart = min((page - 1)*PAGE_ENTRIES, prethinkframe_hooks_length);
-    	pageend   = min(pagestart + PAGE_ENTRIES, prethinkframe_hooks_length);
-		V_DrawSmallString(MAX_X-60, MAX_Y+2*HEIGHT, V_MONOSPACE | V_GREENMAP, "PreThinkFrame");
-	}
-	else if (cv_perfstats.value == 5){
-		maxpage = postthinkframe_hooks_length/PAGE_ENTRIES + 1;
-		page = max(1, min(cv_ps_thinkframe_page.value, maxpage));
-    	pagestart = min((page - 1)*PAGE_ENTRIES, postthinkframe_hooks_length);
-    	pageend   = min(pagestart + PAGE_ENTRIES, postthinkframe_hooks_length);
-		V_DrawSmallString(MAX_X-65, MAX_Y+2*HEIGHT, V_MONOSPACE | V_GREENMAP, "PostThinkFrame");
-
+				V_DrawSmallString(MAX_X-50, MAX_Y+2*HEIGHT, V_MONOSPACE | V_GREENMAP, "ThinkFrame");
+			}
+			break;
+		case 4:
+			{
+				maxpage = prethinkframe_hooks_length/PAGE_ENTRIES + 1;
+				page = max(1, min(cv_ps_thinkframe_page.value, maxpage));
+				pagestart = min((page - 1)*PAGE_ENTRIES, prethinkframe_hooks_length);
+				pageend   = min(pagestart + PAGE_ENTRIES, prethinkframe_hooks_length);
+				V_DrawSmallString(MAX_X-60, MAX_Y+2*HEIGHT, V_MONOSPACE | V_GREENMAP, "PreThinkFrame");
+			}
+			break;
+		case 5:
+			{
+				maxpage = postthinkframe_hooks_length/PAGE_ENTRIES + 1;
+				page = max(1, min(cv_ps_thinkframe_page.value, maxpage));
+				pagestart = min((page - 1)*PAGE_ENTRIES, postthinkframe_hooks_length);
+				pageend   = min(pagestart + PAGE_ENTRIES, postthinkframe_hooks_length);
+				V_DrawSmallString(MAX_X-65, MAX_Y+2*HEIGHT, V_MONOSPACE | V_GREENMAP, "PostThinkFrame");
+			}
+			break;
+		default:
+			break;
 	}
 
 	PS_DrawDescriptorHeader();
 
 	for (i = 0; i < hook_length; i++)
 	{
-
 #define NEXT_ROW() y += HEIGHT;
 
-        INT32 value = PS_GetMetricScreenValue(&hook[i].time_taken, true);
-        total += value;
+		INT32 value = PS_GetMetricScreenValue(&hook[i].time_taken, true);
+		total += value;
 
-        if (i < pagestart || i >= pageend) continue;
+		if (i < pagestart || i >= pageend) continue;
 
 		char* str = hook[i].short_src;
 		char* tempstr = tempbuffer;
 		int len = (int)strlen(str);
 		char* str_ptr;
+
 		if (strcmp(".lua", str + len - 4) == 0)
 		{
 			str[len-4] = '\0'; // remove .lua at end
 			len -= 4;
 		}
+
 		// Print wad name first.
 		strcpy(tempstr, str);
 		str_ptr = strrchr(tempstr, '|');
+
 		if (str_ptr)
 		{
 			*str_ptr = '\0';
@@ -891,12 +924,12 @@ static void draw_think_frame_stats(int hook_length, ps_hookinfo_t *hook)
 			if (str_ptr)
 				tempstr = str_ptr + 1;
 			// tempstr should now point to the mod name, (wad/pk3) possibly truncated
-            strcpy(last_mod_name, tempstr);
-            len = (int)strlen(tempstr);
-            if (len > 30)
-                tempstr += len - 30;
-            snprintf(s, sizeof s - 1, "%s", tempstr);
-            V_DrawSmallString(x, y, V_MONOSPACE | V_ALLOWLOWERCASE | V_GRAYMAP, s);
+			strcpy(last_mod_name, tempstr);
+			len = (int)strlen(tempstr);
+			if (len > 30)
+				tempstr += len - 30;
+			snprintf(s, sizeof s - 1, "%s", tempstr);
+			V_DrawSmallString(x, y, V_MONOSPACE | V_ALLOWLOWERCASE | V_GRAYMAP, s);
 			text_color = V_YELLOWMAP;
 		}
 		else
@@ -908,35 +941,35 @@ static void draw_think_frame_stats(int hook_length, ps_hookinfo_t *hook)
 				str = str_ptr + 1;
 			text_color = 0; // white
 		}
+
 		len = (int)strlen(str);
+
 		if (len > 40)
 			str += len - 40;
+
 		snprintf(s, sizeof s - 1, "%40s: %d", str, value);
 		V_DrawSmallString(x + WIDTH, y, V_MONOSPACE | V_ALLOWLOWERCASE | text_color, s);
 		NEXT_ROW()
 
 #undef NEXT_ROW
-
 	}
 
-    snprintf(s, sizeof s - 1, "TOTAL %d", total);
-    V_DrawSmallString(MAX_X, MAX_Y+2*HEIGHT, V_MONOSPACE | V_GREENMAP, s);
+	snprintf(s, sizeof s - 1, "TOTAL %d", total);
+	V_DrawSmallString(MAX_X, MAX_Y+2*HEIGHT, V_MONOSPACE | V_GREENMAP, s);
 
-    if (maxpage > 1) {
-        snprintf(s, sizeof s - 1, "PAGE %d", page);
-        V_DrawSmallString(START_X, MAX_Y+2*HEIGHT, V_MONOSPACE | V_GREENMAP, s);
-    }
-
-
+	if (maxpage > 1)
+	{
+		snprintf(s, sizeof s - 1, "PAGE %d", page);
+		V_DrawSmallString(START_X, MAX_Y+2*HEIGHT, V_MONOSPACE | V_GREENMAP, s);
+	}
 }
 
 void PS_ThinkFrame_Page_OnChange(void)
 {
-    int maxpage = thinkframe_hooks_length/PAGE_ENTRIES + 1;
+	int maxpage = thinkframe_hooks_length/PAGE_ENTRIES + 1;
 
-    if (cv_ps_thinkframe_page.value > maxpage) {
-        CV_StealthSetValue(&cv_ps_thinkframe_page, maxpage);
-    }
+	if (cv_ps_thinkframe_page.value > maxpage)
+		CV_StealthSetValue(&cv_ps_thinkframe_page, maxpage);
 }
 
 #undef WIDTH
@@ -947,8 +980,6 @@ void PS_ThinkFrame_Page_OnChange(void)
 #undef START_Y
 
 #undef PAGE_ENTRIES
-
-
 
 static void PS_DrawPreThinkFrameStats(void)
 {
@@ -983,6 +1014,7 @@ void M_DrawPerfStats(void)
 	{
 		if (!PS_IsLevelActive())
 			return;
+
 		if (!PS_HighResolution())
 		{
 			// Low resolutions can't really use V_DrawSmallString that is used by thinkframe stats.
@@ -992,19 +1024,21 @@ void M_DrawPerfStats(void)
 			V_DrawThinString(80, 100, V_MONOSPACE | V_ALLOWLOWERCASE | V_YELLOWMAP, "for resolutions below 640x400.");
 			return;
 		}
-		if (cv_perfstats.value == 3)
-		{
-			PS_DrawThinkFrameStats();
-		}
-		else if (cv_perfstats.value == 4)
-		{
-			PS_DrawPreThinkFrameStats();
-		}
-		else if (cv_perfstats.value == 5)
-		{
-			PS_DrawPostThinkFrameStats();
-		}
 
+		switch (cv_perfstats.value)
+		{
+			case 3:
+				PS_DrawThinkFrameStats();
+				break;
+			case 4:
+				PS_DrawPreThinkFrameStats();
+				break;
+			case 5:
+				PS_DrawPostThinkFrameStats();
+				break;
+			default:
+				break;
+		}
 	}
 }
 
@@ -1014,15 +1048,18 @@ static void PS_ClearHistory(void)
 	int i;
 
 	Z_FreeTags(PU_PERFSTATS, PU_PERFSTATS);
+
 	// thinkframe hook metric history pointers need to be cleared manually
 	for (i = 0; i < prethinkframe_hooks_length; i++)
 	{
 		prethinkframe_hooks[i].time_taken.history = NULL;
 	}
+
 	for (i = 0; i < thinkframe_hooks_length; i++)
 	{
 		thinkframe_hooks[i].time_taken.history = NULL;
 	}
+
 	for (i = 0; i < postthinkframe_hooks_length; i++)
 	{
 		postthinkframe_hooks[i].time_taken.history = NULL;
