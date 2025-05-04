@@ -1060,7 +1060,7 @@ UINT16 W_CheckNumForLongNamePwad(const char *name, UINT16 wad, UINT16 startlump)
 		lumpinfo_t *lump_p = wadfiles[wad]->lumpinfo + startlump;
 		for (i = startlump; i < wadfiles[wad]->numlumps; i++, lump_p++)
 			if (lump_p->longnamelength == namelen
-				&& lump_p->hash.name == hash
+				&& lump_p->hash.longname == hash
 				&& !stricmp(lump_p->longname, name))
 				return i;
 	}
