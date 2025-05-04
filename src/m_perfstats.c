@@ -127,8 +127,8 @@ perfstatrow_t commoncounter_rows[] = {
 };
 
 perfstatrow_t interpolation_rows[] = {
-	{"intpfrc", "Interp frac: ", &ps_interp_frac, PS_TIME},
-	{"intplag", "Interp lag:  ", &ps_interp_lag, PS_TIME},
+	{"intpfrc", "Interp frac: ", &ps_interp_frac, 0},
+	{"intplag", "Interp lag:  ", &ps_interp_lag, 0},
 	{0}
 };
 
@@ -784,7 +784,7 @@ static void PS_DrawRenderStats(void)
 	if (PS_IsLevelActive())
 	{
 		x = hires ? 115 : 90;
-		cy = PS_DrawPerfRows(x, 10, V_BLUEMAP, commoncounter_rows);// + half_row;
+		cy = PS_DrawPerfRows(x, 10, V_BLUEMAP, commoncounter_rows) + half_row;
 
 #ifdef HWRENDER
 		if (rendermode == render_opengl && cv_glbatching.value)
