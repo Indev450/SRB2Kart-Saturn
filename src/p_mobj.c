@@ -5665,6 +5665,8 @@ void P_SetScale(mobj_t *mobj, fixed_t newscale)
 
 	oldscale = mobj->scale; //keep for adjusting stuff below
 
+	P_UnlinkfromBlockMap(mobj);
+
 	mobj->scale = newscale;
 
 	mobj->radius = FixedMul(mobj->info->radius, newscale);
@@ -5677,6 +5679,11 @@ void P_SetScale(mobj_t *mobj, fixed_t newscale)
 		G_GhostAddScale((INT32) (player - players), newscale);
 		player->viewheight = FixedMul(FixedDiv(player->viewheight, oldscale), newscale); // Nonono don't calculate viewheight elsewhere, this is the best place for it!
 		player->dashspeed = FixedMul(FixedDiv(player->dashspeed, oldscale), newscale); // Prevents the player from having to re-charge up spindash if the player grew in size
+	}
+
+	if (!(mobj->flags & MF_NOBLOCKMAP))
+	{
+		P_LinkToBlockMap(mobj, blocklinks);
 	}
 }
 
