@@ -45,6 +45,9 @@ consvar_t cv_fpscap = {"fpscap", "Match refresh rate", CV_SAVE, fpscap_cons_t, N
 
 consvar_t cv_precipinterp = {"precipinterpolation", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
+ps_metric_t ps_interp_frac = {0};
+ps_metric_t ps_interp_lag = {0};
+
 UINT32 R_GetFramerateCap(void)
 {
 	if (rendermode == render_none)

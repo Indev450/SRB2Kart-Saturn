@@ -126,11 +126,11 @@ perfstatrow_t commoncounter_rows[] = {
 	{0}
 };
 
-/*perfstatrow_t interpolation_rows[] = {
-	{"intpfrc", "Interp frac: ", &ps_interp_frac, PS_TIME},
-	{"intplag", "Interp lag:  ", &ps_interp_lag, PS_TIME},
+perfstatrow_t interpolation_rows[] = {
+	{"intpfrc", "Interp frac: ", &ps_interp_frac, 0},
+	{"intplag", "Interp lag:  ", &ps_interp_lag, 0},
 	{0}
-};*/
+};
 
 #ifdef HWRENDER
 perfstatrow_t batchcount_rows[] = {
@@ -553,8 +553,8 @@ static void PS_UpdateFrameStats(void)
 		if (PS_IsLevelActive())
 			PS_UpdateRowHistories(commoncounter_rows, true);
 
-		/*if (R_UsingFrameInterpolation())
-			PS_UpdateRowHistories(interpolation_rows, true);*/
+		if (R_UsingFrameInterpolation())
+			PS_UpdateRowHistories(interpolation_rows, true);
 
 #ifdef HWRENDER
 		if (rendermode == render_opengl && cv_glbatching.value)
@@ -773,7 +773,7 @@ static void PS_DrawRenderStats(void)
 {
 	const boolean hires = PS_HighResolution();
 	const int half_row = hires ? 5 : 4;
-	int x, y = 10; //, cy = 10;
+	int x, y, cy = 10;
 
 	PS_DrawDescriptorHeader();
 
@@ -784,7 +784,7 @@ static void PS_DrawRenderStats(void)
 	if (PS_IsLevelActive())
 	{
 		x = hires ? 115 : 90;
-		/*cy = */PS_DrawPerfRows(x, 10, V_BLUEMAP, commoncounter_rows);// + half_row;
+		cy = PS_DrawPerfRows(x, 10, V_BLUEMAP, commoncounter_rows) + half_row;
 
 #ifdef HWRENDER
 		if (rendermode == render_opengl && cv_glbatching.value)
@@ -799,11 +799,11 @@ static void PS_DrawRenderStats(void)
 #endif
 	}
 
-	/*if (R_UsingFrameInterpolation())
+	if (R_UsingFrameInterpolation())
 	{
 		x = hires ? 115 : 90;
-		PS_DrawPerfRows(x, cy, V_ROSYMAP, interpolation_rows);
-	}*/
+		PS_DrawPerfRows(x, cy, V_PEACHMAP, interpolation_rows);
+	}
 }
 
 static void PS_DrawGameLogicStats(void)
