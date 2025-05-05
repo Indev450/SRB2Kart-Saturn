@@ -827,6 +827,11 @@ void D_SRB2Loop(void)
 		{
 			renderdeltatics = FloatToFixed(deltatics);
 
+			// I looked at the possibility of putting in a float drawer for
+			// perfstats and it's very complicated, so we'll just do this instead...
+			ps_interp_frac.value.p = (precise_t)((FIXED_TO_FLOAT(g_time.timefrac)) * 1000.0f);
+			ps_interp_lag.value.p = (precise_t)((deltasecs) * 1000.0f);
+
 			if (!(paused || P_AutoPause()) && deltatics < 1.0 && !hu_stopped)
 			{
 				rendertimefrac = g_time.timefrac;
