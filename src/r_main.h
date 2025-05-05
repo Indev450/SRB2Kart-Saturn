@@ -99,7 +99,7 @@ FUNCINLINE static ATTRINLINE PUREFUNC INT32 R_PointOnSide(fixed_t x, fixed_t y, 
 	// also use a mask to avoid branch prediction
 	INT32 mask = (node->dy ^ node->dx ^ x ^ y) >> 31;
 	return (mask & ((node->dy ^ x) < 0)) |  // (left is negative)
-	(~mask & (FixedMul(y, node->dx>>FRACBITS) >= FixedMul(node->dy>>FRACBITS, x)));
+	       (~mask & (FixedMul(y, node->dx>>FRACBITS) >= FixedMul(node->dy>>FRACBITS, x)));
 }
 
 // This is not as accurate
@@ -107,7 +107,8 @@ FUNCINLINE static ATTRINLINE PUREFUNC INT32 R_PointOnSide(fixed_t x, fixed_t y, 
 FUNCINLINE static ATTRINLINE PUREFUNC INT32 R_PointOnSideFast(fixed_t x, fixed_t y, const node_t *node)
 {
 	// use cross product to determine side quickly
-	return ((((INT64)y - node->y) * node->dx - ((INT64)x - node->x) * node->dy) >= 0);
+	INT64 v = ((INT64)y - node->y) * node->dx - ((INT64)x - node->x) * node->dy;
+	return v > 0;
 }
 
 FUNCINLINE static ATTRINLINE PUREFUNC INT32 R_PointOnSegSide(fixed_t x, fixed_t y, const seg_t *line)
@@ -118,7 +119,8 @@ FUNCINLINE static ATTRINLINE PUREFUNC INT32 R_PointOnSegSide(fixed_t x, fixed_t 
     fixed_t ldy = line->v2->y - ly;
 
 	// use cross product to determine side quickly
-	return ((((INT64)y - ly) * ldx - ((INT64)x - lx) * ldy) >= 0);
+	INT64 v = ((INT64)y - ly) * ldx - ((INT64)x - lx) * ldy;
+	return v > 0;
 }
 
 angle_t R_PointToAngle(fixed_t x, fixed_t y);
