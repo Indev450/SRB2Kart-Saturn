@@ -2584,8 +2584,6 @@ static void P_DoZoomTube(player_t *player)
 		{
 			if (th->function.acp1 != (actionf_p1)P_MobjThinker) // Not a mobj thinker
 				continue;
-			if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
-				continue;
 
 			mo2 = (mobj_t *)th;
 
