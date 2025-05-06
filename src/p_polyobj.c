@@ -1916,9 +1916,7 @@ void T_PolyObjWaypoint(polywaypoint_t *th)
 			// Find next waypoint
 			for (wp = thinkercap.next; wp != &thinkercap; wp = wp->next)
 			{
-				if (wp->function.acp1 != (actionf_p1)P_MobjThinker) // Not a mobj thinker
-					continue;
-				if (wp->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
+				if (wp->function != (actionf_p1)P_MobjThinker) // Not a mobj thinker
 					continue;
 
 				mo2 = (mobj_t *)wp;
@@ -1957,9 +1955,7 @@ void T_PolyObjWaypoint(polywaypoint_t *th)
 
 				for (wp = thinkercap.next; wp != &thinkercap; wp = wp->next)
 				{
-					if (wp->function.acp1 != (actionf_p1)P_MobjThinker) // Not a mobj thinker
-						continue;
-					if (wp->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
+					if (wp->function != (actionf_p1)P_MobjThinker) // Not a mobj thinker
 						continue;
 
 					mo2 = (mobj_t *)wp;
@@ -1996,9 +1992,7 @@ void T_PolyObjWaypoint(polywaypoint_t *th)
 
 				for (wp = thinkercap.next; wp != &thinkercap; wp = wp->next)
 				{
-					if (wp->function.acp1 != (actionf_p1)P_MobjThinker) // Not a mobj thinker
-						continue;
-					if (wp->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
+					if (wp->function != (actionf_p1)P_MobjThinker) // Not a mobj thinker
 						continue;
 
 					mo2 = (mobj_t *)wp;
@@ -2518,9 +2512,7 @@ INT32 EV_DoPolyObjWaypoint(polywaypointdata_t *pwdata)
 	// Find the first waypoint we need to use
 	for (wp = thinkercap.next; wp != &thinkercap; wp = wp->next)
 	{
-		if (wp->function.acp1 != (actionf_p1)P_MobjThinker) // Not a mobj thinker
-			continue;
-		if (wp->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
+		if (wp->function != (actionf_p1)P_MobjThinker) // Not a mobj thinker
 			continue;
 
 		mo2 = (mobj_t *)wp;

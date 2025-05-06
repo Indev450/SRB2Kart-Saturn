@@ -3762,9 +3762,7 @@ DoneSection2:
 				// to find the first waypoint
 				for (th = thinkercap.next; th != &thinkercap; th = th->next)
 				{
-					if (th->function.acp1 != (actionf_p1)P_MobjThinker)
-						continue;
-					if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
+					if (th->function != (actionf_p1)P_MobjThinker)
 						continue;
 
 					mo2 = (mobj_t *)th;
@@ -3843,9 +3841,7 @@ DoneSection2:
 				// to find the last waypoint
 				for (th = thinkercap.next; th != &thinkercap; th = th->next)
 				{
-					if (th->function.acp1 != (actionf_p1)P_MobjThinker)
-						continue;
-					if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
+					if (th->function != (actionf_p1)P_MobjThinker)
 						continue;
 
 					mo2 = (mobj_t *)th;
@@ -4062,9 +4058,7 @@ DoneSection2:
 				// to find the first waypoint
 				for (th = thinkercap.next; th != &thinkercap; th = th->next)
 				{
-					if (th->function.acp1 != (actionf_p1)P_MobjThinker)
-						continue;
-					if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
+					if (th->function != (actionf_p1)P_MobjThinker)
 						continue;
 
 					mo2 = (mobj_t *)th;
@@ -4102,9 +4096,7 @@ DoneSection2:
 				// Find waypoint before this one (waypointlow)
 				for (th = thinkercap.next; th != &thinkercap; th = th->next)
 				{
-					if (th->function.acp1 != (actionf_p1)P_MobjThinker)
-						continue;
-					if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
+					if (th->function != (actionf_p1)P_MobjThinker)
 						continue;
 
 					mo2 = (mobj_t *)th;
@@ -4131,9 +4123,7 @@ DoneSection2:
 				// Find waypoint after this one (waypointhigh)
 				for (th = thinkercap.next; th != &thinkercap; th = th->next)
 				{
-					if (th->function.acp1 != (actionf_p1)P_MobjThinker)
-						continue;
-					if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
+					if (th->function != (actionf_p1)P_MobjThinker)
 						continue;
 
 					mo2 = (mobj_t *)th;

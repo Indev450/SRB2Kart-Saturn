@@ -2579,9 +2579,7 @@ static void P_DoZoomTube(player_t *player)
 		// Find next waypoint
 		for (th = thinkercap.next; th != &thinkercap; th = th->next)
 		{
-			if (th->function.acp1 != (actionf_p1)P_MobjThinker) // Not a mobj thinker
-				continue;
-			if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
+			if (th->function != (actionf_p1)P_MobjThinker) // Not a mobj thinker
 				continue;
 
 			mo2 = (mobj_t *)th;
