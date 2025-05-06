@@ -3175,8 +3175,6 @@ static void Command_connect(void)
 		return;
 	}
 
-	M_ClearMenus(true);
-
 	if (Playing() || demo.title || demo.playback)
 	{
 		if (demo.title || demo.playback)
@@ -3194,6 +3192,8 @@ static void Command_connect(void)
 
 		D_StartTitle();
 	}
+	else
+		M_ClearMenus(true); // close the menus
 
 	// modified game check: no longer handled
 	// we don't request a restart unless the filelist differs
