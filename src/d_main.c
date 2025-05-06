@@ -956,6 +956,8 @@ void D_StartTitle(void)
 		return;
 	}
 
+	M_ClearMenus(true);
+
 	// okay, stop now
 	// (otherwise the game still thinks we're playing!)
 	SV_StopServer();
