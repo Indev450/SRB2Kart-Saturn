@@ -80,7 +80,7 @@ write netcode into the sound code, OKAY?
 #define GME_BASS 1.0f
 #endif // HAVE_GME
 
- 
+
 //static UINT16 BUFFERSIZE = 2048;
 static UINT16 SAMPLERATE = 44100;
 
@@ -114,7 +114,9 @@ static UINT32 fading_timer;
 static UINT32 fading_duration;
 static INT32 fading_id;
 static void (*fading_callback)(void);
+#if !SDL_VERSION_ATLEAST(2, 32, 56)
 static boolean fading_do_callback;
+#endif
 
 #ifdef HAVE_LIBGME
 static Music_Emu *gme;
@@ -141,7 +143,9 @@ static void var_cleanup(void)
 	 is_fading = false;
 
 	fading_callback = NULL;
+#if !SDL_VERSION_ATLEAST(2, 32, 56)
 	fading_do_callback = false;
+#endif
 
 	internal_volume = 100;
 }
@@ -213,7 +217,7 @@ void I_StartupSound(void)
 		// call to start audio failed -- we do not have it
 		return;
 	}
-	
+
 #ifdef HAVE_OPENMPT
 	CONS_Printf("libopenmpt version: %s\n", openmpt_get_string("library_version"));
 	CONS_Printf("libopenmpt build date: %s\n", openmpt_get_string("build"));
@@ -249,6 +253,7 @@ void I_ShutdownSound(void)
 
 void I_UpdateSound(void)
 {
+#if !SDL_VERSION_ATLEAST(2, 32, 56)
 	if (fading_do_callback)
 	{
 		if (fading_callback)
@@ -256,6 +261,7 @@ void I_UpdateSound(void)
 		fading_callback = NULL;
 		fading_do_callback = false;
 	}
+#endif
 }
 
 /// ------------------------
@@ -583,8 +589,14 @@ static UINT32 get_adjusted_position(UINT32 position)
 
 static void do_fading_callback(void)
 {
+#if SDL_VERSION_ATLEAST(2, 32, 56)
+	if (fading_callback)
+		(*fading_callback)();
+	fading_callback = NULL;
+#else
 	// TODO: Should I use a mutex here or something?
 	fading_do_callback = true;
+#endif
 }
 
 /// ------------------------
@@ -700,7 +712,7 @@ static void mix_gme(void *udata, Uint8 *stream, int len)
 
 	// play gme into stream
 	gme_play(gme, len/2, (short *)stream);
-	
+
 	// Limiter to prevent music from being disorted with some formats
 	if (music_volume >= 18)
 		music_volume = 18;
@@ -716,7 +728,7 @@ static void mix_openmpt(void *udata, Uint8 *stream, int len)
 {
 	int i;
 	short *p;
-	
+
 	(void)udata;
 
 	if (!openmpt_mhandle || songpaused)
@@ -724,7 +736,7 @@ static void mix_openmpt(void *udata, Uint8 *stream, int len)
 
 	// Play module into stream
 	openmpt_module_read_interleaved_stereo(openmpt_mhandle, SAMPLERATE, cv_audbuffersize.value, (short *)stream);
-	
+
 	// Limiter to prevent music from being disorted with some formats
 	if (music_volume >= 18)
 		music_volume = 18;
@@ -813,7 +825,7 @@ boolean I_SetSongSpeed(float speed)
 #endif
 #ifdef HAVE_OPENMPT
 	if (openmpt_mhandle)
-	{		
+	{
 		if (speed > 4.0f)
 			speed = 4.0f; // Limit this to 4x to prevent crashing, stupid fix but... ~SteelT 27/9/19
 #if OPENMPT_API_VERSION_MAJOR < 1 && OPENMPT_API_VERSION_MINOR < 5
