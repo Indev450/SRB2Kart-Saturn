@@ -1950,6 +1950,10 @@ static boolean S_CheckMusicException(void)
 	if (stricmp(music.name, mapmusic.name))
 		return true;
 
+	// dumb hack but dont keepmusic music that is supposed to reset
+	if (music.flags & MUSIC_RELOADRESET)
+		return true;
+
 	// in case somehow the mapmusic was replaced with smth we dont want to keep
 	for (size_t i = 0; i < sizeof(musicexception_list)/sizeof(musicexception_list[0]); i++)
 	{
