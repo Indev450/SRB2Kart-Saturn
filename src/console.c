@@ -1334,7 +1334,12 @@ void CONS_Error(const char *msg)
 
 	// dirty quick hack, but for the good cause
 	while (I_GetKey() != KEY_ENTER)
+	{
+		// Sleep so we don't take too much of cpu usage
+		I_Sleep(1.f/TICRATE*1000);
+
 		I_OsPolling();
+	}
 }
 
 //======================================================================
