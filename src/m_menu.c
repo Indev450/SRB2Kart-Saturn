@@ -3822,10 +3822,7 @@ static void Command_Manual_f(void)
 	itemOn = 0;
 }
 
-boolean DPADUPSCROLL = false;
-boolean DPADDOWNSCROLL = false;
-boolean DPADLEFTSCROLL = false;
-boolean DPADRIGHTSCROLL = false;
+boolean dpadscrollstate[4] = {false, false, false, false};
 
 //
 // M_Responder
@@ -3833,7 +3830,6 @@ boolean DPADRIGHTSCROLL = false;
 boolean M_Responder(event_t *ev)
 {
 	INT32 ch = -1;
-//	INT32 i;
 	static tic_t joywaitx = 0, joywaity = 0, joywaitaccel = 0, mousewait = 0;
 	static INT32 pjoyx = 0, pjoyy = 0, pjoyaccel = 0;
 	static INT32 pmousex = 0, pmousey = 0;
@@ -3874,19 +3870,19 @@ boolean M_Responder(event_t *ev)
 				break;
 			case KEY_HAT1:
 				ch = KEY_UPARROW;
-				DPADUPSCROLL = true;
+				dpadscrollstate[DPAD_UP] = true;
 				break;
 			case KEY_HAT1 + 1:
 				ch = KEY_DOWNARROW;
-				DPADDOWNSCROLL = true;
+				dpadscrollstate[DPAD_DOWN] = true;
 				break;
 			case KEY_HAT1 + 2:
 				ch = KEY_LEFTARROW;
-				DPADLEFTSCROLL = true;
+				dpadscrollstate[DPAD_LEFT] = true;
 				break;
 			case KEY_HAT1 + 3:
 				ch = KEY_RIGHTARROW;
-				DPADRIGHTSCROLL = true;
+				dpadscrollstate[DPAD_RIGHT] = true;
 				break;
 		}
 
@@ -3907,22 +3903,23 @@ boolean M_Responder(event_t *ev)
 		switch (ev->data1) // if you let go of those set those to false
 		{
 			case KEY_HAT1:
-				DPADUPSCROLL = false;
+				dpadscrollstate[DPAD_UP] = false;
 				break;
 			case KEY_HAT1 + 1:
-				DPADDOWNSCROLL = false;
+				dpadscrollstate[DPAD_DOWN] = false;
 				break;
 			case KEY_HAT1 + 2:
-				DPADLEFTSCROLL = false;
+				dpadscrollstate[DPAD_LEFT] = false;
 				break;
 			case KEY_HAT1 + 3:
-				DPADRIGHTSCROLL = false;
+				dpadscrollstate[DPAD_RIGHT] = false;
 				break;
 		}
 	}
 	else if (menuactive)
 	{
 		tic_t thistime = I_GetTime();
+
 		if (ev->type == ev_joystick)
 		{
 			const INT32 jxdeadzone = ((JOYAXISRANGE-1) * max(cv_xdeadzone[0].value, FRACUNIT/2)) >> FRACBITS;
@@ -4376,7 +4373,6 @@ boolean M_Responder(event_t *ev)
 // special responder for demos
 boolean M_DemoResponder(event_t *ev)
 {
-
 	INT32 ch = -1;	// cur event data
 	boolean eatinput = false;	// :omnom:
 
@@ -4562,11 +4558,7 @@ void M_StartControlPanel(void)
 	menuactive = true;
 
 	// reset those just in case the game missed the keyup event
-	DPADUPSCROLL = false;
-	DPADDOWNSCROLL = false;
-	DPADLEFTSCROLL = false;
-	DPADRIGHTSCROLL = false;
-	//
+	memset(dpadscrollstate, false, sizeof(dpadscrollstate));
 
 	if (demo.playback)
 	{

@@ -166,48 +166,56 @@ UINT8 ctrldown = 0; // 0x1 left, 0x2 right
 UINT8 altdown = 0; // 0x1 left, 0x2 right
 boolean capslock = 0;	// gee i wonder what this does.
 
-static void D_PadMenuScrollInput(int input)
+static void D_PadMenuScrollInput(UINT8 input)
 {
-	event_t myev = {0, 0, 0, 0};
-	myev.type = ev_keydown;
-	myev.data1 = input;
-	D_PostEvent(&myev); // put into eventlist
+	event_t dpadev;
+	memset(&dpadev, 0, sizeof(event_t));
+	dpadev.type = ev_keydown;
+
+	switch (input)
+	{
+		case DPAD_UP:
+			dpadev.data1 = KEY_UPARROW;
+			break;
+		case DPAD_DOWN:
+			dpadev.data1 = KEY_DOWNARROW;
+			break;
+		case DPAD_LEFT:
+			dpadev.data1 = KEY_LEFTARROW;
+			break;
+		case DPAD_RIGHT:
+			dpadev.data1 = KEY_RIGHTARROW;
+			break;
+	}
+
+	D_PostEvent(&dpadev); // put into eventlist
 }
 
-#define SCROLLDELAY 19 // TICRATE * ( (k+2) (1 - [wz + h + j - q]^2 - [(gk + 2g + k + 1)(h + j) + h - z]^2 - [16(k + 1)^3(k + 2)(n + 1)^2 + 1 - f^2]^2 calculated by my butt
+#define SCROLLDELAY 19
 
-// this is absolutely awful and i hate it lmao
-// but le hAx0r to make dpad also be able to scroll in the menu
+// Check if any dpad button is held
+// and pass it to the eventlist
 static void D_GamePadMenuScrollTicker(void)
 {
-	static SINT8 menuInputDelayTimer = 0;
-	int key = 0; // butt-on output
+	static UINT8 menuInputDelayTimer = 0;
 
 	if (dedicated)
 		return;
 
-	// wish i had a switch ono
-	if (DPADUPSCROLL)
-		key = KEY_UPARROW;
-	else if (DPADDOWNSCROLL)
-		key = KEY_DOWNARROW;
-	else if (DPADLEFTSCROLL)
-		key = KEY_LEFTARROW;
-	else if (DPADRIGHTSCROLL)
-		key = KEY_RIGHTARROW;
-
-	if (key)
+	for (UINT8 i = 0; i < 4; i++)
 	{
-		if (menuInputDelayTimer < SCROLLDELAY)
-			menuInputDelayTimer++;
+		if (dpadscrollstate[i])
+		{
+			if (menuInputDelayTimer < SCROLLDELAY)
+				menuInputDelayTimer++;
+			else if (menuInputDelayTimer == SCROLLDELAY)
+				D_PadMenuScrollInput(i);
 
-		if (menuInputDelayTimer == SCROLLDELAY)
-			D_PadMenuScrollInput(key);
+			return;
+		}
 	}
-	else
-	{
-		menuInputDelayTimer = 0;
-	}
+
+	menuInputDelayTimer = 0;
 }
 #undef SCROLLDELAY
 
