@@ -550,7 +550,9 @@ void V_SetPalette(INT32 palettenum)
 	if (!pLocalPalette)
 		V_ReloadPalette();
 
+#ifdef HWRENDER
 	if (rendermode == render_soft || (rendermode == render_opengl && HWR_ShouldUsePaletteRendering())) // opengl without paletterendering hates subpalettes
+#endif
 	{
 		if (palettenum == 0)
 		{
