@@ -33,6 +33,16 @@ extern boolean forceshowhud;
 // Does all the real work of the menu interaction.
 boolean M_Responder(event_t *ev);
 
+// for scrolling through menus with controllers
+extern boolean dpadscrollstate[4];
+enum
+{
+	DPAD_UP,
+	DPAD_DOWN,
+	DPAD_LEFT,
+	DPAD_RIGHT
+};
+
 // Called by main loop, runs for demo playback. If this returns true, nullify any further user input.
 boolean M_DemoResponder(event_t *ev);
 
