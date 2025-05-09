@@ -111,8 +111,6 @@ tic_t lowest_lag;
 tic_t simulated_lag;
 boolean server_lagless;
 
-tic_t netticbuffer = 0;
-
 static void Lagless_OnChange(void)
 {
 	/* don't back out of dishonesty, or go lagless after playing honestly */
@@ -6469,7 +6467,7 @@ boolean TryRunTics(tic_t realtics)
 			}
 
 			// Leave a certain amount of tics present in the net buffer as long as we've ran at least one tic this frame.
-			if (client && gamestate == GS_LEVEL && leveltime > 3 && neededtic <= gametic + netticbuffer)
+			if (client && gamestate == GS_LEVEL && leveltime > 3 && neededtic <= gametic + cv_netticbuffer.value)
 				break;
 		}
 	}
@@ -6758,7 +6756,6 @@ void NetUpdate(void)
 		return;
 
 	Net_GetNetStat();
-	netticbuffer = (((gamelostpercent > 1.f) || (playerpingtable[consoleplayer] == 1)) ? CLAMP(cv_netticbuffer.value, 1, 3) : cv_netticbuffer.value);
 
 #ifdef DEDICATEDIDLETIME
 	if (server && dedicated && gamestate == GS_LEVEL)
