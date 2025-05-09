@@ -1471,7 +1471,8 @@ boolean G_Responder(event_t *ev)
 	}
 
 	// update keys current state
-	G_MapEventsToControls(ev);
+	if (!menuactive)
+		G_MapEventsToControls(ev);
 
 	switch (ev->type)
 	{

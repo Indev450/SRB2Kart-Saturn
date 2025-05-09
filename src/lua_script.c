@@ -861,7 +861,8 @@ static void ArchiveExtVars(UINT8 **p, void *pointer, const char *ptype)
 	int TABLESINDEX;
 	UINT16 i;
 
-	if (!gL) {
+	if (!gL)
+	{
 		if (fastcmp(ptype,"player")) // players must always be included, even if no vars
 			WRITEUINT16(*p, 0);
 		return;
@@ -898,8 +899,10 @@ static void ArchiveExtVars(UINT8 **p, void *pointer, const char *ptype)
 
 	if (fastcmp(ptype,"mobj")) // mobjs must write their mobjnum as a header
 		WRITEUINT32(*p, ((mobj_t *)pointer)->mobjnum);
+
 	WRITEUINT16(*p, i);
 	lua_pushnil(gL);
+
 	while (lua_next(gL, -2))
 	{
 		I_Assert(lua_type(gL, -2) == LUA_TSTRING);

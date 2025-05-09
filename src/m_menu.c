@@ -4556,9 +4556,7 @@ void M_StartControlPanel(void)
 	}
 
 	menuactive = true;
-
-	// reset those just in case the game missed the keyup event
-	memset(dpadscrollstate, false, sizeof(dpadscrollstate));
+	G_ResetControls();
 
 	if (demo.playback)
 	{
