@@ -20,6 +20,8 @@
 #include "d_net.h"
 #include "console.h"
 
+#include "m_menu.h"
+
 #include "i_system.h"
 #include "i_video.h"
 #include "r_draw.h"
@@ -259,6 +261,26 @@ void G_MapEventsToControls(event_t *ev)
 		flag = G_CheckDoubleClick(gamekeydown[KEY_4JOY1+i], &joy4dclicks[i]);
 		gamekeydown[KEY_DBL4JOY1+i] = flag;
 	}
+}
+
+void G_ResetControls(void)
+{
+	memset(gamekeydown, 0, NUMINPUTS);
+
+	memset(joyxmove, 0, sizeof(joyxmove));
+	memset(joyymove, 0, sizeof(joyymove));
+
+	memset(joy2xmove, 0, sizeof(joy2xmove));
+	memset(joy2ymove, 0, sizeof(joy2ymove));
+
+	memset(joy3xmove, 0, sizeof(joy3xmove));
+	memset(joy3ymove, 0, sizeof(joy3ymove));
+
+	memset(joy4xmove, 0, sizeof(joy4xmove));
+	memset(joy4ymove, 0, sizeof(joy4ymove));
+
+	// reset those just in case the game missed the keyup event
+	memset(dpadscrollstate, false, sizeof(dpadscrollstate));
 }
 
 //

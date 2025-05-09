@@ -138,6 +138,7 @@ void G_PlayerDeviceRumble(INT32 playernum, UINT16 low_strength, UINT16 high_stre
 
 // remaps the input event to a game control.
 void G_MapEventsToControls(event_t *ev);
+void G_ResetControls(void);
 
 // returns the name of a key
 const char *G_KeynumToString(INT32 keynum);
