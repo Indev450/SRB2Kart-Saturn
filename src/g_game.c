@@ -625,6 +625,17 @@ static void G_SetSaveGameModified(void)
 	strcatbf(savegamename, srb2home, PATHSEP);
 
 	G_LoadGameData();
+
+	// unlock EVERYTHING.
+	for (UINT8 i = 0; i < MAXUNLOCKABLES; i++)
+	{
+		if (!unlockables[i].conditionset)
+			continue;
+		if (!unlockables[i].unlocked)
+		{
+			unlockables[i].unlocked = true;
+		}
+	}
 }
 
 // for consistency among messages: this modifies the game and removes savemoddata.
