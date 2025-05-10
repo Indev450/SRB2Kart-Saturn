@@ -969,7 +969,7 @@ void G_ResetAllDeviceRumbles(void)
 
 	for (i = 0; i < devices; i++)
 	{
-		I_GamepadRumble(devices, 0, 0, 0);
+		I_GamepadRumble(i, 0, 0, 0);
 	}
 }
 
