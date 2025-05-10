@@ -153,6 +153,12 @@ FUNCINLINE static ATTRINLINE void PolyObj_AddThinker(thinker_t *th)
 	th->next = thinkercap.next;
 	th->prev = &thinkercap;
 	thinkercap.next = th;
+
+	th->references = 0;
+	th->cachable = false; // not initialising this made the mobjcache die thx!
+#ifdef PARANOIA
+	th->debug_mobjtype = MT_NULL;
+#endif
 }
 
 static void FreeSideLists(void)
@@ -845,8 +851,7 @@ static polymaplink_t *Polyobj_getLink(void)
 	}
 	else
 	{
-		l = Z_Malloc(sizeof(*l), PU_LEVEL, NULL);
-		memset(l, 0, sizeof(*l));
+		l = Z_Calloc(sizeof(*l), PU_LEVEL, NULL);
 	}
 
 	return l;
@@ -1562,8 +1567,7 @@ void Polyobj_InitLevel(void)
 		{
 			++numPolyObjects;
 
-			qitem = malloc(sizeof(mobjqitem_t));
-			memset(qitem, 0, sizeof(mobjqitem_t));
+			qitem = calloc(1, sizeof(mobjqitem_t));
 			qitem->mo = mo;
 			M_QueueInsert(&(qitem->mqitem), &spawnqueue);
 		}
@@ -1571,8 +1575,7 @@ void Polyobj_InitLevel(void)
 		{
 			++numAnchors;
 
-			qitem = malloc(sizeof(mobjqitem_t));
-			memset(qitem, 0, sizeof(mobjqitem_t));
+			qitem = calloc(1, sizeof(mobjqitem_t));
 			qitem->mo = mo;
 			M_QueueInsert(&(qitem->mqitem), &anchorqueue);
 		}
@@ -1800,12 +1803,12 @@ void T_PolyObjMove(polymove_t *th)
 //
 void T_PolyObjWaypoint(polywaypoint_t *th)
 {
+	mobj_t *mo2;
 	mobj_t *target = NULL;
 	mobj_t *waypoint = NULL;
-	mobj_t *mo2;
+	thinker_t *wp;
 	fixed_t adjustx, adjusty, adjustz;
 	fixed_t momx, momy, momz, dist;
-	thinker_t *wp;
 	INT32 start;
 	polyobj_t *po = Polyobj_GetForNum(th->polyObjNum);
 	polyobj_t *oldpo = po;
@@ -1822,7 +1825,7 @@ void T_PolyObjWaypoint(polywaypoint_t *th)
 #endif
 
 	// check for displacement due to override and reattach when possible
-	if (!po->thinker)
+	if (po->thinker == NULL)
 		po->thinker = &th->thinker;
 
 	// Find out target first.
@@ -1910,7 +1913,37 @@ void T_PolyObjWaypoint(polywaypoint_t *th)
 		{
 			CONS_Debug(DBG_POLYOBJ, "Looking for next waypoint...\n");
 
-			waypoint = (th->direction == -1) ? P_GetPreviousWaypoint(target, false) : P_GetNextWaypoint(target, false);
+			// Find next waypoint
+			for (wp = thinkercap.next; wp != &thinkercap; wp = wp->next)
+			{
+				if (wp->function.acp1 != (actionf_p1)P_MobjThinker) // Not a mobj thinker
+					continue;
+
+				mo2 = (mobj_t *)wp;
+
+				if (mo2->type != MT_TUBEWAYPOINT)
+					continue;
+
+				if (mo2->threshold != th->sequence)
+					continue;
+
+				if (th->direction == -1)
+				{
+					if (mo2->health == target->health - 1)
+					{
+						waypoint = mo2;
+						break;
+					}
+				}
+				else
+				{
+					if (mo2->health == target->health + 1)
+					{
+						waypoint = mo2;
+						break;
+					}
+				}
+			}
 
 			if (!waypoint && th->wrap) // If specified, wrap waypoints
 			{
@@ -1920,7 +1953,35 @@ void T_PolyObjWaypoint(polywaypoint_t *th)
 					th->stophere = true;
 				}
 
-				waypoint = (th->direction == -1) ? P_GetLastWaypoint(th->sequence) : P_GetFirstWaypoint(th->sequence);
+				for (wp = thinkercap.next; wp != &thinkercap; wp = wp->next)
+				{
+					if (wp->function.acp1 != (actionf_p1)P_MobjThinker) // Not a mobj thinker
+						continue;
+
+					mo2 = (mobj_t *)wp;
+
+					if (mo2->type != MT_TUBEWAYPOINT)
+						continue;
+
+					if (mo2->threshold != th->sequence)
+						continue;
+
+					if (th->direction == -1)
+					{
+						if (waypoint == NULL)
+							waypoint = mo2;
+						else if (mo2->health > waypoint->health)
+							waypoint = mo2;
+					}
+					else
+					{
+						if (mo2->health == 0)
+						{
+							waypoint = mo2;
+							break;
+						}
+					}
+				}
 			}
 			else if (!waypoint && th->comeback) // Come back to the start
 			{
@@ -1929,7 +1990,36 @@ void T_PolyObjWaypoint(polywaypoint_t *th)
 				if (!th->continuous)
 					th->comeback = false;
 
-				waypoint = (th->direction == -1) ? P_GetPreviousWaypoint(target, false) : P_GetNextWaypoint(target, false);
+				for (wp = thinkercap.next; wp != &thinkercap; wp = wp->next)
+				{
+					if (wp->function.acp1 != (actionf_p1)P_MobjThinker) // Not a mobj thinker
+						continue;
+
+					mo2 = (mobj_t *)wp;
+
+					if (mo2->type != MT_TUBEWAYPOINT)
+						continue;
+
+					if (mo2->threshold != th->sequence)
+						continue;
+
+					if (th->direction == -1)
+					{
+						if (mo2->health == target->health - 1)
+						{
+							waypoint = mo2;
+							break;
+						}
+					}
+					else
+					{
+						if (mo2->health == target->health + 1)
+						{
+							waypoint = mo2;
+							break;
+						}
+					}
+				}
 			}
 		}
 
@@ -2379,9 +2469,11 @@ INT32 EV_DoPolyObjWaypoint(polywaypointdata_t *pwdata)
 	polyobj_t *po;
 	polyobj_t *oldpo;
 	polywaypoint_t *th;
+	mobj_t *mo2;
 	mobj_t *first = NULL;
 	mobj_t *last = NULL;
 	mobj_t *target = NULL;
+	thinker_t *wp;
 	INT32 start;
 
 	if (!(po = Polyobj_GetForNum(pwdata->polyObjNum)))
@@ -2407,7 +2499,10 @@ INT32 EV_DoPolyObjWaypoint(polywaypointdata_t *pwdata)
 	th->polyObjNum = pwdata->polyObjNum;
 	th->speed = pwdata->speed;
 	th->sequence = pwdata->sequence; // Used to specify sequence #
-	th->direction = pwdata->reverse ? -1 : 1;
+	if (pwdata->reverse)
+		th->direction = -1;
+	else
+		th->direction = 1;
 
 	th->comeback = pwdata->comeback;
 	th->continuous = pwdata->continuous;
@@ -2415,8 +2510,44 @@ INT32 EV_DoPolyObjWaypoint(polywaypointdata_t *pwdata)
 	th->stophere = false;
 
 	// Find the first waypoint we need to use
-	first = (th->direction == -1) ? P_GetLastWaypoint(th->sequence) : P_GetFirstWaypoint(th->sequence);
-	last = (th->direction == -1) ? P_GetFirstWaypoint(th->sequence) : P_GetLastWaypoint(th->sequence);
+	for (wp = thinkercap.next; wp != &thinkercap; wp = wp->next)
+	{
+		if (wp->function.acp1 != (actionf_p1)P_MobjThinker) // Not a mobj thinker
+			continue;
+
+		mo2 = (mobj_t *)wp;
+
+		if (mo2->type != MT_TUBEWAYPOINT)
+			continue;
+
+		if (mo2->threshold != th->sequence)
+			continue;
+
+		if (th->direction == -1) // highest waypoint #
+		{
+			if (mo2->health == 0)
+				last = mo2;
+			else
+			{
+				if (first == NULL)
+					first = mo2;
+				else if (mo2->health > first->health)
+					first = mo2;
+			}
+		}
+		else // waypoint 0
+		{
+			if (mo2->health == 0)
+				first = mo2;
+			else
+			{
+				if (last == NULL)
+					last = mo2;
+				else if (mo2->health > last->health)
+					last = mo2;
+			}
+		}
+	}
 
 	if (!first)
 	{
@@ -2463,7 +2594,7 @@ INT32 EV_DoPolyObjWaypoint(polywaypointdata_t *pwdata)
 	R_CreateInterpolator_Polyobj(&th->thinker, po);
 	// T_PolyObjWaypoint is the only polyobject movement
 	// that can adjust z, so we add these ones too.
-	R_CreateInterpolator_SectorPlane(&th->thinker, po->lines[0]->backsector, false); 
+	R_CreateInterpolator_SectorPlane(&th->thinker, po->lines[0]->backsector, false);
 	R_CreateInterpolator_SectorPlane(&th->thinker, po->lines[0]->backsector, true);
 
 	// Most other polyobject functions handle children by recursively

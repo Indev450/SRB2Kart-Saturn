@@ -21,7 +21,6 @@
 #define SOUND_DUMMY   0
 #define SOUND_SDL     1
 #define SOUND_MIXER   2
-#define SOUND_FMOD    3
 
 #ifndef SOUND
 #ifdef HAVE_SDL
@@ -29,9 +28,6 @@
 // Use Mixer interface?
 #ifdef HAVE_MIXER
     #define SOUND SOUND_MIXER
-    #ifdef HW3SOUND
-    #undef HW3SOUND
-    #endif
 #endif
 
 // Use generic SDL interface.
@@ -40,18 +36,8 @@
 #endif
 
 #else // No SDL.
-
-// Use FMOD?
-#ifdef HAVE_FMOD
-    #define SOUND SOUND_FMOD
-    #ifdef HW3SOUND
-    #undef HW3SOUND
-    #endif
-#else
-    // No more interfaces. :(
-    #define SOUND SOUND_DUMMY
-#endif
-
+// No more interfaces. :(
+#define SOUND SOUND_DUMMY
 #endif
 #endif
 
@@ -127,8 +113,8 @@ extern char  logfilename[1024];
 #else
 #define VERSION    1 // Game version
 #define SUBVERSION 6 // more precise version number
-#define VERSIONSTRING "Saturn v7.2"
-#define VERSIONSTRINGW L"Saturn v7.2"
+#define VERSIONSTRING "Saturn v8"
+#define VERSIONSTRINGW L"Saturn v8"
 // Hey! If you change this, add 1 to the MODVERSION below! Otherwise we can't force updates!
 // And change CMakeLists.txt (not src/, but in root), for CMake users!
 // AND appveyor.yml, for the build bots!
@@ -522,15 +508,30 @@ extern boolean capslock;
 // i_system.c, replace getchar() once the keyboard has been appropriated
 INT32 I_GetKey(void);
 
+/* http://www.cse.yorku.ca/~oz/hash.html */
+static inline
+UINT32 quickncasehash (const char *p, size_t n)
+{
+	size_t i = 0;
+	UINT32 x = 5381;
+
+	while (i < n && p[i])
+	{
+		x = (x * 33) ^ tolower(p[i]);
+		i++;
+	}
+
+	return x;
+}
+
 #ifndef min // Double-Check with WATTCP-32's cdefs.h
 #define min(x, y) (((x) < (y)) ? (x) : (y))
 #endif
 #ifndef max // Double-Check with WATTCP-32's cdefs.h
 #define max(x, y) (((x) > (y)) ? (x) : (y))
 #endif
-
 #ifndef CLAMP
-#define CLAMP(x, min_val, max_val) ((x) < (min_val) ? (min_val) : ((x) > (max_val) ? (max_val) : (x)))
+#define CLAMP(x, y, z) ((x) < (y) ? (y) : ((x) > (z) ? (z) : (x)))
 #endif
 
 #ifndef M_PIl
@@ -544,6 +545,19 @@ INT32 I_GetKey(void);
 
 #ifndef DBL_EPSILON
 #define DBL_EPSILON 2.2204460492503131e-16l
+#endif
+
+#if defined(__GNUC__) || defined(__clang__)
+#ifndef LIKELY
+#define LIKELY(x)   __builtin_expect(!!(x), 1)
+#endif
+
+#ifndef UNLIKELY
+#define UNLIKELY(x) __builtin_expect(!!(x), 0)
+#endif
+#else
+#define LIKELY(x)       (x)
+#define UNLIKELY(x)     (x)
 #endif
 
 // An assert-type mechanism.
@@ -570,21 +584,15 @@ extern const char *compdate, *comptime, *comprevision, *compbranch;
 
 #ifndef NONET
 //-- SATURN __
-/// Enable gamestate resynching between Saturn servers and clients
-/// Like SRB2 and RR does
-/// Still highly experimental
-#ifdef DOSATURNSYNCH
-#define SATURNSYNCH
-
 /// Detect if a client is on Saturn in the clientconfig.
 /// To seperately allow them to join or block joining from vanilla clients.
 #ifdef DOSATURNJOIN
 #define SATURNJOIN
 #endif
-#endif
 
 /// Server detection for if a connecting client is on Saturn.
-/// For stuff like extra synching, etc.
+/// This also enables gamestate resynching between Saturn servers and clients
+/// Like SRB2 and RR does
 #ifdef DOSATURNPAK
 #define SATURNPAK
 #endif

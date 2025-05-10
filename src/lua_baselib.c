@@ -25,6 +25,7 @@
 #include "console.h"
 #include "k_kart.h" // SRB2Kart
 #include "d_netcmd.h" // IsPlayerAdmin
+#include "d_main.h"
 
 #include "lua_script.h"
 #include "lua_libs.h"
@@ -239,6 +240,7 @@ static int lib_pAproxDistance(lua_State *L)
 	fixed_t dy = luaL_checkfixed(L, 2);
 	//HUDSAFE
 	//LUA_Deprecated(L, "P_AproxDistance", "FixedHypot");
+	LUA_LogDeprecated(L, "P_AproxDistance", "FixedHypot");
 	lua_pushfixed(L, FixedHypot(dx, dy));
 	return 1;
 }
@@ -1039,6 +1041,7 @@ static int lib_pTeleportMove(lua_State *L)
 	if (!thing)
 		return LUA_ErrInvalid(L, "mobj_t");
 	//LUA_Deprecated(L, "P_TeleportMove", "P_SetOrigin\" or \"P_MoveOrigin");
+	LUA_LogDeprecated(L, "P_TeleportMove", "P_SetOrigin\" or \"P_MoveOrigin");
 	lua_pushboolean(L, P_MoveOrigin(thing, x, y, z));
 	LUA_PushUserdata(L, tmthing, META_MOBJ);
 	P_SetTarget(&tmthing, ptmthing);
@@ -1106,6 +1109,18 @@ static int lib_pCheckSight(lua_State *L)
 	if (!t1 || !t2)
 		return LUA_ErrInvalid(L, "mobj_t");
 	lua_pushboolean(L, P_CheckSight(t1, t2));
+	return 1;
+}
+
+// DONT USE THIS FOR ANYTHING GAMEPLAY, THIS WILL DESYNCH!
+static int lib_pCheckSightFast(lua_State *L)
+{
+	mobj_t *t1 = *((mobj_t **)luaL_checkudata(L, 1, META_MOBJ));
+	mobj_t *t2 = *((mobj_t **)luaL_checkudata(L, 2, META_MOBJ));
+	//HUDSAFE?
+	if (!t1 || !t2)
+		return LUA_ErrInvalid(L, "mobj_t");
+	lua_pushboolean(L, P_CheckSightFast(t1, t2));
 	return 1;
 }
 
@@ -1637,7 +1652,7 @@ static int lib_pGetZAt(lua_State *L)
 	if (!slope)
 		return LUA_ErrInvalid(L, "pslope_t");
 
-	lua_pushfixed(L, P_GetZAt(slope, x, y));
+	lua_pushfixed(L, P_GetSlopeZAt(slope, x, y));
 	return 1;
 }
 
@@ -1817,7 +1832,7 @@ static int lib_sStartSoundAtVolume(lua_State *L)
 			return LUA_ErrInvalid(L, "player_t");
 	}
 	if (!player || P_IsLocalPlayer(player))
-	S_StartSoundAtVolume(origin, sound_id, volume);
+		S_StartSoundAtVolume(origin, sound_id, volume);
 	return 0;
 }
 
@@ -1919,7 +1934,7 @@ static int lib_sChangeMusic(lua_State *L)
 		music_flags = (UINT16)((music_num & 0x7FFF0000) >> 16);
 	else
 #endif
-	music_flags = (UINT16)luaL_optinteger(L, 4, 0);
+		music_flags = (UINT16)luaL_optinteger(L, 4, 0);
 
 	position = (UINT32)luaL_optinteger(L, 5, 0);
 	prefadems = (UINT32)luaL_optinteger(L, 6, 0);
@@ -3154,7 +3169,6 @@ static luaL_Reg lib[] = {
 	{"P_LookForEnemies",lib_pLookForEnemies},
 	{"P_NukeEnemies",lib_pNukeEnemies},
 	{"P_HomingAttack",lib_pHomingAttack},
-	//{"P_SuperReady",lib_pSuperReady},
 	{"P_Telekinesis",lib_pTelekinesis},
 
 	// p_map
@@ -3167,6 +3181,7 @@ static luaL_Reg lib[] = {
 	{"P_SlideMove",lib_pSlideMove},
 	{"P_BounceMove",lib_pBounceMove},
 	{"P_CheckSight", lib_pCheckSight},
+	{"P_CheckSightFast", lib_pCheckSightFast},
 	{"P_CheckHoopPosition",lib_pCheckHoopPosition},
 	{"P_RadiusAttack",lib_pRadiusAttack},
 	{"P_FloorzAtPos",lib_pFloorzAtPos},

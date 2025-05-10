@@ -154,7 +154,7 @@ static int lib_setState(lua_State *L)
 		return luaL_error(L, "Do not alter states in BuildCMD code!");
 
 	// clear the state to start with, in case of missing table elements
-	memset(state,0,sizeof(state_t));
+	memset(state, 0, sizeof(state_t));
 	state->tics = -1;
 
 	lua_pushnil(L);
@@ -262,8 +262,8 @@ boolean LUA_CallAction(enum actionnum actionnum, mobj_t *actor)
 		return false; // action not called.
 
 	if (superstack && fasticmp(actionpointers[actionnum].name, superactions[superstack-1])) // the action is calling itself,
-		return false; // let it call the hardcoded function 
-		
+		return false; // let it call the hardcoded function
+
 	lua_pushcfunction(gL, LUA_GetErrorMessage);
 
 	// grab function by uppercase name.
@@ -514,7 +514,7 @@ static int lib_setMobjInfo(lua_State *L)
 		return luaL_error(L, "Do not alter mobjinfo in BuildCMD code!");
 
 	// clear the mobjinfo to start with, in case of missing table elements
-	memset(info,0,sizeof(mobjinfo_t));
+	memset(info, 0, sizeof(mobjinfo_t));
 	info->doomednum = -1; // default to no editor value
 	info->spawnhealth = 1; // avoid 'dead' noclip behaviors
 

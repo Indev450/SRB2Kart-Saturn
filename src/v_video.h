@@ -17,6 +17,7 @@
 #include "doomdef.h"
 #include "doomtype.h"
 #include "r_defs.h"
+#include "r_main.h"
 
 //
 // VIDEO
@@ -27,12 +28,12 @@
 
 extern UINT8 *screens[5];
 
-extern consvar_t cv_ticrate, cv_accuratefps, cv_allcaps, cv_constextsize, cv_menucaps,\
-cv_globalgamma, cv_globalsaturation,\
-cv_rhue, cv_yhue, cv_ghue, cv_chue, cv_bhue, cv_mhue,\
-cv_rgamma, cv_ygamma, cv_ggamma, cv_cgamma, cv_bgamma, cv_mgamma, \
-cv_rsaturation, cv_ysaturation, cv_gsaturation, cv_csaturation, cv_bsaturation, cv_msaturation;
-
+extern consvar_t cv_ticrate, cv_accuratefps, cv_allcaps, cv_constextsize, cv_menucaps,
+cv_globalgamma, cv_globalsaturation,
+cv_rhue, cv_yhue, cv_ghue, cv_chue, cv_bhue, cv_mhue,
+cv_rgamma, cv_ygamma, cv_ggamma, cv_cgamma, cv_bgamma, cv_mgamma,
+cv_rsaturation, cv_ysaturation, cv_gsaturation, cv_csaturation, cv_bsaturation, cv_msaturation,
+cv_palette, cv_palettenum;
 
 // Allocates buffer screens, call before R_Init.
 void V_Init(void);
@@ -59,14 +60,14 @@ void V_SetPalette(INT32 palettenum);
 
 void V_SetPaletteLump(const char *pal);
 
+void V_ResetPaletteCVars(void);
+
 const char *R_GetPalname(UINT16 num);
 const char *GetPalette(void);
 
 extern RGBA_t *pLocalPalette;
 
 extern UINT8 hudtrans;
-
-extern INT32 V_LocalTransFlag(void);
 
 void V_CubeApply(UINT8 *red, UINT8 *green, UINT8 *blue);
 
@@ -196,6 +197,9 @@ void V_DrawFadeScreen(UINT16 color, UINT8 strength);
 
 void V_DrawFadeConsBack(INT32 plines);
 
+// allow menu text to be displayed in lowercase
+#define MENUCAPS (!cv_menucaps.value ? V_ALLOWLOWERCASE : 0)
+
 // draw a single character
 void V_DrawCharacter(INT32 x, INT32 y, INT32 c, boolean lowercaseallowed);
 // draw a single character, but for the chat
@@ -265,9 +269,17 @@ INT32 V_SubStringLengthToFit(const char *string, INT32 width, INT32 option);
 
 char V_GetSkincolorChar(INT32 color);
 
+INT32 V_SkinColorToHighlightcolor(skincolors_t color);
+
+// this is pretty dumb, but has to be done like this, otherwise the fps counter just disappears sometimes for no reason lol
+FUNCINLINE static ATTRINLINE INT32 V_LocalTransFlag(void)
+{
+	return ((10-cv_translucenthud.value)*V_10TRANS);
+}
+
 typedef struct player_s player_t;
 
-void V_DoPostProcessor(INT32 view, player_t *player, INT32 param);
+void V_DoPostProcessor(INT32 view, INT32 param);
 
 void V_DrawPatchFill(patch_t *pat);
 

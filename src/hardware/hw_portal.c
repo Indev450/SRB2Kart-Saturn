@@ -23,7 +23,7 @@
 #include "../z_zone.h"
 
 #include "hw_clip.h"
-#include "hw_drv.h"
+#include "hw_gl.h"
 #include "hw_defs.h"
 #include "hw_main.h"
 #include "hw_portal.h"
@@ -140,23 +140,27 @@ void HWR_PortalFrame(gl_portal_t* portal)
 static void HWR_RenderPortalSeg(gl_portal_t* portal, SINT8 state)
 {
 	gl_drawing_stencil = true; // do not draw outside of the stencil buffer, idiot.
+
 	// set our portal state and prepare to render the seg
 	HWR_SetPortalState(state);
+
 	gl_curline = portal->seg;
 	gl_frontsector = portal->seg->frontsector;
 	gl_backsector = portal->seg->backsector;
+
 	HWR_ProcessSeg();
 	gl_drawing_stencil = false;
+
 	// need to work around the r_opengl PF_Invisible bug with this call
 	// similarly as in the linkdraw hack in HWR_DrawSprites
-	HWD.pfnSetBlend(PF_Translucent|PF_Occlude|PF_Masked);
+	GL_SetBlend(PF_Translucent|PF_Occlude|PF_Masked);
 }
 
 // Renders a single portal from the current viewpoint.
 void HWR_RenderPortal(gl_portal_t* portal, gl_portal_t* rootportal, const float fpov, player_t *player, int stencil_level)
 {
 	// draw portal seg to stencil buffer with increment
-	HWR_SetTransform(fpov, player);
+	HWR_SetTransform(fpov);
 	HWR_ClearClipper();
 
 	HWR_SetStencilState(HWR_STENCIL_BEGIN, stencil_level);
@@ -171,12 +175,12 @@ void HWR_RenderPortal(gl_portal_t* portal, gl_portal_t* rootportal, const float 
 		HWR_PortalFrame(rootportal);
 	else // current frame is not a portal frame but the main view!
 	{
-		R_SetupFrame(player, false);
+		R_SetupFrame(viewssnum, false);
 		portalclipline = NULL;
 	}
 
 	// remove portal seg from stencil buffer
-	HWR_SetTransform(fpov, player);
+	HWR_SetTransform(fpov);
 	HWR_ClearClipper();
 
 	HWR_SetStencilState(HWR_STENCIL_REVERSE, stencil_level);

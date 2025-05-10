@@ -12,12 +12,16 @@
 
 //#include "k_kart.h"
 #include "doomdef.h"
+#include "doomstat.h"
 #include "g_game.h"
+#include "m_random.h"
 #include "v_video.h"
 #include "k_director.h"
 #include "d_netcmd.h"
 #include "p_local.h"
 #include "st_stuff.h"
+
+#include "r_fps.h"
 
 #define SWITCHTIME TICRATE * 5		// cooldown between unforced switches
 #define BOREDOMTIME 3 * TICRATE / 2 // how long until players considered far apart?
@@ -28,7 +32,9 @@
 
 struct directorinfo
 {
+	player_t* viewplayer;
 	tic_t cooldown; // how long has it been since we last switched?
+	tic_t chaosleep;// how long did we watch the same player?
 	tic_t freeze;   // when nonzero, fixed switch pending, freeze logic!
 	INT32 attacker; // who to switch to when freeze delay elapses
 	INT32 maxdist;  // how far is the closest player from finishing?
@@ -38,23 +44,17 @@ struct directorinfo
 	INT32 boredom[MAXPLAYERS];       // how long has a given position had no credible attackers?
 } directorinfo;
 
-boolean K_DirectorIsPlayerAlone(void)
+static INT32 K_PlayersPlaying(void)
 {
-	UINT8 pingame = 0;
-
-	// Gotta check how many players are active at this moment.
-	for (UINT8 i = 0; i < MAXPLAYERS; i++)
+	INT32 num = 0, i;
+	for (i = 0; i < MAXPLAYERS; i++)
 	{
-		if (!playeringame[i] || players[i].spectator)
+		if (!playeringame[i] || players[i].spectator || !players[i].mo)
 			continue;
 
-		pingame++;
-
-		if (pingame >= 2) // we dont need to check further
-			break;
+		num++;
 	}
-
-	return (pingame <= 1);
+	return num;
 }
 
 static inline boolean race_rules(void)
@@ -67,9 +67,58 @@ static fixed_t ScaleFromMap(fixed_t n, fixed_t scale)
 	return FixedMul(n, FixedDiv(scale, mapobjectscale));
 }
 
+boolean K_DirectorIsAvailable(void)
+{
+	if (splitscreen || dedicated || (demo.playback && demo.title) || modeattacking)
+		return false;
+	return ((gamestate == GS_LEVEL) && ((demo.playback && !camera[0].freecam) || (players[consoleplayer].spectator && (K_PlayersPlaying() > 1))));
+}
+
 static boolean K_DirectorIsEnabled(void)
 {
-	return cv_director.value && !splitscreen && (gamestate == GS_LEVEL && (((!playeringame[consoleplayer] || players[consoleplayer].spectator)) || (demo.playback && !demo.freecam && (!demo.title || !modeattacking))) && !K_DirectorIsPlayerAlone());
+	return (cv_director.value && K_DirectorIsAvailable());
+}
+
+static mobj_t *finishmo = NULL;
+
+// scan for the waypoint on the finish line
+// used to get a very approximate distance from player to finishline
+// we probably should like, do some maths to find the middle point between multiplayer
+// waypoints with the same values, but idk if its really worth it
+static void K_SetupFinishMo(void)
+{
+	INT16 maxMoveCount = -1;
+	INT16 maxAngle = -1;
+
+	finishmo = NULL;
+
+	if (!(mapheaderinfo[gamemap - 1]->levelflags & LF_SECTIONRACE)) // not a sprint map
+	{
+		// waypoint with angle 0 should always be at the finish line
+		for (finishmo = waypointcap; finishmo != NULL; finishmo = finishmo->tracer)
+		{
+			if (finishmo->spawnpoint->angle == 0)
+				break;
+		}
+	}
+	else // crappy optimization weeeee
+	{
+		// sprint maps finishline waypoint is the one with highest movecount AND angle
+		for (finishmo = waypointcap; finishmo != NULL; finishmo = finishmo->tracer)
+		{
+			if (finishmo->movecount > maxMoveCount)
+				maxMoveCount = finishmo->movecount;
+			if (finishmo->spawnpoint->angle > maxAngle)
+				maxAngle = finishmo->spawnpoint->angle;
+		}
+
+		// now actually get the one
+		for (finishmo = waypointcap; finishmo != NULL; finishmo = finishmo->tracer)
+		{
+			if (finishmo->movecount == maxMoveCount && finishmo->spawnpoint->angle == maxAngle)
+				break; // found it
+		}
+	}
 }
 
 void K_InitDirector(void)
@@ -80,6 +129,8 @@ void K_InitDirector(void)
 	directorinfo.freeze = 0;
 	directorinfo.attacker = 0;
 	directorinfo.maxdist = 0;
+	directorinfo.viewplayer = NULL;
+	directorinfo.chaosleep = 0;
 
 	for (playernum = 0; playernum < MAXPLAYERS; playernum++)
 	{
@@ -87,50 +138,18 @@ void K_InitDirector(void)
 		directorinfo.gap[playernum] = INT32_MAX;
 		directorinfo.boredom[playernum] = 0;
 	}
+
+	K_SetupFinishMo();
 }
 
 static fixed_t K_GetDistanceToFinish(player_t player)
 {
-	mobj_t *mo;
-	fixed_t dist = 0;
-	INT16 maxMoveCount = -1;
-	INT16 maxAngle = -1;
+	if (P_MobjWasRemoved(finishmo))
+		return 0;
 
-	if (!(mapheaderinfo[gamemap - 1]->levelflags & LF_SECTIONRACE))
-	{
-		for (mo = waypointcap; mo != NULL; mo = mo->tracer)
-		{
-			if (mo->spawnpoint->angle != 0)
-				continue;
-
-			dist = P_AproxDistance(P_AproxDistance(mo->x - player.mo->x,
-												mo->y - player.mo->y),
-							mo->z - player.mo->z) / FRACUNIT;
-
-			break;
-		}
-	}
-	else // crappy optimization weeeee
-	{
-		for (mo = waypointcap; mo != NULL; mo = mo->tracer)
-		{
-			if (mo->movecount > maxMoveCount)
-				maxMoveCount = mo->movecount;
-			if (mo->spawnpoint->angle > maxAngle)
-				maxAngle = mo->spawnpoint->angle;
-
-			if (!(mo->movecount == maxMoveCount && mo->spawnpoint->angle == maxAngle)) // sprint maps finishline waypoint is the one with highest movecount AND angle
-				continue;
-
-			dist = P_AproxDistance(P_AproxDistance(mo->x - player.mo->x,
-												   mo->y - player.mo->y),
-						  mo->z - player.mo->z) / FRACUNIT;
-
-			break;
-		}
-	}
-
-	return dist;
+	return P_AproxDistance(P_AproxDistance(finishmo->x - player.mo->x,
+										   finishmo->y - player.mo->y),
+										   finishmo->z - player.mo->z) / FRACUNIT;
 }
 
 static fixed_t K_GetFinishGap(INT32 leader, INT32 follower)
@@ -154,10 +173,10 @@ static void K_UpdateDirectorPositions(void)
 	INT32 position;
 	player_t* target;
 
-	memset(directorinfo.sortedplayers, -1, sizeof(directorinfo.sortedplayers));
-
 	for (playernum = 0; playernum < MAXPLAYERS; playernum++)
 	{
+		directorinfo.sortedplayers[playernum] = -1;
+
 		target = &players[playernum];
 
 		if (playeringame[playernum] && !target->spectator && target->kartstuff[k_position] > 0)
@@ -213,11 +232,6 @@ static void K_DirectorSwitch(INT32 player, boolean force)
 		return;
 	}
 
-	if (P_IsDisplayPlayer(&players[player]))
-	{
-		return;
-	}
-
 	if (players[player].exiting)
 	{
 		return;
@@ -230,6 +244,7 @@ static void K_DirectorSwitch(INT32 player, boolean force)
 
 	G_ResetView(1, player, true);
 	directorinfo.cooldown = SWITCHTIME;
+	directorinfo.chaosleep = 0;
 }
 
 static void K_DirectorForceSwitch(INT32 player, INT32 time)
@@ -241,6 +256,26 @@ static void K_DirectorForceSwitch(INT32 player, INT32 time)
 
 	directorinfo.attacker = player;
 	directorinfo.freeze = time;
+	directorinfo.chaosleep = 0;
+}
+
+static void K_DirectorSwitchRandom(void)
+{
+	INT32 randomplayer = -1;
+
+	// kinda dumb but just check if the random player is existing lmao
+	for (INT32 h = 0; h < MAXPLAYERS; h++)
+	{
+		randomplayer = directorinfo.sortedplayers[M_RandomRange(0, K_PlayersPlaying()-1)]; // switch to someone random
+
+		if (randomplayer != -1 && randomplayer != displayplayers[0]) // dont switch to ourselves Zzz...
+		{
+			break;
+		}
+	}
+
+	if (randomplayer != -1)
+		K_DirectorSwitch(randomplayer, true);
 }
 
 void K_DirectorFollowAttack(player_t *player, mobj_t *inflictor, mobj_t *source)
@@ -250,7 +285,7 @@ void K_DirectorFollowAttack(player_t *player, mobj_t *inflictor, mobj_t *source)
 		return;
 	}
 
-	if (!P_IsDisplayPlayer(player))
+	if (directorinfo.viewplayer != player)
 	{
 		return;
 	}
@@ -283,6 +318,7 @@ void K_DrawDirectorDebugger(void)
 	V_DrawThinString(120, 0, V_70TRANS, va("BORED"));
 	V_DrawThinString(150, 0, V_70TRANS, va("COOLDOWN: %d", directorinfo.cooldown));
 	V_DrawThinString(230, 0, V_70TRANS, va("MAXDIST: %d", directorinfo.maxdist));
+	V_DrawThinString(310, 0, V_70TRANS, va("SLEEPTIME: %d", directorinfo.chaosleep));
 
 	for (position = 0; position < MAXPLAYERS - 1; position++)
 	{
@@ -319,8 +355,8 @@ void K_DrawDirectorDebugger(void)
 
 void K_UpdateDirector(void)
 {
-	INT32 *displayplayerp = &displayplayers[0];
 	INT32 targetposition;
+	directorinfo.viewplayer = &players[displayplayers[0]];
 
 	if (!K_DirectorIsEnabled())
 	{
@@ -329,7 +365,8 @@ void K_UpdateDirector(void)
 
 	K_UpdateDirectorPositions();
 
-	if (directorinfo.cooldown > 0) {
+	if (directorinfo.cooldown > 0)
+	{
 		directorinfo.cooldown--;
 	}
 
@@ -348,6 +385,27 @@ void K_UpdateDirector(void)
 		!race_rules()))
 	{
 		K_DirectorSwitch(directorinfo.sortedplayers[0], false);
+		return;
+	}
+
+	// insta switch if the player were watching finishes
+	if (players[displayplayers[0]].exiting)
+	{
+		K_DirectorSwitchRandom();
+		return;
+	}
+
+	// begin counting when cooldown wore off
+	if (!directorinfo.cooldown)
+	{
+		directorinfo.chaosleep++;
+	}
+
+	// force switch 10 seconds after the cooldown has ended
+	// otherwise i fall asleeb zzz...
+	if (directorinfo.chaosleep > TICRATE*10)
+	{
+		K_DirectorSwitchRandom();
 		return;
 	}
 
@@ -391,15 +449,9 @@ void K_UpdateDirector(void)
 		target = directorinfo.sortedplayers[targetposition];
 
 		// stop here since we're already viewing this player
-		if (*displayplayerp == target)
+		if (displayplayers[0] == target)
 		{
 			break;
-		}
-
-		// if this is a splitscreen player, try next pair
-		if (P_IsDisplayPlayer(&players[target]))
-		{
-			continue;
 		}
 
 		// if we're certain the back half of the pair is actually in this position, try to switch
@@ -408,8 +460,8 @@ void K_UpdateDirector(void)
 			K_DirectorSwitch(target, false);
 		}
 
-		// even if we're not certain, if we're certain we're watching the WRONG player, try to switch
-		if (players[*displayplayerp].kartstuff[k_position] != targetposition+1 && !players[*displayplayerp].kartstuff[k_positiondelay])
+		// even if we're not certain, if we're cetain we're watching the WRONG player, try to switch
+		if (directorinfo.viewplayer->kartstuff[k_position] != targetposition+1 && !directorinfo.viewplayer->kartstuff[k_positiondelay])
 		{
 			K_DirectorSwitch(target, false);
 		}
@@ -420,15 +472,16 @@ void K_UpdateDirector(void)
 
 void K_ToggleDirector(void)
 {
-	if (!directortextactive)
+	if (!K_DirectorIsAvailable())
 		return;
 
 	if (!K_DirectorIsEnabled())
 	{
+		G_AdjustView(1, 1, true);
 		directorinfo.cooldown = 0; // switch immediately
 	}
 
 	directortoggletimer = 0;
 
-	COM_ImmedExecute("add director 1");
+	CV_SetValue(&cv_director, (cv_director.value ^ 1));
 }

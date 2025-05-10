@@ -299,6 +299,7 @@ static void CalcFillCoords(drawitem_t *item)
 			else if (!(c & V_SNAPTOLEFT))
 				x += (vid.width - (BASEVIDWIDTH * dupx)) / 2;
 		}
+
 		if (vid.height != BASEVIDHEIGHT * dupy)
 		{
 			// same thing here
@@ -307,6 +308,7 @@ static void CalcFillCoords(drawitem_t *item)
 			else if (!(c & V_SNAPTOTOP))
 				y += (vid.height - (BASEVIDHEIGHT * dupy)) / 2;
 		}
+
 		if (c & V_SPLITSCREEN)
 			y += (BASEVIDHEIGHT * dupy)/2;
 		if (c & V_HORZSCREEN)
@@ -334,6 +336,7 @@ static UINT64 GetItemId(void)
 		id |= INTERP_LATCH;
 		hud_interplatch = false;
 	}
+
 	if (hud_interpstring)
 		id |= INTERP_STRING;
 
@@ -639,18 +642,12 @@ void LUA_HUD_DrawList(huddrawlist_h list)
 		switch (item->type)
 		{
 			case DI_Draw:
-				if (!item->patch || item->patch == NULL)
-					return;
 				V_DrawBlendingFixedPatch(LERPS(x), LERPS(y), FRACUNIT, item->flags, item->patch, item->colormap, item->blend);
 				break;
 			case DI_DrawScaled:
-				if (!item->patch || item->patch == NULL)
-					return;
 				V_DrawBlendingFixedPatch(LERPS(x), LERPS(y), LERP(scale), item->flags, item->patch, item->colormap, item->blend);
 				break;
 			case DI_DrawStretched:
-				if (!item->patch || item->patch == NULL)
-					return;
 				V_DrawStretchyFixedPatch(LERPS(x), LERPS(y), LERP(hscale), LERP(vscale), item->flags, item->patch, item->colormap, item->blend);
 				break;
 			case DI_DrawNum:

@@ -30,16 +30,26 @@
 // =============================
 
 // Selected by user.
-extern INT16 gamemap;
-extern char mapmusname[7];
-extern UINT16 mapmusflags;
-extern UINT32 mapmusposition;
-extern UINT32 mapmusresume;
+
+typedef struct
+{
+	char       name[7];  // Music name, up to 6-character name
+	void       *data;    // Music lump
+	UINT16     flags;    // Track and reset bit
+	boolean    looping;  // Is this music looping?
+	UINT32     position; // Position to jump to
+	UINT32     resume;   // Saved Position when music was stopped
+	UINT32     fadeinms; // Fade in time in ms (used for queue)
+} music_t;
+
+extern music_t mapmusic;
+
 #define MUSIC_TRACKMASK   0x0FFF // ----************
 #define MUSIC_RELOADRESET 0x8000 // *---------------
 #define MUSIC_FORCERESET  0x4000 // -*--------------
 // Use other bits if necessary.
 
+extern INT16 gamemap;
 extern INT16 maptol;
 extern UINT8 globalweather;
 extern INT32 curWeather;
@@ -212,6 +222,15 @@ typedef struct
 	char value[256]; // 255 usable characters. If this seriously isn't enough then wtf.
 } customoption_t;
 
+typedef struct
+{
+	boolean use_custom_light;
+	UINT8 light_contrast;				///< Range of wall lighting. 0 is no lighting.
+	SINT8 sprite_backlight;				///< Subtract from wall lighting for sprites only.
+	boolean use_light_angle;			///< When false, wall lighting is evenly distributed. When true, wall lighting is directional.
+	angle_t light_angle;				///< Angle of directional wall lighting.
+} mapheader_lighting_t;
+
 /** Map header information.
   */
 typedef struct
@@ -225,7 +244,7 @@ typedef struct
 	INT16 nextlevel;       ///< Map number of next level, or 1100-1102 to end.
 	char musname[7];       ///< Music track to play. "" for no music.
 	UINT16 mustrack;       ///< Subsong to play. Only really relevant for music modules and specific formats supported by GME. 0 to ignore.
-	UINT32 muspos;    ///< Music position to jump to.
+	UINT32 muspos;         ///< Music position to jump to.
 	char forcecharacter[17];  ///< (SKINNAMESIZE+1) Skin to switch to or "" to disable.
 	UINT8 weather;         ///< 0 = sunny day, 1 = storm, 2 = snow, 3 = rain, 4 = blank, 5 = thunder w/o rain, 6 = rain w/o lightning, 7 = heat wave.
 	INT16 skynum;          ///< Sky number to use.
@@ -257,7 +276,11 @@ typedef struct
 
 	// SRB2kart
 	//boolean automap;    ///< Displays a level's white map outline in modified games
-	fixed_t mobj_scale; ///< Replacement for TOL_ERZ3
+	fixed_t mobj_scale;   ///< Replacement for TOL_ERZ3
+
+	mapheader_lighting_t lighting;			///< Wall and sprite lighting
+	mapheader_lighting_t lighting_encore;	///< Alternative lighting for Encore mode
+	boolean use_encore_lighting;			///< Whether to use separate Encore lighting
 
 	// Music stuff.
 	UINT32 musinterfadeout;  ///< Fade out level music on intermission screen in milliseconds
@@ -337,9 +360,6 @@ enum GameType // SRB2Kart
 
 // String names for gametypes
 extern const char *Gametype_Names[NUMGAMETYPES];
-
-extern tic_t totalplaytime;
-extern UINT32 matchesplayed;
 
 extern UINT8 stagefailed;
 
@@ -454,6 +474,14 @@ extern tic_t racecountdown, exitcountdown;
 extern fixed_t gravity;
 extern fixed_t mapobjectscale;
 
+extern struct maplighting
+{
+	UINT8 contrast;
+	SINT8 backlight;
+	boolean directional;
+	angle_t angle;
+} maplighting;
+
 //for CTF balancing
 extern INT16 autobalance;
 extern INT16 teamscramble;
@@ -482,7 +510,6 @@ extern boolean startedInFreePlay;
 
 extern boolean legitimateexit;
 extern boolean comebackshowninfo;
-extern tic_t curlap, bestlap;
 
 extern INT16 votelevels[4][2];
 extern SINT8 votes[MAXPLAYERS];
@@ -509,18 +536,6 @@ extern mapthing_t *playerstarts[MAXPLAYERS]; // Cooperative
 extern mapthing_t *bluectfstarts[MAXPLAYERS]; // CTF
 extern mapthing_t *redctfstarts[MAXPLAYERS]; // CTF
 
-#define WAYPOINTSEQUENCESIZE 256
-#define NUMWAYPOINTSEQUENCES 256
-extern mobj_t *waypoints[NUMWAYPOINTSEQUENCES][WAYPOINTSEQUENCESIZE];
-extern UINT16 numwaypoints[NUMWAYPOINTSEQUENCES];
-
-void P_AddWaypoint(UINT8 sequence, UINT8 id, mobj_t *waypoint);
-mobj_t *P_GetFirstWaypoint(UINT8 sequence);
-mobj_t *P_GetLastWaypoint(UINT8 sequence);
-mobj_t *P_GetPreviousWaypoint(mobj_t *current, boolean wrap);
-mobj_t *P_GetNextWaypoint(mobj_t *current, boolean wrap);
-mobj_t *P_GetClosestWaypoint(UINT8 sequence, mobj_t *mo);
-
 // =====================================
 // Internal parameters, used for engine.
 // =====================================
@@ -540,9 +555,6 @@ mobj_t *P_GetClosestWaypoint(UINT8 sequence, mobj_t *mo);
 extern FILE *debugfile;
 extern INT32 debugload;
 #endif
-
-// if true, load all graphics at level load
-extern boolean precache;
 
 // wipegamestate can be set to -1
 //  to force a wipe on the next draw

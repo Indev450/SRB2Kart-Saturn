@@ -13,7 +13,7 @@
 
 #include "hw_main.h"
 #include "hw_glob.h"
-#include "hw_drv.h"
+#include "hw_gl.h"
 #include "hw_shaders.h"
 #include "../z_zone.h"
 
@@ -29,9 +29,6 @@ static struct {
 	// Floor shader
 	{GLSL_DEFAULT_VERTEX_SHADER, GLSL_FLOOR_FRAGMENT_SHADER},
 
-	// Shadow shader
-	{GLSL_DEFAULT_VERTEX_SHADER, GLSL_SHADOW_FRAGMENT_SHADER},
-
 	// Wall shader
 	{GLSL_DEFAULT_VERTEX_SHADER, GLSL_WALL_FRAGMENT_SHADER},
 
@@ -39,7 +36,7 @@ static struct {
 	{GLSL_DEFAULT_VERTEX_SHADER, GLSL_WALL_FRAGMENT_SHADER},
 
 	// Model shader
-	{GLSL_DEFAULT_VERTEX_SHADER, GLSL_WALL_FRAGMENT_SHADER},
+	{GLSL_MODEL_LIGHTING_VERTEX_SHADER, GLSL_WALL_FRAGMENT_SHADER},
 
 	// Water shader
 	{GLSL_DEFAULT_VERTEX_SHADER, GLSL_WATER_FRAGMENT_SHADER},
@@ -90,7 +87,7 @@ boolean HWR_InitShaders(void)
 {
 	int i;
 
-	if (!HWD.pfnInitShaders())
+	if (!GL_InitShaders())
 		return false;
 
 	for (i = 0; i < NUMSHADERTARGETS; i++)
@@ -369,16 +366,16 @@ static void HWR_CompileShader(int index)
 	{
 		char *preprocessed = HWR_PreprocessShader(vertex_source);
 		if (!preprocessed) return;
-		HWD.pfnLoadShader(index, preprocessed, HWD_SHADERSTAGE_VERTEX);
+		GL_LoadShader(index, preprocessed, HWD_SHADERSTAGE_VERTEX);
 	}
 	if (fragment_source)
 	{
 		char *preprocessed = HWR_PreprocessShader(fragment_source);
 		if (!preprocessed) return;
-		HWD.pfnLoadShader(index, preprocessed, HWD_SHADERSTAGE_FRAGMENT);
+		GL_LoadShader(index, preprocessed, HWD_SHADERSTAGE_FRAGMENT);
 	}
 
-	gl_shaders[index].compiled = HWD.pfnCompileShader(index);
+	gl_shaders[index].compiled = GL_CompileShader(index);
 }
 
 // compile or recompile shaders
@@ -403,17 +400,18 @@ void HWR_CompileShaders(void)
 
 int HWR_GetShaderFromTarget(int shader_target)
 {
-	int custom_shader = gl_shadertargets[shader_target].custom_shader;
-	// use custom shader if following are true
-	// - custom shader exists
-	// - custom shader has been compiled successfully
-	// - custom shaders are enabled
-	// - custom shaders are allowed by the server
-	if (custom_shader != -1 && gl_shaders[custom_shader].compiled &&
-		cv_glshaders.value == 1)
-		return custom_shader;
-	else
-		return gl_shadertargets[shader_target].base_shader;
+	if (cv_glshaders.value == 1)
+	{
+		int custom_shader = gl_shadertargets[shader_target].custom_shader;
+		// use custom shader if following are true
+		// - custom shader exists
+		// - custom shader has been compiled successfully
+		// - custom shaders are enabled
+		if (custom_shader != -1 && gl_shaders[custom_shader].compiled)
+			return custom_shader;
+	}
+
+	return gl_shadertargets[shader_target].base_shader;
 }
 
 static inline UINT16 HWR_FindShaderDefs(UINT16 wadnum)
@@ -432,7 +430,6 @@ static inline UINT16 HWR_FindShaderDefs(UINT16 wadnum)
 customshaderxlat_t shaderxlat[] =
 {
 	{"Flat", SHADER_FLOOR},
-	{"Shadow", SHADER_SHADOW},
 	{"WallTexture", SHADER_WALL},
 	{"Sprite", SHADER_SPRITE},
 	{"Model", SHADER_MODEL},

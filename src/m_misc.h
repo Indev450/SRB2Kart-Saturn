@@ -30,7 +30,7 @@ typedef enum {
 extern moviemode_t moviemode;
 
 extern consvar_t cv_screenshot_option, cv_screenshot_folder;
-extern consvar_t cv_moviemode;
+extern consvar_t cv_moviemode, cv_movie_folder, cv_movie_option;
 extern consvar_t cv_zlib_memory, cv_zlib_level, cv_zlib_strategy, cv_zlib_window_bits;
 extern consvar_t cv_zlib_memorya, cv_zlib_levela, cv_zlib_strategya, cv_zlib_window_bitsa;
 extern consvar_t cv_apng_delay;
@@ -69,6 +69,8 @@ void M_ScreenShot(void);
 void M_DoScreenShot(void);
 boolean M_ScreenshotResponder(event_t *ev);
 
+void M_MinimapGenerate(void);
+
 void Command_SaveConfig_f(void);
 void Command_LoadConfig_f(void);
 void Command_ChangeConfig_f(void);
@@ -96,6 +98,11 @@ TMatrix *RotateZMatrix(angle_t rad);
 void strcatbf(char *s1, const char *s2, const char *s3);
 
 const char *M_FileError(FILE *handle);
+
+int     M_PathParts      (const char *path);
+boolean M_IsPathAbsolute (const char *path);
+void    M_MkdirEach      (const char *path, int start, int mode);
+void    M_MkdirEachUntil (const char *path, int start, int end, int mode);
 
 // counting bits, for weapon ammo code, usually
 FUNCMATH UINT8 M_CountBits(UINT32 num, UINT8 size);

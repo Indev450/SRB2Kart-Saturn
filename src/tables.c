@@ -176,11 +176,16 @@ fixed_t *finecosine = &finesine[FINEANGLES/4];
 
 #include "t_facon.c"
 
-
 FUNCMATH angle_t FixedAcos(fixed_t x)
 {
 	if (-FRACUNIT > x || x >= FRACUNIT) return 0;
 	return fineacon[((x<<(FINE_FRACBITS-FRACBITS)))+FRACUNIT];
+}
+
+INT32 AngleDeltaSigned(angle_t a1, angle_t a2)
+{
+	// Silly but easy way to do it through integer conversion.
+	return (INT32)(a1) - (INT32)(a2);
 }
 
 //
@@ -269,7 +274,7 @@ boolean FV2_InsidePolygon(const vector2_t *vIntersection, const vector2_t *Poly,
 	// with floating point numbers.  It usually won't always be perfectly 2 * PI, so we need
 	// to use a little twiddling.  I use .9999, but you can change this to fit your own desired accuracy.
 
-	if(Angle >= ANGLE_MAX)	// If the angle is greater than 2 PI, (360 degrees)
+	if (Angle >= ANGLE_MAX) // If the angle is greater than 2 PI, (360 degrees)
 		return 1; // The point is inside of the polygon
 
 	return 0; // If you get here, it obviously wasn't inside the polygon.

@@ -247,6 +247,35 @@ FUNCMATH FUNCINLINE static ATTRINLINE fixed_t FixedRound(fixed_t x)
 	return INT32_MAX;
 }
 
+/**	\brief	The xs_CRoundToInt function
+
+	\param	val	double number
+
+	\return Round toward nearest, but ties round toward even
+*/
+#if defined(SRB2_BIG_ENDIAN)
+	#define _xs_iexp_				0
+	#define _xs_iman_				1
+#else
+	#define _xs_iexp_				1       //intel is little endian
+	#define _xs_iman_				0
+#endif //BigEndian_
+
+typedef double real64;
+
+typedef union _xs_doubleints
+{
+	real64 val;
+	unsigned ival[2];
+} _xs_doubleints;
+
+FUNCMATH FUNCINLINE static ATTRINLINE int xs_CRoundToInt(real64 val)
+{
+	_xs_doubleints uval;
+	uval.val = val + 6755399441055744.0;
+	return uval.ival[_xs_iman_];
+}
+
 typedef struct
 {
 	fixed_t x;

@@ -144,8 +144,8 @@ UINT32 nflatxshift, nflatyshift, nflatshiftup, nflatmask;
 #define DEFAULT_STARTTRANSCOLOR 160
 #define NUM_PALETTE_ENTRIES 256
 
-static UINT8** translationtablecache[TT_CACHE_SIZE] = {NULL};
-static UINT8** localtranslationtablecache[MAXLOCALSKINS] = {NULL};
+static UINT8 **translationtablecache[TT_CACHE_SIZE] = {NULL};
+static UINT8 **localtranslationtablecache[MAXLOCALSKINS] = {NULL};
 
 
 // See also the enum skincolors_t
@@ -214,14 +214,12 @@ const UINT8 Color_Opposite[MAXSKINCOLORS*2] =
 
 CV_PossibleValue_t Color_cons_t[MAXSKINCOLORS+1];
 
-#define TRANSTAB_AMTMUL10 (256.0f / 10.0f)
-
 /** \brief Initializes the translucency tables used by the Software renderer.
 */
 void R_InitTranslucencyTables(void)
 {
-	// Load here the transparency lookup tables 'TINTTAB'
-	// NOTE: the TINTTAB resource MUST BE aligned on 64k for the asm
+	// Load here the transparency lookup tables 'TRANSx0'
+	// NOTE: the TRANSx0 resources MUST BE aligned on 64k for the asm
 	// optimised code (in other words, transtables pointer low word is 0)
 	transtables = Z_MallocAlign(NUMTRANSTABLES*0x10000, PU_STATIC,
 		NULL, 16);
@@ -317,7 +315,7 @@ static void BlendTab_Modulative(UINT8 *table)
 
 static INT32 BlendTab_Count[NUMBLENDMAPS] =
 {
-	NUMTRANSTABLES,   // blendtab_add
+	NUMTRANSTABLES+1, // blendtab_add
 	NUMTRANSTABLES+1, // blendtab_subtract
 	NUMTRANSTABLES+1, // blendtab_reversesubtract
 	1                 // blendtab_modulate
@@ -337,7 +335,7 @@ static INT32 BlendTab_FromStyle[] =
 static void BlendTab_GenerateMaps(INT32 tab, INT32 style, void (*genfunc)(UINT8 *, int, UINT8))
 {
 	INT32 i = 0, num = BlendTab_Count[tab];
-	const float amtmul = (256.0f / (float)(NUMTRANSTABLES));
+	const float amtmul = (256.0f / (float)(NUMTRANSTABLES + 1));
 	for (; i < num; i++)
 	{
 		const size_t offs = (0x10000 * i);
@@ -384,8 +382,8 @@ UINT8 *R_GetBlendTable(int style, INT32 alphalevel)
 {
 	size_t offs;
 
-	if (style == AST_COPY || style == AST_OVERLAY)
-		return NULL;
+	if (style <= AST_COPY || style >= AST_OVERLAY)
+		return transtables + (ClipTransLevel(alphalevel) << FF_TRANSSHIFT);
 
 	offs = (ClipBlendLevel(style, alphalevel) << FF_TRANSSHIFT);
 
@@ -414,7 +412,7 @@ UINT8 *R_GetBlendTable(int style, INT32 alphalevel)
 
 boolean R_BlendLevelVisible(INT32 blendmode, INT32 alphalevel)
 {
-	if (blendmode == AST_COPY || blendmode == AST_SUBTRACT || blendmode == AST_MODULATE || blendmode == AST_OVERLAY)
+	if (blendmode <= AST_COPY || blendmode == AST_SUBTRACT || blendmode == AST_MODULATE || blendmode >= AST_OVERLAY)
 		return true;
 
 	return (alphalevel < BlendTab_Count[BlendTab_FromStyle[blendmode]]);
@@ -422,9 +420,9 @@ boolean R_BlendLevelVisible(INT32 blendmode, INT32 alphalevel)
 
 /**	\brief	Retrieves a translation colormap from the cache.
 
-	\param	skinnum	number of skin, TC_DEFAULT or TC_BOSS
-	\param	color	translation color
-	\param	flags	set GTC_CACHE to use the cache
+	\param	skinnum		skin number, or a translation mode
+	\param	color		translation color
+	\param	flags		set GTC_CACHE to use the cache
 
 	\return	Colormap. If not cached, caller should Z_Free.
 */
@@ -442,19 +440,22 @@ static UINT8* RGetTranslationColormap(INT32 skinnum, skincolors_t color, UINT8 f
 	else
 	{
 		tt = translationtablecache;
+
 		// Adjust if we want the default colormap
-		if (skinnum == TC_DEFAULT) skintableindex = DEFAULT_TT_CACHE_INDEX;
-		else if (skinnum == TC_BOSS) skintableindex = BOSS_TT_CACHE_INDEX;
-		else if (skinnum == TC_METALSONIC) skintableindex = METALSONIC_TT_CACHE_INDEX;
-		else if (skinnum == TC_ALLWHITE) skintableindex = ALLWHITE_TT_CACHE_INDEX;
-		else if (skinnum == TC_RAINBOW) skintableindex = RAINBOW_TT_CACHE_INDEX;
-		else if (skinnum == TC_BLINK) skintableindex = BLINK_TT_CACHE_INDEX;
-		else skintableindex = skinnum;
+		switch (skinnum)
+		{
+			case TC_DEFAULT:    skintableindex = DEFAULT_TT_CACHE_INDEX; break;
+			case TC_BOSS:       skintableindex = BOSS_TT_CACHE_INDEX; break;
+			case TC_METALSONIC: skintableindex = METALSONIC_TT_CACHE_INDEX; break;
+			case TC_ALLWHITE:   skintableindex = ALLWHITE_TT_CACHE_INDEX; break;
+			case TC_RAINBOW:    skintableindex = RAINBOW_TT_CACHE_INDEX; break;
+			case TC_BLINK:      skintableindex = BLINK_TT_CACHE_INDEX; break;
+			default:       skintableindex = skinnum; break;
+		}
 	}
 
 	if (flags & GTC_CACHE)
 	{
-
 		// Allocate table for skin if necessary
 		if (!tt[skintableindex])
 			tt[skintableindex] = Z_Calloc(MAXTRANSLATIONS * sizeof(UINT8**), PU_STATIC, NULL);
@@ -486,12 +487,12 @@ UINT8* R_GetTranslationColormap(INT32 skinnum, skincolors_t color, UINT8 flags)
 UINT8* R_GetLocalTranslationColormap(skin_t *skin, skin_t *localskin, skincolors_t color, UINT8 flags, boolean local)
 {
 	if (localskin)
-		return RGetTranslationColormap(( localskin - ( (local) ? localskins : skins ) ), color, flags, local);
+		return RGetTranslationColormap(localskin - K_GetSkinArray(local), color, flags, local);
 	else
-		return RGetTranslationColormap(( skin - skins ), color, flags, false);
+		return RGetTranslationColormap((skin - skins), color, flags, false);
 }
 
-patch_t* R_GetSkinFaceRank(player_t* ply) 
+patch_t* R_GetSkinFaceRank(player_t* ply)
 {
 	if (ply->skinlocal && ply->localskin)
 		return localfacerankprefix[ply->localskin - 1];
@@ -500,7 +501,7 @@ patch_t* R_GetSkinFaceRank(player_t* ply)
 	return facerankprefix[ply->skin];
 }
 
-patch_t* R_GetSkinFaceWant(player_t* ply) 
+patch_t* R_GetSkinFaceWant(player_t* ply)
 {
 	if (ply->skinlocal && ply->localskin)
 		return localfacewantprefix[ply->localskin - 1];
@@ -509,7 +510,7 @@ patch_t* R_GetSkinFaceWant(player_t* ply)
 	return facewantprefix[ply->skin];
 }
 
-patch_t* R_GetSkinFaceMini(player_t* ply) 
+patch_t* R_GetSkinFaceMini(player_t* ply)
 {
 	if (ply->skinlocal && ply->localskin)
 		return localfacemmapprefix[ply->localskin - 1];
@@ -775,11 +776,3 @@ void R_DrawViewBorder(void)
 // ==========================================================================
 
 #include "r_draw8.c"
-
-// ==========================================================================
-//                   INCLUDE 16bpp DRAWING CODE HERE
-// ==========================================================================
-
-#ifdef HIGHCOLOR
-#include "r_draw16.c"
-#endif

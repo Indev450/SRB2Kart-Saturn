@@ -289,7 +289,7 @@ int
 HMS_register (void)
 {
 	struct HMS_buffer *hms;
-	int ok;
+	int okay;
 
 	char post[256];
 
@@ -316,23 +316,23 @@ HMS_register (void)
 
 	curl_easy_setopt(hms->curl, CURLOPT_POSTFIELDS, post);
 
-	ok = HMS_do(hms);
+	okay = HMS_do(hms);
 
-	if (ok)
+	if (okay)
 	{
 		hms_server_token = strdup(strtok(hms->buffer, "\n"));
 	}
 
 	HMS_end(hms);
 
-	return ok;
+	return okay;
 }
 
 int
 HMS_unlist (void)
 {
 	struct HMS_buffer *hms;
-	int ok;
+	int okay;
 
 	hms = HMS_connect("servers/%s/unlist", hms_server_token);
 
@@ -342,19 +342,19 @@ HMS_unlist (void)
 	curl_easy_setopt(hms->curl, CURLOPT_POST, 1);
 	curl_easy_setopt(hms->curl, CURLOPT_POSTFIELDSIZE, 0);
 
-	ok = HMS_do(hms);
+	okay = HMS_do(hms);
 	HMS_end(hms);
 
 	free(hms_server_token);
 
-	return ok;
+	return okay;
 }
 
 int
 HMS_update (void)
 {
 	struct HMS_buffer *hms;
-	int ok;
+	int okay;
 
 	char post[256];
 
@@ -376,10 +376,10 @@ HMS_update (void)
 
 	curl_easy_setopt(hms->curl, CURLOPT_POSTFIELDS, post);
 
-	ok = HMS_do(hms);
+	okay = HMS_do(hms);
 	HMS_end(hms);
 
-	return ok;
+	return okay;
 }
 
 void
@@ -488,7 +488,7 @@ int
 HMS_compare_mod_version (char *buffer, size_t buffer_size)
 {
 	struct HMS_buffer *hms;
-	int ok;
+	int okay;
 
 	char *version;
 	char *version_name;
@@ -498,7 +498,7 @@ HMS_compare_mod_version (char *buffer, size_t buffer_size)
 	if (! hms)
 		return 0;
 
-	ok = 0;
+	okay = 0;
 
 	if (HMS_do(hms))
 	{
@@ -510,16 +510,16 @@ HMS_compare_mod_version (char *buffer, size_t buffer_size)
 			if (atoi(version) != MODVERSION)
 			{
 				strlcpy(buffer, version_name, buffer_size);
-				ok = 1;
+				okay = 1;
 			}
 			else
-				ok = -1;
+				okay = -1;
 		}
 	}
 
 	HMS_end(hms);
 
-	return ok;
+	return okay;
 }
 
 const char *
@@ -532,9 +532,9 @@ HMS_fetch_rules (char *buffer, size_t buffer_size)
 	if (! hms)
 		return NULL;
 
-	boolean ok = HMS_do(hms);
+	boolean okay = HMS_do(hms);
 
-	if (ok)
+	if (okay)
 	{
 		char *p = strstr(hms->buffer, "\n\n");
 
@@ -552,7 +552,7 @@ HMS_fetch_rules (char *buffer, size_t buffer_size)
 
 	HMS_end(hms);
 
-	if (!ok)
+	if (!okay)
 		return NULL;
 
 	return buffer;

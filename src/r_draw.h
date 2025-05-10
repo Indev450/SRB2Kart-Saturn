@@ -189,17 +189,5 @@ void R_DrawFogSpan_8(void);
 void R_DrawFogColumn_8(void);
 void R_DrawColumnShadowed_8(void);
 
-// ------------------
-// 16bpp DRAWING CODE
-// ------------------
-
-#ifdef HIGHCOLOR
-void R_DrawColumn_16(void);
-void R_DrawWallColumn_16(void);
-void R_DrawTranslucentColumn_16(void);
-void R_DrawTranslatedColumn_16(void);
-void R_DrawSpan_16(void);
-#endif
-
 // =========================================================================
 #endif  // __R_DRAW__

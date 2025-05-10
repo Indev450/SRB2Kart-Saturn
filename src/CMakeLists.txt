@@ -129,6 +129,7 @@ set(SRB2_CORE_RENDER_SOURCES
 	r_fps.c
 	r_main.c
 	r_patch.c
+	r_patchrotation.c
 	r_plane.c
 	r_segs.c
 	r_sky.c
@@ -143,7 +144,8 @@ set(SRB2_CORE_RENDER_SOURCES
 	r_fps.h
 	r_local.h
 	r_main.h
-	r_patch
+	r_patch.h
+	r_patchrotation.h
 	r_plane.h
 	r_segs.h
 	r_sky.h
@@ -173,6 +175,7 @@ set(SRB2_CORE_GAME_SOURCES
 	p_user.c
 	k_director.c
 	k_kart.c
+	k_stats.c
 	i_time.c
 
 	p_local.h
@@ -187,6 +190,7 @@ set(SRB2_CORE_GAME_SOURCES
 	p_tick.h
 	k_director.h
 	k_kart.h
+	k_stats.h
 )
 
 if(NOT (CMAKE_CXX_COMPILER_ID MATCHES "Clang"))
@@ -487,7 +491,7 @@ if(${SRB2_CONFIG_HWRENDER})
 		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_data.h
 		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_defs.h
 		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_dll.h
-		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_drv.h
+		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_gl.h
 		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_glob.h
 		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_main.h
 		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_portal.h

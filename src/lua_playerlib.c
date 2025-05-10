@@ -157,9 +157,8 @@ static const udata_field_t player_fields[] = {
     FIELD(player_t, grieftime,        udatalib_getter_tic,         udatalib_setter_tic),
     FIELD(player_t, griefstrikes,     udatalib_getter_uint8,       udatalib_setter_uint8),
     FIELD(player_t, splitscreenindex, udatalib_getter_uint8,       player_splitscreenindex_noset),
-#ifdef HWRENDER
     FIELD(player_t, fovadd,           udatalib_getter_fixed,       udatalib_setter_fixed), // Mmm yeah thats definitely synch safe
-#endif
+
     // Same as player.name
 	{ "sliproll", 0, player_sliproll_getter, player_sliproll_noset },
 	{ "viewrollangle", 0, player_viewrollangle_getter, player_viewrollangle_noset },
@@ -296,7 +295,7 @@ int player_localskin_getter(lua_State *L)
 	player_t *plr = GETPLAYER();
 
 	if (plr->localskin)
-		lua_pushstring(L, (plr->skinlocal ? localskins : skins)[plr->localskin - 1].name);
+		lua_pushstring(L, K_GetPlayerSkin(plr)->name);
 	else
 		lua_pushnil(L);
 
@@ -486,6 +485,7 @@ static int lib_iterateDisplayplayers(lua_State *L)
 
 		if (!players[displayplayers[i]].mo)
 			continue;
+
 		LUA_PushUserdata(L, &players[displayplayers[i]], META_PLAYER);
 		lua_pushinteger(L, i);	// push this to recall what number we were on for the next function call. I suppose this also means you can retrieve the splitscreen player number with 'for p, n in displayplayers.iterate'!
 		return 2;

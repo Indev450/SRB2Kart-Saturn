@@ -106,10 +106,6 @@ virtlump_t* vres_Find(const virtres_t*, const char*);
 
 #define lumpcache_t void *
 
-#ifdef HWRENDER
-#include "m_aatree.h"
-#endif
-
 // Resource type of the WAD. Yeah, I know this sounds dumb, but I'll leave it like this until I clean up the code further.
 typedef enum restype
 {
@@ -127,8 +123,9 @@ typedef struct wadfile_s
 	restype_t type;
 	lumpinfo_t *lumpinfo;
 	lumpcache_t *lumpcache;
-#ifdef HWRENDER
-	aatree_t *hwrcache; // patches are cached in renderer's native format
+	lumpcache_t *patchcache;
+#ifdef ROTSPRITE
+	lumpcache_t *rotcache; // Cache rotsprites for rotating patches.
 #endif
 	UINT16 numlumps; // this wad's number of resources
 	FILE *handle;
@@ -207,17 +204,25 @@ void *W_CacheLumpNumPwad(UINT16 wad, UINT16 lump, INT32 tag);
 void *W_CacheLumpNum(lumpnum_t lump, INT32 tag);
 void *W_CacheLumpNumForce(lumpnum_t lumpnum, INT32 tag);
 
+boolean W_IsPatchCached(lumpnum_t lump, void *ptr);
 boolean W_IsLumpCached(lumpnum_t lump, void *ptr);
 
 void *W_CacheLumpName(const char *name, INT32 tag);
 void *W_CachePatchName(const char *name, INT32 tag);
 
-#ifdef HWRENDER
-//void *W_CachePatchNumPwad(UINT16 wad, UINT16 lump, INT32 tag); // return a patch_t
-void *W_CachePatchNum(lumpnum_t lumpnum, INT32 tag); // return a patch_t
-#else
-//#define W_CachePatchNumPwad(wad, lump, tag) W_CacheLumpNumPwad(wad, lump, tag)
-#define W_CachePatchNum(lumpnum, tag) W_CacheLumpNum(lumpnum, tag)
+// Returns either a Software patch, or an OpenGL patch.
+void *W_CachePatchNumPwad(UINT16 wad, UINT16 lump, INT32 tag);
+void *W_CachePatchNum(lumpnum_t lumpnum, INT32 tag);
+
+void *W_GetCachedPatchNumPwad(UINT16 wad, UINT16 lump);
+
+// Returns a Software patch.
+void *W_CacheSoftwarePatchNumPwad(UINT16 wad, UINT16 lump, INT32 tag);
+void *W_CacheSoftwarePatchNum(lumpnum_t lumpnum, INT32 tag);
+
+#ifdef ROTSPRITE
+void *W_GetCachedRotPatchPwad(UINT16 wadnum, UINT16 lumpnum); // Get patch-based rotsprites from the cache.
+void *W_CachePatchNameRotated(const char *name, INT32 rotationangle, INT32 tag);
 #endif
 
 void W_UnlockCachedPatch(void *patch);

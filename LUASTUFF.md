@@ -28,6 +28,10 @@ exist.
 Returns the values of the given HUD item's `xoffset`/`yoffset` cvars.
 Available for any HUD item with offset cvars.
 
+## patch = v.cachePatchRotated(name, rollangle)
+Like v.cachePatch, it caches a new patch with the corresponding name. Unlike v.cachePatch, however,
+a rollangle can be supplied to the function so that it returns a rotated patch instead.
+
 ## x, y, flags = v.getDrawInfo(item)
 
 Returns the X, Y and flags where the given HUD item will be drawn for the current displayplayer.

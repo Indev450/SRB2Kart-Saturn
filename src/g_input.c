@@ -20,6 +20,8 @@
 #include "d_net.h"
 #include "console.h"
 
+#include "m_menu.h"
+
 #include "i_system.h"
 #include "i_video.h"
 #include "r_draw.h"
@@ -33,9 +35,7 @@ static CV_PossibleValue_t turnsmooth_cons_t[] = {{2, "Slow"}, {1, "Fast"}, {0, "
 
 // mouse values are used once
 consvar_t cv_mousesens = {"mousesens", "20", CV_SAVE, mousesens_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_mousesens2 = {"mousesens2", "20", CV_SAVE, mousesens_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_mouseysens = {"mouseysens", "20", CV_SAVE, mousesens_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_mouseysens2 = {"mouseysens2", "20", CV_SAVE, mousesens_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_controlperkey = {"controlperkey", "One", CV_SAVE, onecontrolperkey_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_turnsmooth = {"turnsmoothing", "Slow", CV_SAVE, turnsmooth_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
@@ -125,8 +125,6 @@ static void led_off_handle4(void)
 INT32 mousex, mousey;
 INT32 mlooky; // like mousey but with a custom sensitivity for mlook
 
-INT32 mouse2x, mouse2y, mlook2y;
-
 // joystick values are repeated
 INT32 joyxmove[JOYAXISSET], joyymove[JOYAXISSET], joy2xmove[JOYAXISSET], joy2ymove[JOYAXISSET],
 joy3xmove[JOYAXISSET], joy3ymove[JOYAXISSET], joy4xmove[JOYAXISSET], joy4ymove[JOYAXISSET];
@@ -135,10 +133,7 @@ joy3xmove[JOYAXISSET], joy3ymove[JOYAXISSET], joy4xmove[JOYAXISSET], joy4ymove[J
 UINT8 gamekeydown[NUMINPUTS];
 
 // two key codes (or virtual key) per game control
-INT32 gamecontrol[num_gamecontrols][2];
-INT32 gamecontrolbis[num_gamecontrols][2]; // secondary splitscreen player
-INT32 gamecontrol3[num_gamecontrols][2]; // tertiary splitscreen player
-INT32 gamecontrol4[num_gamecontrols][2]; // quarternary splitscreen player
+INT32 gamecontrol[MAXSPLITSCREENPLAYERS][num_gamecontrols][2];
 
 typedef struct
 {
@@ -148,7 +143,6 @@ typedef struct
 } dclick_t;
 static dclick_t mousedclicks[MOUSEBUTTONS];
 static dclick_t joydclicks[JOYBUTTONS + JOYHATS*4];
-static dclick_t mouse2dclicks[MOUSEBUTTONS];
 static dclick_t joy2dclicks[JOYBUTTONS + JOYHATS*4];
 static dclick_t joy3dclicks[JOYBUTTONS + JOYHATS*4];
 static dclick_t joy4dclicks[JOYBUTTONS + JOYHATS*4];
@@ -233,14 +227,6 @@ void G_MapEventsToControls(event_t *ev)
 			if (ev->data3 != INT32_MAX) joy4ymove[i] = ev->data3;
 			break;
 
-		case ev_mouse2: // buttons are virtual keys
-			if (menuactive || CON_Ready() || chat_on)
-				break;
-			mouse2x = (INT32)(ev->data2*((cv_mousesens2.value*cv_mousesens2.value)/110.0f + 0.1f));
-			mouse2y = (INT32)(ev->data3*((cv_mousesens2.value*cv_mousesens2.value)/110.0f + 0.1f));
-			mlook2y = (INT32)(ev->data3*((cv_mouseysens2.value*cv_mousesens2.value)/110.0f + 0.1f));
-			break;
-
 		default:
 			break;
 	}
@@ -256,12 +242,6 @@ void G_MapEventsToControls(event_t *ev)
 	{
 		flag = G_CheckDoubleClick(gamekeydown[KEY_JOY1+i], &joydclicks[i]);
 		gamekeydown[KEY_DBLJOY1+i] = flag;
-	}
-
-	for (i = 0; i < MOUSEBUTTONS; i++)
-	{
-		flag = G_CheckDoubleClick(gamekeydown[KEY_2MOUSE1+i], &mouse2dclicks[i]);
-		gamekeydown[KEY_DBL2MOUSE1+i] = flag;
 	}
 
 	for (i = 0; i < JOYBUTTONS + JOYHATS*4; i++)
@@ -281,6 +261,26 @@ void G_MapEventsToControls(event_t *ev)
 		flag = G_CheckDoubleClick(gamekeydown[KEY_4JOY1+i], &joy4dclicks[i]);
 		gamekeydown[KEY_DBL4JOY1+i] = flag;
 	}
+}
+
+void G_ResetControls(void)
+{
+	memset(gamekeydown, 0, NUMINPUTS);
+
+	memset(joyxmove, 0, sizeof(joyxmove));
+	memset(joyymove, 0, sizeof(joyymove));
+
+	memset(joy2xmove, 0, sizeof(joy2xmove));
+	memset(joy2ymove, 0, sizeof(joy2ymove));
+
+	memset(joy3xmove, 0, sizeof(joy3xmove));
+	memset(joy3ymove, 0, sizeof(joy3ymove));
+
+	memset(joy4xmove, 0, sizeof(joy4xmove));
+	memset(joy4ymove, 0, sizeof(joy4ymove));
+
+	// reset those just in case the game missed the keyup event
+	memset(dpadscrollstate, false, sizeof(dpadscrollstate));
 }
 
 //
@@ -401,18 +401,8 @@ static keyname_t keynames[] =
 	{KEY_MOUSE1+5,"MOUSE6"},
 	{KEY_MOUSE1+6,"MOUSE7"},
 	{KEY_MOUSE1+7,"MOUSE8"},
-	{KEY_2MOUSE1+0,"SEC_MOUSE2"}, // BP: sorry my mouse handler swap button 1 and 2
-	{KEY_2MOUSE1+1,"SEC_MOUSE1"},
-	{KEY_2MOUSE1+2,"SEC_MOUSE3"},
-	{KEY_2MOUSE1+3,"SEC_MOUSE4"},
-	{KEY_2MOUSE1+4,"SEC_MOUSE5"},
-	{KEY_2MOUSE1+5,"SEC_MOUSE6"},
-	{KEY_2MOUSE1+6,"SEC_MOUSE7"},
-	{KEY_2MOUSE1+7,"SEC_MOUSE8"},
 	{KEY_MOUSEWHEELUP, "Wheel 1 UP"},
 	{KEY_MOUSEWHEELDOWN, "Wheel 1 Down"},
-	{KEY_2MOUSEWHEELUP, "Wheel 2 UP"},
-	{KEY_2MOUSEWHEELDOWN, "Wheel 2 Down"},
 
 	{KEY_JOY1+0, "JOY1"},
 	{KEY_JOY1+1, "JOY2"},
@@ -423,7 +413,7 @@ static keyname_t keynames[] =
 	{KEY_JOY1+6, "JOY7"},
 	{KEY_JOY1+7, "JOY8"},
 	{KEY_JOY1+8, "JOY9"},
-	
+
 #if !defined (NOMOREJOYBTN_1S)
 	// we use up to 32 buttons in DirectInput
 	{KEY_JOY1+9, "JOY10"},
@@ -476,14 +466,6 @@ static keyname_t keynames[] =
 	{KEY_DBLMOUSE1+5, "DBLMOUSE6"},
 	{KEY_DBLMOUSE1+6, "DBLMOUSE7"},
 	{KEY_DBLMOUSE1+7, "DBLMOUSE8"},
-	{KEY_DBL2MOUSE1+0, "DBLSEC_MOUSE2"}, // BP: sorry my mouse handler swap button 1 and 2
-	{KEY_DBL2MOUSE1+1, "DBLSEC_MOUSE1"},
-	{KEY_DBL2MOUSE1+2, "DBLSEC_MOUSE3"},
-	{KEY_DBL2MOUSE1+3, "DBLSEC_MOUSE4"},
-	{KEY_DBL2MOUSE1+4, "DBLSEC_MOUSE5"},
-	{KEY_DBL2MOUSE1+5, "DBLSEC_MOUSE6"},
-	{KEY_DBL2MOUSE1+6, "DBLSEC_MOUSE7"},
-	{KEY_DBL2MOUSE1+7, "DBLSEC_MOUSE8"},
 
 	{KEY_DBLJOY1+0, "DBLJOY1"},
 	{KEY_DBLJOY1+1, "DBLJOY2"},
@@ -868,7 +850,6 @@ static keyname_t keynames[] =
 	{KEY_DBL4HAT1+13, "DBLFOR_HATDOWN4"},
 	{KEY_DBL4HAT1+14, "DBLFOR_HATLEFT4"},
 	{KEY_DBL4HAT1+15, "DBLFOR_HATRIGHT4"},
-
 };
 
 static const char *gamecontrolname[num_gamecontrols] =
@@ -902,115 +883,81 @@ static const char *gamecontrolname[num_gamecontrols] =
 	"custom2",
 	"custom3",
 	"director",
+	"freecam",
+	"camfloat",
+	"camsink",
+	"strafeleft",
+	"straferight",
 };
 
 #define NUMKEYNAMES (sizeof (keynames)/sizeof (keyname_t))
 
 #include "k_kart.h"
 
-INT32 G_GetDeviceForPlayer(INT32 player)
+UINT16 G_GetSkinColor(INT32 playernum)
 {
-	switch (player)
+	if (gamestate == GS_LEVEL)
 	{
-		case 0:
-			return cv_usejoystick.value;
-			break;
-		case 1:
-			return cv_usejoystick2.value;
-			break;
-		case 2:
-			return cv_usejoystick3.value;
-			break;
-		case 3:
-			return cv_usejoystick4.value;
-			break;
-		default:
-			return 0;
-			break;
+		player_t *player = &players[displayplayers[playernum]];
+
+		// make rgb rainbow vomit when invul or flash blue when grow
+		if (cv_ledpowerup[playernum].value && player->mo && (player->kartstuff[k_invincibilitytimer] || player->kartstuff[k_growshrinktimer] || player->powers[pw_invulnerability]))
+			return player->mo->color;
+
+		// take actual player skincolour when ingame
+		if (player->skincolor)
+			return player->skincolor;
 	}
-}
-
-inline UINT16 G_GetSkinColor(INT32 player)
-{
-	// make rgb rainbow vomit when invul or flash blue when grow
-	if (cv_ledpowerup[player].value && gamestate == GS_LEVEL && players[displayplayers[player]].mo && (players[displayplayers[player]].kartstuff[k_invincibilitytimer] || players[displayplayers[player]].powers[pw_invulnerability] || players[displayplayers[player]].kartstuff[k_growshrinktimer]))
-		return players[displayplayers[player]].mo->color;
-
-	// take actual player skincolour when ingame
-	if (gamestate == GS_LEVEL && players[displayplayers[player]].skincolor)
-		return players[displayplayers[player]].skincolor;
 
 	// otherwise just fallback to whatever the cvar is
-	switch (player)
+	switch (playernum)
 	{
 		case 0:
 			return cv_playercolor.value;
-			break;
 		case 1:
 			return cv_playercolor2.value;
-			break;
 		case 2:
 			return cv_playercolor3.value;
-			break;
 		case 3:
 			return cv_playercolor4.value;
-			break;
 		default:
 			return 0;
-			break;
 	}
+
+	return 0;
 }
 
-void G_SetPlayerGamepadIndicatorColor(INT32 player, UINT16 color)
+void G_SetPlayerGamepadIndicatorColor(INT32 playernum, UINT16 color)
 {
-	INT32 device;
 	UINT16 skincolor;
 	byteColor_t byte_color;
 
-	I_Assert(player >= 0 && player < MAXSPLITSCREENPLAYERS);
+	I_Assert(playernum >= 0 && playernum < MAXSPLITSCREENPLAYERS);
 
-	if (cv_gamepadled[player].value == 0)
-		return;
-
-	device = G_GetDeviceForPlayer(player);
-
-	if (device <= 0)
+	if (cv_gamepadled[playernum].value == 0)
 	{
 		return;
 	}
 
-	skincolor = color ? color : G_GetSkinColor(player);
+	skincolor = color ? color : G_GetSkinColor(playernum);
 	byte_color = V_GetColor(colortranslations[skincolor][8]).s;
 
-	I_SetGamepadIndicatorColor(device, byte_color.red, byte_color.green, byte_color.blue);
+	I_SetGamepadIndicatorColor(playernum, byte_color.red, byte_color.green, byte_color.blue);
 }
 
-static void G_ResetPlayerGamepadIndicatorColor(INT32 player)
+static void G_ResetPlayerGamepadIndicatorColor(INT32 playernum)
 {
-	if (cv_gamepadled[player].value == 0)
+	if (cv_gamepadled[playernum].value == 0)
 	{
-		INT32 device = G_GetDeviceForPlayer(player);
-		if (device <= 0)
-			return;
-
-		I_SetGamepadIndicatorColor(device, 0, 0, 255);
+		I_SetGamepadIndicatorColor(playernum, 0, 0, 255);
 	}
 	else
-		G_SetPlayerGamepadIndicatorColor(player, 0);
+		G_SetPlayerGamepadIndicatorColor(playernum, 0);
 }
 
-static void G_ResetPlayerDeviceRumble(INT32 player)
+static void G_ResetPlayerDeviceRumble(INT32 playernum)
 {
-	INT32 device_id;
-
-	device_id = G_GetDeviceForPlayer(player);
-
-	if (device_id < 1)
-	{
-		return;
-	}
-
-	I_GamepadRumble(device_id, 0, 0, 0);
+	I_GamepadRumble(playernum, 0, 0, 0);
 }
 
 void G_ResetAllDeviceRumbles(void)
@@ -1022,29 +969,20 @@ void G_ResetAllDeviceRumbles(void)
 
 	for (i = 0; i < devices; i++)
 	{
-		INT32 device_id = G_GetDeviceForPlayer(i);
-
-		I_GamepadRumble(device_id, 0, 0, 0);
+		I_GamepadRumble(devices, 0, 0, 0);
 	}
 }
 
-void G_PlayerDeviceRumble(INT32 player, UINT16 low_strength, UINT16 high_strength, UINT32 duration)
+void G_PlayerDeviceRumble(INT32 playernum, UINT16 low_strength, UINT16 high_strength, UINT32 duration)
 {
-	INT32 device_id;
+	I_Assert(playernum >= 0 && playernum < MAXSPLITSCREENPLAYERS);
 
-	if (cv_rumble[player].value == 0)
+	if (cv_rumble[playernum].value == 0)
 	{
 		return;
 	}
 
-	device_id = G_GetDeviceForPlayer(player);
-
-	if (device_id < 1)
-	{
-		return;
-	}
-
-	I_GamepadRumble(device_id, low_strength, high_strength, duration);
+	I_GamepadRumble(playernum, low_strength, high_strength, duration);
 }
 
 //
@@ -1058,13 +996,14 @@ void G_ClearControlKeys(INT32 (*setupcontrols)[2], INT32 control)
 
 void G_ClearAllControlKeys(void)
 {
-	INT32 i;
-	for (i = 0; i < num_gamecontrols; i++)
+	INT32 i, k;
+
+	for (k = 0; k < MAXSPLITSCREENPLAYERS; k++)
 	{
-		G_ClearControlKeys(gamecontrol, i);
-		G_ClearControlKeys(gamecontrolbis, i);
-		G_ClearControlKeys(gamecontrol3, i);
-		G_ClearControlKeys(gamecontrol4, i);
+		for (i = 0; i < num_gamecontrols; i++)
+		{
+			G_ClearControlKeys(gamecontrol[k], i);
+		}
 	}
 }
 
@@ -1103,7 +1042,7 @@ INT32 G_KeyStringtoNum(const char *keystr)
 	if (!keystr[0])
 		return 0;
 
-	if (!keystr[1] && keystr[0] > ' ' && keystr[0] <= 'z')
+	if (!keystr[0] || (!keystr[1] && keystr[0] > ' ' && keystr[0] <= 'z'))
 		return keystr[0];
 
 	if (!strncmp(keystr, "KEY", 3) && keystr[3] >= '0' && keystr[3] <= '9')
@@ -1122,158 +1061,131 @@ void G_Controldefault(UINT8 player)
 	if (player == 0 || player == 1)
 	{
 		// Main controls
-		gamecontrol[gc_aimforward ][0] = KEY_UPARROW;
-		gamecontrol[gc_aimbackward][0] = KEY_DOWNARROW;
-		gamecontrol[gc_turnleft   ][0] = KEY_LEFTARROW;
-		gamecontrol[gc_turnright  ][0] = KEY_RIGHTARROW;
-		gamecontrol[gc_accelerate ][0] = 'a';
-		gamecontrol[gc_drift      ][0] = 's';
-		gamecontrol[gc_brake      ][0] = 'd';
-		gamecontrol[gc_fire       ][0] = KEY_SPACE;
-		gamecontrol[gc_lookback   ][0] = KEY_LSHIFT;
+		gamecontrol[0][gc_aimforward ][0] = KEY_UPARROW;
+		gamecontrol[0][gc_aimbackward][0] = KEY_DOWNARROW;
+		gamecontrol[0][gc_turnleft   ][0] = KEY_LEFTARROW;
+		gamecontrol[0][gc_turnright  ][0] = KEY_RIGHTARROW;
+		gamecontrol[0][gc_accelerate ][0] = 'a';
+		gamecontrol[0][gc_drift      ][0] = 's';
+		gamecontrol[0][gc_brake      ][0] = 'd';
+		gamecontrol[0][gc_fire       ][0] = KEY_SPACE;
+		gamecontrol[0][gc_lookback   ][0] = KEY_LSHIFT;
 
-		gamecontrol[gc_accelerate ][1] = KEY_JOY1+0; // A
-		gamecontrol[gc_lookback   ][1] = KEY_JOY1+2; // X
-		gamecontrol[gc_brake      ][1] = KEY_JOY1+1; // B
-		gamecontrol[gc_fire       ][1] = KEY_JOY1+9; // LB
-		gamecontrol[gc_drift      ][1] = KEY_JOY1+10; // RB
+		gamecontrol[0][gc_accelerate ][1] = KEY_JOY1+0; // A
+		gamecontrol[0][gc_lookback   ][1] = KEY_JOY1+2; // X
+		gamecontrol[0][gc_brake      ][1] = KEY_JOY1+1; // B
+		gamecontrol[0][gc_fire       ][1] = KEY_JOY1+9; // LB
+		gamecontrol[0][gc_drift      ][1] = KEY_JOY1+10; // RB
 
 		// Extra controls
-		gamecontrol[gc_pause      ][0] = KEY_PAUSE;
-		gamecontrol[gc_console    ][0] = KEY_CONSOLE;
-		gamecontrol[gc_screenshot ][0] = KEY_F8;
-		gamecontrol[gc_recordgif  ][0] = KEY_F9;
-		gamecontrol[gc_viewpoint  ][0] = KEY_F12;
-		gamecontrol[gc_talkkey    ][0] = 't';
+		gamecontrol[0][gc_pause      ][0] = KEY_PAUSE;
+		gamecontrol[0][gc_console    ][0] = KEY_CONSOLE;
+		gamecontrol[0][gc_screenshot ][0] = KEY_F8;
+		gamecontrol[0][gc_recordgif  ][0] = KEY_F9;
+		gamecontrol[0][gc_viewpoint  ][0] = KEY_F12;
+		gamecontrol[0][gc_talkkey    ][0] = 't';
 		//gamecontrol[gc_teamkey    ][0] = 'y';
-		gamecontrol[gc_scores     ][0] = KEY_TAB;
-		gamecontrol[gc_spectate   ][0] = '\'';
-		gamecontrol[gc_lookup     ][0] = KEY_PGUP;
-		gamecontrol[gc_lookdown   ][0] = KEY_PGDN;
-		gamecontrol[gc_centerview ][0] = KEY_END;
-		gamecontrol[gc_camreset   ][0] = KEY_HOME;
-		gamecontrol[gc_camtoggle  ][0] = KEY_BACKSPACE;
+		gamecontrol[0][gc_scores     ][0] = KEY_TAB;
+		gamecontrol[0][gc_spectate   ][0] = '\'';
+		gamecontrol[0][gc_lookup     ][0] = KEY_PGUP;
+		gamecontrol[0][gc_lookdown   ][0] = KEY_PGDN;
+		gamecontrol[0][gc_centerview ][0] = KEY_END;
+		gamecontrol[0][gc_camreset   ][0] = KEY_HOME;
+		gamecontrol[0][gc_camtoggle  ][0] = KEY_BACKSPACE;
 
-		gamecontrol[gc_viewpoint  ][1] = KEY_JOY1+3; // Y
-		gamecontrol[gc_pause      ][1] = KEY_JOY1+4; // Back
-		gamecontrol[gc_systemmenu ][0] = KEY_JOY1+6; // Start
-		//gamecontrol[gc_camtoggle  ][1] = KEY_HAT1+0; // D-Pad Up
-		//gamecontrol[gc_screenshot ][1] = KEY_HAT1+1; // D-Pad Down // absolutely fucking NOT
-		gamecontrol[gc_talkkey    ][1] = KEY_HAT1+1; // D-Pad Down
-		gamecontrol[gc_scores     ][1] = KEY_HAT1+0; // D-Pad Up
+		gamecontrol[0][gc_viewpoint  ][1] = KEY_JOY1+3; // Y
+		gamecontrol[0][gc_pause      ][1] = KEY_JOY1+4; // Back
+		gamecontrol[0][gc_systemmenu ][0] = KEY_JOY1+6; // Start
+		//gamecontrol[0][gc_camtoggle  ][1] = KEY_HAT1+0; // D-Pad Up
+		//gamecontrol[0][gc_screenshot ][1] = KEY_HAT1+1; // D-Pad Down // absolutely fucking NOT
+		gamecontrol[0][gc_talkkey    ][1] = KEY_HAT1+1; // D-Pad Down
+		gamecontrol[0][gc_scores     ][1] = KEY_HAT1+0; // D-Pad Up
 	}
 
 	if (player == 0 || player == 2)
 	{
 		// Player 2 controls
-		gamecontrolbis[gc_accelerate ][0] = KEY_2JOY1+0; // A
-		gamecontrolbis[gc_lookback   ][0] = KEY_2JOY1+2; // X
-		gamecontrolbis[gc_brake      ][0] = KEY_2JOY1+1; // B
-		gamecontrolbis[gc_fire       ][0] = KEY_2JOY1+9; // LB
-		gamecontrolbis[gc_drift      ][0] = KEY_2JOY1+10; // RB
+		gamecontrol[1][gc_accelerate ][0] = KEY_2JOY1+0; // A
+		gamecontrol[1][gc_lookback   ][0] = KEY_2JOY1+2; // X
+		gamecontrol[1][gc_brake      ][0] = KEY_2JOY1+1; // B
+		gamecontrol[1][gc_fire       ][0] = KEY_2JOY1+9; // LB
+		gamecontrol[1][gc_drift      ][0] = KEY_2JOY1+10; // RB
 	}
 
 	if (player == 0 || player == 3)
 	{
 		// Player 3 controls
-		gamecontrol3[gc_accelerate ][0] = KEY_3JOY1+0; // A
-		gamecontrol3[gc_lookback   ][0] = KEY_3JOY1+2; // X
-		gamecontrol3[gc_brake      ][0] = KEY_3JOY1+1; // B
-		gamecontrol3[gc_fire       ][0] = KEY_3JOY1+9; // LB
-		gamecontrol3[gc_drift      ][0] = KEY_3JOY1+10; // RB
+		gamecontrol[2][gc_accelerate ][0] = KEY_3JOY1+0; // A
+		gamecontrol[2][gc_lookback   ][0] = KEY_3JOY1+2; // X
+		gamecontrol[2][gc_brake      ][0] = KEY_3JOY1+1; // B
+		gamecontrol[2][gc_fire       ][0] = KEY_3JOY1+9; // LB
+		gamecontrol[2][gc_drift      ][0] = KEY_3JOY1+10; // RB
 	}
 
 	if (player == 0 || player == 4)
 	{
 		// Player 4 controls
-		gamecontrol4[gc_accelerate ][0] = KEY_4JOY1+0; // A
-		gamecontrol4[gc_lookback   ][0] = KEY_4JOY1+2; // X
-		gamecontrol4[gc_brake      ][0] = KEY_4JOY1+1; // B
-		gamecontrol4[gc_fire       ][0] = KEY_4JOY1+9; // LB
-		gamecontrol4[gc_drift      ][0] = KEY_4JOY1+10; // RB
+		gamecontrol[3][gc_accelerate ][0] = KEY_4JOY1+0; // A
+		gamecontrol[3][gc_lookback   ][0] = KEY_4JOY1+2; // X
+		gamecontrol[3][gc_brake      ][0] = KEY_4JOY1+1; // B
+		gamecontrol[3][gc_fire       ][0] = KEY_4JOY1+9; // LB
+		gamecontrol[3][gc_drift      ][0] = KEY_4JOY1+10; // RB
 	}
 }
 
 void G_SaveKeySetting(FILE *f)
 {
-	INT32 i;
+	INT32 i, k;
 
-	for (i = 1; i < num_gamecontrols; i++)
+	static const char *controltext[MAXSPLITSCREENPLAYERS] = {
+		"setcontrol",
+		"setcontrol2",
+		"setcontrol3",
+		"setcontrol4"
+	};
+
+	for (k = 0; k < MAXSPLITSCREENPLAYERS; k++)
 	{
-		fprintf(f, "setcontrol \"%s\" \"%s\"", gamecontrolname[i],
-			G_KeynumToString(gamecontrol[i][0]));
+		for (i = 1; i < num_gamecontrols; i++)
+		{
+			fprintf(f, "%s \"%s\" \"%s\"", controltext[k], gamecontrolname[i],
+					G_KeynumToString(gamecontrol[k][i][0]));
 
-		if (gamecontrol[i][1])
-			fprintf(f, " \"%s\"\n", G_KeynumToString(gamecontrol[i][1]));
-		else
-			fprintf(f, "\n");
-	}
-
-	for (i = 1; i < num_gamecontrols; i++)
-	{
-		fprintf(f, "setcontrol2 \"%s\" \"%s\"", gamecontrolname[i],
-			G_KeynumToString(gamecontrolbis[i][0]));
-
-		if (gamecontrolbis[i][1])
-			fprintf(f, " \"%s\"\n", G_KeynumToString(gamecontrolbis[i][1]));
-		else
-			fprintf(f, "\n");
-	}
-
-	for (i = 1; i < num_gamecontrols; i++)
-	{
-		fprintf(f, "setcontrol3 \"%s\" \"%s\"", gamecontrolname[i],
-			G_KeynumToString(gamecontrol3[i][0]));
-
-		if (gamecontrol3[i][1])
-			fprintf(f, " \"%s\"\n", G_KeynumToString(gamecontrol3[i][1]));
-		else
-			fprintf(f, "\n");
-	}
-
-	for (i = 1; i < num_gamecontrols; i++)
-	{
-		fprintf(f, "setcontrol4 \"%s\" \"%s\"", gamecontrolname[i],
-			G_KeynumToString(gamecontrol4[i][0]));
-
-		if (gamecontrol4[i][1])
-			fprintf(f, " \"%s\"\n", G_KeynumToString(gamecontrol4[i][1]));
-		else
-			fprintf(f, "\n");
+			if (gamecontrol[k][i][1])
+				fprintf(f, " \"%s\"\n", G_KeynumToString(gamecontrol[k][i][1]));
+			else
+				fprintf(f, "\n");
+		}
 	}
 }
 
 INT32 G_CheckDoubleUsage(INT32 keynum, boolean modify)
 {
 	INT32 result = gc_null;
+
 	if (cv_controlperkey.value == 1)
 	{
-		INT32 i, j;
-		for (i = 0; i < num_gamecontrols; i++)
+		INT32 i, j, k;
+
+		for (k = 0; k < MAXSPLITSCREENPLAYERS; k++)
 		{
-			for (j = 0; j < 2; j++)
+			for (i = 0; i < num_gamecontrols; i++)
 			{
-				if (gamecontrol[i][j] == keynum) {
-					result = i;
-					if (modify) gamecontrol[i][j] = KEY_NULL;
+				for (j = 0; j < 2; j++)
+				{
+					if (gamecontrol[k][i][j] == keynum)
+					{
+						result = i;
+						if (modify) gamecontrol[k][i][j] = KEY_NULL;
+					}
+
+					if (result && !modify)
+						return result;
 				}
-				if (gamecontrolbis[i][j] == keynum) {
-					result = i;
-					if (modify) gamecontrolbis[i][j] = KEY_NULL;
-				}
-				if (gamecontrol3[i][j] == keynum) {
-					result = i;
-					if (modify) gamecontrol3[i][j] = KEY_NULL;
-				}
-				if (gamecontrol4[i][j] == keynum) {
-					result = i;
-					if (modify) gamecontrol4[i][j] = KEY_NULL;
-				}
-				if (result && !modify)
-					return result;
 			}
 		}
 	}
+
 	return result;
 }
 
@@ -1427,11 +1339,11 @@ static void setcontrol(INT32 (*gc)[2])
 	INT32 player;
 	boolean nestedoverride = false;
 
-	if ((void*)gc == (void*)&gamecontrol4)
+	if ((void*)gc == (void*)&gamecontrol[3])
 		player = 3;
-	else if ((void*)gc == (void*)&gamecontrol3)
+	else if ((void*)gc == (void*)&gamecontrol[2])
 		player = 2;
-	else if ((void*)gc == (void*)&gamecontrolbis)
+	else if ((void*)gc == (void*)&gamecontrol[1])
 		player = 1;
 	else
 		player = 0;
@@ -1494,7 +1406,7 @@ void Command_Setcontrol_f(void)
 		return;
 	}
 
-	setcontrol(gamecontrol);
+	setcontrol(gamecontrol[0]);
 }
 
 void Command_Setcontrol2_f(void)
@@ -1509,7 +1421,7 @@ void Command_Setcontrol2_f(void)
 		return;
 	}
 
-	setcontrol(gamecontrolbis);
+	setcontrol(gamecontrol[1]);
 }
 
 void Command_Setcontrol3_f(void)
@@ -1524,7 +1436,7 @@ void Command_Setcontrol3_f(void)
 		return;
 	}
 
-	setcontrol(gamecontrol3);
+	setcontrol(gamecontrol[2]);
 }
 
 void Command_Setcontrol4_f(void)
@@ -1539,5 +1451,5 @@ void Command_Setcontrol4_f(void)
 		return;
 	}
 
-	setcontrol(gamecontrol4);
+	setcontrol(gamecontrol[3]);
 }

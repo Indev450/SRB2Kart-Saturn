@@ -110,6 +110,8 @@ FUNCMATH angle_t FixedAngleC(fixed_t fa, fixed_t factor);
 /// The FixedAcos function
 FUNCMATH angle_t FixedAcos(fixed_t x);
 
+FUNCMATH INT32 AngleDeltaSigned(angle_t a1, angle_t a2);
+
 /// Fixed Point Vector functions
 angle_t FV2_AngleBetweenVectors(const vector2_t *Vector1, const vector2_t *Vector2);
 angle_t FV3_AngleBetweenVectors(const vector3_t *Vector1, const vector3_t *Vector2);

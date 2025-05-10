@@ -77,6 +77,9 @@
 /// \brief Frame flags: frame appears between sector bright and full bright
 #define FF_SEMIBRIGHT	(FF_FULLBRIGHT|FF_FULLDARK)
 
+/// \brief mobj_t.lightlevel is absolute instead of relative
+#define FF_ABSOLUTELIGHTLEVEL 0x00400000
+
 /// \brief Frame flags: Simple stateless animation
 #define FF_ANIMATE 0x10000000
 

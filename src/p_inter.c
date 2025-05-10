@@ -284,7 +284,7 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 	if (special->flags & MF_BOSS && special->flags2 & MF2_FRET)
 		return;
 
-	if (LUAh_TouchSpecial(special, toucher) || P_MobjWasRemoved(special))
+	if (LUA_HookTouchSpecial(special, toucher) || P_MobjWasRemoved(special))
 		return;
 
 	if (special->flags & MF_BOSS)
@@ -976,11 +976,10 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 			break;
 		case MT_HOOPCOLLIDE:
 			// This produces a kind of 'domino effect' with the hoop's pieces.
-			if (!midgamejoin)
-				for (; special->hprev != NULL; special = special->hprev); // Move to the first sprite in the hoop
+			for (; !P_MobjWasRemoved(special->hprev); special = special->hprev); // Move to the first sprite in the hoop
 
 			i = 0;
-			for (; special->type == MT_HOOP; special = special->hnext)
+			for (; !P_MobjWasRemoved(special->hnext) && special->type == MT_HOOP; special = special->hnext)
 			{
 				special->fuse = 11;
 				special->movedir = i;
@@ -1641,7 +1640,7 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source)
 	target->flags2 &= ~(MF2_SKULLFLY|MF2_NIGHTSPULL);
 	target->health = 0; // This makes it easy to check if something's dead elsewhere.
 
-	if (LUAh_MobjDeath(target, inflictor, source) || P_MobjWasRemoved(target))
+	if (LUA_HookMobjDeath(target, inflictor, source) || P_MobjWasRemoved(target))
 		return;
 
 	// SRB2kart
@@ -2365,10 +2364,9 @@ static void P_RingDamage(player_t *player, mobj_t *inflictor, mobj_t *source, IN
   *                  player is hit by a ring, the player who shot it. In some
   *                  cases, the target will go after this object after
   *                  receiving damage. This can be NULL.
-  * \param damage    Amount of damage to be dealt. 10000 is instant death.
+  * \param damage    Amount of damage to be dealt. DMG_INSTAKILL is instant death.
   * \return True if the target sustained damage, otherwise false.
   * \todo Clean up this mess, split into multiple functions.
-  * \todo Get rid of the magic number 10000.
   * \sa P_KillMobj
   */
 boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 damage)
@@ -2379,14 +2377,18 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 	if (objectplacing)
 		return false;
 
+	// well no clue but this may happen ig
+	if (!target)
+		return false;
+
 	if (target->health <= 0)
 		return false;
 
 	// Spectator handling
 	if (netgame)
 	{
-		if (damage == 42000 && target->player && target->player->spectator)
-			damage = 10000;
+		if (damage == DMG_SPECTATOR && target->player && target->player->spectator)
+			damage = DMG_INSTAKILL;
 		else if (target->player && target->player->spectator)
 			return false;
 
@@ -2397,7 +2399,8 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 	// Everything above here can't be forced.
 	if (!metalrecording)
 	{
-		UINT8 shouldForce = LUAh_ShouldDamage(target, inflictor, source, damage);
+		UINT8 shouldForce = LUA_HookShouldDamage(target, inflictor, source, damage);
+
 		if (P_MobjWasRemoved(target))
 			return (shouldForce == 1); // mobj was removed
 		if (shouldForce == 1)
@@ -2438,7 +2441,7 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 		if (!force && target->fuse) // Invincible
 			return false;
 
-		if (LUAh_MobjDamage(target, inflictor, source, damage) || P_MobjWasRemoved(target))
+		if (LUA_HookMobjDamage(target, inflictor, source, damage) || P_MobjWasRemoved(target))
 			return true;
 
 		if (target->health > 1)
@@ -2464,7 +2467,7 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 		if (!force && target->flags2 & MF2_FRET) // Currently flashing from being hit
 			return false;
 
-		if (LUAh_MobjDamage(target, inflictor, source, damage) || P_MobjWasRemoved(target))
+		if (LUA_HookMobjDamage(target, inflictor, source, damage) || P_MobjWasRemoved(target))
 			return true;
 
 		if (target->health > 1)
@@ -2472,7 +2475,7 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 	}
 	else if (target->flags & MF_ENEMY)
 	{
-		if (LUAh_MobjDamage(target, inflictor, source, damage) || P_MobjWasRemoved(target))
+		if (LUA_HookMobjDamage(target, inflictor, source, damage) || P_MobjWasRemoved(target))
 			return true;
 	}
 
@@ -2501,14 +2504,14 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 					return false; // Don't run eachother over in special stages and team games and such
 			}
 
-			if (LUAh_MobjDamage(target, inflictor, source, damage))
+			if (LUA_HookMobjDamage(target, inflictor, source, damage))
 				return true;
 
 			P_NiGHTSDamage(target, source); // -5s :(
 			return true;
 		}
 
-		if (LUAh_MobjDamage(target, inflictor, source, damage))
+		if (LUA_HookMobjDamage(target, inflictor, source, damage))
 			return true;
 
 		if (!force && inflictor && (inflictor->flags & MF_FIRE))
@@ -2525,7 +2528,7 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 		{
 			if ((G_BattleGametype()) && cv_suddendeath.value
 				&& !player->powers[pw_flashing] && !player->powers[pw_invulnerability])
-				damage = 10000;
+				damage = DMG_INSTAKILL;
 		}
 
 		// Player hits another player
@@ -2539,7 +2542,7 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 			return false;
 
 		// Instant-Death
-		if (damage == 10000)
+		if (damage == DMG_INSTAKILL)
 			P_KillPlayer(player, source, damage);
 		else if (player->kartstuff[k_invincibilitytimer] > 0 || player->kartstuff[k_growshrinktimer] > 0 || player->powers[pw_flashing])
 		{
@@ -2592,7 +2595,7 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 		else
 		{
 			player->health -= damage; // mirror mobj health here
-			if (damage < 10000)
+			if (damage < DMG_INSTAKILL)
 			{
 				target->player->powers[pw_flashing] = K_GetKartFlashing(target->player);
 				if (damage > 0) // don't spill emeralds/ammo/panels for shield damage

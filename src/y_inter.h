@@ -23,6 +23,23 @@ void Y_StartVote(void);
 void Y_EndVote(void);
 void Y_SetupVoteFinish(SINT8 pick, SINT8 level);
 
+typedef struct
+{
+	UINT8 *color[MAXPLAYERS]; // Winner's color #
+	INT32 *character[MAXPLAYERS]; // Winner's character #
+	INT32 num[MAXPLAYERS]; // Winner's player #
+	char *name[MAXPLAYERS]; // Winner's name
+	INT32 numplayers; // Number of players being displayed
+	char levelstring[64]; // holds levelnames up to 64 characters
+	// SRB2kart
+	UINT8 increase[MAXPLAYERS]; // how much did the score increase by?
+	UINT8 jitter[MAXPLAYERS]; // wiggle
+	UINT32 val[MAXPLAYERS]; // Gametype-specific value
+	UINT8 pos[MAXPLAYERS]; // player positions. used for ties
+	boolean rankingsmode; // rankings mode
+	boolean encore; // encore mode
+} y_data_t;
+
 typedef enum
 {
 	int_none,

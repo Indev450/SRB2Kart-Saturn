@@ -40,6 +40,7 @@ int mobj_sprev_unimplemented(lua_State *L);
 int mobj_angle_setter(lua_State *L);
 int mobj_sloperoll_noop(lua_State *L);
 int mobj_spritescale_setter(lua_State *L);
+int mobj_spriteoffset_setter(lua_State *L);
 int mobj_touching_sectorlist_unimplemented(lua_State *L);
 int mobj_radius_setter(lua_State *L);
 int mobj_height_setter(lua_State *L);
@@ -95,9 +96,10 @@ static const udata_field_t mobj_fields[] = {
     FIELD(mobj_t, anim_duration,       udatalib_getter_uint16,     udatalib_setter_uint16),
     FIELD(mobj_t, spritexscale,        udatalib_getter_fixed,      mobj_spritescale_setter),
     FIELD(mobj_t, spriteyscale,        udatalib_getter_fixed,      mobj_spritescale_setter),
-    FIELD(mobj_t, spritexoffset,       udatalib_getter_fixed,      udatalib_setter_fixed),
-    FIELD(mobj_t, spriteyoffset,       udatalib_getter_fixed,      udatalib_setter_fixed),
+    FIELD(mobj_t, spritexoffset,       udatalib_getter_fixed,      mobj_spriteoffset_setter),
+    FIELD(mobj_t, spriteyoffset,       udatalib_getter_fixed,      mobj_spriteoffset_setter),
     FIELD(mobj_t, touching_sectorlist, mobj_touching_sectorlist_unimplemented, mobj_touching_sectorlist_unimplemented),
+    FIELD(mobj_t, lightlevel,          udatalib_getter_int16,      udatalib_setter_int16),
     FIELD(mobj_t, subsector,           udatalib_getter_subsector,  mobj_nosetpos_subsector),
     FIELD(mobj_t, floorz,              udatalib_getter_fixed,      mobj_nosetpos_floorz),
     FIELD(mobj_t, ceilingz,            udatalib_getter_fixed,      mobj_nosetpos_ceilingz),
@@ -148,7 +150,6 @@ static const udata_field_t mobj_fields[] = {
     FIELD(mobj_t, standingslope,       udatalib_getter_slope,      mobj_standingslope_noset),
     FIELD(mobj_t, colorized,           udatalib_getter_boolean,    udatalib_setter_boolean),
 	FIELD(mobj_t, mirrored,           udatalib_getter_boolean,    udatalib_setter_boolean),
-    FIELD(mobj_t, rollmodel,           udatalib_getter_boolean,    udatalib_setter_boolean),
     { NULL, 0, NULL, NULL },
 };
 #undef FIELD
@@ -279,6 +280,26 @@ int mobj_spritescale_setter(lua_State *L)
     return 0;
 }
 
+int mobj_spriteoffset_setter(lua_State *L)
+{
+    mobj_t *mo = GETMO();
+
+    fixed_t *spriteoffset;
+    UDATALIB_GETFIELD(fixed_t, spriteoffset);
+
+    if (!mo->player)
+        *spriteoffset = luaL_checkfixed(L, 2);
+    else
+    {
+        // Mmm yea
+        if (spriteoffset == &mo->spritexoffset)
+            mo->realxoffset = luaL_checkfixed(L, 2);
+        else
+            mo->realyoffset = luaL_checkfixed(L, 2);
+    }
+    return 0;
+}
+
 int mobj_radius_setter(lua_State *L)
 {
     mobj_t *mo = GETMO();
@@ -371,16 +392,16 @@ int mobj_skin_getter(lua_State *L)
     mobj_t *mo = GETMO();
 
     if (!mo->skin)
-		return 0;
+        return 0;
 
-	if (hud_running && cv_luaimmersion.value) {
-			if (mo->localskin) // HUD ONLY!!!!!!!!!!
-				lua_pushstring(L, ((skin_t *)mo->localskin)->name);
-			else
-				lua_pushstring(L, ((skin_t *)mo->skin)->name);
-		} else {
-			lua_pushstring(L, ((skin_t *)mo->skin)->name);
-		}
+    // HUD ONLY!!!!!!!!!!
+    if (hud_running && cv_luaimmersion.value)
+    {
+        lua_pushstring(L, K_GetMobjSkin(mo)->name);
+    }
+    else
+        lua_pushstring(L, ((skin_t *)mo->skin)->name);
+
     return 1;
 }
 
@@ -431,7 +452,7 @@ int mobj_localskin_setter(lua_State *L)
 		strlcpy(skin, luaL_optstring(L, 2, "none"), sizeof skin);
 		strlwr(skin); // all skin names are lowercase
 
-		if (strcasecmp(skin, "none"))
+		if (stricmp(skin, "none"))
 		{
 			// Try localskins
 			for (i = 0; i < numlocalskins; i++)
@@ -447,7 +468,7 @@ int mobj_localskin_setter(lua_State *L)
 			// Try other skins
 			for (i = 0; i < numskins; i++)
 			{
-				if (fastcmp(skins[i].name, skin))
+				if (stricmp(skins[i].name, skin) == 0)
 				{
 					mo->localskin = &skins[i];
 					mo->skinlocal = false;
@@ -461,7 +482,6 @@ int mobj_localskin_setter(lua_State *L)
 			mo->skinlocal = false;
 		}
 	}
-
 
 	return 0;
 }
@@ -481,12 +501,12 @@ int mobj_color_setter(lua_State *L)
 int mobj_blendmode_setter(lua_State *L)
 {
     mobj_t *mo = GETMO();
-    
+
 	INT32 blendmode = (INT32)luaL_checkinteger(L, 2);
 	if (blendmode < 0 || blendmode > AST_OVERLAY)
 		return luaL_error(L, "mobj.blendmode %d out of range (0 - %d).", blendmode, AST_OVERLAY);
 	mo->blendmode = blendmode;
-	
+
     return 0;
 }
 

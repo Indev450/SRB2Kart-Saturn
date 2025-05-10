@@ -202,9 +202,13 @@ void I_JoyScale4(void);
 
 // Called by D_SRB2Main.
 
+/**	\brief to startup joystick
+ */
+void I_InitJoystick(UINT8 index);
+
 /**	\brief to startup the first joystick
 */
-void I_InitJoystick(void);
+void I_InitJoystick1(void);
 
 /**	\brief to startup the second joystick
 */
@@ -222,6 +226,8 @@ void I_InitJoystick4(void);
 */
 INT32 I_NumJoys(void);
 
+extern INT32 numcontrollers;
+
 /**	\brief	The *I_GetJoyName function
 
 	\param	joyindex	which joystick
@@ -230,8 +236,8 @@ INT32 I_NumJoys(void);
 */
 const char *I_GetJoyName(INT32 joyindex);
 
-void I_GamepadRumble(INT32 device_id, UINT16 low_strength, UINT16 high_strength, UINT32 duration);
-void I_SetGamepadIndicatorColor(INT32 device_id, UINT8 red, UINT8 green, UINT8 blue);
+void I_GamepadRumble(INT32 playernum, UINT16 low_strength, UINT16 high_strength, UINT32 duration);
+void I_SetGamepadIndicatorColor(INT32 playernum, UINT8 red, UINT8 green, UINT8 blue);
 
 #ifndef NOMUMBLE
 #include "p_mobj.h" // mobj_t
@@ -244,10 +250,6 @@ void I_UpdateMumble(const mobj_t *mobj, const listener_t listener);
 /**	\brief Startup the first mouse
 */
 void I_StartupMouse(void);
-
-/**	\brief Startup the second mouse
-*/
-void I_StartupMouse2(void);
 
 /**	\brief  setup timer irq and user timer routine.
 */
@@ -307,25 +309,9 @@ INT32 I_mkdir(const char *dirname, INT32 unixright);
 */
 const char *I_LocateWad(void);
 
-/**	\brief First Joystick's events
+/**	\brief Joystick events
 */
-void I_GetJoystickEvents(void);
-
-/**	\brief Second Joystick's events
-*/
-void I_GetJoystick2Events(void);
-
-/**	\brief Third Joystick's events
-*/
-void I_GetJoystick3Events(void);
-
-/**	\brief Fourth Joystick's events
-*/
-void I_GetJoystick4Events(void);
-
-/**	\brief Mouses events
-*/
-void I_GetMouseEvents(void);
+void I_GetJoystickEvents(UINT8 index);
 
 char *I_GetEnv(const char *name);
 

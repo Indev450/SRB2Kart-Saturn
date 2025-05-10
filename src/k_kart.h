@@ -11,6 +11,7 @@
 
 #define KART_FULLTURN 800
 
+
 extern UINT8 colortranslations[MAXTRANSLATIONS][16];
 extern const char *KartColor_Names[MAXSKINCOLORS];
 extern const UINT8 KartColor_Opposite[MAXSKINCOLORS*2];
@@ -19,23 +20,36 @@ void K_GenerateKartColormap(UINT8 *dest_colormap, INT32 skinnum, UINT8 color, bo
 UINT8 K_GetKartColorByName(const char *name);
 UINT8 K_GetHudColor(void);
 boolean K_UseColorHud(void);
+boolean K_UseHighResPortraits(void);
 
-void K_RegisterKartStuff(void);
+void K_RegisterServerKartStuff(void);
+void K_RegisterClientKartStuff(void);
 
-extern consvar_t cv_colorizedhud;
-extern consvar_t cv_colorizeditembox;
-extern consvar_t cv_colorizedhudcolor;
+extern consvar_t cv_coloredspeedlines, cv_coloredsneakertrail;
+extern consvar_t cv_bananajitter;
+extern consvar_t cv_bananthrowroll;
+extern consvar_t cv_airsparks;
+extern consvar_t cv_colorizedhud, cv_colorizeditembox, cv_colorizedhudcolor;
 extern consvar_t cv_darkitembox;
 extern consvar_t cv_biglaps;
 extern consvar_t cv_highresportrait;
-extern consvar_t cv_stat_xoffset;
-extern consvar_t cv_stat_yoffset;
+extern consvar_t cv_stat_xoffset, cv_stat_yoffset;
 extern consvar_t cv_showstats;
+extern consvar_t cv_fancyroulette;
 extern consvar_t cv_showlaptimes;
 extern consvar_t cv_battlespeedo;
+extern consvar_t cv_multiitemicon;
+extern consvar_t cv_huditemamount;
 
-#define NUMSPEEDOSTUFF 6
+#define NUMSPEEDOSTUFF 8
 extern CV_PossibleValue_t speedo_cons_t[NUMSPEEDOSTUFF];
+#define NUMDGAUGESTUFF 6
+extern CV_PossibleValue_t driftgaugestyle_cons_t[NUMDGAUGESTUFF];
+#define NUMINPUTDISPLAYSTUFF 5
+extern CV_PossibleValue_t inputdisplay_cons_t[NUMINPUTDISPLAYSTUFF];
+#define NUMMINIMAPDOTSTUFF 5
+extern CV_PossibleValue_t minimapdot_cons_t[NUMMINIMAPDOTSTUFF];
+
 
 boolean K_IsPlayerLosing(player_t *player);
 boolean K_IsPlayerWanted(player_t *player);
@@ -55,7 +69,9 @@ void K_ExplodePlayer(player_t *player, mobj_t *source, mobj_t *inflictor);
 void K_StealBumper(player_t *player, player_t *victim, boolean force);
 void K_SpawnKartExplosion(fixed_t x, fixed_t y, fixed_t z, fixed_t radius, INT32 number, mobjtype_t type, angle_t rotangle, boolean spawncenter, boolean ghostit, mobj_t *source);
 void K_SpawnMineExplosion(mobj_t *source, UINT8 color);
-void K_RollMobjBySlopes(mobj_t *mo, boolean usedistance);
+boolean K_CheckSlopeRollDist(mobj_t *mobj);
+boolean K_ShouldSlopeRoll(mobj_t *mobj);
+void K_RollMobjBySlopes(mobj_t *mo, pslope_t *slope);
 void K_SpawnBoostTrail(player_t *player);
 void K_SpawnSparkleTrail(mobj_t *mo);
 void K_SpawnWipeoutTrail(mobj_t *mo, boolean translucent);
@@ -112,6 +128,7 @@ typedef struct
 patch_t *K_getItemBoxPatch(boolean small, boolean dark);
 patch_t *K_getItemMulPatch(boolean small);
 void K_getItemBoxDrawinfo(drawinfo_t *out);
+INT32 K_getMinimapTrans(void);
 void K_getLapsDrawinfo(drawinfo_t *out);
 void K_getMinimapDrawinfo(drawinfo_t *out);
 
