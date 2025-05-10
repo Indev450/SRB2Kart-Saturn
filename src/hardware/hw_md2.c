@@ -1060,21 +1060,12 @@ static void HWR_GetBlendedTexture(patch_t *patch, patch_t *blendgpatch, INT32 sk
 {
 	// mostly copied from HWR_GetMappedPatch, hence the similarities and comment
 	GLPatch_t *glPatch = patch->hardware;
-	GLPatch_t *glBlendPatch = NULL;
 	GLMipmap_t *glMipmap, *newMipmap;
 
 
 	if (blendgpatch == NULL || colormap == colormaps || colormap == NULL)
 	{
 		// Don't do any blending
-		GL_SetTexture(glPatch->mipmap);
-		return;
-	}
-
-	if ((blendgpatch && (glBlendPatch = blendgpatch->hardware) && glBlendPatch->mipmap->format)
-		&& (patch->width != blendgpatch->width || patch->height != blendgpatch->height))
-	{
-		// Blend image exists, but it's bad.
 		GL_SetTexture(glPatch->mipmap);
 		return;
 	}
@@ -1330,7 +1321,9 @@ void HWR_DrawMD2(gl_vissprite_t *spr)
 
 		if (gpatch && hwrPatch && hwrPatch->mipmap->format) // else if meant that if a texture couldn't be loaded, it would just end up using something else's texture
 		{
-			if ((skincolors_t)spr->mobj->color != SKINCOLOR_NONE)
+			if ((skincolors_t)spr->mobj->color != SKINCOLOR_NONE &&
+				blendgpatch && hwrBlendPatch->mipmap->format
+				&& gpatch->width == blendgpatch->width && gpatch->height == blendgpatch->height)
 			{
 				INT32 tcskinnum = TC_DEFAULT;
 				if ((spr->mobj->flags & MF_BOSS) && (spr->mobj->flags2 & MF2_FRET) && (leveltime & 1)) // Bosses "flash"
