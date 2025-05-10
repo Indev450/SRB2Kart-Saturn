@@ -156,6 +156,11 @@ Add Gamepad Rumble support for things.
 To be used with Displayplayers.
 Duration is in milliseconds and is optional to set, default value is 84ms.
 
+## P_CheckSightFast(mo1, mo2)
+
+Exactly same as P_CheckSight but uses cheaper algorithm, useful for things like nametags. Doesn't work exactly
+like P_CheckSight so don't use it for anything gameplay-related.
+
 # Other changes
 
 ## P_PlayRinglossSound(source, damager)
