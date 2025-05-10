@@ -75,7 +75,6 @@ struct GLPatch_s
 {
 	GLMipmap_t			*mipmap;
 	float				max_s,max_t;
-	boolean				notfound; // if the texture file was not found, mark it here (used in model texture loading)
 };
 typedef struct GLPatch_s GLPatch_t;
 
