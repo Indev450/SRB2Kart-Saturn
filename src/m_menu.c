@@ -2595,7 +2595,7 @@ static menuitem_t OP_SaturnCreditsMenu[] =
 	{IT_STRING2+IT_SPACE, NULL, 	"EXpand", 		 									NULL, 	  117},
 	{IT_STRING2+IT_SPACE, NULL, 	"Nexit", 		 									NULL, 	  127},
 	{IT_STRING2+IT_SPACE, NULL, 	"Spee", 		 									NULL, 	  137},
-	{IT_STRING2+IT_SPACE, NULL, 	"Jin", 		 										NULL, 	  147},
+	{IT_STRING2+IT_SPACE, NULL, 	"jin", 		 										NULL, 	  147},
 	{IT_STRING2+IT_SPACE, NULL, 	"riomccloud", 		 								NULL, 	  157},
 	{IT_STRING2+IT_SPACE, NULL, 	"chromaticpipe", 		 							NULL, 	  167},
 	{IT_STRING2+IT_SPACE, NULL, 	"Achii", 		 									NULL, 	  177},
