@@ -14,10 +14,7 @@
 
 #include <time.h>
 
-#include "doomstat.h"
-#include "i_time.h"
 #include "i_system.h"
-#include "r_main.h"
 #include "d_clisrv.h"
 #include "d_netcmd.h"
 #include "i_net.h"
@@ -391,7 +388,7 @@ static void DRPC_GotServerIP(UINT32 address)
 --------------------------------------------------*/
 static const char *DRPC_GetServerIP(void)
 {
-	const char *address;
+	const char *address; 
 
 	// If you're connected
 	if (I_GetNodeAddress && (address = I_GetNodeAddress(servernode)) != NULL)
@@ -431,54 +428,6 @@ static void DRPC_EmptyRequests(void)
 	}
 }
 
-static char gamemodes[256] = "";
-
-static void append_to_string(char *buffer, const char *mod_name)
-{
-	if (strlen(buffer) > 0)
-		strcat(buffer, " - ");
-
-	strcat(buffer, mod_name);
-}
-
-static void DRPC_UpdateGameModes(void)
-{
-	const consvar_t *weathermodactive = CV_FindVar("weathermod");
-	const consvar_t *friendmodactive = CV_FindVar("fr_enabled");
-	const consvar_t *eliminationactive = CV_FindVar("elimination");
-	const consvar_t *driftnitroactive = CV_FindVar("driftnitro");
-
-	const consvar_t *slipstreamactive = CV_FindVar("slipstream_enabled");
-	const consvar_t *booststackactive = CV_FindVar("booststack");
-	const consvar_t *airbrakeactive = CV_FindVar("wa_airbrake");
-
-	gamemodes[0] = '\0';
-
-	append_to_string(gamemodes, gametype_cons_t[gametype].strvalue);
-
-	// battle is battle, dont think anything can even be activated with it
-	if (G_BattleGametype())
-		return;
-
-	const boolean techactive = ((driftnitroactive && !driftnitroactive->value) && (slipstreamactive && slipstreamactive->value) && (booststackactive && booststackactive->value) && (airbrakeactive && airbrakeactive->value)); //this combination is only active with tech lel
-
-	if (driftnitroactive && driftnitroactive->value)
-		append_to_string(gamemodes, "DriftNitro");
-	else if (techactive)
-		append_to_string(gamemodes, "Tech");
-
-	if (weathermodactive && weathermodactive->value)
-		append_to_string(gamemodes, "Weathermod");
-
-	if (friendmodactive && friendmodactive->value)
-		append_to_string(gamemodes, "Friendmod");
-
-	if (eliminationactive && eliminationactive->value)
-		append_to_string(gamemodes, "Elimination");
-
-	//CONS_Printf("%s\n", gamemodes);
-}
-
 /*--------------------------------------------------
 	void DRPC_UpdatePresence(void)
 
@@ -490,7 +439,7 @@ void DRPC_UpdatePresence(void)
 
 	if (!drpc_init) DRPC_Init();
 
-	char detailstr[256+1];
+	char detailstr[48+1];
 
 	char mapimg[8+1];
 	char mapname[5+21+21+2+1];
@@ -583,10 +532,8 @@ void DRPC_UpdatePresence(void)
 			discordPresence.details = "Time Attack";
 		else
 		{
-			DRPC_UpdateGameModes();
-
-			snprintf(detailstr, 256, "%s%s%s",
-				(strlen(gamemodes) != 0) ? gamemodes : "",
+			snprintf(detailstr, 48, "%s%s%s",
+				gametype_cons_t[gametype].strvalue,
 				(gametype == GT_RACE) ? va(" | %s", kartspeed_cons_t[gamespeed].strvalue) : "",
 				(encoremode == true) ? " | Encore" : ""
 			);
