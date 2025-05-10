@@ -1494,6 +1494,7 @@ void I_GamepadRumble(INT32 playernum, UINT16 low_strength, UINT16 high_strength,
 	(void)duration;
 #else
 	SDL_GameController *controller = JoyInfo[playernum].dev;
+
 	if (controller == NULL)
 	{
 		return;
@@ -1512,6 +1513,7 @@ void I_SetGamepadIndicatorColor(INT32 playernum, UINT8 red, UINT8 green, UINT8 b
 	(void)blue;
 #else
 	SDL_GameController *controller = JoyInfo[playernum].dev;
+
 	if (controller == NULL)
 	{
 		return;
