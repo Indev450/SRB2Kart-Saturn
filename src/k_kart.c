@@ -10105,6 +10105,9 @@ static void K_drawNameTags(void)
 
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
+		distance = 0;
+		flipped = false;
+
 		if (i > PLAYERSMASK)
 			continue;
 		if (players[i].spectator || !playeringame[i] || P_MobjWasRemoved(players[i].mo))
