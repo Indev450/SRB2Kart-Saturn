@@ -722,7 +722,7 @@ void K_RainbowColormap(UINT8 *dest_colormap, UINT8 skincolor)
 */
 void K_GenerateKartColormap(UINT8 *dest_colormap, INT32 skinnum, UINT8 color, boolean local)
 {
-	INT32 i, starttranscolor, skinramplength;
+	INT32 i, starttranscolor;
 
 	// Handle a couple of simple special cases
 	if (skinnum < TC_DEFAULT)
@@ -762,12 +762,14 @@ void K_GenerateKartColormap(UINT8 *dest_colormap, INT32 skinnum, UINT8 color, bo
 			dest_colormap[31] = 0;
 		else if (skinnum == TC_METALSONIC)
 			dest_colormap[239] = 0;
+
 		return;
 	}
 	else if (color == SKINCOLOR_NONE)
 	{
 		for (i = 0; i < NUM_PALETTE_ENTRIES; i++)
 			dest_colormap[i] = (UINT8)i;
+
 		return;
 	}
 
@@ -786,18 +788,11 @@ void K_GenerateKartColormap(UINT8 *dest_colormap, INT32 skinnum, UINT8 color, bo
 	for (i = 0; i < starttranscolor; i++)
 		dest_colormap[i] = (UINT8)i;
 
-	i = starttranscolor + 16;
-	if (i < NUM_PALETTE_ENTRIES)
-	{
-		for (i = (UINT8)i; i < NUM_PALETTE_ENTRIES; i++)
-			dest_colormap[i] = (UINT8)i;
-		skinramplength = 16;
-	}
-	else
-		skinramplength = i - NUM_PALETTE_ENTRIES; // shouldn't this be NUM_PALETTE_ENTRIES - starttranscolor?
+	for (i = (UINT8)(starttranscolor + 16); i < NUM_PALETTE_ENTRIES; i++)
+		dest_colormap[i] = (UINT8)i;
 
 	// Build the translated ramp
-	for (i = 0; i < skinramplength; i++)
+	for (i = 0; i < SKIN_RAMP_LENGTH; i++)
 	{
 		// Sryder 2017-10-26: What was here before was most definitely not particularly readable, check above for new color translation table
 		dest_colormap[starttranscolor + i] = colortranslations[color][i];
