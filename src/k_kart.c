@@ -5740,9 +5740,12 @@ static boolean K_SpeedLinesShouldBlend(player_t *player)
 static UINT8 K_GetSpeedLineColor(player_t *player, boolean colorSpeed)
 {
 	UINT8 speedcolor = SKINCOLOR_NONE;
+	const UINT8 playercolor = player->mo->color;
 
 	if (colorSpeed)
 	{
+		speedcolor = playercolor;
+
 		if (cv_coloredspeedlines.value >= 2 && player->kartstuff[k_driftboost])
 		{
 			if (player->kartstuff[k_driftboost] <= 20)
@@ -5751,9 +5754,10 @@ static UINT8 K_GetSpeedLineColor(player_t *player, boolean colorSpeed)
 				speedcolor = SKINCOLOR_RASPBERRY;
 			else if (player->kartstuff[k_driftboost] <= 125)
 				speedcolor = (UINT8)(1 + (leveltime % (MAXSKINCOLORS-1)));
-		}
 
-		speedcolor = (leveltime & 1) ? ((cv_coloredspeedlines.value == 3) ? SKINCOLOR_NONE : player->mo->color) : speedcolor;
+			if (cv_coloredspeedlines.value == 2)
+				speedcolor = (leveltime & 1) ? playercolor : speedcolor;
+		}
 	}
 
 	if (cv_coloredspeedlines.value != 3)
@@ -5765,7 +5769,7 @@ static UINT8 K_GetSpeedLineColor(player_t *player, boolean colorSpeed)
 		}
 		else if (player->kartstuff[k_invincibilitytimer])
 		{
-			speedcolor = player->mo->color;
+			speedcolor = playercolor;
 		}
 	}
 
