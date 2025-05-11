@@ -5621,7 +5621,8 @@ static UINT8 K_GetSpeedLineColor(player_t *player, boolean colorSpeed)
 
 	if (colorSpeed)
 	{
-		speedcolor = playercolor;
+		if (cv_coloredspeedlines.value != 3)
+			speedcolor = playercolor;
 
 		if (cv_coloredspeedlines.value >= 2 && player->kartstuff[k_driftboost])
 		{
