@@ -1485,6 +1485,7 @@ void I_GamepadRumble(INT32 playernum, UINT16 low_strength, UINT16 high_strength,
 	(void)duration;
 #else
 	SDL_GameController *controller = JoyInfo[playernum].dev;
+
 	if (controller == NULL)
 	{
 		return;
@@ -1503,6 +1504,7 @@ void I_SetGamepadIndicatorColor(INT32 playernum, UINT8 red, UINT8 green, UINT8 b
 	(void)blue;
 #else
 	SDL_GameController *controller = JoyInfo[playernum].dev;
+
 	if (controller == NULL)
 	{
 		return;
@@ -1921,7 +1923,10 @@ INT32 I_StartupSystem(void)
 	SDL_GetVersion(&SDLlinked);
 	I_StartupConsole();
 #ifdef NEWSIGNALHANDLER
-	I_Fork();
+	// This is useful when debugging. It lets GDB attach to
+	// the correct process easily.
+	if (!M_CheckParm("-nofork"))
+		I_Fork();
 #endif
 #ifdef HAVE_THREADS
 	I_start_threads();
@@ -2213,9 +2218,10 @@ void I_ShutdownSystem(void)
 {
 	INT32 c;
 
-#ifndef NEWSIGNALHANDLER
-	I_ShutdownConsole();
+#ifdef NEWSIGNALHANDLER
+	if (M_CheckParm("-nofork"))
 #endif
+		I_ShutdownConsole();
 
 	for (c = MAX_QUIT_FUNCS-1; c >= 0; c--)
 		if (quit_funcs[c])

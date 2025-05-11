@@ -397,7 +397,7 @@ static void md2_loadTexture(md2_t *model)
 		glPatch->mipmap->format = PCX_Load(filename, &w, &h, glPatch);
 		if (glPatch->mipmap->format == 0)
 		{
-			glPatch->notfound = true;// mark it so its not searched for again repeatedly
+			model->notexturefile = true; // mark it so its not searched for again repeatedly
 			return;
 		}
 
@@ -468,7 +468,7 @@ static void md2_loadBlendTexture(md2_t *model)
 		glPatch->mipmap->format = PCX_Load(filename, &w, &h, glPatch);
 		if (glPatch->mipmap->format == 0)
 		{
-			glPatch->notfound = true;// mark it so its not searched for again repeatedly
+			model->noblendfile = true; // mark it so its not searched for again repeatedly
 			Z_Free(filename);
 			return;
 		}
@@ -505,6 +505,8 @@ void HWR_InitMD2(void)
 		md2_playermodels[s].model = NULL;
 		md2_playermodels[s].glpatch = NULL;
 		md2_playermodels[s].skin = -1;
+		md2_playermodels[s].notexturefile = false;
+		md2_playermodels[s].noblendfile = false;
 		md2_playermodels[s].notfound = true;
 		md2_playermodels[s].error = false;
 	}
@@ -514,6 +516,8 @@ void HWR_InitMD2(void)
 		md2_localplayermodels[s].model = NULL;
 		md2_localplayermodels[s].glpatch = NULL;
 		md2_localplayermodels[s].skin = -1;
+		md2_localplayermodels[s].notexturefile = false;
+		md2_localplayermodels[s].noblendfile = false;
 		md2_localplayermodels[s].notfound = true;
 		md2_localplayermodels[s].error = false;
 	}
@@ -523,6 +527,8 @@ void HWR_InitMD2(void)
 		md2_models[i].model = NULL;
 		md2_models[i].glpatch = NULL;
 		md2_models[i].skin = -1;
+		md2_models[s].notexturefile = false;
+		md2_models[s].noblendfile = false;
 		md2_models[i].notfound = true;
 		md2_models[i].error = false;
 	}
@@ -543,21 +549,10 @@ void HWR_InitMD2(void)
 	}
 	while (fscanf(f, "%19s %31s %f %f", name, filename, &scale, &offset) == 4)
 	{
-		/*if (stricmp(name, "PLAY") == 0)
-		{
-			CONS_Printf("MD2 for sprite PLAY detected in mdls.dat, use a player skin instead!\n");
-			continue;
-		}*/
-		// 8/1/19: Allow PLAY to load for default MD2.
-
 		for (i = 0; i < NUMSPRITES; i++)
 		{
 			if (stricmp(name, sprnames[i]) == 0)
 			{
-				//if (stricmp(name, "PLAY") == 0)
-					//continue;
-
-				//CONS_Debug(DBG_RENDER, "  Found: %s %s %f %f\n", name, filename, scale, offset);
 				md2_models[i].scale = scale;
 				md2_models[i].offset = offset;
 				md2_models[i].notfound = false;
@@ -570,7 +565,6 @@ void HWR_InitMD2(void)
 		{
 			if (stricmp(name, skins[s].name) == 0)
 			{
-				//CONS_Printf("  Found: %s %s %f %f\n", name, filename, scale, offset);
 				md2_playermodels[s].skin = s;
 				md2_playermodels[s].scale = scale;
 				md2_playermodels[s].offset = offset;
@@ -1060,21 +1054,12 @@ static void HWR_GetBlendedTexture(patch_t *patch, patch_t *blendgpatch, INT32 sk
 {
 	// mostly copied from HWR_GetMappedPatch, hence the similarities and comment
 	GLPatch_t *glPatch = patch->hardware;
-	GLPatch_t *glBlendPatch = NULL;
 	GLMipmap_t *glMipmap, *newMipmap;
 
 
 	if (blendgpatch == NULL || colormap == colormaps || colormap == NULL)
 	{
 		// Don't do any blending
-		GL_SetTexture(glPatch->mipmap);
-		return;
-	}
-
-	if ((blendgpatch && (glBlendPatch = blendgpatch->hardware) && glBlendPatch->mipmap->format)
-		&& (patch->width != blendgpatch->width || patch->height != blendgpatch->height))
-	{
-		// Blend image exists, but it's bad.
 		GL_SetTexture(glPatch->mipmap);
 		return;
 	}
@@ -1305,7 +1290,7 @@ void HWR_DrawMD2(gl_vissprite_t *spr)
 			hwrPatch = ((GLPatch_t *)gpatch->hardware);
 
 		if (!gpatch || !hwrPatch
-		|| ((!hwrPatch->mipmap->format || !hwrPatch->mipmap->downloaded) && !hwrPatch->notfound))
+		|| ((!hwrPatch->mipmap->format || !hwrPatch->mipmap->downloaded) && !md2->notexturefile))
 			md2_loadTexture(md2);
 
 		// Load it again, because it isn't being loaded into gpatch after md2_loadtexture...
@@ -1320,7 +1305,7 @@ void HWR_DrawMD2(gl_vissprite_t *spr)
 
 		if ((gpatch && hwrPatch && hwrPatch->mipmap->format) // don't load the blend texture if the base texture isn't available
 			&& (!blendgpatch || !hwrBlendPatch
-			|| ((!hwrBlendPatch->mipmap->format || !hwrBlendPatch->mipmap->downloaded) && !hwrPatch->notfound)))
+			|| ((!hwrBlendPatch->mipmap->format || !hwrBlendPatch->mipmap->downloaded) && !md2->noblendfile)))
 			md2_loadBlendTexture(md2);
 
 		// Load it again, because it isn't being loaded into blendgpatch after md2_loadblendtexture...
@@ -1330,7 +1315,9 @@ void HWR_DrawMD2(gl_vissprite_t *spr)
 
 		if (gpatch && hwrPatch && hwrPatch->mipmap->format) // else if meant that if a texture couldn't be loaded, it would just end up using something else's texture
 		{
-			if ((skincolors_t)spr->mobj->color != SKINCOLOR_NONE)
+			if ((skincolors_t)spr->mobj->color != SKINCOLOR_NONE &&
+				blendgpatch && hwrBlendPatch->mipmap->format
+				&& gpatch->width == blendgpatch->width && gpatch->height == blendgpatch->height)
 			{
 				INT32 tcskinnum = TC_DEFAULT;
 				if ((spr->mobj->flags & MF_BOSS) && (spr->mobj->flags2 & MF2_FRET) && (leveltime & 1)) // Bosses "flash"

@@ -963,13 +963,10 @@ static void G_ResetPlayerDeviceRumble(INT32 playernum)
 void G_ResetAllDeviceRumbles(void)
 {
 	int i;
-	int devices;
 
-	devices = I_NumJoys();
-
-	for (i = 0; i < devices; i++)
+	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
 	{
-		I_GamepadRumble(devices, 0, 0, 0);
+		I_GamepadRumble(i, 0, 0, 0);
 	}
 }
 

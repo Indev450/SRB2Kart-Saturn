@@ -11034,9 +11034,17 @@ void P_SpawnMapThing(mapthing_t *mthing)
 	// check for players specially
 	if (mthing->type > 0 && mthing->type <= 32)
 	{
-		// save spots for respawning in network games
-		if (!metalrecording)
-			playerstarts[mthing->type-1] = mthing;
+		if (mthing->type > MAXPLAYERS) // be wary of playerstarts size!  playerstarts[MAXPLAYERS]
+		{
+			CONS_Alert(CONS_ERROR, "Excess player start detected %d This will crash vanilla clients!\n", mthing->type);
+		}
+		else
+		{
+			// save spots for respawning in network games
+			if (!metalrecording)
+				playerstarts[mthing->type-1] = mthing;
+		}
+
 		return;
 	}
 

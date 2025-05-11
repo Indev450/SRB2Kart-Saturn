@@ -5617,9 +5617,13 @@ static boolean K_SpeedLinesShouldBlend(player_t *player)
 static UINT8 K_GetSpeedLineColor(player_t *player, boolean colorSpeed)
 {
 	UINT8 speedcolor = SKINCOLOR_NONE;
+	const UINT8 playercolor = player->mo->color;
 
 	if (colorSpeed)
 	{
+		if (cv_coloredspeedlines.value != 3)
+			speedcolor = playercolor;
+
 		if (cv_coloredspeedlines.value >= 2 && player->kartstuff[k_driftboost])
 		{
 			if (player->kartstuff[k_driftboost] <= 20)
@@ -5628,9 +5632,10 @@ static UINT8 K_GetSpeedLineColor(player_t *player, boolean colorSpeed)
 				speedcolor = SKINCOLOR_RASPBERRY;
 			else if (player->kartstuff[k_driftboost] <= 125)
 				speedcolor = (UINT8)(1 + (leveltime % (MAXSKINCOLORS-1)));
-		}
 
-		speedcolor = (leveltime & 1) ? ((cv_coloredspeedlines.value == 3) ? SKINCOLOR_NONE : player->mo->color) : speedcolor;
+			if (cv_coloredspeedlines.value == 2)
+				speedcolor = (leveltime & 1) ? playercolor : speedcolor;
+		}
 	}
 
 	if (cv_coloredspeedlines.value != 3)
@@ -5642,7 +5647,7 @@ static UINT8 K_GetSpeedLineColor(player_t *player, boolean colorSpeed)
 		}
 		else if (player->kartstuff[k_invincibilitytimer])
 		{
-			speedcolor = player->mo->color;
+			speedcolor = playercolor;
 		}
 	}
 
@@ -10658,6 +10663,7 @@ static void K_drawKartMinimapHead(mobj_t *mo, INT32 x, INT32 y, INT32 flags)
 
 	const skin_t *skin;
 	player_t *player = mo->player;
+	const boolean skinlocal = mo->skinlocal;
 
 	fixed_t amnumxpos, amnumypos;
 	INT32 amxpos, amypos, wntdamxpos, wntdamypos;
@@ -10670,7 +10676,7 @@ static void K_drawKartMinimapHead(mobj_t *mo, INT32 x, INT32 y, INT32 flags)
 #endif
 
 	skin = K_GetMobjSkin(mo);
-	minimaphead = R_GetSkinFaceMini(player);
+	minimaphead = (skinlocal ? localfacemmapprefix : facemmapprefix)[K_GetMobjSkinNum(skin, skinlocal)];
 
 	amnumxpos = (FixedMul(lerp(mo->old_x, mo->x), minimapinfo.zoom) - minimapinfo.offs_x);
 	amnumypos = -(FixedMul(lerp(mo->old_y, mo->y), minimapinfo.zoom) - minimapinfo.offs_y);
@@ -10720,7 +10726,7 @@ static void K_drawKartMinimapHead(mobj_t *mo, INT32 x, INT32 y, INT32 flags)
 		if (mo->colorized)
 			colormap = R_GetTranslationColormap(TC_RAINBOW, mo->color, GTC_CACHE);
 		else
-			colormap = R_GetLocalTranslationColormap(mo->skin, mo->localskin, mo->color, GTC_CACHE, mo->skinlocal);
+			colormap = R_GetLocalTranslationColormap(mo->skin, mo->localskin, mo->color, GTC_CACHE, skinlocal);
 
 		V_DrawFixedPatch(amxpos, amypos, scale, flags, minimaphead, colormap);
 
