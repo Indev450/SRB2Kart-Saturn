@@ -11201,6 +11201,9 @@ static void K_drawKartMinimap(void)
 
 			angle_t ang = R_InterpolateAngle(mobj->old_angle, mobj->angle);
 
+			if (encoremode)
+				ang = ANGLE_180 - ang;
+
 			if (mobj->colorized)
 				colormap = R_GetTranslationColormap(TC_RAINBOW, mobj->color, GTC_CACHE);
 			else
