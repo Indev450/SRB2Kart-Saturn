@@ -3283,7 +3283,6 @@ demointermission:
 void G_AfterIntermission(void)
 {
 	HU_ClearCEcho();
-	//G_NextLevel();
 
 	if (demo.playback)
 	{
