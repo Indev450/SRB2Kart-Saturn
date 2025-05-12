@@ -385,7 +385,7 @@ static int state_get(lua_State *L)
 		default:
 		{
 			if (devparm)
-				return luaL_error(L, LUA_QL("state_t") " has no field named " LUA_QS, field);
+				return luaL_error(L, LUA_QL("state_t") " has no field named " LUA_QS, lua_tostring(L, 2));
 			return 0;
 		}
 	}
@@ -462,7 +462,7 @@ static int state_set(lua_State *L)
 	break;
 
 	default:
-		return luaL_error(L, LUA_QL("state_t") " has no field named " LUA_QS, field);
+		return luaL_error(L, LUA_QL("state_t") " has no field named " LUA_QS, lua_tostring(L, 2));
 	}
 
 	return 0;
