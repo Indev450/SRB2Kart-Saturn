@@ -877,7 +877,7 @@ static int mapthing_get(lua_State *L)
 			break;
 		default:
 			if (devparm)
-				return luaL_error(L, LUA_QL("mapthing_t") " has no field named " LUA_QS, field);
+				return luaL_error(L, LUA_QL("mapthing_t") " has no field named " LUA_QS, lua_tostring(L, 2));
 			else
 				return 0;
 	}
@@ -931,7 +931,7 @@ static int mapthing_set(lua_State *L)
 			mt->mobj = *((mobj_t **)luaL_checkudata(L, 3, META_MOBJ));
 			break;
 		default:
-			return luaL_error(L, LUA_QL("mapthing_t") " has no field named " LUA_QS, field);
+			return luaL_error(L, LUA_QL("mapthing_t") " has no field named " LUA_QS, lua_tostring(L, 2));
 	}
 
 	return 0;
