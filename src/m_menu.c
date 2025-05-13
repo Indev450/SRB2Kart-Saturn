@@ -11445,7 +11445,7 @@ static void M_HandleSetupMultiPlayer(INT32 choice)
 	boolean exitmenu = false;  // exit to previous menu and send name change
 	const boolean gridselect = (cv_skinselectmenu.value == SKINMENUTYPE_GRID || cv_skinselectmenu.value == SKINMENUTYPE_EXTENDED); // menus with "grids"
 
-	if ((choice == gamecontrol[0][gc_fire][0] || choice == gamecontrol[0][gc_fire][1]) && (itemOn == 2 || (gridselect && itemOn == 1)))
+	if ((choice == gamecontrol[0][gc_fire][0] || choice == gamecontrol[0][gc_fire][1]) && (itemOn == 2 || (gridselect && itemOn == 1 && choice != KEY_ENTER)))
 		choice = KEY_BACKSPACE; // Hack to allow resetting prefcolor on controllers
 
 #define BREAKWHENLOCKED {\
