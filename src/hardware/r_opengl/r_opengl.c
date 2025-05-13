@@ -925,7 +925,7 @@ void GL_UnSetShader(void)
 static void GL_SetNoTexture(void)
 {
 	// Disable texture.
-	if (tex_downloaded != NOTEXTURE_NUM && !currently_batching)
+	if (tex_downloaded != NOTEXTURE_NUM)
 	{
 		if (NOTEXTURE_NUM == 0)
 			pglGenTextures(1, &NOTEXTURE_NUM);
@@ -1049,6 +1049,8 @@ void GL_SetStates(void)
 	GL_SetNoTexture();
 
 	pglPolygonOffset(-1.0f, -1.0f);
+
+	pglDisable(GL_FOG);
 
 	// bp : when no t&l :)
 	pglLoadIdentity();
