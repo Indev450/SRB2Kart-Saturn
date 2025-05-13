@@ -221,19 +221,6 @@ boolean OglSdlSurface(INT32 w, INT32 h)
 
 	SDL_GL_SetSwapInterval(cv_vidwait.value ? 1 : 0);
 
-	// The screen textures need to be flushed if the width or height change so that they be remade for the correct size
-	if (screen_width != w || screen_height != h)
-	{
-		GL_FlushScreenTextures();
-
-#ifdef USE_FBO_OGL
-		GL_Framebuffer_DeleteAttachments();
-#endif
-	}
-
-	screen_width = (GLint)w;
-	screen_height = (GLint)h;
-
 	GL_SetModelView(w, h);
 	GL_SetStates();
 	pglClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT);
