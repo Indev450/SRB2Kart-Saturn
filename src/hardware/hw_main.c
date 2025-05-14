@@ -2351,9 +2351,6 @@ static void HWR_AddLine(seg_t *line)
 {
 	angle_t angle1, angle2;
 
-	// SoM: Backsector needs to be run through R_FakeFlat
-	static sector_t tempsec;
-
 	fixed_t v1x, v1y, v2x, v2y; // the seg's vertexes as fixed_t
 
 	boolean dont_draw = false;
@@ -2410,8 +2407,6 @@ doaddline:
 		}
 		else
 		{
-			gl_backsector = R_FakeFlat(gl_backsector, &tempsec, NULL, NULL, true);
-
 			if (CheckClip(gl_frontsector, gl_backsector))
 			{
 				gld_clipper_SafeAddClipRange(angle2, angle1);

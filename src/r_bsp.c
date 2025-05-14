@@ -388,7 +388,6 @@ static void R_AddLine(seg_t *line)
 {
 	INT32 x1, x2;
 	angle_t angle1, angle2, span, tspan;
-	static sector_t tempsec;
 
 	g_portal = NULL;
 
@@ -471,8 +470,6 @@ static void R_AddLine(seg_t *line)
 	// Single sided line?
 	if (!backsector)
 		goto clipsolid;
-
-	backsector = R_FakeFlat(backsector, &tempsec, NULL, NULL, true);
 
 	doorclosed = 0;
 
