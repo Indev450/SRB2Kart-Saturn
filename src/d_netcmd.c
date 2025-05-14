@@ -1028,7 +1028,6 @@ void D_RegisterClientCommands(void)
 	{
 		CV_RegisterVar(&cv_rumble[i]);
 		CV_RegisterVar(&cv_gamepadled[i]);
-		CV_RegisterVar(&cv_ledpowerup[i]);
 	}
 
 	CV_RegisterVar(&cv_usemouse);

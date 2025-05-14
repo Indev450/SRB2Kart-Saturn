@@ -1290,8 +1290,7 @@ static menuitem_t OP_Joystick1Menu[] =
 
 	{IT_HEADER, NULL, "Miscellaneous", NULL, 112},
 	{IT_STRING | IT_CVAR,  NULL, "Controller Rumble"      , &cv_rumble[0]       , 120},
-	{IT_STRING | IT_CVAR,  NULL, "Set LED to skin color"  , &cv_gamepadled[0]   , 125},
-	{IT_STRING | IT_CVAR,  NULL, "Flash LED on powerups"  , &cv_ledpowerup[0]   , 130},
+	{IT_STRING | IT_CVAR,  NULL, "Set LED to Player color", &cv_gamepadled[0]   , 125},
 };
 
 static menuitem_t OP_Joystick2Menu[] =
@@ -1321,8 +1320,7 @@ static menuitem_t OP_Joystick2Menu[] =
 
 	{IT_HEADER, NULL, "Miscellaneous", NULL, 112},
 	{IT_STRING | IT_CVAR,  NULL, "Controller Rumble"      , &cv_rumble[1]       , 120},
-	{IT_STRING | IT_CVAR,  NULL, "Set LED to skin color"  , &cv_gamepadled[1]   , 125},
-	{IT_STRING | IT_CVAR,  NULL, "Flash LED on powerups"  , &cv_ledpowerup[1]   , 130},
+	{IT_STRING | IT_CVAR,  NULL, "Set LED to Player color", &cv_gamepadled[1]   , 125},
 };
 
 static menuitem_t OP_Joystick3Menu[] =
@@ -1352,8 +1350,7 @@ static menuitem_t OP_Joystick3Menu[] =
 
 	{IT_HEADER, NULL, "Miscellaneous", NULL, 112},
 	{IT_STRING | IT_CVAR,  NULL, "Controller Rumble"      , &cv_rumble[2]       , 120},
-	{IT_STRING | IT_CVAR,  NULL, "Set LED to skin color"  , &cv_gamepadled[2]   , 125},
-	{IT_STRING | IT_CVAR,  NULL, "Flash LED on powerups"  , &cv_ledpowerup[2]   , 130},
+	{IT_STRING | IT_CVAR,  NULL, "Set LED to Player color", &cv_gamepadled[2]   , 125},
 };
 
 static menuitem_t OP_Joystick4Menu[] =
@@ -1383,8 +1380,7 @@ static menuitem_t OP_Joystick4Menu[] =
 
 	{IT_HEADER, NULL, "Miscellaneous", NULL, 112},
 	{IT_STRING | IT_CVAR,  NULL, "Controller Rumble"      , &cv_rumble[3]       , 120},
-	{IT_STRING | IT_CVAR,  NULL, "Set LED to skin color"  , &cv_gamepadled[3]   , 125},
-	{IT_STRING | IT_CVAR,  NULL, "Flash LED on powerups"  , &cv_ledpowerup[3]   , 130},
+	{IT_STRING | IT_CVAR,  NULL, "Set LED to Player color", &cv_gamepadled[3]   , 125},
 };
 
 static menuitem_t OP_JoystickSetMenu[] =
@@ -3178,10 +3174,10 @@ menu_t OP_ControlsDef = DEFAULTMENUSTYLE("M_CONTRO", OP_ControlsMenu, &OP_MainDe
 //WTF
 menu_t OP_MouseOptionsDef = DEFAULTMENUSTYLE("M_CONTRO", OP_MouseOptionsMenu, &OP_ControlsDef, 60, 30);
 menu_t OP_AllControlsDef = CONTROLMENUSTYLE(OP_AllControlsMenu, &OP_ControlsDef);
-menu_t OP_Joystick1Def = DEFAULTSCROLLSTYLE("M_CONTRO", OP_Joystick1Menu, &OP_AllControlsDef, 60, 36);
-menu_t OP_Joystick2Def = DEFAULTSCROLLSTYLE("M_CONTRO", OP_Joystick2Menu, &OP_AllControlsDef, 60, 36);
-menu_t OP_Joystick3Def = DEFAULTSCROLLSTYLE("M_CONTRO", OP_Joystick3Menu, &OP_AllControlsDef, 60, 36);
-menu_t OP_Joystick4Def = DEFAULTSCROLLSTYLE("M_CONTRO", OP_Joystick4Menu, &OP_AllControlsDef, 60, 36);
+menu_t OP_Joystick1Def = DEFAULTSCROLLSTYLE("M_CONTRO", OP_Joystick1Menu, &OP_AllControlsDef, 30, 36);
+menu_t OP_Joystick2Def = DEFAULTSCROLLSTYLE("M_CONTRO", OP_Joystick2Menu, &OP_AllControlsDef, 30, 36);
+menu_t OP_Joystick3Def = DEFAULTSCROLLSTYLE("M_CONTRO", OP_Joystick3Menu, &OP_AllControlsDef, 30, 36);
+menu_t OP_Joystick4Def = DEFAULTSCROLLSTYLE("M_CONTRO", OP_Joystick4Menu, &OP_AllControlsDef, 30, 36);
 menu_t OP_JoystickSetDef =
 {
 	"M_CONTRO",
