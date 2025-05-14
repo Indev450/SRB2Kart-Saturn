@@ -1562,6 +1562,14 @@ void V_DrawPatchFill(patch_t *pat)
 	}
 }
 
+// Draws a patch and scales it to fill out the screen vertically while remaining centered
+void V_DrawCenteredScaledFullScreenPatch(patch_t *patch)
+{
+	fixed_t scale = FixedDiv(vid.height << FRACBITS, patch->height << FRACBITS);
+	fixed_t x = ((vid.width << FRACBITS) - FixedMul(patch->width << FRACBITS, scale)) / 2; // i fucking hate maths
+	V_DrawFixedPatch(x, 0, scale, V_NOSCALEPATCH, patch, NULL);
+}
+
 void V_DrawVhsEffect(boolean rewind)
 {
 	static fixed_t upbary = 100*FRACUNIT, downbary = 150*FRACUNIT;

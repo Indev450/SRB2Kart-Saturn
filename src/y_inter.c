@@ -912,35 +912,35 @@ static void Y_UnloadData(void)
 //
 static void Y_DrawAnimatedVoteScreenPatch(boolean widePatch)
 {
+	patch_t *votebg = NULL;
 	char tempAnimPrefix[7];
-	widePatch ? strcpy(tempAnimPrefix, animWidePrefix) : strcpy(tempAnimPrefix, animPrefix);
-	const INT32 tempFoundAnimVoteFrames = widePatch ? foundAnimVoteWideFrames : foundAnimVoteFrames;
+	strcpy(tempAnimPrefix, (widePatch ? animWidePrefix : animPrefix));
+	const INT32 tempFoundAnimVoteFrames = (widePatch ? foundAnimVoteWideFrames : foundAnimVoteFrames) - 1;
 
 	// Just in case someone provides LESS widescreen frames than normal frames or vice versa, reset the frame counter to 0
-	if (currentAnimFrame > tempFoundAnimVoteFrames - 1)
+	if (currentAnimFrame > tempFoundAnimVoteFrames)
 		currentAnimFrame = 0;
 
-	patch_t *background = W_CachePatchName(va("%s%d", tempAnimPrefix, currentAnimFrame + 1), PU_PATCH);
-	V_DrawScaledPatch(((vid.width/2) / vid.dupx) - (background->width/2), // Keep the width/height adjustments, for screens that are less wide than 320(?)
-				(vid.height / vid.dupy) - background->height,
-				V_SNAPTOTOP|V_SNAPTOLEFT, background);
+	votebg = W_CachePatchName(va("%s%d", tempAnimPrefix, currentAnimFrame + 1), PU_PATCH);
 
-	if (renderisnewtic && votetic % 2 == 0 && !paused)
-		currentAnimFrame = (currentAnimFrame + 1 > tempFoundAnimVoteFrames - 1) ? 0 : currentAnimFrame + 1;
+	V_DrawCenteredScaledFullScreenPatch(votebg);
+
+	if (renderisnewtic && (votetic % 2 == 0) && !paused)
+		currentAnimFrame = (currentAnimFrame + 1 > tempFoundAnimVoteFrames) ? 0 : (currentAnimFrame + 1);
 }
 
 static void Y_DrawVoteScreenPatch(void)
 {
+	patch_t *votebg = NULL;
 	const boolean widescreen = (vid.width / vid.dupx > 320);
-	const boolean animvote = (foundAnimVoteWideFrames || foundAnimVoteFrames);
 
-	if (animvote)
+	if (foundAnimVoteWideFrames || foundAnimVoteFrames)
 	{
 		Y_DrawAnimatedVoteScreenPatch((foundAnimVoteWideFrames && widescreen));
 		return;
 	}
 
-	patch_t *votebg = bgpatch; // non widescreen patch
+	votebg = bgpatch; // non widescreen patch
 
 	UINT8 prefgametype = (votelevels[0][1] & ~0x80);
 	const boolean widebgreplaced = (prefgametype == GT_MATCH) ? widebattlereplaced : wideracereplaced;
@@ -952,9 +952,7 @@ static void Y_DrawVoteScreenPatch(void)
 		votebg = widebgpatch;
 	}
 
-	V_DrawScaledPatch(((vid.width/2) / vid.dupx) - (votebg->width/2),
-					  (vid.height / vid.dupy) - votebg->height,
-					  V_SNAPTOTOP|V_SNAPTOLEFT, votebg);
+	V_DrawCenteredScaledFullScreenPatch(votebg);
 }
 
 //
