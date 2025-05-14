@@ -58,44 +58,35 @@ consvar_t cv_rumble[MAXSPLITSCREENPLAYERS] = {
 	{"rumble4", "Off", CV_SAVE|CV_CALL|CV_NOINIT, CV_OnOff, rumble_off_handle4, 0, NULL, NULL, 0, 0, NULL}
 };
 
+static CV_PossibleValue_t gamepadled_cons_t[] = {{0, "Off"}, {1, "Skincolor"}, {2, "Mobjcolor"}, {0, NULL}};
 consvar_t cv_gamepadled[MAXSPLITSCREENPLAYERS] = {
-	{"gamepadled", "On", CV_SAVE|CV_CALL|CV_NOINIT, CV_OnOff, led_off_handle, 0, NULL, NULL, 0, 0, NULL},
-	{"gamepadled2", "On", CV_SAVE|CV_CALL|CV_NOINIT, CV_OnOff, led_off_handle2, 0, NULL, NULL, 0, 0, NULL},
-	{"gamepadled3", "On", CV_SAVE|CV_CALL|CV_NOINIT, CV_OnOff, led_off_handle3, 0, NULL, NULL, 0, 0, NULL},
-	{"gamepadled4", "On", CV_SAVE|CV_CALL|CV_NOINIT, CV_OnOff, led_off_handle4, 0, NULL, NULL, 0, 0, NULL}
-};
-
-consvar_t cv_ledpowerup[MAXSPLITSCREENPLAYERS] = {
-	{"ledpowerup", "Off", CV_SAVE|CV_CALL|CV_NOINIT, CV_OnOff, led_off_handle, 0, NULL, NULL, 0, 0, NULL},
-	{"ledpowerup2", "Off", CV_SAVE|CV_CALL|CV_NOINIT, CV_OnOff, led_off_handle2, 0, NULL, NULL, 0, 0, NULL},
-	{"ledpowerup3", "Off", CV_SAVE|CV_CALL|CV_NOINIT, CV_OnOff, led_off_handle3, 0, NULL, NULL, 0, 0, NULL},
-	{"ledpowerup4", "Off", CV_SAVE|CV_CALL|CV_NOINIT, CV_OnOff, led_off_handle4, 0, NULL, NULL, 0, 0, NULL}
+	{"gamepadled",  "Skincolor", CV_SAVE|CV_CALL|CV_NOINIT, gamepadled_cons_t, led_off_handle, 0, NULL, NULL, 0, 0, NULL},
+	{"gamepadled2", "Skincolor", CV_SAVE|CV_CALL|CV_NOINIT, gamepadled_cons_t, led_off_handle2, 0, NULL, NULL, 0, 0, NULL},
+	{"gamepadled3", "Skincolor", CV_SAVE|CV_CALL|CV_NOINIT, gamepadled_cons_t, led_off_handle3, 0, NULL, NULL, 0, 0, NULL},
+	{"gamepadled4", "Skincolor", CV_SAVE|CV_CALL|CV_NOINIT, gamepadled_cons_t, led_off_handle4, 0, NULL, NULL, 0, 0, NULL}
 };
 
 static void rumble_off_handle(void)
 {
-	if (cv_rumble[0].value == 0)
+	if (!cv_rumble[0].value)
 		G_ResetPlayerDeviceRumble(0);
 }
 
-
 static void rumble_off_handle2(void)
 {
-	if (cv_rumble[1].value == 0)
+	if (!cv_rumble[1].value)
 		G_ResetPlayerDeviceRumble(1);
 }
 
-
 static void rumble_off_handle3(void)
 {
-	if (cv_rumble[2].value == 0)
+	if (!cv_rumble[2].value)
 		G_ResetPlayerDeviceRumble(2);
 }
 
-
 static void rumble_off_handle4(void)
 {
-	if (cv_rumble[3].value == 0)
+	if (!cv_rumble[3].value)
 		G_ResetPlayerDeviceRumble(3);
 }
 
@@ -104,18 +95,15 @@ static void led_off_handle(void)
 	G_ResetPlayerGamepadIndicatorColor(0);
 }
 
-
 static void led_off_handle2(void)
 {
 	G_ResetPlayerGamepadIndicatorColor(1);
 }
 
-
 static void led_off_handle3(void)
 {
 	G_ResetPlayerGamepadIndicatorColor(2);
 }
-
 
 static void led_off_handle4(void)
 {
@@ -900,13 +888,16 @@ UINT16 G_GetSkinColor(INT32 playernum)
 	{
 		player_t *player = &players[displayplayers[playernum]];
 
-		// make rgb rainbow vomit when invul or flash blue when grow
-		if (cv_ledpowerup[playernum].value && player->mo && (player->kartstuff[k_invincibilitytimer] || player->kartstuff[k_growshrinktimer] || player->powers[pw_invulnerability]))
-			return player->mo->color;
+		if (player)
+		{
+			// make rgb rainbow vomit when invul or flash blue when grow
+			if ((cv_gamepadled[playernum].value == 2) && player->mo && player->mo->color)
+				return player->mo->color;
 
-		// take actual player skincolour when ingame
-		if (player->skincolor)
-			return player->skincolor;
+			// take actual player skincolour when ingame
+			if (player->skincolor)
+				return player->skincolor;
+		}
 	}
 
 	// otherwise just fallback to whatever the cvar is
