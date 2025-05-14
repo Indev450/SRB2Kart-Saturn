@@ -1563,11 +1563,49 @@ void V_DrawPatchFill(patch_t *pat)
 }
 
 // Draws a patch and scales it to fill out the screen vertically while remaining centered
-void V_DrawCenteredScaledFullScreenPatch(patch_t *patch)
+/*void V_DrawCenteredScaledFullScreenPatch(patch_t *patch)
 {
 	fixed_t scale = FixedDiv(vid.height << FRACBITS, patch->height << FRACBITS);
 	fixed_t x = ((vid.width << FRACBITS) - FixedMul(patch->width << FRACBITS, scale)) / 2; // i fucking hate maths
 	V_DrawFixedPatch(x, 0, scale, V_NOSCALEPATCH, patch, NULL);
+}
+
+void V_DrawCenteredScaledFullScreenPatch(patch_t *patch)
+{
+	fixed_t scale = FixedDiv(vid.width << FRACBITS, patch->width << FRACBITS);
+
+	fixed_t scaled_height = FixedMul(patch->height << FRACBITS, scale);
+
+	fixed_t y = (vid.height << FRACBITS) - scaled_height;
+
+	if (scaled_height < (vid.height << FRACBITS))
+	{
+		y /= 2;
+	}
+
+	V_DrawFixedPatch(0, y, scale, V_NOSCALEPATCH, patch, NULL);
+}*/
+
+void V_DrawCenteredScaledFullScreenPatch(patch_t *patch)
+{
+	fixed_t x = 0, y = 0, scale = FRACUNIT;
+
+	//scale = FixedDiv(vid.width << FRACBITS, patch->width << FRACBITS); // fit the screen horizontally
+	scale = ((vid.width * FRACUNIT) / patch->width); // fit the screen horizontally
+
+
+	fixed_t scaled_height = FixedMul(patch->height << FRACBITS, scale);
+
+	// however, if this means the patch doesent fill out the screen vertically then
+	if (scaled_height < (vid.height << FRACBITS))
+	{
+		scale = ((vid.height * FRACUNIT) / patch->height); // scale it to fit the screen vertically
+		x = ((vid.width << FRACBITS) - FixedMul(patch->width << FRACBITS, scale)) / 2;
+	}
+	else
+		y = (vid.height << FRACBITS) - scaled_height;
+
+	V_DrawFixedPatch(x, y, scale, V_NOSCALEPATCH, patch, NULL);
 }
 
 void V_DrawVhsEffect(boolean rewind)
