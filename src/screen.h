@@ -153,6 +153,8 @@ extern consvar_t cv_timescale;
 
 extern consvar_t cv_alwaysgrabmouse;
 
+extern consvar_t cv_votebgscaling;
+
 // quick fix for tall/short skies, depending on bytesperpixel
 extern void (*walldrawerfunc)(void);
 

@@ -906,6 +906,28 @@ static void Y_UnloadData(void)
 
 // SRB2Kart: Voting!
 
+static void Y_DrawVoteBackground(patch_t *patch)
+{
+	switch (cv_votebgscaling.value)
+	{
+		case 1: // adaptive
+			V_DrawAdaptiveScaledFullScreenPatch(patch);
+			break;
+		case 2: // vertical-fill
+			V_DrawVerticallyScaledFullScreenPatch(patch);
+			break;
+		case 3: // horizontal-fill
+			V_DrawHorizontallyScaledFullScreenPatch(patch);
+			break;
+		case 0: // vanilla
+		default:
+			V_DrawScaledPatch(((vid.width/2) / vid.dupx) - (patch->width/2),
+							  (vid.height / vid.dupy) - patch->height,
+							  V_SNAPTOTOP|V_SNAPTOLEFT, patch);
+			break;
+	}
+}
+
 // Y_DrawAnimatedVoteScreenPatch
 //
 // Draw animated patch based on frame counter on vote screen
@@ -923,7 +945,7 @@ static void Y_DrawAnimatedVoteScreenPatch(boolean widePatch)
 
 	votebg = W_CachePatchName(va("%s%d", tempAnimPrefix, currentAnimFrame + 1), PU_PATCH);
 
-	V_DrawCenteredScaledFullScreenPatch(votebg);
+	Y_DrawVoteBackground(votebg);
 
 	if (renderisnewtic && (votetic % 2 == 0) && !paused)
 		currentAnimFrame = (currentAnimFrame + 1 > tempFoundAnimVoteFrames) ? 0 : (currentAnimFrame + 1);
@@ -952,7 +974,7 @@ static void Y_DrawVoteScreenPatch(void)
 		votebg = widebgpatch;
 	}
 
-	V_DrawCenteredScaledFullScreenPatch(votebg);
+	Y_DrawVoteBackground(votebg);
 }
 
 //
