@@ -2208,6 +2208,11 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 //Hurdler: end of 3d-floors test
 }
 
+static inline boolean HWR_UsePortals(void)
+{
+	return cv_glportals.value && gl_maphasportals;
+}
+
 // From PrBoom:
 //
 // e6y: Check whether the player can look beyond this line, returns true if we can't
@@ -2268,7 +2273,8 @@ static boolean CheckClip(sector_t * afrontsector, sector_t * abacksector)
 	}
 
 	// using this check with portals causes weird culling issues on ante-station
-	if (LIKELY(!portalclipline) && (afrontsector == viewsector || abacksector == viewsector))
+	if (LIKELY(!portalclipline) &&
+	(afrontsector == viewsector || abacksector == viewsector))
 	{
 		fixed_t viewf1, viewf2, viewc1, viewc2;
 		if (afrontsector == viewsector)
@@ -2334,7 +2340,8 @@ static boolean CheckClip(sector_t * afrontsector, sector_t * abacksector)
 
 	// Window.
 	// We know it's a window when the above isn't true and the back and front sectors don't match
-	if (backc1 != frontc1 || backc2 != frontc2 || backf1 != frontf1 || backf2 != frontf2)
+	if (backc1 != frontc1 || backc2 != frontc2
+	 || backf1 != frontf1 || backf2 != frontf2)
 	{
 		checkforemptylines = false;
 		return false;
@@ -2398,7 +2405,7 @@ static void HWR_AddLine(seg_t *line)
 
 	gl_backsector = line->backsector;
 
-	if (!cv_glportals.value || LIKELY(!gl_maphasportals))
+	if (LIKELY(!HWR_UsePortals()))
 	{
 doaddline:
 		if (!line->backsector)
@@ -5456,7 +5463,7 @@ void HWR_RenderViewpoint(gl_portal_t *rootportal, const float fpov, player_t *pl
 	gl_portallist_t portallist;
 
 	const boolean skybox = (skyboxmo[0] && cv_skybox.value);
-	const boolean useportals = cv_glportals.value && gl_maphasportals && allow_portals;
+	const boolean useportals = HWR_UsePortals() && allow_portals;
 	bspfunc bspFunc = (useportals && portalclipline) ? HWR_RenderPortalBSPNode : HWR_RenderBSPNode;
 
 	portallist.base = portallist.cap = NULL;
