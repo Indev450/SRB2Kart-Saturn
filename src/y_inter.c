@@ -294,27 +294,23 @@ static void Y_CalculateMatchData(UINT8 rankingsmode, void (*comparison)(INT32))
 static void Y_AnimatedVoteScreenCheck(void)
 {
 	char tmpPrefix[] = "INTS";
-	boolean stopSearching = false;
 
 	if (luaVoteScreen)
 		strncpy(tmpPrefix, luaVoteScreen, 4);
-	else
-	{
-		if (G_BattleGametype())
-			strcpy(tmpPrefix, "BTLS");
-	}
+	else if (G_BattleGametype())
+		strcpy(tmpPrefix, "BTLS");
 
 	strncpy(animPrefix, tmpPrefix, 4);
 	animPrefix[4] = 'C';
 	strncpy(animWidePrefix, tmpPrefix, 4);
 	animWidePrefix[4] = 'W';
 
-	foundAnimVoteFrames = 0;
-	foundAnimVoteWideFrames = 0;
+	foundAnimVoteFrames = foundAnimVoteWideFrames = 0;
 	currentAnimFrame = 0;
 
 	INT32 i = 1;
-	while (!stopSearching)
+
+	for (;;)
 	{
 		boolean normalLumpExists = W_LumpExists(va("%sC%d", tmpPrefix, i));
 		boolean wideLumpExists = W_LumpExists(va("%sW%d", tmpPrefix, i));
@@ -328,7 +324,7 @@ static void Y_AnimatedVoteScreenCheck(void)
 				foundAnimVoteWideFrames++;
 		}
 		else // If we don't find at least frame 1 (e.g VEXTRN1), let's just stop looking
-			stopSearching = true;
+			break;
 
 		i++;
 	}
