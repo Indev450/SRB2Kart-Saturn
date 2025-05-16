@@ -2203,9 +2203,14 @@ void HU_Drawer(void)
 	if (cechotimer)
 		HU_DrawCEcho();
 
+	// draw song credits
+	if (cv_songcredits.value)
+		HU_DrawSongCredits();
+
 	if (!( Playing() || demo.playback )
 	 || gamestate == GS_INTERMISSION || gamestate == GS_CUTSCENE
 	 || gamestate == GS_CREDITS      || gamestate == GS_EVALUATION
+	 || gamestate == GS_TITLESCREEN
 	 || gamestate == GS_GAMEEND
 	 || gamestate == GS_VOTING || gamestate == GS_WAITINGPLAYERS) // SRB2kart
 		return;
@@ -2235,10 +2240,6 @@ void HU_Drawer(void)
 
 	if (gamestate != GS_LEVEL)
 		return;
-
-	// draw song credits
-	if (cv_songcredits.value)
-		HU_DrawSongCredits();
 
 	// draw desynch text
 	if (hu_resynching
