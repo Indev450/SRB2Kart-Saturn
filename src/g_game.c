@@ -1954,6 +1954,7 @@ void G_Ticker(boolean run)
 
 		case GS_TITLESCREEN:
 			F_TitleScreenTicker(run);
+			HU_Ticker();
 			break;
 		case GS_WAITINGPLAYERS:
 			if (netgame)
