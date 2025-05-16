@@ -934,21 +934,25 @@ static void Y_DrawVoteBackground(patch_t *patch)
 //
 static void Y_DrawAnimatedVoteScreenPatch(boolean widePatch)
 {
+	INT32 nextframe = 0;
 	patch_t *votebg = NULL;
 	char tempAnimPrefix[7];
+	const INT32 tempFoundAnimVoteFrames = ((widePatch ? foundAnimVoteWideFrames : foundAnimVoteFrames) - 1);
+
 	strcpy(tempAnimPrefix, (widePatch ? animWidePrefix : animPrefix));
-	const INT32 tempFoundAnimVoteFrames = (widePatch ? foundAnimVoteWideFrames : foundAnimVoteFrames) - 1;
 
 	// Just in case someone provides LESS widescreen frames than normal frames or vice versa, reset the frame counter to 0
 	if (currentAnimFrame > tempFoundAnimVoteFrames)
 		currentAnimFrame = 0;
 
-	votebg = W_CachePatchName(va("%s%d", tempAnimPrefix, currentAnimFrame + 1), PU_PATCH);
+	nextframe = (currentAnimFrame + 1);
+
+	votebg = W_CachePatchName(va("%s%d", (widePatch ? animWidePrefix : animPrefix), nextframe), PU_PATCH);
 
 	Y_DrawVoteBackground(votebg);
 
 	if (renderisnewtic && (votetic % 2 == 0) && !paused)
-		currentAnimFrame = (currentAnimFrame + 1 > tempFoundAnimVoteFrames) ? 0 : (currentAnimFrame + 1);
+		currentAnimFrame = (nextframe > tempFoundAnimVoteFrames) ? 0 : nextframe;
 }
 
 static void Y_DrawVoteScreenPatch(void)
@@ -1027,6 +1031,7 @@ void Y_VoteDrawer(void)
 	}
 
 	y = (200-height)/2;
+
 	for (i = 0; i < 4; i++)
 	{
 		const char *str;
