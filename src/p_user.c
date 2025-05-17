@@ -3748,17 +3748,21 @@ static boolean P_CheckNoclipCameraPosition(player_t *player, camera_t *thiscam, 
 static void P_MoveCameraToSpawn(UINT8 playernum)
 {
 	camera_t *thiscam = &camera[playernum];
-	mapthing_t *pstart = playerstarts[0];
+	player_t *player = playernum == 0 ? &players[consoleplayer] : &players[displayplayers[playernum]];
 
-	if (!thiscam || !pstart)
+	if (!thiscam || !player->mo)
 		return;
 
-	thiscam->x = pstart->x << FRACBITS;
-	thiscam->y = pstart->y << FRACBITS;
-	thiscam->z = pstart->z << FRACBITS;
+	thiscam->x = player->mo->x - P_ReturnThrustX(player->mo, thiscam->angle, player->mo->radius);
+	thiscam->y = player->mo->y - P_ReturnThrustY(player->mo, thiscam->angle, player->mo->radius);
+	if (player->mo->eflags & MFE_VERTICALFLIP)
+		thiscam->z = player->mo->z + player->mo->height - (32<<FRACBITS) - 16*FRACUNIT;
+	else
+		thiscam->z = player->mo->z + (32<<FRACBITS);
+
 	thiscam->reset = true;
 
-	thiscam->angle = FixedAngle(pstart->angle*FRACUNIT);
+	thiscam->angle = player->mo->angle;
 	thiscam->aiming = 0;
 
 	thiscam->subsector = R_PointInSubsector(thiscam->x,thiscam->y);
