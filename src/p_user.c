@@ -1282,9 +1282,6 @@ void P_DoPlayerExit(player_t *player)
 
 	if (player == &players[consoleplayer])
 		demo.savebutton = leveltime;
-
-	/*if (playeringame[player-players] && netgame && !circuitmap)
-		CONS_Printf(M_GetText("%s has completed the level.\n"), player_names[player-players]);*/
 }
 
 #define SPACESPECIAL 12
@@ -2285,7 +2282,9 @@ static void P_MovePlayer(player_t *player)
 		{
 			player->lturn_max[leveltime%MAXPREDICTTICS] = K_GetKartTurnValue(player, KART_FULLTURN)+1;
 			player->rturn_max[leveltime%MAXPREDICTTICS] = K_GetKartTurnValue(player, -KART_FULLTURN)-1;
-		} else {
+		}
+		else
+		{
 			player->lturn_max[leveltime%MAXPREDICTTICS] = player->rturn_max[leveltime%MAXPREDICTTICS] = 0;
 		}
 
@@ -3746,6 +3745,33 @@ static boolean P_CheckNoclipCameraPosition(player_t *player, camera_t *thiscam, 
 }
 #endif
 
+static void P_MoveCameraToSpawn(UINT8 playernum)
+{
+	camera_t *thiscam = &camera[playernum];
+	player_t *player = playernum == 0 ? &players[consoleplayer] : &players[displayplayers[playernum]];
+
+	if (!thiscam || !player->mo)
+		return;
+
+	thiscam->x = player->mo->x - P_ReturnThrustX(player->mo, thiscam->angle, player->mo->radius);
+	thiscam->y = player->mo->y - P_ReturnThrustY(player->mo, thiscam->angle, player->mo->radius);
+	if (player->mo->eflags & MFE_VERTICALFLIP)
+		thiscam->z = player->mo->z + player->mo->height - (32<<FRACBITS) - 16*FRACUNIT;
+	else
+		thiscam->z = player->mo->z + (32<<FRACBITS);
+
+	thiscam->reset = true;
+
+	thiscam->angle = player->mo->angle;
+	thiscam->aiming = 0;
+
+	thiscam->subsector = R_PointInSubsector(thiscam->x,thiscam->y);
+
+	thiscam->reset_aiming = true;
+
+	R_ResetViewInterpolation(playernum);
+}
+
 boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcalled)
 {
 	static boolean lookbackactive[MAXSPLITSCREENPLAYERS];
@@ -3779,6 +3805,13 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 
 	if (thiscam->freecam || player->spectator)
 	{
+		// idk if this is the best place?
+		if (player->spectator && InputDown(gc_freecam, num+1))
+		{
+			P_MoveCameraToSpawn(num);
+			return true; // dont move while you hold this
+		}
+
 		P_DemoCameraMovement(thiscam, num);
 		P_CalcChasePostImg(player, thiscam);
 		return true;
