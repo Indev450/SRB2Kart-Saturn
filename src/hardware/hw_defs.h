@@ -131,16 +131,22 @@ typedef struct
 	FLOAT       scalex, scaley, scalez;
 	FLOAT       fovangle;
 	UINT8       splitscreen;
-	boolean     flip;            // screenflip
 	boolean     roll;
 	FLOAT       rollangle;
 	FLOAT       centerx, centery;
 	FLOAT       rollx, rollz;
-	boolean     mirror;          // SRB2Kart: Encore Mode
-	boolean     mirrorflip;      // Encore Mode with Flipcam
+	UINT8       fliptype;
 	boolean     shearing;        // 14042019
 	float       viewaiming;      // 17052019
 } FTransform;
+
+enum
+{
+	TRANSFORM_NONE   = 0,
+	TRANSFORM_FLIP   = 1 << 0,                             // screenflip
+	TRANSFORM_MIRROR = 1 << 1,                             // SRB2Kart: Encore Mode
+	TRANSFORM_MIRRORFLIP = TRANSFORM_FLIP|TRANSFORM_MIRROR // SRB2Kart: Encore Mode with Flipcam
+};
 
 // Transformed vector, as passed to HWR API
 typedef struct
