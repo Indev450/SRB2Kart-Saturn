@@ -2282,7 +2282,9 @@ static void P_MovePlayer(player_t *player)
 		{
 			player->lturn_max[leveltime%MAXPREDICTTICS] = K_GetKartTurnValue(player, KART_FULLTURN)+1;
 			player->rturn_max[leveltime%MAXPREDICTTICS] = K_GetKartTurnValue(player, -KART_FULLTURN)-1;
-		} else {
+		}
+		else
+		{
 			player->lturn_max[leveltime%MAXPREDICTTICS] = player->rturn_max[leveltime%MAXPREDICTTICS] = 0;
 		}
 
@@ -3743,6 +3745,29 @@ static boolean P_CheckNoclipCameraPosition(player_t *player, camera_t *thiscam, 
 }
 #endif
 
+static void P_MoveCameraToSpawn(UINT8 playernum)
+{
+	camera_t *thiscam = &camera[playernum];
+	mapthing_t *pstart = playerstarts[0];
+
+	if (!thiscam || !pstart)
+		return;
+
+	thiscam->x = pstart->x << FRACBITS;
+	thiscam->y = pstart->y << FRACBITS;
+	thiscam->z = pstart->z << FRACBITS;
+	thiscam->reset = true;
+
+	thiscam->angle = FixedAngle(pstart->angle*FRACUNIT);
+	thiscam->aiming = 0;
+
+	thiscam->subsector = R_PointInSubsector(thiscam->x,thiscam->y);
+
+	thiscam->reset_aiming = true;
+
+	R_ResetViewInterpolation(playernum);
+}
+
 boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcalled)
 {
 	static boolean lookbackactive[MAXSPLITSCREENPLAYERS];
@@ -3776,6 +3801,13 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 
 	if (thiscam->freecam || player->spectator)
 	{
+		// idk if this is the best place?
+		if (player->spectator && InputDown(gc_freecam, num+1))
+		{
+			P_MoveCameraToSpawn(num);
+			return true; // dont move while you hold this
+		}
+
 		P_DemoCameraMovement(thiscam, num);
 		P_CalcChasePostImg(player, thiscam);
 		return true;
