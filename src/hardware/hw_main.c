@@ -4672,7 +4672,7 @@ static void HWR_ProjectSprite(mobj_t *thing)
 	const boolean vflip = (thing->eflags & MFE_VERTICALFLIP);
 	const boolean hflip = (!(thing->frame & FF_HORIZONTALFLIP) != !mirrored);
 
-	this_scale = FixedToFloat(interp.scale);
+	this_scale   = FixedToFloat(interp.scale);
 	spritexscale = FixedToFloat(interp.spritexscale);
 	spriteyscale = FixedToFloat(interp.spriteyscale);
 
@@ -5342,9 +5342,6 @@ static void HWR_SetTransformAiming(FTransform *trans)
 
 void HWR_SetTransform(float fpov)
 {
-	UINT8 viewnum = R_GetViewNumber();
-	camera_t *thiscam = &camera[viewnum];
-
 	gl_viewx = FixedToFloat(viewx);
 	gl_viewy = FixedToFloat(viewy);
 	gl_viewz = FixedToFloat(viewz);
@@ -5372,17 +5369,17 @@ void HWR_SetTransform(float fpov)
 	HWR_RollTransform(&atransform, viewroll);
 	atransform.splitscreen = splitscreen;
 
-	atransform.flip = false;
-	if ((thiscam->postimg & POSTIMG_FLIP) && !(thiscam->postimg & POSTIMG_MIRROR))
-		atransform.flip = true;
+	const UINT8 postimg = camera[R_GetViewNumber()].postimg;
 
-	atransform.mirror = false;
-	if ((thiscam->postimg & POSTIMG_MIRROR) && !(thiscam->postimg & POSTIMG_FLIP))
-		atransform.mirror = true;
-
-	atransform.mirrorflip = false;
-	if ((thiscam->postimg & POSTIMG_FLIP) && (thiscam->postimg & POSTIMG_MIRROR))
-		atransform.mirrorflip = true;
+	if (postimg & POSTIMG_FLIP)
+	{
+		if (postimg & POSTIMG_MIRROR)
+			atransform.fliptype = TRANSFORM_MIRRORFLIP;
+		else
+			atransform.fliptype = TRANSFORM_FLIP;
+	}
+	else if (postimg & POSTIMG_MIRROR)
+		atransform.fliptype = TRANSFORM_MIRROR;
 
 	// Set transform.
 	GL_SetTransform(&atransform);
@@ -5650,6 +5647,7 @@ void HWR_RenderPlayerView(void)
 	{
 		if (cv_ripplewater.value)
 			GL_SetShaderInfo(HWD_SHADERINFO_LEVELTIME, (INT32)leveltime); // The water surface shader needs the leveltime.
+
 		const angle_t light_angle = maplighting.angle - viewangle + ANGLE_90; // I fucking hate OGL's coordinate system
 		GL_SetShaderInfo(HWD_SHADERINFO_LIGHT_X, FINECOSINE(light_angle >> ANGLETOFINESHIFT));
 		GL_SetShaderInfo(HWD_SHADERINFO_LIGHT_Y, 0);

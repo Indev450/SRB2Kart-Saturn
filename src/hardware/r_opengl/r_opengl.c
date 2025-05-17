@@ -2730,8 +2730,7 @@ void GL_DrawModelEx(model_t *model, INT32 frameIndex, float duration, float tics
 	// pos->mirror is if the screen is flipped horizontally
 	// XOR all the flips together to figure out what culling to use!
 	{
-		boolean reversecull = (flipped ^ hflipped ^ pos->flip ^ pos->mirror);
-		if (reversecull)
+		if ((flipped ^ hflipped ^ !!(pos->fliptype & TRANSFORM_FLIP) ^ !!(pos->fliptype & TRANSFORM_MIRROR)))
 			pglCullFace(GL_FRONT);
 		else
 			pglCullFace(GL_BACK);
@@ -2877,14 +2876,21 @@ void GL_SetTransform(FTransform *stransform)
 		used_fov = stransform->fovangle;
 		shearing = stransform->shearing;
 
-		if (stransform->mirror)
-			pglScalef(-stransform->scalex, stransform->scaley, -stransform->scalez);
-		else if (stransform->mirrorflip)
-			pglScalef(-stransform->scalex, -stransform->scaley, -stransform->scalez);
-		else if (stransform->flip)
-			pglScalef(stransform->scalex, -stransform->scaley, -stransform->scalez);
-		else
-			pglScalef(stransform->scalex, stransform->scaley, -stransform->scalez);
+		switch (stransform->fliptype)
+		{
+			case TRANSFORM_MIRROR:
+				pglScalef(-stransform->scalex, stransform->scaley, -stransform->scalez);
+				break;
+			case TRANSFORM_MIRRORFLIP:
+				pglScalef(-stransform->scalex, -stransform->scaley, -stransform->scalez);
+				break;
+			case TRANSFORM_FLIP:
+				pglScalef(stransform->scalex, -stransform->scaley, -stransform->scalez);
+				break;
+			default: // TRANSFORM_NONE
+				pglScalef(stransform->scalex, stransform->scaley, -stransform->scalez);
+				break;
+		}
 
 		if (stransform->roll)
 			pglRotatef(stransform->rollangle, 0.0f, 0.0f, 1.0f);
@@ -2910,7 +2916,7 @@ void GL_SetTransform(FTransform *stransform)
 	if (shearing)
 	{
 		float dy = stransform->viewaiming * 2;
-		if (stransform->flip || stransform->mirrorflip)
+		if (stransform->fliptype == TRANSFORM_FLIP || stransform->fliptype == TRANSFORM_MIRRORFLIP)
 			dy *= -1.0f;
 		pglTranslatef(0.0f, -dy/BASEVIDHEIGHT, 0.0f);
 	}
