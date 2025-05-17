@@ -1431,6 +1431,8 @@ void HWR_DrawMD2(gl_vissprite_t *spr)
 			? (spr->mobj->rollangle) + (sliptideroll * spr->mobj->player->kartstuff[k_aizdriftstrat])
 			: (spr->mobj->rollangle);
 
+			rollang *= flipfactor;
+
 			fixed_t anglef = AngleFixed(rollang);
 
 			p.rollangle = 0.0f;
