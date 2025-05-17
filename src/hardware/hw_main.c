@@ -4371,44 +4371,45 @@ static void HWR_RenderDrawNodes(void)
 		switch (drawnode->type)
 		{
 			case DRAWNODE_PLANE:
-			{
-				planeinfo_t *plane = &drawnode->u.plane;
+				{
+					planeinfo_t *plane = &drawnode->u.plane;
 
-				// We aren't traversing the BSP tree, so make gl_frontsector null to avoid crashes.
-				gl_frontsector = NULL;
+					// We aren't traversing the BSP tree, so make gl_frontsector null to avoid crashes.
+					gl_frontsector = NULL;
 
-				if (!(plane->blend & PF_NoTexture))
-					HWR_GetFlat(plane->lumpnum,  R_NoEncore(plane->FOFSector, plane->isceiling));
+					if (!(plane->blend & PF_NoTexture))
+						HWR_GetFlat(plane->lumpnum,  R_NoEncore(plane->FOFSector, plane->isceiling));
 
-				HWR_RenderPlane(NULL, plane->xsub, plane->isceiling, plane->fixedheight, plane->blend, plane->lightlevel,
-								plane->lumpnum, plane->FOFSector, plane->alpha, plane->planecolormap);
+					HWR_RenderPlane(NULL, plane->xsub, plane->isceiling, plane->fixedheight, plane->blend, plane->lightlevel,
+									plane->lumpnum, plane->FOFSector, plane->alpha, plane->planecolormap);
+				}
 				break;
-			}
 			case DRAWNODE_POLYOBJECT_PLANE:
-			{
-				polyplaneinfo_t *polyplane = &drawnode->u.polyplane;
+				{
+					polyplaneinfo_t *polyplane = &drawnode->u.polyplane;
 
-				// We aren't traversing the BSP tree, so make gl_frontsector null to avoid crashes.
-				gl_frontsector = NULL;
+					// We aren't traversing the BSP tree, so make gl_frontsector null to avoid crashes.
+					gl_frontsector = NULL;
 
-				if (!(polyplane->blend & PF_NoTexture))
-					HWR_GetFlat(polyplane->lumpnum,  R_NoEncore(polyplane->FOFSector, polyplane->isceiling));
+					if (!(polyplane->blend & PF_NoTexture))
+						HWR_GetFlat(polyplane->lumpnum,  R_NoEncore(polyplane->FOFSector, polyplane->isceiling));
 
-				HWR_RenderPolyObjectPlane(polyplane->polysector, polyplane->isceiling, polyplane->fixedheight, polyplane->blend, polyplane->lightlevel,
-										polyplane->lumpnum, polyplane->FOFSector, polyplane->alpha, polyplane->planecolormap);
+					HWR_RenderPolyObjectPlane(polyplane->polysector, polyplane->isceiling, polyplane->fixedheight, polyplane->blend, polyplane->lightlevel,
+											polyplane->lumpnum, polyplane->FOFSector, polyplane->alpha, polyplane->planecolormap);
+
+				}
 				break;
-			}
 			case DRAWNODE_WALL:
-			{
-				wallinfo_t *wall = &drawnode->u.wall;
+				{
+					wallinfo_t *wall = &drawnode->u.wall;
 
-				if (!(wall->blend & PF_NoTexture))
-					HWR_GetTexture(wall->texnum, wall->noencore);
+					if (!(wall->blend & PF_NoTexture))
+						HWR_GetTexture(wall->texnum, wall->noencore);
 
-				HWR_RenderWall(wall->wallVerts, &wall->Surf, wall->blend, wall->fogwall,
-							wall->lightlevel, wall->wallcolormap);
+					HWR_RenderWall(wall->wallVerts, &wall->Surf, wall->blend, wall->fogwall,
+								wall->lightlevel, wall->wallcolormap);
+				}
 				break;
-			}
 			default:
 				break;
 		}
