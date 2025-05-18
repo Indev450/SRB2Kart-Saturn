@@ -291,7 +291,6 @@ boolean P_Move(mobj_t *actor, fixed_t speed)
   */
 static boolean P_TryWalk(mobj_t *actor)
 {
-
 	if (!P_Move(actor, actor->info->speed))
 		return false;
 

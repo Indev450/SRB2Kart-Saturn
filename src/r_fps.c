@@ -167,16 +167,13 @@ void R_InterpolateViewRollAngle(fixed_t frac)
 void R_InterpolateView(fixed_t frac, boolean forceinvalid)
 {
 	viewvars_t* prevview = oldview;
-	UINT8 i;
 
 	if (FIXED_TO_FLOAT(frac) < 0)
 		frac = 0;
 	if (frac > FRACUNIT)
 		frac = FRACUNIT;
 
-	i = R_GetViewNumber();
-
-	if (oldview_invalid[i] != 0 || forceinvalid)
+	if (oldview_invalid[R_GetViewNumber()] != 0 || forceinvalid)
 	{
 		// interpolate from newview to newview
 		prevview = newview;

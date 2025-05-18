@@ -37,62 +37,6 @@
 #define CTFTEAMCODE(pl) pl->ctfteam ? (pl->ctfteam == 1 ? "\x85" : "\x84") : ""
 #define CTFTEAMENDCODE(pl) pl->ctfteam ? "\x80" : ""
 
-void P_ForceFeed(const player_t *player, INT32 attack, INT32 fade, tic_t duration, INT32 period)
-{
-	BasicFF_t Basicfeed;
-	if (!player)
-		return;
-	Basicfeed.Duration = (UINT32)(duration * (100L/TICRATE));
-	Basicfeed.ForceX = Basicfeed.ForceY = 1;
-	Basicfeed.Gain = 25000;
-	Basicfeed.Magnitude = period*10;
-	Basicfeed.player = player;
-	/// \todo test FFB
-	P_RampConstant(&Basicfeed, attack, fade);
-}
-
-void P_ForceConstant(const BasicFF_t *FFInfo)
-{
-	JoyFF_t ConstantQuake;
-	if (!FFInfo || !FFInfo->player)
-		return;
-	ConstantQuake.ForceX    = FFInfo->ForceX;
-	ConstantQuake.ForceY    = FFInfo->ForceY;
-	ConstantQuake.Duration  = FFInfo->Duration;
-	ConstantQuake.Gain      = FFInfo->Gain;
-	ConstantQuake.Magnitude = FFInfo->Magnitude;
-	if (FFInfo->player == &players[consoleplayer])
-		I_Tactile(ConstantForce, &ConstantQuake);
-	else if (splitscreen && FFInfo->player == &players[displayplayers[1]])
-		I_Tactile2(ConstantForce, &ConstantQuake);
-	else if (splitscreen > 1 && FFInfo->player == &players[displayplayers[2]])
-		I_Tactile3(ConstantForce, &ConstantQuake);
-	else if (splitscreen > 2 && FFInfo->player == &players[displayplayers[3]])
-		I_Tactile4(ConstantForce, &ConstantQuake);
-}
-void P_RampConstant(const BasicFF_t *FFInfo, INT32 Start, INT32 End)
-{
-	JoyFF_t RampQuake;
-	if (!FFInfo || !FFInfo->player)
-		return;
-	RampQuake.ForceX    = FFInfo->ForceX;
-	RampQuake.ForceY    = FFInfo->ForceY;
-	RampQuake.Duration  = FFInfo->Duration;
-	RampQuake.Gain      = FFInfo->Gain;
-	RampQuake.Magnitude = FFInfo->Magnitude;
-	RampQuake.Start     = Start;
-	RampQuake.End       = End;
-	if (FFInfo->player == &players[consoleplayer])
-		I_Tactile(ConstantForce, &RampQuake);
-	else if (splitscreen && FFInfo->player == &players[displayplayers[1]])
-		I_Tactile2(ConstantForce, &RampQuake);
-	else if (splitscreen > 1 && FFInfo->player == &players[displayplayers[2]])
-		I_Tactile3(ConstantForce, &RampQuake);
-	else if (splitscreen > 2 && FFInfo->player == &players[displayplayers[3]])
-		I_Tactile4(ConstantForce, &RampQuake);
-}
-
-
 //
 // GET STUFF
 //
@@ -106,9 +50,6 @@ boolean P_CanPickupItem(player_t *player, UINT8 weapon)
 {
 	if (player->exiting || mapreset)
 		return false;
-
-	/*if (G_BattleGametype() && player->kartstuff[k_bumper] <= 0) // No bumpers in Match
-        return false;*/
 
 	if (weapon)
 	{
@@ -374,7 +315,6 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 			else
 			{
 				K_DropItems(player); //K_StripItems(player);
-				//K_StripOther(player);
 				player->kartstuff[k_itemroulette] = 1;
 				player->kartstuff[k_roulettetype] = 2;
 			}
@@ -842,8 +782,6 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 				return;
 			if (special->fuse == 1)
 				return;
-//			if (special->momz > 0)
-//				return;
 			{
 				UINT8 flagteam = (special->type == MT_REDFLAG) ? 1 : 2;
 				const char *flagtext;
@@ -2291,7 +2229,7 @@ static inline boolean P_PlayerHitsPlayer(mobj_t *target, mobj_t *inflictor, mobj
 	return true;
 }
 
-static void P_KillPlayer(player_t *player, mobj_t *source, INT32 damage)
+static void P_KillPlayer(player_t *player, mobj_t *source)
 {
 	player->pflags &= ~(PF_CARRIED|PF_SLIDING|PF_ITEMHANG|PF_MACESPIN|PF_ROPEHANG|PF_NIGHTSMODE);
 
@@ -2309,8 +2247,6 @@ static void P_KillPlayer(player_t *player, mobj_t *source, INT32 damage)
 
 	// Get rid of emeralds
 	player->powers[pw_emeralds] = 0;
-
-	P_ForceFeed(player, 40, 10, TICRATE, 40 + min(damage, 100)*2);
 
 	P_ResetPlayer(player);
 
@@ -2376,13 +2312,11 @@ void P_RemoveShield(player_t *player)
 		player->powers[pw_shield] = player->powers[pw_shield] & SH_STACK;
 }
 
-static void P_RingDamage(player_t *player, mobj_t *inflictor, mobj_t *source, INT32 damage)
+static void P_RingDamage(player_t *player, mobj_t *inflictor, mobj_t *source)
 {
 	if (!(inflictor && ((inflictor->flags & MF_MISSILE) || inflictor->player) && player->powers[pw_super] && ALL7EMERALDS(player->powers[pw_emeralds])))
 	{
 		P_DoPlayerPain(player, source, inflictor);
-
-		P_ForceFeed(player, 40, 10, TICRATE, 40 + min(damage, 100)*2);
 
 		if (source && (source->type == MT_SPIKE || (source->type == MT_NULL && source->threshold == 43))) // spikes
 			S_StartSound(player->mo, sfx_spkdth);
@@ -2417,10 +2351,7 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 		return false;
 
 	// well no clue but this may happen ig
-	if (!target)
-		return false;
-
-	if (target->health <= 0)
+	if (!target || (target->health <= 0))
 		return false;
 
 	// Spectator handling
@@ -2442,6 +2373,7 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 
 		if (P_MobjWasRemoved(target))
 			return (shouldForce == 1); // mobj was removed
+
 		if (shouldForce == 1)
 			force = true;
 		else if (shouldForce == 2)
@@ -2582,7 +2514,8 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 
 		// Instant-Death
 		if (damage == DMG_INSTAKILL)
-			P_KillPlayer(player, source, damage);
+			P_KillPlayer(player, source);
+
 		else if (player->kartstuff[k_invincibilitytimer] > 0 || player->kartstuff[k_growshrinktimer] > 0 || player->powers[pw_flashing])
 		{
 			if (!force)	// shoulddamage bypasses all of that.
@@ -2600,8 +2533,9 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 				player->kartstuff[k_sneakertimer] = 0;
 				K_SpinPlayer(player, source, 1, inflictor, false);
 				damage = player->mo->health - 1;
-				P_RingDamage(player, inflictor, source, damage);
+				P_RingDamage(player, inflictor, source);
 				P_PlayerRingBurst(player, 5);
+
 				if (P_IsLocalPlayer(player))
 				{
 					P_StartQuake(5, 32<<FRACBITS, 0);
@@ -2611,6 +2545,7 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 			{
 				K_SpinPlayer(player, source, 0, inflictor, false);
 			}
+
 			return true;
 		}
 
@@ -2644,8 +2579,6 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 
 		if (player->health < 0)
 			player->health = 0;
-
-		P_ForceFeed(player, 40, 10, TICRATE, 40 + min(damage, 100)*2);
 	}
 
 	// Killing dead. Just for kicks.
@@ -2679,19 +2612,11 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 	}
 	else
 	{
-		switch (target->type)
-		{
-		case MT_EGGMOBILE2: // egg slimer
-			if (target->health < target->info->damage) // in pinch phase
-			{
-				P_SetMobjState(target, target->info->meleestate); // go to pinch pain state
-				break;
-			}
-			/* FALLTHRU */
-		default:
+		// egg slimer
+		if (target->type == MT_EGGMOBILE2 && (target->health < target->info->damage)) // in pinch phase
+			P_SetMobjState(target, target->info->meleestate); // go to pinch pain state
+		else
 			P_SetMobjState(target, target->info->painstate);
-			break;
-		}
 	}
 
 	if (!P_MobjWasRemoved(target))
@@ -2703,6 +2628,7 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 			// if not intent on another player,
 			// chase after this one
 			P_SetTarget(&target->target, source);
+
 			if (target->state == &states[target->info->spawnstate] && target->info->seestate != S_NULL)
 			{
 				if (player)

@@ -72,8 +72,8 @@ static void P_UpdateSlopeLightOffset(pslope_t *slope)
 		 *	// We reverse it in R_FindPlane now.
 		 *	nX = -nX;
 		 *	nY = -nY;
-	}
-	*/
+		 *	}
+		 */
 
 		light = FixedMul(nX, FINECOSINE(maplighting.angle >> ANGLETOFINESHIFT))
 		+ FixedMul(nY, FINESINE(maplighting.angle >> ANGLETOFINESHIFT));
@@ -233,9 +233,11 @@ void P_RunDynamicSlopes(void)
 				I_Error("P_RunDynamicSlopes: slope has invalid type!");
 		}
 
-		if (slope->zdelta != FixedDiv(zdelta, slope->extent))
+		const fixed_t zeedelta = FixedDiv(zdelta, slope->extent);
+
+		if (slope->zdelta != zeedelta)
 		{
-			slope->zdelta = FixedDiv(zdelta, slope->extent);
+			slope->zdelta = zeedelta;
 			slope->zangle = R_PointToAngle2(0, 0, slope->extent, -zdelta);
 			slope->real_zangle = slope->zangle;
 			P_CalculateSlopeNormal(slope);
@@ -295,18 +297,18 @@ static fixed_t P_GetExtent(sector_t *sector, line_t *line)
 		fixed_t dist;
 
 		// Don't compare to the slope line.
-		if(li == line)
+		if (li == line)
 			continue;
 
 		P_ClosestPointOnLine(li->v1->x, li->v1->y, line, &tempv);
 		dist = R_PointToDist2(tempv.x, tempv.y, li->v1->x, li->v1->y);
-		if(dist > fardist)
+		if (dist > fardist)
 			fardist = dist;
 
 		// Okay, maybe do it for v2 as well?
 		P_ClosestPointOnLine(li->v2->x, li->v2->y, line, &tempv);
 		dist = R_PointToDist2(tempv.x, tempv.y, li->v2->x, li->v2->y);
-		if(dist > fardist)
+		if (dist > fardist)
 			fardist = dist;
 	}
 
@@ -357,11 +359,9 @@ void P_SpawnSlope_Line(int linenum)
 		return;
 	}
 
-	{
-		fixed_t len = R_PointToDist2(0, 0, line->dx, line->dy);
-		nx = FixedDiv(line->dy, len);
-		ny = -FixedDiv(line->dx, len);
-	}
+	fixed_t len = R_PointToDist2(0, 0, line->dx, line->dy);
+	nx = FixedDiv(line->dy, len);
+	ny = -FixedDiv(line->dx, len);
 
 	origin.x = line->v1->x + (line->v2->x - line->v1->x)/2;
 	origin.y = line->v1->y + (line->v2->y - line->v1->y)/2;
@@ -377,7 +377,7 @@ void P_SpawnSlope_Line(int linenum)
 
 		extent = P_GetExtent(line->frontsector, line);
 
-		if(extent < 0)
+		if (extent < 0)
 		{
 			CONS_Printf("P_SpawnSlope_Line failed to get frontsector extent on line number %i\n", linenum);
 			return;
@@ -694,9 +694,9 @@ void P_CopySectorSlope(line_t *line)
 	{
 		sector_t *srcsec = sectors + i;
 
-		if((special - 719) & 1 && !fsec->f_slope && srcsec->f_slope)
+		if ((special - 719) & 1 && !fsec->f_slope && srcsec->f_slope)
 			fsec->f_slope = srcsec->f_slope; //P_CopySlope(srcsec->f_slope);
-		if((special - 719) & 2 && !fsec->c_slope && srcsec->c_slope)
+		if ((special - 719) & 2 && !fsec->c_slope && srcsec->c_slope)
 			fsec->c_slope = srcsec->c_slope; //P_CopySlope(srcsec->c_slope);
 	}
 
@@ -782,25 +782,24 @@ void P_ResetDynamicSlopes(void)
 					if (!(lines[i].flags & ML_NOTAILS))
 						flags |= SL_NODYNAMIC;
 
-					if (which == 704)
+					switch (which)
 					{
-						slopetoset = &lines[i].frontsector->f_slope;
-						which = 0;
-					}
-					else if (which == 705)
-					{
-						slopetoset = &lines[i].frontsector->c_slope;
-						which = 0;
-					}
-					else if (which == 714)
-					{
-						slopetoset = &lines[i].backsector->f_slope;
-						which = 1;
-					}
-					else // 715
-					{
-						slopetoset = &lines[i].backsector->c_slope;
-						which = 1;
+						case 704:
+							slopetoset = &lines[i].frontsector->f_slope;
+							which = 0;
+							break;
+						case 705:
+							slopetoset = &lines[i].frontsector->c_slope;
+							which = 0;
+							break;
+						case 714:
+							slopetoset = &lines[i].backsector->f_slope;
+							which = 1;
+							break;
+						default: // 715
+							slopetoset = &lines[i].backsector->c_slope;
+							which = 1;
+							break;
 					}
 
 					if (lines[i].flags & ML_NOKNUX)
@@ -944,10 +943,12 @@ void P_ButteredSlope(mobj_t *mo)
 
 	if (mo->player)
 	{
-		if (abs(mo->standingslope->zdelta) < FRACUNIT/4 && !(mo->player->pflags & PF_SPINNING))
+		const int zeedelta = abs(mo->standingslope->zdelta);
+
+		if (zeedelta < FRACUNIT/4 && !(mo->player->pflags & PF_SPINNING))
 			return; // Don't slide on non-steep slopes unless spinning
 
-		if (abs(mo->standingslope->zdelta) < FRACUNIT/2 && !(mo->player->rmomx || mo->player->rmomy))
+		if (zeedelta < FRACUNIT/2 && !(mo->player->rmomx || mo->player->rmomy))
 			return; // Allow the player to stand still on slopes below a certain steepness
 	}
 

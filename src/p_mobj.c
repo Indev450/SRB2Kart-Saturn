@@ -1104,7 +1104,6 @@ void P_CheckGravity(mobj_t *mo, boolean affect)
 	}
 }
 
-
 //
 // P_SceneryXYFriction
 //
@@ -1123,13 +1122,13 @@ static void P_SceneryXYFriction(mobj_t *mo, fixed_t oldx, fixed_t oldy)
 	{
 		if ((oldx == mo->x) && (oldy == mo->y)) // didn't go anywhere
 		{
-			mo->momx = FixedMul(mo->momx,ORIG_FRICTION);
-			mo->momy = FixedMul(mo->momy,ORIG_FRICTION);
+			mo->momx = FixedMul(mo->momx, ORIG_FRICTION);
+			mo->momy = FixedMul(mo->momy, ORIG_FRICTION);
 		}
 		else
 		{
-			mo->momx = FixedMul(mo->momx,mo->friction);
-			mo->momy = FixedMul(mo->momy,mo->friction);
+			mo->momx = FixedMul(mo->momx, mo->friction);
+			mo->momy = FixedMul(mo->momy, mo->friction);
 		}
 
 		if (mo->type == MT_CANNONBALLDECOR)
@@ -3299,29 +3298,11 @@ void P_CalcChasePostImg(player_t *player, camera_t *thiscam)
 // Process the mobj-ish required functions of the camera
 boolean P_CameraThinker(player_t *player, camera_t *thiscam, boolean resetcalled)
 {
-	boolean itsatwodlevel = false;
-	UINT8 i;
-
 	// This can happen when joining
 	if (thiscam->subsector == NULL || thiscam->subsector->sector == NULL)
 		return true;
 
 	P_CalcChasePostImg(player, thiscam);
-
-	if (twodlevel)
-		itsatwodlevel = true;
-	else
-	{
-		for (i = 0; i <= splitscreen; i++)
-		{
-			if (thiscam == &camera[i] && players[displayplayers[i]].mo
-				&& (players[displayplayers[i]].mo->flags2 & MF2_TWOD))
-			{
-				itsatwodlevel = true;
-				break;
-			}
-		}
-	}
 
 	if (thiscam->momx || thiscam->momy)
 	{
@@ -3348,9 +3329,6 @@ boolean P_CameraThinker(player_t *player, camera_t *thiscam, boolean resetcalled
 				return true;
 		}
 	}
-
-	if (!itsatwodlevel)
-		P_CheckCameraPosition(thiscam->x, thiscam->y, thiscam);
 
 	thiscam->subsector = R_PointInSubsector(thiscam->x, thiscam->y);
 	thiscam->floorz = tmfloorz;
@@ -3405,9 +3383,8 @@ boolean P_CameraThinker(player_t *player, camera_t *thiscam, boolean resetcalled
 #endif
 	}
 
-	if (itsatwodlevel
-	|| (thiscam->ceilingz - thiscam->z < thiscam->height
-		&& thiscam->ceilingz >= thiscam->z))
+	if (thiscam->ceilingz - thiscam->z < thiscam->height
+		&& thiscam->ceilingz >= thiscam->z)
 	{
 		thiscam->ceilingz = thiscam->z + thiscam->height;
 		thiscam->floorz = thiscam->z;

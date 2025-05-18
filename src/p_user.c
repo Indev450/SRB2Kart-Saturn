@@ -135,9 +135,6 @@ boolean P_AutoPause(void)
 //
 void P_CalcHeight(player_t *player)
 {
-	//INT32 angle;
-	//fixed_t bob;
-	//fixed_t pviewheight;
 	mobj_t *mo = player->mo;
 
 	// Regular movement bobbing.
@@ -256,7 +253,6 @@ void P_GiveEmerald(boolean spawnObj)
 void P_ResetScore(player_t *player)
 {
 	// Formally a host for Chaos mode behavior
-
 	player->scoreadd = 0;
 }
 
@@ -606,15 +602,22 @@ static boolean isPlayerLosing(player_t *player)
 		UINT8 pos = 1;
 		UINT8 maxpos = 1;
 
-		for (int i = 0; i < MAXPLAYERS; ++i) {
-			if (!players[i].ingame || players[i].spectator) continue;
-			if (players[i].marescore > player->marescore) ++pos;
+		for (int i = 0; i < MAXPLAYERS; ++i)
+		{
+			if (!players[i].ingame || players[i].spectator)
+				continue;
+
+			if (players[i].marescore > player->marescore)
+				++pos;
+
 			maxpos = max(getPlayerPos(&players[i]), maxpos);
 		}
 
-		if (maxpos == 1) return false;
+		if (maxpos == 1)
+			return false;
 
-		if (maxpos % 2) ++maxpos;
+		if (maxpos % 2)
+			++maxpos;
 
 		return pos > (maxpos / 2);
 	}
@@ -1182,26 +1185,28 @@ mobj_t *P_SpawnGhostMobj(mobj_t *mobj)
 	else
 		ghost->angle = mobj->angle;
 
-	ghost->pitch = mobj->pitch;
-	ghost->roll = mobj->roll;
-
 	ghost->sprite = mobj->sprite;
 	ghost->frame = mobj->frame;
 	ghost->tics = -1;
 	ghost->frame &= ~FF_TRANSMASK;
 	ghost->frame |= tr_trans50<<FF_TRANSSHIFT;
-	ghost->slopepitch = mobj->slopepitch;
-	ghost->sloperoll = mobj->sloperoll;
 
 	ghost->fuse = ghost->info->damage;
 	ghost->skin = mobj->skin;
 	ghost->localskin = mobj->localskin;
 	ghost->skinlocal = mobj->skinlocal;
+
 	ghost->spritexscale = mobj->spritexscale;
 	ghost->spriteyscale = mobj->spriteyscale;
 	ghost->spritexoffset = mobj->spritexoffset;
 	ghost->spriteyoffset = mobj->spriteyoffset;
+
+	ghost->pitch = mobj->pitch;
+	ghost->roll = mobj->roll;
+	ghost->sloperoll = mobj->sloperoll;
 	ghost->rollangle = mobj->rollangle;
+	ghost->sloperoll = mobj->sloperoll;
+	ghost->slopepitch = mobj->slopepitch;
 
 	if (mobj->flags2 & MF2_OBJECTFLIP)
 		ghost->flags |= MF2_OBJECTFLIP;
@@ -1698,7 +1703,6 @@ static void P_CheckInvincibilityTimer(player_t *player)
 	}
 }
 
-
 //
 // P_DoBubbleBreath
 //
@@ -1868,11 +1872,8 @@ static void P_3dMovement(player_t *player)
 {
 	ticcmd_t *cmd;
 	angle_t movepushangle, movepushsideangle; // Analog
-	//INT32 topspeed, acceleration, thrustfactor;
 	fixed_t movepushforward = 0, movepushside = 0;
 	angle_t dangle; // replaces old quadrants bits
-	//boolean dangleflip = false; // SRB2kart - toaster
-	//fixed_t normalspd = FixedMul(player->normalspeed, player->mo->scale);
 	boolean analogmove = false;
 	fixed_t oldMagnitude, newMagnitude;
 	vector3_t totalthrust;
@@ -1910,20 +1911,18 @@ static void P_3dMovement(player_t *player)
 		else
 			movepushangle = player->mo->angle;
 	}
+
 	movepushsideangle = movepushangle-ANGLE_90;
 
 	// cmomx/cmomy stands for the conveyor belt speed.
 	if (player->onconveyor == 2) // Wind/Current
 	{
-		//if (player->mo->z > player->mo->watertop || player->mo->z + player->mo->height < player->mo->waterbottom)
 		if (!(player->mo->eflags & (MFE_UNDERWATER|MFE_TOUCHWATER)))
 			player->cmomx = player->cmomy = 0;
 	}
 	else if (player->onconveyor == 4 && !P_IsObjectOnGround(player->mo)) // Actual conveyor belt
 		player->cmomx = player->cmomy = 0;
-	else if (player->onconveyor != 2 && player->onconveyor != 4
-				&& player->onconveyor != 1
-	)
+	else if (player->onconveyor != 2 && player->onconveyor != 4 && player->onconveyor != 1)
 		player->cmomx = player->cmomy = 0;
 
 	player->rmomx = player->mo->momx - player->cmomx;
@@ -1939,28 +1938,7 @@ static void P_3dMovement(player_t *player)
 	if (dangle > ANGLE_180) //flip to keep to one side
 	{
 		dangle = InvAngle(dangle);
-		//dangleflip = true;
 	}
-
-	// anything else will leave both at 0, so no need to do anything else
-
-	//{ SRB2kart 220217 - Toaster Code for misplaced thrust
-	/*
-	if (!player->kartstuff[k_drift]) // Not Drifting
-	{
-		angle_t difference = dangle/2;
-		boolean reverse = (dangle >= ANGLE_90);
-
-		if (dangleflip)
-			difference = InvAngle(difference);
-
-		if (reverse)
-			difference += ANGLE_180;
-
-		P_InstaThrust(player->mo, player->mo->angle + difference, player->speed);
-	}
-	*/
-	//}
 
 	// When sliding, don't allow forward/back
 	if (player->pflags & PF_SLIDING)
@@ -1975,15 +1953,11 @@ static void P_3dMovement(player_t *player)
 	// Forward movement
 	if (!((player->exiting || mapreset) || (P_PlayerInPain(player) && !onground)))
 	{
-		//movepushforward = cmd->forwardmove * (thrustfactor * acceleration);
 		movepushforward = K_3dKartMovement(player, onground, cmd->forwardmove);
 
 		// allow very small movement while in air for gameplay
 		if (!onground)
 			movepushforward >>= 2; // proper air movement
-
-		// don't need to account for scale here with kart accel code
-		//movepushforward = FixedMul(movepushforward, player->mo->scale);
 
 		if (player->mo->movefactor != FRACUNIT) // Friction-scaled acceleration...
 			movepushforward = FixedMul(movepushforward, player->mo->movefactor);
@@ -2051,9 +2025,11 @@ static void P_3dMovement(player_t *player)
 	// If "no" to 1, we're not reaching any limits yet, so ignore this entirely!
 	// -Shadow Hog
 	newMagnitude = R_PointToDist2(player->mo->momx - player->cmomx, player->mo->momy - player->cmomy, 0, 0);
+
 	if (newMagnitude > K_GetKartSpeed(player, true)) //topspeed)
 	{
 		fixed_t tempmomx, tempmomy;
+
 		if (oldMagnitude > K_GetKartSpeed(player, true) && onground) // SRB2Kart: onground check for air speed cap
 		{
 			if (newMagnitude > oldMagnitude)
@@ -2252,8 +2228,6 @@ static void P_MovePlayer(player_t *player)
 		{
 			player->pflags |= PF_FULLSTASIS;
 			// If you're in stasis in tag, you don't drown.
-			/*if (player->powers[pw_underwater] <= 12*TICRATE + 1)
-				P_RestoreMusic(player);*/
 			player->powers[pw_underwater] = player->powers[pw_spacetime] = 0;
 		}
 	}
@@ -2535,8 +2509,6 @@ static void P_DoZoomTube(player_t *player)
 	fixed_t dist;
 	boolean reverse;
 
-	//player->mo->height = P_GetPlayerSpinHeight(player);
-
 	if (player->speed > 0)
 		reverse = false;
 	else
@@ -2642,11 +2614,6 @@ static void P_DoZoomTube(player_t *player)
 		else if (player == &players[displayplayers[3]])
 			localangle[3] = player->mo->angle;
 	}
-#if 0
-	if (player->mo->state != &states[S_KART_SPIN])
-		P_SetPlayerMobjState(player->mo, S_KART_SPIN);
-	player->frameangle -= ANGLE_22h;
-#endif
 }
 
 //
@@ -2757,6 +2724,7 @@ boolean P_LookForEnemies(player_t *player)
 			continue; // not a mobj thinker
 
 		mo = (mobj_t *)think;
+
 		if (!(mo->flags & (MF_ENEMY|MF_BOSS|MF_MONITOR|MF_SPRING)))
 			continue; // not a valid enemy
 
@@ -2822,14 +2790,12 @@ void P_HomingAttack(mobj_t *source, mobj_t *enemy) // Home in on your target
 	fixed_t dist;
 	fixed_t ns = 0;
 
-	if (!enemy)
-		return;
-
-	if (!(enemy->health))
+	if (!enemy || !enemy->health)
 		return;
 
 	// change angle
 	source->angle = R_PointToAngle2(source->x, source->y, enemy->x, enemy->y);
+
 	if (source->player)
 	{
 		if (source->player == &players[consoleplayer])
@@ -2882,6 +2848,7 @@ void P_FindEmerald(void)
 			continue;
 
 		mo2 = (mobj_t *)th;
+
 		if (mo2->type == MT_EMERHUNT)
 		{
 			if (!hunt1)
@@ -2902,9 +2869,6 @@ void P_FindEmerald(void)
 //
 static void P_DeathThink(player_t *player)
 {
-	//ticcmd_t *cmd = &player->cmd;
-	//player->deltaviewheight = 0;
-
 	if (player->deadtimer < INT32_MAX)
 		player->deadtimer++;
 
@@ -4079,7 +4043,7 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 	if (player->playerstate != PST_DEAD && !((player->pflags & PF_NIGHTSMODE) && player->exiting))
 		angle += (focusaiming < ANGLE_180 ? focusaiming/2 : InvAngle(InvAngle(focusaiming)/2)); // overcomplicated version of '((signed)focusaiming)/2;'
 
-	if (twodlevel || (mo->flags2 & MF2_TWOD) || (!camstill && !timeover)) // Keep the view still...
+	if (!camstill && !timeover) // Keep the view still...
 	{
 		G_ClipAimingPitch((INT32 *)&angle);
 
@@ -5082,19 +5046,12 @@ void P_PlayerThink(player_t *player)
 		else
 			player->mo->flags2 &= ~MF2_DONTDRAW;
 	}
-	/*else if (player->mo->tracer)
-	{
-		if (player->powers[pw_flashing] & 1)
-			player->mo->tracer->flags2 |= MF2_DONTDRAW;
-		else
-			player->mo->tracer->flags2 &= ~MF2_DONTDRAW;
-	}*/
 
 	player->pflags &= ~PF_SLIDING;
 
 	K_KartPlayerThink(player, cmd); // SRB2kart
 
-	if (rendermode != render_none && cv_tilting.value)
+	if (cv_tilting.value && rendermode != render_none)
 		DoABarrelRoll(player);
 
 	LUA_HookPlayer(player, HOOK(PlayerThink));
@@ -5108,7 +5065,6 @@ void P_PlayerThink(player_t *player)
 void P_PlayerAfterThink(player_t *player)
 {
 	ticcmd_t *cmd;
-	//INT32 oldweapon = player->currentweapon; // SRB2kart - unused
 	camera_t *thiscam = NULL; // if not one of the displayed players, just don't bother
 	UINT8 i;
 
@@ -5170,11 +5126,10 @@ void P_PlayerAfterThink(player_t *player)
 		else if (cmd->forwardmove < 0 && player->mo->tracer->target->lastlook > player->mo->tracer->target->movecount)
 			player->mo->tracer->target->lastlook -= 2;
 
-		if (!(player->mo->tracer->target->flags & MF_SLIDEME) // Noclimb on chain parameters gives this
-		&& !(twodlevel || player->mo->flags2 & MF2_TWOD)) // why on earth would you want to turn them in 2D mode?
+		if (!(player->mo->tracer->target->flags & MF_SLIDEME)) // Noclimb on chain parameters gives this
 		{
 			player->mo->tracer->target->health += cmd->sidemove;
-			player->mo->angle += cmd->sidemove<<ANGLETOFINESHIFT; // 2048 --> ANGLE_MAX
+			player->mo->angle += cmd->sidemove << ANGLETOFINESHIFT; // 2048 --> ANGLE_MAX
 
 			if (player == &players[consoleplayer])
 				localangle[0] = player->mo->angle; // Adjust the local control angle.
@@ -5199,6 +5154,7 @@ void P_PlayerAfterThink(player_t *player)
 			// defaults to make sure 1st person cam doesn't do anything weird on startup
 			//player->deltaviewheight = 0;
 			player->viewheight = FixedMul(32 << FRACBITS, player->mo->scale);
+
 			if (player->mo->eflags & MFE_VERTICALFLIP)
 				player->viewz = player->mo->z + player->mo->height - player->viewheight;
 			else

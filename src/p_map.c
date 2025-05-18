@@ -333,11 +333,11 @@ static boolean PIT_CheckThing(mobj_t *thing)
 		return true;
 
 #ifdef SEENAMES
-  // Do name checks all the way up here
-  // So that NOTHING ELSE can see MT_NAMECHECK because it is client-side.
+	// Do name checks all the way up here
+	// So that NOTHING ELSE can see MT_NAMECHECK because it is client-side.
 	if (tmthing->type == MT_NAMECHECK)
 	{
-	  // Ignore things that aren't players, ignore spectators, ignore yourself.
+	    // Ignore things that aren't players, ignore spectators, ignore yourself.
 		// (also don't bother to check that tmthing->target->player is non-NULL because we're not actually using it here.)
 		if (!thing->player || thing->player->spectator || (tmthing->target && thing->player == tmthing->target->player))
 			return true;
@@ -505,17 +505,15 @@ static boolean PIT_CheckThing(mobj_t *thing)
 	// check for skulls slamming into things
 	if (tmthing->flags2 & MF2_SKULLFLY)
 	{
-		{
-			// see if it went over / under
-			if (tmthing->z > thing->z + thing->height)
-				return true; // overhead
-			if (tmthing->z + tmthing->height < thing->z)
-				return true; // underneath
+		// see if it went over / under
+		if (tmthing->z > thing->z + thing->height)
+			return true; // overhead
+		if (tmthing->z + tmthing->height < thing->z)
+			return true; // underneath
 
-			tmthing->flags2 &= ~MF2_SKULLFLY;
-			tmthing->momx = tmthing->momy = tmthing->momz = 0;
-			return false; // stop moving
-		}
+		tmthing->flags2 &= ~MF2_SKULLFLY;
+		tmthing->momx = tmthing->momy = tmthing->momz = 0;
+		return false; // stop moving
 	}
 
 	// SRB2kart 011617 - Colission[sic] code for kart items //{
@@ -542,10 +540,6 @@ static boolean PIT_CheckThing(mobj_t *thing)
 
 		if (thing->health)
 			P_KillMobj(thing, tmthing, tmthing);
-
-		/*if (tmthing->player && (tmthing->player->kartstuff[k_invincibilitytimer] > 0
-			|| tmthing->player->kartstuff[k_growshrinktimer] > 0))
-			return true;*/
 
 		K_KartBouncing(tmthing, thing, false, true);
 		return false;
@@ -729,7 +723,7 @@ static boolean PIT_CheckThing(mobj_t *thing)
 		if (tmthing->z + tmthing->height < thing->z)
 			return true; // underneath
 
-		if (!(thing->type == MT_PLAYER))
+		if (thing->type != MT_PLAYER)
 			return true;
 
 		if (thing->player && thing->player->powers[pw_flashing])
@@ -1749,7 +1743,7 @@ boolean P_CheckPosition(mobj_t *thing, fixed_t x, fixed_t y)
 			if (!(rover->flags & FF_EXISTS))
 				continue;
 
-			topheight = P_GetFOFTopZ(thing, newsubsec->sector, rover, x, y, NULL);
+			topheight    = P_GetFOFTopZ(thing, newsubsec->sector, rover, x, y, NULL);
 			bottomheight = P_GetFOFBottomZ(thing, newsubsec->sector, rover, x, y, NULL);
 
 			if ((rover->flags & (FF_SWIMMABLE|FF_GOOWATER)) == (FF_SWIMMABLE|FF_GOOWATER) && !(thing->flags & MF_NOGRAVITY))
@@ -1771,14 +1765,16 @@ boolean P_CheckPosition(mobj_t *thing, fixed_t x, fixed_t y)
 					// Land on the top or the bottom, depending on gravity flip.
 					if (!(thing->eflags & MFE_VERTICALFLIP) && thing->z >= topheight - sinklevel && thing->momz <= 0)
 					{
-						if (tmfloorz < topheight - sinklevel) {
+						if (tmfloorz < topheight - sinklevel)
+						{
 							tmfloorz = topheight - sinklevel;
 							tmfloorslope = *rover->t_slope;
 						}
 					}
 					else if (thing->eflags & MFE_VERTICALFLIP && thingtop <= bottomheight + sinklevel && thing->momz >= 0)
 					{
-						if (tmceilingz > bottomheight + sinklevel) {
+						if (tmceilingz > bottomheight + sinklevel)
+						{
 							tmceilingz = bottomheight + sinklevel;
 							tmceilingslope = *rover->b_slope;
 						}
@@ -1800,7 +1796,8 @@ boolean P_CheckPosition(mobj_t *thing, fixed_t x, fixed_t y)
 			{
 				if (thing->z < topheight && bottomheight < thingtop)
 				{
-					if (tmfloorz < thing->z) {
+					if (tmfloorz < thing->z)
+					{
 						tmfloorz = thing->z;
 						tmfloorslope = NULL;
 					}
@@ -1820,6 +1817,7 @@ boolean P_CheckPosition(mobj_t *thing, fixed_t x, fixed_t y)
 				tmfloorz = tmdropoffz = topheight;
 				tmfloorslope = *rover->t_slope;
 			}
+
 			if (bottomheight < tmceilingz && abs(delta1) >= abs(delta2)
 				&& !(rover->flags & FF_PLATFORM)
 				&& !(thing->type == MT_SKIM && (rover->flags & FF_SWIMMABLE)))
@@ -2175,7 +2173,6 @@ boolean P_TryCameraMove(fixed_t x, fixed_t y, camera_t *thiscam)
 	subsector_t *s;
 
 	boolean retval = true;
-	boolean itsatwodlevel = false;
 	UINT8 i;
 
 	floatok = false;
@@ -2188,22 +2185,7 @@ boolean P_TryCameraMove(fixed_t x, fixed_t y, camera_t *thiscam)
 	else
 		s = thiscam->subsector;
 
-	if (twodlevel)
-		itsatwodlevel = true;
-	else
-	{
-		for (i = 0; i <= splitscreen; i++)
-		{
-			if (thiscam == &camera[i] && players[displayplayers[i]].mo
-				&& (players[displayplayers[i]].mo->flags2 & MF2_TWOD))
-			{
-				itsatwodlevel = true;
-				break;
-			}
-		}
-	}
-
-	if (!itsatwodlevel && players[displayplayers[0]].mo)
+	if (players[displayplayers[0]].mo)
 	{
 		fixed_t tryx = thiscam->x;
 		fixed_t tryy = thiscam->y;
@@ -2270,7 +2252,7 @@ boolean P_TryCameraMove(fixed_t x, fixed_t y, camera_t *thiscam)
 	}
 	else
 	{
-		tmfloorz = P_CameraGetFloorZ(thiscam, thiscam->subsector->sector, x, y, NULL);
+		tmfloorz   = P_CameraGetFloorZ(thiscam, thiscam->subsector->sector, x, y, NULL);
 		tmceilingz = P_CameraGetCeilingZ(thiscam, thiscam->subsector->sector, x, y, NULL);
 	}
 
