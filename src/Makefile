@@ -68,7 +68,6 @@ ALL_SYSTEMS=\
 	LINUX64\
 	MINGW64\
 	HAIKU\
-	DUMMY\
 	MINGW\
 	UNIX\
 	LINUX\
@@ -157,17 +156,6 @@ SDL=1
 endif
 
 include Makefile.cfg
-
-ifdef DUMMY
-NOPNG=1
-NOZLIB=1
-NONET=1
-NOHW=1
-NOIPX=1
-EXENAME?=srb2dummy
-OBJS=$(OBJDIR)/i_video.o
-LIBS=-lm
-endif
 
 ifdef HAIKU
 NOIPX=1
@@ -610,10 +598,6 @@ ifdef SDL
 all:	 pre-build $(BIN)/$(EXENAME)
 endif
 
-ifdef DUMMY
-all:	$(BIN)/$(EXENAME)
-endif
-
 cleandep:
 	$(REMOVE) $(OBJDIR)/depend.dep
 	$(REMOVE) comptime.h
@@ -734,9 +718,7 @@ endif
 
 #dependecy made by gcc itself !
 $(OBJS):
-ifndef DUMMY
 -include $(OBJDIR)/depend.dep
-endif
 
 $(OBJDIR)/depend.dep:
 	@echo "Creating dependency file, depend.dep"
