@@ -433,25 +433,11 @@ extern struct minimapinfo
 //
 // P_INTER
 //
-typedef struct BasicFF_s
-{
-	INT32 ForceX; ///< The X of the Force's Vel
-	INT32 ForceY; ///< The Y of the Force's Vel
-	const player_t *player; ///< Player of Rumble
-	//All
-	UINT32 Duration; ///< The total duration of the effect, in microseconds
-	INT32 Gain; ///< /The gain to be applied to the effect, in the range from 0 through 10,000.
-	//All, CONSTANTFORCE �10,000 to 10,000
-	INT32 Magnitude; ///< Magnitude of the effect, in the range from 0 through 10,000.
-} BasicFF_t;
 
 // replace damage magic numbers with smth readable
 #define DMG_INSTAKILL 10000
 #define DMG_SPECTATOR 42000
 
-void P_ForceFeed(const player_t *player, INT32 attack, INT32 fade, tic_t duration, INT32 period);
-void P_ForceConstant(const BasicFF_t *FFInfo);
-void P_RampConstant(const BasicFF_t *FFInfo, INT32 Start, INT32 End);
 void P_RemoveShield(player_t *player);
 boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 damage);
 void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source);
