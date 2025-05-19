@@ -1984,7 +1984,7 @@ static boolean CV_FilterJoyAxisVars(consvar_t *v, const char *valstr)
 	return true;
 }
 
-// Block the Xbox DInput default axes and reset to the current defaults 
+// Block the Xbox DInput default axes and reset to the current defaults
 static boolean CV_FilterJoyAxisVars2(consvar_t *v, const char *valstr)
 {
 	if (!stricmp(v->name, "joyaxis_turn") && !stricmp(valstr, "X-Axis"))
@@ -2041,15 +2041,6 @@ static boolean CV_FilterVarByVersion(consvar_t *v, const char *valstr)
 
 	if (GETMAJOREXECVERSION(cv_execversion.value) < 2) // 2 = 1.0.2
 	{
-#if 0
-		// We don't have changed saved cvars yet
-		if (!stricmp(v->name, "alwaysmlook")
-			|| !stricmp(v->name, "alwaysmlook2")
-			|| !stricmp(v->name, "mousemove")
-			|| !stricmp(v->name, "mousemove2"))
-			return false;
-#endif
-
 		// axis defaults were changed to be friendly to 360 controllers
 		// if ALL axis settings are defaults, then change them to new values
 		if (!CV_FilterJoyAxisVars(v, valstr))

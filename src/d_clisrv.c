@@ -3302,36 +3302,6 @@ void CL_RemovePlayer(INT32 playernum, INT32 reason)
 	if (gametype == GT_CTF)
 		P_PlayerFlagBurst(&players[playernum], false); // Don't take the flag with you!
 
-	// If in a special stage, redistribute the player's rings across
-	// the remaining players.
-	if (G_IsSpecialStage(gamemap))
-	{
-		INT32 i, count, increment, rings;
-
-		for (i = 0, count = 0; i < MAXPLAYERS; i++)
-		{
-			if (playeringame[i])
-				count++;
-		}
-
-		count--;
-		rings = players[playernum].health - 1;
-		increment = rings/count;
-
-		for (i = 0; i < MAXPLAYERS; i++)
-		{
-			if (playeringame[i] && i != playernum)
-			{
-				if (rings < increment)
-					P_GivePlayerRings(&players[i], rings);
-				else
-					P_GivePlayerRings(&players[i], increment);
-
-				rings -= increment;
-			}
-		}
-	}
-
 	LUA_HookPlayerQuit(&players[playernum], reason); // Lua hook for player quitting
 
 	if (playernum == displayplayers[0] && !demo.playback)

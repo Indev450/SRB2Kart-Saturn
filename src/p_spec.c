@@ -3610,8 +3610,6 @@ DoneSection2:
 		case 2: // Special stage GOAL sector / Exit Sector / CTF Flag Return
 			if (player->bot)
 				break;
-			if (!useNightsSS && G_IsSpecialStage(gamemap) && sstimer > 6)
-				sstimer = 6; // Just let P_Ticker take care of the rest.
 
 			// Exit (for FOF exits; others are handled in P_PlayerThink in p_user.c)
 			{
@@ -4520,14 +4518,6 @@ static void P_RunSpecialSectorCheck(player_t *player, sector_t *sector)
 	switch(GETSECSPECIAL(sector->special, 4))
 	{
 		case 2: // Level Exit / GOAL Sector / Flag Return
-			if (!useNightsSS && G_IsSpecialStage(gamemap))
-			{
-				// Special stage GOAL sector
-				// requires touching floor.
-				break;
-			}
-			/* FALLTHRU */
-
 		case 1: // Starpost activator
 		case 5: // Fan sector
 		case 6: // Super Sonic Transform

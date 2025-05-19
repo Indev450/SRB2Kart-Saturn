@@ -474,7 +474,6 @@ boolean P_Teleport(mobj_t *thing, fixed_t x, fixed_t y, fixed_t z, angle_t angle
 boolean P_SetMobjStateNF(mobj_t *mobj, statenum_t state);
 boolean P_CheckMissileSpawn(mobj_t *th);
 void P_Thrust(mobj_t *mo, angle_t angle, fixed_t move);
-void P_DoSuperTransformation(player_t *player, boolean giverings);
 void P_ExplodeMissile(mobj_t *mo);
 void P_CheckGravity(mobj_t *mo, boolean affect);
 

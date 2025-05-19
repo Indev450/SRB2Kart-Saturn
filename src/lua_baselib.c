@@ -1395,12 +1395,7 @@ static int lib_pSetMobjStateNF(lua_State *L)
 
 static int lib_pDoSuperTransformation(lua_State *L)
 {
-	player_t *player = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
-	boolean giverings = lua_optboolean(L, 2);
 	NOHUD
-	if (!player)
-		return LUA_ErrInvalid(L, "player_t");
-	P_DoSuperTransformation(player, giverings);
 	return 0;
 }
 
@@ -2452,16 +2447,15 @@ static int lib_gExitLevel(lua_State *L)
 
 static int lib_gIsSpecialStage(lua_State *L)
 {
-	INT32 mapnum = luaL_optinteger(L, 1, gamemap);
 	//HUDSAFE
-	lua_pushboolean(L, G_IsSpecialStage(mapnum));
+	lua_pushboolean(L, false);
 	return 1;
 }
 
 static int lib_gGametypeUsesLives(lua_State *L)
 {
 	//HUDSAFE
-	lua_pushboolean(L, G_GametypeUsesLives());
+	lua_pushboolean(L, false);
 	return 1;
 }
 
