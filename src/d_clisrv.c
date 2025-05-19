@@ -239,6 +239,18 @@ static boolean UseLocalDelay(void)
 	return (cv_mindelay.value || (server && !server_lagless));
 }
 
+#ifdef SATURNPAK
+static inline boolean UseSaturnSynch(INT32 node)
+{
+	return (is_client_saturn[node] && cv_gamestateattempts.value);
+}
+
+static inline boolean UseVanillaSynch(INT32 node)
+{
+	return (!UseSaturnSynch(node) && cv_resynchattempts.value);
+}
+#endif
+
 static inline void *G_DcpyTiccmd(void* dest, const ticcmd_t* src, const size_t n)
 {
 	const size_t d = n / sizeof(ticcmd_t);
@@ -5436,25 +5448,26 @@ static void HandlePacketFromPlayer(SINT8 node)
 			if (gamestate == GS_LEVEL
 				&& (realstart > gametic - BACKUPTICS+1 && realstart <= gametic)
 				&& consistancy[realstart%BACKUPTICS] != SHORT(netbuffer->u.clientpak.consistancy)
-				&& (!is_client_saturn[node] || (!resendingsavegame[node] && savegameresendcooldown[node] <= I_GetTime() && !SV_ResendingSavegameToAnyone())))
+				&& (!UseSaturnSynch(node) || (!resendingsavegame[node] && savegameresendcooldown[node] <= I_GetTime() && !SV_ResendingSavegameToAnyone())))
 			{
+				resendingsavegame[node] = false; // reset this before just in case
+
 				// Check if a client is saturn before sending ANYTHING!
 				// this way we only send stuff to clients we know can use the gamestate resend
 				// and dont have to wait for a response from clients that never would send a response back
-				if (is_client_saturn[node])
+				if (UseSaturnSynch(node))
 				{
 					// Tell the client we are about to resend them the gamestate
 					netbuffer->packettype = PT_WILLRESENDGAMESTATE;
 					HSendPacket(node, true, 0, 0);
 					resendingsavegame[node] = true;
 				}
-				else
+				else if (UseVanillaSynch(node))
 				{
 					SV_RequireResynch(node);
-					resendingsavegame[node] = false;
 				}
 
-				if ((!is_client_saturn[node] && (cv_resynchattempts.value && resynch_score[node] <= (unsigned)cv_resynchattempts.value*250)) || (is_client_saturn[node] && (gamestate_resend_counter[node] < cv_gamestateattempts.value)))
+				if ((UseVanillaSynch(node) && (resynch_score[node] <= (unsigned)cv_resynchattempts.value*250)) || (UseSaturnSynch(node) && (gamestate_resend_counter[node] < cv_gamestateattempts.value)))
 				{
 					if (is_client_saturn[node] && resendingsavegame[node])
 					{
