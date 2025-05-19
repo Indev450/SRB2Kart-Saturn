@@ -1395,7 +1395,10 @@ static int lib_pSetMobjStateNF(lua_State *L)
 
 static int lib_pDoSuperTransformation(lua_State *L)
 {
+	player_t *player = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
 	NOHUD
+	if (!player)
+		return LUA_ErrInvalid(L, "player_t");
 	return 0;
 }
 
