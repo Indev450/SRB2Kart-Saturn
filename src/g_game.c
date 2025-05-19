@@ -4862,6 +4862,13 @@ void G_WriteAllGhostTics(void)
 		if (multiplayer && ((counter % cv_netdemosyncquality.value) != 0)) // Only write 1 in this many ghost datas per tic to cut down on multiplayer replay size.
 			continue;
 
+		if (((ghostext[i].flags && (ghostext[i].flags & EZT_HIT)) || ghostext[i].hits)
+			&& !ghostext[i].hitlist) // hitlist might be freed during resynch, beware PU_LEVEL!
+		{
+			ghostext[i].hits = 0;
+			continue;
+		}
+
 		CHECKSPACE(1);
 
 		WRITEUINT8(demobuf.p, i);
@@ -4928,9 +4935,9 @@ void G_WriteGhostTic(mobj_t *ghost, INT32 playernum)
 		ziptic |= GZT_XYZ;
 
 		CHECKSPACE(sizeof(fixed_t)*3);
-		WRITEFIXED(demobuf.p,oldghost[playernum].x);
-		WRITEFIXED(demobuf.p,oldghost[playernum].y);
-		WRITEFIXED(demobuf.p,oldghost[playernum].z);
+		WRITEFIXED(demobuf.p, oldghost[playernum].x);
+		WRITEFIXED(demobuf.p, oldghost[playernum].y);
+		WRITEFIXED(demobuf.p, oldghost[playernum].z);
 	}
 	else
 	{
@@ -4948,8 +4955,8 @@ void G_WriteGhostTic(mobj_t *ghost, INT32 playernum)
 
 			CHECKSPACE(4);
 
-			WRITEINT16(demobuf.p,momx);
-			WRITEINT16(demobuf.p,momy);
+			WRITEINT16(demobuf.p, momx);
+			WRITEINT16(demobuf.p, momy);
 		}
 
 		momx = (INT16)((ghost->z-oldghost[playernum].z + (1<<4))>>8);
@@ -4961,7 +4968,7 @@ void G_WriteGhostTic(mobj_t *ghost, INT32 playernum)
 
 			CHECKSPACE(2);
 
-			WRITEINT16(demobuf.p,momx);
+			WRITEINT16(demobuf.p, momx);
 		}
 
 		// This SHOULD set oldghost.x/y/z to match ghost->x/y/z
@@ -4984,7 +4991,7 @@ void G_WriteGhostTic(mobj_t *ghost, INT32 playernum)
 
 		CHECKSPACE(1);
 
-		WRITEUINT8(demobuf.p,oldghost[playernum].angle);
+		WRITEUINT8(demobuf.p, oldghost[playernum].angle);
 	}
 
 	// Store the sprite frame.
@@ -4996,7 +5003,7 @@ void G_WriteGhostTic(mobj_t *ghost, INT32 playernum)
 
 		CHECKSPACE(1);
 
-		WRITEUINT8(demobuf.p,oldghost[playernum].frame);
+		WRITEUINT8(demobuf.p, oldghost[playernum].frame);
 	}
 
 	// Check for sprite set changes
@@ -5032,26 +5039,26 @@ void G_WriteGhostTic(mobj_t *ghost, INT32 playernum)
 	if (ghostext[playernum].flags)
 	{
 		ziptic |= GZT_EXTRA;
-		WRITEUINT8(demobuf.p,ghostext[playernum].flags);
+		WRITEUINT8(demobuf.p, ghostext[playernum].flags);
 
 		if (ghostext[playernum].flags & EZT_COLOR)
 		{
 			CHECKSPACE(1);
-			WRITEUINT8(demobuf.p,ghostext[playernum].color);
+			WRITEUINT8(demobuf.p, ghostext[playernum].color);
 			ghostext[playernum].lastcolor = ghostext[playernum].color;
 		}
 
 		if (ghostext[playernum].flags & EZT_SCALE)
 		{
 			CHECKSPACE(sizeof(fixed_t));
-			WRITEFIXED(demobuf.p,ghostext[playernum].scale);
+			WRITEFIXED(demobuf.p, ghostext[playernum].scale);
 			ghostext[playernum].lastscale = ghostext[playernum].scale;
 		}
 
 		if (ghostext[playernum].flags & EZT_HIT)
 		{
 			CHECKSPACE(2);
-			WRITEUINT16(demobuf.p,ghostext[playernum].hits);
+			WRITEUINT16(demobuf.p, ghostext[playernum].hits);
 
 			for (i = 0; i < ghostext[playernum].hits; i++)
 			{
@@ -5059,13 +5066,13 @@ void G_WriteGhostTic(mobj_t *ghost, INT32 playernum)
 
 				CHECKSPACE(4+4+2+sizeof(fixed_t)*3+sizeof(angle_t));
 
-				WRITEUINT32(demobuf.p,UINT32_MAX); // reserved for some method of determining exactly which mobj this is. (mobjnum doesn't work here.)
-				WRITEUINT32(demobuf.p,mo->type);
-				WRITEUINT16(demobuf.p,(UINT16)mo->health);
-				WRITEFIXED(demobuf.p,mo->x);
-				WRITEFIXED(demobuf.p,mo->y);
-				WRITEFIXED(demobuf.p,mo->z);
-				WRITEANGLE(demobuf.p,mo->angle);
+				WRITEUINT32(demobuf.p, UINT32_MAX); // reserved for some method of determining exactly which mobj this is. (mobjnum doesn't work here.)
+				WRITEUINT32(demobuf.p, mo->type);
+				WRITEUINT16(demobuf.p, (UINT16)mo->health);
+				WRITEFIXED(demobuf.p, mo->x);
+				WRITEFIXED(demobuf.p, mo->y);
+				WRITEFIXED(demobuf.p, mo->z);
+				WRITEANGLE(demobuf.p, mo->angle);
 				P_SetTarget(ghostext[playernum].hitlist+i, NULL);
 			}
 
@@ -5075,7 +5082,7 @@ void G_WriteGhostTic(mobj_t *ghost, INT32 playernum)
 		if (ghostext[playernum].flags & EZT_SPRITE)
 		{
 			CHECKSPACE(1);
-			WRITEUINT8(demobuf.p,sprite);
+			WRITEUINT8(demobuf.p, sprite);
 		}
 
 		if (ghostext[playernum].flags & EZT_KART)
