@@ -106,26 +106,14 @@ void P_DoNightsScore(player_t *player)
 		return; // Don't do any fancy shit for failures.
 
 	dummymo = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z+player->mo->height/2, MT_NIGHTSCORE);
+
 	if (player->bot)
 		player = &players[consoleplayer];
 
-	if (G_IsSpecialStage(gamemap)) // Global link count? Maybe not a good idea...
-	{
-		INT32 i;
-		for (i = 0; i < MAXPLAYERS; i++)
-			if (players[i].ingame)
-			{
-				if (++players[i].linkcount > players[i].maxlink)
-					players[i].maxlink = players[i].linkcount;
-				players[i].linktimer = 2*TICRATE;
-			}
-	}
-	else // Individual link counts
-	{
-		if (++player->linkcount > player->maxlink)
-			player->maxlink = player->linkcount;
-		player->linktimer = 2*TICRATE;
-	}
+	// Individual link counts
+	if (++player->linkcount > player->maxlink)
+		player->maxlink = player->linkcount;
+	player->linktimer = 2*TICRATE;
 
 	if (player->linkcount < 10)
 	{
@@ -155,12 +143,10 @@ void P_DoNightsScore(player_t *player)
 	}
 
 	// Hoops are the only things that should add to your drill meter
-	//player->drillmeter += TICRATE;
 	dummymo->momz = FRACUNIT;
 	dummymo->fuse = 3*TICRATE;
 
 	// What?! NO, don't use the camera! Scale up instead!
-	//P_InstaThrust(dummymo, R_PointToAngle2(dummymo->x, dummymo->y, camera[0].x, camera[0].y), 3*FRACUNIT);
 	dummymo->scalespeed = FRACUNIT/25;
 	dummymo->destscale = 2*FRACUNIT;
 }
@@ -461,8 +447,7 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 
 				special->target->player->kartstuff[k_comebacktimer] = comebacktime;
 
-				K_DropItems(player); //K_StripItems(player);
-				//K_StripOther(player);
+				K_DropItems(player);
 
 				player->kartstuff[k_itemroulette] = 1;
 				player->kartstuff[k_roulettetype] = 2;
@@ -494,7 +479,6 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 
 				if (player->kartstuff[k_invincibilitytimer] > 0 || player->kartstuff[k_growshrinktimer] > 0 || player->kartstuff[k_hyudorotimer] > 0)
 				{
-					//player->powers[pw_flashing] = 0;
 					K_DropHnextList(player);
 					K_StripItems(player);
 				}
@@ -902,14 +886,7 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 			}
 			return;
 		case MT_NIGHTSWING:
-			if (G_IsSpecialStage(gamemap) && useNightsSS)
-			{ // Pseudo-ring.
-				S_StartSound(toucher, special->info->painsound);
-				player->totalring++;
-			}
-			else
-				S_StartSound(toucher, special->info->activesound);
-
+			S_StartSound(toucher, special->info->activesound);
 			P_DoNightsScore(player);
 			break;
 		case MT_HOOPCOLLIDE:
@@ -940,13 +917,7 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 
 			// Hoops are the only things that should add to the drill meter
 			// Also, one tic's worth of drill is too much.
-			if (G_IsSpecialStage(gamemap))
-			{
-				for (i = 0; i < MAXPLAYERS; i++)
-					if (players[i].ingame && players[i].pflags & PF_NIGHTSMODE)
-						players[i].drillmeter += TICRATE/2;
-			}
-			else if (player->bot)
+			if (player->bot)
 				players[consoleplayer].drillmeter += TICRATE/2;
 			else
 				player->drillmeter += TICRATE/2;
@@ -1231,7 +1202,7 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 			P_SetMobjState(special, special->info->deathstate);
 			return;
 		case MT_SPECIALSPIKEBALL:
-			if (!(!useNightsSS && G_IsSpecialStage(gamemap))) // Only for old special stages
+			if (useNightsSS) // Only for old special stages
 			{
 				P_DamageMobj(toucher, special, special, 1);
 				return;
@@ -1552,9 +1523,6 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source)
 	mobj_t *mo;
 	int ms;
 
-	if (!useNightsSS && G_IsSpecialStage(gamemap) && target->player && sstimer > 6)
-		sstimer = 6; // Just let P_Ticker take care of the rest.
-
 	if (target->flags & (MF_ENEMY|MF_BOSS))
 		target->momx = target->momy = target->momz = 0;
 
@@ -1658,20 +1626,6 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source)
 		target->flags |= MF_NOBLOCKMAP|MF_NOCLIPHEIGHT;
 		P_SetThingPosition(target);
 
-		if (!target->player->bot && !G_IsSpecialStage(gamemap)
-		 && G_GametypeUsesLives())
-		{
-			target->player->lives -= 1; // Lose a life Tails 03-11-2000
-
-			if (target->player->lives <= 0) // Tails 03-14-2000
-			{
-				if (P_IsLocalPlayer(target->player)/* && target->player == &players[consoleplayer] */)
-				{
-					S_StopMusic(); // Stop the Music! Tails 03-14-2000
-					S_ChangeMusicInternal("gmover", false); // Yousa dead now, Okieday? Tails 03-14-2000
-				}
-			}
-		}
 		target->player->playerstate = PST_DEAD;
 
 		if (cv_birdmusic.value && cv_fading.value && P_IsLocalPlayer(target->player))

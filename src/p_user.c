@@ -436,9 +436,7 @@ void P_GivePlayerRings(player_t *player, INT32 num_rings)
 
 	player->mo->health += num_rings;
 	player->health += num_rings;
-
-	if (!G_IsSpecialStage(gamemap) || !useNightsSS)
-		player->totalring += num_rings;
+	player->totalring += num_rings;
 
 	//{ SRB2kart - rings don't really do anything, but we don't want the player spilling them later.
 	{
@@ -446,24 +444,6 @@ void P_GivePlayerRings(player_t *player, INT32 num_rings)
 		player->health = 1;
 	}
 	//}
-
-	// Now extra life bonuses are handled here instead of in P_MovePlayer, since why not?
-	if (!ultimatemode && !modeattacking && !G_IsSpecialStage(gamemap) && G_GametypeUsesLives())
-	{
-		INT32 gainlives = 0;
-
-		while (player->xtralife < maxXtraLife && player->health > 100 * (player->xtralife+1))
-		{
-			++gainlives;
-			++player->xtralife;
-		}
-
-		if (gainlives)
-		{
-			P_GivePlayerLives(player, gainlives);
-			P_PlayLivesJingle(player);
-		}
-	}
 }
 
 //
@@ -482,22 +462,10 @@ void P_GivePlayerLives(player_t *player, INT32 numlives)
 		player->lives = 1;
 }
 
-//
-// P_DoSuperTransformation
-//
-// Transform into Super Sonic!
-void P_DoSuperTransformation(player_t *player, boolean giverings)
-{
-	(void)player;
-	(void)giverings;
-
-	return; // SRB2kart - this is not a thing we need
-}
-
 // Adds to the player's score
 void P_AddPlayerScore(player_t *player, UINT32 amount)
 {
-	if (!(G_BattleGametype()))
+	if (!G_BattleGametype())
 		return;
 
 	if (player->bot)
@@ -826,20 +794,6 @@ boolean P_IsObjectOnGround(mobj_t *mo)
 {
 	if (P_IsObjectInGoop(mo))
 	{
-/*
-		// It's a crazy hack that checking if you're on the ground
-		// would actually CHANGE your position and momentum,
-		if (mo->z < mo->floorz)
-		{
-			mo->z = mo->floorz;
-			mo->momz = 0;
-		}
-		else if (mo->z + mo->height > mo->ceilingz)
-		{
-			mo->z = mo->ceilingz - mo->height;
-			mo->momz = 0;
-		}
-*/
 		// but I don't want you to ever 'stand' while submerged in goo.
 		// You're in constant vertical momentum, even if you get stuck on something.
 		// No exceptions.

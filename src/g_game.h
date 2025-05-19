@@ -387,16 +387,24 @@ boolean G_CheckDemoStatus(void);
 void G_SaveDemo(void);
 boolean G_DemoTitleResponder(event_t *ev);
 
+#define G_GametypeHasTeams() (G_IsGameType(GT_TEAMMATCH) || G_IsGameType(GT_CTF))
+#define G_BattleGametype() (G_IsGameType(GT_MATCH))
+#define G_RaceGametype() (G_IsGameType(GT_RACE))
+#define G_TagGametype() (G_IsGameType(GT_TAG) || G_IsGameType(GT_HIDEANDSEEK))
+
+FUNCINLINE static ATTRINLINE boolean G_IsGameType(int type)
+{
+	return (gametype == type);
+}
+
+FUNCINLINE static ATTRINLINE boolean G_GametypeHasSpectators(void)
+{
+	return (netgame || (multiplayer && demo.playback));
+}
+
 INT32 G_GetGametypeByName(const char *gametypestr);
-boolean G_IsSpecialStage(INT32 mapnum);
-boolean G_GametypeUsesLives(void);
-boolean G_GametypeHasTeams(void);
-boolean G_GametypeHasSpectators(void);
-boolean G_BattleGametype(void);
 UINT8 G_SometimesGetDifferentGametype(UINT8 prefgametype);
 UINT8 G_GetGametypeColor(INT16 gt);
-boolean G_RaceGametype(void);
-boolean G_TagGametype(void);
 void G_ExitLevel(void);
 void G_NextLevel(void);
 void G_Continue(void);
@@ -425,7 +433,6 @@ boolean G_GetExitGameFlag(void);
 void G_SetRetryFlag(void);
 void G_ClearRetryFlag(void);
 boolean G_GetRetryFlag(void);
-
 
 void G_LoadGameData(void);
 void G_LoadGameSettings(void);

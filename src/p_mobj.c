@@ -7351,28 +7351,7 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 					P_SetTarget(&mobj->target, goalpost);
 				}
 
-				if (G_IsSpecialStage(gamemap))
-				{ // Never show the NiGHTS drone in special stages. Check ANYONE for bonustime.
-					INT32 i;
-					boolean bonustime = false;
-
-					for (i = 0; i < MAXPLAYERS; i++)
-					{
-						if (players[i].ingame && players[i].bonustime)
-						{
-							bonustime = true;
-							break;
-						}
-					}
-
-					if (!bonustime)
-					{
-						mobj->flags &= ~MF_NOGRAVITY;
-						P_SetMobjState(mobj, S_NIGHTSDRONE1);
-						mobj->flags2 |= MF2_DONTDRAW;
-					}
-				}
-				else if (mobj->tracer && mobj->tracer->player)
+				if (mobj->tracer && mobj->tracer->player)
 				{
 					if (!(mobj->tracer->player->pflags & PF_NIGHTSMODE))
 					{
@@ -7389,39 +7368,7 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 			}
 			else
 			{
-				if (G_IsSpecialStage(gamemap)) // Never show the NiGHTS drone in special stages. Check ANYONE for bonustime.
-				{
-					INT32 i;
-
-					boolean bonustime = false;
-
-					for (i = 0; i < MAXPLAYERS; i++)
-					{
-						if (players[i].ingame && players[i].bonustime)
-						{
-							bonustime = true;
-							break;
-						}
-					}
-
-					if (bonustime)
-					{
-						P_SetMobjState(mobj, S_NIGHTSDRONE_SPARKLING1);
-						mobj->flags |= MF_NOGRAVITY;
-					}
-					else
-					{
-						if (mobj->target)
-						{
-							CONS_Debug(DBG_NIGHTSBASIC, "Removing goal post\n");
-							P_RemoveMobj(mobj->target);
-							P_SetTarget(&mobj->target, NULL);
-						}
-
-						mobj->flags2 |= MF2_DONTDRAW;
-					}
-				}
-				else if (mobj->tracer && mobj->tracer->player)
+				if (mobj->tracer && mobj->tracer->player)
 				{
 					if (mobj->target)
 					{
@@ -10604,10 +10551,6 @@ void P_RespawnSpecials(void)
 	if (!cv_itemrespawn.value)
 		return;
 
-	// Don't respawn in special stages!
-	if (G_IsSpecialStage(gamemap))
-		return;
-
 	// nothing left to respawn?
 	if (iquehead == iquetail)
 		return;
@@ -11323,7 +11266,7 @@ void P_SpawnMapThing(mapthing_t *mthing)
 		if (i == MT_PITYTV || i == MT_GREENTV || i == MT_YELLOWTV || i == MT_BLUETV || i == MT_BLACKTV || i == MT_WHITETV)
 			return; // No shields in Ultimate mode
 
-		if (i == MT_SUPERRINGBOX && !G_IsSpecialStage(gamemap))
+		if (i == MT_SUPERRINGBOX)
 			return; // No rings in Ultimate mode (except special stages)
 	}
 
@@ -11835,14 +11778,6 @@ ML_NOCLIMB : Direction not controllable
 			mobj->health |= 1; // If ambush is set, push using XYZ
 		if (mthing->options & MTF_OBJECTSPECIAL)
 			mobj->health |= 2; // If object special is set, fade using XY
-
-		if (G_IsSpecialStage(gamemap))
-		{
-			if (i == MT_PUSH)
-				P_SetMobjState(mobj, S_GRAVWELLGREEN);
-			if (i == MT_PULL)
-				P_SetMobjState(mobj, S_GRAVWELLRED);
-		}
 	}
 
 	// ignore MTF_ flags and return early

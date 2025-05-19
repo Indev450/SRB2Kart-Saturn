@@ -275,29 +275,28 @@ void CON_SetupBackColormap(void)
 
 	switch (cons_backcolor.value)
 	{
-		case 0:		palindex = 15; 	break; 	// White
-		case 1:		palindex = 31;	break; 	// Gray
-		case 2:		palindex = 47;	break;	// Sepia
-		case 3:		palindex = 63;	break; 	// Brown
-		case 4:		palindex = 150; shift = 7; 	break; 	// Pink
-		case 5:		palindex = 127; shift = 7;	break; 	// Raspberry
-		case 6:		palindex = 143;	break; 	// Red
-		case 7:		palindex = 86;	shift = 7;	break;	// Creamsicle
-		case 8:		palindex = 95;	break; 	// Orange
-		case 9:		palindex = 119; shift = 7;	break; 	// Gold
-		case 10:	palindex = 111;	break; 	// Yellow
-		case 11:	palindex = 191; shift = 7; 	break; 	// Emerald
-		case 12:	palindex = 175;	break; 	// Green
-		case 13:	palindex = 219;	break; 	// Cyan
-		case 14:	palindex = 207; shift = 7;	break; 	// Steel
-		case 15:	palindex = 230;	shift = 7; 	break; 	// Periwinkle
-		case 16:	palindex = 239;	break; 	// Blue
-		case 17:	palindex = 199; shift = 7; 	break; 	// Purple
-		case 18:	palindex = 255; shift = 7; 	break; 	// Lavender
+		case 0:		palindex =  15;             break;  // White
+		case 1:		palindex =  31;             break;  // Gray
+		case 2:		palindex =  47;             break;  // Sepia
+		case 3:		palindex =  63;             break;  // Brown
+		case 4:		palindex = 150; shift = 7;  break;  // Pink
+		case 5:		palindex = 127; shift = 7;  break;  // Raspberry
+		case 6:		palindex = 143;             break;  // Red
+		case 7:		palindex =  86; shift = 7;  break;  // Creamsicle
+		case 8:		palindex =  95;             break;  // Orange
+		case 9:		palindex = 119; shift = 7;  break;  // Gold
+		case 10:	palindex = 111;             break;  // Yellow
+		case 11:	palindex = 191; shift = 7;  break;  // Emerald
+		case 12:	palindex = 175;             break;  // Green
+		case 13:	palindex = 219;             break;  // Cyan
+		case 14:	palindex = 207; shift = 7;  break;  // Steel
+		case 15:	palindex = 230; shift = 7;  break;  // Periwinkle
+		case 16:	palindex = 239;             break;  // Blue
+		case 17:	palindex = 199; shift = 7;  break;  // Purple
+		case 18:	palindex = 255; shift = 7;  break;  // Lavender
 		// Default green
 		default:	palindex = 175; break;
-
-}
+	}
 
 	// setup background colormap
 	for (i = 0, j = 0; i < 768; i += 3, j++)

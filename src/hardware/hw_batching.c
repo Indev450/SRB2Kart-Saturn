@@ -88,7 +88,10 @@ void HWR_ProcessPolygon(FSurfaceInfo *pSurf, FOutVector *pOutVerts, FUINT iNumPt
 	if (currently_batching)
 	{
 		if (!pSurf)
+		{
 			I_Error("Got a null FSurfaceInfo in batching");// nulls should not come in the stuff that batching currently applies to
+		}
+
 		if (polygonArraySize == polygonArrayAllocSize)
 		{
 			PolygonArrayEntry* new_array;
@@ -228,7 +231,9 @@ void HWR_RenderBatches(void)
 	int i;
 
 	if (!currently_batching)
+	{
 		I_Error("HWR_RenderBatches called without starting batching");
+	}
 
 	nextSurfaceInfo.LightInfo.fade_end = 0;
 	nextSurfaceInfo.LightInfo.fade_start = 0;
@@ -236,6 +241,7 @@ void HWR_RenderBatches(void)
 	nextSurfaceInfo.LightInfo.directional = false;
 
 	currently_batching = false;// no longer collecting batches
+
 	if (!polygonArraySize)
 	{
 		ps_hw_numpolys.value.i = ps_hw_numcalls.value.i = ps_hw_numshaders.value.i
@@ -243,6 +249,7 @@ void HWR_RenderBatches(void)
 			= ps_hw_numcolors.value.i = 0;
 		return;// nothing to draw
 	}
+
 	// init stats vars
 	ps_hw_numpolys.value.i = polygonArraySize;
 	ps_hw_numcalls.value.i = ps_hw_numverts.value.i = 0;
@@ -291,7 +298,7 @@ void HWR_RenderBatches(void)
 	else
 		GL_SetTexture(currentTexture);
 
-	while (1)// note: remember handling notexture polyflag as having texture number 0 (also in comparePolygons)
+	while (1) // note: remember handling notexture polyflag as having texture number 0 (also in comparePolygons)
 	{
 		int firstIndex;
 		int lastIndex;
@@ -361,23 +368,28 @@ void HWR_RenderBatches(void)
 			nextTexture = nextEntry->texture;
 			nextPolyFlags = nextEntry->polyFlags;
 			nextSurfaceInfo = nextEntry->surf;
+
 			if (nextPolyFlags & PF_NoTexture)
 				nextTexture = 0;
+
 			if (currentShader != nextShader && cv_glshaders.value && gl_shadersavailable)
 			{
 				changeState = true;
 				changeShader = true;
 			}
+
 			if (currentTexture != nextTexture)
 			{
 				changeState = true;
 				changeTexture = true;
 			}
+
 			if (currentPolyFlags != nextPolyFlags)
 			{
 				changeState = true;
 				changePolyFlags = true;
 			}
+
 			if (cv_glshaders.value && gl_shadersavailable)
 			{
 				if (currentSurfaceInfo.PolyColor.rgba != nextSurfaceInfo.PolyColor.rgba ||
@@ -413,10 +425,12 @@ void HWR_RenderBatches(void)
 			finalVertexWritePos = 0;
 			finalIndexWritePos = 0;
 		}
-		else continue;
+		else
+			continue;
 
 		// if we're here then either its time to stop or time to change state
-		if (stopFlag) break;
+		if (stopFlag)
+			break;
 
 		// change state according to change bools and next vars, update current vars and reset bools
 		if (changeState)
@@ -429,6 +443,7 @@ void HWR_RenderBatches(void)
 
 				ps_hw_numshaders.value.i++;
 			}
+
 			if (changeTexture)
 			{
 				// texture should be already ready for use from calls to GL_SetTexture during batch collection
@@ -438,6 +453,7 @@ void HWR_RenderBatches(void)
 
 				ps_hw_numtextures.value.i++;
 			}
+
 			if (changePolyFlags)
 			{
 				currentPolyFlags = nextPolyFlags;
@@ -445,6 +461,7 @@ void HWR_RenderBatches(void)
 
 				ps_hw_numpolyflags.value.i++;
 			}
+
 			if (changeSurfaceInfo)
 			{
 				currentSurfaceInfo = nextSurfaceInfo;
