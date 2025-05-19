@@ -1572,12 +1572,9 @@ boolean G_CouldView(INT32 playernum)
 	if (playernum < 0 || playernum > MAXPLAYERS-1)
 		return false;
 
-	if (!players[playernum].ingame)
-		return false;
-
 	player = &players[playernum];
 
-	if (player->spectator)
+	if (!player->ingame || player->spectator)
 		return false;
 
 	// SRB2Kart: Only go through players who are actually playing
