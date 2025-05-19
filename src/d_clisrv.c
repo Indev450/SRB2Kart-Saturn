@@ -5696,13 +5696,20 @@ static void HandlePacketFromPlayer(SINT8 node)
 
 					// copy the textcmds
 					numtxtpak = *txtpak++;
+
 					for (j = 0; j < numtxtpak; j++)
 					{
-						INT32 k = *txtpak++; // playernum
+						INT32 playernum = *txtpak++; // playernum
 						const size_t txtsize = txtpak[0]+1;
 
+						if (playernum < 0 || playernum >= MAXPLAYERS)
+						{
+							CONS_Alert(CONS_WARNING, "Got bogus NetXCmd packet targetting player %d\n", playernum);
+							return;
+						}
+
 						if (i >= gametic) // Don't copy old net commands
-							M_Memcpy(D_GetTextcmd(i, k), txtpak, txtsize);
+							M_Memcpy(D_GetTextcmd(i, playernum), txtpak, txtsize);
 						txtpak += txtsize;
 					}
 				}
