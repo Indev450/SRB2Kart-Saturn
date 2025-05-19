@@ -65,6 +65,9 @@ consvar_t cv_renderview = {"renderview", "On", 0, CV_OnOff, NULL, 0, NULL, NULL,
 consvar_t cv_vhseffect = {"vhspause", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_shittyscreen = {"televisionsignal", "Okay", CV_NOSHOWHELP, shittyscreen_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
+static CV_PossibleValue_t votescale_cons_t[] = {{0, "Vanilla"}, {1, "Adaptive"}, {2, "VerticalFill"}, {3, "HorizontalFill"}, {0, NULL}};
+consvar_t cv_votebgscaling = {"votebgscaling", "Adaptive", CV_SAVE, votescale_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+
 static void Highreshudscale_OnChange(void);
 static CV_PossibleValue_t highreshudscale_cons_t[] = {{4*FRACUNIT/5, "MIN"}, {6*FRACUNIT/5, "MAX"}, {0, NULL}};
 consvar_t cv_highreshudscale = {"highreshudscale", "1", CV_SAVE|CV_FLOAT|CV_CALL|CV_NOINIT|CV_NOSHOWHELP, highreshudscale_cons_t, Highreshudscale_OnChange, 0, NULL, NULL, 0, 0, NULL};
@@ -189,6 +192,8 @@ void SCR_Startup(void)
 	CV_RegisterVar(&cv_csaturation);
 	CV_RegisterVar(&cv_bsaturation);
 	CV_RegisterVar(&cv_msaturation);
+
+	CV_RegisterVar(&cv_votebgscaling);
 
 	V_SetPalette(0);
 }

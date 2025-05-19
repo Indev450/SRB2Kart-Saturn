@@ -294,27 +294,23 @@ static void Y_CalculateMatchData(UINT8 rankingsmode, void (*comparison)(INT32))
 static void Y_AnimatedVoteScreenCheck(void)
 {
 	char tmpPrefix[] = "INTS";
-	boolean stopSearching = false;
 
 	if (luaVoteScreen)
 		strncpy(tmpPrefix, luaVoteScreen, 4);
-	else
-	{
-		if (G_BattleGametype())
-			strcpy(tmpPrefix, "BTLS");
-	}
+	else if (G_BattleGametype())
+		strcpy(tmpPrefix, "BTLS");
 
 	strncpy(animPrefix, tmpPrefix, 4);
 	animPrefix[4] = 'C';
 	strncpy(animWidePrefix, tmpPrefix, 4);
 	animWidePrefix[4] = 'W';
 
-	foundAnimVoteFrames = 0;
-	foundAnimVoteWideFrames = 0;
+	foundAnimVoteFrames = foundAnimVoteWideFrames = 0;
 	currentAnimFrame = 0;
 
 	INT32 i = 1;
-	while (!stopSearching)
+
+	for (;;)
 	{
 		boolean normalLumpExists = W_LumpExists(va("%sC%d", tmpPrefix, i));
 		boolean wideLumpExists = W_LumpExists(va("%sW%d", tmpPrefix, i));
@@ -328,7 +324,7 @@ static void Y_AnimatedVoteScreenCheck(void)
 				foundAnimVoteWideFrames++;
 		}
 		else // If we don't find at least frame 1 (e.g VEXTRN1), let's just stop looking
-			stopSearching = true;
+			break;
 
 		i++;
 	}
@@ -906,41 +902,67 @@ static void Y_UnloadData(void)
 
 // SRB2Kart: Voting!
 
+static void Y_DrawVoteBackground(patch_t *patch)
+{
+	switch (cv_votebgscaling.value)
+	{
+		case 1: // adaptive
+			V_DrawAdaptiveScaledFullScreenPatch(patch);
+			break;
+		case 2: // vertical-fill
+			V_DrawVerticallyScaledFullScreenPatch(patch);
+			break;
+		case 3: // horizontal-fill
+			V_DrawHorizontallyScaledFullScreenPatch(patch);
+			break;
+		case 0: // vanilla
+		default:
+			V_DrawScaledPatch(((vid.width/2) / vid.dupx) - (patch->width/2),
+							  (vid.height / vid.dupy) - patch->height,
+							  V_SNAPTOTOP|V_SNAPTOLEFT, patch);
+			break;
+	}
+}
+
 // Y_DrawAnimatedVoteScreenPatch
 //
 // Draw animated patch based on frame counter on vote screen
 //
 static void Y_DrawAnimatedVoteScreenPatch(boolean widePatch)
 {
+	INT32 nextframe = 0;
+	patch_t *votebg = NULL;
 	char tempAnimPrefix[7];
-	widePatch ? strcpy(tempAnimPrefix, animWidePrefix) : strcpy(tempAnimPrefix, animPrefix);
-	const INT32 tempFoundAnimVoteFrames = widePatch ? foundAnimVoteWideFrames : foundAnimVoteFrames;
+	const INT32 tempFoundAnimVoteFrames = ((widePatch ? foundAnimVoteWideFrames : foundAnimVoteFrames) - 1);
+
+	strcpy(tempAnimPrefix, (widePatch ? animWidePrefix : animPrefix));
 
 	// Just in case someone provides LESS widescreen frames than normal frames or vice versa, reset the frame counter to 0
-	if (currentAnimFrame > tempFoundAnimVoteFrames - 1)
+	if (currentAnimFrame > tempFoundAnimVoteFrames)
 		currentAnimFrame = 0;
 
-	patch_t *background = W_CachePatchName(va("%s%d", tempAnimPrefix, currentAnimFrame + 1), PU_PATCH);
-	V_DrawScaledPatch(((vid.width/2) / vid.dupx) - (background->width/2), // Keep the width/height adjustments, for screens that are less wide than 320(?)
-				(vid.height / vid.dupy) - background->height,
-				V_SNAPTOTOP|V_SNAPTOLEFT, background);
+	nextframe = (currentAnimFrame + 1);
 
-	if (renderisnewtic && votetic % 2 == 0 && !paused)
-		currentAnimFrame = (currentAnimFrame + 1 > tempFoundAnimVoteFrames - 1) ? 0 : currentAnimFrame + 1;
+	votebg = W_CachePatchName(va("%s%d", (widePatch ? animWidePrefix : animPrefix), nextframe), PU_PATCH);
+
+	Y_DrawVoteBackground(votebg);
+
+	if (renderisnewtic && (votetic % 2 == 0) && !paused)
+		currentAnimFrame = (nextframe > tempFoundAnimVoteFrames) ? 0 : nextframe;
 }
 
 static void Y_DrawVoteScreenPatch(void)
 {
+	patch_t *votebg = NULL;
 	const boolean widescreen = (vid.width / vid.dupx > 320);
-	const boolean animvote = (foundAnimVoteWideFrames || foundAnimVoteFrames);
 
-	if (animvote)
+	if (foundAnimVoteWideFrames || foundAnimVoteFrames)
 	{
 		Y_DrawAnimatedVoteScreenPatch((foundAnimVoteWideFrames && widescreen));
 		return;
 	}
 
-	patch_t *votebg = bgpatch; // non widescreen patch
+	votebg = bgpatch; // non widescreen patch
 
 	UINT8 prefgametype = (votelevels[0][1] & ~0x80);
 	const boolean widebgreplaced = (prefgametype == GT_MATCH) ? widebattlereplaced : wideracereplaced;
@@ -952,9 +974,7 @@ static void Y_DrawVoteScreenPatch(void)
 		votebg = widebgpatch;
 	}
 
-	V_DrawScaledPatch(((vid.width/2) / vid.dupx) - (votebg->width/2),
-					  (vid.height / vid.dupy) - votebg->height,
-					  V_SNAPTOTOP|V_SNAPTOLEFT, votebg);
+	Y_DrawVoteBackground(votebg);
 }
 
 //
@@ -1007,6 +1027,7 @@ void Y_VoteDrawer(void)
 	}
 
 	y = (200-height)/2;
+
 	for (i = 0; i < 4; i++)
 	{
 		const char *str;

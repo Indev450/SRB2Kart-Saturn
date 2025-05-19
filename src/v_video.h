@@ -283,6 +283,10 @@ void V_DoPostProcessor(INT32 view, INT32 param);
 
 void V_DrawPatchFill(patch_t *pat);
 
+void V_DrawAdaptiveScaledFullScreenPatch(patch_t *patch);
+void V_DrawVerticallyScaledFullScreenPatch(patch_t *patch);
+void V_DrawHorizontallyScaledFullScreenPatch(patch_t *patch);
+
 void VID_BlitLinearScreen(const UINT8 *srcptr, UINT8 *destptr, INT32 width, INT32 height, size_t srcrowbytes,
 	size_t destrowbytes);
 
