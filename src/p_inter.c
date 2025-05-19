@@ -1202,31 +1202,7 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 			P_SetMobjState(special, special->info->deathstate);
 			return;
 		case MT_SPECIALSPIKEBALL:
-			if (useNightsSS) // Only for old special stages
-			{
-				P_DamageMobj(toucher, special, special, 1);
-				return;
-			}
-
-			if (player->powers[pw_invulnerability] || player->powers[pw_flashing]
-			|| (player->powers[pw_super] && !(ALL7EMERALDS(player->powers[pw_emeralds]))))
-				return;
-			if (player->powers[pw_shield] || player->bot)  //If One-Hit Shield
-			{
-				P_RemoveShield(player);
-				S_StartSound(toucher, sfx_shldls); // Ba-Dum! Shield loss.
-			}
-			else
-			{
-				P_PlayRinglossSound(toucher, NULL);
-				if (toucher->health > 10)
-					toucher->health -= 10;
-				else
-					toucher->health = 1;
-				player->health = toucher->health;
-			}
-
-			P_DoPlayerPain(player, special, NULL);
+			P_DamageMobj(toucher, special, special, 1);
 			return;
 		case MT_EGGMOBILE2_POGO:
 			// sanity checks
