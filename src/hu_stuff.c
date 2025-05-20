@@ -2772,6 +2772,12 @@ void HU_SetCEchoFlags(INT32 flags)
 
 void HU_DoCEcho(const char *msg)
 {
+	if (con_muted)
+	{
+		DEBFILE(va("%s\n", msg));
+		return;
+	}
+
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wstringop-truncation" // This is fine, we set null byte later
 	strncpy(cechotext, msg, sizeof(cechotext));

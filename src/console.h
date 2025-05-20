@@ -25,6 +25,9 @@ extern I_mutex con_mutex;
 // set true when screen size has changed, to adapt console
 extern boolean con_recalc;
 
+// no messages will be printed while the console is muted
+extern boolean con_muted;
+
 extern boolean con_startup;
 
 // top clip value for view render: do not draw part of view hidden by console

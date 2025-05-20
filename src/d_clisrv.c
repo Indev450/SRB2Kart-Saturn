@@ -6539,7 +6539,11 @@ boolean TryRunTics(tic_t realtics, tic_t entertic)
 		if (gameStateBufferIsValid[gametic % MAXLOCALSAVESTATES])
 		{
 			if (!(gamestate == GS_INTERMISSION))
+			{
+				con_muted = true;
 				P_LoadGameState(&gameStateBuffer[gametic % MAXLOCALSAVESTATES], &statesave);
+				con_muted = false;
+			}
 			// Most of the time the RandSeed is correct (e.g. lua map voting)
 			// because we always load "real state" before making sims
 			// so setting it up explicitly for the intermission isn't needed.
@@ -6591,7 +6595,9 @@ boolean TryRunTics(tic_t realtics, tic_t entertic)
 			// The server will resynch us anyway if things would go wrong
 			if (simtic > gametic && gameStateBufferIsValid[gametic % MAXLOCALSAVESTATES])
 			{
+				con_muted = true;
 				P_LoadGameState(&gameStateBuffer[gametic % MAXLOCALSAVESTATES], &statesave);
+				con_muted = false;
 				if (Consistancy() != consistancy[gametic % BACKUPTICS])
 					// CONS_Alert(CONS_WARNING, "Saved state at %d isn't consistent with recorded checksum\n", gametic);
 					DEBFILE(va("NETPLUS: Saved state at %d isn't consistent with recorded checksum\n", gametic));
@@ -6674,8 +6680,10 @@ boolean TryRunTics(tic_t realtics, tic_t entertic)
 				}
 			}
 			DEBFILE(va("============ Running SIMMISS tic %d (local %d)\n", gametic, localgametic));
+			con_muted = true;
 			issimulation = true;
 			//G_Ticker(true); //tic one tic further as usual
+			con_muted = false;
 			netcmds[gametic % BACKUPTICS][consoleplayer] = temp;
 			issimulation = false;
 		}
@@ -6875,7 +6883,7 @@ static void RunSimulations(void)
 
 	// simulate the rest o da future
 	issimulation = true;
-	//con_muted = true;
+	con_muted = true;
 
 	simStartTime = I_GetPreciseTime(); //for benchmarking
 
@@ -6921,7 +6929,7 @@ static void RunSimulations(void)
 	}
 
 	issimulation = false;
-	//con_muted = false;
+	con_muted = false;
 	// lastsimtic = simtic;
 
 	// Finalise steadyplayers
