@@ -6987,51 +6987,6 @@ static void RunSimulations(void)
 				}
 			}
 		}
-
-		// move steadyplayer shields and signs
-		if (cv_netsteadyplayers.value)
-		{
-			mobj_t *mobj;
-			thinker_t *th;
-			player_t *redflagplayer = NULL;
-			player_t *blueflagplayer = NULL;
-
-#define ADJUSTPOSITION(obj, player)                                                                       \
-	do                                                                                                    \
-	{                                                                                                     \
-		P_UnsetThingPosition(obj);                                                                        \
-		obj->x += steadyplayers[player].histx[histIndex] - steadyplayers[player].histx[simtic - gametic]; \
-		obj->y += steadyplayers[player].histy[histIndex] - steadyplayers[player].histy[simtic - gametic]; \
-		obj->z += steadyplayers[player].histz[histIndex] - steadyplayers[player].histz[simtic - gametic]; \
-		P_SetThingPosition(obj);                                                                          \
-	} while (0)
-
-			for (int i = 0; i < MAXPLAYERS; i++)
-			{
-				if (players[i].ingame)
-				{
-					if (players[i].gotflag & GF_REDFLAG)
-						redflagplayer = &players[i];
-					if (players[i].gotflag & GF_BLUEFLAG)
-						blueflagplayer = &players[i];
-				}
-			}
-
-			for (th = thinkercap.next; th != &thinkercap; th = th->next)
-			{
-				if (th->function != (actionf_p1)P_MobjThinker)
-					continue;
-
-				mobj = (mobj_t *)th;
-
-				/*if (mobj->flags2 & MF2_SHIELD && mobj->target != NULL && mobj->target->player != NULL && mobj->target != players[consoleplayer].mo)
-					ADJUSTPOSITION(mobj, mobj->target->player - players);
-				else*/ if (mobj->type == MT_BLUEFLAG && blueflagplayer)
-					ADJUSTPOSITION(mobj, blueflagplayer - players);
-				else if (mobj->type == MT_REDFLAG && redflagplayer)
-					ADJUSTPOSITION(mobj, redflagplayer - players);
-			}
-		}
 	}
 
 	simEndTime = I_GetPreciseTime();
