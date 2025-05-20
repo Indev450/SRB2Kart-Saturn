@@ -1357,6 +1357,7 @@ void LUA_UnArchive(savebuffer_t *save, boolean network)
 		while(mobjnum != UINT32_MAX) // repeat until end of mobjs marker.
 		{
 			th = mobjnum_ht_linkedList_Find(mobjnum);
+
 			if (th && ((mobj_t *)th)->mobjnum == mobjnum)
 				UnArchiveExtVars(&save->p, th, network);
 			else
