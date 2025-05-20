@@ -21,6 +21,9 @@
 #pragma interface
 #endif
 
+extern double frame_frequency;
+extern double elapsed_frames;
+
 /**	\brief max quit functions
 */
 #define MAX_QUIT_FUNCS     16
@@ -60,6 +63,8 @@ UINT64 I_GetPrecisePrecision(void);
 /** \brief  Get the current time in rendering tics, including fractions.
 */
 double I_GetFrameTime(void);
+
+void I_SetTime(tic_t tic, int fudge, boolean useAbsoluteFudge);
 
 /**	\brief	Sleeps for the given duration in milliseconds. Depending on the
             operating system's scheduler, the calling thread may give up its

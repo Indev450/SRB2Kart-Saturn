@@ -47,8 +47,16 @@ typedef struct
 void P_SaveGame(savebuffer_t *save);
 void P_SaveNetGame(savebuffer_t *save, boolean resending);
 boolean P_LoadGame(savebuffer_t *save, INT16 mapoverride);
-boolean P_LoadNetGame(savebuffer_t *save, boolean reloading);
+boolean P_LoadNetGame(savebuffer_t *save, boolean reloading, boolean preserveLevel);
 
 mobj_t *P_FindNewPosition(UINT32 oldposition);
+
+typedef struct
+{
+	UINT8 *buffer;
+} savestate_t;
+
+void P_SaveGameState(savestate_t* savestate, savebuffer_t *save);
+boolean P_LoadGameState(const savestate_t* savestate, savebuffer_t *save);
 
 #endif

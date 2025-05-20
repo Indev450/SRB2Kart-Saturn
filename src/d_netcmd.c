@@ -123,6 +123,9 @@ static void KartEncore_OnChange(void);
 static void KartComeback_OnChange(void);
 static void KartEliminateLast_OnChange(void);
 
+static void Command_Autotimefudge(void);
+static void TimeFudge_OnChange(void);
+
 #ifdef NETGAME_DEVMODE
 static void Fishcake_OnChange(void);
 #endif
@@ -527,6 +530,52 @@ consvar_t cv_skinselectgridsort ={ "skinselectgridsort", "Real name", CV_SAVE|CV
 static CV_PossibleValue_t betainterscreen_t[] = {{0, "Off"}, {1, "On"}, {2, "NoBG"}, {0, NULL}};
 consvar_t cv_betainterscreen = {"betaintermissionscreen", "Off", CV_SAVE, betainterscreen_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
+consvar_t cv_simulate = { "sim", "Yes", 0, CV_YesNo, NULL, 0, NULL, NULL, 0, 0, NULL };
+
+consvar_t cv_powerupmusic = { "powerupmusic", "Yes", 0, CV_YesNo, NULL, 0, NULL, NULL, 0, 0, NULL };
+consvar_t cv_playerfullbright = { "playerfullbright", "Yes", 0, CV_YesNo, NULL, 0, NULL, NULL, 0, 0, NULL };
+
+
+static CV_PossibleValue_t simulateTics_cons_t[] = { {0, "MIN"}, {MAXSIMULATIONS - 1, "MAX"}, {0, NULL} };
+consvar_t cv_simulatetics = { "simtics", "MAX", 0, simulateTics_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL };
+
+consvar_t cv_simmisstics = { "simmisstics", "Yes", 0, CV_YesNo, NULL, 0, NULL, NULL, 0, 0, NULL };
+consvar_t cv_jittersmoothing = { "jittersmoothing", "Yes", 0, CV_YesNo, NULL, 0, NULL, NULL, 0, 0, NULL };
+
+static CV_PossibleValue_t simulateculldistance_cons_t[] = { {0, "MIN"}, {10000, "MAX"}, {0, NULL} };
+consvar_t cv_simulateculldistance = { "simcull", "MIN", 0, simulateculldistance_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL };
+
+static CV_PossibleValue_t siminaccuracy_cons_t[] = { {1, "MIN"}, {10, "MAX"}, {0, NULL} };
+consvar_t cv_siminaccuracy = { "siminaccuracy", "MIN", 0, siminaccuracy_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL };
+
+static CV_PossibleValue_t netsteadyplayers_cons_t[] = { {0, "MIN"}, {MAXSIMULATIONS - 1, "MAX"}, {0, NULL} };
+consvar_t cv_netsteadyplayers = { "simsteadyplayers", "0", 0, netsteadyplayers_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL };
+
+static CV_PossibleValue_t nettrails_cons_t[] = { {0, "MIN"}, {10, "MAX"}, {0, NULL} };
+consvar_t cv_nettrails = { "simtrails", "5", 0, nettrails_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL };
+
+consvar_t cv_netslingdelay = { "simslingdelay", "No", 0, CV_YesNo, NULL, 0, NULL, NULL, 0, 0, NULL };
+
+static CV_PossibleValue_t netdelay_cons_t[] = { {0, "MIN"}, {250, "MAX"}, {0, NULL} };
+consvar_t cv_netdelay = { "netdelay", "0", 0, netdelay_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL };
+
+consvar_t cv_netjitter = { "netjitter", "0", 0, netdelay_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL };
+
+consvar_t cv_netsmoothing = { "netsmoothing", "Off", 0, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL };
+
+consvar_t cv_netspikes = { "netspikes", "Off", 0, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL };
+
+static CV_PossibleValue_t netvariabletime_cons_t[] = { {-1, "MIN"}, {100, "MAX"}, {0, NULL} };
+consvar_t cv_netvariabletime = { "netvariabletime", "-1", 0, netvariabletime_cons_t, NULL, -1, NULL, NULL, 0, 0, NULL };
+
+static CV_PossibleValue_t debugsimulaterewind_cons_t[] = { {0, "MIN"}, {BACKUPTICS - 1, "MAX"}, {0, NULL} };
+consvar_t cv_debugsimulaterewind = { "debugsimulaterewind", "0", 0, debugsimulaterewind_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL };
+
+static CV_PossibleValue_t timefudge_cons_t[] = { {0, "MIN"}, {100, "MAX"}, {0, NULL} };
+consvar_t cv_timefudge = { "timefudge", "0", CV_CALL, timefudge_cons_t, TimeFudge_OnChange, 0, NULL, NULL, 0, 0, NULL };
+
+consvar_t cv_autoupdatetimefudge = {"autoupdatetimefudge", "No", 0, CV_YesNo, NULL, 0, NULL, NULL, 0, 0, NULL};
+
 INT16 gametype = GT_RACE; // SRB2kart
 boolean forceresetplayers = false;
 boolean deferencoremode = false;
@@ -665,6 +714,26 @@ void D_RegisterServerCommands(void)
 	COM_AddCommand("archivetest", Command_Archivetest_f);
 #endif
 
+	COM_AddCommand("autotimefudge", Command_Autotimefudge);
+	CV_RegisterVar(&cv_simulate);
+	CV_RegisterVar(&cv_simulatetics);
+	CV_RegisterVar(&cv_simmisstics);
+	CV_RegisterVar(&cv_jittersmoothing);
+	CV_RegisterVar(&cv_simulateculldistance);
+	CV_RegisterVar(&cv_siminaccuracy);
+	CV_RegisterVar(&cv_netdelay);
+	CV_RegisterVar(&cv_netjitter);
+	CV_RegisterVar(&cv_netsmoothing);
+	CV_RegisterVar(&cv_netspikes);
+	CV_RegisterVar(&cv_netsteadyplayers);
+	CV_RegisterVar(&cv_debugsimulaterewind);
+	CV_RegisterVar(&cv_timefudge);
+	CV_RegisterVar(&cv_autoupdatetimefudge);
+	CV_RegisterVar(&cv_nettrails);
+	CV_RegisterVar(&cv_netslingdelay);
+	CV_RegisterVar(&cv_netvariabletime);
+	CV_RegisterVar(&cv_playerfullbright);
+
 	COM_AddCommand("replaymarker", Command_ReplayMarker);
 
 	// for master server connection
@@ -787,6 +856,11 @@ void D_RegisterServerCommands(void)
 #ifndef NOBLUAJIT
 	CV_RegisterVar(&cv_luajit);
 #endif
+}
+
+void Command_Autotimefudge(void)
+{
+	TimeFudge();
 }
 
 // =========================================================================
@@ -2862,6 +2936,8 @@ static void Got_Mapcmd(UINT8 **cp, INT32 playernum)
 		}
 		return;
 	}
+
+	InvalidateSavestates();
 
 	if (chmappending)
 		chmappending--;
@@ -4981,6 +5057,9 @@ void ItemFinder_OnChange(void)
   * \sa cv_pointlimit, TimeLimit_OnChange
   * \author Graue <graue@oceanbase.org>
   */
+
+static int lastpointlimit;
+
 static void PointLimit_OnChange(void)
 {
 	// Don't allow pointlimit in Single Player/Co-Op/Race!
@@ -4991,15 +5070,20 @@ static void PointLimit_OnChange(void)
 		return;
 	}
 
-	if (cv_pointlimit.value)
+	if (cv_pointlimit.value != lastpointlimit)
 	{
-		CONS_Printf(M_GetText("Levels will end after %s scores %d point%s.\n"),
-			G_GametypeHasTeams() ? M_GetText("a team") : M_GetText("someone"),
-			cv_pointlimit.value,
-			cv_pointlimit.value > 1 ? "s" : "");
+		if (cv_pointlimit.value)
+		{
+			CONS_Printf(M_GetText("Levels will end after %s scores %d point%s.\n"),
+				G_GametypeHasTeams() ? M_GetText("a team") : M_GetText("someone"),
+				cv_pointlimit.value,
+				cv_pointlimit.value > 1 ? "s" : "");
+		}
+		else if (netgame || multiplayer)
+			CONS_Printf(M_GetText("Point limit disabled\n"));
 	}
-	else if (netgame || multiplayer)
-		CONS_Printf(M_GetText("Point limit disabled\n"));
+
+	lastpointlimit = cv_pointlimit.value;
 }
 
 static void NumLaps_OnChange(void)
@@ -5037,6 +5121,7 @@ UINT32 timelimitintics = 0;
   *
   * \sa cv_timelimit, PointLimit_OnChange
   */
+
 static void TimeLimit_OnChange(void)
 {
 	// Don't allow timelimit in Single Player/Co-Op/Race!
@@ -5048,19 +5133,28 @@ static void TimeLimit_OnChange(void)
 
 	if (cv_timelimit.value != 0)
 	{
-		CONS_Printf(M_GetText("Levels will end after %d minute%s.\n"),cv_timelimit.value,cv_timelimit.value == 1 ? "" : "s"); // Graue 11-17-2003
-		timelimitintics = cv_timelimit.value * 60 * TICRATE;
+		UINT32 newtimelimit = cv_timelimit.value * 60 * TICRATE;
 
 		//add hidetime for tag too!
 		if (G_TagGametype())
-			timelimitintics += hidetime * TICRATE;
+			newtimelimit += hidetime * TICRATE;
+
+		if (newtimelimit != timelimitintics)
+		{
+			CONS_Printf(M_GetText("Levels will end after %d minute%s.\n"), cv_timelimit.value, cv_timelimit.value == 1 ? "" : "s"); // Graue 11-17-2003
+
+			timelimitintics = newtimelimit; // ...and slightly modified by LX 12-11-2019 <3
+		}
 
 		// Note the deliberate absence of any code preventing
 		//   pointlimit and timelimit from being set simultaneously.
 		// Some people might like to use them together. It works.
 	}
-	else if (netgame || multiplayer)
+	else if ((netgame || multiplayer) && timelimitintics > 0)
+	{
+		timelimitintics = 0;
 		CONS_Printf(M_GetText("Time limit disabled\n"));
+	}
 
 #ifdef HAVE_DISCORDRPC
 	DRPC_UpdatePresence();
@@ -5226,6 +5320,11 @@ static void SoundTest_OnChange(void)
 
 	S_StopSounds();
 	S_StartSound(NULL, cv_soundtest.value);
+}
+
+static void TimeFudge_OnChange(void)
+{
+	I_SetTime(I_GetTime(), cv_timefudge.value, true);
 }
 
 static void AutoBalance_OnChange(void)

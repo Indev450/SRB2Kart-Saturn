@@ -472,6 +472,12 @@ void S_StartSoundAtVolume(const void *origin_p, sfxenum_t sfx_id, INT32 volume)
 		}
 	}
 
+	// local player sounds play immediately during simulations, this is controlled
+	// in TryRunTics and RunSimulations in d_clisrv.c
+	if (gamestate == GS_LEVEL) // and when we are actually playing
+		if (((simtic != targetsimtic - 1 && origin == listenmobj[0]) || (origin != listenmobj[0] && issimulation)))
+			return;
+
 	for (i = 0; i <= splitscreen; i++)
 	{
 		player_t *player = &players[displayplayers[i]];

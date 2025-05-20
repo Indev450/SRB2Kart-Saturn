@@ -126,6 +126,11 @@ INT32 consoleplayer; // player taking events and displaying
 INT32 displayplayers[MAXSPLITSCREENPLAYERS]; // view being displayed
 
 tic_t gametic;
+tic_t simtic; // simulated tic
+tic_t targetsimtic; // target simulated tic
+tic_t smoothedTic;
+boolean canSimulate;
+tic_t finaltargetsimtic;
 tic_t levelstarttic; // gametic at level start
 UINT32 totalrings; // for intermission
 INT16 lastmap; // last level you were at (returning from special stages)
@@ -1891,9 +1896,14 @@ void G_Ticker(boolean run)
 				if (demo.title)
 					F_TitleDemoTicker();
 				P_Ticker(run); // tic the game
-				ST_Ticker();
-				AM_Ticker();
-				HU_Ticker();
+
+				//do not draw any GUI during sims
+				if ((issimulation && finaltargetsimtic == simtic) || (!canSimulate))
+				{
+					ST_Ticker();
+					AM_Ticker();
+					HU_Ticker();
+				}
 			}
 			break;
 

@@ -89,6 +89,9 @@ typedef struct
 	UINT16 sidenum[2];
 } ATTRPACK maplinedef_t;
 
+//#define INT_MIN  (-2147483647 - 1)
+//#define INT_MAX  2147483647
+
 //
 // LineDef attributes.
 //

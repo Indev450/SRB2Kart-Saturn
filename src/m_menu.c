@@ -7745,12 +7745,13 @@ static void M_PlaybackFastForward(INT32 choice)
 	CV_SetValue(&cv_playbackspeed, cv_playbackspeed.value == 1 ? 4 : 1);
 }
 
+
 static void M_PlaybackAdvance(INT32 choice)
 {
 	(void)choice;
 
 	paused = false;
-	TryRunTics(1);
+	TryRunTics(1, 0);
 	paused = true;
 }
 

@@ -1168,6 +1168,9 @@ boolean HGetPacket(void)
 		if (doomcom->remotenode == -1) // No packet received
 			return false;
 
+		if (cv_autoupdatetimefudge.value)
+			TimeFudge();
+
 		getbytes += packetheaderlength + doomcom->datalength; // For stat
 
 		if (doomcom->remotenode >= MAXNETNODES)
@@ -1207,6 +1210,85 @@ boolean HGetPacket(void)
 
 	return true;
 }
+
+extern double netUpdateFudge;
+
+#define gettime ((double)I_GetPreciseTime() / frame_frequency)
+void TimeFudge(void)
+{
+	// you can use SDL_GetPerformanceFrequency() instead of tic_frequency to get more precise timings
+	double startTime = gettime;
+	double packetTimeFudge[64];
+	int numReceivedPackets = 0;
+	const double numSampleTics = 10;
+	int i;
+	double lastTimeReceivedPacket;
+
+	if (server && netgame)
+	{
+		CONS_Printf("Servers do not need time fudging!\n");
+		return;
+	}
+
+	lastTimeReceivedPacket = gettime;
+	while ((fabs(gettime - startTime) < numSampleTics) || numReceivedPackets < 10)
+	{
+		I_NetGet();
+		if ((doomcom->remotenode != -1)) // Packet received
+		{
+			packetTimeFudge[numReceivedPackets] = 100 * fabs((gettime - lastTimeReceivedPacket) - netUpdateFudge); // gets the time fudge offset (0-100)
+			CONS_Printf("%i: %f\n", numReceivedPackets, packetTimeFudge[numReceivedPackets]);
+			numReceivedPackets++;
+			lastTimeReceivedPacket = gettime;
+		}
+	}
+
+	if (numReceivedPackets > 0)
+	{
+		UINT8 minOffset = 100, maxOffset = 0, averageOffset = 0;
+		UINT8 newTimeFudge;
+		UINT8 estimatedRange;
+
+		for (i = 0; i < numReceivedPackets; i++)
+		{
+			if (packetTimeFudge[i] < 0)
+				continue;
+			minOffset = min(minOffset, packetTimeFudge[i]);
+			maxOffset = max(maxOffset, packetTimeFudge[i]);
+		}
+
+		if (maxOffset - minOffset > 50)
+		{
+			// say maxOffset = 90 and minOffset = 20, we want the average to be 30...
+			maxOffset = maxOffset - 100;
+
+			if (minOffset > maxOffset)
+			{
+				int swap = maxOffset;
+				maxOffset = minOffset;
+				minOffset = swap;
+			}
+		}
+
+		estimatedRange = maxOffset - minOffset;
+		averageOffset = (maxOffset + minOffset) / 2;
+
+		CONS_Printf("%i packets received\n Timer fluctuations:\nmin: %d max: %d avg: %d est. range: %d (network update time: %lf)\n", numReceivedPackets, minOffset, maxOffset, averageOffset,
+			estimatedRange, netUpdateFudge);
+
+		if (averageOffset <= 0)
+		{
+			CONS_Printf("Timers are OK, no time fudging required\n");
+			return;
+		}
+
+		newTimeFudge = (cv_timefudge.value + averageOffset + 50) % 100;
+		CONS_Printf("New time fudge: %i%%\n", newTimeFudge);
+
+		CV_SetValue(&cv_timefudge, newTimeFudge);
+	}
+}
+#undef gettime
 
 static boolean Internal_Get(void)
 {

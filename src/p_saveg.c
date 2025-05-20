@@ -44,6 +44,8 @@ savedata_t savedata;
 #define ARCHIVEBLOCK_THINKERS 0x7F37037C
 #define ARCHIVEBLOCK_SPECIALS 0x7F228378
 
+boolean memleak = false;
+
 // Note: This cannot be bigger
 // than an UINT16
 typedef enum
@@ -475,6 +477,46 @@ static void P_NetUnArchivePlayers(savebuffer_t *save, boolean reloading)
 	}
 }
 
+static void P_LocalArchivePlayers(savebuffer_t *save)
+{
+	int i;
+
+	WRITEUINT32(save->p, ARCHIVEBLOCK_PLAYERS);
+
+	for (i = 0; i < MAXPLAYERS; i++)
+	{
+		if (!players[i].ingame)
+			continue;
+
+		WRITEMEM(save->p, &players[i], sizeof(player_t));
+
+		player_t* player = &((player_t*)save->p)[-1];
+
+#define RELINK(var) if (var != NULL) var = (mobj_t*)(size_t)var->mobjnum
+		RELINK(player->capsule);
+		RELINK(player->axis1);
+		RELINK(player->axis2);
+		RELINK(player->awayviewmobj);
+#undef RELINK
+	}
+}
+
+static void P_LocalUnArchivePlayers(savebuffer_t *save)
+{
+	int i;
+
+	if (READUINT32(save->p) != ARCHIVEBLOCK_PLAYERS)
+		I_Error("Bad savestate at archive block Players");
+
+	for (i = 0; i < MAXPLAYERS; i++)
+	{
+		if (!players[i].ingame)
+			continue;
+
+		READMEM(save->p, &players[i], sizeof(player_t));
+	}
+}
+
 ///
 /// World Archiving
 ///
@@ -512,6 +554,128 @@ static void P_NetUnArchivePlayers(savebuffer_t *save, boolean reloading)
 #define LD_S2TOPTEX 0x02
 #define LD_S2BOTTEX 0x04
 #define LD_S2MIDTEX 0x08
+
+//
+// ResetSectors
+// Resets the sectors in the level to their original state
+//
+static void ResetSectors(void)
+{
+	line_t* li;
+
+	// reload the map just to see difference
+	virtres_t* virt = vres_GetMap(lastloadedmaplumpnum);
+	mapsector_t  *ms  = (mapsector_t*) vres_Find(virt, "SECTORS")->data;
+	//mapsidedef_t *msd = (mapsidedef_t*) vres_Find(virt, "SIDEDEFS")->data;
+	maplinedef_t *mld = (maplinedef_t*) vres_Find(virt, "LINEDEFS")->data;
+	sector_t *ss = sectors;
+
+	// reset every sector
+	// commented out lines are eh lines
+	// we really should do them properly, but they take effort and only have a visual effect
+	for (ss = sectors; ss < &sectors[numsectors]; ss++, ms++)
+	{
+		ss->floorheight = ms->floorheight<<FRACBITS;
+		ss->ceilingheight = ms->ceilingheight<<FRACBITS;
+
+		ss->lightlevel = ms->lightlevel;
+		ss->special = ms->special;
+
+		ss->floor_xoffs = ss->spawn_flr_xoffs;
+		ss->floor_yoffs = ss->spawn_flr_yoffs;
+		ss->ceiling_xoffs = ss->spawn_ceil_xoffs;
+		ss->ceiling_yoffs = ss->spawn_ceil_yoffs;
+		ss->floorpic_angle = ss->spawn_flrpic_angle;
+		ss->ceilingpic_angle = ss->spawn_ceilpic_angle;
+		ss->tag = ms->tag; // DON'T use P_ChangeSectorTag
+		ss->firsttag = ss->spawn_firsttag;
+		ss->nexttag = ss->spawn_nexttag;
+
+		ffloor_t* floor = ss->ffloors;
+
+		while (floor != NULL)
+		{
+			floor->flags = floor->spawnflags;
+			floor->alpha = floor->spawnalpha;
+
+			floor = floor->next;
+		}
+	}
+
+	for (li = lines; li < &lines[numlines]; li++, mld++)
+	{
+		li->special = mld->special;
+
+		if (SHORT(li->special) == 321 || SHORT(li->special) == 322)
+			li->callcount = 0;
+	}
+}
+
+//
+// P_LocalArchiveWorld
+// Archives the world's state locally, regardless of differences from original state
+// Faster than NetArchiveWorld
+//
+static void P_LocalArchiveWorld(savebuffer_t *save)
+{
+	UINT8* put;
+
+	// paranoia something something
+	//ClearNetColormaps();
+
+	WRITEUINT32(save->p, ARCHIVEBLOCK_WORLD);
+	put = save->p;
+
+	WRITEUINT32(put, numsectors * sizeof(sectors[0]));
+	WRITEUINT32(put, numlines * sizeof(lines[0]));
+
+	// dump all sector memory into the data
+	WRITEMEM(put, sectors, numsectors * sizeof(sectors[0]));
+	WRITEMEM(put, lines, numlines * sizeof(lines[0]));
+
+	save->p = put;
+}
+
+static void P_LocalUnArchiveWorld(savebuffer_t *save)
+{
+	UINT8* get = save->p;
+
+	if (READUINT32(get) != ARCHIVEBLOCK_WORLD)
+	{
+		I_Error("Bad SaveState at archive block World");
+	}
+
+	// preserve certain local variables
+	sector_t* preservedSectors = Z_Malloc(numsectors * sizeof(sector_t), PU_CACHE, NULL);
+
+	memcpy(preservedSectors, sectors, numsectors * sizeof(sector_t));
+
+	READUINT32(get);
+	READUINT32(get);
+	READMEM(get, sectors, numsectors * sizeof(sectors[0]));
+	READMEM(get, lines, numlines * sizeof(lines[0]));
+
+	for (size_t i = 0; i < numsectors; i++)
+	{
+		sectors[i].thinglist = preservedSectors[i].thinglist;
+		sectors[i].touching_thinglist = preservedSectors[i].touching_thinglist;
+
+		if (sectors[i].thinglist == (mobj_t*)0xDDDDDDDD)
+		{
+			continue;
+		}
+
+		// restore preserved local stuff (tbh I don't really know what this is lol)
+		sectors[i].lightlist = preservedSectors[i].lightlist;
+		sectors[i].numlights = preservedSectors[i].numlights;
+		sectors[i].attached = preservedSectors[i].attached;
+		sectors[i].attachedsolid = preservedSectors[i].attachedsolid;
+	}
+
+	Z_Free(preservedSectors);
+
+	save->p = get;
+}
 
 //
 // P_NetArchiveWorld
@@ -750,7 +914,7 @@ static void P_NetArchiveWorld(savebuffer_t *save)
 //
 // P_NetUnArchiveWorld
 //
-static void P_NetUnArchiveWorld(savebuffer_t *save)
+static void P_NetUnArchiveWorld(savebuffer_t *save, boolean preserveLevel)
 {
 	UINT16 i;
 	line_t *li;
@@ -760,6 +924,16 @@ static void P_NetUnArchiveWorld(savebuffer_t *save)
 
 	if (READUINT32(save->p) != ARCHIVEBLOCK_WORLD)
 		I_Error("Bad $$$.sav at archive block World");
+
+	// initialize colormap vars because paranoia
+	/*R_ClearColormaps();
+
+	if (preserveLevel)
+	{
+		// when we save, we only save sectors that differ from their initial state
+		// so if we don't reset our sectors before loading, some sector changes might not be reverted becuase they were identical to their original state when saved and thus omitted
+		ResetSectors();
+	}*/
 
 	get = save->p;
 
@@ -1002,6 +1176,66 @@ typedef enum
 	tc_polydisplace,
 	tc_end
 } specials_e;
+
+typedef enum
+{
+	ST_FLOORDATA = 1,
+	ST_CEILDATA = 2,
+	ST_LIGHTDATA = 4,
+	ST_FADEMAPDATA = 8
+} sectortarget_e;
+
+typedef struct
+{
+	actionf_p1 action;
+	UINT16 size;
+	UINT32 sectorPointer;
+	UINT8 sectorTargets;
+} specialdef_t;
+
+// special function/data size associations
+#define NOSECTOR(func, type) (actionf_p1)func, sizeof(type), 0, 0
+#define WITHSECTOR(func, type, targets) (actionf_p1)func, sizeof(type), (UINT32)(size_t)&((type*)NULL)->sector, targets
+static const specialdef_t specialDefs[] =
+{
+	NOSECTOR(P_MobjThinker, mobj_t),                   // tc_mobj
+	WITHSECTOR(T_MoveCeiling, ceiling_t, ST_CEILDATA), // tc_ceiling
+	WITHSECTOR(T_MoveFloor, floormove_t, ST_FLOORDATA), // tc_floor
+	WITHSECTOR(T_LightningFlash, lightflash_t, ST_LIGHTDATA), // tc_flash
+	WITHSECTOR(T_StrobeFlash, strobe_t, ST_LIGHTDATA),                 // tc_strobe
+	WITHSECTOR(T_Glow, glow_t, ST_LIGHTDATA),                          // tc_glow
+	WITHSECTOR(T_FireFlicker, fireflicker_t, ST_LIGHTDATA),            // tc_fireflicker
+	WITHSECTOR(T_ThwompSector, levelspecthink_t, ST_FLOORDATA | ST_CEILDATA),         // tc_thwomp
+	NOSECTOR(T_CameraScanner, elevator_t),              // tc_camerascanner
+	WITHSECTOR(T_MoveElevator, elevator_t, ST_CEILDATA | ST_FLOORDATA),              // tc_elevator
+	WITHSECTOR(T_ContinuousFalling, levelspecthink_t, ST_CEILDATA | ST_FLOORDATA),   // tc_contunousfalling
+	WITHSECTOR(T_BounceCheese, levelspecthink_t, ST_CEILDATA),         // tc_bouncecheese
+	WITHSECTOR(T_StartCrumble, elevator_t, ST_FLOORDATA),               // tc_startcrumble
+	WITHSECTOR(T_MarioBlock, levelspecthink_t, ST_FLOORDATA | ST_CEILDATA),           // tc_marioblock
+	NOSECTOR(T_MarioBlockChecker, levelspecthink_t),    // tc_marioblockchecker
+	NOSECTOR(T_SpikeSector, levelspecthink_t),          // tc_spikesector
+	NOSECTOR(T_FloatSector, levelspecthink_t),          // tc_floatsector
+	WITHSECTOR(T_BridgeThinker, levelspecthink_t, ST_CEILDATA | ST_FLOORDATA),        // tc_bridgethinker
+	WITHSECTOR(T_CrushCeiling, ceiling_t, ST_CEILDATA),                // tc_crushceiling
+	NOSECTOR(T_Scroll, scroll_t),                       // tc_scroll
+	NOSECTOR(T_Friction, friction_t),                   // tc_friction
+	NOSECTOR(T_Pusher, pusher_t),                       // tc_pusher
+	NOSECTOR(T_LaserFlash, laserthink_t),               // tc_laserflash
+	WITHSECTOR(T_LightFade, lightlevel_t, ST_LIGHTDATA),                // tc_lightfade
+	NOSECTOR(T_ExecutorDelay, executor_t),              // tc_executor
+	NOSECTOR(T_RaiseSector, levelspecthink_t),          // tc_raisesector
+	NOSECTOR(T_NoEnemiesSector, levelspecthink_t),      // tc_noenemies
+	NOSECTOR(T_EachTimeThinker, levelspecthink_t),      // tc_eachtime
+	NOSECTOR(T_Disappear, disappear_t),                // tc_disappear
+	NOSECTOR(T_PolyObjRotate, polyrotate_t),            // tc_polyrotate
+	NOSECTOR(T_PolyObjMove, polymove_t),                // tc_polymove
+	NOSECTOR(T_PolyObjWaypoint, polywaypoint_t),        // tc_polywaypoint
+	NOSECTOR(T_PolyDoorSlide, polyslidedoor_t),         // tc_polyslidedoor
+	NOSECTOR(T_PolyDoorSwing, polyswingdoor_t),         // tc_polyswingdoor
+	NOSECTOR(T_PolyObjFlag, polymove_t),                // tc_polyflag
+	NOSECTOR(T_PolyObjDisplace, polydisplace_t),        // tc_polydisplace
+};
+#undef A
 
 static inline UINT32 SaveMobjnum(const mobj_t *mobj)
 {
@@ -2658,10 +2892,485 @@ static inline void LoadPolydisplaceThinker(savebuffer_t *save, actionf_p1 thinke
 	P_AddThinker(&ht->thinker);
 }
 
+typedef struct
+{
+	mobj_t* mobj;
+	int thinkerListIndex;
+} mobjloclink_t;
+
+#define HASHLOC(x, y, z) (((x>>4)-(y>>8)+(z>>12)-(x>>16)+(y>>20)-(z>>24)+(x>>28)-(y>>24)+(z>>20)-(x>>16)+(y>>8)-(z>>4)) & 0x7FFF)
+#define MAXNUMMOBJSBYLOC 15
+
+
+//
+// P_LocalArchiveThinkers
+// Archives the world's thinkers locally. Used for within-level savestates
+//
+static void P_LocalArchiveThinkers(savebuffer_t *save)
+{
+	UINT32 j;
+	size_t s;
+	const thinker_t* thinker;
+	mobj_t* savedMobj;
+	executor_t* savedExecutor;
+
+	WRITEUINT32(save->p, ARCHIVEBLOCK_THINKERS);
+
+	//for (i = 0; i < NUM_THINKERLISTS; i++)
+	{
+#define RELINK(var) if (var != NULL) var = (mobj_t*)(size_t)(var->mobjnum)
+		for (thinker = thinkercap.next; thinker != &thinkercap; thinker = thinker->next)
+		{
+			actionf_p1 acp1 = thinker->function;
+
+			// find the associated special def
+			for (j = 0; j < sizeof(specialDefs) / sizeof(specialDefs[0]); j++)
+			{
+				if (acp1 == specialDefs[j].action)
+					break;
+			}
+
+			if (j == sizeof(specialDefs) / sizeof(specialDefs[0]))
+				continue;
+
+			WRITEUINT8(save->p, j);
+			WRITEMEM(save->p, thinker, specialDefs[j].size);
+
+			// relink saved pointers with saved mobjnums
+			if (j == tc_mobj)
+			{
+				savedMobj = &((mobj_t*)(size_t)save->p)[-1];
+				RELINK(savedMobj->tracer);
+				RELINK(savedMobj->target);
+				RELINK(savedMobj->hnext);
+				RELINK(savedMobj->hprev);
+			}
+
+			if (j == tc_executor)
+			{
+				savedExecutor = &((executor_t*)(size_t)save->p)[-1];
+				RELINK(savedExecutor->caller);
+			}
+		}
+
+		WRITEUINT8(save->p, 0xFF); // next list (or end)
+	}
+
+	// now write the nothinkers...
+	// turns out that MF_NOTHINKs aren't in thinker lists lol....
+	// makes sense, but doesn't make life easier. I just wanted an object list. Ah well.
+	for (s = 0; s < numsectors; s++)
+	{
+		mobj_t* thing = sectors[s].thinglist;
+
+		while (thing)
+		{
+			if (thing->flags & MF_NOTHINK)
+			{
+				// archive this thing
+				WRITEUINT8(save->p, tc_mobj);
+				WRITEMEM(save->p, thing, specialDefs[tc_mobj].size);
+
+				savedMobj = &((mobj_t*)save->p)[-1];
+				RELINK(savedMobj->tracer);
+				RELINK(savedMobj->target);
+				RELINK(savedMobj->hnext);
+				RELINK(savedMobj->hprev);
+
+			}
+			thing = thing->snext;
+		}
+	}
+#undef RELINK
+
+	WRITEUINT8(save->p, 0xFF);
+}
+
+static void P_LocalUnArchiveThinkers(savebuffer_t *save)
+{
+	thinker_t *thinker;
+	mobj_t* mobj;
+	UINT8 tclass;
+	UINT8 restoreExecutors = false;
+	INT32 i, j;
+	thinker_t newthinkers = {0};
+	static thinker_t* thinkersbytype[tc_end][16384];
+	static int numthinkersbytype[tc_end];
+	static mobjloclink_t mobjByLoc[32768][MAXNUMMOBJSBYLOC];
+	static int numMobjsByLoc[32768];
+	static mobj_t* mobjByNum[16384];
+
+	memset(mobjByNum, 0, sizeof(mobjByNum));
+	memset(mobjByLoc, 0, sizeof(mobjByLoc));
+	memset(numMobjsByLoc, 0, sizeof(numMobjsByLoc));
+	memset(numthinkersbytype, 0, sizeof(numthinkersbytype));
+
+	if (READUINT32(save->p) != ARCHIVEBLOCK_THINKERS)
+		I_Error("Bad SaveState at archive block Thinkers");
+
+	skyboxmo[0] = skyboxmo[1] = NULL;
+
+	// sort thinkers into maps to speed up replacement searches
+	//for (i = 0; i < NUM_THINKERLISTS; i++)
+	{
+		newthinkers.next = &newthinkers;
+		newthinkers.prev = &newthinkers;
+
+		for (thinker = thinkercap.next; thinker != &thinkercap; thinker = thinker->next)
+		{
+			if (thinker->function == (actionf_p1)P_RemoveThinkerDelayed)
+				continue;
+
+			for (j = 0; j < tc_end; j++)
+			{
+				if (thinker->function == specialDefs[j].action)
+					break;
+			}
+
+			// insert the thinker into the appropriate maps
+			thinkersbytype[j][numthinkersbytype[j]] = thinker;
+			numthinkersbytype[j]++;
+
+			if (thinker->function == (actionf_p1)P_MobjThinker)
+			{
+				UINT16 locHash = HASHLOC(((mobj_t*)thinker)->x, ((mobj_t*)thinker)->y, ((mobj_t*)thinker)->z);
+
+				if (numMobjsByLoc[locHash] < MAXNUMMOBJSBYLOC)
+				{
+					mobjByLoc[locHash][numMobjsByLoc[locHash]].mobj = (mobj_t*)thinker;
+					mobjByLoc[locHash][numMobjsByLoc[locHash]].thinkerListIndex = numthinkersbytype[j] - 1;
+					numMobjsByLoc[locHash]++;
+				}
+			}
+		}
+	}
+
+	// remove from item respawn queues
+	iquetail = iquehead = 0;
+	waypointcap = NULL;
+
+	// clear sector thinker pointers so they don't point to non-existant thinkers for all of eternity
+	for (i = 0; i < (int)numsectors; i++)
+	{
+		mobj_t* thing = sectors[i].thinglist, *next;
+		sectors[i].floordata = sectors[i].ceilingdata = sectors[i].lightingdata;
+
+		// clear nothinkers too
+		while (thing)
+		{
+			next = thing->snext;
+			if (thing->flags & MF_NOTHINK)
+			{
+				thing->thinker.references = 0; // hope this is ok...
+				P_RemoveMobj(thing);
+			}
+
+			thing = next;
+		}
+	}
+
+	// read in saved thinkers
+	//for (list = 0; list < NUM_THINKERLISTS; list++)
+	{
+		for (;;)
+		{
+			tclass = READUINT8(save->p);
+
+			if (tclass == 0xFF)
+				break; // next list
+
+			thinker_t* newthinker = NULL;
+			boolean preservePositions = false;
+
+			// find the existing thinker(s) at the same position, if possible
+			if (tclass == tc_mobj)
+			{
+				mobj_t* savedMobj = (mobj_t*)save->p;
+
+				UINT16 locHash = HASHLOC(savedMobj->x, savedMobj->y, savedMobj->z);
+
+				for (i = 0; i < numMobjsByLoc[locHash]; i++)
+				{
+					if (mobjByLoc[locHash][i].mobj->x == savedMobj->x && mobjByLoc[locHash][i].mobj->y == savedMobj->y && mobjByLoc[locHash][i].mobj->z == savedMobj->z &&
+						(mobjByLoc[locHash][i].mobj->flags & (MF_NOSECTOR | MF_NOBLOCKMAP)) == (savedMobj->flags & (MF_NOSECTOR | MF_NOBLOCKMAP)))
+					{
+						newthinker = (thinker_t*)mobjByLoc[locHash][i].mobj;
+						thinkersbytype[tc_mobj][mobjByLoc[locHash][i].thinkerListIndex] = NULL;
+						mobjByLoc[locHash][i] = mobjByLoc[locHash][numMobjsByLoc[locHash] - 1];
+						numMobjsByLoc[locHash]--;
+						preservePositions = true;
+						break;
+					}
+				}
+			}
+
+			// if that didn't work, find an existing thinker of the same type
+			if (newthinker == NULL && numthinkersbytype[tclass] > 0)
+			{
+				for (j = numthinkersbytype[tclass] - 1; j >= 0; j--)
+				{
+					if (thinkersbytype[tclass][j] == NULL)
+					{
+						numthinkersbytype[tclass]--;
+						continue;
+					}
+
+					// we found an object to replace!
+					newthinker = thinkersbytype[tclass][j];
+					numthinkersbytype[tclass]--;
+					break;
+				}
+			}
+
+			if (newthinker != NULL)
+			{
+				// we found a thinker! we just need to set it up to be replaced
+				if (tclass == tc_mobj && !preservePositions)
+				{
+					// remove it from its old position
+					P_UnsetThingPosition((mobj_t*)newthinker);
+					if (sector_list != NULL)
+					{
+						P_DelSeclist(sector_list);
+						sector_list = NULL;
+					}
+				}
+
+				// detach any playing sounds from this object if we can (still need to work on doing this properly!)
+				//S_DetachChannelsFromOrigin((mobj_t*)newthinker);
+
+				// unlink it from the old list (if it's not a nothinker)
+				if (!(tclass == tc_mobj && (((mobj_t*)newthinker)->flags & MF_NOTHINK)))
+				{
+					newthinker->prev->next = newthinker->next;
+					newthinker->next->prev = newthinker->prev;
+				}
+			}
+			else
+			{
+				// we couldn't find an object to replace so we gotta create it
+				if (tclass == tc_mobj)
+					newthinker = Z_Calloc(specialDefs[tclass].size, PU_LEVEL, NULL);
+				else
+					newthinker = Z_Malloc(specialDefs[tclass].size, PU_LEVSPEC, NULL);
+			}
+
+			// preserve vital positioning stuff (cleanup...)
+			mobj_t preservedMobj = {0};
+
+			if (tclass == tc_mobj)
+				preservedMobj = *(mobj_t*)newthinker;
+
+			// read in the data
+			READMEM(save->p, newthinker, specialDefs[tclass].size);
+
+			newthinker->references = 0; // we'll sort this later
+
+			// set special-specific info
+			switch (tclass)
+			{
+				case tc_mobj:
+				{
+					mobj_t* mobj2 = (mobj_t*)newthinker;
+
+					// link global and player pointers
+					if (mobj2->type == MT_REDFLAG)
+					{
+						redflag = mobj2;
+						rflagpoint = mobj2->spawnpoint;
+					}
+
+					if (mobj2->type == MT_BLUEFLAG)
+					{
+						blueflag = mobj2;
+						bflagpoint = mobj2->spawnpoint;
+					}
+					if (mobj2->type == MT_BOSS3WAYPOINT)
+					{
+						//P_SetTarget(&mobj2->tracer, waypointcap);
+						P_SetTarget(&waypointcap, mobj2);
+					}
+
+					if (mobj2->player && mobj2->type == MT_PLAYER)
+						mobj2->player->mo = mobj2;
+
+					// clear sector links etc
+					mobj2->bnext = NULL;
+					mobj2->bprev = NULL;
+					mobj2->snext = preservedMobj.snext;
+					mobj2->sprev = preservedMobj.sprev;
+					mobj2->subsector = preservedMobj.subsector;
+					mobj2->touching_sectorlist = preservedMobj.touching_sectorlist;
+					mobjByNum[mobj2->mobjnum] = mobj2;
+					break; // i dream of a programming language where breaking is the default and fallthrough is the optional (and so much more rarely used) specifier
+				}
+				case tc_executor:
+					restoreExecutors = true;
+					break;
+			}
+
+			// make special-specific sector connections
+			if (specialDefs[tclass].sectorTargets)
+			{
+				sector_t* target = *(sector_t**)((UINT8*)newthinker + specialDefs[tclass].sectorPointer);
+
+				if (specialDefs[tclass].sectorTargets & ST_CEILDATA)
+					target->ceilingdata = newthinker;
+				if (specialDefs[tclass].sectorTargets & ST_FLOORDATA)
+					target->floordata = newthinker;
+			}
+
+			// relink into the new thinker list
+			if (!(tclass == tc_mobj && (((mobj_t*)newthinker)->flags & MF_NOTHINK)))
+			{
+				newthinker->prev = newthinkers.prev;
+				newthinker->next = &newthinkers;
+				newthinker->prev->next = newthinker;
+				newthinker->next->prev = newthinker;
+			}
+
+			if (tclass == tc_mobj)
+			{
+				if (!preservePositions)
+					P_SetThingPosition((mobj_t*)newthinker);
+				else
+				{
+					((mobj_t*)newthinker)->bnext = preservedMobj.bnext;
+					((mobj_t*)newthinker)->bprev = preservedMobj.bprev;
+				}
+			}
+		}
+	}
+
+	// collect nothinkers as well
+	for (;;)
+	{
+		tclass = READUINT8(save->p);
+
+		if (tclass == 0xFF)
+			break; // next list
+
+		mobj = Z_Calloc(sizeof(mobj_t), PU_LEVEL, NULL);
+		READMEM(save->p, mobj, specialDefs[tclass].size);
+
+		mobjByNum[mobj->mobjnum] = mobj;
+		mobj->bnext = NULL;
+		mobj->bprev = NULL;
+		mobj->snext = NULL;
+		mobj->sprev = NULL;
+		mobj->subsector = NULL;
+		mobj->touching_sectorlist = NULL;
+		P_SetThingPosition(mobj);
+
+		// we just spawner a nothinker so it doesn't go in a thinker list, let it run wild??
+	}
+
+	// delete everything remaining in the list that hasn't been linked
+	//for (i = 0; i < NUM_THINKERLISTS; i++)
+	{
+		thinker_t* next;
+
+		thinker = thinkercap.next;
+		for (thinker = thinkercap.next; thinker != &thinkercap; thinker = next)
+		{
+			next = thinker->next;
+
+			if (thinker->function == (actionf_p1)P_MobjThinker)
+				P_RemoveSavegameMobj((mobj_t *)thinker, true); // item isn't saved, don't remove it
+			else
+			{
+				(next->prev = thinker->prev)->next = next;
+				R_DestroyLevelInterpolators(thinker);
+				Z_Free(thinker);
+			}
+		}
+
+		// remove all the current precip thinkers
+		P_PurgePrecipitation();
+
+		// connect the new linker list to the old linker list
+		newthinkers.prev->next = thinkercap.next;
+		thinkercap.next->prev = newthinkers.prev;
+
+		thinkercap.next = newthinkers.next;
+		newthinkers.next->prev = &thinkercap;
+	}
+
+	// restore execution stuff I guess lol
+	if (restoreExecutors)
+	{
+		executor_t *delay = NULL;
+		UINT32 mobjnum;
+
+		for (thinker = thinkercap.next; thinker != &thinkercap; thinker = thinker->next)
+		{
+			if (thinker->function != (actionf_p1)T_ExecutorDelay)
+				continue;
+
+			delay = (void *)thinker;
+
+			if (!(mobjnum = (UINT32)(size_t)delay->caller))
+				continue;
+
+			delay->caller = mobjByNum[mobjnum];
+		}
+	}
+
+	// restore pointers
+#define RELINK(var) if (var) { UINT32 index = (UINT32)(size_t)var; var = NULL; P_SetTarget(&var, mobjByNum[index]); }
+
+	//RELINK(waypointcap);
+
+	for (thinker = thinkercap.next; thinker != &thinkercap; thinker = thinker->next)
+	{
+		if (thinker->function != (actionf_p1)P_MobjThinker)
+			continue;
+
+		mobj = (mobj_t*)thinker;
+
+		RELINK(mobj->tracer);
+		RELINK(mobj->target);
+		RELINK(mobj->hnext);
+		RELINK(mobj->hprev);
+	}
+
+	// and for nothinkers
+	for (i = 0; i < (int)numsectors; i++)
+	{
+		mobj_t* thing = sectors[i].thinglist;
+
+		while (thing)
+		{
+			if (thing->flags & MF_NOTHINK)
+			{
+				RELINK(thing->tracer);
+				RELINK(thing->target);
+				RELINK(thing->hnext);
+				RELINK(thing->hprev);
+			}
+
+			thing = thing->snext;
+		}
+	}
+
+	// restore player pointers (the above doesn't always seem to work perhaps because playeringame is false?
+	for (i = 0; i < MAXPLAYERS; i++)
+	{
+		if (players[i].ingame)
+		{
+			RELINK(players[i].capsule);
+			RELINK(players[i].axis1);
+			RELINK(players[i].axis2);
+			RELINK(players[i].awayviewmobj);
+		}
+	}
+#undef RELINK
+}
+
 //
 // P_NetUnArchiveThinkers
 //
-static void P_NetUnArchiveThinkers(savebuffer_t *save)
+static void P_NetUnArchiveThinkers(savebuffer_t *save, boolean preserveLevel)
 {
 	thinker_t *currentthinker;
 	thinker_t *next;
@@ -2680,7 +3389,7 @@ static void P_NetUnArchiveThinkers(savebuffer_t *save)
 		next = currentthinker->next;
 
 		if (currentthinker->function == (actionf_p1)P_MobjThinker)
-			P_RemoveSavegameMobj((mobj_t *)currentthinker); // item isn't saved, don't remove it
+			P_RemoveSavegameMobj((mobj_t *)currentthinker, preserveLevel); // item isn't saved, don't remove it
 		else
 		{
 			(next->prev = currentthinker->prev)->next = next;
@@ -2976,6 +3685,17 @@ static inline void P_UnArchivePolyObjects(savebuffer_t *save)
 	for (i = 0; i < numSavedPolys; ++i)
 		P_UnArchivePolyObj(save, &PolyObjects[i]);
 }
+
+static void P_LocalArchivePolyObjects(savebuffer_t *save)
+{
+	P_ArchivePolyObjects(save);
+}
+
+static void P_LocalUnArchivePolyObjects(savebuffer_t *save)
+{
+	P_UnArchivePolyObjects(save);
+}
+
 //
 // P_FinishMobjs
 //
@@ -3289,10 +4009,11 @@ static void P_NetArchiveMisc(savebuffer_t *save, boolean resending)
 		WRITEUINT8(save->p, 0x2e);
 }
 
-FUNCINLINE static ATTRINLINE boolean P_NetUnArchiveMisc(savebuffer_t *save, boolean reloading)
+FUNCINLINE static ATTRINLINE boolean P_NetUnArchiveMisc(savebuffer_t *save, boolean reloading, boolean preserveLevel)
 {
 	UINT32 pig;
 	INT32 i;
+	INT16 oldMap = gamemap;
 
 	if (READUINT32(save->p) != ARCHIVEBLOCK_MISC)
 		I_Error("Bad $$$.sav at archive block Misc");
@@ -3330,7 +4051,7 @@ FUNCINLINE static ATTRINLINE boolean P_NetUnArchiveMisc(savebuffer_t *save, bool
 
 	encoremode = (boolean)READUINT8(save->p);
 
-	if (!P_SetupLevel(true, reloading))
+	if ((!preserveLevel || (gamemap != oldMap)) && !P_SetupLevel(true, reloading))
 	{
 		CONS_Alert(CONS_ERROR, M_GetText("Can't load the level!\n"));
 		return false;
@@ -3409,6 +4130,29 @@ FUNCINLINE static ATTRINLINE boolean P_NetUnArchiveMisc(savebuffer_t *save, bool
 	return true;
 }
 
+//made kart splitscreen compat
+static inline void P_LocalArchiveCameras(savebuffer_t *save)
+{
+	WRITEMEM(save->p, &camera, sizeof(camera));
+}
+
+//made kart splitscreen compat
+static inline void P_LocalUnArchiveCameras(savebuffer_t *save)
+{
+	UINT32 i;
+	boolean chase[MAXSPLITSCREENPLAYERS];
+
+	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
+		chase[i] = camera[i].chase;
+
+	// this makes things easy!
+	READMEM(save->p, &camera, sizeof(camera));
+
+	// chase is changed outside of tics, so preserve this
+	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
+		camera[i].chase = chase[i];
+}
+
 void P_SaveGame(savebuffer_t *save)
 {
 	P_ArchiveMisc(save);
@@ -3481,20 +4225,20 @@ boolean P_LoadGame(savebuffer_t *save, INT16 mapoverride)
 	return true;
 }
 
-boolean P_LoadNetGame(savebuffer_t *save, boolean reloading)
+boolean P_LoadNetGame(savebuffer_t *save, boolean reloading, boolean preserveLevel)
 {
 	CV_LoadNetVars(&save->p);
 
-	if (!P_NetUnArchiveMisc(save, reloading))
+	if (!P_NetUnArchiveMisc(save, reloading, preserveLevel))
 		return false;
 
 	P_NetUnArchivePlayers(save, reloading);
 
 	if (gamestate == GS_LEVEL)
 	{
-		P_NetUnArchiveWorld(save);
+		P_NetUnArchiveWorld(save, preserveLevel);
 		P_UnArchivePolyObjects(save);
-		P_NetUnArchiveThinkers(save);
+		P_NetUnArchiveThinkers(save, preserveLevel);
 		P_NetUnArchiveSpecials(save);
 		P_RelinkPointers();
 		P_FinishMobjs();
@@ -3512,4 +4256,99 @@ boolean P_LoadNetGame(savebuffer_t *save, boolean reloading)
 	// This is done in P_NetUnArchiveSpecials now.
 
 	return READUINT8(save->p) == 0x1d;
+}
+
+// P_SaveGameState is a within-level-only mechanism for saving the game state. It must not be used cross level. Used for simulation backtracking.
+// It uses a mixture of existing NetArchive functions and faster LocalArchive functions to do the job
+void P_SaveGameState(savestate_t* savestate, savebuffer_t *save)
+{
+	mobj_t* mobj;
+	thinker_t* th;
+	UINT32 i = 1; // don't start from 0, it'd be confused with a blank pointer otherwise
+
+	if (savestate->buffer == NULL)
+	{
+		savestate->buffer = Z_Malloc(10 * 1024 * 1024, PU_STATIC, NULL); // ten megabytes?
+	}
+
+	save->p = savestate->buffer;
+
+	WRITEINT16(save->p, gamemap);
+	WRITEUINT32(save->p, globalmobjnum);
+
+	CV_SaveNetVars(&save->p, false);
+	P_NetArchiveMisc(save, false);
+
+	// assign mobj nums for pointer relinking
+	for (th = thinkercap.next; th != &thinkercap; th = th->next)
+	{
+		if (th->function != (actionf_p1)P_MobjThinker)
+			continue;
+
+		mobj = (mobj_t *)th;
+
+		if (mobj->type == MT_HOOP || mobj->type == MT_HOOPCOLLIDE || mobj->type == MT_HOOPCENTER)
+			continue;
+
+		mobj->mobjnum = i++;
+	}
+
+
+	P_NetArchivePlayers(save, false);
+
+	if (gamestate == GS_LEVEL)
+	{
+		P_LocalArchiveWorld(save);
+		P_ArchivePolyObjects(save);
+		P_NetArchiveThinkers(save);
+		P_NetArchiveSpecials(save);
+		//P_LocalArchiveCameras(save);
+	}
+
+	LUA_Archive(save, true);
+}
+
+// P_LoadGameState is a within-level-only mechanism for loading the game state. It must not be used cross level. Used for simulation backtracking.
+// It uses a mixture of existing NetUnArchive functions and faster LocalUnArchive functions to do the job
+boolean P_LoadGameState(const savestate_t* savestate, savebuffer_t *save)
+{
+	INT16 savedGameMap;
+
+	if (savestate->buffer == NULL)
+	{
+		return false;
+	}
+
+	save->p = ((unsigned char*)savestate->buffer);
+
+	savedGameMap = READINT16(save->p);
+
+	if (savedGameMap != gamemap)
+	{
+		// savestates do not work cross-level
+		return false;
+	}
+
+	globalmobjnum = READUINT32(save->p);
+
+	CV_LoadNetVars(&save->p);
+
+	if (P_NetUnArchiveMisc(save, false, true))
+	{
+		return false;
+	}
+
+	if (gamestate == GS_LEVEL)
+	{
+		P_NetUnArchivePlayers(save, false);
+		P_LocalUnArchiveWorld(save);
+		P_UnArchivePolyObjects(save);
+		P_NetUnArchiveThinkers(save, false);
+		P_NetUnArchiveSpecials(save);
+		//P_LocalUnArchiveCameras(save);
+	}
+
+	LUA_UnArchive(save, true);
+
+	return true;
 }

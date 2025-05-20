@@ -50,6 +50,8 @@ static mobj_t *shadowcap = NULL;
 mobj_t *waypointcap = NULL;
 mobj_t *mobjcache = NULL;
 
+UINT32 globalmobjnum = 0; // this should never overflow, but 4 billion would be an impressive number to reach. \todo ensure this never happens
+
 void P_InitCachedActions(void)
 {
 	actioncachehead.prev = actioncachehead.next = &actioncachehead;
@@ -374,6 +376,12 @@ boolean P_WeaponOrPanel(mobjtype_t type)
 		return true;
 
 	return false;
+}
+
+boolean P_IsProjectile(mobjtype_t type)
+{
+	return type == MT_THROWNBOUNCE || type == MT_THROWNINFINITY || type == MT_THROWNAUTOMATIC || type == MT_THROWNSCATTER
+	|| type == MT_THROWNEXPLOSION || type == MT_THROWNGRENADE || type == MT_REDRING;
 }
 
 //
@@ -9477,6 +9485,7 @@ mobj_t *P_SpawnMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type)
 	mobj->thinker.function = (actionf_p1)P_MobjThinker;
 	mobj->type = type;
 	mobj->info = info;
+	mobj->localmobjnum = globalmobjnum++;
 
 	mobj->x = x;
 	mobj->y = y;
@@ -10241,7 +10250,7 @@ void P_FreePrecipMobj(precipmobj_t *mobj)
 }
 
 // Clearing out stuff for savegames
-void P_RemoveSavegameMobj(mobj_t *mobj)
+void P_RemoveSavegameMobj(mobj_t *mobj, boolean preserveLevel)
 {
 	thinker_t *th = (thinker_t*)mobj;
 
@@ -10256,7 +10265,8 @@ void P_RemoveSavegameMobj(mobj_t *mobj)
 	}
 
 	// stop any playing sound
-	S_StopSound(mobj);
+	if (!preserveLevel)
+		S_StopSound(mobj);
 	R_RemoveMobjInterpolator(mobj);
 
 	// just set its reference count to 0 to not trigger the assert in P_UnlinkThinker

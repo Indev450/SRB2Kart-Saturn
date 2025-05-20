@@ -1706,9 +1706,9 @@ UINT64 I_GetPrecisePrecision(void)
 
 static UINT32 frame_rate;
 
-static double frame_frequency;
+double frame_frequency;
 static UINT64 frame_epoch;
-static double elapsed_frames;
+double elapsed_frames;
 
 static void I_InitFrameTime(const UINT64 now, const UINT32 cap)
 {
@@ -1727,6 +1727,8 @@ static void I_InitFrameTime(const UINT64 now, const UINT32 cap)
 	frame_frequency = timer_frequency / (double)frame_rate;
 }
 
+SINT8 lastTimeFudge = 0;
+
 double I_GetFrameTime(void)
 {
 	const UINT64 now = SDL_GetPerformanceCounter();
@@ -1736,6 +1738,32 @@ double I_GetFrameTime(void)
 	{
 		// Maybe do this in a OnChange function for cv_fpscap?
 		I_InitFrameTime(now, cap);
+	}
+
+	//LXShadow's comment:
+	/* If the server and client are using different timer types, this will cause jutter.
+	 *
+	 *
+	 I *t also messes with SRB2netplus's timer fudge, meaning that for a truly accurate timerfudge it needs to know which timer the server is using...
+	 Fudge the timer to sync better with online games. Uses multiply-first approach (more accurate)*/
+
+	if (cv_timefudge.value != lastTimeFudge)
+	{
+		if (elapsed_frames > 0.00000000001)
+			elapsed_frames = now;
+
+		if (cv_timefudge.value > lastTimeFudge)
+		{
+			elapsed_frames -= 1.0; // do not allow the same tic to play twice
+		}
+
+		elapsed_frames = (double)(elapsed_frames + (double)cv_timefudge.value / 100);
+
+		// 100 is just to get a float number from 0 to 1 by dividing timefudge/100
+		// this probably allows to move the time in slight steps
+		// knowing that "elapsed" is a FP value, this makes sense.
+		// jitters happen when we are not "even" with timers within 0..1 (and also depending on latency)
+		lastTimeFudge = cv_timefudge.value;
 	}
 
 	if (frame_rate == 0)
@@ -1750,6 +1778,18 @@ double I_GetFrameTime(void)
 
 	frame_epoch = now; // moving epoch
 	return elapsed_frames;
+}
+
+//
+// I_SetTime
+// Sets the time, used to fudge timers for better network synching
+//
+void I_SetTime(tic_t tic, int fudge, boolean useAbsoluteFudge)
+{
+	tic = max(tic, SDL_GetTicks());
+
+	if (useAbsoluteFudge)
+		elapsed_frames = elapsed_frames + ((double)fudge / 100) * frame_frequency;
 }
 
 //

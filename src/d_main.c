@@ -859,7 +859,7 @@ void D_SRB2Loop(void)
 				realtics = 1;
 
 			// process tics (but maybe not if realtic == 0)
-			TryRunTics(realtics);
+			TryRunTics(realtics, entertic);
 
 			if (lastdraw || singletics || (gametic > rendergametic))
 			{

@@ -27,6 +27,8 @@
 
 #define STATLENGTH (TICRATE*2)
 
+void TimeFudge(void);
+
 // stat of net
 extern INT32 ticruned, ticmiss;
 extern INT32 getbps, sendbps;
