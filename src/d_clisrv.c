@@ -6722,7 +6722,7 @@ boolean TryRunTics(tic_t realtics, tic_t entertic)
 			DEBFILE(va("============ Running SIMMISS tic %d (local %d)\n", gametic, localgametic));
 			con_muted = true;
 			issimulation = true;
-			G_Ticker(true); //tic one tic further as usual
+			//G_Ticker(true); //tic one tic further as usual
 			con_muted = false;
 			netcmds[gametic % BACKUPTICS][consoleplayer] = temp;
 			issimulation = false;
