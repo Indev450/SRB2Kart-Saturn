@@ -204,7 +204,6 @@ steadyplayer_t steadyplayers[MAXPLAYERS];
 void EncodeTiccmdTime(ticcmd_t *ticcmd, tic_t time);
 tic_t DecodeTiccmdTime(const ticcmd_t *ticcmd);
 static boolean CompareTiccmd(const ticcmd_t *a, const ticcmd_t *b);
-static void AdjustSimulatedTiccmdInputs(ticcmd_t *cmds);
 
 static void RunSimulations(void);
 // Net simulation stuff END
@@ -6164,9 +6163,6 @@ static void CL_SendClientCmd(void)
 		}
 
 		packetsize = sizeof (clientcmd_pak);
-		//ticcmd_t adjustedCmd = localcmds[0][lagDelay];
-		//AdjustSimulatedTiccmdInputs(&adjustedCmd);
-
 		G_MoveTiccmd(&netbuffer->u.clientpak.cmd, &localcmds[0][lagDelay], 1);
 		netbuffer->u.clientpak.consistancy = SHORT(consistancy[gametic % BACKUPTICS]);
 
@@ -6357,32 +6353,6 @@ tic_t DecodeTiccmdTime(const ticcmd_t *ticcmd)
 #else
 	return 0;
 #endif
-}
-
-INT16 oldAngle;
-static void AdjustSimulatedTiccmdInputs(ticcmd_t *cmds)
-{
-	if (server || simtic == gametic)
-		return;
-
-	if (!oldAngle)
-		oldAngle = cmds->angleturn;
-
-	if (cmds->angleturn != oldAngle)
-	{
-		// If the aiming angles are different, readjust movements to go towards the player's original intended direction
-		angle_t difference = (cmds->angleturn - oldAngle) << 16;
-		oldAngle = cmds->angleturn;
-		char oldSidemove = cmds->sidemove, oldForwardmove = cmds->forwardmove;
-
-		cmds->sidemove = (FixedMul((fixed_t)(oldSidemove<<FRACBITS), FINECOSINE(difference>>ANGLETOFINESHIFT))
-						+ FixedMul((fixed_t)(oldForwardmove<<FRACBITS), FINESINE(difference>>ANGLETOFINESHIFT))) >> FRACBITS;
-		cmds->forwardmove = (FixedMul((fixed_t)(oldSidemove<<FRACBITS), -FINESINE(difference>>ANGLETOFINESHIFT))
-						+ FixedMul((fixed_t)(oldForwardmove<<FRACBITS), FINECOSINE(difference>>ANGLETOFINESHIFT))) >> FRACBITS;
-
-		cmds->sidemove = min(max(cmds->sidemove, -50), 50);
-		cmds->forwardmove = min(max(cmds->forwardmove, -50), 50);
-	}
 }
 
 //
