@@ -3649,7 +3649,7 @@ void P_SaveGameState(savestate_t* savestate, savebuffer_t *save)
 
 	if (savestate->buffer == NULL)
 	{
-		savestate->buffer = Z_Malloc(10 * 1024 * 1024, PU_STATIC, NULL); // ten megabytes?
+		savestate->buffer = Z_Malloc(15 * 1024 * 1024, PU_STATIC, NULL); // fifteen? megabytes?
 	}
 
 	save->p = savestate->buffer;
