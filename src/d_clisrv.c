@@ -6559,11 +6559,11 @@ boolean TryRunTics(tic_t realtics, tic_t entertic)
 
 	// detect if we can do simulation
 	canSimulate = (gamestate == GS_LEVEL)
-				&& leveltime >= TICRATE*4
+				&& leveltime >= NEWTICRATE
 				&& gametic >= NEWTICRATE
 				//&& !countdown2 //SRB2Kart: No simulating after everyone has finished ... it breaks stuff
 				&& (cv_simulate.value && !server) //SRB2Kart: make it impossible to sim before the start of the race
-				&& (!resynch_local_inprogress && !cl_redownloadinggamestate) && gametic >= SavestatesClearedTic + TICRATE; //do not simulate for one second after clearing
+				&& (!resynch_local_inprogress && !cl_redownloadinggamestate) && gametic >= SavestatesClearedTic + NEWTICRATE; //do not simulate for one second after clearing
 
 	if (simtic > gametic && !canSimulate)
 	{
@@ -6623,6 +6623,8 @@ boolean TryRunTics(tic_t realtics, tic_t entertic)
 
 	if (ticking)
 	{
+		hu_stopped = false;
+
 		if (!(gamestate == GS_LEVEL) // Not in a level
 			// In a level, in a netgame, it's an N livetic (but not gametic because the game can lag)
 			|| ((gamestate == GS_LEVEL) && ((liveTic % simInaccuracy == 0)) && netgame) || !netgame) // or singleplayer
@@ -6700,6 +6702,8 @@ boolean TryRunTics(tic_t realtics, tic_t entertic)
 	// hopefully the server won't miss our input
 	else
 	{
+		hu_stopped = true;
+
 		if (canSimulate && !cl_redownloadinggamestate && cv_simmisstics.value == 1)
 		{
 			// collect net condition data based on encoded tics, it's needed for calculating correct netcmds
@@ -6718,7 +6722,7 @@ boolean TryRunTics(tic_t realtics, tic_t entertic)
 			DEBFILE(va("============ Running SIMMISS tic %d (local %d)\n", gametic, localgametic));
 			con_muted = true;
 			issimulation = true;
-			//G_Ticker(true); //tic one tic further as usual
+			G_Ticker(true); //tic one tic further as usual
 			con_muted = false;
 			netcmds[gametic % BACKUPTICS][consoleplayer] = temp;
 			issimulation = false;
