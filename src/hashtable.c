@@ -215,14 +215,19 @@ hashtable* hashtable_Create(void) {
     return table;
 }
 
-void hashtable_Destroy(hashtable* table) {
+void hashtable_Destroy(hashtable* table)
+{
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wcast-qual"
     // First free allocated keys.
-    for (size_t i = 0; i < table->capacity; i++) {
-        if (table->entries[i].key != NULL) {
+    for (size_t i = 0; i < table->capacity; i++)
+    {
+        if (table->entries[i].key != NULL)
+        {
             free((void*)table->entries[i].key);
         }
     }
-
+#pragma GCC diagnostic pop
     // Then free entries array and table itself.
     free(table->entries);
     free(table);
@@ -293,7 +298,7 @@ static const char* ht_set_entry(ht_entry* entries, size_t capacity,
         }
         (*plength)++;
     }
-    entries[index].key = (char*)key;
+    entries[index].key = (const char*)key;
     entries[index].value = value;
     return key;
 }
@@ -349,12 +354,13 @@ size_t hashtable_Length(hashtable* table) {
     return table->length;
 }
 
-hashtable_iterator ht_iterator(hashtable* table) {
+/*static hashtable_iterator ht_iterator(hashtable* table)
+{
     hashtable_iterator it;
     it._table = table;
     it._index = 0;
     return it;
-}
+}*/
 
 boolean hashtable_Next(hashtable_iterator* it) {
     // Loop till we've hit end of entries array.

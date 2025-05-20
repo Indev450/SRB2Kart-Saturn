@@ -10267,6 +10267,7 @@ void P_RemoveSavegameMobj(mobj_t *mobj, boolean preserveLevel)
 	// stop any playing sound
 	if (!preserveLevel)
 		S_StopSound(mobj);
+
 	R_RemoveMobjInterpolator(mobj);
 
 	// just set its reference count to 0 to not trigger the assert in P_UnlinkThinker
