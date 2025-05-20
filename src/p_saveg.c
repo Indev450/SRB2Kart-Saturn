@@ -2209,7 +2209,7 @@ FUNCINLINE static ATTRINLINE mobj_t *AllocMobj(void)
 	return mobj;
 }
 
-static void LoadMobjThinker(savebuffer_t *save, actionf_p1 thinker)
+static thinker_t*  LoadMobjThinker(savebuffer_t *save, actionf_p1 thinker)
 {
 	thinker_t *next;
 	mobj_t *mobj;
@@ -2237,7 +2237,7 @@ static void LoadMobjThinker(savebuffer_t *save, actionf_p1 thinker)
 		if (mapthings[spawnpointnum].type == 1705 || mapthings[spawnpointnum].type == 1713) // NiGHTS Hoop special case
 		{
 			P_SpawnHoopsAndRings(&mapthings[spawnpointnum]);
-			return;
+			return NULL;
 		}
 
 		mobj = AllocMobj();
@@ -2456,7 +2456,7 @@ static void LoadMobjThinker(savebuffer_t *save, actionf_p1 thinker)
 			skyboxmo[0] = mobj;
 	}
 
-	P_AddThinker(&mobj->thinker);
+	//P_AddThinker(&mobj->thinker);
 
 	if (diff2 & MD2_WAYPOINTCAP)
 		P_SetTarget(&waypointcap, mobj);
@@ -2464,6 +2464,8 @@ static void LoadMobjThinker(savebuffer_t *save, actionf_p1 thinker)
 	mobj->info = (mobjinfo_t *)next; // temporarily, set when leave this function
 
 	R_AddMobjInterpolator(mobj);
+
+	return &mobj->thinker;
 }
 
 //
@@ -3447,6 +3449,7 @@ static void P_NetUnArchiveThinkers(savebuffer_t *save, boolean preserveLevel, bo
 	// read in saved thinkers
 	for (;;)
 	{
+		thinker_t* th = NULL;
 		tclass = READUINT8(save->p);
 
 		if (tclass == tc_end)
@@ -3456,7 +3459,9 @@ static void P_NetUnArchiveThinkers(savebuffer_t *save, boolean preserveLevel, bo
 		switch (tclass)
 		{
 			case tc_mobj:
-				LoadMobjThinker(save, (actionf_p1)P_MobjThinker);
+				th = LoadMobjThinker(save, (actionf_p1)P_MobjThinker);
+				P_AddThinker(th);
+				mobjnum_ht_linkedList_AddEntry(th);
 				break;
 
 			case tc_ceiling:
@@ -4355,6 +4360,8 @@ void P_SaveGameState(savestate_t* savestate, savebuffer_t *save)
 boolean P_LoadGameState(const savestate_t* savestate, savebuffer_t *save)
 {
 	INT16 savedGameMap;
+
+	mobjnum_ht_linkedList_Init();
 
 	if (savestate->buffer == NULL)
 	{
