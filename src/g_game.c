@@ -1898,7 +1898,7 @@ void G_Ticker(boolean run)
 				P_Ticker(run); // tic the game
 
 				//do not draw any GUI during sims
-				if ((issimulation && finaltargetsimtic == simtic) || (!canSimulate))
+				if (!issimulation || finaltargetsimtic == simtic)
 				{
 					ST_Ticker();
 					AM_Ticker();
