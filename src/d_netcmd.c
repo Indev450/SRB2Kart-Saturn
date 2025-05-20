@@ -562,8 +562,6 @@ consvar_t cv_debugsimulaterewind = { "debugsimulaterewind", "0", 0, debugsimulat
 static CV_PossibleValue_t timefudge_cons_t[] = { {0, "MIN"}, {100, "MAX"}, {0, NULL} };
 consvar_t cv_timefudge = { "timefudge", "0", CV_CALL, timefudge_cons_t, TimeFudge_OnChange, 0, NULL, NULL, 0, 0, NULL };
 
-consvar_t cv_autoupdatetimefudge = {"autoupdatetimefudge", "No", 0, CV_YesNo, NULL, 0, NULL, NULL, 0, 0, NULL};
-
 INT16 gametype = GT_RACE; // SRB2kart
 boolean forceresetplayers = false;
 boolean deferencoremode = false;
@@ -712,7 +710,6 @@ void D_RegisterServerCommands(void)
 	CV_RegisterVar(&cv_netsteadyplayers);
 	CV_RegisterVar(&cv_debugsimulaterewind);
 	CV_RegisterVar(&cv_timefudge);
-	CV_RegisterVar(&cv_autoupdatetimefudge);
 	CV_RegisterVar(&cv_nettrails);
 	CV_RegisterVar(&cv_netslingdelay);
 	CV_RegisterVar(&cv_playerfullbright);

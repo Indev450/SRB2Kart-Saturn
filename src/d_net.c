@@ -1168,9 +1168,6 @@ boolean HGetPacket(void)
 		if (doomcom->remotenode == -1) // No packet received
 			return false;
 
-		if (cv_autoupdatetimefudge.value)
-			TimeFudge();
-
 		getbytes += packetheaderlength + doomcom->datalength; // For stat
 
 		if (doomcom->remotenode >= MAXNETNODES)

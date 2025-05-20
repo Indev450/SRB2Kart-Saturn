@@ -155,7 +155,6 @@ extern consvar_t cv_siminaccuracy;
 extern consvar_t cv_netsteadyplayers;
 extern consvar_t cv_debugsimulaterewind;
 extern consvar_t cv_timefudge;
-extern consvar_t cv_autoupdatetimefudge;
 extern consvar_t cv_nettrails;
 extern consvar_t cv_netslingdelay;
 
