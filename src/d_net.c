@@ -1208,8 +1208,6 @@ boolean HGetPacket(void)
 	return true;
 }
 
-extern double netUpdateFudge;
-
 #define gettime (I_GetPreciseTime() / tic_frequency)
 void TimeFudge(void)
 {

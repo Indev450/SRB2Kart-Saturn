@@ -6489,7 +6489,7 @@ int estimatedRTT = 0, minRTT, maxRTT;
 int minLiveTicOffset, maxLiveTicOffset;
 int recommendedSimulateTics = 0; // simulateTics recommendation based on the last known 'stable' RTT (range <= 2). Used for avoiding spike lag future-past-teleports.
 int smoothingDelay;
-int netUpdateFudge; // our last net update fudge
+double netUpdateFudge; // our last net update fudge
 
 tic_t SavestatesClearedTic;
 

@@ -28,6 +28,7 @@
 #define STATLENGTH (TICRATE*2)
 
 void TimeFudge(void);
+extern double netUpdateFudge;
 
 // stat of net
 extern INT32 ticruned, ticmiss;
