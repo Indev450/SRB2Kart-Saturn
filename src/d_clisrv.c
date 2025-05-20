@@ -206,7 +206,7 @@ tic_t DecodeTiccmdTime(const ticcmd_t *ticcmd);
 static boolean CompareTiccmd(const ticcmd_t *a, const ticcmd_t *b);
 static void AdjustSimulatedTiccmdInputs(ticcmd_t *cmds);
 
-static void RunSimulations();
+static void RunSimulations(void);
 // Net simulation stuff END
 
 // engine
@@ -6164,10 +6164,10 @@ static void CL_SendClientCmd(void)
 		}
 
 		packetsize = sizeof (clientcmd_pak);
-		ticcmd_t adjustedCmd = localcmds[0][lagDelay];
-		AdjustSimulatedTiccmdInputs(&adjustedCmd);
+		//ticcmd_t adjustedCmd = localcmds[0][lagDelay];
+		//AdjustSimulatedTiccmdInputs(&adjustedCmd);
 
-		G_MoveTiccmd(&netbuffer->u.clientpak.cmd, &adjustedCmd, 1);
+		G_MoveTiccmd(&netbuffer->u.clientpak.cmd, &localcmds[0][lagDelay], 1);
 		netbuffer->u.clientpak.consistancy = SHORT(consistancy[gametic % BACKUPTICS]);
 
 		if (splitscreen || botingame) // Send a special packet with 2 cmd for splitscreen
@@ -6606,7 +6606,7 @@ boolean TryRunTics(tic_t realtics, tic_t entertic)
 	for (tic_t i = 0; i < realtics; i++)
 	{
 		//localcmds are being calculated in NetUpdate()->Local_Maketic() function
-		localTicBuffer[(liveTic - i) % MAXSIMULATIONS] = localcmds[0][min(i, MAXGENTLEMENDELAY-1)];
+		localTicBuffer[(liveTic - i) % MAXSIMULATIONS] = localcmds[0][0];
 	}
 
 	ticking = (neededtic > gametic);
@@ -6705,7 +6705,7 @@ boolean TryRunTics(tic_t realtics, tic_t entertic)
 			}
 			DEBFILE(va("============ Running SIMMISS tic %d (local %d)\n", gametic, localgametic));
 			issimulation = true;
-			G_Ticker(true); //tic one tic further as usual
+			//G_Ticker(true); //tic one tic further as usual
 			netcmds[gametic % BACKUPTICS][consoleplayer] = temp;
 			issimulation = false;
 		}
@@ -6931,10 +6931,10 @@ static void RunSimulations(void)
 			netcmds[gametic % BACKUPTICS][consoleplayer] = localTicBuffer[(liveTic - estimatedRTT + i + 1 + MAXSIMULATIONS) % MAXSIMULATIONS];
 		}
 		else
-			netcmds[gametic % BACKUPTICS][consoleplayer] = localcmds[0][min(i, MAXGENTLEMENDELAY-1)]; //NO
+			netcmds[gametic % BACKUPTICS][consoleplayer] = localcmds[0][0]; //NO
 
 		DEBFILE(va("============ Running SIM tic %d (local %d) (sim %d)\n", gametic, localgametic, simtic));
-		G_Ticker(true); // tic a bunch of times lol see what happens lolol
+		//G_Ticker(true); // tic a bunch of times lol see what happens lolol
 		simtic++;
 
 		// record simulated players' positions

@@ -4277,7 +4277,7 @@ void P_SaveGameState(savestate_t* savestate, savebuffer_t *save)
 	WRITEUINT32(save->p, globalmobjnum);
 
 	CV_SaveNetVars(&save->p, false);
-	P_NetArchiveMisc(save, false);
+	P_NetArchiveMisc(save, true);
 
 	// assign mobj nums for pointer relinking
 	for (th = thinkercap.next; th != &thinkercap; th = th->next)
@@ -4294,7 +4294,7 @@ void P_SaveGameState(savestate_t* savestate, savebuffer_t *save)
 	}
 
 
-	P_NetArchivePlayers(save, false);
+	P_NetArchivePlayers(save, true);
 
 	if (gamestate == GS_LEVEL)
 	{
@@ -4333,14 +4333,15 @@ boolean P_LoadGameState(const savestate_t* savestate, savebuffer_t *save)
 
 	CV_LoadNetVars(&save->p);
 
-	if (P_NetUnArchiveMisc(save, false, true))
+	if (P_NetUnArchiveMisc(save, true, true))
 	{
 		return false;
 	}
 
+	P_NetUnArchivePlayers(save, true);
+
 	if (gamestate == GS_LEVEL)
 	{
-		P_NetUnArchivePlayers(save, false);
 		P_LocalUnArchiveWorld(save);
 		P_UnArchivePolyObjects(save);
 		P_NetUnArchiveThinkers(save, false);
