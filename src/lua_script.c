@@ -35,6 +35,8 @@
 
 #include "doomstat.h"
 
+#include "hashtable.h"
+
 #ifndef NOBLUAJIT
 #include "d_main.h"
 #include "i_system.h"
@@ -1128,7 +1130,7 @@ static UINT8 UnArchiveValue(UINT8 **p, int TABLESINDEX, boolean network)
 			return 3;	// Don't set the field
 		}
 
-		LUA_PushUserdata(gL, P_FindNewPosition(READUINT32(*p)), META_MOBJ);
+		LUA_PushUserdata(gL, P_FindNewPosition_Hashtable(READUINT32(*p)), META_MOBJ);
 		break;
 	case ARCH_PLAYER:
 		LUA_PushUserdata(gL, &players[READUINT8(*p)], META_PLAYER);
@@ -1350,7 +1352,29 @@ void LUA_UnArchive(savebuffer_t *save, boolean network)
 
 	if (network == true)
 	{
-		do {
+		mobjnum = READUINT32(save->p); // read a mobjnum
+
+		while(mobjnum != UINT32_MAX) // repeat until end of mobjs marker.
+		{
+			th = mobjnum_ht_linkedList_Find(mobjnum);
+			if (th && ((mobj_t *)th)->mobjnum == mobjnum)
+				UnArchiveExtVars(&save->p, th, network);
+			else
+			{
+				for (th = thinkercap.next; th != &thinkercap; th = th->next)
+				{
+					if (th->function != (actionf_p1)P_MobjThinker)
+						continue;
+
+					if (((mobj_t *)th)->mobjnum != mobjnum) // find matching mobj
+						continue;
+					UnArchiveExtVars(&save->p, th, network); // apply variables
+				}
+			}
+			mobjnum = READUINT32(save->p); // read a mobjnum
+		}
+
+		/*do {
 			mobjnum = READUINT32(save->p); // read a mobjnum
 			for (th = thinkercap.next; th != &thinkercap; th = th->next)
 			{
@@ -1360,7 +1384,7 @@ void LUA_UnArchive(savebuffer_t *save, boolean network)
 				if (((mobj_t *)th)->mobjnum == mobjnum) // find matching mobj
 					UnArchiveExtVars(&save->p, th, network); // apply variables
 			}
-		} while(mobjnum != UINT32_MAX); // repeat until end of mobjs marker.
+		} while(mobjnum != UINT32_MAX); // repeat until end of mobjs marker.*/
 
 		LUA_HookNetArchive(NetUnArchive, save); // call the NetArchive hook in unarchive mode
 	}

@@ -58,6 +58,38 @@ typedef enum
 	SECONDAXIS = 0x20,
 } player_saveflags;
 
+#include "hashtable.h"
+
+// Now save the pointers, tracer and target, but at load time we must
+// relink to this; the savegame contains the old position in the pointer
+// field copyed in the info field temporarily, but finally we just search
+// for the old position and relink to it.
+mobj_t *P_FindNewPosition_Hashtable(UINT32 oldposition)
+{
+	thinker_t *th;
+	mobj_t *mobj;
+
+	th = mobjnum_ht_linkedList_Find(oldposition);
+
+	if (th && ((mobj_t *)th)->mobjnum == oldposition && !(th->function == (actionf_p1)P_RemoveThinkerDelayed))
+		return (mobj_t *)th;
+
+	for (th = thinkercap.next; th != &thinkercap; th = th->next)
+	{
+		if (th->function != (actionf_p1)P_MobjThinker)
+			continue;
+
+		mobj = (mobj_t *)th;
+		if (mobj->mobjnum != oldposition)
+			continue;
+
+		return mobj;
+	}
+	CONS_Debug(DBG_GAMELOGIC, "mobj not found\n");
+	return NULL;
+}
+
+
 //
 // P_ArchivePlayer
 //
@@ -4233,6 +4265,10 @@ boolean P_LoadGame(savebuffer_t *save, INT16 mapoverride)
 
 boolean P_LoadNetGame(savebuffer_t *save, boolean reloading, boolean preserveLevel)
 {
+	mobjnum_ht_linkedList_Init(); //clean up hashtables to avoid lua stuff using them
+								  //this is temporary and will be rewritten to use in vanilla code
+								  //once rollback netcode will be stable
+
 	CV_LoadNetVars(&save->p);
 
 	if (!P_NetUnArchiveMisc(save, reloading, false))

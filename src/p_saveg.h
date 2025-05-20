@@ -59,4 +59,6 @@ typedef struct
 void P_SaveGameState(savestate_t* savestate, savebuffer_t *save);
 boolean P_LoadGameState(const savestate_t* savestate, savebuffer_t *save);
 
+mobj_t *P_FindNewPosition_Hashtable(UINT32 oldposition);
+
 #endif
