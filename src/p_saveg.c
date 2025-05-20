@@ -4352,7 +4352,7 @@ void P_SaveGameState(savestate_t* savestate, savebuffer_t *save)
 		//P_LocalArchiveCameras(save);
 	}
 
-	LUA_Archive(save, true);
+	//LUA_Archive(save, true);
 }
 
 // P_LoadGameState is a within-level-only mechanism for loading the game state. It must not be used cross level. Used for simulation backtracking.
@@ -4398,7 +4398,7 @@ boolean P_LoadGameState(const savestate_t* savestate, savebuffer_t *save)
 		//P_LocalUnArchiveCameras(save);
 	}
 
-	LUA_UnArchive(save, true);
+	//LUA_UnArchive(save, true);
 
 	return true;
 }
