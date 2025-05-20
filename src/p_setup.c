@@ -2796,10 +2796,6 @@ boolean P_SetupLevel(boolean fromnetsave, boolean reloadinggamestate)
 	boolean ranspecialwipe = false;
 	sector_t *ss;
 
-	//prevent loading a level when in a simulation
-	if (issimulation)
-		return true;
-
 	midgamejoin = fromnetsave; // makes dynslopes run in P_Ticker/P_PreTicker to avoid synch issues and other stuff
 
 	levelloading = true;
@@ -2932,7 +2928,7 @@ boolean P_SetupLevel(boolean fromnetsave, boolean reloadinggamestate)
 	Patch_FreeTag(PU_PATCH_LOWPRIORITY);
 	//Patch_FreeTag(PU_PATCH_ROTATED); // we keep those ty!
 	Z_FreeTags(PU_LEVEL, PU_PURGELEVEL - 1);
-	//InvalidateSavestates();
+	InvalidateSavestates();
 
 #if defined (WALLSPLATS) || defined (FLOORSPLATS)
 	// clear the splats from previous level

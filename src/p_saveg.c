@@ -3370,7 +3370,7 @@ static void P_LocalUnArchiveThinkers(savebuffer_t *save)
 //
 // P_NetUnArchiveThinkers
 //
-static void P_NetUnArchiveThinkers(savebuffer_t *save, boolean preserveLevel)
+static void P_NetUnArchiveThinkers(savebuffer_t *save, boolean preserveLevel, boolean savestate)
 {
 	thinker_t *currentthinker;
 	thinker_t *next;
@@ -3403,7 +3403,8 @@ static void P_NetUnArchiveThinkers(savebuffer_t *save, boolean preserveLevel)
 
 	// we don't want the removed mobjs to come back
 	iquetail = iquehead = 0;
-	P_InitThinkers();
+	if (!savestate)
+		P_InitThinkers();
 
 	// clear sector thinker pointers so they don't point to non-existant thinkers for all of eternity
 	for (i = 0; i < numsectors; i++)
@@ -4009,7 +4010,7 @@ static void P_NetArchiveMisc(savebuffer_t *save, boolean resending)
 		WRITEUINT8(save->p, 0x2e);
 }
 
-FUNCINLINE static ATTRINLINE boolean P_NetUnArchiveMisc(savebuffer_t *save, boolean reloading, boolean preserveLevel)
+FUNCINLINE static ATTRINLINE boolean P_NetUnArchiveMisc(savebuffer_t *save, boolean reloading, boolean savestate)
 {
 	UINT32 pig;
 	INT32 i;
@@ -4051,9 +4052,14 @@ FUNCINLINE static ATTRINLINE boolean P_NetUnArchiveMisc(savebuffer_t *save, bool
 
 	encoremode = (boolean)READUINT8(save->p);
 
-	if ((!preserveLevel || (gamemap != oldMap)) && !P_SetupLevel(true, reloading))
+	if (!savestate && !P_SetupLevel(true, reloading))
 	{
 		CONS_Alert(CONS_ERROR, M_GetText("Can't load the level!\n"));
+		return false;
+	}
+
+	if (savestate && (!reloading || (gamemap != oldMap)))
+	{
 		return false;
 	}
 
@@ -4229,7 +4235,7 @@ boolean P_LoadNetGame(savebuffer_t *save, boolean reloading, boolean preserveLev
 {
 	CV_LoadNetVars(&save->p);
 
-	if (!P_NetUnArchiveMisc(save, reloading, preserveLevel))
+	if (!P_NetUnArchiveMisc(save, reloading, false))
 		return false;
 
 	P_NetUnArchivePlayers(save, reloading);
@@ -4238,7 +4244,7 @@ boolean P_LoadNetGame(savebuffer_t *save, boolean reloading, boolean preserveLev
 	{
 		P_NetUnArchiveWorld(save, preserveLevel);
 		P_UnArchivePolyObjects(save);
-		P_NetUnArchiveThinkers(save, preserveLevel);
+		P_NetUnArchiveThinkers(save, preserveLevel, false);
 		P_NetUnArchiveSpecials(save);
 		P_RelinkPointers();
 		P_FinishMobjs();
@@ -4344,7 +4350,7 @@ boolean P_LoadGameState(const savestate_t* savestate, savebuffer_t *save)
 	{
 		P_LocalUnArchiveWorld(save);
 		P_UnArchivePolyObjects(save);
-		P_NetUnArchiveThinkers(save, false);
+		P_NetUnArchiveThinkers(save, false, true);
 		P_NetUnArchiveSpecials(save);
 		//P_LocalUnArchiveCameras(save);
 	}
