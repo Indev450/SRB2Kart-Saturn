@@ -611,7 +611,7 @@ else
 	-$(.)../comptime.sh .
 endif
 
-clean:
+clean: cleandep
 	$(REMOVE) *~ *.flc
 	$(REMOVE) $(OBJDIR)/*.o
 ifndef NOBLUAJIT
