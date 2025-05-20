@@ -556,18 +556,6 @@ consvar_t cv_nettrails = { "simtrails", "5", 0, nettrails_cons_t, NULL, 0, NULL,
 
 consvar_t cv_netslingdelay = { "simslingdelay", "No", 0, CV_YesNo, NULL, 0, NULL, NULL, 0, 0, NULL };
 
-static CV_PossibleValue_t netdelay_cons_t[] = { {0, "MIN"}, {250, "MAX"}, {0, NULL} };
-consvar_t cv_netdelay = { "netdelay", "0", 0, netdelay_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL };
-
-consvar_t cv_netjitter = { "netjitter", "0", 0, netdelay_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL };
-
-consvar_t cv_netsmoothing = { "netsmoothing", "Off", 0, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL };
-
-consvar_t cv_netspikes = { "netspikes", "Off", 0, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL };
-
-static CV_PossibleValue_t netvariabletime_cons_t[] = { {-1, "MIN"}, {100, "MAX"}, {0, NULL} };
-consvar_t cv_netvariabletime = { "netvariabletime", "-1", 0, netvariabletime_cons_t, NULL, -1, NULL, NULL, 0, 0, NULL };
-
 static CV_PossibleValue_t debugsimulaterewind_cons_t[] = { {0, "MIN"}, {BACKUPTICS - 1, "MAX"}, {0, NULL} };
 consvar_t cv_debugsimulaterewind = { "debugsimulaterewind", "0", 0, debugsimulaterewind_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL };
 
@@ -721,17 +709,12 @@ void D_RegisterServerCommands(void)
 	CV_RegisterVar(&cv_jittersmoothing);
 	CV_RegisterVar(&cv_simulateculldistance);
 	CV_RegisterVar(&cv_siminaccuracy);
-	CV_RegisterVar(&cv_netdelay);
-	CV_RegisterVar(&cv_netjitter);
-	CV_RegisterVar(&cv_netsmoothing);
-	CV_RegisterVar(&cv_netspikes);
 	CV_RegisterVar(&cv_netsteadyplayers);
 	CV_RegisterVar(&cv_debugsimulaterewind);
 	CV_RegisterVar(&cv_timefudge);
 	CV_RegisterVar(&cv_autoupdatetimefudge);
 	CV_RegisterVar(&cv_nettrails);
 	CV_RegisterVar(&cv_netslingdelay);
-	CV_RegisterVar(&cv_netvariabletime);
 	CV_RegisterVar(&cv_playerfullbright);
 
 	COM_AddCommand("replaymarker", Command_ReplayMarker);
