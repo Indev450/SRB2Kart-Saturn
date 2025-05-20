@@ -562,9 +562,6 @@ static void P_LocalArchiveWorld(savebuffer_t *save)
 	WRITEUINT32(save->p, ARCHIVEBLOCK_WORLD);
 	put = save->p;
 
-	WRITEUINT32(put, numsectors * sizeof(sectors[0]));
-	WRITEUINT32(put, numlines * sizeof(lines[0]));
-
 	// dump all sector memory into the data
 	WRITEMEM(put, sectors, numsectors * sizeof(sectors[0]));
 	WRITEMEM(put, lines, numlines * sizeof(lines[0]));
@@ -586,8 +583,6 @@ static void P_LocalUnArchiveWorld(savebuffer_t *save)
 
 	memcpy(preservedSectors, sectors, numsectors * sizeof(sector_t));
 
-	READUINT32(get);
-	READUINT32(get);
 	READMEM(get, sectors, numsectors * sizeof(sectors[0]));
 	READMEM(get, lines, numlines * sizeof(lines[0]));
 
