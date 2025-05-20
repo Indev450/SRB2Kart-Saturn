@@ -1213,7 +1213,7 @@ boolean HGetPacket(void)
 
 extern double netUpdateFudge;
 
-#define gettime ((double)I_GetPreciseTime() / frame_frequency)
+#define gettime (I_GetPreciseTime() / tic_frequency)
 void TimeFudge(void)
 {
 	// you can use SDL_GetPerformanceFrequency() instead of tic_frequency to get more precise timings

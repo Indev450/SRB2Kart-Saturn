@@ -6544,8 +6544,8 @@ boolean TryRunTics(tic_t realtics, tic_t entertic)
 	}
 
 	precise_t now = I_GetPreciseTime();
-	double frame = ((double)now / frame_frequency);
-	netUpdateFudge = (((double)now/ frame_frequency) - frame); // record the timefudge where the net update typically occurs
+	double frame = ((double)now / tic_frequency);
+	netUpdateFudge = (((double)now / tic_frequency) - frame); // record the timefudge where the net update typically occurs
 
 	NetUpdate();
 

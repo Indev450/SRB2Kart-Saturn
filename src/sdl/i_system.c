@@ -1710,6 +1710,8 @@ double frame_frequency;
 static UINT64 frame_epoch;
 double elapsed_frames;
 
+double tic_frequency;
+
 static void I_InitFrameTime(const UINT64 now, const UINT32 cap)
 {
 	frame_rate = cap;
@@ -1789,7 +1791,7 @@ void I_SetTime(tic_t tic, int fudge, boolean useAbsoluteFudge)
 	tic = max(tic, SDL_GetTicks());
 
 	if (useAbsoluteFudge)
-		elapsed_frames = elapsed_frames + ((double)fudge / 100) * frame_frequency;
+		elapsed_frames = elapsed_frames + ((double)fudge / 100) * tic_frequency;
 }
 
 //
@@ -1801,6 +1803,8 @@ void I_StartupTimer(void)
 
 	I_InitFrameTime(0, R_GetFramerateCap());
 	elapsed_frames  = 0.0;
+
+	tic_frequency   = timer_frequency / (double)NEWTICRATE;
 }
 
 void I_Sleep(UINT32 ms)

@@ -21,7 +21,7 @@
 #pragma interface
 #endif
 
-extern double frame_frequency;
+extern double tic_frequency;
 extern double elapsed_frames;
 
 /**	\brief max quit functions
