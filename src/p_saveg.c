@@ -3626,7 +3626,7 @@ static void P_NetUnArchiveThinkers(savebuffer_t *save, boolean preserveLevel, bo
 			delay = (void *)currentthinker;
 
 			if ((mobjnum = (UINT32)(size_t)delay->caller))
-				delay->caller = P_FindNewPosition(mobjnum);
+				delay->caller = P_FindNewPosition_Hashtable(mobjnum);
 		}
 	}
 }
@@ -3758,7 +3758,7 @@ static inline mobj_t *RelinkMobj(mobj_t **ptr)
 {
 	UINT32 temp = (UINT32)(size_t)*ptr;
 	*ptr = NULL;
-	return P_SetTarget(ptr, P_FindNewPosition(temp));
+	return P_SetTarget(ptr, P_FindNewPosition_Hashtable(temp));
 }
 
 static void P_RelinkPointers(void)
