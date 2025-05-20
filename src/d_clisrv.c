@@ -6498,27 +6498,7 @@ static boolean CompareTiccmd(const ticcmd_t* a, const ticcmd_t* b)
 	&& a->forwardmove == b->forwardmove && a->sidemove == b->sidemove;
 }
 
-savebuffer_t statesave;
-
-static void makestatesave(void)
-{
-	statesave.buffer = (UINT8 *)malloc(10 * 1024 * 1024);
-	if (!statesave.buffer)
-	{
-		CONS_Alert(CONS_ERROR, M_GetText("No more free memory for savegame\n"));
-		return;
-	}
-
-	statesave.p = statesave.buffer;
-}
-
-static void deletstatesave(void)
-{
-	if (statesave.buffer)
-		free(statesave.buffer);
-	statesave.buffer = NULL;
-	statesave.p = NULL;
-}
+savebuffer_t statesave = {NULL, NULL};
 
 boolean TryRunTics(tic_t realtics, tic_t entertic)
 {
@@ -6578,8 +6558,6 @@ boolean TryRunTics(tic_t realtics, tic_t entertic)
 				//&& !countdown2 //SRB2Kart: No simulating after everyone has finished ... it breaks stuff
 				&& (cv_simulate.value && !server) //SRB2Kart: make it impossible to sim before the start of the race
 				&& (!resynch_local_inprogress && !cl_redownloadinggamestate) && gametic >= SavestatesClearedTic + TICRATE; //do not simulate for one second after clearing
-
-	makestatesave(); // allocate our save buffer n shit
 
 	if (simtic > gametic && !canSimulate)
 	{
@@ -7114,8 +7092,6 @@ void InvalidateSavestates(void)
 
 		gameStateBufferIsValid[i] = false;
 	}
-
-	deletstatesave();
 
 	SavestatesClearedTic = gametic;
 }
