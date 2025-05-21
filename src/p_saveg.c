@@ -3529,6 +3529,8 @@ boolean P_LoadGame(savebuffer_t *save, INT16 mapoverride)
 
 boolean P_LoadNetGame(savebuffer_t *save, boolean reloading)
 {
+	mobjnum_ht_linkedList_Init(); //clean up hashtables to avoid lua stuff using them
+
 	CV_LoadNetVars(&save->p);
 
 	if (!P_NetUnArchiveMisc(save, reloading))
