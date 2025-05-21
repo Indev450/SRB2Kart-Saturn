@@ -1895,6 +1895,40 @@ mobj_t *P_FindNewPosition(UINT32 oldposition)
 	return NULL;
 }
 
+#include "hashtable.h"
+
+// Now save the pointers, tracer and target, but at load time we must
+// relink to this; the savegame contains the old position in the pointer
+// field copyed in the info field temporarily, but finally we just search
+// for the old position and relink to it.
+mobj_t *P_FindNewPosition_Hashtable(UINT32 oldposition)
+{
+	thinker_t *th;
+	mobj_t *mobj;
+
+	th = mobjnum_ht_linkedList_Find(oldposition);
+
+	if (th && ((mobj_t *)th)->mobjnum == oldposition)
+	{
+		//CONS_Printf("using hashtable newpos\n");
+		return (mobj_t *)th;
+	}
+
+	for (th = thinkercap.next; th != &thinkercap; th = th->next)
+	{
+		if (th->function != (actionf_p1)P_MobjThinker)
+			continue;
+
+		mobj = (mobj_t *)th;
+
+		if (mobj->mobjnum == oldposition)
+			return mobj;
+	}
+
+	CONS_Debug(DBG_GAMELOGIC, "mobj %d not found\n", oldposition);
+	return NULL;
+}
+
 static inline mobj_t *LoadMobj(UINT32 mobjnum)
 {
 	if (mobjnum == 0) return NULL;
@@ -1943,7 +1977,7 @@ FUNCINLINE static ATTRINLINE mobj_t *AllocMobj(void)
 	return mobj;
 }
 
-static void LoadMobjThinker(savebuffer_t *save, actionf_p1 thinker)
+static thinker_t* LoadMobjThinker(savebuffer_t *save, actionf_p1 thinker)
 {
 	thinker_t *next;
 	mobj_t *mobj;
@@ -1971,7 +2005,7 @@ static void LoadMobjThinker(savebuffer_t *save, actionf_p1 thinker)
 		if (mapthings[spawnpointnum].type == 1705 || mapthings[spawnpointnum].type == 1713) // NiGHTS Hoop special case
 		{
 			P_SpawnHoopsAndRings(&mapthings[spawnpointnum]);
-			return;
+			return NULL;
 		}
 
 		mobj = AllocMobj();
@@ -2190,14 +2224,14 @@ static void LoadMobjThinker(savebuffer_t *save, actionf_p1 thinker)
 			skyboxmo[0] = mobj;
 	}
 
-	P_AddThinker(&mobj->thinker);
-
 	if (diff2 & MD2_WAYPOINTCAP)
 		P_SetTarget(&waypointcap, mobj);
 
 	mobj->info = (mobjinfo_t *)next; // temporarily, set when leave this function
 
 	R_AddMobjInterpolator(mobj);
+
+	return &mobj->thinker;
 }
 
 //
@@ -2211,7 +2245,7 @@ static void LoadMobjThinker(savebuffer_t *save, actionf_p1 thinker)
 //		2 - Ceiling Only
 //		3 - Both
 //
-static void LoadSpecialLevelThinker(savebuffer_t *save, actionf_p1 thinker, UINT8 floorOrCeiling)
+static thinker_t *LoadSpecialLevelThinker(savebuffer_t *save, actionf_p1 thinker, UINT8 floorOrCeiling)
 {
 	levelspecthink_t *ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
 	size_t i;
@@ -2232,7 +2266,7 @@ static void LoadSpecialLevelThinker(savebuffer_t *save, actionf_p1 thinker, UINT
 			ht->sector->floordata = ht;
 	}
 
-	P_AddThinker(&ht->thinker);
+	return &ht->thinker;
 }
 
 //
@@ -2240,7 +2274,7 @@ static void LoadSpecialLevelThinker(savebuffer_t *save, actionf_p1 thinker, UINT
 //
 // Loads a ceiling_t from a save game
 //
-static void LoadCeilingThinker(savebuffer_t *save, actionf_p1 thinker)
+static thinker_t *LoadCeilingThinker(savebuffer_t *save, actionf_p1 thinker)
 {
 	ceiling_t *ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
 	ht->thinker.function = thinker;
@@ -2261,7 +2295,7 @@ static void LoadCeilingThinker(savebuffer_t *save, actionf_p1 thinker)
 	ht->sourceline = READFIXED(save->p);
 	if (ht->sector)
 		ht->sector->ceilingdata = ht;
-	P_AddThinker(&ht->thinker);
+	return &ht->thinker;
 }
 
 //
@@ -2269,7 +2303,7 @@ static void LoadCeilingThinker(savebuffer_t *save, actionf_p1 thinker)
 //
 // Loads a floormove_t from a save game
 //
-static void LoadFloormoveThinker(savebuffer_t *save, actionf_p1 thinker)
+static thinker_t *LoadFloormoveThinker(savebuffer_t *save, actionf_p1 thinker)
 {
 	floormove_t *ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
 	ht->thinker.function = thinker;
@@ -2285,7 +2319,7 @@ static void LoadFloormoveThinker(savebuffer_t *save, actionf_p1 thinker)
 	ht->delaytimer = READFIXED(save->p);
 	if (ht->sector)
 		ht->sector->floordata = ht;
-	P_AddThinker(&ht->thinker);
+	return &ht->thinker;
 }
 
 //
@@ -2293,7 +2327,7 @@ static void LoadFloormoveThinker(savebuffer_t *save, actionf_p1 thinker)
 //
 // Loads a lightflash_t from a save game
 //
-static void LoadLightflashThinker(savebuffer_t *save, actionf_p1 thinker)
+static thinker_t *LoadLightflashThinker(savebuffer_t *save, actionf_p1 thinker)
 {
 	lightflash_t *ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
 	ht->thinker.function = thinker;
@@ -2302,7 +2336,7 @@ static void LoadLightflashThinker(savebuffer_t *save, actionf_p1 thinker)
 	ht->minlight = READINT32(save->p);
 	if (ht->sector)
 		ht->sector->lightingdata = ht;
-	P_AddThinker(&ht->thinker);
+	return &ht->thinker;
 }
 
 //
@@ -2310,7 +2344,7 @@ static void LoadLightflashThinker(savebuffer_t *save, actionf_p1 thinker)
 //
 // Loads a strobe_t from a save game
 //
-static void LoadStrobeThinker(savebuffer_t *save, actionf_p1 thinker)
+static thinker_t *LoadStrobeThinker(savebuffer_t *save, actionf_p1 thinker)
 {
 	strobe_t *ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
 	ht->thinker.function = thinker;
@@ -2322,7 +2356,7 @@ static void LoadStrobeThinker(savebuffer_t *save, actionf_p1 thinker)
 	ht->brighttime = READINT32(save->p);
 	if (ht->sector)
 		ht->sector->lightingdata = ht;
-	P_AddThinker(&ht->thinker);
+	return &ht->thinker;
 }
 
 //
@@ -2330,7 +2364,7 @@ static void LoadStrobeThinker(savebuffer_t *save, actionf_p1 thinker)
 //
 // Loads a glow_t from a save game
 //
-static void LoadGlowThinker(savebuffer_t *save, actionf_p1 thinker)
+static thinker_t *LoadGlowThinker(savebuffer_t *save, actionf_p1 thinker)
 {
 	glow_t *ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
 	ht->thinker.function = thinker;
@@ -2341,7 +2375,7 @@ static void LoadGlowThinker(savebuffer_t *save, actionf_p1 thinker)
 	ht->speed = READINT32(save->p);
 	if (ht->sector)
 		ht->sector->lightingdata = ht;
-	P_AddThinker(&ht->thinker);
+	return &ht->thinker;
 }
 
 //
@@ -2349,7 +2383,7 @@ static void LoadGlowThinker(savebuffer_t *save, actionf_p1 thinker)
 //
 // Loads a fireflicker_t from a save game
 //
-static void LoadFireflickerThinker(savebuffer_t *save, actionf_p1 thinker)
+static thinker_t *LoadFireflickerThinker(savebuffer_t *save, actionf_p1 thinker)
 {
 	fireflicker_t *ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
 	ht->thinker.function = thinker;
@@ -2360,7 +2394,7 @@ static void LoadFireflickerThinker(savebuffer_t *save, actionf_p1 thinker)
 	ht->minlight = READINT32(save->p);
 	if (ht->sector)
 		ht->sector->lightingdata = ht;
-	P_AddThinker(&ht->thinker);
+	return &ht->thinker;
 }
 
 //
@@ -2368,7 +2402,7 @@ static void LoadFireflickerThinker(savebuffer_t *save, actionf_p1 thinker)
 //
 // Loads a elevator_t from a save game
 //
-static void LoadElevatorThinker(savebuffer_t *save, actionf_p1 thinker, UINT8 floorOrCeiling)
+static thinker_t *LoadElevatorThinker(savebuffer_t *save, actionf_p1 thinker, UINT8 floorOrCeiling)
 {
 	elevator_t *ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
 	ht->thinker.function = thinker;
@@ -2398,7 +2432,7 @@ static void LoadElevatorThinker(savebuffer_t *save, actionf_p1 thinker, UINT8 fl
 			ht->sector->floordata = ht;
 	}
 
-	P_AddThinker(&ht->thinker);
+	return &ht->thinker;
 }
 
 //
@@ -2406,7 +2440,7 @@ static void LoadElevatorThinker(savebuffer_t *save, actionf_p1 thinker, UINT8 fl
 //
 // Loads a scroll_t from a save game
 //
-static void LoadScrollThinker(savebuffer_t *save, actionf_p1 thinker)
+static thinker_t *LoadScrollThinker(savebuffer_t *save, actionf_p1 thinker)
 {
 	scroll_t *ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
 	ht->thinker.function = thinker;
@@ -2420,7 +2454,7 @@ static void LoadScrollThinker(savebuffer_t *save, actionf_p1 thinker)
 	ht->accel = READINT32(save->p);
 	ht->exclusive = READINT32(save->p);
 	ht->type = READUINT8(save->p);
-	P_AddThinker(&ht->thinker);
+	return &ht->thinker;
 }
 
 //
@@ -2428,7 +2462,7 @@ static void LoadScrollThinker(savebuffer_t *save, actionf_p1 thinker)
 //
 // Loads a friction_t from a save game
 //
-static inline void LoadFrictionThinker(savebuffer_t *save, actionf_p1 thinker)
+static inline thinker_t *LoadFrictionThinker(savebuffer_t *save, actionf_p1 thinker)
 {
 	friction_t *ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
 	ht->thinker.function = thinker;
@@ -2437,7 +2471,7 @@ static inline void LoadFrictionThinker(savebuffer_t *save, actionf_p1 thinker)
 	ht->affectee = READINT32(save->p);
 	ht->referrer = READINT32(save->p);
 	ht->roverfriction = READUINT8(save->p);
-	P_AddThinker(&ht->thinker);
+	return &ht->thinker;
 }
 
 //
@@ -2445,7 +2479,7 @@ static inline void LoadFrictionThinker(savebuffer_t *save, actionf_p1 thinker)
 //
 // Loads a pusher_t from a save game
 //
-static void LoadPusherThinker(savebuffer_t *save, actionf_p1 thinker)
+static thinker_t *LoadPusherThinker(savebuffer_t *save, actionf_p1 thinker)
 {
 	pusher_t *ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
 	ht->thinker.function = thinker;
@@ -2463,7 +2497,7 @@ static void LoadPusherThinker(savebuffer_t *save, actionf_p1 thinker)
 	ht->exclusive = READINT32(save->p);
 	ht->slider = READINT32(save->p);
 	ht->source = P_GetPushThing(ht->affectee);
-	P_AddThinker(&ht->thinker);
+	return &ht->thinker;
 }
 
 //
@@ -2471,7 +2505,7 @@ static void LoadPusherThinker(savebuffer_t *save, actionf_p1 thinker)
 //
 // Loads a laserthink_t from a save game
 //
-static inline void LoadLaserThinker(savebuffer_t *save, actionf_p1 thinker)
+static inline thinker_t *LoadLaserThinker(savebuffer_t *save, actionf_p1 thinker)
 {
 	laserthink_t *ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
 	ffloor_t *rover = NULL;
@@ -2483,7 +2517,7 @@ static inline void LoadLaserThinker(savebuffer_t *save, actionf_p1 thinker)
 		if (rover->secnum == (size_t)(ht->sec - sectors)
 		&& rover->master == ht->sourceline)
 			ht->ffloor = rover;
-	P_AddThinker(&ht->thinker);
+	return &ht->thinker;
 }
 
 //
@@ -2491,7 +2525,7 @@ static inline void LoadLaserThinker(savebuffer_t *save, actionf_p1 thinker)
 //
 // Loads a lightlevel_t from a save game
 //
-FUNCINLINE static ATTRINLINE void LoadLightlevelThinker(savebuffer_t *save, actionf_p1 thinker)
+FUNCINLINE static ATTRINLINE thinker_t *LoadLightlevelThinker(savebuffer_t *save, actionf_p1 thinker)
 {
 	lightlevel_t *ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
 	ht->thinker.function = thinker;
@@ -2500,7 +2534,7 @@ FUNCINLINE static ATTRINLINE void LoadLightlevelThinker(savebuffer_t *save, acti
 	ht->speed = READINT32(save->p);
 	if (ht->sector)
 		ht->sector->lightingdata = ht;
-	P_AddThinker(&ht->thinker);
+	return &ht->thinker;
 }
 
 //
@@ -2508,7 +2542,7 @@ FUNCINLINE static ATTRINLINE void LoadLightlevelThinker(savebuffer_t *save, acti
 //
 // Loads a executor_t from a save game
 //
-static inline void LoadExecutorThinker(savebuffer_t *save, actionf_p1 thinker)
+static inline thinker_t *LoadExecutorThinker(savebuffer_t *save, actionf_p1 thinker)
 {
 	executor_t *ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
 	ht->thinker.function = thinker;
@@ -2516,7 +2550,7 @@ static inline void LoadExecutorThinker(savebuffer_t *save, actionf_p1 thinker)
 	ht->caller = LoadMobj(READUINT32(save->p));
 	ht->sector = LoadSector(READUINT32(save->p));
 	ht->timer = READINT32(save->p);
-	P_AddThinker(&ht->thinker);
+	return &ht->thinker;
 }
 
 //
@@ -2524,7 +2558,7 @@ static inline void LoadExecutorThinker(savebuffer_t *save, actionf_p1 thinker)
 //
 // Loads a disappear_t thinker
 //
-static inline void LoadDisappearThinker(savebuffer_t *save, actionf_p1 thinker)
+static inline thinker_t *LoadDisappearThinker(savebuffer_t *save, actionf_p1 thinker)
 {
 	disappear_t *ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
 	ht->thinker.function = thinker;
@@ -2535,7 +2569,7 @@ static inline void LoadDisappearThinker(savebuffer_t *save, actionf_p1 thinker)
 	ht->affectee = READINT32(save->p);
 	ht->sourceline = READINT32(save->p);
 	ht->exists = READINT32(save->p);
-	P_AddThinker(&ht->thinker);
+	return &ht->thinker;
 }
 
 //
@@ -2543,7 +2577,7 @@ static inline void LoadDisappearThinker(savebuffer_t *save, actionf_p1 thinker)
 //
 // Loads a polyrotate_t thinker
 //
-static inline void LoadPolyrotatetThinker(savebuffer_t *save, actionf_p1 thinker)
+static inline thinker_t *LoadPolyrotatetThinker(savebuffer_t *save, actionf_p1 thinker)
 {
 	polyrotate_t *ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
 	ht->thinker.function = thinker;
@@ -2551,7 +2585,7 @@ static inline void LoadPolyrotatetThinker(savebuffer_t *save, actionf_p1 thinker
 	ht->speed = READINT32(save->p);
 	ht->distance = READINT32(save->p);
 	ht->turnobjs = READUINT8(save->p);
-	P_AddThinker(&ht->thinker);
+	return &ht->thinker;
 }
 
 //
@@ -2559,7 +2593,7 @@ static inline void LoadPolyrotatetThinker(savebuffer_t *save, actionf_p1 thinker
 //
 // Loads a polymovet_t thinker
 //
-static void LoadPolymoveThinker(savebuffer_t *save, actionf_p1 thinker)
+static thinker_t *LoadPolymoveThinker(savebuffer_t *save, actionf_p1 thinker)
 {
 	polymove_t *ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
 	ht->thinker.function = thinker;
@@ -2569,7 +2603,7 @@ static void LoadPolymoveThinker(savebuffer_t *save, actionf_p1 thinker)
 	ht->momy = READFIXED(save->p);
 	ht->distance = READINT32(save->p);
 	ht->angle = READANGLE(save->p);
-	P_AddThinker(&ht->thinker);
+	return &ht->thinker;
 }
 
 //
@@ -2577,7 +2611,7 @@ static void LoadPolymoveThinker(savebuffer_t *save, actionf_p1 thinker)
 //
 // Loads a polywaypoint_t thinker
 //
-static inline void LoadPolywaypointThinker(savebuffer_t *save, actionf_p1 thinker)
+static inline thinker_t *LoadPolywaypointThinker(savebuffer_t *save, actionf_p1 thinker)
 {
 	polywaypoint_t *ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
 	ht->thinker.function = thinker;
@@ -2593,7 +2627,7 @@ static inline void LoadPolywaypointThinker(savebuffer_t *save, actionf_p1 thinke
 	ht->diffx = READFIXED(save->p);
 	ht->diffy = READFIXED(save->p);
 	ht->diffz = READFIXED(save->p);
-	P_AddThinker(&ht->thinker);
+	return &ht->thinker;
 }
 
 //
@@ -2601,7 +2635,7 @@ static inline void LoadPolywaypointThinker(savebuffer_t *save, actionf_p1 thinke
 //
 // loads a polyslidedoor_t thinker
 //
-static inline void LoadPolyslidedoorThinker(savebuffer_t *save, actionf_p1 thinker)
+static inline thinker_t *LoadPolyslidedoorThinker(savebuffer_t *save, actionf_p1 thinker)
 {
 	polyslidedoor_t *ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
 	ht->thinker.function = thinker;
@@ -2618,7 +2652,7 @@ static inline void LoadPolyslidedoorThinker(savebuffer_t *save, actionf_p1 think
 	ht->momx = READFIXED(save->p);
 	ht->momy = READFIXED(save->p);
 	ht->closing = READUINT8(save->p);
-	P_AddThinker(&ht->thinker);
+	return &ht->thinker;
 }
 
 //
@@ -2626,7 +2660,7 @@ static inline void LoadPolyslidedoorThinker(savebuffer_t *save, actionf_p1 think
 //
 // Loads a polyswingdoor_t thinker
 //
-static inline void LoadPolyswingdoorThinker(savebuffer_t *save, actionf_p1 thinker)
+static inline thinker_t *LoadPolyswingdoorThinker(savebuffer_t *save, actionf_p1 thinker)
 {
 	polyswingdoor_t *ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
 	ht->thinker.function = thinker;
@@ -2638,7 +2672,7 @@ static inline void LoadPolyswingdoorThinker(savebuffer_t *save, actionf_p1 think
 	ht->initDistance = READINT32(save->p);
 	ht->distance = READINT32(save->p);
 	ht->closing = READUINT8(save->p);
-	P_AddThinker(&ht->thinker);
+	return &ht->thinker;
 }
 
 //
@@ -2646,7 +2680,7 @@ static inline void LoadPolyswingdoorThinker(savebuffer_t *save, actionf_p1 think
 //
 // Loads a polydisplace_t thinker
 //
-static inline void LoadPolydisplaceThinker(savebuffer_t *save, actionf_p1 thinker)
+static inline thinker_t *LoadPolydisplaceThinker(savebuffer_t *save, actionf_p1 thinker)
 {
 	polydisplace_t *ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
 	ht->thinker.function = thinker;
@@ -2655,7 +2689,7 @@ static inline void LoadPolydisplaceThinker(savebuffer_t *save, actionf_p1 thinke
 	ht->dx = READFIXED(save->p);
 	ht->dy = READFIXED(save->p);
 	ht->oldHeights = READFIXED(save->p);
-	P_AddThinker(&ht->thinker);
+	return &ht->thinker;
 }
 
 //
@@ -2705,6 +2739,7 @@ static void P_NetUnArchiveThinkers(savebuffer_t *save)
 	// read in saved thinkers
 	for (;;)
 	{
+		thinker_t* th = NULL;
 		tclass = READUINT8(save->p);
 
 		if (tclass == tc_end)
@@ -2714,153 +2749,164 @@ static void P_NetUnArchiveThinkers(savebuffer_t *save)
 		switch (tclass)
 		{
 			case tc_mobj:
-				LoadMobjThinker(save, (actionf_p1)P_MobjThinker);
+				th = LoadMobjThinker(save, (actionf_p1)P_MobjThinker);
 				break;
 
 			case tc_ceiling:
-				LoadCeilingThinker(save, (actionf_p1)T_MoveCeiling);
+				th = LoadCeilingThinker(save, (actionf_p1)T_MoveCeiling);
 				break;
 
 			case tc_crushceiling:
-				LoadCeilingThinker(save, (actionf_p1)T_CrushCeiling);
+				th = LoadCeilingThinker(save, (actionf_p1)T_CrushCeiling);
 				break;
 
 			case tc_floor:
-				LoadFloormoveThinker(save, (actionf_p1)T_MoveFloor);
+				th = LoadFloormoveThinker(save, (actionf_p1)T_MoveFloor);
 				break;
 
 			case tc_flash:
-				LoadLightflashThinker(save, (actionf_p1)T_LightningFlash);
+				th = LoadLightflashThinker(save, (actionf_p1)T_LightningFlash);
 				break;
 
 			case tc_strobe:
-				LoadStrobeThinker(save, (actionf_p1)T_StrobeFlash);
+				th = LoadStrobeThinker(save, (actionf_p1)T_StrobeFlash);
 				break;
 
 			case tc_glow:
-				LoadGlowThinker(save, (actionf_p1)T_Glow);
+				th = LoadGlowThinker(save, (actionf_p1)T_Glow);
 				break;
 
 			case tc_fireflicker:
-				LoadFireflickerThinker(save, (actionf_p1)T_FireFlicker);
+				th = LoadFireflickerThinker(save, (actionf_p1)T_FireFlicker);
 				break;
 
 			case tc_elevator:
-				LoadElevatorThinker(save, (actionf_p1)T_MoveElevator, 3);
+				th = LoadElevatorThinker(save, (actionf_p1)T_MoveElevator, 3);
 				break;
 
 			case tc_continuousfalling:
-				LoadSpecialLevelThinker(save, (actionf_p1)T_ContinuousFalling, 3);
+				th = LoadSpecialLevelThinker(save, (actionf_p1)T_ContinuousFalling, 3);
 				break;
 
 			case tc_thwomp:
-				LoadSpecialLevelThinker(save, (actionf_p1)T_ThwompSector, 3);
+				th = LoadSpecialLevelThinker(save, (actionf_p1)T_ThwompSector, 3);
 				break;
 
 			case tc_noenemies:
-				LoadSpecialLevelThinker(save, (actionf_p1)T_NoEnemiesSector, 0);
+				th = LoadSpecialLevelThinker(save, (actionf_p1)T_NoEnemiesSector, 0);
 				break;
 
 			case tc_eachtime:
-				LoadSpecialLevelThinker(save, (actionf_p1)T_EachTimeThinker, 0);
+				th = LoadSpecialLevelThinker(save, (actionf_p1)T_EachTimeThinker, 0);
 				break;
 
 			case tc_raisesector:
-				LoadSpecialLevelThinker(save, (actionf_p1)T_RaiseSector, 0);
+				th = LoadSpecialLevelThinker(save, (actionf_p1)T_RaiseSector, 0);
 				break;
 
 			/// \todo rewrite all the code that uses an elevator_t but isn't an elevator
 			/// \note working on it!
 			case tc_camerascanner:
-				LoadElevatorThinker(save, (actionf_p1)T_CameraScanner, 0);
+				th = LoadElevatorThinker(save, (actionf_p1)T_CameraScanner, 0);
 				break;
 
 			case tc_bouncecheese:
-				LoadSpecialLevelThinker(save, (actionf_p1)T_BounceCheese, 2);
+				th = LoadSpecialLevelThinker(save, (actionf_p1)T_BounceCheese, 2);
 				break;
 
 			case tc_startcrumble:
-				LoadElevatorThinker(save, (actionf_p1)T_StartCrumble, 1);
+				th = LoadElevatorThinker(save, (actionf_p1)T_StartCrumble, 1);
 				break;
 
 			case tc_marioblock:
-				LoadSpecialLevelThinker(save, (actionf_p1)T_MarioBlock, 3);
+				th = LoadSpecialLevelThinker(save, (actionf_p1)T_MarioBlock, 3);
 				break;
 
 			case tc_marioblockchecker:
-				LoadSpecialLevelThinker(save, (actionf_p1)T_MarioBlockChecker, 0);
+				th = LoadSpecialLevelThinker(save, (actionf_p1)T_MarioBlockChecker, 0);
 				break;
 
 			case tc_spikesector:
-				LoadSpecialLevelThinker(save, (actionf_p1)T_SpikeSector, 0);
+				th = LoadSpecialLevelThinker(save, (actionf_p1)T_SpikeSector, 0);
 				break;
 
 			case tc_floatsector:
-				LoadSpecialLevelThinker(save, (actionf_p1)T_FloatSector, 0);
+				th = LoadSpecialLevelThinker(save, (actionf_p1)T_FloatSector, 0);
 				break;
 
 			case tc_bridgethinker:
-				LoadSpecialLevelThinker(save, (actionf_p1)T_BridgeThinker, 3);
+				th = LoadSpecialLevelThinker(save, (actionf_p1)T_BridgeThinker, 3);
 				break;
 
 			case tc_laserflash:
-				LoadLaserThinker(save, (actionf_p1)T_LaserFlash);
+				th = LoadLaserThinker(save, (actionf_p1)T_LaserFlash);
 				break;
 
 			case tc_lightfade:
-				LoadLightlevelThinker(save, (actionf_p1)T_LightFade);
+				th = LoadLightlevelThinker(save, (actionf_p1)T_LightFade);
 				break;
 
 			case tc_executor:
-				LoadExecutorThinker(save, (actionf_p1)T_ExecutorDelay);
+				th = LoadExecutorThinker(save, (actionf_p1)T_ExecutorDelay);
 				restoreNum = true;
 				break;
 
 			case tc_disappear:
-				LoadDisappearThinker(save, (actionf_p1)T_Disappear);
+				th = LoadDisappearThinker(save, (actionf_p1)T_Disappear);
 				break;
 
 			case tc_polyrotate:
-				LoadPolyrotatetThinker(save, (actionf_p1)T_PolyObjRotate);
+				th = LoadPolyrotatetThinker(save, (actionf_p1)T_PolyObjRotate);
 				break;
 
 			case tc_polymove:
-				LoadPolymoveThinker(save, (actionf_p1)T_PolyObjMove);
+				th = LoadPolymoveThinker(save, (actionf_p1)T_PolyObjMove);
 				break;
 
 			case tc_polywaypoint:
-				LoadPolywaypointThinker(save, (actionf_p1)T_PolyObjWaypoint);
+				th = LoadPolywaypointThinker(save, (actionf_p1)T_PolyObjWaypoint);
 				break;
 
 			case tc_polyslidedoor:
-				LoadPolyslidedoorThinker(save, (actionf_p1)T_PolyDoorSlide);
+				th = LoadPolyslidedoorThinker(save, (actionf_p1)T_PolyDoorSlide);
 				break;
 
 			case tc_polyswingdoor:
-				LoadPolyswingdoorThinker(save, (actionf_p1)T_PolyDoorSwing);
+				th = LoadPolyswingdoorThinker(save, (actionf_p1)T_PolyDoorSwing);
 				break;
 
 			case tc_polyflag:
-				LoadPolymoveThinker(save, (actionf_p1)T_PolyObjFlag);
+				th = LoadPolymoveThinker(save, (actionf_p1)T_PolyObjFlag);
 				break;
 
 			case tc_polydisplace:
-				LoadPolydisplaceThinker(save, (actionf_p1)T_PolyObjDisplace);
+				th = LoadPolydisplaceThinker(save, (actionf_p1)T_PolyObjDisplace);
 				break;
 			case tc_scroll:
-				LoadScrollThinker(save, (actionf_p1)T_Scroll);
+				th = LoadScrollThinker(save, (actionf_p1)T_Scroll);
 				break;
 
 			case tc_friction:
-				LoadFrictionThinker(save, (actionf_p1)T_Friction);
+				th = LoadFrictionThinker(save, (actionf_p1)T_Friction);
 				break;
 
 			case tc_pusher:
-				LoadPusherThinker(save, (actionf_p1)T_Pusher);
+				th = LoadPusherThinker(save, (actionf_p1)T_Pusher);
 				break;
 
 			default:
 				I_Error("P_UnarchiveSpecials: Unknown tclass %d in savegame", tclass);
+		}
+
+		if (th)
+		{
+			P_AddThinker(th);
+
+			if (th->function == (actionf_p1)P_MobjThinker && tclass == tc_mobj)
+			{
+				//CONS_Printf("added to hashlist\n");
+				mobjnum_ht_linkedList_AddEntry(th);
+			}
 		}
 	}
 
@@ -2879,7 +2925,7 @@ static void P_NetUnArchiveThinkers(savebuffer_t *save)
 			delay = (void *)currentthinker;
 
 			if ((mobjnum = (UINT32)(size_t)delay->caller))
-				delay->caller = P_FindNewPosition(mobjnum);
+				delay->caller = P_FindNewPosition_Hashtable(mobjnum);
 		}
 	}
 }
@@ -3000,7 +3046,7 @@ static inline mobj_t *RelinkMobj(mobj_t **ptr)
 {
 	UINT32 temp = (UINT32)(size_t)*ptr;
 	*ptr = NULL;
-	return P_SetTarget(ptr, P_FindNewPosition(temp));
+	return P_SetTarget(ptr, P_FindNewPosition_Hashtable(temp));
 }
 
 static void P_RelinkPointers(void)
