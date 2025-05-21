@@ -1311,7 +1311,7 @@ void CURLPrepareFile(const char* url, int dfilenum)
 		CONS_Printf("Downloading %s from %s\n", curl_realname, url);
 
 		strcatbf(curl_curfile->filename, downloaddir, "/");
-		curl_curfile->file = NULL;
+		curl_curfile->file = fopen(curl_curfile->filename, "wb");
 
 		if (!curl_curfile->file)
 		{
