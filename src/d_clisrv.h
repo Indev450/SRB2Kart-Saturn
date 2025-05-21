@@ -635,6 +635,9 @@ void CL_RemovePlayer(INT32 playernum, INT32 reason);
 void CL_QueryServerList(msg_server_t *list);
 void CL_UpdateServerList(void);
 void CL_TimeoutServerList(void);
+
+void CL_AbortConnection(void);
+
 // Is there a game running
 boolean Playing(void);
 
