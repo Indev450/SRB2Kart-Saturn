@@ -93,7 +93,7 @@ void mobjnum_ht_linkedList_AddEntry(thinker_t* thinker)
   *
   * \param mobjnum     Which mobj's memory address to remove by itsmobjnum
   */
-/*void mobjnum_ht_linkedList_RemoveEntry (UINT32 mobjnumber)
+/*void mobjnum_ht_linkedList_RemoveEntry(UINT32 mobjnumber)
 {
     mobjnum_linkedList* currentEntry = &mobjnum_Hashtable[(UINT8)(mobjnumber % HT_NUMLISTS)];
 
@@ -191,7 +191,7 @@ static void mobjnum_ht_linkedList_Wipe(void)
 // Simple hash table implemented in C.
 
 // Hash table entry (slot may be filled or empty).
-typedef struct
+/*typedef struct
 {
     const char* key;  // key is NULL if this slot is empty
     void* value;
@@ -408,13 +408,13 @@ size_t hashtable_Length(hashtable* table)
     return table->length;
 }
 
-/*hashtable_iterator ht_iterator(hashtable* table)
+hashtable_iterator ht_iterator(hashtable* table)
 {
     hashtable_iterator it;
     it._table = table;
     it._index = 0;
     return it;
-}*/
+}
 
 boolean hashtable_Next(hashtable_iterator* it)
 {
@@ -436,4 +436,4 @@ boolean hashtable_Next(hashtable_iterator* it)
         }
     }
     return false;
-}
+}*/

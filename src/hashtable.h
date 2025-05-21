@@ -13,16 +13,13 @@
 #include "p_mobj.h"
 #include "d_think.h"
 
-// extern uint16_t	 hashHits;
-// extern uint16_t	 hashMiss;
-
 void mobjnum_ht_linkedList_Init(void);
 void mobjnum_ht_linkedList_AddEntry (thinker_t* thinker);
 thinker_t* mobjnum_ht_linkedList_Find (uint32_t mobjnumber);
 // void mobjnum_ht_linkedList_Wipe();
 
 // Hash table iterator: create with ht_iterator, iterate with ht_next.
-typedef struct hashtable hashtable;
+/*typedef struct hashtable hashtable;
 
 typedef struct {
     const UINT32* key;
@@ -53,4 +50,4 @@ hashtable_iterator hashtable_Iterator(hashtable_iterator* table);
 // Move iterator to next item in hash table, update iterator's key
 // and value to current item, and return true. If there are no more
 // items, return false. Don't call ht_set during iteration.
-boolean hashtable_Next(hashtable_iterator* it);
+boolean hashtable_Next(hashtable_iterator* it);*/
