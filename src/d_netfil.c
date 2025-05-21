@@ -1315,7 +1315,7 @@ void CURLPrepareFile(const char* url, int dfilenum)
 
 		if (!curl_curfile->file)
 		{
-			M_StartMessage("Download of %s failed! Check if you have write access to your download folder!\n", curl_curfile->filename, MM_NOTHING);
+			CONS_Alert(CONS_ERROR, "Download of %s failed! Check if you have write access to your download folder!\n", curl_curfile->filename);
 			CURLAbortFile();
 			D_QuitNetGame();
 			CL_Reset();
