@@ -1315,11 +1315,8 @@ void CURLPrepareFile(const char* url, int dfilenum)
 
 		if (!curl_curfile->file)
 		{
-			CONS_Alert(CONS_ERROR, "Download of %s failed! Check if you have write access to your download folder!\n", curl_curfile->filename);
-			CURLAbortFile();
-			D_QuitNetGame();
-			CL_Reset();
-			D_StartTitle();
+			CONS_Alert(CONS_ERROR, "Couldnt open %s for writing!\nAborting file download.\nCheck if you have write access to your download folder!\n", curl_curfile->filename);
+			CL_AbortConnection();
 			M_StartMessage(M_GetText(
 				"An error occured when trying to\n"
 				"download missing addons.\n"
