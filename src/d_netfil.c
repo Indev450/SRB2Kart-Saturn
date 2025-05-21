@@ -1311,13 +1311,22 @@ void CURLPrepareFile(const char* url, int dfilenum)
 		CONS_Printf("Downloading %s from %s\n", curl_realname, url);
 
 		strcatbf(curl_curfile->filename, downloaddir, "/");
-		curl_curfile->file = fopen(curl_curfile->filename, "wb");
+		curl_curfile->file = NULL;
 
 		if (!curl_curfile->file)
 		{
-			CONS_Alert(CONS_ERROR, "Download of %s failed! Check if you have write access to your download folder!\n", curl_curfile->filename);
-			filedownload.http_running = false;
-			filedownload.http_failed = true;
+			M_StartMessage("Download of %s failed! Check if you have write access to your download folder!\n", curl_curfile->filename, MM_NOTHING);
+			CURLAbortFile();
+			D_QuitNetGame();
+			CL_Reset();
+			D_StartTitle();
+			M_StartMessage(M_GetText(
+				"An error occured when trying to\n"
+				"download missing addons.\n"
+				"See the console or log file\n"
+				"for additional details.\n\n"
+				"Press ESC\n"
+			), NULL, MM_NOTHING);
 			return;
 		}
 
