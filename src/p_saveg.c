@@ -2902,7 +2902,7 @@ static void P_NetUnArchiveThinkers(savebuffer_t *save)
 		{
 			P_AddThinker(th);
 
-			if (th->function == (actionf_p1)P_MobjThinker && tclass == tc_mobj)
+			if (tclass == tc_mobj && th->function == (actionf_p1)P_MobjThinker)
 			{
 				//CONS_Printf("added to hashlist\n");
 				mobjnum_ht_linkedList_AddEntry(th);
