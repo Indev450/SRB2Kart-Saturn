@@ -152,36 +152,22 @@ static void mobjnum_ht_linkedList_Wipe(void)
 
     for (UINT8 i = 0; i < HT_NUMLISTS; i++)
     {
-        if (!mobjnum_Hashtable[i].next)
-            continue;
+        currentEntry = mobjnum_Hashtable[i].next;
 
-        for (currentEntry = &mobjnum_Hashtable[i]; currentEntry != NULL; currentEntry = next)
+        for (currentEntry = mobjnum_Hashtable[i].next; currentEntry != NULL; currentEntry = next)
         {
             // bye!
-            if (currentEntry->next)
-                next = currentEntry->next;
-            else
-                next = NULL;
+            next = currentEntry->next;
 
-            if (currentEntry->next)
-            {
-                currentEntry->next = NULL;
-            }
+            // we memset everything after anyways
+            // keeping it if we wanna use the wipe seperately
+            //currentEntry->next = NULL;
+            //currentEntry->thinker = NULL;
+            //currentEntry->prev = NULL;
 
-            if (currentEntry->thinker)
-            {
-                currentEntry->thinker = NULL;
-            }
-
-            if (currentEntry->prev) //prevents freeing the first element
-            {
-                currentEntry->prev = NULL;
-                free(currentEntry);
-            }
+            free(currentEntry);
         }
     }
-
-    return;
 }
 
 // Simple hash table implemented in C.
