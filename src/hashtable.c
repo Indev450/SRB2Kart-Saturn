@@ -47,7 +47,9 @@ void mobjnum_ht_linkedList_AddEntry(thinker_t* thinker)
     mobjnum_linkedList* currentEntry; // = &mobjnum_Hashtable[(UINT8)(mobj->mobjnum % HT_NUMLISTS)];
     mobjnum_linkedList* next;
 
-    currentEntry = &mobjnum_Hashtable[(UINT8)(((mobj_t*)thinker)->mobjnum % HT_NUMLISTS)];
+    const UINT8 listidx = (UINT8)(((mobj_t*)thinker)->mobjnum % HT_NUMLISTS);
+
+    currentEntry = &mobjnum_Hashtable[listidx];
 
     if (!currentEntry->next) // check for the first entry
     {
@@ -60,7 +62,7 @@ void mobjnum_ht_linkedList_AddEntry(thinker_t* thinker)
         return;
     }
 
-    for (currentEntry = &mobjnum_Hashtable[(UINT8)(((mobj_t*)thinker)->mobjnum % HT_NUMLISTS)]; currentEntry != NULL; currentEntry = next)
+    for (currentEntry = &mobjnum_Hashtable[listidx]; currentEntry != NULL; currentEntry = next)
     {
         if (!currentEntry->thinker)
         {
@@ -106,15 +108,15 @@ void mobjnum_ht_linkedList_AddEntry(thinker_t* thinker)
   */
 thinker_t* mobjnum_ht_linkedList_Find(UINT32 mobjnumber)
 {
-    // mobjnum_linkedList* currentEntry = &mobjnum_Hashtable[(UINT8)(mobjnumber % HT_NUMLISTS)];
-
     mobjnum_linkedList* currentEntry; // = &mobjnum_Hashtable[(UINT8)(mobj->mobjnum % HT_NUMLISTS)];
     mobjnum_linkedList* next;
 
     if (!mobjnumber)
         return NULL;
 
-    currentEntry = &mobjnum_Hashtable[(UINT8)(mobjnumber % HT_NUMLISTS)];
+    const UINT8 listidx = (UINT8)(mobjnumber % HT_NUMLISTS);
+
+    currentEntry = &mobjnum_Hashtable[listidx];
 
     if (!currentEntry->next) // check for the first entry
     {
@@ -125,7 +127,7 @@ thinker_t* mobjnum_ht_linkedList_Find(UINT32 mobjnumber)
             return currentEntry->thinker;
     }
 
-    for (currentEntry = &mobjnum_Hashtable[(UINT8)(mobjnumber % HT_NUMLISTS)]; currentEntry != NULL; currentEntry = next)
+    for (currentEntry = &mobjnum_Hashtable[listidx]; currentEntry != NULL; currentEntry = next)
     {
         if (!currentEntry->thinker)
             return NULL;
