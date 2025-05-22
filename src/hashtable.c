@@ -62,26 +62,24 @@ void mobjnum_ht_linkedList_AddEntry(thinker_t* thinker)
         return;
     }
 
-    for (currentEntry = &mobjnum_Hashtable[listidx]; currentEntry != NULL; currentEntry = next)
+    for (; currentEntry != NULL; currentEntry = next)
     {
         if (!currentEntry->thinker)
         {
             currentEntry->thinker = thinker;
             break;
         }
-        else
+
+        if (!currentEntry->next)
         {
-            if (!currentEntry->next)
-            {
-                currentEntry->next = malloc(sizeof(mobjnum_linkedList));
-                currentEntry->next->thinker = thinker;
-                currentEntry->next->next = NULL;
-                currentEntry->next->prev = currentEntry;
-                next = NULL;
-            }
-            else
-                next = currentEntry->next;
+            currentEntry->next = malloc(sizeof(mobjnum_linkedList));
+            currentEntry->next->thinker = thinker;
+            currentEntry->next->next = NULL;
+            currentEntry->next->prev = currentEntry;
+            break;
         }
+
+        next = currentEntry->next;
     }
 }
 
@@ -127,7 +125,7 @@ thinker_t* mobjnum_ht_linkedList_Find(UINT32 mobjnumber)
             return currentEntry->thinker;
     }
 
-    for (currentEntry = &mobjnum_Hashtable[listidx]; currentEntry != NULL; currentEntry = next)
+    for (; currentEntry != NULL; currentEntry = next)
     {
         if (!currentEntry->thinker)
             return NULL;
@@ -135,10 +133,7 @@ thinker_t* mobjnum_ht_linkedList_Find(UINT32 mobjnumber)
         if (((mobj_t *)currentEntry->thinker)->mobjnum == mobjnumber)
             return currentEntry->thinker;
 
-        if (currentEntry->next)
-            next = currentEntry->next;
-        else
-            next = NULL;
+        next = currentEntry->next;
     }
 
     return NULL;
