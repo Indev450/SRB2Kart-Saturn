@@ -1715,9 +1715,11 @@ static menuitem_t OP_FocusOptionsMenu[] =
 
 	{IT_STRING|IT_CVAR,	NULL, "Pause Game While Unfocused",					&cv_pauseifunfocused,		60},
 
-	{IT_STRING|IT_CVAR,	NULL, "Show \"FOCUS LOST\"",						&cv_showfocuslost,			80},
+	{IT_STRING|IT_CVAR,	NULL, "Background FPS Cap",         				&cv_fpscapbg,          		80},
 
-	{IT_STRING|IT_CVAR,	NULL, "Always Grab Mouse While Focused",			&cv_alwaysgrabmouse,	   100},
+	{IT_STRING|IT_CVAR,	NULL, "Show \"FOCUS LOST\"",						&cv_showfocuslost,		   100},
+
+	{IT_STRING|IT_CVAR,	NULL, "Always Grab Mouse While Focused",			&cv_alwaysgrabmouse,	   120},
 };
 
 static const char* OP_FocusOptionsTooltips[] =
@@ -1726,6 +1728,7 @@ static const char* OP_FocusOptionsTooltips[] =
 	"Should music play while the game is unfocused?",
 	"Should soundeffects play while the game is unfocused?",
 	"Should the game pause while the game is unfocused?",
+	"Set manual framerate cap while the game is unfocused.",
 	"Should the FOCUS LOST window appear\n while the game is unfocused?",
 	"Should the mouse cursor be grabbed and hidden\n while the game is in focus?",
 };
@@ -3157,7 +3160,7 @@ menu_t OP_ChatOptionsDef = DEFAULTMENUSTYLE("M_HUD", OP_ChatOptionsMenu, &OP_HUD
 
 menu_t OP_SoundAdvancedDef = DEFAULTSCROLLSTYLE("M_SOUND", OP_SoundAdvancedMenu, &OP_SoundOptionsDef, 30, 30);
 
-menu_t OP_FocusOptionsDef = DEFAULTMENUSTYLE(NULL, OP_FocusOptionsMenu, &OP_MainDef, 25, 30);
+menu_t OP_FocusOptionsDef = DEFAULTMENUSTYLE(NULL, OP_FocusOptionsMenu, &OP_MainDef, 17, 30);
 
 menu_t OP_GameOptionsDef = DEFAULTMENUSTYLE("M_GAME", OP_GameOptionsMenu, &OP_MainDef, 30, 20);
 menu_t OP_ServerOptionsDef = DEFAULTMENUSTYLE("M_SERVER", OP_ServerOptionsMenu, &OP_MainDef, 24, 20);
