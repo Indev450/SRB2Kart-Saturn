@@ -35,13 +35,7 @@ mobjnum_linkedList mobjnum_Hashtable[HT_NUMLISTS]; //dumb and idiotic, there are
 void mobjnum_ht_linkedList_Init(void)
 {
     mobjnum_ht_linkedList_Wipe();
-
-    for (UINT8 i = 0; i < HT_NUMLISTS; i++)
-    {
-        mobjnum_Hashtable[i].thinker = NULL;
-        mobjnum_Hashtable[i].prev = NULL;
-        mobjnum_Hashtable[i].next = NULL;
-    }
+    memset(mobjnum_Hashtable, 0, sizeof(mobjnum_Hashtable));
 }
 
 /** Adds a thinker's address, determines in which list to add automatically
