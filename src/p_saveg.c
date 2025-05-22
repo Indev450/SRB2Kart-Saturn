@@ -2899,7 +2899,7 @@ static void P_NetUnArchiveThinkers(savebuffer_t *save)
 			delay = (void *)currentthinker;
 
 			if ((mobjnum = (UINT32)(size_t)delay->caller))
-				delay->caller = P_FindNewPosition_Hashtable(mobjnum);
+				delay->caller = P_FindNewPosition(mobjnum);
 		}
 	}
 }
