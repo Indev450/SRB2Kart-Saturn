@@ -33,6 +33,8 @@
 #include "lua_script.h"
 #include "p_slopes.h"
 
+#include "hashtable.h"
+
 savedata_t savedata;
 
 // Block UINT32s to attempt to ensure that the correct data is
@@ -1881,36 +1883,10 @@ mobj_t *P_FindNewPosition(UINT32 oldposition)
 	thinker_t *th;
 	mobj_t *mobj;
 
-	for (th = thinkercap.next; th != &thinkercap; th = th->next)
-	{
-		if (th->function != (actionf_p1)P_MobjThinker)
-			continue;
-
-		mobj = (mobj_t *)th;
-
-		if (mobj->mobjnum == oldposition)
-			return mobj;
-	}
-	CONS_Debug(DBG_GAMELOGIC, "mobj %d not found\n", oldposition);
-	return NULL;
-}
-
-#include "hashtable.h"
-
-// Now save the pointers, tracer and target, but at load time we must
-// relink to this; the savegame contains the old position in the pointer
-// field copyed in the info field temporarily, but finally we just search
-// for the old position and relink to it.
-mobj_t *P_FindNewPosition_Hashtable(UINT32 oldposition)
-{
-	thinker_t *th;
-	mobj_t *mobj;
-
 	th = mobjnum_ht_linkedList_Find(oldposition);
 
 	if (th && ((mobj_t *)th)->mobjnum == oldposition)
 	{
-		//CONS_Printf("using hashtable newpos\n");
 		return (mobj_t *)th;
 	}
 
@@ -1924,7 +1900,6 @@ mobj_t *P_FindNewPosition_Hashtable(UINT32 oldposition)
 		if (mobj->mobjnum == oldposition)
 			return mobj;
 	}
-
 	CONS_Debug(DBG_GAMELOGIC, "mobj %d not found\n", oldposition);
 	return NULL;
 }
@@ -2904,7 +2879,6 @@ static void P_NetUnArchiveThinkers(savebuffer_t *save)
 
 			if (tclass == tc_mobj && th->function == (actionf_p1)P_MobjThinker)
 			{
-				//CONS_Printf("added to hashlist\n");
 				mobjnum_ht_linkedList_AddEntry(th);
 			}
 		}
@@ -3046,7 +3020,7 @@ static inline mobj_t *RelinkMobj(mobj_t **ptr)
 {
 	UINT32 temp = (UINT32)(size_t)*ptr;
 	*ptr = NULL;
-	return P_SetTarget(ptr, P_FindNewPosition_Hashtable(temp));
+	return P_SetTarget(ptr, P_FindNewPosition(temp));
 }
 
 static void P_RelinkPointers(void)
