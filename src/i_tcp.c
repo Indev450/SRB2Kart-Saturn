@@ -655,6 +655,7 @@ is_external_address (UINT32 p)
 
 static boolean hole_punch(ssize_t c)
 {
+	holepunch_t *holepunchpacket = HOLEPUNCH_DATA(doomcom);
 
 	/* See ../doc/Holepunch-Protocol.txt */
 	if (cv_rendezvousserver.string[0] &&
@@ -1442,6 +1443,8 @@ static void rendezvous(int size)
 
 	tic_t tic = I_GetTime();
 
+	holepunch_t *holepunchpacket = HOLEPUNCH_DATA(doomcom);
+
 	if (tic != refreshtic)
 	{
 		if (SOCK_GetAddr(&rzv.ip4, host, (port ? port : "7777"), false))
@@ -1467,6 +1470,7 @@ static void rendezvous(int size)
 static void SOCK_RequestHolePunch(INT32 node)
 {
 	mysockaddr_t * addr = &clientaddress[node];
+	holepunch_t *holepunchpacket = HOLEPUNCH_DATA(doomcom);
 
 	holepunchpacket->addr = addr->ip4.sin_addr.s_addr;
 	holepunchpacket->port = addr->ip4.sin_port;
