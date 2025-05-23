@@ -549,6 +549,28 @@ void M_FirstLoadConfig(void)
 	CV_ToggleExecVersion(false);
 }
 
+static boolean M_BackupConfig(const char *filename)
+{
+	char backupfile[MAX_WADPATH+4];
+
+	snprintf(backupfile, sizeof backupfile, "%s.bak", filename);
+	backupfile[sizeof backupfile - 1] = '\0';
+
+	FILE *config = fopen(filename, "r");
+
+	if (config != NULL)
+	{
+		fclose(config);
+		if (FIL_CopyFile(filename, backupfile) == false)
+		{
+			CONS_Alert(CONS_WARNING,"Failed to create a backup of the configuration file. Will not attempt to write to file\n");
+			return false;
+		}
+	}
+
+	return true;
+}
+
 /** Saves the game configuration.
   *
   * \sa Command_SaveConfig_f
@@ -557,27 +579,10 @@ void M_SaveConfig(const char *filename)
 {
 	FILE *f;
 	char *filepath;
-	char backupfile[MAX_WADPATH+4];
 
 	// make sure not to write back the config until it's been correctly loaded
 	if (!loaded_config)
 		return;
-
-	// Create backup of the config file
-	snprintf(backupfile, sizeof backupfile, "%s.bak", configfile);
-	backupfile[sizeof backupfile - 1] = '\0';
-
-	FILE *config = fopen(configfile, "r");
-
-	if (config != NULL)
-	{
-		fclose(config);
-		if (FIL_CopyFile(configfile, backupfile) == false)
-		{
-			CONS_Alert(CONS_WARNING,"Failed to create a backup of the configuration file. Will not attempt to write to file\n");
-			return;
-		}
-	}
 
 	// can change the file name
 	if (filename)
@@ -594,6 +599,10 @@ void M_SaveConfig(const char *filename)
 			filepath = va(pandf,srb2home, filename);
 		else
 			filepath = Z_StrDup(filename);
+
+		// If failed to backup, do not proceed
+		if (!M_BackupConfig(filepath))
+			return;
 
 		f = fopen(filepath, "w");
 		// change it only if valid
@@ -612,6 +621,10 @@ void M_SaveConfig(const char *filename)
 			CONS_Alert(CONS_NOTICE, M_GetText("Config filename must be .cfg\n"));
 			return;
 		}
+
+		// If failed to backup, do not proceed
+		if (!M_BackupConfig(configfile))
+			return;
 
 		f = fopen(configfile, "w");
 		if (!f)
