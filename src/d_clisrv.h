@@ -38,8 +38,8 @@ applications may follow different packet versions.
 #define VANILLA_GT_MATCH 3
 
 // Networking and tick handling related.
-#define BACKUPTICS 32
-#define TICQUEUE 512 // more than enough for most timeouts....
+#define BACKUPTICS 512 // more than enough for most timeouts....
+#define CLIENTBACKUPTICS 32
 #define MAXTEXTCMD 256
 
 // No. of tics your controls can be delayed by.
