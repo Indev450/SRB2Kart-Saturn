@@ -6020,7 +6020,7 @@ static void HWR_DoPostProcessor(player_t *player)
 		if (thiscam->postimg & POSTIMG_WATER)
 		{
 			WAVELENGTH = 5;
-			AMPLITUDE = 20;
+			AMPLITUDE = 40;
 			FREQUENCY = 8;
 		}
 		else
