@@ -102,6 +102,8 @@ RGBA_t  myPaletteData[256]; // the palette for converting textures to RGBA
 static GLint gltexformat = GL_RGB5_A1;
 GLint   screen_width     = 0;               // used by Draw2DLine()
 GLint   screen_height    = 0;
+GLint   screen_texsizew  = 512; // Power-of-two screen texture render resolution
+GLint   screen_texsizeh  = 512; // Power-of-two screen texture render resolution
 GLbyte  screen_depth     = 0;
 GLint maximumAnisotropy  = 0;
 static GLboolean MipMap  = GL_FALSE;
@@ -129,6 +131,8 @@ GLuint FramebufferObject, FramebufferTexture, RenderbufferObject;
 
 boolean supportFBO = false;
 static boolean fboinit = false;
+
+static void GL_Framebuffer_DeleteAttachments(void);
 #endif
 
 // Sryder:	NextTexAvail is broken for these because palette changes or changes to the texture filter or antialiasing
@@ -948,7 +952,7 @@ void GL_UnSetShader(void)
 static void GL_SetNoTexture(void)
 {
 	// Disable texture.
-	if (tex_downloaded != NOTEXTURE_NUM && !currently_batching)
+	if (tex_downloaded != NOTEXTURE_NUM)
 	{
 		if (NOTEXTURE_NUM == 0)
 			pglGenTextures(1, &NOTEXTURE_NUM);
@@ -991,7 +995,42 @@ static void GL_Perspective(GLfloat fovy, GLfloat aspect)
 // -----------------+
 void GL_SetModelView(GLint w, GLint h)
 {
+	GLint maxtexsize = 0;
 	//GL_DBG_Printf("SetModelView(): %dx%d\n", (int)w, (int)h);
+
+	// The screen textures need to be flushed if the width or height change so that they be remade for the correct size
+	if (screen_width != w || screen_height != h)
+	{
+		GL_FlushScreenTextures();
+
+#ifdef USE_FBO_OGL
+		GL_Framebuffer_DeleteAttachments();
+#endif
+	}
+
+	screen_width = (GLint)w;
+	screen_height = (GLint)h;
+
+	screen_texsizew = screen_texsizeh = 512;
+
+	// look for power of two that is large enough for the screen
+	while (screen_texsizew < w)
+		screen_texsizew <<= 1;
+
+	while (screen_texsizeh < h)
+		screen_texsizeh <<= 1;
+
+	pglGetIntegerv(GL_MAX_TEXTURE_SIZE, &maxtexsize); // Get the maximum supported texture size
+	if ((screen_texsizew > maxtexsize || screen_texsizeh > maxtexsize) && maxtexsize > 0)
+	{
+		// The desired screen texture resolution is too big for the player's GPU!
+		CONS_Alert(CONS_WARNING, "Tried to make a screen texture for a %dx%d game resolution, but your GPU only supports up to %dx%d! Please switch to the software renderer or lower your game resolution.\n", w, h, maxtexsize, maxtexsize);
+
+		// For now, let's just pray that clamping it to the maximum supported size "works"
+		// There'll be a stretchy "border" artefact, but it's better than failing to make the screen textures
+		screen_texsizew = min(screen_texsizew, maxtexsize);
+		screen_texsizeh = min(screen_texsizeh, maxtexsize);
+	}
 
 	pglViewport(0, 0, w, h);
 
@@ -1037,6 +1076,8 @@ void GL_SetStates(void)
 	GL_SetNoTexture();
 
 	pglPolygonOffset(-1.0f, -1.0f);
+
+	pglDisable(GL_FOG);
 
 	// bp : when no t&l :)
 	pglLoadIdentity();
@@ -1122,7 +1163,7 @@ static void GL_Framebuffer_GenerateAttachments(void)
 	fboinit = true;
 }
 
-void GL_Framebuffer_DeleteAttachments(void)
+static void GL_Framebuffer_DeleteAttachments(void)
 {
 	if (!supportFBO || fboinit == false)
 		return;
@@ -2689,8 +2730,7 @@ void GL_DrawModelEx(model_t *model, INT32 frameIndex, float duration, float tics
 	// pos->mirror is if the screen is flipped horizontally
 	// XOR all the flips together to figure out what culling to use!
 	{
-		boolean reversecull = (flipped ^ hflipped ^ pos->flip ^ pos->mirror);
-		if (reversecull)
+		if ((flipped ^ hflipped ^ !!(pos->fliptype & TRANSFORM_FLIP) ^ !!(pos->fliptype & TRANSFORM_MIRROR)))
 			pglCullFace(GL_FRONT);
 		else
 			pglCullFace(GL_BACK);
@@ -2836,14 +2876,21 @@ void GL_SetTransform(FTransform *stransform)
 		used_fov = stransform->fovangle;
 		shearing = stransform->shearing;
 
-		if (stransform->mirror)
-			pglScalef(-stransform->scalex, stransform->scaley, -stransform->scalez);
-		else if (stransform->mirrorflip)
-			pglScalef(-stransform->scalex, -stransform->scaley, -stransform->scalez);
-		else if (stransform->flip)
-			pglScalef(stransform->scalex, -stransform->scaley, -stransform->scalez);
-		else
-			pglScalef(stransform->scalex, stransform->scaley, -stransform->scalez);
+		switch (stransform->fliptype)
+		{
+			case TRANSFORM_MIRROR:
+				pglScalef(-stransform->scalex, stransform->scaley, -stransform->scalez);
+				break;
+			case TRANSFORM_MIRRORFLIP:
+				pglScalef(-stransform->scalex, -stransform->scaley, -stransform->scalez);
+				break;
+			case TRANSFORM_FLIP:
+				pglScalef(stransform->scalex, -stransform->scaley, -stransform->scalez);
+				break;
+			default: // TRANSFORM_NONE
+				pglScalef(stransform->scalex, stransform->scaley, -stransform->scalez);
+				break;
+		}
 
 		if (stransform->roll)
 			pglRotatef(stransform->rollangle, 0.0f, 0.0f, 1.0f);
@@ -2869,7 +2916,7 @@ void GL_SetTransform(FTransform *stransform)
 	if (shearing)
 	{
 		float dy = stransform->viewaiming * 2;
-		if (stransform->flip || stransform->mirrorflip)
+		if (stransform->fliptype == TRANSFORM_FLIP || stransform->fliptype == TRANSFORM_MIRRORFLIP)
 			dy *= -1.0f;
 		pglTranslatef(0.0f, -dy/BASEVIDHEIGHT, 0.0f);
 	}
@@ -2918,7 +2965,6 @@ void GL_PostImgRedraw(float points[SCREENVERTS][SCREENVERTS][2])
 	INT32 x, y;
 	float float_x, float_y, float_nextx, float_nexty;
 	float xfix, yfix;
-	INT32 texsizew = 512, texsizey = 512;
 
 	const float blackBack[16] =
 	{
@@ -2931,16 +2977,9 @@ void GL_PostImgRedraw(float points[SCREENVERTS][SCREENVERTS][2])
 	if (gl_enable_screen_textures != 2)
 		return;
 
-	// look for power of two that is large enough for the screen
-	while (texsizew < screen_width)
-		texsizew <<= 1;
-
-	while (texsizey < screen_height)
-		texsizey <<= 1;
-
 	// X/Y stretch fix for all resolutions(!)
-	xfix = (float)(texsizew)/((float)((screen_width)/(float)(SCREENVERTS-1)));
-	yfix = (float)(texsizey)/((float)((screen_height)/(float)(SCREENVERTS-1)));
+	xfix = (float)(screen_texsizew)/((float)((screen_width)/(float)(SCREENVERTS-1)));
+	yfix = (float)(screen_texsizeh)/((float)((screen_height)/(float)(SCREENVERTS-1)));
 
 	pglDisable(GL_DEPTH_TEST);
 	pglDisable(GL_BLEND);
@@ -3014,7 +3053,6 @@ void GL_FlushScreenTextures(void)
 void GL_DrawScreenTexture(int tex, FSurfaceInfo *surf, FBITFIELD polyflags)
 {
 	float xfix, yfix;
-	INT32 texsizew = 512, texsizey = 512;
 
 	const float screenVerts[12] =
 	{
@@ -3029,15 +3067,8 @@ void GL_DrawScreenTexture(int tex, FSurfaceInfo *surf, FBITFIELD polyflags)
 	if (gl_enable_screen_textures != 2)
 		return;
 
-	// look for power of two that is large enough for the screen
-	while (texsizew < screen_width)
-		texsizew <<= 1;
-
-	while (texsizey < screen_height)
-		texsizey <<= 1;
-
-	xfix = 1/((float)(texsizew)/((float)((screen_width))));
-	yfix = 1/((float)(texsizey)/((float)((screen_height))));
+	xfix = 1/((float)(screen_texsizew)/((float)((screen_width))));
+	yfix = 1/((float)(screen_texsizeh)/((float)((screen_height))));
 
 	// const float screenVerts[12]
 
@@ -3070,7 +3101,6 @@ void GL_DrawScreenTexture(int tex, FSurfaceInfo *surf, FBITFIELD polyflags)
 // Do screen fades!
 void GL_DoScreenWipe(int wipeStart, int wipeEnd)
 {
-	INT32 texsizew = 512, texsizey = 512;
 	float xfix, yfix;
 
 	INT32 fademaskdownloaded = tex_downloaded; // the fade mask that has been set
@@ -3096,15 +3126,8 @@ void GL_DoScreenWipe(int wipeStart, int wipeEnd)
 	if (!gl_enable_screen_textures)
 		return;
 
-	// look for power of two that is large enough for the screen
-	while (texsizew < screen_width)
-		texsizew <<= 1;
-
-	while (texsizey < screen_height)
-		texsizey <<= 1;
-
-	xfix = 1/((float)(texsizew)/((float)((screen_width))));
-	yfix = 1/((float)(texsizey)/((float)((screen_height))));
+	xfix = 1/((float)(screen_texsizew)/((float)((screen_width))));
+	yfix = 1/((float)(screen_texsizeh)/((float)((screen_height))));
 
 	// const float screenVerts[12]
 
@@ -3162,7 +3185,6 @@ void GL_DoScreenWipe(int wipeStart, int wipeEnd)
 
 void GL_RenderVhsEffect(fixed_t upbary, fixed_t downbary, UINT8 updistort, UINT8 downdistort, UINT8 barsize)
 {
-	INT32 texsizew = 512, texsizey = 512;
 	int tex = HWD_SCREENTEXTURE_VHS;
 	float xfix, yfix;
 	float fix[8];
@@ -3180,15 +3202,8 @@ void GL_RenderVhsEffect(fixed_t upbary, fixed_t downbary, UINT8 updistort, UINT8
 	if (gl_enable_screen_textures != 2)
 		return;
 
-	// look for power of two that is large enough for the screen
-	while (texsizew < screen_width)
-		texsizew <<= 1;
-
-	while (texsizey < screen_height)
-		texsizey <<= 1;
-
-	xfix = 1/((float)(texsizew)/((float)((screen_width))));
-	yfix = 1/((float)(texsizey)/((float)((screen_height))));
+	xfix = 1/((float)(screen_texsizew)/((float)((screen_width))));
+	yfix = 1/((float)(screen_texsizeh)/((float)((screen_height))));
 
 	// Slight fuzziness
 	GL_MakeScreenTexture(tex);
@@ -3272,18 +3287,10 @@ void GL_RenderVhsEffect(fixed_t upbary, fixed_t downbary, UINT8 updistort, UINT8
 // Create a texture from the screen.
 void GL_MakeScreenTexture(int tex)
 {
-	INT32 texsizew = 512, texsizey = 512;
 	boolean firstTime = (screenTextures[tex] == 0);
 
 	if (!gl_enable_screen_textures)
 		return;
-
-	// look for power of two that is large enough for the screen
-	while (texsizew < screen_width)
-		texsizew <<= 1;
-
-	while (texsizey < screen_height)
-		texsizey <<= 1;
 
 	// Create screen texture
 	if (firstTime)
@@ -3296,10 +3303,10 @@ void GL_MakeScreenTexture(int tex)
 		pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 		Clamp2D(GL_TEXTURE_WRAP_S);
 		Clamp2D(GL_TEXTURE_WRAP_T);
-		pglCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 0, 0, texsizew, texsizey, 0);
+		pglCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 0, 0, screen_texsizew, screen_texsizeh, 0);
 	}
 	else
-		pglCopyTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 0, 0, texsizew, texsizey);
+		pglCopyTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 0, 0, screen_texsizew, screen_texsizeh);
 
 	tex_downloaded = screenTextures[tex];
 }
@@ -3310,7 +3317,6 @@ void GL_DrawScreenFinalTexture(int tex, INT32 width, INT32 height, boolean usesh
 	float origaspect, newaspect;
 	float xoff = 1, yoff = 1; // xoffset and yoffset for the polygon to have black bars around the screen
 	FRGBAFloat clearColour;
-	INT32 texsizew = 512, texsizey = 512;
 
 	float off[12];
 	float fix[8];
@@ -3318,15 +3324,8 @@ void GL_DrawScreenFinalTexture(int tex, INT32 width, INT32 height, boolean usesh
 	if (gl_enable_screen_textures != 2)
 		return;
 
-	// look for power of two that is large enough for the screen
-	while (texsizew < screen_width)
-		texsizew <<= 1;
-
-	while (texsizey < screen_height)
-		texsizey <<= 1;
-
-	xfix = 1/((float)(texsizew)/((float)((screen_width))));
-	yfix = 1/((float)(texsizey)/((float)((screen_height))));
+	xfix = 1/((float)(screen_texsizew)/((float)((screen_width))));
+	yfix = 1/((float)(screen_texsizeh)/((float)((screen_height))));
 
 	origaspect = (float)screen_width / screen_height;
 	newaspect = (float)width / height;

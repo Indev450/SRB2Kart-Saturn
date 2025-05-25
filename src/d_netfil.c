@@ -1306,6 +1306,21 @@ void CURLPrepareFile(const char* url, int dfilenum)
 
 		strcatbf(curl_curfile->filename, downloaddir, "/");
 		curl_curfile->file = fopen(curl_curfile->filename, "wb");
+
+		if (!curl_curfile->file)
+		{
+			CONS_Alert(CONS_ERROR, "Couldnt open %s for writing!\nAborting file download.\nCheck if you have write access to your download folder!\n", curl_curfile->filename);
+			CL_AbortConnection();
+			M_StartMessage(M_GetText(
+				"An error occured when trying to\n"
+				"download missing addons.\n"
+				"See the console or log file\n"
+				"for additional details.\n\n"
+				"Press ESC\n"
+			), NULL, MM_NOTHING);
+			return;
+		}
+
 		curl_easy_setopt(http_handle, CURLOPT_WRITEDATA, curl_curfile->file);
 		curl_easy_setopt(http_handle, CURLOPT_WRITEFUNCTION, curlwrite_data);
 		curl_easy_setopt(http_handle, CURLOPT_NOPROGRESS, 0L);
@@ -1366,6 +1381,7 @@ void CURLGetFile(void)
 				CONS_Alert(CONS_WARNING, "curl_multi_wait() failed, code %d.\n", mc);
 				continue;
 			}
+
 			curl_curfile->currentsize = curl_dlnow;
 			curl_curfile->totalsize = curl_dltotal;
 		}

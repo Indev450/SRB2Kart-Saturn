@@ -211,14 +211,6 @@ void SendWeaponPref4(void);
 
 static CV_PossibleValue_t usemouse_cons_t[] = {{0, "Off"}, {1, "On"}, {2, "Force"}, {0, NULL}};
 
-#ifdef LJOYSTICK
-static CV_PossibleValue_t joyport_cons_t[] = {{1, "/dev/js0"}, {2, "/dev/js1"}, {3, "/dev/js2"},
-	{4, "/dev/js3"}, {0, NULL}};
-#else
-// accept whatever value - it is in fact the joystick device number
-#define usejoystick_cons_t NULL
-#endif
-
 static CV_PossibleValue_t autobalance_cons_t[] = {{0, "MIN"}, {4, "MAX"}, {0, NULL}};
 static CV_PossibleValue_t teamscramble_cons_t[] = {{0, "Off"}, {1, "Random"}, {2, "Points"}, {0, NULL}};
 
@@ -307,7 +299,7 @@ consvar_t cv_mouseturn = {"mouseturn", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, 
 consvar_t cv_laglesscam = {"lagless_camera", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 consvar_t cv_verticallook[MAXSPLITSCREENPLAYERS] = {
-	{"verticallook", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"verticallook",  "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL},
 	{"verticallook2", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL},
 	{"verticallook3", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL},
 	{"verticallook4", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL}
@@ -315,47 +307,32 @@ consvar_t cv_verticallook[MAXSPLITSCREENPLAYERS] = {
 
 #if defined(HAVE_SDL) || defined(_WINDOWS) //joystick 1 and 2
 consvar_t cv_usejoystick[MAXSPLITSCREENPLAYERS] = {
-	{"use_joystick", "1", CV_SAVE|CV_CALL, usejoystick_cons_t, I_InitJoystick1, 0, NULL, NULL, 0, 0, NULL},
-	{"use_joystick2", "2", CV_SAVE|CV_CALL, usejoystick_cons_t, I_InitJoystick2, 0, NULL, NULL, 0, 0, NULL},
-	{"use_joystick3", "3", CV_SAVE|CV_CALL, usejoystick_cons_t, I_InitJoystick3, 0, NULL, NULL, 0, 0, NULL},
-	{"use_joystick4", "4", CV_SAVE|CV_CALL, usejoystick_cons_t, I_InitJoystick4, 0, NULL, NULL, 0, 0, NULL}
+	{"use_joystick",  "1", CV_SAVE|CV_CALL, NULL, I_InitJoystick1, 0, NULL, NULL, 0, 0, NULL},
+	{"use_joystick2", "2", CV_SAVE|CV_CALL, NULL, I_InitJoystick2, 0, NULL, NULL, 0, 0, NULL},
+	{"use_joystick3", "3", CV_SAVE|CV_CALL, NULL, I_InitJoystick3, 0, NULL, NULL, 0, 0, NULL},
+	{"use_joystick4", "4", CV_SAVE|CV_CALL, NULL, I_InitJoystick4, 0, NULL, NULL, 0, 0, NULL}
 };
 #endif
 
-#if (defined (LJOYSTICK) || defined (HAVE_SDL))
-#ifdef LJOYSTICK
-consvar_t cv_joyport = {"joyport", "/dev/js0", CV_SAVE, joyport_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_joyport2 = {"joyport2", "/dev/js0", CV_SAVE, joyport_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL}; //Alam: for later
-#endif
+#if defined (HAVE_SDL)
 consvar_t cv_joyscale[MAXSPLITSCREENPLAYERS] = {
-	{"joyscale", "1", CV_SAVE|CV_CALL, NULL, I_JoyScale, 0, NULL, NULL, 0, 0, NULL},
+	{"joyscale",  "1", CV_SAVE|CV_CALL, NULL, I_JoyScale, 0, NULL, NULL, 0, 0, NULL},
 	{"joyscale2", "1", CV_SAVE|CV_CALL, NULL, I_JoyScale2, 0, NULL, NULL, 0, 0, NULL},
 	{"joyscale3", "1", CV_SAVE|CV_CALL, NULL, I_JoyScale3, 0, NULL, NULL, 0, 0, NULL},
 	{"joyscale4", "1", CV_SAVE|CV_CALL, NULL, I_JoyScale4, 0, NULL, NULL, 0, 0, NULL}
 };
 #else
-consvar_t cv_joyscale[2] = { //Alam: Dummy for save
-	{"joyscale", "1", CV_SAVE|CV_HIDEN, NULL, NULL, 0, NULL, NULL, 0, 0, NULL},
-	{"joyscale", "1", CV_SAVE|CV_HIDEN, NULL, NULL, 0, NULL, NULL, 0, 0, NULL}
+consvar_t cv_joyscale[MAXSPLITSCREENPLAYERS] = { //Alam: Dummy for save
+	{"joyscale",  "1", CV_SAVE|CV_HIDEN, NULL, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"joyscale2", "1", CV_SAVE|CV_HIDEN, NULL, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"joyscale3", "1", CV_SAVE|CV_HIDEN, NULL, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"joyscale4", "1", CV_SAVE|CV_HIDEN, NULL, NULL, 0, NULL, NULL, 0, 0, NULL}
 };
 #endif
 
 consvar_t cv_matchboxes = {"matchboxes", "Normal", CV_NETVAR|CV_CHEAT|CV_NOSHOWHELP, matchboxes_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_specialrings = {"specialrings", "On", CV_NETVAR|CV_NOSHOWHELP, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_powerstones = {"powerstones", "On", CV_NETVAR|CV_NOSHOWHELP, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
-
-/*consvar_t cv_recycler =      {"tv_recycler",      "5", CV_NETVAR|CV_CHEAT, chances_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_teleporters =   {"tv_teleporter",    "5", CV_NETVAR|CV_CHEAT, chances_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_superring =     {"tv_superring",     "5", CV_NETVAR|CV_CHEAT, chances_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_supersneakers = {"tv_supersneaker",  "5", CV_NETVAR|CV_CHEAT, chances_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_invincibility = {"tv_invincibility", "5", CV_NETVAR|CV_CHEAT, chances_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_jumpshield =    {"tv_jumpshield",    "5", CV_NETVAR|CV_CHEAT, chances_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_watershield =   {"tv_watershield",   "5", CV_NETVAR|CV_CHEAT, chances_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_ringshield =    {"tv_ringshield",    "5", CV_NETVAR|CV_CHEAT, chances_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_forceshield =   {"tv_forceshield",   "5", CV_NETVAR|CV_CHEAT, chances_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_bombshield =    {"tv_bombshield",    "5", CV_NETVAR|CV_CHEAT, chances_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_1up =           {"tv_1up",           "5", CV_NETVAR|CV_CHEAT, chances_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_eggmanbox =     {"tv_eggman",        "5", CV_NETVAR|CV_CHEAT, chances_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};*/
 
 // SRB2kart
 consvar_t cv_sneaker = 				{"sneaker", 			"On", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
@@ -472,7 +449,6 @@ consvar_t cv_killingdead = {"killingdead", "Off", CV_NETVAR|CV_NOSHOWHELP, CV_On
 consvar_t cv_netstat = {"netstat", "Off", 0, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL}; // show bandwidth statistics
 static CV_PossibleValue_t nettimeout_cons_t[] = {{TICRATE/7, "MIN"}, {60*TICRATE, "MAX"}, {0, NULL}};
 consvar_t cv_nettimeout = {"nettimeout", "210", CV_CALL|CV_SAVE, nettimeout_cons_t, NetTimeout_OnChange, 0, NULL, NULL, 0, 0, NULL};
-//static CV_PossibleValue_t jointimeout_cons_t[] = {{5*TICRATE, "MIN"}, {60*TICRATE, "MAX"}, {0, NULL}};
 consvar_t cv_jointimeout = {"jointimeout", "210", CV_CALL|CV_SAVE, nettimeout_cons_t, JoinTimeout_OnChange, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_maxping = {"maxdelay", "20", CV_SAVE, CV_Unsigned, NULL, 0, NULL, NULL, 0, 0, NULL};
 
@@ -992,7 +968,18 @@ void D_RegisterClientCommands(void)
 	CV_RegisterVar(&cv_showfocuslost);
 	CV_RegisterVar(&cv_pauseifunfocused);
 
+	// filesrch.c
+	CV_RegisterVar(&cv_addons_option);
+	CV_RegisterVar(&cv_addons_folder);
+	CV_RegisterVar(&cv_addons_md5);
+	CV_RegisterVar(&cv_addons_showall);
+	CV_RegisterVar(&cv_addons_search_type);
+	CV_RegisterVar(&cv_addons_search_case);
+
 	// g_input.c
+	CV_RegisterVar(&cv_controlperkey);
+	CV_RegisterVar(&cv_turnsmooth);
+
 	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
 	{
 		CV_RegisterVar(&cv_turnaxis[i]);
@@ -1010,45 +997,17 @@ void D_RegisterClientCommands(void)
 		CV_RegisterVar(&cv_custom3axis[i]);
 		CV_RegisterVar(&cv_xdeadzone[i]);
 		CV_RegisterVar(&cv_ydeadzone[i]);
-	}
 
-	// filesrch.c
-	CV_RegisterVar(&cv_addons_option);
-	CV_RegisterVar(&cv_addons_folder);
-	CV_RegisterVar(&cv_addons_md5);
-	CV_RegisterVar(&cv_addons_showall);
-	CV_RegisterVar(&cv_addons_search_type);
-	CV_RegisterVar(&cv_addons_search_case);
-
-	CV_RegisterVar(&cv_controlperkey);
-	CV_RegisterVar(&cv_turnsmooth);
-
-	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
-	{
+		CV_RegisterVar(&cv_usejoystick[i]);
+		CV_RegisterVar(&cv_joyscale[i]);
 		CV_RegisterVar(&cv_rumble[i]);
 		CV_RegisterVar(&cv_gamepadled[i]);
-		CV_RegisterVar(&cv_ledpowerup[i]);
 	}
 
 	CV_RegisterVar(&cv_usemouse);
 	CV_RegisterVar(&cv_invertmouse);
 	CV_RegisterVar(&cv_mousesens);
 	CV_RegisterVar(&cv_mouseysens);
-	//CV_RegisterVar(&cv_mousemove);
-
-	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
-	{
-		CV_RegisterVar(&cv_usejoystick[i]);
-	}
-#ifdef LJOYSTICK
-	CV_RegisterVar(&cv_joyport);
-	CV_RegisterVar(&cv_joyport2);
-#endif
-
-	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
-	{
-		CV_RegisterVar(&cv_joyscale[i]);
-	}
 
 	// s_sound.c
 	CV_RegisterVar(&cv_soundvolume);
@@ -1097,6 +1056,7 @@ void D_RegisterClientCommands(void)
 	}
 
 	CV_RegisterVar(&cv_demodateformat);
+	CV_RegisterVar(&cv_showspecstuff);
 
 	// ingame object placing
 	COM_AddCommand("objectplace", Command_ObjectPlace_f);
@@ -1130,8 +1090,6 @@ void D_RegisterClientCommands(void)
 	CV_RegisterVar(&cv_discordstreamer);
 	CV_RegisterVar(&cv_discordasks);
 #endif
-
-	CV_RegisterVar(&cv_showspecstuff);
 
 	COM_AddCommand("listskins", Command_ListSkins);
 	COM_AddCommand("skinsearch", Command_SkinSearch);
@@ -1441,6 +1399,7 @@ static void SetPlayerName(INT32 playernum, char *newname)
 	else
 	{
 		CONS_Printf(M_GetText("Player %d sent a bad name change\n"), playernum+1);
+
 		if (server && netgame)
 		{
 			SendKick(playernum, KICK_MSG_CON_FAIL);
@@ -1798,24 +1757,8 @@ static void SendNameAndColor3(void)
 
 		if ((foundskin = R_SkinAvailable(cv_skin3.string)) != -1)
 		{
-			//boolean notsame;
-
 			cv_skin3.value = foundskin;
-
-			//notsame = (cv_skin3.value != players[thirdplaya].skin);
-
 			SetPlayerSkin(thirdplaya, cv_skin3.string);
-
-			// SRB2Kart
-			/*if (notsame)
-			{
-				CV_StealthSetValue(&cv_playercolor3, skins[players[thirdplaya].skin].prefcolor);
-
-				players[thirdplaya].skincolor = (cv_playercolor3.value&0x3F) % MAXSKINCOLORS;
-
-				if (players[thirdplaya].mo)
-					players[thirdplaya].mo->color = players[thirdplaya].skincolor;
-			}*/
 		}
 		else
 		{
@@ -2127,6 +2070,7 @@ void D_SendPlayerConfig(void)
 		SendNameAndColor3();
 	if (splitscreen > 2)
 		SendNameAndColor4();
+
 	SendWeaponPref();
 	if (splitscreen)
 		SendWeaponPref2();
@@ -2150,7 +2094,7 @@ static INT32 LookupPlayer(const char *s)
 	if (*s == '0')/* clever way to bypass atoi */
 		return 0;
 
-	if (( playernum = atoi(s) ))
+	if ((playernum = atoi(s)))
 	{
 		playernum = max(min(playernum, MAXPLAYERS-1), 0);/* not out of range */
 		return playernum;
@@ -2231,8 +2175,7 @@ static void Command_View_f(void)
 
 	if (viewnum > 1 && !( multiplayer && demo.playback ))
 	{
-		CONS_Alert(CONS_NOTICE,
-				"You must be viewing a multiplayer replay to use this.\n");
+		CONS_Alert(CONS_NOTICE, "You must be viewing a multiplayer replay to use this.\n");
 		return;
 	}
 
@@ -2314,10 +2257,9 @@ static void Command_SetViews_f(void)
 	UINT8 splits;
 	UINT8 newsplits;
 
-	if (!( demo.playback && multiplayer ))
+	if (!(demo.playback && multiplayer))
 	{
-		CONS_Alert(CONS_NOTICE,
-				"You must be viewing a multiplayer replay to use this.\n");
+		CONS_Alert(CONS_NOTICE, "You must be viewing a multiplayer replay to use this.\n");
 		return;
 	}
 
@@ -2536,18 +2478,8 @@ void D_MapChange(INT32 mapnum, INT32 newgametype, boolean pencoremode, boolean r
 		// Kick bot from special stages
 		if (botskin)
 		{
-			if (G_IsSpecialStage(mapnum))
+			if (!botingame)
 			{
-				if (botingame)
-				{
-					//CL_RemoveSplitscreenPlayer();
-					botingame = false;
-					playeringame[1] = false;
-				}
-			}
-			else if (!botingame)
-			{
-				//CL_AddSplitscreenPlayer();
 				botingame = true;
 				displayplayers[1] = 1;
 				playeringame[1] = true;
@@ -3132,20 +3064,6 @@ static void Command_Respawn(void)
 		CONS_Printf(M_GetText("Nice try.\n"));
 		return;
 	}
-
-	/*if (!G_RaceGametype()) // srb2kart: not necessary, respawning makes you lose a bumper in battle, so it's not desirable to use as a way to escape a hit
-	{
-		CONS_Printf(M_GetText("You may only use this in co-op, race, and competition!\n"));
-		return;
-	}*/
-
-	// Retry is quicker.  Probably should force people to use it.
-	// nope, this is srb2kart - a complete retry is overkill
-	/*if (!(netgame || multiplayer))
-	{
-		CONS_Printf(M_GetText("You can't use this in Single Player! Use \"retry\" instead.\n"));
-		return;
-	}*/
 
 	SendNetXCmd(XD_RESPAWN, &buf, 4);
 }

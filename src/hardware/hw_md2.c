@@ -1431,6 +1431,8 @@ void HWR_DrawMD2(gl_vissprite_t *spr)
 			? (spr->mobj->rollangle) + (sliptideroll * spr->mobj->player->kartstuff[k_aizdriftstrat])
 			: (spr->mobj->rollangle);
 
+			rollang *= flipfactor;
+
 			fixed_t anglef = AngleFixed(rollang);
 
 			p.rollangle = 0.0f;
@@ -1468,8 +1470,7 @@ void HWR_DrawMD2(gl_vissprite_t *spr)
 		p.anglex += flipfactor*FIXED_TO_FLOAT(AngleFixed(interp.roll));
 		p.anglez -= flipfactor*FIXED_TO_FLOAT(AngleFixed(interp.pitch));
 
-		p.flip = atransform.flip;
-		p.mirror = atransform.mirror; // from Kart
+		p.fliptype = atransform.fliptype;
 
 		GL_SetShader(SHADER_MODEL);	// model shader
 		{

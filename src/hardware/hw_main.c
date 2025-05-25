@@ -481,11 +481,11 @@ static UINT8 HWR_FogBlockAlpha(INT32 light, extracolormap_t *colormap) // Let's 
 	return surfcolor.s.alpha;
 }
 
-static FUINT HWR_CalcWallLight(FUINT lightnum, seg_t *seg)
+static FUINT HWR_CalcWallLight(FUINT lightnum, seg_t *seg, extracolormap_t *colormap)
 {
 	INT16 finallight = lightnum;
 
-	if (cv_glfakecontrast.value == 0)
+	if (cv_glfakecontrast.value == 0 || (HWR_ShouldUsePaletteRendering() && colormap))
 		return (FUINT)finallight;
 
 	if (seg != NULL && P_ApplyLightOffsetFine(lightnum, seg->frontsector))
@@ -698,8 +698,7 @@ static void HWR_RenderPlane(subsector_t *subsector, extrasubsector_t *xsub, bool
 	for (i = 0, v3d = planeVerts; i < (INT32)nrPlaneVerts; i++,v3d++,pv++)
 		SETUP3DVERT(v3d, pv->x, pv->y);
 
-	if (slope)
-		lightlevel = HWR_CalcSlopeLight(lightlevel, slope, gl_frontsector, (FOFsector != NULL));
+	lightlevel = HWR_CalcSlopeLight(lightlevel, slope, gl_frontsector, (FOFsector != NULL));
 
 	HWR_Lighting(&Surf, lightlevel, planecolormap, P_SectorUsesDirectionalLighting(gl_frontsector));
 
@@ -1008,7 +1007,7 @@ static void HWR_SplitWall(sector_t *sector, FOutVector *wallVerts, INT32 texnum,
 	fixed_t v2y = FloatToFixed(wallVerts[1].z);
 
 	const UINT8 alpha = Surf->PolyColor.s.alpha;
-	FUINT lightnum = HWR_CalcWallLight(sector->lightlevel, gl_curline);
+	FUINT lightnum = HWR_CalcWallLight(sector->lightlevel, gl_curline, NULL);
 	extracolormap_t *colormap = NULL;
 
 	realtop = top = wallVerts[3].y;
@@ -1051,14 +1050,14 @@ static void HWR_SplitWall(sector_t *sector, FOutVector *wallVerts, INT32 texnum,
 			{
 				lightnum = pfloor->master->frontsector->lightlevel;
 				colormap = pfloor->master->frontsector->extra_colormap;
-				lightnum = (HWR_ShouldUsePaletteRendering() && colormap) ? lightnum : HWR_CalcWallLight(lightnum, gl_curline);
 			}
 			else
 			{
 				lightnum = *list[i].lightlevel;
 				colormap = list[i].extra_colormap;
-				lightnum = (HWR_ShouldUsePaletteRendering() && colormap) ? lightnum : HWR_CalcWallLight(lightnum, gl_curline);
 			}
+
+			lightnum = HWR_CalcWallLight(lightnum, gl_curline, colormap);
 		}
 
 		boolean solid = false;
@@ -1388,7 +1387,7 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 
 	FUINT lightnum = gl_frontsector->lightlevel;
 	extracolormap_t *colormap = gl_frontsector->extra_colormap;
-	lightnum = (HWR_ShouldUsePaletteRendering() && colormap) ? lightnum : HWR_CalcWallLight(lightnum, gl_curline);
+	lightnum = HWR_CalcWallLight(lightnum, gl_curline, colormap);
 
 	FSurfaceInfo Surf;
 
@@ -2015,7 +2014,7 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 
 					Surf.PolyColor.s.alpha = HWR_FogBlockAlpha(lightnum, colormap);
 
-					lightnum = (HWR_ShouldUsePaletteRendering() && colormap) ? lightnum : HWR_CalcWallLight(lightnum, gl_curline);
+					lightnum = HWR_CalcWallLight(lightnum, gl_curline, colormap);
 
 					if (gl_frontsector->numlights)
 						HWR_SplitWall(gl_frontsector, wallVerts, 0, false, &Surf, roverflags, rover, blendmode);
@@ -2132,7 +2131,7 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 
 					Surf.PolyColor.s.alpha = HWR_FogBlockAlpha(lightnum, colormap);
 
-					lightnum = (HWR_ShouldUsePaletteRendering() && colormap) ? lightnum : HWR_CalcWallLight(lightnum, gl_curline);
+					lightnum = HWR_CalcWallLight(lightnum, gl_curline, colormap);
 
 					if (gl_backsector->numlights)
 						HWR_SplitWall(gl_backsector, wallVerts, 0, false, &Surf, roverflags, rover, blendmode);
@@ -2164,6 +2163,11 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 	}
 #undef SLOPEPARAMS
 //Hurdler: end of 3d-floors test
+}
+
+static inline boolean HWR_UsePortals(void)
+{
+	return cv_glportals.value && gl_maphasportals;
 }
 
 // From PrBoom:
@@ -2226,7 +2230,8 @@ static boolean CheckClip(sector_t * afrontsector, sector_t * abacksector)
 	}
 
 	// using this check with portals causes weird culling issues on ante-station
-	if (LIKELY(!portalclipline) && (afrontsector == viewsector || abacksector == viewsector))
+	if (LIKELY(!portalclipline) &&
+	(afrontsector == viewsector || abacksector == viewsector))
 	{
 		fixed_t viewf1, viewf2, viewc1, viewc2;
 		if (afrontsector == viewsector)
@@ -2292,7 +2297,8 @@ static boolean CheckClip(sector_t * afrontsector, sector_t * abacksector)
 
 	// Window.
 	// We know it's a window when the above isn't true and the back and front sectors don't match
-	if (backc1 != frontc1 || backc2 != frontc2 || backf1 != frontf1 || backf2 != frontf2)
+	if (backc1 != frontc1 || backc2 != frontc2
+	 || backf1 != frontf1 || backf2 != frontf2)
 	{
 		checkforemptylines = false;
 		return false;
@@ -2359,7 +2365,7 @@ static void HWR_AddLine(seg_t *line)
 
 	gl_backsector = line->backsector;
 
-	if (!cv_glportals.value || LIKELY(!gl_maphasportals))
+	if (LIKELY(!HWR_UsePortals()))
 	{
 doaddline:
 		if (!line->backsector)
@@ -4365,44 +4371,45 @@ static void HWR_RenderDrawNodes(void)
 		switch (drawnode->type)
 		{
 			case DRAWNODE_PLANE:
-			{
-				planeinfo_t *plane = &drawnode->u.plane;
+				{
+					planeinfo_t *plane = &drawnode->u.plane;
 
-				// We aren't traversing the BSP tree, so make gl_frontsector null to avoid crashes.
-				gl_frontsector = NULL;
+					// We aren't traversing the BSP tree, so make gl_frontsector null to avoid crashes.
+					gl_frontsector = NULL;
 
-				if (!(plane->blend & PF_NoTexture))
-					HWR_GetFlat(plane->lumpnum,  R_NoEncore(plane->FOFSector, plane->isceiling));
+					if (!(plane->blend & PF_NoTexture))
+						HWR_GetFlat(plane->lumpnum,  R_NoEncore(plane->FOFSector, plane->isceiling));
 
-				HWR_RenderPlane(NULL, plane->xsub, plane->isceiling, plane->fixedheight, plane->blend, plane->lightlevel,
-								plane->lumpnum, plane->FOFSector, plane->alpha, plane->planecolormap);
+					HWR_RenderPlane(NULL, plane->xsub, plane->isceiling, plane->fixedheight, plane->blend, plane->lightlevel,
+									plane->lumpnum, plane->FOFSector, plane->alpha, plane->planecolormap);
+				}
 				break;
-			}
 			case DRAWNODE_POLYOBJECT_PLANE:
-			{
-				polyplaneinfo_t *polyplane = &drawnode->u.polyplane;
+				{
+					polyplaneinfo_t *polyplane = &drawnode->u.polyplane;
 
-				// We aren't traversing the BSP tree, so make gl_frontsector null to avoid crashes.
-				gl_frontsector = NULL;
+					// We aren't traversing the BSP tree, so make gl_frontsector null to avoid crashes.
+					gl_frontsector = NULL;
 
-				if (!(polyplane->blend & PF_NoTexture))
-					HWR_GetFlat(polyplane->lumpnum,  R_NoEncore(polyplane->FOFSector, polyplane->isceiling));
+					if (!(polyplane->blend & PF_NoTexture))
+						HWR_GetFlat(polyplane->lumpnum,  R_NoEncore(polyplane->FOFSector, polyplane->isceiling));
 
-				HWR_RenderPolyObjectPlane(polyplane->polysector, polyplane->isceiling, polyplane->fixedheight, polyplane->blend, polyplane->lightlevel,
-										polyplane->lumpnum, polyplane->FOFSector, polyplane->alpha, polyplane->planecolormap);
+					HWR_RenderPolyObjectPlane(polyplane->polysector, polyplane->isceiling, polyplane->fixedheight, polyplane->blend, polyplane->lightlevel,
+											polyplane->lumpnum, polyplane->FOFSector, polyplane->alpha, polyplane->planecolormap);
+
+				}
 				break;
-			}
 			case DRAWNODE_WALL:
-			{
-				wallinfo_t *wall = &drawnode->u.wall;
+				{
+					wallinfo_t *wall = &drawnode->u.wall;
 
-				if (!(wall->blend & PF_NoTexture))
-					HWR_GetTexture(wall->texnum, wall->noencore);
+					if (!(wall->blend & PF_NoTexture))
+						HWR_GetTexture(wall->texnum, wall->noencore);
 
-				HWR_RenderWall(wall->wallVerts, &wall->Surf, wall->blend, wall->fogwall,
-							wall->lightlevel, wall->wallcolormap);
+					HWR_RenderWall(wall->wallVerts, &wall->Surf, wall->blend, wall->fogwall,
+								wall->lightlevel, wall->wallcolormap);
+				}
 				break;
-			}
 			default:
 				break;
 		}
@@ -4666,7 +4673,7 @@ static void HWR_ProjectSprite(mobj_t *thing)
 	const boolean vflip = (thing->eflags & MFE_VERTICALFLIP);
 	const boolean hflip = (!(thing->frame & FF_HORIZONTALFLIP) != !mirrored);
 
-	this_scale = FixedToFloat(interp.scale);
+	this_scale   = FixedToFloat(interp.scale);
 	spritexscale = FixedToFloat(interp.spritexscale);
 	spriteyscale = FixedToFloat(interp.spriteyscale);
 
@@ -5336,9 +5343,6 @@ static void HWR_SetTransformAiming(FTransform *trans)
 
 void HWR_SetTransform(float fpov)
 {
-	UINT8 viewnum = R_GetViewNumber();
-	camera_t *thiscam = &camera[viewnum];
-
 	gl_viewx = FixedToFloat(viewx);
 	gl_viewy = FixedToFloat(viewy);
 	gl_viewz = FixedToFloat(viewz);
@@ -5366,17 +5370,17 @@ void HWR_SetTransform(float fpov)
 	HWR_RollTransform(&atransform, viewroll);
 	atransform.splitscreen = splitscreen;
 
-	atransform.flip = false;
-	if ((thiscam->postimg & POSTIMG_FLIP) && !(thiscam->postimg & POSTIMG_MIRROR))
-		atransform.flip = true;
+	const UINT8 postimg = camera[R_GetViewNumber()].postimg;
 
-	atransform.mirror = false;
-	if ((thiscam->postimg & POSTIMG_MIRROR) && !(thiscam->postimg & POSTIMG_FLIP))
-		atransform.mirror = true;
-
-	atransform.mirrorflip = false;
-	if ((thiscam->postimg & POSTIMG_FLIP) && (thiscam->postimg & POSTIMG_MIRROR))
-		atransform.mirrorflip = true;
+	if (postimg & POSTIMG_FLIP)
+	{
+		if (postimg & POSTIMG_MIRROR)
+			atransform.fliptype = TRANSFORM_MIRRORFLIP;
+		else
+			atransform.fliptype = TRANSFORM_FLIP;
+	}
+	else if (postimg & POSTIMG_MIRROR)
+		atransform.fliptype = TRANSFORM_MIRROR;
 
 	// Set transform.
 	GL_SetTransform(&atransform);
@@ -5408,7 +5412,7 @@ void HWR_RenderViewpoint(gl_portal_t *rootportal, const float fpov, player_t *pl
 	gl_portallist_t portallist;
 
 	const boolean skybox = (skyboxmo[0] && cv_skybox.value);
-	const boolean useportals = cv_glportals.value && gl_maphasportals && allow_portals;
+	const boolean useportals = HWR_UsePortals() && allow_portals;
 	bspfunc bspFunc = (useportals && portalclipline) ? HWR_RenderPortalBSPNode : HWR_RenderBSPNode;
 
 	portallist.base = portallist.cap = NULL;
@@ -5644,6 +5648,7 @@ void HWR_RenderPlayerView(void)
 	{
 		if (cv_ripplewater.value)
 			GL_SetShaderInfo(HWD_SHADERINFO_LEVELTIME, (INT32)leveltime); // The water surface shader needs the leveltime.
+
 		const angle_t light_angle = maplighting.angle - viewangle + ANGLE_90; // I fucking hate OGL's coordinate system
 		GL_SetShaderInfo(HWD_SHADERINFO_LIGHT_X, FINECOSINE(light_angle >> ANGLETOFINESHIFT));
 		GL_SetShaderInfo(HWD_SHADERINFO_LIGHT_Y, 0);
@@ -6015,7 +6020,7 @@ static void HWR_DoPostProcessor(player_t *player)
 		if (thiscam->postimg & POSTIMG_WATER)
 		{
 			WAVELENGTH = 5;
-			AMPLITUDE = 20;
+			AMPLITUDE = 40;
 			FREQUENCY = 8;
 		}
 		else

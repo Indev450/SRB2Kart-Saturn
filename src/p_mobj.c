@@ -1124,9 +1124,6 @@ void P_CheckGravity(mobj_t *mo, boolean affect)
 	}
 }
 
-#define STOPSPEED (FRACUNIT)
-//#define FRICTION (ORIG_FRICTION) // 0.90625
-
 //
 // P_SceneryXYFriction
 //
@@ -1135,8 +1132,8 @@ static void P_SceneryXYFriction(mobj_t *mo, fixed_t oldx, fixed_t oldy)
 	I_Assert(mo != NULL);
 	I_Assert(!P_MobjWasRemoved(mo));
 
-	if (abs(mo->momx) < FixedMul(STOPSPEED/32, mo->scale)
-		&& abs(mo->momy) < FixedMul(STOPSPEED/32, mo->scale))
+	if (abs(mo->momx) < FixedMul(FRACUNIT/32, mo->scale)
+		&& abs(mo->momy) < FixedMul(FRACUNIT/32, mo->scale))
 	{
 		mo->momx = 0;
 		mo->momy = 0;
@@ -1145,13 +1142,13 @@ static void P_SceneryXYFriction(mobj_t *mo, fixed_t oldx, fixed_t oldy)
 	{
 		if ((oldx == mo->x) && (oldy == mo->y)) // didn't go anywhere
 		{
-			mo->momx = FixedMul(mo->momx,ORIG_FRICTION);
-			mo->momy = FixedMul(mo->momy,ORIG_FRICTION);
+			mo->momx = FixedMul(mo->momx, ORIG_FRICTION);
+			mo->momy = FixedMul(mo->momy, ORIG_FRICTION);
 		}
 		else
 		{
-			mo->momx = FixedMul(mo->momx,mo->friction);
-			mo->momy = FixedMul(mo->momy,mo->friction);
+			mo->momx = FixedMul(mo->momx, mo->friction);
+			mo->momy = FixedMul(mo->momy, mo->friction);
 		}
 
 		if (mo->type == MT_CANNONBALLDECOR)
@@ -1183,12 +1180,12 @@ static void P_XYFriction(mobj_t *mo, fixed_t oldx, fixed_t oldy)
 		// spinning friction
 		if (player->pflags & PF_SPINNING && (player->rmomx || player->rmomy) && !(player->pflags & PF_STARTDASH))
 		{
-			const fixed_t ns = FixedDiv(549*ORIG_FRICTION,500*FRACUNIT); //const fixed_t ns = FixedDiv(549*FRICTION,500*FRACUNIT);
+			const fixed_t ns = FixedDiv(549*ORIG_FRICTION, 500*FRACUNIT); //const fixed_t ns = FixedDiv(549*FRICTION,500*FRACUNIT);
 			mo->momx = FixedMul(mo->momx, ns);
 			mo->momy = FixedMul(mo->momy, ns);
 		}
-		else if (abs(player->rmomx) < FixedMul(STOPSPEED, mo->scale)
-		    && abs(player->rmomy) < FixedMul(STOPSPEED, mo->scale)
+		else if (abs(player->rmomx) < FixedMul(FRACUNIT, mo->scale)
+		    && abs(player->rmomy) < FixedMul(FRACUNIT, mo->scale)
 		    && (!(player->cmd.forwardmove && !(twodlevel || mo->flags2 & MF2_TWOD)) && !player->cmd.sidemove && !(player->pflags & PF_SPINNING))
 			&& !(player->mo->standingslope && (!(player->mo->standingslope->flags & SL_NOPHYSICS)) && (abs(player->mo->standingslope->zdelta) >= FRACUNIT/2))
 				)
@@ -2242,9 +2239,9 @@ static boolean P_ZMovement(mobj_t *mo)
 
 				if (mo->type == MT_BIGTUMBLEWEED || mo->type == MT_LITTLETUMBLEWEED)
 				{
-					if (abs(mom.x) < FixedMul(STOPSPEED, mo->scale)
-						&& abs(mom.y) < FixedMul(STOPSPEED, mo->scale)
-						&& abs(mom.z) < FixedMul(STOPSPEED*3, mo->scale))
+					if (abs(mom.x) < FixedMul(FRACUNIT, mo->scale)
+						&& abs(mom.y) < FixedMul(FRACUNIT, mo->scale)
+						&& abs(mom.z) < FixedMul(FRACUNIT*3, mo->scale))
 					{
 						if (mo->flags2 & MF2_AMBUSH)
 						{
@@ -2285,9 +2282,9 @@ static boolean P_ZMovement(mobj_t *mo)
 					mom.z /= 2; // Rocks not so bouncy
 
 					if (!mo->fuse
-						&& abs(mom.x) < FixedMul(STOPSPEED*2, mo->scale)
-						&& abs(mom.y) < FixedMul(STOPSPEED*2, mo->scale)
-						&& abs(mom.z) < FixedMul(STOPSPEED*2*3, mo->scale))
+						&& abs(mom.x) < FixedMul(FRACUNIT*2, mo->scale)
+						&& abs(mom.y) < FixedMul(FRACUNIT*2, mo->scale)
+						&& abs(mom.z) < FixedMul(FRACUNIT*2*3, mo->scale))
 					{
 						//P_RemoveMobj(mo);
 						//return false;
@@ -2297,7 +2294,7 @@ static boolean P_ZMovement(mobj_t *mo)
 				else if (mo->type == MT_CANNONBALLDECOR)
 				{
 					mom.z /= 2;
-					if (abs(mom.z) < FixedMul(STOPSPEED*3, mo->scale))
+					if (abs(mom.z) < FixedMul(FRACUNIT*3, mo->scale))
 						mom.z = 0;
 				}
 			}
@@ -3278,29 +3275,11 @@ void P_CalcChasePostImg(player_t *player, camera_t *thiscam)
 // Process the mobj-ish required functions of the camera
 boolean P_CameraThinker(player_t *player, camera_t *thiscam, boolean resetcalled)
 {
-	boolean itsatwodlevel = false;
-	UINT8 i;
-
 	// This can happen when joining
 	if (thiscam->subsector == NULL || thiscam->subsector->sector == NULL)
 		return true;
 
 	P_CalcChasePostImg(player, thiscam);
-
-	if (twodlevel)
-		itsatwodlevel = true;
-	else
-	{
-		for (i = 0; i <= splitscreen; i++)
-		{
-			if (thiscam == &camera[i] && players[displayplayers[i]].mo
-				&& (players[displayplayers[i]].mo->flags2 & MF2_TWOD))
-			{
-				itsatwodlevel = true;
-				break;
-			}
-		}
-	}
 
 	if (thiscam->momx || thiscam->momy)
 	{
@@ -3327,9 +3306,6 @@ boolean P_CameraThinker(player_t *player, camera_t *thiscam, boolean resetcalled
 				return true;
 		}
 	}
-
-	if (!itsatwodlevel)
-		P_CheckCameraPosition(thiscam->x, thiscam->y, thiscam);
 
 	thiscam->subsector = R_PointInSubsector(thiscam->x, thiscam->y);
 	thiscam->floorz = tmfloorz;
@@ -3384,9 +3360,8 @@ boolean P_CameraThinker(player_t *player, camera_t *thiscam, boolean resetcalled
 #endif
 	}
 
-	if (itsatwodlevel
-	|| (thiscam->ceilingz - thiscam->z < thiscam->height
-		&& thiscam->ceilingz >= thiscam->z))
+	if (thiscam->ceilingz - thiscam->z < thiscam->height
+		&& thiscam->ceilingz >= thiscam->z)
 	{
 		thiscam->ceilingz = thiscam->z + thiscam->height;
 		thiscam->floorz = thiscam->z;
@@ -7406,24 +7381,7 @@ void P_MobjThinker(mobj_t *mobj)
 					P_SetTarget(&mobj->target, goalpost);
 				}
 
-				if (G_IsSpecialStage(gamemap))
-				{ // Never show the NiGHTS drone in special stages. Check ANYONE for bonustime.
-					INT32 i;
-					boolean bonustime = false;
-					for (i = 0; i < MAXPLAYERS; i++)
-						if (playeringame[i] && players[i].bonustime)
-						{
-							bonustime = true;
-							break;
-						}
-					if (!bonustime)
-					{
-						mobj->flags &= ~MF_NOGRAVITY;
-						P_SetMobjState(mobj, S_NIGHTSDRONE1);
-						mobj->flags2 |= MF2_DONTDRAW;
-					}
-				}
-				else if (mobj->tracer && mobj->tracer->player)
+				if (mobj->tracer && mobj->tracer->player)
 				{
 					if (!(mobj->tracer->player->pflags & PF_NIGHTSMODE))
 					{
@@ -7440,35 +7398,7 @@ void P_MobjThinker(mobj_t *mobj)
 			}
 			else
 			{
-				if (G_IsSpecialStage(gamemap))
-				{ // Never show the NiGHTS drone in special stages. Check ANYONE for bonustime.
-					INT32 i;
-
-					boolean bonustime = false;
-					for (i = 0; i < MAXPLAYERS; i++)
-						if (playeringame[i] && players[i].bonustime)
-						{
-							bonustime = true;
-							break;
-						}
-
-					if (bonustime)
-					{
-						P_SetMobjState(mobj, S_NIGHTSDRONE_SPARKLING1);
-						mobj->flags |= MF_NOGRAVITY;
-					}
-					else
-					{
-						if (mobj->target)
-						{
-							CONS_Debug(DBG_NIGHTSBASIC, "Removing goal post\n");
-							P_RemoveMobj(mobj->target);
-							P_SetTarget(&mobj->target, NULL);
-						}
-						mobj->flags2 |= MF2_DONTDRAW;
-					}
-				}
-				else if (mobj->tracer && mobj->tracer->player)
+				if (mobj->tracer && mobj->tracer->player)
 				{
 					if (mobj->target)
 					{
@@ -10479,10 +10409,6 @@ void P_RespawnSpecials(void)
 	if (!cv_itemrespawn.value)
 		return;
 
-	// Don't respawn in special stages!
-	if (G_IsSpecialStage(gamemap))
-		return;
-
 	// nothing left to respawn?
 	if (iquehead == iquetail)
 		return;
@@ -11192,7 +11118,7 @@ void P_SpawnMapThing(mapthing_t *mthing)
 		if (i == MT_PITYTV || i == MT_GREENTV || i == MT_YELLOWTV || i == MT_BLUETV || i == MT_BLACKTV || i == MT_WHITETV)
 			return; // No shields in Ultimate mode
 
-		if (i == MT_SUPERRINGBOX && !G_IsSpecialStage(gamemap))
+		if (i == MT_SUPERRINGBOX)
 			return; // No rings in Ultimate mode (except special stages)
 	}
 
@@ -11691,14 +11617,6 @@ ML_NOCLIMB : Direction not controllable
 			mobj->health |= 1; // If ambush is set, push using XYZ
 		if (mthing->options & MTF_OBJECTSPECIAL)
 			mobj->health |= 2; // If object special is set, fade using XY
-
-		if (G_IsSpecialStage(gamemap))
-		{
-			if (i == MT_PUSH)
-				P_SetMobjState(mobj, S_GRAVWELLGREEN);
-			if (i == MT_PULL)
-				P_SetMobjState(mobj, S_GRAVWELLRED);
-		}
 	}
 
 	// ignore MTF_ flags and return early

@@ -707,8 +707,8 @@ static int kartstuff_len(lua_State *L)
 	return 1;
 }
 
-#define NOFIELD luaL_error(L, LUA_QL("ticcmd_t") " has no field named " LUA_QS, field)
-#define NOSET luaL_error(L, LUA_QL("ticcmd_t") " field " LUA_QS " should not be set directly.", field)
+#define NOFIELD luaL_error(L, LUA_QL("ticcmd_t") " has no field named " LUA_QS, lua_tostring(L, 2))
+#define NOSET luaL_error(L, LUA_QL("ticcmd_t") " field " LUA_QS " should not be set directly.", lua_tostring(L, 2))
 
 enum ticcmd_e
 {

@@ -41,12 +41,48 @@ static CV_PossibleValue_t fpscap_cons_t[] = {
 	{0, "Match refresh rate"},
 	{0, NULL}
 };
+
 consvar_t cv_fpscap = {"fpscap", "Match refresh rate", CV_SAVE, fpscap_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_fpscapbg = {"fpscapbackground", "Match refresh rate", CV_SAVE, fpscap_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 consvar_t cv_precipinterp = {"precipinterpolation", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 ps_metric_t ps_interp_frac = {0};
 ps_metric_t ps_interp_lag = {0};
+
+static boolean R_UseBackgroundFramerateCap(void)
+{
+	if (!window_notinfocus)
+		return false;
+
+	// if foreground is unlimited or matched to refresh rate but bg is limited
+	if (cv_fpscap.value <= 0 && cv_fpscapbg.value >= 0)
+		return true;
+
+	// use the lower value
+	if ((cv_fpscap.value > 0 && cv_fpscapbg.value > 0)
+	&& (cv_fpscapbg.value < cv_fpscap.value))
+		return true;
+
+	return false;
+}
+
+static UINT32 R_GetBackgroundFramerateCap(void)
+{
+	if (cv_fpscapbg.value == 0)
+	{
+		// 0: Match refresh rate
+		return I_GetRefreshRate();
+	}
+
+	if (cv_fpscapbg.value < 0)
+	{
+		// -1: Unlimited
+		return 0;
+	}
+
+	return cv_fpscapbg.value;
+}
 
 UINT32 R_GetFramerateCap(void)
 {
@@ -55,6 +91,11 @@ UINT32 R_GetFramerateCap(void)
 		// If we're not rendering (dedicated server),
 		// we shouldn't be using any interpolation.
 		return TICRATE;
+	}
+
+	if (R_UseBackgroundFramerateCap())
+	{
+		return R_GetBackgroundFramerateCap();
 	}
 
 	if (cv_fpscap.value == 0)
@@ -167,16 +208,13 @@ void R_InterpolateViewRollAngle(fixed_t frac)
 void R_InterpolateView(fixed_t frac, boolean forceinvalid)
 {
 	viewvars_t* prevview = oldview;
-	UINT8 i;
 
 	if (FIXED_TO_FLOAT(frac) < 0)
 		frac = 0;
 	if (frac > FRACUNIT)
 		frac = FRACUNIT;
 
-	i = R_GetViewNumber();
-
-	if (oldview_invalid[i] != 0 || forceinvalid)
+	if (oldview_invalid[R_GetViewNumber()] != 0 || forceinvalid)
 	{
 		// interpolate from newview to newview
 		prevview = newview;

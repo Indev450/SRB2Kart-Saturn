@@ -238,6 +238,18 @@ static boolean UseLocalDelay(void)
 	return (cv_mindelay.value || (server && !server_lagless));
 }
 
+#ifdef SATURNPAK
+static inline boolean UseSaturnSynch(INT32 node)
+{
+	return (is_client_saturn[node] && cv_gamestateattempts.value);
+}
+
+static inline boolean UseVanillaSynch(INT32 node)
+{
+	return (!UseSaturnSynch(node) && cv_resynchattempts.value);
+}
+#endif
+
 static inline void *G_DcpyTiccmd(void* dest, const ticcmd_t* src, const size_t n)
 {
 	const size_t d = n / sizeof(ticcmd_t);
@@ -2278,7 +2290,7 @@ static void M_ConfirmConnect(event_t *ev)
 #endif
 }
 
-static void AbortConnection(void)
+void CL_AbortConnection(void)
 {
 #ifdef HAVE_CURL
 	CURLAbortFile();
@@ -2290,7 +2302,6 @@ static void AbortConnection(void)
 	// Will be reset by caller. Signals refusal.
 	cl_mode = CL_ABORTED;
 }
-
 
 static boolean CL_FinishedFileList(void)
 {
@@ -2304,7 +2315,7 @@ static boolean CL_FinishedFileList(void)
 	}
 	else if (i == 3) // too many files
 	{
-		AbortConnection();
+		CL_AbortConnection();
 		M_StartMessage(M_GetText(
 			"You have too many WAD files loaded\n"
 			"to add ones the server is using.\n"
@@ -2315,7 +2326,7 @@ static boolean CL_FinishedFileList(void)
 	}
 	else if (i == 2) // cannot join for some reason
 	{
-		AbortConnection();
+		CL_AbortConnection();
 		M_StartMessage(M_GetText(
 			"You have the wrong addons loaded.\n\n"
 			"To play on this server, restart\n"
@@ -2352,7 +2363,7 @@ static boolean CL_FinishedFileList(void)
 		{
 			if (!CL_CheckDownloadable()) // nope!
 			{
-				AbortConnection();
+				CL_AbortConnection();
 				M_StartMessage(M_GetText(
 					"An error occured when trying to\n"
 					"download missing addons.\n"
@@ -2617,7 +2628,7 @@ static boolean CL_ServerConnectionTicker(const char *tmpsave, tic_t *oldtic, tic
 			{
 				CONS_Printf(M_GetText("Legacy downloader request packet failed.\n"));
 				CONS_Printf(M_GetText("Network game synchronization aborted.\n"));
-				AbortConnection();
+				CL_AbortConnection();
 				M_StartMessage(M_GetText(
 					"The direct download encountered an error.\n"
 					"See the logfile for more info.\n"
@@ -2644,7 +2655,7 @@ static boolean CL_ServerConnectionTicker(const char *tmpsave, tic_t *oldtic, tic
 			{
 				CONS_Printf("%d minute wait time exceeded.\n", cv_connectawaittime.value);
 				CONS_Printf(M_GetText("Network game synchronization aborted.\n"));
-				AbortConnection();
+				CL_AbortConnection();
 				M_StartMessage(va(
 					"%d minute wait time exceeded.\n"
 					"You may retry connection.\n"
@@ -2715,7 +2726,7 @@ static boolean CL_ServerConnectionTicker(const char *tmpsave, tic_t *oldtic, tic
 		if (!modeattacking && (key == KEY_ESCAPE || key == KEY_JOY1+1 || cl_mode == CL_ABORTED))
 		{
 			CONS_Printf(M_GetText("Network game synchronization aborted.\n"));
-			AbortConnection();
+			CL_AbortConnection();
 
 			return false;
 		}
@@ -3301,36 +3312,6 @@ void CL_RemovePlayer(INT32 playernum, INT32 reason)
 
 	if (gametype == GT_CTF)
 		P_PlayerFlagBurst(&players[playernum], false); // Don't take the flag with you!
-
-	// If in a special stage, redistribute the player's rings across
-	// the remaining players.
-	if (G_IsSpecialStage(gamemap))
-	{
-		INT32 i, count, increment, rings;
-
-		for (i = 0, count = 0; i < MAXPLAYERS; i++)
-		{
-			if (playeringame[i])
-				count++;
-		}
-
-		count--;
-		rings = players[playernum].health - 1;
-		increment = rings/count;
-
-		for (i = 0; i < MAXPLAYERS; i++)
-		{
-			if (playeringame[i] && i != playernum)
-			{
-				if (rings < increment)
-					P_GivePlayerRings(&players[i], rings);
-				else
-					P_GivePlayerRings(&players[i], increment);
-
-				rings -= increment;
-			}
-		}
-	}
 
 	LUA_HookPlayerQuit(&players[playernum], reason); // Lua hook for player quitting
 
@@ -3973,7 +3954,7 @@ static void Got_KickCmd(UINT8 **p, INT32 playernum)
 #ifdef DUMPCONSISTENCY
 		if (msg == KICK_MSG_CON_FAIL) SV_SavedGame();
 #endif
-		AbortConnection();
+		CL_AbortConnection();
 
 		if (msg == KICK_MSG_CON_FAIL)
 			M_StartMessage(M_GetText("Server closed connection\n(Synch failure)\nPress ESC\n"), NULL, MM_NOTHING);
@@ -5416,25 +5397,26 @@ static void HandlePacketFromPlayer(SINT8 node)
 			if (gamestate == GS_LEVEL
 				&& (realstart > gametic - TICQUEUE+1 && realstart <= gametic)
 				&& consistancy[realstart%TICQUEUE] != SHORT(netbuffer->u.clientpak.consistancy)
-				&& (!is_client_saturn[node] || (!resendingsavegame[node] && savegameresendcooldown[node] <= I_GetTime() && !SV_ResendingSavegameToAnyone())))
+				&& (!UseSaturnSynch(node) || (!resendingsavegame[node] && savegameresendcooldown[node] <= I_GetTime() && !SV_ResendingSavegameToAnyone())))
 			{
+				resendingsavegame[node] = false; // reset this before just in case
+
 				// Check if a client is saturn before sending ANYTHING!
 				// this way we only send stuff to clients we know can use the gamestate resend
 				// and dont have to wait for a response from clients that never would send a response back
-				if (is_client_saturn[node])
+				if (UseSaturnSynch(node))
 				{
 					// Tell the client we are about to resend them the gamestate
 					netbuffer->packettype = PT_WILLRESENDGAMESTATE;
 					HSendPacket(node, true, 0, 0);
 					resendingsavegame[node] = true;
 				}
-				else
+				else if (UseVanillaSynch(node))
 				{
 					SV_RequireResynch(node);
-					resendingsavegame[node] = false;
 				}
 
-				if ((!is_client_saturn[node] && (cv_resynchattempts.value && resynch_score[node] <= (unsigned)cv_resynchattempts.value*250)) || (is_client_saturn[node] && (gamestate_resend_counter[node] < cv_gamestateattempts.value)))
+				if ((UseVanillaSynch(node) && (resynch_score[node] <= (unsigned)cv_resynchattempts.value*250)) || (UseSaturnSynch(node) && (gamestate_resend_counter[node] < cv_gamestateattempts.value)))
 				{
 					if (is_client_saturn[node] && resendingsavegame[node])
 					{

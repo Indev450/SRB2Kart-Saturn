@@ -109,7 +109,6 @@ extern consvar_t cv_mousesens, cv_mouseysens;
 extern consvar_t cv_controlperkey, cv_turnsmooth;
 extern consvar_t cv_rumble[MAXSPLITSCREENPLAYERS];
 extern consvar_t cv_gamepadled[MAXSPLITSCREENPLAYERS];
-extern consvar_t cv_ledpowerup[MAXSPLITSCREENPLAYERS];
 
 extern INT32 mousex, mousey;
 extern INT32 mlooky; //mousey with mlookSensitivity

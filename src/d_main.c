@@ -472,6 +472,7 @@ static boolean D_Display(void)
 			F_TitleScreenDrawer();
 			if (wipe)
 				wipedefindex = wipe_titlescreen_toblack;
+			HU_DrawSongCredits();
 			break;
 
 		case GS_WAITINGPLAYERS:

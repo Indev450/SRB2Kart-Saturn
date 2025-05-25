@@ -3538,6 +3538,7 @@ DoneSection2:
 					for (UINT8 j = 0; j <= splitscreen; ++j)
 					{
 						INT32 id = (j == 0 ? consoleplayer : displayplayers[j]);
+
 						if (player == &players[id])
 						{
 							localangle[j] = player->mo->angle;
@@ -3574,7 +3575,6 @@ DoneSection2:
 					sfxenum_t pick = P_RandomKey(2); // Gotta roll the RNG every time this is called for sync reasons
 					if (cv_kartvoices.value)
 						S_StartSound(player->mo, sfx_kbost1+pick);
-					//K_TauntVoiceTimers(player);
 				}
 			}
 			break;
@@ -3610,8 +3610,6 @@ DoneSection2:
 		case 2: // Special stage GOAL sector / Exit Sector / CTF Flag Return
 			if (player->bot)
 				break;
-			if (!useNightsSS && G_IsSpecialStage(gamemap) && sstimer > 6)
-				sstimer = 6; // Just let P_Ticker take care of the rest.
 
 			// Exit (for FOF exits; others are handled in P_PlayerThink in p_user.c)
 			{
@@ -3802,12 +3800,6 @@ DoneSection2:
 
 				if (!(player->mo->state >= &states[S_KART_RUN1] && player->mo->state <= &states[S_KART_RUN2]))
 					P_SetPlayerMobjState(player->mo, S_KART_RUN1);
-
-				//if (!(player->mo->state >= &states[S_PLAY_ATK1] && player->mo->state <= &states[S_PLAY_ATK4])) // SRB2kart
-				//{
-				//	P_SetPlayerMobjState(player->mo, S_PLAY_ATK1);
-				//	S_StartSound(player->mo, sfx_spin);
-				//}
 			}
 			break;
 
@@ -3962,12 +3954,6 @@ DoneSection2:
 						else if (player->laps < (UINT8)(cv_numlaps.value - 1))
 							S_StartSound(NULL, sfx_s221);
 					}
-
-					//player->starpostangle = player->starposttime = player->starpostnum = 0;
-					//player->starpostx = player->starposty = player->starpostz = 0;
-
-					// Play the starpost sound for 'consistency'
-					// S_StartSound(player->mo, sfx_strpst);
 
 					thwompsactive = true; // Lap 2 effects
 					player->grieftime = 0;
@@ -4532,14 +4518,6 @@ static void P_RunSpecialSectorCheck(player_t *player, sector_t *sector)
 	switch(GETSECSPECIAL(sector->special, 4))
 	{
 		case 2: // Level Exit / GOAL Sector / Flag Return
-			if (!useNightsSS && G_IsSpecialStage(gamemap))
-			{
-				// Special stage GOAL sector
-				// requires touching floor.
-				break;
-			}
-			/* FALLTHRU */
-
 		case 1: // Starpost activator
 		case 5: // Fan sector
 		case 6: // Super Sonic Transform
@@ -4809,11 +4787,11 @@ static ffloor_t *P_AddFakeFloor(sector_t *sec, sector_t *sec2, line_t *master, f
 	i = 0;
 	th = thinkercap.next;
 
-	for(;;)
+	for (;;)
 	{
-		if(secthinkers)
+		if (secthinkers)
 		{
-			if(i < secthinkers[sec2num].count)
+			if (i < secthinkers[sec2num].count)
 				th = secthinkers[sec2num].thinkers[i];
 			else break;
 		}
@@ -4845,8 +4823,10 @@ static ffloor_t *P_AddFakeFloor(sector_t *sec, sector_t *sec2, line_t *master, f
 				Add_Pusher(p->type, p->x_mag<<FRACBITS, p->y_mag<<FRACBITS, p->source, (INT32)(sec-sectors), p->affectee, p->exclusive, p->slider);
 		}
 
-		if(secthinkers) i++;
-		else th = th->next;
+		if (secthinkers)
+			i++;
+		else
+			th = th->next;
 	}
 
 	if (flags & FF_TRANSLUCENT)
@@ -6371,6 +6351,7 @@ static void P_AddFakeFloorsByLine(size_t line, ffloortype_e ffloorflags, thinker
 static void P_DoScrollMove(mobj_t *thing, fixed_t dx, fixed_t dy, INT32 exclusive)
 {
 	fixed_t fuckaj = 0; // Nov 05 14:12:08 <+MonsterIestyn> I've heard of explicitly defined variables but this is ridiculous
+
 	if (thing->player)
 	{
 		if (!(dx | dy))
@@ -6392,7 +6373,8 @@ static void P_DoScrollMove(mobj_t *thing, fixed_t dx, fixed_t dy, INT32 exclusiv
 	else if (thing->friction != ORIG_FRICTION)
 		fuckaj = thing->friction;
 
-	if (fuckaj) {
+	if (fuckaj)
+	{
 		// refactor thrust for new friction
 		dx = FixedDiv(dx, CARRYFACTOR);
 		dy = FixedDiv(dy, CARRYFACTOR);
@@ -6450,9 +6432,6 @@ void T_Scroll(scroll_t *s)
 		s->vdx = dx += s->vdx;
 		s->vdy = dy += s->vdy;
 	}
-
-//	if (!(dx | dy)) // no-op if both (x,y) offsets 0
-//		return;
 
 	switch (s->type)
 	{
@@ -6729,27 +6708,21 @@ static void P_SpawnScrollers(void)
 		// this linedef controls the direction and speed of the scrolling. The
 		// most complicated linedef since donuts, but powerful :)
 
-		if (special == 515 || special == 512 || special == 522 || special == 532 || special == 504) // displacement scrollers
+		switch (special)
 		{
-			special -= 2;
-			control = (INT32)(sides[*l->sidenum].sector - sectors);
-		}
-		else if (special == 514 || special == 511 || special == 521 || special == 531 || special == 503) // accelerative scrollers
-		{
-			special--;
-			accel = 1;
-			control = (INT32)(sides[*l->sidenum].sector - sectors);
-		}
-		else if (special == 535 || special == 525) // displacement scrollers
-		{
-			special -= 2;
-			control = (INT32)(sides[*l->sidenum].sector - sectors);
-		}
-		else if (special == 534 || special == 524) // accelerative scrollers
-		{
-			accel = 1;
-			special--;
-			control = (INT32)(sides[*l->sidenum].sector - sectors);
+			case 515: case 512: case 522: case 532: case 504:
+			case 535: case 525: // displacement scrollers
+
+				special -= 2;
+				control = (INT32)(sides[*l->sidenum].sector - sectors);
+				break;
+
+			case 514: case 511: case 521: case 531: case 503:
+			case 534: case 524: // accelerative scrollers
+				special--;
+				accel = 1;
+				control = (INT32)(sides[*l->sidenum].sector - sectors);
+				break;
 		}
 
 		switch (special)

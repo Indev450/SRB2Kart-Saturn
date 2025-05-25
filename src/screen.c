@@ -65,6 +65,9 @@ consvar_t cv_renderview = {"renderview", "On", 0, CV_OnOff, NULL, 0, NULL, NULL,
 consvar_t cv_vhseffect = {"vhspause", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_shittyscreen = {"televisionsignal", "Okay", CV_NOSHOWHELP, shittyscreen_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
+static CV_PossibleValue_t votescale_cons_t[] = {{0, "Vanilla"}, {1, "Adaptive"}, {2, "VerticalFill"}, {3, "HorizontalFill"}, {0, NULL}};
+consvar_t cv_votebgscaling = {"votebgscaling", "Adaptive", CV_SAVE, votescale_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+
 static void Highreshudscale_OnChange(void);
 static CV_PossibleValue_t highreshudscale_cons_t[] = {{4*FRACUNIT/5, "MIN"}, {6*FRACUNIT/5, "MAX"}, {0, NULL}};
 consvar_t cv_highreshudscale = {"highreshudscale", "1", CV_SAVE|CV_FLOAT|CV_CALL|CV_NOINIT|CV_NOSHOWHELP, highreshudscale_cons_t, Highreshudscale_OnChange, 0, NULL, NULL, 0, 0, NULL};
@@ -106,41 +109,18 @@ void SCR_SetMode(void)
 
 	V_SetPalette(0);
 
-	//
-	//  setup the right draw routines for either 8bpp or 16bpp
-	//
-	if (true)//vid.bpp == 1) //Always run in 8bpp. todo: remove all 16bpp code?
-	{
-		spanfunc = basespanfunc = R_DrawSpan_8;
-		splatfunc = R_DrawSplat_8;
-		transcolfunc = R_DrawTranslatedColumn_8;
-		transtransfunc = R_DrawTranslatedTranslucentColumn_8;
+	spanfunc = basespanfunc = R_DrawSpan_8;
+	splatfunc = R_DrawSplat_8;
+	transcolfunc = R_DrawTranslatedColumn_8;
+	transtransfunc = R_DrawTranslatedTranslucentColumn_8;
 
-		colfunc = basecolfunc = R_DrawColumn_8;
-		shadecolfunc = R_DrawShadeColumn_8;
-		fuzzcolfunc = R_DrawTranslucentColumn_8;
-		walldrawerfunc = R_DrawWallColumn_8;
-		twosmultipatchfunc = R_Draw2sMultiPatchColumn_8;
-		twosmultipatchtransfunc = R_Draw2sMultiPatchTranslucentColumn_8;
-	}
-/*	else if (vid.bpp > 1)
-	{
-		I_OutputMsg("using highcolor mode\n");
-		spanfunc = basespanfunc = R_DrawSpan_16;
-		transcolfunc = R_DrawTranslatedColumn_16;
-		transtransfunc = R_DrawTranslucentColumn_16; // No 16bit operation for this function
+	colfunc = basecolfunc = R_DrawColumn_8;
+	shadecolfunc = R_DrawShadeColumn_8;
+	fuzzcolfunc = R_DrawTranslucentColumn_8;
+	walldrawerfunc = R_DrawWallColumn_8;
+	twosmultipatchfunc = R_Draw2sMultiPatchColumn_8;
+	twosmultipatchtransfunc = R_Draw2sMultiPatchTranslucentColumn_8;
 
-		colfunc = basecolfunc = R_DrawColumn_16;
-		shadecolfunc = NULL; // detect error if used somewhere..
-		fuzzcolfunc = R_DrawTranslucentColumn_16;
-		walldrawerfunc = R_DrawWallColumn_16;
-	}*/
-	else
-		I_Error("unknown bytes per pixel mode %d\n", vid.bpp);
-/*
-	if (SCR_IsAspectCorrect(vid.width, vid.height))
-		CONS_Alert(CONS_WARNING, M_GetText("Resolution is not aspect-correct!\nUse a multiple of %dx%d\n"), BASEVIDWIDTH, BASEVIDHEIGHT);
-*/
 	// set the apprpriate drawer for the sky (tall or INT16)
 	setmodeneeded = 0;
 }
@@ -164,10 +144,7 @@ void SCR_Startup(void)
 	vid.fdupx = FixedDiv(vid.width*FRACUNIT, BASEVIDWIDTH*FRACUNIT);
 	vid.fdupy = FixedDiv(vid.height*FRACUNIT, BASEVIDHEIGHT*FRACUNIT);
 
-//#ifdef HWRENDER
-	//if (rendermode != render_opengl && rendermode != render_none) // This was just placing it incorrectly at non aspect correct resolutions in opengl
-//#endif
-		vid.fdupx = vid.fdupy = (vid.fdupx < vid.fdupy ? vid.fdupx : vid.fdupy);
+	vid.fdupx = vid.fdupy = (vid.fdupx < vid.fdupy ? vid.fdupx : vid.fdupy);
 
 	vid.meddupx = (UINT8)(vid.dupx >> 1) + 1;
 	vid.meddupy = (UINT8)(vid.dupy >> 1) + 1;
@@ -216,6 +193,8 @@ void SCR_Startup(void)
 	CV_RegisterVar(&cv_bsaturation);
 	CV_RegisterVar(&cv_msaturation);
 
+	CV_RegisterVar(&cv_votebgscaling);
+
 	V_SetPalette(0);
 }
 
@@ -245,13 +224,7 @@ void SCR_Recalc(void)
 		vid.fdupy = FixedDiv(vid.fdupy, cv_highreshudscale.value);
 	}
 
-#ifdef HWRENDER
-	//if (rendermode != render_opengl && rendermode != render_none) // This was just placing it incorrectly at non aspect correct resolutions in opengl
-	// 13/11/18:
-	// The above is no longer necessary, since we want OpenGL to be just like software now
-	// -- Monster Iestyn
-#endif
-		vid.fdupx = vid.fdupy = (vid.fdupx < vid.fdupy ? vid.fdupx : vid.fdupy);
+	vid.fdupx = vid.fdupy = (vid.fdupx < vid.fdupy ? vid.fdupx : vid.fdupy);
 
 	//vid.baseratio = FixedDiv(vid.height << FRACBITS, BASEVIDHEIGHT << FRACBITS);
 	vid.baseratio = FRACUNIT;

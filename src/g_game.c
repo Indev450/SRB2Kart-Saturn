@@ -396,7 +396,6 @@ consvar_t cv_growmusic  = {"growmusic",  "On", CV_SAVE, powermusic_cons_t, NULL,
 consvar_t cv_supermusic = {"supermusic", "On", CV_SAVE, powermusic_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 consvar_t cv_invertmouse = {"invertmouse", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
-//consvar_t cv_mousemove = {"mousemove", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 static CV_PossibleValue_t joyaxis_cons_t[] = {{0, "None"},
 {1, "Left X"}, {2, "Left Y"}, {-1, "Left X-"}, {-2, "Left Y-"},
@@ -417,105 +416,105 @@ static CV_PossibleValue_t joyaxis_cons_t[] = {{0, "None"},
 static CV_PossibleValue_t deadzone_cons_t[] = {{FRACUNIT/16, "MIN"}, {FRACUNIT, "MAX"}, {0, NULL}};
 
 consvar_t cv_turnaxis[MAXSPLITSCREENPLAYERS] = {
-	{"joyaxis_turn", "Left X", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"joyaxis_turn",  "Left X", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
 	{"joyaxis2_turn", "Left X", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
 	{"joyaxis3_turn", "Left X", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
 	{"joyaxis4_turn", "Left X", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL}
 };
 
 consvar_t cv_moveaxis[MAXSPLITSCREENPLAYERS] = {
-	{"joyaxis_move", "None", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"joyaxis_move",  "None", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
 	{"joyaxis2_move", "None", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
 	{"joyaxis3_move", "None", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
 	{"joyaxis4_move", "None", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL}
 };
 
 consvar_t cv_camstrafeaxis[MAXSPLITSCREENPLAYERS] = {
-	{"joyaxis_camstrafe", "None", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"joyaxis_camstrafe",  "None", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
 	{"joyaxis2_camstrafe", "None", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
 	{"joyaxis3_camstrafe", "None", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
 	{"joyaxis4_camstrafe", "None", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL}
 };
 
 consvar_t cv_camturnaxis[MAXSPLITSCREENPLAYERS] = {
-	{"joyaxis_camturn", "Left X", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"joyaxis_camturn",  "Left X", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
 	{"joyaxis2_camturn", "Left X", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
 	{"joyaxis3_camturn", "Left X", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
 	{"joyaxis4_camturn", "Left X", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL}
 };
 
 consvar_t cv_brakeaxis[MAXSPLITSCREENPLAYERS] = {
-	{"joyaxis_brake", "None", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"joyaxis_brake",  "None", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
 	{"joyaxis2_brake", "None", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
 	{"joyaxis3_brake", "None", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
 	{"joyaxis4_brake", "None", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL}
 };
 
 consvar_t cv_aimaxis[MAXSPLITSCREENPLAYERS] = {
-	{"joyaxis_aim", "Left Y", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"joyaxis_aim",  "Left Y", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
 	{"joyaxis2_aim", "Left Y", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
 	{"joyaxis3_aim", "Left Y", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
 	{"joyaxis4_aim", "Left Y", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL}
 };
 
 consvar_t cv_lookaxis[MAXSPLITSCREENPLAYERS] = {
-	 {"joyaxis_look", "None", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
+	 {"joyaxis_look",  "None", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
 	 {"joyaxis2_look", "None", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
 	 {"joyaxis3_look", "None", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
 	 {"joyaxis4_look", "None", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL}
 };
 
 consvar_t cv_fireaxis[MAXSPLITSCREENPLAYERS] = {
-	{"joyaxis_fire", "L Trigger", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"joyaxis_fire",  "L Trigger", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
 	{"joyaxis2_fire", "L Trigger", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
 	{"joyaxis3_fire", "L Trigger", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
 	{"joyaxis4_fire", "L Trigger", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL}
 };
 
 consvar_t cv_driftaxis[MAXSPLITSCREENPLAYERS] = {
-	{"joyaxis_drift", "R Trigger", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"joyaxis_drift",  "R Trigger", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
 	{"joyaxis2_drift", "R Trigger", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
 	{"joyaxis3_drift", "R Trigger", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
 	{"joyaxis4_drift", "R Trigger", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL}
 };
 
 consvar_t cv_lookbackaxis[MAXSPLITSCREENPLAYERS] = {
-	{"joyaxis_lookback", "None", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"joyaxis_lookback",  "None", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
 	{"joyaxis2_lookback", "None", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
 	{"joyaxis3_lookback", "None", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
 	{"joyaxis4_lookback", "None", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL}
 };
 
 consvar_t cv_custom1axis[MAXSPLITSCREENPLAYERS] = {
-	{"joyaxis_custom1", "None", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"joyaxis_custom1",  "None", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
 	{"joyaxis2_custom1", "None", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
 	{"joyaxis3_custom1", "None", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
 	{"joyaxis4_custom1", "None", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL}
 };
 
 consvar_t cv_custom2axis[MAXSPLITSCREENPLAYERS] = {
-	{"joyaxis_custom2", "None", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"joyaxis_custom2",  "None", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
 	{"joyaxis2_custom2", "None", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
 	{"joyaxis3_custom2", "None", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
 	{"joyaxis4_custom2", "None", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL}
 };
 
 consvar_t cv_custom3axis[MAXSPLITSCREENPLAYERS] = {
-	{"joyaxis_custom3", "None", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"joyaxis_custom3",  "None", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
 	{"joyaxis2_custom3", "None", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
 	{"joyaxis3_custom3", "None", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
 	{"joyaxis4_custom3", "None", CV_SAVE, joyaxis_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL}
 };
 
 consvar_t cv_xdeadzone[MAXSPLITSCREENPLAYERS] = {
-	{"joy_xdeadzone", "0.3", CV_FLOAT|CV_SAVE, deadzone_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"joy_xdeadzone",  "0.3", CV_FLOAT|CV_SAVE, deadzone_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
 	{"joy2_xdeadzone", "0.3", CV_FLOAT|CV_SAVE, deadzone_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
 	{"joy3_xdeadzone", "0.3", CV_FLOAT|CV_SAVE, deadzone_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
 	{"joy4_xdeadzone", "0.3", CV_FLOAT|CV_SAVE, deadzone_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL}
 };
 
 consvar_t cv_ydeadzone[MAXSPLITSCREENPLAYERS] = {
-	{"joy_ydeadzone", "0.5", CV_FLOAT|CV_SAVE, deadzone_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"joy_ydeadzone",  "0.5", CV_FLOAT|CV_SAVE, deadzone_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
 	{"joy2_ydeadzone", "0.5", CV_FLOAT|CV_SAVE, deadzone_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
 	{"joy3_ydeadzone", "0.5", CV_FLOAT|CV_SAVE, deadzone_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
 	{"joy4_ydeadzone", "0.5", CV_FLOAT|CV_SAVE, deadzone_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL}
@@ -1291,7 +1290,7 @@ static void G_DoLoadLevel(boolean resetplayer)
 
 	for (i = 0; i < JOYAXISSET; i++)
 	{
-		joyxmove[i] = joyymove[i] = 0;
+		joyxmove[i]  = joyymove[i]  = 0;
 		joy2xmove[i] = joy2ymove[i] = 0;
 		joy3xmove[i] = joy3ymove[i] = 0;
 		joy4xmove[i] = joy4ymove[i] = 0;
@@ -1583,10 +1582,7 @@ boolean G_CouldView(INT32 playernum)
 		return false;
 
 	// SRB2Kart: Only go through players who are actually playing
-	if (player->exiting)
-		return false;
-
-	if (player->pflags & PF_TIMEOVER)
+	if (player->exiting || (player->pflags & PF_TIMEOVER))
 		return false;
 
 	// I don't know if we want this actually, but I'll humor the suggestion anyway
@@ -1848,11 +1844,11 @@ void G_Ticker(boolean run)
 	{
 		switch (gameaction)
 		{
-			case ga_completed: G_DoCompleted(); break;
+			case ga_completed: G_DoCompleted();     break;
 			case ga_startcont: G_DoStartContinue(); break;
-			case ga_continued: G_DoContinued(); break;
-			case ga_worlddone: G_DoWorldDone(); break;
-			case ga_startvote: G_DoStartVote(); break;
+			case ga_continued: G_DoContinued();     break;
+			case ga_worlddone: G_DoWorldDone();     break;
+			case ga_startvote: G_DoStartVote();     break;
 			case ga_nothing: break;
 			default: I_Error("gameaction = %d\n", gameaction);
 		}
@@ -1954,6 +1950,7 @@ void G_Ticker(boolean run)
 
 		case GS_TITLESCREEN:
 			F_TitleScreenTicker(run);
+			HU_TickSongCredits();
 			break;
 		case GS_WAITINGPLAYERS:
 			if (netgame)
@@ -2571,10 +2568,10 @@ mapthing_t *G_FindRaceStart(INT32 playernum)
 				{
 					if (!playeringame[j] || players[j].spectator)
 						continue;
-					if (j == playernum)
+
+					if ((j == playernum) || (j == i))
 						continue;
-					if (j == i)
-						continue;
+
 					if (players[j].score == players[i].score)
 						num++;
 				}
@@ -2672,6 +2669,7 @@ void G_DoReborn(INT32 playernum)
 		}
 
 		B_RespawnBot(playernum);
+
 		if (oldmo)
 			G_ChangePlayerReferences(oldmo, players[playernum].mo);
 	}
@@ -2694,6 +2692,7 @@ void G_DoReborn(INT32 playernum)
 		}
 
 		G_SpawnPlayer(playernum, starpost);
+
 		if (oldmo)
 			G_ChangePlayerReferences(oldmo, players[playernum].mo);
 
@@ -2763,62 +2762,6 @@ INT32 G_GetGametypeByName(const char *gametypestr)
 }
 
 //
-// G_IsSpecialStage
-//
-// Returns TRUE if
-// the given map is a special stage.
-//
-boolean G_IsSpecialStage(INT32 mapnum)
-{
-	(void)mapnum;
-	return false;
-}
-
-//
-// G_GametypeUsesLives
-//
-// Returns true if the current gametype uses
-// the lives system.  False otherwise.
-//
-boolean G_GametypeUsesLives(void)
-{
-	// SRB2kart NEEDS no lives
-	return false;
-}
-
-//
-// G_GametypeHasTeams
-//
-// Returns true if the current gametype uses
-// Red/Blue teams.  False otherwise.
-//
-boolean G_GametypeHasTeams(void)
-{
-	return (gametype == GT_TEAMMATCH || gametype == GT_CTF);
-}
-
-//
-// G_GametypeHasSpectators
-//
-// Returns true if the current gametype supports
-// spectators.  False otherwise.
-//
-boolean G_GametypeHasSpectators(void)
-{
-	return (netgame || (multiplayer && demo.playback)); //true
-}
-
-//
-// G_BattleGametype
-//
-// Returns true in Battle gamemodes, previously was G_RingSlingerGametype.
-//
-boolean G_BattleGametype(void)
-{
-	return (gametype == GT_MATCH);
-}
-
-//
 // G_SometimesGetDifferentGametype
 //
 // Oh, yeah, and we sometimes flip encore mode on here too.
@@ -2849,6 +2792,7 @@ UINT8 G_SometimesGetDifferentGametype(UINT8 prefgametype)
 			default:
 				break;
 		}
+
 		if (encoreactual != (boolean)cv_kartencore.value)
 			encoremodifier = 0x80;
 	}
@@ -2882,6 +2826,7 @@ UINT8 G_SometimesGetDifferentGametype(UINT8 prefgametype)
 			return (GT_RACE|0x80);
 		return (GT_RACE);
 	}
+
 	// This might appear wrong HERE, but the game will display the Encore possibility on the second voting choice instead.
 	return (GT_MATCH|encoremodifier);
 }
@@ -2902,27 +2847,6 @@ UINT8 G_GetGametypeColor(INT16 gt)
 	if (gt == GT_RACE)
 		return skymap[120];
 	return 247; // FALLBACK
-}
-
-//
-// G_RaceGametype
-//
-// Returns true in Race gamemodes, previously was G_PlatformGametype.
-//
-boolean G_RaceGametype(void)
-{
-	return (gametype == GT_RACE);
-}
-
-//
-// G_TagGametype
-//
-// For Jazz's Tag/HnS modes that have a lot of special cases...
-// SRB2Kart: do we actually want to add Kart tag later? :V
-//
-boolean G_TagGametype(void)
-{
-	return (gametype == GT_TAG || gametype == GT_HIDEANDSEEK);
 }
 
 /** Get the typeoflevel flag needed to indicate support of a gametype.
@@ -2988,7 +2912,8 @@ INT16 G_RandMap(INT16 tolflags, INT16 pprevmap, boolean ignorebuffer, UINT8 maph
 	if (extbuffer != NULL)
 	{
 		bufx = 0;
-		while (extbuffer[bufx]) {
+		while (extbuffer[bufx])
+		{
 			extbufsize++; bufx++;
 		}
 	}
@@ -3117,7 +3042,6 @@ void G_AddMapToBuffer(INT16 map)
 static void G_DoCompleted(void)
 {
 	INT32 i, j = 0;
-	boolean gottoken = false;
 
 	tokenlist = 0; // Reset the list
 
@@ -3166,15 +3090,13 @@ static void G_DoCompleted(void)
 		nextmap = (INT16)(mapheaderinfo[gamemap-1]->nextlevel-1);
 
 	// Remember last map for when you come out of the special stage.
-	if (!G_IsSpecialStage(gamemap))
-		lastmap = nextmap;
+	lastmap = nextmap;
 
 	// If nextmap is actually going to get used, make sure it points to
 	// a map of the proper gametype -- skip levels that don't support
 	// the current gametype. (Helps avoid playing boss levels in Race,
 	// for instance).
-	if (!token && !G_IsSpecialStage(gamemap) && !modeattacking
-		&& (nextmap >= 0 && nextmap < NUMMAPS))
+	if (!token && !modeattacking && (nextmap >= 0 && nextmap < NUMMAPS))
 	{
 		register INT16 cm = nextmap;
 		INT16 tolflag = G_TOLFlag(gametype);
@@ -3228,12 +3150,11 @@ static void G_DoCompleted(void)
 	if (gametype == GT_COOP && token)
 	{
 		token--;
-		gottoken = true;
 
 		if (!(emeralds & EMERALD1))
 			nextmap = (INT16)(sstage_start - 1); // Special Stage 1
 		else if (!(emeralds & EMERALD2))
-			nextmap = (INT16)(sstage_start); // Special Stage 2
+			nextmap = (INT16)(sstage_start);     // Special Stage 2
 		else if (!(emeralds & EMERALD3))
 			nextmap = (INT16)(sstage_start + 1); // Special Stage 3
 		else if (!(emeralds & EMERALD4))
@@ -3244,12 +3165,7 @@ static void G_DoCompleted(void)
 			nextmap = (INT16)(sstage_start + 4); // Special Stage 6
 		else if (!(emeralds & EMERALD7))
 			nextmap = (INT16)(sstage_start + 5); // Special Stage 7
-		else
-			gottoken = false;
 	}
-
-	if (G_IsSpecialStage(gamemap) && !gottoken)
-		nextmap = lastmap; // Exiting from a special stage? Go back to the game. Tails 08-11-2001
 
 	automapactive = false;
 
@@ -3281,7 +3197,6 @@ demointermission:
 void G_AfterIntermission(void)
 {
 	HU_ClearCEcho();
-	//G_NextLevel();
 
 	if (demo.playback)
 	{
@@ -3837,9 +3752,6 @@ void G_LoadGame(UINT32 slot, INT16 mapoverride)
 
 	if (demo.playback) // reset game engine
 		G_StopDemo();
-
-//	paused = false;
-//	automapactive = false;
 
 	// dearchive all the modifications
 	if (!P_LoadGame(&save, mapoverride))
@@ -4950,6 +4862,13 @@ void G_WriteAllGhostTics(void)
 		if (multiplayer && ((counter % cv_netdemosyncquality.value) != 0)) // Only write 1 in this many ghost datas per tic to cut down on multiplayer replay size.
 			continue;
 
+		if (((ghostext[i].flags && (ghostext[i].flags & EZT_HIT)) || ghostext[i].hits)
+			&& !ghostext[i].hitlist) // hitlist might be freed during resynch, beware PU_LEVEL!
+		{
+			ghostext[i].hits = 0;
+			continue;
+		}
+
 		CHECKSPACE(1);
 
 		WRITEUINT8(demobuf.p, i);
@@ -5016,9 +4935,9 @@ void G_WriteGhostTic(mobj_t *ghost, INT32 playernum)
 		ziptic |= GZT_XYZ;
 
 		CHECKSPACE(sizeof(fixed_t)*3);
-		WRITEFIXED(demobuf.p,oldghost[playernum].x);
-		WRITEFIXED(demobuf.p,oldghost[playernum].y);
-		WRITEFIXED(demobuf.p,oldghost[playernum].z);
+		WRITEFIXED(demobuf.p, oldghost[playernum].x);
+		WRITEFIXED(demobuf.p, oldghost[playernum].y);
+		WRITEFIXED(demobuf.p, oldghost[playernum].z);
 	}
 	else
 	{
@@ -5036,8 +4955,8 @@ void G_WriteGhostTic(mobj_t *ghost, INT32 playernum)
 
 			CHECKSPACE(4);
 
-			WRITEINT16(demobuf.p,momx);
-			WRITEINT16(demobuf.p,momy);
+			WRITEINT16(demobuf.p, momx);
+			WRITEINT16(demobuf.p, momy);
 		}
 
 		momx = (INT16)((ghost->z-oldghost[playernum].z + (1<<4))>>8);
@@ -5049,7 +4968,7 @@ void G_WriteGhostTic(mobj_t *ghost, INT32 playernum)
 
 			CHECKSPACE(2);
 
-			WRITEINT16(demobuf.p,momx);
+			WRITEINT16(demobuf.p, momx);
 		}
 
 		// This SHOULD set oldghost.x/y/z to match ghost->x/y/z
@@ -5072,7 +4991,7 @@ void G_WriteGhostTic(mobj_t *ghost, INT32 playernum)
 
 		CHECKSPACE(1);
 
-		WRITEUINT8(demobuf.p,oldghost[playernum].angle);
+		WRITEUINT8(demobuf.p, oldghost[playernum].angle);
 	}
 
 	// Store the sprite frame.
@@ -5084,7 +5003,7 @@ void G_WriteGhostTic(mobj_t *ghost, INT32 playernum)
 
 		CHECKSPACE(1);
 
-		WRITEUINT8(demobuf.p,oldghost[playernum].frame);
+		WRITEUINT8(demobuf.p, oldghost[playernum].frame);
 	}
 
 	// Check for sprite set changes
@@ -5120,26 +5039,26 @@ void G_WriteGhostTic(mobj_t *ghost, INT32 playernum)
 	if (ghostext[playernum].flags)
 	{
 		ziptic |= GZT_EXTRA;
-		WRITEUINT8(demobuf.p,ghostext[playernum].flags);
+		WRITEUINT8(demobuf.p, ghostext[playernum].flags);
 
 		if (ghostext[playernum].flags & EZT_COLOR)
 		{
 			CHECKSPACE(1);
-			WRITEUINT8(demobuf.p,ghostext[playernum].color);
+			WRITEUINT8(demobuf.p, ghostext[playernum].color);
 			ghostext[playernum].lastcolor = ghostext[playernum].color;
 		}
 
 		if (ghostext[playernum].flags & EZT_SCALE)
 		{
 			CHECKSPACE(sizeof(fixed_t));
-			WRITEFIXED(demobuf.p,ghostext[playernum].scale);
+			WRITEFIXED(demobuf.p, ghostext[playernum].scale);
 			ghostext[playernum].lastscale = ghostext[playernum].scale;
 		}
 
 		if (ghostext[playernum].flags & EZT_HIT)
 		{
 			CHECKSPACE(2);
-			WRITEUINT16(demobuf.p,ghostext[playernum].hits);
+			WRITEUINT16(demobuf.p, ghostext[playernum].hits);
 
 			for (i = 0; i < ghostext[playernum].hits; i++)
 			{
@@ -5147,13 +5066,13 @@ void G_WriteGhostTic(mobj_t *ghost, INT32 playernum)
 
 				CHECKSPACE(4+4+2+sizeof(fixed_t)*3+sizeof(angle_t));
 
-				WRITEUINT32(demobuf.p,UINT32_MAX); // reserved for some method of determining exactly which mobj this is. (mobjnum doesn't work here.)
-				WRITEUINT32(demobuf.p,mo->type);
-				WRITEUINT16(demobuf.p,(UINT16)mo->health);
-				WRITEFIXED(demobuf.p,mo->x);
-				WRITEFIXED(demobuf.p,mo->y);
-				WRITEFIXED(demobuf.p,mo->z);
-				WRITEANGLE(demobuf.p,mo->angle);
+				WRITEUINT32(demobuf.p, UINT32_MAX); // reserved for some method of determining exactly which mobj this is. (mobjnum doesn't work here.)
+				WRITEUINT32(demobuf.p, mo->type);
+				WRITEUINT16(demobuf.p, (UINT16)mo->health);
+				WRITEFIXED(demobuf.p, mo->x);
+				WRITEFIXED(demobuf.p, mo->y);
+				WRITEFIXED(demobuf.p, mo->z);
+				WRITEANGLE(demobuf.p, mo->angle);
 				P_SetTarget(ghostext[playernum].hitlist+i, NULL);
 			}
 
@@ -5163,7 +5082,7 @@ void G_WriteGhostTic(mobj_t *ghost, INT32 playernum)
 		if (ghostext[playernum].flags & EZT_SPRITE)
 		{
 			CHECKSPACE(1);
-			WRITEUINT8(demobuf.p,sprite);
+			WRITEUINT8(demobuf.p, sprite);
 		}
 
 		if (ghostext[playernum].flags & EZT_KART)
