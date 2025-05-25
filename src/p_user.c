@@ -4296,19 +4296,17 @@ void P_DoTimeOver(player_t *player)
 		exitcountdown = 5*TICRATE;
 }
 
-	/* gaysed script from me, based on Golden's sprite slope roll */
-
+/* gaysed script from me, based on Golden's sprite slope roll */
 // holy SHIT
-static INT32
-Quaketilt (player_t *player)
+static INT32 Quaketilt(player_t *player)
 {
-	angle_t tilt;
+	angle_t tilt, moma;
 	fixed_t lowb; // this threshold for speed
-	angle_t moma = R_PointToAngle2(0, 0, player->mo->momx, player->mo->momy);
-	INT32 delta = (INT32)( player->mo->angle - moma );
+	INT32 delta;
 	fixed_t speed;
 
-	boolean sliptiding = player->kartstuff[k_drift] ? 0 : player->kartstuff[k_aizdriftstrat];
+	moma = R_PointToAngle2(0, 0, player->mo->momx, player->mo->momy);
+	delta = (INT32)( player->mo->angle - moma );
 
 	if (delta == (INT32)ANGLE_180)/* FUCK YOU HAVE A HACK */
 	{
@@ -4318,6 +4316,9 @@ Quaketilt (player_t *player)
 	// Hi! I'm "not a math guy"!
 	if (abs(delta) > ANGLE_90)
 		delta = (INT32)(( moma + ANGLE_180 ) - player->mo->angle );
+
+	const boolean sliptiding = player->kartstuff[k_drift] ? 0 : player->kartstuff[k_aizdriftstrat];
+
 	if (P_IsObjectOnGround(player->mo))
 	{
 		if (sliptiding)
@@ -4336,23 +4337,24 @@ Quaketilt (player_t *player)
 		tilt = ANGLE_22h;
 		lowb = 10*FRACUNIT;
 	}
+
 	lowb = FixedMul(lowb, player->mo->scale);
 	moma = FixedMul(FixedDiv(delta, ANGLE_90), tilt);
 	speed = abs( player->mo->momx + player->mo->momy );
+
 	if (speed < lowb)
 	{
 		// ease out tilt as we slow...
 		moma = FixedMul(moma, FixedDiv(speed, lowb));
 	}
+
 	return moma;
 }
 
-static void
-DoABarrelRoll (player_t *player)
+static void DoABarrelRoll(player_t *player)
 {
-	angle_t slope;
+	angle_t slope = 0;
 	angle_t delta;
-
 	fixed_t smoothing;
 
 	if (player->exiting)
@@ -4369,10 +4371,6 @@ DoABarrelRoll (player_t *player)
 	if (player->mo->standingslope)
 	{
 		slope = player->mo->standingslope->real_zangle;
-	}
-	else
-	{
-		slope = 0;
 	}
 
 	if (abs((INT32)slope) > ANGLE_11hh)
@@ -4394,7 +4392,7 @@ DoABarrelRoll (player_t *player)
 	smoothing = FixedDiv(AbsAngle(slope), ANGLE_45);
 
 	delta = FixedDiv(delta, cv_tiltsmoothing.value *
-	FixedDiv(FRACUNIT, FRACUNIT + smoothing));
+			FixedDiv(FRACUNIT, FRACUNIT + smoothing));
 
 	if (delta)
 		player->tilt += delta;
