@@ -69,11 +69,6 @@
 #define _USE_MATH_DEFINES // fixes M_PI errors in r_plane.c for Visual Studio
 #include <math.h>
 
-#ifdef GETTEXT
-#include <libintl.h>
-#include <locale.h>
-#endif
-
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <ctype.h>
@@ -447,14 +442,8 @@ void CONS_Debug(INT32 debugflags, const char *fmt, ...) FUNCDEBUG;
 extern char savegamename[256];
 
 // m_misc.h
-#ifdef GETTEXT
-#define M_GetText(String) gettext(String)
-void M_StartupLocale(void);
-#else
-// If no translations are to be used, make a stub
-// M_GetText function that just returns the string.
+//TODO: delet this
 #define M_GetText(x) (x)
-#endif
 
 FUNCINLINE static ATTRINLINE void *M_Memcpy(void *dest, const void *src, size_t n)
 {
