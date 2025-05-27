@@ -69,11 +69,21 @@ typedef struct
 	unsigned long position; // filelump_t filepos
 	unsigned long disksize; // filelump_t size
 	char name[9];           // filelump_t name[] e.g. "LongEntr"
-	UINT32 hash;
 	char *longname;         //                   e.g. "LongEntryName"
 	char *fullname;         //                   e.g. "Folder/Subfolder/LongEntryName.extension"
+
+	size_t namelength;      // length of name
+	size_t longnamelength;  // length of longname
+	size_t fullnamelength;  // length of fullname
+
 	size_t size; // real (uncompressed) size
 	compmethod compression; // lump compression method
+
+	struct {
+		UINT32 name;        // hash of name
+		UINT32 longname;    // hash of longname
+		UINT32 fullname;    // hash of fullname
+	} hash;
 } lumpinfo_t;
 
 // =========================================================================
@@ -164,6 +174,8 @@ INT32 W_AddAutoloadedLocalFiles(char **filenames);
 
 #define W_FileHasFolders(wadfile) ((wadfile)->type == RET_PK3)
 
+UINT32 W_HashLumpName(const char *name);
+
 const char *W_CheckNameForNumPwad(UINT16 wad, UINT16 lump);
 const char *W_CheckNameForNum(lumpnum_t lumpnum);
 
@@ -177,7 +189,6 @@ UINT16 W_CheckNumForFullNamePK3(const char *name, UINT16 wad, UINT16 startlump);
 UINT16 W_CheckNumForFolderStartPK3(const char *name, UINT16 wad, UINT16 startlump);
 UINT16 W_CheckNumForFolderEndPK3(const char *name, UINT16 wad, UINT16 startlump);
 
-lumpnum_t W_CheckNumForMap(const char *name);
 lumpnum_t W_CheckNumForName(const char *name);
 lumpnum_t W_CheckNumForLongName(const char *name);
 lumpnum_t W_GetNumForName(const char *name); // like W_CheckNumForName but I_Error on LUMPERROR
