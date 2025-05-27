@@ -225,8 +225,8 @@ void I_StartupSound(void)
 				SDLmixlinked->major, SDLmixlinked->minor, SDLmixlinked->patch);
 
 #ifdef HAVE_OPENMPT
-	CONS_Printf("libopenmpt version: %s\n", openmpt_get_string("library_version"));
-	CONS_Printf("libopenmpt build date: %s\n", openmpt_get_string("build"));
+	I_OutputMsg("libopenmpt version: %s\n", openmpt_get_string("library_version"));
+	I_OutputMsg("libopenmpt build date: %s\n", openmpt_get_string("build"));
 #endif
 
 	sound_started = true;
