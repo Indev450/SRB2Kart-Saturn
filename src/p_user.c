@@ -552,9 +552,13 @@ static UINT8 getPlayerPos(player_t *player)
 	{
 		UINT8 pos = 1;
 
-		for (int i = 0; i < MAXPLAYERS; ++i) {
-			if (!playeringame[i] || players[i].spectator) continue;
-			if (players[i].marescore > player->marescore) ++pos;
+		for (UINT8 i = 0; i < MAXPLAYERS; ++i)
+		{
+			if (!playeringame[i] || players[i].spectator)
+				continue;
+
+			if (players[i].marescore > player->marescore)
+				++pos;
 		}
 
 		return pos;

@@ -733,8 +733,10 @@ void P_Ticker(boolean run)
 
 		PS_START_TIMING(ps_playerthink_time);
 		for (i = 0; i < MAXPLAYERS; i++)
-			if (playeringame[i] && players[i].mo && !P_MobjWasRemoved(players[i].mo))
+		{
+			if (playeringame[i] && !P_MobjWasRemoved(players[i].mo))
 				P_PlayerThink(&players[i]);
+		}
 		PS_STOP_TIMING(ps_playerthink_time);
 	}
 
@@ -753,8 +755,10 @@ void P_Ticker(boolean run)
 
 		// Run any "after all the other thinkers" stuff
 		for (i = 0; i < MAXPLAYERS; i++)
-			if (playeringame[i] && players[i].mo && !P_MobjWasRemoved(players[i].mo))
+		{
+			if (playeringame[i] && !P_MobjWasRemoved(players[i].mo))
 				P_PlayerAfterThink(&players[i]);
+		}
 
 		// Apply rumble to local players
 		if (!demo.playback)

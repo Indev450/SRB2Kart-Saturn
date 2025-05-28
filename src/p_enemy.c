@@ -887,10 +887,7 @@ void A_PointyThink(void *thing)
 		if (!playeringame[i] || players[i].spectator)
 			continue;
 
-		if (!players[i].mo)
-			continue;
-
-		if (!players[i].mo->health)
+		if (!players[i].mo || !players[i].mo->health)
 			continue;
 
 		if (!P_CheckSight(actor, players[i].mo))
@@ -2236,7 +2233,7 @@ void A_1upThinker(void *thing)
 
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
-		if (!players[i].ingame || players[i].bot || players[i].spectator)
+		if (!playeringame[i] || players[i].bot || players[i].spectator)
 			continue;
 
 		if (!players[i].mo)
@@ -2435,7 +2432,7 @@ void A_BossDeath(void *thing)
 	// if all bosses are dead
 	for (th = thinkercap.next; th != &thinkercap; th = th->next)
 	{
-		if (th->function.acp1 != (actionf_p1)P_MobjThinker)
+		if (th->function != (actionf_p1)P_MobjThinker)
 			continue;
 
 		mo2 = (mobj_t *)th;
@@ -3569,7 +3566,7 @@ void A_ThrownRing(void *thing)
 		if (actor->lastlook == stop)
 			return;
 
-		if (!players[actor->lastlook].ingame)
+		if (!playeringame[actor->lastlook])
 			continue;
 
 		if (c++ == 2)
@@ -6623,7 +6620,7 @@ void A_EggShield(void *thing)
 	// Search for players to push
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
-		if (!players[i].ingame || players[i].spectator)
+		if (!playeringame[i] || players[i].spectator)
 			continue;
 
 		player = &players[i];
@@ -8738,7 +8735,7 @@ void A_ReaperThinker(void *thing)
 		for (i = 0; i<MAXPLAYERS; i++)
 		{
 
-			if (!players[i].ingame)
+			if (!playeringame[i])
 				continue;
 
 			player = &players[i];
@@ -10421,7 +10418,7 @@ void A_VileTarget(void *thing)
 		// Our "Archvile" here is actually Oprah. "YOU GET A TARGET! YOU GET A TARGET! YOU ALL GET A TARGET!"
 		for (i = 0; i < MAXPLAYERS; i++)
 		{
-			if (!players[i].ingame || players[i].spectator)
+			if (!playeringame[i] || players[i].spectator)
 				continue;
 
 			if (!players[i].mo || !players[i].mo->health)

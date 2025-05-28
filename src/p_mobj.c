@@ -4044,7 +4044,7 @@ static void P_Boss3Thinker(mobj_t *mobj)
 			// this can happen if the boss was hurt earlier than expected
 			for (th = thinkercap.next; th != &thinkercap; th = th->next)
 			{
-				if (th->function.acp1 != (actionf_p1)P_MobjThinker)
+				if (th->function != (actionf_p1)P_MobjThinker)
 					continue;
 
 				mo2 = (mobj_t *)th;
@@ -9718,7 +9718,7 @@ mobj_t *P_SpawnMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type)
 
 				for (i = 0; i < MAXPLAYERS; i++)
 				{
-					if (!players[i].ingame)
+					if (!playeringame[i])
 						continue;
 
 					pnum[pcount] = i;

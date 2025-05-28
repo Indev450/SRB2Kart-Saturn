@@ -1343,7 +1343,7 @@ boolean P_RunTriggerLinedef(line_t *triggerline, mobj_t *actor, sector_t *caller
 		{
 			for (i = 0; i < MAXPLAYERS; i++)
 			{
-				if (!players[i].ingame || players[i].spectator)
+				if (!playeringame[i] || players[i].spectator)
 					continue;
 
 				if (!players[i].mo || players[i].mo->health < 1)
@@ -3887,8 +3887,9 @@ DoneSection2:
 
 					for (i = 0; i < MAXPLAYERS; i++)
 					{
-						if (!players[i].ingame || players[i].spectator)
+						if (!playeringame[i] || players[i].spectator)
 							continue;
+
 						nump++;
 					}
 
