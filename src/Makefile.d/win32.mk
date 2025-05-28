@@ -59,15 +59,19 @@ $(1)_CFLAGS?=$($(1)_opts)
 $(1)_LDFLAGS?=$($(1)_libs)
 endef
 
+ifdef HAVE_GME
 lib:=../libs/gme
 LIBGME_opts:=-I$(lib)/include
 LIBGME_libs:=-L$(lib)/win$(32) -lgme
 $(eval $(call _set,LIBGME))
+endif
 
+ifdef HAVE_OPENMPT
 lib:=../libs/libopenmpt
 LIBOPENMPT_opts:=-I$(lib)/inc
 LIBOPENMPT_libs:=-L$(lib)/lib/$(x86)/mingw -lopenmpt
 $(eval $(call _set,LIBOPENMPT))
+endif
 
 lib:=../libs/SDL2_mixer/$(mingw)
 
@@ -123,4 +127,11 @@ lib:=../libs/miniupnpc
 MINIUPNPC_opts:=-I$(lib)/include -DMINIUPNP_STATICLIB
 MINIUPNPC_libs:=-L$(lib)/mingw$(32) -lminiupnpc -lws2_32 -liphlpapi
 $(eval $(call _set,MINIUPNPC))
+endif
+
+ifdef HAVE_DISCORDRPC
+lib:=../libs/discord-rpc/win$(32)-dynamic/
+DRPC_opts+=-I$(lib)/include
+DRPC_libs+=-L$(lib)/lib -ldiscord-rpc
+$(eval $(call _set,DRPC))
 endif

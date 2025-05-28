@@ -24,10 +24,6 @@ ifndef NOMD5
 sources+=md5.c
 endif
 
-ifndef NOOPENMPT
-HAVE_OPENMPT=1
-endif
-
 ifdef NOBLUAJIT
 opts+=-DNOBLUAJIT
 endif
@@ -69,6 +65,12 @@ MINIUPNPC_PKGCONFIG?=miniupnpc
 $(eval $(call Use_pkg_config,MINIUPNPC))
 HAVE_MINIUPNPC=1
 opts+=-DHAVE_MINIUPNPC
+endif
+
+ifdef MINGW
+ifndef NODISCORDRPC
+HAVE_DISCORDRPC=1
+endif
 endif
 
 ifdef HAVE_DISCORDRPC
