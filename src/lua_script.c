@@ -1224,7 +1224,7 @@ void LUA_Archive(savebuffer_t *save, boolean network)
 		{
 			for (th = thinkercap.next; th != &thinkercap; th = th->next)
 			{
-				if (th->function.acp1 != (actionf_p1)P_MobjThinker)
+				if (th->function != (actionf_p1)P_MobjThinker)
 					continue;
 
 				// archive function will determine when to skip mobjs,
@@ -1264,15 +1264,18 @@ void LUA_UnArchive(savebuffer_t *save, boolean network)
 	{
 		do {
 			mobjnum = READUINT32(save->p); // read a mobjnum
+
 			for (th = thinkercap.next; th != &thinkercap; th = th->next)
 			{
-				if (th->function.acp1 != (actionf_p1)P_MobjThinker)
+				if (th->function != (actionf_p1)P_MobjThinker)
 					continue;
 
-				if (((mobj_t *)th)->mobjnum == mobjnum) // find matching mobj
-					UnArchiveExtVars(&save->p, th, network); // apply variables
+				if (((mobj_t *)th)->mobjnum != mobjnum) // find matching mobj
+					continue;
+				UnArchiveExtVars(&save->p, th, network); // apply variables
 			}
-		} while(mobjnum != UINT32_MAX); // repeat until end of mobjs marker.
+
+		} while (mobjnum != UINT32_MAX); // repeat until end of mobjs marker.
 
 		LUA_HookNetArchive(NetUnArchive, save); // call the NetArchive hook in unarchive mode
 	}
