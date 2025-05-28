@@ -3,10 +3,11 @@
 #
 
 passthru_opts+=\
-	NO_IPV6 NOHW NOMD5 NOPOSTPROCESSING\
+	NOHW NOMD5 NOPOSTPROCESSING\
 	MOBJCONSISTANCY PACKETDROP ZDEBUG\
 	HAVE_MINIUPNPC\
-	HAVE_DISCORDRPC DEVELOP
+	HAVE_DISCORDRPC DEVELOP\
+	NOBLUAJIT
 
 # build with debugging information
 ifdef DEBUGMODE
@@ -16,16 +17,16 @@ endif
 
 ifndef NOHW
 opts+=-DHWRENDER
-sources+=$(call List,hardware/Sourcefile)
+
+ifndef NOSCREENFBO
 opts+=-DUSE_FBO_OGL
+endif
+
+sources+=$(call List,hardware/Sourcefile)
 endif
 
 ifndef NOMD5
 sources+=md5.c
-endif
-
-ifdef NOBLUAJIT
-opts+=-DNOBLUAJIT
 endif
 
 ifndef NONET
@@ -67,6 +68,7 @@ HAVE_MINIUPNPC=1
 opts+=-DHAVE_MINIUPNPC
 endif
 
+#windoze hack
 ifdef MINGW
 ifndef NODISCORDRPC
 HAVE_DISCORDRPC=1

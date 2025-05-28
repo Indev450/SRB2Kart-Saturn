@@ -30,7 +30,7 @@ endif
 ifdef MINGW64
 libs+=-lws2_32
 else
-ifdef NO_IPV6
+ifdef HAVE_IPV6
 libs+=-lwsock32
 else
 libs+=-lws2_32

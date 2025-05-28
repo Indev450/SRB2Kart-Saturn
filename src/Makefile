@@ -23,7 +23,6 @@
 # version cannot be detected, you may need to set a flag
 # manually.
 #
-# On Windows machines, 32-bit Windows is always targetted.
 #
 # Platform/system flags:
 #
@@ -41,8 +40,10 @@
 #
 # Safe to use online
 # ------------------
-# NO_IPV6=1 - Disable IPv6 address support.
 # NOHW=1 - Disable OpenGL renderer.
+# NOSCREENFBO=1 - Disable screen FBO for downsampling in OpenGL.
+# NOSATURNPAK=1 - Disable handling the special Saturn packet and resynch system
+# NOSATURNJOIN=1 - Disable the seperate Saturn allowjoin toggle
 # ZDEBUG=1 - Enable more detailed memory debugging
 # HAVE_MINIUPNPC=1 - Enable automated port forwarding.
 #                    Already enabled by default for 32-bit
@@ -51,11 +52,6 @@
 # NOGME=1 - Disable game music emu, retro VGM support.
 # NOOPENMPT=1 - Disable module (tracker) music support.
 # NOMIXER=1 - Disable SDL Mixer (audio playback).
-# NOMIXERX=1 - Forgo SDL Mixer X--revert to standard SDL
-#              Mixer. Mixer X is the default for Windows
-#              builds.
-# HAVE_MIXERX=1 - Enable SDL Mixer X. Outside of Windows
-#                 builds, SDL Mixer X is not the default.
 # NOTHREADS=1 - Disable multithreading.
 #
 # Netplay incompatible
@@ -72,6 +68,8 @@
 #
 # VALGRIND=1 - Enable Valgrind memory debugging support.
 # PROFILEMODE=1 - Enable performance profiling (gprof).
+# USEASAN=1 - Enable building with Address Sanitizer.
+# NOLIBBACKTRACE=1 - Disable using Libbacktrace for crashlog traces.
 #
 # General flags for building:
 #
@@ -93,6 +91,7 @@
 # NOLDWARNING=1 - ?
 # NOSDLMAIN=1 - ?
 # SDLMAIN=1 - ?
+# USELTO=1 - Enable building with LTO.
 #
 # Library configuration flags:
 # Everything here is an override.
