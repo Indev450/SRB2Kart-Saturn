@@ -62,11 +62,6 @@ SDLMAIN=1
 endif
 endif
 
-ifndef NOLIBBACKTRACE
-opts+=-DHAVE_LIBBACKTRACE
-libs+=-lbacktrace
-endif
-
 ifdef SDLMAIN
 opts+=-DSDLMAIN
 else
