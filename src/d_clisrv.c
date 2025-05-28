@@ -1068,6 +1068,7 @@ static void SV_RequireResynch(INT32 node)
 
 	// Initial setup
 	memset(resynch_sent[node], 0, MAXPLAYERS);
+
 	for (i = 0; i < MAXPLAYERS; ++i)
 	{
 		if (!playeringame[i]) // Player not in game so just drop it from required synch
@@ -1771,8 +1772,6 @@ static boolean SV_SendServerConfig(INT32 node)
 	// which is nice and easy for us to detect
 	memset(netbuffer->u.servercfg.playerskins, 0xFF, sizeof(netbuffer->u.servercfg.playerskins));
 	memset(netbuffer->u.servercfg.playercolor, 0xFF, sizeof(netbuffer->u.servercfg.playercolor));
-
-	memset(netbuffer->u.servercfg.adminplayers, -1, sizeof(netbuffer->u.servercfg.adminplayers));
 
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
@@ -3269,7 +3268,7 @@ void CL_ClearPlayer(INT32 playernum)
 		P_RemoveMobj(players[playernum].mo);
 	}
 
-	memset(&players[playernum], 0, sizeof (player_t));
+	memset(&players[playernum], 0, sizeof(player_t));
 }
 
 //
@@ -4278,14 +4277,14 @@ void SV_ResetServer(void)
 		sprintf(player_names[i], "Player %d", i + 1);
 	}
 
-	memset(player_name_changes, 0, sizeof player_name_changes);
+	memset(player_name_changes, 0, sizeof(player_name_changes));
 
-	memset(playeringame, false, sizeof playeringame);
-	memset(playernode, UINT8_MAX, sizeof playernode);
+	memset(playeringame, false, sizeof(playeringame));
+	memset(playernode, UINT8_MAX, sizeof(playernode));
 
 	pingmeasurecount = 1;
-	memset(realpingtable, 0, sizeof realpingtable);
-	memset(playerpingtable, 0, sizeof playerpingtable);
+	memset(realpingtable, 0, sizeof(realpingtable));
+	memset(playerpingtable, 0, sizeof(playerpingtable));
 
 	ClearAdminPlayers();
 
