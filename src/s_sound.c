@@ -32,6 +32,7 @@
 #include "m_menu.h" // bird music stuff
 
 #include "lua_hook.h" // MusicChange hook
+#include "lua_hud.h" // LUA_HudEnabled(hud_musiccredit)
 
 static boolean S_AdjustSoundParams(const mobj_t *listener, const mobj_t *source, INT32 *vol, INT32 *sep, INT32 *pitch, sfxinfo_t *sfxinfo);
 static void SetChannelsNum(void);
@@ -1452,7 +1453,7 @@ void S_ShowSpecifiedMusicCredit(const char *musname)
 
 	def = S_FindMusicCredit(musname);
 
-	if (def)
+	if (def && !LUA_HookMusicCredit(def))
 	{
 		cursongcredit.def = def;
 		cursongcredit.anim = 5*TICRATE;
