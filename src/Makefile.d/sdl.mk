@@ -14,7 +14,6 @@ sources+=$(call List,sdl/Sourcefile)
 opts+=-DDIRECTFULLSCREEN -DHAVE_SDL
 
 NOUPNP=1
-NOBLUAJIT=1
 
 # FIXME: UNTESTED
 #ifdef PANDORA

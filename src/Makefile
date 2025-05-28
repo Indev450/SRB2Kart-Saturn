@@ -116,6 +116,8 @@
 # SDL_CONFIG= - sdl-config command.
 # SDL_CFLAGS=, SDL_LDFLAGS=
 
+NOBLUAJIT=1
+
 clean_targets=cleandep clean distclean info
 
 .PHONY : $(clean_targets) all
