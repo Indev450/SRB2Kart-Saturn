@@ -2113,14 +2113,18 @@ static INT32 LookupPlayer(const char *s)
 static INT32 FindPlayerByPlace(INT32 place)
 {
 	INT32 playernum;
+
 	for (playernum = 0; playernum < MAXPLAYERS; ++playernum)
-		if (playeringame[playernum])
 	{
+		if (!playeringame[playernum])
+			continue;
+
 		if (players[playernum].kartstuff[k_position] == place)
 		{
 			return playernum;
 		}
 	}
+
 	return -1;
 }
 
@@ -5672,7 +5676,7 @@ static void Command_Archivetest_f(void)
 	// assign mobjnum
 	i = 1;
 	for (th = thinkercap.next; th != &thinkercap; th = th->next)
-		if (th->function.acp1 == (actionf_p1)P_MobjThinker)
+		if (th->function == (actionf_p1)P_MobjThinker)
 			((mobj_t *)th)->mobjnum = i++;
 
 	// allocate buffer

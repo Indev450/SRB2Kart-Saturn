@@ -115,7 +115,7 @@ void Command_Numthinkers_f(void)
 
 	for (think = listtype->next; think != listtype; think = think->next)
 	{
-		if (think->function.acp1 != action)
+		if (think->function != action)
 			continue;
 
 		count++;
@@ -152,7 +152,7 @@ void Command_CountMobjs_f(void)
 
 			for (th = thinkercap.next; th != &thinkercap; th = th->next)
 			{
-				if (th->function.acp1 != (actionf_p1)P_MobjThinker)
+				if (th->function != (actionf_p1)P_MobjThinker)
 					continue;
 
 				if (((mobj_t *)th)->type == i)
@@ -172,7 +172,7 @@ void Command_CountMobjs_f(void)
 
 		for (th = thinkercap.next; th != &thinkercap; th = th->next)
 		{
-			if (th->function.acp1 != (actionf_p1)P_MobjThinker)
+			if (th->function != (actionf_p1)P_MobjThinker)
 				continue;
 
 			if (((mobj_t *)th)->type == i)
@@ -207,7 +207,7 @@ void P_AddThinker(thinker_t *thinker)
 
 	thinker->references = 0;    // killough 11/98: init reference counter to 0
 
-	thinker->cachable = (thinker->function.acp1 == (actionf_p1)P_MobjThinker);
+	thinker->cachable = (thinker->function == (actionf_p1)P_MobjThinker);
 #ifdef PARANOIA
 	thinker->debug_mobjtype = MT_NULL;
 #endif
@@ -235,7 +235,7 @@ void P_AddPrecipThinker(thinker_t *thinker)
 #ifdef PARANOIA
 static const char *MobjTypeName(const mobj_t *mobj)
 {
-	actionf_p1 p1 = mobj->thinker.function.acp1;
+	actionf_p1 p1 = mobj->thinker.function;
 
 	if (p1 == (actionf_p1)P_MobjThinker)
 	{
@@ -254,7 +254,7 @@ static const char *MobjTypeName(const mobj_t *mobj)
 
 static const char *MobjThinkerName(const mobj_t *mobj)
 {
-	actionf_p1 p1 = mobj->thinker.function.acp1;
+	actionf_p1 p1 = mobj->thinker.function;
 
 	if (p1 == (actionf_p1)P_MobjThinker)
 	{
@@ -371,7 +371,7 @@ void P_UnlinkThinker(thinker_t *thinker)
 void P_RemoveThinker(thinker_t *thinker)
 {
 	LUA_InvalidateUserdata(thinker);
-	thinker->function.acp1 = (actionf_p1)P_RemoveThinkerDelayed;
+	thinker->function = (actionf_p1)P_RemoveThinkerDelayed;
 }
 
 /*
@@ -455,9 +455,9 @@ static inline void P_RunThinkers(void)
 	for (currentthinker = thinkercap.next; currentthinker != &thinkercap; currentthinker = currentthinker->next)
 	{
 #ifdef PARANOIA
-		I_Assert(currentthinker->function.acp1 != NULL);
+		I_Assert(currentthinker->function != NULL);
 #endif
-		currentthinker->function.acp1(currentthinker);
+		currentthinker->function(currentthinker);
 	}
 }
 
@@ -610,7 +610,7 @@ static inline void P_ResetSpriteStuff(void)
 	{
 		mobj_t *mo;
 
-		if (th->function.acp1 != (actionf_p1)P_MobjThinker) // not a mobj
+		if (th->function != (actionf_p1)P_MobjThinker) // not a mobj
 			continue;
 
 		mo = (mobj_t *)th;
@@ -733,8 +733,10 @@ void P_Ticker(boolean run)
 
 		PS_START_TIMING(ps_playerthink_time);
 		for (i = 0; i < MAXPLAYERS; i++)
-			if (playeringame[i] && players[i].mo && !P_MobjWasRemoved(players[i].mo))
+		{
+			if (playeringame[i] && !P_MobjWasRemoved(players[i].mo))
 				P_PlayerThink(&players[i]);
+		}
 		PS_STOP_TIMING(ps_playerthink_time);
 	}
 
@@ -753,8 +755,10 @@ void P_Ticker(boolean run)
 
 		// Run any "after all the other thinkers" stuff
 		for (i = 0; i < MAXPLAYERS; i++)
-			if (playeringame[i] && players[i].mo && !P_MobjWasRemoved(players[i].mo))
+		{
+			if (playeringame[i] && !P_MobjWasRemoved(players[i].mo))
 				P_PlayerAfterThink(&players[i]);
+		}
 
 		// Apply rumble to local players
 		if (!demo.playback)
@@ -956,7 +960,7 @@ void P_PreTicker(INT32 frames)
 			if (!playeringame[i])
 				continue;
 
-			if (!players[i].mo || P_MobjWasRemoved(players[i].mo))
+			if (P_MobjWasRemoved(players[i].mo))
 				continue;
 
 			P_PlayerAfterThink(&players[i]);

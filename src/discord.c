@@ -489,7 +489,7 @@ void DRPC_UpdatePresence(void)
 		{
 #endif
 			discordPresence.state = "Private";
-#ifdef MASTERSERVER			
+#ifdef MASTERSERVER
 		}
 #endif
 
