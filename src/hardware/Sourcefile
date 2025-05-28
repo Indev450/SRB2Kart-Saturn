@@ -6,9 +6,9 @@ hw_md2.c
 hw_cache.c
 hw_md2load.c
 hw_md3load.c
-u_list.c
 hw_model.c
 hw_portal.c
 hw_batching.c
 hw_shaders.c
+u_list.c
 r_opengl/r_opengl.c
