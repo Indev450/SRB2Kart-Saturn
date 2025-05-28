@@ -21,7 +21,7 @@
 //
 //-----------------------------------------------------------------------------
 /// \file
-/// \brief SRB2 system stuff for SDL
+/// \brief SRB2 system stuff for dedicated
 
 #ifdef CMAKECONFIG
 #include "config.h"
@@ -30,6 +30,12 @@
 #endif
 
 #include <signal.h>
+
+// A little more than the minimum sleep duration on Windows.
+// May be incorrect for other platforms, but we don't currently have a way to
+// query the scheduler granularity. SDL will do what's needed to make this as
+// low as possible though.
+#define MIN_SLEEP_DURATION_MS 2.1
 
 #ifdef _WIN32
 #define RPC_NO_WINDOWS_H
@@ -43,14 +49,7 @@ typedef HANDLE (WINAPI *p_OpenFileMappingA) (DWORD, BOOL, LPCSTR);
 typedef LPVOID (WINAPI *p_MapViewOfFile) (HANDLE, DWORD, DWORD, DWORD, SIZE_T);
 #endif
 
-// A little more than the minimum sleep duration on Windows.
-// May be incorrect for other platforms, but we don't currently have a way to
-// query the scheduler granularity. SDL will do what's needed to make this as
-// low as possible though.
-#define MIN_SLEEP_DURATION_MS 2.1
-
 #include <stdio.h>
-#include <time.h>
 #include <stdlib.h>
 #include <string.h>
 #ifdef __GNUC__
@@ -71,22 +70,8 @@ typedef LPVOID (WINAPI *p_MapViewOfFile) (HANDLE, DWORD, DWORD, DWORD, SIZE_T);
 #pragma warning(disable : 4214 4244)
 #endif
 
-#ifdef HAVE_SDL
-#define _MATH_DEFINES_DEFINED
-#include "SDL.h"
-
-#ifdef HAVE_TTF
-#include "i_ttf.h"
-#endif
-
-#ifdef _MSC_VER
-#pragma warning(default : 4214 4244)
-#endif
-
-#include "SDL_cpuinfo.h"
-#define HAVE_SDLCPUINFO
-
 #if defined (__unix__) || defined(__APPLE__) || (defined (UNIXCOMMON) && !defined (__HAIKU__))
+#include <time.h>
 #if defined (__linux__)
 #include <sys/vfs.h>
 #else
@@ -146,6 +131,8 @@ typedef LPVOID (WINAPI *p_MapViewOfFile) (HANDLE, DWORD, DWORD, DWORD, SIZE_T);
 #include <errno.h>
 #endif
 
+#include <time.h>
+
 // Locations for searching the srb2.srb
 #if defined (__unix__) || defined(__APPLE__) || defined (UNIXCOMMON)
 #define DEFAULTWADLOCATION1 "/usr/local/share/games/SRB2Kart"
@@ -165,29 +152,21 @@ typedef LPVOID (WINAPI *p_MapViewOfFile) (HANDLE, DWORD, DWORD, DWORD, SIZE_T);
 */
 static char returnWadPath[256];
 
-//Alam_GBC: SDL
-
 #include "../doomdef.h"
 #include "../m_misc.h"
-#include "../i_time.h"
 #include "../i_video.h"
 #include "../i_sound.h"
 #include "../i_system.h"
-#include "../i_threads.h"
 #include "../screen.h" //vid.WndParent
 #include "../d_net.h"
 #include "../g_game.h"
 #include "../filesrch.h"
 #include "../z_zone.h" // Z_Free
 #include "endtxt.h"
-#include "sdlmain.h"
 
 #include "../i_joy.h"
 
 #include "../m_argv.h"
-
-#include "../r_main.h" // Frame interpolation/uncapped
-#include "../r_fps.h"
 
 #ifdef MAC_ALERT
 #include "macosx/mac_alert.h"
@@ -200,8 +179,6 @@ static char returnWadPath[256];
 #include "../d_clisrv.h"
 #include "../byteptr.h"
 #endif
-
-INT32 numcontrollers = 0;
 
 #ifdef HAVE_LIBBACKTRACE
 #include <backtrace.h>
@@ -396,37 +373,12 @@ static void write_backtrace(bt_crash_reason_t reason)
 
 #endif
 
-/**	\brief	The JoyReset function
+boolean consolevent = false;
+boolean framebuffer = false;
 
-	\param	JoySet	Joystick info to reset
-
-	\return	void
-*/
-static void JoyReset(SDLJoyInfo_t *JoySet)
-{
-	if (JoySet->dev)
-	{
-		SDL_GameControllerClose(JoySet->dev);
-	}
-	JoySet->dev = NULL;
-	JoySet->oldjoy = -1;
-	JoySet->axises = JoySet->buttons = JoySet->hats = JoySet->balls = 0;
-	//JoySet->scale
-}
-
-/**	\brief joystick up and running
-*/
-static INT32 joystick_started[MAXSPLITSCREENPLAYERS] = {0, 0, 0, 0};
-
-/**	\brief SDL info about joystick
-*/
-SDLJoyInfo_t JoyInfo[MAXSPLITSCREENPLAYERS];
-
-SDL_bool consolevent = SDL_FALSE;
-SDL_bool framebuffer = SDL_FALSE;
+boolean g_in_exiting_signal_handler = false;
 
 UINT8 keyboard_started = false;
-boolean g_in_exiting_signal_handler = false;
 
 static void I_ReportSignal(int num, int coredumped)
 {
@@ -484,10 +436,6 @@ static void I_ReportSignal(int num, int coredumped)
 #endif
 
 	I_OutputMsg("\nProcess killed by signal: %s\n\n", sigmsg);
-
-	SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR,
-		"Process killed by signal",
-		msg, NULL);
 }
 
 #ifndef NEWSIGNALHANDLER
@@ -500,6 +448,9 @@ FUNCNORETURN static ATTRNORETURN void signal_handler(INT32 num)
 #ifdef HAVE_LIBBACKTRACE
 	write_backtrace(BT_CRASH_REASON_SIGNAL(num));
 #endif
+
+	if (demo.recording)
+		G_SaveDemo();
 
 	I_ReportSignal(num, 0);
 	I_ShutdownSystem();
@@ -518,7 +469,7 @@ FUNCNORETURN static ATTRNORETURN void quit_handler(int num)
 
 #ifdef HAVE_TERMIOS
 // TERMIOS console code from Quake3: thank you!
-SDL_bool stdin_active = SDL_TRUE;
+boolean stdin_active = true;
 
 typedef struct
 {
@@ -591,7 +542,7 @@ static void I_ShutdownConsole(void)
 	if (consolevent)
 	{
 		I_OutputMsg("Shutdown tty console\n");
-		consolevent = SDL_FALSE;
+		consolevent = false;
 		tcsetattr (STDIN_FILENO, TCSADRAIN, &tty_tc);
 	}
 }
@@ -610,14 +561,14 @@ static void I_StartupConsole(void)
 	framebuffer = M_CheckParm("-framebuffer");
 
 	if (framebuffer)
-		consolevent = SDL_FALSE;
+		consolevent = false;
 
 	if (!consolevent) return;
 
 	if (isatty(STDIN_FILENO)!=1)
 	{
 		I_OutputMsg("stdin is not a tty, tty console mode failed\n");
-		consolevent = SDL_FALSE;
+		consolevent = false;
 		return;
 	}
 	memset(&tty_con, 0x00, sizeof(tty_con));
@@ -706,7 +657,6 @@ void I_GetConsoleEvents(void)
 			write(STDOUT_FILENO, &key, 1);
 		}
 		if (ev.data1) D_PostEvent(&ev);
-		//tty_FlushIn();
 	}
 }
 
@@ -743,7 +693,7 @@ static void Impl_HandleKeyboardConsoleEvent(KEY_EVENT_RECORD evt, HANDLE co)
 				break;
 			case VK_RETURN:
 				entering_con_command = false;
-				/* FALLTHRU */
+				// Fall through.
 			default:
 				//event.data1 = MapVirtualKey(evt.wVirtualKeyCode,2); // convert in to char
 				event.data1 = evt.uChar.AsciiChar;
@@ -811,7 +761,7 @@ static void I_StartupConsole(void)
 	if (gotConsole)
 	{
 		SetConsoleTitleA("SRB2Kart Console");
-		consolevent = SDL_TRUE;
+		consolevent = true;
 	}
 
 	//Let get the real console HANDLE, because Mingw's Bash is bad!
@@ -844,7 +794,7 @@ static inline void I_StartupConsole(void)
 	framebuffer = M_CheckParm("-framebuffer");
 
 	if (framebuffer)
-		consolevent = SDL_FALSE;
+		consolevent = false;
 }
 static inline void I_ShutdownConsole(void){}
 #endif
@@ -880,6 +830,9 @@ static void signal_handler_child(INT32 num)
 #ifdef HAVE_LIBBACKTRACE
 	write_backtrace(BT_CRASH_REASON_SIGNAL(num));
 #endif
+
+	if (demo.recording)
+		G_SaveDemo();
 
 	signal(num, SIG_DFL);               //default signal action
 	raise(num);
@@ -1061,264 +1014,34 @@ INT32 I_GetKey (void)
 //
 void I_JoyScale(void)
 {
-	Joystick[0].bGamepadStyle = cv_joyscale[0].value==0;
-	JoyInfo[0].scale = Joystick[0].bGamepadStyle?1:cv_joyscale[0].value;
 }
 
 void I_JoyScale2(void)
 {
-	Joystick[1].bGamepadStyle = cv_joyscale[1].value==0;
-	JoyInfo[1].scale = Joystick[1].bGamepadStyle?1:cv_joyscale[1].value;
 }
 
 void I_JoyScale3(void)
 {
-	Joystick[2].bGamepadStyle = cv_joyscale[2].value==0;
-	JoyInfo[2].scale = Joystick[2].bGamepadStyle?1:cv_joyscale[2].value;
 }
 
 void I_JoyScale4(void)
 {
-	Joystick[3].bGamepadStyle = cv_joyscale[3].value==0;
-	JoyInfo[3].scale = Joystick[3].bGamepadStyle?1:cv_joyscale[3].value;
 }
 
-// Cheat to get the device index for a joystick handle
-INT32 I_GetJoystickDeviceIndex(SDL_GameController *dev)
-{
-	SDL_Joystick *joystick = NULL;
+/**	\brief	Shuts down joystick 1
 
-	joystick = SDL_GameControllerGetJoystick(dev);
 
-	if (joystick)
-	{
-		return SDL_JoystickInstanceID(joystick);
-	}
-
-	return -1;
-}
-
-void I_UpdateJoystickDeviceIndex(UINT8 player)
-{
-	///////////////////////////////////////////////
-	// update this joystick's device index (wow) //
-	///////////////////////////////////////////////
-	if (JoyInfo[player].dev)
-	{
-		cv_usejoystick[player].value = I_GetJoystickDeviceIndex(JoyInfo[player].dev) + 1;
-	}
-	else
-	{
-		UINT8 joystickID, compareJoystick;
-		for (joystickID = 0; joystickID < MAXSPLITSCREENPLAYERS; joystickID++)
-		{
-			// is this cv_usejoystick used?
-			const INT32 value = atoi(cv_usejoystick[joystickID].string);
-			for (compareJoystick = 0; compareJoystick < MAXSPLITSCREENPLAYERS; compareJoystick++)
-			{
-				if (compareJoystick == player)
-					continue;
-				if (value == JoyInfo[compareJoystick].oldjoy || value == cv_usejoystick[compareJoystick].value)
-					break;
-			}
-			if (compareJoystick == MAXSPLITSCREENPLAYERS)
-			{
-				// We DID make it through the whole loop, so we can use this one!
-				cv_usejoystick[player].value = value;
-				break;
-			}
-		}
-		if (joystickID == MAXSPLITSCREENPLAYERS)
-		{
-			// We DID NOT make it through the whole loop, so we can't assign this joystick to anything.
-			// When you try your best, but you don't succeed...
-			cv_usejoystick[player].value = 0;
-		}
-	}
-}
-
-void I_UpdateJoystickDeviceIndices(UINT8 excludePlayer)
-{
-	UINT8 player;
-
-	for (player = 0; player < MAXSPLITSCREENPLAYERS; player++)
-	{
-		if (player == excludePlayer)
-			continue;
-
-		I_UpdateJoystickDeviceIndex(player);
-	}
-}
-
-/**	\brief Joystick buttons states
-*/
-static UINT64 lastjoybuttons[MAXSPLITSCREENPLAYERS] = {0,0,0,0};
-
-/**	\brief Joystick hats state
-*/
-static UINT64 lastjoyhats[MAXSPLITSCREENPLAYERS] = {0,0,0,0};
-
-/**	\brief	Shuts down joystick
 	\return void
+
+
 */
-void I_ShutdownJoystick(UINT8 index)
+void I_ShutdownJoystick(void)
 {
-	INT32 i;
-	event_t event;
-	event.type = ev_keyup;
-	event.data2 = 0;
-	event.data3 = 0;
-
-	lastjoybuttons[index] = lastjoyhats[index] = 0;
-
-	// emulate the up of all joystick buttons
-	for (i = 0; i < JOYBUTTONS; i++)
-	{
-		event.data1=KEY_JOY1 + i;
-		D_PostEvent(&event);
-	}
-
-	// emulate the up of all joystick hats
-	for (i = 0; i < JOYHATS*4; i++)
-	{
-		event.data1=KEY_HAT1+i;
-		D_PostEvent(&event);
-	}
-
-	// reset joystick position
-	event.type = ev_joystick;
-	for (i = 0; i < JOYAXISSET; i++)
-	{
-		event.data1 = i;
-		D_PostEvent(&event);
-	}
-
-	joystick_started[index] = 0;
-	JoyReset(&JoyInfo[index]);
-
-	// don't shut down the subsystem here, because hotplugging
 }
 
 void I_GetJoystickEvents(UINT8 index)
 {
-	static event_t event = {0,0,0,0};
-	INT32 i = 0;
-	UINT64 joyhats = 0;
-
-	if (!joystick_started[index])
-		return;
-
-	if (!JoyInfo[index].dev) //I_ShutdownJoystick();
-		return;
-
-	joyhats |= SDL_GameControllerGetButton(JoyInfo[index].dev, SDL_CONTROLLER_BUTTON_DPAD_UP);
-	joyhats |= SDL_GameControllerGetButton(JoyInfo[index].dev, SDL_CONTROLLER_BUTTON_DPAD_DOWN) << 1;
-	joyhats |= SDL_GameControllerGetButton(JoyInfo[index].dev, SDL_CONTROLLER_BUTTON_DPAD_LEFT) << 2;
-	joyhats |= SDL_GameControllerGetButton(JoyInfo[index].dev, SDL_CONTROLLER_BUTTON_DPAD_RIGHT) << 3;
-
-	if (joyhats != lastjoyhats[index])
-	{
-		INT64 j = 1; // keep only bits that changed since last time
-		INT64 newhats = joyhats ^ lastjoyhats[index];
-		lastjoyhats[index] = joyhats;
-
-		for (i = 0; i < JOYHATS*4; i++, j <<= 1)
-		{
-			if (newhats & j) // hat changed state?
-			{
-				if (joyhats & j)
-					event.type = ev_keydown;
-				else
-					event.type = ev_keyup;
-				event.data1 = KEY_HAT1 + i;
-				D_PostEvent(&event);
-			}
-		}
-	}
-}
-
-/**	\brief	Open joystick handle
-
-	\param	fname	name of joystick
-
-	\return	axises
-*/
-static int joy_open(int playerIndex, int joyIndex)
-{
-	SDL_GameController *newdev = NULL;
-	int num_joy = 0;
-
-	if (SDL_WasInit(SDL_INIT_JOYSTICK) == 0)
-	{
-		CONS_Printf(M_GetText("Joystick subsystem not started\n"));
-		return -1;
-	}
-	if (SDL_WasInit(SDL_INIT_GAMECONTROLLER) == 0)
-	{
-		CONS_Printf(M_GetText("Game Controller subsystem not started\n"));
-		return -1;
-	}
-
-	if (joyIndex <= 0)
-		return -1;
-
-	num_joy = SDL_NumJoysticks();
-
-	if (num_joy == 0)
-	{
-		CONS_Printf("%s", M_GetText("Found no joysticks on this system\n"));
-		return -1;
-	}
-
-	newdev = SDL_GameControllerOpen(joyIndex-1);
-
-	// Handle the edge case where the device <-> joystick index assignment can change due to hotplugging
-	// This indexing is SDL's responsibility and there's not much we can do about it.
-	//
-	// Example:
-	// 1. Plug Controller A   -> Index 0 opened
-	// 2. Plug Controller B   -> Index 1 opened
-	// 3. Unplug Controller A -> Index 0 closed, Index 1 active
-	// 4. Unplug Controller B -> Index 0 inactive, Index 1 closed
-	// 5. Plug Controller B   -> Index 0 opened
-	// 6. Plug Controller A   -> Index 0 REPLACED, opened as Controller A; Index 1 is now Controller B
-	if (JoyInfo[playerIndex].dev)
-	{
-		if (JoyInfo[playerIndex].dev == newdev // same device, nothing to do
-			|| (newdev == NULL && SDL_GameControllerGetAttached(JoyInfo[playerIndex].dev))) // we failed, but already have a working device
-			return SDL_CONTROLLER_AXIS_MAX;
-		// Else, we're changing devices, so send neutral joy events
-		CONS_Debug(DBG_GAMELOGIC, "Joystick1 device is changing; resetting events...\n");
-		I_ShutdownJoystick(playerIndex);
-	}
-
-	JoyInfo[playerIndex].dev = newdev;
-
-	if (JoyInfo[playerIndex].dev == NULL)
-	{
-		CONS_Debug(DBG_GAMELOGIC, M_GetText("Joystick1: Couldn't open device - %s\n"), SDL_GetError());
-		return -1;
-	}
-	else
-	{
-		CONS_Debug(DBG_GAMELOGIC, M_GetText("Joystick1: %s\n"), SDL_GameControllerName(JoyInfo[playerIndex].dev));
-		JoyInfo[playerIndex].axises = SDL_CONTROLLER_AXIS_MAX;
-
-		if (JoyInfo[playerIndex].axises > JOYAXISSET*2)
-			JoyInfo[playerIndex].axises = JOYAXISSET*2;
-
-		JoyInfo[playerIndex].buttons = SDL_CONTROLLER_BUTTON_MAX ; // dpad is 4 buttons
-		if (JoyInfo[playerIndex].buttons > JOYBUTTONS)
-			JoyInfo[playerIndex].buttons = JOYBUTTONS;
-
-		JoyInfo[playerIndex].hats = 4;
-		if (JoyInfo[playerIndex].hats > JOYHATS)
-			JoyInfo[playerIndex].hats = JOYHATS;
-
-		JoyInfo[playerIndex].balls = 0;
-
-		return JoyInfo[playerIndex].axises;
-	}
+	(void)index;
 }
 
 //
@@ -1326,192 +1049,50 @@ static int joy_open(int playerIndex, int joyIndex)
 //
 void I_InitJoystick(UINT8 index)
 {
-	UINT8 i;
-	SDL_GameController *newcontroller = NULL;
-
-	//I_ShutdownJoystick();
-	//SDL_SetHintWithPriority("SDL_XINPUT_ENABLED", "0", SDL_HINT_OVERRIDE);
-	if (M_CheckParm("-nojoy"))
-		return;
-
-	if (M_CheckParm("-noxinput"))
-		SDL_SetHintWithPriority("SDL_XINPUT_ENABLED", "0", SDL_HINT_OVERRIDE);
-
-	if (M_CheckParm("-nohidapi"))
-		SDL_SetHintWithPriority("SDL_JOYSTICK_HIDAPI", "0", SDL_HINT_OVERRIDE);
-
-	if (SDL_WasInit(SDL_INIT_JOYSTICK) == 0)
-	{
-		CONS_Printf("I_InitJoystick()...\n");
-
-		if (SDL_InitSubSystem(SDL_INIT_JOYSTICK) == -1)
-		{
-			CONS_Printf(M_GetText("Couldn't initialize joystick: %s\n"), SDL_GetError());
-			return;
-		}
-	}
-	if (SDL_WasInit(SDL_INIT_GAMECONTROLLER) == 0)
-	{
-		if (SDL_InitSubSystem(SDL_INIT_GAMECONTROLLER) == -1)
-		{
-			CONS_Printf(M_GetText("Couldn't initialize gamepads: %s\n"), SDL_GetError());
-			return;
-		}
-	}
-
-	if (cv_usejoystick[index].value)
-		newcontroller = SDL_GameControllerOpen(cv_usejoystick[index].value-1);
-
-	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
-	{
-		if (i == index)
-			continue;
-
-		if (JoyInfo[i].dev == newcontroller)
-			break;
-	}
-
-	if (newcontroller && i < MAXSPLITSCREENPLAYERS) // don't override an active device
-	{
-		cv_usejoystick[index].value = I_GetJoystickDeviceIndex(JoyInfo[index].dev) + 1;
-	}
-	else if (newcontroller && joy_open(index, cv_usejoystick[index].value) != -1)
-	{
-		// SDL's device indexes are unstable, so cv_usejoystick may not match
-		// the actual device index. So let's cheat a bit and find the device's current index.
-		JoyInfo[index].oldjoy = I_GetJoystickDeviceIndex(JoyInfo[index].dev) + 1;
-		joystick_started[index] = 1;
-	}
-	else
-	{
-		if (JoyInfo[index].oldjoy)
-			I_ShutdownJoystick(index);
-		cv_usejoystick[index].value = 0;
-		joystick_started[index] = 0;
-	}
-
-	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
-	{
-		if (JoyInfo[i].dev == newcontroller)
-			break;
-	}
-
-	if (i == MAXSPLITSCREENPLAYERS)
-	{
-		// Joystick didn't end up being used
-		SDL_GameControllerClose(newcontroller);
-	}
+	(void)index;
 }
 
 void I_InitJoystick1(void)
 {
-	I_InitJoystick(0);
 }
 
 void I_InitJoystick2(void)
 {
-	I_InitJoystick(1);
 }
 
 void I_InitJoystick3(void)
 {
-	I_InitJoystick(2);
 }
 
 void I_InitJoystick4(void)
 {
-	I_InitJoystick(3);
-}
-
-static void I_ShutdownInput(void)
-{
-	UINT8 i;
-
-	// Yes, the name is misleading: these send neutral events to
-	// clean up the unplugged joystick's input
-	// Note these methods are internal to this file, not called elsewhere.
-
-	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
-		I_ShutdownJoystick(i);
-
-	if (SDL_WasInit(SDL_INIT_GAMECONTROLLER) == SDL_INIT_GAMECONTROLLER)
-	{
-		CONS_Printf("Shutting down gamecontroller system\n");
-		SDL_QuitSubSystem(SDL_INIT_GAMECONTROLLER);
-		I_OutputMsg("I_Joystick: SDL's Game Controller system has been shutdown\n");
-	}
-
-	if (SDL_WasInit(SDL_INIT_JOYSTICK) == SDL_INIT_JOYSTICK)
-	{
-		CONS_Printf("Shutting down joy system\n");
-		SDL_QuitSubSystem(SDL_INIT_JOYSTICK);
-		I_OutputMsg("I_Joystick: SDL's Joystick system has been shutdown\n");
-	}
 }
 
 INT32 I_NumJoys(void)
 {
-	INT32 numjoy = 0;
-	if (SDL_WasInit(SDL_INIT_JOYSTICK) == SDL_INIT_JOYSTICK)
-		numjoy = SDL_NumJoysticks();
-	return numjoy;
+	return 0;
 }
-
-static char joyname[256]; // MAX_PATH; joystick name is straight from the driver
 
 const char *I_GetJoyName(INT32 joyindex)
 {
-	const char *tempname = NULL;
-	joyname[0] = 0;
-	joyindex--; //SDL's Joystick System starts at 0, not 1
-	if (SDL_WasInit(SDL_INIT_JOYSTICK) == SDL_INIT_JOYSTICK)
-	{
-		tempname = SDL_JoystickNameForIndex(joyindex);
-		if (tempname)
-		{
-			memcpy(joyname, tempname, 255);
-			joyname[255] = '\0';
-		}
-	}
-	return joyname;
+	(void)joyindex;
+	return NULL;
 }
 
 void I_GamepadRumble(INT32 playernum, UINT16 low_strength, UINT16 high_strength, UINT32 duration)
 {
-#if !(SDL_VERSION_ATLEAST(2,0,14))
 	(void)playernum;
 	(void)low_strength;
 	(void)high_strength;
 	(void)duration;
-#else
-	SDL_GameController *controller = JoyInfo[playernum].dev;
-
-	if (controller == NULL)
-	{
-		return;
-	}
-
-	SDL_GameControllerRumble(controller, low_strength, high_strength, duration);
-#endif
 }
 
 void I_SetGamepadIndicatorColor(INT32 playernum, UINT8 red, UINT8 green, UINT8 blue)
 {
-#if !(SDL_VERSION_ATLEAST(2,0,14))
 	(void)playernum;
 	(void)red;
 	(void)green;
 	(void)blue;
-#else
-	SDL_GameController *controller = JoyInfo[playernum].dev;
-
-	if (controller == NULL)
-	{
-		return;
-	}
-
-	SDL_GameControllerSetLED(controller, red, green, blue);
-#endif
 }
 
 #ifndef NOMUMBLE
@@ -1529,8 +1110,8 @@ static struct {
 	UINT32 uiVersion;
 	DWORD uiTick;
 #else
-	Uint32 uiVersion;
-	Uint32 uiTick;
+	UINT32 uiVersion;
+	UINT32 uiTick;
 #endif
 	float fAvatarPosition[3];
 	float fAvatarFront[3];
@@ -1543,7 +1124,7 @@ static struct {
 #ifdef WINMUMBLE
 	UINT32 context_len;
 #else
-	Uint32 context_len;
+	UINT32 context_len;
 #endif
 	unsigned char context[256]; // server/team
 	wchar_t description[2048]; // game description
@@ -1585,7 +1166,7 @@ void I_UpdateMumble(const mobj_t *mobj, const listener_t listener)
 	if (!mumble)
 		return;
 
-	if(mumble->uiVersion != 2) {
+	if (mumble->uiVersion != 2) {
 		wcsncpy(mumble->name, L"SRB2Kart "VERSIONSTRINGW, 256);
 		wcsncpy(mumble->description, L"Sonic Robo Blast 2 Kart with integrated Mumble Link support.", 2048);
 		mumble->uiVersion = 2;
@@ -1642,6 +1223,7 @@ void I_UpdateMumble(const mobj_t *mobj, const listener_t listener)
 #undef WINMUMBLE
 #endif // NOMUMBLE
 
+
 /**	\brief empty ticcmd for player 1
 */
 static ticcmd_t emptycmd;
@@ -1661,7 +1243,7 @@ ticcmd_t *I_BaseTiccmd2(void)
 }
 
 /**	\brief empty ticcmd for player 3
-*/
+ */
 static ticcmd_t emptycmd3;
 
 ticcmd_t *I_BaseTiccmd3(void)
@@ -1670,7 +1252,7 @@ ticcmd_t *I_BaseTiccmd3(void)
 }
 
 /**	\brief empty ticcmd for player 4
-*/
+ */
 static ticcmd_t emptycmd4;
 
 ticcmd_t *I_BaseTiccmd4(void)
@@ -1683,80 +1265,52 @@ ticcmd_t *I_BaseTiccmd4(void)
 // returns time in 1/TICRATE second tics
 //
 
-static Uint64 timer_frequency;
-
 precise_t I_GetPreciseTime(void)
 {
-	return SDL_GetPerformanceCounter();
+#if defined (__unix__) || defined(__APPLE__) || defined (UNIXCOMMON)
+	struct timespec ts;
+	clock_gettime(CLOCK_MONOTONIC, &ts);
+	return (precise_t)ts.tv_sec * 1000000000 + ts.tv_nsec;
+#elif defined (_WIN32)
+	LARGE_INTEGER counter;
+	QueryPerformanceCounter(&counter);
+	return (precise_t)counter.QuadPart;
+#else
+	return 0;
+#endif
 }
 
 UINT64 I_GetPrecisePrecision(void)
 {
-	return SDL_GetPerformanceFrequency();
+#if defined (__unix__) || defined(__APPLE__) || defined (UNIXCOMMON)
+	return 1000000000;
+#elif defined (_WIN32)
+	LARGE_INTEGER frequency;
+	QueryPerformanceFrequency(&frequency);
+	return (UINT64)frequency.QuadPart;
+#else
+	return 1000000;
+#endif
 }
 
-static UINT32 frame_rate;
-
-static double frame_frequency;
-static UINT64 frame_epoch;
-static double elapsed_frames;
-
-static void I_InitFrameTime(const UINT64 now, const UINT32 cap)
-{
-	frame_rate = cap;
-	frame_epoch = now;
-
-	//elapsed_frames = 0.0;
-
-	if (frame_rate == 0)
-	{
-		// Shouldn't be used, but just in case...?
-		frame_frequency = 1.0;
-		return;
-	}
-
-	frame_frequency = timer_frequency / (double)frame_rate;
-}
-
-double I_GetFrameTime(void)
-{
-	const UINT64 now = SDL_GetPerformanceCounter();
-	const UINT32 cap = R_GetFramerateCap();
-
-	if (cap != frame_rate)
-	{
-		// Maybe do this in a OnChange function for cv_fpscap?
-		I_InitFrameTime(now, cap);
-	}
-
-	if (frame_rate == 0)
-	{
-		// Always advance a frame.
-		elapsed_frames += 1.0;
-	}
-	else
-	{
-		elapsed_frames += (now - frame_epoch) / frame_frequency;
-	}
-
-	frame_epoch = now; // moving epoch
-	return elapsed_frames;
-}
-
-//
-// I_StartupTimer
-//
-void I_StartupTimer(void)
-{
-	timer_frequency = SDL_GetPerformanceFrequency();
-
-	I_InitFrameTime(0, R_GetFramerateCap());
-	elapsed_frames  = 0.0;
-}
+void I_StartupTimer(void){}
 
 void I_Sleep(UINT32 ms)
 {
-	SDL_Delay(ms);
+#if defined (__unix__) || defined(__APPLE__) || defined (UNIXCOMMON)
+	struct timespec ts = {
+		.tv_sec = ms / 1000,
+		.tv_nsec = ms % 1000 * 1000000,
+	};
+	int status;
+	do status = clock_nanosleep(CLOCK_MONOTONIC, 0, &ts, &ts);
+	while (status == EINTR);
+#elif defined (_WIN32)
+	Sleep(ms);
+#else
+	(void)ms;
+#warning No sleep function for this system!
+#endif
 }
 
 void I_SleepDuration(precise_t duration)
@@ -1799,6 +1353,7 @@ void I_SleepDuration(precise_t duration)
 		}
 
 		// Otherwise, this is a spinloop.
+
 		cur = I_GetPreciseTime();
 	}
 #endif
@@ -1816,10 +1371,6 @@ FUNCNORETURN static ATTRNORETURN void newsignalhandler_Warn(const char *pr)
 	);
 
 	I_OutputMsg("%s\n", text);
-
-	SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR,
-		"Startup error",
-		text, NULL);
 
 	I_ShutdownConsole();
 	exit(-1);
@@ -1886,28 +1437,15 @@ static void I_Fork(void)
 
 INT32 I_StartupSystem(void)
 {
-	SDL_version SDLcompiled;
-	SDL_version SDLlinked;
-	SDL_VERSION(&SDLcompiled)
-	SDL_GetVersion(&SDLlinked);
 	I_StartupConsole();
 #ifdef NEWSIGNALHANDLER
-	// This is useful when debugging. It lets GDB attach to
-	// the correct process easily.
-	if (!M_CheckParm("-nofork"))
-		I_Fork();
+	I_Fork();
 #endif
 #ifdef HAVE_THREADS
 	I_start_threads();
 	I_AddExitFunc(I_stop_threads);
 #endif
 	I_RegisterSignals();
-	I_OutputMsg("Compiled for SDL version: %d.%d.%d\n",
-	 SDLcompiled.major, SDLcompiled.minor, SDLcompiled.patch);
-	I_OutputMsg("Linked with SDL version: %d.%d.%d\n",
-	 SDLlinked.major, SDLlinked.minor, SDLlinked.patch);
-	if (SDL_Init(0) < 0)
-		I_Error("SRB2: SDL System Error: %s", SDL_GetError()); //Alam: Oh no....
 #ifndef NOMUMBLE
 	I_SetupMumble();
 #endif
@@ -1919,12 +1457,11 @@ INT32 I_StartupSystem(void)
 //
 void I_Quit(void)
 {
-	static SDL_bool quiting = SDL_FALSE;
+	static boolean quiting = false;
 
 	/* prevent recursive I_Quit() */
 	if (quiting) goto death;
-	SDLforceUngrabMouse();
-	quiting = SDL_FALSE;
+	quiting = false;
 	I_ShutdownConsole();
 	M_SaveConfig(NULL); //save game config, cvars..
 #ifndef NONET
@@ -1944,9 +1481,7 @@ void I_Quit(void)
 	I_ShutdownSound();
 	// use this for 1.28 19990220 by Kin
 	I_ShutdownGraphics();
-	I_ShutdownInput();
 	I_ShutdownSystem();
-	SDL_Quit();
 	/* if option -noendtxt is set, don't print the text */
 	if (!M_CheckParm("-noendtxt") && W_CheckNumForName("ENDOOM") != LUMPERROR)
 	{
@@ -1963,7 +1498,7 @@ death:
 void I_WaitVBL(INT32 count)
 {
 	count = 1;
-	SDL_Delay(count);
+	I_Sleep(count);
 }
 
 void I_BeginRead(void)
@@ -1994,22 +1529,16 @@ void I_Error(const char *error, ...)
 	if (shutdowning)
 	{
 		errorcount++;
-		if (errorcount == 1)
-			SDLforceUngrabMouse();
 		// try to shutdown each subsystem separately
-		if (errorcount == 2)
+		if (errorcount == 1)
 			I_ShutdownMusic();
-		if (errorcount == 3)
+		if (errorcount == 2)
 			I_ShutdownSound();
-		if (errorcount == 4)
+		if (errorcount == 3)
 			I_ShutdownGraphics();
-		if (errorcount == 5)
-			I_ShutdownInput();
-		if (errorcount == 6)
+		if (errorcount == 4)
 			I_ShutdownSystem();
-		if (errorcount == 7)
-			SDL_Quit();
-		if (errorcount == 8)
+		if (errorcount == 5)
 		{
 			M_SaveConfig(NULL);
 			G_SaveGameData(false);
@@ -2019,12 +1548,8 @@ void I_Error(const char *error, ...)
 			va_start(argptr, error);
 			vsprintf(buffer, error, argptr);
 			va_end(argptr);
-			// Implement message box with SDL_ShowSimpleMessageBox,
-			// which should fail gracefully if it can't put a message box up
-			// on the target system
-			SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR,
-				"SRB2Kart "VERSIONSTRING" Recursive Error",
-				buffer, NULL);
+
+			I_OutputMsg("SRB2Kart %s Recursive Error", buffer);
 
 			W_Shutdown();
 			exit(-1); // recursive errors detected
@@ -2042,7 +1567,6 @@ void I_Error(const char *error, ...)
 #ifdef HAVE_LIBBACKTRACE
 	write_backtrace(BT_CRASH_REASON_ERRORMSG(buffer));
 #endif
-
 	// ---
 
 	I_ShutdownConsole();
@@ -2064,21 +1588,7 @@ void I_Error(const char *error, ...)
 	I_ShutdownSound();
 	// use this for 1.28 19990220 by Kin
 	I_ShutdownGraphics();
-	I_ShutdownInput();
 	I_ShutdownSystem();
-	SDL_Quit();
-
-	// Implement message box with SDL_ShowSimpleMessageBox,
-	// which should fail gracefully if it can't put a message box up
-	// on the target system
-	SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR,
-		"SRB2Kart "VERSIONSTRING" Error",
-		buffer, NULL);
-	// Note that SDL_ShowSimpleMessageBox does *not* require SDL to be
-	// initialized at the time, so calling it after SDL_Quit() is
-	// perfectly okay! In addition, we do this on purpose so the
-	// fullscreen window is closed before displaying the error message
-	// in case the fullscreen window blocks it for some absurd reason.
 
 	W_Shutdown();
 
@@ -2187,10 +1697,9 @@ void I_ShutdownSystem(void)
 {
 	INT32 c;
 
-#ifdef NEWSIGNALHANDLER
-	if (M_CheckParm("-nofork"))
+#ifndef NEWSIGNALHANDLER
+	I_ShutdownConsole();
 #endif
-		I_ShutdownConsole();
 
 	for (c = MAX_QUIT_FUNCS-1; c >= 0; c--)
 		if (quit_funcs[c])
@@ -2206,7 +1715,6 @@ void I_ShutdownSystem(void)
 		logstream = NULL;
 	}
 #endif
-
 }
 
 void I_GetDiskFreeSpace(INT64 *freespace)
@@ -2306,61 +1814,24 @@ INT32 I_mkdir(const char *dirname, INT32 unixright)
 
 char *I_GetEnv(const char *name)
 {
-#ifdef NEED_SDL_GETENV
-	return SDL_getenv(name);
-#else
 	return getenv(name);
-#endif
 }
 
 INT32 I_PutEnv(char *variable)
 {
-#ifdef NEED_SDL_GETENV
-	return SDL_putenv(variable);
-#else
 	return putenv(variable);
-#endif
 }
 
 INT32 I_ClipboardCopy(const char *data, size_t size)
 {
-	char storage[256];
-	if (size > 255)
-		size = 255;
-	memcpy(storage, data, size);
-	storage[size] = 0;
-
-	if (SDL_SetClipboardText(storage))
-		return 0;
+	(void)data;
+	(void)size;
 	return -1;
 }
 
 const char *I_ClipboardPaste(void)
 {
-	static char clipboard_modified[256];
-	char *clipboard_contents, *i = clipboard_modified;
-
-	if (!SDL_HasClipboardText())
-		return NULL;
-
-	clipboard_contents = SDL_GetClipboardText();
-	strlcpy(clipboard_modified, clipboard_contents, 256);
-	SDL_free(clipboard_contents);
-
-	while (*i)
-	{
-		if (*i == '\n' || *i == '\r')
-		{ // End on newline
-			*i = 0;
-			break;
-		}
-		else if (*i == '\t')
-			*i = ' '; // Tabs become spaces
-		else if (*i < 32 || (unsigned)*i > 127)
-			*i = '?'; // Nonprintable chars become question marks
-		++i;
-	}
-	return (const char *)&clipboard_modified;
+	return NULL;
 }
 
 /**	\brief	The isWadPathOk function
@@ -2421,7 +1892,7 @@ static void pathonly(char *s)
 */
 static const char *searchWad(const char *searchDir)
 {
-	static char tempsw[MAX_WADPATH] = "";
+	static char tempsw[256] = "";
 	filestatus_t fstemp;
 
 	strcpy(tempsw, WADKEYWORD1);
@@ -2741,4 +2212,9 @@ size_t I_GetFreeMem(size_t *total)
 
 // note CPUAFFINITY code used to reside here
 void I_RegisterSysCommands(void) {}
-#endif
+
+boolean I_InitNetwork(void)
+{
+	// this must exist, but this is actually handled in i_tcp.c
+	return false;
+}

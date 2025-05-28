@@ -228,6 +228,14 @@ set(SRB2_CONFIG_STATIC_OPENGL OFF CACHE BOOL
 	"Use statically linked OpenGL. NOT RECOMMENDED.")
 set(SRB2_CONFIG_USE_FBO_OGL ON CACHE BOOL
 	"Enable OpenGL FBO Downsampling support.")
+set(SRB2_CONFIG_DEDICATED OFF CACHE BOOL
+	"Build a dedicated server.")
+
+if(${SRB2_CONFIG_DEDICATED})
+	set(SRB2_CONFIG_HAVE_GME NO)
+	set(SRB2_CONFIG_HAVE_OPENMPT NO)
+	set(SRB2_CONFIG_HWRENDER NO)
+endif()
 
 ### use internal libraries?
 if(${CMAKE_SYSTEM} MATCHES "Windows") ###set on Windows only
@@ -554,7 +562,11 @@ add_definitions(-DCMAKECONFIG)
 #	${SRB2_BLUA_HEADERS}
 #)
 
-add_subdirectory(sdl)
+if(${SRB2_CONFIG_DEDICATED})
+	add_subdirectory(dedicated)
+else()
+	add_subdirectory(sdl)
+endif()
 
 if(NOT ${SRB2_SDL2_AVAILABLE} AND NOT ${SRB2_WIN32_AVAILABLE})
 	message(FATAL_ERROR "There are no targets available to build an SRB2Kart executable. :(")
