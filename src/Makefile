@@ -574,16 +574,6 @@ OBJS:=$(i_main_o) \
 		$(i_sound_o)    \
 		$(OBJS)
 
-# List of languages to compile.
-# For reference, this is the command I use to build a srb2.pot file from the source code.
-# (The listed source files are the ones containing translated strings).
-# FILES=""; for file in `find ./ | grep "\.c" | grep -v svn`; do [ "`grep "M_GetText(" $file`" ] && FILES="$FILES $file"; done; xgettext -d srb2 -o locale/srb2.pot -kM_GetText -F --no-wrap $FILES
-ifdef GETTEXT
-POS:=$(BIN)/en.mo
-
-OPTS+=-DGETTEXT
-endif
-
 ifdef PANDORA
 all:	pre-build $(BIN)/$(PNDNAME)
 endif
@@ -743,10 +733,6 @@ endif
 
 $(OBJDIR)/comptime.o: comptime.c pre-build
 	$(CC) $(CFLAGS) $(WFLAGS) -c $< -o $@
-
-$(BIN)/%.mo: locale/%.po
-	-$(MKDIR) $(BIN)
-	$(MSGFMT) -f -o $@ $<
 
 $(OBJDIR)/%.o: %.c
 	$(CC) $(CFLAGS) $(WFLAGS) -c $< -o $@
