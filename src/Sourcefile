@@ -39,6 +39,7 @@ s_sound.c
 screen.c
 sounds.c
 st_stuff.c
+string.c
 tables.c
 v_video.c
 w_wad.c

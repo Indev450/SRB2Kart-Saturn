@@ -59,19 +59,15 @@ $(1)_CFLAGS?=$($(1)_opts)
 $(1)_LDFLAGS?=$($(1)_libs)
 endef
 
-ifdef HAVE_GME
 lib:=../libs/gme
 LIBGME_opts:=-I$(lib)/include
 LIBGME_libs:=-L$(lib)/win$(32) -lgme
 $(eval $(call _set,LIBGME))
-endif
 
-ifdef HAVE_OPENMPT
 lib:=../libs/libopenmpt
 LIBOPENMPT_opts:=-I$(lib)/inc
 LIBOPENMPT_libs:=-L$(lib)/lib/$(x86)/mingw -lopenmpt
 $(eval $(call _set,LIBOPENMPT))
-endif
 
 lib:=../libs/SDL2_mixer/$(mingw)
 
@@ -87,20 +83,16 @@ SDL_libs:=-L$(lib)/lib $(mixer_libs)\
 $(eval $(call _set,SDL))
 endif
 
-ifndef MINGW64
+ifdef MINGW64
+lib:=../libs/libbacktrace
+LIBBACKTRACE_opts:=-I$(lib)/include
+LIBBACKTRACE_libs:=-L$(lib)/lib/x86_64 -lbacktrace
+$(eval $(call _set,LIBBACKTRACE))
+else
 lib:=../libs/drmingw
 DRMINGW_opts+=-I$(lib)/include
 DRMINGW_libs+=-L$(lib)/lib/win32 -lmgwhelp -lexchndl
 $(eval $(call _set,DRMINGW))
-endif
-
-ifdef HAVE_LIBBACKTRACE
-ifdef MINGW64
-lib:=../libs/libbacktrace
-LIBTRACE_opts:=-I$(lib)/include
-LIBTRACE_libs:=-L$(lib)/lib/x86_64 -lbacktrace
-$(eval $(call _set,LIBTRACE))
-endif
 endif
 
 lib:=../libs/zlib
@@ -115,23 +107,17 @@ PNG_libs:=-L$(lib)/projects -lpng$(32)
 $(eval $(call _set,PNG))
 endif
 
-ifndef NOCURL
 lib:=../libs/curl
 CURL_opts:=-I$(lib)/include
 CURL_libs:=-L$(lib)/lib$(32) -lcurl
 $(eval $(call _set,CURL))
-endif
 
-ifdef HAVE_MINIUPNPC
 lib:=../libs/miniupnpc
 MINIUPNPC_opts:=-I$(lib)/include -DMINIUPNP_STATICLIB
 MINIUPNPC_libs:=-L$(lib)/mingw$(32) -lminiupnpc -lws2_32 -liphlpapi
 $(eval $(call _set,MINIUPNPC))
-endif
 
-ifdef HAVE_DISCORDRPC
-lib:=../libs/discord-rpc/win$(32)-dynamic/
-DRPC_opts+=-I$(lib)/include
-DRPC_libs+=-L$(lib)/lib -ldiscord-rpc
-$(eval $(call _set,DRPC))
-endif
+lib:=../libs/discord-rpc/win$(32)-dynamic
+DISCORDRPC_opts+=-I$(lib)/include
+DISCORDRPC_libs+=-L$(lib)/lib -ldiscord-rpc
+$(eval $(call _set,DISCORDRPC))

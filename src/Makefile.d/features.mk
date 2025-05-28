@@ -67,6 +67,12 @@ HAVE_MINIUPNPC=1
 opts+=-DHAVE_MINIUPNPC
 endif
 
+ifndef NOLIBBACKTRACE
+$(eval $(call Propogate_flags,LIBBACKTRACE))
+libs+=-lbacktrace
+opts+=-DHAVE_LIBBACKTRACE
+endif
+
 ifdef MINGW
 ifndef NODISCORDRPC
 HAVE_DISCORDRPC=1
