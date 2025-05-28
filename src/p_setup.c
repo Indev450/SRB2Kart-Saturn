@@ -2543,6 +2543,7 @@ static void P_InitMinimapInfo(void)
 	lumpnum_t lumpnum;
 	fixed_t a;
 	fixed_t b;
+
 	node_t *bsp = &nodes[numnodes-1];
 
 	minimapinfo.minimap_pic = NULL;
@@ -3188,6 +3189,12 @@ UINT16 P_PartialAddWadFile(const char *wadfilename, boolean local)
 	if (!devparm && digmreplaces)
 		CONS_Printf(M_GetText("%s digital musics replaced\n"), sizeu1(digmreplaces));
 
+#ifdef HWRENDER
+	// Free GPU textures before freeing patches.
+	if (rendermode == render_opengl && (vid.glstate == VID_GL_LIBRARY_LOADED))
+		HWR_ClearAllTextures();
+#endif
+
 	//
 	// search for sprite replacements
 	//
@@ -3198,7 +3205,7 @@ UINT16 P_PartialAddWadFile(const char *wadfilename, boolean local)
 	// Reload it all anyway, just in case they
 	// added some textures but didn't insert a
 	// TEXTURES/etc. list.
-	//R_LoadTexturesPwad(wadnum);
+	R_LoadTexturesPwad(wadnum);
 
 	// everything from MultiSetupWadFile until ST_Start was here originally
 
@@ -3293,7 +3300,8 @@ UINT16 P_PartialAddWadFile(const char *wadfilename, boolean local)
 
 // Only exists to make sure there's no way to overwrite partadd_stage externally
 // unless you really push yourself.
-SINT8 P_PartialAddGetStage(void) {
+SINT8 P_PartialAddGetStage(void)
+{
 	return partadd_stage;
 }
 
@@ -3327,13 +3335,8 @@ boolean P_MultiSetupWadFiles(boolean fullsetup)
 
 	if (partadd_stage == 1)
 	{
-#ifdef HWRENDER
-		// Free GPU textures before freeing patches.
-		if (rendermode == render_opengl && (vid.glstate == VID_GL_LIBRARY_LOADED))
-			HWR_ClearAllTextures();
-#endif
 		// Reload all textures, unconditionally for better or worse.
-		R_LoadTextures();
+		//R_LoadTextures();
 
 		if (fullsetup)
 			++partadd_stage;
