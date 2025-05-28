@@ -1439,7 +1439,10 @@ INT32 I_StartupSystem(void)
 {
 	I_StartupConsole();
 #ifdef NEWSIGNALHANDLER
-	I_Fork();
+	// This is useful when debugging. It lets GDB attach to
+	// the correct process easily.
+	if (!M_CheckParm("-nofork"))
+		I_Fork();
 #endif
 #ifdef HAVE_THREADS
 	I_start_threads();
