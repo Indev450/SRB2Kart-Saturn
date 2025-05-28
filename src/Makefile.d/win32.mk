@@ -30,11 +30,11 @@ endif
 ifdef MINGW64
 libs+=-lws2_32
 else
-ifdef HAVE_IPV6
-libs+=-lwsock32
-else
+#ifndef HAVE_IPV6
+#libs+=-lwsock32
+#else
 libs+=-lws2_32
-endif
+#endif
 endif
 
 ifndef MINGW64
@@ -90,9 +90,8 @@ LIBBACKTRACE_libs:=-L$(lib)/lib/x86_64 -lbacktrace
 $(eval $(call _set,LIBBACKTRACE))
 else
 lib:=../libs/drmingw
-DRMINGW_opts+=-I$(lib)/include
-DRMINGW_libs+=-L$(lib)/lib/win32 -lmgwhelp -lexchndl
-$(eval $(call _set,DRMINGW))
+opts+=-I$(lib)/include
+libs+=-L$(lib)/lib/win32 -lmgwhelp -lexchndl
 endif
 
 lib:=../libs/zlib
@@ -112,10 +111,12 @@ CURL_opts:=-I$(lib)/include
 CURL_libs:=-L$(lib)/lib$(32) -lcurl
 $(eval $(call _set,CURL))
 
+ifndef MINGW64 # miniupnc is broken with MINGW64
 lib:=../libs/miniupnpc
 MINIUPNPC_opts:=-I$(lib)/include -DMINIUPNP_STATICLIB
 MINIUPNPC_libs:=-L$(lib)/mingw$(32) -lminiupnpc -lws2_32 -liphlpapi
 $(eval $(call _set,MINIUPNPC))
+endif
 
 lib:=../libs/discord-rpc/win$(32)-dynamic
 DISCORDRPC_opts+=-I$(lib)/include
