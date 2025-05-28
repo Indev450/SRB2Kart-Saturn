@@ -192,8 +192,8 @@ include bluajit/Makefile.cfg
 include bluajit/Makefile.cfg2
 endif
 
-depends:=$(basename $(filter %.c %.s,$(sources)))
-objects:=$(basename $(filter %.c %.s %.nas,$(sources)))
+depends:=$(basename $(filter %.c %.cpp %.s,$(sources)))
+objects:=$(basename $(filter %.c %.cpp %.s %.nas,$(sources)))
 
 depends:=$(depends:%=$(depdir)/%.d)
 
@@ -267,10 +267,11 @@ opts+=$(debug_opts)
 opts+=$(foreach v,$(passthru_opts),$(if $($(v)),-D$(v)))
 
 opts+=$(WFLAGS) $(CPPFLAGS) $(CFLAGS)
-libs+=$(LDFLAGS)
+libs+=$(LDFLAGS) -lstdc++
 asflags:=$(ASFLAGS) -x assembler-with-cpp
 
 cc=$(CC)
+cxx=$(CXX)
 
 ifdef DISTCC
 cc=distcc $(CC)
@@ -372,6 +373,7 @@ endif
 endef
 
 $(eval $(call _recipe,c))
+$(eval $(call _recipe,cpp))
 $(eval $(call _recipe,s,$(asflags)))
 
 # compiling recipe template
@@ -385,6 +387,7 @@ $(objdir)/%.$(1) : %.$(2) | $$$$(@D)/
 endef
 
 $(eval $(call _recipe,o,c,$(cc) -c -o $$@ $$<))
+$(eval $(call _recipe,o,cpp,$(cxx) -c -o $$@ $$<))
 $(eval $(call _recipe,o,s,$(cc) $(asflags) -c -o $$@ $$<))
 $(eval $(call _recipe,res,rc,$(windres) -i $$< -o $$@))
 
