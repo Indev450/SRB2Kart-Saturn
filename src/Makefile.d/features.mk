@@ -21,7 +21,6 @@ opts+=-DUSE_FBO_OGL
 endif
 
 ifndef NOMD5
-opts+=-DNOMD5
 sources+=md5.c
 endif
 
