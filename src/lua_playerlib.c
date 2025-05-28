@@ -400,7 +400,7 @@ static int lib_iteratePlayers(lua_State *L)
 		i = (INT32)(*((player_t **)luaL_checkudata(L, 1, META_PLAYER)) - players);
 	for (i++; i < MAXPLAYERS; i++)
 	{
-		if (!players[i].ingame)
+		if (!playeringame[i])
 			continue;
 		if (!players[i].mo)
 			continue;
@@ -419,7 +419,7 @@ static int lib_getPlayer(lua_State *L)
 		lua_Integer i = luaL_checkinteger(L, 2);
 		if (i < 0 || i >= MAXPLAYERS)
 			return luaL_error(L, "players[] index %d out of range (0 - %d)", i, MAXPLAYERS-1);
-		if (!players[i].ingame)
+		if (!playeringame[i])
 			return 0;
 		if (!players[i].mo)
 			return 0;
@@ -480,7 +480,7 @@ static int lib_iterateDisplayplayers(lua_State *L)
 
 	for (i++; i < MAXSPLITSCREENPLAYERS; i++)
 	{
-		if (i > splitscreen || !players[displayplayers[i]].ingame)
+		if (i > splitscreen || !playeringame[displayplayers[i]])
 			return 0;	// Stop! There are no more players for us to go through. There will never be a player gap in displayplayers.
 
 		if (!players[displayplayers[i]].mo)
@@ -504,7 +504,7 @@ static int lib_getDisplayplayers(lua_State *L)
 			return luaL_error(L, "displayplayers[] index %d out of range (0 - %d)", i, MAXSPLITSCREENPLAYERS-1);
 		if (i > splitscreen)
 			return 0;
-		if (!players[displayplayers[i]].ingame)
+		if (!playeringame[displayplayers[i]])
 			return 0;
 		if (!players[displayplayers[i]].mo)
 			return 0;

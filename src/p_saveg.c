@@ -121,7 +121,7 @@ static void P_NetArchivePlayers(savebuffer_t *save, boolean resending)
 		if (resending)
 			WRITESINT8(save->p, (SINT8)adminplayers[i]);
 
-		if (!players[i].ingame)
+		if (!playeringame[i])
 			continue;
 
 		flags = 0;
@@ -314,7 +314,7 @@ static void P_NetUnArchivePlayers(savebuffer_t *save, boolean reloading)
 		// Do NOT memset player struct to 0
 		// other areas may initialize data elsewhere
 		//memset(&players[i], 0, sizeof (player_t));
-		if (!players[i].ingame)
+		if (!playeringame[i])
 			continue;
 
 		// NOTE: sending tics should (hopefully) no longer be necessary
@@ -3202,9 +3202,8 @@ static inline void P_UnArchiveSPGame(savebuffer_t *save, INT16 mapoverride)
 			I_Error("This save file is for a particular mod, it cannot be used with the regular game.");
 	}
 
-	for (INT32 i = 0; i < MAXPLAYERS; i++)
-		players[i].ingame = false;
-	players[consoleplayer].ingame = true;
+	memset(playeringame, 0, sizeof(*playeringame));
+	playeringame[consoleplayer] = true;
 }
 
 static void P_NetArchiveMisc(savebuffer_t *save, boolean resending)
@@ -3228,7 +3227,7 @@ static void P_NetArchiveMisc(savebuffer_t *save, boolean resending)
 		WRITEINT16(save->p, gametype);
 
 	for (i = 0; i < MAXPLAYERS; i++)
-		pig |= (players[i].ingame != 0)<<i;
+		pig |= (playeringame[i] != 0)<<i;
 	WRITEUINT32(save->p, pig);
 
 	WRITEUINT32(save->p, P_GetRandSeed());
@@ -3340,7 +3339,7 @@ FUNCINLINE static ATTRINLINE boolean P_NetUnArchiveMisc(savebuffer_t *save, bool
 	pig = READUINT32(save->p);
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
-		players[i].ingame  = (pig & (1<<i)) != 0;
+		playeringame[i] = (pig & (1<<i)) != 0;
 		// playerstate is set in unarchiveplayers
 	}
 

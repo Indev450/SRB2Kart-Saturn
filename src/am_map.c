@@ -312,13 +312,12 @@ static void AM_initVariables(void)
 	m_h = FTOM(f_h);
 
 	// find player to center on initially
-	if (!players[pnum = consoleplayer].ingame)
+	if (!playeringame[pnum = consoleplayer])
 		for (pnum = 0; pnum < MAXPLAYERS; pnum++)
-			if (players[pnum].ingame)
+			if (playeringame[pnum])
 				break;
 
 	plr = &players[pnum];
-
 	if (plr != NULL && plr->mo != NULL)
 	{
 		m_x = (plr->mo->x >> FRACTOMAPBITS) - m_w/2;
@@ -1228,7 +1227,7 @@ static inline void AM_drawPlayers(void)
 
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
-		if (!players[i].ingame || players[i].spectator)
+		if (!playeringame[i] || players[i].spectator)
 			continue;
 
 		if (!players[i].mo)

@@ -602,7 +602,7 @@ void DRPC_UpdatePresence(void)
 	}
 
 	// Character info
-	if (Playing() && players[consoleplayer].ingame && !players[consoleplayer].spectator)
+	if (Playing() && playeringame[consoleplayer] && !players[consoleplayer].spectator)
 	{
 		// Supported skin names
 		static const char *supportedSkins[] = {

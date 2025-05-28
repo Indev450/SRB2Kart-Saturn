@@ -2668,7 +2668,7 @@ static void P_SetupPlayer(void)
 
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
-		if (players[i].ingame)
+		if (playeringame[i])
 		{
 			players[i].pflags &= ~PF_NIGHTSMODE;
 
@@ -2704,7 +2704,7 @@ static void P_SetupPlayer(void)
 		//Also, you'd never have to loop through all 32 players slots to find anything ever again.
 		for (i = 0; i < MAXPLAYERS; i++)
 		{
-			if (players[i].ingame && !players[i].spectator)
+			if (playeringame[i] && !players[i].spectator)
 			{
 				playersactive[realnumplayers] = i; //stores the player's node in the array.
 				realnumplayers++;
@@ -2763,7 +2763,7 @@ static void P_SetupPlayer(void)
 		UINT8 nump = 0;
 		for (i = 0; i < MAXPLAYERS; i++)
 		{
-			if (!players[i].ingame || players[i].spectator)
+			if (!playeringame[i] || players[i].spectator)
 			{
 				continue;
 			}
@@ -3046,11 +3046,11 @@ boolean P_SetupLevel(boolean fromnetsave, boolean reloadinggamestate)
 
 	if (!fromnetsave) // uglier hack
 	{ // to make a newly loaded level start on the second frame.
-		INT32 buf = gametic % BACKUPTICS;
+		INT32 buf = gametic % TICQUEUE;
 
 		for (i = 0; i < MAXPLAYERS; i++)
 		{
-			if (players[i].ingame)
+			if (playeringame[i])
 				G_CopyTiccmd(&players[i].cmd, &netcmds[buf][i], 1);
 		}
 

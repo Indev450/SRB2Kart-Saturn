@@ -365,7 +365,7 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 
 						for (i = 0; i < MAXPLAYERS; i++)
 						{
-							if (!players[i].ingame || players[i].spectator || players[i].kartstuff[k_bumper] <= 0)
+							if (!playeringame[i] || players[i].spectator || players[i].kartstuff[k_bumper] <= 0)
 								continue;
 							numingame++;
 						}
@@ -427,7 +427,7 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 
 					for (i = 0; i < MAXPLAYERS; i++)
 					{
-						if (!players[i].ingame || players[i].spectator || players[i].kartstuff[k_bumper] <= 0)
+						if (!playeringame[i] || players[i].spectator || players[i].kartstuff[k_bumper] <= 0)
 							continue;
 						numingame++;
 					}
@@ -454,7 +454,7 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 
 				if (special->target->player->kartstuff[k_eggmanblame] >= 0
 				&& special->target->player->kartstuff[k_eggmanblame] < MAXPLAYERS
-				&& players[special->target->player->kartstuff[k_eggmanblame]].ingame
+				&& playeringame[special->target->player->kartstuff[k_eggmanblame]]
 				&& !players[special->target->player->kartstuff[k_eggmanblame]].spectator)
 					player->kartstuff[k_eggmanblame] = special->target->player->kartstuff[k_eggmanblame];
 				else
@@ -698,7 +698,7 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 			{
 				for (i = 0; i < MAXPLAYERS; i++)
 				{
-					if (!players[i].ingame || players[i].spectator)
+					if (!playeringame[i] || players[i].spectator)
 						continue;
 
 					players[i].exiting = raceexittime+1;
@@ -1308,7 +1308,7 @@ void P_CheckTimeLimit(void)
 		{
 			if (players[i].exiting)
 				return;
-			if (players[i].ingame && players[i].spectator)
+			if (playeringame[i] && players[i].spectator)
 				spectators++;
 		}
 
@@ -1324,7 +1324,7 @@ void P_CheckTimeLimit(void)
 				//Store the nodes of participating players in an array.
 				for (i = 0; i < MAXPLAYERS; i++)
 				{
-					if (players[i].ingame && !players[i].spectator)
+					if (playeringame[i] && !players[i].spectator)
 					{
 						playerarray[playercount] = i;
 						playercount++;
@@ -1363,7 +1363,7 @@ void P_CheckTimeLimit(void)
 
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
-		if (!players[i].ingame || players[i].spectator)
+		if (!playeringame[i] || players[i].spectator)
 			continue;
 		if (players[i].exiting)
 			return;
@@ -1392,14 +1392,14 @@ void P_CheckPointLimit(void)
 
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
-		if (!players[i].ingame || players[i].spectator)
+		if (!playeringame[i] || players[i].spectator)
 			continue;
 
 		if ((UINT32)cv_pointlimit.value <= players[i].marescore)
 		{
 			for (i = 0; i < MAXPLAYERS; i++) // AAAAA nested loop using the same iteration variable ;;
 			{
-				if (!players[i].ingame || players[i].spectator)
+				if (!playeringame[i] || players[i].spectator)
 					continue;
 				if (players[i].exiting)
 					return;
@@ -1419,7 +1419,7 @@ boolean P_CheckRacers(void)
 	// Check if all the players in the race have finished. If so, end the level.
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
-		if (!players[i].ingame || players[i].spectator || players[i].exiting || !players[i].lives)
+		if (!playeringame[i] || players[i].spectator || players[i].exiting || !players[i].lives)
 			continue;
 
 		break;
@@ -1435,7 +1435,7 @@ boolean P_CheckRacers(void)
 	{
 		for (j = 0; j < MAXPLAYERS; j++)
 		{
-			if (!players[j].ingame || players[j].spectator)
+			if (!playeringame[j] || players[j].spectator)
 				continue;
 			numplayersingame++;
 		}
@@ -1445,7 +1445,7 @@ boolean P_CheckRacers(void)
 			// check if we just got unlucky and there was only one guy who was a problem
 			for (j = i+1; j < MAXPLAYERS; j++)
 			{
-				if (!players[j].ingame || players[j].spectator || players[j].exiting || !players[j].lives)
+				if (!playeringame[j] || players[j].spectator || players[j].exiting || !players[j].lives)
 					continue;
 
 				break;
@@ -1467,7 +1467,7 @@ boolean P_CheckRacers(void)
 
 		for (i = 0; i < MAXPLAYERS; i++)
 		{
-			if (!players[i].ingame || players[i].spectator)
+			if (!playeringame[i] || players[i].spectator)
 				continue;
 			numingame++;
 			if (players[i].exiting)
