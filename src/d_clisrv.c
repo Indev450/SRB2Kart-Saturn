@@ -1687,13 +1687,7 @@ static void SV_SendPlayerInfo(INT32 node)
 
 	for (i = 0; i < MSCOMPAT_MAXPLAYERS; i++)
 	{
-		if (i >= MAXPLAYERS)
-		{
-			netbuffer->u.playerinfo[i].node = 255;
-			continue;
-		}
-
-		if (playernode[i] == UINT8_MAX || !playeringame[i])
+		if ((i >= MAXPLAYERS) || !playeringame[i])
 		{
 			netbuffer->u.playerinfo[i].node = 255; // This slot is empty.
 			continue;
