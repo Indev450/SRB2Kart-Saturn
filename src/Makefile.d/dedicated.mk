@@ -4,10 +4,7 @@ sources+=$(call List,dedicated/Sourcefile)
 
 opts+=-DDEDICATED
 
-ifdef FREEBSD
-# on FreeBSD, we have to link to libpthread explicitly
 libs+=-lpthread
-endif
 
 ifdef MINGW
 libs+=-mconsole
