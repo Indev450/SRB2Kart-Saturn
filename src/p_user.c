@@ -552,13 +552,9 @@ static UINT8 getPlayerPos(player_t *player)
 	{
 		UINT8 pos = 1;
 
-		for (UINT8 i = 0; i < MAXPLAYERS; ++i)
-		{
-			if (!playeringame[i] || players[i].spectator)
-				continue;
-
-			if (players[i].marescore > player->marescore)
-				++pos;
+		for (int i = 0; i < MAXPLAYERS; ++i) {
+			if (!playeringame[i] || players[i].spectator) continue;
+			if (players[i].marescore > player->marescore) ++pos;
 		}
 
 		return pos;
@@ -1068,7 +1064,7 @@ void P_SpawnShieldOrb(player_t *player)
 	// blaze through the thinkers to see if an orb already exists!
 	for (th = thinkercap.next; th != &thinkercap; th = th->next)
 	{
-		if (th->function != (actionf_p1)P_MobjThinker)
+		if (th->function.acp1 != (actionf_p1)P_MobjThinker)
 			continue;
 
 		shieldobj = (mobj_t *)th;
@@ -1784,7 +1780,7 @@ void P_Telekinesis(player_t *player, fixed_t thrust, fixed_t range)
 
 	for (th = thinkercap.next; th != &thinkercap; th = th->next)
 	{
-		if (th->function != (actionf_p1)P_MobjThinker)
+		if (th->function.acp1 != (actionf_p1)P_MobjThinker)
 			continue;
 
 		mo2 = (mobj_t *)th;
@@ -2510,7 +2506,7 @@ static void P_DoZoomTube(player_t *player)
 		// Find next waypoint
 		for (th = thinkercap.next; th != &thinkercap; th = th->next)
 		{
-			if (th->function != (actionf_p1)P_MobjThinker) // Not a mobj thinker
+			if (th->function.acp1 != (actionf_p1)P_MobjThinker) // Not a mobj thinker
 				continue;
 
 			mo2 = (mobj_t *)th;
@@ -2600,7 +2596,7 @@ void P_NukeEnemies(mobj_t *inflictor, mobj_t *source, fixed_t radius)
 
 	for (think = thinkercap.next; think != &thinkercap; think = think->next)
 	{
-		if (think->function != (actionf_p1)P_MobjThinker)
+		if (think->function.acp1 != (actionf_p1)P_MobjThinker)
 			continue; // not a mobj thinker
 
 		mo = (mobj_t *)think;
@@ -2677,7 +2673,7 @@ boolean P_LookForEnemies(player_t *player)
 
 	for (think = thinkercap.next; think != &thinkercap; think = think->next)
 	{
-		if (think->function != (actionf_p1)P_MobjThinker)
+		if (think->function.acp1 != (actionf_p1)P_MobjThinker)
 			continue; // not a mobj thinker
 
 		mo = (mobj_t *)think;
@@ -2801,7 +2797,7 @@ void P_FindEmerald(void)
 	// to find all emeralds
 	for (th = thinkercap.next; th != &thinkercap; th = th->next)
 	{
-		if (th->function != (actionf_p1)P_MobjThinker)
+		if (th->function.acp1 != (actionf_p1)P_MobjThinker)
 			continue;
 
 		mo2 = (mobj_t *)th;
@@ -4247,7 +4243,7 @@ static void P_CalcPostImg(player_t *player, camera_t *thiscam)
 	else
 		pviewheight = player->mo->z + player->viewheight;
 
-	if (player->awayviewtics && !P_MobjWasRemoved(player->awayviewmobj))
+	if (player->awayviewtics && player->awayviewmobj && !P_MobjWasRemoved(player->awayviewmobj))
 	{
 		sector = player->awayviewmobj->subsector->sector;
 		pviewheight = player->awayviewmobj->z + 20*FRACUNIT;
@@ -4778,7 +4774,7 @@ void P_PlayerThink(player_t *player)
 
 		for (th = thinkercap.next; th != &thinkercap; th = th->next)
 		{
-			if (th->function != (actionf_p1)P_MobjThinker)
+			if (th->function.acp1 != (actionf_p1)P_MobjThinker)
 				continue;
 
 			mo2 = (mobj_t *)th;

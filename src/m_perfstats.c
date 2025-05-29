@@ -590,9 +590,9 @@ static void PS_CountThinkers(void)
 	{
 		ps_thinkercount.value.i++;
 
-		if (thinker->function == (actionf_p1)P_RemoveThinkerDelayed)
+		if (thinker->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
 			ps_removecount.value.i++;
-		else if (thinker->function == (actionf_p1)P_MobjThinker)
+		else if (thinker->function.acp1 == (actionf_p1)P_MobjThinker)
 		{
 			mobj_t *mobj = (mobj_t*)thinker;
 			ps_mobjcount.value.i++;
@@ -609,7 +609,7 @@ static void PS_CountThinkers(void)
 
 	for (thinker = precipcap.next; thinker != &precipcap; thinker = thinker->next)
 	{
-		if (thinker->function != (actionf_p1)P_NullPrecipThinker)
+		if (thinker->function.acp1 != (actionf_p1)P_NullPrecipThinker)
 			continue; // not a precipmobj thinker
 
 		ps_precipcount.value.i++;
@@ -620,7 +620,7 @@ static void PS_CountThinkers(void)
 		for (thinker = thlist[i].next; thinker != &thlist[i]; thinker = thinker->next)
 		{
 			ps_thinkercount.value.i++;
-			if (thinker->function == (actionf_p1)P_RemoveThinkerDelayed)
+			if (thinker->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
 				ps_removecount.value.i++;
 			else if (i == THINK_POLYOBJ)
 				ps_polythcount.value.i++;
@@ -628,7 +628,7 @@ static void PS_CountThinkers(void)
 				ps_mainthcount.value.i++;
 			else if (i == THINK_MOBJ)
 			{
-				if (thinker->function == (actionf_p1)P_MobjThinker)
+				if (thinker->function.acp1 == (actionf_p1)P_MobjThinker)
 				{
 					mobj_t *mobj = (mobj_t*)thinker;
 					ps_mobjcount.value.i++;
@@ -739,7 +739,7 @@ static void PS_DrawDescriptorHeader(void)
 		int samples_left = max(ps_frame_samples_left, ps_tick_samples_left);
 		int x, y;
 
-		if (cv_perfstats.value >= 3)
+		if (cv_perfstats.value >= 3)		
 		{
 			x = 2;
 			y = 0;
@@ -892,7 +892,7 @@ static void draw_think_frame_stats(int hook_length, ps_hookinfo_t *hook)
 
 	PS_DrawDescriptorHeader();
 
-	for (i = 0; i < hook_length; i++)
+	for (i = 0; i < hook_length; i++)	
 	{
 #define NEXT_ROW() y += HEIGHT;
 
@@ -1010,7 +1010,7 @@ void M_DrawPerfStats(void)
 		// tics when frame skips happen
 		PS_DrawGameLogicStats();
 	}
-	else if (cv_perfstats.value >= 3) // lua thinkframe
+	else if (cv_perfstats.value >= 3) // lua thinkframe	
 	{
 		if (!PS_IsLevelActive())
 			return;

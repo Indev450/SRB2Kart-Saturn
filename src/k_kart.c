@@ -693,7 +693,6 @@ void K_RainbowColormap(UINT8 *dest_colormap, UINT8 skincolor)
 			dest_colormap[i] = (UINT8)i;
 			continue;
 		}
-
 		color = V_GetColor(i);
 		SETBRIGHTNESS(brightness, color.s.red, color.s.green, color.s.blue);
 		brightdif = 256;
@@ -2815,7 +2814,7 @@ void K_SpinPlayer(player_t *player, mobj_t *source, INT32 type, mobj_t *inflicto
 
 static void K_RemoveGrowShrink(player_t *player)
 {
-	if (!P_MobjWasRemoved(player->mo))
+	if (player->mo && !P_MobjWasRemoved(player->mo))
 	{
 		if (player->kartstuff[k_growshrinktimer] > 0) // Play Shrink noise
 			S_StartSound(player->mo, sfx_kc59);
@@ -3228,7 +3227,7 @@ void K_SpawnKartExplosion(fixed_t x, fixed_t y, fixed_t z, fixed_t radius, INT32
 		mobj->momy = FixedMul(FixedDiv(mobjy - y, dist), FixedDiv(dist, 6*FRACUNIT));
 		mobj->momz = FixedMul(FixedDiv(mobjz - z, dist), FixedDiv(dist, 6*FRACUNIT));
 
-		if (!P_MobjWasRemoved(source))
+		if (source && !P_MobjWasRemoved(source))
 			P_SetTarget(&mobj->target, source);
 	}
 }
@@ -4089,7 +4088,7 @@ static mobj_t *K_FindLastTrailMobj(player_t *player)
 	if (!player || !(trail = player->mo) || !player->mo->hnext || !player->mo->hnext->health)
 		return NULL;
 
-	while (!P_MobjWasRemoved(trail->hnext) && trail->hnext->health)
+	while (trail->hnext && !P_MobjWasRemoved(trail->hnext) && trail->hnext->health)
 	{
 		trail = trail->hnext;
 	}
@@ -4326,7 +4325,7 @@ void K_PuntMine(mobj_t *thismine, mobj_t *punter)
 	fixed_t spd;
 	mobj_t *mine;
 
-	if (P_MobjWasRemoved(thismine))
+	if (!thismine || P_MobjWasRemoved(thismine))
 		return;
 
 	//This guarantees you hit a mine being dragged
@@ -4355,7 +4354,7 @@ void K_PuntMine(mobj_t *thismine, mobj_t *punter)
 	else
 		mine = thismine;
 
-	if (P_MobjWasRemoved(mine))
+	if (!mine || P_MobjWasRemoved(mine))
 		return;
 
 	spd = K_GetProjectileSpeed();
@@ -4522,8 +4521,7 @@ void K_DoSneaker(player_t *player, INT32 type)
 			if (player->mo->hnext)
 			{
 				mobj_t *cur = player->mo->hnext;
-
-				while (!P_MobjWasRemoved(cur))
+				while (cur && !P_MobjWasRemoved(cur))
 				{
 					if (!cur->tracer)
 					{
@@ -4587,7 +4585,7 @@ static void K_DoShrink(player_t *user)
 				K_DropItems(&players[i]);
 				players[i].kartstuff[k_growshrinktimer] = -(20*TICRATE);
 
-				if (!P_MobjWasRemoved(players[i].mo))
+				if (players[i].mo && !P_MobjWasRemoved(players[i].mo))
 				{
 					players[i].mo->scalespeed = mapobjectscale/TICRATE;
 					players[i].mo->destscale = (6*mapobjectscale)/8;
@@ -4717,7 +4715,7 @@ void K_DropHnextList(player_t *player)
 	mobjtype_t type;
 	boolean orbit, ponground, dropall = true;
 
-	if (P_MobjWasRemoved(work))
+	if (!work || P_MobjWasRemoved(work))
 		return;
 
 	flip = P_MobjFlip(player->mo);
@@ -4856,7 +4854,7 @@ void K_DropItems(player_t *player)
 
 	K_DropHnextList(player);
 
-	if (!P_MobjWasRemoved(player->mo) && player->kartstuff[k_itemamount])
+	if (player->mo && !P_MobjWasRemoved(player->mo) && player->kartstuff[k_itemamount])
 	{
 		mobj_t *drop = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z + player->mo->height/2, MT_FLOATINGITEM);
 		P_SetScale(drop, drop->scale>>4);
@@ -4885,7 +4883,7 @@ void K_DropRocketSneaker(player_t *player)
 	fixed_t flingangle;
 	boolean leftshoe = true; //left shoe is first
 
-	if (!(!P_MobjWasRemoved(player->mo) && player->mo->hnext && !P_MobjWasRemoved(player->mo->hnext)))
+	if (!(player->mo && !P_MobjWasRemoved(player->mo) && player->mo->hnext && !P_MobjWasRemoved(player->mo->hnext)))
 		return;
 
 	while ((shoe = shoe->hnext) && !P_MobjWasRemoved(shoe))
@@ -4924,7 +4922,7 @@ void K_DropRocketSneaker(player_t *player)
 
 void K_DropKitchenSink(player_t *player)
 {
-	if (!(!P_MobjWasRemoved(player->mo) && player->mo->hnext && !P_MobjWasRemoved(player->mo->hnext)))
+	if (!(player->mo && !P_MobjWasRemoved(player->mo) && player->mo->hnext && !P_MobjWasRemoved(player->mo->hnext)))
 		return;
 
 	if (player->mo->hnext->type != MT_SINK_SHIELD)
@@ -4941,13 +4939,13 @@ void K_RepairOrbitChain(mobj_t *orbit)
 	mobj_t *cachenext = orbit->hnext;
 
 	// First, repair the chain
-	if (!P_MobjWasRemoved(orbit->hnext) && orbit->hnext->health)
+	if (orbit->hnext && orbit->hnext->health && !P_MobjWasRemoved(orbit->hnext))
 	{
 		P_SetTarget(&orbit->hnext->hprev, orbit->hprev);
 		P_SetTarget(&orbit->hnext, NULL);
 	}
 
-	if (!P_MobjWasRemoved(orbit->hprev) && orbit->hprev->health)
+	if (orbit->hprev && orbit->hprev->health && !P_MobjWasRemoved(orbit->hprev))
 	{
 		P_SetTarget(&orbit->hprev->hnext, cachenext);
 		P_SetTarget(&orbit->hprev, NULL);
@@ -4962,7 +4960,7 @@ void K_RepairOrbitChain(mobj_t *orbit)
 		mobj_t *cur = orbit->target->hnext;
 		mobj_t *prev = NULL;
 
-		while (!P_MobjWasRemoved(cur))
+		while (cur && !P_MobjWasRemoved(cur))
 		{
 			prev = cur;
 			cur = cur->hnext;
@@ -5162,7 +5160,7 @@ static void K_MoveHeldObjects(player_t *player)
 
 				player->kartstuff[k_bananadrag] = 0; // Just to make sure
 
-				while (!P_MobjWasRemoved(cur))
+				while (cur && !P_MobjWasRemoved(cur))
 				{
 					const fixed_t radius = FixedHypot(player->mo->radius, player->mo->radius) + FixedHypot(cur->radius, cur->radius); // mobj's distance from its Target, or Radius.
 					fixed_t z;
@@ -5240,7 +5238,7 @@ static void K_MoveHeldObjects(player_t *player)
 				if (P_IsObjectOnGround(player->mo) && player->speed > 0)
 					player->kartstuff[k_bananadrag]++;
 
-				while (!P_MobjWasRemoved(cur))
+				while (cur && !P_MobjWasRemoved(cur))
 				{
 					const fixed_t radius = FixedHypot(targ->radius, targ->radius) + FixedHypot(cur->radius, cur->radius);
 					angle_t ang;
@@ -5268,7 +5266,7 @@ static void K_MoveHeldObjects(player_t *player)
 					else
 						dist = cur->extravalue1/2;
 
-					if (P_MobjWasRemoved(targ))
+					if (!targ || P_MobjWasRemoved(targ))
 						continue;
 
 					// Shrink your items if the player shrunk too.
@@ -5326,7 +5324,7 @@ static void K_MoveHeldObjects(player_t *player)
 				mobj_t *cur = player->mo->hnext;
 				INT32 num = 0;
 
-				while (!P_MobjWasRemoved(cur))
+				while (cur && !P_MobjWasRemoved(cur))
 				{
 					const fixed_t radius = FixedHypot(player->mo->radius, player->mo->radius) + FixedHypot(cur->radius, cur->radius);
 					boolean vibrate = ((leveltime & 1) && !cur->tracer);
@@ -5391,7 +5389,7 @@ static void K_MoveHeldObjects(player_t *player)
 
 					}
 
-					if (!P_MobjWasRemoved(cur->tracer))
+					if (cur->tracer && !P_MobjWasRemoved(cur->tracer))
 					{
 						fixed_t diffx, diffy, diffz;
 
@@ -6139,7 +6137,7 @@ void K_KartPlayerAfterThink(player_t *player)
 		else
 			targ = K_FindJawzTarget(player->mo, player);
 
-		if (!targ || P_MobjWasRemoved(targ->mo))
+		if (!targ || !targ->mo || P_MobjWasRemoved(targ->mo))
 		{
 			player->kartstuff[k_lastjawztarget] = -1;
 			player->kartstuff[k_jawztargetdelay] = 0;

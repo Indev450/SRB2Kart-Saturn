@@ -7701,10 +7701,7 @@ static void M_PlaybackRewind(INT32 choice)
 			S_PauseAudio();
 		}
 		else
-		{
-			demo.rewinding = true;
-			paused = true;
-		}
+			demo.rewinding = paused = true;
 	}
 	else if (lastconfirmtime + TICRATE/2 < I_GetTime())
 	{
