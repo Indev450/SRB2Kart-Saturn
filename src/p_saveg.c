@@ -2877,7 +2877,7 @@ static void P_NetUnArchiveThinkers(savebuffer_t *save)
 		{
 			P_AddThinker(th);
 
-			if (tclass == tc_mobj && th->function == (actionf_p1)P_MobjThinker)
+			if (tclass == tc_mobj && th->function.acp1 == (actionf_p1)P_MobjThinker)
 			{
 				mobjnum_ht_linkedList_AddEntry(th);
 			}
