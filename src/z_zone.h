@@ -110,8 +110,9 @@ void *Z_ReallocAlign(void *ptr, size_t size, INT32 tag, void *user, INT32 alignb
 // Free all memory by tag
 // these don't give line numbers for ZDEBUG currently though
 // (perhaps this should be changed in future?)
-#define Z_FreeTag(tagnum) Z_FreeTags(tagnum, tagnum)
-void Z_FreeTags(INT32 lowtag, INT32 hightag);
+#define Z_FreeTag(tagnum) Z_FreeTags2(tagnum, tagnum, __FILE__, __LINE__)
+#define Z_FreeTags(tagnum, tagnum2) Z_FreeTags2(tagnum, tagnum2, __FILE__, __LINE__)
+void Z_FreeTags2(INT32 lowtag, INT32 hightag, const char *file, INT32 line);
 
 // Iterate memory by tag
 #define Z_IterateTag(tagnum, func) Z_IterateTags(tagnum, tagnum, func)
@@ -121,7 +122,8 @@ void Z_IterateTags(INT32 lowtag, INT32 hightag, boolean (*iterfunc)(void *));
 // Utility functions
 //
 void Z_CheckMemCleanup(void);
-void Z_CheckHeap(INT32 i);
+#define Z_CheckHeap(tag) Z_CheckHeap2(__FILE__, __LINE__)
+void Z_CheckHeap2(const char *file, INT32 line);
 
 //
 // Zone memory modification
