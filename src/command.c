@@ -240,7 +240,6 @@ void COM_ImmedExecute(const char *ptext)
 
 	while (i < strlen(ptext))
 	{
-
 		quotes = 0;
 		for (j = 0; i < strlen(ptext); i++,j++)
 		{

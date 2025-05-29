@@ -7167,8 +7167,11 @@ static void DrawReplayHutReplayInfo(void)
 		if (mapheaderinfo[demolist[dir_on[menudepthleft]].map-1])
 		{
 			char *title = G_BuildMapTitle(demolist[dir_on[menudepthleft]].map);
-			V_DrawString(x, y, V_SNAPTOTOP|MENUCAPS, title);
-			Z_Free(title);
+			if (title)
+			{
+				V_DrawString(x, y, V_SNAPTOTOP|MENUCAPS, title);
+				Z_Free(title);
+			}
 		}
 		else
 			V_DrawString(x, y, V_SNAPTOTOP|V_ALLOWLOWERCASE|V_TRANSLUCENT, "Level is not loaded.");
@@ -8123,6 +8126,9 @@ UINT8 skyRoomMenuTranslations[MAXUNLOCKABLES];
 
 static char *M_GetConditionString(condition_t cond)
 {
+	char *title = NULL;
+	char *response = NULL;
+
 	switch(cond.type)
 	{
 		case UC_PLAYTIME:
@@ -8149,33 +8155,45 @@ static char *M_GetConditionString(condition_t cond)
 				G_TicsToSeconds(cond.requirement));
 		case UC_MAPVISITED:
 		{
-			char *title = G_BuildMapTitle(cond.requirement-1);
-			char *response = va("Visit %s", title);
-			Z_Free(title);
+			title = G_BuildMapTitle(cond.requirement-1);
+			if (title)
+			{
+				response = va("Visit %s", title);
+				Z_Free(title);
+			}
 			return response;
 		}
 		case UC_MAPBEATEN:
 		{
-			char *title = G_BuildMapTitle(cond.requirement-1);
-			char *response = va("Beat %s", title);
-			Z_Free(title);
+			title = G_BuildMapTitle(cond.requirement-1);
+			if (title)
+			{
+				response = va("Beat %s", title);
+				Z_Free(title);
+			}
 			return response;
 		}
 		case UC_MAPALLEMERALDS:
 		{
-			char *title = G_BuildMapTitle(cond.requirement-1);
-			char *response = va("Beat %s w/ all emeralds", title);
-			Z_Free(title);
+			title = G_BuildMapTitle(cond.requirement-1);
+			if (title)
+			{
+				response = va("Beat %s w/ all emeralds", title);
+				Z_Free(title);
+			}
 			return response;
 		}
 		case UC_MAPTIME:
 		{
-			char *title = G_BuildMapTitle(cond.extrainfo1-1);
-			char *response = va("Beat %s in %i:%02i.%02i", title,
-				G_TicsToMinutes(cond.requirement, true),
-				G_TicsToSeconds(cond.requirement),
-				G_TicsToCentiseconds(cond.requirement));
-			Z_Free(title);
+			title = G_BuildMapTitle(cond.extrainfo1-1);
+			if (title)
+			{
+				response = va("Beat %s in %i:%02i.%02i", title,
+					G_TicsToMinutes(cond.requirement, true),
+					G_TicsToSeconds(cond.requirement),
+					G_TicsToCentiseconds(cond.requirement));
+				Z_Free(title);
+			}
 			return response;
 		}
 		case UC_TOTALEMBLEMS:

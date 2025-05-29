@@ -457,6 +457,9 @@ static void LoadPalette(const char *lumpname)
 #endif
 		pLocalPalette[i].s.alpha = 0xFF;
 
+		if (!Cubeapply)
+			continue;
+
 		// lerp of colour cubing! if you want, make it smoother yourself
 		V_CubeApply(&pLocalPalette[i].s.red, &pLocalPalette[i].s.green, &pLocalPalette[i].s.blue);
 	}
