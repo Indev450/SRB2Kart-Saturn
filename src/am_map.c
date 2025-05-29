@@ -197,7 +197,7 @@ static fixed_t scale_mtof = (fixed_t)INITSCALEMTOF;
 // used by FTOM to scale from frame-buffer-to-map coords (=1/scale_mtof)
 static fixed_t scale_ftom;
 
-static player_t *plr; // the player represented by an arrow
+static player_t *plr = NULL; // the player represented by an arrow
 
 static boolean followplayer = true; // specifies whether to follow the player around
 
@@ -237,7 +237,7 @@ static inline void AM_restoreScaleAndLoc(void)
 		m_x = old_m_x;
 		m_y = old_m_y;
 	}
-	else
+	else if (plr && plr->mo)
 	{
 		m_x = (plr->mo->x >> FRACTOMAPBITS) - m_w/2;
 		m_y = (plr->mo->y >> FRACTOMAPBITS) - m_h/2;
@@ -318,7 +318,8 @@ static void AM_initVariables(void)
 				break;
 
 	plr = &players[pnum];
-	if (plr != NULL && plr->mo != NULL)
+
+	if (plr && plr->mo)
 	{
 		m_x = (plr->mo->x >> FRACTOMAPBITS) - m_w/2;
 		m_y = (plr->mo->y >> FRACTOMAPBITS) - m_h/2;
@@ -597,6 +598,9 @@ static inline void AM_changeWindowScale(void)
 
 static inline void AM_doFollowPlayer(void)
 {
+	if (!plr || !plr->mo)
+		return;
+
 	if (f_oldloc.x != plr->mo->x || f_oldloc.y != plr->mo->y)
 	{
 		m_x = FTOM(MTOF(plr->mo->x >> FRACTOMAPBITS)) - m_w/2;
