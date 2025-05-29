@@ -2200,12 +2200,11 @@ static void Command_Tunes_f(void)
 	if (tunenum)
 		snprintf(mapmusic.name, 7, "%sM", G_BuildMapName(tunenum));
 	else
-		strncpy(mapmusic.name, tunearg, 7);
+		strlcpy(mapmusic.name, tunearg, sizeof(mapmusic.name));
 
 	if (argc > 4)
 		position = (UINT32)atoi(COM_Argv(4));
 
-	mapmusic.name[6] = 0;
 	mapmusic.flags = (track & MUSIC_TRACKMASK);
 	mapmusic.position = position;
 	mapmusic.resume = 0;

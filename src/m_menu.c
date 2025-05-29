@@ -8596,8 +8596,7 @@ static void M_DrawMusicTest(void)
 				if (t == st_sel && namelength > MAXLENGTH)
 					scrollMusicName(songname, namelength, MAXLENGTH, buf);
 				else
-					strncpy(buf, songname, MAXLENGTH);
-				buf[MAXLENGTH] = 0;
+					strlcpy(buf, songname, MAXLENGTH);
 
 				V_DrawString(x, y, (t == st_sel ? V_YELLOWMAP : 0)|V_ALLOWLOWERCASE|V_MONOSPACE, buf);
 				if (curplaying == soundtestdefs[t])
