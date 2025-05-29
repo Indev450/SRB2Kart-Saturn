@@ -230,7 +230,7 @@ FUNCINLINE static ATTRINLINE boolean HWR_ShouldUsePaletteRendering(void)
 
 FUNCINLINE static ATTRINLINE boolean HWR_PalRenderFlashpal(void)
 {
-	return (HWR_ShouldUsePaletteRendering() && cv_glflashpal.value);
+	return (cv_glflashpal.value && HWR_ShouldUsePaletteRendering());
 }
 
 #endif
