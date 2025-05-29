@@ -80,7 +80,7 @@ write netcode into the sound code, OKAY?
 #define GME_BASS 1.0f
 #endif // HAVE_GME
 
- 
+
 //static UINT16 BUFFERSIZE = 2048;
 static UINT16 SAMPLERATE = 44100;
 
@@ -722,7 +722,7 @@ static void mix_gme(void *udata, Uint8 *stream, int len)
 
 	// play gme into stream
 	gme_play(gme, len/2, (short *)stream);
-	
+
 	// Limiter to prevent music from being disorted with some formats
 	if (music_volume >= 18)
 		music_volume = 18;
@@ -738,7 +738,7 @@ static void mix_openmpt(void *udata, Uint8 *stream, int len)
 {
 	int i;
 	short *p;
-	
+
 	(void)udata;
 
 	if (!openmpt_mhandle || songpaused)
@@ -746,7 +746,7 @@ static void mix_openmpt(void *udata, Uint8 *stream, int len)
 
 	// Play module into stream
 	openmpt_module_read_interleaved_stereo(openmpt_mhandle, SAMPLERATE, cv_audbuffersize.value, (short *)stream);
-	
+
 	// Limiter to prevent music from being disorted with some formats
 	if (music_volume >= 18)
 		music_volume = 18;
@@ -835,7 +835,7 @@ boolean I_SetSongSpeed(float speed)
 #endif
 #ifdef HAVE_OPENMPT
 	if (openmpt_mhandle)
-	{		
+	{
 		if (speed > 4.0f)
 			speed = 4.0f; // Limit this to 4x to prevent crashing, stupid fix but... ~SteelT 27/9/19
 #if OPENMPT_API_VERSION_MAJOR < 1 && OPENMPT_API_VERSION_MINOR < 5

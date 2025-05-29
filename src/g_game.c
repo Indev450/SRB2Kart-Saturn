@@ -2629,7 +2629,7 @@ void G_ChangePlayerReferences(mobj_t *oldmo, mobj_t *newmo)
 	// scan all thinkers
 	for (th = thinkercap.next; th != &thinkercap; th = th->next)
 	{
-		if (th->function.acp1 != (actionf_p1)P_MobjThinker)
+		if (th->function != (actionf_p1)P_MobjThinker)
 			continue;
 
 		mo2 = (mobj_t *)th;
@@ -5212,7 +5212,7 @@ void G_ConsGhostTic(INT32 playernum)
 				mobj = NULL;
 				for (th = thinkercap.next; th != &thinkercap; th = th->next)
 				{
-					if (th->function.acp1 != (actionf_p1)P_MobjThinker)
+					if (th->function != (actionf_p1)P_MobjThinker)
 						continue;
 					mobj = (mobj_t *)th;
 					if (mobj->type == (mobjtype_t)type && mobj->x == x && mobj->y == y && mobj->z == z)
@@ -6133,38 +6133,39 @@ void G_BeginRecording(void)
 	CV_SaveNetVars(&demobuf.p, true);
 
 	// Now store some info for each in-game player
-	for (p = 0; p < MAXPLAYERS; p++) {
-		if (playeringame[p]) {
-			player = &players[p];
+	for (p = 0; p < MAXPLAYERS; p++)
+	{
+		if (!playeringame[p])
+			continue;
 
-			WRITEUINT8(demobuf.p, p | (player->spectator ? DEMO_SPECTATOR : 0));
+		player = &players[p];
 
-			// Name
-			memset(name, 0, 16);
-			memcpy(name, player_names[p], 15);
-			M_Memcpy(demobuf.p,name,16);
-			demobuf.p += 16;
+		WRITEUINT8(demobuf.p, p | (player->spectator ? DEMO_SPECTATOR : 0));
 
-			// Skin
-			memset(name, 0, 16);
-			strncpy(name, skins[player->skin].name, 16);
-			M_Memcpy(demobuf.p,name,16);
-			demobuf.p += 16;
+		// Name
+		memset(name, 0, 16);
+		memcpy(name, player_names[p], 15);
+		M_Memcpy(demobuf.p,name,16);
+		demobuf.p += 16;
 
-			// Color
-			memset(name, 0, 16);
-			strncpy(name, KartColor_Names[player->skincolor], 16);
-			M_Memcpy(demobuf.p,name,16);
-			demobuf.p += 16;
+		// Skin
+		memset(name, 0, 16);
+		strncpy(name, skins[player->skin].name, 16);
+		M_Memcpy(demobuf.p,name,16);
+		demobuf.p += 16;
 
-			// Score, since Kart uses this to determine where you start on the map
-			WRITEUINT32(demobuf.p, player->score);
+		// Color
+		memset(name, 0, 16);
+		strncpy(name, KartColor_Names[player->skincolor], 16);
+		M_Memcpy(demobuf.p,name,16);
+		demobuf.p += 16;
 
-			// Kart speed and weight
-			WRITEUINT8(demobuf.p, skins[player->skin].kartspeed);
-			WRITEUINT8(demobuf.p, skins[player->skin].kartweight);
+		// Score, since Kart uses this to determine where you start on the map
+		WRITEUINT32(demobuf.p, player->score);
 
-		}
+		// Kart speed and weight
+		WRITEUINT8(demobuf.p, skins[player->skin].kartspeed);
+		WRITEUINT8(demobuf.p, skins[player->skin].kartweight);
 	}
 
 	WRITEUINT8(demobuf.p, 0xFF); // Denote the end of the player listing
@@ -7277,9 +7278,9 @@ void G_DoPlayDemo(char *defdemoname)
 	//LUA_HookInt(gamemap, HOOK(MapChange));
 
 	consoleplayer = 0;
-	memset(playeringame,0,sizeof(playeringame));
-	memset(displayplayers,0,sizeof(displayplayers));
-	memset(camera,0,sizeof(camera)); // reset freecam
+	memset(playeringame, 0, sizeof(playeringame));
+	memset(displayplayers, 0, sizeof(displayplayers));
+	memset(camera, 0, sizeof(camera)); // reset freecam
 
 	// Load players that were in-game when the map started
 	p = READUINT8(demobuf.p);
@@ -7855,7 +7856,7 @@ void G_DoPlayMetal(void)
 	// find metal sonic
 	for (th = thinkercap.next; th != &thinkercap; th = th->next)
 	{
-		if (th->function.acp1 != (actionf_p1)P_MobjThinker)
+		if (th->function != (actionf_p1)P_MobjThinker)
 			continue;
 
 		mo = (mobj_t *)th;
