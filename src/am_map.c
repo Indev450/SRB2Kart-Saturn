@@ -319,7 +319,7 @@ static void AM_initVariables(void)
 
 	plr = &players[pnum];
 
-	if (plr != NULL && plr->mo != NULL)
+	if (plr && plr->mo)
 	{
 		m_x = (plr->mo->x >> FRACTOMAPBITS) - m_w/2;
 		m_y = (plr->mo->y >> FRACTOMAPBITS) - m_h/2;
