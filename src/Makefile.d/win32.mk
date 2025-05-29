@@ -38,7 +38,7 @@ libs+=-lws2_32
 endif
 
 ifndef MINGW64
-libs+=--large-address-aware
+#libs+=--large-address-aware
 NOLIBBACKTRACE=1
 endif
 
