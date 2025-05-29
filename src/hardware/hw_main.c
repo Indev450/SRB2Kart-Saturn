@@ -5980,7 +5980,7 @@ static void HWR_DoPostProcessor(player_t *player)
 
 	// Armageddon Blast Flash!
 	// Could this even be considered postprocessor?
-	if (player->flashcount && !HWR_PalRenderFlashpal())
+	if (!HWR_PalRenderFlashpal() && player->flashcount)
 	{
 		FOutVector      v[4];
 		FSurfaceInfo Surf;
