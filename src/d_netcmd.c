@@ -2774,7 +2774,7 @@ static void Command_Map_f(void)
 	// G_TOLFlag handles both multiplayer gametype and ignores it for !multiplayer
 	else
 	{
-		if (!mapheaderinfo[newmapnum-1] || mapheaderinfo[newmapnum-1] == NULL)
+		if (!mapheaderinfo[newmapnum-1])
 		{
 			CONS_Alert(CONS_WARNING, M_GetText("Invalid mapheaderinfo for Course %s (%s)\n"), realmapname, G_BuildMapName(newmapnum));
 			Z_Free(realmapname);
@@ -3028,9 +3028,14 @@ static void Command_ReplayMarker(void)
 			adjustedleveltime = 0;
 
 		char *title = G_BuildMapTitle(gamemap);
-		snprintf(demo.titlename, 64, "%s [%i:%02d/%.5s]", title, G_TicsToMinutes(adjustedleveltime, false), G_TicsToSeconds(adjustedleveltime), modeattacking ? "Record Attack" : connectedservername);
+
 		if (title)
+		{
+			snprintf(demo.titlename, 64, "%s [%i:%02d/%.5s]", title, G_TicsToMinutes(adjustedleveltime, false), G_TicsToSeconds(adjustedleveltime), modeattacking ? "Record Attack" : connectedservername);
 			Z_Free(title);
+		}
+		else
+			snprintf(demo.titlename, 64, "[%i:%02d/%.5s]", G_TicsToMinutes(adjustedleveltime, false), G_TicsToSeconds(adjustedleveltime), modeattacking ? "Record Attack" : connectedservername);
 
 		CONS_Printf("Replay will be saved!\n");
 	}
