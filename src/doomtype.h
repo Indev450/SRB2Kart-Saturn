@@ -158,6 +158,11 @@ size_t strlcpy(char *dst, const char *src, size_t siz);
 
 #ifndef _WIN32
 #include <stdbool.h>
+// dont use stdbools _BOOL type
+// its smaller (1 byte) than the old interger bool (4 bytes)
+// which results in packed struct sizes being mismatched between vanilla and this
+// however we gotta still include stdbool cause since c23 true and false are keywords
+// which we cant use as enumeration constants
 typedef int32_t boolean;
 #else
 #define false FALSE
