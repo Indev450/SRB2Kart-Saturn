@@ -46,12 +46,16 @@ RGBA_t *HWR_GetTexturePalette(void)
 
 static INT32 format2bpp(GLTextureFormat_t format)
 {
-	if (format == GL_TEXFMT_RGBA)
-		return 4;
-	else if (format == GL_TEXFMT_ALPHA_INTENSITY_88 || format == GL_TEXFMT_AP_88)
-		return 2;
-	else
-		return 1;
+	switch (format)
+	{
+		case GL_TEXFMT_RGBA:
+			return 4;
+		case GL_TEXFMT_ALPHA_INTENSITY_88:
+		case GL_TEXFMT_AP_88:
+			return 2;
+		default:
+			return 1;
+	}
 }
 
 // This code was originally placed directly in HWR_DrawPatchInCache.
@@ -221,8 +225,6 @@ static void HWR_DrawTexturePatchInCache(GLMipmap_t *mipmap,
 	if (texture->width <= 0 || texture->height <= 0)
 		return;
 
-	palette = HWR_GetTexturePalette();
-
 	x1 = patch->originx;
 	width = SHORT(realpatch->width);
 	height = SHORT(realpatch->height);
@@ -233,6 +235,8 @@ static void HWR_DrawTexturePatchInCache(GLMipmap_t *mipmap,
 
 	if (patch->originy > texture->height || (patch->originy + height) < 0)
 		return; // patch not located within texture's y bounds, ignore
+
+	palette = HWR_GetTexturePalette();
 
 	// patch is actually inside the texture!
 	// now check if texture is partly off-screen and adjust accordingly
@@ -323,7 +327,6 @@ static void HWR_GenerateTexture(INT32 texnum, GLMapTexture_t *gltex, boolean noe
 	boolean skyspecial = false; // poor hack for Legacy large skies..
 
 	RGBA_t *palette;
-	palette = HWR_GetTexturePalette();
 
 	texture = textures[texnum];
 
@@ -360,6 +363,8 @@ static void HWR_GenerateTexture(INT32 texnum, GLMapTexture_t *gltex, boolean noe
 	{
 		INT32 j;
 		RGBA_t col;
+
+		palette = HWR_GetTexturePalette();
 
 		col = palette[HWR_CHROMAKEY_EQUIVALENTCOLORINDEX];
 
