@@ -134,6 +134,7 @@ include Makefile.d/util.mk
 
 ifdef PREFIX
 CC:=$(PREFIX)-gcc
+CXX:=$(PREFIX)-g++
 endif
 
 OBJDUMP_OPTS?=--wide --source --line-numbers
@@ -270,15 +271,21 @@ opts+=$(WFLAGS) $(CPPFLAGS) $(CFLAGS)
 libs+=$(LDFLAGS) -lstdc++
 asflags:=$(ASFLAGS) -x assembler-with-cpp
 
+cxxopts:=$(opts)
+cxxopts+=-std=c++17
+cxxopts+=$(CXXFLAGS)
+
 cc=$(CC)
 cxx=$(CXX)
 
 ifdef DISTCC
 cc=distcc $(CC)
+cxx=distcc $(CXX)
 endif
 
 ifdef CCACHE
 cc=ccache $(CC)
+cxx=ccache $(CXX)
 endif
 
 ifndef SILENT
@@ -293,7 +300,11 @@ SHELL ..... $(SHELL)
 
 CC ........ $(cc)
 
+CXX ....... $(cxx)
+
 CFLAGS .... $(opts)
+
+CXXFLAGS .. $(cxxopts)
 
 LDFLAGS ... $(libs)
 
@@ -370,6 +381,19 @@ ifdef Echo_name
 endif
 endif
 	$(.)$(cc) -MM -MF $$@ -MT $(objdir)/$$*.o $(2) $$<
+endef
+
+# dependency recipe template (C++)
+# 1: source file suffix
+# 2: extra flags to gcc
+define _recipecxx =
+$(depdir)/%.d : %.$(1) | $$$$(@D)/
+ifndef WINDOWSHELL
+ifdef Echo_name
+	@printf '%-20.20s\r' $$<
+endif
+endif
+	$(.)$(cxx) -MM -MF $$@ -MT $(objdir)/$$*.o $(2) $$<
 endef
 
 $(eval $(call _recipe,c))
