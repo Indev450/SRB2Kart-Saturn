@@ -577,6 +577,9 @@ extern boolean acceptnewnode;
 extern SINT8 servernode;
 extern char connectedservername[MAXSERVERNAME+1];
 
+extern plrinfo playerinfo[MAXPLAYERS];
+extern SINT8 joinnode;
+
 void Command_Ping_f(void);
 extern tic_t connectiontimeout;
 extern tic_t jointimeout;
