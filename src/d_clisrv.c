@@ -2795,9 +2795,9 @@ static boolean CL_ServerConnectionTicker(const char *tmpsave, tic_t *oldtic, tic
 
 		if (cl_mode == CL_VIEWSERVER)
 		{
-			if (gamekeydown[KEY_ENTER])
+			if (key == KEY_ENTER || key == KEY_JOY1)
 				cl_mode = CL_CHECKFILES;
-			else if (gamekeydown[KEY_ESCAPE])
+			else if (key == KEY_ESCAPE || key == KEY_JOY1+1)
 				cl_mode = CL_ABORTED;
 		}
 
