@@ -2043,8 +2043,7 @@ static lumpchecklist_t folderblacklist[] =
 	{NULL, 0},
 };
 
-static int
-W_VerifyPK3 (FILE *fp, lumpchecklist_t *checklist, boolean status)
+static int W_VerifyPK3(FILE *fp, lumpchecklist_t *checklist, boolean status)
 {
 	int verified = true;
 
@@ -2086,7 +2085,10 @@ W_VerifyPK3 (FILE *fp, lumpchecklist_t *checklist, boolean status)
 	char *cdir = (char*)(malloc(LONG(zend.cdirsize)));
 
 	if (fread(cdir, 1, LONG(zend.cdirsize), fp) < (UINT32)(LONG(zend.cdirsize)))
+	{
+		free(cdir);
 		return true;
+	}
 
 	size_t offset = 0;
 
@@ -2098,7 +2100,10 @@ W_VerifyPK3 (FILE *fp, lumpchecklist_t *checklist, boolean status)
 		char* dotpos;
 
 		if (memcmp(zentry->signature, pat_central, 4) != 0)
+		{
+			free(cdir);
 			return true;
+		}
 
 		if (verified == true)
 		{
@@ -2136,10 +2141,16 @@ W_VerifyPK3 (FILE *fp, lumpchecklist_t *checklist, boolean status)
 			sizeof *zentry + SHORT(zentry->namelen) + SHORT(zentry->xtralen) + SHORT(zentry->commlen);
 
 		if (fseek(fp, LONG(zentry->offset), SEEK_SET) != 0)
+		{
+			free(cdir);
 			return true;
+		}
 
 		if (fread(&zlentry, 1, sizeof(zlentry_t), fp) < sizeof (zlentry_t))
+		{
+			free(cdir);
 			return true;
+		}
 
 		data_size +=
 			sizeof zlentry + SHORT(zlentry.namelen) + SHORT(zlentry.xtralen) + LONG(zlentry.compsize);
@@ -2190,7 +2201,9 @@ static int W_VerifyFile(const char *filename, lumpchecklist_t *checklist,
 			goodfile = W_VerifyWAD(handle, checklist, status);
 		}
 	}
+
 	fclose(handle);
+
 	return goodfile;
 }
 
@@ -2345,7 +2358,10 @@ static int W_CheckPK3Contains(FILE *fp, lumpchecklist_t *checklist)
 	char *cdir = (char*)(malloc(LONG(zend.cdirsize)));
 
 	if (fread(cdir, 1, LONG(zend.cdirsize), fp) < (UINT32)(LONG(zend.cdirsize)))
+	{
+		free(cdir);
 		return true;
+	}
 
 	size_t offset = 0;
 
@@ -2357,7 +2373,10 @@ static int W_CheckPK3Contains(FILE *fp, lumpchecklist_t *checklist)
 		char* dotpos;
 
 		if (memcmp(zentry->signature, pat_central, 4) != 0)
+		{
+			free(cdir);
 			return false;
+		}
 
 		fullname = (char*)(malloc(SHORT(zentry->namelen) + 1));
 		strlcpy(fullname, (char*)(zentry + 1), SHORT(zentry->namelen) + 1);
@@ -2377,11 +2396,19 @@ static int W_CheckPK3Contains(FILE *fp, lumpchecklist_t *checklist)
 			strncpy(lumpname, trimname, min(8, dotpos - trimname));
 
 			if (W_NameStartsWith(lumpname, checklist))
+			{
+				free(fullname);
+				free(cdir);
 				return true;
+			}
 		}
 
 		if (W_NameStartsWith(fullname, checklist))
+		{
+			free(fullname);
+			free(cdir);
 			return true;
+		}
 
 		free(fullname);
 
@@ -2391,10 +2418,16 @@ static int W_CheckPK3Contains(FILE *fp, lumpchecklist_t *checklist)
 			sizeof *zentry + SHORT(zentry->namelen) + SHORT(zentry->xtralen) + SHORT(zentry->commlen);
 
 		if (fseek(fp, LONG(zentry->offset), SEEK_SET) != 0)
+		{
+			free(cdir);
 			return false;
+		}
 
 		if (fread(&zlentry, 1, sizeof(zlentry_t), fp) < sizeof (zlentry_t))
+		{
+			free(cdir);
 			return false;
+		}
 
 		data_size +=
 			sizeof zlentry + SHORT(zlentry.namelen) + SHORT(zlentry.xtralen) + LONG(zlentry.compsize);
