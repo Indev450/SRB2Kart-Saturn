@@ -4458,7 +4458,10 @@ static void HWR_DrawModels(void)
 			continue;
 		}
 
-		if (spr->mobj && spr->mobj->skin && spr->mobj->sprite == SPR_PLAY)
+		if (!spr->mobj)
+			continue;
+
+		if (spr->mobj->skin && spr->mobj->sprite == SPR_PLAY)
 		{
 			md2_t *md2;
 
