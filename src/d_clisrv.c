@@ -2545,6 +2545,7 @@ static boolean CL_ServerConnectionSearchTicker(tic_t *asksent)
 			if (i < 0)
 				return true;
 		}
+		joinnode = i;
 
 		// Quit here rather than downloading files and being refused later.
 		if (serverlist[i].info.numberofplayer >= serverlist[i].info.maxplayer)
