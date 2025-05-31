@@ -1062,7 +1062,7 @@ static void R_SetupCommonFrame(player_t * player, sector_t * sector)
 
 static void R_SetupAimingFrame(player_t *player, camera_t *thiscam)
 {
-	if (player->awayviewtics)
+	if (player->awayviewtics && player->awayviewmobj)
 	{
 		newview->aim = player->awayviewaiming;
 		newview->angle = player->awayviewmobj->angle;
@@ -1168,7 +1168,7 @@ void R_SkyboxFrame(int s)
 	{
 		mapheader_t *mh = mapheaderinfo[gamemap-1];
 
-		if (player->awayviewtics)
+		if (player->awayviewtics && player->awayviewmobj)
 		{
 			SETUPSKYVIEW(player->awayviewmobj, (player->awayviewmobj->z + 20*FRACUNIT));
 		}
@@ -1225,7 +1225,7 @@ void R_SetupFrame(int s, boolean skybox)
 
 	R_SetupAimingFrame(player, thiscam);
 
-	if (player->awayviewtics) // cut-away view stuff
+	if (player->awayviewtics && player->awayviewmobj) // cut-away view stuff
 	{
 		viewmobj = player->awayviewmobj; // should be a MT_ALTVIEWMAN
 		I_Assert(viewmobj != NULL);
@@ -1234,7 +1234,7 @@ void R_SetupFrame(int s, boolean skybox)
 		newview->y = viewmobj->y;
 		newview->z = viewmobj->z + 20*FRACUNIT;
 
-		if (!P_MobjWasRemoved(viewmobj) && viewmobj->subsector && viewmobj->subsector->sector)
+		if (viewmobj->subsector && viewmobj->subsector->sector)
 			sector = viewmobj->subsector->sector;
 
 		R_SetupCommonFrame(player, sector);
@@ -1252,7 +1252,7 @@ void R_SetupFrame(int s, boolean skybox)
 
 		R_SetupCommonFrame(player, sector);
 	}
-	else // use the player's eyes view
+	else if (player->mo) // use the player's eyes view
 	{
 		viewmobj = player->mo;
 		I_Assert(viewmobj != NULL);
@@ -1261,7 +1261,7 @@ void R_SetupFrame(int s, boolean skybox)
 		newview->y = viewmobj->y;
 		newview->z = player->viewz;
 
-		if (!P_MobjWasRemoved(viewmobj) && viewmobj->subsector && viewmobj->subsector->sector)
+		if (viewmobj->subsector && viewmobj->subsector->sector)
 			sector = viewmobj->subsector->sector;
 
 		R_SetupCommonFrame(player, sector);
