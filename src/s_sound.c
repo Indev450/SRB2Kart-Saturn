@@ -1436,6 +1436,11 @@ musicdef_t *S_FindMusicCredit(const char *musname)
 	return NULL;
 }
 
+void S_ResetMusicCredit(void)
+{
+	memset(&cursongcredit, 0, sizeof(cursongcredit));
+}
+
 //
 // S_ShowSpecifiedMusicCredit
 //
