@@ -10,7 +10,6 @@
 /// \brief Tally screens, or "Intermissions" as they were formally called in Doom
 
 extern boolean usebuffer;
-extern char *luaVoteScreen;
 
 void Y_IntermissionDrawer(void);
 void Y_Ticker(void);
@@ -55,3 +54,27 @@ typedef enum
 	int_classicrace, // Competition
 } intertype_t;
 extern intertype_t intertype;
+
+// VEXTRN - Vote (V) Extra (EXT) Race (R) Normal (N - Normal sized patch)
+// VEXTRW - Vote (V) Extra (EXT) Race (R) Normal (W - Wide patch)
+// VEXTBN - Vote (V) Extra (EXT) Battle (B) Normal (N - Normal sized patch)
+// VEXTBW - Vote (V) Extra (EXT) Battle (B) Normal (W - Wide patch)
+typedef struct
+{
+	char Prefix[5];                 // Race = INTSX, Battle = BTLSX
+	char *luaVoteScreen;            // lua prefix
+
+	INT32 currentAnimFrame;         // current animated background frame
+
+	INT32 foundLuaVoteFrames;       // normal lua patch frames
+	INT32 foundLuaVoteWideFrames;   // wide lua patch frames
+
+	boolean racereplaced;           // non lua race patch replaced
+	boolean wideracereplaced;       // non lua wide race patch replaced
+	boolean battlereplaced;         // non lua battle patch replaced
+	boolean widebattlereplaced;     // non lua wide battle patch replaced
+
+	patch_t *bgpatch;               // votebackground patch
+	patch_t *widebgpatch;           // wide votebackground patch
+} votescreen_t;
+extern votescreen_t VoteScreen;

@@ -67,6 +67,8 @@
 #include "lua_script.h"
 #include "lua_hook.h"
 
+#include "y_inter.h"
+
 #if !defined (UNDER_CE)
 #include <time.h>
 #endif
@@ -3107,12 +3109,6 @@ boolean P_AddWadFile(const char *wadfilename, boolean local)
 	return true;
 }
 
-// check for replacement votescreen backgrounds
-boolean wideracereplaced = false;
-boolean racereplaced = false;
-boolean widebattlereplaced = false;
-boolean battlereplaced = false;
-
 //
 // Add a WAD file and do the per-WAD setup stages.
 // Call P_MultiSetupWadFiles as soon as possible after any number of these.
@@ -3252,10 +3248,11 @@ UINT16 P_PartialAddWadFile(const char *wadfilename, boolean local)
 	// TODO: Experimental SPRTINFO support, test first
 	R_LoadSpriteInfoLumps(wadnum, wadfiles[wadnum]->numlumps);
 
+
 	//
-	// check for votescreen replacements
+	// check for non Lua votescreen replacements
 	//
-	if (!wideracereplaced && !racereplaced && !widebattlereplaced && !battlereplaced)
+	if (!VoteScreen.wideracereplaced && !VoteScreen.racereplaced && !VoteScreen.widebattlereplaced && !VoteScreen.battlereplaced)
 	{
 		lumpinfo = wadfiles[wadnum]->lumpinfo;
 		for (i = 0; i < numlumps; i++, lumpinfo++)
@@ -3263,28 +3260,28 @@ UINT16 P_PartialAddWadFile(const char *wadfilename, boolean local)
 			name = lumpinfo->name;
 
 			// widescreen patch Race
-			if (!wideracereplaced && !strncmp(name, "INTERSCW", 8))
+			if (!VoteScreen.wideracereplaced && !strncmp(name, "INTERSCW", 8))
 			{
-				wideracereplaced = true;
+				VoteScreen.wideracereplaced = true;
 				continue;
 			}
 
-			if (!racereplaced && !strncmp(name, "INTERSCR", 8))
+			if (!VoteScreen.racereplaced && !strncmp(name, "INTERSCR", 8))
 			{
-				racereplaced = true;
+				VoteScreen.racereplaced = true;
 				continue;
 			}
 
 			// widescreen patch Battle
-			if (!widebattlereplaced && !strncmp(name, "BATTLSCW", 8))
+			if (!VoteScreen.widebattlereplaced && !strncmp(name, "BATTLSCW", 8))
 			{
-				widebattlereplaced = true;
+				VoteScreen.widebattlereplaced = true;
 				continue;
 			}
 
-			if (!battlereplaced && !strncmp(name, "BATTLSCR", 8))
+			if (!VoteScreen.battlereplaced && !strncmp(name, "BATTLSCR", 8))
 			{
-				battlereplaced = true;
+				VoteScreen.battlereplaced = true;
 				continue;
 			}
 		}
