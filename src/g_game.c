@@ -8235,6 +8235,11 @@ boolean G_DemoTitleResponder(event_t *ev)
 void G_SetGamestate(gamestate_t newstate)
 {
 	gamestate = newstate;
+
+	//HACK: reset musiccredits whenever we change gamestate
+	// since we allow them to run everywhere now
+	S_ResetMusicCredit();
+
 #ifdef HAVE_DISCORDRPC
 	DRPC_UpdatePresence();
 #endif
