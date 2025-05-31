@@ -161,6 +161,32 @@ Duration is in milliseconds and is optional to set, default value is 84ms.
 Exactly same as P_CheckSight but uses cheaper algorithm, useful for things like nametags. Doesn't work exactly
 like P_CheckSight so don't use it for anything gameplay-related.
 
+## musicdef_t
+
+Userdata structure representing a musicdef. Fields:
+
+`musicdef.name` - song identifier ("kmap01" for example).
+
+`musicdef.usage`, `musicdef.source` - fields from vanilla MUSICDEFS lump.
+
+`musicdef.filename` - unused for now.
+
+`musicdef.title`, `musicdef.alttitle`, `musicdef.authors` - fields from MUSCINFO lump.
+
+`#musicdef` - returns integer id for musicdef (which can be used as index in `musicdefs`).
+
+All fields are read-only.
+
+## S_FindMusicCredit(name)
+
+Returns musicdef corresponding to music with given identifier. For example, `S_FindMusicCredit("kmap01")` will return
+musicdef for green hills music.
+
+## musicdefs
+
+Global table for all musicdefs, similar to mobjinfo, states, etc. Can take either integer indices,
+from `0` to `#musicdefs-1`, or string indices (which is equal to calling `S_FindMusicCredit`).
+
 # Other changes
 
 ## P_PlayRinglossSound(source, damager)
