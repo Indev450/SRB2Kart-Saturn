@@ -5388,7 +5388,7 @@ static void HandlePacketFromPlayer(SINT8 node)
 
 			// Check player consistancy during the level
 			if (gamestate == GS_LEVEL
-				&& (realstart > gametic - TICQUEUE+1 && realstart <= gametic)
+				&& (realstart <= gametic && realstart + TICQUEUE - 1 > gametic)
 				&& consistancy[realstart%TICQUEUE] != SHORT(netbuffer->u.clientpak.consistancy)
 				&& (!UseSaturnSynch(node) || (!resendingsavegame[node] && savegameresendcooldown[node] <= I_GetTime() && !SV_ResendingSavegameToAnyone())))
 			{
@@ -5418,10 +5418,13 @@ static void HandlePacketFromPlayer(SINT8 node)
 					}
 
 					if (cv_blamecfail.value)
+					{
 						CONS_Printf(M_GetText("Synch failure for player %d (%s); expected %hd, got %hd\n"),
 							netconsole+1, player_names[netconsole],
 							consistancy[realstart%TICQUEUE],
 							SHORT(netbuffer->u.clientpak.consistancy));
+					}
+
 					DEBFILE(va("Restoring player %d (synch failure) [%update] %d!=%d\n",
 						netconsole, realstart, consistancy[realstart%TICQUEUE],
 						SHORT(netbuffer->u.clientpak.consistancy)));
@@ -5693,7 +5696,7 @@ static void HandlePacketFromPlayer(SINT8 node)
 				break;
 			}
 
-			//Update client ping table from the server.
+			// Update client ping table from the server.
 			if (client)
 			{
 				UINT8 i;
@@ -6503,7 +6506,6 @@ static inline void PingUpdate(void)
 				if (pingtimeout[i] > 0)
 					pingtimeout[i]--;
 			}
-
 		}
 
 		//kick lagging players... unless everyone but the server's ping sucks.

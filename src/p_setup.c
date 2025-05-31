@@ -2808,10 +2808,6 @@ boolean P_SetupLevel(boolean fromnetsave, boolean reloadinggamestate)
 	CON_Drawer(); // let the user know what we are going to do
 	I_FinishUpdate(); // page flip or blit buffer
 
-	// Reset the palette
-	if (rendermode != render_none)
-		V_SetPaletteLump("PLAYPAL");
-
 	// Initialize sector node list.
 	P_Initsecnode();
 
@@ -2880,7 +2876,10 @@ boolean P_SetupLevel(boolean fromnetsave, boolean reloadinggamestate)
 
 	// Reset the palette now all fades have been done
 	if (rendermode != render_none)
-		V_ReloadPalette(); // Set the level palette
+	{
+		//V_ResetPaletteCVars(); // dont carry over changed palettes
+		V_SetPaletteLump(GetPalette()); // Set the level palette
+	}
 
 	// Print "SPEEDING OFF TO [ZONE] [ACT 1]..."
 	/*if (rendermode != render_none)

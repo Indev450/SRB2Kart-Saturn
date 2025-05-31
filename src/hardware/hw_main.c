@@ -340,7 +340,6 @@ static void HWR_SetShaderState(void)
 	GL_SetSpecialState(HWD_SET_SHADERS, HWR_UseShader() ? 1 : 0);
 }
 
-
 static boolean HWR_IsWireframeMode(void)
 {
 	return (cv_glwireframe.value /*&& cv_debug*/);
@@ -4235,7 +4234,6 @@ static void *HWR_CreateDrawNode(gl_drawnode_type_t type)
 		Z_Realloc(drawnodes, alloceddrawnodes * sizeof(gl_drawnode_t), PU_LEVEL, &drawnodes);
 	}
 
-
 	drawnode = &drawnodes[numdrawnodes++];
 	drawnode->type = type;
 
@@ -5889,7 +5887,6 @@ static void COM_HWR_glinfo(void)
 			CONS_Printf("Unrecognized argument: %s\n", argv);
 			return;
 		}
-
 	}
 
 	CONS_Printf("\x88OpenGL %s\x80\n", gl_version);
@@ -6009,19 +6006,19 @@ static void HWR_DoPostProcessor(player_t *player)
 	if (cv_glscreentextures.value != 2) // screen textures are needed for the rest of the effects
 		return;
 
-	// Capture the screen for intermission and screen waving
-	if (gamestate != GS_INTERMISSION)
-		GL_MakeScreenTexture(HWD_SCREENTEXTURE_GENERIC1);
-
-	if (splitscreen) // Not supported in splitscreen - someone want to add support?
-		return;
-
-	//UINT8 viewnum = R_GetViewNumber(); // see above
+	//UINT8 viewnum = R_GetViewNumber(); // see below
 	//camera_t *thiscam = &camera[viewnum];
 	camera_t *thiscam = &camera[0];
 
+	// Not supported in splitscreen - someone want to add support?
+	const boolean screenwave = (!splitscreen && (thiscam->postimg & POSTIMG_WATER || thiscam->postimg & POSTIMG_HEAT));
+
+	// Capture the screen for intermission and screen waving
+	if ((lastdraw || screenwave) && gamestate != GS_INTERMISSION)
+		GL_MakeScreenTexture(HWD_SCREENTEXTURE_GENERIC1);
+
 	// Drunken vision! WooOOooo~
-	if (thiscam->postimg & POSTIMG_WATER || thiscam->postimg & POSTIMG_HEAT)
+	if (screenwave)
 	{
 		// 10 by 10 grid. 2 coordinates (xy)
 		float v[SCREENVERTS][SCREENVERTS][2];
@@ -6055,6 +6052,7 @@ static void HWR_DoPostProcessor(player_t *player)
 				v[x][y][1] = (y/((float)(SCREENVERTS-1.0f)/9.0f))-4.5f;
 			}
 		}
+
 		GL_PostImgRedraw(v);
 
 		// Capture the screen again for screen waving on the intermission
