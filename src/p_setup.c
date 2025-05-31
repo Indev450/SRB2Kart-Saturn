@@ -3197,33 +3197,33 @@ static boolean P_CheckMapReplacements(char *name)
 static boolean P_CheckVoteReplacements(char *name)
 {
 	// widescreen patch Race
-	if (!VoteScreen.wideracereplaced && !memcmp(name, "INTERSCW", 8))
+	if (!VoteScreen.replaced.widerace && !memcmp(name, "INTERSCW", 8))
 	{
-		VoteScreen.wideracereplaced = true;
+		VoteScreen.replaced.widerace = true;
 		return false;
 	}
 
-	if (!VoteScreen.racereplaced && !memcmp(name, "INTERSCR", 8))
+	if (!VoteScreen.replaced.race && !memcmp(name, "INTERSCR", 8))
 	{
-		VoteScreen.racereplaced = true;
+		VoteScreen.replaced.race = true;
 		return false;
 	}
 
 	// widescreen patch Battle
-	if (!VoteScreen.widebattlereplaced && !memcmp(name, "BATTLSCW", 8))
+	if (!VoteScreen.replaced.widebattle && !memcmp(name, "BATTLSCW", 8))
 	{
-		VoteScreen.widebattlereplaced = true;
+		VoteScreen.replaced.widebattle = true;
 		return false;
 	}
 
-	if (!VoteScreen.battlereplaced && !memcmp(name, "BATTLSCR", 8))
+	if (!VoteScreen.replaced.battle && !memcmp(name, "BATTLSCR", 8))
 	{
-		VoteScreen.battlereplaced = true;
+		VoteScreen.replaced.battle = true;
 		return false;
 	}
 
-	if (VoteScreen.wideracereplaced && VoteScreen.racereplaced
-	&& VoteScreen.widebattlereplaced && VoteScreen.battlereplaced)
+	if (VoteScreen.replaced.widerace && VoteScreen.replaced.race
+	&& VoteScreen.replaced.widebattle && VoteScreen.replaced.battle)
 	{
 		return true;
 	}

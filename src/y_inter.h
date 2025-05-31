@@ -55,6 +55,15 @@ typedef enum
 } intertype_t;
 extern intertype_t intertype;
 
+// Votescreen stuff
+typedef struct
+{
+	boolean race;       // non lua race patch replaced
+	boolean widerace;   // non lua widescreen race patch replaced
+	boolean battle;     // non lua battle patch replaced
+	boolean widebattle; // non lua widescreen battle patch replaced
+} votereplace_t;
+
 // VEXTRN - Vote (V) Extra (EXT) Race (R) Normal (N - Normal sized patch)
 // VEXTRW - Vote (V) Extra (EXT) Race (R) Normal (W - Wide patch)
 // VEXTBN - Vote (V) Extra (EXT) Battle (B) Normal (N - Normal sized patch)
@@ -67,14 +76,15 @@ typedef struct
 	INT32 currentAnimFrame;         // current animated background frame
 
 	INT32 foundLuaVoteFrames;       // normal lua patch frames
-	INT32 foundLuaVoteWideFrames;   // wide lua patch frames
+	INT32 foundLuaVoteWideFrames;   // widescreen lua patch frames
 
-	boolean racereplaced;           // non lua race patch replaced
-	boolean wideracereplaced;       // non lua wide race patch replaced
-	boolean battlereplaced;         // non lua battle patch replaced
-	boolean widebattlereplaced;     // non lua wide battle patch replaced
+	votereplace_t replaced;         // checks which non lua patch has been replaced
 
 	patch_t *bgpatch;               // votebackground patch
 	patch_t *widebgpatch;           // wide votebackground patch
+
+	patch_t *cursor[5];             // cursor patches
+	patch_t *randomlvl;             // randomlevel patch
+	patch_t *rubyicon;              // encore ruby patch
 } votescreen_t;
 extern votescreen_t VoteScreen;
