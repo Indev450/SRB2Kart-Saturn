@@ -2572,7 +2572,7 @@ static boolean CL_ServerConnectionSearchTicker(tic_t *asksent)
 				return true;
 			}
 
-			cl_mode = CL_VIEWSERVER;
+			cl_mode = (cv_serverinfoscreen.value) ? CL_VIEWSERVER : CL_CHECKFILES;
 		}
 		else
 		{
@@ -2626,7 +2626,7 @@ static boolean CL_ServerConnectionTicker(const char *tmpsave, tic_t *oldtic, tic
 
 		case CL_ASKFULLFILELIST:
 			if (cl_lastcheckedfilecount == UINT16_MAX) // All files retrieved
-				cl_mode = CL_VIEWSERVER;
+				cl_mode = (cv_serverinfoscreen.value) ? CL_VIEWSERVER : CL_CHECKFILES;
 			else if (fileneedednum != cl_lastcheckedfilecount || I_GetTime() >= *asksent)
 			{
 				if (CL_AskFileList(fileneedednum))
@@ -4227,6 +4227,8 @@ consvar_t cv_downloadspeed = {"downloadspeed", "300", CV_SAVE, downloadspeed_con
 
 static CV_PossibleValue_t connectawaittime_cons_t[] = {{1, "MIN"}, {60, "MAX"}, {0, "Inf"}, {0, NULL}};
 consvar_t cv_connectawaittime = {"connectawaittime", "5", CV_SAVE, connectawaittime_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+
+consvar_t cv_serverinfoscreen = {"serverinfoscreen", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 static void Got_AddPlayer(UINT8 **p, INT32 playernum);
 static void Got_RemovePlayer(UINT8 **p, INT32 playernum);
