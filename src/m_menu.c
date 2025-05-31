@@ -8479,7 +8479,7 @@ static void M_MusicTest(INT32 choice)
 {
 	(void)choice;
 
-	if (!S_PrepareSoundTest())
+	if (!nummusicdefs)
 	{
 		M_StartMessage(M_GetText("No selectable tracks found.\n"),NULL,MM_NOTHING);
 		return;
@@ -8558,33 +8558,33 @@ static void M_DrawMusicTest(void)
 	{
 		INT32 t, b, q, m = 128;
 
-		if (numsoundtestdefs <= 8)
+		if (nummusicdefs <= 8)
 		{
 			t = 0;
-			b = numsoundtestdefs - 1;
+			b = nummusicdefs - 1;
 			i = 0;
 		}
 		else
 		{
 			q = m;
-			m = (5*m)/numsoundtestdefs;
+			m = (5*m)/nummusicdefs;
 			if (st_sel < 3)
 			{
 				t = 0;
 				b = 7;
 				i = 0;
 			}
-			else if (st_sel >= numsoundtestdefs-4)
+			else if (st_sel >= nummusicdefs-4)
 			{
-				t = numsoundtestdefs - 8;
-				b = numsoundtestdefs - 1;
+				t = nummusicdefs - 8;
+				b = nummusicdefs - 1;
 				i = q-m;
 			}
 			else
 			{
 				t = st_sel - 3;
 				b = st_sel + 4;
-				i = (t * (q-m))/(numsoundtestdefs - 8);
+				i = (t * (q-m))/(nummusicdefs - 8);
 			}
 		}
 
@@ -8593,7 +8593,7 @@ static void M_DrawMusicTest(void)
 		if (t != 0)
 			V_DrawString(20+280+4, 60+4 - (skullAnimCounter/5), V_YELLOWMAP, "\x1A");
 
-		if (b != numsoundtestdefs - 1)
+		if (b != nummusicdefs - 1)
 			V_DrawString(20+280+4, 60+128-12 + (skullAnimCounter/5), V_YELLOWMAP, "\x1B");
 
 		x = 24;
@@ -8607,8 +8607,9 @@ static void M_DrawMusicTest(void)
 				V_DrawFill(20, y-4, 280-1, 16, 237);
 
 			{
+				const musicdef_t *def = S_GetMusicCredit(t);
 				const size_t MAXLENGTH = 34;
-				const char *songname = soundtestdefs[t]->title[0] ? soundtestdefs[t]->title : soundtestdefs[t]->source;
+				const char *songname = def->title[0] ? def->title : def->source;
 
 				size_t namelength = strlen(songname);
 
@@ -8620,7 +8621,7 @@ static void M_DrawMusicTest(void)
 					strlcpy(buf, songname, MAXLENGTH);
 
 				V_DrawString(x, y, (t == st_sel ? V_YELLOWMAP : 0)|V_ALLOWLOWERCASE|V_MONOSPACE, buf);
-				if (curplaying == soundtestdefs[t])
+				if (curplaying == def)
 				{
 					V_DrawFill(20+280-9, y-4, 8, 16, 230);
 				}
@@ -8638,7 +8639,7 @@ static void M_HandleMusicTest(INT32 choice)
 	switch (choice)
 	{
 		case KEY_DOWNARROW:
-			if (st_sel++ >= numsoundtestdefs-1)
+			if (st_sel++ >= nummusicdefs-1)
 				st_sel = 0;
 			{
 				S_StartSound(NULL, sfx_menu1);
@@ -8647,18 +8648,18 @@ static void M_HandleMusicTest(INT32 choice)
 			break;
 		case KEY_UPARROW:
 			if (!st_sel--)
-				st_sel = numsoundtestdefs-1;
+				st_sel = nummusicdefs-1;
 			{
 				S_StartSound(NULL, sfx_menu1);
 			}
 			st_musictime = 0;
 			break;
 		case KEY_PGDN:
-			if (st_sel < numsoundtestdefs-1)
+			if (st_sel < nummusicdefs-1)
 			{
 				st_sel += 3;
-				if (st_sel >= numsoundtestdefs-1)
-					st_sel = numsoundtestdefs-1;
+				if (st_sel >= nummusicdefs-1)
+					st_sel = nummusicdefs-1;
 				S_StartSound(NULL, sfx_menu1);
 			}
 			st_musictime = 0;
@@ -8692,7 +8693,7 @@ static void M_HandleMusicTest(INT32 choice)
 		case KEY_ENTER:
 			S_StopSounds();
 			S_StopMusic();
-			curplaying = soundtestdefs[st_sel];
+			curplaying = S_GetMusicCredit(st_sel);
 			S_ChangeMusicInternal(curplaying->name, true);
 			break;
 
@@ -8701,9 +8702,6 @@ static void M_HandleMusicTest(INT32 choice)
 	}
 	if (exitmenu)
 	{
-		Z_Free(soundtestdefs);
-		soundtestdefs = NULL;
-
 		if (currentMenu->prevMenu)
 			M_SetupNextMenu(currentMenu->prevMenu);
 		else
