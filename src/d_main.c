@@ -926,7 +926,7 @@ void D_SRB2Loop(void)
 
 			if ((elapsed > 0) && ((INT64)capbudget > elapsed) && !vsync_with_match_refresh)
 			{
-				I_SleepDuration(capbudget - (finishprecise - enterprecise));
+				I_SleepDuration(capbudget - elapsed);
 			}
 		}
 		// Capture the time once more to get the real delta time.
