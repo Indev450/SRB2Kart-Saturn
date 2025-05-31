@@ -268,50 +268,6 @@ static void Y_CalculateMatchData(UINT8 rankingsmode, void (*comparison)(INT32))
 	}
 }
 
-//
-// Y_VoteScreenCheck
-//
-static void Y_VoteScreenCheck(void)
-{
-	strcpy(VoteScreen.Prefix, "INTS");
-
-	if (VoteScreen.luaPrefix[0] != 0)
-		strlcpy(VoteScreen.Prefix, VoteScreen.luaPrefix, sizeof(VoteScreen.Prefix));
-	else if (G_BattleGametype())
-		strcpy(VoteScreen.Prefix, "BTLS");
-
-	VoteScreen.foundLuaVoteFrames = VoteScreen.foundLuaVoteWideFrames = 0;
-	VoteScreen.currentAnimFrame = 0;
-
-	INT32 i = 1;
-
-	// check for lua vote background replacements
-	for (;;)
-	{
-		// Check if the lumps exist (checking for VEXTR(N|W)xx for race and VEXTRB(N|W)xx for battle)
-		boolean normalLumpExists = W_LumpExists(va("%sC%d", VoteScreen.Prefix, i));
-		boolean wideLumpExists = W_LumpExists(va("%sW%d", VoteScreen.Prefix, i));
-
-		if (normalLumpExists || wideLumpExists)
-		{
-			if (normalLumpExists)
-				VoteScreen.foundLuaVoteFrames++;
-
-			if (wideLumpExists)
-				VoteScreen.foundLuaVoteWideFrames++;
-		}
-		else // If we don't find at least frame 1 (e.g VEXTRN1), let's just stop looking
-			break;
-
-		i++;
-	}
-
-	// non lua vote background handling
-	boolean prefbattletype = ((votelevels[0][1] & ~0x80) == GT_MATCH);
-	VoteScreen.widebgpatch = W_CachePatchName((prefbattletype ? "BATTLSCW" : "INTERSCW"), PU_PATCH);
-	VoteScreen.bgpatch = W_CachePatchName((prefbattletype ? "BATTLSCR" : "INTERSCR"), PU_PATCH);
-}
-
 // Y_PlayerStandingsDrawer
 //
 // Handles drawing the center-of-screen player standings.
