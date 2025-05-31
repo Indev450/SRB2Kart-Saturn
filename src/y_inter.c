@@ -870,11 +870,6 @@ static void Y_FollowIntermission(void)
 //
 static void Y_UnloadData(void)
 {
-	// In hardware mode, don't Z_ChangeTag a pointer returned by W_CachePatchName().
-	// It doesn't work and is unnecessary.
-	if (rendermode != render_soft)
-		return;
-
 	// unload the background patches
 	UNLOAD(VoteScreen.bgpatch);
 	UNLOAD(VoteScreen.widebgpatch);
@@ -1641,9 +1636,6 @@ void Y_EndVote(void)
 static void Y_UnloadVoteData(void)
 {
 	voteclient.loaded = false;
-
-	if (rendermode != render_soft)
-		return;
 
 	UNLOAD(VoteScreen.widebgpatch);
 	UNLOAD(VoteScreen.bgpatch);
