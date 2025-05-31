@@ -62,7 +62,7 @@ extern intertype_t intertype;
 typedef struct
 {
 	char Prefix[5];                 // Race = INTSX, Battle = BTLSX
-	char *luaVoteScreen;            // lua prefix
+	char luaPrefix[5];              // prefix for lua votescreens
 
 	INT32 currentAnimFrame;         // current animated background frame
 
