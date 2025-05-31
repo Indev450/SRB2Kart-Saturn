@@ -845,7 +845,8 @@ void Y_StartIntermission(void)
 //
 void Y_EndIntermission(void)
 {
-	Y_UnloadData();
+	if (!dedicated)
+		Y_UnloadData();
 
 	endtic = -1;
 	sorttic = -1;
@@ -1636,6 +1637,9 @@ void Y_EndVote(void)
 static void Y_UnloadVoteData(void)
 {
 	voteclient.loaded = false;
+
+	if (dedicated)
+		return;
 
 	UNLOAD(VoteScreen.widebgpatch);
 	UNLOAD(VoteScreen.bgpatch);
