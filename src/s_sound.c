@@ -1203,8 +1203,58 @@ static consvar_t *music_refade_cv;
 /// Music Definitions
 /// ------------------------
 
-musicdef_t *musicdefstart = NULL; // First music definition
-struct cursongcredit cursongcredit; // Currently displayed song credit info
+// Similar system to vissprite allocation. Exists so external pointers to musicdefs are not invalidated
+// when allocating more space for musicdefs
+#define MUSICDEFCHUNKBITS 6
+#define MUSICDEFSPERCHUNK (1 << MUSICDEFCHUNKBITS)
+#define MUSICDEFINDEXMASK (MUSICDEFSPERCHUNK - 1)
+static musicdef_t **musicdefs = NULL;
+static INT32 numchunks = 0;
+INT32 nummusicdefs = 0;
+
+//
+// S_GetMusicCredit
+//
+// Return music credit with given index.
+//
+musicdef_t *S_GetMusicCredit(INT32 i)
+{
+	if (i < 0 || i >= nummusicdefs)
+		return NULL;
+
+	INT32 chunk = i >> MUSICDEFCHUNKBITS;
+	i &= MUSICDEFINDEXMASK;
+
+	return &musicdefs[chunk][i];
+}
+
+//
+// S_AddMusicCredit
+//
+// Return new music credit, allocates memory for it if needed.
+//
+static musicdef_t *S_AddMusicCredit(void)
+{
+	INT32 chunk = nummusicdefs >> MUSICDEFCHUNKBITS;
+	INT32 i = nummusicdefs & MUSICDEFINDEXMASK;
+
+	// Allocate new chunk if needed. Other chunks stay valid
+	if (chunk == numchunks)
+	{
+		++numchunks;
+		musicdefs = (musicdef_t**)Z_Realloc(musicdefs, sizeof(musicdef_t*)*numchunks, PU_STATIC, NULL);
+		musicdefs[chunk] = Z_Calloc(sizeof(musicdef_t)*MUSICDEFSPERCHUNK, PU_STATIC, NULL);
+	}
+
+	// Store "id" of new musicdef (mostly exists only for lua)
+	musicdefs[chunk][i].num = nummusicdefs;
+
+	++nummusicdefs;
+
+	return &musicdefs[chunk][i];
+}
+
+struct cursongcredit cursongcredit = {0}; // Currently displayed song credit info
 
 static boolean
 ReadMusicDefFields (UINT16 wadnum, int line, char *stoken, musicdef_t **defp)
@@ -1232,14 +1282,11 @@ ReadMusicDefFields (UINT16 wadnum, int line, char *stoken, musicdef_t **defp)
 			// Nothing found, add to the end.
 			if (!def)
 			{
-				def = Z_Calloc(sizeof (musicdef_t), PU_STATIC, NULL);
+				def = S_AddMusicCredit();
 
 				STRBUFCPY(def->name, value);
 				strlwr(def->name);
 				def->hash = quickncasehash (def->name, 6);
-
-				def->next = musicdefstart;
-				musicdefstart = def;
 			}
 
 			(*defp) = def;
@@ -1424,8 +1471,10 @@ musicdef_t *S_FindMusicCredit(const char *musname)
 	UINT32 hash = quickncasehash (musname, 6);
 	musicdef_t *def;
 
-	for (def = musicdefstart; def; def = def->next)
+	for (INT32 i = 0; i < nummusicdefs; ++i)
 	{
+		def = S_GetMusicCredit(i);
+
 		if (hash != def->hash)
 			continue;
 		if (stricmp(def->name, musname))
@@ -1470,41 +1519,6 @@ void S_ShowSpecifiedMusicCredit(const char *musname)
 void S_ShowMusicCredit(void)
 {
 	S_ShowSpecifiedMusicCredit(music.name);
-}
-
-musicdef_t **soundtestdefs = NULL;
-INT32 numsoundtestdefs = 0;
-
-//
-// S_PrepareSoundTest
-//
-// Prepare sound test. What am I, your butler?
-//
-boolean S_PrepareSoundTest(void)
-{
-	musicdef_t *def;
-	INT32 pos = numsoundtestdefs = 0;
-
-	for (def = musicdefstart; def; def = def->next)
-	{
-		numsoundtestdefs++;
-	}
-
-	if (!numsoundtestdefs)
-		return false;
-
-	if (soundtestdefs)
-		Z_Free(soundtestdefs);
-
-	if (!(soundtestdefs = Z_Malloc(numsoundtestdefs*sizeof(musicdef_t *), PU_STATIC, NULL)))
-		I_Error("S_PrepareSoundTest(): could not allocate soundtestdefs.");
-
-	for (def = musicdefstart; def /*&& i < numsoundtestdefs*/; def = def->next)
-	{
-		soundtestdefs[pos++] = def;
-	}
-
-	return true;
 }
 
 /// ------------------------
