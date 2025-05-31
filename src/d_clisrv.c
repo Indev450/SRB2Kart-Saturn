@@ -217,6 +217,7 @@ struct textcmdbuf_s
 static textcmdbuf_t *textcmdbuf[MAXSPLITSCREENPLAYERS] = {NULL};
 
 ticcmd_t netcmds[TICQUEUE][MAXPLAYERS];
+static ticcmd_t playercmds[MAXPLAYERS];
 static textcmdtic_t *textcmds[TEXTCMD_HASH_SIZE] = {NULL};
 
 consvar_t cv_showjoinaddress = {"showjoinaddress", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
@@ -2302,6 +2303,7 @@ static boolean CL_FinishedFileList(void)
 	char *downloadsize = NULL;
 	//CONS_Printf(M_GetText("Checking files...\n"));
 	i = CL_CheckFiles();
+
 	if (i == 4) // still checking ...
 	{
 		return true;
@@ -5323,14 +5325,9 @@ static void HandlePacketFromPlayer(SINT8 node)
 				|| netbuffer->packettype == PT_NODEKEEPALIVEMIS)
 				break;
 
-			// If we've alredy received a ticcmd for this tic, just submit it for the next one.
-			tic_t faketic = maketic;
-			if ((!!(netcmds[maketic % TICQUEUE][netconsole].angleturn & TICCMD_RECEIVED))
-				&& (maketic - firstticstosend < TICQUEUE - 1))
-				faketic++;
-
 			// Copy ticcmd
-			G_MoveTiccmd(&netcmds[faketic%TICQUEUE][netconsole], &netbuffer->u.clientpak.cmd, 1);
+			// store it in an internal buffer so the last packet takes precedence, which minimizes input lag
+			G_MoveTiccmd(&playercmds[netconsole], &netbuffer->u.clientpak.cmd, 1);
 
 			// Check ticcmd for "speed hacks"
 			if (CheckForSpeedHacks((UINT8)netconsole))
@@ -5342,8 +5339,7 @@ static void HandlePacketFromPlayer(SINT8 node)
 				|| (netbuffer->packettype == PT_CLIENT4CMD || netbuffer->packettype == PT_CLIENT4MIS))
 				&& (nodetoplayer2[node] >= 0))
 			{
-				G_MoveTiccmd(&netcmds[faketic%TICQUEUE][(UINT8)nodetoplayer2[node]],
-					&netbuffer->u.client2pak.cmd2, 1);
+				G_MoveTiccmd(&playercmds[(UINT8)nodetoplayer2[node]], &netbuffer->u.client2pak.cmd2, 1);
 
 				if (CheckForSpeedHacks((UINT8)nodetoplayer2[node]))
 					break;
@@ -5353,8 +5349,7 @@ static void HandlePacketFromPlayer(SINT8 node)
 				|| (netbuffer->packettype == PT_CLIENT4CMD || netbuffer->packettype == PT_CLIENT4MIS))
 				&& (nodetoplayer3[node] >= 0))
 			{
-				G_MoveTiccmd(&netcmds[faketic%TICQUEUE][(UINT8)nodetoplayer3[node]],
-					&netbuffer->u.client3pak.cmd3, 1);
+				G_MoveTiccmd(&playercmds[(UINT8)nodetoplayer3[node]], &netbuffer->u.client3pak.cmd3, 1);
 
 				if (CheckForSpeedHacks((UINT8)nodetoplayer3[node]))
 					break;
@@ -5363,8 +5358,7 @@ static void HandlePacketFromPlayer(SINT8 node)
 			if ((netbuffer->packettype == PT_CLIENT4CMD || netbuffer->packettype == PT_CLIENT4MIS)
 				&& (nodetoplayer4[node] >= 0))
 			{
-				G_MoveTiccmd(&netcmds[faketic%TICQUEUE][(UINT8)nodetoplayer4[node]],
-					&netbuffer->u.client4pak.cmd4, 1);
+				G_MoveTiccmd(&playercmds[(UINT8)nodetoplayer4[node]], &netbuffer->u.client4pak.cmd4, 1);
 
 				if (CheckForSpeedHacks((UINT8)nodetoplayer4[node]))
 					break;
@@ -6121,10 +6115,12 @@ static void CL_SendClientCmd(void)
 				}
 
 				M_Memcpy(netbuffer->u.textcmd, localtextcmd[i], localtextcmd[i][0]+1);
+
 				// All extra data have been sent
 				if (HSendPacket(servernode, true, 0, localtextcmd[i][0]+1)) // Send can fail...
 				{
 					localtextcmd[i][0] = 0;
+
 					if (textcmdbuf[i] != NULL)
 					{
 						textcmdbuf_t *buf = textcmdbuf[i];
@@ -6178,11 +6174,13 @@ static void SV_SendTics(void)
 				continue;
 			DEBFILE(va("Sent %d anyway\n", realfirsttic));
 		}
+
 		if (realfirsttic < firstticstosend)
 			realfirsttic = firstticstosend;
 
 		// compute the length of the packet and cut it if too large
 		packsize = BASESERVERTICSSIZE;
+
 		for (i = realfirsttic; i < lasttictosend; i++)
 		{
 			packsize += sizeof (ticcmd_t) * doomcom->numslots;
@@ -6210,6 +6208,7 @@ static void SV_SendTics(void)
 						DEBFILE("sending it anyway\n");
 					}
 				}
+
 				break;
 			}
 		}
@@ -6231,6 +6230,7 @@ static void SV_SendTics(void)
 		{
 			ntextcmd = bufpos++;
 			*ntextcmd = 0;
+
 			for (j = 0; j < MAXPLAYERS; j++)
 			{
 				UINT8 *textcmd = D_GetExistingTextcmd(i, j);
@@ -6253,6 +6253,7 @@ static void SV_SendTics(void)
 			supposedtics[n] = lasttictosend-doomcom->extratics;
 		else
 			supposedtics[n] = lasttictosend;
+
 		if (supposedtics[n] < nettics[n]) supposedtics[n] = nettics[n];
 	}
 	// node 0 is me!
@@ -6329,36 +6330,7 @@ void SV_SpawnPlayer(INT32 playernum, INT32 x, INT32 y, angle_t angle)
 // create missed tic
 static void SV_Maketic(void)
 {
-	INT32 j;
-
-	for (j = 0; j < MAXNETNODES; j++)
-	{
-		if (!playerpernode[j])
-			continue;
-
-		INT32 player = nodetoplayer[j];
-		if ((netcmds[maketic%TICQUEUE][player].angleturn & TICCMD_RECEIVED) == 0)
-		{ // we didn't receive this tic
-			INT32 i;
-
-			DEBFILE(va("MISS tic%4d for node %d\n", maketic, j));
-#if defined(PARANOIA) && 0
-			CONS_Debug(DBG_NETPLAY, "Client Misstic %d\n", maketic);
-#endif
-			// copy the old tic
-			for (i = 0; i < playerpernode[j]; i++)
-			{
-				if (i == 0) player = nodetoplayer[j];
-				else if (i == 1) player = nodetoplayer2[j];
-				else if (i == 2) player = nodetoplayer3[j];
-				else if (i == 3) player = nodetoplayer4[j];
-				netcmds[maketic%TICQUEUE][player] = netcmds[(maketic-1)%TICQUEUE][player];
-				netcmds[maketic%TICQUEUE][player].angleturn &= ~TICCMD_RECEIVED;
-			}
-		}
-	}
-
-	// all tic are now proceed make the next
+	G_MoveTiccmd(netcmds[maketic % TICQUEUE], playercmds, MAXPLAYERS);
 	maketic++;
 }
 
