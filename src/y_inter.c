@@ -314,17 +314,9 @@ static void Y_VoteScreenCheck(void)
 	}
 
 	// non lua vote background handling
-	UINT8 prefgametype = (votelevels[0][1] & ~0x80);
-
-	VoteScreen.widebgpatch = VoteScreen.bgpatch = W_CachePatchName(((prefgametype == GT_MATCH) ? "BATTLSCR" : "INTERSCR"), PU_PATCH);
-
-	if (VoteScreen.wideracereplaced || VoteScreen.widebattlereplaced)
-	{
-		if (prefgametype == GT_MATCH && VoteScreen.widebattlereplaced)
-			VoteScreen.widebgpatch = W_CachePatchName("BATTLSCW", PU_PATCH);
-		else if (VoteScreen.wideracereplaced)
-			VoteScreen.widebgpatch = W_CachePatchName("INTERSCW", PU_PATCH);
-	}
+	boolean prefbattletype = ((votelevels[0][1] & ~0x80) == GT_MATCH);
+	VoteScreen.widebgpatch = W_CachePatchName((prefbattletype ? "BATTLSCW" : "INTERSCW"), PU_PATCH);
+	VoteScreen.bgpatch = W_CachePatchName((prefbattletype ? "BATTLSCR" : "INTERSCR"), PU_PATCH);
 }
 
 // Y_PlayerStandingsDrawer
@@ -878,7 +870,7 @@ static void Y_FollowIntermission(void)
 	G_AfterIntermission();
 }
 
-#define UNLOAD(x) if (x) {Patch_Free(x);} x = NULL;
+#define UNLOAD(x) {if ((x) != NULL) {Patch_Free(x);} x = NULL;}
 
 //
 // Y_UnloadData
