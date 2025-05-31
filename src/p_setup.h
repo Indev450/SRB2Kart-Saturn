@@ -68,11 +68,6 @@ void HWR_LoadLevel(boolean reloadinggamestate);
 
 boolean P_AddWadFile(const char *wadfilename, boolean local);
 
-extern boolean wideracereplaced;
-extern boolean racereplaced;
-extern boolean widebattlereplaced;
-extern boolean battlereplaced;
-
 // WARNING: The following functions should be grouped as follows:
 // any amount of PartialAdds followed by MultiSetups until returned true,
 // as soon as possible.
