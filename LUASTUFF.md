@@ -187,6 +187,11 @@ musicdef for green hills music.
 Global table for all musicdefs, similar to mobjinfo, states, etc. Can take either integer indices,
 from `0` to `#musicdefs-1`, or string indices (which is equal to calling `S_FindMusicCredit`).
 
+## addHook("MusicCredit", function(musicdef))
+
+Hook is called whenever `S_ShowMusicCredit` (either from game or mod) is called. Takes musicdef as only argument, returning true
+will overwrite vanilla behavior (not show music credit), can be used to implement custom music credit pop-ups.
+
 # Other changes
 
 ## P_PlayRinglossSound(source, damager)
