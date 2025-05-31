@@ -3223,7 +3223,13 @@ static boolean P_CheckVoteReplacements(char *name)
 		return false;
 	}
 
-	return true;
+	if (VoteScreen.wideracereplaced && VoteScreen.racereplaced
+	&& VoteScreen.widebattlereplaced && VoteScreen.battlereplaced)
+	{
+		return true;
+	}
+
+	return false;
 }
 
 //
