@@ -1809,7 +1809,7 @@ void D_SRB2Main(void)
 		{
 			name = lumpinfo->name;
 
-			if (name[0] == 'M' && name[1] == 'A' && name[2] == 'P') // Ignore the headers
+			if (memcmp(name, "MAP", 3) == 0) // Ignore the headers
 			{
 				INT16 num;
 				if (name[5] != '\0')
@@ -1839,7 +1839,7 @@ void D_SRB2Main(void)
 		{
 			name = lumpinfo->name;
 
-			if (name[0] == 'M' && name[1] == 'A' && name[2] == 'P') // Ignore the headers
+			if (memcmp(name, "MAP", 3) == 0) // Ignore the headers
 			{
 				INT16 num;
 				if (name[5] != '\0')
