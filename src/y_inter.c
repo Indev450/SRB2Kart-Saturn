@@ -282,8 +282,8 @@ static void Y_VoteScreenCheck(void)
 {
 	strcpy(VoteScreen.Prefix, "INTS");
 
-	if (VoteScreen.luaVoteScreen)
-		strncpy(VoteScreen.Prefix, VoteScreen.luaVoteScreen, 4);
+	if (VoteScreen.luaPrefix[0] != 0)
+		strlcpy(VoteScreen.Prefix, VoteScreen.luaPrefix, sizeof(VoteScreen.Prefix));
 	else if (G_BattleGametype())
 		strcpy(VoteScreen.Prefix, "BTLS");
 
