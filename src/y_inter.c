@@ -1474,6 +1474,9 @@ void Y_VoteTicker(void)
 
 static void Y_InitVoteDrawing(void)
 {
+	if (dedicated)
+		return;
+
 	// setup the background patches
 	Y_VoteScreenCheck();
 
@@ -1565,11 +1568,14 @@ void Y_StartVote(void)
 			levelinfo[i].gts = NULL;
 
 		// set up the pic
-		lumpnum = W_CheckNumForName(va("%sP", G_BuildMapName(votelevels[i][0]+1)));
-		if (lumpnum != LUMPERROR)
-			levelinfo[i].pic = W_CachePatchName(va("%sP", G_BuildMapName(votelevels[i][0]+1)), PU_PATCH);
-		else
-			levelinfo[i].pic = W_CachePatchName("BLANKLVL", PU_PATCH);
+		if (!dedicated)
+		{
+			lumpnum = W_CheckNumForName(va("%sP", G_BuildMapName(votelevels[i][0]+1)));
+			if (lumpnum != LUMPERROR)
+				levelinfo[i].pic = W_CachePatchName(va("%sP", G_BuildMapName(votelevels[i][0]+1)), PU_PATCH);
+			else
+				levelinfo[i].pic = W_CachePatchName("BLANKLVL", PU_PATCH);
+		}
 	}
 
 	voteclient.loaded = true;
