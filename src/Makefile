@@ -116,8 +116,6 @@
 # SDL_CONFIG= - sdl-config command.
 # SDL_CFLAGS=, SDL_LDFLAGS=
 
-NOBLUAJIT=1
-
 clean_targets=cleandep clean distclean info
 
 .PHONY : $(clean_targets) all
@@ -185,13 +183,8 @@ objdir:=$(makedir)/objs
 sources+=\
 	$(call List,Sourcefile)
 
-ifdef NOBLUAJIT
 sources+=\
 	$(call List,blua/Sourcefile)
-else
-include bluajit/Makefile.cfg
-include bluajit/Makefile.cfg2
-endif
 
 depends:=$(basename $(filter %.c %.cpp %.s,$(sources)))
 objects:=$(basename $(filter %.c %.cpp %.s %.nas,$(sources)))
@@ -425,13 +418,6 @@ clean :
 
 distclean :
 	$(call _rm,../bin ../objs ../dep ../make comptime.h)
-
-ifndef NOBLUAJIT
-	$(call _rm,$(objdir)/buildvm* $(objdir)/minilua* $(objdir)/lj_vm*)
-
-cleanjit:
-	$(call _rm,$(objdir)/buildvm* $(objdir)/minilua* $(objdir)/lj_vm* $(ALL_HDRGEN) $(LJVMCORE_O) $(ALL_GEN))
-endif
 
 info:
 ifdef WINDOWSHELL
