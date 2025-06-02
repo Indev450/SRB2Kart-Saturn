@@ -1907,8 +1907,7 @@ void GL_SetTexture(GLMipmap_t *pTexInfo)
 	{
 		if (pTexInfo->downloaded != tex_downloaded)
 		{
-			if (!currently_batching)
-				pglBindTexture(GL_TEXTURE_2D, pTexInfo->downloaded);
+			pglBindTexture(GL_TEXTURE_2D, pTexInfo->downloaded);
 			tex_downloaded = pTexInfo->downloaded;
 		}
 	}
