@@ -87,6 +87,9 @@ boolean serverrunning = false;
 INT32 serverplayer = 0;
 char motd[254], server_context[8]; // Message of the Day, Unique Context (even without Mumble support)
 
+plrinfo playerinfo[MAXPLAYERS];
+SINT8 joinnode = 0; // used for CL_VIEWSERVER
+
 // Server specific vars
 UINT8 playernode[MAXPLAYERS];
 
@@ -1186,6 +1189,7 @@ typedef enum
 #endif
 	CL_CONNECTED,
 	CL_ABORTED,
+	CL_VIEWSERVER,
 	CL_ASKFULLFILELIST,
 	CL_CONFIRMCONNECT,
 #ifdef HAVE_CURL
@@ -1249,7 +1253,7 @@ static inline void CL_DrawConnectionStatus(void)
 	if (!menuactive) // menu already draws its own fade
 		V_DrawFadeScreen(0xFF00, 16); // force default
 
-	if (cl_mode != CL_DOWNLOADFILES && cl_mode != CL_LOADFILES && cl_mode != CL_CHECKFILES
+	if (cl_mode != CL_DOWNLOADFILES && cl_mode != CL_LOADFILES && cl_mode != CL_CHECKFILES && cl_mode != CL_VIEWSERVER
 #ifdef HAVE_CURL
 	&& cl_mode != CL_DOWNLOADHTTPFILES
 #endif
@@ -1368,6 +1372,78 @@ static inline void CL_DrawConnectionStatus(void)
 			V_DrawFill(BASEVIDWIDTH/2-128, BASEVIDHEIGHT-24, totalfileslength, 8, 160);
 			V_DrawCenteredString(BASEVIDWIDTH/2, BASEVIDHEIGHT-24, V_20TRANS|V_MONOSPACE|MENUCAPS,
 				va(" %2u/%2u Files",loadcompletednum,fileneedednum));
+		}
+		else if (cl_mode == CL_VIEWSERVER)
+		{
+			V_DrawFill(8, 16, BASEVIDWIDTH - 16, 54, 239);
+
+			V_DrawThinString(12 + 80, 18, V_ALLOWLOWERCASE, va("%s", serverlist[joinnode].info.servername));
+
+			const char *map = va("%sP", serverlist[joinnode].info.mapname);
+			patch_t *current_map = W_LumpExists(map) ? W_CachePatchName(map, PU_CACHE) : W_CachePatchName("BLANKLVL", PU_CACHE);
+			V_DrawSmallScaledPatch(10, 18, 0, current_map);
+
+			V_DrawThinString(12 + 80, 38, V_ALLOWLOWERCASE, va("%s", serverlist[joinnode].info.maptitle));
+			V_DrawThinString(12 + 80, 48, V_ALLOWLOWERCASE, va("%s", Gametype_Names[serverlist[joinnode].info.gametype]));
+
+			if (fileneedednum > 0)
+			{
+				V_DrawThinString(12 + 80, 58, V_ALLOWLOWERCASE|V_ORANGEMAP, va("%i Addons", fileneedednum));
+			}
+			else
+			{
+				V_DrawThinString(12 + 80, 58, V_ALLOWLOWERCASE|V_YELLOWMAP, "Vanilla");
+			}
+
+			if (serverlist[joinnode].info.cheatsenabled)
+			{
+				V_DrawRightAlignedThinString(BASEVIDWIDTH - 12, 58, V_ALLOWLOWERCASE|V_GREENMAP, "Cheats");
+			}
+
+			V_DrawFill(8, 72, BASEVIDWIDTH - 16, 112, 239);
+
+			V_DrawString(12, 74, V_ALLOWLOWERCASE|V_YELLOWMAP, "Players");
+			V_DrawRightAlignedString(BASEVIDWIDTH - 12, 74, V_ALLOWLOWERCASE|V_YELLOWMAP, va("%i / %i", serverlist[joinnode].info.numberofplayer, serverlist[joinnode].info.maxplayer));
+
+			INT32 i;
+			INT32 count = 0;
+			INT32 x = 14;
+			INT32 y = 84;
+			INT32 statuscolor = 1;
+			char player_name[MAXPLAYERNAME+1];
+			if (serverlist[joinnode].info.numberofplayer > 0)
+			{
+				for (i = 0; i < MAXPLAYERS; i++)
+				{
+					if (playerinfo[i].node < 255)
+					{
+						strncpy(player_name, playerinfo[i].name, MAXPLAYERNAME);
+						V_DrawThinString(x + 10, y, V_ALLOWLOWERCASE|V_6WIDTHSPACE, player_name);
+
+						if (playerinfo[i].team == 0) { statuscolor = 184; } // playing
+						if (playerinfo[i].data & 0x20) { statuscolor = 86; } // tag IT
+						if (playerinfo[i].team == 1) { statuscolor = 128; } // ctf red team
+						if (playerinfo[i].team == 2) { statuscolor = 232; } // ctf blue team
+						if (playerinfo[i].team == 255) { statuscolor = 16; } // spectator or non-team
+
+						V_DrawFill(x, y, 7, 7, 31);
+						V_DrawFill(x, y, 6, 6, statuscolor);
+
+						y += 9;
+						count++;
+						if ((count == 11) || (count == 22))
+						{
+							x += 104;
+							y = 84;
+						}
+					}
+				}
+			}
+
+			// Buttons
+			V_DrawFill(8, BASEVIDHEIGHT - 14, BASEVIDWIDTH - 16, 12, 239);
+			V_DrawThinString(16, BASEVIDHEIGHT - 12, V_ALLOWLOWERCASE, va("[%sESC%s] = Abort", "\x82", "\x80"));
+			V_DrawRightAlignedThinString(BASEVIDWIDTH - 12, BASEVIDHEIGHT - 12, V_ALLOWLOWERCASE, va("[%sENTER%s] = Join", "\x82", "\x80"));
 		}
 		else if (filedownload.current != -1)
 		{
@@ -2471,6 +2547,7 @@ static boolean CL_ServerConnectionSearchTicker(tic_t *asksent)
 			if (i < 0)
 				return true;
 		}
+		joinnode = i;
 
 		// Quit here rather than downloading files and being refused later.
 		if (serverlist[i].info.numberofplayer >= serverlist[i].info.maxplayer)
@@ -2497,7 +2574,7 @@ static boolean CL_ServerConnectionSearchTicker(tic_t *asksent)
 				return true;
 			}
 
-			cl_mode = CL_CHECKFILES;
+			cl_mode = (cv_serverinfoscreen.value) ? CL_VIEWSERVER : CL_CHECKFILES;
 		}
 		else
 		{
@@ -2551,7 +2628,7 @@ static boolean CL_ServerConnectionTicker(const char *tmpsave, tic_t *oldtic, tic
 
 		case CL_ASKFULLFILELIST:
 			if (cl_lastcheckedfilecount == UINT16_MAX) // All files retrieved
-				cl_mode = CL_CHECKFILES;
+				cl_mode = (cv_serverinfoscreen.value) ? CL_VIEWSERVER : CL_CHECKFILES;
 			else if (fileneedednum != cl_lastcheckedfilecount || I_GetTime() >= *asksent)
 			{
 				if (CL_AskFileList(fileneedednum))
@@ -2717,6 +2794,15 @@ static boolean CL_ServerConnectionTicker(const char *tmpsave, tic_t *oldtic, tic
 			D_ProcessEvents(); //needed for menu system to receive inputs
 
 		key = I_GetKey();
+
+		if (cl_mode == CL_VIEWSERVER)
+		{
+			if (key == KEY_ENTER || key == KEY_JOY1)
+				cl_mode = CL_CHECKFILES;
+			else if (key == KEY_ESCAPE || key == KEY_JOY1+1)
+				cl_mode = CL_ABORTED;
+		}
+
 		// Only ESC and non-keyboard keys abort connection
 		if (!modeattacking && (key == KEY_ESCAPE || key == KEY_JOY1+1 || cl_mode == CL_ABORTED))
 		{
@@ -4144,6 +4230,8 @@ consvar_t cv_downloadspeed = {"downloadspeed", "300", CV_SAVE, downloadspeed_con
 static CV_PossibleValue_t connectawaittime_cons_t[] = {{1, "MIN"}, {60, "MAX"}, {0, "Inf"}, {0, NULL}};
 consvar_t cv_connectawaittime = {"connectawaittime", "5", CV_SAVE, connectawaittime_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
+consvar_t cv_serverinfoscreen = {"serverinfoscreen", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+
 static void Got_AddPlayer(UINT8 **p, INT32 playernum);
 static void Got_RemovePlayer(UINT8 **p, INT32 playernum);
 
@@ -4911,6 +4999,16 @@ static void HandleServerInfo(SINT8 node)
 	if (client && cl_mode > CL_SEARCHING && node == servernode)
 		memcpy(connectedservername, netbuffer->u.serverinfo.servername, MAXSERVERNAME);
 }
+
+
+static void HandlePlayerInfo(SINT8 node)
+{
+	(void)node;
+	
+	INT32 i;
+	for (i = 0; i < MAXPLAYERS; i++)
+		playerinfo[i] = netbuffer->u.playerinfo[i];
+}
 #endif
 
 #ifdef SATURNPAK
@@ -5199,6 +5297,10 @@ static void HandlePacketFromAwayNode(SINT8 node)
 
 		case PT_CLIENTCMD:
 			break; // This is not an "unknown packet"
+		
+		case PT_PLAYERINFO: 
+			HandlePlayerInfo(node);
+		break; 
 
 		case PT_SERVERTICS:
 			// Do not remove my own server (we have just get a out of order packet)
@@ -5786,8 +5888,9 @@ static void GetPackets(void)
 		}
 #endif
 
-		if (netbuffer->packettype == PT_PLAYERINFO)
-			continue; // We do nothing with PLAYERINFO, that's for the MS browser.
+		/*if (netbuffer->packettype == PT_PLAYERINFO)
+			 continue; // We do nothing with PLAYERINFO, that's for the MS browser. Not quite true anymore :p*/
+
 
 		// We also count unknown packets, hence "<="
 		if (netbuffer->packettype <= NUMPACKETTYPE)
