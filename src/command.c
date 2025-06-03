@@ -838,10 +838,15 @@ static void COM_Help_f(void)
 			{
 				{
 					if (!stricmp(cvar->PossibleValue[0].strvalue, "MIN") && !stricmp(cvar->PossibleValue[1].strvalue, "MAX"))
-					{
+					{	
 						if (floatmode)
-							CONS_Printf("  range from %f to %f\n", FIXED_TO_FLOAT(cvar->PossibleValue[0].value),
-								FIXED_TO_FLOAT(cvar->PossibleValue[1].value));
+						{
+							float fu = FIXED_TO_FLOAT(cvar->PossibleValue[0].value);
+							float ck = FIXED_TO_FLOAT(cvar->PossibleValue[1].value);
+							CONS_Printf("  range from %ld%s to %ld%s\n",
+									(long)fu, M_Ftrim(fu),
+									(long)ck, M_Ftrim(ck));
+						}
 						else
 							CONS_Printf("  range from %d to %d\n", cvar->PossibleValue[0].value,
 								cvar->PossibleValue[1].value);
@@ -1038,7 +1043,10 @@ static void COM_Add_f(void)
 	}
 
 	if (( cvar->flags & CV_FLOAT ))
-		CV_Set(cvar, va("%f", FIXED_TO_FLOAT (cvar->value) + atof(COM_Argv(2))));
+	{
+		float n =FIXED_TO_FLOAT (cvar->value) + atof(COM_Argv(2));
+		CV_Set(cvar, va("%ld%s", (long)n, M_Ftrim(n)));
+	}
 	else
 		CV_AddValue(cvar, atoi(COM_Argv(2)));
 }
