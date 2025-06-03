@@ -816,12 +816,17 @@ static void COM_Help_f(void)
 		cvar = CV_FindVar(help);
 		if (cvar)
 		{
+			boolean floatmode = false;
+			const char *cvalue = NULL;
 			CONS_Printf("\x82""Variable %s:\n", cvar->name);
 			CONS_Printf(M_GetText("  flags: "));
 			if (cvar->flags & CV_SAVE)
 				CONS_Printf("AUTOSAVE ");
 			if (cvar->flags & CV_FLOAT)
+			{
 				CONS_Printf("FLOAT ");
+				floatmode = true;
+			}
 			if (cvar->flags & CV_NETVAR)
 				CONS_Printf("NETVAR ");
 			if (cvar->flags & CV_CALL)
@@ -831,30 +836,38 @@ static void COM_Help_f(void)
 			CONS_Printf("\n");
 			if (cvar->PossibleValue)
 			{
-				if (!stricmp(cvar->PossibleValue[0].strvalue, "MIN") && !stricmp(cvar->PossibleValue[1].strvalue, "MAX"))
 				{
-					CONS_Printf("  range from %d to %d\n", cvar->PossibleValue[0].value,
-						cvar->PossibleValue[1].value);
-					i = 2;
-				}
+					if (!stricmp(cvar->PossibleValue[0].strvalue, "MIN") && !stricmp(cvar->PossibleValue[1].strvalue, "MAX"))
+					{
+						if (floatmode)
+							CONS_Printf("  range from %f to %f\n", FIXED_TO_FLOAT(cvar->PossibleValue[0].value),
+								FIXED_TO_FLOAT(cvar->PossibleValue[1].value));
+						else
+							CONS_Printf("  range from %d to %d\n", cvar->PossibleValue[0].value,
+								cvar->PossibleValue[1].value);
+						i = 2;
+					}
 
-				{
-					const char *cvalue = NULL;
 					//CONS_Printf(M_GetText("  possible value : %s\n"), cvar->name);
 					while (cvar->PossibleValue[i].strvalue)
 					{
-						CONS_Printf("  %-2d : %s\n", cvar->PossibleValue[i].value,
-							cvar->PossibleValue[i].strvalue);
+						if (floatmode)
+							CONS_Printf("  %-2f : %s\n", FIXED_TO_FLOAT(cvar->PossibleValue[i].value),
+								cvar->PossibleValue[i].strvalue);
+						else
+							CONS_Printf("  %-2d : %s\n", cvar->PossibleValue[i].value,
+								cvar->PossibleValue[i].strvalue);
 						if (cvar->PossibleValue[i].value == cvar->value)
 							cvalue = cvar->PossibleValue[i].strvalue;
 						i++;
 					}
-					if (cvalue)
-						CONS_Printf(" Current value: %s\n", cvalue);
-					else
-						CONS_Printf(" Current value: %d\n", cvar->value);
 				}
 			}
+
+			if (cvalue)
+				CONS_Printf(" Current value: %s\n", cvalue);
+			else if (cvar->string)
+				CONS_Printf(" Current value: %s\n", cvar->string);
 			else
 				CONS_Printf(" Current value: %d\n", cvar->value);
 		}
