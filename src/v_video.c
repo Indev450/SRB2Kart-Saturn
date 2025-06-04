@@ -1666,7 +1666,7 @@ void V_DrawVhsEffect(boolean rewind)
 		if (y == 0 && offs < 0) offs = 0;
 		else if (y >= vid.height-2 && offs > 0) offs = 0;
 
-		for (x = pos+vid.rowbytes*2; pos < x; pos++)
+		for (x = min(pos+vid.rowbytes*2, vid.rowbytes*vid.height); pos < x; pos++)
 		{
 			tmp[pos] = thismapstart[buf[pos+offs]];
 #ifdef HQ_VHS
