@@ -845,7 +845,6 @@ void R_DrawSpan_8 (void)
 
 // R_CalcTiltedLighting
 // Exactly what it says on the tin. I wish I wasn't too lazy to explain things properly.
-static INT32 tiltlighting[MAXVIDWIDTH];
 void R_CalcTiltedLighting(fixed_t start, fixed_t end)
 {
 	// ZDoom uses a different lighting setup to us, and I couldn't figure out how to adapt their version

@@ -69,8 +69,8 @@ typedef struct
 static lighttable_t **spritelights;
 
 // constant arrays used for psprite clipping and initializing clipping
-INT16 negonearray[MAXVIDWIDTH];
-INT16 screenheightarray[MAXVIDWIDTH];
+INT16 *negonearray;
+INT16 *screenheightarray;
 
 spriteinfo_t spriteinfo[NUMSPRITES];
 
@@ -498,11 +498,6 @@ void R_InitSprites(void)
 	float fa;
 #endif
 
-	for (i = 0; i < MAXVIDWIDTH; i++)
-	{
-		negonearray[i] = -1;
-	}
-
 #ifdef ROTSPRITE
 	for (angle = 1; angle < ROTANGLES; angle++)
 	{
@@ -550,6 +545,34 @@ void R_ClearSprites(void)
 	visspritecount = numvisiblesprites = clippedvissprites = 0;
 }
 
+static INT16 *vissprite_clipbot[MAXVISSPRITES >> VISSPRITECHUNKBITS];
+static INT16 *vissprite_cliptop[MAXVISSPRITES >> VISSPRITECHUNKBITS];
+
+static void R_AllocVisSpriteChunkMemory(UINT32 chunk)
+{
+	vissprite_clipbot[chunk] = Z_Realloc(vissprite_clipbot[chunk], sizeof(INT16) * (VISSPRITESPERCHUNK * viewwidth), PU_STATIC, NULL);
+	vissprite_cliptop[chunk] = Z_Realloc(vissprite_cliptop[chunk], sizeof(INT16) * (VISSPRITESPERCHUNK * viewwidth), PU_STATIC, NULL);
+
+	for (unsigned i = 0; i < VISSPRITESPERCHUNK; i++)
+	{
+		vissprite_t *sprite = visspritechunks[chunk] + i;
+
+		sprite->clipbot = vissprite_clipbot[chunk] + (viewwidth * i);
+		sprite->cliptop = vissprite_cliptop[chunk] + (viewwidth * i);
+	}
+}
+
+void R_AllocVisSpriteMemory(void)
+{
+	unsigned numchunks = MAXVISSPRITES >> VISSPRITECHUNKBITS;
+
+	for (unsigned i = 0; i < numchunks; i++)
+	{
+		if (visspritechunks[i])
+			R_AllocVisSpriteChunkMemory(i);
+	}
+}
+
 //
 // R_NewVisSprite
 //
@@ -561,7 +584,10 @@ static vissprite_t *R_GetVisSprite(UINT32 num)
 
 		// Allocate chunk if necessary
 		if (!visspritechunks[chunk])
+		{
 			Z_Malloc(sizeof(vissprite_t) * VISSPRITESPERCHUNK, PU_LEVEL, &visspritechunks[chunk]);
+			R_AllocVisSpriteChunkMemory(chunk);
+		}
 
 		return visspritechunks[chunk] + (num & VISSPRITEINDEXMASK);
 }
@@ -967,14 +993,9 @@ static void R_DrawPrecipitationVisSprite(vissprite_t *vis)
 //
 static void R_SplitSprite(vissprite_t *sprite)
 {
-	INT32 i, lightnum, lindex;
-	INT16 cutfrac;
-	sector_t *sector;
-	vissprite_t *newsprite;
+	sector_t *sector = sprite->sector;
 
-	sector = sprite->sector;
-
-	for (i = 1; i < sector->numlights; i++)
+	for (INT32 i = 1; i < sector->numlights; i++)
 	{
 		fixed_t testheight;
 
@@ -988,7 +1009,7 @@ static void R_SplitSprite(vissprite_t *sprite)
 		if (testheight <= sprite->gz)
 			return;
 
-		cutfrac = (INT16)((centeryfrac - FixedMul(testheight - viewz, sprite->sortscale))>>FRACBITS);
+		INT16 cutfrac = (INT16)((centeryfrac - FixedMul(testheight - viewz, sprite->sortscale))>>FRACBITS);
 		if (cutfrac < 0)
 			continue;
 		if (cutfrac > viewheight)
@@ -996,7 +1017,16 @@ static void R_SplitSprite(vissprite_t *sprite)
 
 		// Found a split! Make a new sprite, copy the old sprite to it, and
 		// adjust the heights.
-		newsprite = M_Memcpy(R_NewVisSprite(), sprite, sizeof (vissprite_t));
+		vissprite_t *newsprite = R_NewVisSprite();
+
+		// Needs to keep the new sprite's clipping tables
+		INT16 *cliptop = newsprite->cliptop;
+		INT16 *clipbot = newsprite->clipbot;
+
+		M_Memcpy(newsprite, sprite, sizeof (vissprite_t));
+
+		newsprite->cliptop = cliptop;
+		newsprite->clipbot = clipbot;
 
 		sprite->cut |= SC_BOTTOM;
 		sprite->gz = testheight;
@@ -1019,7 +1049,7 @@ static void R_SplitSprite(vissprite_t *sprite)
 		newsprite->cut |= SC_TOP;
 		if (!(sector->lightlist[i].caster->flags & FF_NOSHADE))
 		{
-			lightnum = (*sector->lightlist[i].lightlevel >> LIGHTSEGSHIFT);
+			INT32 lightnum = (*sector->lightlist[i].lightlevel >> LIGHTSEGSHIFT);
 
 			if (lightnum < 0)
 				spritelights = scalelight[0];
@@ -1033,7 +1063,7 @@ static void R_SplitSprite(vissprite_t *sprite)
 			if (!((newsprite->cut & SC_FULLBRIGHT)
 				&& (!newsprite->extra_colormap || !(newsprite->extra_colormap->fog & 1))))
 			{
-				lindex = FixedMul(sprite->xscale, LIGHTRESOLUTIONFIX)>>(LIGHTSCALESHIFT);
+				INT32 lindex = FixedMul(sprite->xscale, LIGHTRESOLUTIONFIX)>>(LIGHTSCALESHIFT);
 
 				// Mitigate against negative xscale and arithmetic overflow
 				lindex = CLAMP(lindex, 0, MAXLIGHTSCALE - 1);

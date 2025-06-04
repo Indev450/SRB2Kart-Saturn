@@ -125,7 +125,7 @@ extern boolean lastdraw;
 extern INT32 postimgparam[MAXSPLITSCREENPLAYERS];
 
 extern INT32 viewwindowx, viewwindowy;
-extern INT32 viewwidth, scaledviewwidth;
+extern INT32 viewwidth;
 
 extern boolean gamedataloaded;
 
