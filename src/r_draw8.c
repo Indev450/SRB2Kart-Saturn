@@ -785,29 +785,59 @@ void R_DrawSpan_8 (void)
 	{
 		return;
 	}
-
 	while (count >= 8)
 	{
 		// SoM: Why didn't I see this earlier? the spot variable is a waste now because we don't
 		// have the uber complicated math to calculate it now, so that was a memory write we didn't
 		// need!
-		for (i = 0; i < 8; i++)
-		{
-			bit = (((UINT32)yposition >> nflatyshift) & nflatmask) | ((UINT32)xposition >> nflatxshift);
-			dest[i] = colormap[source[bit]];
+		bit = (((UINT32)yposition >> nflatyshift) & nflatmask) | ((UINT32)xposition >> nflatxshift);
+		dest[0] = colormap[source[bit]];
+		xposition += xstep;
+		yposition += ystep;
 
-			xposition += xstep;
-			yposition += ystep;
-		}
+		bit = (((UINT32)yposition >> nflatyshift) & nflatmask) | ((UINT32)xposition >> nflatxshift);
+		dest[1] = colormap[source[bit]];
+		xposition += xstep;
+		yposition += ystep;
+
+		bit = (((UINT32)yposition >> nflatyshift) & nflatmask) | ((UINT32)xposition >> nflatxshift);
+		dest[2] = colormap[source[bit]];
+		xposition += xstep;
+		yposition += ystep;
+
+		bit = (((UINT32)yposition >> nflatyshift) & nflatmask) | ((UINT32)xposition >> nflatxshift);
+		dest[3] = colormap[source[bit]];
+		xposition += xstep;
+		yposition += ystep;
+
+		bit = (((UINT32)yposition >> nflatyshift) & nflatmask) | ((UINT32)xposition >> nflatxshift);
+		dest[4] = colormap[source[bit]];
+		xposition += xstep;
+		yposition += ystep;
+
+		bit = (((UINT32)yposition >> nflatyshift) & nflatmask) | ((UINT32)xposition >> nflatxshift);
+		dest[5] = colormap[source[bit]];
+		xposition += xstep;
+		yposition += ystep;
+
+		bit = (((UINT32)yposition >> nflatyshift) & nflatmask) | ((UINT32)xposition >> nflatxshift);
+		dest[6] = colormap[source[bit]];
+		xposition += xstep;
+		yposition += ystep;
+
+		bit = (((UINT32)yposition >> nflatyshift) & nflatmask) | ((UINT32)xposition >> nflatxshift);
+		dest[7] = colormap[source[bit]];
+		xposition += xstep;
+		yposition += ystep;
 
 		dest += 8;
 		count -= 8;
 	}
+
 	while (count-- && dest <= deststop)
 	{
 		bit = (((UINT32)yposition >> nflatyshift) & nflatmask) | ((UINT32)xposition >> nflatxshift);
 		*dest++ = colormap[source[bit]];
-
 		xposition += xstep;
 		yposition += ystep;
 	}
@@ -1590,13 +1620,45 @@ void R_DrawTranslucentSpan_8 (void)
 		// SoM: Why didn't I see this earlier? the spot variable is a waste now because we don't
 		// have the uber complicated math to calculate it now, so that was a memory write we didn't
 		// need!
-		for (i = 0; i < 8; i++)
-		{
-			bit = (((UINT32)yposition >> nflatyshift) & nflatmask) | ((UINT32)xposition >> nflatxshift);
-			dest[i] = *(ds_transmap + (colormap[source[bit]] << 8) + dest[i]);
-			xposition += xstep;
-			yposition += ystep;
-		}
+		bit = (((UINT32)yposition >> nflatyshift) & nflatmask) | ((UINT32)xposition >> nflatxshift);
+		dest[0] = *(ds_transmap + (colormap[source[bit]] << 8) + dest[0]);
+		xposition += xstep;
+		yposition += ystep;
+
+		bit = (((UINT32)yposition >> nflatyshift) & nflatmask) | ((UINT32)xposition >> nflatxshift);
+		dest[1] = *(ds_transmap + (colormap[source[bit]] << 8) + dest[1]);
+		xposition += xstep;
+		yposition += ystep;
+
+		bit = (((UINT32)yposition >> nflatyshift) & nflatmask) | ((UINT32)xposition >> nflatxshift);
+		dest[2] = *(ds_transmap + (colormap[source[bit]] << 8) + dest[2]);
+		xposition += xstep;
+		yposition += ystep;
+
+		bit = (((UINT32)yposition >> nflatyshift) & nflatmask) | ((UINT32)xposition >> nflatxshift);
+		dest[3] = *(ds_transmap + (colormap[source[bit]] << 8) + dest[3]);
+		xposition += xstep;
+		yposition += ystep;
+
+		bit = (((UINT32)yposition >> nflatyshift) & nflatmask) | ((UINT32)xposition >> nflatxshift);
+		dest[4] = *(ds_transmap + (colormap[source[bit]] << 8) + dest[4]);
+		xposition += xstep;
+		yposition += ystep;
+
+		bit = (((UINT32)yposition >> nflatyshift) & nflatmask) | ((UINT32)xposition >> nflatxshift);
+		dest[5] = *(ds_transmap + (colormap[source[bit]] << 8) + dest[5]);
+		xposition += xstep;
+		yposition += ystep;
+
+		bit = (((UINT32)yposition >> nflatyshift) & nflatmask) | ((UINT32)xposition >> nflatxshift);
+		dest[6] = *(ds_transmap + (colormap[source[bit]] << 8) + dest[6]);
+		xposition += xstep;
+		yposition += ystep;
+
+		bit = (((UINT32)yposition >> nflatyshift) & nflatmask) | ((UINT32)xposition >> nflatxshift);
+		dest[7] = *(ds_transmap + (colormap[source[bit]] << 8) + dest[7]);
+		xposition += xstep;
+		yposition += ystep;
 
 		dest += 8;
 		count -= 8;
@@ -1647,13 +1709,45 @@ void R_DrawTranslucentWaterSpan_8(void)
 		// SoM: Why didn't I see this earlier? the spot variable is a waste now because we don't
 		// have the uber complicated math to calculate it now, so that was a memory write we didn't
 		// need!
-		for (i = 0; i < 8; i++)
-		{
-			bit = ((yposition >> nflatyshift) & nflatmask) | (xposition >> nflatxshift);
-			dest[i] = colormap[*(ds_transmap + (source[bit] << 8) + *dsrc++)];
-			xposition += xstep;
-			yposition += ystep;
-		}
+		bit = ((yposition >> nflatyshift) & nflatmask) | (xposition >> nflatxshift);
+		dest[0] = colormap[*(ds_transmap + (source[bit] << 8) + *dsrc++)];
+		xposition += xstep;
+		yposition += ystep;
+
+		bit = ((yposition >> nflatyshift) & nflatmask) | (xposition >> nflatxshift);
+		dest[1] = colormap[*(ds_transmap + (source[bit] << 8) + *dsrc++)];
+		xposition += xstep;
+		yposition += ystep;
+
+		bit = ((yposition >> nflatyshift) & nflatmask) | (xposition >> nflatxshift);
+		dest[2] = colormap[*(ds_transmap + (source[bit] << 8) + *dsrc++)];
+		xposition += xstep;
+		yposition += ystep;
+
+		bit = ((yposition >> nflatyshift) & nflatmask) | (xposition >> nflatxshift);
+		dest[3] = colormap[*(ds_transmap + (source[bit] << 8) + *dsrc++)];
+		xposition += xstep;
+		yposition += ystep;
+
+		bit = ((yposition >> nflatyshift) & nflatmask) | (xposition >> nflatxshift);
+		dest[4] = colormap[*(ds_transmap + (source[bit] << 8) + *dsrc++)];
+		xposition += xstep;
+		yposition += ystep;
+
+		bit = ((yposition >> nflatyshift) & nflatmask) | (xposition >> nflatxshift);
+		dest[5] = colormap[*(ds_transmap + (source[bit] << 8) + *dsrc++)];
+		xposition += xstep;
+		yposition += ystep;
+
+		bit = ((yposition >> nflatyshift) & nflatmask) | (xposition >> nflatxshift);
+		dest[6] = colormap[*(ds_transmap + (source[bit] << 8) + *dsrc++)];
+		xposition += xstep;
+		yposition += ystep;
+
+		bit = ((yposition >> nflatyshift) & nflatmask) | (xposition >> nflatxshift);
+		dest[7] = colormap[*(ds_transmap + (source[bit] << 8) + *dsrc++)];
+		xposition += xstep;
+		yposition += ystep;
 
 		dest += 8;
 		count -= 8;
