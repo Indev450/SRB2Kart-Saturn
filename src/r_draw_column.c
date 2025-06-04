@@ -28,8 +28,6 @@ void R_DrawColumn(void)
 	UINT8 *restrict dest;
 	intptr_t frac;
 	intptr_t fracstep;
-	INT32 npow2min;
-	INT32 npow2max;
 
 	count = dc_yh - dc_yl;
 
@@ -59,8 +57,9 @@ void R_DrawColumn(void)
 	const lighttable_t *restrict colormap = dc_colormap;
 
 	intptr_t heightmask = dc_sourcelength-1;
-	npow2min = -1;
-	npow2max = dc_sourcelength;
+
+	static const INT32 npow2min = -1;
+	const INT32 npow2max = dc_sourcelength;
 
 	if (dc_sourcelength & heightmask)   // not a power of 2 -- killough
 	{
@@ -89,17 +88,7 @@ void R_DrawColumn(void)
 
 			// -1 is the lower clamp bound because column posts have a "safe" byte before the real data
 			// and a few bytes after as well
-
-			// jartha: faster on my AMD FX-6300 CPU.
-			// Faster than ternaries, faster than std::min/std::max. Don't ask me why.
-			// I tested by viewing a non-PO2 texture from a consistent distance so it covered the entire screen.
-			// The framerate difference was about 50 frames at 640x400.
-			INT32 n = frac >> FRACBITS;
-			if (n < npow2min)
-				n = npow2min;
-			if (n > npow2max)
-				n = npow2max;
-			*dest = colormap[source[n]];
+			*dest = colormap[source[CLAMP(frac >> FRACBITS, npow2min, npow2max)]];
 
 			dest += vid.width;
 
@@ -152,9 +141,6 @@ void R_Draw2sMultiPatchColumn(void)
 	intptr_t frac;
 	intptr_t fracstep;
 
-	INT32 npow2min;
-	INT32 npow2max;
-
 	count = dc_yh - dc_yl;
 
 	if (count < 0) // Zero length, column does not exceed a pixel.
@@ -183,8 +169,8 @@ void R_Draw2sMultiPatchColumn(void)
 	intptr_t heightmask = dc_sourcelength-1;
 	UINT8 val;
 
-	npow2min = -1;
-	npow2max = dc_sourcelength;
+	static const INT32 npow2min = -1;
+	const INT32 npow2max = dc_sourcelength;
 
 	if (dc_sourcelength & heightmask)   // not a power of 2 -- killough
 	{
@@ -213,18 +199,7 @@ void R_Draw2sMultiPatchColumn(void)
 
 			// -1 is the lower clamp bound because column posts have a "safe" byte before the real data
 			// and a few bytes after as well
-
-			// jartha: faster on my AMD FX-6300 CPU.
-			// Faster than ternaries, faster than std::min/std::max. Don't ask me why.
-			// I tested by viewing a non-PO2 texture from a consistent distance so it covered the entire screen.
-			// The framerate difference was about 50 frames at 640x400.
-			INT32 n = frac >> FRACBITS;
-			if (n < npow2min)
-				n = npow2min;
-			if (n > npow2max)
-				n = npow2max;
-
-			val = source[n];
+			val = source[CLAMP(frac >> FRACBITS, npow2min, npow2max)];
 
 			if (val != TRANSPARENTPIXEL)
 			{
@@ -256,6 +231,7 @@ void R_Draw2sMultiPatchColumn(void)
 		while ((count -= 2) >= 0) // texture height is a power of 2
 		{
 			val = source[(frac>>FRACBITS) & heightmask];
+
 			if (val != TRANSPARENTPIXEL)
 			{
 				*dest = colormap[val];
@@ -292,9 +268,6 @@ void R_Draw2sMultiPatchTranslucentColumn(void)
 	intptr_t frac;
 	intptr_t fracstep;
 
-	INT32 npow2min;
-	INT32 npow2max;
-
 	count = dc_yh - dc_yl;
 
 	if (count < 0) // Zero length, column does not exceed a pixel.
@@ -324,8 +297,8 @@ void R_Draw2sMultiPatchTranslucentColumn(void)
 	intptr_t heightmask = dc_sourcelength-1;
 	register UINT8 val;
 
-	npow2min = -1;
-	npow2max = dc_sourcelength;
+	static const INT32 npow2min = -1;
+	const INT32 npow2max = dc_sourcelength;
 
 	if (dc_sourcelength & heightmask)   // not a power of 2 -- killough
 	{
@@ -354,18 +327,7 @@ void R_Draw2sMultiPatchTranslucentColumn(void)
 
 			// -1 is the lower clamp bound because column posts have a "safe" byte before the real data
 			// and a few bytes after as well
-
-			// jartha: faster on my AMD FX-6300 CPU.
-			// Faster than ternaries, faster than std::min/std::max. Don't ask me why.
-			// I tested by viewing a non-PO2 texture from a consistent distance so it covered the entire screen.
-			// The framerate difference was about 50 frames at 640x400.
-			INT32 n = frac >> FRACBITS;
-			if (n < npow2min)
-				n = npow2min;
-			if (n > npow2max)
-				n = npow2max;
-
-			val = source[n];
+			val = source[CLAMP(frac >> FRACBITS, npow2min, npow2max)];
 
 			if (val != TRANSPARENTPIXEL)
 			{
@@ -479,9 +441,6 @@ void R_DrawTranslucentColumn(void)
 	intptr_t frac;
 	intptr_t fracstep;
 
-	INT32 npow2min;
-	INT32 npow2max;
-
 	count = dc_yh - dc_yl + 1;
 
 	if (count <= 0) // Zero length, column does not exceed a pixel.
@@ -508,8 +467,8 @@ void R_DrawTranslucentColumn(void)
 	const lighttable_t *restrict colormap = dc_colormap;
 	intptr_t heightmask = dc_sourcelength-1;
 
-	npow2min = -1;
-	npow2max = dc_sourcelength;
+	static const INT32 npow2min = -1;
+	const INT32 npow2max = dc_sourcelength;
 
 	if (dc_sourcelength & heightmask)
 	{
@@ -538,18 +497,7 @@ void R_DrawTranslucentColumn(void)
 
 			// -1 is the lower clamp bound because column posts have a "safe" byte before the real data
 			// and a few bytes after as well
-
-			// jartha: faster on my AMD FX-6300 CPU.
-			// Faster than ternaries, faster than std::min/std::max. Don't ask me why.
-			// I tested by viewing a non-PO2 texture from a consistent distance so it covered the entire screen.
-			// The framerate difference was about 50 frames at 640x400.
-			INT32 n = frac >> FRACBITS;
-			if (n < npow2min)
-				n = npow2min;
-			if (n > npow2max)
-				n = npow2max;
-
-			*dest = *(transmap + (colormap[source[n]]<<8) + (*dest));
+			*dest = *(transmap + (colormap[source[CLAMP(frac >> FRACBITS, npow2min, npow2max)]]<<8) + (*dest));
 
 			dest += vid.width;
 
@@ -591,9 +539,6 @@ void R_DrawTranslatedTranslucentColumn(void)
 	intptr_t frac;
 	intptr_t fracstep;
 
-	INT32 npow2min;
-	INT32 npow2max;
-
 	count = dc_yh - dc_yl + 1;
 
 	if (count <= 0) // Zero length, column does not exceed a pixel.
@@ -617,8 +562,8 @@ void R_DrawTranslatedTranslucentColumn(void)
 	// This is as fast as it gets.
 	intptr_t heightmask = dc_sourcelength-1;
 
-	npow2min = -1;
-	npow2max = dc_sourcelength;
+	static const INT32 npow2min = -1;
+	const INT32 npow2max = dc_sourcelength;
 
 	if (dc_sourcelength & heightmask)
 	{
@@ -647,18 +592,7 @@ void R_DrawTranslatedTranslucentColumn(void)
 
 			// -1 is the lower clamp bound because column posts have a "safe" byte before the real data
 			// and a few bytes after as well
-
-			// jartha: faster on my AMD FX-6300 CPU.
-			// Faster than ternaries, faster than std::min/std::max. Don't ask me why.
-			// I tested by viewing a non-PO2 texture from a consistent distance so it covered the entire screen.
-			// The framerate difference was about 50 frames at 640x400.
-			INT32 n = frac >> FRACBITS;
-			if (n < npow2min)
-				n = npow2min;
-			if (n > npow2max)
-				n = npow2max;
-
-			*dest = *(dc_transmap + (dc_colormap[dc_translation[dc_source[n]]]<<8) + (*dest));
+			*dest = *(dc_transmap + (dc_colormap[dc_translation[dc_source[CLAMP(frac >> FRACBITS, npow2min, npow2max)]]]<<8) + (*dest));
 
 			dest += vid.width;
 
