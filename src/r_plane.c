@@ -893,15 +893,34 @@ void R_DrawSinglePlane(visplane_t *pl)
 						if (bottom > vid.height)
 							bottom = vid.height;
 
-						if (splitscreen > 2 && viewplayer == &players[displayplayers[3]]) // Only copy the part of the screen we need
-							scr = (vid.screens[0] + (top+(viewheight))*vid.width + viewwidth);
-						else if ((splitscreen == 1 && viewplayer == &players[displayplayers[1]])
-							|| (splitscreen > 1 && viewplayer == &players[displayplayers[2]]))
-							scr = (vid.screens[0] + (top+(viewheight))*vid.width);
-						else if (splitscreen > 1 && viewplayer == &players[displayplayers[1]])
-							scr = (vid.screens[0] + ((top)*vid.width) + viewwidth);
-						else
-							scr = (vid.screens[0] + ((top)*vid.width));
+						// Only copy the part of the screen we need
+						scr = (renderscreen + (top*vid.width));
+
+						for (UINT8 i = 1; i <= splitscreen; i++)
+						{
+							if (viewplayer == &players[displayplayers[i]])
+							{
+								switch (i)
+								{
+									case 1:
+										if (splitscreen == 1)
+											scr = (renderscreen + (top + viewheight) * vid.width);
+										else if (splitscreen > 1)
+											scr = (renderscreen + (top * vid.width) + viewwidth);
+										break;
+									case 2:
+										scr = (renderscreen + (top + viewheight) * vid.width);
+										break;
+									case 3:
+										scr = (renderscreen + (top + viewheight) * vid.width + viewwidth);
+										break;
+									default:
+										break;
+								}
+
+								break;
+							}
+						}
 
 						VID_BlitLinearScreen(scr, vid.screens[1]+((top)*vid.width),
 											vid.width, bottom-top,
