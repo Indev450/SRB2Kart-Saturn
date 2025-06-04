@@ -413,7 +413,7 @@ void R_DrawShadeColumn(void)
 		return;
 	}
 
-	// FIXME. As above.
+	// Framebuffer destination address.
 	dest = R_Address(dc_x, dc_yl);
 
 	// Looks familiar.
@@ -453,7 +453,7 @@ void R_DrawTranslucentColumn(void)
 		return;
 	}
 
-	// FIXME. As above.
+	// Framebuffer destination address.
 	dest = R_Address(dc_x, dc_yl);
 
 	// Looks familiar.
@@ -551,7 +551,7 @@ void R_DrawTranslatedTranslucentColumn(void)
 		return;
 	}
 
-	// FIXME. As above.
+	// Framebuffer destination address.
 	dest = R_Address(dc_x, dc_yl);
 
 	// Looks familiar.
@@ -646,7 +646,7 @@ void R_DrawTranslatedColumn(void)
 		return;
 	}
 
-	// FIXME. As above.
+	// Framebuffer destination address.
 	dest = R_Address(dc_x, dc_yl);
 
 	// Looks familiar.
