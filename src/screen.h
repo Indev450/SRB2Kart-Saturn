@@ -39,14 +39,10 @@
 // we try to re-allocate a minimum of buffers for stability of the memory,
 // so all the small-enough tables based on screen size, are allocated once
 // and for all at the maximum size.
-#define MAXVIDWIDTH 5120 // don't set this too high because actually
-#define MAXVIDHEIGHT 2880 // lots of tables are allocated with the MAX size.
+#define MAXVIDWIDTH 8192 // don't set this too high because actually
+#define MAXVIDHEIGHT 8192 // lots of tables are allocated with the MAX size.
 #define BASEVIDWIDTH 320 // NEVER CHANGE THIS! This is the original
 #define BASEVIDHEIGHT 200 // resolution of the graphics.
-
-// max res for png capture; just here to prevent some crashes on very high resolutions; tho you should never go this high cause ogl allocs certain things with MAXVIDWIDTH and MAXVIDHEIGHT too Zzz...
-#define MAXPNGWIDTH 7680
-#define MAXPNGHEIGHT 4320
 
 // global video state
 typedef struct viddef_s
