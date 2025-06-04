@@ -24,7 +24,7 @@
 /**	\brief The R_DrawSpan function
 	Draws the actual span.
 */
-void R_DrawSpan (void)
+void R_DrawSpan(void)
 {
 	uintptr_t xposition;
 	uintptr_t yposition;
@@ -110,6 +110,219 @@ void R_DrawSpan (void)
 		*dest++ = colormap[source[bit]];
 		xposition += xstep;
 		yposition += ystep;
+	}
+}
+
+/**	\brief The R_DrawTranslucentSpan function
+	Draws the actual span with translucent.
+*/
+void R_DrawTranslucentSpan(void)
+{
+	fixed_t xposition;
+	fixed_t yposition;
+	fixed_t xstep, ystep;
+	register UINT32 bit;
+
+	UINT8 *source;
+	UINT8 *colormap;
+	register UINT8 *dest;
+	const UINT8 *deststop = vid.screens[0] + vid.rowbytes * vid.height;
+
+	register intptr_t count = (ds_x2 - ds_x1 + 1);
+
+	xposition = ds_xfrac; yposition = ds_yfrac;
+	xstep = ds_xstep; ystep = ds_ystep;
+
+	// SoM: we only need 6 bits for the integer part (0 thru 63) so the rest
+	// can be used for the fraction part. This allows calculation of the memory address in the
+	// texture with two shifts, an OR and one AND. (see below)
+	// for texture sizes > 64 the amount of precision we can allow will decrease, but only by one
+	// bit per power of two (obviously)
+	// Ok, because I was able to eliminate the variable spot below, this function is now FASTER
+	// than the original span renderer. Whodathunkit?
+	xposition <<= nflatshiftup; yposition <<= nflatshiftup;
+	xstep <<= nflatshiftup; ystep <<= nflatshiftup;
+
+	source = ds_source;
+	colormap = ds_colormap;
+	dest = R_Address(ds_x1, ds_y);
+
+	while (count >= 8)
+	{
+		// SoM: Why didn't I see this earlier? the spot variable is a waste now because we don't
+		// have the uber complicated math to calculate it now, so that was a memory write we didn't
+		// need!
+		bit = (((UINT32)yposition >> nflatyshift) & nflatmask) | ((UINT32)xposition >> nflatxshift);
+		dest[0] = *(ds_transmap + (colormap[source[bit]] << 8) + dest[0]);
+		xposition += xstep;
+		yposition += ystep;
+
+		bit = (((UINT32)yposition >> nflatyshift) & nflatmask) | ((UINT32)xposition >> nflatxshift);
+		dest[1] = *(ds_transmap + (colormap[source[bit]] << 8) + dest[1]);
+		xposition += xstep;
+		yposition += ystep;
+
+		bit = (((UINT32)yposition >> nflatyshift) & nflatmask) | ((UINT32)xposition >> nflatxshift);
+		dest[2] = *(ds_transmap + (colormap[source[bit]] << 8) + dest[2]);
+		xposition += xstep;
+		yposition += ystep;
+
+		bit = (((UINT32)yposition >> nflatyshift) & nflatmask) | ((UINT32)xposition >> nflatxshift);
+		dest[3] = *(ds_transmap + (colormap[source[bit]] << 8) + dest[3]);
+		xposition += xstep;
+		yposition += ystep;
+
+		bit = (((UINT32)yposition >> nflatyshift) & nflatmask) | ((UINT32)xposition >> nflatxshift);
+		dest[4] = *(ds_transmap + (colormap[source[bit]] << 8) + dest[4]);
+		xposition += xstep;
+		yposition += ystep;
+
+		bit = (((UINT32)yposition >> nflatyshift) & nflatmask) | ((UINT32)xposition >> nflatxshift);
+		dest[5] = *(ds_transmap + (colormap[source[bit]] << 8) + dest[5]);
+		xposition += xstep;
+		yposition += ystep;
+
+		bit = (((UINT32)yposition >> nflatyshift) & nflatmask) | ((UINT32)xposition >> nflatxshift);
+		dest[6] = *(ds_transmap + (colormap[source[bit]] << 8) + dest[6]);
+		xposition += xstep;
+		yposition += ystep;
+
+		bit = (((UINT32)yposition >> nflatyshift) & nflatmask) | ((UINT32)xposition >> nflatxshift);
+		dest[7] = *(ds_transmap + (colormap[source[bit]] << 8) + dest[7]);
+		xposition += xstep;
+		yposition += ystep;
+
+		dest += 8;
+		count -= 8;
+	}
+	while (count-- && dest <= deststop)
+	{
+		bit = (((UINT32)yposition >> nflatyshift) & nflatmask) | ((UINT32)xposition >> nflatxshift);
+		*dest = *(ds_transmap + (colormap[source[bit]] << 8) + *dest);
+		dest++;
+		xposition += xstep;
+		yposition += ystep;
+	}
+}
+
+void R_DrawTranslucentWaterSpan(void)
+{
+	UINT32 xposition;
+	UINT32 yposition;
+	UINT32 xstep, ystep;
+	register UINT32 bit;
+
+	UINT8 *source;
+	UINT8 *colormap;
+	register UINT8 *dest;
+	UINT8 *dsrc;
+
+	register intptr_t count;
+
+	// SoM: we only need 6 bits for the integer part (0 thru 63) so the rest
+	// can be used for the fraction part. This allows calculation of the memory address in the
+	// texture with two shifts, an OR and one AND. (see below)
+	// for texture sizes > 64 the amount of precision we can allow will decrease, but only by one
+	// bit per power of two (obviously)
+	// Ok, because I was able to eliminate the variable spot below, this function is now FASTER
+	// than the original span renderer. Whodathunkit?
+	xposition = ds_xfrac << nflatshiftup; yposition = (ds_yfrac + ds_waterofs) << nflatshiftup;
+	xstep = ds_xstep << nflatshiftup; ystep = ds_ystep << nflatshiftup;
+
+	source = ds_source;
+	colormap = ds_colormap;
+	dest = R_Address(ds_x1, ds_y);
+	dsrc = vid.screens[1] + (ds_y+ds_bgofs)*vid.width + ds_x1;
+	count = ds_x2 - ds_x1 + 1;
+
+	while (count >= 8)
+	{
+		// SoM: Why didn't I see this earlier? the spot variable is a waste now because we don't
+		// have the uber complicated math to calculate it now, so that was a memory write we didn't
+		// need!
+		bit = ((yposition >> nflatyshift) & nflatmask) | (xposition >> nflatxshift);
+		dest[0] = colormap[*(ds_transmap + (source[bit] << 8) + *dsrc++)];
+		xposition += xstep;
+		yposition += ystep;
+
+		bit = ((yposition >> nflatyshift) & nflatmask) | (xposition >> nflatxshift);
+		dest[1] = colormap[*(ds_transmap + (source[bit] << 8) + *dsrc++)];
+		xposition += xstep;
+		yposition += ystep;
+
+		bit = ((yposition >> nflatyshift) & nflatmask) | (xposition >> nflatxshift);
+		dest[2] = colormap[*(ds_transmap + (source[bit] << 8) + *dsrc++)];
+		xposition += xstep;
+		yposition += ystep;
+
+		bit = ((yposition >> nflatyshift) & nflatmask) | (xposition >> nflatxshift);
+		dest[3] = colormap[*(ds_transmap + (source[bit] << 8) + *dsrc++)];
+		xposition += xstep;
+		yposition += ystep;
+
+		bit = ((yposition >> nflatyshift) & nflatmask) | (xposition >> nflatxshift);
+		dest[4] = colormap[*(ds_transmap + (source[bit] << 8) + *dsrc++)];
+		xposition += xstep;
+		yposition += ystep;
+
+		bit = ((yposition >> nflatyshift) & nflatmask) | (xposition >> nflatxshift);
+		dest[5] = colormap[*(ds_transmap + (source[bit] << 8) + *dsrc++)];
+		xposition += xstep;
+		yposition += ystep;
+
+		bit = ((yposition >> nflatyshift) & nflatmask) | (xposition >> nflatxshift);
+		dest[6] = colormap[*(ds_transmap + (source[bit] << 8) + *dsrc++)];
+		xposition += xstep;
+		yposition += ystep;
+
+		bit = ((yposition >> nflatyshift) & nflatmask) | (xposition >> nflatxshift);
+		dest[7] = colormap[*(ds_transmap + (source[bit] << 8) + *dsrc++)];
+		xposition += xstep;
+		yposition += ystep;
+
+		dest += 8;
+		count -= 8;
+	}
+	while (count--)
+	{
+		bit = ((yposition >> nflatyshift) & nflatmask) | (xposition >> nflatxshift);
+		*dest++ = colormap[*(ds_transmap + (source[bit] << 8) + *dsrc++)];
+
+		xposition += xstep;
+		yposition += ystep;
+	}
+}
+
+/**	\brief The R_DrawFogSpan function
+	Draws the actual span with fogging.
+*/
+void R_DrawFogSpan(void)
+{
+	UINT8 *colormap;
+	register UINT8 *dest;
+
+	register intptr_t count;
+
+	colormap = ds_colormap;
+	dest = R_Address(dc_x, dc_yl);
+
+	count = ds_x2 - ds_x1 + 1;
+
+	while (count >= 4)
+	{
+		dest[0] = colormap[dest[0]];
+		dest[1] = colormap[dest[1]];
+		dest[2] = colormap[dest[2]];
+		dest[3] = colormap[dest[3]];
+
+		dest += 4;
+		count -= 4;
+	}
+
+	while (count--)
+	{
+		*dest = colormap[*dest];
+		dest++;
 	}
 }
 
@@ -419,7 +632,6 @@ void R_DrawTiltedTranslucentSpan(void)
 #endif
 }
 
-#ifndef NOWATER
 /**	\brief The R_DrawTiltedTranslucentWaterSpan function
 	Like DrawTiltedTranslucentSpan, but for water
 */
@@ -559,7 +771,6 @@ void R_DrawTiltedTranslucentWaterSpan(void)
 	}
 #endif
 }
-#endif // NOWATER
 
 void R_DrawTiltedSplat(void)
 {
@@ -718,7 +929,7 @@ void R_DrawTiltedSplat(void)
 /**	\brief The R_DrawSplat function
 	Just like R_DrawSpan, but skips transparent pixels.
 */
-void R_DrawSplat (void)
+void R_DrawSplat(void)
 {
 	UINT32 xposition;
 	UINT32 yposition;
@@ -788,7 +999,7 @@ void R_DrawSplat (void)
 /**	\brief The R_DrawTranslucentSplat function
 	Just like R_DrawSplat, but is translucent!
 */
-void R_DrawTranslucentSplat (void)
+void R_DrawTranslucentSplat(void)
 {
 	UINT32 xposition;
 	UINT32 yposition;
@@ -847,220 +1058,5 @@ void R_DrawTranslucentSplat (void)
 		dest++;
 		xposition += xstep;
 		yposition += ystep;
-	}
-}
-
-/**	\brief The R_DrawTranslucentSpan function
-	Draws the actual span with translucent.
-*/
-void R_DrawTranslucentSpan (void)
-{
-	fixed_t xposition;
-	fixed_t yposition;
-	fixed_t xstep, ystep;
-	register UINT32 bit;
-
-	UINT8 *source;
-	UINT8 *colormap;
-	register UINT8 *dest;
-	const UINT8 *deststop = vid.screens[0] + vid.rowbytes * vid.height;
-
-	register intptr_t count = (ds_x2 - ds_x1 + 1);
-
-	xposition = ds_xfrac; yposition = ds_yfrac;
-	xstep = ds_xstep; ystep = ds_ystep;
-
-	// SoM: we only need 6 bits for the integer part (0 thru 63) so the rest
-	// can be used for the fraction part. This allows calculation of the memory address in the
-	// texture with two shifts, an OR and one AND. (see below)
-	// for texture sizes > 64 the amount of precision we can allow will decrease, but only by one
-	// bit per power of two (obviously)
-	// Ok, because I was able to eliminate the variable spot below, this function is now FASTER
-	// than the original span renderer. Whodathunkit?
-	xposition <<= nflatshiftup; yposition <<= nflatshiftup;
-	xstep <<= nflatshiftup; ystep <<= nflatshiftup;
-
-	source = ds_source;
-	colormap = ds_colormap;
-	dest = R_Address(ds_x1, ds_y);
-
-	while (count >= 8)
-	{
-		// SoM: Why didn't I see this earlier? the spot variable is a waste now because we don't
-		// have the uber complicated math to calculate it now, so that was a memory write we didn't
-		// need!
-		bit = (((UINT32)yposition >> nflatyshift) & nflatmask) | ((UINT32)xposition >> nflatxshift);
-		dest[0] = *(ds_transmap + (colormap[source[bit]] << 8) + dest[0]);
-		xposition += xstep;
-		yposition += ystep;
-
-		bit = (((UINT32)yposition >> nflatyshift) & nflatmask) | ((UINT32)xposition >> nflatxshift);
-		dest[1] = *(ds_transmap + (colormap[source[bit]] << 8) + dest[1]);
-		xposition += xstep;
-		yposition += ystep;
-
-		bit = (((UINT32)yposition >> nflatyshift) & nflatmask) | ((UINT32)xposition >> nflatxshift);
-		dest[2] = *(ds_transmap + (colormap[source[bit]] << 8) + dest[2]);
-		xposition += xstep;
-		yposition += ystep;
-
-		bit = (((UINT32)yposition >> nflatyshift) & nflatmask) | ((UINT32)xposition >> nflatxshift);
-		dest[3] = *(ds_transmap + (colormap[source[bit]] << 8) + dest[3]);
-		xposition += xstep;
-		yposition += ystep;
-
-		bit = (((UINT32)yposition >> nflatyshift) & nflatmask) | ((UINT32)xposition >> nflatxshift);
-		dest[4] = *(ds_transmap + (colormap[source[bit]] << 8) + dest[4]);
-		xposition += xstep;
-		yposition += ystep;
-
-		bit = (((UINT32)yposition >> nflatyshift) & nflatmask) | ((UINT32)xposition >> nflatxshift);
-		dest[5] = *(ds_transmap + (colormap[source[bit]] << 8) + dest[5]);
-		xposition += xstep;
-		yposition += ystep;
-
-		bit = (((UINT32)yposition >> nflatyshift) & nflatmask) | ((UINT32)xposition >> nflatxshift);
-		dest[6] = *(ds_transmap + (colormap[source[bit]] << 8) + dest[6]);
-		xposition += xstep;
-		yposition += ystep;
-
-		bit = (((UINT32)yposition >> nflatyshift) & nflatmask) | ((UINT32)xposition >> nflatxshift);
-		dest[7] = *(ds_transmap + (colormap[source[bit]] << 8) + dest[7]);
-		xposition += xstep;
-		yposition += ystep;
-
-		dest += 8;
-		count -= 8;
-	}
-	while (count-- && dest <= deststop)
-	{
-		bit = (((UINT32)yposition >> nflatyshift) & nflatmask) | ((UINT32)xposition >> nflatxshift);
-		*dest = *(ds_transmap + (colormap[source[bit]] << 8) + *dest);
-		dest++;
-		xposition += xstep;
-		yposition += ystep;
-	}
-}
-
-#ifndef NOWATER
-void R_DrawTranslucentWaterSpan(void)
-{
-	UINT32 xposition;
-	UINT32 yposition;
-	UINT32 xstep, ystep;
-	register UINT32 bit;
-
-	UINT8 *source;
-	UINT8 *colormap;
-	register UINT8 *dest;
-	UINT8 *dsrc;
-
-	register intptr_t count;
-
-	// SoM: we only need 6 bits for the integer part (0 thru 63) so the rest
-	// can be used for the fraction part. This allows calculation of the memory address in the
-	// texture with two shifts, an OR and one AND. (see below)
-	// for texture sizes > 64 the amount of precision we can allow will decrease, but only by one
-	// bit per power of two (obviously)
-	// Ok, because I was able to eliminate the variable spot below, this function is now FASTER
-	// than the original span renderer. Whodathunkit?
-	xposition = ds_xfrac << nflatshiftup; yposition = (ds_yfrac + ds_waterofs) << nflatshiftup;
-	xstep = ds_xstep << nflatshiftup; ystep = ds_ystep << nflatshiftup;
-
-	source = ds_source;
-	colormap = ds_colormap;
-	dest = R_Address(ds_x1, ds_y);
-	dsrc = vid.screens[1] + (ds_y+ds_bgofs)*vid.width + ds_x1;
-	count = ds_x2 - ds_x1 + 1;
-
-	while (count >= 8)
-	{
-		// SoM: Why didn't I see this earlier? the spot variable is a waste now because we don't
-		// have the uber complicated math to calculate it now, so that was a memory write we didn't
-		// need!
-		bit = ((yposition >> nflatyshift) & nflatmask) | (xposition >> nflatxshift);
-		dest[0] = colormap[*(ds_transmap + (source[bit] << 8) + *dsrc++)];
-		xposition += xstep;
-		yposition += ystep;
-
-		bit = ((yposition >> nflatyshift) & nflatmask) | (xposition >> nflatxshift);
-		dest[1] = colormap[*(ds_transmap + (source[bit] << 8) + *dsrc++)];
-		xposition += xstep;
-		yposition += ystep;
-
-		bit = ((yposition >> nflatyshift) & nflatmask) | (xposition >> nflatxshift);
-		dest[2] = colormap[*(ds_transmap + (source[bit] << 8) + *dsrc++)];
-		xposition += xstep;
-		yposition += ystep;
-
-		bit = ((yposition >> nflatyshift) & nflatmask) | (xposition >> nflatxshift);
-		dest[3] = colormap[*(ds_transmap + (source[bit] << 8) + *dsrc++)];
-		xposition += xstep;
-		yposition += ystep;
-
-		bit = ((yposition >> nflatyshift) & nflatmask) | (xposition >> nflatxshift);
-		dest[4] = colormap[*(ds_transmap + (source[bit] << 8) + *dsrc++)];
-		xposition += xstep;
-		yposition += ystep;
-
-		bit = ((yposition >> nflatyshift) & nflatmask) | (xposition >> nflatxshift);
-		dest[5] = colormap[*(ds_transmap + (source[bit] << 8) + *dsrc++)];
-		xposition += xstep;
-		yposition += ystep;
-
-		bit = ((yposition >> nflatyshift) & nflatmask) | (xposition >> nflatxshift);
-		dest[6] = colormap[*(ds_transmap + (source[bit] << 8) + *dsrc++)];
-		xposition += xstep;
-		yposition += ystep;
-
-		bit = ((yposition >> nflatyshift) & nflatmask) | (xposition >> nflatxshift);
-		dest[7] = colormap[*(ds_transmap + (source[bit] << 8) + *dsrc++)];
-		xposition += xstep;
-		yposition += ystep;
-
-		dest += 8;
-		count -= 8;
-	}
-	while (count--)
-	{
-		bit = ((yposition >> nflatyshift) & nflatmask) | (xposition >> nflatxshift);
-		*dest++ = colormap[*(ds_transmap + (source[bit] << 8) + *dsrc++)];
-
-		xposition += xstep;
-		yposition += ystep;
-	}
-}
-#endif
-
-/**	\brief The R_DrawFogSpan function
-	Draws the actual span with fogging.
-*/
-void R_DrawFogSpan(void)
-{
-	UINT8 *colormap;
-	register UINT8 *dest;
-
-	register intptr_t count;
-
-	colormap = ds_colormap;
-	dest = R_Address(dc_x, dc_yl);
-
-	count = ds_x2 - ds_x1 + 1;
-
-	while (count >= 4)
-	{
-		dest[0] = colormap[dest[0]];
-		dest[1] = colormap[dest[1]];
-		dest[2] = colormap[dest[2]];
-		dest[3] = colormap[dest[3]];
-
-		dest += 4;
-		count -= 4;
-	}
-
-	while (count--)
-	{
-		*dest = colormap[*dest];
-		dest++;
 	}
 }

@@ -164,9 +164,11 @@ void R_DrawViewBorder(void);
 // DRAWING CODE
 // -----------------
 
+// column drawers
 void R_DrawColumn(void);
 #define R_DrawWallColumn	R_DrawColumn
 void R_DrawShadeColumn(void);
+void R_DrawColumnShadowed(void);
 
 void R_DrawTranslucentColumn(void);
 
@@ -178,28 +180,23 @@ void R_Draw2sMultiPatchTranslucentColumn(void);
 
 void R_DrawFogColumn(void);
 
-void R_DrawColumnShadowed(void);
-
+// span drawers
 void R_DrawSpan(void);
 
 void R_CalcTiltedLighting(fixed_t start, fixed_t end);
 
 void R_DrawTiltedSpan(void);
 void R_DrawTiltedTranslucentSpan(void);
+void R_DrawTiltedTranslucentWaterSpan(void);
 
-void R_DrawTiltedSplat(void);
-void R_DrawSplat(void);
-
-void R_DrawTranslucentSplat(void);
 void R_DrawTranslucentSpan(void);
 void R_DrawTranslucentWaterSpan(void);
-#ifndef NOWATER
-void R_DrawTiltedTranslucentWaterSpan(void);
-#endif
 
 void R_DrawFogSpan(void);
 
-
+void R_DrawTiltedSplat(void);
+void R_DrawSplat(void);
+void R_DrawTranslucentSplat(void);
 
 // =========================================================================
 #endif  // __R_DRAW__
