@@ -49,7 +49,7 @@ void R_DrawColumn(void)
 
 	// Determine scaling, which is the only mapping to be done.
 	fracstep = dc_iscale;
-	frac = (dc_texturemid + FixedMul((dc_yl << FRACBITS) - centeryfrac, fracstep))*(!dc_hires);
+	frac = (dc_texturemid + FixedMul((dc_yl << FRACBITS) - centeryfrac, fracstep));
 
 	// Inner loop that does the actual texture mapping, e.g. a DDA-like scaling.
 	// This is as fast as it gets.
@@ -160,7 +160,7 @@ void R_Draw2sMultiPatchColumn(void)
 
 	// Determine scaling, which is the only mapping to be done.
 	fracstep = dc_iscale;
-	frac = (dc_texturemid + FixedMul((dc_yl << FRACBITS) - centeryfrac, fracstep))*(!dc_hires);
+	frac = (dc_texturemid + FixedMul((dc_yl << FRACBITS) - centeryfrac, fracstep));
 
 	// Inner loop that does the actual texture mapping, e.g. a DDA-like scaling.
 	// This is as fast as it gets.
@@ -287,7 +287,7 @@ void R_Draw2sMultiPatchTranslucentColumn(void)
 
 	// Determine scaling, which is the only mapping to be done.
 	fracstep = dc_iscale;
-	frac = (dc_texturemid + FixedMul((dc_yl << FRACBITS) - centeryfrac, fracstep))*(!dc_hires);
+	frac = (dc_texturemid + FixedMul((dc_yl << FRACBITS) - centeryfrac, fracstep));
 
 	// Inner loop that does the actual texture mapping, e.g. a DDA-like scaling.
 	// This is as fast as it gets.
@@ -418,7 +418,7 @@ void R_DrawShadeColumn(void)
 
 	// Looks familiar.
 	fracstep = dc_iscale;
-	frac = (dc_texturemid + FixedMul((dc_yl << FRACBITS) - centeryfrac, fracstep))*(!dc_hires);
+	frac = (dc_texturemid + FixedMul((dc_yl << FRACBITS) - centeryfrac, fracstep));
 
 	// Here we do an additional index re-mapping.
 	do
@@ -458,7 +458,7 @@ void R_DrawTranslucentColumn(void)
 
 	// Looks familiar.
 	fracstep = dc_iscale;
-	frac = (dc_texturemid + FixedMul((dc_yl << FRACBITS) - centeryfrac, fracstep))*(!dc_hires);
+	frac = (dc_texturemid + FixedMul((dc_yl << FRACBITS) - centeryfrac, fracstep));
 
 	// Inner loop that does the actual texture mapping, e.g. a DDA-like scaling.
 	// This is as fast as it gets.
@@ -556,7 +556,7 @@ void R_DrawTranslatedTranslucentColumn(void)
 
 	// Looks familiar.
 	fracstep = dc_iscale;
-	frac = (dc_texturemid + FixedMul((dc_yl << FRACBITS) - centeryfrac, fracstep))*(!dc_hires);
+	frac = (dc_texturemid + FixedMul((dc_yl << FRACBITS) - centeryfrac, fracstep));
 
 	// Inner loop that does the actual texture mapping, e.g. a DDA-like scaling.
 	// This is as fast as it gets.
@@ -651,7 +651,7 @@ void R_DrawTranslatedColumn(void)
 
 	// Looks familiar.
 	fracstep = dc_iscale;
-	frac = (dc_texturemid + FixedMul((dc_yl << FRACBITS) - centeryfrac, fracstep))*(!dc_hires);
+	frac = (dc_texturemid + FixedMul((dc_yl << FRACBITS) - centeryfrac, fracstep));
 
 	// Here we do an additional index re-mapping.
 	do
