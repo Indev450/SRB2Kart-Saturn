@@ -195,9 +195,9 @@ static void R_HandleRipplePlane(visplane_t *pl)
 
 	planeripple.active = true;
 
-	if (spanfunc == R_DrawTranslucentSpan_8)
+	if (spanfunc == R_DrawTranslucentSpan)
 	{
-		spanfunc = R_DrawTranslucentWaterSpan_8;
+		spanfunc = R_DrawTranslucentWaterSpan;
 
 		// Copy the current scene, ugh
 		top = pl->high-8;
@@ -883,7 +883,7 @@ void R_DrawSinglePlane(visplane_t *pl)
 
 	if (pl->polyobj && pl->polyobj->translucency != 0)
 	{
-		spanfunc = R_DrawTranslucentSpan_8;
+		spanfunc = R_DrawTranslucentSpan;
 
 		// Hacked up support for alpha value in software mode Tails 09-24-2002 (sidenote: ported to polys 10-15-2014, there was no time travel involved -Red)
 		if (pl->polyobj->translucency >= 10)
@@ -923,7 +923,7 @@ void R_DrawSinglePlane(visplane_t *pl)
 
 			if (pl->ffloor->flags & FF_TRANSLUCENT)
 			{
-				spanfunc = R_DrawTranslucentSpan_8;
+				spanfunc = R_DrawTranslucentSpan;
 
 				// Hacked up support for alpha value in software mode Tails 09-24-2002
 				// ...unhacked by toaster 04-01-2021, re-hacked a little by sphere 19-11-2021
@@ -949,7 +949,7 @@ void R_DrawSinglePlane(visplane_t *pl)
 			}
 			else if (pl->ffloor->flags & FF_FOG)
 			{
-				spanfunc = R_DrawFogSpan_8;
+				spanfunc = R_DrawFogSpan;
 				light = (pl->lightlevel >> LIGHTSEGSHIFT);
 			}
 			else light = (pl->lightlevel >> LIGHTSEGSHIFT);
@@ -1115,16 +1115,16 @@ void R_DrawSinglePlane(visplane_t *pl)
 			R_SetSlopePlaneVectors(pl, 0, xoffs, yoffs, fudgecanyon);
 
 #ifndef NOWATER
-		if (spanfunc == R_DrawTranslucentWaterSpan_8)
-			spanfunc = R_DrawTiltedTranslucentWaterSpan_8;
+		if (spanfunc == R_DrawTranslucentWaterSpan)
+			spanfunc = R_DrawTiltedTranslucentWaterSpan;
 		else
 #endif
-		if (spanfunc == R_DrawTranslucentSpan_8)
-			spanfunc = R_DrawTiltedTranslucentSpan_8;
+		if (spanfunc == R_DrawTranslucentSpan)
+			spanfunc = R_DrawTiltedTranslucentSpan;
 		else if (spanfunc == splatfunc)
-			spanfunc = R_DrawTiltedSplat_8;
+			spanfunc = R_DrawTiltedSplat;
 		else
-			spanfunc = R_DrawTiltedSpan_8;
+			spanfunc = R_DrawTiltedSpan;
 
 		planezlight = scalelight[light];
 	}
@@ -1170,11 +1170,11 @@ a 'smoothing' of the texture while
 using the palette colors.
 */
 #ifdef QUINCUNX
-	if (spanfunc == R_DrawSpan_8)
+	if (spanfunc == R_DrawSpan)
 	{
 		INT32 i;
 		ds_transmap = R_GetTranslucencyTable(tr_trans50);
-		spanfunc = R_DrawTranslucentSpan_8;
+		spanfunc = R_DrawTranslucentSpan;
 		for (i=0; i<4; i++)
 		{
 			xoffs = pl->xoffs;

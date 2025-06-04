@@ -108,17 +108,17 @@ void SCR_SetMode(void)
 
 	V_SetPalette(0);
 
-	spanfunc = basespanfunc = R_DrawSpan_8;
-	splatfunc = R_DrawSplat_8;
-	transcolfunc = R_DrawTranslatedColumn_8;
-	transtransfunc = R_DrawTranslatedTranslucentColumn_8;
+	spanfunc = basespanfunc = R_DrawSpan;
+	splatfunc = R_DrawSplat;
+	transcolfunc = R_DrawTranslatedColumn;
+	transtransfunc = R_DrawTranslatedTranslucentColumn;
 
-	colfunc = basecolfunc = R_DrawColumn_8;
-	shadecolfunc = R_DrawShadeColumn_8;
-	fuzzcolfunc = R_DrawTranslucentColumn_8;
-	walldrawerfunc = R_DrawWallColumn_8;
-	twosmultipatchfunc = R_Draw2sMultiPatchColumn_8;
-	twosmultipatchtransfunc = R_Draw2sMultiPatchTranslucentColumn_8;
+	colfunc = basecolfunc = R_DrawColumn;
+	shadecolfunc = R_DrawShadeColumn;
+	fuzzcolfunc = R_DrawTranslucentColumn;
+	walldrawerfunc = R_DrawWallColumn;
+	twosmultipatchfunc = R_Draw2sMultiPatchColumn;
+	twosmultipatchtransfunc = R_Draw2sMultiPatchTranslucentColumn;
 
 	// set the apprpriate drawer for the sky (tall or INT16)
 	setmodeneeded = 0;
