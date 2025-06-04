@@ -621,7 +621,7 @@ void R_DrawMaskedColumn(column_t *column)
 
 	basetexturemid = dc_texturemid;
 
-	for (; column->topdelta != 0xff ;)
+	while (column->topdelta != 0xff)
 	{
 		// calculate unclipped screen coordinates
 		// for post
@@ -678,7 +678,7 @@ static void R_DrawFlippedMaskedColumn(column_t *column)
 	INT32 topdelta, prevdelta = -1;
 	UINT8 *d,*s;
 
-	for (; column->topdelta != 0xff ;)
+	while (column->topdelta != 0xff)
 	{
 		// calculate unclipped screen coordinates
 		// for post

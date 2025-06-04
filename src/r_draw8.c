@@ -45,8 +45,6 @@ void R_DrawColumn_8(void)
 	}
 
 	// Framebuffer destination address.
-	// Use ylookup LUT to avoid multiply with ScreenWidth.
-	// Use columnofs LUT for subwindows?
 	dest = R_Address(dc_x, dc_yl);
 
 	count++;
@@ -170,8 +168,6 @@ void R_Draw2sMultiPatchColumn_8(void)
 	}
 
 	// Framebuffer destination address.
-	// Use ylookup LUT to avoid multiply with ScreenWidth.
-	// Use columnofs LUT for subwindows?
 	dest = R_Address(dc_x, dc_yl);
 
 	count++;
@@ -312,8 +308,6 @@ void R_Draw2sMultiPatchTranslucentColumn_8(void)
 	}
 
 	// Framebuffer destination address.
-	// Use ylookup LUT to avoid multiply with ScreenWidth.
-	// Use columnofs LUT for subwindows?
 	dest = R_Address(dc_x, dc_yl);
 
 	count++;
@@ -1815,9 +1809,6 @@ void R_DrawFogColumn_8(void)
 #endif
 
 	// Framebuffer destination address.
-	// Use ylookup LUT to avoid multiply with ScreenWidth.
-	// Use columnofs LUT for subwindows?
-	//dest = ylookup[dc_yl] + columnofs[dc_x];
 	dest = R_Address(dc_x, dc_yl);
 
 	// Determine scaling, which is the only mapping to be done.
@@ -1860,6 +1851,7 @@ void R_DrawColumnShadowed_8(void)
 		solid = dc_lightlist[i].flags & FF_CUTSOLIDS;
 
 		height = dc_lightlist[i].height >> LIGHTSCALESHIFT;
+
 		if (solid)
 		{
 			bheight = dc_lightlist[i].botheight >> LIGHTSCALESHIFT;
@@ -1874,6 +1866,7 @@ void R_DrawColumnShadowed_8(void)
 				bheight = temp;
 			}
 		}
+
 		if (height <= dc_yl)
 		{
 			dc_colormap = dc_lightlist[i].rcolormap;
@@ -1883,6 +1876,7 @@ void R_DrawColumnShadowed_8(void)
 				dc_yl = bheight;
 			continue;
 		}
+
 		// Found a break in the column!
 		dc_yh = height;
 
