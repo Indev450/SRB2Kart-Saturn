@@ -146,6 +146,67 @@ static void R_UpdatePlaneRipple(void)
 	ds_waterofs = (leveltime & 1)*16384;
 	planeripple.offset = ((leveltime-1)*140) + ((rendertimefrac*140) / FRACUNIT);
 }
+
+static void R_HandleRipplePlane(visplane_t *pl)
+{
+	INT32 top, bottom;
+	UINT8 *scr;
+
+	if (!cv_ripplewater.value)
+	{
+		planeripple.active = false;
+		return;
+	}
+
+	planeripple.active = true;
+
+	if (spanfunc == R_DrawTranslucentSpan_8)
+	{
+		spanfunc = R_DrawTranslucentWaterSpan_8;
+
+		// Copy the current scene, ugh
+		top = pl->high-8;
+		bottom = pl->low+8;
+
+		if (top < 0)
+			top = 0;
+		if (bottom > vid.height)
+			bottom = vid.height;
+
+		// Only copy the part of the screen we need
+		scr = (renderscreen + (top*vid.width));
+
+		for (UINT8 i = 1; i <= splitscreen; i++)
+		{
+			if (viewplayer != &players[displayplayers[i]])
+				continue;
+
+			switch (i)
+			{
+				case 1:
+					if (splitscreen == 1)
+						scr = (renderscreen + (top + viewheight) * vid.width);
+					else if (splitscreen > 1)
+						scr = (renderscreen + (top * vid.width) + viewwidth);
+					break;
+				case 2:
+					scr = (renderscreen + (top + viewheight) * vid.width);
+					break;
+				case 3:
+					scr = (renderscreen + (top + viewheight) * vid.width + viewwidth);
+					break;
+				default:
+					break;
+			}
+
+			break;
+		}
+
+		VID_BlitLinearScreen(scr, vid.screens[1]+((top)*vid.width),
+											 vid.width, bottom-top,
+											 vid.width, vid.width);
+	}
+}
 #endif
 
 //
@@ -773,7 +834,6 @@ static void R_SetSlopePlaneVectors(visplane_t *pl, INT32 y, fixed_t xoff, fixed_
 	R_CalculateSlopeVectors(pl->slope, pl->viewx, pl->viewy, pl->viewz, FRACUNIT, FRACUNIT, xoff, yoff, pl->viewangle, pl->plangle, fudge);
 }
 
-
 void R_DrawSinglePlane(visplane_t *pl)
 {
 	INT32 light = 0;
@@ -873,64 +933,7 @@ void R_DrawSinglePlane(visplane_t *pl)
 #ifndef NOWATER
 			if (pl->ffloor->flags & FF_RIPPLE)
 			{
-				INT32 top, bottom;
-				UINT8 *scr;
-
-				if (cv_ripplewater.value)
-				{
-					planeripple.active = true;
-
-					if (spanfunc == R_DrawTranslucentSpan_8)
-					{
-						spanfunc = R_DrawTranslucentWaterSpan_8;
-
-						// Copy the current scene, ugh
-						top = pl->high-8;
-						bottom = pl->low+8;
-
-						if (top < 0)
-							top = 0;
-						if (bottom > vid.height)
-							bottom = vid.height;
-
-						// Only copy the part of the screen we need
-						scr = (renderscreen + (top*vid.width));
-
-						for (UINT8 i = 1; i <= splitscreen; i++)
-						{
-							if (viewplayer == &players[displayplayers[i]])
-							{
-								switch (i)
-								{
-									case 1:
-										if (splitscreen == 1)
-											scr = (renderscreen + (top + viewheight) * vid.width);
-										else if (splitscreen > 1)
-											scr = (renderscreen + (top * vid.width) + viewwidth);
-										break;
-									case 2:
-										scr = (renderscreen + (top + viewheight) * vid.width);
-										break;
-									case 3:
-										scr = (renderscreen + (top + viewheight) * vid.width + viewwidth);
-										break;
-									default:
-										break;
-								}
-
-								break;
-							}
-						}
-
-						VID_BlitLinearScreen(scr, vid.screens[1]+((top)*vid.width),
-											vid.width, bottom-top,
-											vid.width, vid.width);
-					}
-				}
-				else
-				{
-					planeripple.active = false;
-				}
+				R_HandleRipplePlane(pl);
 			}
 #endif
 		}
