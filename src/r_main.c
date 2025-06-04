@@ -799,8 +799,8 @@ void R_CheckViewMorph(void)
 
 void R_ApplyViewMorph(void)
 {
-	UINT8 *tmpscr = screens[4];
-	UINT8 *srcscr = screens[0];
+	UINT8 *tmpscr = vid.screens[4];
+	UINT8 *srcscr = vid.screens[0];
 	INT32 p, end = vid.width * vid.height;
 
 	if (!viewmorph.use)
@@ -835,8 +835,7 @@ void R_ApplyViewMorph(void)
 		for (p = 0; p < end; p++)
 			tmpscr[p] = srcscr[viewmorph.scrmap[p]];
 
-	VID_BlitLinearScreen(tmpscr, screens[0],
-			vid.width*vid.bpp, vid.height, vid.width*vid.bpp, vid.width);
+	VID_BlitLinearScreen(tmpscr, vid.screens[0], vid.width, vid.height, vid.width, vid.width);
 }
 
 angle_t R_ViewRollAngle(const player_t *player)

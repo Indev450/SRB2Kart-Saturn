@@ -47,7 +47,7 @@ void R_DrawColumn_8(void)
 	// Framebuffer destination address.
 	// Use ylookup LUT to avoid multiply with ScreenWidth.
 	// Use columnofs LUT for subwindows?
-	dest = &topleft[dc_yl*vid.width + dc_x];
+	dest = R_Address(dc_x, dc_yl);
 
 	count++;
 
@@ -172,7 +172,7 @@ void R_Draw2sMultiPatchColumn_8(void)
 	// Framebuffer destination address.
 	// Use ylookup LUT to avoid multiply with ScreenWidth.
 	// Use columnofs LUT for subwindows?
-	dest = &topleft[dc_yl*vid.width + dc_x];
+	dest = R_Address(dc_x, dc_yl);
 
 	count++;
 
@@ -314,7 +314,7 @@ void R_Draw2sMultiPatchTranslucentColumn_8(void)
 	// Framebuffer destination address.
 	// Use ylookup LUT to avoid multiply with ScreenWidth.
 	// Use columnofs LUT for subwindows?
-	dest = &topleft[dc_yl*vid.width + dc_x];
+	dest = R_Address(dc_x, dc_yl);
 
 	count++;
 
@@ -458,7 +458,7 @@ void R_DrawShadeColumn_8(void)
 	}
 
 	// FIXME. As above.
-	dest = &topleft[dc_yl*vid.width + dc_x];
+	dest = R_Address(dc_x, dc_yl);
 
 	// Looks familiar.
 	fracstep = dc_iscale;
@@ -501,7 +501,7 @@ void R_DrawTranslucentColumn_8(void)
 	}
 
 	// FIXME. As above.
-	dest = &topleft[dc_yl*vid.width + dc_x];
+	dest = R_Address(dc_x, dc_yl);
 
 	// Looks familiar.
 	fracstep = dc_iscale;
@@ -613,7 +613,7 @@ void R_DrawTranslatedTranslucentColumn_8(void)
 	}
 
 	// FIXME. As above.
-	dest = &topleft[dc_yl*vid.width + dc_x];
+	dest = R_Address(dc_x, dc_yl);
 
 	// Looks familiar.
 	fracstep = dc_iscale;
@@ -719,7 +719,7 @@ void R_DrawTranslatedColumn_8(void)
 	}
 
 	// FIXME. As above.
-	dest = &topleft[dc_yl*vid.width + dc_x];
+	dest = R_Address(dc_x, dc_yl);
 
 	// Looks familiar.
 	fracstep = dc_iscale;
@@ -763,8 +763,8 @@ void R_DrawSpan_8 (void)
 
 	UINT8 *restrict source = ds_source;
 	UINT8 *restrict colormap = ds_colormap;
-	UINT8 *restrict dest = ylookup[ds_y] + columnofs[ds_x1];
-	const UINT8 *restrict deststop = screens[0] + vid.rowbytes * vid.height;
+	UINT8 *restrict dest = R_Address(ds_x1, ds_y);
+	const UINT8 *restrict deststop = vid.screens[0] + vid.rowbytes * vid.height;
 
 	register size_t count = (ds_x2 - ds_x1 + 1);
 	size_t i;
@@ -882,7 +882,7 @@ void R_DrawTiltedSpan_8(void)
 	uz = ds_sup->z + ds_sup->y*(centery-ds_y) + ds_sup->x*(ds_x1-centerx);
 	vz = ds_svp->z + ds_svp->y*(centery-ds_y) + ds_svp->x*(ds_x1-centerx);
 
-	dest = ylookup[ds_y] + columnofs[ds_x1];
+	dest = R_Address(ds_x1, ds_y);
 
 	source = ds_source;
 
@@ -1020,7 +1020,7 @@ void R_DrawTiltedTranslucentSpan_8(void)
 	uz = ds_sup->z + ds_sup->y*(centery-ds_y) + ds_sup->x*(ds_x1-centerx);
 	vz = ds_svp->z + ds_svp->y*(centery-ds_y) + ds_svp->x*(ds_x1-centerx);
 
-	dest = ylookup[ds_y] + columnofs[ds_x1];
+	dest = R_Address(ds_x1, ds_y);
 
 	source = ds_source;
 
@@ -1160,8 +1160,8 @@ void R_DrawTiltedTranslucentWaterSpan_8(void)
 	uz = ds_sup->z + ds_sup->y*(centery-ds_y) + ds_sup->x*(ds_x1-centerx);
 	vz = ds_svp->z + ds_svp->y*(centery-ds_y) + ds_svp->x*(ds_x1-centerx);
 
-	dest = ylookup[ds_y] + columnofs[ds_x1];
-	dsrc = screens[1] + (ds_y+ds_bgofs)*vid.width + ds_x1;
+	dest = R_Address(ds_x1, ds_y);
+	dsrc = vid.screens[1] + (ds_y+ds_bgofs)*vid.width + ds_x1;
 
 	source = ds_source;
 
@@ -1300,7 +1300,7 @@ void R_DrawTiltedSplat_8(void)
 	uz = ds_sup->z + ds_sup->y*(centery-ds_y) + ds_sup->x*(ds_x1-centerx);
 	vz = ds_svp->z + ds_svp->y*(centery-ds_y) + ds_svp->x*(ds_x1-centerx);
 
-	dest = ylookup[ds_y] + columnofs[ds_x1];
+	dest = R_Address(ds_x1, ds_y);
 
 	source = ds_source;
 	//colormap = ds_colormap;
@@ -1447,7 +1447,7 @@ void R_DrawSplat_8 (void)
 
 	source = ds_source;
 	colormap = ds_colormap;
-	dest = ylookup[ds_y] + columnofs[ds_x1];
+	dest = R_Address(ds_x1, ds_y);
 	count = ds_x2 - ds_x1 + 1;
 
 	while (count >= 8)
@@ -1517,7 +1517,7 @@ void R_DrawTranslucentSplat_8 (void)
 
 	source = ds_source;
 	colormap = ds_colormap;
-	dest = ylookup[ds_y] + columnofs[ds_x1];
+	dest = R_Address(ds_x1, ds_y);
 	count = ds_x2 - ds_x1 + 1;
 
 	while (count >= 8)
@@ -1565,7 +1565,7 @@ void R_DrawTranslucentSpan_8 (void)
 	UINT8 *source;
 	UINT8 *colormap;
 	register UINT8 *dest;
-	const UINT8 *deststop = screens[0] + vid.rowbytes * vid.height;
+	const UINT8 *deststop = vid.screens[0] + vid.rowbytes * vid.height;
 
 	register size_t count = (ds_x2 - ds_x1 + 1);
 	size_t i;
@@ -1585,7 +1585,7 @@ void R_DrawTranslucentSpan_8 (void)
 
 	source = ds_source;
 	colormap = ds_colormap;
-	dest = ylookup[ds_y] + columnofs[ds_x1];
+	dest = R_Address(ds_x1, ds_y);
 
 	while (count >= 8)
 	{
@@ -1641,8 +1641,8 @@ void R_DrawTranslucentWaterSpan_8(void)
 
 	source = ds_source;
 	colormap = ds_colormap;
-	dest = ylookup[ds_y] + columnofs[ds_x1];
-	dsrc = screens[1] + (ds_y+ds_bgofs)*vid.width + ds_x1;
+	dest = R_Address(ds_x1, ds_y);
+	dsrc = vid.screens[1] + (ds_y+ds_bgofs)*vid.width + ds_x1;
 	count = ds_x2 - ds_x1 + 1;
 
 	while (count >= 8)
@@ -1683,7 +1683,7 @@ void R_DrawFogSpan_8(void)
 	register size_t count;
 
 	colormap = ds_colormap;
-	dest = &topleft[ds_y *vid.width + ds_x1];
+	dest = R_Address(dc_x, dc_yl);
 
 	count = ds_x2 - ds_x1 + 1;
 
@@ -1728,7 +1728,7 @@ void R_DrawFogColumn_8(void)
 	// Use ylookup LUT to avoid multiply with ScreenWidth.
 	// Use columnofs LUT for subwindows?
 	//dest = ylookup[dc_yl] + columnofs[dc_x];
-	dest = &topleft[dc_yl*vid.width + dc_x];
+	dest = R_Address(dc_x, dc_yl);
 
 	// Determine scaling, which is the only mapping to be done.
 	do

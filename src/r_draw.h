@@ -20,13 +20,13 @@
 // -------------------------------
 // COMMON STUFF FOR 8bpp AND 16bpp
 // -------------------------------
-extern UINT8 *ylookup[MAXVIDHEIGHT*4];
-extern UINT8 *ylookup1[MAXVIDHEIGHT*4];
-extern UINT8 *ylookup2[MAXVIDHEIGHT*4];
-extern UINT8 *ylookup3[MAXVIDHEIGHT*4];
-extern UINT8 *ylookup4[MAXVIDHEIGHT*4];
-extern INT32 columnofs[MAXVIDWIDTH*4];
-extern UINT8 *topleft;
+extern UINT8 *renderscreen;
+extern INT32 linesize;
+
+FUNCINLINE static ATTRINLINE UINT8 *R_Address(INT32 px, INT32 py)
+{
+	return renderscreen + (py + viewwindowy) * linesize + (viewwindowx + px);
+}
 
 // -------------------------
 // COLUMN DRAWING CODE STUFF

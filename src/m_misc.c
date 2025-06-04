@@ -1237,7 +1237,7 @@ void M_SaveFrame(void)
 				if (rendermode == render_soft)
 				{
 					// munge planar buffer to linear
-					linear = screens[2];
+					linear = vid.screens[2];
 					I_ReadScreen(linear);
 				}
 #ifdef HWRENDER
@@ -1539,7 +1539,7 @@ void M_DoScreenShot(void)
 	if (rendermode == render_soft)
 	{
 		// munge planar buffer to linear
-		linear = screens[2];
+		linear = vid.screens[2];
 		I_ReadScreen(linear);
 	}
 

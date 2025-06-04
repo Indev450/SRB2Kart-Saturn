@@ -450,7 +450,7 @@ void Y_IntermissionDrawer(void)
 	else
 	{
 		if (rendermode == render_soft)
-			VID_BlitLinearScreen(screens[1], screens[0], vid.width*vid.bpp, vid.height, vid.width*vid.bpp, vid.rowbytes);
+			VID_BlitLinearScreen(vid.screens[1], vid.screens[0], vid.width, vid.height, vid.width, vid.rowbytes);
 #ifdef HWRENDER
 		else if (rendermode == render_opengl)
 			HWR_DrawIntermissionBG();
