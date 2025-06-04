@@ -89,7 +89,7 @@ static void R_DrawSplatColumn(column_t *column)
 
 	basetexturemid = dc_texturemid;
 
-	for (; column->topdelta != 0xff ;)
+	while (column->topdelta != 0xff)
 	{
 		// calculate unclipped screen coordinates for post
 		topdelta = column->topdelta;
