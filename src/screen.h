@@ -53,70 +53,34 @@ typedef struct viddef_s
 {
 	INT32 modenum; // vidmode num indexes videomodes list
 
+	// Each screen is [vid.width*vid.height];
+	UINT8 *screens[5];
+	// screens[0] = main display window
+	// screens[1] = back screen, alternative blitting
+	// screens[2] = screenshot buffer, gif movie buffer
+	// screens[3] = fade screen start
+	// screens[4] = fade screen end, postimage tempoarary buffer
+
 	UINT8 *buffer; // invisible screens buffer
 	size_t rowbytes; // bytes per scanline of the VIDEO mode
 	INT32 width; // PIXELS per scanline
 	INT32 height;
-	union { // don't need numpages for OpenGL, so we can use it for fullscreen/windowed mode
-		INT32 numpages; // always 1, page flipping todo
-		INT32 windowed; // windowed or fullscren mode?
-	} u;
-	INT32 recalc; // if true, recalc vid-based stuff
-	UINT8 *direct; // linear frame buffer, or vga base mem.
+	boolean recalc; // if true, recalc vid-based stuff
 	INT32 dupx, dupy; // scale 1, 2, 3 value for menus & overlays
 	INT32/*fixed_t*/ fdupx, fdupy; // same as dupx, dupy, but exact value when aspect ratio isn't 320/200
-	INT32 bpp; // BYTES per pixel: 1 = 256color, 2 = highcolor
 
-	INT32 baseratio; // Used to get the correct value for lighting walls
-
-	// for Win32 version
-	DNWH WndParent; // handle of the application's window
 	UINT8 smalldupx, smalldupy; // factor for a little bit of scaling
 	UINT8 meddupx, meddupy; // factor for moderate, but not full, scaling
 #ifdef HWRENDER
-	INT32/*fixed_t*/ fsmalldupx, fsmalldupy;
-	INT32/*fixed_t*/ fmeddupx, fmeddupy;
 	INT32 glstate;
 #endif
 } viddef_t;
-#define VIDWIDTH vid.width
-#define VIDHEIGHT vid.height
 
 enum
 {
-	VID_GL_LIBRARY_LOADED     = 1,
+	VID_GL_LIBRARY_LOADED     =  1,
 	VID_GL_LIBRARY_ERROR      = -1,
 };
-
-// internal additional info for vesa modes only
-typedef struct
-{
-	INT32 vesamode; // vesa mode number plus LINEAR_MODE bit
-	void *plinearmem; // linear address of start of frame buffer
-} vesa_extra_t;
-
-// a video modes from the video modes list,
-// note: video mode 0 is always standard VGA320x200.
-typedef struct vmode_s
-{
-	struct vmode_s *pnext;
-	char *name;
-	UINT32 width, height;
-	UINT32 rowbytes; // bytes per scanline
-	UINT32 bytesperpixel; // 1 for 256c, 2 for highcolor
-	INT32 windowed; // if true this is a windowed mode
-	INT32 numpages;
-	vesa_extra_t *pextradata; // vesa mode extra data
-#ifdef _WIN32
-	INT32 (WINAPI *setmode)(viddef_t *lvid, struct vmode_s *pcurrentmode);
-#else
-	INT32 (*setmode)(viddef_t *lvid, struct vmode_s *pcurrentmode);
-#endif
-	INT32 misc; // misc for display driver (r_opengl.dll etc)
-} vmode_t;
-
-#define NUMSPECIALMODES  4
-extern vmode_t specialmodes[NUMSPECIALMODES];
 
 // ---------------------------------------------
 // color mode dependent drawer function pointers
@@ -135,14 +99,15 @@ extern void (*transtransfunc)(void);
 extern void (*twosmultipatchfunc)(void);
 extern void (*twosmultipatchtransfunc)(void);
 
+// quick fix for tall/short skies, depending on bytesperpixel
+extern void (*walldrawerfunc)(void);
+
 // ----------------
 // screen variables
 // ----------------
 extern viddef_t vid;
 extern INT32 setmodeneeded; // mode number to set if needed, or 0
-extern double averageFPS;
 
-extern INT32 scr_bpp;
 extern UINT8 *scr_borderpatch; // patch used to fill the view borders
 
 extern consvar_t cv_scr_width, cv_scr_height, cv_renderview, cv_fullscreen, cv_vhseffect, cv_shittyscreen;
@@ -154,9 +119,6 @@ extern consvar_t cv_timescale;
 extern consvar_t cv_alwaysgrabmouse;
 
 extern consvar_t cv_votebgscaling;
-
-// quick fix for tall/short skies, depending on bytesperpixel
-extern void (*walldrawerfunc)(void);
 
 // Change video mode, only at the start of a refresh.
 void SCR_SetMode(void);

@@ -336,7 +336,6 @@ static void D_Renderview(void)
 			if (!issplitscreen) // Initialize for P1
 			{
 				viewwindowy = viewwindowx = 0;
-				topleft = screens[0];
 				objectsdrawn = 0;
 			}
 
@@ -350,8 +349,6 @@ static void D_Renderview(void)
 #endif
 			if (issplitscreen) // Splitscreen-specific
 			{
-				const INT32 len = viewheight*sizeof(ylookup[0]);
-
 				switch (i)
 				{
 					case 1:
@@ -365,28 +362,20 @@ static void D_Renderview(void)
 							viewwindowx = 0;
 							viewwindowy = viewheight;
 						}
-						M_Memcpy(ylookup, ylookup2, len);
 						break;
 					case 2:
 						viewwindowx = 0;
 						viewwindowy = viewheight;
-						M_Memcpy(ylookup, ylookup3, len);
 						break;
 					case 3:
 						viewwindowx = viewwidth;
 						viewwindowy = viewheight;
-						M_Memcpy(ylookup, ylookup4, len);
 					default:
 						break;
 				}
-
-				topleft = screens[0] + viewwindowy*vid.width + viewwindowx;
 			}
 
 			R_RenderPlayerView(&players[displayplayers[i]]);
-
-			if (issplitscreen)
-				M_Memcpy(ylookup, ylookup1, viewheight*sizeof (ylookup[0]));
 		}
 
 		if (!issplitscreen)
@@ -584,7 +573,7 @@ static boolean D_Display(void)
 		{
 			if (rendermode == render_soft)
 			{
-				VID_BlitLinearScreen(screens[0], screens[1], vid.width*vid.bpp, vid.height, vid.width*vid.bpp, vid.rowbytes);
+				VID_BlitLinearScreen(vid.screens[0], vid.screens[1], vid.width, vid.height, vid.width, vid.rowbytes);
 			}
 
 			lastdraw = false;
@@ -618,7 +607,7 @@ static boolean D_Display(void)
 		V_DrawFadeScreen(TC_RAINBOW, (leveltime & 0x20) ? SKINCOLOR_PASTEL : SKINCOLOR_MOONSLAM);
 
 	// vid size change is now finished if it was on...
-	vid.recalc = 0;
+	vid.recalc = false;
 
 #ifdef HAVE_THREADS
 	I_lock_mutex(&m_menu_mutex);
