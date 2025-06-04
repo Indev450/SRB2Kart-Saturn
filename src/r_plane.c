@@ -148,7 +148,6 @@ void R_AllocPlaneMemory(void)
 // Sets planeripple.xfrac and planeripple.yfrac, added to ds_xfrac and ds_yfrac, if the span is not tilted.
 //
 
-#ifndef NOWATER
 INT32 ds_bgofs;
 INT32 ds_waterofs;
 
@@ -242,7 +241,6 @@ static void R_HandleRipplePlane(visplane_t *pl)
 											 vid.width, vid.width);
 	}
 }
-#endif
 
 //
 // R_MapPlane
@@ -296,7 +294,6 @@ void R_MapPlane(INT32 y, INT32 x1, INT32 x2)
 		ds_yfrac = yoffs - FixedMul(planesin, distance) + (x1 - centerx) * ds_ystep;
 	}
 
-#ifndef NOWATER
 	if (planeripple.active)
 	{
 		// Needed for ds_bgofs
@@ -319,7 +316,6 @@ void R_MapPlane(INT32 y, INT32 x1, INT32 x2)
 		if ((y + ds_bgofs) < 0)
 			ds_bgofs = -y;
 	}
-#endif
 
 	if (currentplane->slope)
 		ds_colormap = colormaps;
@@ -716,9 +712,7 @@ void R_DrawPlanes(void)
 		}
 	}
 
-#ifndef NOWATER
 	R_UpdatePlaneRipple();
-#endif
 }
 
 static void R_DrawSkyPlane(visplane_t *pl)
@@ -876,9 +870,7 @@ void R_DrawSinglePlane(visplane_t *pl)
 		return;
 	}
 
-#ifndef NOWATER
 	planeripple.active = false;
-#endif
 	spanfunc = basespanfunc;
 
 	if (pl->polyobj && pl->polyobj->translucency != 0)
@@ -954,12 +946,10 @@ void R_DrawSinglePlane(visplane_t *pl)
 			}
 			else light = (pl->lightlevel >> LIGHTSEGSHIFT);
 
-#ifndef NOWATER
 			if (pl->ffloor->flags & FF_RIPPLE)
 			{
 				R_HandleRipplePlane(pl);
 			}
-#endif
 		}
 		else light = (pl->lightlevel >> LIGHTSEGSHIFT);
 	}
@@ -1097,7 +1087,6 @@ void R_DrawSinglePlane(visplane_t *pl)
 		xoffs = (fixed_t)(xoffs*fudgecanyon);
 		yoffs = (fixed_t)(yoffs/fudgecanyon);
 
-#ifndef NOWATER
 		if (planeripple.active)
 		{
 			fixed_t plheight = abs(P_GetSlopeZAt(pl->slope, pl->viewx, pl->viewy) - pl->viewz);
@@ -1111,15 +1100,11 @@ void R_DrawSinglePlane(visplane_t *pl)
 			}
 		}
 		else
-#endif
 			R_SetSlopePlaneVectors(pl, 0, xoffs, yoffs, fudgecanyon);
 
-#ifndef NOWATER
 		if (spanfunc == R_DrawTranslucentWaterSpan)
 			spanfunc = R_DrawTiltedTranslucentWaterSpan;
-		else
-#endif
-		if (spanfunc == R_DrawTranslucentSpan)
+		else if (spanfunc == R_DrawTranslucentSpan)
 			spanfunc = R_DrawTiltedTranslucentSpan;
 		else if (spanfunc == splatfunc)
 			spanfunc = R_DrawTiltedSplat;
