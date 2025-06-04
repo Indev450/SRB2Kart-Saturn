@@ -338,7 +338,7 @@ void R_RenderMaskedSegRange(drawseg_t *ds, INT32 x1, INT32 x2)
 	}
 	else if (ldef->special == 909)
 	{
-		colfunc = R_DrawFogColumn_8;
+		colfunc = R_DrawFogColumn;
 		windowtop = frontsector->ceilingheight;
 		windowbottom = frontsector->floorheight;
 	}
@@ -431,7 +431,7 @@ void R_RenderMaskedSegRange(drawseg_t *ds, INT32 x1, INT32 x2)
 		else
 			lightnum = (frontsector->lightlevel >> LIGHTSEGSHIFT);
 
-		if (colfunc == R_DrawFogColumn_8
+		if (colfunc == R_DrawFogColumn
 			|| (frontsector->extra_colormap && frontsector->extra_colormap->fog))
 			;
 		else if (P_ApplyLightOffset(lightnum, frontsector))
@@ -732,7 +732,7 @@ void R_RenderThickSideRange(drawseg_t *ds, INT32 x1, INT32 x2, ffloor_t *pfloor)
 			colfunc = fuzzcolfunc;
 	}
 	else if (pfloor->flags & FF_FOG)
-		colfunc = R_DrawFogColumn_8;
+		colfunc = R_DrawFogColumn;
 
 	range = max(ds->x2-ds->x1, 1);
 	//SoM: Moved these up here so they are available for my lightlist calculations
@@ -1000,7 +1000,7 @@ void R_RenderThickSideRange(drawseg_t *ds, INT32 x1, INT32 x2, ffloor_t *pfloor)
 			// Get data for the column
 			col = (column_t *)((UINT8 *)R_GetColumn(texnum,maskedtexturecol[dc_x]) - 3);
 
-			// SoM: New code does not rely on R_DrawColumnShadowed_8 which
+			// SoM: New code does not rely on R_DrawColumnShadowed which
 			// will (hopefully) put less strain on the stack.
 			if (dc_numlights)
 			{
@@ -1410,7 +1410,7 @@ static void R_RenderSegLoop (void)
 				else
 					dc_lightlist[i].rcolormap = xwalllights[pindex];
 
-				colfunc = R_DrawColumnShadowed_8;
+				colfunc = R_DrawColumnShadowed;
 			}
 		}
 

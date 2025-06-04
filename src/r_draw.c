@@ -678,7 +678,8 @@ void R_DrawViewBorder(void)
 #endif
 
 // ==========================================================================
-//                   INCLUDE 8bpp DRAWING CODE HERE
+//                   INCLUDE DRAWING CODE HERE
 // ==========================================================================
 
-#include "r_draw8.c"
+#include "r_draw_column.c"
+#include "r_draw_span.c"
