@@ -766,8 +766,7 @@ void R_DrawSpan_8 (void)
 	UINT8 *restrict dest = ylookup[ds_y] + columnofs[ds_x1];
 	const UINT8 *restrict deststop = screens[0] + vid.rowbytes * vid.height;
 
-	register size_t count = (ds_x2 - ds_x1 + 1);
-	size_t i;
+	register intptr_t count = (ds_x2 - ds_x1 + 1);
 
 	xposition = ds_xfrac; yposition = ds_yfrac;
 	xstep = ds_xstep; ystep = ds_ystep;
@@ -851,7 +850,7 @@ void R_CalcTiltedLighting(fixed_t start, fixed_t end)
 void R_DrawTiltedSpan_8(void)
 {
 	int width = ds_x2 - ds_x1;
-	double iz, uz, vz;
+	float iz, uz, vz;
 	UINT32 u, v;
 	int i;
 
@@ -859,9 +858,9 @@ void R_DrawTiltedSpan_8(void)
 	UINT8 *colormap;
 	register UINT8 *dest;
 
-	double startz, startu, startv;
-	double izstep, uzstep, vzstep;
-	double endz, endu, endv;
+	float startz, startu, startv;
+	float izstep, uzstep, vzstep;
+	float endz, endu, endv;
 	UINT32 stepu, stepv;
 	register UINT32 bit;
 
@@ -954,7 +953,7 @@ void R_DrawTiltedSpan_8(void)
 		}
 		else
 		{
-			double left = width;
+			float left = width;
 			iz += ds_szp->x * left;
 			uz += ds_sup->x * left;
 			vz += ds_svp->x * left;
@@ -989,7 +988,7 @@ void R_DrawTiltedSpan_8(void)
 void R_DrawTiltedTranslucentSpan_8(void)
 {
 	int width = ds_x2 - ds_x1;
-	double iz, uz, vz;
+	float iz, uz, vz;
 	UINT32 u, v;
 	int i;
 
@@ -997,9 +996,9 @@ void R_DrawTiltedTranslucentSpan_8(void)
 	UINT8 *colormap;
 	register UINT8 *dest;
 
-	double startz, startu, startv;
-	double izstep, uzstep, vzstep;
-	double endz, endu, endv;
+	float startz, startu, startv;
+	float izstep, uzstep, vzstep;
+	float endz, endu, endv;
 	UINT32 stepu, stepv;
 	register UINT32 bit;
 
@@ -1092,7 +1091,7 @@ void R_DrawTiltedTranslucentSpan_8(void)
 		}
 		else
 		{
-			double left = width;
+			float left = width;
 			iz += ds_szp->x * left;
 			uz += ds_sup->x * left;
 			vz += ds_svp->x * left;
@@ -1128,7 +1127,7 @@ void R_DrawTiltedTranslucentSpan_8(void)
 void R_DrawTiltedTranslucentWaterSpan_8(void)
 {
 	int width = ds_x2 - ds_x1;
-	double iz, uz, vz;
+	float iz, uz, vz;
 	UINT32 u, v;
 	int i;
 
@@ -1137,9 +1136,9 @@ void R_DrawTiltedTranslucentWaterSpan_8(void)
 	register UINT8 *dest;
 	UINT8 *dsrc;
 
-	double startz, startu, startv;
-	double izstep, uzstep, vzstep;
-	double endz, endu, endv;
+	float startz, startu, startv;
+	float izstep, uzstep, vzstep;
+	float endz, endu, endv;
 	UINT32 stepu, stepv;
 	register UINT32 bit;
 
@@ -1233,7 +1232,7 @@ void R_DrawTiltedTranslucentWaterSpan_8(void)
 		}
 		else
 		{
-			double left = width;
+			float left = width;
 			iz += ds_szp->x * left;
 			uz += ds_sup->x * left;
 			vz += ds_svp->x * left;
@@ -1267,7 +1266,7 @@ void R_DrawTiltedSplat_8(void)
 {
 	// x1, x2 = ds_x1, ds_x2
 	int width = ds_x2 - ds_x1;
-	double iz, uz, vz;
+	float iz, uz, vz;
 	UINT32 u, v;
 	int i;
 
@@ -1277,9 +1276,9 @@ void R_DrawTiltedSplat_8(void)
 
 	UINT8 val;
 
-	double startz, startu, startv;
-	double izstep, uzstep, vzstep;
-	double endz, endu, endv;
+	float startz, startu, startv;
+	float izstep, uzstep, vzstep;
+	float endz, endu, endv;
 	UINT32 stepu, stepv;
 	register UINT32 bit;
 
@@ -1385,7 +1384,7 @@ void R_DrawTiltedSplat_8(void)
 		}
 		else
 		{
-			double left = width;
+			float left = width;
 			iz += ds_szp->x * left;
 			uz += ds_sup->x * left;
 			vz += ds_svp->x * left;
@@ -1567,8 +1566,7 @@ void R_DrawTranslucentSpan_8 (void)
 	register UINT8 *dest;
 	const UINT8 *deststop = screens[0] + vid.rowbytes * vid.height;
 
-	register size_t count = (ds_x2 - ds_x1 + 1);
-	size_t i;
+	register intptr_t count = (ds_x2 - ds_x1 + 1);
 
 	xposition = ds_xfrac; yposition = ds_yfrac;
 	xstep = ds_xstep; ystep = ds_ystep;
@@ -1626,8 +1624,7 @@ void R_DrawTranslucentWaterSpan_8(void)
 	register UINT8 *dest;
 	UINT8 *dsrc;
 
-	register size_t count;
-	size_t i;
+	register intptr_t count;
 
 	// SoM: we only need 6 bits for the integer part (0 thru 63) so the rest
 	// can be used for the fraction part. This allows calculation of the memory address in the
@@ -1680,7 +1677,7 @@ void R_DrawFogSpan_8(void)
 	UINT8 *colormap;
 	register UINT8 *dest;
 
-	register size_t count;
+	register intptr_t count;
 
 	colormap = ds_colormap;
 	dest = &topleft[ds_y *vid.width + ds_x1];
