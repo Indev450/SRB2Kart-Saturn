@@ -38,7 +38,7 @@
 
 /**	\brief view info
 */
-INT32 linesize, viewwidth, scaledviewwidth, viewheight, viewwindowx, viewwindowy;
+INT32 linesize, viewwidth, viewheight, viewwindowx, viewwindowy;
 UINT8 *renderscreen;            // haleyjd
 
 // =========================================================================
@@ -98,6 +98,10 @@ float focallengthf, zeroheight;
 */
 
 UINT32 nflatxshift, nflatyshift, nflatshiftup, nflatmask;
+
+// For, uh, tilted lighting, duh.
+static INT32 *tiltlighting;
+
 
 // ==========================================================================
 //                        OLD DOOM FUZZY EFFECT
@@ -470,12 +474,38 @@ void R_FlushTranslationColormapCache(void)
 	\return	void
 */
 
+static void R_AllocViewMemory(void)
+{
+	negonearray = Z_Realloc(negonearray, sizeof(*negonearray) * viewwidth, PU_STATIC, NULL);
+	screenheightarray = Z_Realloc(screenheightarray, sizeof(*screenheightarray) * viewwidth, PU_STATIC, NULL);
+
+	floorclip = Z_Realloc(floorclip, sizeof(*floorclip) * viewwidth, PU_STATIC, NULL);
+	ceilingclip = Z_Realloc(ceilingclip, sizeof(*ceilingclip) * viewwidth, PU_STATIC, NULL);
+
+	frontscale = Z_Realloc(frontscale, sizeof(*frontscale) * viewwidth, PU_STATIC, NULL);
+
+	xtoviewangle = Z_Realloc(xtoviewangle, sizeof(*xtoviewangle) * (viewwidth + 1), PU_STATIC, NULL);
+
+	tiltlighting = Z_Realloc(tiltlighting, sizeof(*tiltlighting) * viewwidth, PU_STATIC, NULL);
+
+	R_AllocSegMemory();
+	R_AllocClipSegMemory();
+	R_AllocPlaneMemory();
+#ifdef FLOORSPLATS
+	R_AllocFloorSpriteTables();
+#endif
+	R_AllocVisSpriteMemory();
+}
+
+
 void R_InitViewBuffer(INT32 width, INT32 height)
 {
 	if (width > MAXVIDWIDTH)
 		width = MAXVIDWIDTH;
 	if (height > MAXVIDHEIGHT)
 		height = MAXVIDHEIGHT;
+
+	R_AllocViewMemory();
 
 	viewwindowx = 0;
 	viewwindowy = 0;
