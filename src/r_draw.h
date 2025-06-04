@@ -35,7 +35,6 @@ FUNCINLINE static ATTRINLINE UINT8 *R_Address(INT32 px, INT32 py)
 extern lighttable_t *dc_colormap;
 extern INT32 dc_x, dc_yl, dc_yh;
 extern fixed_t dc_iscale, dc_texturemid;
-extern UINT8 dc_hires;
 
 extern UINT8 *dc_source; // first pixel in a column
 

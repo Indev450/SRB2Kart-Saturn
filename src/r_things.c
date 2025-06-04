@@ -829,7 +829,7 @@ static void R_DrawVisSprite(vissprite_t *vis)
 		dc_colormap = colormaps;
 
 	if (encoremap && !vis->mobj->color && !(vis->mobj->flags & MF_DONTENCOREMAP))
-			dc_colormap += COLORMAP_REMAPOFFSET;
+		dc_colormap += COLORMAP_REMAPOFFSET;
 
 	dc_texturemid = vis->texturemid;
 	dc_texheight = patch->height;
@@ -918,7 +918,6 @@ static void R_DrawVisSprite(vissprite_t *vis)
 	}
 
 	colfunc = basecolfunc;
-	dc_hires = 0;
 
 	vis->x1 = x1;
 	vis->x2 = x2;
