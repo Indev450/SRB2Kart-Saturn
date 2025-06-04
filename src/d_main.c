@@ -345,7 +345,7 @@ static void D_Renderview(void)
 			{
 				HWR_RenderPlayerView();
 				R_RestoreLevelInterpolators();
-				return;
+				continue;
 			}
 #endif
 			if (issplitscreen) // Splitscreen-specific
