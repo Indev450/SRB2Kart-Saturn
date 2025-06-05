@@ -14,6 +14,10 @@
 #ifndef __P_SETUP__
 #define __P_SETUP__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "doomdata.h"
 #include "doomstat.h"
 #include "r_defs.h"
@@ -115,5 +119,9 @@ void P_AddGradesForMare(INT16 i, UINT8 mare, char *gtext);
 UINT8 P_GetGrade(UINT32 pscore, INT16 map, UINT8 mare);
 UINT8 P_HasGrades(INT16 map, UINT8 mare);
 UINT32 P_GetScoreForGrade(INT16 map, UINT8 mare, UINT8 grade);
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif

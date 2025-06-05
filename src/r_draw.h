@@ -14,6 +14,10 @@
 #ifndef __R_DRAW__
 #define __R_DRAW__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "r_defs.h"
 #include "r_things.h"
 
@@ -118,7 +122,7 @@ extern void (*basespanfunc)(drawspandata_t*);
 extern void (*splatfunc)(drawspandata_t*);
 
 // Draws a single visplane.
-void R_DrawSinglePlane(drawspandata_t* ds, visplane_t *pl);
+void R_DrawSinglePlane(drawspandata_t* ds, visplane_t *pl, boolean allow_parallel);
 
 // Vectors for Software's tilted slope drawers
 extern floatv3_t *ds_su, *ds_sv, *ds_sz;
@@ -239,6 +243,10 @@ void R_DrawFogSpan(drawspandata_t* ds);
 void R_DrawTiltedSplat(drawspandata_t* ds);
 void R_DrawSplat(drawspandata_t* ds);
 void R_DrawTranslucentSplat(drawspandata_t* ds);
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 // =========================================================================
 #endif  // __R_DRAW__

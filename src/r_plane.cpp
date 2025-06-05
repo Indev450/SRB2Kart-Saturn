@@ -29,6 +29,8 @@
 #include "p_tick.h"
 #include "r_fps.h"
 #include "r_portal.h"
+#include "core/thread_pool.h"
+
 
 //
 // opening
@@ -91,8 +93,8 @@ static INT16 *ffloor_c_clip;
 
 static void R_ReallocPlaneBounds(visplane_t *pl)
 {
-	pl->top_memory = Z_Realloc(pl->top_memory, sizeof(UINT16) * (viewwidth + 2), PU_STATIC, NULL);
-	pl->bottom_memory = Z_Realloc(pl->bottom_memory, sizeof(UINT16) * (viewwidth + 2), PU_STATIC, NULL);
+	pl->top_memory    = static_cast<UINT16*>(Z_Realloc(pl->top_memory, sizeof(UINT16) * (viewwidth + 2), PU_STATIC, NULL));
+	pl->bottom_memory = static_cast<UINT16*>(Z_Realloc(pl->bottom_memory, sizeof(UINT16) * (viewwidth + 2), PU_STATIC, NULL));
 	pl->top = pl->top_memory + 1;
 	pl->bottom = pl->bottom_memory + 1;
 }
@@ -122,8 +124,8 @@ void R_AllocPlaneMemory(void)
 	}
 
 	// Alloc ffloor clip tables
-	ffloor_f_clip = Z_Realloc(ffloor_f_clip, sizeof(*ffloor_f_clip) * (viewwidth * MAXFFLOORS), PU_STATIC, NULL);
-	ffloor_c_clip = Z_Realloc(ffloor_c_clip, sizeof(*ffloor_c_clip) * (viewwidth * MAXFFLOORS), PU_STATIC, NULL);
+	ffloor_f_clip = static_cast<INT16*>(Z_Realloc(ffloor_f_clip, sizeof(*ffloor_f_clip) * (viewwidth * MAXFFLOORS), PU_STATIC, NULL));
+	ffloor_c_clip = static_cast<INT16*>(Z_Realloc(ffloor_c_clip, sizeof(*ffloor_c_clip) * (viewwidth * MAXFFLOORS), PU_STATIC, NULL));
 
 	for (unsigned i = 0; i < MAXFFLOORS; i++)
 	{
@@ -131,8 +133,8 @@ void R_AllocPlaneMemory(void)
 		ffloor[i].c_clip = ffloor_c_clip + (i * viewwidth);
 	}
 
-	yslopetab = Z_Realloc(yslopetab, sizeof(*yslopetab) * (viewheight * 16), PU_STATIC, NULL);
-	spanstart = Z_Realloc(spanstart, sizeof(*spanstart) * viewheight, PU_STATIC, NULL);
+	yslopetab = static_cast<fixed_t*>(Z_Realloc(yslopetab, sizeof(*yslopetab) * (viewheight * 16), PU_STATIC, NULL));
+	spanstart = static_cast<fixed_t*>(Z_Realloc(spanstart, sizeof(*spanstart) * viewheight, PU_STATIC, NULL));
 }
 
 //
@@ -225,6 +227,19 @@ static void R_HandleRipplePlane(drawspandata_t* ds, visplane_t *pl)
 	}
 }
 
+
+static bool R_CheckMapPlane(const char* funcname, INT32 y, INT32 x1, INT32 x2)
+{
+	if (x1 == x2)
+		return true;
+
+	if (x1 < x2 && x1 >= 0 && x2 < viewwidth && y >= 0 && y < viewheight)
+		return true;
+
+	CONS_Debug(DBG_RENDER, "%s: x1=%d, x2=%d at y=%d\n", funcname, x1, x2, y);
+	return false;
+}
+
 //
 // R_MapPlane
 //
@@ -237,16 +252,14 @@ static void R_HandleRipplePlane(drawspandata_t* ds, visplane_t *pl)
 //  viewsin
 //  viewcos
 //  viewheight
-static void R_MapPlane(drawspandata_t *ds, INT32 y, INT32 x1, INT32 x2)
+static void R_MapPlane(drawspandata_t *ds, INT32 y, INT32 x1, INT32 x2, boolean allow_parallel)
 {
 	angle_t angle, planecos, planesin;
 	fixed_t distance = 0, span;
 	size_t pindex;
 
-#ifdef RANGECHECK
-	if (x2 < x1 || x1 < 0 || x2 >= viewwidth || y > viewheight)
-		I_Error("R_MapPlane: %d, %d at %d", x1, x2, y);
-#endif
+	if (!R_CheckMapPlane(__func__, y, x1, x2))
+		return;
 
 	if (x1 >= vid.width)
 		x1 = vid.width - 1;
@@ -383,11 +396,11 @@ static visplane_t *new_visplane(unsigned hash)
 	visplane_t *check = freetail;
 	if (!check)
 	{
-		check = calloc(1, sizeof (*check));
+		check = static_cast<visplane_t*>(calloc(1, sizeof (*check)));
 		if (check == NULL)
 			I_Error("new_visplane: Out of memory");
-		check->top_memory = Z_Malloc(sizeof(UINT16) * (viewwidth + 2), PU_STATIC, NULL);
-		check->bottom_memory = Z_Malloc(sizeof(UINT16) * (viewwidth + 2), PU_STATIC, NULL);
+		check->top_memory = static_cast<UINT16*>(Z_Malloc(sizeof(UINT16) * (viewwidth + 2), PU_STATIC, NULL));
+		check->bottom_memory = static_cast<UINT16*>(Z_Malloc(sizeof(UINT16) * (viewwidth + 2), PU_STATIC, NULL));
 		check->top = check->top_memory + 1;
 		check->bottom = check->bottom_memory + 1;
 	}
@@ -648,7 +661,7 @@ void R_ExpandPlane(visplane_t *pl, INT32 start, INT32 stop)
 //
 // R_MakeSpans
 //
-static void R_MakeSpans(drawspandata_t* ds, INT32 x, INT32 t1, INT32 b1, INT32 t2, INT32 b2)
+static void R_MakeSpans(drawspandata_t* ds, INT32 x, INT32 t1, INT32 b1, INT32 t2, INT32 b2, boolean allow_parallel)
 {
 	//    Alam: from r_splats's R_RenderFloorSplat
 	if (t1 >= vid.height) t1 = vid.height-1;
@@ -657,17 +670,69 @@ static void R_MakeSpans(drawspandata_t* ds, INT32 x, INT32 t1, INT32 b1, INT32 t
 	if (b2 >= vid.height) b2 = vid.height-1;
 	if (x-1 >= vid.width) x = vid.width;
 
+	// We want to draw N spans per subtask to ensure the work is
+	// coarse enough to not be too slow due to task scheduling overhead.
+	// To safely do this, we need to copy part of spanstart to a local.
+	// This is essentially loop unrolling across threads.
+	constexpr const int kSpanTaskGranularity = 8;
 	drawspandata_t dc_copy = *ds;
-
 	while (t1 < t2 && t1 <= b1)
 	{
-		R_MapPlane(&dc_copy, t1, spanstart[t1], x - 1);
-		t1++;
+		INT32 spanstartcopy[kSpanTaskGranularity] = {0};
+		INT32 taskspans = 0;
+		for (int i = 0; i < kSpanTaskGranularity; i++)
+		{
+			if (!((t1 + i) < t2 && (t1 + i) <= b1))
+			{
+				break;
+			}
+			spanstartcopy[i] = spanstart[t1 + i];
+			taskspans += 1;
+		}
+		auto task = [=]() mutable -> void {
+			for (int i = 0; i < taskspans; i++)
+			{
+				R_MapPlane(&dc_copy, t1 + i, spanstartcopy[i], x - 1, false);
+			}
+		};
+		if (allow_parallel)
+		{
+			srb2::g_main_threadpool->schedule(std::move(task));
+		}
+		else
+		{
+			(task)();
+		}
+		t1 += taskspans;
 	}
 	while (b1 > b2 && b1 >= t1)
 	{
-		R_MapPlane(&dc_copy, b1, spanstart[b1], x - 1);
-		b1--;
+		INT32 spanstartcopy[kSpanTaskGranularity] = {0};
+		INT32 taskspans = 0;
+		for (int i = 0; i < kSpanTaskGranularity; i++)
+		{
+			if (!((b1 - i) > b2 && (b1 - i) >= t1))
+			{
+				break;
+			}
+			spanstartcopy[i] = spanstart[b1 - i];
+			taskspans += 1;
+		}
+		auto task = [=]() mutable -> void {
+			for (int i = 0; i < taskspans; i++)
+			{
+				R_MapPlane(&dc_copy, b1 - i, spanstartcopy[i], x - 1, false);
+			}
+		};
+		if (allow_parallel)
+		{
+			srb2::g_main_threadpool->schedule(std::move(task));
+		}
+		else
+		{
+			(task)();
+		}
+		b1 -= taskspans;
 	}
 
 	while (t2 < t1 && t2 <= b2)
@@ -692,14 +757,14 @@ void R_DrawPlanes(void)
 			if (pl->ffloor != NULL || pl->polyobj != NULL)
 				continue;
 
-			R_DrawSinglePlane(&ds, pl);
+			R_DrawSinglePlane(&ds, pl, true);
 		}
 	}
 
 	R_UpdatePlaneRipple(&ds);
 }
 
-static void R_DrawSkyPlane(visplane_t *pl)
+static void R_DrawSkyPlane(visplane_t *pl, boolean allow_parallel)
 {
 	INT32 x;
 	drawcolumndata_t dc = {0};
@@ -727,30 +792,54 @@ static void R_DrawSkyPlane(visplane_t *pl)
 	dc.texheight = textureheight[skytexture] >>FRACBITS;
 	dc.sourcelength = dc.texheight;
 
+	x = pl->minx;
+
 	// Precache the texture so we don't corrupt the zoned heap off-main thread
 	if (!texturecache[texturetranslation[skytexture]])
 	{
 		R_GenerateTexture(texturetranslation[skytexture]);
 	}
 
-	for (x = pl->minx; x <= pl->maxx; x++)
+	while (x <= pl->maxx)
 	{
-		dc.yl = pl->top[x];
-		dc.yh = pl->bottom[x];
+		// Tune concurrency granularity here to maximize throughput
+		// The cheaper colfunc is, the more coarse the task should be
+		constexpr const int kSkyPlaneMacroColumns = 8;
 
-		if (dc.yl > dc.yh)
+		auto thunk = [=]() mutable -> void {
+			for (int i = 0; i < kSkyPlaneMacroColumns && i + x <= pl->maxx; i++)
+			{
+				dc.yl = pl->top[x + i];
+				dc.yh = pl->bottom[x + i];
+
+				if (dc.yl > dc.yh)
+				{
+					continue;
+				}
+
+				INT32 angle = (pl->viewangle + xtoviewangle[x + i])>>ANGLETOSKYSHIFT;
+				dc.iscale = FixedMul(skyscale, FINECOSINE(xtoviewangle[x + i]>>ANGLETOFINESHIFT));
+				dc.x = x + i;
+				dc.source =
+					R_GetColumn(texturetranslation[skytexture],
+						-angle); // get negative of angle for each column to display sky correct way round! --Monster Iestyn 27/01/18
+
+				colfunc(&dc);
+			}
+		};
+
+		if (allow_parallel)
 		{
-			continue;
+			srb2::g_main_threadpool->schedule(std::move(thunk));
+		}
+		else
+		{
+			(thunk)();
 		}
 
-		INT32 angle = (pl->viewangle + xtoviewangle[x])>>ANGLETOSKYSHIFT;
-		dc.iscale = FixedMul(skyscale, FINECOSINE(xtoviewangle[x]>>ANGLETOFINESHIFT));
-		dc.x = x;
-		dc.source =
-		R_GetColumn(texturetranslation[skytexture],
-					-angle); // get negative of angle for each column to display sky correct way round! --Monster Iestyn 27/01/18
-		wallcolfunc(&dc);
+		x += kSkyPlaneMacroColumns;
 	}
+
 }
 
 // Potentially override other stuff for now cus we're mean. :< But draw a slope plane!
@@ -833,11 +922,11 @@ d.z = (v1.x * v2.y) - (v1.y * v2.x)
 static void R_SetSlopePlaneVectors(drawspandata_t* ds, visplane_t *pl, INT32 y, fixed_t xoff, fixed_t yoff, float fudge)
 {
 	if (ds_su == NULL)
-		ds_su = Z_Malloc(sizeof(*ds_su) * vid.height, PU_STATIC, NULL);
+		ds_su = static_cast<floatv3_t*>(Z_Malloc(sizeof(*ds_su) * vid.height, PU_STATIC, NULL));
 	if (ds_sv == NULL)
-		ds_sv = Z_Malloc(sizeof(*ds_sv) * vid.height, PU_STATIC, NULL);
+		ds_sv = static_cast<floatv3_t*>(Z_Malloc(sizeof(*ds_sv) * vid.height, PU_STATIC, NULL));
 	if (ds_sz == NULL)
-		ds_sz = Z_Malloc(sizeof(*ds_sz) * vid.height, PU_STATIC, NULL);
+		ds_sz = static_cast<floatv3_t*>(Z_Malloc(sizeof(*ds_sz) * vid.height, PU_STATIC, NULL));
 
 	ds->sup = ds_su[y];
 	ds->svp = ds_sv[y];
@@ -846,7 +935,7 @@ static void R_SetSlopePlaneVectors(drawspandata_t* ds, visplane_t *pl, INT32 y, 
 	R_CalculateSlopeVectors(ds, pl->slope, pl->viewx, pl->viewy, pl->viewz, FRACUNIT, FRACUNIT, xoff, yoff, pl->viewangle, pl->plangle, fudge);
 }
 
-void R_DrawSinglePlane(drawspandata_t* ds, visplane_t *pl)
+void R_DrawSinglePlane(drawspandata_t* ds, visplane_t *pl, boolean allow_parallel)
 {
 	INT32 light = 0;
 	INT32 x;
@@ -860,7 +949,7 @@ void R_DrawSinglePlane(drawspandata_t* ds, visplane_t *pl)
 	// sky flat
 	if (pl->picnum == skyflatnum)
 	{
-		R_DrawSkyPlane(pl);
+		R_DrawSkyPlane(pl, allow_parallel);
 		return;
 	}
 
@@ -1128,7 +1217,7 @@ void R_DrawSinglePlane(drawspandata_t* ds, visplane_t *pl)
 
 	for (x = pl->minx; x <= stop; x++)
 	{
-		R_MakeSpans(ds, x, pl->top[x-1], pl->bottom[x-1], pl->top[x], pl->bottom[x]);
+		R_MakeSpans(ds, x, pl->top[x-1], pl->bottom[x-1], pl->top[x], pl->bottom[x], allow_parallel);
 	}
 
 /*

@@ -14,6 +14,10 @@
 #ifndef __R_SEGS__
 #define __R_SEGS__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #ifdef __GNUG__
 #pragma interface
 #endif
@@ -25,5 +29,9 @@ void R_StoreWallRange(INT32 start, INT32 stop);
 void R_AllocSegMemory(void);
 
 transnum_t R_GetLinedefTransTable(fixed_t alpha);
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif

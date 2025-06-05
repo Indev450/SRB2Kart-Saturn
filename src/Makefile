@@ -181,7 +181,8 @@ objdir:=$(makedir)/objs
 
 # very sophisticated dependency
 sources+=\
-	$(call List,Sourcefile)
+	$(call List,Sourcefile)\
+	$(call List,core/Sourcefile)
 
 sources+=\
 	$(call List,blua/Sourcefile)

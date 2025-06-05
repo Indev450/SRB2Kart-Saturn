@@ -14,6 +14,10 @@
 #ifndef __R_PLANE__
 #define __R_PLANE__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "screen.h" // needs MAXVIDWIDTH/MAXVIDHEIGHT
 #include "r_data.h"
 #include "p_polyobj.h"
@@ -110,4 +114,9 @@ typedef struct planemgr_s
 
 extern visffloor_t ffloor[MAXFFLOORS];
 extern INT32 numffloors;
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
+
 #endif

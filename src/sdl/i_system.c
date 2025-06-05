@@ -189,6 +189,9 @@ static char returnWadPath[256];
 #include "../r_main.h" // Frame interpolation/uncapped
 #include "../r_fps.h"
 
+#include "../s_sound.h"
+#include "../core/thread_pool.h"
+
 #ifdef MAC_ALERT
 #include "macosx/mac_alert.h"
 #endif
@@ -493,6 +496,15 @@ static void I_ReportSignal(int num, int coredumped)
 #ifndef NEWSIGNALHANDLER
 FUNCNORETURN static ATTRNORETURN void signal_handler(INT32 num)
 {
+	if (g_main_thread_id != std::this_thread::get_id())
+	{
+		// Do not attempt any sort of recovery if this signal triggers off the main thread
+		signal(num, SIG_DFL);
+		raise(num);
+		exit(-2);
+	}
+
+
 	g_in_exiting_signal_handler = true;
 
 	D_QuitNetGame(); // Fix server freezes
@@ -1524,7 +1536,7 @@ void I_SetGamepadIndicatorColor(INT32 playernum, UINT8 red, UINT8 green, UINT8 b
 #define DEG2RAD (0.017453292519943295769236907684883l) // TAU/360 or PI/180
 #define MUMBLEUNIT (64.0f) // FRACUNITS in a Meter
 
-static struct {
+static struct mumble_s {
 #ifdef WINMUMBLE
 	UINT32 uiVersion;
 	DWORD uiTick;
@@ -1557,7 +1569,7 @@ static void I_SetupMumble(void)
 	if (!hMap)
 		return;
 
-	mumble = MapViewOfFile(hMap, FILE_MAP_ALL_ACCESS, 0, 0, sizeof(*mumble));
+	mumble = static_cast<mumble_s*>(MapViewOfFile(hMap, FILE_MAP_ALL_ACCESS, 0, 0, sizeof(*mumble)));
 	if (!mumble)
 		CloseHandle(hMap);
 #elif defined (HAVE_SHM)
@@ -1570,7 +1582,7 @@ static void I_SetupMumble(void)
 	if(shmfd < 0)
 		return;
 
-	mumble = mmap(NULL, sizeof(*mumble), PROT_READ | PROT_WRITE, MAP_SHARED, shmfd, 0);
+	mumble = (mmap(NULL, sizeof(*mumble), PROT_READ | PROT_WRITE, MAP_SHARED, shmfd, 0));
 	if (mumble == MAP_FAILED)
 		mumble = NULL;
 #endif
@@ -1586,7 +1598,7 @@ void I_UpdateMumble(const mobj_t *mobj, const listener_t listener)
 		return;
 
 	if(mumble->uiVersion != 2) {
-		wcsncpy(mumble->name, L"SRB2Kart "VERSIONSTRINGW, 256);
+		wcsncpy(mumble->name, L"SRB2Kart " VERSIONSTRINGW, 256);
 		wcsncpy(mumble->description, L"Sonic Robo Blast 2 Kart with integrated Mumble Link support.", 2048);
 		mumble->uiVersion = 2;
 	}
@@ -1900,6 +1912,8 @@ INT32 I_StartupSystem(void)
 #ifdef HAVE_THREADS
 	I_start_threads();
 	I_AddExitFunc(I_stop_threads);
+	I_ThreadPoolInit();
+	I_AddExitFunc(I_ThreadPoolShutdown);
 #endif
 	I_RegisterSignals();
 	I_OutputMsg("Compiled for SDL version: %d.%d.%d\n",
@@ -2373,7 +2387,7 @@ const char *I_ClipboardPaste(void)
 */
 static boolean isWadPathOk(const char *path)
 {
-	char *wad3path = malloc(256);
+	char *wad3path = (malloc(256));
 
 	if (!wad3path)
 		return false;
