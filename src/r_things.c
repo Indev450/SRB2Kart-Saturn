@@ -2940,9 +2940,9 @@ static void R_DrawMaskedList (drawnode_t* head)
 
 	for (r2 = head->next; r2 != head; r2 = r2->next)
 	{
-		drawspandata_t ds = {0};
 		if (r2->plane)
 		{
+			drawspandata_t ds = {0};
 			next = r2->prev;
 			R_DrawSinglePlane(&ds, r2->plane, false);
 			R_DoneWithNode(r2);
