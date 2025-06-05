@@ -14,6 +14,10 @@
 #ifndef __R_THINGS__
 #define __R_THINGS__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "sounds.h"
 #include "r_plane.h"
 #include "r_patch.h"
@@ -310,5 +314,9 @@ FUNCMATH FUNCINLINE static ATTRINLINE boolean R_ValidSpriteAngle(UINT8 rotation)
 {
 	return ((rotation <= 8) || (rotation == ROT_L) || (rotation == ROT_R));
 }
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif //__R_THINGS__

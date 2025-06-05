@@ -183,7 +183,8 @@ objdir:=$(makedir)/objs
 
 # very sophisticated dependency
 sources+=\
-	$(call List,Sourcefile)
+	$(call List,Sourcefile)\
+	$(call List,core/Sourcefile)
 
 ifdef NOBLUAJIT
 sources+=\

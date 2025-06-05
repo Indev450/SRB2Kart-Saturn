@@ -14,6 +14,10 @@
 #ifndef __R_DATA__
 #define __R_DATA__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "r_defs.h"
 #include "r_state.h"
 
@@ -112,5 +116,9 @@ UINT8 NearestPaletteColor(UINT8 r, UINT8 g, UINT8 b, RGBA_t *palette);
 #define NearestColor(r, g, b) NearestPaletteColor(r, g, b, NULL)
 
 extern INT32 numtextures;
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif

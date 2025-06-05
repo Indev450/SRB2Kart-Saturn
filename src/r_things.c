@@ -2952,7 +2952,7 @@ static void R_DrawMaskedList (drawnode_t* head)
 		if (r2->plane)
 		{
 			next = r2->prev;
-			R_DrawSinglePlane(&ds, r2->plane);
+			R_DrawSinglePlane(&ds, r2->plane, false);
 			R_DoneWithNode(r2);
 			r2 = next;
 		}

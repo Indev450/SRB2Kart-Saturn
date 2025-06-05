@@ -14,6 +14,10 @@
 #ifndef __R_PORTAL__
 #define __R_PORTAL__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "r_data.h"
 #include "r_plane.h" // visplanes
 
@@ -55,5 +59,9 @@ void Portal_ClipApply (const portal_t* portal);
 
 void Portal_AddSkybox(const visplane_t* plane);
 void Portal_AddSkyboxPortals(void);
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif

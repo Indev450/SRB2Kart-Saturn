@@ -14,6 +14,10 @@
 #ifndef __Z_ZONE__
 #define __Z_ZONE__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdio.h>
 #include "doomdef.h"
 #include "doomtype.h"
@@ -154,5 +158,9 @@ size_t Z_TagsUsage(INT32 lowtag, INT32 hightag);
 // Miscellaneous functions
 //
 char *Z_StrDup(const char *in);
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif

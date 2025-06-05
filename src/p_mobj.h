@@ -14,6 +14,10 @@
 #ifndef __P_MOBJ__
 #define __P_MOBJ__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 // Basics.
 #include "tables.h"
 #include "m_fixed.h"
@@ -546,4 +550,9 @@ extern mapthing_t *huntemeralds[MAXHUNTEMERALDS];
 extern INT32 numhuntemeralds;
 extern boolean runemeraldmanager;
 extern INT32 numstarposts;
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
+
 #endif

@@ -14,6 +14,10 @@
 #ifndef __R_MAIN__
 #define __R_MAIN__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "d_player.h"
 #include "r_data.h"
 #include "m_perfstats.h"
@@ -84,7 +88,7 @@ extern lighttable_t *zlight[LIGHTLEVELS][MAXLIGHTZ];
 //
 // killough 5/2/98: reformatted
 //
-FUNCINLINE static ATTRINLINE PUREFUNC INT32 R_PointOnSide(fixed_t x, fixed_t y, const node_t *restrict node)
+FUNCINLINE static ATTRINLINE PUREFUNC INT32 R_PointOnSide(fixed_t x, fixed_t y, const node_t *node)
 {
 	if (!node->dx)
 		return x <= node->x ? node->dy > 0 : node->dy < 0;
@@ -245,4 +249,9 @@ void R_RegisterEngineStuff(void);
 INT32 R_GetHudUncap(void);
 // same as above but keeps interpolation during pause
 INT32 R_GetMenuUncap(void);
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
+
 #endif

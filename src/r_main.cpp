@@ -13,6 +13,8 @@
 ///        utility functions (BSP, geometry, trigonometry).
 ///        See tables.c, too.
 
+#include <algorithm>
+
 #include "doomdef.h"
 #include "g_game.h"
 #include "g_input.h"
@@ -36,6 +38,8 @@
 #include "doomstat.h" // MAXSPLITSCREENPLAYERS
 #include "r_fps.h" // Frame interpolation/uncapped
 #include "tables.h"
+
+#include "core/thread_pool.h"
 
 #ifdef HWRENDER
 #include "hardware/hw_main.h"
@@ -157,10 +161,6 @@ static void FlipCam_OnChange(void);
 static void FlipCam2_OnChange(void);
 static void FlipCam3_OnChange(void);
 static void FlipCam4_OnChange(void);
-void SendWeaponPref(void);
-void SendWeaponPref2(void);
-void SendWeaponPref3(void);
-void SendWeaponPref4(void);
 
 static void DirLight_OnChange(void);
 
@@ -504,10 +504,10 @@ void R_GetRenderBlockMapDimensions(fixed_t drawdist, INT32 *xl, INT32 *xh, INT32
 	const fixed_t vyright = viewy + FixedMul(drawdist, FSIN(right));
 
 	// Try to narrow the search to within only the field of view
-	*xl = (unsigned)(min(viewx, min(vxleft, vxright)) - bmaporgx)>>MAPBLOCKSHIFT;
-	*xh = (unsigned)(max(viewx, max(vxleft, vxright)) - bmaporgx)>>MAPBLOCKSHIFT;
-	*yl = (unsigned)(min(viewy, min(vyleft, vyright)) - bmaporgy)>>MAPBLOCKSHIFT;
-	*yh = (unsigned)(max(viewy, max(vyleft, vyright)) - bmaporgy)>>MAPBLOCKSHIFT;
+	*xl = (unsigned)(std::min(viewx, std::min(vxleft, vxright)) - bmaporgx)>>MAPBLOCKSHIFT;
+	*xh = (unsigned)(std::max(viewx, std::max(vxleft, vxright)) - bmaporgx)>>MAPBLOCKSHIFT;
+	*yl = (unsigned)(std::min(viewy, std::min(vyleft, vyright)) - bmaporgy)>>MAPBLOCKSHIFT;
+	*yh = (unsigned)(std::max(viewy, std::max(vyleft, vyright)) - bmaporgy)>>MAPBLOCKSHIFT;
 
 	if (*xh >= bmapwidth)
 		*xh = bmapwidth - 1;
@@ -681,9 +681,9 @@ void R_CheckViewMorph(void)
 	if (viewmorph.scrmapsize != vid.width*vid.height)
 	{
 		viewmorph.scrmapsize = vid.width*vid.height;
-		viewmorph.scrmap = realloc(viewmorph.scrmap, vid.width*vid.height * sizeof(INT32));
-		viewmorph.ceilingclip = realloc(viewmorph.ceilingclip, vid.width * sizeof(INT16));
-		viewmorph.floorclip = realloc(viewmorph.floorclip, vid.width * sizeof(INT16));
+		viewmorph.scrmap = static_cast<INT32*>(realloc(viewmorph.scrmap, vid.width*vid.height * sizeof(INT32)));
+		viewmorph.ceilingclip = static_cast<INT16*>(realloc(viewmorph.ceilingclip, vid.width * sizeof(INT16)));
+		viewmorph.floorclip = static_cast<INT16*>(realloc(viewmorph.floorclip, vid.width * sizeof(INT16)));
 	}
 
 	temp = FINECOSINE(rollangle);
@@ -695,7 +695,7 @@ void R_CheckViewMorph(void)
 	x1 = (vid.width*fabsf(rollcos) + vid.height*fabsf(rollsin)) / vid.width;
 	y1 = (vid.height*fabsf(rollcos) + vid.width*fabsf(rollsin)) / vid.height;
 
-	temp = max(x1, y1)*FRACUNIT;
+	temp = std::max(x1, y1)*FRACUNIT;
 	if (temp < FRACUNIT)
 		temp = FRACUNIT;
 	else
@@ -741,10 +741,10 @@ void R_CheckViewMorph(void)
 		xb = vid.width-1-xa;
 		yb = vid.height-1-ya;
 
-		viewmorph.ceilingclip[xa] = min(viewmorph.ceilingclip[xa], ya);
-		viewmorph.floorclip[xa] = max(viewmorph.floorclip[xa], ya);
-		viewmorph.ceilingclip[xb] = min(viewmorph.ceilingclip[xb], yb);
-		viewmorph.floorclip[xb] = max(viewmorph.floorclip[xb], yb);
+		viewmorph.ceilingclip[xa] = std::min(viewmorph.ceilingclip[xa], ya);
+		viewmorph.floorclip[xa]   = std::max(viewmorph.floorclip[xa], ya);
+		viewmorph.ceilingclip[xb] = std::min(viewmorph.ceilingclip[xb], yb);
+		viewmorph.floorclip[xb]   = std::max(viewmorph.floorclip[xb], yb);
 		x2 += rollcos;
 		y2 += rollsin;
 	}
@@ -758,10 +758,10 @@ void R_CheckViewMorph(void)
 		xb = vid.width-1-xa;
 		yb = vid.height-1-ya;
 
-		viewmorph.ceilingclip[xa] = min(viewmorph.ceilingclip[xa], ya);
-		viewmorph.floorclip[xa] = max(viewmorph.floorclip[xa], ya);
-		viewmorph.ceilingclip[xb] = min(viewmorph.ceilingclip[xb], yb);
-		viewmorph.floorclip[xb] = max(viewmorph.floorclip[xb], yb);
+		viewmorph.ceilingclip[xa] = std::min(viewmorph.ceilingclip[xa], ya);
+		viewmorph.floorclip[xa]   = std::max(viewmorph.floorclip[xa], ya);
+		viewmorph.ceilingclip[xb] = std::min(viewmorph.ceilingclip[xb], yb);
+		viewmorph.floorclip[xb]   = std::max(viewmorph.floorclip[xb], yb);
 		x2 -= rollsin;
 		y2 += rollcos;
 	}
@@ -978,7 +978,7 @@ void R_ExecuteSetViewSize(void)
 fixed_t R_GetPlayerFov(player_t *player)
 {
 	fixed_t fov = cv_fov.value + player->fovadd;
-	return max(MINFOV*FRACUNIT, min(fov, MAXFOV*FRACUNIT));
+	return std::max(MINFOV*FRACUNIT, std::min(fov, MAXFOV*FRACUNIT));
 }
 
 static void R_SetFov(fixed_t playerfov)
@@ -1095,7 +1095,7 @@ void R_SkyboxFrame(int s)
 	camera_t *thiscam = &camera[s];
 	subsector_t * subsector = NULL;
 
-	R_SetViewContext(VIEWCONTEXT_SKY1 + s);
+	R_SetViewContext(static_cast<viewcontext_e>(VIEWCONTEXT_SKY1 + s));
 
 	// cut-away view stuff
 	newview->sky = true;
@@ -1193,7 +1193,8 @@ void R_SetupFrame(int s, boolean skybox)
 	boolean chasecam = (cv_chasecam[s].value);
 	sector_t * sector = NULL;
 
-	R_SetViewContext(VIEWCONTEXT_PLAYER1 + s);
+	R_SetViewContext(static_cast<viewcontext_e>(VIEWCONTEXT_PLAYER1 + s));
+
 	if (thiscam->reset)
 	{
 		R_ResetViewInterpolation(s);
@@ -1336,9 +1337,12 @@ static fixed_t viewfov[MAXSPLITSCREENPLAYERS];
 void R_RenderPlayerView(player_t *player)
 {
 	UINT8			nummasks	= 1;
-	maskcount_t*	masks		= malloc(sizeof(maskcount_t));
+	maskcount_t*	masks		= static_cast<maskcount_t*>(malloc(sizeof(maskcount_t)));
 	const boolean skybox = (skyboxmo[0] && cv_skybox.value);
 	UINT8 i;
+
+	srb2::ThreadPool::Sema tp_sema;
+	srb2::g_main_threadpool->begin_sema();
 
 	// if this is display player 1
 	if (cv_homremoval.value && player == &players[displayplayers[0]])
@@ -1352,7 +1356,7 @@ void R_RenderPlayerView(player_t *player)
 	else if (splitscreen == 2 && player == &players[displayplayers[2]])
 	{
 		// V_DrawPatchFill, but for the fourth screen only
-		patch_t *pat = W_CachePatchName("SRB2BACK", PU_CACHE);
+		patch_t *pat = static_cast<patch_t*>(W_CachePatchName("SRB2BACK", PU_CACHE));
 		INT32 dupz = (vid.dupx < vid.dupy ? vid.dupx : vid.dupy);
 		INT32 x, y, pw = SHORT(pat->width) * dupz, ph = SHORT(pat->height) * dupz;
 
@@ -1399,7 +1403,6 @@ void R_RenderPlayerView(player_t *player)
 #ifdef FLOORSPLATS
 		R_ClearVisibleFloorSplats();
 #endif
-
 		R_RenderViewpoint(&masks[nummasks - 1], false);
 
 		R_ClipSprites();
@@ -1407,6 +1410,11 @@ void R_RenderPlayerView(player_t *player)
 #ifdef FLOORSPLATS
 		R_DrawVisibleFloorSplats();
 #endif
+		// well sometimes synchronization is off and may result in some visual glitching, oh well
+		tp_sema = srb2::g_main_threadpool->end_sema();
+		srb2::g_main_threadpool->notify_sema(tp_sema);
+		srb2::g_main_threadpool->wait_sema(tp_sema);
+		srb2::g_main_threadpool->begin_sema();
 		R_DrawMasked(masks, nummasks);
 	}
 	PS_STOP_TIMING(ps_skyboxtime);
@@ -1446,7 +1454,12 @@ void R_RenderPlayerView(player_t *player)
 
 	ps_numbspcalls.value.i = ps_numpolyobjects.value.i = ps_numdrawnodes.value.i = 0;
 	PS_START_TIMING(ps_bsptime);
+	//tp_sema = srb2::g_main_threadpool->end_sema();
+	//srb2::g_main_threadpool->notify_sema(tp_sema);
+	//srb2::g_main_threadpool->wait_sema(tp_sema);
+	//srb2::g_main_threadpool->begin_sema();
 	R_RenderViewpoint(&masks[nummasks - 1], true);
+
 	PS_STOP_TIMING(ps_bsptime);
 	PS_START_TIMING(ps_sw_spritecliptime);
 	R_ClipSprites();
@@ -1481,7 +1494,7 @@ void R_RenderPlayerView(player_t *player)
 			validcount++;
 
 			// Render the BSP from the new viewpoint, and clip
-			masks = realloc(masks, (++nummasks)*sizeof(maskcount_t));
+			masks = static_cast<maskcount_t*>(realloc(masks, (++nummasks)*sizeof(maskcount_t)));
 
 			// Render the BSP from the new viewpoint, and clip
 			// any sprites with the new clipsegs and window.
@@ -1496,6 +1509,9 @@ void R_RenderPlayerView(player_t *player)
 
 	PS_START_TIMING(ps_sw_planetime);
 	R_DrawPlanes();
+	tp_sema = srb2::g_main_threadpool->end_sema();
+	srb2::g_main_threadpool->notify_sema(tp_sema);
+	srb2::g_main_threadpool->wait_sema(tp_sema);
 	PS_STOP_TIMING(ps_sw_planetime);
 #ifdef FLOORSPLATS
 	R_DrawVisibleFloorSplats();
