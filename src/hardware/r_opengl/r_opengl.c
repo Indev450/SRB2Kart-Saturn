@@ -689,7 +689,7 @@ typedef enum
 	gluniform_leveltime,
 
 	gluniform_scr_resolution,
-	
+
 	gluniform_max,
 } gluniform_t;
 
@@ -1803,7 +1803,7 @@ void GL_UpdateTexture(GLMipmap_t *pTexInfo)
 		case GL_TEXFMT_ALPHA_INTENSITY_88:
 			GL_AllocTextureBuffer(pTexInfo);
 			ptex = tex = textureBuffer;
-			texformat = GL_LUMINANCE_ALPHA;
+			texformat = GL_RGBA;
 
 			for (idx = 0, j = 0; j < h; j++)
 			{
@@ -1821,7 +1821,7 @@ void GL_UpdateTexture(GLMipmap_t *pTexInfo)
 		case GL_TEXFMT_ALPHA_8: // Used for fade masks
 			GL_AllocTextureBuffer(pTexInfo);
 			ptex = tex = textureBuffer;
-			texformat = GL_ALPHA;
+			texformat = GL_RGBA;
 
 			memset(&tex->s, 255, sizeof(byteColor_t)*w*h); // 255 because the fade mask is modulated with the screen texture, so alpha affects it while the colours don't
 
@@ -1857,8 +1857,6 @@ void GL_UpdateTexture(GLMipmap_t *pTexInfo)
 
 	if (MipMap && !transparent) // No mipmaps on transparent stuff
 	{
-		int maxlod = (texformat == GL_LUMINANCE_ALPHA || texformat == GL_ALPHA) ? 4 : 5;
-
 		pglTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, GL_TRUE);
 
 		if (update)
@@ -1868,7 +1866,7 @@ void GL_UpdateTexture(GLMipmap_t *pTexInfo)
 
 		// Control the mipmap level of detail
 		pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_LOD, 0);
-		pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LOD, maxlod);
+		pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LOD, 5);
 	}
 	else
 	{
@@ -1891,7 +1889,6 @@ void GL_UpdateTexture(GLMipmap_t *pTexInfo)
 	if (maximumAnisotropy)
 		pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, anisotropic_filter);
 }
-
 
 // -----------------+
 // SetTexture       : The mipmap becomes the current texture source
@@ -2735,7 +2732,7 @@ void GL_DrawModelEx(model_t *model, INT32 frameIndex, float duration, float tics
 	poly.green  = byte2float[Surface->PolyColor.s.green];
 	poly.blue   = byte2float[Surface->PolyColor.s.blue];
 	poly.alpha  = byte2float[Surface->PolyColor.s.alpha];
-	
+
 	pglColor4ubv((GLubyte*)&Surface->PolyColor.s);
 
 	GL_SetBlend(((poly.alpha < 1) ? Surface->PolyFlags : (PF_Masked|PF_Occlude))|PF_Modulated);
@@ -2749,7 +2746,7 @@ void GL_DrawModelEx(model_t *model, INT32 frameIndex, float duration, float tics
 	fade.green = byte2float[Surface->FadeColor.s.green];
 	fade.blue  = byte2float[Surface->FadeColor.s.blue];
 	fade.alpha = byte2float[Surface->FadeColor.s.alpha];
-	
+
 	if (Surface->LightTableId && Surface->LightTableId != lt_downloaded)
 	{
 		pglActiveTexture(GL_TEXTURE2);

@@ -237,6 +237,8 @@ boolean OglSdlSurface(INT32 w, INT32 h)
 
 	first_init = true;
 
+	HWR_Startup();
+
 	return true;
 }
 
