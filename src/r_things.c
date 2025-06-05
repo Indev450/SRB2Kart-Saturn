@@ -2145,9 +2145,7 @@ void R_AddPrecipitationSprites(void)
 //
 // R_SortVisSprites
 //
-static vissprite_t vsprsortedhead;
-
-void R_SortVisSprites(void)
+static void R_SortVisSprites(vissprite_t* vsprsortedhead, UINT32 start, UINT32 end)
 {
 	UINT32       i;
 	vissprite_t *ds, *dsprev, *dsnext, *dsfirst;
@@ -2156,20 +2154,17 @@ void R_SortVisSprites(void)
 	fixed_t      bestscale;
 	INT32        bestdispoffset;
 
-	if (!visspritecount)
-		return;
-
 	unsorted.next = unsorted.prev = &unsorted;
 
-	dsfirst = R_GetVisSprite(0);
+	dsfirst = R_GetVisSprite(start);
 
 	// The first's prev and last's next will be set to
 	// nonsense, but are fixed in a moment
-	for (i = 0, dsnext = dsfirst, ds = NULL; i < visspritecount; i++)
+	for (i = start, dsnext = dsfirst, ds = NULL; i < end; i++)
 	{
 		dsprev = ds;
 		ds = dsnext;
-		if (i < visspritecount - 1) dsnext = R_GetVisSprite(i + 1);
+		if (i < end - 1) dsnext = R_GetVisSprite(i + 1);
 
 		ds->next = dsnext;
 		ds->prev = dsprev;
@@ -2183,8 +2178,8 @@ void R_SortVisSprites(void)
 	unsorted.prev = ds;
 
 	// pull the vissprites out by scale
-	vsprsortedhead.next = vsprsortedhead.prev = &vsprsortedhead;
-	for (i = 0; i < visspritecount; i++)
+	vsprsortedhead->next = vsprsortedhead->prev = vsprsortedhead;
+	for (i = start; i < end; i++)
 	{
 		bestscale = bestdispoffset = INT32_MAX;
 		for (ds = unsorted.next; ds != &unsorted; ds = ds->next)
@@ -2214,10 +2209,10 @@ void R_SortVisSprites(void)
 		{
 			best->next->prev = best->prev;
 			best->prev->next = best->next;
-			best->next = &vsprsortedhead;
-			best->prev = vsprsortedhead.prev;
-			vsprsortedhead.prev->next = best;
-			vsprsortedhead.prev = best;
+			best->next = vsprsortedhead;
+			best->prev = vsprsortedhead->prev;
+			vsprsortedhead->prev->next = best;
+			vsprsortedhead->prev = best;
 		}
 	}
 }
@@ -2228,28 +2223,28 @@ void R_SortVisSprites(void)
 static drawnode_t *R_CreateDrawNode(drawnode_t *link);
 
 static drawnode_t nodebankhead;
-static drawnode_t nodehead;
 
-static void R_CreateDrawNodes(void)
+static void R_CreateDrawNodes(maskcount_t* mask, drawnode_t* head, boolean tempskip)
 {
 	drawnode_t *entry;
 	drawseg_t *ds;
 	INT32 i, p, best, x1, x2;
 	fixed_t bestdelta, delta;
 	vissprite_t *rover;
+	static vissprite_t vsprsortedhead;
 	drawnode_t *r2;
 	visplane_t *plane;
 	INT32 sintersect;
 	fixed_t scale = 0;
 
 	// Add the 3D floors, thicksides, and masked textures...
-	for (ds = ds_p; ds-- > drawsegs ;)
+	for (ds = drawsegs + mask->drawsegs[1]; ds-- > drawsegs + mask->drawsegs[0];)
 	{
 		if (ds->numthicksides)
 		{
 			for (i = 0; i < ds->numthicksides; i++)
 			{
-				entry = R_CreateDrawNode(&nodehead);
+				entry = R_CreateDrawNode(head);
 				entry->thickseg = ds;
 				entry->ffloor = ds->thicksides[i];
 			}
@@ -2265,7 +2260,7 @@ static void R_CreateDrawNodes(void)
 			else
 			{
 				// Put it in!
-				entry = R_CreateDrawNode(&nodehead);
+				entry = R_CreateDrawNode(head);
 				entry->plane = plane;
 				entry->seg = ds;
 			}
@@ -2273,7 +2268,7 @@ static void R_CreateDrawNodes(void)
 		}
 		if (ds->maskedtexturecol)
 		{
-			entry = R_CreateDrawNode(&nodehead);
+			entry = R_CreateDrawNode(head);
 			entry->seg = ds;
 		}
 		if (ds->numffloorplanes)
@@ -2305,7 +2300,7 @@ static void R_CreateDrawNodes(void)
 				}
 				if (best != -1)
 				{
-					entry = R_CreateDrawNode(&nodehead);
+					entry = R_CreateDrawNode(head);
 					entry->plane = ds->ffloorplanes[best];
 					entry->seg = ds;
 					ds->ffloorplanes[best] = NULL;
@@ -2315,6 +2310,9 @@ static void R_CreateDrawNodes(void)
 			}
 		}
 	}
+
+	if (tempskip)
+		return;
 
 	// find all the remaining polyobject planes and add them on the end of the list
 	// probably this is a terrible idea if we wanted them to be sorted properly
@@ -2333,16 +2331,17 @@ static void R_CreateDrawNodes(void)
 			continue;
 		}
 
-		entry = R_CreateDrawNode(&nodehead);
+		entry = R_CreateDrawNode(head);
 		entry->plane = plane;
 		// note: no seg is set, for what should be obvious reasons
 		PolyObjects[i].visplane = NULL;
 	}
 
-	if (visspritecount == 0)
+	// No vissprites in this mask?
+	if (mask->vissprites[1] - mask->vissprites[0] == 0)
 		return;
 
-	R_SortVisSprites();
+	R_SortVisSprites(&vsprsortedhead, mask->vissprites[0], mask->vissprites[1]);
 
 	for (rover = vsprsortedhead.prev; rover != &vsprsortedhead; rover = rover->prev)
 	{
@@ -2351,7 +2350,7 @@ static void R_CreateDrawNodes(void)
 
 		sintersect = (rover->x1 + rover->x2) / 2;
 
-		for (r2 = nodehead.next; r2 != &nodehead; r2 = r2->next)
+		for (r2 = head->next; r2 != head; r2 = r2->next)
 		{
 			if (r2->plane)
 			{
@@ -2477,9 +2476,9 @@ static void R_CreateDrawNodes(void)
 				}
 			}
 		}
-		if (r2 == &nodehead)
+		if (r2 == head)
 		{
-			entry = R_CreateDrawNode(&nodehead);
+			entry = R_CreateDrawNode(head);
 			entry->sprite = rover;
 		}
 	}
@@ -2523,25 +2522,24 @@ static void R_DoneWithNode(drawnode_t *node)
 	(node->prev = &nodebankhead)->next = node;
 }
 
-static void R_ClearDrawNodes(void)
+static void R_ClearDrawNodes(drawnode_t* head)
 {
 	drawnode_t *rover;
 	drawnode_t *next;
 
-	for (rover = nodehead.next; rover != &nodehead ;)
+	for (rover = head->next; rover != head;)
 	{
 		next = rover->next;
 		R_DoneWithNode(rover);
 		rover = next;
 	}
 
-	nodehead.next = nodehead.prev = &nodehead;
+	head->next = head->prev = head;
 }
 
 void R_InitDrawNodes(void)
 {
 	nodebankhead.next = nodebankhead.prev = &nodebankhead;
-	nodehead.next = nodehead.prev = &nodehead;
 }
 
 //
@@ -2943,14 +2941,12 @@ boolean R_ThingIsFullDark(mobj_t *thing)
 //
 // R_DrawMasked
 //
-void R_DrawMasked(void)
+static void R_DrawMaskedList (drawnode_t* head)
 {
 	drawnode_t *r2;
 	drawnode_t *next;
 
-	R_CreateDrawNodes();
-
-	for (r2 = nodehead.next; r2 != &nodehead; r2 = r2->next)
+	for (r2 = head->next; r2 != head; r2 = r2->next)
 	{
 		drawspandata_t ds = {0};
 		if (r2->plane)
@@ -2993,7 +2989,36 @@ void R_DrawMasked(void)
 			r2 = next;
 		}
 	}
-	R_ClearDrawNodes();
+}
+
+void R_DrawMasked(maskcount_t* masks, UINT8 nummasks)
+{
+	drawnode_t heads[nummasks];	/**< Drawnode lists; as many as number of views/portals. */
+	UINT8 i;
+
+	for (i = 0; i < nummasks; i++)
+	{
+		heads[i].next = heads[i].prev = &heads[i];
+
+		viewx = masks[i].viewx;
+		viewy = masks[i].viewy;
+		viewz = masks[i].viewz;
+		viewsector = masks[i].viewsector;
+
+
+		R_CreateDrawNodes(&masks[i], &heads[i], false);
+	}
+
+	for (; nummasks > 0; nummasks--)
+	{
+		viewx = masks[nummasks - 1].viewx;
+		viewy = masks[nummasks - 1].viewy;
+		viewz = masks[nummasks - 1].viewz;
+		viewsector = masks[nummasks - 1].viewsector;
+
+		R_DrawMaskedList(&heads[nummasks - 1]);
+		R_ClearDrawNodes(&heads[nummasks - 1]);
+	}
 }
 
 // ==========================================================================

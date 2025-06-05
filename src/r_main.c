@@ -1281,20 +1281,46 @@ static void R_PortalFrame(portal_t *portal)
 	if (portal->clipline != -1)
 	{
 		portalclipline = &lines[portal->clipline];
-		portalcullsector = portalclipline->frontsector;
 		viewsector = portalclipline->frontsector;
 	}
 	else
 	{
 		portalclipline = NULL;
-		portalcullsector = NULL;
 		viewsector = R_PointInSubsector(viewx, viewy)->sector;
 	}
+}
+
+static void Mask_Pre (maskcount_t* m)
+{
+	m->drawsegs[0] = ds_p - drawsegs;
+	m->vissprites[0] = visspritecount;
+	m->viewx = viewx;
+	m->viewy = viewy;
+	m->viewz = viewz;
+	m->viewsector = viewsector;
+}
+
+static void Mask_Post (maskcount_t* m)
+{
+	m->drawsegs[1] = ds_p - drawsegs;
+	m->vissprites[1] = visspritecount;
 }
 
 // ================
 // R_RenderView
 // ================
+
+// viewx, viewy, viewangle, all that good stuff must be set
+static void R_RenderViewpoint(maskcount_t* mask)
+{
+	Mask_Pre(mask);
+
+	curdrawsegs = ds_p;
+
+	R_RenderBSPNode((INT32)numnodes - 1);
+
+	Mask_Post(mask);
+}
 
 //                     FAB NOTE FOR WIN32 PORT !! I'm not finished already,
 // but I suspect network may have problems with the video buffer being locked
@@ -1306,6 +1332,8 @@ static fixed_t viewfov[MAXSPLITSCREENPLAYERS];
 
 void R_RenderPlayerView(player_t *player)
 {
+	UINT8			nummasks	= 1;
+	maskcount_t*	masks		= malloc(sizeof(maskcount_t));
 	const boolean skybox = (skyboxmo[0] && cv_skybox.value);
 	UINT8 i;
 
@@ -1369,13 +1397,14 @@ void R_RenderPlayerView(player_t *player)
 		R_ClearVisibleFloorSplats();
 #endif
 
-		R_RenderBSPNode((INT32)numnodes - 1);
+		R_RenderViewpoint(&masks[nummasks - 1]);
+
 		R_ClipSprites();
 		R_DrawPlanes();
 #ifdef FLOORSPLATS
 		R_DrawVisibleFloorSplats();
 #endif
-		R_DrawMasked();
+		R_DrawMasked(masks, nummasks);
 	}
 	PS_STOP_TIMING(ps_skyboxtime);
 
@@ -1410,10 +1439,11 @@ void R_RenderPlayerView(player_t *player)
 	NetUpdate();
 
 	// The head node is the last node output.
+	//masks = realloc(masks, (++nummasks)*sizeof(maskcount_t));
 
 	ps_numbspcalls.value.i = ps_numpolyobjects.value.i = ps_numdrawnodes.value.i = 0;
 	PS_START_TIMING(ps_bsptime);
-	R_RenderBSPNode((INT32)numnodes - 1);
+	R_RenderViewpoint(&masks[nummasks - 1]);
 	PS_STOP_TIMING(ps_bsptime);
 	R_AddPrecipitationSprites();
 	PS_START_TIMING(ps_sw_spritecliptime);
@@ -1446,14 +1476,18 @@ void R_RenderPlayerView(player_t *player)
 			// that were previously stored.
 			Portal_ClipApply(portal);
 
+			validcount++;
+
+			// Render the BSP from the new viewpoint, and clip
+			masks = realloc(masks, (++nummasks)*sizeof(maskcount_t));
+
 			// Render the BSP from the new viewpoint, and clip
 			// any sprites with the new clipsegs and window.
-			R_RenderBSPNode((INT32)numnodes - 1);
+			R_RenderViewpoint(&masks[nummasks - 1]);
+
 			R_ClipSprites();
 
 			Portal_Remove(portal);
-
-			validcount++;
 		}
 	}
 	PS_STOP_TIMING(ps_sw_portaltime);
@@ -1467,8 +1501,10 @@ void R_RenderPlayerView(player_t *player)
 	// draw mid texture and sprite
 	// And now 3D floors/sides!
 	PS_START_TIMING(ps_sw_maskedtime);
-	R_DrawMasked();
+	R_DrawMasked(masks, nummasks);
 	PS_STOP_TIMING(ps_sw_maskedtime);
+
+	free(masks);
 
 	// Check for new console commands.
 	NetUpdate();

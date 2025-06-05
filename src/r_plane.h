@@ -56,6 +56,8 @@ typedef struct visplane_s
 	boolean noencore;
 } visplane_t;
 
+extern visplane_t *visplanes[MAXVISPLANES];
+
 extern visplane_t *floorplane;
 extern visplane_t *ceilingplane;
 
