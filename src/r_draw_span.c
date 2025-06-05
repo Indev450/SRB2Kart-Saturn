@@ -371,15 +371,7 @@ void R_DrawTiltedSpan(drawspandata_t* ds)
 	float endz, endu, endv;
 	UINT32 stepu, stepv;
 	register UINT32 bit;
-	static INT32 *tiltlighting = NULL;
-	static INT32 oldviewwidth = 0;
-
-	// dont realloc every frame pls thx
-	if (tiltlighting == NULL || oldviewwidth != viewwidth)
-	{
-		tiltlighting = Z_Realloc(tiltlighting, sizeof(*tiltlighting) * viewwidth, PU_STATIC, NULL);
-		oldviewwidth = viewwidth;
-	}
+	INT32 tiltlighting[MAXVIDWIDTH];
 
 	iz = ds->szp.z + ds->szp.y*(centery-ds->y) + ds->szp.x*(ds->x1-centerx);
 
@@ -518,15 +510,7 @@ void R_DrawTiltedTranslucentSpan(drawspandata_t* ds)
 	float endz, endu, endv;
 	UINT32 stepu, stepv;
 	register UINT32 bit;
-	static INT32 *tiltlighting = NULL;
-	static INT32 oldviewwidth = 0;
-
-	// dont realloc every frame pls thx
-	if (tiltlighting == NULL || oldviewwidth != viewwidth)
-	{
-		tiltlighting = Z_Realloc(tiltlighting, sizeof(*tiltlighting) * viewwidth, PU_STATIC, NULL);
-		oldviewwidth = viewwidth;
-	}
+	INT32 tiltlighting[MAXVIDWIDTH];
 
 	iz = ds->szp.z + ds->szp.y*(centery-ds->y) + ds->szp.x*(ds->x1-centerx);
 
@@ -666,15 +650,7 @@ void R_DrawTiltedTranslucentWaterSpan(drawspandata_t* ds)
 	float endz, endu, endv;
 	UINT32 stepu, stepv;
 	register UINT32 bit;
-	static INT32 *tiltlighting = NULL;
-	static INT32 oldviewwidth = 0;
-
-	// dont realloc every frame pls thx
-	if (tiltlighting == NULL || oldviewwidth != viewwidth)
-	{
-		tiltlighting = Z_Realloc(tiltlighting, sizeof(*tiltlighting) * viewwidth, PU_STATIC, NULL);
-		oldviewwidth = viewwidth;
-	}
+	INT32 tiltlighting[MAXVIDWIDTH];
 
 	iz = ds->szp.z + ds->szp.y*(centery-ds->y) + ds->szp.x*(ds->x1-centerx);
 
@@ -814,15 +790,7 @@ void R_DrawTiltedSplat(drawspandata_t* ds)
 	float endz, endu, endv;
 	UINT32 stepu, stepv;
 	register UINT32 bit;
-	static INT32 *tiltlighting = NULL;
-	static INT32 oldviewwidth = 0;
-
-	// dont realloc every frame pls thx
-	if (tiltlighting == NULL || oldviewwidth != viewwidth)
-	{
-		tiltlighting = Z_Realloc(tiltlighting, sizeof(*tiltlighting) * viewwidth, PU_STATIC, NULL);
-		oldviewwidth = viewwidth;
-	}
+	INT32 tiltlighting[MAXVIDWIDTH];
 
 	iz = ds->szp.z + ds->szp.y*(centery-ds->y) + ds->szp.x*(ds->x1-centerx);
 
