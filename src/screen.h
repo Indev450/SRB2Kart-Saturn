@@ -78,13 +78,6 @@ enum
 	VID_GL_LIBRARY_ERROR      = -1,
 };
 
-// ---------------------------------------------
-// color mode dependent drawer function pointers
-// ---------------------------------------------
-extern void (*spanfunc)(void);
-extern void (*basespanfunc)(void);
-extern void (*splatfunc)(void);
-
 // ----------------
 // screen variables
 // ----------------

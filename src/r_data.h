@@ -50,6 +50,7 @@ typedef struct
 
 // all loaded and prepared textures from the start of the game
 extern texture_t **textures;
+extern UINT8 **texturecache; // graphics data for each generated full-size texture
 
 // texture width is a power of 2, so it can easily repeat along sidedefs using a simple mask
 extern INT32 *texturewidthmask;
@@ -67,6 +68,8 @@ extern CV_PossibleValue_t Color_cons_t[];
 // Load TEXTURE1/TEXTURE2/PNAMES definitions, create lookup tables
 void R_LoadTextures(void);
 void R_FlushTextureCache(void);
+
+UINT8 *R_GenerateTexture(size_t texnum);
 
 INT32 R_GetTextureNum(INT32 texnum);
 void R_CheckTextureCache(INT32 tex);

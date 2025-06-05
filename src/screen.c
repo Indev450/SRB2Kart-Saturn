@@ -33,28 +33,6 @@
 // SRB2Kart
 #include "r_fps.h" // R_GetFramerateCap
 
-// --------------------------------------------
-// assembly or c drawer routines for 8bpp/16bpp
-// --------------------------------------------
-void (*wallcolfunc)(drawcolumndata_t*); // new wall column drawer to draw posts >128 high
-void (*colfunc)(drawcolumndata_t*); // standard column, up to 128 high posts
-
-void (*basecolfunc)(drawcolumndata_t*);
-void (*fuzzcolfunc)(drawcolumndata_t*); // standard fuzzy effect column drawer
-void (*transcolfunc)(drawcolumndata_t*); // translation column drawer
-void (*shadecolfunc)(drawcolumndata_t*); // smokie test..
-
-void (*transtransfunc)(drawcolumndata_t*); // translucent translated column drawer
-void (*twosmultipatchfunc)(drawcolumndata_t*); // for cols with transparent pixels
-void (*twosmultipatchtransfunc)(drawcolumndata_t*); // for cols with transparent pixels AND translucency
-
-//  Short and Tall sky drawer, for the current color mode
-void (*walldrawerfunc)(drawcolumndata_t*);
-
-void (*spanfunc)(void); // span drawer, use a 64x64 tile
-void (*splatfunc)(void); // span drawer w/ transparency
-void (*basespanfunc)(void); // default span func for color mode
-
 // ------------------
 // global video state
 // ------------------
