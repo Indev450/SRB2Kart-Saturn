@@ -34,6 +34,10 @@
 
 #define GLENCORE
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 // Startup & Shutdown the hardware mode renderer
 void HWR_Startup(void);
 void HWR_Shutdown(void);
@@ -232,5 +236,9 @@ FUNCINLINE static ATTRINLINE boolean HWR_PalRenderFlashpal(void)
 {
 	return (cv_glflashpal.value && HWR_ShouldUsePaletteRendering());
 }
+
+#ifdef __cplusplus
+}// extern "C"
+#endif
 
 #endif
