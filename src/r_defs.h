@@ -68,6 +68,37 @@ typedef struct
 #endif
 } extracolormap_t;
 
+typedef struct
+{
+	lighttable_t* colormap;
+
+	INT32 x;
+	INT32 yl;
+	INT32 yh;
+	fixed_t iscale;
+	fixed_t texturemid;
+
+	UINT8* source; // first pixel in a column
+	UINT8* lightmap; // lighting only
+
+	// translucency stuff here
+	UINT8* transmap;
+
+	// translation stuff here
+	UINT8* translation;
+
+	struct r_lightlist_s* lightlist;
+
+	INT32 numlights;
+	INT32 maxlights;
+
+	//Fix TUTIFRUTI
+	INT32 texheight;
+	INT32 sourcelength;
+} drawcolumndata_t;
+
+extern drawcolumndata_t g_dc;
+
 //
 // INTERNAL MAP TYPES used by play and refresh
 //

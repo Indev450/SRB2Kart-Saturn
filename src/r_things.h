@@ -62,7 +62,6 @@ fixed_t R_GetSpriteDirectionalLighting(angle_t angle);
 
 fixed_t R_GetShadowZ(mobj_t *thing, pslope_t **shadowslope);
 
-void R_DrawMaskedColumn(column_t *column);
 void R_SortVisSprites(void);
 
 //faB: find sprites in wadfile, replace existing, add new ones

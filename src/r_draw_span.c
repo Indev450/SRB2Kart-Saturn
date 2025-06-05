@@ -304,7 +304,7 @@ void R_DrawFogSpan(void)
 	register intptr_t count;
 
 	colormap = ds_colormap;
-	dest = R_Address(dc_x, dc_yl);
+	dest = R_Address(ds_x1, ds_y);
 
 	count = ds_x2 - ds_x1 + 1;
 

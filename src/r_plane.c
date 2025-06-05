@@ -719,6 +719,7 @@ static void R_DrawSkyPlane(visplane_t *pl)
 {
 	INT32 x;
 	INT32 angle;
+	drawcolumndata_t dc = {0};
 
 	if (!newview->sky)
 	{
@@ -729,33 +730,33 @@ static void R_DrawSkyPlane(visplane_t *pl)
 	wallcolfunc = walldrawerfunc;
 
 	// use correct aspect ratio scale
-	dc_iscale = skyscale;
+	dc.iscale = skyscale;
 	// Sky is always drawn full bright,
 	//  i.e. colormaps[0] is used.
 	// Because of this hack, sky is not affected
 	//  by INVUL inverse mapping.
-	dc_colormap = colormaps;
+	dc.colormap = colormaps;
 
 	if (encoremap)
-		dc_colormap += COLORMAP_REMAPOFFSET;
+		dc.colormap += COLORMAP_REMAPOFFSET;
 
-	dc_texturemid = skytexturemid;
-	dc_texheight = textureheight[skytexture] >>FRACBITS;
-	dc_sourcelength = dc_texheight;
+	dc.texturemid = skytexturemid;
+	dc.texheight = textureheight[skytexture] >>FRACBITS;
+	dc.sourcelength = dc.texheight;
 
 	for (x = pl->minx; x <= pl->maxx; x++)
 	{
-		dc_yl = pl->top[x];
-		dc_yh = pl->bottom[x];
+		dc.yl = pl->top[x];
+		dc.yh = pl->bottom[x];
 
-		if (!(dc_yl <= dc_yh))
+		if (!(dc.yl <= dc.yh))
 			continue;
 
 		angle = (pl->viewangle + xtoviewangle[x])>>ANGLETOSKYSHIFT;
-		dc_iscale = FixedMul(skyscale, FINECOSINE(xtoviewangle[x]>>ANGLETOFINESHIFT));
-		dc_x = x;
-		dc_source = R_GetColumn(texturetranslation[skytexture], angle);
-		wallcolfunc();
+		dc.iscale = FixedMul(skyscale, FINECOSINE(xtoviewangle[x]>>ANGLETOFINESHIFT));
+		dc.x = x;
+		dc.source = R_GetColumn(texturetranslation[skytexture], angle);
+		wallcolfunc(&dc);
 	}
 }
 

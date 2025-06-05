@@ -32,24 +32,21 @@ FUNCINLINE static ATTRINLINE UINT8 *R_Address(INT32 px, INT32 py)
 // COLUMN DRAWING CODE STUFF
 // -------------------------
 
-extern lighttable_t *dc_colormap;
-extern INT32 dc_x, dc_yl, dc_yh;
-extern fixed_t dc_iscale, dc_texturemid;
+extern void (*wallcolfunc)(drawcolumndata_t*);
+extern void (*colfunc)(drawcolumndata_t*);
+extern void (*basecolfunc)(drawcolumndata_t*);
+extern void (*fuzzcolfunc)(drawcolumndata_t*);
+extern void (*transcolfunc)(drawcolumndata_t*);
+extern void (*shadecolfunc)(drawcolumndata_t*);
+extern void (*transtransfunc)(drawcolumndata_t*);
 
-extern UINT8 *dc_source; // first pixel in a column
+extern void (*twosmultipatchfunc)(drawcolumndata_t*);
+extern void (*twosmultipatchtransfunc)(drawcolumndata_t*);
 
-// translucency stuff here
-extern UINT8 *dc_transmap;
+// quick fix for tall/short skies, depending on bytesperpixel
+extern void (*walldrawerfunc)(drawcolumndata_t*);
 
-// translation stuff here
-
-extern UINT8 *dc_translation;
-
-extern struct r_lightlist_s *dc_lightlist;
-extern INT32 dc_numlights, dc_maxlights;
-
-//Fix TUTIFRUTI
-extern INT32 dc_texheight;
+void R_DrawMaskedColumn(drawcolumndata_t* dc, column_t *column);
 
 // -----------------------
 // SPAN DRAWING CODE STUFF
@@ -60,7 +57,6 @@ extern lighttable_t *ds_colormap;
 extern fixed_t ds_xfrac, ds_yfrac, ds_xstep, ds_ystep;
 extern INT32 ds_waterofs, ds_bgofs;
 extern UINT8 *ds_source; // start of a 64*64 tile image
-extern INT32 dc_sourcelength;
 extern UINT8 *ds_transmap;
 
 extern INT32 ds_bgofs;
@@ -164,20 +160,20 @@ void R_DrawViewBorder(void);
 // -----------------
 
 // column drawers
-void R_DrawColumn(void);
+void R_DrawColumn(drawcolumndata_t* dc);
 #define R_DrawWallColumn	R_DrawColumn
-void R_DrawShadeColumn(void);
-void R_DrawColumnShadowed(void);
+void R_DrawShadeColumn(drawcolumndata_t* dc);
+void R_DrawColumnShadowed(drawcolumndata_t* dc);
 
-void R_DrawTranslucentColumn(void);
+void R_DrawTranslucentColumn(drawcolumndata_t* dc);
 
-void R_DrawTranslatedColumn(void);
-void R_DrawTranslatedTranslucentColumn(void);
+void R_DrawTranslatedColumn(drawcolumndata_t* dc);
+void R_DrawTranslatedTranslucentColumn(drawcolumndata_t* dc);
 
-void R_Draw2sMultiPatchColumn(void);
-void R_Draw2sMultiPatchTranslucentColumn(void);
+void R_Draw2sMultiPatchColumn(drawcolumndata_t* dc);
+void R_Draw2sMultiPatchTranslucentColumn(drawcolumndata_t* dc);
 
-void R_DrawFogColumn(void);
+void R_DrawFogColumn(drawcolumndata_t* dc);
 
 // span drawers
 void R_DrawSpan(void);
