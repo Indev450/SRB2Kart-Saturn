@@ -62,8 +62,6 @@ static gl_portal_t* HWR_Portal_Add (seg_t *seg)
 
 void HWR_FreePortalList(gl_portallist_t freelist)
 {
-	portalcullsector = NULL;
-
 	// free memory from portal list allocated by calls to Add2Lines
 	gl_portal_t *gl_portal_temp = freelist.base;
 	while (gl_portal_temp)
@@ -125,13 +123,11 @@ void HWR_PortalFrame(gl_portal_t* portal)
 	if (portal->clipline != -1)
 	{
 		portalclipline = &lines[portal->clipline];
-		portalcullsector = portalclipline->frontsector;
 		viewsector = portalclipline->frontsector;
 	}
 	else
 	{
 		portalclipline = NULL;
-		portalcullsector = NULL;
 		viewsector = R_PointInSubsector(viewx, viewy)->sector;
 	}
 }

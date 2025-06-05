@@ -40,7 +40,7 @@
 // good night sweet prince
 //#define SHITPLANESPARENCY
 
-static visplane_t *visplanes[MAXVISPLANES];
+visplane_t *visplanes[MAXVISPLANES];
 static visplane_t *freetail;
 static visplane_t **freehead = &freetail;
 
@@ -367,8 +367,6 @@ void R_ClearPlanes(void)
 		{
 			freehead = &(*freehead)->next;
 		}
-
-	numffloors = 0;
 
 	lastopening = openings;
 

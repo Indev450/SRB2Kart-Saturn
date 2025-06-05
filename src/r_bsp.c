@@ -35,6 +35,7 @@ sector_t *backsector;
 // very ugly realloc() of drawsegs at run-time, I upped it to 512
 // instead of 256.. and someone managed to send me a level with
 // 896 drawsegs! So too bad here's a limit removal a-la-Boom
+drawseg_t *curdrawsegs = NULL; /**< This is used to handle multiple lists for masked drawsegs. */
 drawseg_t *drawsegs = NULL;
 drawseg_t *ds_p = NULL;
 
@@ -1199,14 +1200,6 @@ void R_RenderBSPNode(INT32 bspnum)
 			return;
 
 		bspnum = bsp->children[side^1];
-	}
-
-	// PORTAL CULLING
-	if (portalcullsector)
-	{
-		if (subsectors[bspnum & ~NF_SUBSECTOR].sector != portalcullsector)
-			return;
-		portalcullsector = NULL;
 	}
 
 	R_Subsector(bspnum == -1 ? 0 : bspnum & ~NF_SUBSECTOR);
