@@ -963,18 +963,21 @@ void R_DrawTiltedSplat(drawspandata_t* ds)
 */
 void R_DrawSplat(drawspandata_t* ds)
 {
-	UINT32 xposition;
-	UINT32 yposition;
-	UINT32 xstep, ystep;
+	uintptr_t xposition;
+	uintptr_t yposition;
+	uintptr_t xstep, ystep;
 	register UINT32 bit;
 
-	UINT8 *source;
-	UINT8 *colormap;
-	register UINT8 *dest;
+	UINT8 *restrict source = ds->source;
+	UINT8 *restrict colormap = ds->colormap;
+	UINT8 *restrict dest = R_Address(ds->x1, ds->y);
 
-	register size_t count;
+	register intptr_t count = (ds->x2 - ds->x1 + 1);
 	size_t i;
 	UINT32 val;
+
+	xposition = ds->xfrac; yposition = ds->yfrac;
+	xstep = ds->xstep; ystep = ds->ystep;
 
 	// SoM: we only need 6 bits for the integer part (0 thru 63) so the rest
 	// can be used for the fraction part. This allows calculation of the memory address in the
@@ -983,13 +986,8 @@ void R_DrawSplat(drawspandata_t* ds)
 	// bit per power of two (obviously)
 	// Ok, because I was able to eliminate the variable spot below, this function is now FASTER
 	// than the original span renderer. Whodathunkit?
-	xposition = ds->xfrac << ds->nflatshiftup; yposition = ds->yfrac << ds->nflatshiftup;
-	xstep = ds->xstep << ds->nflatshiftup; ystep = ds->ystep << ds->nflatshiftup;
-
-	source = ds->source;
-	colormap = ds->colormap;
-	dest = R_Address(ds->x1, ds->y);
-	count = ds->x2 - ds->x1 + 1;
+	xposition <<= ds->nflatshiftup; yposition <<= ds->nflatshiftup;
+	xstep <<= ds->nflatshiftup; ystep <<= ds->nflatshiftup;
 
 	while (count >= 8)
 	{
@@ -1033,18 +1031,21 @@ void R_DrawSplat(drawspandata_t* ds)
 */
 void R_DrawTranslucentSplat(drawspandata_t* ds)
 {
-	UINT32 xposition;
-	UINT32 yposition;
-	UINT32 xstep, ystep;
+	uintptr_t xposition;
+	uintptr_t yposition;
+	uintptr_t xstep, ystep;
 	register UINT32 bit;
 
-	UINT8 *source;
-	UINT8 *colormap;
-	register UINT8 *dest;
+	UINT8 *restrict source = ds->source;
+	UINT8 *restrict colormap = ds->colormap;
+	UINT8 *restrict dest = R_Address(ds->x1, ds->y);
 
-	register size_t count;
+	register intptr_t count = (ds->x2 - ds->x1 + 1);
 	size_t i;
 	UINT8 val;
+
+	xposition = ds->xfrac; yposition = ds->yfrac;
+	xstep = ds->xstep; ystep = ds->ystep;
 
 	// SoM: we only need 6 bits for the integer part (0 thru 63) so the rest
 	// can be used for the fraction part. This allows calculation of the memory address in the
@@ -1053,13 +1054,8 @@ void R_DrawTranslucentSplat(drawspandata_t* ds)
 	// bit per power of two (obviously)
 	// Ok, because I was able to eliminate the variable spot below, this function is now FASTER
 	// than the original span renderer. Whodathunkit?
-	xposition = ds->xfrac << ds->nflatshiftup; yposition = ds->yfrac << ds->nflatshiftup;
-	xstep = ds->xstep << ds->nflatshiftup; ystep = ds->ystep << ds->nflatshiftup;
-
-	source = ds->source;
-	colormap = ds->colormap;
-	dest = R_Address(ds->x1, ds->y);
-	count = ds->x2 - ds->x1 + 1;
+	xposition <<= ds->nflatshiftup; yposition <<= ds->nflatshiftup;
+	xstep <<= ds->nflatshiftup; ystep <<= ds->nflatshiftup;
 
 	while (count >= 8)
 	{
