@@ -104,23 +104,23 @@ extracolormap_t extra_colormaps[MAXCOLORMAPS];
 
 // Performance stats
 precise_t ps_prevframetime = 0;
-ps_metric_t ps_rendercalltime = {0};
-ps_metric_t ps_otherrendertime = {0};
-ps_metric_t ps_uitime = {0};
-ps_metric_t ps_swaptime = {0};
+ps_metric_t ps_rendercalltime = {};
+ps_metric_t ps_otherrendertime = {};
+ps_metric_t ps_uitime = {};
+ps_metric_t ps_swaptime = {};
 
-ps_metric_t ps_skyboxtime = {0};
-ps_metric_t ps_bsptime = {0};
+ps_metric_t ps_skyboxtime = {};
+ps_metric_t ps_bsptime = {};
 
-ps_metric_t ps_sw_spritecliptime = {0};
-ps_metric_t ps_sw_portaltime = {0};
-ps_metric_t ps_sw_planetime = {0};
-ps_metric_t ps_sw_maskedtime = {0};
+ps_metric_t ps_sw_spritecliptime = {};
+ps_metric_t ps_sw_portaltime = {};
+ps_metric_t ps_sw_planetime = {};
+ps_metric_t ps_sw_maskedtime = {};
 
-ps_metric_t ps_numbspcalls = {0};
-ps_metric_t ps_numsprites = {0};
-ps_metric_t ps_numdrawnodes = {0};
-ps_metric_t ps_numpolyobjects = {0};
+ps_metric_t ps_numbspcalls = {};
+ps_metric_t ps_numsprites = {};
+ps_metric_t ps_numdrawnodes = {};
+ps_metric_t ps_numpolyobjects = {};
 
 static CV_PossibleValue_t drawdist_cons_t[] = {
 	/*{256, "256"},*/	{512, "512"},	{768, "768"},
@@ -1341,9 +1341,6 @@ void R_RenderPlayerView(player_t *player)
 	const boolean skybox = (skyboxmo[0] && cv_skybox.value);
 	UINT8 i;
 
-	srb2::ThreadPool::Sema tp_sema;
-	srb2::g_main_threadpool->begin_sema();
-
 	// if this is display player 1
 	if (cv_homremoval.value && player == &players[displayplayers[0]])
 	{
@@ -1391,6 +1388,8 @@ void R_RenderPlayerView(player_t *player)
 
 	Portal_InitList();
 
+	srb2::ThreadPool::Sema tp_sema;
+
 	PS_START_TIMING(ps_skyboxtime);
 	if (skybox && skyVisible)
 	{
@@ -1403,6 +1402,7 @@ void R_RenderPlayerView(player_t *player)
 #ifdef FLOORSPLATS
 		R_ClearVisibleFloorSplats();
 #endif
+		srb2::g_main_threadpool->begin_sema();
 		R_RenderViewpoint(&masks[nummasks - 1], false);
 
 		R_ClipSprites();
@@ -1414,7 +1414,6 @@ void R_RenderPlayerView(player_t *player)
 		tp_sema = srb2::g_main_threadpool->end_sema();
 		srb2::g_main_threadpool->notify_sema(tp_sema);
 		srb2::g_main_threadpool->wait_sema(tp_sema);
-		srb2::g_main_threadpool->begin_sema();
 		R_DrawMasked(masks, nummasks);
 	}
 	PS_STOP_TIMING(ps_skyboxtime);
@@ -1454,10 +1453,13 @@ void R_RenderPlayerView(player_t *player)
 
 	ps_numbspcalls.value.i = ps_numpolyobjects.value.i = ps_numdrawnodes.value.i = 0;
 	PS_START_TIMING(ps_bsptime);
-	//tp_sema = srb2::g_main_threadpool->end_sema();
-	//srb2::g_main_threadpool->notify_sema(tp_sema);
-	//srb2::g_main_threadpool->wait_sema(tp_sema);
-	//srb2::g_main_threadpool->begin_sema();
+	if (skybox && skyVisible)
+	{
+		tp_sema = srb2::g_main_threadpool->end_sema();
+		srb2::g_main_threadpool->notify_sema(tp_sema);
+		srb2::g_main_threadpool->wait_sema(tp_sema);
+	}
+	srb2::g_main_threadpool->begin_sema();
 	R_RenderViewpoint(&masks[nummasks - 1], true);
 
 	PS_STOP_TIMING(ps_bsptime);

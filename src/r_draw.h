@@ -66,7 +66,6 @@ typedef struct
 	INT32 x1;
 	INT32 x2;
 	lighttable_t* colormap;
-	lighttable_t* fullbright;
 	lighttable_t* translation;
 
 	fixed_t xfrac;

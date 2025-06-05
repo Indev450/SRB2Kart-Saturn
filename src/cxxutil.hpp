@@ -71,7 +71,7 @@ public:
 
 class NoOpAssertHandler {
 public:
-	static void handle(const SourceLocation& source_location, const char* expression) {}
+	static void handle(const SourceLocation& source_location, const char* expression) {(void)source_location; (void)expression;}
 };
 
 /// @brief Assert a precondition expression, aborting the application if it fails.

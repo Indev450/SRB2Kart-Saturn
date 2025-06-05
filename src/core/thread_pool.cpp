@@ -45,7 +45,7 @@ static void do_work(ThreadPool::Task& work)
 }
 
 static void pool_executor(
-	int thread_index,
+	//int thread_index,
 	std::shared_ptr<std::atomic<bool>> pool_alive,
 	std::shared_ptr<std::mutex> worker_ready_mutex,
 	std::shared_ptr<std::condition_variable> worker_ready_condvar,
@@ -158,7 +158,7 @@ ThreadPool::ThreadPool(size_t threads)
 			thread = std::thread
 			{
 				pool_executor,
-				i,
+				//i,
 				pool_alive_,
 				worker_ready_mutexes_[i],
 				worker_ready_condvars_[i],

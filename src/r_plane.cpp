@@ -144,21 +144,19 @@ void R_AllocPlaneMemory(void)
 // Sets planeripple.xfrac and planeripple.yfrac, added to ds_xfrac and ds_yfrac, if the span is not tilted.
 //
 
-static void R_CalculatePlaneRipple(drawspandata_t* ds, visplane_t *plane, INT32 y, fixed_t plheight, boolean calcfrac)
+static fixed_t R_CalculateRippleOffset(drawspandata_t* ds, INT32 y)
 {
-	fixed_t distance = FixedMul(plheight, yslope[y]);
+	fixed_t distance = FixedMul(ds->planeheight, yslope[y]);
 	const INT32 yay = (ds->planeripple.offset + (distance>>9)) & 8191;
+	return FixedDiv(FINESINE(yay), (1<<12) + (distance>>11))>>FRACBITS;
+}
 
-	// ripples da water texture
-	ds->bgofs = FixedDiv(FINESINE(yay), (1<<12) + (distance>>11))>>FRACBITS;
-
-	if (calcfrac)
-	{
-		angle_t angle = (plane->viewangle + plane->plangle)>>ANGLETOFINESHIFT;
-		angle = (angle + 2048) & 8191; // 90 degrees
-		ds->planeripple.xfrac = FixedMul(FINECOSINE(angle), (ds->bgofs<<FRACBITS));
-		ds->planeripple.yfrac = FixedMul(FINESINE(angle), (ds->bgofs<<FRACBITS));
-	}
+static void R_CalculatePlaneRipple(drawspandata_t* ds, angle_t angle)
+{
+	angle >>= ANGLETOFINESHIFT;
+	angle = (angle + 2048) & 8191; // 90 degrees
+	ds->planeripple.xfrac = FixedMul(FINECOSINE(angle), ds->bgofs);
+	ds->planeripple.yfrac = FixedMul(FINESINE(angle), ds->bgofs);
 }
 
 static void R_UpdatePlaneRipple(drawspandata_t* ds)
@@ -259,6 +257,8 @@ static void R_MapPlane(drawspandata_t *ds, void(*spanfunc2)(drawspandata_t*), IN
 	fixed_t distance = 0, span;
 	size_t pindex;
 
+	(void)allow_parallel;
+
 	if (!R_CheckMapPlane(__func__, y, x1, x2))
 		return;
 
@@ -288,7 +288,10 @@ static void R_MapPlane(drawspandata_t *ds, void(*spanfunc2)(drawspandata_t*), IN
 	if (ds->planeripple.active)
 	{
 		// Needed for ds_bgofs
-		R_CalculatePlaneRipple(ds, ds->currentplane, y, ds->planeheight, (!ds->currentplane->slope));
+
+		ds->bgofs = R_CalculateRippleOffset(ds, y);
+
+		R_CalculatePlaneRipple(ds, ds->currentplane->viewangle + ds->currentplane->plangle);
 
 		ds->xfrac += ds->planeripple.xfrac;
 		ds->yfrac += ds->planeripple.yfrac;
@@ -319,16 +322,24 @@ static void R_MapPlane(drawspandata_t *ds, void(*spanfunc2)(drawspandata_t*), IN
 
 static void R_MapTiltedPlane(drawspandata_t *ds, void(*spanfunc2)(drawspandata_t*), INT32 y, INT32 x1, INT32 x2, boolean allow_parallel)
 {
+	(void)allow_parallel;
+
 	if (!R_CheckMapPlane(__func__, y, x1, x2))
 		return;
 
 	// Water ripple effect
 	if (ds->planeripple.active)
 	{
+		ds->bgofs = R_CalculateRippleOffset(ds, y);
+
 		R_SetTiltedSpan(ds, std::clamp(y, 0, viewheight));
 
-		R_CalculatePlaneRipple(ds, ds->currentplane, y, ds->planeheight, false);
-		R_SetSlopePlaneVectors(ds, ds->currentplane, y, (ds->xoffs + ds->planeripple.xfrac), (ds->yoffs + ds->planeripple.yfrac), 0);
+		float fudgecanyon = 0;
+		// Okay, look, don't ask me why this works, but without this setup there's a disgusting-looking misalignment with the textures. -fickle
+		fudgecanyon = ((1<<ds->nflatshiftup)+1.0f)/(1<<ds->nflatshiftup);
+
+		R_CalculatePlaneRipple(ds, ds->currentplane->viewangle + ds->currentplane->plangle);
+		R_SetSlopePlaneVectors(ds, ds->currentplane, y, (ds->xoffs + ds->planeripple.xfrac), (ds->yoffs + ds->planeripple.yfrac), fudgecanyon);
 
 		if ((y + ds->bgofs) >= viewheight)
 			ds->bgofs = viewheight-y-1;
@@ -341,11 +352,9 @@ static void R_MapTiltedPlane(drawspandata_t *ds, void(*spanfunc2)(drawspandata_t
 	else
 		ds->colormap = colormaps;
 
-	ds->fullbright = colormaps;
 	if (encoremap && !ds->currentplane->noencore)
 	{
 		ds->colormap += COLORMAP_REMAPOFFSET;
-		ds->fullbright += COLORMAP_REMAPOFFSET;
 	}
 
 	ds->y = y;
@@ -765,10 +774,12 @@ void R_DrawPlanes(void)
 {
 	visplane_t *pl;
 	INT32 i;
-	drawspandata_t ds = {0};
+	drawspandata_t ds = {};
 
 	spanfunc = basespanfunc;
 	wallcolfunc = walldrawerfunc;
+
+	R_UpdatePlaneRipple(&ds);
 
 	for (i = 0; i < MAXVISPLANES; i++, pl++)
 	{
@@ -780,14 +791,12 @@ void R_DrawPlanes(void)
 			R_DrawSinglePlane(&ds, pl, true);
 		}
 	}
-
-	R_UpdatePlaneRipple(&ds);
 }
 
 static void R_DrawSkyPlane(visplane_t *pl, void(*colfunc2)(drawcolumndata_t*), boolean allow_parallel)
 {
 	INT32 x;
-	drawcolumndata_t dc = {0};
+	drawcolumndata_t dc = {};
 
 	if (!newview->sky)
 	{
@@ -971,6 +980,8 @@ void R_DrawSinglePlane(drawspandata_t* ds, visplane_t *pl, boolean allow_paralle
 	if (!(pl->minx <= pl->maxx))
 		return;
 
+	R_UpdatePlaneRipple(ds);
+
 	// sky flat
 	if (pl->picnum == skyflatnum)
 	{
@@ -986,7 +997,7 @@ void R_DrawSinglePlane(drawspandata_t* ds, visplane_t *pl, boolean allow_paralle
 		spanfunc = R_DrawTranslucentSpan;
 
 		// Hacked up support for alpha value in software mode Tails 09-24-2002 (sidenote: ported to polys 10-15-2014, there was no time travel involved -Red)
-		if (pl->polyobj->translucency >= 10)
+		if (pl->polyobj->translucency >= NUMTRANSMAPS)
 			return; // Don't even draw it
 		else if (pl->polyobj->translucency > 0)
 			ds->transmap = R_GetTranslucencyTable(pl->polyobj->translucency);
@@ -1127,7 +1138,6 @@ void R_DrawSinglePlane(drawspandata_t* ds, visplane_t *pl, boolean allow_paralle
 
 	ds->xoffs = pl->xoffs;
 	ds->yoffs = pl->yoffs;
-	ds->planeheight = abs(pl->height - pl->viewz);
 
 	if (light >= LIGHTLEVELS)
 		light = LIGHTLEVELS-1;
@@ -1199,13 +1209,14 @@ void R_DrawSinglePlane(drawspandata_t* ds, visplane_t *pl, boolean allow_paralle
 
 		if (ds->planeripple.active)
 		{
-			fixed_t plheight = abs(P_GetSlopeZAt(pl->slope, pl->viewx, pl->viewy) - pl->viewz);
+			ds->planeheight = abs(P_GetSlopeZAt(pl->slope, pl->viewx, pl->viewy) - pl->viewz);
 
 			R_PlaneBounds(pl);
 
 			for (x = pl->high; x < pl->low; x++)
 			{
-				R_CalculatePlaneRipple(ds, pl, x, plheight, true);
+				ds->bgofs = R_CalculateRippleOffset(ds, x);
+				R_CalculatePlaneRipple(ds, pl->viewangle + pl->plangle);
 				R_SetSlopePlaneVectors(ds, pl, x, (ds->xoffs + ds->planeripple.xfrac), (ds->yoffs + ds->planeripple.yfrac), fudgecanyon);
 			}
 		}
@@ -1224,7 +1235,10 @@ void R_DrawSinglePlane(drawspandata_t* ds, visplane_t *pl, boolean allow_paralle
 		ds->planezlight = scalelight[light];
 	}
 	else
+	{
+		ds->planeheight = abs(pl->height - pl->viewz);
 		ds->planezlight = zlight[light];
+	}
 
 	// set the maximum value for unsigned
 	pl->top[pl->maxx+1] = 0xffff;
