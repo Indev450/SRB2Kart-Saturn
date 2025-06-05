@@ -79,9 +79,6 @@ typedef struct
 	fixed_t xoffs;
 	fixed_t yoffs;
 
-	UINT16 flatwidth;
-	UINT16 flatheight;
-
 	visplane_t *currentplane;
 	UINT8 *source;
 	UINT8 *transmap;
