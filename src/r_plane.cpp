@@ -30,7 +30,10 @@
 #include "r_fps.h"
 #include "r_portal.h"
 #include "core/thread_pool.h"
+#include <algorithm>
 
+static void R_SetSlopePlaneVectors(drawspandata_t* ds, visplane_t *pl, INT32 y, fixed_t xoff, fixed_t yoff, float fudge);
+static void R_SetTiltedSpan(drawspandata_t* ds, INT32 span);
 
 //
 // opening
@@ -85,8 +88,6 @@ fixed_t *yslopetab;
 fixed_t *yslope;
 
 fixed_t basexscale, baseyscale;
-
-static fixed_t xoffs, yoffs;
 
 static INT16 *ffloor_f_clip;
 static INT16 *ffloor_c_clip;
@@ -252,7 +253,7 @@ static bool R_CheckMapPlane(const char* funcname, INT32 y, INT32 x1, INT32 x2)
 //  viewsin
 //  viewcos
 //  viewheight
-static void R_MapPlane(drawspandata_t *ds, INT32 y, INT32 x1, INT32 x2, boolean allow_parallel)
+static void R_MapPlane(drawspandata_t *ds, void(*spanfunc2)(drawspandata_t*), INT32 y, INT32 x1, INT32 x2, boolean allow_parallel)
 {
 	angle_t angle, planecos, planesin;
 	fixed_t distance = 0, span;
@@ -261,51 +262,36 @@ static void R_MapPlane(drawspandata_t *ds, INT32 y, INT32 x1, INT32 x2, boolean 
 	if (!R_CheckMapPlane(__func__, y, x1, x2))
 		return;
 
-	if (x1 >= vid.width)
-		x1 = vid.width - 1;
+	angle = (ds->currentplane->viewangle + ds->currentplane->plangle)>>ANGLETOFINESHIFT;
+	planecos = FINECOSINE(angle);
+	planesin = FINESINE(angle);
 
-	if (!ds->currentplane->slope)
+	// [RH] Notice that I dumped the caching scheme used by Doom.
+	// It did not offer any appreciable speedup.
+	distance = FixedMul(ds->planeheight, yslope[y]);
+	span = abs(centery - y);
+
+	if (span) // don't divide by zero
 	{
-		angle = (ds->currentplane->viewangle + ds->currentplane->plangle)>>ANGLETOFINESHIFT;
-		planecos = FINECOSINE(angle);
-		planesin = FINESINE(angle);
-
-		// [RH] Notice that I dumped the caching scheme used by Doom.
-		// It did not offer any appreciable speedup.
-		distance = FixedMul(ds->planeheight, yslope[y]);
-		span = abs(centery - y);
-
-		if (span) // don't divide by zero
-		{
-			ds->xstep = FixedMul(planesin, ds->planeheight) / span;
-			ds->ystep = FixedMul(planecos, ds->planeheight) / span;
-		}
-		else
-		{
-			ds->xstep = FixedMul(distance, basexscale);
-			ds->ystep = FixedMul(distance, baseyscale);
-		}
-
-		ds->xfrac = xoffs + FixedMul(planecos, distance) + (x1 - centerx) * ds->xstep;
-		ds->yfrac = yoffs - FixedMul(planesin, distance) + (x1 - centerx) * ds->ystep;
+		ds->xstep = FixedMul(planesin, ds->planeheight) / span;
+		ds->ystep = FixedMul(planecos, ds->planeheight) / span;
 	}
+	else
+	{
+		ds->xstep = FixedMul(distance, basexscale);
+		ds->ystep = FixedMul(distance, baseyscale);
+	}
+
+	ds->xfrac = ds->xoffs + FixedMul(planecos, distance) + (x1 - centerx) * ds->xstep;
+	ds->yfrac = ds->yoffs - FixedMul(planesin, distance) + (x1 - centerx) * ds->ystep;
 
 	if (ds->planeripple.active)
 	{
 		// Needed for ds_bgofs
 		R_CalculatePlaneRipple(ds, ds->currentplane, y, ds->planeheight, (!ds->currentplane->slope));
 
-		if (ds->currentplane->slope)
-		{
-			ds->sup = ds_su[y];
-			ds->svp = ds_sv[y];
-			ds->szp = ds_sz[y];
-		}
-		else
-		{
-			ds->xfrac += ds->planeripple.xfrac;
-			ds->yfrac += ds->planeripple.yfrac;
-		}
+		ds->xfrac += ds->planeripple.xfrac;
+		ds->yfrac += ds->planeripple.yfrac;
 
 		if ((y + ds->bgofs) >= viewheight)
 			ds->bgofs = viewheight-y-1;
@@ -313,15 +299,11 @@ static void R_MapPlane(drawspandata_t *ds, INT32 y, INT32 x1, INT32 x2, boolean 
 			ds->bgofs = -y;
 	}
 
-	if (ds->currentplane->slope)
-		ds->colormap = colormaps;
-	else
-	{
-		pindex = distance >> LIGHTZSHIFT;
-		if (pindex >= MAXLIGHTZ)
-			pindex = MAXLIGHTZ - 1;
-		ds->colormap = ds->planezlight[pindex];
-	}
+	pindex = distance >> LIGHTZSHIFT;
+	if (pindex >= MAXLIGHTZ)
+		pindex = MAXLIGHTZ - 1;
+	ds->colormap = ds->planezlight[pindex];
+
 	if (encoremap && !ds->currentplane->noencore)
 		ds->colormap += COLORMAP_REMAPOFFSET;
 
@@ -332,7 +314,45 @@ static void R_MapPlane(drawspandata_t *ds, INT32 y, INT32 x1, INT32 x2, boolean 
 	ds->x1 = x1;
 	ds->x2 = x2;
 
-	spanfunc(ds);
+	spanfunc2(ds);
+}
+
+static void R_MapTiltedPlane(drawspandata_t *ds, void(*spanfunc2)(drawspandata_t*), INT32 y, INT32 x1, INT32 x2, boolean allow_parallel)
+{
+	if (!R_CheckMapPlane(__func__, y, x1, x2))
+		return;
+
+	// Water ripple effect
+	if (ds->planeripple.active)
+	{
+		R_SetTiltedSpan(ds, std::clamp(y, 0, viewheight));
+
+		R_CalculatePlaneRipple(ds, ds->currentplane, y, ds->planeheight, false);
+		R_SetSlopePlaneVectors(ds, ds->currentplane, y, (ds->xoffs + ds->planeripple.xfrac), (ds->yoffs + ds->planeripple.yfrac), 0);
+
+		if ((y + ds->bgofs) >= viewheight)
+			ds->bgofs = viewheight-y-1;
+		if ((y + ds->bgofs) < 0)
+			ds->bgofs = -y;
+	}
+
+	if (ds->currentplane->extra_colormap)
+		ds->colormap = ds->currentplane->extra_colormap->colormap;
+	else
+		ds->colormap = colormaps;
+
+	ds->fullbright = colormaps;
+	if (encoremap && !ds->currentplane->noencore)
+	{
+		ds->colormap += COLORMAP_REMAPOFFSET;
+		ds->fullbright += COLORMAP_REMAPOFFSET;
+	}
+
+	ds->y = y;
+	ds->x1 = x1;
+	ds->x2 = x2;
+
+	spanfunc2(ds);
 }
 
 void R_ClearFFloorClips(void)
@@ -661,7 +681,7 @@ void R_ExpandPlane(visplane_t *pl, INT32 start, INT32 stop)
 //
 // R_MakeSpans
 //
-static void R_MakeSpans(drawspandata_t* ds, INT32 x, INT32 t1, INT32 b1, INT32 t2, INT32 b2, boolean allow_parallel)
+static void R_MakeSpans(void (*mapfunc)(drawspandata_t* ds, void(*spanfunc)(drawspandata_t*), INT32, INT32, INT32, boolean), void(*spanfunc2)(drawspandata_t*), drawspandata_t* ds, INT32 x, INT32 t1, INT32 b1, INT32 t2, INT32 b2, boolean allow_parallel)
 {
 	//    Alam: from r_splats's R_RenderFloorSplat
 	if (t1 >= vid.height) t1 = vid.height-1;
@@ -692,7 +712,7 @@ static void R_MakeSpans(drawspandata_t* ds, INT32 x, INT32 t1, INT32 b1, INT32 t
 		auto task = [=]() mutable -> void {
 			for (int i = 0; i < taskspans; i++)
 			{
-				R_MapPlane(&dc_copy, t1 + i, spanstartcopy[i], x - 1, false);
+				mapfunc(&dc_copy, spanfunc2, t1 + i, spanstartcopy[i], x - 1, false);
 			}
 		};
 		if (allow_parallel)
@@ -721,7 +741,7 @@ static void R_MakeSpans(drawspandata_t* ds, INT32 x, INT32 t1, INT32 b1, INT32 t
 		auto task = [=]() mutable -> void {
 			for (int i = 0; i < taskspans; i++)
 			{
-				R_MapPlane(&dc_copy, b1 - i, spanstartcopy[i], x - 1, false);
+				mapfunc(&dc_copy, spanfunc2, b1 - i, spanstartcopy[i], x - 1, false);
 			}
 		};
 		if (allow_parallel)
@@ -764,7 +784,7 @@ void R_DrawPlanes(void)
 	R_UpdatePlaneRipple(&ds);
 }
 
-static void R_DrawSkyPlane(visplane_t *pl, boolean allow_parallel)
+static void R_DrawSkyPlane(visplane_t *pl, void(*colfunc2)(drawcolumndata_t*), boolean allow_parallel)
 {
 	INT32 x;
 	drawcolumndata_t dc = {0};
@@ -824,7 +844,7 @@ static void R_DrawSkyPlane(visplane_t *pl, boolean allow_parallel)
 					R_GetColumn(texturetranslation[skytexture],
 						-angle); // get negative of angle for each column to display sky correct way round! --Monster Iestyn 27/01/18
 
-				colfunc(&dc);
+				colfunc2(&dc);
 			}
 		};
 
@@ -919,19 +939,23 @@ d.z = (v1.x * v2.y) - (v1.y * v2.x)
 #undef SFMULT
 }
 
-static void R_SetSlopePlaneVectors(drawspandata_t* ds, visplane_t *pl, INT32 y, fixed_t xoff, fixed_t yoff, float fudge)
+static void R_SetTiltedSpan(drawspandata_t* ds, INT32 span)
 {
 	if (ds_su == NULL)
-		ds_su = static_cast<floatv3_t*>(Z_Malloc(sizeof(*ds_su) * vid.height, PU_STATIC, NULL));
+		ds_su = static_cast<floatv3_t*>(Z_Calloc(sizeof(*ds_su) * vid.height, PU_STATIC, NULL));
 	if (ds_sv == NULL)
-		ds_sv = static_cast<floatv3_t*>(Z_Malloc(sizeof(*ds_sv) * vid.height, PU_STATIC, NULL));
+		ds_sv = static_cast<floatv3_t*>(Z_Calloc(sizeof(*ds_sv) * vid.height, PU_STATIC, NULL));
 	if (ds_sz == NULL)
-		ds_sz = static_cast<floatv3_t*>(Z_Malloc(sizeof(*ds_sz) * vid.height, PU_STATIC, NULL));
+		ds_sz = static_cast<floatv3_t*>(Z_Calloc(sizeof(*ds_sz) * vid.height, PU_STATIC, NULL));
 
-	ds->sup = ds_su[y];
-	ds->svp = ds_sv[y];
-	ds->szp = ds_sz[y];
+	ds->sup = ds_su[span];
+	ds->svp = ds_sv[span];
+	ds->szp = ds_sz[span];
+}
 
+static void R_SetSlopePlaneVectors(drawspandata_t* ds, visplane_t *pl, INT32 y, fixed_t xoff, fixed_t yoff, float fudge)
+{
+	R_SetTiltedSpan(ds, y);
 	R_CalculateSlopeVectors(ds, pl->slope, pl->viewx, pl->viewy, pl->viewz, FRACUNIT, FRACUNIT, xoff, yoff, pl->viewangle, pl->plangle, fudge);
 }
 
@@ -942,6 +966,7 @@ void R_DrawSinglePlane(drawspandata_t* ds, visplane_t *pl, boolean allow_paralle
 	INT32 stop, angle;
 	size_t size;
 	ffloor_t *rover;
+	void (*mapfunc)(drawspandata_t*, void(*)(drawspandata_t*), INT32, INT32, INT32, boolean) = R_MapPlane;
 
 	if (!(pl->minx <= pl->maxx))
 		return;
@@ -949,7 +974,7 @@ void R_DrawSinglePlane(drawspandata_t* ds, visplane_t *pl, boolean allow_paralle
 	// sky flat
 	if (pl->picnum == skyflatnum)
 	{
-		R_DrawSkyPlane(pl, allow_parallel);
+		R_DrawSkyPlane(pl, colfunc, allow_parallel);
 		return;
 	}
 
@@ -1100,8 +1125,8 @@ void R_DrawSinglePlane(drawspandata_t* ds, visplane_t *pl, boolean allow_paralle
 			break;
 	}
 
-	xoffs = pl->xoffs;
-	yoffs = pl->yoffs;
+	ds->xoffs = pl->xoffs;
+	ds->yoffs = pl->yoffs;
 	ds->planeheight = abs(pl->height - pl->viewz);
 
 	if (light >= LIGHTLEVELS)
@@ -1118,6 +1143,8 @@ void R_DrawSinglePlane(drawspandata_t* ds, visplane_t *pl, boolean allow_paralle
 		fudgecanyon = ((1<<ds->nflatshiftup)+1.0f)/(1<<ds->nflatshiftup);
 
 		angle_t hack = (pl->plangle & (ANGLE_90-1));
+
+		mapfunc = R_MapTiltedPlane;
 
 		if (hack)
 		{
@@ -1147,28 +1174,28 @@ void R_DrawSinglePlane(drawspandata_t* ds, visplane_t *pl, boolean allow_paralle
 			ox = FixedMul(temp,cosinecomponent)+FixedMul(oy,-sinecomponent); // negative sine for opposite direction
 			oy = -FixedMul(temp,-sinecomponent)+FixedMul(oy,cosinecomponent);
 
-			temp = xoffs;
-			xoffs = (FixedMul(temp,cosinecomponent) & modmask) + (FixedMul(yoffs,sinecomponent) & modmask);
-			yoffs = (-FixedMul(temp,sinecomponent) & modmask) + (FixedMul(yoffs,cosinecomponent) & modmask);
+			temp = ds->xoffs;
+			ds->xoffs = (FixedMul(temp,cosinecomponent) & modmask) + (FixedMul(ds->yoffs, sinecomponent) & modmask);
+			ds->yoffs = (-FixedMul(temp,sinecomponent) & modmask) + (FixedMul(ds->yoffs, cosinecomponent) & modmask);
 
-			temp = xoffs & modmask;
-			yoffs &= modmask;
-			xoffs = FixedMul(temp,cosinecomponent)+FixedMul(yoffs,-sinecomponent); // ditto
-			yoffs = -FixedMul(temp,-sinecomponent)+FixedMul(yoffs,cosinecomponent);
+			temp = ds->xoffs & modmask;
+			ds->yoffs &= modmask;
+			ds->xoffs = FixedMul(temp,cosinecomponent)+FixedMul(ds->yoffs, -sinecomponent); // ditto
+			ds->yoffs = -FixedMul(temp,-sinecomponent)+FixedMul(ds->yoffs, cosinecomponent);
 
-			xoffs -= (pl->slope->o.x - ox);
-			yoffs += (pl->slope->o.y + oy);
+			ds->xoffs -= (pl->slope->o.x - ox);
+			ds->yoffs += (pl->slope->o.y + oy);
 		}
 		else
 		{
-			xoffs &= ((1 << (32-ds->nflatshiftup))-1);
-			yoffs &= ((1 << (32-ds->nflatshiftup))-1);
-			xoffs -= (pl->slope->o.x + (1 << (31-ds->nflatshiftup))) & ~((1 << (32-ds->nflatshiftup))-1);
-			yoffs += (pl->slope->o.y + (1 << (31-ds->nflatshiftup))) & ~((1 << (32-ds->nflatshiftup))-1);
+			ds->xoffs &= ((1 << (32-ds->nflatshiftup))-1);
+			ds->yoffs &= ((1 << (32-ds->nflatshiftup))-1);
+			ds->xoffs -= (pl->slope->o.x + (1 << (31-ds->nflatshiftup))) & ~((1 << (32-ds->nflatshiftup))-1);
+			ds->yoffs += (pl->slope->o.y + (1 << (31-ds->nflatshiftup))) & ~((1 << (32-ds->nflatshiftup))-1);
 		}
 
-		xoffs = (fixed_t)(xoffs*fudgecanyon);
-		yoffs = (fixed_t)(yoffs/fudgecanyon);
+		ds->xoffs = (fixed_t)(ds->xoffs*fudgecanyon);
+		ds->yoffs = (fixed_t)(ds->yoffs/fudgecanyon);
 
 		if (ds->planeripple.active)
 		{
@@ -1179,11 +1206,11 @@ void R_DrawSinglePlane(drawspandata_t* ds, visplane_t *pl, boolean allow_paralle
 			for (x = pl->high; x < pl->low; x++)
 			{
 				R_CalculatePlaneRipple(ds, pl, x, plheight, true);
-				R_SetSlopePlaneVectors(ds, pl, x, (xoffs + ds->planeripple.xfrac), (yoffs + ds->planeripple.yfrac), fudgecanyon);
+				R_SetSlopePlaneVectors(ds, pl, x, (ds->xoffs + ds->planeripple.xfrac), (ds->yoffs + ds->planeripple.yfrac), fudgecanyon);
 			}
 		}
 		else
-			R_SetSlopePlaneVectors(ds, pl, 0, xoffs, yoffs, fudgecanyon);
+			R_SetSlopePlaneVectors(ds, pl, 0, ds->xoffs, ds->yoffs, fudgecanyon);
 
 		if (spanfunc == R_DrawTranslucentWaterSpan)
 			spanfunc = R_DrawTiltedTranslucentWaterSpan;
@@ -1217,7 +1244,7 @@ void R_DrawSinglePlane(drawspandata_t* ds, visplane_t *pl, boolean allow_paralle
 
 	for (x = pl->minx; x <= stop; x++)
 	{
-		R_MakeSpans(ds, x, pl->top[x-1], pl->bottom[x-1], pl->top[x], pl->bottom[x], allow_parallel);
+		R_MakeSpans(mapfunc, spanfunc, ds, x, pl->top[x-1], pl->bottom[x-1], pl->top[x], pl->bottom[x], allow_parallel);
 	}
 
 /*
@@ -1244,29 +1271,29 @@ using the palette colors.
 		spanfunc = R_DrawTranslucentSpan;
 		for (i=0; i<4; i++)
 		{
-			xoffs = pl->xoffs;
-			yoffs = pl->yoffs;
+			ds->xoffs = pl->xoffs;
+			ds->yoffs = pl->yoffs;
 
 			switch(i)
 			{
 				case 0:
-					xoffs -= FRACUNIT/4;
-					yoffs -= FRACUNIT/4;
+					ds->xoffs -= FRACUNIT/4;
+					ds->yoffs -= FRACUNIT/4;
 					break;
 				case 1:
-					xoffs -= FRACUNIT/4;
-					yoffs += FRACUNIT/4;
+					ds->xoffs -= FRACUNIT/4;
+					ds->yoffs += FRACUNIT/4;
 					break;
 				case 2:
-					xoffs += FRACUNIT/4;
-					yoffs -= FRACUNIT/4;
+					ds->xoffs += FRACUNIT/4;
+					ds->yoffs -= FRACUNIT/4;
 					break;
 				case 3:
-					xoffs += FRACUNIT/4;
-					yoffs += FRACUNIT/4;
+					ds->xoffs += FRACUNIT/4;
+					ds->yoffs += FRACUNIT/4;
 					break;
 			}
-			planeheight = abs(pl->height - pl->viewz);
+			ds->planeheight = abs(pl->height - pl->viewz);
 
 			if (light >= LIGHTLEVELS)
 				light = LIGHTLEVELS-1;
@@ -1274,7 +1301,7 @@ using the palette colors.
 			if (light < 0)
 				light = 0;
 
-			planezlight = zlight[light];
+			ds->planezlight = zlight[light];
 
 			// set the maximum value for unsigned
 			pl->top[pl->maxx+1] = 0xffff;
