@@ -2952,10 +2952,11 @@ void R_DrawMasked(void)
 
 	for (r2 = nodehead.next; r2 != &nodehead; r2 = r2->next)
 	{
+		drawspandata_t ds = {0};
 		if (r2->plane)
 		{
 			next = r2->prev;
-			R_DrawSinglePlane(r2->plane);
+			R_DrawSinglePlane(&ds, r2->plane);
 			R_DoneWithNode(r2);
 			r2 = next;
 		}
@@ -2980,9 +2981,13 @@ void R_DrawMasked(void)
 
 			// Tails 08-18-2002
 			if (r2->sprite->precip == true)
+			{
 				R_DrawPrecipitationSprite(r2->sprite);
+			}
 			else
+			{
 				R_DrawSprite(r2->sprite);
+			}
 
 			R_DoneWithNode(r2);
 			r2 = next;

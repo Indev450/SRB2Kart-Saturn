@@ -55,26 +55,47 @@ drawcolumndata_t g_dc;
 UINT8 *transtables; // translucency tables
 UINT8 *blendtables[NUMBLENDMAPS];
 
+// --------------------------------------------
+// c drawer routines
+// --------------------------------------------
+
+
+void (*wallcolfunc)(drawcolumndata_t*); // new wall column drawer to draw posts >128 high
+void (*colfunc)(drawcolumndata_t*); // standard column, up to 128 high posts
+
+void (*basecolfunc)(drawcolumndata_t*);
+void (*fuzzcolfunc)(drawcolumndata_t*); // standard fuzzy effect column drawer
+void (*transcolfunc)(drawcolumndata_t*); // translation column drawer
+void (*shadecolfunc)(drawcolumndata_t*); // smokie test..
+
+void (*transtransfunc)(drawcolumndata_t*); // translucent translated column drawer
+void (*twosmultipatchfunc)(drawcolumndata_t*); // for cols with transparent pixels
+void (*twosmultipatchtransfunc)(drawcolumndata_t*); // for cols with transparent pixels AND translucency
+
+//  Short and Tall sky drawer, for the current color mode
+void (*walldrawerfunc)(drawcolumndata_t*);
+
 // =========================================================================
 //                      SPAN DRAWING CODE STUFF
 // =========================================================================
 
-INT32 ds_y, ds_x1, ds_x2;
-lighttable_t *ds_colormap;
-fixed_t ds_xfrac, ds_yfrac, ds_xstep, ds_ystep;
-
-UINT8 *ds_source; // points to the start of a flat
-UINT8 *ds_transmap; // one of the translucency tables
+drawspandata_t g_ds;
 
 // Vectors for Software's tilted slope drawers
 floatv3_t *ds_su, *ds_sv, *ds_sz;
-floatv3_t *ds_sup, *ds_svp, *ds_szp;
-float focallengthf, zeroheight;
+
+float focallengthf;
 
 // For, uh, tilted lighting, duh.
-static INT32 *tiltlighting;
+//static INT32 *tiltlighting;
 
-UINT32 nflatxshift, nflatyshift, nflatshiftup, nflatmask;
+// --------------------------------------------
+// c drawer routines
+// --------------------------------------------
+
+void (*spanfunc)(drawspandata_t*); // span drawer, use a 64x64 tile
+void (*splatfunc)(drawspandata_t*); // span drawer w/ transparency
+void (*basespanfunc)(drawspandata_t*); // default span func for color mode
 
 // ==========================================================================
 //                        OLD DOOM FUZZY EFFECT
@@ -459,7 +480,7 @@ static void R_AllocViewMemory(void)
 
 	xtoviewangle = Z_Realloc(xtoviewangle, sizeof(*xtoviewangle) * (viewwidth + 1), PU_STATIC, NULL);
 
-	tiltlighting = Z_Realloc(tiltlighting, sizeof(*tiltlighting) * viewwidth, PU_STATIC, NULL);
+	//tiltlighting = Z_Realloc(tiltlighting, sizeof(*tiltlighting) * viewwidth, PU_STATIC, NULL);
 
 	R_AllocSegMemory();
 	R_AllocClipSegMemory();

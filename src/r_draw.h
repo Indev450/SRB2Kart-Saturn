@@ -52,29 +52,78 @@ void R_DrawMaskedColumn(drawcolumndata_t* dc, column_t *column);
 // SPAN DRAWING CODE STUFF
 // -----------------------
 
-extern INT32 ds_y, ds_x1, ds_x2;
-extern lighttable_t *ds_colormap;
-extern fixed_t ds_xfrac, ds_yfrac, ds_xstep, ds_ystep;
-extern INT32 ds_waterofs, ds_bgofs;
-extern UINT8 *ds_source; // start of a 64*64 tile image
-extern UINT8 *ds_transmap;
-
-extern INT32 ds_bgofs;
-
 typedef struct {
 	float x, y, z;
 } floatv3_t;
 
+typedef struct
+{
+	INT32 y;
+	INT32 x1;
+	INT32 x2;
+	lighttable_t* colormap;
+	lighttable_t* fullbright;
+	lighttable_t* translation;
+
+	fixed_t xfrac;
+	fixed_t yfrac;
+	fixed_t xstep;
+	fixed_t ystep;
+	INT32 waterofs;
+	INT32 bgofs;
+
+	fixed_t xoffs;
+	fixed_t yoffs;
+
+	UINT16 flatwidth;
+	UINT16 flatheight;
+
+	visplane_t *currentplane;
+	UINT8 *source;
+	UINT8 *transmap;
+
+	float zeroheight;
+
+	// Vectors for Software's tilted slope drawers
+	floatv3_t sup;
+	floatv3_t svp;
+	floatv3_t szp;
+
+	// Variable flat sizes
+	UINT32 nflatxshift;
+	UINT32 nflatyshift;
+	UINT32 nflatshiftup;
+	UINT32 nflatmask;
+
+	fixed_t planeheight;
+	lighttable_t **planezlight;
+
+	//
+	// Water ripple effect
+	// Needs the height of the plane, and the vertical position of the span.
+	// Sets planeripple.xfrac and planeripple.yfrac, added to ds_xfrac and ds_yfrac, if the span is not tilted.
+	//
+	struct
+	{
+		INT32 offset;
+		fixed_t xfrac, yfrac;
+		boolean active;
+	} planeripple;
+} drawspandata_t;
+
+extern drawspandata_t g_ds;
+
+extern void (*spanfunc)(drawspandata_t*);
+extern void (*basespanfunc)(drawspandata_t*);
+extern void (*splatfunc)(drawspandata_t*);
+
+// Draws a single visplane.
+void R_DrawSinglePlane(drawspandata_t* ds, visplane_t *pl);
+
 // Vectors for Software's tilted slope drawers
 extern floatv3_t *ds_su, *ds_sv, *ds_sz;
-extern floatv3_t *ds_sup, *ds_svp, *ds_szp;
-extern float focallengthf, zeroheight;
 
-// Variable flat sizes
-extern UINT32 nflatxshift;
-extern UINT32 nflatyshift;
-extern UINT32 nflatshiftup;
-extern UINT32 nflatmask;
+extern float focallengthf;
 
 /// \brief Top border
 #define BRDR_T 0
@@ -176,22 +225,20 @@ void R_Draw2sMultiPatchTranslucentColumn(drawcolumndata_t* dc);
 void R_DrawFogColumn(drawcolumndata_t* dc);
 
 // span drawers
-void R_DrawSpan(void);
+void R_DrawSpan(drawspandata_t* ds);
 
-void R_CalcTiltedLighting(fixed_t start, fixed_t end);
+void R_DrawTiltedSpan(drawspandata_t* ds);
+void R_DrawTiltedTranslucentSpan(drawspandata_t* ds);
+void R_DrawTiltedTranslucentWaterSpan(drawspandata_t* ds);
 
-void R_DrawTiltedSpan(void);
-void R_DrawTiltedTranslucentSpan(void);
-void R_DrawTiltedTranslucentWaterSpan(void);
+void R_DrawTranslucentSpan(drawspandata_t* ds);
+void R_DrawTranslucentWaterSpan(drawspandata_t* ds);
 
-void R_DrawTranslucentSpan(void);
-void R_DrawTranslucentWaterSpan(void);
+void R_DrawFogSpan(drawspandata_t* ds);
 
-void R_DrawFogSpan(void);
-
-void R_DrawTiltedSplat(void);
-void R_DrawSplat(void);
-void R_DrawTranslucentSplat(void);
+void R_DrawTiltedSplat(drawspandata_t* ds);
+void R_DrawSplat(drawspandata_t* ds);
+void R_DrawTranslucentSplat(drawspandata_t* ds);
 
 // =========================================================================
 #endif  // __R_DRAW__
