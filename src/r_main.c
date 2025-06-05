@@ -1311,7 +1311,7 @@ static void Mask_Post (maskcount_t* m)
 // ================
 
 // viewx, viewy, viewangle, all that good stuff must be set
-static void R_RenderViewpoint(maskcount_t* mask)
+static void R_RenderViewpoint(maskcount_t* mask, boolean drawprecip)
 {
 	Mask_Pre(mask);
 
@@ -1319,7 +1319,8 @@ static void R_RenderViewpoint(maskcount_t* mask)
 
 	R_RenderBSPNode((INT32)numnodes - 1);
 
-	R_AddPrecipitationSprites();
+	if (drawprecip)
+		R_AddPrecipitationSprites();
 
 	Mask_Post(mask);
 }
@@ -1399,7 +1400,7 @@ void R_RenderPlayerView(player_t *player)
 		R_ClearVisibleFloorSplats();
 #endif
 
-		R_RenderViewpoint(&masks[nummasks - 1]);
+		R_RenderViewpoint(&masks[nummasks - 1], false);
 
 		R_ClipSprites();
 		R_DrawPlanes();
@@ -1445,7 +1446,7 @@ void R_RenderPlayerView(player_t *player)
 
 	ps_numbspcalls.value.i = ps_numpolyobjects.value.i = ps_numdrawnodes.value.i = 0;
 	PS_START_TIMING(ps_bsptime);
-	R_RenderViewpoint(&masks[nummasks - 1]);
+	R_RenderViewpoint(&masks[nummasks - 1], true);
 	PS_STOP_TIMING(ps_bsptime);
 	PS_START_TIMING(ps_sw_spritecliptime);
 	R_ClipSprites();
@@ -1484,7 +1485,7 @@ void R_RenderPlayerView(player_t *player)
 
 			// Render the BSP from the new viewpoint, and clip
 			// any sprites with the new clipsegs and window.
-			R_RenderViewpoint(&masks[nummasks - 1]);
+			R_RenderViewpoint(&masks[nummasks - 1], true);
 
 			R_ClipSprites();
 
