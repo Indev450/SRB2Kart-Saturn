@@ -1319,6 +1319,8 @@ static void R_RenderViewpoint(maskcount_t* mask)
 
 	R_RenderBSPNode((INT32)numnodes - 1);
 
+	R_AddPrecipitationSprites();
+
 	Mask_Post(mask);
 }
 
@@ -1445,7 +1447,7 @@ void R_RenderPlayerView(player_t *player)
 	PS_START_TIMING(ps_bsptime);
 	R_RenderViewpoint(&masks[nummasks - 1]);
 	PS_STOP_TIMING(ps_bsptime);
-	R_AddPrecipitationSprites();
+
 	PS_START_TIMING(ps_sw_spritecliptime);
 	R_ClipSprites();
 	PS_STOP_TIMING(ps_sw_spritecliptime);
