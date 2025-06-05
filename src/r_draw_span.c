@@ -15,6 +15,8 @@
 // SPANS
 // ==========================================================================
 
+#include <threads.h>
+
 #define SPANSIZE 16
 #define INVSPAN 0.0625f
 
@@ -371,8 +373,8 @@ void R_DrawTiltedSpan(drawspandata_t* ds)
 	float endz, endu, endv;
 	UINT32 stepu, stepv;
 	register UINT32 bit;
-	static INT32 *tiltlighting = NULL;
-	static INT32 oldviewwidth = 0;
+	thread_local static INT32 *tiltlighting = NULL;
+	thread_local static INT32 oldviewwidth = 0;
 
 	// dont realloc every frame pls thx
 	if (tiltlighting == NULL || oldviewwidth != viewwidth)
@@ -518,8 +520,8 @@ void R_DrawTiltedTranslucentSpan(drawspandata_t* ds)
 	float endz, endu, endv;
 	UINT32 stepu, stepv;
 	register UINT32 bit;
-	static INT32 *tiltlighting = NULL;
-	static INT32 oldviewwidth = 0;
+	thread_local static INT32 *tiltlighting = NULL;
+	thread_local static INT32 oldviewwidth = 0;
 
 	// dont realloc every frame pls thx
 	if (tiltlighting == NULL || oldviewwidth != viewwidth)
@@ -666,8 +668,8 @@ void R_DrawTiltedTranslucentWaterSpan(drawspandata_t* ds)
 	float endz, endu, endv;
 	UINT32 stepu, stepv;
 	register UINT32 bit;
-	static INT32 *tiltlighting = NULL;
-	static INT32 oldviewwidth = 0;
+	thread_local static INT32 *tiltlighting = NULL;
+	thread_local static INT32 oldviewwidth = 0;
 
 	// dont realloc every frame pls thx
 	if (tiltlighting == NULL || oldviewwidth != viewwidth)
@@ -814,8 +816,8 @@ void R_DrawTiltedSplat(drawspandata_t* ds)
 	float endz, endu, endv;
 	UINT32 stepu, stepv;
 	register UINT32 bit;
-	static INT32 *tiltlighting = NULL;
-	static INT32 oldviewwidth = 0;
+	thread_local static INT32 *tiltlighting = NULL;
+	thread_local static INT32 oldviewwidth = 0;
 
 	// dont realloc every frame pls thx
 	if (tiltlighting == NULL || oldviewwidth != viewwidth)
