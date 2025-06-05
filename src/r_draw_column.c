@@ -54,7 +54,6 @@ void R_DrawColumn(drawcolumndata_t* dc)
 	// This is as fast as it gets.
 	const UINT8 *restrict source = dc->source;
 	const lighttable_t *restrict colormap = dc->colormap;
-
 	intptr_t heightmask = dc->sourcelength-1;
 
 	static const INT32 npow2min = -1;
@@ -62,7 +61,17 @@ void R_DrawColumn(drawcolumndata_t* dc)
 
 	register const INT32 stride = vid.width;
 
-	if (dc->sourcelength & heightmask)   // not a power of 2 -- killough
+	if (heightmask == -1)
+	{
+		// texture has no height, so just go
+		while (--count > 0)
+		{
+			*dest = colormap[source[frac>>FRACBITS]];
+			dest += stride;
+			frac += fracstep;
+		}
+	}
+	else if (dc->sourcelength & heightmask)   // not a power of 2 -- killough
 	{
 		heightmask = dc->texheight << FRACBITS;
 
@@ -173,7 +182,17 @@ void R_Draw2sMultiPatchColumn(drawcolumndata_t* dc)
 
 	register const INT32 stride = vid.width;
 
-	if (dc->sourcelength & heightmask)   // not a power of 2 -- killough
+	if (heightmask == -1)
+	{
+		// texture has no height, so just go
+		while (--count > 0)
+		{
+			*dest = colormap[source[frac>>FRACBITS]];
+			dest += stride;
+			frac += fracstep;
+		}
+	}
+	else if (dc->sourcelength & heightmask)   // not a power of 2 -- killough
 	{
 		heightmask = dc->texheight << FRACBITS;
 
@@ -303,7 +322,17 @@ void R_Draw2sMultiPatchTranslucentColumn(drawcolumndata_t* dc)
 
 	register const INT32 stride = vid.width;
 
-	if (dc->sourcelength & heightmask)   // not a power of 2 -- killough
+	if (heightmask == -1)
+	{
+		// texture has no height, so just go
+		while (--count > 0)
+		{
+			*dest = colormap[source[frac>>FRACBITS]];
+			dest += stride;
+			frac += fracstep;
+		}
+	}
+	else if (dc->sourcelength & heightmask)   // not a power of 2 -- killough
 	{
 		heightmask = dc->texheight << FRACBITS;
 
