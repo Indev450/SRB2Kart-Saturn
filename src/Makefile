@@ -262,7 +262,7 @@ opts+=$(debug_opts)
 opts+=$(foreach v,$(passthru_opts),$(if $($(v)),-D$(v)))
 
 opts+=$(WFLAGS) $(CPPFLAGS) $(CFLAGS)
-libs+=$(LDFLAGS) -lstdc++
+libs+=$(LDFLAGS) -lstdc++ -lpthread
 asflags:=$(ASFLAGS) -x assembler-with-cpp
 
 cxxopts:=$(opts)
@@ -405,7 +405,7 @@ $(objdir)/%.$(1) : %.$(2) | $$$$(@D)/
 endef
 
 $(eval $(call _recipe,o,c,$(cc) -c -o $$@ $$<))
-$(eval $(call _recipe,o,cpp,$(cxx) -c -o $$@ $$<))
+$(eval $(call _recipe,o,cpp,$(cxx) $(cxxopts) -c -o $$@ $$<))
 $(eval $(call _recipe,o,s,$(cc) $(asflags) -c -o $$@ $$<))
 $(eval $(call _recipe,res,rc,$(windres) -i $$< -o $$@))
 
