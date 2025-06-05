@@ -1447,7 +1447,6 @@ void R_RenderPlayerView(player_t *player)
 	PS_START_TIMING(ps_bsptime);
 	R_RenderViewpoint(&masks[nummasks - 1]);
 	PS_STOP_TIMING(ps_bsptime);
-
 	PS_START_TIMING(ps_sw_spritecliptime);
 	R_ClipSprites();
 	PS_STOP_TIMING(ps_sw_spritecliptime);
