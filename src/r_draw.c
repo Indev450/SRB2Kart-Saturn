@@ -45,12 +45,7 @@ UINT8 *renderscreen;            // haleyjd
 //                      COLUMN DRAWING CODE STUFF
 // =========================================================================
 
-lighttable_t *dc_colormap;
-INT32 dc_x = 0, dc_yl = 0, dc_yh = 0;
-
-fixed_t dc_iscale, dc_texturemid;
-UINT8 *dc_source;
-INT32 dc_sourcelength;
+drawcolumndata_t g_dc;
 
 // -----------------------
 // translucency stuff here
@@ -59,22 +54,6 @@ INT32 dc_sourcelength;
 
 UINT8 *transtables; // translucency tables
 UINT8 *blendtables[NUMBLENDMAPS];
-
-/**	\brief R_DrawTransColumn uses this
-*/
-UINT8 *dc_transmap; // one of the translucency tables
-
-// ----------------------
-// translation stuff here
-// ----------------------
-
-
-/**	\brief R_DrawTranslatedColumn uses this
-*/
-UINT8 *dc_translation;
-
-struct r_lightlist_s *dc_lightlist = NULL;
-INT32 dc_numlights = 0, dc_maxlights, dc_texheight;
 
 // =========================================================================
 //                      SPAN DRAWING CODE STUFF
@@ -92,14 +71,10 @@ floatv3_t *ds_su, *ds_sv, *ds_sz;
 floatv3_t *ds_sup, *ds_svp, *ds_szp;
 float focallengthf, zeroheight;
 
-/**	\brief Variable flat sizes
-*/
-
-UINT32 nflatxshift, nflatyshift, nflatshiftup, nflatmask;
-
 // For, uh, tilted lighting, duh.
 static INT32 *tiltlighting;
 
+UINT32 nflatxshift, nflatyshift, nflatshiftup, nflatmask;
 
 // ==========================================================================
 //                        OLD DOOM FUZZY EFFECT

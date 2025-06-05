@@ -81,22 +81,9 @@ enum
 // ---------------------------------------------
 // color mode dependent drawer function pointers
 // ---------------------------------------------
-
-extern void (*wallcolfunc)(void);
-extern void (*colfunc)(void);
-extern void (*basecolfunc)(void);
-extern void (*fuzzcolfunc)(void);
-extern void (*transcolfunc)(void);
-extern void (*shadecolfunc)(void);
 extern void (*spanfunc)(void);
 extern void (*basespanfunc)(void);
 extern void (*splatfunc)(void);
-extern void (*transtransfunc)(void);
-extern void (*twosmultipatchfunc)(void);
-extern void (*twosmultipatchtransfunc)(void);
-
-// quick fix for tall/short skies, depending on bytesperpixel
-extern void (*walldrawerfunc)(void);
 
 // ----------------
 // screen variables

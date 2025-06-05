@@ -612,14 +612,14 @@ INT16 *mceilingclip;
 fixed_t spryscale = 0, sprtopscreen = 0, sprbotscreen = 0;
 fixed_t windowtop = 0, windowbottom = 0;
 
-void R_DrawMaskedColumn(column_t *column)
+void R_DrawMaskedColumn(drawcolumndata_t* dc, column_t *column)
 {
 	INT32 topscreen;
 	INT32 bottomscreen;
 	fixed_t basetexturemid;
 	INT32 topdelta, prevdelta = 0;
 
-	basetexturemid = dc_texturemid;
+	basetexturemid = dc->texturemid;
 
 	while (column->topdelta != 0xff)
 	{
@@ -632,49 +632,54 @@ void R_DrawMaskedColumn(column_t *column)
 		topscreen = sprtopscreen + spryscale*topdelta;
 		bottomscreen = topscreen + spryscale*column->length;
 
-		dc_yl = (topscreen+FRACUNIT-1)>>FRACBITS;
-		dc_yh = (bottomscreen-1)>>FRACBITS;
+		dc->yl = (topscreen+FRACUNIT-1)>>FRACBITS;
+		dc->yh = (bottomscreen-1)>>FRACBITS;
 
 		if (windowtop != INT32_MAX && windowbottom != INT32_MAX)
 		{
 			if (windowtop > topscreen)
-				dc_yl = (windowtop + FRACUNIT - 1)>>FRACBITS;
+				dc->yl = (windowtop + FRACUNIT - 1)>>FRACBITS;
 			if (windowbottom < bottomscreen)
-				dc_yh = (windowbottom - 1)>>FRACBITS;
+				dc->yh = (windowbottom - 1)>>FRACBITS;
 		}
 
-		if (dc_yh >= mfloorclip[dc_x])
-			dc_yh = mfloorclip[dc_x]-1;
-		if (dc_yl <= mceilingclip[dc_x])
-			dc_yl = mceilingclip[dc_x]+1;
+		if (dc->yh >= mfloorclip[dc->x])
+			dc->yh = mfloorclip[dc->x]-1;
+		if (dc->yl <= mceilingclip[dc->x])
+			dc->yl = mceilingclip[dc->x]+1;
 
-		if (dc_yl < 0)
-			dc_yl = 0;
-		if (dc_yh >= vid.height)
-			dc_yh = vid.height - 1;
+		if (dc->yl < 0)
+			dc->yl = 0;
+		if (dc->yh >= vid.height)
+			dc->yh = vid.height - 1;
 
-		if (dc_yl <= dc_yh && dc_yh > 0 && column->length != 0)
+		if (dc->yl <= dc->yh && dc->yh > 0 && column->length != 0)
 		{
-			dc_source = (UINT8 *)column + 3;
-			dc_sourcelength = column->length;
-			dc_texturemid = basetexturemid - (topdelta<<FRACBITS);
+			dc->source = (UINT8 *)column + 3;
+			dc->sourcelength = column->length;
+			dc->texturemid = basetexturemid - (topdelta<<FRACBITS);
 
 			// Drawn by R_DrawColumn.
-			colfunc();
+			drawcolumndata_t dc_copy = *dc;
+			void (*colfunccopy)(drawcolumndata_t*);
+			colfunccopy = colfunc;
+			colfunccopy((drawcolumndata_t*)(&dc_copy));
+
+			//colfunc();
 		}
 		column = (column_t *)((UINT8 *)column + column->length + 4);
 	}
 
-	dc_texturemid = basetexturemid;
+	dc->texturemid = basetexturemid;
 }
 
 INT32 lengthcol; // column->length : for flipped column function pointers and multi-patch on 2sided wall = texture->height
 
-static void R_DrawFlippedMaskedColumn(column_t *column)
+static void R_DrawFlippedMaskedColumn(drawcolumndata_t* dc, column_t *column)
 {
 	INT32 topscreen;
 	INT32 bottomscreen;
-	fixed_t basetexturemid = dc_texturemid;
+	fixed_t basetexturemid = dc->texturemid;
 	INT32 topdelta, prevdelta = -1;
 	UINT8 *d,*s;
 
@@ -690,44 +695,49 @@ static void R_DrawFlippedMaskedColumn(column_t *column)
 		topscreen = sprtopscreen + spryscale*topdelta;
 		bottomscreen = sprbotscreen == INT32_MAX ? topscreen + spryscale*column->length
 		                                      : sprbotscreen + spryscale*column->length;
-		dc_yl = (topscreen+FRACUNIT-1)>>FRACBITS;
-		dc_yh = (bottomscreen-1)>>FRACBITS;
+		dc->yl = (topscreen+FRACUNIT-1)>>FRACBITS;
+		dc->yh = (bottomscreen-1)>>FRACBITS;
 
 		if (windowtop != INT32_MAX && windowbottom != INT32_MAX)
 		{
 			if (windowtop > topscreen)
-				dc_yl = (windowtop + FRACUNIT - 1)>>FRACBITS;
+				dc->yl = (windowtop + FRACUNIT - 1)>>FRACBITS;
 			if (windowbottom < bottomscreen)
-				dc_yh = (windowbottom - 1)>>FRACBITS;
+				dc->yh = (windowbottom - 1)>>FRACBITS;
 		}
 
-		if (dc_yh >= mfloorclip[dc_x])
-			dc_yh = mfloorclip[dc_x]-1;
-		if (dc_yl <= mceilingclip[dc_x])
-			dc_yl = mceilingclip[dc_x]+1;
-		if (dc_yl < 0)
-			dc_yl = 0;
-		if (dc_yh >= vid.height) // dc_yl must be < vid.height, so reduces number of checks in tight loop
-			dc_yh = vid.height - 1;
+		if (dc->yh >= mfloorclip[dc->x])
+			dc->yh = mfloorclip[dc->x]-1;
+		if (dc->yl <= mceilingclip[dc->x])
+			dc->yl = mceilingclip[dc->x]+1;
+		if (dc->yl < 0)
+			dc->yl = 0;
+		if (dc->yh >= vid.height) // dc->yl must be < vid.height, so reduces number of checks in tight loop
+			dc->yh = vid.height - 1;
 
-		if (dc_yl <= dc_yh && dc_yh > 0 && column->length != 0)
+		if (dc->yl <= dc->yh && dc->yh > 0 && column->length != 0)
 		{
-			dc_source = ZZ_Alloc(column->length);
-			dc_sourcelength = column->length;
+			dc->source = ZZ_Alloc(column->length);
+			dc->sourcelength = column->length;
 
-			for (s = (UINT8 *)column+2+column->length, d = dc_source; d < dc_source+column->length; --s)
+			for (s = (UINT8 *)column+2+column->length, d = dc->source; d < dc->source+column->length; --s)
 				*d++ = *s;
-			dc_texturemid = basetexturemid - (topdelta<<FRACBITS);
+			dc->texturemid = basetexturemid - (topdelta<<FRACBITS);
 
 			// Still drawn by R_DrawColumn.
-			colfunc();
+			drawcolumndata_t dc_copy = *dc;
+			void (*colfunccopy)(drawcolumndata_t*);
+			colfunccopy = colfunc;
+			colfunccopy((drawcolumndata_t*)(&dc_copy));
 
-			Z_Free(dc_source);
+			//colfunc();
+
+			Z_Free(dc->source);
 		}
 		column = (column_t *)((UINT8 *)column + column->length + 4);
 	}
 
-	dc_texturemid = basetexturemid;
+	dc->texturemid = basetexturemid;
 }
 
 //
@@ -737,7 +747,7 @@ static void R_DrawFlippedMaskedColumn(column_t *column)
 static void R_DrawVisSprite(vissprite_t *vis)
 {
 	column_t *column;
-	void (*localcolfunc)(column_t *);
+	void (*localcolfunc)(drawcolumndata_t*, column_t *);
 	INT32 texturecolumn;
 	INT32 pwidth;
 	fixed_t frac;
@@ -745,6 +755,7 @@ static void R_DrawVisSprite(vissprite_t *vis)
 	fixed_t this_scale = vis->thingscale;
 	INT32 x1, x2;
 	INT64 overflow_test;
+	drawcolumndata_t dc = {0};
 
 	if (!patch)
 		return;
@@ -771,33 +782,33 @@ static void R_DrawVisSprite(vissprite_t *vis)
 	}
 
 	colfunc = basecolfunc; // hack: this isn't resetting properly somewhere.
-	dc_colormap = vis->colormap;
+	dc.colormap = vis->colormap;
 	if ((vis->mobj->flags & MF_BOSS) && (vis->mobj->flags2 & MF2_FRET) && (leveltime & 1)) // Bosses "flash"
 	{
 		// translate certain pixels to white
 		colfunc = transcolfunc;
 		if (vis->mobj->type == MT_CYBRAKDEMON)
-			dc_translation = R_GetTranslationColormap(TC_ALLWHITE, 0, GTC_CACHE);
+			dc.translation = R_GetTranslationColormap(TC_ALLWHITE, 0, GTC_CACHE);
 		else if (vis->mobj->type == MT_METALSONIC_BATTLE)
-			dc_translation = R_GetTranslationColormap(TC_METALSONIC, 0, GTC_CACHE);
+			dc.translation = R_GetTranslationColormap(TC_METALSONIC, 0, GTC_CACHE);
 		else
-			dc_translation = R_GetTranslationColormap(TC_BOSS, 0, GTC_CACHE);
+			dc.translation = R_GetTranslationColormap(TC_BOSS, 0, GTC_CACHE);
 	}
 	else if (vis->mobj->color && vis->transmap) // Color mapping
 	{
 		colfunc = transtransfunc;
-		dc_transmap = vis->transmap;
+		dc.transmap = vis->transmap;
 		if (vis->mobj->colorized)
-			dc_translation = R_GetTranslationColormap(TC_RAINBOW, vis->mobj->color, GTC_CACHE);
+			dc.translation = R_GetTranslationColormap(TC_RAINBOW, vis->mobj->color, GTC_CACHE);
 		else if (vis->mobj->skin && vis->mobj->sprite == SPR_PLAY) // MT_GHOST LOOKS LIKE A PLAYER SO USE THE PLAYER TRANSLATION TABLES. >_>
-			dc_translation = R_GetLocalTranslationColormap(vis->mobj->skin, vis->mobj->localskin, vis->mobj->color, GTC_CACHE, vis->mobj->skinlocal);
+			dc.translation = R_GetLocalTranslationColormap(vis->mobj->skin, vis->mobj->localskin, vis->mobj->color, GTC_CACHE, vis->mobj->skinlocal);
 		else // Use the defaults
-			dc_translation = R_GetTranslationColormap(TC_DEFAULT, vis->mobj->color, GTC_CACHE);
+			dc.translation = R_GetTranslationColormap(TC_DEFAULT, vis->mobj->color, GTC_CACHE);
 	}
 	else if (vis->transmap)
 	{
 		colfunc = fuzzcolfunc;
-		dc_transmap = vis->transmap;    //Fab : 29-04-98: translucency table
+		dc.transmap = vis->transmap;    //Fab : 29-04-98: translucency table
 	}
 	else if (vis->mobj->color)
 	{
@@ -806,33 +817,33 @@ static void R_DrawVisSprite(vissprite_t *vis)
 
 		// New colormap stuff for skins Tails 06-07-2002
 		if (vis->mobj->colorized)
-			dc_translation = R_GetTranslationColormap(TC_RAINBOW, vis->mobj->color, GTC_CACHE);
+			dc.translation = R_GetTranslationColormap(TC_RAINBOW, vis->mobj->color, GTC_CACHE);
 		else if (vis->mobj->skin && vis->mobj->sprite == SPR_PLAY) // This thing is a player!
-			dc_translation = R_GetLocalTranslationColormap(vis->mobj->skin, vis->mobj->localskin, vis->mobj->color, GTC_CACHE, vis->mobj->skinlocal);
+			dc.translation = R_GetLocalTranslationColormap(vis->mobj->skin, vis->mobj->localskin, vis->mobj->color, GTC_CACHE, vis->mobj->skinlocal);
 		else // Use the defaults
-			dc_translation = R_GetTranslationColormap(TC_DEFAULT, vis->mobj->color, GTC_CACHE);
+			dc.translation = R_GetTranslationColormap(TC_DEFAULT, vis->mobj->color, GTC_CACHE);
 	}
 	else if (vis->mobj->sprite == SPR_PLAY) // Looks like a player, but doesn't have a color? Get rid of green sonic syndrome.
 	{
 		colfunc = transcolfunc;
-		dc_translation = R_GetTranslationColormap(TC_DEFAULT, SKINCOLOR_BLUE, GTC_CACHE);
+		dc.translation = R_GetTranslationColormap(TC_DEFAULT, SKINCOLOR_BLUE, GTC_CACHE);
 	}
 
 	if (vis->extra_colormap)
 	{
-		if (!dc_colormap)
-			dc_colormap = vis->extra_colormap->colormap;
+		if (!dc.colormap)
+			dc.colormap = vis->extra_colormap->colormap;
 		else
-			dc_colormap = &vis->extra_colormap->colormap[dc_colormap - colormaps];
+			dc.colormap = &vis->extra_colormap->colormap[dc.colormap - colormaps];
 	}
-	if (!dc_colormap)
-		dc_colormap = colormaps;
+	if (!dc.colormap)
+		dc.colormap = colormaps;
 
 	if (encoremap && !vis->mobj->color && !(vis->mobj->flags & MF_DONTENCOREMAP))
-		dc_colormap += COLORMAP_REMAPOFFSET;
+		dc.colormap += COLORMAP_REMAPOFFSET;
 
-	dc_texturemid = vis->texturemid;
-	dc_texheight = patch->height;
+	dc.texturemid = vis->texturemid;
+	dc.texheight = patch->height;
 
 	frac = vis->startfrac;
 	windowtop = windowbottom = sprbotscreen = INT32_MAX;
@@ -852,15 +863,15 @@ static void R_DrawVisSprite(vissprite_t *vis)
 			vis->xiscale = FixedDiv(vis->xiscale, this_scale);
 			vis->isScaled = true;
 		}
-		dc_texturemid = FixedDiv(dc_texturemid, this_scale);
+		dc.texturemid = FixedDiv(dc.texturemid, this_scale);
 	}
 
 	spryscale = vis->scale;
 
 	if (!(vis->scalestep))
 	{
-		sprtopscreen = centeryfrac - FixedMul(dc_texturemid, spryscale);
-		dc_iscale = FixedDiv(FRACUNIT, vis->scale);
+		sprtopscreen = centeryfrac - FixedMul(dc.texturemid, spryscale);
+		dc.iscale = FixedDiv(FRACUNIT, vis->scale);
 	}
 
 	x1 = vis->x1;
@@ -886,9 +897,9 @@ static void R_DrawVisSprite(vissprite_t *vis)
 		fixed_t scalestep = FixedMul(vis->scalestep, vis->spriteyscale);
 
 		// Papersprite drawing loop
-		for (dc_x = vis->x1; dc_x <= vis->x2; dc_x++, spryscale += scalestep)
+		for (dc.x = vis->x1; dc.x <= vis->x2; dc.x++, spryscale += scalestep)
 		{
-			angle_t angle = ((vis->centerangle + xtoviewangle[dc_x]) >> ANGLETOFINESHIFT) & 0xFFF;
+			angle_t angle = ((vis->centerangle + xtoviewangle[dc.x]) >> ANGLETOFINESHIFT) & 0xFFF;
 			texturecolumn = (vis->paperoffset - FixedMul(FINETANGENT(angle), vis->paperdistance)) / horzscale;
 
 			if (texturecolumn < 0 || texturecolumn >= pwidth)
@@ -897,23 +908,23 @@ static void R_DrawVisSprite(vissprite_t *vis)
 			if (vis->xiscale < 0) // Flipped sprite
 				texturecolumn = pwidth - 1 - texturecolumn;
 
-			sprtopscreen = (centeryfrac - FixedMul(dc_texturemid, spryscale));
-			dc_iscale = (0xffffffffu / (unsigned)spryscale);
+			sprtopscreen = (centeryfrac - FixedMul(dc.texturemid, spryscale));
+			dc.iscale = (0xffffffffu / (unsigned)spryscale);
 
 			column = (column_t *)((UINT8 *)patch->columns + (patch->columnofs[texturecolumn]));
 
-			localcolfunc (column);
+			localcolfunc (&dc, column);
 		}
 	}
 	else
 	{
 		// Non-paper drawing loop
-		for (dc_x = vis->x1; dc_x <= vis->x2 && (frac>>FRACBITS) < pwidth; dc_x++, frac += vis->xiscale)
+		for (dc.x = vis->x1; dc.x <= vis->x2 && (frac>>FRACBITS) < pwidth; dc.x++, frac += vis->xiscale)
 		{
 			texturecolumn = CLAMP(frac >> FRACBITS, 0, pwidth - 1);
 			column = (column_t *)((UINT8 *)patch->columns + (patch->columnofs[texturecolumn]));
 
-			localcolfunc (column);
+			localcolfunc (&dc, column);
 		}
 	}
 
@@ -932,6 +943,7 @@ static void R_DrawPrecipitationVisSprite(vissprite_t *vis)
 	patch_t *patch;
 	fixed_t this_scale = vis->thingscale;
 	INT64 overflow_test;
+	drawcolumndata_t dc = {0};
 
 	//Fab : R_InitSprites now sets a wad lump number
 	patch = vis->patch;
@@ -946,20 +958,20 @@ static void R_DrawPrecipitationVisSprite(vissprite_t *vis)
 	if (vis->transmap)
 	{
 		colfunc = fuzzcolfunc;
-		dc_transmap = vis->transmap;    //Fab : 29-04-98: translucency table
+		dc.transmap = vis->transmap;    //Fab : 29-04-98: translucency table
 	}
 
-	dc_colormap = colormaps;
+	dc.colormap = colormaps;
 	if (encoremap)
-		dc_colormap += COLORMAP_REMAPOFFSET;
+		dc.colormap += COLORMAP_REMAPOFFSET;
 
-	dc_iscale = FixedDiv(FRACUNIT, vis->scale);
-	dc_texturemid = FixedDiv(vis->texturemid, this_scale);
-	dc_texheight = patch->height;
+	dc.iscale = FixedDiv(FRACUNIT, vis->scale);
+	dc.texturemid = FixedDiv(vis->texturemid, this_scale);
+	dc.texheight = patch->height;
 
 	frac = vis->startfrac;
 	spryscale = vis->scale;
-	sprtopscreen = centeryfrac - FixedMul(dc_texturemid,spryscale);
+	sprtopscreen = centeryfrac - FixedMul(dc.texturemid,spryscale);
 	windowtop = windowbottom = sprbotscreen = INT32_MAX;
 
 	if (vis->x1 < 0)
@@ -968,7 +980,7 @@ static void R_DrawPrecipitationVisSprite(vissprite_t *vis)
 	if (vis->x2 >= vid.width)
 		vis->x2 = vid.width-1;
 
-	for (dc_x = vis->x1; dc_x <= vis->x2; dc_x++, frac += vis->xiscale)
+	for (dc.x = vis->x1; dc.x <= vis->x2; dc.x++, frac += vis->xiscale)
 	{
 		texturecolumn = frac>>FRACBITS;
 
@@ -980,7 +992,7 @@ static void R_DrawPrecipitationVisSprite(vissprite_t *vis)
 
 		column = (column_t *)((UINT8 *)patch->columns + (patch->columnofs[texturecolumn]));
 
-		R_DrawMaskedColumn(column);
+		R_DrawMaskedColumn(&dc, column);
 	}
 
 	colfunc = basecolfunc;
@@ -2950,7 +2962,7 @@ void R_DrawMasked(void)
 		else if (r2->seg && r2->seg->maskedtexturecol != NULL)
 		{
 			next = r2->prev;
-			R_RenderMaskedSegRange(r2->seg, r2->seg->x1, r2->seg->x2);
+			R_RenderMaskedSegRange( r2->seg, r2->seg->x1, r2->seg->x2);
 			r2->seg->maskedtexturecol = NULL;
 			R_DoneWithNode(r2);
 			r2 = next;
