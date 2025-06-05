@@ -48,6 +48,8 @@ consvar_t cv_renderview = {"renderview", "On", 0, CV_OnOff, NULL, 0, NULL, NULL,
 consvar_t cv_vhseffect = {"vhspause", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_shittyscreen = {"televisionsignal", "Okay", CV_NOSHOWHELP, shittyscreen_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
+consvar_t cv_parallelsoftware = {"parallelsoftware", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+
 static CV_PossibleValue_t votescale_cons_t[] = {{0, "Vanilla"}, {1, "Adaptive"}, {2, "VerticalFill"}, {3, "HorizontalFill"}, {0, NULL}};
 consvar_t cv_votebgscaling = {"votebgscaling", "Adaptive", CV_SAVE, votescale_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
