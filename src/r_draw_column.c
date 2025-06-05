@@ -36,7 +36,6 @@ void R_DrawColumn(drawcolumndata_t* dc)
 		return;
 	}
 
-
 	if ((unsigned)dc->x >= (unsigned)vid.width || dc->yl < 0 || dc->yh >= vid.height)
 	{
 		return;
@@ -60,6 +59,8 @@ void R_DrawColumn(drawcolumndata_t* dc)
 
 	static const INT32 npow2min = -1;
 	const INT32 npow2max = dc->sourcelength;
+
+	register const INT32 stride = vid.width;
 
 	if (dc->sourcelength & heightmask)   // not a power of 2 -- killough
 	{
@@ -90,8 +91,7 @@ void R_DrawColumn(drawcolumndata_t* dc)
 			// and a few bytes after as well
 			*dest = colormap[source[CLAMP(frac >> FRACBITS, npow2min, npow2max)]];
 
-			dest += vid.width;
-
+			dest += stride;
 
 #if __SIZEOF_POINTER__ < 8 // 64-bit systems have large enough numbers for this to be a non-issue
 			// Avoid overflow.
@@ -117,12 +117,12 @@ void R_DrawColumn(drawcolumndata_t* dc)
 		{
 			*dest = colormap[source[(frac>>FRACBITS) & heightmask]];
 
-			dest += vid.width;
+			dest += stride;
 			frac += fracstep;
 
 			*dest = colormap[source[(frac>>FRACBITS) & heightmask]];
 
-			dest += vid.width;
+			dest += stride;
 			frac += fracstep;
 		}
 
@@ -171,6 +171,8 @@ void R_Draw2sMultiPatchColumn(drawcolumndata_t* dc)
 	static const INT32 npow2min = -1;
 	const INT32 npow2max = dc->sourcelength;
 
+	register const INT32 stride = vid.width;
+
 	if (dc->sourcelength & heightmask)   // not a power of 2 -- killough
 	{
 		heightmask = dc->texheight << FRACBITS;
@@ -205,7 +207,7 @@ void R_Draw2sMultiPatchColumn(drawcolumndata_t* dc)
 				*dest = colormap[val];
 			}
 
-			dest += vid.width;
+			dest += stride;
 
 			// Avoid overflow.
 #if __SIZEOF_POINTER__ < 8
@@ -236,7 +238,7 @@ void R_Draw2sMultiPatchColumn(drawcolumndata_t* dc)
 				*dest = colormap[val];
 			}
 
-			dest += vid.width;
+			dest += stride;
 			frac += fracstep;
 
 			val = source[(frac>>FRACBITS) & heightmask];
@@ -245,7 +247,7 @@ void R_Draw2sMultiPatchColumn(drawcolumndata_t* dc)
 				*dest = colormap[val];
 			}
 
-			dest += vid.width;
+			dest += stride;
 			frac += fracstep;
 		}
 
@@ -299,6 +301,8 @@ void R_Draw2sMultiPatchTranslucentColumn(drawcolumndata_t* dc)
 	static const INT32 npow2min = -1;
 	const INT32 npow2max = dc->sourcelength;
 
+	register const INT32 stride = vid.width;
+
 	if (dc->sourcelength & heightmask)   // not a power of 2 -- killough
 	{
 		heightmask = dc->texheight << FRACBITS;
@@ -333,7 +337,7 @@ void R_Draw2sMultiPatchTranslucentColumn(drawcolumndata_t* dc)
 				*dest = *(transmap + (colormap[val]<<8) + (*dest));
 			}
 
-			dest += vid.width;
+			dest += stride;
 
 			// Avoid overflow.
 #if __SIZEOF_POINTER__ < 8
@@ -363,7 +367,7 @@ void R_Draw2sMultiPatchTranslucentColumn(drawcolumndata_t* dc)
 				*dest = *(transmap + (colormap[val]<<8) + (*dest));
 			}
 
-			dest += vid.width;
+			dest += stride;
 			frac += fracstep;
 
 			val = source[(frac>>FRACBITS) & heightmask];
@@ -372,7 +376,7 @@ void R_Draw2sMultiPatchTranslucentColumn(drawcolumndata_t* dc)
 				*dest = *(transmap + (colormap[val]<<8) + (*dest));
 			}
 
-			dest += vid.width;
+			dest += stride;
 			frac += fracstep;
 		}
 
@@ -419,11 +423,13 @@ void R_DrawShadeColumn(drawcolumndata_t* dc)
 	fracstep = dc->iscale;
 	frac = (dc->texturemid + FixedMul((dc->yl << FRACBITS) - centeryfrac, fracstep));
 
+	register const INT32 stride = vid.width;
+
 	// Here we do an additional index re-mapping.
 	do
 	{
 		*dest = colormaps[(dc->source[frac>>FRACBITS] <<8) + (*dest)];
-		dest += vid.width;
+		dest += stride;
 		frac += fracstep;
 	} while (count--);
 }
@@ -469,6 +475,8 @@ void R_DrawTranslucentColumn(drawcolumndata_t* dc)
 	static const INT32 npow2min = -1;
 	const INT32 npow2max = dc->sourcelength;
 
+	register const INT32 stride = vid.width;
+
 	if (dc->sourcelength & heightmask)
 	{
 		heightmask = dc->texheight << FRACBITS;
@@ -498,7 +506,7 @@ void R_DrawTranslucentColumn(drawcolumndata_t* dc)
 			// and a few bytes after as well
 			*dest = *(transmap + (colormap[source[CLAMP(frac >> FRACBITS, npow2min, npow2max)]]<<8) + (*dest));
 
-			dest += vid.width;
+			dest += stride;
 
 			if ((frac += fracstep) >= heightmask)
 			{
@@ -512,11 +520,11 @@ void R_DrawTranslucentColumn(drawcolumndata_t* dc)
 		while ((count -= 2) >= 0) // texture height is a power of 2
 		{
 			*dest = *(transmap + (colormap[source[(frac>>FRACBITS)&heightmask]]<<8) + (*dest));
-			dest += vid.width;
+			dest += stride;
 			frac += fracstep;
 
 			*dest = *(transmap + (colormap[source[(frac>>FRACBITS)&heightmask]]<<8) + (*dest));
-			dest += vid.width;
+			dest += stride;
 			frac += fracstep;
 		}
 
@@ -564,6 +572,8 @@ void R_DrawTranslatedTranslucentColumn(drawcolumndata_t* dc)
 	static const INT32 npow2min = -1;
 	const INT32 npow2max = dc->sourcelength;
 
+	register const INT32 stride = vid.width;
+
 	if (dc->sourcelength & heightmask)
 	{
 		heightmask = dc->texheight << FRACBITS;
@@ -593,7 +603,7 @@ void R_DrawTranslatedTranslucentColumn(drawcolumndata_t* dc)
 			// and a few bytes after as well
 			*dest = *(dc->transmap + (dc->colormap[dc->translation[dc->source[CLAMP(frac >> FRACBITS, npow2min, npow2max)]]]<<8) + (*dest));
 
-			dest += vid.width;
+			dest += stride;
 
 			if ((frac += fracstep) >= heightmask)
 			{
@@ -607,11 +617,11 @@ void R_DrawTranslatedTranslucentColumn(drawcolumndata_t* dc)
 		while ((count -= 2) >= 0) // texture height is a power of 2
 		{
 			*dest = *(dc->transmap + (dc->colormap[dc->translation[dc->source[(frac>>FRACBITS)&heightmask]]]<<8) + (*dest));
-			dest += vid.width;
+			dest += stride;
 			frac += fracstep;
 
 			*dest = *(dc->transmap + (dc->colormap[dc->translation[dc->source[(frac>>FRACBITS)&heightmask]]]<<8) + (*dest));
-			dest += vid.width;
+			dest += stride;
 			frac += fracstep;
 		}
 
@@ -652,6 +662,8 @@ void R_DrawTranslatedColumn(drawcolumndata_t* dc)
 	fracstep = dc->iscale;
 	frac = (dc->texturemid + FixedMul((dc->yl << FRACBITS) - centeryfrac, fracstep));
 
+	register const INT32 stride = vid.width;
+
 	// Here we do an additional index re-mapping.
 	do
 	{
@@ -662,7 +674,7 @@ void R_DrawTranslatedColumn(drawcolumndata_t* dc)
 		//  is mapped to gray, red, black/indigo.
 		*dest = dc->colormap[dc->translation[dc->source[frac>>FRACBITS]]];
 
-		dest += vid.width;
+		dest += stride;
 
 		frac += fracstep;
 	} while (count--);
@@ -690,12 +702,14 @@ void R_DrawFogColumn(drawcolumndata_t* dc)
 	// Framebuffer destination address.
 	dest = R_Address(dc->x, dc->yl);
 
+	register const INT32 stride = vid.width;
+
 	// Determine scaling, which is the only mapping to be done.
 	do
 	{
 		// Simple. Apply the colormap to what's already on the screen.
 		*dest = dc->colormap[*dest];
-		dest += vid.width;
+		dest += stride;
 	} while (count--);
 }
 
