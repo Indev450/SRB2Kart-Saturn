@@ -287,8 +287,6 @@ static void R_MapPlane(drawspandata_t *ds, void(*spanfunc2)(drawspandata_t*), IN
 
 	if (ds->planeripple.active)
 	{
-		// Needed for ds_bgofs
-
 		ds->bgofs = R_CalculateRippleOffset(ds, y);
 
 		R_CalculatePlaneRipple(ds, ds->currentplane->viewangle + ds->currentplane->plangle);
@@ -450,8 +448,8 @@ static visplane_t *new_visplane(unsigned hash)
 //              If not, allocates another of them.
 //
 visplane_t *R_FindPlane(fixed_t height, INT32 picnum, INT32 lightlevel,
-	fixed_t xoff, fixed_t yoff, angle_t plangle, extracolormap_t *planecolormap,
-	ffloor_t *pfloor
+	fixed_t xoff, fixed_t yoff, angle_t plangle, extracolormap_t *planecolormap
+			, ffloor_t *pfloor
 			, polyobj_t *polyobj
 			, pslope_t *slope
 			, boolean noencore
@@ -460,10 +458,8 @@ visplane_t *R_FindPlane(fixed_t height, INT32 picnum, INT32 lightlevel,
 	visplane_t *check;
 	unsigned hash;
 
-	if (slope); else // Don't mess with this right now if a slope is involved
+	if (!slope) // Don't mess with this right now if a slope is involved
 	{
-		xoff += viewx;
-		yoff -= viewy;
 		if (plangle != 0)
 		{
 			// Add the view offset, rotated by the plane angle.
@@ -472,6 +468,11 @@ visplane_t *R_FindPlane(fixed_t height, INT32 picnum, INT32 lightlevel,
 			fixed_t oldxoff = xoff;
 			xoff = FixedMul(xoff,cosinecomponent)+FixedMul(yoff,sinecomponent);
 			yoff = -FixedMul(oldxoff,sinecomponent)+FixedMul(yoff,cosinecomponent);
+		}
+		else
+		{
+			xoff += viewx;
+			yoff -= viewy;
 		}
 	}
 
@@ -676,14 +677,7 @@ void R_ExpandPlane(visplane_t *pl, INT32 start, INT32 stop)
 	{
 		unionh = pl->maxx;
 	}
-/*
-	for (x = start; x <= stop; x++)
-		if (pl->top[x] != 0xffff || pl->bottom[x] != 0x0000)
-			break;
 
-	if (x <= stop)
-		I_Error("R_ExpandPlane: planes in same subsector overlap?!\nminx: %d, maxx: %d, start: %d, stop: %d\n", pl->minx, pl->maxx, start, stop);
-*/
 	pl->minx = unionl, pl->maxx = unionh;
 }
 
@@ -776,9 +770,6 @@ void R_DrawPlanes(void)
 	INT32 i;
 	drawspandata_t ds = {};
 
-	spanfunc = basespanfunc;
-	wallcolfunc = walldrawerfunc;
-
 	R_UpdatePlaneRipple(&ds);
 
 	for (i = 0; i < MAXVISPLANES; i++, pl++)
@@ -804,10 +795,14 @@ static void R_DrawSkyPlane(visplane_t *pl, void(*colfunc2)(drawcolumndata_t*), b
 		return;
 	}
 
-	wallcolfunc = walldrawerfunc;
+	// Reset column drawer function (note: couldn't we just call walldrawerfunc directly?)
+	// (that is, unless we'll need to switch drawers in future for some reason)
+	//wallcolfunc = walldrawerfunc;
+	colfunc = basecolfunc;
 
 	// use correct aspect ratio scale
 	dc.iscale = skyscale;
+
 	// Sky is always drawn full bright,
 	//  i.e. colormaps[0] is used.
 	// Because of this hack, sky is not affected
@@ -1084,10 +1079,7 @@ void R_DrawSinglePlane(drawspandata_t* ds, visplane_t *pl, boolean allow_paralle
 
 	ds->currentplane = pl;
 
-	ds->source = (UINT8 *)
-		W_CacheLumpNum(levelflats[pl->picnum].lumpnum,
-			PU_STATIC); // Stay here until Z_ChangeTag
-
+	ds->source = (UINT8 *)W_CacheLumpNum(levelflats[pl->picnum].lumpnum, PU_STATIC); // Stay here until Z_ChangeTag
 	size = W_LumpLength(levelflats[pl->picnum].lumpnum);
 
 	switch (size)

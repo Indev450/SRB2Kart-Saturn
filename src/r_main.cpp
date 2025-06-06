@@ -1448,17 +1448,11 @@ void R_RenderPlayerView(player_t *player)
 	// check for new console commands.
 	NetUpdate();
 
-	// The head node is the last node output.
-	//masks = realloc(masks, (++nummasks)*sizeof(maskcount_t));
-
 	ps_numbspcalls.value.i = ps_numpolyobjects.value.i = ps_numdrawnodes.value.i = 0;
 	PS_START_TIMING(ps_bsptime);
-	if (skybox && skyVisible)
-	{
-		tp_sema = srb2::g_main_threadpool->end_sema();
-		srb2::g_main_threadpool->notify_sema(tp_sema);
-		srb2::g_main_threadpool->wait_sema(tp_sema);
-	}
+	tp_sema = srb2::g_main_threadpool->end_sema();
+	srb2::g_main_threadpool->notify_sema(tp_sema);
+	srb2::g_main_threadpool->wait_sema(tp_sema);
 	srb2::g_main_threadpool->begin_sema();
 	R_RenderViewpoint(&masks[nummasks - 1], true);
 
