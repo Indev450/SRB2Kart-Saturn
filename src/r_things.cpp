@@ -3013,4 +3013,6 @@ void R_DrawMasked(maskcount_t* masks, UINT8 nummasks)
 		R_DrawMaskedList(&heads[nummasks - 1]);
 		R_ClearDrawNodes(&heads[nummasks - 1]);
 	}
+
+	free(heads);
 }
