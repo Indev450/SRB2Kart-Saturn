@@ -15,6 +15,7 @@
 #include "doomdef.h"
 #include "fastcmp.h"
 #include "r_things.h"
+#include "r_skins.h"
 #include "r_main.h"
 #include "p_local.h"
 #include "g_game.h"

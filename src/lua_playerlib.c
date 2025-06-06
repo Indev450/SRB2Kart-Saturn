@@ -13,6 +13,7 @@
 #include "doomdef.h"
 #include "fastcmp.h"
 #include "r_main.h"
+#include "r_skins.h"
 #include "r_things.h"
 #include "p_mobj.h"
 #include "d_player.h"

@@ -15,6 +15,7 @@
 #ifndef __X_MENU__
 #define __X_MENU__
 
+#include "r_skins.h"
 #include "d_event.h"
 #include "command.h"
 #include "i_threads.h"
