@@ -412,8 +412,7 @@ boolean R_AddSingleSpriteDef(const char *sprname, spritedef_t *spritedef, UINT16
 
 	// allocate this sprite's frames
 	if (!spritedef->spriteframes)
-		spritedef->spriteframes =
-		 Z_Malloc(maxframe * sizeof (*spritedef->spriteframes), PU_STATIC, NULL);
+		spritedef->spriteframes = static_cast<spriteframe_t*>(Z_Malloc(maxframe * sizeof (*spritedef->spriteframes), PU_STATIC, NULL));
 
 	spritedef->numframes = maxframe;
 	M_Memcpy(spritedef->spriteframes, sprtemp, maxframe*sizeof (spriteframe_t));
@@ -517,7 +516,7 @@ void R_InitSprites(void)
 	if (!numsprites)
 		I_Error("R_AddSpriteDefs: no sprites in namelist\n");
 
-	sprites = Z_Calloc(numsprites * sizeof (*sprites), PU_STATIC, NULL);
+	sprites = static_cast<spritedef_t*>(Z_Calloc(numsprites * sizeof (*sprites), PU_STATIC, NULL));
 
 	// find sprites in each -file added pwad
 	for (i = 0; i < numwadfiles; i++)
@@ -550,8 +549,8 @@ static INT16 *vissprite_cliptop[MAXVISSPRITES >> VISSPRITECHUNKBITS];
 
 static void R_AllocVisSpriteChunkMemory(UINT32 chunk)
 {
-	vissprite_clipbot[chunk] = Z_Realloc(vissprite_clipbot[chunk], sizeof(INT16) * (VISSPRITESPERCHUNK * viewwidth), PU_STATIC, NULL);
-	vissprite_cliptop[chunk] = Z_Realloc(vissprite_cliptop[chunk], sizeof(INT16) * (VISSPRITESPERCHUNK * viewwidth), PU_STATIC, NULL);
+	vissprite_clipbot[chunk] = static_cast<INT16*>(Z_Realloc(vissprite_clipbot[chunk], sizeof(INT16) * (VISSPRITESPERCHUNK * viewwidth), PU_STATIC, NULL));
+	vissprite_cliptop[chunk] = static_cast<INT16*>(Z_Realloc(vissprite_cliptop[chunk], sizeof(INT16) * (VISSPRITESPERCHUNK * viewwidth), PU_STATIC, NULL));
 
 	for (unsigned i = 0; i < VISSPRITESPERCHUNK; i++)
 	{
@@ -717,7 +716,7 @@ static void R_DrawFlippedMaskedColumn(drawcolumndata_t* dc, column_t *column)
 
 		if (dc->yl <= dc->yh && dc->yh > 0 && column->length != 0)
 		{
-			dc->source = ZZ_Alloc(column->length);
+			dc->source = static_cast<UINT8*>(ZZ_Alloc(column->length));
 			dc->sourcelength = column->length;
 
 			for (s = (UINT8 *)column+2+column->length, d = dc->source; d < dc->source+column->length; --s)
@@ -755,7 +754,7 @@ static void R_DrawVisSprite(vissprite_t *vis)
 	fixed_t this_scale = vis->thingscale;
 	INT32 x1, x2;
 	INT64 overflow_test;
-	drawcolumndata_t dc = {0};
+	drawcolumndata_t dc = {};
 
 	if (!patch)
 		return;
@@ -788,22 +787,22 @@ static void R_DrawVisSprite(vissprite_t *vis)
 		// translate certain pixels to white
 		colfunc = transcolfunc;
 		if (vis->mobj->type == MT_CYBRAKDEMON)
-			dc.translation = R_GetTranslationColormap(TC_ALLWHITE, 0, GTC_CACHE);
+			dc.translation = R_GetTranslationColormap(TC_ALLWHITE, SKINCOLOR_NONE, GTC_CACHE);
 		else if (vis->mobj->type == MT_METALSONIC_BATTLE)
-			dc.translation = R_GetTranslationColormap(TC_METALSONIC, 0, GTC_CACHE);
+			dc.translation = R_GetTranslationColormap(TC_METALSONIC, SKINCOLOR_NONE, GTC_CACHE);
 		else
-			dc.translation = R_GetTranslationColormap(TC_BOSS, 0, GTC_CACHE);
+			dc.translation = R_GetTranslationColormap(TC_BOSS, SKINCOLOR_NONE, GTC_CACHE);
 	}
 	else if (vis->mobj->color && vis->transmap) // Color mapping
 	{
 		colfunc = transtransfunc;
 		dc.transmap = vis->transmap;
 		if (vis->mobj->colorized)
-			dc.translation = R_GetTranslationColormap(TC_RAINBOW, vis->mobj->color, GTC_CACHE);
+			dc.translation = R_GetTranslationColormap(TC_RAINBOW, static_cast<skincolors_t>(vis->mobj->color), GTC_CACHE);
 		else if (vis->mobj->skin && vis->mobj->sprite == SPR_PLAY) // MT_GHOST LOOKS LIKE A PLAYER SO USE THE PLAYER TRANSLATION TABLES. >_>
-			dc.translation = R_GetLocalTranslationColormap(vis->mobj->skin, vis->mobj->localskin, vis->mobj->color, GTC_CACHE, vis->mobj->skinlocal);
+			dc.translation = R_GetLocalTranslationColormap(static_cast<skin_t*>(vis->mobj->skin), static_cast<skin_t*>(vis->mobj->localskin), static_cast<skincolors_t>(vis->mobj->color), GTC_CACHE, vis->mobj->skinlocal);
 		else // Use the defaults
-			dc.translation = R_GetTranslationColormap(TC_DEFAULT, vis->mobj->color, GTC_CACHE);
+			dc.translation = R_GetTranslationColormap(TC_DEFAULT, static_cast<skincolors_t>(vis->mobj->color), GTC_CACHE);
 	}
 	else if (vis->transmap)
 	{
@@ -817,11 +816,11 @@ static void R_DrawVisSprite(vissprite_t *vis)
 
 		// New colormap stuff for skins Tails 06-07-2002
 		if (vis->mobj->colorized)
-			dc.translation = R_GetTranslationColormap(TC_RAINBOW, vis->mobj->color, GTC_CACHE);
+			dc.translation = R_GetTranslationColormap(TC_RAINBOW, static_cast<skincolors_t>(vis->mobj->color), GTC_CACHE);
 		else if (vis->mobj->skin && vis->mobj->sprite == SPR_PLAY) // This thing is a player!
-			dc.translation = R_GetLocalTranslationColormap(vis->mobj->skin, vis->mobj->localskin, vis->mobj->color, GTC_CACHE, vis->mobj->skinlocal);
+			dc.translation = R_GetLocalTranslationColormap(static_cast<skin_t*>(vis->mobj->skin), static_cast<skin_t*>(vis->mobj->localskin), static_cast<skincolors_t>(vis->mobj->color), GTC_CACHE, vis->mobj->skinlocal);
 		else // Use the defaults
-			dc.translation = R_GetTranslationColormap(TC_DEFAULT, vis->mobj->color, GTC_CACHE);
+			dc.translation = R_GetTranslationColormap(TC_DEFAULT, static_cast<skincolors_t>(vis->mobj->color), GTC_CACHE);
 	}
 	else if (vis->mobj->sprite == SPR_PLAY) // Looks like a player, but doesn't have a color? Get rid of green sonic syndrome.
 	{
@@ -944,10 +943,11 @@ static void R_DrawPrecipitationVisSprite(vissprite_t *vis)
 	patch_t *patch;
 	fixed_t this_scale = vis->thingscale;
 	INT64 overflow_test;
-	drawcolumndata_t dc = {0};
+	drawcolumndata_t dc = {};
 
 	//Fab : R_InitSprites now sets a wad lump number
 	patch = vis->patch;
+
 	if (!patch)
 		return;
 
@@ -1040,7 +1040,7 @@ static void R_SplitSprite(vissprite_t *sprite)
 		newsprite->cliptop = cliptop;
 		newsprite->clipbot = clipbot;
 
-		sprite->cut |= SC_BOTTOM;
+		sprite->cut = static_cast<spritecut_e>(sprite->cut | SC_BOTTOM);
 		sprite->gz = testheight;
 
 		newsprite->gzt = sprite->gz;
@@ -1058,7 +1058,8 @@ static void R_SplitSprite(vissprite_t *sprite)
 
 		newsprite->szt -= 8;
 
-		newsprite->cut |= SC_TOP;
+		sprite->cut = static_cast<spritecut_e>(sprite->cut | SC_TOP);
+
 		if (!(sector->lightlist[i].caster->flags & FF_NOSHADE))
 		{
 			INT32 lightnum = (*sector->lightlist[i].lightlevel >> LIGHTSEGSHIFT);
@@ -1154,7 +1155,7 @@ fixed_t R_GetShadowZ(mobj_t *thing, pslope_t **shadowslope)
 fixed_t R_GetSpriteDirectionalLighting(angle_t angle)
 {
 	// Copied from P_UpdateSegLightOffset
-	const UINT8 contrast = min(max(0, maplighting.contrast - maplighting.backlight), UINT8_MAX);
+	const UINT8 contrast = std::min(std::max(0, maplighting.contrast - maplighting.backlight), UINT8_MAX);
 	const fixed_t contrastFixed = ((fixed_t)contrast) * FRACUNIT;
 
 	fixed_t light = FRACUNIT;
@@ -1170,6 +1171,8 @@ fixed_t R_GetSpriteDirectionalLighting(angle_t angle)
 
 	return extralight;
 }
+
+#define std_R_QuickCamDist(x, y) std::max(abs(((x)>>FRACBITS) - (viewx>>FRACBITS)), abs(((y)>>FRACBITS) - (viewy>>FRACBITS)))
 
 //
 // R_ProjectSprite
@@ -1239,10 +1242,10 @@ static void R_ProjectSprite(mobj_t *thing)
 	const boolean papersprite = (thing->frame & FF_PAPERSPRITE);
 
 	if (cv_maxinterpdist.value)
-		dist = R_QuickCamDist(thing->x, thing->y);
+		dist = std_R_QuickCamDist(thing->x, thing->y);
 
 	// uncapped/interpolation
-	interpmobjstate_t interp = {0};
+	interpmobjstate_t interp = {};
 
 	// do interpolation
 	if (R_UsingFrameInterpolation() && !paused && (!cv_maxinterpdist.value || dist < cv_maxinterpdist.value))
@@ -1506,7 +1509,7 @@ static void R_ProjectSprite(mobj_t *thing)
 
 		tx2 = FixedMul(tr_x, viewsin) - FixedMul(tr_y, viewcos);
 
-		if (max(tz, tz2) < FixedMul(MINZ, this_scale)) // non-papersprite clipping is handled earlier
+		if (std::max(tz, tz2) < FixedMul(MINZ, this_scale)) // non-papersprite clipping is handled earlier
 			return;
 
 		// Needs partially clipped
@@ -1639,7 +1642,6 @@ static void R_ProjectSprite(mobj_t *thing)
 	if (oldthing->frame & FF_ABSOLUTELIGHTLEVEL)
 	{
 		const UINT8 n = R_ThingLightLevel(oldthing);
-
 		// n = uint8 aka 0 - 255, so the shift will always be 0 - LIGHTLEVELS - 1
 		lights_array = scalelight[n >> LIGHTSEGSHIFT];
 	}
@@ -1687,7 +1689,7 @@ static void R_ProjectSprite(mobj_t *thing)
 			}
 
 			// Less change in contrast in dark sectors
-			extralight = FixedMul(extralight, min(max(0, lightnum), LIGHTLEVELS - 1) * FRACUNIT / (LIGHTLEVELS - 1));
+			extralight = FixedMul(extralight, std::min(std::max(0, lightnum), LIGHTLEVELS - 1) * FRACUNIT / (LIGHTLEVELS - 1));
 
 			if (papersprite)
 			{
@@ -1699,7 +1701,7 @@ static void R_ProjectSprite(mobj_t *thing)
 				fixed_t n = FixedDiv(FixedMul(xscale, LIGHTRESOLUTIONFIX), ((MAXLIGHTSCALE-1) << LIGHTSCALESHIFT));
 
 				// Less change in contrast at further distances, to counteract DOOM diminished light
-				extralight = FixedMul(extralight, min(n, FRACUNIT));
+				extralight = FixedMul(extralight, std::min(n, FRACUNIT));
 
 				// Contrast is stronger for normal sprites, stronger than wall lighting is at the same distance
 				lightnum += FixedFloor((extralight / 4) + (FRACUNIT / 2)) / FRACUNIT;
@@ -1801,11 +1803,11 @@ static void R_ProjectSprite(mobj_t *thing)
 		vis->transmap = NULL;
 
 	if (R_ThingIsFullBright(oldthing) || oldthing->flags2 & MF2_SHADOW || thing->flags2 & MF2_SHADOW)
-		vis->cut |= SC_FULLBRIGHT;
+		vis->cut = static_cast<spritecut_e>(vis->cut | SC_FULLBRIGHT);
 	else if (R_ThingIsSemiBright(oldthing))
-		vis->cut |= SC_SEMIBRIGHT;
+		vis->cut = static_cast<spritecut_e>(vis->cut | SC_SEMIBRIGHT);
 	else if (R_ThingIsFullDark(oldthing))
-		vis->cut |= SC_FULLDARK;
+		vis->cut = static_cast<spritecut_e>(vis->cut | SC_FULLDARK);
 
 	//
 	// determine the colormap (lightlevel & special effects)
@@ -1840,7 +1842,7 @@ static void R_ProjectSprite(mobj_t *thing)
 		vis->patch = rotsprite;
 	else
 #endif
-		vis->patch = W_CachePatchNum(sprframe->lumppat[rot], PU_SPRITE);
+		vis->patch = static_cast<patch_t*>(W_CachePatchNum(sprframe->lumppat[rot], PU_SPRITE));
 
 	vis->precip = false;
 
@@ -1882,10 +1884,10 @@ static void R_ProjectPrecipitationSprite(precipmobj_t *thing)
 		return;
 
 	if (cv_maxinterpdist.value)
-		dist = R_QuickCamDist(thing->x, thing->y);
+		dist = std_R_QuickCamDist(thing->x, thing->y);
 
 	// uncapped/interpolation
-	interpmobjstate_t interp = {0};
+	interpmobjstate_t interp = {};
 
 	// okay... this is a hack, but weather isn't networked, so it should be ok
 	if (!P_PrecipThinker(thing))
@@ -2025,7 +2027,7 @@ static void R_ProjectPrecipitationSprite(precipmobj_t *thing)
 
 	//Fab: lumppat is the lump number of the patch to use, this is different
 	//     than lumpid for sprites-in-pwad : the graphics are patched
-	vis->patch = W_CachePatchNum(sprframe->lumppat[0], PU_SPRITE);
+	vis->patch = static_cast<patch_t*>(W_CachePatchNum(sprframe->lumppat[0], PU_SPRITE));
 
 	// specific translucency
 	if ((thing->blendmode != AST_COPY) && cv_translucency.value)
@@ -2489,7 +2491,7 @@ static drawnode_t *R_CreateDrawNode(drawnode_t *link)
 
 	if (node == &nodebankhead)
 	{
-		node = malloc(sizeof (*node));
+		node = static_cast<drawnode_t*>(malloc(sizeof (*node)));
 		if (!node)
 			I_Error("No more free memory to CreateDrawNode");
 	}
@@ -2577,7 +2579,7 @@ static boolean R_CheckSpriteVisible(vissprite_t *spr, INT32 x1, INT32 x2)
 		scalestep = FixedMul(scalestep, spr->spriteyscale);
 
 		if (spr->thingscale != FRACUNIT)
-			texturemid = FixedDiv(spr->texturemid, max(spr->thingscale, 1));
+			texturemid = FixedDiv(spr->texturemid, std::max(spr->thingscale, 1));
 		else
 			texturemid = spr->texturemid;
 	}
@@ -2791,7 +2793,7 @@ static void R_ClipVisSprite(vissprite_t *spr, INT32 x1, INT32 x2)
 	if (cv_spriteclip.value)
 	{
 		if (!R_CheckSpriteVisible(spr, x1, x2))
-			spr->cut |= SC_NOTVISIBLE;
+			spr->cut = static_cast<spritecut_e>(spr->cut | SC_NOTVISIBLE);
 	}
 }
 
@@ -2822,11 +2824,11 @@ void R_ClipSprites(void)
 
 		for (i = 0; i < DS_RANGES_COUNT; i++)
 		{
-			drawsegs_xranges[i].items = Z_Realloc(
+			drawsegs_xranges[i].items = static_cast<drawseg_xrange_item_t*>(Z_Realloc(
 				drawsegs_xranges[i].items,
 				drawsegs_xrange_size * sizeof(drawsegs_xranges[i].items[0]),
 				PU_STATIC, NULL
-			);
+			));
 		}
 	}
 
@@ -2864,7 +2866,7 @@ void R_ClipSprites(void)
 		if (cv_spriteclip.value
 		&& (spr->szt > vid.height || spr->sz < 0))
 		{
-			spr->cut |= SC_NOTVISIBLE;
+			spr->cut = static_cast<spritecut_e>(spr->cut | SC_NOTVISIBLE);
 			continue;
 		}
 
@@ -2949,7 +2951,7 @@ static void R_DrawMaskedList (drawnode_t* head)
 	{
 		if (r2->plane)
 		{
-			drawspandata_t ds = {0};
+			drawspandata_t ds = {};
 			next = r2->prev;
 			R_DrawSinglePlane(&ds, r2->plane, false);
 			R_DoneWithNode(r2);
@@ -2992,8 +2994,10 @@ static void R_DrawMaskedList (drawnode_t* head)
 
 void R_DrawMasked(maskcount_t* masks, UINT8 nummasks)
 {
-	drawnode_t heads[nummasks];	/**< Drawnode lists; as many as number of views/portals. */
 	UINT8 i;
+	drawnode_t *heads;	/**< Drawnode lists; as many as number of views/portals. */
+
+	heads = static_cast<drawnode_t*>(calloc(nummasks, sizeof(drawnode_t)));
 
 	for (i = 0; i < nummasks; i++)
 	{
@@ -3003,7 +3007,6 @@ void R_DrawMasked(maskcount_t* masks, UINT8 nummasks)
 		viewy = masks[i].viewy;
 		viewz = masks[i].viewz;
 		viewsector = masks[i].viewsector;
-
 
 		R_CreateDrawNodes(&masks[i], &heads[i], false);
 	}
