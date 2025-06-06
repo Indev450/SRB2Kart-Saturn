@@ -1294,11 +1294,11 @@ static void R_RenderSegLoop(drawcolumndata_t* dc)
 						bottom_w = bottom;
 
 					// Polyobject-specific hack to fix plane leaking -Red
-					if (ffloor[i].polyobj && top_w >= bottom_w) {
+					if (ffloor[i].polyobj && top_w >= bottom_w)
+					{
 						ffloor[i].plane->top[rw_x] = ffloor[i].plane->bottom[rw_x] = 0xFFFF;
-					} else
-
-					if (top_w <= bottom_w)
+					}
+					else if (top_w <= bottom_w)
 					{
 						fftop = (INT16)top_w;
 						ffbottom = (INT16)bottom_w;
@@ -1338,11 +1338,11 @@ static void R_RenderSegLoop(drawcolumndata_t* dc)
 						bottom_w = bottom;
 
 					// Polyobject-specific hack to fix plane leaking -Red
-					if (ffloor[i].polyobj && top_w >= bottom_w) {
+					if (ffloor[i].polyobj && top_w >= bottom_w)
+					{
 						ffloor[i].plane->top[rw_x] = ffloor[i].plane->bottom[rw_x] = 0xFFFF;
-					} else
-
-					if (top_w <= bottom_w)
+					}
+					else if (top_w <= bottom_w)
 					{
 						fftop = (INT16)top_w;
 						ffbottom = (INT16)bottom_w;
@@ -1356,6 +1356,7 @@ static void R_RenderSegLoop(drawcolumndata_t* dc)
 						{
 							rw_ceilingmarked = true;
 							ceilingclip[rw_x] = ffbottom;
+
 							if (yl < ffbottom)
 								yl = ffbottom;
 
@@ -1379,7 +1380,8 @@ static void R_RenderSegLoop(drawcolumndata_t* dc)
 		// Mask 4095 to guarantee this index is within bounds
 		texturecolumn = rw_offset-FixedMul(FINETANGENT(angle & 4095),rw_distance);
 
-		if (oldtexturecolumn != -1) {
+		if (oldtexturecolumn != -1)
+		{
 			rw_bottomtexturemid += FixedMul(rw_bottomtextureslide,  oldtexturecolumn-texturecolumn);
 			rw_midtexturemid    += FixedMul(rw_midtextureslide,     oldtexturecolumn-texturecolumn);
 			rw_toptexturemid    += FixedMul(rw_toptextureslide,     oldtexturecolumn-texturecolumn);
@@ -1399,8 +1401,10 @@ static void R_RenderSegLoop(drawcolumndata_t* dc)
 				pindex = MAXLIGHTSCALE-1;
 
 			dc->colormap = walllights[pindex];
+
 			if (encoremap && !(curline->linedef->flags & ML_TFERLINE))
 				dc->colormap += COLORMAP_REMAPOFFSET;
+
 			dc->x = rw_x;
 			dc->iscale = 0xffffffffu / (unsigned)rw_scale;
 
@@ -1411,6 +1415,7 @@ static void R_RenderSegLoop(drawcolumndata_t* dc)
 		if (dc->numlights)
 		{
 			lighttable_t **xwalllights;
+
 			for (i = 0; i < dc->numlights; i++)
 			{
 				INT32 lightnum;
@@ -1453,7 +1458,7 @@ static void R_RenderSegLoop(drawcolumndata_t* dc)
 				dc->yl = yl;
 				dc->yh = yh;
 				dc->texturemid = rw_midtexturemid;
-				dc->source = R_GetColumn(midtexture,texturecolumn);
+				dc->source = R_GetColumn(midtexture, texturecolumn);
 				dc->texheight = textureheight[midtexture]>>FRACBITS;
 				dc->sourcelength = dc->texheight;
 				colfunc(dc);
@@ -1470,6 +1475,7 @@ static void R_RenderSegLoop(drawcolumndata_t* dc)
 				// note: don't use min/max macros, since casting from INT32 to INT16 is involved here
 				if (markceiling && (!rw_ceilingmarked))
 					ceilingclip[rw_x] = (yl >= 0) ? ((yl > viewheight) ? (INT16)viewheight : (INT16)((INT16)yl - 1)) : -1;
+
 				if (markfloor && (!rw_floormarked))
 					floorclip[rw_x] = (yh < viewheight) ? ((yh < -1) ? -1 : (INT16)((INT16)yh + 1)) : (INT16)viewheight;
 			}
@@ -1501,7 +1507,7 @@ static void R_RenderSegLoop(drawcolumndata_t* dc)
 						dc->yl = yl;
 						dc->yh = mid;
 						dc->texturemid = rw_toptexturemid;
-						dc->source = R_GetColumn(toptexture,texturecolumn);
+						dc->source = R_GetColumn(toptexture, texturecolumn);
 						dc->texheight = textureheight[toptexture]>>FRACBITS;
 						dc->sourcelength = dc->texheight;
 						colfunc(dc);
@@ -1538,8 +1544,7 @@ static void R_RenderSegLoop(drawcolumndata_t* dc)
 						dc->yl = mid;
 						dc->yh = yh;
 						dc->texturemid = rw_bottomtexturemid;
-						dc->source = R_GetColumn(bottomtexture,
-							texturecolumn);
+						dc->source = R_GetColumn(bottomtexture, texturecolumn);
 						dc->texheight = textureheight[bottomtexture]>>FRACBITS;
 						dc->sourcelength = dc->texheight;
 						colfunc(dc);
@@ -1560,7 +1565,8 @@ static void R_RenderSegLoop(drawcolumndata_t* dc)
 			// save texturecol for backdrawing of masked mid texture
 			maskedtexturecol[rw_x] = (INT16)texturecolumn;
 
-			if (maskedtextureheight != NULL) {
+			if (maskedtextureheight != NULL)
+			{
 				maskedtextureheight[rw_x] = (!!(curline->linedef->flags & ML_DONTPEGBOTTOM) ^ !!(curline->linedef->flags & ML_EFFECT3) ?
 											max(rw_midtexturemid, rw_midtextureback) :
 											min(rw_midtexturemid, rw_midtextureback));
@@ -1572,6 +1578,7 @@ static void R_RenderSegLoop(drawcolumndata_t* dc)
 			for (i = 0; i < dc->numlights; i++)
 			{
 				dc->lightlist[i].height += dc->lightlist[i].heightstep;
+
 				if (dc->lightlist[i].flags & FF_CUTSOLIDS)
 					dc->lightlist[i].botheight += dc->lightlist[i].botheightstep;
 			}
