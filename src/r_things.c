@@ -921,10 +921,11 @@ static void R_DrawVisSprite(vissprite_t *vis)
 		// Non-paper drawing loop
 		for (dc.x = vis->x1; dc.x <= vis->x2 && (frac>>FRACBITS) < pwidth; dc.x++, frac += vis->xiscale)
 		{
-			texturecolumn = CLAMP(frac >> FRACBITS, 0, pwidth - 1);
+			//texturecolumn = CLAMP(frac >> FRACBITS, 0, pwidth - 1);
+			texturecolumn = (frac >> FRACBITS);
 			column = (column_t *)((UINT8 *)patch->columns + (patch->columnofs[texturecolumn]));
 
-			localcolfunc (&dc, column);
+			localcolfunc(&dc, column);
 		}
 	}
 
