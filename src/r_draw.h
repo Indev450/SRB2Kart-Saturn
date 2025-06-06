@@ -20,6 +20,7 @@ extern "C" {
 
 #include "r_defs.h"
 #include "r_things.h"
+#include "r_skins.h"
 
 // -------------------------------
 // COMMON STUFF FOR 8bpp AND 16bpp

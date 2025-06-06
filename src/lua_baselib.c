@@ -16,6 +16,7 @@
 #include "p_slopes.h" // P_GetZAt
 #include "z_zone.h"
 #include "r_main.h"
+#include "r_skins.h"
 #include "r_things.h"
 #include "m_random.h"
 #include "s_sound.h"
