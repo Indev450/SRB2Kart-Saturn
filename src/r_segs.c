@@ -1798,57 +1798,38 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 	if (frontsector->hasslope || (backsector && backsector->hasslope)) // Commenting this out for FOFslop. -Red
 	{
 		angle_t temp;
+		double a1, b1, c1, a2, b2, c2, det; // 1 is the seg, 2 is the view angle vector...
 
 		// left
 		temp = xtoviewangle[start]+viewangle;
 
-#define FIXED_TO_DOUBLE(x) (((double)(x)) / ((double)FRACUNIT))
-#define DOUBLE_TO_FIXED(x) (fixed_t)((x) * ((double)FRACUNIT))
+		a1 = FixedToDouble(curline->v2->y-curline->v1->y);
+		b1 = FixedToDouble(curline->v1->x-curline->v2->x);
+		c1 = a1*FixedToDouble(curline->v1->x) + b1*FixedToDouble(curline->v1->y);
 
-		{
-			// Both lines can be written in slope-intercept form, so figure out line intersection
-			double a1, b1, c1, a2, b2, c2, det; // 1 is the seg, 2 is the view angle vector...
-			///TODO: convert to fixed point
+		// Both lines can be written in slope-intercept form, so figure out line intersection
 
-			a1 = FIXED_TO_DOUBLE(curline->v2->y-curline->v1->y);
-			b1 = FIXED_TO_DOUBLE(curline->v1->x-curline->v2->x);
-			c1 = a1*FIXED_TO_DOUBLE(curline->v1->x) + b1*FIXED_TO_DOUBLE(curline->v1->y);
+		// left
+		a2 = -FixedToDouble(FINESINE(temp>>ANGLETOFINESHIFT));
+		b2 = FixedToDouble(FINECOSINE(temp>>ANGLETOFINESHIFT));
+		c2 = a2*FixedToDouble(viewx) + b2*FixedToDouble(viewy);
 
-			a2 = -FIXED_TO_DOUBLE(FINESINE(temp>>ANGLETOFINESHIFT));
-			b2 = FIXED_TO_DOUBLE(FINECOSINE(temp>>ANGLETOFINESHIFT));
-			c2 = a2*FIXED_TO_DOUBLE(viewx) + b2*FIXED_TO_DOUBLE(viewy);
+		det = a1*b2 - a2*b1;
 
-			det = a1*b2 - a2*b1;
-
-			ds_p->leftpos.x = segleft.x = DOUBLE_TO_FIXED((b2*c1 - b1*c2)/det);
-			ds_p->leftpos.y = segleft.y = DOUBLE_TO_FIXED((a1*c2 - a2*c1)/det);
-		}
+		ds_p->leftpos.x = segleft.x = DoubleToFixed((b2*c1 - b1*c2)/det);
+		ds_p->leftpos.y = segleft.y = DoubleToFixed((a1*c2 - a2*c1)/det);
 
 		// right
 		temp = xtoviewangle[stop]+viewangle;
 
-		{
-			// Both lines can be written in slope-intercept form, so figure out line intersection
-			double a1, b1, c1, a2, b2, c2, det; // 1 is the seg, 2 is the view angle vector...
-			///TODO: convert to fixed point
+		a2 = -FixedToDouble(FINESINE(temp>>ANGLETOFINESHIFT));
+		b2 = FixedToDouble(FINECOSINE(temp>>ANGLETOFINESHIFT));
+		c2 = a2*FixedToDouble(viewx) + b2*FixedToDouble(viewy);
 
-			a1 = FIXED_TO_DOUBLE(curline->v2->y-curline->v1->y);
-			b1 = FIXED_TO_DOUBLE(curline->v1->x-curline->v2->x);
-			c1 = a1*FIXED_TO_DOUBLE(curline->v1->x) + b1*FIXED_TO_DOUBLE(curline->v1->y);
+		det = a1*b2 - a2*b1;
 
-			a2 = -FIXED_TO_DOUBLE(FINESINE(temp>>ANGLETOFINESHIFT));
-			b2 = FIXED_TO_DOUBLE(FINECOSINE(temp>>ANGLETOFINESHIFT));
-			c2 = a2*FIXED_TO_DOUBLE(viewx) + b2*FIXED_TO_DOUBLE(viewy);
-
-			det = a1*b2 - a2*b1;
-
-			ds_p->rightpos.x = segright.x = DOUBLE_TO_FIXED((b2*c1 - b1*c2)/det);
-			ds_p->rightpos.y = segright.y = DOUBLE_TO_FIXED((a1*c2 - a2*c1)/det);
-		}
-
-#undef FIXED_TO_DOUBLE
-#undef DOUBLE_TO_FIXED
-
+		ds_p->rightpos.x = segright.x = DoubleToFixed((b2*c1 - b1*c2)/det);
+		ds_p->rightpos.y = segright.y = DoubleToFixed((a1*c2 - a2*c1)/det);
 	}
 
 #define SLOPEPARAMS(slope, end1, end2, normalheight) \
@@ -1908,11 +1889,14 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 	if (!backsector)
 	{
 		fixed_t texheight;
+
 		// single sided line
 		midtexture = R_GetTextureNum(sidedef->midtexture);
 		texheight = textureheight[midtexture];
+
 		// a single sided line is terminal, so it must mark ends
 		markfloor = markceiling = true;
+
 		if (linedef->flags & ML_EFFECT2)
 		{
 			if (linedef->flags & ML_DONTPEGBOTTOM)
@@ -2012,18 +1996,18 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 		if (worldlow != worldbottom
 			|| worldlowslope != worldbottomslope
 			|| backsector->f_slope != frontsector->f_slope
-		    || backsector->floorpic != frontsector->floorpic
-		    || backsector->lightlevel != frontsector->lightlevel
-		    //SoM: 3/22/2000: Check floor x and y offsets.
-		    || backsector->floor_xoffs != frontsector->floor_xoffs
-		    || backsector->floor_yoffs != frontsector->floor_yoffs
-		    || backsector->floorpic_angle != frontsector->floorpic_angle
-		    //SoM: 3/22/2000: Prevents bleeding.
-		    || frontsector->heightsec != -1
-		    || backsector->floorlightsec != frontsector->floorlightsec
-		    //SoM: 4/3/2000: Check for colormaps
-		    || frontsector->extra_colormap != backsector->extra_colormap
-		    || (frontsector->ffloors != backsector->ffloors && frontsector->tag != backsector->tag))
+			|| backsector->floorpic != frontsector->floorpic
+			|| backsector->lightlevel != frontsector->lightlevel
+			//SoM: 3/22/2000: Check floor x and y offsets.
+			|| backsector->floor_xoffs != frontsector->floor_xoffs
+			|| backsector->floor_yoffs != frontsector->floor_yoffs
+			|| backsector->floorpic_angle != frontsector->floorpic_angle
+			//SoM: 3/22/2000: Prevents bleeding.
+			|| frontsector->heightsec != -1
+			|| backsector->floorlightsec != frontsector->floorlightsec
+			//SoM: 4/3/2000: Check for colormaps
+			|| frontsector->extra_colormap != backsector->extra_colormap
+			|| (frontsector->ffloors != backsector->ffloors && frontsector->tag != backsector->tag))
 		{
 			markfloor = true;
 		}
@@ -2036,18 +2020,18 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 		if (worldhigh != worldtop
 			|| worldhighslope != worldtopslope
 			|| backsector->c_slope != frontsector->c_slope
-		    || backsector->ceilingpic != frontsector->ceilingpic
-		    || backsector->lightlevel != frontsector->lightlevel
-		    //SoM: 3/22/2000: Check floor x and y offsets.
-		    || backsector->ceiling_xoffs != frontsector->ceiling_xoffs
-		    || backsector->ceiling_yoffs != frontsector->ceiling_yoffs
-		    || backsector->ceilingpic_angle != frontsector->ceilingpic_angle
-		    //SoM: 3/22/2000: Prevents bleeding.
-		    || (frontsector->heightsec != -1 && frontsector->ceilingpic != skyflatnum)
-		    || backsector->ceilinglightsec != frontsector->ceilinglightsec
-		    //SoM: 4/3/2000: Check for colormaps
-		    || frontsector->extra_colormap != backsector->extra_colormap
-		    || (frontsector->ffloors != backsector->ffloors && frontsector->tag != backsector->tag))
+			|| backsector->ceilingpic != frontsector->ceilingpic
+			|| backsector->lightlevel != frontsector->lightlevel
+			//SoM: 3/22/2000: Check floor x and y offsets.
+			|| backsector->ceiling_xoffs != frontsector->ceiling_xoffs
+			|| backsector->ceiling_yoffs != frontsector->ceiling_yoffs
+			|| backsector->ceilingpic_angle != frontsector->ceilingpic_angle
+			//SoM: 3/22/2000: Prevents bleeding.
+			|| (frontsector->heightsec != -1 && frontsector->ceilingpic != skyflatnum)
+			|| backsector->ceilinglightsec != frontsector->ceilinglightsec
+			//SoM: 4/3/2000: Check for colormaps
+			|| frontsector->extra_colormap != backsector->extra_colormap
+			|| (frontsector->ffloors != backsector->ffloors && frontsector->tag != backsector->tag))
 		{
 			markceiling = true;
 		}
@@ -2058,7 +2042,7 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 		}
 
 		if (backsector->ceilingheight <= frontsector->floorheight ||
-		    backsector->floorheight >= frontsector->ceilingheight)
+			backsector->floorheight >= frontsector->ceilingheight)
 		{
 			// closed door
 			markceiling = markfloor = true;
@@ -2282,9 +2266,9 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 
 					// Oy vey.
 					if (      ((P_GetFFloorTopZAt   (rover, segleft .x, segleft .y)) <= worldbottom      + viewz
-					        && (P_GetFFloorTopZAt   (rover, segright.x, segright.y)) <= worldbottomslope + viewz)
-					        ||((P_GetFFloorBottomZAt(rover, segleft .x, segleft .y)) >= worldtop         + viewz
-					        && (P_GetFFloorBottomZAt(rover, segright.x, segright.y)) >= worldtopslope    + viewz))
+							&& (P_GetFFloorTopZAt   (rover, segright.x, segright.y)) <= worldbottomslope + viewz)
+							||((P_GetFFloorBottomZAt(rover, segleft .x, segleft .y)) >= worldtop         + viewz
+							&& (P_GetFFloorBottomZAt(rover, segright.x, segright.y)) >= worldtopslope    + viewz))
 						continue;
 
 					ds_p->thicksides[i] = rover;
@@ -2302,15 +2286,15 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 
 					// Oy vey.
 					if (      (P_GetFFloorTopZAt   (rover, segleft .x, segleft .y) <= worldbottom      + viewz
-					        && P_GetFFloorTopZAt   (rover, segright.x, segright.y) <= worldbottomslope + viewz)
-					        ||(P_GetFFloorBottomZAt(rover, segleft .x, segleft .y) >= worldtop         + viewz
-					        && P_GetFFloorBottomZAt(rover, segright.x, segright.y) >= worldtopslope    + viewz))
+							&& P_GetFFloorTopZAt   (rover, segright.x, segright.y) <= worldbottomslope + viewz)
+							||(P_GetFFloorBottomZAt(rover, segleft .x, segleft .y) >= worldtop         + viewz
+							&& P_GetFFloorBottomZAt(rover, segright.x, segright.y) >= worldtopslope    + viewz))
 						continue;
 
 					if (      (P_GetFFloorTopZAt   (rover, segleft .x, segleft .y) <= worldlow       + viewz
-					        && P_GetFFloorTopZAt   (rover, segright.x, segright.y) <= worldlowslope  + viewz)
-					        ||(P_GetFFloorBottomZAt(rover, segleft .x, segleft .y) >= worldhigh      + viewz
-					        && P_GetFFloorBottomZAt(rover, segright.x, segright.y) >= worldhighslope + viewz))
+							&& P_GetFFloorTopZAt   (rover, segright.x, segright.y) <= worldlowslope  + viewz)
+							||(P_GetFFloorBottomZAt(rover, segleft .x, segleft .y) >= worldhigh      + viewz
+							&& P_GetFFloorBottomZAt(rover, segright.x, segright.y) >= worldhighslope + viewz))
 						continue;
 
 					ds_p->thicksides[i] = rover;
@@ -2626,9 +2610,9 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 					planevistest = P_GetFFloorBottomZAt(rover, viewx, viewy);
 
 					if ((roverleft>>4 <= worldhigh || roverright>>4 <= worldhighslope) &&
-					    (roverleft>>4 >= worldlow || roverright>>4 >= worldlowslope) &&
-					    ((viewz < planevistest && !(rover->flags & FF_INVERTPLANES)) ||
-					     (viewz > planevistest && (rover->flags & FF_BOTHPLANES))))
+						(roverleft>>4 >= worldlow || roverright>>4 >= worldlowslope) &&
+						((viewz < planevistest && !(rover->flags & FF_INVERTPLANES)) ||
+						 (viewz > planevistest && (rover->flags & FF_BOTHPLANES))))
 					{
 						//ffloor[i].slope = *rover->b_slope;
 						ffloor[i].b_pos = roverleft;
@@ -2649,9 +2633,9 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 					planevistest = P_GetFFloorTopZAt(rover, viewx, viewy);
 
 					if ((roverleft>>4 <= worldhigh || roverright>>4 <= worldhighslope) &&
-					    (roverleft>>4 >= worldlow || roverright>>4 >= worldlowslope) &&
-					    ((viewz > planevistest && !(rover->flags & FF_INVERTPLANES)) ||
-					     (viewz < planevistest && (rover->flags & FF_BOTHPLANES))))
+						(roverleft>>4 >= worldlow || roverright>>4 >= worldlowslope) &&
+						((viewz > planevistest && !(rover->flags & FF_INVERTPLANES)) ||
+						 (viewz < planevistest && (rover->flags & FF_BOTHPLANES))))
 					{
 						//ffloor[i].slope = *rover->t_slope;
 						ffloor[i].b_pos = roverleft;
@@ -2683,9 +2667,9 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 					planevistest = P_GetFFloorBottomZAt(rover, viewx, viewy);
 
 					if ((roverleft>>4 <= worldhigh || roverright>>4 <= worldhighslope) &&
-					    (roverleft>>4 >= worldlow || roverright>>4 >= worldlowslope) &&
-					    ((viewz < planevistest && !(rover->flags & FF_INVERTPLANES)) ||
-					     (viewz > planevistest && (rover->flags & FF_BOTHPLANES))))
+						(roverleft>>4 >= worldlow || roverright>>4 >= worldlowslope) &&
+						((viewz < planevistest && !(rover->flags & FF_INVERTPLANES)) ||
+						 (viewz > planevistest && (rover->flags & FF_BOTHPLANES))))
 					{
 						//ffloor[i].slope = *rover->b_slope;
 						ffloor[i].b_pos = roverleft;
@@ -2706,9 +2690,9 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 					planevistest = P_GetFFloorTopZAt(rover, viewx, viewy);
 
 					if ((roverleft>>4 <= worldhigh || roverright>>4 <= worldhighslope) &&
-					    (roverleft>>4 >= worldlow || roverright>>4 >= worldlowslope) &&
-					    ((viewz > planevistest && !(rover->flags & FF_INVERTPLANES)) ||
-					     (viewz < planevistest && (rover->flags & FF_BOTHPLANES))))
+						(roverleft>>4 >= worldlow || roverright>>4 >= worldlowslope) &&
+						((viewz > planevistest && !(rover->flags & FF_INVERTPLANES)) ||
+						 (viewz < planevistest && (rover->flags & FF_BOTHPLANES))))
 					{
 						//ffloor[i].slope = *rover->t_slope;
 						ffloor[i].b_pos = roverleft;
