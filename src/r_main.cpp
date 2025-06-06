@@ -1006,7 +1006,6 @@ static void R_SetFov(fixed_t playerfov)
 	R_SetSkyScale();
 }
 
-
 //
 // R_Init
 //
@@ -1388,8 +1387,6 @@ void R_RenderPlayerView(player_t *player)
 
 	Portal_InitList();
 
-	srb2::ThreadPool::Sema tp_sema;
-
 	PS_START_TIMING(ps_skyboxtime);
 	if (skybox && skyVisible)
 	{
@@ -1402,7 +1399,6 @@ void R_RenderPlayerView(player_t *player)
 #ifdef FLOORSPLATS
 		R_ClearVisibleFloorSplats();
 #endif
-		srb2::g_main_threadpool->begin_sema();
 		R_RenderViewpoint(&masks[nummasks - 1], false);
 
 		R_ClipSprites();
@@ -1411,9 +1407,6 @@ void R_RenderPlayerView(player_t *player)
 		R_DrawVisibleFloorSplats();
 #endif
 		// well sometimes synchronization is off and may result in some visual glitching, oh well
-		tp_sema = srb2::g_main_threadpool->end_sema();
-		srb2::g_main_threadpool->notify_sema(tp_sema);
-		srb2::g_main_threadpool->wait_sema(tp_sema);
 		R_DrawMasked(masks, nummasks);
 	}
 	PS_STOP_TIMING(ps_skyboxtime);
@@ -1450,10 +1443,6 @@ void R_RenderPlayerView(player_t *player)
 
 	ps_numbspcalls.value.i = ps_numpolyobjects.value.i = ps_numdrawnodes.value.i = 0;
 	PS_START_TIMING(ps_bsptime);
-	tp_sema = srb2::g_main_threadpool->end_sema();
-	srb2::g_main_threadpool->notify_sema(tp_sema);
-	srb2::g_main_threadpool->wait_sema(tp_sema);
-	srb2::g_main_threadpool->begin_sema();
 	R_RenderViewpoint(&masks[nummasks - 1], true);
 
 	PS_STOP_TIMING(ps_bsptime);
@@ -1505,9 +1494,6 @@ void R_RenderPlayerView(player_t *player)
 
 	PS_START_TIMING(ps_sw_planetime);
 	R_DrawPlanes();
-	tp_sema = srb2::g_main_threadpool->end_sema();
-	srb2::g_main_threadpool->notify_sema(tp_sema);
-	srb2::g_main_threadpool->wait_sema(tp_sema);
 	PS_STOP_TIMING(ps_sw_planetime);
 #ifdef FLOORSPLATS
 	R_DrawVisibleFloorSplats();

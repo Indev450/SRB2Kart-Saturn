@@ -13,6 +13,8 @@
 ///        while maintaining a per column clipping list only.
 ///        Moreover, the sky areas have to be determined.
 
+#include <algorithm>
+
 #include "doomdef.h"
 #include "console.h"
 #include "g_game.h"
@@ -29,8 +31,8 @@
 #include "p_tick.h"
 #include "r_fps.h"
 #include "r_portal.h"
+
 #include "core/thread_pool.h"
-#include <algorithm>
 
 static void R_SetSlopePlaneVectors(drawspandata_t* ds, visplane_t *pl, INT32 y, fixed_t xoff, fixed_t yoff, float fudge);
 static void R_SetTiltedSpan(drawspandata_t* ds, INT32 span);
@@ -769,11 +771,13 @@ void R_DrawPlanes(void)
 	visplane_t *pl;
 	INT32 i;
 	drawspandata_t ds = {};
+	srb2::ThreadPool::Sema tp_sema;
 
 	R_UpdatePlaneRipple(&ds);
 
 	for (i = 0; i < MAXVISPLANES; i++, pl++)
 	{
+		srb2::g_main_threadpool->begin_sema();
 		for (pl = visplanes[i]; pl; pl = pl->next)
 		{
 			if (pl->ffloor != NULL || pl->polyobj != NULL)
@@ -781,6 +785,9 @@ void R_DrawPlanes(void)
 
 			R_DrawSinglePlane(&ds, pl, cv_parallelsoftware.value);
 		}
+		tp_sema = srb2::g_main_threadpool->end_sema();
+		srb2::g_main_threadpool->notify_sema(tp_sema);
+		srb2::g_main_threadpool->wait_sema(tp_sema);
 	}
 }
 
