@@ -389,19 +389,15 @@ void R_RenderMaskedSegRange(drawseg_t *drawseg, INT32 x1, INT32 x2)
 
 	// Setup lighting based on the presence/lack-of 3D floors.
 	dc->numlights = 0;
+
 	if (frontsector->numlights)
 	{
 		dc->numlights = frontsector->numlights;
+
 		if (dc->numlights >= dc->maxlights)
 		{
-			r_lightlist_t* old_lightlist = dc->lightlist;
-			INT32 old_maxlights = dc->maxlights;
 			dc->maxlights = dc->numlights;
-			dc->lightlist = (Z_Frame_Alloc(sizeof (*dc->lightlist) * dc->maxlights));
-			if (old_lightlist != NULL)
-			{
-				M_Memcpy(dc->lightlist, old_lightlist, sizeof (*dc->lightlist) * old_maxlights);
-			}
+			dc->lightlist = Z_Realloc(dc->lightlist, sizeof (*dc->lightlist) * dc->maxlights, PU_STATIC, NULL);
 		}
 
 		for (i = 0; i < dc->numlights; i++)
@@ -765,16 +761,11 @@ void R_RenderThickSideRange(drawseg_t *drawseg, INT32 x1, INT32 x2, ffloor_t *pf
 	if (frontsector->numlights)
 	{
 		dc->numlights = frontsector->numlights;
-		if (dc->numlights > dc->maxlights)
+
+		if (dc->numlights >= dc->maxlights)
 		{
-			r_lightlist_t* old_lightlist = dc->lightlist;
-			INT32 old_maxlights = dc->maxlights;
 			dc->maxlights = dc->numlights;
-			dc->lightlist = (Z_Frame_Alloc(sizeof (*dc->lightlist) * dc->maxlights));
-			if (old_lightlist != NULL)
-			{
-				M_Memcpy(dc->lightlist, old_lightlist, sizeof (*dc->lightlist) * old_maxlights);
-			}
+			dc->lightlist = Z_Realloc(dc->lightlist, sizeof (*dc->lightlist) * dc->maxlights, PU_STATIC, NULL);
 		}
 
 		for (i = p = 0; i < dc->numlights; i++)
@@ -2491,7 +2482,12 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 	{
 		dc.numlights = frontsector->numlights;
 		dc.maxlights = dc.numlights;
-		dc.lightlist = (Z_Frame_Alloc(sizeof(*dc.lightlist) * dc.maxlights));
+
+		if (dc.numlights >= dc.maxlights)
+		{
+			dc.maxlights = dc.numlights;
+			dc.lightlist = Z_Realloc(dc.lightlist, sizeof (*dc.lightlist) * dc.maxlights, PU_STATIC, NULL);
+		}
 
 		for (i = p = 0; i < dc.numlights; i++)
 		{
