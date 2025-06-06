@@ -149,48 +149,50 @@ void R_DrawTranslucentSpan(drawspandata_t* ds)
 	colormap = ds->colormap;
 	dest = R_Address(ds->x1, ds->y);
 
+	register const UINT8 *tranmap = ds->transmap;
+
 	while (count >= 8)
 	{
 		// SoM: Why didn't I see this earlier? the spot variable is a waste now because we don't
 		// have the uber complicated math to calculate it now, so that was a memory write we didn't
 		// need!
 		bit = (((UINT32)yposition >> ds->nflatyshift) & ds->nflatmask) | ((UINT32)xposition >> ds->nflatxshift);
-		dest[0] = *(ds->transmap + (colormap[source[bit]] << 8) + dest[0]);
+		dest[0] = *(tranmap + (colormap[source[bit]] << 8) + dest[0]);
 		xposition += xstep;
 		yposition += ystep;
 
 		bit = (((UINT32)yposition >> ds->nflatyshift) & ds->nflatmask) | ((UINT32)xposition >> ds->nflatxshift);
-		dest[1] = *(ds->transmap + (colormap[source[bit]] << 8) + dest[1]);
+		dest[1] = *(tranmap + (colormap[source[bit]] << 8) + dest[1]);
 		xposition += xstep;
 		yposition += ystep;
 
 		bit = (((UINT32)yposition >> ds->nflatyshift) & ds->nflatmask) | ((UINT32)xposition >> ds->nflatxshift);
-		dest[2] = *(ds->transmap + (colormap[source[bit]] << 8) + dest[2]);
+		dest[2] = *(tranmap + (colormap[source[bit]] << 8) + dest[2]);
 		xposition += xstep;
 		yposition += ystep;
 
 		bit = (((UINT32)yposition >> ds->nflatyshift) & ds->nflatmask) | ((UINT32)xposition >> ds->nflatxshift);
-		dest[3] = *(ds->transmap + (colormap[source[bit]] << 8) + dest[3]);
+		dest[3] = *(tranmap + (colormap[source[bit]] << 8) + dest[3]);
 		xposition += xstep;
 		yposition += ystep;
 
 		bit = (((UINT32)yposition >> ds->nflatyshift) & ds->nflatmask) | ((UINT32)xposition >> ds->nflatxshift);
-		dest[4] = *(ds->transmap + (colormap[source[bit]] << 8) + dest[4]);
+		dest[4] = *(tranmap + (colormap[source[bit]] << 8) + dest[4]);
 		xposition += xstep;
 		yposition += ystep;
 
 		bit = (((UINT32)yposition >> ds->nflatyshift) & ds->nflatmask) | ((UINT32)xposition >> ds->nflatxshift);
-		dest[5] = *(ds->transmap + (colormap[source[bit]] << 8) + dest[5]);
+		dest[5] = *(tranmap + (colormap[source[bit]] << 8) + dest[5]);
 		xposition += xstep;
 		yposition += ystep;
 
 		bit = (((UINT32)yposition >> ds->nflatyshift) & ds->nflatmask) | ((UINT32)xposition >> ds->nflatxshift);
-		dest[6] = *(ds->transmap + (colormap[source[bit]] << 8) + dest[6]);
+		dest[6] = *(tranmap + (colormap[source[bit]] << 8) + dest[6]);
 		xposition += xstep;
 		yposition += ystep;
 
 		bit = (((UINT32)yposition >> ds->nflatyshift) & ds->nflatmask) | ((UINT32)xposition >> ds->nflatxshift);
-		dest[7] = *(ds->transmap + (colormap[source[bit]] << 8) + dest[7]);
+		dest[7] = *(tranmap + (colormap[source[bit]] << 8) + dest[7]);
 		xposition += xstep;
 		yposition += ystep;
 
@@ -200,7 +202,7 @@ void R_DrawTranslucentSpan(drawspandata_t* ds)
 	while (count-- && dest <= deststop)
 	{
 		bit = (((UINT32)yposition >> ds->nflatyshift) & ds->nflatmask) | ((UINT32)xposition >> ds->nflatxshift);
-		*dest = *(ds->transmap + (colormap[source[bit]] << 8) + *dest);
+		*dest = *(tranmap + (colormap[source[bit]] << 8) + *dest);
 		dest++;
 		xposition += xstep;
 		yposition += ystep;
@@ -237,48 +239,50 @@ void R_DrawTranslucentWaterSpan(drawspandata_t* ds)
 	dsrc = vid.screens[1] + (ds->y+ds->bgofs)*vid.width + ds->x1;
 	count = ds->x2 - ds->x1 + 1;
 
+	register const UINT8 *tranmap = ds->transmap;
+
 	while (count >= 8)
 	{
 		// SoM: Why didn't I see this earlier? the spot variable is a waste now because we don't
 		// have the uber complicated math to calculate it now, so that was a memory write we didn't
 		// need!
 		bit = ((yposition >> ds->nflatyshift) & ds->nflatmask) | (xposition >> ds->nflatxshift);
-		dest[0] = colormap[*(ds->transmap + (source[bit] << 8) + *dsrc++)];
+		dest[0] = colormap[*(tranmap + (source[bit] << 8) + *dsrc++)];
 		xposition += xstep;
 		yposition += ystep;
 
 		bit = ((yposition >> ds->nflatyshift) & ds->nflatmask) | (xposition >> ds->nflatxshift);
-		dest[1] = colormap[*(ds->transmap + (source[bit] << 8) + *dsrc++)];
+		dest[1] = colormap[*(tranmap + (source[bit] << 8) + *dsrc++)];
 		xposition += xstep;
 		yposition += ystep;
 
 		bit = ((yposition >> ds->nflatyshift) & ds->nflatmask) | (xposition >> ds->nflatxshift);
-		dest[2] = colormap[*(ds->transmap + (source[bit] << 8) + *dsrc++)];
+		dest[2] = colormap[*(tranmap + (source[bit] << 8) + *dsrc++)];
 		xposition += xstep;
 		yposition += ystep;
 
 		bit = ((yposition >> ds->nflatyshift) & ds->nflatmask) | (xposition >> ds->nflatxshift);
-		dest[3] = colormap[*(ds->transmap + (source[bit] << 8) + *dsrc++)];
+		dest[3] = colormap[*(tranmap + (source[bit] << 8) + *dsrc++)];
 		xposition += xstep;
 		yposition += ystep;
 
 		bit = ((yposition >> ds->nflatyshift) & ds->nflatmask) | (xposition >> ds->nflatxshift);
-		dest[4] = colormap[*(ds->transmap + (source[bit] << 8) + *dsrc++)];
+		dest[4] = colormap[*(tranmap + (source[bit] << 8) + *dsrc++)];
 		xposition += xstep;
 		yposition += ystep;
 
 		bit = ((yposition >> ds->nflatyshift) & ds->nflatmask) | (xposition >> ds->nflatxshift);
-		dest[5] = colormap[*(ds->transmap + (source[bit] << 8) + *dsrc++)];
+		dest[5] = colormap[*(tranmap + (source[bit] << 8) + *dsrc++)];
 		xposition += xstep;
 		yposition += ystep;
 
 		bit = ((yposition >> ds->nflatyshift) & ds->nflatmask) | (xposition >> ds->nflatxshift);
-		dest[6] = colormap[*(ds->transmap + (source[bit] << 8) + *dsrc++)];
+		dest[6] = colormap[*(tranmap + (source[bit] << 8) + *dsrc++)];
 		xposition += xstep;
 		yposition += ystep;
 
 		bit = ((yposition >> ds->nflatyshift) & ds->nflatmask) | (xposition >> ds->nflatxshift);
-		dest[7] = colormap[*(ds->transmap + (source[bit] << 8) + *dsrc++)];
+		dest[7] = colormap[*(tranmap + (source[bit] << 8) + *dsrc++)];
 		xposition += xstep;
 		yposition += ystep;
 
@@ -288,7 +292,7 @@ void R_DrawTranslucentWaterSpan(drawspandata_t* ds)
 	while (count--)
 	{
 		bit = ((yposition >> ds->nflatyshift) & ds->nflatmask) | (xposition >> ds->nflatxshift);
-		*dest++ = colormap[*(ds->transmap + (source[bit] << 8) + *dsrc++)];
+		*dest++ = colormap[*(tranmap + (source[bit] << 8) + *dsrc++)];
 
 		xposition += xstep;
 		yposition += ystep;
