@@ -913,7 +913,7 @@ static void R_DrawVisSprite(vissprite_t *vis)
 
 			column = (column_t *)((UINT8 *)patch->columns + (patch->columnofs[texturecolumn]));
 
-			localcolfunc (&dc, column);
+			localcolfunc(&dc, column);
 		}
 	}
 	else
@@ -1207,8 +1207,6 @@ static void R_ProjectSprite(mobj_t *thing)
 	fixed_t offset, offset2;
 	fixed_t paperoffset = 0, paperdistance = 0; angle_t centerangle = 0;
 
-	INT32 lightnum;
-
 	//SoM: 3/17/2000
 	fixed_t gz, gzt;
 	INT32 heightsec, phs;
@@ -1229,7 +1227,7 @@ static void R_ProjectSprite(mobj_t *thing)
 	angle_t sliptiderollangle = 0;
 #endif
 
-	if (P_MobjWasRemoved(thing) || thing->subsector == NULL)
+	if (!thing || thing->subsector == NULL)
 		return;
 
 	mobj_t *oldthing = thing;
@@ -1273,7 +1271,7 @@ static void R_ProjectSprite(mobj_t *thing)
 	tx = FixedMul(tr_x, viewsin) - FixedMul(tr_y, viewcos); // sideways distance
 
 	// too far off the side?
-	if (!papersprite && abs(tx) > tz<<2) // papersprite clipping is handled later
+	if (!papersprite && abs(tx) > (INT64)FixedMul(tz, fovtan)<<2) // papersprite clipping is handled later
 		return;
 
 	// aspect ratio stuff
@@ -1524,7 +1522,7 @@ static void R_ProjectSprite(mobj_t *thing)
 			tz2 = FixedMul(MINZ, this_scale);
 		}
 
-		if (tx2 < -(FixedMul(tz2, fovtan)<<2) || tx > FixedMul(tz, fovtan)<<2) // too far off the side?
+		if ((tx2 / 4) < -(FixedMul(tz2, fovtan)) || (tx / 4) > FixedMul(tz, fovtan)) // too far off the side?
 			return;
 
 		yscale = FixedDiv(projectiony, tz);
@@ -1550,7 +1548,7 @@ static void R_ProjectSprite(mobj_t *thing)
 
 		range++; // fencepost problem
 
-		if (range > 32767)
+		if (range > INT16_MAX)
 		{
 			// If the range happens to be too large for fixed_t,
 			// abort the draw to avoid xscale becoming negative due to arithmetic overflow.
@@ -1574,14 +1572,14 @@ static void R_ProjectSprite(mobj_t *thing)
 		scalestep = 0;
 		yscale = sortscale;
 		tx += offset;
-		x1 = (centerxfrac + FixedMul(tx,xscale))>>FRACBITS;
+		x1 = centerx + (FixedMul(tx,xscale) / FRACUNIT);
 
 		// off the right side?
 		if (x1 > viewwidth)
 			return;
 
 		tx += offset2;
-		x2 = ((centerxfrac + FixedMul(tx,xscale))>>FRACBITS); x2--;
+		x2 = (centerx + (FixedMul(tx,xscale) / FRACUNIT)) - 1;
 
 		// off the left side
 		if (x2 < 0)
@@ -1598,13 +1596,13 @@ static void R_ProjectSprite(mobj_t *thing)
 			return;
 	}
 
+	// Determine the blendmode and translucency value
 	INT32 blendmode;
 	if (oldthing->frame & FF_BLENDMASK)
 		blendmode = ((oldthing->frame & FF_BLENDMASK) >> FF_BLENDSHIFT) + 1;
 	else
 		blendmode = oldthing->blendmode;
 
-	// Determine the translucency value.
 	if (oldthing->flags2 & MF2_SHADOW || thing->flags2 & MF2_SHADOW) // actually only the player should use this (temporary invisibility)
 		trans = tr_trans80; // because now the translucency is set through FF_TRANSMASK
 	else if (oldthing->frame & FF_TRANSMASK)
@@ -1646,10 +1644,13 @@ static void R_ProjectSprite(mobj_t *thing)
 	}
 	else
 	{
+		INT32 lightnum;
+
 		if (thing->subsector->sector->numlights)
 		{
 			light = thing->subsector->sector->numlights - 1;
 
+			// R_GetPlaneLight won't work on sloped lights!
 			for (lightnum = 1; lightnum < thing->subsector->sector->numlights; lightnum++)
 			{
 				fixed_t h = P_GetLightZAt(&thing->subsector->sector->lightlist[lightnum], interp.x, interp.y);
@@ -1670,7 +1671,7 @@ static void R_ProjectSprite(mobj_t *thing)
 
 		lightnum = (lightnum + R_ThingLightLevel(thing)) >> LIGHTSEGSHIFT;
 
-		if (maplighting.directional == true && P_SectorUsesDirectionalLighting(thing->subsector->sector))
+		if (maplighting.directional && P_SectorUsesDirectionalLighting(thing->subsector->sector))
 		{
 			fixed_t extralight = R_GetSpriteDirectionalLighting(papersprite
 					? interp.angle + (ang >= ANGLE_180 ? -ANGLE_90 : ANGLE_90)
@@ -1713,23 +1714,20 @@ static void R_ProjectSprite(mobj_t *thing)
 	}
 
 	heightsec = thing->subsector->sector->heightsec;
-	if (viewplayer->mo && viewplayer->mo->subsector)
+	if (viewplayer && viewplayer->mo && viewplayer->mo->subsector)
 		phs = viewplayer->mo->subsector->sector->heightsec;
 	else
 		phs = -1;
 
 	if (heightsec != -1 && phs != -1) // only clip things which are in special sectors
 	{
-		fixed_t top = gzt;
-		fixed_t bottom = interp.z;
-
 		if (viewz < sectors[phs].floorheight ?
-			bottom >= sectors[heightsec].floorheight :
-			top < sectors[heightsec].floorheight)
+			interp.z >= sectors[heightsec].floorheight :
+			gzt < sectors[heightsec].floorheight)
 			return;
 		if (viewz > sectors[phs].ceilingheight ?
-			top < sectors[heightsec].ceilingheight && viewz >= sectors[heightsec].ceilingheight :
-			bottom >= sectors[heightsec].ceilingheight)
+			gzt < sectors[heightsec].ceilingheight && viewz >= sectors[heightsec].ceilingheight :
+			interp.z >= sectors[heightsec].ceilingheight)
 			return;
 	}
 
