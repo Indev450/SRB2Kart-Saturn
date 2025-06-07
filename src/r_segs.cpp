@@ -1863,6 +1863,14 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 		worldlow -= viewz;
 		worldlowslope -= viewz;
 
+		if (frontsector->ceilingpic != skyflatnum
+			&& backsector->ceilingpic == skyflatnum)
+		{
+			if ((worldhigh <= worldtop && worldhighslope <= worldtopslope) // Assuming ESLOPE is always on with my changes
+				&& (worldhigh != worldtop || worldhighslope != worldtopslope))
+					worldtop = worldhigh;
+		}
+
 		// hack to allow height changes in outdoor areas
 		// This is what gets rid of the upper textures if there should be sky
 		if (frontsector->ceilingpic == skyflatnum
