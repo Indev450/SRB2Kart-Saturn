@@ -581,39 +581,19 @@ visplane_t *R_CheckPlane(visplane_t *pl, INT32 start, INT32 stop)
 //
 // R_ExpandPlane
 //
-// This function basically expands the visplane or I_Errors.
+// This function basically expands the visplane.
 // The reason for this is that when creating 3D floor planes, there is no
 // need to create new ones with R_CheckPlane, because 3D floor planes
 // are created by subsector and there is no way a subsector can graphically
 // overlap.
 void R_ExpandPlane(visplane_t *pl, INT32 start, INT32 stop)
 {
-	INT32 unionl, unionh;
-//	INT32 x;
-
 	// Don't expand polyobject planes here - we do that on our own.
 	if (pl->polyobj)
 		return;
 
-	if (start < pl->minx)
-	{
-		unionl = start;
-	}
-	else
-	{
-		unionl = pl->minx;
-	}
-
-	if (stop > pl->maxx)
-	{
-		unionh = stop;
-	}
-	else
-	{
-		unionh = pl->maxx;
-	}
-
-	pl->minx = unionl, pl->maxx = unionh;
+	if (pl->minx > start) pl->minx = start;
+	if (pl->maxx < stop)  pl->maxx = stop;
 }
 
 //
