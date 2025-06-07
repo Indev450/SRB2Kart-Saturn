@@ -888,6 +888,8 @@ void R_SetViewSize(void)
 	setsizeneeded = true;
 }
 
+static void R_SetupViewBuffers(void);
+
 //
 // R_ExecuteSetViewSize
 //
@@ -922,9 +924,7 @@ void R_ExecuteSetViewSize(void)
 	centerxfrac = centerx<<FRACBITS;
 	centeryfrac = centery<<FRACBITS;
 
-	R_InitViewBuffer(viewwidth, viewheight);
-
-	R_SetFov(cv_fov.value); // shit dies if we dont call it here
+	R_SetupViewBuffers();
 
 	// why did we calc all the software crap?
 #ifdef HWRENDER
@@ -981,29 +981,48 @@ fixed_t R_GetPlayerFov(player_t *player)
 	return std::max(MINFOV*FRACUNIT, std::min(fov, MAXFOV*FRACUNIT));
 }
 
-static void R_SetFov(fixed_t playerfov)
+static void R_CalcFov(fixed_t playerfov)
 {
 	angle_t fov = FixedAngle(playerfov/2) + ANGLE_90;
 	fovtan = FixedMul(FINETANGENT(fov >> ANGLETOFINESHIFT), viewmorph.zoomneeded);
 	if (splitscreen == 1) // Splitscreen FOV should be adjusted to maintain expected vertical view
 		fovtan = 17*fovtan/10;
 
-	// this is only used for planes rendering in software mode
-	INT32 j = viewheight*16;
-
-	for (INT32 i = 0; i < j; i++)
-	{
-		fixed_t dy = (i - viewheight*8)<<FRACBITS;
-		dy = FixedMul(abs(dy), fovtan);
-		yslopetab[i] = FixedDiv(centerx*FRACUNIT, dy);
-	}
-
 	projection = projectiony = FixedDiv(centerxfrac, fovtan);
+}
 
+static void R_InitViewMapping(void)
+{
 	R_InitTextureMapping();
+
+	if (rendermode == render_soft)
+	{
+		// this is only used for planes rendering in software mode
+		INT32 j = viewheight*16;
+
+		for (INT32 i = 0; i < j; i++)
+		{
+			fixed_t dy = (i - viewheight*8)<<FRACBITS;
+			dy = FixedMul(abs(dy), fovtan);
+			yslopetab[i] = FixedDiv(centerx*FRACUNIT, dy);
+		}
+	}
 
 	// setup sky scaling
 	R_SetSkyScale();
+}
+
+static void R_SetupViewBuffers(void)
+{
+	R_CalcFov(cv_fov.value);
+	R_InitViewBuffer(viewwidth, viewheight);
+	R_InitViewMapping();
+}
+
+static void R_SetFov(fixed_t playerfov)
+{
+	R_CalcFov(playerfov);
+	R_InitViewMapping();
 }
 
 //
