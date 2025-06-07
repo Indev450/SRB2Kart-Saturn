@@ -268,13 +268,14 @@ opts+=$(debug_opts)
 
 opts+=$(foreach v,$(passthru_opts),$(if $($(v)),-D$(v)))
 
-opts+=$(WFLAGS) $(CPPFLAGS) $(CFLAGS)
+opts+=$(CPPFLAGS) $(CFLAGS)
 libs+=$(LDFLAGS) -lstdc++ -lpthread
 asflags:=$(ASFLAGS) -x assembler-with-cpp
 
-cxxopts:=$(opts)
-cxxopts+=-std=c++17
-cxxopts+=$(CXXFLAGS)
+cxxopts:=$(opts) $(CXXFLAGS)
+
+# pls dont pass the warning flags to ceepeepee
+opts+=$(WFLAGS)
 
 cc=$(CC)
 cxx=$(CXX)
