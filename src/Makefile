@@ -378,19 +378,6 @@ endif
 	$(.)$(cc) -MM -MF $$@ -MT $(objdir)/$$*.o $(2) $$<
 endef
 
-# dependency recipe template (C++)
-# 1: source file suffix
-# 2: extra flags to gcc
-define _recipecxx =
-$(depdir)/%.d : %.$(1) | $$$$(@D)/
-ifndef WINDOWSHELL
-ifdef Echo_name
-	@printf '%-20.20s\r' $$<
-endif
-endif
-	$(.)$(cxx) -MM -MF $$@ -MT $(objdir)/$$*.o $(2) $$<
-endef
-
 $(eval $(call _recipe,c))
 $(eval $(call _recipe,cpp))
 $(eval $(call _recipe,s,$(asflags)))
