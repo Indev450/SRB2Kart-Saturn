@@ -347,7 +347,6 @@ static void R_RenderMaskedSegLoop(drawcolumndata_t* dc, drawseg_t *drawseg, INT3
 							rlight->rcolormap = xwalllights[pindex];
 					};
 
-
 					auto set_colormap_below_light = [&]
 					{
 						dc->colormap = rlight->rcolormap;
@@ -935,43 +934,38 @@ void R_RenderThickSideRange(drawseg_t *drawseg, INT32 x1, INT32 x2, ffloor_t *pf
 			fixed_t height;
 			fixed_t bheight = 0;
 			INT32 solid = 0;
-			INT32 lighteffect = 0;
 
 			auto set_light_vars = [&](INT32 k)
 			{
 				rlight = &dc->lightlist[k];
-				lighteffect = !(dc->lightlist[k].flags & FF_NOSHADE);
 
-				if (lighteffect)
+				lightnum = rlight->lightnum;
+
+				if (lightnum < 0)
+					xwalllights = scalelight[0];
+				else if (lightnum >= LIGHTLEVELS)
+					xwalllights = scalelight[LIGHTLEVELS-1];
+				else
+					xwalllights = scalelight[lightnum];
+
+				pindex = FixedMul(spryscale, LIGHTRESOLUTIONFIX)>>LIGHTSCALESHIFT;
+
+				if (pindex >= MAXLIGHTSCALE)
+					pindex = MAXLIGHTSCALE-1;
+
+				if (pfloor->flags & FF_FOG)
 				{
-					lightnum = rlight->lightnum;
-
-					if (lightnum < 0)
-						xwalllights = scalelight[0];
-					else if (lightnum >= LIGHTLEVELS)
-						xwalllights = scalelight[LIGHTLEVELS-1];
+					if (pfloor->master->frontsector->extra_colormap)
+						rlight->rcolormap = pfloor->master->frontsector->extra_colormap->colormap + (xwalllights[pindex] - colormaps);
 					else
-						xwalllights = scalelight[lightnum];
-
-					pindex = FixedMul(spryscale, LIGHTRESOLUTIONFIX)>>LIGHTSCALESHIFT;
-
-					if (pindex >= MAXLIGHTSCALE)
-						pindex = MAXLIGHTSCALE-1;
-
-					if (pfloor->flags & FF_FOG)
-					{
-						if (pfloor->master->frontsector->extra_colormap)
-							rlight->rcolormap = pfloor->master->frontsector->extra_colormap->colormap + (xwalllights[pindex] - colormaps);
-						else
-							rlight->rcolormap = xwalllights[pindex];
-					}
+						rlight->rcolormap = xwalllights[pindex];
+				}
+				else
+				{
+					if (rlight->extra_colormap)
+						rlight->rcolormap = rlight->extra_colormap->colormap + (xwalllights[pindex] - colormaps);
 					else
-					{
-						if (rlight->extra_colormap)
-							rlight->rcolormap = rlight->extra_colormap->colormap + (xwalllights[pindex] - colormaps);
-						else
-							rlight->rcolormap = xwalllights[pindex];
-					}
+						rlight->rcolormap = xwalllights[pindex];
 				}
 			};
 
@@ -991,18 +985,18 @@ void R_RenderThickSideRange(drawseg_t *drawseg, INT32 x1, INT32 x2, ffloor_t *pf
 			{
 				// Check if the current light effects the colormap/lightlevel
 				rlight = &dc->lightlist[i];
-				lighteffect = !(dc->lightlist[i].flags & FF_NOSHADE);
+				xwalllights = NULL;
 
-				if (lighteffect)
-				{
+				if (!(dc->lightlist[i].flags & FF_NOSHADE))
 					set_light_vars(i);
-				}
 
 				solid = 0; // don't carry over solid-cutting flag from the previous light
 
 				// Check if the current light can cut the current 3D floor.
 				if (rlight->flags & FF_CUTSOLIDS && !(pfloor->flags & FF_EXTRA))
+				{
 					solid = 1;
+				}
 				else if (rlight->flags & FF_CUTEXTRA && pfloor->flags & FF_EXTRA)
 				{
 					if (rlight->flags & FF_EXTRA)
@@ -1029,12 +1023,16 @@ void R_RenderThickSideRange(drawseg_t *drawseg, INT32 x1, INT32 x2, ffloor_t *pf
 
 				if (height <= windowtop)
 				{
-					if (lighteffect)
+					if (xwalllights)
 					{
 						set_colormap_below_light();
 					}
+
 					if (solid && windowtop < bheight)
+					{
 						windowtop = bheight;
+					}
+
 					continue;
 				}
 
@@ -1049,20 +1047,23 @@ void R_RenderThickSideRange(drawseg_t *drawseg, INT32 x1, INT32 x2, ffloor_t *pf
 					{
 						rlight = &dc->lightlist[i];
 						rlight->height += rlight->heightstep;
+
 						if (rlight->flags & FF_CUTLEVEL)
 							rlight->botheight += rlight->botheightstep;
 					}
+
 					continue;
 				}
 
 				// draw the texture
 				colfunc_2s (dc, col);
+
 				if (solid)
 					windowtop = bheight;
 				else
 					windowtop = windowbottom + 1;
 
-				if (lighteffect)
+				if (xwalllights)
 				{
 					set_colormap_below_light();
 				}
@@ -1072,7 +1073,9 @@ void R_RenderThickSideRange(drawseg_t *drawseg, INT32 x1, INT32 x2, ffloor_t *pf
 
 			// draw the texture, if there is any space left
 			if (windowtop < windowbottom)
+			{
 				colfunc_2s (dc, col);
+			}
 
 			spryscale += rw_scalestep;
 			continue;
