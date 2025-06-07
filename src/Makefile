@@ -116,8 +116,6 @@
 # SDL_CONFIG= - sdl-config command.
 # SDL_CFLAGS=, SDL_LDFLAGS=
 
-NOBLUAJIT=1
-
 clean_targets=cleandep clean distclean info
 
 .PHONY : $(clean_targets) all
@@ -134,6 +132,7 @@ include Makefile.d/util.mk
 
 ifdef PREFIX
 CC:=$(PREFIX)-gcc
+CXX:=$(PREFIX)-g++
 endif
 
 OBJDUMP_OPTS?=--wide --source --line-numbers
@@ -184,13 +183,8 @@ objdir:=$(makedir)/objs
 sources+=\
 	$(call List,Sourcefile)
 
-ifdef NOBLUAJIT
 sources+=\
 	$(call List,blua/Sourcefile)
-else
-include bluajit/Makefile.cfg
-include bluajit/Makefile.cfg2
-endif
 
 depends:=$(basename $(filter %.c %.cpp %.s,$(sources)))
 objects:=$(basename $(filter %.c %.cpp %.s %.nas,$(sources)))
@@ -270,15 +264,21 @@ opts+=$(WFLAGS) $(CPPFLAGS) $(CFLAGS)
 libs+=$(LDFLAGS) -lstdc++
 asflags:=$(ASFLAGS) -x assembler-with-cpp
 
+cxxopts:=$(opts)
+cxxopts+=-std=c++17
+cxxopts+=$(CXXFLAGS)
+
 cc=$(CC)
 cxx=$(CXX)
 
 ifdef DISTCC
 cc=distcc $(CC)
+cxx=distcc $(CXX)
 endif
 
 ifdef CCACHE
 cc=ccache $(CC)
+cxx=ccache $(CXX)
 endif
 
 ifndef SILENT
@@ -293,7 +293,11 @@ SHELL ..... $(SHELL)
 
 CC ........ $(cc)
 
+CXX ....... $(cxx)
+
 CFLAGS .... $(opts)
+
+CXXFLAGS .. $(cxxopts)
 
 LDFLAGS ... $(libs)
 
@@ -372,6 +376,19 @@ endif
 	$(.)$(cc) -MM -MF $$@ -MT $(objdir)/$$*.o $(2) $$<
 endef
 
+# dependency recipe template (C++)
+# 1: source file suffix
+# 2: extra flags to gcc
+define _recipecxx =
+$(depdir)/%.d : %.$(1) | $$$$(@D)/
+ifndef WINDOWSHELL
+ifdef Echo_name
+	@printf '%-20.20s\r' $$<
+endif
+endif
+	$(.)$(cxx) -MM -MF $$@ -MT $(objdir)/$$*.o $(2) $$<
+endef
+
 $(eval $(call _recipe,c))
 $(eval $(call _recipe,cpp))
 $(eval $(call _recipe,s,$(asflags)))
@@ -401,13 +418,6 @@ clean :
 
 distclean :
 	$(call _rm,../bin ../objs ../dep ../make comptime.h)
-
-ifndef NOBLUAJIT
-	$(call _rm,$(objdir)/buildvm* $(objdir)/minilua* $(objdir)/lj_vm*)
-
-cleanjit:
-	$(call _rm,$(objdir)/buildvm* $(objdir)/minilua* $(objdir)/lj_vm* $(ALL_HDRGEN) $(LJVMCORE_O) $(ALL_GEN))
-endif
 
 info:
 ifdef WINDOWSHELL
