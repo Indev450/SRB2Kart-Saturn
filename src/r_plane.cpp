@@ -145,7 +145,6 @@ void R_AllocPlaneMemory(void)
 // Needs the height of the plane, and the vertical position of the span.
 // Sets planeripple.xfrac and planeripple.yfrac, added to ds_xfrac and ds_yfrac, if the span is not tilted.
 //
-
 static fixed_t R_CalculateRippleOffset(drawspandata_t* ds, INT32 y)
 {
 	fixed_t distance = FixedMul(ds->planeheight, yslope[y]);
@@ -253,7 +252,7 @@ static bool R_CheckMapPlane(const char* funcname, INT32 y, INT32 x1, INT32 x2)
 //  viewsin
 //  viewcos
 //  viewheight
-static void R_MapPlane(drawspandata_t *ds, void(*spanfunc2)(drawspandata_t*), INT32 y, INT32 x1, INT32 x2, boolean allow_parallel)
+static void R_MapPlane(drawspandata_t *ds, spandrawfunc_t *localspanfunc, INT32 y, INT32 x1, INT32 x2, boolean allow_parallel)
 {
 	angle_t angle, planecos, planesin;
 	fixed_t distance = 0, span;
@@ -317,10 +316,10 @@ static void R_MapPlane(drawspandata_t *ds, void(*spanfunc2)(drawspandata_t*), IN
 	ds->x1 = x1;
 	ds->x2 = x2;
 
-	spanfunc2(ds);
+	localspanfunc(ds);
 }
 
-static void R_MapTiltedPlane(drawspandata_t *ds, void(*spanfunc2)(drawspandata_t*), INT32 y, INT32 x1, INT32 x2, boolean allow_parallel)
+static void R_MapTiltedPlane(drawspandata_t *ds, spandrawfunc_t *localspanfunc, INT32 y, INT32 x1, INT32 x2, boolean allow_parallel)
 {
 	(void)allow_parallel;
 
@@ -361,7 +360,7 @@ static void R_MapTiltedPlane(drawspandata_t *ds, void(*spanfunc2)(drawspandata_t
 	ds->x1 = x1;
 	ds->x2 = x2;
 
-	spanfunc2(ds);
+	localspanfunc(ds);
 }
 
 void R_ClearFFloorClips(void)
@@ -686,7 +685,7 @@ void R_ExpandPlane(visplane_t *pl, INT32 start, INT32 stop)
 //
 // R_MakeSpans
 //
-static void R_MakeSpans(void (*mapfunc)(drawspandata_t* ds, void(*spanfunc)(drawspandata_t*), INT32, INT32, INT32, boolean), void(*spanfunc2)(drawspandata_t*), drawspandata_t* ds, INT32 x, INT32 t1, INT32 b1, INT32 t2, INT32 b2, boolean allow_parallel)
+static void R_MakeSpans(void (*mapfunc)(drawspandata_t* ds, void(*spanfunc)(drawspandata_t*), INT32, INT32, INT32, boolean), spandrawfunc_t* localspanfunc, drawspandata_t* ds, INT32 x, INT32 t1, INT32 b1, INT32 t2, INT32 b2, boolean allow_parallel)
 {
 	//    Alam: from r_splats's R_RenderFloorSplat
 	if (t1 >= vid.height) t1 = vid.height-1;
@@ -717,7 +716,7 @@ static void R_MakeSpans(void (*mapfunc)(drawspandata_t* ds, void(*spanfunc)(draw
 		auto task = [=]() mutable -> void {
 			for (int i = 0; i < taskspans; i++)
 			{
-				mapfunc(&dc_copy, spanfunc2, t1 + i, spanstartcopy[i], x - 1, false);
+				mapfunc(&dc_copy, localspanfunc, t1 + i, spanstartcopy[i], x - 1, false);
 			}
 		};
 		if (allow_parallel)
@@ -746,7 +745,7 @@ static void R_MakeSpans(void (*mapfunc)(drawspandata_t* ds, void(*spanfunc)(draw
 		auto task = [=]() mutable -> void {
 			for (int i = 0; i < taskspans; i++)
 			{
-				mapfunc(&dc_copy, spanfunc2, b1 - i, spanstartcopy[i], x - 1, false);
+				mapfunc(&dc_copy, localspanfunc, b1 - i, spanstartcopy[i], x - 1, false);
 			}
 		};
 		if (allow_parallel)
@@ -804,8 +803,7 @@ static void R_DrawSkyPlane(visplane_t *pl, void(*colfunc2)(drawcolumndata_t*), b
 
 	// Reset column drawer function (note: couldn't we just call walldrawerfunc directly?)
 	// (that is, unless we'll need to switch drawers in future for some reason)
-	//wallcolfunc = walldrawerfunc;
-	colfunc = basecolfunc;
+	R_SetColumnFunc(BASEDRAWFUNC);
 
 	// use correct aspect ratio scale
 	dc.iscale = skyscale;
@@ -870,7 +868,6 @@ static void R_DrawSkyPlane(visplane_t *pl, void(*colfunc2)(drawcolumndata_t*), b
 
 		x += kSkyPlaneMacroColumns;
 	}
-
 }
 
 // Potentially override other stuff for now cus we're mean. :< But draw a slope plane!
@@ -976,6 +973,7 @@ void R_DrawSinglePlane(drawspandata_t* ds, visplane_t *pl, boolean allow_paralle
 	INT32 x;
 	INT32 stop, angle;
 	size_t size;
+	INT32 spanfunctype = BASEDRAWFUNC;
 	ffloor_t *rover;
 	void (*mapfunc)(drawspandata_t*, void(*)(drawspandata_t*), INT32, INT32, INT32, boolean) = R_MapPlane;
 
@@ -992,11 +990,11 @@ void R_DrawSinglePlane(drawspandata_t* ds, visplane_t *pl, boolean allow_paralle
 	}
 
 	ds->planeripple.active = false;
-	spanfunc = basespanfunc;
+	R_SetSpanFunc(BASEDRAWFUNC);
 
 	if (pl->polyobj && pl->polyobj->translucency != 0)
 	{
-		spanfunc = R_DrawTranslucentSpan;
+		spanfunctype = SPANDRAWFUNC_TRANS;
 
 		// Hacked up support for alpha value in software mode Tails 09-24-2002 (sidenote: ported to polys 10-15-2014, there was no time travel involved -Red)
 		if (pl->polyobj->translucency >= NUMTRANSMAPS)
@@ -1004,7 +1002,7 @@ void R_DrawSinglePlane(drawspandata_t* ds, visplane_t *pl, boolean allow_paralle
 		else if (pl->polyobj->translucency > 0)
 			ds->transmap = R_GetTranslucencyTable(pl->polyobj->translucency);
 		else // Opaque, but allow transparent flat pixels
-			spanfunc = splatfunc;
+			spanfunctype = SPANDRAWFUNC_SPLAT;
 
 #ifdef SHITPLANESPARENCY
 		if (spanfunc == splatfunc || (pl->extra_colormap && pl->extra_colormap->fog))
@@ -1014,7 +1012,6 @@ void R_DrawSinglePlane(drawspandata_t* ds, visplane_t *pl, boolean allow_paralle
 			light = (pl->lightlevel >> LIGHTSEGSHIFT);
 		else
 			light = LIGHTLEVELS-1;
-
 	}
 	else
 	{
@@ -1036,7 +1033,7 @@ void R_DrawSinglePlane(drawspandata_t* ds, visplane_t *pl, boolean allow_paralle
 
 			if (pl->ffloor->flags & FF_TRANSLUCENT)
 			{
-				spanfunc = R_DrawTranslucentSpan;
+				spanfunctype = SPANDRAWFUNC_TRANS;
 
 				// Hacked up support for alpha value in software mode Tails 09-24-2002
 				// ...unhacked by toaster 04-01-2021, re-hacked a little by sphere 19-11-2021
@@ -1048,7 +1045,7 @@ void R_DrawSinglePlane(drawspandata_t* ds, visplane_t *pl, boolean allow_paralle
 					if (pl->ffloor->blend) // additive, (reverse) subtractive, modulative
 						ds->transmap = R_GetBlendTable(pl->ffloor->blend, trans);
 					else if (!(ds->transmap = R_GetTranslucencyTable(trans)) || trans == 0)
-						spanfunc = splatfunc; // Opaque, but allow transparent flat pixels
+						spanfunctype = SPANDRAWFUNC_SPLAT; // Opaque, but allow transparent flat pixels
 				}
 
 #ifdef SHITPLANESPARENCY
@@ -1062,7 +1059,7 @@ void R_DrawSinglePlane(drawspandata_t* ds, visplane_t *pl, boolean allow_paralle
 			}
 			else if (pl->ffloor->flags & FF_FOG)
 			{
-				spanfunc = R_DrawFogSpan;
+				spanfunctype = SPANDRAWFUNC_FOG;
 				light = (pl->lightlevel >> LIGHTSEGSHIFT);
 			}
 			else light = (pl->lightlevel >> LIGHTSEGSHIFT);
@@ -1222,14 +1219,21 @@ void R_DrawSinglePlane(drawspandata_t* ds, visplane_t *pl, boolean allow_paralle
 		else
 			R_SetSlopePlaneVectors(ds, pl, 0, ds->xoffs, ds->yoffs, fudgecanyon);
 
-		if (spanfunc == R_DrawTranslucentWaterSpan)
-			spanfunc = R_DrawTiltedTranslucentWaterSpan;
-		else if (spanfunc == R_DrawTranslucentSpan)
-			spanfunc = R_DrawTiltedTranslucentSpan;
-		else if (spanfunc == splatfunc)
-			spanfunc = R_DrawTiltedSplat;
-		else
-			spanfunc = R_DrawTiltedSpan;
+		switch (spanfunctype)
+		{
+			case SPANDRAWFUNC_WATER:
+				spanfunctype = SPANDRAWFUNC_TILTEDWATER;
+				break;
+			case SPANDRAWFUNC_TRANS:
+				spanfunctype = SPANDRAWFUNC_TILTEDTRANS;
+				break;
+			case SPANDRAWFUNC_SPLAT:
+				spanfunctype = SPANDRAWFUNC_TILTEDSPLAT;
+				break;
+			default:
+				spanfunctype = SPANDRAWFUNC_TILTED;
+				break;
+		}
 
 		ds->planezlight = scalelight[light];
 	}
@@ -1238,6 +1242,8 @@ void R_DrawSinglePlane(drawspandata_t* ds, visplane_t *pl, boolean allow_paralle
 		ds->planeheight = abs(pl->height - pl->viewz);
 		ds->planezlight = zlight[light];
 	}
+
+	R_SetSpanFunc(spanfunctype);
 
 	// set the maximum value for unsigned
 	pl->top[pl->maxx+1] = 0xffff;

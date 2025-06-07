@@ -98,6 +98,10 @@ extern consvar_t cv_alwaysgrabmouse;
 
 extern consvar_t cv_votebgscaling;
 
+void R_SetColumnFunc(size_t id);
+void R_SetSpanFunc(size_t id);
+boolean R_CheckColumnFunc(size_t id);
+
 // Change video mode, only at the start of a refresh.
 void SCR_SetMode(void);
 // Recalc screen size dependent stuff

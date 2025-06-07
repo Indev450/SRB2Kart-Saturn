@@ -420,49 +420,6 @@ void R_Draw2sMultiPatchTranslucentColumn(drawcolumndata_t* dc)
 	}
 }
 
-/**	\brief The R_DrawShadeColumn function
-	Experiment to make software go faster. Taken from the Boom source
-*/
-void R_DrawShadeColumn(drawcolumndata_t* dc)
-{
-	register INT32 count;
-	register UINT8 *dest;
-	register fixed_t frac, fracstep;
-
-	// check out coords for src*
-	if ((dc->yl < 0) || (dc->x >= vid.width))
-		return;
-
-	count = dc->yh - dc->yl;
-
-	if (count < 0) // Zero length, column does not exceed a pixel.
-	{
-		return;
-	}
-
-	if ((unsigned)dc->x >= (unsigned)vid.width || dc->yl < 0 || dc->yh >= vid.height)
-	{
-		return;
-	}
-
-	// Framebuffer destination address.
-	dest = R_Address(dc->x, dc->yl);
-
-	// Looks familiar.
-	fracstep = dc->iscale;
-	frac = (dc->texturemid + FixedMul((dc->yl << FRACBITS) - centeryfrac, fracstep));
-
-	register const INT32 stride = vid.width;
-
-	// Here we do an additional index re-mapping.
-	do
-	{
-		*dest = colormaps[(dc->source[frac>>FRACBITS] <<8) + (*dest)];
-		dest += stride;
-		frac += fracstep;
-	} while (count--);
-}
-
 /**	\brief The R_DrawTranslucentColumn function
 	I've made an asm routine for the transparency, because it slows down
 	a lot in 640x480 with big sprites (bfg on all screen, or transparent
@@ -804,7 +761,9 @@ void R_DrawColumnShadowed(drawcolumndata_t* dc)
 
 		if (dc->yh > realyh)
 			dc->yh = realyh;
-		basecolfunc(dc);		// R_DrawColumn for the appropriate architecture
+
+		(colfuncs[BASEDRAWFUNC])(dc);		// R_DrawColumn_8 for the appropriate architecture
+
 		if (solid)
 			dc->yl = bheight;
 		else
@@ -814,7 +773,9 @@ void R_DrawColumnShadowed(drawcolumndata_t* dc)
 		if (encoremap)
 			dc->colormap += COLORMAP_REMAPOFFSET;
 	}
+
 	dc->yh = realyh;
+
 	if (dc->yl <= realyh)
-		walldrawerfunc(dc);		// R_DrawWallColumn for the appropriate architecture
+		(colfuncs[BASEDRAWFUNC])(dc);		// R_DrawWallColumn_8 for the appropriate architecture
 }

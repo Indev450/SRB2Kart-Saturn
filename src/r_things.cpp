@@ -782,12 +782,11 @@ static void R_DrawVisSprite(vissprite_t *vis)
 		return;
 	}
 
-	colfunc = basecolfunc; // hack: this isn't resetting properly somewhere.
+	R_SetColumnFunc(BASEDRAWFUNC); // hack: this isn't resetting properly somewhere.
 	dc.colormap = vis->colormap;
 	if ((vis->mobj->flags & MF_BOSS) && (vis->mobj->flags2 & MF2_FRET) && (leveltime & 1)) // Bosses "flash"
 	{
-		// translate certain pixels to white
-		colfunc = transcolfunc;
+		R_SetColumnFunc(COLDRAWFUNC_TRANS); // translate certain pixels to white
 		if (vis->mobj->type == MT_CYBRAKDEMON)
 			dc.translation = R_GetTranslationColormap(TC_ALLWHITE, SKINCOLOR_NONE, GTC_CACHE);
 		else if (vis->mobj->type == MT_METALSONIC_BATTLE)
@@ -797,7 +796,7 @@ static void R_DrawVisSprite(vissprite_t *vis)
 	}
 	else if (vis->mobj->color && vis->transmap) // Color mapping
 	{
-		colfunc = transtransfunc;
+		R_SetColumnFunc(COLDRAWFUNC_TRANSTRANS);
 		dc.transmap = vis->transmap;
 		if (vis->mobj->colorized)
 			dc.translation = R_GetTranslationColormap(TC_RAINBOW, static_cast<skincolors_t>(vis->mobj->color), GTC_CACHE);
@@ -808,13 +807,13 @@ static void R_DrawVisSprite(vissprite_t *vis)
 	}
 	else if (vis->transmap)
 	{
-		colfunc = fuzzcolfunc;
+		R_SetColumnFunc(COLDRAWFUNC_FUZZY);
 		dc.transmap = vis->transmap;    //Fab : 29-04-98: translucency table
 	}
 	else if (vis->mobj->color)
 	{
 		// translate green skin to another color
-		colfunc = transcolfunc;
+		R_SetColumnFunc(COLDRAWFUNC_TRANS);
 
 		// New colormap stuff for skins Tails 06-07-2002
 		if (vis->mobj->colorized)
@@ -826,7 +825,7 @@ static void R_DrawVisSprite(vissprite_t *vis)
 	}
 	else if (vis->mobj->sprite == SPR_PLAY) // Looks like a player, but doesn't have a color? Get rid of green sonic syndrome.
 	{
-		colfunc = transcolfunc;
+		R_SetColumnFunc(COLDRAWFUNC_TRANS);
 		dc.translation = R_GetTranslationColormap(TC_DEFAULT, SKINCOLOR_BLUE, GTC_CACHE);
 	}
 
@@ -930,7 +929,7 @@ static void R_DrawVisSprite(vissprite_t *vis)
 		}
 	}
 
-	colfunc = basecolfunc;
+	R_SetColumnFunc(BASEDRAWFUNC);
 
 	vis->x1 = x1;
 	vis->x2 = x2;
@@ -960,7 +959,7 @@ static void R_DrawPrecipitationVisSprite(vissprite_t *vis)
 
 	if (vis->transmap)
 	{
-		colfunc = fuzzcolfunc;
+		R_SetColumnFunc(COLDRAWFUNC_FUZZY);
 		dc.transmap = vis->transmap;    //Fab : 29-04-98: translucency table
 	}
 
@@ -998,7 +997,7 @@ static void R_DrawPrecipitationVisSprite(vissprite_t *vis)
 		R_DrawMaskedColumn(&dc, column);
 	}
 
-	colfunc = basecolfunc;
+	R_SetColumnFunc(BASEDRAWFUNC);
 }
 
 //
@@ -2658,9 +2657,6 @@ static void R_ClipVisSprite(vissprite_t *spr, INT32 x1, INT32 x2)
 			    (lowscale < spr->sortscale &&
 			     !R_PointOnSegSide (spr->gx, spr->gy, ds->curline)))
 			{
-				// masked mid texture?
-				/*if (ds->maskedtexturecol)
-					R_RenderMaskedSegRange (ds, r1, r2);*/
 				// seg is behind sprite
 				continue;
 			}
@@ -2976,7 +2972,7 @@ static void R_DrawMaskedList(drawnode_t* head)
 			next = r2->prev;
 
 			// Tails 08-18-2002
-			if (r2->sprite->precip == true)
+			if (r2->sprite->precip)
 			{
 				R_DrawPrecipitationSprite(r2->sprite);
 			}
