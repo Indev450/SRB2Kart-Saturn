@@ -57,6 +57,7 @@ void R_DrawSpan(drawspandata_t* ds)
 	{
 		return;
 	}
+
 	while (count >= 8)
 	{
 		// SoM: Why didn't I see this earlier? the spot variable is a waste now because we don't
@@ -350,13 +351,17 @@ static void R_CalcTiltedLighting(INT32 *lightbuffer, INT32 x1, INT32 x2, fixed_t
 		lightbuffer[i] = (start += step) >> FRACBITS;
 
 		if (lightbuffer[i] < 0)
+		{
 			lightbuffer[i] = 0;
+		}
 		else if (lightbuffer[i] >= MAXLIGHTSCALE)
+		{
 			lightbuffer[i] = MAXLIGHTSCALE-1;
+		}
 	}
 }
 
-#define PLANELIGHTFLOAT ((float)BASEVIDWIDTH * BASEVIDWIDTH / vid.width / (ds->zeroheight - FIXED_TO_FLOAT(viewz)) / 21.0f * FIXED_TO_FLOAT(fovtan))
+#define PLANELIGHTFLOAT ((float)BASEVIDWIDTH * BASEVIDWIDTH / vid.width / ds->zeroheight / 21.0f * FIXED_TO_FLOAT(fovtan))
 
 /**	\brief The R_DrawTiltedSpan function
 	Draw slopes! Holy sheit!
@@ -414,8 +419,8 @@ void R_DrawSpan_Tilted(drawspandata_t* ds)
 	do
 	{
 		double z = 1.f/iz;
-		u = (INT64)(uz*z) + viewx;
-		v = (INT64)(vz*z) + viewy;
+		u = (INT64)(uz*z);
+		v = (INT64)(vz*z);
 
 		bit = ((v >> ds->nflatyshift) & ds->nflatmask) | (u >> ds->nflatxshift);
 		colormap = ds->planezlight[tiltlighting[ds->x1++]] + (ds->colormap - colormaps);
@@ -447,8 +452,8 @@ void R_DrawSpan_Tilted(drawspandata_t* ds)
 		endv = vz*endz;
 		stepu = (INT64)((endu - startu) * INVSPAN);
 		stepv = (INT64)((endv - startv) * INVSPAN);
-		u = (INT64)(startu) + viewx;
-		v = (INT64)(startv) + viewy;
+		u = (INT64)(startu);
+		v = (INT64)(startv);
 
 		for (i = SPANSIZE-1; i >= 0; i--)
 		{
@@ -487,8 +492,8 @@ void R_DrawSpan_Tilted(drawspandata_t* ds)
 			left = 1.f/left;
 			stepu = (INT64)((endu - startu) * left);
 			stepv = (INT64)((endv - startv) * left);
-			u = (INT64)(startu) + viewx;
-			v = (INT64)(startv) + viewy;
+			u = (INT64)(startu);
+			v = (INT64)(startv);
 
 			for (; width != 0; width--)
 			{
@@ -561,8 +566,8 @@ void R_DrawTranslucentSpan_Tilted(drawspandata_t* ds)
 	do
 	{
 		double z = 1.f/iz;
-		u = (INT64)(uz*z) + viewx;
-		v = (INT64)(vz*z) + viewy;
+		u = (INT64)(uz*z);
+		v = (INT64)(vz*z);
 
 		bit = ((v >> ds->nflatyshift) & ds->nflatmask) | (u >> ds->nflatxshift);
 		colormap = ds->planezlight[tiltlighting[ds->x1++]] + (ds->colormap - colormaps);
@@ -594,8 +599,8 @@ void R_DrawTranslucentSpan_Tilted(drawspandata_t* ds)
 		endv = vz*endz;
 		stepu = (INT64)((endu - startu) * INVSPAN);
 		stepv = (INT64)((endv - startv) * INVSPAN);
-		u = (INT64)(startu) + viewx;
-		v = (INT64)(startv) + viewy;
+		u = (INT64)(startu);
+		v = (INT64)(startv);
 
 		for (i = SPANSIZE-1; i >= 0; i--)
 		{
@@ -634,8 +639,8 @@ void R_DrawTranslucentSpan_Tilted(drawspandata_t* ds)
 			left = 1.f/left;
 			stepu = (INT64)((endu - startu) * left);
 			stepv = (INT64)((endv - startv) * left);
-			u = (INT64)(startu) + viewx;
-			v = (INT64)(startv) + viewy;
+			u = (INT64)(startu);
+			v = (INT64)(startv);
 
 			for (; width != 0; width--)
 			{
@@ -710,8 +715,8 @@ void R_DrawTranslucentWaterSpan_Tilted(drawspandata_t* ds)
 	do
 	{
 		double z = 1.f/iz;
-		u = (INT64)(uz*z) + viewx;
-		v = (INT64)(vz*z) + viewy;
+		u = (INT64)(uz*z);
+		v = (INT64)(vz*z);
 
 		bit = ((v >> ds->nflatyshift) & ds->nflatmask) | (u >> ds->nflatxshift);
 		colormap = ds->planezlight[tiltlighting[ds->x1++]] + (ds->colormap - colormaps);
@@ -743,8 +748,8 @@ void R_DrawTranslucentWaterSpan_Tilted(drawspandata_t* ds)
 		endv = vz*endz;
 		stepu = (INT64)((endu - startu) * INVSPAN);
 		stepv = (INT64)((endv - startv) * INVSPAN);
-		u = (INT64)(startu) + viewx;
-		v = (INT64)(startv) + viewy;
+		u = (INT64)(startu);
+		v = (INT64)(startv);
 
 		for (i = SPANSIZE-1; i >= 0; i--)
 		{
@@ -783,8 +788,8 @@ void R_DrawTranslucentWaterSpan_Tilted(drawspandata_t* ds)
 			left = 1.f/left;
 			stepu = (INT64)((endu - startu) * left);
 			stepv = (INT64)((endv - startv) * left);
-			u = (INT64)(startu) + viewx;
-			v = (INT64)(startv) + viewy;
+			u = (INT64)(startu);
+			v = (INT64)(startv);
 
 			for (; width != 0; width--)
 			{
@@ -858,8 +863,8 @@ void R_DrawSplat_Tilted(drawspandata_t* ds)
 	do
 	{
 		double z = 1.f/iz;
-		u = (INT64)(uz*z) + viewx;
-		v = (INT64)(vz*z) + viewy;
+		u = (INT64)(uz*z);
+		v = (INT64)(vz*z);
 
 		bit = ((v >> ds->nflatyshift) & ds->nflatmask) | (u >> ds->nflatxshift);
 		val = source[bit];
@@ -896,8 +901,8 @@ void R_DrawSplat_Tilted(drawspandata_t* ds)
 		endv = vz*endz;
 		stepu = (INT64)((endu - startu) * INVSPAN);
 		stepv = (INT64)((endv - startv) * INVSPAN);
-		u = (INT64)(startu) + viewx;
-		v = (INT64)(startv) + viewy;
+		u = (INT64)(startu);
+		v = (INT64)(startv);
 
 		for (i = SPANSIZE-1; i >= 0; i--)
 		{
@@ -943,8 +948,8 @@ void R_DrawSplat_Tilted(drawspandata_t* ds)
 			left = 1.f/left;
 			stepu = (INT64)((endu - startu) * left);
 			stepv = (INT64)((endv - startv) * left);
-			u = (INT64)(startu) + viewx;
-			v = (INT64)(startv) + viewy;
+			u = (INT64)(startu);
+			v = (INT64)(startv);
 
 			for (; width != 0; width--)
 			{
