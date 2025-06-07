@@ -678,12 +678,14 @@ void R_DrawFogColumn(drawcolumndata_t* dc)
 
 	// Zero length, column does not exceed a pixel.
 	if (count < 0)
+	{
 		return;
+	}
 
-#ifdef RANGECHECK
 	if ((unsigned)dc->x >= (unsigned)vid.width || dc->yl < 0 || dc->yh >= vid.height)
-		I_Error("R_DrawFogColumn: %d to %d at %d", dc->yl, dc->yh, dc->x);
-#endif
+	{
+		return;
+	}
 
 	// Framebuffer destination address.
 	dest = R_Address(dc->x, dc->yl);
@@ -709,18 +711,20 @@ void R_DrawColumnShadowed(drawcolumndata_t* dc)
 	register INT32 count;
 	INT32 realyh, i, height, bheight = 0, solid = 0;
 
-	realyh = dc->yh;
-
 	count = dc->yh - dc->yl;
 
 	// Zero length, column does not exceed a pixel.
 	if (count < 0)
+	{
 		return;
+	}
 
-#ifdef RANGECHECK
 	if ((unsigned)dc->x >= (unsigned)vid.width || dc->yl < 0 || dc->yh >= vid.height)
-		I_Error("R_DrawColumnShadowed: %d to %d at %d", dc->yl, dc->yh, dc->x);
-#endif
+	{
+		return;
+	}
+
+	realyh = dc->yh;
 
 	// This runs through the lightlist from top to bottom and cuts up the column accordingly.
 	for (i = 0; i < dc->numlights; i++)
