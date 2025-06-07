@@ -2750,8 +2750,6 @@ static void P_SetupPlayer(void)
 		I_mkdir(va("%s"PATHSEP"replay", srb2home), 0755);
 		I_mkdir(va("%s"PATHSEP"replay"PATHSEP"online", srb2home), 0755);
 		G_RecordDemo(buf);
-		if (dedicated)
-			G_BeginRecording(); //this has to move here, since dedicated servers dont run got_mapcmd
 	}
 
 	wantedcalcdelay = wantedfrequency*2;

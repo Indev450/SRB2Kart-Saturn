@@ -782,10 +782,6 @@ void R_DrawSpan_8 (void)
 	xposition <<= nflatshiftup; yposition <<= nflatshiftup;
 	xstep <<= nflatshiftup; ystep <<= nflatshiftup;
 
-	source = ds_source;
-	colormap = ds_colormap;
-	dest = ylookup[ds_y] + columnofs[ds_x1];
-
 	if (dest+8 > deststop)
 	{
 		return;
