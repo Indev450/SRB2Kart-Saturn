@@ -496,14 +496,13 @@ static void I_ReportSignal(int num, int coredumped)
 #ifndef NEWSIGNALHANDLER
 FUNCNORETURN static ATTRNORETURN void signal_handler(INT32 num)
 {
-	if (g_main_thread_id != std::this_thread::get_id())
+	/*if (g_main_thread_id != std::this_thread::get_id())
 	{
 		// Do not attempt any sort of recovery if this signal triggers off the main thread
 		signal(num, SIG_DFL);
 		raise(num);
 		exit(-2);
-	}
-
+	}*/
 
 	g_in_exiting_signal_handler = true;
 
@@ -1569,7 +1568,8 @@ static void I_SetupMumble(void)
 	if (!hMap)
 		return;
 
-	mumble = static_cast<mumble_s*>(MapViewOfFile(hMap, FILE_MAP_ALL_ACCESS, 0, 0, sizeof(*mumble)));
+	//mumble = static_cast<mumble_s*>(MapViewOfFile(hMap, FILE_MAP_ALL_ACCESS, 0, 0, sizeof(*mumble)));
+	mumble = MapViewOfFile(hMap, FILE_MAP_ALL_ACCESS, 0, 0, sizeof(*mumble));
 	if (!mumble)
 		CloseHandle(hMap);
 #elif defined (HAVE_SHM)

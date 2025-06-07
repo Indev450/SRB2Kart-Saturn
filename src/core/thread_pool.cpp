@@ -17,7 +17,7 @@
 #include <string>
 #include <system_error>
 
-#include <fmt/format.h>
+//#include <fmt/format.h>
 //#include <tracy/tracy/Tracy.hpp>
 
 #include "../cxxutil.hpp"
