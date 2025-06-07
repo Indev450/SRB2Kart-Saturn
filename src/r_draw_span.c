@@ -34,9 +34,9 @@
 */
 void R_DrawSpan(drawspandata_t* ds)
 {
-	uintptr_t xposition;
-	uintptr_t yposition;
-	uintptr_t xstep, ystep;
+	UINT32 xposition;
+	UINT32 yposition;
+	UINT32 xstep, ystep;
 	register UINT32 bit;
 
 	UINT8 *restrict source = ds->source;
@@ -69,42 +69,42 @@ void R_DrawSpan(drawspandata_t* ds)
 		// SoM: Why didn't I see this earlier? the spot variable is a waste now because we don't
 		// have the uber complicated math to calculate it now, so that was a memory write we didn't
 		// need!
-		bit = (((UINT32)yposition >> ds->nflatyshift) & ds->nflatmask) | ((UINT32)xposition >> ds->nflatxshift);
+		bit = ((yposition >> ds->nflatyshift) & ds->nflatmask) | (xposition >> ds->nflatxshift);
 		dest[0] = colormap[source[bit]];
 		xposition += xstep;
 		yposition += ystep;
 
-		bit = (((UINT32)yposition >> ds->nflatyshift) & ds->nflatmask) | ((UINT32)xposition >> ds->nflatxshift);
+		bit = ((yposition >> ds->nflatyshift) & ds->nflatmask) | (xposition >> ds->nflatxshift);
 		dest[1] = colormap[source[bit]];
 		xposition += xstep;
 		yposition += ystep;
 
-		bit = (((UINT32)yposition >> ds->nflatyshift) & ds->nflatmask) | ((UINT32)xposition >> ds->nflatxshift);
+		bit = ((yposition >> ds->nflatyshift) & ds->nflatmask) | (xposition >> ds->nflatxshift);
 		dest[2] = colormap[source[bit]];
 		xposition += xstep;
 		yposition += ystep;
 
-		bit = (((UINT32)yposition >> ds->nflatyshift) & ds->nflatmask) | ((UINT32)xposition >> ds->nflatxshift);
+		bit = ((yposition >> ds->nflatyshift) & ds->nflatmask) | (xposition >> ds->nflatxshift);
 		dest[3] = colormap[source[bit]];
 		xposition += xstep;
 		yposition += ystep;
 
-		bit = (((UINT32)yposition >> ds->nflatyshift) & ds->nflatmask) | ((UINT32)xposition >> ds->nflatxshift);
+		bit = ((yposition >> ds->nflatyshift) & ds->nflatmask) | (xposition >> ds->nflatxshift);
 		dest[4] = colormap[source[bit]];
 		xposition += xstep;
 		yposition += ystep;
 
-		bit = (((UINT32)yposition >> ds->nflatyshift) & ds->nflatmask) | ((UINT32)xposition >> ds->nflatxshift);
+		bit = ((yposition >> ds->nflatyshift) & ds->nflatmask) | (xposition >> ds->nflatxshift);
 		dest[5] = colormap[source[bit]];
 		xposition += xstep;
 		yposition += ystep;
 
-		bit = (((UINT32)yposition >> ds->nflatyshift) & ds->nflatmask) | ((UINT32)xposition >> ds->nflatxshift);
+		bit = ((yposition >> ds->nflatyshift) & ds->nflatmask) | (xposition >> ds->nflatxshift);
 		dest[6] = colormap[source[bit]];
 		xposition += xstep;
 		yposition += ystep;
 
-		bit = (((UINT32)yposition >> ds->nflatyshift) & ds->nflatmask) | ((UINT32)xposition >> ds->nflatxshift);
+		bit = ((yposition >> ds->nflatyshift) & ds->nflatmask) | (xposition >> ds->nflatxshift);
 		dest[7] = colormap[source[bit]];
 		xposition += xstep;
 		yposition += ystep;
@@ -115,7 +115,7 @@ void R_DrawSpan(drawspandata_t* ds)
 
 	while (count-- && dest <= deststop)
 	{
-		bit = (((UINT32)yposition >> ds->nflatyshift) & ds->nflatmask) | ((UINT32)xposition >> ds->nflatxshift);
+		bit = ((yposition >> ds->nflatyshift) & ds->nflatmask) | (xposition >> ds->nflatxshift);
 		*dest++ = colormap[source[bit]];
 		xposition += xstep;
 		yposition += ystep;
@@ -127,9 +127,9 @@ void R_DrawSpan(drawspandata_t* ds)
 */
 void R_DrawTranslucentSpan(drawspandata_t* ds)
 {
-	uintptr_t xposition;
-	uintptr_t yposition;
-	uintptr_t xstep, ystep;
+	UINT32 xposition;
+	UINT32 yposition;
+	UINT32 xstep, ystep;
 	register UINT32 bit;
 
 	UINT8 *restrict source = ds->source;
@@ -159,42 +159,42 @@ void R_DrawTranslucentSpan(drawspandata_t* ds)
 		// SoM: Why didn't I see this earlier? the spot variable is a waste now because we don't
 		// have the uber complicated math to calculate it now, so that was a memory write we didn't
 		// need!
-		bit = (((UINT32)yposition >> ds->nflatyshift) & ds->nflatmask) | ((UINT32)xposition >> ds->nflatxshift);
+		bit = ((yposition >> ds->nflatyshift) & ds->nflatmask) | (xposition >> ds->nflatxshift);
 		dest[0] = *(tranmap + (colormap[source[bit]] << 8) + dest[0]);
 		xposition += xstep;
 		yposition += ystep;
 
-		bit = (((UINT32)yposition >> ds->nflatyshift) & ds->nflatmask) | ((UINT32)xposition >> ds->nflatxshift);
+		bit = ((yposition >> ds->nflatyshift) & ds->nflatmask) | (xposition >> ds->nflatxshift);
 		dest[1] = *(tranmap + (colormap[source[bit]] << 8) + dest[1]);
 		xposition += xstep;
 		yposition += ystep;
 
-		bit = (((UINT32)yposition >> ds->nflatyshift) & ds->nflatmask) | ((UINT32)xposition >> ds->nflatxshift);
+		bit = ((yposition >> ds->nflatyshift) & ds->nflatmask) | (xposition >> ds->nflatxshift);
 		dest[2] = *(tranmap + (colormap[source[bit]] << 8) + dest[2]);
 		xposition += xstep;
 		yposition += ystep;
 
-		bit = (((UINT32)yposition >> ds->nflatyshift) & ds->nflatmask) | ((UINT32)xposition >> ds->nflatxshift);
+		bit = ((yposition >> ds->nflatyshift) & ds->nflatmask) | (xposition >> ds->nflatxshift);
 		dest[3] = *(tranmap + (colormap[source[bit]] << 8) + dest[3]);
 		xposition += xstep;
 		yposition += ystep;
 
-		bit = (((UINT32)yposition >> ds->nflatyshift) & ds->nflatmask) | ((UINT32)xposition >> ds->nflatxshift);
+		bit = ((yposition >> ds->nflatyshift) & ds->nflatmask) | (xposition >> ds->nflatxshift);
 		dest[4] = *(tranmap + (colormap[source[bit]] << 8) + dest[4]);
 		xposition += xstep;
 		yposition += ystep;
 
-		bit = (((UINT32)yposition >> ds->nflatyshift) & ds->nflatmask) | ((UINT32)xposition >> ds->nflatxshift);
+		bit = ((yposition >> ds->nflatyshift) & ds->nflatmask) | (xposition >> ds->nflatxshift);
 		dest[5] = *(tranmap + (colormap[source[bit]] << 8) + dest[5]);
 		xposition += xstep;
 		yposition += ystep;
 
-		bit = (((UINT32)yposition >> ds->nflatyshift) & ds->nflatmask) | ((UINT32)xposition >> ds->nflatxshift);
+		bit = ((yposition >> ds->nflatyshift) & ds->nflatmask) | (xposition >> ds->nflatxshift);
 		dest[6] = *(tranmap + (colormap[source[bit]] << 8) + dest[6]);
 		xposition += xstep;
 		yposition += ystep;
 
-		bit = (((UINT32)yposition >> ds->nflatyshift) & ds->nflatmask) | ((UINT32)xposition >> ds->nflatxshift);
+		bit = ((yposition >> ds->nflatyshift) & ds->nflatmask) | (xposition >> ds->nflatxshift);
 		dest[7] = *(tranmap + (colormap[source[bit]] << 8) + dest[7]);
 		xposition += xstep;
 		yposition += ystep;
@@ -204,7 +204,7 @@ void R_DrawTranslucentSpan(drawspandata_t* ds)
 	}
 	while (count-- && dest <= deststop)
 	{
-		bit = (((UINT32)yposition >> ds->nflatyshift) & ds->nflatmask) | ((UINT32)xposition >> ds->nflatxshift);
+		bit = ((yposition >> ds->nflatyshift) & ds->nflatmask) | (xposition >> ds->nflatxshift);
 		*dest = *(tranmap + (colormap[source[bit]] << 8) + *dest);
 		dest++;
 		xposition += xstep;
@@ -214,9 +214,9 @@ void R_DrawTranslucentSpan(drawspandata_t* ds)
 
 void R_DrawTranslucentWaterSpan(drawspandata_t* ds)
 {
-	uintptr_t xposition;
-	uintptr_t yposition;
-	uintptr_t xstep, ystep;
+	UINT32 xposition;
+	UINT32 yposition;
+	UINT32 xstep, ystep;
 	register UINT32 bit;
 
 	UINT8 *restrict source = ds->source;
@@ -304,9 +304,9 @@ void R_DrawTranslucentWaterSpan(drawspandata_t* ds)
 */
 void R_DrawSplat(drawspandata_t* ds)
 {
-	uintptr_t xposition;
-	uintptr_t yposition;
-	uintptr_t xstep, ystep;
+	UINT32 xposition;
+	UINT32 yposition;
+	UINT32 xstep, ystep;
 	register UINT32 bit;
 	register UINT32 val;
 
@@ -336,7 +336,7 @@ void R_DrawSplat(drawspandata_t* ds)
 		// need!
 		//
 		// <Callum> 4194303 = (2048x2048)-1 (2048x2048 is maximum flat size)
-		bit = (((UINT32)yposition >> ds->nflatyshift) & ds->nflatmask) | ((UINT32)xposition >> ds->nflatxshift);
+		bit = ((yposition >> ds->nflatyshift) & ds->nflatmask) | (xposition >> ds->nflatxshift);
 		bit &= MAXFLATBYTES;
 		val = source[bit];
 		if (val != TRANSPARENTPIXEL)
@@ -344,7 +344,7 @@ void R_DrawSplat(drawspandata_t* ds)
 		xposition += xstep;
 		yposition += ystep;
 
-		bit = (((UINT32)yposition >> ds->nflatyshift) & ds->nflatmask) | ((UINT32)xposition >> ds->nflatxshift);
+		bit = ((yposition >> ds->nflatyshift) & ds->nflatmask) | (xposition >> ds->nflatxshift);
 		bit &= MAXFLATBYTES;
 		val = source[bit];
 		if (val != TRANSPARENTPIXEL)
@@ -352,7 +352,7 @@ void R_DrawSplat(drawspandata_t* ds)
 		xposition += xstep;
 		yposition += ystep;
 
-		bit = (((UINT32)yposition >> ds->nflatyshift) & ds->nflatmask) | ((UINT32)xposition >> ds->nflatxshift);
+		bit = ((yposition >> ds->nflatyshift) & ds->nflatmask) | (xposition >> ds->nflatxshift);
 		bit &= MAXFLATBYTES;
 		val = source[bit];
 		if (val != TRANSPARENTPIXEL)
@@ -360,7 +360,7 @@ void R_DrawSplat(drawspandata_t* ds)
 		xposition += xstep;
 		yposition += ystep;
 
-		bit = (((UINT32)yposition >> ds->nflatyshift) & ds->nflatmask) | ((UINT32)xposition >> ds->nflatxshift);
+		bit = ((yposition >> ds->nflatyshift) & ds->nflatmask) | (xposition >> ds->nflatxshift);
 		bit &= MAXFLATBYTES;
 		val = source[bit];
 		if (val != TRANSPARENTPIXEL)
@@ -368,7 +368,7 @@ void R_DrawSplat(drawspandata_t* ds)
 		xposition += xstep;
 		yposition += ystep;
 
-		bit = (((UINT32)yposition >> ds->nflatyshift) & ds->nflatmask) | ((UINT32)xposition >> ds->nflatxshift);
+		bit = ((yposition >> ds->nflatyshift) & ds->nflatmask) | (xposition >> ds->nflatxshift);
 		bit &= MAXFLATBYTES;
 		val = source[bit];
 		if (val != TRANSPARENTPIXEL)
@@ -376,7 +376,7 @@ void R_DrawSplat(drawspandata_t* ds)
 		xposition += xstep;
 		yposition += ystep;
 
-		bit = (((UINT32)yposition >> ds->nflatyshift) & ds->nflatmask) | ((UINT32)xposition >> ds->nflatxshift);
+		bit = ((yposition >> ds->nflatyshift) & ds->nflatmask) | (xposition >> ds->nflatxshift);
 		bit &= MAXFLATBYTES;
 		val = source[bit];
 		if (val != TRANSPARENTPIXEL)
@@ -384,7 +384,7 @@ void R_DrawSplat(drawspandata_t* ds)
 		xposition += xstep;
 		yposition += ystep;
 
-		bit = (((UINT32)yposition >> ds->nflatyshift) & ds->nflatmask) | ((UINT32)xposition >> ds->nflatxshift);
+		bit = ((yposition >> ds->nflatyshift) & ds->nflatmask) | (xposition >> ds->nflatxshift);
 		bit &= MAXFLATBYTES;
 		val = source[bit];
 		if (val != TRANSPARENTPIXEL)
@@ -392,7 +392,7 @@ void R_DrawSplat(drawspandata_t* ds)
 		xposition += xstep;
 		yposition += ystep;
 
-		bit = (((UINT32)yposition >> ds->nflatyshift) & ds->nflatmask) | ((UINT32)xposition >> ds->nflatxshift);
+		bit = ((yposition >> ds->nflatyshift) & ds->nflatmask) | (xposition >> ds->nflatxshift);
 		bit &= MAXFLATBYTES;
 		val = source[bit];
 		if (val != TRANSPARENTPIXEL)
@@ -405,7 +405,7 @@ void R_DrawSplat(drawspandata_t* ds)
 	}
 	while (count--)
 	{
-		bit = (((UINT32)yposition >> ds->nflatyshift) & ds->nflatmask) | ((UINT32)xposition >> ds->nflatxshift);
+		bit = ((yposition >> ds->nflatyshift) & ds->nflatmask) | (xposition >> ds->nflatxshift);
 		val = source[bit];
 		if (val != TRANSPARENTPIXEL)
 		{
@@ -423,9 +423,9 @@ void R_DrawSplat(drawspandata_t* ds)
 */
 void R_DrawTranslucentSplat(drawspandata_t* ds)
 {
-	uintptr_t xposition;
-	uintptr_t yposition;
-	uintptr_t xstep, ystep;
+	UINT32 xposition;
+	UINT32 yposition;
+	UINT32 xstep, ystep;
 	register UINT32 bit;
 	register UINT32 val;
 
@@ -453,56 +453,56 @@ void R_DrawTranslucentSplat(drawspandata_t* ds)
 		// SoM: Why didn't I see this earlier? the spot variable is a waste now because we don't
 		// have the uber complicated math to calculate it now, so that was a memory write we didn't
 		// need!
-		bit = (((UINT32)yposition >> ds->nflatyshift) & ds->nflatmask) | ((UINT32)xposition >> ds->nflatxshift);
+		bit = ((yposition >> ds->nflatyshift) & ds->nflatmask) | (xposition >> ds->nflatxshift);
 		val = source[bit];
 		if (val != TRANSPARENTPIXEL)
 			dest[0] = *(ds->transmap + (colormap[val] << 8) + dest[0]);
 		xposition += xstep;
 		yposition += ystep;
 
-		bit = (((UINT32)yposition >> ds->nflatyshift) & ds->nflatmask) | ((UINT32)xposition >> ds->nflatxshift);
+		bit = ((yposition >> ds->nflatyshift) & ds->nflatmask) | (xposition >> ds->nflatxshift);
 		val = source[bit];
 		if (val != TRANSPARENTPIXEL)
 			dest[1] = *(ds->transmap + (colormap[val] << 8) + dest[1]);
 		xposition += xstep;
 		yposition += ystep;
 
-		bit = (((UINT32)yposition >> ds->nflatyshift) & ds->nflatmask) | ((UINT32)xposition >> ds->nflatxshift);
+		bit = ((yposition >> ds->nflatyshift) & ds->nflatmask) | (xposition >> ds->nflatxshift);
 		val = source[bit];
 		if (val != TRANSPARENTPIXEL)
 			dest[2] = *(ds->transmap + (colormap[val] << 8) + dest[2]);
 		xposition += xstep;
 		yposition += ystep;
 
-		bit = (((UINT32)yposition >> ds->nflatyshift) & ds->nflatmask) | ((UINT32)xposition >> ds->nflatxshift);
+		bit = ((yposition >> ds->nflatyshift) & ds->nflatmask) | (xposition >> ds->nflatxshift);
 		val = source[bit];
 		if (val != TRANSPARENTPIXEL)
 			dest[3] = *(ds->transmap + (colormap[val] << 8) + dest[3]);
 		xposition += xstep;
 		yposition += ystep;
 
-		bit = (((UINT32)yposition >> ds->nflatyshift) & ds->nflatmask) | ((UINT32)xposition >> ds->nflatxshift);
+		bit = ((yposition >> ds->nflatyshift) & ds->nflatmask) | (xposition >> ds->nflatxshift);
 		val = source[bit];
 		if (val != TRANSPARENTPIXEL)
 			dest[4] = *(ds->transmap + (colormap[val] << 8) + dest[4]);
 		xposition += xstep;
 		yposition += ystep;
 
-		bit = (((UINT32)yposition >> ds->nflatyshift) & ds->nflatmask) | ((UINT32)xposition >> ds->nflatxshift);
+		bit = ((yposition >> ds->nflatyshift) & ds->nflatmask) | (xposition >> ds->nflatxshift);
 		val = source[bit];
 		if (val != TRANSPARENTPIXEL)
 			dest[5] = *(ds->transmap + (colormap[val] << 8) + dest[5]);
 		xposition += xstep;
 		yposition += ystep;
 
-		bit = (((UINT32)yposition >> ds->nflatyshift) & ds->nflatmask) | ((UINT32)xposition >> ds->nflatxshift);
+		bit = ((yposition >> ds->nflatyshift) & ds->nflatmask) | (xposition >> ds->nflatxshift);
 		val = source[bit];
 		if (val != TRANSPARENTPIXEL)
 			dest[6] = *(ds->transmap + (colormap[val] << 8) + dest[6]);
 		xposition += xstep;
 		yposition += ystep;
 
-		bit = (((UINT32)yposition >> ds->nflatyshift) & ds->nflatmask) | ((UINT32)xposition >> ds->nflatxshift);
+		bit = ((yposition >> ds->nflatyshift) & ds->nflatmask) | (xposition >> ds->nflatxshift);
 		val = source[bit];
 		if (val != TRANSPARENTPIXEL)
 			dest[7] = *(ds->transmap + (colormap[val] << 8) + dest[7]);
@@ -514,7 +514,7 @@ void R_DrawTranslucentSplat(drawspandata_t* ds)
 	}
 	while (count--)
 	{
-		bit = (((UINT32)yposition >> ds->nflatyshift) & ds->nflatmask) | ((UINT32)xposition >> ds->nflatxshift);
+		bit = ((yposition >> ds->nflatyshift) & ds->nflatmask) | (xposition >> ds->nflatxshift);
 		val = source[bit];
 		if (val != TRANSPARENTPIXEL)
 			*dest = *(ds->transmap + (colormap[val] << 8) + *dest);

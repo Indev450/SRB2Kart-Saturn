@@ -25,7 +25,7 @@
 void R_DrawColumn(drawcolumndata_t* dc)
 {
 	INT32 count;
-	UINT8 *restrict dest;
+	register UINT8 *restrict dest;
 	intptr_t frac;
 	intptr_t fracstep;
 
@@ -145,7 +145,7 @@ void R_DrawColumn(drawcolumndata_t* dc)
 void R_Draw2sMultiPatchColumn(drawcolumndata_t* dc)
 {
 	INT32 count;
-	UINT8 *restrict dest;
+	register UINT8 *restrict dest;
 	intptr_t frac;
 	intptr_t fracstep;
 
@@ -284,7 +284,7 @@ void R_Draw2sMultiPatchColumn(drawcolumndata_t* dc)
 void R_Draw2sMultiPatchTranslucentColumn(drawcolumndata_t* dc)
 {
 	INT32 count;
-	UINT8 *restrict dest;
+	register UINT8 *restrict dest;
 	intptr_t frac;
 	intptr_t fracstep;
 
@@ -428,7 +428,7 @@ void R_Draw2sMultiPatchTranslucentColumn(drawcolumndata_t* dc)
 void R_DrawTranslucentColumn(drawcolumndata_t* dc)
 {
 	register INT32 count;
-	UINT8 *restrict dest;
+	register UINT8 *restrict dest;
 	intptr_t frac;
 	intptr_t fracstep;
 
@@ -528,7 +528,7 @@ void R_DrawTranslucentColumn(drawcolumndata_t* dc)
 void R_DrawTranslatedTranslucentColumn(drawcolumndata_t* dc)
 {
 	register INT32 count;
-	UINT8 *restrict dest;
+	register UINT8 *restrict dest;
 	intptr_t frac;
 	intptr_t fracstep;
 
