@@ -608,7 +608,7 @@ void R_DrawSpan_Tilted(drawspandata_t* ds)
 	// dont realloc every frame pls thx
 	if (tiltlighting == NULL || oldviewwidth != viewwidth)
 	{
-		tiltlighting = Z_Realloc(tiltlighting, sizeof(*tiltlighting) * viewwidth, PU_STATIC, NULL);
+		tiltlighting = realloc(tiltlighting, sizeof(*tiltlighting) * viewwidth);
 		oldviewwidth = viewwidth;
 	}
 
@@ -755,7 +755,7 @@ void R_DrawTranslucentSpan_Tilted(drawspandata_t* ds)
 	// dont realloc every frame pls thx
 	if (tiltlighting == NULL || oldviewwidth != viewwidth)
 	{
-		tiltlighting = Z_Realloc(tiltlighting, sizeof(*tiltlighting) * viewwidth, PU_STATIC, NULL);
+		tiltlighting = realloc(tiltlighting, sizeof(*tiltlighting) * viewwidth);
 		oldviewwidth = viewwidth;
 	}
 
@@ -903,7 +903,7 @@ void R_DrawTranslucentWaterSpan_Tilted(drawspandata_t* ds)
 	// dont realloc every frame pls thx
 	if (tiltlighting == NULL || oldviewwidth != viewwidth)
 	{
-		tiltlighting = Z_Realloc(tiltlighting, sizeof(*tiltlighting) * viewwidth, PU_STATIC, NULL);
+		tiltlighting = realloc(tiltlighting, sizeof(*tiltlighting) * viewwidth);
 		oldviewwidth = viewwidth;
 	}
 
@@ -1051,7 +1051,7 @@ void R_DrawSplat_Tilted(drawspandata_t* ds)
 	// dont realloc every frame pls thx
 	if (tiltlighting == NULL || oldviewwidth != viewwidth)
 	{
-		tiltlighting = Z_Realloc(tiltlighting, sizeof(*tiltlighting) * viewwidth, PU_STATIC, NULL);
+		tiltlighting = realloc(tiltlighting, sizeof(*tiltlighting) * viewwidth);
 		oldviewwidth = viewwidth;
 	}
 
