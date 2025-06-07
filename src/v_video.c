@@ -656,10 +656,7 @@ void V_DrawStretchyFixedPatch(fixed_t x, fixed_t y, fixed_t pscale, fixed_t vsca
 	fixed_t pwidth; // patch width
 	fixed_t offx = 0; // x offset
 
-	if (rendermode == render_none)
-		return;
-
-	if (!patch)
+	if (rendermode == render_none || !patch)
 		return;
 
 #ifdef HWRENDER
@@ -679,12 +676,18 @@ void V_DrawStretchyFixedPatch(fixed_t x, fixed_t y, fixed_t pscale, fixed_t vsca
 	v_translevel = NULL;
 	if (alphalevel || blendmode)
 	{
-		if (alphalevel == 13)
-			alphalevel = hudminusalpha[hudtrans];
-		else if (alphalevel == 14)
-			alphalevel = 10 - hudtrans;
-		else if (alphalevel == 15)
-			alphalevel = hudplusalpha[hudtrans];
+		switch (alphalevel)
+		{
+			case 13:
+				alphalevel = hudminusalpha[hudtrans];
+				break;
+			case 14:
+				alphalevel = (10 - hudtrans);
+				break;
+			case 15:
+				alphalevel = hudplusalpha[hudtrans];
+				break;
+		}
 
 		if (alphalevel >= 10)
 			return; // invis
@@ -972,10 +975,7 @@ void V_DrawCroppedPatch(fixed_t x, fixed_t y, fixed_t pscale, INT32 scrn, patch_
 	UINT8 *desttop, *dest;
 	const UINT8 *source, *deststop;
 
-	if (rendermode == render_none)
-		return;
-
-	if (!patch)
+	if (rendermode == render_none || !patch)
 		return;
 
 #ifdef HWRENDER
@@ -991,12 +991,18 @@ void V_DrawCroppedPatch(fixed_t x, fixed_t y, fixed_t pscale, INT32 scrn, patch_
 	v_translevel = NULL;
 	if ((alphalevel = ((scrn & V_ALPHAMASK) >> V_ALPHASHIFT)))
 	{
-		if (alphalevel == 13)
-			alphalevel = hudminusalpha[hudtrans];
-		else if (alphalevel == 14)
-			alphalevel = 10 - hudtrans;
-		else if (alphalevel == 15)
-			alphalevel = hudplusalpha[hudtrans];
+		switch (alphalevel)
+		{
+			case 13:
+				alphalevel = hudminusalpha[hudtrans];
+				break;
+			case 14:
+				alphalevel = (10 - hudtrans);
+				break;
+			case 15:
+				alphalevel = hudplusalpha[hudtrans];
+				break;
+		}
 
 		if (alphalevel >= 10)
 			return; // invis
@@ -1239,6 +1245,7 @@ void V_DrawFill(INT32 x, INT32 y, INT32 w, INT32 h, INT32 c)
 			else if (!(c & V_SNAPTOTOP))
 				y += (vid.height - (BASEVIDHEIGHT * dupy)) / 2;
 		}
+
 		if (c & V_SPLITSCREEN)
 			y += (BASEVIDHEIGHT * dupy)/2;
 		if (c & V_HORZSCREEN)
@@ -1272,12 +1279,18 @@ void V_DrawFill(INT32 x, INT32 y, INT32 w, INT32 h, INT32 c)
 
 	if (alphalevel)
 	{
-		if (alphalevel == 13)
-			alphalevel = hudminusalpha[hudtrans];
-		else if (alphalevel == 14)
-			alphalevel = 10 - hudtrans;
-		else if (alphalevel == 15)
-			alphalevel = hudplusalpha[hudtrans];
+		switch (alphalevel)
+		{
+			case 13:
+				alphalevel = hudminusalpha[hudtrans];
+				break;
+			case 14:
+				alphalevel = (10 - hudtrans);
+				break;
+			case 15:
+				alphalevel = hudplusalpha[hudtrans];
+				break;
+		}
 
 		if (alphalevel >= 10)
 			return; // invis
@@ -1354,7 +1367,7 @@ void V_DrawFillConsoleMap(INT32 x, INT32 y, INT32 w, INT32 h, INT32 c)
 	if (rendermode == render_opengl)
 	{
 		UINT32 hwcolor = V_GetHWConsBackColor();
-		HWR_DrawConsoleFill(x, y, w, h, hwcolor, c);	// we still use the regular color stuff but only for flags. actual draw color is "hwcolor" for this.
+		HWR_DrawConsoleFill(x, y, w, h, hwcolor, c); // we still use the regular color stuff but only for flags. actual draw color is "hwcolor" for this.
 		return;
 	}
 #endif
@@ -1416,12 +1429,18 @@ void V_DrawFillConsoleMap(INT32 x, INT32 y, INT32 w, INT32 h, INT32 c)
 
 	if ((alphalevel = ((c & V_ALPHAMASK) >> V_ALPHASHIFT)))
 	{
-		if (alphalevel == 13)
-			alphalevel = hudminusalpha[hudtrans];
-		else if (alphalevel == 14)
-			alphalevel = 10 - hudtrans;
-		else if (alphalevel == 15)
-			alphalevel = hudplusalpha[hudtrans];
+		switch (alphalevel)
+		{
+			case 13:
+				alphalevel = hudminusalpha[hudtrans];
+				break;
+			case 14:
+				alphalevel = (10 - hudtrans);
+				break;
+			case 15:
+				alphalevel = hudplusalpha[hudtrans];
+				break;
+		}
 
 		if (alphalevel >= 10)
 			return; // invis
@@ -1429,13 +1448,18 @@ void V_DrawFillConsoleMap(INT32 x, INT32 y, INT32 w, INT32 h, INT32 c)
 
 	c &= 255;
 
-	if (!alphalevel) {
-		for (v = 0; v < h; v++, dest += vid.width) {
-			for (u = 0; u < w; u++) {
+	if (!alphalevel)
+	{
+		for (v = 0; v < h; v++, dest += vid.width)
+		{
+			for (u = 0; u < w; u++)
+			{
 				dest[u] = consolebgmap[dest[u]];
 			}
 		}
-	} else { // mpc 12-04-2018
+	}
+	else
+	{ // mpc 12-04-2018
 		const UINT8 *fadetable = ((UINT8 *)transtables + ((alphalevel-1)<<FF_TRANSSHIFT) + (c*256));
 #define clip(x,y) (x>y) ? y : x
 		w = clip(w,vid.width);
