@@ -149,7 +149,7 @@ static fixed_t R_CalculateRippleOffset(drawspandata_t* ds, INT32 y)
 {
 	fixed_t distance = FixedMul(ds->planeheight, yslope[y]);
 	const INT32 yay = (ds->planeripple.offset + (distance>>9)) & 8191;
-	return FixedDiv(FINESINE(yay), (1<<12) + (distance>>11))>>FRACBITS;
+	return FixedDiv(FINESINE(yay), (1<<12) + (distance>>11));
 }
 
 static void R_CalculatePlaneRipple(drawspandata_t* ds, angle_t angle)
@@ -221,6 +221,11 @@ static void R_MapPlane(drawspandata_t *ds, spandrawfunc_t *localspanfunc, INT32 
 		ds->ystep = FixedMul(distance, baseyscale);
 	}
 
+	// [RH] Instead of using the xtoviewangle array, I calculated the fractional values
+	// at the middle of the screen, then used the calculated ds_xstep and ds_ystep
+	// to step from those to the proper texture coordinate to start drawing at.
+	// That way, the texture coordinate is always calculated by its position
+	// on the screen and not by its position relative to the edge of the visplane.
 	ds->xfrac = ds->xoffs + FixedMul(planecos, distance) + (x1 - centerx) * ds->xstep;
 	ds->yfrac = ds->yoffs - FixedMul(planesin, distance) + (x1 - centerx) * ds->ystep;
 
@@ -232,6 +237,7 @@ static void R_MapPlane(drawspandata_t *ds, spandrawfunc_t *localspanfunc, INT32 
 
 		ds->xfrac += ds->planeripple.xfrac;
 		ds->yfrac += ds->planeripple.yfrac;
+		ds->bgofs >>= FRACBITS;
 
 		if ((y + ds->bgofs) >= viewheight)
 			ds->bgofs = viewheight-y-1;
@@ -273,6 +279,8 @@ static void R_MapTiltedPlane(drawspandata_t *ds, spandrawfunc_t *localspanfunc, 
 
 		R_CalculatePlaneRipple(ds, ds->currentplane->viewangle + ds->currentplane->plangle);
 		R_SetSlopePlaneVectors(ds, ds->currentplane, y, (ds->xoffs + ds->planeripple.xfrac), (ds->yoffs + ds->planeripple.yfrac));
+
+		ds->bgofs >>= FRACBITS;
 
 		if ((y + ds->bgofs) >= viewheight)
 			ds->bgofs = viewheight-y-1;
