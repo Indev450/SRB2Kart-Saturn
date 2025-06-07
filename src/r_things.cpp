@@ -664,9 +664,7 @@ void R_DrawMaskedColumn(drawcolumndata_t* dc, column_t *column)
 			drawcolumndata_t dc_copy = *dc;
 			void (*colfunccopy)(drawcolumndata_t*);
 			colfunccopy = colfunc;
-			colfunccopy((drawcolumndata_t*)(&dc_copy));
-
-			//colfunc();
+			colfunccopy(const_cast<drawcolumndata_t*>(&dc_copy));
 		}
 		column = (column_t *)((UINT8 *)column + column->length + 4);
 	}
@@ -729,9 +727,7 @@ static void R_DrawFlippedMaskedColumn(drawcolumndata_t* dc, column_t *column)
 			drawcolumndata_t dc_copy = *dc;
 			void (*colfunccopy)(drawcolumndata_t*);
 			colfunccopy = colfunc;
-			colfunccopy((drawcolumndata_t*)(&dc_copy));
-
-			//colfunc();
+			colfunccopy(const_cast<drawcolumndata_t*>(&dc_copy));
 
 			Z_Free(dc->source);
 		}
