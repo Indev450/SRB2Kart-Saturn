@@ -553,7 +553,7 @@ static void HWR_RenderPlane(subsector_t *subsector, extrasubsector_t *xsub, bool
 	size_t len;
 
 	float tempxsow, tempytow;
-	float scrollx = 0.0f, scrolly = 0.0f;
+	float scrollx = 0.0f, scrolly = 0.0f, anglef = 0.0f;
 	angle_t angle = 0;
 
 	static FOutVector *planeVerts = NULL;
@@ -673,14 +673,11 @@ static void HWR_RenderPlane(subsector_t *subsector, extrasubsector_t *xsub, bool
 
 	if (angle) // Only needs to be done if there's an altered angle
 	{
-		angle = InvAngle(angle)>>ANGLETOFINESHIFT;
-
-		// This needs to be done so everything aligns after rotation
-		// It would be done so that rotation is done, THEN the translation, but I couldn't get it to rotate AND scroll like software does
-		tempxsow = FloatToFixed(flatxref);
-		tempytow = FloatToFixed(flatyref);
-		flatxref = (FixedToFloat(FixedMul(tempxsow, FINECOSINE(angle)) - FixedMul(tempytow, FINESINE(angle))));
-		flatyref = (FixedToFloat(FixedMul(tempxsow, FINESINE(angle)) + FixedMul(tempytow, FINECOSINE(angle))));
+		tempxsow = flatxref;
+		tempytow = flatyref;
+		anglef = ANG2RAD(InvAngle(angle));
+		flatxref = (tempxsow * cos(anglef)) - (tempytow * sin(anglef));
+		flatyref = (tempxsow * sin(anglef)) + (tempytow * cos(anglef));
 	}
 
 #define SETUP3DVERT(vert, vx, vy) {\
@@ -691,10 +688,10 @@ static void HWR_RenderPlane(subsector_t *subsector, extrasubsector_t *xsub, bool
 		/* Need to rotate before translate */\
 		if (angle) /* Only needs to be done if there's an altered angle */\
 		{\
-			tempxsow = FloatToFixed(vert->s);\
-			tempytow = FloatToFixed(vert->t);\
-			vert->s = (FixedToFloat(FixedMul(tempxsow, FINECOSINE(angle)) - FixedMul(tempytow, FINESINE(angle))));\
-			vert->t = (FixedToFloat(FixedMul(tempxsow, FINESINE(angle)) + FixedMul(tempytow, FINECOSINE(angle))));\
+			tempxsow = vert->s;\
+			tempytow = vert->t;\
+			vert->s = (tempxsow * cos(anglef)) - (tempytow * sin(anglef));\
+			vert->t = (tempxsow * sin(anglef)) + (tempytow * cos(anglef));\
 		}\
 \
 		vert->x = (vx);\
