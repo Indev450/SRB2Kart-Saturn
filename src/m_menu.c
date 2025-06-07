@@ -3602,8 +3602,8 @@ static void M_ChangeCvar(INT32 choice)
 		char s[20];
 		float increment;
 
-		increment = (currentMenu->menuitems[itemOn].status & IT_CV_BIGFLOAT) ? 0.5f : (1.0f/16.0f);
-		sprintf(s, "%f",FIXED_TO_FLOAT(cv->value)+(choice)*increment);
+		increment = FIXED_TO_FLOAT(cv->value)+(choice)*((currentMenu->menuitems[itemOn].status & IT_CV_BIGFLOAT) ? 0.5f : (1.0f/16.0f));
+		sprintf(s,"%ld%s",(long)increment,M_Ftrim(increment));
 		CV_Set(cv, s);
 	}
 	else
