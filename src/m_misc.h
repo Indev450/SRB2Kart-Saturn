@@ -15,6 +15,10 @@
 #ifndef __M_MISC__
 #define __M_MISC__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "doomtype.h"
 #include "tables.h"
 
@@ -120,5 +124,9 @@ UINT32 FNV1a_HashLowercaseString(const char *message);
 
 #include "w_wad.h"
 extern char configfile[MAX_WADPATH];
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif

@@ -282,7 +282,7 @@ void I_UpdateSound(void)
 // sorry. more asm needed.
 static Mix_Chunk *ds2chunk(void *stream)
 {
-	UINT16 ver,freq;
+	UINT16 ver, freq;
 	UINT32 samples, i, newsamples;
 	UINT8 *sound;
 

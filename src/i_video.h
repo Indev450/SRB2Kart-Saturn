@@ -14,6 +14,10 @@
 #ifndef __I_VIDEO__
 #define __I_VIDEO__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "doomtype.h"
 
 #ifdef __GNUG__
@@ -149,6 +153,10 @@ void RefreshOGLSDLSurface(void);
 void I_DownSample(void);
 boolean UseScreenFBO(void);
 extern boolean downsample;
+#endif
+
+#ifdef __cplusplus
+} // extern "C"
 #endif
 
 #endif

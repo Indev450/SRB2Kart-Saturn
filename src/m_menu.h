@@ -15,6 +15,10 @@
 #ifndef __X_MENU__
 #define __X_MENU__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "r_skins.h"
 #include "d_event.h"
 #include "command.h"
@@ -433,5 +437,9 @@ if (currentMenu == &menu)\
 			coolalphatimer--;\
 	}\
 }
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif //__X_MENU__

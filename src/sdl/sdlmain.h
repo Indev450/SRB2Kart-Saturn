@@ -19,6 +19,10 @@
 #ifndef __sdlmain__
 #define __sdlmain__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 extern SDL_bool consolevent;
 extern SDL_bool framebuffer;
 
@@ -85,5 +89,9 @@ void SDLforceUngrabMouse(void);
 
 // Needed for some WIN32 functions
 extern SDL_Window *window;
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif

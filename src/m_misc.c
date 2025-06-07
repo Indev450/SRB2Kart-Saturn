@@ -14,6 +14,10 @@
 
 #ifdef __GNUC__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #if (__GNUC__ > 4) || (__GNUC__ == 4 && __GNUC_MINOR__ >= 3)
 // Ignore "argument might be clobbered by longjmp" warning in GCC
 // (if libpng is compiled with setjmp error handling)
@@ -2207,3 +2211,7 @@ UINT32 FNV1a_HashLowercaseString(const char *message)
 
 	return hash;
 }
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
