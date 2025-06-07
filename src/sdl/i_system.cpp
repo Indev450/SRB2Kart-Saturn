@@ -2529,43 +2529,43 @@ static const char *locateWad(void)
 
 	// examine default dirs
 #ifdef DEFAULTWADLOCATION1
-	I_OutputMsg(","DEFAULTWADLOCATION1);
+	I_OutputMsg("," DEFAULTWADLOCATION1);
 	strcpy(returnWadPath, DEFAULTWADLOCATION1);
 	if (isWadPathOk(returnWadPath))
 		return returnWadPath;
 #endif
 #ifdef DEFAULTWADLOCATION2
-	I_OutputMsg(","DEFAULTWADLOCATION2);
+	I_OutputMsg("," DEFAULTWADLOCATION2);
 	strcpy(returnWadPath, DEFAULTWADLOCATION2);
 	if (isWadPathOk(returnWadPath))
 		return returnWadPath;
 #endif
 #ifdef DEFAULTWADLOCATION3
-	I_OutputMsg(","DEFAULTWADLOCATION3);
+	I_OutputMsg("," DEFAULTWADLOCATION3);
 	strcpy(returnWadPath, DEFAULTWADLOCATION3);
 	if (isWadPathOk(returnWadPath))
 		return returnWadPath;
 #endif
 #ifdef DEFAULTWADLOCATION4
-	I_OutputMsg(","DEFAULTWADLOCATION4);
+	I_OutputMsg("," DEFAULTWADLOCATION4);
 	strcpy(returnWadPath, DEFAULTWADLOCATION4);
 	if (isWadPathOk(returnWadPath))
 		return returnWadPath;
 #endif
 #ifdef DEFAULTWADLOCATION5
-	I_OutputMsg(","DEFAULTWADLOCATION5);
+	I_OutputMsg("," DEFAULTWADLOCATION5);
 	strcpy(returnWadPath, DEFAULTWADLOCATION5);
 	if (isWadPathOk(returnWadPath))
 		return returnWadPath;
 #endif
 #ifdef DEFAULTWADLOCATION6
-	I_OutputMsg(","DEFAULTWADLOCATION6);
+	I_OutputMsg("," DEFAULTWADLOCATION6);
 	strcpy(returnWadPath, DEFAULTWADLOCATION6);
 	if (isWadPathOk(returnWadPath))
 		return returnWadPath;
 #endif
 #ifdef DEFAULTWADLOCATION7
-	I_OutputMsg(","DEFAULTWADLOCATION7);
+	I_OutputMsg("," DEFAULTWADLOCATION7);
 	strcpy(returnWadPath, DEFAULTWADLOCATION7);
 	if (isWadPathOk(returnWadPath))
 		return returnWadPath;
@@ -2587,21 +2587,21 @@ static const char *locateWad(void)
 #endif
 #ifdef DEFAULTSEARCHPATH1
 	// find in /usr/local
-	I_OutputMsg(", in:"DEFAULTSEARCHPATH1);
+	I_OutputMsg(", in:" DEFAULTSEARCHPATH1);
 	WadPath = searchWad(DEFAULTSEARCHPATH1);
 	if (WadPath)
 		return WadPath;
 #endif
 #ifdef DEFAULTSEARCHPATH2
 	// find in /usr/games
-	I_OutputMsg(", in:"DEFAULTSEARCHPATH2);
+	I_OutputMsg(", in:" DEFAULTSEARCHPATH2);
 	WadPath = searchWad(DEFAULTSEARCHPATH2);
 	if (WadPath)
 		return WadPath;
 #endif
 #ifdef DEFAULTSEARCHPATH3
 	// find in ???
-	I_OutputMsg(", in:"DEFAULTSEARCHPATH3);
+	I_OutputMsg(", in:" DEFAULTSEARCHPATH3);
 	WadPath = searchWad(DEFAULTSEARCHPATH3);
 	if (WadPath)
 		return WadPath;
