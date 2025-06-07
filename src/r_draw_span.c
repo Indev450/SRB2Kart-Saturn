@@ -15,7 +15,13 @@
 // SPANS
 // ==========================================================================
 
+#ifdef _WIN32
+#include <windows.h>
+#define local_for_thread static __thread
+#else
 #include <threads.h>
+#define local_for_thread thread_local static
+#endif
 
 #define SPANSIZE 16
 #define INVSPAN 0.0625f
@@ -596,8 +602,8 @@ void R_DrawSpan_Tilted(drawspandata_t* ds)
 	float endz, endu, endv;
 	UINT32 stepu, stepv;
 	register UINT32 bit;
-	thread_local static INT32 *tiltlighting = NULL;
-	thread_local static INT32 oldviewwidth = 0;
+	local_for_thread INT32 *tiltlighting = NULL;
+	local_for_thread INT32 oldviewwidth = 0;
 
 	// dont realloc every frame pls thx
 	if (tiltlighting == NULL || oldviewwidth != viewwidth)
@@ -743,8 +749,8 @@ void R_DrawTranslucentSpan_Tilted(drawspandata_t* ds)
 	float endz, endu, endv;
 	UINT32 stepu, stepv;
 	register UINT32 bit;
-	thread_local static INT32 *tiltlighting = NULL;
-	thread_local static INT32 oldviewwidth = 0;
+	local_for_thread INT32 *tiltlighting = NULL;
+	local_for_thread INT32 oldviewwidth = 0;
 
 	// dont realloc every frame pls thx
 	if (tiltlighting == NULL || oldviewwidth != viewwidth)
@@ -891,8 +897,8 @@ void R_DrawTranslucentWaterSpan_Tilted(drawspandata_t* ds)
 	float endz, endu, endv;
 	UINT32 stepu, stepv;
 	register UINT32 bit;
-	thread_local static INT32 *tiltlighting = NULL;
-	thread_local static INT32 oldviewwidth = 0;
+	local_for_thread INT32 *tiltlighting = NULL;
+	local_for_thread INT32 oldviewwidth = 0;
 
 	// dont realloc every frame pls thx
 	if (tiltlighting == NULL || oldviewwidth != viewwidth)
@@ -1039,8 +1045,8 @@ void R_DrawSplat_Tilted(drawspandata_t* ds)
 	float endz, endu, endv;
 	UINT32 stepu, stepv;
 	register UINT32 bit;
-	thread_local static INT32 *tiltlighting = NULL;
-	thread_local static INT32 oldviewwidth = 0;
+	local_for_thread INT32 *tiltlighting = NULL;
+	local_for_thread INT32 oldviewwidth = 0;
 
 	// dont realloc every frame pls thx
 	if (tiltlighting == NULL || oldviewwidth != viewwidth)
