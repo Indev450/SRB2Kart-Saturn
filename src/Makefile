@@ -268,14 +268,11 @@ opts+=$(debug_opts)
 
 opts+=$(foreach v,$(passthru_opts),$(if $($(v)),-D$(v)))
 
-opts+=$(CPPFLAGS) $(CFLAGS)
-libs+=$(LDFLAGS) -lstdc++ -lpthread
-asflags:=$(ASFLAGS) -x assembler-with-cpp
-
+opts+=$(WFLAGS) $(CPPFLAGS) $(CFLAGS)
 cxxopts:=$(opts) $(CXXFLAGS)
 
-# pls dont pass the warning flags to ceepeepee
-opts+=$(WFLAGS)
+libs+=$(LDFLAGS) -lstdc++ -lpthread
+asflags:=$(ASFLAGS) -x assembler-with-cpp
 
 cc=$(CC)
 cxx=$(CXX)
@@ -296,6 +293,7 @@ ifndef SILENT
 ifndef MAKE_RESTARTS
 ifndef destructive
 $(shell $(CC) -v)
+#$(shell $(CXX) -v)
 define flags =
 
 SHELL ..... $(SHELL)
@@ -323,6 +321,7 @@ endif
 
 LD:=$(CC)
 cc:=$(cc) $(opts)
+cxx:=$(cxx) $(cxxopts)
 ifdef UPX
 upx=$(UPX) $(UPX_OPTS)
 endif
@@ -400,7 +399,7 @@ $(objdir)/%.$(1) : %.$(2) | $$$$(@D)/
 endef
 
 $(eval $(call _recipe,o,c,$(cc) -c -o $$@ $$<))
-$(eval $(call _recipe,o,cpp,$(cxx) $(cxxopts) -c -o $$@ $$<))
+$(eval $(call _recipe,o,cpp,$(cxx) -c -o $$@ $$<))
 $(eval $(call _recipe,o,s,$(cc) $(asflags) -c -o $$@ $$<))
 $(eval $(call _recipe,res,rc,$(windres) -i $$< -o $$@))
 
