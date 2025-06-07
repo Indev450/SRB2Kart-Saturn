@@ -14,6 +14,10 @@
 
 #ifdef __GNUC__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #if (__GNUC__ > 4) || (__GNUC__ == 4 && __GNUC_MINOR__ >= 3)
 // Ignore "argument might be clobbered by longjmp" warning in GCC
 // (if libpng is compiled with setjmp error handling)
@@ -2191,3 +2195,8 @@ void M_MkdirEach(const char *path, int start, int mode)
 {
 	M_MkdirEachUntil(path, start, -1, mode);
 }
+
+
+#ifdef __cplusplus
+} // extern "C"
+#endif

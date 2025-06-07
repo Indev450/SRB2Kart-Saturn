@@ -204,6 +204,8 @@ static char returnWadPath[256];
 #include "../byteptr.h"
 #endif
 
+static std::thread::id g_main_thread_id;
+
 INT32 numcontrollers = 0;
 
 #ifdef HAVE_LIBBACKTRACE
@@ -211,11 +213,13 @@ INT32 numcontrollers = 0;
 // TODO - move this to some header file instead
 extern struct backtrace_state *bt_state;
 
+typedef enum {
+	BTCRASH_SIGNAL,
+	BTCRASH_ERRORMSG,
+} bt_crash_type_t;
+
 typedef struct bt_crash_reason_s {
-	enum {
-		BTCRASH_SIGNAL,
-		BTCRASH_ERRORMSG,
-	} type;
+	bt_crash_type_t type;
 
 	union {
 		INT32 signal;
@@ -496,13 +500,13 @@ static void I_ReportSignal(int num, int coredumped)
 #ifndef NEWSIGNALHANDLER
 FUNCNORETURN static ATTRNORETURN void signal_handler(INT32 num)
 {
-	/*if (g_main_thread_id != std::this_thread::get_id())
+	if (g_main_thread_id != std::this_thread::get_id())
 	{
 		// Do not attempt any sort of recovery if this signal triggers off the main thread
 		signal(num, SIG_DFL);
 		raise(num);
 		exit(-2);
-	}*/
+	}
 
 	g_in_exiting_signal_handler = true;
 
@@ -617,8 +621,8 @@ static void I_StartupConsole(void)
 	signal(SIGTTIN, SIG_IGN);
 	signal(SIGTTOU, SIG_IGN);
 
-	consolevent = !M_CheckParm("-noconsole");
-	framebuffer = M_CheckParm("-framebuffer");
+	consolevent = static_cast<SDL_bool>(!M_CheckParm("-noconsole"));
+	framebuffer = static_cast<SDL_bool>( M_CheckParm("-framebuffer"));
 
 	if (framebuffer)
 		consolevent = SDL_FALSE;
@@ -658,8 +662,9 @@ static void I_StartupConsole(void)
 void I_GetConsoleEvents(void)
 {
 	// we use this when sending back commands
-	event_t ev = {0,0,0,0};
+	event_t ev = {};
 	char key = 0;
+
 	struct pollfd pfd =
 	{
 		.fd = STDIN_FILENO,
@@ -865,6 +870,8 @@ static inline void I_ShutdownConsole(void){}
 //
 static void I_RegisterSignals (void)
 {
+	g_main_thread_id = std::this_thread::get_id();
+
 #ifdef SIGINT
 	signal(SIGINT , quit_handler);
 #endif
@@ -922,7 +929,7 @@ void I_OutputMsg(const char *fmt, ...)
 	if (len == 0)
 		return;
 
-	txt = malloc(len+1);
+	txt = static_cast<char*>(malloc(len+1));
 	va_start(argptr,fmt);
 	vsprintf(txt, fmt, argptr);
 	va_end(argptr);
@@ -989,7 +996,7 @@ void I_OutputMsg(const char *fmt, ...)
 					return;
 				}
 
-				ReadConsoleOutputCharacter(co, oldLines, oldLength, coordNextWrite, &bytesWritten);
+				ReadConsoleOutputCharacter(co, (LPSTR)oldLines, oldLength, coordNextWrite, &bytesWritten);
 
 				// Move to where we what to print - which is where we would've been,
 				// had console input not been in the way,
@@ -1212,7 +1219,7 @@ void I_ShutdownJoystick(UINT8 index)
 
 void I_GetJoystickEvents(UINT8 index)
 {
-	static event_t event = {0,0,0,0};
+	static event_t event = {};
 	INT32 i = 0;
 	UINT64 joyhats = 0;
 
@@ -1565,11 +1572,12 @@ static void I_SetupMumble(void)
 {
 #ifdef WINMUMBLE
 	HANDLE hMap = OpenFileMappingW(FILE_MAP_ALL_ACCESS, FALSE, L"MumbleLink");
+
 	if (!hMap)
 		return;
 
-	//mumble = static_cast<mumble_s*>(MapViewOfFile(hMap, FILE_MAP_ALL_ACCESS, 0, 0, sizeof(*mumble)));
-	mumble = MapViewOfFile(hMap, FILE_MAP_ALL_ACCESS, 0, 0, sizeof(*mumble));
+	mumble = static_cast<mumble_s*>(MapViewOfFile(hMap, FILE_MAP_ALL_ACCESS, 0, 0, sizeof(*mumble)));
+
 	if (!mumble)
 		CloseHandle(hMap);
 #elif defined (HAVE_SHM)
@@ -1579,10 +1587,11 @@ static void I_SetupMumble(void)
 	snprintf(memname, 256, "/MumbleLink.%d", getuid());
 	shmfd = shm_open(memname, O_RDWR, S_IRUSR | S_IWUSR);
 
-	if(shmfd < 0)
+	if (shmfd < 0)
 		return;
 
-	mumble = (mmap(NULL, sizeof(*mumble), PROT_READ | PROT_WRITE, MAP_SHARED, shmfd, 0));
+	mumble = static_cast<mumble_s*>(mmap(NULL, sizeof(*mumble), PROT_READ | PROT_WRITE, MAP_SHARED, shmfd, 0));
+
 	if (mumble == MAP_FAILED)
 		mumble = NULL;
 #endif
@@ -1597,7 +1606,8 @@ void I_UpdateMumble(const mobj_t *mobj, const listener_t listener)
 	if (!mumble)
 		return;
 
-	if(mumble->uiVersion != 2) {
+	if (mumble->uiVersion != 2)
+	{
 		wcsncpy(mumble->name, L"SRB2Kart " VERSIONSTRINGW, 256);
 		wcsncpy(mumble->description, L"Sonic Robo Blast 2 Kart with integrated Mumble Link support.", 2048);
 		mumble->uiVersion = 2;
@@ -1617,11 +1627,12 @@ void I_UpdateMumble(const mobj_t *mobj, const listener_t listener)
 	{
 		UINT8 *p = mumble->context;
 		WRITEMEM(p, server_context, 8);
-		WRITEINT16(p, gamemap);
+		WRITEINT16_2(p, gamemap);
 		mumble->context_len = (UINT32)(p - mumble->context);
 	}
 
-	if (mobj) {
+	if (mobj)
+	{
 		mumble->fAvatarPosition[0] = FIXED_TO_FLOAT(mobj->x) / MUMBLEUNIT;
 		mumble->fAvatarPosition[1] = FIXED_TO_FLOAT(mobj->z) / MUMBLEUNIT;
 		mumble->fAvatarPosition[2] = FIXED_TO_FLOAT(mobj->y) / MUMBLEUNIT;
@@ -1776,8 +1787,8 @@ void I_SleepDuration(precise_t duration)
 #if defined(__linux__) || defined(__FreeBSD__) || defined(__HAIKU__)
 	UINT64 precision = I_GetPrecisePrecision();
 	struct timespec ts = {
-		.tv_sec = duration / precision,
-		.tv_nsec = duration * 1000000000 / precision % 1000000000,
+			.tv_sec = static_cast<__time_t>(duration / precision),
+			.tv_nsec = static_cast<__syscall_slong_t>(duration * 1000000000 / precision % 1000000000),
 	};
 	int status;
 	do status = clock_nanosleep(CLOCK_MONOTONIC, 0, &ts, &ts);
@@ -2004,6 +2015,12 @@ void I_Error(const char *error, ...)
 	va_list argptr;
 	char buffer[8192];
 
+	if (std::this_thread::get_id() != g_main_thread_id)
+	{
+		// Do not attempt a graceful shutdown. Errors off the main thread are unresolvable.
+		exit(-2);
+	}
+
 	// recursive error detecting
 	if (shutdowning)
 	{
@@ -2037,7 +2054,7 @@ void I_Error(const char *error, ...)
 			// which should fail gracefully if it can't put a message box up
 			// on the target system
 			SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR,
-				"SRB2Kart "VERSIONSTRING" Recursive Error",
+				"SRB2Kart " VERSIONSTRING " Recursive Error",
 				buffer, NULL);
 
 			W_Shutdown();
@@ -2086,7 +2103,7 @@ void I_Error(const char *error, ...)
 	// which should fail gracefully if it can't put a message box up
 	// on the target system
 	SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR,
-		"SRB2Kart "VERSIONSTRING" Error",
+		"SRB2Kart " VERSIONSTRING " Error",
 		buffer, NULL);
 	// Note that SDL_ShowSimpleMessageBox does *not* require SDL to be
 	// initialized at the time, so calling it after SDL_Quit() is
@@ -2123,7 +2140,6 @@ void I_AddExitFunc(void (*func)())
 		}
 	}
 }
-
 
 //
 //  Removes a function from the list that need to be called by
@@ -2387,7 +2403,7 @@ const char *I_ClipboardPaste(void)
 */
 static boolean isWadPathOk(const char *path)
 {
-	char *wad3path = (malloc(256));
+	char *wad3path = static_cast<char*>(malloc(256));
 
 	if (!wad3path)
 		return false;
@@ -2559,7 +2575,7 @@ static const char *locateWad(void)
 	I_OutputMsg(",HOME/" DEFAULTDIR);
 	if ((envstr = I_GetEnv("HOME")) != NULL)
 	{
-		char *tmp = malloc(strlen(envstr) + sizeof(PATHSEP) + sizeof(DEFAULTDIR));
+		char *tmp = static_cast<char*>(malloc(strlen(envstr) + sizeof(PATHSEP) + sizeof(DEFAULTDIR)));
 		strcpy(tmp, envstr);
 		strcat(tmp, PATHSEP);
 		strcat(tmp, DEFAULTDIR);
@@ -2629,17 +2645,22 @@ const char *I_LocateWad(void)
 static long get_entry(const char* name, const char* buf)
 {
 	long val;
-	char* hit = strstr(buf, name);
-	if (hit == NULL) {
+	const char* hit = strstr(buf, name);
+
+	if (hit == NULL)
+	{
 		return -1;
 	}
 
 	errno = 0;
 	val = strtol(hit + strlen(name), NULL, 10);
-	if (errno != 0) {
+
+	if (errno != 0)
+	{
 		CONS_Alert(CONS_ERROR, M_GetText("get_entry: strtol() failed: %s\n"), strerror(errno));
 		return -1;
 	}
+
 	return val;
 }
 #endif

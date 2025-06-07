@@ -18,6 +18,10 @@
 #ifndef __D_NET__
 #define __D_NET__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 // Max computers in a game
 // 127 is probably as high as this can go, because
 // SINT8 is used for nodes sometimes >:(
@@ -62,5 +66,9 @@ void Net_AbortPacketType(UINT8 packettype);
 void Net_SendAcks(INT32 node);
 void Net_WaitAllAckReceived(UINT32 timeout);
 const char *Net_GetPacketName(UINT8 packettype);
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif

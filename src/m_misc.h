@@ -15,6 +15,10 @@
 #ifndef __M_MISC__
 #define __M_MISC__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "doomtype.h"
 #include "tables.h"
 
@@ -109,5 +113,9 @@ FUNCMATH UINT8 M_CountBits(UINT32 num, UINT8 size);
 
 #include "w_wad.h"
 extern char configfile[MAX_WADPATH];
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif

@@ -28,6 +28,7 @@
 #define WRITEUINT8(p,b)     do {   UINT8 *p_tmp = (void *)p; const   UINT8 tv = (  UINT8)(b); memcpy(p, &tv, sizeof(  UINT8)); p_tmp++; p = (void *)p_tmp; } while (0)
 #define WRITESINT8(p,b)     do {   SINT8 *p_tmp = (void *)p; const   SINT8 tv = (  UINT8)(b); memcpy(p, &tv, sizeof(  UINT8)); p_tmp++; p = (void *)p_tmp; } while (0)
 #define WRITEINT16(p,b)     do {   INT16 *p_tmp = (void *)p; const   INT16 tv = (  INT16)(b); memcpy(p, &tv, sizeof(  INT16)); p_tmp++; p = (void *)p_tmp; } while (0)
+#define WRITEINT16_2(p,b)     do {   INT16 *p_tmp = (  INT16 *)p; const   INT16 tv = (  INT16)(b); memcpy(p, &tv, sizeof(  INT16)); p_tmp++; *(void**)(&(p)) = (void *)p_tmp; } while (0) // dumb hack for mumble
 #define WRITEUINT16(p,b)    do {  UINT16 *p_tmp = (void *)p; const  UINT16 tv = ( UINT16)(b); memcpy(p, &tv, sizeof( UINT16)); p_tmp++; p = (void *)p_tmp; } while (0)
 #define WRITEINT32(p,b)     do {   INT32 *p_tmp = (void *)p; const   INT32 tv = (  INT32)(b); memcpy(p, &tv, sizeof(  INT32)); p_tmp++; p = (void *)p_tmp; } while (0)
 #define WRITEUINT32(p,b)    do {  UINT32 *p_tmp = (void *)p; const  UINT32 tv = ( UINT32)(b); memcpy(p, &tv, sizeof( UINT32)); p_tmp++; p = (void *)p_tmp; } while (0)
@@ -38,6 +39,7 @@
 #define WRITEUINT8(p,b)     do {   UINT8 *p_tmp = (  UINT8 *)p; *p_tmp = (  UINT8)(b); p_tmp++; p = (void *)p_tmp; } while (0)
 #define WRITESINT8(p,b)     do {   SINT8 *p_tmp = (  SINT8 *)p; *p_tmp = (  SINT8)(b); p_tmp++; p = (void *)p_tmp; } while (0)
 #define WRITEINT16(p,b)     do {   INT16 *p_tmp = (  INT16 *)p; *p_tmp = (  INT16)(b); p_tmp++; p = (void *)p_tmp; } while (0)
+#define WRITEINT16_2(p,b)     do {   INT16 *p_tmp = (  INT16 *)p; *p_tmp = (  INT16)(b); p_tmp++; *(void**)(&(p)) = (void *)p_tmp; } while (0) // dumb hack for mumble
 #define WRITEUINT16(p,b)    do {  UINT16 *p_tmp = ( UINT16 *)p; *p_tmp = ( UINT16)(b); p_tmp++; p = (void *)p_tmp; } while (0)
 #define WRITEINT32(p,b)     do {   INT32 *p_tmp = (  INT32 *)p; *p_tmp = (  INT32)(b); p_tmp++; p = (void *)p_tmp; } while (0)
 #define WRITEUINT32(p,b)    do {  UINT32 *p_tmp = ( UINT32 *)p; *p_tmp = ( UINT32)(b); p_tmp++; p = (void *)p_tmp; } while (0)
