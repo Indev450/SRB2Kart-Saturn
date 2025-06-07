@@ -33,29 +33,6 @@ FUNCINLINE static ATTRINLINE UINT8 *R_Address(INT32 px, INT32 py)
 	return renderscreen + (py + viewwindowy) * linesize + (viewwindowx + px);
 }
 
-// -------------------------
-// COLUMN DRAWING CODE STUFF
-// -------------------------
-
-extern void (*wallcolfunc)(drawcolumndata_t*);
-extern void (*colfunc)(drawcolumndata_t*);
-extern void (*basecolfunc)(drawcolumndata_t*);
-extern void (*fuzzcolfunc)(drawcolumndata_t*);
-extern void (*transcolfunc)(drawcolumndata_t*);
-extern void (*shadecolfunc)(drawcolumndata_t*);
-extern void (*transtransfunc)(drawcolumndata_t*);
-
-extern void (*twosmultipatchfunc)(drawcolumndata_t*);
-extern void (*twosmultipatchtransfunc)(drawcolumndata_t*);
-
-// quick fix for tall/short skies, depending on bytesperpixel
-extern void (*walldrawerfunc)(drawcolumndata_t*);
-
-void R_DrawMaskedColumn(drawcolumndata_t* dc, column_t *column);
-
-// -----------------------
-// SPAN DRAWING CODE STUFF
-// -----------------------
 
 typedef struct {
 	float x, y, z;
@@ -114,10 +91,6 @@ typedef struct
 
 extern drawspandata_t g_ds;
 
-extern void (*spanfunc)(drawspandata_t*);
-extern void (*basespanfunc)(drawspandata_t*);
-extern void (*splatfunc)(drawspandata_t*);
-
 // Draws a single visplane.
 void R_DrawSinglePlane(drawspandata_t* ds, visplane_t *pl, boolean allow_parallel);
 
@@ -125,6 +98,54 @@ void R_DrawSinglePlane(drawspandata_t* ds, visplane_t *pl, boolean allow_paralle
 extern floatv3_t *ds_su, *ds_sv, *ds_sz;
 
 extern float focallengthf;
+
+
+typedef void (coldrawfunc_t)(drawcolumndata_t*);
+typedef void (spandrawfunc_t)(drawspandata_t*);
+
+#define BASEDRAWFUNC 0
+
+enum
+{
+	COLDRAWFUNC_BASE = BASEDRAWFUNC,
+	COLDRAWFUNC_FUZZY,
+	COLDRAWFUNC_TRANS,
+	COLDRAWFUNC_SHADOWED,
+	COLDRAWFUNC_TRANSTRANS,
+	COLDRAWFUNC_TWOSMULTIPATCH,
+	COLDRAWFUNC_TWOSMULTIPATCHTRANS,
+	COLDRAWFUNC_FOG,
+
+	COLDRAWFUNC_MAX
+};
+
+extern int colfunctype;
+extern coldrawfunc_t *colfunc;
+extern coldrawfunc_t *colfuncs[COLDRAWFUNC_MAX];
+
+enum
+{
+	SPANDRAWFUNC_BASE = BASEDRAWFUNC,
+	SPANDRAWFUNC_TRANS,
+	SPANDRAWFUNC_TILTED,
+	SPANDRAWFUNC_TILTEDTRANS,
+
+	SPANDRAWFUNC_SPLAT,
+	SPANDRAWFUNC_TRANSSPLAT,
+	SPANDRAWFUNC_TILTEDSPLAT,
+
+	SPANDRAWFUNC_WATER,
+	SPANDRAWFUNC_TILTEDWATER,
+
+	SPANDRAWFUNC_FOG,
+
+	SPANDRAWFUNC_MAX
+};
+
+extern spandrawfunc_t *spanfunc;
+extern spandrawfunc_t *spanfuncs[SPANDRAWFUNC_MAX];
+
+void R_DrawMaskedColumn(drawcolumndata_t* dc, column_t *column);
 
 /// \brief Top border
 #define BRDR_T 0
@@ -211,8 +232,6 @@ void R_DrawViewBorder(void);
 
 // column drawers
 void R_DrawColumn(drawcolumndata_t* dc);
-#define R_DrawWallColumn	R_DrawColumn
-void R_DrawShadeColumn(drawcolumndata_t* dc);
 void R_DrawColumnShadowed(drawcolumndata_t* dc);
 
 void R_DrawTranslucentColumn(drawcolumndata_t* dc);
@@ -228,16 +247,16 @@ void R_DrawFogColumn(drawcolumndata_t* dc);
 // span drawers
 void R_DrawSpan(drawspandata_t* ds);
 
-void R_DrawTiltedSpan(drawspandata_t* ds);
-void R_DrawTiltedTranslucentSpan(drawspandata_t* ds);
-void R_DrawTiltedTranslucentWaterSpan(drawspandata_t* ds);
+void R_DrawSpan_Tilted(drawspandata_t* ds);
+void R_DrawTranslucentSpan_Tilted(drawspandata_t* ds);
+void R_DrawTranslucentWaterSpan_Tilted(drawspandata_t* ds);
 
 void R_DrawTranslucentSpan(drawspandata_t* ds);
 void R_DrawTranslucentWaterSpan(drawspandata_t* ds);
 
 void R_DrawFogSpan(drawspandata_t* ds);
 
-void R_DrawTiltedSplat(drawspandata_t* ds);
+void R_DrawSplat_Tilted(drawspandata_t* ds);
 void R_DrawSplat(drawspandata_t* ds);
 void R_DrawTranslucentSplat(drawspandata_t* ds);
 

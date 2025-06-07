@@ -78,6 +78,36 @@ UINT8 *scr_borderpatch; // flat used to fill the reduced view borders set at ST_
 
 // =========================================================================
 
+static void SCR_SetDrawFuncs(void)
+{
+	//
+	//  setup the right draw routines
+	//
+
+	spanfuncs[BASEDRAWFUNC] = R_DrawSpan;
+	spanfuncs[SPANDRAWFUNC_TRANS] = R_DrawTranslucentSpan;
+	spanfuncs[SPANDRAWFUNC_TILTED] = R_DrawSpan_Tilted;
+	spanfuncs[SPANDRAWFUNC_TILTEDTRANS] = R_DrawTranslucentSpan_Tilted;
+	spanfuncs[SPANDRAWFUNC_SPLAT] = R_DrawSplat;
+	spanfuncs[SPANDRAWFUNC_TRANSSPLAT] = R_DrawTranslucentSplat;
+	spanfuncs[SPANDRAWFUNC_TILTEDSPLAT] = R_DrawSplat_Tilted;
+	spanfuncs[SPANDRAWFUNC_WATER] = R_DrawTranslucentWaterSpan;
+	spanfuncs[SPANDRAWFUNC_TILTEDWATER] = R_DrawTranslucentWaterSpan_Tilted;
+	spanfuncs[SPANDRAWFUNC_FOG] = R_DrawFogSpan;
+
+	colfuncs[BASEDRAWFUNC] = R_DrawColumn;
+	colfuncs[COLDRAWFUNC_FUZZY] = R_DrawTranslucentColumn;
+	colfuncs[COLDRAWFUNC_TRANS] = R_DrawTranslatedColumn;
+	colfuncs[COLDRAWFUNC_SHADOWED] = R_DrawColumnShadowed;
+	colfuncs[COLDRAWFUNC_TRANSTRANS] = R_DrawTranslatedTranslucentColumn;
+	colfuncs[COLDRAWFUNC_TWOSMULTIPATCH] = R_Draw2sMultiPatchColumn;
+	colfuncs[COLDRAWFUNC_TWOSMULTIPATCHTRANS] = R_Draw2sMultiPatchTranslucentColumn;
+	colfuncs[COLDRAWFUNC_FOG] = R_DrawFogColumn;
+
+	R_SetColumnFunc(BASEDRAWFUNC);
+	R_SetSpanFunc(BASEDRAWFUNC);
+}
+
 void SCR_SetMode(void)
 {
 	if (dedicated)
@@ -90,20 +120,45 @@ void SCR_SetMode(void)
 
 	V_SetPalette(0);
 
-	spanfunc = basespanfunc = R_DrawSpan;
-	splatfunc = R_DrawSplat;
-	transcolfunc = R_DrawTranslatedColumn;
-	transtransfunc = R_DrawTranslatedTranslucentColumn;
-
-	colfunc = basecolfunc = R_DrawColumn;
-	shadecolfunc = R_DrawShadeColumn;
-	fuzzcolfunc = R_DrawTranslucentColumn;
-	walldrawerfunc = R_DrawWallColumn;
-	twosmultipatchfunc = R_Draw2sMultiPatchColumn;
-	twosmultipatchtransfunc = R_Draw2sMultiPatchTranslucentColumn;
+	SCR_SetDrawFuncs();
 
 	// set the apprpriate drawer for the sky (tall or INT16)
 	setmodeneeded = 0;
+}
+
+void R_SetColumnFunc(size_t id)
+{
+	I_Assert(id < COLDRAWFUNC_MAX);
+
+	colfunctype = id;
+	colfunc = colfuncs[id];
+}
+
+void R_SetSpanFunc(size_t id)
+{
+	I_Assert(id < SPANDRAWFUNC_MAX);
+	spanfunc = spanfuncs[id];
+}
+
+boolean R_CheckColumnFunc(size_t id)
+{
+	size_t i;
+
+	if (colfunc == NULL)
+	{
+		// Shouldn't happen.
+		return false;
+	}
+
+	for (i = 0; i < COLDRAWFUNC_MAX; i++)
+	{
+		if (colfunc == colfuncs[id])
+		{
+			return true;
+		}
+	}
+
+	return false;
 }
 
 // do some initial settings for the game loading screen

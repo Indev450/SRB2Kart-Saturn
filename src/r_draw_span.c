@@ -361,7 +361,7 @@ static void R_CalcTiltedLighting(INT32 *lightbuffer, INT32 x1, INT32 x2, fixed_t
 /**	\brief The R_DrawTiltedSpan function
 	Draw slopes! Holy sheit!
 */
-void R_DrawTiltedSpan(drawspandata_t* ds)
+void R_DrawSpan_Tilted(drawspandata_t* ds)
 {
 	int width = ds->x2 - ds->x1;
 	float iz, uz, vz;
@@ -508,7 +508,7 @@ void R_DrawTiltedSpan(drawspandata_t* ds)
 /**	\brief The R_DrawTiltedTranslucentSpan function
 	Like DrawTiltedSpan, but translucent
 */
-void R_DrawTiltedTranslucentSpan(drawspandata_t* ds)
+void R_DrawTranslucentSpan_Tilted(drawspandata_t* ds)
 {
 	int width = ds->x2 - ds->x1;
 	float iz, uz, vz;
@@ -655,7 +655,7 @@ void R_DrawTiltedTranslucentSpan(drawspandata_t* ds)
 /**	\brief The R_DrawTiltedTranslucentWaterSpan function
 	Like DrawTiltedTranslucentSpan, but for water
 */
-void R_DrawTiltedTranslucentWaterSpan(drawspandata_t* ds)
+void R_DrawTranslucentWaterSpan_Tilted(drawspandata_t* ds)
 {
 	int width = ds->x2 - ds->x1;
 	float iz, uz, vz;
@@ -801,7 +801,7 @@ void R_DrawTiltedTranslucentWaterSpan(drawspandata_t* ds)
 #endif
 }
 
-void R_DrawTiltedSplat(drawspandata_t* ds)
+void R_DrawSplat_Tilted(drawspandata_t* ds)
 {
 	// x1, x2 = ds->x1, ds->x2
 	int width = ds->x2 - ds->x1;

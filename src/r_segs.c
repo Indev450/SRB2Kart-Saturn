@@ -77,172 +77,6 @@ static INT16 *maskedtexturecol;
 static fixed_t *maskedtextureheight = NULL;
 
 // ==========================================================================
-// R_Splats Wall Splats Drawer
-// ==========================================================================
-
-#ifdef WALLSPLATS
-static INT16 last_ceilingclip[MAXVIDWIDTH];
-static INT16 last_floorclip[MAXVIDWIDTH];
-
-static void R_DrawSplatColumn(column_t *column)
-{
-	INT32 topscreen, bottomscreen;
-	fixed_t basetexturemid;
-	INT32 topdelta, prevdelta = -1;
-
-	basetexturemid = dc->texturemid;
-
-	while (column->topdelta != 0xff)
-	{
-		// calculate unclipped screen coordinates for post
-		topdelta = column->topdelta;
-		if (topdelta <= prevdelta)
-			topdelta += prevdelta;
-		prevdelta = topdelta;
-		topscreen = sprtopscreen + spryscale*topdelta;
-		bottomscreen = topscreen + spryscale*column->length;
-
-		dc->yl = (topscreen+FRACUNIT-1)>>FRACBITS;
-		dc->yh = (bottomscreen-1)>>FRACBITS;
-
-		if (dc->yh >= last_floorclip[dc->x])
-			dc->yh = last_floorclip[dc->x] - 1;
-		if (dc->yl <= last_ceilingclip[dc->x])
-			dc->yl = last_ceilingclip[dc->x] + 1;
-		if (dc->yl <= dc->yh && dl_yh < vid.height && yh > 0)
-		{
-			dc->source = (UINT8 *)column + 3;
-			dc->texturemid = basetexturemid - (topdelta<<FRACBITS);
-
-			// Drawn by R_DrawColumn.
-			colfunc();
-		}
-		column = (column_t *)((UINT8 *)column + column->length + 4);
-	}
-
-	dc->texturemid = basetexturemid;
-}
-
-static void R_DrawWallSplats(void)
-{
-	wallsplat_t *splat;
-	seg_t *seg;
-	angle_t angle, angle1, angle2;
-	INT32 x1, x2;
-	size_t pindex;
-	column_t *col;
-	patch_t *patch;
-	fixed_t texturecolumn;
-
-	splat = (wallsplat_t *)linedef->splats;
-
-	I_Assert(splat != NULL);
-
-	seg = ds_p->curline;
-
-	// draw all splats from the line that touches the range of the seg
-	for (; splat; splat = splat->next)
-	{
-		angle1 = R_PointToAngle(splat->v1.x, splat->v1.y);
-		angle2 = R_PointToAngle(splat->v2.x, splat->v2.y);
-		angle1 = (angle1 - viewangle + ANGLE_90)>>ANGLETOFINESHIFT;
-		angle2 = (angle2 - viewangle + ANGLE_90)>>ANGLETOFINESHIFT;
-		// out of the viewangletox lut
-		/// \todo clip it to the screen
-		if (angle1 > FINEANGLES/2 || angle2 > FINEANGLES/2)
-			continue;
-		x1 = viewangletox[angle1];
-		x2 = viewangletox[angle2];
-
-		if (x1 >= x2)
-			continue; // does not cross a pixel
-
-		// splat is not in this seg range
-		if (x2 < ds_p->x1 || x1 > ds_p->x2)
-			continue;
-
-		if (x1 < ds_p->x1)
-			x1 = ds_p->x1;
-		if (x2 > ds_p->x2)
-			x2 = ds_p->x2;
-		if (x2 <= x1)
-			continue;
-
-		// calculate incremental stepping values for texture edges
-		rw_scalestep = ds_p->scalestep;
-		spryscale = ds_p->scale1 + (x1 - ds_p->x1)*rw_scalestep;
-		mfloorclip = floorclip;
-		mceilingclip = ceilingclip;
-
-		patch = W_CachePatchNum(splat->patch, PU_SPRITE);
-
-		dc->texturemid = splat->top + (patch->height<<(FRACBITS-1)) - viewz;
-		if (splat->yoffset)
-			dc->texturemid += *splat->yoffset;
-
-		sprtopscreen = centeryfrac - FixedMul(dc->texturemid, spryscale);
-
-		// set drawing mode
-		switch (splat->flags & SPLATDRAWMODE_MASK)
-		{
-			case SPLATDRAWMODE_OPAQUE:
-				colfunc = basecolfunc;
-				break;
-			case SPLATDRAWMODE_TRANS:
-				if (!cv_translucency.value)
-					colfunc = basecolfunc;
-				else
-				{
-					dc->transmap = R_GetTranslucencyTable(tr_trans50);
-					colfunc = fuzzcolfunc;
-				}
-
-				break;
-			case SPLATDRAWMODE_SHADE:
-				colfunc = shadecolfunc;
-				break;
-		}
-
-		dc->texheight = 0;
-
-		// draw the columns
-		for (dc->x = x1; dc->x <= x2; dc->x++, spryscale += rw_scalestep)
-		{
-			pindex = FixedMul(spryscale, LIGHTRESOLUTIONFIX)>>LIGHTSCALESHIFT;
-			if (pindex >= MAXLIGHTSCALE)
-				pindex = MAXLIGHTSCALE - 1;
-			dc->colormap = walllights[pindex];
-			if (encoremap && !(seg->linedef->flags & ML_TFERLINE))
-				dc->colormap += COLORMAP_REMAPOFFSET;
-
-			if (frontsector->extra_colormap)
-				dc->colormap = frontsector->extra_colormap->colormap + (dc->colormap - colormaps);
-
-			sprtopscreen = centeryfrac - FixedMul(dc->texturemid, spryscale);
-			dc->iscale = 0xffffffffu / (unsigned)spryscale;
-
-			// find column of patch, from perspective
-			angle = (rw_centerangle + xtoviewangle[dc->x])>>ANGLETOFINESHIFT;
-				texturecolumn = rw_offset2 - splat->offset
-					- FixedMul(FINETANGENT(angle), rw_distance);
-
-			// FIXME!
-			texturecolumn >>= FRACBITS;
-			if (texturecolumn < 0 || texturecolumn >= patch->width)
-				continue;
-
-			// draw the texture
-			col = (column_t *)((UINT8 *)patch->columns + (patch->columnofs[texturecolumn]));
-			R_DrawSplatColumn(col);
-		}
-	} // next splat
-
-	colfunc = basecolfunc;
-}
-
-#endif //WALLSPLATS
-
-// ==========================================================================
 // R_RenderMaskedSegRange
 // ==========================================================================
 
@@ -281,18 +115,19 @@ static void R_Render2sidedMultiPatchColumn(drawcolumndata_t* dc, column_t *colum
 		dc->source = (UINT8 *)column + 3;
 		dc->sourcelength = lengthcol;
 
-
 		// Drawn by R_DrawColumn.
 		drawcolumndata_t dc_copy = *dc;
-		void (*colfunccopy)(drawcolumndata_t*);
-		colfunccopy = colfunc;
+		coldrawfunc_t* colfunccopy = colfunc;
 
-		if (colfunc == wallcolfunc)
-			colfunccopy = twosmultipatchfunc;
-		else if (colfunc == fuzzcolfunc)
-			colfunccopy = twosmultipatchtransfunc;
-		else
-			colfunc(dc);
+		// FIXME: do something better to look these up WITHOUT affecting global state...
+		if (R_CheckColumnFunc(BASEDRAWFUNC) == true)
+		{
+			colfunccopy = colfuncs[COLDRAWFUNC_TWOSMULTIPATCH];
+		}
+		else if (R_CheckColumnFunc(COLDRAWFUNC_FUZZY) == true)
+		{
+			colfunccopy = colfuncs[COLDRAWFUNC_TWOSMULTIPATCHTRANS];
+		}
 
 		colfunccopy((drawcolumndata_t*)(&dc_copy));
 	}
@@ -301,6 +136,48 @@ static void R_Render2sidedMultiPatchColumn(drawcolumndata_t* dc, column_t *colum
 transnum_t R_GetLinedefTransTable(fixed_t alpha)
 {
 	return (20*(FRACUNIT - alpha - 1) + FRACUNIT) >> (FRACBITS+1);
+}
+
+static boolean R_CheckBlendMode(drawcolumndata_t* dc, const line_t *ldef)
+{
+	if (!ldef->alpha)
+		return false;
+
+	if (ldef->blendmode)
+	{
+		if (ldef->alpha == NUMTRANSMAPS || ldef->blendmode == AST_MODULATE)
+			dc->transmap = R_GetBlendTable(ldef->blendmode, 0);
+		else
+			dc->transmap = R_GetBlendTable(ldef->blendmode, R_GetLinedefTransTable(ldef->alpha));
+
+		R_SetColumnFunc(COLDRAWFUNC_FUZZY);
+	}
+	else if (ldef->alpha > 0 && ldef->alpha < FRACUNIT)
+	{
+		dc->transmap = R_GetTranslucencyTable(R_GetLinedefTransTable(ldef->alpha));
+		R_SetColumnFunc(COLDRAWFUNC_FUZZY);
+	}
+	else if (ldef->special == 909)
+	{
+		R_SetColumnFunc(COLDRAWFUNC_FOG);
+		windowtop = frontsector->ceilingheight;
+		windowbottom = frontsector->floorheight;
+	}
+	else
+	{
+		R_SetColumnFunc(BASEDRAWFUNC);
+	}
+
+	if (curline->polyseg && curline->polyseg->translucency > 0)
+	{
+		if (curline->polyseg->translucency >= NUMTRANSMAPS)
+			return false;
+
+		dc->transmap = R_GetTranslucencyTable(curline->polyseg->translucency);
+		R_SetColumnFunc(COLDRAWFUNC_FUZZY);
+	}
+
+	return true;
 }
 
 void R_RenderMaskedSegRange(drawseg_t *drawseg, INT32 x1, INT32 x2)
@@ -334,40 +211,9 @@ void R_RenderMaskedSegRange(drawseg_t *drawseg, INT32 x1, INT32 x2)
 	// hack translucent linedef types (900-909 for transtables 1-9)
 	ldef = curline->linedef;
 
-	if (!ldef->alpha)
-		return;
-
-	if (ldef->blendmode)
+	if (R_CheckBlendMode(dc, ldef) == false)
 	{
-		if (ldef->alpha == NUMTRANSMAPS || ldef->blendmode == AST_MODULATE)
-			dc->transmap = R_GetBlendTable(ldef->blendmode, 0);
-		else
-			dc->transmap = R_GetBlendTable(ldef->blendmode, R_GetLinedefTransTable(ldef->alpha));
-		colfunc = fuzzcolfunc;
-	}
-	else if (ldef->alpha > 0 && ldef->alpha < FRACUNIT)
-	{
-		dc->transmap = R_GetTranslucencyTable(R_GetLinedefTransTable(ldef->alpha));
-		colfunc = fuzzcolfunc;
-	}
-	else if (ldef->special == 909)
-	{
-		colfunc = R_DrawFogColumn;
-		windowtop = frontsector->ceilingheight;
-		windowbottom = frontsector->floorheight;
-	}
-	else
-	{
-		colfunc = wallcolfunc;
-	}
-
-	if (curline->polyseg && curline->polyseg->translucency > 0)
-	{
-		if (curline->polyseg->translucency >= NUMTRANSMAPS)
-			return;
-
-		dc->transmap = R_GetTranslucencyTable(curline->polyseg->translucency);
-		colfunc = fuzzcolfunc;
+		return; // does not render
 	}
 
 	range = max(drawseg->x2-drawseg->x1, 1);
@@ -409,20 +255,20 @@ void R_RenderMaskedSegRange(drawseg_t *drawseg, INT32 x1, INT32 x2)
 			leftheight  = P_GetLightZAt(light, drawseg-> leftpos.x, drawseg-> leftpos.y);
 			rightheight = P_GetLightZAt(light, drawseg->rightpos.x, drawseg->rightpos.y);
 
-			leftheight -= viewz;
+			leftheight  -= viewz;
 			rightheight -= viewz;
 
-			rlight->height = (centeryfrac) - FixedMul(leftheight, drawseg->scale1);
-			rlight->heightstep = (centeryfrac) - FixedMul(rightheight, drawseg->scale2);
-			rlight->heightstep = (rlight->heightstep-rlight->height)/(range);
-			rlight->startheight = rlight->height; // keep starting value here to reset for each repeat
-			rlight->lightlevel = *light->lightlevel;
+			rlight->height         = (centeryfrac) - FixedMul(leftheight, drawseg->scale1);
+			rlight->heightstep     = (centeryfrac) - FixedMul(rightheight, drawseg->scale2);
+			rlight->heightstep     = (rlight->heightstep-rlight->height)/(range);
+			rlight->startheight    = rlight->height; // keep starting value here to reset for each repeat
+			rlight->lightlevel     = *light->lightlevel;
 			rlight->extra_colormap = light->extra_colormap;
 			rlight->flags = light->flags;
 
 			if (rlight->flags & FF_FOG || (rlight->extra_colormap && rlight->extra_colormap->fog))
 				lightnum = (rlight->lightlevel >> LIGHTSEGSHIFT);
-			else if (colfunc == fuzzcolfunc)
+			else if (R_CheckColumnFunc(COLDRAWFUNC_FUZZY))
 				lightnum = LIGHTLEVELS - 1;
 			else
 				lightnum = (rlight->lightlevel >> LIGHTSEGSHIFT);
@@ -437,17 +283,13 @@ void R_RenderMaskedSegRange(drawseg_t *drawseg, INT32 x1, INT32 x2)
 	}
 	else
 	{
-		if (colfunc == fuzzcolfunc)
-		{
-			if (frontsector->extra_colormap && frontsector->extra_colormap->fog)
-				lightnum = (frontsector->lightlevel >> LIGHTSEGSHIFT);
-			else
-				lightnum = LIGHTLEVELS - 1;
-		}
-		else
+		if ((R_CheckColumnFunc(COLDRAWFUNC_FUZZY) == false)
+			|| (frontsector->extra_colormap && frontsector->extra_colormap->fog))
 			lightnum = (frontsector->lightlevel >> LIGHTSEGSHIFT);
+		else
+			lightnum = LIGHTLEVELS - 1;
 
-		if (colfunc == R_DrawFogColumn
+		if ((R_CheckColumnFunc(COLDRAWFUNC_FOG) == true)
 			|| (frontsector->extra_colormap && frontsector->extra_colormap->fog))
 			;
 		else if (P_ApplyLightOffset(lightnum, frontsector))
@@ -646,7 +488,7 @@ void R_RenderMaskedSegRange(drawseg_t *drawseg, INT32 x1, INT32 x2)
 			spryscale += rw_scalestep;
 		}
 	}
-	colfunc = wallcolfunc;
+}
 }
 
 // Loop through R_DrawMaskedColumn calls
@@ -720,7 +562,7 @@ void R_RenderThickSideRange(drawseg_t *drawseg, INT32 x1, INT32 x2, ffloor_t *pf
 	frontsector = curline->frontsector == pfloor->target ? curline->backsector : curline->frontsector;
 	texnum = R_GetTextureNum(sides[pfloor->master->sidenum[0]].midtexture);
 
-	colfunc = wallcolfunc;
+	R_SetColumnFunc(BASEDRAWFUNC);
 
 	if (pfloor->master->flags & ML_TFERLINE)
 	{
@@ -747,10 +589,14 @@ void R_RenderThickSideRange(drawseg_t *drawseg, INT32 x1, INT32 x2, ffloor_t *pf
 		}
 
 		if (fuzzy)
-			colfunc = fuzzcolfunc;
+		{
+			R_SetColumnFunc(COLDRAWFUNC_FUZZY);
+		}
 	}
 	else if (pfloor->flags & FF_FOG)
-		colfunc = R_DrawFogColumn;
+	{
+		R_SetColumnFunc(COLDRAWFUNC_FOG);
+	}
 
 	range = max(drawseg->x2-drawseg->x1, 1);
 	//SoM: Moved these up here so they are available for my lightlist calculations
@@ -859,7 +705,7 @@ void R_RenderThickSideRange(drawseg_t *drawseg, INT32 x1, INT32 x2, ffloor_t *pf
 			lightnum = (frontsector->lightlevel >> LIGHTSEGSHIFT);
 		else if (pfloor->flags & FF_FOG)
 			lightnum = (pfloor->master->frontsector->lightlevel >> LIGHTSEGSHIFT);
-		else if (colfunc == fuzzcolfunc)
+		else if (R_CheckColumnFunc(COLDRAWFUNC_FUZZY) == true)
 			lightnum = LIGHTLEVELS-1;
 		else
 			lightnum = R_FakeFlat(frontsector, &tempsec, &templight, &templight, false)
@@ -1174,7 +1020,7 @@ void R_RenderThickSideRange(drawseg_t *drawseg, INT32 x1, INT32 x2, ffloor_t *pf
 		spryscale += rw_scalestep;
 	}
 
-	colfunc = wallcolfunc;
+	R_SetColumnFunc(BASEDRAWFUNC);
 
 #undef CLAMPMAX
 #undef CLAMPMIN
@@ -1210,6 +1056,24 @@ static inline void R_ExpandPlaneY(visplane_t *pl, INT32 x, INT16 top, INT16 bott
 //
 #define HEIGHTBITS              12
 #define HEIGHTUNIT              (1<<HEIGHTBITS)
+
+static void R_DrawWallColumn(drawcolumndata_t* dc, INT32 yl, INT32 yh, fixed_t mid, fixed_t texturecolumn, INT32 texture, boolean remap)
+{
+	dc->yl = yl;
+	dc->yh = yh;
+	dc->texturemid = mid;
+	dc->source = R_GetColumn(texture, texturecolumn);
+	dc->texheight = textureheight[texture] >> FRACBITS;
+	dc->sourcelength = dc->texheight;
+	R_SetColumnFunc(colfunctype);
+	coldrawfunc_t* colfunccopy = colfunc;
+	drawcolumndata_t dc_copy = *dc;
+	if (remap)
+	{
+		dc_copy.colormap += COLORMAP_REMAPOFFSET;
+	}
+	colfunccopy((drawcolumndata_t*)(&dc_copy));
+}
 
 static boolean didsolidcol; // True if at least one column was marked solid
 
@@ -1444,7 +1308,7 @@ static void R_RenderSegLoop(drawcolumndata_t* dc)
 				else
 					dc->lightlist[i].rcolormap = xwalllights[pindex];
 
-				colfunc = R_DrawColumnShadowed;
+				R_SetColumnFunc(COLDRAWFUNC_SHADOWED);
 			}
 		}
 
@@ -1456,14 +1320,7 @@ static void R_RenderSegLoop(drawcolumndata_t* dc)
 			// single sided line
 			if (yl <= yh && yh >= 0 && yl < viewheight)
 			{
-				dc->yl = yl;
-				dc->yh = yh;
-				dc->texturemid = rw_midtexturemid;
-				dc->source = R_GetColumn(midtexture, texturecolumn);
-				dc->texheight = textureheight[midtexture]>>FRACBITS;
-				dc->sourcelength = dc->texheight;
-
-				colfunc(dc);
+				R_DrawWallColumn(dc, yl, yh, rw_midtexturemid, texturecolumn, midtexture, (encoremap && !(curline->linedef->flags & ML_TFERLINE)));
 
 				// dont draw anything more for this column, since
 				// a midtexture blocks the view
@@ -1506,15 +1363,7 @@ static void R_RenderSegLoop(drawcolumndata_t* dc)
 					}
 					else if (mid >= 0) // safe to draw top texture
 					{
-						dc->yl = yl;
-						dc->yh = mid;
-						dc->texturemid = rw_toptexturemid;
-						dc->source = R_GetColumn(toptexture, texturecolumn);
-						dc->texheight = textureheight[toptexture]>>FRACBITS;
-						dc->sourcelength = dc->texheight;
-
-						colfunc(dc);
-
+						R_DrawWallColumn(dc, yl, mid, rw_toptexturemid, texturecolumn, toptexture, topremap);
 						ceilingclip[rw_x] = (INT16)mid;
 					}
 					else if (!rw_ceilingmarked) // entirely off top of screen
@@ -1545,15 +1394,7 @@ static void R_RenderSegLoop(drawcolumndata_t* dc)
 					}
 					else if (mid < viewheight) // safe to draw bottom texture
 					{
-						dc->yl = mid;
-						dc->yh = yh;
-						dc->texturemid = rw_bottomtexturemid;
-						dc->source = R_GetColumn(bottomtexture, texturecolumn);
-						dc->texheight = textureheight[bottomtexture]>>FRACBITS;
-						dc->sourcelength = dc->texheight;
-
-						colfunc(dc);
-
+						R_DrawWallColumn(dc, mid, yh, rw_bottomtexturemid, texturecolumn, bottomtexture, bottomremap);
 						floorclip[rw_x] = (INT16)mid;
 					}
 					else if (!rw_floormarked)  // entirely off bottom of screen
@@ -1617,9 +1458,6 @@ static void R_RenderSegLoop(drawcolumndata_t* dc)
 		topfrac += topstep;
 		bottomfrac += bottomstep;
 	}
-
-	//colfunc = wallcolfunc;
-	colfunc = wallcolfunc;
 }
 
 // Uses precalculated seg->length
@@ -2843,21 +2681,8 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 
 	didsolidcol = false;
 
-#ifdef WALLSPLATS
-	if (linedef->splats && cv_splats.value)
-	{
-		// Isn't a bit wasteful to copy the ENTIRE array for every drawseg?
-		M_Memcpy(last_ceilingclip + ds_p->x1, ceilingclip + ds_p->x1,
-			sizeof (INT16) * (ds_p->x2 - ds_p->x1 + 1));
-		M_Memcpy(last_floorclip + ds_p->x1, floorclip + ds_p->x1,
-			sizeof (INT16) * (ds_p->x2 - ds_p->x1 + 1));
-		R_RenderSegLoop();
-		R_DrawWallSplats();
-	}
-	else
-#endif
-
 	R_RenderSegLoop(&dc);
+	R_SetColumnFunc(BASEDRAWFUNC);
 
 	if (g_portal) // if curline is a portal, set portalrender for drawseg
 		ds_p->portalpass = portalrender+1;
@@ -2904,5 +2729,6 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 		ds_p->silhouette |= SIL_BOTTOM;
 		ds_p->bsilheight = (sidedef->midtexture > 0 && sidedef->midtexture < numtextures) ? INT32_MAX: INT32_MIN;
 	}
+
 	ds_p++;
 }

@@ -59,21 +59,9 @@ UINT8 *blendtables[NUMBLENDMAPS];
 // c drawer routines
 // --------------------------------------------
 
-
-void (*wallcolfunc)(drawcolumndata_t*); // new wall column drawer to draw posts >128 high
-void (*colfunc)(drawcolumndata_t*); // standard column, up to 128 high posts
-
-void (*basecolfunc)(drawcolumndata_t*);
-void (*fuzzcolfunc)(drawcolumndata_t*); // standard fuzzy effect column drawer
-void (*transcolfunc)(drawcolumndata_t*); // translation column drawer
-void (*shadecolfunc)(drawcolumndata_t*); // smokie test..
-
-void (*transtransfunc)(drawcolumndata_t*); // translucent translated column drawer
-void (*twosmultipatchfunc)(drawcolumndata_t*); // for cols with transparent pixels
-void (*twosmultipatchtransfunc)(drawcolumndata_t*); // for cols with transparent pixels AND translucency
-
-//  Short and Tall sky drawer, for the current color mode
-void (*walldrawerfunc)(drawcolumndata_t*);
+coldrawfunc_t *colfunc;
+coldrawfunc_t *colfuncs[COLDRAWFUNC_MAX];
+int colfunctype;
 
 // =========================================================================
 //                      SPAN DRAWING CODE STUFF
@@ -93,9 +81,8 @@ float focallengthf;
 // c drawer routines
 // --------------------------------------------
 
-void (*spanfunc)(drawspandata_t*); // span drawer, use a 64x64 tile
-void (*splatfunc)(drawspandata_t*); // span drawer w/ transparency
-void (*basespanfunc)(drawspandata_t*); // default span func for color mode
+spandrawfunc_t *spanfunc;
+spandrawfunc_t *spanfuncs[SPANDRAWFUNC_MAX];
 
 // ==========================================================================
 //                        OLD DOOM FUZZY EFFECT
