@@ -558,9 +558,6 @@ typedef struct seg_s
 	float flength; // length of the seg, used by hardware renderer
 #endif
 
-	// Why slow things down by calculating lightlists for every thick side?
-	size_t numlights;
-	r_lightlist_t *rlights;
 	polyobj_t *polyseg;
 	boolean dontrenderme;
 
