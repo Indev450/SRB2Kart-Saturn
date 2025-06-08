@@ -31,6 +31,9 @@
 #include "core/memory.h"
 #include "core/thread_pool.h"
 
+#define HEIGHTBITS              12
+#define HEIGHTUNIT              (1<<HEIGHTBITS)
+
 // OPTIMIZE: closed two sided lines as single sided
 
 // True if any of the segs textures might be visible.
@@ -165,10 +168,10 @@ static void R_RenderMaskedSegLoop(drawcolumndata_t* dc, drawseg_t *drawseg, INT3
 	{
 		dc->numlights = frontsector->numlights;
 
-		if (dc->numlights >= dc->maxlights)
+		if (dc->numlights > dc->maxlights)
 		{
 			dc->maxlights = dc->numlights;
-			dc->lightlist = static_cast<r_lightlist_s*>(Z_Realloc(dc->lightlist, sizeof (*dc->lightlist) * dc->maxlights, PU_STATIC, NULL));
+			dc->lightlist = static_cast<r_lightlist_t*>(Z_Frame_Alloc(sizeof (*dc->lightlist) * dc->maxlights));
 		}
 
 		for (i = 0; i < dc->numlights; i++)
@@ -666,10 +669,10 @@ void R_RenderThickSideRange(drawseg_t *drawseg, INT32 x1, INT32 x2, ffloor_t *pf
 	{
 		dc->numlights = frontsector->numlights;
 
-		if (dc->numlights >= dc->maxlights)
+		if (dc->numlights > dc->maxlights)
 		{
 			dc->maxlights = dc->numlights;
-			dc->lightlist = static_cast<r_lightlist_s*>(Z_Realloc(dc->lightlist, sizeof (*dc->lightlist) * dc->maxlights, PU_STATIC, NULL));
+			dc->lightlist = static_cast<r_lightlist_t*>(Z_Frame_Alloc(sizeof (*dc->lightlist) * dc->maxlights));
 		}
 
 		for (i = p = 0; i < dc->numlights; i++)
@@ -1136,8 +1139,6 @@ static inline void R_ExpandPlaneY(visplane_t *pl, INT32 x, INT16 top, INT16 bott
 //  textures.
 // CALLED: CORE LOOPING ROUTINE.
 //
-#define HEIGHTBITS              12
-#define HEIGHTUNIT              (1<<HEIGHTBITS)
 
 static void R_DrawWallColumn(drawcolumndata_t* dc, INT32 yl, INT32 yh, fixed_t mid, fixed_t texturecolumn, INT32 texture, boolean remap)
 {
@@ -2405,12 +2406,7 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 	{
 		dc.numlights = frontsector->numlights;
 		dc.maxlights = dc.numlights;
-
-		if (dc.numlights >= dc.maxlights)
-		{
-			dc.maxlights = dc.numlights;
-			dc.lightlist = static_cast<r_lightlist_s*>(Z_Realloc(dc.lightlist, sizeof (*dc.lightlist) * dc.maxlights, PU_STATIC, NULL));
-		}
+		dc.lightlist = static_cast<r_lightlist_t*>(Z_Frame_Alloc(sizeof(*dc.lightlist) * dc.maxlights));
 
 		for (i = p = 0; i < dc.numlights; i++)
 		{

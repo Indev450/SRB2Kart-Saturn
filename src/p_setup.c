@@ -580,9 +580,6 @@ static void P_LoadRawSegs(UINT8 *data)
 		else
 			li->backsector = 0;
 
-		li->numlights = 0;
-		li->rlights = NULL;
-
 		P_UpdateSegLightOffset(li);
 	}
 }
