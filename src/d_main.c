@@ -327,6 +327,39 @@ static void D_Renderview(void)
 
 	R_ApplyLevelInterpolators(rendertimefrac);
 
+	if (rendermode == render_soft)
+	{
+		// if this is display player 1
+		if (cv_homremoval.value)
+		{
+			if (cv_homremoval.value == 1)
+			{
+				// Clear the software screen buffer to remove HOM
+				memset(vid.screens[0], 31, vid.width * vid.height);
+			}
+			else if (cv_homremoval.value == 2)
+			{
+				//'development' HOM removal -- makes it blindingly obvious if HOM is spotted.
+				memset(vid.screens[0], 32+(timeinmap&15), vid.width * vid.height);
+			}
+		}
+	}
+
+	// Draw over the fourth screen so you don't have to stare at a HOM :V
+	if (splitscreen == 2)
+	{
+		// V_DrawPatchFill, but for the fourth screen only
+		patch_t *pat = W_CachePatchName("SRB2BACK", PU_CACHE);
+		INT32 dupz = (vid.dupx < vid.dupy ? vid.dupx : vid.dupy);
+		INT32 x, y, pw = SHORT(pat->width) * dupz, ph = SHORT(pat->height) * dupz;
+
+		for (x = vid.width>>1; x < vid.width; x += pw)
+		{
+			for (y = vid.height>>1; y < vid.height; y += ph)
+				V_DrawScaledPatch(x, y, V_NOSCALESTART, pat);
+		}
+	}
+
 	for (i = 0; i <= splitscreen; i++)
 	{
 		const boolean issplitscreen = (i > 0);
