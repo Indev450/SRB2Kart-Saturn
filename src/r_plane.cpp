@@ -307,16 +307,14 @@ static void R_MapTiltedPlane(drawspandata_t *ds, spandrawfunc_t *localspanfunc, 
 
 void R_ClearFFloorClips(void)
 {
-	INT32 i, p;
+	INT32 p;
 
 	// opening / clipping determination
-	for (i = 0; i < viewwidth; i++)
+	for (p = 0; p < MAXFFLOORS; p++)
 	{
-		for (p = 0; p < MAXFFLOORS; p++)
-		{
-			ffloor[p].f_clip[i] = (INT16)viewheight;
-			ffloor[p].c_clip[i] = -1;
-		}
+		visffloor_t *fffloor = &ffloor[p];
+		std::fill(fffloor->f_clip, fffloor->f_clip + viewwidth, static_cast<INT16>(viewheight));
+		std::fill(fffloor->c_clip, fffloor->c_clip + viewwidth, static_cast<INT16>(-1));
 	}
 
 	numffloors = 0;
@@ -328,21 +326,15 @@ void R_ClearFFloorClips(void)
 //
 void R_ClearPlanes(void)
 {
-	INT32 i, p;
+	INT32 i;
 	angle_t angle;
 
 	// opening / clipping determination
-	for (i = 0; i < viewwidth; i++)
-	{
-		floorclip[i] = (INT16)viewheight;
-		ceilingclip[i] = -1;
-		frontscale[i] = INT32_MAX;
-		for (p = 0; p < MAXFFLOORS; p++)
-		{
-			ffloor[p].f_clip[i] = (INT16)viewheight;
-			ffloor[p].c_clip[i] = -1;
-		}
-	}
+	std::fill(floorclip, floorclip + viewwidth, static_cast<INT16>(viewheight));
+	std::fill(ceilingclip, ceilingclip + viewwidth, static_cast<INT16>(-1));
+	std::fill(frontscale, frontscale + viewwidth, INT32_MAX);
+
+	R_ClearFFloorClips();
 
 	for (i = 0; i < MAXVISPLANES; i++)
 		for (*freehead = visplanes[i], visplanes[i] = NULL;
