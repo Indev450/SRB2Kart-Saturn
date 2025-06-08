@@ -166,6 +166,10 @@ void Portal_Add2Lines (const INT32 line1, const INT32 line2, const INT32 x1, con
 
 	vertex_t dest_c, start_c;
 
+	portal->viewx = viewx;
+	portal->viewy = viewy;
+	portal->viewz = viewz;
+
 	// looking glass center
 	start_c.x = (start->v1->x + start->v2->x) / 2;
 	start_c.y = (start->v1->y + start->v2->y) / 2;
@@ -174,13 +178,24 @@ void Portal_Add2Lines (const INT32 line1, const INT32 line2, const INT32 x1, con
 	dest_c.x = (dest->v1->x + dest->v2->x) / 2;
 	dest_c.y = (dest->v1->y + dest->v2->y) / 2;
 
-	disttopoint = R_PointToDist2(start_c.x, start_c.y, viewx, viewy);
-	angtopoint = R_PointToAngle2(start_c.x, start_c.y, viewx, viewy);
-	angtopoint += dangle;
-
-	portal->viewx = dest_c.x + FixedMul(FINECOSINE(angtopoint>>ANGLETOFINESHIFT), disttopoint);
-	portal->viewy = dest_c.y + FixedMul(FINESINE(angtopoint>>ANGLETOFINESHIFT), disttopoint);
 	portal->viewz = viewz + dest->frontsector->floorheight - start->frontsector->floorheight;
+
+	if (dangle == 0)
+	{
+		// the entrance goes straight opposite the exit, so we just need to mess with the offset.
+		portal->viewx += dest_c.x - start_c.x;
+		portal->viewy += dest_c.y - start_c.y;
+	}
+	else
+	{
+		disttopoint = R_PointToDist2(start_c.x, start_c.y, viewx, viewy);
+		angtopoint = R_PointToAngle2(start_c.x, start_c.y, viewx, viewy);
+		angtopoint += dangle;
+
+		portal->viewx = dest_c.x + FixedMul(FINECOSINE(angtopoint>>ANGLETOFINESHIFT), disttopoint);
+		portal->viewy = dest_c.y + FixedMul(FINESINE(angtopoint>>ANGLETOFINESHIFT), disttopoint);
+	}
+
 	portal->viewangle = viewangle + dangle;
 
 	portal->clipline = line2;
