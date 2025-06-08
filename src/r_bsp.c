@@ -364,8 +364,10 @@ static void R_AddLine(seg_t *line)
 		{
 			// Find the other side!
 			INT32 line2 = P_FindSpecialLineFromTag(40, line->linedef->tag, -1);
+
 			if (line->linedef == &lines[line2])
 				line2 = P_FindSpecialLineFromTag(40, line->linedef->tag, line2);
+
 			if (line2 >= 0) // found it!
 			{
 				Portal_Add2Lines(line->linedef-lines, line2, x1, x2); // Remember the lines for later rendering
@@ -1200,6 +1202,14 @@ void R_RenderBSPNode(INT32 bspnum)
 			return;
 
 		bspnum = bsp->children[side^1];
+	}
+
+	// PORTAL CULLING
+	if (portalcullsector)
+	{
+		if (subsectors[bspnum & ~NF_SUBSECTOR].sector != portalcullsector)
+			return;
+		portalcullsector = NULL;
 	}
 
 	R_Subsector(bspnum == -1 ? 0 : bspnum & ~NF_SUBSECTOR);

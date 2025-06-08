@@ -1291,8 +1291,8 @@ static void R_PortalFrame(portal_t *portal)
 	viewz = portal->viewz;
 
 	viewangle = portal->viewangle;
-	// viewsin = FINESINE(viewangle>>ANGLETOFINESHIFT);
-	// viewcos = FINECOSINE(viewangle>>ANGLETOFINESHIFT);
+	//viewsin = FINESINE(viewangle>>ANGLETOFINESHIFT);
+	//viewcos = FINECOSINE(viewangle>>ANGLETOFINESHIFT);
 
 	portalclipstart = portal->start;
 	portalclipend = portal->end;
@@ -1300,11 +1300,12 @@ static void R_PortalFrame(portal_t *portal)
 	if (portal->clipline != -1)
 	{
 		portalclipline = &lines[portal->clipline];
-		viewsector = portalclipline->frontsector;
+		viewsector = portalcullsector = portalclipline->frontsector;
 	}
 	else
 	{
 		portalclipline = NULL;
+		portalcullsector = NULL;
 		viewsector = R_PointInSubsector(viewx, viewy)->sector;
 	}
 }
@@ -1415,16 +1416,10 @@ void R_RenderPlayerView(player_t *player)
 		R_ClearDrawSegs();
 		R_ClearPlanes();
 		R_ClearSprites();
-#ifdef FLOORSPLATS
-		R_ClearVisibleFloorSplats();
-#endif
 		R_RenderViewpoint(&masks[nummasks - 1], false);
 
-		R_ClipSprites();
+		R_ClipSprites(drawsegs, NULL);
 		R_DrawPlanes();
-#ifdef FLOORSPLATS
-		R_DrawVisibleFloorSplats();
-#endif
 		// well sometimes synchronization is off and may result in some visual glitching, oh well
 		R_DrawMasked(masks, nummasks);
 	}
@@ -1453,9 +1448,6 @@ void R_RenderPlayerView(player_t *player)
 	}
 	R_ClearDrawSegs();
 	R_ClearSprites();
-#ifdef FLOORSPLATS
-	R_ClearVisibleFloorSplats();
-#endif
 
 	// check for new console commands.
 	NetUpdate();
@@ -1463,10 +1455,9 @@ void R_RenderPlayerView(player_t *player)
 	ps_numbspcalls.value.i = ps_numpolyobjects.value.i = ps_numdrawnodes.value.i = 0;
 	PS_START_TIMING(ps_bsptime);
 	R_RenderViewpoint(&masks[nummasks - 1], true);
-
 	PS_STOP_TIMING(ps_bsptime);
 	PS_START_TIMING(ps_sw_spritecliptime);
-	R_ClipSprites();
+	R_ClipSprites(drawsegs, NULL);
 	PS_STOP_TIMING(ps_sw_spritecliptime);
 
 	ps_numsprites.value.i = numvisiblesprites;
@@ -1497,14 +1488,14 @@ void R_RenderPlayerView(player_t *player)
 
 			validcount++;
 
-			// Render the BSP from the new viewpoint, and clip
 			masks = static_cast<maskcount_t*>(realloc(masks, (++nummasks)*sizeof(maskcount_t)));
 
 			// Render the BSP from the new viewpoint, and clip
 			// any sprites with the new clipsegs and window.
-			R_RenderViewpoint(&masks[nummasks - 1], true);
 
-			R_ClipSprites();
+			R_RenderViewpoint(&masks[nummasks - 1], nummasks - 1);
+
+			R_ClipSprites(ds_p - (masks[nummasks - 1].drawsegs[1] - masks[nummasks - 1].drawsegs[0]), portal);
 
 			Portal_Remove(portal);
 		}
@@ -1514,9 +1505,6 @@ void R_RenderPlayerView(player_t *player)
 	PS_START_TIMING(ps_sw_planetime);
 	R_DrawPlanes();
 	PS_STOP_TIMING(ps_sw_planetime);
-#ifdef FLOORSPLATS
-	R_DrawVisibleFloorSplats();
-#endif
 	// draw mid texture and sprite
 	// And now 3D floors/sides!
 	PS_START_TIMING(ps_sw_maskedtime);

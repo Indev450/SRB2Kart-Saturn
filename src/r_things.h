@@ -19,6 +19,7 @@ extern "C" {
 #endif
 
 #include "r_plane.h"
+#include "r_portal.h"
 
 // number of sprite lumps for spritewidth,offset,topoffset lookup tables
 // Fab: this is a hack : should allocate the lookup tables per sprite
@@ -167,7 +168,7 @@ typedef struct vissprite_s
 
 extern UINT32 visspritecount, numvisiblesprites;
 
-void R_ClipSprites(void);
+void R_ClipSprites(drawseg_t* dsstart, portal_t* portal);
 
 void R_AllocVisSpriteMemory(void);
 

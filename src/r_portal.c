@@ -1,6 +1,6 @@
 // SONIC ROBO BLAST 2 KART
 //-----------------------------------------------------------------------------
-// Copyright (C) 2024 by Kart Krew.
+// Copyright (C) 2025 by Kart Krew.
 // Copyright (C) 2020 by Sonic Team Junior.
 // Copyright (C) 2000 by DooM Legacy Team.
 // Copyright (C) 1996 by id Software, Inc.
@@ -27,6 +27,7 @@ UINT8 portalrender;			/**< When rendering a portal, it establishes the depth of 
 portal_t *portal_base, *portal_cap;
 
 line_t *portalclipline;
+sector_t *portalcullsector;
 INT32 portalclipstart, portalclipend;
 
 portal_t *g_portal; // is curline a portal seg?
@@ -36,7 +37,6 @@ void Portal_InitList (void)
 	portalrender = 0;
 	portal_base = portal_cap = NULL;
 }
-
 
 /** Store the clipping window for a portal in its given range.
  *
@@ -63,7 +63,6 @@ static void Portal_ClipRange (portal_t* portal)
 		scale++;
 	}
 }
-
 
 /** Apply the clipping window from a portal.
  */
@@ -134,6 +133,7 @@ static portal_t* Portal_Add (const INT16 x1, const INT16 x2)
 
 void Portal_Remove (portal_t* portal)
 {
+	portalcullsector = NULL;
 	portal_base = portal->next;
 	Z_Free(portal->ceilingclip);
 	Z_Free(portal->floorclip);

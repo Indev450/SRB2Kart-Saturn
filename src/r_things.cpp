@@ -2604,7 +2604,7 @@ static boolean R_CheckSpriteVisible(vissprite_t *spr, INT32 x1, INT32 x2)
 
 // R_ClipVisSprite
 // Clips vissprites without drawing, so that portals can work. -Red
-static void R_ClipVisSprite(vissprite_t *spr, INT32 x1, INT32 x2)
+static void R_ClipVisSprite(vissprite_t *spr, INT32 x1, INT32 x2, portal_t* portal)
 {
 	drawseg_t *ds;
 	INT32		x;
@@ -2643,30 +2643,33 @@ static void R_ClipVisSprite(vissprite_t *spr, INT32 x1, INT32 x2)
 
 			ds = curr->user;
 
-			if (ds->portalpass > 0 && ds->portalpass <= portalrender)
-				continue; // is a portal
+			if (ds->portalpass != 66) // unused?
+			{
+				if (ds->portalpass > 0 && ds->portalpass <= portalrender)
+					continue; // is a portal
+
+				if (ds->scale1 > ds->scale2)
+				{
+					lowscale = ds->scale2;
+					scale = ds->scale1;
+				}
+				else
+				{
+					lowscale = ds->scale1;
+					scale = ds->scale2;
+				}
+
+				if (scale < spr->sortscale ||
+					(lowscale < spr->sortscale &&
+					!R_PointOnSegSide (spr->gx, spr->gy, ds->curline)))
+				{
+					// seg is behind sprite
+					continue;
+				}
+			}
 
 			r1 = ds->x1 < spr->x1 ? spr->x1 : ds->x1;
 			r2 = ds->x2 > spr->x2 ? spr->x2 : ds->x2;
-
-			if (ds->scale1 > ds->scale2)
-			{
-				lowscale = ds->scale2;
-				scale = ds->scale1;
-			}
-			else
-			{
-				lowscale = ds->scale1;
-				scale = ds->scale2;
-			}
-
-			if (scale < spr->sortscale ||
-			    (lowscale < spr->sortscale &&
-			     !R_PointOnSegSide (spr->gx, spr->gy, ds->curline)))
-			{
-				// seg is behind sprite
-				continue;
-			}
 
 			// clip this piece of the sprite
 			silhouette = ds->silhouette;
@@ -2792,11 +2795,34 @@ static void R_ClipVisSprite(vissprite_t *spr, INT32 x1, INT32 x2)
 		if (!R_CheckSpriteVisible(spr, x1, x2))
 			spr->cut = static_cast<spritecut_e>(spr->cut | SC_NOTVISIBLE);
 	}
+
+	if (portal)
+	{
+		INT32 start_index = std::max(portal->start, x1);
+		INT32 end_index = std::min(portal->start + portal->end - portal->start, x2);
+		for (x = x1; x < start_index; x++)
+		{
+			spr->clipbot[x] = -1;
+			spr->cliptop[x] = -1;
+		}
+		for (x = start_index; x <= end_index; x++)
+		{
+			if (spr->clipbot[x] > portal->floorclip[x - portal->start])
+				spr->clipbot[x] = portal->floorclip[x - portal->start];
+			if (spr->cliptop[x] < portal->ceilingclip[x - portal->start])
+				spr->cliptop[x] = portal->ceilingclip[x - portal->start];
+		}
+		for (x = end_index + 1; x <= x2; x++)
+		{
+			spr->clipbot[x] = -1;
+			spr->cliptop[x] = -1;
+		}
+	}
 }
 
-void R_ClipSprites(void)
+void R_ClipSprites(drawseg_t* dsstart, portal_t* portal)
 {
-	const size_t maxdrawsegs = ds_p - drawsegs;
+	const size_t maxdrawsegs = ds_p - dsstart;
 	const INT32 cx = viewwidth / 2;
 	drawseg_t* ds;
 	INT32 i;
@@ -2829,7 +2855,7 @@ void R_ClipSprites(void)
 		}
 	}
 
-	for (ds = ds_p; ds-- > drawsegs;)
+	for (ds = ds_p; ds-- > dsstart;)
 	{
 		if (ds->silhouette || ds->maskedtexturecol)
 		{
@@ -2883,7 +2909,7 @@ void R_ClipSprites(void)
 			drawsegs_xrange_count = drawsegs_xranges[0].count;
 		}
 
-		R_ClipVisSprite(spr, spr->x1, spr->x2);
+		R_ClipVisSprite(spr, spr->x1, spr->x2, portal);
 
 		if ((spr->cut & SC_NOTVISIBLE) == 0)
 			numvisiblesprites++;
