@@ -1360,29 +1360,6 @@ void R_RenderPlayerView(player_t *player)
 	const boolean skybox = (skyboxmo[0] && cv_skybox.value);
 	UINT8 i;
 
-	// if this is display player 1
-	if (cv_homremoval.value && player == &players[displayplayers[0]])
-	{
-		if (cv_homremoval.value == 1)
-			V_DrawFill(0, 0, BASEVIDWIDTH, BASEVIDHEIGHT, 31); // No HOM effect!
-		else //'development' HOM removal -- makes it blindingly obvious if HOM is spotted.
-			V_DrawFill(0, 0, BASEVIDWIDTH, BASEVIDHEIGHT, 128+(timeinmap&15));
-	}
-	// Draw over the fourth screen so you don't have to stare at a HOM :V
-	else if (splitscreen == 2 && player == &players[displayplayers[2]])
-	{
-		// V_DrawPatchFill, but for the fourth screen only
-		patch_t *pat = static_cast<patch_t*>(W_CachePatchName("SRB2BACK", PU_CACHE));
-		INT32 dupz = (vid.dupx < vid.dupy ? vid.dupx : vid.dupy);
-		INT32 x, y, pw = SHORT(pat->width) * dupz, ph = SHORT(pat->height) * dupz;
-
-		for (x = vid.width>>1; x < vid.width; x += pw)
-		{
-			for (y = vid.height>>1; y < vid.height; y += ph)
-				V_DrawScaledPatch(x, y, V_NOSCALESTART, pat);
-		}
-	}
-
 	// load previous saved value of skyVisible for the player
 	for (i = 0; i <= splitscreen; i++)
 	{
