@@ -91,6 +91,7 @@ void Portal_ClipApply (const portal_t* portal)
 		floorclip[i] = -1;
 		ceilingclip[i] = (INT16)viewheight;
 	}
+
 	for (i = end; i < vid.width; i++)
 	{
 		floorclip[i] = -1;
@@ -119,11 +120,11 @@ static portal_t* Portal_Add (const INT16 x1, const INT16 x2)
 	portal->next = NULL;
 
 	// Store clipping values so they can be restored once the portal is rendered.
-	portal->ceilingclip	= ceilingclipsave;
-	portal->floorclip	= floorclipsave;
-	portal->frontscale	= frontscalesave;
-	portal->start	= x1;
-	portal->end		= x2;
+	portal->ceilingclip = ceilingclipsave;
+	portal->floorclip   = floorclipsave;
+	portal->frontscale  = frontscalesave;
+	portal->start       = x1;
+	portal->end         = x2;
 
 	// Increase recursion level.
 	portal->pass = portalrender+1;
@@ -289,6 +290,9 @@ void Portal_AddSkybox(const visplane_t* plane)
 	portal->viewx = skyboxmo[0]->x;
 	portal->viewy = skyboxmo[0]->y;
 	portal->viewz = skyboxmo[0]->z;
+	if (skyboxmo[0]->spawnpoint)
+		portal->viewz = ((fixed_t)skyboxmo[0]->spawnpoint->angle)<<FRACBITS;
+
 	portal->viewangle = viewangle + skyboxmo[0]->angle;
 
 	mh = mapheaderinfo[gamemap-1];
