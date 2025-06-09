@@ -719,8 +719,12 @@ static void R_DrawSkyPlane(visplane_t *pl, void(*colfunc2)(drawcolumndata_t*), b
 	INT32 x;
 	drawcolumndata_t dc = {};
 
+	// If we're not supposed to draw the sky (e.g. for skyboxes), don't do anything!
+	// This probably utterly ruins sky rendering for FOFs and polyobjects, unfortunately
 	if (!newview->sky)
 	{
+		// Mark that the sky was visible here for next tic
+		// (note: this is a hack and it sometimes can cause HOMs to appear for a tic IIRC)
 		skyVisible = true;
 		return;
 	}
@@ -972,15 +976,18 @@ void R_DrawSinglePlane(drawspandata_t* ds, visplane_t *pl, boolean allow_paralle
 			// Don't draw planes that shouldn't be drawn.
 			for (rover = pl->ffloor->target->ffloors; rover; rover = rover->next)
 			{
-				if (!((pl->ffloor->flags & FF_CUTEXTRA) && (rover->flags & FF_EXTRA)))
-					continue;
+				if ((pl->ffloor->flags & FF_CUTEXTRA) && (rover->flags & FF_EXTRA))
+				{
+					if (!(rover->flags & FF_EXTRA))
+						continue;
 
-				// The plane is from an extra 3D floor... Check the flags so
-				// there are no undesired cuts.
-				if (((pl->ffloor->flags & (FF_FOG|FF_SWIMMABLE)) == (rover->flags & (FF_FOG|FF_SWIMMABLE)))
-					&& pl->height < *rover->topheight
-					&& pl->height > *rover->bottomheight)
-					return;
+					// The plane is from an extra 3D floor... Check the flags so
+					// there are no undesired cuts.
+					if (((pl->ffloor->flags & (FF_FOG|FF_SWIMMABLE)) == (rover->flags & (FF_FOG|FF_SWIMMABLE)))
+						&& pl->height < *rover->topheight
+						&& pl->height > *rover->bottomheight)
+						return;
+				}
 			}
 
 			if (pl->ffloor->flags & FF_TRANSLUCENT)
@@ -994,6 +1001,7 @@ void R_DrawSinglePlane(drawspandata_t* ds, visplane_t *pl, boolean allow_paralle
 					INT32 trans = (10*((256+12) - pl->ffloor->alpha))/255;
 					if (trans >= 10)
 						return; // Don't even draw it
+
 					if (pl->ffloor->blend) // additive, (reverse) subtractive, modulative
 						ds->transmap = R_GetBlendTable(pl->ffloor->blend, trans);
 					else if (!(ds->transmap = R_GetTranslucencyTable(trans)) || trans == 0)
