@@ -1082,28 +1082,20 @@ static void R_SetupAimingFrame(player_t *player, camera_t *thiscam)
 		newview->aim = player->awayviewaiming;
 		newview->angle = player->awayviewmobj->angle;
 	}
-	else if (thiscam->chase)
+	else if (thiscam && thiscam->chase)
 	{
 		newview->aim = thiscam->aiming;
 		newview->angle = thiscam->angle;
+	}
+	else if (!demo.playback && player->playerstate != PST_DEAD)
+	{
+		newview->aim = localaiming[viewssnum];
+		newview->angle = localangle[viewssnum];
 	}
 	else
 	{
 		newview->aim = player->aiming;
 		newview->angle = player->mo->angle;
-
-		if (!demo.playback && player->playerstate != PST_DEAD)
-		{
-			for (UINT8 i = 0; i <= splitscreen; i++)
-			{
-				if (player == (i == 0 ? &players[consoleplayer] : &players[displayplayers[i]]))
-				{
-					newview->angle = localangle[i];
-					newview->aim = localaiming[i];
-					break;
-				}
-			}
-		}
 	}
 }
 
