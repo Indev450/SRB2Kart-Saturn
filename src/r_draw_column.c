@@ -27,7 +27,6 @@ void R_DrawColumn(drawcolumndata_t* dc)
 	INT32 count;
 	register UINT8 *restrict dest;
 	intptr_t frac;
-	intptr_t fracstep;
 
 	count = dc->yh - dc->yl;
 
@@ -47,7 +46,7 @@ void R_DrawColumn(drawcolumndata_t* dc)
 	count++;
 
 	// Determine scaling, which is the only mapping to be done.
-	fracstep = dc->iscale;
+	const intptr_t fracstep = dc->iscale;
 	frac = (dc->texturemid + FixedMul((dc->yl << FRACBITS) - centeryfrac, fracstep));
 
 	// Inner loop that does the actual texture mapping, e.g. a DDA-like scaling.
@@ -147,7 +146,6 @@ void R_Draw2sMultiPatchColumn(drawcolumndata_t* dc)
 	INT32 count;
 	register UINT8 *restrict dest;
 	intptr_t frac;
-	intptr_t fracstep;
 
 	count = dc->yh - dc->yl;
 
@@ -167,7 +165,7 @@ void R_Draw2sMultiPatchColumn(drawcolumndata_t* dc)
 	count++;
 
 	// Determine scaling, which is the only mapping to be done.
-	fracstep = dc->iscale;
+	const intptr_t fracstep = dc->iscale;
 	frac = (dc->texturemid + FixedMul((dc->yl << FRACBITS) - centeryfrac, fracstep));
 
 	// Inner loop that does the actual texture mapping, e.g. a DDA-like scaling.
@@ -286,7 +284,6 @@ void R_Draw2sMultiPatchTranslucentColumn(drawcolumndata_t* dc)
 	INT32 count;
 	register UINT8 *restrict dest;
 	intptr_t frac;
-	intptr_t fracstep;
 
 	count = dc->yh - dc->yl;
 
@@ -306,7 +303,7 @@ void R_Draw2sMultiPatchTranslucentColumn(drawcolumndata_t* dc)
 	count++;
 
 	// Determine scaling, which is the only mapping to be done.
-	fracstep = dc->iscale;
+	const intptr_t fracstep = dc->iscale;
 	frac = (dc->texturemid + FixedMul((dc->yl << FRACBITS) - centeryfrac, fracstep));
 
 	// Inner loop that does the actual texture mapping, e.g. a DDA-like scaling.
@@ -430,7 +427,6 @@ void R_DrawTranslucentColumn(drawcolumndata_t* dc)
 	register INT32 count;
 	register UINT8 *restrict dest;
 	intptr_t frac;
-	intptr_t fracstep;
 
 	count = dc->yh - dc->yl + 1;
 
@@ -448,7 +444,7 @@ void R_DrawTranslucentColumn(drawcolumndata_t* dc)
 	dest = R_Address(dc->x, dc->yl);
 
 	// Looks familiar.
-	fracstep = dc->iscale;
+	const intptr_t fracstep = dc->iscale;
 	frac = (dc->texturemid + FixedMul((dc->yl << FRACBITS) - centeryfrac, fracstep));
 
 	// Inner loop that does the actual texture mapping, e.g. a DDA-like scaling.
@@ -530,7 +526,6 @@ void R_DrawTranslatedTranslucentColumn(drawcolumndata_t* dc)
 	register INT32 count;
 	register UINT8 *restrict dest;
 	intptr_t frac;
-	intptr_t fracstep;
 
 	count = dc->yh - dc->yl + 1;
 
@@ -548,7 +543,7 @@ void R_DrawTranslatedTranslucentColumn(drawcolumndata_t* dc)
 	dest = R_Address(dc->x, dc->yl);
 
 	// Looks familiar.
-	fracstep = dc->iscale;
+	const intptr_t fracstep = dc->iscale;
 	frac = (dc->texturemid + FixedMul((dc->yl << FRACBITS) - centeryfrac, fracstep));
 
 	// Inner loop that does the actual texture mapping, e.g. a DDA-like scaling.
@@ -627,7 +622,7 @@ void R_DrawTranslatedColumn(drawcolumndata_t* dc)
 {
 	register INT32 count;
 	register UINT8 *dest;
-	register fixed_t frac, fracstep;
+	register fixed_t frac;
 
 	count = dc->yh - dc->yl;
 
@@ -645,7 +640,7 @@ void R_DrawTranslatedColumn(drawcolumndata_t* dc)
 	dest = R_Address(dc->x, dc->yl);
 
 	// Looks familiar.
-	fracstep = dc->iscale;
+	const fixed_t fracstep = dc->iscale;
 	frac = (dc->texturemid + FixedMul((dc->yl << FRACBITS) - centeryfrac, fracstep));
 
 	register const INT32 stride = vid.width;
