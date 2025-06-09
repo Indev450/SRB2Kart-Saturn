@@ -622,6 +622,8 @@ void R_RenderThickSideRange(drawseg_t *drawseg, INT32 x1, INT32 x2, ffloor_t *pf
 	INT32         oldx = -1;
 	fixed_t       left_top, left_bottom; // needed here for slope skewing
 	pslope_t      *skewslope = NULL;
+	boolean fog = false;
+	boolean fuzzy = false;
 
 	drawcolumndata_t *dc = &g_dc;
 
@@ -648,7 +650,7 @@ void R_RenderThickSideRange(drawseg_t *drawseg, INT32 x1, INT32 x2, ffloor_t *pf
 
 	if (pfloor->flags & FF_TRANSLUCENT)
 	{
-		boolean fuzzy = true;
+		fuzzy = true;
 
 		// Hacked up support for alpha value in software mode Tails 09-24-2002
 		// ...unhacked by toaster 04-01-2021, re-hacked a little by sphere 19-11-2021
@@ -662,15 +664,11 @@ void R_RenderThickSideRange(drawseg_t *drawseg, INT32 x1, INT32 x2, ffloor_t *pf
 			else if (!(dc->transmap = R_GetTranslucencyTable(trans)) || trans == 0)
 				fuzzy = false; // Opaque
 		}
-
-		if (fuzzy)
-		{
-			R_SetColumnFunc(COLDRAWFUNC_FUZZY);
-		}
 	}
 	else if (pfloor->flags & FF_FOG)
 	{
 		R_SetColumnFunc(COLDRAWFUNC_FOG);
+		fog = true;
 	}
 
 	range = std::max(drawseg->x2-drawseg->x1, 1);
@@ -782,9 +780,9 @@ void R_RenderThickSideRange(drawseg_t *drawseg, INT32 x1, INT32 x2, ffloor_t *pf
 		// Get correct light level!
 		if ((frontsector->extra_colormap && frontsector->extra_colormap->fog))
 			lightnum = (frontsector->lightlevel >> LIGHTSEGSHIFT);
-		else if (pfloor->flags & FF_FOG)
+		else if (fog)
 			lightnum = (pfloor->master->frontsector->lightlevel >> LIGHTSEGSHIFT);
-		else if (R_CheckColumnFunc(COLDRAWFUNC_FUZZY) == true)
+		else if (fuzzy)
 			lightnum = LIGHTLEVELS-1;
 		else
 			lightnum = R_FakeFlat(frontsector, &tempsec, &templight, &templight, false)
@@ -933,14 +931,23 @@ void R_RenderThickSideRange(drawseg_t *drawseg, INT32 x1, INT32 x2, ffloor_t *pf
 						rlight->botheight += rlight->botheightstep;
 				}
 			}
+
 			spryscale += rw_scalestep;
 			continue;
 		}
 
-		dc->iscale = 0xffffffffu / (unsigned)spryscale;
-
 		// Get data for the column
 		col = (column_t *)((UINT8 *)R_GetColumn(texnum, maskedtexturecol[dc->x]) - 3);
+
+		if (!fog)
+		{
+			dc->iscale = 0xffffffffu / (unsigned)spryscale;
+
+			if (fuzzy)
+				R_SetColumnFunc(COLDRAWFUNC_FUZZY);
+			else
+				R_SetColumnFunc(BASEDRAWFUNC);
+		}
 
 		// SoM: New code does not rely on R_DrawColumnShadowed which
 		// will (hopefully) put less strain on the stack.
