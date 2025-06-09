@@ -40,6 +40,7 @@ extern drawseg_t *curdrawsegs;
 extern drawseg_t *drawsegs;
 extern drawseg_t *ds_p;
 extern INT32 doorclosed;
+extern UINT8 *solidcol;
 extern boolean g_walloffscreen;
 
 // BSP?
