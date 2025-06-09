@@ -1679,6 +1679,7 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 	{
 		size_t pos = lastopening - openings;
 		size_t need = (rw_stopx - start)*4 + pos;
+
 		if (need > maxopenings)
 		{
 			drawseg_t *ds;  //needed for fix from *cough* zdoom *cough*
@@ -1697,9 +1698,9 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 			// borrowed fix from *cough* zdoom *cough*
 			// [RH] We also need to adjust the openings pointers that
 			//    were already stored in drawsegs.
-			for (ds = curdrawsegs; ds < ds_p; ds++)
+			for (ds = drawsegs; ds < ds_p; ds++)
 			{
-#define ADJUST(p) if (ds->p + ds->x1 >= oldopenings && ds->p + ds->x1 <= oldlast) ds->p = ds->p - oldopenings + openings;
+#define ADJUST(p) if (ds->p + ds->x1 >= oldopenings && ds->p + ds->x1 <= oldlast) ds->p = (ds->p - oldopenings) + openings;
 				ADJUST(maskedtexturecol);
 				ADJUST(sprtopclip);
 				ADJUST(sprbottomclip);
