@@ -1878,6 +1878,8 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 	else
 	{
 		// two sided line
+		boolean bothceilingssky = false; // turned on if both back and front ceilings are sky
+
 		SLOPEPARAMS(backsector->c_slope, worldhigh, worldhighslope, backsector->ceilingheight)
 		SLOPEPARAMS(backsector->f_slope, worldlow,  worldlowslope,  backsector->floorheight)
 		worldhigh -= viewz;
@@ -1892,6 +1894,8 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 		{
 			worldtopslope = worldhighslope =
 			worldtop = worldhigh;
+
+			bothceilingssky = true;
 		}
 
 		ds_p->sprtopclip = ds_p->sprbottomclip = NULL;
@@ -1912,18 +1916,22 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 			// ds_p->sprbottomclip = negonearray;
 		}
 
-		if (worldtopslope < worldhighslope || worldtop < worldhigh)
+		if (!bothceilingssky)
 		{
-			ds_p->silhouette |= SIL_TOP;
-			if (P_GetSectorCeilingZAt(backsector, viewx, viewy) < viewz)
+			if (worldtopslope < worldhighslope || worldtop < worldhigh)
+			{
+				ds_p->silhouette |= SIL_TOP;
+				if (P_GetSectorCeilingZAt(backsector, viewx, viewy) < viewz)
+					ds_p->tsilheight = INT32_MIN;
+				else
+					ds_p->tsilheight = (frontsector->c_slope ? INT32_MIN : frontsector->ceilingheight);
+			}
+			else if (P_GetSectorCeilingZAt(backsector, viewx, viewy) < viewz)
+			{
+				ds_p->silhouette |= SIL_TOP;
 				ds_p->tsilheight = INT32_MIN;
-			else
-				ds_p->tsilheight = (frontsector->c_slope ? INT32_MIN : frontsector->ceilingheight);
-		}
-		else if (P_GetSectorCeilingZAt(backsector, viewx, viewy) < viewz)
-		{
-			ds_p->silhouette |= SIL_TOP;
-			ds_p->tsilheight = INT32_MIN;
+				// ds_p->sprtopclip = screenheightarray;
+			}
 		}
 
 		if (viewsector != frontsector && viewsector != backsector)
@@ -2001,7 +2009,8 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 		}
 
 		// check TOP TEXTURE
-		if (worldhigh < worldtop || worldhighslope < worldtopslope)
+		if (!bothceilingssky // never draw the top texture if on
+			&& (worldhigh < worldtop || worldhighslope < worldtopslope))
 		{
 			fixed_t texheight;
 			// top texture
@@ -2043,6 +2052,7 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 				rw_toptextureslide = ceilingbackslide;
 			}
 		}
+
 		// check BOTTOM TEXTURE
 		if (worldlow > worldbottom || worldlowslope > worldbottomslope) // Only if VISIBLE!!!
 		{
@@ -2403,7 +2413,7 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 		topstep = -FixedMul (rw_scalestep, worldtop);
 		topfrac = (centeryfrac>>4) - FixedMul (worldtop, rw_scale);
 
-		bottomstep = -FixedMul (rw_scalestep,worldbottom);
+		bottomstep = -FixedMul (rw_scalestep, worldbottom);
 		bottomfrac = (centeryfrac>>4) - FixedMul (worldbottom, rw_scale);
 
 		if (frontsector->c_slope)
@@ -2520,7 +2530,7 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 
 		if (toptexture)
 		{
-			fixed_t topfracend = (centeryfrac>>4) - FixedMul (worldhighslope, ds_p->scale2);
+			fixed_t topfracend = (centeryfrac>>4) - FixedMul(worldhighslope, ds_p->scale2);
 
 			pixhigh = (centeryfrac>>4) - FixedMul (worldhigh, rw_scale);
 			pixhighstep = (topfracend-pixhigh)/(range);
