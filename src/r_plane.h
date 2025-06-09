@@ -79,6 +79,7 @@ void R_AllocPlaneMemory(void);
 void R_ClearPlanes(void);
 void R_ClearFFloorClips (void);
 
+void R_DrawSkyPlanes(void);
 void R_DrawPlanes(void);
 
 visplane_t *R_FindPlane(fixed_t height, INT32 picnum, INT32 lightlevel, fixed_t xoff, fixed_t yoff, angle_t plangle,
