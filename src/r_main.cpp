@@ -1469,8 +1469,7 @@ void R_RenderPlayerView(player_t *player)
 
 			// Render the BSP from the new viewpoint, and clip
 			// any sprites with the new clipsegs and window.
-
-			R_RenderViewpoint(&masks[nummasks - 1], nummasks - 1);
+			R_RenderViewpoint(&masks[nummasks - 1], true);
 
 			R_ClipSprites(ds_p - (masks[nummasks - 1].drawsegs[1] - masks[nummasks - 1].drawsegs[0]), portal);
 
