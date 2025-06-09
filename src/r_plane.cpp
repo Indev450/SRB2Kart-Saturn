@@ -698,9 +698,9 @@ void R_DrawPlanes(void)
 
 	R_UpdatePlaneRipple(&ds);
 
+	srb2::g_main_threadpool->begin_sema();
 	for (i = 0; i < MAXVISPLANES; i++, pl++)
 	{
-		srb2::g_main_threadpool->begin_sema();
 		for (pl = visplanes[i]; pl; pl = pl->next)
 		{
 			if (pl->ffloor != NULL || pl->polyobj != NULL)
@@ -708,10 +708,37 @@ void R_DrawPlanes(void)
 
 			R_DrawSinglePlane(&ds, pl, cv_parallelsoftware.value);
 		}
-		tp_sema = srb2::g_main_threadpool->end_sema();
-		srb2::g_main_threadpool->notify_sema(tp_sema);
-		srb2::g_main_threadpool->wait_sema(tp_sema);
 	}
+	tp_sema = srb2::g_main_threadpool->end_sema();
+	srb2::g_main_threadpool->notify_sema(tp_sema);
+	srb2::g_main_threadpool->wait_sema(tp_sema);
+}
+
+static void R_DrawSkyPlane(visplane_t *pl, void(*colfunc2)(drawcolumndata_t*), boolean allow_parallel);
+
+void R_DrawSkyPlanes(void)
+{
+	visplane_t *pl;
+	INT32 i;
+	srb2::ThreadPool::Sema tp_sema;
+
+	srb2::g_main_threadpool->begin_sema();
+	for (i = 0; i < MAXVISPLANES; i++, pl++)
+	{
+		for (pl = visplanes[i]; pl; pl = pl->next)
+		{
+			if (pl->ffloor != NULL || pl->polyobj != NULL)
+				continue;
+
+			if (pl->picnum != skyflatnum)
+				continue;
+
+			R_DrawSkyPlane(pl, colfunc, cv_parallelsoftware.value);
+		}
+	}
+	tp_sema = srb2::g_main_threadpool->end_sema();
+	srb2::g_main_threadpool->notify_sema(tp_sema);
+	srb2::g_main_threadpool->wait_sema(tp_sema);
 }
 
 static void R_DrawSkyPlane(visplane_t *pl, void(*colfunc2)(drawcolumndata_t*), boolean allow_parallel)
@@ -723,9 +750,6 @@ static void R_DrawSkyPlane(visplane_t *pl, void(*colfunc2)(drawcolumndata_t*), b
 	// This probably utterly ruins sky rendering for FOFs and polyobjects, unfortunately
 	if (!newview->sky)
 	{
-		// Mark that the sky was visible here for next tic
-		// (note: this is a hack and it sometimes can cause HOMs to appear for a tic IIRC)
-		skyVisible = true;
 		return;
 	}
 
@@ -943,7 +967,12 @@ void R_DrawSinglePlane(drawspandata_t* ds, visplane_t *pl, boolean allow_paralle
 	// sky flat
 	if (pl->picnum == skyflatnum)
 	{
-		R_DrawSkyPlane(pl, colfunc, allow_parallel);
+		// horrific
+		if (!newview->sky)
+		{
+			skyVisible = true;
+		}
+
 		return;
 	}
 
