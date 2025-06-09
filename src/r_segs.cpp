@@ -465,9 +465,9 @@ static boolean R_CheckBlendMode(drawcolumndata_t* dc, const line_t *ldef)
 	}
 	else if (ldef->special == 909)
 	{
-		R_SetColumnFunc(COLDRAWFUNC_FOG);
 		windowtop = frontsector->ceilingheight;
 		windowbottom = frontsector->floorheight;
+		R_SetColumnFunc(COLDRAWFUNC_FOG);
 	}
 	else
 	{
@@ -585,7 +585,7 @@ static void R_DrawRepeatMaskedColumn(drawcolumndata_t* dc, column_t *col)
 static boolean R_IsFFloorTranslucent(visffloor_t *pfloor)
 {
 	if (pfloor->polyobj)
-		return (pfloor->polyobj->translucency > 0);
+		return true;
 
 	// Polyobjects have no ffloors, and they're handled in the conditional above.
 	if (pfloor->ffloor != NULL)
@@ -851,12 +851,10 @@ void R_RenderThickSideRange(drawseg_t *drawseg, INT32 x1, INT32 x2, ffloor_t *pf
 		}
 	}
 
-	if (slopeskew)
+	if (slopeskew && skewslope)
 	{
 		angle_t lineangle = R_PointToAngle2(curline->v1->x, curline->v1->y, curline->v2->x, curline->v2->y);
-
-		if (skewslope)
-			ffloortextureslide = FixedMul(skewslope->zdelta, FINECOSINE((lineangle-skewslope->xydirection)>>ANGLETOFINESHIFT));
+		ffloortextureslide = FixedMul(skewslope->zdelta, FINECOSINE((lineangle-skewslope->xydirection)>>ANGLETOFINESHIFT));
 	}
 
 	dc->texturemid += offsetvalue;
@@ -1131,9 +1129,9 @@ void R_RenderThickSideRange(drawseg_t *drawseg, INT32 x1, INT32 x2, ffloor_t *pf
 // R_FFloorCanClip
 //
 // Returns true if a fake floor can clip a column away.
-static boolean R_FFloorCanClip(visffloor_t *pfloor)
+static inline boolean R_FFloorCanClip(visffloor_t *pfloor)
 {
-	return (cv_ffloorclip.value && !R_IsFFloorTranslucent(pfloor) && !pfloor->polyobj);
+	return (cv_ffloorclip.value && !R_IsFFloorTranslucent(pfloor));
 }
 
 // R_ExpandPlaneY
@@ -1823,19 +1821,25 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 	rw_toptextureslide = rw_midtextureslide = rw_bottomtextureslide = 0;
 	ceilingfrontslide = floorfrontslide = ceilingbackslide = floorbackslide = 0;
 
-	angle_t lineangle = R_PointToAngle2(curline->v1->x, curline->v1->y, curline->v2->x, curline->v2->y);
+	if (backsector || frontsector->f_slope || frontsector->c_slope)
+	{
+		angle_t lineangle = R_PointToAngle2(curline->v1->x, curline->v1->y, curline->v2->x, curline->v2->y);
 
-	if (frontsector->f_slope)
-		floorfrontslide = FixedMul(frontsector->f_slope->zdelta, FINECOSINE((lineangle-frontsector->f_slope->xydirection)>>ANGLETOFINESHIFT));
+		if (frontsector->f_slope)
+			floorfrontslide   = FixedMul(frontsector->f_slope->zdelta, FINECOSINE((lineangle-frontsector->f_slope->xydirection)>>ANGLETOFINESHIFT));
 
-	if (frontsector->c_slope)
-		ceilingfrontslide = FixedMul(frontsector->c_slope->zdelta, FINECOSINE((lineangle-frontsector->c_slope->xydirection)>>ANGLETOFINESHIFT));
+		if (frontsector->c_slope)
+			ceilingfrontslide = FixedMul(frontsector->c_slope->zdelta, FINECOSINE((lineangle-frontsector->c_slope->xydirection)>>ANGLETOFINESHIFT));
 
-	if (backsector && backsector->f_slope)
-		floorbackslide = FixedMul(backsector->f_slope->zdelta, FINECOSINE((lineangle-backsector->f_slope->xydirection)>>ANGLETOFINESHIFT));
+		if (backsector)
+		{
+			if (backsector->f_slope)
+				floorbackslide    = FixedMul(backsector->f_slope->zdelta,  FINECOSINE((lineangle-backsector->f_slope->xydirection)>>ANGLETOFINESHIFT));
 
-	if (backsector && backsector->c_slope)
-		ceilingbackslide = FixedMul(backsector->c_slope->zdelta, FINECOSINE((lineangle-backsector->c_slope->xydirection)>>ANGLETOFINESHIFT));
+			if (backsector->c_slope)
+				ceilingbackslide  = FixedMul(backsector->c_slope->zdelta,  FINECOSINE((lineangle-backsector->c_slope->xydirection)>>ANGLETOFINESHIFT));
+		}
+	}
 
 	if (!backsector)
 	{
@@ -2328,7 +2332,7 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 	}
 
 	// calculate rw_offset (only needed for textured lines)
-	segtextured = midtexture || toptexture || bottomtexture || maskedtexture || (numthicksides > 0);
+	segtextured = (midtexture || toptexture || bottomtexture || maskedtexture || (numthicksides > 0));
 
 	if (segtextured)
 	{
@@ -2829,15 +2833,19 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 		lastopening += rw_stopx - start;
 	}
 
-	if (maskedtexture && !(ds_p->silhouette & SIL_TOP))
+	if (maskedtexture)
 	{
-		ds_p->silhouette |= SIL_TOP;
-		ds_p->tsilheight = (sidedef->midtexture > 0 && sidedef->midtexture < numtextures) ? INT32_MIN: INT32_MAX;
-	}
-	if (maskedtexture && !(ds_p->silhouette & SIL_BOTTOM))
-	{
-		ds_p->silhouette |= SIL_BOTTOM;
-		ds_p->bsilheight = (sidedef->midtexture > 0 && sidedef->midtexture < numtextures) ? INT32_MAX: INT32_MIN;
+		if (!(ds_p->silhouette & SIL_TOP))
+		{
+			ds_p->silhouette |= SIL_TOP;
+			ds_p->tsilheight = (sidedef->midtexture > 0 && sidedef->midtexture < numtextures) ? INT32_MIN: INT32_MAX;
+		}
+
+		if (!(ds_p->silhouette & SIL_BOTTOM))
+		{
+			ds_p->silhouette |= SIL_BOTTOM;
+			ds_p->bsilheight = (sidedef->midtexture > 0 && sidedef->midtexture < numtextures) ? INT32_MAX: INT32_MIN;
+		}
 	}
 
 	ds_p++;
