@@ -136,11 +136,11 @@ void R_PortalClearClipSegs(INT32 start, INT32 end)
 {
 	R_ClearClipSegs();
 
-	for (INT32 x = 0; x < start; x++)
-		solidcol[x] = 1;
+	if (start > 0)
+		memset(solidcol, 1, start);
 
-	for (INT32 x = end; x < viewwidth; x++)
-		solidcol[x] = 1;
+	if (end < viewwidth)
+		memset(solidcol + end, 1, viewwidth - end);
 }
 
 //
@@ -333,6 +333,7 @@ static void R_AddLine(seg_t *line)
 
 		angle1 = clipangle;
 	}
+
 	tspan = clipangle - angle2;
 	if (tspan > doubleclipangle)
 	{
@@ -1103,6 +1104,7 @@ void R_Prep3DFloors(sector_t *sector)
 				}
 			}
 		}
+
 		if (!best)
 		{
 			sector->numlights = i;
