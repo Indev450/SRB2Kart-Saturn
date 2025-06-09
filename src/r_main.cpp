@@ -1355,31 +1355,19 @@ static fixed_t viewfov[MAXSPLITSCREENPLAYERS];
 
 void R_RenderPlayerView(player_t *player)
 {
-	INT32			nummasks	= 1;
-	maskcount_t*	masks		= static_cast<maskcount_t*>(malloc(sizeof(maskcount_t)));
-	const boolean skybox = (skyboxmo[0] && cv_skybox.value);
-	UINT8 i;
+	INT32           nummasks = 1;
+	maskcount_t*    masks    = static_cast<maskcount_t*>(malloc(sizeof(maskcount_t)));
+	const boolean   skybox   = (skyboxmo[0] && cv_skybox.value);
 
 	// load previous saved value of skyVisible for the player
-	for (i = 0; i <= splitscreen; i++)
-	{
-		if (player != &players[displayplayers[i]])
-			continue;
-
-		skyVisible = skyVisiblePerPlayer[i];
-		break;
-	}
+	skyVisible = skyVisiblePerPlayer[viewssnum];
 
 	fixed_t fov = R_GetPlayerFov(player);
 
-	for (UINT8 j = 0; j <= splitscreen; j++)
+	if (viewfov[viewssnum] != fov)
 	{
-		if (player == &players[displayplayers[j]]
-			&& viewfov[j] != fov)
-		{
-			viewfov[j] = fov;
-			R_SetFov(fov);
-		}
+		viewfov[viewssnum] = fov;
+		R_SetFov(fov);
 	}
 
 	Portal_InitList();
@@ -1498,14 +1486,7 @@ void R_RenderPlayerView(player_t *player)
 
 	// save value to skyVisiblePerPlayer
 	// this is so that P1 can't affect whether P2 can see a skybox or not, or vice versa
-	for (i = 0; i <= splitscreen; i++)
-	{
-		if (player != &players[displayplayers[i]])
-			continue;
-
-		skyVisiblePerPlayer[i] = skyVisible;
-		break;
-	}
+	skyVisiblePerPlayer[viewssnum] = skyVisible;
 }
 
 // =========================================================================
