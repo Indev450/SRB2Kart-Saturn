@@ -1349,10 +1349,10 @@ void R_RenderPlayerView(player_t *player)
 
 	for (UINT8 j = 0; j <= splitscreen; j++)
 	{
-		if (player == &players[displayplayers[i]]
-			&& viewfov[i] != fov)
+		if (player == &players[displayplayers[j]]
+			&& viewfov[j] != fov)
 		{
-			viewfov[i] = fov;
+			viewfov[j] = fov;
 			R_SetFov(fov);
 		}
 	}
