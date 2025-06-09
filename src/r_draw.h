@@ -28,11 +28,12 @@ extern "C" {
 extern UINT8 *renderscreen;
 extern INT32 linesize;
 
-FUNCINLINE static ATTRINLINE UINT8 *R_Address(INT32 px, INT32 py)
+# define RENDER_FASTCALL __attribute__((hot))
+
+FUNCINLINE static ATTRINLINE RENDER_FASTCALL UINT8 *R_Address(INT32 px, INT32 py)
 {
 	return renderscreen + (py + viewwindowy) * linesize + (viewwindowx + px);
 }
-
 
 typedef struct {
 	float x, y, z;
@@ -234,34 +235,34 @@ void R_DrawViewBorder(void);
 // -----------------
 
 // column drawers
-void R_DrawColumn(drawcolumndata_t* dc);
-void R_DrawColumnShadowed(drawcolumndata_t* dc);
+void R_DrawColumn(drawcolumndata_t* dc) RENDER_FASTCALL;
+void R_DrawColumnShadowed(drawcolumndata_t* dc) RENDER_FASTCALL;
 
-void R_DrawTranslucentColumn(drawcolumndata_t* dc);
+void R_DrawTranslucentColumn(drawcolumndata_t* dc) RENDER_FASTCALL;
 
-void R_DrawTranslatedColumn(drawcolumndata_t* dc);
-void R_DrawTranslatedTranslucentColumn(drawcolumndata_t* dc);
+void R_DrawTranslatedColumn(drawcolumndata_t* dc) RENDER_FASTCALL;
+void R_DrawTranslatedTranslucentColumn(drawcolumndata_t* dc) RENDER_FASTCALL;
 
-void R_Draw2sMultiPatchColumn(drawcolumndata_t* dc);
-void R_Draw2sMultiPatchTranslucentColumn(drawcolumndata_t* dc);
+void R_Draw2sMultiPatchColumn(drawcolumndata_t* dc) RENDER_FASTCALL;
+void R_Draw2sMultiPatchTranslucentColumn(drawcolumndata_t* dc) RENDER_FASTCALL;
 
-void R_DrawFogColumn(drawcolumndata_t* dc);
+void R_DrawFogColumn(drawcolumndata_t* dc) RENDER_FASTCALL;
 
 // span drawers
-void R_DrawSpan(drawspandata_t* ds);
+void R_DrawSpan(drawspandata_t* ds) RENDER_FASTCALL;
 
-void R_DrawSpan_Tilted(drawspandata_t* ds);
-void R_DrawTranslucentSpan_Tilted(drawspandata_t* ds);
-void R_DrawTranslucentWaterSpan_Tilted(drawspandata_t* ds);
+void R_DrawSpan_Tilted(drawspandata_t* ds) RENDER_FASTCALL;
+void R_DrawTranslucentSpan_Tilted(drawspandata_t* ds) RENDER_FASTCALL;
+void R_DrawTranslucentWaterSpan_Tilted(drawspandata_t* ds) RENDER_FASTCALL;
 
-void R_DrawTranslucentSpan(drawspandata_t* ds);
-void R_DrawTranslucentWaterSpan(drawspandata_t* ds);
+void R_DrawTranslucentSpan(drawspandata_t* ds) RENDER_FASTCALL;
+void R_DrawTranslucentWaterSpan(drawspandata_t* ds) RENDER_FASTCALL;
 
-void R_DrawFogSpan(drawspandata_t* ds);
+void R_DrawFogSpan(drawspandata_t* ds) RENDER_FASTCALL;
 
-void R_DrawSplat_Tilted(drawspandata_t* ds);
-void R_DrawSplat(drawspandata_t* ds);
-void R_DrawTranslucentSplat(drawspandata_t* ds);
+void R_DrawSplat_Tilted(drawspandata_t* ds) RENDER_FASTCALL;
+void R_DrawSplat(drawspandata_t* ds) RENDER_FASTCALL;
+void R_DrawTranslucentSplat(drawspandata_t* ds) RENDER_FASTCALL;
 
 #ifdef __cplusplus
 } // extern "C"
