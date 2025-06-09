@@ -1355,7 +1355,7 @@ static fixed_t viewfov[MAXSPLITSCREENPLAYERS];
 
 void R_RenderPlayerView(player_t *player)
 {
-	UINT8			nummasks	= 1;
+	INT32			nummasks	= 1;
 	maskcount_t*	masks		= static_cast<maskcount_t*>(malloc(sizeof(maskcount_t)));
 	const boolean skybox = (skyboxmo[0] && cv_skybox.value);
 	UINT8 i;

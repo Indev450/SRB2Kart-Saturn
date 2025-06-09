@@ -3016,9 +3016,9 @@ static void R_DrawMaskedList(drawnode_t* head)
 	}
 }
 
-void R_DrawMasked(maskcount_t* masks, UINT8 nummasks)
+void R_DrawMasked(maskcount_t* masks, INT32 nummasks)
 {
-	UINT8 i;
+	INT32 i;
 	drawnode_t *heads;	/**< Drawnode lists; as many as number of views/portals. */
 
 	heads = static_cast<drawnode_t*>(calloc(nummasks, sizeof(drawnode_t)));
