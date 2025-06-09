@@ -143,6 +143,21 @@ transnum_t R_GetLinedefTransTable(fixed_t alpha)
 	return static_cast<transnum_t>((20*(FRACUNIT - alpha - 1) + FRACUNIT) >> (FRACBITS+1));
 }
 
+static inline boolean R_OverflowTest(drawcolumndata_t* dc)
+{
+	INT64 overflow_test;
+
+	overflow_test = (INT64)centeryfrac - (((INT64)dc->texturemid*spryscale)>>FRACBITS);
+
+	if (overflow_test < 0)
+		overflow_test = -overflow_test;
+
+	if ((UINT64)overflow_test&0xFFFFFFFF80000000ULL)
+		return true;
+
+	return false;
+}
+
 static void R_RenderMaskedSegLoop(drawcolumndata_t* dc, drawseg_t *drawseg, INT32 x1, INT32 x2, INT32 texnum, void (*colfunc_2s)(drawcolumndata_t*, column_t *))
 {
 	size_t pindex;
@@ -153,7 +168,6 @@ static void R_RenderMaskedSegLoop(drawcolumndata_t* dc, drawseg_t *drawseg, INT3
 	r_lightlist_t *rlight;
 	sector_t *front, *back;
 	INT32 times, repeats;
-	INT64 overflow_test;
 	INT32 range;
 	line_t *ldef;
 
@@ -296,9 +310,7 @@ static void R_RenderMaskedSegLoop(drawcolumndata_t* dc, drawseg_t *drawseg, INT3
 			if (maskedtexturecol[dc->x] != INT16_MAX)
 			{
 				// Check for overflows first
-				overflow_test = (INT64)centeryfrac - (((INT64)dc->texturemid*spryscale)>>FRACBITS);
-				if (overflow_test < 0) overflow_test = -overflow_test;
-				if ((UINT64)overflow_test&0xFFFFFFFF80000000ULL)
+				if (R_OverflowTest(dc))
 				{
 					// Eh, no, go away, don't waste our time
 					if (dc->numlights)
@@ -309,6 +321,7 @@ static void R_RenderMaskedSegLoop(drawcolumndata_t* dc, drawseg_t *drawseg, INT3
 							rlight->height += rlight->heightstep;
 						}
 					}
+
 					spryscale += rw_scalestep;
 					continue;
 				}
@@ -425,6 +438,7 @@ static void R_RenderMaskedSegLoop(drawcolumndata_t* dc, drawseg_t *drawseg, INT3
 
 				colfunc_2s(dc, col);
 			}
+
 			spryscale += rw_scalestep;
 		}
 	}
@@ -664,6 +678,17 @@ void R_RenderThickSideRange(drawseg_t *drawseg, INT32 x1, INT32 x2, ffloor_t *pf
 	rw_scalestep = drawseg->scalestep;
 	spryscale = drawseg->scale1 + (x1 - drawseg->x1)*rw_scalestep;
 
+#define CLAMPMAX INT32_MAX
+#define CLAMPMIN (-INT32_MAX) // This is not INT32_MIN on purpose! INT32_MIN makes the drawers freak out.
+	auto overflow_clamp = [&](INT64 overflow_test)
+	{
+		return (overflow_test > (INT64)CLAMPMAX) ? CLAMPMAX :
+		(overflow_test > (INT64)CLAMPMIN) ? (fixed_t)overflow_test :
+		CLAMPMIN;
+	};
+#undef CLAMPMAX
+#undef CLAMPMIN
+
 	dc->numlights = 0;
 	if (frontsector->numlights)
 	{
@@ -706,18 +731,13 @@ void R_RenderThickSideRange(drawseg_t *drawseg, INT32 x1, INT32 x2, ffloor_t *pf
 			leftheight -= viewz;
 			rightheight -= viewz;
 
-#define CLAMPMAX INT32_MAX
-#define CLAMPMIN (-INT32_MAX) // This is not INT32_MIN on purpose! INT32_MIN makes the drawers freak out.
 			// Monster Iestyn (25/03/18): do not skip these lights if they fail overflow test, just clamp them instead so they behave.
 			overflow_test = (INT64)centeryfrac - (((INT64)leftheight*drawseg->scale1)>>FRACBITS);
-			if      (overflow_test > (INT64)CLAMPMAX) rlight->height = CLAMPMAX;
-			else if (overflow_test > (INT64)CLAMPMIN) rlight->height = (fixed_t)overflow_test;
-			else                                      rlight->height = CLAMPMIN;
+			rlight->height = overflow_clamp(overflow_test);
 
 			overflow_test = (INT64)centeryfrac - (((INT64)rightheight*drawseg->scale2)>>FRACBITS);
-			if      (overflow_test > (INT64)CLAMPMAX) rlight->heightstep = CLAMPMAX;
-			else if (overflow_test > (INT64)CLAMPMIN) rlight->heightstep = (fixed_t)overflow_test;
-			else                                      rlight->heightstep = CLAMPMIN;
+			rlight->heightstep = overflow_clamp(overflow_test);
+
 			rlight->heightstep = (rlight->heightstep-rlight->height)/(range);
 			rlight->flags = static_cast<ffloortype_e>(light->flags);
 
@@ -730,14 +750,11 @@ void R_RenderThickSideRange(drawseg_t *drawseg, INT32 x1, INT32 x2, ffloor_t *pf
 
 				// Monster Iestyn (25/03/18): do not skip these lights if they fail overflow test, just clamp them instead so they behave.
 				overflow_test = (INT64)centeryfrac - (((INT64)leftheight*drawseg->scale1)>>FRACBITS);
-				if      (overflow_test > (INT64)CLAMPMAX) rlight->botheight = CLAMPMAX;
-				else if (overflow_test > (INT64)CLAMPMIN) rlight->botheight = (fixed_t)overflow_test;
-				else                                      rlight->botheight = CLAMPMIN;
+				rlight->botheight = overflow_clamp(overflow_test);
 
 				overflow_test = (INT64)centeryfrac - (((INT64)rightheight*drawseg->scale2)>>FRACBITS);
-				if      (overflow_test > (INT64)CLAMPMAX) rlight->botheightstep = CLAMPMAX;
-				else if (overflow_test > (INT64)CLAMPMIN) rlight->botheightstep = (fixed_t)overflow_test;
-				else                                      rlight->botheightstep = CLAMPMIN;
+				rlight->botheightstep = overflow_clamp(overflow_test);
+
 				rlight->botheightstep = (rlight->botheightstep-rlight->botheight)/(range);
 			}
 
@@ -894,15 +911,11 @@ void R_RenderThickSideRange(drawseg_t *drawseg, INT32 x1, INT32 x2, ffloor_t *pf
 				dc->texturemid += FixedMul(ffloortextureslide, (maskedtexturecol[oldx]-maskedtexturecol[dc->x])<<FRACBITS);
 			oldx = dc->x;
 		}
+
 		// Calculate bounds
 		// clamp the values if necessary to avoid overflows and rendering glitches caused by them
-
-		if      (top_frac > (INT64)CLAMPMAX)    sprtopscreen = windowtop = CLAMPMAX;
-		else if (top_frac > (INT64)CLAMPMIN)    sprtopscreen = windowtop = (fixed_t)top_frac;
-		else                                    sprtopscreen = windowtop = CLAMPMIN;
-		if      (bottom_frac > (INT64)CLAMPMAX) sprbotscreen = windowbottom = CLAMPMAX;
-		else if (bottom_frac > (INT64)CLAMPMIN) sprbotscreen = windowbottom = (fixed_t)bottom_frac;
-		else                                    sprbotscreen = windowbottom = CLAMPMIN;
+		sprtopscreen = windowtop = overflow_clamp(top_frac);
+		sprbotscreen = windowbottom = overflow_clamp(bottom_frac);
 
 		top_frac += top_step;
 		bottom_frac += bottom_step;
@@ -1106,9 +1119,6 @@ void R_RenderThickSideRange(drawseg_t *drawseg, INT32 x1, INT32 x2, ffloor_t *pf
 	}
 
 	R_SetColumnFunc(BASEDRAWFUNC);
-
-#undef CLAMPMAX
-#undef CLAMPMIN
 }
 
 // R_FFloorCanClip
@@ -2393,6 +2403,7 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 			fixed_t topfracend = (centeryfrac>>4) - FixedMul (worldtopslope, ds_p->scale2);
 			topstep = (topfracend-topfrac)/(range);
 		}
+
 		if (frontsector->f_slope)
 		{
 			fixed_t bottomfracend = (centeryfrac>>4) - FixedMul (worldbottomslope, ds_p->scale2);
