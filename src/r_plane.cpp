@@ -961,7 +961,7 @@ void R_DrawSinglePlane(drawspandata_t* ds, visplane_t *pl, boolean allow_paralle
 			spanfunctype = SPANDRAWFUNC_SPLAT;
 
 #ifdef SHITPLANESPARENCY
-		if (spanfunc == splatfunc || (pl->extra_colormap && pl->extra_colormap->fog))
+		if (spanfunc == spanfuncs[SPANDRAWFUNC_SPLAT] || (pl->extra_colormap && pl->extra_colormap->fog))
 #else
 		if (!pl->extra_colormap || !(pl->extra_colormap->fog & 2))
 #endif
@@ -1009,7 +1009,7 @@ void R_DrawSinglePlane(drawspandata_t* ds, visplane_t *pl, boolean allow_paralle
 				}
 
 #ifdef SHITPLANESPARENCY
-				if (spanfunc == splatfunc || (pl->extra_colormap && pl->extra_colormap->fog))
+				if (spanfunc == spanfuncs[SPANDRAWFUNC_SPLAT] || (pl->extra_colormap && pl->extra_colormap->fog))
 #else
 				if (!pl->extra_colormap || !(pl->extra_colormap->fog & 2))
 #endif
@@ -1229,12 +1229,15 @@ a 'smoothing' of the texture while
 using the palette colors.
 */
 #ifdef QUINCUNX
-	if (spanfunc == R_DrawSpan)
+	if (spanfunc == spanfuncs[BASEDRAWFUNC])
 	{
 		INT32 i;
-		ds_transmap = R_GetTranslucencyTable(tr_trans50);
-		spanfunc = R_DrawTranslucentSpan;
-		for (i=0; i<4; i++)
+
+		ds->transmap = R_GetTranslucencyTable(tr_trans50);
+
+		R_SetSpanFunc(SPANDRAWFUNC_TRANS);
+
+		for (i = 0; i < 4; i++)
 		{
 			ds->xoffs = pl->xoffs;
 			ds->yoffs = pl->yoffs;
