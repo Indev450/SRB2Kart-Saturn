@@ -17,6 +17,7 @@
 
 #include "r_portal.h"
 #include "r_splats.h"
+#include "r_fps.h" // newview
 
 #include "w_wad.h"
 #include "z_zone.h"
@@ -2414,8 +2415,23 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 	}
 	else
 	{
-		topstep = -FixedMul (rw_scalestep, worldtop);
-		topfrac = (centeryfrac>>4) - FixedMul (worldtop, rw_scale);
+		// this is an attempt to fix issues with textureless midtextures drawing nothing where they should just draw sky instead
+		if ((newview->sky // only do this for skyrender
+			&& viewz < P_GetSectorCeilingZAt(frontsector, viewx, viewy)
+			&& (!midtexture && !curline->sidedef->midtexture && !curline->polyseg)
+			&& ((!backsector && frontsector->ceilingpic == skyflatnum)
+			|| ((backsector && backsector->ceilingpic == skyflatnum)
+			&& (worldhigh <= worldtop && worldhighslope <= worldtopslope)
+			&& (worldhigh != worldtop || worldhighslope != worldtopslope)))))
+		{
+			topstep = -FixedMul (rw_scalestep, worldbottom);
+			topfrac = (centeryfrac>>4) - FixedMul (worldbottom, rw_scale);
+		}
+		else
+		{
+			topstep = -FixedMul (rw_scalestep, worldtop);
+			topfrac = (centeryfrac>>4) - FixedMul (worldtop, rw_scale);
+		}
 
 		bottomstep = -FixedMul (rw_scalestep, worldbottom);
 		bottomfrac = (centeryfrac>>4) - FixedMul (worldbottom, rw_scale);
