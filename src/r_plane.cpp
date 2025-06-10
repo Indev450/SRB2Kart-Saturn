@@ -746,6 +746,9 @@ static void R_DrawSkyPlane(visplane_t *pl, void(*colfunc2)(drawcolumndata_t*), b
 	INT32 x;
 	drawcolumndata_t dc = {};
 
+	if (!(pl->minx <= pl->maxx))
+		return;
+
 	// If we're not supposed to draw the sky (e.g. for skyboxes), don't do anything!
 	// This probably utterly ruins sky rendering for FOFs and polyobjects, unfortunately
 	if (!newview->sky)
