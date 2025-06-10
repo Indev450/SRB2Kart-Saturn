@@ -2419,13 +2419,19 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 		if ((newview->sky // only do this for skyrender
 			&& viewz < P_GetSectorCeilingZAt(frontsector, viewx, viewy)
 			&& (!midtexture && !curline->sidedef->midtexture && !curline->polyseg)
-			&& ((!backsector && frontsector->ceilingpic == skyflatnum)
-			|| ((backsector && backsector->ceilingpic == skyflatnum)
+			&& ((!backsector && frontsector->ceilingpic == skyflatnum && frontsector->floorpic != skyflatnum)
+			|| ((backsector && backsector->ceilingpic == skyflatnum && frontsector->ceilingpic != skyflatnum)
 			&& (worldhigh <= worldtop && worldhighslope <= worldtopslope)
 			&& (worldhigh != worldtop || worldhighslope != worldtopslope)))))
 		{
 			topstep = -FixedMul (rw_scalestep, worldbottom);
 			topfrac = (centeryfrac>>4) - FixedMul (worldbottom, rw_scale);
+
+			if (frontsector->f_slope || (backsector && backsector->f_slope))
+			{
+				topstep = -FixedMul (rw_scalestep, worldbottomslope);
+				topfrac = (centeryfrac>>4) - FixedMul (worldbottomslope, rw_scale);
+			}
 		}
 		else
 		{
