@@ -500,6 +500,7 @@ visplane_t *R_FindPlane(fixed_t height, INT32 picnum, INT32 lightlevel,
 	check->polyobj = polyobj;
 	check->slope = slope;
 	check->noencore = noencore;
+	check->cyan = levelflats[picnum].cyan;
 
 	memset(check->top, 0xff, sizeof(*check->top) * viewwidth);
 	memset(check->bottom, 0x00, sizeof(*check->bottom) * viewwidth);
@@ -576,6 +577,7 @@ visplane_t *R_CheckPlane(visplane_t *pl, INT32 start, INT32 stop)
 		new_pl->polyobj = pl->polyobj;
 		new_pl->slope = pl->slope;
 		new_pl->noencore = pl->noencore;
+		new_pl->cyan = pl->cyan;
 		pl = new_pl;
 		pl->minx = start;
 		pl->maxx = stop;
@@ -1023,6 +1025,9 @@ void R_DrawSinglePlane(drawspandata_t* ds, visplane_t *pl, boolean allow_paralle
 						return;
 				}
 			}
+
+			if (pl->cyan && !(pl->ffloor->flags & FF_RIPPLE))
+				spanfunctype = SPANDRAWFUNC_SPLAT;
 
 			if (pl->ffloor->flags & FF_TRANSLUCENT)
 			{

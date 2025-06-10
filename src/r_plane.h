@@ -58,6 +58,7 @@ typedef struct visplane_s
 	pslope_t *slope;
 
 	boolean noencore;
+	boolean cyan;
 } visplane_t;
 
 extern visplane_t *visplanes[MAXVISPLANES];
