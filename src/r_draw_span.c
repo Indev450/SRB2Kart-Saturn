@@ -1188,3 +1188,43 @@ void R_DrawSplat_Tilted(drawspandata_t* ds)
 	}
 #endif
 }
+
+void R_DrawFogSpan_Tilted(drawspandata_t* ds)
+{
+	int width = ds->x2 - ds->x1;
+	float iz = ds->szp.z + ds->szp.y*(centery-ds->y) + ds->szp.x*(ds->x1-centerx);
+	register UINT8 *dest;
+
+	local_for_thread INT32 *tiltlighting = NULL;
+	local_for_thread INT32 oldviewwidth = 0;
+
+	// dont realloc every frame pls thx
+	if (tiltlighting == NULL || oldviewwidth != viewwidth)
+	{
+		tiltlighting = realloc(tiltlighting, sizeof(*tiltlighting) * viewwidth);
+		oldviewwidth = viewwidth;
+	}
+
+	dest = R_Address(ds->x1, ds->y);
+
+	// Lighting is simple. It's just linear interpolation from start to end
+	{
+		float planelightfloat = PLANELIGHTFLOAT;
+		float lightstart, lightend;
+
+		lightend = (iz + ds->szp.x*width) * planelightfloat;
+		lightstart = iz * planelightfloat;
+
+		R_CalcTiltedLighting(tiltlighting, ds->x1, ds->x2, FLOAT_TO_FIXED(lightstart), FLOAT_TO_FIXED(lightend));
+		//CONS_Printf("tilted lighting %f to %f (foc %f)\n", lightstart, lightend, focallengthf);
+	}
+
+	do
+	{
+		UINT8 *colormap = ds->planezlight[tiltlighting[ds->x1++]] + (ds->colormap - colormaps);
+		*dest = colormap[*dest];
+		dest++;
+	}
+	while (--width >= 0);
+}
+
