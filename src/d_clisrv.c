@@ -2394,6 +2394,7 @@ static boolean CL_FinishedFileList(void)
 	char *downloadsize = NULL;
 	//CONS_Printf(M_GetText("Checking files...\n"));
 	i = CL_CheckFiles();
+
 	if (i == 4) // still checking ...
 	{
 		return true;
@@ -5026,6 +5027,16 @@ static void HandleServerInfo(SINT8 node)
 		memcpy(connectedservername, netbuffer->u.serverinfo.servername, MAXSERVERNAME);
 }
 
+static void HandlePlayerInfo(SINT8 node)
+{
+	(void)node;
+	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
+
+	INT32 i;
+	for (i = 0; i < MAXPLAYERS; i++)
+		playerinfo[i] = netbuffer->u.playerinfo[i];
+}
+
 // Helper function for packets that should only be sent by the server
 // If it is NOT from the server, bail out and close the connection!
 static boolean ServerOnly(SINT8 node)
@@ -5190,7 +5201,9 @@ static void PT_ServerCFG(SINT8 node)
 #ifdef SATURNPAK
 	SendSaturnInfo(node);
 #endif
+
 	memset(playeringame, 0, sizeof(playeringame));
+
 	for (j = 0; j < MAXPLAYERS; j++)
 	{
 		if (netbuffer->u.servercfg.playerskins[j] == 0xFF
@@ -5336,10 +5349,10 @@ static void HandlePacketFromAwayNode(SINT8 node)
 
 		case PT_CLIENTCMD:
 			break; // This is not an "unknown packet"
-		
-		case PT_PLAYERINFO: 
+
+		case PT_PLAYERINFO:
 			HandlePlayerInfo(node);
-		break; 
+		break;
 
 		case PT_SERVERTICS:
 			// Do not remove my own server (we have just get a out of order packet)
@@ -5532,7 +5545,7 @@ static void HandlePacketFromPlayer(SINT8 node)
 
 			// Check player consistancy during the level
 			if (gamestate == GS_LEVEL
-				&& (realstart > gametic - BACKUPTICS+1 && realstart <= gametic)
+				&& (realstart <= gametic && realstart + BACKUPTICS - 1 > gametic)
 				&& consistancy[realstart%BACKUPTICS] != SHORT(netbuffer->u.clientpak.consistancy)
 				&& (!UseSaturnSynch(node) || (!resendingsavegame[node] && savegameresendcooldown[node] <= I_GetTime() && !SV_ResendingSavegameToAnyone())))
 			{
@@ -5948,7 +5961,6 @@ static void GetPackets(void)
 		/*if (netbuffer->packettype == PT_PLAYERINFO)
 			 continue; // We do nothing with PLAYERINFO, that's for the MS browser. Not quite true anymore :p*/
 
-
 		// We also count unknown packets, hence "<="
 		if (netbuffer->packettype <= NUMPACKETTYPE)
 			++packetstat[netbuffer->packettype];
@@ -6279,10 +6291,12 @@ static void CL_SendClientCmd(void)
 				}
 
 				M_Memcpy(netbuffer->u.textcmd, localtextcmd[i], localtextcmd[i][0]+1);
+
 				// All extra data have been sent
 				if (HSendPacket(servernode, true, 0, localtextcmd[i][0]+1)) // Send can fail...
 				{
 					localtextcmd[i][0] = 0;
+
 					if (textcmdbuf[i] != NULL)
 					{
 						textcmdbuf_t *buf = textcmdbuf[i];
@@ -6339,6 +6353,7 @@ static void SV_SendTics(void)
 
 		// compute the length of the packet and cut it if too large
 		packsize = BASESERVERTICSSIZE;
+
 		for (i = realfirsttic; i < lasttictosend; i++)
 		{
 			packsize += sizeof (ticcmd_t) * doomcom->numslots;
@@ -6366,6 +6381,7 @@ static void SV_SendTics(void)
 						DEBFILE("sending it anyway\n");
 					}
 				}
+
 				break;
 			}
 		}
@@ -6387,6 +6403,7 @@ static void SV_SendTics(void)
 		{
 			ntextcmd = bufpos++;
 			*ntextcmd = 0;
+
 			for (j = 0; j < MAXPLAYERS; j++)
 			{
 				UINT8 *textcmd = D_GetExistingTextcmd(i, j);
