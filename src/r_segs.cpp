@@ -2415,29 +2415,55 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 	}
 	else
 	{
-		// this is an attempt to fix issues with textureless midtextures drawing nothing where they should just draw sky instead
-		if ((newview->sky // only do this for skyrender
-			&& viewz < P_GetSectorCeilingZAt(frontsector, viewx, viewy)
-			&& (!midtexture && !curline->sidedef->midtexture && !curline->polyseg)
-			&& ((!backsector && frontsector->ceilingpic == skyflatnum && frontsector->floorpic != skyflatnum)
-			|| ((backsector && backsector->ceilingpic == skyflatnum && frontsector->ceilingpic != skyflatnum)
-			&& (worldhigh <= worldtop && worldhighslope <= worldtopslope)
-			&& (worldhigh != worldtop || worldhighslope != worldtopslope)))))
-		{
-			topstep = -FixedMul (rw_scalestep, worldbottom);
-			topfrac = (centeryfrac>>4) - FixedMul (worldbottom, rw_scale);
+		// for everyone that sees this
+		// dont.
+		// this is absolute shit-tier hacks
+		// but i just cant determine this in any sane way
+		// but this checks a shitton of things to make software handle skies better
 
-			if (frontsector->f_slope || (backsector && backsector->f_slope))
-			{
-				topstep = -FixedMul (rw_scalestep, worldbottomslope);
-				topfrac = (centeryfrac>>4) - FixedMul (worldbottomslope, rw_scale);
-			}
-		}
-		else
+		const bool emptymid = (!midtexture && !curline->sidedef->midtexture && !curline->polyseg);
+
+		auto set_topstep_normal = [&]
 		{
 			topstep = -FixedMul (rw_scalestep, worldtop);
 			topfrac = (centeryfrac>>4) - FixedMul (worldtop, rw_scale);
+		};
+
+		if (emptymid)
+		{
+			const bool tophigh = (backsector && worldhigh <= worldtop && worldhighslope <= worldtopslope)
+			&& (worldhigh != worldtop || worldhighslope != worldtopslope);
+
+			// if we cant see the goddamn skyplane, well there wont be any skybox
+			// we could kill skyVisible instead, but i want to keep the performance improvemnts it yields
+			// so we do this absolute trash
+			if ((frontsector->floorpic != skyflatnum && frontsector->ceilingpic != skyflatnum)
+				&& ((!backsector && frontsector->ceilingpic != skyflatnum && frontsector->floorpic != skyflatnum)
+				|| (tophigh && (frontsector->ceilingpic != skyflatnum)
+				&& (backsector->floorheight > frontsector->ceilingheight || backsector->ceilingheight < frontsector->floorheight))))
+				skyVisible = true;
+
+			// this is an attempt to fix issues with textureless midtextures drawing nothing where they should just draw sky instead
+			if ((newview->sky // only do this for skyrender
+				&& viewz < P_GetSectorCeilingZAt(frontsector, viewx, viewy) // looks ugly while our cam is in the sky
+				&& ((!backsector && frontsector->ceilingpic == skyflatnum && frontsector->floorpic != skyflatnum)
+				|| (tophigh && (backsector->ceilingpic == skyflatnum && frontsector->ceilingpic != skyflatnum)))))
+			{
+				topstep = -FixedMul (rw_scalestep, worldbottom);
+				topfrac = (centeryfrac>>4) - FixedMul (worldbottom, rw_scale);
+
+				// account for slopes to try and get rid of sharp edges from the black void
+				if (frontsector->f_slope || (backsector && backsector->f_slope))
+				{
+					topstep = -FixedMul (rw_scalestep, worldbottomslope);
+					topfrac = (centeryfrac>>4) - FixedMul (worldbottomslope, rw_scale);
+				}
+			}
+			else
+				set_topstep_normal();
 		}
+		else
+			set_topstep_normal();
 
 		bottomstep = -FixedMul (rw_scalestep, worldbottom);
 		bottomfrac = (centeryfrac>>4) - FixedMul (worldbottom, rw_scale);
