@@ -141,6 +141,7 @@ enum
 	SPANDRAWFUNC_TILTEDWATER,
 
 	SPANDRAWFUNC_FOG,
+	SPANDRAWFUNC_TILTEDFOG,
 
 	SPANDRAWFUNC_MAX
 };
@@ -258,6 +259,7 @@ void R_DrawTranslucentSpan(drawspandata_t* ds);
 void R_DrawTranslucentWaterSpan(drawspandata_t* ds);
 
 void R_DrawFogSpan(drawspandata_t* ds);
+void R_DrawFogSpan_Tilted(drawspandata_t* ds);
 
 void R_DrawSplat_Tilted(drawspandata_t* ds);
 void R_DrawSplat(drawspandata_t* ds);

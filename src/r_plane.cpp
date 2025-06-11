@@ -1213,6 +1213,9 @@ void R_DrawSinglePlane(drawspandata_t* ds, visplane_t *pl, boolean allow_paralle
 			case SPANDRAWFUNC_SPLAT:
 				spanfunctype = SPANDRAWFUNC_TILTEDSPLAT;
 				break;
+			case SPANDRAWFUNC_FOG:
+				spanfunctype = SPANDRAWFUNC_TILTEDFOG;
+				break;
 			default:
 				spanfunctype = SPANDRAWFUNC_TILTED;
 				break;
