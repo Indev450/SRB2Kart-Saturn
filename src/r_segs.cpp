@@ -1421,7 +1421,7 @@ static void R_RenderSegLoop(drawcolumndata_t* dc)
 			// single sided line
 			if (yl <= yh && yh >= 0 && yl < viewheight)
 			{
-				R_DrawWallColumn(dc, yl, yh, rw_midtexturemid, texturecolumn, midtexture, (encoremap && !(curline->linedef->flags & ML_TFERLINE)));
+				R_DrawWallColumn(dc, yl, yh, rw_midtexturemid, texturecolumn, midtexture, midremap);
 
 				// dont draw anything more for this column, since
 				// a midtexture blocks the view
