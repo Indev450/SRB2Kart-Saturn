@@ -5459,44 +5459,43 @@ static void PT_ClientCmd(INT32 netconsole, SINT8 node)
 		|| netbuffer->packettype == PT_NODEKEEPALIVEMIS)
 		return;
 
-	// If we've alredy received a ticcmd for this tic, just submit it for the next one.
-	tic_t faketic = maketic;
-	if ((!!(netcmds[maketic % BACKUPTICS][netconsole].angleturn & TICCMD_RECEIVED))
-		&& (maketic - firstticstosend < BACKUPTICS - 1))
-		faketic++;
+	// store it in an internal buffer so the last packet takes precedence, which minimizes input lag
+	G_MoveTiccmd(&playercmds[netconsole], &netbuffer->u.clientpak.cmd, 1);
 
-			// Don't do anything for packets of type NODEKEEPALIVE?
-			// Sryder 2018/07/01: Update the freezetimeout still!
-			if (netbuffer->packettype == PT_NODEKEEPALIVE
-				|| netbuffer->packettype == PT_NODEKEEPALIVEMIS)
-				break;
+	// Check ticcmd for "speed hacks"
+	if (CheckForSpeedHacks((UINT8)netconsole))
+		return;
 
-			// store it in an internal buffer so the last packet takes precedence, which minimizes input lag
-			G_MoveTiccmd(&playercmds[netconsole], &netbuffer->u.clientpak.cmd, 1);
+	// Splitscreen cmd
+	if (((netbuffer->packettype == PT_CLIENT2CMD || netbuffer->packettype == PT_CLIENT2MIS)
+		|| (netbuffer->packettype == PT_CLIENT3CMD || netbuffer->packettype == PT_CLIENT3MIS)
+		|| (netbuffer->packettype == PT_CLIENT4CMD || netbuffer->packettype == PT_CLIENT4MIS))
+		&& (nodetoplayer2[node] >= 0))
+	{
+		G_MoveTiccmd(&playercmds[(UINT8)nodetoplayer2[node]], &netbuffer->u.client2pak.cmd2, 1);
 
-			// Check ticcmd for "speed hacks"
-			if (CheckForSpeedHacks((UINT8)netconsole))
-				break;
+		if (CheckForSpeedHacks((UINT8)nodetoplayer2[node]))
+			return;
+	}
 
-			// Splitscreen cmd
-			if (((netbuffer->packettype == PT_CLIENT2CMD || netbuffer->packettype == PT_CLIENT2MIS)
-				|| (netbuffer->packettype == PT_CLIENT3CMD || netbuffer->packettype == PT_CLIENT3MIS)
-				|| (netbuffer->packettype == PT_CLIENT4CMD || netbuffer->packettype == PT_CLIENT4MIS))
-				&& (nodetoplayer2[node] >= 0))
-			{
-				G_MoveTiccmd(&playercmds[(UINT8)nodetoplayer2[node]], &netbuffer->u.client2pak.cmd2, 1);
+	if (((netbuffer->packettype == PT_CLIENT3CMD || netbuffer->packettype == PT_CLIENT3MIS)
+		|| (netbuffer->packettype == PT_CLIENT4CMD || netbuffer->packettype == PT_CLIENT4MIS))
+		&& (nodetoplayer3[node] >= 0))
+	{
+		G_MoveTiccmd(&playercmds[(UINT8)nodetoplayer3[node]], &netbuffer->u.client3pak.cmd3, 1);
+
+		if (CheckForSpeedHacks((UINT8)nodetoplayer3[node]))
+			return;
+	}
 
 	if ((netbuffer->packettype == PT_CLIENT4CMD || netbuffer->packettype == PT_CLIENT4MIS)
 		&& (nodetoplayer4[node] >= 0))
 	{
-		G_MoveTiccmd(&netcmds[faketic%BACKUPTICS][(UINT8)nodetoplayer4[node]],
-			&netbuffer->u.client4pak.cmd4, 1);
+		G_MoveTiccmd(&playercmds[(UINT8)nodetoplayer4[node]], &netbuffer->u.client4pak.cmd4, 1);
 
-			if (((netbuffer->packettype == PT_CLIENT3CMD || netbuffer->packettype == PT_CLIENT3MIS)
-				|| (netbuffer->packettype == PT_CLIENT4CMD || netbuffer->packettype == PT_CLIENT4MIS))
-				&& (nodetoplayer3[node] >= 0))
-			{
-				G_MoveTiccmd(&playercmds[(UINT8)nodetoplayer3[node]], &netbuffer->u.client3pak.cmd3, 1);
+		if (CheckForSpeedHacks((UINT8)nodetoplayer4[node]))
+			return;
+	}
 
 	// A delay before we check resynching
 	// Used on join or just after a synch fail
@@ -5546,11 +5545,6 @@ static void PT_ClientCmd(INT32 netconsole, SINT8 node)
 			}
 
 			if (cv_blamecfail.value)
-			// Check player consistancy during the level
-			if (gamestate == GS_LEVEL
-				&& (realstart <= gametic && realstart + BACKUPTICS - 1 > gametic)
-				&& consistancy[realstart%BACKUPTICS] != SHORT(netbuffer->u.clientpak.consistancy)
-				&& (!UseSaturnSynch(node) || (!resendingsavegame[node] && savegameresendcooldown[node] <= I_GetTime() && !SV_ResendingSavegameToAnyone())))
 			{
 				CONS_Printf(M_GetText("Synch failure for player %d (%s); expected %hd, got %hd\n"),
 					netconsole+1, player_names[netconsole],
