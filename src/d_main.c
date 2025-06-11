@@ -197,12 +197,10 @@ static void D_PadMenuScrollInput(UINT8 input)
 // and pass it to the eventlist
 static void D_GamePadMenuScrollTicker(void)
 {
+	UINT8 i;
 	static UINT8 menuInputDelayTimer = 0;
 
-	if (dedicated)
-		return;
-
-	for (UINT8 i = 0; i < 4; i++)
+	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
 	{
 		if (dpadscrollstate[i])
 		{
@@ -222,10 +220,10 @@ static void D_GamePadMenuScrollTicker(void)
 static void D_DeviceLEDTick(void)
 {
 	UINT8 i;
-	static UINT16 color[MAXSPLITSCREENPLAYERS] = {0, 0, 0, 0};
-	static UINT16 curcolor[MAXSPLITSCREENPLAYERS] = {0, 0, 0, 0};
+	static UINT16 color[MAXSPLITSCREENPLAYERS] = {0};
+	static UINT16 curcolor[MAXSPLITSCREENPLAYERS] = {0};
 
-	if (dedicated || numcontrollers == 0)
+	if (numcontrollers == 0)
 	{
 		return;
 	}
@@ -252,7 +250,6 @@ static void D_DeviceLEDTick(void)
 void D_ProcessEvents(void)
 {
 	event_t *ev;
-
 	boolean eaten;
 
 	for (; eventtail != eventhead; eventtail = (eventtail+1) & (MAXEVENTS-1))
@@ -291,8 +288,10 @@ void D_ProcessEvents(void)
 
 		// Demo input:
 		if (demo.playback)
+		{
 			if (M_DemoResponder(ev))
 				continue;	// demo ate the event
+		}
 
 		// console input
 #ifdef HAVE_THREADS
@@ -317,6 +316,88 @@ void D_ProcessEvents(void)
 // draw current display, possibly wiping it from the previous
 //
 
+static void D_Renderview(void)
+{
+	UINT8 i;
+
+	if (automapactive)
+		return;
+
+	R_ApplyLevelInterpolators(rendertimefrac);
+
+	for (i = 0; i <= splitscreen; i++)
+	{
+		const boolean issplitscreen = (i > 0);
+
+		if (!P_MobjWasRemoved(players[displayplayers[i]].mo) || players[displayplayers[i]].playerstate == PST_DEAD)
+		{
+			viewssnum = i;
+
+			if (!issplitscreen) // Initialize for P1
+			{
+				viewwindowy = viewwindowx = 0;
+				topleft = screens[0];
+				objectsdrawn = 0;
+			}
+
+#ifdef HWRENDER
+			if (rendermode == render_opengl)
+			{
+				HWR_RenderPlayerView();
+				R_RestoreLevelInterpolators();
+				continue;
+			}
+#endif
+			if (issplitscreen) // Splitscreen-specific
+			{
+				const INT32 len = viewheight*sizeof(ylookup[0]);
+
+				switch (i)
+				{
+					case 1:
+						if (splitscreen > 1)
+						{
+							viewwindowx = viewwidth;
+							viewwindowy = 0;
+						}
+						else
+						{
+							viewwindowx = 0;
+							viewwindowy = viewheight;
+						}
+						M_Memcpy(ylookup, ylookup2, len);
+						break;
+					case 2:
+						viewwindowx = 0;
+						viewwindowy = viewheight;
+						M_Memcpy(ylookup, ylookup3, len);
+						break;
+					case 3:
+						viewwindowx = viewwidth;
+						viewwindowy = viewheight;
+						M_Memcpy(ylookup, ylookup4, len);
+					default:
+						break;
+				}
+
+				topleft = screens[0] + viewwindowy*vid.width + viewwindowx;
+			}
+
+			R_RenderPlayerView(&players[displayplayers[i]]);
+
+			if (issplitscreen)
+				M_Memcpy(ylookup, ylookup1, viewheight*sizeof (ylookup[0]));
+		}
+
+		if (!issplitscreen)
+			R_ApplyViewMorph();
+
+		V_DoPostProcessor(i, postimgparam[i]);
+	}
+
+	R_RestoreLevelInterpolators();
+}
+
 // wipegamestate can be set to -1 to force a wipe on the next draw
 // added comment : there is a wipe eatch change of the gamestate
 gamestate_t wipegamestate = GS_LEVEL;
@@ -327,7 +408,6 @@ static boolean D_Display(void)
 	boolean forcerefresh = false;
 	static boolean wipe = false;
 	INT32 wipedefindex = 0;
-	UINT8 i;
 
 	if (!dedicated)
 	{
@@ -366,6 +446,7 @@ static boolean D_Display(void)
 	{
 		// set for all later
 		wipedefindex = gamestate; // wipe_xxx_toblack
+
 		if (gamestate == GS_TITLESCREEN && wipegamestate != GS_INTRO)
 			wipedefindex = wipe_timeattack_toblack;
 		else if (gamestate == GS_INTERMISSION)
@@ -378,26 +459,28 @@ static boolean D_Display(void)
 
 		if (!dedicated)
 		{
-			// Fade to black first
-			if (gamestate != GS_LEVEL // fades to black on its own timing, always
-			 && wipedefs[wipedefindex] != UINT8_MAX)
+			if (gamestate != GS_LEVEL)
 			{
-				F_WipeStartScreen();
-				V_DrawFill(0, 0, BASEVIDWIDTH, BASEVIDHEIGHT, 31);
-				F_WipeEndScreen();
-				F_RunWipe(wipedefs[wipedefindex], gamestate != GS_TIMEATTACK);
-				ranwipe = true;
-			}
+				// Fade to black first
+				if (wipedefs[wipedefindex] != UINT8_MAX) // fades to black on its own timing, always
+				{
+					F_WipeStartScreen();
+					V_DrawFill(0, 0, BASEVIDWIDTH, BASEVIDHEIGHT, 31);
+					F_WipeEndScreen();
+					F_RunWipe(wipedefs[wipedefindex], gamestate != GS_TIMEATTACK);
+					ranwipe = true;
+				}
 
-			if (gamestate != GS_LEVEL && rendermode != render_none)
-			{
-				V_SetPaletteLump("PLAYPAL"); // Reset the palette
-				R_ReInitColormaps(0, LUMPERROR);
+				if (rendermode != render_none)
+				{
+					V_SetPaletteLump("PLAYPAL"); // Reset the palette
+					R_ReInitColormaps(0, LUMPERROR);
+				}
 			}
 
 			F_WipeStartScreen();
 		}
-		else //dedicated servers
+		else // dedicated servers
 		{
 			F_RunWipe(wipedefs[wipedefindex], gamestate != GS_TIMEATTACK);
 			ranwipe = true;
@@ -405,7 +488,7 @@ static boolean D_Display(void)
 		}
 	}
 
-	if (dedicated) //bail out after wipe logic
+	if (dedicated) // bail out after wipe logic
 		return false;
 
 	// do buffered drawing
@@ -428,9 +511,6 @@ static boolean D_Display(void)
 			Y_VoteDrawer();
 			HU_Erase();
 			HU_Drawer();
-			break;
-
-		case GS_TIMEATTACK:
 			break;
 
 		case GS_INTRO:
@@ -484,6 +564,7 @@ static boolean D_Display(void)
 				HU_Erase();
 				HU_Drawer();
 			}
+		case GS_TIMEATTACK:
 		case GS_DEDICATEDSERVER:
 		case GS_NULL:
 			break;
@@ -492,89 +573,10 @@ static boolean D_Display(void)
 	if (gamestate == GS_LEVEL)
 	{
 		// draw the view directly
-		if (cv_renderview.value && !automapactive)
+		if (cv_renderview.value)
 		{
 			PS_START_TIMING(ps_rendercalltime);
-
-			R_ApplyLevelInterpolators(rendertimefrac);
-
-			for (i = 0; i <= splitscreen; i++)
-			{
-				if (!P_MobjWasRemoved(players[displayplayers[i]].mo) || players[displayplayers[i]].playerstate == PST_DEAD)
-				{
-					viewssnum = i;
-
-					if (i == 0) // Initialize for P1
-					{
-						viewwindowy = 0;
-						viewwindowx = 0;
-
-						topleft = screens[0] + viewwindowy*vid.width + viewwindowx;
-						objectsdrawn = 0;
-					}
-
-#ifdef HWRENDER
-					if (rendermode == render_opengl)
-						HWR_RenderPlayerView();
-					else
-#endif
-					if (rendermode != render_none)
-					{
-						if (i > 0) // Splitscreen-specific
-						{
-							switch (i)
-							{
-								case 1:
-									if (splitscreen > 1)
-									{
-										viewwindowx = viewwidth;
-										viewwindowy = 0;
-									}
-									else
-									{
-										viewwindowx = 0;
-										viewwindowy = viewheight;
-									}
-									M_Memcpy(ylookup, ylookup2, viewheight*sizeof (ylookup[0]));
-									break;
-								case 2:
-									viewwindowx = 0;
-									viewwindowy = viewheight;
-									M_Memcpy(ylookup, ylookup3, viewheight*sizeof (ylookup[0]));
-									break;
-								case 3:
-									viewwindowx = viewwidth;
-									viewwindowy = viewheight;
-									M_Memcpy(ylookup, ylookup4, viewheight*sizeof (ylookup[0]));
-								default:
-									break;
-							}
-
-
-							topleft = screens[0] + viewwindowy*vid.width + viewwindowx;
-						}
-
-						R_RenderPlayerView(&players[displayplayers[i]]);
-
-						if (i > 0)
-							M_Memcpy(ylookup, ylookup1, viewheight*sizeof (ylookup[0]));
-					}
-				}
-			}
-
-			if (rendermode == render_soft)
-			{
-				if (!splitscreen)
-					R_ApplyViewMorph();
-
-				for (i = 0; i <= splitscreen; i++)
-				{
-					V_DoPostProcessor(i, postimgparam[i]);
-				}
-			}
-
-			R_RestoreLevelInterpolators();
-
+			D_Renderview();
 			PS_STOP_TIMING(ps_rendercalltime);
 		}
 
@@ -584,6 +586,7 @@ static boolean D_Display(void)
 			{
 				VID_BlitLinearScreen(screens[0], screens[1], vid.width*vid.bpp, vid.height, vid.width*vid.bpp, vid.rowbytes);
 			}
+
 			lastdraw = false;
 		}
 
@@ -606,13 +609,8 @@ static boolean D_Display(void)
 	// draw pause pic
 	if (paused && cv_showhud.value && !demo.playback)
 	{
-		INT32 py;
-		patch_t *patch;
-		if (automapactive)
-			py = 4;
-		else
-			py = viewwindowy + 4;
-		patch = W_CachePatchName("M_PAUSE", PU_PATCH);
+		INT32 py = (automapactive) ? 4 : (viewwindowy + 4);
+		patch_t *patch = W_CachePatchName("M_PAUSE", PU_PATCH);
 		V_DrawScaledPatch(viewwindowx + (BASEVIDWIDTH - patch->width)/2, py, V_SNAPTOTOP, patch);
 	}
 
@@ -754,7 +752,7 @@ void D_SRB2Loop(void)
 
 		// Casting the return value of a function is bad practice (apparently)
 		double budget = ((R_GetFramerateCap() == 0) ? 0.0 : round((1.0 / R_GetFramerateCap()) * I_GetPrecisePrecision()));
-		capbudget = (precise_t) budget;
+		capbudget = (precise_t)budget;
 
 		boolean ranwipe = false;
 
@@ -824,12 +822,15 @@ void D_SRB2Loop(void)
 				doDisplay = true;
 			}
 
-			if (menuactive)
+			if (!dedicated)
 			{
-				D_GamePadMenuScrollTicker();
-			}
+				if (menuactive)
+				{
+					D_GamePadMenuScrollTicker();
+				}
 
-			D_DeviceLEDTick();
+				D_DeviceLEDTick();
+			}
 		}
 
 		if (interp)
@@ -841,7 +842,9 @@ void D_SRB2Loop(void)
 			ps_interp_frac.value.p = (precise_t)((FIXED_TO_FLOAT(g_time.timefrac)) * 1000.0f);
 			ps_interp_lag.value.p = (precise_t)((deltasecs) * 1000.0f);
 
-			if (!(paused || P_AutoPause()) && deltatics < 1.0 && !hu_stopped)
+			const boolean lagging = ((deltatics >= 1.0) || hu_stopped);
+
+			if (!(paused || P_AutoPause()) && !lagging)
 			{
 				rendertimefrac = g_time.timefrac;
 			}
@@ -850,7 +853,7 @@ void D_SRB2Loop(void)
 				rendertimefrac = FRACUNIT;
 			}
 
-			if ((deltatics < 1.0) && !hu_stopped)
+			if (!lagging)
 			{
 				rendertimefrac_unpaused = g_time.timefrac;
 			}

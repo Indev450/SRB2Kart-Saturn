@@ -212,7 +212,7 @@ boolean OglSdlSurface(INT32 w, INT32 h)
 #ifdef USE_FBO_OGL
 		char videodriver[4] = {'S','D','L',0};
 		if (supportFBO && strstr((const char*)gl_renderer, "NVIDIA")
-			&& (*strncpy(videodriver, SDL_GetCurrentVideoDriver(), 4) != '\0')
+			&& (*strncpy(videodriver, SDL_GetCurrentVideoDriver(), sizeof(videodriver)-1) != '\0')
 			&& (strncasecmp("x11",videodriver,4) == 0))
 			xwaylandcrap = true;
 #endif

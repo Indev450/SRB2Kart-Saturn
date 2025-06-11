@@ -187,7 +187,7 @@ void ST_doPaletteStuff(void)
 
 #ifdef HWRENDER
 	if (rendermode == render_opengl && !HWR_PalRenderFlashpal())
-		palette = 0; // No flashpals here in OpenGL
+		palette = 0; // Don't set the palette to a flashpal in OpenGL's truecolor mode
 #endif
 
 	palette = min(max(palette, 0), 13);

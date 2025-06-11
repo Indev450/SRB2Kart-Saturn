@@ -385,7 +385,8 @@ consvar_t cv_consolechat = {"chatmode", "Window", CV_SAVE, consolechat_cons_t, N
 consvar_t cv_pauseifunfocused = {"pauseifunfocused", "Yes", CV_SAVE, CV_YesNo, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 // Display song credits
-consvar_t cv_songcredits = {"songcredits", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+static CV_PossibleValue_t songcredits_cons_t[] = {{0, "Off"}, {1, "Default"}, {2, "Box"}, {0, NULL}};
+consvar_t cv_songcredits = {"songcredits", "Default", CV_SAVE, songcredits_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 // Show "FREE PLAY" when you're alone. :(
 consvar_t cv_showfreeplay = { "showfreeplay", "Yes", CV_SAVE, CV_YesNo, NULL, 0, NULL, NULL, 0, 0, NULL};
@@ -3998,7 +3999,6 @@ void G_InitNew(UINT8 pencoremode, const char *mapname, boolean resetplayer, bool
 	}
 }
 
-
 char *G_BuildMapTitle(INT32 mapnum)
 {
 	char *title = NULL;
@@ -5465,33 +5465,36 @@ void G_GhostTicker(void)
 						break;
 					}
 				}
-				if (type == MT_GHOST)
+				if (type != -1)
 				{
-					mobj = P_SpawnGhostMobj(g->mo); // does a large portion of the work for us
-					mobj->frame = (mobj->frame & ~FF_FRAMEMASK)|tr_trans60<<FF_TRANSSHIFT; // P_SpawnGhostMobj sets trans50, we want trans60
-				}
-				else
-				{
-					mobj = P_SpawnMobj(g->mo->x, g->mo->y, g->mo->z - FixedDiv(FixedMul(g->mo->info->height, g->mo->scale) - g->mo->height,3*FRACUNIT), MT_THOK);
-					mobj->sprite = states[mobjinfo[type].spawnstate].sprite;
-					mobj->frame = (states[mobjinfo[type].spawnstate].frame & FF_FRAMEMASK) | tr_trans60<<FF_TRANSSHIFT;
-					mobj->tics = -1; // nope.
-					mobj->color = g->mo->color;
-					if (g->mo->eflags & MFE_VERTICALFLIP)
+					if (type == MT_GHOST)
 					{
-						mobj->flags2 |= MF2_OBJECTFLIP;
-						mobj->eflags |= MFE_VERTICALFLIP;
+						mobj = P_SpawnGhostMobj(g->mo); // does a large portion of the work for us
+						mobj->frame = (mobj->frame & ~FF_FRAMEMASK)|tr_trans60<<FF_TRANSSHIFT; // P_SpawnGhostMobj sets trans50, we want trans60
 					}
-					P_SetScale(mobj, g->mo->scale);
-					mobj->destscale = g->mo->scale;
+					else
+					{
+						mobj = P_SpawnMobj(g->mo->x, g->mo->y, g->mo->z - FixedDiv(FixedMul(g->mo->info->height, g->mo->scale) - g->mo->height,3*FRACUNIT), MT_THOK);
+						mobj->sprite = states[mobjinfo[type].spawnstate].sprite;
+						mobj->frame = (states[mobjinfo[type].spawnstate].frame & FF_FRAMEMASK) | tr_trans60<<FF_TRANSSHIFT;
+						mobj->tics = -1; // nope.
+						mobj->color = g->mo->color;
+						if (g->mo->eflags & MFE_VERTICALFLIP)
+						{
+							mobj->flags2 |= MF2_OBJECTFLIP;
+							mobj->eflags |= MFE_VERTICALFLIP;
+						}
+						P_SetScale(mobj, g->mo->scale);
+						mobj->destscale = g->mo->scale;
+					}
+					mobj->floorz = mobj->z;
+					mobj->ceilingz = mobj->z+mobj->height;
+					P_UnsetThingPosition(mobj);
+					mobj->flags = MF_NOBLOCKMAP|MF_NOCLIP|MF_NOCLIPHEIGHT|MF_NOGRAVITY; // make an ATTEMPT to curb crazy SOCs fucking stuff up...
+					P_SetThingPosition(mobj);
+					mobj->fuse = 8;
+					P_SetTarget(&mobj->target, g->mo);
 				}
-				mobj->floorz = mobj->z;
-				mobj->ceilingz = mobj->z+mobj->height;
-				P_UnsetThingPosition(mobj);
-				mobj->flags = MF_NOBLOCKMAP|MF_NOCLIP|MF_NOCLIPHEIGHT|MF_NOGRAVITY; // make an ATTEMPT to curb crazy SOCs fucking stuff up...
-				P_SetThingPosition(mobj);
-				mobj->fuse = 8;
-				P_SetTarget(&mobj->target, g->mo);
 			}
 			if (ziptic & EZT_HIT)
 			{ // Spawn hit poofs for killing things!
@@ -6068,15 +6071,19 @@ void G_BeginRecording(void)
 		char *title = G_BuildMapTitle(gamemap);
 
 		// Print to a separate temp buffer instead of demo.titlename, so we can use it in M_TextInputSetString
-		snprintf(demotitlename, 64, "%s - %s", title, modeattacking ? "Time Attack" : connectedservername);
+		if (title)
+		{
+			snprintf(demotitlename, 64, "%s - %s", title, modeattacking ? "Time Attack" : connectedservername);
+			Z_Free(title);
+		}
+		else
+			snprintf(demotitlename, 64, "%s", modeattacking ? "Time Attack" : connectedservername);
 
 		// Init just in case it isn't initialized already
 		M_TextInputInit(&demo.titlenameinput, demo.titlename, sizeof(demo.titlename));
 
 		// This will indirectly assign to demo.titlename too
 		M_TextInputSetString(&demo.titlenameinput, demotitlename);
-
-		Z_Free(title);
 	}
 
 	// demo checksum
@@ -8140,7 +8147,7 @@ void G_SaveDemo(void)
 		size_t i, strindex = 0;
 		boolean dash = true;
 
-		for (i = 0; i < 127 && demo.titlename[i]; i++)
+		for (i = 0; demo.titlename[i] && i < 127; i++)
 		{
 			if ((demo.titlename[i] >= 'a' && demo.titlename[i] <= 'z') ||
 				(demo.titlename[i] >= '0' && demo.titlename[i] <= '9'))
@@ -8231,6 +8238,11 @@ boolean G_DemoTitleResponder(event_t *ev)
 void G_SetGamestate(gamestate_t newstate)
 {
 	gamestate = newstate;
+
+	//HACK: reset musiccredits whenever we change gamestate
+	// since we allow them to run everywhere now
+	S_ResetMusicCredit();
+
 #ifdef HAVE_DISCORDRPC
 	DRPC_UpdatePresence();
 #endif

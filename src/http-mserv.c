@@ -343,8 +343,8 @@ HMS_unlist (void)
 	if (! hms)
 		return 0;
 
-	curl_easy_setopt(hms->curl, CURLOPT_POST, 1);
-	curl_easy_setopt(hms->curl, CURLOPT_POSTFIELDSIZE, 0);
+	curl_easy_setopt(hms->curl, CURLOPT_POST, (long)1);
+	curl_easy_setopt(hms->curl, CURLOPT_POSTFIELDSIZE, (long)0);
 
 	okay = HMS_do(hms);
 	HMS_end(hms);

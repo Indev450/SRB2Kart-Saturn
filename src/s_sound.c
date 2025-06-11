@@ -1436,6 +1436,11 @@ musicdef_t *S_FindMusicCredit(const char *musname)
 	return NULL;
 }
 
+void S_ResetMusicCredit(void)
+{
+	memset(&cursongcredit, 0, sizeof(cursongcredit));
+}
+
 //
 // S_ShowSpecifiedMusicCredit
 //
@@ -2042,9 +2047,12 @@ static boolean S_SkipIntroMusic(void)
 
 	char *maptitle = G_BuildMapTitle(gamemap); // Zzz...
 
-	// check if menu music is playing, otherwise it may continue playing
-	if (!stricmp(music.name, "titles") || (maptitle && (!stricmp(maptitle, "Wandering Falls")))) // wandering balls changes its song when the race starts Zzz...
-		skip = false;
+	if (maptitle)
+	{
+		// check if menu music is playing, otherwise it may continue playing
+		if (!stricmp(music.name, "titles") || (maptitle && (!stricmp(maptitle, "Wandering Falls")))) // wandering balls changes its song when the race starts Zzz...
+			skip = false;
+	}
 
 	Z_Free(maptitle);
 

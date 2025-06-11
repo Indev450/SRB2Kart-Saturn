@@ -89,32 +89,23 @@ void HWR_ProcessPolygon(FSurfaceInfo *pSurf, FOutVector *pOutVerts, FUINT iNumPt
 	{
 		if (!pSurf)
 		{
-			I_Error("Got a null FSurfaceInfo in batching");// nulls should not come in the stuff that batching currently applies to
+			I_Error("Got a null FSurfaceInfo in batching"); // nulls should not come in the stuff that batching currently applies to
 		}
 
 		if (polygonArraySize == polygonArrayAllocSize)
 		{
-			PolygonArrayEntry* new_array;
-			// ran out of space, make new array double the size
+			// ran out of space, double the array size
 			polygonArrayAllocSize *= 2;
-			new_array = malloc(polygonArrayAllocSize * sizeof(PolygonArrayEntry));
-			memcpy(new_array, polygonArray, polygonArraySize * sizeof(PolygonArrayEntry));
-			free(polygonArray);
-			polygonArray = new_array;
+			polygonArray = realloc(polygonArray, polygonArrayAllocSize * sizeof(PolygonArrayEntry));
 			// also need to redo the index array, dont need to copy it though
-			free(polygonArraySorted);
-			polygonArraySorted = malloc(polygonArrayAllocSize * sizeof(PolygonArrayEntry *));
+			polygonArraySorted = realloc(polygonArraySorted, polygonArrayAllocSize * sizeof(PolygonArrayEntry*));
 		}
 
 		while (unsortedVertexArraySize + (int)iNumPts > unsortedVertexArrayAllocSize)
 		{
-			FOutVector* new_array;
 			// need more space for vertices in unsortedVertexArray
 			unsortedVertexArrayAllocSize *= 2;
-			new_array = malloc(unsortedVertexArrayAllocSize * sizeof(FOutVector));
-			memcpy(new_array, unsortedVertexArray, unsortedVertexArraySize * sizeof(FOutVector));
-			free(unsortedVertexArray);
-			unsortedVertexArray = new_array;
+			unsortedVertexArray = realloc(unsortedVertexArray, unsortedVertexArrayAllocSize * sizeof(FOutVector));
 		}
 
 		// add the polygon data to the arrays
@@ -124,7 +115,7 @@ void HWR_ProcessPolygon(FSurfaceInfo *pSurf, FOutVector *pOutVerts, FUINT iNumPt
 		polygonArray[polygonArraySize].numVerts = iNumPts;
 		polygonArray[polygonArraySize].polyFlags = PolyFlags;
 		polygonArray[polygonArraySize].texture = current_texture;
-		polygonArray[polygonArraySize].shader = (shader_target != -1) ? HWR_GetShaderFromTarget(shader_target) : shader_target;
+		polygonArray[polygonArraySize].shader = (shader_target != SHADER_NONE) ? HWR_GetShaderFromTarget(shader_target) : shader_target;
 		polygonArray[polygonArraySize].horizonSpecial = horizonSpecial;
 		polygonArraySize++;
 
@@ -138,10 +129,11 @@ void HWR_ProcessPolygon(FSurfaceInfo *pSurf, FOutVector *pOutVerts, FUINT iNumPt
 	}
 }
 
+
 static int comparePolygons(const void *p1, const void *p2)
 {
-	PolygonArrayEntry *poly1 = *(PolygonArrayEntry *const *)p1;
-	PolygonArrayEntry *poly2 = *(PolygonArrayEntry *const *)p2;
+	const PolygonArrayEntry *poly1 = *(PolygonArrayEntry *const *)p1;
+	const PolygonArrayEntry *poly2 = *(PolygonArrayEntry *const *)p2;
 	int diff;
 	INT64 diff64;
 
@@ -177,9 +169,7 @@ static int comparePolygons(const void *p1, const void *p2)
 	diff = poly1->surf.LightInfo.fade_end - poly2->surf.LightInfo.fade_end;
 	if (diff != 0) return diff;
 
-	diff = poly1->surf.LightInfo.directional - poly2->surf.LightInfo.directional;
-
-	return diff;
+	return poly1->surf.LightInfo.directional - poly2->surf.LightInfo.directional;
 }
 
 static int comparePolygonsNoShaders(const void *p1, const void *p2)
@@ -328,19 +318,11 @@ void HWR_RenderBatches(void)
 		// probably never will this loop run more than once though
 		while (finalVertexWritePos + numVerts > finalVertexArrayAllocSize)
 		{
-			FOutVector* new_array;
-			unsigned int* new_index_array;
 			finalVertexArrayAllocSize *= 2;
-			new_array = malloc(finalVertexArrayAllocSize * sizeof(FOutVector));
-			memcpy(new_array, finalVertexArray, finalVertexWritePos * sizeof(FOutVector));
-			free(finalVertexArray);
-			finalVertexArray = new_array;
+			finalVertexArray = realloc(finalVertexArray, finalVertexArrayAllocSize * sizeof(FOutVector));
 			// also increase size of index array, 3x of vertex array since
 			// going from fans to triangles increases vertex count to 3x
-			new_index_array = malloc(finalVertexArrayAllocSize * 3 * sizeof(UINT32));
-			memcpy(new_index_array, finalVertexIndexArray, finalIndexWritePos * sizeof(UINT32));
-			free(finalVertexIndexArray);
-			finalVertexIndexArray = new_index_array;
+			finalVertexIndexArray = realloc(finalVertexIndexArray, finalVertexArrayAllocSize * 3 * sizeof(UINT32));
 		}
 		// write the vertices of the polygon
 		memcpy(&finalVertexArray[finalVertexWritePos], &unsortedVertexArray[entry->vertsIndex],

@@ -2747,8 +2747,6 @@ static void P_SetupPlayer(void)
 		I_mkdir(va("%s"PATHSEP"replay", srb2home), 0755);
 		I_mkdir(va("%s"PATHSEP"replay"PATHSEP"online", srb2home), 0755);
 		G_RecordDemo(buf);
-		if (dedicated)
-			G_BeginRecording(); //this has to move here, since dedicated servers dont run got_mapcmd
 	}
 
 	wantedcalcdelay = wantedfrequency*2;
@@ -2868,12 +2866,9 @@ boolean P_SetupLevel(boolean fromnetsave, boolean reloadinggamestate)
 			F_WipeStartScreen();
 			V_DrawFill(0, 0, BASEVIDWIDTH, BASEVIDHEIGHT, levelfadecol);
 			F_WipeEndScreen();
-			F_RunWipe(wipedefs[(encoremode ? wipe_level_final : wipe_level_toblack)], false);
 		}
-		else //dedicated servers
-		{
-			F_RunWipe(wipedefs[(encoremode ? wipe_level_final : wipe_level_toblack)], false);
-		}
+
+		F_RunWipe(wipedefs[(encoremode ? wipe_level_final : wipe_level_toblack)], false);
 	}
 
 	// Reset the palette now all fades have been done

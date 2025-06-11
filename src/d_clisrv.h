@@ -576,6 +576,9 @@ extern boolean acceptnewnode;
 extern SINT8 servernode;
 extern char connectedservername[MAXSERVERNAME+1];
 
+extern plrinfo playerinfo[MAXPLAYERS];
+extern SINT8 joinnode;
+
 void Command_Ping_f(void);
 extern tic_t connectiontimeout;
 extern tic_t jointimeout;
@@ -606,6 +609,8 @@ extern consvar_t
 extern consvar_t cv_connectawaittime;
 
 extern consvar_t cv_discordinvites;
+
+extern consvar_t cv_serverinfoscreen;
 
 // Used in d_net, the only dependence
 //tic_t ExpandTics(INT32 low, tic_t basetic);
