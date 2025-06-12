@@ -2468,39 +2468,38 @@ static menuitem_t OP_HudOffsetMenu[] =
 
 static menuitem_t OP_SaturnCreditsMenu[] =
 {
-	{IT_HEADER, NULL, "Saturn Credits", 												NULL,       0},
+	{IT_HEADER, NULL, "Thanks to all contributers <3", 									NULL,      0},
 
-	{IT_HEADER, NULL, "Thanks to all contributers <3", 									NULL,      7},
+	{IT_STRING2+IT_SPACE, NULL, 	"Alug",      										NULL, 	   10},
+	{IT_STRING2+IT_SPACE, NULL, 	"Indev",        									NULL,      20},
+	{IT_STRING2+IT_SPACE, NULL, 	"Haya",       										NULL,      30},
+	{IT_STRING2+IT_SPACE, NULL, 	"Nepdisk", 		 									NULL, 	   40},
+	{IT_STRING2+IT_SPACE, NULL, 	"GenericHeroGuy", 		 							NULL, 	   50},
+	{IT_STRING2+IT_SPACE, NULL, 	"xyzzy",     										NULL, 	   60},
+	{IT_STRING2+IT_SPACE, NULL, 	"Chearii", 		 									NULL, 	   70},
 
-	{IT_STRING2+IT_SPACE, NULL, 	"Alug",      										NULL, 	   17},
-	{IT_STRING2+IT_SPACE, NULL, 	"Indev",        									NULL,      27},
-	{IT_STRING2+IT_SPACE, NULL, 	"Haya",       										NULL,      37},
-	{IT_STRING2+IT_SPACE, NULL, 	"Nepdisk", 		 									NULL, 	   47},
-	{IT_STRING2+IT_SPACE, NULL, 	"GenericHeroGuy", 		 							NULL, 	   57},
-	{IT_STRING2+IT_SPACE, NULL, 	"xyzzy",     										NULL, 	   67},
-	{IT_STRING2+IT_SPACE, NULL, 	"Chearii", 		 									NULL, 	   77},
+	{IT_STRING2+IT_SPACE, NULL, 	"Sunflower", 		 								NULL, 	   80},
+	{IT_STRING2+IT_SPACE, NULL, 	"Yuz", 		  										NULL, 	   90},
+	{IT_STRING2+IT_SPACE, NULL, 	"Democrab", 		  								NULL, 	  100},
+	{IT_STRING2+IT_SPACE, NULL, 	"EXpand", 		 									NULL, 	  110},
+	{IT_STRING2+IT_SPACE, NULL, 	"Nexit", 		 									NULL, 	  120},
+	{IT_STRING2+IT_SPACE, NULL, 	"Spee", 		 									NULL, 	  130},
+	{IT_STRING2+IT_SPACE, NULL, 	"jin", 		 										NULL, 	  140},
+	{IT_STRING2+IT_SPACE, NULL, 	"riomccloud", 		 								NULL, 	  150},
+	{IT_STRING2+IT_SPACE, NULL, 	"chromaticpipe", 		 							NULL, 	  160},
+	{IT_STRING2+IT_SPACE, NULL, 	"Achii", 		 									NULL, 	  170},
+	{IT_STRING2+IT_SPACE, NULL, 	"Anonimus", 		 								NULL, 	  180},
+	{IT_STRING2+IT_SPACE, NULL, 	"scizor300", 		 								NULL, 	  190},
+	{IT_STRING2+IT_SPACE, NULL, 	"Lugent", 		 									NULL, 	  200},
 
-	{IT_STRING2+IT_SPACE, NULL, 	"Sunflower aka AnimeSonic", 		 				NULL, 	   87},
-	{IT_STRING2+IT_SPACE, NULL, 	"Yuz aka Yuzler", 		  							NULL, 	   97},
-	{IT_STRING2+IT_SPACE, NULL, 	"Democrab", 		  								NULL, 	  107},
-	{IT_STRING2+IT_SPACE, NULL, 	"EXpand", 		 									NULL, 	  117},
-	{IT_STRING2+IT_SPACE, NULL, 	"Nexit", 		 									NULL, 	  127},
-	{IT_STRING2+IT_SPACE, NULL, 	"Spee", 		 									NULL, 	  137},
-	{IT_STRING2+IT_SPACE, NULL, 	"jin", 		 										NULL, 	  147},
-	{IT_STRING2+IT_SPACE, NULL, 	"riomccloud", 		 								NULL, 	  157},
-	{IT_STRING2+IT_SPACE, NULL, 	"chromaticpipe", 		 							NULL, 	  167},
-	{IT_STRING2+IT_SPACE, NULL, 	"Achii", 		 									NULL, 	  177},
-	{IT_STRING2+IT_SPACE, NULL, 	"Anonimus", 		 								NULL, 	  187},
-	{IT_STRING2+IT_SPACE, NULL, 	"scizor300", 		 								NULL, 	  197},
+	{IT_HEADER, 		  NULL, 	"Special Thanks <3", 								NULL,     168},
 
-	{IT_HEADER, 		  NULL, 	"Special Thanks <3", 								NULL,     167},
+	{IT_STRING2+IT_SPACE, NULL,		"All of Sunflower's Garden",	      				NULL,     178},
+	{IT_STRING2+IT_SPACE, NULL, 	"The Moe Mansion and Birdhouse Team",       		NULL,     188},
+	{IT_STRING2+IT_SPACE, NULL, 	"Galactice for Galaxy",       						NULL,     198},
 
-	{IT_STRING2+IT_SPACE, NULL,		"All of Sunflower's Garden",	      				NULL,     177},
-	{IT_STRING2+IT_SPACE, NULL, 	"The Moe Mansion and Birdhouse Team",       		NULL,     187},
-	{IT_STRING2+IT_SPACE, NULL, 	"Galactice for Galaxy",       						NULL,     197},
-
-	{IT_STRING+IT_SPACE, NULL, "", 														NULL,     207},	// dummy text I
-	{IT_STRING, NULL, "", 																NULL,     267},	// dummy text II
+	{IT_STRING+IT_SPACE, NULL, "", 														NULL,     198},	// dummy text I
+	{IT_STRING, NULL, "", 																NULL,     258},	// dummy text II
 };
 
 // sry we dont have space for this anymore :/
