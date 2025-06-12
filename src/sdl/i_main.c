@@ -27,7 +27,7 @@
 #include <unistd.h>
 #endif
 
-#ifdef __unix__
+#if defined (__unix__) || defined(__APPLE__) || defined (UNIXCOMMON)
 #include <errno.h>
 #endif
 
