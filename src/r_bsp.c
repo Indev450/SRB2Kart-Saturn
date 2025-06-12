@@ -349,6 +349,8 @@ static void R_AddLine(seg_t *line)
 	// The seg is in the view range, but not necessarily visible.
 	angle1 = (angle1+ANGLE_90)>>ANGLETOFINESHIFT;
 	angle2 = (angle2+ANGLE_90)>>ANGLETOFINESHIFT;
+
+	// killough 1/31/98: Here is where "slime trails" can SOMETIMES occur:
 	x1 = viewangletox[angle1];
 	x2 = viewangletox[angle2];
 
@@ -494,20 +496,10 @@ static boolean R_CheckBBox(const fixed_t *bspcoord)
 	INT32 sx1, sx2, boxpos;
 	const INT32* check;
 
-	// Find the corners of the box that define the edges from current viewpoint.
-	if (viewx <= bspcoord[BOXLEFT])
-		boxpos = 0;
-	else if (viewx < bspcoord[BOXRIGHT])
-		boxpos = 1;
-	else
-		boxpos = 2;
-
-	if (viewy >= bspcoord[BOXTOP])
-		boxpos |= 0;
-	else if (viewy > bspcoord[BOXBOTTOM])
-		boxpos |= 1<<2;
-	else
-		boxpos |= 2<<2;
+	// Find the corners of the box
+	// that define the edges from current viewpoint.
+	boxpos = (viewx <= bspcoord[BOXLEFT] ? 0 : viewx < bspcoord[BOXRIGHT ] ? 1 : 2) +
+	(viewy >= bspcoord[BOXTOP ] ? 0 : viewy > bspcoord[BOXBOTTOM] ? 4 : 8);
 
 	if (boxpos == 5)
 		return true;
@@ -518,18 +510,23 @@ static boolean R_CheckBBox(const fixed_t *bspcoord)
 	angle1 = R_PointToAngle64(bspcoord[check[0]], bspcoord[check[1]]) - viewangle;
 	angle2 = R_PointToAngle64(bspcoord[check[2]], bspcoord[check[3]]) - viewangle;
 
-	if ((signed)angle1 < (signed)angle2)
+	// cph - replaced old code, which was unclear and badly commented
+	// Much more efficient code now
+	if ((signed)angle1 < (signed)angle2) /* it's "behind" us */
 	{
+		/* Either angle1 or angle2 is behind us, so it doesn't matter if we
+		 * change it to the corect sign
+		 */
 		if ((angle1 >= ANGLE_180) && (angle1 < ANGLE_270))
 			angle1 = ANGLE_180-1;
 		else
 			angle2 = ANGLE_180;
 	}
 
-	if ((signed)angle2 >= (signed)clipangle) return false;
-	if ((signed)angle1 <= -(signed)clipangle) return false;
-	if ((signed)angle1 >= (signed)clipangle) angle1 = clipangle;
-	if ((signed)angle2 <= -(signed)clipangle) angle2 = 0-clipangle;
+	if ((signed)angle2 >= (signed)clipangle)  return false;                // Both off left edge
+	if ((signed)angle1 <= -(signed)clipangle) return false;                // Both off right edge
+	if ((signed)angle1 >= (signed)clipangle)  angle1 = clipangle;          // Clip at left edge
+	if ((signed)angle2 <= -(signed)clipangle) angle2 = -(signed)clipangle; // Clip at right edge
 
 	// Find the first clippost that touches the source post (adjacent pixels are touching).
 	angle1 = (angle1+ANGLE_90)>>ANGLETOFINESHIFT;
@@ -550,10 +547,9 @@ static boolean R_CheckBBox(const fixed_t *bspcoord)
 	return true;
 }
 
-
 size_t numpolys;        // number of polyobjects in current subsector
 size_t num_po_ptrs;     // number of polyobject pointers allocated
-polyobj_t **po_ptrs; // temp ptr array to sort polyobject pointers
+polyobj_t **po_ptrs;    // temp ptr array to sort polyobject pointers
 
 //
 // R_PolyobjCompare
@@ -738,14 +734,15 @@ static void R_Subsector(size_t num)
 	fixed_t floorcenterz, ceilingcenterz;
 	ffloor_t *rover;
 
-#ifdef RANGECHECK
-	if (num >= numsubsectors)
-		I_Error("R_Subsector: ss %s with numss = %s\n", sizeu1(num), sizeu2(numsubsectors));
-#endif
-
 	// subsectors added at run-time
 	if (num >= numsubsectors)
+	{
+#ifdef RANGECHECK
+		I_Error("R_Subsector: ss %s with numss = %s\n", sizeu1(num), sizeu2(numsubsectors));
+#else
 		return;
+#endif
+	}
 
 	sub = &subsectors[num];
 	frontsector = sub->sector;

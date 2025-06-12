@@ -39,8 +39,6 @@
 #include "r_fps.h" // Frame interpolation/uncapped
 #include "tables.h"
 
-#include "core/thread_pool.h"
-
 #ifdef HWRENDER
 #include "hardware/hw_main.h"
 #endif
