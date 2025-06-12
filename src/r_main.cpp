@@ -1099,17 +1099,88 @@ static void R_SetupAimingFrame(player_t *player, camera_t *thiscam)
 	}
 }
 
+static void R_SetupSkyScale(player_t *player, camera_t *thiscam, mapheader_t *mh)
+{
+	if (!mh->skybox_scalex && !mh->skybox_scaley && !mh->skybox_scalez)
+		return;
+
+	auto setup_skyscale = [&](fixed_t mox, fixed_t moy, fixed_t zscale)
+	{
+		if (skyboxmo[1])
+		{
+			fixed_t x = 0, y = 0;
+
+			if (mh->skybox_scalex > 0)
+				x = (mox - skyboxmo[1]->x) / mh->skybox_scalex;
+			else if (mh->skybox_scalex < 0)
+				x = (mox - skyboxmo[1]->x) * -mh->skybox_scalex;
+
+			if (mh->skybox_scaley > 0)
+				y = (moy - skyboxmo[1]->y) / mh->skybox_scaley;
+			else if (mh->skybox_scaley < 0)
+				y = (moy - skyboxmo[1]->y) * -mh->skybox_scaley;
+
+			if (viewmobj->angle == 0)
+			{
+				newview->x += x;
+				newview->y += y;
+			}
+			else if (viewmobj->angle == ANGLE_90)
+			{
+				newview->x -= y;
+				newview->y += x;
+			}
+			else if (viewmobj->angle == ANGLE_180)
+			{
+				newview->x -= x;\
+				newview->y -= y;\
+			}
+			else if (viewmobj->angle == ANGLE_270)
+			{
+				newview->x += y;
+				newview->y -= x;
+			}
+			else
+			{
+				angle_t ang = viewmobj->angle>>ANGLETOFINESHIFT;
+				newview->x  += FixedMul(x,FINECOSINE(ang)) - FixedMul(y,  FINESINE(ang));
+				newview->y += FixedMul(x,  FINESINE(ang)) + FixedMul(y,FINECOSINE(ang));
+			}
+		}
+
+		if (mh->skybox_scalez > 0)
+			newview->z += zscale / mh->skybox_scalez;
+		else if (mh->skybox_scalez < 0)
+			newview->z += zscale * -mh->skybox_scalez;
+	};
+
+	if (player->awayviewtics && player->awayviewmobj)
+	{
+		setup_skyscale(player->awayviewmobj->x, player->awayviewmobj->y, (player->awayviewmobj->z + 20*FRACUNIT));
+	}
+	else if (thiscam && thiscam->chase)
+	{
+		setup_skyscale(thiscam->x, thiscam->y, (thiscam->z + (thiscam->height>>1)));
+	}
+	else
+	{
+		setup_skyscale(player->mo->x, player->mo->y, player->viewz);
+	}
+}
+
 void R_SkyboxFrame(int s)
 {
 	player_t *player = &players[displayplayers[s]];
 	camera_t *thiscam = &camera[s];
 	subsector_t * subsector = NULL;
+	mapheader_t *mh = mapheaderinfo[gamemap-1];
 
 	R_SetViewContext(static_cast<viewcontext_e>(VIEWCONTEXT_SKY1 + s));
 
 	// cut-away view stuff
 	newview->sky = true;
 	viewmobj = skyboxmo[0];
+
 #ifdef PARANOIA
 	if (P_MobjWasRemoved(viewmobj))
 	{
@@ -1117,78 +1188,19 @@ void R_SkyboxFrame(int s)
 		I_Error("R_SkyboxFrame: viewmobj null (player %s)", sizeu1(playeri));
 	}
 #endif
+
 	R_SetupAimingFrame(player, thiscam);
 
 	newview->angle += viewmobj->angle;
 
 	newview->x = viewmobj->x;
 	newview->y = viewmobj->y;
-	newview->z = 0;
-	if (viewmobj->spawnpoint)
-		newview->z = ((fixed_t)viewmobj->spawnpoint->angle)<<FRACBITS;
+	newview->z = (viewmobj->spawnpoint) ? (((fixed_t)viewmobj->spawnpoint->angle)<<FRACBITS) : 0;
 
-#define SETUPSKYVIEW(viewmo, zscale)\
-	if (skyboxmo[1])\
-	{\
-		fixed_t x = 0, y = 0;\
-		if (mh->skybox_scalex > 0)\
-			x = (viewmo->x - skyboxmo[1]->x) / mh->skybox_scalex;\
-		else if (mh->skybox_scalex < 0)\
-			x = (viewmo->x - skyboxmo[1]->x) * -mh->skybox_scalex;\
-		if (mh->skybox_scaley > 0)\
-			y = (viewmo->y - skyboxmo[1]->y) / mh->skybox_scaley;\
-		else if (mh->skybox_scaley < 0)\
-			y = (viewmo->y - skyboxmo[1]->y) * -mh->skybox_scaley;\
-		if (viewmobj->angle == 0)\
-		{\
-			newview->x += x;\
-			newview->y += y;\
-		}\
-		else if (viewmobj->angle == ANGLE_90)\
-		{\
-			newview->x -= y;\
-			newview->y += x;\
-		}\
-		else if (viewmobj->angle == ANGLE_180)\
-		{\
-			newview->x -= x;\
-			newview->y -= y;\
-		}\
-		else if (viewmobj->angle == ANGLE_270)\
-		{\
-			newview->x += y;\
-			newview->y -= x;\
-		}\
-		else\
-		{\
-			angle_t ang = viewmobj->angle>>ANGLETOFINESHIFT;\
-			newview->x  += FixedMul(x,FINECOSINE(ang)) - FixedMul(y,  FINESINE(ang));\
-			newview->y += FixedMul(x,  FINESINE(ang)) + FixedMul(y,FINECOSINE(ang));\
-		}\
-	}\
-	if (mh->skybox_scalez > 0)\
-	newview->z += zscale / mh->skybox_scalez;\
-	else if (mh->skybox_scalez < 0)\
-		newview->z += zscale * -mh->skybox_scalez;
-
-	if (mapheaderinfo[gamemap-1])
+	if (mh)
 	{
-		mapheader_t *mh = mapheaderinfo[gamemap-1];
-
-		if (player->awayviewtics && player->awayviewmobj)
-		{
-			SETUPSKYVIEW(player->awayviewmobj, (player->awayviewmobj->z + 20*FRACUNIT));
-		}
-		else if (thiscam->chase)
-		{
-			SETUPSKYVIEW(thiscam, (thiscam->z + (thiscam->height>>1)));
-		}
-		else
-		{
-			SETUPSKYVIEW(player->mo, player->viewz);
-		}
+		R_SetupSkyScale(player, thiscam, mh);
 	}
-#undef SETUPSKYVIEW
 
 	if (!P_MobjWasRemoved(viewmobj) && viewmobj->subsector && viewmobj->subsector->sector)
 		subsector = viewmobj->subsector;
@@ -1250,12 +1262,13 @@ void R_SetupFrame(int s, boolean skybox)
 	else if (thiscam && chasecam) // use outside cam view
 	{
 		viewmobj = NULL;
+		I_Assert(thiscam != NULL);
 
 		newview->x = thiscam->x;
 		newview->y = thiscam->y;
 		newview->z = thiscam->z + (thiscam->height>>1);
 
-		if (thiscam != NULL && thiscam->subsector && thiscam->subsector->sector)
+		if (thiscam->subsector && thiscam->subsector->sector)
 			sector = thiscam->subsector->sector;
 
 		R_SetupCommonFrame(player, sector);
@@ -1518,6 +1531,7 @@ void R_RegisterEngineStuff(void)
 	{
 		CV_RegisterVar(&cv_chasecam[i]);
 	}
+
 	CV_RegisterVar(&cv_shadow);
 	CV_RegisterVar(&cv_shadowoffs);
 	CV_RegisterVar(&cv_skybox);
