@@ -2415,13 +2415,11 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 	}
 	else
 	{
-		// for everyone that sees this
+		// for anyone that sees this
 		// dont.
 		// this is absolute shit-tier hacks
 		// but i just cant determine this in any sane way
 		// but this checks a shitton of things to make software handle skies better
-
-		const bool emptymid = (!midtexture && !curline->sidedef->midtexture && !curline->polyseg);
 
 		auto set_topstep_normal = [&]
 		{
@@ -2429,7 +2427,8 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 			topfrac = (centeryfrac>>4) - FixedMul (worldtop, rw_scale);
 		};
 
-		if (emptymid)
+		// untextured seg
+		if (!segtextured && !curline->polyseg)
 		{
 			const bool tophigh = (backsector && worldhigh <= worldtop && worldhighslope <= worldtopslope)
 			&& (worldhigh != worldtop || worldhighslope != worldtopslope);
@@ -2437,17 +2436,15 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 			// if we cant see the goddamn skyplane, well there wont be any skybox
 			// we could kill skyVisible instead, but i want to keep the performance improvemnts it yields
 			// so we do this absolute trash
-			if ((frontsector->floorpic != skyflatnum && frontsector->ceilingpic != skyflatnum)
-				&& ((!backsector && frontsector->ceilingpic != skyflatnum && frontsector->floorpic != skyflatnum)
-				|| (tophigh && (frontsector->ceilingpic != skyflatnum)
-				&& (backsector->floorheight > frontsector->ceilingheight || backsector->ceilingheight < frontsector->floorheight))))
+			if ((frontsector->floorpic != skyflatnum && frontsector->ceilingpic != skyflatnum) // try to guess if its a "window"
+				&& ((!backsector) // single sided
+				|| (tophigh && (backsector->floorheight > frontsector->ceilingheight || backsector->ceilingheight < frontsector->floorheight)))) // check if there is a "thok" sector behind it
 				skyVisible = true;
 
 			// this is an attempt to fix issues with textureless midtextures drawing nothing where they should just draw sky instead
 			if ((newview->sky // only do this for skyrender
-				&& viewz < P_GetSectorCeilingZAt(frontsector, viewx, viewy) // looks ugly while our cam is in the sky
-				&& ((!backsector && frontsector->ceilingpic == skyflatnum && frontsector->floorpic != skyflatnum)
-				|| (tophigh && (backsector->ceilingpic == skyflatnum && frontsector->ceilingpic != skyflatnum)))))
+				&& ((!backsector && frontsector->ceilingpic == skyflatnum) // single sided line with sky ceiling
+				|| (tophigh && (backsector->ceilingpic == skyflatnum && frontsector->ceilingpic != skyflatnum))))) // double sided with back ceiling sky but not front ceiling sky
 			{
 				topstep = -FixedMul (rw_scalestep, worldbottom);
 				topfrac = (centeryfrac>>4) - FixedMul (worldbottom, rw_scale);
