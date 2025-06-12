@@ -1758,6 +1758,72 @@ INT32 axtoi(const char *hexStg)
 	return intValue;
 }
 
+void CopyCaretColors(char *p, const char *s, int n)
+{
+	char *t;
+	int   m;
+	int   c;
+
+	if (!n)
+		return;
+
+	while (( t = strchr(s, '^') ))
+	{
+		m = ( t - s );
+
+		if (m >= n)
+		{
+			memcpy(p, s, n);
+			return;
+		}
+		else
+			memcpy(p, s, m);
+
+		p += m;
+		n -= m;
+		s += m;
+
+		if (!n)
+			return;
+
+		if (s[1])
+		{
+			c = toupper(s[1]);
+			if (isdigit(c))
+				c = 0x80 + ( c - '0' );
+			else if (c >= 'A' && c <= 'F')
+				c = 0x80 + ( c - 'A' );
+			else
+				c = 0;
+
+			if (c)
+			{
+				*p++ = c;
+				n--;
+
+				if (!n)
+					return;
+			}
+			else
+			{
+				if (n < 2)
+					break;
+
+				memcpy(p, s, 2);
+
+				p += 2;
+				n -= 2;
+			}
+
+			s += 2;
+		}
+		else
+			break;
+	}
+
+	strncpy(p, s, n);
+}
+
 /** Token parser for TEXTURES, ANIMDEFS, and potentially other lumps later down the line.
   * Was originally R_GetTexturesToken when I was coding up the TEXTURES parser, until I realized I needed it for ANIMDEFS too.
   * Parses up to the next whitespace character or comma. When finding the start of the next token, whitespace is skipped.

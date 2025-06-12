@@ -81,6 +81,8 @@ void M_SaveConfig(const char *filename);
 
 INT32 axtoi(const char *hexStg);
 
+void CopyCaretColors(char *p, const char *s, int n);
+
 const char *GetRevisionString(void);
 
 // Vector/matrix math
