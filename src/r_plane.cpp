@@ -727,7 +727,7 @@ void R_DrawSkyPlanes(void)
 	{
 		for (pl = visplanes[i]; pl; pl = pl->next)
 		{
-			if (pl->picnum != skyflatnum || pl->ffloor != NULL || pl->polyobj != NULL)
+			if (pl->picnum != skyflatnum || pl->ffloor || pl->polyobj)
 				continue;
 
 			R_DrawSkyPlane(pl, colfunc, cv_parallelsoftware.value);
