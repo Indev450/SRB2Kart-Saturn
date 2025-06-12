@@ -32,7 +32,9 @@
 #include "r_fps.h"
 #include "r_portal.h"
 
+#ifdef HAVE_THREADS
 #include "core/thread_pool.h"
+#endif
 
 //
 // opening
@@ -248,6 +250,7 @@ static void R_MapPlane(drawspandata_t *ds, spandrawfunc_t *localspanfunc, INT32 
 	pindex = distance >> LIGHTZSHIFT;
 	if (pindex >= MAXLIGHTZ)
 		pindex = MAXLIGHTZ - 1;
+
 	ds->colormap = ds->planezlight[pindex];
 
 	if (encoremap && !ds->currentplane->noencore)
@@ -356,6 +359,7 @@ void R_ClearPlanes(void)
 static visplane_t *new_visplane(unsigned hash)
 {
 	visplane_t *check = freetail;
+
 	if (!check)
 	{
 		check = static_cast<visplane_t*>(calloc(1, sizeof (*check)));
@@ -372,8 +376,10 @@ static visplane_t *new_visplane(unsigned hash)
 		if (!freetail)
 			freehead = &freetail;
 	}
+
 	check->next = visplanes[hash];
 	visplanes[hash] = check;
+
 	return check;
 }
 
@@ -620,12 +626,14 @@ static void R_MakeSpans(void (*mapfunc)(drawspandata_t* ds, void(*spanfunc)(draw
 	if (b2 >= vidheight) b2 = vidheight-1;
 	if (x-1 >= vid.width) x = vid.width;
 
+	drawspandata_t dc_copy = *ds;
+
+#ifdef HAVE_THREADS
 	// We want to draw N spans per subtask to ensure the work is
 	// coarse enough to not be too slow due to task scheduling overhead.
 	// To safely do this, we need to copy part of spanstart to a local.
 	// This is essentially loop unrolling across threads.
 	constexpr const int kSpanTaskGranularity = 8;
-	drawspandata_t dc_copy = *ds;
 	while (t1 < t2 && t1 <= b1)
 	{
 		INT32 spanstartcopy[kSpanTaskGranularity] = {0};
@@ -684,6 +692,20 @@ static void R_MakeSpans(void (*mapfunc)(drawspandata_t* ds, void(*spanfunc)(draw
 		}
 		b1 -= taskspans;
 	}
+#else
+	(void)allow_parallel;
+
+	while (t1 < t2 && t1 <= b1)
+	{
+		mapfunc(&dc_copy, localspanfunc, t1, spanstart[t1], x - 1, false);
+		t1++;
+	}
+	while (b1 > b2 && b1 >= t1)
+	{
+		mapfunc(&dc_copy, localspanfunc, b1, spanstart[b1], x - 1, false);
+		b1--;
+	}
+#endif
 
 	while (t2 < t1 && t2 <= b2)
 		spanstart[t2++] = x;
@@ -696,11 +718,15 @@ void R_DrawPlanes(void)
 	visplane_t *pl;
 	INT32 i;
 	drawspandata_t ds = {};
+#ifdef HAVE_THREADS
 	srb2::ThreadPool::Sema tp_sema;
+#endif
 
 	R_UpdatePlaneRipple(&ds);
 
+#ifdef HAVE_THREADS
 	srb2::g_main_threadpool->begin_sema();
+#endif
 	for (i = 0; i < MAXVISPLANES; i++, pl++)
 	{
 		for (pl = visplanes[i]; pl; pl = pl->next)
@@ -711,9 +737,11 @@ void R_DrawPlanes(void)
 			R_DrawSinglePlane(&ds, pl, cv_parallelsoftware.value);
 		}
 	}
+#ifdef HAVE_THREADS
 	tp_sema = srb2::g_main_threadpool->end_sema();
 	srb2::g_main_threadpool->notify_sema(tp_sema);
 	srb2::g_main_threadpool->wait_sema(tp_sema);
+#endif
 }
 
 static void R_DrawSkyPlane(visplane_t *pl, void(*colfunc2)(drawcolumndata_t*), boolean allow_parallel);
@@ -722,9 +750,11 @@ void R_DrawSkyPlanes(void)
 {
 	visplane_t *pl;
 	INT32 i;
-	srb2::ThreadPool::Sema tp_sema;
 
+#ifdef HAVE_THREADS
+	srb2::ThreadPool::Sema tp_sema;
 	srb2::g_main_threadpool->begin_sema();
+#endif
 	for (i = 0; i < MAXVISPLANES; i++, pl++)
 	{
 		for (pl = visplanes[i]; pl; pl = pl->next)
@@ -735,9 +765,11 @@ void R_DrawSkyPlanes(void)
 			R_DrawSkyPlane(pl, colfunc, cv_parallelsoftware.value);
 		}
 	}
+#ifdef HAVE_THREADS
 	tp_sema = srb2::g_main_threadpool->end_sema();
 	srb2::g_main_threadpool->notify_sema(tp_sema);
 	srb2::g_main_threadpool->wait_sema(tp_sema);
+#endif
 }
 
 static void R_DrawSkyPlane(visplane_t *pl, void(*colfunc2)(drawcolumndata_t*), boolean allow_parallel)
@@ -783,6 +815,7 @@ static void R_DrawSkyPlane(visplane_t *pl, void(*colfunc2)(drawcolumndata_t*), b
 		R_GenerateTexture(texturetranslation[skytexture]);
 	}
 
+#ifdef HAVE_THREADS
 	while (x <= pl->maxx)
 	{
 		// Tune concurrency granularity here to maximize throughput
@@ -824,6 +857,31 @@ static void R_DrawSkyPlane(visplane_t *pl, void(*colfunc2)(drawcolumndata_t*), b
 
 		x += kSkyPlaneMacroColumns;
 	}
+#else
+	(void)allow_parallel;
+
+	for (x = pl->minx; x <= pl->maxx; x++)
+	{
+		dc.yl = pl->top[x];
+		dc.yh = pl->bottom[x];
+
+		if (dc.yl > dc.yh)
+		{
+			continue;
+		}
+
+		INT32 angle = (pl->viewangle + xtoviewangle[x])>>ANGLETOSKYSHIFT;
+		angle -= (skytextureoffset >> FRACBITS);
+
+		dc.iscale = FixedMul(skyscale, FINECOSINE(xtoviewangle[x]>>ANGLETOFINESHIFT));
+		dc.x = x;
+		dc.source =
+		R_GetColumn(texturetranslation[skytexture],
+					-angle); // get negative of angle for each column to display sky correct way round! --Monster Iestyn 27/01/18
+
+		colfunc2(&dc);
+	}
+#endif
 }
 
 // Returns the height of the sloped plane at (x, y) as a 32.16 fixed_t

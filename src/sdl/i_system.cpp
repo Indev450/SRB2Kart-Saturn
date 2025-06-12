@@ -206,7 +206,6 @@ static char returnWadPath[256];
 #include "../r_fps.h"
 
 #include "../s_sound.h"
-#include "../core/thread_pool.h"
 
 #ifdef MAC_ALERT
 #include "macosx/mac_alert.h"
@@ -220,7 +219,10 @@ static char returnWadPath[256];
 #include "../byteptr.h"
 #endif
 
+#ifdef HAVE_THREADS
+#include "../core/thread_pool.h"
 static std::thread::id g_main_thread_id;
+#endif
 
 INT32 numcontrollers = 0;
 
@@ -517,6 +519,7 @@ static void I_ReportSignal(int num, int coredumped)
 #ifndef NEWSIGNALHANDLER
 FUNCNORETURN static ATTRNORETURN void signal_handler(INT32 num)
 {
+#ifdef HAVE_THREADS
 	if (g_main_thread_id != std::this_thread::get_id())
 	{
 		// Do not attempt any sort of recovery if this signal triggers off the main thread
@@ -524,6 +527,7 @@ FUNCNORETURN static ATTRNORETURN void signal_handler(INT32 num)
 		raise(num);
 		exit(-2);
 	}
+#endif
 
 	g_in_exiting_signal_handler = true;
 
@@ -887,7 +891,9 @@ static inline void I_ShutdownConsole(void){}
 //
 static void I_RegisterSignals (void)
 {
+#ifdef HAVE_THREADS
 	g_main_thread_id = std::this_thread::get_id();
+#endif
 
 #ifdef SIGINT
 	signal(SIGINT , quit_handler);
@@ -2049,11 +2055,13 @@ void I_Error(const char *error, ...)
 	va_list argptr;
 	char buffer[8192];
 
+#ifdef HAVE_THREADS
 	if (std::this_thread::get_id() != g_main_thread_id)
 	{
 		// Do not attempt a graceful shutdown. Errors off the main thread are unresolvable.
 		exit(-2);
 	}
+#endif
 
 	// recursive error detecting
 	if (shutdowning)
