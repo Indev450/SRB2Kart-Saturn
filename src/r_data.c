@@ -100,7 +100,7 @@ INT32 numtextures = 0; // total number of textures found,
 
 texture_t **textures = NULL;
 static UINT32 **texturecolumnofs; // column offset lookup table for each texture
-static UINT8 **texturecache; // graphics data for each generated full-size texture
+UINT8 **texturecache; // graphics data for each generated full-size texture
 
 // texture width is a power of 2, so it can easily repeat along sidedefs using a simple mask
 INT32 *texturewidthmask;
@@ -297,7 +297,7 @@ static inline void R_DrawColumnInCache(column_t *patch, UINT8 *cache, INT32 orig
 // This is not optimised, but it's supposed to be executed only once
 // per level, when enough memory is available.
 //
-static UINT8 *R_GenerateTexture(size_t texnum)
+UINT8 *R_GenerateTexture(size_t texnum)
 {
 	UINT8 *block;
 	UINT8 *blocktex;

@@ -96,12 +96,12 @@ void HWR_DrawPatch(patch_t *gpatch, INT32 x, INT32 y, INT32 option)
 		pdupx = pdupy = 2.0f;
 		break;
 	case V_SMALLSCALEPATCH:
-		pdupx = 2.0f * FIXED_TO_FLOAT(vid.fsmalldupx);
-		pdupy = 2.0f * FIXED_TO_FLOAT(vid.fsmalldupy);
+		pdupx = 2.0f * FIXED_TO_FLOAT(vid.smalldupx*FRACUNIT);
+		pdupy = 2.0f * FIXED_TO_FLOAT(vid.smalldupy*FRACUNIT);
 		break;
 	case V_MEDSCALEPATCH:
-		pdupx = 2.0f * FIXED_TO_FLOAT(vid.fmeddupx);
-		pdupy = 2.0f * FIXED_TO_FLOAT(vid.fmeddupy);
+		pdupx = 2.0f * FIXED_TO_FLOAT(vid.meddupx*FRACUNIT);
+		pdupy = 2.0f * FIXED_TO_FLOAT(vid.meddupx*FRACUNIT);
 		break;
 	}
 

@@ -66,6 +66,7 @@ void HWR_FreePortalList(gl_portallist_t freelist)
 
 	// free memory from portal list allocated by calls to Add2Lines
 	gl_portal_t *gl_portal_temp = freelist.base;
+
 	while (gl_portal_temp)
 	{
 		gl_portal_t *nextportal = gl_portal_temp->next;
@@ -125,8 +126,7 @@ void HWR_PortalFrame(gl_portal_t* portal)
 	if (portal->clipline != -1)
 	{
 		portalclipline = &lines[portal->clipline];
-		portalcullsector = portalclipline->frontsector;
-		viewsector = portalclipline->frontsector;
+		portalcullsector = viewsector = portalclipline->frontsector;
 	}
 	else
 	{

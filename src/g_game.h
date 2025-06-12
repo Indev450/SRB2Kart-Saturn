@@ -14,6 +14,10 @@
 #ifndef __G_GAME__
 #define __G_GAME__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "doomdef.h"
 #include "doomstat.h"
 #include "d_event.h"
@@ -483,5 +487,9 @@ INT16 G_RandMap(INT16 tolflags, INT16 pprevmap, boolean ignorebuffer, UINT8 maph
 void G_AddMapToBuffer(INT16 map);
 
 void G_FixCamera(UINT8 view);
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif

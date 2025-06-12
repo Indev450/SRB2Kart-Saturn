@@ -548,7 +548,7 @@ static void HWR_RenderPlane(subsector_t *subsector, extrasubsector_t *xsub, bool
 	size_t len;
 
 	float tempxsow, tempytow;
-	float scrollx = 0.0f, scrolly = 0.0f;
+	float scrollx = 0.0f, scrolly = 0.0f, anglef = 0.0f;
 	angle_t angle = 0;
 
 	static FOutVector *planeVerts = NULL;
@@ -668,14 +668,11 @@ static void HWR_RenderPlane(subsector_t *subsector, extrasubsector_t *xsub, bool
 
 	if (angle) // Only needs to be done if there's an altered angle
 	{
-		angle = InvAngle(angle)>>ANGLETOFINESHIFT;
-
-		// This needs to be done so everything aligns after rotation
-		// It would be done so that rotation is done, THEN the translation, but I couldn't get it to rotate AND scroll like software does
-		tempxsow = FloatToFixed(flatxref);
-		tempytow = FloatToFixed(flatyref);
-		flatxref = (FixedToFloat(FixedMul(tempxsow, FINECOSINE(angle)) - FixedMul(tempytow, FINESINE(angle))));
-		flatyref = (FixedToFloat(FixedMul(tempxsow, FINESINE(angle)) + FixedMul(tempytow, FINECOSINE(angle))));
+		tempxsow = flatxref;
+		tempytow = flatyref;
+		anglef = ANG2RAD(InvAngle(angle));
+		flatxref = (tempxsow * cos(anglef)) - (tempytow * sin(anglef));
+		flatyref = (tempxsow * sin(anglef)) + (tempytow * cos(anglef));
 	}
 
 #define SETUP3DVERT(vert, vx, vy) {\
@@ -686,10 +683,10 @@ static void HWR_RenderPlane(subsector_t *subsector, extrasubsector_t *xsub, bool
 		/* Need to rotate before translate */\
 		if (angle) /* Only needs to be done if there's an altered angle */\
 		{\
-			tempxsow = FloatToFixed(vert->s);\
-			tempytow = FloatToFixed(vert->t);\
-			vert->s = (FixedToFloat(FixedMul(tempxsow, FINECOSINE(angle)) - FixedMul(tempytow, FINESINE(angle))));\
-			vert->t = (FixedToFloat(FixedMul(tempxsow, FINESINE(angle)) + FixedMul(tempytow, FINECOSINE(angle))));\
+			tempxsow = vert->s;\
+			tempytow = vert->t;\
+			vert->s = (tempxsow * cos(anglef)) - (tempytow * sin(anglef));\
+			vert->t = (tempxsow * sin(anglef)) + (tempytow * cos(anglef));\
 		}\
 \
 		vert->x = (vx);\
@@ -3202,6 +3199,17 @@ static void HWR_RenderBSPNode(INT32 bspnum)
 		bspnum = bsp->children[side^1];
 	}
 
+	// PORTAL CULLING
+	if (portalcullsector)
+	{
+		// skip all subsectors encountered before the portal
+		// destination's front sector
+		if (portalcullsector != subsectors[bspnum & ~NF_SUBSECTOR].sector)
+			return;
+		else
+			portalcullsector = NULL;
+	}
+
 	// e6y: support for extended nodes
 	HWR_Subsector(bspnum == -1 ? 0 : bspnum & ~NF_SUBSECTOR);
 }
@@ -3231,17 +3239,6 @@ static void HWR_RenderPortalBSPNode(INT32 bspnum)
 			return;
 
 		bspnum = bsp->children[side^1];
-	}
-
-	// PORTAL CULLING
-	if (portalcullsector)
-	{
-		// skip all subsectors encountered before the portal
-		// destination's front sector
-		if (portalcullsector != subsectors[bspnum & ~NF_SUBSECTOR].sector)
-			return;
-		else
-			portalcullsector = NULL;
 	}
 
 	// e6y: support for extended nodes
@@ -5565,20 +5562,6 @@ static void HWR_RenderFrame(player_t *player, boolean skybox)
 	if (splitscreen > 1 && viewssnum & 1)
 	{
 		gl_viewwindowx += gl_viewwidth;
-	}
-
-	if (splitscreen == 2 && player == &players[displayplayers[2]])
-	{
-		// V_DrawPatchFill, but for the fourth screen only
-		patch_t *gpatch = W_CachePatchName("SRB2BACK", PU_PATCH);
-		INT32 dupz = (vid.dupx < vid.dupy ? vid.dupx : vid.dupy);
-		INT32 x, y, pw = (gpatch->width * dupz), ph = (gpatch->height * dupz);
-
-		for (x = vid.width >> 1; x < vid.width; x += pw)
-		{
-			for (y = vid.height >> 1; y < vid.height; y += ph)
-				HWR_DrawStretchyFixedPatch(gpatch, (x)<<FRACBITS, (y)<<FRACBITS, FRACUNIT, FRACUNIT, V_NOSCALESTART, NULL, 0);
-		}
 	}
 
 	// check for new console commands.

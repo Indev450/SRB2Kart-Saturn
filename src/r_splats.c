@@ -33,7 +33,16 @@ struct rastery_s
 	fixed_t tx1, ty1;
 	fixed_t tx2, ty2; // start/end points in texture at this line
 };
-static struct rastery_s rastertab[MAXVIDHEIGHT];
+static struct rastery_s *rastertab;
+
+static boolean *cliptable;
+
+void R_AllocFloorSpriteTables(void)
+{
+	//cliptable = Z_Realloc(cliptable, sizeof(*cliptable) * (viewwidth + 1), PU_STATIC, NULL);
+	rastertab = Z_Realloc(rastertab, sizeof(*rastertab) * viewheight, PU_STATIC, NULL);
+}
+
 
 static void prepare_rastertab(void);
 #endif

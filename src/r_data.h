@@ -14,6 +14,10 @@
 #ifndef __R_DATA__
 #define __R_DATA__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "r_defs.h"
 #include "r_state.h"
 
@@ -51,6 +55,7 @@ typedef struct
 
 // all loaded and prepared textures from the start of the game
 extern texture_t **textures;
+extern UINT8 **texturecache; // graphics data for each generated full-size texture
 
 // texture width is a power of 2, so it can easily repeat along sidedefs using a simple mask
 extern INT32 *texturewidthmask;
@@ -69,6 +74,8 @@ extern CV_PossibleValue_t Color_cons_t[];
 void R_LoadTextures(void);
 void R_LoadTexturesPwad(UINT16 wadnum);
 void R_FlushTextureCache(void);
+
+UINT8 *R_GenerateTexture(size_t texnum);
 
 INT32 R_GetTextureNum(INT32 texnum);
 void R_CheckTextureCache(INT32 tex);
@@ -109,5 +116,9 @@ UINT8 NearestPaletteColor(UINT8 r, UINT8 g, UINT8 b, RGBA_t *palette);
 #define NearestColor(r, g, b) NearestPaletteColor(r, g, b, NULL)
 
 extern INT32 numtextures;
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif

@@ -73,6 +73,8 @@
 #include "m_perfstats.h"
 #include "k_kart.h"
 
+#include "core/memory.h"
+
 #include "lua_script.h"
 
 #ifdef CMAKECONFIG
@@ -325,6 +327,39 @@ static void D_Renderview(void)
 
 	R_ApplyLevelInterpolators(rendertimefrac);
 
+	if (rendermode == render_soft)
+	{
+		// if this is display player 1
+		if (cv_homremoval.value)
+		{
+			if (cv_homremoval.value == 1)
+			{
+				// Clear the software screen buffer to remove HOM
+				memset(vid.screens[0], 31, vid.width * vid.height);
+			}
+			else if (cv_homremoval.value == 2)
+			{
+				//'development' HOM removal -- makes it blindingly obvious if HOM is spotted.
+				memset(vid.screens[0], 32+(timeinmap&15), vid.width * vid.height);
+			}
+		}
+	}
+
+	// Draw over the fourth screen so you don't have to stare at a HOM :V
+	if (splitscreen == 2)
+	{
+		// V_DrawPatchFill, but for the fourth screen only
+		patch_t *pat = W_CachePatchName("SRB2BACK", PU_CACHE);
+		INT32 dupz = (vid.dupx < vid.dupy ? vid.dupx : vid.dupy);
+		INT32 x, y, pw = SHORT(pat->width) * dupz, ph = SHORT(pat->height) * dupz;
+
+		for (x = vid.width>>1; x < vid.width; x += pw)
+		{
+			for (y = vid.height>>1; y < vid.height; y += ph)
+				V_DrawScaledPatch(x, y, V_NOSCALESTART, pat);
+		}
+	}
+
 	for (i = 0; i <= splitscreen; i++)
 	{
 		const boolean issplitscreen = (i > 0);
@@ -336,7 +371,6 @@ static void D_Renderview(void)
 			if (!issplitscreen) // Initialize for P1
 			{
 				viewwindowy = viewwindowx = 0;
-				topleft = screens[0];
 				objectsdrawn = 0;
 			}
 
@@ -350,8 +384,6 @@ static void D_Renderview(void)
 #endif
 			if (issplitscreen) // Splitscreen-specific
 			{
-				const INT32 len = viewheight*sizeof(ylookup[0]);
-
 				switch (i)
 				{
 					case 1:
@@ -365,28 +397,20 @@ static void D_Renderview(void)
 							viewwindowx = 0;
 							viewwindowy = viewheight;
 						}
-						M_Memcpy(ylookup, ylookup2, len);
 						break;
 					case 2:
 						viewwindowx = 0;
 						viewwindowy = viewheight;
-						M_Memcpy(ylookup, ylookup3, len);
 						break;
 					case 3:
 						viewwindowx = viewwidth;
 						viewwindowy = viewheight;
-						M_Memcpy(ylookup, ylookup4, len);
 					default:
 						break;
 				}
-
-				topleft = screens[0] + viewwindowy*vid.width + viewwindowx;
 			}
 
 			R_RenderPlayerView(&players[displayplayers[i]]);
-
-			if (issplitscreen)
-				M_Memcpy(ylookup, ylookup1, viewheight*sizeof (ylookup[0]));
 		}
 
 		if (!issplitscreen)
@@ -584,7 +608,7 @@ static boolean D_Display(void)
 		{
 			if (rendermode == render_soft)
 			{
-				VID_BlitLinearScreen(screens[0], screens[1], vid.width*vid.bpp, vid.height, vid.width*vid.bpp, vid.rowbytes);
+				VID_BlitLinearScreen(vid.screens[0], vid.screens[1], vid.width, vid.height, vid.width, vid.rowbytes);
 			}
 
 			lastdraw = false;
@@ -618,7 +642,7 @@ static boolean D_Display(void)
 		V_DrawFadeScreen(TC_RAINBOW, (leveltime & 0x20) ? SKINCOLOR_PASTEL : SKINCOLOR_MOONSLAM);
 
 	// vid size change is now finished if it was on...
-	vid.recalc = 0;
+	vid.recalc = false;
 
 #ifdef HAVE_THREADS
 	I_lock_mutex(&m_menu_mutex);
@@ -749,6 +773,8 @@ void D_SRB2Loop(void)
 		precise_t capbudget;
 		precise_t enterprecise = I_GetPreciseTime();
 		precise_t finishprecise = enterprecise;
+
+		Z_Frame_Reset();
 
 		// Casting the return value of a function is bad practice (apparently)
 		double budget = ((R_GetFramerateCap() == 0) ? 0.0 : round((1.0 / R_GetFramerateCap()) * I_GetPrecisePrecision()));

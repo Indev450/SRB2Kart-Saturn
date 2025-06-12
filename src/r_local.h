@@ -14,6 +14,10 @@
 #ifndef __R_LOCAL__
 #define __R_LOCAL__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 // Screen size related parameters.
 #include "doomdef.h"
 
@@ -37,5 +41,9 @@
 extern drawseg_t *firstseg;
 
 void SplitScreen_OnChange(void);
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif // __R_LOCAL__

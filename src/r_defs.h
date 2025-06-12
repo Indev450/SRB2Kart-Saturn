@@ -68,6 +68,37 @@ typedef struct
 #endif
 } extracolormap_t;
 
+typedef struct
+{
+	lighttable_t* colormap;
+
+	INT32 x;
+	INT32 yl;
+	INT32 yh;
+	fixed_t iscale;
+	fixed_t texturemid;
+
+	UINT8* source; // first pixel in a column
+	UINT8* lightmap; // lighting only
+
+	// translucency stuff here
+	UINT8* transmap;
+
+	// translation stuff here
+	UINT8* translation;
+
+	struct r_lightlist_s* lightlist;
+
+	INT32 numlights;
+	INT32 maxlights;
+
+	//Fix TUTIFRUTI
+	INT32 texheight;
+	INT32 sourcelength;
+} drawcolumndata_t;
+
+extern drawcolumndata_t g_dc;
+
 //
 // INTERNAL MAP TYPES used by play and refresh
 //
@@ -527,9 +558,6 @@ typedef struct seg_s
 	float flength; // length of the seg, used by hardware renderer
 #endif
 
-	// Why slow things down by calculating lightlists for every thick side?
-	size_t numlights;
-	r_lightlist_t *rlights;
 	polyobj_t *polyseg;
 	boolean dontrenderme;
 
@@ -610,11 +638,11 @@ typedef struct drawseg_s
 	struct ffloor_s *thicksides[MAXFFLOORS];
 	INT16 *thicksidecol;
 	INT32 numthicksides;
-	fixed_t frontscale[MAXVIDWIDTH];
+	fixed_t *frontscale;
 
 	UINT8 portalpass; // if > 0 and <= portalrender, do not affect sprite clipping
 
-	fixed_t maskedtextureheight[MAXVIDWIDTH]; // For handling sloped midtextures
+	fixed_t *maskedtextureheight; // For handling sloped midtextures
 
 	vertex_t leftpos, rightpos; // Used for rendering FOF walls with slopes
 } drawseg_t;

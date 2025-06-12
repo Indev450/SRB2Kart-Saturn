@@ -13,6 +13,8 @@
 ///        utility functions (BSP, geometry, trigonometry).
 ///        See tables.c, too.
 
+#include <algorithm>
+
 #include "doomdef.h"
 #include "g_game.h"
 #include "g_input.h"
@@ -36,6 +38,8 @@
 #include "doomstat.h" // MAXSPLITSCREENPLAYERS
 #include "r_fps.h" // Frame interpolation/uncapped
 #include "tables.h"
+
+#include "core/thread_pool.h"
 
 #ifdef HWRENDER
 #include "hardware/hw_main.h"
@@ -88,7 +92,7 @@ INT32 viewangletox[FINEANGLES/2];
 // The xtoviewangleangle[] table maps a screen pixel
 // to the lowest viewangle that maps back to x ranges
 // from clipangle to -clipangle.
-angle_t xtoviewangle[MAXVIDWIDTH+1];
+angle_t *xtoviewangle;
 
 lighttable_t *scalelight[LIGHTLEVELS][MAXLIGHTSCALE];
 lighttable_t *scalelightfixed[MAXLIGHTSCALE];
@@ -100,23 +104,23 @@ extracolormap_t extra_colormaps[MAXCOLORMAPS];
 
 // Performance stats
 precise_t ps_prevframetime = 0;
-ps_metric_t ps_rendercalltime = {0};
-ps_metric_t ps_otherrendertime = {0};
-ps_metric_t ps_uitime = {0};
-ps_metric_t ps_swaptime = {0};
+ps_metric_t ps_rendercalltime = {};
+ps_metric_t ps_otherrendertime = {};
+ps_metric_t ps_uitime = {};
+ps_metric_t ps_swaptime = {};
 
-ps_metric_t ps_skyboxtime = {0};
-ps_metric_t ps_bsptime = {0};
+ps_metric_t ps_skyboxtime = {};
+ps_metric_t ps_bsptime = {};
 
-ps_metric_t ps_sw_spritecliptime = {0};
-ps_metric_t ps_sw_portaltime = {0};
-ps_metric_t ps_sw_planetime = {0};
-ps_metric_t ps_sw_maskedtime = {0};
+ps_metric_t ps_sw_spritecliptime = {};
+ps_metric_t ps_sw_portaltime = {};
+ps_metric_t ps_sw_planetime = {};
+ps_metric_t ps_sw_maskedtime = {};
 
-ps_metric_t ps_numbspcalls = {0};
-ps_metric_t ps_numsprites = {0};
-ps_metric_t ps_numdrawnodes = {0};
-ps_metric_t ps_numpolyobjects = {0};
+ps_metric_t ps_numbspcalls = {};
+ps_metric_t ps_numsprites = {};
+ps_metric_t ps_numdrawnodes = {};
+ps_metric_t ps_numpolyobjects = {};
 
 static CV_PossibleValue_t drawdist_cons_t[] = {
 	/*{256, "256"},*/	{512, "512"},	{768, "768"},
@@ -157,10 +161,6 @@ static void FlipCam_OnChange(void);
 static void FlipCam2_OnChange(void);
 static void FlipCam3_OnChange(void);
 static void FlipCam4_OnChange(void);
-void SendWeaponPref(void);
-void SendWeaponPref2(void);
-void SendWeaponPref3(void);
-void SendWeaponPref4(void);
 
 static void DirLight_OnChange(void);
 
@@ -504,10 +504,10 @@ void R_GetRenderBlockMapDimensions(fixed_t drawdist, INT32 *xl, INT32 *xh, INT32
 	const fixed_t vyright = viewy + FixedMul(drawdist, FSIN(right));
 
 	// Try to narrow the search to within only the field of view
-	*xl = (unsigned)(min(viewx, min(vxleft, vxright)) - bmaporgx)>>MAPBLOCKSHIFT;
-	*xh = (unsigned)(max(viewx, max(vxleft, vxright)) - bmaporgx)>>MAPBLOCKSHIFT;
-	*yl = (unsigned)(min(viewy, min(vyleft, vyright)) - bmaporgy)>>MAPBLOCKSHIFT;
-	*yh = (unsigned)(max(viewy, max(vyleft, vyright)) - bmaporgy)>>MAPBLOCKSHIFT;
+	*xl = (unsigned)(std::min(viewx, std::min(vxleft, vxright)) - bmaporgx)>>MAPBLOCKSHIFT;
+	*xh = (unsigned)(std::max(viewx, std::max(vxleft, vxright)) - bmaporgx)>>MAPBLOCKSHIFT;
+	*yl = (unsigned)(std::min(viewy, std::min(vyleft, vyright)) - bmaporgy)>>MAPBLOCKSHIFT;
+	*yh = (unsigned)(std::max(viewy, std::max(vyleft, vyright)) - bmaporgy)>>MAPBLOCKSHIFT;
 
 	if (*xh >= bmapwidth)
 		*xh = bmapwidth - 1;
@@ -631,7 +631,7 @@ static struct {
 	INT32 scrmapsize;
 
 	INT32 x1; // clip rendering horizontally for efficiency
-	INT16 ceilingclip[MAXVIDWIDTH], floorclip[MAXVIDWIDTH];
+	INT16 *ceilingclip, *floorclip;
 
 	boolean use;
 } viewmorph = {
@@ -642,7 +642,7 @@ static struct {
 	0,
 
 	0,
-	{}, {},
+	NULL, NULL,
 
 	false
 };
@@ -680,10 +680,10 @@ void R_CheckViewMorph(void)
 
 	if (viewmorph.scrmapsize != vid.width*vid.height)
 	{
-		if (viewmorph.scrmap)
-			free(viewmorph.scrmap);
-		viewmorph.scrmap = malloc(vid.width*vid.height * sizeof(INT32));
 		viewmorph.scrmapsize = vid.width*vid.height;
+		viewmorph.scrmap = static_cast<INT32*>(realloc(viewmorph.scrmap, vid.width*vid.height * sizeof(INT32)));
+		viewmorph.ceilingclip = static_cast<INT16*>(realloc(viewmorph.ceilingclip, vid.width * sizeof(INT16)));
+		viewmorph.floorclip = static_cast<INT16*>(realloc(viewmorph.floorclip, vid.width * sizeof(INT16)));
 	}
 
 	temp = FINECOSINE(rollangle);
@@ -695,7 +695,7 @@ void R_CheckViewMorph(void)
 	x1 = (vid.width*fabsf(rollcos) + vid.height*fabsf(rollsin)) / vid.width;
 	y1 = (vid.height*fabsf(rollcos) + vid.width*fabsf(rollsin)) / vid.height;
 
-	temp = max(x1, y1)*FRACUNIT;
+	temp = std::max(x1, y1)*FRACUNIT;
 	if (temp < FRACUNIT)
 		temp = FRACUNIT;
 	else
@@ -741,10 +741,10 @@ void R_CheckViewMorph(void)
 		xb = vid.width-1-xa;
 		yb = vid.height-1-ya;
 
-		viewmorph.ceilingclip[xa] = min(viewmorph.ceilingclip[xa], ya);
-		viewmorph.floorclip[xa] = max(viewmorph.floorclip[xa], ya);
-		viewmorph.ceilingclip[xb] = min(viewmorph.ceilingclip[xb], yb);
-		viewmorph.floorclip[xb] = max(viewmorph.floorclip[xb], yb);
+		viewmorph.ceilingclip[xa] = std::min(viewmorph.ceilingclip[xa], ya);
+		viewmorph.floorclip[xa]   = std::max(viewmorph.floorclip[xa], ya);
+		viewmorph.ceilingclip[xb] = std::min(viewmorph.ceilingclip[xb], yb);
+		viewmorph.floorclip[xb]   = std::max(viewmorph.floorclip[xb], yb);
 		x2 += rollcos;
 		y2 += rollsin;
 	}
@@ -758,10 +758,10 @@ void R_CheckViewMorph(void)
 		xb = vid.width-1-xa;
 		yb = vid.height-1-ya;
 
-		viewmorph.ceilingclip[xa] = min(viewmorph.ceilingclip[xa], ya);
-		viewmorph.floorclip[xa] = max(viewmorph.floorclip[xa], ya);
-		viewmorph.ceilingclip[xb] = min(viewmorph.ceilingclip[xb], yb);
-		viewmorph.floorclip[xb] = max(viewmorph.floorclip[xb], yb);
+		viewmorph.ceilingclip[xa] = std::min(viewmorph.ceilingclip[xa], ya);
+		viewmorph.floorclip[xa]   = std::max(viewmorph.floorclip[xa], ya);
+		viewmorph.ceilingclip[xb] = std::min(viewmorph.ceilingclip[xb], yb);
+		viewmorph.floorclip[xb]   = std::max(viewmorph.floorclip[xb], yb);
 		x2 -= rollsin;
 		y2 += rollcos;
 	}
@@ -799,8 +799,8 @@ void R_CheckViewMorph(void)
 
 void R_ApplyViewMorph(void)
 {
-	UINT8 *tmpscr = screens[4];
-	UINT8 *srcscr = screens[0];
+	UINT8 *tmpscr = vid.screens[4];
+	UINT8 *srcscr = vid.screens[0];
 	INT32 p, end = vid.width * vid.height;
 
 	if (!viewmorph.use)
@@ -835,8 +835,7 @@ void R_ApplyViewMorph(void)
 		for (p = 0; p < end; p++)
 			tmpscr[p] = srcscr[viewmorph.scrmap[p]];
 
-	VID_BlitLinearScreen(tmpscr, screens[0],
-			vid.width*vid.bpp, vid.height, vid.width*vid.bpp, vid.width);
+	VID_BlitLinearScreen(tmpscr, vid.screens[0], vid.width, vid.height, vid.width, vid.width);
 }
 
 angle_t R_ViewRollAngle(const player_t *player)
@@ -889,6 +888,8 @@ void R_SetViewSize(void)
 	setsizeneeded = true;
 }
 
+static void R_SetupViewBuffers(void);
+
 //
 // R_ExecuteSetViewSize
 //
@@ -907,18 +908,15 @@ void R_ExecuteSetViewSize(void)
 	// status bar overlay
 	st_overlay = cv_showhud.value;
 
-	scaledviewwidth = vid.width;
+	viewwidth = vid.width;
 	viewheight = vid.height;
 
 	if (splitscreen)
 		viewheight >>= 1;
 
-	viewwidth = scaledviewwidth;
-
 	if (splitscreen > 1)
 	{
 		viewwidth >>= 1;
-		scaledviewwidth >>= 1;
 	}
 
 	centerx = viewwidth/2;
@@ -926,9 +924,7 @@ void R_ExecuteSetViewSize(void)
 	centerxfrac = centerx<<FRACBITS;
 	centeryfrac = centery<<FRACBITS;
 
-	R_SetFov(cv_fov.value);
-
-	R_InitViewBuffer(scaledviewwidth, viewheight);
+	R_SetupViewBuffers();
 
 	// why did we calc all the software crap?
 #ifdef HWRENDER
@@ -942,7 +938,10 @@ void R_ExecuteSetViewSize(void)
 
 	// thing clipping
 	for (i = 0; i < viewwidth; i++)
+	{
+		negonearray[i] = -1;
 		screenheightarray[i] = (INT16)viewheight;
+	}
 
 	if (ds_su)
 		Z_Free(ds_su);
@@ -952,7 +951,6 @@ void R_ExecuteSetViewSize(void)
 		Z_Free(ds_sz);
 
 	ds_su = ds_sv = ds_sz = NULL;
-	ds_sup = ds_svp = ds_szp = NULL;
 
 	memset(scalelight, 0xFF, sizeof(scalelight));
 
@@ -980,33 +978,52 @@ void R_ExecuteSetViewSize(void)
 fixed_t R_GetPlayerFov(player_t *player)
 {
 	fixed_t fov = cv_fov.value + player->fovadd;
-	return max(MINFOV*FRACUNIT, min(fov, MAXFOV*FRACUNIT));
+	return std::max(MINFOV*FRACUNIT, std::min(fov, MAXFOV*FRACUNIT));
 }
 
-static void R_SetFov(fixed_t playerfov)
+static void R_CalcFov(fixed_t playerfov)
 {
 	angle_t fov = FixedAngle(playerfov/2) + ANGLE_90;
 	fovtan = FixedMul(FINETANGENT(fov >> ANGLETOFINESHIFT), viewmorph.zoomneeded);
 	if (splitscreen == 1) // Splitscreen FOV should be adjusted to maintain expected vertical view
 		fovtan = 17*fovtan/10;
 
-	// this is only used for planes rendering in software mode
-	INT32 j = viewheight*16;
-	for (INT32 i = 0; i < j; i++)
-	{
-		fixed_t dy = (i - viewheight*8)<<FRACBITS;
-		dy = FixedMul(abs(dy), fovtan);
-		yslopetab[i] = FixedDiv(centerx*FRACUNIT, dy);
-	}
-
 	projection = projectiony = FixedDiv(centerxfrac, fovtan);
+}
 
+static void R_InitViewMapping(void)
+{
 	R_InitTextureMapping();
+
+	if (rendermode == render_soft)
+	{
+		// this is only used for planes rendering in software mode
+		INT32 j = viewheight*16;
+
+		for (INT32 i = 0; i < j; i++)
+		{
+			fixed_t dy = (i - viewheight*8)<<FRACBITS;
+			dy = FixedMul(abs(dy), fovtan);
+			yslopetab[i] = FixedDiv(centerx*FRACUNIT, dy);
+		}
+	}
 
 	// setup sky scaling
 	R_SetSkyScale();
 }
 
+static void R_SetupViewBuffers(void)
+{
+	R_CalcFov(cv_fov.value);
+	R_InitViewBuffer(viewwidth, viewheight);
+	R_InitViewMapping();
+}
+
+static void R_SetFov(fixed_t playerfov)
+{
+	R_CalcFov(playerfov);
+	R_InitViewMapping();
+}
 
 //
 // R_Init
@@ -1021,9 +1038,6 @@ void R_Init(void)
 	//I_OutputMsg("\nR_InitViewBorder");
 	R_InitViewBorder();
 	R_SetViewSize(); // setsizeneeded is set true
-
-	//I_OutputMsg("\nR_InitPlanes");
-	R_InitPlanes();
 
 	// this is now done by SCR_Recalc() at the first mode set
 	//I_OutputMsg("\nR_InitLightTables");
@@ -1093,17 +1107,88 @@ static void R_SetupAimingFrame(player_t *player, camera_t *thiscam)
 	}
 }
 
+static void R_SetupSkyScale(player_t *player, camera_t *thiscam, mapheader_t *mh)
+{
+	if (!mh->skybox_scalex && !mh->skybox_scaley && !mh->skybox_scalez)
+		return;
+
+	auto setup_skyscale = [&](fixed_t mox, fixed_t moy, fixed_t zscale)
+	{
+		if (skyboxmo[1])
+		{
+			fixed_t x = 0, y = 0;
+
+			if (mh->skybox_scalex > 0)
+				x = (mox - skyboxmo[1]->x) / mh->skybox_scalex;
+			else if (mh->skybox_scalex < 0)
+				x = (mox - skyboxmo[1]->x) * -mh->skybox_scalex;
+
+			if (mh->skybox_scaley > 0)
+				y = (moy - skyboxmo[1]->y) / mh->skybox_scaley;
+			else if (mh->skybox_scaley < 0)
+				y = (moy - skyboxmo[1]->y) * -mh->skybox_scaley;
+
+			if (viewmobj->angle == 0)
+			{
+				newview->x += x;
+				newview->y += y;
+			}
+			else if (viewmobj->angle == ANGLE_90)
+			{
+				newview->x -= y;
+				newview->y += x;
+			}
+			else if (viewmobj->angle == ANGLE_180)
+			{
+				newview->x -= x;\
+				newview->y -= y;\
+			}
+			else if (viewmobj->angle == ANGLE_270)
+			{
+				newview->x += y;
+				newview->y -= x;
+			}
+			else
+			{
+				angle_t ang = viewmobj->angle>>ANGLETOFINESHIFT;
+				newview->x  += FixedMul(x,FINECOSINE(ang)) - FixedMul(y,  FINESINE(ang));
+				newview->y += FixedMul(x,  FINESINE(ang)) + FixedMul(y,FINECOSINE(ang));
+			}
+		}
+
+		if (mh->skybox_scalez > 0)
+			newview->z += zscale / mh->skybox_scalez;
+		else if (mh->skybox_scalez < 0)
+			newview->z += zscale * -mh->skybox_scalez;
+	};
+
+	if (player->awayviewtics && player->awayviewmobj)
+	{
+		setup_skyscale(player->awayviewmobj->x, player->awayviewmobj->y, (player->awayviewmobj->z + 20*FRACUNIT));
+	}
+	else if (thiscam && thiscam->chase)
+	{
+		setup_skyscale(thiscam->x, thiscam->y, (thiscam->z + (thiscam->height>>1)));
+	}
+	else
+	{
+		setup_skyscale(player->mo->x, player->mo->y, player->viewz);
+	}
+}
+
 void R_SkyboxFrame(int s)
 {
 	player_t *player = &players[displayplayers[s]];
 	camera_t *thiscam = &camera[s];
 	subsector_t * subsector = NULL;
+	mapheader_t *mh = mapheaderinfo[gamemap-1];
 
-	R_SetViewContext(VIEWCONTEXT_SKY1 + s);
+	R_SetViewContext(static_cast<viewcontext_e>(VIEWCONTEXT_SKY1 + s));
 
 	// cut-away view stuff
 	newview->sky = true;
 	viewmobj = skyboxmo[0];
+
 #ifdef PARANOIA
 	if (P_MobjWasRemoved(viewmobj))
 	{
@@ -1111,78 +1196,19 @@ void R_SkyboxFrame(int s)
 		I_Error("R_SkyboxFrame: viewmobj null (player %s)", sizeu1(playeri));
 	}
 #endif
+
 	R_SetupAimingFrame(player, thiscam);
 
 	newview->angle += viewmobj->angle;
 
 	newview->x = viewmobj->x;
 	newview->y = viewmobj->y;
-	newview->z = 0;
-	if (viewmobj->spawnpoint)
-		newview->z = ((fixed_t)viewmobj->spawnpoint->angle)<<FRACBITS;
+	newview->z = (viewmobj->spawnpoint) ? (((fixed_t)viewmobj->spawnpoint->angle)<<FRACBITS) : 0;
 
-#define SETUPSKYVIEW(viewmo, zscale)\
-	if (skyboxmo[1])\
-	{\
-		fixed_t x = 0, y = 0;\
-		if (mh->skybox_scalex > 0)\
-			x = (viewmo->x - skyboxmo[1]->x) / mh->skybox_scalex;\
-		else if (mh->skybox_scalex < 0)\
-			x = (viewmo->x - skyboxmo[1]->x) * -mh->skybox_scalex;\
-		if (mh->skybox_scaley > 0)\
-			y = (viewmo->y - skyboxmo[1]->y) / mh->skybox_scaley;\
-		else if (mh->skybox_scaley < 0)\
-			y = (viewmo->y - skyboxmo[1]->y) * -mh->skybox_scaley;\
-		if (viewmobj->angle == 0)\
-		{\
-			newview->x += x;\
-			newview->y += y;\
-		}\
-		else if (viewmobj->angle == ANGLE_90)\
-		{\
-			newview->x -= y;\
-			newview->y += x;\
-		}\
-		else if (viewmobj->angle == ANGLE_180)\
-		{\
-			newview->x -= x;\
-			newview->y -= y;\
-		}\
-		else if (viewmobj->angle == ANGLE_270)\
-		{\
-			newview->x += y;\
-			newview->y -= x;\
-		}\
-		else\
-		{\
-			angle_t ang = viewmobj->angle>>ANGLETOFINESHIFT;\
-			newview->x  += FixedMul(x,FINECOSINE(ang)) - FixedMul(y,  FINESINE(ang));\
-			newview->y += FixedMul(x,  FINESINE(ang)) + FixedMul(y,FINECOSINE(ang));\
-		}\
-	}\
-	if (mh->skybox_scalez > 0)\
-	newview->z += zscale / mh->skybox_scalez;\
-	else if (mh->skybox_scalez < 0)\
-		newview->z += zscale * -mh->skybox_scalez;
-
-	if (mapheaderinfo[gamemap-1])
+	if (mh)
 	{
-		mapheader_t *mh = mapheaderinfo[gamemap-1];
-
-		if (player->awayviewtics && player->awayviewmobj)
-		{
-			SETUPSKYVIEW(player->awayviewmobj, (player->awayviewmobj->z + 20*FRACUNIT));
-		}
-		else if (thiscam->chase)
-		{
-			SETUPSKYVIEW(thiscam, (thiscam->z + (thiscam->height>>1)));
-		}
-		else
-		{
-			SETUPSKYVIEW(player->mo, player->viewz);
-		}
+		R_SetupSkyScale(player, thiscam, mh);
 	}
-#undef SETUPSKYVIEW
 
 	if (!P_MobjWasRemoved(viewmobj) && viewmobj->subsector && viewmobj->subsector->sector)
 		subsector = viewmobj->subsector;
@@ -1197,7 +1223,8 @@ void R_SetupFrame(int s, boolean skybox)
 	boolean chasecam = (cv_chasecam[s].value);
 	sector_t * sector = NULL;
 
-	R_SetViewContext(VIEWCONTEXT_PLAYER1 + s);
+	R_SetViewContext(static_cast<viewcontext_e>(VIEWCONTEXT_PLAYER1 + s));
+
 	if (thiscam->reset)
 	{
 		R_ResetViewInterpolation(s);
@@ -1243,12 +1270,13 @@ void R_SetupFrame(int s, boolean skybox)
 	else if (thiscam && chasecam) // use outside cam view
 	{
 		viewmobj = NULL;
+		I_Assert(thiscam != NULL);
 
 		newview->x = thiscam->x;
 		newview->y = thiscam->y;
 		newview->z = thiscam->z + (thiscam->height>>1);
 
-		if (thiscam != NULL && thiscam->subsector && thiscam->subsector->sector)
+		if (thiscam->subsector && thiscam->subsector->sector)
 			sector = thiscam->subsector->sector;
 
 		R_SetupCommonFrame(player, sector);
@@ -1276,8 +1304,8 @@ static void R_PortalFrame(portal_t *portal)
 	viewz = portal->viewz;
 
 	viewangle = portal->viewangle;
-	// viewsin = FINESINE(viewangle>>ANGLETOFINESHIFT);
-	// viewcos = FINECOSINE(viewangle>>ANGLETOFINESHIFT);
+	//viewsin = FINESINE(viewangle>>ANGLETOFINESHIFT);
+	//viewcos = FINECOSINE(viewangle>>ANGLETOFINESHIFT);
 
 	portalclipstart = portal->start;
 	portalclipend = portal->end;
@@ -1285,8 +1313,7 @@ static void R_PortalFrame(portal_t *portal)
 	if (portal->clipline != -1)
 	{
 		portalclipline = &lines[portal->clipline];
-		portalcullsector = portalclipline->frontsector;
-		viewsector = portalclipline->frontsector;
+		viewsector = portalcullsector = portalclipline->frontsector;
 	}
 	else
 	{
@@ -1296,9 +1323,40 @@ static void R_PortalFrame(portal_t *portal)
 	}
 }
 
+static void Mask_Pre (maskcount_t* m)
+{
+	m->drawsegs[0] = ds_p - drawsegs;
+	m->vissprites[0] = visspritecount;
+	m->viewx = viewx;
+	m->viewy = viewy;
+	m->viewz = viewz;
+	m->viewsector = viewsector;
+}
+
+static void Mask_Post (maskcount_t* m)
+{
+	m->drawsegs[1] = ds_p - drawsegs;
+	m->vissprites[1] = visspritecount;
+}
+
 // ================
 // R_RenderView
 // ================
+
+// viewx, viewy, viewangle, all that good stuff must be set
+static void R_RenderViewpoint(maskcount_t* mask, boolean drawprecip)
+{
+	Mask_Pre(mask);
+
+	curdrawsegs = ds_p;
+
+	R_RenderBSPNode((INT32)numnodes - 1);
+
+	if (drawprecip)
+		R_AddPrecipitationSprites();
+
+	Mask_Post(mask);
+}
 
 //                     FAB NOTE FOR WIN32 PORT !! I'm not finished already,
 // but I suspect network may have problems with the video buffer being locked
@@ -1310,52 +1368,19 @@ static fixed_t viewfov[MAXSPLITSCREENPLAYERS];
 
 void R_RenderPlayerView(player_t *player)
 {
-	const boolean skybox = (skyboxmo[0] && cv_skybox.value);
-	UINT8 i;
-
-	// if this is display player 1
-	if (cv_homremoval.value && player == &players[displayplayers[0]])
-	{
-		if (cv_homremoval.value == 1)
-			V_DrawFill(0, 0, BASEVIDWIDTH, BASEVIDHEIGHT, 31); // No HOM effect!
-		else //'development' HOM removal -- makes it blindingly obvious if HOM is spotted.
-			V_DrawFill(0, 0, BASEVIDWIDTH, BASEVIDHEIGHT, 128+(timeinmap&15));
-	}
-	// Draw over the fourth screen so you don't have to stare at a HOM :V
-	else if (splitscreen == 2 && player == &players[displayplayers[2]])
-	{
-		// V_DrawPatchFill, but for the fourth screen only
-		patch_t *pat = W_CachePatchName("SRB2BACK", PU_CACHE);
-		INT32 dupz = (vid.dupx < vid.dupy ? vid.dupx : vid.dupy);
-		INT32 x, y, pw = SHORT(pat->width) * dupz, ph = SHORT(pat->height) * dupz;
-
-		for (x = vid.width>>1; x < vid.width; x += pw)
-		{
-			for (y = vid.height>>1; y < vid.height; y += ph)
-				V_DrawScaledPatch(x, y, V_NOSCALESTART, pat);
-		}
-	}
+	INT32           nummasks = 1;
+	maskcount_t*    masks    = static_cast<maskcount_t*>(malloc(sizeof(maskcount_t)));
+	const boolean   skybox   = (skyboxmo[0] && cv_skybox.value);
 
 	// load previous saved value of skyVisible for the player
-	for (i = 0; i <= splitscreen; i++)
-	{
-		if (player != &players[displayplayers[i]])
-			continue;
-
-		skyVisible = skyVisiblePerPlayer[i];
-		break;
-	}
+	skyVisible = skyVisiblePerPlayer[viewssnum];
 
 	fixed_t fov = R_GetPlayerFov(player);
 
-	for (UINT8 j = 0; j <= splitscreen; j++)
+	if (viewfov[viewssnum] != fov)
 	{
-		if (player == &players[displayplayers[j]]
-			&& viewfov[j] != fov)
-		{
-			viewfov[j] = fov;
-			R_SetFov(fov);
-		}
+		viewfov[viewssnum] = fov;
+		R_SetFov(fov);
 	}
 
 	Portal_InitList();
@@ -1369,17 +1394,13 @@ void R_RenderPlayerView(player_t *player)
 		R_ClearDrawSegs();
 		R_ClearPlanes();
 		R_ClearSprites();
-#ifdef FLOORSPLATS
-		R_ClearVisibleFloorSplats();
-#endif
 
-		R_RenderBSPNode((INT32)numnodes - 1);
-		R_ClipSprites();
+		R_RenderViewpoint(&masks[nummasks - 1], false);
+
+		R_ClipSprites(drawsegs, NULL);
+		R_DrawSkyPlanes(); // draw the fucker again to prevent some artifacts
 		R_DrawPlanes();
-#ifdef FLOORSPLATS
-		R_DrawVisibleFloorSplats();
-#endif
-		R_DrawMasked();
+		R_DrawMasked(masks, nummasks);
 	}
 	PS_STOP_TIMING(ps_skyboxtime);
 
@@ -1406,22 +1427,16 @@ void R_RenderPlayerView(player_t *player)
 	}
 	R_ClearDrawSegs();
 	R_ClearSprites();
-#ifdef FLOORSPLATS
-	R_ClearVisibleFloorSplats();
-#endif
 
 	// check for new console commands.
 	NetUpdate();
 
-	// The head node is the last node output.
-
 	ps_numbspcalls.value.i = ps_numpolyobjects.value.i = ps_numdrawnodes.value.i = 0;
 	PS_START_TIMING(ps_bsptime);
-	R_RenderBSPNode((INT32)numnodes - 1);
+	R_RenderViewpoint(&masks[nummasks - 1], true);
 	PS_STOP_TIMING(ps_bsptime);
-	R_AddPrecipitationSprites();
 	PS_START_TIMING(ps_sw_spritecliptime);
-	R_ClipSprites();
+	R_ClipSprites(drawsegs, NULL);
 	PS_STOP_TIMING(ps_sw_spritecliptime);
 
 	ps_numsprites.value.i = numvisiblesprites;
@@ -1450,43 +1465,40 @@ void R_RenderPlayerView(player_t *player)
 			// that were previously stored.
 			Portal_ClipApply(portal);
 
+			validcount++;
+
+			masks = static_cast<maskcount_t*>(realloc(masks, (++nummasks)*sizeof(maskcount_t)));
+
 			// Render the BSP from the new viewpoint, and clip
 			// any sprites with the new clipsegs and window.
-			R_RenderBSPNode((INT32)numnodes - 1);
-			R_ClipSprites();
+			R_RenderViewpoint(&masks[nummasks - 1], true);
+
+			R_ClipSprites(ds_p - (masks[nummasks - 1].drawsegs[1] - masks[nummasks - 1].drawsegs[0]), portal);
 
 			Portal_Remove(portal);
-
-			validcount++;
 		}
 	}
 	PS_STOP_TIMING(ps_sw_portaltime);
 
 	PS_START_TIMING(ps_sw_planetime);
+	if (!skybox)
+		R_DrawSkyPlanes();
 	R_DrawPlanes();
 	PS_STOP_TIMING(ps_sw_planetime);
-#ifdef FLOORSPLATS
-	R_DrawVisibleFloorSplats();
-#endif
 	// draw mid texture and sprite
 	// And now 3D floors/sides!
 	PS_START_TIMING(ps_sw_maskedtime);
-	R_DrawMasked();
+	R_DrawMasked(masks, nummasks);
 	PS_STOP_TIMING(ps_sw_maskedtime);
+
+	free(masks);
 
 	// Check for new console commands.
 	NetUpdate();
 
 	// save value to skyVisiblePerPlayer
 	// this is so that P1 can't affect whether P2 can see a skybox or not, or vice versa
-	for (i = 0; i <= splitscreen; i++)
-	{
-		if (player != &players[displayplayers[i]])
-			continue;
-
-		skyVisiblePerPlayer[i] = skyVisible;
-		break;
-	}
+	skyVisiblePerPlayer[viewssnum] = skyVisible;
 }
 
 // =========================================================================
@@ -1527,6 +1539,7 @@ void R_RegisterEngineStuff(void)
 	{
 		CV_RegisterVar(&cv_chasecam[i]);
 	}
+
 	CV_RegisterVar(&cv_shadow);
 	CV_RegisterVar(&cv_shadowoffs);
 	CV_RegisterVar(&cv_skybox);

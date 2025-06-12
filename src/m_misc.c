@@ -14,6 +14,10 @@
 
 #ifdef __GNUC__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #if (__GNUC__ > 4) || (__GNUC__ == 4 && __GNUC_MINOR__ >= 3)
 // Ignore "argument might be clobbered by longjmp" warning in GCC
 // (if libpng is compiled with setjmp error handling)
@@ -1060,7 +1064,7 @@ static boolean M_SetupaPNG(png_const_charp filename, png_bytep pal)
 	png_init_io(apng_ptr, apng_FILE);
 
 #ifdef PNG_SET_USER_LIMITS_SUPPORTED
-	png_set_user_limits(apng_ptr, MAXPNGWIDTH, MAXPNGHEIGHT);
+	png_set_user_limits(apng_ptr, MAXVIDWIDTH, MAXVIDHEIGHT);
 #endif
 
 	//png_set_filter(apng_ptr, 0, PNG_ALL_FILTERS);
@@ -1237,7 +1241,7 @@ void M_SaveFrame(void)
 				if (rendermode == render_soft)
 				{
 					// munge planar buffer to linear
-					linear = screens[2];
+					linear = vid.screens[2];
 					I_ReadScreen(linear);
 				}
 #ifdef HWRENDER
@@ -1375,7 +1379,7 @@ boolean M_SavePNG(const char *filename, void *data, int width, int height, const
 	png_init_io(png_ptr, png_FILE);
 
 #ifdef PNG_SET_USER_LIMITS_SUPPORTED
-	png_set_user_limits(png_ptr, MAXPNGWIDTH, MAXPNGHEIGHT);
+	png_set_user_limits(png_ptr, MAXVIDWIDTH, MAXVIDHEIGHT);
 #endif
 
 	//png_set_filter(png_ptr, 0, PNG_ALL_FILTERS);
@@ -1539,7 +1543,7 @@ void M_DoScreenShot(void)
 	if (rendermode == render_soft)
 	{
 		// munge planar buffer to linear
-		linear = screens[2];
+		linear = vid.screens[2];
 		I_ReadScreen(linear);
 	}
 
@@ -2273,3 +2277,8 @@ UINT32 FNV1a_HashLowercaseString(const char *message)
 
 	return hash;
 }
+
+
+#ifdef __cplusplus
+} // extern "C"
+#endif

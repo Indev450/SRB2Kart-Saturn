@@ -20,6 +20,7 @@
 #include "p_setup.h"
 #include "r_fps.h"
 #include "r_main.h"
+#include "r_skins.h"
 #include "r_things.h"
 #include "r_sky.h"
 #include "r_splats.h"

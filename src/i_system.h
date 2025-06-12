@@ -14,6 +14,10 @@
 #ifndef __I_SYSTEM__
 #define __I_SYSTEM__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "d_ticcmd.h"
 #include "d_event.h"
 
@@ -255,5 +259,9 @@ INT32 I_ClipboardCopy(const char *data, size_t size);
 const char *I_ClipboardPaste(void);
 
 void I_RegisterSysCommands(void);
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif
