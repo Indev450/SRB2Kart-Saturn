@@ -567,58 +567,7 @@ void SendKick(UINT8 playernum, UINT8 msg)
 // end of extra data function
 // -----------------------------------------------------------------
 
-// -----------------------------------------------------------------
-// extra data function for lmps
-// -----------------------------------------------------------------
-
-// if extradatabit is set, after the ziped tic you find this:
-//
-//   type   |  description
-// ---------+--------------
-//   byte   | size of the extradata
-//   byte   | the extradata (xd) bits: see XD_...
-//            with this byte you know what parameter folow
-// if (xd & XDNAMEANDCOLOR)
-//   byte   | color
-//   char[MAXPLAYERNAME] | name of the player
-// endif
-// if (xd & XD_WEAPON_PREF)
-//   byte   | original weapon switch: boolean, true if use the old
-//          | weapon switch methode
-//   char[NUMWEAPONS] | the weapon switch priority
-//   byte   | autoaim: true if use the old autoaim system
-// endif
-/*boolean AddLmpExtradata(UINT8 **demo_point, INT32 playernum)
-{
-	UINT8 *textcmd = D_GetExistingTextcmd(gametic, playernum);
-
-	if (!textcmd)
-		return false;
-
-	M_Memcpy(*demo_point, textcmd, textcmd[0]+1);
-	*demo_point += textcmd[0]+1;
-	return true;
-}
-
-void ReadLmpExtraData(UINT8 **demo_pointer, INT32 playernum)
-{
-	UINT8 nextra;
-	UINT8 *textcmd;
-
-	if (!demo_pointer)
-		return;
-
-	textcmd = D_GetTextcmd(gametic, playernum);
-	nextra = **demo_pointer;
-	M_Memcpy(textcmd, *demo_pointer, nextra + 1);
-	// increment demo pointer
-	*demo_pointer += nextra + 1;
-}*/
-
-// -----------------------------------------------------------------
-// end extra data function for lmps
-// -----------------------------------------------------------------
-
+// can we get rid of this finally lmao
 // -----------------------------------------------------------------
 // resynch player data
 // -----------------------------------------------------------------
@@ -1588,70 +1537,6 @@ static boolean CL_SendJoin(void)
 #endif
 
 	return HSendPacket(servernode, false, 0, sizeof (clientconfig_pak));
-}
-
-static void
-CopyCaretColors (char *p, const char *s, int n)
-{
-	char *t;
-	int   m;
-	int   c;
-	if (!n)
-		return;
-	while (( t = strchr(s, '^') ))
-	{
-		m = ( t - s );
-
-		if (m >= n)
-		{
-			memcpy(p, s, n);
-			return;
-		}
-		else
-			memcpy(p, s, m);
-
-		p += m;
-		n -= m;
-		s += m;
-
-		if (!n)
-			return;
-
-		if (s[1])
-		{
-			c = toupper(s[1]);
-			if (isdigit(c))
-				c = 0x80 + ( c - '0' );
-			else if (c >= 'A' && c <= 'F')
-				c = 0x80 + ( c - 'A' );
-			else
-				c = 0;
-
-			if (c)
-			{
-				*p++ = c;
-				n--;
-
-				if (!n)
-					return;
-			}
-			else
-			{
-				if (n < 2)
-					break;
-
-				memcpy(p, s, 2);
-
-				p += 2;
-				n -= 2;
-			}
-
-			s += 2;
-		}
-		else
-			break;
-	}
-	strncpy(p, s, n);
 }
 
 static void SV_SendServerInfo(INT32 node, tic_t servertime)
