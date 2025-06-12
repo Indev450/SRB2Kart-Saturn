@@ -246,6 +246,7 @@ opts+=-O3
 ifdef USELTO
 # compile with LTO
 opts+=-flto=auto
+libs+=-flto=auto
 endif
 endif
 
