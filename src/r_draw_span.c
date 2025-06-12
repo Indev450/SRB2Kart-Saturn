@@ -15,12 +15,16 @@
 // SPANS
 // ==========================================================================
 
+#ifdef HAVE_THREADS
 #ifdef _WIN32
 #include <windows.h>
 #define local_for_thread static __thread
 #else
 #include <threads.h>
 #define local_for_thread thread_local static
+#endif
+#else
+#define local_for_thread static
 #endif
 
 #define SPANSIZE 16

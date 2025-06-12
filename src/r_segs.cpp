@@ -30,7 +30,6 @@
 #include "screen.h"
 
 #include "core/memory.h"
-#include "core/thread_pool.h"
 
 #define HEIGHTBITS              12
 #define HEIGHTUNIT              (1<<HEIGHTBITS)
