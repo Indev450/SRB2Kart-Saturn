@@ -110,6 +110,8 @@ static UINT8 **localtranslationtablecache[MAXLOCALSKINS] = {NULL};
 
 CV_PossibleValue_t Color_cons_t[MAXSKINCOLORS+1];
 
+static void R_GenerateBlendTables(void);
+
 /** \brief Initializes the translucency tables used by the Software renderer.
 */
 void R_InitTranslucencyTables(void)
@@ -239,7 +241,7 @@ static void BlendTab_GenerateMaps(INT32 tab, INT32 style, void (*genfunc)(UINT8 
 	}
 }
 
-void R_GenerateBlendTables(void)
+static void R_GenerateBlendTables(void)
 {
 	INT32 i;
 
