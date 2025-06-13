@@ -136,6 +136,7 @@ enum
 	SPANDRAWFUNC_SPLAT,
 	SPANDRAWFUNC_TRANSSPLAT,
 	SPANDRAWFUNC_TILTEDSPLAT,
+	SPANDRAWFUNC_TILTEDTRANSSPLAT,
 
 	SPANDRAWFUNC_WATER,
 	SPANDRAWFUNC_TILTEDWATER,
@@ -264,6 +265,7 @@ void R_DrawFogSpan_Tilted(drawspandata_t* ds);
 void R_DrawSplat_Tilted(drawspandata_t* ds);
 void R_DrawSplat(drawspandata_t* ds);
 void R_DrawTranslucentSplat(drawspandata_t* ds);
+void R_DrawTranslucentSplat_Tilted(drawspandata_t* ds);
 
 #ifdef __cplusplus
 } // extern "C"

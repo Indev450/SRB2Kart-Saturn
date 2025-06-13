@@ -15,6 +15,8 @@
 ///        not the architecture of the frame buffer.
 ///        The frame buffer is a linear one, and we need only the base address.
 
+#include <algorithm>
+
 #include "doomdef.h"
 #include "doomstat.h"
 #include "r_local.h"
@@ -115,8 +117,7 @@ void R_InitTranslucencyTables(void)
 	// Load here the transparency lookup tables 'TRANSx0'
 	// NOTE: the TRANSx0 resources MUST BE aligned on 64k for the asm
 	// optimised code (in other words, transtables pointer low word is 0)
-	transtables = Z_MallocAlign(NUMTRANSTABLES*0x10000, PU_STATIC,
-		NULL, 16);
+	transtables = static_cast<UINT8*>(Z_MallocAlign(NUMTRANSTABLES*0x10000, PU_STATIC, NULL, 16));
 
 	W_ReadLump(W_GetNumForName("TRANS10"), transtables);
 	W_ReadLump(W_GetNumForName("TRANS20"), transtables+0x10000);
@@ -177,10 +178,10 @@ static void BlendTab_Subtractive(UINT8 *table, int style, UINT8 blendamt)
 			RGBA_t frontrgba = V_GetColor(fg);
 			RGBA_t result;
 
-			result.rgba = ASTBlendPixel(backrgba, frontrgba, style, 0xFF);
-			result.s.red = max(0, result.s.red - blendamt);
-			result.s.green = max(0, result.s.green - blendamt);
-			result.s.blue = max(0, result.s.blue - blendamt);
+			result.rgba    = ASTBlendPixel(backrgba, frontrgba, style, 0xFF);
+			result.s.red   = std::max(0, result.s.red - blendamt);
+			result.s.green = std::max(0, result.s.green - blendamt);
+			result.s.blue  = std::max(0, result.s.blue - blendamt);
 
 			table[((bg * 0x100) + fg)] = GetColorLUT(&transtab_lut, result.s.red, result.s.green, result.s.blue);
 		}
@@ -233,7 +234,7 @@ static void BlendTab_GenerateMaps(INT32 tab, INT32 style, void (*genfunc)(UINT8 
 	for (; i < num; i++)
 	{
 		const size_t offs = (0x10000 * i);
-		const UINT16 alpha = min(amtmul * i, 0xFF);
+		const UINT16 alpha = std::fmin(amtmul * i, 0xFF);
 		genfunc(blendtables[tab] + offs, style, alpha);
 	}
 }
@@ -243,7 +244,7 @@ void R_GenerateBlendTables(void)
 	INT32 i;
 
 	for (i = 0; i < NUMBLENDMAPS; i++)
-		blendtables[i] = Z_MallocAlign(BlendTab_Count[i] * 0x10000, PU_STATIC, NULL, 16);
+		blendtables[i] = static_cast<UINT8*>(Z_MallocAlign(BlendTab_Count[i] * 0x10000, PU_STATIC, NULL, 16));
 
 	InitColorLUT(&transtab_lut, pLocalPalette, false);
 
@@ -264,8 +265,8 @@ void R_GenerateBlendTables(void)
 	BlendTab_Modulative(blendtables[blendtab_modulate]);
 }
 
-#define ClipBlendLevel(style, trans) max(min((trans), BlendTab_Count[BlendTab_FromStyle[style]]-1), 0)
-#define ClipTransLevel(trans) max(min((trans), NUMTRANSMAPS-2), 0)
+#define ClipBlendLevel(style, trans) std::max(std::min((trans), BlendTab_Count[BlendTab_FromStyle[style]]-1), 0)
+#define ClipTransLevel(trans) std::max(std::min((trans), NUMTRANSMAPS-2), 0)
 
 UINT8 *R_GetTranslucencyTable(INT32 alphalevel)
 {
@@ -352,7 +353,7 @@ static UINT8* RGetTranslationColormap(INT32 skinnum, skincolors_t color, UINT8 f
 	{
 		// Allocate table for skin if necessary
 		if (!tt[skintableindex])
-			tt[skintableindex] = Z_Calloc(MAXTRANSLATIONS * sizeof(UINT8**), PU_STATIC, NULL);
+			tt[skintableindex] = static_cast<UINT8**>(Z_Calloc(MAXTRANSLATIONS * sizeof(UINT8**), PU_STATIC, NULL));
 
 		// Get colormap
 		ret = tt[skintableindex][color];
@@ -362,7 +363,7 @@ static UINT8* RGetTranslationColormap(INT32 skinnum, skincolors_t color, UINT8 f
 	// Generate the colormap if necessary
 	if (!ret)
 	{
-		ret = Z_MallocAlign(NUM_PALETTE_ENTRIES, (flags & GTC_CACHE) ? PU_LEVEL : PU_STATIC, NULL, 8);
+		ret = static_cast<UINT8*>(Z_MallocAlign(NUM_PALETTE_ENTRIES, (flags & GTC_CACHE) ? PU_LEVEL : PU_STATIC, NULL, 8));
 		K_GenerateKartColormap(ret, skinnum, color, local); //R_GenerateTranslationColormap(ret, skinnum, color);		// SRB2kart
 
 		// Cache the colormap if desired
@@ -457,17 +458,15 @@ void R_FlushTranslationColormapCache(void)
 
 static void R_AllocViewMemory(void)
 {
-	negonearray = Z_Realloc(negonearray, sizeof(*negonearray) * viewwidth, PU_STATIC, NULL);
-	screenheightarray = Z_Realloc(screenheightarray, sizeof(*screenheightarray) * viewwidth, PU_STATIC, NULL);
+	negonearray       = static_cast<INT16*>(Z_Realloc(negonearray, sizeof(*negonearray) * viewwidth, PU_STATIC, NULL));
+	screenheightarray = static_cast<INT16*>(Z_Realloc(screenheightarray, sizeof(*screenheightarray) * viewwidth, PU_STATIC, NULL));
 
-	floorclip = Z_Realloc(floorclip, sizeof(*floorclip) * viewwidth, PU_STATIC, NULL);
-	ceilingclip = Z_Realloc(ceilingclip, sizeof(*ceilingclip) * viewwidth, PU_STATIC, NULL);
+	floorclip         = static_cast<INT16*>(Z_Realloc(floorclip, sizeof(*floorclip) * viewwidth, PU_STATIC, NULL));
+	ceilingclip       = static_cast<INT16*>(Z_Realloc(ceilingclip, sizeof(*ceilingclip) * viewwidth, PU_STATIC, NULL));
 
-	frontscale = Z_Realloc(frontscale, sizeof(*frontscale) * viewwidth, PU_STATIC, NULL);
+	frontscale        = static_cast<fixed_t*>(Z_Realloc(frontscale, sizeof(*frontscale) * viewwidth, PU_STATIC, NULL));
 
-	xtoviewangle = Z_Realloc(xtoviewangle, sizeof(*xtoviewangle) * (viewwidth + 1), PU_STATIC, NULL);
-
-	//tiltlighting = Z_Realloc(tiltlighting, sizeof(*tiltlighting) * viewwidth, PU_STATIC, NULL);
+	xtoviewangle      = static_cast<angle_t*>(Z_Realloc(xtoviewangle, sizeof(*xtoviewangle) * (viewwidth + 1), PU_STATIC, NULL));
 
 	R_AllocSegMemory();
 	R_AllocClipSegMemory();
@@ -662,5 +661,5 @@ void R_DrawViewBorder(void)
 //                   INCLUDE DRAWING CODE HERE
 // ==========================================================================
 
-#include "r_draw_column.c"
-#include "r_draw_span.c"
+#include "r_draw_column.cpp"
+#include "r_draw_span.cpp"
