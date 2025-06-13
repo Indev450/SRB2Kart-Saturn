@@ -91,6 +91,7 @@ static void SCR_SetDrawFuncs(void)
 	spanfuncs[SPANDRAWFUNC_SPLAT] = R_DrawSplat;
 	spanfuncs[SPANDRAWFUNC_TRANSSPLAT] = R_DrawTranslucentSplat;
 	spanfuncs[SPANDRAWFUNC_TILTEDSPLAT] = R_DrawSplat_Tilted;
+	spanfuncs[SPANDRAWFUNC_TILTEDTRANSSPLAT] = R_DrawTranslucentSpan_Tilted;
 	spanfuncs[SPANDRAWFUNC_WATER] = R_DrawTranslucentWaterSpan;
 	spanfuncs[SPANDRAWFUNC_TILTEDWATER] = R_DrawTranslucentWaterSpan_Tilted;
 	spanfuncs[SPANDRAWFUNC_FOG] = R_DrawFogSpan;
