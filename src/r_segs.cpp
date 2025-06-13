@@ -2092,7 +2092,7 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 		rw_bottomtexturemid += sidedef->rowoffset;
 
 		// allocate space for masked texture tables
-		if (frontsector && backsector && frontsector->tag != backsector->tag && (backsector->ffloors || frontsector->ffloors))
+		if (frontsector && backsector && (frontsector->tag != backsector->tag) && (backsector->ffloors || frontsector->ffloors))
 		{
 			ffloor_t *rover;
 			ffloor_t *r2;
@@ -2111,6 +2111,14 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 			highcut      = std::min(worldtop, worldhigh) + viewz;
 			lowcutslope  = std::max(worldbottomslope, worldlowslope) + viewz;
 			highcutslope = std::min(worldtopslope, worldhighslope) + viewz;
+
+			auto check_fof_offscreen = [&](INT32 bottom, INT32 bottomslope, INT32 top, INT32 topslope)
+			{
+				return ((P_GetFFloorTopZAt    (rover, segleft .x, segleft .y) <= bottom      + viewz
+					&&   P_GetFFloorTopZAt    (rover, segright.x, segright.y) <= bottomslope + viewz)
+					|| ( P_GetFFloorBottomZAt (rover, segleft .x, segleft .y) >= top         + viewz
+					&&   P_GetFFloorBottomZAt (rover, segright.x, segright.y) >= topslope    + viewz));
+			};
 
 			if (frontsector->ffloors && backsector->ffloors)
 			{
@@ -2233,14 +2241,12 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 				{
 					if (!(rover->flags & FF_RENDERSIDES) || !(rover->flags & FF_EXISTS) || rover->flags & FF_INVERTSIDES)
 						continue;
+
 					if (rover->norender == leveltime)
 						continue;
 
 					// Oy vey.
-					if (      ((P_GetFFloorTopZAt   (rover, segleft .x, segleft .y)) <= worldbottom      + viewz
-							&& (P_GetFFloorTopZAt   (rover, segright.x, segright.y)) <= worldbottomslope + viewz)
-							||((P_GetFFloorBottomZAt(rover, segleft .x, segleft .y)) >= worldtop         + viewz
-							&& (P_GetFFloorBottomZAt(rover, segright.x, segright.y)) >= worldtopslope    + viewz))
+					if (check_fof_offscreen(worldbottom, worldbottomslope, worldtop, worldtopslope))
 						continue;
 
 					ds_p->thicksides[i] = rover;
@@ -2253,20 +2259,15 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 				{
 					if (!(rover->flags & FF_RENDERSIDES) || !(rover->flags & FF_EXISTS) || !(rover->flags & FF_ALLSIDES))
 						continue;
+
 					if (rover->norender == leveltime)
 						continue;
 
 					// Oy vey.
-					if (      (P_GetFFloorTopZAt   (rover, segleft .x, segleft .y) <= worldbottom      + viewz
-							&& P_GetFFloorTopZAt   (rover, segright.x, segright.y) <= worldbottomslope + viewz)
-							||(P_GetFFloorBottomZAt(rover, segleft .x, segleft .y) >= worldtop         + viewz
-							&& P_GetFFloorBottomZAt(rover, segright.x, segright.y) >= worldtopslope    + viewz))
+					if (check_fof_offscreen(worldbottom, worldbottomslope, worldtop, worldtopslope))
 						continue;
 
-					if (      (P_GetFFloorTopZAt   (rover, segleft .x, segleft .y) <= worldlow       + viewz
-							&& P_GetFFloorTopZAt   (rover, segright.x, segright.y) <= worldlowslope  + viewz)
-							||(P_GetFFloorBottomZAt(rover, segleft .x, segleft .y) >= worldhigh      + viewz
-							&& P_GetFFloorBottomZAt(rover, segright.x, segright.y) >= worldhighslope + viewz))
+					if (check_fof_offscreen(worldlow, worldlowslope, worldhigh, worldhighslope))
 						continue;
 
 					ds_p->thicksides[i] = rover;
@@ -2608,12 +2609,25 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 			fixed_t planevistest;
 			i = 0;
 
+			auto setup_back_fof = [&]
+			{
+				//ffloor[i].slope = *rover->b_slope;
+				ffloor[i].b_pos = roverleft;
+				ffloor[i].b_pos_slope = roverright;
+				ffloor[i].b_pos >>= 4;
+				ffloor[i].b_pos_slope >>= 4;
+				ffloor[i].b_frac = (centeryfrac >> 4) - FixedMul(ffloor[i].b_pos, rw_scale);
+				ffloor[i].b_step = (centeryfrac >> 4) - FixedMul(ffloor[i].b_pos_slope, ds_p->scale2);
+				ffloor[i].b_step = (ffloor[i].b_step-ffloor[i].b_frac)/(range);
+			};
+
 			if (backsector->ffloors)
 			{
 				for (rover = backsector->ffloors; rover && i < MAXFFLOORS; rover = rover->next)
 				{
 					if (!(rover->flags & FF_EXISTS) || !(rover->flags & FF_RENDERPLANES))
 						continue;
+
 					if (rover->norender == leveltime)
 						continue;
 
@@ -2630,14 +2644,7 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 						((viewz < planevistest && !(rover->flags & FF_INVERTPLANES)) ||
 						 (viewz > planevistest && (rover->flags & FF_BOTHPLANES))))
 					{
-						//ffloor[i].slope = *rover->b_slope;
-						ffloor[i].b_pos = roverleft;
-						ffloor[i].b_pos_slope = roverright;
-						ffloor[i].b_pos >>= 4;
-						ffloor[i].b_pos_slope >>= 4;
-						ffloor[i].b_frac = (centeryfrac >> 4) - FixedMul(ffloor[i].b_pos, rw_scale);
-						ffloor[i].b_step = (centeryfrac >> 4) - FixedMul(ffloor[i].b_pos_slope, ds_p->scale2);
-						ffloor[i].b_step = (ffloor[i].b_step-ffloor[i].b_frac)/(range);
+						setup_back_fof();
 						i++;
 					}
 
@@ -2653,14 +2660,7 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 						((viewz > planevistest && !(rover->flags & FF_INVERTPLANES)) ||
 						 (viewz < planevistest && (rover->flags & FF_BOTHPLANES))))
 					{
-						//ffloor[i].slope = *rover->t_slope;
-						ffloor[i].b_pos = roverleft;
-						ffloor[i].b_pos_slope = roverright;
-						ffloor[i].b_pos >>= 4;
-						ffloor[i].b_pos_slope >>= 4;
-						ffloor[i].b_frac = (centeryfrac >> 4) - FixedMul(ffloor[i].b_pos, rw_scale);
-						ffloor[i].b_step = (centeryfrac >> 4) - FixedMul(ffloor[i].b_pos_slope, ds_p->scale2);
-						ffloor[i].b_step = (ffloor[i].b_step-ffloor[i].b_frac)/(range);
+						setup_back_fof();
 						i++;
 					}
 				}
@@ -2687,14 +2687,7 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 						((viewz < planevistest && !(rover->flags & FF_INVERTPLANES)) ||
 						 (viewz > planevistest && (rover->flags & FF_BOTHPLANES))))
 					{
-						//ffloor[i].slope = *rover->b_slope;
-						ffloor[i].b_pos = roverleft;
-						ffloor[i].b_pos_slope = roverright;
-						ffloor[i].b_pos >>= 4;
-						ffloor[i].b_pos_slope >>= 4;
-						ffloor[i].b_frac = (centeryfrac >> 4) - FixedMul(ffloor[i].b_pos, rw_scale);
-						ffloor[i].b_step = (centeryfrac >> 4) - FixedMul(ffloor[i].b_pos_slope, ds_p->scale2);
-						ffloor[i].b_step = (ffloor[i].b_step-ffloor[i].b_frac)/(range);
+						setup_back_fof();
 						i++;
 					}
 
@@ -2710,14 +2703,7 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 						((viewz > planevistest && !(rover->flags & FF_INVERTPLANES)) ||
 						 (viewz < planevistest && (rover->flags & FF_BOTHPLANES))))
 					{
-						//ffloor[i].slope = *rover->t_slope;
-						ffloor[i].b_pos = roverleft;
-						ffloor[i].b_pos_slope = roverright;
-						ffloor[i].b_pos >>= 4;
-						ffloor[i].b_pos_slope >>= 4;
-						ffloor[i].b_frac = (centeryfrac >> 4) - FixedMul(ffloor[i].b_pos, rw_scale);
-						ffloor[i].b_step = (centeryfrac >> 4) - FixedMul(ffloor[i].b_pos_slope, ds_p->scale2);
-						ffloor[i].b_step = (ffloor[i].b_step-ffloor[i].b_frac)/(range);
+						setup_back_fof();
 						i++;
 					}
 				}
@@ -2725,6 +2711,21 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 
 			if (curline->polyseg && frontsector && (curline->polyseg->flags & POF_RENDERPLANES))
 			{
+				auto setup_back_polyobj = [&](fixed_t height)
+				{
+					if (ffloor[i].plane->minx > ds_p->x1)
+						ffloor[i].plane->minx = ds_p->x1;
+
+					if (ffloor[i].plane->maxx < ds_p->x2)
+						ffloor[i].plane->maxx = ds_p->x2;
+
+					ffloor[i].slope = NULL;
+					ffloor[i].b_pos = height;
+					ffloor[i].b_pos = (ffloor[i].b_pos - viewz) >> 4;
+					ffloor[i].b_step = FixedMul(-rw_scalestep, ffloor[i].b_pos);
+					ffloor[i].b_frac = (centeryfrac >> 4) - FixedMul(ffloor[i].b_pos, rw_scale);
+				};
+
 				while (i < numffloors && ffloor[i].polyobj != curline->polyseg)
 					i++;
 
@@ -2732,17 +2733,7 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 					backsector->floorheight >= frontsector->floorheight &&
 					(viewz < backsector->floorheight))
 				{
-					if (ffloor[i].plane->minx > ds_p->x1)
-						ffloor[i].plane->minx = ds_p->x1;
-
-					if (ffloor[i].plane->maxx < ds_p->x2)
-						ffloor[i].plane->maxx = ds_p->x2;
-
-					ffloor[i].slope = NULL;
-					ffloor[i].b_pos = backsector->floorheight;
-					ffloor[i].b_pos = (ffloor[i].b_pos - viewz) >> 4;
-					ffloor[i].b_step = FixedMul(-rw_scalestep, ffloor[i].b_pos);
-					ffloor[i].b_frac = (centeryfrac >> 4) - FixedMul(ffloor[i].b_pos, rw_scale);
+					setup_back_polyobj(backsector->floorheight);
 					i++;
 				}
 
@@ -2750,17 +2741,7 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 					backsector->ceilingheight <= frontsector->ceilingheight &&
 					(viewz > backsector->ceilingheight))
 				{
-					if (ffloor[i].plane->minx > ds_p->x1)
-						ffloor[i].plane->minx = ds_p->x1;
-
-					if (ffloor[i].plane->maxx < ds_p->x2)
-						ffloor[i].plane->maxx = ds_p->x2;
-
-					ffloor[i].slope = NULL;
-					ffloor[i].b_pos = backsector->ceilingheight;
-					ffloor[i].b_pos = (ffloor[i].b_pos - viewz) >> 4;
-					ffloor[i].b_step = FixedMul(-rw_scalestep, ffloor[i].b_pos);
-					ffloor[i].b_frac = (centeryfrac >> 4) - FixedMul(ffloor[i].b_pos, rw_scale);
+					setup_back_polyobj(backsector->ceilingheight);
 					i++;
 				}
 			}
