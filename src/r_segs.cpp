@@ -2433,7 +2433,6 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 		if (!segtextured && !curline->polyseg)
 		{
 			const bool tophigh = (worldhigh <= worldtop && worldhighslope <= worldtopslope);
-			const bool topnothigh = (backsector && (worldhigh != worldtop || worldhighslope != worldtopslope));
 
 			// if we cant see the goddamn skyplane, well there wont be any skybox
 			// we could kill skyVisible instead, but i want to keep the performance improvemnts it yields
@@ -2441,14 +2440,12 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 			if ((tophigh
 				&& (frontsector->floorpic != skyflatnum && frontsector->ceilingpic != skyflatnum)) // try to guess if its a "window"
 				&& ((!backsector) // single sided
-				|| (topnothigh && (backsector->floorheight > frontsector->ceilingheight || backsector->ceilingheight < frontsector->floorheight)))) // check if there is a "thok" sector behind it
+				|| ((backsector && (worldhigh != worldtop || worldhighslope != worldtopslope))
+				&& (backsector->floorheight >= frontsector->ceilingheight || backsector->ceilingheight <= frontsector->floorheight)))) // check if there is a "thok" sector behind it
 				skyVisible = true;
 
-			// this is an attempt to fix issues with textureless midtextures drawing nothing where they should just draw sky instead
-			if ((tophigh
-				&& newview->sky) // only do this for skyrender
-				&& ((!backsector && frontsector->ceilingpic == skyflatnum) // single sided line with sky ceiling
-				|| (topnothigh && (backsector->ceilingpic == skyflatnum && frontsector->ceilingpic != skyflatnum)))) // double sided with back ceiling sky but not front ceiling sky
+			// this is an attempt to fix issues with textureless single sided lines drawing nothing where they should just draw sky instead
+			if (tophigh && !backsector && frontsector->ceilingpic == skyflatnum)
 			{
 				topstep = -FixedMul (rw_scalestep, worldbottom);
 				topfrac = (centeryfrac>>4) - FixedMul (worldbottom, rw_scale);
