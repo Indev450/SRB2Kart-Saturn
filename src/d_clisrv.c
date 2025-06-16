@@ -98,7 +98,7 @@ UINT8 playernode[MAXPLAYERS];
 tic_t jointimeout = (3*TICRATE);
 static boolean sendingsavegame[MAXNETNODES]; // Are we sending the savegame?
 #ifdef SATURNPAK
-static boolean resendingsavegame[MAXNETNODES]; // Are we resending the savegame?
+static tic_t resendingsavegame[MAXNETNODES]; // Are we resending the savegame?
 static tic_t savegameresendcooldown[MAXNETNODES]; // How long before we can resend again?
 #endif
 static tic_t freezetimeout[MAXNETNODES]; // Until when can this node freeze the server before getting a timeout?
@@ -4332,7 +4332,7 @@ static void ResetNode(INT32 node)
 	// SATURN
 #ifdef SATURNPAK
 	is_client_saturn[node] = false;
-	resendingsavegame[node] = false;
+	resendingsavegame[node] = 0;
 	savegameresendcooldown[node] = 0;
 	gamestate_resend_counter[node] = 0;
 #endif
@@ -5043,7 +5043,7 @@ static void PT_CanReceiveGamestate(SINT8 node)
 	CONS_Printf(M_GetText("Resending game state to %s...\n"), player_names[nodetoplayer[node]]);
 
 	SV_SendSaveGame(node, true); // Resend a complete game state
-	resendingsavegame[node] = true;
+	resendingsavegame[node] = 1;
 }
 #endif
 
@@ -5494,7 +5494,7 @@ static void HandlePacketFromPlayer(SINT8 node)
 				&& consistancy[realstart%TICQUEUE] != SHORT(netbuffer->u.clientpak.consistancy)
 				&& (!UseSaturnSynch(node) || (!resendingsavegame[node] && savegameresendcooldown[node] <= I_GetTime() && !SV_ResendingSavegameToAnyone())))
 			{
-				resendingsavegame[node] = false; // reset this before just in case
+				resendingsavegame[node] = 0; // reset this before just in case
 
 				// Check if a client is saturn before sending ANYTHING!
 				// this way we only send stuff to clients we know can use the gamestate resend
@@ -5504,7 +5504,7 @@ static void HandlePacketFromPlayer(SINT8 node)
 					// Tell the client we are about to resend them the gamestate
 					netbuffer->packettype = PT_WILLRESENDGAMESTATE;
 					HSendPacket(node, true, 0, 0);
-					resendingsavegame[node] = true;
+					resendingsavegame[node] = 1;
 				}
 				else if (UseVanillaSynch(node))
 				{
@@ -5834,7 +5834,7 @@ static void HandlePacketFromPlayer(SINT8 node)
 			break;
 		case PT_RECEIVEDGAMESTATE:
 			sendingsavegame[node] = false;
-			resendingsavegame[node] = false;
+			resendingsavegame[node] = 0;
 			savegameresendcooldown[node] = I_GetTime() + cv_resynchcooldown.value * TICRATE; // I_GetTime() + 5 * TICRATE;
 			break;
 		case PT_WILLRESENDGAMESTATE:
@@ -6465,9 +6465,34 @@ static void SV_Maketic(void)
 	maketic++;
 }
 
+#ifdef SATURNPAK
+static void SV_UpdateResendGamestateTimeout(void)
+{
+	for (INT32 i = 0; i < MAXNETNODES; ++i)
+	{
+		if (!resendingsavegame[i])
+			continue;
+
+		resendingsavegame[i]++;
+
+		// Resending savegame took too long
+		if (resendingsavegame[i] > (tic_t)TICRATE*cv_pingtimeout.value)
+		{
+			resendingsavegame[i] = 0;
+			SendKick(i, KICK_MSG_CON_FAIL);
+		}
+	}
+}
+#endif
+
 boolean TryRunTics(tic_t realtics)
 {
 	boolean ticking;
+
+#ifdef SATURNPAK
+	if (server)
+		SV_UpdateResendGamestateTimeout();
+#endif
 
 	// the machine has lagged but it is not so bad
 	if (realtics > TICRATE/7) // FIXME: consistency failure!!
