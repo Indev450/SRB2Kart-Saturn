@@ -119,7 +119,7 @@ void R_InitTranslucencyTables(void)
 	// Load here the transparency lookup tables 'TRANSx0'
 	// NOTE: the TRANSx0 resources MUST BE aligned on 64k for the asm
 	// optimised code (in other words, transtables pointer low word is 0)
-	transtables = static_cast<UINT8*>(Z_MallocAlign(NUMTRANSTABLES*0x10000, PU_STATIC, NULL, 16));
+	transtables = static_cast<UINT8*>(Z_Malloc(NUMTRANSTABLES*0x10000, PU_STATIC, NULL));
 
 	W_ReadLump(W_GetNumForName("TRANS10"), transtables);
 	W_ReadLump(W_GetNumForName("TRANS20"), transtables+0x10000);
@@ -246,7 +246,7 @@ static void R_GenerateBlendTables(void)
 	INT32 i;
 
 	for (i = 0; i < NUMBLENDMAPS; i++)
-		blendtables[i] = static_cast<UINT8*>(Z_MallocAlign(BlendTab_Count[i] * 0x10000, PU_STATIC, NULL, 16));
+		blendtables[i] = static_cast<UINT8*>(Z_Malloc(BlendTab_Count[i] * 0x10000, PU_STATIC, NULL));
 
 	InitColorLUT(&transtab_lut, pLocalPalette, false);
 
@@ -365,7 +365,7 @@ static UINT8* RGetTranslationColormap(INT32 skinnum, skincolors_t color, UINT8 f
 	// Generate the colormap if necessary
 	if (!ret)
 	{
-		ret = static_cast<UINT8*>(Z_MallocAlign(NUM_PALETTE_ENTRIES, (flags & GTC_CACHE) ? PU_LEVEL : PU_STATIC, NULL, 8));
+		ret = static_cast<UINT8*>(Z_Malloc(NUM_PALETTE_ENTRIES, (flags & GTC_CACHE) ? PU_LEVEL : PU_STATIC, NULL));
 		K_GenerateKartColormap(ret, skinnum, color, local); //R_GenerateTranslationColormap(ret, skinnum, color);		// SRB2kart
 
 		// Cache the colormap if desired

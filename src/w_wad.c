@@ -634,7 +634,7 @@ static lumpinfo_t* ResGetLumpsZip (FILE* handle, UINT16* nlmp)
 
 	fseek(handle, LONG(zend.cdiroffset), SEEK_SET);
 
-	char *cdir = (Z_MallocAlign(LONG(zend.cdirsize), PU_STATIC, &cdir, 7));
+	char *cdir = Z_Malloc(LONG(zend.cdirsize), PU_STATIC, &cdir);
 
 	if (fread(cdir, 1, LONG(zend.cdirsize), handle) < (UINT32)(LONG(zend.cdirsize)))
 	{
