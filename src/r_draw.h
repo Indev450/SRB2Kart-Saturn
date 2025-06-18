@@ -179,12 +179,16 @@ extern lumpnum_t viewborderlump[8];
 #define GTC_MENUCACHE GTC_CACHE
 //@TODO Add a separate caching mechanism for menu colormaps distinct from in-level GTC_CACHE. For now this is still preferable to memory leaks...
 
-#define TC_DEFAULT    -1
-#define TC_BOSS       -2
-#define TC_METALSONIC -3 // For Metal Sonic battle
-#define TC_ALLWHITE   -4 // For Cy-Brak-demon
-#define TC_RAINBOW    -5 // For invincibility power
-#define TC_BLINK      -6 // For item blinking
+enum
+{
+	TC_BOSS       = INT8_MIN,
+	TC_METALSONIC, // For Metal Sonic battle
+	TC_ALLWHITE,   // For Cy-Brak-demon
+	TC_RAINBOW,    // For single colour
+	TC_BLINK,      // For item blinking, according to kart
+
+	TC_DEFAULT
+};
 
 // Initialize color translation tables, for player rendering etc.
 UINT8* R_GetTranslationColormap(INT32 skinnum, skincolors_t color, UINT8 flags);
