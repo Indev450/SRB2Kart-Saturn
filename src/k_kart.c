@@ -7387,10 +7387,9 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 
 	K_KartDrift(player, onground);
 
-	if ((!player->kartstuff[k_aizdriftstrat]) || (!P_IsObjectOnGround(player->mo)) || (player->kartstuff[k_drift]))
+	if (player->sliproll && ((!player->kartstuff[k_aizdriftstrat]) || (!P_IsObjectOnGround(player->mo)) || (player->kartstuff[k_drift])))
 	{
-		if (player->sliproll && (player->sliproll > 0))
-			player->sliproll -= (4*ANG1);
+		player->sliproll -= (4*ANG1);
 	}
 
 	// funneh Saturn sprite stuff
