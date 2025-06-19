@@ -2133,16 +2133,13 @@ void HU_TickSongCredits(void)
 	}
 }
 
-void HU_DrawSongCredits(void)
+static void HU_DrawSongCreditsVanilla(void)
 {
 	char *str;
 	INT32 len;
 	fixed_t destx;
 	INT32 y = (splitscreen ? (BASEVIDHEIGHT/2)-4 : 32);
 	INT32 bgt;
-
-	if (!cursongcredit.def) // No def
-		return;
 
 	str = va("\x1F"" %s", cursongcredit.def->source);
 	len = V_ThinStringWidth(str, V_ALLOWLOWERCASE|V_6WIDTHSPACE);
@@ -2171,6 +2168,70 @@ void HU_DrawSongCredits(void)
 		V_DrawScaledPatch(cursongcredit.x / FRACUNIT, y-2, V_SNAPTOLEFT|(bgt<<V_ALPHASHIFT), songcreditbg);
 	if (cursongcredit.trans < NUMTRANSMAPS)
 		V_DrawRightAlignedThinString(cursongcredit.x / FRACUNIT, y, V_ALLOWLOWERCASE|V_6WIDTHSPACE|V_SNAPTOLEFT|(cursongcredit.trans<<V_ALPHASHIFT), str);
+}
+
+#define BOXCREDITSLIDEIN (5*TICRATE-TICRATE/2)
+#define BOXCREDITSLIDEOUT (TICRATE/2)
+#define BOXCREDITHEIGHT 8
+static void HU_DrawSongCreditsBox(void)
+{
+	char *str = cursongcredit.def->source;
+	INT32 strwidth = V_SmallStringWidth(str, V_ALLOWLOWERCASE) + 4;
+
+	// dup dup dup dup
+	INT32 dup = min(vid.dupx, vid.dupy);
+
+	// Center it
+	INT32 x = (BASEVIDWIDTH/2 - strwidth/2)*dup + ((vid.width - (BASEVIDWIDTH * vid.dupx)) / 2);
+	INT32 y = 0;
+
+	INT32 flags = V_SNAPTOTOP|V_NOSCALESTART;
+	INT32 t = cursongcredit.anim;
+	INT32 bgt;
+
+	fixed_t interpoffset = FixedMul(BOXCREDITHEIGHT*dup*FRACUNIT/(TICRATE/2), R_GetHudUncap());
+
+	if (t > BOXCREDITSLIDEIN)
+	{
+		// Sliding in
+		t = TICRATE/2 - (t - BOXCREDITSLIDEIN);
+		y = -BOXCREDITHEIGHT*dup + (FixedMul(BOXCREDITHEIGHT*FRACUNIT, FixedDiv(t*FRACUNIT, TICRATE*FRACUNIT/2))*dup + interpoffset)/FRACUNIT;
+	}
+	else if (t < TICRATE/2)
+	{
+		// Sliding out
+		y = -BOXCREDITHEIGHT*dup + (FixedMul(BOXCREDITHEIGHT*FRACUNIT, FixedDiv(t*FRACUNIT, TICRATE*FRACUNIT/2))*dup - interpoffset)/FRACUNIT;
+	}
+
+	bgt = (NUMTRANSMAPS/2) + (cursongcredit.trans/2);
+
+	if (bgt < NUMTRANSMAPS)
+	{
+		V_DrawFill(x, y, strwidth*dup, BOXCREDITHEIGHT*dup, 28|flags|(bgt<<V_ALPHASHIFT));
+		V_DrawFill(x+dup, y+dup, (strwidth-2)*dup, (BOXCREDITHEIGHT-2)*dup, 30|flags|(bgt<<V_ALPHASHIFT));
+	}
+	if (cursongcredit.trans < NUMTRANSMAPS)
+	{
+		V_DrawSmallString(x+2*dup, y+2*dup, V_ALLOWLOWERCASE|flags|(cursongcredit.trans<<V_ALPHASHIFT), str);
+	}
+}
+
+void HU_DrawSongCredits(void)
+{
+	if (!cursongcredit.def) // No def
+		return;
+
+	switch (cv_songcredits.value)
+	{
+		case 1:
+			HU_DrawSongCreditsVanilla();
+			break;
+		case 2:
+			HU_DrawSongCreditsBox();
+			break;
+		default:
+			break;
+	}
 }
 
 

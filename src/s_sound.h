@@ -206,6 +206,7 @@ void S_InitMTDefs(void);
 musicdef_t *S_FindMusicCredit(const char *musname);
 void S_ShowSpecifiedMusicCredit(const char *musname);
 void S_ShowMusicCredit(void);
+void S_ResetMusicCredit(void);
 
 boolean S_PrepareSoundTest(void);
 

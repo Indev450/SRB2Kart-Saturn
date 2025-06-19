@@ -202,6 +202,8 @@ extern consvar_t cv_glsolvetjoin;
 
 extern consvar_t cv_glbatching;
 
+extern consvar_t cv_glwireframe;
+
 extern consvar_t cv_glrenderdistance;
 
 extern consvar_t cv_glhorizonlines;
@@ -223,7 +225,7 @@ FUNCINLINE static ATTRINLINE boolean HWR_ShouldUsePaletteRendering(void)
 
 FUNCINLINE static ATTRINLINE boolean HWR_PalRenderFlashpal(void)
 {
-	return (HWR_ShouldUsePaletteRendering() && cv_glflashpal.value);
+	return (cv_glflashpal.value && HWR_ShouldUsePaletteRendering());
 }
 
 #endif

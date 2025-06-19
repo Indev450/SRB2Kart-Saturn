@@ -10527,10 +10527,11 @@ static void K_drawKartWanted(void)
 	{
 		INT32 x = basex+(splitscreen > 1 ? 13 : 8), y = basey+(splitscreen > 1 ? 16 : 21);
 		fixed_t scale = FRACUNIT/2;
-		player_t *p = &players[battlewanted[i]];
 
 		if (battlewanted[i] == -1)
 			break;
+
+		player_t *p = &players[battlewanted[i]];
 
 		if (numwanted == 1)
 			scale = FRACUNIT;
@@ -10542,7 +10543,7 @@ static void K_drawKartWanted(void)
 				y += 16;
 		}
 
-		if (players[battlewanted[i]].skincolor)
+		if (p->skincolor)
 		{
 			colormap = R_GetTranslationColormap(TC_RAINBOW, p->skincolor, GTC_CACHE);
 			V_DrawFixedPatch(x<<FRACBITS, y<<FRACBITS, FRACUNIT, V_HUDTRANS|(splitscreen < 3 ? V_SNAPTORIGHT : 0)|V_SNAPTOBOTTOM, (scale == FRACUNIT ? R_GetSkinFaceWant(p) : R_GetSkinFaceRank(p)), colormap);

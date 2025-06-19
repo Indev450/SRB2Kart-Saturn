@@ -110,8 +110,11 @@ typedef LPVOID (WINAPI *p_MapViewOfFile) (HANDLE, DWORD, DWORD, DWORD, SIZE_T);
 #endif
 #endif
 
-#if defined (__unix__) || (defined (UNIXCOMMON) && !defined (__APPLE__))
+#if defined(UNIXCOMMON)
 #include <poll.h>
+#endif
+
+#if defined (__unix__) || (defined (UNIXCOMMON) && !defined (__APPLE__))
 #include <errno.h>
 #include <sys/wait.h>
 #define NEWSIGNALHANDLER
@@ -743,7 +746,7 @@ static void Impl_HandleKeyboardConsoleEvent(KEY_EVENT_RECORD evt, HANDLE co)
 				break;
 			case VK_RETURN:
 				entering_con_command = false;
-				// Fall through.
+				/* FALLTHRU */
 			default:
 				//event.data1 = MapVirtualKey(evt.wVirtualKeyCode,2); // convert in to char
 				event.data1 = evt.uChar.AsciiChar;
