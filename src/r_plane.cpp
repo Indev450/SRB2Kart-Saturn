@@ -737,9 +737,12 @@ void R_DrawPlanes(void)
 		}
 	}
 #ifdef HAVE_THREADS
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Waggregate-return"
 	tp_sema = srb2::g_main_threadpool->end_sema();
 	srb2::g_main_threadpool->notify_sema(tp_sema);
 	srb2::g_main_threadpool->wait_sema(tp_sema);
+#pragma GCC diagnostic pop
 #endif
 }
 
@@ -765,9 +768,12 @@ void R_DrawSkyPlanes(void)
 		}
 	}
 #ifdef HAVE_THREADS
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Waggregate-return"
 	tp_sema = srb2::g_main_threadpool->end_sema();
 	srb2::g_main_threadpool->notify_sema(tp_sema);
 	srb2::g_main_threadpool->wait_sema(tp_sema);
+#pragma GCC diagnostic pop
 #endif
 }
 

@@ -139,7 +139,7 @@ static void R_DrawSpanTemplate(drawspandata_t* ds)
 
 		for (i = 0; i < 8; i++)
 		{
-			bit = (((UINT32)yposition >> ds->nflatyshift) & ds->nflatmask) | ((UINT32)xposition >> ds->nflatxshift);
+			bit = ((yposition >> ds->nflatyshift) & ds->nflatmask) | (xposition >> ds->nflatxshift);
 
 			dest[i] = R_DrawSpanPixel<Type>(ds, &dsrc[i], colormap, bit, source);
 
@@ -155,7 +155,7 @@ static void R_DrawSpanTemplate(drawspandata_t* ds)
 
 	while (count-- && dest <= deststop)
 	{
-		bit = (((UINT32)yposition >> ds->nflatyshift) & ds->nflatmask) | ((UINT32)xposition >> ds->nflatxshift);
+		bit = ((yposition >> ds->nflatyshift) & ds->nflatmask) | (xposition >> ds->nflatxshift);
 
 		*dest = R_DrawSpanPixel<Type>(ds, dsrc, colormap, bit, source);
 
