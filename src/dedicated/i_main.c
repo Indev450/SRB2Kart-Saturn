@@ -22,38 +22,26 @@
 #include "../d_main.h"
 #include "../m_misc.h" /* path shit */
 #include "../i_system.h"
+#include "../d_clisrv.h"
 
 #if defined (__GNUC__) || defined (__unix__)
 #include <unistd.h>
 #endif
 
-#if defined (__unix__) || defined(__APPLE__) || defined (UNIXCOMMON)
+#ifdef __unix__
 #include <errno.h>
 #endif
 
 #include "time.h" // For log timestamps
 
-#ifdef HAVE_SDL
-
 #ifdef HAVE_TTF
-#include "SDL.h"
 #include "i_ttf.h"
-#endif
-
-#if defined (_WIN32) && !defined (main)
-//#define SDLMAIN
 #endif
 
 #ifdef HAVE_LIBBACKTRACE
 #include <backtrace.h>
 
 struct backtrace_state *bt_state = NULL;
-#endif
-
-#ifdef SDLMAIN
-#include "SDL_main.h"
-#elif defined(FORCESDLMAIN)
-extern int SDL_main(int argc, char *argv[]);
 #endif
 
 #ifdef LOGMESSAGES
@@ -94,6 +82,17 @@ ChDirToExe (void)
 		SetCurrentDirectoryA(path);
 	}
 }
+#endif
+
+/**	\brief	The main function
+
+	\param	argc	number of arg
+	\param	*argv	string table
+
+	\return	int
+*/
+#if defined (__GNUC__) && (__GNUC__ >= 4)
+#pragma GCC diagnostic ignored "-Wmissing-noreturn"
 #endif
 
 #ifdef LOGMESSAGES
@@ -183,26 +182,12 @@ static void InitLogging(void)
 }
 #endif
 
-
-/**	\brief	The main function
-
-	\param	argc	number of arg
-	\param	*argv	string table
-
-	\return	int
-*/
-#if defined (__GNUC__) && (__GNUC__ >= 4)
-#pragma GCC diagnostic ignored "-Wmissing-noreturn"
-#endif
-
-#ifdef FORCESDLMAIN
-int SDL_main(int argc, char **argv)
-#else
 int main(int argc, char **argv)
-#endif
 {
 	myargc = argc;
 	myargv = argv; /// \todo pull out path to exe from this string
+
+	dedicated = true;
 
 #ifdef HAVE_LIBBACKTRACE
 	bt_state = backtrace_create_state(
@@ -215,14 +200,6 @@ int main(int argc, char **argv)
 		NULL,
 		NULL
 	);
-#endif
-
-#ifdef HAVE_TTF
-#ifdef _WIN32
-	I_StartupTTF(FONTPOINTSIZE, SDL_INIT_VIDEO|SDL_INIT_AUDIO, SDL_SWSURFACE);
-#else
-	I_StartupTTF(FONTPOINTSIZE, SDL_INIT_VIDEO, SDL_SWSURFACE);
-#endif
 #endif
 
 #ifdef _WIN32
@@ -259,4 +236,3 @@ int main(int argc, char **argv)
 	// return to OS
 	return 0;
 }
-#endif

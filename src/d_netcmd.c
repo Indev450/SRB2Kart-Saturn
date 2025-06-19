@@ -302,14 +302,12 @@ consvar_t cv_verticallook[MAXSPLITSCREENPLAYERS] = {
 	{"verticallook4", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL}
 };
 
-#if defined(HAVE_SDL) || defined(_WINDOWS) //joystick 1 and 2
 consvar_t cv_usejoystick[MAXSPLITSCREENPLAYERS] = {
 	{"use_joystick",  "1", CV_SAVE|CV_CALL, NULL, I_InitJoystick1, 0, NULL, NULL, 0, 0, NULL},
 	{"use_joystick2", "2", CV_SAVE|CV_CALL, NULL, I_InitJoystick2, 0, NULL, NULL, 0, 0, NULL},
 	{"use_joystick3", "3", CV_SAVE|CV_CALL, NULL, I_InitJoystick3, 0, NULL, NULL, 0, 0, NULL},
 	{"use_joystick4", "4", CV_SAVE|CV_CALL, NULL, I_InitJoystick4, 0, NULL, NULL, 0, 0, NULL}
 };
-#endif
 
 #if defined (HAVE_SDL)
 consvar_t cv_joyscale[MAXSPLITSCREENPLAYERS] = {
