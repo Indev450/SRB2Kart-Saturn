@@ -298,6 +298,7 @@ static void R_AddLine(seg_t *line)
 	INT32 x1, x2;
 	angle_t angle1, angle2, span, tspan;
 	static sector_t tempsec;
+	boolean bothfloorssky   = false;
 
 	g_portal = NULL;
 
@@ -390,6 +391,10 @@ static void R_AddLine(seg_t *line)
 
 	doorclosed = 0;
 
+	// likewise, but for floors and upper textures
+	if (backsector->floorpic == skyflatnum && frontsector->floorpic == skyflatnum)
+		bothfloorssky = true;
+
 	fixed_t frontf1,frontf2, frontc1, frontc2; // front floor/ceiling ends
 	fixed_t backf1, backf2, backc1, backc2; // back floor ceiling ends
 
@@ -417,19 +422,19 @@ static void R_AddLine(seg_t *line)
 	if (viewsector != backsector && viewsector != frontsector)
 	{
 		// here we're talking about a CEILING lower than a floor. ...yeah we don't even need to bother.
-		if (backc1 <= frontf1 && backc2 <= frontf2)
+		const boolean ceillow = (backc1 <= frontf1 && backc2 <= frontf2);
+
+		// this tries to fix some skyboxes drawing a black void as a midtexture lel
+		if (ceillow && (!bothfloorssky && backsector->ceilingpic == skyflatnum && frontsector->ceilingpic != skyflatnum) // double sided with back ceiling sky but not front ceiling sky
+			&& !line->sidedef->midtexture && !line->sidedef->bottomtexture && !line->sidedef->toptexture && !line->polyseg) // effectively empty
 		{
-			goto clipsolid;
+			goto clippass;
 		}
 
-		// here we're talking about floors higher than ceilings, don't even bother either.
-		if (backf1 >= frontc1 && backf2 >= frontc2)
-		{
-			goto clipsolid;
-		}
-
+		doorclosed = ceillow
+		|| (backf1 >= frontc1 && backf2 >= frontc2)
 		// Check for automap fix. Store in doorclosed for r_segs.c
-		doorclosed = (backc1 <= backf1 && backc2 <= backf2
+		|| (backc1 <= backf1 && backc2 <= backf2
 		&& ((backc1 >= frontc1 && backc2 >= frontc2) || curline->sidedef->toptexture)
 		&& ((backf1 <= frontf1 && backf2 >= frontf2) || curline->sidedef->bottomtexture)
 		&& (backsector->ceilingpic != skyflatnum || frontsector->ceilingpic != skyflatnum));
