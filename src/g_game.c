@@ -8124,9 +8124,6 @@ void G_SaveDemo(void)
 
 	UINT8 *p = demobuf.buffer+16; // after version
 	UINT32 length;
-#ifdef NOMD5
-	UINT8 i;
-#endif
 
 	// Ensure extrainfo pointer is always available, even if no info is present.
 	if (demoinfo_p && *(UINT32 *)demoinfo_p == 0)
@@ -8181,7 +8178,7 @@ void G_SaveDemo(void)
 	length = *(UINT32 *)demoinfo_p;
 	WRITEUINT32(demoinfo_p, length);
 #ifdef NOMD5
-	for (i = 0; i < 16; i++, p++)
+	for (UINT8 k = 0; k < 16; k++, p++)
 		*p = M_RandomByte(); // This MD5 was chosen by fair dice roll and most likely < 50% correct.
 #else
 	// Make a checksum of everything after the checksum in the file up to the end of the standard data. Extrainfo is freely modifiable.
