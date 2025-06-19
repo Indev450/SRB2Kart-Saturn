@@ -226,6 +226,8 @@ consvar_t cv_glsolvetjoin = {"gr_solvetjoin", "On", 0, CV_OnOff, NULL, 0, NULL, 
 
 consvar_t cv_glbatching = {"gr_batching", "On", 0, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
+consvar_t cv_glwireframe = {"gr_wireframe", "Off", 0, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+
 consvar_t cv_glrenderdistance = {"gr_renderdistance", "Max", CV_SAVE, glrenderdistance_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 consvar_t cv_glhorizonlines = {"gr_horizonlines", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
@@ -336,6 +338,11 @@ static void CV_glpalettedepth_OnChange(void)
 static void HWR_SetShaderState(void)
 {
 	GL_SetSpecialState(HWD_SET_SHADERS, HWR_UseShader() ? 1 : 0);
+}
+
+static boolean HWR_IsWireframeMode(void)
+{
+	return (cv_glwireframe.value /*&& cv_debug*/);
 }
 
 static boolean HWR_OverrideObjectLightLevel(mobj_t *thing, INT32 *lightlevel)
@@ -4227,7 +4234,6 @@ static void *HWR_CreateDrawNode(gl_drawnode_type_t type)
 		Z_Realloc(drawnodes, alloceddrawnodes * sizeof(gl_drawnode_t), PU_LEVEL, &drawnodes);
 	}
 
-
 	drawnode = &drawnodes[numdrawnodes++];
 	drawnode->type = type;
 
@@ -4458,7 +4464,10 @@ static void HWR_DrawModels(void)
 			continue;
 		}
 
-		if (spr->mobj && spr->mobj->skin && spr->mobj->sprite == SPR_PLAY)
+		if (!spr->mobj)
+			continue;
+
+		if (spr->mobj->skin && spr->mobj->sprite == SPR_PLAY)
 		{
 			md2_t *md2;
 
@@ -5259,6 +5268,9 @@ static void HWR_DrawSkyBackground(void)
 	if (drewsky)
 		return;
 
+	if (HWR_IsWireframeMode())
+		return;
+
 	GL_SetBlend(PF_Translucent|PF_NoDepthTest|PF_Modulated);
 
 	memcpy(&dometransform, &atransform, sizeof(FTransform));
@@ -5461,8 +5473,8 @@ void HWR_RenderViewpoint(gl_portal_t *rootportal, const float fpov, player_t *pl
 		HWR_PortalClipping(rootportal);
 	}
 
-	// Set transform.
-	GL_SetTransform(&atransform);
+	if (HWR_IsWireframeMode())
+		GL_SetSpecialState(HWD_SET_WIREFRAME, 1);
 
 	ps_numbspcalls.value.i = 0;
 	ps_numpolyobjects.value.i = 0;
@@ -5526,6 +5538,9 @@ void HWR_RenderViewpoint(gl_portal_t *rootportal, const float fpov, player_t *pl
 	ps_hw_nodesorttime.value.p = 0;
 	ps_hw_nodedrawtime.value.p = 0;
 	HWR_RenderDrawNodes();
+
+	if (HWR_IsWireframeMode())
+		GL_SetSpecialState(HWD_SET_WIREFRAME, 0);
 
 	HWR_FreePortalList(portallist);
 }
@@ -5750,7 +5765,7 @@ static void HWR_TogglePaletteRendering(void)
 			// If the r_opengl "texture palette" stays the same during this switch, these textures
 			// will not be cleared out. However they are still out of date since the
 			// composite texture blending method has changed. Therefore they need to be cleared.
-			GL_ClearMipMapCache();
+			HWR_LoadMapTextures(numtextures);
 		}
 	}
 	else
@@ -5764,7 +5779,7 @@ static void HWR_TogglePaletteRendering(void)
 			// If the r_opengl "texture palette" stays the same during this switch, these textures
 			// will not be cleared out. However they are still out of date since the
 			// composite texture blending method has changed. Therefore they need to be cleared.
-			GL_ClearMipMapCache();
+			HWR_LoadMapTextures(numtextures);
 		}
 	}
 }
@@ -5800,6 +5815,8 @@ void HWR_AddCommands(void)
 	CV_RegisterVar(&cv_glsolvetjoin);
 
 	CV_RegisterVar(&cv_glbatching);
+
+	CV_RegisterVar(&cv_glwireframe);
 
 	CV_RegisterVar(&cv_glrenderdistance);
 
@@ -5873,7 +5890,6 @@ static void COM_HWR_glinfo(void)
 			CONS_Printf("Unrecognized argument: %s\n", argv);
 			return;
 		}
-
 	}
 
 	CONS_Printf("\x88OpenGL %s\x80\n", gl_version);
@@ -5993,19 +6009,19 @@ static void HWR_DoPostProcessor(player_t *player)
 	if (cv_glscreentextures.value != 2) // screen textures are needed for the rest of the effects
 		return;
 
-	// Capture the screen for intermission and screen waving
-	if (gamestate != GS_INTERMISSION)
-		GL_MakeScreenTexture(HWD_SCREENTEXTURE_GENERIC1);
-
-	if (splitscreen) // Not supported in splitscreen - someone want to add support?
-		return;
-
-	//UINT8 viewnum = R_GetViewNumber(); // see above
+	//UINT8 viewnum = R_GetViewNumber(); // see below
 	//camera_t *thiscam = &camera[viewnum];
 	camera_t *thiscam = &camera[0];
 
+	// Not supported in splitscreen - someone want to add support?
+	const boolean screenwave = (!splitscreen && (thiscam->postimg & POSTIMG_WATER || thiscam->postimg & POSTIMG_HEAT));
+
+	// Capture the screen for intermission and screen waving
+	if ((lastdraw || screenwave) && gamestate != GS_INTERMISSION)
+		GL_MakeScreenTexture(HWD_SCREENTEXTURE_GENERIC1);
+
 	// Drunken vision! WooOOooo~
-	if (thiscam->postimg & POSTIMG_WATER || thiscam->postimg & POSTIMG_HEAT)
+	if (screenwave)
 	{
 		// 10 by 10 grid. 2 coordinates (xy)
 		float v[SCREENVERTS][SCREENVERTS][2];
@@ -6020,7 +6036,7 @@ static void HWR_DoPostProcessor(player_t *player)
 		if (thiscam->postimg & POSTIMG_WATER)
 		{
 			WAVELENGTH = 5;
-			AMPLITUDE = 20;
+			AMPLITUDE = 40;
 			FREQUENCY = 8;
 		}
 		else
@@ -6039,6 +6055,7 @@ static void HWR_DoPostProcessor(player_t *player)
 				v[x][y][1] = (y/((float)(SCREENVERTS-1.0f)/9.0f))-4.5f;
 			}
 		}
+
 		GL_PostImgRedraw(v);
 
 		// Capture the screen again for screen waving on the intermission

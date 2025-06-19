@@ -125,16 +125,17 @@ static CV_PossibleValue_t drawdist_cons_t[] = {
 	{8192, "8192"},	{12288, "12288"}, {20480, "20480"},
 	{24576, "24576"},{0, "Infinite"},	{0, NULL}};
 
-#if defined(__x86_64__) || defined(__amd64__) || defined(__aarch64__) || defined(__arm64__) // only for 64bit (idk how else to proper check lmao)
+#if __SIZEOF_POINTER__ < 8 // only for 64bit
 static CV_PossibleValue_t drawdist_precip_cons_t[] = {
-	{256, "256"}, {512, "512"}, {768, "768"},
+	{256, "256"},   {512, "512"},   {768, "768"},
 	{1024, "1024"}, {1536, "1536"}, {2048, "2048"},
-	{3072, "3072"}, {4096, "4096"}, {0, "None"}, {0, NULL}};
+	{0, "None"},    {0, NULL}};
+
 #else
 static CV_PossibleValue_t drawdist_precip_cons_t[] = {
-	{256, "256"},	{512, "512"},	{768, "768"},
-	{1024, "1024"},	{1536, "1536"},	{2048, "2048"},
-	{0, "None"},	{0, NULL}};
+	{256, "256"},   {512, "512"},   {768, "768"},
+	{1024, "1024"}, {1536, "1536"}, {2048, "2048"},
+	{3072, "3072"}, {4096, "4096"}, {0, "None"}, {0, NULL}};
 #endif
 
 static CV_PossibleValue_t maxinterpdist_cons_t[] = {
@@ -1062,7 +1063,7 @@ static void R_SetupCommonFrame(player_t * player, sector_t * sector)
 
 static void R_SetupAimingFrame(player_t *player, camera_t *thiscam)
 {
-	if (player->awayviewtics)
+	if (player->awayviewtics && player->awayviewmobj)
 	{
 		newview->aim = player->awayviewaiming;
 		newview->angle = player->awayviewmobj->angle;
@@ -1168,7 +1169,7 @@ void R_SkyboxFrame(int s)
 	{
 		mapheader_t *mh = mapheaderinfo[gamemap-1];
 
-		if (player->awayviewtics)
+		if (player->awayviewtics && player->awayviewmobj)
 		{
 			SETUPSKYVIEW(player->awayviewmobj, (player->awayviewmobj->z + 20*FRACUNIT));
 		}
@@ -1225,7 +1226,7 @@ void R_SetupFrame(int s, boolean skybox)
 
 	R_SetupAimingFrame(player, thiscam);
 
-	if (player->awayviewtics) // cut-away view stuff
+	if (player->awayviewtics && player->awayviewmobj) // cut-away view stuff
 	{
 		viewmobj = player->awayviewmobj; // should be a MT_ALTVIEWMAN
 		I_Assert(viewmobj != NULL);
@@ -1234,7 +1235,7 @@ void R_SetupFrame(int s, boolean skybox)
 		newview->y = viewmobj->y;
 		newview->z = viewmobj->z + 20*FRACUNIT;
 
-		if (!P_MobjWasRemoved(viewmobj) && viewmobj->subsector && viewmobj->subsector->sector)
+		if (viewmobj->subsector && viewmobj->subsector->sector)
 			sector = viewmobj->subsector->sector;
 
 		R_SetupCommonFrame(player, sector);
@@ -1252,7 +1253,7 @@ void R_SetupFrame(int s, boolean skybox)
 
 		R_SetupCommonFrame(player, sector);
 	}
-	else // use the player's eyes view
+	else if (player->mo) // use the player's eyes view
 	{
 		viewmobj = player->mo;
 		I_Assert(viewmobj != NULL);
@@ -1261,7 +1262,7 @@ void R_SetupFrame(int s, boolean skybox)
 		newview->y = viewmobj->y;
 		newview->z = player->viewz;
 
-		if (!P_MobjWasRemoved(viewmobj) && viewmobj->subsector && viewmobj->subsector->sector)
+		if (viewmobj->subsector && viewmobj->subsector->sector)
 			sector = viewmobj->subsector->sector;
 
 		R_SetupCommonFrame(player, sector);
@@ -1349,10 +1350,10 @@ void R_RenderPlayerView(player_t *player)
 
 	for (UINT8 j = 0; j <= splitscreen; j++)
 	{
-		if (player == &players[displayplayers[i]]
-			&& viewfov[i] != fov)
+		if (player == &players[displayplayers[j]]
+			&& viewfov[j] != fov)
 		{
-			viewfov[i] = fov;
+			viewfov[j] = fov;
 			R_SetFov(fov);
 		}
 	}
