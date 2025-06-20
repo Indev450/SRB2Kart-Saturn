@@ -167,46 +167,48 @@ boolean ST_SameTeam(player_t *a, player_t *b)
 
 static boolean st_stopped = true;
 
-void ST_Ticker(void)
-{
-	if (st_stopped)
-		return;
-}
-
 // 0 is default, any others are special palettes.
 INT32 st_palette = 0;
 
-void ST_doPaletteStuff(void)
+void ST_ResetPaletteStuff(void)
 {
-	INT32 palette;
+	st_palette = 0;
+	V_SetPalette(0);
+}
 
-	if (stplyr && stplyr->flashcount)
-		palette = stplyr->flashpal;
-	else
-		palette = 0;
+static void ST_doPaletteStuff(void)
+{
+	INT32 palette = 0;
 
 #ifdef HWRENDER
 	if (rendermode == render_opengl && !HWR_PalRenderFlashpal())
-		palette = 0; // Don't set the palette to a flashpal in OpenGL's truecolor mode
+		return;
 #endif
 
-	palette = min(max(palette, 0), 13);
+	if (stplyr && stplyr->flashcount)
+		palette = CLAMP(stplyr->flashpal, 0, 13);
 
 	if (palette != st_palette)
 	{
 		st_palette = palette;
 
-#ifdef HWRENDER
-		if (rendermode == render_soft || (rendermode == render_opengl && HWR_PalRenderFlashpal()))
-#else
-		if (rendermode != render_none)
-#endif
+		if (!splitscreen)
 		{
-			//V_SetPaletteLump(GetPalette()); // Reset the palette -- is this needed?
-			if (!splitscreen)
-				V_SetPalette(palette);
+			V_SetPalette(palette);
 		}
 	}
+}
+
+void ST_Ticker(void)
+{
+	if (st_stopped)
+		return;
+
+	// Do red-/gold-shifts from damage/items
+	//25/08/99: Hurdler: palette changes is done for all players,
+	//                   not only player1! That's why this part
+	//                   of code is moved somewhere else.
+	ST_doPaletteStuff();
 }
 
 void ST_UnloadGraphics(void)
@@ -306,9 +308,7 @@ static inline void ST_Stop(void)
 
 void ST_Start(void)
 {
-	if (!st_stopped)
-		ST_Stop();
-
+	ST_Stop();
 	ST_InitData();
 
 	if (!dedicated)
@@ -756,15 +756,6 @@ void ST_Drawer(void)
 	// force a set of the palette by using doPaletteStuff()
 	if (vid.recalc)
 		st_palette = -1;
-
-	// Do red-/gold-shifts from damage/items
-#ifdef HWRENDER
-	//25/08/99: Hurdler: palette changes is done for all players,
-	//                   not only player1! That's why this part
-	//                   of code is moved somewhere else.
-	if (rendermode == render_soft || (rendermode == render_opengl && HWR_PalRenderFlashpal()))
-#endif
-	if (rendermode != render_none) ST_doPaletteStuff();
 
 	if (st_overlay)
 	{

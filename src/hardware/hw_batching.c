@@ -129,7 +129,6 @@ void HWR_ProcessPolygon(FSurfaceInfo *pSurf, FOutVector *pOutVerts, FUINT iNumPt
 	}
 }
 
-
 static int comparePolygons(const void *p1, const void *p2)
 {
 	const PolygonArrayEntry *poly1 = *(PolygonArrayEntry *const *)p1;
@@ -378,8 +377,8 @@ void HWR_RenderBatches(void)
 					currentSurfaceInfo.TintColor.rgba != nextSurfaceInfo.TintColor.rgba ||
 					currentSurfaceInfo.FadeColor.rgba != nextSurfaceInfo.FadeColor.rgba ||
 					currentSurfaceInfo.LightInfo.light_level != nextSurfaceInfo.LightInfo.light_level ||
-					currentSurfaceInfo.LightInfo.fade_start != nextSurfaceInfo.LightInfo.fade_start ||
-					currentSurfaceInfo.LightInfo.fade_end != nextSurfaceInfo.LightInfo.fade_end ||
+					currentSurfaceInfo.LightInfo.fade_start  != nextSurfaceInfo.LightInfo.fade_start  ||
+					currentSurfaceInfo.LightInfo.fade_end    != nextSurfaceInfo.LightInfo.fade_end    ||
 					currentSurfaceInfo.LightInfo.directional != nextSurfaceInfo.LightInfo.directional)
 				{
 					changeState = true;

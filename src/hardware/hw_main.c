@@ -5570,8 +5570,6 @@ static void HWR_RenderFrame(player_t *player, boolean skybox)
 	// Clear view, set viewport (glViewport), set perspective...
 	HWR_ClearView();
 
-	ST_doPaletteStuff();
-
 	// Draw the sky background.
 	HWR_DrawSkyBackground();
 	if (skybox)
@@ -5728,6 +5726,7 @@ void HWR_LoadLevel(boolean reloadinggamestate)
 static void HWR_TogglePaletteRendering(void)
 {
 	V_ResetPaletteCVars(); // dont carry over changed palettes
+	ST_ResetPaletteStuff();
 
 	// which state should we go to?
 	if (HWR_ShouldUsePaletteRendering())
