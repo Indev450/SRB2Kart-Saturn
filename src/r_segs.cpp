@@ -542,8 +542,7 @@ void R_RenderMaskedSegRange(drawseg_t *drawseg, INT32 x1, INT32 x2)
 template <typename T>
 static constexpr T saturating_add(T x, T y) noexcept
 {
-	INT64 z;
-	z = static_cast<INT64>(x) + static_cast<INT64>(y);
+	INT64 z = static_cast<INT64>(x) + static_cast<INT64>(y);
 	if (z > static_cast<INT64>(std::numeric_limits<T>::max()))
 	{
 		z = static_cast<INT64>(std::numeric_limits<T>::max());
@@ -558,8 +557,7 @@ static constexpr T saturating_add(T x, T y) noexcept
 template <typename T>
 static constexpr T saturating_mul(T x, T y) noexcept
 {
-	INT64 z;
-	z = static_cast<INT64>(x) * static_cast<INT64>(y);
+	INT64 z = static_cast<INT64>(x) * static_cast<INT64>(y);
 	if (z > static_cast<INT64>(std::numeric_limits<T>::max()))
 	{
 		z = static_cast<INT64>(std::numeric_limits<T>::max());
