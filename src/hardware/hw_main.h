@@ -20,6 +20,10 @@
 #ifndef __HWR_MAIN_H__
 #define __HWR_MAIN_H__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "hw_gl.h"
 #include "hw_glob.h"
 #include "hw_data.h"
@@ -33,10 +37,6 @@
 #include "../v_video.h"
 
 #define GLENCORE
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 // Startup & Shutdown the hardware mode renderer
 void HWR_Startup(void);
@@ -115,6 +115,7 @@ void HWR_AddCommands(void);
 
 void HWR_RenderPlayerView(void);
 void HWR_RenderViewpoint(gl_portal_t *rootportal, const float fpov, player_t *player, int stencil_level, boolean allow_portals);
+void HWR_RenderPortalViewpoint(gl_portal_t *rootportal, const float fpov, player_t *player, int stencil_level, boolean allow_portals);
 
 void HWR_ClearSkyDome(void);
 void HWR_BuildSkyDome(void);

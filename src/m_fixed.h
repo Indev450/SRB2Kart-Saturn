@@ -15,6 +15,10 @@
 #ifndef __M_FIXED__
 #define __M_FIXED__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "doomtype.h"
 #ifdef __GNUC__
 #include <stdlib.h>
@@ -369,5 +373,9 @@ void FM_MultMatrixVec3(const matrix_t *matrix, const vector3_t *vec, vector3_t *
 void FM_MultMatrix(matrix_t *dest, const matrix_t *multme);
 void FM_Translate(matrix_t *dest, fixed_t x, fixed_t y, fixed_t z);
 void FM_Scale(matrix_t *dest, fixed_t x, fixed_t y, fixed_t z);
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif //m_fixed.h

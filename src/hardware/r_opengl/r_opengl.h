@@ -20,6 +20,10 @@
 #ifndef _R_OPENGL_H_
 #define _R_OPENGL_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #ifdef HAVE_SDL
 #define _MATH_DEFINES_DEFINED
 
@@ -143,5 +147,9 @@ typedef enum
 	GLF_NOZBUFREAD = 0x01,
 	GLF_NOTEXENV   = 0x02,
 } oglflags_t;
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif
