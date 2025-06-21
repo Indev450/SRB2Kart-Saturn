@@ -81,15 +81,32 @@ UINT8 *solidcol;
 
 void R_AllocClipSegMemory(void)
 {
-	solidcol = Z_Realloc(solidcol, sizeof(*solidcol) * viewwidth, PU_STATIC, NULL);
+	solidcol = static_cast<UINT8*>(Z_Realloc(solidcol, sizeof(*solidcol) * viewwidth, PU_STATIC, NULL));
 }
+
+namespace
+{
+
+enum class ClipType
+{
+	// Does handle solid walls,
+	//  e.g. single sided LineDefs (middle texture)
+	//  that entirely block the view.
+	kSolid,
+	kSolidDontRender,
+
+	// Clips the given range of columns, but does not include it in the clip list.
+	// Does handle windows, e.g. LineDefs with upper and lower texture.
+	kPass,
+};
 
 // CPhipps -
 // R_ClipWallSegment
 //
 // Replaces the old R_Clip*WallSegment functions. It draws bits of walls in those
 // columns which aren't solid, and updates the solidcol[] array appropriately
-static void R_ClipWallSegment(int first, int last, boolean solid, boolean soliddontrender)
+template <ClipType Type>
+static void R_ClipWallSegment(int first, int last)
 {
 	while (first < last)
 	{
@@ -97,7 +114,7 @@ static void R_ClipWallSegment(int first, int last, boolean solid, boolean solidd
 
 		if (solidcol[first])
 		{
-			p = memchr(solidcol+first, 0, last-first);
+			p = static_cast<UINT8*>(memchr(solidcol+first, 0, last-first));
 			if (!p)
 				return; // All solid
 
@@ -105,7 +122,7 @@ static void R_ClipWallSegment(int first, int last, boolean solid, boolean solidd
 		}
 		else
 		{
-			p = memchr(solidcol+first, 1, last-first);
+			p = static_cast<UINT8*>(memchr(solidcol+first, 1, last-first));
 
 			int to;
 			if (!p)
@@ -113,16 +130,22 @@ static void R_ClipWallSegment(int first, int last, boolean solid, boolean solidd
 			else
 				to = p - solidcol;
 
-			if (!soliddontrender)
+			if constexpr (Type != ClipType::kSolidDontRender)
+			{
 				R_StoreWallRange(first, to-1);
+			}
 
-			if (solid)
+			if constexpr (Type != ClipType::kPass)
+			{
 				memset(solidcol+first, 1, to-first);
+			}
 
 			first = to;
 		}
 	}
 }
+
+}; // namespace
 
 //
 // R_ClearClipSegs
@@ -459,15 +482,15 @@ static void R_AddLine(seg_t *line)
 
 clippass:
 	g_walloffscreen = false;
-	R_ClipWallSegment(x1, x2, false, false);
+	R_ClipWallSegment<ClipType::kPass>(x1, x2);
 
 	if (g_walloffscreen)
-		R_ClipWallSegment(x1, x2, false, true);
+		R_ClipWallSegment<ClipType::kSolidDontRender>(x1, x2);
 	return;
 
 clipsolid:
 	g_walloffscreen = false;
-	R_ClipWallSegment(x1, x2, true, false);
+	R_ClipWallSegment<ClipType::kSolid>(x1, x2);
 }
 
 //
@@ -592,8 +615,7 @@ void R_SortPolyObjects(subsector_t *sub)
 		{
 			// use free instead realloc since faster (thanks Lee ^_^)
 			free(po_ptrs);
-			po_ptrs = malloc((num_po_ptrs = numpolys*2)
-				* sizeof(*po_ptrs));
+			po_ptrs = static_cast<polyobj_t**>(malloc((num_po_ptrs = numpolys*2)* sizeof(*po_ptrs)));
 		}
 
 		po = sub->polyList;
@@ -610,8 +632,7 @@ void R_SortPolyObjects(subsector_t *sub)
 		// 03/10/06: only bother if there are actually polys to sort
 		if (numpolys >= 2)
 		{
-			qs22j(po_ptrs, numpolys, sizeof(polyobj_t *),
-				R_PolyobjCompare);
+			qs22j(po_ptrs, numpolys, sizeof(polyobj_t *), R_PolyobjCompare);
 		}
 	}
 }
@@ -637,8 +658,8 @@ static int R_PolysegCompare(const void *p1, const void *p2)
 	dist2v1 = vxdist(seg2->v1);
 	dist2v2 = vxdist(seg2->v2);
 
-	if (min(dist1v1, dist1v2) != min(dist2v1, dist2v2))
-		return min(dist1v1, dist1v2) - min(dist2v1, dist2v2);
+	if (std::min(dist1v1, dist1v2) != std::min(dist2v1, dist2v2))
+		return std::min(dist1v1, dist1v2) - std::min(dist2v1, dist2v2);
 
 	{ // That didn't work, so now let's try this.......
 		fixed_t delta1, delta2, x1, y1, x2, y2;
@@ -1056,7 +1077,7 @@ void R_Prep3DFloors(sector_t *sector)
 	if (count != sector->numlights)
 	{
 		Z_Free(sector->lightlist);
-		sector->lightlist = Z_Calloc(sizeof (*sector->lightlist) * count, PU_LEVEL, NULL);
+		sector->lightlist = static_cast<lightlist_t*>(Z_Calloc(sizeof (*sector->lightlist) * count, PU_LEVEL, NULL));
 		sector->numlights = count;
 	}
 	else
