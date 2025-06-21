@@ -181,12 +181,11 @@ extern lumpnum_t viewborderlump[8];
 
 enum
 {
-	TC_BOSS       = INT8_MIN,
-	TC_METALSONIC, // For Metal Sonic battle
-	TC_ALLWHITE,   // For Cy-Brak-demon
-	TC_RAINBOW,    // For single colour
-	TC_BLINK,      // For item blinking, according to kart
-
+	TC_BLINK  = -6, // For item blinking, according to kart
+	TC_RAINBOW,     // For single colour
+	TC_ALLWHITE,    // For Cy-Brak-demon
+	TC_METALSONIC,  // For Metal Sonic battle
+	TC_BOSS,
 	TC_DEFAULT
 };
 
