@@ -1927,7 +1927,6 @@ static void R_ProjectPrecipitationSprite(precipmobj_t *thing)
 
 	// aspect ratio stuff :
 	xscale = FixedDiv(projection, tz);
-	yscale = FixedDiv(projectiony, tz);
 
 	// decide which patch to use for sprite relative to player
 #ifdef RANGECHECK
@@ -1988,6 +1987,9 @@ static void R_ProjectPrecipitationSprite(precipmobj_t *thing)
 		if (R_DoCulling(thing->subsector->sector->cullheight, viewsector->cullheight, viewz, gz, gzt))
 			return;
 	}
+
+	// aspect ratio stuff :
+	yscale = FixedDiv(projectiony, tz);
 
 	// store information in a vissprite
 	vis = R_NewVisSprite();
@@ -2162,7 +2164,8 @@ static void R_SortVisSprites(vissprite_t* vsprsortedhead, UINT32 start, UINT32 e
 	{
 		dsprev = ds;
 		ds = dsnext;
-		if (i < end - 1) dsnext = R_GetVisSprite(i + 1);
+		if (i < end - 1)
+			dsnext = R_GetVisSprite(i + 1);
 
 		ds->next = dsnext;
 		ds->prev = dsprev;
@@ -2634,8 +2637,10 @@ static void R_ClipVisSprite(vissprite_t *spr, INT32 x1, INT32 x2, portal_t* port
 
 		while (++curr <= last)
 		{
+			__builtin_prefetch(curr + 1, 0, 3);
+
 			// determine if the drawseg obscures the sprite
-			if (curr->x1 > spr->x2 || curr->x2 < spr->x1)
+			if (curr->x1 > x2 || curr->x2 < x1)
 			{
 				// does not cover sprite
 				continue;
@@ -2661,15 +2666,15 @@ static void R_ClipVisSprite(vissprite_t *spr, INT32 x1, INT32 x2, portal_t* port
 
 				if (scale < spr->sortscale ||
 					(lowscale < spr->sortscale &&
-					!R_PointOnSegSide (spr->gx, spr->gy, ds->curline)))
+					!R_PointOnSegSide(spr->gx, spr->gy, ds->curline)))
 				{
 					// seg is behind sprite
 					continue;
 				}
 			}
 
-			r1 = ds->x1 < spr->x1 ? spr->x1 : ds->x1;
-			r2 = ds->x2 > spr->x2 ? spr->x2 : ds->x2;
+			r1 = ds->x1 < x1 ? x1 : ds->x1;
+			r2 = ds->x2 > x2 ? x2 : ds->x2;
 
 			// clip this piece of the sprite
 			silhouette = ds->silhouette;
@@ -2711,20 +2716,21 @@ static void R_ClipVisSprite(vissprite_t *spr, INT32 x1, INT32 x2, portal_t* port
 	if (spr->heightsec != -1)  // only things in specially marked sectors
 	{
 		fixed_t mh, h;
-		INT32 phs = viewplayer->mo->subsector->sector->heightsec;
+		const INT32 phs = viewplayer->mo->subsector->sector->heightsec;
+
 		if ((mh = sectors[spr->heightsec].floorheight) > spr->gz &&
 			(h = centeryfrac - FixedMul(mh -= viewz, spr->sortscale)) >= 0 &&
 			(h >>= FRACBITS) < viewheight)
 		{
 			if (mh <= 0 || (phs != -1 && viewz > sectors[phs].floorheight))
 			{                          // clip bottom
-				for (x = spr->x1; x <= spr->x2; x++)
+				for (x = x1; x <= x2; x++)
 					if (spr->clipbot[x] == -2 || h < spr->clipbot[x])
 						spr->clipbot[x] = (INT16)h;
 			}
 			else						// clip top
 			{
-				for (x = spr->x1; x <= spr->x2; x++)
+				for (x = x1; x <= x2; x++)
 					if (spr->cliptop[x] == -2 || h > spr->cliptop[x])
 						spr->cliptop[x] = (INT16)h;
 			}
@@ -2736,21 +2742,22 @@ static void R_ClipVisSprite(vissprite_t *spr, INT32 x1, INT32 x2, portal_t* port
 		{
 			if (phs != -1 && viewz >= sectors[phs].ceilingheight)
 			{                         // clip bottom
-				for (x = spr->x1; x <= spr->x2; x++)
+				for (x = x1; x <= x2; x++)
 					if (spr->clipbot[x] == -2 || h < spr->clipbot[x])
 						spr->clipbot[x] = (INT16)h;
 			}
 			else                       // clip top
 			{
-				for (x = spr->x1; x <= spr->x2; x++)
+				for (x = x1; x <= x2; x++)
 					if (spr->cliptop[x] == -2 || h > spr->cliptop[x])
 						spr->cliptop[x] = (INT16)h;
 			}
 		}
 	}
+
 	if (spr->cut & SC_TOP && spr->cut & SC_BOTTOM)
 	{
-		for (x = spr->x1; x <= spr->x2; x++)
+		for (x = x1; x <= x2; x++)
 		{
 			if (spr->cliptop[x] == -2 || spr->szt > spr->cliptop[x])
 				spr->cliptop[x] = spr->szt;
@@ -2761,7 +2768,7 @@ static void R_ClipVisSprite(vissprite_t *spr, INT32 x1, INT32 x2, portal_t* port
 	}
 	else if (spr->cut & SC_TOP)
 	{
-		for (x = spr->x1; x <= spr->x2; x++)
+		for (x = x1; x <= x2; x++)
 		{
 			if (spr->cliptop[x] == -2 || spr->szt > spr->cliptop[x])
 				spr->cliptop[x] = spr->szt;
@@ -2769,7 +2776,7 @@ static void R_ClipVisSprite(vissprite_t *spr, INT32 x1, INT32 x2, portal_t* port
 	}
 	else if (spr->cut & SC_BOTTOM)
 	{
-		for (x = spr->x1; x <= spr->x2; x++)
+		for (x = x1; x <= x2; x++)
 		{
 			if (spr->clipbot[x] == -2 || spr->sz < spr->clipbot[x])
 				spr->clipbot[x] = spr->sz;
@@ -2779,7 +2786,7 @@ static void R_ClipVisSprite(vissprite_t *spr, INT32 x1, INT32 x2, portal_t* port
 	// all clipping has been performed, so store the values - what, did you think we were drawing them NOW?
 
 	// check for unclipped columns
-	for (x = spr->x1; x <= spr->x2; x++)
+	for (x = x1; x <= x2; x++)
 	{
 		if (spr->clipbot[x] == -2)
 			spr->clipbot[x] = (INT16)viewheight;
@@ -2800,6 +2807,7 @@ static void R_ClipVisSprite(vissprite_t *spr, INT32 x1, INT32 x2, portal_t* port
 	{
 		INT32 start_index = std::max(portal->start, x1);
 		INT32 end_index = std::min(portal->start + portal->end - portal->start, x2);
+
 		for (x = x1; x < start_index; x++)
 		{
 			spr->clipbot[x] = -1;
