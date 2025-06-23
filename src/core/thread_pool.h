@@ -80,6 +80,7 @@ public:
 
 	/// Enqueue but don't notify
 	template <typename T> void schedule(T&& thunk);
+	template <typename F> void for_each(F&& task);
 	/// Notify threads after several schedules
 	void notify();
 	void notify_sema(const Sema& sema);
@@ -141,6 +142,60 @@ void ThreadPool::schedule(T&& thunk)
 	{
 		next_queue_index_ = 0;
 	}
+}
+
+template <typename F>
+void ThreadPool::for_each(F&& thunk)
+{
+	static_assert(sizeof(std::decay_t<F>) <= sizeof(std::declval<Task>().raw));
+
+	if (immediate_mode_)
+	{
+		thunk();
+		return;
+	}
+
+	Sema sync_sema;
+	begin_sema();
+
+	auto counter = std::make_shared<std::atomic<uint32_t>>(threads_.size());
+
+	for (size_t i = 0; i < threads_.size(); i++) {
+		std::shared_ptr<Queue> q = work_queues_[i];
+		Task task;
+
+		struct TaskData {
+			std::decay_t<F> func;
+			std::shared_ptr<std::atomic<uint32_t>> counter;
+			Sema sema;
+			ThreadPool* pool;
+		};
+		static_assert(sizeof(TaskData) <= sizeof(task.raw));
+
+		new (task.raw.data()) TaskData{
+			std::forward<F>(thunk),
+			counter,
+			sync_sema,
+			this
+		};
+
+		task.thunk = [](void* ptr) {
+			auto* data = static_cast<TaskData*>(ptr);
+			data->func();
+			if (--(*data->counter) == 0) {
+				data->pool->notify_sema(data->sema);
+			}
+		};
+
+		task.deleter = [](void* ptr) {
+			static_cast<TaskData*>(ptr)->~TaskData();
+		};
+
+		task.pseudosema = cur_sema_;
+		q->push(std::move(task));
+	}
+
+	wait_sema(sync_sema);
 }
 
 } // namespace srb2
