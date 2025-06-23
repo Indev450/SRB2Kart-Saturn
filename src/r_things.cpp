@@ -844,8 +844,8 @@ static void R_DrawVisSprite(vissprite_t *vis)
 	frac = vis->startfrac;
 	windowtop = windowbottom = sprbotscreen = INT32_MAX;
 
-	if ((vis->mobj->skin || vis->mobj->localskin) && K_GetMobjSkin(vis->mobj)->flags & SF_HIRES)
-		this_scale = FixedMul(this_scale, K_GetMobjSkin(vis->mobj)->highresscale);
+	//if ((vis->mobj->skin || vis->mobj->localskin) && K_GetMobjSkin(vis->mobj)->flags & SF_HIRES)
+	//	this_scale = FixedMul(this_scale, K_GetMobjSkin(vis->mobj)->highresscale);
 
 	if (this_scale <= 0)
 		this_scale = 1;
