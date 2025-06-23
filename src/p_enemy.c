@@ -425,6 +425,23 @@ void P_NewChaseDir(mobj_t *actor)
 	actor->movedir = (angle_t)DI_NODIR; // cannot move
 }
 
+static boolean P_IsVisible(mobj_t *actor, mobj_t *mo, boolean allaround, fixed_t dist)
+{
+	if (!allaround)
+	{
+		const angle_t an = R_PointToAngle2(actor->x, actor->y, mo->x, mo->y) - actor->angle;
+		if (an > ANGLE_90 && an < ANGLE_270)
+		{
+			dist = P_AproxDistance(mo->x - actor->x, mo->y - actor->y);
+			// if real close, react anyway
+			if (dist > FixedMul(MELEERANGE, actor->scale))
+				return false; // behind back
+		}
+	}
+
+	return P_CheckSight(actor, mo);
+}
+
 /** Looks for players to chase after, aim at, or whatever.
   *
   * \param actor     The object looking for flesh.
@@ -438,7 +455,7 @@ boolean P_LookForPlayers(mobj_t *actor, boolean allaround, boolean tracer, fixed
 {
 	INT32 c = 0, stop;
 	player_t *player;
-	angle_t an;
+	boolean unseen[MAXPLAYERS] = {0};
 
 	// BP: first time init, this allow minimum lastlook changes
 	if (actor->lastlook < 0)
@@ -478,20 +495,11 @@ boolean P_LookForPlayers(mobj_t *actor, boolean allaround, boolean tracer, fixed
 			&& P_AproxDistance(P_AproxDistance(player->mo->x - actor->x, player->mo->y - actor->y), player->mo->z - actor->z) > dist)
 			continue; // Too far away
 
-		if (!allaround)
+		if (unseen[actor->lastlook] || !P_IsVisible(actor, player->mo, allaround, dist))
 		{
-			an = R_PointToAngle2(actor->x, actor->y, player->mo->x, player->mo->y) - actor->angle;
-			if (an > ANGLE_90 && an < ANGLE_270)
-			{
-				dist = P_AproxDistance(player->mo->x - actor->x, player->mo->y - actor->y);
-				// if real close, react anyway
-				if (dist > FixedMul(MELEERANGE, actor->scale))
-					continue; // behind back
-			}
+			unseen[actor->lastlook] = true;
+			continue;
 		}
-
-		if (!P_CheckSight(actor, player->mo))
-			continue; // out of sight
 
 		if (tracer)
 			P_SetTarget(&actor->tracer, player->mo);
