@@ -41,6 +41,10 @@ INT32 skytexture;
 */
 INT32 skytexturemid;
 
+/**	\brief the x offset of the sky texture
+ */
+INT32 skytextureoffset;
+
 /**	\brief the scale of the sky
 */
 fixed_t skyscale;
@@ -49,6 +53,7 @@ fixed_t skyscale;
 */
 INT32 levelskynum;
 INT32 globallevelskynum;
+
 
 /**	\brief	The R_SetupSkyDraw function
 
@@ -61,8 +66,20 @@ INT32 globallevelskynum;
 */
 void R_SetupSkyDraw(void)
 {
-	// the horizon line in a 256x128 sky texture
-	skytexturemid = (textures[skytexture]->height/2)<<FRACBITS;
+	// the horizon line in the sky texture
+	skytexturemid = (textures[skytexture]->height / 2) << FRACBITS;
+	skytextureoffset = 0;
+
+	if (textures[skytexture]->type == TEXTURETYPE_SINGLEPATCH)
+	{
+		// Sal: Allow for sky offsets
+		texpatch_t *const tex_patch = &textures[skytexture]->patches[0];
+		patch_t *patch = W_CachePatchNumPwad(tex_patch->wad, tex_patch->lump, PU_CACHE);
+
+		skytexturemid += (patch->topoffset << FRACBITS);
+		skytextureoffset += (patch->leftoffset << FRACBITS);
+	}
+
 	R_SetSkyScale();
 }
 
@@ -74,5 +91,7 @@ void R_SetupSkyDraw(void)
 */
 void R_SetSkyScale(void)
 {
-	skyscale = FixedDiv(fovtan, FixedDiv(vid.width*FRACUNIT, BASEVIDWIDTH*FRACUNIT));
+	//skyscale = FixedDiv(fovtan, FixedDiv(vid.width*FRACUNIT, BASEVIDWIDTH*FRACUNIT));
+	fixed_t difference = vid.fdupx-(vid.dupx<<FRACBITS);
+	skyscale = FixedDiv(fovtan, vid.fdupx+difference);
 }

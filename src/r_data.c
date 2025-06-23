@@ -649,6 +649,7 @@ void R_LoadTextures(void)
 			M_Memcpy(texture->name, W_CheckNameForNumPwad(wadnum, lumpnum), sizeof(texture->name));
 			texture->width = SHORT(patchlump->width);
 			texture->height = SHORT(patchlump->height);
+			texture->type = TEXTURETYPE_SINGLEPATCH;
 			texture->patchcount = 1;
 			texture->holes = false;
 
@@ -915,19 +916,22 @@ static texture_t *R_ParseTexture(boolean actuallyLoadTexture)
 
 	// Left Curly Brace
 	texturesToken = M_GetToken(NULL);
+
 	if (texturesToken == NULL)
 	{
 		I_Error("Error parsing TEXTURES lump: Unexpected end of file where open curly brace for texture \"%s\" should be",newTextureName);
 	}
+
 	if (strcmp(texturesToken,"{")==0)
 	{
 		if (actuallyLoadTexture)
 		{
 			// Allocate memory for a zero-patch texture. Obviously, we'll be adding patches momentarily.
-			resultTexture = (texture_t *)Z_Calloc(sizeof(texture_t),PU_STATIC,NULL);
+			resultTexture = (texture_t *)Z_Calloc(sizeof(texture_t), PU_STATIC, NULL);
 			M_Memcpy(resultTexture->name, newTextureName, 8);
 			resultTexture->width = newTextureWidth;
 			resultTexture->height = newTextureHeight;
+			resultTexture->type = TEXTURETYPE_COMPOSITE;
 		}
 		Z_Free(texturesToken);
 		texturesToken = M_GetToken(NULL);
