@@ -13,18 +13,6 @@
 /// \brief span drawer functions
 /// \note  no includes because this is included as part of r_draw.cpp
 
-#ifdef HAVE_THREADS
-#ifdef _WIN32
-#include <windows.h>
-#define local_for_thread static __thread
-#else
-#include <threads.h>
-#define local_for_thread thread_local static
-#endif
-#else
-#define local_for_thread static
-#endif
-
 // ==========================================================================
 // SPANS
 // ==========================================================================
@@ -210,15 +198,6 @@ static void R_DrawTiltedSpanTemplate(drawspandata_t* ds)
 	float endz, endu, endv;
 	UINT32 stepu, stepv;
 	UINT32 bit;
-	local_for_thread INT32 *tiltlighting = NULL;
-	local_for_thread INT32 oldviewwidth = 0;
-
-	// dont realloc every frame pls thx
-	if (tiltlighting == NULL || oldviewwidth != viewwidth)
-	{
-		tiltlighting = static_cast<INT32*>(realloc(tiltlighting, sizeof(*tiltlighting) * viewwidth));
-		oldviewwidth = viewwidth;
-	}
 
 	INT32 x1 = ds->x1;
 	const INT32 nflatxshift = ds->nflatxshift;
@@ -410,16 +389,6 @@ void R_DrawFogSpan_Tilted(drawspandata_t* ds)
 	int width = ds->x2 - ds->x1;
 	float iz = ds->szp.z + ds->szp.y*(centery-ds->y) + ds->szp.x*(ds->x1-centerx);
 	UINT8 *dest;
-
-	local_for_thread INT32 *tiltlighting = NULL;
-	local_for_thread INT32 oldviewwidth = 0;
-
-	// dont realloc every frame pls thx
-	if (tiltlighting == NULL || oldviewwidth != viewwidth)
-	{
-		tiltlighting = static_cast<INT32*>(realloc(tiltlighting, sizeof(*tiltlighting) * viewwidth));
-		oldviewwidth = viewwidth;
-	}
 
 	dest = R_Address(ds->x1, ds->y);
 	const INT32 stride = vid.width;

@@ -34,6 +34,10 @@
 #include "hardware/hw_main.h"
 #endif
 
+#ifdef HAVE_THREADS
+#include "core/thread_pool.h"
+#endif
+
 // ==========================================================================
 //                     COMMON DATA FOR 8bpp AND 16bpp
 // ==========================================================================
@@ -77,7 +81,19 @@ floatv3_t *ds_su, *ds_sv, *ds_sz;
 float focallengthf;
 
 // For, uh, tilted lighting, duh.
-//static INT32 *tiltlighting;
+#ifdef HAVE_THREADS
+#ifdef _WIN32
+#include <windows.h>
+#define local_for_thread static __thread
+#else
+#include <threads.h>
+#define local_for_thread thread_local static
+#endif
+#else
+#define local_for_thread static
+#endif
+
+local_for_thread INT32 *tiltlighting;
 
 // --------------------------------------------
 // c drawer routines
@@ -469,6 +485,15 @@ static void R_AllocViewMemory(void)
 	frontscale        = static_cast<fixed_t*>(Z_Realloc(frontscale, sizeof(*frontscale) * viewwidth, PU_STATIC, NULL));
 
 	xtoviewangle      = static_cast<angle_t*>(Z_Realloc(xtoviewangle, sizeof(*xtoviewangle) * (viewwidth + 1), PU_STATIC, NULL));
+
+	auto init_tiltlighting = [] {
+		tiltlighting = static_cast<INT32*>(realloc(tiltlighting, sizeof(*tiltlighting) * viewwidth)); // dont use Zone memory since its not thread safe
+	};
+
+	init_tiltlighting();
+#ifdef HAVE_THREADS
+	srb2::g_main_threadpool->for_each(std::move(init_tiltlighting));
+#endif
 
 	R_AllocSegMemory();
 	R_AllocClipSegMemory();
