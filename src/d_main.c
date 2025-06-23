@@ -1610,7 +1610,9 @@ void D_SRB2Main(void)
 #endif
 
 	// for dedicated server
+#if !defined (DEDICATED)
 	dedicated = M_CheckParm("-dedicated") != 0;
+#endif
 
 	strcpy(title, "SRB2Kart");
 	strcpy(srb2, "SRB2Kart");
