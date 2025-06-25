@@ -1065,6 +1065,18 @@ int LUA_HookMusicChange(const char *oldname, struct MusicChange *param)
 	return hook.status;
 }
 
+int LUA_HookMusicCredit(musicdef_t *musicdef)
+{
+	Hook_State hook;
+	if (prepare_hook(&hook, 0, HOOK(MusicCredit)))
+	{
+		LUA_PushUserdata(gL, musicdef, META_MUSICDEF);
+		call_hooks(&hook, 1, res_true);
+	}
+
+	return hook.status;
+}
+
 static int kartdamage_hook
 (
 		player_t *player,
