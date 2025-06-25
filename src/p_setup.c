@@ -672,6 +672,19 @@ INT32 P_AddLevelFlat(const char *flatname, levelflat_t *levelflat)
 		levelflat->lumpnum = R_GetFlatNumForName(flatname);
 		levelflat->baselumpnum = LUMPERROR;
 
+		{
+			UINT8 *flat = (UINT8 *)W_CacheLumpNum(levelflat->lumpnum, PU_LEVEL);
+			size_t size = W_LumpLength(levelflat->lumpnum);
+			for (size_t steppy = 0; steppy < size; steppy++)
+			{
+				if (flat[steppy] == TRANSPARENTPIXEL)
+				{
+					levelflat->cyan = true;
+					break;
+				}
+			}
+		}
+
 #ifndef ZDEBUG
 		CONS_Debug(DBG_SETUP, "flat #%03d: %s\n", atoi(sizeu1(numlevelflats)), levelflat->name);
 #endif
@@ -716,6 +729,19 @@ INT32 P_AddLevelFlatRuntime(const char *flatname)
 		// store the flat lump number
 		levelflat->lumpnum = R_GetFlatNumForName(flatname);
 		levelflat->baselumpnum = LUMPERROR;
+
+		{
+			UINT8 *flat = (UINT8 *)W_CacheLumpNum(levelflat->lumpnum, PU_LEVEL);
+			size_t size = W_LumpLength(levelflat->lumpnum);
+			for (size_t steppy = 0; steppy < size; steppy++)
+			{
+				if (flat[steppy] == TRANSPARENTPIXEL)
+				{
+					levelflat->cyan = true;
+					break;
+				}
+			}
+		}
 
 #ifndef ZDEBUG
 		CONS_Debug(DBG_SETUP, "flat #%03d: %s\n", atoi(sizeu1(numlevelflats)), levelflat->name);

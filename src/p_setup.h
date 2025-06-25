@@ -52,6 +52,7 @@ typedef struct
 	INT32 animseq; // start pos. in the anim sequence
 	INT32 numpics;
 	INT32 speed;
+	boolean cyan;
 } levelflat_t;
 
 extern size_t numlevelflats;

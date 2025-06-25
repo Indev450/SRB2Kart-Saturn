@@ -582,6 +582,9 @@ static void R_DrawRepeatMaskedColumn(drawcolumndata_t* dc, column_t *col)
 // Returns true if a fake floor is translucent.
 static boolean R_IsFFloorTranslucent(visffloor_t *pfloor)
 {
+	if (pfloor->plane->cyan)
+		return true;
+
 	if (pfloor->polyobj)
 		return true;
 
