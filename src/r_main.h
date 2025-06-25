@@ -211,6 +211,7 @@ extern consvar_t cv_chasecam[MAXSPLITSCREENPLAYERS];
 extern consvar_t cv_flipcam[MAXSPLITSCREENPLAYERS];
 extern consvar_t cv_shadow, cv_shadowoffs;
 extern consvar_t cv_ffloorclip, cv_spriteclip;
+extern consvar_t cv_softcyancut;
 extern consvar_t cv_translucency;
 extern consvar_t cv_drawdist, cv_drawdist_precip, cv_lessprecip, cv_mobjscaleprecip;
 extern consvar_t cv_fov, cv_fovchange;
