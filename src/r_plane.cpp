@@ -1088,7 +1088,7 @@ void R_DrawSinglePlane(drawspandata_t* ds, visplane_t *pl, boolean allow_paralle
 				}
 			}
 
-			if (pl->cyan && !(pl->ffloor->flags & FF_RIPPLE))
+			if (cv_softcyancut.value && pl->cyan && !(pl->ffloor->flags & FF_RIPPLE))
 				spanfunctype = SPANDRAWFUNC_SPLAT;
 
 			if (pl->ffloor->flags & FF_TRANSLUCENT)
