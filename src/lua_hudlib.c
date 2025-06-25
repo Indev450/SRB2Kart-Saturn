@@ -1260,15 +1260,10 @@ extern int lib_hudadd(lua_State *L);
 
 static int lib_hudsetvotebackground(lua_State *L)
 {
+	memset(VoteScreen.luaPrefix, 0, sizeof(VoteScreen.luaPrefix));
+
 	if (lua_isnoneornil(L, 1))
 	{
-		if (luaVoteScreen)
-		{
-			free(luaVoteScreen);
-		}
-
-		luaVoteScreen = NULL;
-
 		return 0;
 	}
 
@@ -1279,15 +1274,8 @@ static int lib_hudsetvotebackground(lua_State *L)
 		return luaL_argerror(L, 1, "prefix should 4 characters wide");
 	}
 
-	if (!luaVoteScreen)
-	{
-		luaVoteScreen = (char*)malloc(5);
-		luaVoteScreen[4] = 0;
-	}
-
-	strncpy(luaVoteScreen, prefix, 4);
-
-	strupr(luaVoteScreen);
+	strncpy(VoteScreen.luaPrefix, prefix, 4);
+	strupr(VoteScreen.luaPrefix);
 
 	return 0;
 }

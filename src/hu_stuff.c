@@ -259,8 +259,6 @@ INT32 HU_FallBackFrSpecialLetter(INT32 key)
 	}
 }
 
-
-
 static char cechotext[1024];
 static tic_t cechotimer = 0;
 static tic_t cechoduration = 5*TICRATE;
