@@ -550,6 +550,16 @@ FUNCNORETURN static ATTRNORETURN void signal_handler(INT32 num)
 
 FUNCNORETURN static ATTRNORETURN void quit_handler(int num)
 {
+#ifdef HAVE_THREADS
+	if (g_main_thread_id != std::this_thread::get_id())
+	{
+		// Do not attempt any sort of recovery if this signal triggers off the main thread
+		signal(num, SIG_DFL);
+		raise(num);
+		exit(-2);
+	}
+#endif
+
 	signal(num, SIG_DFL); //default signal action
 	raise(num);
 	I_Quit();
