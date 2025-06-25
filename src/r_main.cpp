@@ -1114,6 +1114,7 @@ static void R_SetupSkyScale(player_t *player, camera_t *thiscam, mapheader_t *mh
 	{
 		if (skyboxmo[1])
 		{
+			angle_t ang;
 			fixed_t x = 0, y = 0;
 
 			if (mh->skybox_scalex > 0)
@@ -1126,31 +1127,29 @@ static void R_SetupSkyScale(player_t *player, camera_t *thiscam, mapheader_t *mh
 			else if (mh->skybox_scaley < 0)
 				y = (moy - skyboxmo[1]->y) * -mh->skybox_scaley;
 
-			if (viewmobj->angle == 0)
+			switch (viewmobj->angle)
 			{
-				newview->x += x;
-				newview->y += y;
-			}
-			else if (viewmobj->angle == ANGLE_90)
-			{
-				newview->x -= y;
-				newview->y += x;
-			}
-			else if (viewmobj->angle == ANGLE_180)
-			{
-				newview->x -= x;\
-				newview->y -= y;\
-			}
-			else if (viewmobj->angle == ANGLE_270)
-			{
-				newview->x += y;
-				newview->y -= x;
-			}
-			else
-			{
-				angle_t ang = viewmobj->angle>>ANGLETOFINESHIFT;
-				newview->x  += FixedMul(x,FINECOSINE(ang)) - FixedMul(y,  FINESINE(ang));
-				newview->y += FixedMul(x,  FINESINE(ang)) + FixedMul(y,FINECOSINE(ang));
+				case 0:
+					newview->x += x;
+					newview->y += y;
+					break;
+				case ANGLE_90:
+					newview->x -= y;
+					newview->y += x;
+					break;
+				case ANGLE_180:
+					newview->x -= x;\
+					newview->y -= y;\
+					break;
+				case ANGLE_270:
+					newview->x += y;
+					newview->y -= x;
+					break;
+				default:
+					ang = viewmobj->angle>>ANGLETOFINESHIFT;
+					newview->x  += FixedMul(x,FINECOSINE(ang)) - FixedMul(y,  FINESINE(ang));
+					newview->y += FixedMul(x,  FINESINE(ang)) + FixedMul(y,FINECOSINE(ang));
+					break;
 			}
 		}
 
