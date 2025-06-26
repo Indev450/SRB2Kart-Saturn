@@ -3199,17 +3199,6 @@ static void HWR_RenderBSPNode(INT32 bspnum)
 		bspnum = bsp->children[side^1];
 	}
 
-	// PORTAL CULLING
-	if (portalcullsector)
-	{
-		// skip all subsectors encountered before the portal
-		// destination's front sector
-		if (portalcullsector != subsectors[bspnum & ~NF_SUBSECTOR].sector)
-			return;
-		else
-			portalcullsector = NULL;
-	}
-
 	// e6y: support for extended nodes
 	HWR_Subsector(bspnum == -1 ? 0 : bspnum & ~NF_SUBSECTOR);
 }
@@ -3239,6 +3228,17 @@ static void HWR_RenderPortalBSPNode(INT32 bspnum)
 			return;
 
 		bspnum = bsp->children[side^1];
+	}
+
+	// PORTAL CULLING
+	if (portalcullsector)
+	{
+		// skip all subsectors encountered before the portal
+		// destination's front sector
+		if (portalcullsector != subsectors[bspnum & ~NF_SUBSECTOR].sector)
+			return;
+		else
+			portalcullsector = NULL;
 	}
 
 	// e6y: support for extended nodes
