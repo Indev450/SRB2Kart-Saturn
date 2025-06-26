@@ -76,10 +76,10 @@ static void R_DrawSpanTemplate(drawspandata_t* ds)
 	UINT32 xstep, ystep;
 	UINT32 bit;
 
-	UINT8 *dest = R_Address(ds->x1, ds->y);
-	UINT8 *dsrc;
+	UINT8 * __restrict dest = R_Address(ds->x1, ds->y);
+	UINT8 * __restrict dsrc;
 
-	const UINT8 *deststop = vid.screens[0] + vid.rowbytes * vid.height;
+	const UINT8 * __restrict deststop = vid.screens[0] + vid.rowbytes * vid.height;
 
 	if (dest+8 > deststop)
 	{
@@ -92,8 +92,8 @@ static void R_DrawSpanTemplate(drawspandata_t* ds)
 	xposition = ds->xfrac; yposition = ds->yfrac;
 	xstep = ds->xstep; ystep = ds->ystep;
 
-	const UINT8 *source = ds->source;
-	const UINT8 *colormap = ds->colormap;
+	const UINT8 * __restrict source = ds->source;
+	const UINT8 * __restrict colormap = ds->colormap;
 
 	if constexpr (Type & DS_RIPPLE)
 	{
@@ -190,8 +190,8 @@ static void R_DrawTiltedSpanTemplate(drawspandata_t* ds)
 	UINT32 u, v;
 	int i;
 
-	UINT8 *dest = R_Address(ds->x1, ds->y);
-	UINT8 *dsrc;
+	UINT8 * __restrict dest = R_Address(ds->x1, ds->y);
+	UINT8 * __restrict dsrc;
 
 	float startz, startu, startv;
 	float izstep, uzstep, vzstep;
@@ -362,8 +362,8 @@ DEFINE_SPAN_COMBO(R_DrawTranslucentWaterSpan, DS_TRANSMAP|DS_RIPPLE)
 */
 void R_DrawFogSpan(drawspandata_t* ds)
 {
-	const UINT8 *colormap = ds->colormap;
-	UINT8 *dest = R_Address(ds->x1, ds->y);
+	const UINT8 * __restrict colormap = ds->colormap;
+	UINT8 * __restrict dest = R_Address(ds->x1, ds->y);
 
 	intptr_t count = ds->x2 - ds->x1 + 1;
 
@@ -389,7 +389,7 @@ void R_DrawFogSpan_Tilted(drawspandata_t* ds)
 {
 	int width = ds->x2 - ds->x1;
 	float iz = ds->szp.z + ds->szp.y*(centery-ds->y) + ds->szp.x*(ds->x1-centerx);
-	UINT8 *dest;
+	UINT8 * __restrict dest;
 
 	dest = R_Address(ds->x1, ds->y);
 	const INT32 stride = vid.width;

@@ -31,7 +31,7 @@ enum DrawColumnType
 };
 
 template<DrawColumnType Type>
-static constexpr UINT8 R_GetColumnTranslated(drawcolumndata_t* dc, UINT8 col, const UINT8 *colormap)
+static constexpr UINT8 R_GetColumnTranslated(drawcolumndata_t* dc, UINT8 col, const UINT8 * __restrict colormap)
 {
 	if constexpr (Type & DrawColumnType::DC_COLORMAP)
 	{
@@ -42,7 +42,7 @@ static constexpr UINT8 R_GetColumnTranslated(drawcolumndata_t* dc, UINT8 col, co
 }
 
 template<DrawColumnType Type>
-static constexpr UINT8 R_GetColumnTranslucent(drawcolumndata_t* dc, UINT8 *dest, UINT8 col, const UINT8 *colormap)
+static constexpr UINT8 R_GetColumnTranslucent(drawcolumndata_t* dc, UINT8 * __restrict dest, UINT8 col, const UINT8 * __restrict colormap)
 {
 	col = R_GetColumnTranslated<Type>(dc, col, colormap);
 
@@ -57,7 +57,7 @@ static constexpr UINT8 R_GetColumnTranslucent(drawcolumndata_t* dc, UINT8 *dest,
 }
 
 template<DrawColumnType Type>
-static constexpr UINT8 R_DrawColumnPixel(drawcolumndata_t* dc, UINT8 *dest, UINT32 bit, const UINT8 *source, const UINT8 *colormap)
+static constexpr UINT8 R_DrawColumnPixel(drawcolumndata_t* dc, UINT8 * __restrict dest, UINT32 bit, const __restrict UINT8 *source, const __restrict UINT8 *colormap)
 {
 	UINT8 col = source[bit];
 
@@ -182,18 +182,18 @@ static void R_DrawColumnTemplate(drawcolumndata_t *dc)
 		//
 		// killough 2/1/98: more performance tuning
 
-		fixed_t frac;
+		intptr_t frac;
 		const intptr_t fracstep = dc->iscale;
 		const intptr_t heightmask = dc->sourcelength-1;
-		static const INT32 npow2min = -1;
+		constexpr INT32 npow2min = -1;
 		const INT32 npow2max = dc->sourcelength;
 		const INT32 stride = vid.width;
 
-		const UINT8 *source = dc->source;
-		const lighttable_t *colormap = dc->colormap;
+		const UINT8 * __restrict source = dc->source;
+		const lighttable_t * __restrict colormap = dc->colormap;
 
 		// Framebuffer destination address.
-		UINT8 *dest = R_Address(dc->x, dc->yl);
+		UINT8 * __restrict dest = R_Address(dc->x, dc->yl);
 
 		count++;
 
@@ -275,7 +275,7 @@ static void R_DrawColumnTemplate(drawcolumndata_t *dc)
 
 							// -1 is the lower clamp bound because column posts have a "safe" byte before the real data
 							// and a few bytes after as well
-							*dest = R_DrawColumnPixel<Type>(dc, dest, std::clamp((frac >> FRACBITS), npow2min, npow2max), source, colormap);
+							*dest = R_DrawColumnPixel<Type>(dc, dest, CLAMP((frac >> FRACBITS), npow2min, npow2max), source, colormap);
 
 							dest += stride;
 
@@ -325,7 +325,7 @@ DEFINE_COLUMN_FUNC(R_Draw2sMultiPatchTranslucentColumn, DC_HOLES|DC_TRANSMAP)
 void R_DrawFogColumn(drawcolumndata_t* dc)
 {
 	INT32 count;
-	UINT8 *dest;
+	UINT8 * __restrict dest;
 
 	count = dc->yh - dc->yl;
 
@@ -344,7 +344,7 @@ void R_DrawFogColumn(drawcolumndata_t* dc)
 	dest = R_Address(dc->x, dc->yl);
 
 	const INT32 stride = vid.width;
-	const lighttable_t *colormap = dc->colormap;
+	const lighttable_t * __restrict colormap = dc->colormap;
 
 	// Determine scaling, which is the only mapping to be done.
 	do
