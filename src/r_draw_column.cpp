@@ -220,7 +220,7 @@ static void R_DrawColumnTemplate(drawcolumndata_t *dc)
 						frac += FRACUNIT;
 
 					// texture has no height, so just go
-					while (--count > 0)
+					while (--count >= 0)
 					{
 						*dest = R_DrawColumnPixel<Type>(dc, dest, frac>>FRACBITS, source, colormap);
 						dest += stride;
