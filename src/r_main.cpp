@@ -1129,8 +1129,8 @@ static void R_SetupSkyScale(player_t *player, camera_t *thiscam, mapheader_t *mh
 					newview->y += x;
 					break;
 				case ANGLE_180:
-					newview->x -= x;\
-					newview->y -= y;\
+					newview->x -= x;
+					newview->y -= y;
 					break;
 				case ANGLE_270:
 					newview->x += y;
