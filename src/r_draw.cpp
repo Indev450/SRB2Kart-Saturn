@@ -36,15 +36,6 @@
 
 #ifdef HAVE_THREADS
 #include "core/thread_pool.h"
-#ifdef _WIN32
-#include <windows.h>
-#define local_for_thread static __thread
-#else
-#include <threads.h>
-#define local_for_thread thread_local static
-#endif
-#else
-#define local_for_thread static
 #endif
 
 // ==========================================================================
@@ -90,7 +81,19 @@ floatv3_t *ds_su, *ds_sv, *ds_sz;
 float focallengthf;
 
 // For, uh, tilted lighting, duh.
-local_for_thread std::unique_ptr<INT32[]> tiltlight;
+#ifdef HAVE_THREADS
+#ifdef _WIN32
+#include <windows.h>
+#define local_for_thread static __thread
+#else
+#include <threads.h>
+#define local_for_thread thread_local static
+#endif
+#else
+#define local_for_thread static
+#endif
+
+local_for_thread INT32 *tiltlighting;
 
 // --------------------------------------------
 // c drawer routines
@@ -483,12 +486,13 @@ static void R_AllocViewMemory(void)
 
 	xtoviewangle      = static_cast<angle_t*>(Z_Realloc(xtoviewangle, sizeof(*xtoviewangle) * (viewwidth + 1), PU_STATIC, NULL));
 
-	auto init_tiltlighting = [](INT32 size) {
-		tiltlight = std::make_unique<INT32[]>(size);
+	auto init_tiltlighting = [] {
+		tiltlighting = static_cast<INT32*>(realloc(tiltlighting, sizeof(*tiltlighting) * viewwidth)); // dont use Zone memory since its not thread safe
 	};
-	init_tiltlighting(viewwidth); // allocate for main thread
+
+	init_tiltlighting();
 #ifdef HAVE_THREADS
-	srb2::g_main_threadpool->for_each([=] { init_tiltlighting(viewwidth); });
+	srb2::g_main_threadpool->for_each(std::move(init_tiltlighting));
 #endif
 
 	R_AllocSegMemory();
