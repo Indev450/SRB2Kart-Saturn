@@ -51,8 +51,6 @@ fixed_t P_InterceptVector(divline_t *v2, divline_t *v1);
 INT32 P_BoxOnLineSide(fixed_t *tmbox, const line_t *ld);
 void P_UnsetPrecipThingPosition(precipmobj_t *thing);
 void P_SetPrecipitationThingPosition(precipmobj_t *thing);
-void P_LinkToBlockMap(mobj_t *thing, mobj_t **bmap);
-void P_UnlinkfromBlockMap(mobj_t *thing);
 void P_CreatePrecipSecNodeList(precipmobj_t *thing, fixed_t x,fixed_t y);
 boolean P_SceneryTryMove(mobj_t *thing, fixed_t x, fixed_t y);
 

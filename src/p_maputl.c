@@ -740,7 +740,23 @@ void P_UnsetThingPosition(mobj_t *thing)
 		thing->touching_sectorlist = NULL; //to be restored by P_SetThingPosition
 	}
 
-	P_UnlinkfromBlockMap(thing);
+	if (!(thing->flags & MF_NOBLOCKMAP))
+	{
+		/* inert things don't need to be in blockmap
+		 *
+		 * killough 8/11/98: simpler scheme using pointers-to-pointers for prev
+		 * pointers, allows head node pointers to be treated like everything else
+		 *
+		 * Also more robust, since it doesn't depend on current position for
+		 * unlinking. Old method required computing head node based on position
+		 * at time of unlinking, assuming it was the same position as during
+		 * linking.
+		 */
+
+		mobj_t *bnext, **bprev = thing->bprev;
+		if (bprev && (*bprev = bnext = thing->bnext) != NULL)  // unlink from block map
+			bnext->bprev = bprev;
+	}
 }
 
 void P_UnsetPrecipThingPosition(precipmobj_t *thing)
@@ -752,7 +768,7 @@ void P_UnsetPrecipThingPosition(precipmobj_t *thing)
 		bnext->bprev = bprev;
 }
 
-void P_LinkToBlockMap(mobj_t *thing, mobj_t **bmap)
+static void P_LinkToBlockMap(mobj_t *thing, mobj_t **bmap)
 {
 	const INT32 blockx = (unsigned)(thing->x - bmaporgx) >> MAPBLOCKSHIFT;
 	const INT32 blocky = (unsigned)(thing->y - bmaporgy) >> MAPBLOCKSHIFT;
@@ -778,27 +794,6 @@ void P_LinkToBlockMap(mobj_t *thing, mobj_t **bmap)
 	else // thing is off the map
 	{
 		thing->bnext = NULL, thing->bprev = NULL;
-	}
-}
-
-void P_UnlinkfromBlockMap(mobj_t *thing)
-{
-	if (!(thing->flags & MF_NOBLOCKMAP))
-	{
-		/* inert things don't need to be in blockmap
-		 *
-		 * killough 8/11/98: simpler scheme using pointers-to-pointers for prev
-		 * pointers, allows head node pointers to be treated like everything else
-		 *
-		 * Also more robust, since it doesn't depend on current position for
-		 * unlinking. Old method required computing head node based on position
-		 * at time of unlinking, assuming it was the same position as during
-		 * linking.
-		 */
-
-		mobj_t *bnext, **bprev = thing->bprev;
-		if (bprev && (*bprev = bnext = thing->bnext) != NULL)  // unlink from block map
-			bnext->bprev = bprev;
 	}
 }
 
