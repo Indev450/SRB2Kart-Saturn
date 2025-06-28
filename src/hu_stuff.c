@@ -1643,7 +1643,7 @@ static void HU_drawMiniChat(void)
 			else if (msg[j] == ':' && (emote = M_VerifyEmote(msg+j, &emotelen)))
 			{
 				if (cv_chatbacktint.value) // on request of wolfy
-					V_DrawFillConsoleMap(x + dx + 2, y+dy, HU_EmoteWidth(emote), charheight, 239|V_SNAPTOBOTTOM|V_SNAPTOLEFT);
+					V_DrawFillConsoleMap(x + dx + 2, y+dy, HU_EmoteWidth(emote)-charwidth/2, charheight, 239|V_SNAPTOBOTTOM|V_SNAPTOLEFT);
 
 				dx += HU_DrawEmote(x+dx+2, y+dy, emote, V_SNAPTOBOTTOM|V_SNAPTOLEFT|transflag) - charwidth;
 
