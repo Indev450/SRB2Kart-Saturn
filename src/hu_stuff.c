@@ -1752,7 +1752,8 @@ static void HU_drawChatLog(INT32 offset)
 			}
 			else if (msg[j] == ':' && (emote = M_VerifyEmote(msg+j, &emotelen)))
 			{
-				dx += HU_DrawEmote(x+dx+2, y+dy, emote, V_SNAPTOBOTTOM|V_SNAPTOLEFT) - charwidth;
+				if ((y+dy+2 >= chat_topy) && (y+dy < (chat_bottomy)))
+					dx += HU_DrawEmote(x+dx+2, y+dy, emote, V_SNAPTOBOTTOM|V_SNAPTOLEFT) - charwidth;
 				j += emotelen;
 			}
 			else
