@@ -4451,6 +4451,8 @@ void P_PlayerThink(player_t *player)
 		I_Error("p_playerthink: players[%s].mo == NULL", sizeu1(playeri));
 #endif
 
+	player->driftlevel = 0; // idk where to put this
+
 	// todo: Figure out what is actually causing these problems in the first place...
 	if ((player->health <= 0 || player->mo->health <= 0) && player->playerstate == PST_LIVE) //you should be DEAD!
 	{
