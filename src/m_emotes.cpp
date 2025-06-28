@@ -77,7 +77,6 @@ void M_LoadEmotes(UINT16 wadnum)
 				continue;
 			}
 
-			// This first->second looks kind of weird i know
 			emote = &emotes[emote_name];
 
 			emote->timeperframe = 1;
