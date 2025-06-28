@@ -163,6 +163,13 @@ void M_LoadEmotes(UINT16 wadnum)
 	CONS_Printf("Added %d emotes\n", numemotes);
 }
 
+void M_InitEmotes(void)
+{
+	UINT16 i;
+	for (i = 0; i < numwadfiles; i++)
+		M_LoadEmotes(i);
+}
+
 emote_t *M_FindEmote(const char *name, int skip)
 {
 	if (!cv_emotes.value)

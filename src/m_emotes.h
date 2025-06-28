@@ -22,6 +22,9 @@ typedef struct emote_s {
 // Reads and adds emotes from EMOTES lump, with syntax similar to soc
 void M_LoadEmotes(UINT16 wadnum);
 
+// Load emotes from all base wads
+void M_InitEmotes(void);
+
 // Finds first matching emote, ignoring first few matches
 emote_t *M_FindEmote(const char *name, int skips);
 
