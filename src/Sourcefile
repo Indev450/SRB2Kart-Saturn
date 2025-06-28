@@ -28,6 +28,7 @@ m_cond.c
 m_fixed.c
 m_menu.c
 m_textinput.c
+m_emotes.cpp
 m_misc.c
 m_perfstats.c
 m_queue.c

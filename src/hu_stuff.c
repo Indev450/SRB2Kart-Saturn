@@ -17,6 +17,7 @@
 
 #include "m_menu.h" // gametype_cons_t
 #include "m_cond.h" // emblems
+#include "m_emotes.h"
 
 #include "d_clisrv.h"
 
@@ -93,6 +94,7 @@ static textinput_t w_chat;
 static boolean headsupactive = false;
 boolean hu_showscores; // draw rankings
 static char hu_tick;
+static tic_t hu_emoteanim = 0;
 
 static huddrawlist_h luahuddrawlist_scores;
 
@@ -1102,6 +1104,7 @@ void HU_Ticker(void)
 		return;
 
 	hu_tick++;
+	hu_emoteanim++;
 	hu_tick &= 7; // currently only to blink chat input cursor
 
 	if (PLAYER1INPUTDOWN(gc_scores))
@@ -1406,6 +1409,40 @@ boolean HU_Responder(event_t *ev)
 
 #ifndef NONET
 
+static INT32 HU_DrawEmote(INT32 x, INT32 y, emote_t *emote, INT32 flags)
+{
+	if (emote->numframes == 0)
+		return 4; // charwidth
+
+	const char *lumpname = emote->frames[(hu_emoteanim/emote->timeperframe) % emote->numframes];
+	patch_t *emotepatch = W_CachePatchName(lumpname, PU_CACHE);
+
+	int emotewidth = min(6, emotepatch->width);
+	int charheight = 6;
+
+	fixed_t scale = (FRACUNIT/emotepatch->width)*emotewidth;
+
+	x *= FRACUNIT;
+	y *= FRACUNIT;
+
+	y -= (scale*emotepatch->height-charheight*FRACUNIT)/2;
+
+	V_DrawFixedPatch(x, y, scale, flags, emotepatch, NULL);
+
+	return emotewidth;
+}
+
+static INT32 HU_EmoteWidth(emote_t *emote)
+{
+	if (emote->numframes == 0)
+		return 4; // charwidth
+
+	const char *lumpname = emote->frames[(hu_emoteanim/emote->timeperframe) % emote->numframes];
+	patch_t *emotepatch = W_CachePatchName(lumpname, PU_CACHE);
+
+	return min(8, emotepatch->width);
+}
+
 // Precompile a wordwrapped string to any given width.
 // This is a muuuch better method than V_WORDWRAP.
 // again stolen and modified a bit from video.c, don't mind me, will need to rearrange this one day.
@@ -1417,6 +1454,8 @@ static char *CHAT_WordWrap(INT32 x, INT32 w, INT32 option, const char *string)
 	size_t slen;
 	char *newstring = Z_StrDup(string);
 	INT32 spacewidth = (vid.width < 640) ? 8 : 4, charwidth = (vid.width < 640) ? 8 : 4;
+	emote_t *emote = NULL;
+	int emotelen = 0;
 
 	slen = strlen(string);
 	x = 0;
@@ -1438,7 +1477,12 @@ static char *CHAT_WordWrap(INT32 x, INT32 w, INT32 option, const char *string)
 			c = toupper(c);
 		c -= HU_FONTSTART;
 
-		if (c < 0 || c >= HU_FONTSIZE || !hu_font[c])
+		if (string[i] == ':' && (emote = M_VerifyEmote(string+i, &emotelen)))
+		{
+			chw = HU_EmoteWidth(emote);
+			i += emotelen-1;
+		}
+		else if (c < 0 || c >= HU_FONTSIZE || !hu_font[c])
 		{
 			chw = spacewidth;
 			lastusablespace = i;
@@ -1459,7 +1503,6 @@ static char *CHAT_WordWrap(INT32 x, INT32 w, INT32 option, const char *string)
 	}
 	return newstring;
 }
-
 
 // 30/7/18: chaty is now the distance at which the lowest point of the chat will be drawn if that makes any sense.
 
@@ -1493,6 +1536,8 @@ static void HU_drawMiniChat(void)
 		char *msg = CHAT_WordWrap(x+2, boxw-(charwidth*2), V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_ALLOWLOWERCASE, chat_mini[i-1]);
 		size_t j = 0;
 		INT32 linescount = 0;
+		emote_t *emote = NULL;
+		int emotelen = 0;
 
 		while(msg[j]) // iterate through msg
 		{
@@ -1516,6 +1561,11 @@ static void HU_drawMiniChat(void)
 				}
 
 				++j;
+			}
+			else if (msg[j] == ':' && (emote = M_VerifyEmote(msg+j, &emotelen)))
+			{
+				dx += HU_EmoteWidth(emote) - charwidth;
+				j += emotelen;
 			}
 			else
 			{
@@ -1562,6 +1612,8 @@ static void HU_drawMiniChat(void)
 		size_t j = 0;
 		char *msg = CHAT_WordWrap(x+2, boxw-(charwidth*2), V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_ALLOWLOWERCASE, chat_mini[i]); // get the current message, and word wrap it.
 		UINT8 *colormap = NULL;
+		emote_t *emote = NULL;
+		int emotelen = 0;
 
 		while(msg[j]) // iterate through msg
 		{
@@ -1587,6 +1639,15 @@ static void HU_drawMiniChat(void)
 				}
 
 				++j;
+			}
+			else if (msg[j] == ':' && (emote = M_VerifyEmote(msg+j, &emotelen)))
+			{
+				if (cv_chatbacktint.value) // on request of wolfy
+					V_DrawFillConsoleMap(x + dx + 2, y+dy, HU_EmoteWidth(emote)-charwidth/2, charheight, 239|V_SNAPTOBOTTOM|V_SNAPTOLEFT);
+
+				dx += HU_DrawEmote(x+dx+2, y+dy, emote, V_SNAPTOBOTTOM|V_SNAPTOLEFT|transflag) - charwidth;
+
+				j += emotelen;
 			}
 			else
 			{
@@ -1665,6 +1726,9 @@ static void HU_drawChatLog(INT32 offset)
 		INT32 j = 0;
 		char *msg = CHAT_WordWrap(x+2, boxw-(charwidth*2), V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_ALLOWLOWERCASE, chat_log[i]); // get the current message, and word wrap it.
 		UINT8 *colormap = NULL;
+		emote_t *emote = NULL;
+		int emotelen = 0;
+
 		while(msg[j]) // iterate through msg
 		{
 			if (msg[j] < HU_FONTSTART) // don't draw
@@ -1685,6 +1749,11 @@ static void HU_drawChatLog(INT32 offset)
 				}
 
 				++j;
+			}
+			else if (msg[j] == ':' && (emote = M_VerifyEmote(msg+j, &emotelen)))
+			{
+				dx += HU_DrawEmote(x+dx+2, y+dy, emote, V_SNAPTOBOTTOM|V_SNAPTOLEFT) - charwidth;
+				j += emotelen;
 			}
 			else
 			{
