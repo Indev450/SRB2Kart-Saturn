@@ -11,13 +11,14 @@
 /// \file
 /// \brief hardware renderer, using the standard HardWareRender driver DLL for SRB2
 
+#ifdef HWRENDER
+
 #include <algorithm>
-#include <math.h>
+#define _USE_MATH_DEFINES
+#include <cmath>
 
 #include "../doomstat.h"
 #include "../doomdef.h"
-
-#ifdef HWRENDER
 
 #include "hw_main.h"
 #include "hw_glob.h"
