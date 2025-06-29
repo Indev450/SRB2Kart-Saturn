@@ -1369,7 +1369,7 @@ boolean HU_Responder(event_t *ev)
 		&& ev->data1 != gamecontrol[0][gc_talkkey][1]))
 			return false;
 
-		M_TextInputHandle(&w_chat, c);
+		M_TextInputHandleEmotes(&w_chat, c);
 
 		if (c == KEY_ENTER)
 		{
@@ -1409,39 +1409,7 @@ boolean HU_Responder(event_t *ev)
 
 #ifndef NONET
 
-static INT32 HU_DrawEmote(INT32 x, INT32 y, emote_t *emote, INT32 flags)
-{
-	if (emote->numframes == 0)
-		return 4; // charwidth
-
-	const char *lumpname = emote->frames[(hu_emoteanim/emote->timeperframe) % emote->numframes];
-	patch_t *emotepatch = W_CachePatchName(lumpname, PU_CACHE);
-
-	int emotewidth = min(6, emotepatch->width);
-	int charheight = 6;
-
-	fixed_t scale = (FRACUNIT/emotepatch->width)*emotewidth;
-
-	x *= FRACUNIT;
-	y *= FRACUNIT;
-
-	y -= (scale*emotepatch->height-charheight*FRACUNIT)/2;
-
-	V_DrawFixedPatch(x, y, scale, flags, emotepatch, NULL);
-
-	return emotewidth;
-}
-
-static INT32 HU_EmoteWidth(emote_t *emote)
-{
-	if (emote->numframes == 0)
-		return 4; // charwidth
-
-	const char *lumpname = emote->frames[(hu_emoteanim/emote->timeperframe) % emote->numframes];
-	patch_t *emotepatch = W_CachePatchName(lumpname, PU_CACHE);
-
-	return min(8, emotepatch->width);
-}
+#define HU_DrawEmote(x, y, emote, flags) M_DrawEmote((x), (y), (emote), hu_emoteanim, (flags))
 
 // Precompile a wordwrapped string to any given width.
 // This is a muuuch better method than V_WORDWRAP.
@@ -1477,10 +1445,10 @@ static char *CHAT_WordWrap(INT32 x, INT32 w, INT32 option, const char *string)
 			c = toupper(c);
 		c -= HU_FONTSTART;
 
-		if (string[i] == ':' && (emote = M_VerifyEmote(string+i, &emotelen)))
+		if ((emote = M_VerifyEmote(string+i, &emotelen)))
 		{
-			chw = HU_EmoteWidth(emote);
-			i += emotelen-1;
+			chw = EMOTEWIDTH;
+			i += emotelen-1; // Will be incremented on next loop iteration, hence -1
 		}
 		else if (c < 0 || c >= HU_FONTSIZE || !hu_font[c])
 		{
@@ -1562,9 +1530,9 @@ static void HU_drawMiniChat(void)
 
 				++j;
 			}
-			else if (msg[j] == ':' && (emote = M_VerifyEmote(msg+j, &emotelen)))
+			else if ((emote = M_VerifyEmote(msg+j, &emotelen)))
 			{
-				dx += HU_EmoteWidth(emote) - charwidth;
+				dx += EMOTEWIDTH - charwidth;
 				j += emotelen;
 			}
 			else
@@ -1640,12 +1608,13 @@ static void HU_drawMiniChat(void)
 
 				++j;
 			}
-			else if (msg[j] == ':' && (emote = M_VerifyEmote(msg+j, &emotelen)))
+			else if ((emote = M_VerifyEmote(msg+j, &emotelen)))
 			{
 				if (cv_chatbacktint.value) // on request of wolfy
-					V_DrawFillConsoleMap(x + dx + 2, y+dy, HU_EmoteWidth(emote)-charwidth/2, charheight, 239|V_SNAPTOBOTTOM|V_SNAPTOLEFT);
+					V_DrawFillConsoleMap(x + dx + 2, y+dy, EMOTEWIDTH, charheight, 239|V_SNAPTOBOTTOM|V_SNAPTOLEFT);
 
-				dx += HU_DrawEmote(x+dx+2, y+dy, emote, V_SNAPTOBOTTOM|V_SNAPTOLEFT|transflag) - charwidth;
+				HU_DrawEmote(x+dx+2, y+dy, emote, V_SNAPTOBOTTOM|V_SNAPTOLEFT|transflag);
+				dx += EMOTEWIDTH - charwidth;
 
 				j += emotelen;
 			}
@@ -1750,10 +1719,13 @@ static void HU_drawChatLog(INT32 offset)
 
 				++j;
 			}
-			else if (msg[j] == ':' && (emote = M_VerifyEmote(msg+j, &emotelen)))
+			else if ((emote = M_VerifyEmote(msg+j, &emotelen)))
 			{
 				if ((y+dy+2 >= chat_topy) && (y+dy < (chat_bottomy)))
-					dx += HU_DrawEmote(x+dx+2, y+dy, emote, V_SNAPTOBOTTOM|V_SNAPTOLEFT) - charwidth;
+				{
+					HU_DrawEmote(x+dx+2, y+dy, emote, V_SNAPTOBOTTOM|V_SNAPTOLEFT);
+					dx += EMOTEWIDTH - charwidth;
+				}
 				j += emotelen;
 			}
 			else
@@ -1881,7 +1853,7 @@ static void HU_DrawChat(void)
 	typelines = 1;
 
 	if ((w_chat.cursor == 0 || w_chat.length == 0) && hu_tick < 4)
-		V_DrawChatCharacter(chatx+2+c+charwidth*w_chat.cursor, y+1, '_'|V_SNAPTOBOTTOM|V_SNAPTOLEFT|t, !cv_allcaps.value, NULL);
+		V_DrawChatCharacter(chatx+2+c, y+1, '_'|V_SNAPTOBOTTOM|V_SNAPTOLEFT|t, !cv_allcaps.value, NULL);
 
 	if (w_chat.select != w_chat.cursor)
 	{
@@ -1892,29 +1864,39 @@ static void HU_DrawChat(void)
 	while (w_chat_buf[i])
 	{
 		boolean skippedline = false;
-		if (w_chat.cursor == (i+1))
+		emote_t *emote = NULL;
+		int emotelen = 0;
+		int drawwidth = charwidth; // if we've drawn emote, selection needs to account for that
+
+		if ((emote = M_VerifyEmote(w_chat_buf+i, &emotelen)))
+		{
+			HU_DrawEmote(chatx + c + 2, y-1, emote, V_SNAPTOBOTTOM|V_SNAPTOLEFT|t);
+			c += EMOTEWIDTH - charwidth;
+			i += emotelen-1;
+			drawwidth = EMOTEWIDTH;
+		}
+		else if (w_chat_buf[i] >= HU_FONTSTART) //Hurdler: isn't it better like that?
+			V_DrawChatCharacter(chatx + c + 2, y, w_chat_buf[i] | V_SNAPTOBOTTOM|V_SNAPTOLEFT | t, !cv_allcaps.value, NULL);
+
+		// Draw selection
+		if (i >= select_start && i < select_end)
+			V_DrawFill(chatx + c + 2 - (drawwidth-charwidth), y-1, drawwidth, charheight, 103|V_TRANSLUCENT|V_SNAPTOBOTTOM|V_SNAPTOLEFT|t);
+
+		++i;
+
+		if (w_chat.cursor == i)
 		{
 			INT32 cursorx = (c+charwidth < boxw-charwidth) ? (chatx + 2 + c+charwidth) : (chatx+1); // we may have to go down.
 			INT32 cursory = (cursorx != chatx+1) ? (y) : (y+charheight);
 			if (hu_tick < 4)
 				V_DrawChatCharacter(cursorx, cursory+1, '_' |V_SNAPTOBOTTOM|V_SNAPTOLEFT|t, !cv_allcaps.value, NULL);
 
-			if (cursorx == chatx+1 && saylen == i) // a weirdo hack
+			if (cursorx == chatx+1 && saylen == i-1) // a weirdo hack
 			{
 				typelines += 1;
 				skippedline = true;
 			}
 		}
-
-		//Hurdler: isn't it better like that?
-		if (w_chat_buf[i] >= HU_FONTSTART)
-			V_DrawChatCharacter(chatx + c + 2, y, w_chat_buf[i] | V_SNAPTOBOTTOM|V_SNAPTOLEFT | t, !cv_allcaps.value, NULL);
-
-		// Draw selection
-		if (i >= select_start && i < select_end)
-			V_DrawFill(chatx + c + 2, y-1, charwidth, charheight, 103|V_TRANSLUCENT|V_SNAPTOBOTTOM|V_SNAPTOLEFT|t);
-
-		++i;
 
 		c += charwidth;
 		if (c > boxw-(charwidth*2) && !skippedline)
