@@ -14,6 +14,10 @@
 #ifndef __STSTUFF_H__
 #define __STSTUFF_H__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "doomtype.h"
 #include "d_event.h"
 #include "d_player.h"
@@ -141,5 +145,9 @@ extern UINT16 objectsdrawn;
 // variable to stop mayonaka static from flickering
 extern consvar_t cv_lessflicker;
 extern consvar_t cv_stagetitle;
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif

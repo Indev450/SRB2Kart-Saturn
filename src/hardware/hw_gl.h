@@ -13,6 +13,10 @@
 #ifndef __HWR_GL_H__
 #define __HWR_GL_H__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "../screen.h"
 
 #include "hw_data.h"
@@ -75,5 +79,9 @@ void GL_SetPaletteLookup(UINT8 *lut);
 UINT32 GL_CreateLightTable(RGBA_t *hw_lighttable);
 void GL_ClearLightTables(void);
 void GL_SetScreenPalette(RGBA_t *palette);
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif // __HWR_GL_H__
