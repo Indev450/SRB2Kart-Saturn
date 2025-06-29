@@ -491,7 +491,7 @@ boolean R_DoCulling(line_t *cullheight, line_t *viewcullheight, fixed_t vz, fixe
 // Returns search dimensions within a blockmap, in the direction of viewangle and out to a certain distance.
 void R_GetRenderBlockMapDimensions(fixed_t drawdist, INT32 *xl, INT32 *xh, INT32 *yl, INT32 *yh)
 {
-	const angle_t left = viewangle - clipangle;
+	const angle_t left  = viewangle - clipangle;
 	const angle_t right = viewangle + clipangle;
 
 	const fixed_t vxleft = viewx + FixedMul(drawdist, FCOS(left));
@@ -656,7 +656,6 @@ void R_CheckViewMorph(void)
 
 	rollangle >>= ANGLETOFINESHIFT;
 	rollangle = ((rollangle+2) & ~3) & FINEMASK; // Limit the distinct number of angles to reduce recalcs from angles changing a lot.
-
 
 	if (rollangle == viewmorph.rollangle &&
 		viewmorph.scrmapsize == vid.width*vid.height)
@@ -1363,7 +1362,7 @@ void R_RenderPlayerView(player_t *player)
 	// load previous saved value of skyVisible for the player
 	skyVisible = skyVisiblePerPlayer[viewssnum];
 
-	fixed_t fov = R_GetPlayerFov(player);
+	const fixed_t fov = R_GetPlayerFov(player);
 
 	if (viewfov[viewssnum] != fov)
 	{
