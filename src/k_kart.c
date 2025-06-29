@@ -820,7 +820,8 @@ UINT8 K_GetKartColorByName(const char *name)
 
 UINT8 K_GetHudColor(void)
 {
-	if (cv_colorizedhud.value && cv_colorizedhudcolor.value) return cv_colorizedhudcolor.value;
+	if (cv_colorizedhud.value && cv_colorizedhudcolor.value)
+		return cv_colorizedhudcolor.value;
 
 	return ((stplyr && gamestate == GS_LEVEL) ? stplyr->skincolor : cv_playercolor.value);
 }
@@ -841,7 +842,7 @@ enum
 	SPEEDO_EXTRA3,
 };
 
-static UINT8 K_GetSpeedometerStyle(void)
+static SINT8 K_GetSpeedometerStyle(void)
 {
 	if (cv_newspeedometer.value == 2 && xtra_speedo)
 		return SPEEDO_EXTRA;
@@ -4605,13 +4606,13 @@ static void K_DoShrink(player_t *user)
 
 void K_DoPogoSpring(mobj_t *mo, fixed_t vertispeed, UINT8 sound)
 {
-	const fixed_t vscale = mapobjectscale + (mo->scale - mapobjectscale);
-
 	if (mo->player && mo->player->spectator)
 		return;
 
 	if (mo->eflags & MFE_SPRUNG)
 		return;
+
+	const fixed_t vscale = mapobjectscale + (mo->scale - mapobjectscale);
 
 	mo->standingslope = NULL;
 
@@ -5515,12 +5516,12 @@ player_t *K_FindJawzTarget(mobj_t *actor, player_t *source)
 // Engine Sounds.
 static void K_UpdateEngineSounds(player_t *player, ticcmd_t *cmd)
 {
-	const INT32 numsnds = 13;
+	static const INT32 numsnds = 13;
 
-	const fixed_t closedist = 160*FRACUNIT;
-	const fixed_t fardist = 1536*FRACUNIT;
+	static const fixed_t closedist = 160*FRACUNIT;
+	static const fixed_t fardist   = 1536*FRACUNIT;
 
-	const UINT8 dampenval = 48; // 255 * 48 = close enough to FRACUNIT/6
+	static const UINT8 dampenval = 48; // 255 * 48 = close enough to FRACUNIT/6
 
 	INT32 class, s, w; // engine class number
 
@@ -5529,18 +5530,6 @@ static void K_UpdateEngineSounds(player_t *player, ticcmd_t *cmd)
 
 	INT32 targetsnd = 0;
 	INT32 i;
-
-	s = (player->kartspeed - 1) / 3;
-	w = (player->kartweight - 1) / 3;
-
-#define LOCKSTAT(stat) \
-	if (stat < 0) { stat = 0; } \
-	if (stat > 2) { stat = 2; }
-	LOCKSTAT(s);
-	LOCKSTAT(w);
-#undef LOCKSTAT
-
-	class = s + (3*w);
 
 	if (leveltime < 8 || player->spectator || player->exiting)
 	{
@@ -5647,13 +5636,25 @@ static void K_UpdateEngineSounds(player_t *player, ticcmd_t *cmd)
 		return;
 	}
 
+	s = (player->kartspeed - 1) / 3;
+	w = (player->kartweight - 1) / 3;
+
+#define LOCKSTAT(stat) \
+	if (stat < 0) { stat = 0; } \
+	if (stat > 2) { stat = 2; }
+	LOCKSTAT(s);
+	LOCKSTAT(w);
+#undef LOCKSTAT
+
+	class = s + (3*w);
+
 	S_StartSoundAtVolume(player->mo, (sfx_krta00 + player->kartstuff[k_enginesnd]) + (class * numsnds), volume);
 }
 
 static void K_UpdateInvincibilitySounds(player_t *player)
 {
 	INT32 sfxnum = sfx_None;
-	boolean localplayer = P_IsLocalPlayer(player);
+	const boolean localplayer = P_IsLocalPlayer(player);
 
 	if (player->mo->health > 0)
 	{
@@ -5719,21 +5720,14 @@ void K_KartPlayerHUDUpdate(player_t *player)
 
 static boolean K_SpeedLinesShouldBlend(player_t *player)
 {
-	fixed_t percentspeed = 0;
-
-	if (!cv_playerblendeffects.value)
-		return false;
-
-	if (!player->mo)
+	if (!cv_playerblendeffects.value || !player->mo)
 		return false;
 
 	if (player->kartstuff[k_sneakertimer])
 		return true;
 
 	// this is how the percentage speedometer calcs, i suck at maths so this was the easiest thing to do lmao
-	percentspeed = (FixedDiv(player->speed, FixedMul(K_GetKartSpeed(player, false), ORIG_FRICTION))*100)>>FRACBITS;
-
-	if (percentspeed > 127) // sneaker boost is around 25%
+	if ((FixedDiv(player->speed, FixedMul(K_GetKartSpeed(player, false), ORIG_FRICTION))*100)>>FRACBITS > 127) // sneaker boost is around 25%
 		return true;
 
 	return false;
@@ -5851,6 +5845,7 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 	else if (player->kartstuff[k_eggmanexplode]) // You're gonna diiiiie
 	{
 		const INT32 flashtime = 4<<(player->kartstuff[k_eggmanexplode]/TICRATE);
+
 		if (player->kartstuff[k_eggmanexplode] == 1 || (player->kartstuff[k_eggmanexplode] % (flashtime/2) != 0))
 		{
 			player->mo->colorized = false;
@@ -6182,6 +6177,7 @@ boolean K_CheckPlayersRespawnColliding(INT32 playernum, fixed_t x, fixed_t y)
 {
 	INT32 i;
 	fixed_t p1radius = players[playernum].mo->radius;
+
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
 		if (playernum == i || !playeringame[i] || players[i].spectator || !players[i].mo || players[i].mo->health <= 0
@@ -6241,9 +6237,9 @@ INT16 K_GetKartTurnValue(player_t *player, INT16 turnvalue)
 		return turnvalue;
 	}
 
-	fixed_t p_topspeed = K_GetKartSpeed(player, false);
-	fixed_t p_curspeed = min(player->speed, p_topspeed * 2);
-	fixed_t p_maxspeed = p_topspeed * 3;
+	fixed_t p_topspeed  = K_GetKartSpeed(player, false);
+	fixed_t p_curspeed  = min(player->speed, p_topspeed * 2);
+	fixed_t p_maxspeed  = p_topspeed * 3;
 	fixed_t adjustangle = FixedDiv((p_maxspeed>>16) - (p_curspeed>>16), (p_maxspeed>>16) + player->kartweight);
 
 	turnvalue = FixedMul(turnvalue, adjustangle); // Weight has a small effect on turning
@@ -6477,13 +6473,15 @@ static void K_KartDrift(player_t *player, boolean onground)
 void K_KartUpdatePosition(player_t *player)
 {
 	fixed_t position = 1;
-	fixed_t oldposition = player->kartstuff[k_position];
+	fixed_t oldposition;
 	fixed_t i, ppcd, pncd, ipcd, incd;
 	fixed_t pmo, imo;
 	mobj_t *mo;
 
 	if (player->spectator || !player->mo)
 		return;
+
+	oldposition = player->kartstuff[k_position];
 
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
@@ -6624,11 +6622,6 @@ void K_SpawnWaterRunParticles(mobj_t *mobj)
 	if (!haswatertrail)
 		return;
 
-	fixed_t runSpeed = 14 * mobj->scale;
-	fixed_t curSpeed = INT32_MAX;
-	fixed_t topSpeed = INT32_MAX;
-	fixed_t trailScale = FRACUNIT;
-
 	if (mobj->momz != 0)
 	{
 		// Only while touching ground.
@@ -6640,6 +6633,11 @@ void K_SpawnWaterRunParticles(mobj_t *mobj)
 		// Invalid water plane.
 		return;
 	}
+
+	fixed_t runSpeed = 14 * mobj->scale;
+	fixed_t curSpeed = INT32_MAX;
+	fixed_t topSpeed = INT32_MAX;
+	fixed_t trailScale = FRACUNIT;
 
 	if (mobj->player != NULL)
 	{
@@ -7861,14 +7859,294 @@ void K_UpdateSpectateGrief(void)
 #define NUMPOSFRAMES 7 // White, three blues, three reds
 #define NUMWINFRAMES 6 // Red, yellow, green, cyan, blue, purple
 
-//{ 	Patch Definitions
-static patch_t *kp_nodraw;
+//{ Patch Definitions
 
+// --Saturn patches--
+// dont leave those unitialized incase we missed a check somewhere
+
+// -Speedometers-
+
+// Smol speedo
+static patch_t *skp_smallsticker    = NULL;
+static patch_t *skp_smallsticker3   = NULL;
+
+static patch_t *skp_speedpatches[5] = {NULL};
+
+// Achii speedo
+static patch_t *skp_smallstickerachi       =  NULL;
+static patch_t *skp_speedpatchesachi[5]    = {NULL};
+static patch_t *skp_smallstickerachiclr    =  NULL;
+static patch_t *skp_speedpatchesachiclr[5] = {NULL};
+
+// Kartz speedo
+static patch_t *kp_kartzspeedo[25]      = {NULL};
+static patch_t *kp_kartzspeedo_smol[25] = {NULL};
+
+// dial speedometer
+static patch_t *skp_rankfinish             =  NULL;
+static patch_t *skp_dialbase[2]            = {NULL};
+static patch_t *skp_speedpatchesdial[5]    = {NULL};
+static patch_t *skp_dialnum[10]            = {NULL};
+//static patch_t *skp_dialclr              =  NULL;
+static patch_t *skp_dialbaseclr[2]         = {NULL};
+static patch_t *skp_speedpatchesdialclr[5] = {NULL};
+static patch_t *skp_dialnumclr[10]         = {NULL};
+
+// -Colourized hud-
+
+static patch_t *kp_timestickerclr        =  NULL;
+static patch_t *kp_timestickerwideclr    =  NULL;
+static patch_t *kp_lapstickerclr         =  NULL;
+static patch_t *kp_lapstickerbigclr      =  NULL;
+static patch_t *kp_lapstickerbig2clr     =  NULL;
+static patch_t *kp_lapstickerwideclr     =  NULL;
+//static patch_t *kp_lapstickernarrowclr =  NULL;
+static patch_t *kp_bumperstickerclr      =  NULL;
+static patch_t *kp_bumperstickerwideclr  =  NULL;
+static patch_t *kp_karmastickerclr       =  NULL;
+static patch_t *kp_timeoutstickerclr     =  NULL;
+static patch_t *skp_smallstickerclr      =  NULL;
+static patch_t *skp_smallstickerclr3     =  NULL;
+static patch_t *kp_itemmulstickerclr[2]  = {NULL};
+static patch_t *kp_itembgclr[4]          = {NULL};
+
+// -Misc.-
+
+static patch_t *kp_lapstickerbig  = NULL;
+static patch_t *kp_lapstickerbig2 = NULL;
+
+static patch_t *nametagpic    = NULL;
+static patch_t *nametagline   = NULL;
+static patch_t *nametagspeed  = NULL;
+static patch_t *nametagweight = NULL;
+
+static patch_t *driftgauge           = NULL;
+static patch_t *driftgaugecolor      = NULL;
+static patch_t *driftgaugesmall      = NULL;
+static patch_t *driftgaugesmallcolor = NULL;
+
+static patch_t *kp_minimapdot = NULL;
+
+static patch_t *joybacking = NULL;
+static patch_t *joyknob    = NULL;
+static patch_t *joyshadow  = NULL;
+
+static patch_t *kp_multjawz       =  NULL;
+static patch_t *kp_multsneaker[2] = {NULL};
+static patch_t *kp_multbanana[3]  = {NULL};
+
+static void K_LoadSaturnHUDGraphics(void)
+{
+	INT32 i;
+	char buffer[9];
+
+	if (found_extra_kart)
+	{
+		if (xtra_speedo) // smol speedometer
+		{
+			skp_smallsticker    = (patch_t *)W_CachePatchName("SP_SMSTC", PU_HUDGFX);
+			skp_speedpatches[0] = (patch_t *)W_CachePatchName("K_TRNULL", PU_HUDGFX); // lolxd
+			skp_speedpatches[1] = (patch_t *)W_CachePatchName("SP_MKMH",  PU_HUDGFX);
+			skp_speedpatches[2] = (patch_t *)W_CachePatchName("SP_MMPH",  PU_HUDGFX);
+			skp_speedpatches[3] = (patch_t *)W_CachePatchName("SP_MFRAC", PU_HUDGFX);
+			skp_speedpatches[4] = (patch_t *)W_CachePatchName("SP_MPERC", PU_HUDGFX);
+		}
+
+		if (achi_speedo)
+		{
+			skp_smallstickerachi    = (patch_t *)W_CachePatchName("SP_AMSTC", PU_HUDGFX);
+			skp_speedpatchesachi[0] = (patch_t *)W_CachePatchName("K_TRNULL", PU_HUDGFX); // lolxd
+			skp_speedpatchesachi[1] = (patch_t *)W_CachePatchName("SP_AKMH",  PU_HUDGFX);
+			skp_speedpatchesachi[2] = (patch_t *)W_CachePatchName("SP_AMPH",  PU_HUDGFX);
+			skp_speedpatchesachi[3] = (patch_t *)W_CachePatchName("SP_AFRAC", PU_HUDGFX);
+			skp_speedpatchesachi[4] = (patch_t *)W_CachePatchName("SP_APERC", PU_HUDGFX);
+		}
+
+		if (dial_speedo)
+		{
+			skp_rankfinish  = (patch_t *)W_CachePatchName("RANKFIN",  PU_HUDGFX);
+			skp_dialbase[0] = (patch_t *)W_CachePatchName("K_DSPBS1", PU_HUDGFX);
+			skp_dialbase[1] = (patch_t *)W_CachePatchName("K_DSPBS2", PU_HUDGFX);
+
+			skp_speedpatchesdial[0] = (patch_t *)W_CachePatchName("K_TRNULL", PU_HUDGFX); // lolxd
+			skp_speedpatchesdial[1] = (patch_t *)W_CachePatchName("SP_DKMH",  PU_HUDGFX);
+			skp_speedpatchesdial[2] = (patch_t *)W_CachePatchName("SP_DMPH",  PU_HUDGFX);
+			skp_speedpatchesdial[3] = (patch_t *)W_CachePatchName("SP_DFRAC", PU_HUDGFX);
+			skp_speedpatchesdial[4] = (patch_t *)W_CachePatchName("SP_DPERC", PU_HUDGFX);
+
+			sprintf(buffer, "K_DSPNMx");
+			for (i = 0; i < 10; i++)
+			{
+				buffer[7] = '0'+(i%10);
+				skp_dialnum[i] = (patch_t *)W_CachePatchName(buffer, PU_HUDGFX);
+			}
+		}
+
+		// KartZ speedo
+		if (kartz_speedo)
+		{
+			const char* patchNames[] = {
+				"K_KZSP1", "K_KZSP2", "K_KZSP3", "K_KZSP4", "K_KZSP5",
+				"K_KZSP6", "K_KZSP7", "K_KZSP8", "K_KZSP9", "K_KZSP10",
+				"K_KZSP11", "K_KZSP12", "K_KZSP13", "K_KZSP14", "K_KZSP15",
+				"K_KZSP16", "K_KZSP17", "K_KZSP18", "K_KZSP19", "K_KZSP20",
+				"K_KZSP21", "K_KZSP22", "K_KZSP23", "K_KZSP24", "K_KZSP25"
+			};
+
+			for (size_t m = 0; m < sizeof(patchNames) / sizeof(patchNames[0]); ++m)
+			{
+				kp_kartzspeedo[m] = (patch_t *)W_CachePatchName(patchNames[m], PU_HUDGFX);
+			}
+		}
+
+		if (kartz_speedo_smol)
+		{
+			const char* patchNames[] = {
+				"K_KZSS1", "K_KZSS2", "K_KZSS3", "K_KZSS4", "K_KZSS5",
+				"K_KZSS6", "K_KZSS7", "K_KZSS8", "K_KZSS9", "K_KZSS10",
+				"K_KZSS11", "K_KZSS12", "K_KZSS13", "K_KZSS14", "K_KZSS15",
+				"K_KZSS16", "K_KZSS17", "K_KZSS18", "K_KZSS19", "K_KZSS20",
+				"K_KZSS21", "K_KZSS22", "K_KZSS23", "K_KZSS24", "K_KZSS25"
+			};
+
+			for (size_t m = 0; m < sizeof(patchNames) / sizeof(patchNames[0]); ++m)
+			{
+				kp_kartzspeedo_smol[m] = (patch_t *)W_CachePatchName(patchNames[m], PU_HUDGFX);
+			}
+		}
+
+		if (big_lap)
+		{
+			kp_lapstickerbig  = (patch_t *)W_CachePatchName("K_STLAPB", PU_HUDGFX);
+			kp_lapstickerbig2 = (patch_t *)W_CachePatchName("K_STLA2B", PU_HUDGFX);
+		}
+
+		// Nametags
+		if (nametaggfx)
+		{
+			nametagpic    = (patch_t *)W_CachePatchName("NTLINE", PU_HUDGFX);
+			nametagline   = (patch_t *)W_CachePatchName("NTLINEV", PU_HUDGFX);
+			nametagspeed  = (patch_t *)W_CachePatchName("NTSP", PU_HUDGFX);
+			nametagweight = (patch_t *)W_CachePatchName("NTWH", PU_HUDGFX);
+		}
+
+		if (driftgaugegfx)
+		{
+			driftgauge      =  (patch_t *)W_CachePatchName("K_DGAU", PU_HUDGFX);
+			driftgaugesmall =  (patch_t *)W_CachePatchName("K_DGSU", PU_HUDGFX);
+
+			if (driftgaugegfx_clr)
+			{
+				driftgaugecolor      =  (patch_t *)W_CachePatchName("K_DCAU", PU_HUDGFX);
+				driftgaugesmallcolor =  (patch_t *)W_CachePatchName("K_DCSU", PU_HUDGFX);
+			}
+		}
+
+		if (joystickicon)
+		{
+			joybacking = (patch_t *)W_CachePatchName("JOYBCK", PU_HUDGFX);
+			joyknob    = (patch_t *)W_CachePatchName("JOYKNB", PU_HUDGFX);
+			joyshadow  = (patch_t *)W_CachePatchName("JOYSHD", PU_HUDGFX);
+		}
+
+		if (minidoticon)
+		{
+			kp_minimapdot = (patch_t *)W_CachePatchName("MMAPDOT", PU_HUDGFX);
+		}
+
+		if (multiitem_icon)
+		{
+			kp_multsneaker[0] = (patch_t *)W_CachePatchName("K_ITSHO2", PU_HUDGFX);
+			kp_multsneaker[1] = (patch_t *)W_CachePatchName("K_ITSHO3", PU_HUDGFX);
+			kp_multbanana[0]  = (patch_t *)W_CachePatchName("K_ITBAN2", PU_HUDGFX);
+			kp_multbanana[1]  = (patch_t *)W_CachePatchName("K_ITBAN3", PU_HUDGFX);
+			kp_multbanana[2]  = (patch_t *)W_CachePatchName("K_ITBAN4", PU_HUDGFX);
+			kp_multjawz       = (patch_t *)W_CachePatchName("K_ITJAW2", PU_HUDGFX);
+		}
+	}
+
+	if (found_extra2_kart)
+	{
+		if (xtra_speedo_clr)
+		{
+			skp_smallstickerclr = (patch_t *)W_CachePatchName("SC_SMSTC", PU_HUDGFX);
+		}
+
+		if (xtra_speedo_clr3)
+		{
+			skp_smallstickerclr3 = (patch_t *)W_CachePatchName("SC_SM3TC", PU_HUDGFX);
+		}
+
+		if (achi_speedo_clr)
+		{
+			skp_smallstickerachiclr    = (patch_t *)W_CachePatchName("SC_AMSTC", PU_HUDGFX);
+			skp_speedpatchesachiclr[0] = (patch_t *)W_CachePatchName("K_TRNULL", PU_HUDGFX); // lolxd
+			skp_speedpatchesachiclr[1] = (patch_t *)W_CachePatchName("SC_AKMH",  PU_HUDGFX);
+			skp_speedpatchesachiclr[2] = (patch_t *)W_CachePatchName("SC_AMPH",  PU_HUDGFX);
+			skp_speedpatchesachiclr[3] = (patch_t *)W_CachePatchName("SC_AFRAC", PU_HUDGFX);
+			skp_speedpatchesachiclr[4] = (patch_t *)W_CachePatchName("SC_APERC", PU_HUDGFX);
+		}
+
+		if (dial_speedo_clr)
+		{
+			skp_dialbaseclr[0] = (patch_t *)W_CachePatchName("K_DSPBC1", PU_HUDGFX);
+			skp_dialbaseclr[1] = (patch_t *)W_CachePatchName("K_DSPBC2", PU_HUDGFX);
+
+			skp_speedpatchesdialclr[0] = (patch_t *)W_CachePatchName("K_TRNULL", PU_HUDGFX); // lolxd
+			skp_speedpatchesdialclr[1] = (patch_t *)W_CachePatchName("SC_DKMH",  PU_HUDGFX);
+			skp_speedpatchesdialclr[2] = (patch_t *)W_CachePatchName("SC_DMPH",  PU_HUDGFX);
+			skp_speedpatchesdialclr[3] = (patch_t *)W_CachePatchName("SC_DFRAC", PU_HUDGFX);
+			skp_speedpatchesdialclr[4] = (patch_t *)W_CachePatchName("SC_DPERC", PU_HUDGFX);
+
+			sprintf(buffer, "K_DSPNCx");
+			for (i = 0; i < 10; i++)
+			{
+				buffer[7] = '0'+(i%10);
+				skp_dialnumclr[i] = (patch_t *)W_CachePatchName(buffer, PU_HUDGFX);
+			}
+		}
+
+		if (big_lap_color)
+		{
+			kp_lapstickerbigclr  = (patch_t *)W_CachePatchName("K_SCLAPB", PU_HUDGFX);
+			kp_lapstickerbig2clr = (patch_t *)W_CachePatchName("K_SCLA2B", PU_HUDGFX);
+		}
+
+		// Colourized hud
+		if (clr_hud)
+		{
+			kp_timestickerclr       = (patch_t *)W_CachePatchName("K_SCTIME", PU_HUDGFX);
+			kp_timestickerwideclr   = (patch_t *)W_CachePatchName("K_SCTIMW", PU_HUDGFX);
+			kp_lapstickerclr        = (patch_t *)W_CachePatchName("K_SCLAPS", PU_HUDGFX);
+			kp_lapstickerwideclr    = (patch_t *)W_CachePatchName("K_SCLAPW", PU_HUDGFX);
+			kp_bumperstickerclr     = (patch_t *)W_CachePatchName("K_SCBALN", PU_HUDGFX);
+			kp_bumperstickerwideclr = (patch_t *)W_CachePatchName("K_SCBALW", PU_HUDGFX);
+			kp_karmastickerclr      = (patch_t *)W_CachePatchName("K_SCKARM", PU_HUDGFX);
+			kp_timeoutstickerclr    = (patch_t *)W_CachePatchName("K_SCTOUT", PU_HUDGFX);
+			kp_itembgclr[0]         = (patch_t *)W_CachePatchName("K_ITBC"  , PU_HUDGFX);
+			kp_itembgclr[1]         = (patch_t *)W_CachePatchName("K_ITBCD" , PU_HUDGFX);
+			kp_itembgclr[2]         = (patch_t *)W_CachePatchName("K_ISBC"  , PU_HUDGFX);
+			kp_itembgclr[3]         = (patch_t *)W_CachePatchName("K_ISBCD" , PU_HUDGFX);
+			kp_itemmulstickerclr[1] = (patch_t *)W_CachePatchName("K_ISMULC", PU_HUDGFX);
+			kp_itemmulstickerclr[0] = (patch_t *)W_CachePatchName("K_ITMULC", PU_HUDGFX);
+		}
+	}
+
+	if (found_extra3_kart)
+	{
+		if (xtra_speedo3) // 80x11 patch scaled to size
+		{
+			skp_smallsticker3 = (patch_t *)W_CachePatchName("SP_SM3TC", PU_HUDGFX);
+		}
+	}
+}
+
+// -- Kart patches --
+
+static patch_t *kp_nodraw;
 static patch_t *kp_timesticker;
 static patch_t *kp_timestickerwide;
 static patch_t *kp_lapsticker;
-static patch_t *kp_lapstickerbig;
-static patch_t *kp_lapstickerbig2;
 static patch_t *kp_lapstickerwide;
 //static patch_t *kp_lapstickernarrow;
 static patch_t *kp_splitlapflag;
@@ -7877,27 +8155,6 @@ static patch_t *kp_bumperstickerwide;
 static patch_t *kp_karmasticker;
 static patch_t *kp_splitkarmabomb;
 static patch_t *kp_timeoutsticker;
-
-//Colourized hud
-static patch_t *kp_timestickerclr;
-static patch_t *kp_timestickerwideclr;
-static patch_t *kp_lapstickerclr;
-static patch_t *kp_lapstickerbigclr;
-static patch_t *kp_lapstickerbig2clr;
-static patch_t *kp_lapstickerwideclr;
-//static patch_t *kp_lapstickernarrowclr;
-static patch_t *kp_bumperstickerclr;
-static patch_t *kp_bumperstickerwideclr;
-static patch_t *kp_karmastickerclr;
-static patch_t *kp_timeoutstickerclr;
-static patch_t *skp_smallstickerclr;
-static patch_t *skp_smallstickerclr3;
-static patch_t *kp_itemmulstickerclr[2];
-static patch_t *kp_itembgclr[4];
-
-//Kartz speedo
-static patch_t *kp_kartzspeedo[25];
-static patch_t *kp_kartzspeedo_smol[25];
 
 static patch_t *kp_startcountdown[16];
 static patch_t *kp_racefinish[6];
@@ -7927,15 +8184,12 @@ static patch_t *kp_itemmulsticker[2];
 static patch_t *kp_itemx;
 
 static patch_t *kp_sneaker[2];
-static patch_t *kp_multsneaker[2];
 static patch_t *kp_rocketsneaker[2];
 static patch_t *kp_invincibility[13];
 static patch_t *kp_banana[2];
-static patch_t *kp_multbanana[3];
 static patch_t *kp_eggman[2];
 static patch_t *kp_orbinaut[5];
 static patch_t *kp_jawz[2];
-static patch_t *kp_multjawz[1];
 static patch_t *kp_mine[2];
 static patch_t *kp_ballhog[2];
 static patch_t *kp_selfpropelledbomb[2];
@@ -7962,42 +8216,7 @@ static patch_t *kp_lapanim_number[10][3];
 static patch_t *kp_lapanim_emblem[2];
 static patch_t *kp_lapanim_hand[3];
 
-static patch_t *nametagpic;
-static patch_t *nametagline;
-static patch_t *nametagspeed;
-static patch_t *nametagweight;
-
-static patch_t *driftgauge;
-static patch_t *driftgaugecolor;
-static patch_t *driftgaugesmall;
-static patch_t *driftgaugesmallcolor;
-
 static patch_t *kp_yougotem;
-
-static patch_t *skp_smallsticker;
-static patch_t *skp_smallsticker3;
-static patch_t *skp_speedpatches[5];
-
-static patch_t *skp_smallstickerachi;
-static patch_t *skp_speedpatchesachi[5];
-static patch_t *skp_smallstickerachiclr;
-static patch_t *skp_speedpatchesachiclr[5];
-
-// dial speedometer
-static patch_t *skp_rankfinish;
-static patch_t *skp_dialbase[2];
-static patch_t *skp_speedpatchesdial[5];
-static patch_t *skp_dialnum[10];
-//static patch_t *skp_dialclr;
-static patch_t *skp_dialbaseclr[2];
-static patch_t *skp_speedpatchesdialclr[5];
-static patch_t *skp_dialnumclr[10];
-
-static patch_t *joybacking;
-static patch_t *joyknob;
-static patch_t *joyshadow;
-
-static patch_t *kp_minimapdot;
 
 void K_LoadKartHUDGraphics(void)
 {
@@ -8005,221 +8224,52 @@ void K_LoadKartHUDGraphics(void)
 	char buffer[9];
 
 	// Null Stuff
-	kp_nodraw = 				W_CachePatchName("K_TRNULL", PU_HUDGFX);
+	kp_nodraw = (patch_t *)W_CachePatchName("K_TRNULL", PU_HUDGFX);
 
 	// Stickers
-	kp_timesticker = 			W_CachePatchName("K_STTIME", PU_HUDGFX);
-	kp_timestickerwide = 		W_CachePatchName("K_STTIMW", PU_HUDGFX);
-	kp_lapsticker = 			W_CachePatchName("K_STLAPS", PU_HUDGFX);
-	kp_lapstickerwide = 		W_CachePatchName("K_STLAPW", PU_HUDGFX);
-	//kp_lapstickernarrow = 		W_CachePatchName("K_STLAPN", PU_HUDGFX);
-	kp_splitlapflag = 			W_CachePatchName("K_SPTLAP", PU_HUDGFX);
-	kp_bumpersticker = 			W_CachePatchName("K_STBALN", PU_HUDGFX);
-	kp_bumperstickerwide = 		W_CachePatchName("K_STBALW", PU_HUDGFX);
-	kp_karmasticker = 			W_CachePatchName("K_STKARM", PU_HUDGFX);
-	kp_splitkarmabomb = 		W_CachePatchName("K_SPTKRM", PU_HUDGFX);
-	kp_timeoutsticker = 		W_CachePatchName("K_STTOUT", PU_HUDGFX);
-
-	if (xtra_speedo) // snowy speedometer
-	{
-		skp_smallsticker = 	  W_CachePatchName("SP_SMSTC", PU_HUDGFX);
-		skp_speedpatches[0] = W_CachePatchName("K_TRNULL", PU_HUDGFX); // lolxd
-		skp_speedpatches[1] = W_CachePatchName("SP_MKMH",  PU_HUDGFX);
-		skp_speedpatches[2] = W_CachePatchName("SP_MMPH",  PU_HUDGFX);
-		skp_speedpatches[3] = W_CachePatchName("SP_MFRAC", PU_HUDGFX);
-		skp_speedpatches[4] = W_CachePatchName("SP_MPERC", PU_HUDGFX);
-	}
-
-	if (xtra_speedo3) // 80x11 patch scaled to size
-	{
-		skp_smallsticker3 = 	  W_CachePatchName("SP_SM3TC", PU_HUDGFX);
-	}
-
-	if (achi_speedo)
-	{
-		skp_smallstickerachi = 	  W_CachePatchName("SP_AMSTC", PU_HUDGFX);
-		skp_speedpatchesachi[0] = W_CachePatchName("K_TRNULL", PU_HUDGFX); // lolxd
-		skp_speedpatchesachi[1] = W_CachePatchName("SP_AKMH",  PU_HUDGFX);
-		skp_speedpatchesachi[2] = W_CachePatchName("SP_AMPH",  PU_HUDGFX);
-		skp_speedpatchesachi[3] = W_CachePatchName("SP_AFRAC", PU_HUDGFX);
-		skp_speedpatchesachi[4] = W_CachePatchName("SP_APERC", PU_HUDGFX);
-	}
-
-	if (dial_speedo)
-	{
-		skp_rankfinish =		  W_CachePatchName("RANKFIN",  PU_HUDGFX);
-		skp_dialbase[0] = 	      W_CachePatchName("K_DSPBS1", PU_HUDGFX);
-		skp_dialbase[1] = 	      W_CachePatchName("K_DSPBS2", PU_HUDGFX);
-
-		skp_speedpatchesdial[0] = W_CachePatchName("K_TRNULL", PU_HUDGFX); // lolxd
-		skp_speedpatchesdial[1] = W_CachePatchName("SP_DKMH",  PU_HUDGFX);
-		skp_speedpatchesdial[2] = W_CachePatchName("SP_DMPH",  PU_HUDGFX);
-		skp_speedpatchesdial[3] = W_CachePatchName("SP_DFRAC", PU_HUDGFX);
-		skp_speedpatchesdial[4] = W_CachePatchName("SP_DPERC", PU_HUDGFX);
-
-		sprintf(buffer, "K_DSPNMx");
-		for (i = 0; i < 10; i++)
-		{
-			buffer[7] = '0'+(i%10);
-			skp_dialnum[i] = (patch_t *) W_CachePatchName(buffer, PU_HUDGFX);
-		}
-	}
-
-	if (big_lap)
-	{
-		kp_lapstickerbig = 		W_CachePatchName("K_STLAPB", PU_HUDGFX);
-		kp_lapstickerbig2 = 	W_CachePatchName("K_STLA2B", PU_HUDGFX);
-	}
-
-	// Colourized hud
-	if (clr_hud)
-	{
-		kp_timestickerclr = 			W_CachePatchName("K_SCTIME", PU_HUDGFX);
-		kp_timestickerwideclr = 		W_CachePatchName("K_SCTIMW", PU_HUDGFX);
-		kp_lapstickerclr = 				W_CachePatchName("K_SCLAPS", PU_HUDGFX);
-		kp_lapstickerwideclr = 			W_CachePatchName("K_SCLAPW", PU_HUDGFX);
-		kp_bumperstickerclr = 			W_CachePatchName("K_SCBALN", PU_HUDGFX);
-		kp_bumperstickerwideclr = 		W_CachePatchName("K_SCBALW", PU_HUDGFX);
-		kp_karmastickerclr = 			W_CachePatchName("K_SCKARM", PU_HUDGFX);
-		kp_timeoutstickerclr = 			W_CachePatchName("K_SCTOUT", PU_HUDGFX);
-		kp_itembgclr[0] = 				W_CachePatchName("K_ITBC"  , PU_HUDGFX);
-		kp_itembgclr[1] = 				W_CachePatchName("K_ITBCD" , PU_HUDGFX);
-		kp_itembgclr[2] = 				W_CachePatchName("K_ISBC"  , PU_HUDGFX);
-		kp_itembgclr[3] = 				W_CachePatchName("K_ISBCD" , PU_HUDGFX);
-		kp_itemmulstickerclr[1] = 		W_CachePatchName("K_ISMULC", PU_HUDGFX);
-		kp_itemmulstickerclr[0] = 		W_CachePatchName("K_ITMULC", PU_HUDGFX);
-	}
-
-	if (big_lap_color)
-	{
-		kp_lapstickerbigclr = 		W_CachePatchName("K_SCLAPB", PU_HUDGFX);
-		kp_lapstickerbig2clr = 		W_CachePatchName("K_SCLA2B", PU_HUDGFX);
-	}
-
-	if (xtra_speedo && xtra_speedo_clr)
-		skp_smallstickerclr = 	  	W_CachePatchName("SC_SMSTC", PU_HUDGFX);
-
-	if (xtra_speedo3 && xtra_speedo_clr3) // 80x11 patch scaled to size
-		skp_smallstickerclr3 = 	  	W_CachePatchName("SC_SM3TC", PU_HUDGFX);
-
-	if (achi_speedo && achi_speedo_clr)
-	{
-		skp_smallstickerachiclr    = W_CachePatchName("SC_AMSTC", PU_HUDGFX);
-		skp_speedpatchesachiclr[0] = W_CachePatchName("K_TRNULL", PU_HUDGFX); // lolxd
-		skp_speedpatchesachiclr[1] = W_CachePatchName("SC_AKMH",  PU_HUDGFX);
-		skp_speedpatchesachiclr[2] = W_CachePatchName("SC_AMPH",  PU_HUDGFX);
-		skp_speedpatchesachiclr[3] = W_CachePatchName("SC_AFRAC", PU_HUDGFX);
-		skp_speedpatchesachiclr[4] = W_CachePatchName("SC_APERC", PU_HUDGFX);
-	}
-
-	if (dial_speedo && dial_speedo_clr)
-	{
-		skp_dialbaseclr[0] = 	     W_CachePatchName("K_DSPBC1", PU_HUDGFX);
-		skp_dialbaseclr[1] = 	     W_CachePatchName("K_DSPBC2", PU_HUDGFX);
-
-		skp_speedpatchesdialclr[0] = W_CachePatchName("K_TRNULL", PU_HUDGFX); // lolxd
-		skp_speedpatchesdialclr[1] = W_CachePatchName("SC_DKMH",  PU_HUDGFX);
-		skp_speedpatchesdialclr[2] = W_CachePatchName("SC_DMPH",  PU_HUDGFX);
-		skp_speedpatchesdialclr[3] = W_CachePatchName("SC_DFRAC", PU_HUDGFX);
-		skp_speedpatchesdialclr[4] = W_CachePatchName("SC_DPERC", PU_HUDGFX);
-
-		sprintf(buffer, "K_DSPNCx");
-		for (i = 0; i < 10; i++)
-		{
-			buffer[7] = '0'+(i%10);
-			skp_dialnumclr[i] = (patch_t *) W_CachePatchName(buffer, PU_HUDGFX);
-		}
-	}
-
-	// KartZ speedo
-	if (kartz_speedo)
-	{
-		const char* patchNames[] = {
-			"K_KZSP1", "K_KZSP2", "K_KZSP3", "K_KZSP4", "K_KZSP5",
-			"K_KZSP6", "K_KZSP7", "K_KZSP8", "K_KZSP9", "K_KZSP10",
-			"K_KZSP11", "K_KZSP12", "K_KZSP13", "K_KZSP14", "K_KZSP15",
-			"K_KZSP16", "K_KZSP17", "K_KZSP18", "K_KZSP19", "K_KZSP20",
-			"K_KZSP21", "K_KZSP22", "K_KZSP23", "K_KZSP24", "K_KZSP25"
-		};
-
-		for (size_t m = 0; m < sizeof(patchNames) / sizeof(patchNames[0]); ++m)
-		{
-			kp_kartzspeedo[m] = W_CachePatchName(patchNames[m], PU_HUDGFX);
-		}
-	}
-
-	if (kartz_speedo_smol)
-	{
-		const char* patchNames[] = {
-			"K_KZSS1", "K_KZSS2", "K_KZSS3", "K_KZSS4", "K_KZSS5",
-			"K_KZSS6", "K_KZSS7", "K_KZSS8", "K_KZSS9", "K_KZSS10",
-			"K_KZSS11", "K_KZSS12", "K_KZSS13", "K_KZSS14", "K_KZSS15",
-			"K_KZSS16", "K_KZSS17", "K_KZSS18", "K_KZSS19", "K_KZSS20",
-			"K_KZSS21", "K_KZSS22", "K_KZSS23", "K_KZSS24", "K_KZSS25"
-		};
-
-		for (size_t m = 0; m < sizeof(patchNames) / sizeof(patchNames[0]); ++m)
-		{
-			kp_kartzspeedo_smol[m] = W_CachePatchName(patchNames[m], PU_HUDGFX);
-		}
-	}
-
-	// Nametags
-	if (nametaggfx)
-	{
-		nametagpic = W_CachePatchName("NTLINE", PU_HUDGFX);
-		nametagline = W_CachePatchName("NTLINEV", PU_HUDGFX);
-		nametagspeed = W_CachePatchName("NTSP", PU_HUDGFX);
-		nametagweight = W_CachePatchName("NTWH", PU_HUDGFX);
-	}
-
-	if (driftgaugegfx)
-	{
-		driftgauge =  W_CachePatchName("K_DGAU", PU_HUDGFX);
-		driftgaugecolor =  W_CachePatchName("K_DCAU", PU_HUDGFX);
-	}
-
-	if (driftgaugegfx_clr)
-	{
-		driftgaugesmall =  W_CachePatchName("K_DGSU", PU_HUDGFX);
-		driftgaugesmallcolor =  W_CachePatchName("K_DCSU", PU_HUDGFX);
-	}
-
-	if (joystickicon)
-	{
-		joybacking = W_CachePatchName("JOYBCK", PU_HUDGFX);
-		joyknob = W_CachePatchName("JOYKNB", PU_HUDGFX);
-		joyshadow = W_CachePatchName("JOYSHD", PU_HUDGFX);
-	}
+	kp_timesticker        = (patch_t *)W_CachePatchName("K_STTIME", PU_HUDGFX);
+	kp_timestickerwide    = (patch_t *)W_CachePatchName("K_STTIMW", PU_HUDGFX);
+	kp_lapsticker         = (patch_t *)W_CachePatchName("K_STLAPS", PU_HUDGFX);
+	kp_lapstickerwide     = (patch_t *)W_CachePatchName("K_STLAPW", PU_HUDGFX);
+	//kp_lapstickernarrow = (patch_t *)W_CachePatchName("K_STLAPN", PU_HUDGFX);
+	kp_splitlapflag       = (patch_t *)W_CachePatchName("K_SPTLAP", PU_HUDGFX);
+	kp_bumpersticker      = (patch_t *)W_CachePatchName("K_STBALN", PU_HUDGFX);
+	kp_bumperstickerwide  = (patch_t *)W_CachePatchName("K_STBALW", PU_HUDGFX);
+	kp_karmasticker       = (patch_t *)W_CachePatchName("K_STKARM", PU_HUDGFX);
+	kp_splitkarmabomb     = (patch_t *)W_CachePatchName("K_SPTKRM", PU_HUDGFX);
+	kp_timeoutsticker     = (patch_t *)W_CachePatchName("K_STTOUT", PU_HUDGFX);
 
 	// Starting countdown
-	kp_startcountdown[0] = 		W_CachePatchName("K_CNT3A", PU_HUDGFX);
-	kp_startcountdown[1] = 		W_CachePatchName("K_CNT2A", PU_HUDGFX);
-	kp_startcountdown[2] = 		W_CachePatchName("K_CNT1A", PU_HUDGFX);
-	kp_startcountdown[3] = 		W_CachePatchName("K_CNTGOA", PU_HUDGFX);
-	kp_startcountdown[4] = 		W_CachePatchName("K_CNT3B", PU_HUDGFX);
-	kp_startcountdown[5] = 		W_CachePatchName("K_CNT2B", PU_HUDGFX);
-	kp_startcountdown[6] = 		W_CachePatchName("K_CNT1B", PU_HUDGFX);
-	kp_startcountdown[7] = 		W_CachePatchName("K_CNTGOB", PU_HUDGFX);
+	kp_startcountdown[0] = (patch_t *)W_CachePatchName("K_CNT3A", PU_HUDGFX);
+	kp_startcountdown[1] = (patch_t *)W_CachePatchName("K_CNT2A", PU_HUDGFX);
+	kp_startcountdown[2] = (patch_t *)W_CachePatchName("K_CNT1A", PU_HUDGFX);
+	kp_startcountdown[3] = (patch_t *)W_CachePatchName("K_CNTGOA", PU_HUDGFX);
+	kp_startcountdown[4] = (patch_t *)W_CachePatchName("K_CNT3B", PU_HUDGFX);
+	kp_startcountdown[5] = (patch_t *)W_CachePatchName("K_CNT2B", PU_HUDGFX);
+	kp_startcountdown[6] = (patch_t *)W_CachePatchName("K_CNT1B", PU_HUDGFX);
+	kp_startcountdown[7] = (patch_t *)W_CachePatchName("K_CNTGOB", PU_HUDGFX);
+
 	// Splitscreen
-	kp_startcountdown[8] = 		W_CachePatchName("K_SMC3A", PU_HUDGFX);
-	kp_startcountdown[9] = 		W_CachePatchName("K_SMC2A", PU_HUDGFX);
-	kp_startcountdown[10] = 	W_CachePatchName("K_SMC1A", PU_HUDGFX);
-	kp_startcountdown[11] = 	W_CachePatchName("K_SMCGOA", PU_HUDGFX);
-	kp_startcountdown[12] = 	W_CachePatchName("K_SMC3B", PU_HUDGFX);
-	kp_startcountdown[13] = 	W_CachePatchName("K_SMC2B", PU_HUDGFX);
-	kp_startcountdown[14] = 	W_CachePatchName("K_SMC1B", PU_HUDGFX);
-	kp_startcountdown[15] = 	W_CachePatchName("K_SMCGOB", PU_HUDGFX);
+	kp_startcountdown[8]  = (patch_t *)W_CachePatchName("K_SMC3A", PU_HUDGFX);
+	kp_startcountdown[9]  = (patch_t *)W_CachePatchName("K_SMC2A", PU_HUDGFX);
+	kp_startcountdown[10] = (patch_t *)W_CachePatchName("K_SMC1A", PU_HUDGFX);
+	kp_startcountdown[11] = (patch_t *)W_CachePatchName("K_SMCGOA", PU_HUDGFX);
+	kp_startcountdown[12] = (patch_t *)W_CachePatchName("K_SMC3B", PU_HUDGFX);
+	kp_startcountdown[13] = (patch_t *)W_CachePatchName("K_SMC2B", PU_HUDGFX);
+	kp_startcountdown[14] = (patch_t *)W_CachePatchName("K_SMC1B", PU_HUDGFX);
+	kp_startcountdown[15] = (patch_t *)W_CachePatchName("K_SMCGOB", PU_HUDGFX);
 
 	// Finish
-	kp_racefinish[0] = 			W_CachePatchName("K_FINA", PU_HUDGFX);
-	kp_racefinish[1] = 			W_CachePatchName("K_FINB", PU_HUDGFX);
+	kp_racefinish[0] = (patch_t *)W_CachePatchName("K_FINA", PU_HUDGFX);
+	kp_racefinish[1] = (patch_t *)W_CachePatchName("K_FINB", PU_HUDGFX);
+
 	// Splitscreen
-	kp_racefinish[2] = 			W_CachePatchName("K_SMFINA", PU_HUDGFX);
-	kp_racefinish[3] = 			W_CachePatchName("K_SMFINB", PU_HUDGFX);
+	kp_racefinish[2] = (patch_t *)W_CachePatchName("K_SMFINA", PU_HUDGFX);
+	kp_racefinish[3] = (patch_t *)W_CachePatchName("K_SMFINB", PU_HUDGFX);
+
 	// 2P splitscreen
-	kp_racefinish[4] = 			W_CachePatchName("K_2PFINA", PU_HUDGFX);
-	kp_racefinish[5] = 			W_CachePatchName("K_2PFINB", PU_HUDGFX);
+	kp_racefinish[4] = (patch_t *)W_CachePatchName("K_2PFINA", PU_HUDGFX);
+	kp_racefinish[5] = (patch_t *)W_CachePatchName("K_2PFINB", PU_HUDGFX);
 
 	// Position numbers
 	sprintf(buffer, "K_POSNxx");
@@ -8228,9 +8278,8 @@ void K_LoadKartHUDGraphics(void)
 		buffer[6] = '0'+i;
 		for (j = 0; j < NUMPOSFRAMES; j++)
 		{
-			//sprintf(buffer, "K_POSN%d%d", i, j);
 			buffer[7] = '0'+j;
-			kp_positionnum[i][j] = (patch_t *) W_CachePatchName(buffer, PU_HUDGFX);
+			kp_positionnum[i][j] = (patch_t *)W_CachePatchName(buffer, PU_HUDGFX);
 		}
 	}
 
@@ -8238,7 +8287,7 @@ void K_LoadKartHUDGraphics(void)
 	for (i = 0; i < NUMWINFRAMES; i++)
 	{
 		buffer[7] = '0'+i;
-		kp_winnernum[i] = (patch_t *) W_CachePatchName(buffer, PU_HUDGFX);
+		kp_winnernum[i] = (patch_t *)W_CachePatchName(buffer, PU_HUDGFX);
 	}
 
 	sprintf(buffer, "OPPRNKxx");
@@ -8246,122 +8295,105 @@ void K_LoadKartHUDGraphics(void)
 	{
 		buffer[6] = '0'+(i/10);
 		buffer[7] = '0'+(i%10);
-		kp_facenum[i] = (patch_t *) W_CachePatchName(buffer, PU_HUDGFX);
+		kp_facenum[i] = (patch_t *)W_CachePatchName(buffer, PU_HUDGFX);
 	}
 
 	sprintf(buffer, "K_CHILIx");
 	for (i = 0; i < 8; i++)
 	{
 		buffer[7] = '0'+(i+1);
-		kp_facehighlight[i] = (patch_t *) W_CachePatchName(buffer, PU_HUDGFX);
+		kp_facehighlight[i] = (patch_t *)W_CachePatchName(buffer, PU_HUDGFX);
 	}
 
 	// Extra ranking icons
-	kp_rankbumper =				W_CachePatchName("K_BLNICO", PU_HUDGFX);
-	kp_tinybumper[0] =			W_CachePatchName("K_BLNA", PU_HUDGFX);
-	kp_tinybumper[1] =			W_CachePatchName("K_BLNB", PU_HUDGFX);
-	kp_ranknobumpers =			W_CachePatchName("K_NOBLNS", PU_HUDGFX);
+	kp_rankbumper    = (patch_t *)W_CachePatchName("K_BLNICO", PU_HUDGFX);
+	kp_tinybumper[0] = (patch_t *)W_CachePatchName("K_BLNA", PU_HUDGFX);
+	kp_tinybumper[1] = (patch_t *)W_CachePatchName("K_BLNB", PU_HUDGFX);
+	kp_ranknobumpers = (patch_t *)W_CachePatchName("K_NOBLNS", PU_HUDGFX);
 
 	// Battle graphics
-	kp_battlewin = 				W_CachePatchName("K_BWIN", PU_HUDGFX);
-	kp_battlecool = 			W_CachePatchName("K_BCOOL", PU_HUDGFX);
-	kp_battlelose = 			W_CachePatchName("K_BLOSE", PU_HUDGFX);
-	kp_battlewait = 			W_CachePatchName("K_BWAIT", PU_HUDGFX);
-	kp_battleinfo = 			W_CachePatchName("K_BINFO", PU_HUDGFX);
-	kp_wanted = 				W_CachePatchName("K_WANTED", PU_HUDGFX);
-	kp_wantedsplit = 			W_CachePatchName("4PWANTED", PU_HUDGFX);
-	kp_wantedreticle =			W_CachePatchName("MMAPWANT", PU_HUDGFX);
-
-	if (minidoticon)
-		kp_minimapdot =			W_CachePatchName("MMAPDOT", PU_HUDGFX);
+	kp_battlewin     = (patch_t *)W_CachePatchName("K_BWIN", PU_HUDGFX);
+	kp_battlecool    = (patch_t *)W_CachePatchName("K_BCOOL", PU_HUDGFX);
+	kp_battlelose    = (patch_t *)W_CachePatchName("K_BLOSE", PU_HUDGFX);
+	kp_battlewait    = (patch_t *)W_CachePatchName("K_BWAIT", PU_HUDGFX);
+	kp_battleinfo    = (patch_t *)W_CachePatchName("K_BINFO", PU_HUDGFX);
+	kp_wanted        = (patch_t *)W_CachePatchName("K_WANTED", PU_HUDGFX);
+	kp_wantedsplit   = (patch_t *)W_CachePatchName("4PWANTED", PU_HUDGFX);
+	kp_wantedreticle = (patch_t *)W_CachePatchName("MMAPWANT", PU_HUDGFX);
 
 	// Kart Item Windows
-	kp_itembg[0] = 				W_CachePatchName("K_ITBG", PU_HUDGFX);
-	kp_itembg[1] = 				W_CachePatchName("K_ITBGD", PU_HUDGFX);
-	kp_itemtimer[0] = 			W_CachePatchName("K_ITIMER", PU_HUDGFX);
-	kp_itemmulsticker[0] = 		W_CachePatchName("K_ITMUL", PU_HUDGFX);
-	kp_itemx = 					W_CachePatchName("K_ITX", PU_HUDGFX);
+	kp_itembg[0]         = (patch_t *)W_CachePatchName("K_ITBG", PU_HUDGFX);
+	kp_itembg[1]         = (patch_t *)W_CachePatchName("K_ITBGD", PU_HUDGFX);
+	kp_itemtimer[0]      = (patch_t *)W_CachePatchName("K_ITIMER", PU_HUDGFX);
+	kp_itemmulsticker[0] = (patch_t *)W_CachePatchName("K_ITMUL", PU_HUDGFX);
+	kp_itemx             = (patch_t *)W_CachePatchName("K_ITX", PU_HUDGFX);
+	// Splitscreen
+	kp_itembg[2]         = (patch_t *)W_CachePatchName("K_ISBG", PU_HUDGFX);
+	kp_itembg[3]         = (patch_t *)W_CachePatchName("K_ISBGD", PU_HUDGFX);
+	kp_itemtimer[1]      = (patch_t *)W_CachePatchName("K_ISIMER", PU_HUDGFX);
+	kp_itemmulsticker[1] = (patch_t *)W_CachePatchName("K_ISMUL", PU_HUDGFX);
 
-	kp_sneaker[0] =				W_CachePatchName("K_ITSHOE", PU_HUDGFX);
-	if (multiitem_icon)
-	{
-		kp_multsneaker[0] = 	W_CachePatchName("K_ITSHO2", PU_HUDGFX);
-		kp_multsneaker[1] = 	W_CachePatchName("K_ITSHO3", PU_HUDGFX);
-	}
-	kp_rocketsneaker[0] =		W_CachePatchName("K_ITRSHE", PU_HUDGFX);
+	// Kart Items
+	kp_sneaker[0]           = (patch_t *)W_CachePatchName("K_ITSHOE", PU_HUDGFX);
+	kp_rocketsneaker[0]     = (patch_t *)W_CachePatchName("K_ITRSHE", PU_HUDGFX);
+	kp_banana[0]            = (patch_t *)W_CachePatchName("K_ITBANA", PU_HUDGFX);
+	kp_eggman[0]            = (patch_t *)W_CachePatchName("K_ITEGGM", PU_HUDGFX);
+	kp_jawz[0]              = (patch_t *)W_CachePatchName("K_ITJAWZ", PU_HUDGFX);
+	kp_mine[0]              = (patch_t *)W_CachePatchName("K_ITMINE", PU_HUDGFX);
+	kp_ballhog[0]           = (patch_t *)W_CachePatchName("K_ITBHOG", PU_HUDGFX);
+	kp_selfpropelledbomb[0] = (patch_t *)W_CachePatchName("K_ITSPB", PU_HUDGFX);
+	kp_grow[0]              = (patch_t *)W_CachePatchName("K_ITGROW", PU_HUDGFX);
+	kp_shrink[0]            = (patch_t *)W_CachePatchName("K_ITSHRK", PU_HUDGFX);
+	kp_thundershield[0]     = (patch_t *)W_CachePatchName("K_ITTHNS", PU_HUDGFX);
+	kp_hyudoro[0]           = (patch_t *)W_CachePatchName("K_ITHYUD", PU_HUDGFX);
+	kp_pogospring[0]        = (patch_t *)W_CachePatchName("K_ITPOGO", PU_HUDGFX);
+	kp_kitchensink[0]       = (patch_t *)W_CachePatchName("K_ITSINK", PU_HUDGFX);
+	kp_sadface[0]           = (patch_t *)W_CachePatchName("K_ITSAD", PU_HUDGFX);
+	// Splitscreen
+	kp_sneaker[1]           = (patch_t *)W_CachePatchName("K_ISSHOE", PU_HUDGFX);
+	kp_rocketsneaker[1]     = (patch_t *)W_CachePatchName("K_ISRSHE", PU_HUDGFX);
+	kp_banana[1]            = (patch_t *)W_CachePatchName("K_ISBANA", PU_HUDGFX);
+	kp_eggman[1]            = (patch_t *)W_CachePatchName("K_ISEGGM", PU_HUDGFX);
+	kp_orbinaut[4]          = (patch_t *)W_CachePatchName("K_ISORBN", PU_HUDGFX);
+	kp_jawz[1]              = (patch_t *)W_CachePatchName("K_ISJAWZ", PU_HUDGFX);
+	kp_mine[1]              = (patch_t *)W_CachePatchName("K_ISMINE", PU_HUDGFX);
+	kp_ballhog[1]           = (patch_t *)W_CachePatchName("K_ISBHOG", PU_HUDGFX);
+	kp_selfpropelledbomb[1] = (patch_t *)W_CachePatchName("K_ISSPB", PU_HUDGFX);
+	kp_grow[1]              = (patch_t *)W_CachePatchName("K_ISGROW", PU_HUDGFX);
+	kp_shrink[1]            = (patch_t *)W_CachePatchName("K_ISSHRK", PU_HUDGFX);
+	kp_thundershield[1]     = (patch_t *)W_CachePatchName("K_ISTHNS", PU_HUDGFX);
+	kp_hyudoro[1]           = (patch_t *)W_CachePatchName("K_ISHYUD", PU_HUDGFX);
+	kp_pogospring[1]        = (patch_t *)W_CachePatchName("K_ISPOGO", PU_HUDGFX);
+	kp_kitchensink[1]       = (patch_t *)W_CachePatchName("K_ISSINK", PU_HUDGFX);
+	kp_sadface[1]           = (patch_t *)W_CachePatchName("K_ISSAD", PU_HUDGFX);
 
 	sprintf(buffer, "K_ITINVx");
 	for (i = 0; i < 7; i++)
 	{
 		buffer[7] = '1'+i;
-		kp_invincibility[i] = (patch_t *) W_CachePatchName(buffer, PU_HUDGFX);
+		kp_invincibility[i] = (patch_t *)W_CachePatchName(buffer, PU_HUDGFX);
 	}
 
-	kp_banana[0] =				W_CachePatchName("K_ITBANA", PU_HUDGFX);
-	if (multiitem_icon)
-	{
-		kp_multbanana[0] = 	W_CachePatchName("K_ITBAN2", PU_HUDGFX);
-		kp_multbanana[1] =	 W_CachePatchName("K_ITBAN3", PU_HUDGFX);
-		kp_multbanana[2] = 	W_CachePatchName("K_ITBAN4", PU_HUDGFX);
-	}
-	kp_eggman[0] =				W_CachePatchName("K_ITEGGM", PU_HUDGFX);
 	sprintf(buffer, "K_ITORBx");
 	for (i = 0; i < 4; i++)
 	{
 		buffer[7] = '1'+i;
-		kp_orbinaut[i] = (patch_t *) W_CachePatchName(buffer, PU_HUDGFX);
+		kp_orbinaut[i] = (patch_t *)W_CachePatchName(buffer, PU_HUDGFX);
 	}
-	kp_jawz[0] =				W_CachePatchName("K_ITJAWZ", PU_HUDGFX);
-	if (multiitem_icon)
-	{
-		kp_multjawz[0] =		W_CachePatchName("K_ITJAW2", PU_HUDGFX);
-	}
-	kp_mine[0] =				W_CachePatchName("K_ITMINE", PU_HUDGFX);
-	kp_ballhog[0] =				W_CachePatchName("K_ITBHOG", PU_HUDGFX);
-	kp_selfpropelledbomb[0] =	W_CachePatchName("K_ITSPB", PU_HUDGFX);
-	kp_grow[0] =				W_CachePatchName("K_ITGROW", PU_HUDGFX);
-	kp_shrink[0] =				W_CachePatchName("K_ITSHRK", PU_HUDGFX);
-	kp_thundershield[0] =		W_CachePatchName("K_ITTHNS", PU_HUDGFX);
-	kp_hyudoro[0] = 			W_CachePatchName("K_ITHYUD", PU_HUDGFX);
-	kp_pogospring[0] = 			W_CachePatchName("K_ITPOGO", PU_HUDGFX);
-	kp_kitchensink[0] = 		W_CachePatchName("K_ITSINK", PU_HUDGFX);
-	kp_sadface[0] = 			W_CachePatchName("K_ITSAD", PU_HUDGFX);
 
-	// Splitscreen
-	kp_itembg[2] = 				W_CachePatchName("K_ISBG", PU_HUDGFX);
-	kp_itembg[3] = 				W_CachePatchName("K_ISBGD", PU_HUDGFX);
-	kp_itemtimer[1] = 			W_CachePatchName("K_ISIMER", PU_HUDGFX);
-	kp_itemmulsticker[1] = 		W_CachePatchName("K_ISMUL", PU_HUDGFX);
-
-	kp_sneaker[1] =				W_CachePatchName("K_ISSHOE", PU_HUDGFX);
-	kp_rocketsneaker[1] =		W_CachePatchName("K_ISRSHE", PU_HUDGFX);
 	sprintf(buffer, "K_ISINVx");
 	for (i = 0; i < 6; i++)
 	{
 		buffer[7] = '1'+i;
-		kp_invincibility[i+7] = (patch_t *) W_CachePatchName(buffer, PU_HUDGFX);
+		kp_invincibility[i+7] = (patch_t *)W_CachePatchName(buffer, PU_HUDGFX);
 	}
-	kp_banana[1] =				W_CachePatchName("K_ISBANA", PU_HUDGFX);
-	kp_eggman[1] =				W_CachePatchName("K_ISEGGM", PU_HUDGFX);
-	kp_orbinaut[4] =			W_CachePatchName("K_ISORBN", PU_HUDGFX);
-	kp_jawz[1] =				W_CachePatchName("K_ISJAWZ", PU_HUDGFX);
-	kp_mine[1] =				W_CachePatchName("K_ISMINE", PU_HUDGFX);
-	kp_ballhog[1] =				W_CachePatchName("K_ISBHOG", PU_HUDGFX);
-	kp_selfpropelledbomb[1] =	W_CachePatchName("K_ISSPB", PU_HUDGFX);
-	kp_grow[1] =				W_CachePatchName("K_ISGROW", PU_HUDGFX);
-	kp_shrink[1] =				W_CachePatchName("K_ISSHRK", PU_HUDGFX);
-	kp_thundershield[1] =		W_CachePatchName("K_ISTHNS", PU_HUDGFX);
-	kp_hyudoro[1] = 			W_CachePatchName("K_ISHYUD", PU_HUDGFX);
-	kp_pogospring[1] = 			W_CachePatchName("K_ISPOGO", PU_HUDGFX);
-	kp_kitchensink[1] = 		W_CachePatchName("K_ISSINK", PU_HUDGFX);
-	kp_sadface[1] = 			W_CachePatchName("K_ISSAD", PU_HUDGFX);
 
 	// CHECK indicators
 	sprintf(buffer, "K_CHECKx");
 	for (i = 0; i < 6; i++)
 	{
 		buffer[7] = '1'+i;
-		kp_check[i] = (patch_t *) W_CachePatchName(buffer, PU_HUDGFX);
+		kp_check[i] = (patch_t *)W_CachePatchName(buffer, PU_HUDGFX);
 	}
 
 	// Eggman warning numbers
@@ -8369,20 +8401,20 @@ void K_LoadKartHUDGraphics(void)
 	for (i = 0; i < 4; i++)
 	{
 		buffer[6] = '0'+i;
-		kp_eggnum[i] = (patch_t *) W_CachePatchName(buffer, PU_HUDGFX);
+		kp_eggnum[i] = (patch_t *)W_CachePatchName(buffer, PU_HUDGFX);
 	}
 
 	// First person mode
-	kp_fpview[0] = 				W_CachePatchName("VIEWA0", PU_HUDGFX);
-	kp_fpview[1] =				W_CachePatchName("VIEWB0D0", PU_HUDGFX);
-	kp_fpview[2] = 				W_CachePatchName("VIEWC0E0", PU_HUDGFX);
+	kp_fpview[0] = (patch_t *)W_CachePatchName("VIEWA0", PU_HUDGFX);
+	kp_fpview[1] = (patch_t *)W_CachePatchName("VIEWB0D0", PU_HUDGFX);
+	kp_fpview[2] = (patch_t *)W_CachePatchName("VIEWC0E0", PU_HUDGFX);
 
 	// Input UI Wheel
 	sprintf(buffer, "K_WHEELx");
 	for (i = 0; i < 5; i++)
 	{
 		buffer[7] = '0'+i;
-		kp_inputwheel[i] = (patch_t *) W_CachePatchName(buffer, PU_HUDGFX);
+		kp_inputwheel[i] = (patch_t *)W_CachePatchName(buffer, PU_HUDGFX);
 	}
 
 	// HERE COMES A NEW CHALLENGER
@@ -8391,7 +8423,7 @@ void K_LoadKartHUDGraphics(void)
 	{
 		buffer[6] = '0'+((i+1)/10);
 		buffer[7] = '0'+((i+1)%10);
-		kp_challenger[i] = (patch_t *) W_CachePatchName(buffer, PU_HUDGFX);
+		kp_challenger[i] = (patch_t *)W_CachePatchName(buffer, PU_HUDGFX);
 	}
 
 	// Lap start animation
@@ -8399,7 +8431,7 @@ void K_LoadKartHUDGraphics(void)
 	for (i = 0; i < 7; i++)
 	{
 		buffer[6] = '0'+(i+1);
-		kp_lapanim_lap[i] = (patch_t *) W_CachePatchName(buffer, PU_HUDGFX);
+		kp_lapanim_lap[i] = (patch_t *)W_CachePatchName(buffer, PU_HUDGFX);
 	}
 
 	sprintf(buffer, "K_LAPFxx");
@@ -8407,7 +8439,7 @@ void K_LoadKartHUDGraphics(void)
 	{
 		buffer[6] = '0'+((i+1)/10);
 		buffer[7] = '0'+((i+1)%10);
-		kp_lapanim_final[i] = (patch_t *) W_CachePatchName(buffer, PU_HUDGFX);
+		kp_lapanim_final[i] = (patch_t *)W_CachePatchName(buffer, PU_HUDGFX);
 	}
 
 	sprintf(buffer, "K_LAPNxx");
@@ -8417,7 +8449,7 @@ void K_LoadKartHUDGraphics(void)
 		for (j = 0; j < 3; j++)
 		{
 			buffer[7] = '0'+(j+1);
-			kp_lapanim_number[i][j] = (patch_t *) W_CachePatchName(buffer, PU_HUDGFX);
+			kp_lapanim_number[i][j] = (patch_t *)W_CachePatchName(buffer, PU_HUDGFX);
 		}
 	}
 
@@ -8425,17 +8457,20 @@ void K_LoadKartHUDGraphics(void)
 	for (i = 0; i < 2; i++)
 	{
 		buffer[7] = '0'+(i+1);
-		kp_lapanim_emblem[i] = (patch_t *) W_CachePatchName(buffer, PU_HUDGFX);
+		kp_lapanim_emblem[i] = (patch_t *)W_CachePatchName(buffer, PU_HUDGFX);
 	}
 
 	sprintf(buffer, "K_LAPH0x");
 	for (i = 0; i < 3; i++)
 	{
 		buffer[7] = '0'+(i+1);
-		kp_lapanim_hand[i] = (patch_t *) W_CachePatchName(buffer, PU_HUDGFX);
+		kp_lapanim_hand[i] = (patch_t *)W_CachePatchName(buffer, PU_HUDGFX);
 	}
 
-	kp_yougotem = (patch_t *) W_CachePatchName("YOUGOTEM", PU_HUDGFX);
+	kp_yougotem = (patch_t *)W_CachePatchName("YOUGOTEM", PU_HUDGFX);
+
+	if (found_extra_kart || found_extra2_kart || found_extra3_kart)
+		K_LoadSaturnHUDGraphics();
 }
 
 // For the item toggle menu
@@ -8915,7 +8950,6 @@ static void K_drawKartItem(void)
 
 	patch_t *localinv = ((offset) ? kp_invincibility[((leveltime % (6*3)) / 3) + 7] : kp_invincibility[(leveltime % (7*3)) / 3]);
 	INT32 fx = 0, fy = 0, fflags = 0;	// final coords for hud and flags...
-	//INT32 splitflags = K_calcSplitFlags(V_SNAPTOTOP|V_SNAPTOLEFT);
 	INT32 numberdisplaymin = cv_huditemamount.value == 2 ? 1 : 2; // No longer a constant so other things can modify this value
 	INT32 itembar = 0;
 	INT32 maxl = 0; // itembar's normal highest value
@@ -8924,10 +8958,6 @@ static void K_drawKartItem(void)
 	SINT8 colormode = TC_RAINBOW;
 	UINT8 *colmap = NULL;
 	UINT8 *colormap = NULL;
-
-	boolean flipamount = splitscreen > 1 && stplyrnum & 1;	// Used for 3P/4P splitscreen to flip item amount stuff
-
-	const boolean usemultiicon = (multiitem_icon && cv_multiitemicon.value && !offset);
 
 	if (stplyr->kartstuff[k_itemroulette])
 	{
@@ -9063,7 +9093,9 @@ static void K_drawKartItem(void)
 			if (stplyr->kartstuff[k_itemamount] <= 0)
 				return;
 
-			switch(stplyr->kartstuff[k_itemtype])
+			const boolean usemultiicon = (multiitem_icon && cv_multiitemicon.value && !offset);
+
+			switch (stplyr->kartstuff[k_itemtype])
 			{
 				case KITEM_SNEAKER:
 					if (usemultiicon)
@@ -9134,7 +9166,7 @@ static void K_drawKartItem(void)
 					{
 						if (!cv_huditemamount.value)
 							numberdisplaymin = 3;
-						localpatch = ((stplyr->kartstuff[k_itemamount] == 1) ? kp_jawz[offset] : kp_multjawz[0]);
+						localpatch = ((stplyr->kartstuff[k_itemamount] == 1) ? kp_jawz[offset] : kp_multjawz);
 					}
 					else
 					{
@@ -9206,6 +9238,8 @@ static void K_drawKartItem(void)
 	fx = info.x;
 	fy = info.y;
 	fflags = info.flags;
+
+	boolean flipamount = splitscreen > 1 && stplyrnum & 1;	// Used for 3P/4P splitscreen to flip item amount stuff
 
 	if (K_UseColorHud())
 		colormap = R_GetTranslationColormap(TC_DEFAULT, K_GetHudColor(), GTC_CACHE);
@@ -9279,7 +9313,6 @@ static void K_drawKartItem(void)
 	// Quick Eggman numbers
 	if (stplyr->kartstuff[k_eggmanexplode] > 1 /*&& stplyr->kartstuff[k_eggmanexplode] <= 3*TICRATE*/)
 		V_DrawScaledPatch(fx+17, fy+13-offset, V_HUDTRANS|fflags, kp_eggnum[min(3, G_TicsToSeconds(stplyr->kartstuff[k_eggmanexplode]))]);
-
 }
 
 void K_drawKartTimestamp(tic_t drawtime, INT32 TX, INT32 TY, INT16 emblemmap, UINT8 mode)
@@ -9288,6 +9321,7 @@ void K_drawKartTimestamp(tic_t drawtime, INT32 TX, INT32 TY, INT16 emblemmap, UI
 	// TIME_Y = 6;					//   6
 
 	INT32 splitflags = 0;
+
 	if (!mode)
 	{
 		splitflags = V_HUDTRANS|K_calcSplitFlags(V_SNAPTOTOP|V_SNAPTORIGHT);
@@ -9434,18 +9468,16 @@ static void K_DrawKartPositionNum(INT32 num)
 	// POSI_Y = BASEVIDHEIGHT- 64;	// 136
 
 	const boolean wheeloffs = (cv_showinput.value && cv_posi_xoffset.value == 0 && cv_posi_yoffset.value == 0 && cv_wheel_xoffset.value == 0 && cv_wheel_yoffset.value == 0);
-	boolean win = (stplyr->exiting && num == 1);
-	//INT32 X = POSI_X;
+	const boolean win = (stplyr->exiting && num == 1);
 	INT32 W = kp_positionnum[0][0]->width;
 	fixed_t scale = FRACUNIT;
 	patch_t *localpatch = kp_positionnum[0][0];
 	INT32 addOrSub = B_SUBTRACT;
-	//INT32 splitflags = K_calcSplitFlags(V_SNAPTOBOTTOM|V_SNAPTORIGHT);
 	INT32 fx = 0, fy = 0, fflags = 0;
-	INT32 xoffs = wheeloffs ? -48 : 0;
-	boolean flipdraw = false;	// flip the order we draw it in for MORE splitscreen bs. fun.
-	boolean flipvdraw = false;	// used only for 2p splitscreen so overtaking doesn't make 1P's position fly off the screen.
-	boolean overtake = false;
+	const INT32 xoffs = wheeloffs ? -48 : 0;
+	boolean flipdraw  = false; // flip the order we draw it in for MORE splitscreen bs. fun.
+	boolean flipvdraw = false; // used only for 2p splitscreen so overtaking doesn't make 1P's position fly off the screen.
+	boolean overtake  = false;
 
 	if ((mapheaderinfo[gamemap - 1]->levelflags & LF_SUBTRACTNUM) == LF_SUBTRACTNUM)
 	{
@@ -9719,7 +9751,7 @@ void HU_DrawTabRankings(INT32 x, INT32 y, playersort_t *tab, INT32 scorelines, I
 {
 	INT32 i, rightoffset = 240;
 	const UINT8 *colormap;
-	INT32 dupadjust = cv_betainterscreen.value ? 314 : (vid.width/vid.dupx), duptweak = cv_betainterscreen.value ? -3 : (dupadjust - BASEVIDWIDTH)/2;
+	const INT32 dupadjust = cv_betainterscreen.value ? 314 : (vid.width/vid.dupx), duptweak = cv_betainterscreen.value ? -3 : (dupadjust - BASEVIDWIDTH)/2;
 
 	boolean (*_isHighlightedPlayer)(const player_t *) = (demo.playback ? P_IsDisplayPlayer : P_IsLocalPlayer);
 
@@ -9838,9 +9870,9 @@ static boolean K_BigLap(void)
 
 static void K_drawKartLaps(void)
 {
-	INT32 splitflags = K_calcSplitFlags(V_SNAPTOBOTTOM|V_SNAPTOLEFT);
+	const INT32 splitflags = K_calcSplitFlags(V_SNAPTOBOTTOM|V_SNAPTOLEFT);
 	INT32 fx = 0, fy = 0, fflags = 0;	// stuff for 3p / 4p splitscreen.
-	boolean flipstring = splitscreen > 1 && stplyrnum & 1;  // used for 3p or 4p
+	const boolean flipstring = splitscreen > 1 && stplyrnum & 1;  // used for 3p or 4p
 	INT32 stringw = 0;	// used with the above
 	const char *laps;
 
@@ -9936,13 +9968,13 @@ static void K_DrawDialSpeedometer(fixed_t speed,
 								  boolean infoactive,
 								  boolean colorized)
 {
-	UINT8* colormap = R_GetTranslationColormap(TC_DEFAULT, K_GetHudColor(), GTC_CACHE);
+	const UINT8* colormap = R_GetTranslationColormap(TC_DEFAULT, K_GetHudColor(), GTC_CACHE);
 
 	INT32 rot = 0;
-	UINT8 infoidx = (infoactive) ? 1 : 0;
+	const UINT8 infoidx = (infoactive) ? 1 : 0;
 	patch_t* dialpatch;
 
-	angle_t speedangle =
+	const angle_t speedangle =
 		FixedAngle(((min(135 * FRACUNIT, FixedDiv(speed, divisor)) - (45 * FRACUNIT))));
 
 	rot = R_GetRollAngle(speedangle);
@@ -10201,9 +10233,9 @@ static void K_drawKartSpeedometer(void)
 
 static void K_drawKartBumpersOrKarma(void)
 {
-	UINT8 *colormap = R_GetTranslationColormap(TC_DEFAULT, K_GetHudColor(), GTC_CACHE);
+	const UINT8 *colormap = R_GetTranslationColormap(TC_DEFAULT, K_GetHudColor(), GTC_CACHE);
 	INT32 fx, fy, fflags;
-	boolean flipstring = splitscreen > 1 && stplyrnum & 1;  // same as laps, used for splitscreen
+	const boolean flipstring = splitscreen > 1 && stplyrnum & 1;  // same as laps, used for splitscreen
 	INT32 stringw = 0;	// used with the above
 	const char *bumpval = "";
 
@@ -10639,13 +10671,13 @@ static void K_drawDriftGauge(void)
 	int i;
 	UINT8 *cmap;
 
-	static UINT8 driftcolors[3][4] = {
+	static const UINT8 driftcolors[3][4] = {
 		{0, 0, 10, 16},       // no drift
 		{215, 215, 204, 253}, // blue
 		{125, 125, 151, 159}  // red
 	};
 
-	static UINT8 driftskins[3] = {
+	static const UINT8 driftskins[3] = {
 		SKINCOLOR_NONE,
 		SKINCOLOR_TEAL,
 		SKINCOLOR_SALMON,
@@ -10679,10 +10711,10 @@ skipcrap:
 	fixed_t bary;
 	INT32 BAR_WIDTH;
 
-	const INT32 driftval = K_GetKartDriftSparkValue(stplyr);
+	const INT32 driftval    = K_GetKartDriftSparkValue(stplyr);
 	const INT32 driftcharge = min(driftval*4, stplyr->kartstuff[k_driftcharge]);
-	const INT32 driftlevel = min(driftcharge / driftval, 2);
-	const INT32 drifttrans = ((cv_driftgaugetrans.value) ? V_LocalTransFlag() : 0);
+	const INT32 driftlevel  = min(driftcharge / driftval, 2);
+	const INT32 drifttrans  = ((cv_driftgaugetrans.value) ? V_LocalTransFlag() : 0);
 
 	basex = pos.x>>FRACBITS;
 	basey = pos.y>>FRACBITS;
@@ -10731,7 +10763,6 @@ skipcrap:
 					}
 					else
 						V_DrawMappedPatch(cv_driftgaugestyle.value == 2 ? basex + dup*11 : basex, basey, V_NOSCALESTART|V_OFFSET|drifttrans, cv_driftgaugestyle.value == 2 ? driftgaugesmall : driftgauge, NULL);
-
 				}
 
 				if (driftcharge >= driftval*4) // rainbow sparks
@@ -10888,7 +10919,7 @@ static void K_drawKartPlayerCheck(void)
 	UINT8 *colormap;
 	INT32 x;
 
-	INT32 splitflags = K_calcSplitFlags(V_SNAPTOBOTTOM);
+	const INT32 splitflags = K_calcSplitFlags(V_SNAPTOBOTTOM);
 
 	if (!stplyr->mo || stplyr->spectator)
 		return;
@@ -11030,7 +11061,7 @@ static void K_drawKartMinimapHead(mobj_t *mo, INT32 x, INT32 y, INT32 flags)
 
 	if (cv_minihead.value)
 	{
-		amxpos += (minimaphead->width / 4)<<FRACBITS;
+		amxpos += (minimaphead->width  / 4)<<FRACBITS;
 		amypos += (minimaphead->height / 4)<<FRACBITS;
 		scale /= 2;
 	}
@@ -11085,7 +11116,7 @@ static void K_drawKartMinimap(void)
 	INT32 minimaptrans, splitflags;
 	SINT8 localplayers[MAXSPLITSCREENPLAYERS];
 	SINT8 numlocalplayers = 0;
-	patch_t *AutomapPic = NULL;
+	patch_t *AutomapPic;
 
 	// Draw the HUD only when playing in a level.
 	// hu_stuff needs this, unlike st_stuff.
@@ -11597,32 +11628,29 @@ static void K_drawKartFirstPerson(void)
 
 	V_DrawFixedPatch(x, y, scale, splitflags, kp_fpview[target], colmap);
 
-	pnum[stplyrnum] = pn;
-	turn[stplyrnum] = tn;
+	pnum[stplyrnum]  = pn;
+	turn[stplyrnum]  = tn;
 	drift[stplyrnum] = dr;
 }
 
 // doesn't need to ever support 4p
 static void K_drawInput(void)
 {
-	static INT32 pn = 0;
 	INT32 offs, col;
+	static INT32 pn = 0;
 
-	if (!cv_showinput.value) // dont bother
-		return;
-
-	if (timeinmap <= 105)
+	if (!cv_showinput.value || (timeinmap <= 105)) // dont bother
 		return;
 
 	INT32 target = 0, splitflags = (V_SNAPTOBOTTOM|V_SNAPTORIGHT|V_HUDTRANS);
 	INT32 x = (BASEVIDWIDTH - 32 + cv_wheel_xoffset.value)*FRACUNIT, y = (BASEVIDHEIGHT - 24 + cv_wheel_yoffset.value)*FRACUNIT;
 
-	const UINT8 hudcolor = K_GetHudColor();
-	const INT32 accent1 = splitflags|colortranslations[hudcolor][5];
-	const INT32 accent2 = splitflags|colortranslations[hudcolor][9];
+	const UINT8  hudcolor = K_GetHudColor();
+	const INT32  accent1 = splitflags|colortranslations[hudcolor][5];
+	const INT32  accent2 = splitflags|colortranslations[hudcolor][9];
 	const UINT8 *hudcolormap = R_GetTranslationColormap(0, hudcolor, GTC_CACHE);
 
-	ticcmd_t *cmd = &stplyr->cmd;
+	const ticcmd_t *cmd = &stplyr->cmd;
 
 	if (timeinmap < 113)
 	{
@@ -11667,11 +11695,14 @@ static void K_drawInput(void)
 
 	if (cv_showinput.value == 2 || cv_showinput.value == 3)
 	{
-		INT32 joyx, joyxoffs, joyy, joyyoffs, axis;
-		joyxoffs = -8, joyyoffs = -24;
-		joyx = x>>FRACBITS, joyy = y>>FRACBITS;
+		INT32 axis;
+		INT32 hudforward = 0; // for the stick input display :chaosleep:
 		UINT8 *shadowcolormap = NULL;
-		const boolean usejoysprite = (cv_showinput.value == 3 && joystickicon);
+		const INT32 joyx = x>>FRACBITS;
+		const INT32 joyy = y>>FRACBITS;
+		static const INT32 joyxoffs = -8;
+		static const INT32 joyyoffs = -24;
+		const boolean usejoysprite  = (cv_showinput.value == 3 && joystickicon);
 
 		// O backing
 		if (usejoysprite)
@@ -11688,7 +11719,6 @@ static void K_drawInput(void)
 		// time for pain and suffering
 		// kart does not have anything we can get analogue joystick y axis values from
 		// during normal gameplay, so replicate shit here
-		INT32 hudforward = 0; // for the stick input display :chaosleep:
 
 		// this is horrid but we cant get actual input in replays so uhh
 		if (demo.playback || !P_IsLocalPlayer(stplyr)) // yeah...........
@@ -11719,9 +11749,9 @@ static void K_drawInput(void)
 					hudforward-= KART_FULLTURN;
 				}
 			}
-		}
 
-		hudforward = CLAMP(hudforward, -KART_FULLTURN, KART_FULLTURN);
+			hudforward = CLAMP(hudforward, -KART_FULLTURN, KART_FULLTURN);
+		}
 
 		if (cmd->driftturn || hudforward)
 		{
@@ -11795,7 +11825,7 @@ static void K_drawInput(void)
 static void K_drawChallengerScreen(void)
 {
 	// This is an insanely complicated animation.
-	static UINT8 anim[52] = {
+	static const UINT8 anim[52] = {
 		0,0,1,1,2,2,3,3,4,4,5,5,6,6,7,7,8,8,9,9,10,10,11,11,12,12,13,13, // frame 1-14, 2 tics: HERE COMES A NEW slides in
 		14,14,14,14,14,14, // frame 15, 6 tics: pause on the W
 		15,16,17,18, // frame 16-19, 1 tic: CHALLENGER approaches screen
@@ -11865,7 +11895,7 @@ void K_drawKartFreePlay(UINT32 flashtime)
 {
 	// no splitscreen support because it's not FREE PLAY if you have more than one player in-game
 
-	if (! cv_showfreeplay.value)
+	if (!cv_showfreeplay.value)
 		return;
 
 	if ((flashtime % TICRATE) < TICRATE/2)
