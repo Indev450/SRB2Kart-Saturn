@@ -183,38 +183,37 @@ consvar_t cv_flipcam[MAXSPLITSCREENPLAYERS] = {
 	{"flipcam4", "No", CV_SAVE|CV_CALL|CV_NOINIT, CV_YesNo, FlipCam4_OnChange, 0, NULL, NULL, 0, 0, NULL}
 };
 
-consvar_t cv_shadow = {"shadow", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_shadowoffs = {"offsetshadows", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_skybox = {"skybox", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_ffloorclip = {"r_ffloorclip", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_spriteclip = {"r_spriteclip", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_soniccd = {"soniccd", "Off", CV_NETVAR|CV_NOSHOWHELP, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_allowmlook = {"allowmlook", "Yes", CV_NETVAR, CV_YesNo, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_showhud = {"showhud", "Yes", CV_CALL,  CV_YesNo, R_SetViewSize, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_translucenthud = {"translucenthud", "10", CV_SAVE, translucenthud_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_uncappedhud = {"uncappedhud", "Yes", CV_SAVE, CV_YesNo, NULL, 0, NULL, NULL, 0, 0, NULL};
-
-consvar_t cv_translucency = {"translucency", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_drawdist = {"drawdist", "Infinite", CV_SAVE, drawdist_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_shadow          = {"shadow", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_shadowoffs      = {"offsetshadows", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_skybox          = {"skybox", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_ffloorclip      = {"r_ffloorclip", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_spriteclip      = {"r_spriteclip", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_softcyancut     = {"softwarecyancut", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_translucency    = {"translucency", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_drawdist        = {"drawdist", "Infinite", CV_SAVE, drawdist_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_drawdist_precip = {"drawdist_precip", "1024", CV_SAVE|CV_CALL|CV_NOINIT, drawdist_precip_cons_t, Precipstuff_OnChange, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_lessprecip = {"lessweathereffects", "Off", CV_SAVE|CV_CALL|CV_NOINIT, CV_OnOff, Precipstuff_OnChange, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_lessprecip      = {"lessweathereffects", "Off", CV_SAVE|CV_CALL|CV_NOINIT, CV_OnOff, Precipstuff_OnChange, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_mobjscaleprecip = {"scaleprecipmobjscale", "Off", CV_SAVE|CV_CALL|CV_NOINIT, CV_OnOff, Precipstuff_OnChange, 0, NULL, NULL, 0, 0, NULL};
-
-consvar_t cv_maxinterpdist = {"maxinterpdist", "Infinite", CV_SAVE, maxinterpdist_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
-
-consvar_t cv_ripplewater = {"waterripples", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
-
-// cap fov, fov too high tears software apart.
-consvar_t cv_fov = {"fov", "90", CV_FLOAT|CV_CALL|CV_SAVE, fov_cons_t, Fov_OnChange, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_fovchange = {"fovchange", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_maxinterpdist   = {"maxinterpdist", "Infinite", CV_SAVE, maxinterpdist_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_ripplewater     = {"waterripples", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 // Okay, whoever said homremoval causes a performance hit should be shot.
-consvar_t cv_homremoval = {"homremoval", "Yes", CV_SAVE, homremoval_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_homremoval      = {"homremoval", "Yes", CV_SAVE, homremoval_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
-consvar_t cv_maxportals = {"maxportals", "2", CV_SAVE, maxportals_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_maxportals      = {"maxportals", "2", CV_SAVE, maxportals_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+
+// cap fov, fov too high tears software apart.
+consvar_t cv_fov             = {"fov", "90", CV_FLOAT|CV_CALL|CV_SAVE, fov_cons_t, Fov_OnChange, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_fovchange       = {"fovchange", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 // randomized directional lightning
-consvar_t cv_randomdirlight = {"randomdirectionallight", "Off", CV_SAVE|CV_CALL|CV_NOINIT, CV_OnOff, DirLight_OnChange, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_randomdirlight  = {"randomdirectionallight", "Off", CV_SAVE|CV_CALL|CV_NOINIT, CV_OnOff, DirLight_OnChange, 0, NULL, NULL, 0, 0, NULL};
+
+consvar_t cv_showhud         = {"showhud", "Yes", CV_CALL,  CV_YesNo, R_SetViewSize, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_translucenthud  = {"translucenthud", "10", CV_SAVE, translucenthud_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_uncappedhud     = {"uncappedhud", "Yes", CV_SAVE, CV_YesNo, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_soniccd         = {"soniccd", "Off", CV_NETVAR|CV_NOSHOWHELP, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_allowmlook      = {"allowmlook", "Yes", CV_NETVAR, CV_YesNo, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 // tells to reset the maplight at next map change
 static void DirLight_OnChange(void)
@@ -492,7 +491,7 @@ boolean R_DoCulling(line_t *cullheight, line_t *viewcullheight, fixed_t vz, fixe
 // Returns search dimensions within a blockmap, in the direction of viewangle and out to a certain distance.
 void R_GetRenderBlockMapDimensions(fixed_t drawdist, INT32 *xl, INT32 *xh, INT32 *yl, INT32 *yh)
 {
-	const angle_t left = viewangle - clipangle;
+	const angle_t left  = viewangle - clipangle;
 	const angle_t right = viewangle + clipangle;
 
 	const fixed_t vxleft = viewx + FixedMul(drawdist, FCOS(left));
@@ -657,7 +656,6 @@ void R_CheckViewMorph(void)
 
 	rollangle >>= ANGLETOFINESHIFT;
 	rollangle = ((rollangle+2) & ~3) & FINEMASK; // Limit the distinct number of angles to reduce recalcs from angles changing a lot.
-
 
 	if (rollangle == viewmorph.rollangle &&
 		viewmorph.scrmapsize == vid.width*vid.height)
@@ -1106,6 +1104,7 @@ static void R_SetupSkyScale(player_t *player, camera_t *thiscam, mapheader_t *mh
 	{
 		if (skyboxmo[1])
 		{
+			angle_t ang;
 			fixed_t x = 0, y = 0;
 
 			if (mh->skybox_scalex > 0)
@@ -1118,31 +1117,29 @@ static void R_SetupSkyScale(player_t *player, camera_t *thiscam, mapheader_t *mh
 			else if (mh->skybox_scaley < 0)
 				y = (moy - skyboxmo[1]->y) * -mh->skybox_scaley;
 
-			if (viewmobj->angle == 0)
+			switch (viewmobj->angle)
 			{
-				newview->x += x;
-				newview->y += y;
-			}
-			else if (viewmobj->angle == ANGLE_90)
-			{
-				newview->x -= y;
-				newview->y += x;
-			}
-			else if (viewmobj->angle == ANGLE_180)
-			{
-				newview->x -= x;\
-				newview->y -= y;\
-			}
-			else if (viewmobj->angle == ANGLE_270)
-			{
-				newview->x += y;
-				newview->y -= x;
-			}
-			else
-			{
-				angle_t ang = viewmobj->angle>>ANGLETOFINESHIFT;
-				newview->x  += FixedMul(x,FINECOSINE(ang)) - FixedMul(y,  FINESINE(ang));
-				newview->y += FixedMul(x,  FINESINE(ang)) + FixedMul(y,FINECOSINE(ang));
+				case 0:
+					newview->x += x;
+					newview->y += y;
+					break;
+				case ANGLE_90:
+					newview->x -= y;
+					newview->y += x;
+					break;
+				case ANGLE_180:
+					newview->x -= x;
+					newview->y -= y;
+					break;
+				case ANGLE_270:
+					newview->x += y;
+					newview->y -= x;
+					break;
+				default:
+					ang = viewmobj->angle>>ANGLETOFINESHIFT;
+					newview->x  += FixedMul(x,FINECOSINE(ang)) - FixedMul(y,  FINESINE(ang));
+					newview->y += FixedMul(x,  FINESINE(ang)) + FixedMul(y,FINECOSINE(ang));
+					break;
 			}
 		}
 
@@ -1365,7 +1362,7 @@ void R_RenderPlayerView(player_t *player)
 	// load previous saved value of skyVisible for the player
 	skyVisible = skyVisiblePerPlayer[viewssnum];
 
-	fixed_t fov = R_GetPlayerFov(player);
+	const fixed_t fov = R_GetPlayerFov(player);
 
 	if (viewfov[viewssnum] != fov)
 	{
@@ -1535,6 +1532,7 @@ void R_RegisterEngineStuff(void)
 	CV_RegisterVar(&cv_skybox);
 	CV_RegisterVar(&cv_ffloorclip);
 	CV_RegisterVar(&cv_spriteclip);
+	CV_RegisterVar(&cv_softcyancut);
 
 	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
 	{

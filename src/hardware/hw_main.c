@@ -3199,17 +3199,6 @@ static void HWR_RenderBSPNode(INT32 bspnum)
 		bspnum = bsp->children[side^1];
 	}
 
-	// PORTAL CULLING
-	if (portalcullsector)
-	{
-		// skip all subsectors encountered before the portal
-		// destination's front sector
-		if (portalcullsector != subsectors[bspnum & ~NF_SUBSECTOR].sector)
-			return;
-		else
-			portalcullsector = NULL;
-	}
-
 	// e6y: support for extended nodes
 	HWR_Subsector(bspnum == -1 ? 0 : bspnum & ~NF_SUBSECTOR);
 }
@@ -3239,6 +3228,17 @@ static void HWR_RenderPortalBSPNode(INT32 bspnum)
 			return;
 
 		bspnum = bsp->children[side^1];
+	}
+
+	// PORTAL CULLING
+	if (portalcullsector)
+	{
+		// skip all subsectors encountered before the portal
+		// destination's front sector
+		if (portalcullsector != subsectors[bspnum & ~NF_SUBSECTOR].sector)
+			return;
+		else
+			portalcullsector = NULL;
 	}
 
 	// e6y: support for extended nodes
@@ -5570,8 +5570,6 @@ static void HWR_RenderFrame(player_t *player, boolean skybox)
 	// Clear view, set viewport (glViewport), set perspective...
 	HWR_ClearView();
 
-	ST_doPaletteStuff();
-
 	// Draw the sky background.
 	HWR_DrawSkyBackground();
 	if (skybox)
@@ -5728,6 +5726,7 @@ void HWR_LoadLevel(boolean reloadinggamestate)
 static void HWR_TogglePaletteRendering(void)
 {
 	V_ResetPaletteCVars(); // dont carry over changed palettes
+	ST_ResetPaletteStuff();
 
 	// which state should we go to?
 	if (HWR_ShouldUsePaletteRendering())

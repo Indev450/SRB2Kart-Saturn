@@ -542,8 +542,7 @@ void R_RenderMaskedSegRange(drawseg_t *drawseg, INT32 x1, INT32 x2)
 template <typename T>
 static constexpr T saturating_add(T x, T y) noexcept
 {
-	INT64 z;
-	z = static_cast<INT64>(x) + static_cast<INT64>(y);
+	INT64 z = static_cast<INT64>(x) + static_cast<INT64>(y);
 	if (z > static_cast<INT64>(std::numeric_limits<T>::max()))
 	{
 		z = static_cast<INT64>(std::numeric_limits<T>::max());
@@ -558,8 +557,7 @@ static constexpr T saturating_add(T x, T y) noexcept
 template <typename T>
 static constexpr T saturating_mul(T x, T y) noexcept
 {
-	INT64 z;
-	z = static_cast<INT64>(x) * static_cast<INT64>(y);
+	INT64 z = static_cast<INT64>(x) * static_cast<INT64>(y);
 	if (z > static_cast<INT64>(std::numeric_limits<T>::max()))
 	{
 		z = static_cast<INT64>(std::numeric_limits<T>::max());
@@ -584,6 +582,9 @@ static void R_DrawRepeatMaskedColumn(drawcolumndata_t* dc, column_t *col)
 // Returns true if a fake floor is translucent.
 static boolean R_IsFFloorTranslucent(visffloor_t *pfloor)
 {
+	if (cv_softcyancut.value && pfloor->plane->cyan)
+		return true;
+
 	if (pfloor->polyobj)
 		return true;
 
@@ -1548,6 +1549,74 @@ static void R_RenderSegLoop(drawcolumndata_t* dc)
 
 			ffloor[i].f_clip[rw_x] = ffloor[i].c_clip[rw_x] = (INT16)((ffloor[i].b_frac >> HEIGHTBITS) & 0xFFFF);
 			ffloor[i].b_frac += ffloor[i].b_step;
+		}
+
+		rw_scale += rw_scalestep;
+		topfrac += topstep;
+		bottomfrac += bottomstep;
+	}
+}
+
+static void R_MarkSegBounds(void)
+{
+	INT32     yl, yh;
+	INT32 top, bottom;
+	INT16 topclip, bottomclip;
+
+	for (; rw_x < rw_stopx; rw_x++)
+	{
+		// mark floor / ceiling areas
+		yl = (topfrac+HEIGHTUNIT-1)>>HEIGHTBITS;
+
+		// no space above wall?
+		top = ceilingclip[rw_x]+1;
+
+		// no space above wall?
+		if (yl < top)
+			yl = top;
+
+		if (markceiling)
+		{
+			bottom = yl > floorclip[rw_x] ? floorclip[rw_x] : yl;
+
+			if (top <= --bottom && ceilingplane)
+			{
+				R_ExpandPlaneY(ceilingplane, rw_x, top, bottom);
+			}
+		}
+
+		yh = bottomfrac>>HEIGHTBITS;
+
+		bottom = floorclip[rw_x]-1;
+
+		if (yh > bottom)
+			yh = bottom;
+
+		if (markfloor)
+		{
+			top = yh < ceilingclip[rw_x] ? ceilingclip[rw_x] : yh;
+
+			if (++top <= bottom && floorplane)
+			{
+				R_ExpandPlaneY(floorplane, rw_x, top, bottom);
+			}
+		}
+
+		frontscale[rw_x] = rw_scale;
+
+		topclip = (yl >= 0) ? ((yl > viewheight) ? (INT16)viewheight : (INT16)((INT16)yl - 1)) : -1;
+		bottomclip = (yh < viewheight) ? ((yh < -1) ? -1 : (INT16)((INT16)yh + 1)) : (INT16)viewheight;
+
+		if (markceiling) // no top wall
+			ceilingclip[rw_x] = topclip;
+
+		if (markfloor) // no bottom wall
+			floorclip[rw_x] = bottomclip;
+
+		if (floorclip[rw_x] <= ceilingclip[rw_x] + 1)
+		{
+			solidcol[rw_x] = 1;
+			didsolidcol = true;
 		}
 
 		rw_scale += rw_scalestep;
@@ -2813,13 +2882,30 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 
 	}
 
-	rw_silhouette = &(ds_p->silhouette);
-	rw_tsilheight = &(ds_p->tsilheight);
-	rw_bsilheight = &(ds_p->bsilheight);
-
 	didsolidcol = false;
 
-	R_RenderSegLoop(&dc);
+	if (!segtextured && !numffloors)
+	{
+		if (markfloor || markceiling)
+			R_MarkSegBounds();
+		else
+		{
+			for (; rw_x < rw_stopx; rw_x++)
+			{
+				frontscale[rw_x] = rw_scale;
+				rw_scale += rw_scalestep;
+			}
+		}
+	}
+	else
+	{
+		rw_silhouette = &ds_p->silhouette;
+		rw_tsilheight = &ds_p->tsilheight;
+		rw_bsilheight = &ds_p->bsilheight;
+
+		R_RenderSegLoop(&dc);
+	}
+
 	R_SetColumnFunc(BASEDRAWFUNC);
 
 	if (g_portal) // if curline is a portal, set portalrender for drawseg

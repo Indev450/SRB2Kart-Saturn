@@ -37,6 +37,14 @@ typedef struct
 	UINT16 wad, lump;
 } texpatch_t;
 
+// texture type
+enum
+{
+	TEXTURETYPE_UNKNOWN,
+	TEXTURETYPE_SINGLEPATCH,
+	TEXTURETYPE_COMPOSITE,
+};
+
 // A maptexturedef_t describes a rectangular texture,
 //  which is composed of one or more mappatch_t structures
 //  that arrange graphic patches.
@@ -45,6 +53,7 @@ typedef struct
 	// Keep name for switch changing, etc.
 	char name[8];
 	UINT32 hash;
+	UINT8 type; // TEXTURETYPE_
 	INT16 width, height;
 	boolean holes;
 

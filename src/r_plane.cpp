@@ -149,7 +149,7 @@ void R_AllocPlaneMemory(void)
 //
 static fixed_t R_CalculateRippleOffset(drawspandata_t* ds, INT32 y)
 {
-	fixed_t distance = FixedMul(ds->planeheight, yslope[y]);
+	const fixed_t distance = FixedMul(ds->planeheight, yslope[y]);
 	const INT32 yay = (ds->planeripple.offset + (distance>>9)) & 8191;
 	return FixedDiv(FINESINE(yay), (1<<12) + (distance>>11));
 }
@@ -507,6 +507,7 @@ visplane_t *R_FindPlane(fixed_t height, INT32 picnum, INT32 lightlevel,
 	check->polyobj = polyobj;
 	check->slope = slope;
 	check->noencore = noencore;
+	check->cyan = levelflats[picnum].cyan;
 
 	memset(check->top, 0xff, sizeof(*check->top) * viewwidth);
 	memset(check->bottom, 0x00, sizeof(*check->bottom) * viewwidth);
@@ -558,6 +559,7 @@ visplane_t *R_CheckPlane(visplane_t *pl, INT32 start, INT32 stop)
 	else /* Cannot use existing plane; create a new one */
 	{
 		visplane_t *new_pl;
+
 		if (pl->ffloor)
 		{
 			new_pl = new_visplane(MAXVISPLANES - 1);
@@ -583,6 +585,7 @@ visplane_t *R_CheckPlane(visplane_t *pl, INT32 start, INT32 stop)
 		new_pl->polyobj = pl->polyobj;
 		new_pl->slope = pl->slope;
 		new_pl->noencore = pl->noencore;
+		new_pl->cyan = pl->cyan;
 		pl = new_pl;
 		pl->minx = start;
 		pl->maxx = stop;
@@ -780,7 +783,6 @@ void R_DrawSkyPlanes(void)
 static void R_DrawSkyPlane(visplane_t *pl, void(*colfunc2)(drawcolumndata_t*), boolean allow_parallel)
 {
 	INT32 x;
-	drawcolumndata_t dc = {};
 
 	if (!(pl->minx <= pl->maxx))
 		return;
@@ -791,6 +793,8 @@ static void R_DrawSkyPlane(visplane_t *pl, void(*colfunc2)(drawcolumndata_t*), b
 	{
 		return;
 	}
+
+	drawcolumndata_t dc = {};
 
 	// Reset column drawer function (note: couldn't we just call walldrawerfunc directly?)
 	// (that is, unless we'll need to switch drawers in future for some reason)
@@ -839,6 +843,8 @@ static void R_DrawSkyPlane(visplane_t *pl, void(*colfunc2)(drawcolumndata_t*), b
 				}
 
 				INT32 angle = (pl->viewangle + xtoviewangle[x + i])>>ANGLETOSKYSHIFT;
+				angle -= (skytextureoffset >> FRACBITS);
+
 				dc.iscale = FixedMul(skyscale, FINECOSINE(xtoviewangle[x + i]>>ANGLETOFINESHIFT));
 				dc.x = x + i;
 				dc.source =
@@ -1002,8 +1008,8 @@ static inline void R_AdjustSlopeCoordinates(drawspandata_t* ds, vector3_t *origi
 {
 	const fixed_t modmask = ((1 << (32-ds->nflatshiftup)) - 1);
 
-	fixed_t ox = (origin->x & modmask);
-	fixed_t oy = -(origin->y & modmask);
+	const fixed_t ox = (origin->x & modmask);
+	const fixed_t oy = -(origin->y & modmask);
 
 	ds->xoffs &= modmask;
 	ds->yoffs &= modmask;
@@ -1083,6 +1089,9 @@ void R_DrawSinglePlane(drawspandata_t* ds, visplane_t *pl, boolean allow_paralle
 						return;
 				}
 			}
+
+			if (cv_softcyancut.value && pl->cyan && !(pl->ffloor->flags & FF_RIPPLE))
+				spanfunctype = SPANDRAWFUNC_SPLAT;
 
 			if (pl->ffloor->flags & FF_TRANSLUCENT)
 			{
