@@ -1242,32 +1242,32 @@ static boolean AddIWAD(void)
 }
 
 // extra graphic patches for saturn specific thingies
-boolean found_extra_kart = false;
+boolean found_extra_kart  = false;
 boolean found_extra2_kart = false;
 boolean found_extra3_kart = false;
 
-boolean xtra_speedo = false;       // extra speedometer check
-boolean xtra_speedo_clr = false;   // extra speedometer colour check
-boolean xtra_speedo3 = false;      // 80x 11 extra speedometer check
-boolean xtra_speedo_clr3 = false;  // 80x 11 extra speedometer colour check
-boolean achi_speedo = false;       // achiiro speedometer check
-boolean achi_speedo_clr = false;   // extra speedometer colour check
-boolean dial_speedo = false;       // dial speedometer check
-boolean dial_speedo_clr = false;   // dial speedometer colour check
-boolean kartz_speedo = false;      // kartZ speedo
+boolean xtra_speedo       = false; // extra speedometer check
+boolean xtra_speedo_clr   = false; // extra speedometer colour check
+boolean xtra_speedo3      = false; // 80x 11 extra speedometer check
+boolean xtra_speedo_clr3  = false; // 80x 11 extra speedometer colour check
+boolean achi_speedo       = false; // achiiro speedometer check
+boolean achi_speedo_clr   = false; // extra speedometer colour check
+boolean dial_speedo       = false; // dial speedometer check
+boolean dial_speedo_clr   = false; // dial speedometer colour check
+boolean kartz_speedo      = false; // kartZ speedo
 boolean kartz_speedo_smol = false; // kartZ speedo but smol
 
-boolean clr_hud = false;           // colour hud check
+boolean clr_hud           = false; // colour hud check
 boolean driftgaugegfx_clr = false; // driftgauge colour check
-boolean big_lap = false;           // bigger lap counter
-boolean big_lap_color = false;     // bigger lap counter but colour
-boolean statdp = false;            // stat display for extended player setup
-boolean nametaggfx = false;        // Nametag stuffs
-boolean driftgaugegfx = false;     // Driftgauge stuffs
-boolean multiitem_icon = false;    // Extra icons for Sneakers, Banana and Jawz
-boolean joystickicon = false;      // Extra icons for the joystick input display
-boolean minidoticon = false;        // Dot graphic for minimap player angle display
-boolean minilighticon = false;     // mkwii-style minimap headlight
+boolean big_lap           = false; // bigger lap counter
+boolean big_lap_color     = false; // bigger lap counter but colour
+boolean statdp            = false; // stat display for extended player setup
+boolean nametaggfx        = false; // Nametag stuffs
+boolean driftgaugegfx     = false; // Driftgauge stuffs
+boolean multiitem_icon    = false; // Extra icons for Sneakers, Banana and Jawz
+boolean joystickicon      = false; // Extra icons for the joystick input display
+boolean minidoticon       = false; // Dot graphic for minimap player angle display
+boolean minilighticon     = false; // mkwii-style minimap headlight
 //
 
 static void IdentifyVersion(void)
