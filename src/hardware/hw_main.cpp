@@ -102,10 +102,10 @@ sector_t *gl_backsector;
 static boolean gl_maphashorizonlines = false;
 
 // values for the far clipping plane
-static float clipping_distances[] = {1024.0f, 2048.0f, 4096.0f, 6144.0f, 8192.0f, 12288.0f, 16384.0f};
+static constexpr float clipping_distances[] = {1024.0f, 2048.0f, 4096.0f, 6144.0f, 8192.0f, 12288.0f, 16384.0f};
 // values for bsp culling
 // slightly higher than the far clipping plane to compensate for impreciseness
-static INT32 bsp_culling_distances[] = {(1024+512)*FRACUNIT, (2048+512)*FRACUNIT, (4096+512)*FRACUNIT,
+static constexpr INT32 bsp_culling_distances[] = {(1024+512)*FRACUNIT, (2048+512)*FRACUNIT, (4096+512)*FRACUNIT,
 	(6144+512)*FRACUNIT, (8192+512)*FRACUNIT, (12288+512)*FRACUNIT, (16384+512)*FRACUNIT};
 
 // Performance stats
@@ -4155,8 +4155,8 @@ static int CompareVisSprites(const void *p1, const void *p2)
 	// "boolean to int"
 
 	// check for precip first, because then sprX->mobj is actually a precipmobj_t and does not have flags2 or tracer
-	int transparency1 = (!spr1->precip && (spr1->mobj->flags2 & MF2_SHADOW)) || (spr1->mobj->frame & FF_TRANSMASK);
-	int transparency2 = (!spr2->precip && (spr2->mobj->flags2 & MF2_SHADOW)) || (spr2->mobj->frame & FF_TRANSMASK);
+	const int transparency1 = (!spr1->precip && (spr1->mobj->flags2 & MF2_SHADOW)) || (spr1->mobj->frame & FF_TRANSMASK);
+	const int transparency2 = (!spr2->precip && (spr2->mobj->flags2 & MF2_SHADOW)) || (spr2->mobj->frame & FF_TRANSMASK);
 
 	idiff = transparency1 - transparency2;
 	if (idiff != 0) return idiff;
@@ -4369,7 +4369,8 @@ static void HWR_RenderDrawNodes(void)
 
 			for (i = run_start+1; i < numdrawnodes; i++)
 			{
-				if (drawnodes[sortindex[i]].type != DRAWNODE_PLANE) break;
+				if (drawnodes[sortindex[i]].type != DRAWNODE_PLANE)
+					break;
 			}
 
 			run_end = i-1;
@@ -4705,8 +4706,8 @@ static void HWR_ProjectSprite(mobj_t *thing)
 		return;
 
 	const boolean mirrored = thing->mirrored;
-	const boolean vflip = (thing->eflags & MFE_VERTICALFLIP);
-	const boolean hflip = (!(thing->frame & FF_HORIZONTALFLIP) != !mirrored);
+	const boolean vflip    = (thing->eflags & MFE_VERTICALFLIP);
+	const boolean hflip    = (!(thing->frame & FF_HORIZONTALFLIP) != !mirrored);
 
 	this_scale   = FixedToFloat(interp.scale);
 	spritexscale = FixedToFloat(interp.spritexscale);
@@ -4723,7 +4724,7 @@ static void HWR_ProjectSprite(mobj_t *thing)
 #ifdef ROTSPRITE
 	// determine here if sprite should rotate for optimization
 	const boolean sliprollrotate = (cv_sliptideroll.value && (thing->player && thing->player->sliproll));
-	const boolean shouldrotate = (interp.sloperoll || interp.slopepitch || interp.roll || interp.pitch || thing->rollangle || sliprollrotate);
+	const boolean shouldrotate   = (interp.sloperoll || interp.slopepitch || interp.roll || interp.pitch || thing->rollangle || sliprollrotate);
 #endif
 
 	//Fab : 02-08-98: 'skin' override spritedef currently used for skin
@@ -5144,8 +5145,8 @@ static gl_sky_t gl_sky;
 
 static void HWR_SkyDomeVertex(gl_sky_t *sky, gl_skyvertex_t *vbo, int r, int c, signed char yflip, float delta, boolean foglayer)
 {
-	static const float scale = 10000.0f;
-	static const float maxSideAngle = DEG2RADGL(60.0f);
+	static constexpr float scale = 10000.0f;
+	static constexpr float maxSideAngle = DEG2RADGL(60.0f);
 
 	float topAngle = DEG2RADGL(c / (float)sky->columns * 360.0f);
 	float sideAngle = (maxSideAngle * (float)(sky->rows - r) / (float)sky->rows);
@@ -5285,7 +5286,7 @@ void HWR_BuildSkyDome(void)
 static boolean drewsky = false;
 
 // precompute to save a bit of division
-static const float FINEDEGREE = (360.0f/(float)FINEANGLES);
+static constexpr float FINEDEGREE = (360.0f/(float)FINEANGLES);
 
 static void HWR_DrawSkyBackground(void)
 {
@@ -5512,7 +5513,7 @@ void HWR_RenderViewpoint(gl_portal_t *rootportal, const float fpov, player_t *pl
 	if (HWR_IsWireframeMode())
 		GL_SetSpecialState(HWD_SET_WIREFRAME, 1);
 
-	ps_numbspcalls.value.i = 0;
+	ps_numbspcalls.value.i    = 0;
 	ps_numpolyobjects.value.i = 0;
 	PS_START_TIMING(ps_bsptime);
 
@@ -5584,7 +5585,7 @@ void HWR_RenderViewpoint(gl_portal_t *rootportal, const float fpov, player_t *pl
 		HWR_DrawModels();
 	PS_STOP_TIMING(ps_hw_spritedrawtime);
 
-	ps_numdrawnodes.value.i = 0;
+	ps_numdrawnodes.value.i    = 0;
 	ps_hw_nodesorttime.value.p = 0;
 	ps_hw_nodedrawtime.value.p = 0;
 	HWR_RenderDrawNodes();
@@ -5685,10 +5686,6 @@ static void HWR_RollTransform(FTransform *tr, angle_t roll)
 
 void HWR_RenderPlayerView(void)
 {
-	player_t * player = &players[displayplayers[viewssnum]];
-
-	const boolean skybox = (skyboxmo[0] && cv_skybox.value); // True if there's a skybox object and skyboxes are on
-
 	// Clear the color buffer, stops HOMs. Also seems to fix the skybox issue on Intel GPUs.
 	if (viewssnum == 0) // Only do it if it's the first screen being rendered
 	{
@@ -5718,6 +5715,9 @@ void HWR_RenderPlayerView(void)
 
 	if (viewssnum > 3)
 		return;
+
+	player_t * player = &players[displayplayers[viewssnum]];
+	const boolean skybox = (skyboxmo[0] && cv_skybox.value); // True if there's a skybox object and skyboxes are on
 
 	// Render the skybox if there is one.
 	PS_START_TIMING(ps_skyboxtime);
@@ -6055,7 +6055,7 @@ static void HWR_DoPostProcessor(player_t *player)
 
 	//UINT8 viewnum = R_GetViewNumber(); // see below
 	//camera_t *thiscam = &camera[viewnum];
-	camera_t *thiscam = &camera[0];
+	const camera_t *thiscam = &camera[0];
 
 	// Not supported in splitscreen - someone want to add support?
 	const boolean screenwave = (!splitscreen && (thiscam->postimg & POSTIMG_WATER || thiscam->postimg & POSTIMG_HEAT));
