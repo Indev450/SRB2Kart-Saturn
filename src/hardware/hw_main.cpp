@@ -1026,7 +1026,7 @@ static void HWR_SplitWall(sector_t *sector, FOutVector *wallVerts, INT32 texnum,
 	// Lactozilla: If both heights of a side lay on the same position, then this wall is a triangle.
 	// To avoid division by zero, which would result in a NaN, we check if the vertical difference
 	// between the two vertices is not zero.
-	if (fpclassify(diff) == FP_ZERO)
+	if (std::fpclassify(diff) == FP_ZERO)
 		pegmul = 0.0;
 	else
 		pegmul = (pegb - pegt) / diff;
@@ -1038,7 +1038,7 @@ static void HWR_SplitWall(sector_t *sector, FOutVector *wallVerts, INT32 texnum,
 	endpegt = wallVerts[2].t;
 	endpegb = wallVerts[1].t;
 
-	if (fpclassify(diff) == FP_ZERO)
+	if (std::fpclassify(diff) == FP_ZERO)
 		endpegmul = 0.0;
 	else
 		endpegmul = (endpegb - endpegt) / diff;
@@ -2028,7 +2028,7 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 
 					if ((roverflags & FF_TRANSLUCENT && rover->alpha < 256) || rover->blend)
 					{
-						blendmode = rover->blend ? HWR_GetBlendModeFlag(rover->blend) : PF_Translucent;
+						blendmode = rover->blend ? HWR_GetBlendModeFlag(rover->blend) : static_cast<FBITFIELD>(PF_Translucent);
 						Surf.PolyColor.s.alpha = CLAMP(rover->alpha, 0, 255);
 					}
 
@@ -2145,7 +2145,7 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 
 					if ((roverflags & FF_TRANSLUCENT && rover->alpha < 256) || rover->blend)
 					{
-						blendmode = rover->blend ? HWR_GetBlendModeFlag(rover->blend) : PF_Translucent;
+						blendmode = rover->blend ? HWR_GetBlendModeFlag(rover->blend) : static_cast<FBITFIELD>(PF_Translucent);
 						Surf.PolyColor.s.alpha = CLAMP(rover->alpha, 0, 255);
 					}
 
@@ -3079,7 +3079,7 @@ static void HWR_Subsector(size_t num)
 											false,
 											*rover->bottomheight,
 											*gl_frontsector->lightlist[light].lightlevel,
-											CLAMP(rover->alpha, 0 ,255), rover->master->frontsector, HWR_RippleBlend(gl_frontsector, rover, false) | (rover->blend ? HWR_GetBlendModeFlag(rover->blend) : PF_Translucent),
+											CLAMP(rover->alpha, 0 ,255), rover->master->frontsector, HWR_RippleBlend(gl_frontsector, rover, false) | (rover->blend ? HWR_GetBlendModeFlag(rover->blend) : static_cast<FBITFIELD>(PF_Translucent)),
 											false, gl_frontsector->lightlist[light].extra_colormap);
 				}
 				else
@@ -3125,7 +3125,7 @@ static void HWR_Subsector(size_t num)
 											true,
 											*rover->topheight,
 											*gl_frontsector->lightlist[light].lightlevel,
-											CLAMP(rover->alpha, 0 ,255), rover->master->frontsector, HWR_RippleBlend(gl_frontsector, rover, false) | (rover->blend ? HWR_GetBlendModeFlag(rover->blend) : PF_Translucent),
+											CLAMP(rover->alpha, 0 ,255), rover->master->frontsector, HWR_RippleBlend(gl_frontsector, rover, false) | (rover->blend ? HWR_GetBlendModeFlag(rover->blend) : static_cast<FBITFIELD>(PF_Translucent)),
 											false, gl_frontsector->lightlist[light].extra_colormap);
 				}
 				else
@@ -5171,7 +5171,7 @@ static void HWR_SkyDomeVertex(gl_sky_t *sky, gl_skyvertex_t *vbo, int r, int c, 
 	float z = (realRadius * (float)sin(topAngle));
 	float timesRepeat = (4 * (256.0f / sky->width));
 
-	if (fpclassify(timesRepeat) == FP_ZERO)
+	if (std::fpclassify(timesRepeat) == FP_ZERO)
 		timesRepeat = 1.0f;
 
 	if (!foglayer)
