@@ -11,7 +11,6 @@ extern "C" {
 #include "hu_stuff.h"
 
 // Goddammit
-#define restrict
 #include "v_video.h"
 }
 

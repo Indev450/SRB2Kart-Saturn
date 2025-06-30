@@ -560,6 +560,14 @@ UINT32 quickncasehash (const char *p, size_t n)
 #define UNLIKELY(x)     (x)
 #endif
 
+#ifdef __cplusplus
+#if defined(__GNUC__) || defined(__clang__) || defined(_MSC_VER)
+	#define restrict __restrict
+#else
+	#define restrict
+#endif
+#endif
+
 // An assert-type mechanism.
 #ifdef PARANOIA
 #define I_Assert(e) ((e) ? (void)0 : I_Error("assert failed: %s, file %s, line %d", #e, __FILE__, __LINE__))
