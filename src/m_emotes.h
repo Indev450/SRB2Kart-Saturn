@@ -15,6 +15,7 @@ extern consvar_t cv_emotes;
 #define EMOTEWIDTH 6
 
 typedef struct emote_s {
+	char name[MAXEMOTENAME+1];
 	char frames[MAXEMOTEFRAMES][9];
 	UINT8 numframes;
 	tic_t timeperframe;
@@ -27,7 +28,7 @@ void M_LoadEmotes(UINT16 wadnum);
 void M_InitEmotes(void);
 
 // Finds first matching emote, ignoring first few matches
-emote_t *M_FindEmote(const char *name, int skips);
+emote_t *M_FindEmote(const char *name, int len, int skips);
 
 // If first character is not ':', instantly returns null
 // Starts from ':' character, goes until it finds ':' or end of string
