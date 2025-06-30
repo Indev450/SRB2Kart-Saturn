@@ -420,6 +420,7 @@ typedef enum
 } slopetype_t;
 
 #define HORIZONSPECIAL 41
+#define PORTALSPECIAL  40
 
 typedef struct line_s
 {

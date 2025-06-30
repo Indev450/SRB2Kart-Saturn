@@ -385,15 +385,15 @@ static void R_AddLine(seg_t *line)
 	backsector = line->backsector;
 
 	// Portal line
-	if (line->linedef->special == 40 && line->side == 0)
+	if (line->linedef->special == PORTALSPECIAL && line->side == 0)
 	{
 		if (portalrender < cv_maxportals.value)
 		{
 			// Find the other side!
-			INT32 line2 = P_FindSpecialLineFromTag(40, line->linedef->tag, -1);
+			INT32 line2 = P_FindSpecialLineFromTag(PORTALSPECIAL, line->linedef->tag, -1);
 
 			if (line->linedef == &lines[line2])
-				line2 = P_FindSpecialLineFromTag(40, line->linedef->tag, line2);
+				line2 = P_FindSpecialLineFromTag(PORTALSPECIAL, line->linedef->tag, line2);
 
 			if (line2 >= 0) // found it!
 			{
