@@ -12,6 +12,7 @@ extern consvar_t cv_emotes;
 
 #define MAXEMOTENAME 32
 #define MAXEMOTEFRAMES 32
+#define EMOTEWIDTH 6
 
 typedef struct emote_s {
 	char frames[MAXEMOTEFRAMES][9];
@@ -28,11 +29,16 @@ void M_InitEmotes(void);
 // Finds first matching emote, ignoring first few matches
 emote_t *M_FindEmote(const char *name, int skips);
 
+// If first character is not ':', instantly returns null
 // Starts from ':' character, goes until it finds ':' or end of string
 // If end of string is found, or closing ':' is found but resulting emote name doesn't exist,
 // it returns null, otherwise it returns emote and stores into *emotelen how much characters
 // needs to be skipped to get past emote name
 emote_t *M_VerifyEmote(const char *name, int *emotelen);
+
+// Draw the emote, anim should be some kind of timer ticking every game tic
+// for animated emotes
+void M_DrawEmote(INT32 x, INT32 y, emote_t *emote, tic_t anim, INT32 flags);
 
 #ifdef __cplusplus
 } // extern "C"

@@ -7,9 +7,13 @@
 
 extern "C" {
 #include "w_wad.h"
-}
-
 #include "z_zone.h"
+#include "hu_stuff.h"
+
+// Goddammit
+#define restrict
+#include "v_video.h"
+}
 
 consvar_t cv_emotes = {"emotes", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};;
 
@@ -197,6 +201,9 @@ emote_t *M_FindEmote(const char *name, int skip)
 
 emote_t *M_VerifyEmote(const char *name, int *emotelen)
 {
+	if (*name != ':')
+		return nullptr;
+
 	if (!cv_emotes.value)
 		return nullptr;
 
@@ -223,4 +230,29 @@ emote_t *M_VerifyEmote(const char *name, int *emotelen)
 		*emotelen = p-name+1;
 
 	return match;
+}
+
+void M_DrawEmote(INT32 x, INT32 y, emote_t *emote, tic_t anim, INT32 flags)
+{
+	if (emote->numframes == 0)
+		return;
+
+	const char *lumpname = emote->frames[(anim/emote->timeperframe) % emote->numframes];
+	patch_t *emotepatch = (patch_t*)W_CachePatchName(lumpname, PU_CACHE);
+
+	const int CHARHEIGHT = 6;
+
+	fixed_t scale = FRACUNIT;
+
+	x *= FRACUNIT;
+	y *= FRACUNIT;
+
+	if (emotepatch->width > EMOTEWIDTH)
+		scale = (FRACUNIT/emotepatch->width)*EMOTEWIDTH;
+	else if (emotepatch->width < EMOTEWIDTH)
+		x += (EMOTEWIDTH-emotepatch->width)*FRACUNIT/2;
+
+	y -= (scale*emotepatch->height-CHARHEIGHT*FRACUNIT)/2;
+
+	V_DrawFixedPatch(x, y, scale, flags, emotepatch, NULL);
 }
