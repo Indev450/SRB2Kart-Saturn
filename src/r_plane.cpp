@@ -100,7 +100,7 @@ static void R_ReallocPlaneBounds(visplane_t *pl)
 {
 	pl->top_memory    = static_cast<UINT16*>(Z_Realloc(pl->top_memory, sizeof(UINT16) * (viewwidth + 2), PU_STATIC, NULL));
 	pl->bottom_memory = static_cast<UINT16*>(Z_Realloc(pl->bottom_memory, sizeof(UINT16) * (viewwidth + 2), PU_STATIC, NULL));
-	pl->top = pl->top_memory + 1;
+	pl->top    = pl->top_memory + 1;
 	pl->bottom = pl->bottom_memory + 1;
 }
 
@@ -203,14 +203,14 @@ static void R_MapPlane(drawspandata_t *ds, spandrawfunc_t *localspanfunc, INT32 
 	if (!R_CheckMapPlane(__func__, y, x1, x2))
 		return;
 
-	angle = (ds->currentplane->viewangle + ds->currentplane->plangle)>>ANGLETOFINESHIFT;
+	angle    = (ds->currentplane->viewangle + ds->currentplane->plangle)>>ANGLETOFINESHIFT;
 	planecos = FINECOSINE(angle);
 	planesin = FINESINE(angle);
 
 	// [RH] Notice that I dumped the caching scheme used by Doom.
 	// It did not offer any appreciable speedup.
 	distance = FixedMul(ds->planeheight, yslope[y]);
-	span = abs(centery - y);
+	span     = abs(centery - y);
 
 	if (span) // don't divide by zero
 	{
@@ -259,7 +259,7 @@ static void R_MapPlane(drawspandata_t *ds, spandrawfunc_t *localspanfunc, INT32 
 	if (ds->currentplane->extra_colormap)
 		ds->colormap = ds->currentplane->extra_colormap->colormap + (ds->colormap - colormaps);
 
-	ds->y = y;
+	ds->y  = y;
 	ds->x1 = x1;
 	ds->x2 = x2;
 
@@ -301,7 +301,7 @@ static void R_MapTiltedPlane(drawspandata_t *ds, spandrawfunc_t *localspanfunc, 
 		ds->colormap += COLORMAP_REMAPOFFSET;
 	}
 
-	ds->y = y;
+	ds->y  = y;
 	ds->x1 = x1;
 	ds->x2 = x2;
 
