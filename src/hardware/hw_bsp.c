@@ -371,12 +371,13 @@ static poly_t *CutOutSubsecPoly(seg_t *lseg, INT32 count, poly_t *poly)
 		line_t *line = lseg->linedef;
 
 		// portal check
-		if (!gl_maphasportals && line->special == 40 && lseg->side == 0)
+		if (!gl_maphasportals && line->special == PORTALSPECIAL && lseg->side == 0)
 		{
 			// Find the other side!
-			INT32 line2 = P_FindSpecialLineFromTag(40, line->tag, -1);
+			INT32 line2 = P_FindSpecialLineFromTag(PORTALSPECIAL, line->tag, -1);
+
 			if (line == &lines[line2])
-				line2 = P_FindSpecialLineFromTag(40, line->tag, line2);
+				line2 = P_FindSpecialLineFromTag(PORTALSPECIAL, line->tag, line2);
 			if (line2 >= 0) // found it!
 				gl_maphasportals = 1;
 		}

@@ -2361,6 +2361,40 @@ static inline void DoAddLine(seg_t* line, angle_t angle1, angle_t angle2)
 	// SoM: Backsector needs to be run through R_FakeFlat
 	static sector_t tempsec;
 
+	auto do_addline = [&](bool dontdraw) {
+		if (!line->backsector)
+		{
+			gld_clipper_SafeAddClipRange(angle2, angle1);
+		}
+		else
+		{
+			gl_backsector = R_FakeFlat(gl_backsector, &tempsec, NULL, NULL, true);
+
+			if (CheckClip(gl_frontsector, gl_backsector))
+			{
+				gld_clipper_SafeAddClipRange(angle2, angle1);
+				checkforemptylines = false;
+			}
+
+			// Reject empty lines used for triggers and special events.
+			// Identical floor and ceiling on both sides,
+			//  identical light levels on both sides,
+			//  and no middle texture.
+			if (checkforemptylines && R_IsEmptyLine(line, gl_frontsector, gl_backsector))
+				return;
+		}
+
+		if constexpr (Type == AddLineType::kPortal)
+		{
+			if (gl_portal_state != GLPORTAL_SEARCH && !dontdraw)// no need to do this during the portal check
+				HWR_ProcessSeg(); // Doesn't need arguments because they're defined globally :D
+		}
+		else if constexpr (Type == AddLineType::kNormal)
+		{
+			HWR_ProcessSeg(); // Doesn't need arguments because they're defined globally :D
+		}
+	};
+
 	if constexpr (Type == AddLineType::kPortal)
 	{
 		boolean dont_draw = false;
@@ -2377,15 +2411,15 @@ static inline void DoAddLine(seg_t* line, angle_t angle1, angle_t angle2)
 		if (gl_portal_state == GLPORTAL_STENCIL || gl_portal_state == GLPORTAL_DEPTH)
 			goto doaddline;
 
-		if (line->linedef->special == 40)
+		if (line->linedef->special == PORTALSPECIAL)
 		{
 			if (line->side == 0)
 			{
 				// Find the other side!
-				INT32 line2 = P_FindSpecialLineFromTag(40, line->linedef->tag, -1);
+				INT32 line2 = P_FindSpecialLineFromTag(PORTALSPECIAL, line->linedef->tag, -1);
 
 				if (line->linedef == &lines[line2])
-					line2 = P_FindSpecialLineFromTag(40, line->linedef->tag, line2);
+					line2 = P_FindSpecialLineFromTag(PORTALSPECIAL, line->linedef->tag, line2);
 
 				if (line2 >= 0) // found it!
 				{
@@ -2400,59 +2434,11 @@ static inline void DoAddLine(seg_t* line, angle_t angle1, angle_t angle2)
 		}
 
 	doaddline:
-		if (!line->backsector)
-		{
-			gld_clipper_SafeAddClipRange(angle2, angle1);
-		}
-		else
-		{
-			gl_backsector = R_FakeFlat(gl_backsector, &tempsec, NULL, NULL, true);
-
-			if (CheckClip(gl_frontsector, gl_backsector))
-			{
-				gld_clipper_SafeAddClipRange(angle2, angle1);
-				checkforemptylines = false;
-			}
-
-			// Reject empty lines used for triggers and special events.
-			// Identical floor and ceiling on both sides,
-			//  identical light levels on both sides,
-			//  and no middle texture.
-			if (checkforemptylines && R_IsEmptyLine(line, gl_frontsector, gl_backsector))
-				return;
-		}
-
-		if (LIKELY(gl_portal_state != GLPORTAL_SEARCH && !dont_draw))// no need to do this during the portal check
-			HWR_ProcessSeg(); // Doesn't need arguments because they're defined globally :D
-		return;
+		do_addline(dont_draw); // no need to do this during the portal check
 	}
-
-	if constexpr (Type == AddLineType::kNormal)
+	else if constexpr (Type == AddLineType::kNormal)
 	{
-		if (!line->backsector)
-		{
-			gld_clipper_SafeAddClipRange(angle2, angle1);
-		}
-		else
-		{
-			gl_backsector = R_FakeFlat(gl_backsector, &tempsec, NULL, NULL, true);
-
-			if (CheckClip(gl_frontsector, gl_backsector))
-			{
-				gld_clipper_SafeAddClipRange(angle2, angle1);
-				checkforemptylines = false;
-			}
-
-			// Reject empty lines used for triggers and special events.
-			// Identical floor and ceiling on both sides,
-			//  identical light levels on both sides,
-			//  and no middle texture.
-			if (checkforemptylines && R_IsEmptyLine(line, gl_frontsector, gl_backsector))
-				return;
-		}
-
-		HWR_ProcessSeg(); // Doesn't need arguments because they're defined globally :D
-		return;
+		do_addline(false);
 	}
 }
 
@@ -3286,8 +3272,7 @@ static void HWR_RenderBSPNode(INT32 bspnum)
 			if (!(HWR_CheckBBox(bsp->bbox[side^1]) && HWR_PortalCheckBBox(bsp->bbox[side^1])))
 				return;
 		}
-
-		if constexpr (Type == BspType::kNormal)
+		else if constexpr (Type == BspType::kNormal)
 		{
 			// Recursively divide front space (toward the viewer).
 			HWR_RenderBSPNode<BspType::kNormal>(bsp->children[side]);
@@ -5599,8 +5584,7 @@ void HWR_RenderViewpoint(gl_portal_t *rootportal, const float fpov, player_t *pl
 		// woo we back
 		HWR_SetPortalState(oldgl_portal_state);
 	}
-
-	if constexpr (Type == RenderViewpointType::kNormal)
+	else if constexpr (Type == RenderViewpointType::kNormal)
 	{
 		// Recursively "render" the BSP tree.
 		HWR_RenderBSPNode<BspType::kNormal>((INT32)numnodes-1);
