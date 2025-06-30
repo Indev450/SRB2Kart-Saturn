@@ -1,6 +1,5 @@
 #include "m_textinput.h"
 #include "m_menu.h" // MAXSTRINGLENGTH
-#include "m_emotes.h" // M_EmoteV_SubStringWidth
 #include "v_video.h"
 #include "r_main.h" // renderisnewtic
 #include "i_system.h"
@@ -401,13 +400,86 @@ boolean M_TextInputHandle(textinput_t *input, INT32 key)
 	return M_TextInputHandleBase(input, key, false);
 }
 
-boolean M_TextInputHandleEmotes(textinput_t *input, INT32 key)
+boolean M_TextInputHandleEmotes(textinput_t *input, INT32 key, emote_t *suggestions[], int maxsuggestions)
 {
 	boolean ret = M_TextInputHandleBase(input, key, true);
 
 	// After this handled key we ended up inside an emote, lets fix that
 	if (M_TextInputCheckEmote(input))
 		M_TextInputToWordEnd(input, !shiftdown);
+
+	// Always clear the first entry
+	suggestions[0] = NULL;
+
+	// For autocomplete
+	int emotestart = 0;
+
+	// Try find suggestions for emote names
+	for (int i = input->cursor-1; i >= 0 && input->cursor-i <= MAXEMOTENAME; --i)
+	{
+		// Space can't be part of emote name
+		if (isspace(input->buffer[i]))
+			break;
+
+		// Found a :, try suggest emotes
+		if (input->buffer[i] == ':')
+		{
+			emotestart = i+1;
+			// ...But only if we typed at least something
+			if ((int)input->cursor-(i-1) < 3)
+				break;
+
+			for (int skip = 0; skip < maxsuggestions; ++skip)
+			{
+				suggestions[skip] = M_FindEmote(input->buffer+i+1, input->cursor-i-1, skip);
+
+				// No more suggestions
+				if (!suggestions[skip])
+					break;
+			}
+
+			// In any case, we found what we wanted, can exit the loop now
+			break;
+		}
+	}
+
+	// If we suggest emotes, try autocomplete
+	if (key == '\t' && suggestions[0])
+	{
+		int pos = (input->cursor-emotestart);
+		boolean autocomplete = true;
+
+		while (autocomplete)
+		{
+			// Check if current character matches for all suggestions
+			char c = suggestions[0]->name[pos];
+
+			// End of string reached
+			if (!c)
+				break;
+
+			for (int i = 1; i < maxsuggestions && suggestions[i]; ++i)
+			{
+				if (suggestions[i]->name[pos] != c)
+				{
+					autocomplete = false;
+					break;
+				}
+			}
+
+			++pos;
+
+			if (autocomplete)
+				M_TextInputAddChar(input, c);
+		}
+
+		// This was the only suggestion, finish autocomplete with a ':' and clear suggestions
+		if (maxsuggestions == 1 || !suggestions[1])
+		{
+			M_TextInputAddChar(input, ':');
+			suggestions[0] = NULL;
+		}
+	}
 
 	return ret;
 }
