@@ -39,8 +39,12 @@ extern "C" {
 // as an non-fixed-point integer.
 // It is very rough, tho it is used only for optimizing out unnecessary
 // interpolation, so it is kinda ok on big distances.
+
+#ifdef __cplusplus
+#define R_QuickCamDist(x, y) std::max(std::abs(((x)>>FRACBITS) - (viewx>>FRACBITS)), std::abs(((y)>>FRACBITS) - (viewy>>FRACBITS)))
+#else
 #define R_QuickCamDist(x, y) max(abs(((x)>>FRACBITS) - (viewx>>FRACBITS)), abs(((y)>>FRACBITS) - (viewy>>FRACBITS)))
-#define R_QuickCamDistFixed(x, y) (max(abs(((x)) - (viewx)), abs(((y)) - (viewy))))
+#endif
 
 // Constant arrays used for psprite clipping
 //  and initializing clipping.
@@ -85,6 +89,7 @@ void R_DrawMasked(maskcount_t* masks, INT32 nummasks);
 
 boolean R_ThingVisible(mobj_t *thing);
 boolean R_ThingWithinDist(mobj_t *thing, INT32 limit_dist);
+boolean R_CheckInterpDist(mobj_t *thing);
 
 boolean R_ThingIsFullBright(mobj_t *thing);
 boolean R_ThingIsSemiBright(mobj_t *thing);

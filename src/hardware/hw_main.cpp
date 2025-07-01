@@ -3551,8 +3551,6 @@ static void HWR_DrawSpriteShadow(gl_vissprite_t *spr, patch_t *gpatch, GLPatch_t
 	}
 }*/
 
-#define std_R_QuickCamDist(x, y) std::max(abs(((x)>>FRACBITS) - (viewx>>FRACBITS)), abs(((y)>>FRACBITS) - (viewy>>FRACBITS)))
-
 // This is expecting a pointer to an array containing 4 wallVerts for a sprite
 static void HWR_RotateSpritePolyToAim(gl_vissprite_t *spr, FOutVector *wallVerts, const boolean precip, const boolean papersprite)
 {
@@ -3564,13 +3562,9 @@ static void HWR_RotateSpritePolyToAim(gl_vissprite_t *spr, FOutVector *wallVerts
 	// uncapped/interpolation
 	interpmobjstate_t interp = {};
 	float basey, lowy;
-	INT32 dist = -1;
-
-	if (cv_maxinterpdist.value)
-		dist = std_R_QuickCamDist(spr->mobj->x, spr->mobj->y);
 
 	// do interpolation
-	if (R_UsingFrameInterpolation() && !paused && (!cv_maxinterpdist.value || dist < cv_maxinterpdist.value))
+	if (R_UsingFrameInterpolation() && !paused && R_CheckInterpDist(spr->mobj))
 	{
 		if (precip)
 		{
@@ -4681,7 +4675,6 @@ static void HWR_ProjectSprite(mobj_t *thing)
 	angle_t camang = 0;
 #endif
 	INT32 heightsec, phs;
-	INT32 dist = -1;
 
 	fixed_t spr_width, spr_height;
 	fixed_t spr_offset, spr_topoffset;
@@ -4698,10 +4691,7 @@ static void HWR_ProjectSprite(mobj_t *thing)
 	// uncapped/interpolation
 	interpmobjstate_t interp = {};
 
-	if (cv_maxinterpdist.value)
-		dist = std_R_QuickCamDist(thing->x, thing->y);
-
-	if (R_UsingFrameInterpolation() && !paused && (!cv_maxinterpdist.value || dist < cv_maxinterpdist.value))
+	if (R_UsingFrameInterpolation() && !paused && R_CheckInterpDist(thing))
 	{
 		R_InterpolateMobjState(thing, rendertimefrac, &interp);
 	}
@@ -5050,7 +5040,6 @@ static void HWR_ProjectPrecipitationSprite(precipmobj_t *thing)
 	size_t lumpoff;
 	unsigned rot = 0;
 	UINT8 flip;
-	INT32 dist = -1;
 
 	if (!thing)
 		return;
@@ -5064,11 +5053,8 @@ static void HWR_ProjectPrecipitationSprite(precipmobj_t *thing)
 	// uncapped/interpolation
 	interpmobjstate_t interp = {};
 
-	if (cv_maxinterpdist.value)
-		dist = std_R_QuickCamDist(thing->x, thing->y);
-
 	// do interpolation
-	if (R_UsingFrameInterpolation() && !paused && (!cv_maxinterpdist.value || dist < cv_maxinterpdist.value))
+	if (R_UsingFrameInterpolation() && !paused && R_CheckInterpDist((mobj_t*)thing))
 	{
 		R_InterpolatePrecipMobjState(thing, rendertimefrac, &interp);
 	}
