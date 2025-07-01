@@ -2289,8 +2289,9 @@ static void HU_DrawSongCreditsBox(void)
 
 	if (bgt < NUMTRANSMAPS)
 	{
-		V_DrawFill(x, y, strwidth*dup, BOXCREDITHEIGHT*dup, 28|flags|(bgt<<V_ALPHASHIFT));
-		V_DrawFill(x+dup, y+dup, (strwidth-2)*dup, (BOXCREDITHEIGHT-2)*dup, 30|flags|(bgt<<V_ALPHASHIFT));
+		const UINT8 accent = colortranslations[K_GetHudColor()][9];
+		V_DrawFill(x, y, strwidth*dup, BOXCREDITHEIGHT*dup, accent|flags|(bgt<<V_ALPHASHIFT));
+		V_DrawFill(x+dup, y+dup, (strwidth-2)*dup, (BOXCREDITHEIGHT-2)*dup, accent|flags|(bgt<<V_ALPHASHIFT));
 	}
 	if (cursongcredit.trans < NUMTRANSMAPS)
 	{
