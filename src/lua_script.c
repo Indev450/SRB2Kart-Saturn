@@ -1304,7 +1304,7 @@ void LUA_UnArchive(savebuffer_t *save, boolean network)
 			mobjnum = READUINT32(save->p); // read a mobjnum
 			for (th = thinkercap.next; th != &thinkercap; th = th->next)
 			{
-				if (th->function.acp1 != (actionf_p1)P_MobjThinker)
+				if (th->function != (actionf_p1)P_MobjThinker)
 					continue;
 
 				if (((mobj_t *)th)->mobjnum == mobjnum) // find matching mobj
