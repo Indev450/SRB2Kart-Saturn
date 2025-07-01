@@ -24,6 +24,7 @@
 #include "w_wad.h"
 #include "z_zone.h"
 #include "k_kart.h"
+#include "k_hud.h" // SRB2kart
 
 #include "lua_script.h"
 #include "lua_libs.h"
