@@ -3552,7 +3552,7 @@ static void HWR_DrawSpriteShadow(gl_vissprite_t *spr, patch_t *gpatch, GLPatch_t
 // This is expecting a pointer to an array containing 4 wallVerts for a sprite
 static void HWR_RotateSpritePolyToAim(gl_vissprite_t *spr, FOutVector *wallVerts, const boolean precip, const boolean papersprite)
 {
-	if (!cv_glspritebillboarding.value || !spr || !spr->mobj || !wallVerts || papersprite)
+	if (!cv_glspritebillboarding.value || papersprite)
 	{
 		return;
 	}
