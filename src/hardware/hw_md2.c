@@ -1187,7 +1187,7 @@ void HWR_DrawMD2(gl_vissprite_t *spr)
 		spriteinfo_t *sprinfo;
 		interpmobjstate_t interp;
 
-		if (R_UsingFrameInterpolation() && !paused && (!cv_maxinterpdist.value || R_QuickCamDist(spr->mobj->x, spr->mobj->y) < cv_maxinterpdist.value))
+		if (R_UsingFrameInterpolation() && !paused && R_CheckInterpDist(spr->mobj))
 		{
 			R_InterpolateMobjState(spr->mobj, rendertimefrac, &interp);
 		}

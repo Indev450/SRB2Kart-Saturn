@@ -740,12 +740,9 @@ void R_DrawPlanes(void)
 		}
 	}
 #ifdef HAVE_THREADS
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Waggregate-return"
 	tp_sema = srb2::g_main_threadpool->end_sema();
 	srb2::g_main_threadpool->notify_sema(tp_sema);
 	srb2::g_main_threadpool->wait_sema(tp_sema);
-#pragma GCC diagnostic pop
 #endif
 }
 
@@ -771,12 +768,9 @@ void R_DrawSkyPlanes(void)
 		}
 	}
 #ifdef HAVE_THREADS
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Waggregate-return"
 	tp_sema = srb2::g_main_threadpool->end_sema();
 	srb2::g_main_threadpool->notify_sema(tp_sema);
 	srb2::g_main_threadpool->wait_sema(tp_sema);
-#pragma GCC diagnostic pop
 #endif
 }
 
@@ -1102,6 +1096,7 @@ void R_DrawSinglePlane(drawspandata_t* ds, visplane_t *pl, boolean allow_paralle
 				// and mercilessly shoved into saturn by chearii 02-02-2025
 				{
 					INT32 trans = (10*((256+12) - pl->ffloor->alpha))/255;
+
 					if (trans >= 10)
 						return; // Don't even draw it
 
@@ -1138,13 +1133,8 @@ void R_DrawSinglePlane(drawspandata_t* ds, visplane_t *pl, boolean allow_paralle
 					spanfunctype = SPANDRAWFUNC_WATER;
 
 					// Copy the current scene, ugh
-					top = pl->high-8;
-					bottom = pl->low+8;
-
-					if (top < 0)
-						top = 0;
-					if (bottom > vid.height)
-						bottom = vid.height;
+					top    = std::max(0, pl->high - 8);
+					bottom = std::min(viewheight, pl->low + 8);
 
 					// Only copy the part of the screen we need
 					UINT8 i = R_GetViewNumber();
