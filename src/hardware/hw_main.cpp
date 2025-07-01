@@ -3893,7 +3893,7 @@ static void HWR_DrawSprite(gl_vissprite_t *spr)
 		return;
 
 	const boolean papersprite = (spr->mobj->frame & FF_PAPERSPRITE);
-	sector_t *sector = spr->mobj->subsector->sector;
+	const sector_t *sector = spr->mobj->subsector->sector;
 
 	if (sector->numlights)
 	{
@@ -3978,13 +3978,13 @@ static void HWR_DrawSprite(gl_vissprite_t *spr)
 
 	// colormap test
 	INT32 lightlevel = 255;
-	boolean lightset = HWR_OverrideObjectLightLevel(spr->mobj, &lightlevel);
+	const boolean lightset = HWR_OverrideObjectLightLevel(spr->mobj, &lightlevel);
 	extracolormap_t *colormap = sector->extra_colormap;
 	const boolean fullbright = R_ThingIsFullBright(spr->mobj);
 
 	if (!lightset)
 	{
-		lightlevel = std::min(static_cast<int>(sector->lightlevel), 255);
+		lightlevel = std::min(static_cast<INT32>(sector->lightlevel), 255);
 		HWR_ObjectLightLevelPost(spr, sector, &lightlevel, false);
 	}
 
