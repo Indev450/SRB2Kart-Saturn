@@ -3757,7 +3757,7 @@ static void HWR_SplitSprite(gl_vissprite_t *spr, const boolean papersprite)
 			continue;
 
 		if (!lightset)
-			lightlevel = std::min(static_cast<int>(*list[i-1].lightlevel), 255);
+			lightlevel = static_cast<INT32>(CLAMP(*list[i-1].lightlevel, 0, 255));
 
 		colormap = list[i-1].extra_colormap;
 		break;
@@ -3776,7 +3776,7 @@ static void HWR_SplitSprite(gl_vissprite_t *spr, const boolean papersprite)
 		{
 			if (!lightset)
 			{
-				lightlevel = std::min(static_cast<int>(*list[i].lightlevel), 255);
+				lightlevel = static_cast<INT32>(CLAMP(*list[i].lightlevel, 0, 255));
 				HWR_ObjectLightLevelPost(spr, sector, &lightlevel, false);
 			}
 
@@ -3984,7 +3984,7 @@ static void HWR_DrawSprite(gl_vissprite_t *spr)
 
 	if (!lightset)
 	{
-		lightlevel = std::min(static_cast<INT32>(sector->lightlevel), 255);
+		lightlevel = static_cast<INT32>(CLAMP(sector->lightlevel, 0, 255));
 		HWR_ObjectLightLevelPost(spr, sector, &lightlevel, false);
 	}
 
@@ -4090,7 +4090,7 @@ static void HWR_DrawPrecipitationSprite(gl_vissprite_t *spr)
 		light = R_GetPlaneLight(sector, spr->mobj->z + spr->mobj->height, false); // Always use the light at the top instead of whatever I was doing before
 
 		if (!(spr->mobj->frame & FF_FULLBRIGHT))
-			lightlevel = std::min(static_cast<int>(*sector->lightlist[light].lightlevel), 255);
+			lightlevel = static_cast<UINT8>(CLAMP(*sector->lightlist[light].lightlevel, 0, 255));
 
 		if (sector->lightlist[light].extra_colormap)
 			colormap = sector->lightlist[light].extra_colormap;
@@ -4098,7 +4098,7 @@ static void HWR_DrawPrecipitationSprite(gl_vissprite_t *spr)
 	else
 	{
 		if (!(spr->mobj->frame & FF_FULLBRIGHT))
-			lightlevel = std::min(static_cast<int>(sector->lightlevel), 255);
+			lightlevel = static_cast<UINT8>(CLAMP(sector->lightlevel, 0, 255));
 
 		if (sector->extra_colormap)
 			colormap = sector->extra_colormap;
