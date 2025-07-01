@@ -114,8 +114,8 @@ void HWR_SetViewSize(void);
 void HWR_AddCommands(void);
 
 void HWR_RenderPlayerView(void);
-void HWR_RenderViewpoint(gl_portal_t *rootportal, const float fpov, player_t *player, int stencil_level, boolean allow_portals);
-void HWR_RenderPortalViewpoint(gl_portal_t *rootportal, const float fpov, player_t *player, int stencil_level, boolean allow_portals);
+void HWR_RenderViewpoint(gl_portal_t *rootportal, player_t *player, int stencil_level, boolean allow_portals);
+void HWR_RenderPortalViewpoint(gl_portal_t *rootportal, player_t *player, int stencil_level, boolean allow_portals);
 
 void HWR_ClearSkyDome(void);
 void HWR_BuildSkyDome(void);
