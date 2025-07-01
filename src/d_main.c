@@ -73,6 +73,7 @@
 #include "d_protocol.h"
 #include "m_perfstats.h"
 #include "k_kart.h"
+#include "k_hud.h"
 
 #include "core/memory.h"
 

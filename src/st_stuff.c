@@ -34,6 +34,7 @@
 #include "i_time.h"
 
 #include "k_kart.h" // SRB2kart
+#include "k_hud.h"
 
 //random index
 #include "m_random.h"

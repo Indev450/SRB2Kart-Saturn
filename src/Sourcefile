@@ -13,6 +13,7 @@ f_finale.c
 f_wipe.c
 filesrch.c
 g_game.c
+g_demo.c
 g_input.c
 hu_stuff.c
 i_tcp.c
@@ -79,6 +80,7 @@ p_tick.c
 p_user.c
 k_director.c
 k_kart.c
+k_hud.c
 k_stats.c
 lua_baselib.c
 lua_blockmaplib.c

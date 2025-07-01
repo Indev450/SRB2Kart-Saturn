@@ -50,6 +50,7 @@
 
 #include "s_sound.h" // song credits
 #include "k_kart.h"
+#include "k_hud.h"
 
 #include "m_textinput.h"
 

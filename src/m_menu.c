@@ -70,6 +70,7 @@
 #include "st_stuff.h"
 #include "i_sound.h"
 #include "k_kart.h" // SRB2kart
+#include "k_hud.h" // SRB2kart
 #include "k_stats.h" // SRB2kart
 #include "d_player.h" // KITEM_ constants
 
