@@ -1985,7 +1985,7 @@ static void R_ProjectPrecipitationSprite(precipmobj_t *thing)
 	vis->gy = interp.y;
 	vis->gz = gz;
 	vis->gzt = gzt;
-	vis->thingheight = 4*FRACUNIT;
+	vis->thingheight = 4 << FRACBITS;
 	vis->pz = interp.z;
 	vis->pzt = vis->pz + vis->thingheight;
 	vis->texturemid = vis->gzt - viewz;
@@ -2930,7 +2930,7 @@ boolean R_ThingWithinDist(mobj_t *thing, INT32 limit_dist)
 {
 	if (limit_dist)
 	{
-		if (P_AproxDistance(viewx-thing->x, viewy-thing->y)/mapobjectscale > limit_dist)
+		if ((R_QuickCamDist(thing->x, thing->y) << FRACBITS)/mapobjectscale > limit_dist)
 		{
 			return false;
 		}

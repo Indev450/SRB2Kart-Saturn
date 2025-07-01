@@ -380,7 +380,7 @@ void HWR_ObjectLightLevelPost(gl_vissprite_t *spr, const sector_t *sector, INT32
 			extralight = FixedMul(extralight, CLAMP(*lightlevel, 0, 255) * FRACUNIT / 255);
 
 			// simple OGL approximation
-			fixed_t tr = R_PointToDist(spr->mobj->x, spr->mobj->y);
+			fixed_t tr = R_QuickCamDist(spr->mobj->x, spr->mobj->y) << FRACBITS;
 			fixed_t xscale = FixedDiv((vid.width / 2) << FRACBITS, tr);
 
 			// Less change in contrast at further distances, to counteract DOOM diminished light
@@ -811,6 +811,7 @@ static void HWR_RenderPlane(subsector_t *subsector, extrasubsector_t *xsub, bool
 
 			// Based on the seg length and the distance from the line, split horizon into multiple poly sets to reduce distortion
 			dist = sqrtf((xd*xd) + (yd*yd)) / dist / 16.0f;
+
 			if (dist > 100.0f)
 				numplanes = 100;
 			else
@@ -2558,18 +2559,18 @@ static boolean HWR_CheckBBox(const fixed_t *bspcoord)
 		if (viewx < bspcoord[BOXLEFT]) // 1,4,6
 		{
 			if (viewy > bspcoord[BOXTOP]) // 1
-				mindist = R_PointToDist(bspcoord[BOXLEFT], bspcoord[BOXTOP]);
+				mindist = R_QuickCamDist(bspcoord[BOXLEFT], bspcoord[BOXTOP]) << FRACBITS;
 			else if (viewy < bspcoord[BOXBOTTOM]) // 6
-				mindist = R_PointToDist(bspcoord[BOXLEFT], bspcoord[BOXBOTTOM]);
+				mindist = R_QuickCamDist(bspcoord[BOXLEFT], bspcoord[BOXBOTTOM]) << FRACBITS;
 			else // 4
 				mindist = bspcoord[BOXLEFT] - viewx;
 		}
 		else if (viewx > bspcoord[BOXRIGHT]) // 3,5,8
 		{
 			if (viewy > bspcoord[BOXTOP]) // 3
-				mindist = R_PointToDist(bspcoord[BOXRIGHT], bspcoord[BOXTOP]);
+				mindist = R_QuickCamDist(bspcoord[BOXRIGHT], bspcoord[BOXTOP]) << FRACBITS;
 			else if (viewy < bspcoord[BOXBOTTOM]) // 8
-				mindist = R_PointToDist(bspcoord[BOXRIGHT], bspcoord[BOXBOTTOM]);
+				mindist = R_QuickCamDist(bspcoord[BOXRIGHT], bspcoord[BOXBOTTOM]) << FRACBITS;
 			else // 5
 				mindist = viewx - bspcoord[BOXRIGHT];
 		}
