@@ -65,6 +65,7 @@
 #include "st_stuff.h"
 #include "m_misc.h" // M_MapNumber
 #include "p_setup.h" // P_PartialAddFile mayb
+#include "k_hud.h"
 
 #ifdef HWRENDER
 #include "r_data.h"

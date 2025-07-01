@@ -4,8 +4,6 @@ sources+=$(call List,dedicated/Sourcefile)
 
 opts+=-DDEDICATED
 
-libs+=-lpthread
-
 ifdef MINGW
 libs+=-mconsole
 endif

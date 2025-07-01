@@ -40,6 +40,7 @@
 #include "m_random.h" // M_RandomKey
 #include "g_input.h" // PLAYER1INPUTDOWN
 #include "k_kart.h" // colortranslations
+#include "k_hud.h"
 #include "console.h" // cons_menuhighlight
 #include "lua_hook.h" // IntermissionThinker hook
 #include "lua_hud.h" // intermission hud hook
@@ -450,7 +451,7 @@ void Y_IntermissionDrawer(void)
 	else
 	{
 		if (rendermode == render_soft)
-			VID_BlitLinearScreen(screens[1], screens[0], vid.width*vid.bpp, vid.height, vid.width*vid.bpp, vid.rowbytes);
+			VID_BlitLinearScreen(vid.screens[1], vid.screens[0], vid.width, vid.height, vid.width, vid.rowbytes);
 #ifdef HWRENDER
 		else if (rendermode == render_opengl)
 			HWR_DrawIntermissionBG();

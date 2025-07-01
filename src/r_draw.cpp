@@ -15,6 +15,8 @@
 ///        not the architecture of the frame buffer.
 ///        The frame buffer is a linear one, and we need only the base address.
 
+#include <algorithm>
+
 #include "doomdef.h"
 #include "doomstat.h"
 #include "r_local.h"
@@ -38,47 +40,14 @@
 
 /**	\brief view info
 */
-INT32 viewwidth, scaledviewwidth, viewheight, viewwindowx, viewwindowy;
-
-/**	\brief pointer to the start of each line of the screen,
-*/
-UINT8 *ylookup[MAXVIDHEIGHT*4];
-
-/**	\brief pointer to the start of each line of the screen, for view1 (splitscreen)
-*/
-UINT8 *ylookup1[MAXVIDHEIGHT*4];
-
-/**	\brief pointer to the start of each line of the screen, for view2 (splitscreen)
-*/
-UINT8 *ylookup2[MAXVIDHEIGHT*4];
-
-/**	\brief pointer to the start of each line of the screen, for view3 (splitscreen)
-*/
-UINT8 *ylookup3[MAXVIDHEIGHT*4];
-
-/**	\brief pointer to the start of each line of the screen, for view4 (splitscreen)
-*/
-UINT8 *ylookup4[MAXVIDHEIGHT*4];
-
-/**	\brief  x byte offset for columns inside the viewwindow,
-	so the first column starts at (SCRWIDTH - VIEWWIDTH)/2
-*/
-INT32 columnofs[MAXVIDWIDTH*4];
-
-UINT8 *topleft;
+INT32 linesize, viewwidth, viewheight, viewwindowx, viewwindowy;
+UINT8 *renderscreen;            // haleyjd
 
 // =========================================================================
 //                      COLUMN DRAWING CODE STUFF
 // =========================================================================
 
-lighttable_t *dc_colormap;
-INT32 dc_x = 0, dc_yl = 0, dc_yh = 0;
-
-fixed_t dc_iscale, dc_texturemid;
-UINT8 dc_hires; // under MSVC boolean is a byte, while on other systems, it a bit,
-               // soo lets make it a byte on all system for the ASM code
-UINT8 *dc_source;
-INT32 dc_sourcelength;
+drawcolumndata_t g_dc;
 
 // -----------------------
 // translucency stuff here
@@ -88,42 +57,34 @@ INT32 dc_sourcelength;
 UINT8 *transtables; // translucency tables
 UINT8 *blendtables[NUMBLENDMAPS];
 
-/**	\brief R_DrawTransColumn uses this
-*/
-UINT8 *dc_transmap; // one of the translucency tables
+// --------------------------------------------
+// c drawer routines
+// --------------------------------------------
 
-// ----------------------
-// translation stuff here
-// ----------------------
-
-
-/**	\brief R_DrawTranslatedColumn uses this
-*/
-UINT8 *dc_translation;
-
-struct r_lightlist_s *dc_lightlist = NULL;
-INT32 dc_numlights = 0, dc_maxlights, dc_texheight;
+coldrawfunc_t *colfunc;
+coldrawfunc_t *colfuncs[COLDRAWFUNC_MAX];
+int colfunctype;
 
 // =========================================================================
 //                      SPAN DRAWING CODE STUFF
 // =========================================================================
 
-INT32 ds_y, ds_x1, ds_x2;
-lighttable_t *ds_colormap;
-fixed_t ds_xfrac, ds_yfrac, ds_xstep, ds_ystep;
-
-UINT8 *ds_source; // points to the start of a flat
-UINT8 *ds_transmap; // one of the translucency tables
+drawspandata_t g_ds;
 
 // Vectors for Software's tilted slope drawers
 floatv3_t *ds_su, *ds_sv, *ds_sz;
-floatv3_t *ds_sup, *ds_svp, *ds_szp;
-float focallengthf, zeroheight;
 
-/**	\brief Variable flat sizes
-*/
+float focallengthf;
 
-UINT32 nflatxshift, nflatyshift, nflatshiftup, nflatmask;
+// For, uh, tilted lighting, duh.
+//static INT32 *tiltlighting;
+
+// --------------------------------------------
+// c drawer routines
+// --------------------------------------------
+
+spandrawfunc_t *spanfunc;
+spandrawfunc_t *spanfuncs[SPANDRAWFUNC_MAX];
 
 // ==========================================================================
 //                        OLD DOOM FUZZY EFFECT
@@ -147,72 +108,9 @@ UINT32 nflatxshift, nflatyshift, nflatshiftup, nflatmask;
 static UINT8 **translationtablecache[TT_CACHE_SIZE] = {NULL};
 static UINT8 **localtranslationtablecache[MAXLOCALSKINS] = {NULL};
 
-
-// See also the enum skincolors_t
-// TODO Callum: Can this be translated?
-/*
-const char *Color_Names[MAXSKINCOLORS] =
-{
-	"None",      // SKINCOLOR_NONE
-	"White",     // SKINCOLOR_WHITE
-	"Silver",    // SKINCOLOR_SILVER
-	"Grey",      // SKINCOLOR_GREY
-	"Black",     // SKINCOLOR_BLACK
-	"Cyan",      // SKINCOLOR_CYAN
-	"Teal",      // SKINCOLOR_TEAL
-	"Steel_Blue",// SKINCOLOR_STEEL
-	"Blue",      // SKINCOLOR_BLUE
-	"Peach",     // SKINCOLOR_PEACH
-	"Tan",       // SKINCOLOR_TAN
-	"Pink",      // SKINCOLOR_PINK
-	"Lavender",  // SKINCOLOR_LAVENDER
-	"Purple",    // SKINCOLOR_PURPLE
-	"Orange",    // SKINCOLOR_ORANGE
-	"Rosewood",  // SKINCOLOR_ROSEWOOD
-	"Beige",     // SKINCOLOR_BEIGE
-	"Brown",     // SKINCOLOR_BROWN
-	"Red",       // SKINCOLOR_RED
-	"Dark_Red",  // SKINCOLOR_DARKRED
-	"Neon_Green",// SKINCOLOR_NEONGREEN
-	"Green",     // SKINCOLOR_GREEN
-	"Zim",       // SKINCOLOR_ZIM
-	"Olive",     // SKINCOLOR_OLIVE
-	"Yellow",    // SKINCOLOR_YELLOW
-	"Gold"       // SKINCOLOR_GOLD
-};
-
-const UINT8 Color_Opposite[MAXSKINCOLORS*2] =
-{
-	SKINCOLOR_NONE,8,   // SKINCOLOR_NONE
-	SKINCOLOR_BLACK,10, // SKINCOLOR_WHITE
-	SKINCOLOR_GREY,4,   // SKINCOLOR_SILVER
-	SKINCOLOR_SILVER,12,// SKINCOLOR_GREY
-	SKINCOLOR_WHITE,8,  // SKINCOLOR_BLACK
-	SKINCOLOR_NONE,8,   // SKINCOLOR_CYAN
-	SKINCOLOR_NONE,8,   // SKINCOLOR_TEAL
-	SKINCOLOR_NONE,8,   // SKINCOLOR_STEEL
-	SKINCOLOR_ORANGE,9, // SKINCOLOR_BLUE
-	SKINCOLOR_NONE,8,   // SKINCOLOR_PEACH
-	SKINCOLOR_NONE,8,   // SKINCOLOR_TAN
-	SKINCOLOR_NONE,8,   // SKINCOLOR_PINK
-	SKINCOLOR_NONE,8,   // SKINCOLOR_LAVENDER
-	SKINCOLOR_NONE,8,   // SKINCOLOR_PURPLE
-	SKINCOLOR_BLUE,12,  // SKINCOLOR_ORANGE
-	SKINCOLOR_NONE,8,   // SKINCOLOR_ROSEWOOD
-	SKINCOLOR_NONE,8,   // SKINCOLOR_BEIGE
-	SKINCOLOR_NONE,8,   // SKINCOLOR_BROWN
-	SKINCOLOR_GREEN,5,  // SKINCOLOR_RED
-	SKINCOLOR_NONE,8,   // SKINCOLOR_DARKRED
-	SKINCOLOR_NONE,8,   // SKINCOLOR_NEONGREEN
-	SKINCOLOR_RED,11,   // SKINCOLOR_GREEN
-	SKINCOLOR_PURPLE,3, // SKINCOLOR_ZIM
-	SKINCOLOR_NONE,8,   // SKINCOLOR_OLIVE
-	SKINCOLOR_NONE,8,   // SKINCOLOR_YELLOW
-	SKINCOLOR_NONE,8    // SKINCOLOR_GOLD
-};
-*/
-
 CV_PossibleValue_t Color_cons_t[MAXSKINCOLORS+1];
+
+static void R_GenerateBlendTables(void);
 
 /** \brief Initializes the translucency tables used by the Software renderer.
 */
@@ -221,8 +119,7 @@ void R_InitTranslucencyTables(void)
 	// Load here the transparency lookup tables 'TRANSx0'
 	// NOTE: the TRANSx0 resources MUST BE aligned on 64k for the asm
 	// optimised code (in other words, transtables pointer low word is 0)
-	transtables = Z_MallocAlign(NUMTRANSTABLES*0x10000, PU_STATIC,
-		NULL, 16);
+	transtables = static_cast<UINT8*>(Z_MallocAlign(NUMTRANSTABLES*0x10000, PU_STATIC, NULL, 16));
 
 	W_ReadLump(W_GetNumForName("TRANS10"), transtables);
 	W_ReadLump(W_GetNumForName("TRANS20"), transtables+0x10000);
@@ -283,10 +180,10 @@ static void BlendTab_Subtractive(UINT8 *table, int style, UINT8 blendamt)
 			RGBA_t frontrgba = V_GetColor(fg);
 			RGBA_t result;
 
-			result.rgba = ASTBlendPixel(backrgba, frontrgba, style, 0xFF);
-			result.s.red = max(0, result.s.red - blendamt);
-			result.s.green = max(0, result.s.green - blendamt);
-			result.s.blue = max(0, result.s.blue - blendamt);
+			result.rgba    = ASTBlendPixel(backrgba, frontrgba, style, 0xFF);
+			result.s.red   = std::max(0, result.s.red - blendamt);
+			result.s.green = std::max(0, result.s.green - blendamt);
+			result.s.blue  = std::max(0, result.s.blue - blendamt);
 
 			table[((bg * 0x100) + fg)] = GetColorLUT(&transtab_lut, result.s.red, result.s.green, result.s.blue);
 		}
@@ -339,17 +236,17 @@ static void BlendTab_GenerateMaps(INT32 tab, INT32 style, void (*genfunc)(UINT8 
 	for (; i < num; i++)
 	{
 		const size_t offs = (0x10000 * i);
-		const UINT16 alpha = min(amtmul * i, 0xFF);
+		const UINT16 alpha = std::fmin(amtmul * i, 0xFF);
 		genfunc(blendtables[tab] + offs, style, alpha);
 	}
 }
 
-void R_GenerateBlendTables(void)
+static void R_GenerateBlendTables(void)
 {
 	INT32 i;
 
 	for (i = 0; i < NUMBLENDMAPS; i++)
-		blendtables[i] = Z_MallocAlign(BlendTab_Count[i] * 0x10000, PU_STATIC, NULL, 16);
+		blendtables[i] = static_cast<UINT8*>(Z_MallocAlign(BlendTab_Count[i] * 0x10000, PU_STATIC, NULL, 16));
 
 	InitColorLUT(&transtab_lut, pLocalPalette, false);
 
@@ -370,8 +267,8 @@ void R_GenerateBlendTables(void)
 	BlendTab_Modulative(blendtables[blendtab_modulate]);
 }
 
-#define ClipBlendLevel(style, trans) max(min((trans), BlendTab_Count[BlendTab_FromStyle[style]]-1), 0)
-#define ClipTransLevel(trans) max(min((trans), NUMTRANSMAPS-2), 0)
+#define ClipBlendLevel(style, trans) std::max(std::min((trans), BlendTab_Count[BlendTab_FromStyle[style]]-1), 0)
+#define ClipTransLevel(trans) std::max(std::min((trans), NUMTRANSMAPS-2), 0)
 
 UINT8 *R_GetTranslucencyTable(INT32 alphalevel)
 {
@@ -458,7 +355,7 @@ static UINT8* RGetTranslationColormap(INT32 skinnum, skincolors_t color, UINT8 f
 	{
 		// Allocate table for skin if necessary
 		if (!tt[skintableindex])
-			tt[skintableindex] = Z_Calloc(MAXTRANSLATIONS * sizeof(UINT8**), PU_STATIC, NULL);
+			tt[skintableindex] = static_cast<UINT8**>(Z_Calloc(MAXTRANSLATIONS * sizeof(UINT8**), PU_STATIC, NULL));
 
 		// Get colormap
 		ret = tt[skintableindex][color];
@@ -468,7 +365,7 @@ static UINT8* RGetTranslationColormap(INT32 skinnum, skincolors_t color, UINT8 f
 	// Generate the colormap if necessary
 	if (!ret)
 	{
-		ret = Z_MallocAlign(NUM_PALETTE_ENTRIES, (flags & GTC_CACHE) ? PU_LEVEL : PU_STATIC, NULL, 8);
+		ret = static_cast<UINT8*>(Z_MallocAlign(NUM_PALETTE_ENTRIES, (flags & GTC_CACHE) ? PU_LEVEL : PU_STATIC, NULL, 8));
 		K_GenerateKartColormap(ret, skinnum, color, local); //R_GenerateTranslationColormap(ret, skinnum, color);		// SRB2kart
 
 		// Cache the colormap if desired
@@ -540,19 +437,6 @@ void R_FlushTranslationColormapCache(void)
 			memset(localtranslationtablecache[i], 0, MAXTRANSLATIONS * sizeof(UINT8**));
 }
 
-/*
-UINT8 R_GetColorByName(const char *name)
-{
-	UINT8 color = (UINT8)atoi(name);
-	if (color > 0 && color < MAXSKINCOLORS)
-		return color;
-	for (color = 1; color < MAXSKINCOLORS; color++)
-		if (!stricmp(Color_Names[color], name))
-			return color;
-	return 0;
-}
-*/
-
 // ==========================================================================
 //               COMMON DRAWER FOR 8 AND 16 BIT COLOR MODES
 // ==========================================================================
@@ -572,39 +456,44 @@ UINT8 R_GetColorByName(const char *name)
 	\param	height	hieght of buffer
 
 	\return	void
-
-
 */
+
+static void R_AllocViewMemory(void)
+{
+	negonearray       = static_cast<INT16*>(Z_Realloc(negonearray, sizeof(*negonearray) * viewwidth, PU_STATIC, NULL));
+	screenheightarray = static_cast<INT16*>(Z_Realloc(screenheightarray, sizeof(*screenheightarray) * viewwidth, PU_STATIC, NULL));
+
+	floorclip         = static_cast<INT16*>(Z_Realloc(floorclip, sizeof(*floorclip) * viewwidth, PU_STATIC, NULL));
+	ceilingclip       = static_cast<INT16*>(Z_Realloc(ceilingclip, sizeof(*ceilingclip) * viewwidth, PU_STATIC, NULL));
+
+	frontscale        = static_cast<fixed_t*>(Z_Realloc(frontscale, sizeof(*frontscale) * viewwidth, PU_STATIC, NULL));
+
+	xtoviewangle      = static_cast<angle_t*>(Z_Realloc(xtoviewangle, sizeof(*xtoviewangle) * (viewwidth + 1), PU_STATIC, NULL));
+
+	R_AllocSegMemory();
+	R_AllocClipSegMemory();
+	R_AllocPlaneMemory();
+#ifdef FLOORSPLATS
+	R_AllocFloorSpriteTables();
+#endif
+	R_AllocVisSpriteMemory();
+}
+
 
 void R_InitViewBuffer(INT32 width, INT32 height)
 {
-	INT32 i, bytesperpixel = vid.bpp;
-
 	if (width > MAXVIDWIDTH)
 		width = MAXVIDWIDTH;
 	if (height > MAXVIDHEIGHT)
 		height = MAXVIDHEIGHT;
-	if (bytesperpixel < 1 || bytesperpixel > 4)
-		I_Error("R_InitViewBuffer: wrong bytesperpixel value %d\n", bytesperpixel);
+
+	R_AllocViewMemory();
 
 	viewwindowx = 0;
 	viewwindowy = 0;
 
-	// Column offset for those columns of the view window, but relative to the entire screen
-	for (i = 0; i < width; i++)
-		columnofs[i] = (viewwindowx + i) * bytesperpixel;
-
-	// Precalculate all row offsets.
-	for (i = 0; i < height; i++)
-	{
-		ylookup[i] = ylookup1[i] = screens[0] + i*vid.width*bytesperpixel;
-		if (splitscreen == 1)
-			ylookup2[i] = screens[0] + (i+viewheight)*vid.width*bytesperpixel;
-		else
-			ylookup2[i] = screens[0] + i*vid.width*bytesperpixel + (viewwidth*bytesperpixel);
-		ylookup3[i] = screens[0] + (i+viewheight)*vid.width*bytesperpixel;
-		ylookup4[i] = screens[0] + (i+viewheight)*vid.width*bytesperpixel + (viewwidth*bytesperpixel);
-	}
+	linesize     = vid.width;      // killough 11/98
+	renderscreen = vid.screens[0]; // haleyjd 07/02/14
 }
 
 /**	\brief viewborder patches lump numbers
@@ -625,6 +514,28 @@ void R_InitViewBorder(void)
 	viewborderlump[BRDR_TR] = W_GetNumForName("brdr_tr");
 	viewborderlump[BRDR_BR] = W_GetNumForName("brdr_br");
 }
+
+/**	\brief	The R_VideoErase function
+
+	Copy a screen buffer.
+
+	\param	ofs	offest from buffer
+	\param	count	bytes to erase
+
+	\return	void
+
+
+*/
+void R_VideoErase(size_t ofs, INT32 count)
+{
+	// LFB copy.
+	// This might not be a good idea if memcpy
+	//  is not optimal, e.g. byte by byte on
+	//  a 32bit CPU, as GNU GCC/Linux libc did
+	//  at one point.
+	M_Memcpy(vid.screens[0] + ofs, vid.screens[1] + ofs, count);
+}
+
 
 #if 0
 /**	\brief R_FillBackScreen
@@ -648,7 +559,7 @@ void R_FillBackScreen(void)
 		return;
 
 	src = scr_borderpatch;
-	dest = screens[1];
+	dest = vid.screens[1];
 
 	for (y = 0; y < vid.height; y++)
 	{
@@ -699,30 +610,7 @@ void R_FillBackScreen(void)
 	V_DrawPatch(viewwindowx + scaledviewwidth, viewwindowy + viewheight, 1,
 		W_CacheLumpNum(viewborderlump[BRDR_BR], PU_CACHE));
 }
-#endif
 
-/**	\brief	The R_VideoErase function
-
-	Copy a screen buffer.
-
-	\param	ofs	offest from buffer
-	\param	count	bytes to erase
-
-	\return	void
-
-
-*/
-void R_VideoErase(size_t ofs, INT32 count)
-{
-	// LFB copy.
-	// This might not be a good idea if memcpy
-	//  is not optimal, e.g. byte by byte on
-	//  a 32bit CPU, as GNU GCC/Linux libc did
-	//  at one point.
-	M_Memcpy(screens[0] + ofs, screens[1] + ofs, count);
-}
-
-#if 0
 /**	\brief The R_DrawViewBorder
 
   Draws the border around the view
@@ -766,13 +654,14 @@ void R_DrawViewBorder(void)
 	side <<= 1;
 
     // simpler using our VID_Blit routine
-	VID_BlitLinearScreen(screens[1] + ofs, screens[0] + ofs, side, viewheight - 1,
+	VID_BlitLinearScreen(vid.screens[1] + ofs, vid.screens[0] + ofs, side, viewheight - 1,
 		vid.width, vid.width);
 }
 #endif
 
 // ==========================================================================
-//                   INCLUDE 8bpp DRAWING CODE HERE
+//                   INCLUDE DRAWING CODE HERE
 // ==========================================================================
 
-#include "r_draw8.c"
+#include "r_draw_column.cpp"
+#include "r_draw_span.cpp"

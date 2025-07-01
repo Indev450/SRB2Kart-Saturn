@@ -13,6 +13,7 @@ f_finale.c
 f_wipe.c
 filesrch.c
 g_game.c
+g_demo.c
 g_input.c
 hu_stuff.c
 i_tcp.c
@@ -50,14 +51,15 @@ r_bsp.c
 r_data.c
 r_draw.c
 r_fps.c
-r_main.c
+r_main.cpp
 r_patch.c
 r_patchrotation.c
-r_plane.c
-r_segs.c
+r_plane.cpp
+r_segs.cpp
+r_skins.c
 r_sky.c
 r_splats.c
-r_things.c
+r_things.cpp
 r_portal.c
 p_ceilng.c
 p_enemy.c
@@ -78,6 +80,7 @@ p_tick.c
 p_user.c
 k_director.c
 k_kart.c
+k_hud.c
 k_stats.c
 lua_baselib.c
 lua_blockmaplib.c

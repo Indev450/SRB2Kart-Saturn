@@ -111,7 +111,9 @@ static fileused_t transferFiles[UINT8_MAX + 1];
 // Receiver structure
 INT32 fileneedednum; // Number of files needed to join the server
 fileneeded_t fileneeded[MAX_WADFILES]; // List of needed files
+#ifdef HAVE_THREADS
 static I_mutex downloadmutex;
+#endif
 char downloaddir[512] = "DOWNLOAD";
 
 file_download_t filedownload;
@@ -1351,14 +1353,18 @@ void CURLAbortFile(void)
 {
 	filedownload.http_running = false;
 
+#ifdef HAVE_THREADS
 	// lock and unlock to wait for the download thread to exit
 	I_lock_mutex(&downloadmutex);
 	I_unlock_mutex(downloadmutex);
+#endif
 }
 
 void CURLGetFile(void)
 {
+#ifdef HAVE_THREADS
 	I_lock_mutex(&downloadmutex);
+#endif
 	CURLMcode mc; /* return code used by curl_multi_wait() */
 	CURLcode easyres; /* Return from easy interface */
 	CURLMsg *m; /* for picking up messages with the transfer status */
@@ -1453,7 +1459,9 @@ void CURLGetFile(void)
     }
 
 	filedownload.http_running = false;
+#ifdef HAVE_THREADS
 	I_unlock_mutex(downloadmutex);
+#endif
 }
 
 HTTP_login *

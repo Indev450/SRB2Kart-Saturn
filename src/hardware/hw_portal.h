@@ -14,6 +14,10 @@
 #ifndef __HW_PORTAL__
 #define __HW_PORTAL__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #ifdef HWRENDER
 
 #include "../doomstat.h"
@@ -77,5 +81,9 @@ void HWR_FreePortalList(gl_portallist_t portallist);
 boolean HWR_PortalCheckPointSide(fixed_t x, fixed_t y);
 boolean HWR_PortalCheckBBox(const fixed_t *bspcoord);
 
+#endif
+
+#ifdef __cplusplus
+}// extern "C"
 #endif
 #endif

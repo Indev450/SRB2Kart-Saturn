@@ -14,6 +14,10 @@
 #ifndef __STSTUFF_H__
 #define __STSTUFF_H__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "doomtype.h"
 #include "d_event.h"
 #include "d_player.h"
@@ -27,6 +31,8 @@ extern tic_t directortoggletimer;
 
 // Called by main loop.
 void ST_Ticker(void);
+
+void ST_ResetPaletteStuff(void);
 
 // Called when naming a replay.
 void ST_DrawDemoTitleEntry(void);
@@ -55,8 +61,6 @@ void ST_LoadGraphics(void);
 void ST_LoadFaceGraphics(char *rankstr, char *wantstr, char *mmapstr, INT32 playernum);
 void ST_LoadLocalFaceGraphics(char *rankstr, char *wantstr, char *mmapstr, INT32 playernum);
 void ST_ReloadSkinFaceGraphics(void);
-
-void ST_doPaletteStuff(void);
 
 // return if player a is in the same team as player b
 boolean ST_SameTeam(player_t *a, player_t *b);
@@ -141,5 +145,9 @@ extern UINT16 objectsdrawn;
 // variable to stop mayonaka static from flickering
 extern consvar_t cv_lessflicker;
 extern consvar_t cv_stagetitle;
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif

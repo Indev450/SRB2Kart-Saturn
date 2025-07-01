@@ -14,6 +14,10 @@
 #ifndef __P_SETUP__
 #define __P_SETUP__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "doomdata.h"
 #include "doomstat.h"
 #include "r_defs.h"
@@ -48,6 +52,7 @@ typedef struct
 	INT32 animseq; // start pos. in the anim sequence
 	INT32 numpics;
 	INT32 speed;
+	boolean cyan;
 } levelflat_t;
 
 extern size_t numlevelflats;
@@ -110,5 +115,9 @@ void P_AddGradesForMare(INT16 i, UINT8 mare, char *gtext);
 UINT8 P_GetGrade(UINT32 pscore, INT16 map, UINT8 mare);
 UINT8 P_HasGrades(INT16 map, UINT8 mare);
 UINT32 P_GetScoreForGrade(INT16 map, UINT8 mare, UINT8 grade);
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif

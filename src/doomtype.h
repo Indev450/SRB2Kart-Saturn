@@ -17,6 +17,10 @@
 #ifndef __DOOMTYPE__
 #define __DOOMTYPE__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #if defined (_WIN32)
 //#define WIN32_LEAN_AND_MEAN
 #define RPC_NO_WINDOWS_H
@@ -383,5 +387,9 @@ unset_bit_array (bitarray_t * const array, const int value)
 	((n) < 0 ? -1 : (n) > 0 ? 1 : 0)
 
 typedef UINT64 precise_t;
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif //__DOOMTYPE__

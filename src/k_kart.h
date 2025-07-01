@@ -6,6 +6,10 @@
 #ifndef __K_KART__
 #define __K_KART__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "doomdef.h"
 #include "d_player.h" // Need for player_t
 
@@ -18,9 +22,6 @@ extern const UINT8 KartColor_Opposite[MAXSKINCOLORS*2];
 void K_RainbowColormap(UINT8 *dest_colormap, UINT8 skincolor);
 void K_GenerateKartColormap(UINT8 *dest_colormap, INT32 skinnum, UINT8 color, boolean local);
 UINT8 K_GetKartColorByName(const char *name);
-UINT8 K_GetHudColor(void);
-boolean K_UseColorHud(void);
-boolean K_UseHighResPortraits(void);
 
 void K_RegisterServerKartStuff(void);
 void K_RegisterClientKartStuff(void);
@@ -29,30 +30,11 @@ extern consvar_t cv_coloredspeedlines, cv_coloredsneakertrail;
 extern consvar_t cv_bananajitter;
 extern consvar_t cv_bananthrowroll;
 extern consvar_t cv_airsparks;
-extern consvar_t cv_colorizedhud, cv_colorizeditembox, cv_colorizedhudcolor;
-extern consvar_t cv_darkitembox;
-extern consvar_t cv_biglaps;
-extern consvar_t cv_highresportrait;
-extern consvar_t cv_stat_xoffset, cv_stat_yoffset;
-extern consvar_t cv_showstats;
-extern consvar_t cv_fancyroulette;
-extern consvar_t cv_showlaptimes;
-extern consvar_t cv_battlespeedo;
-extern consvar_t cv_multiitemicon;
-extern consvar_t cv_huditemamount;
-
-#define NUMSPEEDOSTUFF 8
-extern CV_PossibleValue_t speedo_cons_t[NUMSPEEDOSTUFF];
-#define NUMDGAUGESTUFF 6
-extern CV_PossibleValue_t driftgaugestyle_cons_t[NUMDGAUGESTUFF];
-#define NUMINPUTDISPLAYSTUFF 5
-extern CV_PossibleValue_t inputdisplay_cons_t[NUMINPUTDISPLAYSTUFF];
-#define NUMMINIMAPDOTSTUFF 5
-extern CV_PossibleValue_t minimapdot_cons_t[NUMMINIMAPDOTSTUFF];
-
 
 boolean K_IsPlayerLosing(player_t *player);
 boolean K_IsPlayerWanted(player_t *player);
+INT32 K_KartGetItemOdds(UINT8 pos, SINT8 item, fixed_t mashed, boolean spbrush);
+INT32 K_FindUseodds(player_t *player, fixed_t mashed, INT32 pingame, INT32 bestbumper, boolean spbrush, boolean dontforcespb);
 void K_KartBouncing(mobj_t *mobj1, mobj_t *mobj2, boolean bounce, boolean solid);
 void K_FlipFromObject(mobj_t *mo, mobj_t *master);
 void K_MatchGenericExtraFlags(mobj_t *mo, mobj_t *master);
@@ -111,26 +93,9 @@ void K_PlayOvertakeSound(mobj_t *source);
 void K_PlayHitEmSound(mobj_t *source, mobj_t *victim);
 void K_PlayPowerGloatSound(mobj_t *source);
 
-const char *K_GetItemPatch(UINT8 item, boolean tiny);
-INT32 K_calcSplitFlags(INT32 snapflags);
-void K_LoadKartHUDGraphics(void);
-void K_drawKartHUD(void);
-void K_drawKartFreePlay(UINT32 flashtime);
-void K_drawKartTimestamp(tic_t drawtime, INT32 TX, INT32 TY, INT16 emblemmap, UINT8 mode);
-
-typedef struct
-{
-	INT32 x;
-	INT32 y;
-	INT32 flags;
-} drawinfo_t;
-
-patch_t *K_getItemBoxPatch(boolean small, boolean dark);
-patch_t *K_getItemMulPatch(boolean small);
-void K_getItemBoxDrawinfo(drawinfo_t *out);
-INT32 K_getMinimapTrans(void);
-void K_getLapsDrawinfo(drawinfo_t *out);
-void K_getMinimapDrawinfo(drawinfo_t *out);
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 // =========================================================================
 #endif  // __K_KART__

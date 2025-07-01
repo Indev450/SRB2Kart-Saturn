@@ -58,6 +58,9 @@
 // warning C4152: nonstandard extension, function/data pointer conversion in expression
 // warning C4213: nonstandard extension used : cast on l-value
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #include "doomtype.h"
 
@@ -666,6 +669,10 @@ extern const char *compdate, *comptime, *comprevision, *compbranch;
 #define HOLEPUNCH
 #else
 #undef UPDATE_ALERT
+#endif
+
+#ifdef __cplusplus
+} // extern "C"
 #endif
 
 #endif // __DOOMDEF__
