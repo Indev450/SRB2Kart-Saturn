@@ -1164,8 +1164,6 @@ fixed_t R_GetSpriteDirectionalLighting(angle_t angle)
 	return extralight;
 }
 
-#define std_R_QuickCamDist(x, y) std::max(abs(((x)>>FRACBITS) - (viewx>>FRACBITS)), abs(((y)>>FRACBITS) - (viewy>>FRACBITS)))
-
 //
 // R_ProjectSprite
 // Generates a vissprite for a thing
@@ -1206,7 +1204,6 @@ static void R_ProjectSprite(mobj_t *thing)
 	//SoM: 3/17/2000
 	fixed_t gz, gzt;
 	INT32 heightsec, phs;
-	INT32 dist = -1;
 	INT32 light = 0;
 	lighttable_t **lights_array = spritelights;
 	fixed_t this_scale;
@@ -1233,14 +1230,11 @@ static void R_ProjectSprite(mobj_t *thing)
 	const boolean hflip = (!(thing->frame & FF_HORIZONTALFLIP) != !mirrored);
 	const boolean papersprite = (thing->frame & FF_PAPERSPRITE);
 
-	if (cv_maxinterpdist.value)
-		dist = std_R_QuickCamDist(thing->x, thing->y);
-
 	// uncapped/interpolation
 	interpmobjstate_t interp = {};
 
 	// do interpolation
-	if (R_UsingFrameInterpolation() && !paused && (!cv_maxinterpdist.value || dist < cv_maxinterpdist.value))
+	if (R_UsingFrameInterpolation() && !paused && R_CheckInterpDist(oldthing))
 	{
 		R_InterpolateMobjState(oldthing, rendertimefrac, &interp);
 	}
@@ -1862,16 +1856,8 @@ static void R_ProjectPrecipitationSprite(precipmobj_t *thing)
 	fixed_t gz, gzt;
 	fixed_t this_scale;
 
-	INT32 dist = 1;
-
 	if (!thing || thing->subsector == NULL)
 		return;
-
-	if (cv_maxinterpdist.value)
-		dist = std_R_QuickCamDist(thing->x, thing->y);
-
-	// uncapped/interpolation
-	interpmobjstate_t interp = {};
 
 	// okay... this is a hack, but weather isn't networked, so it should be ok
 	if (!P_PrecipThinker(thing))
@@ -1879,8 +1865,11 @@ static void R_ProjectPrecipitationSprite(precipmobj_t *thing)
 		return;
 	}
 
+	// uncapped/interpolation
+	interpmobjstate_t interp = {};
+
 	// do interpolation
-	if (R_UsingFrameInterpolation() && !paused && (!cv_maxinterpdist.value || dist < cv_maxinterpdist.value))
+	if (R_UsingFrameInterpolation() && !paused && R_CheckInterpDist((mobj_t*)thing))
 	{
 		R_InterpolatePrecipMobjState(thing, rendertimefrac, &interp);
 	}
@@ -2919,7 +2908,7 @@ boolean R_ThingVisible (mobj_t *thing)
 
 	if (splitscreen)
 	{
-		if ((viewssnum == 0 && (thing->eflags & MFE_DRAWONLYFORP1))
+		if    ((viewssnum == 0 && (thing->eflags & MFE_DRAWONLYFORP1))
 			|| (viewssnum == 1 && (thing->eflags & MFE_DRAWONLYFORP2))
 			|| (viewssnum == 2 && (thing->eflags & MFE_DRAWONLYFORP2))
 			|| (viewssnum == 3 && (thing->eflags & MFE_DRAWONLYFORP4)))
@@ -2940,6 +2929,16 @@ boolean R_ThingWithinDist(mobj_t *thing, INT32 limit_dist)
 	}
 
 	return true;
+}
+
+boolean R_CheckInterpDist(mobj_t *thing)
+{
+	if (!cv_maxinterpdist.value)
+		return true;
+
+	const INT32 dist = R_QuickCamDist(thing->x, thing->y);
+
+	return (dist < cv_maxinterpdist.value);
 }
 
 boolean R_ThingIsFullBright(mobj_t *thing)
