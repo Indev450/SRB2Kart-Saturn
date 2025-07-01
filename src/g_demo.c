@@ -68,6 +68,8 @@ UINT8  numDemos      = 0; //3; -- i'm FED UP of losing my skincolour to a broken
 UINT32 demoDelayTime = 15*TICRATE;
 UINT32 demoIdleTime  = 3*TICRATE;
 
+boolean nodrawers; // for comparative timing purposes
+boolean noblit; // for comparative timing purposes
 static tic_t demostarttime; // for comparative timing purposes
 
 //@TODO put these all in a struct for namespacing purposes?
