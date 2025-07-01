@@ -2323,44 +2323,46 @@ static menuitem_t OP_SaturnHudMenu[] =
 {
 	{IT_HEADER, NULL, "Saturn Hud Options", NULL, 0},
 
-	{IT_STRING | IT_CVAR, NULL, "Speedometer Style",		 			&cv_newspeedometer, 	 	 10},
-	{IT_STRING | IT_CVAR, NULL, "Battle Speedometer",		 			&cv_battlespeedo, 	 	 	 15},
+	{IT_STRING|IT_CVAR,    NULL, "Speedometer Style",           &cv_newspeedometer,    10},
+	{IT_STRING|IT_CVAR,    NULL, "Battle Speedometer",          &cv_battlespeedo,      15},
 
-	{IT_STRING | IT_CVAR, NULL, "Colourized HUD",						&cv_colorizedhud,		 	 25},
-	{IT_STRING | IT_CVAR, NULL, "Colourized Itembox",					&cv_colorizeditembox,		 30},
-	{IT_STRING | IT_CVAR, NULL, "Colourized HUD Color",					&cv_colorizedhudcolor,		 35},
+	{IT_STRING|IT_CVAR,    NULL, "Colourized HUD",              &cv_colorizedhud,      25},
+	{IT_STRING|IT_CVAR,    NULL, "Colourized Itembox",          &cv_colorizeditembox,  30},
+	{IT_STRING|IT_CVAR,    NULL, "Colourized HUD Color",        &cv_colorizedhudcolor, 35},
 
-	{IT_STRING | IT_CVAR, NULL, "Input Display",		 				&cv_showinput, 	 			 45},
+	{IT_STRING|IT_CVAR,    NULL, "Input Display",               &cv_showinput,         45},
 
-	{IT_STRING | IT_CVAR, NULL, "Stat Display",		 					&cv_showstats, 	 			 55},
+	{IT_STRING|IT_CVAR,    NULL, "Stat Display",                &cv_showstats,         55},
 
-	{IT_STRING | IT_CVAR, NULL, "Higher Resolution Portraits",			&cv_highresportrait, 	 	 65},
+	{IT_STRING|IT_CVAR,    NULL, "Higher Resolution Portraits", &cv_highresportrait,   65},
 
-	{IT_STRING | IT_CVAR, NULL, "Small Positionnumber",		 			&cv_smallposnum, 	 		 75},
-	{IT_STRING | IT_CVAR, NULL, "Positionnumber Animation", 			&cv_posanim, 			 	 80},
+	{IT_STRING|IT_CVAR,    NULL, "Small Positionnumber",        &cv_smallposnum,       75},
+	{IT_STRING|IT_CVAR,    NULL, "Positionnumber Animation",    &cv_posanim,           80},
 
-	{IT_STRING | IT_CVAR, NULL, "Flash Lap Times",		 				&cv_showlaptimes, 	 		 90},
+	{IT_STRING|IT_CVAR,    NULL, "Flash Lap Times",             &cv_showlaptimes,      90},
 
-	{IT_STRING | IT_CVAR, NULL, "Multi-Item icons",		 			    &cv_multiitemicon, 	 		100},
-	{IT_STRING | IT_CVAR, NULL, "Item Amount Number",		 			&cv_huditemamount, 	 		105},
-	{IT_STRING | IT_CVAR, NULL, "Animated Roulette",		 			&cv_fancyroulette, 	 		110},
+	{IT_STRING|IT_CVAR,    NULL, "Multi-Item icons",            &cv_multiitemicon,    100},
+	{IT_STRING|IT_CVAR,    NULL, "Item Amount Number",          &cv_huditemamount,    105},
+	{IT_STRING|IT_CVAR,    NULL, "Animated Roulette",           &cv_fancyroulette,    110},
 
-	{IT_STRING | IT_CVAR, NULL, "Show Lap Emblem",		 				&cv_showlapemblem, 	 		120},
-	{IT_STRING | IT_CVAR, NULL, "Show Cecho Messages", 					&cv_cechotoggle, 			125},
+	{IT_STRING|IT_CVAR,    NULL, "Show Lap Emblem",             &cv_showlapemblem,    120},
+	{IT_STRING|IT_CVAR,    NULL, "Show Cecho Messages",         &cv_cechotoggle,      125},
 
-	{IT_STRING | IT_CVAR, NULL,	"Show Names on Minimap",   				&cv_showminimapnames, 		135},
-	{IT_STRING | IT_CVAR, NULL,	"Small Minimap Players",   				&cv_minihead, 				140},
-	{IT_STRING | IT_CVAR, NULL,	"Spin Minimap Icons", 			  		&cv_spinoutroll,      		145},
-	{IT_STRING | IT_CVAR, NULL,	"Player Angle Visual", 			  		&cv_showminimapangle,      	150},
+	{IT_STRING|IT_CVAR,    NULL, "Show Names on Minimap",       &cv_showminimapnames, 135},
+	{IT_STRING|IT_CVAR,    NULL, "Small Minimap Players",       &cv_minihead,         140},
+	{IT_STRING|IT_CVAR,    NULL, "Spin Minimap Icons",          &cv_spinoutroll,      145},
+	{IT_STRING|IT_CVAR,    NULL, "Player Angle Visual",         &cv_showminimapangle, 150},
 
-	{IT_STRING | IT_CVAR, NULL, "Beta Intermissionscreen", 				&cv_betainterscreen, 		160},
+	{IT_STRING|IT_CVAR,    NULL, "Music Credits",               &cv_songcredits,      160},
 
-	{IT_STRING | IT_CVAR, NULL,	"Show Director Prompt",   				&cv_showdirectorhud, 		170},
+	{IT_STRING|IT_CVAR,    NULL, "Beta Intermissionscreen",     &cv_betainterscreen,  170},
 
-	{IT_STRING | IT_SUBMENU, NULL, "Nametags...", 						&OP_NametagDef, 		   	180},
-	{IT_STRING | IT_SUBMENU, NULL, "Driftgauge...", 					&OP_DriftGaugeDef, 		   	185},
+	{IT_STRING|IT_CVAR,    NULL, "Show Director Prompt",        &cv_showdirectorhud,  180},
 
-	{IT_SUBMENU|IT_STRING,	NULL,	"Hud Offsets...", 					&OP_HudOffsetDef,		   	195},
+	{IT_STRING|IT_SUBMENU, NULL, "Nametags...",                 &OP_NametagDef,       190},
+	{IT_STRING|IT_SUBMENU, NULL, "Driftgauge...",               &OP_DriftGaugeDef,    195},
+
+	{IT_SUBMENU|IT_STRING, NULL, "Hud Offsets...",              &OP_HudOffsetDef,     205},
 };
 
 static const char* OP_SaturnHudTooltips[] =
@@ -2386,6 +2388,7 @@ static const char* OP_SaturnHudTooltips[] =
 	"Minimize the player icons on the minimap.",
 	"Erratically rotate player icons during spinouts.",
 	"Visualize the player facing angle.",
+	"Show the Music Credits and which style.",
 	"Make the Intermission screen look like in beta versions of Kart!\nEither with background or just the rest.",
 	"Show the Director Toggle prompt when spectating.",
 	"Nametag Options.",
@@ -2416,6 +2419,7 @@ enum
 	sh_smallmap,
 	sh_iconspinout,
 	sh_minidot,
+	sh_songcred,
 	sh_betainter,
 	sh_directorhud,
 	sh_nametagmen,
