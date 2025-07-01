@@ -102,9 +102,6 @@ UINT8 modeattacking = ATTACKING_NONE;
 boolean imcontinuing = false;
 boolean runemeraldmanager = false;
 
-boolean nodrawers; // for comparative timing purposes
-boolean noblit; // for comparative timing purposes
-
 boolean netgame; // only true if packets are broadcast
 boolean multiplayer;
 boolean playeringame[MAXPLAYERS];
