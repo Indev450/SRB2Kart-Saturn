@@ -1,0 +1,667 @@
+// SONIC ROBO BLAST 2
+//-----------------------------------------------------------------------------
+// Copyright (C) 1993-1996 by id Software, Inc.
+// Copyright (C) 1998-2000 by DooM Legacy Team.
+// Copyright (C) 1999-2018 by Sonic Team Junior.
+//
+// This program is free software distributed under the
+// terms of the GNU General Public License, version 2.
+// See the 'LICENSE' file for more details.
+//-----------------------------------------------------------------------------
+/// \file  r_draw.c
+/// \brief span / column drawer functions, for 8bpp and 16bpp
+///        All drawing to the view buffer is accomplished in this file.
+///        The other refresh files only know about ccordinates,
+///        not the architecture of the frame buffer.
+///        The frame buffer is a linear one, and we need only the base address.
+
+#include <algorithm>
+
+#include "doomdef.h"
+#include "doomstat.h"
+#include "r_local.h"
+#include "r_things.h"
+#include "st_stuff.h" // need ST_HEIGHT
+#include "i_video.h"
+#include "v_video.h"
+#include "m_misc.h"
+#include "w_wad.h"
+#include "z_zone.h"
+#include "console.h" // Until buffering gets finished
+#include "k_kart.h" // SRB2kart
+
+#ifdef HWRENDER
+#include "hardware/hw_main.h"
+#endif
+
+// ==========================================================================
+//                     COMMON DATA FOR 8bpp AND 16bpp
+// ==========================================================================
+
+/**	\brief view info
+*/
+INT32 linesize, viewwidth, viewheight, viewwindowx, viewwindowy;
+UINT8 *renderscreen;            // haleyjd
+
+// =========================================================================
+//                      COLUMN DRAWING CODE STUFF
+// =========================================================================
+
+drawcolumndata_t g_dc;
+
+// -----------------------
+// translucency stuff here
+// -----------------------
+#define NUMTRANSTABLES 9 // how many translucency tables are used
+
+UINT8 *transtables; // translucency tables
+UINT8 *blendtables[NUMBLENDMAPS];
+
+// --------------------------------------------
+// c drawer routines
+// --------------------------------------------
+
+coldrawfunc_t *colfunc;
+coldrawfunc_t *colfuncs[COLDRAWFUNC_MAX];
+int colfunctype;
+
+// =========================================================================
+//                      SPAN DRAWING CODE STUFF
+// =========================================================================
+
+drawspandata_t g_ds;
+
+// Vectors for Software's tilted slope drawers
+floatv3_t *ds_su, *ds_sv, *ds_sz;
+
+float focallengthf;
+
+// For, uh, tilted lighting, duh.
+//static INT32 *tiltlighting;
+
+// --------------------------------------------
+// c drawer routines
+// --------------------------------------------
+
+spandrawfunc_t *spanfunc;
+spandrawfunc_t *spanfuncs[SPANDRAWFUNC_MAX];
+
+// ==========================================================================
+//                        OLD DOOM FUZZY EFFECT
+// ==========================================================================
+
+// =========================================================================
+//                   TRANSLATION COLORMAP CODE
+// =========================================================================
+
+#define DEFAULT_TT_CACHE_INDEX MAXSKINS
+#define BOSS_TT_CACHE_INDEX (MAXSKINS + 1)
+#define METALSONIC_TT_CACHE_INDEX (MAXSKINS + 2)
+#define ALLWHITE_TT_CACHE_INDEX (MAXSKINS + 3)
+#define RAINBOW_TT_CACHE_INDEX (MAXSKINS + 4)
+#define BLINK_TT_CACHE_INDEX (MAXSKINS + 5)
+#define TT_CACHE_SIZE (MAXSKINS + 6)
+#define SKIN_RAMP_LENGTH 16
+#define DEFAULT_STARTTRANSCOLOR 160
+#define NUM_PALETTE_ENTRIES 256
+
+static UINT8 **translationtablecache[TT_CACHE_SIZE] = {NULL};
+static UINT8 **localtranslationtablecache[MAXLOCALSKINS] = {NULL};
+
+CV_PossibleValue_t Color_cons_t[MAXSKINCOLORS+1];
+
+static void R_GenerateBlendTables(void);
+
+/** \brief Initializes the translucency tables used by the Software renderer.
+*/
+void R_InitTranslucencyTables(void)
+{
+	// Load here the transparency lookup tables 'TRANSx0'
+	// NOTE: the TRANSx0 resources MUST BE aligned on 64k for the asm
+	// optimised code (in other words, transtables pointer low word is 0)
+	transtables = static_cast<UINT8*>(Z_MallocAlign(NUMTRANSTABLES*0x10000, PU_STATIC, NULL, 16));
+
+	W_ReadLump(W_GetNumForName("TRANS10"), transtables);
+	W_ReadLump(W_GetNumForName("TRANS20"), transtables+0x10000);
+	W_ReadLump(W_GetNumForName("TRANS30"), transtables+0x20000);
+	W_ReadLump(W_GetNumForName("TRANS40"), transtables+0x30000);
+	W_ReadLump(W_GetNumForName("TRANS50"), transtables+0x40000);
+	W_ReadLump(W_GetNumForName("TRANS60"), transtables+0x50000);
+	W_ReadLump(W_GetNumForName("TRANS70"), transtables+0x60000);
+	W_ReadLump(W_GetNumForName("TRANS80"), transtables+0x70000);
+	W_ReadLump(W_GetNumForName("TRANS90"), transtables+0x80000);
+
+	R_GenerateBlendTables();
+}
+
+static colorlookup_t transtab_lut;
+
+static void BlendTab_Translucent(UINT8 *table, int style, UINT8 blendamt)
+{
+	INT16 bg, fg;
+
+	if (table == NULL)
+		I_Error("BlendTab_Translucent: input table was NULL!");
+
+	for (bg = 0; bg < 0x100; bg++)
+	{
+		for (fg = 0; fg < 0x100; fg++)
+		{
+			RGBA_t backrgba = V_GetColor(bg);
+			RGBA_t frontrgba = V_GetColor(fg);
+			RGBA_t result;
+
+			result.rgba = ASTBlendPixel(backrgba, frontrgba, style, 0xFF);
+			result.rgba = ASTBlendPixel(result, frontrgba, AST_TRANSLUCENT, blendamt);
+
+			table[((bg * 0x100) + fg)] = GetColorLUT(&transtab_lut, result.s.red, result.s.green, result.s.blue);
+		}
+	}
+}
+
+static void BlendTab_Subtractive(UINT8 *table, int style, UINT8 blendamt)
+{
+	INT16 bg, fg;
+
+	if (table == NULL)
+		I_Error("BlendTab_Subtractive: input table was NULL!");
+
+	if (blendamt == 0xFF)
+	{
+		memset(table, GetColorLUT(&transtab_lut, 0, 0, 0), 0x10000);
+		return;
+	}
+
+	for (bg = 0; bg < 0x100; bg++)
+	{
+		for (fg = 0; fg < 0x100; fg++)
+		{
+			RGBA_t backrgba = V_GetColor(bg);
+			RGBA_t frontrgba = V_GetColor(fg);
+			RGBA_t result;
+
+			result.rgba    = ASTBlendPixel(backrgba, frontrgba, style, 0xFF);
+			result.s.red   = std::max(0, result.s.red - blendamt);
+			result.s.green = std::max(0, result.s.green - blendamt);
+			result.s.blue  = std::max(0, result.s.blue - blendamt);
+
+			table[((bg * 0x100) + fg)] = GetColorLUT(&transtab_lut, result.s.red, result.s.green, result.s.blue);
+		}
+	}
+}
+
+static void BlendTab_Modulative(UINT8 *table)
+{
+	INT16 bg, fg;
+
+	if (table == NULL)
+		I_Error("BlendTab_Modulative: input table was NULL!");
+
+	for (bg = 0; bg < 0x100; bg++)
+	{
+		for (fg = 0; fg < 0x100; fg++)
+		{
+			RGBA_t backrgba = V_GetColor(bg);
+			RGBA_t frontrgba = V_GetColor(fg);
+			RGBA_t result;
+			result.rgba = ASTBlendPixel(backrgba, frontrgba, AST_MODULATE, 0);
+			table[((bg * 0x100) + fg)] = GetColorLUT(&transtab_lut, result.s.red, result.s.green, result.s.blue);
+		}
+	}
+}
+
+static INT32 BlendTab_Count[NUMBLENDMAPS] =
+{
+	NUMTRANSTABLES+1, // blendtab_add
+	NUMTRANSTABLES+1, // blendtab_subtract
+	NUMTRANSTABLES+1, // blendtab_reversesubtract
+	1                 // blendtab_modulate
+};
+
+static INT32 BlendTab_FromStyle[] =
+{
+	0,                        // AST_COPY
+	0,                        // AST_TRANSLUCENT
+	blendtab_add,             // AST_ADD
+	blendtab_subtract,        // AST_SUBTRACT
+	blendtab_reversesubtract, // AST_REVERSESUBTRACT
+	blendtab_modulate,        // AST_MODULATE
+	0                         // AST_OVERLAY
+};
+
+static void BlendTab_GenerateMaps(INT32 tab, INT32 style, void (*genfunc)(UINT8 *, int, UINT8))
+{
+	INT32 i = 0, num = BlendTab_Count[tab];
+	const float amtmul = (256.0f / (float)(NUMTRANSTABLES + 1));
+	for (; i < num; i++)
+	{
+		const size_t offs = (0x10000 * i);
+		const UINT16 alpha = std::fmin(amtmul * i, 0xFF);
+		genfunc(blendtables[tab] + offs, style, alpha);
+	}
+}
+
+static void R_GenerateBlendTables(void)
+{
+	INT32 i;
+
+	for (i = 0; i < NUMBLENDMAPS; i++)
+		blendtables[i] = static_cast<UINT8*>(Z_MallocAlign(BlendTab_Count[i] * 0x10000, PU_STATIC, NULL, 16));
+
+	InitColorLUT(&transtab_lut, pLocalPalette, false);
+
+	// Additive
+	BlendTab_GenerateMaps(blendtab_add, AST_ADD, BlendTab_Translucent);
+
+	// Subtractive
+#if 1
+	BlendTab_GenerateMaps(blendtab_subtract, AST_SUBTRACT, BlendTab_Subtractive);
+#else
+	BlendTab_GenerateMaps(blendtab_subtract, AST_SUBTRACT, BlendTab_Translucent);
+#endif
+
+	// Reverse subtractive
+	BlendTab_GenerateMaps(blendtab_reversesubtract, AST_REVERSESUBTRACT, BlendTab_Translucent);
+
+	// Modulative blending only requires a single table
+	BlendTab_Modulative(blendtables[blendtab_modulate]);
+}
+
+#define ClipBlendLevel(style, trans) std::max(std::min((trans), BlendTab_Count[BlendTab_FromStyle[style]]-1), 0)
+#define ClipTransLevel(trans) std::max(std::min((trans), NUMTRANSMAPS-2), 0)
+
+UINT8 *R_GetTranslucencyTable(INT32 alphalevel)
+{
+	return transtables + (ClipTransLevel(alphalevel-1) << FF_TRANSSHIFT);
+}
+
+UINT8 *R_GetBlendTable(int style, INT32 alphalevel)
+{
+	size_t offs;
+
+	if (style <= AST_COPY || style >= AST_OVERLAY)
+		return transtables + (ClipTransLevel(alphalevel) << FF_TRANSSHIFT);
+
+	offs = (ClipBlendLevel(style, alphalevel) << FF_TRANSSHIFT);
+
+	// Lactozilla: Returns the equivalent to AST_TRANSLUCENT
+	// if no alpha style matches any of the blend tables.
+	switch (style)
+	{
+		case AST_ADD:
+			return blendtables[blendtab_add] + offs;
+		case AST_SUBTRACT:
+			return blendtables[blendtab_subtract] + offs;
+		case AST_REVERSESUBTRACT:
+			return blendtables[blendtab_reversesubtract] + offs;
+		case AST_MODULATE:
+			return blendtables[blendtab_modulate];
+		default:
+			break;
+	}
+
+	// Return a normal translucency table
+	if (--alphalevel >= 0)
+		return transtables + (ClipTransLevel(alphalevel) << FF_TRANSSHIFT);
+	else
+		return NULL;
+}
+
+boolean R_BlendLevelVisible(INT32 blendmode, INT32 alphalevel)
+{
+	if (blendmode <= AST_COPY || blendmode == AST_SUBTRACT || blendmode == AST_MODULATE || blendmode >= AST_OVERLAY)
+		return true;
+
+	return (alphalevel < BlendTab_Count[BlendTab_FromStyle[blendmode]]);
+}
+
+/**	\brief	Retrieves a translation colormap from the cache.
+
+	\param	skinnum		skin number, or a translation mode
+	\param	color		translation color
+	\param	flags		set GTC_CACHE to use the cache
+
+	\return	Colormap. If not cached, caller should Z_Free.
+*/
+static UINT8* RGetTranslationColormap(INT32 skinnum, skincolors_t color, UINT8 flags, boolean local)
+{
+	UINT8 ***tt;
+	UINT8* ret;
+	INT32 skintableindex;
+
+	if (local)
+	{
+		tt = localtranslationtablecache;
+		skintableindex = skinnum;
+	}
+	else
+	{
+		tt = translationtablecache;
+
+		// Adjust if we want the default colormap
+		switch (skinnum)
+		{
+			case TC_DEFAULT:    skintableindex = DEFAULT_TT_CACHE_INDEX; break;
+			case TC_BOSS:       skintableindex = BOSS_TT_CACHE_INDEX; break;
+			case TC_METALSONIC: skintableindex = METALSONIC_TT_CACHE_INDEX; break;
+			case TC_ALLWHITE:   skintableindex = ALLWHITE_TT_CACHE_INDEX; break;
+			case TC_RAINBOW:    skintableindex = RAINBOW_TT_CACHE_INDEX; break;
+			case TC_BLINK:      skintableindex = BLINK_TT_CACHE_INDEX; break;
+			default:       skintableindex = skinnum; break;
+		}
+	}
+
+	if (flags & GTC_CACHE)
+	{
+		// Allocate table for skin if necessary
+		if (!tt[skintableindex])
+			tt[skintableindex] = static_cast<UINT8**>(Z_Calloc(MAXTRANSLATIONS * sizeof(UINT8**), PU_STATIC, NULL));
+
+		// Get colormap
+		ret = tt[skintableindex][color];
+	}
+	else ret = NULL;
+
+	// Generate the colormap if necessary
+	if (!ret)
+	{
+		ret = static_cast<UINT8*>(Z_MallocAlign(NUM_PALETTE_ENTRIES, (flags & GTC_CACHE) ? PU_LEVEL : PU_STATIC, NULL, 8));
+		K_GenerateKartColormap(ret, skinnum, color, local); //R_GenerateTranslationColormap(ret, skinnum, color);		// SRB2kart
+
+		// Cache the colormap if desired
+		if (flags & GTC_CACHE)
+			tt[skintableindex][color] = ret;
+	}
+
+	return ret;
+}
+
+UINT8* R_GetTranslationColormap(INT32 skinnum, skincolors_t color, UINT8 flags)
+{
+	return RGetTranslationColormap(skinnum, color, flags, false);
+}
+
+UINT8* R_GetLocalTranslationColormap(skin_t *skin, skin_t *localskin, skincolors_t color, UINT8 flags, boolean local)
+{
+	if (localskin)
+		return RGetTranslationColormap(localskin - K_GetSkinArray(local), color, flags, local);
+	else
+		return RGetTranslationColormap((skin - skins), color, flags, false);
+}
+
+patch_t* R_GetSkinFaceRank(player_t* ply)
+{
+	if (ply->skinlocal && ply->localskin)
+		return localfacerankprefix[ply->localskin - 1];
+	else if (ply->localskin)
+		return facerankprefix[ply->localskin - 1];
+	return facerankprefix[ply->skin];
+}
+
+patch_t* R_GetSkinFaceWant(player_t* ply)
+{
+	if (ply->skinlocal && ply->localskin)
+		return localfacewantprefix[ply->localskin - 1];
+	else if (ply->localskin)
+		return facewantprefix[ply->localskin - 1];
+	return facewantprefix[ply->skin];
+}
+
+patch_t* R_GetSkinFaceMini(player_t* ply)
+{
+	if (ply->skinlocal && ply->localskin)
+		return localfacemmapprefix[ply->localskin - 1];
+	else if (ply->localskin)
+		return facemmapprefix[ply->localskin - 1];
+	return facemmapprefix[ply->skin];
+}
+
+/**	\brief	Flushes cache of translation colormaps.
+
+	Flushes cache of translation colormaps, but doesn't actually free the
+	colormaps themselves. These are freed when PU_LEVEL blocks are purged,
+	at or before which point, this function should be called.
+
+	\return	void
+*/
+void R_FlushTranslationColormapCache(void)
+{
+	INT32 i;
+
+	for (i = 0; i < (INT32)(sizeof(translationtablecache) / sizeof(translationtablecache[0])); i++)
+		if (translationtablecache[i])
+			memset(translationtablecache[i], 0, MAXTRANSLATIONS * sizeof(UINT8**));
+
+	for (i = 0; i < (INT32)(sizeof(localtranslationtablecache) / sizeof(localtranslationtablecache[0])); i++)
+		if (localtranslationtablecache[i])
+			memset(localtranslationtablecache[i], 0, MAXTRANSLATIONS * sizeof(UINT8**));
+}
+
+// ==========================================================================
+//               COMMON DRAWER FOR 8 AND 16 BIT COLOR MODES
+// ==========================================================================
+
+// in a perfect world, all routines would be compatible for either mode,
+// and optimised enough
+//
+// in reality, the few routines that can work for either mode, are
+// put here
+
+/**	\brief	The R_InitViewBuffer function
+
+	Creates lookup tables for getting the framebuffer address
+	of a pixel to draw.
+
+	\param	width	witdh of buffer
+	\param	height	hieght of buffer
+
+	\return	void
+*/
+
+static void R_AllocViewMemory(void)
+{
+	negonearray       = static_cast<INT16*>(Z_Realloc(negonearray, sizeof(*negonearray) * viewwidth, PU_STATIC, NULL));
+	screenheightarray = static_cast<INT16*>(Z_Realloc(screenheightarray, sizeof(*screenheightarray) * viewwidth, PU_STATIC, NULL));
+
+	floorclip         = static_cast<INT16*>(Z_Realloc(floorclip, sizeof(*floorclip) * viewwidth, PU_STATIC, NULL));
+	ceilingclip       = static_cast<INT16*>(Z_Realloc(ceilingclip, sizeof(*ceilingclip) * viewwidth, PU_STATIC, NULL));
+
+	frontscale        = static_cast<fixed_t*>(Z_Realloc(frontscale, sizeof(*frontscale) * viewwidth, PU_STATIC, NULL));
+
+	xtoviewangle      = static_cast<angle_t*>(Z_Realloc(xtoviewangle, sizeof(*xtoviewangle) * (viewwidth + 1), PU_STATIC, NULL));
+
+	R_AllocSegMemory();
+	R_AllocClipSegMemory();
+	R_AllocPlaneMemory();
+#ifdef FLOORSPLATS
+	R_AllocFloorSpriteTables();
+#endif
+	R_AllocVisSpriteMemory();
+}
+
+
+void R_InitViewBuffer(INT32 width, INT32 height)
+{
+	if (width > MAXVIDWIDTH)
+		width = MAXVIDWIDTH;
+	if (height > MAXVIDHEIGHT)
+		height = MAXVIDHEIGHT;
+
+	R_AllocViewMemory();
+
+	viewwindowx = 0;
+	viewwindowy = 0;
+
+	linesize     = vid.width;      // killough 11/98
+	renderscreen = vid.screens[0]; // haleyjd 07/02/14
+}
+
+/**	\brief viewborder patches lump numbers
+*/
+lumpnum_t viewborderlump[8];
+
+/**	\brief Store the lumpnumber of the viewborder patches
+*/
+
+void R_InitViewBorder(void)
+{
+	viewborderlump[BRDR_T] = W_GetNumForName("brdr_t");
+	viewborderlump[BRDR_B] = W_GetNumForName("brdr_b");
+	viewborderlump[BRDR_L] = W_GetNumForName("brdr_l");
+	viewborderlump[BRDR_R] = W_GetNumForName("brdr_r");
+	viewborderlump[BRDR_TL] = W_GetNumForName("brdr_tl");
+	viewborderlump[BRDR_BL] = W_GetNumForName("brdr_bl");
+	viewborderlump[BRDR_TR] = W_GetNumForName("brdr_tr");
+	viewborderlump[BRDR_BR] = W_GetNumForName("brdr_br");
+}
+
+/**	\brief	The R_VideoErase function
+
+	Copy a screen buffer.
+
+	\param	ofs	offest from buffer
+	\param	count	bytes to erase
+
+	\return	void
+
+
+*/
+void R_VideoErase(size_t ofs, INT32 count)
+{
+	// LFB copy.
+	// This might not be a good idea if memcpy
+	//  is not optimal, e.g. byte by byte on
+	//  a 32bit CPU, as GNU GCC/Linux libc did
+	//  at one point.
+	M_Memcpy(vid.screens[0] + ofs, vid.screens[1] + ofs, count);
+}
+
+
+#if 0
+/**	\brief R_FillBackScreen
+
+	Fills the back screen with a pattern for variable screen sizes
+	Also draws a beveled edge.
+*/
+void R_FillBackScreen(void)
+{
+	UINT8 *src, *dest;
+	patch_t *patch;
+	INT32 x, y, step, boff;
+
+	// quickfix, don't cache lumps in both modes
+	if (rendermode != render_soft)
+		return;
+
+	// draw pattern around the status bar too (when hires),
+	// so return only when in full-screen without status bar.
+	if (scaledviewwidth == vid.width && viewheight == vid.height)
+		return;
+
+	src = scr_borderpatch;
+	dest = vid.screens[1];
+
+	for (y = 0; y < vid.height; y++)
+	{
+		for (x = 0; x < vid.width/128; x++)
+		{
+			M_Memcpy (dest, src+((y&127)<<7), 128);
+			dest += 128;
+		}
+
+		if (vid.width&127)
+		{
+			M_Memcpy(dest, src+((y&127)<<7), vid.width&127);
+			dest += (vid.width&127);
+		}
+	}
+
+	// don't draw the borders when viewwidth is full vid.width.
+	if (scaledviewwidth == vid.width)
+		return;
+
+	step = 8;
+	boff = 8;
+
+	patch = W_CacheLumpNum(viewborderlump[BRDR_T], PU_CACHE);
+	for (x = 0; x < scaledviewwidth; x += step)
+		V_DrawPatch(viewwindowx + x, viewwindowy - boff, 1, patch);
+
+	patch = W_CacheLumpNum(viewborderlump[BRDR_B], PU_CACHE);
+	for (x = 0; x < scaledviewwidth; x += step)
+		V_DrawPatch(viewwindowx + x, viewwindowy + viewheight, 1, patch);
+
+	patch = W_CacheLumpNum(viewborderlump[BRDR_L], PU_CACHE);
+	for (y = 0; y < viewheight; y += step)
+		V_DrawPatch(viewwindowx - boff, viewwindowy + y, 1, patch);
+
+	patch = W_CacheLumpNum(viewborderlump[BRDR_R],PU_CACHE);
+	for (y = 0; y < viewheight; y += step)
+		V_DrawPatch(viewwindowx + scaledviewwidth, viewwindowy + y, 1,
+			patch);
+
+	// Draw beveled corners.
+	V_DrawPatch(viewwindowx - boff, viewwindowy - boff, 1,
+		W_CacheLumpNum(viewborderlump[BRDR_TL], PU_CACHE));
+	V_DrawPatch(viewwindowx + scaledviewwidth, viewwindowy - boff, 1,
+		W_CacheLumpNum(viewborderlump[BRDR_TR], PU_CACHE));
+	V_DrawPatch(viewwindowx - boff, viewwindowy + viewheight, 1,
+		W_CacheLumpNum(viewborderlump[BRDR_BL], PU_CACHE));
+	V_DrawPatch(viewwindowx + scaledviewwidth, viewwindowy + viewheight, 1,
+		W_CacheLumpNum(viewborderlump[BRDR_BR], PU_CACHE));
+}
+
+/**	\brief The R_DrawViewBorder
+
+  Draws the border around the view
+	for different size windows?
+*/
+void R_DrawViewBorder(void)
+{
+	INT32 top, side, ofs;
+
+	if (rendermode == render_none)
+		return;
+#ifdef HWRENDER
+	if (rendermode != render_soft)
+	{
+		HWR_DrawViewBorder(0);
+		return;
+	}
+	else
+#endif
+
+#ifdef DEBUG
+	fprintf(stderr,"RDVB: vidwidth %d vidheight %d scaledviewwidth %d viewheight %d\n",
+		vid.width, vid.height, scaledviewwidth, viewheight);
+#endif
+
+	if (scaledviewwidth == vid.width)
+		return;
+
+	top = (vid.height - viewheight)>>1;
+	side = (vid.width - scaledviewwidth)>>1;
+
+	// copy top and one line of left side
+	R_VideoErase(0, top*vid.width+side);
+
+	// copy one line of right side and bottom
+	ofs = (viewheight+top)*vid.width - side;
+	R_VideoErase(ofs, top*vid.width + side);
+
+	// copy sides using wraparound
+	ofs = top*vid.width + vid.width-side;
+	side <<= 1;
+
+    // simpler using our VID_Blit routine
+	VID_BlitLinearScreen(vid.screens[1] + ofs, vid.screens[0] + ofs, side, viewheight - 1,
+		vid.width, vid.width);
+}
+#endif
+
+// ==========================================================================
+//                   INCLUDE DRAWING CODE HERE
+// ==========================================================================
+
+#include "r_draw_column.cpp"
+#include "r_draw_span.cpp"

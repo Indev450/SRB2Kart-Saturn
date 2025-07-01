@@ -100,7 +100,7 @@ INT32 numtextures = 0; // total number of textures found,
 
 texture_t **textures = NULL;
 static UINT32 **texturecolumnofs; // column offset lookup table for each texture
-static UINT8 **texturecache; // graphics data for each generated full-size texture
+UINT8 **texturecache; // graphics data for each generated full-size texture
 
 // texture width is a power of 2, so it can easily repeat along sidedefs using a simple mask
 INT32 *texturewidthmask;
@@ -296,7 +296,7 @@ static inline void R_DrawColumnInCache(column_t *patch, UINT8 *cache, INT32 orig
 // This is not optimised, but it's supposed to be executed only once
 // per level, when enough memory is available.
 //
-static UINT8 *R_GenerateTexture(size_t texnum)
+UINT8 *R_GenerateTexture(size_t texnum)
 {
 	UINT8 *block;
 	UINT8 *blocktex;
@@ -649,6 +649,7 @@ void R_LoadTextures(void)
 			M_Memcpy(texture->name, W_CheckNameForNumPwad(wadnum, lumpnum), sizeof(texture->name));
 			texture->width = SHORT(patchlump->width);
 			texture->height = SHORT(patchlump->height);
+			texture->type = TEXTURETYPE_SINGLEPATCH;
 			texture->patchcount = 1;
 			texture->holes = false;
 
@@ -690,12 +691,15 @@ static texpatch_t *R_ParsePatch(boolean actuallyLoadPatch)
 
 	// Patch identifier
 	texturesToken = M_GetToken(NULL);
+
 	if (texturesToken == NULL)
 	{
 		I_Error("Error parsing TEXTURES lump: Unexpected end of file where patch name should be");
 	}
+
 	texturesTokenLength = strlen(texturesToken);
-	if (texturesTokenLength>8)
+
+	if (texturesTokenLength > 8)
 	{
 		I_Error("Error parsing TEXTURES lump: Patch name \"%s\" exceeds 8 characters",texturesToken);
 	}
@@ -713,10 +717,12 @@ static texpatch_t *R_ParsePatch(boolean actuallyLoadPatch)
 	// Comma 1
 	Z_Free(texturesToken);
 	texturesToken = M_GetToken(NULL);
+
 	if (texturesToken == NULL)
 	{
 		I_Error("Error parsing TEXTURES lump: Unexpected end of file where comma after \"%s\"'s patch name should be",patchName);
 	}
+
 	if (strcmp(texturesToken,",")!=0)
 	{
 		I_Error("Error parsing TEXTURES lump: Expected \",\" after %s's patch name, got \"%s\"",patchName,texturesToken);
@@ -725,14 +731,17 @@ static texpatch_t *R_ParsePatch(boolean actuallyLoadPatch)
 	// XPos
 	Z_Free(texturesToken);
 	texturesToken = M_GetToken(NULL);
+
 	if (texturesToken == NULL)
 	{
 		I_Error("Error parsing TEXTURES lump: Unexpected end of file where patch \"%s\"'s x coordinate should be",patchName);
 	}
+
 	endPos = NULL;
 #ifndef AVOID_ERRNO
 	errno = 0;
 #endif
+
 	patchXPos = strtol(texturesToken,&endPos,10);
 	(void)patchXPos; //unused for now
 	if (endPos == texturesToken // Empty string
@@ -748,10 +757,12 @@ static texpatch_t *R_ParsePatch(boolean actuallyLoadPatch)
 	// Comma 2
 	Z_Free(texturesToken);
 	texturesToken = M_GetToken(NULL);
+
 	if (texturesToken == NULL)
 	{
 		I_Error("Error parsing TEXTURES lump: Unexpected end of file where comma after patch \"%s\"'s x coordinate should be",patchName);
 	}
+
 	if (strcmp(texturesToken,",")!=0)
 	{
 		I_Error("Error parsing TEXTURES lump: Expected \",\" after patch \"%s\"'s x coordinate, got \"%s\"",patchName,texturesToken);
@@ -760,6 +771,7 @@ static texpatch_t *R_ParsePatch(boolean actuallyLoadPatch)
 	// YPos
 	Z_Free(texturesToken);
 	texturesToken = M_GetToken(NULL);
+
 	if (texturesToken == NULL)
 	{
 		I_Error("Error parsing TEXTURES lump: Unexpected end of file where patch \"%s\"'s y coordinate should be",patchName);
@@ -904,19 +916,22 @@ static texture_t *R_ParseTexture(boolean actuallyLoadTexture)
 
 	// Left Curly Brace
 	texturesToken = M_GetToken(NULL);
+
 	if (texturesToken == NULL)
 	{
 		I_Error("Error parsing TEXTURES lump: Unexpected end of file where open curly brace for texture \"%s\" should be",newTextureName);
 	}
+
 	if (strcmp(texturesToken,"{")==0)
 	{
 		if (actuallyLoadTexture)
 		{
 			// Allocate memory for a zero-patch texture. Obviously, we'll be adding patches momentarily.
-			resultTexture = (texture_t *)Z_Calloc(sizeof(texture_t),PU_STATIC,NULL);
+			resultTexture = (texture_t *)Z_Calloc(sizeof(texture_t), PU_STATIC, NULL);
 			M_Memcpy(resultTexture->name, newTextureName, 8);
 			resultTexture->width = newTextureWidth;
 			resultTexture->height = newTextureHeight;
+			resultTexture->type = TEXTURETYPE_COMPOSITE;
 		}
 		Z_Free(texturesToken);
 		texturesToken = M_GetToken(NULL);
@@ -1131,9 +1146,9 @@ static void R_InitExtraColormaps(void)
 lumpnum_t R_GetFlatNumForName(const char *name)
 {
 	INT32 i;
-	lumpnum_t lump;
-	lumpnum_t start;
-	lumpnum_t end;
+	lumpnum_t lump = LUMPERROR;
+	lumpnum_t start = LUMPERROR;
+	lumpnum_t end = LUMPERROR;
 
 	// Scan wad files backwards so patched flats take preference.
 	for (i = numwadfiles - 1; i >= 0; i--)
@@ -1608,7 +1623,7 @@ const char *R_ColormapNameForNum(INT32 num)
 	if (num == -1)
 		return "NONE";
 
-	if (num < 0 || num > MAXCOLORMAPS)
+	if (num < 0 || num >= MAXCOLORMAPS)
 		I_Error("R_ColormapNameForNum: num %d is invalid!\n", num);
 
 	if (foundcolormaps[num] == LUMPERROR)

@@ -72,6 +72,9 @@
 #include "d_protocol.h"
 #include "m_perfstats.h"
 #include "k_kart.h"
+#include "k_hud.h"
+
+#include "core/memory.h"
 
 #include "lua_script.h"
 
@@ -197,12 +200,10 @@ static void D_PadMenuScrollInput(UINT8 input)
 // and pass it to the eventlist
 static void D_GamePadMenuScrollTicker(void)
 {
+	UINT8 i;
 	static UINT8 menuInputDelayTimer = 0;
 
-	if (dedicated)
-		return;
-
-	for (UINT8 i = 0; i < 4; i++)
+	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
 	{
 		if (dpadscrollstate[i])
 		{
@@ -222,10 +223,10 @@ static void D_GamePadMenuScrollTicker(void)
 static void D_DeviceLEDTick(void)
 {
 	UINT8 i;
-	static UINT16 color[MAXSPLITSCREENPLAYERS] = {0, 0, 0, 0};
-	static UINT16 curcolor[MAXSPLITSCREENPLAYERS] = {0, 0, 0, 0};
+	static UINT16 color[MAXSPLITSCREENPLAYERS] = {0};
+	static UINT16 curcolor[MAXSPLITSCREENPLAYERS] = {0};
 
-	if (dedicated || numcontrollers == 0)
+	if (numcontrollers == 0)
 	{
 		return;
 	}
@@ -252,7 +253,6 @@ static void D_DeviceLEDTick(void)
 void D_ProcessEvents(void)
 {
 	event_t *ev;
-
 	boolean eaten;
 
 	for (; eventtail != eventhead; eventtail = (eventtail+1) & (MAXEVENTS-1))
@@ -291,8 +291,10 @@ void D_ProcessEvents(void)
 
 		// Demo input:
 		if (demo.playback)
+		{
 			if (M_DemoResponder(ev))
 				continue;	// demo ate the event
+		}
 
 		// console input
 #ifdef HAVE_THREADS
@@ -317,6 +319,110 @@ void D_ProcessEvents(void)
 // draw current display, possibly wiping it from the previous
 //
 
+static void D_Renderview(void)
+{
+	UINT8 i;
+
+	if (automapactive)
+		return;
+
+	R_ApplyLevelInterpolators(rendertimefrac);
+
+	if (rendermode == render_soft)
+	{
+		// if this is display player 1
+		if (cv_homremoval.value)
+		{
+			if (cv_homremoval.value == 1)
+			{
+				// Clear the software screen buffer to remove HOM
+				memset(vid.screens[0], 31, vid.width * vid.height);
+			}
+			else if (cv_homremoval.value == 2)
+			{
+				//'development' HOM removal -- makes it blindingly obvious if HOM is spotted.
+				memset(vid.screens[0], 32+(timeinmap&15), vid.width * vid.height);
+			}
+		}
+	}
+
+	// Draw over the fourth screen so you don't have to stare at a HOM :V
+	if (splitscreen == 2)
+	{
+		// V_DrawPatchFill, but for the fourth screen only
+		patch_t *pat = W_CachePatchName("SRB2BACK", PU_CACHE);
+		INT32 dupz = (vid.dupx < vid.dupy ? vid.dupx : vid.dupy);
+		INT32 x, y, pw = SHORT(pat->width) * dupz, ph = SHORT(pat->height) * dupz;
+
+		for (x = vid.width>>1; x < vid.width; x += pw)
+		{
+			for (y = vid.height>>1; y < vid.height; y += ph)
+				V_DrawScaledPatch(x, y, V_NOSCALESTART, pat);
+		}
+	}
+
+	for (i = 0; i <= splitscreen; i++)
+	{
+		const boolean issplitscreen = (i > 0);
+
+		if (!P_MobjWasRemoved(players[displayplayers[i]].mo) || players[displayplayers[i]].playerstate == PST_DEAD)
+		{
+			viewssnum = i;
+
+			if (!issplitscreen) // Initialize for P1
+			{
+				viewwindowy = viewwindowx = 0;
+				objectsdrawn = 0;
+			}
+
+#ifdef HWRENDER
+			if (rendermode == render_opengl)
+			{
+				HWR_RenderPlayerView();
+				R_RestoreLevelInterpolators();
+				continue;
+			}
+#endif
+			if (issplitscreen) // Splitscreen-specific
+			{
+				switch (i)
+				{
+					case 1:
+						if (splitscreen > 1)
+						{
+							viewwindowx = viewwidth;
+							viewwindowy = 0;
+						}
+						else
+						{
+							viewwindowx = 0;
+							viewwindowy = viewheight;
+						}
+						break;
+					case 2:
+						viewwindowx = 0;
+						viewwindowy = viewheight;
+						break;
+					case 3:
+						viewwindowx = viewwidth;
+						viewwindowy = viewheight;
+					default:
+						break;
+				}
+			}
+
+			R_RenderPlayerView(&players[displayplayers[i]]);
+		}
+
+		if (!issplitscreen)
+			R_ApplyViewMorph();
+
+		V_DoPostProcessor(i, postimgparam[i]);
+	}
+
+	R_RestoreLevelInterpolators();
+}
+
 // wipegamestate can be set to -1 to force a wipe on the next draw
 // added comment : there is a wipe eatch change of the gamestate
 gamestate_t wipegamestate = GS_LEVEL;
@@ -327,7 +433,6 @@ static boolean D_Display(void)
 	boolean forcerefresh = false;
 	static boolean wipe = false;
 	INT32 wipedefindex = 0;
-	UINT8 i;
 
 	if (!dedicated)
 	{
@@ -366,6 +471,7 @@ static boolean D_Display(void)
 	{
 		// set for all later
 		wipedefindex = gamestate; // wipe_xxx_toblack
+
 		if (gamestate == GS_TITLESCREEN && wipegamestate != GS_INTRO)
 			wipedefindex = wipe_timeattack_toblack;
 		else if (gamestate == GS_INTERMISSION)
@@ -378,26 +484,28 @@ static boolean D_Display(void)
 
 		if (!dedicated)
 		{
-			// Fade to black first
-			if (gamestate != GS_LEVEL // fades to black on its own timing, always
-			 && wipedefs[wipedefindex] != UINT8_MAX)
+			if (gamestate != GS_LEVEL)
 			{
-				F_WipeStartScreen();
-				V_DrawFill(0, 0, BASEVIDWIDTH, BASEVIDHEIGHT, 31);
-				F_WipeEndScreen();
-				F_RunWipe(wipedefs[wipedefindex], gamestate != GS_TIMEATTACK);
-				ranwipe = true;
-			}
+				// Fade to black first
+				if (wipedefs[wipedefindex] != UINT8_MAX) // fades to black on its own timing, always
+				{
+					F_WipeStartScreen();
+					V_DrawFill(0, 0, BASEVIDWIDTH, BASEVIDHEIGHT, 31);
+					F_WipeEndScreen();
+					F_RunWipe(wipedefs[wipedefindex], gamestate != GS_TIMEATTACK);
+					ranwipe = true;
+				}
 
-			if (gamestate != GS_LEVEL && rendermode != render_none)
-			{
-				V_SetPaletteLump("PLAYPAL"); // Reset the palette
-				R_ReInitColormaps(0, LUMPERROR);
+				if (rendermode != render_none)
+				{
+					V_SetPaletteLump("PLAYPAL"); // Reset the palette
+					R_ReInitColormaps(0, LUMPERROR);
+				}
 			}
 
 			F_WipeStartScreen();
 		}
-		else //dedicated servers
+		else // dedicated servers
 		{
 			F_RunWipe(wipedefs[wipedefindex], gamestate != GS_TIMEATTACK);
 			ranwipe = true;
@@ -405,7 +513,7 @@ static boolean D_Display(void)
 		}
 	}
 
-	if (dedicated) //bail out after wipe logic
+	if (dedicated) // bail out after wipe logic
 		return false;
 
 	// do buffered drawing
@@ -428,9 +536,6 @@ static boolean D_Display(void)
 			Y_VoteDrawer();
 			HU_Erase();
 			HU_Drawer();
-			break;
-
-		case GS_TIMEATTACK:
 			break;
 
 		case GS_INTRO:
@@ -484,6 +589,7 @@ static boolean D_Display(void)
 				HU_Erase();
 				HU_Drawer();
 			}
+		case GS_TIMEATTACK:
 		case GS_DEDICATEDSERVER:
 		case GS_NULL:
 			break;
@@ -492,89 +598,10 @@ static boolean D_Display(void)
 	if (gamestate == GS_LEVEL)
 	{
 		// draw the view directly
-		if (cv_renderview.value && !automapactive)
+		if (cv_renderview.value)
 		{
 			PS_START_TIMING(ps_rendercalltime);
-
-			R_ApplyLevelInterpolators(rendertimefrac);
-
-			for (i = 0; i <= splitscreen; i++)
-			{
-				if (!P_MobjWasRemoved(players[displayplayers[i]].mo) || players[displayplayers[i]].playerstate == PST_DEAD)
-				{
-					viewssnum = i;
-
-					if (i == 0) // Initialize for P1
-					{
-						viewwindowy = 0;
-						viewwindowx = 0;
-
-						topleft = screens[0] + viewwindowy*vid.width + viewwindowx;
-						objectsdrawn = 0;
-					}
-
-#ifdef HWRENDER
-					if (rendermode == render_opengl)
-						HWR_RenderPlayerView();
-					else
-#endif
-					if (rendermode != render_none)
-					{
-						if (i > 0) // Splitscreen-specific
-						{
-							switch (i)
-							{
-								case 1:
-									if (splitscreen > 1)
-									{
-										viewwindowx = viewwidth;
-										viewwindowy = 0;
-									}
-									else
-									{
-										viewwindowx = 0;
-										viewwindowy = viewheight;
-									}
-									M_Memcpy(ylookup, ylookup2, viewheight*sizeof (ylookup[0]));
-									break;
-								case 2:
-									viewwindowx = 0;
-									viewwindowy = viewheight;
-									M_Memcpy(ylookup, ylookup3, viewheight*sizeof (ylookup[0]));
-									break;
-								case 3:
-									viewwindowx = viewwidth;
-									viewwindowy = viewheight;
-									M_Memcpy(ylookup, ylookup4, viewheight*sizeof (ylookup[0]));
-								default:
-									break;
-							}
-
-
-							topleft = screens[0] + viewwindowy*vid.width + viewwindowx;
-						}
-
-						R_RenderPlayerView(&players[displayplayers[i]]);
-
-						if (i > 0)
-							M_Memcpy(ylookup, ylookup1, viewheight*sizeof (ylookup[0]));
-					}
-				}
-			}
-
-			if (rendermode == render_soft)
-			{
-				if (!splitscreen)
-					R_ApplyViewMorph();
-
-				for (i = 0; i <= splitscreen; i++)
-				{
-					V_DoPostProcessor(i, postimgparam[i]);
-				}
-			}
-
-			R_RestoreLevelInterpolators();
-
+			D_Renderview();
 			PS_STOP_TIMING(ps_rendercalltime);
 		}
 
@@ -582,8 +609,9 @@ static boolean D_Display(void)
 		{
 			if (rendermode == render_soft)
 			{
-				VID_BlitLinearScreen(screens[0], screens[1], vid.width*vid.bpp, vid.height, vid.width*vid.bpp, vid.rowbytes);
+				VID_BlitLinearScreen(vid.screens[0], vid.screens[1], vid.width, vid.height, vid.width, vid.rowbytes);
 			}
+
 			lastdraw = false;
 		}
 
@@ -606,13 +634,8 @@ static boolean D_Display(void)
 	// draw pause pic
 	if (paused && cv_showhud.value && !demo.playback)
 	{
-		INT32 py;
-		patch_t *patch;
-		if (automapactive)
-			py = 4;
-		else
-			py = viewwindowy + 4;
-		patch = W_CachePatchName("M_PAUSE", PU_PATCH);
+		INT32 py = (automapactive) ? 4 : (viewwindowy + 4);
+		patch_t *patch = W_CachePatchName("M_PAUSE", PU_PATCH);
 		V_DrawScaledPatch(viewwindowx + (BASEVIDWIDTH - patch->width)/2, py, V_SNAPTOTOP, patch);
 	}
 
@@ -620,7 +643,7 @@ static boolean D_Display(void)
 		V_DrawFadeScreen(TC_RAINBOW, (leveltime & 0x20) ? SKINCOLOR_PASTEL : SKINCOLOR_MOONSLAM);
 
 	// vid size change is now finished if it was on...
-	vid.recalc = 0;
+	vid.recalc = false;
 
 #ifdef HAVE_THREADS
 	I_lock_mutex(&m_menu_mutex);
@@ -752,9 +775,11 @@ void D_SRB2Loop(void)
 		precise_t enterprecise = I_GetPreciseTime();
 		precise_t finishprecise = enterprecise;
 
+		Z_Frame_Reset();
+
 		// Casting the return value of a function is bad practice (apparently)
 		double budget = ((R_GetFramerateCap() == 0) ? 0.0 : round((1.0 / R_GetFramerateCap()) * I_GetPrecisePrecision()));
-		capbudget = (precise_t) budget;
+		capbudget = (precise_t)budget;
 
 		boolean ranwipe = false;
 
@@ -824,12 +849,15 @@ void D_SRB2Loop(void)
 				doDisplay = true;
 			}
 
-			if (menuactive)
+			if (!dedicated)
 			{
-				D_GamePadMenuScrollTicker();
-			}
+				if (menuactive)
+				{
+					D_GamePadMenuScrollTicker();
+				}
 
-			D_DeviceLEDTick();
+				D_DeviceLEDTick();
+			}
 		}
 
 		if (interp)
@@ -841,7 +869,9 @@ void D_SRB2Loop(void)
 			ps_interp_frac.value.p = (precise_t)((FIXED_TO_FLOAT(g_time.timefrac)) * 1000.0f);
 			ps_interp_lag.value.p = (precise_t)((deltasecs) * 1000.0f);
 
-			if (!(paused || P_AutoPause()) && deltatics < 1.0 && !hu_stopped)
+			const boolean lagging = ((deltatics >= 1.0) || hu_stopped);
+
+			if (!(paused || P_AutoPause()) && !lagging)
 			{
 				rendertimefrac = g_time.timefrac;
 			}
@@ -850,7 +880,7 @@ void D_SRB2Loop(void)
 				rendertimefrac = FRACUNIT;
 			}
 
-			if ((deltatics < 1.0) && !hu_stopped)
+			if (!lagging)
 			{
 				rendertimefrac_unpaused = g_time.timefrac;
 			}
@@ -923,7 +953,7 @@ void D_SRB2Loop(void)
 
 			if ((elapsed > 0) && ((INT64)capbudget > elapsed) && !vsync_with_match_refresh)
 			{
-				I_SleepDuration(capbudget - (finishprecise - enterprecise));
+				I_SleepDuration(capbudget - elapsed);
 			}
 		}
 		// Capture the time once more to get the real delta time.
@@ -1213,32 +1243,32 @@ static boolean AddIWAD(void)
 }
 
 // extra graphic patches for saturn specific thingies
-boolean found_extra_kart = false;
+boolean found_extra_kart  = false;
 boolean found_extra2_kart = false;
 boolean found_extra3_kart = false;
 
-boolean xtra_speedo = false;       // extra speedometer check
-boolean xtra_speedo_clr = false;   // extra speedometer colour check
-boolean xtra_speedo3 = false;      // 80x 11 extra speedometer check
-boolean xtra_speedo_clr3 = false;  // 80x 11 extra speedometer colour check
-boolean achi_speedo = false;       // achiiro speedometer check
-boolean achi_speedo_clr = false;   // extra speedometer colour check
-boolean dial_speedo = false;       // dial speedometer check
-boolean dial_speedo_clr = false;   // dial speedometer colour check
-boolean kartz_speedo = false;      // kartZ speedo
+boolean xtra_speedo       = false; // extra speedometer check
+boolean xtra_speedo_clr   = false; // extra speedometer colour check
+boolean xtra_speedo3      = false; // 80x 11 extra speedometer check
+boolean xtra_speedo_clr3  = false; // 80x 11 extra speedometer colour check
+boolean achi_speedo       = false; // achiiro speedometer check
+boolean achi_speedo_clr   = false; // extra speedometer colour check
+boolean dial_speedo       = false; // dial speedometer check
+boolean dial_speedo_clr   = false; // dial speedometer colour check
+boolean kartz_speedo      = false; // kartZ speedo
 boolean kartz_speedo_smol = false; // kartZ speedo but smol
 
-boolean clr_hud = false;           // colour hud check
+boolean clr_hud           = false; // colour hud check
 boolean driftgaugegfx_clr = false; // driftgauge colour check
-boolean big_lap = false;           // bigger lap counter
-boolean big_lap_color = false;     // bigger lap counter but colour
-boolean statdp = false;            // stat display for extended player setup
-boolean nametaggfx = false;        // Nametag stuffs
-boolean driftgaugegfx = false;     // Driftgauge stuffs
-boolean multiitem_icon = false;    // Extra icons for Sneakers, Banana and Jawz
-boolean joystickicon = false;      // Extra icons for the joystick input display
-boolean minidoticon = false;        // Dot graphic for minimap player angle display
-boolean minilighticon = false;     // mkwii-style minimap headlight
+boolean big_lap           = false; // bigger lap counter
+boolean big_lap_color     = false; // bigger lap counter but colour
+boolean statdp            = false; // stat display for extended player setup
+boolean nametaggfx        = false; // Nametag stuffs
+boolean driftgaugegfx     = false; // Driftgauge stuffs
+boolean multiitem_icon    = false; // Extra icons for Sneakers, Banana and Jawz
+boolean joystickicon      = false; // Extra icons for the joystick input display
+boolean minidoticon       = false; // Dot graphic for minimap player angle display
+boolean minilighticon     = false; // mkwii-style minimap headlight
 //
 
 static void IdentifyVersion(void)
@@ -1602,7 +1632,9 @@ void D_SRB2Main(void)
 #endif
 
 	// for dedicated server
+#if !defined (DEDICATED)
 	dedicated = M_CheckParm("-dedicated") != 0;
+#endif
 
 	strcpy(title, "SRB2Kart");
 	strcpy(srb2, "SRB2Kart");
@@ -1804,7 +1836,7 @@ void D_SRB2Main(void)
 		{
 			name = lumpinfo->name;
 
-			if (name[0] == 'M' && name[1] == 'A' && name[2] == 'P') // Ignore the headers
+			if (memcmp(name, "MAP", 3) == 0) // Ignore the headers
 			{
 				INT16 num;
 				if (name[5] != '\0')
@@ -1834,7 +1866,7 @@ void D_SRB2Main(void)
 		{
 			name = lumpinfo->name;
 
-			if (name[0] == 'M' && name[1] == 'A' && name[2] == 'P') // Ignore the headers
+			if (memcmp(name, "MAP", 3) == 0) // Ignore the headers
 			{
 				INT16 num;
 				if (name[5] != '\0')

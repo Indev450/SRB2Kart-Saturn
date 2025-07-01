@@ -67,6 +67,8 @@
 #include "lua_script.h"
 #include "lua_hook.h"
 
+#include "y_inter.h"
+
 #if !defined (UNDER_CE)
 #include <time.h>
 #endif
@@ -580,9 +582,6 @@ static void P_LoadRawSegs(UINT8 *data)
 		else
 			li->backsector = 0;
 
-		li->numlights = 0;
-		li->rlights = NULL;
-
 		P_UpdateSegLightOffset(li);
 	}
 }
@@ -675,6 +674,21 @@ INT32 P_AddLevelFlat(const char *flatname, levelflat_t *levelflat)
 		levelflat->lumpnum = R_GetFlatNumForName(flatname);
 		levelflat->baselumpnum = LUMPERROR;
 
+		// check if our flat contains cyan pixels
+		// not sure if this is the best way to do it but it works
+		{
+			const UINT8 *flat = (UINT8 *)W_CacheLumpNum(levelflat->lumpnum, PU_LEVEL);
+			size_t size = W_LumpLength(levelflat->lumpnum);
+			for (size_t steppy = 0; steppy < size; steppy++)
+			{
+				if (flat[steppy] == TRANSPARENTPIXEL)
+				{
+					levelflat->cyan = true;
+					break;
+				}
+			}
+		}
+
 #ifndef ZDEBUG
 		CONS_Debug(DBG_SETUP, "flat #%03d: %s\n", atoi(sizeu1(numlevelflats)), levelflat->name);
 #endif
@@ -719,6 +733,21 @@ INT32 P_AddLevelFlatRuntime(const char *flatname)
 		// store the flat lump number
 		levelflat->lumpnum = R_GetFlatNumForName(flatname);
 		levelflat->baselumpnum = LUMPERROR;
+
+		// check if our flat contains cyan pixels
+		// not sure if this is the best way to do it but it works
+		{
+			const UINT8 *flat = (UINT8 *)W_CacheLumpNum(levelflat->lumpnum, PU_LEVEL);
+			size_t size = W_LumpLength(levelflat->lumpnum);
+			for (size_t steppy = 0; steppy < size; steppy++)
+			{
+				if (flat[steppy] == TRANSPARENTPIXEL)
+				{
+					levelflat->cyan = true;
+					break;
+				}
+			}
+		}
 
 #ifndef ZDEBUG
 		CONS_Debug(DBG_SETUP, "flat #%03d: %s\n", atoi(sizeu1(numlevelflats)), levelflat->name);
@@ -2747,8 +2776,6 @@ static void P_SetupPlayer(void)
 		I_mkdir(va("%s"PATHSEP"replay", srb2home), 0755);
 		I_mkdir(va("%s"PATHSEP"replay"PATHSEP"online", srb2home), 0755);
 		G_RecordDemo(buf);
-		if (dedicated)
-			G_BeginRecording(); //this has to move here, since dedicated servers dont run got_mapcmd
 	}
 
 	wantedcalcdelay = wantedfrequency*2;
@@ -2868,12 +2895,9 @@ boolean P_SetupLevel(boolean fromnetsave, boolean reloadinggamestate)
 			F_WipeStartScreen();
 			V_DrawFill(0, 0, BASEVIDWIDTH, BASEVIDHEIGHT, levelfadecol);
 			F_WipeEndScreen();
-			F_RunWipe(wipedefs[(encoremode ? wipe_level_final : wipe_level_toblack)], false);
 		}
-		else //dedicated servers
-		{
-			F_RunWipe(wipedefs[(encoremode ? wipe_level_final : wipe_level_toblack)], false);
-		}
+
+		F_RunWipe(wipedefs[(encoremode ? wipe_level_final : wipe_level_toblack)], false);
 	}
 
 	// Reset the palette now all fades have been done
@@ -3109,11 +3133,128 @@ boolean P_AddWadFile(const char *wadfilename, boolean local)
 	return true;
 }
 
-// check for replacement votescreen backgrounds
-boolean wideracereplaced = false;
-boolean racereplaced = false;
-boolean widebattlereplaced = false;
-boolean battlereplaced = false;
+static size_t sreplaces = 0, mreplaces = 0, digmreplaces = 0;
+
+//
+// search for sound replacements
+//
+static boolean P_CheckSoundReplacements(UINT16 wadnum, char *name, size_t i)
+{
+	size_t j;
+	lumpnum_t lumpnum = (i|(wadnum<<16));
+
+	if (name[0] == 'D')
+	{
+		if (name[1] == 'S')
+		{
+			for (j = 1; j < NUMSFX; j++)
+			{
+				if (S_sfx[j].name && !strnicmp(S_sfx[j].name, name + 2, 6)
+				&& (S_sfx[j].lumpnum != lumpnum) && (S_sfx[j].lumpnum != LUMPERROR))
+				{
+					// the sound will be reloaded when needed,
+					// since sfx->data will be NULL
+					CONS_Debug(DBG_SETUP, "Sound %.8s replaced\n", name);
+
+					I_FreeSfx(&S_sfx[j]);
+
+					// Re-cache it
+					if (S_PrecacheSound())
+						S_sfx[j].data = I_GetSfx(&S_sfx[j]);
+
+					sreplaces++;
+					return true;
+				}
+			}
+		}
+		else if (name[1] == '_')
+		{
+			CONS_Debug(DBG_SETUP, "Music %.8s ignored\n", name);
+			mreplaces++;
+			return true;
+		}
+	}
+	else if (name[0] == 'O' && name[1] == '_')
+	{
+		CONS_Debug(DBG_SETUP, "Music %.8s replaced\n", name);
+		digmreplaces++;
+		return true;
+	}
+
+	return false;
+}
+
+//
+// search for maps
+//
+static boolean P_CheckMapReplacements(char *name)
+{
+	if (memcmp(name, "MAP", 3) == 0) // Ignore the headers
+	{
+		INT16 num;
+
+		if (name[5] != '\0')
+			return false;
+
+		num = (INT16)M_MapNumber(name[3], name[4]);
+
+		// we want to record whether this map exists. if it doesn't have a header, we can assume it's not relephant
+		if (num <= NUMMAPS && mapheaderinfo[num-1])
+		{
+			if (mapheaderinfo[num-1]->menuflags & LF2_EXISTSHACK)
+				G_SetGameModified(multiplayer, true); // oops, double-defined - no record attack privileges for you
+			mapheaderinfo[num-1]->menuflags |= LF2_EXISTSHACK;
+		}
+
+		if (num == gamemap)
+			partadd_replacescurrentmap = true;
+
+		CONS_Printf("%s\n", name);
+		return true;
+	}
+
+	return false;
+}
+
+//
+// check for non Lua votescreen replacements
+//
+static boolean P_CheckVoteReplacements(char *name)
+{
+	// widescreen patch Race
+	if (!VoteScreen.replaced.widerace && !memcmp(name, "INTERSCW", 8))
+	{
+		VoteScreen.replaced.widerace = true;
+		return false;
+	}
+
+	if (!VoteScreen.replaced.race && !memcmp(name, "INTERSCR", 8))
+	{
+		VoteScreen.replaced.race = true;
+		return false;
+	}
+
+	// widescreen patch Battle
+	if (!VoteScreen.replaced.widebattle && !memcmp(name, "BATTLSCW", 8))
+	{
+		VoteScreen.replaced.widebattle = true;
+		return false;
+	}
+
+	if (!VoteScreen.replaced.battle && !memcmp(name, "BATTLSCR", 8))
+	{
+		VoteScreen.replaced.battle = true;
+		return false;
+	}
+
+	if (VoteScreen.replaced.widerace && VoteScreen.replaced.race
+	&& VoteScreen.replaced.widebattle && VoteScreen.replaced.battle)
+	{
+		return true;
+	}
+
+	return false;
+}
 
 //
 // Add a WAD file and do the per-WAD setup stages.
@@ -3121,11 +3262,14 @@ boolean battlereplaced = false;
 //
 UINT16 P_PartialAddWadFile(const char *wadfilename, boolean local)
 {
-	size_t i, j, sreplaces = 0, mreplaces = 0, digmreplaces = 0;
+	size_t i;
 	UINT16 numlumps, wadnum;
 	char *name;
 	boolean mapsadded = false;
+	static boolean allvotereplaced = false;
 	lumpinfo_t *lumpinfo;
+
+	sreplaces = mreplaces = digmreplaces = 0;
 
 	if ((numlumps = W_InitFile(wadfilename, local)) == INT16_MAX)
 	{
@@ -3141,52 +3285,33 @@ UINT16 P_PartialAddWadFile(const char *wadfilename, boolean local)
 
 	wadfiles[wadnum]->localfile = local;
 
-	//
-	// search for sound replacements
-	//
 	lumpinfo = wadfiles[wadnum]->lumpinfo;
 	for (i = 0; i < numlumps; i++, lumpinfo++)
 	{
 		name = lumpinfo->name;
-		lumpnum_t lumpnum = i|(wadnum<<16);
 
-		if (name[0] == 'D')
+		if (P_CheckSoundReplacements(wadnum, name, i))
+			continue;
+
+		if (P_CheckMapReplacements(name))
 		{
-			if (name[1] == 'S') for (j = 1; j < NUMSFX; j++)
-			{
-				if (S_sfx[j].name && !strnicmp(S_sfx[j].name, name + 2, 6) && S_sfx[j].lumpnum != lumpnum && S_sfx[j].lumpnum != LUMPERROR)
-				{
-					// the sound will be reloaded when needed,
-					// since sfx->data will be NULL
-					CONS_Debug(DBG_SETUP, "Sound %.8s replaced\n", name);
-
-					I_FreeSfx(&S_sfx[j]);
-
-					// Re-cache it
-					if (S_PrecacheSound())
-						S_sfx[j].data = I_GetSfx(&S_sfx[j]);
-
-					sreplaces++;
-				}
-			}
-			else if (name[1] == '_')
-			{
-				CONS_Debug(DBG_SETUP, "Music %.8s ignored\n", name);
-				mreplaces++;
-			}
+			mapsadded = true;
+			continue;
 		}
-		else if (name[0] == 'O' && name[1] == '_')
-		{
-			CONS_Debug(DBG_SETUP, "Music %.8s replaced\n", name);
-			digmreplaces++;
-		}
+
+		if (!allvotereplaced && P_CheckVoteReplacements(name))
+			allvotereplaced = true;
 	}
+
 	if (!devparm && sreplaces)
 		CONS_Printf(M_GetText("%s sounds replaced\n"), sizeu1(sreplaces));
 	if (!devparm && mreplaces)
 		CONS_Printf(M_GetText("%s midi musics ignored\n"), sizeu1(mreplaces));
 	if (!devparm && digmreplaces)
 		CONS_Printf(M_GetText("%s digital musics replaced\n"), sizeu1(digmreplaces));
+
+	if (!mapsadded)
+		CONS_Printf(M_GetText("No maps added\n"));
 
 	//
 	// search for sprite replacements
@@ -3212,79 +3337,8 @@ UINT16 P_PartialAddWadFile(const char *wadfilename, boolean local)
 	//
 	S_LoadMusicDefs(wadnum);
 
-	//
-	// search for maps
-	//
-	lumpinfo = wadfiles[wadnum]->lumpinfo;
-	for (i = 0; i < numlumps; i++, lumpinfo++)
-	{
-		name = lumpinfo->name;
-
-		if (name[0] == 'M' && name[1] == 'A' && name[2] == 'P') // Ignore the headers
-		{
-			INT16 num;
-			if (name[5]!='\0')
-				continue;
-			num = (INT16)M_MapNumber(name[3], name[4]);
-
-			// we want to record whether this map exists. if it doesn't have a header, we can assume it's not relephant
-			if (num <= NUMMAPS && mapheaderinfo[num-1])
-			{
-				if (mapheaderinfo[num-1]->menuflags & LF2_EXISTSHACK)
-					G_SetGameModified(multiplayer, true); // oops, double-defined - no record attack privileges for you
-				mapheaderinfo[num-1]->menuflags |= LF2_EXISTSHACK;
-			}
-
-			if (num == gamemap)
-				partadd_replacescurrentmap = true;
-
-			CONS_Printf("%s\n", name);
-			mapsadded = true;
-		}
-	}
-	if (!mapsadded)
-		CONS_Printf(M_GetText("No maps added\n"));
-
 	// TODO: Experimental SPRTINFO support, test first
 	R_LoadSpriteInfoLumps(wadnum, wadfiles[wadnum]->numlumps);
-
-	//
-	// check for votescreen replacements
-	//
-	if (!wideracereplaced && !racereplaced && !widebattlereplaced && !battlereplaced)
-	{
-		lumpinfo = wadfiles[wadnum]->lumpinfo;
-		for (i = 0; i < numlumps; i++, lumpinfo++)
-		{
-			name = lumpinfo->name;
-
-			// widescreen patch Race
-			if (!wideracereplaced && !strncmp(name, "INTERSCW", 8))
-			{
-				wideracereplaced = true;
-				continue;
-			}
-
-			if (!racereplaced && !strncmp(name, "INTERSCR", 8))
-			{
-				racereplaced = true;
-				continue;
-			}
-
-			// widescreen patch Battle
-			if (!widebattlereplaced && !strncmp(name, "BATTLSCW", 8))
-			{
-				widebattlereplaced = true;
-				continue;
-			}
-
-			if (!battlereplaced && !strncmp(name, "BATTLSCR", 8))
-			{
-				battlereplaced = true;
-				continue;
-			}
-		}
-	}
 
 	refreshdirmenu &= ~REFRESHDIR_GAMEDATA; // Under usual circumstances we'd wait for REFRESHDIR_GAMEDATA to disappear the next frame, but it's a bit too dangerous for that...
 	partadd_stage = 0;

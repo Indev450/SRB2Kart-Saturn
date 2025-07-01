@@ -15,6 +15,10 @@
 #ifndef __M_MISC__
 #define __M_MISC__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "doomtype.h"
 #include "tables.h"
 
@@ -104,10 +108,20 @@ boolean M_IsPathAbsolute (const char *path);
 void    M_MkdirEach      (const char *path, int start, int mode);
 void    M_MkdirEachUntil (const char *path, int start, int end, int mode);
 
+/*
+Return dot and then the fractional part of a float, without
+trailing zeros, or "" if the fractional part is zero.
+*/
+const char * M_Ftrim (double);
+
 // counting bits, for weapon ammo code, usually
 FUNCMATH UINT8 M_CountBits(UINT32 num, UINT8 size);
 
 #include "w_wad.h"
 extern char configfile[MAX_WADPATH];
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif

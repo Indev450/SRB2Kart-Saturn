@@ -20,14 +20,14 @@
 #include "../doomdef.h"
 #include "../m_argv.h"
 #include "../d_main.h"
-#include "../m_misc.h"/* path shit */
+#include "../m_misc.h" /* path shit */
 #include "../i_system.h"
 
 #if defined (__GNUC__) || defined (__unix__)
 #include <unistd.h>
 #endif
 
-#ifdef __unix__
+#if defined (__unix__) || defined(__APPLE__) || defined (UNIXCOMMON)
 #include <errno.h>
 #endif
 

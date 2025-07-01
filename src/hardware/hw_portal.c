@@ -45,8 +45,8 @@ static gl_portal_t* HWR_Portal_Add (seg_t *seg)
 	// Linked list.
 	if (!currentportallist->base)
 	{
-		currentportallist->base	= portal;
-		currentportallist->cap	= portal;
+		currentportallist->base = portal;
+		currentportallist->cap  = portal;
 	}
 	else
 	{
@@ -66,6 +66,7 @@ void HWR_FreePortalList(gl_portallist_t freelist)
 
 	// free memory from portal list allocated by calls to Add2Lines
 	gl_portal_t *gl_portal_temp = freelist.base;
+
 	while (gl_portal_temp)
 	{
 		gl_portal_t *nextportal = gl_portal_temp->next;
@@ -125,8 +126,7 @@ void HWR_PortalFrame(gl_portal_t* portal)
 	if (portal->clipline != -1)
 	{
 		portalclipline = &lines[portal->clipline];
-		portalcullsector = portalclipline->frontsector;
-		viewsector = portalclipline->frontsector;
+		portalcullsector = viewsector = portalclipline->frontsector;
 	}
 	else
 	{
@@ -146,7 +146,7 @@ static void HWR_RenderPortalSeg(gl_portal_t* portal, SINT8 state)
 
 	gl_curline = portal->seg;
 	gl_frontsector = portal->seg->frontsector;
-	gl_backsector = portal->seg->backsector;
+	gl_backsector  = portal->seg->backsector;
 
 	HWR_ProcessSeg();
 	gl_drawing_stencil = false;
@@ -169,7 +169,7 @@ void HWR_RenderPortal(gl_portal_t* portal, gl_portal_t* rootportal, const float 
 	// go to portal frame lmao
 	HWR_PortalFrame(portal);
 	// call HWR_RenderViewpoint
-	HWR_RenderViewpoint(portal, fpov, player, stencil_level + 1, true);
+	HWR_RenderPortalViewpoint(portal, player, stencil_level + 1, true);
 	// return to current frame
 	if (rootportal)
 		HWR_PortalFrame(rootportal);
@@ -202,7 +202,9 @@ boolean HWR_PortalCheckPointSide(fixed_t x, fixed_t y)
 	// so first check if the point is precisely on the line, and then if not, check the side.
 
 	vertex_t closest_point;
+
 	P_ClosestPointOnLine(x, y, portalclipline, &closest_point);
+
 	if (closest_point.x != x || closest_point.y != y)
 	{
 		if (P_PointOnLineSide(x, y, portalclipline) != 1)

@@ -70,6 +70,7 @@
 #include "st_stuff.h"
 #include "i_sound.h"
 #include "k_kart.h" // SRB2kart
+#include "k_hud.h" // SRB2kart
 #include "k_stats.h" // SRB2kart
 #include "d_player.h" // KITEM_ constants
 
@@ -2188,29 +2189,30 @@ static menuitem_t OP_SaturnMenu[] =
 
 	{IT_STRING | IT_CVAR, NULL, "Minimum Input Delay", 					&cv_mindelay, 	 	 		 20},
 	{IT_STRING | IT_CVAR, NULL, "Gentlemens Ping", 						&cv_gentlemens, 	 	 	 25},
+	{IT_STRING | IT_CVAR, NULL, "Server Info Screen", 				    &cv_serverinfoscreen, 	 	 30},
 
-	{IT_STRING | IT_CVAR, NULL, "Skin Select Spinning Speed",		 	&cv_skinselectspin, 	 	 35},
+	{IT_STRING | IT_CVAR, NULL, "Skin Select Spinning Speed",		 	&cv_skinselectspin, 	 	 40},
 
-	{IT_STRING | IT_CVAR, NULL, "Colorized Speedlines", 				&cv_coloredspeedlines, 		 45},
-	{IT_STRING | IT_CVAR, NULL, "Colorized Sneakertrails", 				&cv_coloredsneakertrail, 	 50},
+	{IT_STRING | IT_CVAR, NULL, "Colorized Speedlines", 				&cv_coloredspeedlines, 		 50},
+	{IT_STRING | IT_CVAR, NULL, "Colorized Sneakertrails", 				&cv_coloredsneakertrail, 	 55},
 
-	{IT_STRING | IT_CVAR, NULL, "Player Blendeffects", 					&cv_playerblendeffects, 	 60},
+	{IT_STRING | IT_CVAR, NULL, "Player Blendeffects", 					&cv_playerblendeffects, 	 65},
 
-	{IT_STRING | IT_CVAR, NULL, "Bananadrag Jitter", 					&cv_bananajitter, 	 		 70},
+	{IT_STRING | IT_CVAR, NULL, "Bananadrag Jitter", 					&cv_bananajitter, 	 		 75},
 
-	{IT_STRING | IT_CVAR, NULL, "Midair Driftsparks", 					&cv_airsparks, 	 		 	 80},
+	{IT_STRING | IT_CVAR, NULL, "Midair Driftsparks", 					&cv_airsparks, 	 		 	 85},
 
-	{IT_STRING | IT_CVAR, NULL, "Show Localskin Menus", 				&cv_showlocalskinmenus, 	 90},
+	{IT_STRING | IT_CVAR, NULL, "Show Localskin Menus", 				&cv_showlocalskinmenus, 	 95},
 
-	{IT_STRING | IT_CVAR, NULL, "Uppercase Menu",						&cv_menucaps,   		    100},
+	{IT_STRING | IT_CVAR, NULL, "Uppercase Menu",						&cv_menucaps,   		    105},
 
-	{IT_STRING | IT_CVAR, NULL, "Keyboard Layout",						&cv_keyboardlayout,   	   	110},
+	{IT_STRING | IT_CVAR, NULL, "Keyboard Layout",						&cv_keyboardlayout,   	   	115},
 
-	{IT_STRING | IT_CVAR, NULL, "Less Midnight Channel Flicker", 		&cv_lessflicker, 		   	120},
+	{IT_STRING | IT_CVAR, NULL, "Less Midnight Channel Flicker", 		&cv_lessflicker, 		   	125},
 
-	{IT_SUBMENU|IT_STRING,	NULL,	"Saturn Hud...", 					&OP_SaturnHudDef,		   	130},
-	{IT_SUBMENU|IT_STRING,	NULL,	"Sprite Distortion...", 			&OP_PlayerDistortDef,	   	135},
-	{IT_SUBMENU|IT_STRING,	NULL,	"Saturn Credits", 					&OP_SaturnCreditsDef,	   	140}, // uwu
+	{IT_SUBMENU|IT_STRING,	NULL,	"Saturn Hud...", 					&OP_SaturnHudDef,		   	135},
+	{IT_SUBMENU|IT_STRING,	NULL,	"Sprite Distortion...", 			&OP_PlayerDistortDef,	   	140},
+	{IT_SUBMENU|IT_STRING,	NULL,	"Saturn Credits", 					&OP_SaturnCreditsDef,	   	145}, // uwu
 };
 
 static const char* OP_SaturnTooltips[] =
@@ -2219,6 +2221,7 @@ static const char* OP_SaturnTooltips[] =
 	"How long can the game wait before it kicks you out from the server\nconnecting screen.",
 	"Practice for online play! 0 = instant response.",
 	"Simulate online input delay when hosting a server.\nValue choosen by Player with the lowest ping",
+	"Show a screen before joining a server displaying important information about it",
 	"How much speen do you want?",
 	"Colourize the speedlines in your skincolor if you go fast enough!",
 	"Colourize the sneaker flame trails in your skincolor!",
@@ -2321,44 +2324,46 @@ static menuitem_t OP_SaturnHudMenu[] =
 {
 	{IT_HEADER, NULL, "Saturn Hud Options", NULL, 0},
 
-	{IT_STRING | IT_CVAR, NULL, "Speedometer Style",		 			&cv_newspeedometer, 	 	 10},
-	{IT_STRING | IT_CVAR, NULL, "Battle Speedometer",		 			&cv_battlespeedo, 	 	 	 15},
+	{IT_STRING|IT_CVAR,    NULL, "Speedometer Style",           &cv_newspeedometer,    10},
+	{IT_STRING|IT_CVAR,    NULL, "Battle Speedometer",          &cv_battlespeedo,      15},
 
-	{IT_STRING | IT_CVAR, NULL, "Colourized HUD",						&cv_colorizedhud,		 	 25},
-	{IT_STRING | IT_CVAR, NULL, "Colourized Itembox",					&cv_colorizeditembox,		 30},
-	{IT_STRING | IT_CVAR, NULL, "Colourized HUD Color",					&cv_colorizedhudcolor,		 35},
+	{IT_STRING|IT_CVAR,    NULL, "Colourized HUD",              &cv_colorizedhud,      25},
+	{IT_STRING|IT_CVAR,    NULL, "Colourized Itembox",          &cv_colorizeditembox,  30},
+	{IT_STRING|IT_CVAR,    NULL, "Colourized HUD Color",        &cv_colorizedhudcolor, 35},
 
-	{IT_STRING | IT_CVAR, NULL, "Input Display",		 				&cv_showinput, 	 			 45},
+	{IT_STRING|IT_CVAR,    NULL, "Input Display",               &cv_showinput,         45},
 
-	{IT_STRING | IT_CVAR, NULL, "Stat Display",		 					&cv_showstats, 	 			 55},
+	{IT_STRING|IT_CVAR,    NULL, "Stat Display",                &cv_showstats,         55},
 
-	{IT_STRING | IT_CVAR, NULL, "Higher Resolution Portraits",			&cv_highresportrait, 	 	 65},
+	{IT_STRING|IT_CVAR,    NULL, "Higher Resolution Portraits", &cv_highresportrait,   65},
 
-	{IT_STRING | IT_CVAR, NULL, "Small Positionnumber",		 			&cv_smallposnum, 	 		 75},
-	{IT_STRING | IT_CVAR, NULL, "Positionnumber Animation", 			&cv_posanim, 			 	 80},
+	{IT_STRING|IT_CVAR,    NULL, "Small Positionnumber",        &cv_smallposnum,       75},
+	{IT_STRING|IT_CVAR,    NULL, "Positionnumber Animation",    &cv_posanim,           80},
 
-	{IT_STRING | IT_CVAR, NULL, "Flash Lap Times",		 				&cv_showlaptimes, 	 		 90},
+	{IT_STRING|IT_CVAR,    NULL, "Flash Lap Times",             &cv_showlaptimes,      90},
 
-	{IT_STRING | IT_CVAR, NULL, "Multi-Item icons",		 			    &cv_multiitemicon, 	 		100},
-	{IT_STRING | IT_CVAR, NULL, "Item Amount Number",		 			&cv_huditemamount, 	 		105},
-	{IT_STRING | IT_CVAR, NULL, "Animated Roulette",		 			&cv_fancyroulette, 	 		110},
+	{IT_STRING|IT_CVAR,    NULL, "Multi-Item icons",            &cv_multiitemicon,    100},
+	{IT_STRING|IT_CVAR,    NULL, "Item Amount Number",          &cv_huditemamount,    105},
+	{IT_STRING|IT_CVAR,    NULL, "Animated Roulette",           &cv_fancyroulette,    110},
 
-	{IT_STRING | IT_CVAR, NULL, "Show Lap Emblem",		 				&cv_showlapemblem, 	 		120},
-	{IT_STRING | IT_CVAR, NULL, "Show Cecho Messages", 					&cv_cechotoggle, 			125},
+	{IT_STRING|IT_CVAR,    NULL, "Show Lap Emblem",             &cv_showlapemblem,    120},
+	{IT_STRING|IT_CVAR,    NULL, "Show Cecho Messages",         &cv_cechotoggle,      125},
 
-	{IT_STRING | IT_CVAR, NULL,	"Show Names on Minimap",   				&cv_showminimapnames, 		135},
-	{IT_STRING | IT_CVAR, NULL,	"Small Minimap Players",   				&cv_minihead, 				140},
-	{IT_STRING | IT_CVAR, NULL,	"Spin Minimap Icons", 			  		&cv_spinoutroll,      		145},
-	{IT_STRING | IT_CVAR, NULL,	"Player Angle Visual", 			  		&cv_showminimapangle,      	150},
+	{IT_STRING|IT_CVAR,    NULL, "Show Names on Minimap",       &cv_showminimapnames, 135},
+	{IT_STRING|IT_CVAR,    NULL, "Small Minimap Players",       &cv_minihead,         140},
+	{IT_STRING|IT_CVAR,    NULL, "Spin Minimap Icons",          &cv_spinoutroll,      145},
+	{IT_STRING|IT_CVAR,    NULL, "Player Angle Visual",         &cv_showminimapangle, 150},
 
-	{IT_STRING | IT_CVAR, NULL, "Beta Intermissionscreen", 				&cv_betainterscreen, 		160},
+	{IT_STRING|IT_CVAR,    NULL, "Music Credits",               &cv_songcredits,      160},
 
-	{IT_STRING | IT_CVAR, NULL,	"Show Director Prompt",   				&cv_showdirectorhud, 		170},
+	{IT_STRING|IT_CVAR,    NULL, "Beta Intermissionscreen",     &cv_betainterscreen,  170},
 
-	{IT_STRING | IT_SUBMENU, NULL, "Nametags...", 						&OP_NametagDef, 		   	180},
-	{IT_STRING | IT_SUBMENU, NULL, "Driftgauge...", 					&OP_DriftGaugeDef, 		   	185},
+	{IT_STRING|IT_CVAR,    NULL, "Show Director Prompt",        &cv_showdirectorhud,  180},
 
-	{IT_SUBMENU|IT_STRING,	NULL,	"Hud Offsets...", 					&OP_HudOffsetDef,		   	195},
+	{IT_STRING|IT_SUBMENU, NULL, "Nametags...",                 &OP_NametagDef,       190},
+	{IT_STRING|IT_SUBMENU, NULL, "Driftgauge...",               &OP_DriftGaugeDef,    195},
+
+	{IT_SUBMENU|IT_STRING, NULL, "Hud Offsets...",              &OP_HudOffsetDef,     205},
 };
 
 static const char* OP_SaturnHudTooltips[] =
@@ -2384,6 +2389,7 @@ static const char* OP_SaturnHudTooltips[] =
 	"Minimize the player icons on the minimap.",
 	"Erratically rotate player icons during spinouts.",
 	"Visualize the player facing angle.",
+	"Show the Music Credits and which style.",
 	"Make the Intermission screen look like in beta versions of Kart!\nEither with background or just the rest.",
 	"Show the Director Toggle prompt when spectating.",
 	"Nametag Options.",
@@ -2414,6 +2420,7 @@ enum
 	sh_smallmap,
 	sh_iconspinout,
 	sh_minidot,
+	sh_songcred,
 	sh_betainter,
 	sh_directorhud,
 	sh_nametagmen,
@@ -2466,39 +2473,38 @@ static menuitem_t OP_HudOffsetMenu[] =
 
 static menuitem_t OP_SaturnCreditsMenu[] =
 {
-	{IT_HEADER, NULL, "Saturn Credits", 												NULL,       0},
+	{IT_HEADER, NULL, "Thanks to all contributers <3", 									NULL,      0},
 
-	{IT_HEADER, NULL, "Thanks to all contributers <3", 									NULL,      7},
+	{IT_STRING2+IT_SPACE, NULL, 	"Alug",      										NULL, 	   10},
+	{IT_STRING2+IT_SPACE, NULL, 	"Indev",        									NULL,      20},
+	{IT_STRING2+IT_SPACE, NULL, 	"Haya",       										NULL,      30},
+	{IT_STRING2+IT_SPACE, NULL, 	"Nepdisk", 		 									NULL, 	   40},
+	{IT_STRING2+IT_SPACE, NULL, 	"GenericHeroGuy", 		 							NULL, 	   50},
+	{IT_STRING2+IT_SPACE, NULL, 	"xyzzy",     										NULL, 	   60},
+	{IT_STRING2+IT_SPACE, NULL, 	"Chearii", 		 									NULL, 	   70},
 
-	{IT_STRING2+IT_SPACE, NULL, 	"Alug",      										NULL, 	   17},
-	{IT_STRING2+IT_SPACE, NULL, 	"Indev",        									NULL,      27},
-	{IT_STRING2+IT_SPACE, NULL, 	"Haya",       										NULL,      37},
-	{IT_STRING2+IT_SPACE, NULL, 	"Nepdisk", 		 									NULL, 	   47},
-	{IT_STRING2+IT_SPACE, NULL, 	"GenericHeroGuy", 		 							NULL, 	   57},
-	{IT_STRING2+IT_SPACE, NULL, 	"xyzzy",     										NULL, 	   67},
-	{IT_STRING2+IT_SPACE, NULL, 	"Chearii", 		 									NULL, 	   77},
+	{IT_STRING2+IT_SPACE, NULL, 	"Sunflower", 		 								NULL, 	   80},
+	{IT_STRING2+IT_SPACE, NULL, 	"Yuz", 		  										NULL, 	   90},
+	{IT_STRING2+IT_SPACE, NULL, 	"Democrab", 		  								NULL, 	  100},
+	{IT_STRING2+IT_SPACE, NULL, 	"EXpand", 		 									NULL, 	  110},
+	{IT_STRING2+IT_SPACE, NULL, 	"Nexit", 		 									NULL, 	  120},
+	{IT_STRING2+IT_SPACE, NULL, 	"Spee", 		 									NULL, 	  130},
+	{IT_STRING2+IT_SPACE, NULL, 	"jin", 		 										NULL, 	  140},
+	{IT_STRING2+IT_SPACE, NULL, 	"riomccloud", 		 								NULL, 	  150},
+	{IT_STRING2+IT_SPACE, NULL, 	"chromaticpipe", 		 							NULL, 	  160},
+	{IT_STRING2+IT_SPACE, NULL, 	"Achii", 		 									NULL, 	  170},
+	{IT_STRING2+IT_SPACE, NULL, 	"Anonimus", 		 								NULL, 	  180},
+	{IT_STRING2+IT_SPACE, NULL, 	"scizor300", 		 								NULL, 	  190},
+	{IT_STRING2+IT_SPACE, NULL, 	"Lugent", 		 									NULL, 	  200},
 
-	{IT_STRING2+IT_SPACE, NULL, 	"Sunflower aka AnimeSonic", 		 				NULL, 	   87},
-	{IT_STRING2+IT_SPACE, NULL, 	"Yuz aka Yuzler", 		  							NULL, 	   97},
-	{IT_STRING2+IT_SPACE, NULL, 	"Democrab", 		  								NULL, 	  107},
-	{IT_STRING2+IT_SPACE, NULL, 	"EXpand", 		 									NULL, 	  117},
-	{IT_STRING2+IT_SPACE, NULL, 	"Nexit", 		 									NULL, 	  127},
-	{IT_STRING2+IT_SPACE, NULL, 	"Spee", 		 									NULL, 	  137},
-	{IT_STRING2+IT_SPACE, NULL, 	"jin", 		 										NULL, 	  147},
-	{IT_STRING2+IT_SPACE, NULL, 	"riomccloud", 		 								NULL, 	  157},
-	{IT_STRING2+IT_SPACE, NULL, 	"chromaticpipe", 		 							NULL, 	  167},
-	{IT_STRING2+IT_SPACE, NULL, 	"Achii", 		 									NULL, 	  177},
-	{IT_STRING2+IT_SPACE, NULL, 	"Anonimus", 		 								NULL, 	  187},
-	{IT_STRING2+IT_SPACE, NULL, 	"scizor300", 		 								NULL, 	  197},
+	{IT_HEADER, 		  NULL, 	"Special Thanks <3", 								NULL,     168},
 
-	{IT_HEADER, 		  NULL, 	"Special Thanks <3", 								NULL,     167},
+	{IT_STRING2+IT_SPACE, NULL,		"All of Sunflower's Garden",	      				NULL,     178},
+	{IT_STRING2+IT_SPACE, NULL, 	"The Moe Mansion and Birdhouse Team",       		NULL,     188},
+	{IT_STRING2+IT_SPACE, NULL, 	"Galactice for Galaxy",       						NULL,     198},
 
-	{IT_STRING2+IT_SPACE, NULL,		"All of Sunflower's Garden",	      				NULL,     177},
-	{IT_STRING2+IT_SPACE, NULL, 	"The Moe Mansion and Birdhouse Team",       		NULL,     187},
-	{IT_STRING2+IT_SPACE, NULL, 	"Galactice for Galaxy",       						NULL,     197},
-
-	{IT_STRING+IT_SPACE, NULL, "", 														NULL,     207},	// dummy text I
-	{IT_STRING, NULL, "", 																NULL,     267},	// dummy text II
+	{IT_STRING+IT_SPACE, NULL, "", 														NULL,     198},	// dummy text I
+	{IT_STRING, NULL, "", 																NULL,     258},	// dummy text II
 };
 
 // sry we dont have space for this anymore :/
@@ -3600,8 +3606,8 @@ static void M_ChangeCvar(INT32 choice)
 		char s[20];
 		float increment;
 
-		increment = (currentMenu->menuitems[itemOn].status & IT_CV_BIGFLOAT) ? 0.5f : (1.0f/16.0f);
-		sprintf(s, "%f",FIXED_TO_FLOAT(cv->value)+(choice)*increment);
+		increment = FIXED_TO_FLOAT(cv->value)+(choice)*((currentMenu->menuitems[itemOn].status & IT_CV_BIGFLOAT) ? 0.5f : (1.0f/16.0f));
+		sprintf(s,"%ld%s",(long)increment,M_Ftrim(increment));
 		CV_Set(cv, s);
 	}
 	else
@@ -7133,7 +7139,7 @@ static void DrawReplayHutReplayInfo(void)
 
 	case MD_OUTDATED:
 		V_DrawThinString(17, 64, V_SNAPTOTOP|V_ALLOWLOWERCASE|V_TRANSLUCENT|highlightflags, va("Recorded on an outdated version. %s", demolist[dir_on[menudepthleft]].version));
-		/*fallthru*/
+		/* FALLTHRU */
 	default:
 		// Draw level stuff
 		x = 15; y = 15;
@@ -7167,8 +7173,11 @@ static void DrawReplayHutReplayInfo(void)
 		if (mapheaderinfo[demolist[dir_on[menudepthleft]].map-1])
 		{
 			char *title = G_BuildMapTitle(demolist[dir_on[menudepthleft]].map);
-			V_DrawString(x, y, V_SNAPTOTOP|MENUCAPS, title);
-			Z_Free(title);
+			if (title)
+			{
+				V_DrawString(x, y, V_SNAPTOTOP|MENUCAPS, title);
+				Z_Free(title);
+			}
 		}
 		else
 			V_DrawString(x, y, V_SNAPTOTOP|V_ALLOWLOWERCASE|V_TRANSLUCENT, "Level is not loaded.");
@@ -8120,6 +8129,9 @@ UINT8 skyRoomMenuTranslations[MAXUNLOCKABLES];
 
 static char *M_GetConditionString(condition_t cond)
 {
+	char *title = NULL;
+	char *response = NULL;
+
 	switch(cond.type)
 	{
 		case UC_PLAYTIME:
@@ -8146,33 +8158,45 @@ static char *M_GetConditionString(condition_t cond)
 				G_TicsToSeconds(cond.requirement));
 		case UC_MAPVISITED:
 		{
-			char *title = G_BuildMapTitle(cond.requirement-1);
-			char *response = va("Visit %s", title);
-			Z_Free(title);
+			title = G_BuildMapTitle(cond.requirement-1);
+			if (title)
+			{
+				response = va("Visit %s", title);
+				Z_Free(title);
+			}
 			return response;
 		}
 		case UC_MAPBEATEN:
 		{
-			char *title = G_BuildMapTitle(cond.requirement-1);
-			char *response = va("Beat %s", title);
-			Z_Free(title);
+			title = G_BuildMapTitle(cond.requirement-1);
+			if (title)
+			{
+				response = va("Beat %s", title);
+				Z_Free(title);
+			}
 			return response;
 		}
 		case UC_MAPALLEMERALDS:
 		{
-			char *title = G_BuildMapTitle(cond.requirement-1);
-			char *response = va("Beat %s w/ all emeralds", title);
-			Z_Free(title);
+			title = G_BuildMapTitle(cond.requirement-1);
+			if (title)
+			{
+				response = va("Beat %s w/ all emeralds", title);
+				Z_Free(title);
+			}
 			return response;
 		}
 		case UC_MAPTIME:
 		{
-			char *title = G_BuildMapTitle(cond.extrainfo1-1);
-			char *response = va("Beat %s in %i:%02i.%02i", title,
-				G_TicsToMinutes(cond.requirement, true),
-				G_TicsToSeconds(cond.requirement),
-				G_TicsToCentiseconds(cond.requirement));
-			Z_Free(title);
+			title = G_BuildMapTitle(cond.extrainfo1-1);
+			if (title)
+			{
+				response = va("Beat %s in %i:%02i.%02i", title,
+					G_TicsToMinutes(cond.requirement, true),
+					G_TicsToSeconds(cond.requirement),
+					G_TicsToCentiseconds(cond.requirement));
+				Z_Free(title);
+			}
 			return response;
 		}
 		case UC_TOTALEMBLEMS:
@@ -8458,7 +8482,7 @@ static void M_MusicTest(INT32 choice)
 {
 	(void)choice;
 
-	if (!S_PrepareSoundTest())
+	if (!nummusicdefs)
 	{
 		M_StartMessage(M_GetText("No selectable tracks found.\n"),NULL,MM_NOTHING);
 		return;
@@ -8537,33 +8561,33 @@ static void M_DrawMusicTest(void)
 	{
 		INT32 t, b, q, m = 128;
 
-		if (numsoundtestdefs <= 8)
+		if (nummusicdefs <= 8)
 		{
 			t = 0;
-			b = numsoundtestdefs - 1;
+			b = nummusicdefs - 1;
 			i = 0;
 		}
 		else
 		{
 			q = m;
-			m = (5*m)/numsoundtestdefs;
+			m = (5*m)/nummusicdefs;
 			if (st_sel < 3)
 			{
 				t = 0;
 				b = 7;
 				i = 0;
 			}
-			else if (st_sel >= numsoundtestdefs-4)
+			else if (st_sel >= nummusicdefs-4)
 			{
-				t = numsoundtestdefs - 8;
-				b = numsoundtestdefs - 1;
+				t = nummusicdefs - 8;
+				b = nummusicdefs - 1;
 				i = q-m;
 			}
 			else
 			{
 				t = st_sel - 3;
 				b = st_sel + 4;
-				i = (t * (q-m))/(numsoundtestdefs - 8);
+				i = (t * (q-m))/(nummusicdefs - 8);
 			}
 		}
 
@@ -8572,7 +8596,7 @@ static void M_DrawMusicTest(void)
 		if (t != 0)
 			V_DrawString(20+280+4, 60+4 - (skullAnimCounter/5), V_YELLOWMAP, "\x1A");
 
-		if (b != numsoundtestdefs - 1)
+		if (b != nummusicdefs - 1)
 			V_DrawString(20+280+4, 60+128-12 + (skullAnimCounter/5), V_YELLOWMAP, "\x1B");
 
 		x = 24;
@@ -8586,8 +8610,9 @@ static void M_DrawMusicTest(void)
 				V_DrawFill(20, y-4, 280-1, 16, 237);
 
 			{
+				const musicdef_t *def = S_GetMusicCredit(t);
 				const size_t MAXLENGTH = 34;
-				const char *songname = soundtestdefs[t]->title[0] ? soundtestdefs[t]->title : soundtestdefs[t]->source;
+				const char *songname = def->title[0] ? def->title : def->source;
 
 				size_t namelength = strlen(songname);
 
@@ -8600,7 +8625,7 @@ static void M_DrawMusicTest(void)
 				buf[MAXLENGTH] = 0;
 
 				V_DrawString(x, y, (t == st_sel ? V_YELLOWMAP : 0)|V_ALLOWLOWERCASE|V_MONOSPACE, buf);
-				if (curplaying == soundtestdefs[t])
+				if (curplaying == def)
 				{
 					V_DrawFill(20+280-9, y-4, 8, 16, 230);
 				}
@@ -8618,7 +8643,7 @@ static void M_HandleMusicTest(INT32 choice)
 	switch (choice)
 	{
 		case KEY_DOWNARROW:
-			if (st_sel++ >= numsoundtestdefs-1)
+			if (st_sel++ >= nummusicdefs-1)
 				st_sel = 0;
 			{
 				S_StartSound(NULL, sfx_menu1);
@@ -8627,18 +8652,18 @@ static void M_HandleMusicTest(INT32 choice)
 			break;
 		case KEY_UPARROW:
 			if (!st_sel--)
-				st_sel = numsoundtestdefs-1;
+				st_sel = nummusicdefs-1;
 			{
 				S_StartSound(NULL, sfx_menu1);
 			}
 			st_musictime = 0;
 			break;
 		case KEY_PGDN:
-			if (st_sel < numsoundtestdefs-1)
+			if (st_sel < nummusicdefs-1)
 			{
 				st_sel += 3;
-				if (st_sel >= numsoundtestdefs-1)
-					st_sel = numsoundtestdefs-1;
+				if (st_sel >= nummusicdefs-1)
+					st_sel = nummusicdefs-1;
 				S_StartSound(NULL, sfx_menu1);
 			}
 			st_musictime = 0;
@@ -8672,7 +8697,7 @@ static void M_HandleMusicTest(INT32 choice)
 		case KEY_ENTER:
 			S_StopSounds();
 			S_StopMusic();
-			curplaying = soundtestdefs[st_sel];
+			curplaying = S_GetMusicCredit(st_sel);
 			S_ChangeMusicInternal(curplaying->name, true);
 			break;
 
@@ -8681,9 +8706,6 @@ static void M_HandleMusicTest(INT32 choice)
 	}
 	if (exitmenu)
 	{
-		Z_Free(soundtestdefs);
-		soundtestdefs = NULL;
-
 		if (currentMenu->prevMenu)
 			M_SetupNextMenu(currentMenu->prevMenu);
 		else

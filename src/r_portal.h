@@ -14,10 +14,14 @@
 #ifndef __R_PORTAL__
 #define __R_PORTAL__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "r_data.h"
+#include "r_plane.h" // visplanes
 
-
-/** Portal structure.
+/** Portal structure for the software renderer.
  */
 typedef struct portal_s
 {
@@ -53,5 +57,12 @@ void Portal_Remove		(portal_t* portal);
 void Portal_Add2Lines	(const INT32 line1, const INT32 line2, const INT32 x1, const INT32 x2);
 
 void Portal_ClipApply (const portal_t* portal);
+
+void Portal_AddSkybox(const visplane_t* plane);
+void Portal_AddSkyboxPortals(void);
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif

@@ -96,12 +96,12 @@ void HWR_DrawPatch(patch_t *gpatch, INT32 x, INT32 y, INT32 option)
 		pdupx = pdupy = 2.0f;
 		break;
 	case V_SMALLSCALEPATCH:
-		pdupx = 2.0f * FIXED_TO_FLOAT(vid.fsmalldupx);
-		pdupy = 2.0f * FIXED_TO_FLOAT(vid.fsmalldupy);
+		pdupx = 2.0f * FIXED_TO_FLOAT(vid.smalldupx*FRACUNIT);
+		pdupy = 2.0f * FIXED_TO_FLOAT(vid.smalldupy*FRACUNIT);
 		break;
 	case V_MEDSCALEPATCH:
-		pdupx = 2.0f * FIXED_TO_FLOAT(vid.fmeddupx);
-		pdupy = 2.0f * FIXED_TO_FLOAT(vid.fmeddupy);
+		pdupx = 2.0f * FIXED_TO_FLOAT(vid.meddupx*FRACUNIT);
+		pdupy = 2.0f * FIXED_TO_FLOAT(vid.meddupx*FRACUNIT);
 		break;
 	}
 
@@ -241,16 +241,16 @@ void HWR_DrawStretchyFixedPatch(patch_t *gpatch, fixed_t x, fixed_t y, fixed_t p
 				if (option & V_SNAPTORIGHT)
 					cx += (fvw - (FLOATBASEVIDWIDTH * dupx));
 				else if (!(option & V_SNAPTOLEFT))
-					cx += (fvw - (FLOATBASEVIDWIDTH * dupx))/2;
+					cx += (fvw - (FLOATBASEVIDWIDTH * dupx))/2.0f;
 			}
 			if (fabsf(fvh - FLOATBASEVIDHEIGHT * dupy) > 1.0E-36f)
 			{
 				if ((option & (V_SPLITSCREEN|V_SNAPTOTOP)) == (V_SPLITSCREEN|V_SNAPTOTOP))
-					cy += (fvh/2 - (FLOATBASEVIDHEIGHT/2 * dupy));
+					cy += (fvh/2.0f - (FLOATBASEVIDHEIGHT/2.0f * dupy));
 				else if (option & V_SNAPTOBOTTOM)
 					cy += (fvh - (FLOATBASEVIDHEIGHT * dupy));
 				else if (!(option & V_SNAPTOTOP))
-					cy += (fvh - (FLOATBASEVIDHEIGHT * dupy))/2;
+					cy += (fvh - (FLOATBASEVIDHEIGHT * dupy))/2.0f;
 			}
 		}
 	}
@@ -305,10 +305,13 @@ void HWR_DrawStretchyFixedPatch(patch_t *gpatch, fixed_t x, fixed_t y, fixed_t p
 		FSurfaceInfo Surf;
 		Surf.PolyColor.s.red = Surf.PolyColor.s.green = Surf.PolyColor.s.blue = 0xff;
 
-		if (alphalevel == 13) Surf.PolyColor.s.alpha = softwaretranstogl_lo[hudtrans];
-		else if (alphalevel == 14) Surf.PolyColor.s.alpha = softwaretranstogl[hudtrans];
-		else if (alphalevel == 15) Surf.PolyColor.s.alpha = softwaretranstogl_hi[hudtrans];
-		else Surf.PolyColor.s.alpha = softwaretranstogl[10-alphalevel];
+		switch (alphalevel)
+		{
+			case 13: Surf.PolyColor.s.alpha = softwaretranstogl_lo[hudtrans];   break;
+			case 14: Surf.PolyColor.s.alpha = softwaretranstogl[hudtrans];      break;
+			case 15: Surf.PolyColor.s.alpha = softwaretranstogl_hi[hudtrans];   break;
+			default: Surf.PolyColor.s.alpha = softwaretranstogl[10-alphalevel]; break;
+		}
 
 		flags |= PF_Modulated;
 		GL_DrawPolygon(&Surf, v, 4, flags);
@@ -392,16 +395,16 @@ void HWR_DrawCroppedPatch(patch_t *gpatch, fixed_t x, fixed_t y, fixed_t pscale,
 				if (option & V_SNAPTORIGHT)
 					cx += (fvw - (FLOATBASEVIDWIDTH * dupx));
 				else if (!(option & V_SNAPTOLEFT))
-					cx += (fvw - (FLOATBASEVIDWIDTH * dupx))/2;
+					cx += (fvw - (FLOATBASEVIDWIDTH * dupx))/2.0f;
 			}
 			if (fabsf(fvh - FLOATBASEVIDHEIGHT * dupy) > 1.0E-36f)
 			{
 				if ((option & (V_SPLITSCREEN|V_SNAPTOTOP)) == (V_SPLITSCREEN|V_SNAPTOTOP))
-					cy += (fvh/2 - (FLOATBASEVIDHEIGHT/2 * dupy));
+					cy += (fvh/2.0f - (FLOATBASEVIDHEIGHT/2.0f * dupy));
 				else if (option & V_SNAPTOBOTTOM)
 					cy += (fvh - (FLOATBASEVIDHEIGHT * dupy));
 				else if (!(option & V_SNAPTOTOP))
-					cy += (fvh - (FLOATBASEVIDHEIGHT * dupy))/2;
+					cy += (fvh - (FLOATBASEVIDHEIGHT * dupy))/2.0f;
 			}
 		}
 	}
@@ -467,10 +470,13 @@ void HWR_DrawCroppedPatch(patch_t *gpatch, fixed_t x, fixed_t y, fixed_t pscale,
 		FSurfaceInfo Surf;
 		Surf.PolyColor.s.red = Surf.PolyColor.s.green = Surf.PolyColor.s.blue = 0xff;
 
-		if (alphalevel == 13) Surf.PolyColor.s.alpha = softwaretranstogl_lo[cv_translucenthud.value];
-		else if (alphalevel == 14) Surf.PolyColor.s.alpha = softwaretranstogl[cv_translucenthud.value];
-		else if (alphalevel == 15) Surf.PolyColor.s.alpha = softwaretranstogl_hi[cv_translucenthud.value];
-		else Surf.PolyColor.s.alpha = softwaretranstogl[10-alphalevel];
+		switch (alphalevel)
+		{
+			case 13: Surf.PolyColor.s.alpha = softwaretranstogl_lo[cv_translucenthud.value]; break;
+			case 14: Surf.PolyColor.s.alpha = softwaretranstogl[cv_translucenthud.value];    break;
+			case 15: Surf.PolyColor.s.alpha = softwaretranstogl_hi[cv_translucenthud.value]; break;
+			default: Surf.PolyColor.s.alpha = softwaretranstogl[10-alphalevel];              break;
+		}
 
 		flags |= PF_Modulated;
 		GL_DrawPolygon(&Surf, v, 4, flags);
@@ -487,7 +493,7 @@ void HWR_DrawCroppedPatch(patch_t *gpatch, fixed_t x, fixed_t y, fixed_t pscale,
 // --------------------------------------------------------------------------
 // Fills a box of pixels using a flat texture as a pattern
 // --------------------------------------------------------------------------
-void HWR_DrawFlatFill (INT32 x, INT32 y, INT32 w, INT32 h, lumpnum_t flatlumpnum)
+void HWR_DrawFlatFill(INT32 x, INT32 y, INT32 w, INT32 h, lumpnum_t flatlumpnum)
 {
 	FOutVector  v[4];
 	double dflatsize;
@@ -840,7 +846,7 @@ void HWR_DrawDiag(INT32 x, INT32 y, INT32 wh, INT32 color)
 			if (color & V_SNAPTORIGHT)
 				fx += (fvw - (FLOATBASEVIDWIDTH * dupx));
 			else if (!(color & V_SNAPTOLEFT))
-				fx += (fvw - (FLOATBASEVIDWIDTH * dupx)) / 2;
+				fx += (fvw - (FLOATBASEVIDWIDTH * dupx)) / 2.0f;
 		}
 		if (fabsf(fvh - (FLOATBASEVIDHEIGHT * dupy)) > 1.0E-36f)
 		{
@@ -848,7 +854,7 @@ void HWR_DrawDiag(INT32 x, INT32 y, INT32 wh, INT32 color)
 			if (color & V_SNAPTOBOTTOM)
 				fy += (fvh - (FLOATBASEVIDHEIGHT * dupy));
 			else if (!(color & V_SNAPTOTOP))
-				fy += (fvh - (FLOATBASEVIDHEIGHT * dupy)) / 2;
+				fy += (fvh - (FLOATBASEVIDHEIGHT * dupy)) / 2.0f;
 		}
 	}
 
@@ -1122,10 +1128,13 @@ void HWR_DrawFill(INT32 x, INT32 y, INT32 w, INT32 h, INT32 color)
 
 	if (alphalevel)
 	{
-		if (alphalevel == 13) Surf.PolyColor.s.alpha = softwaretranstogl_lo[hudtrans];
-		else if (alphalevel == 14) Surf.PolyColor.s.alpha = softwaretranstogl[hudtrans];
-		else if (alphalevel == 15) Surf.PolyColor.s.alpha = softwaretranstogl_hi[hudtrans];
-		else Surf.PolyColor.s.alpha = softwaretranstogl[10-alphalevel];
+		switch (alphalevel)
+		{
+			case 13: Surf.PolyColor.s.alpha = softwaretranstogl_lo[hudtrans];   break;
+			case 14: Surf.PolyColor.s.alpha = softwaretranstogl[hudtrans];      break;
+			case 15: Surf.PolyColor.s.alpha = softwaretranstogl_hi[hudtrans];   break;
+			default: Surf.PolyColor.s.alpha = softwaretranstogl[10-alphalevel]; break;
+		}
 	}
 
 	GL_DrawPolygon(&Surf, v, 4, PF_NoTexture|PF_Modulated|PF_Translucent|PF_NoDepthTest);

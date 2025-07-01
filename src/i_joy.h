@@ -13,6 +13,10 @@
 #ifndef __I_JOY_H__
 #define __I_JOY_H__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "g_input.h"
 
 /*!
@@ -54,5 +58,9 @@ typedef struct JoyType_s JoyType_t;
 */
 
 extern JoyType_t Joystick[MAXSPLITSCREENPLAYERS];
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif // __I_JOY_H__

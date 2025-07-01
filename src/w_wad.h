@@ -14,6 +14,10 @@
 #ifndef __W_WAD__
 #define __W_WAD__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #ifdef HWRENDER
 #include "hardware/hw_data.h"
 #endif
@@ -232,5 +236,9 @@ void W_VerifyFileMD5(UINT16 wadfilenum, const char *matchmd5);
 int W_VerifyNMUSlumps(const char *filename);
 
 int W_CheckPostLoadList(const char *filename);
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif // __W_WAD__

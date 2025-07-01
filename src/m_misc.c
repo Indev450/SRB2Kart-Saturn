@@ -14,6 +14,10 @@
 
 #ifdef __GNUC__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #if (__GNUC__ > 4) || (__GNUC__ == 4 && __GNUC_MINOR__ >= 3)
 // Ignore "argument might be clobbered by longjmp" warning in GCC
 // (if libpng is compiled with setjmp error handling)
@@ -55,10 +59,11 @@
 
 #ifdef HAVE_SDL
 #include "sdl/hwsym_sdl.h"
+#endif
+
 #ifdef __linux__
 #ifndef _LARGEFILE64_SOURCE
 typedef off_t off64_t;
-#endif
 #endif
 #endif
 
@@ -1059,7 +1064,7 @@ static boolean M_SetupaPNG(png_const_charp filename, png_bytep pal)
 	png_init_io(apng_ptr, apng_FILE);
 
 #ifdef PNG_SET_USER_LIMITS_SUPPORTED
-	png_set_user_limits(apng_ptr, MAXPNGWIDTH, MAXPNGHEIGHT);
+	png_set_user_limits(apng_ptr, MAXVIDWIDTH, MAXVIDHEIGHT);
 #endif
 
 	//png_set_filter(apng_ptr, 0, PNG_ALL_FILTERS);
@@ -1236,7 +1241,7 @@ void M_SaveFrame(void)
 				if (rendermode == render_soft)
 				{
 					// munge planar buffer to linear
-					linear = screens[2];
+					linear = vid.screens[2];
 					I_ReadScreen(linear);
 				}
 #ifdef HWRENDER
@@ -1374,7 +1379,7 @@ boolean M_SavePNG(const char *filename, void *data, int width, int height, const
 	png_init_io(png_ptr, png_FILE);
 
 #ifdef PNG_SET_USER_LIMITS_SUPPORTED
-	png_set_user_limits(png_ptr, MAXPNGWIDTH, MAXPNGHEIGHT);
+	png_set_user_limits(png_ptr, MAXVIDWIDTH, MAXVIDHEIGHT);
 #endif
 
 	//png_set_filter(png_ptr, 0, PNG_ALL_FILTERS);
@@ -1538,7 +1543,7 @@ void M_DoScreenShot(void)
 	if (rendermode == render_soft)
 	{
 		// munge planar buffer to linear
-		linear = screens[2];
+		linear = vid.screens[2];
 		I_ReadScreen(linear);
 	}
 
@@ -1917,6 +1922,25 @@ char *M_GetToken(const char *inputString)
 	return texturesToken;
 }
 
+
+const char * M_Ftrim (double f)
+{
+	static char dig[9];/* "0." + 6 digits (6 is printf's default) */
+	int i;
+	/* I know I said it's the default, but just in case... */
+	sprintf(dig, "%.6f", fabs(modf(f, &f)));
+	/* trim trailing zeroes */
+	for (i = strlen(dig)-1; dig[i] == '0'; --i)
+		;
+	if (dig[i] == '.')/* :NOTHING: */
+		return "";
+	else
+	{
+		dig[i + 1] = '\0';
+		return &dig[1];/* skip the 0 */
+	}
+}
+
 /** Count bits in a number.
   */
 UINT8 M_CountBits(UINT32 num, UINT8 size)
@@ -2142,3 +2166,8 @@ void M_MkdirEach(const char *path, int start, int mode)
 {
 	M_MkdirEachUntil(path, start, -1, mode);
 }
+
+
+#ifdef __cplusplus
+} // extern "C"
+#endif

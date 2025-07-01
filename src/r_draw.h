@@ -14,72 +14,143 @@
 #ifndef __R_DRAW__
 #define __R_DRAW__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "r_defs.h"
 #include "r_things.h"
+#include "r_skins.h"
 
 // -------------------------------
 // COMMON STUFF FOR 8bpp AND 16bpp
 // -------------------------------
-extern UINT8 *ylookup[MAXVIDHEIGHT*4];
-extern UINT8 *ylookup1[MAXVIDHEIGHT*4];
-extern UINT8 *ylookup2[MAXVIDHEIGHT*4];
-extern UINT8 *ylookup3[MAXVIDHEIGHT*4];
-extern UINT8 *ylookup4[MAXVIDHEIGHT*4];
-extern INT32 columnofs[MAXVIDWIDTH*4];
-extern UINT8 *topleft;
+extern UINT8 *renderscreen;
+extern INT32 linesize;
 
-// -------------------------
-// COLUMN DRAWING CODE STUFF
-// -------------------------
+FUNCINLINE static ATTRINLINE UINT8 *R_Address(INT32 px, INT32 py)
+{
+	return renderscreen + (py + viewwindowy) * linesize + (viewwindowx + px);
+}
 
-extern lighttable_t *dc_colormap;
-extern INT32 dc_x, dc_yl, dc_yh;
-extern fixed_t dc_iscale, dc_texturemid;
-extern UINT8 dc_hires;
-
-extern UINT8 *dc_source; // first pixel in a column
-
-// translucency stuff here
-extern UINT8 *dc_transmap;
-
-// translation stuff here
-
-extern UINT8 *dc_translation;
-
-extern struct r_lightlist_s *dc_lightlist;
-extern INT32 dc_numlights, dc_maxlights;
-
-//Fix TUTIFRUTI
-extern INT32 dc_texheight;
-
-// -----------------------
-// SPAN DRAWING CODE STUFF
-// -----------------------
-
-extern INT32 ds_y, ds_x1, ds_x2;
-extern lighttable_t *ds_colormap;
-extern fixed_t ds_xfrac, ds_yfrac, ds_xstep, ds_ystep;
-extern INT32 ds_waterofs, ds_bgofs;
-extern UINT8 *ds_source; // start of a 64*64 tile image
-extern INT32 dc_sourcelength;
-extern UINT8 *ds_transmap;
-
-extern INT32 ds_bgofs;
 
 typedef struct {
 	float x, y, z;
 } floatv3_t;
 
+typedef struct
+{
+	INT32 y;
+	INT32 x1;
+	INT32 x2;
+	lighttable_t* colormap;
+	lighttable_t* translation;
+
+	fixed_t xfrac;
+	fixed_t yfrac;
+	fixed_t xstep;
+	fixed_t ystep;
+	INT32 waterofs;
+	INT32 bgofs;
+
+	fixed_t xoffs;
+	fixed_t yoffs;
+
+	visplane_t *currentplane;
+	UINT8 *source;
+	UINT8 *transmap;
+
+	float zeroheight;
+
+	// Vectors for Software's tilted slope drawers
+	floatv3_t sup;
+	floatv3_t svp;
+	floatv3_t szp;
+	floatv3_t slope_origin;
+	floatv3_t slope_u;
+	floatv3_t slope_v;
+
+	// Variable flat sizes
+	UINT32 nflatxshift;
+	UINT32 nflatyshift;
+	UINT32 nflatshiftup;
+	UINT32 nflatmask;
+
+	fixed_t planeheight;
+	lighttable_t **planezlight;
+
+	//
+	// Water ripple effect
+	// Needs the height of the plane, and the vertical position of the span.
+	// Sets planeripple.xfrac and planeripple.yfrac, added to ds_xfrac and ds_yfrac, if the span is not tilted.
+	//
+	struct
+	{
+		INT32 offset;
+		fixed_t xfrac, yfrac;
+		boolean active;
+	} planeripple;
+} drawspandata_t;
+
+extern drawspandata_t g_ds;
+
+// Draws a single visplane.
+void R_DrawSinglePlane(drawspandata_t* ds, visplane_t *pl, boolean allow_parallel);
+
 // Vectors for Software's tilted slope drawers
 extern floatv3_t *ds_su, *ds_sv, *ds_sz;
-extern floatv3_t *ds_sup, *ds_svp, *ds_szp;
-extern float focallengthf, zeroheight;
 
-// Variable flat sizes
-extern UINT32 nflatxshift;
-extern UINT32 nflatyshift;
-extern UINT32 nflatshiftup;
-extern UINT32 nflatmask;
+extern float focallengthf;
+
+
+typedef void (coldrawfunc_t)(drawcolumndata_t*);
+typedef void (spandrawfunc_t)(drawspandata_t*);
+
+#define BASEDRAWFUNC 0
+
+enum
+{
+	COLDRAWFUNC_BASE = BASEDRAWFUNC,
+	COLDRAWFUNC_FUZZY,
+	COLDRAWFUNC_TRANS,
+	COLDRAWFUNC_SHADOWED,
+	COLDRAWFUNC_TRANSTRANS,
+	COLDRAWFUNC_TWOSMULTIPATCH,
+	COLDRAWFUNC_TWOSMULTIPATCHTRANS,
+	COLDRAWFUNC_FOG,
+
+	COLDRAWFUNC_MAX
+};
+
+extern int colfunctype;
+extern coldrawfunc_t *colfunc;
+extern coldrawfunc_t *colfuncs[COLDRAWFUNC_MAX];
+
+enum
+{
+	SPANDRAWFUNC_BASE = BASEDRAWFUNC,
+	SPANDRAWFUNC_TRANS,
+	SPANDRAWFUNC_TILTED,
+	SPANDRAWFUNC_TILTEDTRANS,
+
+	SPANDRAWFUNC_SPLAT,
+	SPANDRAWFUNC_TRANSSPLAT,
+	SPANDRAWFUNC_TILTEDSPLAT,
+	SPANDRAWFUNC_TILTEDTRANSSPLAT,
+
+	SPANDRAWFUNC_WATER,
+	SPANDRAWFUNC_TILTEDWATER,
+
+	SPANDRAWFUNC_FOG,
+	SPANDRAWFUNC_TILTEDFOG,
+
+	SPANDRAWFUNC_MAX
+};
+
+extern spandrawfunc_t *spanfunc;
+extern spandrawfunc_t *spanfuncs[SPANDRAWFUNC_MAX];
+
+void R_DrawMaskedColumn(drawcolumndata_t* dc, column_t *column);
 
 /// \brief Top border
 #define BRDR_T 0
@@ -108,12 +179,15 @@ extern lumpnum_t viewborderlump[8];
 #define GTC_MENUCACHE GTC_CACHE
 //@TODO Add a separate caching mechanism for menu colormaps distinct from in-level GTC_CACHE. For now this is still preferable to memory leaks...
 
-#define TC_DEFAULT    -1
-#define TC_BOSS       -2
-#define TC_METALSONIC -3 // For Metal Sonic battle
-#define TC_ALLWHITE   -4 // For Cy-Brak-demon
-#define TC_RAINBOW    -5 // For invincibility power
-#define TC_BLINK      -6 // For item blinking
+enum
+{
+	TC_BLINK  = -6, // For item blinking, according to kart
+	TC_RAINBOW,     // For single colour
+	TC_ALLWHITE,    // For Cy-Brak-demon
+	TC_METALSONIC,  // For Metal Sonic battle
+	TC_BOSS,
+	TC_DEFAULT
+};
 
 // Initialize color translation tables, for player rendering etc.
 UINT8* R_GetTranslationColormap(INT32 skinnum, skincolors_t color, UINT8 flags);
@@ -138,7 +212,6 @@ enum
 extern UINT8 *blendtables[NUMBLENDMAPS];
 
 void R_InitTranslucencyTables(void);
-void R_GenerateBlendTables(void);
 
 UINT8 *R_GetTranslucencyTable(INT32 alphalevel);
 UINT8 *R_GetBlendTable(int style, INT32 alphalevel);
@@ -161,33 +234,44 @@ void R_DrawViewBorder(void);
 #define TRANSPARENTPIXEL 247
 
 // -----------------
-// 8bpp DRAWING CODE
+// DRAWING CODE
 // -----------------
 
-void R_DrawColumn_8(void);
-#define R_DrawWallColumn_8	R_DrawColumn_8
-void R_DrawShadeColumn_8(void);
-void R_DrawTranslucentColumn_8(void);
+// column drawers
+void R_DrawColumn(drawcolumndata_t* dc);
+void R_DrawColumnShadowed(drawcolumndata_t* dc);
 
-void R_DrawTranslatedColumn_8(void);
-void R_DrawTranslatedTranslucentColumn_8(void);
-void R_DrawSpan_8(void);
-void R_CalcTiltedLighting(fixed_t start, fixed_t end);
-void R_DrawTiltedSpan_8(void);
-void R_DrawTiltedTranslucentSpan_8(void);
-#ifndef NOWATER
-void R_DrawTiltedTranslucentWaterSpan_8(void);
+void R_DrawTranslucentColumn(drawcolumndata_t* dc);
+
+void R_DrawTranslatedColumn(drawcolumndata_t* dc);
+void R_DrawTranslatedTranslucentColumn(drawcolumndata_t* dc);
+
+void R_Draw2sMultiPatchColumn(drawcolumndata_t* dc);
+void R_Draw2sMultiPatchTranslucentColumn(drawcolumndata_t* dc);
+
+void R_DrawFogColumn(drawcolumndata_t* dc);
+
+// span drawers
+void R_DrawSpan(drawspandata_t* ds);
+
+void R_DrawSpan_Tilted(drawspandata_t* ds);
+void R_DrawTranslucentSpan_Tilted(drawspandata_t* ds);
+void R_DrawTranslucentWaterSpan_Tilted(drawspandata_t* ds);
+
+void R_DrawTranslucentSpan(drawspandata_t* ds);
+void R_DrawTranslucentWaterSpan(drawspandata_t* ds);
+
+void R_DrawFogSpan(drawspandata_t* ds);
+void R_DrawFogSpan_Tilted(drawspandata_t* ds);
+
+void R_DrawSplat_Tilted(drawspandata_t* ds);
+void R_DrawSplat(drawspandata_t* ds);
+void R_DrawTranslucentSplat(drawspandata_t* ds);
+void R_DrawTranslucentSplat_Tilted(drawspandata_t* ds);
+
+#ifdef __cplusplus
+} // extern "C"
 #endif
-void R_DrawTiltedSplat_8(void);
-void R_DrawSplat_8(void);
-void R_DrawTranslucentSplat_8(void);
-void R_DrawTranslucentSpan_8(void);
-void R_DrawTranslucentWaterSpan_8(void);
-void R_Draw2sMultiPatchColumn_8(void);
-void R_Draw2sMultiPatchTranslucentColumn_8(void);
-void R_DrawFogSpan_8(void);
-void R_DrawFogColumn_8(void);
-void R_DrawColumnShadowed_8(void);
 
 // =========================================================================
 #endif  // __R_DRAW__

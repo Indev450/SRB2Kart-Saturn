@@ -13,6 +13,10 @@
 #ifndef __D_NETFIL__
 #define __D_NETFIL__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "d_clisrv.h"
 #include "w_wad.h"
 
@@ -123,6 +127,10 @@ void CURLAbortFile(void);
 void CURLGetFile(void);
 HTTP_login * CURLGetLogin (const char *url, HTTP_login ***return_prev_next);
 size_t curlwrite_data(void *ptr, size_t size, size_t nmemb, FILE *stream);
+#endif
+
+#ifdef __cplusplus
+} // extern "C"
 #endif
 
 #endif // __D_NETFIL__

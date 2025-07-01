@@ -16,6 +16,7 @@
 #include "g_game.h"
 #include "p_local.h"
 #include "r_main.h"
+#include "r_skins.h"
 #include "r_state.h"
 #include "s_sound.h"
 #include "m_random.h"

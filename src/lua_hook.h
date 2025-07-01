@@ -55,6 +55,7 @@
 	X (PlayerQuit),\
 	X (PlayerThink),/* P_PlayerThink */\
 	X (MusicChange),\
+	X (MusicCredit),\
 	X (ShouldSpin),/*SRB2KART*/\
 	X (ShouldExplode),/*SRB2KART*/\
 	X (ShouldSquish),/*SRB2KART*/\
@@ -130,6 +131,7 @@ int  LUA_HookPlayerCanDamage(player_t *, mobj_t *);
 void LUA_HookPlayerQuit(player_t *, int);
 int  LUA_HookPlayerCmd(player_t *, ticcmd_t *);
 int  LUA_HookMusicChange(const char *oldname, struct MusicChange *);
+int  LUA_HookMusicCredit(musicdef_t *musicdef);
 
 int LUA_HookShouldSpin(player_t *player, mobj_t *inflictor, mobj_t *source); // SRB2KART: Should player be spun out?
 int LUA_HookShouldExplode(player_t *player, mobj_t *inflictor, mobj_t *source); // SRB2KART: Should player be exploded?

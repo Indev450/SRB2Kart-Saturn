@@ -20,6 +20,7 @@
 #include "p_setup.h"
 #include "r_fps.h"
 #include "r_main.h"
+#include "r_skins.h"
 #include "r_things.h"
 #include "r_sky.h"
 #include "r_splats.h"
@@ -7025,7 +7026,7 @@ void P_MobjThinker(mobj_t *mobj)
 				P_RemoveMobj(mobj);
 				return;
 			}
-			// fallthru
+			/* FALLTHRU */
 		case MT_ORBINAUT_SHIELD:
 		case MT_BANANA_SHIELD:
 		case MT_EGGMANITEM_SHIELD:
@@ -7035,7 +7036,7 @@ void P_MobjThinker(mobj_t *mobj)
 		case MT_JAWZ_DUD:
 			if (P_IsObjectOnGround(mobj))
 				P_SetMobjState(mobj, mobj->info->xdeathstate);
-			// fallthru
+			/* FALLTHRU */
 		case MT_JAWZ_SHIELD:
 			mobj->flags2 ^= MF2_DONTDRAW;
 			break;
