@@ -7,9 +7,12 @@
 
 extern "C" {
 #include "w_wad.h"
-}
-
 #include "z_zone.h"
+#include "hu_stuff.h"
+
+// Goddammit
+#include "v_video.h"
+}
 
 consvar_t cv_emotes = {"emotes", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};;
 
@@ -71,13 +74,20 @@ void M_LoadEmotes(UINT16 wadnum)
 
 			emote_name = line.substr(split+1);
 
-			if (emote_name.find_first_of(" \t\n\r\f\v") != emote_name.npos)
+			if (emote_name.find_first_of(" \t\n\r\f\v:") != emote_name.npos)
 			{
-				CONS_Alert(CONS_WARNING, "EMOTES: Emote name cannot contain spaces. (file %s, line %d)\n", wadfiles[wadnum]->filename, linenum);
+				CONS_Alert(CONS_WARNING, "EMOTES: Emote name cannot contain spaces or ':' symbols. (file %s, line %d)\n", wadfiles[wadnum]->filename, linenum);
 				continue;
 			}
 
+			if (emote_name.size() > MAXEMOTENAME)
+			{
+				CONS_Alert(CONS_WARNING, "EMOTES: Emote name is too long, truncating. (file %s, line %d)\n", wadfiles[wadnum]->filename, linenum);
+				emote_name = emote_name.substr(0, MAXEMOTENAME);
+			}
+
 			emote = &emotes[emote_name];
+			strlcpy(emote->name, emote_name.c_str(), MAXEMOTENAME);
 
 			emote->timeperframe = 1;
 			emote->numframes = 0;
@@ -170,17 +180,17 @@ void M_InitEmotes(void)
 		M_LoadEmotes(i);
 }
 
-emote_t *M_FindEmote(const char *name, int skip)
+emote_t *M_FindEmote(const char *name, int len, int skip)
 {
 	if (!cv_emotes.value)
 		return nullptr;
 
 	char query[MAXEMOTENAME+1] = {0};
-	std::strncpy(query, name, MAXEMOTENAME);
+	std::strncpy(query, name, min(len, MAXEMOTENAME));
 
 	for (auto &pair: emotes)
 	{
-		if (pair.first.rfind(query, 0, MAXEMOTENAME) != 0)
+		if (pair.first.rfind(query, 0, min(len, MAXEMOTENAME)) != 0)
 			continue;
 
 		if (skip > 0)
@@ -197,6 +207,9 @@ emote_t *M_FindEmote(const char *name, int skip)
 
 emote_t *M_VerifyEmote(const char *name, int *emotelen)
 {
+	if (*name != ':')
+		return nullptr;
+
 	if (!cv_emotes.value)
 		return nullptr;
 
@@ -223,4 +236,29 @@ emote_t *M_VerifyEmote(const char *name, int *emotelen)
 		*emotelen = p-name+1;
 
 	return match;
+}
+
+void M_DrawEmote(INT32 x, INT32 y, emote_t *emote, tic_t anim, INT32 flags)
+{
+	if (emote->numframes == 0)
+		return;
+
+	const char *lumpname = emote->frames[(anim/emote->timeperframe) % emote->numframes];
+	patch_t *emotepatch = (patch_t*)W_CachePatchName(lumpname, PU_CACHE);
+
+	const int CHARHEIGHT = 6;
+
+	fixed_t scale = FRACUNIT;
+
+	x *= FRACUNIT;
+	y *= FRACUNIT;
+
+	if (emotepatch->width > EMOTEWIDTH)
+		scale = (FRACUNIT/emotepatch->width)*EMOTEWIDTH;
+	else if (emotepatch->width < EMOTEWIDTH)
+		x += (EMOTEWIDTH-emotepatch->width)*FRACUNIT/2;
+
+	y -= (scale*emotepatch->height-CHARHEIGHT*FRACUNIT)/2;
+
+	V_DrawFixedPatch(x, y, scale, flags, emotepatch, NULL);
 }
