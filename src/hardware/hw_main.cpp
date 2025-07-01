@@ -709,9 +709,9 @@ static void HWR_RenderPlane(subsector_t *subsector, extrasubsector_t *xsub, bool
 
 	lightlevel = HWR_CalcSlopeLight(lightlevel, slope, gl_frontsector, (FOFsector != NULL));
 
-	if (havesnakerpad || havepazrcst || havefaytpad)
+	if (lightlevel != 255 && subsector && (havesnakerpad || havepazrcst || havefaytpad))
 	{
-		if ((lightlevel != 255) && subsector && subsector->sector && (lumpnum != LUMPERROR))
+		if (subsector->sector && (lumpnum != LUMPERROR))
 		{
 			const char *name = W_CheckNameForNum(lumpnum);
 
