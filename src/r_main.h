@@ -101,7 +101,7 @@ FUNCINLINE static ATTRINLINE PUREFUNC INT32 R_PointOnSide(fixed_t x, fixed_t y, 
 
 	// Try to quickly decide by looking at sign bits.
 	// also use a mask to avoid branch prediction
-	INT32 mask = (UINT32)(node->dy ^ node->dx ^ x ^ y) >> 31;
+	INT32 mask = (node->dy ^ node->dx ^ x ^ y) >> 31;
 	return (mask & ((node->dy ^ x) < 0)) |  // (left is negative)
 	       (~mask & (FixedMul(y, node->dx>>FRACBITS) >= FixedMul(node->dy>>FRACBITS, x)));
 }

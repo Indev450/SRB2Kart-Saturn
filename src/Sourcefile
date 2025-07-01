@@ -98,4 +98,3 @@ lua_skinlib.c
 lua_thinkerlib.c
 lua_udatalib.c
 lua_glib.c
-hashtable.c

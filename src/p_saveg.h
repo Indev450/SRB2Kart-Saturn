@@ -50,6 +50,5 @@ boolean P_LoadGame(savebuffer_t *save, INT16 mapoverride);
 boolean P_LoadNetGame(savebuffer_t *save, boolean reloading);
 
 mobj_t *P_FindNewPosition(UINT32 oldposition);
-mobj_t *P_FindNewPosition_Hashtable(UINT32 oldposition);
 
 #endif

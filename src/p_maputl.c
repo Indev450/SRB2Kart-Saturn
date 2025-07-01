@@ -743,15 +743,15 @@ void P_UnsetThingPosition(mobj_t *thing)
 	if (!(thing->flags & MF_NOBLOCKMAP))
 	{
 		/* inert things don't need to be in blockmap
-		 *
-		 * killough 8/11/98: simpler scheme using pointers-to-pointers for prev
-		 * pointers, allows head node pointers to be treated like everything else
-		 *
-		 * Also more robust, since it doesn't depend on current position for
-		 * unlinking. Old method required computing head node based on position
-		 * at time of unlinking, assuming it was the same position as during
-		 * linking.
-		 */
+		*
+		* killough 8/11/98: simpler scheme using pointers-to-pointers for prev
+		* pointers, allows head node pointers to be treated like everything else
+		*
+		* Also more robust, since it doesn't depend on current position for
+		* unlinking. Old method required computing head node based on position
+		* at time of unlinking, assuming it was the same position as during
+		* linking.
+		*/
 
 		mobj_t *bnext, **bprev = thing->bprev;
 		if (bprev && (*bprev = bnext = thing->bnext) != NULL)  // unlink from block map
