@@ -196,6 +196,7 @@ static char returnWadPath[256];
 #include "../screen.h" //vid.WndParent
 #include "../d_net.h"
 #include "../g_game.h"
+#include "../g_demo.h"
 #include "../filesrch.h"
 #include "../z_zone.h" // Z_Free
 #include "endtxt.h"
