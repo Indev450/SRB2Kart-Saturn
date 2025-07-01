@@ -2985,12 +2985,9 @@ static void R_DrawMaskedList(drawnode_t* head)
 #endif
 			R_DrawSinglePlane(&ds, r2->plane, cv_parallelsoftware.value);
 #ifdef HAVE_THREADS
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Waggregate-return"
 			tp_sema = srb2::g_main_threadpool->end_sema();
 			srb2::g_main_threadpool->notify_sema(tp_sema);
 			srb2::g_main_threadpool->wait_sema(tp_sema);
-#pragma GCC diagnostic pop
 #endif
 			R_DoneWithNode(r2);
 			r2 = next;
