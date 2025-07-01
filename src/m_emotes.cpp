@@ -9,8 +9,6 @@ extern "C" {
 #include "w_wad.h"
 #include "z_zone.h"
 #include "hu_stuff.h"
-
-// Goddammit
 #include "v_video.h"
 }
 
@@ -186,11 +184,11 @@ emote_t *M_FindEmote(const char *name, int len, int skip)
 		return nullptr;
 
 	char query[MAXEMOTENAME+1] = {0};
-	std::strncpy(query, name, min(len, MAXEMOTENAME));
+	std::strncpy(query, name, std::min(len, MAXEMOTENAME));
 
 	for (auto &pair: emotes)
 	{
-		if (pair.first.rfind(query, 0, min(len, MAXEMOTENAME)) != 0)
+		if (pair.first.rfind(query, 0, std::min(len, MAXEMOTENAME)) != 0)
 			continue;
 
 		if (skip > 0)
