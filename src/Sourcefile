@@ -13,6 +13,7 @@ f_finale.c
 f_wipe.c
 filesrch.c
 g_game.c
+g_demo.c
 g_input.c
 hu_stuff.c
 i_tcp.c
