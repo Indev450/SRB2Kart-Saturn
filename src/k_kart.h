@@ -6,6 +6,10 @@
 #ifndef __K_KART__
 #define __K_KART__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "doomdef.h"
 #include "d_player.h" // Need for player_t
 
@@ -131,6 +135,10 @@ void K_getItemBoxDrawinfo(drawinfo_t *out);
 INT32 K_getMinimapTrans(void);
 void K_getLapsDrawinfo(drawinfo_t *out);
 void K_getMinimapDrawinfo(drawinfo_t *out);
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 // =========================================================================
 #endif  // __K_KART__

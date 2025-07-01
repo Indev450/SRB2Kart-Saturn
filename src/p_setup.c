@@ -582,9 +582,6 @@ static void P_LoadRawSegs(UINT8 *data)
 		else
 			li->backsector = 0;
 
-		li->numlights = 0;
-		li->rlights = NULL;
-
 		P_UpdateSegLightOffset(li);
 	}
 }
@@ -677,6 +674,21 @@ INT32 P_AddLevelFlat(const char *flatname, levelflat_t *levelflat)
 		levelflat->lumpnum = R_GetFlatNumForName(flatname);
 		levelflat->baselumpnum = LUMPERROR;
 
+		// check if our flat contains cyan pixels
+		// not sure if this is the best way to do it but it works
+		{
+			const UINT8 *flat = (UINT8 *)W_CacheLumpNum(levelflat->lumpnum, PU_LEVEL);
+			size_t size = W_LumpLength(levelflat->lumpnum);
+			for (size_t steppy = 0; steppy < size; steppy++)
+			{
+				if (flat[steppy] == TRANSPARENTPIXEL)
+				{
+					levelflat->cyan = true;
+					break;
+				}
+			}
+		}
+
 #ifndef ZDEBUG
 		CONS_Debug(DBG_SETUP, "flat #%03d: %s\n", atoi(sizeu1(numlevelflats)), levelflat->name);
 #endif
@@ -721,6 +733,21 @@ INT32 P_AddLevelFlatRuntime(const char *flatname)
 		// store the flat lump number
 		levelflat->lumpnum = R_GetFlatNumForName(flatname);
 		levelflat->baselumpnum = LUMPERROR;
+
+		// check if our flat contains cyan pixels
+		// not sure if this is the best way to do it but it works
+		{
+			const UINT8 *flat = (UINT8 *)W_CacheLumpNum(levelflat->lumpnum, PU_LEVEL);
+			size_t size = W_LumpLength(levelflat->lumpnum);
+			for (size_t steppy = 0; steppy < size; steppy++)
+			{
+				if (flat[steppy] == TRANSPARENTPIXEL)
+				{
+					levelflat->cyan = true;
+					break;
+				}
+			}
+		}
 
 #ifndef ZDEBUG
 		CONS_Debug(DBG_SETUP, "flat #%03d: %s\n", atoi(sizeu1(numlevelflats)), levelflat->name);

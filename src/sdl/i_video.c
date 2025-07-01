@@ -1497,7 +1497,7 @@ void I_FinishUpdate(void)
 		ST_AskToJoinEnvelope();
 #endif
 
-	if (rendermode == render_soft && screens[0])
+	if (rendermode == render_soft && vid.screens[0])
 	{
 		if (!bufSurface) //Double-Check
 		{
@@ -1547,9 +1547,7 @@ void I_ReadScreen(UINT8 *scr)
 	if (rendermode != render_soft)
 		I_Error ("I_ReadScreen: called while in non-software mode");
 	else
-		VID_BlitLinearScreen(screens[0], scr,
-			vid.width*vid.bpp, vid.height,
-			vid.rowbytes, vid.rowbytes);
+		VID_BlitLinearScreen(vid.screens[0], scr, vid.width, vid.height, vid.rowbytes, vid.rowbytes);
 }
 
 //
@@ -1753,8 +1751,7 @@ INT32 VID_SetMode(INT32 modeNum)
 {
 	SDLdoUngrabMouse();
 
-	vid.recalc = 1;
-	vid.bpp = 1;
+	vid.recalc = true;
 
 	if (modeNum >= 0 && modeNum < MAXWINMODES)
 	{
@@ -1944,16 +1941,9 @@ static void Impl_VideoSetupSDLBuffer(void)
 		bufSurface = NULL;
 	}
 	// Set up the SDL palletized buffer (copied to vidbuffer before being rendered to texture)
-	if (vid.bpp == 1)
-	{
-		bufSurface = SDL_CreateRGBSurfaceFrom(screens[0],vid.width,vid.height,8,
-			(int)vid.rowbytes,0x00000000,0x00000000,0x00000000,0x00000000); // 256 mode
-	}
-	else if (vid.bpp == 2) // Fury -- don't think this is used at all anymore
-	{
-		bufSurface = SDL_CreateRGBSurfaceFrom(screens[0],vid.width,vid.height,15,
-			(int)vid.rowbytes,0x00007C00,0x000003E0,0x0000001F,0x00000000); // 555 mode
-	}
+	bufSurface = SDL_CreateRGBSurfaceFrom(vid.screens[0], vid.width, vid.height, 8,
+		(int)vid.rowbytes, 0x00000000, 0x00000000, 0x00000000, 0x00000000); // 256 mode
+
 	if (bufSurface)
 	{
 		SDL_SetPaletteColors(bufSurface->format->palette, localPalette, 0, 256);
@@ -1969,11 +1959,13 @@ static void Impl_VideoSetupBuffer(void)
 	// Set up game's software render buffer
 	//if (rendermode == render_soft)
 	{
-		vid.rowbytes = vid.width * vid.bpp;
-		vid.direct = NULL;
+		vid.rowbytes = vid.width;
+
 		if (vid.buffer)
 			free(vid.buffer);
+
 		vid.buffer = calloc(vid.rowbytes*vid.height, NUMSCREENS);
+
 		if (!vid.buffer)
 		{
 			I_Error("%s", M_GetText("Not enough memory for video buffer\n"));
@@ -2184,9 +2176,6 @@ void I_StartupGraphics(void)
 	vid.width = BASEVIDWIDTH; // Default size for startup
 	vid.height = BASEVIDHEIGHT; // BitsPerPixel is the SDL interface's
 	vid.recalc = true; // Set up the console stufff
-	vid.direct = NULL; // Maybe direct access?
-	vid.bpp = 1; // This is the game engine's Bpp
-	vid.WndParent = NULL; //For the window?
 
 #ifdef HAVE_TTF
 	I_ShutdownTTF();

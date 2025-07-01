@@ -341,7 +341,7 @@ static void AM_FrameBufferInit(void)
 	f_x = f_y = 0;
 	f_w = vid.width;
 	f_h = vid.height;
-	am_buf = screens[0];
+	am_buf = vid.screens[0];
 }
 
 //

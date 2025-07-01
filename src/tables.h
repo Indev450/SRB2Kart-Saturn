@@ -14,6 +14,10 @@
 #ifndef __TABLES__
 #define __TABLES__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #ifdef LINUX
 #include <math.h>
 #endif
@@ -133,5 +137,9 @@ void FM_Rotate(matrix_t *dest, angle_t angle, fixed_t x, fixed_t y, fixed_t z);
 // FSIN(ANGLE_90) = FRACUNIT
 #define FSIN(n) FINESINE(ANGLETOFINE(n))
 #define FCOS(n) FINECOSINE(ANGLETOFINE(n))
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif

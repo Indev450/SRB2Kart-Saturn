@@ -58,6 +58,9 @@
 // warning C4152: nonstandard extension, function/data pointer conversion in expression
 // warning C4213: nonstandard extension used : cast on l-value
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #include "doomtype.h"
 
@@ -563,6 +566,14 @@ UINT32 quickncasehash (const char *p, size_t n)
 #define UNLIKELY(x)     (x)
 #endif
 
+#ifdef __cplusplus
+#if defined(__GNUC__) || defined(__clang__) || defined(_MSC_VER)
+	#define restrict __restrict
+#else
+	#define restrict
+#endif
+#endif
+
 // An assert-type mechanism.
 #ifdef PARANOIA
 #define I_Assert(e) ((e) ? (void)0 : I_Error("assert failed: %s, file %s, line %d", #e, __FILE__, __LINE__))
@@ -658,6 +669,10 @@ extern const char *compdate, *comptime, *comprevision, *compbranch;
 #define HOLEPUNCH
 #else
 #undef UPDATE_ALERT
+#endif
+
+#ifdef __cplusplus
+} // extern "C"
 #endif
 
 #endif // __DOOMDEF__

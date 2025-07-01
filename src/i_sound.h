@@ -13,6 +13,10 @@
 #ifndef __I_SOUND__
 #define __I_SOUND__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "doomdef.h"
 #include "sounds.h"
 #include "command.h"
@@ -240,5 +244,9 @@ boolean I_FadeSongFromVolume(UINT8 target_volume, UINT8 source_volume, UINT32 ms
 boolean I_FadeSong(UINT8 target_volume, UINT32 ms, void (*callback)(void));
 boolean I_FadeOutStopSong(UINT32 ms);
 boolean I_FadeInPlaySong(UINT32 ms, boolean looping);
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif
