@@ -2075,7 +2075,10 @@ static boolean S_SkipIntroMusic(void)
 	char *maptitle = G_BuildMapTitle(gamemap); // Zzz...
 
 	if (maptitle && (!stricmp(maptitle, "Wandering Falls"))) // wandering balls changes its song when the race starts Zzz...
+	{
+		Z_Free(maptitle);
 		return false;
+	}
 
 	Z_Free(maptitle);
 
