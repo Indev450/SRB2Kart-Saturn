@@ -349,7 +349,7 @@ double averageFPS = 0.0f;
 
 #ifdef USE_FPS_SAMPLES
 #define MAX_FRAME_TIME (0.05)
-#define NUM_FPS_SAMPLES (16) // Number of samples to store
+#define NUM_FPS_SAMPLES (32) // Number of samples to store
 
 static double total_frame_time = 0.0;
 static int frame_index;
