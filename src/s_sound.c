@@ -1996,7 +1996,6 @@ boolean S_MapMusPlaying(void)
 	return S_MusicPlaying() && (strcasecmp(music.name, mapmusic.name) == 0);
 }
 
-
 // saves the current song position everytime a song stops
 // so we can resume it in some cases
 static void S_SetKeepMusResume(void)
@@ -2041,7 +2040,7 @@ void S_KeepMusic(void)
 }
 
 // Sets up the map music in case it should be reloaded
-// Special case for keep music
+// Special case for keepmusic
 void S_HandleReloadResetMusic(void)
 {
 	if (!(mapmusic.flags & MUSIC_RELOADRESET))
@@ -2066,23 +2065,21 @@ void S_HandleReloadResetMusic(void)
 
 static boolean S_SkipIntroMusic(void)
 {
-	boolean skip = cv_skipintromusic.value;
+	if (!cv_skipintromusic.value)
+		return false;
 
-	if (!skip)
+	// check if menu music is playing, otherwise it may continue playing
+	if (!stricmp(music.name, "titles"))
 		return false;
 
 	char *maptitle = G_BuildMapTitle(gamemap); // Zzz...
 
-	if (maptitle)
-	{
-		// check if menu music is playing, otherwise it may continue playing
-		if (!stricmp(music.name, "titles") || (maptitle && (!stricmp(maptitle, "Wandering Falls")))) // wandering balls changes its song when the race starts Zzz...
-			skip = false;
-	}
+	if (maptitle && (!stricmp(maptitle, "Wandering Falls"))) // wandering balls changes its song when the race starts Zzz...
+		return false;
 
 	Z_Free(maptitle);
 
-	return skip;
+	return true;
 }
 
 //
