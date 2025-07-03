@@ -2471,9 +2471,13 @@ static menuitem_t OP_HudOffsetMenu[] =
 	{IT_STRING | IT_CVAR,	NULL,	"Vertical Offset",	  	  		&cv_stat_yoffset,     	185},
 };
 
+// FIXME: WE EFFECTIVELY HAVE NO MORE SPACE FOR GREEN RES
+// i had to put multiple names into single lines at this point
+// we ought to really do something better for this at this point
+// absolutely crazy how many people put work into this at this point <3
 static menuitem_t OP_SaturnCreditsMenu[] =
 {
-	{IT_HEADER, NULL, "Thanks to all contributers <3", 									NULL,      0},
+	{IT_HEADER, NULL, "Thanks to all contributers <3", 									NULL,       0},
 
 	{IT_STRING2+IT_SPACE, NULL, 	"Alug",      										NULL, 	   10},
 	{IT_STRING2+IT_SPACE, NULL, 	"Indev",        									NULL,      20},
@@ -2482,20 +2486,21 @@ static menuitem_t OP_SaturnCreditsMenu[] =
 	{IT_STRING2+IT_SPACE, NULL, 	"GenericHeroGuy", 		 							NULL, 	   50},
 	{IT_STRING2+IT_SPACE, NULL, 	"xyzzy",     										NULL, 	   60},
 	{IT_STRING2+IT_SPACE, NULL, 	"Chearii", 		 									NULL, 	   70},
+	{IT_STRING2+IT_SPACE, NULL, 	"riomccloud", 		 								NULL, 	   80},
+	{IT_STRING2+IT_SPACE, NULL, 	"chromaticpipe", 		 							NULL, 	   90},
+	{IT_STRING2+IT_SPACE, NULL, 	"PAS", 		 										NULL, 	  100},
+	{IT_STRING2+IT_SPACE, NULL, 	"$HOME", 		 									NULL, 	  110},
+	{IT_STRING2+IT_SPACE, NULL, 	"Achii", 		 									NULL, 	  120},
+	{IT_STRING2+IT_SPACE, NULL, 	"Anonimus", 		 								NULL, 	  130},
+	{IT_STRING2+IT_SPACE, NULL, 	"scizor300", 		 								NULL, 	  140},
+	{IT_STRING2+IT_SPACE, NULL, 	"Lugent", 		 									NULL, 	  150},
 
-	{IT_STRING2+IT_SPACE, NULL, 	"Sunflower", 		 								NULL, 	   80},
-	{IT_STRING2+IT_SPACE, NULL, 	"Yuz", 		  										NULL, 	   90},
-	{IT_STRING2+IT_SPACE, NULL, 	"Democrab", 		  								NULL, 	  100},
-	{IT_STRING2+IT_SPACE, NULL, 	"EXpand", 		 									NULL, 	  110},
-	{IT_STRING2+IT_SPACE, NULL, 	"Nexit", 		 									NULL, 	  120},
-	{IT_STRING2+IT_SPACE, NULL, 	"Spee", 		 									NULL, 	  130},
-	{IT_STRING2+IT_SPACE, NULL, 	"jin", 		 										NULL, 	  140},
-	{IT_STRING2+IT_SPACE, NULL, 	"riomccloud", 		 								NULL, 	  150},
-	{IT_STRING2+IT_SPACE, NULL, 	"chromaticpipe", 		 							NULL, 	  160},
-	{IT_STRING2+IT_SPACE, NULL, 	"Achii", 		 									NULL, 	  170},
-	{IT_STRING2+IT_SPACE, NULL, 	"Anonimus", 		 								NULL, 	  180},
-	{IT_STRING2+IT_SPACE, NULL, 	"scizor300", 		 								NULL, 	  190},
-	{IT_STRING2+IT_SPACE, NULL, 	"Lugent", 		 									NULL, 	  200},
+	{IT_HEADER, 		  NULL, 	"", 												NULL,     124},
+
+	{IT_STRING2+IT_SPACE, NULL, 	"Sunflower	Yuz", 		 							NULL, 	  180},
+	{IT_STRING2+IT_SPACE, NULL, 	"Democrab	EXpand", 		  						NULL, 	  190},
+	{IT_STRING2+IT_SPACE, NULL, 	"Nexit	Spee", 		  								NULL, 	  200},
+	{IT_STRING2+IT_SPACE, NULL, 	"jin", 		 										NULL, 	  210},
 
 	{IT_HEADER, 		  NULL, 	"Special Thanks <3", 								NULL,     168},
 
@@ -2507,7 +2512,7 @@ static menuitem_t OP_SaturnCreditsMenu[] =
 	{IT_STRING, NULL, "", 																NULL,     258},	// dummy text II
 };
 
-// sry we dont have space for this anymore :/
+// sry we dont have space for this anymore :c
 /*static const char* OP_CreditTooltips[] =
 {
 	NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,
