@@ -98,6 +98,7 @@ consvar_t cv_showminimapangle = {"showminimapangle", "Off", CV_SAVE, minimapdot_
 
 consvar_t cv_posanim     = {"postitionanimation", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_smallposnum = {"smallpositionnumber", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_smoothposition = {"smoothposition", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 consvar_t cv_showlapemblem = {"showlapemblem", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
@@ -210,6 +211,7 @@ void K_RegisterKartHudStuff(void)
 
 	CV_RegisterVar(&cv_posanim);
 	CV_RegisterVar(&cv_smallposnum);
+	CV_RegisterVar(&cv_smoothposition);
 
 	CV_RegisterVar(&cv_fancyroulette);
 
@@ -1948,6 +1950,8 @@ void K_drawKartTimestamp(tic_t drawtime, INT32 TX, INT32 TY, INT16 emblemmap, UI
 	}
 }
 
+#define POS_DELAY_TIME 10
+
 static void K_DrawKartPositionNum(INT32 num)
 {
 	// POSI_X = BASEVIDWIDTH - 51;	// 269
@@ -1966,7 +1970,9 @@ static void K_DrawKartPositionNum(INT32 num)
 
 	if ((cv_posanim.value && stplyr->kartstuff[k_positiondelay]) || stplyr->exiting)
 	{
-		scale *= 2;
+		const UINT8 delay = (stplyr->exiting) ? POS_DELAY_TIME : stplyr->positiondelay;
+		const fixed_t add = (scale * 3) >> ((r_splitscreen == 1) ? 1 : 2);
+		scale = cv_smoothposition.value ? scale + min((add * (delay * delay)) / (POS_DELAY_TIME * POS_DELAY_TIME), add) : scale*2;
 		overtake = true;	// this is used for splitscreen stuff in conjunction with flipdraw.
 	}
 
