@@ -377,7 +377,7 @@ void HWR_ObjectLightLevelPost(gl_vissprite_t *spr, const sector_t *sector, INT32
 			extralight = FixedMul(extralight, CLAMP(*lightlevel, 0, 255) * FRACUNIT / 255);
 
 			// simple OGL approximation
-			fixed_t tr = R_PointToDist(spr->mobj->x, spr->mobj->y);
+			fixed_t tr = R_QuickCamDist(spr->mobj->x, spr->mobj->y) << FRACBITS;
 			fixed_t xscale = FixedDiv((vid.width / 2) << FRACBITS, tr);
 
 			// Less change in contrast at further distances, to counteract DOOM diminished light
@@ -739,10 +739,10 @@ static void HWR_RenderPlane(subsector_t *subsector, extrasubsector_t *xsub, bool
 		UINT8 numplanes, j;
 		vertex_t v; // For determining the closest distance from the line to the camera, to split render planes for minimum distortion;
 
-		const float renderdist = 27000.0f; // How far out to properly render the plane
-		const float farrenderdist = 32768.0f; // From here, raise plane to horizon level to fill in the line with some texture distortion
+		static constexpr float renderdist    = 27000.0f; // How far out to properly render the plane
+		static constexpr float farrenderdist = 32768.0f; // From here, raise plane to horizon level to fill in the line with some texture distortion
 
-		seg_t *line = &segs[subsector->firstline];
+		const seg_t *line = &segs[subsector->firstline];
 
 		for (i = 0; i < subsector->numlines; i++, line++)
 		{
@@ -779,6 +779,7 @@ static void HWR_RenderPlane(subsector_t *subsector, extrasubsector_t *xsub, bool
 
 			// Based on the seg length and the distance from the line, split horizon into multiple poly sets to reduce distortion
 			dist = sqrtf((xd*xd) + (yd*yd)) / dist / 16.0f;
+
 			if (dist > 100.0f)
 				numplanes = 100;
 			else
@@ -1083,12 +1084,12 @@ static void HWR_SplitWall(sector_t *sector, FOutVector *wallVerts, INT32 texnum,
 		else
 			solid = false;
 
-		height = FixedToFloat(P_GetLightZAt(&list[i], v1x, v1y));
+		height    = FixedToFloat(P_GetLightZAt(&list[i], v1x, v1y));
 		endheight = FixedToFloat(P_GetLightZAt(&list[i], v2x, v2y));
 
 		if (solid)
 		{
-			bheight = FixedToFloat(P_GetFFloorBottomZAt(list[i].caster, v1x, v1y));
+			bheight    = FixedToFloat(P_GetFFloorBottomZAt(list[i].caster, v1x, v1y));
 			endbheight = FixedToFloat(P_GetFFloorBottomZAt(list[i].caster, v2x, v2y));
 		}
 
@@ -1096,6 +1097,7 @@ static void HWR_SplitWall(sector_t *sector, FOutVector *wallVerts, INT32 texnum,
 		{
 			if (solid && top > bheight)
 				top = bheight;
+
 			if (solid && endtop > endbheight)
 				endtop = endbheight;
 		}
@@ -1111,15 +1113,12 @@ static void HWR_SplitWall(sector_t *sector, FOutVector *wallVerts, INT32 texnum,
 			endbheight = endrealbot;
 		}
 
-		if (endbheight >= endtop)
-			continue;
-
-		if (bheight >= top)
+		if ((endbheight >= endtop) || (bheight >= top))
 			continue;
 
 		// Found a break
 		// The heights are clamped to ensure the polygon doesn't cross itself.
-		bot = CLAMP(bheight, realbot, top);
+		bot    = CLAMP(bheight, realbot, top);
 		endbot = CLAMP(endbheight, endrealbot, endtop);
 
 		Surf->PolyColor.s.alpha = alpha;
@@ -1148,6 +1147,7 @@ static void HWR_SplitWall(sector_t *sector, FOutVector *wallVerts, INT32 texnum,
 
 	bot = realbot;
 	endbot = endrealbot;
+
 	if ((endtop <= endrealbot) && (top <= realbot))
 		return;
 
@@ -1388,7 +1388,7 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 
 	// x offset the texture
 	fixed_t texturehpeg = gl_sidedef->textureoffset + gl_curline->offset;
-	float cliplow = (float)texturehpeg;
+	float cliplow  = (float)texturehpeg;
 	float cliphigh = (float)(texturehpeg + (gl_curline->flength*FRACUNIT));
 
 	FUINT lightnum = gl_frontsector->lightlevel;
@@ -2526,18 +2526,18 @@ static boolean HWR_CheckBBox(const fixed_t *bspcoord)
 		if (viewx < bspcoord[BOXLEFT]) // 1,4,6
 		{
 			if (viewy > bspcoord[BOXTOP]) // 1
-				mindist = R_PointToDist(bspcoord[BOXLEFT], bspcoord[BOXTOP]);
+				mindist = R_QuickCamDist(bspcoord[BOXLEFT], bspcoord[BOXTOP]) << FRACBITS;
 			else if (viewy < bspcoord[BOXBOTTOM]) // 6
-				mindist = R_PointToDist(bspcoord[BOXLEFT], bspcoord[BOXBOTTOM]);
+				mindist = R_QuickCamDist(bspcoord[BOXLEFT], bspcoord[BOXBOTTOM]) << FRACBITS;
 			else // 4
 				mindist = bspcoord[BOXLEFT] - viewx;
 		}
 		else if (viewx > bspcoord[BOXRIGHT]) // 3,5,8
 		{
 			if (viewy > bspcoord[BOXTOP]) // 3
-				mindist = R_PointToDist(bspcoord[BOXRIGHT], bspcoord[BOXTOP]);
+				mindist = R_QuickCamDist(bspcoord[BOXRIGHT], bspcoord[BOXTOP]) << FRACBITS;
 			else if (viewy < bspcoord[BOXBOTTOM]) // 8
-				mindist = R_PointToDist(bspcoord[BOXRIGHT], bspcoord[BOXBOTTOM]);
+				mindist = R_QuickCamDist(bspcoord[BOXRIGHT], bspcoord[BOXBOTTOM]) << FRACBITS;
 			else // 5
 				mindist = viewx - bspcoord[BOXRIGHT];
 		}
@@ -2944,7 +2944,7 @@ static void HWR_Subsector(size_t num)
 				if (sub->validcount == validcount)
 					continue;
 
-				sector_t *controlSec = &sectors[rover->secnum];
+				const sector_t *controlSec = &sectors[rover->secnum];
 
 				if (!controlSec->moved)
 					continue;
@@ -3639,10 +3639,10 @@ static void HWR_SplitSprite(gl_vissprite_t *spr, const boolean papersprite)
 	hwrpatch = ((GLPatch_t *)gpatch->hardware);
 
 	// Draw shadow BEFORE sprite
-	if (cv_shadow.value // Shadows enabled
+	if (UNLIKELY(cv_shadow.value // Shadows enabled
 		&& (spr->mobj->flags & (MF_SCENERY|MF_SPAWNCEILING|MF_NOGRAVITY)) != (MF_SCENERY|MF_SPAWNCEILING|MF_NOGRAVITY) // Ceiling scenery have no shadow.
 		&& !(spr->mobj->flags2 & MF2_DEBRIS) // Debris have no corona or shadow.
-		&& (spr->mobj->z >= spr->mobj->floorz)) // Without this, your shadow shows on the floor, even after you die and fall through the ground.
+		&& (spr->mobj->z >= spr->mobj->floorz))) // Without this, your shadow shows on the floor, even after you die and fall through the ground.
 	{
 		////////////////////
 		// SHADOW SPRITE! //
@@ -3753,7 +3753,7 @@ static void HWR_SplitSprite(gl_vissprite_t *spr, const boolean papersprite)
 
 	for (i = 1; i < sector->numlights; i++)
 	{
-		fixed_t h = P_GetLightZAt(&sector->lightlist[i], spr->mobj->x, spr->mobj->y);
+		const fixed_t h = P_GetLightZAt(&sector->lightlist[i], spr->mobj->x, spr->mobj->y);
 
 		if (!(h <= temp))
 			continue;
@@ -3798,10 +3798,7 @@ static void HWR_SplitSprite(gl_vissprite_t *spr, const boolean papersprite)
 			endbheight = endrealbot;
 		}
 
-		if (endbheight >= endtop)
-			continue;
-
-		if (bheight >= top)
+		if ((endbheight >= endtop) || (bheight >= top))
 			continue;
 
 		// Found a break
@@ -3960,10 +3957,10 @@ static void HWR_DrawSprite(gl_vissprite_t *spr)
 	}
 
 	// Draw shadow BEFORE sprite
-	if (cv_shadow.value // Shadows enabled
+	if (UNLIKELY(cv_shadow.value // Shadows enabled
 		&& (spr->mobj->flags & (MF_SCENERY|MF_SPAWNCEILING|MF_NOGRAVITY)) != (MF_SCENERY|MF_SPAWNCEILING|MF_NOGRAVITY) // Ceiling scenery have no shadow.
 		&& !(spr->mobj->flags2 & MF2_DEBRIS) // Debris have no corona or shadow.
-		&& (spr->mobj->z >= spr->mobj->floorz)) // Without this, your shadow shows on the floor, even after you die and fall through the ground.
+		&& (spr->mobj->z >= spr->mobj->floorz))) // Without this, your shadow shows on the floor, even after you die and fall through the ground.
 	{
 		////////////////////
 		// SHADOW SPRITE! //
@@ -4585,7 +4582,7 @@ static void HWR_AddPrecipitationSprites(void)
 	drawdist = ((fixed_t)(cv_drawdist_precip.value) * (cv_mobjscaleprecip.value ? mapobjectscale : FRACUNIT));
 
 	// No to infinite precipitation draw distance.
-	if (drawdist == 0)
+	if (cv_drawdist_precip.value == 0)
 	{
 		return;
 	}
@@ -5441,10 +5438,11 @@ namespace
 	};
 
 template <RenderViewpointType Type>
-void HWR_RenderViewpoint(gl_portal_t *rootportal, const float fpov, player_t *player, int stencil_level, boolean allow_portals)
+void HWR_RenderViewpoint(gl_portal_t *rootportal, player_t *player, int stencil_level, boolean allow_portals)
 {
 	gl_portallist_t portallist;
 
+	const float fpov = FixedToFloat(R_GetPlayerFov(player));
 	const boolean skybox = (skyboxmo[0] && cv_skybox.value);
 
 	portallist.base = portallist.cap = NULL;
@@ -5586,8 +5584,8 @@ void HWR_RenderViewpoint(gl_portal_t *rootportal, const float fpov, player_t *pl
 };
 
 extern "C" {
-	void HWR_RenderPortalViewpoint(gl_portal_t *rootportal, const float fpov, player_t *player, int stencil_level, boolean allow_portals) {
-		HWR_RenderViewpoint<RenderViewpointType::kPortal>(rootportal, fpov, player, stencil_level, allow_portals);
+	void HWR_RenderPortalViewpoint(gl_portal_t *rootportal, player_t *player, int stencil_level, boolean allow_portals) {
+		HWR_RenderViewpoint<RenderViewpointType::kPortal>(rootportal, player, stencil_level, allow_portals);
 	}
 }
 
@@ -5596,8 +5594,6 @@ extern "C" {
 // ==========================================================================
 static void HWR_RenderFrame(player_t *player, boolean skybox)
 {
-	const float fpov = FixedToFloat(R_GetPlayerFov(player));
-
 	// set window position
 	gl_viewwindowx = gl_baseviewwindowx;
 	gl_viewwindowy = gl_baseviewwindowy;
@@ -5637,9 +5633,9 @@ static void HWR_RenderFrame(player_t *player, boolean skybox)
 
 	portalclipline = NULL;
 	if (UNLIKELY(HWR_UsePortals()))
-		HWR_RenderViewpoint<RenderViewpointType::kPortal>(NULL, fpov, player, 0, !skybox);
+		HWR_RenderViewpoint<RenderViewpointType::kPortal>(NULL, player, 0, !skybox);
 	else
-		HWR_RenderViewpoint<RenderViewpointType::kNormal>(NULL, fpov, player, 0, !skybox);
+		HWR_RenderViewpoint<RenderViewpointType::kNormal>(NULL, player, 0, !skybox);
 
 	// Unset transform and shader
 	GL_SetTransform(NULL);

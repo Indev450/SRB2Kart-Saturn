@@ -89,13 +89,16 @@ consvar_t cv_highresportrait = {"highresportrait", "Off", CV_SAVE, CV_OnOff, NUL
 CV_PossibleValue_t inputdisplay_cons_t[NUMINPUTDISPLAYSTUFF];
 consvar_t cv_showinput = {"showinput", "Off", CV_SAVE, inputdisplay_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
-CV_PossibleValue_t minimapdot_cons_t[NUMMINIMAPDOTSTUFF];
-consvar_t cv_minihead         = {"smallminimapplayers", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+static CV_PossibleValue_t minihead_cons_t[] = {{0, "Off"}, {1, "On"}, {2, "Others"}, {0, NULL}};
+consvar_t cv_minihead         = {"smallminimapplayers", "Off", CV_SAVE, minihead_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_showminimapnames = {"showminimapnames", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+
+CV_PossibleValue_t minimapdot_cons_t[NUMMINIMAPDOTSTUFF];
 consvar_t cv_showminimapangle = {"showminimapangle", "Off", CV_SAVE, minimapdot_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 consvar_t cv_posanim     = {"postitionanimation", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_smallposnum = {"smallpositionnumber", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_smoothposition = {"smoothposition", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 consvar_t cv_showlapemblem = {"showlapemblem", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
@@ -208,6 +211,7 @@ void K_RegisterKartHudStuff(void)
 
 	CV_RegisterVar(&cv_posanim);
 	CV_RegisterVar(&cv_smallposnum);
+	CV_RegisterVar(&cv_smoothposition);
 
 	CV_RegisterVar(&cv_fancyroulette);
 
@@ -1946,6 +1950,8 @@ void K_drawKartTimestamp(tic_t drawtime, INT32 TX, INT32 TY, INT16 emblemmap, UI
 	}
 }
 
+#define POS_DELAY_TIME 10
+
 static void K_DrawKartPositionNum(INT32 num)
 {
 	// POSI_X = BASEVIDWIDTH - 51;	// 269
@@ -1964,7 +1970,9 @@ static void K_DrawKartPositionNum(INT32 num)
 
 	if ((cv_posanim.value && stplyr->kartstuff[k_positiondelay]) || stplyr->exiting)
 	{
-		scale *= 2;
+		const UINT8 delay = (stplyr->exiting) ? POS_DELAY_TIME : stplyr->positiondelay;
+		const fixed_t add = (scale * 3) >> ((r_splitscreen == 1) ? 1 : 2);
+		scale = cv_smoothposition.value ? scale + min((add * (delay * delay)) / (POS_DELAY_TIME * POS_DELAY_TIME), add) : scale*2;
 		overtake = true;	// this is used for splitscreen stuff in conjunction with flipdraw.
 	}
 
@@ -3435,6 +3443,11 @@ static void K_drawKartPlayerCheck(void)
 	}
 }
 
+static boolean K_useSmallMinimapHead(player_t *player)
+{
+	return cv_minihead.value == 1 || (cv_minihead.value == 2 && !(player && P_IsDisplayPlayer(player)));
+}
+
 static void K_drawKartMinimapIcon(fixed_t objx, fixed_t objy, INT32 hudx, INT32 hudy, INT32 flags, INT32 blend, patch_t *icon, UINT8 *colormap, drawinfo_t *dims, boolean scaleme)
 {
 	// amnum xpos & ypos are the icon's speed around the HUD.
@@ -3504,6 +3517,7 @@ static void K_drawKartMinimapHead(mobj_t *mo, INT32 x, INT32 y, INT32 flags)
 	INT32 amxpos, amypos, wntdamxpos, wntdamypos;
 	fixed_t scale = FRACUNIT;
 	patch_t *minimaphead = NULL;
+	boolean minihead = K_useSmallMinimapHead(mo->player);
 
 #ifdef ROTSPRITE
 	angle_t rollangle = 0;
@@ -3527,11 +3541,12 @@ static void K_drawKartMinimapHead(mobj_t *mo, INT32 x, INT32 y, INT32 flags)
 		V_DrawCenteredSmallStringAtFixed(amxpos + (4*FRACUNIT), amypos - (3*FRACUNIT), V_ALLOWLOWERCASE|flags|V_SkinColorToHighlightcolor(mo->color), player_names[player - players]);
 	}
 
-	// thx wanted reticle for having weird offsets very cool
-	wntdamxpos = cv_minihead.value ? amxpos + (1<<FRACBITS) : amxpos - (4<<FRACBITS);
-	wntdamypos = cv_minihead.value ? amypos + (1<<FRACBITS) : amypos - (4<<FRACBITS);
 
-	if (cv_minihead.value)
+	// thx wanted reticle for having weird offsets very cool
+	wntdamxpos = minihead ? amxpos + (1<<FRACBITS) : amxpos - (4<<FRACBITS);
+	wntdamypos = minihead ? amypos + (1<<FRACBITS) : amypos - (4<<FRACBITS);
+
+	if (minihead)
 	{
 		amxpos += (minimaphead->width  / 4)<<FRACBITS;
 		amypos += (minimaphead->height / 4)<<FRACBITS;
@@ -3694,7 +3709,7 @@ static void K_drawKartMinimap(void)
 	splitflags &= ~V_HUDTRANSHALF;
 	splitflags |= V_HUDTRANS;
 
-	const SINT8 icondotradius = (cv_minihead.value && !cv_showminimapnames.value) ? 8 : 10;
+	const SINT8 icondotradius = ((cv_minihead.value == 1) && !cv_showminimapnames.value) ? 8 : 10;
 	patch_t* minipatch;
 	INT32 rot;
 	INT32 blending;

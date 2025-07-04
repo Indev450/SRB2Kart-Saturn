@@ -1977,7 +1977,7 @@ static void R_ProjectPrecipitationSprite(precipmobj_t *thing)
 	vis->gy = interp.y;
 	vis->gz = gz;
 	vis->gzt = gzt;
-	vis->thingheight = 4*FRACUNIT;
+	vis->thingheight = 4 << FRACBITS;
 	vis->pz = interp.z;
 	vis->pzt = vis->pz + vis->thingheight;
 	vis->texturemid = vis->gzt - viewz;
@@ -2901,12 +2901,12 @@ void R_ClipSprites(drawseg_t* dsstart, portal_t* portal)
 }
 
 /* Check if thing may be drawn from our current view. */
-boolean R_ThingVisible (mobj_t *thing)
+boolean R_ThingVisible(mobj_t *thing)
 {
 	if (UNLIKELY((thing->sprite == SPR_NULL) || (thing->flags2 & MF2_DONTDRAW)))
 		return false;
 
-	if (splitscreen)
+	if (UNLIKELY(splitscreen))
 	{
 		if    ((viewssnum == 0 && (thing->eflags & MFE_DRAWONLYFORP1))
 			|| (viewssnum == 1 && (thing->eflags & MFE_DRAWONLYFORP2))
@@ -2922,7 +2922,7 @@ boolean R_ThingWithinDist(mobj_t *thing, INT32 limit_dist)
 {
 	if (limit_dist)
 	{
-		if (P_AproxDistance(viewx-thing->x, viewy-thing->y)/mapobjectscale > limit_dist)
+		if ((R_QuickCamDist(thing->x, thing->y) << FRACBITS)/mapobjectscale > limit_dist)
 		{
 			return false;
 		}

@@ -1718,16 +1718,15 @@ static boolean S_PlayMusic(boolean looping, UINT32 fadeinms)
 static void S_QueueMusic(const char *mmusic, UINT16 mflags, boolean looping, UINT32 position, UINT32 fadeinms)
 {
 	strncpy(queue.name, mmusic, 7);
-	queue.flags = mflags;
-	queue.looping = looping;
+	queue.flags    = mflags;
+	queue.looping  = looping;
 	queue.position = position;
 	queue.fadeinms = fadeinms;
 }
 
 static void S_ClearQueue(void)
 {
-	queue.name[0] = queue.flags = queue.position = queue.fadeinms = 0;
-	queue.looping = false;
+	memset(&queue, 0, sizeof(music_t));
 }
 
 static void S_ChangeMusicToQueue(void)
@@ -1758,7 +1757,7 @@ void S_ChangeMusicEx(const char *mmusic, UINT16 mflags, boolean looping, UINT32 
 		|| demo.title) // SRB2Kart: Demos don't interrupt title screen music
 		return;
 
-	strncpy(newmusic, mmusic, 6);
+	strncpy(newmusic,   mmusic, 6);
 	strncpy(checkmusic, mmusic, 6);
 
 	if (LUA_HookMusicChange(music.name, &hook_param))
@@ -2031,7 +2030,7 @@ void S_KeepMusic(void)
 }
 
 // Sets up the map music in case it should be reloaded
-// Special case for keep music
+// Special case for keepmusic
 void S_HandleReloadResetMusic(void)
 {
 	if (!(mapmusic.flags & MUSIC_RELOADRESET))
@@ -2056,23 +2055,24 @@ void S_HandleReloadResetMusic(void)
 
 static boolean S_SkipIntroMusic(void)
 {
-	boolean skip = cv_skipintromusic.value;
+	if (!cv_skipintromusic.value)
+		return false;
 
-	if (!skip)
+	// check if menu music is playing, otherwise it may continue playing
+	if (!stricmp(music.name, "titles"))
 		return false;
 
 	char *maptitle = G_BuildMapTitle(gamemap); // Zzz...
 
-	if (maptitle)
+	if (maptitle && !stricmp(maptitle, "Wandering Falls")) // wandering balls changes its song when the race starts Zzz...
 	{
-		// check if menu music is playing, otherwise it may continue playing
-		if (!stricmp(music.name, "titles") || (maptitle && (!stricmp(maptitle, "Wandering Falls")))) // wandering balls changes its song when the race starts Zzz...
-			skip = false;
+		Z_Free(maptitle);
+		return false;
 	}
 
 	Z_Free(maptitle);
 
-	return skip;
+	return true;
 }
 
 //
