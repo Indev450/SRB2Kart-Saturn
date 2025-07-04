@@ -1976,8 +1976,8 @@ static void K_DrawKartPositionNum(INT32 num)
 
 	if ((cv_posanim.value && stplyr->kartstuff[k_positiondelay]) || stplyr->exiting)
 	{
-		const UINT8 delay = (stplyr->exiting) ? POS_DELAY_TIME : stplyr->positiondelay;
-		const fixed_t add = (scale * 3) >> ((r_splitscreen == 1) ? 1 : 2);
+		const UINT8 delay = (stplyr->exiting) ? POS_DELAY_TIME : stplyr->kartstuff[k_positiondelay];
+		const fixed_t add = (scale * 3) >> ((splitscreen == 1) ? 1 : 2);
 		scale = cv_smoothposition.value ? scale + min((add * (delay * delay)) / (POS_DELAY_TIME * POS_DELAY_TIME), add) : scale*2;
 		overtake = true;	// this is used for splitscreen stuff in conjunction with flipdraw.
 	}
