@@ -3508,31 +3508,12 @@ static void Command_GetPlayerNum(void)
 
 SINT8 nametonum(const char *name)
 {
-	INT32 playernum, i;
+	INT32 playernum = D_LookupPlayer(name);
 
-	if (!strcmp(name, "0"))
-		return 0;
+	if (playernum == -1)
+		CONS_Printf(M_GetText("There is no player named \"%s\"\n"), name);
 
-	playernum = (SINT8)atoi(name);
-
-	if (playernum < 0 || playernum >= MAXPLAYERS)
-		return -1;
-
-	if (playernum)
-	{
-		if (playeringame[playernum])
-			return (SINT8)playernum;
-		else
-			return -1;
-	}
-
-	for (i = 0; i < MAXPLAYERS; i++)
-		if (playeringame[i] && !stricmp(player_names[i], name))
-			return (SINT8)i;
-
-	CONS_Printf(M_GetText("There is no player named \"%s\"\n"), name);
-
-	return -1;
+	return playernum;
 }
 
 /** Lists all players and their player numbers.

@@ -701,7 +701,7 @@ static void Command_Sayto_f(void)
 		return;
 	}
 
-	target = nametonum(COM_Argv(1));
+	target = D_LookupPlayer(COM_Argv(1));
 	if (target == -1)
 	{
 		CONS_Alert(CONS_NOTICE, M_GetText("No player with that name!\n"));
