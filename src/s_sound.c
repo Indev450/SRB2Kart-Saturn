@@ -1722,16 +1722,15 @@ static boolean S_PlayMusic(boolean looping, UINT32 fadeinms)
 static void S_QueueMusic(const char *mmusic, UINT16 mflags, boolean looping, UINT32 position, UINT32 fadeinms)
 {
 	strncpy(queue.name, mmusic, 7);
-	queue.flags = mflags;
-	queue.looping = looping;
+	queue.flags    = mflags;
+	queue.looping  = looping;
 	queue.position = position;
 	queue.fadeinms = fadeinms;
 }
 
 static void S_ClearQueue(void)
 {
-	queue.name[0] = queue.flags = queue.position = queue.fadeinms = 0;
-	queue.looping = false;
+	memset(&queue, 0, sizeof(music_t));
 }
 
 static void S_ChangeMusicToQueue(void)
@@ -1762,7 +1761,7 @@ void S_ChangeMusicEx(const char *mmusic, UINT16 mflags, boolean looping, UINT32 
 		|| demo.title) // SRB2Kart: Demos don't interrupt title screen music
 		return;
 
-	strncpy(newmusic, mmusic, 6);
+	strncpy(newmusic,   mmusic, 6);
 	strncpy(checkmusic, mmusic, 6);
 
 	if (LUA_HookMusicChange(music.name, &hook_param))
