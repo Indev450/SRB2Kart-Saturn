@@ -96,9 +96,9 @@ consvar_t cv_showminimapnames = {"showminimapnames", "Off", CV_SAVE, CV_OnOff, N
 CV_PossibleValue_t minimapdot_cons_t[NUMMINIMAPDOTSTUFF];
 consvar_t cv_showminimapangle = {"showminimapangle", "Off", CV_SAVE, minimapdot_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
-consvar_t cv_posanim     = {"postitionanimation", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_smallposnum = {"smallpositionnumber", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_smoothposition = {"smoothposition", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+static CV_PossibleValue_t posanim_cons_t[] = {{0, "Off"}, {1, "On"}, {2, "Smooth"}, {0, NULL}};
+consvar_t cv_posanim        = {"postitionanimation", "On", CV_SAVE, posanim_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_smallposnum    = {"smallpositionnumber", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 consvar_t cv_showlapemblem = {"showlapemblem", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
@@ -211,7 +211,6 @@ void K_RegisterKartHudStuff(void)
 
 	CV_RegisterVar(&cv_posanim);
 	CV_RegisterVar(&cv_smallposnum);
-	CV_RegisterVar(&cv_smoothposition);
 
 	CV_RegisterVar(&cv_fancyroulette);
 
@@ -1976,9 +1975,15 @@ static void K_DrawKartPositionNum(INT32 num)
 
 	if ((cv_posanim.value && stplyr->kartstuff[k_positiondelay]) || stplyr->exiting)
 	{
-		const UINT8 delay = (stplyr->exiting) ? POS_DELAY_TIME : stplyr->kartstuff[k_positiondelay];
-		const fixed_t add = (scale * 3) >> ((splitscreen == 1) ? 1 : 2);
-		scale = cv_smoothposition.value ? scale + min((add * (delay * delay)) / (POS_DELAY_TIME * POS_DELAY_TIME), add) : scale*2;
+		if (cv_posanim.value == 2)
+		{
+			const UINT8 delay = (stplyr->exiting) ? POS_DELAY_TIME : stplyr->kartstuff[k_positiondelay];
+			const fixed_t add = (scale * 3) >> ((splitscreen == 1) ? 1 : 2);
+			scale = (scale + min((add * (delay * delay)) / (POS_DELAY_TIME * POS_DELAY_TIME), add));
+		}
+		else
+			scale *= 2;
+
 		overtake = true;	// this is used for splitscreen stuff in conjunction with flipdraw.
 	}
 
