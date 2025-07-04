@@ -671,6 +671,8 @@ SINT8 nametonum(const char *name);
 extern char motd[254], server_context[8];
 extern UINT8 playernode[MAXPLAYERS];
 
+extern boolean player_muted[MAXPLAYERS];
+
 INT32 D_NumPlayers(void);
 
 void D_ResetTiccmds(void);

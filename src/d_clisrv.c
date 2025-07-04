@@ -90,8 +90,11 @@ char motd[254], server_context[8]; // Message of the Day, Unique Context (even w
 plrinfo playerinfo[MAXPLAYERS];
 SINT8 joinnode = 0; // used for CL_VIEWSERVER
 
+boolean player_muted[MAXPLAYERS] = {0};
+
 // Server specific vars
 UINT8 playernode[MAXPLAYERS];
+
 
 // Minimum timeout for sending the savegame
 // The actual timeout will be longer depending on the savegame length
@@ -3487,6 +3490,8 @@ void CL_Reset(void)
 	filedownload.http_source[0] = '\0';
 #endif
 	G_ResetAllDeviceRumbles();
+
+	memset(player_muted, 0, sizeof(player_muted));
 
 	// D_StartTitle should get done now, but the calling function will handle it
 }
