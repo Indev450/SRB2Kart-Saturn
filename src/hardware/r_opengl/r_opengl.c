@@ -1988,7 +1988,6 @@ void GL_UpdateTexture(GLMipmap_t *pTexInfo)
 		pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, anisotropic_filter);
 }
 
-
 // -----------------+
 // SetTexture       : The mipmap becomes the current texture source
 // -----------------+
