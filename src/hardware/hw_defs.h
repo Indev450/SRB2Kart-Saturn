@@ -201,6 +201,7 @@ enum
 	SHADER_SPRITE,
 	SHADER_MODEL,
 	SHADER_WATER,
+	SHADER_WAVE,
 	SHADER_FOG,
 	SHADER_SKY,
 	SHADER_PALETTE_POSTPROCESS,
@@ -263,6 +264,7 @@ enum EPolyFlags
 	PF_ForceWrapX       = 0x00020000,   // Force repeat texture on X
 	PF_ForceWrapY       = 0x00040000,   // Forces repeat texture on Y
 	PF_Ripple           = 0x00100000,   // Water ripple effect. The current backend doesn't use it for anything.
+	PF_Wave             = 0x00200000,   // Water wave effect.
 	PF_Skydecal         = 0x20000000    // Enables smaller polygon offset, to be used for skywalls only
 	//                    0x20000000
 	//                    0x40000000
