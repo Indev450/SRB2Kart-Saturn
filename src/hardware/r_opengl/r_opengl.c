@@ -1887,7 +1887,7 @@ void GL_UpdateTexture(GLMipmap_t *pTexInfo)
 			// However, it does need to be copied to a buffer for generating mipmaps and padding
 			if (MipMap || applyPadding)
 			{
-				AllocTextureBuffer(pTexInfo);
+				GL_AllocTextureBuffer(pTexInfo);
 				tex = textureBuffer;
 				memcpy(tex, ptex, w * h * 4);
 				ptex = tex;
