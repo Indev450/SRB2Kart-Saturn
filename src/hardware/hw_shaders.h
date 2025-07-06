@@ -36,14 +36,14 @@
 #define GLSL_WAVE_VERTEX_SHADER \
 	"uniform float leveltime;\n" \
 	"const float waveSpeed = 2.5;\n" \
-	"const float waveFrequency = 0.7;\n" \
+	"const float waveFrequency = 0.5;\n" \
 	"const float waveAmplitude = 1.8;\n" \
 	"void main()\n" \
 	"{\n" \
 		"vec4 modelPos = gl_Vertex;\n" \
 		"float timeF = leveltime * waveSpeed;\n" \
-		"float wave1 = sin(timeF) * waveAmplitude;\n" \
-		"float wave2 = cos(timeF * 1.3) * waveAmplitude;\n" \
+		"float wave1 = sin(modelPos.z * waveFrequency + timeF) * waveAmplitude;\n" \
+		"float wave2 = cos(modelPos.x * waveFrequency * 0.7 + timeF * 1.3) * waveAmplitude;\n" \
 		"modelPos.y += wave1 + wave2;\n" \
 		"vec4 worldPos = gl_ModelViewMatrix * modelPos;\n" \
 		"gl_Position = gl_ProjectionMatrix * worldPos;\n" \
