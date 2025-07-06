@@ -6872,6 +6872,32 @@ static void M_HutCheckReplays(size_t maxnum)
 	}
 }
 
+static int ReplayListSortComparator(const void *entry1, const void *entry2)
+{
+	const menudemo_t *demo1 = (const menudemo_t*)entry1;
+	const menudemo_t *demo2 = (const menudemo_t*)entry2;
+
+	char filepath1[sizeof(demo1->filepath)];
+	char filepath2[sizeof(demo2->filepath)];
+
+	// First check for directories, they always should be at the top
+	if (demo1->type == MD_SUBDIR && demo2->type != MD_SUBDIR)
+		return -1;
+	else if (demo2->type == MD_SUBDIR && demo1->type != MD_SUBDIR)
+		return 1;
+	else if (demo1->type == MD_SUBDIR && demo2->type == MD_SUBDIR)
+		return 0;
+
+	memcpy(filepath1, demo1->filepath, sizeof(filepath1));
+	memcpy(filepath2, demo2->filepath, sizeof(filepath2));
+
+	nameonly(filepath1);
+	nameonly(filepath2);
+
+	// Comparing in opposite order to move new replays to the top
+	return strncmp(filepath2, filepath1, sizeof(filepath1));
+}
+
 static void PrepReplayList(boolean reset)
 {
 	size_t i;
@@ -6914,6 +6940,8 @@ static void PrepReplayList(boolean reset)
 			sprintf(demolist_all[i].title, ".....");
 		}
 	}
+
+	qs22j(demolist_all, sizedirmenu, sizeof(menudemo_t), ReplayListSortComparator);
 
 	Unlock_search_state();
 
