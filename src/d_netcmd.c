@@ -1026,6 +1026,7 @@ void D_RegisterClientCommands(void)
 	CV_RegisterVar(&cv_scr_height);
 
 	CV_RegisterVar(&cv_parallelsoftware);
+	CV_RegisterVar(&cv_paralleldrawmasked);
 
 	CV_RegisterVar(&cv_soundtest);
 
