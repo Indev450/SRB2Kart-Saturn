@@ -2978,15 +2978,20 @@ static void R_DrawMaskedList(drawnode_t* head)
 		{
 			drawspandata_t ds = {};
 			next = r2->prev;
+			boolean parallel = cv_parallelsoftware.value && cv_paralleldrawmasked.value;
 #ifdef HAVE_THREADS
 			srb2::ThreadPool::Sema tp_sema;
-			srb2::g_main_threadpool->begin_sema();
+			if (parallel)
+				srb2::g_main_threadpool->begin_sema();
 #endif
-			R_DrawSinglePlane(&ds, r2->plane, cv_parallelsoftware.value);
+			R_DrawSinglePlane(&ds, r2->plane, parallel);
 #ifdef HAVE_THREADS
-			tp_sema = srb2::g_main_threadpool->end_sema();
-			srb2::g_main_threadpool->notify_sema(tp_sema);
-			srb2::g_main_threadpool->wait_sema(tp_sema);
+			if (parallel)
+			{
+				tp_sema = srb2::g_main_threadpool->end_sema();
+				srb2::g_main_threadpool->notify_sema(tp_sema);
+				srb2::g_main_threadpool->wait_sema(tp_sema);
+			}
 #endif
 			R_DoneWithNode(r2);
 			r2 = next;
