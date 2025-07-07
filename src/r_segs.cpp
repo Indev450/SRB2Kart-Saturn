@@ -306,8 +306,10 @@ static void R_RenderMaskedSegLoop(drawcolumndata_t* dc, drawseg_t *drawseg, INT3
 			else
 				dc->texturemid -= (textureheight[texnum])*times;
 
+			const INT16 colnum = maskedtexturecol[dc->x];
+
 			// calculate lighting
-			if (maskedtexturecol[dc->x] != INT16_MAX)
+			if (colnum != INT16_MAX)
 			{
 				// Check for overflows first
 				if (R_OverflowTest(dc))
@@ -337,7 +339,7 @@ static void R_RenderMaskedSegLoop(drawcolumndata_t* dc, drawseg_t *drawseg, INT3
 					dc->iscale = 0xffffffffu / (unsigned)spryscale;
 
 					// draw the texture
-					col = (column_t *)((UINT8 *)R_GetColumn(texnum, maskedtexturecol[dc->x]) - 3);
+					col = (column_t *)((UINT8 *)R_GetColumn(texnum, colnum) - 3);
 
 					auto set_light_vars = [&](INT32 k)
 					{
@@ -434,7 +436,7 @@ static void R_RenderMaskedSegLoop(drawcolumndata_t* dc, drawseg_t *drawseg, INT3
 				dc->iscale = 0xffffffffu / (unsigned)spryscale;
 
 				// draw the texture
-				col = (column_t *)((UINT8 *)R_GetColumn(texnum, maskedtexturecol[dc->x]) - 3);
+				col = (column_t *)((UINT8 *)R_GetColumn(texnum, colnum) - 3);
 
 				colfunc_2s(dc, col);
 			}
@@ -1190,6 +1192,7 @@ static void R_RenderSegLoop(drawcolumndata_t* dc)
 	INT32     bottom;
 	INT32     i;
 
+	// Loop over width
 	for (; rw_x < rw_stopx; rw_x++)
 	{
 		// mark floor / ceiling areas
@@ -1563,6 +1566,7 @@ static void R_MarkSegBounds(void)
 	INT32 top, bottom;
 	INT16 topclip, bottomclip;
 
+	// Loop over width
 	for (; rw_x < rw_stopx; rw_x++)
 	{
 		// mark floor / ceiling areas

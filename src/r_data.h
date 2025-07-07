@@ -56,7 +56,6 @@ typedef struct
 	UINT32 hash;
 	INT16 width, height;
 	boolean holes;
-
 	// All the patches[patchcount] are drawn back to front into the cached texture.
 	INT16 patchcount;
 	texpatch_t patches[0];

@@ -474,11 +474,28 @@ UINT8 *R_GetColumn(fixed_t tex, INT32 col)
 {
 	UINT8 *data;
 
-	col &= texturewidthmask[tex];
 	data = texturecache[tex];
 
+	const INT16 texwidth = textures[tex]->width;
+
+	if (texturewidthmask[tex])
+		col &= texturewidthmask[tex];  // set by load textures
+	else
+	{
+		// Odd width texture, cannot just mask.
+		// Sometime gets colnum = -1 or = width, even without tiling.
+		// Test LostCiv, Map 20, crates.
+		col = ( col < 0 ) ?
+			texwidth - (((-col - 1) % texwidth) + 1)
+			: col % texwidth;
+	}
+
 	if (!data)
+	{
+		// This must be here because cache can be freed by other operations.
+		// To prevent must lock individual texture cache on every draw.
 		data = R_GenerateTexture(tex);
+	}
 
 	return data + LONG(texturecolumnofs[tex][col]);
 }
@@ -578,9 +595,23 @@ Rloadtextures (INT32 i, INT32 w)
 
 		Z_Free(patchlump);
 
+		// determine width power of 2
+#if 1
+        // [WDJ] only need to determine if exact power of 2.
+        k = 1;
+        while (k < texture->width)
+            k<<=1;
+#else
+		// Largest power of 2 that fits within width.
 		k = 1;
 		while (k << 1 <= texture->width)
 			k <<= 1;
+#endif
+		if (k != texture->width)
+		{
+			// Odd width
+			k = 1;  // make texturewidthmask = 0
+		}
 
 		texturewidthmask[i] = k - 1;
 		textureheight[i] = texture->height << FRACBITS;
