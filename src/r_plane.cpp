@@ -247,7 +247,7 @@ static void R_MapPlane(drawspandata_t *ds, spandrawfunc_t *localspanfunc, INT32 
 			ds->bgofs = -y;
 	}
 
-	pindex = std::min(distance >> LIGHTZSHIFT, MAXLIGHTZ - 1);
+	pindex = std::min<size_t>(distance >> LIGHTZSHIFT, MAXLIGHTZ - 1);
 
 	ds->colormap = ds->planezlight[pindex];
 
