@@ -629,13 +629,12 @@ static void R_MakeSpans(void (*mapfunc)(drawspandata_t* ds, void(*spanfunc)(draw
 	if (x-1 >= vid.width) x = vid.width;
 
 #ifdef HAVE_THREADS
-	drawspandata_t ds_copy = *ds;
-
 	// We want to draw N spans per subtask to ensure the work is
 	// coarse enough to not be too slow due to task scheduling overhead.
 	// To safely do this, we need to copy part of spanstart to a local.
 	// This is essentially loop unrolling across threads.
 	constexpr const int kSpanTaskGranularity = 8;
+	drawspandata_t ds_copy = *ds;
 	while (t1 < t2 && t1 <= b1)
 	{
 		INT32 spanstartcopy[kSpanTaskGranularity] = {0};
@@ -1020,6 +1019,7 @@ void R_DrawSinglePlane(drawspandata_t* ds, visplane_t *pl, boolean allow_paralle
 	size_t size;
 	INT32 spanfunctype = BASEDRAWFUNC;
 	ffloor_t *rover;
+	levelflat_t *levelflat;
 	void (*mapfunc)(drawspandata_t*, void(*)(drawspandata_t*), INT32, INT32, INT32, boolean) = R_MapPlane;
 
 	if (pl->minx > pl->maxx)
@@ -1177,8 +1177,15 @@ void R_DrawSinglePlane(drawspandata_t* ds, visplane_t *pl, boolean allow_paralle
 
 	ds->currentplane = pl;
 
-	ds->source = (UINT8 *)W_CacheLumpNum(levelflats[pl->picnum].lumpnum, PU_STATIC); // Stay here until Z_ChangeTag
-	size = W_LumpLength(levelflats[pl->picnum].lumpnum);
+	levelflat = &levelflats[pl->picnum];
+
+	// Get the texture
+	ds->source = (UINT8 *)W_CacheLumpNum(levelflat->lumpnum, PU_STATIC); // Stay here until Z_ChangeTag
+
+	if (ds->source == NULL)
+		return;
+
+	size = W_LumpLength(levelflat->lumpnum);
 
 	switch (size)
 	{
