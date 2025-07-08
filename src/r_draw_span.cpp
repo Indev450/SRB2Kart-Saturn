@@ -47,9 +47,22 @@ enum DrawSpanType
 };
 
 template<DrawSpanType Type>
+static constexpr UINT8 R_GetSpanTranslated(drawspandata_t* ds, UINT8 col)
+{
+	if constexpr (Type & DrawSpanType::DS_COLORMAP)
+	{
+		return ds->translation[col];
+	}
+	else
+	{
+		return col;
+	}
+}
+
+template<DrawSpanType Type>
 static constexpr UINT8 R_GetSpanTranslucent(drawspandata_t* ds, UINT8 *dsrc, const UINT8 *colormap, UINT8 col)
 {
-	col = colormap[col];
+	col = colormap[R_GetSpanTranslated<Type>(ds, col)];
 
 	if constexpr (Type & DrawSpanType::DS_TRANSMAP)
 	{

@@ -705,7 +705,7 @@ static void Command_Sayto_f(void)
 		return;
 	}
 
-	target = nametonum(COM_Argv(1));
+	target = D_LookupPlayer(COM_Argv(1));
 	if (target == -1)
 	{
 		CONS_Alert(CONS_NOTICE, M_GetText("No player with that name!\n"));
@@ -953,6 +953,9 @@ static void Got_Saycmd(UINT8 **p, INT32 playernum)
 	else
 		stop_spamming[playernum] = 4; // you can hold off for 4 tics, can you?
 
+	if (player_muted[playernum])
+		spam_eatmsg = 1; // Let lua know we're skipping this message
+
 	// run the lua hook even if we were supposed to eat the msg, netgame consistency goes first.
 
 	if (LUA_HookPlayerMsg(playernum, target, flags, msg, spam_eatmsg))
@@ -1184,6 +1187,23 @@ static boolean HU_clearChatSpaces(void)
 	return nothingbutspaces;
 }
 
+static void DoMute(const char *name)
+{
+	INT32 pnum = D_LookupPlayer(name);
+
+	if (pnum < 0)
+	{
+		HU_AddChatText("\x85""ERROR: \x80Player not found.", false);
+		return;
+	}
+
+	player_muted[pnum] = !player_muted[pnum];
+
+	HU_AddChatText(va("Player '%s' has been %smuted.", player_names[pnum], player_muted[pnum] ? "" : "un"), false);
+	if (player_muted[pnum])
+		HU_AddChatText("Use same command to unmute them.", false);
+}
+
 static void HU_SendChatMessage(void)
 {
 	char buf[2 + HU_MAXMSGLEN + 1];
@@ -1210,7 +1230,19 @@ static void HU_SendChatMessage(void)
 		return;
 	}
 
-	if (strlen(msg) > 4 && strnicmp(msg, "/pm", 3) == 0) // used /pm
+	size_t len = strlen(msg);
+
+	if (len >= 5 && strnicmp(msg, "/mute", 5) == 0) // Used /mute
+	{
+		if (len > 6)
+			DoMute(msg+6);
+		else
+			HU_AddChatText("\x82NOTICE: \x80Usage: /mute <name|node>", false);
+
+		return;
+	}
+
+	if (len > 4 && strnicmp(msg, "/pm", 3) == 0) // used /pm
 	{
 		INT32 spc = 1; // used if nodenum[1] is a space.
 		char *nodenum = (char*) malloc(3);

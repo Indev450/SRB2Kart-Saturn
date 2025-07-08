@@ -247,9 +247,7 @@ static void R_MapPlane(drawspandata_t *ds, spandrawfunc_t *localspanfunc, INT32 
 			ds->bgofs = -y;
 	}
 
-	pindex = distance >> LIGHTZSHIFT;
-	if (pindex >= MAXLIGHTZ)
-		pindex = MAXLIGHTZ - 1;
+	pindex = std::min<size_t>(distance >> LIGHTZSHIFT, MAXLIGHTZ - 1);
 
 	ds->colormap = ds->planezlight[pindex];
 
@@ -352,8 +350,8 @@ void R_ClearPlanes(void)
 	angle = (viewangle-ANGLE_90)>>ANGLETOFINESHIFT;
 
 	// scale will be unit scale at SCREENWIDTH/2 distance
-	basexscale = FixedDiv (FINECOSINE(angle), centerxfrac);
-	baseyscale = -FixedDiv (FINESINE(angle), centerxfrac);
+	basexscale =  FixedDiv (FINECOSINE(angle), centerxfrac);
+	baseyscale = -FixedDiv (FINESINE(angle),   centerxfrac);
 }
 
 static visplane_t *new_visplane(unsigned hash)
@@ -442,26 +440,20 @@ visplane_t *R_FindPlane(fixed_t height, INT32 picnum, INT32 lightlevel,
 		}
 	}
 
-	// This appears to fix the Nimbus Ruins sky bug.
-	if (picnum == skyflatnum && pfloor)
-	{
-		height = 0; // all skies map together
-		lightlevel = 0;
-	}
-	else if (slope != NULL && P_ApplyLightOffset(lightlevel >> LIGHTSEGSHIFT, lighting_sector))
-	{
-		if (reverseLight)
-		{
-			lightlevel -= slope->lightOffset * 8;
-		}
-		else
-		{
-			lightlevel += slope->lightOffset * 8;
-		}
-	}
-
 	if (!pfloor)
 	{
+		if (slope != NULL && P_ApplyLightOffset(lightlevel >> LIGHTSEGSHIFT, lighting_sector))
+		{
+			if (reverseLight)
+			{
+				lightlevel -= slope->lightOffset * 8;
+			}
+			else
+			{
+				lightlevel += slope->lightOffset * 8;
+			}
+		}
+
 		hash = visplane_hash(picnum, lightlevel, height);
 
 		for (check = visplanes[hash]; check; check = check->next)
@@ -485,6 +477,13 @@ visplane_t *R_FindPlane(fixed_t height, INT32 picnum, INT32 lightlevel,
 	}
 	else
 	{
+		// This appears to fix the Nimbus Ruins sky bug.
+		if (picnum == skyflatnum)
+		{
+			height     = 0; // all skies map together
+			lightlevel = 0;
+		}
+
 		hash = MAXVISPLANES - 1;
 	}
 
@@ -592,6 +591,7 @@ visplane_t *R_CheckPlane(visplane_t *pl, INT32 start, INT32 stop)
 		memset(pl->top, 0xff, sizeof(*pl->top) * viewwidth);
 		memset(pl->bottom, 0x00, sizeof(*pl->bottom) * viewwidth);
 	}
+
 	return pl;
 }
 
@@ -628,14 +628,13 @@ static void R_MakeSpans(void (*mapfunc)(drawspandata_t* ds, void(*spanfunc)(draw
 	if (b2 >= vidheight) b2 = vidheight-1;
 	if (x-1 >= vid.width) x = vid.width;
 
-	drawspandata_t dc_copy = *ds;
-
 #ifdef HAVE_THREADS
 	// We want to draw N spans per subtask to ensure the work is
 	// coarse enough to not be too slow due to task scheduling overhead.
 	// To safely do this, we need to copy part of spanstart to a local.
 	// This is essentially loop unrolling across threads.
 	constexpr const int kSpanTaskGranularity = 8;
+	drawspandata_t ds_copy = *ds;
 	while (t1 < t2 && t1 <= b1)
 	{
 		INT32 spanstartcopy[kSpanTaskGranularity] = {0};
@@ -652,7 +651,7 @@ static void R_MakeSpans(void (*mapfunc)(drawspandata_t* ds, void(*spanfunc)(draw
 		auto task = [=]() mutable -> void {
 			for (int i = 0; i < taskspans; i++)
 			{
-				mapfunc(&dc_copy, localspanfunc, t1 + i, spanstartcopy[i], x - 1, false);
+				mapfunc(&ds_copy, localspanfunc, t1 + i, spanstartcopy[i], x - 1, false);
 			}
 		};
 		if (allow_parallel)
@@ -681,7 +680,7 @@ static void R_MakeSpans(void (*mapfunc)(drawspandata_t* ds, void(*spanfunc)(draw
 		auto task = [=]() mutable -> void {
 			for (int i = 0; i < taskspans; i++)
 			{
-				mapfunc(&dc_copy, localspanfunc, b1 - i, spanstartcopy[i], x - 1, false);
+				mapfunc(&ds_copy, localspanfunc, b1 - i, spanstartcopy[i], x - 1, false);
 			}
 		};
 		if (allow_parallel)
@@ -699,12 +698,12 @@ static void R_MakeSpans(void (*mapfunc)(drawspandata_t* ds, void(*spanfunc)(draw
 
 	while (t1 < t2 && t1 <= b1)
 	{
-		mapfunc(&dc_copy, localspanfunc, t1, spanstart[t1], x - 1, false);
+		mapfunc(ds, localspanfunc, t1, spanstart[t1], x - 1, false);
 		t1++;
 	}
 	while (b1 > b2 && b1 >= t1)
 	{
-		mapfunc(&dc_copy, localspanfunc, b1, spanstart[b1], x - 1, false);
+		mapfunc(ds, localspanfunc, b1, spanstart[b1], x - 1, false);
 		b1--;
 	}
 #endif
@@ -1020,12 +1019,11 @@ void R_DrawSinglePlane(drawspandata_t* ds, visplane_t *pl, boolean allow_paralle
 	size_t size;
 	INT32 spanfunctype = BASEDRAWFUNC;
 	ffloor_t *rover;
+	levelflat_t *levelflat;
 	void (*mapfunc)(drawspandata_t*, void(*)(drawspandata_t*), INT32, INT32, INT32, boolean) = R_MapPlane;
 
-	if (!(pl->minx <= pl->maxx))
+	if (pl->minx > pl->maxx)
 		return;
-
-	R_UpdatePlaneRipple(ds);
 
 	// sky flat
 	if (pl->picnum == skyflatnum)
@@ -1038,6 +1036,8 @@ void R_DrawSinglePlane(drawspandata_t* ds, visplane_t *pl, boolean allow_paralle
 
 		return;
 	}
+
+	R_UpdatePlaneRipple(ds);
 
 	ds->planeripple.active = false;
 	R_SetSpanFunc(BASEDRAWFUNC);
@@ -1175,16 +1175,17 @@ void R_DrawSinglePlane(drawspandata_t* ds, visplane_t *pl, boolean allow_paralle
 		else light = (pl->lightlevel >> LIGHTSEGSHIFT);
 	}
 
-	// Don't mess with angle on slopes! We'll handle this ourselves later
-	if (!pl->slope && viewangle != pl->viewangle+pl->plangle)
-	{
-		viewangle = pl->viewangle+pl->plangle;
-	}
-
 	ds->currentplane = pl;
 
-	ds->source = (UINT8 *)W_CacheLumpNum(levelflats[pl->picnum].lumpnum, PU_STATIC); // Stay here until Z_ChangeTag
-	size = W_LumpLength(levelflats[pl->picnum].lumpnum);
+	levelflat = &levelflats[pl->picnum];
+
+	// Get the texture
+	ds->source = (UINT8 *)W_CacheLumpNum(levelflat->lumpnum, PU_STATIC); // Stay here until Z_ChangeTag
+
+	if (ds->source == NULL)
+		return;
+
+	size = W_LumpLength(levelflat->lumpnum);
 
 	switch (size)
 	{
@@ -1235,11 +1236,7 @@ void R_DrawSinglePlane(drawspandata_t* ds, visplane_t *pl, boolean allow_paralle
 	ds->xoffs = pl->xoffs;
 	ds->yoffs = pl->yoffs;
 
-	if (light >= LIGHTLEVELS)
-		light = LIGHTLEVELS-1;
-
-	if (light < 0)
-		light = 0;
+	light = CLAMP(light, 0, LIGHTLEVELS-1);
 
 	if (pl->slope)
 	{
@@ -1292,6 +1289,12 @@ void R_DrawSinglePlane(drawspandata_t* ds, visplane_t *pl, boolean allow_paralle
 	}
 	else
 	{
+		// Don't mess with angle on slopes! We'll handle this ourselves later
+		if (viewangle != pl->viewangle + pl->plangle)
+		{
+			viewangle = pl->viewangle + pl->plangle;
+		}
+
 		ds->planeheight = abs(pl->height - pl->viewz);
 		ds->planezlight = zlight[light];
 	}
@@ -1299,10 +1302,8 @@ void R_DrawSinglePlane(drawspandata_t* ds, visplane_t *pl, boolean allow_paralle
 	R_SetSpanFunc(spanfunctype);
 
 	// set the maximum value for unsigned
-	pl->top[pl->maxx+1] = 0xffff;
-	pl->top[pl->minx-1] = 0xffff;
-	pl->bottom[pl->maxx+1] = 0x0000;
-	pl->bottom[pl->minx-1] = 0x0000;
+	pl->top[pl->maxx+1]    = pl->top[pl->minx-1]    = 0xffff;
+	pl->bottom[pl->maxx+1] = pl->bottom[pl->minx-1] = 0x0000;
 
 	stop = pl->maxx + 1;
 
@@ -1403,6 +1404,7 @@ void R_PlaneBounds(visplane_t *plane)
 		if (plane->bottom[i] > low)
 			low = plane->bottom[i];
 	}
+
 	plane->high = hi;
 	plane->low = low;
 }

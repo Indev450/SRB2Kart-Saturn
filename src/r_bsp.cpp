@@ -199,9 +199,9 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec, INT32 *floorlightlevel,
 		UINT8 i = R_GetViewNumber();
 
 		if (viewplayer == &players[displayplayers[i]] && camera[i].chase)
-			heightsec = R_PointInSubsector(camera[i].x, camera[i].y)->sector->heightsec;
-		else if (i > splitscreen && viewmobj)
-			heightsec = R_PointInSubsector(pviewmobj->x, pviewmobj->y)->sector->heightsec;
+			heightsec = camera->subsector->sector->heightsec;
+		else if (viewmobj)
+			heightsec = pviewmobj->subsector->sector->heightsec;
 		else
 			return sec;
 

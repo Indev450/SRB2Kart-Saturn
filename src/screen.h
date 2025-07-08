@@ -88,6 +88,7 @@ extern UINT8 *scr_borderpatch; // patch used to fill the view borders
 
 extern consvar_t cv_scr_width, cv_scr_height, cv_renderview, cv_fullscreen, cv_vhseffect, cv_shittyscreen;
 extern consvar_t cv_parallelsoftware;
+extern consvar_t cv_paralleldrawmasked;
 
 extern consvar_t cv_highreshudscale;
 // wait for page flipping to end or not

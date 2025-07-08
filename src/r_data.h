@@ -56,7 +56,6 @@ typedef struct
 	UINT8 type; // TEXTURETYPE_
 	INT16 width, height;
 	boolean holes;
-
 	// All the patches[patchcount] are drawn back to front into the cached texture.
 	INT16 patchcount;
 	texpatch_t patches[0];
@@ -65,9 +64,6 @@ typedef struct
 // all loaded and prepared textures from the start of the game
 extern texture_t **textures;
 extern UINT8 **texturecache; // graphics data for each generated full-size texture
-
-// texture width is a power of 2, so it can easily repeat along sidedefs using a simple mask
-extern INT32 *texturewidthmask;
 
 extern fixed_t *textureheight; // needed for texture pegging
 
