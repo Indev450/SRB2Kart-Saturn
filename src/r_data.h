@@ -65,9 +65,6 @@ typedef struct
 extern texture_t **textures;
 extern UINT8 **texturecache; // graphics data for each generated full-size texture
 
-// texture width is a power of 2, so it can easily repeat along sidedefs using a simple mask
-extern INT32 *texturewidthmask;
-
 extern fixed_t *textureheight; // needed for texture pegging
 
 UINT32 ASTBlendPixel(RGBA_t background, RGBA_t foreground, int style, UINT8 alpha);
