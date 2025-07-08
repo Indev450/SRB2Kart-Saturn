@@ -103,7 +103,7 @@ static UINT32 **texturecolumnofs; // column offset lookup table for each texture
 UINT8 **texturecache; // graphics data for each generated full-size texture
 
 // texture width is a power of 2, so it can easily repeat along sidedefs using a simple mask
-INT32 *texturewidthmask;
+static INT32 *texturewidthmask;
 
 fixed_t *textureheight; // needed for texture pegging
 
@@ -475,12 +475,12 @@ UINT8 *R_GetColumn(fixed_t tex, INT32 col)
 
 	data = texturecache[tex];
 
-	const INT16 texwidth = textures[tex]->width;
-
 	if (texturewidthmask[tex])
 		col &= texturewidthmask[tex];  // set by load textures
 	else
 	{
+		const INT16 texwidth = textures[tex]->width;
+
 		// Odd width texture, cannot just mask.
 		// Sometime gets colnum = -1 or = width, even without tiling.
 		// Test LostCiv, Map 20, crates.
