@@ -10411,9 +10411,11 @@ void P_PrecipitationEffects(void)
 				P_SpawnLightningFlash(ss); // Spawn a quick flash thinker
 	}
 
+	const mobj_t *pmo = players[displayplayers[0]].mo;
+
 	// Local effects from here on out!
 	// If we're not in game fully yet, we don't worry about them.
-	if (!playeringame[displayplayers[0]] || !players[displayplayers[0]].mo)
+	if (!playeringame[displayplayers[0]] || !pmo)
 		return;
 
 	if (sound_disabled)
@@ -10422,7 +10424,7 @@ void P_PrecipitationEffects(void)
 	if (!sounds_rain && !sounds_thunder)
 		return; // no need to calculate volume at ALL
 
-	if (players[displayplayers[0]].mo->subsector->sector->ceilingpic == skyflatnum)
+	if (pmo->subsector->sector->ceilingpic == skyflatnum)
 		volume = 255; // Sky above? We get it full blast.
 	else
 	{
@@ -10433,7 +10435,7 @@ void P_PrecipitationEffects(void)
 		// Essentially check in a 1024 unit radius of the player for an outdoor area.
 #define RADIUSSTEP (64*FRACUNIT)
 #define SEARCHRADIUS (16*RADIUSSTEP)
-		yl = yh = players[displayplayers[0]].mo->y;
+		yl = yh = pmo->y;
 		yl -= SEARCHRADIUS;
 		while (yl < INT32_MIN)
 			yl += RADIUSSTEP;
@@ -10441,7 +10443,7 @@ void P_PrecipitationEffects(void)
 		while (yh > INT32_MAX)
 			yh -= RADIUSSTEP;
 
-		xl = xh = players[displayplayers[0]].mo->x;
+		xl = xh = pmo->x;
 		xl -= SEARCHRADIUS;
 		while (xl < INT32_MIN)
 			xl += RADIUSSTEP;
@@ -10457,20 +10459,19 @@ void P_PrecipitationEffects(void)
 				if (R_PointInSubsector((fixed_t)x, (fixed_t)y)->sector->ceilingpic != skyflatnum) // Found the outdoors!
 					continue;
 
-				newdist = S_CalculateSoundDistance(players[displayplayers[0]].mo->x, players[displayplayers[0]].mo->y, 0, (fixed_t)x, (fixed_t)y, 0);
+				newdist = S_CalculateSoundDistance(pmo->x, pmo->y, 0, (fixed_t)x, (fixed_t)y, 0);
 
 				if (newdist < closedist)
 					closedist = newdist;
 			}
 
 		volume = 255 - (closedist>>(FRACBITS+2));
+		volume = CLAMP(volume, 0, 255);
 	}
 #undef RADIUSSTEP
 
-	volume = CLAMP(volume, 0, 255);
-
 	if (sounds_rain)
-		S_StartSoundAtVolume(players[displayplayers[0]].mo, sfx_rainin, volume);
+		S_StartSoundAtVolume(pmo, sfx_rainin, volume);
 
 	if (!sounds_thunder)
 		return;
@@ -10478,7 +10479,7 @@ void P_PrecipitationEffects(void)
 	if (effects_lightning && lightningStrike && volume)
 	{
 		// Large, close thunder sounds to go with our lightning.
-		S_StartSoundAtVolume(players[displayplayers[0]].mo, sfx_litng1 + M_RandomKey(4), volume);
+		S_StartSoundAtVolume(pmo, sfx_litng1 + M_RandomKey(4), volume);
 	}
 	else if (thunderchance < 20)
 	{
@@ -10486,7 +10487,7 @@ void P_PrecipitationEffects(void)
 		if (volume < 80)
 			volume = 80;
 
-		S_StartSoundAtVolume(players[displayplayers[0]].mo, sfx_athun1 + M_RandomKey(2), volume);
+		S_StartSoundAtVolume(pmo, sfx_athun1 + M_RandomKey(2), volume);
 	}
 }
 
