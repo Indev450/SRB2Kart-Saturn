@@ -20,16 +20,17 @@
 
 typedef struct aatree_node_s
 {
-	INT32	key;
-	void*	value;
+	INT32 key;
+	INT32 depth;
+	void *value;
 
 	struct aatree_node_s *left, *right;
 } aatree_node_t;
 
 struct aatree_s
 {
-	aatree_node_t	*root;
-	UINT32		flags;
+	aatree_node_t *root;
+	UINT32 flags;
 };
 
 aatree_t *M_AATreeAlloc(UINT32 flags)
@@ -58,46 +59,43 @@ void M_AATreeFree(aatree_t *aatree)
 static aatree_node_t *M_AATreeRotateRight(aatree_node_t *node)
 {
 	aatree_node_t *newnode = node->left;
+	aatree_node_t *tmp = newnode->right;
 	newnode->right = node;
-	node->left = NULL;
+	node->left = tmp;
 	return newnode;
 }
 
 static aatree_node_t *M_AATreeRotateLeft(aatree_node_t *node)
 {
 	aatree_node_t *newnode = node->right;
+	aatree_node_t *tmp = newnode->left;
 	newnode->left = node;
-	node->right = NULL;
+	node->right = tmp;
 	return newnode;
 }
 
 static aatree_node_t *M_AATreeRebalance(aatree_node_t *node)
 {
-	if (node->right && !node->left)
+	INT32 balance;
+	if (node->left == NULL && node->right == NULL)
+		return node;
+	if (node->left == NULL)
+		balance = -node->right->depth;
+	else if (node->right == NULL)
+		balance = node->left->depth;
+	else
 	{
-		if (node->right->left && !node->right->right)
-		{
-			node->right = M_AATreeRotateRight(node->right);
-			return M_AATreeRotateLeft(node);
-		}
-
-		if (node->right->right && !node->right->left)
-		{
-			return M_AATreeRotateLeft(node);
-		}
+		assert(node->left->key < node->right->key);
+		balance = node->left->depth - node->right->depth;
 	}
-	else if (node->left && !node->right)
-	{
-		if (node->left->right && !node->left->left)
-		{
-			node->left = M_AATreeRotateLeft(node->left);
-			return M_AATreeRotateRight(node);
-		}
 
-		if (node->left->left && !node->left->right)
-		{
-			return M_AATreeRotateRight(node);
-		}
+	if (balance > 1)
+	{
+		return M_AATreeRotateRight(node);
+	}
+	else if (balance < -1)
+	{
+		return M_AATreeRotateLeft(node);
 	}
 
 	return node;
@@ -113,6 +111,7 @@ static aatree_node_t *M_AATreeSet_Node(aatree_node_t *node, UINT32 flags, INT32 
 		if (value && (flags & AATREE_ZUSER)) Z_SetUser(value, &node->value);
 		else node->value = value;
 		node->left = node->right = NULL;
+		node->depth = 1;
 	}
 	else
 	{
@@ -127,6 +126,16 @@ static aatree_node_t *M_AATreeSet_Node(aatree_node_t *node, UINT32 flags, INT32 
 		}
 
 		node = M_AATreeRebalance(node);
+		if (node->left == NULL && node->right == NULL)
+			node->depth = 1;
+		else if (node->left == NULL)
+			node->depth = node->right->depth + 1;
+		else if (node->right == NULL)
+			node->depth = node->left->depth + 1;
+		else if (node->left->depth > node->right->depth)
+			node->depth = node->left->depth + 1;
+		else
+			node->depth = node->right->depth + 1;
 	}
 
 	return node;
