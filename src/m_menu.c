@@ -107,7 +107,7 @@
 #define SMALLLINEHEIGHT 8
 #define SLIDER_RANGE 10
 #define SLIDER_WIDTH (8*SLIDER_RANGE+6)
-#define SERVERS_PER_PAGE 11
+#define SERVERS_PER_PAGE 10
 #define MAXSTAT 9 //Max number a stat can have
 
 typedef enum
@@ -183,6 +183,8 @@ static char joystickInfo[8][29];
 static UINT32 serverlistpage;
 static UINT32 oldserverlistpage;
 static float serverlistslidex;
+static INT32 serverlistsearched[MAXSERVERLIST] = {0};
+static UINT32 serverlistsearchedcount = 0;
 #endif
 
 //static saveinfo_t savegameinfo[MAXSAVEGAMES]; // Extra info about the save games.
@@ -211,6 +213,8 @@ static void M_StopMessage(INT32 choice);
 
 #ifndef NONET
 static void M_HandleServerPage(INT32 choice);
+static void M_HandleServerSearch(INT32 choice);
+static void M_SearchServerList(void);
 #endif
 
 // Prototyping is fun, innit?
@@ -1110,11 +1114,11 @@ static menuitem_t MP_PlayerSetupMenu[] =
 #ifndef NONET
 static menuitem_t MP_ConnectMenu[] =
 {
-	{IT_STRING | IT_CVAR,       NULL, "Sort By",  &cv_serversort,      4},
-	{IT_STRING | IT_KEYHANDLER, NULL, "Page",     M_HandleServerPage, 12},
-	{IT_STRING | IT_CALL,       NULL, "Refresh",  M_Refresh,          20},
+	{IT_STRING | IT_KEYHANDLER, NULL, "",         M_HandleServerSearch,0},
+	{IT_STRING | IT_CVAR,       NULL, "Sort By",  &cv_serversort,     16},
+	{IT_STRING | IT_KEYHANDLER, NULL, "Page",     M_HandleServerPage, 24},
+	{IT_STRING | IT_CALL,       NULL, "Refresh",  M_Refresh,          32},
 
-	{IT_STRING | IT_SPACE, NULL, "",              M_Connect,          36},
 	{IT_STRING | IT_SPACE, NULL, "",              M_Connect,          48},
 	{IT_STRING | IT_SPACE, NULL, "",              M_Connect,          60},
 	{IT_STRING | IT_SPACE, NULL, "",              M_Connect,          72},
@@ -1129,6 +1133,7 @@ static menuitem_t MP_ConnectMenu[] =
 
 enum
 {
+	mp_connect_search,
 	mp_connect_sort,
 	mp_connect_page,
 	mp_connect_refresh,
@@ -4875,6 +4880,9 @@ void M_Init(void)
 
 	//todo put this somewhere better...
 	CV_RegisterVar(&cv_allcaps);
+
+	memset(menu_text_input_buf, 0, sizeof menu_text_input_buf);
+	M_TextInputInit(&menuinput, menu_text_input_buf, sizeof menu_text_input_buf);
 }
 
 void M_InitCharacterTables(void)
@@ -9629,13 +9637,62 @@ Fetch_servers_thread (int *id)
 }
 #endif/*MASTERSERVER*/
 
-#define SERVERHEADERHEIGHT 36
+#define SERVERHEADERHEIGHT 48
 #define SERVERLINEHEIGHT 12
 
 #define S_LINEY(n) currentMenu->y + SERVERHEADERHEIGHT + (n * SERVERLINEHEIGHT)
 
 #ifndef NONET
 static UINT32 localservercount;
+
+static void M_SearchServerList(void)
+{
+	serverlistsearchedcount = 0;
+
+	for (UINT32 i = 0; i < serverlistcount; ++i)
+	{
+		if (menuinput.length == 0 || strcasestr(serverlist[i].info.servername, menuinput.buffer) != NULL)
+			serverlistsearched[serverlistsearchedcount++] = i;
+	}
+
+	if (menuinput.length > 0)
+		serverlistpage = 0;
+}
+
+static void M_HandleServerSearch(INT32 choice)
+{
+	boolean exitmenu = false; // exit to previous menu
+
+	switch (choice)
+	{
+		case KEY_DOWNARROW:
+			M_NextOpt();
+			S_StartSound(NULL, sfx_menu1);
+			break;
+		case KEY_UPARROW:
+			M_PrevOpt();
+			S_StartSound(NULL, sfx_menu1);
+			break;
+		case KEY_ESCAPE:
+			exitmenu = true;
+			break;
+
+		default:
+			if (M_TextInputHandle(&menuinput, choice))
+			{
+				S_StartSound(NULL, sfx_menu1);
+				M_SearchServerList();
+			}
+			break;
+	}
+	if (exitmenu)
+	{
+		if (currentMenu->prevMenu)
+			M_SetupNextMenu(currentMenu->prevMenu);
+		else
+			M_ClearMenus(true);
+	}
+}
 
 static void M_HandleServerPage(INT32 choice)
 {
@@ -9659,7 +9716,7 @@ static void M_HandleServerPage(INT32 choice)
 		case KEY_ENTER:
 		case KEY_RIGHTARROW:
 			S_StartSound(NULL, sfx_menu1);
-			if ((serverlistpage + 1) * SERVERS_PER_PAGE < serverlistcount)
+			if ((serverlistpage + 1) * SERVERS_PER_PAGE < serverlistsearchedcount)
 			{
 				oldserverlistpage = serverlistpage++;
 				serverlistslidex = BASEVIDWIDTH;
@@ -9690,7 +9747,7 @@ static void M_Connect(INT32 choice)
 {
 	// do not call menuexitfunc
 	M_ClearMenus(false);
-	COM_BufAddText(va("connect node %d\n", serverlist[choice-FIRSTSERVERLINE + serverlistpage * SERVERS_PER_PAGE].node));
+	COM_BufAddText(va("connect node %d\n", serverlist[serverlistsearched[choice-FIRSTSERVERLINE + serverlistpage * SERVERS_PER_PAGE]].node));
 }
 
 static void M_Refresh(INT32 choice)
@@ -9748,11 +9805,11 @@ static void M_DrawServerCountAndHorizontalBar(void)
 
 	radius = V_StringWidth(text, 0) / 2;
 
-	V_DrawCenteredString(center, currentMenu->y+28, 0, text);
+	V_DrawCenteredString(center, currentMenu->y+40, 0, text);
 
 	// Horizontal line!
-	V_DrawFill(1, currentMenu->y+32, center - radius - 2, 1, 0);
-	V_DrawFill(center + radius + 2, currentMenu->y+32, BASEVIDWIDTH - 1, 1, 0);
+	V_DrawFill(1, currentMenu->y+44, center - radius - 2, 1, 0);
+	V_DrawFill(center + radius + 2, currentMenu->y+44, BASEVIDWIDTH - 1, 1, 0);
 }
 #endif
 
@@ -9762,9 +9819,9 @@ static void M_DrawServerLines(INT32 x, INT32 page)
 	const char *gt = "Unknown";
 	const char *spd = "";
 
-	for (i = 0; i < min(serverlistcount - page * SERVERS_PER_PAGE, SERVERS_PER_PAGE); i++)
+	for (i = 0; i < min(serverlistsearchedcount - page * SERVERS_PER_PAGE, SERVERS_PER_PAGE); i++)
 	{
-		INT32 slindex = i + page * SERVERS_PER_PAGE;
+		INT32 slindex = serverlistsearched[i + page * SERVERS_PER_PAGE];
 		UINT32 globalflags = ((serverlist[slindex].info.numberofplayer >= serverlist[slindex].info.maxplayer) ? V_TRANSLUCENT : 0)
 			|((itemOn == FIRSTSERVERLINE+i) ? highlightflags : 0)|V_ALLOWLOWERCASE;
 
@@ -9803,7 +9860,7 @@ static void M_DrawServerLines(INT32 x, INT32 page)
 static void M_DrawConnectMenu(void)
 {
 	UINT16 i;
-	INT32 numPages = (serverlistcount+(SERVERS_PER_PAGE-1))/SERVERS_PER_PAGE;
+	INT32 numPages = (serverlistsearchedcount+(SERVERS_PER_PAGE-1))/SERVERS_PER_PAGE;
 	INT32 mservflags = V_ALLOWLOWERCASE;
 
 	for (i = FIRSTSERVERLINE; i < min(localservercount, SERVERS_PER_PAGE)+FIRSTSERVERLINE; i++)
@@ -9852,6 +9909,16 @@ static void M_DrawConnectMenu(void)
 	{
 		M_DrawServerLines(currentMenu->x, serverlistpage);
 	}
+
+	V_DrawFill(currentMenu->x, currentMenu->y, MAXSTRINGLENGTH*8+6, 8+6, 239);
+
+	const INT32 xoff = 3, yoff = 3;
+
+
+	if (itemOn != 0)
+		V_DrawString(currentMenu->x+xoff, currentMenu->y+yoff, V_ALLOWLOWERCASE, menuinput.buffer);
+	else
+		M_DrawTextInput(currentMenu->x+xoff, currentMenu->y+yoff, &menuinput, 0);
 
 	localservercount = serverlistcount;
 
@@ -9932,6 +9999,7 @@ void M_SortServerList(void)
 		qs22j(serverlist, serverlistcount, sizeof(serverelem_t), ServerListEntryComparator_gametype);
 		break;
 	}
+	M_SearchServerList();
 #endif
 }
 
@@ -9989,6 +10057,9 @@ static void M_ConnectMenu(INT32 choice)
 	serverlistpage = 0;
 
 	CL_UpdateServerList();
+
+	// Reset
+	M_TextInputSetString(&menuinput, "");
 
 	M_SetupNextMenu(&MP_ConnectDef);
 	itemOn = 0;
