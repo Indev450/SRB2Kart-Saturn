@@ -1828,6 +1828,21 @@ void CopyCaretColors(char *p, const char *s, int n)
 	strncpy(p, s, n);
 }
 
+void StripColors(char *dst, char *src, size_t n)
+{
+	size_t j = 0;
+
+	for (size_t i = 0; j < n && src[i] != 0; ++i)
+	{
+		char c = src[i];
+
+		if ((c & 0x80) == 0)
+			dst[j++] = c;
+	}
+
+	dst[j] = 0;
+}
+
 /** Token parser for TEXTURES, ANIMDEFS, and potentially other lumps later down the line.
   * Was originally R_GetTexturesToken when I was coding up the TEXTURES parser, until I realized I needed it for ANIMDEFS too.
   * Parses up to the next whitespace character or comma. When finding the start of the next token, whitespace is skipped.

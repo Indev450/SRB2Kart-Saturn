@@ -9647,11 +9647,13 @@ static UINT32 localservercount;
 
 static void M_SearchServerList(void)
 {
+	char servername[MAXSERVERNAME+1] = {0};
 	serverlistsearchedcount = 0;
 
 	for (UINT32 i = 0; i < serverlistcount; ++i)
 	{
-		if (menuinput.length == 0 || strcasestr(serverlist[i].info.servername, menuinput.buffer) != NULL)
+		StripColors(servername, serverlist[i].info.servername, MAXSERVERNAME);
+		if (menuinput.length == 0 || strcasestr(servername, menuinput.buffer) != NULL)
 			serverlistsearched[serverlistsearchedcount++] = i;
 	}
 
