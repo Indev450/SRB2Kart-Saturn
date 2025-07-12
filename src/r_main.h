@@ -137,15 +137,17 @@ fixed_t R_ScaleFromGlobalAngle(angle_t visangle);
 //
 // R_PointInSubsector
 //
-FUNCINLINE static ATTRINLINE subsector_t *R_PointInSubsector(fixed_t x, fixed_t y)
-{
-	size_t nodenum = numnodes-1;
-
-	while (!(nodenum & NF_SUBSECTOR))
-		nodenum = nodes[nodenum].children[R_PointOnSide(x, y, nodes+nodenum)];
-
-	return &subsectors[nodenum & ~NF_SUBSECTOR];
+#define R_POINTINSUBSECTOR(FUNCNAME, SIDEFUNC)\
+FUNCINLINE static ATTRINLINE subsector_t *FUNCNAME(fixed_t x, fixed_t y)\
+{\
+	size_t nodenum = numnodes-1;\
+	while (!(nodenum & NF_SUBSECTOR))\
+		nodenum = nodes[nodenum].children[SIDEFUNC(x, y, nodes+nodenum)];\
+	return &subsectors[nodenum & ~NF_SUBSECTOR];\
 }
+
+R_POINTINSUBSECTOR(R_PointInSubsector, R_PointOnSide)
+R_POINTINSUBSECTOR(R_PointInSubsectorFast, R_PointOnSideFast)
 
 subsector_t *R_IsPointInSubsector(fixed_t x, fixed_t y);
 

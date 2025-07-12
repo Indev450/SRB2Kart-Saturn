@@ -4724,7 +4724,7 @@ static void K_CalculateBananaSlope(mobj_t *mobj, fixed_t x, fixed_t y, fixed_t z
 	//sec = R_PointInSubsector(x, y)->sector;
 
 	if (mobj->x != x || mobj->y != y || mobj->subsector == NULL)
-		sec = R_PointInSubsector(x, y)->sector;
+		sec = R_PointInSubsectorFast(x, y)->sector;
 	else
 		sec = mobj->subsector->sector;
 
