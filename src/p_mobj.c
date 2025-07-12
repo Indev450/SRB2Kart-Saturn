@@ -777,7 +777,7 @@ fixed_t P_CameraFloorZ(camera_t *mobj, sector_t *sector, sector_t *boundsec, fix
 		testy += y;
 
 		// If the highest point is in the sector, then we have it easy! Just get the Z at that point
-		if (R_PointInSubsector(testx, testy)->sector == (boundsec ? boundsec : sector))
+		if (R_PointInSubsectorFast(testx, testy)->sector == (boundsec ? boundsec : sector))
 			return P_GetSlopeZAt(slope, testx, testy);
 
 		// If boundsec is set, we're looking for specials. In that case, iterate over every line in this sector to find the TRUE highest/lowest point
@@ -856,7 +856,7 @@ fixed_t P_CameraCeilingZ(camera_t *mobj, sector_t *sector, sector_t *boundsec, f
 		testy += y;
 
 		// If the highest point is in the sector, then we have it easy! Just get the Z at that point
-		if (R_PointInSubsector(testx, testy)->sector == (boundsec ? boundsec : sector))
+		if (R_PointInSubsectorFast(testx, testy)->sector == (boundsec ? boundsec : sector))
 			return P_GetSlopeZAt(slope, testx, testy);
 
 		// If boundsec is set, we're looking for specials. In that case, iterate over every line in this sector to find the TRUE highest/lowest point
@@ -3308,7 +3308,7 @@ boolean P_CameraThinker(player_t *player, camera_t *thiscam, boolean resetcalled
 		}
 	}
 
-	thiscam->subsector = R_PointInSubsector(thiscam->x, thiscam->y);
+	thiscam->subsector = R_PointInSubsectorFast(thiscam->x, thiscam->y);
 	thiscam->floorz = tmfloorz;
 	thiscam->ceilingz = tmceilingz;
 
@@ -10319,7 +10319,7 @@ void P_PrecipitationEffects(void)
 		for (y = yl; y <= yh; y += RADIUSSTEP)
 			for (x = xl; x <= xh; x += RADIUSSTEP)
 			{
-				if (R_PointInSubsector((fixed_t)x, (fixed_t)y)->sector->ceilingpic != skyflatnum) // Found the outdoors!
+				if (R_PointInSubsectorFast((fixed_t)x, (fixed_t)y)->sector->ceilingpic != skyflatnum) // Found the outdoors!
 					continue;
 
 				newdist = S_CalculateSoundDistance(players[displayplayers[0]].mo->x, players[displayplayers[0]].mo->y, 0, (fixed_t)x, (fixed_t)y, 0);

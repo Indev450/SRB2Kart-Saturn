@@ -579,8 +579,6 @@ static void R_InitTextureMapping(void)
 	doubleclipangle = clipangle*2;
 }
 
-
-
 //
 // R_InitLightTables
 // Only inits the zlight table,
@@ -1093,7 +1091,7 @@ static void R_SetupCommonFrame(player_t * player, sector_t * sector)
 	if (sector != NULL)
 		newview->sector = sector;
 	else
-		newview->sector = R_PointInSubsector(newview->x, newview->y)->sector;
+		newview->sector = R_PointInSubsectorFast(newview->x, newview->y)->sector;
 
 	R_InterpolateView(rendertimefrac_unpaused, false);
 }
@@ -1333,7 +1331,7 @@ static void R_PortalFrame(portal_t *portal)
 	{
 		portalclipline = NULL;
 		portalcullsector = NULL;
-		viewsector = R_PointInSubsector(viewx, viewy)->sector;
+		viewsector = R_PointInSubsectorFast(viewx, viewy)->sector;
 	}
 }
 

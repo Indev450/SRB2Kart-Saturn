@@ -1995,7 +1995,7 @@ boolean P_CheckCameraPosition(fixed_t x, fixed_t y, camera_t *thiscam)
 	tmbbox[BOXLEFT] = x - thiscam->radius;
 
 	if (thiscam->x != x || thiscam->y != y || thiscam->subsector == NULL)
-		newsubsec = R_PointInSubsector(x, y);
+		newsubsec = R_PointInSubsectorFast(x, y);
 	else
 		newsubsec = thiscam->subsector;
 
@@ -2181,7 +2181,7 @@ boolean P_TryCameraMove(fixed_t x, fixed_t y, camera_t *thiscam)
 		return false;
 
 	if (thiscam->x != x || thiscam->y != y || thiscam->subsector == NULL)
-		s = R_PointInSubsector(x, y);
+		s = R_PointInSubsectorFast(x, y);
 	else
 		s = thiscam->subsector;
 
