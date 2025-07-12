@@ -85,7 +85,7 @@ static aatree_node_t *M_AATreeRebalance(aatree_node_t *node)
 		balance = node->left->depth;
 	else
 	{
-		assert(node->left->key < node->right->key);
+		I_Assert(node->left->key < node->right->key);
 		balance = node->left->depth - node->right->depth;
 	}
 
