@@ -122,7 +122,7 @@ static void KeyboardLayout_OnChange(void)
 
 boolean I_UseNativeKeyboard(void)
 {
-	return cv_keyboardlayout.value == 2 && (chat_on || CON_Ready() || (menu_text_input && menuactive));
+	return (cv_keyboardlayout.value == 2) && (chat_on || CON_Ready() || (menu_text_input && menuactive));
 }
 
 static CV_PossibleValue_t keyboardlayout_cons_t[] = {{1,"Default US"}, {2, "Native"}, {3, "AZERTY"}, {0, NULL}};
@@ -222,7 +222,6 @@ static INT32 custom_height = 0;
 static void Impl_VideoSetupSDLBuffer(void);
 static void Impl_VideoSetupBuffer(void);
 static SDL_bool Impl_CreateWindow(SDL_bool fullscreen);
-//static void Impl_SetWindowName(const char *title);
 static void Impl_SetWindowIcon(void);
 
 static void SDLdoGrabMouse(void);
@@ -261,6 +260,7 @@ static INT32 Impl_SDL_Scancode_To_Keycode(SDL_Scancode code)
 		// get lowercase ASCII
 		return code - SDL_SCANCODE_A + 'a';
 	}
+
 	if (code >= SDL_SCANCODE_1 && code <= SDL_SCANCODE_9)
 	{
 		return code - SDL_SCANCODE_1 + '1';
@@ -269,10 +269,12 @@ static INT32 Impl_SDL_Scancode_To_Keycode(SDL_Scancode code)
 	{
 		return '0';
 	}
+
 	if (code >= SDL_SCANCODE_F1 && code <= SDL_SCANCODE_F10)
 	{
 		return KEY_F1 + (code - SDL_SCANCODE_F1);
 	}
+
 	switch (code)
 	{
 		// F11 and F12 are separated from the rest of the function keys
@@ -340,6 +342,7 @@ static INT32 Impl_SDL_Scancode_To_Keycode(SDL_Scancode code)
 		case SDL_SCANCODE_RGUI:   return KEY_RIGHTWIN;
 		default:                  break;
 	}
+
 	return 0;
 }
 
@@ -349,19 +352,18 @@ static INT32 GetTypedChar(SDL_Keysym keysym)
 	SDL_Event next_event;
 	SDL_Keycode keycode = keysym.sym;
 	SDL_Scancode scancode = keysym.scancode;
-	const boolean Text_Input_Only = (chat_on || CON_Ready() || (menu_text_input && menuactive)); // only use this this if on chat or console or the current menu wants inputs from us (except if its the control setup menu ig)
 
-	// Special cases, where we always return a fixed value.
-	switch (keycode)
+	if (I_UseNativeKeyboard()) // only use this this if on chat or console or the current menu wants inputs from us (except if its the control setup menu ig)
 	{
-		case SDLK_BACKSPACE: return KEY_BACKSPACE;
-		case SDLK_RETURN:    return KEY_ENTER;
-		default:
-			break;
-	}
+		// Special cases, where we always return a fixed value.
+		switch (keycode)
+		{
+			case SDLK_BACKSPACE: return KEY_BACKSPACE;
+			case SDLK_RETURN:    return KEY_ENTER;
+			default:
+				break;
+		}
 
-	if (Text_Input_Only)
-	{
 		if (SDL_PeepEvents(&next_event, 1, SDL_PEEKEVENT, SDL_FIRSTEVENT, SDL_LASTEVENT) == 1 && next_event.type == SDL_TEXTINPUT)
 		{
 			if (next_event.text.text[1] == '\0') // limit to ASCII
@@ -369,7 +371,7 @@ static INT32 GetTypedChar(SDL_Keysym keysym)
 		}
 	}
 
-	return Impl_SDL_Scancode_To_Keycode(scancode); // fallback
+	return Impl_SDL_Scancode_To_Keycode(scancode); // fallback to scancodes
 }
 
 static INT32 Impl_SDL_Keysym_To_Keycode(SDL_Keysym keysym)
@@ -446,6 +448,7 @@ static INT32 Impl_SDL_Keysym_To_Keycode(SDL_Keysym keysym)
 
 		default:                  break;
 	}
+
 	return Impl_SDL_Scancode_To_Keycode(scancode);
 }
 
@@ -453,6 +456,7 @@ static void SDLdoGrabMouse(void)
 {
 	SDL_ShowCursor(SDL_DISABLE);
 	SDL_SetWindowGrab(window, SDL_TRUE);
+
 	if (SDL_SetRelativeMouseMode(SDL_TRUE) == 0) // already warps mouse if successful
 		wrapmouseok = SDL_TRUE; // TODO: is wrapmouseok or HalfWarpMouse needed anymore?
 }
@@ -518,14 +522,15 @@ static void VID_Command_ModeList_f(void)
 {
 	// List windowed modes
 	INT32 i = 0;
+
 	CONS_Printf("NOTE: Under SDL2, all modes are supported on all platforms.\n");
 	CONS_Printf("Under opengl, fullscreen only supports native desktop resolution.\n");
 	CONS_Printf("Under software, the mode is stretched up to desktop resolution.\n");
+
 	for (i = 0; i < MAXWINMODES; i++)
 	{
 		CONS_Printf("%2d: %dx%d\n", i, windowedModes[i][0], windowedModes[i][1]);
 	}
-
 }
 
 static void VID_Command_Mode_f (void)
@@ -592,6 +597,7 @@ static INT32 SDLJoyAxis(const Sint16 axis, evtype_t which)
 	return raxis;
 }
 
+// Get the desktop resolution from the current display the gamewindow resides on
 static void I_CheckDesktopRes(void)
 {
 	int currentDisplayIndex = -1;
@@ -617,6 +623,7 @@ static void I_CheckDesktopRes(void)
 	desktopheight = curmode.h;
 }
 
+// Check if the game resolution matches the desktop resolution
 boolean I_CheckNativeRes(void)
 {
 	return (vid.width == desktopwidth && vid.height == desktopheight);
@@ -720,15 +727,15 @@ static void Impl_HandleWindowEvent(SDL_WindowEvent evt)
 		{
 			if (cv_usemouse.value) I_StartupMouse();
 		}
-		//else firsttimeonmouse = SDL_FALSE;
 	}
 	else if (!mousefocus && !kbfocus)
 	{
 		// Tell game we lost focus, pause music
 		window_notinfocus = true;
-		if (! cv_playmusicifunfocused.value)
+
+		if (!cv_playmusicifunfocused.value)
 			I_SetMusicVolume(0);
-		if (! cv_playsoundifunfocused.value)
+		if (!cv_playsoundifunfocused.value)
 			S_StopSounds();
 
 		if (!disable_mouse)
@@ -750,17 +757,16 @@ static void Impl_HandleKeyboardEvent(SDL_KeyboardEvent evt, Uint32 type)
 {
 	event_t event;
 
-	if (type == SDL_KEYUP)
+	switch (type)
 	{
-		event.type = ev_keyup;
-	}
-	else if (type == SDL_KEYDOWN)
-	{
-		event.type = ev_keydown;
-	}
-	else
-	{
-		return;
+		case SDL_KEYUP:
+			event.type = ev_keyup;
+			break;
+		case SDL_KEYDOWN:
+			event.type = ev_keydown;
+			break;
+		default:
+			return;
 	}
 
 	switch (cv_keyboardlayout.value)
@@ -776,7 +782,8 @@ static void Impl_HandleKeyboardEvent(SDL_KeyboardEvent evt, Uint32 type)
 			break;
 	}
 
-	if (event.data1) D_PostEvent(&event);
+	if (event.data1)
+		D_PostEvent(&event);
 }
 
 static void Impl_HandleMouseMotionEvent(SDL_MouseMotionEvent evt)
@@ -1541,7 +1548,7 @@ void I_SetPalette(RGBA_t *palette)
 {
 	size_t i;
 
-	for (i=0; i<256; i++)
+	for (i = 0; i < 256; i++)
 	{
 		localPalette[i].r = palette[i].s.red;
 		localPalette[i].g = palette[i].s.green;
