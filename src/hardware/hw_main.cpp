@@ -4454,6 +4454,15 @@ static void HWR_RenderDrawNodes(void)
 // --------------------------------------------------------------------------
 //  Draw all vissprites
 // --------------------------------------------------------------------------
+namespace
+{
+	enum class DrawSpritesType
+	{
+		kSprites,
+		kModels,
+	};
+
+template <DrawSpritesType Type>
 static void HWR_DrawSprites(void)
 {
 	UINT32 i;
@@ -4468,55 +4477,43 @@ static void HWR_DrawSprites(void)
 			continue;
 		}
 
-		HWR_DrawSprite(spr);
-	}
-}
-
-static void HWR_DrawModels(void)
-{
-	UINT32 i;
-
-	for (i = 0; i < gl_visspritecount; i++)
-	{
-		gl_vissprite_t *spr = gl_vsprorder[i];
-
-		if (spr->precip)
+		if constexpr (Type == DrawSpritesType::kModels)
 		{
-			HWR_DrawPrecipitationSprite(spr);
-			continue;
-		}
-
-		if (!spr->mobj)
-			continue;
-
-		if (spr->mobj->skin && spr->mobj->sprite == SPR_PLAY)
-		{
-			md2_t *md2;
-
-			if (spr->mobj->localskin)
+			if (spr->mobj && spr->mobj->skin && spr->mobj->sprite == SPR_PLAY)
 			{
-				if (spr->mobj->skinlocal)
-					md2 = &md2_localplayermodels[(skin_t *)spr->mobj->localskin - localskins];
+				md2_t *md2;
+
+				if (spr->mobj->localskin)
+				{
+					if (spr->mobj->skinlocal)
+						md2 = &md2_localplayermodels[(skin_t *)spr->mobj->localskin - localskins];
+					else
+						md2 = &md2_playermodels     [(skin_t *)spr->mobj->localskin -      skins];
+				}
 				else
-					md2 = &md2_playermodels     [(skin_t *)spr->mobj->localskin -      skins];
+					md2 = &md2_playermodels[(skin_t *)spr->mobj->skin - skins];
+
+				// 8/1/19: Only don't display player models if no default SPR_PLAY is found.
+				if (((md2->notfound || md2->scale < 0.0f) && ((!cv_glfallbackplayermodel.value) || md2_models[SPR_PLAY].notfound || md2_models[SPR_PLAY].scale < 0.0f)) || spr->mobj->state == &states[S_PLAY_SIGN])
+					HWR_DrawSprite(spr);
+				else
+					HWR_DrawMD2(spr);
 			}
 			else
-				md2 = &md2_playermodels[(skin_t *)spr->mobj->skin - skins];
-
-			// 8/1/19: Only don't display player models if no default SPR_PLAY is found.
-			if (((md2->notfound || md2->scale < 0.0f) && ((!cv_glfallbackplayermodel.value) || md2_models[SPR_PLAY].notfound || md2_models[SPR_PLAY].scale < 0.0f)) || spr->mobj->state == &states[S_PLAY_SIGN])
-				HWR_DrawSprite(spr);
-			else
-				HWR_DrawMD2(spr);
+			{
+				if (md2_models[spr->mobj->sprite].notfound || md2_models[spr->mobj->sprite].scale < 0.0f)
+					HWR_DrawSprite(spr);
+				else
+					HWR_DrawMD2(spr);
+			}
 		}
-		else
+
+		if constexpr (Type == DrawSpritesType::kSprites)
 		{
-			if (md2_models[spr->mobj->sprite].notfound || md2_models[spr->mobj->sprite].scale < 0.0f)
-				HWR_DrawSprite(spr);
-			else
-				HWR_DrawMD2(spr);
+			HWR_DrawSprite(spr);
 		}
 	}
+}
 }
 
 // --------------------------------------------------------------------------
@@ -5567,10 +5564,10 @@ void HWR_RenderViewpoint(gl_portal_t *rootportal, player_t *player, int stencil_
 	HWR_SortVisSprites();
 	PS_STOP_TIMING(ps_hw_spritesorttime);
 	PS_START_TIMING(ps_hw_spritedrawtime);
-	if (LIKELY(!cv_glmdls.value))
-		HWR_DrawSprites();
+	if (UNLIKELY(cv_glmdls.value))
+		HWR_DrawSprites<DrawSpritesType::kModels>();
 	else
-		HWR_DrawModels();
+		HWR_DrawSprites<DrawSpritesType::kSprites>();
 	PS_STOP_TIMING(ps_hw_spritedrawtime);
 
 	ps_numdrawnodes.value.i    = 0;
