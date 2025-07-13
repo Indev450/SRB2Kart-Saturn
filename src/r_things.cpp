@@ -737,6 +737,13 @@ static void R_DrawFlippedMaskedColumn(drawcolumndata_t* dc, column_t *column)
 	dc->texturemid = basetexturemid;
 }
 
+
+// Based off of R_GetLinedefTransTable
+transnum_t R_GetThingTransTable(fixed_t alpha, transnum_t transmap)
+{
+	return static_cast<transnum_t>((20*(FRACUNIT - ((alpha * (10 - transmap))/10) - 1) + FRACUNIT) >> (FRACBITS+1));
+}
+
 //
 // R_DrawVisSprite
 //  mfloorclip and mceilingclip should also be set.
@@ -1603,6 +1610,8 @@ static void R_ProjectSprite(mobj_t *thing)
 	}
 	else
 		trans = 0;
+
+	trans = static_cast<INT32>(R_GetThingTransTable(R_GetThingFade(oldthing), static_cast<transnum_t>(trans)));
 
 	//SoM: 3/17/2000: Disregard sprites that are out of view..
 	if (vflip)
@@ -2937,6 +2946,31 @@ boolean R_ThingWithinDist(mobj_t *thing, INT32 limit_dist)
 	}
 
 	return true;
+}
+
+fixed_t R_GetThingFade(mobj_t *thing)
+{
+	fixed_t fadealpha = FRACUNIT;
+
+	if (!cv_playerfade.value || leveltime < starttime-(3*TICRATE) || !thing->player || thing->player == viewplayer)
+		return fadealpha;
+
+	const INT32 playerdist     = (FixedMul((thing->x - viewx), viewcos) + FixedMul((thing->y - viewy), viewsin)) >> FRACBITS;
+	const INT32 viewplayerdist = (FixedMul((viewplayer->mo->x - viewx), viewcos) + FixedMul((viewplayer->mo->y - viewy), viewsin)) >> FRACBITS;
+
+	if (playerdist < viewplayerdist)
+	{
+		if (playerdist < viewplayerdist / 2) // stronger fade when very close
+		{
+			fadealpha = (playerdist * FRACUNIT) / (viewplayerdist / 2) / 3;
+		}
+		else
+		{
+			fadealpha = (playerdist * FRACUNIT) / viewplayerdist;
+		}
+	}
+
+	return fadealpha;
 }
 
 boolean R_CheckInterpDist(mobj_t *thing)

@@ -3766,6 +3766,8 @@ static void HWR_SplitSprite(gl_vissprite_t *spr, const boolean papersprite)
 		blend = HWR_GetBlendModeFlag(blendmode)|PF_Occlude;
 	}
 
+	Surf.PolyColor.s.alpha = FixedMul(R_GetThingFade(spr->mobj), Surf.PolyColor.s.alpha);
+
 	if (HWR_UseShader())
 	{
 		shader = SHADER_SPRITE;
@@ -4051,6 +4053,8 @@ static void HWR_DrawSprite(gl_vissprite_t *spr)
 		Surf.PolyColor.s.alpha = 0xFF;
 		blend = HWR_GetBlendModeFlag(blendmode)|PF_Occlude;
 	}
+
+	Surf.PolyColor.s.alpha = FixedMul(R_GetThingFade(spr->mobj), Surf.PolyColor.s.alpha);
 
 	if (HWR_UseShader())
 	{
