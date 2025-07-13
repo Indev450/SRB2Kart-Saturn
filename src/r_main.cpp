@@ -141,10 +141,10 @@ static CV_PossibleValue_t drawdist_precip_cons_t[] = {
 #endif
 
 static CV_PossibleValue_t maxinterpdist_cons_t[] = {
-       /*{256, "256"},*/ {512, "512"}, {768, "768"},
-       {1024, "1024"}, {1536, "1536"}, {2048, "2048"},
-       {3072, "3072"}, {4096, "4096"}, {6144, "6144"},
-       {8192, "8192"}, {0, "Infinite"}, {0, NULL}};
+	/*{256, "256"},*/ {512, "512"}, {768, "768"},
+	{1024, "1024"}, {1536, "1536"}, {2048, "2048"},
+	{3072, "3072"}, {4096, "4096"}, {6144, "6144"},
+	{8192, "8192"}, {0, "Infinite"}, {0, NULL}};
 
 static CV_PossibleValue_t fov_cons_t[] = {{MINFOV*FRACUNIT, "MIN"}, {MAXFOV*FRACUNIT, "MAX"}, {0, NULL}};
 
@@ -170,14 +170,14 @@ consvar_t cv_tailspickup = {"tailspickup", "On", CV_NETVAR|CV_NOSHOWHELP, CV_OnO
 consvar_t cv_precachetextures = {"precachetextures", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 consvar_t cv_chasecam[MAXSPLITSCREENPLAYERS] = {
-	{"chasecam", "On", 0, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"chasecam",  "On", 0, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL},
 	{"chasecam2", "On", 0, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL},
 	{"chasecam3", "On", 0, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL},
 	{"chasecam4", "On", 0, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL}
 };
 
 consvar_t cv_flipcam[MAXSPLITSCREENPLAYERS] = {
-	{"flipcam", "No", CV_SAVE|CV_CALL|CV_NOINIT, CV_YesNo, FlipCam_OnChange, 0, NULL, NULL, 0, 0, NULL},
+	{"flipcam",  "No", CV_SAVE|CV_CALL|CV_NOINIT, CV_YesNo, FlipCam_OnChange,  0, NULL, NULL, 0, 0, NULL},
 	{"flipcam2", "No", CV_SAVE|CV_CALL|CV_NOINIT, CV_YesNo, FlipCam2_OnChange, 0, NULL, NULL, 0, 0, NULL},
 	{"flipcam3", "No", CV_SAVE|CV_CALL|CV_NOINIT, CV_YesNo, FlipCam3_OnChange, 0, NULL, NULL, 0, 0, NULL},
 	{"flipcam4", "No", CV_SAVE|CV_CALL|CV_NOINIT, CV_YesNo, FlipCam4_OnChange, 0, NULL, NULL, 0, 0, NULL}
@@ -195,6 +195,7 @@ consvar_t cv_drawdist_precip = {"drawdist_precip", "1024", CV_SAVE|CV_CALL|CV_NO
 consvar_t cv_lessprecip      = {"lessweathereffects", "Off", CV_SAVE|CV_CALL|CV_NOINIT, CV_OnOff, Precipstuff_OnChange, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_mobjscaleprecip = {"scaleprecipmobjscale", "Off", CV_SAVE|CV_CALL|CV_NOINIT, CV_OnOff, Precipstuff_OnChange, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_maxinterpdist   = {"maxinterpdist", "Infinite", CV_SAVE, maxinterpdist_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_playerfade      = {"playerfade", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_ripplewater     = {"waterripples", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 // Okay, whoever said homremoval causes a performance hit should be shot.
@@ -211,6 +212,7 @@ consvar_t cv_randomdirlight  = {"randomdirectionallight", "Off", CV_SAVE|CV_CALL
 
 consvar_t cv_showhud         = {"showhud", "Yes", CV_CALL,  CV_YesNo, R_SetViewSize, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_translucenthud  = {"translucenthud", "10", CV_SAVE, translucenthud_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+
 consvar_t cv_uncappedhud     = {"uncappedhud", "Yes", CV_SAVE, CV_YesNo, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_soniccd         = {"soniccd", "Off", CV_NETVAR|CV_NOSHOWHELP, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_allowmlook      = {"allowmlook", "Yes", CV_NETVAR, CV_YesNo, NULL, 0, NULL, NULL, 0, 0, NULL};
@@ -1594,6 +1596,7 @@ void R_RegisterEngineStuff(void)
 	CV_RegisterVar(&cv_randomdirlight);
 
 	CV_RegisterVar(&cv_maxinterpdist);
+	CV_RegisterVar(&cv_playerfade);
 
 	CV_RegisterVar(&cv_ripplewater);
 
