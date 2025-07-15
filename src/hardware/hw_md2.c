@@ -1227,7 +1227,8 @@ void HWR_DrawMD2(gl_vissprite_t *spr)
 			Surf.PolyFlags = HWR_GetBlendModeFlag(blendmode);
 		}
 
-		Surf.PolyColor.s.alpha = FixedMul(R_GetThingFade(spr->mobj), Surf.PolyColor.s.alpha);
+		if (cv_playerfade.value && spr->mobj->player)
+			Surf.PolyColor.s.alpha = FixedMul(R_DoPlayerFade(spr->mobj), Surf.PolyColor.s.alpha);
 
 		// dont forget to enabled the depth test because we can't do this like
 		// before: polygons models are not sorted
