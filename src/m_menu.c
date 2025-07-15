@@ -2742,7 +2742,7 @@ menu_t MISC_AddonsDef =
 	50, 28,
 	0,
 	NULL,
-	{NULL}
+	NULL
 };
 
 menu_t MISC_ReplayHutDef =
@@ -2755,7 +2755,7 @@ menu_t MISC_ReplayHutDef =
 	30, 80,
 	0,
 	M_QuitReplayHut,
-	{NULL}
+	NULL
 };
 
 menu_t MISC_ReplayOptionsDef =
@@ -2768,7 +2768,7 @@ menu_t MISC_ReplayOptionsDef =
 	27, 40,
 	0,
 	NULL,
-	{NULL}
+	NULL
 };
 
 menu_t MISC_ReplayStartDef =
@@ -2781,7 +2781,7 @@ menu_t MISC_ReplayStartDef =
 	30, 90,
 	0,
 	NULL,
-	{NULL}
+	NULL
 };
 
 menu_t PlaybackMenuDef = {
@@ -2794,12 +2794,12 @@ menu_t PlaybackMenuDef = {
 	BASEVIDWIDTH/2 - 88, 2,
 	0,
 	NULL,
-	{NULL}
+	NULL
 };
 
 menu_t MAPauseDef = PAUSEMENUSTYLE(MAPauseMenu, 40, 72);
-menu_t SPauseDef = PAUSEMENUSTYLE(SPauseMenu, 40, 72);
-menu_t MPauseDef = PAUSEMENUSTYLE(MPauseMenu, 40, 72);
+menu_t SPauseDef  = PAUSEMENUSTYLE(SPauseMenu, 40, 72);
+menu_t MPauseDef  = PAUSEMENUSTYLE(MPauseMenu, 40, 72);
 
 #ifdef HAVE_DISCORDRPC
 menu_t MISC_DiscordRequestsDef = {
@@ -2811,16 +2811,16 @@ menu_t MISC_DiscordRequestsDef = {
 	0, 0,
 	0,
 	NULL,
-	{NULL}
+	NULL
 };
 #endif
 
 // Misc Main Menu
-menu_t MISC_ScrambleTeamDef = DEFAULTMENUSTYLE(NULL, MISC_ScrambleTeamMenu, &MPauseDef, 27, 40);
-menu_t MISC_ChangeTeamDef = DEFAULTMENUSTYLE(NULL, MISC_ChangeTeamMenu, &MPauseDef, 27, 40);
-menu_t MISC_ChangeSpectateDef = DEFAULTMENUSTYLE(NULL, MISC_ChangeSpectateMenu, &MPauseDef, 27, 40);
-menu_t MISC_ChangeLevelDef = MAPICONMENUSTYLE(NULL, MISC_ChangeLevelMenu, &MPauseDef);
-menu_t MISC_HelpDef = IMAGEDEF(MISC_HelpMenu);
+menu_t MISC_ScrambleTeamDef   = DEFAULTMENUSTYLE(NULL, MISC_ScrambleTeamMenu, &MPauseDef, 27, 40, NULL);
+menu_t MISC_ChangeTeamDef     = DEFAULTMENUSTYLE(NULL, MISC_ChangeTeamMenu, &MPauseDef, 27, 40, NULL);
+menu_t MISC_ChangeSpectateDef = DEFAULTMENUSTYLE(NULL, MISC_ChangeSpectateMenu, &MPauseDef, 27, 40, NULL);
+menu_t MISC_ChangeLevelDef    = MAPICONMENUSTYLE(NULL, MISC_ChangeLevelMenu, &MPauseDef);
+menu_t MISC_HelpDef           = IMAGEDEF(MISC_HelpMenu);
 
 //
 // M_GetGametypeColor
@@ -2907,7 +2907,7 @@ menu_t SR_PandoraDef =
 	60, 40,
 	0,
 	M_ExitPandorasBox,
-	{NULL}
+	NULL
 };
 menu_t SR_MainDef = CENTERMENUSTYLE(NULL, SR_MainMenu, &MainDef, 72);
 
@@ -2923,7 +2923,7 @@ menu_t SR_UnlockChecklistDef =
 	280, 185,
 	0,
 	NULL,
-	{NULL}
+	NULL
 };
 
 menu_t SR_MusicTestDef =
@@ -2936,7 +2936,7 @@ menu_t SR_MusicTestDef =
 	60, 150,
 	0,
 	NULL,
-	{NULL}
+	NULL
 };
 
 menu_t SR_EmblemHintDef =
@@ -2949,7 +2949,7 @@ menu_t SR_EmblemHintDef =
 	60, 150,
 	0,
 	NULL,
-	{NULL}
+	NULL
 };
 
 // Single Player
@@ -2965,7 +2965,7 @@ menu_t SP_LevelStatsDef =
 	280, 185,
 	0,
 	NULL,
-	{NULL}
+	NULL
 };
 
 static menu_t SP_TimeAttackDef =
@@ -2978,7 +2978,7 @@ static menu_t SP_TimeAttackDef =
 	34, 40,
 	0,
 	M_QuitTimeAttackMenu,
-	{NULL}
+	NULL
 };
 static menu_t SP_ReplayDef =
 {
@@ -2990,7 +2990,7 @@ static menu_t SP_ReplayDef =
 	34, 40,
 	0,
 	NULL,
-	{NULL}
+	NULL
 };
 static menu_t SP_GuestReplayDef =
 {
@@ -3002,7 +3002,7 @@ static menu_t SP_GuestReplayDef =
 	34, 40,
 	0,
 	NULL,
-	{NULL}
+	NULL
 };
 static menu_t SP_GhostDef =
 {
@@ -3014,7 +3014,7 @@ static menu_t SP_GhostDef =
 	34, 40,
 	0,
 	NULL,
-	{NULL}
+	NULL
 };
 
 // Multiplayer
@@ -3032,7 +3032,7 @@ menu_t MP_MainDef =
 #else
 	NULL,
 #endif
-	{NULL}
+	NULL
 };
 
 menu_t MP_OfflineServerDef = MAPICONMENUSTYLE("M_MULTI", MP_OfflineServerMenu, &MP_MainDef);
@@ -3050,7 +3050,7 @@ menu_t MP_ConnectDef =
 	27,24,
 	0,
 	M_CancelConnect,
-	{NULL}
+	NULL
 };
 #endif
 menu_t MP_PlayerSetupDef =
@@ -3063,7 +3063,7 @@ menu_t MP_PlayerSetupDef =
 	36, 14,
 	0,
 	M_QuitMultiPlayerMenu,
-	{NULL}
+	NULL
 };
 
 // Options
@@ -3077,18 +3077,18 @@ menu_t OP_MainDef =
 	60, 25,
 	0,
 	NULL,
-	{NULL}
+	NULL
 };
 
-menu_t OP_ControlsDef = DEFAULTMENUSTYLE("M_CONTRO", OP_ControlsMenu, &OP_MainDef, 60, 30);
+menu_t OP_ControlsDef     = DEFAULTMENUSTYLE("M_CONTRO", OP_ControlsMenu, &OP_MainDef, 60, 30, OP_ControlsTooltips);
 //WTF
-menu_t OP_MouseOptionsDef = DEFAULTMENUSTYLE("M_CONTRO", OP_MouseOptionsMenu, &OP_ControlsDef, 60, 30);
-menu_t OP_AllControlsDef = CONTROLMENUSTYLE(OP_AllControlsMenu, &OP_ControlsDef);
-menu_t OP_Joystick1Def = DEFAULTSCROLLSTYLE("M_CONTRO", OP_Joystick1Menu, &OP_AllControlsDef, 30, 36);
-menu_t OP_Joystick2Def = DEFAULTSCROLLSTYLE("M_CONTRO", OP_Joystick2Menu, &OP_AllControlsDef, 30, 36);
-menu_t OP_Joystick3Def = DEFAULTSCROLLSTYLE("M_CONTRO", OP_Joystick3Menu, &OP_AllControlsDef, 30, 36);
-menu_t OP_Joystick4Def = DEFAULTSCROLLSTYLE("M_CONTRO", OP_Joystick4Menu, &OP_AllControlsDef, 30, 36);
-menu_t OP_JoystickSetDef =
+menu_t OP_MouseOptionsDef = DEFAULTMENUSTYLE("M_CONTRO", OP_MouseOptionsMenu, &OP_ControlsDef, 60, 30, OP_MouseTooltips);
+menu_t OP_AllControlsDef  = CONTROLMENUSTYLE(OP_AllControlsMenu, &OP_ControlsDef);
+menu_t OP_Joystick1Def    = DEFAULTSCROLLSTYLE("M_CONTRO", OP_Joystick1Menu, &OP_AllControlsDef, 30, 36, NULL);
+menu_t OP_Joystick2Def    = DEFAULTSCROLLSTYLE("M_CONTRO", OP_Joystick2Menu, &OP_AllControlsDef, 30, 36, NULL);
+menu_t OP_Joystick3Def    = DEFAULTSCROLLSTYLE("M_CONTRO", OP_Joystick3Menu, &OP_AllControlsDef, 30, 36, NULL);
+menu_t OP_Joystick4Def    = DEFAULTSCROLLSTYLE("M_CONTRO", OP_Joystick4Menu, &OP_AllControlsDef, 30, 36, NULL);
+menu_t OP_JoystickSetDef  =
 {
 	"M_CONTRO",
 	sizeof (OP_JoystickSetMenu)/sizeof (menuitem_t),
@@ -3098,7 +3098,7 @@ menu_t OP_JoystickSetDef =
 	50, 40,
 	0,
 	NULL,
-	{NULL}
+	NULL
 };
 
 menu_t OP_VideoOptionsDef =
@@ -3111,7 +3111,7 @@ menu_t OP_VideoOptionsDef =
 	30, 15,
 	0,
 	NULL,
-	{NULL}
+	OP_VideoTooltips
 };
 
 menu_t OP_VideoModeDef =
@@ -3124,7 +3124,7 @@ menu_t OP_VideoModeDef =
 	48, 26,
 	0,
 	NULL,
-	{NULL}
+	NULL
 };
 
 menu_t OP_ColorOptionsDef =
@@ -3137,7 +3137,7 @@ menu_t OP_ColorOptionsDef =
 	30, 30,
 	0,
 	NULL,
-	{NULL}
+	NULL
 };
 
 menu_t OP_SoundOptionsDef =
@@ -3150,7 +3150,7 @@ menu_t OP_SoundOptionsDef =
 	30, 20,
 	0,
 	NULL,
-	{NULL}
+	OP_SoundTooltips
 };
 
 
@@ -3164,25 +3164,25 @@ menu_t OP_HUDOptionsDef =
 	30, 20,
 	0,
 	NULL,
-	{NULL}
+	NULL
 };
 
-menu_t OP_CamOptionsDef = DEFAULTMENUSTYLE(NULL, OP_CamOptionsMenu, &OP_MainDef, 30, 30);
-menu_t OP_Player1CamOptionsDef = DEFAULTMENUSTYLE(NULL, OP_Player1CamOptionsMenu, &OP_CamOptionsDef, 30, 30);
-menu_t OP_Player2CamOptionsDef = DEFAULTMENUSTYLE(NULL, OP_Player2CamOptionsMenu, &OP_CamOptionsDef, 30, 30);
-menu_t OP_Player3CamOptionsDef = DEFAULTMENUSTYLE(NULL, OP_Player3CamOptionsMenu, &OP_CamOptionsDef, 30, 30);
-menu_t OP_Player4CamOptionsDef = DEFAULTMENUSTYLE(NULL, OP_Player4CamOptionsMenu, &OP_CamOptionsDef, 30, 30);
+menu_t OP_CamOptionsDef        = DEFAULTMENUSTYLE(NULL, OP_CamOptionsMenu, &OP_MainDef, 30, 30, OP_CamOptionsTooltips);
+menu_t OP_Player1CamOptionsDef = DEFAULTMENUSTYLE(NULL, OP_Player1CamOptionsMenu, &OP_CamOptionsDef, 30, 30, OP_PlayerCamOptionsTooltips);
+menu_t OP_Player2CamOptionsDef = DEFAULTMENUSTYLE(NULL, OP_Player2CamOptionsMenu, &OP_CamOptionsDef, 30, 30, OP_PlayerCamOptionsTooltips);
+menu_t OP_Player3CamOptionsDef = DEFAULTMENUSTYLE(NULL, OP_Player3CamOptionsMenu, &OP_CamOptionsDef, 30, 30, OP_PlayerCamOptionsTooltips);
+menu_t OP_Player4CamOptionsDef = DEFAULTMENUSTYLE(NULL, OP_Player4CamOptionsMenu, &OP_CamOptionsDef, 30, 30, OP_PlayerCamOptionsTooltips);
 
-menu_t OP_ChatOptionsDef = DEFAULTMENUSTYLE("M_HUD", OP_ChatOptionsMenu, &OP_HUDOptionsDef, 30, 30);
+menu_t OP_ChatOptionsDef = DEFAULTMENUSTYLE("M_HUD", OP_ChatOptionsMenu, &OP_HUDOptionsDef, 30, 30, OP_ChatOptionsTooltips);
 
-menu_t OP_SoundAdvancedDef = DEFAULTSCROLLSTYLE("M_SOUND", OP_SoundAdvancedMenu, &OP_SoundOptionsDef, 30, 30);
+menu_t OP_SoundAdvancedDef = DEFAULTSCROLLSTYLE("M_SOUND", OP_SoundAdvancedMenu, &OP_SoundOptionsDef, 30, 30, OP_SoundAdvancedTooltips);
 
-menu_t OP_FocusOptionsDef = DEFAULTMENUSTYLE(NULL, OP_FocusOptionsMenu, &OP_MainDef, 17, 30);
+menu_t OP_FocusOptionsDef = DEFAULTMENUSTYLE(NULL, OP_FocusOptionsMenu, &OP_MainDef, 17, 30, OP_FocusOptionsTooltips);
 
-menu_t OP_GameOptionsDef = DEFAULTMENUSTYLE("M_GAME", OP_GameOptionsMenu, &OP_MainDef, 30, 20);
-menu_t OP_ServerOptionsDef = DEFAULTMENUSTYLE("M_SERVER", OP_ServerOptionsMenu, &OP_MainDef, 24, 20);
+menu_t OP_GameOptionsDef = DEFAULTMENUSTYLE("M_GAME", OP_GameOptionsMenu, &OP_MainDef, 30, 20, OP_GameTooltips);
+menu_t OP_ServerOptionsDef = DEFAULTMENUSTYLE("M_SERVER", OP_ServerOptionsMenu, &OP_MainDef, 24, 20, OP_ServerOptionsTooltips);
 #ifndef NONET
-menu_t OP_AdvServerOptionsDef = DEFAULTSCROLLSTYLE("M_SERVER", OP_AdvServerOptionsMenu, &OP_ServerOptionsDef, 24, 30);
+menu_t OP_AdvServerOptionsDef = DEFAULTSCROLLSTYLE("M_SERVER", OP_AdvServerOptionsMenu, &OP_ServerOptionsDef, 24, 30, OP_AdvServerOptionsTooltips);
 #endif
 
 //menu_t OP_NetgameOptionsDef = DEFAULTMENUSTYLE("M_SERVER", OP_NetgameOptionsMenu, &OP_ServerOptionsDef, 30, 30);
@@ -3198,38 +3198,38 @@ menu_t OP_MonitorToggleDef =
 	47, 30,
 	0,
 	NULL,
-	{NULL}
+	NULL
 };
 
 #ifdef HWRENDER
-menu_t OP_OpenGLOptionsDef = DEFAULTSCROLLSTYLE("M_VIDEO", OP_OpenGLOptionsMenu, &OP_VideoOptionsDef, 30, 30);
+menu_t OP_OpenGLOptionsDef = DEFAULTSCROLLSTYLE("M_VIDEO", OP_OpenGLOptionsMenu, &OP_VideoOptionsDef, 30, 30, OP_OpenGLTooltips);
 #endif
 
-menu_t OP_ExpOptionsDef = DEFAULTSCROLLSTYLE("M_VIDEO", OP_ExpOptionsMenu, &OP_VideoOptionsDef, 30, 25);
+menu_t OP_ExpOptionsDef = DEFAULTSCROLLSTYLE("M_VIDEO", OP_ExpOptionsMenu, &OP_VideoOptionsDef, 30, 25, OP_ExpTooltips);
 
-menu_t OP_DataOptionsDef = DEFAULTMENUSTYLE("M_DATA", OP_DataOptionsMenu, &OP_MainDef, 60, 30);
-menu_t OP_ScreenshotOptionsDef = DEFAULTSCROLLSTYLE("M_SCSHOT", OP_ScreenshotOptionsMenu, &OP_DataOptionsDef, 30, 30);
-menu_t OP_AddonsOptionsDef = DEFAULTMENUSTYLE("M_ADDONS", OP_AddonsOptionsMenu, &OP_DataOptionsDef, 30, 30);
-menu_t OP_ProtocolDef = DEFAULTMENUSTYLE(NULL, OP_ProtocolMenu, &OP_DataOptionsDef, 30, 30);
+menu_t OP_DataOptionsDef       = DEFAULTMENUSTYLE("M_DATA", OP_DataOptionsMenu, &OP_MainDef, 60, 30, NULL);
+menu_t OP_ScreenshotOptionsDef = DEFAULTSCROLLSTYLE("M_SCSHOT", OP_ScreenshotOptionsMenu, &OP_DataOptionsDef, 30, 30, NULL);
+menu_t OP_AddonsOptionsDef     = DEFAULTMENUSTYLE("M_ADDONS", OP_AddonsOptionsMenu, &OP_DataOptionsDef, 30, 30, NULL);
+menu_t OP_ProtocolDef          = DEFAULTMENUSTYLE(NULL, OP_ProtocolMenu, &OP_DataOptionsDef, 30, 30, NULL);
 #ifdef HAVE_DISCORDRPC
-menu_t OP_DiscordOptionsDef = DEFAULTMENUSTYLE(NULL, OP_DiscordOptionsMenu, &OP_DataOptionsDef, 30, 30);
+menu_t OP_DiscordOptionsDef    = DEFAULTMENUSTYLE(NULL, OP_DiscordOptionsMenu, &OP_DataOptionsDef, 30, 30);
 #endif
-menu_t OP_EraseDataDef = DEFAULTMENUSTYLE("M_DATA", OP_EraseDataMenu, &OP_DataOptionsDef, 30, 30);
+menu_t OP_EraseDataDef         = DEFAULTMENUSTYLE("M_DATA", OP_EraseDataMenu, &OP_DataOptionsDef, 30, 30, NULL);
 
-menu_t OP_SaturnDef = DEFAULTSCROLLSTYLE(NULL, OP_SaturnMenu, &OP_MainDef, 30, 30);
-menu_t OP_PlayerDistortDef = DEFAULTSCROLLSTYLE("M_VIDEO", OP_PlayerDistortMenu, &OP_SaturnDef, 30, 30);
-menu_t OP_HudOffsetDef = DEFAULTSCROLLSTYLE(NULL, OP_HudOffsetMenu, &OP_SaturnHudDef, 30, 30);
-menu_t OP_SaturnHudDef = DEFAULTSCROLLSTYLE(NULL, OP_SaturnHudMenu, &OP_SaturnDef, 30, 30);
+menu_t OP_SaturnDef        = DEFAULTSCROLLSTYLE(NULL, OP_SaturnMenu, &OP_MainDef, 30, 30, OP_SaturnTooltips);
+menu_t OP_SaturnCreditsDef = DEFAULTMENUSTYLE(NULL, OP_SaturnCreditsMenu, &OP_SaturnDef, 30, 0, NULL); // OP_CreditTooltips no space :c
 
-menu_t OP_SaturnCreditsDef = DEFAULTMENUSTYLE(NULL, OP_SaturnCreditsMenu, &OP_SaturnDef, 30, 0);
+menu_t OP_SaturnHudDef     = DEFAULTSCROLLSTYLE(NULL, OP_SaturnHudMenu, &OP_SaturnDef, 30, 30, OP_SaturnHudTooltips);
+menu_t OP_PlayerDistortDef = DEFAULTSCROLLSTYLE("M_VIDEO", OP_PlayerDistortMenu, &OP_SaturnDef, 30, 30, OP_PlayerDistortTooltips);
+menu_t OP_HudOffsetDef     = DEFAULTSCROLLSTYLE(NULL, OP_HudOffsetMenu, &OP_SaturnHudDef, 30, 30, NULL);
 
-menu_t OP_BirdDef = DEFAULTMENUSTYLE(NULL, OP_BirdMenu, &OP_MainDef, 30, 30);
+menu_t OP_BirdDef = DEFAULTMENUSTYLE(NULL, OP_BirdMenu, &OP_MainDef, 30, 30, OP_BirdTooltips);
 
-menu_t OP_NametagDef = DEFAULTMENUSTYLE(NULL, OP_NametagMenu, &OP_SaturnHudDef, 30, 40);
-menu_t OP_DriftGaugeDef = DEFAULTMENUSTYLE(NULL, OP_DriftGaugeMenu, &OP_SaturnHudDef, 30, 40);
+menu_t OP_NametagDef    = DEFAULTMENUSTYLE(NULL, OP_NametagMenu, &OP_SaturnHudDef, 30, 40, OP_NametagTooltips);
+menu_t OP_DriftGaugeDef = DEFAULTMENUSTYLE(NULL, OP_DriftGaugeMenu, &OP_SaturnHudDef, 30, 40, OP_DriftGaugeTooltips);
 
-menu_t OP_TiltDef = DEFAULTMENUSTYLE(NULL, OP_TiltMenu, &OP_BirdDef, 30, 60);
-menu_t OP_AdvancedBirdDef = DEFAULTMENUSTYLE(NULL, OP_AdvancedBirdMenu, &OP_BirdDef, 30, 60);
+menu_t OP_TiltDef         = DEFAULTMENUSTYLE(NULL, OP_TiltMenu, &OP_BirdDef, 30, 60, OP_TiltTooltips);
+menu_t OP_AdvancedBirdDef = DEFAULTMENUSTYLE(NULL, OP_AdvancedBirdMenu, &OP_BirdDef, 30, 60, OP_AdvancedBirdTooltips);
 
 INT16 ccvarposition = 0;
 
@@ -3246,7 +3246,7 @@ static void M_CustomCvarMenu(INT32 choice)
 /*menu_t OP_CustomCvarMenuDef = DEFAULTSCROLLMENUSTYLE(
 	MTREE3(MN_OP_MAIN, MN_OP_DATA, MN_OP_ADDONS),
 	"M_ADDONS", OP_CustomCvarMenu, &OP_MainDef, 30, 30);*/
-menu_t OP_CustomCvarMenuDef = DEFAULTSCROLLSTYLE("M_ADDONS", OP_CustomCvarMenu, &OP_MainDef, 10, 30);
+menu_t OP_CustomCvarMenuDef = DEFAULTSCROLLSTYLE("M_ADDONS", OP_CustomCvarMenu, &OP_MainDef, 10, 30, NULL);
 
 menu_t OP_ForkedBirdDef = {
 	NULL,
@@ -3257,10 +3257,10 @@ menu_t OP_ForkedBirdDef = {
 	30, 6,
 	0,
 	NULL,
-	{NULL}
+	NULL
 };
 
-menu_t OP_LocalSkinDef = DEFAULTMENUSTYLE(NULL, OP_TiltMenu, &OP_ForkedBirdDef, 30, 60);
+menu_t OP_LocalSkinDef = DEFAULTMENUSTYLE(NULL, OP_TiltMenu, &OP_ForkedBirdDef, 30, 60, NULL);
 
 
 // ==========================================================================
@@ -5200,6 +5200,16 @@ static void M_DrawSplitText(INT32 x, INT32 y, INT32 option, const char* str, INT
 	free(clines);
 }
 
+static void M_DoToolTips(menu_t* menu)
+{
+	if (!menu->tooltips || itemOn == -1 || !menu->tooltips[itemOn])
+		return;
+
+	M_DrawSplitText(BASEVIDWIDTH / 2, BASEVIDHEIGHT-50, V_ALLOWLOWERCASE|V_SNAPTOBOTTOM, menu->tooltips[itemOn], coolalphatimer);
+
+	if ((coolalphatimer > 0) && interpTimerHackAllow)
+		coolalphatimer--;
+}
 
 static void M_DrawGenericMenu(void)
 {
@@ -5346,23 +5356,7 @@ static void M_DrawGenericMenu(void)
 
 	// dumb hack
 	// tooltips
-	// replaced with macro so it doesent look as terrible anymore lol
-	DoToolTips(OP_ControlsDef, OP_ControlsTooltips);
-	DoToolTips(OP_MouseOptionsDef, OP_MouseTooltips);
-	DoToolTips(OP_VideoOptionsDef, OP_VideoTooltips);
-	DoToolTips(OP_SoundOptionsDef, OP_SoundTooltips);
-	DoToolTips(OP_FocusOptionsDef, OP_FocusOptionsTooltips);
-	DoToolTips(OP_ChatOptionsDef, OP_ChatOptionsTooltips);
-	DoToolTips(OP_GameOptionsDef, OP_GameTooltips);
-	DoToolTips(OP_ServerOptionsDef, OP_ServerOptionsTooltips);
-	//DoToolTips(OP_SaturnCreditsDef, OP_CreditTooltips); // C:
-	DoToolTips(OP_BirdDef, OP_BirdTooltips);
-	DoToolTips(OP_TiltDef, OP_TiltTooltips);
-	DoToolTips(OP_AdvancedBirdDef, OP_AdvancedBirdTooltips);
-	DoToolTips(OP_NametagDef, OP_NametagTooltips);
-	DoToolTips(OP_DriftGaugeDef, OP_DriftGaugeTooltips);
-	DoToolTips(OP_CamOptionsDef, OP_CamOptionsTooltips);
-	DoToolTips(OP_Player1CamOptionsDef || currentMenu == &OP_Player2CamOptionsDef || currentMenu == &OP_Player3CamOptionsDef || currentMenu == &OP_Player4CamOptionsDef, OP_PlayerCamOptionsTooltips); // god this one is still terrible lmao
+	M_DoToolTips(currentMenu);
 }
 
 static void M_DrawGenericBackgroundMenu(void)
@@ -5493,16 +5487,7 @@ static void M_DrawGenericScrollMenu(void)
 
 	// dumb hack
 	// tooltips
-	// same macro here
-	DoToolTips(OP_ExpOptionsDef, OP_ExpTooltips);
-#ifdef HWRENDER
-	DoToolTips(OP_OpenGLOptionsDef, OP_OpenGLTooltips);
-#endif
-	DoToolTips(OP_SaturnDef, OP_SaturnTooltips);
-	DoToolTips(OP_SaturnHudDef, OP_SaturnHudTooltips);
-	DoToolTips(OP_AdvServerOptionsDef, OP_AdvServerOptionsTooltips);
-	DoToolTips(OP_SoundAdvancedDef, OP_SoundAdvancedTooltips);
-	DoToolTips(OP_PlayerDistortDef, OP_PlayerDistortTooltips);
+	M_DoToolTips(currentMenu);
 }
 
 static void M_DrawPauseMenu(void)
