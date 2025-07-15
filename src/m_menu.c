@@ -9596,7 +9596,7 @@ static void M_DrawLocalSkinMenu(void)
 	spriteframe_t *sprframe;
 	patch_t *patch;
 	UINT8 frame;
-	UINT8 skintodisplay;
+	INT16 skintodisplay;
 	UINT32 speenframe;
 	skin_t displayskin;
 
