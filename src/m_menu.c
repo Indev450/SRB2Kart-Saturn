@@ -152,9 +152,6 @@ description_t description[MAXSKINS];
 
 INT32 mapwads[NUMMAPS];
 
-//static char *char_notes = NULL;
-//static fixed_t char_scroll = 0;
-
 boolean browselocalskins = false;
 
 boolean menuactive = false;
@@ -476,9 +473,6 @@ static CV_PossibleValue_t dummyspectate_cons_t[] = {{0, "Spectator"}, {1, "Playi
 static CV_PossibleValue_t dummyscramble_cons_t[] = {{0, "Random"}, {1, "Points"}, {0, NULL}};
 static CV_PossibleValue_t ringlimit_cons_t[] = {{0, "MIN"}, {9999, "MAX"}, {0, NULL}};
 static CV_PossibleValue_t liveslimit_cons_t[] = {{0, "MIN"}, {99, "MAX"}, {0, NULL}};
-/*static CV_PossibleValue_t dummymares_cons_t[] = {
-	{-1, "END"}, {0,"Overall"}, {1,"Mare 1"}, {2,"Mare 2"}, {3,"Mare 3"}, {4,"Mare 4"}, {5,"Mare 5"}, {6,"Mare 6"}, {7,"Mare 7"}, {8,"Mare 8"}, {0,NULL}
-};*/
 static CV_PossibleValue_t dummystaff_cons_t[] = {{0, "MIN"}, {100, "MAX"}, {0, NULL}};
 
 static consvar_t cv_dummymenuplayer = {"dummymenuplayer", "P1", CV_HIDEN|CV_CALL, dummymenuplayer_cons_t, Dummymenuplayer_OnChange, 0, NULL, NULL, 0, 0, NULL};
@@ -604,10 +598,6 @@ static void M_CustomCvarMenu(INT32 choice)
 	else
 		M_StartMessage(M_GetText("No custom options were found\n"), NULL, MM_NOTHING);
 }
-
-// ==========================================================================
-// END ORGANIZATION STUFF.
-// ==========================================================================
 
 // current menudef
 menu_t *currentMenu = &MainDef;
@@ -1832,8 +1822,7 @@ void M_Init(void)
 #endif
 		OP_ExpOptionsMenu[op_exp_paldepth].status = IT_DISABLED;
 	}
-
-	if (rendermode == render_opengl)
+	else if (rendermode == render_opengl)
 	{
 #ifdef USE_FBO_OGL
 		if (!supportFBO)
@@ -4641,10 +4630,6 @@ static void M_DrawPlaybackMenu(void)
 		currentMenu->x = BASEVIDWIDTH/2 - 88;
 	}
 
-	// wip
-	//M_DrawTextBox(currentMenu->x-68, currentMenu->y-7, 15, 15);
-	//M_DrawCenteredMenu();
-
 	for (i = 0; i < currentMenu->numitems; i++)
 	{
 		UINT8 *inactivemap = NULL;
@@ -6614,6 +6599,7 @@ static void M_HandleServerPage(INT32 choice)
 		default:
 			break;
 	}
+
 	if (exitmenu)
 	{
 		if (currentMenu->prevMenu)
@@ -7830,9 +7816,11 @@ static void M_DrawSetupMultiPlayerMenu(void)
 			}
 			break;
 	}
+
 	// draw the name of the color you have chosen
 	// Just so people don't go thinking that "Default" is Green.
 	st = V_StringWidth(KartColor_Names[setupm_fakecolor], 0);
+
 	switch (cv_skinselectmenu.value)
 	{
 		case SKINMENUTYPE_EXTENDED:
@@ -9616,13 +9604,15 @@ static void M_DrawLocalSkinMenu(void)
 	// use generic drawer for cursor, items and title
 	M_DrawGenericMenu();
 
-	#define charw 72
+#define charw 72
 
 	// anim the player in the box
 	multi_tics -= renderdeltatics;
+
 	while (multi_tics <= 0)
 	{
 		st = cv_skinselectspin.value == SKINSELECTSPIN_PAIN ? S_KART_PAIN : multi_state->nextstate;
+
 		if (st != S_NULL)
 			multi_state = &states[st];
 
@@ -9645,7 +9635,9 @@ static void M_DrawLocalSkinMenu(void)
 		{
 			sprdef = &allskins[R_AnySkinAvailable(cv_skin.string)].spritedef;
 			skintodisplay = R_AnySkinAvailable(cv_skin.string);
-		} else { // STILL NOTHIN? use sonic instead
+		}
+		else // STILL NOTHIN? use sonic instead
+		{
 			sprdef = &allskins[0].spritedef;
 			skintodisplay = 0;
 		}
@@ -9666,7 +9658,8 @@ static void M_DrawLocalSkinMenu(void)
 
 	//this is a very shitty solution for checking if a sprite needs flipping
 	//but it works
-	if ((sprframe->lumppat[speenframe] == sprframe->lumppat[8-speenframe]) && (speenframe > 4)) {
+	if ((sprframe->lumppat[speenframe] == sprframe->lumppat[8-speenframe]) && (speenframe > 4))
+	{
 		flags = V_FLIP; // This sprite is left/right flipped!
 	}
 	patch = W_CachePatchNum(sprframe->lumppat[speenframe], PU_PATCH);
@@ -9675,8 +9668,7 @@ static void M_DrawLocalSkinMenu(void)
 	V_DrawFill(mx + 220 - (charw/2), my+54, charw, 84, 239);
 
 	// draw player sprite
-	UINT8 *colormap = R_GetTranslationColormap(skintodisplay, cv_playercolor.value, GTC_MENUCACHE);
-	colormap = R_GetLocalTranslationColormap(&skins[allskins[skintodisplay].localnum], (allskins[skintodisplay].localskin ? &localskins[allskins[skintodisplay].localnum] : NULL), cv_playercolor.value, GTC_MENUCACHE, allskins[skintodisplay].localskin);
+	UINT8 *colormap = R_GetLocalTranslationColormap(&skins[allskins[skintodisplay].localnum], (allskins[skintodisplay].localskin ? &localskins[allskins[skintodisplay].localnum] : NULL), cv_playercolor.value, GTC_MENUCACHE, allskins[skintodisplay].localskin);
 
 	V_DrawMappedPatch(mx, my+50, 0, W_CachePatchName(allskins[skintodisplay].facewant, PU_PATCH), colormap);
 	V_DrawMappedPatch(mx+8, my+85, 0, W_CachePatchName(allskins[skintodisplay].facerank, PU_PATCH), colormap);
