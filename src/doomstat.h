@@ -447,19 +447,19 @@ extern UINT16 spacetimetics;
 extern UINT16 extralifetics;
 
 // SRB2kart
-extern tic_t introtime;
-extern tic_t starttime;
-extern tic_t raceexittime;
-extern tic_t battleexittime;
-extern INT32 hyudorotime;
-extern INT32 stealtime;
-extern INT32 sneakertime;
-extern INT32 itemtime;
-extern INT32 comebacktime;
-extern INT32 bumptime;
-extern INT32 wipeoutslowtime;
-extern INT32 wantedreduce;
-extern INT32 wantedfrequency;
+extern const tic_t introtime;
+extern const tic_t starttime;
+extern const tic_t raceexittime;
+extern const tic_t battleexittime;
+extern const INT32 hyudorotime;
+extern const INT32 stealtime;
+extern const INT32 sneakertime;
+extern const INT32 itemtime;
+extern const INT32 comebacktime;
+extern const INT32 bumptime;
+extern const INT32 wipeoutslowtime;
+extern const INT32 wantedreduce;
+extern const INT32 wantedfrequency;
 
 extern UINT8 introtoplay;
 extern UINT8 creditscutscene;
