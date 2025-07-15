@@ -8249,6 +8249,7 @@ static void M_DrawSetupMultiPlayerMenu(void)
 	while (multi_tics <= 0)
 	{
 		st = cv_skinselectspin.value == SKINSELECTSPIN_PAIN ? S_KART_PAIN : multi_state->nextstate;
+
 		if (st != S_NULL)
 			multi_state = &states[st];
 
@@ -8263,14 +8264,12 @@ static void M_DrawSetupMultiPlayerMenu(void)
 	{
 		case SKINMENUTYPE_2D:
 			skintodisplay = setupm_fakeskin;
-			if (setupm_skinlockedselect) //show the skin we are trying to select
+			if (setupm_skinlockedselect) // show the skin we are trying to select
 				skintodisplay = skinstats[setupm_skinxpos][setupm_skinypos][setupm_skinselect];
 			else if (skinstatscount[setupm_skinxpos][setupm_skinypos] && itemOn == 1)
 				skintodisplay = skinstats[setupm_skinxpos][setupm_skinypos][(I_GetTime()/TICRATE)%SELECTEDSTATSCOUNT];
 			break;
 		case SKINMENUTYPE_EXTENDED:
-			skintodisplay = (itemOn == 1 && setupm_skinselect < numskins ? skinsorted[setupm_skinselect] : setupm_fakeskin);
-			break;
 		case SKINMENUTYPE_GRID:
 			skintodisplay = (itemOn == 1 && setupm_skinselect < numskins ? skinsorted[setupm_skinselect] : setupm_fakeskin);
 			break;
@@ -8279,8 +8278,10 @@ static void M_DrawSetupMultiPlayerMenu(void)
 			break;
 	}
 
-	if (R_SkinAvailable(skins[skintodisplay].name) != -1)
-		sprdef = &skins[R_SkinAvailable(skins[skintodisplay].name)].spritedef;
+	const INT32 skinnum = R_SkinAvailable(skins[skintodisplay].name);
+
+	if (skinnum != -1)
+		sprdef = &skins[skinnum].spritedef;
 	else
 		sprdef = &skins[0].spritedef;
 
@@ -9597,6 +9598,7 @@ static void M_DrawLocalSkinMenu(void)
 	UINT8 frame;
 	UINT8 skintodisplay;
 	UINT32 speenframe;
+	skin_t displayskin;
 
 	mx = OP_ForkedBirdDef.x;
 	my = OP_ForkedBirdDef.y;
@@ -9623,25 +9625,22 @@ static void M_DrawLocalSkinMenu(void)
 	}
 
 	// skin 0 is default player sprite
-	if (R_AnySkinAvailable(cv_fakelocalskin.string) != -1)
-	{
-		sprdef = &allskins[R_AnySkinAvailable(cv_fakelocalskin.string)].spritedef;
-		skintodisplay = R_AnySkinAvailable(cv_fakelocalskin.string);
-	}
-	else
+	skintodisplay = R_AnySkinAvailable(cv_fakelocalskin.string);
+
+	if (skintodisplay == -1)
 	{
 		// ATTEMPT TO FIND REAL SKIN
-		if (R_AnySkinAvailable(cv_skin.string) != -1)
+		skintodisplay = R_AnySkinAvailable(cv_skin.string);
+
+		if (skintodisplay == -1) // STILL NOTHIN? use sonic instead
 		{
-			sprdef = &allskins[R_AnySkinAvailable(cv_skin.string)].spritedef;
-			skintodisplay = R_AnySkinAvailable(cv_skin.string);
-		}
-		else // STILL NOTHIN? use sonic instead
-		{
-			sprdef = &allskins[0].spritedef;
 			skintodisplay = 0;
 		}
 	}
+
+	displayskin = allskins[skintodisplay];
+
+	sprdef = &displayskin.spritedef;
 
 	if (!sprdef->numframes) // No frames ??
 		return; // Can't render!
@@ -9668,21 +9667,21 @@ static void M_DrawLocalSkinMenu(void)
 	V_DrawFill(mx + 220 - (charw/2), my+54, charw, 84, 239);
 
 	// draw player sprite
-	UINT8 *colormap = R_GetLocalTranslationColormap(&skins[allskins[skintodisplay].localnum], (allskins[skintodisplay].localskin ? &localskins[allskins[skintodisplay].localnum] : NULL), cv_playercolor.value, GTC_MENUCACHE, allskins[skintodisplay].localskin);
+	UINT8 *colormap = R_GetLocalTranslationColormap(&skins[displayskin.localnum], (displayskin.localskin ? &localskins[displayskin.localnum] : NULL), cv_playercolor.value, GTC_MENUCACHE, displayskin.localskin);
 
-	V_DrawMappedPatch(mx, my+50, 0, W_CachePatchName(allskins[skintodisplay].facewant, PU_PATCH), colormap);
-	V_DrawMappedPatch(mx+8, my+85, 0, W_CachePatchName(allskins[skintodisplay].facerank, PU_PATCH), colormap);
+	V_DrawMappedPatch(mx, my+50, 0, W_CachePatchName(displayskin.facewant, PU_PATCH), colormap);
+	V_DrawMappedPatch(mx+8, my+85, 0, W_CachePatchName(displayskin.facerank, PU_PATCH), colormap);
 	V_DrawString(mx, my+108, V_ALLOWLOWERCASE, "Character");
-	if (strlen(allskins[skintodisplay].realname) > 10)
-		V_DrawThinString(mx+20, my+118, V_ALLOWLOWERCASE|highlightflags, allskins[skintodisplay].realname);
+	if (strlen(displayskin.realname) > 10)
+		V_DrawThinString(mx+20, my+118, V_ALLOWLOWERCASE|highlightflags, displayskin.realname);
 	else
-		V_DrawString(mx+20, my+118, V_ALLOWLOWERCASE|highlightflags, allskins[skintodisplay].realname);
+		V_DrawString(mx+20, my+118, V_ALLOWLOWERCASE|highlightflags, displayskin.realname);
 
-	if (allskins[skintodisplay].flags & SF_HIRES)
+	if (displayskin.flags & SF_HIRES)
 	{
 		V_DrawFixedPatch((mx+220)<<FRACBITS,
 					(my+120)<<FRACBITS,
-			allskins[skintodisplay].highresscale,
+			displayskin.highresscale,
 			flags, patch, colormap);
 	}
 	else
