@@ -1521,6 +1521,7 @@ enum
 	//op_exp_dirlight,
 	op_exp_skybox,
 	op_exp_accuratefps,
+	op_exp_votescrn,
 #ifdef HWRENDER
 	op_exp_glscrtx,
 #ifdef USE_FBO_OGL
