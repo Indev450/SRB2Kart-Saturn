@@ -141,10 +141,10 @@ static CV_PossibleValue_t drawdist_precip_cons_t[] = {
 #endif
 
 static CV_PossibleValue_t maxinterpdist_cons_t[] = {
-       /*{256, "256"},*/ {512, "512"}, {768, "768"},
-       {1024, "1024"}, {1536, "1536"}, {2048, "2048"},
-       {3072, "3072"}, {4096, "4096"}, {6144, "6144"},
-       {8192, "8192"}, {0, "Infinite"}, {0, NULL}};
+	/*{256, "256"},*/ {512, "512"}, {768, "768"},
+	{1024, "1024"}, {1536, "1536"}, {2048, "2048"},
+	{3072, "3072"}, {4096, "4096"}, {6144, "6144"},
+	{8192, "8192"}, {0, "Infinite"}, {0, NULL}};
 
 static CV_PossibleValue_t fov_cons_t[] = {{MINFOV*FRACUNIT, "MIN"}, {MAXFOV*FRACUNIT, "MAX"}, {0, NULL}};
 
@@ -170,14 +170,14 @@ consvar_t cv_tailspickup = {"tailspickup", "On", CV_NETVAR|CV_NOSHOWHELP, CV_OnO
 consvar_t cv_precachetextures = {"precachetextures", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 consvar_t cv_chasecam[MAXSPLITSCREENPLAYERS] = {
-	{"chasecam", "On", 0, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"chasecam",  "On", 0, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL},
 	{"chasecam2", "On", 0, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL},
 	{"chasecam3", "On", 0, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL},
 	{"chasecam4", "On", 0, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL}
 };
 
 consvar_t cv_flipcam[MAXSPLITSCREENPLAYERS] = {
-	{"flipcam", "No", CV_SAVE|CV_CALL|CV_NOINIT, CV_YesNo, FlipCam_OnChange, 0, NULL, NULL, 0, 0, NULL},
+	{"flipcam",  "No", CV_SAVE|CV_CALL|CV_NOINIT, CV_YesNo, FlipCam_OnChange,  0, NULL, NULL, 0, 0, NULL},
 	{"flipcam2", "No", CV_SAVE|CV_CALL|CV_NOINIT, CV_YesNo, FlipCam2_OnChange, 0, NULL, NULL, 0, 0, NULL},
 	{"flipcam3", "No", CV_SAVE|CV_CALL|CV_NOINIT, CV_YesNo, FlipCam3_OnChange, 0, NULL, NULL, 0, 0, NULL},
 	{"flipcam4", "No", CV_SAVE|CV_CALL|CV_NOINIT, CV_YesNo, FlipCam4_OnChange, 0, NULL, NULL, 0, 0, NULL}
@@ -195,6 +195,7 @@ consvar_t cv_drawdist_precip = {"drawdist_precip", "1024", CV_SAVE|CV_CALL|CV_NO
 consvar_t cv_lessprecip      = {"lessweathereffects", "Off", CV_SAVE|CV_CALL|CV_NOINIT, CV_OnOff, Precipstuff_OnChange, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_mobjscaleprecip = {"scaleprecipmobjscale", "Off", CV_SAVE|CV_CALL|CV_NOINIT, CV_OnOff, Precipstuff_OnChange, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_maxinterpdist   = {"maxinterpdist", "Infinite", CV_SAVE, maxinterpdist_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_playerfade      = {"playerfade", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_ripplewater     = {"waterripples", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 // Okay, whoever said homremoval causes a performance hit should be shot.
@@ -211,6 +212,7 @@ consvar_t cv_randomdirlight  = {"randomdirectionallight", "Off", CV_SAVE|CV_CALL
 
 consvar_t cv_showhud         = {"showhud", "Yes", CV_CALL,  CV_YesNo, R_SetViewSize, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_translucenthud  = {"translucenthud", "10", CV_SAVE, translucenthud_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+
 consvar_t cv_uncappedhud     = {"uncappedhud", "Yes", CV_SAVE, CV_YesNo, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_soniccd         = {"soniccd", "Off", CV_NETVAR|CV_NOSHOWHELP, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_allowmlook      = {"allowmlook", "Yes", CV_NETVAR, CV_YesNo, NULL, 0, NULL, NULL, 0, 0, NULL};
@@ -400,7 +402,8 @@ angle_t R_PlayerSliptideAngle(player_t *player)
 	sprframe = &sprdef->spriteframes[rot];
 
 	// No sprite frame? I guess it is possible
-	if (!sprframe) return 0;
+	if (!sprframe)
+		return 0;
 
 	if (sprframe->rotate != SRF_SINGLE || (mo->frame & FF_PAPERSPRITE))
 		ang = R_PointToAngle(mo->x, mo->y) - mo->angle;
@@ -460,6 +463,7 @@ boolean R_DoCulling(line_t *cullheight, line_t *viewcullheight, fixed_t vz, fixe
 		return false;
 
 	cullplane = cullheight->frontsector->floorheight;
+
 	if (cullheight->flags & ML_NOCLIMB) // Group culling
 	{
 		if (!viewcullheight)
@@ -578,8 +582,6 @@ static void R_InitTextureMapping(void)
 	clipangle = xtoviewangle[0];
 	doubleclipangle = clipangle*2;
 }
-
-
 
 //
 // R_InitLightTables
@@ -1048,6 +1050,33 @@ void R_Init(void)
 }
 
 //
+// R_IsPointInSubsector, same as above but returns 0 if not in subsector
+//
+subsector_t *R_IsPointInSubsector(fixed_t x, fixed_t y)
+{
+	node_t *node;
+	INT32 side, i;
+	size_t nodenum;
+	subsector_t *ret;
+
+	nodenum = numnodes - 1;
+
+	while (!(nodenum & NF_SUBSECTOR))
+	{
+		node = &nodes[nodenum];
+		side = R_PointOnSide(x, y, node);
+		nodenum = node->children[side];
+	}
+
+	ret = &subsectors[nodenum & ~NF_SUBSECTOR];
+	for (i = 0; i < ret->numlines; i++)
+		if (P_PointOnLineSide(x, y, segs[ret->firstline + i].linedef) != segs[ret->firstline + i].side)
+			return 0;
+
+	return ret;
+}
+
+//
 // R_SetupFrame
 //
 
@@ -1066,7 +1095,7 @@ static void R_SetupCommonFrame(player_t * player, sector_t * sector)
 	if (sector != NULL)
 		newview->sector = sector;
 	else
-		newview->sector = R_PointInSubsector(newview->x, newview->y)->sector;
+		newview->sector = R_PointInSubsectorFast(newview->x, newview->y)->sector;
 
 	R_InterpolateView(rendertimefrac_unpaused, false);
 }
@@ -1167,7 +1196,7 @@ void R_SkyboxFrame(int s)
 {
 	player_t *player = &players[displayplayers[s]];
 	camera_t *thiscam = &camera[s];
-	subsector_t * subsector = NULL;
+	subsector_t *subsector = NULL;
 	mapheader_t *mh = mapheaderinfo[gamemap-1];
 
 	R_SetViewContext(static_cast<viewcontext_e>(VIEWCONTEXT_SKY1 + s));
@@ -1306,7 +1335,7 @@ static void R_PortalFrame(portal_t *portal)
 	{
 		portalclipline = NULL;
 		portalcullsector = NULL;
-		viewsector = R_PointInSubsector(viewx, viewy)->sector;
+		viewsector = R_PointInSubsectorFast(viewx, viewy)->sector;
 	}
 }
 
@@ -1522,11 +1551,6 @@ void R_RegisterEngineStuff(void)
 	CV_RegisterVar(&cv_fovchange);
 	CV_RegisterVar(&cv_fov);
 
-	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
-	{
-		CV_RegisterVar(&cv_chasecam[i]);
-	}
-
 	CV_RegisterVar(&cv_shadow);
 	CV_RegisterVar(&cv_shadowoffs);
 	CV_RegisterVar(&cv_skybox);
@@ -1536,6 +1560,8 @@ void R_RegisterEngineStuff(void)
 
 	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
 	{
+		CV_RegisterVar(&cv_chasecam[i]);
+
 		CV_RegisterVar(&cv_cam_dist[i]);
 		CV_RegisterVar(&cv_cam_still[i]);
 		CV_RegisterVar(&cv_cam_height[i]);
@@ -1569,6 +1595,7 @@ void R_RegisterEngineStuff(void)
 	CV_RegisterVar(&cv_randomdirlight);
 
 	CV_RegisterVar(&cv_maxinterpdist);
+	CV_RegisterVar(&cv_playerfade);
 
 	CV_RegisterVar(&cv_ripplewater);
 

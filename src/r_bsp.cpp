@@ -196,10 +196,10 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec, INT32 *floorlightlevel,
 		mobj_t *pviewmobj = viewplayer->mo;
 		INT32 heightsec;
 		boolean underwater;
-		UINT8 i = R_GetViewNumber();
+		camera_t *thiscam = &camera[R_GetViewNumber()];
 
-		if (viewplayer == &players[displayplayers[i]] && camera[i].chase)
-			heightsec = camera->subsector->sector->heightsec;
+		if (thiscam->chase)
+			heightsec = thiscam->subsector->sector->heightsec;
 		else if (viewmobj)
 			heightsec = pviewmobj->subsector->sector->heightsec;
 		else

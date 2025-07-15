@@ -88,7 +88,7 @@ extern lighttable_t *zlight[LIGHTLEVELS][MAXLIGHTZ];
 //
 // killough 5/2/98: reformatted
 //
-FUNCINLINE static ATTRINLINE PUREFUNC INT32 R_PointOnSide(fixed_t x, fixed_t y, const node_t * restrict node)
+FUNCINLINE static ATTRINLINE PUREFUNC INT32 R_PointOnSide(fixed_t x, fixed_t y, const node_t* restrict node)
 {
 	if (!node->dx)
 		return x <= node->x ? node->dy > 0 : node->dy < 0;
@@ -117,10 +117,10 @@ FUNCINLINE static ATTRINLINE PUREFUNC INT32 R_PointOnSideFast(fixed_t x, fixed_t
 
 FUNCINLINE static ATTRINLINE PUREFUNC INT32 R_PointOnSegSide(fixed_t x, fixed_t y, const seg_t *line)
 {
-    fixed_t lx = line->v1->x;
-    fixed_t ly = line->v1->y;
-    fixed_t ldx = line->v2->x - lx;
-    fixed_t ldy = line->v2->y - ly;
+	fixed_t lx = line->v1->x;
+	fixed_t ly = line->v1->y;
+	fixed_t ldx = line->v2->x - lx;
+	fixed_t ldy = line->v2->y - ly;
 
 	// use cross product to determine side quickly
 	INT64 v = ((INT64)y - ly) * ldx - ((INT64)x - lx) * ldy;
@@ -137,42 +137,19 @@ fixed_t R_ScaleFromGlobalAngle(angle_t visangle);
 //
 // R_PointInSubsector
 //
-FUNCINLINE static ATTRINLINE subsector_t *R_PointInSubsector(fixed_t x, fixed_t y)
-{
-	size_t nodenum = numnodes-1;
-
-	while (!(nodenum & NF_SUBSECTOR))
-		nodenum = nodes[nodenum].children[R_PointOnSide(x, y, nodes+nodenum)];
-
-	return &subsectors[nodenum & ~NF_SUBSECTOR];
+#define R_POINTINSUBSECTOR(FUNCNAME, SIDEFUNC)\
+FUNCINLINE static ATTRINLINE subsector_t *FUNCNAME(fixed_t x, fixed_t y)\
+{\
+	size_t nodenum = numnodes-1;\
+	while (!(nodenum & NF_SUBSECTOR))\
+		nodenum = nodes[nodenum].children[SIDEFUNC(x, y, nodes+nodenum)];\
+	return &subsectors[nodenum & ~NF_SUBSECTOR];\
 }
 
-//
-// R_IsPointInSubsector, same as above but returns 0 if not in subsector
-//
-FUNCINLINE static ATTRINLINE subsector_t *R_IsPointInSubsector(fixed_t x, fixed_t y)
-{
-	node_t *node;
-	INT32 side, i;
-	size_t nodenum;
-	subsector_t *ret;
+R_POINTINSUBSECTOR(R_PointInSubsector, R_PointOnSide)
+R_POINTINSUBSECTOR(R_PointInSubsectorFast, R_PointOnSideFast)
 
-	nodenum = numnodes - 1;
-
-	while (!(nodenum & NF_SUBSECTOR))
-	{
-		node = &nodes[nodenum];
-		side = R_PointOnSide(x, y, node);
-		nodenum = node->children[side];
-	}
-
-	ret = &subsectors[nodenum & ~NF_SUBSECTOR];
-	for (i = 0; i < ret->numlines; i++)
-		if (P_PointOnLineSide(x, y, segs[ret->firstline + i].linedef) != segs[ret->firstline + i].side)
-			return 0;
-
-	return ret;
-}
+subsector_t *R_IsPointInSubsector(fixed_t x, fixed_t y);
 
 #define R_PointToDist(x, y) R_PointToDist2(viewx, viewy, x, y)
 #define R_PointToDist2(px2, py2, px1, py1) FixedHypot((px1) - (px2), (py1) - (py2))
@@ -218,6 +195,7 @@ extern consvar_t cv_fov, cv_fovchange;
 extern consvar_t cv_skybox;
 extern consvar_t cv_tailspickup;
 extern consvar_t cv_maxinterpdist;
+extern consvar_t cv_playerfade;
 extern consvar_t cv_ripplewater;
 
 extern consvar_t cv_randomdirlight;

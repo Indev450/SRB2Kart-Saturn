@@ -1227,6 +1227,9 @@ void HWR_DrawMD2(gl_vissprite_t *spr)
 			Surf.PolyFlags = HWR_GetBlendModeFlag(blendmode);
 		}
 
+		if (cv_playerfade.value && spr->mobj->player)
+			Surf.PolyColor.s.alpha = FixedMul(R_DoPlayerFade(spr->mobj), Surf.PolyColor.s.alpha);
+
 		// dont forget to enabled the depth test because we can't do this like
 		// before: polygons models are not sorted
 
@@ -1241,7 +1244,7 @@ void HWR_DrawMD2(gl_vissprite_t *spr)
 			else
 			{
 				md2s = md2_playermodels;
-				skinnum = (skin_t *)spr->mobj->localskin -      skins;
+				skinnum = (skin_t *)spr->mobj->localskin - skins;
 			}
 		}
 		else
@@ -1266,6 +1269,7 @@ void HWR_DrawMD2(gl_vissprite_t *spr)
 
 		if (md2->error)
 			return; // we already failed loading this before :(
+
 		if (!md2->model)
 		{
 			CONS_Debug(DBG_RENDER, "Loading model... (%s, %s)", sprnames[spr->mobj->sprite], md2->filename);
@@ -1284,6 +1288,7 @@ void HWR_DrawMD2(gl_vissprite_t *spr)
 				return;
 			}
 		}
+
 		//Hurdler: arf, I don't like that implementation at all... too much crappy
 		gpatch = md2->glpatch;
 		if (gpatch)

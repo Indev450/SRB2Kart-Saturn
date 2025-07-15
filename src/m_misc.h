@@ -87,6 +87,9 @@ INT32 axtoi(const char *hexStg);
 
 void CopyCaretColors(char *p, const char *s, int n);
 
+// Remove color codes from string
+void StripColors(char *dst, char *src, size_t n);
+
 const char *GetRevisionString(void);
 
 // Vector/matrix math

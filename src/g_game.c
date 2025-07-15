@@ -196,19 +196,19 @@ UINT16 spacetimetics = 11*TICRATE + (TICRATE/2);
 UINT16 extralifetics = 4*TICRATE;
 
 // SRB2kart
-tic_t introtime = 108+5; // plus 5 for white fade
-tic_t starttime = 6*TICRATE + (3*TICRATE/4);
-tic_t raceexittime = 5*TICRATE + (2*TICRATE/3);
-tic_t battleexittime = 8*TICRATE;
-INT32 hyudorotime = 7*TICRATE;
-INT32 stealtime = TICRATE/2;
-INT32 sneakertime = TICRATE + (TICRATE/3);
-INT32 itemtime = 8*TICRATE;
-INT32 comebacktime = 10*TICRATE;
-INT32 bumptime = 6;
-INT32 wipeoutslowtime = 20;
-INT32 wantedreduce = 5*TICRATE;
-INT32 wantedfrequency = 10*TICRATE;
+const tic_t introtime = 108+5; // plus 5 for white fade
+const tic_t starttime = 6*TICRATE + (3*TICRATE/4);
+const tic_t raceexittime = 5*TICRATE + (2*TICRATE/3);
+const tic_t battleexittime = 8*TICRATE;
+const INT32 hyudorotime = 7*TICRATE;
+const INT32 stealtime = TICRATE/2;
+const INT32 sneakertime = TICRATE + (TICRATE/3);
+const INT32 itemtime = 8*TICRATE;
+const INT32 comebacktime = 10*TICRATE;
+const INT32 bumptime = 6;
+const INT32 wipeoutslowtime = 20;
+const INT32 wantedreduce = 5*TICRATE;
+const INT32 wantedfrequency = 10*TICRATE;
 
 INT32 gameovertics = 15*TICRATE;
 
