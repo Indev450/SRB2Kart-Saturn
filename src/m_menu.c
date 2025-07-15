@@ -239,17 +239,8 @@ menu_t SPauseDef;
 #define lsheadingheight 16
 
 // Sky Room
-//static void M_CustomLevelSelect(INT32 choice);
-//static void M_CustomWarp(INT32 choice);
-FUNCNORETURN static ATTRNORETURN void M_UltimateCheat(INT32 choice);
-//static void M_LoadGameLevelSelect(INT32 choice);
-static void M_GetAllEmeralds(INT32 choice);
-static void M_DestroyRobots(INT32 choice);
-//static void M_LevelSelectWarp(INT32 choice);
 static void M_Credits(INT32 choice);
 static void M_MusicTest(INT32 choice);
-static void M_PandorasBox(INT32 choice);
-static void M_EmblemHints(INT32 choice);
 static char *M_GetConditionString(condition_t cond);
 menu_t SR_MainDef, SR_UnlockChecklistDef;
 
@@ -269,14 +260,11 @@ static void M_ConfirmEnterGame(INT32 choice);
 static void M_ConfirmTeamScramble(INT32 choice);
 static void M_ConfirmTeamChange(INT32 choice);
 static void M_ConfirmSpectateChange(INT32 choice);
-//static void M_SecretsMenu(INT32 choice);
-//static void M_SetupChoosePlayer(INT32 choice);
 static void M_QuitSRB2(INT32 choice);
 menu_t SP_MainDef, MP_MainDef, OP_MainDef;
 menu_t MISC_ScrambleTeamDef, MISC_ChangeTeamDef, MISC_ChangeSpectateDef;
 
 // Single Player
-//static void M_LoadGame(INT32 choice);
 static void M_TimeAttack(INT32 choice);
 static boolean M_QuitTimeAttackMenu(void);
 static void M_Statistics(INT32 choice);
@@ -285,7 +273,6 @@ static void M_ReplayTimeAttack(INT32 choice);
 static void M_ChooseTimeAttack(INT32 choice);
 static void M_ModeAttackEndGame(INT32 choice);
 static void M_SetGuestReplay(INT32 choice);
-//static void M_ChoosePlayer(INT32 choice);
 menu_t SP_LevelStatsDef;
 static menu_t SP_TimeAttackDef, SP_ReplayDef, SP_GuestReplayDef, SP_GhostDef;
 
@@ -307,10 +294,10 @@ static void M_Connect(INT32 choice);
 #endif
 static void M_StartOfflineServerMenu(INT32 choice);
 static void M_StartServer(INT32 choice);
-static void M_SetupMultiPlayer(INT32 choice);
-static void M_SetupMultiPlayer2(INT32 choice);
-static void M_SetupMultiPlayer3(INT32 choice);
-static void M_SetupMultiPlayer4(INT32 choice);
+static void M_SetupMultiPlayer(void);
+static void M_SetupMultiPlayer2(void);
+static void M_SetupMultiPlayer3(void);
+static void M_SetupMultiPlayer4(void);
 static void M_SetupMultiHandler(INT32 choice);
 
 // Options
@@ -321,10 +308,10 @@ menu_t OP_MouseOptionsDef;
 menu_t OP_Joystick1Def, OP_Joystick2Def, OP_Joystick3Def, OP_Joystick4Def;
 menu_t OP_CustomCvarMenuDef;
 static void M_VideoModeMenu(INT32 choice);
-static void M_Setup1PControlsMenu(INT32 choice);
-static void M_Setup2PControlsMenu(INT32 choice);
-static void M_Setup3PControlsMenu(INT32 choice);
-static void M_Setup4PControlsMenu(INT32 choice);
+static void M_Setup1PControlsMenu(void);
+static void M_Setup2PControlsMenu(void);
+static void M_Setup3PControlsMenu(void);
+static void M_Setup4PControlsMenu(void);
 
 static void M_Setup1PJoystickMenu(INT32 choice);
 static void M_Setup2PJoystickMenu(INT32 choice);
@@ -346,7 +333,6 @@ menu_t OP_OpenGLOptionsDef;
 #endif
 menu_t OP_SoundOptionsDef;
 menu_t OP_SoundAdvancedDef;
-//static void M_RestartAudio(void);
 
 menu_t OP_FocusOptionsDef;
 
@@ -431,7 +417,6 @@ static void M_DrawAddons(void);
 static void M_DrawSkyRoom(void);
 static void M_DrawChecklist(void);
 static void M_DrawMusicTest(void);
-static void M_DrawEmblemHints(void);
 static void M_DrawPauseMenu(void);
 static void M_DrawLevelSelectOnly(boolean leftfade, boolean rightfade);
 static void M_DrawServerMenu(void);
@@ -456,7 +441,6 @@ static void M_DrawLocalSkinMenu(void);
 #ifndef NONET
 static boolean M_CancelConnect(void);
 #endif
-static boolean M_ExitPandorasBox(void);
 static boolean M_QuitMultiPlayerMenu(void);
 static void M_HandleAddons(INT32 choice);
 static void M_HandleSoundTest(INT32 choice);
@@ -778,11 +762,6 @@ typedef enum
 // ---------------------
 static menuitem_t SPauseMenu[] =
 {
-	// Pandora's Box will be shifted up if both options are available
-	{IT_CALL | IT_STRING,    NULL, "Pandora's Box...",     M_PandorasBox,         16},
-	{IT_CALL | IT_STRING,    NULL, "Medal Hints...",       M_EmblemHints,         24},
-	//{IT_CALL | IT_STRING,    NULL, "Level Select...",    M_LoadGameLevelSelect, 32},
-
 	{IT_CALL | IT_STRING,    NULL, "Continue",             M_SelectableClearMenus,48},
 	{IT_CALL | IT_STRING,    NULL, "Retry",                M_Retry,               56},
 	{IT_CALL | IT_STRING,    NULL, "Options",              M_Options,             64},
@@ -793,11 +772,7 @@ static menuitem_t SPauseMenu[] =
 
 typedef enum
 {
-	spause_pandora = 0,
-	spause_hints,
-	//spause_levelselect,
-
-	spause_continue,
+	spause_continue = 0,
 	spause_retry,
 	spause_options,
 	spause_title,
@@ -865,21 +840,6 @@ static menuitem_t MISC_HelpMenu[] =
 // --------------------------------
 // Prefix: SR_
 
-// Pause Menu Pandora's Box Options
-static menuitem_t SR_PandorasBox[] =
-{
-	{IT_STRING | IT_CVAR, NULL, "Rings",              &cv_dummyrings,      20},
-	{IT_STRING | IT_CVAR, NULL, "Lives",              &cv_dummylives,      30},
-	{IT_STRING | IT_CVAR, NULL, "Continues",          &cv_dummycontinues,  40},
-
-	{IT_STRING | IT_CVAR, NULL, "Gravity",            &cv_gravity,         60},
-	{IT_STRING | IT_CVAR, NULL, "Throw Rings",        &cv_ringslinger,     70},
-
-	{IT_STRING | IT_CALL, NULL, "Get All Emeralds",   M_GetAllEmeralds,    90},
-	{IT_STRING | IT_CALL, NULL, "Destroy All Robots", M_DestroyRobots,    100},
-
-	{IT_STRING | IT_CALL, NULL, "Ultimate Cheat",     M_UltimateCheat,    130},
-};
 
 // Sky Room Custom Unlocks
 static menuitem_t SR_MainMenu[] =
@@ -932,12 +892,6 @@ static menuitem_t SR_MusicTestMenu[] =
 	{IT_KEYHANDLER | IT_STRING, NULL, "", M_HandleMusicTest, 0},
 };
 
-
-static menuitem_t SR_EmblemHintMenu[] =
-{
-	{IT_STRING|IT_CVAR,         NULL, "Medal Radar",  &cv_itemfinder, 10},
-	{IT_WHITESTRING|IT_SUBMENU, NULL, "Back",         &SPauseDef,     20}
-};
 
 // --------------------------------
 // 1 Player and all of its submenus
@@ -1235,7 +1189,6 @@ static menuitem_t OP_AllControlsMenu[] =
 	{IT_HEADER, NULL, "Miscellaneous Controls", NULL, 0},
 	{IT_SPACE, NULL, NULL, NULL, 0},
 	{IT_CONTROL, NULL, "Chat",                  M_ChangeControl, gc_talkkey    },
-	//{IT_CONTROL, NULL, "Team Chat",           M_ChangeControl, gc_teamkey    },
 	{IT_CONTROL, NULL, "Show Rankings",         M_ChangeControl, gc_scores     },
 	{IT_CONTROL, NULL, "Pause",                 M_ChangeControl, gc_pause      },
 	{IT_CONTROL, NULL, "Screenshot",            M_ChangeControl, gc_screenshot },
@@ -1255,7 +1208,6 @@ static menuitem_t OP_AllControlsMenu[] =
 	{IT_CONTROL, NULL, "Reset Camera",          M_ChangeControl, gc_camreset   },
 	{IT_CONTROL, NULL, "Strafe Left",           M_ChangeControl, gc_strafeleft },
 	{IT_CONTROL, NULL, "Strafe Right",          M_ChangeControl, gc_straferight},
-	//{IT_CONTROL, NULL, "Toggle First-Person", M_ChangeControl, gc_camtoggle  },
 
 	{IT_HEADER, NULL, "Spectator Controls", NULL, 0},
 	{IT_SPACE, NULL, NULL, NULL, 0},
@@ -1617,10 +1569,7 @@ static menuitem_t OP_SoundOptionsMenu[] =
 	{IT_STRING|IT_CVAR,			NULL, "MIDI",					&cv_gamemidimusic,		 50},
 	{IT_STRING|IT_CVAR|IT_CV_SLIDER,
 								NULL, "MIDI Volume",			&cv_midimusicvolume,	 58},
-#endif
 
-	//{IT_STRING|IT_CALL,			NULL, "Restart Audio System",	M_RestartAudio,			 50},
-#ifdef NO_MIDI
 	{IT_STRING|IT_CVAR,							NULL, "Reverse L/R Channels",			&stereoreverse,			 	50},
 
 	{IT_STRING|IT_CVAR,							NULL, "Chat Notifications",				&cv_chatnotifications,	 	65},
@@ -2120,38 +2069,6 @@ static const char* OP_AdvServerOptionsTooltips[] =
 	"Log player file transfers.",
 };
 #endif
-
-/*static menuitem_t OP_NetgameOptionsMenu[] =
-{
-	{IT_STRING | IT_CVAR, NULL, "Time Limit",            &cv_timelimit,        10},
-	{IT_STRING | IT_CVAR, NULL, "Point Limit",           &cv_pointlimit,       18},
-
-	{IT_STRING | IT_CVAR, NULL, "Frantic Items",         &cv_kartfrantic,      34},
-
-	{IT_STRING | IT_CVAR, NULL, "Item Respawn",          &cv_itemrespawn,      50},
-	{IT_STRING | IT_CVAR, NULL, "Item Respawn Delay",     &cv_itemrespawntime,  58},
-
-	{IT_STRING | IT_CVAR, NULL, "Player Respawn Delay",  &cv_respawntime,      74},
-
-	{IT_STRING | IT_CVAR, NULL, "Force Skin #",          &cv_forceskin,          90},
-	{IT_STRING | IT_CVAR, NULL, "Restrict Skin Changes", &cv_restrictskinchange, 98},
-
-	//{IT_STRING | IT_CVAR, NULL, "Autobalance Teams",            &cv_autobalance,      114},
-	//{IT_STRING | IT_CVAR, NULL, "Scramble Teams on Map Change", &cv_scrambleonchange, 122},
-};*/
-
-/*static menuitem_t OP_GametypeOptionsMenu[] =
-{
-	{IT_HEADER,           NULL, "RACE",                  NULL,                 2},
-	{IT_STRING | IT_CVAR, NULL, "Game Speed",    		  &cv_kartspeed,    	10},
-	{IT_STRING | IT_CVAR, NULL, "Encore Mode",    		  &cv_kartencore,    	18},
-	{IT_STRING | IT_CVAR, NULL, "Number of Laps",        &cv_numlaps,          26},
-	{IT_STRING | IT_CVAR, NULL, "Use Map Lap Counts",    &cv_usemapnumlaps,    34},
-
-	{IT_HEADER,           NULL, "BATTLE",                NULL,                 50},
-	{IT_STRING | IT_CVAR, NULL, "Starting Bumpers",     &cv_kartbumpers,     58},
-	{IT_STRING | IT_CVAR, NULL, "Karma Comeback",        &cv_kartcomeback,     66},
-};*/
 
 #define ITEMTOGGLEBOTTOMRIGHT
 
@@ -2897,21 +2814,7 @@ INT32 HU_GetHighlightColor(void)
 }
 
 // Sky Room
-menu_t SR_PandoraDef =
-{
-	"M_PANDRA",
-	sizeof (SR_PandorasBox)/sizeof (menuitem_t),
-	&SPauseDef,
-	SR_PandorasBox,
-	M_DrawGenericMenu,
-	60, 40,
-	0,
-	M_ExitPandorasBox,
-	NULL
-};
 menu_t SR_MainDef = CENTERMENUSTYLE(NULL, SR_MainMenu, &MainDef, 72);
-
-//menu_t SR_LevelSelectDef = MAPICONMENUSTYLE(NULL, SR_LevelSelectMenu, &SR_MainDef);
 
 menu_t SR_UnlockChecklistDef =
 {
@@ -2933,19 +2836,6 @@ menu_t SR_MusicTestDef =
 	&OP_SoundOptionsDef,
 	SR_MusicTestMenu,
 	M_DrawMusicTest,
-	60, 150,
-	0,
-	NULL,
-	NULL
-};
-
-menu_t SR_EmblemHintDef =
-{
-	NULL,
-	sizeof (SR_EmblemHintMenu)/sizeof (menuitem_t),
-	&SPauseDef,
-	SR_EmblemHintMenu,
-	M_DrawEmblemHints,
 	60, 150,
 	0,
 	NULL,
@@ -3185,9 +3075,6 @@ menu_t OP_ServerOptionsDef = DEFAULTMENUSTYLE("M_SERVER", OP_ServerOptionsMenu, 
 menu_t OP_AdvServerOptionsDef = DEFAULTSCROLLSTYLE("M_SERVER", OP_AdvServerOptionsMenu, &OP_ServerOptionsDef, 24, 30, OP_AdvServerOptionsTooltips);
 #endif
 
-//menu_t OP_NetgameOptionsDef = DEFAULTMENUSTYLE("M_SERVER", OP_NetgameOptionsMenu, &OP_ServerOptionsDef, 30, 30);
-//menu_t OP_GametypeOptionsDef = DEFAULTMENUSTYLE("M_SERVER", OP_GametypeOptionsMenu, &OP_ServerOptionsDef, 30, 30);
-//menu_t OP_ChatOptionsDef = DEFAULTMENUSTYLE("M_GAME", OP_ChatOptionsMenu, &OP_GameOptionsDef, 30, 30);
 menu_t OP_MonitorToggleDef =
 {
 	"M_GAME",
@@ -4138,22 +4025,12 @@ boolean M_Responder(event_t *ev)
 			M_NextOpt();
 			S_StartSound(NULL, sfx_menu1);
 			coolalphatimer = 9;
-			/*if (currentMenu == &SP_PlayerDef)
-			{
-				Z_Free(char_notes);
-				char_notes = NULL;
-			}*/
 			return true;
 
 		case KEY_UPARROW:
 			M_PrevOpt();
 			S_StartSound(NULL, sfx_menu1);
 			coolalphatimer = 9;
-			/*if (currentMenu == &SP_PlayerDef)
-			{
-				Z_Free(char_notes);
-				char_notes = NULL;
-			}*/
 			return true;
 
 		case KEY_LEFTARROW:
@@ -4209,7 +4086,6 @@ boolean M_Responder(event_t *ev)
 			return true;
 
 		case KEY_ESCAPE:
-		//case KEY_JOY1 + 2:
 			noFurtherInput = true;
 			currentMenu->lastOn = itemOn;
 			if (currentMenu->prevMenu)
@@ -4262,10 +4138,6 @@ boolean M_Responder(event_t *ev)
 				return true;
 			}
 
-			// Why _does_ backspace go back anyway?
-			//currentMenu->lastOn = itemOn;
-			//if (currentMenu->prevMenu)
-			//	M_SetupNextMenu(currentMenu->prevMenu);
 			return false;
 
 		default:
@@ -4471,9 +4343,6 @@ void M_StartControlPanel(void)
 	}
 	else if (!Playing())
 	{
-		// Secret menu!
-		//MainMenu[secrets].status = (M_AnySecretUnlocked()) ? (IT_STRING | IT_CALL) : (IT_DISABLED);
-
 		currentMenu = &MainDef;
 		itemOn = singleplr;
 	}
@@ -4486,17 +4355,12 @@ void M_StartControlPanel(void)
 	{
 		if (gamestate != GS_LEVEL) // intermission, so gray out stuff.
 		{
-			SPauseMenu[spause_pandora].status = (M_SecretUnlocked(SECRET_PANDORA)) ? (IT_GRAYEDOUT) : (IT_DISABLED);
 			SPauseMenu[spause_retry].status = IT_GRAYEDOUT;
 		}
 		else
 		{
-			SPauseMenu[spause_pandora].status = (M_SecretUnlocked(SECRET_PANDORA)) ? (IT_STRING | IT_CALL) : (IT_DISABLED);
 			SPauseMenu[spause_retry].status = (IT_STRING | IT_CALL);
 		}
-
-		// And emblem hints.
-		SPauseMenu[spause_hints].status = (M_SecretUnlocked(SECRET_EMBLEMHINTS)) ? (IT_STRING | IT_CALL) : (IT_DISABLED);
 
 		currentMenu = &SPauseDef;
 		itemOn = spause_continue;
@@ -4855,13 +4719,6 @@ void M_Init(void)
 	if (!xtra_speedo && !kartz_speedo && !achi_speedo && !dial_speedo) // why bother?
 		OP_SaturnHudMenu[sh_speedometer].status = IT_GRAYEDOUT;
 
-	//if (!xtra_speedo && kartz_speedo)
-		//OP_SaturnMenu[sm_speedometer].text = "Speedometer (No Small)";
-
-	//if (xtra_speedo && !kartz_speedo)
-		//OP_SaturnMenu[sm_speedometer].text = "Speedometer (No PMeter)";
-	// idk i dont wanna bother with this tbh lmao
-
 	if (!clr_hud) // uhguauhauguuhee
 	{
 		OP_SaturnHudMenu[sh_colorhud].status = IT_GRAYEDOUT;
@@ -4969,11 +4826,11 @@ static void M_DrawThermo(INT32 x, INT32 y, consvar_t *cv)
 	lumpnum_t leftlump, rightlump, centerlump[2], cursorlump;
 	patch_t *p;
 
-	leftlump = W_GetNumForName("M_THERML");
-	rightlump = W_GetNumForName("M_THERMR");
+	leftlump      = W_GetNumForName("M_THERML");
+	rightlump     = W_GetNumForName("M_THERMR");
 	centerlump[0] = W_GetNumForName("M_THERMM");
 	centerlump[1] = W_GetNumForName("M_THERMM");
-	cursorlump = W_GetNumForName("M_THERMO");
+	cursorlump    = W_GetNumForName("M_THERMO");
 
 	V_DrawScaledPatch(xx, y, 0, p = W_CachePatchNum(leftlump, PU_PATCH));
 	xx += p->width - p->leftoffset;
@@ -5094,8 +4951,6 @@ static void M_DrawMapEmblems(INT32 mapnum, INT32 x, INT32 y)
 		{
 			case ET_TIME: //case ET_SCORE: case ET_RINGS:
 				curtype = 1; break;
-			/*case ET_NGRADE: case ET_NTIME:
-				curtype = 2; break;*/
 			default:
 				curtype = 0; break;
 		}
@@ -5802,9 +5657,8 @@ menu_t MessageDef =
 	0, 0,               // x, y                (TO HACK)
 	0,                  // lastOn, flags       (TO HACK)
 	NULL,
-	NULL,
+	NULL,               // tooltips lel
 };
-
 
 void M_StartMessage(const char *string, void *routine,
 	menumessagetype_t itemtype)
@@ -6071,14 +5925,22 @@ static void M_AddonsInternal(void)
 {
 	const char *pathname = ".";
 
-	if (cv_addons_option.value == 0)
-		pathname = usehome ? srb2home : srb2path;
-	else if (cv_addons_option.value == 1)
-		pathname = srb2home;
-	else if (cv_addons_option.value == 2)
-		pathname = srb2path;
-	else if (cv_addons_option.value == 3 && *cv_addons_folder.string != '\0')
-		pathname = cv_addons_folder.string;
+	switch (cv_addons_option.value)
+	{
+		case 0:
+			pathname = usehome ? srb2home : srb2path;
+			break;
+		case 1:
+			pathname = srb2home;
+			break;
+		case 2:
+			pathname = srb2path;
+			break;
+		case 3:
+			if (*cv_addons_folder.string != '\0')
+				pathname = cv_addons_folder.string;
+			break;
+	}
 
 	strlcpy(menupath, pathname, 1024);
 	menupathindex[(menudepthleft = menudepth-1)] = strlen(menupath) + 1;
@@ -6106,19 +5968,19 @@ static void M_AddonsInternal(void)
 			W_UnlockCachedPatch(addonsp[i]);
 	}
 
-	addonsp[EXT_FOLDER] = W_CachePatchName("M_FFLDR", PU_PATCH);
-	addonsp[EXT_UP] = W_CachePatchName("M_FBACK", PU_PATCH);
+	addonsp[EXT_FOLDER]    = W_CachePatchName("M_FFLDR", PU_PATCH);
+	addonsp[EXT_UP]        = W_CachePatchName("M_FBACK", PU_PATCH);
 	addonsp[EXT_NORESULTS] = W_CachePatchName("M_FNOPE", PU_PATCH);
-	addonsp[EXT_TXT] = W_CachePatchName("M_FTXT", PU_PATCH);
-	addonsp[EXT_CFG] = W_CachePatchName("M_FCFG", PU_PATCH);
-	addonsp[EXT_WAD] = W_CachePatchName("M_FWAD", PU_PATCH);
+	addonsp[EXT_TXT]       = W_CachePatchName("M_FTXT", PU_PATCH);
+	addonsp[EXT_CFG]       = W_CachePatchName("M_FCFG", PU_PATCH);
+	addonsp[EXT_WAD]       = W_CachePatchName("M_FWAD", PU_PATCH);
 #ifdef USE_KART
-	addonsp[EXT_KART] = W_CachePatchName("M_FKART", PU_PATCH);
+	addonsp[EXT_KART]      = W_CachePatchName("M_FKART", PU_PATCH);
 #endif
-	addonsp[EXT_PK3] = W_CachePatchName("M_FPK3", PU_PATCH);
-	addonsp[EXT_SOC] = W_CachePatchName("M_FSOC", PU_PATCH);
-	addonsp[EXT_LUA] = W_CachePatchName("M_FLUA", PU_PATCH);
-	addonsp[NUM_EXT] = W_CachePatchName("M_FUNKN", PU_PATCH);
+	addonsp[EXT_PK3]   = W_CachePatchName("M_FPK3", PU_PATCH);
+	addonsp[EXT_SOC]   = W_CachePatchName("M_FSOC", PU_PATCH);
+	addonsp[EXT_LUA]   = W_CachePatchName("M_FLUA", PU_PATCH);
+	addonsp[NUM_EXT]   = W_CachePatchName("M_FUNKN", PU_PATCH);
 	addonsp[NUM_EXT+1] = W_CachePatchName("M_FSEL", PU_PATCH);
 	addonsp[NUM_EXT+2] = W_CachePatchName("M_FLOAD", PU_PATCH);
 	addonsp[NUM_EXT+3] = W_CachePatchName("M_FSRCH", PU_PATCH);
@@ -7833,7 +7695,6 @@ static void M_PlaybackToggleFreecam(INT32 choice)
 	}
 }
 
-
 static void M_PlaybackQuit(INT32 choice)
 {
 	(void)choice;
@@ -7848,26 +7709,6 @@ static void M_PlaybackQuit(INT32 choice)
 	}
 	else
 		D_StartTitle();
-}
-
-static void M_PandorasBox(INT32 choice)
-{
-	(void)choice;
-	CV_StealthSetValue(&cv_dummyrings, max(players[consoleplayer].health - 1, 0));
-	CV_StealthSetValue(&cv_dummylives, players[consoleplayer].lives);
-	CV_StealthSetValue(&cv_dummycontinues, players[consoleplayer].continues);
-	M_SetupNextMenu(&SR_PandoraDef);
-}
-
-static boolean M_ExitPandorasBox(void)
-{
-	if (cv_dummyrings.value != max(players[consoleplayer].health - 1, 0))
-		COM_ImmedExecute(va("setrings %d", cv_dummyrings.value));
-	if (cv_dummylives.value != players[consoleplayer].lives)
-		COM_ImmedExecute(va("setlives %d", cv_dummylives.value));
-	if (cv_dummycontinues.value != players[consoleplayer].continues)
-		COM_ImmedExecute(va("setcontinues %d", cv_dummycontinues.value));
-	return true;
 }
 
 static void M_ChangeLevel(INT32 choice)
@@ -8113,44 +7954,6 @@ void M_SlotCvarIntoModMenu(consvar_t* cvar, const char* category, const char* na
 	++ccvarposition;
 }
 
-// ======
-// CHEATS
-// ======
-
-static void M_UltimateCheat(INT32 choice)
-{
-	(void)choice;
-	I_Quit();
-}
-
-static void M_GetAllEmeralds(INT32 choice)
-{
-	(void)choice;
-
-	emeralds = ((EMERALD7)*2)-1;
-	M_StartMessage(M_GetText("You now have all 7 emeralds.\nUse them wisely.\nWith great power comes great ring drain.\n"),NULL,MM_NOTHING);
-
-	G_SetGameModified(multiplayer, true);
-}
-
-static void M_DestroyRobotsResponse(INT32 ch)
-{
-	if (ch != 'y' && ch != KEY_ENTER)
-		return;
-
-	// Destroy all robots
-	P_DestroyRobots();
-
-	G_SetGameModified(multiplayer, true);
-}
-
-static void M_DestroyRobots(INT32 choice)
-{
-	(void)choice;
-
-	M_StartMessage(M_GetText("Do you want to destroy all\nrobots in the current level?\n\n(Press 'Y' to confirm)\n"),M_DestroyRobotsResponse,MM_YESNO);
-}
-
 // ========
 // SKY ROOM
 // ========
@@ -8300,56 +8103,6 @@ static void M_DrawChecklist(void)
 	}
 }
 #undef NUMCHECKLIST
-
-#define NUMHINTS 5
-static void M_EmblemHints(INT32 choice)
-{
-	(void)choice;
-	SR_EmblemHintMenu[0].status = (M_SecretUnlocked(SECRET_ITEMFINDER)) ? (IT_CVAR|IT_STRING) : (IT_SECRET);
-	M_SetupNextMenu(&SR_EmblemHintDef);
-	itemOn = 1; // always start on back.
-}
-
-static void M_DrawEmblemHints(void)
-{
-	INT32 i, j = 0;
-	UINT32 collected = 0;
-	emblem_t *emblem;
-	const char *hint;
-
-	for (i = 0; i < numemblems; i++)
-	{
-		emblem = &emblemlocations[i];
-		if (emblem->level != gamemap || emblem->type > ET_SKIN)
-			continue;
-
-		if (emblem->collected)
-		{
-			collected = recommendedflags;
-			V_DrawMappedPatch(12, 12+(28*j), 0, W_CachePatchName(M_GetEmblemPatch(emblem), PU_PATCH),
-				R_GetTranslationColormap(TC_DEFAULT, M_GetEmblemColor(emblem), GTC_MENUCACHE));
-		}
-		else
-		{
-			collected = 0;
-			V_DrawScaledPatch(12, 12+(28*j), 0, W_CachePatchName("NEEDIT", PU_PATCH));
-		}
-
-		if (emblem->hint[0])
-			hint = emblem->hint;
-		else
-			hint = M_GetText("No hints available.");
-		hint = V_WordWrap(40, BASEVIDWIDTH-12, 0, hint);
-		V_DrawString(40, 8+(28*j), V_RETURN8|V_ALLOWLOWERCASE|collected, hint);
-
-		if (++j >= NUMHINTS)
-			break;
-	}
-	if (!j)
-		V_DrawCenteredString(160, 48, highlightflags, "No hidden medals on this map.");
-
-	M_DrawGenericMenu();
-}
 
 static void M_DrawSkyRoom(void)
 {
@@ -9339,6 +9092,7 @@ static void M_HandleStaffReplay(INT32 choice)
 		default:
 			break;
 	}
+
 	if (exitmenu)
 	{
 		if (currentMenu->prevMenu)
@@ -9824,7 +9578,7 @@ static void M_DrawServerLines(INT32 x, INT32 page)
 			V_DrawSmallString(x+222, S_LINEY(i)+8, globalflags, "\x83" "Cheats");
 
 		V_DrawSmallString(x, S_LINEY(i)+8, globalflags,
-		                     va("Ping: %u", (UINT32)LONG(serverlist[slindex].info.time)));
+								va("Ping: %u", (UINT32)LONG(serverlist[slindex].info.time)));
 
 		gt = "Unknown";
 		if (serverlist[slindex].info.gametype < NUMGAMETYPES)
@@ -10000,7 +9754,8 @@ static void M_CheckMODVersion(int id)
 {
 	char updatestring[500];
 	const char *updatecheck = GetMODVersion(id);
-	if(updatecheck)
+
+	if (updatecheck)
 	{
 		sprintf(updatestring, UPDATE_ALERT_STRING, VERSIONSTRING, updatecheck);
 #ifdef HAVE_THREADS
@@ -10635,18 +10390,19 @@ static void M_SetupMultiHandler(INT32 choice)
 			switch (setupm_pselect)
 			{
 				case 2:
-					M_SetupMultiPlayer2(0);
+					M_SetupMultiPlayer2();
 					return;
 				case 3:
-					M_SetupMultiPlayer3(0);
+					M_SetupMultiPlayer3();
 					return;
 				case 4:
-					M_SetupMultiPlayer4(0);
+					M_SetupMultiPlayer4();
 					return;
 				default:
-					M_SetupMultiPlayer(0);
+					M_SetupMultiPlayer();
 					return;
 			}
+
 			break;
 		}
 
@@ -11365,6 +11121,7 @@ static void M_DrawSetupMultiPlayerMenu(void)
 
 	// anim the player in the box
 	multi_tics -= renderdeltatics;
+
 	while (multi_tics <= 0)
 	{
 		st = cv_skinselectspin.value == SKINSELECTSPIN_PAIN ? S_KART_PAIN : multi_state->nextstate;
@@ -11378,7 +11135,6 @@ static void M_DrawSetupMultiPlayerMenu(void)
 	}
 
 	// skin 0 is default player sprite
-
 	switch (cv_skinselectmenu.value)
 	{
 		case SKINMENUTYPE_2D:
@@ -11387,34 +11143,22 @@ static void M_DrawSetupMultiPlayerMenu(void)
 				skintodisplay = skinstats[setupm_skinxpos][setupm_skinypos][setupm_skinselect];
 			else if (skinstatscount[setupm_skinxpos][setupm_skinypos] && itemOn == 1)
 				skintodisplay = skinstats[setupm_skinxpos][setupm_skinypos][(I_GetTime()/TICRATE)%SELECTEDSTATSCOUNT];
-
-			if (R_SkinAvailable(skins[skintodisplay].name) != -1)
-				sprdef = &skins[R_SkinAvailable(skins[skintodisplay].name)].spritedef;
-			else
-				sprdef = &skins[0].spritedef;
 			break;
 		case SKINMENUTYPE_EXTENDED:
-				skintodisplay = (itemOn == 1 && setupm_skinselect < numskins ? skinsorted[setupm_skinselect] : setupm_fakeskin);
-			if (R_SkinAvailable(skins[skintodisplay].name) != -1)
-				sprdef = &skins[R_SkinAvailable(skins[skintodisplay].name)].spritedef;
-			else
-				sprdef = &skins[0].spritedef;
+			skintodisplay = (itemOn == 1 && setupm_skinselect < numskins ? skinsorted[setupm_skinselect] : setupm_fakeskin);
 			break;
 		case SKINMENUTYPE_GRID:
 			skintodisplay = (itemOn == 1 && setupm_skinselect < numskins ? skinsorted[setupm_skinselect] : setupm_fakeskin);
-			if (R_SkinAvailable(skins[skintodisplay].name) != -1)
-				sprdef = &skins[R_SkinAvailable(skins[skintodisplay].name)].spritedef;
-			else
-				sprdef = &skins[0].spritedef;
 			break;
 		default:
 			skintodisplay = setupm_fakeskin;
-			if (R_SkinAvailable(skins[setupm_fakeskin].name) != -1)
-				sprdef = &skins[R_SkinAvailable(skins[setupm_fakeskin].name)].spritedef;
-			else
-				sprdef = &skins[0].spritedef;
 			break;
 	}
+
+	if (R_SkinAvailable(skins[skintodisplay].name) != -1)
+		sprdef = &skins[R_SkinAvailable(skins[skintodisplay].name)].spritedef;
+	else
+		sprdef = &skins[0].spritedef;
 
 	if (!sprdef->numframes) // No frames ??
 		return; // Can't render!
@@ -11748,6 +11492,7 @@ static void M_HandleSetupMultiPlayer(INT32 choice)
 				}
 			}
 			break;
+
 		case KEY_DEL:
 			if (cv_skinselectmenu.value)
 				BREAKWHENLOCKED
@@ -11758,9 +11503,6 @@ static void M_HandleSetupMultiPlayer(INT32 choice)
 			}
 			break;
 
-		//c why?????
-		//case gamecontrol[0][gc_accelerate][0]:
-		//case gamecontrol[0][gc_accelerate][1]:
 		case KEY_ENTER:
 			if (cv_skinselectmenu.value == SKINMENUTYPE_2D)
 			{
@@ -11853,27 +11595,48 @@ default:\
 }
 
 // start the multiplayer setup menu
-static void M_SetupMultiPlayer(INT32 choice)
-{
-	(void)choice;
 
+static void M_DoSetupMultiPlayer(UINT8 pnum)
+{
 	multi_state = cv_skinselectspin.value == SKINSELECTSPIN_PAIN ? &states[S_KART_PAIN] : &states[mobjinfo[MT_PLAYER].seestate];
 	multi_tics = multi_state->tics*FRACUNIT;
 
 	M_TextInputInit(&setupm_input, setupm_name, sizeof(setupm_name));
 	M_TextInputSetString(&setupm_input, cv_playername.string);
 
-	// set for player 1
-	setupm_player = &players[consoleplayer];
-	setupm_cvskin = &cv_skin;
-	setupm_cvcolor = &cv_playercolor;
-	setupm_cvname = &cv_playername;
+	switch (pnum)
+	{
+		case 1:
+			setupm_player  = &players[displayplayers[pnum]];
+			setupm_cvskin  = &cv_skin2;
+			setupm_cvcolor = &cv_playercolor2;
+			setupm_cvname  = &cv_playername2;
+			break;
+		case 2:
+			setupm_player  = &players[displayplayers[pnum]];
+			setupm_cvskin  = &cv_skin3;
+			setupm_cvcolor = &cv_playercolor3;
+			setupm_cvname  = &cv_playername3;
+			break;
+		case 3:
+			setupm_player  = &players[displayplayers[pnum]];
+			setupm_cvskin  = &cv_skin4;
+			setupm_cvcolor = &cv_playercolor4;
+			setupm_cvname  = &cv_playername4;
+			break;
+		case 0:
+			setupm_player  = &players[consoleplayer];
+			setupm_cvskin  = &cv_skin;
+			setupm_cvcolor = &cv_playercolor;
+			setupm_cvname  = &cv_playername;
+			break;
+	}
 
 	setupm_skinxpos = 4;
 	setupm_skinypos = 0;
 	setupm_skinlockedselect = false;
 
-	setupm_playernum = 0;
+	setupm_playernum = pnum;
 
 	// For whatever reason this doesn't work right if you just use ->value
 	setupm_fakeskin = R_SkinAvailable(setupm_cvskin->string);
@@ -11882,10 +11645,20 @@ static void M_SetupMultiPlayer(INT32 choice)
 	setupm_fakecolor = setupm_cvcolor->value;
 
 	// disable skin changes if we can't actually change skins
-	if (!CanChangeSkin(consoleplayer))
-		MP_PlayerSetupMenu[2].status = (IT_GRAYEDOUT);
+	if (splitscreen && pnum > 0)
+	{
+		if (splitscreen && !CanChangeSkin(displayplayers[pnum]))
+			MP_PlayerSetupMenu[2].status = (IT_GRAYEDOUT);
+		else
+			MP_PlayerSetupMenu[2].status = (IT_KEYHANDLER | IT_STRING);
+	}
 	else
-		MP_PlayerSetupMenu[2].status = (IT_KEYHANDLER|IT_STRING);
+	{
+		if (!CanChangeSkin(consoleplayer))
+			MP_PlayerSetupMenu[2].status = (IT_GRAYEDOUT);
+		else
+			MP_PlayerSetupMenu[2].status = (IT_KEYHANDLER|IT_STRING);
+	}
 
 	//change the y offsets of the menu depending on cvar settings
 	SKINSELECTMENUEDIT
@@ -11895,141 +11668,32 @@ static void M_SetupMultiPlayer(INT32 choice)
 	MP_PlayerSetupDef.prevMenu = currentMenu;
 	M_SetupNextMenu(&MP_PlayerSetupDef);
 }
-
-// start the multiplayer setup menu, for secondary player (splitscreen mode)
-static void M_SetupMultiPlayer2(INT32 choice)
-{
-	(void)choice;
-
-	multi_state = cv_skinselectspin.value == SKINSELECTSPIN_PAIN ? &states[S_KART_PAIN] : &states[mobjinfo[MT_PLAYER].seestate];
-	multi_tics = multi_state->tics*FRACUNIT;
-
-	M_TextInputInit(&setupm_input, setupm_name, sizeof(setupm_name));
-	M_TextInputSetString(&setupm_input, cv_playername2.string);
-
-	// set for splitscreen secondary player
-	setupm_player = &players[displayplayers[1]];
-	setupm_cvskin = &cv_skin2;
-	setupm_cvcolor = &cv_playercolor2;
-	setupm_cvname = &cv_playername2;
-	setupm_skinxpos = 4;
-	setupm_skinypos = 0;
-	setupm_skinlockedselect = false;
-
-	setupm_playernum = 1;
-
-	// For whatever reason this doesn't work right if you just use ->value
-	setupm_fakeskin = R_SkinAvailable(setupm_cvskin->string);
-	if (setupm_fakeskin == -1)
-		setupm_fakeskin = 0;
-	setupm_fakecolor = setupm_cvcolor->value;
-
-	// disable skin changes if we can't actually change skins
-	if (splitscreen && !CanChangeSkin(displayplayers[1]))
-		MP_PlayerSetupMenu[2].status = (IT_GRAYEDOUT);
-	else
-		MP_PlayerSetupMenu[2].status = (IT_KEYHANDLER | IT_STRING);
-
-	//change the y offsets of the menu depending on cvar settings
-	SKINSELECTMENUEDIT
-
-	sortSkinGrid();
-
-	MP_PlayerSetupDef.prevMenu = currentMenu;
-	M_SetupNextMenu(&MP_PlayerSetupDef);
-}
-
-// start the multiplayer setup menu, for third player (splitscreen mode)
-static void M_SetupMultiPlayer3(INT32 choice)
-{
-	(void)choice;
-
-	multi_state = cv_skinselectspin.value == SKINSELECTSPIN_PAIN ? &states[S_KART_PAIN] : &states[mobjinfo[MT_PLAYER].seestate];
-	multi_tics = multi_state->tics;
-
-	M_TextInputInit(&setupm_input, setupm_name, sizeof(setupm_name));
-	M_TextInputSetString(&setupm_input, cv_playername3.string);
-
-	// set for splitscreen third player
-	setupm_player = &players[displayplayers[2]];
-	setupm_cvskin = &cv_skin3;
-	setupm_cvcolor = &cv_playercolor3;
-	setupm_cvname = &cv_playername3;
-	setupm_skinxpos = 4;
-	setupm_skinypos = 0;
-	setupm_skinlockedselect = false;
-
-	setupm_playernum = 2;
-
-	// For whatever reason this doesn't work right if you just use ->value
-	setupm_fakeskin = R_SkinAvailable(setupm_cvskin->string);
-	if (setupm_fakeskin == -1)
-		setupm_fakeskin = 0;
-	setupm_fakecolor = setupm_cvcolor->value;
-
-	// disable skin changes if we can't actually change skins
-	if (splitscreen > 1 && !CanChangeSkin(displayplayers[2]))
-		MP_PlayerSetupMenu[2].status = (IT_GRAYEDOUT);
-	else
-		MP_PlayerSetupMenu[2].status = (IT_KEYHANDLER | IT_STRING);
-
-	//change the y offsets of the menu depending on cvar settings
-	SKINSELECTMENUEDIT
-
-	sortSkinGrid();
-
-	MP_PlayerSetupDef.prevMenu = currentMenu;
-	M_SetupNextMenu(&MP_PlayerSetupDef);
-}
-
-// start the multiplayer setup menu, for third player (splitscreen mode)
-static void M_SetupMultiPlayer4(INT32 choice)
-{
-	(void)choice;
-
-	multi_state = cv_skinselectspin.value == SKINSELECTSPIN_PAIN ? &states[S_KART_PAIN] : &states[mobjinfo[MT_PLAYER].seestate];
-	multi_tics = multi_state->tics;
-
-	M_TextInputInit(&setupm_input, setupm_name, sizeof(setupm_name));
-	M_TextInputSetString(&setupm_input, cv_playername4.string);
-
-	// set for splitscreen fourth player
-	setupm_player = &players[displayplayers[3]];
-	setupm_cvskin = &cv_skin4;
-	setupm_cvcolor = &cv_playercolor4;
-	setupm_cvname = &cv_playername4;
-	setupm_skinxpos = 4;
-	setupm_skinypos = 0;
-	setupm_skinlockedselect = false;
-
-	setupm_playernum = 3;
-
-	// For whatever reason this doesn't work right if you just use ->value
-	setupm_fakeskin = R_SkinAvailable(setupm_cvskin->string);
-	if (setupm_fakeskin == -1)
-		setupm_fakeskin = 0;
-	setupm_fakecolor = setupm_cvcolor->value;
-
-	// disable skin changes if we can't actually change skins
-	if (splitscreen > 2 && !CanChangeSkin(displayplayers[3]))
-		MP_PlayerSetupMenu[2].status = (IT_GRAYEDOUT);
-	else
-		MP_PlayerSetupMenu[2].status = (IT_KEYHANDLER | IT_STRING);
-
-	//change the y offsets of the menu depending on cvar settings
-	SKINSELECTMENUEDIT
-
-	sortSkinGrid();
-
-	MP_PlayerSetupDef.prevMenu = currentMenu;
-	M_SetupNextMenu(&MP_PlayerSetupDef);
-}
-
 #undef SKINSELECTMENUEDIT
+
+static void M_SetupMultiPlayer(void)
+{
+	M_DoSetupMultiPlayer(0);
+}
+
+static void M_SetupMultiPlayer2(void)
+{
+	M_DoSetupMultiPlayer(1);
+}
+
+static void M_SetupMultiPlayer3(void)
+{
+	M_DoSetupMultiPlayer(2);
+}
+
+static void M_SetupMultiPlayer4(void)
+{
+	M_DoSetupMultiPlayer(3);
+}
 
 static boolean M_QuitMultiPlayerMenu(void)
 {
 	size_t l;
+
 	// send name if changed
 	if (strcmp(setupm_name, setupm_cvname->string))
 	{
@@ -12039,6 +11703,7 @@ static boolean M_QuitMultiPlayerMenu(void)
 			setupm_name[l] =0;
 		COM_BufAddText (va("%s \"%s\"\n",setupm_cvname->name,setupm_name));
 	}
+
 	// you know what? always putting these in the buffer won't hurt anything.
 	COM_BufAddText (va("%s \"%s\"\n",setupm_cvskin->name,skins[setupm_fakeskin].name));
 	COM_BufAddText (va("%s %d\n",setupm_cvcolor->name,setupm_fakecolor));
@@ -12066,10 +11731,13 @@ static void M_EraseDataResponse(INT32 ch)
 		K_EraseStats();
 		F_StartIntro();
 	}
+
 	if (erasecontext != 1)
 		G_ClearRecords();
+
 	if (erasecontext != 0)
 		M_ClearSecrets();
+
 	M_ClearMenus(true);
 }
 
@@ -12151,7 +11819,7 @@ static void M_DrawJoystick(void)
 		compareval = cv_usejoystick[0].value;
 #endif
 
-		if ((setupcontrolplayer == 4 && (i == compareval4))
+		if    ((setupcontrolplayer == 4 && (i == compareval4))
 			|| (setupcontrolplayer == 3 && (i == compareval3))
 			|| (setupcontrolplayer == 2 && (i == compareval2))
 			|| (setupcontrolplayer == 1 && (i == compareval)))
@@ -12228,141 +11896,76 @@ static void M_Setup4PJoystickMenu(INT32 choice)
 	M_SetupJoystickMenu(choice);
 }
 
+#ifdef JOYSTICK_HOTPLUG
+static void M_DoAssignJoystick(UINT8 pnum, INT32 choice)
+{
+	INT32 oldchoice, oldstringchoice;
+	const INT32 numjoys = I_NumJoys();
+
+	oldchoice = oldstringchoice = atoi(cv_usejoystick[pnum].string) > numjoys ? atoi(cv_usejoystick[pnum].string) : cv_usejoystick[pnum].value;
+	CV_SetValue(&cv_usejoystick[pnum], choice);
+
+	// Just in case last-minute changes were made to cv_usejoystick.value,
+	// update the string too
+	// But don't do this if we're intentionally setting higher than numjoys
+	if (choice <= numjoys)
+	{
+		CV_SetValue(&cv_usejoystick[pnum], cv_usejoystick[pnum].value);
+
+		if (oldchoice > numjoys)  /* reset this so the comparison is valid*/
+			oldchoice = cv_usejoystick[pnum].value;
+
+		if (oldchoice != choice)
+		{
+			if (choice && oldstringchoice > numjoys) // if we did not select "None", we likely selected a used device
+				CV_SetValue(&cv_usejoystick[pnum], (oldstringchoice > numjoys ? oldstringchoice : oldchoice));
+
+			if (oldstringchoice ==
+				(atoi(cv_usejoystick[pnum].string) > numjoys ? atoi(cv_usejoystick[pnum].string) : cv_usejoystick[pnum].value))
+				M_StartMessage("This joystick is used by another\n"
+				"player. Reset the joystick\n"
+				"for that player first.\n\n"
+				"(Press a key)\n", NULL, MM_NOTHING);
+		}
+	}
+}
+#endif
+
 static void M_AssignJoystick(INT32 choice)
 {
 #ifdef JOYSTICK_HOTPLUG
-	INT32 oldchoice, oldstringchoice;
-	INT32 numjoys = I_NumJoys();
-
-	if (setupcontrolplayer == 4)
+	switch (setupcontrolplayer)
 	{
-		oldchoice = oldstringchoice = atoi(cv_usejoystick[3].string) > numjoys ? atoi(cv_usejoystick[3].string) : cv_usejoystick[3].value;
-		CV_SetValue(&cv_usejoystick[3], choice);
-
-		// Just in case last-minute changes were made to cv_usejoystick.value,
-		// update the string too
-		// But don't do this if we're intentionally setting higher than numjoys
-		if (choice <= numjoys)
-		{
-			CV_SetValue(&cv_usejoystick[3], cv_usejoystick[3].value);
-
-			// reset this so the comparison is valid
-			if (oldchoice > numjoys)
-				oldchoice = cv_usejoystick[3].value;
-
-			if (oldchoice != choice)
-			{
-				if (choice && oldstringchoice > numjoys) // if we did not select "None", we likely selected a used device
-					CV_SetValue(&cv_usejoystick[3], (oldstringchoice > numjoys ? oldstringchoice : oldchoice));
-
-				if (oldstringchoice ==
-					(atoi(cv_usejoystick[3].string) > numjoys ? atoi(cv_usejoystick[3].string) : cv_usejoystick[3].value))
-					M_StartMessage("This joystick is used by another\n"
-								   "player. Reset the joystick\n"
-								   "for that player first.\n\n"
-								   "(Press a key)\n", NULL, MM_NOTHING);
-			}
-		}
-	}
-	else if (setupcontrolplayer == 3)
-	{
-		oldchoice = oldstringchoice = atoi(cv_usejoystick[2].string) > numjoys ? atoi(cv_usejoystick[2].string) : cv_usejoystick[2].value;
-		CV_SetValue(&cv_usejoystick[2], choice);
-
-		// Just in case last-minute changes were made to cv_usejoystick.value,
-		// update the string too
-		// But don't do this if we're intentionally setting higher than numjoys
-		if (choice <= numjoys)
-		{
-			CV_SetValue(&cv_usejoystick[2], cv_usejoystick[2].value);
-
-			// reset this so the comparison is valid
-			if (oldchoice > numjoys)
-				oldchoice = cv_usejoystick[2].value;
-
-			if (oldchoice != choice)
-			{
-				if (choice && oldstringchoice > numjoys) // if we did not select "None", we likely selected a used device
-					CV_SetValue(&cv_usejoystick[2], (oldstringchoice > numjoys ? oldstringchoice : oldchoice));
-
-				if (oldstringchoice ==
-					(atoi(cv_usejoystick[2].string) > numjoys ? atoi(cv_usejoystick[2].string) : cv_usejoystick[2].value))
-					M_StartMessage("This joystick is used by another\n"
-								   "player. Reset the joystick\n"
-								   "for that player first.\n\n"
-								   "(Press a key)\n", NULL, MM_NOTHING);
-			}
-		}
-	}
-	else if (setupcontrolplayer == 2)
-	{
-		oldchoice = oldstringchoice = atoi(cv_usejoystick[1].string) > numjoys ? atoi(cv_usejoystick[1].string) : cv_usejoystick[1].value;
-		CV_SetValue(&cv_usejoystick[1], choice);
-
-		// Just in case last-minute changes were made to cv_usejoystick.value,
-		// update the string too
-		// But don't do this if we're intentionally setting higher than numjoys
-		if (choice <= numjoys)
-		{
-			CV_SetValue(&cv_usejoystick[1], cv_usejoystick[1].value);
-
-			// reset this so the comparison is valid
-			if (oldchoice > numjoys)
-				oldchoice = cv_usejoystick[1].value;
-
-			if (oldchoice != choice)
-			{
-				if (choice && oldstringchoice > numjoys) // if we did not select "None", we likely selected a used device
-					CV_SetValue(&cv_usejoystick[1], (oldstringchoice > numjoys ? oldstringchoice : oldchoice));
-
-				if (oldstringchoice ==
-					(atoi(cv_usejoystick[1].string) > numjoys ? atoi(cv_usejoystick[1].string) : cv_usejoystick[1].value))
-					M_StartMessage("This joystick is used by another\n"
-					               "player. Reset the joystick\n"
-					               "for that player first.\n\n"
-					               "(Press a key)\n", NULL, MM_NOTHING);
-			}
-		}
-	}
-	else if (setupcontrolplayer == 1)
-	{
-		oldchoice = oldstringchoice = atoi(cv_usejoystick[0].string) > numjoys ? atoi(cv_usejoystick[0].string) : cv_usejoystick[0].value;
-		CV_SetValue(&cv_usejoystick[0], choice);
-
-		// Just in case last-minute changes were made to cv_usejoystick.value,
-		// update the string too
-		// But don't do this if we're intentionally setting higher than numjoys
-		if (choice <= numjoys)
-		{
-			CV_SetValue(&cv_usejoystick[0], cv_usejoystick[0].value);
-
-			// reset this so the comparison is valid
-			if (oldchoice > numjoys)
-				oldchoice = cv_usejoystick[0].value;
-
-			if (oldchoice != choice)
-			{
-				if (choice && oldstringchoice > numjoys) // if we did not select "None", we likely selected a used device
-					CV_SetValue(&cv_usejoystick[0], (oldstringchoice > numjoys ? oldstringchoice : oldchoice));
-
-				if (oldstringchoice ==
-					(atoi(cv_usejoystick[0].string) > numjoys ? atoi(cv_usejoystick[0].string) : cv_usejoystick[0].value))
-					M_StartMessage("This joystick is used by another\n"
-					               "player. Reset the joystick\n"
-					               "for that player first.\n\n"
-					               "(Press a key)\n", NULL, MM_NOTHING);
-			}
-		}
+		case 4:
+			M_DoAssignJoystick(3, choice);
+			break;
+		case 3:
+			M_DoAssignJoystick(2, choice);
+			break;
+		case 2:
+			M_DoAssignJoystick(1, choice);
+			break;
+		case 1:
+			M_DoAssignJoystick(0, choice);
+			break;
 	}
 #else
-	if (setupcontrolplayer == 4)
-		CV_SetValue(&cv_usejoystick[3], choice);
-	else if (setupcontrolplayer == 3)
-		CV_SetValue(&cv_usejoystick[2], choice);
-	else if (setupcontrolplayer == 2)
-		CV_SetValue(&cv_usejoystick[1], choice);
-	else if (setupcontrolplayer == 1)
-		CV_SetValue(&cv_usejoystick[0], choice);
+
+	switch (setupcontrolplayer)
+	{
+		case 4:
+			CV_SetValue(&cv_usejoystick[3], choice);
+			break;
+		case 3:
+			CV_SetValue(&cv_usejoystick[2], choice);
+			break;
+		case 2:
+			CV_SetValue(&cv_usejoystick[1], choice);
+			break;
+		case 1:
+			CV_SetValue(&cv_usejoystick[0], choice);
+			break;
+	}
 #endif
 }
 
@@ -12370,96 +11973,75 @@ static void M_AssignJoystick(INT32 choice)
 // CONTROLS MENU
 // =============
 
-static void M_Setup1PControlsMenu(INT32 choice)
+static void M_SetupControlsMenu(UINT8 pnum)
 {
-	(void)choice;
-	setupcontrolplayer = 1;
-	setupcontrols = gamecontrol[0];        // was called from main Options (for console player, then)
+	setupcontrolplayer = pnum+1;
+	setupcontrols = gamecontrol[pnum];        // was called from main Options (for console player, then)
 	currentMenu->lastOn = itemOn;
 
 	// Set proper gamepad options
-	OP_AllControlsMenu[0].itemaction = &OP_Joystick1Def;
+	switch (pnum)
+	{
+		case 1:
+			OP_AllControlsMenu[0].itemaction = &OP_Joystick2Def;
+			break;
+		case 2:
+			OP_AllControlsMenu[0].itemaction = &OP_Joystick3Def;
+			break;
+		case 3:
+			OP_AllControlsMenu[0].itemaction = &OP_Joystick4Def;
+			break;
+		case 0:
+			OP_AllControlsMenu[0].itemaction = &OP_Joystick1Def;
+			break;
+	}
 
-	// Unhide P1-only controls
-	OP_AllControlsMenu[15].status = IT_CONTROL; // Chat
-	OP_AllControlsMenu[16].status = IT_CONTROL; // Rankings
-	OP_AllControlsMenu[17].status = IT_CONTROL; // Pause
-	OP_AllControlsMenu[18].status = IT_CONTROL; // Screenshot
-	OP_AllControlsMenu[19].status = IT_CONTROL; // GIF
-	OP_AllControlsMenu[20].status = IT_CONTROL; // System Menu
-	OP_AllControlsMenu[21].status = IT_CONTROL; // Console
-	OP_AllControlsMenu[37].status = IT_CONTROL; // Director
+	if (pnum > 0)
+	{
+		// Hide P1-only controls
+		OP_AllControlsMenu[15].status = IT_CONTROL; // Chat
+		OP_AllControlsMenu[16].status = IT_CONTROL; // Rankings
+		OP_AllControlsMenu[17].status = IT_CONTROL; // Pause
+		OP_AllControlsMenu[18].status = IT_CONTROL; // Screenshot
+		OP_AllControlsMenu[19].status = IT_CONTROL; // GIF
+		OP_AllControlsMenu[20].status = IT_CONTROL; // System Menu
+		OP_AllControlsMenu[21].status = IT_CONTROL; // Console
+		OP_AllControlsMenu[37].status = IT_CONTROL; // Director
+	}
+	else
+	{
+		// Unhide P1-only controls
+		OP_AllControlsMenu[15].status = IT_CONTROL; // Chat
+		OP_AllControlsMenu[16].status = IT_CONTROL; // Rankings
+		OP_AllControlsMenu[17].status = IT_CONTROL; // Pause
+		OP_AllControlsMenu[18].status = IT_CONTROL; // Screenshot
+		OP_AllControlsMenu[19].status = IT_CONTROL; // GIF
+		OP_AllControlsMenu[20].status = IT_CONTROL; // System Menu
+		OP_AllControlsMenu[21].status = IT_CONTROL; // Console
+		OP_AllControlsMenu[37].status = IT_CONTROL; // Director
+	}
 
 	M_SetupNextMenu(&OP_AllControlsDef);
 }
 
-static void M_Setup2PControlsMenu(INT32 choice)
+static void M_Setup1PControlsMenu(void)
 {
-	(void)choice;
-	setupcontrolplayer = 2;
-	setupcontrols = gamecontrol[1];
-	currentMenu->lastOn = itemOn;
-
-	// Set proper gamepad options
-	OP_AllControlsMenu[0].itemaction = &OP_Joystick2Def;
-
-	// Hide P1-only controls
-	OP_AllControlsMenu[15].status = IT_GRAYEDOUT2; // Chat
-	OP_AllControlsMenu[16].status = IT_GRAYEDOUT2; // Rankings
-	OP_AllControlsMenu[17].status = IT_GRAYEDOUT2; // Pause
-	OP_AllControlsMenu[18].status = IT_GRAYEDOUT2; // Screenshot
-	OP_AllControlsMenu[19].status = IT_GRAYEDOUT2; // GIF
-	OP_AllControlsMenu[20].status = IT_GRAYEDOUT2; // System Menu
-	OP_AllControlsMenu[21].status = IT_GRAYEDOUT2; // Console
-	OP_AllControlsMenu[37].status = IT_GRAYEDOUT2; // Director
-
-	M_SetupNextMenu(&OP_AllControlsDef);
+	M_SetupControlsMenu(0);
 }
 
-static void M_Setup3PControlsMenu(INT32 choice)
+static void M_Setup2PControlsMenu(void)
 {
-	(void)choice;
-	setupcontrolplayer = 3;
-	setupcontrols = gamecontrol[2];
-	currentMenu->lastOn = itemOn;
-
-	// Set proper gamepad options
-	OP_AllControlsMenu[0].itemaction = &OP_Joystick3Def;
-
-	// Hide P1-only controls
-	OP_AllControlsMenu[15].status = IT_GRAYEDOUT2; // Chat
-	OP_AllControlsMenu[16].status = IT_GRAYEDOUT2; // Rankings
-	OP_AllControlsMenu[17].status = IT_GRAYEDOUT2; // Pause
-	OP_AllControlsMenu[18].status = IT_GRAYEDOUT2; // Screenshot
-	OP_AllControlsMenu[19].status = IT_GRAYEDOUT2; // GIF
-	OP_AllControlsMenu[20].status = IT_GRAYEDOUT2; // System Menu
-	OP_AllControlsMenu[21].status = IT_GRAYEDOUT2; // Console
-	OP_AllControlsMenu[37].status = IT_GRAYEDOUT2; // Director
-
-	M_SetupNextMenu(&OP_AllControlsDef);
+	M_SetupControlsMenu(1);
 }
 
-static void M_Setup4PControlsMenu(INT32 choice)
+static void M_Setup3PControlsMenu(void)
 {
-	(void)choice;
-	setupcontrolplayer = 4;
-	setupcontrols = gamecontrol[3];
-	currentMenu->lastOn = itemOn;
+	M_SetupControlsMenu(2);
+}
 
-	// Set proper gamepad options
-	OP_AllControlsMenu[0].itemaction = &OP_Joystick4Def;
-
-	// Hide P1-only controls
-	OP_AllControlsMenu[15].status = IT_GRAYEDOUT2; // Chat
-	OP_AllControlsMenu[16].status = IT_GRAYEDOUT2; // Rankings
-	OP_AllControlsMenu[17].status = IT_GRAYEDOUT2; // Pause
-	OP_AllControlsMenu[18].status = IT_GRAYEDOUT2; // Screenshot
-	OP_AllControlsMenu[19].status = IT_GRAYEDOUT2; // GIF
-	OP_AllControlsMenu[20].status = IT_GRAYEDOUT2; // System Menu
-	OP_AllControlsMenu[21].status = IT_GRAYEDOUT2; // Console
-	OP_AllControlsMenu[37].status = IT_GRAYEDOUT2; // Director
-
-	M_SetupNextMenu(&OP_AllControlsDef);
+static void M_Setup4PControlsMenu(void)
+{
+	M_SetupControlsMenu(3);
 }
 
 #define controlheight 18
@@ -12548,8 +12130,6 @@ static void M_DrawControl(void)
 			}
 			V_DrawRightAlignedString(BASEVIDWIDTH-currentMenu->x, y, highlightflags|V_ALLOWLOWERCASE, tmp);
 		}
-		/*else if (currentMenu->menuitems[i].status == IT_GRAYEDOUT2)
-			V_DrawString(x, y, V_TRANSLUCENT, currentMenu->menuitems[i].text);*/
 		else if ((currentMenu->menuitems[i].status == IT_HEADER) && (i != max-1))
 			V_DrawString(19, y+6, highlightflags|V_ALLOWLOWERCASE, currentMenu->menuitems[i].text);
 		else if (currentMenu->menuitems[i].status & IT_STRING)
@@ -12738,15 +12318,6 @@ static void M_ResetControls(INT32 choice)
 	(void)choice;
 	M_StartMessage(va(M_GetText("Reset Player %d's controls to defaults?\n\n(Press 'Y' to confirm)\n"), setupcontrolplayer), M_ResetControlsResponse, MM_YESNO);
 }
-
-// =====
-// SOUND
-// =====
-
-/*static void M_RestartAudio(void)
-{
-	COM_ImmedExecute("restartaudio");
-}*/
 
 // ===============
 // VIDEO MODE MENU
@@ -13164,9 +12735,6 @@ static void M_DrawColorMenu(void)
 				break;
 			case IT_HEADERTEXT:
 				V_DrawString(x-16, y, V_YELLOWMAP|MENUCAPS, currentMenu->menuitems[i].text);
-				//V_DrawFill(19, y, 281, 9, currentMenu->menuitems[i+1].alphaKey);
-				//V_DrawFill(300, y, 1, 9, 26);
-				//M_DrawLevelPlatterHeader(y - (lsheadingheight - 12), currentMenu->menuitems[i].text, false);
 				break;
 		}
 	}
@@ -13558,7 +13126,7 @@ static void M_HandleMonitorToggles(INT32 choice)
 // =========
 // Quit Game
 // =========
-static INT32 quitsounds[] =
+static const INT32 quitsounds[] =
 {
 	// holy shit we're changing things up!
 	// srb2kart: you ain't seen nothing yet
@@ -13626,13 +13194,12 @@ static void M_QuitSRB2(INT32 choice)
 	M_StartMessage(quitmsg[M_RandomKey(NUM_QUITMESSAGES)], M_QuitResponse, MM_YESNO);
 }
 
-#ifdef HWRENDER
-// =====================================================================
-// OpenGL specific options
-// =====================================================================
-#endif
-
 #ifdef HAVE_DISCORDRPC
+
+// =====================================================================
+// DiscordRPC specific options
+// =====================================================================
+
 static const tic_t confirmLength = 3*TICRATE/4;
 static tic_t confirmDelay = 0;
 static boolean confirmAccept = false;
