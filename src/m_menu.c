@@ -3212,7 +3212,7 @@ menu_t OP_ScreenshotOptionsDef = DEFAULTSCROLLSTYLE("M_SCSHOT", OP_ScreenshotOpt
 menu_t OP_AddonsOptionsDef     = DEFAULTMENUSTYLE("M_ADDONS", OP_AddonsOptionsMenu, &OP_DataOptionsDef, 30, 30, NULL);
 menu_t OP_ProtocolDef          = DEFAULTMENUSTYLE(NULL, OP_ProtocolMenu, &OP_DataOptionsDef, 30, 30, NULL);
 #ifdef HAVE_DISCORDRPC
-menu_t OP_DiscordOptionsDef    = DEFAULTMENUSTYLE(NULL, OP_DiscordOptionsMenu, &OP_DataOptionsDef, 30, 30);
+menu_t OP_DiscordOptionsDef    = DEFAULTMENUSTYLE(NULL, OP_DiscordOptionsMenu, &OP_DataOptionsDef, 30, 30, NULL);
 #endif
 menu_t OP_EraseDataDef         = DEFAULTMENUSTYLE("M_DATA", OP_EraseDataMenu, &OP_DataOptionsDef, 30, 30, NULL);
 
@@ -5802,7 +5802,7 @@ menu_t MessageDef =
 	0, 0,               // x, y                (TO HACK)
 	0,                  // lastOn, flags       (TO HACK)
 	NULL,
-	{0},
+	NULL,
 };
 
 
