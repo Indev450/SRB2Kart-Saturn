@@ -9124,14 +9124,14 @@ static void M_SetupControlsMenu(UINT8 pnum)
 	if (pnum > 0)
 	{
 		// Hide P1-only controls
-		OP_AllControlsMenu[15].status = IT_CONTROL; // Chat
-		OP_AllControlsMenu[16].status = IT_CONTROL; // Rankings
-		OP_AllControlsMenu[17].status = IT_CONTROL; // Pause
-		OP_AllControlsMenu[18].status = IT_CONTROL; // Screenshot
-		OP_AllControlsMenu[19].status = IT_CONTROL; // GIF
-		OP_AllControlsMenu[20].status = IT_CONTROL; // System Menu
-		OP_AllControlsMenu[21].status = IT_CONTROL; // Console
-		OP_AllControlsMenu[37].status = IT_CONTROL; // Director
+		OP_AllControlsMenu[15].status = IT_GRAYEDOUT2; // Chat
+		OP_AllControlsMenu[16].status = IT_GRAYEDOUT2; // Rankings
+		OP_AllControlsMenu[17].status = IT_GRAYEDOUT2; // Pause
+		OP_AllControlsMenu[18].status = IT_GRAYEDOUT2; // Screenshot
+		OP_AllControlsMenu[19].status = IT_GRAYEDOUT2; // GIF
+		OP_AllControlsMenu[20].status = IT_GRAYEDOUT2; // System Menu
+		OP_AllControlsMenu[21].status = IT_GRAYEDOUT2; // Console
+		OP_AllControlsMenu[37].status = IT_GRAYEDOUT2; // Director
 	}
 	else
 	{
