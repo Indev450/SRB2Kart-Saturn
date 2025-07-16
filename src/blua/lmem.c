@@ -48,7 +48,7 @@ void *luaM_growaux_ (lua_State *L, void *block, int *size, size_t size_elems,
   void *newblock;
   int newsize;
   if (*size >= limit/2) {  /* cannot double it? */
-    if (*size >= limit)  /* cannot grow even a little? */
+    if (l_unlikely(*size >= limit))  /* cannot grow even a little? */
       luaG_runerror(L, errormsg);
     newsize = limit;  /* still have at least one free place */
   }
@@ -77,7 +77,7 @@ void *luaM_realloc_ (lua_State *L, void *block, size_t osize, size_t nsize) {
   global_State *g = G(L);
   lua_assert((osize == 0) == (block == NULL));
   block = (*g->frealloc)(g->ud, block, osize, nsize);
-  if (block == NULL && nsize > 0)
+  if (l_unlikely(block == NULL && nsize > 0))
     luaD_throw(L, LUA_ERRMEM);
   lua_assert((nsize == 0) == (block == NULL));
   g->totalbytes = (g->totalbytes - osize) + nsize;
