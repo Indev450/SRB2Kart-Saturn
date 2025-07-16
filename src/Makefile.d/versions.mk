@@ -146,6 +146,7 @@ ifdef NONX86
   ifdef X86_64 # yeah that SEEMS contradictory
   opts+=-march=nocona
   endif
+  opts+=-march=native
 else
   ifndef GCC29
   opts+=-msse3 -mfpmath=sse
