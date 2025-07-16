@@ -6062,32 +6062,47 @@ void K_KartUpdatePosition(player_t *player)
 				// This checks every thing on the map, and looks for MT_BOSS3WAYPOINT (the thing we're using for checkpoint wp's, for now)
 				for (mo = waypointcap; mo != NULL; mo = mo->tracer)
 				{
-					pmo = P_AproxDistance(P_AproxDistance(	mo->x - player->mo->x,
-															mo->y - player->mo->y),
-															mo->z - player->mo->z) / FRACUNIT;
-					imo = P_AproxDistance(P_AproxDistance(	mo->x - players[i].mo->x,
-															mo->y - players[i].mo->y),
-															mo->z - players[i].mo->z) / FRACUNIT;
+					const boolean isprevcheckpointp = mo->health == player->starpostnum;
+					const boolean isnextcheckpointp = mo->health == (player->starpostnum + 1);
 
-					if (mo->health == player->starpostnum && (!mo->movecount || mo->movecount == player->laps+1))
+					if ((isprevcheckpointp || isnextcheckpointp) && (!mo->movecount || mo->movecount == player->laps+1))
 					{
-						player->kartstuff[k_prevcheck] += pmo;
-						ppcd++;
+						pmo = P_AproxDistance(P_AproxDistance(	mo->x - player->mo->x,
+																mo->y - player->mo->y),
+																mo->z - player->mo->z) / FRACUNIT;
+
+						if (isprevcheckpointp)
+						{
+							player->kartstuff[k_prevcheck] += pmo;
+							ppcd++;
+						}
+
+						if (isnextcheckpointp)
+						{
+							player->kartstuff[k_nextcheck] += pmo;
+							pncd++;
+						}
 					}
-					if (mo->health == (player->starpostnum + 1) && (!mo->movecount || mo->movecount == player->laps+1))
+
+					const boolean isprevcheckpointi = mo->health == players[i].starpostnum;
+					const boolean isnextcheckpointi = mo->health == (players[i].starpostnum + 1);
+
+					if ((isprevcheckpointi || isnextcheckpointi) && (!mo->movecount || mo->movecount == players[i].laps+1))
 					{
-						player->kartstuff[k_nextcheck] += pmo;
-						pncd++;
-					}
-					if (mo->health == players[i].starpostnum && (!mo->movecount || mo->movecount == players[i].laps+1))
-					{
-						players[i].kartstuff[k_prevcheck] += imo;
-						ipcd++;
-					}
-					if (mo->health == (players[i].starpostnum + 1) && (!mo->movecount || mo->movecount == players[i].laps+1))
-					{
-						players[i].kartstuff[k_nextcheck] += imo;
-						incd++;
+						imo = P_AproxDistance(P_AproxDistance(	mo->x - players[i].mo->x,
+																mo->y - players[i].mo->y),
+																mo->z - players[i].mo->z) / FRACUNIT;
+
+						if (isprevcheckpointi)
+						{
+							players[i].kartstuff[k_prevcheck] += imo;
+							ipcd++;
+						}
+						if (isnextcheckpointi )
+						{
+							players[i].kartstuff[k_nextcheck] += imo;
+							incd++;
+						}
 					}
 				}
 
