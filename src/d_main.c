@@ -1478,7 +1478,7 @@ static void D_CheckSaturnExtraFiles(void)
 		}
 
 		// extra round joystick inputdisplay sprites
-		if (W_CheckMultipleLumps("JOYBCK","JOYKNB","JOYSHD", NULL))
+		if (W_CheckMultipleLumps("JOYBCK", "JOYKNB", "JOYSHD", NULL))
 		{
 			joystickicon = true;
 			PUSHCONS(inputdisplay_cons_temp, last_inputdisplay_i, 3, "StickGFX");

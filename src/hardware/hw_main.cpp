@@ -746,7 +746,8 @@ static void HWR_RenderPlane(subsector_t *subsector, extrasubsector_t *xsub, bool
 
 		for (i = 0; i < subsector->numlines; i++, line++)
 		{
-			if (line->linedef->special != HORIZONSPECIAL)
+			// this check sucks and is a hotspot lel
+			if (LIKELY(line->linedef->special != HORIZONSPECIAL))
 				continue;
 
 			if (R_PointOnSegSide(viewx, viewy, line) != 0)
@@ -762,8 +763,7 @@ static void HWR_RenderPlane(subsector_t *subsector, extrasubsector_t *xsub, bool
 			}
 			else
 			{
-				x1 = FixedToFloat(line->v1->x);
-				y1 = FixedToFloat(line->v1->x);
+				x1 = y1 = FixedToFloat(line->v1->x);
 			}
 
 			if (line->pv2)
@@ -3889,11 +3889,13 @@ static void HWR_DrawSprite(gl_vissprite_t *spr)
 
 	INT32 shader = SHADER_NONE;
 
-	if (!spr->mobj || !spr->mobj->subsector)
+	const mobj_t *sprmo = spr->mobj;
+
+	if (UNLIKELY(!sprmo || !sprmo->subsector))
 		return;
 
-	const boolean papersprite = (spr->mobj->frame & FF_PAPERSPRITE);
-	const sector_t *sector = spr->mobj->subsector->sector;
+	const boolean papersprite = (sprmo->frame & FF_PAPERSPRITE);
+	const sector_t *sector = sprmo->subsector->sector;
 
 	if (sector->numlights)
 	{
@@ -3959,9 +3961,9 @@ static void HWR_DrawSprite(gl_vissprite_t *spr)
 
 	// Draw shadow BEFORE sprite
 	if (UNLIKELY(cv_shadow.value // Shadows enabled
-		&& (spr->mobj->flags & (MF_SCENERY|MF_SPAWNCEILING|MF_NOGRAVITY)) != (MF_SCENERY|MF_SPAWNCEILING|MF_NOGRAVITY) // Ceiling scenery have no shadow.
-		&& !(spr->mobj->flags2 & MF2_DEBRIS) // Debris have no corona or shadow.
-		&& (spr->mobj->z >= spr->mobj->floorz))) // Without this, your shadow shows on the floor, even after you die and fall through the ground.
+		&& (sprmo->flags & (MF_SCENERY|MF_SPAWNCEILING|MF_NOGRAVITY)) != (MF_SCENERY|MF_SPAWNCEILING|MF_NOGRAVITY) // Ceiling scenery have no shadow.
+		&& !(sprmo->flags2 & MF2_DEBRIS) // Debris have no corona or shadow.
+		&& (sprmo->z >= sprmo->floorz))) // Without this, your shadow shows on the floor, even after you die and fall through the ground.
 	{
 		////////////////////
 		// SHADOW SPRITE! //
@@ -3991,24 +3993,24 @@ static void HWR_DrawSprite(gl_vissprite_t *spr)
 	HWR_Lighting(&Surf, lightlevel, colormap, P_SectorUsesDirectionalLighting(sector) && !fullbright);
 
 	INT32 blendmode;
-	if (spr->mobj->frame & FF_BLENDMASK)
-		blendmode = ((spr->mobj->frame & FF_BLENDMASK) >> FF_BLENDSHIFT) + 1;
+	if (sprmo->frame & FF_BLENDMASK)
+		blendmode = ((sprmo->frame & FF_BLENDMASK) >> FF_BLENDSHIFT) + 1;
 	else
-		blendmode = spr->mobj->blendmode;
+		blendmode = sprmo->blendmode;
 
 	if (UNLIKELY(!cv_translucency.value)) // translucency disabled
 	{
 		Surf.PolyColor.s.alpha = 0xFF;
 		blend = PF_Translucent|PF_Occlude;
 	}
-	else if (spr->mobj->flags2 & MF2_SHADOW)
+	else if (sprmo->flags2 & MF2_SHADOW)
 	{
 		Surf.PolyColor.s.alpha = 0x40;
 		blend = HWR_GetBlendModeFlag(blendmode);
 	}
-	else if (spr->mobj->frame & FF_TRANSMASK)
+	else if (sprmo->frame & FF_TRANSMASK)
 	{
-		INT32 trans = (spr->mobj->frame & FF_TRANSMASK)>>FF_TRANSSHIFT;
+		INT32 trans = (sprmo->frame & FF_TRANSMASK)>>FF_TRANSSHIFT;
 		blend = HWR_SurfaceBlend(blendmode, trans, &Surf);
 	}
 	else
@@ -4021,7 +4023,7 @@ static void HWR_DrawSprite(gl_vissprite_t *spr)
 		blend = HWR_GetBlendModeFlag(blendmode)|PF_Occlude;
 	}
 
-	if (cv_playerfade.value && spr->mobj->player)
+	if (cv_playerfade.value && sprmo->player)
 		Surf.PolyColor.s.alpha = FixedMul(R_DoPlayerFade(spr->mobj), Surf.PolyColor.s.alpha);
 
 	if (HWR_UseShader())
@@ -4044,7 +4046,9 @@ static void HWR_DrawPrecipitationSprite(gl_vissprite_t *spr)
 
 	INT32 shader = SHADER_NONE;
 
-	if (!spr->mobj || !spr->mobj->subsector)
+	const mobj_t *sprmo = spr->mobj;
+
+	if (UNLIKELY(!sprmo || !sprmo->subsector))
 		return;
 
 	// cache sprite graphics
@@ -4082,7 +4086,7 @@ static void HWR_DrawPrecipitationSprite(gl_vissprite_t *spr)
 	wallVerts[0].t = wallVerts[1].t = hwrpatch->max_t;
 
 	// colormap test
-	sector_t *sector = spr->mobj->subsector->sector;
+	sector_t *sector = sprmo->subsector->sector;
 	UINT8 lightlevel = 255;
 	extracolormap_t *colormap = sector->extra_colormap;
 
@@ -4090,9 +4094,9 @@ static void HWR_DrawPrecipitationSprite(gl_vissprite_t *spr)
 	{
 		INT32 light;
 
-		light = R_GetPlaneLight(sector, spr->mobj->z + spr->mobj->height, false); // Always use the light at the top instead of whatever I was doing before
+		light = R_GetPlaneLight(sector, sprmo->z + sprmo->height, false); // Always use the light at the top instead of whatever I was doing before
 
-		if (!(spr->mobj->frame & FF_FULLBRIGHT))
+		if (!(sprmo->frame & FF_FULLBRIGHT))
 			lightlevel = static_cast<UINT8>(CLAMP(*sector->lightlist[light].lightlevel, 0, 255));
 
 		if (sector->lightlist[light].extra_colormap)
@@ -4100,7 +4104,7 @@ static void HWR_DrawPrecipitationSprite(gl_vissprite_t *spr)
 	}
 	else
 	{
-		if (!(spr->mobj->frame & FF_FULLBRIGHT))
+		if (!(sprmo->frame & FF_FULLBRIGHT))
 			lightlevel = static_cast<UINT8>(CLAMP(sector->lightlevel, 0, 255));
 
 		if (sector->extra_colormap)
@@ -4109,9 +4113,9 @@ static void HWR_DrawPrecipitationSprite(gl_vissprite_t *spr)
 
 	HWR_Lighting(&Surf, lightlevel, colormap, P_SectorUsesDirectionalLighting(sector));
 
-	if (spr->mobj->frame & FF_TRANSMASK)
+	if (sprmo->frame & FF_TRANSMASK)
 	{
-		INT32 trans = (spr->mobj->frame & FF_TRANSMASK)>>FF_TRANSSHIFT;
+		INT32 trans = (sprmo->frame & FF_TRANSMASK)>>FF_TRANSSHIFT;
 		blend = HWR_SurfaceBlend(AST_TRANSLUCENT, trans, &Surf);
 	}
 	else
