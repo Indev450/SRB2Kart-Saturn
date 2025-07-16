@@ -1751,6 +1751,7 @@ boolean P_CheckPosition(mobj_t *thing, fixed_t x, fixed_t y)
 				// If you're inside goowater and slowing down
 				fixed_t sinklevel = FixedMul(thing->info->height/6, thing->scale);
 				fixed_t minspeed = FixedMul(thing->info->height/9, thing->scale);
+
 				if (thing->z < topheight && bottomheight < thingtop
 				&& abs(thing->momz) < minspeed)
 				{
@@ -2043,6 +2044,7 @@ boolean P_CheckCameraPosition(fixed_t x, fixed_t y, camera_t *thiscam)
 		for (rover = newsec->ffloors; rover; rover = rover->next)
 		{
 			fixed_t topheight, bottomheight;
+
 			if (!(rover->flags & FF_BLOCKOTHERS) || !(rover->flags & FF_EXISTS) || !(rover->flags & FF_RENDERALL) || GETSECSPECIAL(rover->master->frontsector->special, 4) == 12)
 				continue;
 
@@ -2053,6 +2055,7 @@ boolean P_CheckCameraPosition(fixed_t x, fixed_t y, camera_t *thiscam)
 				+ ((topheight - bottomheight)/2));
 			delta2 = thingtop - (bottomheight
 				+ ((topheight - bottomheight)/2));
+
 			if (topheight > tmfloorz && abs(delta1) < abs(delta2))
 			{
 				tmfloorz = tmdropoffz = topheight;
@@ -2171,14 +2174,12 @@ boolean P_CheckCameraPosition(fixed_t x, fixed_t y, camera_t *thiscam)
 boolean P_TryCameraMove(fixed_t x, fixed_t y, camera_t *thiscam)
 {
 	subsector_t *s;
-
-	boolean retval = true;
 	UINT8 i;
-
-	floatok = false;
 
 	if (dedicated) // this crashes so don't even try it
 		return false;
+
+	floatok = false;
 
 	if (thiscam->x != x || thiscam->y != y || thiscam->subsector == NULL)
 		s = R_PointInSubsectorFast(x, y);
@@ -2222,11 +2223,11 @@ boolean P_TryCameraMove(fixed_t x, fixed_t y, camera_t *thiscam)
 			else
 				tryy = y;
 
-			if (!P_CheckCameraPosition(tryx, tryy, thiscam))
-				return false; // solid wall or thing
-
 			if (tmceilingz - tmfloorz < thiscam->height)
 				return false; // doesn't fit
+
+			if (!P_CheckCameraPosition(tryx, tryy, thiscam))
+				return false; // solid wall or thing
 
 			floatok = true;
 
@@ -2248,7 +2249,8 @@ boolean P_TryCameraMove(fixed_t x, fixed_t y, camera_t *thiscam)
 
 			if ((tmfloorz - thiscam->z > MAXCAMERASTEPMOVE))
 				return false; // too big a step up
-		} while(tryx != x || tryy != y);
+
+		} while (tryx != x || tryy != y);
 	}
 	else
 	{
@@ -2265,7 +2267,7 @@ boolean P_TryCameraMove(fixed_t x, fixed_t y, camera_t *thiscam)
 	thiscam->y = y;
 	thiscam->subsector = s;
 
-	return retval;
+	return true;
 }
 
 //
