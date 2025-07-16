@@ -9067,8 +9067,10 @@ void P_MobjThinker(mobj_t *mobj)
 
 	tmfloorthing = tmhitthing = NULL;
 
+	const sector_t *sec1 = mobj->subsector ? mobj->subsector->sector : NULL;
+
 	// 970 allows ANY mobj to trigger a linedef exec
-	if (mobj->subsector && GETSECSPECIAL(mobj->subsector->sector->special, 2) == 8)
+	if (sec1 && GETSECSPECIAL(sec1->special, 2) == 8)
 	{
 		sector_t *sec2;
 
