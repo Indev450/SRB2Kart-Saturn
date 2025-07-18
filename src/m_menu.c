@@ -6295,12 +6295,16 @@ static boolean M_AddonsRefresh(void)
 	return false;
 }
 
+static tic_t addons_scrolltic = 0; // maybe not the best place but e
+
 static void M_DrawAddons(void)
 {
 	INT32 x, y;
 	ssize_t i, m;
 	const UINT8 *flashcol = NULL;
 	UINT8 hilicol;
+
+	if (renderisnewtic) addons_scrolltic++;
 
 	// hack - need to refresh at end of frame to handle addfile...
 	if (refreshdirmenu & M_AddonsRefresh())
@@ -6385,6 +6389,9 @@ static void M_DrawAddons(void)
 	for (; i < m; i++)
 	{
 		UINT32 flags = V_ALLOWLOWERCASE;
+#define MAXADDONNAME 31
+		char scrollbuf[MAXADDONNAME+1] = {0};
+
 		if (y > BASEVIDHEIGHT) break;
 		if (dirmenu[i])
 #define type (UINT8)(dirmenu[i][DIR_TYPE])
@@ -6405,11 +6412,22 @@ static void M_DrawAddons(void)
 			}
 
 #define charsonside 14
-			if (dirmenu[i][DIR_LEN] > (charsonside*2 + 3))
-				V_DrawString(x, y+4, flags, va("%.*s...%s", charsonside, dirmenu[i]+DIR_STRING, dirmenu[i]+DIR_STRING+dirmenu[i][DIR_LEN]-(charsonside+1)));
+			if (dirmenu[i][DIR_LEN] > MAXADDONNAME)
+			{
+				if ((size_t)i == dir_on[menudepthleft])
+				{
+					M_ScrollString(dirmenu[i]+DIR_STRING, dirmenu[i][DIR_LEN]-1, scrollbuf, MAXADDONNAME, addons_scrolltic);
+				}
+				else
+					strncpy(scrollbuf, va("%.*s...%s", charsonside, dirmenu[i]+DIR_STRING, dirmenu[i]+DIR_STRING+dirmenu[i][DIR_LEN]-(charsonside+1)), MAXADDONNAME);
+
+				V_DrawString(x, y+4, flags, scrollbuf);
+			}
 #undef charsonside
 			else
 				V_DrawString(x, y+4, flags, dirmenu[i]+DIR_STRING);
+
+#undef MAXADDONNAME
 		}
 #undef type
 		y += 16;
@@ -6534,11 +6552,13 @@ static void M_HandleAddons(INT32 choice)
 		case KEY_DOWNARROW:
 			if (dir_on[menudepthleft] < sizedirmenu-1)
 				dir_on[menudepthleft]++;
+			addons_scrolltic = 0;
 			S_StartSound(NULL, sfx_menu1);
 			break;
 		case KEY_UPARROW:
 			if (dir_on[menudepthleft])
 				dir_on[menudepthleft]--;
+			addons_scrolltic = 0;
 			S_StartSound(NULL, sfx_menu1);
 			break;
 		case KEY_PGDN:
@@ -6547,6 +6567,7 @@ static void M_HandleAddons(INT32 choice)
 				for (i = numaddonsshown; i && (dir_on[menudepthleft] < sizedirmenu-1); i--)
 					dir_on[menudepthleft]++;
 			}
+			addons_scrolltic = 0;
 			S_StartSound(NULL, sfx_menu1);
 			break;
 		case KEY_PGUP:
@@ -6555,6 +6576,7 @@ static void M_HandleAddons(INT32 choice)
 				for (i = numaddonsshown; i && (dir_on[menudepthleft]); i--)
 					dir_on[menudepthleft]--;
 			}
+			addons_scrolltic = 0;
 			S_StartSound(NULL, sfx_menu1);
 			break;
 		case KEY_ENTER:
@@ -6694,6 +6716,7 @@ static void M_HandleAddons(INT32 choice)
 
 		case KEY_ESCAPE:
 			exitmenu = true;
+			addons_scrolltic = 0;
 			break;
 
 		default:
