@@ -1542,15 +1542,17 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source)
 				{
 					if (target->target->hnext)
 						K_KillBananaChain(target->target->hnext, inflictor, source);
+
 					target->target->player->kartstuff[k_itemamount] = 0;
 				}
-				else if (target->target->player->kartstuff[k_itemamount])
+				else
 					target->target->player->kartstuff[k_itemamount]--;
 			}
 			else if ((target->type == MT_ORBINAUT_SHIELD && target->target->player->kartstuff[k_itemtype] == KITEM_ORBINAUT) // orbit items
 				|| (target->type == MT_JAWZ_SHIELD && target->target->player->kartstuff[k_itemtype] == KITEM_JAWZ))
 			{
 				target->target->player->kartstuff[k_itemamount]--;
+
 				if (target->lastlook != 0)
 				{
 					K_RepairOrbitChain(target);
