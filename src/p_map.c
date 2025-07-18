@@ -2176,10 +2176,10 @@ boolean P_TryCameraMove(fixed_t x, fixed_t y, camera_t *thiscam)
 	subsector_t *s;
 	UINT8 i;
 
+	floatok = false;
+
 	if (dedicated) // this crashes so don't even try it
 		return false;
-
-	floatok = false;
 
 	if (thiscam->x != x || thiscam->y != y || thiscam->subsector == NULL)
 		s = R_PointInSubsectorFast(x, y);
