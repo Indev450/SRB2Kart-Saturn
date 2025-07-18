@@ -10040,46 +10040,33 @@ void P_RemoveMobj(mobj_t *mobj)
 	R_RemoveMobjInterpolator(mobj);
 
 	// free block
-	// DBG: set everything in mobj_t to 0xFF instead of leaving it. debug memory error.
 	if (mobj->flags & MF_NOTHINK && !mobj->thinker.next)
 	{ // Uh-oh, the mobj doesn't think, P_RemoveThinker would never go through!
 		if (!mobj->thinker.references)
 		{
-#ifdef SCRAMBLE_REMOVED
-			// Invalidate mobj_t data to cause crashes if accessed!
-			memset(mobj, 0xff, sizeof(mobj_t));
-#endif
 			// no references, dump it directly in the mobj cache
 			mobj->hnext = mobjcache;
 			mobjcache = mobj;
+			return;
 		}
-		else
-		{ // Add thinker just to delay removing it until refrences are gone.
-			mobj->flags &= ~MF_NOTHINK;
-			P_AddThinker((thinker_t *)mobj);
-#ifdef PARANOIA
-			// Saved to avoid being scrambled like below...
-			mobj->thinker.debug_mobjtype = mobj->type;
-#endif
-#ifdef SCRAMBLE_REMOVED
-			// Invalidate mobj_t data to cause crashes if accessed!
-			memset((UINT8 *)mobj + sizeof(thinker_t), 0xff, sizeof(mobj_t) - sizeof(thinker_t));
-#endif
-			P_RemoveThinker((thinker_t *)mobj);
-		}
+
+		// Add thinker just to delay removing it until refrences are gone.
+		mobj->flags &= ~MF_NOTHINK;
+		P_AddThinker((thinker_t *)mobj);
 	}
-	else
-	{
+
+	P_RemoveThinker((thinker_t *)mobj);
+
 #ifdef PARANOIA
-		// Saved to avoid being scrambled like below...
-		mobj->thinker.debug_mobjtype = mobj->type;
+	// Saved to avoid being scrambled like below...
+	mobj->thinker.debug_mobjtype = mobj->type;
 #endif
+
+	// DBG: set everything in mobj_t to 0xFF instead of leaving it. debug memory error.
 #ifdef SCRAMBLE_REMOVED
-		// Invalidate mobj_t data to cause crashes if accessed!
-		memset((UINT8 *)mobj + sizeof(thinker_t), 0xff, sizeof(mobj_t) - sizeof(thinker_t));
+	// Invalidate mobj_t data to cause crashes if accessed!
+	memset((UINT8 *)mobj + sizeof(thinker_t), 0xff, sizeof(mobj_t) - sizeof(thinker_t));
 #endif
-		P_RemoveThinker((thinker_t *)mobj);
-	}
 }
 
 void P_FreePrecipMobj(precipmobj_t *mobj)
