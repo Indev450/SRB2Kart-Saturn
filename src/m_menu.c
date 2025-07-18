@@ -3282,12 +3282,16 @@ static boolean M_AddonsRefresh(void)
 	return false;
 }
 
+static tic_t addons_scrolltic = 0; // maybe not the best place but e
+
 static void M_DrawAddons(void)
 {
 	INT32 x, y;
 	ssize_t i, m;
 	const UINT8 *flashcol = NULL;
 	UINT8 hilicol;
+
+	if (renderisnewtic) addons_scrolltic++;
 
 	// hack - need to refresh at end of frame to handle addfile...
 	if (refreshdirmenu & M_AddonsRefresh())
@@ -3372,6 +3376,9 @@ static void M_DrawAddons(void)
 	for (; i < m; i++)
 	{
 		UINT32 flags = V_ALLOWLOWERCASE;
+#define MAXADDONNAME 31
+		char scrollbuf[MAXADDONNAME+1] = {0};
+
 		if (y > BASEVIDHEIGHT) break;
 		if (dirmenu[i])
 #define type (UINT8)(dirmenu[i][DIR_TYPE])
@@ -3392,11 +3399,22 @@ static void M_DrawAddons(void)
 			}
 
 #define charsonside 14
-			if (dirmenu[i][DIR_LEN] > (charsonside*2 + 3))
-				V_DrawString(x, y+4, flags, va("%.*s...%s", charsonside, dirmenu[i]+DIR_STRING, dirmenu[i]+DIR_STRING+dirmenu[i][DIR_LEN]-(charsonside+1)));
+			if (dirmenu[i][DIR_LEN] > MAXADDONNAME)
+			{
+				if ((size_t)i == dir_on[menudepthleft])
+				{
+					M_ScrollString(dirmenu[i]+DIR_STRING, dirmenu[i][DIR_LEN]-1, scrollbuf, MAXADDONNAME, addons_scrolltic);
+				}
+				else
+					strncpy(scrollbuf, va("%.*s...%s", charsonside, dirmenu[i]+DIR_STRING, dirmenu[i]+DIR_STRING+dirmenu[i][DIR_LEN]-(charsonside+1)), MAXADDONNAME);
+
+				V_DrawString(x, y+4, flags, scrollbuf);
+			}
 #undef charsonside
 			else
 				V_DrawString(x, y+4, flags, dirmenu[i]+DIR_STRING);
+
+#undef MAXADDONNAME
 		}
 #undef type
 		y += 16;
@@ -3521,11 +3539,13 @@ static void M_HandleAddons(INT32 choice)
 		case KEY_DOWNARROW:
 			if (dir_on[menudepthleft] < sizedirmenu-1)
 				dir_on[menudepthleft]++;
+			addons_scrolltic = 0;
 			S_StartSound(NULL, sfx_menu1);
 			break;
 		case KEY_UPARROW:
 			if (dir_on[menudepthleft])
 				dir_on[menudepthleft]--;
+			addons_scrolltic = 0;
 			S_StartSound(NULL, sfx_menu1);
 			break;
 		case KEY_PGDN:
@@ -3534,6 +3554,7 @@ static void M_HandleAddons(INT32 choice)
 				for (i = numaddonsshown; i && (dir_on[menudepthleft] < sizedirmenu-1); i--)
 					dir_on[menudepthleft]++;
 			}
+			addons_scrolltic = 0;
 			S_StartSound(NULL, sfx_menu1);
 			break;
 		case KEY_PGUP:
@@ -3542,6 +3563,7 @@ static void M_HandleAddons(INT32 choice)
 				for (i = numaddonsshown; i && (dir_on[menudepthleft]); i--)
 					dir_on[menudepthleft]--;
 			}
+			addons_scrolltic = 0;
 			S_StartSound(NULL, sfx_menu1);
 			break;
 		case KEY_ENTER:
@@ -3681,6 +3703,7 @@ static void M_HandleAddons(INT32 choice)
 
 		case KEY_ESCAPE:
 			exitmenu = true;
+			addons_scrolltic = 0;
 			break;
 
 		default:
@@ -5337,51 +5360,6 @@ static musicdef_t *curplaying = NULL;
 static INT32 st_sel = 0;
 static tic_t st_musictime = 0;
 
-static void scrollMusicName(const char name[], size_t len, size_t maxlen, char result[])
-{
-	// How much should we scroll. Not sure why +1 is needed, but without it this function skips 2
-	// characters at once sometimes
-	const size_t amount = len - maxlen + 1;
-
-	// Note: anything above 17 will cause zero division
-	const size_t MAXSPEED = 6;
-	const size_t t = st_musictime / (35/min(amount, MAXSPEED));
-
-	const size_t state = (t / amount) % 4;
-
-	switch (state)
-	{
-		// Show beginning of the name
-		case 0:
-			memcpy(result, name, maxlen-1);
-		break;
-
-		// Scroll towards end of the name
-		case 1:
-		{
-			const size_t advance = t % amount;
-			memcpy(result, name+advance, maxlen-1);
-		}
-		break;
-
-		// Show end of the name
-		case 2:
-			memcpy(result, name+len+1-maxlen, maxlen-1);
-		break;
-
-		// Scroll towards start of the name
-		case 3:
-		{
-			const size_t advance = t % amount;
-			memcpy(result, name+len+1-maxlen-advance, maxlen-1);
-		}
-		break;
-	}
-
-	// Technically not necessary, since it gets set again after function call, but just in case
-	result[maxlen] = 0;
-}
-
 static void M_MusicTest(INT32 choice)
 {
 	(void)choice;
@@ -5523,7 +5501,7 @@ static void M_DrawMusicTest(void)
 				char buf[MAXLENGTH+1];
 
 				if (t == st_sel && namelength > MAXLENGTH)
-					scrollMusicName(songname, namelength, MAXLENGTH, buf);
+					M_ScrollString(songname, namelength, buf, MAXLENGTH, st_musictime);
 				else
 					strlcpy(buf, songname, MAXLENGTH);
 

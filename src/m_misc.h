@@ -73,6 +73,8 @@ void M_ScreenShot(void);
 void M_DoScreenShot(void);
 boolean M_ScreenshotResponder(event_t *ev);
 
+void M_ScrollString(const char name[], size_t len, char result[], size_t maxlen, tic_t timer);
+
 void M_MinimapGenerate(void);
 
 void Command_SaveConfig_f(void);

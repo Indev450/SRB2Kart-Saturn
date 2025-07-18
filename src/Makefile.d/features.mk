@@ -68,6 +68,7 @@ opts+=-DHAVE_MINIUPNPC
 endif
 
 ifndef NOLIBBACKTRACE
+$(eval $(call Propogate_flags,LIBBACKTRACE))
 libs+=-lbacktrace
 opts+=-DHAVE_LIBBACKTRACE
 endif
@@ -80,6 +81,7 @@ endif
 endif
 
 ifdef HAVE_DISCORDRPC
+$(eval $(call Propogate_flags,DISCORDRPC))
 libs+=-ldiscord-rpc
 opts+=-DUSE_STUN
 sources+=discord.c stun.c
