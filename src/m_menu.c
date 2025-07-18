@@ -8460,51 +8460,6 @@ static musicdef_t *curplaying = NULL;
 static INT32 st_sel = 0;
 static tic_t st_musictime = 0;
 
-static void scrollMusicName(const char name[], size_t len, size_t maxlen, char result[])
-{
-	// How much should we scroll. Not sure why +1 is needed, but without it this function skips 2
-	// characters at once sometimes
-	const size_t amount = len - maxlen + 1;
-
-	// Note: anything above 17 will cause zero division
-	const size_t MAXSPEED = 6;
-	const size_t t = st_musictime / (35/min(amount, MAXSPEED));
-
-	const size_t state = (t / amount) % 4;
-
-	switch (state)
-	{
-		// Show beginning of the name
-		case 0:
-			memcpy(result, name, maxlen-1);
-		break;
-
-		// Scroll towards end of the name
-		case 1:
-		{
-			const size_t advance = t % amount;
-			memcpy(result, name+advance, maxlen-1);
-		}
-		break;
-
-		// Show end of the name
-		case 2:
-			memcpy(result, name+len+1-maxlen, maxlen-1);
-		break;
-
-		// Scroll towards start of the name
-		case 3:
-		{
-			const size_t advance = t % amount;
-			memcpy(result, name+len+1-maxlen-advance, maxlen-1);
-		}
-		break;
-	}
-
-	// Technically not necessary, since it gets set again after function call, but just in case
-	result[maxlen] = 0;
-}
-
 static void M_MusicTest(INT32 choice)
 {
 	(void)choice;
@@ -8646,7 +8601,7 @@ static void M_DrawMusicTest(void)
 				char buf[MAXLENGTH+1];
 
 				if (t == st_sel && namelength > MAXLENGTH)
-					scrollMusicName(songname, namelength, MAXLENGTH, buf);
+					M_ScrollString(songname, namelength, buf, MAXLENGTH, st_musictime);
 				else
 					strncpy(buf, songname, MAXLENGTH);
 				buf[MAXLENGTH] = 0;
