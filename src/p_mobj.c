@@ -3424,7 +3424,7 @@ static void P_PlayerMobjThinker(mobj_t *mobj)
 		P_CheckPosition(mobj, mobj->x, mobj->y);
 		goto animonly;
 	}
-	else if (mobj->player->pflags & PF_MACESPIN && mobj->tracer)
+	else if (UNLIKELY(mobj->player->pflags & PF_MACESPIN && mobj->tracer))
 	{
 		P_CheckPosition(mobj, mobj->x, mobj->y);
 		goto animonly;
