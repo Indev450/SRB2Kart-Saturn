@@ -7161,17 +7161,28 @@ static void M_DrawLevelSelectOnly(boolean leftfade, boolean rightfade)
 
 	if (cv_nextmap.value && cv_showtrackaddon.value)
 	{
+		static tic_t namescroll = 0;
+		static INT32 namescrollmap = 0;
+		char namescrollbuf[64]= {0};
+
+		if (cv_nextmap.value != namescrollmap)
+		{
+			namescrollmap = cv_nextmap.value;
+			namescroll = 0;
+		}
+
+		if (renderisnewtic) namescroll++;
+
 		char *addonname = wadfiles[mapwads[cv_nextmap.value-1]]->filename;
 		INT32 len;
-		INT32 charlimit = 21 + (dupadjust/5);
+		INT32 charlimit = min((size_t)(21 + (dupadjust/5)), sizeof(namescrollbuf)-1);
 		nameonly(addonname);
 		len = strlen(addonname);
-#define charsonside 14
 		if (len > charlimit)
-			V_DrawThinString(x+w+5, y+i-8, V_TRANSLUCENT|MENUCAPS, va("%.*s...%s", charsonside, addonname, addonname+((len-charlimit) + charsonside))); // variable reuse...
-#undef charsonside
+			M_ScrollString(addonname, len, namescrollbuf, charlimit, namescroll);
 		else
-			V_DrawThinString(x+w+5, y+i-8, V_TRANSLUCENT|MENUCAPS, addonname); // variable reuse...
+			strncpy(namescrollbuf, addonname, sizeof(namescrollbuf));
+		V_DrawThinString(x+w+5, y+i-8, V_TRANSLUCENT|MENUCAPS, namescrollbuf); // variable reuse...
 	}
 
 	if (!cv_kartencore.value || gamestate == GS_TIMEATTACK || cv_newgametype.value != GT_RACE)
