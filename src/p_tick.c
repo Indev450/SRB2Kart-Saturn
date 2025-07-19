@@ -190,7 +190,7 @@ void Command_CountMobjs_f(void)
 void P_InitThinkers(void)
 {
 	thinkercap.prev = thinkercap.next = &thinkercap;
-	precipcap.prev = precipcap.next = &precipcap;
+	precipcap.prev  = precipcap.next  = &precipcap;
 	waypointcap = NULL;
 }
 
@@ -767,8 +767,10 @@ void P_Ticker(boolean run)
 		PS_START_TIMING(ps_playerthink_time);
 		for (i = 0; i < MAXPLAYERS; i++)
 		{
-			if (playeringame[i] && !P_MobjWasRemoved(players[i].mo))
-				P_PlayerThink(&players[i]);
+			if (!playeringame[i] || P_MobjWasRemoved(players[i].mo))
+				continue;
+
+			P_PlayerThink(&players[i]);
 		}
 		PS_STOP_TIMING(ps_playerthink_time);
 	}
@@ -789,8 +791,10 @@ void P_Ticker(boolean run)
 		// Run any "after all the other thinkers" stuff
 		for (i = 0; i < MAXPLAYERS; i++)
 		{
-			if (playeringame[i] && !P_MobjWasRemoved(players[i].mo))
-				P_PlayerAfterThink(&players[i]);
+			if (!playeringame[i] || P_MobjWasRemoved(players[i].mo))
+				continue;
+
+			P_PlayerAfterThink(&players[i]);
 		}
 
 		// Apply rumble to local players
@@ -869,12 +873,12 @@ void P_Ticker(boolean run)
 
 		if (demo.recording)
 		{
-			INT32 axis = JoyAxis(AXISLOOKBACK, 1);
-
 			G_WriteAllGhostTics();
 
 			if (cv_recordmultiplayerdemos.value)
 			{
+				const INT32 axis = JoyAxis(AXISLOOKBACK, 1);
+
 				if (demo.savemode == DSM_NOTSAVING || demo.savemode == DSM_WILLAUTOSAVE)
 					if (demo.savebutton && demo.savebutton + 3*TICRATE < leveltime && (InputDown(gc_lookback, 1) || (cv_usejoystick[0].value && axis > 0)))
 						demo.savemode = DSM_TITLEENTRY;
@@ -990,10 +994,7 @@ void P_PreTicker(INT32 frames)
 		// Run any "after all the other thinkers" stuff
 		for (i = 0; i < MAXPLAYERS; i++)
 		{
-			if (!playeringame[i])
-				continue;
-
-			if (P_MobjWasRemoved(players[i].mo))
+			if (!playeringame[i] || P_MobjWasRemoved(players[i].mo))
 				continue;
 
 			P_PlayerAfterThink(&players[i]);

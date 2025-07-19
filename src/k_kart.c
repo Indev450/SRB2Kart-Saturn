@@ -1659,7 +1659,7 @@ static UINT8 K_CheckOffroadCollide(mobj_t *mo)
 
 			// we will do essentially the same checks as above instead of bothering with top/bottom height of the FOF.
 			// Reminder that an FOF's floor is its bottom, silly!
-			if ( ((s2->flags & SF_FLIPSPECIAL_FLOOR) && mo->z == cel)	// "floor" check
+			if (   ((s2->flags & SF_FLIPSPECIAL_FLOOR) && mo->z == cel)	// "floor" check
 				|| ((s2->flags & SF_FLIPSPECIAL_CEILING) && (mo->z + mo->height) == flr) )	// "ceiling" check.
 
 				for (i = 2; i < 5; i++)	// check for sector special
@@ -1743,10 +1743,10 @@ static void K_SpawnDashDustRelease(player_t *player)
 	I_Assert(player->mo != NULL);
 	I_Assert(!P_MobjWasRemoved(player->mo));
 
-	if (!P_IsObjectOnGround(player->mo))
+	if (!player->speed && !player->kartstuff[k_startboost])
 		return;
 
-	if (!player->speed && !player->kartstuff[k_startboost])
+	if (!P_IsObjectOnGround(player->mo))
 		return;
 
 	travelangle = player->mo->angle;
@@ -1977,11 +1977,11 @@ static void K_PlayGenericCombatSound(mobj_t *source, mobj_t *other, sfxenum_t sf
 
 	boolean alwaysHear = false;
 
-	if (other != NULL && P_MobjWasRemoved(other) == false && other->player != NULL)
+	if (cv_kartvoices.value && !P_MobjWasRemoved(other) && other->player != NULL)
+	{
 		alwaysHear = P_IsDisplayPlayer(other->player);
-
-	if (cv_kartvoices.value)
 		S_StartSound(alwaysHear ? NULL : source, skin->soundsid[S_sfx[sfx_id].skinsound]);
+	}
 
 	K_RegularVoiceTimers(source->player);
 }
@@ -2003,7 +2003,7 @@ void K_PlayAttackTaunt(mobj_t *source)
 void K_PlayBoostTaunt(mobj_t *source)
 {
 	sfxenum_t pick = P_RandomKey(2); // Gotta roll the RNG every time this is called for sync reasons
-	boolean tasteful = (!source->player || !source->player->kartstuff[k_tauntvoices]);
+	const boolean tasteful = (!source->player || !source->player->kartstuff[k_tauntvoices]);
 
 	if (cv_kartvoices.value && (tasteful || cv_kartvoices.value == 2))
 		S_StartSound(source, sfx_kbost1+pick);
@@ -2016,14 +2016,14 @@ void K_PlayBoostTaunt(mobj_t *source)
 
 void K_PlayOvertakeSound(mobj_t *source)
 {
-	boolean tasteful = (!source->player || !source->player->kartstuff[k_voices]);
-
 	if (!G_RaceGametype()) // Only in race
 		return;
 
 	// 4 seconds from before race begins, 10 seconds afterwards
 	if (leveltime < starttime+(10*TICRATE))
 		return;
+
+	const boolean tasteful = (!source->player || !source->player->kartstuff[k_voices]);
 
 	if (cv_kartvoices.value && (tasteful || cv_kartvoices.value == 2))
 		S_StartSound(source, sfx_kslow);
@@ -2260,6 +2260,7 @@ fixed_t K_GetKartSpeed(player_t *player, boolean doboostpower)
 
 	if (doboostpower)
 		return FixedMul(finalspeed, player->kartstuff[k_boostpower]+player->kartstuff[k_speedboost]);
+
 	return finalspeed;
 }
 
@@ -2296,10 +2297,14 @@ fixed_t K_3dKartMovement(player_t *player, boolean onground, fixed_t forwardmove
 {
 	fixed_t accelmax = 4000;
 	fixed_t newspeed, oldspeed, finalspeed;
-	fixed_t p_speed = K_GetKartSpeed(player, true);
-	fixed_t p_accel = K_GetKartAccel(player);
+	fixed_t p_speed, p_accel;
 
-	if (!onground) return 0; // If the player isn't on the ground, there is no change in speed
+	// If the player isn't on the ground, there is no change in speed
+	if (!onground)
+		return 0;
+
+	p_speed = K_GetKartSpeed(player, true);
+	p_accel = K_GetKartAccel(player);
 
 	// ACCELCODE!!!1!11!
 	oldspeed = R_PointToDist2(0, 0, player->rmomx, player->rmomy); // FixedMul(P_AproxDistance(player->rmomx, player->rmomy), player->mo->scale);
@@ -2403,6 +2408,7 @@ void K_SpinPlayer(player_t *player, mobj_t *source, INT32 type, mobj_t *inflicto
 
 	if (P_MobjWasRemoved(player->mo))
 		return; // mobj was removed (in theory that shouldn't happen)
+
 	if (shouldForce == 1)
 		force = true;
 	else if (shouldForce == 2)
@@ -2543,8 +2549,10 @@ void K_SquishPlayer(player_t *player, mobj_t *source, mobj_t *inflictor)
 	// PS: Inflictor is unused for all purposes here and is actually only ever relevant to Lua. It may be nil too.
 	boolean force = false;	// Used to check if Lua ShouldSquish should get us damaged reguardless of flashtics or heck knows what.
 	UINT8 shouldForce = LUA_HookShouldSquish(player, inflictor, source);
+
 	if (P_MobjWasRemoved(player->mo))
 		return; // mobj was removed (in theory that shouldn't happen)
+
 	if (shouldForce == 1)
 		force = true;
 	else if (shouldForce == 2)
@@ -2657,6 +2665,7 @@ void K_ExplodePlayer(player_t *player, mobj_t *source, mobj_t *inflictor) // A b
 
 	if (P_MobjWasRemoved(player->mo))
 		return; // mobj was removed (in theory that shouldn't happen)
+
 	if (shouldForce == 1)
 		force = true;
 	else if (shouldForce == 2)
@@ -2742,6 +2751,7 @@ void K_ExplodePlayer(player_t *player, mobj_t *source, mobj_t *inflictor) // A b
 	player->powers[pw_flashing] = K_GetKartFlashing(player);
 
 	upgoer = (18*mapobjectscale*P_MobjFlip(player->mo));
+
 	if (player->mo->eflags & MFE_UNDERWATER)
 		upgoer = (117 * upgoer) / 200;
 
@@ -3690,7 +3700,6 @@ void K_SpawnWipeoutTrail(mobj_t *mo, boolean translucent)
 void K_DriftDustHandling(mobj_t *spawner)
 {
 	angle_t anglediff;
-	const INT16 spawnrange = spawner->radius>>FRACBITS;
 
 	if (!P_IsObjectOnGround(spawner) || leveltime % 2 != 0)
 		return;
@@ -3726,6 +3735,8 @@ void K_DriftDustHandling(mobj_t *spawner)
 
 	if (anglediff > ANGLE_180)
 		anglediff = InvAngle(anglediff);
+
+	const INT16 spawnrange = spawner->radius>>FRACBITS;
 
 	/*if (anglediff > ANG10*4) // Trying to turn further than 40 degrees
 	{
@@ -4021,9 +4032,8 @@ static mobj_t *K_ThrowKartItem(player_t *player, boolean missile, mobjtype_t map
 
 void K_PuntMine(mobj_t *thismine, mobj_t *punter)
 {
-	angle_t fa = R_PointToAngle2(0, 0, punter->momx, punter->momy) >> ANGLETOFINESHIFT;
-	fixed_t z = 30*mapobjectscale + punter->momz;
-	fixed_t spd;
+	angle_t fa;
+	fixed_t z, spd;
 	mobj_t *mine;
 
 	if (P_MobjWasRemoved(thismine))
@@ -4057,6 +4067,9 @@ void K_PuntMine(mobj_t *thismine, mobj_t *punter)
 
 	if (P_MobjWasRemoved(mine))
 		return;
+
+	fa = R_PointToAngle2(0, 0, punter->momx, punter->momy) >> ANGLETOFINESHIFT;
+	z = 30*mapobjectscale + punter->momz;
 
 	spd = K_GetProjectileSpeed();
 
@@ -4269,8 +4282,10 @@ static void K_DoShrink(player_t *user)
 	{
 		if (!playeringame[i] || players[i].spectator || !players[i].mo)
 			continue;
+
 		if (&players[i] == user)
 			continue;
+
 		if (players[i].kartstuff[k_position] < user->kartstuff[k_position])
 		{
 			//P_FlashPal(&players[i], PAL_NUKE, 10);
@@ -5155,6 +5170,7 @@ player_t *K_FindJawzTarget(mobj_t *actor, player_t *source)
 
 		// Find the angle, see who's got the best.
 		thisang = actor->angle - R_PointToAngle2(actor->x, actor->y, player->mo->x, player->mo->y);
+
 		if (thisang > ANGLE_180)
 			thisang = InvAngle(thisang);
 
@@ -5351,10 +5367,11 @@ static void K_UpdateEngineSounds(player_t *player, ticcmd_t *cmd)
 static void K_UpdateInvincibilitySounds(player_t *player)
 {
 	INT32 sfxnum = sfx_None;
-	const boolean localplayer = P_IsLocalPlayer(player);
 
 	if (player->mo->health > 0)
 	{
+		const boolean localplayer = P_IsLocalPlayer(player);
+
 		if (player->kartstuff[k_growshrinktimer] > 0 && (!localplayer || cv_growmusic.value == 2)) // Prioritize Grow
 			sfxnum = cv_kartinvinsfx.value ? sfx_alarmg : sfx_kgrow;
 		else if (player->kartstuff[k_invincibilitytimer] > 0 && (!localplayer || cv_supermusic.value == 2))
@@ -5895,7 +5912,7 @@ boolean K_CheckPlayersRespawnColliding(INT32 playernum, fixed_t x, fixed_t y)
 static INT16 K_GetKartDriftValue(player_t *player, fixed_t countersteer)
 {
 	INT16 basedrift, driftangle;
-	fixed_t driftweight = player->kartweight*14; // 12
+	fixed_t driftweight;
 
 	// If they aren't drifting or on the ground this doesn't apply
 	if (player->kartstuff[k_drift] == 0 || !P_IsObjectOnGround(player->mo))
@@ -5905,6 +5922,8 @@ static INT16 K_GetKartDriftValue(player_t *player, fixed_t countersteer)
 	{
 		return -266*player->kartstuff[k_drift]; // Drift has ended and we are tweaking their angle back a bit
 	}
+
+	driftweight = player->kartweight*14; // 12
 
 	//basedrift = 90*player->kartstuff[k_drift]; // 450
 	//basedrift = 93*player->kartstuff[k_drift] - driftweight*3*player->kartstuff[k_drift]/10; // 447 - 303
@@ -5916,6 +5935,9 @@ static INT16 K_GetKartDriftValue(player_t *player, fixed_t countersteer)
 
 INT16 K_GetKartTurnValue(player_t *player, INT16 turnvalue)
 {
+	fixed_t p_topspeed, p_curspeed, p_maxspeed;
+	fixed_t adjustangle;
+
 	if (player->spectator)
 		return turnvalue;
 
@@ -5934,10 +5956,10 @@ INT16 K_GetKartTurnValue(player_t *player, INT16 turnvalue)
 		return turnvalue;
 	}
 
-	fixed_t p_topspeed  = K_GetKartSpeed(player, false);
-	fixed_t p_curspeed  = min(player->speed, p_topspeed * 2);
-	fixed_t p_maxspeed  = p_topspeed * 3;
-	fixed_t adjustangle = FixedDiv((p_maxspeed>>16) - (p_curspeed>>16), (p_maxspeed>>16) + player->kartweight);
+	p_topspeed  = K_GetKartSpeed(player, false);
+	p_curspeed  = min(player->speed, p_topspeed * 2);
+	p_maxspeed  = p_topspeed * 3;
+	adjustangle = FixedDiv((p_maxspeed>>16) - (p_curspeed>>16), (p_maxspeed>>16) + player->kartweight);
 
 	turnvalue = FixedMul(turnvalue, adjustangle); // Weight has a small effect on turning
 
@@ -6532,7 +6554,7 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 
 	K_KartUpdatePosition(player);
 
-	if (!player->exiting)
+	if (LIKELY(!player->exiting))
 	{
 		if (player->kartstuff[k_oldposition] < player->kartstuff[k_position]) // But first, if you lost a place,
 		{
