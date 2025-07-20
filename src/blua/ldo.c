@@ -172,7 +172,7 @@ void luaD_reallocCI (lua_State *L, int newsize) {
 
 
 void luaD_growstack (lua_State *L, int n) {
-  if (n <= L->stacksize)  /* double size is enough? */
+  if (l_likely(n <= L->stacksize))  /* double size is enough? */
     luaD_reallocstack(L, 2*L->stacksize);
   else
     luaD_reallocstack(L, L->stacksize + n);
@@ -180,11 +180,11 @@ void luaD_growstack (lua_State *L, int n) {
 
 
 static CallInfo *growCI (lua_State *L) {
-  if (L->size_ci > LUAI_MAXCALLS)  /* overflow while handling overflow? */
+  if (l_unlikely(L->size_ci > LUAI_MAXCALLS))  /* overflow while handling overflow? */
     luaD_throw(L, LUA_ERRERR);
   else {
     luaD_reallocCI(L, 2*L->size_ci);
-    if (L->size_ci > LUAI_MAXCALLS)
+    if (l_unlikely(L->size_ci > LUAI_MAXCALLS))
       luaG_runerror(L, "stack overflow");
   }
   return ++L->ci;
@@ -257,7 +257,7 @@ static StkId tryfuncTM (lua_State *L, StkId func) {
   const TValue *tm = luaT_gettmbyobj(L, func, TM_CALL);
   StkId p;
   ptrdiff_t funcr = savestack(L, func);
-  if (!ttisfunction(tm))
+  if (l_unlikely(!ttisfunction(tm)))
     luaG_typeerror(L, func, "call");
   /* Open a hole inside the stack at `func' */
   for (p = L->top; p > func; p--) setobjs2s(L, p, p-1);
@@ -356,7 +356,7 @@ int luaD_poscall (lua_State *L, StkId firstResult) {
   StkId res;
   int wanted, i;
   CallInfo *ci;
-  if (L->hookmask & LUA_MASKRET)
+  if (l_unlikely(L->hookmask) & LUA_MASKRET)
     firstResult = callrethooks(L, firstResult);
   ci = L->ci--;
   res = ci->func;  /* res == final position of 1st result */
@@ -380,7 +380,7 @@ int luaD_poscall (lua_State *L, StkId firstResult) {
 ** function position.
 */
 void luaD_call (lua_State *L, StkId func, int nResults) {
-  if (++L->nCcalls >= LUAI_MAXCCALLS) {
+  if (l_unlikely(++L->nCcalls >= LUAI_MAXCCALLS)) {
     if (L->nCcalls == LUAI_MAXCCALLS)
       luaG_runerror(L, "C stack overflow");
     else if (L->nCcalls >= (LUAI_MAXCCALLS + (LUAI_MAXCCALLS>>3)))
@@ -430,15 +430,15 @@ static int resume_error (lua_State *L, const char *msg) {
 LUA_API int lua_resume (lua_State *L, int nargs) {
   int status;
   lua_lock(L);
-  if (L->status != LUA_YIELD && (L->status != 0 || L->ci != L->base_ci))
+  if (l_unlikely(L->status != LUA_YIELD && (L->status != 0 || L->ci != L->base_ci)))
       return resume_error(L, "cannot resume non-suspended coroutine");
-  if (L->nCcalls >= LUAI_MAXCCALLS)
+  if (l_unlikely(L->nCcalls >= LUAI_MAXCCALLS))
     return resume_error(L, "C stack overflow");
   luai_userstateresume(L, nargs);
   lua_assert(L->errfunc == 0);
   L->baseCcalls = ++L->nCcalls;
   status = luaD_rawrunprotected(L, resume, L->top - nargs);
-  if (status != 0) {  /* error? */
+  if (l_unlikely(status != 0)) {  /* error? */
     L->status = cast_byte(status);  /* mark thread as `dead' */
     luaD_seterrorobj(L, status, L->top);
     L->ci->top = L->top;
@@ -456,7 +456,7 @@ LUA_API int lua_resume (lua_State *L, int nargs) {
 LUA_API int lua_yield (lua_State *L, int nresults) {
   luai_userstateyield(L, nresults);
   lua_lock(L);
-  if (L->nCcalls > L->baseCcalls)
+  if (l_unlikely(L->nCcalls > L->baseCcalls))
     luaG_runerror(L, "attempt to yield across metamethod/C-call boundary");
   L->base = L->top - nresults;  /* protect stack slots below */
   L->status = LUA_YIELD;
@@ -474,7 +474,7 @@ int luaD_pcall (lua_State *L, Pfunc func, void *u,
   ptrdiff_t old_errfunc = L->errfunc;
   L->errfunc = ef;
   status = luaD_rawrunprotected(L, func, u);
-  if (status != 0) {  /* an error occurred? */
+  if (l_unlikely(status != 0)) {  /* an error occurred? */
     StkId oldtop = restorestack(L, old_top);
     luaF_close(L, oldtop);  /* close eventual pending closures */
     luaD_seterrorobj(L, status, oldtop);
@@ -511,8 +511,8 @@ static void f_parser (lua_State *L, void *ud) {
   tf = ((c == LUA_SIGNATURE[0]) ? luaU_undump : luaY_parser)(L, p->z,
                                                              &p->buff, p->name);
 #else
-  if (c == LUA_SIGNATURE[0])
-		luaG_runerror(L, "invalid format, cannot load bytecode scripts");
+  if (l_unlikely(c == LUA_SIGNATURE[0]))
+      luaG_runerror(L, "invalid format, cannot load bytecode scripts");
   tf = luaY_parser(L, p->z, &p->buff, p->name);
 #endif
   cl = luaF_newLclosure(L, tf->nups, hvalue(gt(L)));

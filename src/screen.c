@@ -33,23 +33,6 @@
 // SRB2Kart
 #include "r_fps.h" // R_GetFramerateCap
 
-// --------------------------------------------
-// assembly or c drawer routines for 8bpp/16bpp
-// --------------------------------------------
-void (*wallcolfunc)(void); // new wall column drawer to draw posts >128 high
-void (*colfunc)(void); // standard column, up to 128 high posts
-
-void (*basecolfunc)(void);
-void (*fuzzcolfunc)(void); // standard fuzzy effect column drawer
-void (*transcolfunc)(void); // translation column drawer
-void (*shadecolfunc)(void); // smokie test..
-void (*spanfunc)(void); // span drawer, use a 64x64 tile
-void (*splatfunc)(void); // span drawer w/ transparency
-void (*basespanfunc)(void); // default span func for color mode
-void (*transtransfunc)(void); // translucent translated column drawer
-void (*twosmultipatchfunc)(void); // for cols with transparent pixels
-void (*twosmultipatchtransfunc)(void); // for cols with transparent pixels AND translucency
-
 // ------------------
 // global video state
 // ------------------
@@ -64,6 +47,9 @@ consvar_t cv_scr_height = {"scr_height", "800", CV_SAVE, CV_Unsigned, NULL, 0, N
 consvar_t cv_renderview = {"renderview", "On", 0, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_vhseffect = {"vhspause", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_shittyscreen = {"televisionsignal", "Okay", CV_NOSHOWHELP, shittyscreen_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+
+consvar_t cv_parallelsoftware = {"parallelsoftware", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_paralleldrawmasked = {"paralleldrawmasked", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 static CV_PossibleValue_t votescale_cons_t[] = {{0, "Vanilla"}, {1, "Adaptive"}, {2, "VerticalFill"}, {3, "HorizontalFill"}, {0, NULL}};
 consvar_t cv_votebgscaling = {"votebgscaling", "Adaptive", CV_SAVE, votescale_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
@@ -89,13 +75,41 @@ consvar_t cv_accuratefps = {"fpssampling", "1", CV_SAVE, accuratefps_cons_t, NUL
 //                           SCREEN VARIABLES
 // =========================================================================
 
-INT32 scr_bpp; // current video mode bytes per pixel
 UINT8 *scr_borderpatch; // flat used to fill the reduced view borders set at ST_Init()
 
 // =========================================================================
 
-//  Short and Tall sky drawer, for the current color mode
-void (*walldrawerfunc)(void);
+static void SCR_SetDrawFuncs(void)
+{
+	//
+	//  setup the right draw routines
+	//
+
+	spanfuncs[BASEDRAWFUNC] = R_DrawSpan;
+	spanfuncs[SPANDRAWFUNC_TRANS] = R_DrawTranslucentSpan;
+	spanfuncs[SPANDRAWFUNC_TILTED] = R_DrawSpan_Tilted;
+	spanfuncs[SPANDRAWFUNC_TILTEDTRANS] = R_DrawTranslucentSpan_Tilted;
+	spanfuncs[SPANDRAWFUNC_SPLAT] = R_DrawSplat;
+	spanfuncs[SPANDRAWFUNC_TRANSSPLAT] = R_DrawTranslucentSplat;
+	spanfuncs[SPANDRAWFUNC_TILTEDSPLAT] = R_DrawSplat_Tilted;
+	spanfuncs[SPANDRAWFUNC_TILTEDTRANSSPLAT] = R_DrawTranslucentSpan_Tilted;
+	spanfuncs[SPANDRAWFUNC_WATER] = R_DrawTranslucentWaterSpan;
+	spanfuncs[SPANDRAWFUNC_TILTEDWATER] = R_DrawTranslucentWaterSpan_Tilted;
+	spanfuncs[SPANDRAWFUNC_FOG] = R_DrawFogSpan;
+	spanfuncs[SPANDRAWFUNC_TILTEDFOG] = R_DrawFogSpan_Tilted;
+
+	colfuncs[BASEDRAWFUNC] = R_DrawColumn;
+	colfuncs[COLDRAWFUNC_FUZZY] = R_DrawTranslucentColumn;
+	colfuncs[COLDRAWFUNC_TRANS] = R_DrawTranslatedColumn;
+	colfuncs[COLDRAWFUNC_SHADOWED] = R_DrawColumnShadowed;
+	colfuncs[COLDRAWFUNC_TRANSTRANS] = R_DrawTranslatedTranslucentColumn;
+	colfuncs[COLDRAWFUNC_TWOSMULTIPATCH] = R_Draw2sMultiPatchColumn;
+	colfuncs[COLDRAWFUNC_TWOSMULTIPATCHTRANS] = R_Draw2sMultiPatchTranslucentColumn;
+	colfuncs[COLDRAWFUNC_FOG] = R_DrawFogColumn;
+
+	R_SetColumnFunc(BASEDRAWFUNC);
+	R_SetSpanFunc(BASEDRAWFUNC);
+}
 
 void SCR_SetMode(void)
 {
@@ -109,20 +123,45 @@ void SCR_SetMode(void)
 
 	V_SetPalette(0);
 
-	spanfunc = basespanfunc = R_DrawSpan_8;
-	splatfunc = R_DrawSplat_8;
-	transcolfunc = R_DrawTranslatedColumn_8;
-	transtransfunc = R_DrawTranslatedTranslucentColumn_8;
-
-	colfunc = basecolfunc = R_DrawColumn_8;
-	shadecolfunc = R_DrawShadeColumn_8;
-	fuzzcolfunc = R_DrawTranslucentColumn_8;
-	walldrawerfunc = R_DrawWallColumn_8;
-	twosmultipatchfunc = R_Draw2sMultiPatchColumn_8;
-	twosmultipatchtransfunc = R_Draw2sMultiPatchTranslucentColumn_8;
+	SCR_SetDrawFuncs();
 
 	// set the apprpriate drawer for the sky (tall or INT16)
 	setmodeneeded = 0;
+}
+
+void R_SetColumnFunc(size_t id)
+{
+	I_Assert(id < COLDRAWFUNC_MAX);
+
+	colfunctype = id;
+	colfunc = colfuncs[id];
+}
+
+void R_SetSpanFunc(size_t id)
+{
+	I_Assert(id < SPANDRAWFUNC_MAX);
+	spanfunc = spanfuncs[id];
+}
+
+boolean R_CheckColumnFunc(size_t id)
+{
+	size_t i;
+
+	if (colfunc == NULL)
+	{
+		// Shouldn't happen.
+		return false;
+	}
+
+	for (i = 0; i < COLDRAWFUNC_MAX; i++)
+	{
+		if (colfunc == colfuncs[id])
+		{
+			return true;
+		}
+	}
+
+	return false;
 }
 
 // do some initial settings for the game loading screen
@@ -148,19 +187,9 @@ void SCR_Startup(void)
 
 	vid.meddupx = (UINT8)(vid.dupx >> 1) + 1;
 	vid.meddupy = (UINT8)(vid.dupy >> 1) + 1;
-#ifdef HWRENDER
-	vid.fmeddupx = vid.meddupx*FRACUNIT;
-	vid.fmeddupy = vid.meddupy*FRACUNIT;
-#endif
 
 	vid.smalldupx = (UINT8)(vid.dupx / 3) + 1;
 	vid.smalldupy = (UINT8)(vid.dupy / 3) + 1;
-#ifdef HWRENDER
-	vid.fsmalldupx = vid.smalldupx*FRACUNIT;
-	vid.fsmalldupy = vid.smalldupy*FRACUNIT;
-#endif
-
-	vid.baseratio = FRACUNIT;
 
 	V_Init();
 	CV_RegisterVar(&cv_highreshudscale);
@@ -205,9 +234,6 @@ void SCR_Recalc(void)
 	if (dedicated)
 		return;
 
-	// bytes per pixel quick access
-	scr_bpp = vid.bpp;
-
 	// scale 1,2,3 times in x and y the patches for the menus and overlays...
 	// calculated once and for all, used by routines in v_video.c
 	vid.dupx = vid.width / BASEVIDWIDTH;
@@ -226,22 +252,11 @@ void SCR_Recalc(void)
 
 	vid.fdupx = vid.fdupy = (vid.fdupx < vid.fdupy ? vid.fdupx : vid.fdupy);
 
-	//vid.baseratio = FixedDiv(vid.height << FRACBITS, BASEVIDHEIGHT << FRACBITS);
-	vid.baseratio = FRACUNIT;
-
 	vid.meddupx = (UINT8)(vid.dupx >> 1) + 1;
 	vid.meddupy = (UINT8)(vid.dupy >> 1) + 1;
-#ifdef HWRENDER
-	vid.fmeddupx = vid.meddupx*FRACUNIT;
-	vid.fmeddupy = vid.meddupy*FRACUNIT;
-#endif
 
 	vid.smalldupx = (UINT8)(vid.dupx / 3) + 1;
 	vid.smalldupy = (UINT8)(vid.dupy / 3) + 1;
-#ifdef HWRENDER
-	vid.fsmalldupx = vid.smalldupx*FRACUNIT;
-	vid.fsmalldupy = vid.smalldupy*FRACUNIT;
-#endif
 
 	// toggle off (then back on) the automap because some screensize-dependent values will
 	// be calculated next time the automap is activated.
@@ -335,7 +350,7 @@ double averageFPS = 0.0f;
 
 #ifdef USE_FPS_SAMPLES
 #define MAX_FRAME_TIME (0.05)
-#define NUM_FPS_SAMPLES (16) // Number of samples to store
+#define NUM_FPS_SAMPLES (32) // Number of samples to store
 
 static double total_frame_time = 0.0;
 static int frame_index;

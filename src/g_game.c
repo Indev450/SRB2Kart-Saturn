@@ -59,10 +59,6 @@
 #include "discord.h"
 #endif
 
-// for replay dates
-#include <time.h>
-#include <locale.h>
-
 gameaction_t gameaction;
 gamestate_t gamestate = GS_NULL;
 UINT8 ultimatemode = false;
@@ -87,8 +83,6 @@ static void G_DoContinued(void);
 static void G_DoWorldDone(void);
 static void G_DoStartVote(void);
 
-static void G_ResetDemoPlayback(char *pdemoname);
-
 music_t mapmusic;
 
 INT16 gamemap = 1;
@@ -107,15 +101,6 @@ UINT8 paused;
 UINT8 modeattacking = ATTACKING_NONE;
 boolean imcontinuing = false;
 boolean runemeraldmanager = false;
-
-// menu demo things
-UINT8  numDemos      = 0; //3; -- i'm FED UP of losing my skincolour to a broken demo. change this back when we make new ones
-UINT32 demoDelayTime = 15*TICRATE;
-UINT32 demoIdleTime  = 3*TICRATE;
-
-boolean nodrawers; // for comparative timing purposes
-boolean noblit; // for comparative timing purposes
-static tic_t demostarttime; // for comparative timing purposes
 
 boolean netgame; // only true if packets are broadcast
 boolean multiplayer;
@@ -211,19 +196,19 @@ UINT16 spacetimetics = 11*TICRATE + (TICRATE/2);
 UINT16 extralifetics = 4*TICRATE;
 
 // SRB2kart
-tic_t introtime = 108+5; // plus 5 for white fade
-tic_t starttime = 6*TICRATE + (3*TICRATE/4);
-tic_t raceexittime = 5*TICRATE + (2*TICRATE/3);
-tic_t battleexittime = 8*TICRATE;
-INT32 hyudorotime = 7*TICRATE;
-INT32 stealtime = TICRATE/2;
-INT32 sneakertime = TICRATE + (TICRATE/3);
-INT32 itemtime = 8*TICRATE;
-INT32 comebacktime = 10*TICRATE;
-INT32 bumptime = 6;
-INT32 wipeoutslowtime = 20;
-INT32 wantedreduce = 5*TICRATE;
-INT32 wantedfrequency = 10*TICRATE;
+const tic_t introtime = 108+5; // plus 5 for white fade
+const tic_t starttime = 6*TICRATE + (3*TICRATE/4);
+const tic_t raceexittime = 5*TICRATE + (2*TICRATE/3);
+const tic_t battleexittime = 8*TICRATE;
+const INT32 hyudorotime = 7*TICRATE;
+const INT32 stealtime = TICRATE/2;
+const INT32 sneakertime = TICRATE + (TICRATE/3);
+const INT32 itemtime = 8*TICRATE;
+const INT32 comebacktime = 10*TICRATE;
+const INT32 bumptime = 6;
+const INT32 wipeoutslowtime = 20;
+const INT32 wantedreduce = 5*TICRATE;
+const INT32 wantedfrequency = 10*TICRATE;
 
 INT32 gameovertics = 15*TICRATE;
 
@@ -290,63 +275,7 @@ UINT32 timesBeaten;
 UINT32 timesBeatenWithEmeralds;
 //UINT32 timesBeatenUltimate;
 
-//@TODO put these all in a struct for namespacing purposes?
-static char demoname[128];
-savebuffer_t demobuf;
-static UINT8 *demotime_p, *demoinfo_p;
-static UINT8 *demoend;
-static UINT8 demoflags;
-static boolean demosynced = true; // console warning message
-
-struct demovars_s demo;
-
-boolean metalrecording; // recording as metal sonic
-mobj_t *metalplayback;
-static UINT8 *metalbuffer = NULL;
-static UINT8 *metal_p;
-static UINT16 metalversion;
-
-// extra data stuff (events registered this frame while recording)
-static struct {
-	UINT8 flags; // EZT flags
-
-	// EZT_COLOR
-	UINT8 color, lastcolor;
-
-	// EZT_SCALE
-	fixed_t scale, lastscale;
-
-	// EZT_KART
-	INT32 kartitem, kartamount, kartbumpers;
-
-	UINT8 desyncframes; // Don't try to resync unless we've been off for two frames, to monkeypatch a few trouble spots
-
-	// EZT_HIT
-	UINT16 hits;
-	mobj_t **hitlist;
-} ghostext[MAXPLAYERS];
-
-// Your naming conventions are stupid and useless.
-// There is no conflict here.
-demoghost *ghosts = NULL;
-
 INT16 prevmap, nextmap;
-
-static CV_PossibleValue_t recordmultiplayerdemos_cons_t[] = {{0, "Disabled"}, {1, "Manual Save"}, {2, "Auto Save"}, {0, NULL}};
-consvar_t cv_recordmultiplayerdemos = {"netdemo_record", "Manual Save", CV_SAVE, recordmultiplayerdemos_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
-
-static CV_PossibleValue_t netdemosyncquality_cons_t[] = {{1, "MIN"}, {35, "MAX"}, {0, NULL}};
-consvar_t cv_netdemosyncquality = {"netdemo_syncquality", "1", CV_SAVE, netdemosyncquality_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
-
-// Units are MiB.
-static CV_PossibleValue_t maxdemosize_cons_t[] = {{10, "MIN"}, {100, "MAX"}, {0, NULL}};
-consvar_t cv_maxdemosize = {"maxdemosize", "10", CV_SAVE, maxdemosize_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
-
-static CV_PossibleValue_t demochangemap_cons_t[] = {{0, "Disabled"}, {1, "Diff Map"}, {2, "Always"}, {0, NULL}};
-consvar_t cv_demochangemap = {"netdemo_savemapchange", "Disabled", CV_SAVE, demochangemap_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
-
-static CV_PossibleValue_t demodateformat_cons_t[] = {{0, "Automatic"}, {1, "EU"}, {2, "US"}, {0, NULL}};
-consvar_t cv_demodateformat = {"netdemo_dateformat", "Automatic", CV_SAVE, demodateformat_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 // Analog Control
 void SendWeaponPref(void);

@@ -2022,7 +2022,7 @@ static void P_ProcessLineSpecial(line_t *line, mobj_t *mo, sector_t *callsec)
 								camera[i].y += y;
 								camera[i].z += z;
 								camera[i].reset = true;
-								camera[i].subsector = R_PointInSubsector(camera[i].x, camera[i].y);
+								camera[i].subsector = R_PointInSubsectorFast(camera[i].x, camera[i].y);
 								R_RelativeTeleportViewInterpolation(i, x, y, z, 0);
 								break;
 							}

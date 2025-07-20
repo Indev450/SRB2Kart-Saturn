@@ -24,6 +24,7 @@
 #include "r_fps.h"
 #include "r_things.h"
 #include "r_state.h"
+#include "r_skins.h"
 #include "w_wad.h"
 #include "y_inter.h"
 #include "z_zone.h"

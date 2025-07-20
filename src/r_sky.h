@@ -14,6 +14,10 @@
 #ifndef __R_SKY__
 #define __R_SKY__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "m_fixed.h"
 
 #ifdef __GNUG__
@@ -26,7 +30,7 @@
 /// \brief The sky map is 256*128*4 maps.
 #define ANGLETOSKYSHIFT 22
 
-extern INT32 skytexture, skytexturemid;
+extern INT32 skytexture, skytexturemid, skytextureoffset;
 extern fixed_t skyscale;
 
 extern INT32 skyflatnum;
@@ -37,5 +41,9 @@ extern INT32 globallevelskynum;
 void R_SetupSkyDraw(void);
 
 void R_SetSkyScale(void);
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif

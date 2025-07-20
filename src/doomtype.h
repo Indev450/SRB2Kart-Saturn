@@ -17,6 +17,10 @@
 #ifndef __DOOMTYPE__
 #define __DOOMTYPE__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #if defined (_WIN32)
 //#define WIN32_LEAN_AND_MEAN
 #define RPC_NO_WINDOWS_H
@@ -100,8 +104,10 @@ typedef long ssize_t;
 	#define strnicmp(x,y,n) strncasecmp(x,y,n)
 #endif
 
+#ifndef __cplusplus
 char *strcasestr(const char *in, const char *what);
 #define stristr strcasestr
+#endif
 
 #if defined (macintosh) //|| defined (__APPLE__) //skip all boolean/Boolean crap
 	#define true 1
@@ -381,5 +387,9 @@ unset_bit_array (bitarray_t * const array, const int value)
 	((n) < 0 ? -1 : (n) > 0 ? 1 : 0)
 
 typedef UINT64 precise_t;
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif //__DOOMTYPE__

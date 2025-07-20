@@ -540,6 +540,8 @@ static const char *credits[] = {
 	"\"Jin\"",
 	"\"riomccloud\"",
 	"\"chromaticpipe\"",
+	"\"PAS\"",
+	"\"$HOME\"",
 	"\"Achii\"",
 	"\"Anonimus\"",
 	"\"scizor300\"",

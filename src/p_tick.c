@@ -573,7 +573,7 @@ static void P_RunQuakes(void)
 {
 	fixed_t ir;
 
-	if (quake.time <= 0)
+	if (!cv_screenquake.value || quake.time <= 0)
 	{
 		quake.x = quake.y = quake.z = quake.roll = 0;
 		return;
@@ -618,8 +618,8 @@ static inline void P_ResetSpriteStuff(void)
 		if (!mo || (mo->sprite == SPR_NULL) || (mo->flags2 & MF2_DONTDRAW) || (mo->type == MT_SHADOW))
 			continue;
 
-		mo->spritexscale = mo->realxscale;
-		mo->spriteyscale = mo->realyscale;
+		mo->spritexscale  = mo->realxscale;
+		mo->spriteyscale  = mo->realyscale;
 		mo->spritexoffset = mo->realxoffset;
 		mo->spriteyoffset = mo->realyoffset;
 	}

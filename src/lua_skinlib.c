@@ -12,6 +12,7 @@
 
 #include "doomdef.h"
 #include "fastcmp.h"
+#include "r_skins.h"
 #include "r_things.h"
 #include "sounds.h"
 

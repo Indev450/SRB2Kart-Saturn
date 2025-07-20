@@ -14,6 +14,10 @@
 #ifndef __D_MAIN__
 #define __D_MAIN__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "d_event.h"
 #include "w_wad.h"   // for MAX_WADFILES
 
@@ -89,5 +93,9 @@ const char *D_Home(void);
 // BASE LEVEL
 //
 void D_StartTitle(void);
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif //__D_MAIN__

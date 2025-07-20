@@ -1037,6 +1037,7 @@ sfxenum_t S_AddSoundFx(const char *name, boolean singular, INT32 flags, boolean 
 				S_sfx[i].data = I_GetSfx(&S_sfx[i]);
 			else
 				S_sfx[i].data = NULL;
+
 			return i;
 		}
 	}

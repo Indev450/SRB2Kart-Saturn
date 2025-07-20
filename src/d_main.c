@@ -72,6 +72,9 @@
 #include "d_protocol.h"
 #include "m_perfstats.h"
 #include "k_kart.h"
+#include "k_hud.h"
+
+#include "core/memory.h"
 
 #include "lua_script.h"
 
@@ -325,6 +328,39 @@ static void D_Renderview(void)
 
 	R_ApplyLevelInterpolators(rendertimefrac);
 
+	if (rendermode == render_soft)
+	{
+		// if this is display player 1
+		if (cv_homremoval.value)
+		{
+			if (cv_homremoval.value == 1)
+			{
+				// Clear the software screen buffer to remove HOM
+				memset(vid.screens[0], 31, vid.width * vid.height);
+			}
+			else if (cv_homremoval.value == 2)
+			{
+				//'development' HOM removal -- makes it blindingly obvious if HOM is spotted.
+				memset(vid.screens[0], 32+(timeinmap&15), vid.width * vid.height);
+			}
+		}
+	}
+
+	// Draw over the fourth screen so you don't have to stare at a HOM :V
+	if (splitscreen == 2)
+	{
+		// V_DrawPatchFill, but for the fourth screen only
+		patch_t *pat = W_CachePatchName("SRB2BACK", PU_CACHE);
+		INT32 dupz = (vid.dupx < vid.dupy ? vid.dupx : vid.dupy);
+		INT32 x, y, pw = SHORT(pat->width) * dupz, ph = SHORT(pat->height) * dupz;
+
+		for (x = vid.width>>1; x < vid.width; x += pw)
+		{
+			for (y = vid.height>>1; y < vid.height; y += ph)
+				V_DrawScaledPatch(x, y, V_NOSCALESTART, pat);
+		}
+	}
+
 	for (i = 0; i <= splitscreen; i++)
 	{
 		const boolean issplitscreen = (i > 0);
@@ -336,7 +372,6 @@ static void D_Renderview(void)
 			if (!issplitscreen) // Initialize for P1
 			{
 				viewwindowy = viewwindowx = 0;
-				topleft = screens[0];
 				objectsdrawn = 0;
 			}
 
@@ -350,8 +385,6 @@ static void D_Renderview(void)
 #endif
 			if (issplitscreen) // Splitscreen-specific
 			{
-				const INT32 len = viewheight*sizeof(ylookup[0]);
-
 				switch (i)
 				{
 					case 1:
@@ -365,28 +398,20 @@ static void D_Renderview(void)
 							viewwindowx = 0;
 							viewwindowy = viewheight;
 						}
-						M_Memcpy(ylookup, ylookup2, len);
 						break;
 					case 2:
 						viewwindowx = 0;
 						viewwindowy = viewheight;
-						M_Memcpy(ylookup, ylookup3, len);
 						break;
 					case 3:
 						viewwindowx = viewwidth;
 						viewwindowy = viewheight;
-						M_Memcpy(ylookup, ylookup4, len);
 					default:
 						break;
 				}
-
-				topleft = screens[0] + viewwindowy*vid.width + viewwindowx;
 			}
 
 			R_RenderPlayerView(&players[displayplayers[i]]);
-
-			if (issplitscreen)
-				M_Memcpy(ylookup, ylookup1, viewheight*sizeof (ylookup[0]));
 		}
 
 		if (!issplitscreen)
@@ -584,7 +609,7 @@ static boolean D_Display(void)
 		{
 			if (rendermode == render_soft)
 			{
-				VID_BlitLinearScreen(screens[0], screens[1], vid.width*vid.bpp, vid.height, vid.width*vid.bpp, vid.rowbytes);
+				VID_BlitLinearScreen(vid.screens[0], vid.screens[1], vid.width, vid.height, vid.width, vid.rowbytes);
 			}
 
 			lastdraw = false;
@@ -618,7 +643,7 @@ static boolean D_Display(void)
 		V_DrawFadeScreen(TC_RAINBOW, (leveltime & 0x20) ? SKINCOLOR_PASTEL : SKINCOLOR_MOONSLAM);
 
 	// vid size change is now finished if it was on...
-	vid.recalc = 0;
+	vid.recalc = false;
 
 #ifdef HAVE_THREADS
 	I_lock_mutex(&m_menu_mutex);
@@ -749,6 +774,8 @@ void D_SRB2Loop(void)
 		precise_t capbudget;
 		precise_t enterprecise = I_GetPreciseTime();
 		precise_t finishprecise = enterprecise;
+
+		Z_Frame_Reset();
 
 		// Casting the return value of a function is bad practice (apparently)
 		double budget = ((R_GetFramerateCap() == 0) ? 0.0 : round((1.0 / R_GetFramerateCap()) * I_GetPrecisePrecision()));
@@ -926,7 +953,7 @@ void D_SRB2Loop(void)
 
 			if ((elapsed > 0) && ((INT64)capbudget > elapsed) && !vsync_with_match_refresh)
 			{
-				I_SleepDuration(capbudget - (finishprecise - enterprecise));
+				I_SleepDuration(capbudget - elapsed);
 			}
 		}
 		// Capture the time once more to get the real delta time.
@@ -1216,32 +1243,32 @@ static boolean AddIWAD(void)
 }
 
 // extra graphic patches for saturn specific thingies
-boolean found_extra_kart = false;
+boolean found_extra_kart  = false;
 boolean found_extra2_kart = false;
 boolean found_extra3_kart = false;
 
-boolean xtra_speedo = false;       // extra speedometer check
-boolean xtra_speedo_clr = false;   // extra speedometer colour check
-boolean xtra_speedo3 = false;      // 80x 11 extra speedometer check
-boolean xtra_speedo_clr3 = false;  // 80x 11 extra speedometer colour check
-boolean achi_speedo = false;       // achiiro speedometer check
-boolean achi_speedo_clr = false;   // extra speedometer colour check
-boolean dial_speedo = false;       // dial speedometer check
-boolean dial_speedo_clr = false;   // dial speedometer colour check
-boolean kartz_speedo = false;      // kartZ speedo
+boolean xtra_speedo       = false; // extra speedometer check
+boolean xtra_speedo_clr   = false; // extra speedometer colour check
+boolean xtra_speedo3      = false; // 80x 11 extra speedometer check
+boolean xtra_speedo_clr3  = false; // 80x 11 extra speedometer colour check
+boolean achi_speedo       = false; // achiiro speedometer check
+boolean achi_speedo_clr   = false; // extra speedometer colour check
+boolean dial_speedo       = false; // dial speedometer check
+boolean dial_speedo_clr   = false; // dial speedometer colour check
+boolean kartz_speedo      = false; // kartZ speedo
 boolean kartz_speedo_smol = false; // kartZ speedo but smol
 
-boolean clr_hud = false;           // colour hud check
+boolean clr_hud           = false; // colour hud check
 boolean driftgaugegfx_clr = false; // driftgauge colour check
-boolean big_lap = false;           // bigger lap counter
-boolean big_lap_color = false;     // bigger lap counter but colour
-boolean statdp = false;            // stat display for extended player setup
-boolean nametaggfx = false;        // Nametag stuffs
-boolean driftgaugegfx = false;     // Driftgauge stuffs
-boolean multiitem_icon = false;    // Extra icons for Sneakers, Banana and Jawz
-boolean joystickicon = false;      // Extra icons for the joystick input display
-boolean minidoticon = false;        // Dot graphic for minimap player angle display
-boolean minilighticon = false;     // mkwii-style minimap headlight
+boolean big_lap           = false; // bigger lap counter
+boolean big_lap_color     = false; // bigger lap counter but colour
+boolean statdp            = false; // stat display for extended player setup
+boolean nametaggfx        = false; // Nametag stuffs
+boolean driftgaugegfx     = false; // Driftgauge stuffs
+boolean multiitem_icon    = false; // Extra icons for Sneakers, Banana and Jawz
+boolean joystickicon      = false; // Extra icons for the joystick input display
+boolean minidoticon       = false; // Dot graphic for minimap player angle display
+boolean minilighticon     = false; // mkwii-style minimap headlight
 //
 
 static void IdentifyVersion(void)
@@ -1451,7 +1478,7 @@ static void D_CheckSaturnExtraFiles(void)
 		}
 
 		// extra round joystick inputdisplay sprites
-		if (W_CheckMultipleLumps("JOYBCK","JOYKNB","JOYSHD", NULL))
+		if (W_CheckMultipleLumps("JOYBCK", "JOYKNB", "JOYSHD", NULL))
 		{
 			joystickicon = true;
 			PUSHCONS(inputdisplay_cons_temp, last_inputdisplay_i, 3, "StickGFX");
@@ -1580,11 +1607,6 @@ void D_SRB2Main(void)
 #if !defined(NOTERMIOS)
 	if (setvbuf(stderr, NULL, _IOFBF, 1000))
 		I_OutputMsg("setvbuf didnt work\n");
-#endif
-
-#ifdef GETTEXT
-	// initialise locale code
-	M_StartupLocale();
 #endif
 
 	// get parameters from a response file (eg: srb2 @parms.txt)
@@ -1814,7 +1836,7 @@ void D_SRB2Main(void)
 		{
 			name = lumpinfo->name;
 
-			if (name[0] == 'M' && name[1] == 'A' && name[2] == 'P') // Ignore the headers
+			if (memcmp(name, "MAP", 3) == 0) // Ignore the headers
 			{
 				INT16 num;
 				if (name[5] != '\0')
@@ -1844,7 +1866,7 @@ void D_SRB2Main(void)
 		{
 			name = lumpinfo->name;
 
-			if (name[0] == 'M' && name[1] == 'A' && name[2] == 'P') // Ignore the headers
+			if (memcmp(name, "MAP", 3) == 0) // Ignore the headers
 			{
 				INT16 num;
 				if (name[5] != '\0')

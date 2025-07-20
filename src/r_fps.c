@@ -173,7 +173,7 @@ static vector3_t *R_LerpVector3(const vector3_t *from, const vector3_t *to, fixe
 
 // recalc necessary stuff for mouseaiming
 // slopes are already calculated for the full possible view (which is 4*viewheight).
-// 18/08/18: (No it's actually 16*viewheight, thanks Jimita for finding this out)
+// 18/08/18: (No it's actually 16*viewheight, thanks Lactozilla for finding this out)
 static void R_SetupFreelook(void)
 {
 	// clip it in the case we are looking a hardware 90 degrees full aiming
@@ -232,7 +232,7 @@ void R_InterpolateView(fixed_t frac, boolean forceinvalid)
 	viewcos = FINECOSINE(viewangle>>ANGLETOFINESHIFT);
 
 	viewplayer = newview->player;
-	viewsector = R_PointInSubsector(viewx, viewy)->sector;
+	viewsector = R_PointInSubsectorFast(viewx, viewy)->sector;
 
 	R_SetupFreelook();
 }
@@ -494,8 +494,8 @@ void R_CreateInterpolator_Polyobj(thinker_t *thinker, polyobj_t *polyobj)
 	interp->polyobj.polyobj = polyobj;
 	interp->polyobj.vertices_size = polyobj->numVertices;
 
-	interp->polyobj.oldvertices = Z_CallocAlign(sizeof(fixed_t) * 2 * polyobj->numVertices, PU_LEVEL, NULL, 32);
-	interp->polyobj.bakvertices = Z_CallocAlign(sizeof(fixed_t) * 2 * polyobj->numVertices, PU_LEVEL, NULL, 32);
+	interp->polyobj.oldvertices = Z_Calloc(sizeof(fixed_t) * 2 * polyobj->numVertices, PU_LEVEL, NULL);
+	interp->polyobj.bakvertices = Z_Calloc(sizeof(fixed_t) * 2 * polyobj->numVertices, PU_LEVEL, NULL);
 	for (size_t i = 0; i < polyobj->numVertices; i++)
 	{
 		interp->polyobj.oldvertices[i * 2    ] = interp->polyobj.bakvertices[i * 2    ] = polyobj->vertices[i]->x;

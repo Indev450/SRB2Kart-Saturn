@@ -32,6 +32,7 @@
 #include "m_menu.h" // bird music stuff
 
 #include "lua_hook.h" // MusicChange hook
+#include "lua_hud.h" // LUA_HudEnabled(hud_musiccredit)
 
 static boolean S_AdjustSoundParams(const mobj_t *listener, const mobj_t *source, INT32 *vol, INT32 *sep, INT32 *pitch, sfxinfo_t *sfxinfo);
 static void SetChannelsNum(void);
@@ -956,7 +957,7 @@ boolean S_AdjustSoundParams(const mobj_t *listener, const mobj_t *source, INT32 
 		INT64 x, y, yl, yh, xl, xh;
 		fixed_t newdist;
 
-		if (R_PointInSubsector(listensource.x, listensource.y)->sector->ceilingpic == skyflatnum)
+		if (R_PointInSubsectorFast(listensource.x, listensource.y)->sector->ceilingpic == skyflatnum)
 			approx_dist = 0;
 		else
 		{
@@ -969,7 +970,7 @@ boolean S_AdjustSoundParams(const mobj_t *listener, const mobj_t *source, INT32 
 			for (y = yl; y <= yh; y += FRACUNIT*64)
 				for (x = xl; x <= xh; x += FRACUNIT*64)
 				{
-					if (R_PointInSubsector(x, y)->sector->ceilingpic == skyflatnum)
+					if (R_PointInSubsectorFast(x, y)->sector->ceilingpic == skyflatnum)
 					{
 						// Found the outdoors!
 						newdist = S_CalculateSoundDistance(listensource.x, listensource.y, 0, x, y, 0);
@@ -1202,8 +1203,58 @@ static consvar_t *music_refade_cv;
 /// Music Definitions
 /// ------------------------
 
-musicdef_t *musicdefstart = NULL; // First music definition
-struct cursongcredit cursongcredit; // Currently displayed song credit info
+// Similar system to vissprite allocation. Exists so external pointers to musicdefs are not invalidated
+// when allocating more space for musicdefs
+#define MUSICDEFCHUNKBITS 6
+#define MUSICDEFSPERCHUNK (1 << MUSICDEFCHUNKBITS)
+#define MUSICDEFINDEXMASK (MUSICDEFSPERCHUNK - 1)
+static musicdef_t **musicdefs = NULL;
+static INT32 numchunks = 0;
+INT32 nummusicdefs = 0;
+
+//
+// S_GetMusicCredit
+//
+// Return music credit with given index.
+//
+musicdef_t *S_GetMusicCredit(INT32 i)
+{
+	if (i < 0 || i >= nummusicdefs)
+		return NULL;
+
+	INT32 chunk = i >> MUSICDEFCHUNKBITS;
+	i &= MUSICDEFINDEXMASK;
+
+	return &musicdefs[chunk][i];
+}
+
+//
+// S_AddMusicCredit
+//
+// Return new music credit, allocates memory for it if needed.
+//
+static musicdef_t *S_AddMusicCredit(void)
+{
+	INT32 chunk = nummusicdefs >> MUSICDEFCHUNKBITS;
+	INT32 i = nummusicdefs & MUSICDEFINDEXMASK;
+
+	// Allocate new chunk if needed. Other chunks stay valid
+	if (chunk == numchunks)
+	{
+		++numchunks;
+		musicdefs = (musicdef_t**)Z_Realloc(musicdefs, sizeof(musicdef_t*)*numchunks, PU_STATIC, NULL);
+		musicdefs[chunk] = Z_Calloc(sizeof(musicdef_t)*MUSICDEFSPERCHUNK, PU_STATIC, NULL);
+	}
+
+	// Store "id" of new musicdef (mostly exists only for lua)
+	musicdefs[chunk][i].num = nummusicdefs;
+
+	++nummusicdefs;
+
+	return &musicdefs[chunk][i];
+}
+
+struct cursongcredit cursongcredit = {0}; // Currently displayed song credit info
 
 static boolean
 ReadMusicDefFields (UINT16 wadnum, int line, char *stoken, musicdef_t **defp)
@@ -1231,14 +1282,11 @@ ReadMusicDefFields (UINT16 wadnum, int line, char *stoken, musicdef_t **defp)
 			// Nothing found, add to the end.
 			if (!def)
 			{
-				def = Z_Calloc(sizeof (musicdef_t), PU_STATIC, NULL);
+				def = S_AddMusicCredit();
 
 				STRBUFCPY(def->name, value);
 				strlwr(def->name);
 				def->hash = quickncasehash (def->name, 6);
-
-				def->next = musicdefstart;
-				musicdefstart = def;
 			}
 
 			(*defp) = def;
@@ -1423,8 +1471,10 @@ musicdef_t *S_FindMusicCredit(const char *musname)
 	UINT32 hash = quickncasehash (musname, 6);
 	musicdef_t *def;
 
-	for (def = musicdefstart; def; def = def->next)
+	for (INT32 i = 0; i < nummusicdefs; ++i)
 	{
+		def = S_GetMusicCredit(i);
+
 		if (hash != def->hash)
 			continue;
 		if (stricmp(def->name, musname))
@@ -1457,7 +1507,7 @@ void S_ShowSpecifiedMusicCredit(const char *musname)
 
 	def = S_FindMusicCredit(musname);
 
-	if (def)
+	if (def && !LUA_HookMusicCredit(def))
 	{
 		cursongcredit.def = def;
 		cursongcredit.anim = 5*TICRATE;
@@ -1474,41 +1524,6 @@ void S_ShowSpecifiedMusicCredit(const char *musname)
 void S_ShowMusicCredit(void)
 {
 	S_ShowSpecifiedMusicCredit(music.name);
-}
-
-musicdef_t **soundtestdefs = NULL;
-INT32 numsoundtestdefs = 0;
-
-//
-// S_PrepareSoundTest
-//
-// Prepare sound test. What am I, your butler?
-//
-boolean S_PrepareSoundTest(void)
-{
-	musicdef_t *def;
-	INT32 pos = numsoundtestdefs = 0;
-
-	for (def = musicdefstart; def; def = def->next)
-	{
-		numsoundtestdefs++;
-	}
-
-	if (!numsoundtestdefs)
-		return false;
-
-	if (soundtestdefs)
-		Z_Free(soundtestdefs);
-
-	if (!(soundtestdefs = Z_Malloc(numsoundtestdefs*sizeof(musicdef_t *), PU_STATIC, NULL)))
-		I_Error("S_PrepareSoundTest(): could not allocate soundtestdefs.");
-
-	for (def = musicdefstart; def /*&& i < numsoundtestdefs*/; def = def->next)
-	{
-		soundtestdefs[pos++] = def;
-	}
-
-	return true;
 }
 
 /// ------------------------
@@ -1703,16 +1718,15 @@ static boolean S_PlayMusic(boolean looping, UINT32 fadeinms)
 static void S_QueueMusic(const char *mmusic, UINT16 mflags, boolean looping, UINT32 position, UINT32 fadeinms)
 {
 	strncpy(queue.name, mmusic, 7);
-	queue.flags = mflags;
-	queue.looping = looping;
+	queue.flags    = mflags;
+	queue.looping  = looping;
 	queue.position = position;
 	queue.fadeinms = fadeinms;
 }
 
 static void S_ClearQueue(void)
 {
-	queue.name[0] = queue.flags = queue.position = queue.fadeinms = 0;
-	queue.looping = false;
+	memset(&queue, 0, sizeof(music_t));
 }
 
 static void S_ChangeMusicToQueue(void)
@@ -1743,7 +1757,7 @@ void S_ChangeMusicEx(const char *mmusic, UINT16 mflags, boolean looping, UINT32 
 		|| demo.title) // SRB2Kart: Demos don't interrupt title screen music
 		return;
 
-	strncpy(newmusic, mmusic, 6);
+	strncpy(newmusic,   mmusic, 6);
 	strncpy(checkmusic, mmusic, 6);
 
 	if (LUA_HookMusicChange(music.name, &hook_param))
@@ -2016,7 +2030,7 @@ void S_KeepMusic(void)
 }
 
 // Sets up the map music in case it should be reloaded
-// Special case for keep music
+// Special case for keepmusic
 void S_HandleReloadResetMusic(void)
 {
 	if (!(mapmusic.flags & MUSIC_RELOADRESET))
@@ -2041,23 +2055,24 @@ void S_HandleReloadResetMusic(void)
 
 static boolean S_SkipIntroMusic(void)
 {
-	boolean skip = cv_skipintromusic.value;
+	if (!cv_skipintromusic.value)
+		return false;
 
-	if (!skip)
+	// check if menu music is playing, otherwise it may continue playing
+	if (!stricmp(music.name, "titles"))
 		return false;
 
 	char *maptitle = G_BuildMapTitle(gamemap); // Zzz...
 
-	if (maptitle)
+	if (maptitle && !stricmp(maptitle, "Wandering Falls")) // wandering balls changes its song when the race starts Zzz...
 	{
-		// check if menu music is playing, otherwise it may continue playing
-		if (!stricmp(music.name, "titles") || (maptitle && (!stricmp(maptitle, "Wandering Falls")))) // wandering balls changes its song when the race starts Zzz...
-			skip = false;
+		Z_Free(maptitle);
+		return false;
 	}
 
 	Z_Free(maptitle);
 
-	return skip;
+	return true;
 }
 
 //

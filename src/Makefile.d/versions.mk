@@ -16,6 +16,9 @@ $(foreach v,$(join $(wordlist 2,$(_n),- $(gcc_versions)),\
 	$(and $(findstring =,$(v)),\
 	$(eval $(call _predecessor,$(subst =, ,$(v))))))
 
+# aggregate returns seem to happen alot in c++ so just supress em lel
+CXXFLAGS+= -Wno-aggregate-return
+
 # -W -Wno-unused
 
 ifdef GCC150

@@ -158,6 +158,8 @@ extern consvar_t cv_tiltsmoothing;
 
 extern consvar_t cv_actionmovie;
 
+extern consvar_t cv_screenquake;
+
 extern consvar_t cv_lookbackmom[MAXSPLITSCREENPLAYERS];
 
 extern consvar_t cv_verticallook[MAXSPLITSCREENPLAYERS];
