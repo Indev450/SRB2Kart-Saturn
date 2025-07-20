@@ -140,7 +140,7 @@ boolean P_DoSpring(mobj_t *spring, mobj_t *object)
 	if (object->player && object->player->spectator)
 		return false;
 
-	if (object->player && (object->player->pflags & PF_NIGHTSMODE))
+	if (UNLIKELY(object->player && (object->player->pflags & PF_NIGHTSMODE)))
 	{
 		/*Someone want to make these work like bumpers?*/
 		return false;
@@ -335,7 +335,7 @@ static boolean PIT_CheckThing(mobj_t *thing)
 #ifdef SEENAMES
 	// Do name checks all the way up here
 	// So that NOTHING ELSE can see MT_NAMECHECK because it is client-side.
-	if (tmthing->type == MT_NAMECHECK)
+	if (UNLIKELY(tmthing->type == MT_NAMECHECK))
 	{
 	    // Ignore things that aren't players, ignore spectators, ignore yourself.
 		// (also don't bother to check that tmthing->target->player is non-NULL because we're not actually using it here.)
@@ -361,8 +361,8 @@ static boolean PIT_CheckThing(mobj_t *thing)
 		return true;
 
 	// Don't collide with your buddies while NiGHTS-flying.
-	if (tmthing->player && thing->player && (maptol & TOL_NIGHTS)
-		&& ((tmthing->player->pflags & PF_NIGHTSMODE) || (thing->player->pflags & PF_NIGHTSMODE)))
+	if (UNLIKELY(tmthing->player && thing->player && (maptol & TOL_NIGHTS)
+		&& ((tmthing->player->pflags & PF_NIGHTSMODE) || (thing->player->pflags & PF_NIGHTSMODE))))
 		return true;
 
 	blockdist = thing->radius + tmthing->radius;
@@ -3183,7 +3183,7 @@ stairstep:
 
 	P_HitSlideLine(bestslideline); // clip the moves
 
-	if ((twodlevel || (mo->flags2 & MF2_TWOD)) && mo->player)
+	if (UNLIKELY((twodlevel || (mo->flags2 & MF2_TWOD)) && mo->player))
 	{
 		mo->momx = tmxmove;
 		tmymove = 0;

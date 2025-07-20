@@ -498,9 +498,9 @@ void P_PlayLivesJingle(player_t *player)
 	if (player && !P_IsLocalPlayer(player))
 		return;
 
-	if (use1upSound)
+	if (UNLIKELY(use1upSound))
 		S_StartSound(NULL, sfx_oneup);
-	else if (mariomode)
+	else if (UNLIKELY(mariomode))
 		S_StartSound(NULL, sfx_marioa);
 	else
 	{
@@ -528,7 +528,7 @@ void P_PlayRinglossSound(mobj_t *source, mobj_t *damager)
 			S_StartSound(NULL, sfx);
 		}
 		else
-			S_StartSound(source, (mariomode) ? sfx_mario8 : sfx_khurt1 + key);
+			S_StartSound(source, UNLIKELY(mariomode) ? sfx_mario8 : sfx_khurt1 + key);
 	}
 	else
 		S_StartSound(source, sfx_slip);
@@ -5062,7 +5062,7 @@ void P_PlayerAfterThink(player_t *player)
 		}
 	}
 
-	if (player->pflags & PF_NIGHTSMODE)
+	if (UNLIKELY(player->pflags & PF_NIGHTSMODE))
 	{
 		player->powers[pw_gravityboots] = 0;
 	}

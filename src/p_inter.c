@@ -587,7 +587,7 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 			special->momx = special->momy = special->momz = 0;
 			P_GivePlayerRings(player, 1);
 
-			if ((maptol & TOL_NIGHTS) && special->type != MT_FLINGRING)
+			if (UNLIKELY((maptol & TOL_NIGHTS) && special->type != MT_FLINGRING))
 				P_DoNightsScore(player);
 			break;
 
@@ -599,7 +599,7 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 			special->momx = special->momy = 0;
 			P_GivePlayerRings(player, 1);
 
-			if ((maptol & TOL_NIGHTS) && special->type != MT_FLINGCOIN)
+			if (UNLIKELY((maptol & TOL_NIGHTS) && special->type != MT_FLINGCOIN))
 				P_DoNightsScore(player);
 			break;
 		case MT_BLUEBALL:
@@ -615,7 +615,7 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 			else
 				special->scalespeed = 4*FRACUNIT/5;
 
-			if (maptol & TOL_NIGHTS)
+			if (UNLIKELY(maptol & TOL_NIGHTS))
 				P_DoNightsScore(player);
 			break;
 		case MT_AUTOPICKUP:
@@ -832,6 +832,7 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 			if (player->bumpertime < TICRATE/4)
 			{
 				S_StartSound(toucher, special->info->seesound);
+
 				if (player->pflags & PF_NIGHTSMODE)
 				{
 					player->bumpertime = TICRATE/2;
@@ -1226,9 +1227,9 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 			return; // SRB2kart - don't need bubbles mucking with the player
 			if ((player->powers[pw_shield] & SH_NOSTACK) == SH_ELEMENTAL)
 				return;
-			if (maptol & TOL_NIGHTS)
+			if (UNLIKELY(maptol & TOL_NIGHTS))
 				return;
-			if (mariomode)
+			if (UNLIKELY(mariomode))
 				return;
 			else if (toucher->eflags & MFE_VERTICALFLIP)
 			{
@@ -2391,11 +2392,11 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 			if (player->exiting)
 				return false;
 
-			if (!(target->player->pflags & (PF_NIGHTSMODE|PF_NIGHTSFALL)) && (maptol & TOL_NIGHTS))
+			if (UNLIKELY(!(target->player->pflags & (PF_NIGHTSMODE|PF_NIGHTSFALL)) && (maptol & TOL_NIGHTS)))
 				return false;
 		}
 
-		if (player->pflags & PF_NIGHTSMODE) // NiGHTS damage handling
+		if (UNLIKELY(player->pflags & PF_NIGHTSMODE)) // NiGHTS damage handling
 		{
 			if (!force)
 			{
@@ -2640,7 +2641,7 @@ void P_PlayerRingBurst(player_t *player, INT32 num_rings)
 			ns = FixedMul(((i*FRACUNIT)/16)+2*FRACUNIT, mo->scale);
 			mo->momx = FixedMul(FINECOSINE(fa),ns);
 
-			if (!(twodlevel || (player->mo->flags2 & MF2_TWOD)))
+			if (LIKELY(!(twodlevel || (player->mo->flags2 & MF2_TWOD))))
 				mo->momy = FixedMul(FINESINE(fa),ns);
 
 			P_SetObjectMomZ(mo, 8*FRACUNIT, false);
@@ -2664,7 +2665,7 @@ void P_PlayerRingBurst(player_t *player, INT32 num_rings)
 			ns = FixedMul(momxy, mo->scale);
 			mo->momx = FixedMul(FINECOSINE(fa),ns);
 
-			if (!(twodlevel || (player->mo->flags2 & MF2_TWOD)))
+			if (LIKELY(!(twodlevel || (player->mo->flags2 & MF2_TWOD))))
 				mo->momy = FixedMul(FINESINE(fa),ns);
 
 			ns = momz;
@@ -2771,7 +2772,7 @@ void P_PlayerWeaponPanelBurst(player_t *player)
 		ns = FixedMul(3*FRACUNIT, mo->scale);
 		mo->momx = FixedMul(FINECOSINE(fa),ns);
 
-		if (!(twodlevel || (player->mo->flags2 & MF2_TWOD)))
+		if (LIKELY(!(twodlevel || (player->mo->flags2 & MF2_TWOD))))
 			mo->momy = FixedMul(FINESINE(fa),ns);
 
 		P_SetObjectMomZ(mo, 4*FRACUNIT, false);
@@ -2855,7 +2856,7 @@ void P_PlayerWeaponAmmoBurst(player_t *player)
 		ns = FixedMul(2*FRACUNIT, mo->scale);
 		mo->momx = FixedMul(FINECOSINE(fa), ns);
 
-		if (!(twodlevel || (player->mo->flags2 & MF2_TWOD)))
+		if (LIKELY(!(twodlevel || (player->mo->flags2 & MF2_TWOD))))
 			mo->momy = FixedMul(FINESINE(fa),ns);
 
 		P_SetObjectMomZ(mo, 3*FRACUNIT, false);
@@ -2971,7 +2972,7 @@ void P_PlayerEmeraldBurst(player_t *player, boolean toss)
 
 			momx = FixedMul(FINECOSINE(fa), ns);
 
-			if (!(twodlevel || (player->mo->flags2 & MF2_TWOD)))
+			if (LIKELY(!(twodlevel || (player->mo->flags2 & MF2_TWOD))))
 				momy = FixedMul(FINESINE(fa),ns);
 			else
 				momy = 0;
@@ -3028,7 +3029,7 @@ void P_PlayerFlagBurst(player_t *player, boolean toss)
 	{
 		angle_t fa = P_RandomByte()*FINEANGLES/256;
 		flag->momx = FixedMul(FINECOSINE(fa), FixedMul(6*FRACUNIT, player->mo->scale));
-		if (!(twodlevel || (player->mo->flags2 & MF2_TWOD)))
+		if (LIKELY(!(twodlevel || (player->mo->flags2 & MF2_TWOD))))
 			flag->momy = FixedMul(FINESINE(fa), FixedMul(6*FRACUNIT, player->mo->scale));
 	}
 

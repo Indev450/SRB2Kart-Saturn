@@ -250,7 +250,7 @@ boolean P_Move(mobj_t *actor, fixed_t speed)
 	I_Assert(movedir < NUMDIRS);
 
 	tryx = actor->x + FixedMul(speed*xspeed[movedir], actor->scale);
-	if (twodlevel || actor->flags2 & MF2_TWOD)
+	if (UNLIKELY(twodlevel || actor->flags2 & MF2_TWOD))
 		tryy = actor->y;
 	else
 		tryy = actor->y + FixedMul(speed*yspeed[movedir], actor->scale);
@@ -4388,7 +4388,7 @@ void A_MouseThink(void *thing)
 		|| (actor->eflags & MFE_VERTICALFLIP && actor->z + actor->height == actor->ceilingz))
 		&& !actor->reactiontime)
 	{
-		if (twodlevel || actor->flags2 & MF2_TWOD)
+		if (UNLIKELY(twodlevel || actor->flags2 & MF2_TWOD))
 		{
 			if (P_RandomChance(FRACUNIT/2))
 				actor->angle += ANGLE_180;

@@ -892,7 +892,7 @@ static void P_PlayerFlip(mobj_t *mo)
 	G_GhostAddFlip((INT32) (mo->player - players));
 	// Flip aiming to match!
 
-	if (mo->player->pflags & PF_NIGHTSMODE) // NiGHTS doesn't use flipcam
+	if (UNLIKELY(mo->player->pflags & PF_NIGHTSMODE)) // NiGHTS doesn't use flipcam
 	{
 		if (mo->tracer)
 			mo->tracer->eflags ^= MFE_VERTICALFLIP;
@@ -990,7 +990,7 @@ fixed_t P_GetMobjGravity(mobj_t *mo)
 		//|| (mo->player->charability == CA_FLY && (mo->player->powers[pw_tailsfly]
 		//	|| (mo->state >= &states[S_PLAY_SPC1] && mo->state <= &states[S_PLAY_SPC4]))))
 		//	gravityadd = gravityadd/3; // less gravity while flying/gliding
-		if (mo->player->climbing || (mo->player->pflags & PF_NIGHTSMODE))
+		if (UNLIKELY(mo->player->climbing || (mo->player->pflags & PF_NIGHTSMODE)))
 			return 0;
 
 		if (!(mo->flags2 & MF2_OBJECTFLIP) != !(mo->player->powers[pw_gravityboots])) // negated to turn numeric into bool - would be double negated, but not needed if both would be
@@ -1586,7 +1586,7 @@ void P_XYMovement(mobj_t *mo)
 	// Check the gravity status.
 	P_CheckGravity(mo, false);
 
-	if (player && !moved && player->pflags & PF_NIGHTSMODE && mo->target)
+	if (UNLIKELY(player && !moved && player->pflags & PF_NIGHTSMODE && mo->target))
 	{
 		angle_t fa;
 
@@ -1631,7 +1631,7 @@ void P_XYMovement(mobj_t *mo)
 	if (player && player->homing) // no friction for homing
 		return;
 
-	if (player && player->pflags & PF_NIGHTSMODE)
+	if (UNLIKELY(player && player->pflags & PF_NIGHTSMODE))
 		return; // no friction for NiGHTS players
 
 	if ((mo->type == MT_BIGTUMBLEWEED || mo->type == MT_LITTLETUMBLEWEED)
@@ -2192,7 +2192,7 @@ static boolean P_ZMovement(mobj_t *mo)
 				|| mo->type == MT_CANNONBALLDECOR
 				|| mo->type == MT_FALLINGROCK)
 			{
-				if (maptol & TOL_NIGHTS)
+				if (UNLIKELY(maptol & TOL_NIGHTS))
 					mom.z = -FixedDiv(mom.z, 10*FRACUNIT);
 				else
 					mom.z = -FixedMul(mom.z, FixedDiv(17*FRACUNIT,20*FRACUNIT));
@@ -2332,9 +2332,9 @@ static boolean P_ZMovement(mobj_t *mo)
 				mo->momz = -mo->momz;
 			else
 			// Flags bounce
-			if (mo->type == MT_REDFLAG || mo->type == MT_BLUEFLAG)
+			if (UNLIKELY(mo->type == MT_REDFLAG || mo->type == MT_BLUEFLAG))
 			{
-				if (maptol & TOL_NIGHTS)
+				if (UNLIKELY(maptol & TOL_NIGHTS))
 					mo->momz = -FixedDiv(mo->momz, 10*FRACUNIT);
 				else
 					mo->momz = -FixedMul(mo->momz, FixedDiv(17*FRACUNIT,20*FRACUNIT));
@@ -2401,7 +2401,7 @@ static void P_PlayerZMovement(mobj_t *mo)
 		else
 			mo->z = mo->floorz;
 
-		if (mo->player->pflags & PF_NIGHTSMODE)
+		if (UNLIKELY(mo->player->pflags & PF_NIGHTSMODE))
 		{
 			// bounce off floor if you were flying towards it
 			if ((mo->eflags & MFE_VERTICALFLIP && mo->player->flyangle > 0 && mo->player->flyangle < 180)
@@ -2591,7 +2591,7 @@ nightsdone:
 		else
 			mo->z = mo->ceilingz - mo->height;
 
-		if (mo->player->pflags & PF_NIGHTSMODE)
+		if (UNLIKELY(mo->player->pflags & PF_NIGHTSMODE))
 		{
 			// bounce off ceiling if you were flying towards it
 			if ((mo->eflags & MFE_VERTICALFLIP && mo->player->flyangle > 180 && mo->player->flyangle <= 359)
@@ -2636,7 +2636,7 @@ nightsdone:
 			}
 
 			// hit the ceiling
-			if (mariomode)
+			if (UNLIKELY(mariomode))
 				S_StartSound(mo, sfx_mario1);
 
 			if (!mo->player->climbing)
@@ -3536,15 +3536,18 @@ static void P_PlayerMobjThinker(mobj_t *mobj)
 	}
 	else
 	{
-		if (!(mobj->player->pflags & PF_NIGHTSMODE)) // "jumping" is used for drilling
+		if (LIKELY(!(mobj->player->pflags & PF_NIGHTSMODE))) // "jumping" is used for drilling
 			mobj->player->jumping = 0;
+
 		mobj->player->pflags &= ~PF_JUMPED;
+
 		if (mobj->player->secondjump || mobj->player->powers[pw_tailsfly])
 		{
 			mobj->player->secondjump = 0;
 			mobj->player->powers[pw_tailsfly] = 0;
 			P_SetPlayerMobjState(mobj, S_KART_WALK1); // SRB2kart - was S_PLAY_RUN1
 		}
+
 		mobj->eflags &= ~MFE_JUSTHITFLOOR;
 	}
 
