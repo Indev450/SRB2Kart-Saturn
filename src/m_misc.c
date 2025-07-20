@@ -14,6 +14,10 @@
 
 #ifdef __GNUC__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #if (__GNUC__ > 4) || (__GNUC__ == 4 && __GNUC_MINOR__ >= 3)
 // Ignore "argument might be clobbered by longjmp" warning in GCC
 // (if libpng is compiled with setjmp error handling)
@@ -1060,7 +1064,7 @@ static boolean M_SetupaPNG(png_const_charp filename, png_bytep pal)
 	png_init_io(apng_ptr, apng_FILE);
 
 #ifdef PNG_SET_USER_LIMITS_SUPPORTED
-	png_set_user_limits(apng_ptr, MAXPNGWIDTH, MAXPNGHEIGHT);
+	png_set_user_limits(apng_ptr, MAXVIDWIDTH, MAXVIDHEIGHT);
 #endif
 
 	//png_set_filter(apng_ptr, 0, PNG_ALL_FILTERS);
@@ -1237,7 +1241,7 @@ void M_SaveFrame(void)
 				if (rendermode == render_soft)
 				{
 					// munge planar buffer to linear
-					linear = screens[2];
+					linear = vid.screens[2];
 					I_ReadScreen(linear);
 				}
 #ifdef HWRENDER
@@ -1375,7 +1379,7 @@ boolean M_SavePNG(const char *filename, void *data, int width, int height, const
 	png_init_io(png_ptr, png_FILE);
 
 #ifdef PNG_SET_USER_LIMITS_SUPPORTED
-	png_set_user_limits(png_ptr, MAXPNGWIDTH, MAXPNGHEIGHT);
+	png_set_user_limits(png_ptr, MAXVIDWIDTH, MAXVIDHEIGHT);
 #endif
 
 	//png_set_filter(png_ptr, 0, PNG_ALL_FILTERS);
@@ -1539,7 +1543,7 @@ void M_DoScreenShot(void)
 	if (rendermode == render_soft)
 	{
 		// munge planar buffer to linear
-		linear = screens[2];
+		linear = vid.screens[2];
 		I_ReadScreen(linear);
 	}
 
@@ -1598,6 +1602,52 @@ boolean M_ScreenshotResponder(event_t *ev)
 	else
 		return false;
 	return true;
+}
+
+
+void M_ScrollString(const char name[], size_t len, char result[], size_t maxlen, tic_t timer)
+{
+	// How much should we scroll. Not sure why +1 is needed, but without it this function skips 2
+	// characters at once sometimes
+	const size_t amount = len - maxlen + 1;
+
+	// Note: anything above 17 will cause zero division
+	const size_t MAXSPEED = 6;
+	const tic_t t = timer / (35/min(amount, MAXSPEED));
+
+	const size_t state = (t / amount) % 4;
+
+	switch (state)
+	{
+		// Show beginning of the name
+		case 0:
+			memcpy(result, name, maxlen-1);
+		break;
+
+		// Scroll towards end of the name
+		case 1:
+		{
+			const size_t advance = t % amount;
+			memcpy(result, name+advance, maxlen-1);
+		}
+		break;
+
+		// Show end of the name
+		case 2:
+			memcpy(result, name+len+1-maxlen, maxlen-1);
+		break;
+
+		// Scroll towards start of the name
+		case 3:
+		{
+			const size_t advance = t % amount;
+			memcpy(result, name+len+1-maxlen-advance, maxlen-1);
+		}
+		break;
+	}
+
+	// Technically not necessary, since it gets set again after function call, but just in case
+	result[maxlen] = 0;
 }
 
 void M_MinimapGenerate(void)
@@ -1676,54 +1726,6 @@ failure:
 	}
 #endif //#ifdef USE_PNG
 }
-
-// ==========================================================================
-//                       TRANSLATION FUNCTIONS
-// ==========================================================================
-
-// M_StartupLocale.
-// Sets up gettext to translate SRB2's strings.
-#ifdef GETTEXT
-#if defined (__unix__) || defined(__APPLE__) || defined (UNIXCOMMON)
-#define GETTEXTDOMAIN1 "/usr/share/locale"
-#define GETTEXTDOMAIN2 "/usr/local/share/locale"
-#elif defined (_WIN32)
-#define GETTEXTDOMAIN1 "."
-#endif
-
-void M_StartupLocale(void)
-{
-	char *textdomhandle = NULL;
-
-	CONS_Printf("M_StartupLocale...\n");
-
-	setlocale(LC_ALL, "");
-
-	// Do not set numeric locale as that affects atof
-	setlocale(LC_NUMERIC, "C");
-
-	// FIXME: global name define anywhere?
-#ifdef GETTEXTDOMAIN1
-	textdomhandle = bindtextdomain("srb2", GETTEXTDOMAIN1);
-#endif
-#ifdef GETTEXTDOMAIN2
-	if (!textdomhandle)
-		textdomhandle = bindtextdomain("srb2", GETTEXTDOMAIN2);
-#endif
-#ifdef GETTEXTDOMAIN3
-	if (!textdomhandle)
-		textdomhandle = bindtextdomain("srb2", GETTEXTDOMAIN3);
-#endif
-#ifdef GETTEXTDOMAIN4
-	if (!textdomhandle)
-		textdomhandle = bindtextdomain("srb2", GETTEXTDOMAIN4);
-#endif
-	if (textdomhandle)
-		textdomain("srb2");
-	else
-		CONS_Printf("Could not find locale text domain!\n");
-}
-#endif
 
 // ==========================================================================
 //                        MISC STRING FUNCTIONS
@@ -1870,6 +1872,21 @@ void CopyCaretColors(char *p, const char *s, int n)
 	}
 
 	strncpy(p, s, n);
+}
+
+void StripColors(char *dst, char *src, size_t n)
+{
+	size_t j = 0;
+
+	for (size_t i = 0; j < n && src[i] != 0; ++i)
+	{
+		char c = src[i];
+
+		if ((c & 0x80) == 0)
+			dst[j++] = c;
+	}
+
+	dst[j] = 0;
 }
 
 /** Token parser for TEXTURES, ANIMDEFS, and potentially other lumps later down the line.
@@ -2276,3 +2293,8 @@ void M_MkdirEach(const char *path, int start, int mode)
 {
 	M_MkdirEachUntil(path, start, -1, mode);
 }
+
+
+#ifdef __cplusplus
+} // extern "C"
+#endif

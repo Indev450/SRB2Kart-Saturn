@@ -15,6 +15,10 @@
 #ifndef __M_MISC__
 #define __M_MISC__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "doomtype.h"
 #include "tables.h"
 
@@ -69,6 +73,8 @@ void M_ScreenShot(void);
 void M_DoScreenShot(void);
 boolean M_ScreenshotResponder(event_t *ev);
 
+void M_ScrollString(const char name[], size_t len, char result[], size_t maxlen, tic_t timer);
+
 void M_MinimapGenerate(void);
 
 void Command_SaveConfig_f(void);
@@ -82,6 +88,9 @@ void M_SaveConfig(const char *filename);
 INT32 axtoi(const char *hexStg);
 
 void CopyCaretColors(char *p, const char *s, int n);
+
+// Remove color codes from string
+void StripColors(char *dst, char *src, size_t n);
 
 const char *GetRevisionString(void);
 
@@ -117,5 +126,9 @@ FUNCMATH UINT8 M_CountBits(UINT32 num, UINT8 size);
 
 #include "w_wad.h"
 extern char configfile[MAX_WADPATH];
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif

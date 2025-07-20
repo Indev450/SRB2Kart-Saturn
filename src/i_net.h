@@ -14,6 +14,10 @@
 #ifndef __I_NET__
 #define __I_NET__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #ifdef __GNUG__
 #pragma interface
 #endif
@@ -179,5 +183,9 @@ extern bannednode_t *bannednode;
 
 /// \brief Called by D_SRB2Main to be defined by extern network driver
 boolean I_InitNetwork(void);
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif

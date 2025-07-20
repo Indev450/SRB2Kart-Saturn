@@ -12,6 +12,10 @@
 #ifndef __R_PATCHROTATION__
 #define __R_PATCHROTATION__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "r_fps.h"
 
 // Sprite rotation
@@ -25,6 +29,10 @@ patch_t *Patch_GetRotatedSprite(spriteframe_t *sprite, size_t frame, size_t spri
 
 extern fixed_t rollcosang[ROTANGLES];
 extern fixed_t rollsinang[ROTANGLES];
+#endif
+
+#ifdef __cplusplus
+} // extern "C"
 #endif
 
 #endif // __R_PATCHROTATION__

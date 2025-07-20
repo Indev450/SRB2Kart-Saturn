@@ -181,7 +181,8 @@ objdir:=$(makedir)/objs
 
 # very sophisticated dependency
 sources+=\
-	$(call List,Sourcefile)
+	$(call List,Sourcefile)\
+	$(call List,core/Sourcefile)
 
 sources+=\
 	$(call List,blua/Sourcefile)
@@ -262,12 +263,10 @@ opts+=$(debug_opts)
 opts+=$(foreach v,$(passthru_opts),$(if $($(v)),-D$(v)))
 
 opts+=$(WFLAGS) $(CPPFLAGS) $(CFLAGS)
-libs+=$(LDFLAGS) -lstdc++
-asflags:=$(ASFLAGS) -x assembler-with-cpp
+cxxopts:=$(opts) $(CXXFLAGS) -std=c++17
 
-cxxopts:=$(opts)
-cxxopts+=-std=c++17
-cxxopts+=$(CXXFLAGS)
+libs+=$(LDFLAGS) -lstdc++ -lpthread
+asflags:=$(ASFLAGS) -x assembler-with-cpp
 
 cc=$(CC)
 cxx=$(CXX)
@@ -288,6 +287,7 @@ ifndef SILENT
 ifndef MAKE_RESTARTS
 ifndef destructive
 $(shell $(CC) -v)
+#$(shell $(CXX) -v)
 define flags =
 
 SHELL ..... $(SHELL)
@@ -315,6 +315,7 @@ endif
 
 LD:=$(CC)
 cc:=$(cc) $(opts)
+cxx:=$(cxx) $(cxxopts)
 ifdef UPX
 upx=$(UPX) $(UPX_OPTS)
 endif
@@ -375,19 +376,6 @@ ifdef Echo_name
 endif
 endif
 	$(.)$(cc) -MM -MF $$@ -MT $(objdir)/$$*.o $(2) $$<
-endef
-
-# dependency recipe template (C++)
-# 1: source file suffix
-# 2: extra flags to gcc
-define _recipecxx =
-$(depdir)/%.d : %.$(1) | $$$$(@D)/
-ifndef WINDOWSHELL
-ifdef Echo_name
-	@printf '%-20.20s\r' $$<
-endif
-endif
-	$(.)$(cxx) -MM -MF $$@ -MT $(objdir)/$$*.o $(2) $$<
 endef
 
 $(eval $(call _recipe,c))

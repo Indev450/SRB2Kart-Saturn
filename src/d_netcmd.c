@@ -204,11 +204,6 @@ static void Command_Archivetest_f(void);
 //                           CLIENT VARIABLES
 // =========================================================================
 
-void SendWeaponPref(void);
-void SendWeaponPref2(void);
-void SendWeaponPref3(void);
-void SendWeaponPref4(void);
-
 static CV_PossibleValue_t usemouse_cons_t[] = {{0, "Off"}, {1, "On"}, {2, "Force"}, {0, NULL}};
 
 static CV_PossibleValue_t autobalance_cons_t[] = {{0, "MIN"}, {4, "MAX"}, {0, NULL}};
@@ -1030,6 +1025,9 @@ void D_RegisterClientCommands(void)
 	CV_RegisterVar(&cv_scr_width);
 	CV_RegisterVar(&cv_scr_height);
 
+	CV_RegisterVar(&cv_parallelsoftware);
+	CV_RegisterVar(&cv_paralleldrawmasked);
+
 	CV_RegisterVar(&cv_soundtest);
 
 	CV_RegisterVar(&cv_perfstats);
@@ -1051,7 +1049,9 @@ void D_RegisterClientCommands(void)
 		CV_RegisterVar(&cv_verticallook[i]);
 	}
 
+	CV_RegisterVar(&cv_resyncdemo);
 	CV_RegisterVar(&cv_demodateformat);
+
 	CV_RegisterVar(&cv_showspecstuff);
 
 	// ingame object placing
@@ -2083,7 +2083,7 @@ static void Command_ResetCamera_f(void)
 }
 
 /* Consider replacing nametonum with this */
-static INT32 LookupPlayer(const char *s)
+INT32 D_LookupPlayer(const char *s)
 {
 	INT32 playernum;
 
@@ -2099,8 +2099,7 @@ static INT32 LookupPlayer(const char *s)
 	for (playernum = 0; playernum < MAXPLAYERS; ++playernum)
 	{
 		/* Match name case-insensitively: fully, or partially the start. */
-		if (playeringame[playernum])
-			if (strnicmp(player_names[playernum], s, strlen(s)) == 0)
+		if (playeringame[playernum] && (strnicmp(player_names[playernum], s, strlen(s)) == 0))
 		{
 			return playernum;
 		}
@@ -2211,7 +2210,7 @@ static void Command_View_f(void)
 		}
 		else
 		{
-			if (( playernum = LookupPlayer(COM_Argv(1)) ) == -1)
+			if (( playernum = D_LookupPlayer(COM_Argv(1)) ) == -1)
 			{
 				CONS_Alert(CONS_WARNING, "There is no player by that name!\n");
 				return;

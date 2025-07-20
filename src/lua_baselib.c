@@ -16,6 +16,7 @@
 #include "p_slopes.h" // P_GetZAt
 #include "z_zone.h"
 #include "r_main.h"
+#include "r_skins.h"
 #include "r_things.h"
 #include "m_random.h"
 #include "s_sound.h"
@@ -24,6 +25,7 @@
 #include "hu_stuff.h"	// HU_AddChatText
 #include "console.h"
 #include "k_kart.h" // SRB2Kart
+#include "k_hud.h" // SRB2Kart
 #include "d_netcmd.h" // IsPlayerAdmin
 #include "d_main.h"
 

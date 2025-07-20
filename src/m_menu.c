@@ -70,6 +70,7 @@
 #include "st_stuff.h"
 #include "i_sound.h"
 #include "k_kart.h" // SRB2kart
+#include "k_hud.h" // SRB2kart
 #include "k_stats.h" // SRB2kart
 #include "d_player.h" // KITEM_ constants
 
@@ -106,7 +107,7 @@
 #define SMALLLINEHEIGHT 8
 #define SLIDER_RANGE 10
 #define SLIDER_WIDTH (8*SLIDER_RANGE+6)
-#define SERVERS_PER_PAGE 11
+#define SERVERS_PER_PAGE 10
 #define MAXSTAT 9 //Max number a stat can have
 
 typedef enum
@@ -182,6 +183,8 @@ static char joystickInfo[8][29];
 static UINT32 serverlistpage;
 static UINT32 oldserverlistpage;
 static float serverlistslidex;
+static INT32 serverlistsearched[MAXSERVERLIST] = {0};
+static UINT32 serverlistsearchedcount = 0;
 #endif
 
 //static saveinfo_t savegameinfo[MAXSAVEGAMES]; // Extra info about the save games.
@@ -210,6 +213,8 @@ static void M_StopMessage(INT32 choice);
 
 #ifndef NONET
 static void M_HandleServerPage(INT32 choice);
+static void M_HandleServerSearch(INT32 choice);
+static void M_SearchServerList(void);
 #endif
 
 // Prototyping is fun, innit?
@@ -1109,11 +1114,11 @@ static menuitem_t MP_PlayerSetupMenu[] =
 #ifndef NONET
 static menuitem_t MP_ConnectMenu[] =
 {
-	{IT_STRING | IT_CVAR,       NULL, "Sort By",  &cv_serversort,      4},
-	{IT_STRING | IT_KEYHANDLER, NULL, "Page",     M_HandleServerPage, 12},
-	{IT_STRING | IT_CALL,       NULL, "Refresh",  M_Refresh,          20},
+	{IT_STRING | IT_KEYHANDLER, NULL, "",         M_HandleServerSearch,0},
+	{IT_STRING | IT_CVAR,       NULL, "Sort By",  &cv_serversort,     16},
+	{IT_STRING | IT_KEYHANDLER, NULL, "Page",     M_HandleServerPage, 24},
+	{IT_STRING | IT_CALL,       NULL, "Refresh",  M_Refresh,          32},
 
-	{IT_STRING | IT_SPACE, NULL, "",              M_Connect,          36},
 	{IT_STRING | IT_SPACE, NULL, "",              M_Connect,          48},
 	{IT_STRING | IT_SPACE, NULL, "",              M_Connect,          60},
 	{IT_STRING | IT_SPACE, NULL, "",              M_Connect,          72},
@@ -1128,6 +1133,7 @@ static menuitem_t MP_ConnectMenu[] =
 
 enum
 {
+	mp_connect_search,
 	mp_connect_sort,
 	mp_connect_page,
 	mp_connect_refresh,
@@ -1521,6 +1527,7 @@ enum
 	//op_exp_dirlight,
 	op_exp_skybox,
 	op_exp_accuratefps,
+	op_exp_votescrn,
 #ifdef HWRENDER
 	op_exp_glscrtx,
 #ifdef USE_FBO_OGL
@@ -2323,44 +2330,46 @@ static menuitem_t OP_SaturnHudMenu[] =
 {
 	{IT_HEADER, NULL, "Saturn Hud Options", NULL, 0},
 
-	{IT_STRING | IT_CVAR, NULL, "Speedometer Style",		 			&cv_newspeedometer, 	 	 10},
-	{IT_STRING | IT_CVAR, NULL, "Battle Speedometer",		 			&cv_battlespeedo, 	 	 	 15},
+	{IT_STRING|IT_CVAR,    NULL, "Speedometer Style",           &cv_newspeedometer,    10},
+	{IT_STRING|IT_CVAR,    NULL, "Battle Speedometer",          &cv_battlespeedo,      15},
 
-	{IT_STRING | IT_CVAR, NULL, "Colourized HUD",						&cv_colorizedhud,		 	 25},
-	{IT_STRING | IT_CVAR, NULL, "Colourized Itembox",					&cv_colorizeditembox,		 30},
-	{IT_STRING | IT_CVAR, NULL, "Colourized HUD Color",					&cv_colorizedhudcolor,		 35},
+	{IT_STRING|IT_CVAR,    NULL, "Colourized HUD",              &cv_colorizedhud,      25},
+	{IT_STRING|IT_CVAR,    NULL, "Colourized Itembox",          &cv_colorizeditembox,  30},
+	{IT_STRING|IT_CVAR,    NULL, "Colourized HUD Color",        &cv_colorizedhudcolor, 35},
 
-	{IT_STRING | IT_CVAR, NULL, "Input Display",		 				&cv_showinput, 	 			 45},
+	{IT_STRING|IT_CVAR,    NULL, "Input Display",               &cv_showinput,         45},
 
-	{IT_STRING | IT_CVAR, NULL, "Stat Display",		 					&cv_showstats, 	 			 55},
+	{IT_STRING|IT_CVAR,    NULL, "Stat Display",                &cv_showstats,         55},
 
-	{IT_STRING | IT_CVAR, NULL, "Higher Resolution Portraits",			&cv_highresportrait, 	 	 65},
+	{IT_STRING|IT_CVAR,    NULL, "Higher Resolution Portraits", &cv_highresportrait,   65},
 
-	{IT_STRING | IT_CVAR, NULL, "Small Positionnumber",		 			&cv_smallposnum, 	 		 75},
-	{IT_STRING | IT_CVAR, NULL, "Positionnumber Animation", 			&cv_posanim, 			 	 80},
+	{IT_STRING|IT_CVAR,    NULL, "Small Positionnumber",        &cv_smallposnum,       75},
+	{IT_STRING|IT_CVAR,    NULL, "Positionnumber Animation",    &cv_posanim,           80},
 
-	{IT_STRING | IT_CVAR, NULL, "Flash Lap Times",		 				&cv_showlaptimes, 	 		 90},
+	{IT_STRING|IT_CVAR,    NULL, "Flash Lap Times",             &cv_showlaptimes,      90},
 
-	{IT_STRING | IT_CVAR, NULL, "Multi-Item icons",		 			    &cv_multiitemicon, 	 		100},
-	{IT_STRING | IT_CVAR, NULL, "Item Amount Number",		 			&cv_huditemamount, 	 		105},
-	{IT_STRING | IT_CVAR, NULL, "Animated Roulette",		 			&cv_fancyroulette, 	 		110},
+	{IT_STRING|IT_CVAR,    NULL, "Multi-Item icons",            &cv_multiitemicon,    100},
+	{IT_STRING|IT_CVAR,    NULL, "Item Amount Number",          &cv_huditemamount,    105},
+	{IT_STRING|IT_CVAR,    NULL, "Animated Roulette",           &cv_fancyroulette,    110},
 
-	{IT_STRING | IT_CVAR, NULL, "Show Lap Emblem",		 				&cv_showlapemblem, 	 		120},
-	{IT_STRING | IT_CVAR, NULL, "Show Cecho Messages", 					&cv_cechotoggle, 			125},
+	{IT_STRING|IT_CVAR,    NULL, "Show Lap Emblem",             &cv_showlapemblem,    120},
+	{IT_STRING|IT_CVAR,    NULL, "Show Cecho Messages",         &cv_cechotoggle,      125},
 
-	{IT_STRING | IT_CVAR, NULL,	"Show Names on Minimap",   				&cv_showminimapnames, 		135},
-	{IT_STRING | IT_CVAR, NULL,	"Small Minimap Players",   				&cv_minihead, 				140},
-	{IT_STRING | IT_CVAR, NULL,	"Spin Minimap Icons", 			  		&cv_spinoutroll,      		145},
-	{IT_STRING | IT_CVAR, NULL,	"Player Angle Visual", 			  		&cv_showminimapangle,      	150},
+	{IT_STRING|IT_CVAR,    NULL, "Show Names on Minimap",       &cv_showminimapnames, 135},
+	{IT_STRING|IT_CVAR,    NULL, "Small Minimap Players",       &cv_minihead,         140},
+	{IT_STRING|IT_CVAR,    NULL, "Spin Minimap Icons",          &cv_spinoutroll,      145},
+	{IT_STRING|IT_CVAR,    NULL, "Player Angle Visual",         &cv_showminimapangle, 150},
 
-	{IT_STRING | IT_CVAR, NULL, "Beta Intermissionscreen", 				&cv_betainterscreen, 		160},
+	{IT_STRING|IT_CVAR,    NULL, "Music Credits",               &cv_songcredits,      160},
 
-	{IT_STRING | IT_CVAR, NULL,	"Show Director Prompt",   				&cv_showdirectorhud, 		170},
+	{IT_STRING|IT_CVAR,    NULL, "Beta Intermissionscreen",     &cv_betainterscreen,  170},
 
-	{IT_STRING | IT_SUBMENU, NULL, "Nametags...", 						&OP_NametagDef, 		   	180},
-	{IT_STRING | IT_SUBMENU, NULL, "Driftgauge...", 					&OP_DriftGaugeDef, 		   	185},
+	{IT_STRING|IT_CVAR,    NULL, "Show Director Prompt",        &cv_showdirectorhud,  180},
 
-	{IT_SUBMENU|IT_STRING,	NULL,	"Hud Offsets...", 					&OP_HudOffsetDef,		   	195},
+	{IT_STRING|IT_SUBMENU, NULL, "Nametags...",                 &OP_NametagDef,       190},
+	{IT_STRING|IT_SUBMENU, NULL, "Driftgauge...",               &OP_DriftGaugeDef,    195},
+
+	{IT_SUBMENU|IT_STRING, NULL, "Hud Offsets...",              &OP_HudOffsetDef,     205},
 };
 
 static const char* OP_SaturnHudTooltips[] =
@@ -2386,6 +2395,7 @@ static const char* OP_SaturnHudTooltips[] =
 	"Minimize the player icons on the minimap.",
 	"Erratically rotate player icons during spinouts.",
 	"Visualize the player facing angle.",
+	"Show the Music Credits and which style.",
 	"Make the Intermission screen look like in beta versions of Kart!\nEither with background or just the rest.",
 	"Show the Director Toggle prompt when spectating.",
 	"Nametag Options.",
@@ -2416,6 +2426,7 @@ enum
 	sh_smallmap,
 	sh_iconspinout,
 	sh_minidot,
+	sh_songcred,
 	sh_betainter,
 	sh_directorhud,
 	sh_nametagmen,
@@ -2466,9 +2477,13 @@ static menuitem_t OP_HudOffsetMenu[] =
 	{IT_STRING | IT_CVAR,	NULL,	"Vertical Offset",	  	  		&cv_stat_yoffset,     	185},
 };
 
+// FIXME: WE EFFECTIVELY HAVE NO MORE SPACE FOR GREEN RES
+// i had to put multiple names into single lines at this point
+// we ought to really do something better for this at this point
+// absolutely crazy how many people put work into this at this point <3
 static menuitem_t OP_SaturnCreditsMenu[] =
 {
-	{IT_HEADER, NULL, "Thanks to all contributers <3", 									NULL,      0},
+	{IT_HEADER, NULL, "Thanks to all contributers <3", 									NULL,       0},
 
 	{IT_STRING2+IT_SPACE, NULL, 	"Alug",      										NULL, 	   10},
 	{IT_STRING2+IT_SPACE, NULL, 	"Indev",        									NULL,      20},
@@ -2477,20 +2492,21 @@ static menuitem_t OP_SaturnCreditsMenu[] =
 	{IT_STRING2+IT_SPACE, NULL, 	"GenericHeroGuy", 		 							NULL, 	   50},
 	{IT_STRING2+IT_SPACE, NULL, 	"xyzzy",     										NULL, 	   60},
 	{IT_STRING2+IT_SPACE, NULL, 	"Chearii", 		 									NULL, 	   70},
+	{IT_STRING2+IT_SPACE, NULL, 	"riomccloud", 		 								NULL, 	   80},
+	{IT_STRING2+IT_SPACE, NULL, 	"chromaticpipe", 		 							NULL, 	   90},
+	{IT_STRING2+IT_SPACE, NULL, 	"PAS", 		 										NULL, 	  100},
+	{IT_STRING2+IT_SPACE, NULL, 	"$HOME", 		 									NULL, 	  110},
+	{IT_STRING2+IT_SPACE, NULL, 	"Achii", 		 									NULL, 	  120},
+	{IT_STRING2+IT_SPACE, NULL, 	"Anonimus", 		 								NULL, 	  130},
+	{IT_STRING2+IT_SPACE, NULL, 	"scizor300", 		 								NULL, 	  140},
+	{IT_STRING2+IT_SPACE, NULL, 	"Lugent", 		 									NULL, 	  150},
 
-	{IT_STRING2+IT_SPACE, NULL, 	"Sunflower", 		 								NULL, 	   80},
-	{IT_STRING2+IT_SPACE, NULL, 	"Yuz", 		  										NULL, 	   90},
-	{IT_STRING2+IT_SPACE, NULL, 	"Democrab", 		  								NULL, 	  100},
-	{IT_STRING2+IT_SPACE, NULL, 	"EXpand", 		 									NULL, 	  110},
-	{IT_STRING2+IT_SPACE, NULL, 	"Nexit", 		 									NULL, 	  120},
-	{IT_STRING2+IT_SPACE, NULL, 	"Spee", 		 									NULL, 	  130},
-	{IT_STRING2+IT_SPACE, NULL, 	"jin", 		 										NULL, 	  140},
-	{IT_STRING2+IT_SPACE, NULL, 	"riomccloud", 		 								NULL, 	  150},
-	{IT_STRING2+IT_SPACE, NULL, 	"chromaticpipe", 		 							NULL, 	  160},
-	{IT_STRING2+IT_SPACE, NULL, 	"Achii", 		 									NULL, 	  170},
-	{IT_STRING2+IT_SPACE, NULL, 	"Anonimus", 		 								NULL, 	  180},
-	{IT_STRING2+IT_SPACE, NULL, 	"scizor300", 		 								NULL, 	  190},
-	{IT_STRING2+IT_SPACE, NULL, 	"Lugent", 		 									NULL, 	  200},
+	{IT_HEADER, 		  NULL, 	"", 												NULL,     124},
+
+	{IT_STRING2+IT_SPACE, NULL, 	"Sunflower	Yuz", 		 							NULL, 	  180},
+	{IT_STRING2+IT_SPACE, NULL, 	"Democrab	EXpand", 		  						NULL, 	  190},
+	{IT_STRING2+IT_SPACE, NULL, 	"Nexit	Spee", 		  								NULL, 	  200},
+	{IT_STRING2+IT_SPACE, NULL, 	"jin", 		 										NULL, 	  210},
 
 	{IT_HEADER, 		  NULL, 	"Special Thanks <3", 								NULL,     168},
 
@@ -2502,7 +2518,7 @@ static menuitem_t OP_SaturnCreditsMenu[] =
 	{IT_STRING, NULL, "", 																NULL,     258},	// dummy text II
 };
 
-// sry we dont have space for this anymore :/
+// sry we dont have space for this anymore :c
 /*static const char* OP_CreditTooltips[] =
 {
 	NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,
@@ -2726,7 +2742,7 @@ menu_t MISC_AddonsDef =
 	50, 28,
 	0,
 	NULL,
-	{NULL}
+	NULL
 };
 
 menu_t MISC_ReplayHutDef =
@@ -2739,7 +2755,7 @@ menu_t MISC_ReplayHutDef =
 	30, 80,
 	0,
 	M_QuitReplayHut,
-	{NULL}
+	NULL
 };
 
 menu_t MISC_ReplayOptionsDef =
@@ -2752,7 +2768,7 @@ menu_t MISC_ReplayOptionsDef =
 	27, 40,
 	0,
 	NULL,
-	{NULL}
+	NULL
 };
 
 menu_t MISC_ReplayStartDef =
@@ -2765,7 +2781,7 @@ menu_t MISC_ReplayStartDef =
 	30, 90,
 	0,
 	NULL,
-	{NULL}
+	NULL
 };
 
 menu_t PlaybackMenuDef = {
@@ -2778,12 +2794,12 @@ menu_t PlaybackMenuDef = {
 	BASEVIDWIDTH/2 - 88, 2,
 	0,
 	NULL,
-	{NULL}
+	NULL
 };
 
 menu_t MAPauseDef = PAUSEMENUSTYLE(MAPauseMenu, 40, 72);
-menu_t SPauseDef = PAUSEMENUSTYLE(SPauseMenu, 40, 72);
-menu_t MPauseDef = PAUSEMENUSTYLE(MPauseMenu, 40, 72);
+menu_t SPauseDef  = PAUSEMENUSTYLE(SPauseMenu, 40, 72);
+menu_t MPauseDef  = PAUSEMENUSTYLE(MPauseMenu, 40, 72);
 
 #ifdef HAVE_DISCORDRPC
 menu_t MISC_DiscordRequestsDef = {
@@ -2795,16 +2811,16 @@ menu_t MISC_DiscordRequestsDef = {
 	0, 0,
 	0,
 	NULL,
-	{NULL}
+	NULL
 };
 #endif
 
 // Misc Main Menu
-menu_t MISC_ScrambleTeamDef = DEFAULTMENUSTYLE(NULL, MISC_ScrambleTeamMenu, &MPauseDef, 27, 40);
-menu_t MISC_ChangeTeamDef = DEFAULTMENUSTYLE(NULL, MISC_ChangeTeamMenu, &MPauseDef, 27, 40);
-menu_t MISC_ChangeSpectateDef = DEFAULTMENUSTYLE(NULL, MISC_ChangeSpectateMenu, &MPauseDef, 27, 40);
-menu_t MISC_ChangeLevelDef = MAPICONMENUSTYLE(NULL, MISC_ChangeLevelMenu, &MPauseDef);
-menu_t MISC_HelpDef = IMAGEDEF(MISC_HelpMenu);
+menu_t MISC_ScrambleTeamDef   = DEFAULTMENUSTYLE(NULL, MISC_ScrambleTeamMenu, &MPauseDef, 27, 40, NULL);
+menu_t MISC_ChangeTeamDef     = DEFAULTMENUSTYLE(NULL, MISC_ChangeTeamMenu, &MPauseDef, 27, 40, NULL);
+menu_t MISC_ChangeSpectateDef = DEFAULTMENUSTYLE(NULL, MISC_ChangeSpectateMenu, &MPauseDef, 27, 40, NULL);
+menu_t MISC_ChangeLevelDef    = MAPICONMENUSTYLE(NULL, MISC_ChangeLevelMenu, &MPauseDef);
+menu_t MISC_HelpDef           = IMAGEDEF(MISC_HelpMenu);
 
 //
 // M_GetGametypeColor
@@ -2891,7 +2907,7 @@ menu_t SR_PandoraDef =
 	60, 40,
 	0,
 	M_ExitPandorasBox,
-	{NULL}
+	NULL
 };
 menu_t SR_MainDef = CENTERMENUSTYLE(NULL, SR_MainMenu, &MainDef, 72);
 
@@ -2907,7 +2923,7 @@ menu_t SR_UnlockChecklistDef =
 	280, 185,
 	0,
 	NULL,
-	{NULL}
+	NULL
 };
 
 menu_t SR_MusicTestDef =
@@ -2920,7 +2936,7 @@ menu_t SR_MusicTestDef =
 	60, 150,
 	0,
 	NULL,
-	{NULL}
+	NULL
 };
 
 menu_t SR_EmblemHintDef =
@@ -2933,7 +2949,7 @@ menu_t SR_EmblemHintDef =
 	60, 150,
 	0,
 	NULL,
-	{NULL}
+	NULL
 };
 
 // Single Player
@@ -2949,7 +2965,7 @@ menu_t SP_LevelStatsDef =
 	280, 185,
 	0,
 	NULL,
-	{NULL}
+	NULL
 };
 
 static menu_t SP_TimeAttackDef =
@@ -2962,7 +2978,7 @@ static menu_t SP_TimeAttackDef =
 	34, 40,
 	0,
 	M_QuitTimeAttackMenu,
-	{NULL}
+	NULL
 };
 static menu_t SP_ReplayDef =
 {
@@ -2974,7 +2990,7 @@ static menu_t SP_ReplayDef =
 	34, 40,
 	0,
 	NULL,
-	{NULL}
+	NULL
 };
 static menu_t SP_GuestReplayDef =
 {
@@ -2986,7 +3002,7 @@ static menu_t SP_GuestReplayDef =
 	34, 40,
 	0,
 	NULL,
-	{NULL}
+	NULL
 };
 static menu_t SP_GhostDef =
 {
@@ -2998,7 +3014,7 @@ static menu_t SP_GhostDef =
 	34, 40,
 	0,
 	NULL,
-	{NULL}
+	NULL
 };
 
 // Multiplayer
@@ -3016,7 +3032,7 @@ menu_t MP_MainDef =
 #else
 	NULL,
 #endif
-	{NULL}
+	NULL
 };
 
 menu_t MP_OfflineServerDef = MAPICONMENUSTYLE("M_MULTI", MP_OfflineServerMenu, &MP_MainDef);
@@ -3034,7 +3050,7 @@ menu_t MP_ConnectDef =
 	27,24,
 	0,
 	M_CancelConnect,
-	{NULL}
+	NULL
 };
 #endif
 menu_t MP_PlayerSetupDef =
@@ -3047,7 +3063,7 @@ menu_t MP_PlayerSetupDef =
 	36, 14,
 	0,
 	M_QuitMultiPlayerMenu,
-	{NULL}
+	NULL
 };
 
 // Options
@@ -3061,18 +3077,18 @@ menu_t OP_MainDef =
 	60, 25,
 	0,
 	NULL,
-	{NULL}
+	NULL
 };
 
-menu_t OP_ControlsDef = DEFAULTMENUSTYLE("M_CONTRO", OP_ControlsMenu, &OP_MainDef, 60, 30);
+menu_t OP_ControlsDef     = DEFAULTMENUSTYLE("M_CONTRO", OP_ControlsMenu, &OP_MainDef, 60, 30, OP_ControlsTooltips);
 //WTF
-menu_t OP_MouseOptionsDef = DEFAULTMENUSTYLE("M_CONTRO", OP_MouseOptionsMenu, &OP_ControlsDef, 60, 30);
-menu_t OP_AllControlsDef = CONTROLMENUSTYLE(OP_AllControlsMenu, &OP_ControlsDef);
-menu_t OP_Joystick1Def = DEFAULTSCROLLSTYLE("M_CONTRO", OP_Joystick1Menu, &OP_AllControlsDef, 30, 36);
-menu_t OP_Joystick2Def = DEFAULTSCROLLSTYLE("M_CONTRO", OP_Joystick2Menu, &OP_AllControlsDef, 30, 36);
-menu_t OP_Joystick3Def = DEFAULTSCROLLSTYLE("M_CONTRO", OP_Joystick3Menu, &OP_AllControlsDef, 30, 36);
-menu_t OP_Joystick4Def = DEFAULTSCROLLSTYLE("M_CONTRO", OP_Joystick4Menu, &OP_AllControlsDef, 30, 36);
-menu_t OP_JoystickSetDef =
+menu_t OP_MouseOptionsDef = DEFAULTMENUSTYLE("M_CONTRO", OP_MouseOptionsMenu, &OP_ControlsDef, 60, 30, OP_MouseTooltips);
+menu_t OP_AllControlsDef  = CONTROLMENUSTYLE(OP_AllControlsMenu, &OP_ControlsDef);
+menu_t OP_Joystick1Def    = DEFAULTSCROLLSTYLE("M_CONTRO", OP_Joystick1Menu, &OP_AllControlsDef, 30, 36, NULL);
+menu_t OP_Joystick2Def    = DEFAULTSCROLLSTYLE("M_CONTRO", OP_Joystick2Menu, &OP_AllControlsDef, 30, 36, NULL);
+menu_t OP_Joystick3Def    = DEFAULTSCROLLSTYLE("M_CONTRO", OP_Joystick3Menu, &OP_AllControlsDef, 30, 36, NULL);
+menu_t OP_Joystick4Def    = DEFAULTSCROLLSTYLE("M_CONTRO", OP_Joystick4Menu, &OP_AllControlsDef, 30, 36, NULL);
+menu_t OP_JoystickSetDef  =
 {
 	"M_CONTRO",
 	sizeof (OP_JoystickSetMenu)/sizeof (menuitem_t),
@@ -3082,7 +3098,7 @@ menu_t OP_JoystickSetDef =
 	50, 40,
 	0,
 	NULL,
-	{NULL}
+	NULL
 };
 
 menu_t OP_VideoOptionsDef =
@@ -3095,7 +3111,7 @@ menu_t OP_VideoOptionsDef =
 	30, 15,
 	0,
 	NULL,
-	{NULL}
+	OP_VideoTooltips
 };
 
 menu_t OP_VideoModeDef =
@@ -3108,7 +3124,7 @@ menu_t OP_VideoModeDef =
 	48, 26,
 	0,
 	NULL,
-	{NULL}
+	NULL
 };
 
 menu_t OP_ColorOptionsDef =
@@ -3121,7 +3137,7 @@ menu_t OP_ColorOptionsDef =
 	30, 30,
 	0,
 	NULL,
-	{NULL}
+	NULL
 };
 
 menu_t OP_SoundOptionsDef =
@@ -3134,7 +3150,7 @@ menu_t OP_SoundOptionsDef =
 	30, 20,
 	0,
 	NULL,
-	{NULL}
+	OP_SoundTooltips
 };
 
 
@@ -3148,25 +3164,25 @@ menu_t OP_HUDOptionsDef =
 	30, 20,
 	0,
 	NULL,
-	{NULL}
+	NULL
 };
 
-menu_t OP_CamOptionsDef = DEFAULTMENUSTYLE(NULL, OP_CamOptionsMenu, &OP_MainDef, 30, 30);
-menu_t OP_Player1CamOptionsDef = DEFAULTMENUSTYLE(NULL, OP_Player1CamOptionsMenu, &OP_CamOptionsDef, 30, 30);
-menu_t OP_Player2CamOptionsDef = DEFAULTMENUSTYLE(NULL, OP_Player2CamOptionsMenu, &OP_CamOptionsDef, 30, 30);
-menu_t OP_Player3CamOptionsDef = DEFAULTMENUSTYLE(NULL, OP_Player3CamOptionsMenu, &OP_CamOptionsDef, 30, 30);
-menu_t OP_Player4CamOptionsDef = DEFAULTMENUSTYLE(NULL, OP_Player4CamOptionsMenu, &OP_CamOptionsDef, 30, 30);
+menu_t OP_CamOptionsDef        = DEFAULTMENUSTYLE(NULL, OP_CamOptionsMenu, &OP_MainDef, 30, 30, OP_CamOptionsTooltips);
+menu_t OP_Player1CamOptionsDef = DEFAULTMENUSTYLE(NULL, OP_Player1CamOptionsMenu, &OP_CamOptionsDef, 30, 30, OP_PlayerCamOptionsTooltips);
+menu_t OP_Player2CamOptionsDef = DEFAULTMENUSTYLE(NULL, OP_Player2CamOptionsMenu, &OP_CamOptionsDef, 30, 30, OP_PlayerCamOptionsTooltips);
+menu_t OP_Player3CamOptionsDef = DEFAULTMENUSTYLE(NULL, OP_Player3CamOptionsMenu, &OP_CamOptionsDef, 30, 30, OP_PlayerCamOptionsTooltips);
+menu_t OP_Player4CamOptionsDef = DEFAULTMENUSTYLE(NULL, OP_Player4CamOptionsMenu, &OP_CamOptionsDef, 30, 30, OP_PlayerCamOptionsTooltips);
 
-menu_t OP_ChatOptionsDef = DEFAULTMENUSTYLE("M_HUD", OP_ChatOptionsMenu, &OP_HUDOptionsDef, 30, 30);
+menu_t OP_ChatOptionsDef = DEFAULTMENUSTYLE("M_HUD", OP_ChatOptionsMenu, &OP_HUDOptionsDef, 30, 30, OP_ChatOptionsTooltips);
 
-menu_t OP_SoundAdvancedDef = DEFAULTSCROLLSTYLE("M_SOUND", OP_SoundAdvancedMenu, &OP_SoundOptionsDef, 30, 30);
+menu_t OP_SoundAdvancedDef = DEFAULTSCROLLSTYLE("M_SOUND", OP_SoundAdvancedMenu, &OP_SoundOptionsDef, 30, 30, OP_SoundAdvancedTooltips);
 
-menu_t OP_FocusOptionsDef = DEFAULTMENUSTYLE(NULL, OP_FocusOptionsMenu, &OP_MainDef, 17, 30);
+menu_t OP_FocusOptionsDef = DEFAULTMENUSTYLE(NULL, OP_FocusOptionsMenu, &OP_MainDef, 17, 30, OP_FocusOptionsTooltips);
 
-menu_t OP_GameOptionsDef = DEFAULTMENUSTYLE("M_GAME", OP_GameOptionsMenu, &OP_MainDef, 30, 20);
-menu_t OP_ServerOptionsDef = DEFAULTMENUSTYLE("M_SERVER", OP_ServerOptionsMenu, &OP_MainDef, 24, 20);
+menu_t OP_GameOptionsDef = DEFAULTMENUSTYLE("M_GAME", OP_GameOptionsMenu, &OP_MainDef, 30, 20, OP_GameTooltips);
+menu_t OP_ServerOptionsDef = DEFAULTMENUSTYLE("M_SERVER", OP_ServerOptionsMenu, &OP_MainDef, 24, 20, OP_ServerOptionsTooltips);
 #ifndef NONET
-menu_t OP_AdvServerOptionsDef = DEFAULTSCROLLSTYLE("M_SERVER", OP_AdvServerOptionsMenu, &OP_ServerOptionsDef, 24, 30);
+menu_t OP_AdvServerOptionsDef = DEFAULTSCROLLSTYLE("M_SERVER", OP_AdvServerOptionsMenu, &OP_ServerOptionsDef, 24, 30, OP_AdvServerOptionsTooltips);
 #endif
 
 //menu_t OP_NetgameOptionsDef = DEFAULTMENUSTYLE("M_SERVER", OP_NetgameOptionsMenu, &OP_ServerOptionsDef, 30, 30);
@@ -3182,38 +3198,38 @@ menu_t OP_MonitorToggleDef =
 	47, 30,
 	0,
 	NULL,
-	{NULL}
+	NULL
 };
 
 #ifdef HWRENDER
-menu_t OP_OpenGLOptionsDef = DEFAULTSCROLLSTYLE("M_VIDEO", OP_OpenGLOptionsMenu, &OP_VideoOptionsDef, 30, 30);
+menu_t OP_OpenGLOptionsDef = DEFAULTSCROLLSTYLE("M_VIDEO", OP_OpenGLOptionsMenu, &OP_VideoOptionsDef, 30, 30, OP_OpenGLTooltips);
 #endif
 
-menu_t OP_ExpOptionsDef = DEFAULTSCROLLSTYLE("M_VIDEO", OP_ExpOptionsMenu, &OP_VideoOptionsDef, 30, 25);
+menu_t OP_ExpOptionsDef = DEFAULTSCROLLSTYLE("M_VIDEO", OP_ExpOptionsMenu, &OP_VideoOptionsDef, 30, 25, OP_ExpTooltips);
 
-menu_t OP_DataOptionsDef = DEFAULTMENUSTYLE("M_DATA", OP_DataOptionsMenu, &OP_MainDef, 60, 30);
-menu_t OP_ScreenshotOptionsDef = DEFAULTSCROLLSTYLE("M_SCSHOT", OP_ScreenshotOptionsMenu, &OP_DataOptionsDef, 30, 30);
-menu_t OP_AddonsOptionsDef = DEFAULTMENUSTYLE("M_ADDONS", OP_AddonsOptionsMenu, &OP_DataOptionsDef, 30, 30);
-menu_t OP_ProtocolDef = DEFAULTMENUSTYLE(NULL, OP_ProtocolMenu, &OP_DataOptionsDef, 30, 30);
+menu_t OP_DataOptionsDef       = DEFAULTMENUSTYLE("M_DATA", OP_DataOptionsMenu, &OP_MainDef, 60, 30, NULL);
+menu_t OP_ScreenshotOptionsDef = DEFAULTSCROLLSTYLE("M_SCSHOT", OP_ScreenshotOptionsMenu, &OP_DataOptionsDef, 30, 30, NULL);
+menu_t OP_AddonsOptionsDef     = DEFAULTMENUSTYLE("M_ADDONS", OP_AddonsOptionsMenu, &OP_DataOptionsDef, 30, 30, NULL);
+menu_t OP_ProtocolDef          = DEFAULTMENUSTYLE(NULL, OP_ProtocolMenu, &OP_DataOptionsDef, 30, 30, NULL);
 #ifdef HAVE_DISCORDRPC
-menu_t OP_DiscordOptionsDef = DEFAULTMENUSTYLE(NULL, OP_DiscordOptionsMenu, &OP_DataOptionsDef, 30, 30);
+menu_t OP_DiscordOptionsDef    = DEFAULTMENUSTYLE(NULL, OP_DiscordOptionsMenu, &OP_DataOptionsDef, 30, 30, NULL);
 #endif
-menu_t OP_EraseDataDef = DEFAULTMENUSTYLE("M_DATA", OP_EraseDataMenu, &OP_DataOptionsDef, 30, 30);
+menu_t OP_EraseDataDef         = DEFAULTMENUSTYLE("M_DATA", OP_EraseDataMenu, &OP_DataOptionsDef, 30, 30, NULL);
 
-menu_t OP_SaturnDef = DEFAULTSCROLLSTYLE(NULL, OP_SaturnMenu, &OP_MainDef, 30, 30);
-menu_t OP_PlayerDistortDef = DEFAULTSCROLLSTYLE("M_VIDEO", OP_PlayerDistortMenu, &OP_SaturnDef, 30, 30);
-menu_t OP_HudOffsetDef = DEFAULTSCROLLSTYLE(NULL, OP_HudOffsetMenu, &OP_SaturnHudDef, 30, 30);
-menu_t OP_SaturnHudDef = DEFAULTSCROLLSTYLE(NULL, OP_SaturnHudMenu, &OP_SaturnDef, 30, 30);
+menu_t OP_SaturnDef        = DEFAULTSCROLLSTYLE(NULL, OP_SaturnMenu, &OP_MainDef, 30, 30, OP_SaturnTooltips);
+menu_t OP_SaturnCreditsDef = DEFAULTMENUSTYLE(NULL, OP_SaturnCreditsMenu, &OP_SaturnDef, 30, 0, NULL); // OP_CreditTooltips no space :c
 
-menu_t OP_SaturnCreditsDef = DEFAULTMENUSTYLE(NULL, OP_SaturnCreditsMenu, &OP_SaturnDef, 30, 0);
+menu_t OP_SaturnHudDef     = DEFAULTSCROLLSTYLE(NULL, OP_SaturnHudMenu, &OP_SaturnDef, 30, 30, OP_SaturnHudTooltips);
+menu_t OP_PlayerDistortDef = DEFAULTSCROLLSTYLE("M_VIDEO", OP_PlayerDistortMenu, &OP_SaturnDef, 30, 30, OP_PlayerDistortTooltips);
+menu_t OP_HudOffsetDef     = DEFAULTSCROLLSTYLE(NULL, OP_HudOffsetMenu, &OP_SaturnHudDef, 30, 30, NULL);
 
-menu_t OP_BirdDef = DEFAULTMENUSTYLE(NULL, OP_BirdMenu, &OP_MainDef, 30, 30);
+menu_t OP_BirdDef = DEFAULTMENUSTYLE(NULL, OP_BirdMenu, &OP_MainDef, 30, 30, OP_BirdTooltips);
 
-menu_t OP_NametagDef = DEFAULTMENUSTYLE(NULL, OP_NametagMenu, &OP_SaturnHudDef, 30, 40);
-menu_t OP_DriftGaugeDef = DEFAULTMENUSTYLE(NULL, OP_DriftGaugeMenu, &OP_SaturnHudDef, 30, 40);
+menu_t OP_NametagDef    = DEFAULTMENUSTYLE(NULL, OP_NametagMenu, &OP_SaturnHudDef, 30, 40, OP_NametagTooltips);
+menu_t OP_DriftGaugeDef = DEFAULTMENUSTYLE(NULL, OP_DriftGaugeMenu, &OP_SaturnHudDef, 30, 40, OP_DriftGaugeTooltips);
 
-menu_t OP_TiltDef = DEFAULTMENUSTYLE(NULL, OP_TiltMenu, &OP_BirdDef, 30, 60);
-menu_t OP_AdvancedBirdDef = DEFAULTMENUSTYLE(NULL, OP_AdvancedBirdMenu, &OP_BirdDef, 30, 60);
+menu_t OP_TiltDef         = DEFAULTMENUSTYLE(NULL, OP_TiltMenu, &OP_BirdDef, 30, 60, OP_TiltTooltips);
+menu_t OP_AdvancedBirdDef = DEFAULTMENUSTYLE(NULL, OP_AdvancedBirdMenu, &OP_BirdDef, 30, 60, OP_AdvancedBirdTooltips);
 
 INT16 ccvarposition = 0;
 
@@ -3230,7 +3246,7 @@ static void M_CustomCvarMenu(INT32 choice)
 /*menu_t OP_CustomCvarMenuDef = DEFAULTSCROLLMENUSTYLE(
 	MTREE3(MN_OP_MAIN, MN_OP_DATA, MN_OP_ADDONS),
 	"M_ADDONS", OP_CustomCvarMenu, &OP_MainDef, 30, 30);*/
-menu_t OP_CustomCvarMenuDef = DEFAULTSCROLLSTYLE("M_ADDONS", OP_CustomCvarMenu, &OP_MainDef, 10, 30);
+menu_t OP_CustomCvarMenuDef = DEFAULTSCROLLSTYLE("M_ADDONS", OP_CustomCvarMenu, &OP_MainDef, 10, 30, NULL);
 
 menu_t OP_ForkedBirdDef = {
 	NULL,
@@ -3241,10 +3257,10 @@ menu_t OP_ForkedBirdDef = {
 	30, 6,
 	0,
 	NULL,
-	{NULL}
+	NULL
 };
 
-menu_t OP_LocalSkinDef = DEFAULTMENUSTYLE(NULL, OP_TiltMenu, &OP_ForkedBirdDef, 30, 60);
+menu_t OP_LocalSkinDef = DEFAULTMENUSTYLE(NULL, OP_TiltMenu, &OP_ForkedBirdDef, 30, 60, NULL);
 
 
 // ==========================================================================
@@ -4865,6 +4881,9 @@ void M_Init(void)
 
 	//todo put this somewhere better...
 	CV_RegisterVar(&cv_allcaps);
+
+	memset(menu_text_input_buf, 0, sizeof menu_text_input_buf);
+	M_TextInputInit(&menuinput, menu_text_input_buf, sizeof menu_text_input_buf);
 }
 
 void M_InitCharacterTables(void)
@@ -5181,6 +5200,16 @@ static void M_DrawSplitText(INT32 x, INT32 y, INT32 option, const char* str, INT
 	free(clines);
 }
 
+static void M_DoToolTips(menu_t* menu)
+{
+	if (!menu->tooltips || itemOn == -1 || !menu->tooltips[itemOn])
+		return;
+
+	M_DrawSplitText(BASEVIDWIDTH / 2, BASEVIDHEIGHT-50, V_ALLOWLOWERCASE|V_SNAPTOBOTTOM, menu->tooltips[itemOn], coolalphatimer);
+
+	if ((coolalphatimer > 0) && interpTimerHackAllow)
+		coolalphatimer--;
+}
 
 static void M_DrawGenericMenu(void)
 {
@@ -5327,23 +5356,7 @@ static void M_DrawGenericMenu(void)
 
 	// dumb hack
 	// tooltips
-	// replaced with macro so it doesent look as terrible anymore lol
-	DoToolTips(OP_ControlsDef, OP_ControlsTooltips);
-	DoToolTips(OP_MouseOptionsDef, OP_MouseTooltips);
-	DoToolTips(OP_VideoOptionsDef, OP_VideoTooltips);
-	DoToolTips(OP_SoundOptionsDef, OP_SoundTooltips);
-	DoToolTips(OP_FocusOptionsDef, OP_FocusOptionsTooltips);
-	DoToolTips(OP_ChatOptionsDef, OP_ChatOptionsTooltips);
-	DoToolTips(OP_GameOptionsDef, OP_GameTooltips);
-	DoToolTips(OP_ServerOptionsDef, OP_ServerOptionsTooltips);
-	//DoToolTips(OP_SaturnCreditsDef, OP_CreditTooltips); // C:
-	DoToolTips(OP_BirdDef, OP_BirdTooltips);
-	DoToolTips(OP_TiltDef, OP_TiltTooltips);
-	DoToolTips(OP_AdvancedBirdDef, OP_AdvancedBirdTooltips);
-	DoToolTips(OP_NametagDef, OP_NametagTooltips);
-	DoToolTips(OP_DriftGaugeDef, OP_DriftGaugeTooltips);
-	DoToolTips(OP_CamOptionsDef, OP_CamOptionsTooltips);
-	DoToolTips(OP_Player1CamOptionsDef || currentMenu == &OP_Player2CamOptionsDef || currentMenu == &OP_Player3CamOptionsDef || currentMenu == &OP_Player4CamOptionsDef, OP_PlayerCamOptionsTooltips); // god this one is still terrible lmao
+	M_DoToolTips(currentMenu);
 }
 
 static void M_DrawGenericBackgroundMenu(void)
@@ -5474,16 +5487,7 @@ static void M_DrawGenericScrollMenu(void)
 
 	// dumb hack
 	// tooltips
-	// same macro here
-	DoToolTips(OP_ExpOptionsDef, OP_ExpTooltips);
-#ifdef HWRENDER
-	DoToolTips(OP_OpenGLOptionsDef, OP_OpenGLTooltips);
-#endif
-	DoToolTips(OP_SaturnDef, OP_SaturnTooltips);
-	DoToolTips(OP_SaturnHudDef, OP_SaturnHudTooltips);
-	DoToolTips(OP_AdvServerOptionsDef, OP_AdvServerOptionsTooltips);
-	DoToolTips(OP_SoundAdvancedDef, OP_SoundAdvancedTooltips);
-	DoToolTips(OP_PlayerDistortDef, OP_PlayerDistortTooltips);
+	M_DoToolTips(currentMenu);
 }
 
 static void M_DrawPauseMenu(void)
@@ -5717,8 +5721,16 @@ boolean M_CanShowLevelInList(INT32 mapnum, INT32 gt)
 	{
 		case LLM_CREATESERVER:
 			// Should the map be hidden? <-- well imma wanna toggle it, its just annoying being unable to select hell maps in mapselect
-			if ((mapheaderinfo[mapnum]->menuflags & LF2_HIDEINMENU && mapnum+1 != gamemap) && (gt == GT_RACE && (mapheaderinfo[mapnum]->typeoflevel & TOL_RACE))) // map hell
-				return cv_showallmaps.value;
+
+			if (mapheaderinfo[mapnum]->menuflags & LF2_HIDEINMENU && mapnum+1 != gamemap)
+			{
+				if (cv_showallmaps.value &&
+					((gt == GT_RACE && (mapheaderinfo[mapnum]->typeoflevel & TOL_RACE)) ||                         // race map hell
+					((gt == GT_MATCH || gt == GT_TEAMMATCH) && (mapheaderinfo[mapnum]->typeoflevel & TOL_MATCH)))) // battle map hell
+					return true;
+				else
+					return false;
+			}
 
 			// same goes here, just show every map if i want to
 			if (M_MapLocked(mapnum+1)) // not unlocked
@@ -5798,7 +5810,7 @@ menu_t MessageDef =
 	0, 0,               // x, y                (TO HACK)
 	0,                  // lastOn, flags       (TO HACK)
 	NULL,
-	{0},
+	NULL,
 };
 
 
@@ -6291,12 +6303,16 @@ static boolean M_AddonsRefresh(void)
 	return false;
 }
 
+static tic_t addons_scrolltic = 0; // maybe not the best place but e
+
 static void M_DrawAddons(void)
 {
 	INT32 x, y;
 	ssize_t i, m;
 	const UINT8 *flashcol = NULL;
 	UINT8 hilicol;
+
+	if (renderisnewtic) addons_scrolltic++;
 
 	// hack - need to refresh at end of frame to handle addfile...
 	if (refreshdirmenu & M_AddonsRefresh())
@@ -6381,6 +6397,9 @@ static void M_DrawAddons(void)
 	for (; i < m; i++)
 	{
 		UINT32 flags = V_ALLOWLOWERCASE;
+#define MAXADDONNAME 31
+		char scrollbuf[MAXADDONNAME+1] = {0};
+
 		if (y > BASEVIDHEIGHT) break;
 		if (dirmenu[i])
 #define type (UINT8)(dirmenu[i][DIR_TYPE])
@@ -6401,11 +6420,22 @@ static void M_DrawAddons(void)
 			}
 
 #define charsonside 14
-			if (dirmenu[i][DIR_LEN] > (charsonside*2 + 3))
-				V_DrawString(x, y+4, flags, va("%.*s...%s", charsonside, dirmenu[i]+DIR_STRING, dirmenu[i]+DIR_STRING+dirmenu[i][DIR_LEN]-(charsonside+1)));
+			if (dirmenu[i][DIR_LEN] > MAXADDONNAME)
+			{
+				if ((size_t)i == dir_on[menudepthleft])
+				{
+					M_ScrollString(dirmenu[i]+DIR_STRING, dirmenu[i][DIR_LEN]-1, scrollbuf, MAXADDONNAME, addons_scrolltic);
+				}
+				else
+					strncpy(scrollbuf, va("%.*s...%s", charsonside, dirmenu[i]+DIR_STRING, dirmenu[i]+DIR_STRING+dirmenu[i][DIR_LEN]-(charsonside+1)), MAXADDONNAME);
+
+				V_DrawString(x, y+4, flags, scrollbuf);
+			}
 #undef charsonside
 			else
 				V_DrawString(x, y+4, flags, dirmenu[i]+DIR_STRING);
+
+#undef MAXADDONNAME
 		}
 #undef type
 		y += 16;
@@ -6530,11 +6560,13 @@ static void M_HandleAddons(INT32 choice)
 		case KEY_DOWNARROW:
 			if (dir_on[menudepthleft] < sizedirmenu-1)
 				dir_on[menudepthleft]++;
+			addons_scrolltic = 0;
 			S_StartSound(NULL, sfx_menu1);
 			break;
 		case KEY_UPARROW:
 			if (dir_on[menudepthleft])
 				dir_on[menudepthleft]--;
+			addons_scrolltic = 0;
 			S_StartSound(NULL, sfx_menu1);
 			break;
 		case KEY_PGDN:
@@ -6543,6 +6575,7 @@ static void M_HandleAddons(INT32 choice)
 				for (i = numaddonsshown; i && (dir_on[menudepthleft] < sizedirmenu-1); i--)
 					dir_on[menudepthleft]++;
 			}
+			addons_scrolltic = 0;
 			S_StartSound(NULL, sfx_menu1);
 			break;
 		case KEY_PGUP:
@@ -6551,6 +6584,7 @@ static void M_HandleAddons(INT32 choice)
 				for (i = numaddonsshown; i && (dir_on[menudepthleft]); i--)
 					dir_on[menudepthleft]--;
 			}
+			addons_scrolltic = 0;
 			S_StartSound(NULL, sfx_menu1);
 			break;
 		case KEY_ENTER:
@@ -6690,6 +6724,7 @@ static void M_HandleAddons(INT32 choice)
 
 		case KEY_ESCAPE:
 			exitmenu = true;
+			addons_scrolltic = 0;
 			break;
 
 		default:
@@ -6862,6 +6897,32 @@ static void M_HutCheckReplays(size_t maxnum)
 	}
 }
 
+static int ReplayListSortComparator(const void *entry1, const void *entry2)
+{
+	const menudemo_t *demo1 = (const menudemo_t*)entry1;
+	const menudemo_t *demo2 = (const menudemo_t*)entry2;
+
+	char filepath1[sizeof(demo1->filepath)];
+	char filepath2[sizeof(demo2->filepath)];
+
+	// First check for directories, they always should be at the top
+	if (demo1->type == MD_SUBDIR && demo2->type != MD_SUBDIR)
+		return -1;
+	else if (demo2->type == MD_SUBDIR && demo1->type != MD_SUBDIR)
+		return 1;
+	else if (demo1->type == MD_SUBDIR && demo2->type == MD_SUBDIR)
+		return 0;
+
+	memcpy(filepath1, demo1->filepath, sizeof(filepath1));
+	memcpy(filepath2, demo2->filepath, sizeof(filepath2));
+
+	nameonly(filepath1);
+	nameonly(filepath2);
+
+	// Comparing in opposite order to move new replays to the top
+	return strncmp(filepath2, filepath1, sizeof(filepath1));
+}
+
 static void PrepReplayList(boolean reset)
 {
 	size_t i;
@@ -6904,6 +6965,8 @@ static void PrepReplayList(boolean reset)
 			sprintf(demolist_all[i].title, ".....");
 		}
 	}
+
+	qs22j(demolist_all, sizedirmenu, sizeof(menudemo_t), ReplayListSortComparator);
 
 	Unlock_search_state();
 
@@ -8428,56 +8491,11 @@ static musicdef_t *curplaying = NULL;
 static INT32 st_sel = 0;
 static tic_t st_musictime = 0;
 
-static void scrollMusicName(const char name[], size_t len, size_t maxlen, char result[])
-{
-	// How much should we scroll. Not sure why +1 is needed, but without it this function skips 2
-	// characters at once sometimes
-	const size_t amount = len - maxlen + 1;
-
-	// Note: anything above 17 will cause zero division
-	const size_t MAXSPEED = 6;
-	const size_t t = st_musictime / (35/min(amount, MAXSPEED));
-
-	const size_t state = (t / amount) % 4;
-
-	switch (state)
-	{
-		// Show beginning of the name
-		case 0:
-			memcpy(result, name, maxlen-1);
-		break;
-
-		// Scroll towards end of the name
-		case 1:
-		{
-			const size_t advance = t % amount;
-			memcpy(result, name+advance, maxlen-1);
-		}
-		break;
-
-		// Show end of the name
-		case 2:
-			memcpy(result, name+len+1-maxlen, maxlen-1);
-		break;
-
-		// Scroll towards start of the name
-		case 3:
-		{
-			const size_t advance = t % amount;
-			memcpy(result, name+len+1-maxlen-advance, maxlen-1);
-		}
-		break;
-	}
-
-	// Technically not necessary, since it gets set again after function call, but just in case
-	result[maxlen] = 0;
-}
-
 static void M_MusicTest(INT32 choice)
 {
 	(void)choice;
 
-	if (!S_PrepareSoundTest())
+	if (!nummusicdefs)
 	{
 		M_StartMessage(M_GetText("No selectable tracks found.\n"),NULL,MM_NOTHING);
 		return;
@@ -8556,33 +8574,33 @@ static void M_DrawMusicTest(void)
 	{
 		INT32 t, b, q, m = 128;
 
-		if (numsoundtestdefs <= 8)
+		if (nummusicdefs <= 8)
 		{
 			t = 0;
-			b = numsoundtestdefs - 1;
+			b = nummusicdefs - 1;
 			i = 0;
 		}
 		else
 		{
 			q = m;
-			m = (5*m)/numsoundtestdefs;
+			m = (5*m)/nummusicdefs;
 			if (st_sel < 3)
 			{
 				t = 0;
 				b = 7;
 				i = 0;
 			}
-			else if (st_sel >= numsoundtestdefs-4)
+			else if (st_sel >= nummusicdefs-4)
 			{
-				t = numsoundtestdefs - 8;
-				b = numsoundtestdefs - 1;
+				t = nummusicdefs - 8;
+				b = nummusicdefs - 1;
 				i = q-m;
 			}
 			else
 			{
 				t = st_sel - 3;
 				b = st_sel + 4;
-				i = (t * (q-m))/(numsoundtestdefs - 8);
+				i = (t * (q-m))/(nummusicdefs - 8);
 			}
 		}
 
@@ -8591,7 +8609,7 @@ static void M_DrawMusicTest(void)
 		if (t != 0)
 			V_DrawString(20+280+4, 60+4 - (skullAnimCounter/5), V_YELLOWMAP, "\x1A");
 
-		if (b != numsoundtestdefs - 1)
+		if (b != nummusicdefs - 1)
 			V_DrawString(20+280+4, 60+128-12 + (skullAnimCounter/5), V_YELLOWMAP, "\x1B");
 
 		x = 24;
@@ -8605,21 +8623,22 @@ static void M_DrawMusicTest(void)
 				V_DrawFill(20, y-4, 280-1, 16, 237);
 
 			{
+				const musicdef_t *def = S_GetMusicCredit(t);
 				const size_t MAXLENGTH = 34;
-				const char *songname = soundtestdefs[t]->title[0] ? soundtestdefs[t]->title : soundtestdefs[t]->source;
+				const char *songname = def->title[0] ? def->title : def->source;
 
 				size_t namelength = strlen(songname);
 
 				char buf[MAXLENGTH+1];
 
 				if (t == st_sel && namelength > MAXLENGTH)
-					scrollMusicName(songname, namelength, MAXLENGTH, buf);
+					M_ScrollString(songname, namelength, buf, MAXLENGTH, st_musictime);
 				else
 					strncpy(buf, songname, MAXLENGTH);
 				buf[MAXLENGTH] = 0;
 
 				V_DrawString(x, y, (t == st_sel ? V_YELLOWMAP : 0)|V_ALLOWLOWERCASE|V_MONOSPACE, buf);
-				if (curplaying == soundtestdefs[t])
+				if (curplaying == def)
 				{
 					V_DrawFill(20+280-9, y-4, 8, 16, 230);
 				}
@@ -8637,7 +8656,7 @@ static void M_HandleMusicTest(INT32 choice)
 	switch (choice)
 	{
 		case KEY_DOWNARROW:
-			if (st_sel++ >= numsoundtestdefs-1)
+			if (st_sel++ >= nummusicdefs-1)
 				st_sel = 0;
 			{
 				S_StartSound(NULL, sfx_menu1);
@@ -8646,18 +8665,18 @@ static void M_HandleMusicTest(INT32 choice)
 			break;
 		case KEY_UPARROW:
 			if (!st_sel--)
-				st_sel = numsoundtestdefs-1;
+				st_sel = nummusicdefs-1;
 			{
 				S_StartSound(NULL, sfx_menu1);
 			}
 			st_musictime = 0;
 			break;
 		case KEY_PGDN:
-			if (st_sel < numsoundtestdefs-1)
+			if (st_sel < nummusicdefs-1)
 			{
 				st_sel += 3;
-				if (st_sel >= numsoundtestdefs-1)
-					st_sel = numsoundtestdefs-1;
+				if (st_sel >= nummusicdefs-1)
+					st_sel = nummusicdefs-1;
 				S_StartSound(NULL, sfx_menu1);
 			}
 			st_musictime = 0;
@@ -8691,7 +8710,7 @@ static void M_HandleMusicTest(INT32 choice)
 		case KEY_ENTER:
 			S_StopSounds();
 			S_StopMusic();
-			curplaying = soundtestdefs[st_sel];
+			curplaying = S_GetMusicCredit(st_sel);
 			S_ChangeMusicInternal(curplaying->name, true);
 			break;
 
@@ -8700,9 +8719,6 @@ static void M_HandleMusicTest(INT32 choice)
 	}
 	if (exitmenu)
 	{
-		Z_Free(soundtestdefs);
-		soundtestdefs = NULL;
-
 		if (currentMenu->prevMenu)
 			M_SetupNextMenu(currentMenu->prevMenu);
 		else
@@ -9593,13 +9609,64 @@ Fetch_servers_thread (int *id)
 }
 #endif/*MASTERSERVER*/
 
-#define SERVERHEADERHEIGHT 36
+#define SERVERHEADERHEIGHT 48
 #define SERVERLINEHEIGHT 12
 
 #define S_LINEY(n) currentMenu->y + SERVERHEADERHEIGHT + (n * SERVERLINEHEIGHT)
 
 #ifndef NONET
 static UINT32 localservercount;
+
+static void M_SearchServerList(void)
+{
+	char servername[MAXSERVERNAME+1] = {0};
+	serverlistsearchedcount = 0;
+
+	for (UINT32 i = 0; i < serverlistcount; ++i)
+	{
+		StripColors(servername, serverlist[i].info.servername, MAXSERVERNAME);
+		if (menuinput.length == 0 || strcasestr(servername, menuinput.buffer) != NULL)
+			serverlistsearched[serverlistsearchedcount++] = i;
+	}
+
+	if (menuinput.length > 0)
+		serverlistpage = 0;
+}
+
+static void M_HandleServerSearch(INT32 choice)
+{
+	boolean exitmenu = false; // exit to previous menu
+
+	switch (choice)
+	{
+		case KEY_DOWNARROW:
+			M_NextOpt();
+			S_StartSound(NULL, sfx_menu1);
+			break;
+		case KEY_UPARROW:
+			M_PrevOpt();
+			S_StartSound(NULL, sfx_menu1);
+			break;
+		case KEY_ESCAPE:
+			exitmenu = true;
+			break;
+
+		default:
+			if (M_TextInputHandle(&menuinput, choice))
+			{
+				S_StartSound(NULL, sfx_menu1);
+				M_SearchServerList();
+			}
+			break;
+	}
+	if (exitmenu)
+	{
+		if (currentMenu->prevMenu)
+			M_SetupNextMenu(currentMenu->prevMenu);
+		else
+			M_ClearMenus(true);
+	}
+}
 
 static void M_HandleServerPage(INT32 choice)
 {
@@ -9623,7 +9690,7 @@ static void M_HandleServerPage(INT32 choice)
 		case KEY_ENTER:
 		case KEY_RIGHTARROW:
 			S_StartSound(NULL, sfx_menu1);
-			if ((serverlistpage + 1) * SERVERS_PER_PAGE < serverlistcount)
+			if ((serverlistpage + 1) * SERVERS_PER_PAGE < serverlistsearchedcount)
 			{
 				oldserverlistpage = serverlistpage++;
 				serverlistslidex = BASEVIDWIDTH;
@@ -9654,7 +9721,7 @@ static void M_Connect(INT32 choice)
 {
 	// do not call menuexitfunc
 	M_ClearMenus(false);
-	COM_BufAddText(va("connect node %d\n", serverlist[choice-FIRSTSERVERLINE + serverlistpage * SERVERS_PER_PAGE].node));
+	COM_BufAddText(va("connect node %d\n", serverlist[serverlistsearched[choice-FIRSTSERVERLINE + serverlistpage * SERVERS_PER_PAGE]].node));
 }
 
 static void M_Refresh(INT32 choice)
@@ -9712,11 +9779,11 @@ static void M_DrawServerCountAndHorizontalBar(void)
 
 	radius = V_StringWidth(text, 0) / 2;
 
-	V_DrawCenteredString(center, currentMenu->y+28, 0, text);
+	V_DrawCenteredString(center, currentMenu->y+40, 0, text);
 
 	// Horizontal line!
-	V_DrawFill(1, currentMenu->y+32, center - radius - 2, 1, 0);
-	V_DrawFill(center + radius + 2, currentMenu->y+32, BASEVIDWIDTH - 1, 1, 0);
+	V_DrawFill(1, currentMenu->y+44, center - radius - 2, 1, 0);
+	V_DrawFill(center + radius + 2, currentMenu->y+44, BASEVIDWIDTH - 1, 1, 0);
 }
 #endif
 
@@ -9726,9 +9793,9 @@ static void M_DrawServerLines(INT32 x, INT32 page)
 	const char *gt = "Unknown";
 	const char *spd = "";
 
-	for (i = 0; i < min(serverlistcount - page * SERVERS_PER_PAGE, SERVERS_PER_PAGE); i++)
+	for (i = 0; i < min(serverlistsearchedcount - page * SERVERS_PER_PAGE, SERVERS_PER_PAGE); i++)
 	{
-		INT32 slindex = i + page * SERVERS_PER_PAGE;
+		INT32 slindex = serverlistsearched[i + page * SERVERS_PER_PAGE];
 		UINT32 globalflags = ((serverlist[slindex].info.numberofplayer >= serverlist[slindex].info.maxplayer) ? V_TRANSLUCENT : 0)
 			|((itemOn == FIRSTSERVERLINE+i) ? highlightflags : 0)|V_ALLOWLOWERCASE;
 
@@ -9767,7 +9834,7 @@ static void M_DrawServerLines(INT32 x, INT32 page)
 static void M_DrawConnectMenu(void)
 {
 	UINT16 i;
-	INT32 numPages = (serverlistcount+(SERVERS_PER_PAGE-1))/SERVERS_PER_PAGE;
+	INT32 numPages = (serverlistsearchedcount+(SERVERS_PER_PAGE-1))/SERVERS_PER_PAGE;
 	INT32 mservflags = V_ALLOWLOWERCASE;
 
 	for (i = FIRSTSERVERLINE; i < min(localservercount, SERVERS_PER_PAGE)+FIRSTSERVERLINE; i++)
@@ -9816,6 +9883,16 @@ static void M_DrawConnectMenu(void)
 	{
 		M_DrawServerLines(currentMenu->x, serverlistpage);
 	}
+
+	V_DrawFill(currentMenu->x, currentMenu->y, MAXSTRINGLENGTH*8+6, 8+6, 239);
+
+	const INT32 xoff = 3, yoff = 3;
+
+
+	if (itemOn != 0)
+		V_DrawString(currentMenu->x+xoff, currentMenu->y+yoff, V_ALLOWLOWERCASE, menuinput.buffer);
+	else
+		M_DrawTextInput(currentMenu->x+xoff, currentMenu->y+yoff, &menuinput, 0);
 
 	localservercount = serverlistcount;
 
@@ -9896,6 +9973,7 @@ void M_SortServerList(void)
 		qs22j(serverlist, serverlistcount, sizeof(serverelem_t), ServerListEntryComparator_gametype);
 		break;
 	}
+	M_SearchServerList();
 #endif
 }
 
@@ -9953,6 +10031,9 @@ static void M_ConnectMenu(INT32 choice)
 	serverlistpage = 0;
 
 	CL_UpdateServerList();
+
+	// Reset
+	M_TextInputSetString(&menuinput, "");
 
 	M_SetupNextMenu(&MP_ConnectDef);
 	itemOn = 0;
@@ -10209,17 +10290,28 @@ static void M_DrawLevelSelectOnly(boolean leftfade, boolean rightfade)
 
 	if (cv_nextmap.value && cv_showtrackaddon.value)
 	{
+		static tic_t namescroll = 0;
+		static INT32 namescrollmap = 0;
+		char namescrollbuf[64]= {0};
+
+		if (cv_nextmap.value != namescrollmap)
+		{
+			namescrollmap = cv_nextmap.value;
+			namescroll = 0;
+		}
+
+		if (renderisnewtic) namescroll++;
+
 		char *addonname = wadfiles[mapwads[cv_nextmap.value-1]]->filename;
 		INT32 len;
-		INT32 charlimit = 21 + (dupadjust/5);
+		INT32 charlimit = min((size_t)(21 + (dupadjust/5)), sizeof(namescrollbuf)-1);
 		nameonly(addonname);
 		len = strlen(addonname);
-#define charsonside 14
 		if (len > charlimit)
-			V_DrawThinString(x+w+5, y+i-8, V_TRANSLUCENT|MENUCAPS, va("%.*s...%s", charsonside, addonname, addonname+((len-charlimit) + charsonside))); // variable reuse...
-#undef charsonside
+			M_ScrollString(addonname, len, namescrollbuf, charlimit, namescroll);
 		else
-			V_DrawThinString(x+w+5, y+i-8, V_TRANSLUCENT|MENUCAPS, addonname); // variable reuse...
+			strncpy(namescrollbuf, addonname, sizeof(namescrollbuf));
+		V_DrawThinString(x+w+5, y+i-8, V_TRANSLUCENT|MENUCAPS, namescrollbuf); // variable reuse...
 	}
 
 	if (!cv_kartencore.value || gamestate == GS_TIMEATTACK || cv_newgametype.value != GT_RACE)

@@ -14,6 +14,10 @@
 #ifndef _HWR_GLOB_H_
 #define _HWR_GLOB_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "hw_defs.h"
 #include "../m_misc.h"
 #include "../r_defs.h"
@@ -108,5 +112,9 @@ void HWR_LoadCustomShadersFromFile(UINT16 wadnum, boolean PK3);
 const char *HWR_GetShaderName(INT32 shader);
 
 extern customshaderxlat_t shaderxlat[];
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif //_HW_GLOB_

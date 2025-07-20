@@ -4,6 +4,10 @@
 #ifndef __FILESRCH_H__
 #define __FILESRCH_H__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "doomdef.h"
 #include "d_netfil.h"
 #include "m_menu.h" // MAXSTRINGLENGTH
@@ -95,5 +99,9 @@ INT32 pathisdirectory(const char *path);
 void closefilemenu(boolean validsize);
 void searchfilemenu(char *tempname);
 boolean preparefilemenu(boolean samedepth, boolean replayhut);
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif // __FILESRCH_H__

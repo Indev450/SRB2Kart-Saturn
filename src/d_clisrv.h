@@ -13,6 +13,10 @@
 #ifndef __D_CLISRV__
 #define __D_CLISRV__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "d_ticcmd.h"
 #include "d_net.h"
 #include "d_netcmd.h"
@@ -666,6 +670,8 @@ SINT8 nametonum(const char *name);
 extern char motd[254], server_context[8];
 extern UINT8 playernode[MAXPLAYERS];
 
+extern boolean player_muted[MAXPLAYERS];
+
 INT32 D_NumPlayers(void);
 
 void D_ResetTiccmds(void);
@@ -693,4 +699,9 @@ typedef struct rewind_s {
 void CL_ClearRewinds(void);
 rewind_t *CL_SaveRewindPoint(size_t demopos);
 rewind_t *CL_RewindToTime(tic_t time);
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
+
 #endif

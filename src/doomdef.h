@@ -58,6 +58,9 @@
 // warning C4152: nonstandard extension, function/data pointer conversion in expression
 // warning C4213: nonstandard extension used : cast on l-value
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #include "doomtype.h"
 
@@ -68,11 +71,6 @@
 
 #define _USE_MATH_DEFINES // fixes M_PI errors in r_plane.c for Visual Studio
 #include <math.h>
-
-#ifdef GETTEXT
-#include <libintl.h>
-#include <locale.h>
-#endif
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -447,14 +445,8 @@ void CONS_Debug(INT32 debugflags, const char *fmt, ...) FUNCDEBUG;
 extern char savegamename[256];
 
 // m_misc.h
-#ifdef GETTEXT
-#define M_GetText(String) gettext(String)
-void M_StartupLocale(void);
-#else
-// If no translations are to be used, make a stub
-// M_GetText function that just returns the string.
+//TODO: delet this
 #define M_GetText(x) (x)
-#endif
 
 FUNCINLINE static ATTRINLINE void *M_Memcpy(void *dest, const void *src, size_t n)
 {
@@ -524,12 +516,15 @@ UINT32 quickncasehash (const char *p, size_t n)
 	return x;
 }
 
+#ifndef __cplusplus
 #ifndef min // Double-Check with WATTCP-32's cdefs.h
 #define min(x, y) (((x) < (y)) ? (x) : (y))
 #endif
 #ifndef max // Double-Check with WATTCP-32's cdefs.h
 #define max(x, y) (((x) > (y)) ? (x) : (y))
 #endif
+#endif
+
 #ifndef CLAMP
 #define CLAMP(x, y, z) ((x) < (y) ? (y) : ((x) > (z) ? (z) : (x)))
 #endif
@@ -558,6 +553,14 @@ UINT32 quickncasehash (const char *p, size_t n)
 #else
 #define LIKELY(x)       (x)
 #define UNLIKELY(x)     (x)
+#endif
+
+#ifdef __cplusplus
+#if defined(__GNUC__) || defined(__clang__) || defined(_MSC_VER)
+	#define restrict __restrict
+#else
+	#define restrict
+#endif
 #endif
 
 // An assert-type mechanism.
@@ -655,6 +658,10 @@ extern const char *compdate, *comptime, *comprevision, *compbranch;
 #define HOLEPUNCH
 #else
 #undef UPDATE_ALERT
+#endif
+
+#ifdef __cplusplus
+} // extern "C"
 #endif
 
 #endif // __DOOMDEF__
