@@ -16,6 +16,7 @@
 #include "dehacked.h"
 #include "p_mobj.h"
 #include "p_local.h"
+#include "s_sound.h"
 #include "z_zone.h"
 
 #include "lua_script.h"
@@ -1072,6 +1073,109 @@ static int sfxinfo_num(lua_State *L)
 	return 1;
 }
 
+enum musicdef_e {
+	musicdef_name = 0,
+	musicdef_usage,
+	musicdef_source,
+	musicdef_filename,
+	musicdef_title,
+	musicdef_alttitle,
+	musicdef_authors,
+};
+
+const char *const musicdef_opt[] = {
+	"name",
+	"usage",
+	"source",
+	"filename",
+	"title",
+	"alttitle",
+	"authors",
+	NULL
+};
+
+static int musicdef_fields_ref = LUA_NOREF;
+
+static int lib_sFindMusicCredit(lua_State *L)
+{
+	const char *name = luaL_checkstring(L, 1);
+	LUA_PushUserdata(L, S_FindMusicCredit(name), META_MUSICDEF);
+	return 1;
+}
+
+static int lib_getMusicDef(lua_State *L)
+{
+	musicdef_t *def = NULL;
+
+	if (lua_isnumber(L, 2))
+		def = S_GetMusicCredit(lua_tonumber(L, 2));
+	else if (lua_isstring(L, 2))
+		def = S_FindMusicCredit(lua_tostring(L, 2));
+	else
+		return luaL_error(L, "musicdefs index must be number or string (got %s)", luaL_typename(L, 2));
+
+	LUA_PushUserdata(L, def, META_MUSICDEF);
+
+	return 1;
+}
+
+static int lib_setMusicDef(lua_State *L)
+{
+	return luaL_error(L, "musicdefs is read only");
+}
+
+static int lib_musicdefslen(lua_State *L)
+{
+	lua_pushinteger(L, nummusicdefs);
+	return 1;
+}
+
+static int musicdef_get(lua_State *L)
+{
+	musicdef_t *musicdef = *((musicdef_t **)luaL_checkudata(L, 1, META_MUSICDEF));
+	enum musicdef_e field = Lua_optoption(L, 2, -1, musicdef_fields_ref);
+
+	I_Assert(musicdef != NULL);
+
+	switch (field)
+	{
+	case musicdef_name:
+		lua_pushstring(L, musicdef->name);
+		return 1;
+	case musicdef_usage:
+		lua_pushstring(L, musicdef->usage);
+		return 1;
+	case musicdef_source:
+		lua_pushstring(L, musicdef->source);
+		return 1;
+	case musicdef_filename:
+		lua_pushstring(L, musicdef->filename);
+		return 1;
+	case musicdef_title:
+		lua_pushstring(L, musicdef->title);
+		return 1;
+	case musicdef_alttitle:
+		lua_pushstring(L, musicdef->alttitle);
+		return 1;
+	case musicdef_authors:
+		lua_pushstring(L, musicdef->authors);
+		return 1;
+	default:
+		return luaL_error(L, LUA_QL("musicdef_t") " has no field named " LUA_QS, lua_tostring(L, 2));
+	}
+	return 0;
+}
+
+static int musicdef_num(lua_State *L)
+{
+	musicdef_t *musicdef = *((musicdef_t **)luaL_checkudata(L, 1, META_MUSICDEF));
+
+	I_Assert(musicdef != NULL);
+
+	lua_pushinteger(L, musicdef->num);
+	return 1;
+}
+
 //////////////////////////////
 //
 // Now push all these functions into the Lua state!
@@ -1126,6 +1230,18 @@ int LUA_InfoLib(lua_State *L)
 
 	sfxinfo_fields_ref = Lua_CreateFieldTable(L, sfxinfo_opt);
 
+	luaL_newmetatable(L, META_MUSICDEF);
+		lua_pushcfunction(L, musicdef_get);
+		lua_setfield(L, -2, "__index");
+
+		lua_pushcfunction(L, musicdef_num);
+		lua_setfield(L, -2, "__len");
+	lua_pop(L, 1);
+
+	musicdef_fields_ref = Lua_CreateFieldTable(L, musicdef_opt);
+
+	lua_register(L, "S_FindMusicCredit", lib_sFindMusicCredit);
+
 	lua_newuserdata(L, 0);
 		lua_createtable(L, 0, 2);
 			lua_pushcfunction(L, lib_getSprname);
@@ -1176,5 +1292,19 @@ int LUA_InfoLib(lua_State *L)
 	lua_pushvalue(L, -1);
 	lua_setglobal(L, "S_sfx");
 	lua_setglobal(L, "sfxinfo");
+
+	lua_newuserdata(L, 0);
+		lua_createtable(L, 0, 2);
+			lua_pushcfunction(L, lib_getMusicDef);
+			lua_setfield(L, -2, "__index");
+
+			lua_pushcfunction(L, lib_setMusicDef);
+			lua_setfield(L, -2, "__newindex");
+
+			lua_pushcfunction(L, lib_musicdefslen);
+			lua_setfield(L, -2, "__len");
+		lua_setmetatable(L, -2);
+	lua_setglobal(L, "musicdefs");
+
 	return 0;
 }

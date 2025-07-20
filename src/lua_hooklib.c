@@ -14,6 +14,7 @@
 #include "doomstat.h"
 #include "p_mobj.h"
 #include "g_game.h"
+#include "r_skins.h"
 #include "r_things.h"
 #include "b_bot.h"
 #include "z_zone.h"
@@ -1060,6 +1061,18 @@ int LUA_HookMusicChange(const char *oldname, struct MusicChange *param)
 		}
 
 		lua_settop(gL, 0);
+	}
+
+	return hook.status;
+}
+
+int LUA_HookMusicCredit(musicdef_t *musicdef)
+{
+	Hook_State hook;
+	if (prepare_hook(&hook, 0, HOOK(MusicCredit)))
+	{
+		LUA_PushUserdata(gL, musicdef, META_MUSICDEF);
+		call_hooks(&hook, 1, res_true);
 	}
 
 	return hook.status;

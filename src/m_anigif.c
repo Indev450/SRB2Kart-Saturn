@@ -495,7 +495,7 @@ static void GIF_rgbconvert(UINT8 *linear, UINT8 *scr)
 static void GIF_framewrite(void)
 {
 	UINT8 *p;
-	UINT8 *movie_screen = screens[2];
+	UINT8 *movie_screen = vid.screens[2];
 	INT32 blitx, blity, blitw, blith;
 
 	if (!gifframe_data)
@@ -509,7 +509,7 @@ static void GIF_framewrite(void)
 	if (gif_optimize && gif_frames > 0)
 	{
 		// before blit movie_screen points to last frame, cur_screen points to this frame
-		UINT8 *cur_screen = screens[0];
+		UINT8 *cur_screen = vid.screens[0];
 		GIF_optimizeregion(cur_screen, movie_screen, &blitx, &blity, &blitw, &blith);
 
 		// blit to temp screen
@@ -535,7 +535,7 @@ static void GIF_framewrite(void)
 		if (rendermode == render_opengl)
 		{
 			UINT8 *linear = HWR_GetScreenshot();
-			GIF_rgbconvert(linear, screens[0]);
+			GIF_rgbconvert(linear, vid.screens[0]);
 			//free(linear); // Allocated 'statically', no need to free now
 		}
 #endif
@@ -545,7 +545,7 @@ static void GIF_framewrite(void)
 		if (gif_frames == 0 && rendermode == render_soft)
 			I_ReadScreen(movie_screen);
 
-		movie_screen = screens[0];
+		movie_screen = vid.screens[0];
 	}
 
 	// screen regions are handled in GIF_lzw

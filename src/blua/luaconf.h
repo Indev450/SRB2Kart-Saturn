@@ -774,6 +774,23 @@ union luai_Cast { double l_d; long l_l; };
 /* =================================================================== */
 
 /*
+ * * macros to improve jump prediction, used mostly for error handling
+ ** and debug facilities.
+ */
+#if !defined(l_likely)
+
+#include <stdio.h>
+#if defined(__GNUC__)
+#define l_likely(x)	(__builtin_expect(((x) != 0), 1))
+#define l_unlikely(x)	(__builtin_expect(((x) != 0), 0))
+#else
+#define l_likely(x)	(x)
+#define l_unlikely(x)	(x)
+#endif
+
+#endif
+
+/*
 ** Local configuration. You can use this space to add your redefinitions
 ** without modifying the main part of the file.
 */

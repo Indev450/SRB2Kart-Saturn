@@ -75,4 +75,6 @@ void R_ClearVisibleFloorSplats(void);
 void R_AddVisibleFloorSplats(subsector_t *subsec);
 void R_DrawVisibleFloorSplats(void);
 
+void R_AllocFloorSpriteTables(void);
+
 #endif /*__R_SPLATS_H__*/

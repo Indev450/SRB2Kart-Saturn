@@ -10,6 +10,9 @@
 /// \file  lua_libs.h
 /// \brief libraries for Lua scripting
 
+#include "doomtype.h"
+#include "blua/lua.h"
+
 extern lua_State *gL;
 
 #define LREG_VALID "VALID_USERDATA"
@@ -20,6 +23,7 @@ extern lua_State *gL;
 #define META_STATE "STATE_T*"
 #define META_MOBJINFO "MOBJINFO_T*"
 #define META_SFXINFO "SFXINFO_T*"
+#define META_MUSICDEF "MUSICDEF_T*"
 
 #define META_MOBJ "MOBJ_T*"
 #define META_MAPTHING "MAPTHING_T*"

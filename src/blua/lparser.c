@@ -103,7 +103,7 @@ static void checknext (LexState *ls, int c) {
 
 
 static void check_match (LexState *ls, int what, int who, int where) {
-  if (!testnext(ls, what)) {
+  if (l_unlikely(!testnext(ls, what))) {
     if (where == ls->linenumber)
       error_expected(ls, what);
     else {
@@ -275,7 +275,7 @@ static void adjust_assign (LexState *ls, int nvars, int nexps, expdesc *e) {
 
 
 static void enterlevel (LexState *ls) {
-  if (++ls->L->nCcalls > LUAI_MAXCCALLS)
+  if (l_unlikely(++ls->L->nCcalls > LUAI_MAXCCALLS))
 	luaX_lexerror(ls, "chunk has too many syntax levels", 0);
 }
 
@@ -643,7 +643,7 @@ static void funcargs (LexState *ls, expdesc *f) {
   int line = ls->linenumber;
   switch (ls->t.token) {
     case '(': {  /* funcargs -> `(' [ explist1 ] `)' */
-      if (line != ls->lastline)
+      if (l_unlikely(line != ls->lastline))
         luaX_syntaxerror(ls,"ambiguous syntax (function call x new statement)");
       luaX_next(ls);
       if (ls->t.token == ')')  /* arg list is empty? */
@@ -712,7 +712,7 @@ static void prefixexp (LexState *ls, expdesc *v) {
     case '$': {
       lua_Number i = ls->t.seminfo.r;
       if (i == 0) i = ls->fs->nrhs;
-      if (i <= 0 || i > ls->fs->nlhs)
+      if (l_unlikely(i <= 0 || i > ls->fs->nlhs))
         luaX_syntaxerror(ls, "pseudo-variable out of range or not in assignment");
       else {
         expdesc_list *lhs = ls->fs->lhs;
@@ -1105,7 +1105,7 @@ static void breakstat (LexState *ls, lua_Number n) {
     upval |= bl->upval;
     bl = bl->previous;
   }
-  if (!bl)
+  if (l_unlikely(!bl))
     luaX_syntaxerror(ls, "no loop to break");
   if (upval)
     luaK_codeABC(fs, OP_CLOSE, bl->nactvar, 0, 0);
@@ -1124,7 +1124,7 @@ static void continuestat (LexState *ls) {
     //upval |= bl->upval;     // AK: ADDITION (would this fix forbody probs?)
     bl = bl->previous;
   }
-  if (!bl)
+  if (l_unlikely(!bl))
     luaX_syntaxerror(ls, "no loop to continue");
 
   //if (upval)    //AK: experimental

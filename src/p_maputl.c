@@ -908,7 +908,7 @@ void P_SetUnderlayPosition(mobj_t *thing)
 
 void P_SetPrecipitationThingPosition(precipmobj_t *thing)
 {
-	thing->subsector = R_PointInSubsector(thing->x, thing->y);
+	thing->subsector = R_PointInSubsectorFast(thing->x, thing->y);
 
 	// NOTE: this works because bnext/bprev are at the same
 	// offsets in precipmobj_t and mobj_t

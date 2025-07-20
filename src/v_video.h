@@ -14,6 +14,10 @@
 #ifndef __V_VIDEO__
 #define __V_VIDEO__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "doomdef.h"
 #include "doomtype.h"
 #include "r_defs.h"
@@ -22,11 +26,6 @@
 //
 // VIDEO
 //
-
-// Screen 0 is the screen updated by I_Update screen.
-// Screen 1 is an extra buffer.
-
-extern UINT8 *screens[5];
 
 extern consvar_t cv_ticrate, cv_accuratefps, cv_allcaps, cv_constextsize, cv_menucaps,
 cv_globalgamma, cv_globalsaturation,
@@ -289,5 +288,9 @@ void V_DrawHorizontallyScaledFullScreenPatch(patch_t *patch);
 
 void VID_BlitLinearScreen(const UINT8 *srcptr, UINT8 *destptr, INT32 width, INT32 height, size_t srcrowbytes,
 	size_t destrowbytes);
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif
