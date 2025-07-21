@@ -1166,7 +1166,7 @@ static void R_DrawWallColumn(drawcolumndata_t* dc, INT32 yl, INT32 yh, fixed_t m
 	dc->source = R_GetColumn(texture, texturecolumn);
 	dc->texheight = textureheight[texture] >> FRACBITS;
 	dc->sourcelength = dc->texheight;
-	R_SetColumnFunc(colfunctype);
+	//R_SetColumnFunc(colfunctype);
 	coldrawfunc_t* colfunccopy = colfunc;
 	drawcolumndata_t dc_copy = *dc;
 	if (remap)
