@@ -8967,7 +8967,7 @@ void P_MobjThinker(mobj_t *mobj)
 	I_Assert(mobj != NULL);
 	I_Assert(!P_MobjWasRemoved(mobj));
 
-	if (mobj->flags & MF_NOTHINK)
+	if (UNLIKELY(mobj->flags & MF_NOTHINK))
 		return;
 
 	// Remove dead target/tracer.
@@ -8987,10 +8987,9 @@ void P_MobjThinker(mobj_t *mobj)
 	tmfloorthing = tmhitthing = NULL;
 
 	// 970 allows ANY mobj to trigger a linedef exec
-	if (mobj->subsector && GETSECSPECIAL(mobj->subsector->sector->special, 2) == 8)
+	if (UNLIKELY(sec1 && GETSECSPECIAL(sec1->special, 2) == 8))
 	{
 		sector_t *sec2;
-
 		sec2 = P_ThingOnSpecial3DFloor(mobj);
 		if (sec2 && GETSECSPECIAL(sec2->special, 2) == 1)
 			P_LinedefExecute(sec2->tag, mobj, sec2);
@@ -9054,7 +9053,7 @@ void P_MobjThinker(mobj_t *mobj)
 	if (mobj->flags2 & MF2_FIRING && mobj->target && mobj->health > 0)
 		P_FiringThink(mobj);
 
-	if (mobj->flags & MF_AMBIENT)
+	if (UNLIKELY(mobj->flags & MF_AMBIENT))
 	{
 		if (leveltime % mobj->health)
 			return;
@@ -9104,7 +9103,7 @@ void P_MobjThinker(mobj_t *mobj)
 		|| mobj->type == MT_FLINGEMERALD
 		|| mobj->type == MT_BIGTUMBLEWEED
 		|| mobj->type == MT_LITTLETUMBLEWEED
-		|| mobj->type == MT_CANNONBALLDECOR
+		|| mobj->type == MT_CANNONBALLDECOR)
 		|| mobj->type == MT_FALLINGROCK)
 	{
 		P_TryMove(mobj, mobj->x, mobj->y, true); // Sets mo->standingslope correctly
@@ -9144,13 +9143,12 @@ void P_MobjThinker(mobj_t *mobj)
 
 	if (UNLIKELY(P_WeaponOrPanel(mobj->type)))
 	{
-		case MT_BOUNCEPICKUP ... MT_GRENADEPICKUP:
-			if (mobj->health == 0) // Fading tile
-			{
-				INT32 value = mobj->info->damage/10;
-				value = mobj->fuse/value;
-				value = 10-value;
-				value--;
+		if (mobj->health == 0) // Fading tile
+		{
+			INT32 value = mobj->info->damage/10;
+			value = mobj->fuse/value;
+			value = 10-value;
+			value--;
 
 			if (value <= 0)
 				value = 1;
@@ -9983,6 +9981,7 @@ static precipmobj_t *P_SpawnPrecipMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype
 	else
 	{
 		const INT32 special = GETSECSPECIAL(mobj->subsector->sector->special, 1);
+
 		if (special == 7 || special == 6 || mobj->subsector->sector->floorpic == skyflatnum)
 			mobj->precipflags |= PCF_PIT;
 	}
