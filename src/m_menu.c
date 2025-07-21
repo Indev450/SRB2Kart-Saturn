@@ -2701,8 +2701,16 @@ boolean M_CanShowLevelInList(INT32 mapnum, INT32 gt)
 	{
 		case LLM_CREATESERVER:
 			// Should the map be hidden? <-- well imma wanna toggle it, its just annoying being unable to select hell maps in mapselect
-			if ((mapheaderinfo[mapnum]->menuflags & LF2_HIDEINMENU && mapnum+1 != gamemap) && (gt == GT_RACE && (mapheaderinfo[mapnum]->typeoflevel & TOL_RACE))) // map hell
-				return cv_showallmaps.value;
+
+			if (mapheaderinfo[mapnum]->menuflags & LF2_HIDEINMENU && mapnum+1 != gamemap)
+			{
+				if (cv_showallmaps.value &&
+					((gt == GT_RACE && (mapheaderinfo[mapnum]->typeoflevel & TOL_RACE)) ||                         // race map hell
+					((gt == GT_MATCH || gt == GT_TEAMMATCH) && (mapheaderinfo[mapnum]->typeoflevel & TOL_MATCH)))) // battle map hell
+					return true;
+				else
+					return false;
+			}
 
 			// same goes here, just show every map if i want to
 			if (M_MapLocked(mapnum+1)) // not unlocked
@@ -3282,12 +3290,16 @@ static boolean M_AddonsRefresh(void)
 	return false;
 }
 
+static tic_t addons_scrolltic = 0; // maybe not the best place but e
+
 static void M_DrawAddons(void)
 {
 	INT32 x, y;
 	ssize_t i, m;
 	const UINT8 *flashcol = NULL;
 	UINT8 hilicol;
+
+	if (renderisnewtic) addons_scrolltic++;
 
 	// hack - need to refresh at end of frame to handle addfile...
 	if (refreshdirmenu & M_AddonsRefresh())
@@ -3372,6 +3384,9 @@ static void M_DrawAddons(void)
 	for (; i < m; i++)
 	{
 		UINT32 flags = V_ALLOWLOWERCASE;
+#define MAXADDONNAME 31
+		char scrollbuf[MAXADDONNAME+1] = {0};
+
 		if (y > BASEVIDHEIGHT) break;
 		if (dirmenu[i])
 #define type (UINT8)(dirmenu[i][DIR_TYPE])
@@ -3392,11 +3407,22 @@ static void M_DrawAddons(void)
 			}
 
 #define charsonside 14
-			if (dirmenu[i][DIR_LEN] > (charsonside*2 + 3))
-				V_DrawString(x, y+4, flags, va("%.*s...%s", charsonside, dirmenu[i]+DIR_STRING, dirmenu[i]+DIR_STRING+dirmenu[i][DIR_LEN]-(charsonside+1)));
+			if (dirmenu[i][DIR_LEN] > MAXADDONNAME)
+			{
+				if ((size_t)i == dir_on[menudepthleft])
+				{
+					M_ScrollString(dirmenu[i]+DIR_STRING, dirmenu[i][DIR_LEN]-1, scrollbuf, MAXADDONNAME, addons_scrolltic);
+				}
+				else
+					strncpy(scrollbuf, va("%.*s...%s", charsonside, dirmenu[i]+DIR_STRING, dirmenu[i]+DIR_STRING+dirmenu[i][DIR_LEN]-(charsonside+1)), MAXADDONNAME);
+
+				V_DrawString(x, y+4, flags, scrollbuf);
+			}
 #undef charsonside
 			else
 				V_DrawString(x, y+4, flags, dirmenu[i]+DIR_STRING);
+
+#undef MAXADDONNAME
 		}
 #undef type
 		y += 16;
@@ -3521,11 +3547,13 @@ static void M_HandleAddons(INT32 choice)
 		case KEY_DOWNARROW:
 			if (dir_on[menudepthleft] < sizedirmenu-1)
 				dir_on[menudepthleft]++;
+			addons_scrolltic = 0;
 			S_StartSound(NULL, sfx_menu1);
 			break;
 		case KEY_UPARROW:
 			if (dir_on[menudepthleft])
 				dir_on[menudepthleft]--;
+			addons_scrolltic = 0;
 			S_StartSound(NULL, sfx_menu1);
 			break;
 		case KEY_PGDN:
@@ -3534,6 +3562,7 @@ static void M_HandleAddons(INT32 choice)
 				for (i = numaddonsshown; i && (dir_on[menudepthleft] < sizedirmenu-1); i--)
 					dir_on[menudepthleft]++;
 			}
+			addons_scrolltic = 0;
 			S_StartSound(NULL, sfx_menu1);
 			break;
 		case KEY_PGUP:
@@ -3542,6 +3571,7 @@ static void M_HandleAddons(INT32 choice)
 				for (i = numaddonsshown; i && (dir_on[menudepthleft]); i--)
 					dir_on[menudepthleft]--;
 			}
+			addons_scrolltic = 0;
 			S_StartSound(NULL, sfx_menu1);
 			break;
 		case KEY_ENTER:
@@ -3681,6 +3711,7 @@ static void M_HandleAddons(INT32 choice)
 
 		case KEY_ESCAPE:
 			exitmenu = true;
+			addons_scrolltic = 0;
 			break;
 
 		default:
@@ -5337,51 +5368,6 @@ static musicdef_t *curplaying = NULL;
 static INT32 st_sel = 0;
 static tic_t st_musictime = 0;
 
-static void scrollMusicName(const char name[], size_t len, size_t maxlen, char result[])
-{
-	// How much should we scroll. Not sure why +1 is needed, but without it this function skips 2
-	// characters at once sometimes
-	const size_t amount = len - maxlen + 1;
-
-	// Note: anything above 17 will cause zero division
-	const size_t MAXSPEED = 6;
-	const size_t t = st_musictime / (35/min(amount, MAXSPEED));
-
-	const size_t state = (t / amount) % 4;
-
-	switch (state)
-	{
-		// Show beginning of the name
-		case 0:
-			memcpy(result, name, maxlen-1);
-		break;
-
-		// Scroll towards end of the name
-		case 1:
-		{
-			const size_t advance = t % amount;
-			memcpy(result, name+advance, maxlen-1);
-		}
-		break;
-
-		// Show end of the name
-		case 2:
-			memcpy(result, name+len+1-maxlen, maxlen-1);
-		break;
-
-		// Scroll towards start of the name
-		case 3:
-		{
-			const size_t advance = t % amount;
-			memcpy(result, name+len+1-maxlen-advance, maxlen-1);
-		}
-		break;
-	}
-
-	// Technically not necessary, since it gets set again after function call, but just in case
-	result[maxlen] = 0;
-}
-
 static void M_MusicTest(INT32 choice)
 {
 	(void)choice;
@@ -5523,7 +5509,7 @@ static void M_DrawMusicTest(void)
 				char buf[MAXLENGTH+1];
 
 				if (t == st_sel && namelength > MAXLENGTH)
-					scrollMusicName(songname, namelength, MAXLENGTH, buf);
+					M_ScrollString(songname, namelength, buf, MAXLENGTH, st_musictime);
 				else
 					strncpy(buf, songname, MAXLENGTH);
 				buf[MAXLENGTH] = 0;
@@ -7184,17 +7170,28 @@ static void M_DrawLevelSelectOnly(boolean leftfade, boolean rightfade)
 
 	if (cv_nextmap.value && cv_showtrackaddon.value)
 	{
+		static tic_t namescroll = 0;
+		static INT32 namescrollmap = 0;
+		char namescrollbuf[64]= {0};
+
+		if (cv_nextmap.value != namescrollmap)
+		{
+			namescrollmap = cv_nextmap.value;
+			namescroll = 0;
+		}
+
+		if (renderisnewtic) namescroll++;
+
 		char *addonname = wadfiles[mapwads[cv_nextmap.value-1]]->filename;
 		INT32 len;
-		INT32 charlimit = 21 + (dupadjust/5);
+		INT32 charlimit = min((size_t)(21 + (dupadjust/5)), sizeof(namescrollbuf)-1);
 		nameonly(addonname);
 		len = strlen(addonname);
-#define charsonside 14
 		if (len > charlimit)
-			V_DrawThinString(x+w+5, y+i-8, V_TRANSLUCENT|MENUCAPS, va("%.*s...%s", charsonside, addonname, addonname+((len-charlimit) + charsonside))); // variable reuse...
-#undef charsonside
+			M_ScrollString(addonname, len, namescrollbuf, charlimit, namescroll);
 		else
-			V_DrawThinString(x+w+5, y+i-8, V_TRANSLUCENT|MENUCAPS, addonname); // variable reuse...
+			strncpy(namescrollbuf, addonname, sizeof(namescrollbuf));
+		V_DrawThinString(x+w+5, y+i-8, V_TRANSLUCENT|MENUCAPS, namescrollbuf); // variable reuse...
 	}
 
 	if (!cv_kartencore.value || gamestate == GS_TIMEATTACK || cv_newgametype.value != GT_RACE)

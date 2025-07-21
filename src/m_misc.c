@@ -1604,6 +1604,52 @@ boolean M_ScreenshotResponder(event_t *ev)
 	return true;
 }
 
+
+void M_ScrollString(const char name[], size_t len, char result[], size_t maxlen, tic_t timer)
+{
+	// How much should we scroll. Not sure why +1 is needed, but without it this function skips 2
+	// characters at once sometimes
+	const size_t amount = len - maxlen + 1;
+
+	// Note: anything above 17 will cause zero division
+	const size_t MAXSPEED = 6;
+	const tic_t t = timer / (35/min(amount, MAXSPEED));
+
+	const size_t state = (t / amount) % 4;
+
+	switch (state)
+	{
+		// Show beginning of the name
+		case 0:
+			memcpy(result, name, maxlen-1);
+		break;
+
+		// Scroll towards end of the name
+		case 1:
+		{
+			const size_t advance = t % amount;
+			memcpy(result, name+advance, maxlen-1);
+		}
+		break;
+
+		// Show end of the name
+		case 2:
+			memcpy(result, name+len+1-maxlen, maxlen-1);
+		break;
+
+		// Scroll towards start of the name
+		case 3:
+		{
+			const size_t advance = t % amount;
+			memcpy(result, name+len+1-maxlen-advance, maxlen-1);
+		}
+		break;
+	}
+
+	// Technically not necessary, since it gets set again after function call, but just in case
+	result[maxlen] = 0;
+}
+
 void M_MinimapGenerate(void)
 {
 #ifdef USE_PNG

@@ -178,7 +178,7 @@ boolean P_SetPlayerMobjState(mobj_t *mobj, statenum_t state)
 	// Set animation state
 	// The pflags version of this was just as convoluted.
 	// Rewriten for SRB2kart ... though I don't know what this is.
-	switch(state)
+	switch (state)
 	{
 		case S_KART_STND1...S_KART_STND2_R:
 		case S_KART_SQUISH:
@@ -203,7 +203,7 @@ boolean P_SetPlayerMobjState(mobj_t *mobj, statenum_t state)
 
 	do
 	{
-		if (state == S_NULL)
+		if (UNLIKELY(state == S_NULL))
 		{ // Bad SOC!
 			CONS_Alert(CONS_ERROR, "Cannot remove player mobj by setting its state to S_NULL.\n");
 			//P_RemoveMobj(mobj);
@@ -239,7 +239,7 @@ boolean P_SetPlayerMobjState(mobj_t *mobj, statenum_t state)
 		state = st->nextstate;
 	} while (!mobj->tics && !seenstate[state]);
 
-	if (!mobj->tics)
+	if (UNLIKELY(!mobj->tics))
 		CONS_Alert(CONS_WARNING, M_GetText("State cycle detected, exiting.\n"));
 
 	if (!--recursion)
@@ -306,7 +306,7 @@ boolean P_SetMobjState(mobj_t *mobj, statenum_t state)
 		state = st->nextstate;
 	} while (!mobj->tics && !seenstate[state]);
 
-	if (!mobj->tics)
+	if (UNLIKELY(!mobj->tics))
 		CONS_Alert(CONS_WARNING, M_GetText("State cycle detected, exiting.\n"));
 
 	if (!--recursion)
@@ -1894,11 +1894,9 @@ boolean P_CheckSolidLava(mobj_t *mo, ffloor_t *rover)
 	I_Assert(mo != NULL);
 	I_Assert(!P_MobjWasRemoved(mo));
 
-	fixed_t topheight = P_GetFFloorTopZAt(rover, mo->x, mo->y);
-
 	if (rover->flags & FF_SWIMMABLE && GETSECSPECIAL(rover->master->frontsector->special, 1) == 3
 		&& !(rover->master->flags & ML_BLOCKMONSTERS)
-		&& ((rover->master->flags & ML_EFFECT3) || mo->z-mo->momz > topheight - FixedMul(16*FRACUNIT, mo->scale)))
+		&& ((rover->master->flags & ML_EFFECT3) || mo->z-mo->momz > P_GetFFloorTopZAt(rover, mo->x, mo->y) - FixedMul(16*FRACUNIT, mo->scale)))
 			return true;
 
 	return false;
@@ -3348,6 +3346,7 @@ boolean P_CameraThinker(player_t *player, camera_t *thiscam, boolean resetcalled
 		thiscam->ceilingz = thiscam->z + thiscam->height;
 		thiscam->floorz = thiscam->z;
 	}
+
 	return false;
 }
 
@@ -3373,7 +3372,7 @@ static void P_PlayerMobjThinker(mobj_t *mobj)
 	mobj->eflags &= ~MFE_JUSTSTEPPEDDOWN;
 
 	// Zoom tube
-	if (mobj->tracer && mobj->tracer->type == MT_TUBEWAYPOINT)
+	if (UNLIKELY(mobj->tracer && mobj->tracer->type == MT_TUBEWAYPOINT))
 	{
 		P_UnsetThingPosition(mobj);
 		mobj->x += mobj->momx;
@@ -3383,7 +3382,7 @@ static void P_PlayerMobjThinker(mobj_t *mobj)
 		P_CheckPosition(mobj, mobj->x, mobj->y);
 		goto animonly;
 	}
-	else if (mobj->player->pflags & PF_MACESPIN && mobj->tracer)
+	else if (UNLIKELY(mobj->player->pflags & PF_MACESPIN && mobj->tracer))
 	{
 		P_CheckPosition(mobj, mobj->x, mobj->y);
 		goto animonly;
@@ -3402,7 +3401,7 @@ static void P_PlayerMobjThinker(mobj_t *mobj)
 	else
 		P_TryMove(mobj, mobj->x, mobj->y, true);
 
-	if (!(netgame && mobj->player->spectator))
+	if (LIKELY(!(netgame && mobj->player->spectator)))
 	{
 		// Crumbling platforms
 		for (node = mobj->touching_sectorlist; node; node = node->m_sectorlist_next)
@@ -3449,6 +3448,7 @@ static void P_PlayerMobjThinker(mobj_t *mobj)
 				}
 			}
 		}
+
 		if (thereiswater)
 		{
 			for (node = mobj->touching_sectorlist; node; node = node->m_sectorlist_next)
@@ -5981,7 +5981,8 @@ angle_t P_MobjPitchAndRoll(mobj_t *mobj)
 		return 0;
 
 	// if mobj doesent have any of those, no need to do the rest
-	if (mobj->roll == 0 && mobj->pitch == 0 && mobj->sloperoll == 0 && mobj->slopepitch == 0)
+	if (mobj->roll == 0 && mobj->pitch == 0
+	 && mobj->sloperoll == 0 && mobj->slopepitch == 0)
 		return 0;
 
 	size_t rot = (mobj->frame & FF_FRAMEMASK);
@@ -6007,7 +6008,8 @@ angle_t P_MobjPitchAndRoll(mobj_t *mobj)
 	sprframe = &sprdef->spriteframes[rot];
 
 	// No sprite frame? I guess it is possible
-	if (!sprframe) return 0;
+	if (!sprframe)
+		return 0;
 
 	if (sprframe->rotate != SRF_SINGLE || (mobj->frame & FF_PAPERSPRITE))
 	{
@@ -6016,9 +6018,9 @@ angle_t P_MobjPitchAndRoll(mobj_t *mobj)
 	}
 
 	return_angle = FixedMul(FINECOSINE((ang) >> ANGLETOFINESHIFT), mobj->roll)
-				+ FixedMul(FINESINE((ang) >> ANGLETOFINESHIFT), mobj->pitch)
-				+ FixedMul(FINECOSINE((camang) >> ANGLETOFINESHIFT), mobj->sloperoll)
-				+ FixedMul(FINESINE((camang) >> ANGLETOFINESHIFT), mobj->slopepitch);
+				 + FixedMul(FINESINE((ang) >> ANGLETOFINESHIFT), mobj->pitch)
+				 + FixedMul(FINECOSINE((camang) >> ANGLETOFINESHIFT), mobj->sloperoll)
+				 + FixedMul(FINESINE((camang) >> ANGLETOFINESHIFT), mobj->slopepitch);
 
 	return return_angle;
 }
@@ -9096,7 +9098,7 @@ void P_MobjThinker(mobj_t *mobj)
 		mobj->eflags &= ~MFE_JUSTHITFLOOR;
 	}
 
-	if (mobj->type == MT_FLINGRING
+	if (UNLIKELY(mobj->type == MT_FLINGRING
 		|| mobj->type == MT_FLINGCOIN
 		|| P_WeaponOrPanel(mobj->type)
 		|| mobj->type == MT_FLINGEMERALD
@@ -9109,8 +9111,8 @@ void P_MobjThinker(mobj_t *mobj)
 		P_ButteredSlope(mobj);
 	}
 
-	if (mobj->flags & (MF_ENEMY|MF_BOSS) && mobj->health
-		&& P_CheckDeathPitCollide(mobj)) // extra pit check in case these didn't have momz
+	if (UNLIKELY(mobj->flags & (MF_ENEMY|MF_BOSS) && mobj->health
+		&& P_CheckDeathPitCollide(mobj))) // extra pit check in case these didn't have momz
 	{
 		P_KillMobj(mobj, NULL, NULL);
 		return;
@@ -9119,10 +9121,10 @@ void P_MobjThinker(mobj_t *mobj)
 	// Crush enemies!
 	if (mobj->ceilingz - mobj->floorz < mobj->height)
 	{
-		if ((
+		if (UNLIKELY((
 		(mobj->flags & (MF_ENEMY|MF_BOSS)
 			&& mobj->flags & MF_SHOOTABLE)
-		|| mobj->type == MT_EGGSHIELD)
+		|| mobj->type == MT_EGGSHIELD))
 		&& !(mobj->flags & MF_NOCLIPHEIGHT)
 		&& mobj->health > 0)
 		{
@@ -9140,7 +9142,7 @@ void P_MobjThinker(mobj_t *mobj)
 	if (P_MobjWasRemoved(mobj))
 		return;
 
-	switch (mobj->type)
+	if (UNLIKELY(P_WeaponOrPanel(mobj->type)))
 	{
 		case MT_BOUNCEPICKUP ... MT_GRENADEPICKUP:
 			if (mobj->health == 0) // Fading tile
@@ -9150,15 +9152,12 @@ void P_MobjThinker(mobj_t *mobj)
 				value = 10-value;
 				value--;
 
-				if (value <= 0)
-					value = 1;
+			if (value <= 0)
+				value = 1;
 
-				mobj->frame &= ~FF_TRANSMASK;
-				mobj->frame |= value << FF_TRANSSHIFT;
-			}
-			break;
-		default:
-			break;
+			mobj->frame &= ~FF_TRANSMASK;
+			mobj->frame |= value << FF_TRANSSHIFT;
+		}
 	}
 }
 
@@ -9983,8 +9982,7 @@ static precipmobj_t *P_SpawnPrecipMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype
 		mobj->precipflags |= PCF_FOF;
 	else
 	{
-		INT32 special = GETSECSPECIAL(mobj->subsector->sector->special, 1);
-
+		const INT32 special = GETSECSPECIAL(mobj->subsector->sector->special, 1);
 		if (special == 7 || special == 6 || mobj->subsector->sector->floorpic == skyflatnum)
 			mobj->precipflags |= PCF_PIT;
 	}
@@ -10016,14 +10014,14 @@ void P_RemoveMobj(mobj_t *mobj)
 	mobj->thinker.function = (actionf_p1)P_MobjThinker; // needed for P_UnsetThingPosition, etc. to work.
 
 	// Rings only, please!
-	if (mobj->spawnpoint &&
+	if (UNLIKELY(mobj->spawnpoint &&
 		(mobj->type == MT_RING
 		|| mobj->type == MT_COIN
 		|| mobj->type == MT_BLUEBALL
 		|| mobj->type == MT_REDTEAMRING
 		|| mobj->type == MT_BLUETEAMRING
 		|| P_WeaponOrPanel(mobj->type))
-		&& !(mobj->flags2 & MF2_DONTRESPAWN))
+		&& !(mobj->flags2 & MF2_DONTRESPAWN)))
 	{
 		itemrespawnque[iquehead] = mobj->spawnpoint;
 		itemrespawntime[iquehead] = leveltime;
@@ -10045,13 +10043,13 @@ void P_RemoveMobj(mobj_t *mobj)
 		}
 	}
 
-	if (mobj->type == MT_OVERLAY)
+	if (UNLIKELY(mobj->type == MT_OVERLAY))
 		P_RemoveOverlay(mobj);
 
-	if (mobj->type == MT_SHADOW)
+	if (UNLIKELY(mobj->type == MT_SHADOW))
 		P_RemoveShadow(mobj);
 
-	if (mobj->type == MT_SPB)
+	if (UNLIKELY(mobj->type == MT_SPB))
 		spbplace = -1;
 
 	mobj->health = 0; // Just because
@@ -10063,6 +10061,7 @@ void P_RemoveMobj(mobj_t *mobj)
 		P_DelSeclist(sector_list);
 		sector_list = NULL;
 	}
+
 	mobj->flags |= MF_NOSECTOR|MF_NOBLOCKMAP;
 	mobj->subsector = NULL;
 	mobj->state = NULL;
@@ -10098,46 +10097,33 @@ void P_RemoveMobj(mobj_t *mobj)
 	R_RemoveMobjInterpolator(mobj);
 
 	// free block
-	// DBG: set everything in mobj_t to 0xFF instead of leaving it. debug memory error.
 	if (mobj->flags & MF_NOTHINK && !mobj->thinker.next)
 	{ // Uh-oh, the mobj doesn't think, P_RemoveThinker would never go through!
 		if (!mobj->thinker.references)
 		{
-#ifdef SCRAMBLE_REMOVED
-			// Invalidate mobj_t data to cause crashes if accessed!
-			memset(mobj, 0xff, sizeof(mobj_t));
-#endif
 			// no references, dump it directly in the mobj cache
 			mobj->hnext = mobjcache;
 			mobjcache = mobj;
+			return;
 		}
-		else
-		{ // Add thinker just to delay removing it until refrences are gone.
-			mobj->flags &= ~MF_NOTHINK;
-			P_AddThinker((thinker_t *)mobj);
-#ifdef PARANOIA
-			// Saved to avoid being scrambled like below...
-			mobj->thinker.debug_mobjtype = mobj->type;
-#endif
-#ifdef SCRAMBLE_REMOVED
-			// Invalidate mobj_t data to cause crashes if accessed!
-			memset((UINT8 *)mobj + sizeof(thinker_t), 0xff, sizeof(mobj_t) - sizeof(thinker_t));
-#endif
-			P_RemoveThinker((thinker_t *)mobj);
-		}
+
+		// Add thinker just to delay removing it until refrences are gone.
+		mobj->flags &= ~MF_NOTHINK;
+		P_AddThinker((thinker_t *)mobj);
 	}
-	else
-	{
+
+	P_RemoveThinker((thinker_t *)mobj);
+
 #ifdef PARANOIA
-		// Saved to avoid being scrambled like below...
-		mobj->thinker.debug_mobjtype = mobj->type;
+	// Saved to avoid being scrambled like below...
+	mobj->thinker.debug_mobjtype = mobj->type;
 #endif
+
+	// DBG: set everything in mobj_t to 0xFF instead of leaving it. debug memory error.
 #ifdef SCRAMBLE_REMOVED
-		// Invalidate mobj_t data to cause crashes if accessed!
-		memset((UINT8 *)mobj + sizeof(thinker_t), 0xff, sizeof(mobj_t) - sizeof(thinker_t));
+	// Invalidate mobj_t data to cause crashes if accessed!
+	memset((UINT8 *)mobj + sizeof(thinker_t), 0xff, sizeof(mobj_t) - sizeof(thinker_t));
 #endif
-		P_RemoveThinker((thinker_t *)mobj);
-	}
 }
 
 void P_FreePrecipMobj(precipmobj_t *mobj)
