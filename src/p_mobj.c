@@ -371,7 +371,7 @@ static boolean P_SetPrecipMobjState(precipmobj_t *mobj, statenum_t state)
 //
 boolean P_WeaponOrPanel(mobjtype_t type)
 {
-	if (type >= MT_BOUNCERING && type <= MT_GRENADEPICKUP)
+	if (UNLIKELY(type >= MT_BOUNCERING && type <= MT_GRENADEPICKUP)) // doubt those get used at all in kart tbh
 		return true;
 
 	return false;
@@ -461,6 +461,7 @@ void P_ExplodeMissile(mobj_t *mo)
 boolean P_InsideANonSolidFFloor(mobj_t *mobj, ffloor_t *rover)
 {
 	fixed_t topheight, bottomheight;
+
 	if (!(rover->flags & FF_EXISTS))
 		return false;
 
@@ -1735,9 +1736,6 @@ static void P_AdjustMobjFloorZ_FFloors(mobj_t *mo, sector_t *sector, UINT8 motyp
 		if (!(rover->flags & FF_EXISTS))
 			continue;
 
-		topheight = P_GetFOFTopZ(mo, sector, rover, mo->x, mo->y, NULL);
-		bottomheight = P_GetFOFBottomZ(mo, sector, rover, mo->x, mo->y, NULL);
-
 		if (mo->player && P_CheckSolidLava(mo, rover)) // only the player should be affected
 			;
 		else if (motype != 0 && rover->flags & FF_SWIMMABLE) // "scenery" only
@@ -1747,6 +1745,10 @@ static void P_AdjustMobjFloorZ_FFloors(mobj_t *mo, sector_t *sector, UINT8 motyp
 		else if (!((rover->flags & FF_BLOCKPLAYER && mo->player) // solid to players?
 			    || (rover->flags & FF_BLOCKOTHERS && !mo->player))) // solid to others?
 			continue;
+
+		topheight = P_GetFOFTopZ(mo, sector, rover, mo->x, mo->y, NULL);
+		bottomheight = P_GetFOFBottomZ(mo, sector, rover, mo->x, mo->y, NULL);
+
 		if (rover->flags & FF_QUICKSAND)
 		{
 			switch (motype)
@@ -1770,6 +1772,7 @@ static void P_AdjustMobjFloorZ_FFloors(mobj_t *mo, sector_t *sector, UINT8 motyp
 
 		delta1 = mo->z - (bottomheight + ((topheight - bottomheight)/2));
 		delta2 = thingtop - (bottomheight + ((topheight - bottomheight)/2));
+
 		if (topheight > mo->floorz && abs(delta1) < abs(delta2)
 			&& !(rover->flags & FF_REVERSEPLATFORM)
 			&& ((P_MobjFlip(mo)*mo->momz >= 0) || (!(rover->flags & FF_PLATFORM)))) // In reverse gravity, only clip for FOFs that are intangible from their bottom (the "top" you're falling through) if you're coming from above ("below" in your frame of reference)
@@ -1803,7 +1806,7 @@ static void P_AdjustMobjFloorZ_PolyObjs(mobj_t *mo, subsector_t *subsec)
 
 	thingtop = mo->z + mo->height;
 
-	while(po)
+	while (po)
 	{
 		if (!P_MobjInsidePolyobj(po, mo) || !(po->flags & POF_SOLID))
 		{
@@ -1855,6 +1858,7 @@ static void P_RingZMovement(mobj_t *mo)
 		mo->momz += mo->pmomz;
 		mo->eflags &= ~MFE_APPLYPMOMZ;
 	}
+
 	mo->z += mo->momz;
 
 	// clip movement
@@ -1925,6 +1929,7 @@ static boolean P_ZMovement(mobj_t *mo)
 		mo->momz += mo->pmomz;
 		mo->eflags &= ~MFE_APPLYPMOMZ;
 	}
+
 	mo->z += mo->momz;
 
 	if (mo->standingslope)
@@ -3114,8 +3119,6 @@ static boolean P_CameraCheckHeat(camera_t *thiscam)
 	if (!thiscam || !thiscam->subsector)
 		return false;
 
-	halfheight = thiscam->z + (thiscam->height >> 1);
-
 	// see if we are in water
 	sector = thiscam->subsector->sector;
 
@@ -3125,6 +3128,8 @@ static boolean P_CameraCheckHeat(camera_t *thiscam)
 	if (sector->ffloors)
 	{
 		ffloor_t *rover;
+
+		halfheight = thiscam->z + (thiscam->height >> 1);
 
 		for (rover = sector->ffloors; rover; rover = rover->next)
 		{
@@ -3152,14 +3157,14 @@ static boolean P_CameraCheckWater(camera_t *thiscam)
 	if (!thiscam || !thiscam->subsector)
 		return false;
 
-	halfheight = thiscam->z + (thiscam->height >> 1);
-
 	// see if we are in water
 	sector = thiscam->subsector->sector;
 
 	if (sector->ffloors)
 	{
 		ffloor_t *rover;
+
+		halfheight = thiscam->z + (thiscam->height >> 1);
 
 		for (rover = sector->ffloors; rover; rover = rover->next)
 		{
@@ -5403,8 +5408,6 @@ static void P_GimmeAxisXYPos(mobj_t *closestaxis, degenmobj_t *mobj)
 
 static void P_MoveHoop(mobj_t *mobj)
 {
-	const fixed_t fuse = (mobj->fuse*mobj->extravalue2);
-	const angle_t fa = mobj->movedir*(FINEANGLES/mobj->extravalue1);
 	TVector v;
 	TVector *res;
 	fixed_t finalx, finaly, finalz;
@@ -5413,6 +5416,9 @@ static void P_MoveHoop(mobj_t *mobj)
 	//I_Assert(mobj->target != NULL);
 	if (!mobj->target) /// \todo DEBUG ME! Target was P_RemoveMobj'd at some point, and therefore no longer valid!
 		return;
+
+	const fixed_t fuse = (mobj->fuse*mobj->extravalue2);
+	const angle_t fa = mobj->movedir*(FINEANGLES/mobj->extravalue1);
 
 	x = mobj->target->x;
 	y = mobj->target->y;
@@ -9194,6 +9200,9 @@ void P_PushableThinker(mobj_t *mobj)
 	I_Assert(mobj != NULL);
 	I_Assert(!P_MobjWasRemoved(mobj));
 
+	if (!mobj)
+		return;
+
 	sec = mobj->subsector->sector;
 
 	if (GETSECSPECIAL(sec->special, 2) == 1 && mobj->z == sec->floorheight)
@@ -9209,9 +9218,6 @@ void P_PushableThinker(mobj_t *mobj)
 	// it has to be pushable RIGHT NOW for this part to happen
 	if (mobj->flags & MF_PUSHABLE && !(mobj->momx || mobj->momy))
 		P_TryMove(mobj, mobj->x, mobj->y, true);
-
-	if (!mobj)
-		return;
 
 	if (mobj->fuse == 1) // it would explode in the MobjThinker code
 	{
