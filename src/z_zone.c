@@ -149,9 +149,12 @@ void Z_Free(void *ptr)
 #endif
 #endif
 
-#ifdef ZDEBUG
+#ifdef ZDEBUG2
 	// Write every Z_Free call to a debug file.
 	CONS_Debug(DBG_MEMORY, "Z_Free at %s:%d\n", file, line);
+#elif defined(ZDEBUG)
+	(void)file;
+	(void)line;
 #endif
 
 	// anything that isn't by lua gets passed to lua just in case.
@@ -358,8 +361,10 @@ void *Z_ReallocAlign(void *ptr, size_t size, INT32 tag, void *user, INT32 alignb
 		return NULL;
 
 #ifdef ZDEBUG
+#ifdef ZDEBUG2
 	// Write every Z_Realloc call to a debug file.
 	DEBFILE(va("Z_Realloc at %s:%d\n", file, line));
+#endif
 	rez = Z_Malloc2(size, tag, user, alignbits, file, line);
 #else
 	rez = Z_MallocAlign(size, tag, user, alignbits);
