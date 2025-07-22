@@ -389,11 +389,19 @@ void *Z_Realloc(void *ptr, size_t size, INT32 tag, void *user)
   * \param lowtag The lowest tag to consider.
   * \param hightag The highest tag to consider.
   */
+#ifdef ZDEBUG
 void Z_FreeTags2(INT32 lowtag, INT32 hightag, const char *file, INT32 line)
+#else
+void Z_FreeTags(INT32 lowtag, INT32 hightag)
+#endif
 {
 	memblock_t *block, *next;
 
+#ifdef ZDEBUG
 	Z_CheckHeap2(file, line);
+#else
+	Z_CheckHeap(420);
+#endif
 	for (block = head.next; block != &head; block = next)
 	{
 		next = block->next; // get link before freeing
@@ -463,11 +471,19 @@ void Z_CheckMemCleanup(void)
   * \param i Identifies from where in the code Z_CheckHeap was called.
   * \author Graue <graue@oceanbase.org>
   */
+#ifdef ZDEBUG
 void Z_CheckHeap2(const char *file, INT32 line)
+#else
+void Z_CheckHeap(INT32 tag)
+#endif
 {
 	memblock_t *block;
 	UINT32 blocknumon = 0;
 	void *given;
+
+#ifndef ZDEBUG
+	(void)tag;
+#endif
 
 	for (block = head.next; block != &head; block = block->next)
 	{
@@ -493,11 +509,19 @@ void Z_CheckHeap2(const char *file, INT32 line)
 #endif
 		if (block->user != NULL && *(block->user) != given)
 		{
-			I_Error("Z_CheckHeap %s %d: block %u"
+			I_Error("Z_CheckHeap"
+#ifdef ZDEBUG
+				"at %s %d :"
+#endif
+				"block %u"
 #ifdef ZDEBUG
 				"(owned by %s:%d)"
 #endif
-				" doesn't have a proper user", file, line, blocknumon
+				" doesn't have a proper user"
+#ifdef ZDEBUG
+				, file, line
+#endif
+				, blocknumon
 #ifdef ZDEBUG
 				, block->ownerfile, block->ownerline
 #endif
@@ -505,11 +529,19 @@ void Z_CheckHeap2(const char *file, INT32 line)
 		}
 		if (block->next->prev != block)
 		{
-			I_Error("Z_CheckHeap %s %d: block %u"
+			I_Error("Z_CheckHeap"
+#ifdef ZDEBUG
+				"at %s %d :"
+#endif
+				"block %u"
 #ifdef ZDEBUG
 				"(owned by %s:%d)"
 #endif
-				" lacks proper backlink", file, line, blocknumon
+				" lacks proper backlink"
+#ifdef ZDEBUG
+				, file, line
+#endif
+				, blocknumon
 #ifdef ZDEBUG
 				, block->ownerfile, block->ownerline
 #endif
@@ -517,11 +549,19 @@ void Z_CheckHeap2(const char *file, INT32 line)
 		}
 		if (block->prev->next != block)
 		{
-			I_Error("Z_CheckHeap %s %d: block %u"
+			I_Error("Z_CheckHeap"
+#ifdef ZDEBUG
+				"at %s %d :"
+#endif
+				"block %u"
 #ifdef ZDEBUG
 				"(owned by %s:%d)"
 #endif
-				" lacks proper forward link", file, line, blocknumon
+				" lacks proper forward link"
+#ifdef ZDEBUG
+				, file, line
+#endif
+				, blocknumon
 #ifdef ZDEBUG
 				, block->ownerfile, block->ownerline
 #endif
@@ -529,11 +569,19 @@ void Z_CheckHeap2(const char *file, INT32 line)
 		}
 		if (block->id != ZONEID)
 		{
-			I_Error("Z_CheckHeap %s %d: block %u"
+			I_Error("Z_CheckHeap"
+#ifdef ZDEBUG
+				"at %s %d :"
+#endif
+				"block %u"
 #ifdef ZDEBUG
 				"(owned by %s:%d)"
 #endif
-				" have the wrong ID", file, line, blocknumon
+				" have the wrong ID"
+#ifdef ZDEBUG
+				, file, line
+#endif
+				, blocknumon
 #ifdef ZDEBUG
 				, block->ownerfile, block->ownerline
 #endif
