@@ -32,7 +32,7 @@ extern "C" {
 #define FUNCALLOC(x)
 #endif
 
-//#define ZDEBUG
+#define ZDEBUG
 
 //
 // Purge tags
