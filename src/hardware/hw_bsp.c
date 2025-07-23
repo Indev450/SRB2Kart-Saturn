@@ -2886,6 +2886,11 @@ static void AdjustSegs(void)
 			polyvertex_t sv1, sv2;  // seg v1, v2
 			float distv1,distv2,tmp;
 
+			// Don't touch polyobject segs. We'll compensate
+			// for this when we go about drawing them.
+			if (lseg->polyseg)
+				continue;
+
 			line_t *line = lseg->linedef;
 
 			if (!line)
@@ -3014,6 +3019,11 @@ static void AdjustSegs(void)
 	for (j = 0; (size_t)j < numsegs; j++ )
 	{
 		lseg = &segs[j];
+
+		// Don't touch polyobject segs. We'll compensate
+		// for this when we go about drawing them.
+		if (lseg->polyseg)
+			continue;
 
 		if (!(lseg->pv1 && lseg->pv2))
 		{
