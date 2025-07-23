@@ -217,7 +217,6 @@ static void R_DrawTiltedSpanTemplate(drawspandata_t* ds)
 	const INT32 nflatyshift = ds->nflatyshift;
 	const INT32 nflatmask = ds->nflatmask;
 	const INT32 stride = vid.width;
-	INT32 * restrict tiltlighting = tiltlight.get();
 
 	iz = ds->szp.z + ds->szp.y*(centery-ds->y) + ds->szp.x*(ds->x1-centerx);
 
@@ -406,7 +405,6 @@ void R_DrawFogSpan_Tilted(drawspandata_t* ds)
 
 	dest = R_Address(ds->x1, ds->y);
 	const INT32 stride = vid.width;
-	INT32 * restrict tiltlighting = tiltlight.get();
 
 	// Lighting is simple. It's just linear interpolation from start to end
 	{
