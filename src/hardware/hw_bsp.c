@@ -1839,12 +1839,12 @@ static void CutOutSubsecPoly(INT32 ssindex, /*INOUT*/ wpoly_t* poly)
 			continue;
 
 		// portal check
-		if (!gl_maphasportals && line->special == 40 && lseg->side == 0)
+		if (!gl_maphasportals && line->special == PORTALSPECIAL && lseg->side == 0)
 		{
 			// Find the other side!
-			INT32 line2 = P_FindSpecialLineFromTag(40, line->tag, -1);
+			INT32 line2 = P_FindSpecialLineFromTag(PORTALSPECIAL, line->tag, -1);
 			if (line == &lines[line2])
-				line2 = P_FindSpecialLineFromTag(40, line->tag, line2);
+				line2 = P_FindSpecialLineFromTag(PORTALSPECIAL, line->tag, line2);
 			if (line2 >= 0) // found it!
 				gl_maphasportals = 1;
 		}
@@ -2175,13 +2175,13 @@ static void HWR_SubsecPoly(int ssindex, wpoly_t* poly)
 	if (cv_glpolyshape.value > 0)
 	{
 		// Trim the subsector with the segs.
-		CutOutSubsecPoly( ssindex, /*INOUT*/ poly);
+		CutOutSubsecPoly(ssindex, /*INOUT*/ poly);
 	}
 
 #ifdef DEBUG_TRACE
-	if (trigger_trace )
+	if (trigger_trace)
 	{
-		wpoly_dump( " Subsec poly", poly);
+		wpoly_dump("Subsec poly", poly);
 	}
 #endif
 #ifdef DEBUG_HWBSP
@@ -2193,10 +2193,10 @@ static void HWR_SubsecPoly(int ssindex, wpoly_t* poly)
 // Search for the segs source of this divline.
 static inline void set_divline(node_t* bsp, fdivline_t *divline)
 {
-	divline->x=FIXED_TO_FLOAT( bsp->x);
-	divline->y=FIXED_TO_FLOAT( bsp->y);
-	divline->dx=FIXED_TO_FLOAT( bsp->dx);
-	divline->dy=FIXED_TO_FLOAT( bsp->dy);
+	divline->x  = FIXED_TO_FLOAT(bsp->x);
+	divline->y  = FIXED_TO_FLOAT(bsp->y);
+	divline->dx = FIXED_TO_FLOAT(bsp->dx);
+	divline->dy = FIXED_TO_FLOAT(bsp->dy);
 }
 
 //Hurdler: implement a loading status
@@ -2491,7 +2491,7 @@ static boolean PointInSeg(polyvertex_t* va, polyvertex_t* v1, polyvertex_t* v2)
 	// v1 = origin
 	ax= v2->x - v1->x;
 	ay= v2->y - v1->y;
-	norm = sqrt(ax*ax+ay*ay);  // length of seg
+	norm = hypotf(ax, ay);  // length of seg
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wfloat-equal"
 	if (norm != 0) // yes, this can be exactly 0
@@ -2564,7 +2564,7 @@ typedef struct {
 #define SEARCHSEG_VERTEX_DIST   0.4999f
 
 // Recursive descent in BSP.
-static void SearchSegInBSP(int bspnum, split_T_t * stp)
+static void SearchSegInBSP(INT32 bspnum, split_T_t * stp)
 {
 	wpoly_t *wq = stp->poly;
 	polyvertex_t *pt = stp->pt;
@@ -2602,7 +2602,7 @@ got_subsector:
 
 	// For every subsector polygon different than poly
 	wq = & wpoly_subsectors[subsecnum];
-	if (wq == stp->poly)
+	if (wq == stp->poly || !wq)
 		return;
 
 	numpts = wq->numpts;
@@ -2973,7 +2973,7 @@ static void AdjustSegs(void)
 				// the right point position also split a polygon side to
 				// solve a T-intersection, but too much work
 
-				lseg->pv1 = store_polyvertex( &sv1, SEG_SAME_VERT);
+				lseg->pv1 = store_polyvertex(&sv1, SEG_SAME_VERT);
 			}
 			if (nearv2<=VERTEX_NEAR_DIST*VERTEX_NEAR_DIST )
 			{
@@ -2981,7 +2981,7 @@ static void AdjustSegs(void)
 			}
 			else
 			{
-				lseg->pv2 = store_polyvertex( &sv2, SEG_SAME_VERT);
+				lseg->pv2 = store_polyvertex(&sv2, SEG_SAME_VERT);
 			}
 
 			// recompute length
@@ -2989,7 +2989,7 @@ static void AdjustSegs(void)
 				// [WDJ] FIXED_TO_FLOAT_MULT used to add 1/2 of lsb of fixed_t fraction.
 				float x=((polyvertex_t *)lseg->pv2)->x - ((polyvertex_t *)lseg->pv1)->x + (0.5*FIXED_TO_FLOAT_MULT);
 				float y=((polyvertex_t *)lseg->pv2)->y - ((polyvertex_t *)lseg->pv1)->y + (0.5*FIXED_TO_FLOAT_MULT);
-				lseg->length = sqrt(x*x+y*y)*FRACUNIT;
+				lseg->flength = hypotf(x, y);
 
 				// BP: debug see this kind of segs
 				//if (nearv2>VERTEX_NEAR_DIST*VERTEX_NEAR_DIST || nearv1>VERTEX_NEAR_DIST*VERTEX_NEAR_DIST)
@@ -3086,12 +3086,12 @@ static void finalize_polygons(void)
 // Call this routine after the BSP of a Doom wad file is loaded,
 // and it will generate all the convex polys for the hardware renderer.
 // Called from P_SetupLevel
-void HWR_CreatePlanePolygons (INT32 bspnum)
+void HWR_CreatePlanePolygons(INT32 bspnum)
 {
-	wpoly_t	   rootp;
+	wpoly_t rootp;
 	polyvertex_t** rootpv;
 	size_t i;
-	fixed_t	 rootbbox[4];
+	fixed_t rootbbox[4];
 
 	(void)bspnum;
 
@@ -3109,12 +3109,12 @@ void HWR_CreatePlanePolygons (INT32 bspnum)
 
 	// Enter all vertexes into the root bounding box.
 	// find min/max boundaries of map
-	//CONS_Printf ("Looking for boundaries of map...\n");
+	//CONS_Debug(DBG_RENDER, "Looking for boundaries of map...\n");
 	M_ClearBox(rootbbox);
 	for (i = 0; i < numvertexes; i++)
-		M_AddToBox( rootbbox, vertexes[i].x, vertexes[i].y);
+		M_AddToBox(rootbbox, vertexes[i].x, vertexes[i].y);
 
-	//CONS_Printf ("Generating subsector polygons... %d subsectors\n", numsubsectors);
+	//CONS_Debug(DBG_RENDER, "Generating subsector polygons... %d subsectors\n", numsubsectors);
 
 	HWR_FreeExtraSubsectors ();
 	// allocate extra data for each subsector present in map
@@ -3129,7 +3129,7 @@ void HWR_CreatePlanePolygons (INT32 bspnum)
 	// allocate table for back to front drawing of subsectors
 	/*gr_drawsubsectors = (short*)malloc (sizeof(*gr_drawsubsectors) * num_alloc_poly_subsector);
 	if (!gr_drawsubsectors)
-		I_Error ("couldn't malloc gr_drawsubsectors\n");*/
+		I_Error("couldn't malloc gr_drawsubsectors\n");*/
 
 	// The level map polyvertexes
 	create_poly_vert();
