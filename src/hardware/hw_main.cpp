@@ -1093,7 +1093,7 @@ static void HWR_SplitWall(sector_t *sector, FOutVector *wallVerts, INT32 texnum,
 		if ((endtop < endrealbot) && (top < realbot))
 			return;
 
-		lightlist_t *list = sector->lightlist;
+		const lightlist_t *list = sector->lightlist;
 
 		if (!(list[i].flags & FF_NOSHADE))
 		{
@@ -1431,9 +1431,9 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 	wallVerts[2].z = wallVerts[1].z = ve.y;
 
 	// x offset the texture
-	fixed_t texturehpeg = gl_sidedef->textureoffset + gl_curline->offset;
-	float cliplow  = (float)texturehpeg;
-	float cliphigh = (float)(texturehpeg + (gl_curline->flength*FRACUNIT));
+	const fixed_t texturehpeg = gl_sidedef->textureoffset + gl_curline->offset;
+	const float cliplow  = (float)texturehpeg;
+	const float cliphigh = (float)(texturehpeg + (gl_curline->flength*FRACUNIT));
 
 	FUINT lightnum = gl_frontsector->lightlevel;
 	extracolormap_t *colormap = gl_frontsector->extra_colormap;
@@ -1444,7 +1444,7 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 	if (gl_frontsector)
 		Surf.PolyColor.s.alpha = 255;
 
-	INT32 gl_midtexture = R_GetTextureNum(gl_sidedef->midtexture);
+	const INT32 gl_midtexture = R_GetTextureNum(gl_sidedef->midtexture);
 	GLMapTexture_t *glTex = NULL;
 
 	// two sided line
@@ -1722,7 +1722,7 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 			}
 
 			// Find the wall's coordinates
-			fixed_t midtexheight = textureheight[gl_midtexture] * repeats;
+			const fixed_t midtexheight = textureheight[gl_midtexture] * repeats;
 
 			if (gl_linedef->flags & ML_EFFECT2)
 			{
@@ -2048,6 +2048,7 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 					wallVerts[0].s = wallVerts[3].s = cliplow * glTex->scaleX;
 					wallVerts[2].s = wallVerts[1].s = cliphigh * glTex->scaleX;
 				}
+
 				FBITFIELD blendmode;
 
 				if (roverflags & FF_FOG)
@@ -3343,7 +3344,7 @@ static gl_vissprite_t gl_overflowsprite;
 
 static gl_vissprite_t *HWR_GetVisSprite(UINT32 num)
 {
-	UINT32 chunk = num >> VISSPRITECHUNKBITS;
+	const UINT32 chunk = num >> VISSPRITECHUNKBITS;
 
 	// Allocate chunk if necessary
 	if (!gl_visspritechunks[chunk])
@@ -3405,13 +3406,6 @@ static void HWR_DrawSpriteShadow(gl_vissprite_t *spr, patch_t *gpatch, GLPatch_t
 	fixed_t slopez;
 	float offset = 0;
 
-	// technically this_scale gets multiplied and added to sprite y/x scale, but this thing needs it for some crap so ill just throw it in here again
-	const boolean hires = (spr->mobj && spr->mobj->skin && K_GetMobjSkin(spr->mobj)->flags & SF_HIRES);
-	if (spr->mobj)
-		this_scale = FixedToFloat(spr->mobj->scale);
-	if (hires)
-		this_scale = this_scale * FixedToFloat(K_GetMobjSkin(spr->mobj)->highresscale);
-
 	R_GetShadowZ(spr->mobj, &floorslope);
 
 	mobjfloor = HWR_OpaqueFloorAtPos(
@@ -3461,6 +3455,14 @@ static void HWR_DrawSpriteShadow(gl_vissprite_t *spr, patch_t *gpatch, GLPatch_t
 	}
 	else
 		floorheight = FixedInt(spr->mobj->z - mobjfloor);
+
+	// technically this_scale gets multiplied and added to sprite y/x scale, but this thing needs it for some crap so ill just throw it in here again
+	const boolean hires = (spr->mobj && spr->mobj->skin && K_GetMobjSkin(spr->mobj)->flags & SF_HIRES);
+
+	if (spr->mobj)
+		this_scale = FixedToFloat(spr->mobj->scale);
+	if (hires)
+		this_scale = this_scale * FixedToFloat(K_GetMobjSkin(spr->mobj)->highresscale);
 
 	// create the sprite billboard
 	//
@@ -4194,8 +4196,8 @@ gl_vissprite_t* gl_vsprorder[MAXVISSPRITES];
 // sorted and drawn together with transparent surfaces.
 static int CompareVisSprites(const void *p1, const void *p2)
 {
-	gl_vissprite_t* spr1 = *(gl_vissprite_t*const*)p1;
-	gl_vissprite_t* spr2 = *(gl_vissprite_t*const*)p2;
+	const gl_vissprite_t* spr1 = *(gl_vissprite_t*const*)p1;
+	const gl_vissprite_t* spr2 = *(gl_vissprite_t*const*)p2;
 	int idiff;
 	float fdiff;
 
@@ -4373,8 +4375,8 @@ static void HWR_AddTransparentPolyobjectFloor(lumpnum_t lumpnum, polyobj_t *poly
 
 static int CompareDrawNodePlanes(const void *p1, const void *p2)
 {
-	INT32 n1 = *(const INT32*)p1;
-	INT32 n2 = *(const INT32*)p2;
+	const INT32 n1 = *(const INT32*)p1;
+	const INT32 n2 = *(const INT32*)p2;
 
 	return ABS(drawnodes[n2].u.plane.fixedheight - viewz) - ABS(drawnodes[n1].u.plane.fixedheight - viewz);
 }
@@ -4732,8 +4734,6 @@ static void HWR_ProjectSprite(mobj_t *thing)
 	if (interp.spritexscale < 1 || interp.spriteyscale < 1)
 		return;
 
-	const boolean papersprite = (thing->frame & FF_PAPERSPRITE);
-
 	INT32 blendmode;
 	if (thing->frame & FF_BLENDMASK)
 		blendmode = ((thing->frame & FF_BLENDMASK) >> FF_BLENDSHIFT) + 1;
@@ -4746,6 +4746,8 @@ static void HWR_ProjectSprite(mobj_t *thing)
 		if (!R_BlendLevelVisible(blendmode, (thing->frame & FF_TRANSMASK)>>FF_TRANSSHIFT))
 			return;
 	}
+
+	const boolean papersprite = (thing->frame & FF_PAPERSPRITE);
 
 	// transform the origin point
 	tr_x = FixedToFloat(interp.x);
@@ -4773,12 +4775,6 @@ static void HWR_ProjectSprite(mobj_t *thing)
 #endif
 
 	rot = (thing->frame & FF_FRAMEMASK);
-
-#ifdef ROTSPRITE
-	// determine here if sprite should rotate for optimization
-	const boolean sliprollrotate = (cv_sliptideroll.value && (thing->player && thing->player->sliproll));
-	const boolean shouldrotate   = (interp.sloperoll || interp.slopepitch || interp.roll || interp.pitch || thing->rollangle || sliprollrotate);
-#endif
 
 	//Fab : 02-08-98: 'skin' override spritedef currently used for skin
 	if ((thing->skin || thing->localskin) && thing->sprite == SPR_PLAY)
@@ -4816,6 +4812,12 @@ static void HWR_ProjectSprite(mobj_t *thing)
 #ifdef PARANOIA
 	if (!sprframe)
 		I_Error("sprframes NULL for sprite %d\n", thing->sprite);
+#endif
+
+#ifdef ROTSPRITE
+	// determine here if sprite should rotate for optimization
+	const boolean sliprollrotate = (cv_sliptideroll.value && (thing->player && thing->player->sliproll));
+	const boolean shouldrotate   = (interp.sloperoll || interp.slopepitch || interp.roll || interp.pitch || thing->rollangle || sliprollrotate);
 #endif
 
 	if (sprframe->rotate != SRF_SINGLE || papersprite
@@ -5269,13 +5271,13 @@ void HWR_BuildSkyDome(void)
 {
 	int c, r;
 	signed char yflip;
-	int row_count = 4;
+	static constexpr int row_count = 4;
 	int col_count = 4;
 	float delta;
 
 	gl_sky_t *sky = &gl_sky;
 	gl_skyvertex_t *vertex_p;
-	texture_t *texture = textures[texturetranslation[skytexture]];
+	const texture_t *texture = textures[texturetranslation[skytexture]];
 
 	sky->detail = 16;
 	col_count *= sky->detail;
@@ -5484,7 +5486,7 @@ void HWR_SetTransform(float fpov)
 
 void HWR_ClearClipper(void)
 {
-	angle_t a1 = gld_FrustumAngle(gl_aimingangle);
+	const angle_t a1 = gld_FrustumAngle(gl_aimingangle);
 	gld_clipper_Clear();
 	gld_clipper_SafeAddClipRange(viewangle + a1, viewangle - a1);
 #ifdef HAVE_SPHEREFRUSTRUM
@@ -5790,6 +5792,8 @@ void HWR_RenderPlayerView(void)
 	HWR_RenderFrame(player, false);
 }
 
+// Determine on mapload if current map has any Horizonlines present
+// so we can avoid rather hot checks in HWR_Subsector
 static void HWR_CheckForHorizonLines(void)
 {
 	size_t i;
@@ -6043,7 +6047,7 @@ void HWR_Shutdown(void)
 static void HWR_RenderWall(FOutVector *wallVerts, FSurfaceInfo *pSurf, FBITFIELD blend, boolean fogwall, INT32 lightlevel, extracolormap_t *wallcolormap)
 {
 	FBITFIELD blendmode = blend;
-	UINT8 alpha = pSurf->PolyColor.s.alpha; // retain the alpha
+	const UINT8 alpha = pSurf->PolyColor.s.alpha; // retain the alpha
 
 	INT32 shader = SHADER_NONE;
 
