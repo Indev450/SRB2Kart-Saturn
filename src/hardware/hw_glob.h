@@ -53,7 +53,7 @@ void HWR_ObjectLightLevelPost(gl_vissprite_t *spr, const sector_t *sector, INT32
 // hw_bsp.c
 // --------
 extern poly_subsector_t *poly_subsectors;
-extern size_t addsubsector;
+extern size_t num_poly_subsector;
 
 void HWR_InitPolyPool(void);
 void HWR_FreePolyPool(void);
