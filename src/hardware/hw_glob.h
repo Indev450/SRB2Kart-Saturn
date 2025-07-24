@@ -55,9 +55,8 @@ void HWR_ObjectLightLevelPost(gl_vissprite_t *spr, const sector_t *sector, INT32
 extern poly_subsector_t *poly_subsectors;
 extern size_t num_poly_subsector;
 
-void HWR_InitPolyPool(void);
-void HWR_FreePolyPool(void);
-void HWR_FreeExtraSubsectors(void);
+void HWR_Init_PolyPool(void);
+void HWR_Free_PolyPool(void);
 
 // --------
 // hw_cache.c
