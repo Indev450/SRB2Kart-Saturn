@@ -3166,8 +3166,10 @@ static void K_SpawnDriftSparks(player_t *player)
 	if (leveltime % 2 == 1)
 		return;
 
+	const boolean onground = P_IsObjectOnGround(player->mo);
+
 	// kinda sketchy
-	if (!cv_airsparks.value && P_IsObjectOnGround(player->mo))
+	if (!cv_airsparks.value && onground)
 		return;
 
 	if (!player->kartstuff[k_drift] || player->kartstuff[k_driftcharge] < K_GetKartDriftSparkValue(player))
@@ -3186,7 +3188,7 @@ static void K_SpawnDriftSparks(player_t *player)
 		newy = player->mo->y + P_ReturnThrustY(player->mo, thrustangle, smolscale);
 		spark = P_SpawnMobj(newx, newy, player->mo->z, MT_DRIFTSPARK);
 
-		spark->islocal = cv_airsparks.value && !P_IsObjectOnGround(player->mo);
+		spark->islocal = cv_airsparks.value && !onground;
 
 		P_SetTarget(&spark->target, player->mo);
 		spark->angle = travelangle-(ANGLE_45/5)*player->kartstuff[k_drift];
