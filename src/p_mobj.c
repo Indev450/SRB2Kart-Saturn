@@ -9081,7 +9081,7 @@ void P_MobjThinker(mobj_t *mobj)
 	const sector_t *sec1 = mobj->subsector ? mobj->subsector->sector : NULL;
 
 	// 970 allows ANY mobj to trigger a linedef exec
-	if (UNLIKELY(sec1 && GETSECSPECIAL(sec1->special, 2) == 8))
+	if (UNLIKELY(!mobj->islocal && sec1 && GETSECSPECIAL(sec1->special, 2) == 8)) // BEWARE: islocal does not exist in vanilla
 	{
 		sector_t *sec2;
 		sec2 = P_ThingOnSpecial3DFloor(mobj);

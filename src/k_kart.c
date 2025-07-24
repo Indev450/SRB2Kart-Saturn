@@ -3166,13 +3166,9 @@ static void K_SpawnDriftSparks(player_t *player)
 	if (leveltime % 2 == 1)
 		return;
 
-	if (cv_airsparks.value)
-		goto skipground;
-
-	if (!P_IsObjectOnGround(player->mo))
+	// kinda sketchy
+	if (!cv_airsparks.value && P_IsObjectOnGround(player->mo))
 		return;
-
-skipground: // idk im sleepy
 
 	if (!player->kartstuff[k_drift] || player->kartstuff[k_driftcharge] < K_GetKartDriftSparkValue(player))
 		return;
@@ -3189,6 +3185,8 @@ skipground: // idk im sleepy
 		newx = player->mo->x + P_ReturnThrustX(player->mo, thrustangle, smolscale);
 		newy = player->mo->y + P_ReturnThrustY(player->mo, thrustangle, smolscale);
 		spark = P_SpawnMobj(newx, newy, player->mo->z, MT_DRIFTSPARK);
+
+		spark->islocal = cv_airsparks.value && !P_IsObjectOnGround(player->mo);
 
 		P_SetTarget(&spark->target, player->mo);
 		spark->angle = travelangle-(ANGLE_45/5)*player->kartstuff[k_drift];
@@ -5504,6 +5502,7 @@ FUNCINLINE static ATTRINLINE void K_SpawnNormalSpeedLines(player_t *player, bool
 	fast->momy = 3*player->mo->momy/4;
 	fast->momz = 3*P_GetMobjZMovement(player->mo)/4;
 	//fast->momz = 3*player->mo->momz/4;
+	fast->islocal = !synched;
 	P_SetTarget(&fast->target, player->mo); // easier lua access
 
 	K_MatchGenericExtraFlags(fast, player->mo);
@@ -6448,6 +6447,7 @@ void K_SpawnWaterRunParticles(mobj_t *mobj)
 			water->momx = mobj->momx;
 			water->momy = mobj->momy;
 			water->momz = mobj->momz;
+			water->islocal = true;
 			P_SetScale(water, trailScale);
 			P_SetMobjState(water, curUnderlayFrame);
 			P_SetTarget(&water, mobj);
@@ -6461,6 +6461,7 @@ void K_SpawnWaterRunParticles(mobj_t *mobj)
 			water->momx = mobj->momx;
 			water->momy = mobj->momy;
 			water->momz = mobj->momz;
+			water->islocal = true;
 			P_SetScale(water, trailScale);
 			P_SetMobjState(water, curOverlayFrame);
 			P_SetTarget(&water, mobj);
@@ -6475,6 +6476,7 @@ void K_SpawnWaterRunParticles(mobj_t *mobj)
 			water->momx = mobj->momx;
 			water->momy = mobj->momy;
 			water->momz = mobj->momz;
+			water->islocal = true;
 			P_SetScale(water, trailScale);
 			P_SetMobjState(water, curUnderlayFrame);
 			P_SetTarget(&water, mobj);
@@ -6488,6 +6490,7 @@ void K_SpawnWaterRunParticles(mobj_t *mobj)
 			water->momx = mobj->momx;
 			water->momy = mobj->momy;
 			water->momz = mobj->momz;
+			water->islocal = true;
 			P_SetScale(water, trailScale);
 			P_SetMobjState(water, curOverlayFrame);
 			P_SetTarget(&water, mobj);
