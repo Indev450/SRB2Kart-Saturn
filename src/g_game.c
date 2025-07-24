@@ -751,47 +751,49 @@ INT32 JoyAxis(axis_input_e axissel, UINT8 player)
 	INT32 axisval;
 	boolean flp = false;
 
+	UINT8 pnum = player-1;
+
 	//find what axis to get
 	switch (axissel)
 	{
 		case AXISTURN:
-			axisval = cv_turnaxis[player-1].value;
+			axisval = cv_turnaxis[pnum].value;
 			break;
 		case AXISMOVE:
-			axisval = cv_moveaxis[player-1].value;
+			axisval = cv_moveaxis[pnum].value;
 			break;
 		case AXISCAMTURN:
-			axisval = cv_camturnaxis[player-1].value;
+			axisval = cv_camturnaxis[pnum].value;
 			break;
 		case AXISCAMSTRAFE:
-			axisval = cv_camstrafeaxis[player-1].value;
+			axisval = cv_camstrafeaxis[pnum].value;
 			break;
 		case AXISBRAKE:
-			axisval = cv_brakeaxis[player-1].value;
+			axisval = cv_brakeaxis[pnum].value;
 			break;
 		case AXISAIM:
-			axisval = cv_aimaxis[player-1].value;
+			axisval = cv_aimaxis[pnum].value;
 			break;
 		case AXISLOOK:
-			axisval = cv_lookaxis[player-1].value;
+			axisval = cv_lookaxis[pnum].value;
 			break;
 		case AXISFIRE:
-			axisval = cv_fireaxis[player-1].value;
+			axisval = cv_fireaxis[pnum].value;
 			break;
 		case AXISDRIFT:
-			axisval = cv_driftaxis[player-1].value;
+			axisval = cv_driftaxis[pnum].value;
 			break;
 		case AXISLOOKBACK:
-			axisval = cv_lookbackaxis[player-1].value;
+			axisval = cv_lookbackaxis[pnum].value;
 			break;
 		case AXISCUSTOM1:
-			axisval = cv_custom1axis[player-1].value;
+			axisval = cv_custom1axis[pnum].value;
 			break;
 		case AXISCUSTOM2:
-			axisval = cv_custom2axis[player-1].value;
+			axisval = cv_custom2axis[pnum].value;
 			break;
 		case AXISCUSTOM3:
-			axisval = cv_custom3axis[player-1].value;
+			axisval = cv_custom3axis[pnum].value;
 			break;
 		default:
 			return 0;
@@ -802,44 +804,51 @@ INT32 JoyAxis(axis_input_e axissel, UINT8 player)
 		axisval = -axisval;
 		flp = true;
 	}
+
 	if (axisval > JOYAXISSET*2 || axisval == 0) //not there in array or None
 		return 0;
 
-	if (axisval%2)
+	if (axisval % 2)
 	{
 		axisval /= 2;
-		retaxis = joyxmove[axisval];
+		retaxis = joyxmove[pnum][axisval];
 
 		if (retaxis < (-JOYAXISRANGE))
 			retaxis = -JOYAXISRANGE;
 		if (retaxis > (+JOYAXISRANGE))
 			retaxis = +JOYAXISRANGE;
-		if (!Joystick[player-1].bGamepadStyle && axissel < AXISDEAD)
+		if (!Joystick[pnum].bGamepadStyle && axissel < AXISDEAD)
 		{
-			const INT32 jdeadzone = ((JOYAXISRANGE-1) * cv_xdeadzone[player-1].value) >> FRACBITS;
+			const INT32 jdeadzone = ((JOYAXISRANGE-1) * cv_xdeadzone[pnum].value) >> FRACBITS;
 			if (abs(retaxis) <= jdeadzone)
 				return 0;
 		}
-		if (flp) retaxis = -retaxis; //flip it around
+
+		if (flp)
+			retaxis = -retaxis; // flip it around
+
 		return retaxis;
 	}
 	else
 	{
 		axisval--;
 		axisval /= 2;
-		retaxis = joyymove[axisval];
+		retaxis = joyymove[pnum][axisval];
 
 		if (retaxis < (-JOYAXISRANGE))
 			retaxis = -JOYAXISRANGE;
 		if (retaxis > (+JOYAXISRANGE))
 			retaxis = +JOYAXISRANGE;
-		if (!Joystick[player-1].bGamepadStyle && axissel < AXISDEAD)
+		if (!Joystick[pnum].bGamepadStyle && axissel < AXISDEAD)
 		{
-			const INT32 jdeadzone = ((JOYAXISRANGE-1) * cv_ydeadzone[player-1].value) >> FRACBITS;
+			const INT32 jdeadzone = ((JOYAXISRANGE-1) * cv_ydeadzone[pnum].value) >> FRACBITS;
 			if (abs(retaxis) <= jdeadzone)
 				return 0;
 		}
-		if (flp) retaxis = -retaxis; //flip it around
+
+		if (flp)
+			retaxis = -retaxis; // flip it around
+
 		return retaxis;
 	}
 }
@@ -1286,15 +1295,9 @@ static void G_DoLoadLevel(boolean resetplayer)
 	}
 
 	// clear cmd building stuff
-	memset(gamekeydown, 0, sizeof (gamekeydown));
-
-	for (i = 0; i < JOYAXISSET; i++)
-	{
-		joyxmove[i]  = joyymove[i]  = 0;
-		joy2xmove[i] = joy2ymove[i] = 0;
-		joy3xmove[i] = joy3ymove[i] = 0;
-		joy4xmove[i] = joy4ymove[i] = 0;
-	}
+	memset(gamekeydown, 0, sizeof(gamekeydown));
+	memset(joyxmove, 0, sizeof(joyxmove));
+	memset(joyymove, 0, sizeof(joyymove));
 	mousex = mousey = 0;
 
 	// clear hud messages remains (usually from game startup)
