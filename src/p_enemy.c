@@ -11033,37 +11033,3 @@ void A_SpawnFreshCopy(void *thing)
 
 	newObject->color = actor->color; // SRB2Kart
 }
-
-void A_InvincSparkleRotate(void *thing)
-{
-	mobj_t *actor = thing;
-
-	fixed_t sx, sy, sz;	// Teleport dests.
-	mobj_t *ghost = NULL;
-
-	//if (LUA_CallAction(A_INVINCSPARKLEROTATE, actor))
-		//return;
-
-	if (P_MobjWasRemoved(actor->target))
-		return;
-
-	//CONS_Printf("%d\n", actor->movefactor/FRACUNIT);
-	sx = actor->target->x + FixedMul((actor->movefactor), FINECOSINE((actor->angle)>>ANGLETOFINESHIFT));
-	sy = actor->target->y + FixedMul((actor->movefactor), FINESINE((actor->angle)>>ANGLETOFINESHIFT));
-	sz = actor->target->z + (actor->extravalue1) + FixedMul((actor->cvmem), FINECOSINE((leveltime*ANG1*10 + actor->angle)>>ANGLETOFINESHIFT));
-	P_MoveOrigin(actor, sx, sy, sz);
-
-	actor->momx = actor->target->momx;
-	actor->momy = actor->target->momy;
-	actor->momz = actor->target->momz;	// Give momentum for eventual interp builds idk.
-
-	actor->angle += ANG1*10*(actor->extravalue2);	// Arbitrary value, change this if you want, I suppose.
-
-	ghost = P_SpawnGhostMobj(actor);
-
-	if (!P_MobjWasRemoved(ghost))
-	{
-		ghost->frame |= FF_ADD;
-		ghost->fuse = 4;
-	}
-}

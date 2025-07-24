@@ -1767,8 +1767,7 @@ static void K_SpawnDashDustRelease(player_t *player)
 
 		dust->momx = 3*player->mo->momx/5;
 		dust->momy = 3*player->mo->momy/5;
-		dust->momz = 3*P_GetMobjZMovement(player->mo)/5;
-		//dust->momz = 3*player->mo->momz/5;
+		dust->momz = 3*player->mo->momz/5;
 
 		K_MatchGenericExtraFlags(dust, player->mo);
 	}
@@ -3200,8 +3199,7 @@ static void K_SpawnDriftSparks(player_t *player)
 
 		spark->momx = player->mo->momx/2;
 		spark->momy = player->mo->momy/2;
-		spark->momz = P_GetMobjZMovement(player->mo)/2;
-		//spark->momz = player->mo->momz/2;
+		spark->momz = player->mo->momz/2;
 
 		// rotate the sparks based on pitch and roll; it just looks neat
 		if (cv_sparkroll.value)
@@ -3271,9 +3269,7 @@ static void K_SpawnAIZDust(player_t *player)
 		P_SetScale(spark, (spark->destscale = (3*player->mo->scale)>>2));
 
 		spark->momx = (6*player->mo->momx)/5;
-		spark->momy = (6*player->mo->momy)/5;
-		spark->momz = P_GetMobjZMovement(player->mo)/2;
-		//spark->momz = player->mo->momz/2;
+		spark->momz = player->mo->momz/2;
 
 		K_MatchGenericExtraFlags(spark, player->mo);
 	}
@@ -3627,15 +3623,8 @@ void K_SpawnSparkleTrail(mobj_t *mo)
 
 		sparkle = P_SpawnMobj(newx, newy, newz, MT_SPARKLETRAIL);
 
-		sparkle->angle = R_PointToAngle2(mo->x, mo->y, sparkle->x, sparkle->y);
-
-		sparkle->movefactor = R_PointToDist2(mo->x, mo->y, sparkle->x, sparkle->y);	// Save the distance we spawned away from the player.
-
-		sparkle->extravalue1 = (sparkle->z - mo->z);			// Keep track of our Z position relative to the player's, I suppose.
-		sparkle->extravalue2 = M_RandomRange(0, 1) ? 1 : -1;	// Rotation direction?
-		sparkle->cvmem = M_RandomRange(-25, 25)*mo->scale;		// Vertical "angle"
-
 		K_FlipFromObject(sparkle, mo);
+
 		P_SetTarget(&sparkle->target, mo);
 
 		sparkle->destscale = mo->destscale;
@@ -3682,8 +3671,7 @@ void K_SpawnWipeoutTrail(mobj_t *mo, boolean translucent)
 	{
 		dust->momx = mo->momx/2;
 		dust->momy = mo->momy/2;
-		dust->momz = P_GetMobjZMovement(mo)/2;
-		//dust->momz = mo->momz/2;
+		dust->momz = mo->momz/2;
 	}
 
 	if (translucent)
@@ -5498,12 +5486,10 @@ FUNCINLINE static ATTRINLINE void K_SpawnNormalSpeedLines(player_t *player, bool
 							   player->mo->z + (player->mo->height/2) + (randomfunc(-20,20) * player->mo->scale),
 							   MT_FASTLINE);
 
-	//fast->angle = R_PointToAngle2(0, 0, player->mo->momx, player->mo->momy);
-	fast->angle = K_MomentumAngle(player->mo, 6*player->mo->scale);
+	fast->angle = R_PointToAngle2(0, 0, player->mo->momx, player->mo->momy);
 	fast->momx = 3*player->mo->momx/4;
 	fast->momy = 3*player->mo->momy/4;
-	fast->momz = 3*P_GetMobjZMovement(player->mo)/4;
-	//fast->momz = 3*player->mo->momz/4;
+	fast->momz = 3*player->mo->momz/4;
 	fast->islocal = !synched;
 	P_SetTarget(&fast->target, player->mo); // easier lua access
 
