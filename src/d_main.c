@@ -866,9 +866,25 @@ void D_SRB2Loop(void)
 			rendertimefrac_unpaused = FRACUNIT;
 		}
 
-		if ((interp || doDisplay) && !frameskip)
+
+		if (interp || doDisplay)
 		{
-			ranwipe = D_Display();
+			if (!frameskip)
+			{
+				ranwipe = D_Display();
+			}
+			else if (frameskip)
+			{
+				// always update console and hud
+				// otherwise it may take minutes to open it
+				CON_Drawer();
+
+				if (gamestate == GS_LEVEL)
+				{
+					ST_Drawer();
+					HU_Drawer();
+				}
+			}
 		}
 
 		// Only take screenshots after drawing.
