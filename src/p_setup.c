@@ -3008,7 +3008,6 @@ boolean P_SetupLevel(boolean fromnetsave, boolean reloadinggamestate)
 #ifdef HWRENDER // not win32 only 19990829 by Kin
 	if (rendermode == render_opengl)
 	{
-		HWR_FreeExtraSubsectors();
 		// Create plane polygons.
 		HWR_LoadLevel(reloadinggamestate);
 	}

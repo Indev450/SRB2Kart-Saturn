@@ -5891,7 +5891,7 @@ void HWR_Startup(void)
 		CONS_Printf("HWR_Startup()...\n");
 		textureformat = patchformat = GL_TEXFMT_RGBA;
 
-		HWR_InitPolyPool();
+		HWR_Init_PolyPool();
 
 		HWR_InitMapTextures();
 		HWR_InitMD2();
@@ -5984,7 +5984,7 @@ static void COM_HWR_glinfo(void)
 void HWR_Shutdown(void)
 {
 	CONS_Printf("HWR_Shutdown()\n");
-	HWR_FreePolyPool();
+	HWR_Free_PolyPool();
 	HWR_FreeMapTextures();
 	GL_FlushScreenTextures();
 #ifdef USE_FBO_OGL
