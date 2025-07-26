@@ -32,7 +32,7 @@ extern "C" {
 #define FUNCALLOC(x)
 #endif
 
-//#define ZDEBUG
+#define ZDEBUG
 
 //
 // Purge tags
@@ -92,30 +92,31 @@ void Z_Init(void);
 // Z_Free and alloc with alignment
 #ifdef ZDEBUG
 #define Z_Free(p)                 Z_Free2(p, __FILE__, __LINE__)
-#define Z_MallocAlign(s,t,u,a)    Z_Malloc2(s, t, u, a, __FILE__, __LINE__)
-#define Z_CallocAlign(s,t,u,a)    Z_Calloc2(s, t, u, a, __FILE__, __LINE__)
-#define Z_ReallocAlign(p,s,t,u,a) Z_Realloc2(p,s, t, u, a, __FILE__, __LINE__)
+#define Z_Malloc(s,t,u)    Z_Malloc2(s, t, u, __FILE__, __LINE__)
+#define Z_Calloc(s,t,u)    Z_Calloc2(s, t, u, __FILE__, __LINE__)
+#define Z_Realloc(p,s,t,u) Z_Realloc2(p,s, t, u, __FILE__, __LINE__)
 void Z_Free2(void *ptr, const char *file, INT32 line);
-void *Z_Malloc2(size_t size, INT32 tag, void *user, INT32 alignbits, const char *file, INT32 line) FUNCALLOC(1);
-void *Z_Calloc2(size_t size, INT32 tag, void *user, INT32 alignbits, const char *file, INT32 line) FUNCALLOC(1);
-void *Z_Realloc2(void *ptr, size_t size, INT32 tag, void *user, INT32 alignbits, const char *file, INT32 line) FUNCALLOC(2);
+void *Z_Malloc2(size_t size, INT32 tag, void *user, const char *file, INT32 line) FUNCALLOC(1);
+void *Z_Calloc2(size_t size, INT32 tag, void *user, const char *file, INT32 line) FUNCALLOC(1);
+void *Z_Realloc2(void *ptr, size_t size, INT32 tag, void *user, const char *file, INT32 line) FUNCALLOC(2);
 #else
 void Z_Free(void *ptr);
-void *Z_MallocAlign(size_t size, INT32 tag, void *user, INT32 alignbits) FUNCALLOC(1);
-void *Z_CallocAlign(size_t size, INT32 tag, void *user, INT32 alignbits) FUNCALLOC(1);
-void *Z_ReallocAlign(void *ptr, size_t size, INT32 tag, void *user, INT32 alignbits) FUNCALLOC(2);
+void *Z_Malloc(size_t size, INT32 tag, void *user) FUNCALLOC(1);
+void *Z_Calloc(size_t size, INT32 tag, void *user) FUNCALLOC(1);
+void *Z_Realloc(void *ptr, size_t size, INT32 tag, void *user) FUNCALLOC(2);
 #endif
-
-// Alloc with standard alignment
-#define Z_Malloc(s,t,u)    Z_MallocAlign(s, t, u, sizeof(void *))
-#define Z_Calloc(s,t,u)    Z_CallocAlign(s, t, u, sizeof(void *))
-#define Z_Realloc(p,s,t,u) Z_ReallocAlign(p, s, t, u, sizeof(void *))
 
 // Free all memory by tag
 // these don't give line numbers for ZDEBUG currently though
 // (perhaps this should be changed in future?)
+#ifdef ZDEBUG
+#define Z_FreeTag(tagnum) Z_FreeTags2(tagnum, tagnum, __FILE__, __LINE__)
+#define Z_FreeTags(tagnum, tagnum2) Z_FreeTags2(tagnum, tagnum2, __FILE__, __LINE__)
+void Z_FreeTags2(INT32 lowtag, INT32 hightag, const char *file, INT32 line);
+#else
 #define Z_FreeTag(tagnum) Z_FreeTags(tagnum, tagnum)
 void Z_FreeTags(INT32 lowtag, INT32 hightag);
+#endif
 
 // Iterate memory by tag
 #define Z_IterateTag(tagnum, func) Z_IterateTags(tagnum, tagnum, func)
@@ -125,7 +126,13 @@ void Z_IterateTags(INT32 lowtag, INT32 hightag, boolean (*iterfunc)(void *));
 // Utility functions
 //
 void Z_CheckMemCleanup(void);
-void Z_CheckHeap(INT32 i);
+
+#ifdef ZDEBUG
+#define Z_CheckHeap(tag) Z_CheckHeap2(__FILE__, __LINE__)
+void Z_CheckHeap2(const char *file, INT32 line);
+#else
+void Z_CheckHeap(INT32 tag);
+#endif
 
 //
 // Zone memory modification
