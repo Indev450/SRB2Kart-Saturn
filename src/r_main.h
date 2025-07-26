@@ -215,8 +215,8 @@ void R_SetViewSize(void);
 void R_ExecuteSetViewSize(void);
 
 fixed_t R_GetPlayerFov(player_t *player);
-void R_SkyboxFrame(int s);
-void R_SetupFrame(int s, boolean skybox);
+void R_SkyboxFrame(UINT8 pnum);
+void R_SetupFrame(UINT8 pnum, boolean skybox);
 
 // Called by G_Drawer.
 void R_RenderPlayerView(player_t *player);
