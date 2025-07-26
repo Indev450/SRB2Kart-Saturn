@@ -42,13 +42,13 @@ static CV_PossibleValue_t fpscap_cons_t[] = {
 	{0, NULL}
 };
 
-consvar_t cv_fpscap = {"fpscap", "Match refresh rate", CV_SAVE, fpscap_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_fpscap   = {"fpscap", "Match refresh rate", CV_SAVE, fpscap_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_fpscapbg = {"fpscapbackground", "Match refresh rate", CV_SAVE, fpscap_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 consvar_t cv_precipinterp = {"precipinterpolation", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 ps_metric_t ps_interp_frac = {0};
-ps_metric_t ps_interp_lag = {0};
+ps_metric_t ps_interp_lag  = {0};
 
 static boolean R_UseBackgroundFramerateCap(void)
 {
@@ -67,21 +67,21 @@ static boolean R_UseBackgroundFramerateCap(void)
 	return false;
 }
 
-static UINT32 R_GetBackgroundFramerateCap(void)
+static UINT32 R_GetFrameCap(INT32 val)
 {
-	if (cv_fpscapbg.value == 0)
+	if (val == 0)
 	{
 		// 0: Match refresh rate
 		return I_GetRefreshRate();
 	}
 
-	if (cv_fpscapbg.value < 0)
+	if (val < 0)
 	{
 		// -1: Unlimited
 		return 0;
 	}
 
-	return cv_fpscapbg.value;
+	return val;
 }
 
 UINT32 R_GetFramerateCap(void)
@@ -95,22 +95,10 @@ UINT32 R_GetFramerateCap(void)
 
 	if (R_UseBackgroundFramerateCap())
 	{
-		return R_GetBackgroundFramerateCap();
+		return R_GetFrameCap(cv_fpscapbg.value);
 	}
 
-	if (cv_fpscap.value == 0)
-	{
-		// 0: Match refresh rate
-		return I_GetRefreshRate();
-	}
-
-	if (cv_fpscap.value < 0)
-	{
-		// -1: Unlimited
-		return 0;
-	}
-
-	return cv_fpscap.value;
+	return R_GetFrameCap(cv_fpscap.value);
 }
 
 boolean R_UsingFrameInterpolation(void)
