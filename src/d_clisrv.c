@@ -1039,8 +1039,6 @@ static void SV_SendResynch(INT32 node)
 {
 	INT32 i, j;
 
-	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
-
 	if (!nodeingame[node])
 	{
 		// player left during resynch
@@ -1048,6 +1046,8 @@ static void SV_SendResynch(INT32 node)
 		resynch_inprogress[node] = false;
 		return;
 	}
+
+	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
 
 	// resynched?
 	if (!resynch_status[node])
@@ -1938,8 +1938,6 @@ static void CL_LoadReceivedSavegame(boolean reloading)
 	size_t length, decompressedlen;
 	char tmpsave[264];
 
-	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
-
 	sprintf(tmpsave, "%s" PATHSEP TMPSAVENAME, srb2home);
 
 	length = FIL_ReadFile(tmpsave, &save.buffer);
@@ -2002,6 +2000,7 @@ static void CL_LoadReceivedSavegame(boolean reloading)
 	// so they know they can resume the game
 	if (reloading)
 	{
+		doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
 		netbuffer->packettype = PT_RECEIVEDGAMESTATE;
 		HSendPacket(servernode, true, 0, 0);
 	}
@@ -2046,6 +2045,8 @@ static void CL_ReloadReceivedSavegame(void)
 static void SendAskInfo(INT32 node)
 {
 	tic_t asktime;
+	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
+
 #ifdef HOLEPUNCH
 	if (node != 0 && node != BROADCASTADDR &&
 			cv_rendezvousserver.string[0])
@@ -2055,8 +2056,6 @@ static void SendAskInfo(INT32 node)
 #endif
 
 	asktime = I_GetTime();
-
-	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
 
 	netbuffer->packettype = PT_ASKINFO;
 	netbuffer->u.askinfo.version = VERSION;
@@ -4046,8 +4045,6 @@ static void Command_ResendGamestate(void)
 {
 	SINT8 playernum;
 
-	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
-
 	if (COM_Argc() == 1)
 	{
 		CONS_Printf(M_GetText("resendgamestate <playername/playernum>: resend the game state to a player\n"));
@@ -4062,6 +4059,8 @@ static void Command_ResendGamestate(void)
 	playernum = nametonum(COM_Argv(1));
 	if (playernum == -1 || playernum == 0)
 		return;
+
+	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
 
 	// Send a PT_WILLRESENDGAMESTATE packet to the client so they know what's going on
 	netbuffer->packettype = PT_WILLRESENDGAMESTATE;
@@ -4695,6 +4694,8 @@ static size_t TotalTextCmdPerTic(tic_t tic)
   */
 static void HandleConnect(SINT8 node)
 {
+	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
+
 	// Sal: Dedicated mode is INCREDIBLY hacked together.
 	// If a server filled out, then it'd overwrite the host and turn everyone into weird husks.....
 	// It's too much effort to legimately fix right now. Just prevent it from reaching that state.
@@ -4704,8 +4705,6 @@ static void HandleConnect(SINT8 node)
 	for (UINT8 i = dedicated ? 1 : 0; i < MAXPLAYERS; i++)
 		if (playernode[i] != UINT8_MAX) // We use this to count players because it is affected by SV_AddWaitingPlayers when more than one client joins on the same tic, unlike playeringame and D_NumPlayers. UINT8_MAX denotes no node for that player
 			connectedplayers++;
-
-	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
 
 	if (bannednode && bannednode[node].banid != SIZE_MAX)
 	{
@@ -4924,10 +4923,9 @@ static void HandlePlayerInfo(void)
 
 static void PT_TellFilesNeeded(SINT8 node)
 {
-	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
-
 	if (server && serverrunning)
 	{
+		doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
 		UINT8 *p;
 		INT32 firstfile = netbuffer->u.filesneedednum;
 
@@ -4945,8 +4943,6 @@ static void PT_TellFilesNeeded(SINT8 node)
 
 static void PT_MoreFilesNeeded(SINT8 node)
 {
-	doomdata_t *netbuffer;
-
 	if (server && serverrunning)
 	{ // But wait I thought I'm the server?
 		Net_CloseConnection(node);
@@ -4956,7 +4952,7 @@ static void PT_MoreFilesNeeded(SINT8 node)
 	if (ServerOnly(node))
 		return;
 
-	netbuffer = DOOMCOM_DATA(doomcom);
+	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
 
 	if (cl_mode == CL_ASKFULLFILELIST && netbuffer->u.filesneededcfg.first == fileneedednum)
 	{
@@ -4968,10 +4964,9 @@ static void PT_MoreFilesNeeded(SINT8 node)
 
 static void PT_AskInfo(SINT8 node)
 {
-	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
-
 	if (server && serverrunning)
 	{
+		doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
 		SV_SendServerInfo(node, (tic_t)LONG(netbuffer->u.askinfo.time));
 		SV_SendPlayerInfo(node); // Send extra info
 	}
@@ -4982,8 +4977,6 @@ static void PT_AskInfo(SINT8 node)
 // Negative response of client join request
 static void PT_ServerRefuse(SINT8 node)
 {
-	doomdata_t *netbuffer;
-
 	if (server && serverrunning)
 	{ // But wait I thought I'm the server?
 		Net_CloseConnection(node);
@@ -4996,7 +4989,7 @@ static void PT_ServerRefuse(SINT8 node)
 	if (cl_mode != CL_WAITJOINRESPONSE)
 		return;
 
-	netbuffer = DOOMCOM_DATA(doomcom);
+	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
 
 	// Save the reason so it can be displayed after quitting the netgame
 	char *reason = strdup(netbuffer->u.serverrefuse.reason);
@@ -5041,7 +5034,6 @@ static void PT_ServerCFG(SINT8 node)
 {
 	INT32 j;
 	UINT8 *scp;
-	doomdata_t *netbuffer;
 
 	if (server && serverrunning && node != servernode)
 	{ // but wait I thought I'm the server?
@@ -5056,7 +5048,7 @@ static void PT_ServerCFG(SINT8 node)
 	if (!(cl_mode == CL_WAITJOINRESPONSE || cl_mode == CL_ASKJOIN))
 		return;
 
-	netbuffer = DOOMCOM_DATA(doomcom);
+	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
 
 	if (client)
 	{
@@ -5202,7 +5194,7 @@ static void HandlePacketFromAwayNode(SINT8 node)
 {
 	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
 
-	if (node != servernode)
+	if (UNLIKELY(node != servernode))
 		DEBFILE(va("Received packet from unknown host %d\n", node));
 
 	switch (netbuffer->packettype)
@@ -5278,7 +5270,6 @@ static boolean CheckForSpeedHacks(UINT8 p)
 
 static void PT_ClientCmd(INT32 netconsole, SINT8 node)
 {
-	doomdata_t *netbuffer;
 	tic_t realend, realstart;
 
 	if (client)
@@ -5288,7 +5279,7 @@ static void PT_ClientCmd(INT32 netconsole, SINT8 node)
 	if (resynch_inprogress[node])
 		return;
 
-	netbuffer = DOOMCOM_DATA(doomcom);
+	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
 
 	// To save bytes, only the low byte of tic numbers are sent
 	// Use ExpandTics to figure out what the rest of the bytes are
@@ -5491,12 +5482,10 @@ static void PT_BasicKeepAlive(INT32 netconsole, SINT8 node)
 
 static void PT_TextCmd(INT32 netconsole, SINT8 node)
 {
-	doomdata_t *netbuffer;
-
 	if (client)
 		return;
 
-	netbuffer = DOOMCOM_DATA(doomcom);
+	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
 
 	switch (netbuffer->packettype)
 	{
@@ -5577,18 +5566,16 @@ static void PT_TextCmd(INT32 netconsole, SINT8 node)
 
 static void PT_ClientQuit(INT32 netconsole, SINT8 node)
 {
-	doomdata_t *netbuffer;
 
 	if (client)
 		return;
-
-	netbuffer = DOOMCOM_DATA(doomcom);
 
 	// nodeingame will be put false in the execution of kick command
 	// this allow to send some packets to the quitting client to have their ack back
 	nodewaiting[node] = 0;
 	if (netconsole != -1 && playeringame[netconsole])
 	{
+		doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
 		SendKick(netconsole, (netbuffer->packettype == PT_NODETIMEOUT) ? KICK_MSG_TIMEOUT : KICK_MSG_PLAYER_QUIT);
 	}
 	Net_CloseConnection(node);
@@ -5615,15 +5602,13 @@ static boolean FromServer(SINT8 node, const char *str)
 
 static void PT_Resynched(SINT8 node)
 {
-	doomdata_t *netbuffer;
-
 	// Only accept PT_RESYNCHEND from the server.
 	if (!FromServer(node, "PT_RESYNCHEND"))
 		return;
 
-	netbuffer = DOOMCOM_DATA(doomcom);
-
 	resynch_local_inprogress = false;
+
+	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
 
 	P_SetRandSeed(netbuffer->u.resynchend.randomseed);
 
@@ -5634,7 +5619,6 @@ static void PT_Resynched(SINT8 node)
 
 static void PT_ServerTics(SINT8 node)
 {
-	doomdata_t *netbuffer;
 	tic_t realend, realstart;
 	UINT8 *pak, *txtpak = NULL, numtxtpak;
 
@@ -5642,7 +5626,7 @@ static void PT_ServerTics(SINT8 node)
 	if (!FromServer(node, "PT_SERVERTICS"))
 		return;
 
-	netbuffer = DOOMCOM_DATA(doomcom);
+	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
 
 	realstart = ExpandTics(netbuffer->u.serverpak.starttic, maketic);
 	realend = realstart + netbuffer->u.serverpak.numtics;
@@ -5704,22 +5688,18 @@ static void PT_ServerTics(SINT8 node)
 
 static void PT_Resynching(SINT8 node)
 {
-	doomdata_t *netbuffer;
-
 	// Only accept PT_RESYNCHING from the server.
 	if (!FromServer(node, "PT_RESYNCHING"))
 		return;
 
-	netbuffer = DOOMCOM_DATA(doomcom);
-
 	resynch_local_inprogress = true;
+	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
 	CL_AcknowledgeResynch(&netbuffer->u.resynchpak);
 }
 
 static void PT_Ping(SINT8 node)
 {
 	UINT8 i;
-	doomdata_t *netbuffer;
 
 	// Only accept PT_PING from the server.
 	if (!FromServer(node, "PT_PING"))
@@ -5728,7 +5708,7 @@ static void PT_Ping(SINT8 node)
 	if (!client)
 		return;
 
-	netbuffer = DOOMCOM_DATA(doomcom);
+	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
 
 	// Update client ping table from the server.
 	for (i = 0; i < MAXPLAYERS; i++)
@@ -5875,6 +5855,7 @@ static void GetPackets(void)
 			}
 			continue;
 		}
+
 		if (node == servernode && client && cl_mode != CL_SEARCHING)
 		{
 			if (netbuffer->packettype == PT_SERVERSHUTDOWN)
@@ -6396,7 +6377,7 @@ static void Local_Maketic(INT32 realtics)
 {
 	INT32 i;
 
-	I_OsPolling(); // I_Getevent
+	I_OsPolling();     // I_Getevent
 	D_ProcessEvents(); // menu responder, cons responder,
 	                   // game responder calls HU_Responder, AM_Responder, F_Responder,
 	                   // and G_MapEventsToControls
@@ -6975,7 +6956,7 @@ void NetUpdate(void)
 					SV_Maketic(); // Create missed tics and increment maketic
 
 				for (; tictoclear < firstticstosend; tictoclear++) // Clear only when acknowledged
-					D_Clearticcmd(tictoclear);                    // Clear the maketic the new tic
+					D_Clearticcmd(tictoclear);                     // Clear the maketic the new tic
 
 				SV_SendTics();
 
@@ -6985,6 +6966,7 @@ void NetUpdate(void)
 				hu_resynching = true;
 		}
 	}
+
 	Net_AckTicker();
 	HandleNodeTimeouts();
 
