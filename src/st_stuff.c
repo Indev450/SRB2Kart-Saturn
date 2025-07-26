@@ -418,26 +418,27 @@ static void ST_drawDebugInfo(void)
 
 static void ST_drawLevelTitle(void)
 {
-	char *lvlttl = mapheaderinfo[gamemap-1]->lvlttl;
-	char *subttl = mapheaderinfo[gamemap-1]->subttl;
-	char *zonttl = mapheaderinfo[gamemap-1]->zonttl; // SRB2kart
-	char *actnum = mapheaderinfo[gamemap-1]->actnum;
-	INT32 lvlttlxpos;
-	INT32 ttlnumxpos;
-	INT32 zonexpos;
-	INT32 dupcalc = (vid.width/vid.dupx);
-	UINT8 gtc = G_GetGametypeColor(gametype);
+	char *lvlttl, *subttl, *zonttl, *actnum;
+	INT32 lvlttlxpos, ttlnumxpos, zonexpos;
+	INT32 dupcalc;
+	UINT8 gtc;
 	INT32 sub = 0;
-	INT32 bary = (splitscreen)
-		? BASEVIDHEIGHT/2
-		: 163;
+	INT32 bary;
 	INT32 lvlw;
 
-	if (!cv_stagetitle.value)
+	if (!cv_stagetitle.value || (timeinmap > 113))
 		return;
 
-	if (timeinmap > 113)
+	if (*mapheaderinfo[gamemap-1]->lvlttl == '\0')
 		return;
+
+	lvlttl = mapheaderinfo[gamemap-1]->lvlttl;
+	subttl = mapheaderinfo[gamemap-1]->subttl;
+	zonttl = mapheaderinfo[gamemap-1]->zonttl; // SRB2kart
+	actnum = mapheaderinfo[gamemap-1]->actnum;
+	dupcalc = (vid.width/vid.dupx);
+	gtc = G_GetGametypeColor(gametype);
+	bary = (splitscreen) ? BASEVIDHEIGHT/2 : 163;
 
 	lvlw = V_LevelNameWidth(lvlttl);
 
@@ -602,7 +603,7 @@ static void ST_overlayDrawer(void)
 	}
 
 	// draw level title Tails
-	if (*mapheaderinfo[gamemap-1]->lvlttl != '\0' && !(hu_showscores && (netgame || multiplayer) && !mapreset) && LUA_HudEnabled(hud_stagetitle) && !forceshowhud)
+	if (!(hu_showscores && (netgame || multiplayer) && !mapreset) && LUA_HudEnabled(hud_stagetitle) && !forceshowhud)
 		ST_drawLevelTitle();
 
 	if (!hu_showscores && netgame && !mapreset)
