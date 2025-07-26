@@ -152,7 +152,7 @@ UINT8 graphics_started = 0; // Is used in console.c and screen.c
 // To disable fullscreen at startup; is set in VID_PrepareModeList
 boolean allow_fullscreen = false;
 static SDL_bool disable_fullscreen = SDL_FALSE;
-#define USE_FULLSCREEN (disable_fullscreen||!allow_fullscreen)?0:cv_fullscreen.value
+#define USE_FULLSCREEN (disable_fullscreen||!allow_fullscreen)? 0: (cv_fullscreen.value == 1)
 static SDL_bool disable_mouse = SDL_FALSE;
 #define USE_MOUSEINPUT (!disable_mouse && cv_usemouse.value && havefocus)
 #define MOUSE_MENU false //(!disable_mouse && cv_usemouse.value && menuactive && !USE_FULLSCREEN)
@@ -1366,6 +1366,7 @@ static void SDLSetMode(INT32 width, INT32 height, SDL_bool fullscreen)
 		{
 			wasfullscreen = SDL_TRUE;
 			SDL_SetWindowFullscreen(window, SDL_WINDOW_FULLSCREEN_DESKTOP);
+			I_SetBorderlessWindow();
 		}
 		else // windowed mode
 		{
@@ -2168,6 +2169,12 @@ static void Impl_SetVsync(void)
 		SDL_GL_SetSwapInterval(cv_vidwait.value ? 1 : 0);
 	}
 #endif
+}
+
+void I_SetBorderlessWindow(void)
+{
+	SDL_bool borderless = (cv_fullscreen.value == 2) ? SDL_FALSE : SDL_TRUE;
+	SDL_SetWindowBordered(window, borderless);
 }
 
 #endif
