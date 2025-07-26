@@ -134,9 +134,12 @@ static INT32 desktopwidth = 0, desktopheight = 0;
 
 static void I_CheckDesktopRes(void);
 
+static void VID_SetBorderless(void);
+
 // synchronize page flipping with screen refresh
 consvar_t cv_vidwait = {"vid_wait", "Off", CV_SAVE|CV_CALL|CV_NOINIT, CV_OnOff, Impl_SetVsync, 0, NULL, NULL, 0, 0, NULL};
 static consvar_t cv_stretch = {"stretch", "Off", CV_SAVE|CV_NOSHOWHELP, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+static consvar_t cv_borderless = {"borderless", "Off", CV_SAVE|CV_CALL, CV_OnOff, VID_SetBorderless, 0, NULL, NULL, 0, 0, NULL};
 
 static void mousegrabOnChange(void);
 consvar_t cv_alwaysgrabmouse = {"alwaysgrabmouse", "Off", CV_SAVE|CV_CALL, CV_OnOff, mousegrabOnChange, 0, NULL, NULL, 0, 0, NULL};
@@ -273,6 +276,7 @@ static void SDLSetMode(INT32 width, INT32 height, SDL_bool fullscreen)
 		{
 			wasfullscreen = SDL_TRUE;
 			SDL_SetWindowFullscreen(window, SDL_WINDOW_FULLSCREEN_DESKTOP);
+			VID_SetBorderless();
 		}
 		else // windowed mode
 		{
@@ -2005,6 +2009,7 @@ void I_StartupGraphics(void)
 	CV_RegisterVar (&cv_vidwait);
 	CV_RegisterVar (&cv_stretch);
 	CV_RegisterVar (&cv_alwaysgrabmouse);
+	CV_RegisterVar (&cv_borderless);
 	disable_mouse = M_CheckParm("-nomouse");
 	disable_fullscreen = M_CheckParm("-win") ? 1 : 0;
 
@@ -2287,6 +2292,12 @@ static void Impl_SetVsync(void)
 		SDL_GL_SetSwapInterval(cv_vidwait.value ? 1 : 0);
 	}
 #endif
+}
+
+static void VID_SetBorderless(void)
+{
+	SDL_bool borderless = (cv_borderless.value) ? SDL_FALSE : SDL_TRUE;
+	SDL_SetWindowBordered(window, borderless);
 }
 
 #endif
