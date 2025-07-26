@@ -141,6 +141,8 @@ boolean I_UseNativeKeyboard(void);
 
 boolean I_CheckNativeRes(void);
 
+void I_SetBorderlessWindow(void);
+
 #ifdef USE_FBO_OGL
 
 void RefreshOGLSDLSurface(void);

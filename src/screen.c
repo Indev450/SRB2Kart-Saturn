@@ -80,7 +80,9 @@ static void Highreshudscale_OnChange(void)
 
 static void SCR_ChangeFullscreen (void);
 
-consvar_t cv_fullscreen = {"fullscreen", "Yes", CV_SAVE|CV_CALL, CV_YesNo, SCR_ChangeFullscreen, 0, NULL, NULL, 0, 0, NULL};
+static CV_PossibleValue_t fullscreen_cons_t[] = {{0, "No"}, {1, "Yes"}, {2, "Borderless Window"}, {0, NULL}};
+
+consvar_t cv_fullscreen = {"fullscreen", "Yes", CV_SAVE|CV_CALL, fullscreen_cons_t, SCR_ChangeFullscreen, 0, NULL, NULL, 0, 0, NULL};
 
 static CV_PossibleValue_t accuratefps_cons_t[] = {{0, "Inaccurate"}, {1, "Accurate"}, {0, NULL}};
 consvar_t cv_accuratefps = {"fpssampling", "1", CV_SAVE, accuratefps_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
@@ -310,6 +312,8 @@ void SCR_SetDefaultMode(void)
 void SCR_ChangeFullscreen(void)
 {
 #ifdef DIRECTFULLSCREEN
+	I_SetBorderlessWindow(); // Running this here so we can have borderless window at startup
+
 	// allow_fullscreen is set by VID_PrepareModeList
 	// it is used to prevent switching to fullscreen during startup
 	if (!allow_fullscreen)
