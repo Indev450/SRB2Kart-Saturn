@@ -149,6 +149,8 @@ boolean dedicated = false;
 
 boolean loaded_config = false; // true once config.cfg loaded AND executed
 
+static void D_CleanFile(char **filearray);
+
 //
 // D_PostEvent
 // Called by the I/O functions when input is detected
@@ -1201,7 +1203,7 @@ void D_AddPostloadFiles(void)
 	postautoloaded = true;
 }
 
-void D_CleanFile(char **filearray)
+static void D_CleanFile(char **filearray)
 {
 	size_t pnumwadfiles;
 	for (pnumwadfiles = 0; filearray[pnumwadfiles]; pnumwadfiles++)

@@ -81,8 +81,6 @@ void D_PostEvent(const event_t *ev);
 
 void D_ProcessEvents(void);
 
-void D_CleanFile(char **filearray);
-
 const char *D_Home(void);
 
 //
