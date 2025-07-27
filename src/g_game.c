@@ -124,7 +124,7 @@ boolean addedtogame;
 player_t players[MAXPLAYERS];
 
 INT32 consoleplayer; // player taking events and displaying
-INT32 displayplayers[MAXSPLITSCREENPLAYERS]; // view being displayed
+INT32 displayplayers[MAXSPLITSCREENPLAYERS] = {0}; // view being displayed
 
 tic_t gametic;
 tic_t levelstarttic; // gametic at level start
