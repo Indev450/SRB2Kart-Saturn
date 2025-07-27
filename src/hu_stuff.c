@@ -314,7 +314,7 @@ void HU_LoadGraphics(void)
 	lt_font[0] = (patch_t *)W_CachePatchName("LTFNT039", PU_HUDGFX); /// \note fake start hack
 
 	// Number support
-	lt_font[9] = (patch_t *)W_CachePatchName("LTFNT048", PU_HUDGFX);
+	lt_font[9]  = (patch_t *)W_CachePatchName("LTFNT048", PU_HUDGFX);
 	lt_font[10] = (patch_t *)W_CachePatchName("LTFNT049", PU_HUDGFX);
 	lt_font[11] = (patch_t *)W_CachePatchName("LTFNT050", PU_HUDGFX);
 	lt_font[12] = (patch_t *)W_CachePatchName("LTFNT051", PU_HUDGFX);
@@ -751,7 +751,7 @@ static void Command_CSay_f(void)
 		return;
 	}
 
-	if(!server && !IsPlayerAdmin(consoleplayer))
+	if (!server && !IsPlayerAdmin(consoleplayer))
 	{
 		CONS_Alert(CONS_NOTICE, M_GetText("Only servers and admins can use csay.\n"));
 		return;
@@ -2965,13 +2965,11 @@ void HU_DoCEcho(const char *msg)
 				*p = '\n';
 
 		CONS_Printf("%s\n", temp);
+
 		return;
 	}
+	else if (cv_cechotoggle.value)
+		cechotimer = cechoduration;
 
-	I_OutputMsg("%s\n", msg); // print to log
-
-	if (!cv_cechotoggle.value)
-		return;
-
-	cechotimer = cechoduration;
+	I_OutputMsg("%s\n", msg); // ALWAYS print to log
 }
