@@ -1114,10 +1114,10 @@ static menuitem_t MP_PlayerSetupMenu[] =
 #ifndef NONET
 static menuitem_t MP_ConnectMenu[] =
 {
-	{IT_STRING | IT_KEYHANDLER, NULL, "",         M_HandleServerSearch,0},
-	{IT_STRING | IT_CVAR,       NULL, "Sort By",  &cv_serversort,     16},
-	{IT_STRING | IT_KEYHANDLER, NULL, "Page",     M_HandleServerPage, 24},
-	{IT_STRING | IT_CALL,       NULL, "Refresh",  M_Refresh,          32},
+	{IT_STRING | IT_CVAR,       NULL, "Sort By",  &cv_serversort,      0},
+	{IT_STRING | IT_KEYHANDLER, NULL, "Page",     M_HandleServerPage,  8},
+	{IT_STRING | IT_CALL,       NULL, "Refresh",  M_Refresh,          16},
+	{IT_STRING | IT_KEYHANDLER, NULL, "",         M_HandleServerSearch,25},
 
 	{IT_STRING | IT_SPACE, NULL, "",              M_Connect,          48},
 	{IT_STRING | IT_SPACE, NULL, "",              M_Connect,          60},
@@ -1133,10 +1133,10 @@ static menuitem_t MP_ConnectMenu[] =
 
 enum
 {
-	mp_connect_search,
 	mp_connect_sort,
 	mp_connect_page,
 	mp_connect_refresh,
+	mp_connect_search,
 	FIRSTSERVERLINE
 };
 #endif
@@ -6072,8 +6072,8 @@ static void M_AddonsOptions(INT32 choice)
 	M_SetupNextMenu(&OP_AddonsOptionsDef);
 }
 
-#define LOCATIONSTRING1 "Visit \x83SRB2.ORG/MODS\x80 to get & make addons!"
-#define LOCATIONSTRING2 "Visit \x88SRB2.ORG/MODS\x80 to get & make addons!"
+#define LOCATIONSTRING1 "Visit \x83mb.srb2.org/addons\x80 to get & make addons!"
+#define LOCATIONSTRING2 "Visit \x88mb.srb2.org/addons\x80 to get & make addons!"
 
 static void M_AddonsInternal(void)
 {
@@ -9884,15 +9884,16 @@ static void M_DrawConnectMenu(void)
 		M_DrawServerLines(currentMenu->x, serverlistpage);
 	}
 
-	V_DrawFill(currentMenu->x, currentMenu->y, MAXSTRINGLENGTH*8+6, 8+6, 239);
+	INT32 input_y = currentMenu->menuitems[mp_connect_search].alphaKey;
+
+	V_DrawFill(currentMenu->x, currentMenu->y+input_y, MAXSTRINGLENGTH*8+6, 8+6, 239);
 
 	const INT32 xoff = 3, yoff = 3;
 
-
-	if (itemOn != 0)
-		V_DrawString(currentMenu->x+xoff, currentMenu->y+yoff, V_ALLOWLOWERCASE, menuinput.buffer);
+	if (itemOn != mp_connect_search)
+		V_DrawString(currentMenu->x+xoff, currentMenu->y+yoff+input_y, V_ALLOWLOWERCASE, menuinput.buffer);
 	else
-		M_DrawTextInput(currentMenu->x+xoff, currentMenu->y+yoff, &menuinput, 0);
+		M_DrawTextInput(currentMenu->x+xoff, currentMenu->y+yoff+input_y, &menuinput, 0);
 
 	localservercount = serverlistcount;
 

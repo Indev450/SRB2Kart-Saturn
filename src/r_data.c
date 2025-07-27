@@ -1254,8 +1254,7 @@ static void R_InitColormaps(void)
 
 	// Load in the light tables
 	lump = W_GetNumForName("COLORMAP");
-	//Z_MallocAlign(W_LumpLength (lump), PU_STATIC, NULL, 8);
-	colormaps = Z_MallocAlign((256 * 64), PU_STATIC, NULL, 8);
+	colormaps = Z_Malloc((256 * 64), PU_STATIC, NULL);
 	W_ReadLump(lump, colormaps);
 	// no need to init encoremap at this stage
 
@@ -1296,7 +1295,7 @@ void R_ReInitColormaps(UINT16 num, lumpnum_t newencoremap)
 		lighttable_t *colormap_p, *colormap_p2;
 		size_t p, i;
 
-		encoremap = Z_MallocAlign(256 + 10, PU_LEVEL, NULL, 8);
+		encoremap = Z_Malloc(256 + 10, PU_LEVEL, NULL);
 		W_ReadLump(newencoremap, encoremap);
 		colormap_p = colormap_p2 = colormaps;
 		colormap_p += (256 * 32);
@@ -1355,7 +1354,7 @@ void R_ClearColormaps(void)
 	foundcolormaps[num_extra_colormaps] = lump;
 
 	// aligned on 8 bit for asm code
-	extra_colormaps[num_extra_colormaps].colormap = Z_MallocAlign(W_LumpLength(lump), PU_LEVEL, NULL, 16);
+	extra_colormaps[num_extra_colormaps].colormap = Z_Malloc(W_LumpLength(lump), PU_LEVEL, NULL);
 	W_ReadLump(lump, extra_colormaps[num_extra_colormaps].colormap);
 
 	// We set all params of the colormap to normal because there
@@ -1551,7 +1550,7 @@ INT32 R_CreateColormap(char *p1, char *p2, char *p3)
 		}
 
 		// Now allocate memory for the actual colormap array itself!
-		colormap_p = Z_MallocAlign((256 * (encoremap ? 64 : 32)) + 10, PU_LEVEL, NULL, 8);
+		colormap_p = Z_Malloc((256 * (encoremap ? 64 : 32)) + 10, PU_LEVEL, NULL);
 		extra_colormaps[mapnum].colormap = (UINT8 *)colormap_p;
 
 		// Calculate the palette index for each palette index, for each light level

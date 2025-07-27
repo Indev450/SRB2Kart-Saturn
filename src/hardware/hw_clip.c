@@ -121,7 +121,7 @@ static clipnode_t * gld_clipnode_NewRange(angle_t start, angle_t end)
 
 boolean gld_clipper_SafeCheckRange(angle_t startAngle, angle_t endAngle)
 {
-	if(startAngle > endAngle)
+	if (startAngle > endAngle)
 	{
 		return (gld_clipper_IsRangeVisible(startAngle, ANGLE_MAX) || gld_clipper_IsRangeVisible(0, endAngle));
 	}

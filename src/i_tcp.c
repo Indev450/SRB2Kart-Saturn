@@ -1475,13 +1475,7 @@ static void AddBannedIndex(void)
 			banned_size *= 2;
 		}
 
-		banned = Z_ReallocAlign(
-			(void*) banned,
-			sizeof(banned_t) * banned_size,
-			PU_STATIC,
-			NULL,
-			sizeof(banned_t) * 8
-		);
+		banned = Z_Realloc((void*) banned, sizeof(banned_t) * banned_size, PU_STATIC, NULL);
 	}
 
 	numbans++;
