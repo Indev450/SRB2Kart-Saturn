@@ -8987,7 +8987,7 @@ void P_MobjThinker(mobj_t *mobj)
 	tmfloorthing = tmhitthing = NULL;
 
 	// 970 allows ANY mobj to trigger a linedef exec
-	if (mobj->subsector && GETSECSPECIAL(mobj->subsector->sector->special, 2) == 8)
+	if (UNLIKELY(!mobj->islocal && sec1 && GETSECSPECIAL(sec1->special, 2) == 8)) // BEWARE: islocal does not exist in vanilla
 	{
 		sector_t *sec2;
 
@@ -9144,13 +9144,12 @@ void P_MobjThinker(mobj_t *mobj)
 
 	if (UNLIKELY(P_WeaponOrPanel(mobj->type)))
 	{
-		case MT_BOUNCEPICKUP ... MT_GRENADEPICKUP:
-			if (mobj->health == 0) // Fading tile
-			{
-				INT32 value = mobj->info->damage/10;
-				value = mobj->fuse/value;
-				value = 10-value;
-				value--;
+		if (mobj->health == 0) // Fading tile
+		{
+			INT32 value = mobj->info->damage/10;
+			value = mobj->fuse/value;
+			value = 10-value;
+			value--;
 
 			if (value <= 0)
 				value = 1;
