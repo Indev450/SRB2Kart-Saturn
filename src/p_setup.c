@@ -34,6 +34,7 @@
 #include "r_fps.h" // R_ResetViewInterpolation in level load
 
 #include "s_sound.h"
+#include "m_emotes.h"
 #include "st_stuff.h"
 #include "w_wad.h"
 #include "z_zone.h"
@@ -3071,7 +3072,7 @@ boolean P_SetupLevel(boolean fromnetsave, boolean reloadinggamestate)
 
 	if (!fromnetsave) // uglier hack
 	{ // to make a newly loaded level start on the second frame.
-		INT32 buf = gametic % TICQUEUE;
+		INT32 buf = gametic % BACKUPTICS;
 
 		for (i = 0; i < MAXPLAYERS; i++)
 		{
@@ -3336,6 +3337,11 @@ UINT16 P_PartialAddWadFile(const char *wadfilename, boolean local)
 	// edit music defs
 	//
 	S_LoadMusicDefs(wadnum);
+
+	//
+	// look for emotes
+	//
+	M_LoadEmotes(wadnum);
 
 	// TODO: Experimental SPRTINFO support, test first
 	R_LoadSpriteInfoLumps(wadnum, wadfiles[wadnum]->numlumps);

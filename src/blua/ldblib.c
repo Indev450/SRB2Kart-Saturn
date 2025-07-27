@@ -73,7 +73,7 @@ static int db_getinfo (lua_State *L) {
   }
   else
     return luaL_argerror(L, arg+1, "function or level expected");
-  if (!lua_getinfo(L1, options, &ar))
+  if (l_unlikely(!lua_getinfo(L1, options, &ar)))
     return luaL_argerror(L, arg+2, "invalid option");
   lua_createtable(L, 0, 2);
   if (strchr(options, 'S')) {
@@ -104,7 +104,7 @@ static int db_getlocal (lua_State *L) {
   lua_State *L1 = getthread(L, &arg);
   lua_Debug ar;
   const char *name;
-  if (!lua_getstack(L1, luaL_checkint(L, arg+1), &ar))  /* out of range? */
+  if (l_unlikely(!lua_getstack(L1, luaL_checkint(L, arg+1), &ar)))  /* out of range? */
     return luaL_argerror(L, arg+1, "level out of range");
   name = lua_getlocal(L1, &ar, luaL_checkint(L, arg+2));
   if (name) {

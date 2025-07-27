@@ -84,7 +84,7 @@ static int io_type (lua_State *L) {
 
 static FILE *tofile (lua_State *L) {
   FILE **f = tofilep(L);
-  if (*f == NULL)
+  if (l_unlikely(*f == NULL))
     luaL_error(L, "attempt to use a closed file");
   return *f;
 }
@@ -184,8 +184,8 @@ static int io_open (lua_State *L) {
 			break;
 		}
 	}
-	if (strstr(filename, "..") || strchr(filename, ':') || StartsWith(filename, "\\")
-		|| StartsWith(filename, "/") || !pass)
+	if (l_unlikely(strstr(filename, "..") || strchr(filename, ':') || StartsWith(filename, "\\")
+		|| StartsWith(filename, "/") || !pass))
 	{
 		luaL_error(L,"access denied to %s", filename);
 		return pushresult(L,0,filename);
@@ -202,7 +202,7 @@ static int io_open (lua_State *L) {
 	{
 		*splitter = 0;
 		I_mkdir(destFilename, 0755);
-		*splitter = '/'; 
+		*splitter = '/';
 		splitter++;
 
         forward = strchr(splitter, '/');
@@ -226,7 +226,7 @@ static FILE *getiofile (lua_State *L, int findex) {
   FILE *f;
   lua_rawgeti(L, LUA_ENVIRONINDEX, findex);
   f = *(FILE **)lua_touserdata(L, -1);
-  if (f == NULL)
+  if (l_unlikely(f == NULL))
     luaL_error(L, "standard %s file is closed", fnames[findex - 1]);
   return f;
 }
@@ -238,7 +238,7 @@ static int g_iofile (lua_State *L, int f, const char *mode) {
     if (filename) {
       FILE **pf = newfile(L);
       *pf = fopen(filename, mode);
-      if (*pf == NULL)
+      if (l_unlikely(*pf == NULL))
         fileerror(L, 1, filename);
     }
     else {
@@ -290,7 +290,7 @@ static int io_lines (lua_State *L) {
     const char *filename = luaL_checkstring(L, 1);
     FILE **pf = newfile(L);
     *pf = fopen(filename, "r");
-    if (*pf == NULL)
+    if (l_unlikely(*pf == NULL))
       fileerror(L, 1, filename);
     aux_lines(L, lua_gettop(L), 1);
     return 1;
@@ -307,7 +307,7 @@ static int io_lines (lua_State *L) {
 
 static int read_number (lua_State *L, FILE *f) {
   lua_Number d;
-  if (fscanf(f, LUA_NUMBER_SCAN, &d) == 1) {
+  if (l_likely(fscanf(f, LUA_NUMBER_SCAN, &d) == 1)) {
     lua_pushnumber(L, d);
     return 1;
   }
@@ -454,7 +454,7 @@ static int g_write (lua_State *L, FILE *f, int arg) {
     else {
       size_t l;
       const char *s = luaL_checklstring(L, arg, &l);
-	  if (ftell(f) + l > FILELIMIT)
+	  if (l_unlikely(ftell(f) + l > FILELIMIT))
 	  {
 		luaL_error(L,"write limit bypassed in file. Changes have been discarded.");
 		break;
@@ -483,7 +483,7 @@ static int f_seek (lua_State *L) {
   int op = luaL_checkoption(L, 2, "cur", modenames);
   long offset = luaL_optlong(L, 3, 0);
   op = fseek(f, offset, mode[op]);
-  if (op)
+  if (l_unlikely(op))
     return pushresult(L, 0, NULL);  /* error */
   else {
     lua_pushinteger(L, ftell(f));

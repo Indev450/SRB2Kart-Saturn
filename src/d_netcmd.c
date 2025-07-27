@@ -21,6 +21,7 @@
 #include "i_system.h"
 #include "g_game.h"
 #include "hu_stuff.h"
+#include "m_emotes.h"
 #include "g_input.h"
 #include "m_menu.h"
 #include "r_local.h"
@@ -911,6 +912,8 @@ void D_RegisterClientCommands(void)
 	CV_RegisterVar(&cv_cechotoggle);
 
 	CV_RegisterVar(&cv_keyboardlayout);
+
+	CV_RegisterVar(&cv_emotes);
 
 	// time attack ghost options are also saved to config
 	CV_RegisterVar(&cv_ghost_besttime);
@@ -2110,14 +2113,18 @@ INT32 D_LookupPlayer(const char *s)
 static INT32 FindPlayerByPlace(INT32 place)
 {
 	INT32 playernum;
+
 	for (playernum = 0; playernum < MAXPLAYERS; ++playernum)
-		if (playeringame[playernum])
 	{
+		if (!playeringame[playernum])
+			continue;
+
 		if (players[playernum].kartstuff[k_position] == place)
 		{
 			return playernum;
 		}
 	}
+
 	return -1;
 }
 
@@ -5674,7 +5681,7 @@ static void Command_Archivetest_f(void)
 	// assign mobjnum
 	i = 1;
 	for (th = thinkercap.next; th != &thinkercap; th = th->next)
-		if (th->function.acp1 == (actionf_p1)P_MobjThinker)
+		if (th->function == (actionf_p1)P_MobjThinker)
 			((mobj_t *)th)->mobjnum = i++;
 
 	// allocate buffer

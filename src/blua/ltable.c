@@ -278,7 +278,7 @@ static void setnodevector (lua_State *L, Table *t, int size) {
   else {
     int i;
     lsize = ceillog2(size);
-    if (lsize > MAXBITS)
+    if (l_unlikely(lsize > MAXBITS))
       luaG_runerror(L, "table overflow");
     size = twoto(lsize);
     t->node = luaM_newvector(L, size, Node);
@@ -498,8 +498,9 @@ TValue *luaH_set (lua_State *L, Table *t, const TValue *key) {
   if (p != luaO_nilobject)
     return cast(TValue *, p);
   else {
-    if (ttisnil(key)) luaG_runerror(L, "table index is nil");
-    else if (ttisnumber(key) && luai_numisnan(nvalue(key)))
+    if (l_unlikely(ttisnil(key)))
+      luaG_runerror(L, "table index is nil");
+    else if (l_unlikely(ttisnumber(key) && luai_numisnan(nvalue(key))))
       luaG_runerror(L, "table index is NaN");
     return newkey(L, t, key);
   }

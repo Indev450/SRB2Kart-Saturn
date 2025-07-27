@@ -1133,7 +1133,6 @@ static void R_SetupSkyScale(player_t *player, camera_t *thiscam, mapheader_t *mh
 	{
 		if (skyboxmo[1])
 		{
-			angle_t ang;
 			fixed_t x = 0, y = 0;
 
 			if (mh->skybox_scalex > 0)
@@ -1165,8 +1164,8 @@ static void R_SetupSkyScale(player_t *player, camera_t *thiscam, mapheader_t *mh
 					newview->y -= x;
 					break;
 				default:
-					ang = viewmobj->angle>>ANGLETOFINESHIFT;
-					newview->x  += FixedMul(x,FINECOSINE(ang)) - FixedMul(y,  FINESINE(ang));
+					angle_t ang = viewmobj->angle>>ANGLETOFINESHIFT;
+					newview->x += FixedMul(x,FINECOSINE(ang)) - FixedMul(y,  FINESINE(ang));
 					newview->y += FixedMul(x,  FINESINE(ang)) + FixedMul(y,FINECOSINE(ang));
 					break;
 			}
@@ -1192,14 +1191,14 @@ static void R_SetupSkyScale(player_t *player, camera_t *thiscam, mapheader_t *mh
 	}
 }
 
-void R_SkyboxFrame(int s)
+void R_SkyboxFrame(UINT8 pnum)
 {
-	player_t *player = &players[displayplayers[s]];
-	camera_t *thiscam = &camera[s];
-	subsector_t *subsector = NULL;
+	player_t *player = &players[displayplayers[pnum]];
+	camera_t *thiscam = &camera[pnum];
+	sector_t *viewsec = NULL;
 	mapheader_t *mh = mapheaderinfo[gamemap-1];
 
-	R_SetViewContext(static_cast<viewcontext_e>(VIEWCONTEXT_SKY1 + s));
+	R_SetViewContext(static_cast<viewcontext_e>(VIEWCONTEXT_SKY1 + pnum));
 
 	// cut-away view stuff
 	newview->sky = true;
@@ -1215,35 +1214,38 @@ void R_SkyboxFrame(int s)
 
 	R_SetupAimingFrame(player, thiscam);
 
-	newview->angle += viewmobj->angle;
+	if (!P_MobjWasRemoved(viewmobj))
+	{
+		newview->angle += viewmobj->angle;
 
-	newview->x = viewmobj->x;
-	newview->y = viewmobj->y;
-	newview->z = (viewmobj->spawnpoint) ? (((fixed_t)viewmobj->spawnpoint->angle)<<FRACBITS) : 0;
+		newview->x = viewmobj->x;
+		newview->y = viewmobj->y;
+		newview->z = (viewmobj->spawnpoint) ? (((fixed_t)viewmobj->spawnpoint->angle) << FRACBITS) : 0;
+
+		if (viewmobj->subsector)
+			viewsec = viewmobj->subsector->sector;
+	}
 
 	if (mh)
 	{
 		R_SetupSkyScale(player, thiscam, mh);
 	}
 
-	if (!P_MobjWasRemoved(viewmobj) && viewmobj->subsector && viewmobj->subsector->sector)
-		subsector = viewmobj->subsector;
-
-	R_SetupCommonFrame(player, subsector->sector);
+	R_SetupCommonFrame(player, viewsec);
 }
 
-void R_SetupFrame(int s, boolean skybox)
+void R_SetupFrame(UINT8 pnum, boolean skybox)
 {
-	player_t *player = &players[displayplayers[s]];
-	camera_t *thiscam = &camera[s];
-	boolean chasecam = (cv_chasecam[s].value);
-	sector_t * sector = NULL;
+	player_t *player = &players[displayplayers[pnum]];
+	camera_t *thiscam = &camera[pnum];
+	boolean chasecam = (cv_chasecam[pnum].value);
+	sector_t *viewsec = NULL;
 
-	R_SetViewContext(static_cast<viewcontext_e>(VIEWCONTEXT_PLAYER1 + s));
+	R_SetViewContext(static_cast<viewcontext_e>(VIEWCONTEXT_PLAYER1 + pnum));
 
 	if (thiscam->reset)
 	{
-		R_ResetViewInterpolation(s);
+		R_ResetViewInterpolation(pnum);
 		thiscam->reset = false;
 	}
 
@@ -1278,10 +1280,10 @@ void R_SetupFrame(int s, boolean skybox)
 		newview->y = viewmobj->y;
 		newview->z = viewmobj->z + 20*FRACUNIT;
 
-		if (viewmobj->subsector && viewmobj->subsector->sector)
-			sector = viewmobj->subsector->sector;
+		if (viewmobj->subsector)
+			viewsec = viewmobj->subsector->sector;
 
-		R_SetupCommonFrame(player, sector);
+		R_SetupCommonFrame(player, viewsec);
 	}
 	else if (thiscam && chasecam) // use outside cam view
 	{
@@ -1292,10 +1294,10 @@ void R_SetupFrame(int s, boolean skybox)
 		newview->y = thiscam->y;
 		newview->z = thiscam->z + (thiscam->height>>1);
 
-		if (thiscam->subsector && thiscam->subsector->sector)
-			sector = thiscam->subsector->sector;
+		if (thiscam->subsector)
+			viewsec = thiscam->subsector->sector;
 
-		R_SetupCommonFrame(player, sector);
+		R_SetupCommonFrame(player, viewsec);
 	}
 	else if (player->mo) // use the player's eyes view
 	{
@@ -1306,10 +1308,10 @@ void R_SetupFrame(int s, boolean skybox)
 		newview->y = viewmobj->y;
 		newview->z = player->viewz;
 
-		if (viewmobj->subsector && viewmobj->subsector->sector)
-			sector = viewmobj->subsector->sector;
+		if (viewmobj->subsector)
+			viewsec = viewmobj->subsector->sector;
 
-		R_SetupCommonFrame(player, sector);
+		R_SetupCommonFrame(player, viewsec);
 	}
 }
 
@@ -1577,6 +1579,8 @@ void R_RegisterEngineStuff(void)
 	CV_RegisterVar(&cv_quaketilt);
 	CV_RegisterVar(&cv_tiltsmoothing);
 	CV_RegisterVar(&cv_actionmovie);
+
+	CV_RegisterVar(&cv_screenquake);
 
 	CV_RegisterVar(&cv_driftsparkpulse);
 	CV_RegisterVar(&cv_gravstretch);

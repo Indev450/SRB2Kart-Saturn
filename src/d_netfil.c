@@ -142,6 +142,7 @@ UINT8 *PutFileNeeded(UINT16 firstfile)
 {
 	size_t i;
 	UINT8 count = 0;
+	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
 	UINT8 *p_start = netbuffer->packettype == PT_MOREFILESNEEDED ? netbuffer->u.filesneededcfg.files : netbuffer->u.serverinfo.fileneeded;
 	UINT8 *p = p_start;
 	char wadfilename[MAX_WADPATH] = "";
@@ -323,6 +324,7 @@ boolean CL_SendRequestFile(void)
 #ifdef MORELEGACYDOWNLOADER
 	boolean firstloop = true;
 #endif
+	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
 
 #ifdef PARANOIA
 	if (M_CheckParm("-nodownload"))
@@ -451,9 +453,11 @@ tryagain:
 // returns false if a requested file was not found or cannot be sent
 boolean Got_RequestFilePak(INT32 node)
 {
+	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
 	char wad[MAX_WADPATH+1];
 	UINT8 *p = netbuffer->u.textcmd;
 	UINT8 id;
+
 	while (p < netbuffer->u.textcmd + MAXTEXTCMD) // Don't allow hacked client to overflow
 	{
 		id = READUINT8(p);
@@ -817,6 +821,7 @@ void SV_FileSendTicker(void)
 	size_t size;
 	filetx_t *f;
 	INT32 packetsent, ram, i, j;
+	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
 
 	if (!filestosend) // No file to send
 		return;
@@ -945,6 +950,7 @@ void SV_FileSendTicker(void)
 
 void Got_Filetxpak(void)
 {
+	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
 	INT32 filenum = netbuffer->u.filetxpak.fileid;
 	fileneeded_t *file = &fileneeded[filenum];
 	char *filename = file->filename;
@@ -1184,6 +1190,18 @@ filestatus_t findfile(char *filename, const UINT8 *wantedmd5sum, boolean complet
 	else if (homecheck == FS_MD5SUMBAD) // file has a bad md5; move on and look for a file with the right md5
 		badmd5 = true;
 	// if not found at all, just move on without doing anything
+
+	if (cv_addons_option.value == 3 && *cv_addons_folder.string != '\0')
+	{
+		// next, check any custom directory if specified
+		homecheck = filesearch(filename, cv_addons_folder.string, wantedmd5sum, completepath, 10);
+
+		if (homecheck == FS_FOUND) // we found the file, so return that we have :)
+			return FS_FOUND;
+		else if (homecheck == FS_MD5SUMBAD) // file has a bad md5; move on and look for a file with the right md5
+			badmd5 = true;
+		// if not found at all, just move on without doing anything
+	}
 
 	// finally check "." directory
 	homecheck = filesearch(filename, ".", wantedmd5sum, completepath, 10);

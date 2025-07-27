@@ -40,6 +40,7 @@
 #include "g_game.h"
 #include "g_input.h"
 #include "hu_stuff.h"
+#include "m_emotes.h"
 #include "i_sound.h"
 #include "i_system.h"
 #include "i_time.h"
@@ -151,6 +152,8 @@ INT32 eventhead, eventtail;
 boolean dedicated = false;
 
 boolean loaded_config = false; // true once config.cfg loaded AND executed
+
+static void D_CleanFile(char **filearray);
 
 //
 // D_PostEvent
@@ -896,9 +899,24 @@ void D_SRB2Loop(void)
 			rendertimefrac_unpaused = FRACUNIT;
 		}
 
-		if ((interp || doDisplay) && !frameskip)
+		if (interp || doDisplay)
 		{
-			ranwipe = D_Display();
+			if (!frameskip)
+			{
+				ranwipe = D_Display();
+			}
+			else if (!dedicated)
+			{
+				// always update console and hud
+				// otherwise it may take minutes to open it
+				CON_Drawer();
+
+				if (gamestate == GS_LEVEL)
+				{
+					ST_Drawer();
+					HU_Drawer();
+				}
+			}
 		}
 
 		// Only take screenshots after drawing.
@@ -1215,7 +1233,7 @@ void D_AddPostloadFiles(void)
 	postautoloaded = true;
 }
 
-void D_CleanFile(char **filearray)
+static void D_CleanFile(char **filearray)
 {
 	size_t pnumwadfiles;
 	for (pnumwadfiles = 0; filearray[pnumwadfiles]; pnumwadfiles++)
@@ -1478,7 +1496,7 @@ static void D_CheckSaturnExtraFiles(void)
 		}
 
 		// extra round joystick inputdisplay sprites
-		if (W_CheckMultipleLumps("JOYBCK","JOYKNB","JOYSHD", NULL))
+		if (W_CheckMultipleLumps("JOYBCK", "JOYKNB", "JOYSHD", NULL))
 		{
 			joystickicon = true;
 			PUSHCONS(inputdisplay_cons_temp, last_inputdisplay_i, 3, "StickGFX");
@@ -2018,6 +2036,8 @@ void D_SRB2Main(void)
 	}
 
 	S_InitMusicDefs();
+
+	M_InitEmotes();
 
 	CONS_Printf("ST_Init(): Init status bar.\n");
 	ST_Init();

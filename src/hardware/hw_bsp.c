@@ -161,7 +161,7 @@ static boolean SameVertice (polyvertex_t *p1, polyvertex_t *p2)
 		return false;
 #else
 #define  DIVLINE_VERTEX_DIFF   0.45f
-	float ep = DIVLINE_VERTEX_DIFF;
+	static const float ep = DIVLINE_VERTEX_DIFF;
 	if (fabsf( p2->x - p1->x ) > ep )
 		return false;
 	if (fabsf( p2->y - p1->y ) > ep )
@@ -283,6 +283,7 @@ static void SplitPoly (fdivline_t *bsp,         //splitting parametric line
 		*backpoly = NULL;
 		return;
 	}
+
 	if (pe <= ps)
 		I_Error("SplitPoly: invalid splitting line (%d %d)", ps, pe);
 
@@ -368,7 +369,7 @@ static poly_t *CutOutSubsecPoly(seg_t *lseg, INT32 count, poly_t *poly)
 	for (; count--; lseg++)
 	{
 		//x,y,dx,dy (like a divline)
-		line_t *line = lseg->linedef;
+		const line_t *line = lseg->linedef;
 
 		// portal check
 		if (!gl_maphasportals && line->special == PORTALSPECIAL && lseg->side == 0)
