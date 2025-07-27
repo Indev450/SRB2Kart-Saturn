@@ -73,7 +73,7 @@ void P_Thrust(mobj_t *mo, angle_t angle, fixed_t move)
 
 	mo->momx += FixedMul(move, FINECOSINE(angle));
 
-	if (!(twodlevel || (mo->flags2 & MF2_TWOD)))
+	if (LIKELY(!(twodlevel || (mo->flags2 & MF2_TWOD))))
 		mo->momy += FixedMul(move, FINESINE(angle));
 }
 
@@ -90,7 +90,7 @@ void P_InstaThrust(mobj_t *mo, angle_t angle, fixed_t move)
 
 	mo->momx = FixedMul(move, FINECOSINE(angle));
 
-	if (!(twodlevel || (mo->flags2 & MF2_TWOD)))
+	if (LIKELY(!(twodlevel || (mo->flags2 & MF2_TWOD))))
 		mo->momy = FixedMul(move,FINESINE(angle));
 }
 
@@ -498,9 +498,9 @@ void P_PlayLivesJingle(player_t *player)
 	if (player && !P_IsLocalPlayer(player))
 		return;
 
-	if (use1upSound)
+	if (UNLIKELY(use1upSound))
 		S_StartSound(NULL, sfx_oneup);
-	else if (mariomode)
+	else if (UNLIKELY(mariomode))
 		S_StartSound(NULL, sfx_marioa);
 	else
 	{
@@ -528,7 +528,7 @@ void P_PlayRinglossSound(mobj_t *source, mobj_t *damager)
 			S_StartSound(NULL, sfx);
 		}
 		else
-			S_StartSound(source, (mariomode) ? sfx_mario8 : sfx_khurt1 + key);
+			S_StartSound(source, UNLIKELY(mariomode) ? sfx_mario8 : sfx_khurt1 + key);
 	}
 	else
 		S_StartSound(source, sfx_slip);
@@ -1287,12 +1287,13 @@ boolean P_InQuicksand(mobj_t *mo) // Returns true if you are in quicksand
 {
 	sector_t *sector = mo->subsector->sector;
 	fixed_t topheight, bottomheight;
-
-	fixed_t flipoffset = ((mo->eflags & MFE_VERTICALFLIP) ? (mo->height/2) : 0);
+	fixed_t flipoffset;
 
 	if (sector->ffloors)
 	{
 		ffloor_t *rover;
+
+		flipoffset = ((mo->eflags & MFE_VERTICALFLIP) ? (mo->height/2) : 0);
 
 		for (rover = sector->ffloors; rover; rover = rover->next)
 		{
@@ -1682,6 +1683,7 @@ static void P_DoBubbleBreath(player_t *player)
 		bubble = P_SpawnMobj(player->mo->x, player->mo->y, zh, MT_SMALLBUBBLE);
 	else if (P_RandomChance(3*FRACUNIT/256))
 		bubble = P_SpawnMobj(player->mo->x, player->mo->y, zh, MT_MEDIUMBUBBLE);
+
 	if (bubble)
 	{
 		bubble->threshold = 42;
@@ -1689,8 +1691,8 @@ static void P_DoBubbleBreath(player_t *player)
 		P_SetScale(bubble, bubble->destscale);
 	}
 
-	if (player->pflags & PF_NIGHTSMODE) // NiGHTS Super doesn't spawn flight bubbles
-		return;
+	//if (player->pflags & PF_NIGHTSMODE) // NiGHTS Super doesn't spawn flight bubbles
+		//return;
 }
 
 //
@@ -2159,7 +2161,7 @@ static void P_MovePlayer(player_t *player)
 	}
 	// note: don't unset stasis here
 
-	if (!player->spectator && G_TagGametype())
+	if (UNLIKELY(!player->spectator && G_TagGametype()))
 	{
 		// If we have stasis already here, it's because it's forced on us
 		// by a linedef executor or what have you
@@ -2219,7 +2221,7 @@ static void P_MovePlayer(player_t *player)
 			player->lturn_max[leveltime%MAXPREDICTTICS] = player->rturn_max[leveltime%MAXPREDICTTICS] = 0;
 		}
 
-		if (leveltime >= starttime)
+		if (LIKELY(leveltime >= starttime))
 		{
 			// KART: Don't directly apply angleturn! It may have been either A) forged by a malicious client, or B) not be a smooth turn due to a player dropping frames.
 			// Instead, turn the player only up to the amount they're supposed to turn accounting for latency. Allow exactly 1 extra turn unit to try to keep old replays synced.
@@ -2258,7 +2260,7 @@ static void P_MovePlayer(player_t *player)
 		P_3dMovement(player);
 	}
 
-	if (maptol & TOL_2D)
+	if (UNLIKELY(maptol & TOL_2D)) // psure this doesent even work at all
 		runspd = FixedMul(runspd, 2*FRACUNIT/3);
 
 	/////////////////////////
@@ -2319,10 +2321,10 @@ static void P_MovePlayer(player_t *player)
 
 	// Drifting sound
 	// Start looping the sound now.
-	if (leveltime % 50 == 0 && onground && player->kartstuff[k_drift] != 0)
+	if (onground && leveltime % 50 == 0 && player->kartstuff[k_drift] != 0)
 		S_StartSound(player->mo, sfx_drift);
 	// Leveltime being 50 might take a while at times. We'll start it up once, isntantly.
-	else if (!S_SoundPlaying(player->mo, sfx_drift) && onground && player->kartstuff[k_drift] != 0)
+	else if (onground && !S_SoundPlaying(player->mo, sfx_drift) && player->kartstuff[k_drift] != 0)
 		S_StartSound(player->mo, sfx_drift);
 	// Ok, we'll stop now.
 	else if (player->kartstuff[k_drift] == 0 || !onground)
@@ -2347,7 +2349,7 @@ static void P_MovePlayer(player_t *player)
 		P_SetPlayerMobjState(player->mo, S_KART_STND1); // SRB2kart - was S_PLAY_STND
 	}
 
-	if (player->gotflag) // If you can't glide, then why the heck would you be gliding?
+	if (UNLIKELY(player->gotflag)) // If you can't glide, then why the heck would you be gliding?
 	{
 		player->pflags &= ~PF_GLIDING;
 		player->glidetime = 0;
@@ -2708,8 +2710,8 @@ boolean P_LookForEnemies(player_t *player)
 			player->mo->z-mo->z) > FixedMul(RING_DIST, player->mo->scale))
 			continue; // out of range
 
-		if ((twodlevel || player->mo->flags2 & MF2_TWOD)
-		&& abs(player->mo->y-mo->y) > player->mo->radius)
+		if (UNLIKELY((twodlevel || player->mo->flags2 & MF2_TWOD)
+		&& abs(player->mo->y-mo->y) > player->mo->radius))
 			continue; // not in your 2d plane
 
 		if (mo->type == MT_PLAYER) // Don't chase after other players!
@@ -4081,7 +4083,7 @@ boolean P_SpectatorJoinGame(player_t *player)
 	// Team changing in Team Match and CTF
 	// Pressing fire assigns you to a team that needs players if allowed.
 	// Partial code reproduction from p_tick.c autobalance code.
-	else if (G_GametypeHasTeams())
+	else if (UNLIKELY(G_GametypeHasTeams()))
 	{
 		INT32 changeto = 0;
 		INT32 z, numplayersred = 0, numplayersblue = 0;
@@ -4323,10 +4325,10 @@ static INT32 Quaketilt(player_t *player)
 	if (abs(delta) > ANGLE_90)
 		delta = (INT32)(( moma + ANGLE_180 ) - player->mo->angle );
 
-	const boolean sliptiding = player->kartstuff[k_drift] ? 0 : player->kartstuff[k_aizdriftstrat];
-
 	if (P_IsObjectOnGround(player->mo))
 	{
+		const boolean sliptiding = player->kartstuff[k_drift] ? 0 : player->kartstuff[k_aizdriftstrat];
+
 		if (sliptiding)
 		{
 			tilt = ANGLE_45;
@@ -4479,8 +4481,8 @@ void P_PlayerThink(player_t *player)
 	{
 		seenplayer = NULL;
 
-		if (cv_seenames.value && cv_allowseenames.value &&
-			!(G_TagGametype() && (player->pflags & PF_TAGIT)))
+		if (UNLIKELY(cv_seenames.value && cv_allowseenames.value &&
+			!(G_TagGametype() && (player->pflags & PF_TAGIT))))
 		{
 			mobj_t *mo = P_SpawnNameFinder(player->mo, MT_NAMECHECK);
 
@@ -4769,8 +4771,8 @@ void P_PlayerThink(player_t *player)
 	}
 
 	// Even if not NiGHTS, pull in nearby objects when walking around as John Q. Elliot.
-	if (!objectplacing && !((netgame || multiplayer) && player->spectator)
-	&& maptol & TOL_NIGHTS && (!(player->pflags & PF_NIGHTSMODE) || player->powers[pw_nights_helper]))
+	if (UNLIKELY(!objectplacing && !((netgame || multiplayer) && player->spectator)
+	&& maptol & TOL_NIGHTS && (!(player->pflags & PF_NIGHTSMODE) || player->powers[pw_nights_helper])))
 	{
 		thinker_t *th;
 		mobj_t *mo2;
@@ -4835,7 +4837,7 @@ void P_PlayerThink(player_t *player)
 	player->pflags &= ~PF_FULLSTASIS;
 
 	if (player->onconveyor == 1)
-			player->cmomy = player->cmomx = 0;
+		player->cmomy = player->cmomx = 0;
 
 	P_DoBubbleBreath(player); // Spawn Sonic's bubbles
 	P_CheckInvincibilityTimer(player); // Spawn Invincibility Sparkles
@@ -4872,7 +4874,7 @@ void P_PlayerThink(player_t *player)
 #endif
 
 	// check for use
-	if (!(player->pflags & PF_NIGHTSMODE))
+	if (LIKELY(!(player->pflags & PF_NIGHTSMODE)))
 	{
 		if (cmd->buttons & BT_BRAKE)
 			player->pflags |= PF_USEDOWN;
@@ -5044,6 +5046,11 @@ void P_PlayerAfterThink(player_t *player)
 		P_PlayerInSpecialSector(player);
 #endif
 
+	if (player->playerstate == PST_DEAD)
+	{
+		return;
+	}
+
 	for (i = 0; i <= splitscreen; i++)
 	{
 		if (player == &players[displayplayers[i]])
@@ -5053,12 +5060,7 @@ void P_PlayerAfterThink(player_t *player)
 		}
 	}
 
-	if (player->playerstate == PST_DEAD)
-	{
-		return;
-	}
-
-	if (player->pflags & PF_NIGHTSMODE)
+	if (UNLIKELY(player->pflags & PF_NIGHTSMODE))
 	{
 		player->powers[pw_gravityboots] = 0;
 	}

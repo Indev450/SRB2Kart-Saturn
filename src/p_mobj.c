@@ -371,7 +371,7 @@ static boolean P_SetPrecipMobjState(precipmobj_t *mobj, statenum_t state)
 //
 boolean P_WeaponOrPanel(mobjtype_t type)
 {
-	if (type >= MT_BOUNCERING && type <= MT_GRENADEPICKUP)
+	if (UNLIKELY(type >= MT_BOUNCERING && type <= MT_GRENADEPICKUP)) // doubt those get used at all in kart tbh
 		return true;
 
 	return false;
@@ -461,6 +461,7 @@ void P_ExplodeMissile(mobj_t *mo)
 boolean P_InsideANonSolidFFloor(mobj_t *mobj, ffloor_t *rover)
 {
 	fixed_t topheight, bottomheight;
+
 	if (!(rover->flags & FF_EXISTS))
 		return false;
 
@@ -891,7 +892,7 @@ static void P_PlayerFlip(mobj_t *mo)
 	G_GhostAddFlip((INT32) (mo->player - players));
 	// Flip aiming to match!
 
-	if (mo->player->pflags & PF_NIGHTSMODE) // NiGHTS doesn't use flipcam
+	if (UNLIKELY(mo->player->pflags & PF_NIGHTSMODE)) // NiGHTS doesn't use flipcam
 	{
 		if (mo->tracer)
 			mo->tracer->eflags ^= MFE_VERTICALFLIP;
@@ -989,7 +990,7 @@ fixed_t P_GetMobjGravity(mobj_t *mo)
 		//|| (mo->player->charability == CA_FLY && (mo->player->powers[pw_tailsfly]
 		//	|| (mo->state >= &states[S_PLAY_SPC1] && mo->state <= &states[S_PLAY_SPC4]))))
 		//	gravityadd = gravityadd/3; // less gravity while flying/gliding
-		if (mo->player->climbing || (mo->player->pflags & PF_NIGHTSMODE))
+		if (UNLIKELY(mo->player->climbing || (mo->player->pflags & PF_NIGHTSMODE)))
 			return 0;
 
 		if (!(mo->flags2 & MF2_OBJECTFLIP) != !(mo->player->powers[pw_gravityboots])) // negated to turn numeric into bool - would be double negated, but not needed if both would be
@@ -1607,7 +1608,7 @@ void P_XYMovement(mobj_t *mo)
 	// Check the gravity status.
 	P_CheckGravity(mo, false);
 
-	if (player && !moved && player->pflags & PF_NIGHTSMODE && mo->target)
+	if (UNLIKELY(player && !moved && player->pflags & PF_NIGHTSMODE && mo->target))
 	{
 		angle_t fa;
 
@@ -1652,7 +1653,7 @@ void P_XYMovement(mobj_t *mo)
 	if (player && player->homing) // no friction for homing
 		return;
 
-	if (player && player->pflags & PF_NIGHTSMODE)
+	if (UNLIKELY(player && player->pflags & PF_NIGHTSMODE))
 		return; // no friction for NiGHTS players
 
 	if ((mo->type == MT_BIGTUMBLEWEED || mo->type == MT_LITTLETUMBLEWEED)
@@ -1735,9 +1736,6 @@ static void P_AdjustMobjFloorZ_FFloors(mobj_t *mo, sector_t *sector, UINT8 motyp
 		if (!(rover->flags & FF_EXISTS))
 			continue;
 
-		topheight = P_GetFOFTopZ(mo, sector, rover, mo->x, mo->y, NULL);
-		bottomheight = P_GetFOFBottomZ(mo, sector, rover, mo->x, mo->y, NULL);
-
 		if (mo->player && P_CheckSolidLava(mo, rover)) // only the player should be affected
 			;
 		else if (motype != 0 && rover->flags & FF_SWIMMABLE) // "scenery" only
@@ -1747,6 +1745,10 @@ static void P_AdjustMobjFloorZ_FFloors(mobj_t *mo, sector_t *sector, UINT8 motyp
 		else if (!((rover->flags & FF_BLOCKPLAYER && mo->player) // solid to players?
 			    || (rover->flags & FF_BLOCKOTHERS && !mo->player))) // solid to others?
 			continue;
+
+		topheight = P_GetFOFTopZ(mo, sector, rover, mo->x, mo->y, NULL);
+		bottomheight = P_GetFOFBottomZ(mo, sector, rover, mo->x, mo->y, NULL);
+
 		if (rover->flags & FF_QUICKSAND)
 		{
 			switch (motype)
@@ -1770,6 +1772,7 @@ static void P_AdjustMobjFloorZ_FFloors(mobj_t *mo, sector_t *sector, UINT8 motyp
 
 		delta1 = mo->z - (bottomheight + ((topheight - bottomheight)/2));
 		delta2 = thingtop - (bottomheight + ((topheight - bottomheight)/2));
+
 		if (topheight > mo->floorz && abs(delta1) < abs(delta2)
 			&& !(rover->flags & FF_REVERSEPLATFORM)
 			&& ((P_MobjFlip(mo)*mo->momz >= 0) || (!(rover->flags & FF_PLATFORM)))) // In reverse gravity, only clip for FOFs that are intangible from their bottom (the "top" you're falling through) if you're coming from above ("below" in your frame of reference)
@@ -1803,7 +1806,7 @@ static void P_AdjustMobjFloorZ_PolyObjs(mobj_t *mo, subsector_t *subsec)
 
 	thingtop = mo->z + mo->height;
 
-	while(po)
+	while (po)
 	{
 		if (!P_MobjInsidePolyobj(po, mo) || !(po->flags & POF_SOLID))
 		{
@@ -1855,6 +1858,7 @@ static void P_RingZMovement(mobj_t *mo)
 		mo->momz += mo->pmomz;
 		mo->eflags &= ~MFE_APPLYPMOMZ;
 	}
+
 	mo->z += mo->momz;
 
 	// clip movement
@@ -1925,6 +1929,7 @@ static boolean P_ZMovement(mobj_t *mo)
 		mo->momz += mo->pmomz;
 		mo->eflags &= ~MFE_APPLYPMOMZ;
 	}
+
 	mo->z += mo->momz;
 
 	if (mo->standingslope)
@@ -2209,7 +2214,7 @@ static boolean P_ZMovement(mobj_t *mo)
 				|| mo->type == MT_CANNONBALLDECOR
 				|| mo->type == MT_FALLINGROCK)
 			{
-				if (maptol & TOL_NIGHTS)
+				if (UNLIKELY(maptol & TOL_NIGHTS))
 					mom.z = -FixedDiv(mom.z, 10*FRACUNIT);
 				else
 					mom.z = -FixedMul(mom.z, FixedDiv(17*FRACUNIT,20*FRACUNIT));
@@ -2349,9 +2354,9 @@ static boolean P_ZMovement(mobj_t *mo)
 				mo->momz = -mo->momz;
 			else
 			// Flags bounce
-			if (mo->type == MT_REDFLAG || mo->type == MT_BLUEFLAG)
+			if (UNLIKELY(mo->type == MT_REDFLAG || mo->type == MT_BLUEFLAG))
 			{
-				if (maptol & TOL_NIGHTS)
+				if (UNLIKELY(maptol & TOL_NIGHTS))
 					mo->momz = -FixedDiv(mo->momz, 10*FRACUNIT);
 				else
 					mo->momz = -FixedMul(mo->momz, FixedDiv(17*FRACUNIT,20*FRACUNIT));
@@ -2418,7 +2423,7 @@ static void P_PlayerZMovement(mobj_t *mo)
 		else
 			mo->z = mo->floorz;
 
-		if (mo->player->pflags & PF_NIGHTSMODE)
+		if (UNLIKELY(mo->player->pflags & PF_NIGHTSMODE))
 		{
 			// bounce off floor if you were flying towards it
 			if ((mo->eflags & MFE_VERTICALFLIP && mo->player->flyangle > 0 && mo->player->flyangle < 180)
@@ -2608,7 +2613,7 @@ nightsdone:
 		else
 			mo->z = mo->ceilingz - mo->height;
 
-		if (mo->player->pflags & PF_NIGHTSMODE)
+		if (UNLIKELY(mo->player->pflags & PF_NIGHTSMODE))
 		{
 			// bounce off ceiling if you were flying towards it
 			if ((mo->eflags & MFE_VERTICALFLIP && mo->player->flyangle > 180 && mo->player->flyangle <= 359)
@@ -2653,7 +2658,7 @@ nightsdone:
 			}
 
 			// hit the ceiling
-			if (mariomode)
+			if (UNLIKELY(mariomode))
 				S_StartSound(mo, sfx_mario1);
 
 			if (!mo->player->climbing)
@@ -3114,8 +3119,6 @@ static boolean P_CameraCheckHeat(camera_t *thiscam)
 	if (!thiscam || !thiscam->subsector)
 		return false;
 
-	halfheight = thiscam->z + (thiscam->height >> 1);
-
 	// see if we are in water
 	sector = thiscam->subsector->sector;
 
@@ -3125,6 +3128,8 @@ static boolean P_CameraCheckHeat(camera_t *thiscam)
 	if (sector->ffloors)
 	{
 		ffloor_t *rover;
+
+		halfheight = thiscam->z + (thiscam->height >> 1);
 
 		for (rover = sector->ffloors; rover; rover = rover->next)
 		{
@@ -3152,14 +3157,14 @@ static boolean P_CameraCheckWater(camera_t *thiscam)
 	if (!thiscam || !thiscam->subsector)
 		return false;
 
-	halfheight = thiscam->z + (thiscam->height >> 1);
-
 	// see if we are in water
 	sector = thiscam->subsector->sector;
 
 	if (sector->ffloors)
 	{
 		ffloor_t *rover;
+
+		halfheight = thiscam->z + (thiscam->height >> 1);
 
 		for (rover = sector->ffloors; rover; rover = rover->next)
 		{
@@ -3489,15 +3494,18 @@ static void P_PlayerMobjThinker(mobj_t *mobj)
 	}
 	else
 	{
-		if (!(mobj->player->pflags & PF_NIGHTSMODE)) // "jumping" is used for drilling
+		if (LIKELY(!(mobj->player->pflags & PF_NIGHTSMODE))) // "jumping" is used for drilling
 			mobj->player->jumping = 0;
+
 		mobj->player->pflags &= ~PF_JUMPED;
+
 		if (mobj->player->secondjump || mobj->player->powers[pw_tailsfly])
 		{
 			mobj->player->secondjump = 0;
 			mobj->player->powers[pw_tailsfly] = 0;
 			P_SetPlayerMobjState(mobj, S_KART_WALK1); // SRB2kart - was S_PLAY_RUN1
 		}
+
 		mobj->eflags &= ~MFE_JUSTHITFLOOR;
 	}
 
@@ -5403,8 +5411,6 @@ static void P_GimmeAxisXYPos(mobj_t *closestaxis, degenmobj_t *mobj)
 
 static void P_MoveHoop(mobj_t *mobj)
 {
-	const fixed_t fuse = (mobj->fuse*mobj->extravalue2);
-	const angle_t fa = mobj->movedir*(FINEANGLES/mobj->extravalue1);
 	TVector v;
 	TVector *res;
 	fixed_t finalx, finaly, finalz;
@@ -5413,6 +5419,9 @@ static void P_MoveHoop(mobj_t *mobj)
 	//I_Assert(mobj->target != NULL);
 	if (!mobj->target) /// \todo DEBUG ME! Target was P_RemoveMobj'd at some point, and therefore no longer valid!
 		return;
+
+	const fixed_t fuse = (mobj->fuse*mobj->extravalue2);
+	const angle_t fa = mobj->movedir*(FINEANGLES/mobj->extravalue1);
 
 	x = mobj->target->x;
 	y = mobj->target->y;
@@ -8967,7 +8976,7 @@ void P_MobjThinker(mobj_t *mobj)
 	I_Assert(mobj != NULL);
 	I_Assert(!P_MobjWasRemoved(mobj));
 
-	if (mobj->flags & MF_NOTHINK)
+	if (UNLIKELY(mobj->flags & MF_NOTHINK))
 		return;
 
 	// Remove dead target/tracer.
@@ -8986,11 +8995,12 @@ void P_MobjThinker(mobj_t *mobj)
 
 	tmfloorthing = tmhitthing = NULL;
 
+	const sector_t *sec1 = mobj->subsector ? mobj->subsector->sector : NULL;
+
 	// 970 allows ANY mobj to trigger a linedef exec
 	if (UNLIKELY(!mobj->islocal && sec1 && GETSECSPECIAL(sec1->special, 2) == 8)) // BEWARE: islocal does not exist in vanilla
 	{
 		sector_t *sec2;
-
 		sec2 = P_ThingOnSpecial3DFloor(mobj);
 		if (sec2 && GETSECSPECIAL(sec2->special, 2) == 1)
 			P_LinedefExecute(sec2->tag, mobj, sec2);
@@ -9104,7 +9114,7 @@ void P_MobjThinker(mobj_t *mobj)
 		|| mobj->type == MT_FLINGEMERALD
 		|| mobj->type == MT_BIGTUMBLEWEED
 		|| mobj->type == MT_LITTLETUMBLEWEED
-		|| mobj->type == MT_CANNONBALLDECOR
+		|| mobj->type == MT_CANNONBALLDECOR)
 		|| mobj->type == MT_FALLINGROCK)
 	{
 		P_TryMove(mobj, mobj->x, mobj->y, true); // Sets mo->standingslope correctly
@@ -9195,6 +9205,9 @@ void P_PushableThinker(mobj_t *mobj)
 	I_Assert(mobj != NULL);
 	I_Assert(!P_MobjWasRemoved(mobj));
 
+	if (!mobj)
+		return;
+
 	sec = mobj->subsector->sector;
 
 	if (GETSECSPECIAL(sec->special, 2) == 1 && mobj->z == sec->floorheight)
@@ -9210,9 +9223,6 @@ void P_PushableThinker(mobj_t *mobj)
 	// it has to be pushable RIGHT NOW for this part to happen
 	if (mobj->flags & MF_PUSHABLE && !(mobj->momx || mobj->momy))
 		P_TryMove(mobj, mobj->x, mobj->y, true);
-
-	if (!mobj)
-		return;
 
 	if (mobj->fuse == 1) // it would explode in the MobjThinker code
 	{
@@ -9982,6 +9992,7 @@ static precipmobj_t *P_SpawnPrecipMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype
 	else
 	{
 		const INT32 special = GETSECSPECIAL(mobj->subsector->sector->special, 1);
+
 		if (special == 7 || special == 6 || mobj->subsector->sector->floorpic == skyflatnum)
 			mobj->precipflags |= PCF_PIT;
 	}
@@ -10313,9 +10324,11 @@ void P_PrecipitationEffects(void)
 				P_SpawnLightningFlash(ss); // Spawn a quick flash thinker
 	}
 
+	const mobj_t *pmo = players[displayplayers[0]].mo;
+
 	// Local effects from here on out!
 	// If we're not in game fully yet, we don't worry about them.
-	if (!playeringame[displayplayers[0]] || !players[displayplayers[0]].mo)
+	if (!playeringame[displayplayers[0]] || !pmo)
 		return;
 
 	if (sound_disabled)
@@ -10324,7 +10337,7 @@ void P_PrecipitationEffects(void)
 	if (!sounds_rain && !sounds_thunder)
 		return; // no need to calculate volume at ALL
 
-	if (players[displayplayers[0]].mo->subsector->sector->ceilingpic == skyflatnum)
+	if (pmo->subsector->sector->ceilingpic == skyflatnum)
 		volume = 255; // Sky above? We get it full blast.
 	else
 	{
@@ -10335,7 +10348,7 @@ void P_PrecipitationEffects(void)
 		// Essentially check in a 1024 unit radius of the player for an outdoor area.
 #define RADIUSSTEP (64*FRACUNIT)
 #define SEARCHRADIUS (16*RADIUSSTEP)
-		yl = yh = players[displayplayers[0]].mo->y;
+		yl = yh = pmo->y;
 		yl -= SEARCHRADIUS;
 		while (yl < INT32_MIN)
 			yl += RADIUSSTEP;
@@ -10343,7 +10356,7 @@ void P_PrecipitationEffects(void)
 		while (yh > INT32_MAX)
 			yh -= RADIUSSTEP;
 
-		xl = xh = players[displayplayers[0]].mo->x;
+		xl = xh = pmo->x;
 		xl -= SEARCHRADIUS;
 		while (xl < INT32_MIN)
 			xl += RADIUSSTEP;
@@ -10359,20 +10372,19 @@ void P_PrecipitationEffects(void)
 				if (R_PointInSubsectorFast((fixed_t)x, (fixed_t)y)->sector->ceilingpic != skyflatnum) // Found the outdoors!
 					continue;
 
-				newdist = S_CalculateSoundDistance(players[displayplayers[0]].mo->x, players[displayplayers[0]].mo->y, 0, (fixed_t)x, (fixed_t)y, 0);
+				newdist = S_CalculateSoundDistance(pmo->x, pmo->y, 0, (fixed_t)x, (fixed_t)y, 0);
 
 				if (newdist < closedist)
 					closedist = newdist;
 			}
 
 		volume = 255 - (closedist>>(FRACBITS+2));
+		volume = CLAMP(volume, 0, 255);
 	}
 #undef RADIUSSTEP
 
-	volume = CLAMP(volume, 0, 255);
-
 	if (sounds_rain)
-		S_StartSoundAtVolume(players[displayplayers[0]].mo, sfx_rainin, volume);
+		S_StartSoundAtVolume(pmo, sfx_rainin, volume);
 
 	if (!sounds_thunder)
 		return;
@@ -10380,7 +10392,7 @@ void P_PrecipitationEffects(void)
 	if (effects_lightning && lightningStrike && volume)
 	{
 		// Large, close thunder sounds to go with our lightning.
-		S_StartSoundAtVolume(players[displayplayers[0]].mo, sfx_litng1 + M_RandomKey(4), volume);
+		S_StartSoundAtVolume(pmo, sfx_litng1 + M_RandomKey(4), volume);
 	}
 	else if (thunderchance < 20)
 	{
@@ -10388,7 +10400,7 @@ void P_PrecipitationEffects(void)
 		if (volume < 80)
 			volume = 80;
 
-		S_StartSoundAtVolume(players[displayplayers[0]].mo, sfx_athun1 + M_RandomKey(2), volume);
+		S_StartSoundAtVolume(pmo, sfx_athun1 + M_RandomKey(2), volume);
 	}
 }
 

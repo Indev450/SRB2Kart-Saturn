@@ -132,7 +132,17 @@ static void HWR_AddTransparentFloor(lumpnum_t lumpnum, extrasubsector_t *xsub, b
 static void HWR_AddTransparentWall(FOutVector *wallVerts, FSurfaceInfo *pSurf, INT32 texnum, boolean noencore, FBITFIELD blend, boolean fogwall, INT32 lightlevel, extracolormap_t *wallcolormap);
 static void HWR_AddTransparentPolyobjectFloor(lumpnum_t lumpnum, polyobj_t *polysector, boolean isceiling, fixed_t fixedheight, INT32 lightlevel, INT32 alpha, sector_t *FOFSector, FBITFIELD blend, extracolormap_t *planecolormap);
 
-static void HWR_AddSprites(sector_t *sec);
+namespace
+{
+	enum class AddSpritesType
+	{
+		kNoLimitDist,
+		kLimitDist,
+	};
+
+	template<AddSpritesType> static void HWR_AddSprites(sector_t *);
+}
+
 static void HWR_ProjectSprite(mobj_t *thing);
 static void HWR_AddPrecipitationSprites(void);
 static void HWR_ProjectPrecipitationSprite(precipmobj_t *thing);
@@ -3166,7 +3176,10 @@ doaddline:
 	{
 		// draw sprites first, coz they are clipped to the solidsegs of
 		// subsectors more 'in front'
-		HWR_AddSprites(gl_frontsector);
+		if (cv_drawdist.value || current_bsp_culling_distance)
+			HWR_AddSprites<AddSpritesType::kLimitDist>(gl_frontsector);
+		else
+			HWR_AddSprites<AddSpritesType::kNoLimitDist>(gl_frontsector);
 
 		//Hurdler: at this point validcount must be the same, but is not because
 		//         gl_frontsector doesn't point anymore to sub->sector due to
@@ -3518,6 +3531,8 @@ static void HWR_DrawSpriteShadow(gl_vissprite_t *spr, patch_t *gpatch, GLPatch_t
 		HWR_ProcessPolygon(&sSurf, swallVerts, 4, blendmode|PF_Translucent|PF_Modulated, SHADER_NONE, false);
 	}
 }
+
+#define std_R_QuickCamDist(x, y) std::max(abs(((x)>>FRACBITS) - (viewx>>FRACBITS)), abs(((y)>>FRACBITS) - (viewy>>FRACBITS)))
 
 // This is expecting a pointer to an array containing 4 wallVerts for a sprite
 static void HWR_RotateSpritePolyToAim(gl_vissprite_t *spr, FOutVector *wallVerts, const boolean precip, const boolean papersprite)
@@ -4528,6 +4543,10 @@ static void HWR_DrawSprites(void)
 // HWR_AddSprites
 // During BSP traversal, this adds sprites by sector.
 // --------------------------------------------------------------------------
+
+namespace
+{
+template <AddSpritesType Type>
 static void HWR_AddSprites(sector_t *sec)
 {
 	mobj_t *thing;
@@ -4543,28 +4562,36 @@ static void HWR_AddSprites(sector_t *sec)
 	// Well, now it will be done.
 	sec->validcount = validcount;
 
-	limit_dist = cv_drawdist.value;
-
-	if (current_bsp_culling_distance)
+	if constexpr (Type == AddSpritesType::kLimitDist)
 	{
-		// Use the smaller setting
-		if (limit_dist)
-			limit_dist = std::min(current_bsp_culling_distance/mapobjectscale, limit_dist);
-		else
-			limit_dist = current_bsp_culling_distance/mapobjectscale;
+		limit_dist = cv_drawdist.value;
+
+		if (current_bsp_culling_distance)
+		{
+			// Use the smaller setting
+			if (limit_dist)
+				limit_dist = std::min(current_bsp_culling_distance/mapobjectscale, limit_dist);
+			else
+				limit_dist = current_bsp_culling_distance/mapobjectscale;
+		}
 	}
 
 	// Handle all things in sector.
 	for (thing = sec->thinglist; thing; thing = thing->snext)
 	{
-		if (!R_ThingWithinDist(thing, limit_dist))
-			continue;
+		// reduce branching in this rather tight loop
+		if constexpr (Type == AddSpritesType::kLimitDist)
+		{
+			if (!R_ThingWithinDist(thing, limit_dist))
+				continue;
+		}
 
 		if (!R_ThingVisible(thing))
 			continue;
 
 		HWR_ProjectSprite(thing);
 	}
+}
 }
 
 // --------------------------------------------------------------------------

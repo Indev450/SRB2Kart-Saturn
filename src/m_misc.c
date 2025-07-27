@@ -2294,6 +2294,51 @@ void M_MkdirEach(const char *path, int start, int mode)
 	M_MkdirEachUntil(path, start, -1, mode);
 }
 
+// Hashes some message using FNV-1a
+#define FNV1A_OFFSET_BASIS 0x811C9DC5
+#define FNV1A_PRIME        0x01000193
+
+UINT32 FNV1a_Hash(const char *message, size_t size)
+{
+	UINT32 hash = FNV1A_OFFSET_BASIS;
+
+	for (size_t i = 0; i < size; i++)
+	{
+		hash ^= message[i];
+		hash *= FNV1A_PRIME;
+	}
+
+	return hash;
+}
+
+UINT32 FNV1a_HashString(const char *message)
+{
+	UINT32 hash = FNV1A_OFFSET_BASIS;
+
+	while (*message)
+	{
+		hash ^= *message;
+		hash *= FNV1A_PRIME;
+		message++;
+	}
+
+	return hash;
+}
+
+UINT32 FNV1a_HashLowercaseString(const char *message)
+{
+	UINT32 hash = FNV1A_OFFSET_BASIS;
+
+	while (*message)
+	{
+		hash ^= tolower(*message);
+		hash *= FNV1A_PRIME;
+		message++;
+	}
+
+	return hash;
+}
+
 
 #ifdef __cplusplus
 } // extern "C"

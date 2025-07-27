@@ -607,7 +607,7 @@ void S_StartSound(const void *origin, sfxenum_t sfx_id)
 	if (S_SoundDisabled())
 		return;
 
-	if (mariomode) // Sounds change in Mario mode!
+	if (UNLIKELY(mariomode)) // Sounds change in Mario mode!
 	{
 		switch (sfx_id)
 		{
@@ -630,7 +630,7 @@ void S_StartSound(const void *origin, sfxenum_t sfx_id)
 				break;
 		}
 	}
-	if (maptol & TOL_XMAS) // Some sounds change for xmas
+	if (UNLIKELY(maptol & TOL_XMAS)) // Some sounds change for xmas
 	{
 		switch (sfx_id)
 		{

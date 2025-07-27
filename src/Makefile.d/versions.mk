@@ -21,9 +21,6 @@ CXXFLAGS+= -Wno-aggregate-return
 
 # -W -Wno-unused
 
-ifdef GCC150
- opts+=-std=gnu17
-endif
 WFLAGS:=-Wall -Wno-trigraphs
 ifndef GCC295
 #WFLAGS+=-Wno-packed
