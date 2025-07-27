@@ -181,7 +181,7 @@ static int lib_setState(lua_State *L)
 			switch(lua_type(L, 3))
 			{
 			case LUA_TNIL: // Null? Set the action to nothing, then.
-				state->action.acp1 = NULL;
+				state->action = NULL;
 				break;
 			case LUA_TSTRING: // It's a string, expect the name of a built-in action
 				LUA_SetActionByName(state, lua_tostring(L, 3));
@@ -193,7 +193,7 @@ static int lib_setState(lua_State *L)
 				lua_pushvalue(L, 3); // Bring it to the top of the stack
 				lua_rawset(L, -3); // Set it in the registry
 				lua_pop(L, 1); // pop LREG_STATEACTION
-				state->action.acp1 = (actionf_p1)A_Lua; // Set the action for the userdata.
+				state->action = (actionf_p1)A_Lua; // Set the action for the userdata.
 				break;
 			default: // ?!
 				return luaL_typerror(L, 3, "function");
@@ -251,7 +251,7 @@ boolean LUA_SetLuaAction(void *stv, const char *action)
 	lua_pop(gL, 1); // pop LREG_STATEACTION
 
 	lua_pop(gL, 2); // pop the function and LREG_ACTIONS
-	st->action.acp1 = (actionf_p1)A_Lua; // Set the action for the userdata.
+	st->action = (actionf_p1)A_Lua; // Set the action for the userdata.
 	return true; // action successfully set.
 }
 
@@ -350,9 +350,9 @@ static int state_get(lua_State *L)
 		case state_action:
 		{
 			const char *name;
-			if (!st->action.acp1) // Action is NULL.
+			if (!st->action) // Action is NULL.
 				return 0; // return nil.
-			if (st->action.acp1 == (actionf_p1)A_Lua) { // This is a Lua function?
+			if (st->action == (actionf_p1)A_Lua) { // This is a Lua function?
 				lua_getfield(L, LUA_REGISTRYINDEX, LREG_STATEACTION);
 				I_Assert(lua_istable(L, -1));
 				lua_pushlightuserdata(L, st); // Push the state pointer and
@@ -428,7 +428,7 @@ static int state_set(lua_State *L)
 		switch(lua_type(L, 3))
 		{
 		case LUA_TNIL: // Null? Set the action to nothing, then.
-			st->action.acp1 = NULL;
+			st->action = NULL;
 			break;
 		case LUA_TSTRING: // It's a string, expect the name of a built-in action
 			LUA_SetActionByName(st, lua_tostring(L, 3));
@@ -440,7 +440,7 @@ static int state_set(lua_State *L)
 			lua_pushvalue(L, 3); // Bring it to the top of the stack
 			lua_rawset(L, -3); // Set it in the registry
 			lua_pop(L, 1); // pop LREG_STATEACTION
-			st->action.acp1 = (actionf_p1)A_Lua; // Set the action for the userdata.
+			st->action = (actionf_p1)A_Lua; // Set the action for the userdata.
 			break;
 		default: // ?!
 			return luaL_typerror(L, 3, "function");

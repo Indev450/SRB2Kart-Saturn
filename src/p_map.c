@@ -321,7 +321,7 @@ static boolean PIT_CheckThing(mobj_t *thing)
 		return true;
 
 	// Ignore... things.
-	if (!tmthing || !thing || P_MobjWasRemoved(thing))
+	if (!tmthing || P_MobjWasRemoved(thing))
 		return true;
 
 	I_Assert(!P_MobjWasRemoved(tmthing));
@@ -3626,7 +3626,7 @@ static boolean PIT_ChangeSector(mobj_t *thing, boolean realcrush)
 
 						for (think = thinkercap.next; think != &thinkercap; think = think->next)
 						{
-							if (think->function.acp1 != (actionf_p1)T_StartCrumble)
+							if (think->function != (actionf_p1)T_StartCrumble)
 								continue;
 
 							crumbler = (elevator_t *)think;

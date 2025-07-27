@@ -1557,7 +1557,7 @@ void Polyobj_InitLevel(void)
 	// the mobj_t pointers on a queue for use below.
 	for (th = thinkercap.next; th != &thinkercap; th = th->next)
 	{
-		if (th->function.acp1 != (actionf_p1)P_MobjThinker)
+		if (th->function != (actionf_p1)P_MobjThinker)
 				continue;
 
 		mobj_t *mo = (mobj_t *)th;
@@ -1832,7 +1832,7 @@ void T_PolyObjWaypoint(polywaypoint_t *th)
 	// We redo this each tic to make savegame compatibility easier.
 	for (wp = thinkercap.next; wp != &thinkercap; wp = wp->next)
 	{
-		if (wp->function.acp1 != (actionf_p1)P_MobjThinker) // Not a mobj thinker
+		if (wp->function != (actionf_p1)P_MobjThinker) // Not a mobj thinker
 			continue;
 
 		mo2 = (mobj_t *)wp;
@@ -1916,7 +1916,7 @@ void T_PolyObjWaypoint(polywaypoint_t *th)
 			// Find next waypoint
 			for (wp = thinkercap.next; wp != &thinkercap; wp = wp->next)
 			{
-				if (wp->function.acp1 != (actionf_p1)P_MobjThinker) // Not a mobj thinker
+				if (wp->function != (actionf_p1)P_MobjThinker) // Not a mobj thinker
 					continue;
 
 				mo2 = (mobj_t *)wp;
@@ -1955,7 +1955,7 @@ void T_PolyObjWaypoint(polywaypoint_t *th)
 
 				for (wp = thinkercap.next; wp != &thinkercap; wp = wp->next)
 				{
-					if (wp->function.acp1 != (actionf_p1)P_MobjThinker) // Not a mobj thinker
+					if (wp->function != (actionf_p1)P_MobjThinker) // Not a mobj thinker
 						continue;
 
 					mo2 = (mobj_t *)wp;
@@ -1992,7 +1992,7 @@ void T_PolyObjWaypoint(polywaypoint_t *th)
 
 				for (wp = thinkercap.next; wp != &thinkercap; wp = wp->next)
 				{
-					if (wp->function.acp1 != (actionf_p1)P_MobjThinker) // Not a mobj thinker
+					if (wp->function != (actionf_p1)P_MobjThinker) // Not a mobj thinker
 						continue;
 
 					mo2 = (mobj_t *)wp;
@@ -2357,7 +2357,7 @@ INT32 EV_DoPolyObjRotate(polyrotdata_t *prdata)
 
 	// create a new thinker
 	th = Z_Malloc(sizeof(polyrotate_t), PU_LEVSPEC, NULL);
-	th->thinker.function.acp1 = (actionf_p1)T_PolyObjRotate;
+	th->thinker.function = (actionf_p1)T_PolyObjRotate;
 	PolyObj_AddThinker(&th->thinker);
 	po->thinker = &th->thinker;
 
@@ -2425,7 +2425,7 @@ INT32 EV_DoPolyObjMove(polymovedata_t *pmdata)
 
 	// create a new thinker
 	th = Z_Malloc(sizeof(polymove_t), PU_LEVSPEC, NULL);
-	th->thinker.function.acp1 = (actionf_p1)T_PolyObjMove;
+	th->thinker.function = (actionf_p1)T_PolyObjMove;
 	PolyObj_AddThinker(&th->thinker);
 	po->thinker = &th->thinker;
 
@@ -2491,7 +2491,7 @@ INT32 EV_DoPolyObjWaypoint(polywaypointdata_t *pwdata)
 
 	// create a new thinker
 	th = Z_Malloc(sizeof(polywaypoint_t), PU_LEVSPEC, NULL);
-	th->thinker.function.acp1 = (actionf_p1)T_PolyObjWaypoint;
+	th->thinker.function = (actionf_p1)T_PolyObjWaypoint;
 	PolyObj_AddThinker(&th->thinker);
 	po->thinker = &th->thinker;
 
@@ -2512,7 +2512,7 @@ INT32 EV_DoPolyObjWaypoint(polywaypointdata_t *pwdata)
 	// Find the first waypoint we need to use
 	for (wp = thinkercap.next; wp != &thinkercap; wp = wp->next)
 	{
-		if (wp->function.acp1 != (actionf_p1)P_MobjThinker) // Not a mobj thinker
+		if (wp->function != (actionf_p1)P_MobjThinker) // Not a mobj thinker
 			continue;
 
 		mo2 = (mobj_t *)wp;
@@ -2627,7 +2627,7 @@ static void Polyobj_doSlideDoor(polyobj_t *po, polydoordata_t *doordata)
 
 	// allocate and add a new slide door thinker
 	th = Z_Malloc(sizeof(polyslidedoor_t), PU_LEVSPEC, NULL);
-	th->thinker.function.acp1 = (actionf_p1)T_PolyDoorSlide;
+	th->thinker.function = (actionf_p1)T_PolyDoorSlide;
 	PolyObj_AddThinker(&th->thinker);
 
 	// point the polyobject to this thinker
@@ -2678,7 +2678,7 @@ static void Polyobj_doSwingDoor(polyobj_t *po, polydoordata_t *doordata)
 
 	// allocate and add a new swing door thinker
 	th = Z_Malloc(sizeof(polyswingdoor_t), PU_LEVSPEC, NULL);
-	th->thinker.function.acp1 = (actionf_p1)T_PolyDoorSwing;
+	th->thinker.function = (actionf_p1)T_PolyDoorSwing;
 	PolyObj_AddThinker(&th->thinker);
 
 	// point the polyobject to this thinker
@@ -2763,7 +2763,7 @@ INT32 EV_DoPolyObjDisplace(polydisplacedata_t *prdata)
 
 	// create a new thinker
 	th = Z_Malloc(sizeof(polydisplace_t), PU_LEVSPEC, NULL);
-	th->thinker.function.acp1 = (actionf_p1)T_PolyObjDisplace;
+	th->thinker.function = (actionf_p1)T_PolyObjDisplace;
 	PolyObj_AddThinker(&th->thinker);
 	po->thinker = &th->thinker;
 
@@ -2867,7 +2867,7 @@ INT32 EV_DoPolyObjFlag(line_t *pfdata)
 
 	// create a new thinker
 	th = Z_Malloc(sizeof(polymove_t), PU_LEVSPEC, NULL);
-	th->thinker.function.acp1 = (actionf_p1)T_PolyObjFlag;
+	th->thinker.function = (actionf_p1)T_PolyObjFlag;
 	PolyObj_AddThinker(&th->thinker);
 	po->thinker = &th->thinker;
 
