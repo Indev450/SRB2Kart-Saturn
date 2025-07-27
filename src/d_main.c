@@ -868,14 +868,13 @@ void D_SRB2Loop(void)
 			rendertimefrac_unpaused = FRACUNIT;
 		}
 
-
 		if (interp || doDisplay)
 		{
 			if (!frameskip)
 			{
 				ranwipe = D_Display();
 			}
-			else if (frameskip)
+			else if (!dedicated)
 			{
 				// always update console and hud
 				// otherwise it may take minutes to open it
