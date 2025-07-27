@@ -213,6 +213,7 @@ extern consvar_t cv_fov, cv_fovchange;
 extern consvar_t cv_skybox;
 extern consvar_t cv_tailspickup;
 extern consvar_t cv_maxinterpdist;
+extern consvar_t cv_playerfade;
 extern consvar_t cv_ripplewater;
 
 extern consvar_t cv_randomdirlight;
