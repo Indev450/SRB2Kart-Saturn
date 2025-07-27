@@ -114,8 +114,7 @@ INT32 mousex, mousey;
 INT32 mlooky; // like mousey but with a custom sensitivity for mlook
 
 // joystick values are repeated
-INT32 joyxmove[JOYAXISSET], joyymove[JOYAXISSET], joy2xmove[JOYAXISSET], joy2ymove[JOYAXISSET],
-joy3xmove[JOYAXISSET], joy3ymove[JOYAXISSET], joy4xmove[JOYAXISSET], joy4ymove[JOYAXISSET];
+INT32 joyxmove[MAXSPLITSCREENPLAYERS][JOYAXISSET], joyymove[MAXSPLITSCREENPLAYERS][JOYAXISSET];
 
 // current state of the keys: true if pushed
 UINT8 gamekeydown[NUMINPUTS];
@@ -187,32 +186,32 @@ void G_MapEventsToControls(event_t *ev)
 			i = ev->data1;
 			if (i >= JOYAXISSET || menuactive || CON_Ready() || chat_on)
 				break;
-			if (ev->data2 != INT32_MAX) joyxmove[i] = ev->data2;
-			if (ev->data3 != INT32_MAX) joyymove[i] = ev->data3;
+			if (ev->data2 != INT32_MAX) joyxmove[0][i] = ev->data2;
+			if (ev->data3 != INT32_MAX) joyymove[0][i] = ev->data3;
 			break;
 
 		case ev_joystick2: // buttons are virtual keys
 			i = ev->data1;
 			if (i >= JOYAXISSET || menuactive)
 				break;
-			if (ev->data2 != INT32_MAX) joy2xmove[i] = ev->data2;
-			if (ev->data3 != INT32_MAX) joy2ymove[i] = ev->data3;
+			if (ev->data2 != INT32_MAX) joyxmove[1][i] = ev->data2;
+			if (ev->data3 != INT32_MAX) joyymove[1][i] = ev->data3;
 			break;
 
 		case ev_joystick3:
 			i = ev->data1;
 			if (i >= JOYAXISSET)
 				break;
-			if (ev->data2 != INT32_MAX) joy3xmove[i] = ev->data2;
-			if (ev->data3 != INT32_MAX) joy3ymove[i] = ev->data3;
+			if (ev->data2 != INT32_MAX) joyxmove[2][i] = ev->data2;
+			if (ev->data3 != INT32_MAX) joyymove[2][i] = ev->data3;
 			break;
 
 		case ev_joystick4:
 			i = ev->data1;
 			if (i >= JOYAXISSET)
 				break;
-			if (ev->data2 != INT32_MAX) joy4xmove[i] = ev->data2;
-			if (ev->data3 != INT32_MAX) joy4ymove[i] = ev->data3;
+			if (ev->data2 != INT32_MAX) joyxmove[3][i] = ev->data2;
+			if (ev->data3 != INT32_MAX) joyymove[3][i] = ev->data3;
 			break;
 
 		default:
@@ -257,15 +256,6 @@ void G_ResetControls(void)
 
 	memset(joyxmove, 0, sizeof(joyxmove));
 	memset(joyymove, 0, sizeof(joyymove));
-
-	memset(joy2xmove, 0, sizeof(joy2xmove));
-	memset(joy2ymove, 0, sizeof(joy2ymove));
-
-	memset(joy3xmove, 0, sizeof(joy3xmove));
-	memset(joy3ymove, 0, sizeof(joy3ymove));
-
-	memset(joy4xmove, 0, sizeof(joy4xmove));
-	memset(joy4ymove, 0, sizeof(joy4ymove));
 
 	// reset those just in case the game missed the keyup event
 	memset(dpadscrollstate, false, sizeof(dpadscrollstate));
