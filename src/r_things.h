@@ -76,7 +76,7 @@ void R_InitSprites(void);
 void R_ClearSprites(void);
 void R_DrawMasked(void);
 
-fixed_t R_GetThingFade(mobj_t *thing);
+fixed_t R_DoPlayerFade(mobj_t *thing);
 
 boolean R_ThingVisible (mobj_t *thing);
 boolean R_ThingWithinDist (mobj_t *thing, INT32 limit_dist);

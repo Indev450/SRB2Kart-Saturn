@@ -718,7 +718,7 @@ static void R_DrawFlippedMaskedColumn(column_t *column)
 
 
 // Based off of R_GetLinedefTransTable
-transnum_t R_GetThingTransTable(fixed_t alpha, transnum_t transmap)
+static transnum_t R_GetThingTransTable(fixed_t alpha, transnum_t transmap)
 {
 	return (20*(FRACUNIT - ((alpha * (10 - transmap))/10) - 1) + FRACUNIT) >> (FRACBITS+1);
 }
@@ -1586,7 +1586,8 @@ static void R_ProjectSprite(mobj_t *thing)
 	else
 		trans = 0;
 
-	trans = R_GetThingTransTable(R_GetThingFade(oldthing), trans);
+	if (cv_playerfade.value && oldthing->player)
+		trans = R_GetThingTransTable(R_DoPlayerFade(oldthing), trans);
 
 	//SoM: 3/17/2000: Disregard sprites that are out of view..
 	if (vflip)
@@ -2897,11 +2898,12 @@ boolean R_ThingWithinDist(mobj_t *thing, INT32 limit_dist)
 	return true;
 }
 
-fixed_t R_GetThingFade(mobj_t *thing)
+fixed_t R_DoPlayerFade(mobj_t *thing)
 {
 	fixed_t fadealpha = FRACUNIT;
+	static const tic_t countdownstarttime = (15 * TICRATE) / 4; // starttime - (3*TICRATE)
 
-	if (!cv_playerfade.value || leveltime < starttime-(3*TICRATE) || !thing->player || thing->player == viewplayer)
+	if (thing->player == viewplayer || viewplayer->exiting || camera[R_GetViewNumber()].freecam || leveltime < countdownstarttime)
 		return fadealpha;
 
 	const INT32 playerdist     = (FixedMul((thing->x - viewx), viewcos) + FixedMul((thing->y - viewy), viewsin)) >> FRACBITS;
