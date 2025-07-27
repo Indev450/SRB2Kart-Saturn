@@ -17,6 +17,7 @@
 
 #include "m_menu.h" // gametype_cons_t
 #include "m_cond.h" // emblems
+#include "m_emotes.h"
 
 #include "d_clisrv.h"
 
@@ -94,6 +95,9 @@ static textinput_t w_chat;
 static boolean headsupactive = false;
 boolean hu_showscores; // draw rankings
 static char hu_tick;
+static tic_t hu_emoteanim = 0;
+#define MAXEMOTESUGGESTIONS 8
+static emote_t *emote_suggestions[MAXEMOTESUGGESTIONS] = {0};
 
 static huddrawlist_h luahuddrawlist_scores;
 
@@ -1106,6 +1110,7 @@ void HU_Ticker(void)
 		return;
 
 	hu_tick++;
+	hu_emoteanim++;
 	hu_tick &= 7; // currently only to blink chat input cursor
 
 	if (PLAYER1INPUTDOWN(gc_scores))
@@ -1399,7 +1404,7 @@ boolean HU_Responder(event_t *ev)
 		&& ev->data1 != gamecontrol[0][gc_talkkey][1]))
 			return false;
 
-		M_TextInputHandle(&w_chat, c);
+		M_TextInputHandleEmotes(&w_chat, c, emote_suggestions, MAXEMOTESUGGESTIONS);
 
 		if (c == KEY_ENTER)
 		{
@@ -1439,6 +1444,8 @@ boolean HU_Responder(event_t *ev)
 
 #ifndef NONET
 
+#define HU_DrawEmote(x, y, emote, flags) M_DrawEmote((x), (y), (emote), hu_emoteanim, (flags))
+
 // Precompile a wordwrapped string to any given width.
 // This is a muuuch better method than V_WORDWRAP.
 // again stolen and modified a bit from video.c, don't mind me, will need to rearrange this one day.
@@ -1450,6 +1457,8 @@ static char *CHAT_WordWrap(INT32 x, INT32 w, INT32 option, const char *string)
 	size_t slen;
 	char *newstring = Z_StrDup(string);
 	INT32 spacewidth = (vid.width < 640) ? 8 : 4, charwidth = (vid.width < 640) ? 8 : 4;
+	emote_t *emote = NULL;
+	int emotelen = 0;
 
 	slen = strlen(string);
 	x = 0;
@@ -1471,7 +1480,12 @@ static char *CHAT_WordWrap(INT32 x, INT32 w, INT32 option, const char *string)
 			c = toupper(c);
 		c -= HU_FONTSTART;
 
-		if (c < 0 || c >= HU_FONTSIZE || !hu_font[c])
+		if ((emote = M_VerifyEmote(string+i, &emotelen)))
+		{
+			chw = EMOTEWIDTH;
+			i += emotelen-1; // Will be incremented on next loop iteration, hence -1
+		}
+		else if (c < 0 || c >= HU_FONTSIZE || !hu_font[c])
 		{
 			chw = spacewidth;
 			lastusablespace = i;
@@ -1492,7 +1506,6 @@ static char *CHAT_WordWrap(INT32 x, INT32 w, INT32 option, const char *string)
 	}
 	return newstring;
 }
-
 
 // 30/7/18: chaty is now the distance at which the lowest point of the chat will be drawn if that makes any sense.
 
@@ -1526,6 +1539,8 @@ static void HU_drawMiniChat(void)
 		char *msg = CHAT_WordWrap(x+2, boxw-(charwidth*2), V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_ALLOWLOWERCASE, chat_mini[i-1]);
 		size_t j = 0;
 		INT32 linescount = 0;
+		emote_t *emote = NULL;
+		int emotelen = 0;
 
 		while(msg[j]) // iterate through msg
 		{
@@ -1549,6 +1564,11 @@ static void HU_drawMiniChat(void)
 				}
 
 				++j;
+			}
+			else if ((emote = M_VerifyEmote(msg+j, &emotelen)))
+			{
+				dx += EMOTEWIDTH - charwidth;
+				j += emotelen;
 			}
 			else
 			{
@@ -1595,6 +1615,8 @@ static void HU_drawMiniChat(void)
 		size_t j = 0;
 		char *msg = CHAT_WordWrap(x+2, boxw-(charwidth*2), V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_ALLOWLOWERCASE, chat_mini[i]); // get the current message, and word wrap it.
 		UINT8 *colormap = NULL;
+		emote_t *emote = NULL;
+		int emotelen = 0;
 
 		while(msg[j]) // iterate through msg
 		{
@@ -1620,6 +1642,16 @@ static void HU_drawMiniChat(void)
 				}
 
 				++j;
+			}
+			else if ((emote = M_VerifyEmote(msg+j, &emotelen)))
+			{
+				if (cv_chatbacktint.value) // on request of wolfy
+					V_DrawFillConsoleMap(x + dx + 2, y+dy, EMOTEWIDTH, charheight, 239|V_SNAPTOBOTTOM|V_SNAPTOLEFT);
+
+				HU_DrawEmote(x+dx+2, y+dy, emote, V_SNAPTOBOTTOM|V_SNAPTOLEFT|transflag);
+				dx += EMOTEWIDTH - charwidth;
+
+				j += emotelen;
 			}
 			else
 			{
@@ -1698,6 +1730,9 @@ static void HU_drawChatLog(INT32 offset)
 		INT32 j = 0;
 		char *msg = CHAT_WordWrap(x+2, boxw-(charwidth*2), V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_ALLOWLOWERCASE, chat_log[i]); // get the current message, and word wrap it.
 		UINT8 *colormap = NULL;
+		emote_t *emote = NULL;
+		int emotelen = 0;
+
 		while(msg[j]) // iterate through msg
 		{
 			if (msg[j] < HU_FONTSTART) // don't draw
@@ -1718,6 +1753,15 @@ static void HU_drawChatLog(INT32 offset)
 				}
 
 				++j;
+			}
+			else if ((emote = M_VerifyEmote(msg+j, &emotelen)))
+			{
+				if ((y+dy+2 >= chat_topy) && (y+dy < (chat_bottomy)))
+				{
+					HU_DrawEmote(x+dx+2, y+dy, emote, V_SNAPTOBOTTOM|V_SNAPTOLEFT);
+					dx += EMOTEWIDTH - charwidth;
+				}
+				j += emotelen;
 			}
 			else
 			{
@@ -1844,7 +1888,7 @@ static void HU_DrawChat(void)
 	typelines = 1;
 
 	if ((w_chat.cursor == 0 || w_chat.length == 0) && hu_tick < 4)
-		V_DrawChatCharacter(chatx+2+c+charwidth*w_chat.cursor, y+1, '_'|V_SNAPTOBOTTOM|V_SNAPTOLEFT|t, !cv_allcaps.value, NULL);
+		V_DrawChatCharacter(chatx+2+c, y+1, '_'|V_SNAPTOBOTTOM|V_SNAPTOLEFT|t, !cv_allcaps.value, NULL);
 
 	if (w_chat.select != w_chat.cursor)
 	{
@@ -1855,29 +1899,39 @@ static void HU_DrawChat(void)
 	while (w_chat_buf[i])
 	{
 		boolean skippedline = false;
-		if (w_chat.cursor == (i+1))
+		emote_t *emote = NULL;
+		int emotelen = 0;
+		int drawwidth = charwidth; // if we've drawn emote, selection needs to account for that
+
+		if ((emote = M_VerifyEmote(w_chat_buf+i, &emotelen)))
+		{
+			HU_DrawEmote(chatx + c + 2, y-1, emote, V_SNAPTOBOTTOM|V_SNAPTOLEFT|t);
+			c += EMOTEWIDTH - charwidth;
+			i += emotelen-1;
+			drawwidth = EMOTEWIDTH;
+		}
+		else if (w_chat_buf[i] >= HU_FONTSTART) //Hurdler: isn't it better like that?
+			V_DrawChatCharacter(chatx + c + 2, y, w_chat_buf[i] | V_SNAPTOBOTTOM|V_SNAPTOLEFT | t, !cv_allcaps.value, NULL);
+
+		// Draw selection
+		if (i >= select_start && i < select_end)
+			V_DrawFill(chatx + c + 2 - (drawwidth-charwidth), y-1, drawwidth, charheight, 103|V_TRANSLUCENT|V_SNAPTOBOTTOM|V_SNAPTOLEFT|t);
+
+		++i;
+
+		if (w_chat.cursor == i)
 		{
 			INT32 cursorx = (c+charwidth < boxw-charwidth) ? (chatx + 2 + c+charwidth) : (chatx+1); // we may have to go down.
 			INT32 cursory = (cursorx != chatx+1) ? (y) : (y+charheight);
 			if (hu_tick < 4)
 				V_DrawChatCharacter(cursorx, cursory+1, '_' |V_SNAPTOBOTTOM|V_SNAPTOLEFT|t, !cv_allcaps.value, NULL);
 
-			if (cursorx == chatx+1 && saylen == i) // a weirdo hack
+			if (cursorx == chatx+1 && saylen == i-1) // a weirdo hack
 			{
 				typelines += 1;
 				skippedline = true;
 			}
 		}
-
-		//Hurdler: isn't it better like that?
-		if (w_chat_buf[i] >= HU_FONTSTART)
-			V_DrawChatCharacter(chatx + c + 2, y, w_chat_buf[i] | V_SNAPTOBOTTOM|V_SNAPTOLEFT | t, !cv_allcaps.value, NULL);
-
-		// Draw selection
-		if (i >= select_start && i < select_end)
-			V_DrawFill(chatx + c + 2, y-1, charwidth, charheight, 103|V_TRANSLUCENT|V_SNAPTOBOTTOM|V_SNAPTOLEFT|t);
-
-		++i;
 
 		c += charwidth;
 		if (c > boxw-(charwidth*2) && !skippedline)
@@ -1885,6 +1939,36 @@ static void HU_DrawChat(void)
 			c = 0;
 			y += charheight;
 			typelines += 1;
+		}
+	}
+
+	if (emote_suggestions[0])
+	{
+		// A bit of copy-paste from /pm code :p
+		INT32 suggesty = chaty - charheight - 1;
+		size_t longest_suggestion_length = 0;
+
+		for (i = 0; i < MAXEMOTESUGGESTIONS && emote_suggestions[i]; ++i)
+		{
+			longest_suggestion_length = max(longest_suggestion_length, strlen(emote_suggestions[i]->name));
+		}
+
+#ifdef NETSPLITSCREEN
+		if (splitscreen)
+		{
+			suggesty -= BASEVIDHEIGHT/2;
+			if (splitscreen > 1)
+				suggesty += 16;
+		}
+		else
+#endif
+			suggesty -= (cv_kartspeedometer.value ? 16 : 0);
+
+		for (i = 0; i < MAXEMOTESUGGESTIONS && emote_suggestions[i]; ++i)
+		{
+			V_DrawFillConsoleMap(chatx + boxw + 2, suggesty - (7*i), (longest_suggestion_length+2)*4 + EMOTEWIDTH, 6, 239|V_SNAPTOBOTTOM|V_SNAPTOLEFT);
+			V_DrawSmallString(chatx + boxw + 4 + EMOTEWIDTH, suggesty - (7*i), V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_ALLOWLOWERCASE, va(":%s:", emote_suggestions[i]->name));
+			HU_DrawEmote(chatx + boxw + 2, suggesty - i*7, emote_suggestions[i], V_SNAPTOBOTTOM|V_SNAPTOLEFT);
 		}
 	}
 
