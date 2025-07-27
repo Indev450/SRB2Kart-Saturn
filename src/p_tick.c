@@ -461,6 +461,9 @@ static inline void P_RunThinkers(void)
 	}
 }
 
+// Controller rumble!
+// this keeps track of a bunch of things
+// and makes your controller rumble accordingly
 static void P_DeviceRumbleTick(void)
 {
 	UINT8 i;
@@ -472,17 +475,7 @@ static void P_DeviceRumbleTick(void)
 
 	for (i = 0; i <= splitscreen; i++)
 	{
-		UINT16 low = 0;
-		UINT16 high = 0;
-
 		if (!cv_usejoystick[i].value || !cv_rumble[i].value)
-		{
-			continue;
-		}
-
-		player_t *player = ((i == 0) ? &players[consoleplayer] : &players[displayplayers[i]]);
-
-		if (player->spectator || !player->mo)
 		{
 			continue;
 		}
@@ -492,7 +485,21 @@ static void P_DeviceRumbleTick(void)
 			continue;
 		}
 
-		if (player->exiting)
+		UINT16 low = 0, high = 0;
+		UINT16 lenght = 57; // in ms
+
+		const player_t *player = ((i == 0) ? &players[consoleplayer] : &players[displayplayers[i]]);
+
+		// allow lua to do some crap for spectators
+		if (player->spectator || !player->mo)
+		{
+			continue;
+		}
+
+		// reset the rumble if you exit or are ded lel
+		if (player->exiting ||
+			player->playerstate == PST_DEAD ||
+			player->kartstuff[k_respawn] > 1)
 		{
 			G_PlayerDeviceRumble(i, low, high, 0);
 			continue;
@@ -501,15 +508,17 @@ static void P_DeviceRumbleTick(void)
 		if (player->kartstuff[k_spinouttimer])
 		{
 			//low = high = FRACUNIT / 6;
-			low = high = FixedMul((FRACUNIT / 4), (FixedDiv(player->kartstuff[k_spinouttimer], (3*TICRATE / 2))));
+			low = high = FixedMul((FRACUNIT / 4), (FixedDiv(player->kartstuff[k_spinouttimer], (3*TICRATE / 2)))); // try do some some kinda fadeout
 		}
 		else if (player->kartstuff[k_sneakertimer] > (sneakertime-(TICRATE/2)))
 		{
 			low = high = FRACUNIT / 8;
 		}
 		else if ((player->kartstuff[k_offroad])
-			&& P_IsObjectOnGround(player->mo) && player->speed != 0)
+			&& player->speed != 0
+			&& P_IsObjectOnGround(player->mo))
 		{
+			// weaken this depending on if you got hyu or invinc
 			if (player->kartstuff[k_hyudorotimer])
 			{
 				high = FRACUNIT / 128;
@@ -524,7 +533,8 @@ static void P_DeviceRumbleTick(void)
 			}
 		}
 		else if ((player->kartstuff[k_bananadrag] > TICRATE)
-			&& P_IsObjectOnGround(player->mo) && player->speed != 0)
+			&& player->speed != 0
+			&& P_IsObjectOnGround(player->mo))
 		{
 			if (leveltime & 1) // this is actually funny lel
 				high = FRACUNIT / 64;
@@ -541,7 +551,7 @@ static void P_DeviceRumbleTick(void)
 			continue;
 		}
 
-		G_PlayerDeviceRumble(i, low, high, 57);
+		G_PlayerDeviceRumble(i, low, high, lenght);
 	}
 }
 
@@ -556,7 +566,11 @@ void P_RunChaseCameras(void)
 			player_t *p = &players[displayplayers[i]];
 			camera_t *cam = &camera[i];
 
-			if (cv_verticallook[i].value && leveltime > starttime && p->mo && p->kartstuff[k_respawn] == 0 && p->kartstuff[k_throwdir] != 0)
+			if (cv_verticallook[i].value &&
+				leveltime > starttime
+				&& p->mo
+				&& p->kartstuff[k_respawn] == 0
+				&& p->kartstuff[k_throwdir] != 0)
 			{
 				if (p->speed < 6 * p->mo->scale && abs(cam->dpad_y_held) < 2*TICRATE)
 					cam->dpad_y_held += p->kartstuff[k_throwdir];
@@ -599,6 +613,11 @@ static void P_RunQuakes(void)
 	--quake.time;
 }
 
+// Reset our Sprite scales and offsets
+// at the start of our tic
+// this is just to make things simpler
+// as we dont have to reset it ourselves after use
+// done at the start so lua can still overwrite everything
 static inline void P_ResetSpriteStuff(void)
 {
 	thinker_t *th;

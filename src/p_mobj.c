@@ -9064,7 +9064,7 @@ void P_MobjThinker(mobj_t *mobj)
 	if (mobj->flags2 & MF2_FIRING && mobj->target && mobj->health > 0)
 		P_FiringThink(mobj);
 
-	if (mobj->flags & MF_AMBIENT)
+	if (UNLIKELY(mobj->flags & MF_AMBIENT))
 	{
 		if (leveltime % mobj->health)
 			return;

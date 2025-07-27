@@ -481,6 +481,7 @@ boolean P_LookForPlayers(mobj_t *actor, boolean allaround, boolean tracer, fixed
 		if (!allaround)
 		{
 			an = R_PointToAngle2(actor->x, actor->y, player->mo->x, player->mo->y) - actor->angle;
+
 			if (an > ANGLE_90 && an < ANGLE_270)
 			{
 				dist = P_AproxDistance(player->mo->x - actor->x, player->mo->y - actor->y);

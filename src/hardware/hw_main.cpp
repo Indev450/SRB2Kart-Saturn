@@ -14,8 +14,6 @@
 #ifdef HWRENDER
 
 #include <algorithm>
-#define _USE_MATH_DEFINES
-#include <cmath>
 
 #include "../doomstat.h"
 #include "../doomdef.h"
@@ -3036,7 +3034,7 @@ static void HWR_Subsector(size_t num)
 			// rendering heights for bottom and top planes
 			// yes there were functions for this stuff, no idea why it wasnt used but bleh
 			bottomCullHeight = P_GetFFloorBottomZAt(rover, viewx, viewy);
-			topCullHeight = P_GetFFloorTopZAt(rover, viewx, viewy);
+			topCullHeight    = P_GetFFloorTopZAt(rover, viewx, viewy);
 
 			if (gl_frontsector->cullheight)
 			{
@@ -3532,12 +3530,10 @@ static void HWR_DrawSpriteShadow(gl_vissprite_t *spr, patch_t *gpatch, GLPatch_t
 	}
 }
 
-#define std_R_QuickCamDist(x, y) std::max(abs(((x)>>FRACBITS) - (viewx>>FRACBITS)), abs(((y)>>FRACBITS) - (viewy>>FRACBITS)))
-
 // This is expecting a pointer to an array containing 4 wallVerts for a sprite
 static void HWR_RotateSpritePolyToAim(gl_vissprite_t *spr, FOutVector *wallVerts, const boolean precip, const boolean papersprite)
 {
-	if (!cv_glspritebillboarding.value || !spr || !spr->mobj || !wallVerts || papersprite)
+	if (!cv_glspritebillboarding.value || papersprite)
 	{
 		return;
 	}

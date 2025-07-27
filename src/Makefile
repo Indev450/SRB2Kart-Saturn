@@ -263,7 +263,7 @@ opts+=$(debug_opts)
 opts+=$(foreach v,$(passthru_opts),$(if $($(v)),-D$(v)))
 
 opts+=$(WFLAGS) $(CPPFLAGS) $(CFLAGS)
-cxxopts:=$(opts) $(CXXFLAGS) -std=c++17
+cxxopts:=$(opts) $(CXXFLAGS)
 
 libs+=$(LDFLAGS) -lstdc++ -lpthread
 asflags:=$(ASFLAGS) -x assembler-with-cpp

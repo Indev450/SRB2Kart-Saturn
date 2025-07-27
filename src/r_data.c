@@ -484,9 +484,7 @@ UINT8 *R_GetColumn(fixed_t tex, INT32 col)
 		// Odd width texture, cannot just mask.
 		// Sometime gets colnum = -1 or = width, even without tiling.
 		// Test LostCiv, Map 20, crates.
-		col = ( col < 0 ) ?
-			texwidth - (((-col - 1) % texwidth) + 1)
-			: col % texwidth;
+		col = ((col % texwidth) + texwidth) % texwidth;
 	}
 
 	if (!data)

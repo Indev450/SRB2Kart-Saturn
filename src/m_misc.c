@@ -2339,7 +2339,6 @@ UINT32 FNV1a_HashLowercaseString(const char *message)
 	return hash;
 }
 
-
 #ifdef __cplusplus
 } // extern "C"
 #endif

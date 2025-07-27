@@ -3576,11 +3576,14 @@ void K_SpawnSparkleTrail(mobj_t *mo)
 		fixed_t newz = mo->z + mo->momz + (P_RandomRange(0, mo->height>>FRACBITS)<<FRACBITS);
 
 		sparkle = P_SpawnMobj(newx, newy, newz, MT_SPARKLETRAIL);
+
 		K_FlipFromObject(sparkle, mo);
 
 		P_SetTarget(&sparkle->target, mo);
+
 		sparkle->destscale = mo->destscale;
 		P_SetScale(sparkle, mo->scale);
+
 		sparkle->color = mo->color;
 
 		if (cv_playerblendeffects.value && mo->player && K_SpeedLinesShouldBlend(mo->player))
