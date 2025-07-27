@@ -3168,7 +3168,7 @@ static void K_SpawnDriftSparks(player_t *player)
 	const boolean onground = P_IsObjectOnGround(player->mo);
 
 	// kinda sketchy
-	if (!cv_airsparks.value && onground)
+	if (!cv_airsparks.value && !onground)
 		return;
 
 	if (!player->kartstuff[k_drift] || player->kartstuff[k_driftcharge] < K_GetKartDriftSparkValue(player))
