@@ -8985,7 +8985,7 @@ void P_MobjThinker(mobj_t *mobj)
 	tmfloorthing = tmhitthing = NULL;
 
 	// 970 allows ANY mobj to trigger a linedef exec
-	if (mobj->subsector && GETSECSPECIAL(mobj->subsector->sector->special, 2) == 8)
+	if (UNLIKELY(!mobj->islocal && sec1 && GETSECSPECIAL(sec1->special, 2) == 8)) // BEWARE: islocal does not exist in vanilla
 	{
 		sector_t *sec2;
 
