@@ -257,6 +257,8 @@ opts+=-fsanitize=address
 libs+=-fsanitize=address
 endif
 
+cxxopts+=-std=c++17 # force c17 for c++ since most vpss run older ubuntu versions with old compilers
+
 # debug_opts also get passed to windres
 opts+=$(debug_opts)
 
