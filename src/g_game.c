@@ -1787,7 +1787,7 @@ void G_Ticker(boolean run)
 		}
 	}
 
-	buf = gametic % TICQUEUE;
+	buf = gametic % BACKUPTICS;
 
 	if (!demo.playback)
 	{
