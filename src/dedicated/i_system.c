@@ -974,14 +974,18 @@ void I_Sleep(UINT32 ms)
 
 void I_SleepDuration(precise_t duration)
 {
-#if defined(__linux__) || defined(__FreeBSD__) || defined(__HAIKU__)
+#if defined(__linux__) || defined(__FreeBSD__) || defined(__HAIKU__) || defined(__OpenBSD__)
 	UINT64 precision = I_GetPrecisePrecision();
 	struct timespec ts = {
 		.tv_sec = duration / precision,
 		.tv_nsec = duration * 1000000000 / precision % 1000000000,
 	};
 	int status;
+#ifdef __OpenBSD__
+	do status = nanosleep(&ts, &ts);
+#else
 	do status = clock_nanosleep(CLOCK_MONOTONIC, 0, &ts, &ts);
+#endif
 	while (status == EINTR);
 #elif defined (MIN_SLEEP_DURATION_MS)
 	UINT64 precision = I_GetPrecisePrecision();

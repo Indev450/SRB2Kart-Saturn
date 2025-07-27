@@ -176,6 +176,10 @@ if(${SDL2_FOUND})
 		)
 	endif()
 
+	if("${CMAKE_SYSTEM_NAME}" MATCHES "OpenBSD")
+		target_link_libraries(SRB2SDL2 PRIVATE pthread execinfo)
+	endif()
+
 	if(${CMAKE_SYSTEM} MATCHES Windows AND ${CMAKE_C_COMPILER_ID} MATCHES "GNU" AND ${SRB2_SYSTEM_BITS} EQUAL 32)
 		target_link_libraries(SRB2SDL2 PRIVATE
 			"${CMAKE_CURRENT_SOURCE_DIR}/../../libs/drmingw/lib/win32/libexchndl.a"
