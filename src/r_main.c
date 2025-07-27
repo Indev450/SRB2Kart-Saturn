@@ -403,7 +403,8 @@ angle_t R_PlayerSliptideAngle(player_t *player)
 	sprframe = &sprdef->spriteframes[rot];
 
 	// No sprite frame? I guess it is possible
-	if (!sprframe) return 0;
+	if (!sprframe)
+		return 0;
 
 	if (sprframe->rotate != SRF_SINGLE || (mo->frame & FF_PAPERSPRITE))
 		ang = R_PointToAngle(mo->x, mo->y) - mo->angle;
@@ -463,6 +464,7 @@ boolean R_DoCulling(line_t *cullheight, line_t *viewcullheight, fixed_t vz, fixe
 		return false;
 
 	cullplane = cullheight->frontsector->floorheight;
+
 	if (cullheight->flags & ML_NOCLIMB) // Group culling
 	{
 		if (!viewcullheight)
@@ -1523,10 +1525,6 @@ void R_RegisterEngineStuff(void)
 	CV_RegisterVar(&cv_fovchange);
 	CV_RegisterVar(&cv_fov);
 
-	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
-	{
-		CV_RegisterVar(&cv_chasecam[i]);
-	}
 	CV_RegisterVar(&cv_shadow);
 	CV_RegisterVar(&cv_shadowoffs);
 	CV_RegisterVar(&cv_skybox);
@@ -1535,6 +1533,8 @@ void R_RegisterEngineStuff(void)
 
 	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
 	{
+		CV_RegisterVar(&cv_chasecam[i]);
+
 		CV_RegisterVar(&cv_cam_dist[i]);
 		CV_RegisterVar(&cv_cam_still[i]);
 		CV_RegisterVar(&cv_cam_height[i]);
