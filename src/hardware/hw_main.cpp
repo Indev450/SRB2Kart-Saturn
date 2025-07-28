@@ -5027,24 +5027,24 @@ static void HWR_ProjectSprite(mobj_t *thing)
 	vis->mobj = thing;
 
 	//Hurdler: 25/04/2000: now support colormap in hardware mode
-	if ((vis->mobj->flags & MF_BOSS) && (vis->mobj->flags2 & MF2_FRET) && (leveltime & 1)) // Bosses "flash"
+	if (UNLIKELY((vis->mobj->flags & MF_BOSS) && (vis->mobj->flags2 & MF2_FRET) && (leveltime & 1))) // Bosses "flash"
 	{
 		if (vis->mobj->type == MT_CYBRAKDEMON)
-			vis->colormap = static_cast<UINT8*>(R_GetTranslationColormap(TC_ALLWHITE, SKINCOLOR_NONE, GTC_CACHE));
+			vis->colormap = R_GetTranslationColormap(TC_ALLWHITE, SKINCOLOR_NONE, GTC_CACHE);
 		else if (vis->mobj->type == MT_METALSONIC_BATTLE)
-			vis->colormap = static_cast<UINT8*>(R_GetTranslationColormap(TC_METALSONIC, SKINCOLOR_NONE, GTC_CACHE));
+			vis->colormap = R_GetTranslationColormap(TC_METALSONIC, SKINCOLOR_NONE, GTC_CACHE);
 		else
-			vis->colormap = static_cast<UINT8*>(R_GetTranslationColormap(TC_BOSS, SKINCOLOR_NONE, GTC_CACHE));
+			vis->colormap = R_GetTranslationColormap(TC_BOSS, SKINCOLOR_NONE, GTC_CACHE);
 	}
 	else if (thing->color)
 	{
 		// New colormap stuff for skins Tails 06-07-2002
 		if (thing->colorized)
-			vis->colormap = static_cast<UINT8*>(R_GetTranslationColormap(TC_RAINBOW, static_cast<skincolors_t>(thing->color), GTC_CACHE));
+			vis->colormap = R_GetTranslationColormap(TC_RAINBOW, static_cast<skincolors_t>(thing->color), GTC_CACHE);
 		else if (thing->skin && thing->sprite == SPR_PLAY) // This thing is a player!
-			vis->colormap = static_cast<UINT8*>(R_GetLocalTranslationColormap(static_cast<skin_t*>(thing->skin), static_cast<skin_t*>(thing->localskin), static_cast<skincolors_t>(thing->color), GTC_CACHE, thing->skinlocal));
+			vis->colormap = R_GetLocalTranslationColormap(static_cast<skin_t*>(thing->skin), static_cast<skin_t*>(thing->localskin), static_cast<skincolors_t>(thing->color), GTC_CACHE, thing->skinlocal);
 		else
-			vis->colormap = static_cast<UINT8*>(R_GetTranslationColormap(TC_DEFAULT, static_cast<skincolors_t>(thing->color), GTC_CACHE));
+			vis->colormap = R_GetTranslationColormap(TC_DEFAULT, static_cast<skincolors_t>(thing->color), GTC_CACHE);
 	}
 	else
 	{
