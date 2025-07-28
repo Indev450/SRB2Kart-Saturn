@@ -728,7 +728,8 @@ static void HWR_RenderPlane(subsector_t *subsector, poly_subsector_t *xsub, bool
 	for (i = 0, v3d = planeVerts; i < (INT32)nrPlaneVerts; i++,v3d++,pv++)
 		SETUP3DVERT(v3d, pv->x, pv->y);
 
-	lightlevel = HWR_CalcSlopeLight(lightlevel, slope, gl_frontsector, (FOFsector != NULL));
+	if (slope)
+		lightlevel = HWR_CalcSlopeLight(lightlevel, slope, gl_frontsector, (FOFsector != NULL));
 
 	if (subsector && lightlevel != 255 && (havesnakerpad || havepazrcst || havefaytpad))
 	{
