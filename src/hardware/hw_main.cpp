@@ -775,8 +775,6 @@ static void HWR_RenderPlane(subsector_t *subsector, poly_subsector_t *xsub, bool
 			shader = SHADER_FOG;
 		else if (cv_ripplewater.value && (PolyFlags & PF_Ripple))
 			shader = SHADER_WATER;
-		else if (cv_ripplewater.value && (PolyFlags & PF_Wave))
-			shader = SHADER_WAVE;
 		else
 			shader = SHADER_FLOOR;
 
@@ -2920,8 +2918,8 @@ static boolean HWR_DoCulling(line_t *cullheight, line_t *viewcullheight, float v
 static FBITFIELD HWR_RippleBlend(sector_t *sector, ffloor_t *rover, boolean ceiling)
 {
 	(void)sector;
-	//(void)ceiling;
-	return /*R_IsRipplePlane(sector, rover, ceiling)*/ ((rover->flags & FF_RIPPLE) ? (ceiling ? PF_Wave : PF_Ripple) : 0);
+	(void)ceiling;
+	return /*R_IsRipplePlane(sector, rover, ceiling)*/ (rover->flags & FF_RIPPLE) ? PF_Ripple : 0;
 }
 
 // -----------------+
@@ -3081,7 +3079,7 @@ static void HWR_Subsector(size_t num)
 			// rendering heights for bottom and top planes
 			// yes there were functions for this stuff, no idea why it wasnt used but bleh
 			bottomCullHeight = P_GetFFloorBottomZAt(rover, viewx, viewy);
-			topCullHeight    = P_GetFFloorTopZAt(rover, viewx, viewy);
+			topCullHeight = P_GetFFloorTopZAt(rover, viewx, viewy);
 
 			if (gl_frontsector->cullheight)
 			{
@@ -3167,7 +3165,7 @@ static void HWR_Subsector(size_t num)
 											true,
 											*rover->topheight,
 											*gl_frontsector->lightlist[light].lightlevel,
-											CLAMP(rover->alpha, 0 ,255), rover->master->frontsector, HWR_RippleBlend(gl_frontsector, rover, *rover->topheight < rover->target->ceilingheight-(20*FRACUNIT) /*random offset that seems fitting ig*/) | (rover->blend ? HWR_GetBlendModeFlag(rover->blend) : static_cast<FBITFIELD>(PF_Translucent)),
+											CLAMP(rover->alpha, 0 ,255), rover->master->frontsector, HWR_RippleBlend(gl_frontsector, rover, false) | (rover->blend ? HWR_GetBlendModeFlag(rover->blend) : static_cast<FBITFIELD>(PF_Translucent)),
 											false, gl_frontsector->lightlist[light].extra_colormap);
 				}
 				else
@@ -3175,7 +3173,7 @@ static void HWR_Subsector(size_t num)
 					HWR_GetFlat(levelflats[*rover->toppic].lumpnum, R_NoEncore(gl_frontsector, true));
 					light = R_GetPlaneLight(gl_frontsector, centerHeight, (viewz < topCullHeight));
 
-					HWR_RenderPlane(sub, &poly_subsectors[num], true, *rover->topheight, HWR_RippleBlend(gl_frontsector, rover, *rover->topheight < rover->target->ceilingheight-(20*FRACUNIT))|PF_Occlude, *gl_frontsector->lightlist[light].lightlevel, levelflats[*rover->toppic].lumpnum,
+					HWR_RenderPlane(sub, &poly_subsectors[num], true, *rover->topheight, HWR_RippleBlend(gl_frontsector, rover, false)|PF_Occlude, *gl_frontsector->lightlist[light].lightlevel, levelflats[*rover->toppic].lumpnum,
 									rover->master->frontsector, 255, gl_frontsector->lightlist[light].extra_colormap);
 				}
 			}
