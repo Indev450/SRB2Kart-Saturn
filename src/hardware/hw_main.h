@@ -90,8 +90,6 @@ extern boolean gl_shadersavailable;
 
 // terrible optimization lmao
 extern boolean havesnakerpad;
-extern boolean havepazrcst;
-extern boolean havefaytpad;
 
 // hw_draw.c
 void HWR_DrawPatch(patch_t *gpatch, INT32 x, INT32 y, INT32 option);

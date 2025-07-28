@@ -680,14 +680,6 @@ INT32 P_AddLevelFlat(const char *flatname, levelflat_t *levelflat)
 		{
 			havesnakerpad = true;
 		}
-		if (!havepazrcst && memcmp(levelflat->name, "PAZRCST", 7) == 0)
-		{
-			havepazrcst = true;
-		}
-		if (!havefaytpad && memcmp(levelflat->name, "FSBOST", 6) == 0)
-		{
-			havefaytpad = true;
-		}
 #endif
 
 		// check if our flat contains cyan pixels
@@ -834,8 +826,6 @@ static void P_LoadRawSectors(UINT8 *data)
 
 #ifdef HWRENDER
 	havesnakerpad = false;
-	havepazrcst = false;
-	havefaytpad = false;
 #endif
 
 	memset(ss, 0, sizeof(sector_t) * numsectors);

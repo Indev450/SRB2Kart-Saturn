@@ -125,8 +125,6 @@ ps_metric_t ps_hw_batchdrawtime = {};
 
 // terrible optimization
 boolean havesnakerpad = false;
-boolean havepazrcst = false;
-boolean havefaytpad = false;
 
 static void HWR_SplitWall(sector_t *sector, FOutVector *wallVerts, INT32 texnum, boolean noencore, FSurfaceInfo* Surf, INT32 cutflag, ffloor_t *pfloor, FBITFIELD polyflags);
 static void HWR_RenderWall(FOutVector *wallVerts, FSurfaceInfo *pSurf, FBITFIELD blend, boolean fogwall, INT32 lightlevel, extracolormap_t *wallcolormap);
@@ -731,31 +729,19 @@ static void HWR_RenderPlane(subsector_t *subsector, poly_subsector_t *xsub, bool
 	if (slope)
 		lightlevel = HWR_CalcSlopeLight(lightlevel, slope, gl_frontsector, (FOFsector != NULL));
 
-	if (subsector && lightlevel != 255 && (havesnakerpad || havepazrcst || havefaytpad))
+	if (subsector && havesnakerpad && (lightlevel != 255) && (lumpnum != LUMPERROR))
 	{
-		if (subsector->sector && (lumpnum != LUMPERROR))
+		const sector_t *sec = subsector->sector;
+
+		if (sec)
 		{
 			const char *name = W_CheckNameForNum(lumpnum);
 
-			if (name)
+			if (name && memcmp(name, "BOST", 4) == 0) // kart sneakerpad
 			{
-				// kart sneakerpad
-				if (havesnakerpad && memcmp(name, "BOST", 4) == 0)
-				{
-					if (GETSECSPECIAL(subsector->sector->special, 4) == 6)
-						lightlevel = 255;
-
-					// check the fof sector aswell
-					if (FOFsector != NULL)
-					{
-						if (GETSECSPECIAL(FOFsector->special, 4) == 6)
-							lightlevel = 255;
-					}
-				}
-				else if ((havepazrcst && (memcmp(name, "PAZRCST", 7) == 0)) || (havefaytpad && (memcmp(name, "FSBOST", 6) == 0))) // fayt sneakerpads lel
-				{
+				// check if it has sneaker panel special
+				if ((GETSECSPECIAL(sec->special, 4) == 6) || ((FOFsector != NULL) && (GETSECSPECIAL(FOFsector->special, 4) == 6))) // check the fof sector aswell
 					lightlevel = 255;
-				}
 			}
 		}
 	}
