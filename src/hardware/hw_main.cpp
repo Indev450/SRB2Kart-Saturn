@@ -3820,7 +3820,7 @@ static void HWR_SplitSprite(gl_vissprite_t *spr, const boolean papersprite)
 			continue;
 
 		if (!lightset)
-			lightlevel = static_cast<INT32>(CLAMP(*list[i-1].lightlevel, 0, 255));
+			lightlevel = static_cast<INT32>(*list[i-1].lightlevel);
 
 		colormap = list[i-1].extra_colormap;
 		break;
@@ -3839,7 +3839,7 @@ static void HWR_SplitSprite(gl_vissprite_t *spr, const boolean papersprite)
 		{
 			if (!lightset)
 			{
-				lightlevel = static_cast<INT32>(CLAMP(*list[i].lightlevel, 0, 255));
+				lightlevel = static_cast<INT32>(*list[i].lightlevel);
 				HWR_ObjectLightLevelPost(spr, sector, &lightlevel, false);
 			}
 
@@ -4046,7 +4046,7 @@ static void HWR_DrawSprite(gl_vissprite_t *spr)
 
 	if (!lightset)
 	{
-		lightlevel = static_cast<INT32>(CLAMP(sector->lightlevel, 0, 255));
+		lightlevel = static_cast<INT32>(sector->lightlevel);
 		HWR_ObjectLightLevelPost(spr, sector, &lightlevel, false);
 	}
 
@@ -4147,7 +4147,7 @@ static void HWR_DrawPrecipitationSprite(gl_vissprite_t *spr)
 
 	// colormap test
 	sector_t *sector = sprmo->subsector->sector;
-	UINT8 lightlevel = 255;
+	INT32 lightlevel = 255;
 	extracolormap_t *colormap = sector->extra_colormap;
 
 	if (sector->numlights)
@@ -4157,7 +4157,7 @@ static void HWR_DrawPrecipitationSprite(gl_vissprite_t *spr)
 		light = R_GetPlaneLight(sector, sprmo->z + sprmo->height, false); // Always use the light at the top instead of whatever I was doing before
 
 		if (!(sprmo->frame & FF_FULLBRIGHT))
-			lightlevel = static_cast<UINT8>(CLAMP(*sector->lightlist[light].lightlevel, 0, 255));
+			lightlevel = static_cast<INT32>(*sector->lightlist[light].lightlevel);
 
 		if (sector->lightlist[light].extra_colormap)
 			colormap = sector->lightlist[light].extra_colormap;
@@ -4165,7 +4165,7 @@ static void HWR_DrawPrecipitationSprite(gl_vissprite_t *spr)
 	else
 	{
 		if (!(sprmo->frame & FF_FULLBRIGHT))
-			lightlevel = static_cast<UINT8>(CLAMP(sector->lightlevel, 0, 255));
+			lightlevel = static_cast<INT32>(sector->lightlevel);
 
 		if (sector->extra_colormap)
 			colormap = sector->extra_colormap;
