@@ -48,6 +48,10 @@ typedef struct
 // if no portals are found, the portal scanning phase can be skipped while rendering, saving a bit of time.
 boolean gl_maphasportals = false;
 
+// Determine on mapload if current map has any Horizonlines present
+// so we can avoid rather hot checks in HWR_Subsector
+boolean gl_maphashorizonlines = false;
+
 // ==========================================================================
 //                                    FLOOR & CEILING CONVEX POLYS GENERATION
 // ==========================================================================
@@ -382,6 +386,9 @@ static poly_t *CutOutSubsecPoly(seg_t *lseg, INT32 count, poly_t *poly)
 			if (line2 >= 0) // found it!
 				gl_maphasportals = 1;
 		}
+
+		if (!gl_maphashorizonlines && line->special == HORIZONSPECIAL)
+			gl_maphashorizonlines = true;
 
 		p1.x = FIXED_TO_FLOAT(lseg->side ? line->v2->x : line->v1->x);
 		p1.y = FIXED_TO_FLOAT(lseg->side ? line->v2->y : line->v1->y);
@@ -906,8 +913,8 @@ void HWR_CreatePlanePolygons(INT32 bspnum)
 	I_FinishUpdate(); // page flip or blit buffer
 #endif
 
-	// reset the portal flag
-	gl_maphasportals = 0;
+	// reset the portal and horizonline flag
+	gl_maphasportals = gl_maphashorizonlines = 0;
 
 	// find min/max boundaries of map
 	//CONS_Debug(DBG_RENDER, "Looking for boundaries of map...\n");

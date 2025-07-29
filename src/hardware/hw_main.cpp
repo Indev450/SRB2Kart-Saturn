@@ -97,8 +97,6 @@ line_t *gl_linedef;
 sector_t *gl_frontsector;
 sector_t *gl_backsector;
 
-static boolean gl_maphashorizonlines = false;
-
 // values for the far clipping plane
 static constexpr float clipping_distances[] = {1024.0f, 2048.0f, 4096.0f, 6144.0f, 8192.0f, 12288.0f, 16384.0f};
 // values for bsp culling
@@ -5749,51 +5747,13 @@ void HWR_RenderPlayerView(void)
 	HWR_RenderFrame(player, false);
 }
 
-// Determine on mapload if current map has any Horizonlines present
-// so we can avoid rather hot checks in HWR_Subsector
-static void HWR_CheckForHorizonLines(void)
-{
-	size_t i;
-	INT32 h;
-
-	gl_maphashorizonlines = false;
-
-	if (!cv_glhorizonlines.value)
-		return;
-
-	for (i = 0; i < numsubsectors; i++)
-	{
-		subsector_t *subsec = &subsectors[i];
-
-		// sector checked already?
-		if (subsec->validcount == validcount)
-			continue;
-
-		subsec->validcount = validcount;
-
-		seg_t *line = &segs[subsec->firstline];
-
-		for (h = 0; h < subsec->numlines; h++, line++)
-		{
-			if (line->linedef->special != HORIZONSPECIAL)
-				continue;
-
-			gl_maphashorizonlines = true;
-			break;
-		}
-	}
-}
-
-void HWR_LoadLevel(boolean reloadinggamestate)
+void HWR_LoadLevel(void)
 {
 	HWR_CreatePlanePolygons((INT32)numnodes - 1);
 
 	// Build the sky dome
 	HWR_ClearSkyDome();
 	HWR_BuildSkyDome();
-
-	if (!reloadinggamestate)
-		HWR_CheckForHorizonLines();
 
 	if (HWR_ShouldUsePaletteRendering())
 		HWR_SetMapPalette();
