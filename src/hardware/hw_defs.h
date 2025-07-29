@@ -119,7 +119,7 @@ typedef struct
 typedef struct
 {
 	poly_t *planepoly;  // the generated convex polygon
-} poly_subsector_t;
+} extrasubsector_t;
 
 // Vanilla features
 //#define USE_MODEL_NEXTFRAME
