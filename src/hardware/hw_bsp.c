@@ -154,6 +154,20 @@ polyvertex_store_t *   polyvert_store = NULL;
 
 // --- Same vertex
 
+#if 0
+//Hurdler: it's not used anymore
+static
+boolean NearVertex (polyvertex_t* p1, polyvertex_t* p2)
+{
+	if (fabsf( p2->x - p1->x ) > 1.5f)
+	   return false;
+	if (fabsf( p2->y - p1->y ) > 1.5f)
+	   return false;
+	// p1 and p2 are considered the same vertex
+	return true;
+}
+#endif
+
 // If two vertex coords have a x and y difference of less than 1 FRACUNIT,
 // they could be considered the same point.
 // Note: hardcoded value, 1.0f could be anything else.
@@ -161,7 +175,7 @@ polyvertex_store_t *   polyvert_store = NULL;
 // Dist 0.4999 cures HOM in Freedoom map09
 #define SAME_DIST   0.4999f
 //  ep : the max difference in x or y.
-static inline boolean SameVertex(polyvertex_t* p1, polyvertex_t* p2, float ep)
+static boolean SameVertex (polyvertex_t* p1, polyvertex_t* p2, float ep)
 {
 	if (fabsf( p2->x - p1->x ) > ep)
 	   return false;
@@ -231,7 +245,7 @@ static polyvertex_t *find_close_polyvertex(float x, float y, float ep)
 // Search for an existing vertex that is within ep.
 // Otherwise make a new extra vertex.
 //  ep: how close an existing vertex must be to be the same ( 0.001 to 1.5 )
-static inline polyvertex_t *store_polyvertex(polyvertex_t * vert, float ep)
+static polyvertex_t *store_polyvertex(polyvertex_t * vert, float ep)
 {
 	polyvertex_t * vp = find_close_polyvertex(vert->x, vert->y, ep);
 
@@ -248,7 +262,7 @@ static inline polyvertex_t *store_polyvertex(polyvertex_t * vert, float ep)
 // Create a polyvertex for the vertex.
 //  v1 : fixed point vertex
 //  ep: how close an existing vertex must be to be the same ( 0.001 to 1.5 )
-static inline polyvertex_t *store_vertex(vertex_t * v1, float ep)
+static polyvertex_t *store_vertex(vertex_t * v1, float ep)
 {
 	float fx = FIXED_TO_FLOAT( v1->x);
 	float fy = FIXED_TO_FLOAT( v1->y);
@@ -361,6 +375,61 @@ static void wpoly_free(wpoly_t * wpoly)
 		wpoly->ppts = NULL;
 	}
 }
+
+#if 0
+// Unused
+// Will free current content, and allocate a new size, empty.
+//  req_alloc : num vertex, greater than 0
+static
+void wpoly_free_alloc( int req_alloc, /*INOUT*/ wpoly_t * wpoly )
+{
+	wpoly->numpts = 0;
+	if (wpoly->ppts )
+	{
+		Z_Free( wpoly->ppts);
+		wpoly->ppts = NULL;
+	}
+
+	// New array allocation within the wpoly
+	wpoly->num_alloc = req_alloc;
+	if (num_alloc <= 0 )
+		return;
+
+	wpoly->ppts = Z_Malloc((sizeof(void*) * req_alloc), PU_HWRPLANE, NULL);
+}
+#endif
+
+
+#if 0
+// Not Used
+// Resize, keeping current content.
+static
+void wpoly_resize_alloc( int req_alloc, /*INOUT*/ wpoly_t * wpoly )
+{
+	size_t  size;
+	polyvertex_t * * old_pts;  // array of ptr
+
+	if (num_points <= wpoly->num_alloc )   return;
+
+	old_pts = wpoly->ppts;
+	// New array allocation within the wpoly
+	// Due to the cost of allocation, alloc some extra.
+	if (req_alloc < 3 )
+		req_alloc = 3;
+	else
+		req_alloc += 2;
+	wpoly->num_alloc = req_alloc;
+	wpoly->ppts = Z_Malloc((sizeof( void* ) * req_alloc), PU_HWRPLANE, NULL);
+	if (old_pts )
+	{
+		// Copy old array to new, and release old array
+		memcpy( wpoly->ppts, old_pts, sizeof( void* ) * wpoly->numpts);
+		Z_Free( old_pts);
+	}
+	// wpoly->numpts is unchanged
+}
+#endif
+
 
 // Move all vertex from one poly to another.
 //   from_poly :  source, is left empty
@@ -639,6 +708,25 @@ static poly_t* HWR_AllocPoly(INT32 numpts)
 	return p;
 }
 
+
+#if 0
+// Unused
+// Adding a vertex to a poly requires a new poly allocation with larger size.
+// Free the old poly memory.
+static void HWR_FreePoly (poly_t* poly)
+{
+#ifdef ZPLANALLOC
+	Z_Free(poly);
+	// poly = NULL;
+#else
+	// No free list, cannot reclaim memory.
+	// Each poly is a different size.
+	unsigned int  size = sizeof(poly_t) + sizeof(polyvertex_t) * poly->numpts;
+	memset(poly,0,size);
+#endif
+}
+#endif
+
 #ifdef DEBUG_HWBSP
 // print poly for debugging
 void pwpoly( wpoly_t * poly )
@@ -836,7 +924,7 @@ static divline_e fracdivline(fdivline_t* partline, polyvertex_t* v1, polyvertex_
 // Point is to rightside of divline when result > 0,
 // but result is multiplied by length of divline.
 // Returns near 0, when point is on, or nearly on, the divline.
-static inline float point_rightside(fdivline_t * dl, polyvertex_t * v4)
+static float point_rightside(fdivline_t * dl, polyvertex_t * v4)
 {
 	// Cross product of dl and vector dl->(x,y) to v4,
 	// is > 0 when v4 is to right side of divline.
@@ -852,13 +940,23 @@ static inline float point_rightside(fdivline_t * dl, polyvertex_t * v4)
 // The cross product is > 0 when v4 is to the right side of the vector.
 // If the coordinates are rotated until the vector dy>0 and dx = 0, then the
 // cross product is > 0 when v4 is to the right of the vector.
-static inline double cross_product(polyvertex_t * p1, polyvertex_t * p2, polyvertex_t * v4)
+static double cross_product(polyvertex_t * p1, polyvertex_t * p2, polyvertex_t * v4)
 {
 	return
 	( ((double)(v4->x) - (double)(p1->x)) * ((double)(p2->y) - (double)(p1->y))
 	- ((double)(v4->y) - (double)(p1->y)) * ((double)(p2->x) - (double)(p1->x))
    );
 }
+
+#if 0
+// Unused
+static double distance(polyvertex_t * p1, polyvertex_t * p2)
+{
+	double dx = (double)(p2->x) - (double)(p1->x);
+	double dy = (double)(p2->y) - (double)(p1->y);
+	return  sqrt( dx*dx + dy*dy);
+}
+#endif
 
 #ifdef POLYTILE
 // Polytile list
@@ -1057,13 +1155,13 @@ static void SplitPoly(fdivline_t* dlnp, wpoly_t* poly,
 	// Split poly at A and B.
 	wpoly_t * polyA;  // the poly from A to B, clockwise
 	wpoly_t * polyB;  // the poly from B to A, clockwise
-	INT32 n, i, j;
+	INT32  n,i,j;
 #ifdef POLYTILE
-	INT32 A_before_wrap, B_after_wrap;
+	int  A_before_wrap, B_after_wrap;
 #endif
-	divline_e    dle;
-	div_result_t A, B;  // dividing points
-	div_result_t *result;
+	divline_e	 dle;
+	div_result_t  A, B;  // dividing points
+	div_result_t  * result;
 
 #ifdef DEBUG_TRACE
 	if (trigger_trace)
@@ -1390,11 +1488,11 @@ typedef struct loose_seg_s
 typedef struct seg_chain_s
 {
    struct seg_chain_s  *next;
-   loose_seg_t *first_seg;    // head of seg-chain
-   loose_seg_t *last_seg;     // tail of seg-chain
-   polyvertex_t *p1, *p2;     // ends in clockwise order
+   loose_seg_t *first_seg;  // head of seg-chain
+   loose_seg_t *last_seg;   // tail of seg-chain
+   polyvertex_t *p1, *p2;  // ends in clockwise order
    boolean   loose1, loose2;  // loose ends of the seg-chain
-   INT32     num_seg;
+   int	   num_seg;
 } seg_chain_t;
 
 // Nothing to gain by making this a parameter, this saves param passing.
@@ -1722,7 +1820,7 @@ static void CutOutSubsecPoly(INT32 ssindex, /*INOUT*/ wpoly_t* poly)
 	divline_e	dle;
 
 	div_result_t  A, B;  // dividing points
-	div_result_t  *result;
+	div_result_t  * result;
 	INT32  poly_num_pts, ps, n;
 	INT32  i1, i2;
 
@@ -2131,6 +2229,48 @@ static void loading_status(void)
 }
 #endif
 
+
+#if 0
+// [WDJ] Pull the degenerate case out of the main BSP loop.
+// It can only be invoked at the first call.
+// Can get same effect by calling
+// HWR_WalkBSPNode( 0 | NF_SUBSECTOR )
+void HWR_WalkBSPNode_degen (int bspnum)
+{
+	if (bspnum == -1)
+	{
+#if 0
+		// BP: i think this code is useless and wrong because
+		// - bspnum==-1 happens only when numsubsectors == 0
+		// - it can't happens in bsp recursive call since bspnum is a int and children is unsigned short
+		// - the BSP is complet !! (there just can have subsector without segs) (i am not sure of this point)
+
+		// do we have a valid polygon ?
+		if (poly && poly->numpts > 2)
+		{
+			if (verbose )
+				CONS_Printf( EMSG_ver, "Poly: Adding a new subsector !!!\n");
+			if (num_poly_subsector >= num_alloc_poly_subsector)
+				I_Error ("HWR_WalkBSPNode : not enough poly_subsectors\n");
+			else if (num_poly_subsector > 0x7fff)
+				I_Error ("HWR_WalkBSPNode : num_poly_subsector > 0x7fff\n");
+
+			*leafnode = (UINT16)(num_poly_subsector | NF_SUBSECTOR);
+			poly_subsectors[num_poly_subsector].planepoly = poly;
+			num_poly_subsector++;
+
+			// frontpoly and backpoly are empty, and were not init.
+			return;
+		}
+#endif
+
+		//add subsectors without segs here?
+		//HWR_SubsecPoly (0, NULL);
+		I_Error ("HWR_WalkBSPNode : bspnum -1\n");
+	}
+}
+#endif
+
 // poly : the convex polygon that encloses all child subsectors
 // Recursive
 //  bspnum : children[]
@@ -2322,7 +2462,7 @@ static boolean PointInSeg(polyvertex_t* va, polyvertex_t* v1, polyvertex_t* v2)
 	register float ax,ay,bx,by,cx,cy,d,norm;
 
 	// check bbox of the seg first (without altering v1, v2)
-	if (v2->x > v1->x)
+	if (v2->x > v1->x )
 	{
 		// check if x within seg box  v1..v2
 		if ((va->x + MAXDIST) < v1->x) goto not_in;
@@ -2335,7 +2475,7 @@ static boolean PointInSeg(polyvertex_t* va, polyvertex_t* v1, polyvertex_t* v2)
 		if ((va->x - MAXDIST) > v1->x) goto not_in;
 	}
 
-	if (v2->y > v1->y)
+	if (v2->y > v1->y )
 	{
 		// check if x within seg box  v1..v2
 		if ((va->y + MAXDIST) < v1->y) goto not_in;
@@ -2632,7 +2772,7 @@ sector_t *  find_poly_sector( wpoly_t * ssp )
 		// Eqn of line: x = x1 + a * dx,  y = y1 + a * dy
 		// At px:  a = (px - x1) / dx
 		// dd = abs( (py - y1) - ( (px - x1) * dy / dx))
-		if (((dx1 ^ dx2) < 0) && (lp->dx != 0))  // bracket px, and line not vert.
+		if (((dx1 ^ dx2) < 0) && ( lp->dx != 0))  // bracket px, and line not vert.
 		{
 			// Distance to line, measured along x-axis.
 			// This calc has a tendency to overflow, so use INT64.
@@ -2722,10 +2862,10 @@ static void AdjustSegs(void)
 	INT16 segcount;
 	size_t ssnum;
 	INT32 j;
-	sector_t *ss_sector, *poly_sector, *lseg_sector;
+	sector_t * ss_sector, * poly_sector, * lseg_sector;
 	seg_t* lseg;
 	wpoly_t *wp;
-	INT32 v1found = 0, v2found = 0;
+	int v1found = 0, v2found = 0;
 	float nearv1, nearv2;
 
 	// for all segs in all sectors
@@ -2781,7 +2921,7 @@ static void AdjustSegs(void)
 				lseg_sector = sides[line->sidenum[lseg->side]].sector;
 #ifdef DEBUG_HWBSP
 				int secnum = lseg_sector - sectors;
-				if (lseg_sector != ss_sector)
+				if (lseg_sector != ss_sector )
 					CONS_Debug(DBG_RENDER, "AdjustSegs: seg line sector = %i, subsector sector = %i\n",
 								secnum, ss_sector - sectors);
 				if (poly_sector && (lseg_sector != poly_sector))
@@ -2801,10 +2941,9 @@ static void AdjustSegs(void)
 			for (j = 0; j < wp->numpts; j++)
 			{
 				distv1 = wp->ppts[j]->x - sv1.x;
-				tmp = wp->ppts[j]->y - sv1.y;
+				tmp	= wp->ppts[j]->y - sv1.y;
 				distv1 = distv1*distv1 + tmp*tmp;
-
-				if (distv1 <= nearv1)
+				if (distv1 <= nearv1 )
 				{
 					v1found = j;
 					nearv1 = distv1;
@@ -2812,7 +2951,7 @@ static void AdjustSegs(void)
 
 				// the same with v2
 				distv2 = wp->ppts[j]->x - sv2.x;
-				tmp = wp->ppts[j]->y - sv2.y;
+				tmp	= wp->ppts[j]->y - sv2.y;
 				distv2 = distv2*distv2 + tmp*tmp;
 
 				if (distv2 <= nearv2)
@@ -2823,7 +2962,7 @@ static void AdjustSegs(void)
 			}
 
 			// close enough to be considered the same ?
-			if (nearv1 <= VERTEX_NEAR_DIST*VERTEX_NEAR_DIST)
+			if (nearv1<=VERTEX_NEAR_DIST*VERTEX_NEAR_DIST )
 			{
 				// share vertex with segs
 				lseg->pv1 = wp->ppts[v1found];
@@ -2836,7 +2975,7 @@ static void AdjustSegs(void)
 
 				lseg->pv1 = store_polyvertex(&sv1, SEG_SAME_VERT);
 			}
-			if (nearv2 <= VERTEX_NEAR_DIST*VERTEX_NEAR_DIST)
+			if (nearv2<=VERTEX_NEAR_DIST*VERTEX_NEAR_DIST )
 			{
 				lseg->pv2 = wp->ppts[v2found];
 			}
@@ -2847,17 +2986,14 @@ static void AdjustSegs(void)
 
 			// recompute length
 			{
-				const polyvertex_t *pv1 = (polyvertex_t *)lseg->pv1;
-				const polyvertex_t *pv2 = (polyvertex_t *)lseg->pv2;
-
 				// [WDJ] FIXED_TO_FLOAT_MULT used to add 1/2 of lsb of fixed_t fraction.
-				float x = pv2->x - pv1->x + (0.5*FIXED_TO_FLOAT_MULT);
-				float y = pv2->y - pv1->y + (0.5*FIXED_TO_FLOAT_MULT);
+				float x=((polyvertex_t *)lseg->pv2)->x - ((polyvertex_t *)lseg->pv1)->x + (0.5*FIXED_TO_FLOAT_MULT);
+				float y=((polyvertex_t *)lseg->pv2)->y - ((polyvertex_t *)lseg->pv1)->y + (0.5*FIXED_TO_FLOAT_MULT);
 				lseg->flength = hypotf(x, y);
 
 				// BP: debug see this kind of segs
 				//if (nearv2>VERTEX_NEAR_DIST*VERTEX_NEAR_DIST || nearv1>VERTEX_NEAR_DIST*VERTEX_NEAR_DIST)
-					//lseg->flength=1;
+				//	lseg->length=1;
 			}
 		}
 
@@ -2899,12 +3035,12 @@ static void AdjustSegs(void)
 #endif
 		if (!lseg->pv1)
 		{
-			lseg->pv1 = store_vertex(lseg->v1, SEG_SAME_VERT);
+			lseg->pv1 = store_vertex( lseg->v1, SEG_SAME_VERT);
 		}
 
 		if (!lseg->pv2)
 		{
-			lseg->pv2 = store_vertex(lseg->v2, SEG_SAME_VERT);
+			lseg->pv2 = store_vertex( lseg->v2, SEG_SAME_VERT);
 		}
 	}
 #ifdef DEBUG_HWBSP
