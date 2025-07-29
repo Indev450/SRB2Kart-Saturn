@@ -2816,6 +2816,10 @@ boolean P_SetupLevel(boolean fromnetsave, boolean reloadinggamestate)
 
 	levelloading = true;
 
+	// HACK: this doesent reset if you change the map from within a replay and may cause crashes or the replayhut to be non functional
+	if (!demo.playback)
+		demo.inreplayhut = false;
+
 	// This is needed. Don't touch.
 	maptol = mapheaderinfo[gamemap-1]->typeoflevel;
 
