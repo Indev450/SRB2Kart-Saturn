@@ -2930,9 +2930,9 @@ static void HWR_Subsector(size_t num)
 	ffloor_t *rover;
 
 #ifdef PARANOIA //no risk while developing, enough debugging nights!
-	if (num >= num_poly_subsector)
+	if (num >= addsubsector)
 		I_Error("HWR_Subsector: ss %s with numss = %s, addss = %s\n",
-			sizeu1(num), sizeu2(numsubsectors), sizeu3(num_poly_subsector));
+			sizeu1(num), sizeu2(numsubsectors), sizeu3(addsubsector));
 #endif
 
 	if (num < numsubsectors)
