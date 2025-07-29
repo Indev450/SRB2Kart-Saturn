@@ -537,8 +537,6 @@ static byte*	gr_polypool = NULL;
 static unsigned int  gr_polypool_free = 0;
 #endif
 
-static void HWR_Free_poly_subsectors(void);
-
 // only between levels, clear poly pool
 static void HWR_Clear_Polys(void)
 {
@@ -552,14 +550,14 @@ static void HWR_Clear_Polys(void)
 }
 
 // allocate pool for fast alloc of polys
-void HWR_Init_PolyPool(void)
+void HWR_InitPolyPool(void)
 {
 	HWR_Clear_Polys();
 }
 
-void HWR_Free_PolyPool(void)
+void HWR_FreePolyPool(void)
 {
-	HWR_Free_poly_subsectors();
+	HWR_FreeExtraSubsectors();
 	HWR_Clear_Polys();
 }
 
@@ -2256,7 +2254,7 @@ bad_node:
 			bspnum, numnodes);
 }
 
-static void HWR_Free_poly_subsectors(void)
+void HWR_FreeExtraSubsectors(void)
 {
 	if (poly_subsectors)
 	{
@@ -2926,7 +2924,6 @@ void HWR_CreatePlanePolygons(INT32 bspnum)
 	(void)bspnum;
 
 	CONS_Debug(DBG_RENDER, "Creating polygons, please wait...\n");
-
 #ifdef HWR_LOADING_SCREEN
 	ls_count = ls_percent = 0; // reset the loading status
 	CON_Drawer(); //let the user know what we are doing
@@ -2936,7 +2933,7 @@ void HWR_CreatePlanePolygons(INT32 bspnum)
 	// reset the portal flag
 	gl_maphasportals = 0;
 
-	HWR_Clear_Polys();
+	HWR_Clear_Polys ();
 
 	// Enter all vertexes into the root bounding box.
 	// find min/max boundaries of map
@@ -2947,16 +2944,18 @@ void HWR_CreatePlanePolygons(INT32 bspnum)
 
 	//CONS_Debug(DBG_RENDER, "Generating subsector polygons... %d subsectors\n", numsubsectors);
 
-	HWR_Free_poly_subsectors();
-
+	HWR_FreeExtraSubsectors ();
 	// allocate extra data for each subsector present in map
 	num_alloc_poly_subsector = numsubsectors + NUM_EXTRA_SUBSECTORS;
-	poly_subsectors = Z_Calloc(sizeof(poly_subsector_t) * num_alloc_poly_subsector, PU_STATIC, NULL); // set all data in to 0 or NULL !!!
+	poly_subsectors = Z_Malloc( sizeof(poly_subsector_t) * num_alloc_poly_subsector, PU_STATIC, NULL);
+	// set all data in to 0 or NULL !!!
+	memset(poly_subsectors, 0, sizeof(poly_subsector_t) * num_alloc_poly_subsector);
 
-	wpoly_subsectors = Z_Calloc(sizeof(wpoly_t) * num_alloc_poly_subsector, PU_HWRPLANE, NULL);
+	wpoly_subsectors = Z_Malloc( sizeof(wpoly_t) * num_alloc_poly_subsector, PU_HWRPLANE, NULL);
+	memset(wpoly_subsectors, 0, sizeof(wpoly_t) * num_alloc_poly_subsector);
 
 	// allocate table for back to front drawing of subsectors
-	/*gr_drawsubsectors = (short*)malloc(sizeof(*gr_drawsubsectors) * num_alloc_poly_subsector);
+	/*gr_drawsubsectors = (short*)malloc (sizeof(*gr_drawsubsectors) * num_alloc_poly_subsector);
 	if (!gr_drawsubsectors)
 		I_Error("couldn't malloc gr_drawsubsectors\n");*/
 
@@ -2967,7 +2966,7 @@ void HWR_CreatePlanePolygons(INT32 bspnum)
 	num_poly_subsector = numsubsectors;
 
 	// construct the initial convex poly that encloses the full map
-	wpoly_init_alloc(4, &rootp);  // alloc space for 4 pts
+	wpoly_init_alloc( 4, &rootp);  // alloc space for 4 pts
 #ifdef DEBUG_TRACE
 	rootp.id1 = poly_id++;
 	rootp.id2 = 0;
@@ -2992,7 +2991,7 @@ void HWR_CreatePlanePolygons(INT32 bspnum)
 					: (0 | NF_SUBSECTOR)),  // Degenerate, sector 0
 					&rootp, NULL, rootbbox);
 
-	SolveTProblem();
+	SolveTProblem ();
 
 	AdjustSegs();
 #ifdef POLYTILE
