@@ -2004,7 +2004,7 @@ boolean P_CheckCameraPosition(fixed_t x, fixed_t y, camera_t *thiscam)
 
 	mapcampointer = thiscam;
 
-	if (GETSECSPECIAL(newsec->special, 4) == 12)
+	if (UNLIKELY(GETSECSPECIAL(newsec->special, 4) == 12))
 	{ // Camera noclip on entire sector.
 		tmfloorz = tmdropoffz = thiscam->z;
 		tmceilingz = tmdrpoffceilz = thiscam->z + thiscam->height;
@@ -2045,10 +2045,10 @@ boolean P_CheckCameraPosition(fixed_t x, fixed_t y, camera_t *thiscam)
 		{
 			fixed_t topheight, bottomheight;
 
-			if (!(rover->flags & FF_BLOCKOTHERS) || !(rover->flags & FF_EXISTS) || !(rover->flags & FF_RENDERALL) || GETSECSPECIAL(rover->master->frontsector->special, 4) == 12)
+			if (!(rover->flags & FF_BLOCKOTHERS) || !(rover->flags & FF_EXISTS) || !(rover->flags & FF_RENDERALL) || UNLIKELY(GETSECSPECIAL(rover->master->frontsector->special, 4) == 12))
 				continue;
 
-			topheight = P_CameraGetFOFTopZ(thiscam, newsec, rover, x, y, NULL);
+			topheight    = P_CameraGetFOFTopZ(thiscam, newsec, rover, x, y, NULL);
 			bottomheight = P_CameraGetFOFBottomZ(thiscam, newsec, rover, x, y, NULL);
 
 			delta1 = thiscam->z - (bottomheight
@@ -2120,7 +2120,7 @@ boolean P_CheckCameraPosition(fixed_t x, fixed_t y, camera_t *thiscam)
 						// We're inside it! Yess...
 						polysec = po->lines[0]->backsector;
 
-						if (GETSECSPECIAL(polysec->special, 4) == 12)
+						if (UNLIKELY(GETSECSPECIAL(polysec->special, 4) == 12))
 						{ // Camera noclip polyobj.
 							plink = (polymaplink_t *)(plink->link.next);
 							continue;

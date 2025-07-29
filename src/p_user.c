@@ -3516,7 +3516,7 @@ static boolean P_CheckNoclipCameraPosition(player_t *player, camera_t *thiscam, 
 			for (rover = newsubsec->sector->ffloors; rover; rover = rover->next)
 			{
 				fixed_t topheight, bottomheight;
-				if (!(rover->flags & FF_BLOCKOTHERS) || !(rover->flags & FF_EXISTS) || !(rover->flags & FF_RENDERALL) || GETSECSPECIAL(rover->master->frontsector->special, 4) == 12)
+				if (!(rover->flags & FF_BLOCKOTHERS) || !(rover->flags & FF_EXISTS) || !(rover->flags & FF_RENDERALL) || UNLIKELY(UNLIKELY(GETSECSPECIAL(rover->master->frontsector->special, 4) == 12)))
 					continue;
 
 				topheight = P_CameraGetFOFTopZ(thiscam, newsubsec->sector, rover, midx, midy, NULL);
@@ -3581,7 +3581,7 @@ static boolean P_CheckNoclipCameraPosition(player_t *player, camera_t *thiscam, 
 							// We're inside it! Yess...
 							polysec = po->lines[0]->backsector;
 
-							if (GETSECSPECIAL(polysec->special, 4) == 12)
+							if (UNLIKELY(GETSECSPECIAL(polysec->special, 4) == 12))
 							{ // Camera noclip polyobj.
 								plink = (polymaplink_t *)(plink->link.next);
 								continue;
@@ -3637,7 +3637,7 @@ static boolean P_CheckNoclipCameraPosition(player_t *player, camera_t *thiscam, 
 			for (rover = newsubsec->sector->ffloors; rover; rover = rover->next)
 			{
 				fixed_t topheight, bottomheight;
-				if ((rover->flags & FF_BLOCKOTHERS) && (rover->flags & FF_RENDERALL) && (rover->flags & FF_EXISTS) && GETSECSPECIAL(rover->master->frontsector->special, 4) == 12)
+				if (UNLIKELY((rover->flags & FF_BLOCKOTHERS) && (rover->flags & FF_RENDERALL) && (rover->flags & FF_EXISTS) && GETSECSPECIAL(rover->master->frontsector->special, 4) == 12))
 				{
 					topheight = P_CameraGetFOFTopZ(thiscam, newsubsec->sector, rover, midx, midy, NULL);
 					bottomheight = P_CameraGetFOFBottomZ(thiscam, newsubsec->sector, rover, midx, midy, NULL);
