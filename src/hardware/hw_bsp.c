@@ -182,10 +182,12 @@ static void SplitPoly (fdivline_t *bsp,         //splitting parametric line
 	                                         // the front side of the bsp partition line
 	INT32 psonline = 0, peonline = 0;
 
-	for (i = 0; i < poly->numpts; i++)
+	const INT32 numpts = poly->numpts;
+
+	for (i = 0; i < numpts; i++)
 	{
 		j = i + 1;
-		if (j == poly->numpts)
+		if (j == numpts)
 			j = 0;
 
 		// start & end points
@@ -279,7 +281,7 @@ static void SplitPoly (fdivline_t *bsp,         //splitting parametric line
 	// number of points on each side, _not_ counting those
 	// that may lie just one the line
 	nptback  = pe - ps - peonline;
-	nptfront = poly->numpts - peonline - psonline - nptback;
+	nptfront = numpts - peonline - psonline - nptback;
 
 	if (nptback > 0)
 		*backpoly = HWR_AllocPoly(2 + nptback);
@@ -301,7 +303,7 @@ static void SplitPoly (fdivline_t *bsp,         //splitting parametric line
 
 		do
 		{
-			if (++i == poly->numpts)
+			if (++i == numpts)
 				i = 0;
 
 			*pv++ = poly->pts[i];
@@ -318,7 +320,7 @@ static void SplitPoly (fdivline_t *bsp,         //splitting parametric line
 
 		do
 		{
-			if (++i == poly->numpts)
+			if (++i == numpts)
 				i = 0;
 
 			*pv++ = poly->pts[i];
@@ -335,7 +337,7 @@ static void SplitPoly (fdivline_t *bsp,         //splitting parametric line
 		*frontpoly = swappoly;
 	}
 
-	HWR_FreePoly (poly);
+	HWR_FreePoly(poly);
 }
 
 
@@ -403,10 +405,12 @@ static poly_t *CutOutSubsecPoly(seg_t *lseg, INT32 count, poly_t *poly)
 		ps = -1;
 		pe = -1;
 
-		for (i = 0; i < poly->numpts; i++)
+		const INT32 numpts = poly->numpts;
+
+		for (i = 0; i < numpts; i++)
 		{
 			j = i + 1;
-			if (j == poly->numpts)
+			if (j == numpts)
 				j = 0;
 
 			pv = fracdivline(&cutseg, &poly->pts[i], &poly->pts[j]);
@@ -424,7 +428,7 @@ static poly_t *CutOutSubsecPoly(seg_t *lseg, INT32 count, poly_t *poly)
 			{
 				//frac 1 on previous segment,
 				//     0 on the next,
-				//the split line goes through one of the convex poly
+				// the split line goes through one of the convex poly
 				// vertices, happens quite often since the convex
 				// poly is already adjacent to the subsector segs
 				// on most borders
@@ -433,7 +437,7 @@ static poly_t *CutOutSubsecPoly(seg_t *lseg, INT32 count, poly_t *poly)
 
 				if (fracs <= bspfrac)
 				{
-					nump = 2 + poly->numpts - (i-ps);
+					nump = 2 + numpts - (i-ps);
 					pe = ps;
 					ps = i;
 					ve = *pv;
@@ -466,7 +470,7 @@ static poly_t *CutOutSubsecPoly(seg_t *lseg, INT32 count, poly_t *poly)
 
 				do
 				{
-					if (++ps == poly->numpts)
+					if (++ps == numpts)
 						ps = 0;
 					*pv++ = poly->pts[ps];
 				} while (ps != pe);
@@ -507,7 +511,7 @@ static inline void HWR_SubsecPoly(INT32 num, poly_t *poly)
 
 	if (poly)
 	{
-		poly = CutOutSubsecPoly(lseg,count,poly);
+		poly = CutOutSubsecPoly(lseg, count, poly);
 #ifdef DEBUG_HWBSP
 		totalsubsecpolys++;
 #endif
@@ -610,7 +614,9 @@ static void WalkBSPNode(INT32 bspnum, poly_t *poly, UINT16 *leafnode, fixed_t *b
 		M_ClearBox(bbox);
 		poly = extrasubsectors[bspnum & ~NF_SUBSECTOR].planepoly;
 
-		for (i = 0, pt = poly->pts; i < poly->numpts; i++,pt++)
+		const INT32 numpts = poly->numpts;
+
+		for (i = 0, pt = poly->pts; i < numpts; i++,pt++)
 			M_AddToBox(bbox, FLOAT_TO_FIXED(pt->x), FLOAT_TO_FIXED(pt->y));
 
 		return;
@@ -756,7 +762,7 @@ static INT32 numsplitpoly;
 static void SearchSegInBSP(INT32 bspnum,polyvertex_t *p,poly_t *poly)
 {
 	poly_t  *q;
-	INT32 j,k;
+	INT32 j, k;
 
 	if (bspnum & NF_SUBSECTOR)
 	{
@@ -788,7 +794,9 @@ static void SearchSegInBSP(INT32 bspnum,polyvertex_t *p,poly_t *poly)
 
 					newpoly->pts[k] = *p;
 
-					for (n = k+1; n < newpoly->numpts; n++)
+					const INT32 newnumpts = newpoly->numpts;
+
+					for (n = k+1; n < newnumpts; n++)
 						newpoly->pts[n] = q->pts[n-1];
 
 					numsplitpoly++;
@@ -887,7 +895,9 @@ static void AdjustSegs(void)
 			if (lseg->polyseg)
 				continue;
 
-			for (j = 0; j < p->numpts; j++)
+			const INT32 numpts = p->numpts;
+
+			for (j = 0; j < numpts; j++)
 			{
 				distv1 = p->pts[j].x - FIXED_TO_FLOAT(lseg->v1->x);
 				tmp    = p->pts[j].y - FIXED_TO_FLOAT(lseg->v1->y);
@@ -974,7 +984,7 @@ void HWR_CreatePlanePolygons(INT32 bspnum)
 	I_FinishUpdate(); // page flip or blit buffer
 #endif
 
-	// reset the portal flag
+	// reset the portal && horizonline flag
 	gl_maphasportals = gl_maphashorizonlines = 0;
 
 	// find min/max boundaries of map
