@@ -163,9 +163,9 @@ polyvertex_store_t *   polyvert_store = NULL;
 //  ep : the max difference in x or y.
 static inline boolean SameVertex(polyvertex_t* p1, polyvertex_t* p2, float ep)
 {
-	if (fabsf(p2->x - p1->x ) > ep)
+	if (fabsf( p2->x - p1->x ) > ep)
 	   return false;
-	if (fabsf(p2->y - p1->y ) > ep)
+	if (fabsf( p2->y - p1->y ) > ep)
 	   return false;
 	// p1 and p2 are considered the same vertex
 	return true;
@@ -179,7 +179,7 @@ static polyvertex_t *new_polyvertex(void)
 	polyvertex_store_t *psp = polyvert_store;
 
 	if (!polyvert_store
-		|| (polyvert_store->num_vert_used >= POLYSTORE_NUM_VERT))
+		|| (polyvert_store->num_vert_used >= POLYSTORE_NUM_VERT ))
 	{
 		// Need another storage unit.
 		polyvert_store = Z_Malloc(sizeof(polyvertex_store_t), PU_HWRPLANE, NULL);
@@ -196,16 +196,14 @@ static polyvertex_t *new_polyvertex(void)
 static polyvertex_t *find_close_polyvertex(float x, float y, float ep)
 {
 	polyvertex_store_t *psv;
-	polyvertex_t *pv;
 	INT32 i;
 
 	// Search level map vertexes.
-	pv = poly_vert;
+	polyvertex_t * pv = poly_vert;
 	for (i = numvertexes; i > 0; i--)
 	{
-		const float dx = pv->x - x;
-		const float dy = pv->y - y;
-		if (dx*dx + dy*dy < ep*ep)
+		if (( fabsf( pv->x - x ) < ep )
+			&& ( fabsf( pv->y - y ) < ep ))
 			return pv;  // close enough to be the same vertex
 		pv++;
 	}
@@ -218,9 +216,8 @@ static polyvertex_t *find_close_polyvertex(float x, float y, float ep)
 		pv = psv->pv;
 		for (i = psv->num_vert_used; i > 0; i--)
 		{
-			const float dx = pv->x - x;
-			const float dy = pv->y - y;
-			if (dx*dx + dy*dy < ep*ep)
+			if ((fabsf( pv->x - x ) < ep)
+				&& (fabsf( pv->y - y ) < ep))
 				return pv;  // close enough to be the same vertex
 			pv++;
 		}
@@ -234,18 +231,15 @@ static polyvertex_t *find_close_polyvertex(float x, float y, float ep)
 // Search for an existing vertex that is within ep.
 // Otherwise make a new extra vertex.
 //  ep: how close an existing vertex must be to be the same ( 0.001 to 1.5 )
-static inline polyvertex_t *store_polyvertex(polyvertex_t *vert, float ep)
+static inline polyvertex_t *store_polyvertex(polyvertex_t * vert, float ep)
 {
-	const float fx = vert->x;
-	const float fy = vert->y;
-
-	polyvertex_t * vp = find_close_polyvertex(fx, fy, ep);
+	polyvertex_t * vp = find_close_polyvertex(vert->x, vert->y, ep);
 
 	if (!vp)
 	{
 		vp = new_polyvertex();   // new BSP polyvertex
-		vp->x = fx;
-		vp->y = fy;
+		vp->x = vert->x;
+		vp->y = vert->y;
 	}
 
 	return vp;
@@ -254,10 +248,10 @@ static inline polyvertex_t *store_polyvertex(polyvertex_t *vert, float ep)
 // Create a polyvertex for the vertex.
 //  v1 : fixed point vertex
 //  ep: how close an existing vertex must be to be the same ( 0.001 to 1.5 )
-static inline polyvertex_t *store_vertex(vertex_t *v1, float ep)
+static inline polyvertex_t *store_vertex(vertex_t * v1, float ep)
 {
-	const float fx = FIXED_TO_FLOAT(v1->x);
-	const float fy = FIXED_TO_FLOAT(v1->y);
+	float fx = FIXED_TO_FLOAT( v1->x);
+	float fy = FIXED_TO_FLOAT( v1->y);
 	polyvertex_t * vp = find_close_polyvertex(fx, fy, ep);
 
 	if (!vp)
@@ -522,7 +516,7 @@ static void wpoly_insert_cut(polyvertex_t * v1, polyvertex_t * v2,
 static void wpoly_insert_vert(polyvertex_t * v1, INT32 v_at,
 							/*INOUT*/ wpoly_t * xpoly)
 {
-	wpoly_t tmp_poly;
+	wpoly_t  tmp_poly;
 	INT32 numpts = xpoly->numpts;
 
 	if (v_at > numpts)
@@ -751,7 +745,7 @@ static void divresult_dump( onst char * str, div_result_t * dr)
 // with the polygon segment
 
 // BOOMEDIT.WAD has a vertex error of .21
-#define  DIVLINE_VERTEX_DIFF 0.45f
+#define  DIVLINE_VERTEX_DIFF   0.45f
 
 //  partline : the dividing line
 //  p1, p2 : the polygon segment
@@ -761,8 +755,8 @@ static divline_e fracdivline(fdivline_t* partline, polyvertex_t* v1, polyvertex_
 {
 	double  frac;
 	double  den; // numerator, denominator
-	double  v1x, v1y, v1dx, v1dy;  // polygon side vector, v1->v2
-	double  v3x, v3y, v3dx, v3dy;  // partline vector
+	double  v1x,v1y,v1dx,v1dy;  // polygon side vector, v1->v2
+	double  v3x,v3y,v3dx,v3dy;  // partline vector
 
 	// a segment of a polygon
 	v1x  = v1->x;
@@ -782,7 +776,7 @@ static divline_e fracdivline(fdivline_t* partline, polyvertex_t* v1, polyvertex_
 
 	// first check the frac along the polygon segment,
 	// (do not accept hit with the extensions)
-	const double num1 = (v3x - v1x)*v3dy + (v1y - v3y)*v3dx;
+	double num1 = (v3x - v1x)*v3dy + (v1y - v3y)*v3dx;
 	frac = num1 / den;
 
 	// 0= cross at v1, 1.0= cross at v2
@@ -1276,9 +1270,8 @@ no_split:
 	// Typical: divline len=70 d=6828, divline len=1.0 d=35, divline len=1.414 d=5.
 	// The result of point_rightside is proportional to the length of divline.
 	// The divline length can be from 1.414 to 14000.
-	const float tstd = (sqrtf((dlnp->dx * dlnp->dx) + (dlnp->dy * dlnp->dy))) / 2.0f;
+	float tstd = (sqrtf((dlnp->dx * dlnp->dx) + (dlnp->dy * dlnp->dy))) / 2.0f;
 	float sumd = 0;  // accumulated left or rightness.
-
 	for (i = 0; i < poly->numpts; i++)
 	{
 		// Look for a point that is obviously to the left or right.
@@ -1291,7 +1284,6 @@ no_split:
 		if (d < -tstd)
 			goto poly_leftside;
 	}
-
 	// Did not find an obvious left or right point, then
 	if (sumd < 0)
 		goto poly_leftside;
@@ -1335,7 +1327,7 @@ poly_degenerate:
 // Force convex solution.
 static void enforce_convex(wpoly_t * poly)
 {
-	polyvertex_t *rv1, *rv2, *rv3;
+	polyvertex_t * rv1, * rv2, * rv3;
 	INT32 i1, i2, i3;
 	INT32 numpts = poly->numpts;
 
@@ -1409,10 +1401,10 @@ typedef struct seg_chain_s
 // Easier to deal with releasing memory.
 static seg_chain_t *seg_chain = NULL;  // Z_Malloc
 
-static void free_first_seg_chain(void)
+static void free_first_seg_chain( void )
 {
 	seg_chain_t * sctp;
-	loose_seg_t *lsp, *lsp2;
+	loose_seg_t * lsp, * lsp2;
 
 	sctp = seg_chain;
 
@@ -1443,10 +1435,10 @@ static void clear_seg_chains(void)
 // The seg-chains may be in portions, due to entry order.
 static void condense_seg_chains(void)
 {
-	seg_chain_t *sctp;
-	seg_chain_t *sctp2;
-	seg_chain_t *sctp2_prev;
-	polyvertex_t *pv2;
+	seg_chain_t * sctp;
+	seg_chain_t * sctp2;
+	seg_chain_t * sctp2_prev;
+	polyvertex_t * pv2;
 
 	// Search seg-chains for combinations.
 	sctp = seg_chain;
@@ -1500,11 +1492,11 @@ combine:
 static void save_loose_seg(seg_t *loose_seg,
 					 polyvertex_t *vA, polyvertex_t *vB,
 					 boolean looseA, boolean looseB,
-					 boolean B_A_order)
+					 boolean B_A_order )
 {
-	loose_seg_t *lsp;
-	seg_chain_t *sctp;
-	polyvertex_t *pv1, *pv2;
+	loose_seg_t * lsp;
+	seg_chain_t * sctp;
+	polyvertex_t * pv1, * pv2;
 	boolean  loose1, loose2;
 
 	// B_A_order is determined by the order of the polygon sides.
@@ -1582,13 +1574,14 @@ static void save_loose_seg(seg_t *loose_seg,
 
 // Apply the list of loose end seg chains.
 // Return true if a possible non-convex cut is made.
-static boolean apply_seg_chains(wpoly_t * poly)
+static
+boolean  apply_seg_chains( wpoly_t * poly )
 {
 	boolean check_convex = false;
-	wpoly_t comb_poly;  // combine seg-chain and poly
-	loose_seg_t *lsp;
-	seg_chain_t *sctp;
-	polyvertex_t *rv1, *rv2;
+	wpoly_t  comb_poly;  // combine seg-chain and poly
+	loose_seg_t * lsp;
+	seg_chain_t * sctp;
+	polyvertex_t * rv1, * rv2;
 	INT32 n, i1, i2;
 	INT32 numpts = poly->numpts;
 
@@ -1712,26 +1705,26 @@ reject:
 static void CutOutSubsecPoly(INT32 ssindex, /*INOUT*/ wpoly_t* poly)
 {
 	subsector_t* sub;
-	seg_t *lseg;  // array of seg
-	INT16 segcount;  // number of seg in the array
+	seg_t*	   lseg;  // array of seg
+	INT16		segcount;  // number of seg in the array
 
-	polyvertex_t *rv1, *rv2;  // A,B or B,A
-	boolean cut_at_vert;
+	polyvertex_t * rv1, * rv2;  // A,B or B,A
+	boolean   cut_at_vert;
 
 #ifdef CUTOUT_NON_CONVEX
-	boolean check_convex = false;
-	boolean looseA, looseB;
+	boolean   check_convex = false;
+	boolean   looseA, looseB;
 #endif
 
 	vertex_t *v1, *v2;
 	polyvertex_t p1, p2;
-	fdivline_t cutseg; //x,y,dx,dy as start of node_t struct
-	divline_e dle;
+	fdivline_t   cutseg;	 //x,y,dx,dy as start of node_t struct
+	divline_e	dle;
 
-	div_result_t A, B;  // dividing points
-	div_result_t *result;
-	INT32 poly_num_pts, ps, n;
-	INT32 i1, i2;
+	div_result_t  A, B;  // dividing points
+	div_result_t  *result;
+	INT32  poly_num_pts, ps, n;
+	INT32  i1, i2;
 
 	poly_num_pts = poly->numpts;
 	sub = &subsectors[ssindex];
@@ -1742,7 +1735,7 @@ static void CutOutSubsecPoly(INT32 ssindex, /*INOUT*/ wpoly_t* poly)
 	for (; segcount--; lseg++)
 	{
 		//x,y,dx,dy (like a divline)
-		const line_t *line = lseg->linedef;
+		line_t *line = lseg->linedef;
 
 		if (!line)
 			continue;
@@ -1777,7 +1770,7 @@ static void CutOutSubsecPoly(INT32 ssindex, /*INOUT*/ wpoly_t* poly)
 			}
 		}
 
-		if (lseg->side)
+		if (lseg->side )
 		{  // side 1
 			v1 = line->v2;
 			v2 = line->v1;
@@ -1787,11 +1780,10 @@ static void CutOutSubsecPoly(INT32 ssindex, /*INOUT*/ wpoly_t* poly)
 			v1 = line->v1;
 			v2 = line->v2;
 		}
-
-		p1.x = FIXED_TO_FLOAT(v1->x);
-		p1.y = FIXED_TO_FLOAT(v1->y);
-		p2.x = FIXED_TO_FLOAT(v2->x);
-		p2.y = FIXED_TO_FLOAT(v2->y);
+		p1.x = FIXED_TO_FLOAT( v1->x);
+		p1.y = FIXED_TO_FLOAT( v1->y);
+		p2.x = FIXED_TO_FLOAT( v2->x);
+		p2.y = FIXED_TO_FLOAT( v2->y);
 
 		cutseg.x = p1.x;
 		cutseg.y = p1.y;
@@ -2147,15 +2139,15 @@ static void loading_status(void)
 // Called from HWR_CreatePlanePolygons at load time.
 static void HWR_WalkBSPNode(INT32 bspnum, wpoly_t* poly, UINT16 *leafnode, fixed_t *bbox)
 {
-	node_t* bsp;
-	wpoly_t backpoly;
-	wpoly_t frontpoly;
-	fdivline_t fdivline;
-	polyvertex_t *pt;
+	node_t*	 bsp;
+	wpoly_t	 backpoly;
+	wpoly_t	 frontpoly;
+	fdivline_t  fdivline;
+	polyvertex_t*  pt;
 	INT32 subsecnum;  // subsector index
 	INT32 i;
 
-	(void)leafnode; // unused
+	(void)leafnode;
 
 #ifdef DEBUG_TRACE
 	if (trigger_bsp_sector == 0xFFFFFFF2 )
@@ -2327,7 +2319,7 @@ void HWR_FreeExtraSubsectors(void)
 // Is vertex va  within the seg v1, v2
 static boolean PointInSeg(polyvertex_t* va, polyvertex_t* v1, polyvertex_t* v2)
 {
-	register float ax, ay, bx, by, cx, cy, d, norm;
+	register float ax,ay,bx,by,cx,cy,d,norm;
 
 	// check bbox of the seg first (without altering v1, v2)
 	if (v2->x > v1->x)
@@ -2374,7 +2366,7 @@ static boolean PointInSeg(polyvertex_t* va, polyvertex_t* v1, polyvertex_t* v2)
 	// d = (a DOT b),  (product of lengths * cosine( angle ))
 	d =ax*bx+ay*by;
 	// bound of the seg
-	if (d < 0 || d > norm)
+	if(d < 0 || d > norm)
 	{
 		// Also excludes some va within MAXDIST of v1 or v2
 		goto not_in;
@@ -2439,41 +2431,27 @@ static void SearchSegInBSP(INT32 bspnum, split_T_t * stp)
 	size_t subsecnum;
 	INT32  numpts, i1, i2;
 
-	const fixed_t maxy = stp->max_y;
-	const fixed_t maxx = stp->max_x;
-	const fixed_t miny = stp->min_y;
-
 	for (;;)
 	{
-		if (bspnum & NF_SUBSECTOR)
-			goto got_subsector;
-
-		const node_t  *node = &nodes[bspnum];
-		const fixed_t *bbox0 = nodes[bspnum].bbox[0];
-
-		const bool left =
-			((bbox0[BOXBOTTOM] <= maxy) &
-			 (bbox0[BOXTOP]    >= miny) &
-			 (bbox0[BOXLEFT]   <= maxx) &
-			 (bbox0[BOXRIGHT]  >= miny));
+		if (bspnum & NF_SUBSECTOR)  goto got_subsector;
 
 		// Not a subsector, visit left and right children.
-		if (left)
-			SearchSegInBSP(node->children[0], stp);
+		if (   (nodes[bspnum].bbox[0][BOXBOTTOM] <= stp->max_y)
+			&& (nodes[bspnum].bbox[0][BOXTOP   ] >= stp->min_y)
+			&& (nodes[bspnum].bbox[0][BOXLEFT  ] <= stp->max_x)
+			&& (nodes[bspnum].bbox[0][BOXRIGHT ] >= stp->min_y)
+			)
+			SearchSegInBSP(nodes[bspnum].children[0], stp);
 
-		const fixed_t *bbox1 = nodes[bspnum].bbox[1];
-
-		const bool right =
-			((bbox1[BOXBOTTOM] <= maxy) &
-			 (bbox1[BOXTOP]    >= miny) &
-			 (bbox1[BOXLEFT]   <= maxx) &
-			 (bbox1[BOXRIGHT]  >= miny));
-
-		if (!right)
+		if (! ((nodes[bspnum].bbox[1][BOXBOTTOM] <= stp->max_y)
+			&& (nodes[bspnum].bbox[1][BOXTOP   ] >= stp->min_y)
+			&& (nodes[bspnum].bbox[1][BOXLEFT  ] <= stp->max_x)
+			&& (nodes[bspnum].bbox[1][BOXRIGHT ] >= stp->min_y)
+			))
 			break;
 
 		// Tail recursion within loop.
-		bspnum = node->children[1];
+		bspnum = nodes[bspnum].children[1];
 	}
 	return;
 
@@ -2773,7 +2751,7 @@ static void AdjustSegs(void)
 			if (lseg->polyseg)
 				continue;
 
-			const line_t *line = lseg->linedef;
+			line_t *line = lseg->linedef;
 
 			if (!line)
 				continue;
@@ -2902,7 +2880,7 @@ static void AdjustSegs(void)
 	}
 
 	// check for missed segs, not in any polygon
-	for (j = 0; (size_t)j < numsegs; j++)
+	for (j = 0; (size_t)j < numsegs; j++ )
 	{
 		lseg = &segs[j];
 
