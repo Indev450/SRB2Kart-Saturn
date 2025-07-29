@@ -975,9 +975,7 @@ void HWR_CreatePlanePolygons(INT32 bspnum)
 #endif
 
 	// reset the portal flag
-	gl_maphasportals = 0;
-
-	gl_maphashorizonlines = 0;
+	gl_maphasportals = gl_maphashorizonlines = 0;
 
 	// find min/max boundaries of map
 #ifdef DEBUG_HWBSP
