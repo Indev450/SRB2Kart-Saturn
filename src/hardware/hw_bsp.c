@@ -977,6 +977,8 @@ void HWR_CreatePlanePolygons(INT32 bspnum)
 	// reset the portal flag
 	gl_maphasportals = 0;
 
+	gl_maphashorizonlines = 0;
+
 	// find min/max boundaries of map
 #ifdef DEBUG_HWBSP
 	CONS_Debug(DBG_RENDER, "Looking for boundaries of map...\n");
@@ -993,7 +995,7 @@ void HWR_CreatePlanePolygons(INT32 bspnum)
 
 	// allocate extra data for each subsector present in map
 	totsubsectors = numsubsectors + NEWSUBSECTORS;
-	extrasubsectors = calloc(totsubsectors, sizeof (*extrasubsectors));
+	extrasubsectors = calloc(totsubsectors, sizeof(*extrasubsectors));
 	if (UNLIKELY(extrasubsectors == NULL))
 		I_Error("couldn't malloc extrasubsectors totsubsectors %s\n", sizeu1(totsubsectors));
 
