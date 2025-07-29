@@ -1767,7 +1767,7 @@ static void K_SpawnDashDustRelease(player_t *player)
 
 		dust->momx = 3*player->mo->momx/5;
 		dust->momy = 3*player->mo->momy/5;
-		dust->momz = 3*player->mo->momz/5;
+		//dust->momz = 3*player->mo->momz/5;
 
 		K_MatchGenericExtraFlags(dust, player->mo);
 	}
@@ -3199,7 +3199,7 @@ static void K_SpawnDriftSparks(player_t *player)
 
 		spark->momx = player->mo->momx/2;
 		spark->momy = player->mo->momy/2;
-		spark->momz = player->mo->momz/2;
+		//spark->momz = player->mo->momz/2;
 
 		// rotate the sparks based on pitch and roll; it just looks neat
 		if (cv_sparkroll.value)
@@ -3269,7 +3269,7 @@ static void K_SpawnAIZDust(player_t *player)
 		P_SetScale(spark, (spark->destscale = (3*player->mo->scale)>>2));
 
 		spark->momx = (6*player->mo->momx)/5;
-		spark->momz = player->mo->momz/2;
+		//spark->momz = player->mo->momz/2;
 
 		K_MatchGenericExtraFlags(spark, player->mo);
 	}
