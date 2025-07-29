@@ -412,7 +412,7 @@ static inline float P_SegLengthFloat(seg_t *seg)
 	dx = FIXED_TO_FLOAT(seg->v2->x - seg->v1->x);
 	dy = FIXED_TO_FLOAT(seg->v2->y - seg->v1->y);
 
-	return (float)hypot(dx, dy);
+	return hypotf(dx, dy);
 }
 #endif
 
