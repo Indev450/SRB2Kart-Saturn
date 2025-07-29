@@ -1702,7 +1702,7 @@ static void CutOutSubsecPoly(INT32 ssindex, /*INOUT*/ wpoly_t* poly)
 				gl_maphasportals = 1;
 		}
 
-		if (line->sidenum[1] != 0xffff)
+		if (line->sidenum[0] != 0 && line->sidenum[1] != 0)
 		{
 			const sector_t *seg1 = sides[line->sidenum[0]].sector;
 			const sector_t *seg2 = sides[line->sidenum[1]].sector;
@@ -2722,7 +2722,7 @@ static void AdjustSegs(void)
 			if (!line)
 				continue;
 
-			if (line->sidenum[1] != 0xffff)
+			if (line->sidenum[0] != 0 && line->sidenum[1] != 0)
 			{
 				const sector_t *seg1 = sides[line->sidenum[0]].sector;
 				const sector_t *seg2 = sides[line->sidenum[1]].sector;
@@ -2741,7 +2741,7 @@ static void AdjustSegs(void)
 				}
 			}
 
-			if (line->sidenum[lseg->side] != 0xffff)
+			if (line->sidenum[lseg->side] != 0)
 			{
 				// Get the sector from the seg.
 				lseg_sector = sides[line->sidenum[lseg->side]].sector;
