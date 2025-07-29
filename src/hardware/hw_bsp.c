@@ -1,15 +1,73 @@
-// SONIC ROBO BLAST 2 KART
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
-// Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 1998-2016 by DooM Legacy Team.
-// Copyright (C) 1999-2019 by Sonic Team Junior.
 //
-// This program is free software distributed under the
-// terms of the GNU General Public License, version 2.
-// See the 'LICENSE' file for more details.
+// $Id$
+//
+// Copyright (C) 1998-2016 by DooM Legacy Team.
+//
+// This program is free software; you can redistribute it and/or
+// modify it under the terms of the GNU General Public License
+// as published by the Free Software Foundation; either version 2
+// of the License, or (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+//
+// $Log: hw_bsp.c,v $
+// Revision 1.22  2004/07/27 08:19:38  exl
+// New fmod, fs functions, bugfix or 2, patrol nodes
+//
+// Revision 1.21  2002/07/20 03:41:21  mrousseau
+// Removed old/unused code
+// Changed CutOutSubsecPoly to use the original LINEDEF's points rather than
+// the SEGS for clipping to eliminate round-off errors introduced by the
+// BSP builder
+// Modified WalkBSPNode bounding box calculations
+//
+// Revision 1.20  2001/08/14 00:36:26  hurdler
+// Revision 1.19  2001/08/13 17:23:17  hurdler
+//
+// Revision 1.18  2001/08/13 16:27:45  hurdler
+// Added translucency to linedef 300 and colormap to 3d-floors
+//
+// Revision 1.17  2001/08/12 15:21:04  bpereira
+// see my log
+//
+// Revision 1.16  2001/08/09 21:35:23  hurdler
+// Add translucent 3D water in hw mode
+//
+// Revision 1.15  2001/08/08 20:34:43  hurdler
+// Big TANDL update
+//
+// Revision 1.14  2001/05/01 20:38:34  hurdler
+// Revision 1.13  2001/04/16 15:16:26  hurdler
+// Revision 1.12  2000/10/04 16:21:57  hurdler
+// Revision 1.11  2000/10/02 18:25:46  bpereira
+// Revision 1.10  2000/08/11 19:11:57  metzgermeister
+// Revision 1.9  2000/08/10 14:16:25  hurdler
+// Revision 1.8  2000/08/03 17:57:42  bpereira
+// Revision 1.7  2000/08/03 17:32:31  metzgermeister
+// Revision 1.6  2000/03/13 21:41:40  linuxcub
+// Revision 1.5  2000/03/12 23:01:29  linuxcub
+//
+// Revision 1.4  2000/03/06 18:44:00  hurdler
+// hack for the polypoolsize problem
+//
+// Revision 1.3  2000/03/06 15:24:24  hurdler
+// remove polypoolsize limit
+//
+// Revision 1.2  2000/02/27 00:42:11  hurdler
+// Revision 1.1.1.1  2000/02/22 20:32:33  hurdler
+// Initial import into CVS (v1.29 pr3)
+//
+//
+// DESCRIPTION:
+//	  convert Doom map
+//
 //-----------------------------------------------------------------------------
-/// \file
-/// \brief convert SRB2 map
 
 #include <math.h>
 
@@ -28,7 +86,7 @@
 // if no portals are found, the portal scanning phase can be skipped while rendering, saving a bit of time.
 boolean gl_maphasportals = false;
 
-#define FIXED_TO_FLOAT_MULT (1.0f / 65536.0f)
+#define FIXED_TO_FLOAT_MULT	(1.0f / 65536.0f)
 
 //#define DEBUG_HWBSP
 
