@@ -3269,6 +3269,7 @@ static void K_SpawnAIZDust(player_t *player)
 		P_SetScale(spark, (spark->destscale = (3*player->mo->scale)>>2));
 
 		spark->momx = (6*player->mo->momx)/5;
+		spark->momy = (6*player->mo->momy)/5;
 		//spark->momz = player->mo->momz/2;
 
 		K_MatchGenericExtraFlags(spark, player->mo);
