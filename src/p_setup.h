@@ -68,7 +68,7 @@ void P_SetupLevelSky(INT32 skynum, boolean global);
 boolean P_SetupLevel(boolean fromnetsave, boolean reloadinggamestate);
 
 #ifdef HWRENDER
-void HWR_LoadLevel(boolean reloadinggamestate);
+void HWR_LoadLevel(void);
 #endif
 
 boolean P_AddWadFile(const char *wadfilename, boolean local);

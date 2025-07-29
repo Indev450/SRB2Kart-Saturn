@@ -48,6 +48,10 @@ typedef struct
 // if no portals are found, the portal scanning phase can be skipped while rendering, saving a bit of time.
 boolean gl_maphasportals = false;
 
+// Determine on mapload if current map has any Horizonlines present
+// so we can avoid rather hot checks in HWR_Subsector
+boolean gl_maphashorizonlines = false;
+
 // ==========================================================================
 //                                    FLOOR & CEILING CONVEX POLYS GENERATION
 // ==========================================================================
@@ -369,6 +373,9 @@ static poly_t *CutOutSubsecPoly(seg_t *lseg, INT32 count, poly_t *poly)
 			if (line2 >= 0) // found it!
 				gl_maphasportals = 1;
 		}
+
+		if (!gl_maphashorizonlines && line->special == HORIZONSPECIAL)
+			gl_maphashorizonlines = true;
 
 		if (line->sidenum[1] != 0xffff)
 		{

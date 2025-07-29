@@ -2998,7 +2998,7 @@ boolean P_SetupLevel(boolean fromnetsave, boolean reloadinggamestate)
 	{
 		HWR_FreeExtraSubsectors();
 		// Create plane polygons.
-		HWR_LoadLevel(reloadinggamestate);
+		HWR_LoadLevel();
 	}
 #endif
 

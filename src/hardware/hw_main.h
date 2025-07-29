@@ -178,6 +178,7 @@ void HWR_ProcessSeg(void); // Sort of like GLWall::Process in GZDoom
 // hw_bsp.c
 void HWR_CreatePlanePolygons(INT32 bspnum);
 extern boolean gl_maphasportals;
+extern boolean gl_maphashorizonlines;
 
 // Console variables
 extern CV_PossibleValue_t glanisotropicmode_cons_t[];
