@@ -377,6 +377,18 @@ static poly_t *CutOutSubsecPoly(seg_t *lseg, INT32 count, poly_t *poly)
 		if (!gl_maphashorizonlines && line->special == HORIZONSPECIAL)
 			gl_maphashorizonlines = true;
 
+		if (line->sidenum[1] != 0xffff)
+		{
+			if (sides[line->sidenum[0]].sector == sides[line->sidenum[1]].sector)
+			{
+				// Segs that are self-ref linedef do not cutout the subsector.
+#ifdef DEBUG_HWBSP
+				CONS_Debug(DBG_RENDER, "CutOutSubsecPoly: self ref line %i\n", line - lines);
+#endif
+				continue;
+			}
+		}
+
 		p1.x = FIXED_TO_FLOAT(lseg->side ? line->v2->x : line->v1->x);
 		p1.y = FIXED_TO_FLOAT(lseg->side ? line->v2->y : line->v1->y);
 		p2.x = FIXED_TO_FLOAT(lseg->side ? line->v1->x : line->v2->x);
@@ -653,35 +665,41 @@ void HWR_FreeExtraSubsectors(void)
 //#define MOVEVERTEX
 
 // Is vertex va  within the seg v1, v2
-static boolean PointInSeg(polyvertex_t *a,polyvertex_t *v1,polyvertex_t *v2)
+static boolean PointInSeg(polyvertex_t *va,polyvertex_t *v1,polyvertex_t *v2)
 {
 	register float ax, ay, bx, by, cx, cy, d, norm;
-	register polyvertex_t *p;
 
-	// check bbox of the seg first
-	if (v1->x > v2->x)
+	// check bbox of the seg first (without altering v1, v2)
+	if (v2->x > v1->x)
 	{
-		p = v1;
-		v1 = v2;
-		v2 = p;
+		// check if x within seg box  v1..v2
+		if ((va->x + MAXDIST) < v1->x) return false;
+		if ((va->x - MAXDIST) > v2->x) return false;
+	}
+	else
+	{
+		// check if x within seg box  v2..v1
+		if ((va->x + MAXDIST) < v2->x) return false;
+		if ((va->x - MAXDIST) > v1->x) return false;
 	}
 
-	if (a->x < v1->x-MAXDIST || a->x > v2->x+MAXDIST)
-		return false;
-
-	if (v1->y > v2->y)
+	if (v2->y > v1->y)
 	{
-		p = v1;
-		v1 = v2;
-		v2 = p;
+		// check if x within seg box  v1..v2
+		if ((va->y + MAXDIST) < v1->y) return false;
+		if ((va->y - MAXDIST) > v2->y) return false;
 	}
-	if (a->y < v1->y-MAXDIST || a->y > v2->y+MAXDIST)
-		return false;
+	else
+	{
+		// check if x within seg box  v2..v1
+		if ((va->y + MAXDIST) < v2->y) return false;
+		if ((va->y - MAXDIST) > v1->y) return false;
+	}
 
-	// v1 = origine
-	ax= v2->x-v1->x;
-	ay= v2->y-v1->y;
-	norm = hypotf(ax, ay);
+	// v1 = origin
+	ax = v2->x-v1->x;
+	ay = v2->y-v1->y;
+	norm = hypotf(ax, ay); // length of seg
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wfloat-equal"
@@ -689,21 +707,35 @@ static boolean PointInSeg(polyvertex_t *a,polyvertex_t *v1,polyvertex_t *v2)
 #pragma GCC diagnostic pop
 	{
 		ax /= norm;
-		ay /= norm;
+		ay /= norm; // unit vector along seg, v1->v2
 	}
 
-	bx = a->x-v1->x;
-	by = a->y-v1->y;
-	//d = a.b
-	d =ax*bx+ay*by;
+	bx = va->x - v1->x;
+	by = va->y - v1->y;  // vector v1->va
+
+	// d = (a DOT b),  (product of lengths * cosine( angle ))
+	d = ax*bx+ay*by;
 
 	// bound of the seg
 	if (d < 0 || d > norm)
+	{
+		// Also excludes some va within MAXDIST of v1 or v2
 		return false;
+	}
 
-	//c = d.1a-b
+	// Cross product.
+	if (((by * ax) - (bx * ay)) <= 0)
+	{
+		// The vertex is to the rightside of the seg, so adding
+		// it to the polygon would worsen the crack.
+		return false;
+	}
+
+	// measure the error in vector bx,by as difference squared sum
+	//c= (d * unit_vector_seg) - b
 	cx = ax*d-bx;
 	cy = ay*d-by;
+
 #ifdef MOVEVERTEX
 	if (cx*cx+cy*cy <= MAXDIST*MAXDIST)
 	{
