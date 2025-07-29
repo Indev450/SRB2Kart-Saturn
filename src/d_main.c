@@ -1724,8 +1724,14 @@ void D_SRB2Main(void)
 		else
 		{
 			// use user specific config file
+			if (M_CheckParm("-workdir") && M_IsNextParm())
+				snprintf(srb2home, sizeof srb2home, "%s", M_GetNextParm());
+			else
 #ifdef DEFAULTDIR
-			snprintf(srb2home, sizeof srb2home, "%s" PATHSEP DEFAULTDIR, userhome);
+				snprintf(srb2home, sizeof srb2home, "%s" PATHSEP DEFAULTDIR, userhome);
+#else // DEFAULTDIR
+				snprintf(srb2home, sizeof srb2home, "%s", userhome);
+#endif // DEFAULTDIR
 			snprintf(downloaddir, sizeof downloaddir, "%s" PATHSEP "DOWNLOAD", srb2home);
 			if (dedicated)
 				snprintf(configfile, sizeof configfile, "%s" PATHSEP "d"CONFIGFILENAME, srb2home);
@@ -1734,17 +1740,6 @@ void D_SRB2Main(void)
 
 			// can't use sprintf since there is %u in savegamename
 			strcatbf(savegamename, srb2home, PATHSEP);
-#else
-			snprintf(srb2home, sizeof srb2home, "%s", userhome);
-			snprintf(downloaddir, sizeof downloaddir, "%s", userhome);
-			if (dedicated)
-				snprintf(configfile, sizeof configfile, "%s" PATHSEP "d"CONFIGFILENAME, userhome);
-			else
-				snprintf(configfile, sizeof configfile, "%s" PATHSEP CONFIGFILENAME, userhome);
-
-			// can't use sprintf since there is %u in savegamename
-			strcatbf(savegamename, userhome, PATHSEP);
-#endif
 		}
 
 		configfile[sizeof configfile - 1] = '\0';
@@ -1769,6 +1764,9 @@ void D_SRB2Main(void)
 			remove(testfile);
 		}
 	}
+
+	// make sure workdir exists
+	I_mkdir(srb2home, 0755);
 
 	// Create addons dir
 	snprintf(addonsdir, sizeof addonsdir, "%s%s%s", srb2home, PATHSEP, "addons");
