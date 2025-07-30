@@ -1315,14 +1315,6 @@ static void K_drawKartStats(void)
 
 	flags = V_SNAPTOBOTTOM|V_SNAPTOLEFT;
 
-	UINT8 splitnum = 0;
-
-	for (; splitnum < MAXSPLITSCREENPLAYERS; ++splitnum)
-	{
-		if (stplyrnum == splitnum)
-			break;
-	}
-
 	if (!LUA_HudEnabled(hud_statdisplay))
 		return;
 
@@ -1362,7 +1354,7 @@ static void K_drawKartStats(void)
 
 		// If we are in 2-player splitscreen, for player 1 we move hud to up and remove snapping
 		// to bottom
-		if (splitnum == 0)
+		if (stplyrnum == 0)
 		{
 			y /= 2;
 			flags = V_SNAPTOLEFT;
@@ -1375,28 +1367,28 @@ static void K_drawKartStats(void)
 	}
 	else
 	{
-		if (splitnum == 0 || splitnum == 2) // If we are P1 or P3...
+		if (stplyrnum == 0 || stplyrnum == 2) // If we are P1 or P3...
 		{
 			// ye i just align it to position number lol
 			x = POSI_X + 19;
 			y = POSI_Y - 6;
-			flags = V_SNAPTOLEFT|((splitnum == 2) ? V_SPLITSCREEN|V_SNAPTOBOTTOM : 0);	// flip P3 to the bottom.
+			flags = V_SNAPTOLEFT|((stplyrnum == 2) ? V_SPLITSCREEN|V_SNAPTOBOTTOM : 0);	// flip P3 to the bottom.
 		}
 		else // else, that means we're P2 or P4.
 		{
 			x = POSI2_X - 75;
 			y = POSI2_Y - 6;
-			flags = V_SNAPTORIGHT|((splitnum == 3) ? V_SPLITSCREEN|V_SNAPTOBOTTOM : 0);	// flip P4 to the bottom
+			flags = V_SNAPTORIGHT|((stplyrnum == 3) ? V_SPLITSCREEN|V_SNAPTOBOTTOM : 0);	// flip P4 to the bottom
 		}
 	}
 
 	flags |= V_HUDTRANS;
 
-	skin_t *fakeskin;
-	fakeskin = K_GetPlayerSkin(stplyr);
-
 	if (!splitscreen)
 	{
+		skin_t *fakeskin;
+		fakeskin = K_GetPlayerSkin(stplyr);
+
 		// Skin name
 		if (K_IsHighResolution()) // V_DrawSmallString becomes a mess at low resolutions lel
 		{
@@ -1812,6 +1804,7 @@ void K_drawKartTimestamp(tic_t drawtime, INT32 TX, INT32 TY, INT16 emblemmap, UI
 	if (!mode)
 	{
 		splitflags = V_HUDTRANS|K_calcSplitFlags(V_SNAPTOTOP|V_SNAPTORIGHT);
+
 		if (cv_timelimit.value && timelimitintics > 0)
 		{
 			if (drawtime >= timelimitintics)
@@ -2175,9 +2168,7 @@ static boolean K_drawKartPositionFaces(void)
 
 		if (!playeringame[rankplayer[i]])
 			continue;
-		if (player->spectator)
-			continue;
-		if (!player->mo)
+		if (player->spectator || !player->mo)
 			continue;
 
 		const UINT8 mocolor = player->mo->color;
@@ -2186,9 +2177,10 @@ static boolean K_drawKartPositionFaces(void)
 
 		if (mocolor)
 		{
-			colormap = R_GetTranslationColormap(player->skin, mocolor, GTC_CACHE);
 			if (player->mo->colorized)
 				colormap = R_GetTranslationColormap(TC_RAINBOW, mocolor, GTC_CACHE);
+			else
+				colormap = R_GetTranslationColormap(player->skin, mocolor, GTC_CACHE);
 
 			if (K_UseHighResPortraits())
 				V_DrawSmallMappedPatch(FACE_X, Y, V_HUDTRANS|V_SNAPTOLEFT, R_GetSkinFaceWant(player), colormap);
@@ -2217,8 +2209,10 @@ static boolean K_drawKartPositionFaces(void)
 		else
 		{
 			INT32 pos = player->kartstuff[k_position];
+
 			if (pos < 0 || pos > MAXPLAYERS)
 				pos = 0;
+
 			// Draws the little number over the face
 			V_DrawScaledPatch(FACE_X-5, Y+10, V_HUDTRANS|V_SNAPTOLEFT, kp_facenum[pos]);
 		}
@@ -2244,6 +2238,7 @@ void HU_DrawTabRankings(INT32 x, INT32 y, playersort_t *tab, INT32 scorelines, I
 	//I_Assert(scorelines <= 9); -- not today bitch, kart fixed it up
 
 	V_DrawFill(1-duptweak, 26, dupadjust-2, 1, 0); // Draw a horizontal line because it looks nice!
+
 	if (scorelines > 8)
 	{
 		V_DrawFill(160, 26, 1, 147, 0); // Draw a vertical line to separate the two sides.
@@ -3168,7 +3163,7 @@ static void K_drawDriftGauge(void)
 		SKINCOLOR_SALMON,
 	};
 
-	static UINT8 driftrainbow[18] = {
+	static const UINT8 driftrainbow[18] = {
 		0, 31, 47, 63, 79, 95, 111, 119, 127, 143, 159, 175, 183, 191, 199, 207, 223, 247
 	};
 
@@ -3274,7 +3269,6 @@ skipcrap:
 				}
 
 				// right, also draw a cool number
-				//SG_DrawPaddedNum(v, basex + (dup*32), basey, driftcharge*100 / driftval, 3, "PINGN", V_NOSCALESTART|V_OFFSET|drifttrans, cmap)
 				if (cv_driftgaugestyle.value == 3)
 					V_DrawPaddedTallColorNum(basex + (dup*32), basey, V_NOSCALESTART|V_OFFSET|drifttrans, driftcharge*100 / driftval, 3, cmap);
 				else
@@ -3283,10 +3277,10 @@ skipcrap:
 			break;
 		case 4:
 			{
-				cmap = R_GetTranslationColormap(TC_RAINBOW, driftskins[driftlevel],GTC_CACHE);
-
 				if (driftcharge >= driftval*4)
 					cmap = R_GetTranslationColormap(TC_RAINBOW, 1 + leveltime % (MAXSKINCOLORS-1),GTC_CACHE);
+				else
+					cmap = R_GetTranslationColormap(TC_RAINBOW, driftskins[driftlevel],GTC_CACHE);
 
 				V_DrawPaddedTallColorNum(basex + (dup*16), basey, V_NOSCALESTART|V_OFFSET|drifttrans, driftcharge*100 / driftval, 3, cmap);
 			}
@@ -3305,6 +3299,7 @@ static fixed_t K_FindCheckX(fixed_t px, fixed_t py, angle_t ang, fixed_t mx, fix
 	range *= gamespeed+1;
 
 	dist = abs(R_PointToDist2(px, py, mx, my));
+
 	if (dist > range)
 		return -BASEVIDWIDTH;
 
@@ -3404,16 +3399,13 @@ static void K_drawKartPlayerCheck(void)
 	UINT8 *colormap;
 	INT32 x;
 
-	const INT32 splitflags = K_calcSplitFlags(V_SNAPTOBOTTOM);
-
-	if (!stplyr->mo || stplyr->spectator)
-		return;
-
-	if (stplyr->awayviewtics)
+	if (!stplyr->mo || stplyr->spectator || stplyr->awayviewtics)
 		return;
 
 	if (camspin[0])
 		return;
+
+	const INT32 splitflags = K_calcSplitFlags(V_SNAPTOBOTTOM);
 
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
@@ -3532,7 +3524,7 @@ static void K_drawKartMinimapHead(mobj_t *mo, INT32 x, INT32 y, INT32 flags)
 	skin = K_GetMobjSkin(mo);
 	minimaphead = (skinlocal ? localfacemmapprefix : facemmapprefix)[K_GetMobjSkinNum(skin, skinlocal)];
 
-	amnumxpos = (FixedMul(lerp(mo->old_x, mo->x), minimapinfo.zoom) - minimapinfo.offs_x);
+	amnumxpos =  (FixedMul(lerp(mo->old_x, mo->x), minimapinfo.zoom) - minimapinfo.offs_x);
 	amnumypos = -(FixedMul(lerp(mo->old_y, mo->y), minimapinfo.zoom) - minimapinfo.offs_y);
 
 	if (encoremode)
@@ -3965,7 +3957,7 @@ static void K_drawBattleFullscreen(void)
 		}
 	}
 
-	if (netgame && !stplyr->spectator && timeinmap > 113) // FREE PLAY?
+	if (netgame && cv_showfreeplay.value && !stplyr->spectator && timeinmap > 113) // FREE PLAY?
 	{
 		UINT8 i;
 
@@ -4386,10 +4378,6 @@ static void K_drawLapStartAnim(void)
 void K_drawKartFreePlay(UINT32 flashtime)
 {
 	// no splitscreen support because it's not FREE PLAY if you have more than one player in-game
-
-	if (!cv_showfreeplay.value)
-		return;
-
 	if ((flashtime % TICRATE) < TICRATE/2)
 		return;
 
@@ -4503,6 +4491,7 @@ static void K_drawCheckpointDebugger(void)
 		V_DrawString(8, 184, 0, va("Checkpoint: %d / %d (Can finish)", stplyr->starpostnum, numstarposts));
 	else
 		V_DrawString(8, 184, 0, va("Checkpoint: %d / %d (Skip: %d)", stplyr->starpostnum, numstarposts, ((numstarposts/2) + stplyr->starpostnum)));
+
 	V_DrawString(8, 192, 0, va("Waypoint dist: Prev %d, Next %d", stplyr->kartstuff[k_prevcheck], stplyr->kartstuff[k_nextcheck]));
 }
 
@@ -4765,7 +4754,7 @@ void K_drawKartHUD(void)
 		V_DrawScaledPatch(BASEVIDWIDTH/2 - (kp_yougotem->width/2), 32, V_HUDTRANS, kp_yougotem);
 
 	// Draw FREE PLAY.
-	if (isfreeplay && !stplyr->spectator && timeinmap > 113)
+	if (isfreeplay && cv_showfreeplay.value && !stplyr->spectator && timeinmap > 113)
 	{
 		if (LUA_HudEnabled(hud_freeplay))
 			K_drawKartFreePlay(leveltime);
