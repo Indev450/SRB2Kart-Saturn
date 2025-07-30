@@ -610,7 +610,7 @@ void HWR_FadeScreenMenuBack(UINT16 color, UINT8 strength)
 	}
 	else // Do TRANSMAP** fade.
 	{
-		RGBA_t *palette = HWR_GetTexturePalette();
+		const RGBA_t *palette = HWR_GetTexturePalette();
 		Surf.PolyColor.rgba = palette[color&0xFF].rgba;
 
 		if (HWR_ShouldUsePaletteRendering())
@@ -798,7 +798,7 @@ void HWR_drawAMline(const fline_t *fl, INT32 color)
 {
 	F2DCoord v1, v2;
 	RGBA_t color_rgba;
-	RGBA_t *palette = HWR_GetTexturePalette();
+	const RGBA_t *palette = HWR_GetTexturePalette();
 
 	color_rgba = palette[color&0xFF];
 
@@ -819,7 +819,7 @@ void HWR_DrawDiag(INT32 x, INT32 y, INT32 wh, INT32 color)
 	FOutVector v[4];
 	FSurfaceInfo Surf;
 	float fx, fy, fw, fh, fwait = 0;
-	RGBA_t *palette = HWR_GetTexturePalette();
+	RGBA_t *palette;
 
 	if (wh < 0)
 		return; // consistency w/ software
@@ -864,11 +864,13 @@ void HWR_DrawDiag(INT32 x, INT32 y, INT32 wh, INT32 color)
 
 	if (fx >= vid.width || fy >= vid.height)
 		return;
+
 	if (fx < 0)
 	{
 		fw += fx;
 		fx = 0;
 	}
+
 	if (fy < 0)
 	{
 		fh += fy;
@@ -877,11 +879,13 @@ void HWR_DrawDiag(INT32 x, INT32 y, INT32 wh, INT32 color)
 
 	if (fw <= 0 || fh <= 0)
 		return;
+
 	if (fx + fw > vid.width)
 	{
 		fwait = fw - (fvw- fx);
 		fw = fvw - fx;
 	}
+
 	if (fy + fh > vid.height)
 		fh = fvh - fy;
 
@@ -903,6 +907,8 @@ void HWR_DrawDiag(INT32 x, INT32 y, INT32 wh, INT32 color)
 	v[0].t = v[1].t = 0.0f;
 	v[2].t = v[3].t = 1.0f;
 
+	palette = HWR_GetTexturePalette();
+
 	Surf.PolyColor = palette[color&0xFF];
 
 	GL_DrawPolygon(&Surf, v, 4,
@@ -917,7 +923,6 @@ void HWR_DrawConsoleFill(INT32 x, INT32 y, INT32 w, INT32 h, UINT32 color, INT32
 	FOutVector v[4];
 	FSurfaceInfo Surf;
 	float fx, fy, fw, fh;
-	RGBA_t *palette = HWR_GetTexturePalette();
 
 	if (w < 0 || h < 0)
 		return; // consistency w/ software
@@ -941,6 +946,7 @@ void HWR_DrawConsoleFill(INT32 x, INT32 y, INT32 w, INT32 h, UINT32 color, INT32
 
 		if (x == 0 && y == 0 && w == BASEVIDWIDTH && h == BASEVIDHEIGHT)
 		{
+			RGBA_t *palette = HWR_GetTexturePalette();
 			RGBA_t rgbaColour = palette[color&0xFF];
 			FRGBAFloat clearColour;
 			clearColour.red = (float)rgbaColour.s.red / 255;
@@ -971,6 +977,7 @@ void HWR_DrawConsoleFill(INT32 x, INT32 y, INT32 w, INT32 h, UINT32 color, INT32
 			else if (!(options & V_SNAPTOTOP))
 				fy += (fvh - (FLOATBASEVIDHEIGHT * dupy)) / 2;
 		}
+
 		if (options & V_SPLITSCREEN)
 			fy += (FLOATBASEVIDHEIGHT * dupy)/2;
 		if (options & V_HORZSCREEN)
@@ -980,11 +987,13 @@ void HWR_DrawConsoleFill(INT32 x, INT32 y, INT32 w, INT32 h, UINT32 color, INT32
 
 	if (fx >= vid.width || fy >= vid.height)
 		return;
+
 	if (fx < 0)
 	{
 		fw += fx;
 		fx = 0;
 	}
+
 	if (fy < 0)
 	{
 		fh += fy;
@@ -993,8 +1002,10 @@ void HWR_DrawConsoleFill(INT32 x, INT32 y, INT32 w, INT32 h, UINT32 color, INT32
 
 	if (fw <= 0 || fh <= 0)
 		return;
+
 	if (fx + fw > vid.width)
 		fw = fvw - fx;
+
 	if (fy + fh > vid.height)
 		fh = fvh - fy;
 
@@ -1030,11 +1041,12 @@ void HWR_DrawFill(INT32 x, INT32 y, INT32 w, INT32 h, INT32 color)
 	FOutVector v[4];
 	FSurfaceInfo Surf;
 	float fx, fy, fw, fh;
-	UINT8 alphalevel = ((color & V_ALPHAMASK) >> V_ALPHASHIFT);
-	RGBA_t *palette = HWR_GetTexturePalette();
 
 	if (w < 0 || h < 0)
 		return; // consistency w/ software
+
+	const UINT8 alphalevel = ((color & V_ALPHAMASK) >> V_ALPHASHIFT);
+	const RGBA_t *palette = HWR_GetTexturePalette();
 
 //  3--2
 //  | /|

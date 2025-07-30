@@ -60,6 +60,9 @@ void HWR_FreeExtraSubsectors(void);
 // --------
 // hw_cache.c
 // --------
+
+extern RGBA_t mapPalette[256];
+
 void HWR_InitMapTextures(void);
 void HWR_LoadMapTextures(size_t pnumtextures);
 void HWR_FreeMapTextures(void);
@@ -85,7 +88,6 @@ void HWR_ClearAllTextures(void);
 void HWR_FreeColormapCache(void);
 void HWR_UnlockCachedPatch(GLPatch_t *gpatch);
 
-RGBA_t *HWR_GetTexturePalette(void);
 void HWR_SetPalette(RGBA_t *palette);
 void HWR_SetMapPalette(void);
 UINT32 HWR_CreateLightTable(UINT8 *lighttable);
