@@ -234,6 +234,12 @@ FUNCINLINE static ATTRINLINE boolean HWR_PalRenderFlashpal(void)
 	return (cv_glflashpal.value && HWR_ShouldUsePaletteRendering());
 }
 
+// Returns a pointer to the palette which should be used for caching textures.
+FUNCINLINE static ATTRINLINE RGBA_t *HWR_GetTexturePalette(void)
+{
+	return HWR_ShouldUsePaletteRendering() ? mapPalette : pLocalPalette;
+}
+
 #ifdef __cplusplus
 }// extern "C"
 #endif
