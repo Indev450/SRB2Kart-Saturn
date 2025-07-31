@@ -634,6 +634,7 @@ void S_StartSound(const void *origin, sfxenum_t sfx_id)
 				break;
 		}
 	}
+
 	if (UNLIKELY(maptol & TOL_XMAS)) // Some sounds change for xmas
 	{
 		switch (sfx_id)
@@ -699,6 +700,8 @@ void S_UpdateSounds(void)
 		S_SetMIDIMusicVolume (cv_midimusicvolume.value);
 #endif
 
+	memset(listener, 0, sizeof(listener));
+
 	// We're done now, if we're not in a level.
 	if (gamestate != GS_LEVEL)
 	{
@@ -718,7 +721,6 @@ void S_UpdateSounds(void)
 	{
 		player_t *player = &players[displayplayers[i]];
 
-		memset(&listener[i], 0, sizeof (listener[i]));
 		listenmobj[i] = NULL;
 
 		if (player->awayviewtics)
