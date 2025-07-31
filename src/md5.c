@@ -174,8 +174,8 @@ static void md5_process_block(const void *buffer, size_t len, struct md5_ctx *ct
 		OP (B, C, D, A, 22, 0x49b40821);
 
 		/* For the second to fourth round we have the possibly swapped words
-	 in CORRECT_WORDS.  Redefine the macro to take an additional first
-	 argument specifying the function to use.  */
+		in CORRECT_WORDS.  Redefine the macro to take an additional first
+		argument specifying the function to use.  */
 #undef OP
 #define OP(f, a, b, c, d, k, s, T)						\
 		do												\
@@ -354,7 +354,7 @@ int md5_stream(FILE *stream, void *resblock)
 	size_t sum = 0;
 
 	/* Initialize the computation context.  */
-	md5_init_ctx (&ctx);
+	md5_init_ctx(&ctx);
 
 	/* Iterate over full file contents.  */
 	while (1)
@@ -388,7 +388,7 @@ int md5_stream(FILE *stream, void *resblock)
 
 	/* Add the last bytes if necessary.  */
 	if (sum > 0)
-		md5_process_bytes (buffer, sum, &ctx);
+		md5_process_bytes(buffer, sum, &ctx);
 
 	/* Construct result in desired memory.  */
 	md5_finish_ctx(&ctx, resblock);
