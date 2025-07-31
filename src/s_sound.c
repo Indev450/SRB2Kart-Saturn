@@ -81,6 +81,9 @@ consvar_t cv_midimusicvolume = {"midimusicvolume", "18", CV_SAVE, soundvolume_co
 // number of channels available
 consvar_t cv_numChannels = {"snd_channels", "64", CV_SAVE|CV_CALL, CV_Unsigned, SetChannelsNum, 0, NULL, NULL, 0, 0, NULL};
 
+static CV_PossibleValue_t samesoundlimit_cons_t[] = {{0, "MIN"}, {64, "MAX"}, {0, NULL}};
+consvar_t cv_samesoundlimit = {"samesoundlimit", "0", CV_SAVE, samesoundlimit_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+
 //consvar_t cv_resetmusic = {"resetmusic", "No", CV_SAVE|CV_NOSHOWHELP, CV_YesNo, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 // Sound system toggles, saved into the config
@@ -282,6 +285,8 @@ void S_RegisterSoundStuff(void)
 	CV_RegisterVar(&cv_gamemidimusic);
 #endif
 
+	CV_RegisterVar(&cv_samesoundlimit);
+
 	// bird music stuff
 	CV_RegisterVar(&cv_playmusicifunfocused);
 	CV_RegisterVar(&cv_playsoundifunfocused);
@@ -427,6 +432,25 @@ static INT32 S_ScaleVolumeWithSplitscreen(INT32 volume)
 	return FixedDiv(volume * FRACUNIT, root) / FRACUNIT;
 }
 
+static boolean S_CheckSameSoundLimit(sfxenum_t sfx_id)
+{
+	INT32 cnum, scount = 0;
+
+	if (!cv_samesoundlimit.value)
+		return true;
+
+	for (cnum = 0; cnum < numofchannels; cnum++)
+		if ((size_t)(channels[cnum].sfxinfo - S_sfx) == (size_t)sfx_id)
+			scount++;
+
+	//CONS_Printf("same sound count: %d for sfx: %d\n", scount, sfx_id);
+
+	if (scount >= cv_samesoundlimit.value)
+		return false;
+
+	return true;
+}
+
 void S_StartSoundAtVolume(const void *origin_p, sfxenum_t sfx_id, INT32 volume)
 {
 	const mobj_t *origin = (const mobj_t *)origin_p;
@@ -447,6 +471,10 @@ void S_StartSoundAtVolume(const void *origin_p, sfxenum_t sfx_id, INT32 volume)
 
 	// Don't want a sound? Okay then...
 	if (sfx_id == sfx_None)
+		return;
+
+	// reached same sound limit?
+	if (!S_CheckSameSoundLimit(sfx_id))
 		return;
 
 	for (i = 0; i <= splitscreen; i++)

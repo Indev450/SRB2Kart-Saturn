@@ -1138,14 +1138,16 @@ static menuitem_t OP_SoundAdvancedMenu[] =
 
 	{IT_HEADER, 			NULL, "Misc", 						NULL, 				 45},
 
-	{IT_STRING | IT_CVAR, 	NULL, "Grow Music", 				&cv_growmusic, 		 55},
-	{IT_STRING | IT_CVAR, 	NULL, "Invulnerability Music", 		&cv_supermusic, 	 60},
+	{IT_STRING | IT_CVAR, 	NULL, "Same Sound Limit", 			&cv_samesoundlimit,  55},
 
-	{IT_STRING | IT_CVAR, 	NULL, "Keep Map Music", 			&cv_keepmusic, 		 70},
-	{IT_STRING | IT_CVAR, 	NULL, "Skip Intro Music", 			&cv_skipintromusic,  75},
+	{IT_STRING | IT_CVAR, 	NULL, "Grow Music", 				&cv_growmusic, 		 65},
+	{IT_STRING | IT_CVAR, 	NULL, "Invulnerability Music", 		&cv_supermusic, 	 70},
 
-	{IT_STRING | IT_CVAR, 	NULL, "Audio Buffer Size", 			&cv_audbuffersize,   80},
-	{IT_DISABLED, 			NULL, "", 							NULL,     			 90},	// dummy text
+	{IT_STRING | IT_CVAR, 	NULL, "Keep Map Music", 			&cv_keepmusic, 		 80},
+	{IT_STRING | IT_CVAR, 	NULL, "Skip Intro Music", 			&cv_skipintromusic,  85},
+
+	{IT_STRING | IT_CVAR, 	NULL, "Audio Buffer Size", 			&cv_audbuffersize,   90},
+	{IT_DISABLED, 			NULL, "", 							NULL,     			100},	// dummy text
 };
 
 static const char* OP_SoundAdvancedTooltips[] =
@@ -1161,6 +1163,7 @@ static const char* OP_SoundAdvancedTooltips[] =
 	"How far should the four channels in .mod be panned?",
 #endif
 	NULL,
+	"How many times is the same sound allowed to play at once?\nIf 0 theres no limit.",
 	"Should the Grow music be on or off?",
 	"Should the Invulnerability music be on or off?",
 	"Should music be kept when restarting the map?",
