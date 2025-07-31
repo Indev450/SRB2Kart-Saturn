@@ -477,11 +477,12 @@ void S_StartSoundAtVolume(const void *origin_p, sfxenum_t sfx_id, INT32 volume)
 	if (!S_CheckSameSoundLimit(sfx_id))
 		return;
 
+	memset(listener, 0, sizeof(listener));
+
 	for (i = 0; i <= splitscreen; i++)
 	{
 		player_t *player = &players[displayplayers[i]];
 
-		memset(&listener[i], 0, sizeof (listener[i]));
 		listenmobj[i] = NULL;
 
 		if (player->awayviewtics)
