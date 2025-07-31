@@ -449,8 +449,6 @@ void S_StartSoundAtVolume(const void *origin_p, sfxenum_t sfx_id, INT32 volume)
 	if (sfx_id == sfx_None)
 		return;
 
-	initial_volume = (origin ? S_ScaleVolumeWithSplitscreen(volume) : volume);
-
 	for (i = 0; i <= splitscreen; i++)
 	{
 		player_t *player = &players[displayplayers[i]];
@@ -471,11 +469,6 @@ void S_StartSoundAtVolume(const void *origin_p, sfxenum_t sfx_id, INT32 volume)
 		{
 			itsUs = true;
 		}
-	}
-
-	for (i = 0; i <= splitscreen; i++)
-	{
-		player_t *player = &players[displayplayers[i]];
 
 		if (camera[i].chase && !player->awayviewtics)
 		{
@@ -517,6 +510,8 @@ void S_StartSoundAtVolume(const void *origin_p, sfxenum_t sfx_id, INT32 volume)
 	// i seriously get an aneurism by this shitty egg
 	if (strncmp(sfx->name, "DNLT", 4) == 0)
 		return;
+
+	initial_volume = (origin ? S_ScaleVolumeWithSplitscreen(volume) : volume);
 
 	// Initialize sound parameters
 	pitch = NORM_PITCH;
@@ -692,12 +687,12 @@ void S_UpdateSounds(void)
 
 	// Update sound/music volumes, if changed manually at console
 	if (actualsfxvolume != cv_soundvolume.value)
-		S_SetSfxVolume (cv_soundvolume.value);
+		S_SetSfxVolume(cv_soundvolume.value);
 	if (actualdigmusicvolume != cv_digmusicvolume.value)
-		S_SetDigMusicVolume (cv_digmusicvolume.value);
+		S_SetDigMusicVolume(cv_digmusicvolume.value);
 #ifndef NO_MIDI
 	if (actualmidimusicvolume != cv_midimusicvolume.value)
-		S_SetMIDIMusicVolume (cv_midimusicvolume.value);
+		S_SetMIDIMusicVolume(cv_midimusicvolume.value);
 #endif
 
 	memset(listener, 0, sizeof(listener));
@@ -731,15 +726,6 @@ void S_UpdateSounds(void)
 		{
 			listenmobj[i] = player->mo;
 		}
-	}
-
-#ifndef NOMUMBLE
-	I_UpdateMumble(players[consoleplayer].mo, listener[0]);
-#endif
-
-	for (i = 0; i <= splitscreen; i++)
-	{
-		player_t *player = &players[displayplayers[i]];
 
 		if (camera[i].chase && !player->awayviewtics)
 		{
@@ -756,6 +742,10 @@ void S_UpdateSounds(void)
 			listener[i].angle = listenmobj[i]->angle;
 		}
 	}
+
+#ifndef NOMUMBLE
+	I_UpdateMumble(players[consoleplayer].mo, listener[0]);
+#endif
 
 	for (cnum = 0; cnum < numofchannels; cnum++)
 	{
