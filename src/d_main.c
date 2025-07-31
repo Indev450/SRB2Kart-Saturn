@@ -928,7 +928,7 @@ void D_SRB2Loop(void)
 		// consoleplayer -> displayplayers (hear sounds from viewpoint)
 		S_UpdateSounds(); // move positional sounds
 
-		LUA_Step();
+		//LUA_Step();
 
 #ifdef HAVE_DISCORDRPC
 		if (!dedicated && renderisnewtic)

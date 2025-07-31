@@ -1189,7 +1189,7 @@ static void UnArchiveTables(UINT8 **p, boolean network)
 	}
 }
 
-void LUA_Step(void)
+/*void LUA_Step(void)
 {
 	if (!gL)
 		return;
@@ -1200,7 +1200,7 @@ void LUA_Step(void)
 		lua_settop(gL, 0);
 		lua_gc(gL, LUA_GCSTEP, 1);
 	}
-}
+}*/
 
 void LUA_Archive(savebuffer_t *save, boolean network)
 {
@@ -1212,7 +1212,7 @@ void LUA_Archive(savebuffer_t *save, boolean network)
 
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
-		if (!playeringame[i] && i > 0)	// NEVER skip player 0, this is for dedi servs.
+		if (!playeringame[i] && i > 0) // NEVER skip player 0, this is for dedi servs.
 			continue;
 		// all players in game will be archived, even if they just add a 0.
 		ArchiveExtVars(&save->p, &players[i], "player");
