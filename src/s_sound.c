@@ -34,7 +34,7 @@
 #include "lua_hook.h" // MusicChange hook
 #include "lua_hud.h" // LUA_HudEnabled(hud_musiccredit)
 
-static boolean S_AdjustSoundParams(const mobj_t *listener, const mobj_t *source, INT32 *vol, INT32 *sep, INT32 *pitch, sfxinfo_t *sfxinfo);
+static boolean S_AdjustSoundParams(const mobj_t *listener, const mobj_t *source, INT32 *vol, INT32 *sep, sfxinfo_t *sfxinfo);
 static void SetChannelsNum(void);
 static void Command_Tunes_f(void);
 static void Command_RestartAudio_f(void);
@@ -458,7 +458,7 @@ void S_StartSoundAtVolume(const void *origin_p, sfxenum_t sfx_id, INT32 volume)
 	INT32 initial_volume;
 
 	sfxinfo_t *sfx;
-	INT32 sep, pitch, priority, cnum;
+	INT32 sep, cnum;
 	boolean anyListeners = false;
 	boolean itsUs = false;
 	INT32 i;
@@ -543,8 +543,6 @@ void S_StartSoundAtVolume(const void *origin_p, sfxenum_t sfx_id, INT32 volume)
 	initial_volume = (origin ? S_ScaleVolumeWithSplitscreen(volume) : volume);
 
 	// Initialize sound parameters
-	pitch = NORM_PITCH;
-	priority = NORM_PRIORITY;
 	sep = NORM_SEP;
 
 	i = 0; // sensible default
@@ -582,7 +580,7 @@ void S_StartSoundAtVolume(const void *origin_p, sfxenum_t sfx_id, INT32 volume)
 
 			if (listenmobj[i])
 			{
-				audible = S_AdjustSoundParams(listenmobj[i], origin, &volume, &sep, &pitch, sfx);
+				audible = S_AdjustSoundParams(listenmobj[i], origin, &volume, &sep, sfx);
 			}
 
 			if (!audible)
@@ -620,7 +618,7 @@ void S_StartSoundAtVolume(const void *origin_p, sfxenum_t sfx_id, INT32 volume)
 		channels[cnum].sfxinfo = sfx;
 		channels[cnum].origin = origin;
 		channels[cnum].volume = initial_volume;
-		channels[cnum].handle = I_StartSound(sfx_id, volume, sep, pitch, priority, cnum);
+		channels[cnum].handle = I_StartSound(sfx_id, volume, sep, cnum);
 	}
 }
 
@@ -700,7 +698,7 @@ static INT32 actualmidimusicvolume;
 
 void S_UpdateSounds(void)
 {
-	INT32 cnum, volume, sep, pitch;
+	INT32 cnum, volume, sep;
 	boolean audible = false;
 	channel_t *c;
 	INT32 i;
@@ -780,7 +778,6 @@ void S_UpdateSounds(void)
 			{
 				// initialize parameters
 				volume = c->volume; // 8 bits internal volume precision
-				pitch = NORM_PITCH;
 				sep = NORM_SEP;
 
 				// check non-local sounds for distance clipping
@@ -836,13 +833,13 @@ void S_UpdateSounds(void)
 						{
 							audible = S_AdjustSoundParams(
 								listenmobj[i], c->origin,
-								&volume, &sep, &pitch,
+								&volume, &sep,
 								c->sfxinfo
 							);
 						}
 
 						if (audible)
-							I_UpdateSoundParams(c->handle, volume, sep, pitch);
+							I_UpdateSoundParams(c->handle, volume, sep);
 						else
 							S_StopChannel(cnum);
 					}
@@ -935,8 +932,7 @@ fixed_t S_CalculateSoundDistance(fixed_t sx1, fixed_t sy1, fixed_t sz1, fixed_t 
 // If the sound is not audible, returns a 0.
 // Otherwise, modifies parameters and returns 1.
 //
-boolean S_AdjustSoundParams(const mobj_t *listener, const mobj_t *source, INT32 *vol, INT32 *sep, INT32 *pitch,
-	sfxinfo_t *sfxinfo)
+static boolean S_AdjustSoundParams(const mobj_t *listener, const mobj_t *source, INT32 *vol, INT32 *sep, sfxinfo_t *sfxinfo)
 {
 	const boolean reverse = (stereoreverse.value ^ encoremode);
 
@@ -944,8 +940,6 @@ boolean S_AdjustSoundParams(const mobj_t *listener, const mobj_t *source, INT32 
 
 	listener_t listensource;
 	INT32 i;
-
-	(void)pitch;
 
 	if (!listener)
 		return false;
@@ -979,13 +973,16 @@ boolean S_AdjustSoundParams(const mobj_t *listener, const mobj_t *source, INT32 
 		else
 		{
 			// Essentially check in a 1024 unit radius of the player for an outdoor area.
-			yl = listensource.y - 1024*FRACUNIT;
-			yh = listensource.y + 1024*FRACUNIT;
-			xl = listensource.x - 1024*FRACUNIT;
-			xh = listensource.x + 1024*FRACUNIT;
-			approx_dist = 1024*FRACUNIT;
-			for (y = yl; y <= yh; y += FRACUNIT*64)
-				for (x = xl; x <= xh; x += FRACUNIT*64)
+#define RADIUSSTEP (64*FRACUNIT)
+#define SEARCHRADIUS (16*RADIUSSTEP)
+			yl = listensource.y - SEARCHRADIUS;
+			yh = listensource.y + SEARCHRADIUS;
+			xl = listensource.x - SEARCHRADIUS;
+			xh = listensource.x + SEARCHRADIUS;
+			approx_dist = SEARCHRADIUS;
+#undef SEARCHRADIUS
+			for (y = yl; y <= yh; y += RADIUSSTEP)
+				for (x = xl; x <= xh; x += RADIUSSTEP)
 				{
 					if (R_PointInSubsectorFast(x, y)->sector->ceilingpic == skyflatnum)
 					{
@@ -997,6 +994,7 @@ boolean S_AdjustSoundParams(const mobj_t *listener, const mobj_t *source, INT32 
 						}
 					}
 				}
+#undef RADIUSSTEP
 		}
 	}
 	else
@@ -1007,14 +1005,14 @@ boolean S_AdjustSoundParams(const mobj_t *listener, const mobj_t *source, INT32 
 
 	// Ring loss, deaths, etc, should all be heard louder.
 	if (sfxinfo->pitch & SF_X8AWAYSOUND)
-		approx_dist = FixedDiv(approx_dist,8*FRACUNIT);
+		approx_dist = FixedDiv(approx_dist, 8*FRACUNIT);
 
 	// Combine 8XAWAYSOUND with 4XAWAYSOUND and get.... 32XAWAYSOUND?
 	if (sfxinfo->pitch & SF_X4AWAYSOUND)
-		approx_dist = FixedDiv(approx_dist,4*FRACUNIT);
+		approx_dist = FixedDiv(approx_dist, 4*FRACUNIT);
 
 	if (sfxinfo->pitch & SF_X2AWAYSOUND)
-		approx_dist = FixedDiv(approx_dist,2*FRACUNIT);
+		approx_dist = FixedDiv(approx_dist, 2*FRACUNIT);
 
 	if (approx_dist > S_CLIPPING_DIST)
 		return false;
@@ -1047,7 +1045,7 @@ boolean S_AdjustSoundParams(const mobj_t *listener, const mobj_t *source, INT32 
 	if (approx_dist >= S_CLOSE_DIST)
 	{
 		// distance effect
-		INT32 n = (15 * ((S_CLIPPING_DIST - approx_dist)>>FRACBITS));
+		const INT32 n = (15 * ((S_CLIPPING_DIST - approx_dist)>>FRACBITS));
 		*vol = FixedMul(*vol * FRACUNIT / 255, n) / S_ATTENUATOR;
 	}
 
@@ -1922,12 +1920,12 @@ void S_SetMusicVolume(INT32 digvolume, INT32 seqvolume)
 	}
 }
 
-void S_SetRestoreMusicFadeInCvar (consvar_t *cv)
+void S_SetRestoreMusicFadeInCvar(consvar_t *cv)
 {
 	music_refade_cv = cv_birdmusic.value ? cv : 0;
 }
 
-int S_GetRestoreMusicFadeIn (void)
+int S_GetRestoreMusicFadeIn(void)
 {
 	if (music_refade_cv && cv_fading.value)
 		return music_refade_cv->value;
@@ -2041,7 +2039,6 @@ void S_KeepMusic(void)
 	if (oldmap == gamemap && oldencore == encoremode)
 	{
 		const boolean musicchanged = S_CheckMusicException();
-
 		resumekeepmusic = (musicchanged && keepmusic.resume);
 		keepmapmusic = (!musicchanged || resumekeepmusic);
 	}
@@ -2208,6 +2205,7 @@ static void Command_Tunes_f(void)
 			mapmusic.name, (mapmusic.flags & MUSIC_TRACKMASK));
 		return;
 	}
+
 	if (!strcasecmp(tunearg, "-none"))
 	{
 		S_StopMusic();
@@ -2226,6 +2224,7 @@ static void Command_Tunes_f(void)
 		CONS_Alert(CONS_NOTICE, M_GetText("Valid music slots are 1 to 1035.\n"));
 		return;
 	}
+
 	if (!tunenum && strlen(tunearg) > 6) // This is automatic -- just show the error just in case
 		CONS_Alert(CONS_NOTICE, M_GetText("Music name too long - truncated to six characters.\n"));
 
@@ -2266,7 +2265,7 @@ static void Command_RestartAudio_f(void)
 	I_StartupSound();
 	I_InitMusic();
 
-// These must be called or no sound and music until manually set.
+	// These must be called or no sound and music until manually set.
 
 	I_SetSfxVolume(cv_soundvolume.value);
 #ifdef NO_MIDI
