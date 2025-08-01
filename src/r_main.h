@@ -197,6 +197,7 @@ extern consvar_t cv_tailspickup;
 extern consvar_t cv_maxinterpdist;
 extern consvar_t cv_playerfade;
 extern consvar_t cv_ripplewater;
+extern consvar_t cv_secbright;
 
 extern consvar_t cv_randomdirlight;
 

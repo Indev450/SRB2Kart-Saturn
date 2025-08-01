@@ -225,7 +225,6 @@ consvar_t cv_glslopecontrast = {"gr_slopecontrast", "Off", CV_SAVE, CV_OnOff, NU
 consvar_t cv_glshaders = {"gr_shaders", "On", CV_CALL|CV_SAVE, glshaders_cons_t, CV_glshaders_OnChange, 0, NULL, NULL, 0, 0, NULL};
 
 consvar_t cv_gllightdither = {"gr_lightdithering", "Off", CV_CALL|CV_SAVE, CV_OnOff, CV_gllightdithering_OnChange, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_glsecbright = {"secbright", "0", CV_SAVE, secbright_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 consvar_t cv_glfiltermode = {"gr_filtermode", "Nearest", CV_CALL|CV_SAVE, glfiltermode_cons_t, CV_filtermode_OnChange, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_glanisotropicmode = {"gr_anisotropicmode", "1", CV_CALL|CV_SAVE, glanisotropicmode_cons_t, CV_anisotropic_OnChange, 0, NULL, NULL, 0, 0, NULL};
@@ -416,7 +415,7 @@ void HWR_Lighting(FSurfaceInfo *Surface, INT32 light_level, extracolormap_t *col
 	fade_color.rgba = (colormap != NULL) ? (UINT32)colormap->fadergba : GL_DEFAULTFOG;
 
 	// Clamp the light level, since it can sometimes go out of the 0-255 range from animations
-	light_level = CLAMP(SOFTLIGHT(light_level), cv_glsecbright.value, 255);
+	light_level = CLAMP(SOFTLIGHT(light_level), cv_secbright.value, 255);
 
 	// Crappy backup coloring if you can't do shaders
 	if (!HWR_UseShader())
@@ -5828,7 +5827,6 @@ void HWR_AddCommands(void)
 	CV_RegisterVar(&cv_glshaders);
 
 	CV_RegisterVar(&cv_gllightdither);
-	CV_RegisterVar(&cv_glsecbright);
 
 	CV_RegisterVar(&cv_glfiltermode);
 	CV_RegisterVar(&cv_glanisotropicmode);

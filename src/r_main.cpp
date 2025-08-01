@@ -151,6 +151,7 @@ static CV_PossibleValue_t fov_cons_t[] = {{MINFOV*FRACUNIT, "MIN"}, {MAXFOV*FRAC
 static CV_PossibleValue_t translucenthud_cons_t[] = {{0, "MIN"}, {10, "MAX"}, {0, NULL}};
 static CV_PossibleValue_t maxportals_cons_t[] = {{0, "MIN"}, {12, "MAX"}, {0, NULL}}; // lmao rendering 32 portals, you're a card
 static CV_PossibleValue_t homremoval_cons_t[] = {{0, "No"}, {1, "Yes"}, {2, "Flash"}, {0, NULL}};
+static CV_PossibleValue_t secbright_cons_t[] = {{0, "MIN"}, {255, "MAX"}, {0, NULL}};
 
 static void R_SetFov(fixed_t playerfov);
 
@@ -200,6 +201,8 @@ consvar_t cv_ripplewater     = {"waterripples", "On", CV_SAVE, CV_OnOff, NULL, 0
 
 // Okay, whoever said homremoval causes a performance hit should be shot.
 consvar_t cv_homremoval      = {"homremoval", "Yes", CV_SAVE, homremoval_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+
+consvar_t cv_secbright       = {"r_secbright", "0", CV_SAVE, secbright_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 consvar_t cv_maxportals      = {"maxportals", "2", CV_SAVE, maxportals_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
@@ -1558,6 +1561,7 @@ void R_RegisterEngineStuff(void)
 	CV_RegisterVar(&cv_skybox);
 	CV_RegisterVar(&cv_ffloorclip);
 	CV_RegisterVar(&cv_spriteclip);
+	CV_RegisterVar(&cv_secbright);
 	CV_RegisterVar(&cv_softcyancut);
 
 	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
