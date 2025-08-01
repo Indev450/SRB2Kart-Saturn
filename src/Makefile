@@ -246,13 +246,25 @@ debug_opts=-DNDEBUG
 opts+=-O3
 ifdef USELTO
 # compile with LTO
+ifdef MINGW
+opts+=-flto=auto -g
+libs+=-flto=auto -g
+else
 opts+=-flto=auto
 libs+=-flto=auto
+endif
 endif
 endif
 
 ifdef USEASAN
 # compile with asan
+ifdef MINGW
+opts+=-fsanitize=address -g
+libs+=-fsanitize=address -g
+else
+opts+=-fsanitize=address
+libs+=-fsanitize=address
+endif
 opts+=-fsanitize=address
 libs+=-fsanitize=address
 endif
