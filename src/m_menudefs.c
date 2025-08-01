@@ -934,23 +934,25 @@ static menuitem_t OP_ExpOptionsMenu[] =
 	{IT_STRING | IT_CVAR, 	NULL, "Scale Weather with Mobjscale", 	&cv_mobjscaleprecip, 		 25},
 	{IT_STRING | IT_CVAR, 	NULL, "Less Weather Effects", 			&cv_lessprecip, 		 	 30},
 
+	{IT_STRING | IT_CVAR,   NULL, "Minimum Sector Brightness",		&cv_secbright,	  		 	 40},
+
 	//{IT_STRING | IT_CVAR,  NULL, "Randomized Directional Light",	&cv_randomdirlight,	  		 55}, // should this ever come back
 
-	{IT_STRING | IT_CVAR,	NULL, "Skyboxes",						&cv_skybox,				 	 40},
+	{IT_STRING | IT_CVAR,	NULL, "Skyboxes",						&cv_skybox,				 	 50},
 
-	{IT_STRING | IT_CVAR,	NULL, "FPS counter sampling",			&cv_accuratefps,			 50},
+	{IT_STRING | IT_CVAR,	NULL, "FPS counter sampling",			&cv_accuratefps,			 60},
 
-	{IT_STRING | IT_CVAR,	NULL, "Votescreen Scaling",				&cv_votebgscaling,			 60},
+	{IT_STRING | IT_CVAR,	NULL, "Votescreen Scaling",				&cv_votebgscaling,			 70},
 
 #ifdef HWRENDER
-	{IT_STRING | IT_CVAR, 	NULL, "Screen Textures", 				&cv_glscreentextures, 		 70},
+	{IT_STRING | IT_CVAR, 	NULL, "Screen Textures", 				&cv_glscreentextures, 		 80},
 #ifdef USE_FBO_OGL
-	{IT_STRING | IT_CVAR, 	NULL, "FBO Downsampling support", 		&cv_glframebuffer, 			 75},
-	{IT_STRING | IT_CVAR, 	NULL, "Palette Depth", 					&cv_glpalettedepth, 		 85},
-	{IT_DISABLED, 			NULL, "", 								NULL,     			 		 95},	// dummy text
+	{IT_STRING | IT_CVAR, 	NULL, "FBO Downsampling support", 		&cv_glframebuffer, 			 85},
+	{IT_STRING | IT_CVAR, 	NULL, "Palette Depth", 					&cv_glpalettedepth, 		 95},
+	{IT_DISABLED, 			NULL, "", 								NULL,     			 		105},	// dummy text
 #else
-	{IT_STRING | IT_CVAR, 	NULL, "Palette Depth", 					&cv_glpalettedepth, 		 80},
-	{IT_DISABLED, 			NULL, "", 								NULL,     			 		 90},	// dummy text
+	{IT_STRING | IT_CVAR, 	NULL, "Palette Depth", 					&cv_glpalettedepth, 		 90},
+	{IT_DISABLED, 			NULL, "", 								NULL,     			 		100},	// dummy text
 #endif
 #endif
 };
@@ -962,6 +964,7 @@ static const char* OP_ExpTooltips[] =
 	"Should weather be interpolated? Weather should look about the\nsame but perform a bit better when disabled.",
 	"Should weather be scaled with Mapobjectscale?.",
 	"When weather is on this will cut the object amount used in half.",
+	"Sets minimum sector brightness, useful for dark areas",
 	//"Should the directional lightning be randomized each map?\nTakes effect on next map load.",
 	"Toggle being able to see the sky.",
 	"Change the FPS counter sampling method\nInaccurate updates slower and might miss frame drops and such\nAccurate updates faster and is more accurate, but might be less readable", // how to ingles??
@@ -982,6 +985,7 @@ enum
 	op_exp_precipinter,
 	op_exp_precipmoscale,
 	op_exp_lessprecip,
+	op_exp_secbright,
 	//op_exp_dirlight,
 	op_exp_skybox,
 	op_exp_accuratefps,
