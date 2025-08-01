@@ -66,7 +66,7 @@ $(eval $(call _set,LIBGME))
 
 lib:=../libs/libopenmpt
 LIBOPENMPT_opts:=-I$(lib)/inc
-LIBOPENMPT_libs:=-L$(lib)/lib/$(x86)/mingw -lopenmpt
+LIBOPENMPT_libs:=-L$(lib)/lib/$(x86) -lopenmpt
 $(eval $(call _set,LIBOPENMPT))
 
 lib:=../libs/SDL2_mixer/$(mingw)
