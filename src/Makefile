@@ -390,26 +390,12 @@ ifdef Echo_name
 	@printf '%-20.20s\r' $$<
 endif
 endif
-	$(.)$(cc) -MM -MF $$@ -MT $(objdir)/$$*.o $(2) $$<
+	$(.)$(2) -MM -MF $$@ -MT $(objdir)/$$*.o $(3) $$<
 endef
 
-$(eval $(call _recipe,c))
-$(eval $(call _recipe,s,$(asflags)))
-
-# c++ dependency recipe template
-# 1: source file suffix
-# 2: extra flags to gcc
-define _recipe =
-$(depdir)/%.d : %.$(1) | $$$$(@D)/
-ifndef WINDOWSHELL
-ifdef Echo_name
-	@printf '%-20.20s\r' $$<
-endif
-endif
-	$(.)$(cxx) -MM -MF $$@ -MT $(objdir)/$$*.o $(2) $$<
-endef
-
-$(eval $(call _recipe,cpp))
+$(eval $(call _recipe,c,$(cc)))
+$(eval $(call _recipe,cpp,$(cxx)))
+$(eval $(call _recipe,s,$(cc),$(asflags)))
 
 # compiling recipe template
 # 1: target file suffix
