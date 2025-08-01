@@ -274,10 +274,11 @@ opts+=$(debug_opts)
 
 opts+=$(foreach v,$(passthru_opts),$(if $($(v)),-D$(v)))
 
-opts+=$(WFLAGS) $(CPPFLAGS) $(CFLAGS)
-cxxopts:=$(opts) $(CXXFLAGS)
+CXXFLAGS+=-std=c++17 # force c17 for c++ since most vpss run older ubuntu versions with old compilers
 
-cxxopts+=-std=c++17 # force c17 for c++ since most vpss run older ubuntu versions with old compilers
+opts+=$(WFLAGS) $(CFLAGS)
+cxxopts:=$(opts) $(CXXFLAGS)
+opts+=$(CWFLAGS) # warning flags that shouldnt be passed to c++ compiler
 
 libs+=$(LDFLAGS) -lstdc++ -lpthread
 asflags:=$(ASFLAGS) -x assembler-with-cpp
@@ -393,8 +394,22 @@ endif
 endef
 
 $(eval $(call _recipe,c))
-$(eval $(call _recipe,cpp))
 $(eval $(call _recipe,s,$(asflags)))
+
+# c++ dependency recipe template
+# 1: source file suffix
+# 2: extra flags to gcc
+define _recipe =
+$(depdir)/%.d : %.$(1) | $$$$(@D)/
+ifndef WINDOWSHELL
+ifdef Echo_name
+	@printf '%-20.20s\r' $$<
+endif
+endif
+	$(.)$(cxx) -MM -MF $$@ -MT $(objdir)/$$*.o $(2) $$<
+endef
+
+$(eval $(call _recipe,cpp))
 
 # compiling recipe template
 # 1: target file suffix

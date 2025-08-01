@@ -41,7 +41,8 @@ ifdef GCC41
  WFLAGS+=-Wshadow
 endif
 #WFLAGS+=-Wlarger-than-%len%
- WFLAGS+=-Wpointer-arith -Wbad-function-cast
+ WFLAGS+=-Wpointer-arith
+ CWFLAGS+=-Wbad-function-cast
 ifdef GCC45
 #WFLAGS+=-Wc++-compat
 endif
@@ -71,9 +72,10 @@ endif
 endif
 #WFLAGS+=-Wstrict-prototypes
 ifdef GCC40
- WFLAGS+=-Wold-style-definition
+ CWFLAGS+=-Wold-style-definition
 endif
- WFLAGS+=-Wmissing-prototypes -Wmissing-declarations
+ WFLAGS+=-Wmissing-declarations
+ CWFLAGS+=-Wmissing-prototypes
 ifdef GCC40
  WFLAGS+=-Wmissing-field-initializers
 endif
@@ -84,7 +86,7 @@ endif
 #WFLAGS+=-Wpacked
 #WFLAGS+=-Wpadded
 #WFLAGS+=-Wredundant-decls
- WFLAGS+=-Wnested-externs
+ CWFLAGS+=-Wnested-externs
 #WFLAGS+=-Wunreachable-code
  WFLAGS+=-Winline
 ifdef DEBUGMODE
