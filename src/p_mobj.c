@@ -9293,7 +9293,7 @@ void P_PushableThinker(mobj_t *mobj)
 
 	sec = mobj->subsector->sector;
 
-	if (GETSECSPECIAL(sec->special, 2) == 1 && mobj->z == sec->floorheight)
+	if (mobj->z == sec->floorheight && GETSECSPECIAL(sec->special, 2) == 1)
 		P_LinedefExecute(sec->tag, mobj, sec);
 	{
 		sector_t *sec2;

@@ -2394,15 +2394,19 @@ boolean P_TryMove(mobj_t *thing, fixed_t x, fixed_t y, boolean allowdropoff)
 			//All things are affected by their scale.
 			fixed_t maxstep = FixedMul(MAXSTEPMOVE, mapobjectscale);
 
+			INT32 special = 0;
+
 			if (thing->player)
 			{
+				special = GETSECSPECIAL(R_PointInSubsector(x, y)->sector->special, 1);
+
 				// If using type Section1:13, double the maxstep.
 				if (P_PlayerTouchingSectorSpecial(thing->player, 1, 13)
-				|| GETSECSPECIAL(R_PointInSubsector(x, y)->sector->special, 1) == 13)
+				|| special == 13)
 					maxstep <<= 1;
 				// If using type Section1:12, no maxstep. For ledges you don't want the player to climb! (see: Egg Zeppelin & SMK port walls)
 				else if (P_PlayerTouchingSectorSpecial(thing->player, 1, 12)
-				|| GETSECSPECIAL(R_PointInSubsector(x, y)->sector->special, 1) == 12)
+				|| special == 12)
 					maxstep = 0;
 			}
 
@@ -2448,7 +2452,7 @@ boolean P_TryMove(mobj_t *thing, fixed_t x, fixed_t y, boolean allowdropoff)
 			else if (maxstep > 0 && !(
 				thing->player && (
 				P_PlayerTouchingSectorSpecial(thing->player, 1, 14)
-				|| GETSECSPECIAL(R_PointInSubsector(x, y)->sector->special, 1) == 14)
+				|| special == 14)
 				)) // Step down
 			{
 				// If the floor difference is MAXSTEPMOVE or less, and the sector isn't Section1:14, ALWAYS
@@ -2614,7 +2618,6 @@ static boolean P_ThingHeightClip(mobj_t *thing)
 {
 	boolean floormoved;
 	fixed_t oldfloorz = thing->floorz;
-	boolean onfloor = P_IsObjectOnGround(thing);//(thing->z <= thing->floorz);
 
 	if (thing->flags & MF_NOCLIPHEIGHT)
 		return true;
@@ -2634,6 +2637,8 @@ static boolean P_ThingHeightClip(mobj_t *thing)
 	// you'll still get crushed, right?
 	if (tmfloorz > oldfloorz+thing->height)
 		return true;
+
+	const boolean onfloor = P_IsObjectOnGround(thing);//(thing->z <= thing->floorz);
 
 	if (onfloor && !(thing->flags & MF_NOGRAVITY) && floormoved)
 	{
@@ -3950,9 +3955,9 @@ void P_DelSeclist(msecnode_t *node)
 
 static inline boolean PIT_GetSectors(line_t *ld)
 {
-	if (tmbbox[BOXRIGHT] <= ld->bbox[BOXLEFT] ||
-		tmbbox[BOXLEFT] >= ld->bbox[BOXRIGHT] ||
-		tmbbox[BOXTOP] <= ld->bbox[BOXBOTTOM] ||
+	if (tmbbox[BOXRIGHT]  <= ld->bbox[BOXLEFT]   ||
+		tmbbox[BOXLEFT]   >= ld->bbox[BOXRIGHT]  ||
+		tmbbox[BOXTOP]    <= ld->bbox[BOXBOTTOM] ||
 		tmbbox[BOXBOTTOM] >= ld->bbox[BOXTOP])
 		return true;
 
@@ -4072,7 +4077,7 @@ void P_CreateSecNodeList(mobj_t *thing, fixed_t x, fixed_t y)
  * Must clear tmthing at tic end, as it might contain a pointer to a removed thinker, or the level might have ended/been ended and we clear the objects it was pointing too. Hopefully we don't need to carry this between tics for sync. */
 void P_MapStart(void)
 {
-	if (tmthing)
+	if (UNLIKELY(tmthing))
 		I_Error("P_MapStart: tmthing set!");
 }
 
