@@ -1030,6 +1030,7 @@ sfxenum_t S_AddSoundFx(const char *name, boolean singular, INT32 flags, boolean 
 			S_sfx[i].pitch = flags;
 			S_sfx[i].volume = -1;
 			S_sfx[i].lumpnum = LUMPERROR;
+            S_sfx[i].length = 0;
 			S_sfx[i].skinsound = -1;
 			S_sfx[i].usefulness = -1;
 
