@@ -4235,7 +4235,7 @@ static void P_Boss3Thinker(mobj_t *mobj)
 // Move Boss4's sectors by delta.
 static boolean P_Boss4MoveCage(fixed_t delta)
 {
-	const UINT16 tag = 65534;
+	static const UINT16 tag = 65534;
 	INT32 snum;
 	sector_t *sector;
 	for (snum = sectors[tag%numsectors].firsttag; snum != -1; snum = sector->nexttag)
@@ -4284,7 +4284,7 @@ static void P_Boss4PinchSpikeballs(mobj_t *mobj, angle_t angle, fixed_t fz)
 // Destroy cage FOFs.
 static void P_Boss4DestroyCage(void)
 {
-	const UINT16 tag = 65534;
+	static const UINT16 tag = 65534;
 	INT32 snum, next;
 	size_t a;
 	sector_t *sector, *rsec;
