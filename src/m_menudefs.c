@@ -1026,7 +1026,7 @@ static const char* OP_OpenGLTooltips[] =
 	"Graphical Shaders.",
 	"Recreates the look of software mode.",
 	"Flash palettes for palette rendering.",
-	"Minimum shader brightness. This is set in sector brightness values.",
+	"Sets minimum sector brightness, useful for dark areas",
 	"Bit-depth of textures.",
 	"Filter to use on textures.",
 	"Anisotropic filtering.",
