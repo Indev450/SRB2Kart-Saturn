@@ -598,12 +598,6 @@ void S_StartSoundAtVolume(const void *origin_p, sfxenum_t sfx_id, INT32 volume)
 			sfx->data = I_GetSfx(sfx);
 		}
 
-		// increase the usefulness
-		if (sfx->usefulness++ < 0)
-		{
-			sfx->usefulness = -1;
-		}
-
 		// Avoid channel reverse if surround
 		if (reverse)
 		{
@@ -896,8 +890,6 @@ static void S_StopChannel(INT32 cnum)
 			if (cnum != i && c->sfxinfo == channels[i].sfxinfo)
 				break;
 
-		// degrade usefulness of sound data
-		c->sfxinfo->usefulness--;
 		c->sfxinfo = 0;
 	}
 
@@ -1167,7 +1159,6 @@ void S_InitSfxChannels(INT32 sfxVolume)
 	// Note that sounds have not been cached (yet).
 	for (i = 1; i < NUMSFX; i++)
 	{
-		S_sfx[i].usefulness = -1; // for I_GetSfx()
 		S_sfx[i].lumpnum = LUMPERROR;
 	}
 
