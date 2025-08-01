@@ -10,6 +10,9 @@
 /// \file  lua_script.h
 /// \brief Lua scripting basics
 
+#ifndef LUA_SCRIPT_H
+#define LUA_SCRIPT_H
+
 #include "m_fixed.h"
 #include "doomtype.h"
 #include "d_player.h"
@@ -75,7 +78,7 @@ void COM_Lua_f(void);
 #define LUA_Deprecated(L,this_func,use_instead)\
 {\
 	static UINT8 seen = 0;\
-	if (!seen) {\
+	if (UNLIKELY(!seen)) {\
 		seen = 1;\
 		CONS_Alert(CONS_WARNING,"\"%s\" is deprecated and will be removed.\nUse \"%s\" instead.\n", this_func, use_instead);\
 	}\
@@ -84,7 +87,7 @@ void COM_Lua_f(void);
 #define LUA_LogDeprecated(L,this_func,use_instead)\
 {\
 	static UINT8 seen = 0;\
-	if (!seen) {\
+	if (UNLIKELY(!seen)) {\
 		seen = 1;\
 		CON_LogMessage(va("\"%s\" is deprecated and will be removed.\nUse \"%s\" instead.\n", this_func, use_instead));\
 	}\
@@ -95,8 +98,10 @@ void COM_Lua_f(void);
 #define LUA_UsageWarning(L, warningmsg)\
 {\
 	static UINT8 seen = 0;\
-	if (!seen) {\
+	if (UNLIKELY(!seen)) {\
 		seen = 1;\
 		CONS_Alert(CONS_WARNING,"%s\n", warningmsg);\
 	}\
 }
+
+#endif/*LUA_SCRIPT_H*/
