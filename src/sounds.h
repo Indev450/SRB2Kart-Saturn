@@ -78,9 +78,6 @@ struct sfxinfo_struct
 	// pitch if a link
 	INT32 pitch;
 
-	// volume if a link
-	INT32 volume;
-
 	// sound data
 	void *data;
 
@@ -90,11 +87,6 @@ struct sfxinfo_struct
 	// sound that can be remapped for a skin, indexes skins[].skinsounds
 	// 0 up to (NUMSKINSOUNDS-1), -1 = not skin specifc
 	INT32 skinsound;
-
-	// this is checked every second to see if sound
-	// can be thrown out (if 0, then decrement, if -1,
-	// then throw out, if > 0, then it is in use)
-	INT32 usefulness;
 
 	// lump number of sfx
 	lumpnum_t lumpnum;
