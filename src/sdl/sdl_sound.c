@@ -1079,7 +1079,7 @@ void I_StartupSound(void)
 {
 #ifndef HAVE_MIXER
 #ifndef NO_MIDI
-	midi_disabled = 
+	midi_disabled =
 #endif
 	digital_disabled = true;
 #endif
