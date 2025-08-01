@@ -43,8 +43,9 @@ extern UINT8 sound_started;
 
 /**	\brief info of samplerate
 */
+#if defined(HAVE_SDL) && SOUND==SOUND_SDL
 extern consvar_t cv_samplerate;
-//extern consvar_t cv_rndsoundpitch;
+#endif
 
 /**	\brief	The I_GetSfx function
 
