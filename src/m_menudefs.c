@@ -67,6 +67,8 @@ menu_t OP_AdvServerOptionsDef;
 #endif
 menu_t OP_MonitorToggleDef;
 
+menu_t OP_AccessibilityDef;
+
 // Saturn
 menu_t OP_SaturnDef;
 menu_t OP_SaturnHudDef;
@@ -609,25 +611,26 @@ static menuitem_t OP_MainMenu[] =
 {
 	{IT_SUBMENU|IT_STRING,		NULL, "Control Setup...",		&OP_ControlsDef,			  0},
 
-	{IT_SUBMENU|IT_STRING,		NULL, "Video Options...",		&OP_VideoOptionsDef,		 15},
-	{IT_SUBMENU|IT_STRING,		NULL, "Sound Options...",		&OP_SoundOptionsDef,		 25},
-	{IT_SUBMENU|IT_STRING,		NULL, "Game Focus Options...",	&OP_FocusOptionsDef,		 35},
+	{IT_SUBMENU|IT_STRING,		NULL, "Video Options...",		&OP_VideoOptionsDef,		 13},
+	{IT_SUBMENU|IT_STRING,		NULL, "Sound Options...",		&OP_SoundOptionsDef,		 23},
+	{IT_SUBMENU|IT_STRING,		NULL, "Game Focus Options...",	&OP_FocusOptionsDef,		 33},
 
-	{IT_SUBMENU|IT_STRING,		NULL, "HUD Options...",			&OP_HUDOptionsDef,			 50},
-	{IT_SUBMENU|IT_STRING,		NULL, "Camera Options...",		&OP_CamOptionsDef,			 60},
-	{IT_SUBMENU|IT_STRING,		NULL, "Gameplay Options...",	&OP_GameOptionsDef,			 70},
-	{IT_SUBMENU|IT_STRING,		NULL, "Server Options...",		&OP_ServerOptionsDef,		 80},
+	{IT_SUBMENU|IT_STRING,		NULL, "HUD Options...",			&OP_HUDOptionsDef,			 46},
+	{IT_SUBMENU|IT_STRING,		NULL, "Camera Options...",		&OP_CamOptionsDef,			 56},
+	{IT_SUBMENU|IT_STRING,		NULL, "Gameplay Options...",	&OP_GameOptionsDef,			 66},
+	{IT_SUBMENU|IT_STRING,		NULL, "Server Options...",		&OP_ServerOptionsDef,		 76},
 
-	{IT_SUBMENU|IT_STRING,		NULL, "Data Options...",		&OP_DataOptionsDef,			 95},
-	{IT_CALL|IT_STRING, 		NULL, "Custom Addon Options...", M_CustomCvarMenu,   		105},
+	{IT_SUBMENU|IT_STRING,		NULL, "Data Options...",		&OP_DataOptionsDef,			 89},
+	{IT_CALL|IT_STRING, 		NULL, "Custom Addon Options...", M_CustomCvarMenu,   		 99},
 
-	{IT_CALL|IT_STRING,			NULL, "Tricks & Secrets (F1)",	M_Manual,					115},
-	{IT_CALL|IT_STRING,			NULL, "Play Credits",			M_Credits,					125},
+	{IT_CALL|IT_STRING,			NULL, "Tricks & Secrets (F1)",	M_Manual,					109},
+	{IT_CALL|IT_STRING,			NULL, "Play Credits",			M_Credits,					119},
 
-	{IT_SUBMENU|IT_STRING,		NULL, "Saturn Options...",		&OP_SaturnDef,				140},
+	{IT_SUBMENU|IT_STRING,		NULL, "Accessibility Options...",&OP_AccessibilityDef,		132},
+	{IT_SUBMENU|IT_STRING,		NULL, "Saturn Options...",		&OP_SaturnDef,				142},
 
-	{IT_SUBMENU|IT_STRING,		NULL, "Bird...",				&OP_BirdDef,				150},
-	{IT_CALL|IT_STRING,			NULL, "Local Skin Options...",	M_LocalSkinMenu,			160},
+	{IT_SUBMENU|IT_STRING,		NULL, "Bird...",				&OP_BirdDef,				152},
+	{IT_CALL|IT_STRING,			NULL, "Local Skin Options...",	M_LocalSkinMenu,			162},
 };
 
 enum
@@ -644,6 +647,7 @@ enum
 	addonopt,
 	tricksandshit,
 	credits,
+	accesability,
 	satopt,
 	bird,
 	localskin
@@ -1615,6 +1619,59 @@ static menuitem_t OP_MonitorToggleMenu[] =
 #endif
 };
 
+static menuitem_t OP_AccessibilityMenu[] =
+{
+	{IT_HEADER, NULL, "Accessibility options", NULL, 0},
+
+	{IT_HEADER, NULL, "Visual", NULL, 10},
+
+	{IT_STRING|IT_CVAR|IT_CV_SLIDER,   NULL,   "Brightness",                     &cv_globalgamma,        20},
+	{IT_STRING|IT_CVAR|IT_CV_SLIDER,   NULL,   "Saturation",                     &cv_globalsaturation,   25},
+	{IT_SUBMENU|IT_STRING,             NULL,   "Video Color Settings...",        &OP_ColorOptionsDef,    30},
+
+	{IT_STRING|IT_CVAR,                NULL,   "Midnight Channel Flicker",       &cv_lessflicker,        35},
+
+	{IT_STRING|IT_CVAR,                NULL,   "Minimum Sector Brightness",      &cv_secbright,          40},
+
+#ifdef HWRENDER
+	{IT_STRING|IT_CVAR,                NULL,   "Screen Textures",                &cv_glscreentextures,   45},
+#endif
+
+	{IT_STRING|IT_CVAR,                NULL,   "Water Surface Ripples",          &cv_ripplewater,        50},
+
+	{IT_STRING|IT_CVAR,                NULL,   "Fade Players near Camera",       &cv_playerfade,         55},
+
+	{IT_STRING|IT_CVAR,                NULL,   "Quake Screenshakes",             &cv_screenquake,        60},
+
+	{IT_SUBMENU|IT_STRING,             NULL,   "Camera Options...",              &OP_CamOptionsDef,      65},
+
+	{IT_HEADER, NULL, "Audio", NULL, 75},
+
+	{IT_STRING|IT_CVAR,                NULL,   "Reverse L/R Channels",           &stereoreverse,         85},
+	{IT_STRING|IT_CVAR,                NULL,   "Same Sound Limit",               &cv_samesoundlimit,     90},
+};
+
+static const char* OP_AccessibilityTooltips[] =
+{
+	NULL,
+	NULL,
+	"Gamma (brightness) of the game.",
+	"Saturation of the game.",
+	"Advanced color settings of the game.",
+	"Disables the flicker effect on Midnight Channel.",
+	"Sets minimum sector brightness, useful for dark areas",
+#ifdef HWRENDER
+	"Should the game do Screen Textures? Provides a good boost to frames\nat the cost of some visual effects not working when disabled.",
+#endif
+	"Toggles the ripple effect on water surfaces",
+	"Fades other Players that are close to the camera in and out",
+	"Toggles the screen shake effect during Earthquakes",
+	"Camera Options",
+	NULL,
+	"Reverse left and right channels of audio.",
+	"Change how often the same Sound is allowed to play at once.",
+};
+
 static menuitem_t OP_SaturnMenu[] =
 {
 	{IT_HEADER, NULL, "Saturn Options", NULL, 0},
@@ -2540,6 +2597,8 @@ menu_t OP_ProtocolDef          = DEFAULTMENUSTYLE(NULL, OP_ProtocolMenu, &OP_Dat
 menu_t OP_DiscordOptionsDef    = DEFAULTMENUSTYLE(NULL, OP_DiscordOptionsMenu, &OP_DataOptionsDef, 30, 30, NULL);
 #endif
 menu_t OP_EraseDataDef         = DEFAULTMENUSTYLE("M_DATA", OP_EraseDataMenu, &OP_DataOptionsDef, 30, 30, NULL);
+
+menu_t OP_AccessibilityDef     = DEFAULTSCROLLSTYLE(NULL, OP_AccessibilityMenu, &OP_MainDef, 30, 30, OP_AccessibilityTooltips);
 
 menu_t OP_SaturnDef        = DEFAULTSCROLLSTYLE(NULL, OP_SaturnMenu, &OP_MainDef, 30, 30, OP_SaturnTooltips);
 menu_t OP_SaturnCreditsDef = DEFAULTMENUSTYLE(NULL, OP_SaturnCreditsMenu, &OP_SaturnDef, 30, 0, NULL); // OP_CreditTooltips no space :c
