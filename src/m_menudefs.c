@@ -1004,19 +1004,19 @@ static menuitem_t OP_OpenGLOptionsMenu[] =
 	{IT_STRING | IT_CVAR,	NULL, "Shaders",					&cv_glshaders,				25},
 	{IT_STRING | IT_CVAR,	NULL, "Palette Rendering",			&cv_glpaletterendering,		30},
 	{IT_STRING | IT_CVAR,   NULL, "Palette Rendering Flashpals",&cv_glflashpal,				35},
-	{IT_STRING | IT_CVAR, 	NULL, "Min Shader Brightness", 		&cv_glsecbright,			40},
+	//{IT_STRING | IT_CVAR, 	NULL, "Min Shader Brightness", 		&cv_glsecbright,			40},
 
-	{IT_STRING | IT_CVAR,	NULL, "Texture Quality",			&cv_gltexturedepth,			50},
-	{IT_STRING | IT_CVAR,	NULL, "Texture Filter",				&cv_glfiltermode,			55},
-	{IT_STRING | IT_CVAR,	NULL, "Anisotropic",				&cv_glanisotropicmode,		60},
-	{IT_STRING | IT_CVAR,	NULL, "Visual Portals",		  		&cv_glportals,				65},
+	{IT_STRING | IT_CVAR,	NULL, "Texture Quality",			&cv_gltexturedepth,			45},
+	{IT_STRING | IT_CVAR,	NULL, "Texture Filter",				&cv_glfiltermode,			50},
+	{IT_STRING | IT_CVAR,	NULL, "Anisotropic",				&cv_glanisotropicmode,		55},
+	{IT_STRING | IT_CVAR,	NULL, "Visual Portals",		  		&cv_glportals,				60},
 
-	{IT_STRING | IT_CVAR,	NULL, "Wall Contrast Style",		&cv_glfakecontrast,			75},
-	{IT_STRING | IT_CVAR,	NULL, "Slope Contrast",				&cv_glslopecontrast,		80},
-	{IT_STRING | IT_CVAR, 	NULL, "Dithered Lightning", 		&cv_gllightdither,			85},
-	{IT_STRING | IT_CVAR,	NULL, "Sprite Billboarding",		&cv_glspritebillboarding,	90},
-	{IT_STRING | IT_CVAR,	NULL, "Software Perspective",		&cv_glshearing,				95},
-	{IT_STRING | IT_CVAR,	NULL, "Rendering Distance",			&cv_glrenderdistance,		100},
+	{IT_STRING | IT_CVAR,	NULL, "Wall Contrast Style",		&cv_glfakecontrast,			70},
+	{IT_STRING | IT_CVAR,	NULL, "Slope Contrast",				&cv_glslopecontrast,		75},
+	{IT_STRING | IT_CVAR, 	NULL, "Dithered Lightning", 		&cv_gllightdither,			80},
+	{IT_STRING | IT_CVAR,	NULL, "Sprite Billboarding",		&cv_glspritebillboarding,	85},
+	{IT_STRING | IT_CVAR,	NULL, "Software Perspective",		&cv_glshearing,				90},
+	{IT_STRING | IT_CVAR,	NULL, "Rendering Distance",			&cv_glrenderdistance,		95},
 };
 
 static const char* OP_OpenGLTooltips[] =
@@ -1026,7 +1026,6 @@ static const char* OP_OpenGLTooltips[] =
 	"Graphical Shaders.",
 	"Recreates the look of software mode.",
 	"Flash palettes for palette rendering.",
-	"Sets minimum sector brightness, useful for dark areas",
 	"Bit-depth of textures.",
 	"Filter to use on textures.",
 	"Anisotropic filtering.",
@@ -1046,7 +1045,6 @@ enum
 	op_gl_shader,
 	op_gl_palrender,
 	op_gl_flashpal,
-	op_gl_secbright,
 	op_gl_scrdepth,
 	op_gl_filter,
 	op_gl_anis,
@@ -2878,7 +2876,6 @@ void M_UpdateOGLMenu(void)
 	OP_OpenGLOptionsMenu[op_gl_falbckmdls].status = (!cv_glmdls.value) ? IT_GRAYEDOUT : IT_STRING | IT_CVAR;
 
 	OP_OpenGLOptionsMenu[op_gl_lightdither].status = (!HWR_UseShader()) ? IT_GRAYEDOUT : IT_STRING | IT_CVAR;
-	OP_OpenGLOptionsMenu[op_gl_secbright].status = (!HWR_UseShader()) ? IT_GRAYEDOUT : IT_STRING | IT_CVAR;
 
 	OP_OpenGLOptionsMenu[op_gl_palrender].status = (cv_glscreentextures.value != 2 || !HWR_UseShader()) ? IT_GRAYEDOUT : IT_STRING | IT_CVAR;
 	OP_OpenGLOptionsMenu[op_gl_flashpal].status = (!HWR_ShouldUsePaletteRendering()) ? IT_GRAYEDOUT : IT_STRING | IT_CVAR;
