@@ -201,6 +201,11 @@ extern consvar_t cv_secbright;
 
 extern consvar_t cv_randomdirlight;
 
+static inline INT32 R_GetSoftLightlevel(INT32 llevel)
+{
+	return CLAMP(llevel, cv_secbright.value, 255) >> LIGHTSEGSHIFT;
+}
+
 // Called by startup code.
 void R_Init(void);
 

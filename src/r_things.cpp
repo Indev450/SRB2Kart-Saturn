@@ -1061,7 +1061,7 @@ static void R_SplitSprite(vissprite_t *sprite)
 
 		if (!(sector->lightlist[i].caster->flags & FF_NOSHADE))
 		{
-			INT32 lightnum = std::max((*sector->lightlist[i].lightlevel >> LIGHTSEGSHIFT), cv_secbright.value);
+			INT32 lightnum = R_GetSoftLightlevel(*sector->lightlist[i].lightlevel);
 
 			if (lightnum < 0)
 				spritelights = scalelight[0];
@@ -1660,7 +1660,7 @@ static void R_ProjectSprite(mobj_t *thing)
 			lightnum = thing->subsector->sector->lightlevel;
 		}
 
-		lightnum = std::max((lightnum + R_ThingLightLevel(thing)) >> LIGHTSEGSHIFT, cv_secbright.value);
+		lightnum = R_GetSoftLightlevel(lightnum + R_ThingLightLevel(thing));
 
 		if (maplighting.directional && P_SectorUsesDirectionalLighting(thing->subsector->sector))
 		{
@@ -2057,7 +2057,7 @@ void R_AddSprites(sector_t *sec, INT32 lightlevel)
 	{
 		if (sec->heightsec == -1) lightlevel = sec->lightlevel;
 
-		lightnum = std::max((lightlevel >> LIGHTSEGSHIFT), cv_secbright.value);
+		lightnum = R_GetSoftLightlevel(lightlevel);
 
 		if (lightnum < 0)
 			spritelights = scalelight[0];
