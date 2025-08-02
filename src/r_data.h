@@ -52,7 +52,7 @@ typedef struct
 {
 	// Keep name for switch changing, etc.
 	char name[8];
-	UINT8 type; // TEXTURETYPE_
+	UINT32 hash;
 	INT16 width, height;
 	boolean holes;
 	// All the patches[patchcount] are drawn back to front into the cached texture.
@@ -76,6 +76,7 @@ extern CV_PossibleValue_t Color_cons_t[];
 
 // Load TEXTURE1/TEXTURE2/PNAMES definitions, create lookup tables
 void R_LoadTextures(void);
+void R_LoadTexturesPwad(UINT16 wadnum);
 void R_FlushTextureCache(void);
 
 UINT8 *R_GenerateTexture(size_t texnum);
