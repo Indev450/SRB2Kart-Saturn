@@ -2345,9 +2345,7 @@ static void P_RunLevelScript(const char *scriptname)
 		lumpnum_t lumpnum;
 		char newname[9];
 
-		strncpy(newname, scriptname, 8);
-
-		newname[8] = '\0';
+		strlcpy(newname, scriptname, sizeof(newname));
 
 		lumpnum = W_CheckNumForName(newname);
 
@@ -3310,6 +3308,9 @@ UINT16 P_PartialAddWadFile(const char *wadfilename, boolean local)
 		CONS_Printf(M_GetText("%s midi musics ignored\n"), sizeu1(mreplaces));
 	if (!devparm && digmreplaces)
 		CONS_Printf(M_GetText("%s digital musics replaced\n"), sizeu1(digmreplaces));
+
+	if (!mapsadded)
+		CONS_Printf(M_GetText("No maps added\n"));
 
 #ifdef HWRENDER
 	// Free GPU textures before freeing patches.

@@ -580,6 +580,7 @@ Rloadtextures (INT32 i, INT32 w)
 		texture->hash = quickncasehash(texture->name, 8);
 		texture->width = SHORT(patchlump->width);
 		texture->height = SHORT(patchlump->height);
+		texture->type = TEXTURETYPE_SINGLEPATCH;
 		texture->patchcount = 1;
 		texture->holes = false;
 
@@ -592,9 +593,23 @@ Rloadtextures (INT32 i, INT32 w)
 
 		Z_Free(patchlump);
 
+		// determine width power of 2
+#if 1
+        // [WDJ] only need to determine if exact power of 2.
+        k = 1;
+        while (k < texture->width)
+            k<<=1;
+#else
+		// Largest power of 2 that fits within width.
 		k = 1;
 		while (k << 1 <= texture->width)
 			k <<= 1;
+#endif
+		if (k != texture->width)
+		{
+			// Odd width
+			k = 1;  // make texturewidthmask = 0
+		}
 
 		texturewidthmask[i] = k - 1;
 		textureheight[i] = texture->height << FRACBITS;

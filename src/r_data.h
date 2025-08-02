@@ -52,6 +52,7 @@ typedef struct
 {
 	// Keep name for switch changing, etc.
 	char name[8];
+	UINT8 type; // TEXTURETYPE_
 	UINT32 hash;
 	INT16 width, height;
 	boolean holes;
