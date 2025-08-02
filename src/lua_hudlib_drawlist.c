@@ -12,11 +12,7 @@
 
 #include "lua_hudlib_drawlist.h"
 #include "lua_hud.h"
-#ifdef NOBLUAJIT
 #include "blua/lstate.h" // shhhhhh
-#else
-#include "lua_script.h"
-#endif
 #include "lua_libs.h"
 
 #include <string.h>
@@ -303,6 +299,7 @@ static void CalcFillCoords(drawitem_t *item)
 			else if (!(c & V_SNAPTOLEFT))
 				x += (vid.width - (BASEVIDWIDTH * dupx)) / 2;
 		}
+
 		if (vid.height != BASEVIDHEIGHT * dupy)
 		{
 			// same thing here
@@ -311,6 +308,7 @@ static void CalcFillCoords(drawitem_t *item)
 			else if (!(c & V_SNAPTOTOP))
 				y += (vid.height - (BASEVIDHEIGHT * dupy)) / 2;
 		}
+
 		if (c & V_SPLITSCREEN)
 			y += (BASEVIDHEIGHT * dupy)/2;
 		if (c & V_HORZSCREEN)
@@ -330,22 +328,15 @@ static UINT64 GetItemId(void)
 	if (!hud_interpolate)
 		return 0;
 
-#ifdef NOBLUAJIT
-	UINT64 id = (uintptr_t)gL->savedpc;
-#else
-	// he who controls the JIT controls the API
-	const void *p = lua_getpc(gL, 1);
-	I_Assert(p != NULL);
-	UINT64 id = (uintptr_t)p;
-#endif
 	// leave bits 0 and 1 free for the string mode
-	id = (id << 32) | (hud_interpcounter << 10) | (hud_interptag << 2);
+	UINT64 id = ((UINT64)(uintptr_t)gL->savedpc << 32) | (hud_interpcounter << 10) | (hud_interptag << 2);
 
 	if (hud_interplatch)
 	{
 		id |= INTERP_LATCH;
 		hud_interplatch = false;
 	}
+
 	if (hud_interpstring)
 		id |= INTERP_STRING;
 

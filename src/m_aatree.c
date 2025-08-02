@@ -20,17 +20,17 @@
 
 typedef struct aatree_node_s
 {
-	INT32	level;
-	INT32	key;
-	void*	value;
+	INT32 key;
+	INT32 depth;
+	void *value;
 
 	struct aatree_node_s *left, *right;
 } aatree_node_t;
 
 struct aatree_s
 {
-	aatree_node_t	*root;
-	UINT32		flags;
+	aatree_node_t *root;
+	UINT32 flags;
 };
 
 aatree_t *M_AATreeAlloc(UINT32 flags)
@@ -56,40 +56,48 @@ void M_AATreeFree(aatree_t *aatree)
 	Z_Free(aatree);
 }
 
-static aatree_node_t *M_AATreeSkew(aatree_node_t *node)
+static aatree_node_t *M_AATreeRotateRight(aatree_node_t *node)
 {
-	if (node && node->left && node->left->level == node->level)
-	{
-		// Not allowed: horizontal left-link. Reverse the
-		// horizontal link and hook the orphan back in.
-		aatree_node_t *oldleft = node->left;
-		node->left = oldleft->right;
-		oldleft->right = node;
-
-		return oldleft;
-	}
-
-	// No change needed.
-	return node;
+	aatree_node_t *newnode = node->left;
+	aatree_node_t *tmp = newnode->right;
+	newnode->right = node;
+	node->left = tmp;
+	return newnode;
 }
 
-static aatree_node_t *M_AATreeSplit(aatree_node_t *node)
+static aatree_node_t *M_AATreeRotateLeft(aatree_node_t *node)
 {
-	if (node && node->right && node->right->right && node->level == node->right->right->level)
+	aatree_node_t *newnode = node->right;
+	aatree_node_t *tmp = newnode->left;
+	newnode->left = node;
+	node->right = tmp;
+	return newnode;
+}
+
+static aatree_node_t *M_AATreeRebalance(aatree_node_t *node)
+{
+	INT32 balance;
+	if (node->left == NULL && node->right == NULL)
+		return node;
+	if (node->left == NULL)
+		balance = -node->right->depth;
+	else if (node->right == NULL)
+		balance = node->left->depth;
+	else
 	{
-		// Not allowed: two consecutive horizontal right-links.
-		// The middle one becomes the new root at this point,
-		// with suitable adjustments below.
-
-		aatree_node_t *oldright = node->right;
-		node->right = oldright->left;
-		oldright->left = node;
-		oldright->level++;
-
-		return oldright;
+		I_Assert(node->left->key < node->right->key);
+		balance = node->left->depth - node->right->depth;
 	}
 
-	// No change needed.
+	if (balance > 1)
+	{
+		return M_AATreeRotateRight(node);
+	}
+	else if (balance < -1)
+	{
+		return M_AATreeRotateLeft(node);
+	}
+
 	return node;
 }
 
@@ -98,13 +106,12 @@ static aatree_node_t *M_AATreeSet_Node(aatree_node_t *node, UINT32 flags, INT32 
 	if (!node)
 	{
 		// Nothing here, so just add where we are
-
 		node = Z_Malloc(sizeof (aatree_node_t), PU_STATIC, NULL);
-		node->level = 1;
 		node->key = key;
 		if (value && (flags & AATREE_ZUSER)) Z_SetUser(value, &node->value);
 		else node->value = value;
 		node->left = node->right = NULL;
+		node->depth = 1;
 	}
 	else
 	{
@@ -118,8 +125,17 @@ static aatree_node_t *M_AATreeSet_Node(aatree_node_t *node, UINT32 flags, INT32 
 			else node->value = value;
 		}
 
-		node = M_AATreeSkew(node);
-		node = M_AATreeSplit(node);
+		node = M_AATreeRebalance(node);
+		if (node->left == NULL && node->right == NULL)
+			node->depth = 1;
+		else if (node->left == NULL)
+			node->depth = node->right->depth + 1;
+		else if (node->right == NULL)
+			node->depth = node->left->depth + 1;
+		else if (node->left->depth > node->right->depth)
+			node->depth = node->left->depth + 1;
+		else
+			node->depth = node->right->depth + 1;
 	}
 
 	return node;
@@ -134,11 +150,11 @@ void M_AATreeSet(aatree_t *aatree, INT32 key, void* value)
 // and nodes with value == NULL.
 static void *M_AATreeGet_Node(aatree_node_t *node, INT32 key)
 {
-	if (node)
+	if (LIKELY(node))
 	{
-		if (node->key == key)
+		if (UNLIKELY(node->key == key))
 			return node->value;
-		else if(node->key < key)
+		else if (node->key < key)
 			return M_AATreeGet_Node(node->right, key);
 		else
 			return M_AATreeGet_Node(node->left, key);
@@ -151,7 +167,6 @@ void *M_AATreeGet(aatree_t *aatree, INT32 key)
 {
 	return M_AATreeGet_Node(aatree->root, key);
 }
-
 
 static void M_AATreeIterate_Node(aatree_node_t *node, aatree_iter_t callback)
 {

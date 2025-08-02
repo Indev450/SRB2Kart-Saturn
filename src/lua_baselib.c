@@ -16,6 +16,7 @@
 #include "p_slopes.h" // P_GetZAt
 #include "z_zone.h"
 #include "r_main.h"
+#include "r_skins.h"
 #include "r_things.h"
 #include "m_random.h"
 #include "s_sound.h"
@@ -24,6 +25,7 @@
 #include "hu_stuff.h"	// HU_AddChatText
 #include "console.h"
 #include "k_kart.h" // SRB2Kart
+#include "k_hud.h" // SRB2Kart
 #include "d_netcmd.h" // IsPlayerAdmin
 #include "d_main.h"
 
@@ -38,123 +40,6 @@
 boolean luaL_checkboolean(lua_State *L, int narg) {
 	luaL_checktype(L, narg, LUA_TBOOLEAN);
 	return lua_toboolean(L, narg);
-}
-
-static int ref_open, ref_iowrite, ref_fwrite; // original versions of io functions
-
-#define FILELIMIT 1024*1024 // Size limit for reading/writing files
-
-static const char *whitelist[] = { // Allow scripters to write files of these types to SRB2's folder
-	".txt",
-	".sav2",
-	".cfg",
-	".png",
-	".bmp"
-};
-
-static int StartsWith(const char *a, const char *b) // this is wolfs being lazy yet again
-{
-	if(strncmp(a, b, strlen(b)) == 0) return 1;
-	return 0;
-};
-
-// Wrapper for opening files
-static int lib_open(lua_State *L)
-{
-	const char *filename = luaL_checkstring(L, 1);
-	int pass = 0;
-	size_t i;
-	int length = strlen(filename);
-	char *splitter, *forward, *backward;
-	char *destFilename;
-
-	for (i = 0; i < (sizeof (whitelist) / sizeof(const char *)); i++)
-	{
-		if (!stricmp(&filename[length - strlen(whitelist[i])], whitelist[i]))
-		{
-			pass = 1;
-			break;
-		}
-	}
-	if (strstr(filename, "..") || strchr(filename, ':') || StartsWith(filename, "\\")
-		|| StartsWith(filename, "/") || !pass)
-	{
-		return luaL_error(L,"access denied to %s", filename);
-	}
-
-	destFilename = va("%s"PATHSEP"luafiles"PATHSEP"%s", srb2home, filename);
-
-	// Make directories as needed
-	splitter = destFilename;
-
-	forward = strchr(splitter, '/');
-	backward = strchr(splitter, '\\');
-	while ((splitter = (forward && backward) ? min(forward, backward) : (forward ?: backward)))
-	{
-		*splitter = 0;
-		I_mkdir(destFilename, 0755);
-		*splitter = '/';
-		splitter++;
-
-		forward = strchr(splitter, '/');
-		backward = strchr(splitter, '\\');
-	}
-
-	// replace the filename string
-	lua_pushstring(L, destFilename);
-	lua_replace(L, 1);
-	// now call the real io.open
-	lua_rawgeti(L, LUA_REGISTRYINDEX, ref_open);
-	lua_insert(L, 1);
-	lua_call(L, lua_gettop(L)-1, LUA_MULTRET);
-	return lua_gettop(L);
-}
-
-// Wrapper for writing to files
-static int lib_write(lua_State *L, int arg)
-{
-	int top = lua_gettop(L);
-	boolean error = true;
-	size_t len, size = 0;
-	int ogref = ref_iowrite;
-
-	if (arg != 1) {
-		ogref = ref_fwrite;
-		FILE *fp = *(FILE **)luaL_checkudata(L, 1, LUA_FILEHANDLE);
-		if (fp == NULL) goto call; // real file:write will throw
-		size = ftell(fp);
-	}
-
-	// check the size of each argument. if there's too much data,
-	// cut off the stack and print an error
-	for (; arg <= top; arg++) {
-		if (lua_tolstring(L, arg, &len) == NULL) goto call;
-		if ((size += len) > FILELIMIT) {
-			// oops! too many bytes!
-			lua_settop(L, arg-1);
-			goto call;
-		}
-	}
-	error = false;
-
-call:
-	lua_rawgeti(L, LUA_REGISTRYINDEX, ogref);
-	lua_insert(L, 1);
-	lua_call(L, lua_gettop(L)-1, LUA_MULTRET);
-
-	if (error)
-		return luaL_error(L,"write limit bypassed in file. Changes have been discarded.");
-	return lua_gettop(L);
-}
-
-static int lib_write_f(lua_State *L)
-{
-	return lib_write(L, 2);
-}
-
-static int lib_write_io(lua_State *L)
-{
-	return lib_write(L, 1);
 }
 
 // String concatination
@@ -357,6 +242,7 @@ static int lib_pAproxDistance(lua_State *L)
 	fixed_t dy = luaL_checkfixed(L, 2);
 	//HUDSAFE
 	//LUA_Deprecated(L, "P_AproxDistance", "FixedHypot");
+	LUA_LogDeprecated(L, "P_AproxDistance", "FixedHypot");
 	lua_pushfixed(L, FixedHypot(dx, dy));
 	return 1;
 }
@@ -1157,6 +1043,7 @@ static int lib_pTeleportMove(lua_State *L)
 	if (!thing)
 		return LUA_ErrInvalid(L, "mobj_t");
 	//LUA_Deprecated(L, "P_TeleportMove", "P_SetOrigin\" or \"P_MoveOrigin");
+	LUA_LogDeprecated(L, "P_TeleportMove", "P_SetOrigin\" or \"P_MoveOrigin");
 	lua_pushboolean(L, P_MoveOrigin(thing, x, y, z));
 	LUA_PushUserdata(L, tmthing, META_MOBJ);
 	P_SetTarget(&tmthing, ptmthing);
@@ -1511,11 +1398,9 @@ static int lib_pSetMobjStateNF(lua_State *L)
 static int lib_pDoSuperTransformation(lua_State *L)
 {
 	player_t *player = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
-	boolean giverings = lua_optboolean(L, 2);
 	NOHUD
 	if (!player)
 		return LUA_ErrInvalid(L, "player_t");
-	P_DoSuperTransformation(player, giverings);
 	return 0;
 }
 
@@ -1767,7 +1652,7 @@ static int lib_pGetZAt(lua_State *L)
 	if (!slope)
 		return LUA_ErrInvalid(L, "pslope_t");
 
-	lua_pushfixed(L, P_GetZAt(slope, x, y));
+	lua_pushfixed(L, P_GetSlopeZAt(slope, x, y));
 	return 1;
 }
 
@@ -2567,16 +2452,15 @@ static int lib_gExitLevel(lua_State *L)
 
 static int lib_gIsSpecialStage(lua_State *L)
 {
-	INT32 mapnum = luaL_optinteger(L, 1, gamemap);
 	//HUDSAFE
-	lua_pushboolean(L, G_IsSpecialStage(mapnum));
+	lua_pushboolean(L, false);
 	return 1;
 }
 
 static int lib_gGametypeUsesLives(lua_State *L)
 {
 	//HUDSAFE
-	lua_pushboolean(L, G_GametypeUsesLives());
+	lua_pushboolean(L, false);
 	return 1;
 }
 
@@ -3463,28 +3347,6 @@ int LUA_BaseLib(lua_State *L)
 	lua_pushcfunction(L,lib_concat); // push concatination function
 	lua_setfield(L,-2,"__add"); // ... store it as mathematical addition
 	lua_pop(L, 2); // pop metatable and dummy string
-
-	// replaces an existing function with another,
-	// saving the original as a reference
-#define REPLACE(name, func, ref) \
-	lua_pushliteral(L, name); \
-	lua_rawget(L, -2); \
-	ref = luaL_ref(L, LUA_REGISTRYINDEX); \
-	lua_pushliteral(L, name); \
-	lua_pushcclosure(L, &func, 0); \
-	lua_rawset(L, -3);
-
-	// replace io.open
-	lua_getglobal(L, "io");
-	REPLACE("open", lib_open, ref_open)
-	REPLACE("write", lib_write_io, ref_iowrite)
-	lua_pop(L, 1);
-
-	// replace file:write
-	luaL_getmetatable(L, LUA_FILEHANDLE);
-	REPLACE("write", lib_write_f, ref_fwrite)
-	lua_pop(L, 1);
-#undef REPLACE
 
 	lua_newtable(L);
 	lua_setfield(L, LUA_REGISTRYINDEX, LREG_EXTVARS);

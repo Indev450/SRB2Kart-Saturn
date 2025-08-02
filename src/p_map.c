@@ -140,7 +140,7 @@ boolean P_DoSpring(mobj_t *spring, mobj_t *object)
 	if (object->player && object->player->spectator)
 		return false;
 
-	if (object->player && (object->player->pflags & PF_NIGHTSMODE))
+	if (UNLIKELY(object->player && (object->player->pflags & PF_NIGHTSMODE)))
 	{
 		/*Someone want to make these work like bumpers?*/
 		return false;
@@ -321,7 +321,7 @@ static boolean PIT_CheckThing(mobj_t *thing)
 		return true;
 
 	// Ignore... things.
-	if (!tmthing || !thing || P_MobjWasRemoved(thing))
+	if (!tmthing || P_MobjWasRemoved(thing))
 		return true;
 
 	I_Assert(!P_MobjWasRemoved(tmthing));
@@ -333,11 +333,11 @@ static boolean PIT_CheckThing(mobj_t *thing)
 		return true;
 
 #ifdef SEENAMES
-  // Do name checks all the way up here
-  // So that NOTHING ELSE can see MT_NAMECHECK because it is client-side.
-	if (tmthing->type == MT_NAMECHECK)
+	// Do name checks all the way up here
+	// So that NOTHING ELSE can see MT_NAMECHECK because it is client-side.
+	if (UNLIKELY(tmthing->type == MT_NAMECHECK))
 	{
-	  // Ignore things that aren't players, ignore spectators, ignore yourself.
+	    // Ignore things that aren't players, ignore spectators, ignore yourself.
 		// (also don't bother to check that tmthing->target->player is non-NULL because we're not actually using it here.)
 		if (!thing->player || thing->player->spectator || (tmthing->target && thing->player == tmthing->target->player))
 			return true;
@@ -361,8 +361,8 @@ static boolean PIT_CheckThing(mobj_t *thing)
 		return true;
 
 	// Don't collide with your buddies while NiGHTS-flying.
-	if (tmthing->player && thing->player && (maptol & TOL_NIGHTS)
-		&& ((tmthing->player->pflags & PF_NIGHTSMODE) || (thing->player->pflags & PF_NIGHTSMODE)))
+	if (UNLIKELY(tmthing->player && thing->player && (maptol & TOL_NIGHTS)
+		&& ((tmthing->player->pflags & PF_NIGHTSMODE) || (thing->player->pflags & PF_NIGHTSMODE))))
 		return true;
 
 	blockdist = thing->radius + tmthing->radius;
@@ -505,17 +505,15 @@ static boolean PIT_CheckThing(mobj_t *thing)
 	// check for skulls slamming into things
 	if (tmthing->flags2 & MF2_SKULLFLY)
 	{
-		{
-			// see if it went over / under
-			if (tmthing->z > thing->z + thing->height)
-				return true; // overhead
-			if (tmthing->z + tmthing->height < thing->z)
-				return true; // underneath
+		// see if it went over / under
+		if (tmthing->z > thing->z + thing->height)
+			return true; // overhead
+		if (tmthing->z + tmthing->height < thing->z)
+			return true; // underneath
 
-			tmthing->flags2 &= ~MF2_SKULLFLY;
-			tmthing->momx = tmthing->momy = tmthing->momz = 0;
-			return false; // stop moving
-		}
+		tmthing->flags2 &= ~MF2_SKULLFLY;
+		tmthing->momx = tmthing->momy = tmthing->momz = 0;
+		return false; // stop moving
 	}
 
 	// SRB2kart 011617 - Colission[sic] code for kart items //{
@@ -542,10 +540,6 @@ static boolean PIT_CheckThing(mobj_t *thing)
 
 		if (thing->health)
 			P_KillMobj(thing, tmthing, tmthing);
-
-		/*if (tmthing->player && (tmthing->player->kartstuff[k_invincibilitytimer] > 0
-			|| tmthing->player->kartstuff[k_growshrinktimer] > 0))
-			return true;*/
 
 		K_KartBouncing(tmthing, thing, false, true);
 		return false;
@@ -729,7 +723,7 @@ static boolean PIT_CheckThing(mobj_t *thing)
 		if (tmthing->z + tmthing->height < thing->z)
 			return true; // underneath
 
-		if (!(thing->type == MT_PLAYER))
+		if (thing->type != MT_PLAYER)
 			return true;
 
 		if (thing->player && thing->player->powers[pw_flashing])
@@ -1697,9 +1691,9 @@ static boolean PIT_CheckLine(line_t *ld)
 boolean P_CheckPosition(mobj_t *thing, fixed_t x, fixed_t y)
 {
 	INT32 xl, xh, yl, yh, bx, by;
-	subsector_t *newsubsec;
+	sector_t *newsec;
 	boolean blockval = true;
-	
+
 	ps_checkposition_calls.value.i++;
 
 	I_Assert(thing != NULL);
@@ -1720,9 +1714,9 @@ boolean P_CheckPosition(mobj_t *thing, fixed_t x, fixed_t y)
 	tmbbox[BOXLEFT] = x - tmthing->radius;
 
 	if (thing->x != x || thing->y != y || thing->subsector == NULL)
-		newsubsec = R_PointInSubsector(x, y);
+		newsec = R_PointInSubsector(x, y)->sector;
 	else
-		newsubsec = thing->subsector;
+		newsec = thing->subsector->sector;
 
 	ceilingline = blockingline = NULL;
 
@@ -1730,33 +1724,34 @@ boolean P_CheckPosition(mobj_t *thing, fixed_t x, fixed_t y)
 	// that contains the point.
 	// Any contacted lines the step closer together
 	// will adjust them.
-	tmfloorz = tmdropoffz = P_GetFloorZ(thing, newsubsec->sector, x, y, NULL); //newsubsec->sector->floorheight;
-	tmceilingz = P_GetCeilingZ(thing, newsubsec->sector, x, y, NULL); //newsubsec->sector->ceilingheight;
-	tmfloorslope = newsubsec->sector->f_slope;
-	tmceilingslope = newsubsec->sector->c_slope;
+	tmfloorz = tmdropoffz = P_GetFloorZ(thing, newsec, x, y, NULL); //newsec->floorheight;
+	tmceilingz = P_GetCeilingZ(thing, newsec, x, y, NULL); //newsec->ceilingheight;
+	tmfloorslope = newsec->f_slope;
+	tmceilingslope = newsec->c_slope;
 
 	// Check list of fake floors and see if tmfloorz/tmceilingz need to be altered.
-	if (newsubsec->sector->ffloors)
+	if (newsec->ffloors)
 	{
 		ffloor_t *rover;
 		fixed_t delta1, delta2;
 		INT32 thingtop = thing->z + thing->height;
 
-		for (rover = newsubsec->sector->ffloors; rover; rover = rover->next)
+		for (rover = newsec->ffloors; rover; rover = rover->next)
 		{
 			fixed_t topheight, bottomheight, midheight;
 
 			if (!(rover->flags & FF_EXISTS))
 				continue;
 
-			topheight = P_GetFOFTopZ(thing, newsubsec->sector, rover, x, y, NULL);
-			bottomheight = P_GetFOFBottomZ(thing, newsubsec->sector, rover, x, y, NULL);
+			topheight    = P_GetFOFTopZ(thing, newsec, rover, x, y, NULL);
+			bottomheight = P_GetFOFBottomZ(thing, newsec, rover, x, y, NULL);
 
 			if ((rover->flags & (FF_SWIMMABLE|FF_GOOWATER)) == (FF_SWIMMABLE|FF_GOOWATER) && !(thing->flags & MF_NOGRAVITY))
 			{
 				// If you're inside goowater and slowing down
 				fixed_t sinklevel = FixedMul(thing->info->height/6, thing->scale);
 				fixed_t minspeed = FixedMul(thing->info->height/9, thing->scale);
+
 				if (thing->z < topheight && bottomheight < thingtop
 				&& abs(thing->momz) < minspeed)
 				{
@@ -1771,14 +1766,16 @@ boolean P_CheckPosition(mobj_t *thing, fixed_t x, fixed_t y)
 					// Land on the top or the bottom, depending on gravity flip.
 					if (!(thing->eflags & MFE_VERTICALFLIP) && thing->z >= topheight - sinklevel && thing->momz <= 0)
 					{
-						if (tmfloorz < topheight - sinklevel) {
+						if (tmfloorz < topheight - sinklevel)
+						{
 							tmfloorz = topheight - sinklevel;
 							tmfloorslope = *rover->t_slope;
 						}
 					}
 					else if (thing->eflags & MFE_VERTICALFLIP && thingtop <= bottomheight + sinklevel && thing->momz >= 0)
 					{
-						if (tmceilingz > bottomheight + sinklevel) {
+						if (tmceilingz > bottomheight + sinklevel)
+						{
 							tmceilingz = bottomheight + sinklevel;
 							tmceilingslope = *rover->b_slope;
 						}
@@ -1800,7 +1797,8 @@ boolean P_CheckPosition(mobj_t *thing, fixed_t x, fixed_t y)
 			{
 				if (thing->z < topheight && bottomheight < thingtop)
 				{
-					if (tmfloorz < thing->z) {
+					if (tmfloorz < thing->z)
+					{
 						tmfloorz = thing->z;
 						tmfloorslope = NULL;
 					}
@@ -1820,6 +1818,7 @@ boolean P_CheckPosition(mobj_t *thing, fixed_t x, fixed_t y)
 				tmfloorz = tmdropoffz = topheight;
 				tmfloorslope = *rover->t_slope;
 			}
+
 			if (bottomheight < tmceilingz && abs(delta1) >= abs(delta2)
 				&& !(rover->flags & FF_PLATFORM)
 				&& !(thing->type == MT_SKIM && (rover->flags & FF_SWIMMABLE)))
@@ -1986,7 +1985,7 @@ void P_CheckHoopPosition(mobj_t *hoopthing, fixed_t x, fixed_t y, fixed_t z, fix
 boolean P_CheckCameraPosition(fixed_t x, fixed_t y, camera_t *thiscam)
 {
 	INT32 xl, xh, yl, yh, bx, by;
-	subsector_t *newsubsec;
+	sector_t *newsec;
 
 	tmx = x;
 	tmy = y;
@@ -1997,15 +1996,15 @@ boolean P_CheckCameraPosition(fixed_t x, fixed_t y, camera_t *thiscam)
 	tmbbox[BOXLEFT] = x - thiscam->radius;
 
 	if (thiscam->x != x || thiscam->y != y || thiscam->subsector == NULL)
-		newsubsec = R_PointInSubsector(x, y);
+		newsec = R_PointInSubsectorFast(x, y)->sector;
 	else
-		newsubsec = thiscam->subsector;
+		newsec = thiscam->subsector->sector;
 
 	ceilingline = blockingline = NULL;
 
 	mapcampointer = thiscam;
 
-	if (GETSECSPECIAL(newsubsec->sector->special, 4) == 12)
+	if (UNLIKELY(GETSECSPECIAL(newsec->special, 4) == 12))
 	{ // Camera noclip on entire sector.
 		tmfloorz = tmdropoffz = thiscam->z;
 		tmceilingz = tmdrpoffceilz = thiscam->z + thiscam->height;
@@ -2016,45 +2015,47 @@ boolean P_CheckCameraPosition(fixed_t x, fixed_t y, camera_t *thiscam)
 	// that contains the point.
 	// Any contacted lines the step closer together
 	// will adjust them.
-	tmfloorz = tmdropoffz = P_CameraGetFloorZ(thiscam, newsubsec->sector, x, y, NULL);
+	tmfloorz = tmdropoffz = P_CameraGetFloorZ(thiscam, newsec, x, y, NULL);
 
-	tmceilingz = P_CameraGetCeilingZ(thiscam, newsubsec->sector, x, y, NULL);
+	tmceilingz = P_CameraGetCeilingZ(thiscam, newsec, x, y, NULL);
 
 	// Cameras use the heightsec's heights rather then the actual sector heights.
 	// If you can see through it, why not move the camera through it too?
-	if (newsubsec->sector->heightsec >= 0)
+	if (newsec->heightsec >= 0)
 	{
-		tmfloorz = tmdropoffz = sectors[newsubsec->sector->heightsec].floorheight;
-		tmceilingz = tmdrpoffceilz = sectors[newsubsec->sector->heightsec].ceilingheight;
+		tmfloorz = tmdropoffz = sectors[newsec->heightsec].floorheight;
+		tmceilingz = tmdrpoffceilz = sectors[newsec->heightsec].ceilingheight;
 	}
 
 	// Use preset camera clipping heights if set with Sector Special Parameters whose control sector has Camera Intangible special -Red
-	if (newsubsec->sector->camsec >= 0)
+	if (newsec->camsec >= 0)
 	{
-		tmfloorz = tmdropoffz = sectors[newsubsec->sector->camsec].floorheight;
-		tmceilingz = tmdrpoffceilz = sectors[newsubsec->sector->camsec].ceilingheight;
+		tmfloorz = tmdropoffz = sectors[newsec->camsec].floorheight;
+		tmceilingz = tmdrpoffceilz = sectors[newsec->camsec].ceilingheight;
 	}
 
 	// Check list of fake floors and see if tmfloorz/tmceilingz need to be altered.
-	if (newsubsec->sector->ffloors)
+	if (newsec->ffloors)
 	{
 		ffloor_t *rover;
 		fixed_t delta1, delta2;
 		INT32 thingtop = thiscam->z + thiscam->height;
 
-		for (rover = newsubsec->sector->ffloors; rover; rover = rover->next)
+		for (rover = newsec->ffloors; rover; rover = rover->next)
 		{
 			fixed_t topheight, bottomheight;
-			if (!(rover->flags & FF_BLOCKOTHERS) || !(rover->flags & FF_EXISTS) || !(rover->flags & FF_RENDERALL) || GETSECSPECIAL(rover->master->frontsector->special, 4) == 12)
+
+			if (!(rover->flags & FF_BLOCKOTHERS) || !(rover->flags & FF_EXISTS) || !(rover->flags & FF_RENDERALL) || UNLIKELY(GETSECSPECIAL(rover->master->frontsector->special, 4) == 12))
 				continue;
 
-			topheight = P_CameraGetFOFTopZ(thiscam, newsubsec->sector, rover, x, y, NULL);
-			bottomheight = P_CameraGetFOFBottomZ(thiscam, newsubsec->sector, rover, x, y, NULL);
+			topheight    = P_CameraGetFOFTopZ(thiscam, newsec, rover, x, y, NULL);
+			bottomheight = P_CameraGetFOFBottomZ(thiscam, newsec, rover, x, y, NULL);
 
 			delta1 = thiscam->z - (bottomheight
 				+ ((topheight - bottomheight)/2));
 			delta2 = thingtop - (bottomheight
 				+ ((topheight - bottomheight)/2));
+
 			if (topheight > tmfloorz && abs(delta1) < abs(delta2))
 			{
 				tmfloorz = tmdropoffz = topheight;
@@ -2119,7 +2120,7 @@ boolean P_CheckCameraPosition(fixed_t x, fixed_t y, camera_t *thiscam)
 						// We're inside it! Yess...
 						polysec = po->lines[0]->backsector;
 
-						if (GETSECSPECIAL(polysec->special, 4) == 12)
+						if (UNLIKELY(GETSECSPECIAL(polysec->special, 4) == 12))
 						{ // Camera noclip polyobj.
 							plink = (polymaplink_t *)(plink->link.next);
 							continue;
@@ -2173,9 +2174,6 @@ boolean P_CheckCameraPosition(fixed_t x, fixed_t y, camera_t *thiscam)
 boolean P_TryCameraMove(fixed_t x, fixed_t y, camera_t *thiscam)
 {
 	subsector_t *s;
-
-	boolean retval = true;
-	boolean itsatwodlevel = false;
 	UINT8 i;
 
 	floatok = false;
@@ -2184,26 +2182,11 @@ boolean P_TryCameraMove(fixed_t x, fixed_t y, camera_t *thiscam)
 		return false;
 
 	if (thiscam->x != x || thiscam->y != y || thiscam->subsector == NULL)
-		s = R_PointInSubsector(x, y);
+		s = R_PointInSubsectorFast(x, y);
 	else
 		s = thiscam->subsector;
 
-	if (twodlevel)
-		itsatwodlevel = true;
-	else
-	{
-		for (i = 0; i <= splitscreen; i++)
-		{
-			if (thiscam == &camera[i] && players[displayplayers[i]].mo
-				&& (players[displayplayers[i]].mo->flags2 & MF2_TWOD))
-			{
-				itsatwodlevel = true;
-				break;
-			}
-		}
-	}
-
-	if (!itsatwodlevel && players[displayplayers[0]].mo)
+	if (players[displayplayers[0]].mo)
 	{
 		fixed_t tryx = thiscam->x;
 		fixed_t tryy = thiscam->y;
@@ -2240,11 +2223,11 @@ boolean P_TryCameraMove(fixed_t x, fixed_t y, camera_t *thiscam)
 			else
 				tryy = y;
 
-			if (!P_CheckCameraPosition(tryx, tryy, thiscam))
-				return false; // solid wall or thing
-
 			if (tmceilingz - tmfloorz < thiscam->height)
 				return false; // doesn't fit
+
+			if (!P_CheckCameraPosition(tryx, tryy, thiscam))
+				return false; // solid wall or thing
 
 			floatok = true;
 
@@ -2266,11 +2249,12 @@ boolean P_TryCameraMove(fixed_t x, fixed_t y, camera_t *thiscam)
 
 			if ((tmfloorz - thiscam->z > MAXCAMERASTEPMOVE))
 				return false; // too big a step up
-		} while(tryx != x || tryy != y);
+
+		} while (tryx != x || tryy != y);
 	}
 	else
 	{
-		tmfloorz = P_CameraGetFloorZ(thiscam, thiscam->subsector->sector, x, y, NULL);
+		tmfloorz   = P_CameraGetFloorZ(thiscam, thiscam->subsector->sector, x, y, NULL);
 		tmceilingz = P_CameraGetCeilingZ(thiscam, thiscam->subsector->sector, x, y, NULL);
 	}
 
@@ -2283,7 +2267,7 @@ boolean P_TryCameraMove(fixed_t x, fixed_t y, camera_t *thiscam)
 	thiscam->y = y;
 	thiscam->subsector = s;
 
-	return retval;
+	return true;
 }
 
 //
@@ -3199,7 +3183,7 @@ stairstep:
 
 	P_HitSlideLine(bestslideline); // clip the moves
 
-	if ((twodlevel || (mo->flags2 & MF2_TWOD)) && mo->player)
+	if (UNLIKELY((twodlevel || (mo->flags2 & MF2_TWOD)) && mo->player))
 	{
 		mo->momx = tmxmove;
 		tmymove = 0;
@@ -3642,7 +3626,7 @@ static boolean PIT_ChangeSector(mobj_t *thing, boolean realcrush)
 
 						for (think = thinkercap.next; think != &thinkercap; think = think->next)
 						{
-							if (think->function.acp1 != (actionf_p1)T_StartCrumble)
+							if (think->function != (actionf_p1)T_StartCrumble)
 								continue;
 
 							crumbler = (elevator_t *)think;
@@ -4102,10 +4086,7 @@ void P_MapEnd(void)
 fixed_t P_FloorzAtPos(fixed_t x, fixed_t y, fixed_t z, fixed_t height)
 {
 	sector_t *sec = R_PointInSubsector(x, y)->sector;
-	fixed_t floorz = sec->floorheight;
-
-	if (sec->f_slope)
-		floorz = P_GetZAt(sec->f_slope, x, y);
+	fixed_t floorz = P_GetSectorFloorZAt(sec, x, y);
 
 	// Intercept the stupid 'fall through 3dfloors' bug Tails 03-17-2002
 	if (sec->ffloors)
@@ -4116,19 +4097,15 @@ fixed_t P_FloorzAtPos(fixed_t x, fixed_t y, fixed_t z, fixed_t height)
 		for (rover = sec->ffloors; rover; rover = rover->next)
 		{
 			fixed_t topheight, bottomheight;
+
 			if (!(rover->flags & FF_EXISTS))
 				continue;
 
 			if ((!(rover->flags & FF_SOLID || rover->flags & FF_QUICKSAND) || (rover->flags & FF_SWIMMABLE)))
 				continue;
 
-			topheight = *rover->topheight;
-			bottomheight = *rover->bottomheight;
-
-			if (*rover->t_slope)
-				topheight = P_GetZAt(*rover->t_slope, x, y);
-			if (*rover->b_slope)
-				bottomheight = P_GetZAt(*rover->b_slope, x, y);
+			topheight    = P_GetFFloorTopZAt   (rover, x, y);
+			bottomheight = P_GetFFloorBottomZAt(rover, x, y);
 
 			if (rover->flags & FF_QUICKSAND)
 			{
@@ -4142,6 +4119,7 @@ fixed_t P_FloorzAtPos(fixed_t x, fixed_t y, fixed_t z, fixed_t height)
 
 			delta1 = z - (bottomheight + ((topheight - bottomheight)/2));
 			delta2 = thingtop - (bottomheight + ((topheight - bottomheight)/2));
+
 			if (topheight > floorz && abs(delta1) < abs(delta2))
 				floorz = topheight;
 		}

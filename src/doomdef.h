@@ -58,6 +58,9 @@
 // warning C4152: nonstandard extension, function/data pointer conversion in expression
 // warning C4213: nonstandard extension used : cast on l-value
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #include "doomtype.h"
 
@@ -67,11 +70,10 @@
 #include <string.h>
 
 #define _USE_MATH_DEFINES // fixes M_PI errors in r_plane.c for Visual Studio
+#ifdef __cplusplus
+#include <cmath>
+#else
 #include <math.h>
-
-#ifdef GETTEXT
-#include <libintl.h>
-#include <locale.h>
 #endif
 
 #include <sys/types.h>
@@ -113,8 +115,8 @@ extern char  logfilename[1024];
 #else
 #define VERSION    1 // Game version
 #define SUBVERSION 6 // more precise version number
-#define VERSIONSTRING "Saturn v8 - Testing"
-#define VERSIONSTRINGW L"Saturn v8 - Testing"
+#define VERSIONSTRING "Saturn v8.3"
+#define VERSIONSTRINGW L"Saturn v8.3"
 // Hey! If you change this, add 1 to the MODVERSION below! Otherwise we can't force updates!
 // And change CMakeLists.txt (not src/, but in root), for CMake users!
 // AND appveyor.yml, for the build bots!
@@ -447,14 +449,8 @@ void CONS_Debug(INT32 debugflags, const char *fmt, ...) FUNCDEBUG;
 extern char savegamename[256];
 
 // m_misc.h
-#ifdef GETTEXT
-#define M_GetText(String) gettext(String)
-void M_StartupLocale(void);
-#else
-// If no translations are to be used, make a stub
-// M_GetText function that just returns the string.
+//TODO: delet this
 #define M_GetText(x) (x)
-#endif
 
 FUNCINLINE static ATTRINLINE void *M_Memcpy(void *dest, const void *src, size_t n)
 {
@@ -524,12 +520,15 @@ UINT32 quickncasehash (const char *p, size_t n)
 	return x;
 }
 
+#ifndef __cplusplus
 #ifndef min // Double-Check with WATTCP-32's cdefs.h
 #define min(x, y) (((x) < (y)) ? (x) : (y))
 #endif
 #ifndef max // Double-Check with WATTCP-32's cdefs.h
 #define max(x, y) (((x) > (y)) ? (x) : (y))
 #endif
+#endif
+
 #ifndef CLAMP
 #define CLAMP(x, y, z) ((x) < (y) ? (y) : ((x) > (z) ? (z) : (x)))
 #endif
@@ -545,6 +544,27 @@ UINT32 quickncasehash (const char *p, size_t n)
 
 #ifndef DBL_EPSILON
 #define DBL_EPSILON 2.2204460492503131e-16l
+#endif
+
+#if defined(__GNUC__) || defined(__clang__)
+#ifndef LIKELY
+#define LIKELY(x)   __builtin_expect(!!(x), 1)
+#endif
+
+#ifndef UNLIKELY
+#define UNLIKELY(x) __builtin_expect(!!(x), 0)
+#endif
+#else
+#define LIKELY(x)       (x)
+#define UNLIKELY(x)     (x)
+#endif
+
+#ifdef __cplusplus
+#if defined(__GNUC__) || defined(__clang__) || defined(_MSC_VER)
+	#define restrict __restrict
+#else
+	#define restrict
+#endif
 #endif
 
 // An assert-type mechanism.
@@ -571,21 +591,15 @@ extern const char *compdate, *comptime, *comprevision, *compbranch;
 
 #ifndef NONET
 //-- SATURN __
-/// Enable gamestate resynching between Saturn servers and clients
-/// Like SRB2 and RR does
-/// Still highly experimental
-#ifdef DOSATURNSYNCH
-#define SATURNSYNCH
-
 /// Detect if a client is on Saturn in the clientconfig.
 /// To seperately allow them to join or block joining from vanilla clients.
 #ifdef DOSATURNJOIN
 #define SATURNJOIN
 #endif
-#endif
 
 /// Server detection for if a connecting client is on Saturn.
-/// For stuff like extra synching, etc.
+/// This also enables gamestate resynching between Saturn servers and clients
+/// Like SRB2 and RR does
 #ifdef DOSATURNPAK
 #define SATURNPAK
 #endif
@@ -648,6 +662,10 @@ extern const char *compdate, *comptime, *comprevision, *compbranch;
 #define HOLEPUNCH
 #else
 #undef UPDATE_ALERT
+#endif
+
+#ifdef __cplusplus
+} // extern "C"
 #endif
 
 #endif // __DOOMDEF__

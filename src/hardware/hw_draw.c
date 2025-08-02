@@ -71,10 +71,11 @@ static const float FLOATBASEVIDHEIGHT = (float)BASEVIDHEIGHT;
 // Notes            : x,y : positions relative to the original Doom resolution
 //                  : textes(console+score) + menus + status bar
 // -----------------+
-void HWR_DrawPatch(GLPatch_t *gpatch, INT32 x, INT32 y, INT32 option)
+void HWR_DrawPatch(patch_t *gpatch, INT32 x, INT32 y, INT32 option)
 {
 	FOutVector v[4];
 	FBITFIELD flags;
+	GLPatch_t *hwrPatch;
 
 //  3--2
 //  | /|
@@ -87,6 +88,7 @@ void HWR_DrawPatch(GLPatch_t *gpatch, INT32 x, INT32 y, INT32 option)
 
 	// make patch ready in hardware cache
 	HWR_GetPatch(gpatch);
+	hwrPatch = ((GLPatch_t *)gpatch->hardware);
 
 	switch (option & V_SCALEPATCHMASK)
 	{
@@ -94,29 +96,29 @@ void HWR_DrawPatch(GLPatch_t *gpatch, INT32 x, INT32 y, INT32 option)
 		pdupx = pdupy = 2.0f;
 		break;
 	case V_SMALLSCALEPATCH:
-		pdupx = 2.0f * FIXED_TO_FLOAT(vid.fsmalldupx);
-		pdupy = 2.0f * FIXED_TO_FLOAT(vid.fsmalldupy);
+		pdupx = 2.0f * FIXED_TO_FLOAT(vid.smalldupx*FRACUNIT);
+		pdupy = 2.0f * FIXED_TO_FLOAT(vid.smalldupy*FRACUNIT);
 		break;
 	case V_MEDSCALEPATCH:
-		pdupx = 2.0f * FIXED_TO_FLOAT(vid.fmeddupx);
-		pdupy = 2.0f * FIXED_TO_FLOAT(vid.fmeddupy);
+		pdupx = 2.0f * FIXED_TO_FLOAT(vid.meddupx*FRACUNIT);
+		pdupy = 2.0f * FIXED_TO_FLOAT(vid.meddupx*FRACUNIT);
 		break;
 	}
 
 	if (option & V_NOSCALESTART)
 		sdupx = sdupy = 2.0f;
 
-	v[0].x = v[3].x = (x*sdupx-SHORT(gpatch->leftoffset)*pdupx)/vid.width - 1;
-	v[2].x = v[1].x = (x*sdupx+(SHORT(gpatch->width)-SHORT(gpatch->leftoffset))*pdupx)/vid.width - 1;
-	v[0].y = v[1].y = 1-(y*sdupy-SHORT(gpatch->topoffset)*pdupy)/vid.height;
-	v[2].y = v[3].y = 1-(y*sdupy+(SHORT(gpatch->height)-SHORT(gpatch->topoffset))*pdupy)/vid.height;
+	v[0].x = v[3].x = (x*sdupx-gpatch->leftoffset*pdupx)/vid.width - 1;
+	v[2].x = v[1].x = (x*sdupx+(gpatch->width - gpatch->leftoffset)*pdupx)/vid.width - 1;
+	v[0].y = v[1].y = 1-(y*sdupy-gpatch->topoffset*pdupy)/vid.height;
+	v[2].y = v[3].y = 1-(y*sdupy+(gpatch->height - gpatch->topoffset)*pdupy)/vid.height;
 
 	v[0].z = v[1].z = v[2].z = v[3].z = 1.0f;
 
 	v[0].s = v[3].s = 0.0f;
-	v[2].s = v[1].s = gpatch->max_s;
+	v[2].s = v[1].s = hwrPatch->max_s;
 	v[0].t = v[1].t = 0.0f;
-	v[2].t = v[3].t = gpatch->max_t;
+	v[2].t = v[3].t = hwrPatch->max_t;
 
 	flags = PF_Translucent|PF_NoDepthTest;
 
@@ -129,7 +131,7 @@ void HWR_DrawPatch(GLPatch_t *gpatch, INT32 x, INT32 y, INT32 option)
 	GL_DrawPolygon(NULL, v, 4, flags);
 }
 
-void HWR_DrawStretchyFixedPatch(GLPatch_t *gpatch, fixed_t x, fixed_t y, fixed_t pscale, fixed_t vscale, INT32 option, const UINT8 *colormap, INT32 bflags)
+void HWR_DrawStretchyFixedPatch(patch_t *gpatch, fixed_t x, fixed_t y, fixed_t pscale, fixed_t vscale, INT32 option, const UINT8 *colormap, INT32 bflags)
 {
 	FOutVector v[4];
 	FBITFIELD flags;
@@ -137,6 +139,7 @@ void HWR_DrawStretchyFixedPatch(GLPatch_t *gpatch, fixed_t x, fixed_t y, fixed_t
 	float cy = FIXED_TO_FLOAT(y);
 	UINT8 alphalevel = ((option & V_ALPHAMASK) >> V_ALPHASHIFT);
 	UINT8 blendmode = ((bflags & V_BLENDMASK) >> V_BLENDSHIFT);
+	GLPatch_t *hwrPatch;
 
 //  3--2
 //  | /|
@@ -155,6 +158,8 @@ void HWR_DrawStretchyFixedPatch(GLPatch_t *gpatch, fixed_t x, fixed_t y, fixed_t
 		HWR_GetPatch(gpatch);
 	else
 		HWR_GetMappedPatch(gpatch, colormap);
+
+	hwrPatch = ((GLPatch_t *)gpatch->hardware);
 
 	dupx = (float)vid.dupx;
 	dupy = (float)vid.dupy;
@@ -186,13 +191,13 @@ void HWR_DrawStretchyFixedPatch(GLPatch_t *gpatch, fixed_t x, fixed_t y, fixed_t
 
 		// left offset
 		if (option & V_FLIP)
-			offsetx = (float)(SHORT(gpatch->width) - SHORT(gpatch->leftoffset)) * fscalew;
+			offsetx = (float)(gpatch->width - gpatch->leftoffset) * fscalew;
 		else
-			offsetx = (float)SHORT(gpatch->leftoffset) * fscalew;
+			offsetx = (float)(gpatch->leftoffset) * fscalew;
 
 		// top offset
 		// TODO: make some kind of vertical version of V_FLIP, maybe by deprecating V_OFFSET in future?!?
-		offsety = (float)SHORT(gpatch->topoffset) * fscaleh;
+		offsety = (float)(gpatch->topoffset) * fscaleh;
 
 		if ((option & (V_NOSCALESTART|V_OFFSET)) == (V_NOSCALESTART|V_OFFSET)) // Multiply by dupx/dupy for crosshairs
 		{
@@ -220,17 +225,15 @@ void HWR_DrawStretchyFixedPatch(GLPatch_t *gpatch, fixed_t x, fixed_t y, fixed_t
 			// if it's meant to cover the whole screen, black out the rest
 			// cx and cy are possibly *slightly* off from float maths
 			// This is done before here compared to software because we directly alter cx and cy to centre
-			if (cx >= -0.1f && cx <= 0.1f && SHORT(gpatch->width) == BASEVIDWIDTH && cy >= -0.1f && cy <= 0.1f && SHORT(gpatch->height) == BASEVIDHEIGHT)
+			if (cx >= -0.1f && cx <= 0.1f && gpatch->width == BASEVIDWIDTH && cy >= -0.1f && cy <= 0.1f && gpatch->height == BASEVIDHEIGHT)
 			{
-				// Need to temporarily cache the real patch to get the colour of the top left pixel
-				patch_t *realpatch = W_CacheLumpNumPwad(gpatch->wadnum, gpatch->lumpnum, PU_STATIC);
-				const column_t *column = (const column_t *)((const UINT8 *)(realpatch) + LONG((realpatch)->columnofs[0]));
+				const column_t *column = (const column_t *)((const UINT8 *)(gpatch->columns) + (gpatch->columnofs[0]));
+
 				if (!column->topdelta)
 				{
 					const UINT8 *source = (const UINT8 *)(column) + 3;
 					HWR_DrawFill(0, 0, BASEVIDWIDTH, BASEVIDHEIGHT, (column->topdelta == 0xff ? 31 : source[0]));
 				}
-				Z_Free(realpatch);
 			}
 			// centre screen
 			if (fabsf(fvw - FLOATBASEVIDWIDTH * dupx) > 1.0E-36f)
@@ -238,34 +241,26 @@ void HWR_DrawStretchyFixedPatch(GLPatch_t *gpatch, fixed_t x, fixed_t y, fixed_t
 				if (option & V_SNAPTORIGHT)
 					cx += (fvw - (FLOATBASEVIDWIDTH * dupx));
 				else if (!(option & V_SNAPTOLEFT))
-					cx += (fvw - (FLOATBASEVIDWIDTH * dupx))/2;
+					cx += (fvw - (FLOATBASEVIDWIDTH * dupx))/2.0f;
 			}
 			if (fabsf(fvh - FLOATBASEVIDHEIGHT * dupy) > 1.0E-36f)
 			{
 				if ((option & (V_SPLITSCREEN|V_SNAPTOTOP)) == (V_SPLITSCREEN|V_SNAPTOTOP))
-					cy += (fvh/2 - (FLOATBASEVIDHEIGHT/2 * dupy));
+					cy += (fvh/2.0f - (FLOATBASEVIDHEIGHT/2.0f * dupy));
 				else if (option & V_SNAPTOBOTTOM)
 					cy += (fvh - (FLOATBASEVIDHEIGHT * dupy));
 				else if (!(option & V_SNAPTOTOP))
-					cy += (fvh - (FLOATBASEVIDHEIGHT * dupy))/2;
+					cy += (fvh - (FLOATBASEVIDHEIGHT * dupy))/2.0f;
 			}
 		}
 	}
 
-	if (pscale != FRACUNIT)
-	{
-		fwidth = (float)SHORT(gpatch->width) * fscalew * dupx;
-		fheight = (float)SHORT(gpatch->height) * fscaleh * dupy;
-	}
-	else
-	{
-		fwidth = (float)SHORT(gpatch->width) * dupx;
-		fheight = (float)SHORT(gpatch->height) * dupy;
-	}
+	fwidth = (float)(gpatch->width) * fscalew * dupx;
+	fheight = (float)(gpatch->height) * fscaleh * dupy;
 
 	// positions of the cx, cy, are between 0 and vid.width/vid.height now, we need them to be between -1 and 1
-	cx = -1.0f + (cx / (vid.width / 2.0f));
-	cy = 1.0f - (cy / (vid.height / 2.0f));
+	cx = -1.0f + (cx / (fvw / 2.0f));
+	cy = 1.0f - (cy / (fvh / 2.0f));
 
 	// fwidth and fheight are similar
 	fwidth /= fvw / 2.0f;
@@ -282,17 +277,17 @@ void HWR_DrawStretchyFixedPatch(GLPatch_t *gpatch, fixed_t x, fixed_t y, fixed_t
 
 	if (option & V_FLIP)
 	{
-		v[0].s = v[3].s = gpatch->max_s;
+		v[0].s = v[3].s = hwrPatch->max_s;
 		v[2].s = v[1].s = 0.0f;
 	}
 	else
 	{
 		v[0].s = v[3].s = 0.0f;
-		v[2].s = v[1].s = gpatch->max_s;
+		v[2].s = v[1].s = hwrPatch->max_s;
 	}
 
 	v[0].t = v[1].t = 0.0f;
-	v[2].t = v[3].t = gpatch->max_t;
+	v[2].t = v[3].t = hwrPatch->max_t;
 
 	// clip it since it is used for bunny scroll in doom I
 	if (blendmode)
@@ -309,11 +304,14 @@ void HWR_DrawStretchyFixedPatch(GLPatch_t *gpatch, fixed_t x, fixed_t y, fixed_t
 	{
 		FSurfaceInfo Surf;
 		Surf.PolyColor.s.red = Surf.PolyColor.s.green = Surf.PolyColor.s.blue = 0xff;
-		
-		if (alphalevel == 13) Surf.PolyColor.s.alpha = softwaretranstogl_lo[hudtrans];
-		else if (alphalevel == 14) Surf.PolyColor.s.alpha = softwaretranstogl[hudtrans];
-		else if (alphalevel == 15) Surf.PolyColor.s.alpha = softwaretranstogl_hi[hudtrans];
-		else Surf.PolyColor.s.alpha = softwaretranstogl[10-alphalevel];
+
+		switch (alphalevel)
+		{
+			case 13: Surf.PolyColor.s.alpha = softwaretranstogl_lo[hudtrans];   break;
+			case 14: Surf.PolyColor.s.alpha = softwaretranstogl[hudtrans];      break;
+			case 15: Surf.PolyColor.s.alpha = softwaretranstogl_hi[hudtrans];   break;
+			default: Surf.PolyColor.s.alpha = softwaretranstogl[10-alphalevel]; break;
+		}
 
 		flags |= PF_Modulated;
 		GL_DrawPolygon(&Surf, v, 4, flags);
@@ -322,13 +320,14 @@ void HWR_DrawStretchyFixedPatch(GLPatch_t *gpatch, fixed_t x, fixed_t y, fixed_t
 		GL_DrawPolygon(NULL, v, 4, flags);
 }
 
-void HWR_DrawCroppedPatch(GLPatch_t *gpatch, fixed_t x, fixed_t y, fixed_t pscale, INT32 option, fixed_t sx, fixed_t sy, fixed_t w, fixed_t h)
+void HWR_DrawCroppedPatch(patch_t *gpatch, fixed_t x, fixed_t y, fixed_t pscale, INT32 option, fixed_t sx, fixed_t sy, fixed_t w, fixed_t h)
 {
 	FOutVector v[4];
 	FBITFIELD flags;
 	float cx = FIXED_TO_FLOAT(x);
 	float cy = FIXED_TO_FLOAT(y);
 	UINT8 alphalevel = ((option & V_ALPHAMASK) >> V_ALPHASHIFT);
+	GLPatch_t *hwrPatch;
 
 //  3--2
 //  | /|
@@ -344,6 +343,7 @@ void HWR_DrawCroppedPatch(GLPatch_t *gpatch, fixed_t x, fixed_t y, fixed_t pscal
 
 	// make patch ready in hardware cache
 	HWR_GetPatch(gpatch);
+	hwrPatch = ((GLPatch_t *)gpatch->hardware);
 
 	dupx = (float)vid.dupx;
 	dupy = (float)vid.dupy;
@@ -366,8 +366,8 @@ void HWR_DrawCroppedPatch(GLPatch_t *gpatch, fixed_t x, fixed_t y, fixed_t pscal
 	dupx = dupy = (dupx < dupy ? dupx : dupy);
 	fscale = FIXED_TO_FLOAT(pscale);
 
-	cy -= (float)SHORT(gpatch->topoffset) * fscale;
-	cx -= (float)SHORT(gpatch->leftoffset) * fscale;
+	cy -= (float)(gpatch->topoffset) * fscale;
+	cx -= (float)(gpatch->leftoffset) * fscale;
 
 	if (!(option & V_NOSCALESTART))
 	{
@@ -379,17 +379,15 @@ void HWR_DrawCroppedPatch(GLPatch_t *gpatch, fixed_t x, fixed_t y, fixed_t pscal
 			// if it's meant to cover the whole screen, black out the rest
 			// cx and cy are possibly *slightly* off from float maths
 			// This is done before here compared to software because we directly alter cx and cy to centre
-			if (cx >= -0.1f && cx <= 0.1f && SHORT(gpatch->width) == BASEVIDWIDTH && cy >= -0.1f && cy <= 0.1f && SHORT(gpatch->height) == BASEVIDHEIGHT)
+			if (cx >= -0.1f && cx <= 0.1f && gpatch->width == BASEVIDWIDTH && cy >= -0.1f && cy <= 0.1f && gpatch->height == BASEVIDHEIGHT)
 			{
-				// Need to temporarily cache the real patch to get the colour of the top left pixel
-				patch_t *realpatch = W_CacheLumpNumPwad(gpatch->wadnum, gpatch->lumpnum, PU_STATIC);
-				const column_t *column = (const column_t *)((const UINT8 *)(realpatch) + LONG((realpatch)->columnofs[0]));
+				const column_t *column = (const column_t *)((const UINT8 *)(gpatch->columns) + (gpatch->columnofs[0]));
+
 				if (!column->topdelta)
 				{
 					const UINT8 *source = (const UINT8 *)(column) + 3;
 					HWR_DrawFill(0, 0, BASEVIDWIDTH, BASEVIDHEIGHT, (column->topdelta == 0xff ? 31 : source[0]));
 				}
-				Z_Free(realpatch);
 			}
 			// centre screen
 			if (fabsf(fvw - FLOATBASEVIDWIDTH * dupx) > 1.0E-36f)
@@ -397,16 +395,16 @@ void HWR_DrawCroppedPatch(GLPatch_t *gpatch, fixed_t x, fixed_t y, fixed_t pscal
 				if (option & V_SNAPTORIGHT)
 					cx += (fvw - (FLOATBASEVIDWIDTH * dupx));
 				else if (!(option & V_SNAPTOLEFT))
-					cx += (fvw - (FLOATBASEVIDWIDTH * dupx))/2;
+					cx += (fvw - (FLOATBASEVIDWIDTH * dupx))/2.0f;
 			}
 			if (fabsf(fvh - FLOATBASEVIDHEIGHT * dupy) > 1.0E-36f)
 			{
 				if ((option & (V_SPLITSCREEN|V_SNAPTOTOP)) == (V_SPLITSCREEN|V_SNAPTOTOP))
-					cy += (fvh/2 - (FLOATBASEVIDHEIGHT/2 * dupy));
+					cy += (fvh/2.0f - (FLOATBASEVIDHEIGHT/2.0f * dupy));
 				else if (option & V_SNAPTOBOTTOM)
 					cy += (fvh - (FLOATBASEVIDHEIGHT * dupy));
 				else if (!(option & V_SNAPTOTOP))
-					cy += (fvh - (FLOATBASEVIDHEIGHT * dupy))/2;
+					cy += (fvh - (FLOATBASEVIDHEIGHT * dupy))/2.0f;
 			}
 		}
 	}
@@ -420,11 +418,11 @@ void HWR_DrawCroppedPatch(GLPatch_t *gpatch, fixed_t x, fixed_t y, fixed_t pscal
 	if (fheight > h - sy)
 		fheight = h - sy;
 
-	if (fwidth > SHORT(gpatch->width))
-		fwidth = SHORT(gpatch->width);
+	if (fwidth > gpatch->width)
+		fwidth = gpatch->width;
 
-	if (fheight > SHORT(gpatch->height))
-		fheight = SHORT(gpatch->height);
+	if (fheight > gpatch->height)
+		fheight = gpatch->height;
 
 	if (pscale != FRACUNIT)
 	{
@@ -438,8 +436,8 @@ void HWR_DrawCroppedPatch(GLPatch_t *gpatch, fixed_t x, fixed_t y, fixed_t pscal
 	}
 
 	// positions of the cx, cy, are between 0 and vid.width/vid.height now, we need them to be between -1 and 1
-	cx = -1.0f + (cx / (vid.width / 2.0f));
-	cy = 1.0f - (cy / (vid.height / 2.0f));
+	cx = -1.0f + (cx / (fvw / 2.0f));
+	cy = 1.0f - (cy / (fvh / 2.0f));
 
 	// fwidth and fheight are similar
 	fwidth /= fvw / 2.0f;
@@ -454,10 +452,10 @@ void HWR_DrawCroppedPatch(GLPatch_t *gpatch, fixed_t x, fixed_t y, fixed_t pscal
 
 	v[0].z = v[1].z = v[2].z = v[3].z = 1.0f;
 
-	v[0].s = v[3].s = ((sx)/(float)SHORT(gpatch->width) )*gpatch->max_s;
-	v[2].s = v[1].s = ((w )/(float)SHORT(gpatch->width) )*gpatch->max_s;
-	v[0].t = v[1].t = ((sy)/(float)SHORT(gpatch->height))*gpatch->max_t;
-	v[2].t = v[3].t = ((h )/(float)SHORT(gpatch->height))*gpatch->max_t;
+	v[0].s = v[3].s = ((sx)/(float)(gpatch->width) )*hwrPatch->max_s;
+	v[2].s = v[1].s = ((w )/(float)(gpatch->width) )*hwrPatch->max_s;
+	v[0].t = v[1].t = ((sy)/(float)(gpatch->height))*hwrPatch->max_t;
+	v[2].t = v[3].t = ((h )/(float)(gpatch->height))*hwrPatch->max_t;
 
 	flags = PF_Translucent|PF_NoDepthTest;
 
@@ -472,11 +470,14 @@ void HWR_DrawCroppedPatch(GLPatch_t *gpatch, fixed_t x, fixed_t y, fixed_t pscal
 		FSurfaceInfo Surf;
 		Surf.PolyColor.s.red = Surf.PolyColor.s.green = Surf.PolyColor.s.blue = 0xff;
 
-		if (alphalevel == 13) Surf.PolyColor.s.alpha = softwaretranstogl_lo[cv_translucenthud.value];
-		else if (alphalevel == 14) Surf.PolyColor.s.alpha = softwaretranstogl[cv_translucenthud.value];
-		else if (alphalevel == 15) Surf.PolyColor.s.alpha = softwaretranstogl_hi[cv_translucenthud.value];
-		else Surf.PolyColor.s.alpha = softwaretranstogl[10-alphalevel];
-		
+		switch (alphalevel)
+		{
+			case 13: Surf.PolyColor.s.alpha = softwaretranstogl_lo[cv_translucenthud.value]; break;
+			case 14: Surf.PolyColor.s.alpha = softwaretranstogl[cv_translucenthud.value];    break;
+			case 15: Surf.PolyColor.s.alpha = softwaretranstogl_hi[cv_translucenthud.value]; break;
+			default: Surf.PolyColor.s.alpha = softwaretranstogl[10-alphalevel];              break;
+		}
+
 		flags |= PF_Modulated;
 		GL_DrawPolygon(&Surf, v, 4, flags);
 	}
@@ -492,7 +493,7 @@ void HWR_DrawCroppedPatch(GLPatch_t *gpatch, fixed_t x, fixed_t y, fixed_t pscal
 // --------------------------------------------------------------------------
 // Fills a box of pixels using a flat texture as a pattern
 // --------------------------------------------------------------------------
-void HWR_DrawFlatFill (INT32 x, INT32 y, INT32 w, INT32 h, lumpnum_t flatlumpnum)
+void HWR_DrawFlatFill(INT32 x, INT32 y, INT32 w, INT32 h, lumpnum_t flatlumpnum)
 {
 	FOutVector  v[4];
 	double dflatsize;
@@ -609,7 +610,7 @@ void HWR_FadeScreenMenuBack(UINT16 color, UINT8 strength)
 	}
 	else // Do TRANSMAP** fade.
 	{
-		RGBA_t *palette = HWR_GetTexturePalette();
+		const RGBA_t *palette = HWR_GetTexturePalette();
 		Surf.PolyColor.rgba = palette[color&0xFF].rgba;
 
 		if (HWR_ShouldUsePaletteRendering())
@@ -668,7 +669,7 @@ void HWR_DrawViewBorder(INT32 clearlines)
 	INT32 top, side;
 	INT32 baseviewwidth, baseviewheight;
 	INT32 basewindowx, basewindowy;
-	GLPatch_t *patch;
+	patch_t *patch;
 
 //    if (gl_viewwidth == vid.width)
 //        return;
@@ -717,7 +718,7 @@ void HWR_DrawViewBorder(INT32 clearlines)
 	// top edge
 	if (clearlines > basewindowy - 8)
 	{
-		patch = W_CachePatchNum(viewborderlump[BRDR_T], PU_CACHE);
+		patch = W_CachePatchNum(viewborderlump[BRDR_T], PU_PATCH);
 		for (x = 0; x < baseviewwidth; x += 8)
 			HWR_DrawPatch(patch, basewindowx + x, basewindowy - 8,
 				0);
@@ -726,7 +727,7 @@ void HWR_DrawViewBorder(INT32 clearlines)
 	// bottom edge
 	if (clearlines > basewindowy + baseviewheight)
 	{
-		patch = W_CachePatchNum(viewborderlump[BRDR_B], PU_CACHE);
+		patch = W_CachePatchNum(viewborderlump[BRDR_B], PU_PATCH);
 		for (x = 0; x < baseviewwidth; x += 8)
 			HWR_DrawPatch(patch, basewindowx + x,
 				basewindowy + baseviewheight, 0);
@@ -735,7 +736,7 @@ void HWR_DrawViewBorder(INT32 clearlines)
 	// left edge
 	if (clearlines > basewindowy)
 	{
-		patch = W_CachePatchNum(viewborderlump[BRDR_L], PU_CACHE);
+		patch = W_CachePatchNum(viewborderlump[BRDR_L], PU_PATCH);
 		for (y = 0; y < baseviewheight && basewindowy + y < clearlines;
 			y += 8)
 		{
@@ -747,7 +748,7 @@ void HWR_DrawViewBorder(INT32 clearlines)
 	// right edge
 	if (clearlines > basewindowy)
 	{
-		patch = W_CachePatchNum(viewborderlump[BRDR_R], PU_CACHE);
+		patch = W_CachePatchNum(viewborderlump[BRDR_R], PU_PATCH);
 		for (y = 0; y < baseviewheight && basewindowy+y < clearlines;
 			y += 8)
 		{
@@ -759,22 +760,22 @@ void HWR_DrawViewBorder(INT32 clearlines)
 	// Draw beveled corners.
 	if (clearlines > basewindowy - 8)
 		HWR_DrawPatch(W_CachePatchNum(viewborderlump[BRDR_TL],
-				PU_CACHE),
+				PU_PATCH),
 			basewindowx - 8, basewindowy - 8, 0);
 
 	if (clearlines > basewindowy - 8)
 		HWR_DrawPatch(W_CachePatchNum(viewborderlump[BRDR_TR],
-				PU_CACHE),
+				PU_PATCH),
 			basewindowx + baseviewwidth, basewindowy - 8, 0);
 
 	if (clearlines > basewindowy+baseviewheight)
 		HWR_DrawPatch(W_CachePatchNum(viewborderlump[BRDR_BL],
-				PU_CACHE),
+				PU_PATCH),
 			basewindowx - 8, basewindowy + baseviewheight, 0);
 
 	if (clearlines > basewindowy + baseviewheight)
 		HWR_DrawPatch(W_CachePatchNum(viewborderlump[BRDR_BR],
-				PU_CACHE),
+				PU_PATCH),
 			basewindowx + baseviewwidth,
 			basewindowy + baseviewheight, 0);
 }
@@ -793,7 +794,7 @@ void HWR_drawAMline(const fline_t *fl, INT32 color)
 {
 	F2DCoord v1, v2;
 	RGBA_t color_rgba;
-	RGBA_t *palette = HWR_GetTexturePalette();
+	const RGBA_t *palette = HWR_GetTexturePalette();
 
 	color_rgba = palette[color&0xFF];
 
@@ -814,7 +815,7 @@ void HWR_DrawDiag(INT32 x, INT32 y, INT32 wh, INT32 color)
 	FOutVector v[4];
 	FSurfaceInfo Surf;
 	float fx, fy, fw, fh, fwait = 0;
-	RGBA_t *palette = HWR_GetTexturePalette();
+	RGBA_t *palette;
 
 	if (wh < 0)
 		return; // consistency w/ software
@@ -845,7 +846,7 @@ void HWR_DrawDiag(INT32 x, INT32 y, INT32 wh, INT32 color)
 			if (color & V_SNAPTORIGHT)
 				fx += (fvw - (FLOATBASEVIDWIDTH * dupx));
 			else if (!(color & V_SNAPTOLEFT))
-				fx += (fvw - (FLOATBASEVIDWIDTH * dupx)) / 2;
+				fx += (fvw - (FLOATBASEVIDWIDTH * dupx)) / 2.0f;
 		}
 		if (fabsf(fvh - (FLOATBASEVIDHEIGHT * dupy)) > 1.0E-36f)
 		{
@@ -853,17 +854,19 @@ void HWR_DrawDiag(INT32 x, INT32 y, INT32 wh, INT32 color)
 			if (color & V_SNAPTOBOTTOM)
 				fy += (fvh - (FLOATBASEVIDHEIGHT * dupy));
 			else if (!(color & V_SNAPTOTOP))
-				fy += (fvh - (FLOATBASEVIDHEIGHT * dupy)) / 2;
+				fy += (fvh - (FLOATBASEVIDHEIGHT * dupy)) / 2.0f;
 		}
 	}
 
 	if (fx >= vid.width || fy >= vid.height)
 		return;
+
 	if (fx < 0)
 	{
 		fw += fx;
 		fx = 0;
 	}
+
 	if (fy < 0)
 	{
 		fh += fy;
@@ -872,16 +875,18 @@ void HWR_DrawDiag(INT32 x, INT32 y, INT32 wh, INT32 color)
 
 	if (fw <= 0 || fh <= 0)
 		return;
+
 	if (fx + fw > vid.width)
 	{
 		fwait = fw - (fvw- fx);
 		fw = fvw - fx;
 	}
+
 	if (fy + fh > vid.height)
 		fh = fvh - fy;
 
-	fx = -1.0f + fx / (vid.width / 2.0f);
-	fy = 1.0f - fy / (vid.height / 2.0f);
+	fx = -1.0f + fx / (fvw / 2.0f);
+	fy = 1.0f - fy / (fvh / 2.0f);
 	fw = fw / (fvw / 2.0f);
 	fh = fh / (fvh / 2.0f);
 
@@ -898,6 +903,8 @@ void HWR_DrawDiag(INT32 x, INT32 y, INT32 wh, INT32 color)
 	v[0].t = v[1].t = 0.0f;
 	v[2].t = v[3].t = 1.0f;
 
+	palette = HWR_GetTexturePalette();
+
 	Surf.PolyColor = palette[color&0xFF];
 
 	GL_DrawPolygon(&Surf, v, 4,
@@ -912,7 +919,6 @@ void HWR_DrawConsoleFill(INT32 x, INT32 y, INT32 w, INT32 h, UINT32 color, INT32
 	FOutVector v[4];
 	FSurfaceInfo Surf;
 	float fx, fy, fw, fh;
-	RGBA_t *palette = HWR_GetTexturePalette();
 
 	if (w < 0 || h < 0)
 		return; // consistency w/ software
@@ -936,6 +942,7 @@ void HWR_DrawConsoleFill(INT32 x, INT32 y, INT32 w, INT32 h, UINT32 color, INT32
 
 		if (x == 0 && y == 0 && w == BASEVIDWIDTH && h == BASEVIDHEIGHT)
 		{
+			RGBA_t *palette = HWR_GetTexturePalette();
 			RGBA_t rgbaColour = palette[color&0xFF];
 			FRGBAFloat clearColour;
 			clearColour.red = (float)rgbaColour.s.red / 255;
@@ -966,6 +973,7 @@ void HWR_DrawConsoleFill(INT32 x, INT32 y, INT32 w, INT32 h, UINT32 color, INT32
 			else if (!(options & V_SNAPTOTOP))
 				fy += (fvh - (FLOATBASEVIDHEIGHT * dupy)) / 2;
 		}
+
 		if (options & V_SPLITSCREEN)
 			fy += (FLOATBASEVIDHEIGHT * dupy)/2;
 		if (options & V_HORZSCREEN)
@@ -975,11 +983,13 @@ void HWR_DrawConsoleFill(INT32 x, INT32 y, INT32 w, INT32 h, UINT32 color, INT32
 
 	if (fx >= vid.width || fy >= vid.height)
 		return;
+
 	if (fx < 0)
 	{
 		fw += fx;
 		fx = 0;
 	}
+
 	if (fy < 0)
 	{
 		fh += fy;
@@ -988,13 +998,15 @@ void HWR_DrawConsoleFill(INT32 x, INT32 y, INT32 w, INT32 h, UINT32 color, INT32
 
 	if (fw <= 0 || fh <= 0)
 		return;
+
 	if (fx + fw > vid.width)
 		fw = fvw - fx;
+
 	if (fy + fh > vid.height)
 		fh = fvh - fy;
 
-	fx = -1.0f + fx / (vid.width / 2.0f);
-	fy = 1.0f - fy / (vid.height / 2.0f);
+	fx = -1.0f + fx / (fvw / 2.0f);
+	fy = 1.0f - fy / (fvh / 2.0f);
 	fw = fw / (fvw / 2.0f);
 	fh = fh / (fvh / 2.0f);
 
@@ -1025,11 +1037,12 @@ void HWR_DrawFill(INT32 x, INT32 y, INT32 w, INT32 h, INT32 color)
 	FOutVector v[4];
 	FSurfaceInfo Surf;
 	float fx, fy, fw, fh;
-	UINT8 alphalevel = ((color & V_ALPHAMASK) >> V_ALPHASHIFT);
-	RGBA_t *palette = HWR_GetTexturePalette();
 
 	if (w < 0 || h < 0)
 		return; // consistency w/ software
+
+	const UINT8 alphalevel = ((color & V_ALPHAMASK) >> V_ALPHASHIFT);
+	const RGBA_t *palette = HWR_GetTexturePalette();
 
 //  3--2
 //  | /|
@@ -1106,8 +1119,8 @@ void HWR_DrawFill(INT32 x, INT32 y, INT32 w, INT32 h, INT32 color)
 	if (fy + fh > vid.height)
 		fh = fvh - fy;
 
-	fx = -1.0f + fx / (vid.width / 2.0f);
-	fy = 1.0f - fy / (vid.height / 2.0f);
+	fx = -1.0f + fx / (fvw / 2.0f);
+	fy = 1.0f - fy / (fvh / 2.0f);
 	fw = fw / (fvw / 2.0f);
 	fh = fh / (fvh / 2.0f);
 
@@ -1127,10 +1140,13 @@ void HWR_DrawFill(INT32 x, INT32 y, INT32 w, INT32 h, INT32 color)
 
 	if (alphalevel)
 	{
-		if (alphalevel == 13) Surf.PolyColor.s.alpha = softwaretranstogl_lo[hudtrans];
-		else if (alphalevel == 14) Surf.PolyColor.s.alpha = softwaretranstogl[hudtrans];
-		else if (alphalevel == 15) Surf.PolyColor.s.alpha = softwaretranstogl_hi[hudtrans];
-		else Surf.PolyColor.s.alpha = softwaretranstogl[10-alphalevel];
+		switch (alphalevel)
+		{
+			case 13: Surf.PolyColor.s.alpha = softwaretranstogl_lo[hudtrans];   break;
+			case 14: Surf.PolyColor.s.alpha = softwaretranstogl[hudtrans];      break;
+			case 15: Surf.PolyColor.s.alpha = softwaretranstogl_hi[hudtrans];   break;
+			default: Surf.PolyColor.s.alpha = softwaretranstogl[10-alphalevel]; break;
+		}
 	}
 
 	GL_DrawPolygon(&Surf, v, 4, PF_NoTexture|PF_Modulated|PF_Translucent|PF_NoDepthTest);

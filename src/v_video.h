@@ -14,6 +14,10 @@
 #ifndef __V_VIDEO__
 #define __V_VIDEO__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "doomdef.h"
 #include "doomtype.h"
 #include "r_defs.h"
@@ -23,17 +27,12 @@
 // VIDEO
 //
 
-// Screen 0 is the screen updated by I_Update screen.
-// Screen 1 is an extra buffer.
-
-extern UINT8 *screens[5];
-
-extern consvar_t cv_ticrate, cv_accuratefps, cv_allcaps, cv_constextsize, cv_menucaps,\
-cv_globalgamma, cv_globalsaturation,\
-cv_rhue, cv_yhue, cv_ghue, cv_chue, cv_bhue, cv_mhue,\
-cv_rgamma, cv_ygamma, cv_ggamma, cv_cgamma, cv_bgamma, cv_mgamma, \
-cv_rsaturation, cv_ysaturation, cv_gsaturation, cv_csaturation, cv_bsaturation, cv_msaturation;
-
+extern consvar_t cv_ticrate, cv_accuratefps, cv_allcaps, cv_constextsize, cv_menucaps,
+cv_globalgamma, cv_globalsaturation,
+cv_rhue, cv_yhue, cv_ghue, cv_chue, cv_bhue, cv_mhue,
+cv_rgamma, cv_ygamma, cv_ggamma, cv_cgamma, cv_bgamma, cv_mgamma,
+cv_rsaturation, cv_ysaturation, cv_gsaturation, cv_csaturation, cv_bsaturation, cv_msaturation,
+cv_palette, cv_palettenum;
 
 // Allocates buffer screens, call before R_Init.
 void V_Init(void);
@@ -45,7 +44,7 @@ typedef struct
 {
 	boolean init;
 	RGBA_t palette[256];
-	UINT16 table[0xFFFF];
+	UINT16 table[0x10000];
 } colorlookup_t;
 
 void InitColorLUT(colorlookup_t *lut, RGBA_t *palette, boolean makecolors);
@@ -59,6 +58,8 @@ void V_ReloadPalette(void);
 void V_SetPalette(INT32 palettenum);
 
 void V_SetPaletteLump(const char *pal);
+
+void V_ResetPaletteCVars(void);
 
 const char *R_GetPalname(UINT16 num);
 const char *GetPalette(void);
@@ -281,7 +282,15 @@ void V_DoPostProcessor(INT32 view, INT32 param);
 
 void V_DrawPatchFill(patch_t *pat);
 
+void V_DrawAdaptiveScaledFullScreenPatch(patch_t *patch);
+void V_DrawVerticallyScaledFullScreenPatch(patch_t *patch);
+void V_DrawHorizontallyScaledFullScreenPatch(patch_t *patch);
+
 void VID_BlitLinearScreen(const UINT8 *srcptr, UINT8 *destptr, INT32 width, INT32 height, size_t srcrowbytes,
 	size_t destrowbytes);
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif

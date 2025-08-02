@@ -283,7 +283,6 @@
 		1E44AF570B67CEC100BAD059 /* r_defs.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; name = r_defs.h; path = ../../r_defs.h; sourceTree = SOURCE_ROOT; };
 		1E44AF580B67CEC100BAD059 /* r_data.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; name = r_data.c; path = ../../r_data.c; sourceTree = SOURCE_ROOT; };
 		1E44AF590B67CEC100BAD059 /* r_draw.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; name = r_draw.c; path = ../../r_draw.c; sourceTree = SOURCE_ROOT; };
-		1E44AF5A0B67CEC100BAD059 /* r_draw16.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; name = r_draw16.c; path = ../../r_draw16.c; sourceTree = SOURCE_ROOT; };
 		1E44AF5B0B67CEC100BAD059 /* r_draw8.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; name = r_draw8.c; path = ../../r_draw8.c; sourceTree = SOURCE_ROOT; };
 		1E44AF5C0B67CEC100BAD059 /* r_main.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; name = r_main.c; path = ../../r_main.c; sourceTree = SOURCE_ROOT; };
 		1E44AF5D0B67CEC100BAD059 /* r_main.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; name = r_main.h; path = ../../r_main.h; sourceTree = SOURCE_ROOT; };
@@ -732,7 +731,6 @@
 				1E44AF570B67CEC100BAD059 /* r_defs.h */,
 				1E44AF580B67CEC100BAD059 /* r_data.c */,
 				1E44AF590B67CEC100BAD059 /* r_draw.c */,
-				1E44AF5A0B67CEC100BAD059 /* r_draw16.c */,
 				1E44AF5B0B67CEC100BAD059 /* r_draw8.c */,
 				1E44AF5C0B67CEC100BAD059 /* r_main.c */,
 				1E44AF5D0B67CEC100BAD059 /* r_main.h */,

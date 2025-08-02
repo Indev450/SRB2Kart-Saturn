@@ -106,7 +106,7 @@ static int luaB_setmetatable (lua_State *L) {
   luaL_checktype(L, 1, LUA_TTABLE);
   luaL_argcheck(L, t == LUA_TNIL || t == LUA_TTABLE, 2,
                     "nil or table expected");
-  if (luaL_getmetafield(L, 1, "__metatable"))
+  if (l_unlikely(luaL_getmetafield(L, 1, "__metatable")))
     luaL_error(L, "cannot change a protected metatable");
   lua_settop(L, 2);
   lua_setmetatable(L, 1);
@@ -120,10 +120,10 @@ static void getfunc (lua_State *L, int opt) {
     lua_Debug ar;
     int level = opt ? luaL_optint(L, 1, 1) : luaL_checkint(L, 1);
     luaL_argcheck(L, level >= 0, 1, "level must be non-negative");
-    if (lua_getstack(L, level, &ar) == 0)
+    if (l_unlikely(lua_getstack(L, level, &ar) == 0))
       luaL_argerror(L, 1, "invalid level");
     lua_getinfo(L, "f", &ar);
-    if (lua_isnil(L, -1))
+    if (l_unlikely(lua_isnil(L, -1)))
       luaL_error(L, "no function environment for tail call at level %d",
                     level);
   }
@@ -151,7 +151,7 @@ static int luaB_setfenv (lua_State *L) {
     lua_setfenv(L, -2);
     return 0;
   }
-  else if (lua_iscfunction(L, -2) || lua_setfenv(L, -2) == 0)
+  else if (l_unlikely(lua_iscfunction(L, -2) || lua_setfenv(L, -2) == 0))
     luaL_error(L,
           LUA_QL("setfenv") " cannot change environment of given object");
   return 1;
@@ -265,7 +265,7 @@ static int luaB_ipairs (lua_State *L) {
 
 static int luaB_assert (lua_State *L) {
   luaL_checkany(L, 1);
-  if (!lua_toboolean(L, 1))
+  if (l_unlikely(!lua_toboolean(L, 1)))
     return luaL_error(L, "%s", luaL_optstring(L, 2, "assertion failed!"));
   return lua_gettop(L);
 }
@@ -278,7 +278,7 @@ static int luaB_unpack (lua_State *L) {
   e = luaL_opt(L, luaL_checkint, 3, luaL_getn(L, 1));
   if (i > e) return 0;  /* empty range */
   n = e - i + 1;  /* number of elements */
-  if (n <= 0 || !lua_checkstack(L, n))  /* n <= 0 means arith. overflow */
+  if (l_unlikely(n <= 0 || !lua_checkstack(L, n)))  /* n <= 0 means arith. overflow */
     return luaL_error(L, "too many results to unpack");
   lua_rawgeti(L, 1, i);  /* push arg[i] (avoiding overflow problems) */
   while (i++ < e)  /* push arg[i + 1...e] */
@@ -445,9 +445,9 @@ static int luaB_costatus (lua_State *L) {
 
 static int auxresume (lua_State *L, lua_State *co, int narg) {
   int status = costatus(L, co);
-  if (!lua_checkstack(co, narg))
+  if (l_unlikely(!lua_checkstack(co, narg)))
     luaL_error(L, "too many arguments to resume");
-  if (status != CO_SUS) {
+  if (l_unlikely(status != CO_SUS)) {
     lua_pushfstring(L, "cannot resume %s coroutine", statnames[status]);
     return -1;  /* error flag */
   }
@@ -456,7 +456,7 @@ static int auxresume (lua_State *L, lua_State *co, int narg) {
   status = lua_resume(co, narg);
   if (status == 0 || status == LUA_YIELD) {
     int nres = lua_gettop(co);
-    if (!lua_checkstack(L, nres + 1))
+    if (l_unlikely(!lua_checkstack(L, nres + 1)))
       luaL_error(L, "too many results to resume");
     lua_xmove(co, L, nres);  /* move yielded values */
     return nres;

@@ -14,6 +14,10 @@
 #ifndef __R_MAIN__
 #define __R_MAIN__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "d_player.h"
 #include "r_data.h"
 #include "m_perfstats.h"
@@ -84,7 +88,7 @@ extern lighttable_t *zlight[LIGHTLEVELS][MAXLIGHTZ];
 //
 // killough 5/2/98: reformatted
 //
-FUNCINLINE static ATTRINLINE PUREFUNC INT32 R_PointOnSide(fixed_t x, fixed_t y, const node_t *restrict node)
+FUNCINLINE static ATTRINLINE PUREFUNC INT32 R_PointOnSide(fixed_t x, fixed_t y, const node_t* restrict node)
 {
 	if (!node->dx)
 		return x <= node->x ? node->dy > 0 : node->dy < 0;
@@ -99,7 +103,7 @@ FUNCINLINE static ATTRINLINE PUREFUNC INT32 R_PointOnSide(fixed_t x, fixed_t y, 
 	// also use a mask to avoid branch prediction
 	INT32 mask = (node->dy ^ node->dx ^ x ^ y) >> 31;
 	return (mask & ((node->dy ^ x) < 0)) |  // (left is negative)
-	(~mask & (FixedMul(y, node->dx>>FRACBITS) >= FixedMul(node->dy>>FRACBITS, x)));
+	       (~mask & (FixedMul(y, node->dx>>FRACBITS) >= FixedMul(node->dy>>FRACBITS, x)));
 }
 
 // This is not as accurate
@@ -107,18 +111,20 @@ FUNCINLINE static ATTRINLINE PUREFUNC INT32 R_PointOnSide(fixed_t x, fixed_t y, 
 FUNCINLINE static ATTRINLINE PUREFUNC INT32 R_PointOnSideFast(fixed_t x, fixed_t y, const node_t *node)
 {
 	// use cross product to determine side quickly
-	return ((((INT64)y - node->y) * node->dx - ((INT64)x - node->x) * node->dy) >= 0);
+	INT64 v = ((INT64)y - node->y) * node->dx - ((INT64)x - node->x) * node->dy;
+	return v > 0;
 }
 
 FUNCINLINE static ATTRINLINE PUREFUNC INT32 R_PointOnSegSide(fixed_t x, fixed_t y, const seg_t *line)
 {
-    fixed_t lx = line->v1->x;
-    fixed_t ly = line->v1->y;
-    fixed_t ldx = line->v2->x - lx;
-    fixed_t ldy = line->v2->y - ly;
+	fixed_t lx = line->v1->x;
+	fixed_t ly = line->v1->y;
+	fixed_t ldx = line->v2->x - lx;
+	fixed_t ldy = line->v2->y - ly;
 
 	// use cross product to determine side quickly
-	return ((((INT64)y - ly) * ldx - ((INT64)x - lx) * ldy) >= 0);
+	INT64 v = ((INT64)y - ly) * ldx - ((INT64)x - lx) * ldy;
+	return v > 0;
 }
 
 angle_t R_PointToAngle(fixed_t x, fixed_t y);
@@ -131,42 +137,19 @@ fixed_t R_ScaleFromGlobalAngle(angle_t visangle);
 //
 // R_PointInSubsector
 //
-FUNCINLINE static ATTRINLINE subsector_t *R_PointInSubsector(fixed_t x, fixed_t y)
-{
-	size_t nodenum = numnodes-1;
-
-	while (!(nodenum & NF_SUBSECTOR))
-		nodenum = nodes[nodenum].children[R_PointOnSide(x, y, nodes+nodenum)];
-
-	return &subsectors[nodenum & ~NF_SUBSECTOR];
+#define R_POINTINSUBSECTOR(FUNCNAME, SIDEFUNC)\
+FUNCINLINE static ATTRINLINE subsector_t *FUNCNAME(fixed_t x, fixed_t y)\
+{\
+	size_t nodenum = numnodes-1;\
+	while (!(nodenum & NF_SUBSECTOR))\
+		nodenum = nodes[nodenum].children[SIDEFUNC(x, y, nodes+nodenum)];\
+	return &subsectors[nodenum & ~NF_SUBSECTOR];\
 }
 
-//
-// R_IsPointInSubsector, same as above but returns 0 if not in subsector
-//
-FUNCINLINE static ATTRINLINE subsector_t *R_IsPointInSubsector(fixed_t x, fixed_t y)
-{
-	node_t *node;
-	INT32 side, i;
-	size_t nodenum;
-	subsector_t *ret;
+R_POINTINSUBSECTOR(R_PointInSubsector, R_PointOnSide)
+R_POINTINSUBSECTOR(R_PointInSubsectorFast, R_PointOnSideFast)
 
-	nodenum = numnodes - 1;
-
-	while (!(nodenum & NF_SUBSECTOR))
-	{
-		node = &nodes[nodenum];
-		side = R_PointOnSide(x, y, node);
-		nodenum = node->children[side];
-	}
-
-	ret = &subsectors[nodenum & ~NF_SUBSECTOR];
-	for (i = 0; i < ret->numlines; i++)
-		if (P_PointOnLineSide(x, y, segs[ret->firstline + i].linedef) != segs[ret->firstline + i].side)
-			return 0;
-
-	return ret;
-}
+subsector_t *R_IsPointInSubsector(fixed_t x, fixed_t y);
 
 #define R_PointToDist(x, y) R_PointToDist2(viewx, viewy, x, y)
 #define R_PointToDist2(px2, py2, px1, py1) FixedHypot((px1) - (px2), (py1) - (py2))
@@ -205,15 +188,23 @@ extern consvar_t cv_chasecam[MAXSPLITSCREENPLAYERS];
 extern consvar_t cv_flipcam[MAXSPLITSCREENPLAYERS];
 extern consvar_t cv_shadow, cv_shadowoffs;
 extern consvar_t cv_ffloorclip, cv_spriteclip;
+extern consvar_t cv_softcyancut;
 extern consvar_t cv_translucency;
 extern consvar_t cv_drawdist, cv_drawdist_precip, cv_lessprecip, cv_mobjscaleprecip;
 extern consvar_t cv_fov, cv_fovchange;
 extern consvar_t cv_skybox;
 extern consvar_t cv_tailspickup;
 extern consvar_t cv_maxinterpdist;
+extern consvar_t cv_playerfade;
 extern consvar_t cv_ripplewater;
+extern consvar_t cv_secbright;
 
 extern consvar_t cv_randomdirlight;
+
+static inline INT32 R_GetSoftLightlevel(INT32 llevel)
+{
+	return CLAMP(llevel, cv_secbright.value, 255) >> LIGHTSEGSHIFT;
+}
 
 // Called by startup code.
 void R_Init(void);
@@ -230,8 +221,8 @@ void R_SetViewSize(void);
 void R_ExecuteSetViewSize(void);
 
 fixed_t R_GetPlayerFov(player_t *player);
-void R_SkyboxFrame(int s);
-void R_SetupFrame(int s, boolean skybox);
+void R_SkyboxFrame(UINT8 pnum);
+void R_SetupFrame(UINT8 pnum, boolean skybox);
 
 // Called by G_Drawer.
 void R_RenderPlayerView(player_t *player);
@@ -243,4 +234,9 @@ void R_RegisterEngineStuff(void);
 INT32 R_GetHudUncap(void);
 // same as above but keeps interpolation during pause
 INT32 R_GetMenuUncap(void);
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
+
 #endif

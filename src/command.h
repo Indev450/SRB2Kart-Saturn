@@ -13,6 +13,10 @@
 #ifndef __COMMAND_H__
 #define __COMMAND_H__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdio.h>
 #include "doomdef.h"
 
@@ -188,5 +192,9 @@ UINT8 CV_CheatsEnabled(void);
 
 // Returns cvar by name. Exposed here for Lua.
 consvar_t *CV_FindVar(const char *name);
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif // __COMMAND_H__

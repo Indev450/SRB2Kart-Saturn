@@ -80,7 +80,7 @@ write netcode into the sound code, OKAY?
 #define GME_BASS 1.0f
 #endif // HAVE_GME
 
- 
+
 //static UINT16 BUFFERSIZE = 2048;
 static UINT16 SAMPLERATE = 44100;
 
@@ -213,10 +213,20 @@ void I_StartupSound(void)
 		// call to start audio failed -- we do not have it
 		return;
 	}
-	
+
+	SDL_version SDLmixcompiled;
+	const SDL_version *SDLmixlinked;
+	SDL_MIXER_VERSION(&SDLmixcompiled)
+	SDLmixlinked = Mix_Linked_Version();
+
+	I_OutputMsg("Compiled for SDL_mixer version: %d.%d.%d\n",
+				SDLmixcompiled.major, SDLmixcompiled.minor, SDLmixcompiled.patch);
+	I_OutputMsg("Linked with SDL_mixer version: %d.%d.%d\n",
+				SDLmixlinked->major, SDLmixlinked->minor, SDLmixlinked->patch);
+
 #ifdef HAVE_OPENMPT
-	CONS_Printf("libopenmpt version: %s\n", openmpt_get_string("library_version"));
-	CONS_Printf("libopenmpt build date: %s\n", openmpt_get_string("build"));
+	I_OutputMsg("libopenmpt version: %s\n", openmpt_get_string("library_version"));
+	I_OutputMsg("libopenmpt build date: %s\n", openmpt_get_string("build"));
 #endif
 
 	sound_started = true;
@@ -266,7 +276,7 @@ void I_UpdateSound(void)
 // sorry. more asm needed.
 static Mix_Chunk *ds2chunk(void *stream)
 {
-	UINT16 ver,freq;
+	UINT16 ver, freq;
 	UINT32 samples, i, newsamples;
 	UINT8 *sound;
 
@@ -518,14 +528,12 @@ void I_FreeSfx(sfxinfo_t *sfx)
 	sfx->lumpnum = LUMPERROR;
 }
 
-INT32 I_StartSound(sfxenum_t id, UINT8 vol, UINT8 sep, UINT8 pitch, UINT8 priority, INT32 channel)
+INT32 I_StartSound(sfxenum_t id, UINT8 vol, UINT8 sep, INT32 channel)
 {
 	UINT8 volume = (((UINT16)vol + 1) * (UINT16)sfx_volume) / 62; // (256 * 31) / 62 == 127
 	INT32 handle = Mix_PlayChannel(channel, S_sfx[id].data, 0);
 	Mix_Volume(handle, volume);
 	Mix_SetPanning(handle, min((UINT16)(0xff-sep)<<1, 0xff), min((UINT16)(sep)<<1, 0xff));
-	(void)pitch; // Mixer can't handle pitch
-	(void)priority; // priority and channel management is handled by SRB2...
 	return handle;
 }
 
@@ -539,12 +547,11 @@ boolean I_SoundIsPlaying(INT32 handle)
 	return Mix_Playing(handle);
 }
 
-void I_UpdateSoundParams(INT32 handle, UINT8 vol, UINT8 sep, UINT8 pitch)
+void I_UpdateSoundParams(INT32 handle, UINT8 vol, UINT8 sep)
 {
 	UINT8 volume = (((UINT16)vol + 1) * (UINT16)sfx_volume) / 62; // (256 * 31) / 62 == 127
 	Mix_Volume(handle, volume);
 	Mix_SetPanning(handle, min((UINT16)(0xff-sep)<<1, 0xff), min((UINT16)(sep)<<1, 0xff));
-	(void)pitch;
 }
 
 void I_SetSfxVolume(UINT8 volume)
@@ -700,7 +707,7 @@ static void mix_gme(void *udata, Uint8 *stream, int len)
 
 	// play gme into stream
 	gme_play(gme, len/2, (short *)stream);
-	
+
 	// Limiter to prevent music from being disorted with some formats
 	if (music_volume >= 18)
 		music_volume = 18;
@@ -716,7 +723,7 @@ static void mix_openmpt(void *udata, Uint8 *stream, int len)
 {
 	int i;
 	short *p;
-	
+
 	(void)udata;
 
 	if (!openmpt_mhandle || songpaused)
@@ -724,7 +731,7 @@ static void mix_openmpt(void *udata, Uint8 *stream, int len)
 
 	// Play module into stream
 	openmpt_module_read_interleaved_stereo(openmpt_mhandle, SAMPLERATE, cv_audbuffersize.value, (short *)stream);
-	
+
 	// Limiter to prevent music from being disorted with some formats
 	if (music_volume >= 18)
 		music_volume = 18;
@@ -813,7 +820,7 @@ boolean I_SetSongSpeed(float speed)
 #endif
 #ifdef HAVE_OPENMPT
 	if (openmpt_mhandle)
-	{		
+	{
 		if (speed > 4.0f)
 			speed = 4.0f; // Limit this to 4x to prevent crashing, stupid fix but... ~SteelT 27/9/19
 #if OPENMPT_API_VERSION_MAJOR < 1 && OPENMPT_API_VERSION_MINOR < 5

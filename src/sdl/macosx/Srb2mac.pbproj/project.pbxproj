@@ -1540,13 +1540,6 @@
 			path = ../../r_draw8.c;
 			refType = 2;
 		};
-		84177789085A111B000C01D8 = {
-			fileEncoding = 30;
-			isa = PBXFileReference;
-			name = r_draw16.c;
-			path = ../../r_draw16.c;
-			refType = 2;
-		};
 		8417778A085A111B000C01D8 = {
 			fileEncoding = 30;
 			isa = PBXFileReference;

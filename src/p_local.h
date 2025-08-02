@@ -158,7 +158,11 @@ extern consvar_t cv_tiltsmoothing;
 
 extern consvar_t cv_actionmovie;
 
-extern consvar_t cv_lookbackmom;
+extern consvar_t cv_screenquake;
+
+extern consvar_t cv_lookbackmom[MAXSPLITSCREENPLAYERS];
+
+extern consvar_t cv_verticallook[MAXSPLITSCREENPLAYERS];
 
 extern fixed_t t_cam_rotate[MAXSPLITSCREENPLAYERS];
 
@@ -235,7 +239,6 @@ void P_PlayRinglossSound(mobj_t *source, mobj_t *damager);
 void P_PlayDeathSound(mobj_t *source);
 void P_PlayVictorySound(mobj_t *source);
 
-
 //
 // P_MOBJ
 //
@@ -276,7 +279,7 @@ void P_SceneryThinker(mobj_t *mobj);
 // To test it in Lua, check mobj.valid
 FUNCINLINE static ATTRINLINE boolean P_MobjWasRemoved(const mobj_t *mobj)
 {
-	return (!mobj || mobj->thinker.function.acp1 != (actionf_p1)P_MobjThinker);
+	return (!mobj || mobj->thinker.function != (actionf_p1)P_MobjThinker);
 }
 
 fixed_t P_MobjFloorZ(mobj_t *mobj, sector_t *sector, sector_t *boundsec, fixed_t x, fixed_t y, line_t *line, boolean lowest, boolean perfect);
@@ -432,25 +435,11 @@ extern struct minimapinfo
 //
 // P_INTER
 //
-typedef struct BasicFF_s
-{
-	INT32 ForceX; ///< The X of the Force's Vel
-	INT32 ForceY; ///< The Y of the Force's Vel
-	const player_t *player; ///< Player of Rumble
-	//All
-	UINT32 Duration; ///< The total duration of the effect, in microseconds
-	INT32 Gain; ///< /The gain to be applied to the effect, in the range from 0 through 10,000.
-	//All, CONSTANTFORCE �10,000 to 10,000
-	INT32 Magnitude; ///< Magnitude of the effect, in the range from 0 through 10,000.
-} BasicFF_t;
 
 // replace damage magic numbers with smth readable
 #define DMG_INSTAKILL 10000
 #define DMG_SPECTATOR 42000
 
-void P_ForceFeed(const player_t *player, INT32 attack, INT32 fade, tic_t duration, INT32 period);
-void P_ForceConstant(const BasicFF_t *FFInfo);
-void P_RampConstant(const BasicFF_t *FFInfo, INT32 Start, INT32 End);
 void P_RemoveShield(player_t *player);
 boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 damage);
 void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source);
@@ -487,7 +476,6 @@ boolean P_Teleport(mobj_t *thing, fixed_t x, fixed_t y, fixed_t z, angle_t angle
 boolean P_SetMobjStateNF(mobj_t *mobj, statenum_t state);
 boolean P_CheckMissileSpawn(mobj_t *th);
 void P_Thrust(mobj_t *mo, angle_t angle, fixed_t move);
-void P_DoSuperTransformation(player_t *player, boolean giverings);
 void P_ExplodeMissile(mobj_t *mo);
 void P_CheckGravity(mobj_t *mo, boolean affect);
 

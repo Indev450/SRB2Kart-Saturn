@@ -34,6 +34,7 @@
 #include "i_time.h"
 
 #include "k_kart.h" // SRB2kart
+#include "k_hud.h"
 
 //random index
 #include "m_random.h"
@@ -167,58 +168,60 @@ boolean ST_SameTeam(player_t *a, player_t *b)
 
 static boolean st_stopped = true;
 
-void ST_Ticker(void)
-{
-	if (st_stopped)
-		return;
-}
-
 // 0 is default, any others are special palettes.
 INT32 st_palette = 0;
 
-void ST_doPaletteStuff(void)
+void ST_ResetPaletteStuff(void)
 {
-	INT32 palette;
+	st_palette = 0;
+	V_SetPalette(0);
+}
 
-	if (stplyr && stplyr->flashcount)
-		palette = stplyr->flashpal;
-	else
-		palette = 0;
+static void ST_doPaletteStuff(void)
+{
+	INT32 palette = 0;
 
 #ifdef HWRENDER
 	if (rendermode == render_opengl && !HWR_PalRenderFlashpal())
-		palette = 0; // No flashpals here in OpenGL
+		return;
 #endif
 
-	palette = min(max(palette, 0), 13);
+	if (stplyr && stplyr->flashcount)
+		palette = CLAMP(stplyr->flashpal, 0, 13);
 
 	if (palette != st_palette)
 	{
 		st_palette = palette;
 
-#ifdef HWRENDER
-		if (rendermode == render_soft || (rendermode == render_opengl && HWR_PalRenderFlashpal()))
-#else
-		if (rendermode != render_none)
-#endif
+		if (!splitscreen)
 		{
-			//V_SetPaletteLump(GetPalette()); // Reset the palette -- is this needed?
-			if (!splitscreen)
-				V_SetPalette(palette);
+			V_SetPalette(palette);
 		}
 	}
 }
 
+void ST_Ticker(void)
+{
+	if (st_stopped)
+		return;
+
+	// Do red-/gold-shifts from damage/items
+	//25/08/99: Hurdler: palette changes is done for all players,
+	//                   not only player1! That's why this part
+	//                   of code is moved somewhere else.
+	ST_doPaletteStuff();
+}
+
 void ST_UnloadGraphics(void)
 {
-	Z_FreeTags(PU_HUDGFX, PU_HUDGFX);
+	Patch_FreeTag(PU_HUDGFX);
 }
 
 void ST_LoadGraphics(void)
 {
 	// SRB2 border patch
-	st_borderpatchnum = W_GetNumForName("GFZFLR01");
-	scr_borderpatch = W_CacheLumpNum(st_borderpatchnum, PU_HUDGFX);
+	//st_borderpatchnum = W_GetNumForName("GFZFLR01");
+	//scr_borderpatch = W_CacheLumpNum(st_borderpatchnum, PU_HUDGFX);
 
 	// the original Doom uses 'STF' as base name for all face graphics
 	// Graue 04-08-2004: face/name graphics are now indexed by skins
@@ -249,7 +252,7 @@ void ST_LoadFaceGraphics(char *rankstr, char *wantstr, char *mmapstr, INT32 skin
 	facerankprefix[skinnum] = W_CachePatchName(rankstr, PU_HUDGFX);
 	facewantprefix[skinnum] = W_CachePatchName(wantstr, PU_HUDGFX);
 	facemmapprefix[skinnum] = W_CachePatchName(mmapstr, PU_HUDGFX);
-	
+
 	/*facerankprefix_name[skinnum] = rankstr;
 	facewantprefix_name[skinnum] = wantstr;
 	facemmapprefix_name[skinnum] = mmapstr;*/
@@ -260,7 +263,7 @@ void ST_LoadLocalFaceGraphics(char *rankstr, char *wantstr, char *mmapstr, INT32
 	localfacerankprefix[skinnum] = W_CachePatchName(rankstr, PU_HUDGFX);
 	localfacewantprefix[skinnum] = W_CachePatchName(wantstr, PU_HUDGFX);
 	localfacemmapprefix[skinnum] = W_CachePatchName(mmapstr, PU_HUDGFX);
-	
+
 	/*localfacerankprefix_name[skinnum] = rankstr;
 	localfacewantprefix_name[skinnum] = wantstr;
 	localfacemmapprefix_name[skinnum] = mmapstr;*/
@@ -276,7 +279,7 @@ void ST_ReloadSkinFaceGraphics(void)
 
 	for (i = 0; i < numskins; i++)
 		ST_LoadFaceGraphics(skins[i].facerank, skins[i].facewant, skins[i].facemmap, i);
-	
+
 	for (i = 0; i < numlocalskins; i++)
 		ST_LoadLocalFaceGraphics(localskins[i].facerank, localskins[i].facewant, localskins[i].facemmap, i);
 }
@@ -306,9 +309,7 @@ static inline void ST_Stop(void)
 
 void ST_Start(void)
 {
-	if (!st_stopped)
-		ST_Stop();
-
+	ST_Stop();
 	ST_InitData();
 
 	if (!dedicated)
@@ -418,26 +419,27 @@ static void ST_drawDebugInfo(void)
 
 static void ST_drawLevelTitle(void)
 {
-	char *lvlttl = mapheaderinfo[gamemap-1]->lvlttl;
-	char *subttl = mapheaderinfo[gamemap-1]->subttl;
-	char *zonttl = mapheaderinfo[gamemap-1]->zonttl; // SRB2kart
-	char *actnum = mapheaderinfo[gamemap-1]->actnum;
-	INT32 lvlttlxpos;
-	INT32 ttlnumxpos;
-	INT32 zonexpos;
-	INT32 dupcalc = (vid.width/vid.dupx);
-	UINT8 gtc = G_GetGametypeColor(gametype);
+	char *lvlttl, *subttl, *zonttl, *actnum;
+	INT32 lvlttlxpos, ttlnumxpos, zonexpos;
+	INT32 dupcalc;
+	UINT8 gtc;
 	INT32 sub = 0;
-	INT32 bary = (splitscreen)
-		? BASEVIDHEIGHT/2
-		: 163;
+	INT32 bary;
 	INT32 lvlw;
-	
-	if (!cv_stagetitle.value)
+
+	if (!cv_stagetitle.value || (timeinmap > 113))
 		return;
 
-	if (timeinmap > 113)
+	if (*mapheaderinfo[gamemap-1]->lvlttl == '\0')
 		return;
+
+	lvlttl = mapheaderinfo[gamemap-1]->lvlttl;
+	subttl = mapheaderinfo[gamemap-1]->subttl;
+	zonttl = mapheaderinfo[gamemap-1]->zonttl; // SRB2kart
+	actnum = mapheaderinfo[gamemap-1]->actnum;
+	dupcalc = (vid.width/vid.dupx);
+	gtc = G_GetGametypeColor(gametype);
+	bary = (splitscreen) ? BASEVIDHEIGHT/2 : 163;
 
 	lvlw = V_LevelNameWidth(lvlttl);
 
@@ -506,8 +508,8 @@ static void ST_drawLevelTitle(void)
 static const char *ST_GetButtonName(INT32 control, const char *inputtext, boolean unbound, boolean gamectrl)
 {
 	static char buttname[32] = "";
-	const char *butt1 = (gamecontrol[control][0] != 0 ? G_KeynumToString(gamecontrol[control][0]) : NULL);
-	const char *butt2 = (gamecontrol[control][1] != 0 ? G_KeynumToString(gamecontrol[control][1]) : NULL); // alternative bind
+	const char *butt1 = (gamecontrol[0][control][0] != 0 ? G_KeynumToString(gamecontrol[0][control][0]) : NULL);
+	const char *butt2 = (gamecontrol[0][control][1] != 0 ? G_KeynumToString(gamecontrol[0][control][1]) : NULL); // alternative bind
 
 	if (butt1 == NULL && butt2 == NULL) // not bound to a button
 		snprintf(buttname, 32, (unbound ? "%s - %s" : (gamectrl ? "-%s - %s" : "%s - %s")), (unbound ? "Unbound" : ""), inputtext);
@@ -602,7 +604,7 @@ static void ST_overlayDrawer(void)
 	}
 
 	// draw level title Tails
-	if (*mapheaderinfo[gamemap-1]->lvlttl != '\0' && !(hu_showscores && (netgame || multiplayer) && !mapreset) && LUA_HudEnabled(hud_stagetitle) && !forceshowhud)
+	if (!(hu_showscores && (netgame || multiplayer) && !mapreset) && LUA_HudEnabled(hud_stagetitle) && !forceshowhud)
 		ST_drawLevelTitle();
 
 	if (!hu_showscores && netgame && !mapreset)
@@ -739,7 +741,7 @@ void ST_Drawer(void)
 	UINT8 i;
 
 #ifdef SEENAMES
-	if (cv_seenames.value && cv_allowseenames.value && displayplayers[0] == consoleplayer && seenplayer && seenplayer->mo && !mapreset)
+	if (UNLIKELY(cv_seenames.value && cv_allowseenames.value && displayplayers[0] == consoleplayer && seenplayer && seenplayer->mo && !mapreset))
 	{
 		if (cv_seenames.value == 1)
 			V_DrawCenteredString(BASEVIDWIDTH/2, BASEVIDHEIGHT/2 + 15, V_HUDTRANSHALF, player_names[seenplayer-players]);
@@ -756,15 +758,6 @@ void ST_Drawer(void)
 	// force a set of the palette by using doPaletteStuff()
 	if (vid.recalc)
 		st_palette = -1;
-
-	// Do red-/gold-shifts from damage/items
-#ifdef HWRENDER
-	//25/08/99: Hurdler: palette changes is done for all players,
-	//                   not only player1! That's why this part
-	//                   of code is moved somewhere else.
-	if (rendermode == render_soft || (rendermode == render_opengl && HWR_PalRenderFlashpal()))
-#endif
-	if (rendermode != render_none) ST_doPaletteStuff();
 
 	if (st_overlay)
 	{

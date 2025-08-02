@@ -68,6 +68,37 @@ typedef struct
 #endif
 } extracolormap_t;
 
+typedef struct
+{
+	lighttable_t* colormap;
+
+	INT32 x;
+	INT32 yl;
+	INT32 yh;
+	fixed_t iscale;
+	fixed_t texturemid;
+
+	UINT8* source; // first pixel in a column
+	UINT8* lightmap; // lighting only
+
+	// translucency stuff here
+	UINT8* transmap;
+
+	// translation stuff here
+	UINT8* translation;
+
+	struct r_lightlist_s* lightlist;
+
+	INT32 numlights;
+	INT32 maxlights;
+
+	//Fix TUTIFRUTI
+	INT32 texheight;
+	INT32 sourcelength;
+} drawcolumndata_t;
+
+extern drawcolumndata_t g_dc;
+
 //
 // INTERNAL MAP TYPES used by play and refresh
 //
@@ -389,6 +420,7 @@ typedef enum
 } slopetype_t;
 
 #define HORIZONSPECIAL 41
+#define PORTALSPECIAL  40
 
 typedef struct line_s
 {
@@ -527,9 +559,6 @@ typedef struct seg_s
 	float flength; // length of the seg, used by hardware renderer
 #endif
 
-	// Why slow things down by calculating lightlists for every thick side?
-	size_t numlights;
-	r_lightlist_t *rlights;
 	polyobj_t *polyseg;
 	boolean dontrenderme;
 
@@ -610,11 +639,11 @@ typedef struct drawseg_s
 	struct ffloor_s *thicksides[MAXFFLOORS];
 	INT16 *thicksidecol;
 	INT32 numthicksides;
-	fixed_t frontscale[MAXVIDWIDTH];
+	fixed_t *frontscale;
 
 	UINT8 portalpass; // if > 0 and <= portalrender, do not affect sprite clipping
 
-	fixed_t maskedtextureheight[MAXVIDWIDTH]; // For handling sloped midtextures
+	fixed_t *maskedtextureheight; // For handling sloped midtextures
 
 	vertex_t leftpos, rightpos; // Used for rendering FOF walls with slopes
 } drawseg_t;
@@ -642,7 +671,22 @@ typedef struct
 // Patches are used for sprites and all masked pictures, and we compose
 // textures from the TEXTURE1 list of patches.
 //
-// WARNING: this structure is cloned in GLPatch_t
+
+typedef struct
+{
+	INT16 width, height;
+	INT16 leftoffset, topoffset;
+
+	INT32 *columnofs; // Column offsets. This is relative to patch->columns
+	UINT8 *columns; // Software column data
+
+	void *hardware; // OpenGL patch, allocated whenever necessary
+
+#ifdef ROTSPRITE
+	rotsprite_t *rotated; // Rotated patches
+#endif
+} patch_t;
+
 #if defined(_MSC_VER)
 #pragma pack(1)
 #endif
@@ -655,7 +699,7 @@ typedef struct
 	INT16 topoffset;      // pixels below the origin
 	INT32 columnofs[];     // only [width] used
 	// the [0] is &columnofs[width]
-} patch_t;
+} ATTRPACK softwarepatch_t;
 
 #ifdef _MSC_VER
 #pragma warning(disable :  4200)
@@ -720,9 +764,9 @@ typedef struct
 
 	// Flip bits (1 = flip) to use for view angles 0-7.
 	UINT8 flip;
-	
+
 #ifdef ROTSPRITE
-	rotsprite_t *rotated[2][16]; // Rotated patches
+	rotsprite_t *rotated[16]; // Rotated patches
 #endif
 } spriteframe_t;
 

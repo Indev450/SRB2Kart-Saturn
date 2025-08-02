@@ -15,6 +15,7 @@
 #include "doomdef.h"
 #include "fastcmp.h"
 #include "r_things.h"
+#include "r_skins.h"
 #include "r_main.h"
 #include "p_local.h"
 #include "g_game.h"
@@ -149,7 +150,8 @@ static const udata_field_t mobj_fields[] = {
     FIELD(mobj_t, cvmem,               udatalib_getter_int32,      udatalib_setter_int32),
     FIELD(mobj_t, standingslope,       udatalib_getter_slope,      mobj_standingslope_noset),
     FIELD(mobj_t, colorized,           udatalib_getter_boolean,    udatalib_setter_boolean),
-	FIELD(mobj_t, mirrored,           udatalib_getter_boolean,    udatalib_setter_boolean),
+	FIELD(mobj_t, mirrored,            udatalib_getter_boolean,    udatalib_setter_boolean),
+	FIELD(mobj_t, islocal,             udatalib_getter_boolean,    udatalib_setter_boolean),
     { NULL, 0, NULL, NULL },
 };
 #undef FIELD
@@ -392,16 +394,16 @@ int mobj_skin_getter(lua_State *L)
     mobj_t *mo = GETMO();
 
     if (!mo->skin)
-		return 0;
+        return 0;
 
-	if (hud_running && cv_luaimmersion.value) {
-			if (mo->localskin) // HUD ONLY!!!!!!!!!!
-				lua_pushstring(L, ((skin_t *)mo->localskin)->name);
-			else
-				lua_pushstring(L, ((skin_t *)mo->skin)->name);
-		} else {
-			lua_pushstring(L, ((skin_t *)mo->skin)->name);
-		}
+    // HUD ONLY!!!!!!!!!!
+    if (hud_running && cv_luaimmersion.value)
+    {
+        lua_pushstring(L, K_GetMobjSkin(mo)->name);
+    }
+    else
+        lua_pushstring(L, ((skin_t *)mo->skin)->name);
+
     return 1;
 }
 
@@ -452,7 +454,7 @@ int mobj_localskin_setter(lua_State *L)
 		strlcpy(skin, luaL_optstring(L, 2, "none"), sizeof skin);
 		strlwr(skin); // all skin names are lowercase
 
-		if (strcasecmp(skin, "none"))
+		if (stricmp(skin, "none"))
 		{
 			// Try localskins
 			for (i = 0; i < numlocalskins; i++)
@@ -468,7 +470,7 @@ int mobj_localskin_setter(lua_State *L)
 			// Try other skins
 			for (i = 0; i < numskins; i++)
 			{
-				if (fastcmp(skins[i].name, skin))
+				if (stricmp(skins[i].name, skin) == 0)
 				{
 					mo->localskin = &skins[i];
 					mo->skinlocal = false;
@@ -482,7 +484,6 @@ int mobj_localskin_setter(lua_State *L)
 			mo->skinlocal = false;
 		}
 	}
-
 
 	return 0;
 }
@@ -502,12 +503,12 @@ int mobj_color_setter(lua_State *L)
 int mobj_blendmode_setter(lua_State *L)
 {
     mobj_t *mo = GETMO();
-    
+
 	INT32 blendmode = (INT32)luaL_checkinteger(L, 2);
 	if (blendmode < 0 || blendmode > AST_OVERLAY)
 		return luaL_error(L, "mobj.blendmode %d out of range (0 - %d).", blendmode, AST_OVERLAY);
 	mo->blendmode = blendmode;
-	
+
     return 0;
 }
 
@@ -878,7 +879,7 @@ static int mapthing_get(lua_State *L)
 			break;
 		default:
 			if (devparm)
-				return luaL_error(L, LUA_QL("mapthing_t") " has no field named " LUA_QS, field);
+				return luaL_error(L, LUA_QL("mapthing_t") " has no field named " LUA_QS, lua_tostring(L, 2));
 			else
 				return 0;
 	}
@@ -932,7 +933,7 @@ static int mapthing_set(lua_State *L)
 			mt->mobj = *((mobj_t **)luaL_checkudata(L, 3, META_MOBJ));
 			break;
 		default:
-			return luaL_error(L, LUA_QL("mapthing_t") " has no field named " LUA_QS, field);
+			return luaL_error(L, LUA_QL("mapthing_t") " has no field named " LUA_QS, lua_tostring(L, 2));
 	}
 
 	return 0;

@@ -452,25 +452,16 @@ void T_MoveElevator(elevator_t *elevator)
 			const fixed_t dh = abs(elevator->sector->floorheight - elevator->floordestheight);
 
 			// Slow down when reaching destination Tails 12-06-2000
-			if (wh < dh)
-				elevator->speed = FixedDiv(wh,25*FRACUNIT) + FRACUNIT/4;
-			else
-				elevator->speed = FixedDiv(dh,25*FRACUNIT) + FRACUNIT/4;
+			elevator->speed = FixedDiv(((wh < dh) ? wh : dh), 25*FRACUNIT) + FRACUNIT/4;
 
 			if (elevator->origspeed)
 			{
-				elevator->speed = FixedMul(elevator->speed,origspeed);
-				if (elevator->speed > elevator->origspeed)
-					elevator->speed = (elevator->origspeed);
-				if (elevator->speed < 1)
-					elevator->speed = 1;
+				elevator->speed = FixedMul(elevator->speed, origspeed);
+				elevator->speed = CLAMP(elevator->speed, 1, elevator->origspeed);
 			}
 			else
 			{
-				if (elevator->speed > 3*FRACUNIT)
-					elevator->speed = 3*FRACUNIT;
-				if (elevator->speed < 1)
-					elevator->speed = 1;
+				elevator->speed = CLAMP(elevator->speed, 1, 3*FRACUNIT);
 			}
 		}
 
@@ -513,26 +504,18 @@ void T_MoveElevator(elevator_t *elevator)
 			const fixed_t origspeed = FixedDiv(elevator->origspeed,(ELEVATORSPEED/2));
 			const fixed_t wc = abs(elevator->sector->ceilingheight - elevator->ceilingwasheight);
 			const fixed_t dc = abs(elevator->sector->ceilingheight - elevator->ceilingdestheight);
+
 			// Slow down when reaching destination Tails 12-06-2000
-			if (wc < dc)
-				elevator->speed = FixedDiv(wc,25*FRACUNIT) + FRACUNIT/4;
-			else
-				elevator->speed = FixedDiv(dc,25*FRACUNIT) + FRACUNIT/4;
+			elevator->speed = FixedDiv(((wc < dc) ? wc : dc), 25*FRACUNIT) + FRACUNIT/4;
 
 			if (elevator->origspeed)
 			{
-				elevator->speed = FixedMul(elevator->speed,origspeed);
-				if (elevator->speed > elevator->origspeed)
-					elevator->speed = (elevator->origspeed);
-				if (elevator->speed < 1)
-					elevator->speed = 1;
+				elevator->speed = FixedMul(elevator->speed, origspeed);
+				elevator->speed = CLAMP(elevator->speed, 1, elevator->origspeed);
 			}
 			else
 			{
-				if (elevator->speed > 3*FRACUNIT)
-					elevator->speed = 3*FRACUNIT;
-				if (elevator->speed < 1)
-					elevator->speed = 1;
+				elevator->speed = CLAMP(elevator->speed, 1, 3*FRACUNIT);
 			}
 		}
 
@@ -571,11 +554,7 @@ void T_MoveElevator(elevator_t *elevator)
 		else
 			res = res1;
 	}
-/*
-	// make floor move sound
-	if (!(leveltime&7))
-		S_StartSound(&elevator->sector->soundorg, sfx_stnmov);
-*/
+
 	if (res == pastdest || res == crushed)            // if destination height acheived
 	{
 		if (elevator->type == elevateContinuous)
@@ -608,7 +587,6 @@ void T_MoveElevator(elevator_t *elevator)
 					elevator->ceilingdestheight =
 						elevator->floordestheight + elevator->sector->ceilingheight - elevator->sector->floorheight;
 				}
-//				T_MoveElevator(elevator);
 			}
 			else
 			{
@@ -638,7 +616,6 @@ void T_MoveElevator(elevator_t *elevator)
 					elevator->ceilingdestheight =
 						elevator->floordestheight + elevator->sector->ceilingheight - elevator->sector->floorheight;
 				}
-//				T_MoveElevator(elevator);
 			}
 			elevator->delaytimer = elevator->delay;
 		}
@@ -651,9 +628,8 @@ void T_MoveElevator(elevator_t *elevator)
 			P_RemoveThinker(&elevator->thinker);    // remove elevator from actives
 			dontupdate = true;
 		}
-		// make floor stop sound
-		// S_StartSound(&elevator->sector->soundorg, sfx_pstop);
 	}
+
 	if (!dontupdate)
 	{
 		elevator->sector->floorspeed = elevator->speed*elevator->direction;
@@ -2154,10 +2130,7 @@ void T_EachTimeThinker(levelspecthink_t *eachtime)
 					if (!playeringame[j])
 						continue;
 
-					if (!players[j].mo)
-						continue;
-
-					if (players[j].mo->health <= 0)
+					if (!players[j].mo || (players[j].mo->health <= 0))
 						continue;
 
 					if ((netgame || multiplayer) && players[j].spectator)
@@ -2168,6 +2141,7 @@ void T_EachTimeThinker(levelspecthink_t *eachtime)
 					else if (sec->flags & SF_TRIGGERSPECIAL_TOUCH)
 					{
 						boolean insector = false;
+
 						for (node = players[j].mo->touching_sectorlist; node; node = node->m_sectorlist_next)
 						{
 							if (node->m_sector == targetsec)
@@ -2176,6 +2150,7 @@ void T_EachTimeThinker(levelspecthink_t *eachtime)
 								break;
 							}
 						}
+
 						if (!insector)
 							continue;
 					}
@@ -2220,10 +2195,7 @@ void T_EachTimeThinker(levelspecthink_t *eachtime)
 				if (!playeringame[i])
 					continue;
 
-				if (!players[i].mo)
-					continue;
-
-				if (players[i].mo->health <= 0)
+				if (!players[i].mo || (players[i].mo->health <= 0))
 					continue;
 
 				if ((netgame || multiplayer) && players[i].spectator)
@@ -2234,6 +2206,7 @@ void T_EachTimeThinker(levelspecthink_t *eachtime)
 				else if (sec->flags & SF_TRIGGERSPECIAL_TOUCH)
 				{
 					boolean insector = false;
+
 					for (node = players[i].mo->touching_sectorlist; node; node = node->m_sectorlist_next)
 					{
 						if (node->m_sector == sec)
@@ -2242,6 +2215,7 @@ void T_EachTimeThinker(levelspecthink_t *eachtime)
 							break;
 						}
 					}
+
 					if (!insector)
 						continue;
 				}
@@ -2302,10 +2276,7 @@ void T_EachTimeThinker(levelspecthink_t *eachtime)
 				if (!playeringame[i])
 					continue;
 
-				if (!players[i].mo)
-					continue;
-
-				if (players[i].mo->health <= 0)
+				if (!players[i].mo || (players[i].mo->health <= 0))
 					continue;
 
 				if ((netgame || multiplayer) && players[i].spectator)
@@ -2359,11 +2330,7 @@ void T_RaiseSector(levelspecthink_t *raise)
 		{
 			thing = node->m_thing;
 
-			if (!thing->player)
-				continue;
-
-			// Ignore spectators.
-			if (thing->player && thing->player->spectator)
+			if (!thing->player || thing->player->spectator) // Ignore spectators.
 				continue;
 
 			// Option to require spindashing.
@@ -2516,7 +2483,7 @@ void T_CameraScanner(elevator_t *elevator)
 
 	for (UINT8 i = 0; i <= splitscreen; i++)
 	{
-		if (!players[displayplayers[i]].mo || P_MobjWasRemoved(players[displayplayers[i]].mo))
+		if (P_MobjWasRemoved(players[displayplayers[i]].mo))
 			continue;
 
 		if (players[displayplayers[i]].mo->subsector->sector == elevator->actionsector)
@@ -2578,7 +2545,7 @@ INT32 EV_DoFloor(line_t *line, floor_e floortype)
 		sec->floordata = dofloor;
 
 		// set up some generic aspects of the floormove_t
-		dofloor->thinker.function.acp1 = (actionf_p1)T_MoveFloor;
+		dofloor->thinker.function = (actionf_p1)T_MoveFloor;
 		dofloor->type = floortype;
 		dofloor->crush = false; // default: types that crush will change this
 		dofloor->sector = sec;
@@ -2799,7 +2766,7 @@ INT32 EV_DoElevator(line_t *line, elevator_e elevtype, boolean customspeed)
 		P_AddThinker(&elevator->thinker);
 		sec->floordata = elevator;
 		sec->ceilingdata = elevator;
-		elevator->thinker.function.acp1 = (actionf_p1)T_MoveElevator;
+		elevator->thinker.function = (actionf_p1)T_MoveElevator;
 		elevator->type = elevtype;
 		elevator->sourceline = line;
 		elevator->distance = 1; // Always crush unless otherwise
@@ -2956,6 +2923,7 @@ void EV_CrumbleChain(sector_t *sec, ffloor_t *rover)
 			if (R_PointInSubsector(a, b)->sector == sec)
 			{
 				mobj_t *spawned = NULL;
+
 				for (c = topz; c > *rover->bottomheight; c -= spacing)
 				{
 					spawned = P_SpawnMobj(a, b, c, type);
@@ -2986,7 +2954,7 @@ INT32 EV_BounceSector(sector_t *sec, fixed_t momz, line_t *sourceline)
 	bouncer = Z_Calloc(sizeof (*bouncer), PU_LEVSPEC, NULL);
 	P_AddThinker(&bouncer->thinker);
 	sec->ceilingdata = bouncer;
-	bouncer->thinker.function.acp1 = (actionf_p1)T_BounceCheese;
+	bouncer->thinker.function = (actionf_p1)T_BounceCheese;
 
 	// set up the fields according to the type of elevator action
 	bouncer->sector = sec;
@@ -3023,7 +2991,7 @@ INT32 EV_DoContinuousFall(sector_t *sec, sector_t *backsector, fixed_t spd, bool
 	// create and initialize new thinker
 	faller = Z_Calloc(sizeof (*faller), PU_LEVSPEC, NULL);
 	P_AddThinker(&faller->thinker);
-	faller->thinker.function.acp1 = (actionf_p1)T_ContinuousFalling;
+	faller->thinker.function = (actionf_p1)T_ContinuousFalling;
 
 	// set up the fields
 	faller->sector = sec;
@@ -3076,7 +3044,7 @@ INT32 EV_StartCrumble(sector_t *sec, ffloor_t *rover, boolean floating,
 	// create and initialize new elevator thinker
 	elevator = Z_Calloc(sizeof (*elevator), PU_LEVSPEC, NULL);
 	P_AddThinker(&elevator->thinker);
-	elevator->thinker.function.acp1 = (actionf_p1)T_StartCrumble;
+	elevator->thinker.function = (actionf_p1)T_StartCrumble;
 
 	// Does this crumbler return?
 	if (crumblereturn)
@@ -3120,7 +3088,6 @@ INT32 EV_StartCrumble(sector_t *sec, ffloor_t *rover, boolean floating,
 	for (i = -1; (i = P_FindSectorFromTag(elevator->sourceline->tag, i)) >= 0 ;)
 	{
 		foundsec = &sectors[i];
-
 		P_SpawnMobj(foundsec->soundorg.x, foundsec->soundorg.y, elevator->direction == 1 ? elevator->sector->floorheight : elevator->sector->ceilingheight, MT_CRUMBLEOBJ);
 	}
 
@@ -3156,7 +3123,7 @@ INT32 EV_MarioBlock(sector_t *sec, sector_t *roversector, fixed_t topheight, mob
 		P_AddThinker(&block->thinker);
 		sec->floordata = block;
 		sec->ceilingdata = block;
-		block->thinker.function.acp1 = (actionf_p1)T_MarioBlock;
+		block->thinker.function = (actionf_p1)T_MarioBlock;
 
 		// Set up the fields
 		block->sector = sec;

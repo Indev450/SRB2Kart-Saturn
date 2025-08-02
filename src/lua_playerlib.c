@@ -13,6 +13,7 @@
 #include "doomdef.h"
 #include "fastcmp.h"
 #include "r_main.h"
+#include "r_skins.h"
 #include "r_things.h"
 #include "p_mobj.h"
 #include "d_player.h"
@@ -295,7 +296,7 @@ int player_localskin_getter(lua_State *L)
 	player_t *plr = GETPLAYER();
 
 	if (plr->localskin)
-		lua_pushstring(L, (plr->skinlocal ? localskins : skins)[plr->localskin - 1].name);
+		lua_pushstring(L, K_GetPlayerSkin(plr)->name);
 	else
 		lua_pushnil(L);
 
@@ -485,6 +486,7 @@ static int lib_iterateDisplayplayers(lua_State *L)
 
 		if (!players[displayplayers[i]].mo)
 			continue;
+
 		LUA_PushUserdata(L, &players[displayplayers[i]], META_PLAYER);
 		lua_pushinteger(L, i);	// push this to recall what number we were on for the next function call. I suppose this also means you can retrieve the splitscreen player number with 'for p, n in displayplayers.iterate'!
 		return 2;
@@ -706,8 +708,8 @@ static int kartstuff_len(lua_State *L)
 	return 1;
 }
 
-#define NOFIELD luaL_error(L, LUA_QL("ticcmd_t") " has no field named " LUA_QS, field)
-#define NOSET luaL_error(L, LUA_QL("ticcmd_t") " field " LUA_QS " should not be set directly.", field)
+#define NOFIELD luaL_error(L, LUA_QL("ticcmd_t") " has no field named " LUA_QS, lua_tostring(L, 2))
+#define NOSET luaL_error(L, LUA_QL("ticcmd_t") " field " LUA_QS " should not be set directly.", lua_tostring(L, 2))
 
 enum ticcmd_e
 {

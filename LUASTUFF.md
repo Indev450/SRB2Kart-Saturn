@@ -156,6 +156,42 @@ Add Gamepad Rumble support for things.
 To be used with Displayplayers.
 Duration is in milliseconds and is optional to set, default value is 84ms.
 
+## P_CheckSightFast(mo1, mo2)
+
+Exactly same as P_CheckSight but uses cheaper algorithm, useful for things like nametags. Doesn't work exactly
+like P_CheckSight so don't use it for anything gameplay-related.
+
+## musicdef_t
+
+Userdata structure representing a musicdef. Fields:
+
+`musicdef.name` - song identifier ("kmap01" for example).
+
+`musicdef.usage`, `musicdef.source` - fields from vanilla MUSICDEFS lump.
+
+`musicdef.filename` - unused for now.
+
+`musicdef.title`, `musicdef.alttitle`, `musicdef.authors` - fields from MUSCINFO lump.
+
+`#musicdef` - returns integer id for musicdef (which can be used as index in `musicdefs`).
+
+All fields are read-only.
+
+## S_FindMusicCredit(name)
+
+Returns musicdef corresponding to music with given identifier. For example, `S_FindMusicCredit("kmap01")` will return
+musicdef for green hills music.
+
+## musicdefs
+
+Global table for all musicdefs, similar to mobjinfo, states, etc. Can take either integer indices,
+from `0` to `#musicdefs-1`, or string indices (which is equal to calling `S_FindMusicCredit`).
+
+## addHook("MusicCredit", function(musicdef))
+
+Hook is called whenever `S_ShowMusicCredit` (either from game or mod) is called. Takes musicdef as only argument, returning true
+will overwrite vanilla behavior (not show music credit), can be used to implement custom music credit pop-ups.
+
 # Other changes
 
 ## P_PlayRinglossSound(source, damager)

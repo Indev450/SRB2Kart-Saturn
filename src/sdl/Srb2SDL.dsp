@@ -867,11 +867,6 @@ SOURCE=..\r_draw.h
 # End Source File
 # Begin Source File
 
-SOURCE=..\r_draw16.c
-# PROP Exclude_From_Build 1
-# End Source File
-# Begin Source File
-
 SOURCE=..\r_draw8.c
 # PROP Exclude_From_Build 1
 # End Source File
@@ -894,6 +889,14 @@ SOURCE=..\r_patch.c
 # Begin Source File
 
 SOURCE=..\r_patch.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\r_patchrotation.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\r_patchrotation.h
 # End Source File
 # Begin Source File
 

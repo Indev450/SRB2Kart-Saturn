@@ -17,14 +17,27 @@
 
 #include "lauxlib.h"
 #include "lualib.h"
+#include "../i_system.h"
+#include "../doomdef.h"
+#include "../d_main.h"
+#include "../m_misc.h"
 
 
 
 #define IO_INPUT	1
 #define IO_OUTPUT	2
 
+#define FILELIMIT 1024*1024 // Size limit for reading/writing files
+
 
 static const char *const fnames[] = {"input", "output"};
+static const char *whitelist[] = { // Allow scripters to write files of these types to SRB2's folder
+	".txt",
+	".sav2",
+	".cfg",
+	".png",
+	".bmp"
+};
 
 
 static int pushresult (lua_State *L, int i, const char *filename) {
@@ -71,7 +84,7 @@ static int io_type (lua_State *L) {
 
 static FILE *tofile (lua_State *L) {
   FILE **f = tofilep(L);
-  if (*f == NULL)
+  if (l_unlikely(*f == NULL))
     luaL_error(L, "attempt to use a closed file");
   return *f;
 }
@@ -146,12 +159,59 @@ static int io_tostring (lua_State *L) {
   return 1;
 }
 
+static int StartsWith(const char *a, const char *b) // this is wolfs being lazy yet again
+{
+   if(strncmp(a, b, strlen(b)) == 0) return 1;
+   return 0;
+}
+
+
 static int io_open (lua_State *L) {
-  const char *filename = luaL_checkstring(L, 1);
-  const char *mode = luaL_optstring(L, 2, "r");
-  FILE **pf = newfile(L);
-  *pf = fopen(filename, mode);
-  return (*pf == NULL) ? pushresult(L, 0, filename) : 1;
+	FILE **pf;
+	const char *filename = luaL_checkstring(L, 1);
+	int pass = 0;
+	size_t i;
+	int length = strlen(filename);
+	char *splitter, *forward, *backward;
+	char *destFilename;
+	const char *mode = luaL_optstring(L, 2, "r");
+
+	for (i = 0; i < (sizeof (whitelist) / sizeof(const char *)); i++)
+	{
+		if (!stricmp(&filename[length - strlen(whitelist[i])], whitelist[i]))
+		{
+			pass = 1;
+			break;
+		}
+	}
+	if (l_unlikely(strstr(filename, "..") || strchr(filename, ':') || StartsWith(filename, "\\")
+		|| StartsWith(filename, "/") || !pass))
+	{
+		luaL_error(L,"access denied to %s", filename);
+		return pushresult(L,0,filename);
+	}
+
+	destFilename = va("%s"PATHSEP"luafiles"PATHSEP"%s", srb2home, filename);
+
+	// Make directories as needed
+	splitter = destFilename;
+
+    forward = strchr(splitter, '/');
+    backward = strchr(splitter, '\\');
+	while ((splitter = (forward && backward) ? min(forward, backward) : (forward ?: backward)))
+	{
+		*splitter = 0;
+		I_mkdir(destFilename, 0755);
+		*splitter = '/';
+		splitter++;
+
+        forward = strchr(splitter, '/');
+        backward = strchr(splitter, '\\');
+	}
+
+	pf = newfile(L);
+	*pf = fopen(destFilename, mode);
+	return (*pf == NULL) ? pushresult(L, 0, filename) : 1;
 }
 
 
@@ -166,7 +226,7 @@ static FILE *getiofile (lua_State *L, int findex) {
   FILE *f;
   lua_rawgeti(L, LUA_ENVIRONINDEX, findex);
   f = *(FILE **)lua_touserdata(L, -1);
-  if (f == NULL)
+  if (l_unlikely(f == NULL))
     luaL_error(L, "standard %s file is closed", fnames[findex - 1]);
   return f;
 }
@@ -178,7 +238,7 @@ static int g_iofile (lua_State *L, int f, const char *mode) {
     if (filename) {
       FILE **pf = newfile(L);
       *pf = fopen(filename, mode);
-      if (*pf == NULL)
+      if (l_unlikely(*pf == NULL))
         fileerror(L, 1, filename);
     }
     else {
@@ -230,7 +290,7 @@ static int io_lines (lua_State *L) {
     const char *filename = luaL_checkstring(L, 1);
     FILE **pf = newfile(L);
     *pf = fopen(filename, "r");
-    if (*pf == NULL)
+    if (l_unlikely(*pf == NULL))
       fileerror(L, 1, filename);
     aux_lines(L, lua_gettop(L), 1);
     return 1;
@@ -247,7 +307,7 @@ static int io_lines (lua_State *L) {
 
 static int read_number (lua_State *L, FILE *f) {
   lua_Number d;
-  if (fscanf(f, LUA_NUMBER_SCAN, &d) == 1) {
+  if (l_likely(fscanf(f, LUA_NUMBER_SCAN, &d) == 1)) {
     lua_pushnumber(L, d);
     return 1;
   }
@@ -394,6 +454,11 @@ static int g_write (lua_State *L, FILE *f, int arg) {
     else {
       size_t l;
       const char *s = luaL_checklstring(L, arg, &l);
+	  if (l_unlikely(ftell(f) + l > FILELIMIT))
+	  {
+		luaL_error(L,"write limit bypassed in file. Changes have been discarded.");
+		break;
+	  }
       status = status && (fwrite(s, sizeof(char), l, f) == l);
     }
   }
@@ -418,7 +483,7 @@ static int f_seek (lua_State *L) {
   int op = luaL_checkoption(L, 2, "cur", modenames);
   long offset = luaL_optlong(L, 3, 0);
   op = fseek(f, offset, mode[op]);
-  if (op)
+  if (l_unlikely(op))
     return pushresult(L, 0, NULL);  /* error */
   else {
     lua_pushinteger(L, ftell(f));

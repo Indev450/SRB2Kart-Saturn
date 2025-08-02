@@ -15,12 +15,20 @@
 #ifndef __R_FPS_H__
 #define __R_FPS_H__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "m_fixed.h"
 #include "p_local.h"
 #include "r_state.h"
+#include "m_perfstats.h"
 
-extern consvar_t cv_fpscap;
+extern consvar_t cv_fpscap, cv_fpscapbg;
 extern consvar_t cv_precipinterp;
+
+extern ps_metric_t ps_interp_frac;
+extern ps_metric_t ps_interp_lag;
 
 UINT32 R_GetFramerateCap(void);
 boolean R_UsingFrameInterpolation(void);
@@ -134,7 +142,7 @@ void R_RelativeTeleportViewInterpolation(UINT8 p, fixed_t xdiff, fixed_t ydiff, 
 // Set the current view context (the viewvars pointed to by newview)
 void R_SetViewContext(enum viewcontext_e _viewcontext);
 
-fixed_t R_InterpolateFixed(fixed_t from, fixed_t to);
+//fixed_t R_InterpolateFixed(fixed_t from, fixed_t to);
 angle_t R_InterpolateAngle(angle_t from, angle_t to);
 
 // Evaluate the interpolated mobj state for the given mobj
@@ -170,5 +178,9 @@ void R_RemoveMobjInterpolator(mobj_t *mobj);
 void R_UpdateMobjInterpolators(void);
 void R_ResetMobjInterpolationState(mobj_t *mobj);
 void R_ResetPrecipitationMobjInterpolationState(precipmobj_t *mobj);
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif

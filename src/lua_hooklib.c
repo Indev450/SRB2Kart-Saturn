@@ -14,6 +14,7 @@
 #include "doomstat.h"
 #include "p_mobj.h"
 #include "g_game.h"
+#include "r_skins.h"
 #include "r_things.h"
 #include "b_bot.h"
 #include "z_zone.h"
@@ -392,6 +393,16 @@ FUNCINLINE static ATTRINLINE boolean prepare_string_hook
 		return false;
 }
 
+static boolean prepare_hud_hook
+(
+		Hook_State * hook,
+		int hook_type
+){
+	return init_hook_type(hook, 0,
+			hook_type, 0, NULL,
+			hudHookIds[hook_type].numHooks);
+}
+
 FUNCINLINE static ATTRINLINE void init_hook_call
 (
 		Hook_State * hook,
@@ -662,20 +673,16 @@ int LUA_HookTiccmd(player_t *player, ticcmd_t *cmd, int hook_type)
 
 void LUA_HookHUD(int hook_type, huddrawlist_h list)
 {
-	const hook_t * map = &hudHookIds[hook_type];
 	Hook_State hook;
-	if (map->numHooks > 0)
+	if (prepare_hud_hook(&hook, hook_type))
 	{
-		start_hook_stack();
-		begin_hook_values(&hook);
-
 		LUA_SetHudHook(hook_type, list);
 
 		hud_running = true; // local hook
 		hud_interpcounter = 0;
 		hud_interpolate = hud_interpstring = hud_interplatch = false;
 		init_hook_call(&hook, 1, res_hud);
-		call_mapped(&hook, map);
+		call_mapped(&hook, &hudHookIds[hook_type]);
 		lua_settop(gL, 0); // destroy le stack!! >:3
 		hud_running = false;
 
@@ -1060,6 +1067,18 @@ int LUA_HookMusicChange(const char *oldname, struct MusicChange *param)
 		}
 
 		lua_settop(gL, 0);
+	}
+
+	return hook.status;
+}
+
+int LUA_HookMusicCredit(musicdef_t *musicdef)
+{
+	Hook_State hook;
+	if (prepare_hook(&hook, 0, HOOK(MusicCredit)))
+	{
+		LUA_PushUserdata(gL, musicdef, META_MUSICDEF);
+		call_hooks(&hook, 1, res_true);
 	}
 
 	return hook.status;

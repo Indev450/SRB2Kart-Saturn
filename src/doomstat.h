@@ -125,7 +125,7 @@ extern boolean lastdraw;
 extern INT32 postimgparam[MAXSPLITSCREENPLAYERS];
 
 extern INT32 viewwindowx, viewwindowy;
-extern INT32 viewwidth, scaledviewwidth;
+extern INT32 viewwidth;
 
 extern boolean gamedataloaded;
 
@@ -244,7 +244,7 @@ typedef struct
 	INT16 nextlevel;       ///< Map number of next level, or 1100-1102 to end.
 	char musname[7];       ///< Music track to play. "" for no music.
 	UINT16 mustrack;       ///< Subsong to play. Only really relevant for music modules and specific formats supported by GME. 0 to ignore.
-	UINT32 muspos;    ///< Music position to jump to.
+	UINT32 muspos;         ///< Music position to jump to.
 	char forcecharacter[17];  ///< (SKINNAMESIZE+1) Skin to switch to or "" to disable.
 	UINT8 weather;         ///< 0 = sunny day, 1 = storm, 2 = snow, 3 = rain, 4 = blank, 5 = thunder w/o rain, 6 = rain w/o lightning, 7 = heat wave.
 	INT16 skynum;          ///< Sky number to use.
@@ -276,7 +276,7 @@ typedef struct
 
 	// SRB2kart
 	//boolean automap;    ///< Displays a level's white map outline in modified games
-	fixed_t mobj_scale; ///< Replacement for TOL_ERZ3
+	fixed_t mobj_scale;   ///< Replacement for TOL_ERZ3
 
 	mapheader_lighting_t lighting;			///< Wall and sprite lighting
 	mapheader_lighting_t lighting_encore;	///< Alternative lighting for Encore mode
@@ -299,8 +299,6 @@ typedef struct
 #define LF_NORELOAD       8 ///< Don't reload level on death
 #define LF_NOZONE        16 ///< Don't include "ZONE" on level title
 #define LF_SECTIONRACE   32 ///< Section race level
-#define LF_SUBTRACTNUM   64 ///< Use subtractive position number (for bright levels)
-
 
 #define LF2_HIDEINMENU     1 ///< Hide in the multiplayer menu
 #define LF2_HIDEINSTATS    2 ///< Hide in the statistics screen
@@ -448,19 +446,19 @@ extern UINT16 spacetimetics;
 extern UINT16 extralifetics;
 
 // SRB2kart
-extern tic_t introtime;
-extern tic_t starttime;
-extern tic_t raceexittime;
-extern tic_t battleexittime;
-extern INT32 hyudorotime;
-extern INT32 stealtime;
-extern INT32 sneakertime;
-extern INT32 itemtime;
-extern INT32 comebacktime;
-extern INT32 bumptime;
-extern INT32 wipeoutslowtime;
-extern INT32 wantedreduce;
-extern INT32 wantedfrequency;
+extern const tic_t introtime;
+extern const tic_t starttime;
+extern const tic_t raceexittime;
+extern const tic_t battleexittime;
+extern const INT32 hyudorotime;
+extern const INT32 stealtime;
+extern const INT32 sneakertime;
+extern const INT32 itemtime;
+extern const INT32 comebacktime;
+extern const INT32 bumptime;
+extern const INT32 wipeoutslowtime;
+extern const INT32 wantedreduce;
+extern const INT32 wantedfrequency;
 
 extern UINT8 introtoplay;
 extern UINT8 creditscutscene;
@@ -538,18 +536,6 @@ extern mapthing_t *playerstarts[MAXPLAYERS]; // Cooperative
 extern mapthing_t *bluectfstarts[MAXPLAYERS]; // CTF
 extern mapthing_t *redctfstarts[MAXPLAYERS]; // CTF
 
-#define WAYPOINTSEQUENCESIZE 256
-#define NUMWAYPOINTSEQUENCES 256
-extern mobj_t *waypoints[NUMWAYPOINTSEQUENCES][WAYPOINTSEQUENCESIZE];
-extern UINT16 numwaypoints[NUMWAYPOINTSEQUENCES];
-
-void P_AddWaypoint(UINT8 sequence, UINT8 id, mobj_t *waypoint);
-mobj_t *P_GetFirstWaypoint(UINT8 sequence);
-mobj_t *P_GetLastWaypoint(UINT8 sequence);
-mobj_t *P_GetPreviousWaypoint(mobj_t *current, boolean wrap);
-mobj_t *P_GetNextWaypoint(mobj_t *current, boolean wrap);
-mobj_t *P_GetClosestWaypoint(UINT8 sequence, mobj_t *mo);
-
 // =====================================
 // Internal parameters, used for engine.
 // =====================================
@@ -589,7 +575,7 @@ extern consvar_t cv_downloading; // allow clients to downloading WADs.
 extern consvar_t cv_nettimeout; // SRB2Kart: Advanced server options menu
 extern consvar_t cv_jointimeout;
 extern consvar_t cv_maxping;
-extern ticcmd_t netcmds[TICQUEUE][MAXPLAYERS];
+extern ticcmd_t netcmds[BACKUPTICS][MAXPLAYERS];
 extern INT32 serverplayer;
 extern INT32 adminplayers[MAXPLAYERS];
 

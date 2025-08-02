@@ -13,6 +13,10 @@
 #ifndef __HWR_GL_H__
 #define __HWR_GL_H__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "../screen.h"
 
 #include "hw_data.h"
@@ -22,7 +26,6 @@
 #define SCREENVERTS 10
 
 boolean GL_Init(void);
-void GL_FinishUpdate(INT32 waitvbl);
 void SetupGLInfo(void);
 
 void GL_SetSpecialState(hwdspecialstate_t IdState, INT32 Value);
@@ -40,6 +43,7 @@ void GL_DrawModelEx(model_t *model, INT32 frameIndex, float duration, float tics
 
 void GL_RenderSkyDome(gl_sky_t *sky);
 
+void GL_UpdateTexture(GLMipmap_t *pTexInfo);
 void GL_SetTexture(GLMipmap_t *pTexInfo);
 void GL_DeleteTexture(GLMipmap_t *pTexInfo);
 
@@ -75,5 +79,9 @@ void GL_SetPaletteLookup(UINT8 *lut);
 UINT32 GL_CreateLightTable(RGBA_t *hw_lighttable);
 void GL_ClearLightTables(void);
 void GL_SetScreenPalette(RGBA_t *palette);
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif // __HWR_GL_H__

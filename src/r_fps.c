@@ -41,9 +41,48 @@ static CV_PossibleValue_t fpscap_cons_t[] = {
 	{0, "Match refresh rate"},
 	{0, NULL}
 };
-consvar_t cv_fpscap = {"fpscap", "Match refresh rate", CV_SAVE, fpscap_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+
+consvar_t cv_fpscap   = {"fpscap", "Match refresh rate", CV_SAVE, fpscap_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_fpscapbg = {"fpscapbackground", "Match refresh rate", CV_SAVE, fpscap_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 consvar_t cv_precipinterp = {"precipinterpolation", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+
+ps_metric_t ps_interp_frac = {0};
+ps_metric_t ps_interp_lag  = {0};
+
+static boolean R_UseBackgroundFramerateCap(void)
+{
+	if (!window_notinfocus)
+		return false;
+
+	// if foreground is unlimited or matched to refresh rate but bg is limited
+	if (cv_fpscap.value <= 0 && cv_fpscapbg.value >= 0)
+		return true;
+
+	// use the lower value
+	if ((cv_fpscap.value > 0 && cv_fpscapbg.value > 0)
+	&& (cv_fpscapbg.value < cv_fpscap.value))
+		return true;
+
+	return false;
+}
+
+static UINT32 R_GetFrameCap(INT32 val)
+{
+	if (val == 0)
+	{
+		// 0: Match refresh rate
+		return I_GetRefreshRate();
+	}
+
+	if (val < 0)
+	{
+		// -1: Unlimited
+		return 0;
+	}
+
+	return val;
+}
 
 UINT32 R_GetFramerateCap(void)
 {
@@ -54,19 +93,12 @@ UINT32 R_GetFramerateCap(void)
 		return TICRATE;
 	}
 
-	if (cv_fpscap.value == 0)
+	if (R_UseBackgroundFramerateCap())
 	{
-		// 0: Match refresh rate
-		return I_GetRefreshRate();
+		return R_GetFrameCap(cv_fpscapbg.value);
 	}
 
-	if (cv_fpscap.value < 0)
-	{
-		// -1: Unlimited
-		return 0;
-	}
-
-	return cv_fpscap.value;
+	return R_GetFrameCap(cv_fpscap.value);
 }
 
 boolean R_UsingFrameInterpolation(void)
@@ -129,7 +161,7 @@ static vector3_t *R_LerpVector3(const vector3_t *from, const vector3_t *to, fixe
 
 // recalc necessary stuff for mouseaiming
 // slopes are already calculated for the full possible view (which is 4*viewheight).
-// 18/08/18: (No it's actually 16*viewheight, thanks Jimita for finding this out)
+// 18/08/18: (No it's actually 16*viewheight, thanks Lactozilla for finding this out)
 static void R_SetupFreelook(void)
 {
 	// clip it in the case we are looking a hardware 90 degrees full aiming
@@ -164,23 +196,13 @@ void R_InterpolateViewRollAngle(fixed_t frac)
 void R_InterpolateView(fixed_t frac, boolean forceinvalid)
 {
 	viewvars_t* prevview = oldview;
-	UINT8 i;
 
 	if (FIXED_TO_FLOAT(frac) < 0)
 		frac = 0;
 	if (frac > FRACUNIT)
 		frac = FRACUNIT;
 
-	if (viewcontext >= VIEWCONTEXT_SKY1)
-	{
-		i = viewcontext - VIEWCONTEXT_SKY1;
-	}
-	else
-	{
-		i = viewcontext - VIEWCONTEXT_PLAYER1;
-	}
-
-	if (oldview_invalid[i] != 0 || forceinvalid)
+	if (oldview_invalid[R_GetViewNumber()] != 0 || forceinvalid)
 	{
 		// interpolate from newview to newview
 		prevview = newview;
@@ -198,7 +220,7 @@ void R_InterpolateView(fixed_t frac, boolean forceinvalid)
 	viewcos = FINECOSINE(viewangle>>ANGLETOFINESHIFT);
 
 	viewplayer = newview->player;
-	viewsector = R_PointInSubsector(viewx, viewy)->sector;
+	viewsector = R_PointInSubsectorFast(viewx, viewy)->sector;
 
 	R_SetupFreelook();
 }
@@ -211,8 +233,7 @@ void R_UpdateViewInterpolation(void)
 	{
 		pview_old[i] = pview_new[i];
 		skyview_old[i] = skyview_new[i];
-
-		if (oldview_invalid[i]) oldview_invalid[i]--;
+		if (oldview_invalid[i] > 0) oldview_invalid[i]--;
 	}
 
 	last_view_update = I_GetTime();
@@ -286,7 +307,7 @@ void R_SetViewContext(enum viewcontext_e _viewcontext)
 	}
 
 	return (R_LerpFixed(from, to, rendertimefrac));
-}
+}*/
 
 angle_t R_InterpolateAngle(angle_t from, angle_t to)
 {
@@ -296,7 +317,7 @@ angle_t R_InterpolateAngle(angle_t from, angle_t to)
 	}
 
 	return (R_LerpAngle(from, to, rendertimefrac));
-}*/
+}
 
 void R_InterpolateMobjState(mobj_t *mobj, fixed_t frac, interpmobjstate_t *out)
 {
@@ -364,11 +385,7 @@ void R_InterpolatePrecipMobjState(precipmobj_t *mobj, fixed_t frac, interpmobjst
 		out->z = mobj->z;
 		out->scale = cv_mobjscaleprecip.value ? mapobjectscale : FRACUNIT;
 		//out->subsector = mobj->subsector;
-		out->angle = mobj->angle;
-		out->spritexscale = mobj->spritexscale;
-		out->spriteyscale = mobj->spriteyscale;
-		out->spritexoffset = mobj->spritexoffset;
-		out->spriteyoffset = mobj->spriteyoffset;
+		//out->angle = mobj->angle;
 		return;
 	}
 
@@ -376,13 +393,8 @@ void R_InterpolatePrecipMobjState(precipmobj_t *mobj, fixed_t frac, interpmobjst
 		out->y = R_LerpFixed(mobj->old_y, mobj->y, frac);
 		out->z = R_LerpFixed(mobj->old_z, mobj->z, frac);
 		out->scale = cv_mobjscaleprecip.value ? mapobjectscale : FRACUNIT;
-		out->spritexscale = mobj->spritexscale;
-		out->spriteyscale = mobj->spriteyscale;
-		out->spritexoffset = mobj->spritexoffset;
-		out->spriteyoffset = mobj->spriteyoffset;
 		//out->subsector = R_PointInSubsector(out->x, out->y); // this is unused
-
-		out->angle = R_LerpAngle(mobj->old_angle, mobj->angle, frac);
+		//out->angle = R_LerpAngle(mobj->old_angle, mobj->angle, frac);
 }
 
 static void AddInterpolator(levelinterpolator_t* interpolator)
@@ -470,8 +482,8 @@ void R_CreateInterpolator_Polyobj(thinker_t *thinker, polyobj_t *polyobj)
 	interp->polyobj.polyobj = polyobj;
 	interp->polyobj.vertices_size = polyobj->numVertices;
 
-	interp->polyobj.oldvertices = Z_CallocAlign(sizeof(fixed_t) * 2 * polyobj->numVertices, PU_LEVEL, NULL, 32);
-	interp->polyobj.bakvertices = Z_CallocAlign(sizeof(fixed_t) * 2 * polyobj->numVertices, PU_LEVEL, NULL, 32);
+	interp->polyobj.oldvertices = Z_Calloc(sizeof(fixed_t) * 2 * polyobj->numVertices, PU_LEVEL, NULL);
+	interp->polyobj.bakvertices = Z_Calloc(sizeof(fixed_t) * 2 * polyobj->numVertices, PU_LEVEL, NULL);
 	for (size_t i = 0; i < polyobj->numVertices; i++)
 	{
 		interp->polyobj.oldvertices[i * 2    ] = interp->polyobj.bakvertices[i * 2    ] = polyobj->vertices[i]->x;
@@ -796,6 +808,11 @@ void R_ResetMobjInterpolationState(mobj_t *mobj)
 	mobj->old_roll2 = mobj->old_roll;
 	mobj->old_slopepitch2 = mobj->old_slopepitch;
 	mobj->old_sloperoll2 = mobj->old_sloperoll;
+
+	mobj->old_spritexscale2 = mobj->old_spritexscale;
+	mobj->old_spriteyscale2 = mobj->old_spriteyscale;
+	mobj->old_spritexoffset2 = mobj->old_spritexoffset;
+	mobj->old_spriteyoffset2 = mobj->old_spriteyoffset;
 
 	mobj->old_x = mobj->x;
 	mobj->old_y = mobj->y;

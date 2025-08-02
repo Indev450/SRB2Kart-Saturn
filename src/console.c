@@ -275,29 +275,28 @@ void CON_SetupBackColormap(void)
 
 	switch (cons_backcolor.value)
 	{
-		case 0:		palindex = 15; 	break; 	// White
-		case 1:		palindex = 31;	break; 	// Gray
-		case 2:		palindex = 47;	break;	// Sepia
-		case 3:		palindex = 63;	break; 	// Brown
-		case 4:		palindex = 150; shift = 7; 	break; 	// Pink
-		case 5:		palindex = 127; shift = 7;	break; 	// Raspberry
-		case 6:		palindex = 143;	break; 	// Red
-		case 7:		palindex = 86;	shift = 7;	break;	// Creamsicle
-		case 8:		palindex = 95;	break; 	// Orange
-		case 9:		palindex = 119; shift = 7;	break; 	// Gold
-		case 10:	palindex = 111;	break; 	// Yellow
-		case 11:	palindex = 191; shift = 7; 	break; 	// Emerald
-		case 12:	palindex = 175;	break; 	// Green
-		case 13:	palindex = 219;	break; 	// Cyan
-		case 14:	palindex = 207; shift = 7;	break; 	// Steel
-		case 15:	palindex = 230;	shift = 7; 	break; 	// Periwinkle
-		case 16:	palindex = 239;	break; 	// Blue
-		case 17:	palindex = 199; shift = 7; 	break; 	// Purple
-		case 18:	palindex = 255; shift = 7; 	break; 	// Lavender
+		case 0:		palindex =  15;             break;  // White
+		case 1:		palindex =  31;             break;  // Gray
+		case 2:		palindex =  47;             break;  // Sepia
+		case 3:		palindex =  63;             break;  // Brown
+		case 4:		palindex = 150; shift = 7;  break;  // Pink
+		case 5:		palindex = 127; shift = 7;  break;  // Raspberry
+		case 6:		palindex = 143;             break;  // Red
+		case 7:		palindex =  86; shift = 7;  break;  // Creamsicle
+		case 8:		palindex =  95;             break;  // Orange
+		case 9:		palindex = 119; shift = 7;  break;  // Gold
+		case 10:	palindex = 111;             break;  // Yellow
+		case 11:	palindex = 191; shift = 7;  break;  // Emerald
+		case 12:	palindex = 175;             break;  // Green
+		case 13:	palindex = 219;             break;  // Cyan
+		case 14:	palindex = 207; shift = 7;  break;  // Steel
+		case 15:	palindex = 230; shift = 7;  break;  // Periwinkle
+		case 16:	palindex = 239;             break;  // Blue
+		case 17:	palindex = 199; shift = 7;  break;  // Purple
+		case 18:	palindex = 255; shift = 7;  break;  // Lavender
 		// Default green
 		default:	palindex = 175; break;
-
-}
+	}
 
 	// setup background colormap
 	for (i = 0, j = 0; i < 768; i += 3, j++)
@@ -621,11 +620,11 @@ static void CON_MoveConsole(void)
 		con_curlines -= FixedInt(fracmovement);
 		if (con_curlines < con_destlines)
 			con_curlines = con_destlines;
-		
+
 		if (con_destlines == 0) // If the console is being closed, not just moved up...
 			con_tick = 0; // ...don't show the blinking cursor
 	}
-	
+
 	fracmovement %= FRACUNIT; // Reset fracmovement's integer value, but keep the fraction
 
 	Unlock_state();
@@ -635,7 +634,7 @@ INT32 CON_ShiftChar(INT32 ch)
 {
 	if (I_UseNativeKeyboard())
 		return ch;
-	
+
 	if ((ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z'))
 	{
 		if (cv_keyboardlayout.value == 3)
@@ -827,7 +826,7 @@ boolean CON_Responder(event_t *ev)
 	// let go keyup events, don't eat them
 	if (ev->type != ev_keydown && ev->type != ev_console)
 	{
-		if (ev->data1 == gamecontrol[gc_console][0] || ev->data1 == gamecontrol[gc_console][1])
+		if (ev->data1 == gamecontrol[0][gc_console][0] || ev->data1 == gamecontrol[0][gc_console][1])
 			consdown = false;
 		return false;
 	}
@@ -845,7 +844,7 @@ boolean CON_Responder(event_t *ev)
 			INT32 i;
 			for (i = 0; i < num_gamecontrols; i++)
 			{
-				if (gamecontrol[i][0] == ev->data1 || gamecontrol[i][1] == ev->data1)
+				if (gamecontrol[0][i][0] == ev->data1 || gamecontrol[0][i][1] == ev->data1)
 					break;
 			}
 
@@ -853,7 +852,7 @@ boolean CON_Responder(event_t *ev)
 				return false;
 		}
 
-		if (key == gamecontrol[gc_console][0] || key == gamecontrol[gc_console][1])
+		if (key == gamecontrol[0][gc_console][0] || key == gamecontrol[0][gc_console][1])
 		{
 			if (consdown) // ignore repeat
 				return true;
@@ -1244,7 +1243,7 @@ void CONS_Printf(const char *fmt, ...)
 
 	if (con_started)
 		CON_Print(txt);
-	
+
 	CON_LogMessage(txt);
 
 	Lock_state();
@@ -1322,19 +1321,17 @@ void CONS_Debug(INT32 debugflags, const char *fmt, ...)
 //
 void CONS_Error(const char *msg)
 {
-#ifdef RPC_NO_WINDOWS_H
-	if (!graphics_started)
-	{
-		MessageBoxA(vid.WndParent, msg, "SRB2Kart Warning", MB_OK);
-		return;
-	}
-#endif
 	CONS_Printf("\x82%s", msg); // write error msg in different colour
 	CONS_Printf(M_GetText("Press ENTER to continue\n"));
 
 	// dirty quick hack, but for the good cause
 	while (I_GetKey() != KEY_ENTER)
+	{
+		// Sleep so we don't take too much of cpu usage
+		I_Sleep(1.f/TICRATE*1000);
+
 		I_OsPolling();
+	}
 }
 
 //======================================================================
@@ -1474,7 +1471,7 @@ static void CON_DrawHudlines(void)
 				;//charwidth = 4 * con_scalefactor;
 			else
 			{
-				//charwidth = SHORT(hu_font['A'-HU_FONTSTART]->width) * con_scalefactor;
+				//charwidth = hu_font['A'-HU_FONTSTART]->width * con_scalefactor;
 				V_DrawCharacter(x, y, (INT32)(*p) | charflags | cv_constextsize.value | V_NOSCALESTART, !cv_allcaps.value);
 			}
 		}
@@ -1509,7 +1506,7 @@ static void CON_DrawConsole(void)
 	// draw console background
 	if (cons_backpic.value || con_forcepic)
 	{
-		patch_t *con_backpic = W_CachePatchName("KARTKREW", PU_CACHE);
+		patch_t *con_backpic = W_CachePatchName("KARTKREW", PU_PATCH_LOWPRIORITY);
 
 		// Jimita: CON_DrawBackpic just called V_DrawScaledPatch
 		V_DrawFixedPatch(0, 0, FRACUNIT/2, 0, con_backpic, NULL);
@@ -1577,11 +1574,11 @@ void CON_Drawer(void)
 	if (con_recalc)
 	{
 		CON_RecalcSize();
-		
+
 		if (con_curlines <= 0)
 			CON_ClearHUD();
 	}
-	
+
 	// console movement
 	if (con_curlines != con_destlines)
 		CON_MoveConsole();

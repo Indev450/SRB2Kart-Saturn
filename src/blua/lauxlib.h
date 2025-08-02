@@ -36,6 +36,26 @@ LUALIB_API void (luaL_setn) (lua_State *L, int t, int n);
 /* extra error code for `luaL_load' */
 #define LUA_ERRFILE     (LUA_ERRERR+1)
 
+/* Compiler-specific attributes and other macros */
+
+#ifdef __GNUC__ // __attribute__ ((X))
+
+	#if ((__GNUC__ > 4) || (__GNUC__ == 4 && __GNUC_MINOR__ >= 1)) && defined (__MINGW32__) // MinGW, >= GCC 4.1
+		#if 0 //defined  (__USE_MINGW_ANSI_STDIO) && __USE_MINGW_ANSI_STDIO > 0
+			#define FUNCREPORT  __attribute__ ((format(gnu_printf, 2, 3)))
+		#elif (__GNUC__ > 4) || (__GNUC__ == 4 && __GNUC_MINOR__ >= 4) // >= GCC 4.4
+			#define FUNCREPORT  __attribute__ ((format(ms_printf, 2, 3)))
+		#else
+			#define FUNCREPORT  __attribute__ ((format(printf, 2, 3)))
+		#endif
+	#else
+		#define FUNCREPORT  __attribute__ ((format(printf, 2, 3)))
+	#endif
+#endif
+
+#ifndef FUNCREPORT
+#define FUNCREPORT
+#endif
 
 typedef struct luaL_Reg {
   const char *name;
@@ -70,7 +90,7 @@ LUALIB_API int   (luaL_newmetatable) (lua_State *L, const char *tname);
 LUALIB_API void *(luaL_checkudata) (lua_State *L, int ud, const char *tname);
 
 LUALIB_API void (luaL_where) (lua_State *L, int lvl);
-LUALIB_API int (luaL_error) (lua_State *L, const char *fmt, ...);
+LUALIB_API FUNCREPORT int (luaL_error) (lua_State *L, const char *fmt, ...);
 
 LUALIB_API int (luaL_checkoption) (lua_State *L, int narg, const char *def,
                                    const char *const lst[]);
@@ -102,7 +122,7 @@ LUALIB_API const char *(luaL_findtable) (lua_State *L, int idx,
 */
 
 #define luaL_argcheck(L, cond,numarg,extramsg)	\
-		((void)((cond) || luaL_argerror(L, (numarg), (extramsg))))
+		((void)(l_likely(cond) || luaL_argerror(L, (numarg), (extramsg))))
 #define luaL_checkstring(L,n)	(luaL_checklstring(L, (n), NULL))
 #define luaL_optstring(L,n,d)	(luaL_optlstring(L, (n), (d), NULL))
 #define luaL_checkint(L,n)	((int)luaL_checkinteger(L, (n)))

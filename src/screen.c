@@ -33,40 +33,26 @@
 // SRB2Kart
 #include "r_fps.h" // R_GetFramerateCap
 
-// --------------------------------------------
-// assembly or c drawer routines for 8bpp/16bpp
-// --------------------------------------------
-void (*wallcolfunc)(void); // new wall column drawer to draw posts >128 high
-void (*colfunc)(void); // standard column, up to 128 high posts
-
-void (*basecolfunc)(void);
-void (*fuzzcolfunc)(void); // standard fuzzy effect column drawer
-void (*transcolfunc)(void); // translation column drawer
-void (*shadecolfunc)(void); // smokie test..
-void (*spanfunc)(void); // span drawer, use a 64x64 tile
-void (*splatfunc)(void); // span drawer w/ transparency
-void (*basespanfunc)(void); // default span func for color mode
-void (*transtransfunc)(void); // translucent translated column drawer
-void (*twosmultipatchfunc)(void); // for cols with transparent pixels
-void (*twosmultipatchtransfunc)(void); // for cols with transparent pixels AND translucency
-
 // ------------------
 // global video state
 // ------------------
 viddef_t vid;
 INT32 setmodeneeded; //video mode change needed if > 0 (the mode number to set + 1)
 
-static CV_PossibleValue_t scr_depth_cons_t[] = {{8, "8 bits"}, {16, "16 bits"}, {24, "24 bits"}, {32, "32 bits"}, {0, NULL}};
-
 static CV_PossibleValue_t shittyscreen_cons_t[] = {{0, "Okay"}, {1, "Shitty"}, {2, "Extra Shitty"}, {0, NULL}};
 
 //added : 03-02-98: default screen mode, as loaded/saved in config
 consvar_t cv_scr_width = {"scr_width", "1280", CV_SAVE, CV_Unsigned, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_scr_height = {"scr_height", "800", CV_SAVE, CV_Unsigned, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_scr_depth = {"scr_depth", "16 bits", CV_SAVE, scr_depth_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_renderview = {"renderview", "On", 0, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_vhseffect = {"vhspause", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_shittyscreen = {"televisionsignal", "Okay", CV_NOSHOWHELP, shittyscreen_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+
+consvar_t cv_parallelsoftware = {"parallelsoftware", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_paralleldrawmasked = {"paralleldrawmasked", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+
+static CV_PossibleValue_t votescale_cons_t[] = {{0, "Vanilla"}, {1, "Adaptive"}, {2, "VerticalFill"}, {3, "HorizontalFill"}, {0, NULL}};
+consvar_t cv_votebgscaling = {"votebgscaling", "Adaptive", CV_SAVE, votescale_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 static void Highreshudscale_OnChange(void);
 static CV_PossibleValue_t highreshudscale_cons_t[] = {{4*FRACUNIT/5, "MIN"}, {6*FRACUNIT/5, "MAX"}, {0, NULL}};
@@ -80,7 +66,9 @@ static void Highreshudscale_OnChange(void)
 
 static void SCR_ChangeFullscreen (void);
 
-consvar_t cv_fullscreen = {"fullscreen", "Yes", CV_SAVE|CV_CALL, CV_YesNo, SCR_ChangeFullscreen, 0, NULL, NULL, 0, 0, NULL};
+static CV_PossibleValue_t fullscreen_cons_t[] = {{0, "No"}, {1, "Yes"}, {2, "Borderless Window"}, {0, NULL}};
+
+consvar_t cv_fullscreen = {"fullscreen", "Yes", CV_SAVE|CV_CALL, fullscreen_cons_t, SCR_ChangeFullscreen, 0, NULL, NULL, 0, 0, NULL};
 
 static CV_PossibleValue_t accuratefps_cons_t[] = {{0, "Inaccurate"}, {1, "Accurate"}, {0, NULL}};
 consvar_t cv_accuratefps = {"fpssampling", "1", CV_SAVE, accuratefps_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
@@ -89,13 +77,41 @@ consvar_t cv_accuratefps = {"fpssampling", "1", CV_SAVE, accuratefps_cons_t, NUL
 //                           SCREEN VARIABLES
 // =========================================================================
 
-INT32 scr_bpp; // current video mode bytes per pixel
 UINT8 *scr_borderpatch; // flat used to fill the reduced view borders set at ST_Init()
 
 // =========================================================================
 
-//  Short and Tall sky drawer, for the current color mode
-void (*walldrawerfunc)(void);
+static void SCR_SetDrawFuncs(void)
+{
+	//
+	//  setup the right draw routines
+	//
+
+	spanfuncs[BASEDRAWFUNC] = R_DrawSpan;
+	spanfuncs[SPANDRAWFUNC_TRANS] = R_DrawTranslucentSpan;
+	spanfuncs[SPANDRAWFUNC_TILTED] = R_DrawSpan_Tilted;
+	spanfuncs[SPANDRAWFUNC_TILTEDTRANS] = R_DrawTranslucentSpan_Tilted;
+	spanfuncs[SPANDRAWFUNC_SPLAT] = R_DrawSplat;
+	spanfuncs[SPANDRAWFUNC_TRANSSPLAT] = R_DrawTranslucentSplat;
+	spanfuncs[SPANDRAWFUNC_TILTEDSPLAT] = R_DrawSplat_Tilted;
+	spanfuncs[SPANDRAWFUNC_TILTEDTRANSSPLAT] = R_DrawTranslucentSpan_Tilted;
+	spanfuncs[SPANDRAWFUNC_WATER] = R_DrawTranslucentWaterSpan;
+	spanfuncs[SPANDRAWFUNC_TILTEDWATER] = R_DrawTranslucentWaterSpan_Tilted;
+	spanfuncs[SPANDRAWFUNC_FOG] = R_DrawFogSpan;
+	spanfuncs[SPANDRAWFUNC_TILTEDFOG] = R_DrawFogSpan_Tilted;
+
+	colfuncs[BASEDRAWFUNC] = R_DrawColumn;
+	colfuncs[COLDRAWFUNC_FUZZY] = R_DrawTranslucentColumn;
+	colfuncs[COLDRAWFUNC_TRANS] = R_DrawTranslatedColumn;
+	colfuncs[COLDRAWFUNC_SHADOWED] = R_DrawColumnShadowed;
+	colfuncs[COLDRAWFUNC_TRANSTRANS] = R_DrawTranslatedTranslucentColumn;
+	colfuncs[COLDRAWFUNC_TWOSMULTIPATCH] = R_Draw2sMultiPatchColumn;
+	colfuncs[COLDRAWFUNC_TWOSMULTIPATCHTRANS] = R_Draw2sMultiPatchTranslucentColumn;
+	colfuncs[COLDRAWFUNC_FOG] = R_DrawFogColumn;
+
+	R_SetColumnFunc(BASEDRAWFUNC);
+	R_SetSpanFunc(BASEDRAWFUNC);
+}
 
 void SCR_SetMode(void)
 {
@@ -109,43 +125,45 @@ void SCR_SetMode(void)
 
 	V_SetPalette(0);
 
-	//
-	//  setup the right draw routines for either 8bpp or 16bpp
-	//
-	if (true)//vid.bpp == 1) //Always run in 8bpp. todo: remove all 16bpp code?
-	{
-		spanfunc = basespanfunc = R_DrawSpan_8;
-		splatfunc = R_DrawSplat_8;
-		transcolfunc = R_DrawTranslatedColumn_8;
-		transtransfunc = R_DrawTranslatedTranslucentColumn_8;
+	SCR_SetDrawFuncs();
 
-		colfunc = basecolfunc = R_DrawColumn_8;
-		shadecolfunc = R_DrawShadeColumn_8;
-		fuzzcolfunc = R_DrawTranslucentColumn_8;
-		walldrawerfunc = R_DrawWallColumn_8;
-		twosmultipatchfunc = R_Draw2sMultiPatchColumn_8;
-		twosmultipatchtransfunc = R_Draw2sMultiPatchTranslucentColumn_8;
-	}
-/*	else if (vid.bpp > 1)
-	{
-		I_OutputMsg("using highcolor mode\n");
-		spanfunc = basespanfunc = R_DrawSpan_16;
-		transcolfunc = R_DrawTranslatedColumn_16;
-		transtransfunc = R_DrawTranslucentColumn_16; // No 16bit operation for this function
-
-		colfunc = basecolfunc = R_DrawColumn_16;
-		shadecolfunc = NULL; // detect error if used somewhere..
-		fuzzcolfunc = R_DrawTranslucentColumn_16;
-		walldrawerfunc = R_DrawWallColumn_16;
-	}*/
-	else
-		I_Error("unknown bytes per pixel mode %d\n", vid.bpp);
-/*
-	if (SCR_IsAspectCorrect(vid.width, vid.height))
-		CONS_Alert(CONS_WARNING, M_GetText("Resolution is not aspect-correct!\nUse a multiple of %dx%d\n"), BASEVIDWIDTH, BASEVIDHEIGHT);
-*/
 	// set the apprpriate drawer for the sky (tall or INT16)
 	setmodeneeded = 0;
+}
+
+void R_SetColumnFunc(size_t id)
+{
+	I_Assert(id < COLDRAWFUNC_MAX);
+
+	colfunctype = id;
+	colfunc = colfuncs[id];
+}
+
+void R_SetSpanFunc(size_t id)
+{
+	I_Assert(id < SPANDRAWFUNC_MAX);
+	spanfunc = spanfuncs[id];
+}
+
+boolean R_CheckColumnFunc(size_t id)
+{
+	size_t i;
+
+	if (colfunc == NULL)
+	{
+		// Shouldn't happen.
+		return false;
+	}
+
+	for (i = 0; i < COLDRAWFUNC_MAX; i++)
+	{
+		if (colfunc == colfuncs[id])
+		{
+			return true;
+		}
+	}
+
+	return false;
 }
 
 // do some initial settings for the game loading screen
@@ -167,26 +185,13 @@ void SCR_Startup(void)
 	vid.fdupx = FixedDiv(vid.width*FRACUNIT, BASEVIDWIDTH*FRACUNIT);
 	vid.fdupy = FixedDiv(vid.height*FRACUNIT, BASEVIDHEIGHT*FRACUNIT);
 
-//#ifdef HWRENDER
-	//if (rendermode != render_opengl && rendermode != render_none) // This was just placing it incorrectly at non aspect correct resolutions in opengl
-//#endif
-		vid.fdupx = vid.fdupy = (vid.fdupx < vid.fdupy ? vid.fdupx : vid.fdupy);
+	vid.fdupx = vid.fdupy = (vid.fdupx < vid.fdupy ? vid.fdupx : vid.fdupy);
 
 	vid.meddupx = (UINT8)(vid.dupx >> 1) + 1;
 	vid.meddupy = (UINT8)(vid.dupy >> 1) + 1;
-#ifdef HWRENDER
-	vid.fmeddupx = vid.meddupx*FRACUNIT;
-	vid.fmeddupy = vid.meddupy*FRACUNIT;
-#endif
 
 	vid.smalldupx = (UINT8)(vid.dupx / 3) + 1;
 	vid.smalldupy = (UINT8)(vid.dupy / 3) + 1;
-#ifdef HWRENDER
-	vid.fsmalldupx = vid.smalldupx*FRACUNIT;
-	vid.fsmalldupy = vid.smalldupy*FRACUNIT;
-#endif
-
-	vid.baseratio = FRACUNIT;
 
 	V_Init();
 	CV_RegisterVar(&cv_highreshudscale);
@@ -219,6 +224,8 @@ void SCR_Startup(void)
 	CV_RegisterVar(&cv_bsaturation);
 	CV_RegisterVar(&cv_msaturation);
 
+	CV_RegisterVar(&cv_votebgscaling);
+
 	V_SetPalette(0);
 }
 
@@ -228,9 +235,6 @@ void SCR_Recalc(void)
 {
 	if (dedicated)
 		return;
-
-	// bytes per pixel quick access
-	scr_bpp = vid.bpp;
 
 	// scale 1,2,3 times in x and y the patches for the menus and overlays...
 	// calculated once and for all, used by routines in v_video.c
@@ -248,30 +252,13 @@ void SCR_Recalc(void)
 		vid.fdupy = FixedDiv(vid.fdupy, cv_highreshudscale.value);
 	}
 
-#ifdef HWRENDER
-	//if (rendermode != render_opengl && rendermode != render_none) // This was just placing it incorrectly at non aspect correct resolutions in opengl
-	// 13/11/18:
-	// The above is no longer necessary, since we want OpenGL to be just like software now
-	// -- Monster Iestyn
-#endif
-		vid.fdupx = vid.fdupy = (vid.fdupx < vid.fdupy ? vid.fdupx : vid.fdupy);
-
-	//vid.baseratio = FixedDiv(vid.height << FRACBITS, BASEVIDHEIGHT << FRACBITS);
-	vid.baseratio = FRACUNIT;
+	vid.fdupx = vid.fdupy = (vid.fdupx < vid.fdupy ? vid.fdupx : vid.fdupy);
 
 	vid.meddupx = (UINT8)(vid.dupx >> 1) + 1;
 	vid.meddupy = (UINT8)(vid.dupy >> 1) + 1;
-#ifdef HWRENDER
-	vid.fmeddupx = vid.meddupx*FRACUNIT;
-	vid.fmeddupy = vid.meddupy*FRACUNIT;
-#endif
 
 	vid.smalldupx = (UINT8)(vid.dupx / 3) + 1;
 	vid.smalldupy = (UINT8)(vid.dupy / 3) + 1;
-#ifdef HWRENDER
-	vid.fsmalldupx = vid.smalldupx*FRACUNIT;
-	vid.fsmalldupy = vid.smalldupy*FRACUNIT;
-#endif
 
 	// toggle off (then back on) the automap because some screensize-dependent values will
 	// be calculated next time the automap is activated.
@@ -322,8 +309,7 @@ void SCR_CheckDefaultMode(void)
 	}
 	else
 	{
-		CONS_Printf(M_GetText("Default resolution: %d x %d (%d bits)\n"), cv_scr_width.value,
-			cv_scr_height.value, cv_scr_depth.value);
+		CONS_Printf(M_GetText("Default resolution: %d x %d\n"), cv_scr_width.value, cv_scr_height.value);
 		// see note above
 		setmodeneeded = VID_GetModeForSize(cv_scr_width.value, cv_scr_height.value) + 1;
 	}
@@ -335,13 +321,14 @@ void SCR_SetDefaultMode(void)
 	// remember the default screen size
 	CV_SetValue(&cv_scr_width, vid.width);
 	CV_SetValue(&cv_scr_height, vid.height);
-	//CV_SetValue(&cv_scr_depth, vid.bpp*8);
 }
 
 // Change fullscreen on/off according to cv_fullscreen
 void SCR_ChangeFullscreen(void)
 {
 #ifdef DIRECTFULLSCREEN
+	I_SetBorderlessWindow(); // Running this here so we can have borderless window at startup
+
 	// allow_fullscreen is set by VID_PrepareModeList
 	// it is used to prevent switching to fullscreen during startup
 	if (!allow_fullscreen)
@@ -367,7 +354,7 @@ double averageFPS = 0.0f;
 
 #ifdef USE_FPS_SAMPLES
 #define MAX_FRAME_TIME (0.05)
-#define NUM_FPS_SAMPLES (16) // Number of samples to store
+#define NUM_FPS_SAMPLES (32) // Number of samples to store
 
 static double total_frame_time = 0.0;
 static int frame_index;
@@ -460,7 +447,7 @@ void SCR_DisplayTicRate(void)
 		// draw "FPS"
 		if (cv_ticrate.value == 1)
 			V_DrawFixedPatch(306<<FRACBITS, 183<<FRACBITS, FRACUNIT, fpsflags, framecounter, R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_YELLOW, GTC_CACHE));
-			
+
 		if (fps > (benchmark - 5))
 			ticcntcolor = R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_MINT, GTC_CACHE);
 		else if (fps < 20)
@@ -479,10 +466,10 @@ void SCR_DisplayTicRate(void)
 
 			// draw total frame:
 			V_DrawPingNum(x, 190, fpsflags, cap, ticcntcolor);
-			
+
 			x -= digits * 4;
 
-			// draw "/"	
+			// draw "/"
 			V_DrawFixedPatch(x<<FRACBITS, 190<<FRACBITS, FRACUNIT, fpsflags, frameslash, ticcntcolor);
 		}
 
@@ -507,7 +494,7 @@ void SCR_DisplayTicRate(void)
 		// draw "FPS"
 		if (cv_ticrate.value == 3)
 			V_DrawRightAlignedString(319, 181, V_YELLOWMAP|fpsflags, "FPS");
-			
+
 		V_DrawRightAlignedString(319, 190, ticcntcolor2|fpsflags, fps_string);
 	}
 }
@@ -519,7 +506,7 @@ void SCR_DisplayLocalPing(void)
 {
 	UINT32 ping = playerpingtable[consoleplayer];
 	INT32 pingflags = V_LocalTransFlag()|V_SNAPTOBOTTOM|V_SNAPTORIGHT;
-	
+
 	if (cv_showping.value == 1 || (cv_showping.value == 2 && ping > servermaxping)) // only show 2 (warning) if our ping is at a bad level
 	{
 		INT32 dispy = (cv_ticrate.value == 1) ? 165 : ((cv_ticrate.value == 2 || cv_ticrate.value == 4) ? 172 : ((cv_ticrate.value == 3) ? 163 : 181)); // absolute buttpain

@@ -32,6 +32,8 @@ extern consvar_t stereoreverse;
 extern consvar_t cv_soundvolume, cv_digmusicvolume;//, cv_midimusicvolume;
 extern consvar_t cv_numChannels;
 
+extern consvar_t cv_samesoundlimit;
+
 extern consvar_t cv_audbuffersize;
 //extern consvar_t cv_resetmusic;
 extern consvar_t cv_gamedigimusic;
@@ -182,13 +184,8 @@ typedef struct musicdef_s
 	char alttitle[256];
 	char authors[256];
 	boolean use_info;
-	struct musicdef_s *next;
+	size_t num;
 } musicdef_t;
-
-extern musicdef_t *musicdefstart;
-extern musicdef_t **soundtestdefs;
-extern INT32 numsoundtestdefs;
-extern UINT8 soundtestpage;
 
 extern struct cursongcredit
 {
@@ -198,16 +195,17 @@ extern struct cursongcredit
 	UINT8 trans;
 } cursongcredit;
 
+extern INT32 nummusicdefs;
 
 void S_LoadMusicDefs(UINT16 wadnum);
 void S_InitMusicDefs(void);
 void S_LoadMTDefs(UINT16 wadnum);
 void S_InitMTDefs(void);
+musicdef_t *S_GetMusicCredit(INT32 i);
 musicdef_t *S_FindMusicCredit(const char *musname);
 void S_ShowSpecifiedMusicCredit(const char *musname);
 void S_ShowMusicCredit(void);
-
-boolean S_PrepareSoundTest(void);
+void S_ResetMusicCredit(void);
 
 //
 // Music Seeking

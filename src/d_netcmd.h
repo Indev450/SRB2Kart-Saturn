@@ -15,7 +15,16 @@
 #ifndef __D_NETCMD__
 #define __D_NETCMD__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "command.h"
+
+void SendWeaponPref(void);
+void SendWeaponPref2(void);
+void SendWeaponPref3(void);
+void SendWeaponPref4(void);
 
 // console vars
 extern consvar_t cv_playername;
@@ -149,8 +158,9 @@ extern consvar_t cv_pingstyle;
 //extern consvar_t cv_smallpos;
 extern consvar_t cv_showminimapnames;
 extern consvar_t cv_minihead;
+extern consvar_t cv_showminimapangle;
 
-extern consvar_t cv_showlapemblem; 
+extern consvar_t cv_showlapemblem;
 
 extern consvar_t cv_showviewpointtext;
 extern consvar_t cv_showdownloadprompt;
@@ -197,8 +207,6 @@ extern consvar_t cv_showspecstuff;
 extern consvar_t cv_betainterscreen;
 
 extern consvar_t cv_laglesscam;
-
-extern consvar_t cv_verticallook;
 
 typedef enum
 {
@@ -315,8 +323,13 @@ void ClearAdminPlayers(void);
 void RemoveAdminPlayer(INT32 playernum);
 void ItemFinder_OnChange(void);
 void D_SetPassword(const char *pw);
+INT32 D_LookupPlayer(const char *s);
 
 // used for the player setup menu
 UINT8 CanChangeSkin(INT32 playernum);
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif

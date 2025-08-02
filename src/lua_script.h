@@ -10,24 +10,17 @@
 /// \file  lua_script.h
 /// \brief Lua scripting basics
 
+#ifndef LUA_SCRIPT_H
+#define LUA_SCRIPT_H
+
 #include "m_fixed.h"
 #include "doomtype.h"
 #include "d_player.h"
 #include "p_saveg.h"
 
-#ifdef NOBLUAJIT
 #include "blua/lua.h"
 #include "blua/lualib.h"
 #include "blua/lauxlib.h"
-#else
-#include "command.h"
-#include "bluajit/lua.h"
-#include "bluajit/lualib.h"
-#include "bluajit/lauxlib.h"
-#define abs_index(L, i)		((i) > 0 || (i) <= LUA_REGISTRYINDEX ? (i) : \
-					lua_gettop(L) + (i) + 1)
-extern consvar_t cv_luajit;
-#endif
 
 #define lua_optboolean(L, i) (!lua_isnoneornil(L, i) && lua_toboolean(L, i))
 #define lua_opttrueboolean(L, i) (lua_isnoneornil(L, i) || lua_toboolean(L, i))
@@ -65,7 +58,7 @@ void LUA_InvalidateUserdata(void *data);
 void LUA_InvalidateLevel(void);
 void LUA_InvalidateMapthings(void);
 void LUA_InvalidatePlayer(player_t *player);
-void LUA_Step(void);
+//void LUA_Step(void);
 void LUA_Archive(savebuffer_t *save, boolean network);
 void LUA_UnArchive(savebuffer_t *save, boolean network);
 
@@ -85,9 +78,18 @@ void COM_Lua_f(void);
 #define LUA_Deprecated(L,this_func,use_instead)\
 {\
 	static UINT8 seen = 0;\
-	if (!seen) {\
+	if (UNLIKELY(!seen)) {\
 		seen = 1;\
 		CONS_Alert(CONS_WARNING,"\"%s\" is deprecated and will be removed.\nUse \"%s\" instead.\n", this_func, use_instead);\
+	}\
+}
+
+#define LUA_LogDeprecated(L,this_func,use_instead)\
+{\
+	static UINT8 seen = 0;\
+	if (UNLIKELY(!seen)) {\
+		seen = 1;\
+		CON_LogMessage(va("\"%s\" is deprecated and will be removed.\nUse \"%s\" instead.\n", this_func, use_instead));\
 	}\
 }
 
@@ -96,8 +98,10 @@ void COM_Lua_f(void);
 #define LUA_UsageWarning(L, warningmsg)\
 {\
 	static UINT8 seen = 0;\
-	if (!seen) {\
+	if (UNLIKELY(!seen)) {\
 		seen = 1;\
 		CONS_Alert(CONS_WARNING,"%s\n", warningmsg);\
 	}\
 }
+
+#endif/*LUA_SCRIPT_H*/

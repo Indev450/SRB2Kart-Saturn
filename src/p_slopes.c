@@ -72,8 +72,8 @@ static void P_UpdateSlopeLightOffset(pslope_t *slope)
 		 *	// We reverse it in R_FindPlane now.
 		 *	nX = -nX;
 		 *	nY = -nY;
-	}
-	*/
+		 *	}
+		 */
 
 		light = FixedMul(nX, FINECOSINE(maplighting.angle >> ANGLETOFINESHIFT))
 		+ FixedMul(nY, FINESINE(maplighting.angle >> ANGLETOFINESHIFT));
@@ -181,55 +181,63 @@ void P_RunDynamicSlopes(void)
 {
 	pslope_t *slope;
 
-	for (slope = slopelist; slope; slope = slope->next) {
+	for (slope = slopelist; slope; slope = slope->next)
+	{
 		fixed_t zdelta;
 
 		if (slope->flags & SL_NODYNAMIC)
 			continue;
 
-		switch(slope->refpos) {
-		case 1: // front floor
-			zdelta = slope->sourceline->backsector->floorheight - slope->sourceline->frontsector->floorheight;
-			slope->o.z = slope->sourceline->frontsector->floorheight;
-			break;
-		case 2: // front ceiling
-			zdelta = slope->sourceline->backsector->ceilingheight - slope->sourceline->frontsector->ceilingheight;
-			slope->o.z = slope->sourceline->frontsector->ceilingheight;
-			break;
-		case 3: // back floor
-			zdelta = slope->sourceline->frontsector->floorheight - slope->sourceline->backsector->floorheight;
-			slope->o.z = slope->sourceline->backsector->floorheight;
-			break;
-		case 4: // back ceiling
-			zdelta = slope->sourceline->frontsector->ceilingheight - slope->sourceline->backsector->ceilingheight;
-			slope->o.z = slope->sourceline->backsector->ceilingheight;
-			break;
-		case 5: // vertices
-			{
-				mapthing_t *mt;
-				size_t i;
-				INT32 l;
-				line_t *line;
+		switch (slope->refpos)
+		{
+			case 1: // front floor
+				zdelta = slope->sourceline->backsector->floorheight - slope->sourceline->frontsector->floorheight;
+				slope->o.z = slope->sourceline->frontsector->floorheight;
+				break;
+			case 2: // front ceiling
+				zdelta = slope->sourceline->backsector->ceilingheight - slope->sourceline->frontsector->ceilingheight;
+				slope->o.z = slope->sourceline->frontsector->ceilingheight;
+				break;
+			case 3: // back floor
+				zdelta = slope->sourceline->frontsector->floorheight - slope->sourceline->backsector->floorheight;
+				slope->o.z = slope->sourceline->backsector->floorheight;
+				break;
+			case 4: // back ceiling
+				zdelta = slope->sourceline->frontsector->ceilingheight - slope->sourceline->backsector->ceilingheight;
+				slope->o.z = slope->sourceline->backsector->ceilingheight;
+				break;
+			case 5: // vertices
+				{
+					mapthing_t *mt;
+					size_t i;
+					INT32 l;
+					line_t *line;
 
-				for (i = 0; i < 3; i++) {
-					mt = slope->vertices[i];
-					l = P_FindSpecialLineFromTag(799, mt->angle, -1);
-					if (l != -1) {
-						line = &lines[l];
-						mt->z = line->frontsector->floorheight >> FRACBITS;
+					for (i = 0; i < 3; i++)
+					{
+						mt = slope->vertices[i];
+						l = P_FindSpecialLineFromTag(799, mt->angle, -1);
+
+						if (l != -1)
+						{
+							line = &lines[l];
+							mt->z = line->frontsector->floorheight >> FRACBITS;
+						}
 					}
+
+					P_ReconfigureVertexSlope(slope);
 				}
+				continue; // TODO
 
-				P_ReconfigureVertexSlope(slope);
-			}
-			continue; // TODO
-
-		default:
-			I_Error("P_RunDynamicSlopes: slope has invalid type!");
+			default:
+				I_Error("P_RunDynamicSlopes: slope has invalid type!");
 		}
 
-		if (slope->zdelta != FixedDiv(zdelta, slope->extent)) {
-			slope->zdelta = FixedDiv(zdelta, slope->extent);
+		const fixed_t zeedelta = FixedDiv(zdelta, slope->extent);
+
+		if (slope->zdelta != zeedelta)
+		{
+			slope->zdelta = zeedelta;
 			slope->zangle = R_PointToAngle2(0, 0, slope->extent, -zdelta);
 			slope->real_zangle = slope->zangle;
 			P_CalculateSlopeNormal(slope);
@@ -245,8 +253,7 @@ void P_RunDynamicSlopes(void)
 static pslope_t *P_MakeSlope(const vector3_t *o, const vector2_t *d,
                              const fixed_t zdelta, UINT8 flags)
 {
-	pslope_t *ret = Z_Malloc(sizeof(pslope_t), PU_LEVEL, NULL);
-	memset(ret, 0, sizeof(*ret));
+	pslope_t *ret = Z_Calloc(sizeof(pslope_t), PU_LEVEL, NULL);
 
 	ret->o.x = o->x;
 	ret->o.y = o->y;
@@ -290,18 +297,18 @@ static fixed_t P_GetExtent(sector_t *sector, line_t *line)
 		fixed_t dist;
 
 		// Don't compare to the slope line.
-		if(li == line)
+		if (li == line)
 			continue;
 
 		P_ClosestPointOnLine(li->v1->x, li->v1->y, line, &tempv);
 		dist = R_PointToDist2(tempv.x, tempv.y, li->v1->x, li->v1->y);
-		if(dist > fardist)
+		if (dist > fardist)
 			fardist = dist;
 
 		// Okay, maybe do it for v2 as well?
 		P_ClosestPointOnLine(li->v2->x, li->v2->y, line, &tempv);
 		dist = R_PointToDist2(tempv.x, tempv.y, li->v2->x, li->v2->y);
-		if(dist > fardist)
+		if (dist > fardist)
 			fardist = dist;
 	}
 
@@ -340,23 +347,21 @@ void P_SpawnSlope_Line(int linenum)
 	if (line->flags & ML_NOKNUX)
 		flags |= SL_ANCHORVERTEX;
 
-	if(!frontfloor && !backfloor && !frontceil && !backceil)
+	if (!frontfloor && !backfloor && !frontceil && !backceil)
 	{
 		CONS_Printf("P_SpawnSlope_Line called with non-slope line special.\n");
 		return;
 	}
 
-	if(!line->frontsector || !line->backsector)
+	if (!line->frontsector || !line->backsector)
 	{
 		CONS_Debug(DBG_SETUP, "P_SpawnSlope_Line used on a line without two sides. (line number %i)\n", linenum);
 		return;
 	}
 
-	{
-		fixed_t len = R_PointToDist2(0, 0, line->dx, line->dy);
-		nx = FixedDiv(line->dy, len);
-		ny = -FixedDiv(line->dx, len);
-	}
+	fixed_t len = R_PointToDist2(0, 0, line->dx, line->dy);
+	nx = FixedDiv(line->dy, len);
+	ny = -FixedDiv(line->dx, len);
 
 	origin.x = line->v1->x + (line->v2->x - line->v1->x)/2;
 	origin.y = line->v1->y + (line->v2->y - line->v1->y)/2;
@@ -372,7 +377,7 @@ void P_SpawnSlope_Line(int linenum)
 
 		extent = P_GetExtent(line->frontsector, line);
 
-		if(extent < 0)
+		if (extent < 0)
 		{
 			CONS_Printf("P_SpawnSlope_Line failed to get frontsector extent on line number %i\n", linenum);
 			return;
@@ -412,7 +417,7 @@ void P_SpawnSlope_Line(int linenum)
 			fslope->sourceline = line;
 
 			// To find the real highz/lowz of a slope, you need to check all the vertexes
-			// in the slope's sector with P_GetZAt to get the REAL lowz & highz
+			// in the slope's sector with P_GetSlopeZAt to get the REAL lowz & highz
 			// Although these slopes are set by floorheights the ANGLE is what a slope is,
 			// so technically any slope can extend on forever (they are just bound by sectors)
 			// *You can use sourceline as a reference to see if two slopes really are the same
@@ -426,7 +431,7 @@ void P_SpawnSlope_Line(int linenum)
 
 			for (l = 0; l < line->frontsector->linecount; l++)
 			{
-				fixed_t height = P_GetZAt(line->frontsector->f_slope, line->frontsector->lines[l]->v1->x, line->frontsector->lines[l]->v1->y);
+				fixed_t height = P_GetSlopeZAt(line->frontsector->f_slope, line->frontsector->lines[l]->v1->x, line->frontsector->lines[l]->v1->y);
 
 				if (height > highest)
 					highest = height;
@@ -473,7 +478,7 @@ void P_SpawnSlope_Line(int linenum)
 
 			for (l = 0; l < line->frontsector->linecount; l++)
 			{
-				fixed_t height = P_GetZAt(line->frontsector->c_slope, line->frontsector->lines[l]->v1->x, line->frontsector->lines[l]->v1->y);
+				fixed_t height = P_GetSlopeZAt(line->frontsector->c_slope, line->frontsector->lines[l]->v1->x, line->frontsector->lines[l]->v1->y);
 
 				if (height > highest)
 					highest = height;
@@ -495,6 +500,7 @@ void P_SpawnSlope_Line(int linenum)
 			P_CalculateSlopeNormal(cslope);
 		}
 	}
+
 	if (backfloor || backceil)
 	{
 		line->backsector->hasslope = true; // Tell the software renderer that we're sloped
@@ -506,7 +512,7 @@ void P_SpawnSlope_Line(int linenum)
 
 		extent = P_GetExtent(line->backsector, line);
 
-		if(extent < 0)
+		if (extent < 0)
 		{
 			CONS_Printf("P_SpawnSlope_Line failed to get backsector extent on line number %i\n", linenum);
 			return;
@@ -542,7 +548,7 @@ void P_SpawnSlope_Line(int linenum)
 
 			for (l = 0; l < line->backsector->linecount; l++)
 			{
-				fixed_t height = P_GetZAt(line->backsector->f_slope, line->backsector->lines[l]->v1->x, line->backsector->lines[l]->v1->y);
+				fixed_t height = P_GetSlopeZAt(line->backsector->f_slope, line->backsector->lines[l]->v1->x, line->backsector->lines[l]->v1->y);
 
 				if (height > highest)
 					highest = height;
@@ -589,7 +595,7 @@ void P_SpawnSlope_Line(int linenum)
 
 			for (l = 0; l < line->backsector->linecount; l++)
 			{
-				fixed_t height = P_GetZAt(line->backsector->c_slope, line->backsector->lines[l]->v1->x, line->backsector->lines[l]->v1->y);
+				fixed_t height = P_GetSlopeZAt(line->backsector->c_slope, line->backsector->lines[l]->v1->x, line->backsector->lines[l]->v1->y);
 
 				if (height > highest)
 					highest = height;
@@ -626,15 +632,13 @@ static pslope_t *P_NewVertexSlope(INT16 tag1, INT16 tag2, INT16 tag3, UINT8 flag
 	size_t i;
 	mapthing_t *mt = mapthings;
 
-	pslope_t *ret = Z_Malloc(sizeof(pslope_t), PU_LEVEL, NULL);
-	memset(ret, 0, sizeof(*ret));
+	pslope_t *ret = Z_Calloc(sizeof(pslope_t), PU_LEVEL, NULL);
 
 	// Start by setting flags
 	ret->flags = flags;
 
 	// Now set up the vertex list
-	ret->vertices = Z_Malloc(3*sizeof(mapthing_t), PU_LEVEL, NULL);
-	memset(ret->vertices, 0, 3*sizeof(mapthing_t));
+	ret->vertices = Z_Calloc(3*sizeof(mapthing_t), PU_LEVEL, NULL);
 
 	// And... look for the vertices in question.
 	for (i = 0; i < nummapthings; i++, mt++)
@@ -675,8 +679,6 @@ static pslope_t *P_NewVertexSlope(INT16 tag1, INT16 tag2, INT16 tag3, UINT8 flag
 	return ret;
 }
 
-
-
 //
 // P_CopySectorSlope
 //
@@ -688,13 +690,13 @@ void P_CopySectorSlope(line_t *line)
 	int i, special = line->special;
 
 	// Check for copy linedefs
-	for(i = -1; (i = P_FindSectorFromLineTag(line, i)) >= 0;)
+	for (i = -1; (i = P_FindSectorFromLineTag(line, i)) >= 0;)
 	{
 		sector_t *srcsec = sectors + i;
 
-		if((special - 719) & 1 && !fsec->f_slope && srcsec->f_slope)
+		if ((special - 719) & 1 && !fsec->f_slope && srcsec->f_slope)
 			fsec->f_slope = srcsec->f_slope; //P_CopySlope(srcsec->f_slope);
-		if((special - 719) & 2 && !fsec->c_slope && srcsec->c_slope)
+		if ((special - 719) & 2 && !fsec->c_slope && srcsec->c_slope)
 			fsec->c_slope = srcsec->c_slope; //P_CopySlope(srcsec->c_slope);
 	}
 
@@ -780,25 +782,24 @@ void P_ResetDynamicSlopes(void)
 					if (!(lines[i].flags & ML_NOTAILS))
 						flags |= SL_NODYNAMIC;
 
-					if (which == 704)
+					switch (which)
 					{
-						slopetoset = &lines[i].frontsector->f_slope;
-						which = 0;
-					}
-					else if (which == 705)
-					{
-						slopetoset = &lines[i].frontsector->c_slope;
-						which = 0;
-					}
-					else if (which == 714)
-					{
-						slopetoset = &lines[i].backsector->f_slope;
-						which = 1;
-					}
-					else // 715
-					{
-						slopetoset = &lines[i].backsector->c_slope;
-						which = 1;
+						case 704:
+							slopetoset = &lines[i].frontsector->f_slope;
+							which = 0;
+							break;
+						case 705:
+							slopetoset = &lines[i].frontsector->c_slope;
+							which = 0;
+							break;
+						case 714:
+							slopetoset = &lines[i].backsector->f_slope;
+							which = 1;
+							break;
+						default: // 715
+							slopetoset = &lines[i].backsector->c_slope;
+							which = 1;
+							break;
 					}
 
 					if (lines[i].flags & ML_NOKNUX)
@@ -899,11 +900,14 @@ void P_HandleSlopeLanding(mobj_t *thing, pslope_t *slope)
 {
 	vector3_t mom; // Ditto.
 
-	if (slope->flags & SL_NOPHYSICS) { // No physics, no need to make anything complicated.
-		if (P_MobjFlip(thing)*(thing->momz) < 0) { // falling, land on slope
+	if (slope->flags & SL_NOPHYSICS) // No physics, no need to make anything complicated.
+	{
+		if (P_MobjFlip(thing)*(thing->momz) < 0) // falling, land on slope
+		{
 			thing->momz = -P_MobjFlip(thing);
 			thing->standingslope = slope;
 		}
+
 		return;
 	}
 
@@ -913,11 +917,11 @@ void P_HandleSlopeLanding(mobj_t *thing, pslope_t *slope)
 
 	P_ReverseQuantizeMomentumToSlope(&mom, slope);
 
-	if (P_MobjFlip(thing)*mom.z < 0) { // falling, land on slope
+	if (P_MobjFlip(thing)*mom.z < 0) // falling, land on slope
+	{
 		thing->momx = mom.x;
 		thing->momy = mom.y;
 		thing->momz = -P_MobjFlip(thing);
-
 		thing->standingslope = slope;
 	}
 }
@@ -937,19 +941,25 @@ void P_ButteredSlope(mobj_t *mo)
 	if (mo->flags & (MF_NOCLIPHEIGHT|MF_NOGRAVITY))
 		return; // don't slide down slopes if you can't touch them or you're not affected by gravity
 
-	if (mo->player) {
-		if (abs(mo->standingslope->zdelta) < FRACUNIT/4 && !(mo->player->pflags & PF_SPINNING))
+	if (mo->player)
+	{
+		const int zeedelta = abs(mo->standingslope->zdelta);
+
+		if (zeedelta < FRACUNIT/4 && !(mo->player->pflags & PF_SPINNING))
 			return; // Don't slide on non-steep slopes unless spinning
 
-		if (abs(mo->standingslope->zdelta) < FRACUNIT/2 && !(mo->player->rmomx || mo->player->rmomy))
+		if (zeedelta < FRACUNIT/2 && !(mo->player->rmomx || mo->player->rmomy))
 			return; // Allow the player to stand still on slopes below a certain steepness
 	}
 
 	thrust = FINESINE(mo->standingslope->zangle>>ANGLETOFINESHIFT) * 15 / 16 * (mo->eflags & MFE_VERTICALFLIP ? 1 : -1);
 
-	if (mo->player && (mo->player->pflags & PF_SPINNING)) {
+	if (mo->player && (mo->player->pflags & PF_SPINNING))
+	{
 		fixed_t mult = 0;
-		if (mo->momx || mo->momy) {
+
+		if (mo->momx || mo->momy)
+		{
 			angle_t angle = R_PointToAngle2(0, 0, mo->momx, mo->momy) - mo->standingslope->xydirection;
 
 			if (P_MobjFlip(mo) * mo->standingslope->zdelta < 0)

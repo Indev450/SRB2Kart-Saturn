@@ -16,7 +16,6 @@
 #define RPC_NO_WINDOWS_H
 #include <windows.h>
 #endif
-#undef GETTEXT
 #ifdef __GNUC__
 #include <unistd.h>
 #endif
@@ -99,14 +98,16 @@ static GLuint screenPaletteTex = 0; // 1D texture containing the screen palette
 static GLuint paletteLookupTex = 0; // 3D texture containing RGB -> palette index lookup table
 RGBA_t  myPaletteData[256]; // the palette for converting textures to RGBA
 
-GLint   screen_width    = 0;               // used by Draw2DLine()
-GLint   screen_height   = 0;
-GLbyte  screen_depth    = 0;
-GLint   textureformatGL = 0;
-GLint maximumAnisotropy = 0;
-static GLboolean MipMap = GL_FALSE;
-static GLint min_filter = GL_LINEAR;
-static GLint mag_filter = GL_LINEAR;
+static GLint gltexformat = GL_RGB5_A1;
+GLint   screen_width     = 0;               // used by Draw2DLine()
+GLint   screen_height    = 0;
+GLint   screen_texsizew  = 512; // Power-of-two screen texture render resolution
+GLint   screen_texsizeh  = 512; // Power-of-two screen texture render resolution
+GLbyte  screen_depth     = 0;
+GLint maximumAnisotropy  = 0;
+static GLboolean MipMap  = GL_FALSE;
+static GLint min_filter  = GL_LINEAR;
+static GLint mag_filter  = GL_LINEAR;
 static GLint anisotropic_filter = 0;
 boolean supportMipMap = false;
 
@@ -129,6 +130,8 @@ GLuint FramebufferObject, FramebufferTexture, RenderbufferObject;
 
 boolean supportFBO = false;
 static boolean fboinit = false;
+
+static void GL_Framebuffer_DeleteAttachments(void);
 #endif
 
 // Sryder:	NextTexAvail is broken for these because palette changes or changes to the texture filter or antialiasing
@@ -191,7 +194,7 @@ FUNCPRINTF void GL_DBG_Printf(const char *format, ...)
 
 	if (!gllogstream)
 		gllogstream = fopen("ogllog.txt", "w");
-	
+
 	va_start(arglist, format);
 	vsnprintf(str, 4096, format, arglist);
 	va_end(arglist);
@@ -346,6 +349,8 @@ typedef void (APIENTRY * PFNglDisable) (GLenum cap);
 static PFNglDisable pglDisable;
 typedef void (APIENTRY * PFNglGetFloatv) (GLenum pname, GLfloat *params);
 static PFNglGetFloatv pglGetFloatv;
+typedef void (APIENTRY * PFNglPolygonMode) (GLenum, GLenum);
+static PFNglPolygonMode pglPolygonMode;
 
 /* Depth Buffer */
 typedef void (APIENTRY * PFNglClearDepth) (GLclampd depth);
@@ -545,6 +550,7 @@ boolean SetupGLfunc(void)
 	GETOPENGLFUNC(pglGetFloatv, glGetFloatv)
 	GETOPENGLFUNC(pglGetIntegerv, glGetIntegerv)
 	GETOPENGLFUNC(pglGetString, glGetString)
+	GETOPENGLFUNC(pglPolygonMode, glPolygonMode)
 
 	GETOPENGLFUNC(pglClearDepth, glClearDepth)
 	GETOPENGLFUNC(pglDepthFunc, glDepthFunc)
@@ -673,7 +679,7 @@ typedef enum
 	gluniform_light_dir,
 	gluniform_light_contrast,
 	gluniform_light_backlight,
-	
+
 	// palette rendering
 	gluniform_palette_tex, // 1d texture containing a palette
 	gluniform_palette_lookup_tex, // 3d texture containing the rgb->index lookup table
@@ -683,7 +689,7 @@ typedef enum
 	gluniform_leveltime,
 
 	gluniform_scr_resolution,
-	
+
 	gluniform_max,
 } gluniform_t;
 
@@ -730,69 +736,78 @@ static boolean GLFramebuffer_CheckExt(void)
 		return false;
 
 	// check if all needed gl extensions are available
-	return (GL_isExtAvailable("GL_ARB_framebuffer_no_attachments", gl_extensions) && GL_isExtAvailable("GL_ARB_framebuffer_object", gl_extensions) && GL_isExtAvailable("GL_ARB_framebuffer_sRGB", gl_extensions));
+	return (GL_isExtAvailable("GL_ARB_framebuffer_no_attachments", gl_extensions)
+	&& GL_isExtAvailable("GL_ARB_framebuffer_object", gl_extensions)
+	&& GL_isExtAvailable("GL_ARB_framebuffer_sRGB", gl_extensions));
 }
 #endif
 
 void SetupGLFunc4(void)
 {
+#define GetGLfunc(func) \
+	p##func = GetGLFunc(#func); \
+	if (!p##func) \
+	{ \
+		GL_MSG_Warning("failed to get OpenGL function: %s", #func); \
+	} \
+
 	/* 1.2 funcs */
-	pglTexImage3D = GetGLFunc("glTexImage3D");
+	GetGLfunc(glTexImage3D);
 	/* 1.3 funcs */
-	pglActiveTexture = GetGLFunc("glActiveTexture");
-	pglMultiTexCoord2f = GetGLFunc("glMultiTexCoord2f");
-	pglClientActiveTexture = GetGLFunc("glClientActiveTexture");
-	pglMultiTexCoord2fv = GetGLFunc("glMultiTexCoord2fv");
-	
+	GetGLfunc(glActiveTexture);
+	GetGLfunc(glMultiTexCoord2f);
+	GetGLfunc(glClientActiveTexture);
+	GetGLfunc(glMultiTexCoord2fv);
+
 	/* 1.5 funcs */
-	pglGenBuffers = GetGLFunc("glGenBuffers");
-	pglBindBuffer = GetGLFunc("glBindBuffer");
-	pglBufferData = GetGLFunc("glBufferData");
-	pglDeleteBuffers = GetGLFunc("glDeleteBuffers");
-	pglColorPointer = GetGLFunc("glColorPointer");
+	GetGLfunc(glGenBuffers);
+	GetGLfunc(glBindBuffer);
+	GetGLfunc(glBufferData);
+	GetGLfunc(glDeleteBuffers);
+	GetGLfunc(glColorPointer);
 
 	/* 2.0 funcs */
-	pglBlendEquation = GetGLFunc("glBlendEquation");
-	
-	pglStencilFuncSeparate = GetGLFunc("glStencilFuncSeparate");
-	pglStencilOpSeparate = GetGLFunc("glStencilOpSeparate");
+	GetGLfunc(glBlendEquation);
 
-	pglCreateShader = GetGLFunc("glCreateShader");
-	pglShaderSource = GetGLFunc("glShaderSource");
-	pglCompileShader = GetGLFunc("glCompileShader");
-	pglGetShaderiv = GetGLFunc("glGetShaderiv");
-	pglGetShaderInfoLog = GetGLFunc("glGetShaderInfoLog");
-	pglDeleteShader = GetGLFunc("glDeleteShader");
-	pglCreateProgram = GetGLFunc("glCreateProgram");
-	pglDeleteProgram = GetGLFunc("glDeleteProgram");
-	pglAttachShader = GetGLFunc("glAttachShader");
-	pglLinkProgram = GetGLFunc("glLinkProgram");
-	pglGetProgramiv = GetGLFunc("glGetProgramiv");
-	pglGetProgramInfoLog = GetGLFunc("glGetProgramInfoLog");
-	pglUseProgram = GetGLFunc("glUseProgram");
-	pglUniform1i = GetGLFunc("glUniform1i");
-	pglUniform1f = GetGLFunc("glUniform1f");
-	pglUniform2f = GetGLFunc("glUniform2f");
-	pglUniform3f = GetGLFunc("glUniform3f");
-	pglUniform4f = GetGLFunc("glUniform4f");
-	pglUniform1fv = GetGLFunc("glUniform1fv");
-	pglUniform2fv = GetGLFunc("glUniform2fv");
-	pglUniform3fv = GetGLFunc("glUniform3fv");
-	pglGetUniformLocation = GetGLFunc("glGetUniformLocation");
+	GetGLfunc(glStencilFuncSeparate);
+	GetGLfunc(glStencilOpSeparate);
+
+	GetGLfunc(glCreateShader);
+	GetGLfunc(glShaderSource);
+	GetGLfunc(glCompileShader);
+	GetGLfunc(glGetShaderiv);
+	GetGLfunc(glGetShaderInfoLog);
+	GetGLfunc(glDeleteShader);
+	GetGLfunc(glCreateProgram);
+	GetGLfunc(glDeleteProgram);
+	GetGLfunc(glAttachShader);
+	GetGLfunc(glLinkProgram);
+	GetGLfunc(glGetProgramiv);
+	GetGLfunc(glGetProgramInfoLog);
+	GetGLfunc(glUseProgram);
+	GetGLfunc(glUniform1i);
+	GetGLfunc(glUniform1f);
+	GetGLfunc(glUniform2f);
+	GetGLfunc(glUniform3f);
+	GetGLfunc(glUniform4f);
+	GetGLfunc(glUniform1fv);
+	GetGLfunc(glUniform2fv);
+	GetGLfunc(glUniform3fv);
+	GetGLfunc(glGetUniformLocation);
 
 #ifdef USE_FBO_OGL
 	if (GLFramebuffer_CheckExt())
 	{
-		pglGenFramebuffers = GetGLFunc("glGenFramebuffers");
-		pglBindFramebuffer = GetGLFunc("glBindFramebuffer");
-		pglDeleteFramebuffers = GetGLFunc("glDeleteFramebuffers");
-		pglFramebufferTexture2D = GetGLFunc("glFramebufferTexture2D");
-		pglCheckFramebufferStatus = GetGLFunc("glCheckFramebufferStatus");
-		pglGenRenderbuffers = GetGLFunc("glGenRenderbuffers");
-		pglBindRenderbuffer = GetGLFunc("glBindRenderbuffer");
-		pglDeleteRenderbuffers = GetGLFunc("glDeleteRenderbuffers");
-		pglRenderbufferStorage = GetGLFunc("glRenderbufferStorage");
-		pglFramebufferRenderbuffer = GetGLFunc("glFramebufferRenderbuffer");
+		GetGLfunc(glGenFramebuffers);
+		GetGLfunc(glBindFramebuffer);
+		GetGLfunc(glDeleteFramebuffers);
+		GetGLfunc(glFramebufferTexture2D);
+		GetGLfunc(glCheckFramebufferStatus);
+		GetGLfunc(glGenRenderbuffers);
+		GetGLfunc(glBindRenderbuffer);
+		GetGLfunc(glDeleteRenderbuffers);
+		GetGLfunc(glRenderbufferStorage);
+		GetGLfunc(glFramebufferRenderbuffer);
 
 		// check if ALL functions are availible
 		if (pglGenFramebuffers && pglBindFramebuffer &&
@@ -803,13 +818,14 @@ void SetupGLFunc4(void)
 		supportFBO = true;
 	}
 #endif
+#undef GetGLfunc
 }
 
 boolean GL_InitShaders(void)
 {
 	if (!pglUseProgram)
 		return false;
-	
+
 	gl_fallback_shader.vertex_shader = Z_StrDup(GLSL_FALLBACK_VERTEX_SHADER);
 	gl_fallback_shader.fragment_shader = Z_StrDup(GLSL_FALLBACK_FRAGMENT_SHADER);
 
@@ -948,10 +964,11 @@ void GL_UnSetShader(void)
 static void GL_SetNoTexture(void)
 {
 	// Disable texture.
-	if (tex_downloaded != NOTEXTURE_NUM && !currently_batching)
+	if (tex_downloaded != NOTEXTURE_NUM)
 	{
 		if (NOTEXTURE_NUM == 0)
 			pglGenTextures(1, &NOTEXTURE_NUM);
+
 		pglBindTexture(GL_TEXTURE_2D, NOTEXTURE_NUM);
 		tex_downloaded = NOTEXTURE_NUM;
 	}
@@ -991,7 +1008,42 @@ static void GL_Perspective(GLfloat fovy, GLfloat aspect)
 // -----------------+
 void GL_SetModelView(GLint w, GLint h)
 {
+	GLint maxtexsize = 0;
 	//GL_DBG_Printf("SetModelView(): %dx%d\n", (int)w, (int)h);
+
+	// The screen textures need to be flushed if the width or height change so that they be remade for the correct size
+	if (screen_width != w || screen_height != h)
+	{
+		GL_FlushScreenTextures();
+
+#ifdef USE_FBO_OGL
+		GL_Framebuffer_DeleteAttachments();
+#endif
+	}
+
+	screen_width = (GLint)w;
+	screen_height = (GLint)h;
+
+	screen_texsizew = screen_texsizeh = 512;
+
+	// look for power of two that is large enough for the screen
+	while (screen_texsizew < w)
+		screen_texsizew <<= 1;
+
+	while (screen_texsizeh < h)
+		screen_texsizeh <<= 1;
+
+	pglGetIntegerv(GL_MAX_TEXTURE_SIZE, &maxtexsize); // Get the maximum supported texture size
+	if ((screen_texsizew > maxtexsize || screen_texsizeh > maxtexsize) && maxtexsize > 0)
+	{
+		// The desired screen texture resolution is too big for the player's GPU!
+		CONS_Alert(CONS_WARNING, "Tried to make a screen texture for a %dx%d game resolution, but your GPU only supports up to %dx%d! Please switch to the software renderer or lower your game resolution.\n", w, h, maxtexsize, maxtexsize);
+
+		// For now, let's just pray that clamping it to the maximum supported size "works"
+		// There'll be a stretchy "border" artefact, but it's better than failing to make the screen textures
+		screen_texsizew = min(screen_texsizew, maxtexsize);
+		screen_texsizeh = min(screen_texsizeh, maxtexsize);
+	}
 
 	pglViewport(0, 0, w, h);
 
@@ -1038,6 +1090,8 @@ void GL_SetStates(void)
 
 	pglPolygonOffset(-1.0f, -1.0f);
 
+	pglDisable(GL_FOG);
+
 	// bp : when no t&l :)
 	pglLoadIdentity();
 	pglScalef(1.0f, 1.0f, -1.0f);
@@ -1064,10 +1118,12 @@ void GL_DeleteTexture(GLMipmap_t *pTexInfo)
 				head->next->prev = head->prev;
 			else // no next -> tail is being deleted -> update TexCacheTail
 				TexCacheTail = head->prev;
+
 			if (head->prev)
 				head->prev->next = head->next;
 			else // no prev -> head is being deleted -> update TexCacheHead
 				TexCacheHead = head->next;
+
 			free(head);
 			break;
 		}
@@ -1088,7 +1144,7 @@ static void GL_Framebuffer_GenerateAttachments(void)
 	pglBindFramebuffer(GL_FRAMEBUFFER, FramebufferObject);
 
 	// Generate the framebuffer texture
-	if (FramebufferTexture == 0)
+	if (!FramebufferTexture)
 	{
 		pglGenTextures(1, &FramebufferTexture);
 		pglBindTexture(GL_TEXTURE_2D, FramebufferTexture);
@@ -1102,7 +1158,7 @@ static void GL_Framebuffer_GenerateAttachments(void)
 	}
 
 	// Generate the renderbuffer
-	if (RenderbufferObject == 0)
+	if (!RenderbufferObject)
 	{
 		pglGenRenderbuffers(1, &RenderbufferObject);
 
@@ -1122,12 +1178,12 @@ static void GL_Framebuffer_GenerateAttachments(void)
 	fboinit = true;
 }
 
-void GL_Framebuffer_DeleteAttachments(void)
+static void GL_Framebuffer_DeleteAttachments(void)
 {
-	if (!supportFBO || fboinit == false)
+	if (!supportFBO || !fboinit)
 		return;
 
-	if (FramebufferObject == 0 && RenderbufferObject == 0 && FramebufferTexture == 0)
+	if (!FramebufferObject && !RenderbufferObject && !FramebufferTexture)
 		return;
 
 	// Unbind the framebuffer
@@ -1151,7 +1207,7 @@ static void GL_Framebuffer_Generate(void)
 		return;
 
 	// Generate the framebuffer
-	if (FramebufferObject == 0)
+	if (!FramebufferObject)
 		pglGenFramebuffers(1, &FramebufferObject);
 
 	if (pglCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE)
@@ -1160,7 +1216,7 @@ static void GL_Framebuffer_Generate(void)
 
 static void GL_Framebuffer_Delete(void)
 {
-	if (!supportFBO || fboinit == false)
+	if (!supportFBO || !fboinit)
 		return;
 
 	if (FramebufferObject)
@@ -1172,10 +1228,10 @@ static void GL_Framebuffer_Delete(void)
 
 void GL_Framebuffer_Unbind(void)
 {
-	if (!supportFBO || fboinit == false)
+	if (!supportFBO || !fboinit)
 		return;
 
-	if (FramebufferObject == 0 && RenderbufferObject == 0)
+	if (!FramebufferObject && !RenderbufferObject)
 		return;
 
 	pglBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -1189,7 +1245,7 @@ void GL_Framebuffer_Enable(void)
 
 	if (FramebufferObject == 0)
 		GL_Framebuffer_Generate();
-	else if (FramebufferTexture == 0 || RenderbufferObject == 0)
+	else if (!FramebufferTexture || !RenderbufferObject)
 		GL_Framebuffer_GenerateAttachments();
 
 	pglBindFramebuffer(GL_FRAMEBUFFER, FramebufferObject);
@@ -1198,10 +1254,10 @@ void GL_Framebuffer_Enable(void)
 
 void GL_Framebuffer_Disable(void)
 {
-	if (!supportFBO || fboinit == false)
+	if (!supportFBO || !fboinit)
 		return;
 
-	if (FramebufferObject == 0 && RenderbufferObject == 0)
+	if (!FramebufferObject && !RenderbufferObject)
 		return;
 
 	pglBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -1251,20 +1307,29 @@ INT32 GL_isExtAvailable(const char *extension, const GLubyte *start)
 {
 	GLubyte         *where, *terminator;
 
-	if (!extension || !start) return 0;
+	if (!extension || !start)
+		return 0;
+
 	where = (GLubyte *) strchr(extension, ' ');
+
 	if (where || *extension == '\0')
 		return 0;
 
 	for (;;)
 	{
 		where = (GLubyte *) strstr((const char *) start, extension);
+
 		if (!where)
 			break;
+
 		terminator = where + strlen(extension);
+
 		if (where == start || *(where - 1) == ' ')
+		{
 			if (*terminator == ' ' || *terminator == '\0')
 				return 1;
+		}
+
 		start = terminator;
 	}
 	return 0;
@@ -1296,23 +1361,33 @@ void GL_ReadScreenTexture(int tex, UINT16 *dst_data)
 {
 	INT32 i;
 	int dst_stride = screen_width * 3; // stride between rows of image data
-	GLubyte*top = (GLvoid*)dst_data, *bottom = top + dst_stride * (screen_height - 1);
+	GLubyte *top, *bottom;
 	GLubyte *row;
+
 	row = malloc(dst_stride);
-	if (!row) return;
+
+	if (!row)
+		return;
+
+	top = (GLvoid*)dst_data;
+	bottom = top + dst_stride * (screen_height - 1);
+
 	// at the time this function is called, generic2 can be found drawn on the framebuffer
 	// if some other screen texture is needed, draw it to the framebuffer
 	// and draw generic2 back after reading the framebuffer.
 	// this hack is for some reason **much** faster than the simple solution of using glGetTexImage.
 	if (tex != HWD_SCREENTEXTURE_GENERIC2)
 		GL_DrawScreenTexture(tex, NULL, 0);
+
 	pglPixelStorei(GL_PACK_ALIGNMENT, 1);
 	pglReadPixels(0, 0, screen_width, screen_height, GL_RGB, GL_UNSIGNED_BYTE, dst_data);
+
 	if (tex != HWD_SCREENTEXTURE_GENERIC2)
 		GL_DrawScreenTexture(HWD_SCREENTEXTURE_GENERIC2, NULL, 0);
+
 	// Flip image upside down.
 	// In other words, convert OpenGL's "bottom->top" row order into "top->bottom".
-	for(i = 0; i < screen_height/2; i++)
+	for (i = 0; i < screen_height/2; i++)
 	{
 		memcpy(row, top, dst_stride);
 		memcpy(top, bottom, dst_stride);
@@ -1320,6 +1395,7 @@ void GL_ReadScreenTexture(int tex, UINT16 *dst_data)
 		top += dst_stride;
 		bottom -= dst_stride;
 	}
+
 	free(row);
 }
 
@@ -1372,10 +1448,8 @@ void GL_ClearBuffer(FBOOLEAN ColorMask, FBOOLEAN DepthMask, FBOOLEAN StencilMask
 	if (ColorMask)
 	{
 		if (ClearColor)
-			pglClearColor(ClearColor->red,
-			              ClearColor->green,
-			              ClearColor->blue,
-			              ClearColor->alpha);
+			pglClearColor(ClearColor->red, ClearColor->green, ClearColor->blue, ClearColor->alpha);
+
 		ClearMask |= GL_COLOR_BUFFER_BIT;
 	}
 	if (DepthMask)
@@ -1390,6 +1464,7 @@ void GL_ClearBuffer(FBOOLEAN ColorMask, FBOOLEAN DepthMask, FBOOLEAN StencilMask
 
 	if (StencilMask)
 		ClearMask |= GL_STENCIL_BUFFER_BIT;// looks like sometimes stencil buffer needs clearing? had a problem with random black screens
+
 	pglClear(ClearMask);
 	pglEnableClientState(GL_VERTEX_ARRAY); // We always use this one
 	pglEnableClientState(GL_TEXTURE_COORD_ARRAY); // And mostly this one, too
@@ -1529,7 +1604,7 @@ void GL_SetBlend(FBITFIELD PolyFlags)
 {
 	const FBITFIELD Xor = CurrentPolyFlags^PolyFlags;;
 
-	if (Xor & (PF_Blending|PF_RemoveYWrap|PF_ForceWrapX|PF_ForceWrapY|PF_Occlude|PF_NoTexture|PF_Modulated|PF_NoDepthTest|PF_Decal|PF_Invisible))
+	if (Xor & (PF_Blending|PF_RemoveYWrap|PF_ForceWrapX|PF_ForceWrapY|PF_Occlude|PF_NoTexture|PF_Modulated|PF_NoDepthTest|PF_Decal|PF_Skydecal|PF_Invisible))
 	{
 		if (Xor & PF_Blending) // if blending mode must be changed
 			GL_SetBlendMode(PolyFlags & PF_Blending);
@@ -1545,7 +1620,21 @@ void GL_SetBlend(FBITFIELD PolyFlags)
 		if (Xor & PF_Decal)
 		{
 			if (PolyFlags & PF_Decal)
+			{
+				pglPolygonOffset(-1.0f, -1.0f);
 				pglEnable(GL_POLYGON_OFFSET_FILL);
+			}
+			else
+				pglDisable(GL_POLYGON_OFFSET_FILL);
+		}
+
+		if (Xor & PF_Skydecal)
+		{
+			if (PolyFlags & PF_Skydecal)
+			{
+				pglPolygonOffset(0.45f, 0.45f);
+				pglEnable(GL_POLYGON_OFFSET_FILL);
+			}
 			else
 				pglDisable(GL_POLYGON_OFFSET_FILL);
 		}
@@ -1640,14 +1729,123 @@ static void GL_AllocTextureBuffer(GLMipmap_t *pTexInfo)
 	}
 }
 
+#define PADDING_CHECK(offset, alphaCheck) { from = to + (offset); if ((alphaCheck)) from = NULL; else goto foundFrom; }
+
+static void PadRGBABitmap(RGBA_t *tex, UINT16 w, UINT16 h)
+{
+	INT32 i;
+	boolean notLeft, notRight, notTop, notBottom;
+	RGBA_t *to = tex - 1, *from;
+
+	for (i = 0; i < w * h; i++)
+	{
+		to++;
+		if (to->rgba != 0)
+			continue;
+		from = NULL;
+
+		notLeft = i % w != 0;
+		notRight = i % w != w - 1;
+		notTop = i / w != 0;
+		notBottom = i / w != h - 1;
+
+		if (notRight) PADDING_CHECK(1, from->s.alpha == 0) // Check +X
+		if (notBottom) PADDING_CHECK(w, from->s.alpha == 0) // Check +Y
+		if (notLeft) PADDING_CHECK(-1, from->s.alpha == 0) // Check -X
+		if (notTop) PADDING_CHECK(-w, from->s.alpha == 0) // Check -Y
+		if (notRight && notBottom) PADDING_CHECK(1 + w, from->s.alpha == 0) // Check +X+Y
+		if (notLeft && notBottom) PADDING_CHECK(-1 + w, from->s.alpha == 0) // Check -X+Y
+		if (notLeft && notTop) PADDING_CHECK(-1 - w, from->s.alpha == 0) // Check -X-Y
+		if (notRight && notTop) PADDING_CHECK(1 - w, from->s.alpha == 0) // Check +X-Y
+
+foundFrom:
+		if (from != NULL)
+		{
+			*to = *from;
+			to->s.alpha = 0;
+		}
+	}
+}
+
+#undef PADDING_CHECK
+
+static void GenerateMipmaps(INT32 w, INT32 h, RGBA_t *tex, INT32 maxLOD)
+{
+	if (tex == NULL)
+	{
+		GL_MSG_Warning("GenerateMipmaps: attempted to generate mipmaps without texture data");
+		return;
+	}
+
+	RGBA_t samplePoint[4];
+	boolean padTexture;
+	INT32 pointsSampled = 0;
+	INT32 m, j, i, p;
+	UINT16 sumR, sumG, sumB, sumA;
+
+	for (m = 0; m < maxLOD; m++)
+	{
+		if (w <= 1 || h <= 1)
+			return;
+
+		padTexture = false;
+
+		for (j = 0; j < h / 2; j++)
+		{
+			for (i = 0; i < w / 2; i++)
+			{
+				samplePoint[0] = tex[w*j*2 + i*2];
+				samplePoint[1] = tex[w*j*2 + i*2+1];
+				samplePoint[2] = tex[w*(j*2+1) + i*2];
+				samplePoint[3] = tex[w*(j*2+1) + i*2+1];
+
+				pointsSampled = sumR = sumG = sumB = sumA = 0;
+
+				for (p = 0; p < 4; p++)
+				{
+					if (samplePoint[p].s.alpha == 0)
+						continue;
+					sumR += samplePoint[p].s.red;
+					sumG += samplePoint[p].s.green;
+					sumB += samplePoint[p].s.blue;
+					sumA += samplePoint[p].s.alpha;
+					pointsSampled++;
+				}
+
+				if (pointsSampled > 0)
+				{
+					tex[(w/2)*j+i].s.red   = sumR / pointsSampled;
+					tex[(w/2)*j+i].s.green = sumG / pointsSampled;
+					tex[(w/2)*j+i].s.blue  = sumB / pointsSampled;
+					tex[(w/2)*j+i].s.alpha = sumA / pointsSampled;
+				}
+				else
+				{
+					tex[(w/2)*j+i].rgba = 0;
+					padTexture = true;
+				}
+			}
+		}
+
+		w /= 2;
+		h /= 2;
+
+		if (padTexture)
+			PadRGBABitmap(tex, w, h);
+
+		pglTexSubImage2D(GL_TEXTURE_2D, m + 1, 0, 0, w, h, GL_RGBA, GL_UNSIGNED_BYTE, tex);
+	}
+}
+
 // -----------------+
 // UpdateTexture    : Updates texture data.
 // -----------------+
-static void GL_UpdateTexture(GLMipmap_t *pTexInfo)
+void GL_UpdateTexture(GLMipmap_t *pTexInfo)
 {
 	// Upload a texture
 	GLuint num = pTexInfo->downloaded;
 	boolean update = true;
+	const boolean applyPadding = mag_filter == GL_LINEAR || min_filter == GL_LINEAR;
 
 	INT32 w = pTexInfo->width, h = pTexInfo->height;
 	INT32 i, j;
@@ -1669,9 +1867,10 @@ static void GL_UpdateTexture(GLMipmap_t *pTexInfo)
 
 	//GL_DBG_Printf("UpdateTexture %d %x\n", (INT32)num, pImgData);
 
-	texformat = textureformatGL;
+	texformat = gltexformat;
+	const GLTextureFormat_t texinfoformat = pTexInfo->format;
 
-	switch (pTexInfo->format)
+	switch (texinfoformat)
 	{
 		case GL_TEXFMT_P_8:
 		case GL_TEXFMT_AP_88:
@@ -1696,7 +1895,7 @@ static void GL_UpdateTexture(GLMipmap_t *pTexInfo)
 
 					pImgData++;
 
-					if (pTexInfo->format != GL_TEXFMT_AP_88)
+					if (texinfoformat != GL_TEXFMT_AP_88)
 						continue;
 					if (chromakeyed)
 						continue;
@@ -1705,15 +1904,32 @@ static void GL_UpdateTexture(GLMipmap_t *pTexInfo)
 					pImgData++;
 				}
 			}
+
+			if (applyPadding)
+				PadRGBABitmap(tex, w, h);
+
 			break;
 		case GL_TEXFMT_RGBA:
 			// Directly upload the texture data without any kind of conversion.
 			ptex = pImgData;
+
+			// However, it does need to be copied to a buffer for generating mipmaps and padding
+			if (MipMap || applyPadding)
+			{
+				GL_AllocTextureBuffer(pTexInfo);
+				tex = textureBuffer;
+				memcpy(tex, ptex, w * h * 4);
+				ptex = tex;
+
+				if (applyPadding)
+					PadRGBABitmap(tex, w, h);
+			}
+
 			break;
 		case GL_TEXFMT_ALPHA_INTENSITY_88:
 			GL_AllocTextureBuffer(pTexInfo);
 			ptex = tex = textureBuffer;
-			texformat = GL_LUMINANCE_ALPHA;
+			texformat = GL_RGBA;
 
 			for (idx = 0, j = 0; j < h; j++)
 			{
@@ -1731,7 +1947,7 @@ static void GL_UpdateTexture(GLMipmap_t *pTexInfo)
 		case GL_TEXFMT_ALPHA_8: // Used for fade masks
 			GL_AllocTextureBuffer(pTexInfo);
 			ptex = tex = textureBuffer;
-			texformat = GL_ALPHA;
+			texformat = GL_RGBA;
 
 			memset(&tex->s, 255, sizeof(byteColor_t)*w*h); // 255 because the fade mask is modulated with the screen texture, so alpha affects it while the colours don't
 
@@ -1744,7 +1960,7 @@ static void GL_UpdateTexture(GLMipmap_t *pTexInfo)
 			}
 			break;
 		default:
-			GL_MSG_Warning("UpdateTexture: bad format %d\n", pTexInfo->format);
+			GL_MSG_Warning("UpdateTexture: bad format %d\n", texinfoformat);
 			break;
 	}
 
@@ -1776,7 +1992,8 @@ static void GL_UpdateTexture(GLMipmap_t *pTexInfo)
 
 		// Control the mipmap level of detail
 		pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_LOD, 0);
-		pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LOD, 4);
+		pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LOD, 5);
+		GenerateMipmaps(w, h, tex, 5);
 	}
 	else
 	{
@@ -1800,7 +2017,6 @@ static void GL_UpdateTexture(GLMipmap_t *pTexInfo)
 		pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, anisotropic_filter);
 }
 
-
 // -----------------+
 // SetTexture       : The mipmap becomes the current texture source
 // -----------------+
@@ -1815,8 +2031,7 @@ void GL_SetTexture(GLMipmap_t *pTexInfo)
 	{
 		if (pTexInfo->downloaded != tex_downloaded)
 		{
-			if (!currently_batching)
-				pglBindTexture(GL_TEXTURE_2D, pTexInfo->downloaded);
+			pglBindTexture(GL_TEXTURE_2D, pTexInfo->downloaded);
 			tex_downloaded = pTexInfo->downloaded;
 		}
 	}
@@ -1997,7 +2212,7 @@ static boolean GL_Shader_CompileProgram(gl_shader_t *shader, GLint i)
 		pglGetShaderiv(gl_fragShader, GL_COMPILE_STATUS, &result);
 		if (result == GL_FALSE)
 		{
-            pglGetShaderInfoLog(gl_fragShader, 512, NULL, info_log);
+			pglGetShaderInfoLog(gl_fragShader, 512, NULL, info_log);
 
 			GL_MSG_Error("Error compiling fragment shader: %s\n", info_log);
 			pglDeleteShader(gl_vertShader);
@@ -2021,7 +2236,7 @@ static boolean GL_Shader_CompileProgram(gl_shader_t *shader, GLint i)
 		pglDeleteShader(gl_vertShader);
 	if (frag_shader)
 		pglDeleteShader(gl_fragShader);
-	
+
 	// couldn't link?
 	if (result != GL_TRUE)
 	{
@@ -2035,25 +2250,25 @@ static boolean GL_Shader_CompileProgram(gl_shader_t *shader, GLint i)
 #define GETUNI(uniform) pglGetUniformLocation(shader->program, uniform);
 
 	// lighting
-	shader->uniforms[gluniform_poly_color] = GETUNI("poly_color");
-	shader->uniforms[gluniform_tint_color] = GETUNI("tint_color");
-	shader->uniforms[gluniform_fade_color] = GETUNI("fade_color");
-	shader->uniforms[gluniform_lighting] = GETUNI("lighting");
-	shader->uniforms[gluniform_fade_start] = GETUNI("fade_start");
-	shader->uniforms[gluniform_fade_end] = GETUNI("fade_end");
-	shader->uniforms[gluniform_light_dir] = GETUNI("light_dir");
-	shader->uniforms[gluniform_light_contrast] = GETUNI("light_contrast");
-	shader->uniforms[gluniform_light_backlight] = GETUNI("light_backlight");
+	shader->uniforms[gluniform_poly_color]            = GETUNI("poly_color");
+	shader->uniforms[gluniform_tint_color]            = GETUNI("tint_color");
+	shader->uniforms[gluniform_fade_color]            = GETUNI("fade_color");
+	shader->uniforms[gluniform_lighting]              = GETUNI("lighting");
+	shader->uniforms[gluniform_fade_start]            = GETUNI("fade_start");
+	shader->uniforms[gluniform_fade_end]              = GETUNI("fade_end");
+	shader->uniforms[gluniform_light_dir]             = GETUNI("light_dir");
+	shader->uniforms[gluniform_light_contrast]        = GETUNI("light_contrast");
+	shader->uniforms[gluniform_light_backlight]       = GETUNI("light_backlight");
 
 	// palette rendering
-	shader->uniforms[gluniform_palette_tex] = GETUNI("palette_tex");
-	shader->uniforms[gluniform_palette_lookup_tex] = GETUNI("palette_lookup_tex");
-	shader->uniforms[gluniform_lighttable_tex] = GETUNI("lighttable_tex");
+	shader->uniforms[gluniform_palette_tex]           = GETUNI("palette_tex");
+	shader->uniforms[gluniform_palette_lookup_tex]    = GETUNI("palette_lookup_tex");
+	shader->uniforms[gluniform_lighttable_tex]        = GETUNI("lighttable_tex");
 
-	shader->uniforms[gluniform_scr_resolution] = GETUNI("scr_resolution");
+	shader->uniforms[gluniform_scr_resolution]        = GETUNI("scr_resolution");
 
 	// misc.
-	shader->uniforms[gluniform_leveltime] = GETUNI("leveltime");
+	shader->uniforms[gluniform_leveltime]             = GETUNI("leveltime");
 #undef GETUNI
 
 	// set permanent uniform values
@@ -2261,51 +2476,61 @@ void GL_SetSpecialState(hwdspecialstate_t IdState, INT32 Value)
 			gl_allowshaders = Value;
 			break;
 		case HWD_SET_TEXTUREFILTERMODE:
-
-			switch (Value)
 			{
-				case HWD_SET_TEXTUREFILTER_TRILINEAR:
-					min_filter = GL_LINEAR_MIPMAP_LINEAR;
-					mag_filter = GL_LINEAR;
-					MipMap = GL_TRUE;
-					break;
-				case HWD_SET_TEXTUREFILTER_BILINEAR:
-					min_filter = mag_filter = GL_LINEAR;
+				switch (Value)
+				{
+					case HWD_SET_TEXTUREFILTER_TRILINEAR:
+						min_filter = GL_LINEAR_MIPMAP_LINEAR;
+						mag_filter = GL_LINEAR;
+						MipMap     = GL_TRUE;
+						break;
+					case HWD_SET_TEXTUREFILTER_BILINEAR:
+						min_filter = mag_filter = GL_LINEAR;
+						MipMap = GL_FALSE;
+						break;
+					case HWD_SET_TEXTUREFILTER_POINTSAMPLED:
+						min_filter = mag_filter = GL_NEAREST;
+						MipMap = GL_FALSE;
+						break;
+					case HWD_SET_TEXTUREFILTER_MIXED1:
+						min_filter = GL_NEAREST;
+						mag_filter = GL_LINEAR;
+						MipMap     = GL_FALSE;
+						break;
+					case HWD_SET_TEXTUREFILTER_MIXED2:
+						min_filter = GL_LINEAR;
+						mag_filter = GL_NEAREST;
+						MipMap     = GL_FALSE;
+						break;
+					case HWD_SET_TEXTUREFILTER_MIXED3:
+						min_filter = GL_LINEAR_MIPMAP_LINEAR;
+						mag_filter = GL_NEAREST;
+						MipMap     = GL_TRUE;
+						break;
+					default:
+						min_filter = GL_NEAREST;
+						mag_filter = GL_LINEAR;
+				}
+
+				if (!supportMipMap)
+				{
 					MipMap = GL_FALSE;
-					break;
-				case HWD_SET_TEXTUREFILTER_POINTSAMPLED:
-					min_filter = mag_filter = GL_NEAREST;
-					MipMap = GL_FALSE;
-					break;
-				case HWD_SET_TEXTUREFILTER_MIXED1:
-					min_filter = GL_NEAREST;
-					mag_filter = GL_LINEAR;
-					MipMap = GL_FALSE;
-					break;
-				case HWD_SET_TEXTUREFILTER_MIXED2:
 					min_filter = GL_LINEAR;
-					mag_filter = GL_NEAREST;
-					MipMap = GL_FALSE;
-					break;
-				case HWD_SET_TEXTUREFILTER_MIXED3:
-					min_filter = GL_LINEAR_MIPMAP_LINEAR;
-					mag_filter = GL_NEAREST;
-					MipMap = GL_TRUE;
-					break;
-				default:
-					min_filter = GL_NEAREST;
-					mag_filter = GL_LINEAR;
-			}
+				}
 
-			if (!supportMipMap)
-			{
-				MipMap = GL_FALSE;
-				min_filter = GL_LINEAR;
+				GL_Flush(); //??? if we want to change filter mode by texture, remove this
 			}
-
-			GL_Flush(); //??? if we want to change filter mode by texture, remove this
 			break;
-			
+
+		case HWD_SET_WIREFRAME:
+			pglPolygonMode(GL_FRONT_AND_BACK, Value ? GL_LINE : GL_FILL);
+			break;
+
+		case HWD_SET_TEXTURE_FORMAT:
+			gltexformat = (Value == 32) ? GL_RGBA : GL_RGB5_A1;
+			GL_Flush();
+			break;
+
 		case HWD_SET_MSAA:
 			if (Value)
 			{
@@ -2615,7 +2840,7 @@ void GL_DrawModelEx(model_t *model, INT32 frameIndex, float duration, float tics
 	scalex = hscale;
 	scaley = vscale;
 	scalez = hscale;
-	
+
 	if (duration > 0.0 && tics >= 0.0) // don't interpolate if instantaneous or infinite in length
 	{
 		float newtime = (duration - tics); // + 1;
@@ -2633,10 +2858,10 @@ void GL_DrawModelEx(model_t *model, INT32 frameIndex, float duration, float tics
 	poly.green  = byte2float[Surface->PolyColor.s.green];
 	poly.blue   = byte2float[Surface->PolyColor.s.blue];
 	poly.alpha  = byte2float[Surface->PolyColor.s.alpha];
-	
+
 	pglColor4ubv((GLubyte*)&Surface->PolyColor.s);
 
-	GL_SetBlend((poly.alpha < 1 ? Surface->PolyFlags : (PF_Masked|PF_Occlude))|PF_Modulated);
+	GL_SetBlend(((poly.alpha < 1) ? Surface->PolyFlags : (PF_Masked|PF_Occlude))|PF_Modulated);
 
 	tint.red    = byte2float[Surface->TintColor.s.red];
 	tint.green  = byte2float[Surface->TintColor.s.green];
@@ -2647,7 +2872,7 @@ void GL_DrawModelEx(model_t *model, INT32 frameIndex, float duration, float tics
 	fade.green = byte2float[Surface->FadeColor.s.green];
 	fade.blue  = byte2float[Surface->FadeColor.s.blue];
 	fade.alpha = byte2float[Surface->FadeColor.s.alpha];
-	
+
 	if (Surface->LightTableId && Surface->LightTableId != lt_downloaded)
 	{
 		pglActiveTexture(GL_TEXTURE2);
@@ -2667,8 +2892,7 @@ void GL_DrawModelEx(model_t *model, INT32 frameIndex, float duration, float tics
 	// pos->mirror is if the screen is flipped horizontally
 	// XOR all the flips together to figure out what culling to use!
 	{
-		boolean reversecull = (flipped ^ hflipped ^ pos->flip ^ pos->mirror);
-		if (reversecull)
+		if ((flipped ^ hflipped ^ !!(pos->fliptype & TRANSFORM_FLIP) ^ !!(pos->fliptype & TRANSFORM_MIRROR)))
 			pglCullFace(GL_FRONT);
 		else
 			pglCullFace(GL_BACK);
@@ -2681,10 +2905,10 @@ void GL_DrawModelEx(model_t *model, INT32 frameIndex, float duration, float tics
 	if (hflipped)
 		scalez = -scalez;
 
-	pglRotatef(pos->anglez, 0.0f, 0.0f, -1.0f);
-	pglRotatef(pos->anglex, 1.0f, 0.0f, 0.0f);
-	pglRotatef(pos->angley, 0.0f, -1.0f, 0.0f);
-	
+	pglRotatef(pos->anglez, 0.0f,  0.0f, -1.0f);
+	pglRotatef(pos->anglex, 1.0f,  0.0f,  0.0f);
+	pglRotatef(pos->angley, 0.0f, -1.0f,  0.0f);
+
 	if (pos->roll)
 	{
 		pglTranslatef(pos->centerx, pos->centery, 0);
@@ -2814,14 +3038,21 @@ void GL_SetTransform(FTransform *stransform)
 		used_fov = stransform->fovangle;
 		shearing = stransform->shearing;
 
-		if (stransform->mirror)
-			pglScalef(-stransform->scalex, stransform->scaley, -stransform->scalez);
-		else if (stransform->mirrorflip)
-			pglScalef(-stransform->scalex, -stransform->scaley, -stransform->scalez);
-		else if (stransform->flip)
-			pglScalef(stransform->scalex, -stransform->scaley, -stransform->scalez);
-		else
-			pglScalef(stransform->scalex, stransform->scaley, -stransform->scalez);
+		switch (stransform->fliptype)
+		{
+			case TRANSFORM_MIRROR:
+				pglScalef(-stransform->scalex, stransform->scaley, -stransform->scalez);
+				break;
+			case TRANSFORM_MIRRORFLIP:
+				pglScalef(-stransform->scalex, -stransform->scaley, -stransform->scalez);
+				break;
+			case TRANSFORM_FLIP:
+				pglScalef(stransform->scalex, -stransform->scaley, -stransform->scalez);
+				break;
+			default: // TRANSFORM_NONE
+				pglScalef(stransform->scalex, stransform->scaley, -stransform->scalez);
+				break;
+		}
 
 		if (stransform->roll)
 			pglRotatef(stransform->rollangle, 0.0f, 0.0f, 1.0f);
@@ -2847,8 +3078,10 @@ void GL_SetTransform(FTransform *stransform)
 	if (shearing)
 	{
 		float dy = stransform->viewaiming * 2;
-		if (stransform->flip || stransform->mirrorflip)
+
+		if (stransform->fliptype == TRANSFORM_FLIP || stransform->fliptype == TRANSFORM_MIRRORFLIP)
 			dy *= -1.0f;
+
 		pglTranslatef(0.0f, -dy/BASEVIDHEIGHT, 0.0f);
 	}
 
@@ -2887,7 +3120,7 @@ INT32 GL_GetTextureUsed(void)
 		res += tmp->height*tmp->width*bpp;
 		tmp = tmp->next;
 	}
-	
+
 	return res;
 }
 
@@ -2896,32 +3129,25 @@ void GL_PostImgRedraw(float points[SCREENVERTS][SCREENVERTS][2])
 	INT32 x, y;
 	float float_x, float_y, float_nextx, float_nexty;
 	float xfix, yfix;
-	INT32 texsizew = 512, texsizey = 512;
 
 	const float blackBack[16] =
 	{
 		-16.0f, -16.0f, 6.0f,
-		-16.0f, 16.0f, 6.0f,
-		16.0f, 16.0f, 6.0f,
-		16.0f, -16.0f, 6.0f
+		-16.0f,  16.0f, 6.0f,
+		 16.0f,  16.0f, 6.0f,
+		 16.0f, -16.0f, 6.0f
 	};
-	
-	if (gl_enable_screen_textures != 2) 
+
+	if (gl_enable_screen_textures != 2)
 		return;
 
-	// look for power of two that is large enough for the screen
-	while (texsizew < screen_width)
-		texsizew <<= 1;
-
-	while (texsizey < screen_height)
-		texsizey <<= 1;
-
 	// X/Y stretch fix for all resolutions(!)
-	xfix = (float)(texsizew)/((float)((screen_width)/(float)(SCREENVERTS-1)));
-	yfix = (float)(texsizey)/((float)((screen_height)/(float)(SCREENVERTS-1)));
+	xfix = (float)(screen_texsizew)/((float)((screen_width)/(float)(SCREENVERTS-1)));
+	yfix = (float)(screen_texsizeh)/((float)((screen_height)/(float)(SCREENVERTS-1)));
 
 	pglDisable(GL_DEPTH_TEST);
 	pglDisable(GL_BLEND);
+	pglDisableClientState(GL_TEXTURE_COORD_ARRAY);
 
 	// Draw a black square behind the screen texture,
 	// so nothing shows through the edges
@@ -2929,11 +3155,11 @@ void GL_PostImgRedraw(float points[SCREENVERTS][SCREENVERTS][2])
 
 	pglVertexPointer(3, GL_FLOAT, 0, blackBack);
 	pglDrawArrays(GL_TRIANGLE_FAN, 0, 4);
-
 	pglEnableClientState(GL_TEXTURE_COORD_ARRAY);
-	for(x = 0; x < SCREENVERTS-1;x ++)
+
+	for (x = 0; x < (SCREENVERTS-1); x ++)
 	{
-		for(y = 0; y < SCREENVERTS-1; y++)
+		for (y = 0; y < (SCREENVERTS-1); y++)
 		{
 			float stCoords[8];
 			float vertCoords[12];
@@ -2985,36 +3211,27 @@ void GL_PostImgRedraw(float points[SCREENVERTS][SCREENVERTS][2])
 void GL_FlushScreenTextures(void)
 {
 	pglDeleteTextures(NUMSCREENTEXTURES, screenTextures);
-	memset(screenTextures, 0 , sizeof(screenTextures));
+	memset(screenTextures, 0, sizeof(screenTextures));
 }
 
 void GL_DrawScreenTexture(int tex, FSurfaceInfo *surf, FBITFIELD polyflags)
 {
+	float fix[8];
 	float xfix, yfix;
-	INT32 texsizew = 512, texsizey = 512;
 
 	const float screenVerts[12] =
 	{
 		-1.0f, -1.0f, 1.0f,
-		-1.0f, 1.0f, 1.0f,
-		1.0f, 1.0f, 1.0f,
-		1.0f, -1.0f, 1.0f
+		-1.0f,  1.0f, 1.0f,
+		 1.0f,  1.0f, 1.0f,
+		 1.0f, -1.0f, 1.0f
 	};
 
-	float fix[8];
-	
-	if (gl_enable_screen_textures != 2) 
+	if (gl_enable_screen_textures != 2)
 		return;
 
-	// look for power of two that is large enough for the screen
-	while (texsizew < screen_width)
-		texsizew <<= 1;
-
-	while (texsizey < screen_height)
-		texsizey <<= 1;
-
-	xfix = 1/((float)(texsizew)/((float)((screen_width))));
-	yfix = 1/((float)(texsizey)/((float)((screen_height))));
+	xfix = 1/((float)(screen_texsizew)/((float)((screen_width))));
+	yfix = 1/((float)(screen_texsizeh)/((float)((screen_height))));
 
 	// const float screenVerts[12]
 
@@ -3031,7 +3248,7 @@ void GL_DrawScreenTexture(int tex, FSurfaceInfo *surf, FBITFIELD polyflags)
 	pglClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
 
 	pglBindTexture(GL_TEXTURE_2D, screenTextures[tex]);
-	
+
 	GL_PreparePolygon(surf, surf ? polyflags : (PF_NoDepthTest));
 	if (!surf)
 		pglColor4ubv(white);
@@ -3047,7 +3264,6 @@ void GL_DrawScreenTexture(int tex, FSurfaceInfo *surf, FBITFIELD polyflags)
 // Do screen fades!
 void GL_DoScreenWipe(int wipeStart, int wipeEnd)
 {
-	INT32 texsizew = 512, texsizey = 512;
 	float xfix, yfix;
 
 	INT32 fademaskdownloaded = tex_downloaded; // the fade mask that has been set
@@ -3055,9 +3271,9 @@ void GL_DoScreenWipe(int wipeStart, int wipeEnd)
 	const float screenVerts[12] =
 	{
 		-1.0f, -1.0f, 1.0f,
-		-1.0f, 1.0f, 1.0f,
-		1.0f, 1.0f, 1.0f,
-		1.0f, -1.0f, 1.0f
+		-1.0f,  1.0f, 1.0f,
+		 1.0f,  1.0f, 1.0f,
+		 1.0f, -1.0f, 1.0f
 	};
 
 	float fix[8];
@@ -3070,18 +3286,11 @@ void GL_DoScreenWipe(int wipeStart, int wipeEnd)
 		1.0f, 1.0f
 	};
 
-	if (!gl_enable_screen_textures) 
+	if (!gl_enable_screen_textures)
 		return;
 
-	// look for power of two that is large enough for the screen
-	while (texsizew < screen_width)
-		texsizew <<= 1;
-
-	while (texsizey < screen_height)
-		texsizey <<= 1;
-
-	xfix = 1/((float)(texsizew)/((float)((screen_width))));
-	yfix = 1/((float)(texsizey)/((float)((screen_height))));
+	xfix = 1/((float)(screen_texsizew)/((float)((screen_width))));
+	yfix = 1/((float)(screen_texsizeh)/((float)((screen_height))));
 
 	// const float screenVerts[12]
 
@@ -3121,8 +3330,6 @@ void GL_DoScreenWipe(int wipeStart, int wipeEnd)
 
 	pglTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 
-	// const float defaultST[8]
-
 	pglClientActiveTexture(GL_TEXTURE0);
 	pglTexCoordPointer(2, GL_FLOAT, 0, fix);
 	pglVertexPointer(3, GL_FLOAT, 0, screenVerts);
@@ -3141,7 +3348,6 @@ void GL_DoScreenWipe(int wipeStart, int wipeEnd)
 
 void GL_RenderVhsEffect(fixed_t upbary, fixed_t downbary, UINT8 updistort, UINT8 downdistort, UINT8 barsize)
 {
-	INT32 texsizew = 512, texsizey = 512;
 	int tex = HWD_SCREENTEXTURE_VHS;
 	float xfix, yfix;
 	float fix[8];
@@ -3151,23 +3357,16 @@ void GL_RenderVhsEffect(fixed_t upbary, fixed_t downbary, UINT8 updistort, UINT8
 	float screenVerts[12] =
 	{
 		-1.0f, -1.0f, 1.0f,
-		-1.0f, 1.0f, 1.0f,
-		1.0f, 1.0f, 1.0f,
-		1.0f, -1.0f, 1.0f
+		-1.0f,  1.0f, 1.0f,
+		 1.0f,  1.0f, 1.0f,
+		 1.0f, -1.0f, 1.0f
 	};
 
-	if (gl_enable_screen_textures != 2) 
+	if (gl_enable_screen_textures != 2)
 		return;
 
-	// look for power of two that is large enough for the screen
-	while (texsizew < screen_width)
-		texsizew <<= 1;
-
-	while (texsizey < screen_height)
-		texsizey <<= 1;
-
-	xfix = 1/((float)(texsizew)/((float)((screen_width))));
-	yfix = 1/((float)(texsizey)/((float)((screen_height))));
+	xfix = 1/((float)(screen_texsizew)/((float)((screen_width))));
+	yfix = 1/((float)(screen_texsizeh)/((float)((screen_height))));
 
 	// Slight fuzziness
 	GL_MakeScreenTexture(tex);
@@ -3251,22 +3450,15 @@ void GL_RenderVhsEffect(fixed_t upbary, fixed_t downbary, UINT8 updistort, UINT8
 // Create a texture from the screen.
 void GL_MakeScreenTexture(int tex)
 {
-	INT32 texsizew = 512, texsizey = 512;
 	boolean firstTime = (screenTextures[tex] == 0);
-	
+
 	if (!gl_enable_screen_textures)
 		return;
-
-	// look for power of two that is large enough for the screen
-	while (texsizew < screen_width)
-		texsizew <<= 1;
-
-	while (texsizey < screen_height)
-		texsizey <<= 1;
 
 	// Create screen texture
 	if (firstTime)
 		pglGenTextures(1, &screenTextures[tex]);
+
 	pglBindTexture(GL_TEXTURE_2D, screenTextures[tex]);
 
 	if (firstTime)
@@ -3275,10 +3467,10 @@ void GL_MakeScreenTexture(int tex)
 		pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 		Clamp2D(GL_TEXTURE_WRAP_S);
 		Clamp2D(GL_TEXTURE_WRAP_T);
-		pglCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 0, 0, texsizew, texsizey, 0);
+		pglCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 0, 0, screen_texsizew, screen_texsizeh, 0);
 	}
 	else
-		pglCopyTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 0, 0, texsizew, texsizey);
+		pglCopyTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 0, 0, screen_texsizew, screen_texsizeh);
 
 	tex_downloaded = screenTextures[tex];
 }
@@ -3289,26 +3481,19 @@ void GL_DrawScreenFinalTexture(int tex, INT32 width, INT32 height, boolean usesh
 	float origaspect, newaspect;
 	float xoff = 1, yoff = 1; // xoffset and yoffset for the polygon to have black bars around the screen
 	FRGBAFloat clearColour;
-	INT32 texsizew = 512, texsizey = 512;
 
 	float off[12];
 	float fix[8];
-	
+
 	if (gl_enable_screen_textures != 2)
 		return;
 
-	// look for power of two that is large enough for the screen
-	while (texsizew < screen_width)
-		texsizew <<= 1;
-
-	while (texsizey < screen_height)
-		texsizey <<= 1;
-
-	xfix = 1/((float)(texsizew)/((float)((screen_width))));
-	yfix = 1/((float)(texsizey)/((float)((screen_height))));
+	xfix = 1/((float)(screen_texsizew)/((float)((screen_width))));
+	yfix = 1/((float)(screen_texsizeh)/((float)((screen_height))));
 
 	origaspect = (float)screen_width / screen_height;
 	newaspect = (float)width / height;
+
 	if (origaspect < newaspect)
 	{
 		xoff = origaspect / newaspect;
@@ -3384,7 +3569,7 @@ void GL_SetPaletteLookup(UINT8 *lut)
 	{
 		internalFormat = GL_R8;
 	}
-	
+
 	if (!paletteLookupTex)
 		pglGenTextures(1, &paletteLookupTex);
 	pglActiveTexture(GL_TEXTURE1);
@@ -3433,7 +3618,7 @@ void GL_ClearLightTables(void)
 	}
 
 	LightTablesTail = NULL;
-	
+
 	// we no longer have a bound light table (if we had one), we just deleted it!
 	lt_downloaded = 0;
 }
@@ -3444,8 +3629,10 @@ void GL_SetScreenPalette(RGBA_t *palette)
 	if (memcmp(screenPalette, palette, sizeof(screenPalette)))
 	{
 		memcpy(screenPalette, palette, sizeof(screenPalette));
+
 		if (!screenPaletteTex)
 			pglGenTextures(1, &screenPaletteTex);
+
 		pglActiveTexture(GL_TEXTURE2);
 		pglBindTexture(GL_TEXTURE_1D, screenPaletteTex);
 		pglTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);

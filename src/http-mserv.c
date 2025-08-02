@@ -110,13 +110,21 @@ HMS_on_read (char *s, size_t _1, size_t n, void *userdata)
 
 	buffer = userdata;
 
-	if (n >= (size_t)( buffer->end - buffer->needle ))
+	while (n >= (size_t)( buffer->end - buffer->needle ))
 	{
 		/* resize to next multiple of buffer size */
 		blocks = ( n / DEFAULT_BUFFER_SIZE + 1 );
 		buffer->end += ( blocks * DEFAULT_BUFFER_SIZE );
 
-		buffer->buffer = realloc(buffer->buffer, buffer->end);
+		void *tmp = realloc(buffer->buffer, buffer->end);
+		if (tmp == NULL)
+		{
+			// not enough memory to read it, bail
+			free(buffer->buffer);
+			buffer->buffer = NULL;
+			return 0;
+		}
+		buffer->buffer = tmp;
 	}
 
 	memcpy(&buffer->buffer[buffer->needle], s, n);
@@ -220,9 +228,13 @@ HMS_connect (const char *format, ...)
 
 	curl_easy_setopt(curl, CURLOPT_URL, url);
 	curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
-	curl_easy_setopt(curl, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4);
 
-	curl_easy_setopt(curl, CURLOPT_TIMEOUT, cv_masterserver_timeout.value);
+#ifdef HAVE_IPV6
+	if (!M_CheckParm("-ipv6"))
+#endif
+		curl_easy_setopt(curl, CURLOPT_IPRESOLVE, (long)CURL_IPRESOLVE_V4);
+
+	curl_easy_setopt(curl, CURLOPT_TIMEOUT, (long)cv_masterserver_timeout.value);
 	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, HMS_on_read);
 	curl_easy_setopt(curl, CURLOPT_WRITEDATA, buffer);
 
@@ -339,8 +351,8 @@ HMS_unlist (void)
 	if (! hms)
 		return 0;
 
-	curl_easy_setopt(hms->curl, CURLOPT_POST, 1);
-	curl_easy_setopt(hms->curl, CURLOPT_POSTFIELDSIZE, 0);
+	curl_easy_setopt(hms->curl, CURLOPT_POST, (long)1);
+	curl_easy_setopt(hms->curl, CURLOPT_POSTFIELDSIZE, (long)0);
 
 	okay = HMS_do(hms);
 	HMS_end(hms);

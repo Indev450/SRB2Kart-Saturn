@@ -1302,7 +1302,7 @@ static void P_AddExecutorDelay(line_t *line, mobj_t *mobj, sector_t *sector)
 
 	e = Z_Calloc(sizeof (*e), PU_LEVSPEC, NULL);
 
-	e->thinker.function.acp1 = (actionf_p1)T_ExecutorDelay;
+	e->thinker.function = (actionf_p1)T_ExecutorDelay;
 	e->line = line;
 	e->sector = sector;
 	e->timer = (line->backsector->ceilingheight>>FRACBITS)+(line->backsector->floorheight>>FRACBITS);
@@ -1721,6 +1721,19 @@ static boolean is_rain_type (INT32 weathernum)
 	}
 }
 
+void P_PurgePrecipitation(void)
+{
+	thinker_t *think;
+	thinker_t *next;
+
+	for (think = precipcap.next; think != NULL && think != &precipcap;)
+	{
+		next = think->next;
+		P_FreePrecipMobj((precipmobj_t *)think);
+		think = next;
+	}
+}
+
 //
 // P_SwitchWeather
 //
@@ -1729,6 +1742,7 @@ static boolean is_rain_type (INT32 weathernum)
 void P_SwitchWeather(INT32 weathernum)
 {
 	boolean purge = true;
+	boolean spawnprecip = false;
 
 	if (weathernum == curWeather)
 		return;
@@ -1739,22 +1753,7 @@ void P_SwitchWeather(INT32 weathernum)
 
 	if (purge)
 	{
-		thinker_t *think;
-		thinker_t *next;
-		precipmobj_t *precipmobj;
-
-		for (think = precipcap.next; think != &precipcap; think = next)
-		{
-			next = think->next;
-
-#ifdef PARANOIA
-			if (think->function.acp1 != (actionf_p1)P_NullPrecipThinker)
-				continue; // not a precipmobj thinker
-#endif
-
-			precipmobj = (precipmobj_t *)think;
-			P_FreePrecipMobj(precipmobj);
-		}
+		P_PurgePrecipitation();
 	}
 	else // Rather than respawn all that crap, reuse it!
 	{
@@ -1764,11 +1763,6 @@ void P_SwitchWeather(INT32 weathernum)
 
 		for (think = precipcap.next; think != &precipcap; think = think->next)
 		{
-#ifdef PARANOIA
-			if (think->function.acp1 != (actionf_p1)P_NullPrecipThinker)
-				continue; // not a precipmobj thinker
-#endif
-
 			precipmobj = (precipmobj_t *)think;
 
 			INT32 z = 0;
@@ -1813,8 +1807,6 @@ void P_SwitchWeather(INT32 weathernum)
 		}
 	}
 
-	boolean spawnprecip = false;
-
 	switch (weathernum)
 	{
 		case PRECIP_SNOW: // snow
@@ -1822,23 +1814,17 @@ void P_SwitchWeather(INT32 weathernum)
 			spawnprecip = true;
 		break;
 		case PRECIP_RAIN: // rain
-		{
 			curWeather = PRECIP_RAIN;
 			spawnprecip = true;
 			break;
-		}
 		case PRECIP_STORM: // storm
-		{
 			curWeather = PRECIP_STORM;
 			spawnprecip = true;
 			break;
-		}
 		case PRECIP_STORM_NOSTRIKES: // storm w/o lightning
-		{
 			curWeather = PRECIP_STORM_NOSTRIKES;
 			spawnprecip = true;
 			break;
-		}
 		case PRECIP_STORM_NORAIN: // storm w/o rain
 			curWeather = PRECIP_STORM_NORAIN;
 			break;
@@ -2036,7 +2022,7 @@ static void P_ProcessLineSpecial(line_t *line, mobj_t *mo, sector_t *callsec)
 								camera[i].y += y;
 								camera[i].z += z;
 								camera[i].reset = true;
-								camera[i].subsector = R_PointInSubsector(camera[i].x, camera[i].y);
+								camera[i].subsector = R_PointInSubsectorFast(camera[i].x, camera[i].y);
 								R_RelativeTeleportViewInterpolation(i, x, y, z, 0);
 								break;
 							}
@@ -2616,7 +2602,7 @@ static void P_ProcessLineSpecial(line_t *line, mobj_t *mo, sector_t *callsec)
 
 				for (th = thinkercap.next; th != &thinkercap; th = th->next)
 				{
-					if (th->function.acp1 != (actionf_p1)T_Scroll)
+					if (th->function != (actionf_p1)T_Scroll)
 						continue;
 
 					scroller = (scroll_t *)th;
@@ -2951,7 +2937,7 @@ void P_SetupSignExit(player_t *player)
 	// spin all signposts in the level then.
 	for (think = thinkercap.next; think != &thinkercap; think = think->next)
 	{
-		if (think->function.acp1 != (actionf_p1)P_MobjThinker)
+		if (think->function != (actionf_p1)P_MobjThinker)
 			continue; // not a mobj thinker
 
 		thing = (mobj_t *)think;
@@ -3000,7 +2986,7 @@ boolean P_IsFlagAtBase(mobjtype_t flag)
 
 	for (think = thinkercap.next; think != &thinkercap; think = think->next)
 	{
-		if (think->function.acp1 != (actionf_p1)P_MobjThinker)
+		if (think->function != (actionf_p1)P_MobjThinker)
 			continue; // not a mobj thinker
 
 		mo = (mobj_t *)think;
@@ -3287,9 +3273,10 @@ void P_ProcessSpecialSector(player_t *player, sector_t *sector, sector_t *rovers
 			if (roversector || P_MobjReadyToTrigger(player->mo, sector))
 				P_DamageMobj(player->mo, NULL, NULL, 1);
 			break;
-		case 2: // Damage (Water) // SRB2kart - These three damage types are now offroad sectors
-		case 3: // Damage (Fire)
-		case 4: // Damage (Electrical)
+		// SRB2kart - These three damage types are now offroad sectors
+		case 2: // Offroad (Weak)
+		case 3: // Offroad
+		case 4: // Offroad (Strong)
 			break;
 		case 5: // Spikes
 			// Don't do anything. In Soviet Russia, spikes find you.
@@ -3432,7 +3419,7 @@ void P_ProcessSpecialSector(player_t *player, sector_t *sector, sector_t *rovers
 			// The chimps are my friends.. heeheeheheehehee..... - LouisJM
 			for (th = thinkercap.next; th != &thinkercap; th = th->next)
 			{
-				if (th->function.acp1 != (actionf_p1)P_MobjThinker)
+				if (th->function != (actionf_p1)P_MobjThinker)
 					continue;
 
 				mo2 = (mobj_t *)th;
@@ -3551,6 +3538,7 @@ DoneSection2:
 					for (UINT8 j = 0; j <= splitscreen; ++j)
 					{
 						INT32 id = (j == 0 ? consoleplayer : displayplayers[j]);
+
 						if (player == &players[id])
 						{
 							localangle[j] = player->mo->angle;
@@ -3587,7 +3575,6 @@ DoneSection2:
 					sfxenum_t pick = P_RandomKey(2); // Gotta roll the RNG every time this is called for sync reasons
 					if (cv_kartvoices.value)
 						S_StartSound(player->mo, sfx_kbost1+pick);
-					//K_TauntVoiceTimers(player);
 				}
 			}
 			break;
@@ -3623,8 +3610,6 @@ DoneSection2:
 		case 2: // Special stage GOAL sector / Exit Sector / CTF Flag Return
 			if (player->bot)
 				break;
-			if (!useNightsSS && G_IsSpecialStage(gamemap) && sstimer > 6)
-				sstimer = 6; // Just let P_Ticker take care of the rest.
 
 			// Exit (for FOF exits; others are handled in P_PlayerThink in p_user.c)
 			{
@@ -3750,7 +3735,9 @@ DoneSection2:
 				INT32 sequence;
 				fixed_t speed;
 				INT32 lineindex;
+				thinker_t *th;
 				mobj_t *waypoint = NULL;
+				mobj_t *mo2;
 				angle_t an;
 
 				if (player->mo->tracer && player->mo->tracer->type == MT_TUBEWAYPOINT)
@@ -3769,7 +3756,25 @@ DoneSection2:
 				speed = abs(lines[lineindex].dx)/8;
 				sequence = abs(lines[lineindex].dy)>>FRACBITS;
 
-				waypoint = P_GetFirstWaypoint(sequence);
+				// scan the thinkers
+				// to find the first waypoint
+				for (th = thinkercap.next; th != &thinkercap; th = th->next)
+				{
+					if (th->function != (actionf_p1)P_MobjThinker)
+						continue;
+
+					mo2 = (mobj_t *)th;
+
+					if (mo2->type != MT_TUBEWAYPOINT)
+						continue;
+					if (mo2->threshold != sequence)
+						continue;
+					if (mo2->health != 0)
+						continue;
+
+					waypoint = mo2;
+					break;
+				}
 
 				if (!waypoint)
 				{
@@ -3795,12 +3800,6 @@ DoneSection2:
 
 				if (!(player->mo->state >= &states[S_KART_RUN1] && player->mo->state <= &states[S_KART_RUN2]))
 					P_SetPlayerMobjState(player->mo, S_KART_RUN1);
-
-				//if (!(player->mo->state >= &states[S_PLAY_ATK1] && player->mo->state <= &states[S_PLAY_ATK4])) // SRB2kart
-				//{
-				//	P_SetPlayerMobjState(player->mo, S_PLAY_ATK1);
-				//	S_StartSound(player->mo, sfx_spin);
-				//}
 			}
 			break;
 
@@ -3809,7 +3808,9 @@ DoneSection2:
 				INT32 sequence;
 				fixed_t speed;
 				INT32 lineindex;
+				thinker_t *th;
 				mobj_t *waypoint = NULL;
+				mobj_t *mo2;
 				angle_t an;
 
 				if (player->mo->tracer && player->mo->tracer->type == MT_TUBEWAYPOINT)
@@ -3828,7 +3829,25 @@ DoneSection2:
 				speed = -(abs(lines[lineindex].dx)/8); // Negative means reverse
 				sequence = abs(lines[lineindex].dy)>>FRACBITS;
 
-				waypoint = P_GetLastWaypoint(sequence);
+				// scan the thinkers
+				// to find the last waypoint
+				for (th = thinkercap.next; th != &thinkercap; th = th->next)
+				{
+					if (th->function != (actionf_p1)P_MobjThinker)
+						continue;
+
+					mo2 = (mobj_t *)th;
+
+					if (mo2->type != MT_TUBEWAYPOINT)
+						continue;
+					if (mo2->threshold != sequence)
+						continue;
+
+					if (!waypoint)
+						waypoint = mo2;
+					else if (mo2->health > waypoint->health)
+						waypoint = mo2;
+				}
 
 				if (!waypoint)
 				{
@@ -3870,6 +3889,7 @@ DoneSection2:
 					{
 						if (!playeringame[i] || players[i].spectator)
 							continue;
+
 						nump++;
 					}
 
@@ -3893,7 +3913,7 @@ DoneSection2:
 
 					player->kartstuff[k_lapanimation] = 80;
 
-					if (player->pflags & PF_NIGHTSMODE)
+					if (UNLIKELY(player->pflags & PF_NIGHTSMODE))
 						player->drillmeter += 48*20;
 
 					if (netgame && player->laps >= (UINT8)cv_numlaps.value)
@@ -3936,12 +3956,6 @@ DoneSection2:
 							S_StartSound(NULL, sfx_s221);
 					}
 
-					//player->starpostangle = player->starposttime = player->starpostnum = 0;
-					//player->starpostx = player->starposty = player->starpostz = 0;
-
-					// Play the starpost sound for 'consistency'
-					// S_StartSound(player->mo, sfx_strpst);
-
 					thwompsactive = true; // Lap 2 effects
 					player->grieftime = 0;
 				}
@@ -3979,12 +3993,15 @@ DoneSection2:
 				INT32 sequence;
 				fixed_t speed;
 				INT32 lineindex;
+				thinker_t *th;
 				mobj_t *waypointmid = NULL;
 				mobj_t *waypointhigh = NULL;
 				mobj_t *waypointlow = NULL;
+				mobj_t *mo2;
 				mobj_t *closest = NULL;
 				line_t junk;
 				vertex_t v1, v2, resulthigh, resultlow;
+				mobj_t *highest = NULL;
 
 				if (player->mo->tracer && player->mo->tracer->type == MT_TUBEWAYPOINT)
 					break;
@@ -4024,16 +4041,98 @@ DoneSection2:
 				// Determine the closest spot on the line between the three waypoints
 				// Put player at that location.
 
-				waypointmid = P_GetClosestWaypoint(sequence, player->mo);
+				// scan the thinkers
+				// to find the first waypoint
+				for (th = thinkercap.next; th != &thinkercap; th = th->next)
+				{
+					if (th->function != (actionf_p1)P_MobjThinker)
+						continue;
 
-				if (!waypointmid)
+					mo2 = (mobj_t *)th;
+
+					if (mo2->type != MT_TUBEWAYPOINT)
+						continue;
+
+					if (mo2->threshold != sequence)
+						continue;
+
+					if (!highest)
+						highest = mo2;
+					else if (mo2->health > highest->health) // Find the highest waypoint # in case we wrap
+						highest = mo2;
+
+					if (closest && P_AproxDistance(P_AproxDistance(player->mo->x-mo2->x, player->mo->y-mo2->y),
+						player->mo->z-mo2->z) > P_AproxDistance(P_AproxDistance(player->mo->x-closest->x,
+						player->mo->y-closest->y), player->mo->z-closest->z))
+						continue;
+
+					// Found a target
+					closest = mo2;
+				}
+
+				waypointmid = closest;
+
+				closest = NULL;
+
+				if (waypointmid == NULL)
 				{
 					CONS_Debug(DBG_GAMELOGIC, "ERROR: WAYPOINT(S) IN SEQUENCE %d NOT FOUND.\n", sequence);
 					break;
 				}
 
-				waypointlow = P_GetPreviousWaypoint(waypointmid, true);
-				waypointhigh = P_GetNextWaypoint(waypointmid, true);
+				// Find waypoint before this one (waypointlow)
+				for (th = thinkercap.next; th != &thinkercap; th = th->next)
+				{
+					if (th->function != (actionf_p1)P_MobjThinker)
+						continue;
+
+					mo2 = (mobj_t *)th;
+
+					if (mo2->type != MT_TUBEWAYPOINT)
+						continue;
+
+					if (mo2->threshold != sequence)
+						continue;
+
+					if (waypointmid->health == 0)
+					{
+						if (mo2->health != highest->health)
+							continue;
+					}
+					else if (mo2->health != waypointmid->health - 1)
+						continue;
+
+					// Found a target
+					waypointlow = mo2;
+					break;
+				}
+
+				// Find waypoint after this one (waypointhigh)
+				for (th = thinkercap.next; th != &thinkercap; th = th->next)
+				{
+					if (th->function != (actionf_p1)P_MobjThinker)
+						continue;
+
+					mo2 = (mobj_t *)th;
+
+					if (mo2->type != MT_TUBEWAYPOINT)
+						continue;
+
+					if (mo2->threshold != sequence)
+						continue;
+
+					if (waypointmid->health == highest->health)
+					{
+						if (mo2->health != 0)
+							continue;
+					}
+					else if (mo2->health != waypointmid->health + 1)
+						continue;
+
+					// Found a target
+					waypointhigh = mo2;
+					break;
+				}
 
 				CONS_Debug(DBG_GAMELOGIC, "WaypointMid: %d; WaypointLow: %d; WaypointHigh: %d\n",
 								waypointmid->health, waypointlow ? waypointlow->health : -1, waypointhigh ? waypointhigh->health : -1);
@@ -4084,7 +4183,6 @@ DoneSection2:
 
 				if (lines[lineindex].flags & ML_EFFECT1) // Don't wrap
 				{
-					mobj_t *highest = P_GetLastWaypoint(sequence);
 					highest->flags |= MF_SLIDEME;
 				}
 
@@ -4096,7 +4194,7 @@ DoneSection2:
 					player->mo->y = resulthigh.y;
 					player->mo->z = resulthigh.z - P_GetPlayerHeight(player);
 				}
-				else if ((lines[lineindex].flags & ML_EFFECT1) && waypointmid->health == numwaypoints[sequence] - 1)
+				else if ((lines[lineindex].flags & ML_EFFECT1) && waypointmid->health == highest->health)
 				{
 					closest = waypointmid;
 					player->mo->x = resultlow.x;
@@ -4421,14 +4519,6 @@ static void P_RunSpecialSectorCheck(player_t *player, sector_t *sector)
 	switch(GETSECSPECIAL(sector->special, 4))
 	{
 		case 2: // Level Exit / GOAL Sector / Flag Return
-			if (!useNightsSS && G_IsSpecialStage(gamemap))
-			{
-				// Special stage GOAL sector
-				// requires touching floor.
-				break;
-			}
-			/* FALLTHRU */
-
 		case 1: // Starpost activator
 		case 5: // Fan sector
 		case 6: // Super Sonic Transform
@@ -4698,11 +4788,11 @@ static ffloor_t *P_AddFakeFloor(sector_t *sec, sector_t *sec2, line_t *master, f
 	i = 0;
 	th = thinkercap.next;
 
-	for(;;)
+	for (;;)
 	{
-		if(secthinkers)
+		if (secthinkers)
 		{
-			if(i < secthinkers[sec2num].count)
+			if (i < secthinkers[sec2num].count)
 				th = secthinkers[sec2num].thinkers[i];
 			else break;
 		}
@@ -4710,7 +4800,7 @@ static ffloor_t *P_AddFakeFloor(sector_t *sec, sector_t *sec2, line_t *master, f
 			break;
 
 		// Should this FOF have spikeness?
-		if (th->function.acp1 == (actionf_p1)T_SpikeSector)
+		if (th->function == (actionf_p1)T_SpikeSector)
 		{
 			lst = (levelspecthink_t *)th;
 
@@ -4718,7 +4808,7 @@ static ffloor_t *P_AddFakeFloor(sector_t *sec, sector_t *sec2, line_t *master, f
 				P_AddSpikeThinker(sec, (INT32)sec2num);
 		}
 		// Should this FOF have friction?
-		else if(th->function.acp1 == (actionf_p1)T_Friction)
+		else if(th->function == (actionf_p1)T_Friction)
 		{
 			f = (friction_t *)th;
 
@@ -4726,7 +4816,7 @@ static ffloor_t *P_AddFakeFloor(sector_t *sec, sector_t *sec2, line_t *master, f
 				Add_Friction(f->friction, f->movefactor, (INT32)(sec-sectors), f->affectee);
 		}
 		// Should this FOF have wind/current/pusher?
-		else if(th->function.acp1 == (actionf_p1)T_Pusher)
+		else if(th->function == (actionf_p1)T_Pusher)
 		{
 			p = (pusher_t *)th;
 
@@ -4734,8 +4824,10 @@ static ffloor_t *P_AddFakeFloor(sector_t *sec, sector_t *sec2, line_t *master, f
 				Add_Pusher(p->type, p->x_mag<<FRACBITS, p->y_mag<<FRACBITS, p->source, (INT32)(sec-sectors), p->affectee, p->exclusive, p->slider);
 		}
 
-		if(secthinkers) i++;
-		else th = th->next;
+		if (secthinkers)
+			i++;
+		else
+			th = th->next;
 	}
 
 	if (flags & FF_TRANSLUCENT)
@@ -4815,7 +4907,7 @@ static void P_AddSpikeThinker(sector_t *sec, INT32 referrer)
 	spikes = Z_Calloc(sizeof (*spikes), PU_LEVSPEC, NULL);
 	P_AddThinker(&spikes->thinker);
 
-	spikes->thinker.function.acp1 = (actionf_p1)T_SpikeSector;
+	spikes->thinker.function = (actionf_p1)T_SpikeSector;
 
 	spikes->sector = sec;
 	spikes->vars[0] = referrer;
@@ -4837,7 +4929,7 @@ static void P_AddFloatThinker(sector_t *sec, INT32 tag, line_t *sourceline)
 	floater = Z_Calloc(sizeof (*floater), PU_LEVSPEC, NULL);
 	P_AddThinker(&floater->thinker);
 
-	floater->thinker.function.acp1 = (actionf_p1)T_FloatSector;
+	floater->thinker.function = (actionf_p1)T_FloatSector;
 
 	floater->sector = sec;
 	floater->vars[0] = tag;
@@ -4866,7 +4958,7 @@ static void P_AddBlockThinker(sector_t *sec, line_t *sourceline)
 	block = Z_Calloc(sizeof (*block), PU_LEVSPEC, NULL);
 	P_AddThinker(&block->thinker);
 
-	block->thinker.function.acp1 = (actionf_p1)T_MarioBlockChecker;
+	block->thinker.function = (actionf_p1)T_MarioBlockChecker;
 	block->sourceline = sourceline;
 
 	block->sector = sec;
@@ -4895,7 +4987,7 @@ static void P_AddRaiseThinker(sector_t *sec, line_t *sourceline)
 	raise = Z_Calloc(sizeof (*raise), PU_LEVSPEC, NULL);
 	P_AddThinker(&raise->thinker);
 
-	raise->thinker.function.acp1 = (actionf_p1)T_RaiseSector;
+	raise->thinker.function = (actionf_p1)T_RaiseSector;
 
 	if (sourceline->flags & ML_BLOCKMONSTERS)
 		raise->vars[0] = 1;
@@ -4938,7 +5030,7 @@ static void P_AddOldAirbob(sector_t *sec, line_t *sourceline, boolean noadjust)
 	airbob = Z_Calloc(sizeof (*airbob), PU_LEVSPEC, NULL);
 	P_AddThinker(&airbob->thinker);
 
-	airbob->thinker.function.acp1 = (actionf_p1)T_RaiseSector;
+	airbob->thinker.function = (actionf_p1)T_RaiseSector;
 
 	// set up the fields
 	airbob->sector = sec;
@@ -5003,7 +5095,7 @@ static inline void P_AddThwompThinker(sector_t *sec, sector_t *actionsector, lin
 	thwomp = Z_Calloc(sizeof (*thwomp), PU_LEVSPEC, NULL);
 	P_AddThinker(&thwomp->thinker);
 
-	thwomp->thinker.function.acp1 = (actionf_p1)T_ThwompSector;
+	thwomp->thinker.function = (actionf_p1)T_ThwompSector;
 
 	// set up the fields according to the type of elevator action
 	thwomp->sector = sec;
@@ -5044,7 +5136,7 @@ static inline void P_AddNoEnemiesThinker(sector_t *sec, line_t *sourceline)
 	nobaddies = Z_Calloc(sizeof (*nobaddies), PU_LEVSPEC, NULL);
 	P_AddThinker(&nobaddies->thinker);
 
-	nobaddies->thinker.function.acp1 = (actionf_p1)T_NoEnemiesSector;
+	nobaddies->thinker.function = (actionf_p1)T_NoEnemiesSector;
 
 	nobaddies->sector = sec;
 	nobaddies->sourceline = sourceline;
@@ -5066,7 +5158,7 @@ static inline void P_AddEachTimeThinker(sector_t *sec, line_t *sourceline)
 	eachtime = Z_Calloc(sizeof (*eachtime), PU_LEVSPEC, NULL);
 	P_AddThinker(&eachtime->thinker);
 
-	eachtime->thinker.function.acp1 = (actionf_p1)T_EachTimeThinker;
+	eachtime->thinker.function = (actionf_p1)T_EachTimeThinker;
 
 	eachtime->sector = sec;
 	eachtime->sourceline = sourceline;
@@ -5088,7 +5180,7 @@ static inline void P_AddCameraScanner(sector_t *sourcesec, sector_t *actionsecto
 	elevator = Z_Calloc(sizeof (*elevator), PU_LEVSPEC, NULL);
 	P_AddThinker(&elevator->thinker);
 
-	elevator->thinker.function.acp1 = (actionf_p1)T_CameraScanner;
+	elevator->thinker.function = (actionf_p1)T_CameraScanner;
 	elevator->type = elevateBounce;
 
 	// set up the fields according to the type of elevator action
@@ -5124,11 +5216,10 @@ void T_LaserFlash(laserthink_t *flash)
 
 	sourcesec = ffloor->master->frontsector; // Less to type!
 
-	top = (*ffloor->t_slope) ? P_GetZAt(*ffloor->t_slope, sector->soundorg.x, sector->soundorg.y)
-			: *ffloor->topheight;
-	bottom = (*ffloor->b_slope) ? P_GetZAt(*ffloor->b_slope, sector->soundorg.x, sector->soundorg.y)
-			: *ffloor->bottomheight;
+	top    = P_GetFFloorTopZAt   (ffloor, sector->soundorg.x, sector->soundorg.y);
+	bottom = P_GetFFloorBottomZAt(ffloor, sector->soundorg.x, sector->soundorg.y);
 	sector->soundorg.z = (top + bottom)/2;
+
 	S_StartSound(&sector->soundorg, sfx_laser);
 
 	// Seek out objects to DESTROY! MUAHAHHAHAHAA!!!*cough*
@@ -5178,7 +5269,7 @@ static inline void EV_AddLaserThinker(sector_t *sec, sector_t *sec2, line_t *lin
 
 	P_AddThinker(&flash->thinker);
 
-	flash->thinker.function.acp1 = (actionf_p1)T_LaserFlash;
+	flash->thinker.function = (actionf_p1)T_LaserFlash;
 	flash->ffloor = ffloor;
 	flash->sector = sec; // For finding mobjs
 	flash->sec = sec2;
@@ -5292,11 +5383,11 @@ void P_SpawnSpecials(INT32 fromnetsave, boolean reloadinggamestate)
 	// Firstly, find out how many there are in each sector
 	for (th = thinkercap.next; th != &thinkercap; th = th->next)
 	{
-		if (th->function.acp1 == (actionf_p1)T_SpikeSector)
+		if (th->function == (actionf_p1)T_SpikeSector)
 			secthinkers[((levelspecthink_t *)th)->sector - sectors].count++;
-		else if (th->function.acp1 == (actionf_p1)T_Friction)
+		else if (th->function == (actionf_p1)T_Friction)
 			secthinkers[((friction_t *)th)->affectee].count++;
-		else if (th->function.acp1 == (actionf_p1)T_Pusher)
+		else if (th->function == (actionf_p1)T_Pusher)
 			secthinkers[((pusher_t *)th)->affectee].count++;
 	}
 
@@ -5314,11 +5405,11 @@ void P_SpawnSpecials(INT32 fromnetsave, boolean reloadinggamestate)
 	{
 		size_t secnum = (size_t)-1;
 
-		if (th->function.acp1 == (actionf_p1)T_SpikeSector)
+		if (th->function == (actionf_p1)T_SpikeSector)
 			secnum = ((levelspecthink_t *)th)->sector - sectors;
-		else if (th->function.acp1 == (actionf_p1)T_Friction)
+		else if (th->function == (actionf_p1)T_Friction)
 			secnum = ((friction_t *)th)->affectee;
-		else if (th->function.acp1 == (actionf_p1)T_Pusher)
+		else if (th->function == (actionf_p1)T_Pusher)
 			secnum = ((pusher_t *)th)->affectee;
 
 		if (secnum != (size_t)-1)
@@ -6261,6 +6352,7 @@ static void P_AddFakeFloorsByLine(size_t line, ffloortype_e ffloorflags, thinker
 static void P_DoScrollMove(mobj_t *thing, fixed_t dx, fixed_t dy, INT32 exclusive)
 {
 	fixed_t fuckaj = 0; // Nov 05 14:12:08 <+MonsterIestyn> I've heard of explicitly defined variables but this is ridiculous
+
 	if (thing->player)
 	{
 		if (!(dx | dy))
@@ -6282,7 +6374,8 @@ static void P_DoScrollMove(mobj_t *thing, fixed_t dx, fixed_t dy, INT32 exclusiv
 	else if (thing->friction != ORIG_FRICTION)
 		fuckaj = thing->friction;
 
-	if (fuckaj) {
+	if (fuckaj)
+	{
 		// refactor thrust for new friction
 		dx = FixedDiv(dx, CARRYFACTOR);
 		dy = FixedDiv(dy, CARRYFACTOR);
@@ -6340,9 +6433,6 @@ void T_Scroll(scroll_t *s)
 		s->vdx = dx += s->vdx;
 		s->vdy = dy += s->vdy;
 	}
-
-//	if (!(dx | dy)) // no-op if both (x,y) offsets 0
-//		return;
 
 	switch (s->type)
 	{
@@ -6543,7 +6633,7 @@ void T_Scroll(scroll_t *s)
 static void Add_Scroller(INT32 type, fixed_t dx, fixed_t dy, INT32 control, INT32 affectee, INT32 accel, INT32 exclusive)
 {
 	scroll_t *s = Z_Calloc(sizeof *s, PU_LEVSPEC, NULL);
-	s->thinker.function.acp1 = (actionf_p1)T_Scroll;
+	s->thinker.function = (actionf_p1)T_Scroll;
 	s->type = type;
 	s->dx = dx;
 	s->dy = dy;
@@ -6619,27 +6709,21 @@ static void P_SpawnScrollers(void)
 		// this linedef controls the direction and speed of the scrolling. The
 		// most complicated linedef since donuts, but powerful :)
 
-		if (special == 515 || special == 512 || special == 522 || special == 532 || special == 504) // displacement scrollers
+		switch (special)
 		{
-			special -= 2;
-			control = (INT32)(sides[*l->sidenum].sector - sectors);
-		}
-		else if (special == 514 || special == 511 || special == 521 || special == 531 || special == 503) // accelerative scrollers
-		{
-			special--;
-			accel = 1;
-			control = (INT32)(sides[*l->sidenum].sector - sectors);
-		}
-		else if (special == 535 || special == 525) // displacement scrollers
-		{
-			special -= 2;
-			control = (INT32)(sides[*l->sidenum].sector - sectors);
-		}
-		else if (special == 534 || special == 524) // accelerative scrollers
-		{
-			accel = 1;
-			special--;
-			control = (INT32)(sides[*l->sidenum].sector - sectors);
+			case 515: case 512: case 522: case 532: case 504:
+			case 535: case 525: // displacement scrollers
+
+				special -= 2;
+				control = (INT32)(sides[*l->sidenum].sector - sectors);
+				break;
+
+			case 514: case 511: case 521: case 531: case 503:
+			case 534: case 524: // accelerative scrollers
+				special--;
+				accel = 1;
+				control = (INT32)(sides[*l->sidenum].sector - sectors);
+				break;
 		}
 
 		switch (special)
@@ -6719,7 +6803,7 @@ static void Add_MasterDisappearer(tic_t appeartime, tic_t disappeartime, tic_t o
 {
 	disappear_t *d = Z_Malloc(sizeof *d, PU_LEVSPEC, NULL);
 
-	d->thinker.function.acp1 = (actionf_p1)T_Disappear;
+	d->thinker.function = (actionf_p1)T_Disappear;
 	d->appeartime = appeartime;
 	d->disappeartime = disappeartime;
 	d->offset = offset;
@@ -6764,10 +6848,7 @@ void T_Disappear(disappear_t *d)
 
 					if (!(lines[d->sourceline].flags & ML_NOCLIMB))
 					{
-						if (*rover->t_slope)
-							sectors[s].soundorg.z = P_GetZAt(*rover->t_slope, sectors[s].soundorg.x, sectors[s].soundorg.y);
-						else
-							sectors[s].soundorg.z = *rover->topheight;
+						sectors[s].soundorg.z = P_GetFFloorTopZAt(rover, sectors[s].soundorg.x, sectors[s].soundorg.y);
 						S_StartSound(&sectors[s].soundorg, sfx_appear);
 					}
 				}
@@ -6807,7 +6888,7 @@ static void Add_Friction(INT32 friction, INT32 movefactor, INT32 affectee, INT32
 {
 	friction_t *f = Z_Calloc(sizeof *f, PU_LEVSPEC, NULL);
 
-	f->thinker.function.acp1 = (actionf_p1)T_Friction;
+	f->thinker.function = (actionf_p1)T_Friction;
 	f->friction = friction;
 	f->movefactor = movefactor;
 	f->affectee = affectee;
@@ -6962,7 +7043,7 @@ static void Add_Pusher(pushertype_e type, fixed_t x_mag, fixed_t y_mag, mobj_t *
 {
 	pusher_t *p = Z_Calloc(sizeof *p, PU_LEVSPEC, NULL);
 
-	p->thinker.function.acp1 = (actionf_p1)T_Pusher;
+	p->thinker.function = (actionf_p1)T_Pusher;
 	p->source = source;
 	p->type = type;
 	p->x_mag = x_mag>>FRACBITS;
@@ -7022,7 +7103,7 @@ static inline boolean PIT_PushThing(mobj_t *thing)
 		return false;
 
 	// Allow this to affect pushable objects at some point?
-	if (thing->player && (!(thing->flags & (MF_NOGRAVITY | MF_NOCLIP)) || thing->player->pflags & PF_NIGHTSMODE))
+	if (thing->player && (!(thing->flags & (MF_NOGRAVITY | MF_NOCLIP)) || UNLIKELY(thing->player->pflags & PF_NIGHTSMODE)))
 	{
 		INT32 dist;
 		INT32 speed;
@@ -7053,7 +7134,7 @@ static inline boolean PIT_PushThing(mobj_t *thing)
 		// Written with bits and pieces of P_HomingAttack
 		if ((speed > 0) && (P_CheckSight(thing, tmpusher->source)))
 		{
-			if (!(thing->player->pflags & PF_NIGHTSMODE))
+			if (LIKELY(!(thing->player->pflags & PF_NIGHTSMODE)))
 			{
 				// only push wrt Z if health & 1 (mapthing has ambush flag)
 				if (tmpusher->source->health & 1)
