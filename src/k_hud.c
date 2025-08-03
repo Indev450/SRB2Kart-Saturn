@@ -1699,7 +1699,7 @@ static void K_drawKartItem(void)
 			switch (stplyr->kartstuff[k_itemblinkmode])
 			{
 				case 2:
-					localcolor = (UINT8)(1 + (leveltime % (MAXSKINCOLORS-1)));
+					localcolor = K_RainbowColor();
 					break;
 				case 1:
 					localcolor = SKINCOLOR_RED;
@@ -4098,7 +4098,7 @@ static void K_drawKartFirstPerson(void)
 
 		// drift sparks!
 		if ((leveltime & 1) && (stplyr->kartstuff[k_driftcharge] >= dsthree))
-			colmap = R_GetTranslationColormap(TC_RAINBOW, (UINT8)(1 + (leveltime % (MAXSKINCOLORS-1))), GTC_CACHE);
+			colmap = R_GetTranslationColormap(TC_RAINBOW, K_RainbowColor(), GTC_CACHE);
 		else if ((leveltime & 1) && (stplyr->kartstuff[k_driftcharge] >= dstwo))
 			colmap = R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_KETCHUP, GTC_CACHE);
 		else if ((leveltime & 1) && (stplyr->kartstuff[k_driftcharge] >= dsone))

@@ -484,6 +484,15 @@ UINT8 colortranslations[MAXTRANSLATIONS][16] = {
 	{120, 120,  96,  96,  97,  98,  98,  99,  81,  81,  69,  71,  73,  75,  77,  79}, // SKINCOLOR_CSUPER5
 };
 
+//
+// Gives you a color to use for rainbow effects (like invincibility).
+// Return: Skincolor value.
+//
+UINT8 K_RainbowColor(void)
+{
+	return (UINT8)(1 + (leveltime % (MAXSKINCOLORS-1)));
+}
+
 // Define for getting accurate color brightness readings according to how the human eye sees them.
 // https://en.wikipedia.org/wiki/Relative_luminance
 // 0.2126 to red
@@ -645,36 +654,46 @@ UINT8 K_GetKartColorByName(const char *name)
 	return 0;
 }
 
+//
 // returns the players skinnumber
 // accounts for localskins
+//
 INT32 K_GetSkinNum(player_t *player)
 {
 	return player->localskin ? (player->localskin - 1) : player->skin;
 }
 
+//
 // returns the mobj skinnumber
 // accounts for localskins
+//
 INT32 K_GetMobjSkinNum(const skin_t *skin, boolean local)
 {
 	return skin - K_GetSkinArray(local);
 }
 
+//
 // returns the players skinnumber
 // accounts for localskins
+//
 skin_t *K_GetMobjSkin(const mobj_t *mobj)
 {
 	return mobj->localskin ? mobj->localskin : mobj->skin;
 }
 
+//
 // returns the skin array to use
 // accounts for localskins
+//
 skin_t *K_GetSkinArray(boolean local)
 {
 	return local ? localskins : skins;
 }
 
+//
 // returns the players skin
 // accounts for localskins
+//
 skin_t *K_GetPlayerSkin(player_t *player)
 {
 	return &K_GetSkinArray(player->skinlocal)[K_GetSkinNum(player)];
@@ -3084,7 +3103,7 @@ static UINT16 K_DriftSparkColor(player_t *player, INT32 charge)
 
 	if (charge >= K_GetKartDriftSparkValue(player)*4)
 	{
-		color = (UINT8)(1 + (leveltime % (MAXSKINCOLORS-1)));
+		color = K_RainbowColor();
 	}
 	else if (charge >= K_GetKartDriftSparkValue(player)*2)
 	{
@@ -5371,7 +5390,7 @@ static UINT8 K_GetSpeedLineColor(player_t *player, boolean colorSpeed)
 			else if (player->kartstuff[k_driftboost] <= 50)
 				speedcolor = SKINCOLOR_RASPBERRY;
 			else if (player->kartstuff[k_driftboost] <= 125)
-				speedcolor = (UINT8)(1 + (leveltime % (MAXSKINCOLORS-1)));
+				speedcolor = K_RainbowColor();
 
 			if (cv_coloredspeedlines.value == 2)
 				speedcolor = (leveltime & 1) ? playercolor : speedcolor;
