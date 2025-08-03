@@ -236,7 +236,7 @@ static int lib_pRandomChance(lua_State *L)
 // P_MAPUTIL
 ///////////////
 
-static int lib_pAproxDistance(lua_State *L)
+FUNCINLINE static ATTRINLINE int lib_pAproxDistance(lua_State *L)
 {
 	fixed_t dx = luaL_checkfixed(L, 1);
 	fixed_t dy = luaL_checkfixed(L, 2);
@@ -1643,7 +1643,7 @@ static int lib_evCrumbleChain(lua_State *L)
 // P_SLOPES
 ////////////
 
-static int lib_pGetZAt(lua_State *L)
+FUNCINLINE static ATTRINLINE int lib_pGetZAt(lua_State *L)
 {
 	pslope_t *slope = *((pslope_t **)luaL_checkudata(L, 1, META_SLOPE));
 	fixed_t x = luaL_checkfixed(L, 2);
@@ -1659,7 +1659,7 @@ static int lib_pGetZAt(lua_State *L)
 // R_DEFS
 ////////////
 
-static int lib_rPointToAngle(lua_State *L)
+FUNCINLINE static ATTRINLINE int lib_rPointToAngle(lua_State *L)
 {
 	fixed_t x = luaL_checkfixed(L, 1);
 	fixed_t y = luaL_checkfixed(L, 2);
@@ -1668,7 +1668,7 @@ static int lib_rPointToAngle(lua_State *L)
 	return 1;
 }
 
-static int lib_rPointToAngle2(lua_State *L)
+FUNCINLINE static ATTRINLINE int lib_rPointToAngle2(lua_State *L)
 {
 	fixed_t px2 = luaL_checkfixed(L, 1);
 	fixed_t py2 = luaL_checkfixed(L, 2);
@@ -1679,7 +1679,7 @@ static int lib_rPointToAngle2(lua_State *L)
 	return 1;
 }
 
-static int lib_rPointToDist(lua_State *L)
+FUNCINLINE static ATTRINLINE int lib_rPointToDist(lua_State *L)
 {
 	fixed_t x = luaL_checkfixed(L, 1);
 	fixed_t y = luaL_checkfixed(L, 2);
@@ -1688,7 +1688,7 @@ static int lib_rPointToDist(lua_State *L)
 	return 1;
 }
 
-static int lib_rPointToDist2(lua_State *L)
+FUNCINLINE static ATTRINLINE int lib_rPointToDist2(lua_State *L)
 {
 	fixed_t px2 = luaL_checkfixed(L, 1);
 	fixed_t py2 = luaL_checkfixed(L, 2);
@@ -1699,7 +1699,7 @@ static int lib_rPointToDist2(lua_State *L)
 	return 1;
 }
 
-static int lib_rPointInSubsector(lua_State *L)
+FUNCINLINE static ATTRINLINE int lib_rPointInSubsector(lua_State *L)
 {
 	fixed_t x = luaL_checkfixed(L, 1);
 	fixed_t y = luaL_checkfixed(L, 2);

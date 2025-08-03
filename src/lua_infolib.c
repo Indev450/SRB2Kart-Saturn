@@ -62,7 +62,7 @@ static int lib_getSprname(lua_State *L)
 }
 
 /// \todo Maybe make it tally up the used_spr from dehacked?
-static int lib_sprnamelen(lua_State *L)
+FUNCINLINE static ATTRINLINE int lib_sprnamelen(lua_State *L)
 {
 	lua_pushinteger(L, NUMSPRITES);
 	return 1;
@@ -122,7 +122,7 @@ static void A_Lua(mobj_t *actor)
 }
 
 // Arbitrary states[] table index -> state_t *
-static int lib_getState(lua_State *L)
+FUNCINLINE static ATTRINLINE int lib_getState(lua_State *L)
 {
 	UINT32 i;
 	lua_remove(L, 1);
@@ -214,7 +214,7 @@ static int lib_setState(lua_State *L)
 }
 
 // #states -> NUMSTATES
-static int lib_statelen(lua_State *L)
+FUNCINLINE static ATTRINLINE int lib_statelen(lua_State *L)
 {
 	lua_pushinteger(L, NUMSTATES);
 	return 1;
@@ -482,7 +482,7 @@ static int state_num(lua_State *L)
 ///////////////
 
 // Arbitrary mobjinfo[] table index -> mobjinfo_t *
-static int lib_getMobjInfo(lua_State *L)
+FUNCINLINE static ATTRINLINE int lib_getMobjInfo(lua_State *L)
 {
 	UINT32 i;
 	lua_remove(L, 1);
@@ -593,7 +593,7 @@ static int lib_setMobjInfo(lua_State *L)
 }
 
 // #mobjinfo -> NUMMOBJTYPES
-static int lib_mobjinfolen(lua_State *L)
+FUNCINLINE static ATTRINLINE int lib_mobjinfolen(lua_State *L)
 {
 	lua_pushinteger(L, NUMMOBJTYPES);
 	return 1;
@@ -869,7 +869,7 @@ static int mobjinfo_set(lua_State *L)
 }
 
 // mobjinfo_t * -> MT_*
-static int mobjinfo_num(lua_State *L)
+FUNCINLINE static ATTRINLINE int mobjinfo_num(lua_State *L)
 {
 	mobjinfo_t *info = *((mobjinfo_t **)luaL_checkudata(L, 1, META_MOBJINFO));
 
@@ -885,7 +885,7 @@ static int mobjinfo_num(lua_State *L)
 //////////////
 
 // Arbitrary S_sfx[] table index -> sfxinfo_t *
-static int lib_getSfxInfo(lua_State *L)
+FUNCINLINE static ATTRINLINE int lib_getSfxInfo(lua_State *L)
 {
 	UINT32 i;
 	lua_remove(L, 1);
@@ -988,7 +988,7 @@ static int lib_setSfxInfo(lua_State *L)
 	return 0;
 }
 
-static int lib_sfxlen(lua_State *L)
+FUNCINLINE static ATTRINLINE int lib_sfxlen(lua_State *L)
 {
 	lua_pushinteger(L, NUMSFX);
 	return 1;
@@ -1062,7 +1062,7 @@ static int sfxinfo_set(lua_State *L)
 	return 0;
 }
 
-static int sfxinfo_num(lua_State *L)
+FUNCINLINE static ATTRINLINE int sfxinfo_num(lua_State *L)
 {
 	sfxinfo_t *sfx = *((sfxinfo_t **)luaL_checkudata(L, 1, META_SFXINFO));
 
