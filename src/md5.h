@@ -35,15 +35,21 @@
 typedef uint32_t md5_uint32;
 typedef uintptr_t md5_uintptr;
 
+#if defined (__THROW)
+#define THROWFUNC __THROW
+#else
+#define THROWFUNC
+#endif
+
 /*	Compute MD5 message digest for bytes read from STREAM.  The
 	resulting message digest number will be written into the 16 bytes
 	beginning at RESBLOCK.  */
-int md5_stream(FILE *stream, void *resblock) __THROW;
+int md5_stream(FILE *stream, void *resblock) THROWFUNC;
 
 /*	Compute MD5 message digest for LEN bytes beginning at BUFFER.  The
 	result is always in little endian byte order, so that a byte-wise
 	output yields to the wanted ASCII representation of the message
 	digest.  */
-extern void *md5_buffer(const char *buffer, size_t len, void *resblock) __THROW;
+extern void *md5_buffer(const char *buffer, size_t len, void *resblock) THROWFUNC;
 
 #endif /* md5.h */
