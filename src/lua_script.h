@@ -48,7 +48,9 @@ void LUA_LoadLump(UINT16 wad, UINT16 lump);
 #ifdef LUA_ALLOW_BYTECODE
 void LUA_DumpFile(const char *filename);
 #endif
+fixed_t LUA_EvalMathEx(const char *word, const char **error);
 fixed_t LUA_EvalMath(const char *word);
+fixed_t LUA_GetConstant(const char *word);
 
 // Need better name for this ;-;
 void LUA_InvalidateMathlibCache(const char *name);
