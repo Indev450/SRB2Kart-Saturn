@@ -1138,6 +1138,33 @@ static boolean K_UseColorSpeedo(int speedostyle)
 	}
 }
 
+enum
+{
+	GAUGE_DEFAULT = 1,
+	GAUGE_SMALL,
+	GAUGE_BIGNUM,
+	GAUGE_NUMONLY,
+	GAUGE_EXTRA,
+};
+
+static SINT8 K_GetDriftgaugeStyle(void)
+{
+	if (driftgaugegfx)
+	{
+		if (cv_driftgaugestyle.value == 1)
+			return GAUGE_DEFAULT;
+		else if (cv_driftgaugestyle.value == 2)
+			return GAUGE_SMALL;
+		else if (cv_driftgaugestyle.value == 3)
+			return GAUGE_BIGNUM;
+		else if (cv_driftgaugestyle.value == 5 && xtra_speedo3)
+			return GAUGE_EXTRA;
+	}
+
+	// Fallback
+	return GAUGE_NUMONLY; // (cv_driftgaugestyle.value == 4)
+}
+
 static boolean K_IsHighResolution(void)
 {
 	return (vid.width >= 640 && vid.height >= 400);
@@ -3161,7 +3188,7 @@ static void K_drawDriftGauge(void)
 	fixed_t basex, basey;
 	const int dup = vid.dupx;
 	int i;
-	UINT8 *cmap;
+	UINT8 *colormap = NULL;
 
 	static const UINT8 driftcolors[3][4] = {
 		{0, 0, 10, 16},       // no drift
@@ -3207,23 +3234,21 @@ skipcrap:
 	const INT32 driftcharge = min(driftval*4, stplyr->kartstuff[k_driftcharge]);
 	const INT32 driftlevel  = min(driftcharge / driftval, 2);
 	const INT32 drifttrans  = ((cv_driftgaugetrans.value) ? V_LocalTransFlag() : 0);
+	const SINT8 gaugestyle  = K_GetDriftgaugeStyle();
 
 	basex = pos.x>>FRACBITS;
 	basey = pos.y>>FRACBITS;
 
-	switch (cv_driftgaugestyle.value)
+	switch (gaugestyle)
 	{
-		case 1:
-		case 2:
-		case 3:
-		case 5:
+		case GAUGE_DEFAULT:
+		case GAUGE_SMALL:
+		case GAUGE_EXTRA:
+		case GAUGE_BIGNUM:
 			{
-				if (!driftgaugegfx)
-					break;
+				patch_t *driftpatch = NULL;
 
-				const boolean usescaledpatch = (cv_driftgaugestyle.value == 5 && xtra_speedo3);
-
-				if (cv_driftgaugestyle.value == 1 || cv_driftgaugestyle.value == 3 || usescaledpatch)
+				if (gaugestyle == GAUGE_DEFAULT || gaugestyle == GAUGE_BIGNUM || gaugestyle == GAUGE_EXTRA)
 				{
 					barx = basex - dup*23;
 					BAR_WIDTH = dup*47;
@@ -3236,40 +3261,44 @@ skipcrap:
 
 				bary = basey - dup*2;
 
-				if (usescaledpatch) // i hate hud code i hate hud code i hate hud code i hate hud code i hate hud code.....
+				if (gaugestyle == GAUGE_EXTRA) // i hate hud code i hate hud code i hate hud code i hate hud code i hate hud code.....
 				{
-					if (K_UseColorSpeedo(SPEEDO_EXTRA3)) // Colourized hud
+					if (K_UseColorSpeedo(SPEEDO_EXTRA3)) // We reuse the extra speedometer patch hence this check
 					{
-						UINT8 *colormap = R_GetTranslationColormap(TC_DEFAULT, K_GetHudColor(), GTC_CACHE);
-						V_DrawStretchyFixedPatch((basex - dup*30)<<FRACBITS, ((basey<<FRACBITS) - FixedMul(dup<<FRACBITS, 21*FRACUNIT/10)), XTRA3PSCALE, XTRA3VSCALE, V_NOSCALESTART|V_OFFSET|drifttrans, skp_smallstickerclr3, colormap, 0);
+						colormap = R_GetTranslationColormap(TC_DEFAULT, K_GetHudColor(), GTC_CACHE);
+						driftpatch = skp_smallstickerclr3;
 					}
 					else
-						V_DrawStretchyFixedPatch((basex - dup*30)<<FRACBITS, ((basey<<FRACBITS) - FixedMul(dup<<FRACBITS, 21*FRACUNIT/10)), XTRA3PSCALE, XTRA3VSCALE, V_NOSCALESTART|V_OFFSET|drifttrans, skp_smallsticker3, NULL, 0);
+						driftpatch = skp_smallsticker3;
+
+					V_DrawStretchyFixedPatch((basex - dup*30)<<FRACBITS, ((basey<<FRACBITS) - FixedMul(dup<<FRACBITS, 21*FRACUNIT/10)), XTRA3PSCALE, XTRA3VSCALE, V_NOSCALESTART|V_OFFSET|drifttrans, driftpatch, colormap, 0);
 				}
 				else
 				{
 					if (K_UseColorHud()) // Colourized hud
 					{
-						UINT8 *colormap = R_GetTranslationColormap(TC_DEFAULT, K_GetHudColor(), GTC_CACHE);
-						V_DrawMappedPatch(cv_driftgaugestyle.value == 2 ? basex + dup*11 : basex, basey, V_NOSCALESTART|V_OFFSET|drifttrans, cv_driftgaugestyle.value == 2 ? driftgaugesmallcolor : driftgaugecolor, colormap);
+						colormap = R_GetTranslationColormap(TC_DEFAULT, K_GetHudColor(), GTC_CACHE);
+						driftpatch = (gaugestyle == GAUGE_SMALL ? driftgaugesmallcolor : driftgaugecolor);
 					}
 					else
-						V_DrawMappedPatch(cv_driftgaugestyle.value == 2 ? basex + dup*11 : basex, basey, V_NOSCALESTART|V_OFFSET|drifttrans, cv_driftgaugestyle.value == 2 ? driftgaugesmall : driftgauge, NULL);
+						driftpatch = (gaugestyle == GAUGE_SMALL ? driftgaugesmall : driftgauge);
+
+					V_DrawMappedPatch(gaugestyle == GAUGE_SMALL ? basex + dup*11 : basex, basey, V_NOSCALESTART|V_OFFSET|drifttrans, driftpatch, colormap);
 				}
 
 				if (driftcharge >= driftval*4) // rainbow sparks
 				{
-					cmap = R_GetTranslationColormap(TC_RAINBOW, 1 + leveltime % (MAXSKINCOLORS-1),GTC_CACHE);
+					colormap = R_GetTranslationColormap(TC_RAINBOW, K_RainbowColor(), GTC_CACHE);
 
 					for (i = 0; i < 4; i++)
-						V_DrawFill(barx, bary+dup*1+dup*i, BAR_WIDTH, dup, (driftrainbow[min((leveltime % 18) + 1, 18 - 1)] + i*2) | V_NOSCALESTART|drifttrans);
+						V_DrawFill(barx, bary+dup*1+dup*i, BAR_WIDTH, dup, (driftrainbow[min((leveltime % 18) + 1, 17)] + i*2) | V_NOSCALESTART|drifttrans);
 				}
 				else // none/blue/red
 				{
 					const INT32 limit = (driftval * (driftcharge >= driftval*2 ? 2 : 1));
 					const INT32 width = ((driftcharge - (driftcharge >= driftval ? limit : 0)) * BAR_WIDTH) / limit;
 
-					cmap = R_GetTranslationColormap(TC_RAINBOW, driftskins[driftlevel],GTC_CACHE);
+					colormap = R_GetTranslationColormap(TC_RAINBOW, driftskins[driftlevel], GTC_CACHE);
 
 					for (i = 0; i < 4; i++)
 					{
@@ -3281,20 +3310,20 @@ skipcrap:
 				}
 
 				// right, also draw a cool number
-				if (cv_driftgaugestyle.value == 3)
-					V_DrawPaddedTallColorNum(basex + (dup*32), basey, V_NOSCALESTART|V_OFFSET|drifttrans, driftcharge*100 / driftval, 3, cmap);
+				if (gaugestyle == GAUGE_BIGNUM)
+					V_DrawPaddedTallColorNum(basex + (dup*32), basey, V_NOSCALESTART|V_OFFSET|drifttrans, driftcharge*100 / driftval, 3, colormap);
 				else
-					V_DrawPingNum(cv_driftgaugestyle.value == 2 ? basex + (dup*22) : basex + (dup*32), basey, V_NOSCALESTART|V_OFFSET|drifttrans, driftcharge*100 / driftval, cmap);
+					V_DrawPingNum((gaugestyle == GAUGE_SMALL ? basex + (dup*22) : basex + (dup*32)), basey, V_NOSCALESTART|V_OFFSET|drifttrans, driftcharge*100 / driftval, colormap);
 			}
 			break;
-		case 4:
+		case GAUGE_NUMONLY:
 			{
 				if (driftcharge >= driftval*4)
-					cmap = R_GetTranslationColormap(TC_RAINBOW, 1 + leveltime % (MAXSKINCOLORS-1),GTC_CACHE);
+					colormap = R_GetTranslationColormap(TC_RAINBOW, K_RainbowColor(), GTC_CACHE);
 				else
-					cmap = R_GetTranslationColormap(TC_RAINBOW, driftskins[driftlevel],GTC_CACHE);
+					colormap = R_GetTranslationColormap(TC_RAINBOW, driftskins[driftlevel], GTC_CACHE);
 
-				V_DrawPaddedTallColorNum(basex + (dup*16), basey, V_NOSCALESTART|V_OFFSET|drifttrans, driftcharge*100 / driftval, 3, cmap);
+				V_DrawPaddedTallColorNum(basex + (dup*16), basey, V_NOSCALESTART|V_OFFSET|drifttrans, driftcharge*100 / driftval, 3, colormap);
 			}
 			break;
 		default:
@@ -3355,6 +3384,7 @@ static void K_drawKartWanted(void)
 	{
 		basex = WANT_X;
 		basey = WANT_Y;
+
 		if (splitscreen == 2)
 		{
 			basey += 16;	// slight adjust for 3P
@@ -4104,17 +4134,23 @@ static void K_drawKartFirstPerson(void)
 				x -= xoffs;
 			else
 				x += xoffs;
+
 			if (!splitscreen)
 				y += yoffs;
 		}
 
+		const INT32 driftcharge = stplyr->kartstuff[k_driftcharge];
+
 		// drift sparks!
-		if ((leveltime & 1) && (stplyr->kartstuff[k_driftcharge] >= dsthree))
-			colmap = R_GetTranslationColormap(TC_RAINBOW, K_RainbowColor(), GTC_CACHE);
-		else if ((leveltime & 1) && (stplyr->kartstuff[k_driftcharge] >= dstwo))
-			colmap = R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_KETCHUP, GTC_CACHE);
-		else if ((leveltime & 1) && (stplyr->kartstuff[k_driftcharge] >= dsone))
-			colmap = R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_SAPPHIRE, GTC_CACHE);
+		if ((leveltime & 1) && driftcharge)
+		{
+			if (driftcharge >= dsthree)
+				colmap = R_GetTranslationColormap(TC_RAINBOW, K_RainbowColor(), GTC_CACHE);
+			else if (driftcharge >= dstwo)
+				colmap = R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_KETCHUP, GTC_CACHE);
+			else if (driftcharge >= dsone)
+				colmap = R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_SAPPHIRE, GTC_CACHE);
+		}
 		else
 #endif
 		// invincibility/grow/shrink!
