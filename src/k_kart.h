@@ -20,6 +20,7 @@ void K_LoadExtraVFX(void);
 extern UINT8 colortranslations[MAXTRANSLATIONS][16];
 extern const char *KartColor_Names[MAXSKINCOLORS];
 extern const UINT8 KartColor_Opposite[MAXSKINCOLORS*2];
+UINT8 K_RainbowColor(void);
 void K_RainbowColormap(UINT8 *dest_colormap, UINT8 skincolor);
 void K_GenerateKartColormap(UINT8 *dest_colormap, INT32 skinnum, UINT8 color, boolean local);
 UINT8 K_GetKartColorByName(const char *name);

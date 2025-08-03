@@ -7042,7 +7042,7 @@ static boolean P_MobjDeadThink(mobj_t *mobj)
 			if (mobj->flags2 & MF2_AMBUSH)
 			{
 				mobj->colorized = true;
-				mobj->color = (1 + (leveltime % (MAXSKINCOLORS-1)));
+				mobj->color = K_RainbowColor();
 				mobj->frame |= FF_FULLBRIGHT;
 			}
 			else
@@ -7893,7 +7893,7 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 				P_SetScale(mobj, (mobj->destscale = mobj->target->scale));
 
 				if (mobj->target->player->kartstuff[k_driftcharge] >= K_GetKartDriftSparkValue(mobj->target->player)*4)
-					mobj->color = (UINT8)(1 + (leveltime % (MAXSKINCOLORS-1)));
+					mobj->color = K_RainbowColor();
 				else if (mobj->target->player->kartstuff[k_driftcharge] >= K_GetKartDriftSparkValue(mobj->target->player)*2)
 					mobj->color = SKINCOLOR_KETCHUP;
 				else if (mobj->target->player->kartstuff[k_driftcharge] >= K_GetKartDriftSparkValue(mobj->target->player))
@@ -8592,7 +8592,7 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 			if (mobj->flags2 & MF2_AMBUSH)
 			{
 				mobj->colorized = true;
-				mobj->color = (1 + (leveltime % (MAXSKINCOLORS-1)));
+				mobj->color = K_RainbowColor();
 				mobj->frame |= FF_FULLBRIGHT;
 			}
 			else

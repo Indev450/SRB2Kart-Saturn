@@ -1641,7 +1641,7 @@ static void P_CheckInvincibilityTimer(player_t *player)
 	if (!player->powers[pw_invulnerability] && !player->kartstuff[k_invincibilitytimer])
 		return;
 
-	player->mo->color = (UINT8)(1 + (leveltime % (MAXSKINCOLORS-1)));
+	player->mo->color = K_RainbowColor();
 
 	// Resume normal music stuff.
 	if (player->powers[pw_invulnerability] == 1 || player->kartstuff[k_invincibilitytimer] == 1)
