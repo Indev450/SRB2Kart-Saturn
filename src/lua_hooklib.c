@@ -393,7 +393,7 @@ FUNCINLINE static ATTRINLINE boolean prepare_string_hook
 		return false;
 }
 
-static boolean prepare_hud_hook
+FUNCINLINE static ATTRINLINE boolean prepare_hud_hook
 (
 		Hook_State * hook,
 		int hook_type
