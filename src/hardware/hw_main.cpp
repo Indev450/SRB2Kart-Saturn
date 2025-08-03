@@ -3051,7 +3051,7 @@ static void HWR_Subsector(size_t num)
 			// rendering heights for bottom and top planes
 			// yes there were functions for this stuff, no idea why it wasnt used but bleh
 			bottomCullHeight = P_GetFFloorBottomZAt(rover, viewx, viewy);
-			topCullHeight = P_GetFFloorTopZAt(rover, viewx, viewy);
+			topCullHeight    = P_GetFFloorTopZAt(rover, viewx, viewy);
 
 			if (gl_frontsector->cullheight)
 			{

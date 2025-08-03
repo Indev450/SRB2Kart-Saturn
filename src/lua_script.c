@@ -1250,7 +1250,7 @@ void LUA_Archive(savebuffer_t *save, boolean network)
 
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
-		if (!playeringame[i] && i > 0)	// NEVER skip player 0, this is for dedi servs.
+		if (!playeringame[i] && i > 0) // NEVER skip player 0, this is for dedi servs.
 			continue;
 		// all players in game will be archived, even if they just add a 0.
 		ArchiveExtVars(&save->p, &players[i], "player");
@@ -1302,15 +1302,18 @@ void LUA_UnArchive(savebuffer_t *save, boolean network)
 	{
 		do {
 			mobjnum = READUINT32(save->p); // read a mobjnum
+
 			for (th = thinkercap.next; th != &thinkercap; th = th->next)
 			{
 				if (th->function != (actionf_p1)P_MobjThinker)
 					continue;
 
-				if (((mobj_t *)th)->mobjnum == mobjnum) // find matching mobj
-					UnArchiveExtVars(&save->p, th, network); // apply variables
+				if (((mobj_t *)th)->mobjnum != mobjnum) // find matching mobj
+					continue;
+				UnArchiveExtVars(&save->p, th, network); // apply variables
 			}
-		} while(mobjnum != UINT32_MAX); // repeat until end of mobjs marker.
+
+		} while (mobjnum != UINT32_MAX); // repeat until end of mobjs marker.
 
 		LUA_HookNetArchive(NetUnArchive, save); // call the NetArchive hook in unarchive mode
 	}

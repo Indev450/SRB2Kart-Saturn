@@ -682,7 +682,7 @@ INT32 P_AddLevelFlat(const char *flatname, levelflat_t *levelflat)
 	//  first scan through the already found flats
 	//
 	for (i = 0; i < numlevelflats; i++, levelflat++)
-		if (strnicmp(levelflat->name,flatname, 8) == 0)
+		if (strnicmp(levelflat->name, flatname, 8) == 0)
 			break;
 
 	// that flat was already found in the level, return the id
