@@ -6029,14 +6029,27 @@ static void K_KartDrift(player_t *player, boolean onground)
 			if (player->speed > minspeed*2)
 				player->kartstuff[k_getsparks] = 1;
 
+			const boolean driftblue    = (player->kartstuff[k_driftcharge] < dsone   && player->kartstuff[k_driftcharge]+driftadditive >= dsone);
+			const boolean driftred     = (player->kartstuff[k_driftcharge] < dstwo   && player->kartstuff[k_driftcharge]+driftadditive >= dstwo);
+			const boolean driftrainbow = (player->kartstuff[k_driftcharge] < dsthree && player->kartstuff[k_driftcharge]+driftadditive >= dsthree);
+
 			// Sound whenever you get a different tier of sparks
-			if ((player->kartstuff[k_driftcharge] < dsone && player->kartstuff[k_driftcharge]+driftadditive >= dsone)
-				|| (player->kartstuff[k_driftcharge] < dstwo && player->kartstuff[k_driftcharge]+driftadditive >= dstwo)
-				|| (player->kartstuff[k_driftcharge] < dsthree && player->kartstuff[k_driftcharge]+driftadditive >= dsthree))
+			if (driftblue
+				|| driftred
+				|| driftrainbow)
 			{
 				//S_StartSound(player->mo, sfx_s3ka2);
 				if (P_IsLocalPlayer(player)) // UGHGHGH...
+				{
 					S_StartSoundAtVolume(player->mo, sfx_s3ka2, 192); // Ugh...
+				}
+
+				if (driftrainbow)
+					player->driftlevel = 3;
+				else if (driftred)
+					player->driftlevel = 2;
+				else if (driftblue)
+					player->driftlevel = 1;
 
 				player->driftsparkGrowTimer = DRIFTSPARKGROWTICS;
 			}

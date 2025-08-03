@@ -545,6 +545,19 @@ static void P_DeviceRumbleTick(void)
 			high = CLAMP((high + FRACUNIT / 256), 0, UINT16_MAX);
 		}
 
+		// pulse when gettin new driftlevel
+		// let this come last
+		if (player->kartstuff[k_driftcharge]
+			&& player->driftlevel)
+		{
+			high = CLAMP((high + FRACUNIT / 256), 0, UINT16_MAX);
+
+			if (player->driftlevel == 2)
+				lenght = 114;
+			else if (player->driftlevel == 3)
+				lenght = 174;
+		}
+
 		// hack alert! i just dont want this thing constantly resetting the rumble lol
 		if (low == 0 && high == 0)
 		{
