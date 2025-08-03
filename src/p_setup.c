@@ -685,7 +685,7 @@ INT32 P_AddLevelFlat(const char *flatname, levelflat_t *levelflat)
 		// check if our flat contains cyan pixels
 		// not sure if this is the best way to do it but it works
 		{
-			const UINT8 *flat = (UINT8 *)W_CacheLumpNum(levelflat->lumpnum, PU_LEVEL);
+			const UINT8 *flat = R_GetFlat(levelflat->lumpnum);
 			size_t size = W_LumpLength(levelflat->lumpnum);
 			for (size_t steppy = 0; steppy < size; steppy++)
 			{
@@ -745,7 +745,7 @@ INT32 P_AddLevelFlatRuntime(const char *flatname)
 		// check if our flat contains cyan pixels
 		// not sure if this is the best way to do it but it works
 		{
-			const UINT8 *flat = (UINT8 *)W_CacheLumpNum(levelflat->lumpnum, PU_LEVEL);
+			const UINT8 *flat = R_GetFlat(levelflat->lumpnum);
 			size_t size = W_LumpLength(levelflat->lumpnum);
 			for (size_t steppy = 0; steppy < size; steppy++)
 			{
