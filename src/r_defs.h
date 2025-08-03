@@ -68,6 +68,37 @@ typedef struct
 #endif
 } extracolormap_t;
 
+typedef struct
+{
+	lighttable_t* colormap;
+
+	INT32 x;
+	INT32 yl;
+	INT32 yh;
+	fixed_t iscale;
+	fixed_t texturemid;
+
+	UINT8* source; // first pixel in a column
+	UINT8* lightmap; // lighting only
+
+	// translucency stuff here
+	UINT8* transmap;
+
+	// translation stuff here
+	UINT8* translation;
+
+	struct r_lightlist_s* lightlist;
+
+	INT32 numlights;
+	INT32 maxlights;
+
+	//Fix TUTIFRUTI
+	INT32 texheight;
+	INT32 sourcelength;
+} drawcolumndata_t;
+
+extern drawcolumndata_t g_dc;
+
 //
 // INTERNAL MAP TYPES used by play and refresh
 //
@@ -172,6 +203,7 @@ typedef struct ffloor_s
 
 	INT32 lastlight;
 	INT32 alpha;
+	UINT8 blend; // blendmode
 	tic_t norender; // for culling
 
 	// these are saved for netgames, so do not let Lua touch these!
@@ -256,6 +288,12 @@ typedef struct pslope_s
 	mapthing_t **vertices; // List should be three long for slopes made by vertex things, or one long for slopes using one vertex thing to anchor
 
 	struct pslope_s *next; // Make a linked list of dynamic slopes, for easy reference later
+
+	// Light offsets (see seg_t)
+	SINT8 lightOffset;
+#ifdef HWRENDER
+	INT16 hwLightOffset;
+#endif
 } pslope_t;
 
 typedef enum
@@ -272,13 +310,32 @@ typedef enum
 //
 typedef struct sector_s
 {
-	fixed_t floorheight;
-	fixed_t ceilingheight;
 	INT32 floorpic;
 	INT32 ceilingpic;
 	INT16 lightlevel;
+
+	pslope_t *f_slope; // floor slope
+	pslope_t *c_slope; // ceiling slope
+
+	// floor and ceiling texture offsets
+	fixed_t floor_xoffs, floor_yoffs;
+	fixed_t ceiling_xoffs, ceiling_yoffs;
+
+	// flat angle
+	angle_t floorpic_angle;
+	angle_t ceilingpic_angle;
+
+	INT32 floorlightsec, ceilinglightsec;
+
+	// per-sector colormaps!
+	extracolormap_t *extra_colormap;
+
+	fixed_t floorheight;
+	fixed_t ceilingheight;
+
 	INT16 special;
 	UINT16 tag;
+
 	INT32 nexttag, firsttag; // for fast tag searches
 
 	// origin for any sounds played by the sector
@@ -296,18 +353,9 @@ typedef struct sector_s
 	void *ceilingdata; // ceiling move thinker
 	void *lightingdata; // lighting change thinker
 
-	// floor and ceiling texture offsets
-	fixed_t floor_xoffs, floor_yoffs;
-	fixed_t ceiling_xoffs, ceiling_yoffs;
-
-	// flat angle
-	angle_t floorpic_angle;
-	angle_t ceilingpic_angle;
-
 	INT32 heightsec; // other sector, or -1 if no other sector
 	INT32 camsec; // used for camera clipping
 
-	INT32 floorlightsec, ceilinglightsec;
 	INT32 crumblestate; // used for crumbling and bobbing
 
 	INT32 bottommap, midmap, topmap; // dynamic colormaps
@@ -334,9 +382,6 @@ typedef struct sector_s
 	INT32 numlights;
 	boolean moved;
 
-	// per-sector colormaps!
-	extracolormap_t *extra_colormap;
-
 	// This points to the master's floorheight, so it can be changed in realtime!
 	fixed_t *gravity; // per-sector gravity
 	boolean verticalflip; // If gravity < 0, then allow flipped physics
@@ -348,12 +393,7 @@ typedef struct sector_s
 	// Current speed of ceiling/floor. For Knuckles to hold onto stuff.
 	fixed_t floorspeed, ceilspeed;
 
-	// list of precipitation mobjs in sector
-	struct mprecipsecnode_s *touching_preciplist;
-
 	// Eternity engine slope
-	pslope_t *f_slope; // floor slope
-	pslope_t *c_slope; // ceiling slope
 	boolean hasslope; // The sector, or one of its visible FOFs, contains a slope
 
 	// these are saved for netgames, so do not let Lua touch these!
@@ -380,6 +420,7 @@ typedef enum
 } slopetype_t;
 
 #define HORIZONSPECIAL 41
+#define PORTALSPECIAL  40
 
 typedef struct line_s
 {
@@ -396,6 +437,8 @@ typedef struct line_s
 
 	// Visual appearance: sidedefs.
 	UINT16 sidenum[2]; // sidenum[1] will be 0xffff if one-sided
+	fixed_t alpha; // translucency
+	UINT8 blendmode; // blendmode
 
 	fixed_t bbox[4]; // bounding box for the extent of the linedef
 
@@ -453,7 +496,7 @@ typedef struct subsector_s
 {
 	sector_t *sector;
 	INT16 numlines;
-	UINT16 firstline;
+	UINT32 firstline;
 	struct polyobj_s *polyList; // haleyjd 02/19/06: list of polyobjects
 #if 1//#ifdef FLOORSPLATS
 	void *splats; // floorsplat_t list
@@ -486,17 +529,6 @@ typedef struct msecnode_s
 	boolean visited; // used in search algorithms
 } msecnode_t;
 
-typedef struct mprecipsecnode_s
-{
-	sector_t *m_sector; // a sector containing this object
-	struct precipmobj_s *m_thing;  // this object
-	struct mprecipsecnode_s *m_sectorlist_prev;  // prev msecnode_t for this thing
-	struct mprecipsecnode_s *m_sectorlist_next;  // next msecnode_t for this thing
-	struct mprecipsecnode_s *m_thinglist_prev;  // prev msecnode_t for this sector
-	struct mprecipsecnode_s *m_thinglist_next;  // next msecnode_t for this sector
-	boolean visited; // used in search algorithms
-} mprecipsecnode_t;
-
 //
 // The lineseg.
 //
@@ -527,11 +559,14 @@ typedef struct seg_s
 	float flength; // length of the seg, used by hardware renderer
 #endif
 
-	// Why slow things down by calculating lightlists for every thick side?
-	size_t numlights;
-	r_lightlist_t *rlights;
 	polyobj_t *polyseg;
 	boolean dontrenderme;
+
+	// Fake contrast calculated on level load
+	SINT8 lightOffset;
+#ifdef HWRENDER
+	INT16 hwLightOffset;
+#endif
 } seg_t;
 
 //
@@ -604,11 +639,11 @@ typedef struct drawseg_s
 	struct ffloor_s *thicksides[MAXFFLOORS];
 	INT16 *thicksidecol;
 	INT32 numthicksides;
-	fixed_t frontscale[MAXVIDWIDTH];
+	fixed_t *frontscale;
 
 	UINT8 portalpass; // if > 0 and <= portalrender, do not affect sprite clipping
 
-	fixed_t maskedtextureheight[MAXVIDWIDTH]; // For handling sloped midtextures
+	fixed_t *maskedtextureheight; // For handling sloped midtextures
 
 	vertex_t leftpos, rightpos; // Used for rendering FOF walls with slopes
 } drawseg_t;
@@ -636,7 +671,22 @@ typedef struct
 // Patches are used for sprites and all masked pictures, and we compose
 // textures from the TEXTURE1 list of patches.
 //
-// WARNING: this structure is cloned in GLPatch_t
+
+typedef struct
+{
+	INT16 width, height;
+	INT16 leftoffset, topoffset;
+
+	INT32 *columnofs; // Column offsets. This is relative to patch->columns
+	UINT8 *columns; // Software column data
+
+	void *hardware; // OpenGL patch, allocated whenever necessary
+
+#ifdef ROTSPRITE
+	rotsprite_t *rotated; // Rotated patches
+#endif
+} patch_t;
+
 #if defined(_MSC_VER)
 #pragma pack(1)
 #endif
@@ -649,7 +699,7 @@ typedef struct
 	INT16 topoffset;      // pixels below the origin
 	INT32 columnofs[];     // only [width] used
 	// the [0] is &columnofs[width]
-} patch_t;
+} ATTRPACK softwarepatch_t;
 
 #ifdef _MSC_VER
 #pragma warning(disable :  4200)
@@ -675,13 +725,8 @@ typedef struct
 #pragma pack()
 #endif
 
-typedef enum // trimmed since its only real use here is for xscale/yscale
-{
-	RF_HORIZONTALFLIP   = 0x0001,   // Flip sprite horizontally
-	RF_VERTICALFLIP     = 0x0002,   // Flip sprite vertically
-	RF_ABSOLUTEOFFSETS  = 0x0004,   // Sprite uses the object's offsets absolutely, instead of relatively
-	RF_FLIPOFFSETS      = 0x0008,   // Relative object offsets are flipped with the sprite
-} renderflags_t;
+// Possible alpha types for a patch.
+enum patchalphastyle {AST_COPY, AST_TRANSLUCENT, AST_ADD, AST_SUBTRACT, AST_REVERSESUBTRACT, AST_MODULATE, AST_OVERLAY};
 
 typedef enum
 {
@@ -719,9 +764,9 @@ typedef struct
 
 	// Flip bits (1 = flip) to use for view angles 0-7.
 	UINT8 flip;
-	
+
 #ifdef ROTSPRITE
-	rotsprite_t *rotated[2][16]; // Rotated patches
+	rotsprite_t *rotated[16]; // Rotated patches
 #endif
 } spriteframe_t;
 

@@ -773,16 +773,6 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit79]
-FileName=src\r_draw16.c
-Folder=R_Rend
-Compile=0
-CompileCpp=0
-Link=0
-Priority=1000
-OverrideBuildCmd=0
-BuildCmd=
-
 [Unit80]
 FileName=src\r_draw8.c
 Folder=R_Rend

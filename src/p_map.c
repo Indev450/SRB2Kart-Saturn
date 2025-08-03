@@ -26,6 +26,7 @@
 #include "s_sound.h"
 #include "w_wad.h"
 #include "k_kart.h" // SRB2kart 011617
+#include "k_stats.h"
 
 #include "hu_stuff.h" // SRB2kart
 #include "i_system.h" // SRB2kart
@@ -46,9 +47,6 @@ static INT32 tmflags;
 fixed_t tmx;
 fixed_t tmy;
 
-static precipmobj_t *tmprecipthing;
-static fixed_t preciptmbbox[4];
-
 // If "floatok" true, move would be ok
 // if within "tmfloorz - tmceilingz".
 boolean floatok;
@@ -68,7 +66,6 @@ line_t *ceilingline;
 line_t *blockingline;
 
 msecnode_t *sector_list = NULL;
-mprecipsecnode_t *precipsector_list = NULL;
 camera_t *mapcampointer;
 
 //
@@ -76,9 +73,9 @@ camera_t *mapcampointer;
 //
 
 //
-// P_TeleportMove
+// P_MoveOrigin - P_TeleportMove which KEEPS interpolation values.
 //
-static boolean P_TeleportMove(mobj_t *thing, fixed_t x, fixed_t y, fixed_t z)
+boolean P_MoveOrigin(mobj_t *thing, fixed_t x, fixed_t y, fixed_t z)
 {
 	// the move is ok,
 	// so link the thing into its new position
@@ -108,28 +105,19 @@ static boolean P_TeleportMove(mobj_t *thing, fixed_t x, fixed_t y, fixed_t z)
 	return true;
 }
 
+//
 // P_SetOrigin - P_TeleportMove which RESETS interpolation values.
 //
 boolean P_SetOrigin(mobj_t *thing, fixed_t x, fixed_t y, fixed_t z)
 {
-	boolean result = P_TeleportMove(thing, x, y, z);
-
-	if (result == true)
+	if (P_MoveOrigin(thing, x, y, z))
 	{
 		thing->old_x = thing->x;
 		thing->old_y = thing->y;
 		thing->old_z = thing->z;
 	}
 
-	return result;
-}
-
-//
-// P_MoveOrigin - P_TeleportMove which KEEPS interpolation values.
-//
-boolean P_MoveOrigin(mobj_t *thing, fixed_t x, fixed_t y, fixed_t z)
-{
-	return P_TeleportMove(thing, x, y, z);
+	return true;
 }
 
 // =========================================================================
@@ -152,7 +140,7 @@ boolean P_DoSpring(mobj_t *spring, mobj_t *object)
 	if (object->player && object->player->spectator)
 		return false;
 
-	if (object->player && (object->player->pflags & PF_NIGHTSMODE))
+	if (UNLIKELY(object->player && (object->player->pflags & PF_NIGHTSMODE)))
 	{
 		/*Someone want to make these work like bumpers?*/
 		return false;
@@ -235,14 +223,15 @@ boolean P_DoSpring(mobj_t *spring, mobj_t *object)
 
 			if (!demo.playback || P_AnalogMove(object->player))
 			{
-				if (object->player == &players[consoleplayer])
-					localangle[0] = spring->angle;
-				else if (object->player == &players[displayplayers[1]])
-					localangle[1] = spring->angle;
-				else if (object->player == &players[displayplayers[2]])
-					localangle[2] = spring->angle;
-				else if (object->player == &players[displayplayers[3]])
-					localangle[3] = spring->angle;
+				for (UINT8 j = 0; j <= splitscreen; ++j)
+				{
+					INT32 id = (j == 0 ? consoleplayer : displayplayers[j]);
+					if (object->player == &players[id])
+					{
+						localangle[j] = spring->angle;
+						break;
+					}
+				}
 			}
 		}
 
@@ -319,78 +308,6 @@ static void P_DoFanAndGasJet(mobj_t *spring, mobj_t *object)
 	}
 }
 
-#if 0
-static void P_DoTailsCarry(player_t *sonic, player_t *tails)
-{
-	INT32 p;
-	fixed_t zdist; // z distance between the two players' bottoms
-
-	if ((tails->pflags & PF_CARRIED) && tails->mo->tracer == sonic->mo)
-		return;
-	if ((sonic->pflags & PF_CARRIED) && sonic->mo->tracer == tails->mo)
-		return;
-	if (tails->bot == 1)
-		return;
-
-	if (sonic->pflags & PF_NIGHTSMODE)
-		return;
-
-	if (sonic->mo->tracer && sonic->mo->tracer->type == MT_TUBEWAYPOINT
-	&& !(sonic->pflags & PF_ROPEHANG))
-		return; // don't steal players from zoomtubes!
-
-	if ((sonic->mo->eflags & MFE_VERTICALFLIP) != (tails->mo->eflags & MFE_VERTICALFLIP))
-		return; // Both should be in same gravity
-
-	if (tails->mo->eflags & MFE_VERTICALFLIP)
-	{
-		if (tails->mo->ceilingz - (tails->mo->z + tails->mo->height) < sonic->mo->height-FixedMul(2*FRACUNIT, sonic->mo->scale))
-			return;
-	}
-	else if (tails->mo->z - tails->mo->floorz < sonic->mo->height-FixedMul(2*FRACUNIT, sonic->mo->scale))
-		return; // No room to pick up this guy!
-
-	// Search in case another player is already being carried by this fox.
-	for (p = 0; p < MAXPLAYERS; p++)
-		if (playeringame[p] && players[p].mo
-		&& players[p].pflags & PF_CARRIED && players[p].mo->tracer == tails->mo)
-			return;
-
-	if (tails->mo->eflags & MFE_VERTICALFLIP)
-		zdist = (sonic->mo->z + sonic->mo->height) - (tails->mo->z + tails->mo->height);
-	else
-		zdist = tails->mo->z - sonic->mo->z;
-
-	if (zdist <= sonic->mo->height + FixedMul(FRACUNIT, sonic->mo->scale)
-		&& zdist > sonic->mo->height*2/3
-		&& P_MobjFlip(tails->mo)*sonic->mo->momz <= 0)
-	{
-	// Why block opposing teams from tailsflying each other?
-		// Sneaking into the hands of a flying tails player in Race might be a viable strategy, who knows.
-		if (tails->spectator || sonic->spectator || G_RaceGametype()) // SRB2kart
-			sonic->pflags &= ~PF_CARRIED;
-		else
-		{
-			if (sonic-players == consoleplayer && botingame)
-				//CV_SetValue(&cv_analog2, false);
-			P_ResetPlayer(sonic);
-			P_SetTarget(&sonic->mo->tracer, tails->mo);
-			sonic->pflags |= PF_CARRIED;
-			S_StartSound(sonic->mo, sfx_s3k4a);
-			P_UnsetThingPosition(sonic->mo);
-			sonic->mo->x = tails->mo->x;
-			sonic->mo->y = tails->mo->y;
-			P_SetThingPosition(sonic->mo);
-		}
-	}
-	else {
-		if (sonic-players == consoleplayer && botingame)
-			//CV_SetValue(&cv_analog2, true);
-		sonic->pflags &= ~PF_CARRIED;
-	}
-}
-#endif
-
 //
 // PIT_CheckThing
 //
@@ -404,7 +321,7 @@ static boolean PIT_CheckThing(mobj_t *thing)
 		return true;
 
 	// Ignore... things.
-	if (!tmthing || !thing || P_MobjWasRemoved(thing))
+	if (!tmthing || P_MobjWasRemoved(thing))
 		return true;
 
 	I_Assert(!P_MobjWasRemoved(tmthing));
@@ -416,11 +333,11 @@ static boolean PIT_CheckThing(mobj_t *thing)
 		return true;
 
 #ifdef SEENAMES
-  // Do name checks all the way up here
-  // So that NOTHING ELSE can see MT_NAMECHECK because it is client-side.
-	if (tmthing->type == MT_NAMECHECK)
+	// Do name checks all the way up here
+	// So that NOTHING ELSE can see MT_NAMECHECK because it is client-side.
+	if (UNLIKELY(tmthing->type == MT_NAMECHECK))
 	{
-	  // Ignore things that aren't players, ignore spectators, ignore yourself.
+	    // Ignore things that aren't players, ignore spectators, ignore yourself.
 		// (also don't bother to check that tmthing->target->player is non-NULL because we're not actually using it here.)
 		if (!thing->player || thing->player->spectator || (tmthing->target && thing->player == tmthing->target->player))
 			return true;
@@ -444,8 +361,8 @@ static boolean PIT_CheckThing(mobj_t *thing)
 		return true;
 
 	// Don't collide with your buddies while NiGHTS-flying.
-	if (tmthing->player && thing->player && (maptol & TOL_NIGHTS)
-		&& ((tmthing->player->pflags & PF_NIGHTSMODE) || (thing->player->pflags & PF_NIGHTSMODE)))
+	if (UNLIKELY(tmthing->player && thing->player && (maptol & TOL_NIGHTS)
+		&& ((tmthing->player->pflags & PF_NIGHTSMODE) || (thing->player->pflags & PF_NIGHTSMODE))))
 		return true;
 
 	blockdist = thing->radius + tmthing->radius;
@@ -521,7 +438,7 @@ static boolean PIT_CheckThing(mobj_t *thing)
 	}
 
 	{
-		UINT8 shouldCollide = LUAh_MobjCollide(thing, tmthing); // checks hook for thing's type
+		UINT8 shouldCollide = LUA_Hook2Mobj(thing, tmthing, MOBJ_HOOK(MobjCollide)); // checks hook for thing's type
 		if (P_MobjWasRemoved(tmthing) || P_MobjWasRemoved(thing))
 			return true; // one of them was removed???
 		if (shouldCollide == 1)
@@ -530,7 +447,7 @@ static boolean PIT_CheckThing(mobj_t *thing)
 			return true; // force no collide
 	}
 	{
-		UINT8 shouldCollide = LUAh_MobjMoveCollide(tmthing, thing); // checks hook for tmthing's type
+		UINT8 shouldCollide = LUA_Hook2Mobj(tmthing, thing, MOBJ_HOOK(MobjMoveCollide)); // checks hook for tmthing's type
 		if (P_MobjWasRemoved(tmthing) || P_MobjWasRemoved(thing))
 			return true; // one of them was removed???
 		if (shouldCollide == 1)
@@ -588,20 +505,15 @@ static boolean PIT_CheckThing(mobj_t *thing)
 	// check for skulls slamming into things
 	if (tmthing->flags2 & MF2_SKULLFLY)
 	{
-		/*if (tmthing->type == MT_EGGMOBILE) // Don't make Eggman stop!
-			return true; // Let him RUN YOU RIGHT OVER. >:3
-		else*/
-		{
-			// see if it went over / under
-			if (tmthing->z > thing->z + thing->height)
-				return true; // overhead
-			if (tmthing->z + tmthing->height < thing->z)
-				return true; // underneath
+		// see if it went over / under
+		if (tmthing->z > thing->z + thing->height)
+			return true; // overhead
+		if (tmthing->z + tmthing->height < thing->z)
+			return true; // underneath
 
-			tmthing->flags2 &= ~MF2_SKULLFLY;
-			tmthing->momx = tmthing->momy = tmthing->momz = 0;
-			return false; // stop moving
-		}
+		tmthing->flags2 &= ~MF2_SKULLFLY;
+		tmthing->momx = tmthing->momy = tmthing->momz = 0;
+		return false; // stop moving
 	}
 
 	// SRB2kart 011617 - Colission[sic] code for kart items //{
@@ -628,10 +540,6 @@ static boolean PIT_CheckThing(mobj_t *thing)
 
 		if (thing->health)
 			P_KillMobj(thing, tmthing, tmthing);
-
-		/*if (tmthing->player && (tmthing->player->kartstuff[k_invincibilitytimer] > 0
-			|| tmthing->player->kartstuff[k_growshrinktimer] > 0))
-			return true;*/
 
 		K_KartBouncing(tmthing, thing, false, true);
 		return false;
@@ -794,12 +702,14 @@ static boolean PIT_CheckThing(mobj_t *thing)
 
 		if (thing->type == MT_PLAYER)
 		{
+			K_StatPlayerSink(thing->player, P_MobjWasRemoved(tmthing->target) ? NULL : tmthing->target->player);
+
 			S_StartSound(NULL, sfx_bsnipe); //let all players hear it.
 			HU_SetCEchoFlags(0);
 			HU_SetCEchoDuration(5);
 			HU_DoCEcho(va("%s\\was hit by a kitchen sink.\\\\\\\\", player_names[thing->player-players]));
 			I_OutputMsg("%s was hit by a kitchen sink.\n", player_names[thing->player-players]);
-			P_DamageMobj(thing, tmthing, tmthing->target, 10000);
+			P_DamageMobj(thing, tmthing, tmthing->target, DMG_INSTAKILL);
 			P_KillMobj(tmthing, thing, thing);
 		}
 
@@ -813,7 +723,7 @@ static boolean PIT_CheckThing(mobj_t *thing)
 		if (tmthing->z + tmthing->height < thing->z)
 			return true; // underneath
 
-		if (!(thing->type == MT_PLAYER))
+		if (thing->type != MT_PLAYER)
 			return true;
 
 		if (thing->player && thing->player->powers[pw_flashing])
@@ -1061,12 +971,14 @@ static boolean PIT_CheckThing(mobj_t *thing)
 			if ((thing->target == tmthing) && (thing->threshold > 0))
 				return true;
 
+			K_StatPlayerSink(tmthing->player, P_MobjWasRemoved(thing->target) ? NULL : thing->target->player);
+
 			S_StartSound(NULL, sfx_cgot); //let all players hear it.
 			HU_SetCEchoFlags(0);
 			HU_SetCEchoDuration(5);
 			HU_DoCEcho(va("%s\\was hit by a kitchen sink.\\\\\\\\", player_names[tmthing->player-players]));
 			I_OutputMsg("%s was hit by a kitchen sink.\n", player_names[tmthing->player-players]);
-			P_DamageMobj(tmthing, thing, thing->target, 10000);
+			P_DamageMobj(tmthing, thing, thing->target, DMG_INSTAKILL);
 			P_KillMobj(thing, tmthing, tmthing);
 		}
 
@@ -1676,7 +1588,7 @@ static boolean PIT_CheckLine(line_t *ld)
 	if (P_BoxOnLineSide(tmbbox, ld) != -1)
 		return true;
 
-if (tmthing->flags & MF_PAPERCOLLISION) // Caution! Turning whilst up against a wall will get you stuck. You probably shouldn't give the player this flag.
+	if (tmthing->flags & MF_PAPERCOLLISION) // Caution! Turning whilst up against a wall will get you stuck. You probably shouldn't give the player this flag.
 	{
 		fixed_t cosradius, sinradius;
 		cosradius = FixedMul(tmthing->radius, FINECOSINE(tmthing->angle>>ANGLETOFINESHIFT));
@@ -1779,9 +1691,9 @@ if (tmthing->flags & MF_PAPERCOLLISION) // Caution! Turning whilst up against a 
 boolean P_CheckPosition(mobj_t *thing, fixed_t x, fixed_t y)
 {
 	INT32 xl, xh, yl, yh, bx, by;
-	subsector_t *newsubsec;
+	sector_t *newsec;
 	boolean blockval = true;
-	
+
 	ps_checkposition_calls.value.i++;
 
 	I_Assert(thing != NULL);
@@ -1801,40 +1713,45 @@ boolean P_CheckPosition(mobj_t *thing, fixed_t x, fixed_t y)
 	tmbbox[BOXRIGHT] = x + tmthing->radius;
 	tmbbox[BOXLEFT] = x - tmthing->radius;
 
-	newsubsec = R_PointInSubsector(x, y);
+	if (thing->x != x || thing->y != y || thing->subsector == NULL)
+		newsec = R_PointInSubsector(x, y)->sector;
+	else
+		newsec = thing->subsector->sector;
+
 	ceilingline = blockingline = NULL;
 
 	// The base floor / ceiling is from the subsector
 	// that contains the point.
 	// Any contacted lines the step closer together
 	// will adjust them.
-	tmfloorz = tmdropoffz = P_GetFloorZ(thing, newsubsec->sector, x, y, NULL); //newsubsec->sector->floorheight;
-	tmceilingz = P_GetCeilingZ(thing, newsubsec->sector, x, y, NULL); //newsubsec->sector->ceilingheight;
-	tmfloorslope = newsubsec->sector->f_slope;
-	tmceilingslope = newsubsec->sector->c_slope;
+	tmfloorz = tmdropoffz = P_GetFloorZ(thing, newsec, x, y, NULL); //newsec->floorheight;
+	tmceilingz = P_GetCeilingZ(thing, newsec, x, y, NULL); //newsec->ceilingheight;
+	tmfloorslope = newsec->f_slope;
+	tmceilingslope = newsec->c_slope;
 
 	// Check list of fake floors and see if tmfloorz/tmceilingz need to be altered.
-	if (newsubsec->sector->ffloors)
+	if (newsec->ffloors)
 	{
 		ffloor_t *rover;
 		fixed_t delta1, delta2;
 		INT32 thingtop = thing->z + thing->height;
 
-		for (rover = newsubsec->sector->ffloors; rover; rover = rover->next)
+		for (rover = newsec->ffloors; rover; rover = rover->next)
 		{
-			fixed_t topheight, bottomheight;
+			fixed_t topheight, bottomheight, midheight;
 
 			if (!(rover->flags & FF_EXISTS))
 				continue;
 
-			topheight = P_GetFOFTopZ(thing, newsubsec->sector, rover, x, y, NULL);
-			bottomheight = P_GetFOFBottomZ(thing, newsubsec->sector, rover, x, y, NULL);
+			topheight    = P_GetFOFTopZ(thing, newsec, rover, x, y, NULL);
+			bottomheight = P_GetFOFBottomZ(thing, newsec, rover, x, y, NULL);
 
 			if ((rover->flags & (FF_SWIMMABLE|FF_GOOWATER)) == (FF_SWIMMABLE|FF_GOOWATER) && !(thing->flags & MF_NOGRAVITY))
 			{
 				// If you're inside goowater and slowing down
 				fixed_t sinklevel = FixedMul(thing->info->height/6, thing->scale);
 				fixed_t minspeed = FixedMul(thing->info->height/9, thing->scale);
+
 				if (thing->z < topheight && bottomheight < thingtop
 				&& abs(thing->momz) < minspeed)
 				{
@@ -1849,14 +1766,16 @@ boolean P_CheckPosition(mobj_t *thing, fixed_t x, fixed_t y)
 					// Land on the top or the bottom, depending on gravity flip.
 					if (!(thing->eflags & MFE_VERTICALFLIP) && thing->z >= topheight - sinklevel && thing->momz <= 0)
 					{
-						if (tmfloorz < topheight - sinklevel) {
+						if (tmfloorz < topheight - sinklevel)
+						{
 							tmfloorz = topheight - sinklevel;
 							tmfloorslope = *rover->t_slope;
 						}
 					}
 					else if (thing->eflags & MFE_VERTICALFLIP && thingtop <= bottomheight + sinklevel && thing->momz >= 0)
 					{
-						if (tmceilingz > bottomheight + sinklevel) {
+						if (tmceilingz > bottomheight + sinklevel)
+						{
 							tmceilingz = bottomheight + sinklevel;
 							tmceilingslope = *rover->b_slope;
 						}
@@ -1878,7 +1797,8 @@ boolean P_CheckPosition(mobj_t *thing, fixed_t x, fixed_t y)
 			{
 				if (thing->z < topheight && bottomheight < thingtop)
 				{
-					if (tmfloorz < thing->z) {
+					if (tmfloorz < thing->z)
+					{
 						tmfloorz = thing->z;
 						tmfloorslope = NULL;
 					}
@@ -1887,10 +1807,10 @@ boolean P_CheckPosition(mobj_t *thing, fixed_t x, fixed_t y)
 				continue;
 			}
 
-			delta1 = thing->z - (bottomheight
-				+ ((topheight - bottomheight)/2));
-			delta2 = thingtop - (bottomheight
-				+ ((topheight - bottomheight)/2));
+			midheight = (bottomheight + ((topheight - bottomheight)/2));
+
+			delta1 = thing->z - midheight;
+			delta2 = thingtop - midheight;
 
 			if (topheight > tmfloorz && abs(delta1) < abs(delta2)
 				&& !(rover->flags & FF_REVERSEPLATFORM))
@@ -1898,6 +1818,7 @@ boolean P_CheckPosition(mobj_t *thing, fixed_t x, fixed_t y)
 				tmfloorz = tmdropoffz = topheight;
 				tmfloorslope = *rover->t_slope;
 			}
+
 			if (bottomheight < tmceilingz && abs(delta1) >= abs(delta2)
 				&& !(rover->flags & FF_PLATFORM)
 				&& !(thing->type == MT_SKIM && (rover->flags & FF_SWIMMABLE)))
@@ -1921,10 +1842,13 @@ boolean P_CheckPosition(mobj_t *thing, fixed_t x, fixed_t y)
 	BMBOUNDFIX(xl, xh, yl, yh);
 
 	// Check polyobjects and see if tmfloorz/tmceilingz need to be altered
+	// do we really have to iterate through the complete blockmap for polyobjects if there are no polyobjects on the map?
+	if (numPolyObjects)
 	{
 		validcount++;
 
 		for (by = yl; by <= yh; by++)
+		{
 			for (bx = xl; bx <= xh; bx++)
 			{
 				INT32 offset;
@@ -1975,12 +1899,14 @@ boolean P_CheckPosition(mobj_t *thing, fixed_t x, fixed_t y)
 						delta1 = thing->z - (polybottom + ((polytop - polybottom)/2));
 						delta2 = thingtop - (polybottom + ((polytop - polybottom)/2));
 
-						if (polytop > tmfloorz && abs(delta1) < abs(delta2)) {
+						if (polytop > tmfloorz && abs(delta1) < abs(delta2))
+						{
 							tmfloorz = tmdropoffz = polytop;
 							tmfloorslope = NULL;
 						}
 
-						if (polybottom < tmceilingz && abs(delta1) >= abs(delta2)) {
+						if (polybottom < tmceilingz && abs(delta1) >= abs(delta2))
+						{
 							tmceilingz = tmdrpoffceilz = polybottom;
 							tmceilingslope = NULL;
 						}
@@ -1988,6 +1914,7 @@ boolean P_CheckPosition(mobj_t *thing, fixed_t x, fixed_t y)
 					plink = (polymaplink_t *)(plink->link.next);
 				}
 			}
+		}
 	}
 
 	// tmfloorthing is set when tmfloorz comes from a thing's top
@@ -2058,7 +1985,7 @@ void P_CheckHoopPosition(mobj_t *hoopthing, fixed_t x, fixed_t y, fixed_t z, fix
 boolean P_CheckCameraPosition(fixed_t x, fixed_t y, camera_t *thiscam)
 {
 	INT32 xl, xh, yl, yh, bx, by;
-	subsector_t *newsubsec;
+	sector_t *newsec;
 
 	tmx = x;
 	tmy = y;
@@ -2068,12 +1995,16 @@ boolean P_CheckCameraPosition(fixed_t x, fixed_t y, camera_t *thiscam)
 	tmbbox[BOXRIGHT] = x + thiscam->radius;
 	tmbbox[BOXLEFT] = x - thiscam->radius;
 
-	newsubsec = R_PointInSubsector(x, y);
+	if (thiscam->x != x || thiscam->y != y || thiscam->subsector == NULL)
+		newsec = R_PointInSubsectorFast(x, y)->sector;
+	else
+		newsec = thiscam->subsector->sector;
+
 	ceilingline = blockingline = NULL;
 
 	mapcampointer = thiscam;
 
-	if (GETSECSPECIAL(newsubsec->sector->special, 4) == 12)
+	if (UNLIKELY(GETSECSPECIAL(newsec->special, 4) == 12))
 	{ // Camera noclip on entire sector.
 		tmfloorz = tmdropoffz = thiscam->z;
 		tmceilingz = tmdrpoffceilz = thiscam->z + thiscam->height;
@@ -2084,45 +2015,47 @@ boolean P_CheckCameraPosition(fixed_t x, fixed_t y, camera_t *thiscam)
 	// that contains the point.
 	// Any contacted lines the step closer together
 	// will adjust them.
-	tmfloorz = tmdropoffz = P_CameraGetFloorZ(thiscam, newsubsec->sector, x, y, NULL);
+	tmfloorz = tmdropoffz = P_CameraGetFloorZ(thiscam, newsec, x, y, NULL);
 
-	tmceilingz = P_CameraGetCeilingZ(thiscam, newsubsec->sector, x, y, NULL);
+	tmceilingz = P_CameraGetCeilingZ(thiscam, newsec, x, y, NULL);
 
 	// Cameras use the heightsec's heights rather then the actual sector heights.
 	// If you can see through it, why not move the camera through it too?
-	if (newsubsec->sector->heightsec >= 0)
+	if (newsec->heightsec >= 0)
 	{
-		tmfloorz = tmdropoffz = sectors[newsubsec->sector->heightsec].floorheight;
-		tmceilingz = tmdrpoffceilz = sectors[newsubsec->sector->heightsec].ceilingheight;
+		tmfloorz = tmdropoffz = sectors[newsec->heightsec].floorheight;
+		tmceilingz = tmdrpoffceilz = sectors[newsec->heightsec].ceilingheight;
 	}
 
 	// Use preset camera clipping heights if set with Sector Special Parameters whose control sector has Camera Intangible special -Red
-	if (newsubsec->sector->camsec >= 0)
+	if (newsec->camsec >= 0)
 	{
-		tmfloorz = tmdropoffz = sectors[newsubsec->sector->camsec].floorheight;
-		tmceilingz = tmdrpoffceilz = sectors[newsubsec->sector->camsec].ceilingheight;
+		tmfloorz = tmdropoffz = sectors[newsec->camsec].floorheight;
+		tmceilingz = tmdrpoffceilz = sectors[newsec->camsec].ceilingheight;
 	}
 
 	// Check list of fake floors and see if tmfloorz/tmceilingz need to be altered.
-	if (newsubsec->sector->ffloors)
+	if (newsec->ffloors)
 	{
 		ffloor_t *rover;
 		fixed_t delta1, delta2;
 		INT32 thingtop = thiscam->z + thiscam->height;
 
-		for (rover = newsubsec->sector->ffloors; rover; rover = rover->next)
+		for (rover = newsec->ffloors; rover; rover = rover->next)
 		{
 			fixed_t topheight, bottomheight;
-			if (!(rover->flags & FF_BLOCKOTHERS) || !(rover->flags & FF_EXISTS) || !(rover->flags & FF_RENDERALL) || GETSECSPECIAL(rover->master->frontsector->special, 4) == 12)
+
+			if (!(rover->flags & FF_BLOCKOTHERS) || !(rover->flags & FF_EXISTS) || !(rover->flags & FF_RENDERALL) || UNLIKELY(GETSECSPECIAL(rover->master->frontsector->special, 4) == 12))
 				continue;
 
-			topheight = P_CameraGetFOFTopZ(thiscam, newsubsec->sector, rover, x, y, NULL);
-			bottomheight = P_CameraGetFOFBottomZ(thiscam, newsubsec->sector, rover, x, y, NULL);
+			topheight    = P_CameraGetFOFTopZ(thiscam, newsec, rover, x, y, NULL);
+			bottomheight = P_CameraGetFOFBottomZ(thiscam, newsec, rover, x, y, NULL);
 
 			delta1 = thiscam->z - (bottomheight
 				+ ((topheight - bottomheight)/2));
 			delta2 = thingtop - (bottomheight
 				+ ((topheight - bottomheight)/2));
+
 			if (topheight > tmfloorz && abs(delta1) < abs(delta2))
 			{
 				tmfloorz = tmdropoffz = topheight;
@@ -2147,6 +2080,8 @@ boolean P_CheckCameraPosition(fixed_t x, fixed_t y, camera_t *thiscam)
 	BMBOUNDFIX(xl, xh, yl, yh);
 
 	// Check polyobjects and see if tmfloorz/tmceilingz need to be altered
+	// do we really have to iterate through the complete blockmap for polyobjects if there are no polyobjects on the map?
+	if (numPolyObjects)
 	{
 		validcount++;
 
@@ -2185,7 +2120,7 @@ boolean P_CheckCameraPosition(fixed_t x, fixed_t y, camera_t *thiscam)
 						// We're inside it! Yess...
 						polysec = po->lines[0]->backsector;
 
-						if (GETSECSPECIAL(polysec->special, 4) == 12)
+						if (UNLIKELY(GETSECSPECIAL(polysec->special, 4) == 12))
 						{ // Camera noclip polyobj.
 							plink = (polymaplink_t *)(plink->link.next);
 							continue;
@@ -2238,29 +2173,20 @@ boolean P_CheckCameraPosition(fixed_t x, fixed_t y, camera_t *thiscam)
 //
 boolean P_TryCameraMove(fixed_t x, fixed_t y, camera_t *thiscam)
 {
-	subsector_t *s = R_PointInSubsector(x, y);
-	boolean retval = true;
-	boolean itsatwodlevel = false;
+	subsector_t *s;
 	UINT8 i;
 
 	floatok = false;
 
-	if (twodlevel)
-		itsatwodlevel = true;
-	else
-	{
-		for (i = 0; i <= splitscreen; i++)
-		{
-			if (thiscam == &camera[i] && players[displayplayers[i]].mo
-				&& (players[displayplayers[i]].mo->flags2 & MF2_TWOD))
-			{
-				itsatwodlevel = true;
-				break;
-			}
-		}
-	}
+	if (dedicated) // this crashes so don't even try it
+		return false;
 
-	if (!itsatwodlevel && players[displayplayers[0]].mo)
+	if (thiscam->x != x || thiscam->y != y || thiscam->subsector == NULL)
+		s = R_PointInSubsectorFast(x, y);
+	else
+		s = thiscam->subsector;
+
+	if (players[displayplayers[0]].mo)
 	{
 		fixed_t tryx = thiscam->x;
 		fixed_t tryy = thiscam->y;
@@ -2297,11 +2223,11 @@ boolean P_TryCameraMove(fixed_t x, fixed_t y, camera_t *thiscam)
 			else
 				tryy = y;
 
-			if (!P_CheckCameraPosition(tryx, tryy, thiscam))
-				return false; // solid wall or thing
-
 			if (tmceilingz - tmfloorz < thiscam->height)
 				return false; // doesn't fit
+
+			if (!P_CheckCameraPosition(tryx, tryy, thiscam))
+				return false; // solid wall or thing
 
 			floatok = true;
 
@@ -2323,11 +2249,12 @@ boolean P_TryCameraMove(fixed_t x, fixed_t y, camera_t *thiscam)
 
 			if ((tmfloorz - thiscam->z > MAXCAMERASTEPMOVE))
 				return false; // too big a step up
-		} while(tryx != x || tryy != y);
+
+		} while (tryx != x || tryy != y);
 	}
 	else
 	{
-		tmfloorz = P_CameraGetFloorZ(thiscam, thiscam->subsector->sector, x, y, NULL);
+		tmfloorz   = P_CameraGetFloorZ(thiscam, thiscam->subsector->sector, x, y, NULL);
 		tmceilingz = P_CameraGetCeilingZ(thiscam, thiscam->subsector->sector, x, y, NULL);
 	}
 
@@ -2340,7 +2267,7 @@ boolean P_TryCameraMove(fixed_t x, fixed_t y, camera_t *thiscam)
 	thiscam->y = y;
 	thiscam->subsector = s;
 
-	return retval;
+	return true;
 }
 
 //
@@ -2438,10 +2365,13 @@ boolean P_TryMove(mobj_t *thing, fixed_t x, fixed_t y, boolean allowdropoff)
 		radius = MAXRADIUS/2;
 
 	do {
-		if (thing->flags & MF_NOCLIP) {
+		if (thing->flags & MF_NOCLIP)
+		{
 			tryx = x;
 			tryy = y;
-		} else {
+		}
+		else
+		{
 			if (x-tryx > radius)
 				tryx += radius;
 			else if (x-tryx < -radius)
@@ -2474,14 +2404,6 @@ boolean P_TryMove(mobj_t *thing, fixed_t x, fixed_t y, boolean allowdropoff)
 				else if (P_PlayerTouchingSectorSpecial(thing->player, 1, 12)
 				|| GETSECSPECIAL(R_PointInSubsector(x, y)->sector->special, 1) == 12)
 					maxstep = 0;
-
-				// Don't 'step up' while springing,
-				// Only step up "if needed".
-				/* // SRB2kart - don't need
-				if (thing->state == &states[S_PLAY_SPRING]
-				&& P_MobjFlip(thing)*thing->momz > FixedMul(FRACUNIT, thing->scale))
-					maxstep = 0;
-				*/
 			}
 
 			if (thing->type == MT_SKIM)
@@ -2592,14 +2514,16 @@ boolean P_TryMove(mobj_t *thing, fixed_t x, fixed_t y, boolean allowdropoff)
 	if (!(thing->flags & MF_NOCLIPHEIGHT))
 	{
 		// Assign thing's standingslope if needed
-		if (thing->z <= tmfloorz && !(thing->eflags & MFE_VERTICALFLIP)) {
+		if (thing->z <= tmfloorz && !(thing->eflags & MFE_VERTICALFLIP))
+		{
 			if (!startingonground && tmfloorslope)
 				P_HandleSlopeLanding(thing, tmfloorslope);
 
 			if (thing->momz <= 0)
 				thing->standingslope = tmfloorslope;
 		}
-		else if (thing->z+thing->height >= tmceilingz && (thing->eflags & MFE_VERTICALFLIP)) {
+		else if (thing->z+thing->height >= tmceilingz && (thing->eflags & MFE_VERTICALFLIP))
+		{
 			if (!startingonground && tmceilingslope)
 				P_HandleSlopeLanding(thing, tmceilingslope);
 
@@ -3261,7 +3185,7 @@ stairstep:
 
 	P_HitSlideLine(bestslideline); // clip the moves
 
-	if ((twodlevel || (mo->flags2 & MF2_TWOD)) && mo->player)
+	if (UNLIKELY((twodlevel || (mo->flags2 & MF2_TWOD)) && mo->player))
 	{
 		mo->momx = tmxmove;
 		tmymove = 0;
@@ -3704,7 +3628,7 @@ static boolean PIT_ChangeSector(mobj_t *thing, boolean realcrush)
 
 						for (think = thinkercap.next; think != &thinkercap; think = think->next)
 						{
-							if (think->function.acp1 != (actionf_p1)T_StartCrumble)
+							if (think->function != (actionf_p1)T_StartCrumble)
 								continue;
 
 							crumbler = (elevator_t *)think;
@@ -3728,7 +3652,7 @@ static boolean PIT_ChangeSector(mobj_t *thing, boolean realcrush)
 		{
 			// Crush the object
 			if (netgame && thing->player && thing->player->spectator)
-				P_DamageMobj(thing, NULL, NULL, 42000); // Respawn crushed spectators
+				P_DamageMobj(thing, NULL, NULL, DMG_SPECTATOR); // Respawn crushed spectators
 			else
 			{
 				if (!killer)
@@ -3738,7 +3662,7 @@ static boolean PIT_ChangeSector(mobj_t *thing, boolean realcrush)
 					killer->threshold = 44; // Special flag for crushing
 				}
 				if (!thing->player)
-					P_DamageMobj(thing, killer, killer, 10000);
+					P_DamageMobj(thing, killer, killer, DMG_INSTAKILL);
 				else
 					K_SquishPlayer(thing->player, killer, killer); // SRB2kart - Squish instead of kill
 			}
@@ -3783,8 +3707,6 @@ boolean P_CheckSector(sector_t *sector, boolean crunch)
 				n->visited = false;
 
 			sec->moved = true;
-
-			P_RecalcPrecipInSector(sec);
 
 			if (!sector->attachedsolid[i])
 				continue;
@@ -3846,8 +3768,6 @@ boolean P_CheckSector(sector_t *sector, boolean crunch)
 
 			sec->moved = true;
 
-			P_RecalcPrecipInSector(sec);
-
 			if (!sector->attachedsolid[i])
 				continue;
 
@@ -3898,12 +3818,10 @@ boolean P_CheckSector(sector_t *sector, boolean crunch)
 */
 
 static msecnode_t *headsecnode = NULL;
-static mprecipsecnode_t *headprecipsecnode = NULL;
 
 void P_Initsecnode(void)
 {
 	headsecnode = NULL;
-	headprecipsecnode = NULL;
 }
 
 // P_GetSecnode() retrieves a node from the freelist. The calling routine
@@ -3923,33 +3841,12 @@ static msecnode_t *P_GetSecnode(void)
 	return node;
 }
 
-static mprecipsecnode_t *P_GetPrecipSecnode(void)
-{
-	mprecipsecnode_t *node;
-
-	if (headprecipsecnode)
-	{
-		node = headprecipsecnode;
-		headprecipsecnode = headprecipsecnode->m_thinglist_next;
-	}
-	else
-		node = Z_Calloc(sizeof (*node), PU_LEVEL, NULL);
-	return node;
-}
-
 // P_PutSecnode() returns a node to the freelist.
 
 static inline void P_PutSecnode(msecnode_t *node)
 {
 	node->m_thinglist_next = headsecnode;
 	headsecnode = node;
-}
-
-// Tails 08-25-2002
-static inline void P_PutPrecipSecnode(mprecipsecnode_t *node)
-{
-	node->m_thinglist_next = headprecipsecnode;
-	headprecipsecnode = node;
 }
 
 // P_AddSecnode() searches the current list to see if this sector is
@@ -3997,47 +3894,6 @@ static msecnode_t *P_AddSecnode(sector_t *s, mobj_t *thing, msecnode_t *nextnode
 	return node;
 }
 
-// More crazy crap Tails 08-25-2002
-static mprecipsecnode_t *P_AddPrecipSecnode(sector_t *s, precipmobj_t *thing, mprecipsecnode_t *nextnode)
-{
-	mprecipsecnode_t *node;
-
-	node = nextnode;
-	while (node)
-	{
-		if (node->m_sector == s) // Already have a node for this sector?
-		{
-			node->m_thing = thing; // Yes. Setting m_thing says 'keep it'.
-			return nextnode;
-		}
-		node = node->m_sectorlist_next;
-	}
-
-	// Couldn't find an existing node for this sector. Add one at the head
-	// of the list.
-
-	node = P_GetPrecipSecnode();
-
-	// mark new nodes unvisited.
-	node->visited = 0;
-
-	node->m_sector = s; // sector
-	node->m_thing = thing; // mobj
-	node->m_sectorlist_prev = NULL; // prev node on Thing thread
-	node->m_sectorlist_next = nextnode; // next node on Thing thread
-	if (nextnode)
-		nextnode->m_sectorlist_prev = node; // set back link on Thing
-
-	// Add new node at head of sector thread starting at s->touching_thinglist
-
-	node->m_thinglist_prev = NULL; // prev node on sector thread
-	node->m_thinglist_next = s->touching_preciplist; // next node on sector thread
-	if (s->touching_preciplist)
-		node->m_thinglist_next->m_thinglist_prev = node;
-	s->touching_preciplist = node;
-	return node;
-}
-
 // P_DelSecnode() deletes a sector node from the list of
 // sectors this object appears in. Returns a pointer to the next node
 // on the linked list, or NULL.
@@ -4080,57 +3936,11 @@ static msecnode_t *P_DelSecnode(msecnode_t *node)
 	return tn;
 }
 
-// Tails 08-25-2002
-static mprecipsecnode_t *P_DelPrecipSecnode(mprecipsecnode_t *node)
-{
-	mprecipsecnode_t *tp; // prev node on thing thread
-	mprecipsecnode_t *tn; // next node on thing thread
-	mprecipsecnode_t *sp; // prev node on sector thread
-	mprecipsecnode_t *sn; // next node on sector thread
-
-	if (!node)
-		return NULL;
-
-	// Unlink from the Thing thread. The Thing thread begins at
-	// sector_list and not from mobj_t->touching_sectorlist.
-
-	tp = node->m_sectorlist_prev;
-	tn = node->m_sectorlist_next;
-	if (tp)
-		tp->m_sectorlist_next = tn;
-	if (tn)
-		tn->m_sectorlist_prev = tp;
-
-	// Unlink from the sector thread. This thread begins at
-	// sector_t->touching_thinglist.
-
-	sp = node->m_thinglist_prev;
-	sn = node->m_thinglist_next;
-	if (sp)
-		sp->m_thinglist_next = sn;
-	else
-		node->m_sector->touching_preciplist = sn;
-	if (sn)
-		sn->m_thinglist_prev = sp;
-
-	// Return this node to the freelist
-
-	P_PutPrecipSecnode(node);
-	return tn;
-}
-
 // Delete an entire sector list
 void P_DelSeclist(msecnode_t *node)
 {
 	while (node)
 		node = P_DelSecnode(node);
-}
-
-// Tails 08-25-2002
-void P_DelPrecipSeclist(mprecipsecnode_t *node)
-{
-	while (node)
-		node = P_DelPrecipSecnode(node);
 }
 
 // PIT_GetSectors
@@ -4145,7 +3955,7 @@ static inline boolean PIT_GetSectors(line_t *ld)
 		tmbbox[BOXLEFT] >= ld->bbox[BOXRIGHT] ||
 		tmbbox[BOXTOP] <= ld->bbox[BOXBOTTOM] ||
 		tmbbox[BOXBOTTOM] >= ld->bbox[BOXTOP])
-	return true;
+		return true;
 
 	if (P_BoxOnLineSide(tmbbox, ld) != -1)
 		return true;
@@ -4169,41 +3979,6 @@ static inline boolean PIT_GetSectors(line_t *ld)
 	// Use sidedefs instead of 2s flag to determine two-sidedness.
 	if (ld->backsector)
 		sector_list = P_AddSecnode(ld->backsector, tmthing, sector_list);
-
-	return true;
-}
-
-// Tails 08-25-2002
-static inline boolean PIT_GetPrecipSectors(line_t *ld)
-{
-	if (preciptmbbox[BOXRIGHT] <= ld->bbox[BOXLEFT] ||
-		preciptmbbox[BOXLEFT] >= ld->bbox[BOXRIGHT] ||
-		preciptmbbox[BOXTOP] <= ld->bbox[BOXBOTTOM] ||
-		preciptmbbox[BOXBOTTOM] >= ld->bbox[BOXTOP])
-	return true;
-
-	if (P_BoxOnLineSide(preciptmbbox, ld) != -1)
-		return true;
-
-	if (ld->polyobj) // line belongs to a polyobject, don't add it
-		return true;
-
-	// This line crosses through the object.
-
-	// Collect the sector(s) from the line and add to the
-	// sector_list you're examining. If the Thing ends up being
-	// allowed to move to this position, then the sector_list
-	// will be attached to the Thing's mobj_t at touching_sectorlist.
-
-	precipsector_list = P_AddPrecipSecnode(ld->frontsector, tmprecipthing, precipsector_list);
-
-	// Don't assume all lines are 2-sided, since some Things
-	// like MT_TFOG are allowed regardless of whether their radius takes
-	// them beyond an impassable linedef.
-
-	// Use sidedefs instead of 2s flag to determine two-sidedness.
-	if (ld->backsector)
-		precipsector_list = P_AddPrecipSecnode(ld->backsector, tmprecipthing, precipsector_list);
 
 	return true;
 }
@@ -4294,73 +4069,6 @@ void P_CreateSecNodeList(mobj_t *thing, fixed_t x, fixed_t y)
 	}
 }
 
-// More crazy crap Tails 08-25-2002
-void P_CreatePrecipSecNodeList(precipmobj_t *thing,fixed_t x,fixed_t y)
-{
-	INT32 xl, xh, yl, yh, bx, by;
-	mprecipsecnode_t *node = precipsector_list;
-	precipmobj_t *saved_tmthing = tmprecipthing; /* cph - see comment at func end */
-
-	// First, clear out the existing m_thing fields. As each node is
-	// added or verified as needed, m_thing will be set properly. When
-	// finished, delete all nodes where m_thing is still NULL. These
-	// represent the sectors the Thing has vacated.
-
-	while (node)
-	{
-		node->m_thing = NULL;
-		node = node->m_sectorlist_next;
-	}
-
-	tmprecipthing = thing;
-
-	preciptmbbox[BOXTOP] = y + 2*FRACUNIT;
-	preciptmbbox[BOXBOTTOM] = y - 2*FRACUNIT;
-	preciptmbbox[BOXRIGHT] = x + 2*FRACUNIT;
-	preciptmbbox[BOXLEFT] = x - 2*FRACUNIT;
-
-	validcount++; // used to make sure we only process a line once
-
-	xl = (unsigned)(preciptmbbox[BOXLEFT] - bmaporgx)>>MAPBLOCKSHIFT;
-	xh = (unsigned)(preciptmbbox[BOXRIGHT] - bmaporgx)>>MAPBLOCKSHIFT;
-	yl = (unsigned)(preciptmbbox[BOXBOTTOM] - bmaporgy)>>MAPBLOCKSHIFT;
-	yh = (unsigned)(preciptmbbox[BOXTOP] - bmaporgy)>>MAPBLOCKSHIFT;
-
-	BMBOUNDFIX(xl, xh, yl, yh);
-
-	for (bx = xl; bx <= xh; bx++)
-		for (by = yl; by <= yh; by++)
-			P_BlockLinesIterator(bx, by, PIT_GetPrecipSectors);
-
-	// Add the sector of the (x, y) point to sector_list.
-	precipsector_list = P_AddPrecipSecnode(thing->subsector->sector, thing, precipsector_list);
-
-	// Now delete any nodes that won't be used. These are the ones where
-	// m_thing is still NULL.
-	node = precipsector_list;
-	while (node)
-	{
-		if (!node->m_thing)
-		{
-			if (node == precipsector_list)
-				precipsector_list = node->m_sectorlist_next;
-			node = P_DelPrecipSecnode(node);
-		}
-		else
-			node = node->m_sectorlist_next;
-	}
-
-	/* cph -
-	* This is the strife we get into for using global variables. tmthing
-	*  is being used by several different functions calling
-	*  P_BlockThingIterator, including functions that can be called *from*
-	*  P_BlockThingIterator. Using a global tmthing is not reentrant.
-	* OTOH for Boom/MBF demos we have to preserve the buggy behavior.
-	*  Fun. We restore its previous value unless we're in a Boom/MBF demo.
-	*/
-	tmprecipthing = saved_tmthing;
-}
-
 /* cphipps 2004/08/30 -
  * Must clear tmthing at tic end, as it might contain a pointer to a removed thinker, or the level might have ended/been ended and we clear the objects it was pointing too. Hopefully we don't need to carry this between tics for sync. */
 void P_MapStart(void)
@@ -4380,10 +4088,7 @@ void P_MapEnd(void)
 fixed_t P_FloorzAtPos(fixed_t x, fixed_t y, fixed_t z, fixed_t height)
 {
 	sector_t *sec = R_PointInSubsector(x, y)->sector;
-	fixed_t floorz = sec->floorheight;
-
-	if (sec->f_slope)
-		floorz = P_GetZAt(sec->f_slope, x, y);
+	fixed_t floorz = P_GetSectorFloorZAt(sec, x, y);
 
 	// Intercept the stupid 'fall through 3dfloors' bug Tails 03-17-2002
 	if (sec->ffloors)
@@ -4394,19 +4099,15 @@ fixed_t P_FloorzAtPos(fixed_t x, fixed_t y, fixed_t z, fixed_t height)
 		for (rover = sec->ffloors; rover; rover = rover->next)
 		{
 			fixed_t topheight, bottomheight;
+
 			if (!(rover->flags & FF_EXISTS))
 				continue;
 
 			if ((!(rover->flags & FF_SOLID || rover->flags & FF_QUICKSAND) || (rover->flags & FF_SWIMMABLE)))
 				continue;
 
-			topheight = *rover->topheight;
-			bottomheight = *rover->bottomheight;
-
-			if (*rover->t_slope)
-				topheight = P_GetZAt(*rover->t_slope, x, y);
-			if (*rover->b_slope)
-				bottomheight = P_GetZAt(*rover->b_slope, x, y);
+			topheight    = P_GetFFloorTopZAt   (rover, x, y);
+			bottomheight = P_GetFFloorBottomZAt(rover, x, y);
 
 			if (rover->flags & FF_QUICKSAND)
 			{
@@ -4420,6 +4121,7 @@ fixed_t P_FloorzAtPos(fixed_t x, fixed_t y, fixed_t z, fixed_t height)
 
 			delta1 = z - (bottomheight + ((topheight - bottomheight)/2));
 			delta2 = thingtop - (bottomheight + ((topheight - bottomheight)/2));
+
 			if (topheight > floorz && abs(delta1) < abs(delta2))
 				floorz = topheight;
 		}

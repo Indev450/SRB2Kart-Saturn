@@ -14,6 +14,10 @@
 
 #ifdef __GNUC__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #if (__GNUC__ > 4) || (__GNUC__ == 4 && __GNUC_MINOR__ >= 3)
 // Ignore "argument might be clobbered by longjmp" warning in GCC
 // (if libpng is compiled with setjmp error handling)
@@ -26,6 +30,8 @@
 
 // Extended map support.
 #include <ctype.h>
+
+#include "am_map.h"
 
 #include "doomdef.h"
 #include "g_game.h"
@@ -53,10 +59,11 @@
 
 #ifdef HAVE_SDL
 #include "sdl/hwsym_sdl.h"
+#endif
+
 #ifdef __linux__
 #ifndef _LARGEFILE64_SOURCE
 typedef off_t off64_t;
-#endif
 #endif
 #endif
 
@@ -107,6 +114,9 @@ consvar_t cv_screenshot_folder = {"screenshot_folder", "", CV_SAVE, NULL, NULL, 
 
 static CV_PossibleValue_t moviemode_cons_t[] = {{MM_GIF, "GIF"}, {MM_APNG, "aPNG"}, {MM_SCREENSHOT, "Screenshots"}, {0, NULL}};
 consvar_t cv_moviemode = {"moviemode_mode", "GIF", CV_SAVE|CV_CALL, moviemode_cons_t, Moviemode_mode_Onchange, 0, NULL, NULL, 0, 0, NULL};
+
+consvar_t cv_movie_option = {"movie_option", "Default", CV_SAVE|CV_CALL, screenshot_cons_t, Moviemode_option_Onchange, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_movie_folder = {"movie_folder", "", CV_SAVE, NULL, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 static CV_PossibleValue_t zlib_mem_level_t[] = {
 	{1, "(Min Memory) 1"},
@@ -438,7 +448,6 @@ char configfile[MAX_WADPATH];
 // ==========================================================================
 //                          CONFIGURATION
 // ==========================================================================
-static boolean gameconfig_loaded = false; // true once config.cfg loaded AND executed
 
 /** Saves a player's config, possibly to a particular file.
   *
@@ -543,10 +552,28 @@ void M_FirstLoadConfig(void)
 	// don't filter anymore vars and don't let this convsvar be changed
 	COM_BufInsertText(va("%s \"%d\"\n", cv_execversion.name, EXECVERSION));
 	CV_ToggleExecVersion(false);
+}
 
-	// make sure I_Quit() will write back the correct config
-	// (do not write back the config if it crash before)
-	gameconfig_loaded = true;
+static boolean M_BackupConfig(const char *filename)
+{
+	char backupfile[MAX_WADPATH+4];
+
+	snprintf(backupfile, sizeof backupfile, "%s.bak", filename);
+	backupfile[sizeof backupfile - 1] = '\0';
+
+	FILE *config = fopen(filename, "r");
+
+	if (config != NULL)
+	{
+		fclose(config);
+		if (FIL_CopyFile(filename, backupfile) == false)
+		{
+			CONS_Alert(CONS_WARNING,"Failed to create a backup of the configuration file. Will not attempt to write to file\n");
+			return false;
+		}
+	}
+
+	return true;
 }
 
 /** Saves the game configuration.
@@ -560,7 +587,7 @@ void M_SaveConfig(const char *filename)
 	char backupfile[MAX_WADPATH+4];
 
 	// make sure not to write back the config until it's been correctly loaded
-	if (!gameconfig_loaded)
+	if (!loaded_config)
 		return;
 
 	// Create backup of the config file
@@ -595,6 +622,10 @@ void M_SaveConfig(const char *filename)
 		else
 			filepath = Z_StrDup(filename);
 
+		// If failed to backup, do not proceed
+		if (!M_BackupConfig(filepath))
+			return;
+
 		f = fopen(filepath, "w");
 		// change it only if valid
 		if (f)
@@ -612,6 +643,10 @@ void M_SaveConfig(const char *filename)
 			CONS_Alert(CONS_NOTICE, M_GetText("Config filename must be .cfg\n"));
 			return;
 		}
+
+		// If failed to backup, do not proceed
+		if (!M_BackupConfig(configfile))
+			return;
 
 		f = fopen(configfile, "w");
 		if (!f)
@@ -1046,7 +1081,7 @@ static boolean M_SetupaPNG(png_const_charp filename, png_bytep pal)
 	png_init_io(apng_ptr, apng_FILE);
 
 #ifdef PNG_SET_USER_LIMITS_SUPPORTED
-	png_set_user_limits(apng_ptr, MAXPNGWIDTH, MAXPNGHEIGHT);
+	png_set_user_limits(apng_ptr, MAXVIDWIDTH, MAXVIDHEIGHT);
 #endif
 
 	//png_set_filter(apng_ptr, 0, PNG_ALL_FILTERS);
@@ -1142,19 +1177,25 @@ static inline moviemode_t M_StartMovieGIF(const char *pathname)
 void M_StartMovie(void)
 {
 #if NUMSCREENS > 2
-	const char *pathname = ".";
+	char pathname[MAX_WADPATH];
 
 	if (moviemode)
 		return;
 
-	if (cv_screenshot_option.value == 0)
-		pathname = usehome ? srb2home : srb2path;
-	else if (cv_screenshot_option.value == 1)
-		pathname = srb2home;
-	else if (cv_screenshot_option.value == 2)
-		pathname = srb2path;
-	else if (cv_screenshot_option.value == 3 && *cv_screenshot_folder.string != '\0')
-		pathname = cv_screenshot_folder.string;
+	if (cv_movie_option.value == 0)
+		strcpy(pathname, usehome ? srb2home : srb2path);
+	else if (cv_movie_option.value == 1)
+		strcpy(pathname, srb2home);
+	else if (cv_movie_option.value == 2)
+		strcpy(pathname, srb2path);
+	else if (cv_movie_option.value == 3 && *cv_movie_folder.string != '\0')
+		strcpy(pathname, cv_movie_folder.string);
+
+	if (cv_movie_option.value != 3)
+	{
+		strcat(pathname, PATHSEP"gifs"PATHSEP);
+		I_mkdir(pathname, 0755);
+	}
 
 	if (rendermode == render_none)
 		I_Error("Can't make a movie without a render system\n");
@@ -1217,7 +1258,7 @@ void M_SaveFrame(void)
 				if (rendermode == render_soft)
 				{
 					// munge planar buffer to linear
-					linear = screens[2];
+					linear = vid.screens[2];
 					I_ReadScreen(linear);
 				}
 #ifdef HWRENDER
@@ -1355,7 +1396,7 @@ boolean M_SavePNG(const char *filename, void *data, int width, int height, const
 	png_init_io(png_ptr, png_FILE);
 
 #ifdef PNG_SET_USER_LIMITS_SUPPORTED
-	png_set_user_limits(png_ptr, MAXPNGWIDTH, MAXPNGHEIGHT);
+	png_set_user_limits(png_ptr, MAXVIDWIDTH, MAXVIDHEIGHT);
 #endif
 
 	//png_set_filter(png_ptr, 0, PNG_ALL_FILTERS);
@@ -1480,7 +1521,8 @@ void M_ScreenShot(void)
 void M_DoScreenShot(void)
 {
 #if NUMSCREENS > 2
-	const char *freename = NULL, *pathname = ".";
+	const char *freename = NULL;
+	char pathname[MAX_WADPATH];
 	boolean ret = false;
 	UINT8 *linear = NULL;
 
@@ -1492,13 +1534,19 @@ void M_DoScreenShot(void)
 		return;
 
 	if (cv_screenshot_option.value == 0)
-		pathname = usehome ? srb2home : srb2path;
+		strcpy(pathname, usehome ? srb2home : srb2path);
 	else if (cv_screenshot_option.value == 1)
-		pathname = srb2home;
+		strcpy(pathname, srb2home);
 	else if (cv_screenshot_option.value == 2)
-		pathname = srb2path;
+		strcpy(pathname, srb2path);
 	else if (cv_screenshot_option.value == 3 && *cv_screenshot_folder.string != '\0')
-		pathname = cv_screenshot_folder.string;
+		strcpy(pathname, cv_screenshot_folder.string);
+
+	if (cv_screenshot_option.value != 3)
+	{
+		strcat(pathname, PATHSEP"screenshots"PATHSEP);
+		I_mkdir(pathname, 0755);
+	}
 
 #ifdef USE_PNG
 	freename = Newsnapshotfile(pathname,"png");
@@ -1512,7 +1560,7 @@ void M_DoScreenShot(void)
 	if (rendermode == render_soft)
 	{
 		// munge planar buffer to linear
-		linear = screens[2];
+		linear = vid.screens[2];
 		I_ReadScreen(linear);
 	}
 
@@ -1564,62 +1612,137 @@ boolean M_ScreenshotResponder(event_t *ev)
 	if (ch >= KEY_MOUSE1 && menuactive) // If it's not a keyboard key, then don't allow it in the menus!
 		return false;
 
-	if (ch == KEY_F8 || ch == gamecontrol[gc_screenshot][0] || ch == gamecontrol[gc_screenshot][1]) // remappable F8
+	if (ch == KEY_F8 || ch == gamecontrol[0][gc_screenshot][0] || ch == gamecontrol[0][gc_screenshot][1]) // remappable F8
 		M_ScreenShot();
-	else if (ch == KEY_F9 || ch == gamecontrol[gc_recordgif][0] || ch == gamecontrol[gc_recordgif][1]) // remappable F9
+	else if (ch == KEY_F9 || ch == gamecontrol[0][gc_recordgif][0] || ch == gamecontrol[0][gc_recordgif][1]) // remappable F9
 		((moviemode) ? M_StopMovie : M_StartMovie)();
 	else
 		return false;
 	return true;
 }
 
-// ==========================================================================
-//                       TRANSLATION FUNCTIONS
-// ==========================================================================
 
-// M_StartupLocale.
-// Sets up gettext to translate SRB2's strings.
-#ifdef GETTEXT
-#if defined (__unix__) || defined(__APPLE__) || defined (UNIXCOMMON)
-#define GETTEXTDOMAIN1 "/usr/share/locale"
-#define GETTEXTDOMAIN2 "/usr/local/share/locale"
-#elif defined (_WIN32)
-#define GETTEXTDOMAIN1 "."
-#endif
-
-void M_StartupLocale(void)
+void M_ScrollString(const char name[], size_t len, char result[], size_t maxlen, tic_t timer)
 {
-	char *textdomhandle = NULL;
+	// How much should we scroll. Not sure why +1 is needed, but without it this function skips 2
+	// characters at once sometimes
+	const size_t amount = len - maxlen + 1;
 
-	CONS_Printf("M_StartupLocale...\n");
+	// Note: anything above 17 will cause zero division
+	const size_t MAXSPEED = 6;
+	const tic_t t = timer / (35/min(amount, MAXSPEED));
 
-	setlocale(LC_ALL, "");
+	const size_t state = (t / amount) % 4;
 
-	// Do not set numeric locale as that affects atof
-	setlocale(LC_NUMERIC, "C");
+	switch (state)
+	{
+		// Show beginning of the name
+		case 0:
+			memcpy(result, name, maxlen-1);
+		break;
 
-	// FIXME: global name define anywhere?
-#ifdef GETTEXTDOMAIN1
-	textdomhandle = bindtextdomain("srb2", GETTEXTDOMAIN1);
-#endif
-#ifdef GETTEXTDOMAIN2
-	if (!textdomhandle)
-		textdomhandle = bindtextdomain("srb2", GETTEXTDOMAIN2);
-#endif
-#ifdef GETTEXTDOMAIN3
-	if (!textdomhandle)
-		textdomhandle = bindtextdomain("srb2", GETTEXTDOMAIN3);
-#endif
-#ifdef GETTEXTDOMAIN4
-	if (!textdomhandle)
-		textdomhandle = bindtextdomain("srb2", GETTEXTDOMAIN4);
-#endif
-	if (textdomhandle)
-		textdomain("srb2");
-	else
-		CONS_Printf("Could not find locale text domain!\n");
+		// Scroll towards end of the name
+		case 1:
+		{
+			const size_t advance = t % amount;
+			memcpy(result, name+advance, maxlen-1);
+		}
+		break;
+
+		// Show end of the name
+		case 2:
+			memcpy(result, name+len+1-maxlen, maxlen-1);
+		break;
+
+		// Scroll towards start of the name
+		case 3:
+		{
+			const size_t advance = t % amount;
+			memcpy(result, name+len+1-maxlen-advance, maxlen-1);
+		}
+		break;
+	}
+
+	// Technically not necessary, since it gets set again after function call, but just in case
+	result[maxlen] = 0;
 }
-#endif
+
+void M_MinimapGenerate(void)
+{
+#ifdef USE_PNG
+	char *filepath;
+	boolean ret = false;
+	minigen_t *minigen = NULL;
+	size_t option_scale;
+	INT32 mul = 1;
+
+	if (gamestate != GS_LEVEL)
+	{
+		CONS_Alert(CONS_ERROR, "You must be in a level to generate a preliminary minimap!\n");
+		return;
+	}
+
+	if (automapactive)
+	{
+		CONS_Alert(CONS_ERROR, "The automap is active! Please deactivate it and try again.\n");
+		return;
+	}
+
+	option_scale = COM_CheckPartialParm("-m");
+
+	if (option_scale)
+	{
+		if (COM_Argc() < option_scale + 2)/* no argument after? */
+		{
+			CONS_Alert(CONS_ERROR,
+					"No multiplier follows parameter '%s'.\n",
+					COM_Argv(option_scale));
+			return;
+		}
+
+		mul = atoi(COM_Argv(option_scale + 1));
+
+		if (mul < 1 || mul > 10)
+		{
+			CONS_Alert(CONS_ERROR,
+					"Multiplier %d must be within range 1-10.\n",
+					mul);
+			return;
+		}
+
+		filepath = va("%s" PATHSEP "%s-MINIMAP-%d.png", srb2home, G_BuildMapName(gamemap), mul);
+	}
+	else
+	{
+		filepath = va("%s" PATHSEP "%s-MINIMAP.png", srb2home, G_BuildMapName(gamemap));
+	}
+
+	minigen = AM_MinimapGenerate(mul);
+
+	if (minigen == NULL || minigen->buf == NULL)
+		goto failure;
+
+	M_CreateScreenShotPalette();
+	ret = M_SavePNG(filepath, minigen->buf, minigen->w, minigen->h, screenshot_palette);
+
+failure:
+	if (minigen->buf != NULL)
+		free(minigen->buf);
+
+	if (ret)
+	{
+		CONS_Printf(M_GetText("%s saved.\nRemember that this is not a complete minimap,\nand must be edited before putting in-game.\n"), filepath);
+		if (mul != 1)
+		{
+			CONS_Printf("You should divide its size by %d!\n", mul);
+		}
+	}
+	else
+	{
+		CONS_Alert(CONS_ERROR, M_GetText("Couldn't create %s\n"), filepath);
+	}
+#endif //#ifdef USE_PNG
+}
 
 // ==========================================================================
 //                        MISC STRING FUNCTIONS
@@ -1700,6 +1823,87 @@ INT32 axtoi(const char *hexStg)
 		n++;
 	}
 	return intValue;
+}
+
+void CopyCaretColors(char *p, const char *s, int n)
+{
+	char *t;
+	int   m;
+	int   c;
+
+	if (!n)
+		return;
+
+	while (( t = strchr(s, '^') ))
+	{
+		m = ( t - s );
+
+		if (m >= n)
+		{
+			memcpy(p, s, n);
+			return;
+		}
+		else
+			memcpy(p, s, m);
+
+		p += m;
+		n -= m;
+		s += m;
+
+		if (!n)
+			return;
+
+		if (s[1])
+		{
+			c = toupper(s[1]);
+			if (isdigit(c))
+				c = 0x80 + ( c - '0' );
+			else if (c >= 'A' && c <= 'F')
+				c = 0x80 + ( c - 'A' );
+			else
+				c = 0;
+
+			if (c)
+			{
+				*p++ = c;
+				n--;
+
+				if (!n)
+					return;
+			}
+			else
+			{
+				if (n < 2)
+					break;
+
+				memcpy(p, s, 2);
+
+				p += 2;
+				n -= 2;
+			}
+
+			s += 2;
+		}
+		else
+			break;
+	}
+
+	strncpy(p, s, n);
+}
+
+void StripColors(char *dst, char *src, size_t n)
+{
+	size_t j = 0;
+
+	for (size_t i = 0; j < n && src[i] != 0; ++i)
+	{
+		char c = src[i];
+
+		if ((c & 0x80) == 0)
+			dst[j++] = c;
+	}
+
+	dst[j] = 0;
 }
 
 /** Token parser for TEXTURES, ANIMDEFS, and potentially other lumps later down the line.
@@ -1862,6 +2066,25 @@ char *M_GetToken(const char *inputString)
 	return texturesToken;
 }
 
+
+const char * M_Ftrim (double f)
+{
+	static char dig[9];/* "0." + 6 digits (6 is printf's default) */
+	int i;
+	/* I know I said it's the default, but just in case... */
+	sprintf(dig, "%.6f", fabs(modf(f, &f)));
+	/* trim trailing zeroes */
+	for (i = strlen(dig)-1; dig[i] == '0'; --i)
+		;
+	if (dig[i] == '.')/* :NOTHING: */
+		return "";
+	else
+	{
+		dig[i + 1] = '\0';
+		return &dig[1];/* skip the 0 */
+	}
+}
+
 /** Count bits in a number.
   */
 UINT8 M_CountBits(UINT32 num, UINT8 size)
@@ -1987,11 +2210,6 @@ char *sizeu5(size_t num)
 	return sizeu5_buf;
 }
 
-FUNCINLINE ATTRINLINE void *M_Memcpy(void *dest, const void *src, size_t n)
-{
-	return memcpy(dest, src, n);
-}
-
 /** Return the appropriate message for a file error or end of file.
 */
 const char *M_FileError(FILE *fp)
@@ -2001,3 +2219,143 @@ const char *M_FileError(FILE *fp)
 	else
 		return "end-of-file";
 }
+
+/** Return the number of parts of this path.
+*/
+int M_PathParts(const char *path)
+{
+	int n;
+	const char *p;
+	const char *t;
+	if (path == NULL)
+		return 0;
+	for (n = 0, p = path ;; ++n)
+	{
+		t = p;
+		if (( p = strchr(p, PATHSEP[0]) ))
+			p += strspn(p, PATHSEP);
+		else
+		{
+			if (*t)/* there is something after the final delimiter */
+				n++;
+			break;
+		}
+	}
+	return n;
+}
+
+/** Check whether a path is an absolute path.
+*/
+boolean M_IsPathAbsolute(const char *path)
+{
+#ifdef _WIN32
+	return ( strncmp(&path[1], ":\\", 2) == 0 );
+#else
+	return ( path[0] == '/' );
+#endif
+}
+
+/** I_mkdir for each part of the path.
+*/
+void M_MkdirEachUntil(const char *cpath, int start, int end, int mode)
+{
+	char path[MAX_WADPATH];
+	char *p;
+	char *t;
+
+	if (end > 0 && end <= start)
+		return;
+
+	strlcpy(path, cpath, sizeof path);
+#ifdef _WIN32
+	if (strncmp(&path[1], ":\\", 2) == 0)
+		p = &path[3];
+	else
+#endif
+		p = path;
+
+	if (end > 0)
+		end -= start;
+
+	for (; start > 0; --start)
+	{
+		p += strspn(p, PATHSEP);
+		if (!( p = strchr(p, PATHSEP[0]) ))
+			return;
+	}
+	p += strspn(p, PATHSEP);
+	for (;;)
+	{
+		if (end > 0 && !--end)
+			break;
+
+		t = p;
+		if (( p = strchr(p, PATHSEP[0]) ))
+		{
+			*p = '\0';
+			I_mkdir(path, mode);
+			*p = PATHSEP[0];
+			p += strspn(p, PATHSEP);
+		}
+		else
+		{
+			if (*t)
+				I_mkdir(path, mode);
+			break;
+		}
+	}
+}
+
+void M_MkdirEach(const char *path, int start, int mode)
+{
+	M_MkdirEachUntil(path, start, -1, mode);
+}
+
+// Hashes some message using FNV-1a
+#define FNV1A_OFFSET_BASIS 0x811C9DC5
+#define FNV1A_PRIME        0x01000193
+
+UINT32 FNV1a_Hash(const char *message, size_t size)
+{
+	UINT32 hash = FNV1A_OFFSET_BASIS;
+
+	for (size_t i = 0; i < size; i++)
+	{
+		hash ^= message[i];
+		hash *= FNV1A_PRIME;
+	}
+
+	return hash;
+}
+
+UINT32 FNV1a_HashString(const char *message)
+{
+	UINT32 hash = FNV1A_OFFSET_BASIS;
+
+	while (*message)
+	{
+		hash ^= *message;
+		hash *= FNV1A_PRIME;
+		message++;
+	}
+
+	return hash;
+}
+
+UINT32 FNV1a_HashLowercaseString(const char *message)
+{
+	UINT32 hash = FNV1A_OFFSET_BASIS;
+
+	while (*message)
+	{
+		hash ^= tolower(*message);
+		hash *= FNV1A_PRIME;
+		message++;
+	}
+
+	return hash;
+}
+
+#ifdef __cplusplus
+} // extern "C"
+#endif

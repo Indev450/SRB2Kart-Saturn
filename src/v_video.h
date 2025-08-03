@@ -14,45 +14,52 @@
 #ifndef __V_VIDEO__
 #define __V_VIDEO__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "doomdef.h"
 #include "doomtype.h"
 #include "r_defs.h"
+#include "r_main.h"
 
 //
 // VIDEO
 //
 
-// Screen 0 is the screen updated by I_Update screen.
-// Screen 1 is an extra buffer.
-
-extern UINT8 *screens[5];
-
-extern consvar_t cv_ticrate, cv_accuratefps, cv_allcaps, cv_constextsize, cv_menucaps,\
-cv_globalgamma, cv_globalsaturation,\
-cv_rhue, cv_yhue, cv_ghue, cv_chue, cv_bhue, cv_mhue,\
-cv_rgamma, cv_ygamma, cv_ggamma, cv_cgamma, cv_bgamma, cv_mgamma, \
-cv_rsaturation, cv_ysaturation, cv_gsaturation, cv_csaturation, cv_bsaturation, cv_msaturation;
-
+extern consvar_t cv_ticrate, cv_accuratefps, cv_allcaps, cv_constextsize, cv_menucaps,
+cv_globalgamma, cv_globalsaturation,
+cv_rhue, cv_yhue, cv_ghue, cv_chue, cv_bhue, cv_mhue,
+cv_rgamma, cv_ygamma, cv_ggamma, cv_cgamma, cv_bgamma, cv_mgamma,
+cv_rsaturation, cv_ysaturation, cv_gsaturation, cv_csaturation, cv_bsaturation, cv_msaturation,
+cv_palette, cv_palettenum;
 
 // Allocates buffer screens, call before R_Init.
 void V_Init(void);
 
-// Taken from my videos-in-SRB2 project
-// Generates a color look-up table
-// which has up to 64 colors at each channel
+// Color look-up table
+#define CLUTINDEX(r, g, b) (((r) >> 3) << 11) | (((g) >> 2) << 5) | ((b) >> 3)
 
-#define COLORBITS 6
-#define SHIFTCOLORBITS (8-COLORBITS)
-#define CLUTSIZE (1<<COLORBITS)
+typedef struct
+{
+	boolean init;
+	RGBA_t palette[256];
+	UINT16 table[0x10000];
+} colorlookup_t;
 
-extern UINT8 colorlookup[CLUTSIZE][CLUTSIZE][CLUTSIZE];
+void InitColorLUT(colorlookup_t *lut, RGBA_t *palette, boolean makecolors);
+UINT8 GetColorLUT(colorlookup_t *lut, UINT8 r, UINT8 g, UINT8 b);
+UINT8 GetColorLUTDirect(colorlookup_t *lut, UINT8 r, UINT8 g, UINT8 b);
 
-void InitColorLUT(void);
+// Loads the correct palette into memory
+void V_ReloadPalette(void);
 
 // Set the current RGB palette lookup to use for palettized graphics
 void V_SetPalette(INT32 palettenum);
 
 void V_SetPaletteLump(const char *pal);
+
+void V_ResetPaletteCVars(void);
 
 const char *R_GetPalname(UINT16 num);
 const char *GetPalette(void);
@@ -60,8 +67,6 @@ const char *GetPalette(void);
 extern RGBA_t *pLocalPalette;
 
 extern UINT8 hudtrans;
-
-extern INT32 V_LocalTransFlag(void);
 
 void V_CubeApply(UINT8 *red, UINT8 *green, UINT8 *blue);
 
@@ -139,6 +144,17 @@ void V_CubeApply(UINT8 *red, UINT8 *green, UINT8 *blue);
 #define V_SPLITSCREEN        0x40000000
 #define V_HORZSCREEN         0x80000000
 
+// blendmodes are separated into their own category so as to allow older visflags to coexist
+// use bits 21-23 for blendmodes
+#define V_BLENDSHIFT         20
+#define V_BLENDMASK          0x00700000
+// preshifted blend flags minus 1 as effects don't distinguish between AST_COPY and AST_TRANSLUCENT
+#define B_ADD                ((AST_ADD-1)<<V_BLENDSHIFT) // Additive
+#define B_SUBTRACT           ((AST_SUBTRACT-1)<<V_BLENDSHIFT) // Subtractive
+#define B_REVERSESUBTRACT    ((AST_REVERSESUBTRACT-1)<<V_BLENDSHIFT) // Reverse subtractive
+#define B_MODULATE           ((AST_MODULATE-1)<<V_BLENDSHIFT) // Modulate
+
+
 // defines for old functions
 #define V_DrawPatch(x,y,s,p) V_DrawFixedPatch((x)<<FRACBITS, (y)<<FRACBITS, FRACUNIT, s|V_NOSCALESTART|V_NOSCALEPATCH, p, NULL)
 #define V_DrawTranslucentMappedPatch(x,y,s,p,c) V_DrawFixedPatch((x)<<FRACBITS, (y)<<FRACBITS, FRACUNIT, s, p, c)
@@ -154,8 +170,9 @@ void V_CubeApply(UINT8 *red, UINT8 *green, UINT8 *blue);
 #define V_DrawSmallTranslucentPatch(x,y,s,p) V_DrawFixedPatch((x)<<FRACBITS, (y)<<FRACBITS, FRACUNIT/2, s, p, NULL)
 #define V_DrawTinyTranslucentPatch(x,y,s,p) V_DrawFixedPatch((x)<<FRACBITS, (y)<<FRACBITS, FRACUNIT/4, s, p, NULL)
 #define V_DrawSciencePatch(x,y,s,p,sc) V_DrawFixedPatch(x,y,sc,s,p,NULL)
-#define V_DrawFixedPatch(x,y,sc,s,p,c) V_DrawStretchyFixedPatch(x,y,sc,sc,s,p,c)
-void V_DrawStretchyFixedPatch(fixed_t x, fixed_t y, fixed_t pscale, fixed_t vscale, INT32 scrn, patch_t *patch, const UINT8 *colormap);
+#define V_DrawFixedPatch(x,y,sc,s,p,c) V_DrawStretchyFixedPatch(x,y,sc,sc,s,p,c,0)
+#define V_DrawBlendingFixedPatch(x,y,sc,s,p,c,b) V_DrawStretchyFixedPatch(x,y,sc,sc,s,p,c,b)
+void V_DrawStretchyFixedPatch(fixed_t x, fixed_t y, fixed_t pscale, fixed_t vscale, INT32 scrn, patch_t *patch, const UINT8 *colormap, INT32 bflags);
 void V_DrawCroppedPatch(fixed_t x, fixed_t y, fixed_t pscale, INT32 scrn, patch_t *patch, fixed_t sx, fixed_t sy, fixed_t w, fixed_t h);
 
 void V_DrawContinueIcon(INT32 x, INT32 y, INT32 flags, INT32 skinnum, UINT8 skincolor);
@@ -178,6 +195,9 @@ void V_DrawVhsEffect(boolean rewind);
 void V_DrawFadeScreen(UINT16 color, UINT8 strength);
 
 void V_DrawFadeConsBack(INT32 plines);
+
+// allow menu text to be displayed in lowercase
+#define MENUCAPS (!cv_menucaps.value ? V_ALLOWLOWERCASE : 0)
 
 // draw a single character
 void V_DrawCharacter(INT32 x, INT32 y, INT32 c, boolean lowercaseallowed);
@@ -234,19 +254,43 @@ void V_DrawCreditString(fixed_t x, fixed_t y, INT32 option, const char *string);
 INT32 V_CreditStringWidth(const char *string);
 
 // Find string width from hu_font chars
-INT32 V_StringWidth(const char *string, INT32 option);
+INT32 V_SubStringWidth(const char *string, INT32 length, INT32 option);
+#define V_StringWidth(string, option) V_SubStringWidth(string, -1, option)
 // Find string width from hu_font chars, 0.5x scale
-INT32 V_SmallStringWidth(const char *string, INT32 option);
+INT32 V_SmallSubStringWidth(const char *string, INT32 length, INT32 option);
+#define V_SmallStringWidth(string, option) V_SmallSubStringWidth(string, -1, option)
 // Find string width from tny_font chars
-INT32 V_ThinStringWidth(const char *string, INT32 option);
+INT32 V_ThinSubStringWidth(const char *string, INT32 length, INT32 option);
+#define V_ThinStringWidth(string, option) V_ThinSubStringWidth(string, -1, option)
+
+// Find maximum length for substring taken from current string to fit into given width
+INT32 V_SubStringLengthToFit(const char *string, INT32 width, INT32 option);
 
 char V_GetSkincolorChar(INT32 color);
 
-void V_DoPostProcessor(INT32 view, postimg_t type, INT32 param);
+INT32 V_SkinColorToHighlightcolor(skincolors_t color);
+
+// this is pretty dumb, but has to be done like this, otherwise the fps counter just disappears sometimes for no reason lol
+FUNCINLINE static ATTRINLINE INT32 V_LocalTransFlag(void)
+{
+	return ((10-cv_translucenthud.value)*V_10TRANS);
+}
+
+typedef struct player_s player_t;
+
+void V_DoPostProcessor(INT32 view, INT32 param);
 
 void V_DrawPatchFill(patch_t *pat);
 
+void V_DrawAdaptiveScaledFullScreenPatch(patch_t *patch);
+void V_DrawVerticallyScaledFullScreenPatch(patch_t *patch);
+void V_DrawHorizontallyScaledFullScreenPatch(patch_t *patch);
+
 void VID_BlitLinearScreen(const UINT8 *srcptr, UINT8 *destptr, INT32 width, INT32 height, size_t srcrowbytes,
 	size_t destrowbytes);
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif

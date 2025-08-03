@@ -16,6 +16,7 @@
 #include "dehacked.h"
 #include "p_mobj.h"
 #include "p_local.h"
+#include "s_sound.h"
 #include "z_zone.h"
 
 #include "lua_script.h"
@@ -111,6 +112,8 @@ static void A_Lua(mobj_t *actor)
 	lua_pushinteger(gL, var2);
 	LUA_Call(gL, 3, 0, 1);
 
+	lua_pop(gL, 1); // pop error handler
+
 	if (found)
 	{
 		--superstack;
@@ -152,7 +155,7 @@ static int lib_setState(lua_State *L)
 		return luaL_error(L, "Do not alter states in BuildCMD code!");
 
 	// clear the state to start with, in case of missing table elements
-	memset(state,0,sizeof(state_t));
+	memset(state, 0, sizeof(state_t));
 	state->tics = -1;
 
 	lua_pushnil(L);
@@ -178,7 +181,7 @@ static int lib_setState(lua_State *L)
 			switch(lua_type(L, 3))
 			{
 			case LUA_TNIL: // Null? Set the action to nothing, then.
-				state->action.acp1 = NULL;
+				state->action = NULL;
 				break;
 			case LUA_TSTRING: // It's a string, expect the name of a built-in action
 				LUA_SetActionByName(state, lua_tostring(L, 3));
@@ -190,7 +193,7 @@ static int lib_setState(lua_State *L)
 				lua_pushvalue(L, 3); // Bring it to the top of the stack
 				lua_rawset(L, -3); // Set it in the registry
 				lua_pop(L, 1); // pop LREG_STATEACTION
-				state->action.acp1 = (actionf_p1)A_Lua; // Set the action for the userdata.
+				state->action = (actionf_p1)A_Lua; // Set the action for the userdata.
 				break;
 			default: // ?!
 				return luaL_typerror(L, 3, "function");
@@ -248,7 +251,7 @@ boolean LUA_SetLuaAction(void *stv, const char *action)
 	lua_pop(gL, 1); // pop LREG_STATEACTION
 
 	lua_pop(gL, 2); // pop the function and LREG_ACTIONS
-	st->action.acp1 = (actionf_p1)A_Lua; // Set the action for the userdata.
+	st->action = (actionf_p1)A_Lua; // Set the action for the userdata.
 	return true; // action successfully set.
 }
 
@@ -260,8 +263,8 @@ boolean LUA_CallAction(enum actionnum actionnum, mobj_t *actor)
 		return false; // action not called.
 
 	if (superstack && fasticmp(actionpointers[actionnum].name, superactions[superstack-1])) // the action is calling itself,
-		return false; // let it call the hardcoded function 
-		
+		return false; // let it call the hardcoded function
+
 	lua_pushcfunction(gL, LUA_GetErrorMessage);
 
 	// grab function by uppercase name.
@@ -347,9 +350,9 @@ static int state_get(lua_State *L)
 		case state_action:
 		{
 			const char *name;
-			if (!st->action.acp1) // Action is NULL.
+			if (!st->action) // Action is NULL.
 				return 0; // return nil.
-			if (st->action.acp1 == (actionf_p1)A_Lua) { // This is a Lua function?
+			if (st->action == (actionf_p1)A_Lua) { // This is a Lua function?
 				lua_getfield(L, LUA_REGISTRYINDEX, LREG_STATEACTION);
 				I_Assert(lua_istable(L, -1));
 				lua_pushlightuserdata(L, st); // Push the state pointer and
@@ -383,7 +386,7 @@ static int state_get(lua_State *L)
 		default:
 		{
 			if (devparm)
-				return luaL_error(L, LUA_QL("state_t") " has no field named " LUA_QS, field);
+				return luaL_error(L, LUA_QL("state_t") " has no field named " LUA_QS, lua_tostring(L, 2));
 			return 0;
 		}
 	}
@@ -425,7 +428,7 @@ static int state_set(lua_State *L)
 		switch(lua_type(L, 3))
 		{
 		case LUA_TNIL: // Null? Set the action to nothing, then.
-			st->action.acp1 = NULL;
+			st->action = NULL;
 			break;
 		case LUA_TSTRING: // It's a string, expect the name of a built-in action
 			LUA_SetActionByName(st, lua_tostring(L, 3));
@@ -437,7 +440,7 @@ static int state_set(lua_State *L)
 			lua_pushvalue(L, 3); // Bring it to the top of the stack
 			lua_rawset(L, -3); // Set it in the registry
 			lua_pop(L, 1); // pop LREG_STATEACTION
-			st->action.acp1 = (actionf_p1)A_Lua; // Set the action for the userdata.
+			st->action = (actionf_p1)A_Lua; // Set the action for the userdata.
 			break;
 		default: // ?!
 			return luaL_typerror(L, 3, "function");
@@ -460,7 +463,7 @@ static int state_set(lua_State *L)
 	break;
 
 	default:
-		return luaL_error(L, LUA_QL("state_t") " has no field named " LUA_QS, field);
+		return luaL_error(L, LUA_QL("state_t") " has no field named " LUA_QS, lua_tostring(L, 2));
 	}
 
 	return 0;
@@ -512,7 +515,7 @@ static int lib_setMobjInfo(lua_State *L)
 		return luaL_error(L, "Do not alter mobjinfo in BuildCMD code!");
 
 	// clear the mobjinfo to start with, in case of missing table elements
-	memset(info,0,sizeof(mobjinfo_t));
+	memset(info, 0, sizeof(mobjinfo_t));
 	info->doomednum = -1; // default to no editor value
 	info->spawnhealth = 1; // avoid 'dead' noclip behaviors
 
@@ -940,7 +943,7 @@ static int lib_setSfxInfo(lua_State *L)
 
 		if (lua_isnumber(L, 2))
 		{
-			int j = lua_tointeger(L, 2) - 1;
+			int j = lua_tointeger(L, 2);
 
 			// Read and Write enums were combined, need to do this switch now
 			switch (j)
@@ -1070,6 +1073,109 @@ static int sfxinfo_num(lua_State *L)
 	return 1;
 }
 
+enum musicdef_e {
+	musicdef_name = 0,
+	musicdef_usage,
+	musicdef_source,
+	musicdef_filename,
+	musicdef_title,
+	musicdef_alttitle,
+	musicdef_authors,
+};
+
+const char *const musicdef_opt[] = {
+	"name",
+	"usage",
+	"source",
+	"filename",
+	"title",
+	"alttitle",
+	"authors",
+	NULL
+};
+
+static int musicdef_fields_ref = LUA_NOREF;
+
+static int lib_sFindMusicCredit(lua_State *L)
+{
+	const char *name = luaL_checkstring(L, 1);
+	LUA_PushUserdata(L, S_FindMusicCredit(name), META_MUSICDEF);
+	return 1;
+}
+
+static int lib_getMusicDef(lua_State *L)
+{
+	musicdef_t *def = NULL;
+
+	if (lua_isnumber(L, 2))
+		def = S_GetMusicCredit(lua_tonumber(L, 2));
+	else if (lua_isstring(L, 2))
+		def = S_FindMusicCredit(lua_tostring(L, 2));
+	else
+		return luaL_error(L, "musicdefs index must be number or string (got %s)", luaL_typename(L, 2));
+
+	LUA_PushUserdata(L, def, META_MUSICDEF);
+
+	return 1;
+}
+
+static int lib_setMusicDef(lua_State *L)
+{
+	return luaL_error(L, "musicdefs is read only");
+}
+
+static int lib_musicdefslen(lua_State *L)
+{
+	lua_pushinteger(L, nummusicdefs);
+	return 1;
+}
+
+static int musicdef_get(lua_State *L)
+{
+	musicdef_t *musicdef = *((musicdef_t **)luaL_checkudata(L, 1, META_MUSICDEF));
+	enum musicdef_e field = Lua_optoption(L, 2, -1, musicdef_fields_ref);
+
+	I_Assert(musicdef != NULL);
+
+	switch (field)
+	{
+	case musicdef_name:
+		lua_pushstring(L, musicdef->name);
+		return 1;
+	case musicdef_usage:
+		lua_pushstring(L, musicdef->usage);
+		return 1;
+	case musicdef_source:
+		lua_pushstring(L, musicdef->source);
+		return 1;
+	case musicdef_filename:
+		lua_pushstring(L, musicdef->filename);
+		return 1;
+	case musicdef_title:
+		lua_pushstring(L, musicdef->title);
+		return 1;
+	case musicdef_alttitle:
+		lua_pushstring(L, musicdef->alttitle);
+		return 1;
+	case musicdef_authors:
+		lua_pushstring(L, musicdef->authors);
+		return 1;
+	default:
+		return luaL_error(L, LUA_QL("musicdef_t") " has no field named " LUA_QS, lua_tostring(L, 2));
+	}
+	return 0;
+}
+
+static int musicdef_num(lua_State *L)
+{
+	musicdef_t *musicdef = *((musicdef_t **)luaL_checkudata(L, 1, META_MUSICDEF));
+
+	I_Assert(musicdef != NULL);
+
+	lua_pushinteger(L, musicdef->num);
+	return 1;
+}
+
 //////////////////////////////
 //
 // Now push all these functions into the Lua state!
@@ -1124,6 +1230,18 @@ int LUA_InfoLib(lua_State *L)
 
 	sfxinfo_fields_ref = Lua_CreateFieldTable(L, sfxinfo_opt);
 
+	luaL_newmetatable(L, META_MUSICDEF);
+		lua_pushcfunction(L, musicdef_get);
+		lua_setfield(L, -2, "__index");
+
+		lua_pushcfunction(L, musicdef_num);
+		lua_setfield(L, -2, "__len");
+	lua_pop(L, 1);
+
+	musicdef_fields_ref = Lua_CreateFieldTable(L, musicdef_opt);
+
+	lua_register(L, "S_FindMusicCredit", lib_sFindMusicCredit);
+
 	lua_newuserdata(L, 0);
 		lua_createtable(L, 0, 2);
 			lua_pushcfunction(L, lib_getSprname);
@@ -1174,5 +1292,19 @@ int LUA_InfoLib(lua_State *L)
 	lua_pushvalue(L, -1);
 	lua_setglobal(L, "S_sfx");
 	lua_setglobal(L, "sfxinfo");
+
+	lua_newuserdata(L, 0);
+		lua_createtable(L, 0, 2);
+			lua_pushcfunction(L, lib_getMusicDef);
+			lua_setfield(L, -2, "__index");
+
+			lua_pushcfunction(L, lib_setMusicDef);
+			lua_setfield(L, -2, "__newindex");
+
+			lua_pushcfunction(L, lib_musicdefslen);
+			lua_setfield(L, -2, "__len");
+		lua_setmetatable(L, -2);
+	lua_setglobal(L, "musicdefs");
+
 	return 0;
 }

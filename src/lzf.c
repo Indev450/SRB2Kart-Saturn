@@ -37,9 +37,8 @@
 /*
  * Sacrifice very little compression quality in favour of compression speed.
  * This gives almost the same compression as the default code, and is
- * (very roughly) 15% faster. This is the preferable mode of operation.
+ * (very roughly) 15% faster. This is the preferred mode of operation.
  */
-
 #ifndef VERY_FAST
 # define VERY_FAST 1
 #endif
@@ -48,7 +47,7 @@
  * Sacrifice some more compression quality in favour of compression speed.
  * (roughly 1-2% worse compression for large blocks and
  * 9-10% for small, redundant, blocks and >>20% better speed in both cases)
- * In INT16: when in need for speed, enable this for binary data,
+ * In short: when in need for speed, enable this for binary data,
  * possibly disable this for text data.
  */
 #ifndef ULTRA_FAST
@@ -80,7 +79,8 @@
 
 /*
  * You may choose to pre-set the hash table (might be faster on some
- * modern cpus and large (>>64k) blocks)
+ * modern cpus and large (>>64k) blocks, and also makes compression
+ * deterministic/repeatable when the configuration otherwise is the same).
  */
 #ifndef INIT_HTAB
 # define INIT_HTAB 1
@@ -88,15 +88,15 @@
 
 /*
  * Avoid assigning values to errno variable? for some embedding purposes
- * (linux kernel for example), this is neccessary. NOTE: this breaks
- * the documentation in lzf.h.
+ * (linux kernel for example), this is necessary. NOTE: this breaks
+ * the documentation in lzf.h. Avoiding errno has no speed impact.
  */
 #ifndef AVOID_ERRNO
 # define AVOID_ERRNO 0
 #endif
 
 /*
- * Wether to pass the LZF_STATE variable as argument, or allocate it
+ * Whether to pass the LZF_STATE variable as argument, or allocate it
  * on the stack. For small-stack environments, define this to 1.
  * NOTE: this breaks the prototype in lzf.h.
  */
@@ -105,11 +105,11 @@
 #endif
 
 /*
- * Wether to add extra checks for input validity in lzf_decompress
+ * Whether to add extra checks for input validity in lzf_decompress
  * and return EINVAL if the input stream has been corrupted. This
  * only shields against overflowing the input buffer and will not
  * detect most corrupted streams.
- * This check is not normally noticable on modern hardware
+ * This check is not normally noticeable on modern hardware
  * (<1% slowdown), but might slow down older cpus considerably.
  */
 #ifndef CHECK_INPUT

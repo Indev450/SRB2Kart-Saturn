@@ -15,11 +15,18 @@
 #ifndef __X_MENU__
 #define __X_MENU__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#include "r_skins.h"
 #include "d_event.h"
 #include "command.h"
 #include "i_threads.h"
 #include "mserv.h"
 #include "r_things.h" // for SKINNAMESIZE
+
+extern boolean forceshowhud;
 
 //
 // MENUS
@@ -30,6 +37,16 @@
 // this can resize the view and change game parameters.
 // Does all the real work of the menu interaction.
 boolean M_Responder(event_t *ev);
+
+// for scrolling through menus with controllers
+extern boolean dpadscrollstate[4];
+enum
+{
+	DPAD_UP,
+	DPAD_DOWN,
+	DPAD_LEFT,
+	DPAD_RIGHT
+};
 
 // Called by main loop, runs for demo playback. If this returns true, nullify any further user input.
 boolean M_DemoResponder(event_t *ev);
@@ -58,6 +75,9 @@ void M_SortServerList(void);
 
 // Draws a box with a texture inside as background for messages
 void M_DrawTextBox(INT32 x, INT32 y, INT32 width, INT32 boxlines);
+
+// Same but with extra flags applied
+void M_DrawTextBoxFlags(INT32 x, INT32 y, INT32 width, INT32 boxlines, INT32 flags);
 
 // Used in d_netcmd to restart time attack
 void M_ModeAttackRetry(INT32 choice);
@@ -192,14 +212,14 @@ extern menuitem_t PlayerMenu[MAXSKINS];
 typedef struct menu_s
 {
 	const char    *menutitlepic;
-	INT16          numitems;           // # of menu items
-	struct menu_s *prevMenu;           // previous menu
-	menuitem_t    *menuitems;          // menu items
-	void         (*drawroutine)(void); // draw routine
-	INT16          x, y;               // x, y of menu
-	INT16          lastOn;             // last item user was on in menu
-	boolean      (*quitroutine)(void); // called before quit a menu return true if we can
-	const char*		tooltips[MAXTOOLTIPS]; // tooltips! give me that info bitch
+	INT16          numitems;              // # of menu items
+	struct menu_s *prevMenu;              // previous menu
+	menuitem_t    *menuitems;             // menu items
+	void         (*drawroutine)(void);    // draw routine
+	INT16          x, y;                  // x, y of menu
+	INT16          lastOn;                // last item user was on in menu
+	boolean      (*quitroutine)(void);    // called before quit a menu return true if we can
+	const char*   *tooltips; // tooltips! give me that info bitch
 } menu_t;
 
 void M_SetupNextMenu(menu_t *menudef);
@@ -255,6 +275,7 @@ extern INT32 mapwads[NUMMAPS];
 
 extern description_t description[MAXSKINS];
 
+extern consvar_t cv_replaysearchrate;
 extern consvar_t cv_showfocuslost;
 extern consvar_t cv_newgametype, cv_nextmap, cv_chooseskin, cv_serversort;
 extern consvar_t cv_showallmaps;
@@ -280,14 +301,23 @@ void Screenshot_option_Onchange(void);
 // Addons menu updating
 void Addons_option_Onchange(void);
 
+// Moviemode menu updating
+void Moviemode_option_Onchange(void);
+
 // Player distortion menu updating
 void PDistort_menu_Onchange(void);
 
 // Bird menu updating
 void Bird_menu_Onchange(void);
 
-// Saturn menu updating
-void Saturn_menu_Onchange(void);
+// Saturn Hud menu updating
+void SaturnHud_menu_Onchange(void);
+
+void GameFocus_menu_Onchange (void);
+
+#ifdef HWRENDER
+void M_UpdateOGLMenu(void);
+#endif
 
 void M_ReplayHut(INT32 choice);
 void M_SetPlaybackMenuPointer(void);
@@ -305,7 +335,7 @@ void M_PopupMasterServerConnectError(void);
 void M_SlotCvarIntoModMenu(consvar_t* cvar, const char* category, const char* name);
 
 // These defines make it a little easier to make menus
-#define DEFAULTMENUSTYLE(header, source, prev, x, y)\
+#define DEFAULTMENUSTYLE(header, source, prev, x, y, tooltip)\
 {\
 	header,\
 	sizeof(source)/sizeof(menuitem_t),\
@@ -315,10 +345,10 @@ void M_SlotCvarIntoModMenu(consvar_t* cvar, const char* category, const char* na
 	x, y,\
 	0,\
 	NULL,\
-	{NULL}\
+	tooltip\
 }
 
-#define DEFAULTSCROLLSTYLE(header, source, prev, x, y)\
+#define DEFAULTSCROLLSTYLE(header, source, prev, x, y, tooltip)\
 {\
 	header,\
 	sizeof(source)/sizeof(menuitem_t),\
@@ -328,7 +358,7 @@ void M_SlotCvarIntoModMenu(consvar_t* cvar, const char* category, const char* na
 	x, y,\
 	0,\
 	NULL,\
-	{NULL}\
+	tooltip\
 }
 
 
@@ -342,7 +372,7 @@ void M_SlotCvarIntoModMenu(consvar_t* cvar, const char* category, const char* na
 	x, y,\
 	0,\
 	NULL,\
-	{NULL}\
+	NULL\
 }
 
 #define CENTERMENUSTYLE(header, source, prev, y)\
@@ -355,7 +385,7 @@ void M_SlotCvarIntoModMenu(consvar_t* cvar, const char* category, const char* na
 	BASEVIDWIDTH/2, y,\
 	0,\
 	NULL,\
-	{NULL}\
+	NULL\
 }
 
 #define MAPICONMENUSTYLE(header, source, prev)\
@@ -368,7 +398,7 @@ void M_SlotCvarIntoModMenu(consvar_t* cvar, const char* category, const char* na
 	24,40,\
 	0,\
 	NULL,\
-	{NULL}\
+	NULL\
 }
 
 #define CONTROLMENUSTYLE(source, prev)\
@@ -381,7 +411,7 @@ void M_SlotCvarIntoModMenu(consvar_t* cvar, const char* category, const char* na
 	26, 40,\
 	0,\
 	NULL,\
-	{NULL}\
+	NULL\
 }
 
 #define IMAGEDEF(source)\
@@ -394,7 +424,11 @@ void M_SlotCvarIntoModMenu(consvar_t* cvar, const char* category, const char* na
 	0, 0,\
 	0,\
 	NULL,\
-	{NULL}\
+	NULL\
 }
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif //__X_MENU__

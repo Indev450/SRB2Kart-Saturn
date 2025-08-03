@@ -9,6 +9,7 @@
 /// \file  y_inter.c
 /// \brief Tally screens, or "Intermissions" as they were formally called in Doom
 
+#include "d_netcmd.h"
 #include "doomdef.h"
 #include "doomstat.h"
 #include "d_main.h"
@@ -39,6 +40,7 @@
 #include "m_random.h" // M_RandomKey
 #include "g_input.h" // PLAYER1INPUTDOWN
 #include "k_kart.h" // colortranslations
+#include "k_hud.h"
 #include "console.h" // cons_menuhighlight
 #include "lua_hook.h" // IntermissionThinker hook
 #include "lua_hud.h" // intermission hud hook
@@ -54,74 +56,16 @@ typedef struct
 	UINT8 display;
 } y_bonus_t;
 
-typedef union
-{
-	/*struct
-	{
-		char passed1[21]; // KNUCKLES GOT    / CRAWLA HONCHO
-		char passed2[16]; // THROUGH THE ACT / PASSED THE ACT
-		INT32 passedx1;
-		INT32 passedx2;
-
-		y_bonus_t bonuses[4];
-		patch_t *bonuspatches[4];
-
-		SINT8 gotperfbonus; // Used for visitation flags.
-
-		UINT32 score, total; // fake score, total
-		UINT32 tics; // time
-
-		patch_t *ttlnum; // act number being displayed
-		patch_t *ptotal; // TOTAL
-		UINT8 gotlife; // Number of extra lives obtained
-	} coop;*/
-
-	struct
-	{
-		UINT8 *color[MAXPLAYERS]; // Winner's color #
-		INT32 *character[MAXPLAYERS]; // Winner's character #
-		INT32 num[MAXPLAYERS]; // Winner's player #
-		char *name[MAXPLAYERS]; // Winner's name
-		INT32 numplayers; // Number of players being displayed
-		char levelstring[64]; // holds levelnames up to 64 characters
-		// SRB2kart
-		UINT8 increase[MAXPLAYERS]; // how much did the score increase by?
-		UINT8 jitter[MAXPLAYERS]; // wiggle
-		UINT32 val[MAXPLAYERS]; // Gametype-specific value
-		UINT8 pos[MAXPLAYERS]; // player positions. used for ties
-		boolean rankingsmode; // rankings mode
-		boolean encore; // encore mode
-	} match;
-} y_data;
-
-static y_data data;
+static y_data_t data;
 
 // graphics
-static patch_t *bgpatch = NULL;     // INTERSCR
-static patch_t *widebgpatch = NULL; // INTERSCW
 static patch_t *bgtile = NULL;      // SPECTILE/SRB2BACK
-//static patch_t *interpic = NULL;    // custom picture defined in map header
-//static boolean usetile;
-boolean usebuffer = false;
-//static boolean useinterpic;
+
 static INT32 timer;
 
 static INT32 intertic;
 static INT32 endtic = -1;
 static INT32 sorttic = -1;
-
-patch_t *animVoteFramesPatches = NULL;
-// VEXTRN - Vote (V) Extra (EXT) Race (R) Normal (N - Normal sized patch)
-// VEXTBN - Vote (V) Extra (EXT) Battle (B) Normal (N - Normal sized patch)
-// VEXTBW - Vote (V) Extra (EXT) Battle (B) Normal (W - Wide patch used in software)
-// VEXTRW - Vote (V) Extra (EXT) Race (R) Normal (W - Wide patch used in software)
-char animPrefix[] = "INTSC";
-char animWidePrefix[] = "INTSW";
-char *luaVoteScreen = NULL;
-
-INT32 currentAnimFrame = 0;
-static INT32 foundAnimVoteFrames = 0;
-static INT32 foundAnimVoteWideFrames = 0;
 
 intertype_t intertype = int_none;
 
@@ -160,17 +104,13 @@ typedef struct
 	boolean loaded;
 } y_voteclient;
 
+// votescreen stuff
+votescreen_t VoteScreen = {0};
+
 static y_votelvlinfo levelinfo[5];
 static y_voteclient voteclient;
 static INT32 votetic;
 static INT32 voteendtic = -1;
-static patch_t *cursor = NULL;
-static patch_t *cursor1 = NULL;
-static patch_t *cursor2 = NULL;
-static patch_t *cursor3 = NULL;
-static patch_t *cursor4 = NULL;
-static patch_t *randomlvl = NULL;
-static patch_t *rubyicon = NULL;
 
 static void Y_UnloadVoteData(void);
 
@@ -182,11 +122,11 @@ static void Y_CompareRace(INT32 i)
 	UINT32 val = ((players[i].pflags & PF_TIMEOVER || players[i].realtime == UINT32_MAX)
 		? (UINT32_MAX-1) : players[i].realtime);
 
-	if (!(val < data.match.val[data.match.numplayers]))
+	if (!(val < data.val[data.numplayers]))
 		return;
 
-	data.match.val[data.match.numplayers] = val;
-	data.match.num[data.match.numplayers] = i;
+	data.val[data.numplayers] = val;
+	data.num[data.numplayers] = i;
 }
 
 static void Y_CompareBattle(INT32 i)
@@ -194,22 +134,22 @@ static void Y_CompareBattle(INT32 i)
 	UINT32 val = ((players[i].pflags & PF_TIMEOVER)
 			? (UINT32_MAX-1) : players[i].marescore);
 
-	if (!(data.match.val[data.match.numplayers] == UINT32_MAX
-	|| (!(players[i].pflags & PF_TIMEOVER) && val > data.match.val[data.match.numplayers])))
+	if (!(data.val[data.numplayers] == UINT32_MAX
+	|| (!(players[i].pflags & PF_TIMEOVER) && val > data.val[data.numplayers])))
 		return;
 
-	data.match.val[data.match.numplayers] = val;
-	data.match.num[data.match.numplayers] = i;
+	data.val[data.numplayers] = val;
+	data.num[data.numplayers] = i;
 }
 
 static void Y_CompareRank(INT32 i)
 {
-	UINT8 increase = ((data.match.increase[i] == UINT8_MAX) ? 0 : data.match.increase[i]);
-	if (!(data.match.val[data.match.numplayers] == UINT32_MAX || (players[i].score - increase) > data.match.val[data.match.numplayers]))
+	UINT8 increase = ((data.increase[i] == UINT8_MAX) ? 0 : data.increase[i]);
+	if (!(data.val[data.numplayers] == UINT32_MAX || (players[i].score - increase) > data.val[data.numplayers]))
 		return;
 
-	data.match.val[data.match.numplayers] = (players[i].score - increase);
-	data.match.num[data.match.numplayers] = i;
+	data.val[data.numplayers] = (players[i].score - increase);
+	data.num[data.numplayers] = i;
 }
 
 static void Y_CalculateMatchData(UINT8 rankingsmode, void (*comparison)(INT32))
@@ -221,10 +161,10 @@ static void Y_CalculateMatchData(UINT8 rankingsmode, void (*comparison)(INT32))
 	// Initialize variables
 	if (rankingsmode > 1)
 		;
-	else if ((data.match.rankingsmode = (boolean)rankingsmode))
+	else if ((data.rankingsmode = (boolean)rankingsmode))
 	{
-		sprintf(data.match.levelstring, "* Total Rankings *");
-		data.match.encore = false;
+		sprintf(data.levelstring, "* Total Rankings *");
+		data.encore = false;
 	}
 	else
 	{
@@ -232,13 +172,13 @@ static void Y_CalculateMatchData(UINT8 rankingsmode, void (*comparison)(INT32))
 		if (mapheaderinfo[prevmap]->levelflags & LF_NOZONE)
 		{
 			if (mapheaderinfo[prevmap]->actnum[0])
-				snprintf(data.match.levelstring,
-					sizeof data.match.levelstring,
+				snprintf(data.levelstring,
+					sizeof data.levelstring,
 					"* %s %s *",
 					mapheaderinfo[prevmap]->lvlttl, mapheaderinfo[prevmap]->actnum);
 			else
-				snprintf(data.match.levelstring,
-					sizeof data.match.levelstring,
+				snprintf(data.levelstring,
+					sizeof data.levelstring,
 					"* %s *",
 					mapheaderinfo[prevmap]->lvlttl);
 		}
@@ -246,44 +186,44 @@ static void Y_CalculateMatchData(UINT8 rankingsmode, void (*comparison)(INT32))
 		{
 			const char *zonttl = (mapheaderinfo[prevmap]->zonttl[0] ? mapheaderinfo[prevmap]->zonttl : "Zone");
 			if (mapheaderinfo[prevmap]->actnum[0])
-				snprintf(data.match.levelstring,
-					sizeof data.match.levelstring,
+				snprintf(data.levelstring,
+					sizeof data.levelstring,
 					"* %s %s %s *",
 					mapheaderinfo[prevmap]->lvlttl, zonttl, mapheaderinfo[prevmap]->actnum);
 			else
-				snprintf(data.match.levelstring,
-					sizeof data.match.levelstring,
+				snprintf(data.levelstring,
+					sizeof data.levelstring,
 					"* %s %s *",
 					mapheaderinfo[prevmap]->lvlttl, zonttl);
 		}
 
-		data.match.levelstring[sizeof data.match.levelstring - 1] = '\0';
+		data.levelstring[sizeof data.levelstring - 1] = '\0';
 
-		data.match.encore = encoremode;
+		data.encore = encoremode;
 
-		memset(data.match.jitter, 0, sizeof (data.match.jitter));
+		memset(data.jitter, 0, sizeof (data.jitter));
 	}
 
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
-		data.match.val[i] = UINT32_MAX;
+		data.val[i] = UINT32_MAX;
 
 		if (!playeringame[i] || players[i].spectator)
 		{
-			data.match.increase[i] = UINT8_MAX;
+			data.increase[i] = UINT8_MAX;
 			continue;
 		}
 
 		if (!rankingsmode)
-			data.match.increase[i] = UINT8_MAX;
+			data.increase[i] = UINT8_MAX;
 
 		numplayersingame++;
 	}
 
-	memset(data.match.color, 0, sizeof (data.match.color));
-	memset(data.match.character, 0, sizeof (data.match.character));
+	memset(data.color, 0, sizeof (data.color));
+	memset(data.character, 0, sizeof (data.character));
 	memset(completed, 0, sizeof (completed));
-	data.match.numplayers = 0;
+	data.numplayers = 0;
 
 	for (j = 0; j < numplayersingame; j++)
 	{
@@ -297,82 +237,195 @@ static void Y_CalculateMatchData(UINT8 rankingsmode, void (*comparison)(INT32))
 			comparison(i);
 		}
 
-		i = data.match.num[data.match.numplayers];
+		i = data.num[data.numplayers];
 
 		completed[i] = true;
 
-		data.match.color[data.match.numplayers] = &players[i].skincolor;
-		data.match.character[data.match.numplayers] = &players[i].skin;
-		data.match.name[data.match.numplayers] = player_names[i];
+		data.color[data.numplayers] = &players[i].skincolor;
+		data.character[data.numplayers] = &players[i].skin;
+		data.name[data.numplayers] = player_names[i];
 
-		if (data.match.numplayers && (data.match.val[data.match.numplayers] == data.match.val[data.match.numplayers-1]))
-			data.match.pos[data.match.numplayers] = data.match.pos[data.match.numplayers-1];
+		if (data.numplayers && (data.val[data.numplayers] == data.val[data.numplayers-1]))
+			data.pos[data.numplayers] = data.pos[data.numplayers-1];
 		else
-			data.match.pos[data.match.numplayers] = data.match.numplayers+1;
+			data.pos[data.numplayers] = data.numplayers+1;
 
-		if (!rankingsmode && !(players[i].pflags & PF_TIMEOVER) && (data.match.pos[data.match.numplayers] < nump))
+		if (!rankingsmode && !(players[i].pflags & PF_TIMEOVER) && (data.pos[data.numplayers] < nump))
 		{
-			data.match.increase[i] = nump - data.match.pos[data.match.numplayers];
-			players[i].score += data.match.increase[i];
+			data.increase[i] = nump - data.pos[data.numplayers];
+			players[i].score += data.increase[i];
 		}
 
 		if (demo.recording && !rankingsmode)
 			G_WriteStanding(
-				data.match.pos[data.match.numplayers],
-				data.match.name[data.match.numplayers],
-				*data.match.character[data.match.numplayers],
-				*data.match.color[data.match.numplayers],
-				data.match.val[data.match.numplayers]
+				data.pos[data.numplayers],
+				data.name[data.numplayers],
+				*data.character[data.numplayers],
+				*data.color[data.numplayers],
+				data.val[data.numplayers]
 			);
 
-		data.match.numplayers++;
+		data.numplayers++;
 	}
 }
 
+// Y_PlayerStandingsDrawer
 //
-// Y_AnimatedVoteScreenCheck
+// Handles drawing the center-of-screen player standings.
 //
-// Check if the lumps exist (checking for VEXTR(N|W)xx for race and VEXTRB(N|W)xx for battle)
-static void Y_AnimatedVoteScreenCheck(void)
+static void Y_PlayerStandingsDrawer(y_data_t *standings, INT32 x, INT32 hilicol)
 {
-	char tmpPrefix[] = "INTS";
-	boolean stopSearching = false;
-
-	if (luaVoteScreen)
-		strncpy(tmpPrefix, luaVoteScreen, 4);
-	else
+	if (standings->numplayers == 0)
 	{
-		if(G_BattleGametype())
-			strcpy(tmpPrefix, "BTLS");
+		return;
 	}
 
-	strncpy(animPrefix, tmpPrefix, 4);
-	animPrefix[4] = 'C';
-	strncpy(animWidePrefix, tmpPrefix, 4);
-	animWidePrefix[4] = 'W';
+	INT32 i;
 
-	foundAnimVoteFrames = 0;
-	foundAnimVoteWideFrames = 0;
-	currentAnimFrame = 0;
+#define NUMFORNEWCOLUMN 8
+	INT32 y = 41, gutter = ((standings->numplayers > NUMFORNEWCOLUMN) ? 0 : (BASEVIDWIDTH/2));
+	INT32 dupadjust = cv_betainterscreen.value ? 314 : (vid.width/vid.dupx), duptweak = cv_betainterscreen.value ? -3 : (dupadjust - BASEVIDWIDTH)/2;
+	const char *timeheader;
 
-	INT32 i = 1;
-	while(!stopSearching)
+	if (standings->rankingsmode)
+		timeheader = "RANK";
+	else
+		timeheader = (intertype == int_race ? "TIME" : "SCORE");
+
+	// draw the level name
+	V_DrawCenteredString(-4 + x + BASEVIDWIDTH/2, 12, 0, standings->levelstring);
+	V_DrawFill((x-3) - duptweak, 34, dupadjust-2, 1, 0);
+
+	if (standings->encore)
+		V_DrawCenteredString(-4 + x + BASEVIDWIDTH/2, 12-8, hilicol, "ENCORE MODE");
+
+	if (standings->numplayers > NUMFORNEWCOLUMN)
 	{
-		boolean normalLumpExists = W_LumpExists(va("%sC%d", tmpPrefix, i));
-		boolean wideLumpExists = W_LumpExists(va("%sW%d", tmpPrefix, i));
+		V_DrawFill(x+156, 24, 1, 158, 0);
+		V_DrawFill((x-3) - duptweak, 182, dupadjust-2, 1, 0);
 
-		if (normalLumpExists || wideLumpExists)
+		V_DrawCenteredString(x+6+(BASEVIDWIDTH/2), 24, hilicol, "#");
+		V_DrawString(x+36+(BASEVIDWIDTH/2), 24, hilicol, "NAME");
+
+		V_DrawRightAlignedString(x+152, 24, hilicol, timeheader);
+	}
+
+	V_DrawCenteredString(x+6, 24, hilicol, "#");
+	V_DrawString(x+36, 24, hilicol, "NAME");
+
+	V_DrawRightAlignedString(x+(BASEVIDWIDTH/2)+152, 24, hilicol, timeheader);
+
+	boolean (*_isHighlightedPlayer)(const player_t *) = (demo.playback ? P_IsDisplayPlayer : P_IsLocalPlayer);
+
+	for (i = 0; i < standings->numplayers; i++)
+	{
+		const UINT8 pnum = standings->num[i];
+		player_t *player = &players[pnum];
+
+		if (pnum == MAXPLAYERS)
+			;
+		else if (!playeringame[pnum] || player->spectator)
+			standings->num[i] = MAXPLAYERS; // this should be the only field setting in this function
+		else
 		{
-			if (normalLumpExists)
-				foundAnimVoteFrames++;
+			char strtime[MAXPLAYERNAME+1];
 
-			if (wideLumpExists)
-				foundAnimVoteWideFrames++;
+			const boolean whiteplayer = _isHighlightedPlayer(player);
+			const INT32 philicol = (whiteplayer ? V_SkinColorToHighlightcolor(player->skincolor) : 0);
+
+			// Apply the jitter offset (later reversed)
+			if (standings->jitter[pnum] > 0)
+				y--;
+
+			V_DrawCenteredString(x+6, y, 0, va("%d", standings->pos[i]));
+
+			// localskins are amazing
+			if (standings->color[i] != SKINCOLOR_NONE)
+			{
+				UINT8 *colormap = R_GetTranslationColormap(*standings->character[i], *standings->color[i], GTC_CACHE);
+				INT32 skinnum = (player->localskin ? (player->localskin - 1) : *standings->character[i]);
+				patch_t *faceprefix = K_GetFacePrefix(player, skinnum);
+
+				if (K_UseHighResPortraits())
+					V_DrawSmallMappedPatch(x + 16, y - 4, 0, faceprefix, colormap);
+				else
+					V_DrawMappedPatch(x + 16, y - 4, 0, faceprefix, colormap);
+			}
+
+			if (pnum == whiteplayer)
+			{
+				UINT8 cursorframe = (intertic / 4) % 8;
+				V_DrawScaledPatch(x+16, y-4, 0, W_CachePatchName(va("K_CHILI%d", cursorframe+1), PU_PATCH));
+			}
+
+			STRBUFCPY(strtime, standings->name[i]);
+
+			if (standings->numplayers > NUMFORNEWCOLUMN)
+				V_DrawThinString(x+36, y-1, philicol|V_ALLOWLOWERCASE|V_6WIDTHSPACE, strtime);
+			else
+				V_DrawString(x+36, y, philicol|V_ALLOWLOWERCASE, strtime);
+
+			if (standings->rankingsmode)
+			{
+				if (standings->increase[pnum] != UINT8_MAX)
+				{
+					if (standings->increase[pnum] > 9)
+						snprintf(strtime, sizeof strtime, "(+%02d)", standings->increase[pnum]);
+					else
+						snprintf(strtime, sizeof strtime, "(+  %d)", standings->increase[pnum]);
+
+					if (standings->numplayers > NUMFORNEWCOLUMN)
+						V_DrawRightAlignedThinString(x+135+gutter, y-1, V_6WIDTHSPACE, strtime);
+					else
+						V_DrawRightAlignedString(x+120+gutter, y, 0, strtime);
+				}
+
+				snprintf(strtime, sizeof strtime, "%d", standings->val[i]);
+
+				if (standings->numplayers > NUMFORNEWCOLUMN)
+					V_DrawRightAlignedThinString(x+152+gutter, y-1, V_6WIDTHSPACE, strtime);
+				else
+					V_DrawRightAlignedString(x+152+gutter, y, 0, strtime);
+			}
+			else
+			{
+				if (standings->val[i] == (UINT32_MAX-1))
+					V_DrawRightAlignedThinString(x+152+gutter, y-1, (standings->numplayers > NUMFORNEWCOLUMN ? V_6WIDTHSPACE : 0), "NO CONTEST.");
+				else
+				{
+					if (intertype == int_race)
+					{
+						snprintf(strtime, sizeof strtime, "%i'%02i\"%02i", G_TicsToMinutes(standings->val[i], true),
+						G_TicsToSeconds(standings->val[i]), G_TicsToCentiseconds(standings->val[i]));
+						strtime[sizeof strtime - 1] = '\0';
+
+						if (standings->numplayers > NUMFORNEWCOLUMN)
+							V_DrawRightAlignedThinString(x+152+gutter, y-1, V_6WIDTHSPACE, strtime);
+						else
+							V_DrawRightAlignedString(x+152+gutter, y, 0, strtime);
+					}
+					else
+					{
+						if (standings->numplayers > NUMFORNEWCOLUMN)
+							V_DrawRightAlignedThinString(x+152+gutter, y-1, V_6WIDTHSPACE, va("%i", standings->val[i]));
+						else
+							V_DrawRightAlignedString(x+152+gutter, y, 0, va("%i", standings->val[i]));
+					}
+				}
+			}
+
+			if (standings->jitter[pnum] > 0)
+				y++;
 		}
-		else // If we don't find at least frame 1 (e.g VEXTRN1), let's just stop looking
-			stopSearching = true;
 
-		i++;
+		y += 18;
+
+		if (i == NUMFORNEWCOLUMN-1)
+		{
+			y = 41;
+			x += BASEVIDWIDTH/2;
+		}
+#undef NUMFORNEWCOLUMN
 	}
 }
 
@@ -384,49 +437,29 @@ static void Y_AnimatedVoteScreenCheck(void)
 //
 void Y_IntermissionDrawer(void)
 {
-	INT32 i, whiteplayer = MAXPLAYERS, x = 4, hilicol = V_YELLOWMAP; // fallback
+	INT32 x = 4, hilicol = V_YELLOWMAP; // fallback
 
 	if (intertype == int_none || rendermode == render_none)
 		return;
 
-	if (!usebuffer)
-		V_DrawFill(0, 0, BASEVIDWIDTH, BASEVIDHEIGHT, 31);
-
-	if (cv_betainterscreen.value 
-#ifdef HWRENDER	
-	|| (rendermode == render_opengl && cv_grscreentextures.value != 2) // use the neato kart bg for intermission on disabled screen textures
+	if (cv_betainterscreen.value == 1
+#ifdef HWRENDER
+	|| (rendermode == render_opengl && cv_glscreentextures.value != 2) // use the neato kart bg for intermission on disabled screen textures
 #endif
 	)
 		V_DrawPatchFill(bgtile); // use the neato kart bg for intermission on disabled screen textures
-	//else if (useinterpic)
-		//V_DrawScaledPatch(0, 0, 0, interpic);
-	//else if (!usetile)
 	else
 	{
-		if (rendermode == render_soft && usebuffer)
-			VID_BlitLinearScreen(screens[1], screens[0], vid.width*vid.bpp, vid.height, vid.width*vid.bpp, vid.rowbytes);
+		if (rendermode == render_soft)
+			VID_BlitLinearScreen(vid.screens[1], vid.screens[0], vid.width, vid.height, vid.width, vid.rowbytes);
 #ifdef HWRENDER
-		else if(rendermode != render_soft && usebuffer)
-		{
+		else if (rendermode == render_opengl)
 			HWR_DrawIntermissionBG();
-		}
 #endif
-		else
-		{
-			if (widebgpatch && rendermode == render_soft && vid.width / vid.dupx == 400)
-				V_DrawScaledPatch(0, 0, V_SNAPTOLEFT, widebgpatch);
-			else if (bgpatch)
-				V_DrawScaledPatch(0, 0, 0, bgpatch);
-		}
 	}
-	//else if (bgtile)
-		//V_DrawPatchFill(bgtile);
 
-	if (usebuffer) // Fade everything out
-		V_DrawFadeScreen(0xFF00, 22);
-
-	if (!splitscreen)
-		whiteplayer = demo.playback ? displayplayers[0] : consoleplayer;
+	// Fade everything out
+	V_DrawFadeScreen(0xFF00, 22);
 
 	if (cons_menuhighlight.value)
 		hilicol = cons_menuhighlight.value;
@@ -437,6 +470,7 @@ void Y_IntermissionDrawer(void)
 
 	if (sorttic != -1 && intertic >= sorttic && !demo.playback)
 	{
+		// yes this may actually overflow
 		INT64 count = (intertic - sorttic);
 
 		if (count < 8)
@@ -445,196 +479,8 @@ void Y_IntermissionDrawer(void)
 			x += (((((16 - count)<<FRACBITS) - R_GetHudUncap()) * vid.width)>>FRACBITS) / (8 * vid.dupx);
 	}
 
-	// SRB2kart 290117 - compeltely replaced this block.
-	/*if (intertype == int_timeattack)
-	{
-		// draw time
-		ST_DrawPatchFromHud(HUD_TIME, sbotime);
-		if (cv_timetic.value)
-			ST_DrawNumFromHud(HUD_SECONDS, data.coop.tics);
-		else
-		{
-			INT32 seconds, minutes, tictrn;
-
-			seconds = G_TicsToSeconds(data.coop.tics);
-			minutes = G_TicsToMinutes(data.coop.tics, true);
-			tictrn  = G_TicsToCentiseconds(data.coop.tics);
-
-			ST_DrawNumFromHud(HUD_MINUTES, minutes); // Minutes
-			ST_DrawPatchFromHud(HUD_TIMECOLON, sbocolon); // Colon
-			ST_DrawPadNumFromHud(HUD_SECONDS, seconds, 2); // Seconds
-
-			// SRB2kart - pulled from old coop block, just in case we need it
-			// we should show centiseconds on the intermission screen too, if the conditions are right.
-			if (modeattacking || cv_timetic.value == 2)
-			{
-				ST_DrawPatchFromHud(HUD_TIMETICCOLON, sboperiod); // Period
-				ST_DrawPadNumFromHud(HUD_TICS, tictrn, 2); // Tics
-			}
-
-			ST_DrawPatchFromHud(HUD_TIMETICCOLON, sboperiod); // Period
-			ST_DrawPadNumFromHud(HUD_TICS, tictrn, 2); // Tics
-		}
-
-		// draw the "got through act" lines and act number
-		V_DrawLevelTitle(data.coop.passedx1, 49, 0, data.coop.passed1);
-		V_DrawLevelTitle(data.coop.passedx2, 49+V_LevelNameHeight(data.coop.passed2)+2, 0, data.coop.passed2);
-
-		if (strlen(mapheaderinfo[prevmap]->actnum) > 0)
-			V_DrawScaledPatch(244, 57, 0, data.coop.ttlnum);
-
-		//if (gottimebonus && endtic != -1)
-		//	V_DrawCenteredString(BASEVIDWIDTH/2, 172, V_YELLOWMAP, "TIME BONUS UNLOCKED!");
-	}
-	else*/ if (intertype == int_race || intertype == int_match)
-	{
-#define NUMFORNEWCOLUMN 8
-		INT32 y = 41, gutter = ((data.match.numplayers > NUMFORNEWCOLUMN) ? 0 : (BASEVIDWIDTH/2));
-		INT32 dupadjust = (vid.width/vid.dupx), duptweak = (dupadjust - BASEVIDWIDTH)/2;
-		const char *timeheader;
-
-		if (data.match.rankingsmode)
-			timeheader = "RANK";
-		else
-			timeheader = (intertype == int_race ? "TIME" : "SCORE");
-
-		// draw the level name
-		V_DrawCenteredString(-4 + x + BASEVIDWIDTH/2, 12, 0, data.match.levelstring);
-		V_DrawFill((x-3) - duptweak, 34, dupadjust-2, 1, 0);
-
-		if (data.match.encore)
-			V_DrawCenteredString(-4 + x + BASEVIDWIDTH/2, 12-8, hilicol, "ENCORE MODE");
-
-		if (data.match.numplayers > NUMFORNEWCOLUMN)
-		{
-			V_DrawFill(x+156, 24, 1, 158, 0);
-			V_DrawFill((x-3) - duptweak, 182, dupadjust-2, 1, 0);
-
-			V_DrawCenteredString(x+6+(BASEVIDWIDTH/2), 24, hilicol, "#");
-			V_DrawString(x+36+(BASEVIDWIDTH/2), 24, hilicol, "NAME");
-
-			V_DrawRightAlignedString(x+152, 24, hilicol, timeheader);
-		}
-
-		V_DrawCenteredString(x+6, 24, hilicol, "#");
-		V_DrawString(x+36, 24, hilicol, "NAME");
-
-		V_DrawRightAlignedString(x+(BASEVIDWIDTH/2)+152, 24, hilicol, timeheader);
-
-		for (i = 0; i < data.match.numplayers; i++)
-		{
-			boolean dojitter = data.match.jitter[data.match.num[i]];
-			data.match.jitter[data.match.num[i]] = 0;
-
-			if (data.match.num[i] != MAXPLAYERS && playeringame[data.match.num[i]] && !players[data.match.num[i]].spectator)
-			{
-				char strtime[MAXPLAYERNAME+1];
-
-				if (dojitter)
-					y--;
-
-				V_DrawCenteredString(x+6, y, 0, va("%d", data.match.pos[i]));
-
-				if (data.match.color[i])
-				{
-					UINT8 *colormap = R_GetTranslationColormap(*data.match.character[i], *data.match.color[i], GTC_CACHE);
-					// i fucking hate this i fucking hate this i hate this so much
-					if (!players[data.match.num[i]].skinlocal)
-					{
-						int skinIndex = players[data.match.num[i]].localskin ? players[data.match.num[i]].localskin - 1 : *data.match.character[i];
-
-						if (cv_highresportrait.value)
-							V_DrawSmallMappedPatch(x + 16, y - 4, 0, facewantprefix[skinIndex], colormap);
-						else
-							V_DrawMappedPatch(x + 16, y - 4, 0, facerankprefix[skinIndex], colormap);
-					}
-					else
-					{
-						if (cv_highresportrait.value)
-							V_DrawSmallMappedPatch(x + 16, y - 4, 0, localfacewantprefix[players[data.match.num[i]].localskin - 1], colormap);
-						else
-							V_DrawMappedPatch(x + 16, y - 4, 0, localfacerankprefix[players[data.match.num[i]].localskin - 1], colormap);
-					}
-				}
-
-				if (data.match.num[i] == whiteplayer)
-				{
-					UINT8 cursorframe = (intertic / 4) % 8;
-					V_DrawScaledPatch(x+16, y-4, 0, W_CachePatchName(va("K_CHILI%d", cursorframe+1), PU_CACHE));
-				}
-
-				STRBUFCPY(strtime, data.match.name[i]);
-
-				if (data.match.numplayers > NUMFORNEWCOLUMN)
-					V_DrawThinString(x+36, y-1, ((data.match.num[i] == whiteplayer) ? hilicol : 0)|V_ALLOWLOWERCASE|V_6WIDTHSPACE, strtime);
-				else
-					V_DrawString(x+36, y, ((data.match.num[i] == whiteplayer) ? hilicol : 0)|V_ALLOWLOWERCASE, strtime);
-
-				if (data.match.rankingsmode)
-				{
-					if (data.match.increase[data.match.num[i]] != UINT8_MAX)
-					{
-						if (data.match.increase[data.match.num[i]] > 9)
-							snprintf(strtime, sizeof strtime, "(+%02d)", data.match.increase[data.match.num[i]]);
-						else
-							snprintf(strtime, sizeof strtime, "(+  %d)", data.match.increase[data.match.num[i]]);
-
-						if (data.match.numplayers > NUMFORNEWCOLUMN)
-							V_DrawRightAlignedThinString(x+135+gutter, y-1, V_6WIDTHSPACE, strtime);
-						else
-							V_DrawRightAlignedString(x+120+gutter, y, 0, strtime);
-					}
-
-					snprintf(strtime, sizeof strtime, "%d", data.match.val[i]);
-
-					if (data.match.numplayers > NUMFORNEWCOLUMN)
-						V_DrawRightAlignedThinString(x+152+gutter, y-1, V_6WIDTHSPACE, strtime);
-					else
-						V_DrawRightAlignedString(x+152+gutter, y, 0, strtime);
-				}
-				else
-				{
-					if (data.match.val[i] == (UINT32_MAX-1))
-						V_DrawRightAlignedThinString(x+152+gutter, y-1, (data.match.numplayers > NUMFORNEWCOLUMN ? V_6WIDTHSPACE : 0), "NO CONTEST.");
-					else
-					{
-						if (intertype == int_race)
-						{
-							snprintf(strtime, sizeof strtime, "%i'%02i\"%02i", G_TicsToMinutes(data.match.val[i], true),
-							G_TicsToSeconds(data.match.val[i]), G_TicsToCentiseconds(data.match.val[i]));
-							strtime[sizeof strtime - 1] = '\0';
-
-							if (data.match.numplayers > NUMFORNEWCOLUMN)
-								V_DrawRightAlignedThinString(x+152+gutter, y-1, V_6WIDTHSPACE, strtime);
-							else
-								V_DrawRightAlignedString(x+152+gutter, y, 0, strtime);
-						}
-						else
-						{
-							if (data.match.numplayers > NUMFORNEWCOLUMN)
-								V_DrawRightAlignedThinString(x+152+gutter, y-1, V_6WIDTHSPACE, va("%i", data.match.val[i]));
-							else
-								V_DrawRightAlignedString(x+152+gutter, y, 0, va("%i", data.match.val[i]));
-						}
-					}
-				}
-
-				if (dojitter)
-					y++;
-			}
-			else
-				data.match.num[i] = MAXPLAYERS; // this should be the only field setting in this function
-
-			y += 18;
-
-			if (i == NUMFORNEWCOLUMN-1)
-			{
-				y = 41;
-				x += BASEVIDWIDTH/2;
-			}
-#undef NUMFORNEWCOLUMN
-		}
-	}
+	if (intertype == int_race || intertype == int_match)
+		Y_PlayerStandingsDrawer(&data, x, hilicol);
 
 	if (timer)
 	{
@@ -646,11 +492,11 @@ void Y_IntermissionDrawer(void)
 		else
 			string = va("%s starts in %d", cv_advancemap.string, tickdown);
 
-		V_DrawCenteredString(BASEVIDWIDTH/2, 188, hilicol,
-			string);
+		V_DrawCenteredString(BASEVIDWIDTH/2, 188, hilicol, string);
 	}
 
 	if ((demo.recording || demo.savemode == DSM_SAVED) && !demo.playback)
+	{
 		switch (demo.savemode)
 		{
 		case DSM_NOTSAVING:
@@ -668,15 +514,12 @@ void Y_IntermissionDrawer(void)
 		default: // Don't render any text here
 			break;
 		}
-
-	// Make it obvious that scrambling is happening next round.
-	if (cv_scrambleonchange.value && cv_teamscramble.value && (intertic/TICRATE % 2 == 0))
-		V_DrawCenteredString(BASEVIDWIDTH/2, BASEVIDHEIGHT/2, hilicol, M_GetText("Teams will be scrambled next round!"));
+	}
 
 	if (renderisnewtic)
 	{
 		LUA_HUD_ClearDrawList(luahuddrawlist_intermission);
-		LUAh_IntermissionHUD(luahuddrawlist_intermission);
+		LUA_HUDHOOK(intermission, luahuddrawlist_intermission);
 	}
 	LUA_HUD_DrawList(luahuddrawlist_intermission);
 }
@@ -695,7 +538,7 @@ void Y_Ticker(void)
 	{
 		INT32 axis = JoyAxis(AXISLOOKBACK, 1);
 
-		if (demo.savemode == DSM_NOTSAVING && (InputDown(gc_lookback, 1) || (cv_usejoystick.value && axis > 0)))
+		if (demo.savemode == DSM_NOTSAVING && (InputDown(gc_lookback, 1) || (cv_usejoystick[0].value && axis > 0)))
 			demo.savemode = DSM_TITLEENTRY;
 
 		if (demo.savemode == DSM_WILLSAVE || demo.savemode == DSM_WILLAUTOSAVE)
@@ -706,7 +549,7 @@ void Y_Ticker(void)
 	if (paused || P_AutoPause())
 		return;
 
-	LUAh_IntermissionThinker();
+	LUA_HOOK(IntermissionThinker);
 
 	intertic++;
 
@@ -728,8 +571,16 @@ void Y_Ticker(void)
 		return;
 	}
 
-	if (intertic < TICRATE || intertic & 1 || endtic != -1)
+	if (intertic < TICRATE || endtic != -1)
+	{
 		return;
+	}
+
+	if (data.rankingsmode && intertic & 1)
+	{
+		memset(data.jitter, 0, sizeof (data.jitter));
+		return;
+	}
 
 	if (intertype == int_race || intertype == int_match)
 	{
@@ -739,24 +590,24 @@ void Y_Ticker(void)
 				sorttic = intertic + max((cv_inttime.value/2)-2, 2)*TICRATE; // 8 second pause after match results
 			else if (!(multiplayer && demo.playback)) // Don't advance to rankings in replays
 			{
-				if (!data.match.rankingsmode && (intertic >= sorttic + 8))
+				if (!data.rankingsmode && (intertic >= sorttic + 8))
 					Y_CalculateMatchData(1, Y_CompareRank);
 
-				if (data.match.rankingsmode && intertic > sorttic+16+(2*TICRATE))
+				if (data.rankingsmode && intertic > sorttic+16+(2*TICRATE))
 				{
 					INT32 q=0,r=0;
 					boolean kaching = true;
 
-					for (q = 0; q < data.match.numplayers; q++)
+					for (q = 0; q < data.numplayers; q++)
 					{
-						if (data.match.num[q] == MAXPLAYERS
-						|| !data.match.increase[data.match.num[q]]
-						|| data.match.increase[data.match.num[q]] == UINT8_MAX)
+						if (data.num[q] == MAXPLAYERS
+						|| !data.increase[data.num[q]]
+						|| data.increase[data.num[q]] == UINT8_MAX)
 							continue;
 
 						r++;
-						data.match.jitter[data.match.num[q]] = 1;
-						if (--data.match.increase[data.match.num[q]])
+						data.jitter[data.num[q]] = 1;
+						if (--data.increase[data.num[q]])
 							kaching = false;
 					}
 
@@ -795,13 +646,13 @@ static void Y_UpdateRecordReplays(void)
 	if ((mainrecords[gamemap-1]->time == 0) || (players[consoleplayer].realtime < mainrecords[gamemap-1]->time))
 		mainrecords[gamemap-1]->time = players[consoleplayer].realtime;
 
-	if ((mainrecords[gamemap-1]->lap == 0) || (bestlap < mainrecords[gamemap-1]->lap))
-		mainrecords[gamemap-1]->lap = bestlap;
+	if ((mainrecords[gamemap-1]->lap == 0) || (players[consoleplayer].laptime[LAP_BEST] < mainrecords[gamemap-1]->lap))
+		mainrecords[gamemap-1]->lap = players[consoleplayer].laptime[LAP_BEST];
 
 	// Save demo!
 	bestdemo[255] = '\0';
 	lastdemo[255] = '\0';
-	G_SetDemoTime(players[consoleplayer].realtime, bestlap);
+	G_SetDemoTime(players[consoleplayer].realtime, players[consoleplayer].laptime[LAP_BEST]);
 	G_CheckDemoStatus();
 
 	I_mkdir(va("%s"PATHSEP"replay", srb2home), 0755);
@@ -898,13 +749,9 @@ void Y_StartIntermission(void)
 
 		if (gametype == GT_MATCH)
 			intertype = int_match;
-		else //if (gametype == GT_RACE)
+		else
 			intertype = int_race;
 	}
-
-	// We couldn't display the intermission even if we wanted to.
-	// But we still need to give the players their score bonuses, dummy.
-	//if (dedicated) return;
 
 	// This should always exist, but just in case...
 	if(!mapheaderinfo[prevmap])
@@ -922,7 +769,7 @@ void Y_StartIntermission(void)
 		}
 		case int_race: // (time-only race)
 		{
-			if (!majormods && !multiplayer && !demo.playback) // remove this once we have a proper time attack screen
+			if (!multiplayer && !demo.playback) // remove this once we have a proper time attack screen
 			{
 				// Update visitation flags
 				mapvisited[gamemap-1] |= MV_BEATEN;
@@ -942,12 +789,7 @@ void Y_StartIntermission(void)
 			break;
 	}
 
-	//if (intertype == int_race || intertype == int_match)
-	{
-		bgtile = W_CachePatchName("SRB2BACK", PU_STATIC);
-		//usetile = useinterpic = false;
-		usebuffer = true;
-	}
+	bgtile = W_CachePatchName("SRB2BACK", PU_PATCH);
 
 	LUA_HUD_DestroyDrawList(luahuddrawlist_intermission);
 	luahuddrawlist_intermission = LUA_HUD_CreateDrawList();
@@ -960,12 +802,12 @@ void Y_StartIntermission(void)
 //
 void Y_EndIntermission(void)
 {
-	Y_UnloadData();
+	if (!dedicated)
+		Y_UnloadData();
 
 	endtic = -1;
 	sorttic = -1;
 	intertype = int_none;
-	usebuffer = false;
 }
 
 //
@@ -979,56 +821,161 @@ static void Y_FollowIntermission(void)
 	G_AfterIntermission();
 }
 
-#define UNLOAD(x) Z_ChangeTag(x, PU_CACHE); x = NULL
+#define UNLOAD(x) {if ((x) != NULL) {Patch_Free(x);} x = NULL;}
 
 //
 // Y_UnloadData
 //
 static void Y_UnloadData(void)
 {
-	// In hardware mode, don't Z_ChangeTag a pointer returned by W_CachePatchName().
-	// It doesn't work and is unnecessary.
-	if (rendermode != render_soft)
-		return;
-
 	// unload the background patches
-	UNLOAD(bgpatch);
-	UNLOAD(widebgpatch);
+	UNLOAD(VoteScreen.bgpatch);
+	UNLOAD(VoteScreen.widebgpatch);
 	UNLOAD(bgtile);
 	//UNLOAD(interpic);
 }
 
 // SRB2Kart: Voting!
 
-// Y_DrawAnimatedVoteScreenPatch
 //
-// Draw animated patch based on frame counter on vote screen
+// Y_VoteScreenCheck
 //
-static inline void Y_DrawAnimatedVoteScreenPatch(boolean widePatch)
+static void Y_VoteScreenCheck(void)
 {
-	char tempAnimPrefix[7];
-	(widePatch) ? strcpy(tempAnimPrefix, animWidePrefix) : strcpy(tempAnimPrefix, animPrefix);
-	INT32 tempFoundAnimVoteFrames = (widePatch) ? foundAnimVoteWideFrames : foundAnimVoteFrames;
+	strcpy(VoteScreen.Prefix, "INTS");
+
+	if (VoteScreen.luaPrefix[0] != 0)
+		strlcpy(VoteScreen.Prefix, VoteScreen.luaPrefix, sizeof(VoteScreen.Prefix));
+	else if (G_BattleGametype())
+		strcpy(VoteScreen.Prefix, "BTLS");
+
+	VoteScreen.foundLuaVoteFrames = VoteScreen.foundLuaVoteWideFrames = 0;
+	VoteScreen.currentAnimFrame = 0;
+
+	INT32 i = 1;
+
+	// check for lua vote background replacements
+	for (;;)
+	{
+		// Check if the lumps exist (checking for VEXTR(N|W)xx for race and VEXTRB(N|W)xx for battle)
+		boolean normalLumpExists = W_LumpExists(va("%sC%d", VoteScreen.Prefix, i));
+		boolean wideLumpExists = W_LumpExists(va("%sW%d", VoteScreen.Prefix, i));
+
+		if (normalLumpExists || wideLumpExists)
+		{
+			if (normalLumpExists)
+				VoteScreen.foundLuaVoteFrames++;
+
+			if (wideLumpExists)
+				VoteScreen.foundLuaVoteWideFrames++;
+		}
+		else // If we don't find at least frame 1 (e.g VEXTRN1), let's just stop looking
+			break;
+
+		i++;
+	}
+
+	// non lua vote background handling
+	boolean prefbattletype = ((votelevels[0][1] & ~0x80) == GT_MATCH);
+	VoteScreen.widebgpatch = W_CachePatchName((prefbattletype ? "BATTLSCW" : "INTERSCW"), PU_PATCH);
+	VoteScreen.bgpatch = W_CachePatchName((prefbattletype ? "BATTLSCR" : "INTERSCR"), PU_PATCH);
+}
+
+//
+// Y_VoteBackgroundDrawer
+//
+// Determines which patch drawer to use for scaling
+//
+static void Y_VoteBackgroundDrawer(patch_t *patch)
+{
+	switch (cv_votebgscaling.value)
+	{
+		case 1: // adaptive
+			V_DrawAdaptiveScaledFullScreenPatch(patch);
+			break;
+		case 2: // vertical-fill
+			V_DrawVerticallyScaledFullScreenPatch(patch);
+			break;
+		case 3: // horizontal-fill
+			V_DrawHorizontallyScaledFullScreenPatch(patch);
+			break;
+		case 0: // vanilla
+		default:
+			V_DrawScaledPatch(((vid.width/2) / vid.dupx) - (patch->width/2),
+							  (vid.height / vid.dupy) - patch->height,
+							  V_SNAPTOTOP|V_SNAPTOLEFT, patch);
+			break;
+	}
+}
+
+//
+// Y_DrawLuaVoteScreenPatch
+//
+// Handles votebackgrounds set by "setVoteBackground"
+// Aswell as animated patches
+//
+static void Y_DrawLuaVoteScreenPatch(boolean widePatch)
+{
+	INT32 nextframe = 0;
+	patch_t *votebg = NULL;
+	char tempPrefix[6];
+	const INT32 tempfoundAnimLuaVoteFrames = ((widePatch ? VoteScreen.foundLuaVoteWideFrames : VoteScreen.foundLuaVoteFrames) - 1);
+
+	strcpy(tempPrefix, va("%s%s", VoteScreen.Prefix, (widePatch ? "W" : "C")));
+
+	// Draw non animated patch
+	if (!tempfoundAnimLuaVoteFrames)
+	{
+		votebg = W_CachePatchName(va("%s1", tempPrefix), PU_PATCH);
+		Y_VoteBackgroundDrawer(votebg);
+		return;
+	}
+
+	// Draw animated patch based on frame counter on vote screen
 
 	// Just in case someone provides LESS widescreen frames than normal frames or vice versa, reset the frame counter to 0
-	if (widePatch)
+	if (VoteScreen.currentAnimFrame > tempfoundAnimLuaVoteFrames)
+		VoteScreen.currentAnimFrame = 0;
+
+	nextframe = (VoteScreen.currentAnimFrame + 1);
+
+	votebg = W_CachePatchName(va("%s%d", tempPrefix, nextframe), PU_PATCH);
+
+	Y_VoteBackgroundDrawer(votebg);
+
+	if (renderisnewtic && (votetic % 2 == 0) && !paused)
+		VoteScreen.currentAnimFrame = (nextframe > tempfoundAnimLuaVoteFrames) ? 0 : nextframe;
+}
+
+//
+// Y_DrawVoteScreenPatch
+//
+static void Y_DrawVoteScreenPatch(void)
+{
+	patch_t *votebg = NULL;
+	const boolean widescreen = (vid.width / vid.dupx > 320);
+
+	if (VoteScreen.foundLuaVoteWideFrames || VoteScreen.foundLuaVoteFrames)
 	{
-		if (currentAnimFrame > foundAnimVoteWideFrames-1)
-			currentAnimFrame = 0;
-	}
-	else
-	{
-		if (currentAnimFrame > foundAnimVoteFrames-1)
-			currentAnimFrame = 0;
+		Y_DrawLuaVoteScreenPatch(((widescreen && VoteScreen.foundLuaVoteWideFrames) || !VoteScreen.foundLuaVoteFrames));
+		return;
 	}
 
-	patch_t *background = W_CachePatchName(va("%s%d", tempAnimPrefix, currentAnimFrame + 1), PU_CACHE);
-	V_DrawScaledPatch(((vid.width/2) / vid.dupx) - (SHORT(background->width)/2), // Keep the width/height adjustments, for screens that are less wide than 320(?)
-				(vid.height / vid.dupy) - SHORT(background->height),
-				V_SNAPTOTOP|V_SNAPTOLEFT, background);
+	// non widescreen patch
+	votebg = VoteScreen.bgpatch;
 
-	if (renderisnewtic && votetic % 2 == 0 && !paused)
-		currentAnimFrame = (currentAnimFrame + 1 > tempFoundAnimVoteFrames - 1) ? 0 : currentAnimFrame + 1;
+	UINT8 prefgametype = (votelevels[0][1] & ~0x80);
+	const boolean widebgreplaced = (prefgametype == GT_MATCH) ? VoteScreen.replaced.widebattle : VoteScreen.replaced.widerace;
+	const boolean bgreplaced = (prefgametype == GT_MATCH) ? VoteScreen.replaced.battle : VoteScreen.replaced.race;
+
+	// we check a bunch of stuff to always have a "valid" fallback
+	if ((widescreen && (widebgreplaced || !bgreplaced))
+	|| (!widescreen && (widebgreplaced && !bgreplaced)))
+	{
+		votebg = VoteScreen.widebgpatch; // widescreen patch
+	}
+
+	Y_VoteBackgroundDrawer(votebg);
 }
 
 //
@@ -1057,24 +1004,8 @@ void Y_VoteDrawer(void)
 
 	V_DrawFill(0, 0, BASEVIDWIDTH, BASEVIDHEIGHT, 31);
 
-	if (widebgpatch && vid.width / vid.dupx > 320)
-	{
-		if (foundAnimVoteWideFrames == 0)
-			V_DrawScaledPatch(((vid.width/2) / vid.dupx) - (SHORT(widebgpatch->width)/2),
-								(vid.height / vid.dupy) - SHORT(widebgpatch->height),
-								V_SNAPTOTOP|V_SNAPTOLEFT, widebgpatch);
-		else
-			Y_DrawAnimatedVoteScreenPatch(true);
-	}
-	else
-	{
-		if (foundAnimVoteFrames == 0)
-			V_DrawScaledPatch(((vid.width/2) / vid.dupx) - (SHORT(bgpatch->width)/2), // Keep the width/height adjustments, for screens that are less wide than 320(?)
-								(vid.height / vid.dupy) - SHORT(bgpatch->height),
-								V_SNAPTOTOP|V_SNAPTOLEFT, bgpatch);
-		else
-			Y_DrawAnimatedVoteScreenPatch(false);
-	}
+	// decides which votebg to draw and draws it
+	Y_DrawVoteScreenPatch();
 
 	for (i = 0; i < 4; i++) // First, we need to figure out the height of this thing...
 	{
@@ -1097,6 +1028,7 @@ void Y_VoteDrawer(void)
 	}
 
 	y = (200-height)/2;
+
 	for (i = 0; i < 4; i++)
 	{
 		const char *str;
@@ -1106,7 +1038,7 @@ void Y_VoteDrawer(void)
 		if (i == 3)
 		{
 			str = "RANDOM";
-			pic = randomlvl;
+			pic = VoteScreen.randomlvl;
 		}
 		else
 		{
@@ -1130,7 +1062,7 @@ void Y_VoteDrawer(void)
 
 				if (!splitscreen)
 				{
-					thiscurs = cursor;
+					thiscurs = VoteScreen.cursor[0];
 					p = consoleplayer;
 					color = levelinfo[i].gtc;
 					colormap = NULL;
@@ -1140,19 +1072,19 @@ void Y_VoteDrawer(void)
 					switch (j)
 					{
 						case 1:
-							thiscurs = cursor2;
+							thiscurs = VoteScreen.cursor[2];
 							p = displayplayers[1];
 							break;
 						case 2:
-							thiscurs = cursor3;
+							thiscurs = VoteScreen.cursor[3];
 							p = displayplayers[2];
 							break;
 						case 3:
-							thiscurs = cursor4;
+							thiscurs = VoteScreen.cursor[4];
 							p = displayplayers[3];
 							break;
 						default:
-							thiscurs = cursor1;
+							thiscurs = VoteScreen.cursor[1];
 							p = displayplayers[0];
 							break;
 					}
@@ -1180,7 +1112,7 @@ void Y_VoteDrawer(void)
 			else
 			{
 				V_DrawFixedPatch((BASEVIDWIDTH-20)<<FRACBITS, (y)<<FRACBITS, FRACUNIT/2, V_FLIP|V_SNAPTORIGHT, pic, 0);
-				V_DrawFixedPatch((BASEVIDWIDTH-60)<<FRACBITS, ((y+25)<<FRACBITS) - (rubyheight<<1), FRACUNIT, V_SNAPTORIGHT, rubyicon, NULL);
+				V_DrawFixedPatch((BASEVIDWIDTH-60)<<FRACBITS, ((y+25)<<FRACBITS) - (rubyheight<<1), FRACUNIT, V_SNAPTORIGHT, VoteScreen.rubyicon, NULL);
 			}
 
 			V_DrawRightAlignedThinString(BASEVIDWIDTH-21, 40+y, V_SNAPTORIGHT|V_6WIDTHSPACE, str);
@@ -1204,7 +1136,7 @@ void Y_VoteDrawer(void)
 			else
 			{
 				V_DrawFixedPatch((BASEVIDWIDTH-20)<<FRACBITS, y<<FRACBITS, FRACUNIT/4, V_FLIP|V_SNAPTORIGHT, pic, 0);
-				V_DrawFixedPatch((BASEVIDWIDTH-40)<<FRACBITS, (y<<FRACBITS) + (25<<(FRACBITS-1)) - rubyheight, FRACUNIT/2, V_SNAPTORIGHT, rubyicon, NULL);
+				V_DrawFixedPatch((BASEVIDWIDTH-40)<<FRACBITS, (y<<FRACBITS) + (25<<(FRACBITS-1)) - rubyheight, FRACUNIT/2, V_SNAPTORIGHT, VoteScreen.rubyicon, NULL);
 			}
 
 			if (levelinfo[i].gts)
@@ -1226,18 +1158,20 @@ void Y_VoteDrawer(void)
 		if (dedicated && i == 0) // While leaving blank spots for non-existent players is largely intentional, the first spot *always* being blank looks a tad silly :V
 			continue;
 
-		if ((playeringame[i] && !players[i].spectator) && votes[i] != -1)
+		player_t *player = &players[i];
+
+		if ((playeringame[i] && !player->spectator) && votes[i] != -1)
 		{
 			patch_t *pic;
 
 			if (votes[i] >= 3 && (i != pickedvote || voteendtic == -1))
-				pic = randomlvl;
+				pic = VoteScreen.randomlvl;
 			else
 				pic = levelinfo[votes[i]].pic;
 
 			if (!timer && i == voteclient.ranim)
 			{
-				V_DrawScaledPatch(x-18, y+9, V_SNAPTOLEFT, cursor);
+				V_DrawScaledPatch(x-18, y+9, V_SNAPTOLEFT, VoteScreen.cursor[0]);
 				if (voteendtic != -1 && !(votetic % 4))
 					V_DrawFill(x-1, y-1, 42, 27, 120|V_SNAPTOLEFT);
 				else
@@ -1249,7 +1183,7 @@ void Y_VoteDrawer(void)
 			else
 			{
 				V_DrawFixedPatch((x+40)<<FRACBITS, (y)<<FRACBITS, FRACUNIT/4, V_SNAPTOLEFT|V_FLIP, pic, 0);
-				V_DrawFixedPatch((x+20)<<FRACBITS, (y<<FRACBITS) + (25<<(FRACBITS-1)) - rubyheight, FRACUNIT/2, V_SNAPTOLEFT, rubyicon, NULL);
+				V_DrawFixedPatch((x+20)<<FRACBITS, (y<<FRACBITS) + (25<<(FRACBITS-1)) - rubyheight, FRACUNIT/2, V_SNAPTOLEFT, VoteScreen.rubyicon, NULL);
 			}
 
 			if (levelinfo[votes[i]].gts)
@@ -1258,19 +1192,22 @@ void Y_VoteDrawer(void)
 				V_DrawDiag(x, y, 6, V_SNAPTOLEFT|levelinfo[votes[i]].gtc);
 			}
 
-			if (players[i].skincolor)
+			if (player->skincolor)
 			{
-				UINT8 *colormap = R_GetTranslationColormap(players[i].skin, players[i].skincolor, GTC_CACHE);
-				if (cv_highresportrait.value)
-					V_DrawSmallMappedPatch(x+24, y+9, V_SNAPTOLEFT, (players[i].skinlocal ? localfacewantprefix : facewantprefix)[((players[i].localskin) ? players[i].localskin-1 : players[i].skin)], colormap);
+				UINT8 *colormap = R_GetTranslationColormap(player->skin, player->skincolor, GTC_CACHE);
+
+				patch_t *faceprefix = K_GetFacePrefix(player, K_GetSkinNum(player));
+
+				if (K_UseHighResPortraits())
+					V_DrawSmallMappedPatch(x+24, y+9, V_SNAPTOLEFT, faceprefix, colormap);
 				else
-					V_DrawMappedPatch(x+24, y+9, V_SNAPTOLEFT, (players[i].skinlocal ? localfacerankprefix : facerankprefix)[((players[i].localskin) ? players[i].localskin-1 : players[i].skin)], colormap);
+					V_DrawMappedPatch(x+24, y+9, V_SNAPTOLEFT, faceprefix, colormap);
 			}
 
 			if (!splitscreen && i == consoleplayer)
 			{
 				UINT8 cursorframe = (votetic / 4) % 8;
-				V_DrawScaledPatch(x+24, y+9, V_SNAPTOLEFT, W_CachePatchName(va("K_CHILI%d", cursorframe+1), PU_CACHE));
+				V_DrawScaledPatch(x+24, y+9, V_SNAPTOLEFT, W_CachePatchName(va("K_CHILI%d", cursorframe+1), PU_PATCH));
 			}
 		}
 
@@ -1299,7 +1236,7 @@ void Y_VoteDrawer(void)
 	if (renderisnewtic)
 	{
 		LUA_HUD_ClearDrawList(luahuddrawlist_vote);
-		LUAh_VoteHUD(luahuddrawlist_vote);
+		LUA_HUDHOOK(vote, luahuddrawlist_vote);
 	}
 	LUA_HUD_DrawList(luahuddrawlist_vote);
 }
@@ -1346,7 +1283,7 @@ void Y_VoteTicker(void)
 	if (paused || P_AutoPause() || !voteclient.loaded)
 		return;
 
-	LUAh_VoteThinker();
+	LUA_HOOK(VoteThinker);
 
 	votetic++;
 
@@ -1535,10 +1472,28 @@ void Y_VoteTicker(void)
 //
 // MK online style voting screen, appears after intermission
 //
+
+static void Y_InitVoteDrawing(void)
+{
+	if (dedicated)
+		return;
+
+	// setup the background patches
+	Y_VoteScreenCheck();
+
+	VoteScreen.cursor[0] = W_CachePatchName("M_CURSOR", PU_PATCH);
+	VoteScreen.cursor[1] = W_CachePatchName("P1CURSOR", PU_PATCH);
+	VoteScreen.cursor[2] = W_CachePatchName("P2CURSOR", PU_PATCH);
+	VoteScreen.cursor[3] = W_CachePatchName("P3CURSOR", PU_PATCH);
+	VoteScreen.cursor[4] = W_CachePatchName("P4CURSOR", PU_PATCH);
+
+	VoteScreen.randomlvl = W_CachePatchName("RANDOMLV", PU_PATCH);
+	VoteScreen.rubyicon  = W_CachePatchName("RUBYICON", PU_PATCH);
+}
+
 void Y_StartVote(void)
 {
 	INT32 i = 0;
-	UINT8 prefgametype = (votelevels[0][1] & ~0x80);
 
 	votetic = -1;
 
@@ -1547,17 +1502,8 @@ void Y_StartVote(void)
 		I_Error("voteendtic is dirty");
 #endif
 
-	Y_AnimatedVoteScreenCheck();
-
-	widebgpatch = W_CachePatchName(((prefgametype == GT_MATCH) ? "BATTLSCW" : "INTERSCW"), PU_STATIC);
-	bgpatch = W_CachePatchName(((prefgametype == GT_MATCH) ? "BATTLSCR" : "INTERSCR"), PU_STATIC);
-	cursor = W_CachePatchName("M_CURSOR", PU_STATIC);
-	cursor1 = W_CachePatchName("P1CURSOR", PU_STATIC);
-	cursor2 = W_CachePatchName("P2CURSOR", PU_STATIC);
-	cursor3 = W_CachePatchName("P3CURSOR", PU_STATIC);
-	cursor4 = W_CachePatchName("P4CURSOR", PU_STATIC);
-	randomlvl = W_CachePatchName("RANDOMLV", PU_STATIC);
-	rubyicon = W_CachePatchName("RUBYICON", PU_STATIC);
+	// cache vote patches
+	Y_InitVoteDrawing();
 
 	timer = cv_votetime.value*TICRATE;
 	pickedvote = -1;
@@ -1623,11 +1569,14 @@ void Y_StartVote(void)
 			levelinfo[i].gts = NULL;
 
 		// set up the pic
-		lumpnum = W_CheckNumForName(va("%sP", G_BuildMapName(votelevels[i][0]+1)));
-		if (lumpnum != LUMPERROR)
-			levelinfo[i].pic = W_CachePatchName(va("%sP", G_BuildMapName(votelevels[i][0]+1)), PU_STATIC);
-		else
-			levelinfo[i].pic = W_CachePatchName("BLANKLVL", PU_STATIC);
+		if (!dedicated)
+		{
+			lumpnum = W_CheckNumForName(va("%sP", G_BuildMapName(votelevels[i][0]+1)));
+			if (lumpnum != LUMPERROR)
+				levelinfo[i].pic = W_CachePatchName(va("%sP", G_BuildMapName(votelevels[i][0]+1)), PU_PATCH);
+			else
+				levelinfo[i].pic = W_CachePatchName("BLANKLVL", PU_PATCH);
+		}
 	}
 
 	voteclient.loaded = true;
@@ -1652,18 +1601,18 @@ static void Y_UnloadVoteData(void)
 {
 	voteclient.loaded = false;
 
-	if (rendermode != render_soft)
+	if (dedicated)
 		return;
 
-	UNLOAD(widebgpatch);
-	UNLOAD(bgpatch);
-	UNLOAD(cursor);
-	UNLOAD(cursor1);
-	UNLOAD(cursor2);
-	UNLOAD(cursor3);
-	UNLOAD(cursor4);
-	UNLOAD(randomlvl);
-	UNLOAD(rubyicon);
+	UNLOAD(VoteScreen.widebgpatch);
+	UNLOAD(VoteScreen.bgpatch);
+	UNLOAD(VoteScreen.cursor[0]);
+	UNLOAD(VoteScreen.cursor[1]);
+	UNLOAD(VoteScreen.cursor[2]);
+	UNLOAD(VoteScreen.cursor[3]);
+	UNLOAD(VoteScreen.cursor[4]);
+	UNLOAD(VoteScreen.randomlvl);
+	UNLOAD(VoteScreen.rubyicon);
 
 	UNLOAD(levelinfo[3].pic);
 	UNLOAD(levelinfo[2].pic);

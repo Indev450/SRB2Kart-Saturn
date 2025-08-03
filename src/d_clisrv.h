@@ -13,6 +13,10 @@
 #ifndef __D_CLISRV__
 #define __D_CLISRV__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "d_ticcmd.h"
 #include "d_net.h"
 #include "d_netcmd.h"
@@ -38,9 +42,18 @@ applications may follow different packet versions.
 #define VANILLA_GT_MATCH 3
 
 // Networking and tick handling related.
-#define BACKUPTICS 32
-#define TICQUEUE 512 // more than enough for most timeouts....
+#define BACKUPTICS 512 // more than enough for most timeouts....
+#define CLIENTBACKUPTICS 32
 #define MAXTEXTCMD 256
+
+// No. of tics your controls can be delayed by.
+
+// TODO: Instead of storing a ton of extra cmds for gentlemens' delay,
+// keep them in a linked-list, with timestamps to discard everything that's older than already sent.
+// That will support any amount of lag, and be less wasteful for clients who don't use it.
+// This just works as a quick implementation.
+#define MAXGENTLEMENDELAY TICRATE
+
 //
 // Packet structure
 //
@@ -99,10 +112,13 @@ typedef enum
 
 	PT_PING,          // Packet sent to tell clients the other client's latency to server.
 
-	PT_ISSATURN,
+#ifdef SATURNPAK
 	PT_WILLRESENDGAMESTATE, // Hey Client, I am about to resend you the gamestate!
 	PT_CANRECEIVEGAMESTATE, // Okay Server, I'm ready to receive it, you can go ahead.
 	PT_RECEIVEDGAMESTATE,   // Thank you Server, I am ready to play again!
+
+	PT_ISSATURN, 			// Saturn specific identifier packet
+#endif
 
 	NUMPACKETTYPE
 } packettype_t;
@@ -369,7 +385,13 @@ typedef struct
 	UINT8 subversion; // Contains build version
 	UINT8 localplayers;	// number of splitscreen players
 	UINT8 mode;
+<<<<<<< HEAD
 	UINT8 issaturn;
+=======
+#ifdef SATURNJOIN
+	UINT8 issaturn;
+#endif
+>>>>>>> Saturn-Next
 } ATTRPACK clientconfig_pak;
 
 #define SV_SPEEDMASK 0x03		// used to send kartspeed
@@ -379,6 +401,7 @@ typedef struct
 #define MAXSERVERNAME 32
 #define MAXFILENEEDED 915
 #define MAX_MIRROR_LENGTH 256
+
 // This packet is too large
 typedef struct
 {
@@ -514,7 +537,6 @@ extern UINT32 serverlistultimatecount;
 extern INT32 mapchangepending;
 
 // Points inside doomcom
-extern doomdata_t *netbuffer;
 extern consvar_t cv_stunserver;
 extern consvar_t cv_httpsource;
 extern consvar_t cv_kicktime;
@@ -562,6 +584,9 @@ extern boolean acceptnewnode;
 extern SINT8 servernode;
 extern char connectedservername[MAXSERVERNAME+1];
 
+extern plrinfo playerinfo[MAXPLAYERS];
+extern SINT8 joinnode;
+
 void Command_Ping_f(void);
 extern tic_t connectiontimeout;
 extern tic_t jointimeout;
@@ -570,26 +595,44 @@ extern UINT32 realpingtable[MAXPLAYERS];
 extern UINT32 playerpingtable[MAXPLAYERS];
 extern tic_t servermaxping;
 
+extern boolean server_lagless;
+extern tic_t simulated_lag;
+extern tic_t lowest_lag;
+extern consvar_t cv_mindelay, cv_gentlemens;
+
 extern consvar_t
 #ifdef VANILLAJOINNEXTROUND
 	cv_joinnextround,
 #endif
+<<<<<<< HEAD
 	cv_netticbuffer, cv_allownewplayer, cv_allownewsaturnplayer, cv_joinrefusemessage, cv_maxplayers, cv_resynchattempts, cv_resynchcooldown, cv_gamestateattempts, cv_blamecfail, cv_maxsend, cv_noticedownload, cv_downloadspeed;
+=======
+	cv_netticbuffer, cv_allownewplayer,
+#ifdef SATURNJOIN
+	cv_allownewsaturnplayer,
+#endif
+	cv_joinrefusemessage, cv_maxplayers, cv_resynchattempts,
+#ifdef SATURNPAK
+	cv_resynchcooldown, cv_gamestateattempts,
+#endif
+	cv_blamecfail, cv_maxsend, cv_noticedownload, cv_downloadspeed;
+>>>>>>> Saturn-Next
 
 extern consvar_t cv_connectawaittime;
 
 extern consvar_t cv_discordinvites;
 
+extern consvar_t cv_serverinfoscreen;
+
 // Used in d_net, the only dependence
-tic_t ExpandTics(INT32 low, tic_t basetic);
+//tic_t ExpandTics(INT32 low, tic_t basetic);
 void D_ClientServerInit(void);
 
 // Initialise the other field
 void RegisterNetXCmd(netxcmd_t id, void (*cmd_f)(UINT8 **p, INT32 playernum));
-void SendNetXCmd(netxcmd_t id, const void *param, size_t nparam);
-void SendNetXCmd2(netxcmd_t id, const void *param, size_t nparam); // splitsreen player
-void SendNetXCmd3(netxcmd_t id, const void *param, size_t nparam); // splitsreen3 player
-void SendNetXCmd4(netxcmd_t id, const void *param, size_t nparam); // splitsreen4 player
+void SendNetXCmdForPlayer(UINT8 playerid, netxcmd_t id, const void *param, size_t nparam);
+#define SendNetXCmd(id, param, nparam) SendNetXCmdForPlayer(0, id, param, nparam) // Shortcut for P1
+void SendKick(UINT8 playernum, UINT8 msg);
 
 // Create any new ticcmds and broadcast to other players.
 void NetKeepAlive(void);
@@ -608,6 +651,9 @@ void CL_RemovePlayer(INT32 playernum, INT32 reason);
 void CL_QueryServerList(msg_server_t *list);
 void CL_UpdateServerList(void);
 void CL_TimeoutServerList(void);
+
+void CL_AbortConnection(void);
+
 // Is there a game running
 boolean Playing(void);
 
@@ -632,15 +678,20 @@ SINT8 nametonum(const char *name);
 extern char motd[254], server_context[8];
 extern UINT8 playernode[MAXPLAYERS];
 
+extern boolean player_muted[MAXPLAYERS];
+
 INT32 D_NumPlayers(void);
+
 void D_ResetTiccmds(void);
 
 tic_t GetLag(INT32 node);
-UINT8 GetFreeXCmdSize(void);
+//UINT8 GetFreeXCmdSize(UINT8 playerid);
 
 extern UINT8 hu_resynching;
+#ifdef SATURNPAK
 extern UINT8 hu_redownloadinggamestate;
-extern UINT8 hu_stopped; // kart, true when the game is stopped for players due to a disconnecting or connecting player
+#endif
+extern boolean hu_stopped; // kart, true when the game is stopped for players due to a disconnecting or connecting player
 
 typedef struct rewind_s {
 	UINT8 savebuffer[(768*1024)];
@@ -656,4 +707,9 @@ typedef struct rewind_s {
 void CL_ClearRewinds(void);
 rewind_t *CL_SaveRewindPoint(size_t demopos);
 rewind_t *CL_RewindToTime(tic_t time);
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
+
 #endif

@@ -13,7 +13,7 @@
 
 #include "hw_main.h"
 #include "hw_glob.h"
-#include "hw_drv.h"
+#include "hw_gl.h"
 #include "hw_shaders.h"
 #include "../z_zone.h"
 
@@ -25,12 +25,9 @@ static struct {
 	const char *vertex;
 	const char *fragment;
 } const gl_shadersources[] = {
-	
+
 	// Floor shader
 	{GLSL_DEFAULT_VERTEX_SHADER, GLSL_FLOOR_FRAGMENT_SHADER},
-
-	// Shadow shader
-	{GLSL_DEFAULT_VERTEX_SHADER, GLSL_SHADOW_FRAGMENT_SHADER},
 
 	// Wall shader
 	{GLSL_DEFAULT_VERTEX_SHADER, GLSL_WALL_FRAGMENT_SHADER},
@@ -39,7 +36,7 @@ static struct {
 	{GLSL_DEFAULT_VERTEX_SHADER, GLSL_WALL_FRAGMENT_SHADER},
 
 	// Model shader
-	{GLSL_DEFAULT_VERTEX_SHADER, GLSL_WALL_FRAGMENT_SHADER},
+	{GLSL_MODEL_LIGHTING_VERTEX_SHADER, GLSL_WALL_FRAGMENT_SHADER},
 
 	// Water shader
 	{GLSL_DEFAULT_VERTEX_SHADER, GLSL_WATER_FRAGMENT_SHADER},
@@ -52,7 +49,7 @@ static struct {
 
 	// Palette postprocess shader
 	{GLSL_DEFAULT_VERTEX_SHADER, GLSL_PALETTE_POSTPROCESS_FRAGMENT_SHADER},
-	
+
 	// UI colormap fade shader
 	{GLSL_DEFAULT_VERTEX_SHADER, GLSL_UI_COLORMAP_FADE_FRAGMENT_SHADER},
 
@@ -90,7 +87,7 @@ boolean HWR_InitShaders(void)
 {
 	int i;
 
-	if (!HWD.pfnInitShaders())
+	if (!GL_InitShaders())
 		return false;
 
 	for (i = 0; i < NUMSHADERTARGETS; i++)
@@ -279,11 +276,11 @@ static char *HWR_PreprocessShader(char *original)
 
 	// Calculate length of modified shader.
 	new_len = original_len;
-	
-	if (cv_grpaletterendering.value)
+
+	if (cv_glpaletterendering.value)
 		ADD_TO_LEN(PALETTE_RENDERING_DEFINE)
 
-	if (cv_lightdither.value)
+	if (cv_gllightdither.value)
 		ADD_TO_LEN(LIGHT_DITHERING_DEFINE)
 
 #undef ADD_TO_LEN
@@ -324,10 +321,10 @@ static char *HWR_PreprocessShader(char *original)
 	}
 
 	// Write the defines.
-	if (cv_grpaletterendering.value)
+	if (cv_glpaletterendering.value)
 		WRITE_DEFINE(PALETTE_RENDERING_DEFINE)
 
-	if (cv_lightdither.value)
+	if (cv_gllightdither.value)
 		WRITE_DEFINE(LIGHT_DITHERING_DEFINE)
 
 #undef WRITE_DEFINE
@@ -369,16 +366,16 @@ static void HWR_CompileShader(int index)
 	{
 		char *preprocessed = HWR_PreprocessShader(vertex_source);
 		if (!preprocessed) return;
-		HWD.pfnLoadShader(index, preprocessed, HWD_SHADERSTAGE_VERTEX);
+		GL_LoadShader(index, preprocessed, HWD_SHADERSTAGE_VERTEX);
 	}
 	if (fragment_source)
 	{
 		char *preprocessed = HWR_PreprocessShader(fragment_source);
 		if (!preprocessed) return;
-		HWD.pfnLoadShader(index, preprocessed, HWD_SHADERSTAGE_FRAGMENT);
+		GL_LoadShader(index, preprocessed, HWD_SHADERSTAGE_FRAGMENT);
 	}
 
-	gl_shaders[index].compiled = HWD.pfnCompileShader(index);
+	gl_shaders[index].compiled = GL_CompileShader(index);
 }
 
 // compile or recompile shaders
@@ -403,17 +400,18 @@ void HWR_CompileShaders(void)
 
 int HWR_GetShaderFromTarget(int shader_target)
 {
-	int custom_shader = gl_shadertargets[shader_target].custom_shader;
-	// use custom shader if following are true
-	// - custom shader exists
-	// - custom shader has been compiled successfully
-	// - custom shaders are enabled
-	// - custom shaders are allowed by the server
-	if (custom_shader != -1 && gl_shaders[custom_shader].compiled &&
-		cv_grshaders.value == 1)
-		return custom_shader;
-	else
-		return gl_shadertargets[shader_target].base_shader;
+	if (cv_glshaders.value == 1)
+	{
+		int custom_shader = gl_shadertargets[shader_target].custom_shader;
+		// use custom shader if following are true
+		// - custom shader exists
+		// - custom shader has been compiled successfully
+		// - custom shaders are enabled
+		if (custom_shader != -1 && gl_shaders[custom_shader].compiled)
+			return custom_shader;
+	}
+
+	return gl_shadertargets[shader_target].base_shader;
 }
 
 static inline UINT16 HWR_FindShaderDefs(UINT16 wadnum)
@@ -432,7 +430,6 @@ static inline UINT16 HWR_FindShaderDefs(UINT16 wadnum)
 customshaderxlat_t shaderxlat[] =
 {
 	{"Flat", SHADER_FLOOR},
-	{"Shadow", SHADER_SHADOW},
 	{"WallTexture", SHADER_WALL},
 	{"Sprite", SHADER_SPRITE},
 	{"Model", SHADER_MODEL},
@@ -499,47 +496,52 @@ static void HWR_TryToCompileShaderWithImplicitVersion(INT32 shader_index, INT32 
 	boolean vert_shader_version_exists = HWR_VersionDirectiveExists(vert_shader);
 	boolean frag_shader_version_exists = HWR_VersionDirectiveExists(frag_shader);
 
-	if(!vert_shader_version_exists) {
+	if (!vert_shader_version_exists)
 		CONS_Alert(CONS_WARNING, "HWR_LoadCustomShadersFromFile: vertex shader '%s' is missing a #version directive\n", HWR_GetShaderName(shaderxlat_id));
-	}
 
-	if(!frag_shader_version_exists) {
+	if (!frag_shader_version_exists)
 		CONS_Alert(CONS_WARNING, "HWR_LoadCustomShadersFromFile: fragment shader '%s' is missing a #version directive\n", HWR_GetShaderName(shaderxlat_id));
-	}
 
 	// try to compile as is
 	HWR_CompileShader(shader_index);
+
 	if (gl_shaders[shader_index].compiled)
 		return;
 
 	// try each version directive
-	for(UINT32 i = 0; i < sizeof(version_directives) / sizeof(version_directives[0]); ++i) {
+	for (UINT32 i = 0; i < sizeof(version_directives) / sizeof(version_directives[0]); ++i)
+	{
 		CONS_Alert(CONS_NOTICE, "HWR_TryToCompileShaderWithImplicitVersion: Trying %s\n", version_directives[i]);
 
-		if(!vert_shader_version_exists) {
+		if (!vert_shader_version_exists)
+		{
 			// first time reallocation would have to be made
 
-			if(i == 0) {
+			if (i == 0)
+			{
 				void* old = (void*)gl_shaders[shader_index].vertex;
 				vert_shader = gl_shaders[shader_index].vertex = HWR_PrependVersionDirective(vert_shader, i);
 				Z_Free(old);
-			} else {
-				HWR_ReplaceVersionInplace(vert_shader, i);
 			}
+			else
+				HWR_ReplaceVersionInplace(vert_shader, i);
 		}
 
-		if(!frag_shader_version_exists) {
-			if(i == 0) {
+		if (!frag_shader_version_exists)
+		{
+			if (i == 0)
+			{
 				void* old = (void*)gl_shaders[shader_index].fragment;
 				frag_shader = gl_shaders[shader_index].fragment = HWR_PrependVersionDirective(frag_shader, i);
 				Z_Free(old);
-			} else {
-				HWR_ReplaceVersionInplace(frag_shader, i);
 			}
+			else
+				HWR_ReplaceVersionInplace(frag_shader, i);
 		}
 
 		HWR_CompileShader(shader_index);
-		if (gl_shaders[shader_index].compiled) {
+		if (gl_shaders[shader_index].compiled)
+		{
 			CONS_Alert(CONS_NOTICE, "HWR_TryToCompileShaderWithImplicitVersion: Compiled with %s\n",
 					   version_directives[i]);
 			CONS_Alert(CONS_WARNING, "Implicit GLSL version is used. Correct behavior is not guaranteed\n");
@@ -560,7 +562,7 @@ void HWR_LoadCustomShadersFromFile(UINT16 wadnum, boolean PK3)
 	int i;
 	boolean modified_shaders[NUMSHADERTARGETS] = {0};
 
-	if (!gr_shadersavailable)
+	if (!gl_shadersavailable)
 		return;
 
 	lump = HWR_FindShaderDefs(wadnum);
@@ -704,17 +706,20 @@ skip_field:
 		{
 			int shader_index = i + NUMSHADERTARGETS; // index to gl_shaders
 			gl_shadertargets[i].custom_shader = shader_index;
+
 			// if only one stage (vertex/fragment) is defined, the other one
 			// is copied from the base shaders.
 			if (!gl_shaders[shader_index].fragment)
 				gl_shaders[shader_index].fragment = Z_StrDup(gl_shadersources[i].fragment);
+
 			if (!gl_shaders[shader_index].vertex)
 				gl_shaders[shader_index].vertex = Z_StrDup(gl_shadersources[i].vertex);
-			if(!HWR_CheckVersionDirectives(gl_shaders[shader_index].vertex, gl_shaders[shader_index].fragment)) {
+
+			if (!HWR_CheckVersionDirectives(gl_shaders[shader_index].vertex, gl_shaders[shader_index].fragment))
 				HWR_TryToCompileShaderWithImplicitVersion(shader_index, i);
-			} else {
+			else
 				HWR_CompileShader(shader_index);
-			}
+
 			if (!gl_shaders[shader_index].compiled)
 				CONS_Alert(CONS_ERROR, "HWR_LoadCustomShadersFromFile: A compilation error occured for the %s shader in file %s. See the console messages above for more information.\n", shaderxlat[i].type, wadfiles[wadnum]->filename);
 		}

@@ -32,7 +32,8 @@ extern consvar_t stereoreverse;
 extern consvar_t cv_soundvolume, cv_digmusicvolume;//, cv_midimusicvolume;
 extern consvar_t cv_numChannels;
 
-extern consvar_t surround;
+extern consvar_t cv_samesoundlimit;
+
 extern consvar_t cv_audbuffersize;
 //extern consvar_t cv_resetmusic;
 extern consvar_t cv_gamedigimusic;
@@ -69,6 +70,13 @@ extern consvar_t cv_resume;
 extern consvar_t cv_fading;
 extern consvar_t cv_birdmusic;
 
+extern consvar_t cv_keepmusic;
+extern consvar_t cv_skipintromusic;
+//extern consvar_t cv_ignoremusicchanges;
+extern boolean keepmapmusic;
+extern boolean skipintromus;
+#define MUSICSTARTTIME (starttime + (TICRATE/2))
+
 extern consvar_t precachesound;
 
 typedef enum
@@ -102,7 +110,14 @@ void S_InitSfxChannels(INT32 sfxVolume);
 //
 void S_StopSounds(void);
 void S_ClearSfx(void);
-void S_Start(void);
+
+void S_ResetKeepAndSpecialMus(void);
+
+void S_InitMapMusic(void);
+void S_StartMapMusic(void);
+void S_HandleReloadResetMusic(void);
+
+void S_KeepMusic(void);
 
 // Stops music and restarts it from same position. Used for instant applying changes to amiga filters.
 void S_RestartMusic(void);
@@ -158,6 +173,7 @@ boolean S_SpeedMusic(float speed);
 typedef struct musicdef_s
 {
 	char name[7];
+	UINT32 hash;
 	char usage[256];
 	char source[256];
 	char filename[256+1];
@@ -168,13 +184,8 @@ typedef struct musicdef_s
 	char alttitle[256];
 	char authors[256];
 	boolean use_info;
-	struct musicdef_s *next;
+	size_t num;
 } musicdef_t;
-
-extern musicdef_t *musicdefstart;
-extern musicdef_t **soundtestdefs;
-extern INT32 numsoundtestdefs;
-extern UINT8 soundtestpage;
 
 extern struct cursongcredit
 {
@@ -184,16 +195,17 @@ extern struct cursongcredit
 	UINT8 trans;
 } cursongcredit;
 
+extern INT32 nummusicdefs;
 
 void S_LoadMusicDefs(UINT16 wadnum);
 void S_InitMusicDefs(void);
 void S_LoadMTDefs(UINT16 wadnum);
 void S_InitMTDefs(void);
+musicdef_t *S_GetMusicCredit(INT32 i);
 musicdef_t *S_FindMusicCredit(const char *musname);
 void S_ShowSpecifiedMusicCredit(const char *musname);
 void S_ShowMusicCredit(void);
-
-boolean S_PrepareSoundTest(void);
+void S_ResetMusicCredit(void);
 
 //
 // Music Seeking
@@ -218,9 +230,14 @@ UINT32 S_GetMusicPosition(void);
 // Music Playback
 //
 
-enum
-{
-	MUS_SPECIAL = 1,/* powerups--invincibility, grow */
+/* this is for the sake of the hook */
+struct MusicChange {
+	char    * newname;
+	UINT16  * mflags;
+	boolean * looping;
+	UINT32  * position;
+	UINT32  * prefadems;
+	UINT32  * fadeinms;
 };
 
 // Start music track, arbitrary, given its name, and set whether looping
@@ -237,9 +254,6 @@ void S_SetRestoreMusicFadeInCvar (consvar_t *cvar);
 #define S_ClearRestoreMusicFadeInCvar() \
 	S_SetRestoreMusicFadeInCvar(0)
 int  S_GetRestoreMusicFadeIn (void);
-
-void S_SetMusicUsage (int type);
-int  S_MusicUsage (void);
 
 // Stops the music.
 void S_StopMusic(void);
@@ -281,10 +295,8 @@ void S_StartSoundName(void *mo, const  char *soundname);
 void S_StopSoundByID(void *origin, sfxenum_t sfx_id);
 void S_StopSoundByNum(sfxenum_t sfxnum);
 
-#ifndef HW3SOUND
 #define S_StartAttackSound S_StartSound
 #define S_StartScreamSound S_StartSound
-#endif
 
 #ifdef MUSICSLOT_COMPATIBILITY
 // For compatibility with code/scripts relying on older versions

@@ -327,7 +327,8 @@ char menupath[1024];
 size_t menupathindex[menudepth];
 size_t menudepthleft = menudepth;
 
-char menusearch[MAXSTRINGLENGTH+1];
+char menusearchbuf[MAXSTRINGLENGTH+1];
+textinput_t menusearch;
 
 char **dirmenu, **coredirmenu; // core only local for this file
 size_t sizedirmenu, sizecoredirmenu; // ditto
@@ -364,8 +365,8 @@ filestatus_t filesearch(char *filename, const char *startpath, const UINT8 *want
 	char searchpath[1024];
 	size_t *searchpathindex;
 
-	dirhandle = (DIR**) malloc(maxsearchdepth * sizeof (DIR*));
-	searchpathindex = (size_t *) malloc(maxsearchdepth * sizeof (size_t));
+	dirhandle = (DIR**) malloc(maxsearchdepth * sizeof(DIR*));
+	searchpathindex = (size_t *) malloc(maxsearchdepth * sizeof(size_t));
 
 	strcpy(searchpath,startpath);
 	searchpathindex[--depthleft] = strlen(searchpath) + 1;
@@ -409,14 +410,14 @@ filestatus_t filesearch(char *filename, const char *startpath, const UINT8 *want
 		}
 
 		// okay, now we actually want searchpath to incorporate d_name
-		strcpy(&searchpath[searchpathindex[depthleft]],dent->d_name);
+		strcpy(&searchpath[searchpathindex[depthleft]], dent->d_name);
 
 #if defined(__linux__) || defined(__FreeBSD__)
-		if (dent->d_type == DT_UNKNOWN && lstat(searchpath,&fsstat) == 0)
+		if (dent->d_type == DT_UNKNOWN && lstat(searchpath, &fsstat) == 0)
 		{
 			if (S_ISDIR(fsstat.st_mode))
 				dent->d_type = DT_DIR;
-            else if (S_ISLNK(fsstat.st_mode))
+			else if (S_ISLNK(fsstat.st_mode))
 				dent->d_type = DT_LNK;
 		}
 
@@ -438,11 +439,12 @@ filestatus_t filesearch(char *filename, const char *startpath, const UINT8 *want
 		{
 			searchpathindex[--depthleft] = strlen(searchpath) + 1;
 			dirhandle[depthleft] = opendir(searchpath);
+
 			if (!dirhandle[depthleft])
 			{
-					// can't open it... maybe no read-permissions
-					// go back to previous dir
-					depthleft++;
+				// can't open it... maybe no read-permissions
+				// go back to previous dir
+				depthleft++;
 			}
 
 			searchpath[searchpathindex[depthleft]-1] = PATHSEP[0];
@@ -454,9 +456,9 @@ filestatus_t filesearch(char *filename, const char *startpath, const UINT8 *want
 			{
 				case FS_FOUND:
 					if (completepath)
-						strcpy(filename,searchpath);
+						strcpy(filename, searchpath);
 					else
-						strcpy(filename,dent->d_name);
+						strcpy(filename, dent->d_name);
 					retval = FS_FOUND;
 					found = 1;
 					break;
@@ -497,7 +499,7 @@ static boolean filemenucmp(char *haystack, char *needle)
 		strupr(localhaystack);
 	if (cv_addons_search_type.value)
 		return (strstr(localhaystack, needle) != 0);
-	return (!strncmp(localhaystack, needle, menusearch[0]));
+	return (!strncmp(localhaystack, needle, menusearch.length));
 }
 
 void closefilemenu(boolean validsize)
@@ -563,7 +565,7 @@ void searchfilemenu(char *tempname)
 
 	first = (((UINT8)(coredirmenu[0][DIR_TYPE]) == EXT_UP) ? 1 : 0); // skip UP...
 
-	if (!menusearch[0])
+	if (!menusearch.length)
 	{
 		if (dirmenu)
 			Z_Free(dirmenu);
@@ -590,7 +592,7 @@ void searchfilemenu(char *tempname)
 		return;
 	}
 
-	strcpy(localmenusearch, menusearch+1);
+	strcpy(localmenusearch, menusearch.buffer);
 	if (!cv_addons_search_case.value)
 		strupr(localmenusearch);
 
@@ -652,13 +654,17 @@ boolean preparefilemenu(boolean samedepth, boolean replayhut)
 			tempname = Z_StrDup(dirmenu[dir_on[menudepthleft]]+DIR_STRING); // don't need to I_Error if can't make - not important, just QoL
 	}
 	else
-		menusearch[0] = menusearch[1] = 0; // clear search
+		M_TextInputInit(&menusearch, menusearchbuf, MAXSTRINGLENGTH+1);
 
 	if (!(dirhandle = opendir(menupath))) // get directory
 	{
 		closefilemenu(true);
 		return false;
 	}
+
+	if (dirmenu != coredirmenu)
+		Z_Free(dirmenu);
+	dirmenu = NULL;
 
 	for (; sizecoredirmenu > 0; sizecoredirmenu--) // clear out existing items
 	{
@@ -796,7 +802,7 @@ boolean preparefilemenu(boolean samedepth, boolean replayhut)
 					}
 					else if (ext == EXT_TXT)
 					{
-						if (!strcmp(dent->d_name, "log.txt") || !strcmp(dent->d_name, "errorlog.txt"))
+						if (!strncmp(dent->d_name, "log-", 4) || !strcmp(dent->d_name, "errorlog.txt"))
 							ext |= EXT_LOADED;
 					}
 

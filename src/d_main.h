@@ -14,41 +14,63 @@
 #ifndef __D_MAIN__
 #define __D_MAIN__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "d_event.h"
 #include "w_wad.h"   // for MAX_WADFILES
 
-// make sure not to write back the config until it's been correctly loaded
 extern tic_t rendergametic;
+
+// make sure not to write back the config until it's been correctly loaded
+extern boolean loaded_config;
 
 extern char srb2home[256]; //Alam: My Home
 extern boolean usehome; //Alam: which path?
 extern const char *pandf; //Alam: how to path?
 extern char srb2path[256]; //Alam: SRB2's Home
 
+// extra graphic patches for saturn specific thingies
 extern boolean found_extra_kart; // for use in k_kart.c
 extern boolean found_extra2_kart; // for use in k_kart.c
 extern boolean found_extra3_kart; // for use in k_kart.c
 
-extern boolean xtra_speedo; // extra speedometer check
-extern boolean xtra_speedo_clr; // extra speedometer colour check
-extern boolean xtra_speedo3; // 80x11 extra speedometer check
-extern boolean xtra_speedo_clr3; // 80x11 extra speedometer colour check
-extern boolean achi_speedo; // achiiro speedometer check
-extern boolean achi_speedo_clr; // extra speedometer colour check
-extern boolean clr_hud; // colour hud check
-extern boolean big_lap; // bigger lap counter
-extern boolean big_lap_color; // bigger lap counter but colour
-extern boolean kartzspeedo; // kartZ speedo
-extern boolean statdp; // stat display for extended player setup
-extern boolean nametaggfx; // Nametag stuffs
-extern boolean driftgaugegfx;
+extern boolean xtra_speedo;       // extra speedometer check
+extern boolean xtra_speedo_clr;   // extra speedometer colour check
+extern boolean xtra_speedo3;      // 80x11 extra speedometer check
+extern boolean xtra_speedo_clr3;  // 80x11 extra speedometer colour check
+extern boolean achi_speedo;       // achiiro speedometer check
+extern boolean achi_speedo_clr;   // extra speedometer colour check
+extern boolean dial_speedo;       // dial speedometer check
+extern boolean dial_speedo_clr;   // dial speedometer colour check
+extern boolean kartz_speedo;      // kartZ speedo
+extern boolean kartz_speedo_smol; // kartZ speedo but smol
 
+<<<<<<< HEAD
 void D_AddAutoloadFiles(void);
+=======
+extern boolean clr_hud;           // colour hud check
+extern boolean driftgaugegfx_clr; // driftgauge colour check
+extern boolean big_lap;           // bigger lap counter
+extern boolean big_lap_color;     // bigger lap counter but colour
+extern boolean statdp;            // stat display for extended player setup
+extern boolean nametaggfx;        // Nametag stuffs
+extern boolean driftgaugegfx;     // Driftgauge stuffs
+extern boolean multiitem_icon;    // Extra icons for Sneakers, Banana and Jawz
+extern boolean joystickicon;      // Extra icons for the joystick input display
+extern boolean minidoticon;       // Dot icon for minimap player angle display
+extern boolean minilighticon;     // mkwii-style minimap headlight
+//
+>>>>>>> Saturn-Next
 
+// autoload stuff
 extern boolean autoloading;
 extern boolean autoloaded;
 extern boolean postautoloaded;
 extern boolean wasautoloaded;
+
+void D_AddPostloadFiles(void);
 
 extern char *autoloadwadfilespost[MAX_WADFILES];
 extern char *autoloadwadfiles[MAX_WADFILES];
@@ -68,13 +90,15 @@ void D_PostEvent(const event_t *ev);
 
 void D_ProcessEvents(void);
 
-void D_CleanFile(char **filearray);
-
 const char *D_Home(void);
 
 //
 // BASE LEVEL
 //
 void D_StartTitle(void);
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif //__D_MAIN__

@@ -110,13 +110,21 @@ HMS_on_read (char *s, size_t _1, size_t n, void *userdata)
 
 	buffer = userdata;
 
-	if (n >= (size_t)( buffer->end - buffer->needle ))
+	while (n >= (size_t)( buffer->end - buffer->needle ))
 	{
 		/* resize to next multiple of buffer size */
 		blocks = ( n / DEFAULT_BUFFER_SIZE + 1 );
 		buffer->end += ( blocks * DEFAULT_BUFFER_SIZE );
 
-		buffer->buffer = realloc(buffer->buffer, buffer->end);
+		void *tmp = realloc(buffer->buffer, buffer->end);
+		if (tmp == NULL)
+		{
+			// not enough memory to read it, bail
+			free(buffer->buffer);
+			buffer->buffer = NULL;
+			return 0;
+		}
+		buffer->buffer = tmp;
 	}
 
 	memcpy(&buffer->buffer[buffer->needle], s, n);
@@ -220,9 +228,13 @@ HMS_connect (const char *format, ...)
 
 	curl_easy_setopt(curl, CURLOPT_URL, url);
 	curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
-	curl_easy_setopt(curl, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4);
 
-	curl_easy_setopt(curl, CURLOPT_TIMEOUT, cv_masterserver_timeout.value);
+#ifdef HAVE_IPV6
+	if (!M_CheckParm("-ipv6"))
+#endif
+		curl_easy_setopt(curl, CURLOPT_IPRESOLVE, (long)CURL_IPRESOLVE_V4);
+
+	curl_easy_setopt(curl, CURLOPT_TIMEOUT, (long)cv_masterserver_timeout.value);
 	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, HMS_on_read);
 	curl_easy_setopt(curl, CURLOPT_WRITEDATA, buffer);
 
@@ -289,7 +301,7 @@ int
 HMS_register (void)
 {
 	struct HMS_buffer *hms;
-	int ok;
+	int okay;
 
 	char post[256];
 
@@ -316,45 +328,45 @@ HMS_register (void)
 
 	curl_easy_setopt(hms->curl, CURLOPT_POSTFIELDS, post);
 
-	ok = HMS_do(hms);
+	okay = HMS_do(hms);
 
-	if (ok)
+	if (okay)
 	{
 		hms_server_token = strdup(strtok(hms->buffer, "\n"));
 	}
 
 	HMS_end(hms);
 
-	return ok;
+	return okay;
 }
 
 int
 HMS_unlist (void)
 {
 	struct HMS_buffer *hms;
-	int ok;
+	int okay;
 
 	hms = HMS_connect("servers/%s/unlist", hms_server_token);
 
 	if (! hms)
 		return 0;
 
-	curl_easy_setopt(hms->curl, CURLOPT_POST, 1);
-	curl_easy_setopt(hms->curl, CURLOPT_POSTFIELDSIZE, 0);
+	curl_easy_setopt(hms->curl, CURLOPT_POST, (long)1);
+	curl_easy_setopt(hms->curl, CURLOPT_POSTFIELDSIZE, (long)0);
 
-	ok = HMS_do(hms);
+	okay = HMS_do(hms);
 	HMS_end(hms);
 
 	free(hms_server_token);
 
-	return ok;
+	return okay;
 }
 
 int
 HMS_update (void)
 {
 	struct HMS_buffer *hms;
-	int ok;
+	int okay;
 
 	char post[256];
 
@@ -376,10 +388,10 @@ HMS_update (void)
 
 	curl_easy_setopt(hms->curl, CURLOPT_POSTFIELDS, post);
 
-	ok = HMS_do(hms);
+	okay = HMS_do(hms);
 	HMS_end(hms);
 
-	return ok;
+	return okay;
 }
 
 void
@@ -488,7 +500,7 @@ int
 HMS_compare_mod_version (char *buffer, size_t buffer_size)
 {
 	struct HMS_buffer *hms;
-	int ok;
+	int okay;
 
 	char *version;
 	char *version_name;
@@ -498,7 +510,7 @@ HMS_compare_mod_version (char *buffer, size_t buffer_size)
 	if (! hms)
 		return 0;
 
-	ok = 0;
+	okay = 0;
 
 	if (HMS_do(hms))
 	{
@@ -510,16 +522,16 @@ HMS_compare_mod_version (char *buffer, size_t buffer_size)
 			if (atoi(version) != MODVERSION)
 			{
 				strlcpy(buffer, version_name, buffer_size);
-				ok = 1;
+				okay = 1;
 			}
 			else
-				ok = -1;
+				okay = -1;
 		}
 	}
 
 	HMS_end(hms);
 
-	return ok;
+	return okay;
 }
 
 const char *
@@ -532,7 +544,9 @@ HMS_fetch_rules (char *buffer, size_t buffer_size)
 	if (! hms)
 		return NULL;
 
-	if (HMS_do(hms))
+	boolean okay = HMS_do(hms);
+
+	if (okay)
 	{
 		char *p = strstr(hms->buffer, "\n\n");
 
@@ -549,6 +563,9 @@ HMS_fetch_rules (char *buffer, size_t buffer_size)
 		buffer = NULL;
 
 	HMS_end(hms);
+
+	if (!okay)
+		return NULL;
 
 	return buffer;
 }

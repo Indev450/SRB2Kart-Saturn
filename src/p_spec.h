@@ -25,6 +25,22 @@ extern mobj_t *skyboxmo[2];
 //
 #define GETSECSPECIAL(i,j) ((i >> ((j-1)*4))&15)
 
+/** Animated texture descriptor
+ * This keeps track of an animated texture or an animated flat.
+ * \sa P_UpdateSpecials, P_InitPicAnims, animdef_t
+ */
+typedef struct
+{
+	SINT8 istexture; ///< ::true for a texture, ::false for a flat
+	INT32 picnum;    ///< The end flat number
+	INT32 basepic;   ///< The start flat number
+	INT32 numpics;   ///< Number of frames in the animation
+	tic_t speed;     ///< Number of tics for which each frame is shown
+} anim_t;
+
+extern anim_t *lastanim;
+extern anim_t *anims;
+
 // at game start
 void P_InitPicAnims(void);
 
@@ -32,7 +48,7 @@ void P_InitPicAnims(void);
 void P_SetupLevelFlatAnims(void);
 
 // at map load
-void P_SpawnSpecials(INT32 fromnetsave);
+void P_SpawnSpecials(INT32 fromnetsave, boolean reloadinggamestate);
 
 // every tic
 void P_UpdateSpecials(void);
@@ -58,6 +74,7 @@ INT32 P_FindMinSurroundingLight(sector_t *sector, INT32 max);
 void P_SetupSignExit(player_t *player);
 boolean P_IsFlagAtBase(mobjtype_t flag);
 
+void P_PurgePrecipitation(void);
 void P_SwitchWeather(INT32 weathernum);
 
 boolean P_RunTriggerLinedef(line_t *triggerline, mobj_t *actor, sector_t *caller);
@@ -453,5 +470,7 @@ mobj_t *P_GetPushThing(UINT32 s);
 void P_CalcHeight(player_t *player);
 
 sector_t *P_ThingOnSpecial3DFloor(mobj_t *mo);
+
+void P_StartQuake(tic_t time, fixed_t intensity, fixed_t radius);
 
 #endif

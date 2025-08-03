@@ -28,6 +28,7 @@
 #include "r_main.h"
 #include "r_state.h"
 #include "r_defs.h"
+#include "qs22j.h"
 
 
 /*
@@ -95,6 +96,8 @@ INT32 numPolyObjects;
 // Polyobject Blockmap -- initialized in P_LoadBlockMap
 polymaplink_t **polyblocklinks;
 
+static size_t *KnownPolySides;
+static size_t KnownPolySidesCount;
 
 //
 // Static Data
@@ -150,6 +153,42 @@ FUNCINLINE static ATTRINLINE void PolyObj_AddThinker(thinker_t *th)
 	th->next = thinkercap.next;
 	th->prev = &thinkercap;
 	thinkercap.next = th;
+
+	th->references = 0;
+	th->cachable = false; // not initialising this made the mobjcache die thx!
+#ifdef PARANOIA
+	th->debug_mobjtype = MT_NULL;
+#endif
+}
+
+static void FreeSideLists(void)
+{
+	free(KnownPolySides);
+	KnownPolySides = NULL;
+	KnownPolySidesCount = 0;
+}
+
+//==========================================================================
+//
+// InitSideLists [RH]
+//
+// Group sides by vertex and collect side that are known to belong to a
+// polyobject so that they can be initialized fast.
+//==========================================================================
+static void InitSideLists(void)
+{
+	size_t i;
+	FreeSideLists();
+	KnownPolySides = malloc(numsegs * sizeof(KnownPolySides[0]));
+	for (i = 0; i < numsegs; i++)
+	{
+		if (segs[i].linedef &&
+			(segs[i].linedef->special == POLYOBJ_START_LINE ||
+			segs[i].linedef->special == POLYOBJ_EXPLICIT_LINE))
+		{
+			KnownPolySides[KnownPolySidesCount++] = i;
+		}
+	}
 }
 
 //
@@ -512,11 +551,12 @@ static void Polyobj_findExplicit(polyobj_t *po)
 	size_t numSegItems = 0;
 	size_t numSegItemsAlloc = 0;
 
-	size_t i;
+	size_t i, ii;
 
 	// first loop: save off all segs with polyobject's id number
-	for (i = 0; i < numsegs; ++i)
+	for (ii = 0; ii < KnownPolySidesCount; ii++)
 	{
+		i = KnownPolySides[ii];
 		INT32 polyID, parentID;
 
 		if (segs[i].linedef->special != POLYOBJ_EXPLICIT_LINE)
@@ -547,7 +587,7 @@ static void Polyobj_findExplicit(polyobj_t *po)
 
 	// sort the array if necessary
 	if (numSegItems >= 2)
-		qsort(segitems, numSegItems, sizeof(segitem_t), Polyobj_segCompare);
+		qs22j(segitems, numSegItems, sizeof(segitem_t), Polyobj_segCompare);
 
 	// second loop: put the sorted segs into the polyobject
 	for (i = 0; i < numSegItems; ++i)
@@ -566,7 +606,7 @@ static void Polyobj_findExplicit(polyobj_t *po)
 //
 static void Polyobj_spawnPolyObj(INT32 num, mobj_t *spawnSpot, INT32 id)
 {
-	size_t i;
+	size_t i, ii;
 	polyobj_t *po = &PolyObjects[num];
 
 	// don't spawn a polyobject more than once
@@ -590,8 +630,9 @@ static void Polyobj_spawnPolyObj(INT32 num, mobj_t *spawnSpot, INT32 id)
 	// 1. Search segs for "line start" special with tag matching this
 	//    polyobject's id number. If found, iterate through segs which
 	//    share common vertices and record them into the polyobject.
-	for (i = 0; i < numsegs; ++i)
+	for (ii = 0; ii < KnownPolySidesCount; ii++)
 	{
+		i = KnownPolySides[ii];
 		seg_t *seg = &segs[i];
 		INT32 polyID, parentID;
 
@@ -810,8 +851,7 @@ static polymaplink_t *Polyobj_getLink(void)
 	}
 	else
 	{
-		l = Z_Malloc(sizeof(*l), PU_LEVEL, NULL);
-		memset(l, 0, sizeof(*l));
+		l = Z_Calloc(sizeof(*l), PU_LEVEL, NULL);
 	}
 
 	return l;
@@ -1415,7 +1455,10 @@ static boolean Polyobj_rotate(polyobj_t *po, angle_t delta, UINT8 turnthings)
 	{
 		// update seg angles (used only by renderer)
 		for (i = 0; i < po->segCount; ++i)
+		{
 			po->segs[i]->angle += delta;
+			P_UpdateSegLightOffset(po->segs[i]);
+		}
 
 		// update polyobject's angle
 		po->angle += delta;
@@ -1514,10 +1557,8 @@ void Polyobj_InitLevel(void)
 	// the mobj_t pointers on a queue for use below.
 	for (th = thinkercap.next; th != &thinkercap; th = th->next)
 	{
-		if (th->function.acp1 != (actionf_p1)P_MobjThinker)
+		if (th->function != (actionf_p1)P_MobjThinker)
 				continue;
-		if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
-			continue;
 
 		mobj_t *mo = (mobj_t *)th;
 
@@ -1526,8 +1567,7 @@ void Polyobj_InitLevel(void)
 		{
 			++numPolyObjects;
 
-			qitem = malloc(sizeof(mobjqitem_t));
-			memset(qitem, 0, sizeof(mobjqitem_t));
+			qitem = calloc(1, sizeof(mobjqitem_t));
 			qitem->mo = mo;
 			M_QueueInsert(&(qitem->mqitem), &spawnqueue);
 		}
@@ -1535,8 +1575,7 @@ void Polyobj_InitLevel(void)
 		{
 			++numAnchors;
 
-			qitem = malloc(sizeof(mobjqitem_t));
-			memset(qitem, 0, sizeof(mobjqitem_t));
+			qitem = calloc(1, sizeof(mobjqitem_t));
 			qitem->mo = mo;
 			M_QueueInsert(&(qitem->mqitem), &anchorqueue);
 		}
@@ -1552,6 +1591,9 @@ void Polyobj_InitLevel(void)
 		for (i = 0; i < numPolyObjects; ++i)
 			PolyObjects[i].first = PolyObjects[i].next = numPolyObjects;
 
+		// [RH] Make this faster
+		InitSideLists();
+
 		// setup polyobjects
 		for (i = 0; i < numPolyObjects; ++i)
 		{
@@ -1559,6 +1601,9 @@ void Polyobj_InitLevel(void)
 
 			Polyobj_spawnPolyObj(i, qitem->mo, qitem->mo->spawnpoint->angle);
 		}
+
+		// [RH] Don't need the side lists anymore
+		FreeSideLists();
 
 		// move polyobjects to spawn points
 		for (i = 0; i < numAnchors; ++i)
@@ -1787,9 +1832,7 @@ void T_PolyObjWaypoint(polywaypoint_t *th)
 	// We redo this each tic to make savegame compatibility easier.
 	for (wp = thinkercap.next; wp != &thinkercap; wp = wp->next)
 	{
-		if (wp->function.acp1 != (actionf_p1)P_MobjThinker) // Not a mobj thinker
-			continue;
-		if (wp->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
+		if (wp->function != (actionf_p1)P_MobjThinker) // Not a mobj thinker
 			continue;
 
 		mo2 = (mobj_t *)wp;
@@ -1870,7 +1913,41 @@ void T_PolyObjWaypoint(polywaypoint_t *th)
 		{
 			CONS_Debug(DBG_POLYOBJ, "Looking for next waypoint...\n");
 
+<<<<<<< HEAD
 			waypoint = (th->direction == -1) ? P_GetPreviousWaypoint(target, false) : P_GetNextWaypoint(target, false);
+=======
+			// Find next waypoint
+			for (wp = thinkercap.next; wp != &thinkercap; wp = wp->next)
+			{
+				if (wp->function != (actionf_p1)P_MobjThinker) // Not a mobj thinker
+					continue;
+
+				mo2 = (mobj_t *)wp;
+
+				if (mo2->type != MT_TUBEWAYPOINT)
+					continue;
+
+				if (mo2->threshold != th->sequence)
+					continue;
+
+				if (th->direction == -1)
+				{
+					if (mo2->health == target->health - 1)
+					{
+						waypoint = mo2;
+						break;
+					}
+				}
+				else
+				{
+					if (mo2->health == target->health + 1)
+					{
+						waypoint = mo2;
+						break;
+					}
+				}
+			}
+>>>>>>> Saturn-Next
 
 			if (!waypoint && th->wrap) // If specified, wrap waypoints
 			{
@@ -1880,7 +1957,39 @@ void T_PolyObjWaypoint(polywaypoint_t *th)
 					th->stophere = true;
 				}
 
+<<<<<<< HEAD
 				waypoint = (th->direction == -1) ? P_GetLastWaypoint(th->sequence) : P_GetFirstWaypoint(th->sequence);
+=======
+				for (wp = thinkercap.next; wp != &thinkercap; wp = wp->next)
+				{
+					if (wp->function != (actionf_p1)P_MobjThinker) // Not a mobj thinker
+						continue;
+
+					mo2 = (mobj_t *)wp;
+
+					if (mo2->type != MT_TUBEWAYPOINT)
+						continue;
+
+					if (mo2->threshold != th->sequence)
+						continue;
+
+					if (th->direction == -1)
+					{
+						if (waypoint == NULL)
+							waypoint = mo2;
+						else if (mo2->health > waypoint->health)
+							waypoint = mo2;
+					}
+					else
+					{
+						if (mo2->health == 0)
+						{
+							waypoint = mo2;
+							break;
+						}
+					}
+				}
+>>>>>>> Saturn-Next
 			}
 			else if (!waypoint && th->comeback) // Come back to the start
 			{
@@ -1889,7 +1998,40 @@ void T_PolyObjWaypoint(polywaypoint_t *th)
 				if (!th->continuous)
 					th->comeback = false;
 
+<<<<<<< HEAD
 				waypoint = (th->direction == -1) ? P_GetPreviousWaypoint(target, false) : P_GetNextWaypoint(target, false);
+=======
+				for (wp = thinkercap.next; wp != &thinkercap; wp = wp->next)
+				{
+					if (wp->function != (actionf_p1)P_MobjThinker) // Not a mobj thinker
+						continue;
+
+					mo2 = (mobj_t *)wp;
+
+					if (mo2->type != MT_TUBEWAYPOINT)
+						continue;
+
+					if (mo2->threshold != th->sequence)
+						continue;
+
+					if (th->direction == -1)
+					{
+						if (mo2->health == target->health - 1)
+						{
+							waypoint = mo2;
+							break;
+						}
+					}
+					else
+					{
+						if (mo2->health == target->health + 1)
+						{
+							waypoint = mo2;
+							break;
+						}
+					}
+				}
+>>>>>>> Saturn-Next
 			}
 		}
 
@@ -2227,7 +2369,7 @@ INT32 EV_DoPolyObjRotate(polyrotdata_t *prdata)
 
 	// create a new thinker
 	th = Z_Malloc(sizeof(polyrotate_t), PU_LEVSPEC, NULL);
-	th->thinker.function.acp1 = (actionf_p1)T_PolyObjRotate;
+	th->thinker.function = (actionf_p1)T_PolyObjRotate;
 	PolyObj_AddThinker(&th->thinker);
 	po->thinker = &th->thinker;
 
@@ -2295,7 +2437,7 @@ INT32 EV_DoPolyObjMove(polymovedata_t *pmdata)
 
 	// create a new thinker
 	th = Z_Malloc(sizeof(polymove_t), PU_LEVSPEC, NULL);
-	th->thinker.function.acp1 = (actionf_p1)T_PolyObjMove;
+	th->thinker.function = (actionf_p1)T_PolyObjMove;
 	PolyObj_AddThinker(&th->thinker);
 	po->thinker = &th->thinker;
 
@@ -2359,7 +2501,7 @@ INT32 EV_DoPolyObjWaypoint(polywaypointdata_t *pwdata)
 
 	// create a new thinker
 	th = Z_Malloc(sizeof(polywaypoint_t), PU_LEVSPEC, NULL);
-	th->thinker.function.acp1 = (actionf_p1)T_PolyObjWaypoint;
+	th->thinker.function = (actionf_p1)T_PolyObjWaypoint;
 	PolyObj_AddThinker(&th->thinker);
 	po->thinker = &th->thinker;
 
@@ -2375,8 +2517,49 @@ INT32 EV_DoPolyObjWaypoint(polywaypointdata_t *pwdata)
 	th->stophere = false;
 
 	// Find the first waypoint we need to use
+<<<<<<< HEAD
 	first = (th->direction == -1) ? P_GetLastWaypoint(th->sequence) : P_GetFirstWaypoint(th->sequence);
 	last = (th->direction == -1) ? P_GetFirstWaypoint(th->sequence) : P_GetLastWaypoint(th->sequence);
+=======
+	for (wp = thinkercap.next; wp != &thinkercap; wp = wp->next)
+	{
+		if (wp->function != (actionf_p1)P_MobjThinker) // Not a mobj thinker
+			continue;
+
+		mo2 = (mobj_t *)wp;
+
+		if (mo2->type != MT_TUBEWAYPOINT)
+			continue;
+
+		if (mo2->threshold != th->sequence)
+			continue;
+
+		if (th->direction == -1) // highest waypoint #
+		{
+			if (mo2->health == 0)
+				last = mo2;
+			else
+			{
+				if (first == NULL)
+					first = mo2;
+				else if (mo2->health > first->health)
+					first = mo2;
+			}
+		}
+		else // waypoint 0
+		{
+			if (mo2->health == 0)
+				first = mo2;
+			else
+			{
+				if (last == NULL)
+					last = mo2;
+				else if (mo2->health > last->health)
+					last = mo2;
+			}
+		}
+	}
+>>>>>>> Saturn-Next
 
 	if (!first)
 	{
@@ -2423,7 +2606,7 @@ INT32 EV_DoPolyObjWaypoint(polywaypointdata_t *pwdata)
 	R_CreateInterpolator_Polyobj(&th->thinker, po);
 	// T_PolyObjWaypoint is the only polyobject movement
 	// that can adjust z, so we add these ones too.
-	R_CreateInterpolator_SectorPlane(&th->thinker, po->lines[0]->backsector, false); 
+	R_CreateInterpolator_SectorPlane(&th->thinker, po->lines[0]->backsector, false);
 	R_CreateInterpolator_SectorPlane(&th->thinker, po->lines[0]->backsector, true);
 
 	// Most other polyobject functions handle children by recursively
@@ -2456,7 +2639,7 @@ static void Polyobj_doSlideDoor(polyobj_t *po, polydoordata_t *doordata)
 
 	// allocate and add a new slide door thinker
 	th = Z_Malloc(sizeof(polyslidedoor_t), PU_LEVSPEC, NULL);
-	th->thinker.function.acp1 = (actionf_p1)T_PolyDoorSlide;
+	th->thinker.function = (actionf_p1)T_PolyDoorSlide;
 	PolyObj_AddThinker(&th->thinker);
 
 	// point the polyobject to this thinker
@@ -2507,7 +2690,7 @@ static void Polyobj_doSwingDoor(polyobj_t *po, polydoordata_t *doordata)
 
 	// allocate and add a new swing door thinker
 	th = Z_Malloc(sizeof(polyswingdoor_t), PU_LEVSPEC, NULL);
-	th->thinker.function.acp1 = (actionf_p1)T_PolyDoorSwing;
+	th->thinker.function = (actionf_p1)T_PolyDoorSwing;
 	PolyObj_AddThinker(&th->thinker);
 
 	// point the polyobject to this thinker
@@ -2592,7 +2775,7 @@ INT32 EV_DoPolyObjDisplace(polydisplacedata_t *prdata)
 
 	// create a new thinker
 	th = Z_Malloc(sizeof(polydisplace_t), PU_LEVSPEC, NULL);
-	th->thinker.function.acp1 = (actionf_p1)T_PolyObjDisplace;
+	th->thinker.function = (actionf_p1)T_PolyObjDisplace;
 	PolyObj_AddThinker(&th->thinker);
 	po->thinker = &th->thinker;
 
@@ -2696,7 +2879,7 @@ INT32 EV_DoPolyObjFlag(line_t *pfdata)
 
 	// create a new thinker
 	th = Z_Malloc(sizeof(polymove_t), PU_LEVSPEC, NULL);
-	th->thinker.function.acp1 = (actionf_p1)T_PolyObjFlag;
+	th->thinker.function = (actionf_p1)T_PolyObjFlag;
 	PolyObj_AddThinker(&th->thinker);
 	po->thinker = &th->thinker;
 

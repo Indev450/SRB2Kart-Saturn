@@ -17,6 +17,10 @@
 #ifndef __DOOMTYPE__
 #define __DOOMTYPE__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #if defined (_WIN32)
 //#define WIN32_LEAN_AND_MEAN
 #define RPC_NO_WINDOWS_H
@@ -100,8 +104,10 @@ typedef long ssize_t;
 	#define strnicmp(x,y,n) strncasecmp(x,y,n)
 #endif
 
+#ifndef __cplusplus
 char *strcasestr(const char *in, const char *what);
 #define stristr strcasestr
+#endif
 
 #if defined (macintosh) //|| defined (__APPLE__) //skip all boolean/Boolean crap
 	#define true 1
@@ -156,22 +162,19 @@ size_t strlcpy(char *dst, const char *src, size_t siz);
 
 /* Boolean type definition */
 
-// \note __BYTEBOOL__ used to be set above if "macintosh" was defined,
-// if macintosh's version of boolean type isn't needed anymore, then isn't this macro pointless now?
-#ifndef __BYTEBOOL__
-	#define __BYTEBOOL__
-
-	//faB: clean that up !!
-	#if defined( _MSC_VER)  && (_MSC_VER >= 1800) // MSVC 2013 and forward
-		#include "stdbool.h"
-	#elif defined (_WIN32)
-		#define false   FALSE           // use windows types
-		#define true    TRUE
-		#define boolean BOOL
-	#else
-		typedef enum {false, true} boolean;
-	#endif
-#endif // __BYTEBOOL__
+#ifndef _WIN32
+#include <stdbool.h>
+// dont use stdbools _BOOL type
+// its smaller (1 byte) than the old interger bool (4 bytes)
+// which results in packed struct sizes being mismatched between vanilla and this
+// however we gotta still include stdbool cause since c23 true and false are keywords
+// which we cant use as enumeration constants
+typedef int32_t boolean;
+#else
+#define false FALSE
+#define true TRUE
+#define boolean BOOL
+#endif
 
 /* 7.18.2.1  Limits of exact-width integer types */
 #ifndef INT8_MIN
@@ -342,17 +345,6 @@ union FColorRGBA
 } ATTRPACK;
 typedef union FColorRGBA RGBA_t;
 
-typedef enum
-{
-	postimg_none,
-	postimg_water,
-	postimg_motion,
-	postimg_flip,
-	postimg_heat,
-	postimg_mirror,
-	postimg_mirrorflip
-} postimg_t;
-
 typedef UINT32 lumpnum_t; // 16 : 16 unsigned long (wad num: lump num)
 #define LUMPERROR UINT32_MAX
 
@@ -367,6 +359,37 @@ typedef UINT32 tic_t;
 #define UINT2RGBA(a) (UINT32)((a&0xff)<<24)|((a&0xff00)<<8)|((a&0xff0000)>>8)|(((UINT32)a&0xff000000)>>24)
 #endif
 
+#define TOSTR(x) #x
+
+typedef UINT8 bitarray_t;
+
+#define BIT_ARRAY_SIZE(n) (((n) + 7) >> 3)
+
+static inline int
+in_bit_array (const bitarray_t * const array, const int value)
+{
+	return (array[value >> 3] & (1<<(value & 7)));
+}
+
+static inline void
+set_bit_array (bitarray_t * const array, const int value)
+{
+	array[value >> 3] |= (1<<(value & 7));
+}
+
+static inline void
+unset_bit_array (bitarray_t * const array, const int value)
+{
+	array[value >> 3] &= ~(1<<(value & 7));
+}
+
+#define intsign(n) \
+	((n) < 0 ? -1 : (n) > 0 ? 1 : 0)
+
 typedef UINT64 precise_t;
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif //__DOOMTYPE__

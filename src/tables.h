@@ -14,6 +14,10 @@
 #ifndef __TABLES__
 #define __TABLES__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #ifdef LINUX
 #include <math.h>
 #endif
@@ -110,6 +114,8 @@ FUNCMATH angle_t FixedAngleC(fixed_t fa, fixed_t factor);
 /// The FixedAcos function
 FUNCMATH angle_t FixedAcos(fixed_t x);
 
+FUNCMATH INT32 AngleDeltaSigned(angle_t a1, angle_t a2);
+
 /// Fixed Point Vector functions
 angle_t FV2_AngleBetweenVectors(const vector2_t *Vector1, const vector2_t *Vector2);
 angle_t FV3_AngleBetweenVectors(const vector3_t *Vector1, const vector3_t *Vector2);
@@ -131,5 +137,9 @@ void FM_Rotate(matrix_t *dest, angle_t angle, fixed_t x, fixed_t y, fixed_t z);
 // FSIN(ANGLE_90) = FRACUNIT
 #define FSIN(n) FINESINE(ANGLETOFINE(n))
 #define FCOS(n) FINECOSINE(ANGLETOFINE(n))
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif

@@ -26,12 +26,6 @@
 
 #if defined (STDC_HEADERS) || defined (_LIBC)
  #include <stdlib.h>
-#else
- #ifndef HAVE_MEMCPY
-  #if !(defined (_WIN32) && !defined (__CYGWIN__)) && !defined (__APPLE__)
-   #define memcpy(d, s, n) bcopy ((s), (d), (n))
-  #endif
- #endif
 #endif
 
 #include "md5.h"

@@ -13,6 +13,7 @@
 #include "doomdef.h"
 #include "fastcmp.h"
 #include "r_main.h"
+#include "r_skins.h"
 #include "r_things.h"
 #include "p_mobj.h"
 #include "d_player.h"
@@ -50,6 +51,9 @@ int player_localskin_setter(lua_State *L);
 // Non synch safe!
 int player_sliproll_getter(lua_State *L);
 int player_sliproll_noset(lua_State *L);
+
+int player_viewrollangle_getter(lua_State *L);
+int player_viewrollangle_noset(lua_State *L);
 
 #define FIELD(type, field_name, getter, setter) { #field_name, offsetof(type, field_name), getter, setter }
 static const udata_field_t player_fields[] = {
@@ -154,11 +158,11 @@ static const udata_field_t player_fields[] = {
     FIELD(player_t, grieftime,        udatalib_getter_tic,         udatalib_setter_tic),
     FIELD(player_t, griefstrikes,     udatalib_getter_uint8,       udatalib_setter_uint8),
     FIELD(player_t, splitscreenindex, udatalib_getter_uint8,       player_splitscreenindex_noset),
-#ifdef HWRENDER
     FIELD(player_t, fovadd,           udatalib_getter_fixed,       udatalib_setter_fixed), // Mmm yeah thats definitely synch safe
-#endif
+
     // Same as player.name
 	{ "sliproll", 0, player_sliproll_getter, player_sliproll_noset },
+	{ "viewrollangle", 0, player_viewrollangle_getter, player_viewrollangle_noset },
     { "ping", 0, player_ping_getter, player_ping_noset }, // Hmm originally setter doesn't exist so data is written as unreachable custom field...
     { NULL, 0, NULL, NULL },
 };
@@ -217,6 +221,7 @@ NOSET(bot)
 NOSET(splitscreenindex)
 NOSET(ping)
 NOSET(sliproll)
+NOSET(viewrollangle)
 
 #undef NOSET
 
@@ -291,7 +296,7 @@ int player_localskin_getter(lua_State *L)
 	player_t *plr = GETPLAYER();
 
 	if (plr->localskin)
-		lua_pushstring(L, (plr->skinlocal ? localskins : skins)[plr->localskin - 1].name);
+		lua_pushstring(L, K_GetPlayerSkin(plr)->name);
 	else
 		lua_pushnil(L);
 
@@ -368,6 +373,15 @@ int player_sliproll_getter(lua_State *L)
 	player_t *plr = GETPLAYER();
 
 	lua_pushangle(L, R_PlayerSliptideAngle(plr));
+
+	return 1;
+}
+
+int player_viewrollangle_getter(lua_State *L)
+{
+	player_t *plr = GETPLAYER();
+
+	lua_pushangle(L, R_ViewRollAngle(plr));
 
 	return 1;
 }
@@ -472,6 +486,7 @@ static int lib_iterateDisplayplayers(lua_State *L)
 
 		if (!players[displayplayers[i]].mo)
 			continue;
+
 		LUA_PushUserdata(L, &players[displayplayers[i]], META_PLAYER);
 		lua_pushinteger(L, i);	// push this to recall what number we were on for the next function call. I suppose this also means you can retrieve the splitscreen player number with 'for p, n in displayplayers.iterate'!
 		return 2;
@@ -693,8 +708,8 @@ static int kartstuff_len(lua_State *L)
 	return 1;
 }
 
-#define NOFIELD luaL_error(L, LUA_QL("ticcmd_t") " has no field named " LUA_QS, field)
-#define NOSET luaL_error(L, LUA_QL("ticcmd_t") " field " LUA_QS " should not be set directly.", field)
+#define NOFIELD luaL_error(L, LUA_QL("ticcmd_t") " has no field named " LUA_QS, lua_tostring(L, 2))
+#define NOSET luaL_error(L, LUA_QL("ticcmd_t") " field " LUA_QS " should not be set directly.", lua_tostring(L, 2))
 
 enum ticcmd_e
 {

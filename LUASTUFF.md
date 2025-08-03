@@ -28,6 +28,10 @@ exist.
 Returns the values of the given HUD item's `xoffset`/`yoffset` cvars.
 Available for any HUD item with offset cvars.
 
+## patch = v.cachePatchRotated(name, rollangle)
+Like v.cachePatch, it caches a new patch with the corresponding name. Unlike v.cachePatch, however,
+a rollangle can be supplied to the function so that it returns a rotated patch instead.
+
 ## x, y, flags = v.getDrawInfo(item)
 
 Returns the X, Y and flags where the given HUD item will be drawn for the current displayplayer.
@@ -130,8 +134,72 @@ if rawget(_G, "S_StopSoundByNum") ~= nil then
     ... -- Can use it
 end
 ```
-
 ## addHook("ServerJoin", function())
 
 ServerJoin hook called when client joins server (starting a listen server also calls it for host).
 Generally it was made to make loading custom config files less hacky, but can be used for anything else too.
+
+## player.viewrollangle field
+
+Returns player's current view roll angle for the Screen Tilting feature, useful for HUD elements.
+
+## G_SetPlayerGamepadIndicatorColor(player, skincolor)
+
+Set a custom color for Supported Gamepads with RGB LED functionality.
+To be used with Displayplayers.
+Only takes Skincolors.
+Best to be used in a Loop to ensure the color wont get overwritten by the game.
+
+## G_PlayerDeviceRumble(player, low_strength, high_strength, -optional- duration)
+
+Add Gamepad Rumble support for things.
+To be used with Displayplayers.
+Duration is in milliseconds and is optional to set, default value is 84ms.
+
+## P_CheckSightFast(mo1, mo2)
+
+Exactly same as P_CheckSight but uses cheaper algorithm, useful for things like nametags. Doesn't work exactly
+like P_CheckSight so don't use it for anything gameplay-related.
+
+## musicdef_t
+
+Userdata structure representing a musicdef. Fields:
+
+`musicdef.name` - song identifier ("kmap01" for example).
+
+`musicdef.usage`, `musicdef.source` - fields from vanilla MUSICDEFS lump.
+
+`musicdef.filename` - unused for now.
+
+`musicdef.title`, `musicdef.alttitle`, `musicdef.authors` - fields from MUSCINFO lump.
+
+`#musicdef` - returns integer id for musicdef (which can be used as index in `musicdefs`).
+
+All fields are read-only.
+
+## S_FindMusicCredit(name)
+
+Returns musicdef corresponding to music with given identifier. For example, `S_FindMusicCredit("kmap01")` will return
+musicdef for green hills music.
+
+## musicdefs
+
+Global table for all musicdefs, similar to mobjinfo, states, etc. Can take either integer indices,
+from `0` to `#musicdefs-1`, or string indices (which is equal to calling `S_FindMusicCredit`).
+
+## addHook("MusicCredit", function(musicdef))
+
+Hook is called whenever `S_ShowMusicCredit` (either from game or mod) is called. Takes musicdef as only argument, returning true
+will overwrite vanilla behavior (not show music credit), can be used to implement custom music credit pop-ups.
+
+# Other changes
+
+## P_PlayRinglossSound(source, damager)
+
+Add optional `damager` argument (should be `mobj_t`), which causes hurt sound also play for damager
+if `karthitemdialog` option is enabled
+
+## K_PlayHitEmSound(mobj, victim)
+
+Add optional `victim` argument (should be a player's `mobj_t`), which causes "hit em" sound to be
+delayed and played for victim too if `karthitemdialog` option is enabled

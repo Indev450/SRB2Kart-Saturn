@@ -76,7 +76,7 @@ Crashlogs now contain alot more informations. and even more if your build has de
 Also allows 64bit Windows builds to produce Crashlogs!
 
 ## MISC
-- Bird's Camara Tilting feature is no longer turned on by default
+- Bird's Camera Tilting feature is no longer turned on by default
 - Bird's warning on the title screen has been removed
 
 ## Bugs

@@ -57,28 +57,10 @@ typedef struct
 //                             CHEAT Structures
 // ==========================================================================
 
-// Cheat responders
-/*static UINT8 cheatf_ultimate(void)
-{
-	if (menuactive && (currentMenu != &MainDef && currentMenu != &SP_LoadDef))
-		return 0; // Only on the main menu, or the save select!
-
-	S_StartSound(0, sfx_itemup);
-	ultimate_selectable = (!ultimate_selectable);
-
-	// If on the save select, move to what is now Ultimate Mode!
-	if (currentMenu == &SP_LoadDef)
-		M_ForceSaveSlotSelected(NOSAVESLOT);
-	return 1;
-}*/
-
 static UINT8 cheatf_warp(void)
 {
 	UINT8 i;
 	boolean success = false;
-
-	/*if (modifiedgame)
-		return 0;*/
 
 	if (menuactive && currentMenu != &MainDef)
 		return 0; // Only on the main menu!
@@ -133,18 +115,6 @@ static UINT8 cheatf_devmode(void)
 	return 1;
 }
 #endif
-
-/*static cheatseq_t cheat_ultimate = {
-	0, cheatf_ultimate,
-	{ SCRAMBLE('u'), SCRAMBLE('l'), SCRAMBLE('t'), SCRAMBLE('i'), SCRAMBLE('m'), SCRAMBLE('a'), SCRAMBLE('t'), SCRAMBLE('e'), 0xff }
-};*/
-
-/*static cheatseq_t cheat_ultimate_joy = {
-	0, cheatf_ultimate,
-	{ SCRAMBLE(KEY_UPARROW), SCRAMBLE(KEY_UPARROW), SCRAMBLE(KEY_DOWNARROW), SCRAMBLE(KEY_DOWNARROW),
-	  SCRAMBLE(KEY_LEFTARROW), SCRAMBLE(KEY_RIGHTARROW), SCRAMBLE(KEY_LEFTARROW), SCRAMBLE(KEY_RIGHTARROW),
-	  SCRAMBLE(KEY_ENTER), 0xff }
-};*/
 
 static cheatseq_t cheat_warp = {
 	0, cheatf_warp,
@@ -375,70 +345,6 @@ void Command_Hurtme_f(void)
 
 	P_DamageMobj(players[consoleplayer].mo, NULL, NULL, atoi(COM_Argv(1)));
 }
-
-// Moves the NiGHTS player to another axis within the current mare
-/*void Command_JumpToAxis_f(void)
-{
-	REQUIRE_DEVMODE;
-	REQUIRE_INLEVEL;
-	REQUIRE_SINGLEPLAYER;
-
-	if (COM_Argc() != 2)
-	{
-		CONS_Printf(M_GetText("jumptoaxis <axisnum>: Jump to axis within current mare.\n"));
-		return;
-	}
-
-	P_TransferToAxis(&players[consoleplayer], atoi(COM_Argv(1)));
-}
-
-void Command_Charability_f(void)
-{
-	REQUIRE_DEVMODE;
-	REQUIRE_INLEVEL;
-	REQUIRE_SINGLEPLAYER;
-
-	if (COM_Argc() < 3)
-	{
-		CONS_Printf(M_GetText("charability <1/2> <value>: change character abilities\n"));
-		return;
-	}
-
-	if (atoi(COM_Argv(1)) == 1)
-		players[consoleplayer].charability = (UINT8)atoi(COM_Argv(2));
-	else if (atoi(COM_Argv(1)) == 2)
-		players[consoleplayer].charability2 = (UINT8)atoi(COM_Argv(2));
-	else
-		CONS_Printf(M_GetText("charability <1/2> <value>: change character abilities\n"));
-}
-
-void Command_Charspeed_f(void)
-{
-	REQUIRE_DEVMODE;
-	REQUIRE_INLEVEL;
-	REQUIRE_SINGLEPLAYER;
-
-	if (COM_Argc() < 3)
-	{
-		CONS_Printf(M_GetText("charspeed <normalspeed/runspeed/thrustfactor/accelstart/acceleration/actionspd> <value>: set character speed\n"));
-		return;
-	}
-
-	if (!strcasecmp(COM_Argv(1), "normalspeed"))
-		players[consoleplayer].normalspeed = atoi(COM_Argv(2))<<FRACBITS;
-	else if (!strcasecmp(COM_Argv(1), "runspeed"))
-		players[consoleplayer].runspeed = atoi(COM_Argv(2))<<FRACBITS;
-	else if (!strcasecmp(COM_Argv(1), "thrustfactor"))
-		players[consoleplayer].thrustfactor = atoi(COM_Argv(2));
-	else if (!strcasecmp(COM_Argv(1), "accelstart"))
-		players[consoleplayer].accelstart = atoi(COM_Argv(2));
-	else if (!strcasecmp(COM_Argv(1), "acceleration"))
-		players[consoleplayer].acceleration = atoi(COM_Argv(2));
-	else if (!strcasecmp(COM_Argv(1), "actionspd"))
-		players[consoleplayer].actionspd = atoi(COM_Argv(2))<<FRACBITS;
-	else
-		CONS_Printf(M_GetText("charspeed <normalspeed/runspeed/thrustfactor/accelstart/acceleration/actionspd> <value>: set character speed\n"));
-}*/
 
 void Command_RTeleport_f(void)
 {
@@ -682,28 +588,6 @@ void Command_Savecheckpoint_f(void)
 	CONS_Printf(M_GetText("Temporary checkpoint created at %d, %d, %d\n"), players[consoleplayer].starpostx, players[consoleplayer].starposty, players[consoleplayer].starpostz);
 }
 
-// Like M_GetAllEmeralds() but for console devmode junkies.
-/*void Command_Getallemeralds_f(void)
-{
-	REQUIRE_SINGLEPLAYER;
-	REQUIRE_NOULTIMATE;
-	REQUIRE_PANDORA;
-
-	emeralds = ((EMERALD7)*2)-1;
-
-	CONS_Printf(M_GetText("You now have all 7 emeralds.\n"));
-}
-
-void Command_Resetemeralds_f(void)
-{
-	REQUIRE_SINGLEPLAYER;
-	REQUIRE_PANDORA;
-
-	emeralds = 0;
-
-	CONS_Printf(M_GetText("Emeralds reset to zero.\n"));
-}*/
-
 void Command_Devmode_f(void)
 {
 #ifndef _DEBUG
@@ -729,63 +613,6 @@ void Command_Devmode_f(void)
 
 	G_SetGameModified(multiplayer, true);
 }
-
-/*void Command_Setrings_f(void)
-{
-	REQUIRE_INLEVEL;
-	REQUIRE_SINGLEPLAYER;
-	REQUIRE_NOULTIMATE;
-	REQUIRE_PANDORA;
-
-	if (COM_Argc() > 1)
-	{
-		// P_GivePlayerRings does value clamping
-		players[consoleplayer].health = players[consoleplayer].mo->health = 1;
-		P_GivePlayerRings(&players[consoleplayer], atoi(COM_Argv(1)));
-		if (!G_IsSpecialStage(gamemap) || !useNightsSS)
-			players[consoleplayer].totalring -= atoi(COM_Argv(1)); //undo totalring addition done in P_GivePlayerRings
-
-		G_SetGameModified(multiplayer);
-	}
-}
-
-void Command_Setlives_f(void)
-{
-	REQUIRE_INLEVEL;
-	REQUIRE_SINGLEPLAYER;
-	REQUIRE_NOULTIMATE;
-	REQUIRE_PANDORA;
-
-	if (COM_Argc() > 1)
-	{
-		// P_GivePlayerLives does value clamping
-		players[consoleplayer].lives = 0;
-		P_GivePlayerLives(&players[consoleplayer], atoi(COM_Argv(1)));
-
-		G_SetGameModified(multiplayer);
-	}
-}
-
-void Command_Setcontinues_f(void)
-{
-	REQUIRE_INLEVEL;
-	REQUIRE_SINGLEPLAYER;
-	REQUIRE_NOULTIMATE;
-	REQUIRE_PANDORA;
-
-	if (COM_Argc() > 1)
-	{
-		INT32 numcontinues = atoi(COM_Argv(1));
-		if (numcontinues > 99)
-			numcontinues = 99;
-		else if (numcontinues < 0)
-			numcontinues = 0;
-
-		players[consoleplayer].continues = numcontinues;
-
-		G_SetGameModified(multiplayer);
-	}
-}*/
 
 //
 // OBJECTPLACE (and related variables)
@@ -864,7 +691,7 @@ static boolean OP_HeightOkay(player_t *player, UINT8 ceiling)
 	{
 		// Truncate position to match where mapthing would be when spawned
 		// (this applies to every further P_GetZAt call as well)
-		fixed_t cheight = sec->c_slope ? P_GetZAt(sec->c_slope, player->mo->x & 0xFFFF0000, player->mo->y & 0xFFFF0000) : sec->ceilingheight;
+		fixed_t cheight = P_GetSectorCeilingZAt(sec, (player->mo->x & 0xFFFF0000), (player->mo->y & 0xFFFF0000));
 
 		if (((cheight - player->mo->z - player->mo->height)>>FRACBITS) >= (1 << (16-ZSHIFT)))
 		{
@@ -875,7 +702,8 @@ static boolean OP_HeightOkay(player_t *player, UINT8 ceiling)
 	}
 	else
 	{
-		fixed_t fheight = sec->f_slope ? P_GetZAt(sec->f_slope, player->mo->x & 0xFFFF0000, player->mo->y & 0xFFFF0000) : sec->floorheight;
+		fixed_t fheight = P_GetSectorFloorZAt(sec, (player->mo->x & 0xFFFF0000), (player->mo->y & 0xFFFF0000));
+
 		if (((player->mo->z - fheight)>>FRACBITS) >= (1 << (16-ZSHIFT)))
 		{
 			CONS_Printf(M_GetText("Sorry, you're too %s to place this object (max: %d %s).\n"), M_GetText("high"),
@@ -904,9 +732,7 @@ static mapthing_t *OP_CreateNewMapThing(player_t *player, UINT16 type, boolean c
 
 		for (th = thinkercap.next; th != &thinkercap; th = th->next)
 		{
-			if (th->function.acp1 != (actionf_p1)P_MobjThinker)
-				continue;
-			if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
+			if (th->function != (actionf_p1)P_MobjThinker)
 				continue;
 
 			mo = (mobj_t *)th;
@@ -924,12 +750,12 @@ static mapthing_t *OP_CreateNewMapThing(player_t *player, UINT16 type, boolean c
 	mt->y = (INT16)(player->mo->y>>FRACBITS);
 	if (ceiling)
 	{
-		fixed_t cheight = sec->c_slope ? P_GetZAt(sec->c_slope, mt->x << FRACBITS, mt->y << FRACBITS) : sec->ceilingheight;
+		fixed_t cheight = P_GetSectorCeilingZAt(sec, (mt->x << FRACBITS), (mt->y << FRACBITS));
 		mt->options = (UINT16)((cheight - player->mo->z - player->mo->height)>>FRACBITS);
 	}
 	else
 	{
-		fixed_t fheight = sec->f_slope ? P_GetZAt(sec->f_slope, mt->x << FRACBITS, mt->y << FRACBITS) : sec->floorheight;
+		fixed_t fheight = P_GetSectorFloorZAt(sec, (mt->x << FRACBITS), (mt->y << FRACBITS));
 		mt->options = (UINT16)((player->mo->z - fheight)>>FRACBITS);
 	}
 	mt->options <<= ZSHIFT;
@@ -986,8 +812,7 @@ void OP_NightsObjectplace(player_t *player)
 		UINT16 angle = (UINT16)(player->anotherflyangle % 360);
 		INT16 temp = (INT16)FixedInt(AngleFixed(player->mo->angle)); // Traditional 2D Angle
 		sector_t *sec = player->mo->subsector->sector;
-		fixed_t fheight = sec->f_slope ? P_GetZAt(sec->f_slope, player->mo->x & 0xFFFF0000, player->mo->y & 0xFFFF0000) : sec->floorheight;
-
+		fixed_t fheight = P_GetSectorFloorZAt(sec, (player->mo->x & 0xFFFF0000), (player->mo->y & 0xFFFF0000));
 
 		player->pflags |= PF_ATTACKDOWN;
 
@@ -1007,17 +832,6 @@ void OP_NightsObjectplace(player_t *player)
 
 		P_SpawnHoopsAndRings(mt);
 	}
-
-	// This places a bumper!
-	/*if (cmd->buttons & BT_SPECTATE)
-	{
-		player->pflags |= PF_ATTACKDOWN;
-		if (!OP_HeightOkay(player, false))
-			return;
-
-		mt = OP_CreateNewMapThing(player, (UINT16)mobjinfo[MT_NIGHTSBUMPER].doomednum, false);
-		P_SpawnMapThing(mt);
-	}*/
 
 	// This places a ring!
 	if (cmd->buttons & BT_BACKWARD)
@@ -1093,7 +907,7 @@ void OP_ObjectplaceMovement(player_t *player)
 {
 	ticcmd_t *cmd = &player->cmd;
 
-	if (!player->climbing && (netgame || !cv_analog.value || (player->pflags & PF_SPINNING)))
+	if (!player->climbing && (netgame || (player->pflags & PF_SPINNING)))
 		player->mo->angle = (cmd->angleturn<<16 /* not FRACBITS */);
 
 	ticruned++;
@@ -1143,12 +957,12 @@ void OP_ObjectplaceMovement(player_t *player)
 
 		if (!!(mobjinfo[op_currentthing].flags & MF_SPAWNCEILING) ^ !!(cv_opflags.value & MTF_OBJECTFLIP))
 		{
-			fixed_t cheight = sec->c_slope ? P_GetZAt(sec->c_slope, player->mo->x & 0xFFFF0000, player->mo->y & 0xFFFF0000) : sec->ceilingheight;
+			fixed_t cheight = P_GetSectorCeilingZAt(sec, (player->mo->x & 0xFFFF0000), (player->mo->y & 0xFFFF0000));
 			op_displayflags = (UINT16)((cheight - player->mo->z - mobjinfo[op_currentthing].height)>>FRACBITS);
 		}
 		else
 		{
-			fixed_t fheight = sec->f_slope ? P_GetZAt(sec->f_slope, player->mo->x & 0xFFFF0000, player->mo->y & 0xFFFF0000) : sec->floorheight;
+			fixed_t fheight = P_GetSectorFloorZAt(sec, (player->mo->x & 0xFFFF0000), (player->mo->y & 0xFFFF0000));
 			op_displayflags = (UINT16)((player->mo->z - fheight)>>FRACBITS);
 		}
 		op_displayflags <<= ZSHIFT;
@@ -1165,12 +979,7 @@ void OP_ObjectplaceMovement(player_t *player)
 		return;
 	}
 
-	/*if (cmd->buttons & BT_FORWARD)
-	{
-		OP_CycleThings(-1);
-		player->pflags |= PF_ATTACKDOWN;
-	}
-	else*/ if (cmd->buttons & BT_DRIFT)
+	if (cmd->buttons & BT_DRIFT)
 	{
 		OP_CycleThings(1);
 		player->pflags |= PF_ATTACKDOWN;

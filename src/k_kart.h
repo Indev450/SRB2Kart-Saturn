@@ -6,40 +6,40 @@
 #ifndef __K_KART__
 #define __K_KART__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "doomdef.h"
 #include "d_player.h" // Need for player_t
 
 #define KART_FULLTURN 800
 
+<<<<<<< HEAD
 void K_LoadExtraVFX(void);
+=======
+>>>>>>> Saturn-Next
 
 extern UINT8 colortranslations[MAXTRANSLATIONS][16];
 extern const char *KartColor_Names[MAXSKINCOLORS];
 extern const UINT8 KartColor_Opposite[MAXSKINCOLORS*2];
+UINT8 K_RainbowColor(void);
 void K_RainbowColormap(UINT8 *dest_colormap, UINT8 skincolor);
 void K_GenerateKartColormap(UINT8 *dest_colormap, INT32 skinnum, UINT8 color, boolean local);
 UINT8 K_GetKartColorByName(const char *name);
-UINT8 K_GetHudColor(void);
-boolean K_UseColorHud(void);
 
-void K_RegisterKartStuff(void);
+void K_RegisterServerKartStuff(void);
+void K_RegisterClientKartStuff(void);
 
-extern consvar_t cv_colorizedhud;
-extern consvar_t cv_colorizeditembox;
-extern consvar_t cv_colorizedhudcolor;
-extern consvar_t cv_darkitembox;
-extern consvar_t cv_biglaps;
-extern consvar_t cv_highresportrait;
-extern consvar_t cv_stat_xoffset;
-extern consvar_t cv_stat_yoffset;
-extern consvar_t cv_showstats;
-extern consvar_t cv_battlespeedo;
-
-#define NUMSPEEDOSTUFF 6
-extern CV_PossibleValue_t speedo_cons_t[NUMSPEEDOSTUFF];
+extern consvar_t cv_coloredspeedlines, cv_coloredsneakertrail;
+extern consvar_t cv_bananajitter;
+extern consvar_t cv_bananthrowroll;
+extern consvar_t cv_airsparks;
 
 boolean K_IsPlayerLosing(player_t *player);
 boolean K_IsPlayerWanted(player_t *player);
+INT32 K_KartGetItemOdds(UINT8 pos, SINT8 item, fixed_t mashed, boolean spbrush);
+INT32 K_FindUseodds(player_t *player, fixed_t mashed, INT32 pingame, INT32 bestbumper, boolean spbrush, boolean dontforcespb);
 void K_KartBouncing(mobj_t *mobj1, mobj_t *mobj2, boolean bounce, boolean solid);
 void K_FlipFromObject(mobj_t *mo, mobj_t *master);
 void K_MatchGenericExtraFlags(mobj_t *mo, mobj_t *master);
@@ -56,7 +56,9 @@ void K_ExplodePlayer(player_t *player, mobj_t *source, mobj_t *inflictor);
 void K_StealBumper(player_t *player, player_t *victim, boolean force);
 void K_SpawnKartExplosion(fixed_t x, fixed_t y, fixed_t z, fixed_t radius, INT32 number, mobjtype_t type, angle_t rotangle, boolean spawncenter, boolean ghostit, mobj_t *source);
 void K_SpawnMineExplosion(mobj_t *source, UINT8 color);
-void K_RollMobjBySlopes(mobj_t *mo, boolean usedistance);
+boolean K_CheckSlopeRollDist(mobj_t *mobj);
+boolean K_ShouldSlopeRoll(mobj_t *mobj);
+void K_RollMobjBySlopes(mobj_t *mo, pslope_t *slope);
 void K_SpawnBoostTrail(player_t *player);
 void K_SpawnSparkleTrail(mobj_t *mo);
 void K_SpawnWipeoutTrail(mobj_t *mo, boolean translucent);
@@ -94,28 +96,12 @@ void K_SpawnWaterRunParticles(mobj_t *mobj);
 void K_PlayAttackTaunt(mobj_t *source);
 void K_PlayBoostTaunt(mobj_t *source);
 void K_PlayOvertakeSound(mobj_t *source);
-void K_PlayHitEmSound(mobj_t *source);
+void K_PlayHitEmSound(mobj_t *source, mobj_t *victim);
 void K_PlayPowerGloatSound(mobj_t *source);
 
-const char *K_GetItemPatch(UINT8 item, boolean tiny);
-INT32 K_calcSplitFlags(INT32 snapflags);
-void K_LoadKartHUDGraphics(void);
-void K_drawKartHUD(void);
-void K_drawKartFreePlay(UINT32 flashtime);
-void K_drawKartTimestamp(tic_t drawtime, INT32 TX, INT32 TY, INT16 emblemmap, UINT8 mode);
-
-typedef struct
-{
-	INT32 x;
-	INT32 y;
-	INT32 flags;
-} drawinfo_t;
-
-patch_t *K_getItemBoxPatch(boolean small, boolean dark);
-patch_t *K_getItemMulPatch(boolean small);
-void K_getItemBoxDrawinfo(drawinfo_t *out);
-void K_getLapsDrawinfo(drawinfo_t *out);
-void K_getMinimapDrawinfo(drawinfo_t *out);
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 // =========================================================================
 #endif  // __K_KART__

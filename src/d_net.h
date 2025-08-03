@@ -18,6 +18,10 @@
 #ifndef __D_NET__
 #define __D_NET__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 // Max computers in a game
 // 127 is probably as high as this can go, because
 // SINT8 is used for nodes sometimes >:(
@@ -43,14 +47,10 @@ extern SINT8 nodetoplayer4[MAXNETNODES]; // Say the numplayer for this node if a
 extern UINT8 playerpernode[MAXNETNODES]; // Used specially for splitscreen
 extern boolean nodeingame[MAXNETNODES]; // Set false as nodes leave game
 
-extern boolean serverrunning;
-
-INT32 Net_GetFreeAcks(boolean urgent);
 void Net_AckTicker(void);
 
 // If reliable return true if packet sent, 0 else
-boolean HSendPacket(INT32 node, boolean reliable, UINT8 acknum,
-	size_t packetlength);
+boolean HSendPacket(INT32 node, boolean reliable, UINT8 acknum, size_t packetlength);
 boolean HGetPacket(void);
 void D_SetDoomcom(void);
 #ifndef NONET
@@ -66,5 +66,9 @@ void Net_AbortPacketType(UINT8 packettype);
 void Net_SendAcks(INT32 node);
 void Net_WaitAllAckReceived(UINT32 timeout);
 const char *Net_GetPacketName(UINT8 packettype);
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif

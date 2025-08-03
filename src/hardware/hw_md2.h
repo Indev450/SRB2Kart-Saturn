@@ -15,6 +15,10 @@
 #ifndef _HW_MD2_H_
 #define _HW_MD2_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "hw_glob.h"
 #include "hw_model.h"
 
@@ -28,8 +32,10 @@ typedef struct
 	float       scale;
 	float       offset;
 	model_t     *model;
-	void        *grpatch;
-	void        *blendgrpatch;
+	void        *glpatch;
+	boolean     notexturefile; // true if texture file was not found
+	void        *blendglpatch;
+	boolean     noblendfile; // true if blend texture file was not found
 	boolean     notfound;
 	INT32       skin;
 	boolean     error;
@@ -40,8 +46,12 @@ extern md2_t md2_playermodels[MAXSKINS];
 extern md2_t md2_localplayermodels[MAXLOCALSKINS];
 
 void HWR_InitMD2(void);
-void HWR_DrawMD2(gr_vissprite_t *spr);
+void HWR_DrawMD2(gl_vissprite_t *spr);
 void HWR_AddPlayerMD2(INT32 skin, boolean local);
 void HWR_AddSpriteMD2(size_t spritenum);
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif // _HW_MD2_H_

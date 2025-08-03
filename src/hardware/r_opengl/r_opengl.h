@@ -20,6 +20,10 @@
 #ifndef _R_OPENGL_H_
 #define _R_OPENGL_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #ifdef HAVE_SDL
 #define _MATH_DEFINES_DEFINED
 
@@ -43,8 +47,9 @@
 #endif
 
 #define  _CREATE_DLL_  // necessary for Unix AND Windows
+
 #include "../../doomdef.h"
-#include "../hw_drv.h"
+#include "../hw_gl.h"
 #include "../../z_zone.h"
 
 // ==========================================================================
@@ -65,14 +70,15 @@ extern FILE             *gllogstream;
 //                                                                     PROTOS
 // ==========================================================================
 
-boolean LoadGL(void);
+FUNCPRINTF void GL_DBG_Printf(const char *format, ...);
+
 void *GetGLFunc(const char *proc);
 boolean SetupGLfunc(void);
 void SetupGLFunc4(void);
-void Flush(void);
-INT32 isExtAvailable(const char *extension, const GLubyte *start);
-void SetModelView(GLint w, GLint h);
-void SetStates(void);
+void GL_Flush(void);
+INT32 GL_isExtAvailable(const char *extension, const GLubyte *start);
+void GL_SetModelView(GLint w, GLint h);
+void GL_SetStates(void);
 
 #ifndef GL_EXT_texture_filter_anisotropic
 #define GL_TEXTURE_MAX_ANISOTROPY_EXT     0x84FE
@@ -98,21 +104,12 @@ typedef void (APIENTRY * PFNglGetIntegerv) (GLenum pname, GLint *params);
 extern PFNglGetIntegerv pglGetIntegerv;
 typedef const GLubyte* (APIENTRY  * PFNglGetString) (GLenum name);
 extern PFNglGetString pglGetString;
-#if 0
-typedef void (APIENTRY * PFNglEnableClientState) (GLenum cap); // redefined in r_opengl.c
-static PFNglEnableClientState pglEnableClientState;
-#endif
 #endif
 
 #ifdef USE_FBO_OGL
-void GLFramebuffer_Generate(void);
-void GLFramebuffer_Delete(void);
-
-void GLFramebuffer_GenerateAttachments(void);
-void GLFramebuffer_DeleteAttachments(void);
-
-void GLFramebuffer_Enable(void);
-void GLFramebuffer_Disable(void);
+void GL_Framebuffer_Unbind(void);
+void GL_Framebuffer_Enable(void);
+void GL_Framebuffer_Disable(void);
 
 extern GLuint FramebufferObject, FramebufferTexture, RenderbufferObject;
 extern GLboolean FrameBufferEnabled, RenderToFramebuffer;
@@ -126,6 +123,8 @@ extern boolean supportFBO;
 extern const GLubyte	*gl_version;
 extern const GLubyte	*gl_renderer;
 extern const GLubyte	*gl_extensions;
+extern const GLubyte    *gl_vendor;
+extern GLuint     gl_num_extensions;
 
 extern int 				majorGL, minorGL;
 
@@ -139,7 +138,6 @@ extern boolean 			supportMipMap;
 /**	\brief OpenGL flags for video driver
 */
 extern INT32            oglflags;
-extern GLint            textureformatGL;
 
 extern GLfloat projMatrix[16];
 
@@ -148,5 +146,9 @@ typedef enum
 	GLF_NOZBUFREAD = 0x01,
 	GLF_NOTEXENV   = 0x02,
 } oglflags_t;
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif

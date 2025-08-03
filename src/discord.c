@@ -388,7 +388,7 @@ static void DRPC_GotServerIP(UINT32 address)
 --------------------------------------------------*/
 static const char *DRPC_GetServerIP(void)
 {
-	const char *address; 
+	const char *address;
 
 	// If you're connected
 	if (I_GetNodeAddress && (address = I_GetNodeAddress(servernode)) != NULL)
@@ -489,7 +489,7 @@ void DRPC_UpdatePresence(void)
 		{
 #endif
 			discordPresence.state = "Private";
-#ifdef MASTERSERVER			
+#ifdef MASTERSERVER
 		}
 #endif
 
@@ -571,9 +571,15 @@ void DRPC_UpdatePresence(void)
 		{
 			// Map name on tool tip
 			char *title = G_BuildMapTitle(gamemap);
-			snprintf(mapname, 48, "Map: %s", title);
+			if (title)
+			{
+				snprintf(mapname, 48, "Map: %s", title);
+				Z_Free(title);
+			}
+			else
+				snprintf(mapname, 48, "Map: UNKNOWN");
+
 			discordPresence.largeImageText = mapname;
-			Z_Free(title);
 		}
 
 		if (gamestate == GS_LEVEL && Playing())

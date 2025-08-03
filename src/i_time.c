@@ -37,18 +37,20 @@ tic_t I_GetTime(void)
 
 void I_InitializeTime(void)
 {
-	g_time.time = 0;
-	g_time.timefrac = 0;
-
-	enterprecise = 0;
-	oldenterprecise = 0;
-	tictimer = 0.0;
-
 	CV_RegisterVar(&cv_timescale);
 
 	// I_StartupTimer is preserved for potential subsystems that need to setup
 	// timing information for I_GetPreciseTime and sleeping
 	I_StartupTimer();
+
+	g_time.time = 0;
+	g_time.timefrac = 0;
+
+	enterprecise = I_GetPreciseTime();
+	oldenterprecise = enterprecise;
+	entertic = 0;
+	oldentertics = 0;
+	tictimer = 0.0;
 }
 
 void I_UpdateTime(fixed_t timescale)
@@ -58,7 +60,7 @@ void I_UpdateTime(fixed_t timescale)
 	tic_t realtics;
 
 	// get real tics
-	ticratescaled = (double)TICRATE * FIXED_TO_FLOAT(timescale);
+	ticratescaled = (double)TICRATE * FixedToFloat(timescale);
 
 	enterprecise = I_GetPreciseTime();
 	elapsedseconds = (double)(enterprecise - oldenterprecise) / I_GetPrecisePrecision();
@@ -78,7 +80,7 @@ void I_UpdateTime(fixed_t timescale)
 	{
 		double fractional, integral;
 		fractional = modf(tictimer * ticratescaled, &integral);
-		g_time.timefrac = FLOAT_TO_FIXED(fractional);
+		g_time.timefrac = FloatToFixed(fractional);
 	}
 }
 

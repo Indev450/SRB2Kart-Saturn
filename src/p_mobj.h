@@ -14,6 +14,10 @@
 #ifndef __P_MOBJ__
 #define __P_MOBJ__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 // Basics.
 #include "tables.h"
 #include "m_fixed.h"
@@ -254,19 +258,14 @@ typedef enum
 // PRECIPITATION flags ?! ?! ?!
 //
 typedef enum {
-	// Don't draw.
-	PCF_INVISIBLE = 1,
-	// Above pit.
-	PCF_PIT = 2,
-	// Above FOF.
-	PCF_FOF = 4,
-	// Above MOVING FOF (this means we need to keep floorz up to date...)
-	PCF_MOVINGFOF = 8,
-	// Is rain.
-	PCF_RAIN = 16,
-	// Ran the thinker this tic.
-	PCF_THUNK = 32,
+	PCF_INVISIBLE = 1, // Don't draw.
+	PCF_PIT       = 1<<1, // Above pit.
+	PCF_FOF       = 1<<2, // Above FOF.
+	PCF_MOVINGFOF = 1<<3, // Above MOVING FOF (this means we need to keep floorz up to date...)
+	PCF_SPLASH    = 1<<4, // Splashed on the ground, return to the ceiling after the animation's over
+	PCF_THUNK     = 1<<5, // Ran the thinker this tic.
 } precipflag_t;
+
 // Map Object definition.
 typedef struct mobj_s
 {
@@ -277,6 +276,9 @@ typedef struct mobj_s
 	fixed_t x, y, z;
 	fixed_t old_x, old_y, old_z; // position interpolation
 	fixed_t old_x2, old_y2, old_z2;
+
+	mobjtype_t type;
+	const mobjinfo_t *info; // &mobjinfo[mobj->type]
 
 	// More list: links in sector (if needed)
 	struct mobj_s *bnext;
@@ -290,14 +292,18 @@ typedef struct mobj_s
 	spritenum_t sprite; // used to find patch_t and flip value
 	UINT32 frame; // frame number, plus bits see p_pspr.h
 	UINT16 anim_duration; // for FF_ANIMATE states
-	
-	UINT32 renderflags; // render flags
+
+	INT32 blendmode; // blend mode
 	fixed_t spritexscale, spriteyscale;
 	fixed_t spritexoffset, spriteyoffset;
 	fixed_t old_spritexscale, old_spriteyscale;
+	fixed_t old_spritexscale2, old_spriteyscale2;
 	fixed_t old_spritexoffset, old_spriteyoffset;
+	fixed_t old_spritexoffset2, old_spriteyoffset2;
+	INT16 lightlevel; // Add to sector lightlevel, -255 - 255
 
 	fixed_t realxscale, realyscale; // funn-E streeetch
+	fixed_t realxoffset, realyoffset;
 
 	fixed_t stretchslam; // "squish" effect when you land
 
@@ -344,9 +350,6 @@ typedef struct mobj_s
 	// Additional pointers for NiGHTS hoops
 	struct mobj_s *hnext;
 	struct mobj_s *hprev;
-
-	mobjtype_t type;
-	const mobjinfo_t *info; // &mobjinfo[mobj->type]
 
 	INT32 health; // for player this is rings + 1
 
@@ -399,9 +402,8 @@ typedef struct mobj_s
 	boolean resetinterp; // if true, some fields should not be interpolated (see R_InterpolateMobjState implementation)
 	boolean colorized; // Whether the mobj uses the rainbow colormap
 	boolean mirrored; // The object's rotations will be mirrored left to right, e.g., see frame AL from the right and AR from the left
-	boolean rollmodel; // OpenGL: Should this model rotate?
 
-	tic_t slamsoundtimer;
+	tic_t slamsoundtimer; // Funni slam sound when landing
 
 	// saltyhop! hardcode edition
 	boolean salty_ready;
@@ -412,7 +414,11 @@ typedef struct mobj_s
 	boolean init_salty;
 
 	// WARNING: New fields must be added separately to savegame and Lua.
+<<<<<<< HEAD
 	struct mobj_s *watertrail[4];
+=======
+	boolean islocal; // BEWARE: islocal does not exist in vanilla, strictly to be used for locally loaded addons to not cause desynchs with the mobj linedef trigger check. DO NOT USE THIS IN ACTUAL ADDONS YOU INTEND TO USE ON YOUR SERVER
+>>>>>>> Saturn-Next
 } mobj_t;
 
 //
@@ -432,6 +438,9 @@ typedef struct precipmobj_s
 	fixed_t old_x, old_y, old_z; // position interpolation
 	fixed_t old_x2, old_y2, old_z2;
 
+	mobjtype_t type;
+	const mobjinfo_t *info; // &mobjinfo[mobj->type]
+
 	// More list: links in sector (if needed)
 	struct precipmobj_s *bnext;
 	struct precipmobj_s **bprev; // killough 8/11/98: change to ptr-to-ptr
@@ -444,17 +453,21 @@ typedef struct precipmobj_s
 	spritenum_t sprite; // used to find patch_t and flip value
 	UINT32 frame; // frame number, plus bits see p_pspr.h
 	UINT16 anim_duration; // for FF_ANIMATE states
-	
-	UINT32 renderflags; // render flags
+
+	INT32 blendmode; // blend mode
 	fixed_t spritexscale, spriteyscale;
 	fixed_t spritexoffset, spriteyoffset;
 	fixed_t old_spritexscale, old_spriteyscale;
+	fixed_t old_spritexscale2, old_spriteyscale2;
 	fixed_t old_spritexoffset, old_spriteyoffset;
+	fixed_t old_spritexoffset2, old_spriteyoffset2;
+	INT16 lightlevel; // Add to sector lightlevel, -255 - 255
 
 	fixed_t realxscale, realyscale; // funn-E streeetch
+	fixed_t realxoffset, realyoffset;
 
 	fixed_t stretchslam; // "squish" effect when you land
-	
+
 	//sloperollangle
 	angle_t sloperoll, slopepitch;
 	angle_t old_sloperoll, old_slopepitch;
@@ -480,6 +493,7 @@ typedef struct precipmobj_s
 	INT32 tics; // state tic counter
 	state_t *state;
 	INT32 flags; // flags from mobjinfo tables
+	tic_t lastThink;
 } precipmobj_t;
 
 typedef struct actioncache_s
@@ -519,10 +533,9 @@ void P_SpawnParaloop(fixed_t x, fixed_t y, fixed_t z, fixed_t radius, INT32 numb
 boolean P_BossTargetPlayer(mobj_t *actor, boolean closest);
 boolean P_SupermanLook4Players(mobj_t *actor);
 void P_DestroyRobots(void);
-void P_SnowThinker(precipmobj_t *mobj);
-void P_RainThinker(precipmobj_t *mobj);
+boolean P_PrecipThinker(precipmobj_t *mobj);
 void P_NullPrecipThinker(precipmobj_t *mobj);
-void P_RemovePrecipMobj(precipmobj_t *mobj);
+void P_FreePrecipMobj(precipmobj_t *mobj);
 void P_SetScale(mobj_t *mobj, fixed_t newscale);
 void P_XYMovement(mobj_t *mo);
 void P_EmeraldManager(void);
@@ -532,4 +545,9 @@ extern mapthing_t *huntemeralds[MAXHUNTEMERALDS];
 extern INT32 numhuntemeralds;
 extern boolean runemeraldmanager;
 extern INT32 numstarposts;
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
+
 #endif

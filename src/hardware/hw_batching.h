@@ -13,11 +13,15 @@
 #ifndef __HWR_BATCHING_H__
 #define __HWR_BATCHING_H__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "hw_defs.h"
 #include "hw_data.h"
-#include "hw_drv.h"
+#include "hw_gl.h"
 
-typedef struct 
+typedef struct
 {
 	FSurfaceInfo surf;// surf also has its own polyflags for some reason, but it seems unused
 	unsigned int vertsIndex;// location of verts in unsortedVertexArray
@@ -33,5 +37,9 @@ void HWR_StartBatching(void);
 void HWR_SetCurrentTexture(GLMipmap_t *texture);
 void HWR_ProcessPolygon(FSurfaceInfo *pSurf, FOutVector *pOutVerts, FUINT iNumPts, FBITFIELD PolyFlags, int shader, boolean horizonSpecial);
 void HWR_RenderBatches(void);
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif

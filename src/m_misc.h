@@ -15,6 +15,10 @@
 #ifndef __M_MISC__
 #define __M_MISC__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "doomtype.h"
 #include "tables.h"
 
@@ -30,7 +34,7 @@ typedef enum {
 extern moviemode_t moviemode;
 
 extern consvar_t cv_screenshot_option, cv_screenshot_folder;
-extern consvar_t cv_moviemode;
+extern consvar_t cv_moviemode, cv_movie_folder, cv_movie_option;
 extern consvar_t cv_zlib_memory, cv_zlib_level, cv_zlib_strategy, cv_zlib_window_bits;
 extern consvar_t cv_zlib_memorya, cv_zlib_levela, cv_zlib_strategya, cv_zlib_window_bitsa;
 extern consvar_t cv_apng_delay;
@@ -69,6 +73,10 @@ void M_ScreenShot(void);
 void M_DoScreenShot(void);
 boolean M_ScreenshotResponder(event_t *ev);
 
+void M_ScrollString(const char name[], size_t len, char result[], size_t maxlen, tic_t timer);
+
+void M_MinimapGenerate(void);
+
 void Command_SaveConfig_f(void);
 void Command_LoadConfig_f(void);
 void Command_ChangeConfig_f(void);
@@ -78,6 +86,11 @@ void M_FirstLoadConfig(void);
 void M_SaveConfig(const char *filename);
 
 INT32 axtoi(const char *hexStg);
+
+void CopyCaretColors(char *p, const char *s, int n);
+
+// Remove color codes from string
+void StripColors(char *dst, char *src, size_t n);
 
 const char *GetRevisionString(void);
 
@@ -97,10 +110,30 @@ void strcatbf(char *s1, const char *s2, const char *s3);
 
 const char *M_FileError(FILE *handle);
 
+int     M_PathParts      (const char *path);
+boolean M_IsPathAbsolute (const char *path);
+void    M_MkdirEach      (const char *path, int start, int mode);
+void    M_MkdirEachUntil (const char *path, int start, int end, int mode);
+
+/*
+Return dot and then the fractional part of a float, without
+trailing zeros, or "" if the fractional part is zero.
+*/
+const char * M_Ftrim (double);
+
 // counting bits, for weapon ammo code, usually
 FUNCMATH UINT8 M_CountBits(UINT32 num, UINT8 size);
 
+// Hashes some message using FNV-1a
+UINT32 FNV1a_Hash(const char *message, size_t size);
+UINT32 FNV1a_HashString(const char *message);
+UINT32 FNV1a_HashLowercaseString(const char *message);
+
 #include "w_wad.h"
 extern char configfile[MAX_WADPATH];
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif

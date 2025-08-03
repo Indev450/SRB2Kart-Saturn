@@ -14,7 +14,6 @@
 #include "d_main.h" // for srb2home
 #include "g_game.h"
 #include "sounds.h"
-#include "info.h"
 #include "d_think.h"
 #include "m_argv.h"
 #include "z_zone.h"
@@ -29,16 +28,16 @@
 #include "p_local.h" // for var1 and var2, and some constants
 #include "p_setup.h"
 #include "r_data.h"
-#include "r_patch.h"
+#include "r_fps.h"
 #include "r_sky.h"
 #include "r_draw.h" // translation colormap consts (for lua)
 #include "fastcmp.h"
-#include "lua_script.h"
-#include "lua_glib.h"
-#include "lua_hook.h"
+
 #include "d_clisrv.h"
 #include "v_video.h" // video flags (for lua)
 
+#include "lua_glib.h"
+#include "lua_hook.h"
 #include "lua_script.h"
 #include "lua_libs.h"
 
@@ -48,13 +47,14 @@
 
 // Free slot names
 // The crazy word-reading stuff uses these.
-static char *FREE_STATES[NUMSTATEFREESLOTS];
-static char *FREE_MOBJS[NUMMOBJFREESLOTS];
-static UINT8 used_spr[(NUMSPRITEFREESLOTS / 8) + 1]; // Bitwise flag for sprite freeslot in use! I would use ceil() here if I could, but it only saves 1 byte of memory anyway.
+char *FREE_STATES[NUMSTATEFREESLOTS];
+char *FREE_MOBJS[NUMMOBJFREESLOTS];
+UINT8 used_spr[(NUMSPRITEFREESLOTS / 8) + 1]; // Bitwise flag for sprite freeslot in use! I would use ceil() here if I could, but it only saves 1 byte of memory anyway.
+
 #define initfreeslots() {\
-memset(FREE_STATES,0,sizeof(char *) * NUMSTATEFREESLOTS);\
-memset(FREE_MOBJS,0,sizeof(char *) * NUMMOBJFREESLOTS);\
-memset(used_spr,0,sizeof(UINT8) * ((NUMSPRITEFREESLOTS / 8) + 1));\
+	memset(FREE_STATES,0,sizeof(char *) * NUMSTATEFREESLOTS);\
+	memset(FREE_MOBJS,0,sizeof(char *) * NUMMOBJFREESLOTS);\
+	memset(used_spr,0,sizeof(UINT8) * ((NUMSPRITEFREESLOTS / 8) + 1));\
 }
 
 // Crazy word-reading stuff
@@ -291,8 +291,6 @@ static void readPlayer(MYFILE *f, INT32 num)
 	INT32 i;
 	boolean slotfound = false;
 
-	DEH_WriteUndoline("PLAYERTEXT", description[num].notes, UNDO_ENDTEXT);
-
 	do
 	{
 		if (myfgets(s, MAXLINELEN, f))
@@ -362,7 +360,6 @@ static void readPlayer(MYFILE *f, INT32 num)
 			{
 				if (!slotfound && (slotfound = findFreeSlot(&num)) == false)
 					goto done;
-				DEH_WriteUndoline(word, &description[num].picname[0], UNDO_NONE);
 				PlayerMenu[num].status = IT_CALL;
 				strncpy(description[num].picname, word2, 8);
 			}
@@ -386,7 +383,6 @@ static void readPlayer(MYFILE *f, INT32 num)
 				*/
 				if (i != IT_DISABLED && !slotfound && (slotfound = findFreeSlot(&num)) == false)
 					goto done;
-				DEH_WriteUndoline(word, va("%d", PlayerMenu[num].status), UNDO_NONE);
 				PlayerMenu[num].status = (INT16)i;
 			}
 			else if (fastcmp(word, "SKINNAME"))
@@ -394,7 +390,6 @@ static void readPlayer(MYFILE *f, INT32 num)
 				// Send to free slot.
 				if (!slotfound && (slotfound = findFreeSlot(&num)) == false)
 					goto done;
-				DEH_WriteUndoline(word, description[num].skinname, UNDO_NONE);
 				PlayerMenu[num].status = IT_CALL;
 
 				strlcpy(description[num].skinname, word2, sizeof description[num].skinname);
@@ -557,122 +552,98 @@ static void readthing(MYFILE *f, INT32 num)
 
 			if (fastcmp(word, "MAPTHINGNUM") || fastcmp(word, "DOOMEDNUM"))
 			{
-				DEH_WriteUndoline(word, va("%d", mobjinfo[num].doomednum), UNDO_NONE);
 				mobjinfo[num].doomednum = (INT32)atoi(word2);
 			}
 			else if (fastcmp(word, "SPAWNSTATE"))
 			{
-				DEH_WriteUndoline(word, va("%d", mobjinfo[num].spawnstate), UNDO_NONE);
 				mobjinfo[num].spawnstate = get_number(word2);
 			}
 			else if (fastcmp(word, "SPAWNHEALTH"))
 			{
-				DEH_WriteUndoline(word, va("%d", mobjinfo[num].spawnhealth), UNDO_NONE);
 				mobjinfo[num].spawnhealth = (INT32)get_number(word2);
 			}
 			else if (fastcmp(word, "SEESTATE"))
 			{
-				DEH_WriteUndoline(word, va("%d", mobjinfo[num].seestate), UNDO_NONE);
 				mobjinfo[num].seestate = get_number(word2);
 			}
 			else if (fastcmp(word, "SEESOUND"))
 			{
-				DEH_WriteUndoline(word, va("%d", mobjinfo[num].seesound), UNDO_NONE);
 				mobjinfo[num].seesound = get_number(word2);
 			}
 			else if (fastcmp(word, "REACTIONTIME"))
 			{
-				DEH_WriteUndoline(word, va("%d", mobjinfo[num].reactiontime), UNDO_NONE);
 				mobjinfo[num].reactiontime = (INT32)get_number(word2);
 			}
 			else if (fastcmp(word, "ATTACKSOUND"))
 			{
-				DEH_WriteUndoline(word, va("%d", mobjinfo[num].attacksound), UNDO_NONE);
 				mobjinfo[num].attacksound = get_number(word2);
 			}
 			else if (fastcmp(word, "PAINSTATE"))
 			{
-				DEH_WriteUndoline(word, va("%d", mobjinfo[num].painstate), UNDO_NONE);
 				mobjinfo[num].painstate = get_number(word2);
 			}
 			else if (fastcmp(word, "PAINCHANCE"))
 			{
-				DEH_WriteUndoline(word, va("%d", mobjinfo[num].painchance), UNDO_NONE);
 				mobjinfo[num].painchance = (INT32)get_number(word2);
 			}
 			else if (fastcmp(word, "PAINSOUND"))
 			{
-				DEH_WriteUndoline(word, va("%d", mobjinfo[num].painsound), UNDO_NONE);
 				mobjinfo[num].painsound = get_number(word2);
 			}
 			else if (fastcmp(word, "MELEESTATE"))
 			{
-				DEH_WriteUndoline(word, va("%d", mobjinfo[num].meleestate), UNDO_NONE);
 				mobjinfo[num].meleestate = get_number(word2);
 			}
 			else if (fastcmp(word, "MISSILESTATE"))
 			{
-				DEH_WriteUndoline(word, va("%d", mobjinfo[num].missilestate), UNDO_NONE);
 				mobjinfo[num].missilestate = get_number(word2);
 			}
 			else if (fastcmp(word, "DEATHSTATE"))
 			{
-				DEH_WriteUndoline(word, va("%d", mobjinfo[num].deathstate), UNDO_NONE);
 				mobjinfo[num].deathstate = get_number(word2);
 			}
 			else if (fastcmp(word, "DEATHSOUND"))
 			{
-				DEH_WriteUndoline(word, va("%d", mobjinfo[num].deathsound), UNDO_NONE);
 				mobjinfo[num].deathsound = get_number(word2);
 			}
 			else if (fastcmp(word, "XDEATHSTATE"))
 			{
-				DEH_WriteUndoline(word, va("%d", mobjinfo[num].xdeathstate), UNDO_NONE);
 				mobjinfo[num].xdeathstate = get_number(word2);
 			}
 			else if (fastcmp(word, "SPEED"))
 			{
-				DEH_WriteUndoline(word, va("%d", mobjinfo[num].speed), UNDO_NONE);
 				mobjinfo[num].speed = get_number(word2);
 			}
 			else if (fastcmp(word, "RADIUS"))
 			{
-				DEH_WriteUndoline(word, va("%d", mobjinfo[num].radius), UNDO_NONE);
 				mobjinfo[num].radius = get_number(word2);
 			}
 			else if (fastcmp(word, "HEIGHT"))
 			{
-				DEH_WriteUndoline(word, va("%d", mobjinfo[num].height), UNDO_NONE);
 				mobjinfo[num].height = get_number(word2);
 			}
 			else if (fastcmp(word, "DISPOFFSET"))
 			{
-				DEH_WriteUndoline(word, va("%d", mobjinfo[num].dispoffset), UNDO_NONE);
 				mobjinfo[num].dispoffset = get_number(word2);
 			}
 			else if (fastcmp(word, "MASS"))
 			{
-				DEH_WriteUndoline(word, va("%d", mobjinfo[num].mass), UNDO_NONE);
 				mobjinfo[num].mass = (INT32)get_number(word2);
 			}
 			else if (fastcmp(word, "DAMAGE"))
 			{
-				DEH_WriteUndoline(word, va("%d", mobjinfo[num].damage), UNDO_NONE);
 				mobjinfo[num].damage = (INT32)get_number(word2);
 			}
 			else if (fastcmp(word, "ACTIVESOUND"))
 			{
-				DEH_WriteUndoline(word, va("%d", mobjinfo[num].activesound), UNDO_NONE);
 				mobjinfo[num].activesound = get_number(word2);
 			}
 			else if (fastcmp(word, "FLAGS"))
 			{
-				DEH_WriteUndoline(word, va("%d", mobjinfo[num].flags), UNDO_NONE);
 				mobjinfo[num].flags = (INT32)get_number(word2);
 			}
 			else if (fastcmp(word, "RAISESTATE"))
 			{
-				DEH_WriteUndoline(word, va("%d", mobjinfo[num].raisestate), UNDO_NONE);
 				mobjinfo[num].raisestate = get_number(word2);
 			}
 			else
@@ -718,6 +689,20 @@ static const struct {
 
 	{NULL, 0}
 };
+
+static mapheader_lighting_t *usemaplighting(INT32 mapnum, const char *word)
+{
+	if (fastncmp(word, "ENCORE", 6))
+	{
+		mapheaderinfo[mapnum]->use_encore_lighting = true;
+
+		return &mapheaderinfo[mapnum]->lighting_encore;
+	}
+	else
+	{
+		return &mapheaderinfo[mapnum]->lighting;
+	}
+}
 
 static void readlevelheader(MYFILE *f, INT32 num, INT32 wadnum)
 {
@@ -1012,6 +997,35 @@ static void readlevelheader(MYFILE *f, INT32 num, INT32 wadnum)
 			}*/
 			else if (fastcmp(word, "MOBJSCALE"))
 				mapheaderinfo[num-1]->mobj_scale = get_number(word2);
+			else if (fastcmp(word, "LIGHTCONTRAST") || fastcmp(word, "ENCORELIGHTCONTRAST"))
+			{
+				mapheader_lighting_t *lighting = usemaplighting(num-1, word);
+				lighting->light_contrast = (UINT8)i;
+				lighting->use_custom_light = true;
+			}
+			else if (fastcmp(word, "SPRITEBACKLIGHT") || fastcmp(word, "ENCORESPRITEBACKLIGHT"))
+			{
+				mapheader_lighting_t *lighting = usemaplighting(num-1, word);
+				lighting->sprite_backlight = (SINT8)i;
+				lighting->use_custom_light = true;
+			}
+			else if (fastcmp(word, "LIGHTANGLE") || fastcmp(word, "ENCORELIGHTANGLE"))
+			{
+				mapheader_lighting_t *lighting = usemaplighting(num-1, word);
+
+				if (fastcmp(word2, "EVEN"))
+				{
+					lighting->use_light_angle = false;
+					lighting->light_angle = 0;
+				}
+				else
+				{
+					lighting->use_light_angle = true;
+					lighting->light_angle = FixedAngle(FloatToFixed(atof(word2)));
+				}
+
+				lighting->use_custom_light = true;
+			}
 
 			// Individual triggers for level flags, for ease of use (and 2.0 compatibility)
 			else if (fastcmp(word, "SCRIPTISFILE"))
@@ -1110,8 +1124,6 @@ static void readcutscenescene(MYFILE *f, INT32 num, INT32 scenenum)
 	UINT16 usi;
 	UINT8 picid;
 
-	DEH_WriteUndoline("SCENETEXT", cutscenes[num]->scene[scenenum].text, UNDO_ENDTEXT);
-
 	do
 	{
 		if (myfgets(s, MAXLINELEN, f))
@@ -1188,7 +1200,6 @@ static void readcutscenescene(MYFILE *f, INT32 num, INT32 scenenum)
 
 			if (fastcmp(word, "NUMBEROFPICS"))
 			{
-				DEH_WriteUndoline(word, va("%d", cutscenes[num]->scene[scenenum].numpics), UNDO_NONE);
 				cutscenes[num]->scene[scenenum].numpics = (UINT8)i;
 			}
 			else if (fastncmp(word, "PIC", 3))
@@ -1203,27 +1214,22 @@ static void readcutscenescene(MYFILE *f, INT32 num, INT32 scenenum)
 
 				if (fastcmp(word+4, "NAME"))
 				{
-					DEH_WriteUndoline(word, cutscenes[num]->scene[scenenum].picname[picid], UNDO_NONE);
 					strncpy(cutscenes[num]->scene[scenenum].picname[picid], word2, 8);
 				}
 				else if (fastcmp(word+4, "HIRES"))
 				{
-					DEH_WriteUndoline(word, va("%d", cutscenes[num]->scene[scenenum].pichires[picid]), UNDO_NONE);
 					cutscenes[num]->scene[scenenum].pichires[picid] = (UINT8)(i || word2[0] == 'T' || word2[0] == 'Y');
 				}
 				else if (fastcmp(word+4, "DURATION"))
 				{
-					DEH_WriteUndoline(word, va("%u", cutscenes[num]->scene[scenenum].picduration[picid]), UNDO_NONE);
 					cutscenes[num]->scene[scenenum].picduration[picid] = usi;
 				}
 				else if (fastcmp(word+4, "XCOORD"))
 				{
-					DEH_WriteUndoline(word, va("%u", cutscenes[num]->scene[scenenum].xcoord[picid]), UNDO_NONE);
 					cutscenes[num]->scene[scenenum].xcoord[picid] = usi;
 				}
 				else if (fastcmp(word+4, "YCOORD"))
 				{
-					DEH_WriteUndoline(word, va("%u", cutscenes[num]->scene[scenenum].ycoord[picid]), UNDO_NONE);
 					cutscenes[num]->scene[scenenum].ycoord[picid] = usi;
 				}
 				else
@@ -1231,14 +1237,12 @@ static void readcutscenescene(MYFILE *f, INT32 num, INT32 scenenum)
 			}
 			else if (fastcmp(word, "MUSIC"))
 			{
-				DEH_WriteUndoline(word, cutscenes[num]->scene[scenenum].musswitch, UNDO_NONE);
 				strncpy(cutscenes[num]->scene[scenenum].musswitch, word2, 7);
 				cutscenes[num]->scene[scenenum].musswitch[6] = 0;
 			}
 #ifdef MUSICSLOT_COMPATIBILITY
 			else if (fastcmp(word, "MUSICSLOT"))
 			{
-				DEH_WriteUndoline(word, cutscenes[num]->scene[scenenum].musswitch, UNDO_NONE);
 				i = get_mus(word2, true);
 				if (i && i <= 1035)
 					snprintf(cutscenes[num]->scene[scenenum].musswitch, 7, "%sM", G_BuildMapName(i));
@@ -1251,42 +1255,34 @@ static void readcutscenescene(MYFILE *f, INT32 num, INT32 scenenum)
 #endif
 			else if (fastcmp(word, "MUSICTRACK"))
 			{
-				DEH_WriteUndoline(word, va("%u", cutscenes[num]->scene[scenenum].musswitchflags), UNDO_NONE);
 				cutscenes[num]->scene[scenenum].musswitchflags = ((UINT16)i) & MUSIC_TRACKMASK;
 			}
 			else if (fastcmp(word, "MUSICPOS"))
 			{
-				DEH_WriteUndoline(word, va("%u", cutscenes[num]->scene[scenenum].musswitchposition), UNDO_NONE);
 				cutscenes[num]->scene[scenenum].musswitchposition = (UINT32)get_number(word2);
 			}
 			else if (fastcmp(word, "MUSICLOOP"))
 			{
-				DEH_WriteUndoline(word, va("%u", cutscenes[num]->scene[scenenum].musicloop), UNDO_NONE);
 				cutscenes[num]->scene[scenenum].musicloop = (UINT8)(i || word2[0] == 'T' || word2[0] == 'Y');
 			}
 			else if (fastcmp(word, "TEXTXPOS"))
 			{
-				DEH_WriteUndoline(word, va("%u", cutscenes[num]->scene[scenenum].textxpos), UNDO_NONE);
 				cutscenes[num]->scene[scenenum].textxpos = usi;
 			}
 			else if (fastcmp(word, "TEXTYPOS"))
 			{
-				DEH_WriteUndoline(word, va("%u", cutscenes[num]->scene[scenenum].textypos), UNDO_NONE);
 				cutscenes[num]->scene[scenenum].textypos = usi;
 			}
 			else if (fastcmp(word, "FADEINID"))
 			{
-				DEH_WriteUndoline(word, va("%u", cutscenes[num]->scene[scenenum].fadenum), UNDO_NONE);
 				cutscenes[num]->scene[scenenum].fadeinid = (UINT8)i;
 			}
 			else if (fastcmp(word, "FADEOUTID"))
 			{
-				DEH_WriteUndoline(word, va("%u", cutscenes[num]->scene[scenenum].fadenum), UNDO_NONE);
 				cutscenes[num]->scene[scenenum].fadeoutid = (UINT8)i;
 			}
 			else if (fastcmp(word, "FADECOLOR"))
 			{
-				DEH_WriteUndoline(word, va("%u", cutscenes[num]->scene[scenenum].fadenum), UNDO_NONE);
 				cutscenes[num]->scene[scenenum].fadecolor = (UINT8)i;
 			}
 			else
@@ -1346,8 +1342,6 @@ static void readcutscene(MYFILE *f, INT32 num)
 				if (1 <= value && value <= 128)
 				{
 					readcutscenescene(f, num, value - 1);
-					DEH_WriteUndoline(word, word2, UNDO_SPACE|UNDO_CUTLINE);
-					DEH_WriteUndoline("NUMSCENES", va("%d", oldnumscenes), UNDO_SPACE);
 				}
 				else
 					deh_warning("Scene number %d out of range (1 - 128)", value);
@@ -1403,12 +1397,10 @@ static void readhuditem(MYFILE *f, INT32 num)
 
 			if (fastcmp(word, "X"))
 			{
-				DEH_WriteUndoline(word, va("%d", hudinfo[num].x), UNDO_NONE);
 				hudinfo[num].x = i;
 			}
 			else if (fastcmp(word, "Y"))
 			{
-				DEH_WriteUndoline(word, va("%d", hudinfo[num].y), UNDO_NONE);
 				hudinfo[num].y = i;
 			}
 			else
@@ -1424,214 +1416,211 @@ static void readhuditem(MYFILE *f, INT32 num)
 // DO NOT FORGET TO SYNC THIS LIST WITH THE ACTIONNUM ENUM IN INFO.H
 actionpointer_t actionpointers[] =
 {
-	{{A_Explode},              "A_EXPLODE"},
-	{{A_Pain},                 "A_PAIN"},
-	{{A_Fall},                 "A_FALL"},
-	{{A_MonitorPop},           "A_MONITORPOP"},
-	{{A_Look},                 "A_LOOK"},
-	{{A_Chase},                "A_CHASE"},
-	{{A_FaceStabChase},        "A_FACESTABCHASE"},
-	{{A_FaceTarget},           "A_FACETARGET"},
-	{{A_FaceTracer},           "A_FACETRACER"},
-	{{A_Scream},               "A_SCREAM"},
-	{{A_BossDeath},            "A_BOSSDEATH"},
-	{{A_CustomPower},          "A_CUSTOMPOWER"},
-	{{A_GiveWeapon},           "A_GIVEWEAPON"},
-	{{A_RingShield},           "A_RINGSHIELD"},
-	{{A_RingBox},              "A_RINGBOX"},
-	{{A_Invincibility},        "A_INVINCIBILITY"},
-	{{A_SuperSneakers},        "A_SUPERSNEAKERS"},
-	{{A_BunnyHop},             "A_BUNNYHOP"},
-	{{A_BubbleSpawn},          "A_BUBBLESPAWN"},
-	{{A_FanBubbleSpawn},       "A_FANBUBBLESPAWN"},
-	{{A_BubbleRise},           "A_BUBBLERISE"},
-	{{A_BubbleCheck},          "A_BUBBLECHECK"},
-	{{A_AwardScore},           "A_AWARDSCORE"},
-	{{A_ExtraLife},            "A_EXTRALIFE"},
-	{{A_BombShield},           "A_BOMBSHIELD"},
-	{{A_JumpShield},           "A_JUMPSHIELD"},
-	{{A_WaterShield},          "A_WATERSHIELD"},
-	{{A_ForceShield},          "A_FORCESHIELD"},
-	{{A_PityShield},           "A_PITYSHIELD"},
-	{{A_GravityBox},           "A_GRAVITYBOX"},
-	{{A_ScoreRise},            "A_SCORERISE"},
-	{{A_ParticleSpawn},        "A_PARTICLESPAWN"},
-	{{A_AttractChase},         "A_ATTRACTCHASE"},
-	{{A_DropMine},             "A_DROPMINE"},
-	{{A_FishJump},             "A_FISHJUMP"},
-	{{A_ThrownRing},           "A_THROWNRING"},
-	{{A_GrenadeRing},          "A_GRENADERING"}, // SRB2kart
-	{{A_SetSolidSteam},        "A_SETSOLIDSTEAM"},
-	{{A_UnsetSolidSteam},      "A_UNSETSOLIDSTEAM"},
-	{{A_SignPlayer},           "A_SIGNPLAYER"},
-	{{A_OverlayThink},         "A_OVERLAYTHINK"},
-	{{A_JetChase},             "A_JETCHASE"},
-	{{A_JetbThink},            "A_JETBTHINK"},
-	{{A_JetgThink},            "A_JETGTHINK"},
-	{{A_JetgShoot},            "A_JETGSHOOT"},
-	{{A_ShootBullet},          "A_SHOOTBULLET"},
-	{{A_MinusDigging},         "A_MINUSDIGGING"},
-	{{A_MinusPopup},           "A_MINUSPOPUP"},
-	{{A_MinusCheck},           "A_MINUSCHECK"},
-	{{A_ChickenCheck},         "A_CHICKENCHECK"},
-	{{A_MouseThink},           "A_MOUSETHINK"},
-	{{A_DetonChase},           "A_DETONCHASE"},
-	{{A_CapeChase},            "A_CAPECHASE"},
-	{{A_RotateSpikeBall},      "A_ROTATESPIKEBALL"},
-	{{A_SlingAppear},          "A_SLINGAPPEAR"},
-	{{A_MaceRotate},           "A_MACEROTATE"},
-	{{A_UnidusBall},           "A_UNIDUSBALL"},
-	{{A_RockSpawn},            "A_ROCKSPAWN"},
-	{{A_SetFuse},              "A_SETFUSE"},
-	{{A_CrawlaCommanderThink}, "A_CRAWLACOMMANDERTHINK"},
-	{{A_SmokeTrailer},         "A_SMOKETRAILER"},
-	{{A_RingExplode},          "A_RINGEXPLODE"},
-	{{A_OldRingExplode},       "A_OLDRINGEXPLODE"},
-	{{A_MixUp},                "A_MIXUP"},
-	{{A_RecyclePowers},        "A_RECYCLEPOWERS"},
-	{{A_Boss1Chase},           "A_BOSS1CHASE"},
-	{{A_FocusTarget},          "A_FOCUSTARGET"},
-	{{A_Boss2Chase},           "A_BOSS2CHASE"},
-	{{A_Boss2Pogo},            "A_BOSS2POGO"},
-	{{A_BossZoom},             "A_BOSSZOOM"},
-	{{A_BossScream},           "A_BOSSSCREAM"},
-	{{A_Boss2TakeDamage},      "A_BOSS2TAKEDAMAGE"},
-	{{A_Boss7Chase},           "A_BOSS7CHASE"},
-	{{A_GoopSplat},            "A_GOOPSPLAT"},
-	{{A_Boss2PogoSFX},         "A_BOSS2POGOSFX"},
-	{{A_Boss2PogoTarget},      "A_BOSS2POGOTARGET"},
-	{{A_BossJetFume},          "A_BOSSJETFUME"},
-	{{A_EggmanBox},            "A_EGGMANBOX"},
-	{{A_TurretFire},           "A_TURRETFIRE"},
-	{{A_SuperTurretFire},      "A_SUPERTURRETFIRE"},
-	{{A_TurretStop},           "A_TURRETSTOP"},
-	{{A_JetJawRoam},           "A_JETJAWROAM"},
-	{{A_JetJawChomp},          "A_JETJAWCHOMP"},
-	{{A_PointyThink},          "A_POINTYTHINK"},
-	{{A_CheckBuddy},           "A_CHECKBUDDY"},
-	{{A_HoodThink},            "A_HOODTHINK"},
-	{{A_ArrowCheck},           "A_ARROWCHECK"},
-	{{A_SnailerThink},         "A_SNAILERTHINK"},
-	{{A_SharpChase},           "A_SHARPCHASE"},
-	{{A_SharpSpin},            "A_SHARPSPIN"},
-	{{A_VultureVtol},          "A_VULTUREVTOL"},
-	{{A_VultureCheck},         "A_VULTURECHECK"},
-	{{A_SkimChase},            "A_SKIMCHASE"},
-	{{A_1upThinker},           "A_1UPTHINKER"},
-	{{A_SkullAttack},          "A_SKULLATTACK"},
-	{{A_LobShot},              "A_LOBSHOT"},
-	{{A_FireShot},             "A_FIRESHOT"},
-	{{A_SuperFireShot},        "A_SUPERFIRESHOT"},
-	{{A_BossFireShot},         "A_BOSSFIRESHOT"},
-	{{A_Boss7FireMissiles},    "A_BOSS7FIREMISSILES"},
-	{{A_Boss1Laser},           "A_BOSS1LASER"},
-	{{A_Boss4Reverse},         "A_BOSS4REVERSE"},
-	{{A_Boss4SpeedUp},         "A_BOSS4SPEEDUP"},
-	{{A_Boss4Raise},           "A_BOSS4RAISE"},
-	{{A_SparkFollow},          "A_SPARKFOLLOW"},
-	{{A_BuzzFly},              "A_BUZZFLY"},
-	{{A_GuardChase},           "A_GUARDCHASE"},
-	{{A_EggShield},            "A_EGGSHIELD"},
-	{{A_SetReactionTime},      "A_SETREACTIONTIME"},
-	{{A_Boss1Spikeballs},      "A_BOSS1SPIKEBALLS"},
-	{{A_Boss3TakeDamage},      "A_BOSS3TAKEDAMAGE"},
-	{{A_Boss3Path},            "A_BOSS3PATH"},
-	{{A_LinedefExecute},       "A_LINEDEFEXECUTE"},
-	{{A_PlaySeeSound},         "A_PLAYSEESOUND"},
-	{{A_PlayAttackSound},      "A_PLAYATTACKSOUND"},
-	{{A_PlayActiveSound},      "A_PLAYACTIVESOUND"},
-	{{A_SpawnObjectAbsolute},  "A_SPAWNOBJECTABSOLUTE"},
-	{{A_SpawnObjectRelative},  "A_SPAWNOBJECTRELATIVE"},
-	{{A_ChangeAngleRelative},  "A_CHANGEANGLERELATIVE"},
-	{{A_ChangeAngleAbsolute},  "A_CHANGEANGLEABSOLUTE"},
-	{{A_RollAngle},            "A_ROLLANGLE"},
-	{{A_ChangeRollAngleRelative},"A_CHANGEROLLANGLERELATIVE"},
-	{{A_ChangeRollAngleAbsolute},"A_CHANGEROLLANGLEABSOLUTE"},
-	{{A_PlaySound},            "A_PLAYSOUND"},
-	{{A_FindTarget},           "A_FINDTARGET"},
-	{{A_FindTracer},           "A_FINDTRACER"},
-	{{A_SetTics},              "A_SETTICS"},
-	{{A_SetRandomTics},        "A_SETRANDOMTICS"},
-	{{A_ChangeColorRelative},  "A_CHANGECOLORRELATIVE"},
-	{{A_ChangeColorAbsolute},  "A_CHANGECOLORABSOLUTE"},
-	{{A_MoveRelative},         "A_MOVERELATIVE"},
-	{{A_MoveAbsolute},         "A_MOVEABSOLUTE"},
-	{{A_Thrust},               "A_THRUST"},
-	{{A_ZThrust},              "A_ZTHRUST"},
-	{{A_SetTargetsTarget},     "A_SETTARGETSTARGET"},
-	{{A_SetObjectFlags},       "A_SETOBJECTFLAGS"},
-	{{A_SetObjectFlags2},      "A_SETOBJECTFLAGS2"},
-	{{A_RandomState},          "A_RANDOMSTATE"},
-	{{A_RandomStateRange},     "A_RANDOMSTATERANGE"},
-	{{A_DualAction},           "A_DUALACTION"},
-	{{A_RemoteAction},         "A_REMOTEACTION"},
-	{{A_ToggleFlameJet},       "A_TOGGLEFLAMEJET"},
-	{{A_ItemPop},              "A_ITEMPOP"},       // SRB2kart
-	{{A_JawzChase},            "A_JAWZCHASE"}, // SRB2kart
-	{{A_JawzExplode},          "A_JAWZEXPLODE"}, // SRB2kart
-	{{A_SPBChase},             "A_SPBCHASE"}, // SRB2kart
-	{{A_MineExplode},          "A_MINEEXPLODE"}, // SRB2kart
-	{{A_BallhogExplode},       "A_BALLHOGEXPLODE"}, // SRB2kart
-	{{A_LightningFollowPlayer},"A_LIGHTNINGFOLLOWPLAYER"}, //SRB2kart
-	{{A_FZBoomFlash},          "A_FZBOOMFLASH"}, //SRB2kart
-	{{A_FZBoomSmoke},          "A_FZBOOMSMOKE"}, //SRB2kart
-	{{A_RandomShadowFrame},	   "A_RANDOMSHADOWFRAME"}, //SRB2kart
-	{{A_RoamingShadowThinker}, "A_ROAMINGSHADOWTHINKER"}, //SRB2kart
-	{{A_MayonakaArrow}, 	   "A_MAYONAKAARROW"}, //SRB2kart
-	{{A_ReaperThinker}, 	   "A_REAPERTHINKER"}, //SRB2kart
-	{{A_MementosTPParticles},  "A_MEMENTOSTPPARTICLES"}, //SRB2kart
-	{{A_FlameParticle},        "A_FLAMEPARTICLE"}, // SRB2kart
-	{{A_OrbitNights},          "A_ORBITNIGHTS"},
-	{{A_GhostMe},              "A_GHOSTME"},
-	{{A_SetObjectState},       "A_SETOBJECTSTATE"},
-	{{A_SetObjectTypeState},   "A_SETOBJECTTYPESTATE"},
-	{{A_KnockBack},            "A_KNOCKBACK"},
-	{{A_PushAway},             "A_PUSHAWAY"},
-	{{A_RingDrain},            "A_RINGDRAIN"},
-	{{A_SplitShot},            "A_SPLITSHOT"},
-	{{A_MissileSplit},         "A_MISSILESPLIT"},
-	{{A_MultiShot},            "A_MULTISHOT"},
-	{{A_InstaLoop},            "A_INSTALOOP"},
-	{{A_Custom3DRotate},       "A_CUSTOM3DROTATE"},
-	{{A_SearchForPlayers},     "A_SEARCHFORPLAYERS"},
-	{{A_CheckRandom},          "A_CHECKRANDOM"},
-	{{A_CheckTargetRings},     "A_CHECKTARGETRINGS"},
-	{{A_CheckRings},           "A_CHECKRINGS"},
-	{{A_CheckTotalRings},      "A_CHECKTOTALRINGS"},
-	{{A_CheckHealth},          "A_CHECKHEALTH"},
-	{{A_CheckRange},           "A_CHECKRANGE"},
-	{{A_CheckHeight},          "A_CHECKHEIGHT"},
-	{{A_CheckTrueRange},       "A_CHECKTRUERANGE"},
-	{{A_CheckThingCount},      "A_CHECKTHINGCOUNT"},
-	{{A_CheckAmbush},          "A_CHECKAMBUSH"},
-	{{A_CheckCustomValue},     "A_CHECKCUSTOMVALUE"},
-	{{A_CheckCusValMemo},      "A_CHECKCUSVALMEMO"},
-	{{A_SetCustomValue},       "A_SETCUSTOMVALUE"},
-	{{A_UseCusValMemo},        "A_USECUSVALMEMO"},
-	{{A_RelayCustomValue},     "A_RELAYCUSTOMVALUE"},
-	{{A_CusValAction},         "A_CUSVALACTION"},
-	{{A_ForceStop},            "A_FORCESTOP"},
-	{{A_ForceWin},             "A_FORCEWIN"},
-	{{A_SpikeRetract},         "A_SPIKERETRACT"},
-	{{A_InfoState},            "A_INFOSTATE"},
-	{{A_Repeat},               "A_REPEAT"},
-	{{A_SetScale},             "A_SETSCALE"},
-	{{A_RemoteDamage},         "A_REMOTEDAMAGE"},
-	{{A_HomingChase},          "A_HOMINGCHASE"},
-	{{A_TrapShot},             "A_TRAPSHOT"},
-	{{A_VileTarget},           "A_VILETARGET"},
-	{{A_VileAttack},           "A_VILEATTACK"},
-	{{A_VileFire},             "A_VILEFIRE"},
-	{{A_BrakChase},            "A_BRAKCHASE"},
-	{{A_BrakFireShot},         "A_BRAKFIRESHOT"},
-	{{A_BrakLobShot},          "A_BRAKLOBSHOT"},
-	{{A_NapalmScatter},        "A_NAPALMSCATTER"},
-	{{A_SpawnFreshCopy},       "A_SPAWNFRESHCOPY"},
+	{A_Explode,              "A_EXPLODE"},
+	{A_Pain,                 "A_PAIN"},
+	{A_Fall,                 "A_FALL"},
+	{A_MonitorPop,           "A_MONITORPOP"},
+	{A_Look,                 "A_LOOK"},
+	{A_Chase,                "A_CHASE"},
+	{A_FaceStabChase,        "A_FACESTABCHASE"},
+	{A_FaceTarget,           "A_FACETARGET"},
+	{A_FaceTracer,           "A_FACETRACER"},
+	{A_Scream,               "A_SCREAM"},
+	{A_BossDeath,            "A_BOSSDEATH"},
+	{A_CustomPower,          "A_CUSTOMPOWER"},
+	{A_GiveWeapon,           "A_GIVEWEAPON"},
+	{A_RingShield,           "A_RINGSHIELD"},
+	{A_RingBox,              "A_RINGBOX"},
+	{A_Invincibility,        "A_INVINCIBILITY"},
+	{A_SuperSneakers,        "A_SUPERSNEAKERS"},
+	{A_BunnyHop,             "A_BUNNYHOP"},
+	{A_BubbleSpawn,          "A_BUBBLESPAWN"},
+	{A_FanBubbleSpawn,       "A_FANBUBBLESPAWN"},
+	{A_BubbleRise,           "A_BUBBLERISE"},
+	{A_BubbleCheck,          "A_BUBBLECHECK"},
+	{A_AwardScore,           "A_AWARDSCORE"},
+	{A_ExtraLife,            "A_EXTRALIFE"},
+	{A_BombShield,           "A_BOMBSHIELD"},
+	{A_JumpShield,           "A_JUMPSHIELD"},
+	{A_WaterShield,          "A_WATERSHIELD"},
+	{A_ForceShield,          "A_FORCESHIELD"},
+	{A_PityShield,           "A_PITYSHIELD"},
+	{A_GravityBox,           "A_GRAVITYBOX"},
+	{A_ScoreRise,            "A_SCORERISE"},
+	{A_ParticleSpawn,        "A_PARTICLESPAWN"},
+	{A_AttractChase,         "A_ATTRACTCHASE"},
+	{A_DropMine,             "A_DROPMINE"},
+	{A_FishJump,             "A_FISHJUMP"},
+	{A_ThrownRing,           "A_THROWNRING"},
+	{A_GrenadeRing,          "A_GRENADERING"}, // SRB2kart
+	{A_SetSolidSteam,        "A_SETSOLIDSTEAM"},
+	{A_UnsetSolidSteam,      "A_UNSETSOLIDSTEAM"},
+	{A_SignPlayer,           "A_SIGNPLAYER"},
+	{A_OverlayThink,         "A_OVERLAYTHINK"},
+	{A_JetChase,             "A_JETCHASE"},
+	{A_JetbThink,            "A_JETBTHINK"},
+	{A_JetgThink,            "A_JETGTHINK"},
+	{A_JetgShoot,            "A_JETGSHOOT"},
+	{A_ShootBullet,          "A_SHOOTBULLET"},
+	{A_MinusDigging,         "A_MINUSDIGGING"},
+	{A_MinusPopup,           "A_MINUSPOPUP"},
+	{A_MinusCheck,           "A_MINUSCHECK"},
+	{A_ChickenCheck,         "A_CHICKENCHECK"},
+	{A_MouseThink,           "A_MOUSETHINK"},
+	{A_DetonChase,           "A_DETONCHASE"},
+	{A_CapeChase,            "A_CAPECHASE"},
+	{A_RotateSpikeBall,      "A_ROTATESPIKEBALL"},
+	{A_SlingAppear,          "A_SLINGAPPEAR"},
+	{A_MaceRotate,           "A_MACEROTATE"},
+	{A_UnidusBall,           "A_UNIDUSBALL"},
+	{A_RockSpawn,            "A_ROCKSPAWN"},
+	{A_SetFuse,              "A_SETFUSE"},
+	{A_CrawlaCommanderThink, "A_CRAWLACOMMANDERTHINK"},
+	{A_SmokeTrailer,         "A_SMOKETRAILER"},
+	{A_RingExplode,          "A_RINGEXPLODE"},
+	{A_OldRingExplode,       "A_OLDRINGEXPLODE"},
+	{A_MixUp,                "A_MIXUP"},
+	{A_RecyclePowers,        "A_RECYCLEPOWERS"},
+	{A_Boss1Chase,           "A_BOSS1CHASE"},
+	{A_FocusTarget,          "A_FOCUSTARGET"},
+	{A_Boss2Chase,           "A_BOSS2CHASE"},
+	{A_Boss2Pogo,            "A_BOSS2POGO"},
+	{A_BossZoom,             "A_BOSSZOOM"},
+	{A_BossScream,           "A_BOSSSCREAM"},
+	{A_Boss2TakeDamage,      "A_BOSS2TAKEDAMAGE"},
+	{A_Boss7Chase,           "A_BOSS7CHASE"},
+	{A_GoopSplat,            "A_GOOPSPLAT"},
+	{A_Boss2PogoSFX,         "A_BOSS2POGOSFX"},
+	{A_Boss2PogoTarget,      "A_BOSS2POGOTARGET"},
+	{A_BossJetFume,          "A_BOSSJETFUME"},
+	{A_EggmanBox,            "A_EGGMANBOX"},
+	{A_TurretFire,           "A_TURRETFIRE"},
+	{A_SuperTurretFire,      "A_SUPERTURRETFIRE"},
+	{A_TurretStop,           "A_TURRETSTOP"},
+	{A_JetJawRoam,           "A_JETJAWROAM"},
+	{A_JetJawChomp,          "A_JETJAWCHOMP"},
+	{A_PointyThink,          "A_POINTYTHINK"},
+	{A_CheckBuddy,           "A_CHECKBUDDY"},
+	{A_HoodThink,            "A_HOODTHINK"},
+	{A_ArrowCheck,           "A_ARROWCHECK"},
+	{A_SnailerThink,         "A_SNAILERTHINK"},
+	{A_SharpChase,           "A_SHARPCHASE"},
+	{A_SharpSpin,            "A_SHARPSPIN"},
+	{A_VultureVtol,          "A_VULTUREVTOL"},
+	{A_VultureCheck,         "A_VULTURECHECK"},
+	{A_SkimChase,            "A_SKIMCHASE"},
+	{A_1upThinker,           "A_1UPTHINKER"},
+	{A_SkullAttack,          "A_SKULLATTACK"},
+	{A_LobShot,              "A_LOBSHOT"},
+	{A_FireShot,             "A_FIRESHOT"},
+	{A_SuperFireShot,        "A_SUPERFIRESHOT"},
+	{A_BossFireShot,         "A_BOSSFIRESHOT"},
+	{A_Boss7FireMissiles,    "A_BOSS7FIREMISSILES"},
+	{A_Boss1Laser,           "A_BOSS1LASER"},
+	{A_Boss4Reverse,         "A_BOSS4REVERSE"},
+	{A_Boss4SpeedUp,         "A_BOSS4SPEEDUP"},
+	{A_Boss4Raise,           "A_BOSS4RAISE"},
+	{A_SparkFollow,          "A_SPARKFOLLOW"},
+	{A_BuzzFly,              "A_BUZZFLY"},
+	{A_GuardChase,           "A_GUARDCHASE"},
+	{A_EggShield,            "A_EGGSHIELD"},
+	{A_SetReactionTime,      "A_SETREACTIONTIME"},
+	{A_Boss1Spikeballs,      "A_BOSS1SPIKEBALLS"},
+	{A_Boss3TakeDamage,      "A_BOSS3TAKEDAMAGE"},
+	{A_Boss3Path,            "A_BOSS3PATH"},
+	{A_LinedefExecute,       "A_LINEDEFEXECUTE"},
+	{A_PlaySeeSound,         "A_PLAYSEESOUND"},
+	{A_PlayAttackSound,      "A_PLAYATTACKSOUND"},
+	{A_PlayActiveSound,      "A_PLAYACTIVESOUND"},
+	{A_SpawnObjectAbsolute,  "A_SPAWNOBJECTABSOLUTE"},
+	{A_SpawnObjectRelative,  "A_SPAWNOBJECTRELATIVE"},
+	{A_ChangeAngleRelative,  "A_CHANGEANGLERELATIVE"},
+	{A_ChangeAngleAbsolute,  "A_CHANGEANGLEABSOLUTE"},
+	{A_PlaySound,            "A_PLAYSOUND"},
+	{A_FindTarget,           "A_FINDTARGET"},
+	{A_FindTracer,           "A_FINDTRACER"},
+	{A_SetTics,              "A_SETTICS"},
+	{A_SetRandomTics,        "A_SETRANDOMTICS"},
+	{A_ChangeColorRelative,  "A_CHANGECOLORRELATIVE"},
+	{A_ChangeColorAbsolute,  "A_CHANGECOLORABSOLUTE"},
+	{A_MoveRelative,         "A_MOVERELATIVE"},
+	{A_MoveAbsolute,         "A_MOVEABSOLUTE"},
+	{A_Thrust,               "A_THRUST"},
+	{A_ZThrust,              "A_ZTHRUST"},
+	{A_SetTargetsTarget,     "A_SETTARGETSTARGET"},
+	{A_SetObjectFlags,       "A_SETOBJECTFLAGS"},
+	{A_SetObjectFlags2,      "A_SETOBJECTFLAGS2"},
+	{A_RandomState,          "A_RANDOMSTATE"},
+	{A_RandomStateRange,     "A_RANDOMSTATERANGE"},
+	{A_DualAction,           "A_DUALACTION"},
+	{A_RemoteAction,         "A_REMOTEACTION"},
+	{A_ToggleFlameJet,       "A_TOGGLEFLAMEJET"},
+	{A_ItemPop,              "A_ITEMPOP"},       // SRB2kart
+	{A_JawzChase,            "A_JAWZCHASE"}, // SRB2kart
+	{A_JawzExplode,          "A_JAWZEXPLODE"}, // SRB2kart
+	{A_SPBChase,             "A_SPBCHASE"}, // SRB2kart
+	{A_MineExplode,          "A_MINEEXPLODE"}, // SRB2kart
+	{A_BallhogExplode,       "A_BALLHOGEXPLODE"}, // SRB2kart
+	{A_LightningFollowPlayer,"A_LIGHTNINGFOLLOWPLAYER"}, //SRB2kart
+	{A_FZBoomFlash,          "A_FZBOOMFLASH"}, //SRB2kart
+	{A_FZBoomSmoke,          "A_FZBOOMSMOKE"}, //SRB2kart
+	{A_RandomShadowFrame,    "A_RANDOMSHADOWFRAME"}, //SRB2kart
+	{A_RoamingShadowThinker, "A_ROAMINGSHADOWTHINKER"}, //SRB2kart
+	{A_MayonakaArrow,        "A_MAYONAKAARROW"}, //SRB2kart
+	{A_ReaperThinker,        "A_REAPERTHINKER"}, //SRB2kart
+	{A_MementosTPParticles,  "A_MEMENTOSTPPARTICLES"}, //SRB2kart
+	{A_FlameParticle,        "A_FLAMEPARTICLE"}, // SRB2kart
+	{A_OrbitNights,          "A_ORBITNIGHTS"},
+	{A_GhostMe,              "A_GHOSTME"},
+	{A_SetObjectState,       "A_SETOBJECTSTATE"},
+	{A_SetObjectTypeState,   "A_SETOBJECTTYPESTATE"},
+	{A_KnockBack,            "A_KNOCKBACK"},
+	{A_PushAway,             "A_PUSHAWAY"},
+	{A_RingDrain,            "A_RINGDRAIN"},
+	{A_SplitShot,            "A_SPLITSHOT"},
+	{A_MissileSplit,         "A_MISSILESPLIT"},
+	{A_MultiShot,            "A_MULTISHOT"},
+	{A_InstaLoop,            "A_INSTALOOP"},
+	{A_Custom3DRotate,       "A_CUSTOM3DROTATE"},
+	{A_SearchForPlayers,     "A_SEARCHFORPLAYERS"},
+	{A_CheckRandom,          "A_CHECKRANDOM"},
+	{A_CheckTargetRings,     "A_CHECKTARGETRINGS"},
+	{A_CheckRings,           "A_CHECKRINGS"},
+	{A_CheckTotalRings,      "A_CHECKTOTALRINGS"},
+	{A_CheckHealth,          "A_CHECKHEALTH"},
+	{A_CheckRange,           "A_CHECKRANGE"},
+	{A_CheckHeight,          "A_CHECKHEIGHT"},
+	{A_CheckTrueRange,       "A_CHECKTRUERANGE"},
+	{A_CheckThingCount,      "A_CHECKTHINGCOUNT"},
+	{A_CheckAmbush,          "A_CHECKAMBUSH"},
+	{A_CheckCustomValue,     "A_CHECKCUSTOMVALUE"},
+	{A_CheckCusValMemo,      "A_CHECKCUSVALMEMO"},
+	{A_SetCustomValue,       "A_SETCUSTOMVALUE"},
+	{A_UseCusValMemo,        "A_USECUSVALMEMO"},
+	{A_RelayCustomValue,     "A_RELAYCUSTOMVALUE"},
+	{A_CusValAction,         "A_CUSVALACTION"},
+	{A_ForceStop,            "A_FORCESTOP"},
+	{A_ForceWin,             "A_FORCEWIN"},
+	{A_SpikeRetract,         "A_SPIKERETRACT"},
+	{A_InfoState,            "A_INFOSTATE"},
+	{A_Repeat,               "A_REPEAT"},
+	{A_SetScale,             "A_SETSCALE"},
+	{A_RemoteDamage,         "A_REMOTEDAMAGE"},
+	{A_HomingChase,          "A_HOMINGCHASE"},
+	{A_TrapShot,             "A_TRAPSHOT"},
+	{A_VileTarget,           "A_VILETARGET"},
+	{A_VileAttack,           "A_VILEATTACK"},
+	{A_VileFire,             "A_VILEFIRE"},
+	{A_BrakChase,            "A_BRAKCHASE"},
+	{A_BrakFireShot,         "A_BRAKFIRESHOT"},
+	{A_BrakLobShot,          "A_BRAKLOBSHOT"},
+	{A_NapalmScatter,        "A_NAPALMSCATTER"},
+	{A_SpawnFreshCopy,       "A_SPAWNFRESHCOPY"},
 
-	{{NULL},                   "NONE"},
+	{NULL,                   "NONE"},
 
 	// This NULL entry must be the last in the list
-	{{NULL},                   NULL},
+	{NULL,                   NULL},
 };
 
 static void readframe(MYFILE *f, INT32 num)
@@ -1670,32 +1659,26 @@ static void readframe(MYFILE *f, INT32 num)
 
 			if (fastcmp(word1, "SPRITENUMBER") || fastcmp(word1, "SPRITENAME"))
 			{
-				DEH_WriteUndoline(word1, va("%u", states[num].sprite), UNDO_NONE);
 				states[num].sprite = get_sprite(word2);
 			}
 			else if (fastcmp(word1, "SPRITESUBNUMBER") || fastcmp(word1, "SPRITEFRAME"))
 			{
-				DEH_WriteUndoline(word1, va("%d", states[num].frame), UNDO_NONE);
 				states[num].frame = (INT32)get_number(word2); // So the FF_ flags get calculated
 			}
 			else if (fastcmp(word1, "DURATION"))
 			{
-				DEH_WriteUndoline(word1, va("%u", states[num].tics), UNDO_NONE);
 				states[num].tics = (INT32)get_number(word2); // So TICRATE can be used
 			}
 			else if (fastcmp(word1, "NEXT"))
 			{
-				DEH_WriteUndoline(word1, va("%d", states[num].nextstate), UNDO_NONE);
 				states[num].nextstate = get_state(word2);
 			}
 			else if (fastcmp(word1, "VAR1"))
 			{
-				DEH_WriteUndoline(word1, va("%d", states[num].var1), UNDO_NONE);
 				states[num].var1 = (INT32)get_number(word2);
 			}
 			else if (fastcmp(word1, "VAR2"))
 			{
-				DEH_WriteUndoline(word1, va("%d", states[num].var2), UNDO_NONE);
 				states[num].var2 = (INT32)get_number(word2);
 			}
 			else if (fastcmp(word1, "ACTION"))
@@ -1719,9 +1702,8 @@ static void readframe(MYFILE *f, INT32 num)
 
 				for (z = 0; actionpointers[z].name; z++)
 				{
-					if (actionpointers[z].action.acv == states[num].action.acv)
+					if (actionpointers[z].action == states[num].action)
 					{
-						DEH_WriteUndoline(word1, actionpointers[z].name, UNDO_NONE);
 						break;
 					}
 				}
@@ -1729,17 +1711,17 @@ static void readframe(MYFILE *f, INT32 num)
 				z = 0;
 				found = LUA_SetLuaAction(&states[num], actiontocompare);
 				if (!found)
-				while (actionpointers[z].name)
 				{
-					if (fastcmp(actiontocompare, actionpointers[z].name))
+					while (actionpointers[z].name)
 					{
-						states[num].action = actionpointers[z].action;
-						states[num].action.acv = actionpointers[z].action.acv; // assign
-						states[num].action.acp1 = actionpointers[z].action.acp1;
-						found = true;
-						break;
+						if (fastcmp(actiontocompare, actionpointers[z].name))
+						{
+							states[num].action = actionpointers[z].action;
+							found = true;
+							break;
+						}
+						z++;
 					}
-					z++;
 				}
 
 				if (!found)
@@ -1781,17 +1763,14 @@ static void readsound(MYFILE *f, INT32 num, const char *savesfxnames[])
 
 			if (fastcmp(word, "SINGULAR"))
 			{
-				DEH_WriteUndoline(word, va("%d", S_sfx[num].singularity), UNDO_NONE);
 				S_sfx[num].singularity = value;
 			}
 			else if (fastcmp(word, "PRIORITY"))
 			{
-				DEH_WriteUndoline(word, va("%d", S_sfx[num].priority), UNDO_NONE);
 				S_sfx[num].priority = value;
 			}
 			else if (fastcmp(word, "FLAGS"))
 			{
-				DEH_WriteUndoline(word, va("%d", S_sfx[num].pitch), UNDO_NONE);
 				S_sfx[num].pitch = value;
 			}
 			else
@@ -1820,7 +1799,7 @@ static void readsound(MYFILE *f, INT32 num, const char *savesfxnames[])
  * \sa readmaincfg()
  * \author Graue <graue@oceanbase.org>
  */
-static boolean GoodDataFileName(const char *s)
+/*static boolean GoodDataFileName(const char *s)
 {
 	const char *p;
 	const char *tail = ".dat";
@@ -1840,7 +1819,7 @@ static boolean GoodDataFileName(const char *s)
 	if (fasticmp(s, "online.dat")) return false; // SRB2Kart online replay folder
 
 	return true;
-}
+}*/
 
 static void reademblemdata(MYFILE *f, INT32 num)
 {
@@ -1851,16 +1830,6 @@ static void reademblemdata(MYFILE *f, INT32 num)
 	INT32 value;
 
 	// Reset all data initially
-	DEH_WriteUndoline("TYPE", va("%d", emblemlocations[num-1].type), UNDO_NONE);
-	DEH_WriteUndoline("X", va("%d", emblemlocations[num-1].x), UNDO_NONE);
-	DEH_WriteUndoline("Y", va("%d", emblemlocations[num-1].y), UNDO_NONE);
-	DEH_WriteUndoline("Z", va("%d", emblemlocations[num-1].z), UNDO_NONE);
-	DEH_WriteUndoline("MAPNUM", va("%d", emblemlocations[num-1].level), UNDO_NONE);
-	DEH_WriteUndoline("VAR", va("%d", emblemlocations[num-1].var), UNDO_NONE);
-	DEH_WriteUndoline("SPRITE", va("%d", emblemlocations[num-1].sprite), UNDO_NONE);
-	DEH_WriteUndoline("COLOR", va("%d", emblemlocations[num-1].color), UNDO_NONE);
-	DEH_WriteUndoline("HINT", extraemblems[num-1].hint, UNDO_NONE);
-
 	memset(&emblemlocations[num-1], 0, sizeof(emblem_t));
 
 	do
@@ -1988,12 +1957,6 @@ static void readextraemblemdata(MYFILE *f, INT32 num)
 	INT32 value;
 
 	// Reset all data initially
-	DEH_WriteUndoline("NAME", extraemblems[num-1].name, UNDO_NONE);
-	DEH_WriteUndoline("OBJECTIVE", extraemblems[num-1].description, UNDO_NONE);
-	DEH_WriteUndoline("CONDITIONSET", va("%d", extraemblems[num-1].conditionset), UNDO_NONE);
-	DEH_WriteUndoline("SPRITE", va("%d", extraemblems[num-1].sprite), UNDO_NONE);
-	DEH_WriteUndoline("COLOR", va("%d", extraemblems[num-1].color), UNDO_NONE);
-
 	memset(&extraemblems[num-1], 0, sizeof(extraemblem_t));
 
 	do
@@ -2072,15 +2035,6 @@ static void readunlockable(MYFILE *f, INT32 num)
 	INT32 i;
 
 	// Same deal with unlockables, clear all first
-	DEH_WriteUndoline("NAME", unlockables[num].name, UNDO_NONE);
-	DEH_WriteUndoline("OBJECTIVE", unlockables[num].objective, UNDO_NONE);
-	DEH_WriteUndoline("HEIGHT", va("%d", unlockables[num].height), UNDO_NONE);
-	DEH_WriteUndoline("CONDITIONSET", va("%d", unlockables[num].conditionset), UNDO_NONE);
-	DEH_WriteUndoline("TYPE", va("%d", unlockables[num].type), UNDO_NONE);
-	DEH_WriteUndoline("NOCECHO", va("%d", unlockables[num].nocecho), UNDO_NONE);
-	DEH_WriteUndoline("NOCHECKLIST", va("%d", unlockables[num].nochecklist), UNDO_NONE);
-	DEH_WriteUndoline("VAR", va("%d", unlockables[num].variable), UNDO_NONE);
-
 	memset(&unlockables[num], 0, sizeof(unlockable_t));
 
 	do
@@ -2459,13 +2413,11 @@ static void readpatch(MYFILE *f, const char *name, UINT16 wad)
 			// X position of the patch in the texture.
 			if (fastcmp(word, "X"))
 			{
-				//DEH_WriteUndoline(word, va("%d", patch->originx), UNDO_NONE);
 				patch.originx = (INT16)value;
 			}
 			// Y position of the patch in the texture.
 			else if (fastcmp(word, "Y"))
 			{
-				//DEH_WriteUndoline(word, va("%d", patch->originy), UNDO_NONE);
 				patch.originy = (INT16)value;
 			}
 			else
@@ -2534,7 +2486,6 @@ static void readmaincfg(MYFILE *f)
 				else
 					value = get_number(word2);
 
-				DEH_WriteUndoline(word, va("%d", spstage_start), UNDO_NONE);
 				spstage_start = (INT16)value;
 			}
 			else if (fastcmp(word, "SSTAGE_START"))
@@ -2548,79 +2499,64 @@ static void readmaincfg(MYFILE *f)
 				else
 					value = get_number(word2);
 
-				DEH_WriteUndoline(word, va("%d", sstage_start), UNDO_NONE);
 				sstage_start = (INT16)value;
 				sstage_end = (INT16)(sstage_start+6); // 7 special stages total
 			}
 			else if (fastcmp(word, "USENIGHTSSS"))
 			{
-				DEH_WriteUndoline(word, va("%d", useNightsSS), UNDO_NONE);
 				useNightsSS = (value || word2[0] == 'T' || word2[0] == 'Y');
 			}
 			else if (fastcmp(word, "REDTEAM"))
 			{
-				DEH_WriteUndoline(word, va("%d", skincolor_redteam), UNDO_NONE);
 				skincolor_redteam = (UINT8)get_number(word2);
 			}
 			else if (fastcmp(word, "BLUETEAM"))
 			{
-				DEH_WriteUndoline(word, va("%d", skincolor_blueteam), UNDO_NONE);
 				skincolor_blueteam = (UINT8)get_number(word2);
 			}
 			else if (fastcmp(word, "REDRING"))
 			{
-				DEH_WriteUndoline(word, va("%d", skincolor_redring), UNDO_NONE);
 				skincolor_redring = (UINT8)get_number(word2);
 			}
 			else if (fastcmp(word, "BLUERING"))
 			{
-				DEH_WriteUndoline(word, va("%d", skincolor_bluering), UNDO_NONE);
 				skincolor_bluering = (UINT8)get_number(word2);
 			}
 			else if (fastcmp(word, "INVULNTICS"))
 			{
-				DEH_WriteUndoline(word, va("%u", invulntics), UNDO_NONE);
 				invulntics = (UINT16)get_number(word2);
 			}
 			else if (fastcmp(word, "SNEAKERTICS"))
 			{
-				DEH_WriteUndoline(word, va("%u", sneakertics), UNDO_NONE);
 				sneakertics = (UINT16)get_number(word2);
 			}
 			else if (fastcmp(word, "FLASHINGTICS"))
 			{
-				DEH_WriteUndoline(word, va("%u", flashingtics), UNDO_NONE);
 				flashingtics = (UINT16)get_number(word2);
 			}
 			else if (fastcmp(word, "TAILSFLYTICS"))
 			{
-				DEH_WriteUndoline(word, va("%u", tailsflytics), UNDO_NONE);
 				tailsflytics = (UINT16)get_number(word2);
 			}
 			else if (fastcmp(word, "UNDERWATERTICS"))
 			{
-				DEH_WriteUndoline(word, va("%u", underwatertics), UNDO_NONE);
 				underwatertics = (UINT16)get_number(word2);
 			}
 			else if (fastcmp(word, "SPACETIMETICS"))
 			{
-				DEH_WriteUndoline(word, va("%u", spacetimetics), UNDO_NONE);
 				spacetimetics = (UINT16)get_number(word2);
 			}
 			else if (fastcmp(word, "EXTRALIFETICS"))
 			{
-				DEH_WriteUndoline(word, va("%u", extralifetics), UNDO_NONE);
 				extralifetics = (UINT16)get_number(word2);
 			}
 			else if (fastcmp(word, "GAMEOVERTICS"))
 			{
-				DEH_WriteUndoline(word, va("%u", gameovertics), UNDO_NONE);
 				gameovertics = get_number(word2);
 			}
 
 			else if (fastcmp(word, "INTROTOPLAY"))
 			{
-				DEH_WriteUndoline(word, va("%d", introtoplay), UNDO_NONE);
 				introtoplay = (UINT8)get_number(word2);
 				// range check, you morons.
 				if (introtoplay > 128)
@@ -2628,17 +2564,14 @@ static void readmaincfg(MYFILE *f)
 			}
 			else if (fastcmp(word, "LOOPTITLE"))
 			{
-				DEH_WriteUndoline(word, va("%d", looptitle), UNDO_NONE);
 				looptitle = (value || word2[0] == 'T' || word2[0] == 'Y');
 			}
 			else if (fastcmp(word, "TITLESCROLLSPEED"))
 			{
-				DEH_WriteUndoline(word, va("%d", titlescrollspeed), UNDO_NONE);
 				titlescrollspeed = get_number(word2);
 			}
 			else if (fastcmp(word, "CREDITSCUTSCENE"))
 			{
-				DEH_WriteUndoline(word, va("%d", creditscutscene), UNDO_NONE);
 				creditscutscene = (UINT8)get_number(word2);
 				// range check, you morons.
 				if (creditscutscene > 128)
@@ -2646,33 +2579,28 @@ static void readmaincfg(MYFILE *f)
 			}
 			else if (fastcmp(word, "NUMDEMOS"))
 			{
-				DEH_WriteUndoline(word, va("%d", numDemos), UNDO_NONE);
 				numDemos = (UINT8)get_number(word2);
 			}
 			else if (fastcmp(word, "DEMODELAYTIME"))
 			{
-				DEH_WriteUndoline(word, va("%d", demoDelayTime), UNDO_NONE);
 				demoDelayTime = get_number(word2);
 			}
 			else if (fastcmp(word, "DEMOIDLETIME"))
 			{
-				DEH_WriteUndoline(word, va("%d", demoIdleTime), UNDO_NONE);
 				demoIdleTime = get_number(word2);
 			}
 			else if (fastcmp(word, "USE1UPSOUND"))
 			{
-				DEH_WriteUndoline(word, va("%u", use1upSound), UNDO_NONE);
 				use1upSound = (UINT8)(value || word2[0] == 'T' || word2[0] == 'Y');
 			}
 			else if (fastcmp(word, "MAXXTRALIFE"))
 			{
-				DEH_WriteUndoline(word, va("%u", maxXtraLife), UNDO_NONE);
 				maxXtraLife = (UINT8)get_number(word2);
 			}
-
 			else if (fastcmp(word, "GAMEDATA"))
 			{
-				size_t filenamelen;
+				// just ignore it but dont throw a warning
+				/*size_t filenamelen;
 
 				// Check the data filename so that mods
 				// can't write arbitrary files.
@@ -2680,7 +2608,6 @@ static void readmaincfg(MYFILE *f)
 					I_Error("Maincfg: bad data file name '%s'\n", word2);
 
 				G_SaveGameData(false);
-				DEH_WriteUndoline(word, gamedatafilename, UNDO_NONE);
 				strlcpy(gamedatafilename, word2, sizeof (gamedatafilename));
 				strlwr(gamedatafilename);
 				savemoddata = true;
@@ -2697,16 +2624,14 @@ static void readmaincfg(MYFILE *f)
 				// can't use sprintf since there is %u in savegamename
 				strcatbf(savegamename, srb2home, PATHSEP);
 
-				refreshdirmenu |= REFRESHDIR_GAMEDATA;
+				refreshdirmenu |= REFRESHDIR_GAMEDATA;*/
 			}
 			else if (fastcmp(word, "RESETDATA"))
 			{
-				DEH_WriteUndoline(word, "0", UNDO_TODO); /// \todo
 				P_ResetData(value);
 			}
 			else if (fastcmp(word, "CUSTOMVERSION"))
 			{
-				DEH_WriteUndoline(word, customversionstring, UNDO_NONE);
 				strlcpy(customversionstring, word2, sizeof (customversionstring));
 			}
 			else
@@ -2966,13 +2891,11 @@ static void DEH_LoadDehackedFile(MYFILE *f, UINT16 wad)
 			{
 				G_SetGameModified(multiplayer, true);
 				readmaincfg(f);
-				DEH_WriteUndoline(word, "", UNDO_HEADER);
 				continue;
 			}
 			else if (fastcmp(word, "WIPES"))
 			{
 				readwipes(f);
-				DEH_WriteUndoline(word, "", UNDO_HEADER);
 				// This is not a major mod.
 				continue;
 			}
@@ -2993,7 +2916,6 @@ static void DEH_LoadDehackedFile(MYFILE *f, UINT16 wad)
 					deh_warning("Character %d out of range (0 - 31)", i);
 					ignorelines(f);
 				}
-				DEH_WriteUndoline(word, word2, UNDO_HEADER);
 				// This is not a major mod.
 				continue;
 			}
@@ -3007,7 +2929,6 @@ static void DEH_LoadDehackedFile(MYFILE *f, UINT16 wad)
 				{
 					// Read patch from spec file.
 					readpatch(f, word2, wad);
-					DEH_WriteUndoline(word, word2, UNDO_HEADER);
 					// This is not a major mod.
 				}
 				else if (fastcmp(word, "THING") || fastcmp(word, "MOBJ") || fastcmp(word, "OBJECT"))
@@ -3025,13 +2946,7 @@ static void DEH_LoadDehackedFile(MYFILE *f, UINT16 wad)
 						deh_warning("Thing %d out of range (0 - %d)", i, NUMMOBJTYPES-1);
 						ignorelines(f);
 					}
-					DEH_WriteUndoline(word, word2, UNDO_HEADER);
 				}
-/*				else if (fastcmp(word, "ANIMTEX"))
-				{
-					readAnimTex(f, i);
-					// This is not a major mod.
-				}*/
 				else if (fastcmp(word, "LEVEL"))
 				{
 					// Support using the actual map name,
@@ -3052,7 +2967,6 @@ static void DEH_LoadDehackedFile(MYFILE *f, UINT16 wad)
 						deh_warning("Level number %d out of range (1 - %d)", i, NUMMAPS);
 						ignorelines(f);
 					}
-					DEH_WriteUndoline(word, word2, UNDO_HEADER);
 				}
 				else if (fastcmp(word, "CUTSCENE"))
 				{
@@ -3063,8 +2977,6 @@ static void DEH_LoadDehackedFile(MYFILE *f, UINT16 wad)
 						deh_warning("Cutscene number %d out of range (1 - 128)", i);
 						ignorelines(f);
 					}
-					DEH_WriteUndoline(word, word2, UNDO_HEADER);
-					//G_SetGameModified(multiplayer, true); -- might have to reconsider in a future update
 				}
 				else if (fastcmp(word, "FRAME") || fastcmp(word, "STATE"))
 				{
@@ -3081,7 +2993,6 @@ static void DEH_LoadDehackedFile(MYFILE *f, UINT16 wad)
 						deh_warning("Frame %d out of range (0 - %d)", i, NUMSTATES-1);
 						ignorelines(f);
 					}
-					DEH_WriteUndoline(word, word2, UNDO_HEADER);
 				}
 				else if (fastcmp(word, "SOUND"))
 				{
@@ -3094,7 +3005,6 @@ static void DEH_LoadDehackedFile(MYFILE *f, UINT16 wad)
 						deh_warning("Sound %d out of range (0 - %d)", i, NUMSFX-1);
 						ignorelines(f);
 					}
-					DEH_WriteUndoline(word, word2, UNDO_HEADER);
 					// This is not a major mod.
 				}
 				else if (fastcmp(word, "HUDITEM"))
@@ -3108,7 +3018,6 @@ static void DEH_LoadDehackedFile(MYFILE *f, UINT16 wad)
 						deh_warning("HUD item number %d out of range (0 - %d)", i, NUMHUDITEMS-1);
 						ignorelines(f);
 					}
-					DEH_WriteUndoline(word, word2, UNDO_HEADER);
 					// This is not a major mod.
 				}
 				else if (fastcmp(word, "EMBLEM"))
@@ -3129,7 +3038,6 @@ static void DEH_LoadDehackedFile(MYFILE *f, UINT16 wad)
 						deh_warning("Emblem number %d out of range (1 - %d)", i, MAXEMBLEMS);
 						ignorelines(f);
 					}
-					DEH_WriteUndoline(word, word2, UNDO_HEADER);
 				}
 				else if (fastcmp(word, "EXTRAEMBLEM"))
 				{
@@ -3149,7 +3057,6 @@ static void DEH_LoadDehackedFile(MYFILE *f, UINT16 wad)
 						deh_warning("Extra emblem number %d out of range (1 - %d)", i, MAXEXTRAEMBLEMS);
 						ignorelines(f);
 					}
-					DEH_WriteUndoline(word, word2, UNDO_HEADER);
 				}
 				else if (fastcmp(word, "UNLOCKABLE"))
 				{
@@ -3165,7 +3072,6 @@ static void DEH_LoadDehackedFile(MYFILE *f, UINT16 wad)
 						deh_warning("Unlockable number %d out of range (1 - %d)", i, MAXUNLOCKABLES);
 						ignorelines(f);
 					}
-					DEH_WriteUndoline(word, word2, UNDO_HEADER);
 				}
 				else if (fastcmp(word, "CONDITIONSET"))
 				{
@@ -3181,15 +3087,12 @@ static void DEH_LoadDehackedFile(MYFILE *f, UINT16 wad)
 						deh_warning("Condition set number %d out of range (1 - %d)", i, MAXCONDITIONSETS);
 						ignorelines(f);
 					}
-					// no undo support for this insanity yet
-					//DEH_WriteUndoline(word, word2, UNDO_HEADER);
 				}
 				else if (fastcmp(word, "SRB2KART"))
 				{
 					INT32 ver = searchvalue(strtok(NULL, "\n"));
 					if (ver != PATCHVERSION)
 						deh_warning("Patch is for SRB2Kart version %d,\nonly version %d is supported", ver, PATCHVERSION);
-					//DEH_WriteUndoline(word, va("%d", ver), UNDO_NONE);
 				}
 				else if (fastcmp(word, "SRB2"))
 				{
@@ -3268,7 +3171,6 @@ void DEH_LoadDehackedLumpPwad(UINT16 wad, UINT16 lump)
 	f.curpos = f.data;
 	f.data[f.size] = 0;
 	DEH_LoadDehackedFile(&f, wad);
-	DEH_WriteUndoline(va("# uload for wad: %u, lump: %u", wad, lump), NULL, UNDO_DONE);
 	Z_Free(f.data);
 }
 
@@ -3288,7 +3190,7 @@ void DEH_LoadDehackedLump(lumpnum_t lumpnum)
 // RegEx to generate this from info.h: ^\tS_([^,]+), --> \t"S_\1",
 // I am leaving the prefixes solely for clarity to programmers,
 // because sadly no one remembers this place while searching for full state names.
-static const char *const STATE_LIST[] = { // array length left dynamic for sanity testing later.
+const char *const STATE_LIST[] = { // array length left dynamic for sanity testing later.
 	"S_NULL",
 	"S_UNKNOWN",
 	"S_INVISIBLE", // state for invisible sprite
@@ -6502,7 +6404,7 @@ static const char *const STATE_LIST[] = { // array length left dynamic for sanit
 // RegEx to generate this from info.h: ^\tMT_([^,]+), --> \t"MT_\1",
 // I am leaving the prefixes solely for clarity to programmers,
 // because sadly no one remembers this place while searching for full state names.
-static const char *const MOBJTYPE_LIST[] = {  // array length left dynamic for sanity testing later.
+const char *const MOBJTYPE_LIST[] = {  // array length left dynamic for sanity testing later.
 	"MT_NULL",
 	"MT_UNKNOWN",
 
@@ -7293,7 +7195,7 @@ static const char *const MOBJTYPE_LIST[] = {  // array length left dynamic for s
 #endif
 };
 
-static const char *const MOBJFLAG_LIST[] = {
+const char *const MOBJFLAG_LIST[] = {
 	"SPECIAL",
 	"SOLID",
 	"SHOOTABLE",
@@ -7329,7 +7231,7 @@ static const char *const MOBJFLAG_LIST[] = {
 };
 
 // \tMF2_(\S+).*// (.+) --> \t"\1", // \2
-static const char *const MOBJFLAG2_LIST[] = {
+const char *const MOBJFLAG2_LIST[] = {
 	"AXIS",			// It's a NiGHTS axis! (For faster checking)
 	"TWOD",			// Moves like it's in a 2D level
 	"DONTRESPAWN",	// Don't respawn this object!
@@ -7362,7 +7264,7 @@ static const char *const MOBJFLAG2_LIST[] = {
 	NULL
 };
 
-static const char *const MOBJEFLAG_LIST[] = {
+const char *const MOBJEFLAG_LIST[] = {
 	"ONGROUND", // The mobj stands on solid floor (not on another mobj or in air)
 	"JUSTHITFLOOR", // The mobj just hit the floor while falling, this is cleared on next frame
 	"TOUCHWATER", // The mobj stands in a sector with water, and touches the surface
@@ -7380,14 +7282,14 @@ static const char *const MOBJEFLAG_LIST[] = {
 	NULL
 };
 
-static const char *const MAPTHINGFLAG_LIST[4] = {
+const char *const MAPTHINGFLAG_LIST[4] = {
 	NULL,
 	"OBJECTFLIP", // Reverse gravity flag for objects.
 	"OBJECTSPECIAL", // Special flag used with certain objects.
 	"AMBUSH" // Deaf monsters/do not react to sound.
 };
 
-static const char *const PLAYERFLAG_LIST[] = {
+const char *const PLAYERFLAG_LIST[] = {
 	// Flip camera angle with gravity flip prefrence.
 	"FLIPCAM",
 
@@ -7459,7 +7361,7 @@ static const char *const PLAYERFLAG_LIST[] = {
 };
 
 // Linedef flags
-static const char *const ML_LIST[16] = {
+const char *const ML_LIST[16] = {
 	"IMPASSIBLE",
 	"BLOCKMONSTERS",
 	"TWOSIDED",
@@ -7480,7 +7382,7 @@ static const char *const ML_LIST[16] = {
 
 // This DOES differ from r_draw's Color_Names, unfortunately.
 // Also includes Super colors
-static const char *COLOR_ENUMS[] = { // Rejigged for Kart.
+const char *COLOR_ENUMS[] = { // Rejigged for Kart.
 	"NONE",			// SKINCOLOR_NONE
 	"WHITE",		// SKINCOLOR_WHITE
 	"SILVER",		// SKINCOLOR_SILVER
@@ -7648,7 +7550,7 @@ static const char *COLOR_ENUMS[] = { // Rejigged for Kart.
 	"CSUPER5"		// SKINCOLOR_CSUPER5,
 };
 
-static const char *const POWERS_LIST[] = {
+const char *const POWERS_LIST[] = {
 	"INVULNERABILITY",
 	"SNEAKERS",
 	"FLASHING",
@@ -7683,7 +7585,7 @@ static const char *const POWERS_LIST[] = {
 	"INGOOP" // In goop
 };
 
-static const char *const KARTSTUFF_LIST[] = {
+const char *const KARTSTUFF_LIST[] = {
 	"POSITION",
 	"OLDPOSITION",
 	"POSITIONDELAY",
@@ -7770,7 +7672,7 @@ static const char *const KARTSTUFF_LIST[] = {
 	"GROWCANCEL"
 };
 
-static const char *const HUDITEMS_LIST[] = {
+const char *const HUDITEMS_LIST[] = {
 	"LIVESNAME",
 	"LIVESPIC",
 	"LIVESNUM",
@@ -7859,7 +7761,18 @@ struct {
 	{"FF_HORIZONTALFLIP",FF_HORIZONTALFLIP},
 	{"FF_PAPERSPRITE",FF_PAPERSPRITE},
 	{"FF_ANIMATE",FF_ANIMATE},
+	// brightness
+	{"FF_BRIGHTMASK",FF_BRIGHTMASK},
 	{"FF_FULLBRIGHT",FF_FULLBRIGHT},
+	{"FF_SEMIBRIGHT",FF_SEMIBRIGHT},
+	{"FF_FULLDARK",FF_FULLDARK},
+	// blending
+	{"FF_BLENDMASK",FF_BLENDMASK},
+	{"FF_BLENDSHIFT",FF_BRIGHTMASK},
+	{"FF_ADD",FF_ADD},
+	{"FF_SUBTRACT",FF_SUBTRACT},
+	{"FF_REVERSESUBTRACT",FF_REVERSESUBTRACT},
+	{"FF_MODULATE",FF_MODULATE},
 	{"FF_TRANSMASK",FF_TRANSMASK},
 	{"FF_TRANSSHIFT",FF_TRANSSHIFT},
 	// new preshifted translucency (used in source)
@@ -7894,6 +7807,15 @@ struct {
 	{"tr_trans80",tr_trans80},
 	{"tr_trans90",tr_trans90},
 	{"NUMTRANSMAPS",NUMTRANSMAPS},
+
+	// Alpha styles (blend modes)
+	{"AST_COPY",AST_COPY},
+	{"AST_TRANSLUCENT",AST_TRANSLUCENT},
+	{"AST_ADD",AST_ADD},
+	{"AST_SUBTRACT",AST_SUBTRACT},
+	{"AST_REVERSESUBTRACT",AST_REVERSESUBTRACT},
+	{"AST_MODULATE",AST_MODULATE},
+	{"AST_OVERLAY",AST_OVERLAY},
 
 	// Type of levels
 	{"TOL_SP",TOL_SP},
@@ -8259,6 +8181,14 @@ struct {
 	{"V_CHARCOLORSHIFT",V_CHARCOLORSHIFT},
 	{"V_ALPHASHIFT",V_ALPHASHIFT},
 
+	// Blending
+	{"V_BLENDSHIFT",V_BLENDSHIFT},
+	{"V_BLENDMASK",V_BLENDMASK},
+	{"B_ADD",B_ADD},
+	{"B_SUBTRACT",B_SUBTRACT},
+	{"B_REVERSESUBTRACT",B_REVERSESUBTRACT},
+	{"B_MODULATE",B_MODULATE},
+
 	//Kick Reasons
 	{"KR_KICK",KR_KICK},
 	{"KR_PINGLIMIT",KR_PINGLIMIT},
@@ -8594,13 +8524,13 @@ static inline int lib_freeslot(lua_State *L)
 // Arguments: mobj_t actor, int var1, int var2
 static inline int lib_action(lua_State *L)
 {
-	actionf_t *action = lua_touserdata(L,lua_upvalueindex(1));
+	actionf_p1 *action = lua_touserdata(L,lua_upvalueindex(1));
 	mobj_t *actor = *((mobj_t **)luaL_checkudata(L,1,META_MOBJ));
 	var1 = (INT32)luaL_optinteger(L,2,0);
 	var2 = (INT32)luaL_optinteger(L,3,0);
 	if (!actor)
 		return LUA_ErrInvalid(L, "mobj_t");
-	action->acp1(actor);
+	(*action)(actor);
 	return 0;
 }
 
@@ -8680,6 +8610,16 @@ static int lua_enumlib_basic_fallback(lua_State* L)
 static int lua_enumlib_mariomode_get(lua_State *L)
 {
 	lua_pushboolean(L, mariomode != 0);
+	return 1;
+}
+
+static int lua_enumlib_replayfreecam_get(lua_State *L)
+{
+	if (dedicated) // huh?
+		lua_pushboolean(L, false);
+	else
+		lua_pushboolean(L, camera[R_GetViewNumber()].freecam);
+
 	return 1;
 }
 
@@ -9287,9 +9227,6 @@ int LUA_EnumLib(lua_State *L)
 	PUSHGETTER(globalweather, u8);
 	PUSHGETTER(levelskynum, i32);
 	PUSHGETTER(globallevelskynum, i32);
-	PUSHGETTER((*mapmusname), str);
-	PUSHGETTER(mapmusflags, u16);
-	PUSHGETTER(mapmusposition, u32);
 	PUSHGETTER(gravity, fxp);
 	PUSHGETTER(gamespeed, u8);
 	PUSHGETTER(encoremode, bool);
@@ -9303,6 +9240,21 @@ int LUA_EnumLib(lua_State *L)
 	PUSHGETTER(mapobjectscale, fxp);
 	PUSHGETTER(racecountdown, u32);
 	PUSHGETTER(exitcountdown, u32);
+
+	lua_pushcfunction(L, lua_glib_new_getter);
+	lua_pushliteral(L, "mapmusflags");
+	lua_glib_push_u16_getter(L, &mapmusic.flags);
+	lua_call(L, 2, 0);
+
+	lua_pushcfunction(L, lua_glib_new_getter);
+	lua_pushliteral(L, "mapmusposition");
+	lua_glib_push_u32_getter(L, &mapmusic.position);
+	lua_call(L, 2, 0);
+
+	lua_pushcfunction(L, lua_glib_new_getter);
+	lua_pushliteral(L, "mapmusname");
+	lua_glib_push_str_getter(L, mapmusic.name);
+	lua_call(L, 2, 0);
 
 	lua_pushcfunction(L, lua_glib_new_getter);
 	lua_pushliteral(L, "mariomode");
@@ -9354,6 +9306,11 @@ int LUA_EnumLib(lua_State *L)
 	lua_glib_push_bool_getter(L, &demo.playback);
 	lua_call(L, 2, 0);
 
+	lua_pushcfunction(L, lua_glib_new_getter);
+	lua_pushliteral(L, "replayfreecam");
+	lua_pushcfunction(L, lua_enumlib_replayfreecam_get);
+	lua_call(L, 2, 0);
+
 	if (!mathlib)
 	{
 		lua_pushcfunction(L, lua_glib_new_getter);
@@ -9387,13 +9344,15 @@ int LUA_SOCLib(lua_State *L)
 
 const char *LUA_GetActionName(void *action)
 {
-	actionf_t *act = (actionf_t *)action;
+	actionf_p1 *act = (actionf_p1 *)action;
 	size_t z;
+
 	for (z = 0; actionpointers[z].name; z++)
 	{
-		if (actionpointers[z].action.acv == act->acv)
+		if (actionpointers[z].action == *act)
 			return actionpointers[z].name;
 	}
+
 	return NULL;
 }
 
@@ -9406,8 +9365,6 @@ void LUA_SetActionByName(void *state, const char *actiontocompare)
 		if (fasticmp(actiontocompare, actionpointers[z].name))
 		{
 			st->action = actionpointers[z].action;
-			st->action.acv = actionpointers[z].action.acv; // assign
-			st->action.acp1 = actionpointers[z].action.acp1;
 			return;
 		}
 	}

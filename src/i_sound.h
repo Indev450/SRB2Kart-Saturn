@@ -13,6 +13,10 @@
 #ifndef __I_SOUND__
 #define __I_SOUND__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "doomdef.h"
 #include "sounds.h"
 #include "command.h"
@@ -39,8 +43,9 @@ extern UINT8 sound_started;
 
 /**	\brief info of samplerate
 */
+#if defined(HAVE_SDL) && SOUND==SOUND_SDL
 extern consvar_t cv_samplerate;
-//extern consvar_t cv_rndsoundpitch;
+#endif
 
 /**	\brief	The I_GetSfx function
 
@@ -79,7 +84,7 @@ void I_ShutdownSound(void);
 
 	\return	sfx handle
 */
-INT32 I_StartSound(sfxenum_t id, UINT8 vol, UINT8 sep, UINT8 pitch, UINT8 priority, INT32 channel);
+INT32 I_StartSound(sfxenum_t id, UINT8 vol, UINT8 sep, INT32 channel);
 
 /**	\brief	Stops a sound channel.
 
@@ -110,7 +115,7 @@ boolean I_SoundIsPlaying(INT32 handle);
 
 	\return	void
 */
-void I_UpdateSoundParams(INT32 handle, UINT8 vol, UINT8 sep, UINT8 pitch);
+void I_UpdateSoundParams(INT32 handle, UINT8 vol, UINT8 sep);
 
 /**	\brief	The I_SetSfxVolume function
 
@@ -159,7 +164,6 @@ boolean I_SetSongPosition(UINT32 position);
 UINT32 I_GetSongPosition(void);
 
 void I_UpdateSongLagThreshold (void);
-void I_UpdateSongLagConditions (void);
 
 /// ------------------------
 //  MUSIC PLAYBACK
@@ -241,5 +245,9 @@ boolean I_FadeSongFromVolume(UINT8 target_volume, UINT8 source_volume, UINT32 ms
 boolean I_FadeSong(UINT8 target_volume, UINT32 ms, void (*callback)(void));
 boolean I_FadeOutStopSong(UINT32 ms);
 boolean I_FadeInPlaySong(UINT32 ms, boolean looping);
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif

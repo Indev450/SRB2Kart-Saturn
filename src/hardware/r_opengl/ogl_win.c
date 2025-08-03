@@ -28,7 +28,6 @@
 #define RPC_NO_WINDOWS_H
 #include <windows.h>
 #include <time.h>
-#undef GETTEXT
 #include "r_opengl.h"
 
 
@@ -358,8 +357,8 @@ static INT32 WINAPI SetRes(viddef_t *lvid, vmode_t *pcurrentmode)
 	else
 		textureformatGL = GL_RGB5_A1;
 
-	SetModelView(lvid->width, lvid->height);
-	SetStates();
+	GL_SetModelView(lvid->width, lvid->height);
+	GL_SetStates();
 	// we need to clear the depth buffer. Very important!!!
 	pglClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
 
@@ -526,7 +525,7 @@ EXPORT void HWRAPI(Shutdown) (void)
 // -----------------+
 // FinishUpdate     : Swap front and back buffers
 // -----------------+
-EXPORT void HWRAPI(FinishUpdate) (INT32 waitvbl)
+void GL_FinishUpdate (INT32 waitvbl)
 {
 #ifdef USE_WGL_SWAP
 	static INT32 oldwaitvbl = 0;
@@ -546,24 +545,5 @@ EXPORT void HWRAPI(FinishUpdate) (INT32 waitvbl)
 #endif
 
 	SwapBuffers(hDC);
-}
-
-
-// -----------------+
-// SetPalette       : Set the color lookup table for paletted textures
-//                  : in OpenGL, we store values for conversion of paletted graphics when
-//                  : they are downloaded to the 3D card.
-// -----------------+
-EXPORT void HWRAPI(SetPalette) (RGBA_t *pal)
-{
-	INT32 i;
-
-	for (i = 0; i < 256; i++)
-	{
-		myPaletteData[i].s.red   = pal[i].s.red;
-		myPaletteData[i].s.green = pal[i].s.green;
-		myPaletteData[i].s.blue  = pal[i].s.blue;
-		myPaletteData[i].s.alpha = pal[i].s.alpha;
-	}
 }
 #endif

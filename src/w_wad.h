@@ -14,9 +14,15 @@
 #ifndef __W_WAD__
 #define __W_WAD__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #ifdef HWRENDER
 #include "hardware/hw_data.h"
 #endif
+
+#include "m_aatree.h"
 
 #ifdef __GNUG__
 #pragma interface
@@ -71,8 +77,19 @@ typedef struct
 	char name[9];           // filelump_t name[] e.g. "LongEntr"
 	char *longname;         //                   e.g. "LongEntryName"
 	char *fullname;         //                   e.g. "Folder/Subfolder/LongEntryName.extension"
+
+	size_t namelength;      // length of name
+	size_t longnamelength;  // length of longname
+	size_t fullnamelength;  // length of fullname
+
 	size_t size; // real (uncompressed) size
 	compmethod compression; // lump compression method
+
+	struct {
+		UINT32 name;        // hash of name
+		UINT32 longname;    // hash of longname
+		UINT32 fullname;    // hash of fullname
+	} hash;
 } lumpinfo_t;
 
 // =========================================================================
@@ -106,10 +123,6 @@ virtlump_t* vres_Find(const virtres_t*, const char*);
 
 #define lumpcache_t void *
 
-#ifdef HWRENDER
-#include "m_aatree.h"
-#endif
-
 // Resource type of the WAD. Yeah, I know this sounds dumb, but I'll leave it like this until I clean up the code further.
 typedef enum restype
 {
@@ -127,9 +140,12 @@ typedef struct wadfile_s
 	restype_t type;
 	lumpinfo_t *lumpinfo;
 	lumpcache_t *lumpcache;
-#ifdef HWRENDER
-	aatree_t *hwrcache; // patches are cached in renderer's native format
+	lumpcache_t *patchcache;
+#ifdef ROTSPRITE
+	lumpcache_t *rotcache; // Cache rotsprites for rotating patches.
 #endif
+	aatree_t *startfolders;
+	aatree_t *endfolders;
 	UINT16 numlumps; // this wad's number of resources
 	FILE *handle;
 	UINT32 filesize; // for network
@@ -166,6 +182,8 @@ INT32 W_AddAutoloadedLocalFiles(char **filenames);
 
 #define W_FileHasFolders(wadfile) ((wadfile)->type == RET_PK3)
 
+UINT32 W_HashLumpName(const char *name);
+
 const char *W_CheckNameForNumPwad(UINT16 wad, UINT16 lump);
 const char *W_CheckNameForNum(lumpnum_t lumpnum);
 
@@ -179,7 +197,6 @@ UINT16 W_CheckNumForFullNamePK3(const char *name, UINT16 wad, UINT16 startlump);
 UINT16 W_CheckNumForFolderStartPK3(const char *name, UINT16 wad, UINT16 startlump);
 UINT16 W_CheckNumForFolderEndPK3(const char *name, UINT16 wad, UINT16 startlump);
 
-lumpnum_t W_CheckNumForMap(const char *name);
 lumpnum_t W_CheckNumForName(const char *name);
 lumpnum_t W_CheckNumForLongName(const char *name);
 lumpnum_t W_GetNumForName(const char *name); // like W_CheckNumForName but I_Error on LUMPERROR
@@ -207,17 +224,25 @@ void *W_CacheLumpNumPwad(UINT16 wad, UINT16 lump, INT32 tag);
 void *W_CacheLumpNum(lumpnum_t lump, INT32 tag);
 void *W_CacheLumpNumForce(lumpnum_t lumpnum, INT32 tag);
 
+boolean W_IsPatchCached(lumpnum_t lump, void *ptr);
 boolean W_IsLumpCached(lumpnum_t lump, void *ptr);
 
 void *W_CacheLumpName(const char *name, INT32 tag);
 void *W_CachePatchName(const char *name, INT32 tag);
 
-#ifdef HWRENDER
-//void *W_CachePatchNumPwad(UINT16 wad, UINT16 lump, INT32 tag); // return a patch_t
-void *W_CachePatchNum(lumpnum_t lumpnum, INT32 tag); // return a patch_t
-#else
-//#define W_CachePatchNumPwad(wad, lump, tag) W_CacheLumpNumPwad(wad, lump, tag)
-#define W_CachePatchNum(lumpnum, tag) W_CacheLumpNum(lumpnum, tag)
+// Returns either a Software patch, or an OpenGL patch.
+void *W_CachePatchNumPwad(UINT16 wad, UINT16 lump, INT32 tag);
+void *W_CachePatchNum(lumpnum_t lumpnum, INT32 tag);
+
+void *W_GetCachedPatchNumPwad(UINT16 wad, UINT16 lump);
+
+// Returns a Software patch.
+void *W_CacheSoftwarePatchNumPwad(UINT16 wad, UINT16 lump, INT32 tag);
+void *W_CacheSoftwarePatchNum(lumpnum_t lumpnum, INT32 tag);
+
+#ifdef ROTSPRITE
+void *W_GetCachedRotPatchPwad(UINT16 wadnum, UINT16 lumpnum); // Get patch-based rotsprites from the cache.
+void *W_CachePatchNameRotated(const char *name, INT32 rotationangle, INT32 tag);
 #endif
 
 void W_UnlockCachedPatch(void *patch);
@@ -225,5 +250,11 @@ void W_UnlockCachedPatch(void *patch);
 void W_VerifyFileMD5(UINT16 wadfilenum, const char *matchmd5);
 
 int W_VerifyNMUSlumps(const char *filename);
+
+int W_CheckPostLoadList(const char *filename);
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif // __W_WAD__

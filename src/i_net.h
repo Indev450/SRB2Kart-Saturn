@@ -14,6 +14,10 @@
 #ifndef __I_NET__
 #define __I_NET__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #ifdef __GNUG__
 #pragma interface
 #endif
@@ -41,23 +45,44 @@ extern INT16 hardware_MAXPACKETLENGTH;
 
 typedef struct
 {
+	/// Supposed to be DOOMCOM_ID
+	INT32 id;
+
+	/// SRB2 executes an INT32 to execute commands.
+	INT16 intnum;
+	/// Communication between SRB2 and the driver.
+	/// Is CMD_SEND or CMD_GET.
+	INT16 command;
 	/// Is dest for send, set by get (-1 = no packet).
 	INT16 remotenode;
+
 	/// Number of bytes in doomdata to be sent
 	INT16 datalength;
 
 	/// Info common to all nodes.
 	/// Console is always node 0.
 	INT16 numnodes;
+	/// Flag: 1 = no duplication, 2-5 = dup for slow nets.
+	INT16 ticdup;
 	/// Flag: 1 = send a backup tic in every packet.
 	INT16 extratics;
+	/// kind of game
+	INT16 gametype;
+	/// Flag: -1 = new game, 0-5 = load savegame
+	INT16 savegame;
+	/// currect map
+	INT16 map;
 
+	/// Info specific to this node.
+	INT16 consoleplayer;
 	/// Number of "slots": the highest player number in use plus one.
 	INT16 numslots;
 
 	/// The packet data to be sent.
 	char data[MAXPACKETLENGTH];
 } ATTRPACK doomcom_t;
+
+#define DOOMCOM_DATA(d) (doomdata_t *)&(d)->data
 
 #ifdef HOLEPUNCH
 typedef struct
@@ -66,6 +91,8 @@ typedef struct
 	INT32 addr;
 	INT16 port;
 } ATTRPACK holepunch_t;
+
+#define HOLEPUNCH_DATA(d) (holepunch_t *)&(d)->data
 #endif
 
 #if defined(_MSC_VER)
@@ -74,25 +101,13 @@ typedef struct
 
 extern doomcom_t *doomcom;
 
-#ifdef HOLEPUNCH
-extern holepunch_t *holepunchpacket;
-#endif
-
 /**	\brief return packet in doomcom struct
 */
 extern boolean (*I_NetGet)(void);
 
-/**	\brief ask to driver if there is data waiting
-*/
-extern boolean (*I_NetCanGet)(void);
-
 /**	\brief send packet within doomcom struct
 */
 extern void (*I_NetSend)(void);
-
-/**	\brief ask to driver if all is ok to send data now
-*/
-extern boolean (*I_NetCanSend)(void);
 
 /**	\brief	close a connection
 
@@ -168,5 +183,9 @@ extern bannednode_t *bannednode;
 
 /// \brief Called by D_SRB2Main to be defined by extern network driver
 boolean I_InitNetwork(void);
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif

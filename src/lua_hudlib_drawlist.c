@@ -69,6 +69,7 @@ typedef struct drawitem_s {
 		size_t stroffset; // offset into strbuf to get str
 	};
 	const UINT8 *colormap;
+	INT32 blend;
 } drawitem_t;
 
 // The internal structure of a drawlist.
@@ -298,6 +299,7 @@ static void CalcFillCoords(drawitem_t *item)
 			else if (!(c & V_SNAPTOLEFT))
 				x += (vid.width - (BASEVIDWIDTH * dupx)) / 2;
 		}
+
 		if (vid.height != BASEVIDHEIGHT * dupy)
 		{
 			// same thing here
@@ -306,6 +308,7 @@ static void CalcFillCoords(drawitem_t *item)
 			else if (!(c & V_SNAPTOTOP))
 				y += (vid.height - (BASEVIDHEIGHT * dupy)) / 2;
 		}
+
 		if (c & V_SPLITSCREEN)
 			y += (BASEVIDHEIGHT * dupy)/2;
 		if (c & V_HORZSCREEN)
@@ -333,6 +336,7 @@ static UINT64 GetItemId(void)
 		id |= INTERP_LATCH;
 		hud_interplatch = false;
 	}
+
 	if (hud_interpstring)
 		id |= INTERP_STRING;
 
@@ -345,7 +349,8 @@ void LUA_HUD_AddDraw(
 	INT32 y,
 	patch_t *patch,
 	INT32 flags,
-	UINT8 *colormap
+	UINT8 *colormap,
+	INT32 blend
 )
 {
 	size_t i = AllocateDrawItem(list);
@@ -357,6 +362,7 @@ void LUA_HUD_AddDraw(
 	item->patch = patch;
 	item->flags = flags;
 	item->colormap = colormap;
+	item->blend = blend;
 }
 
 void LUA_HUD_AddDrawScaled(
@@ -366,7 +372,8 @@ void LUA_HUD_AddDrawScaled(
 	fixed_t scale,
 	patch_t *patch,
 	INT32 flags,
-	UINT8 *colormap
+	UINT8 *colormap,
+	INT32 blend
 )
 {
 	size_t i = AllocateDrawItem(list);
@@ -379,6 +386,7 @@ void LUA_HUD_AddDrawScaled(
 	item->patch = patch;
 	item->flags = flags;
 	item->colormap = colormap;
+	item->blend = blend;
 }
 
 void LUA_HUD_AddDrawStretched(
@@ -389,7 +397,8 @@ void LUA_HUD_AddDrawStretched(
 	fixed_t vscale,
 	patch_t *patch,
 	INT32 flags,
-	UINT8 *colormap
+	UINT8 *colormap,
+	INT32 blend
 )
 {
 	size_t i = AllocateDrawItem(list);
@@ -403,6 +412,7 @@ void LUA_HUD_AddDrawStretched(
 	item->patch = patch;
 	item->flags = flags;
 	item->colormap = colormap;
+	item->blend = blend;
 }
 
 void LUA_HUD_AddDrawNum(
@@ -632,13 +642,13 @@ void LUA_HUD_DrawList(huddrawlist_h list)
 		switch (item->type)
 		{
 			case DI_Draw:
-				V_DrawFixedPatch(LERPS(x), LERPS(y), FRACUNIT, item->flags, item->patch, item->colormap);
+				V_DrawBlendingFixedPatch(LERPS(x), LERPS(y), FRACUNIT, item->flags, item->patch, item->colormap, item->blend);
 				break;
 			case DI_DrawScaled:
-				V_DrawFixedPatch(LERPS(x), LERPS(y), LERP(scale), item->flags, item->patch, item->colormap);
+				V_DrawBlendingFixedPatch(LERPS(x), LERPS(y), LERP(scale), item->flags, item->patch, item->colormap, item->blend);
 				break;
 			case DI_DrawStretched:
-				V_DrawStretchyFixedPatch(LERPS(x), LERPS(y), LERP(hscale), LERP(vscale), item->flags, item->patch, item->colormap);
+				V_DrawStretchyFixedPatch(LERPS(x), LERPS(y), LERP(hscale), LERP(vscale), item->flags, item->patch, item->colormap, item->blend);
 				break;
 			case DI_DrawNum:
 				V_DrawTallNum(LERPS(x), LERPS(y), item->flags, item->num);

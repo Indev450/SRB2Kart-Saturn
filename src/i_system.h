@@ -14,6 +14,10 @@
 #ifndef __I_SYSTEM__
 #define __I_SYSTEM__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "d_ticcmd.h"
 #include "d_event.h"
 
@@ -33,6 +37,9 @@ extern UINT8 graphics_started;
 /**	\brief Keyboard system is up and run
 */
 extern UINT8 keyboard_started;
+
+/** \brief Set to true when inside a signal handler that will exit the program. */
+extern boolean g_in_exiting_signal_handler;
 
 /**	\brief	The I_GetFreeMem function
 
@@ -113,77 +120,6 @@ ticcmd_t *I_BaseTiccmd4(void);
 */
 void I_Quit(void) FUNCNORETURN;
 
-typedef enum
-{
-	EvilForce = -1,
-	//Constant
-	ConstantForce = 0,
-	//Ramp
-	RampForce,
-	//Periodics
-	SquareForce,
-	SineForce,
-	TriangleForce,
-	SawtoothUpForce,
-	SawtoothDownForce,
-	//MAX
-	NumberofForces,
-} FFType;
-
-typedef struct JoyFF_s
-{
-	INT32 ForceX; ///< The X of the Force's Vel
-	INT32 ForceY; ///< The Y of the Force's Vel
-	//All
-	UINT32 Duration; ///< The total duration of the effect, in microseconds
-	INT32 Gain; //< /The gain to be applied to the effect, in the range from 0 through 10,000.
-	//All, CONSTANTFORCE -10,000 to 10,000
-	INT32 Magnitude; ///< Magnitude of the effect, in the range from 0 through 10,000.
-	//RAMPFORCE
-	INT32 Start; ///< Magnitude at the start of the effect, in the range from -10,000 through 10,000.
-	INT32 End; ///< Magnitude at the end of the effect, in the range from -10,000 through 10,000.
-	//PERIODIC
-	INT32 Offset; ///< Offset of the effect.
-	UINT32 Phase; ///< Position in the cycle of the periodic effect at which playback begins, in the range from 0 through 35,999
-	UINT32 Period; ///< Period of the effect, in microseconds.
-} JoyFF_t;
-
-/**	\brief	Forcefeedback for the first joystick
-
-	\param	Type   what kind of Effect
-	\param	Effect Effect Info
-
-	\return	void
-*/
-
-void I_Tactile(FFType Type, const JoyFF_t *Effect);
-
-/**	\brief	Forcefeedback for the second joystick
-
-	\param	Type   what kind of Effect
-	\param	Effect Effect Info
-
-	\return	void
-*/
-void I_Tactile2(FFType Type, const JoyFF_t *Effect);
-
-/**	\brief	Forcefeedback for the third joystick
-
-\param	Type   what kind of Effect
-\param	Effect Effect Info
-
-\return	void
-*/
-void I_Tactile3(FFType Type, const JoyFF_t *Effect);
-
-/**	\brief	Forcefeedback for the fourth joystick
-
-\param	Type   what kind of Effect
-\param	Effect Effect Info
-
-\return	void
-*/
-void I_Tactile4(FFType Type, const JoyFF_t *Effect);
 
 /**	\brief to set up the first joystick scale
 */
@@ -203,9 +139,13 @@ void I_JoyScale4(void);
 
 // Called by D_SRB2Main.
 
+/**	\brief to startup joystick
+ */
+void I_InitJoystick(UINT8 index);
+
 /**	\brief to startup the first joystick
 */
-void I_InitJoystick(void);
+void I_InitJoystick1(void);
 
 /**	\brief to startup the second joystick
 */
@@ -223,6 +163,8 @@ void I_InitJoystick4(void);
 */
 INT32 I_NumJoys(void);
 
+extern INT32 numcontrollers;
+
 /**	\brief	The *I_GetJoyName function
 
 	\param	joyindex	which joystick
@@ -230,6 +172,9 @@ INT32 I_NumJoys(void);
 	\return	joystick name
 */
 const char *I_GetJoyName(INT32 joyindex);
+
+void I_GamepadRumble(INT32 playernum, UINT16 low_strength, UINT16 high_strength, UINT32 duration);
+void I_SetGamepadIndicatorColor(INT32 playernum, UINT8 red, UINT8 green, UINT8 blue);
 
 #ifndef NOMUMBLE
 #include "p_mobj.h" // mobj_t
@@ -242,10 +187,6 @@ void I_UpdateMumble(const mobj_t *mobj, const listener_t listener);
 /**	\brief Startup the first mouse
 */
 void I_StartupMouse(void);
-
-/**	\brief Startup the second mouse
-*/
-void I_StartupMouse2(void);
 
 /**	\brief  setup timer irq and user timer routine.
 */
@@ -305,25 +246,9 @@ INT32 I_mkdir(const char *dirname, INT32 unixright);
 */
 const char *I_LocateWad(void);
 
-/**	\brief First Joystick's events
+/**	\brief Joystick events
 */
-void I_GetJoystickEvents(void);
-
-/**	\brief Second Joystick's events
-*/
-void I_GetJoystick2Events(void);
-
-/**	\brief Third Joystick's events
-*/
-void I_GetJoystick3Events(void);
-
-/**	\brief Fourth Joystick's events
-*/
-void I_GetJoystick4Events(void);
-
-/**	\brief Mouses events
-*/
-void I_GetMouseEvents(void);
+void I_GetJoystickEvents(UINT8 index);
 
 char *I_GetEnv(const char *name);
 
@@ -338,5 +263,9 @@ INT32 I_ClipboardCopy(const char *data, size_t size);
 const char *I_ClipboardPaste(void);
 
 void I_RegisterSysCommands(void);
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif

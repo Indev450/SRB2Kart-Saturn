@@ -25,6 +25,9 @@
 ///        allocator was fragmenting badly. Finally, this version is a bit
 ///        simpler (about half the lines of code).
 
+#include <stddef.h>
+#include <stdalign.h>
+
 #include "doomdef.h"
 #include "doomstat.h"
 #include "r_patch.h"
@@ -67,8 +70,9 @@ typedef struct memblock_s
 	struct memblock_s *next, *prev;
 } memblock_t;
 
-#define MEMORY(x) (void *)((uintptr_t)(x) + sizeof(memblock_t))
-#define MEMBLOCK(x) (memblock_t *)((uintptr_t)(x) - sizeof(memblock_t))
+#define ALIGNPAD (((sizeof (memblock_t) + (alignof (max_align_t) - 1)) & ~(alignof (max_align_t) - 1)) - sizeof (memblock_t))
+#define MEMORY(x) (void *)((uintptr_t)(x) + sizeof(memblock_t) + ALIGNPAD)
+#define MEMBLOCK(x) (memblock_t *)((uintptr_t)(x) - ALIGNPAD - sizeof(memblock_t))
 
 // both the head and tail of the zone memory block list
 static memblock_t head;
@@ -145,9 +149,12 @@ void Z_Free(void *ptr)
 #endif
 #endif
 
-#ifdef ZDEBUG
+#ifdef ZDEBUG2
 	// Write every Z_Free call to a debug file.
 	CONS_Debug(DBG_MEMORY, "Z_Free at %s:%d\n", file, line);
+#elif defined(ZDEBUG)
+	(void)file;
+	(void)line;
 #endif
 
 	// anything that isn't by lua gets passed to lua just in case.
@@ -198,7 +205,7 @@ static void *xm(size_t size)
 	return p;
 }
 
-/** The Z_MallocAlign function.
+/** The Z_Malloc function.
   * Allocates a block of memory, adds it to a linked list so we can keep track of it.
   *
   * \param size Amount of memory to be allocated, in bytes.
@@ -206,28 +213,26 @@ static void *xm(size_t size)
   * \param user The address of a pointer to the memory to be allocated.
   *             When the memory is freed by Z_Free later,
   *             the pointer at this address will then be automatically set to NULL.
-  * \param alignbits The alignment of the memory to be allocated, in bits. Can be 0.
   * \note You can pass Z_Malloc() a NULL user if the tag is less than PU_PURGELEVEL.
-  * \sa Z_CallocAlign, Z_ReallocAlign
+  * \sa Z_Calloc, Z_Realloc
   */
 #ifdef ZDEBUG
-void *Z_Malloc2(size_t size, INT32 tag, void *user, INT32 alignbits,
+void *Z_Malloc2(size_t size, INT32 tag, void *user,
 	const char *file, INT32 line)
 #else
-void *Z_MallocAlign(size_t size, INT32 tag, void *user, INT32 alignbits)
+void *Z_Malloc(size_t size, INT32 tag, void *user)
 #endif
 {
 	memblock_t *block;
 	void *ptr;
-	(void)(alignbits); // no longer used, so silence warnings.
 
 #ifdef ZDEBUG2
 	CONS_Debug(DBG_MEMORY, "Z_Malloc %s:%d\n", file, line);
 #endif
 
-	block = xm(sizeof (memblock_t) + size);
+	block = xm(sizeof (memblock_t) + ALIGNPAD + size);
 	ptr = MEMORY(block);
-	I_Assert((intptr_t)ptr % sizeof (void *) == 0);
+	I_Assert((intptr_t)ptr % alignof (max_align_t) == 0);
 
 #ifdef HAVE_VALGRIND
 	Z_calloc = false;
@@ -265,55 +270,53 @@ void *Z_MallocAlign(size_t size, INT32 tag, void *user, INT32 alignbits)
 	return ptr;
 }
 
-/** The Z_CallocAlign function.
+/** The Z_Calloc function.
   * Allocates a block of memory, adds it to a linked list so we can keep track of it.
-  * Unlike Z_MallocAlign, this also initialises the bytes to zero.
+  * Unlike Z_Malloc, this also initialises the bytes to zero.
   *
   * \param size Amount of memory to be allocated, in bytes.
   * \param tag Purge tag.
   * \param user The address of a pointer to the memory to be allocated.
   *             When the memory is freed by Z_Free later,
   *             the pointer at this address will then be automatically set to NULL.
-  * \param alignbits The alignment of the memory to be allocated, in bits. Can be 0.
   * \note You can pass Z_Calloc() a NULL user if the tag is less than PU_PURGELEVEL.
-  * \sa Z_MallocAlign, Z_ReallocAlign
+  * \sa Z_Malloc, Z_Realloc
   */
 #ifdef ZDEBUG
-void *Z_Calloc2(size_t size, INT32 tag, void *user, INT32 alignbits, const char *file, INT32 line)
+void *Z_Calloc2(size_t size, INT32 tag, void *user, const char *file, INT32 line)
 #else
-void *Z_CallocAlign(size_t size, INT32 tag, void *user, INT32 alignbits)
+void *Z_Calloc(size_t size, INT32 tag, void *user)
 #endif
 {
 #ifdef VALGRIND_MEMPOOL_ALLOC
 	Z_calloc = true;
 #endif
 #ifdef ZDEBUG
-	return memset(Z_Malloc2    (size, tag, user, alignbits, file, line), 0, size);
+	return memset(Z_Malloc2(size, tag, user, file, line), 0, size);
 #else
-	return memset(Z_MallocAlign(size, tag, user, alignbits            ), 0, size);
+	return memset(Z_Malloc (size, tag, user            ), 0, size);
 #endif
 }
 
-/** The Z_ReallocAlign function.
+/** The Z_Realloc function.
   * Reallocates a block of memory with a new size.
   *
   * \param ptr A pointer to allocated memory,
   *             assumed to have been allocated with Z_Malloc/Z_Calloc.
-  *             If NULL, this function instead acts as a wrapper for Z_CallocAlign.
+  *             If NULL, this function instead acts as a wrapper for Z_Calloc.
   * \param size New size of memory block, in bytes.
   *             If zero, then the memory is freed and NULL is returned.
   * \param tag New purge tag.
   * \param user The address of a pointer to the memory to be reallocated.
   *             This can be a different user to the one originally assigned to the memory block.
-  * \param alignbits The alignment of the memory to be allocated, in bits. Can be 0.
   * \return A pointer to the reallocated memory. Can be NULL if memory was freed.
   * \note You can pass Z_Realloc() a NULL user if the tag is less than PU_PURGELEVEL.
-  * \sa Z_MallocAlign, Z_CallocAlign
+  * \sa Z_Malloc, Z_Calloc
   */
 #ifdef ZDEBUG
-void *Z_Realloc2(void *ptr, size_t size, INT32 tag, void *user, INT32 alignbits, const char *file, INT32 line)
+void *Z_Realloc2(void *ptr, size_t size, INT32 tag, void *user, const char *file, INT32 line)
 #else
-void *Z_ReallocAlign(void *ptr, size_t size, INT32 tag, void *user, INT32 alignbits)
+void *Z_Realloc(void *ptr, size_t size, INT32 tag, void *user)
 #endif
 {
 	void *rez;
@@ -333,9 +336,9 @@ void *Z_ReallocAlign(void *ptr, size_t size, INT32 tag, void *user, INT32 alignb
 	if (!ptr)
 	{
 #ifdef ZDEBUG
-		return Z_Calloc2(size, tag, user, alignbits, file , line);
+		return Z_Calloc2(size, tag, user, file, line);
 #else
-		return Z_CallocAlign(size, tag, user, alignbits);
+		return Z_Calloc(size, tag, user);
 #endif
 	}
 
@@ -343,9 +346,9 @@ void *Z_ReallocAlign(void *ptr, size_t size, INT32 tag, void *user, INT32 alignb
 #ifdef PARANOIA
 	if (block->id != ZONEID)
 #ifdef ZDEBUG
-		I_Error("Z_ReallocAlign at %s:%d: wrong id", file, line);
+		I_Error("Z_Realloc at %s:%d: wrong id", file, line);
 #else
-		I_Error("Z_ReallocAlign: wrong id");
+		I_Error("Z_Realloc: wrong id");
 #endif
 #endif
 
@@ -353,11 +356,13 @@ void *Z_ReallocAlign(void *ptr, size_t size, INT32 tag, void *user, INT32 alignb
 		return NULL;
 
 #ifdef ZDEBUG
+#ifdef ZDEBUG2
 	// Write every Z_Realloc call to a debug file.
 	DEBFILE(va("Z_Realloc at %s:%d\n", file, line));
-	rez = Z_Malloc2(size, tag, user, alignbits, file, line);
+#endif
+	rez = Z_Malloc2(size, tag, user, file, line);
 #else
-	rez = Z_MallocAlign(size, tag, user, alignbits);
+	rez = Z_Malloc(size, tag, user);
 #endif
 
 	if (size < block->realsize)
@@ -389,11 +394,19 @@ void *Z_ReallocAlign(void *ptr, size_t size, INT32 tag, void *user, INT32 alignb
   * \param lowtag The lowest tag to consider.
   * \param hightag The highest tag to consider.
   */
+#ifdef ZDEBUG
+void Z_FreeTags2(INT32 lowtag, INT32 hightag, const char *file, INT32 line)
+#else
 void Z_FreeTags(INT32 lowtag, INT32 hightag)
+#endif
 {
 	memblock_t *block, *next;
 
+#ifdef ZDEBUG
+	Z_CheckHeap2(file, line);
+#else
 	Z_CheckHeap(420);
+#endif
 	for (block = head.next; block != &head; block = next)
 	{
 		next = block->next; // get link before freeing
@@ -463,11 +476,19 @@ void Z_CheckMemCleanup(void)
   * \param i Identifies from where in the code Z_CheckHeap was called.
   * \author Graue <graue@oceanbase.org>
   */
-void Z_CheckHeap(INT32 i)
+#ifdef ZDEBUG
+void Z_CheckHeap2(const char *file, INT32 line)
+#else
+void Z_CheckHeap(INT32 tag)
+#endif
 {
 	memblock_t *block;
 	UINT32 blocknumon = 0;
 	void *given;
+
+#ifndef ZDEBUG
+	(void)tag;
+#endif
 
 	for (block = head.next; block != &head; block = block->next)
 	{
@@ -493,11 +514,19 @@ void Z_CheckHeap(INT32 i)
 #endif
 		if (block->user != NULL && *(block->user) != given)
 		{
-			I_Error("Z_CheckHeap %d: block %u"
+			I_Error("Z_CheckHeap"
+#ifdef ZDEBUG
+				"at %s %d :"
+#endif
+				"block %u"
 #ifdef ZDEBUG
 				"(owned by %s:%d)"
 #endif
-				" doesn't have a proper user", i, blocknumon
+				" doesn't have a proper user"
+#ifdef ZDEBUG
+				, file, line
+#endif
+				, blocknumon
 #ifdef ZDEBUG
 				, block->ownerfile, block->ownerline
 #endif
@@ -505,11 +534,19 @@ void Z_CheckHeap(INT32 i)
 		}
 		if (block->next->prev != block)
 		{
-			I_Error("Z_CheckHeap %d: block %u"
+			I_Error("Z_CheckHeap"
+#ifdef ZDEBUG
+				"at %s %d :"
+#endif
+				"block %u"
 #ifdef ZDEBUG
 				"(owned by %s:%d)"
 #endif
-				" lacks proper backlink", i, blocknumon
+				" lacks proper backlink"
+#ifdef ZDEBUG
+				, file, line
+#endif
+				, blocknumon
 #ifdef ZDEBUG
 				, block->ownerfile, block->ownerline
 #endif
@@ -517,11 +554,19 @@ void Z_CheckHeap(INT32 i)
 		}
 		if (block->prev->next != block)
 		{
-			I_Error("Z_CheckHeap %d: block %u"
+			I_Error("Z_CheckHeap"
+#ifdef ZDEBUG
+				"at %s %d :"
+#endif
+				"block %u"
 #ifdef ZDEBUG
 				"(owned by %s:%d)"
 #endif
-				" lacks proper forward link", i, blocknumon
+				" lacks proper forward link"
+#ifdef ZDEBUG
+				, file, line
+#endif
+				, blocknumon
 #ifdef ZDEBUG
 				, block->ownerfile, block->ownerline
 #endif
@@ -529,11 +574,19 @@ void Z_CheckHeap(INT32 i)
 		}
 		if (block->id != ZONEID)
 		{
-			I_Error("Z_CheckHeap %d: block %u"
+			I_Error("Z_CheckHeap"
+#ifdef ZDEBUG
+				"at %s %d :"
+#endif
+				"block %u"
 #ifdef ZDEBUG
 				"(owned by %s:%d)"
 #endif
-				" have the wrong ID", i, blocknumon
+				" have the wrong ID"
+#ifdef ZDEBUG
+				, file, line
+#endif
+				, blocknumon
 #ifdef ZDEBUG
 				, block->ownerfile, block->ownerline
 #endif
@@ -651,24 +704,30 @@ static void Command_Memfree_f(void)
 
 	Z_CheckHeap(-1);
 	CONS_Printf("\x82%s", M_GetText("Memory Info\n"));
-	CONS_Printf(M_GetText("Total heap used   : %7s KB\n"), sizeu1(Z_TagsUsage(0, INT32_MAX)>>10));
-	CONS_Printf(M_GetText("Static            : %7s KB\n"), sizeu1(Z_TagUsage(PU_STATIC)>>10));
-	CONS_Printf(M_GetText("Lua               : %7s KB\n"), sizeu1(Z_TagUsage(PU_LUA)>>10));
-	CONS_Printf(M_GetText("Static (sound)    : %7s KB\n"), sizeu1(Z_TagUsage(PU_SOUND)>>10));
-	CONS_Printf(M_GetText("Static (music)    : %7s KB\n"), sizeu1(Z_TagUsage(PU_MUSIC)>>10));
-	CONS_Printf(M_GetText("Locked cache      : %7s KB\n"), sizeu1(Z_TagUsage(PU_CACHE)>>10));
-	CONS_Printf(M_GetText("Level             : %7s KB\n"), sizeu1(Z_TagUsage(PU_LEVEL)>>10));
-	CONS_Printf(M_GetText("Special thinker   : %7s KB\n"), sizeu1(Z_TagUsage(PU_LEVSPEC)>>10));
-	CONS_Printf(M_GetText("All purgable      : %7s KB\n"),
+	CONS_Printf(M_GetText("Total heap used        : %7s KB\n"), sizeu1(Z_TotalUsage()>>10));
+	CONS_Printf(M_GetText("Lua                    : %7s KB\n"), sizeu1(Z_TagUsage(PU_LUA)>>10));
+	CONS_Printf(M_GetText("Static                 : %7s KB\n"), sizeu1(Z_TagUsage(PU_STATIC)>>10));
+	CONS_Printf(M_GetText("Static (sound)         : %7s KB\n"), sizeu1(Z_TagUsage(PU_SOUND)>>10));
+	CONS_Printf(M_GetText("Static (music)         : %7s KB\n"), sizeu1(Z_TagUsage(PU_MUSIC)>>10));
+	CONS_Printf(M_GetText("Patches                : %7s KB\n"), sizeu1(Z_TagUsage(PU_PATCH)>>10));
+	CONS_Printf(M_GetText("Patches (low priority) : %7s KB\n"), sizeu1(Z_TagUsage(PU_PATCH_LOWPRIORITY)>>10));
+	CONS_Printf(M_GetText("Patches (rotated)      : %7s KB\n"), sizeu1(Z_TagUsage(PU_PATCH_ROTATED)>>10));
+	CONS_Printf(M_GetText("Sprites                : %7s KB\n"), sizeu1(Z_TagUsage(PU_SPRITE)>>10));
+	CONS_Printf(M_GetText("HUD graphics           : %7s KB\n"), sizeu1(Z_TagUsage(PU_HUDGFX)>>10));
+	CONS_Printf(M_GetText("Locked cache           : %7s KB\n"), sizeu1(Z_TagUsage(PU_CACHE)>>10));
+	CONS_Printf(M_GetText("Level                  : %7s KB\n"), sizeu1(Z_TagUsage(PU_LEVEL)>>10));
+	CONS_Printf(M_GetText("Special thinker        : %7s KB\n"), sizeu1(Z_TagUsage(PU_LEVSPEC)>>10));
+	CONS_Printf(M_GetText("All purgable           : %7s KB\n"),
 		sizeu1(Z_TagsUsage(PU_PURGELEVEL, INT32_MAX)>>10));
 
 #ifdef HWRENDER
-	if (rendermode != render_soft && rendermode != render_none)
+	if (rendermode == render_opengl)
 	{
-		CONS_Printf(M_GetText("Patch info headers: %7s KB\n"), sizeu1(Z_TagUsage(PU_HWRPATCHINFO)>>10));
-		CONS_Printf(M_GetText("Mipmap patches    : %7s KB\n"), sizeu1(Z_TagUsage(PU_HWRPATCHCOLMIPMAP)>>10));
-		CONS_Printf(M_GetText("HW Texture cache  : %7s KB\n"), sizeu1(Z_TagUsage(PU_HWRCACHE)>>10));
-		CONS_Printf(M_GetText("Plane polygons    : %7s KB\n"), sizeu1(Z_TagUsage(PU_HWRPLANE)>>10));
+		CONS_Printf(M_GetText("Patch info headers     : %7s KB\n"), sizeu1(Z_TagUsage(PU_HWRPATCHINFO)>>10));
+		CONS_Printf(M_GetText("Cached textures        : %7s KB\n"), sizeu1(Z_TagUsage(PU_HWRCACHE)>>10));
+		CONS_Printf(M_GetText("Texture colormaps      : %7s KB\n"), sizeu1(Z_TagUsage(PU_HWRPATCHCOLMIPMAP)>>10));
+		CONS_Printf(M_GetText("Model textures         : %7s KB\n"), sizeu1(Z_TagUsage(PU_HWRMODELTEXTURE)>>10));
+		CONS_Printf(M_GetText("Plane polygons         : %7s KB\n"), sizeu1(Z_TagUsage(PU_HWRPLANE)>>10));
 		CONS_Printf(M_GetText("All GPU textures       : %7d KB\n"), HWR_GetTextureUsed()>>10);
 	}
 #endif
@@ -678,8 +737,6 @@ static void Command_Memfree_f(void)
 	CONS_Printf(M_GetText("    Total physical memory: %s KB\n"), sizeu1(totalbytes>>10));
 	CONS_Printf(M_GetText("Available physical memory: %s KB\n"), sizeu1(freebytes>>10));
 }
-
-
 
 #ifdef ZDEBUG
 /** The function called by the "memdump" console command.

@@ -273,7 +273,7 @@ static void F_DoWipe(fademask_t *fademask)
 			else
 			{
 				// pointer to transtable that this mask would use
-				transtbl = transtables + ((9 - *mask)<<FF_TRANSSHIFT);
+				transtbl = R_GetTranslucencyTable((9 - *mask) + 1);
 
 				// DRAWING LOOP
 				while (draw_linestogo--)
@@ -313,7 +313,7 @@ void F_WipeStartScreen(void)
 		return;
 	}
 #endif
-	wipe_scr_start = screens[3];
+	wipe_scr_start = vid.screens[3];
 	I_ReadScreen(wipe_scr_start);
 #endif
 }
@@ -330,7 +330,7 @@ void F_WipeEndScreen(void)
 		return;
 	}
 #endif
-	wipe_scr_end = screens[4];
+	wipe_scr_end = vid.screens[4];
 	I_ReadScreen(wipe_scr_end);
 	V_DrawBlock(0, 0, 0, vid.width, vid.height, wipe_scr_start);
 #endif
@@ -353,7 +353,7 @@ void F_RunWipe(UINT8 wipetype, boolean drawMenu)
 
 	// Init the wipe
 	WipeInAction = true;
-	wipe_scr = screens[0];
+	wipe_scr = vid.screens[0];
 
 	// lastwipetic should either be 0 or the tic we last wiped
 	// on for fade-to-black

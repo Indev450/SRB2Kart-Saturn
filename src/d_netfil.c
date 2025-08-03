@@ -64,11 +64,11 @@ static boolean SV_SendFile(INT32 node, const char *filename, UINT8 fileid);
 
 #ifdef HAVE_CURL
 size_t curlwrite_data(void *ptr, size_t size, size_t nmemb, FILE *stream);
-#if defined(CURL_AT_LEAST_VERSION) && CURL_AT_LEAST_VERSION(7, 35, 0)
-int curlprogress_callbackx(void *clientp, curl_off_t dltotal, curl_off_t dlnow, curl_off_t ultotal, curl_off_t ulnow);
-#define XFERINFOFUNCTION
+#if (LIBCURL_VERSION_MAJOR <= 7) && (LIBCURL_VERSION_MINOR < 35)
+static int curlprogress_callback(void *clientp, double dltotal, double dlnow, double ultotal, double ulnow);
 #else
-int curlprogress_callback(void *clientp, double dltotal, double dlnow, double ultotal, double ulnow);
+static int curlprogress_callbackx(void *clientp, curl_off_t dltotal, curl_off_t dlnow, curl_off_t ultotal, curl_off_t ulnow);
+#define XFERINFOFUNCTION
 #endif
 #endif
 
@@ -111,26 +111,19 @@ static fileused_t transferFiles[UINT8_MAX + 1];
 // Receiver structure
 INT32 fileneedednum; // Number of files needed to join the server
 fileneeded_t fileneeded[MAX_WADFILES]; // List of needed files
+#ifdef HAVE_THREADS
+static I_mutex downloadmutex;
+#endif
 char downloaddir[512] = "DOWNLOAD";
 
-#ifdef CLIENT_LOADINGSCREEN
-// for cl loading screen
-INT32 lastfilenum = -1;
-INT32 downloadcompletednum = 0;
-UINT32 downloadcompletedsize = 0;
-INT32 totalfilesrequestednum = 0;
-UINT32 totalfilesrequestedsize = 0;
-#endif
+file_download_t filedownload;
 
 #ifdef HAVE_CURL
 static CURL *http_handle;
 static CURLM *multi_handle;
-boolean curl_running = false;
-boolean curl_failedwebdownload = false;
-static double curl_dlnow;
-static double curl_dltotal;
+static UINT32 curl_dlnow;
+static UINT32 curl_dltotal;
 static time_t curl_starttime;
-INT32 curl_transfers = 0;
 static int curl_runninghandles = 0;
 static UINT32 curl_origfilesize;
 static UINT32 curl_origtotalfilesize;
@@ -149,6 +142,7 @@ UINT8 *PutFileNeeded(UINT16 firstfile)
 {
 	size_t i;
 	UINT8 count = 0;
+	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
 	UINT8 *p_start = netbuffer->packettype == PT_MOREFILESNEEDED ? netbuffer->u.filesneededcfg.files : netbuffer->u.serverinfo.fileneeded;
 	UINT8 *p = p_start;
 	char wadfilename[MAX_WADPATH] = "";
@@ -221,6 +215,7 @@ void D_ParseFileneeded(INT32 fileneedednum_parm, UINT8 *fileneededstr, UINT16 fi
 	for (i = firstfile; i < fileneedednum; i++)
 	{
 		fileneeded[i].status = FS_NOTCHECKED; // We haven't even started looking for the file yet
+		fileneeded[i].justdownloaded = false;
 		filestatus = READUINT8(p); // The first byte is the file status
 		fileneeded[i].willsend = (UINT8)(filestatus >> 4);
 		fileneeded[i].totalsize = READUINT32(p); // The four next bytes are the file size
@@ -232,8 +227,12 @@ void D_ParseFileneeded(INT32 fileneedednum_parm, UINT8 *fileneededstr, UINT16 fi
 
 void CL_PrepareDownloadSaveGame(const char *tmpsave)
 {
+#ifdef CLIENT_LOADINGSCREEN
+	filedownload.current = -1;
+#endif
 	fileneedednum = 1;
 	fileneeded[0].status = FS_REQUESTED;
+	fileneeded[0].justdownloaded = false;
 	fileneeded[0].totalsize = UINT32_MAX;
 	fileneeded[0].file = NULL;
 	memset(fileneeded[0].md5sum, 0, 16);
@@ -325,6 +324,7 @@ boolean CL_SendRequestFile(void)
 #ifdef MORELEGACYDOWNLOADER
 	boolean firstloop = true;
 #endif
+	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
 
 #ifdef PARANOIA
 	if (M_CheckParm("-nodownload"))
@@ -453,9 +453,11 @@ tryagain:
 // returns false if a requested file was not found or cannot be sent
 boolean Got_RequestFilePak(INT32 node)
 {
+	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
 	char wad[MAX_WADPATH+1];
 	UINT8 *p = netbuffer->u.textcmd;
 	UINT8 id;
+
 	while (p < netbuffer->u.textcmd + MAXTEXTCMD) // Don't allow hacked client to overflow
 	{
 		id = READUINT8(p);
@@ -548,13 +550,13 @@ INT32 CL_CheckFiles(void)
 	{
 		if (fileneeded[i].status == FS_NOTFOUND || fileneeded[i].status == FS_MD5SUMBAD || fileneeded[i].status == FS_FALLBACK)
 			downloadrequired = true;
-		
+
 		if (fileneeded[i].status != FS_OPEN)
 			filestoload++;
 
 		if (fileneeded[i].status != FS_NOTCHECKED) //since we're running this over multiple tics now, its possible for us to come across files checked in previous tics
 			continue;
-		
+
 		CONS_Debug(DBG_NETPLAY, "searching for '%s' ", fileneeded[i].filename);
 
 		// Check in already loaded files
@@ -658,12 +660,9 @@ static boolean SV_SendFile(INT32 node, const char *filename, UINT8 fileid)
 		q = &((*q)->next);
 
 	// Allocate a file request and append it to the file list
-	p = *q = (filetx_t *)malloc(sizeof (filetx_t));
+	p = *q = (filetx_t *)calloc(1, sizeof(filetx_t)); // Initialise with zeros
 	if (!p)
 		I_Error("SV_SendFile: No more memory\n");
-
-	// Initialise with zeros
-	memset(p, 0, sizeof (filetx_t));
 
 	// Allocate the file name
 	p->id.filename = (char *)malloc(MAX_WADPATH);
@@ -743,12 +742,9 @@ void SV_SendRam(INT32 node, void *data, size_t size, freemethod_t freemethod, UI
 		q = &((*q)->next);
 
 	// Allocate a file request and append it to the file list
-	p = *q = (filetx_t *)malloc(sizeof (filetx_t));
+	p = *q = (filetx_t *)calloc(1, sizeof(filetx_t)); // Initialise with zeros
 	if (!p)
 		I_Error("SV_SendRam: No more memory\n");
-
-	// Initialise with zeros
-	memset(p, 0, sizeof (filetx_t));
 
 	p->ram = freemethod; // Remember how to free the memory block for when we're done sending it
 	p->id.ram = data;
@@ -825,6 +821,7 @@ void SV_FileSendTicker(void)
 	size_t size;
 	filetx_t *f;
 	INT32 packetsent, ram, i, j;
+	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
 
 	if (!filestosend) // No file to send
 		return;
@@ -833,6 +830,7 @@ void SV_FileSendTicker(void)
 
 	netbuffer->packettype = PT_FILEFRAGMENT;
 
+	// (((sendbytes-nowsentbyte)*TICRATE)/(I_GetTime()-starttime)<(UINT32)net_bandwidth)
 	while (packetsent-- && filestosend != 0)
 	{
 		for (i = currentnode, j = 0; j < MAXNETNODES;
@@ -863,8 +861,12 @@ void SV_FileSendTicker(void)
 
 					if (!transferFiles[f->fileid].file)
 					{
-						I_Error("Can't open file %s: %s",
+						CONS_Alert(CONS_ERROR, "Can't open file %s: %s\n",
 							f->id.filename, strerror(errno));
+
+						SV_EndFileSend(i);
+						HSendPacket(i, true, 0, PT_SERVERREFUSE);
+						break;
 					}
 				}
 
@@ -948,6 +950,7 @@ void SV_FileSendTicker(void)
 
 void Got_Filetxpak(void)
 {
+	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
 	INT32 filenum = netbuffer->u.filetxpak.fileid;
 	fileneeded_t *file = &fileneeded[filenum];
 	char *filename = file->filename;
@@ -969,7 +972,7 @@ void Got_Filetxpak(void)
 
 	if (filenum >= fileneedednum)
 	{
-		DEBFILE(va("fileframent not needed %d>%d\n", filenum, fileneedednum));
+		DEBFILE(va("filefragment not needed %d>%d\n", filenum, fileneedednum));
 		//I_Error("Received an unneeded file fragment (file id received: %d, file id needed: %d)\n", filenum, fileneedednum);
 		return;
 	}
@@ -990,6 +993,7 @@ void Got_Filetxpak(void)
 	{
 		UINT32 pos = LONG(netbuffer->u.filetxpak.position);
 		UINT16 size = SHORT(netbuffer->u.filetxpak.size);
+
 		// Use a special trick to know when the file is complete (not always used)
 		// WARNING: file fragments can arrive out of order so don't stop yet!
 		if (pos & 0x80000000)
@@ -1009,15 +1013,16 @@ void Got_Filetxpak(void)
 			fclose(file->file);
 			file->file = NULL;
 			file->status = FS_FOUND;
+			file->justdownloaded = true;
 			CONS_Printf(M_GetText("Downloading %s...(done)\n"),
 				filename);
 #ifndef NONET
-			downloadcompletednum++;
-			downloadcompletedsize += file->totalsize;
+			filedownload.completednum++;
+			filedownload.completedsize += file->totalsize;
 #endif
 		}
 	}
-	else
+	else if (!file->justdownloaded)
 	{
 		const char *s;
 		switch(file->status)
@@ -1040,6 +1045,7 @@ void Got_Filetxpak(void)
 		}
 		I_Error("Received a file not requested (file id: %d, file status: %s)\n", filenum, s);
 	}
+
 	// Send ack back quickly
 	if (++filetime == 3)
 	{
@@ -1048,7 +1054,7 @@ void Got_Filetxpak(void)
 	}
 
 #ifdef CLIENT_LOADINGSCREEN
-	lastfilenum = filenum;
+	filedownload.current = filenum;
 #endif
 }
 
@@ -1185,6 +1191,18 @@ filestatus_t findfile(char *filename, const UINT8 *wantedmd5sum, boolean complet
 		badmd5 = true;
 	// if not found at all, just move on without doing anything
 
+	if (cv_addons_option.value == 3 && *cv_addons_folder.string != '\0')
+	{
+		// next, check any custom directory if specified
+		homecheck = filesearch(filename, cv_addons_folder.string, wantedmd5sum, completepath, 10);
+
+		if (homecheck == FS_FOUND) // we found the file, so return that we have :)
+			return FS_FOUND;
+		else if (homecheck == FS_MD5SUMBAD) // file has a bad md5; move on and look for a file with the right md5
+			badmd5 = true;
+		// if not found at all, just move on without doing anything
+	}
+
 	// finally check "." directory
 	homecheck = filesearch(filename, ".", wantedmd5sum, completepath, 10);
 
@@ -1197,31 +1215,57 @@ filestatus_t findfile(char *filename, const UINT8 *wantedmd5sum, boolean complet
 #ifdef HAVE_CURL
 size_t curlwrite_data(void *ptr, size_t size, size_t nmemb, FILE *stream)
 {
-    size_t written;
-    written = fwrite(ptr, size, nmemb, stream);
-    return written;
+   return fwrite(ptr, size, nmemb, stream);
 }
 
 #ifdef XFERINFOFUNCTION
-int curlprogress_callbackx(void *clientp, curl_off_t dltotal, curl_off_t dlnow, curl_off_t ultotal, curl_off_t ulnow)
+static int curlprogress_callbackx(void *clientp, curl_off_t dltotal, curl_off_t dlnow, curl_off_t ultotal, curl_off_t ulnow)
 {
+	time_t curtime;
+
 	(void)clientp;
 	(void)ultotal;
 	(void)ulnow; // Function prototype requires these but we won't use, so just discard
-	curl_dlnow = dlnow;
-	curl_dltotal = dltotal;
-	getbytes = curl_dlnow / (time(NULL) - curl_starttime); // To-do: Make this more accurate???
+
+	curtime = time(NULL);
+
+	curl_dlnow = (UINT32)dlnow;
+	curl_dltotal = (UINT32)dltotal;
+
+	if (curtime > curl_starttime)
+	{
+		getbytes = ((double)dlnow) / (curtime - curl_starttime); // To-do: Make this more accurate???
+	}
+	else
+	{
+		getbytes = 0;
+	}
+
 	return 0;
 }
 #else
-int curlprogress_callback(void *clientp, double dltotal, double dlnow, double ultotal, double ulnow)
+static int curlprogress_callback(void *clientp, double dltotal, double dlnow, double ultotal, double ulnow)
 {
+	time_t curtime;
+
 	(void)clientp;
 	(void)ultotal;
 	(void)ulnow; // Function prototype requires these but we won't use, so just discard
-	curl_dlnow = dlnow;
-	curl_dltotal = dltotal;
-	getbytes = curl_dlnow / (time(NULL) - curl_starttime); // To-do: Make this more accurate???
+
+	curtime = time(NULL);
+
+	curl_dlnow = (UINT32)dlnow;
+	curl_dltotal = (UINT32)dltotal;
+
+	if (curtime > curl_starttime)
+	{
+		getbytes = ((double)dlnow) / (curtime - curl_starttime); // To-do: Make this more accurate???
+	}
+	else
+	{
+		getbytes = 0;
+	}
+
 	return 0;
 }
 #endif
@@ -1257,10 +1301,10 @@ void CURLPrepareFile(const char* url, int dfilenum)
 		curl_easy_setopt(http_handle, CURLOPT_URL, va("%s/%s", url, curl_realname));
 
 		// Only allow HTTP and HTTPS
-#if defined(CURL_AT_LEAST_VERSION) && CURL_AT_LEAST_VERSION(7, 85, 0)
-		curl_easy_setopt(http_handle, CURLOPT_PROTOCOLS_STR, "http,https");
-#else
+#if (LIBCURL_VERSION_MAJOR <= 7) && (LIBCURL_VERSION_MINOR < 85)
 		curl_easy_setopt(http_handle, CURLOPT_PROTOCOLS, CURLPROTO_HTTP|CURLPROTO_HTTPS);
+#else
+		curl_easy_setopt(http_handle, CURLOPT_PROTOCOLS_STR, "http,https");
 #endif
 
 		curl_easy_setopt(http_handle, CURLOPT_USERAGENT, va("SRB2Kart/v%d.%d", VERSION, SUBVERSION)); // Set user agent as some servers won't accept invalid user agents.
@@ -1282,6 +1326,21 @@ void CURLPrepareFile(const char* url, int dfilenum)
 
 		strcatbf(curl_curfile->filename, downloaddir, "/");
 		curl_curfile->file = fopen(curl_curfile->filename, "wb");
+
+		if (!curl_curfile->file)
+		{
+			CONS_Alert(CONS_ERROR, "Couldnt open %s for writing!\nAborting file download.\nCheck if you have write access to your download folder!\n", curl_curfile->filename);
+			CL_AbortConnection();
+			M_StartMessage(M_GetText(
+				"An error occured when trying to\n"
+				"download missing addons.\n"
+				"See the console or log file\n"
+				"for additional details.\n\n"
+				"Press ESC\n"
+			), NULL, MM_NOTHING);
+			return;
+		}
+
 		curl_easy_setopt(http_handle, CURLOPT_WRITEDATA, curl_curfile->file);
 		curl_easy_setopt(http_handle, CURLOPT_WRITEFUNCTION, curlwrite_data);
 		curl_easy_setopt(http_handle, CURLOPT_NOPROGRESS, 0L);
@@ -1292,26 +1351,38 @@ void CURLPrepareFile(const char* url, int dfilenum)
 #endif
 
 		curl_curfile->status = FS_DOWNLOADING;
-		lastfilenum = dfilenum;
 		curl_multi_add_handle(multi_handle, http_handle);
 
 		curl_multi_perform(multi_handle, &curl_runninghandles);
 		curl_starttime = time(NULL);
 
-		curl_running = true;
+		filedownload.current = dfilenum;
+		filedownload.http_running = true;
+
 #ifdef HAVE_THREADS
 		I_spawn_thread("http-download", (I_thread_fn)CURLGetFile, NULL);
 #endif
 	}
+	else
+		filedownload.http_running = false;
 }
 
 void CURLAbortFile(void)
 {
-	curl_running = false;
+	filedownload.http_running = false;
+
+#ifdef HAVE_THREADS
+	// lock and unlock to wait for the download thread to exit
+	I_lock_mutex(&downloadmutex);
+	I_unlock_mutex(downloadmutex);
+#endif
 }
 
 void CURLGetFile(void)
 {
+#ifdef HAVE_THREADS
+	I_lock_mutex(&downloadmutex);
+#endif
 	CURLMcode mc; /* return code used by curl_multi_wait() */
 	CURLcode easyres; /* Return from easy interface */
 	CURLMsg *m; /* for picking up messages with the transfer status */
@@ -1319,10 +1390,8 @@ void CURLGetFile(void)
 	int msgs_left; /* how many messages are left */
 	const char *easy_handle_error;
 	boolean running = true;
-	long response_code = 0;
-	static char *filename;
 
-	while (running && curl_running)
+	while (running && filedownload.http_running)
     {
     	if (curl_runninghandles)
 		{
@@ -1336,6 +1405,7 @@ void CURLGetFile(void)
 				CONS_Alert(CONS_WARNING, "curl_multi_wait() failed, code %d.\n", mc);
 				continue;
 			}
+
 			curl_curfile->currentsize = curl_dlnow;
 			curl_curfile->totalsize = curl_dltotal;
 		}
@@ -1349,11 +1419,13 @@ void CURLGetFile(void)
 				e = m->easy_handle;
 				easyres = m->data.result;
 
-				filename = Z_StrDup(curl_realname);
+				char *filename = Z_StrDup(curl_realname);
 				nameonly(filename);
 
 				if (easyres != CURLE_OK)
 				{
+					long response_code = 0;
+
 					if (easyres == CURLE_HTTP_RETURNED_ERROR)
 						curl_easy_getinfo(e, CURLINFO_RESPONSE_CODE, &response_code);
 
@@ -1361,7 +1433,7 @@ void CURLGetFile(void)
 					curl_curfile->status = FS_FALLBACK;
 					curl_curfile->currentsize = curl_origfilesize;
 					curl_curfile->totalsize = curl_origtotalfilesize;
-					curl_failedwebdownload = true;
+					filedownload.http_failed = true;
 					fclose(curl_curfile->file);
 					remove(curl_curfile->filename);
 					CONS_Printf(M_GetText("Failed to download %s (%s)\n"), filename, easy_handle_error);
@@ -1374,36 +1446,40 @@ void CURLGetFile(void)
 					{
 						CONS_Alert(CONS_ERROR, M_GetText("HTTP Download of %s finished but is corrupt or has been modified\n"), filename);
 						curl_curfile->status = FS_FALLBACK;
-						curl_failedwebdownload = true;
+						filedownload.http_failed = true;
 					}
 					else
 					{
 						CONS_Printf(M_GetText("Finished HTTP download of %s\n"), filename);
-						downloadcompletednum++;
-						downloadcompletedsize += curl_curfile->totalsize;
+						filedownload.completednum++;
+						filedownload.completedsize += curl_curfile->totalsize;
 						curl_curfile->status = FS_FOUND;
 					}
 				}
 
 				Z_Free(filename);
 				curl_curfile->file = NULL;
-				curl_transfers--;
+				filedownload.remaining--;
 				curl_multi_remove_handle(multi_handle, e);
 				curl_easy_cleanup(e);
 
-				if (!curl_transfers)
+				if (!filedownload.remaining)
 					break;
 			}
 		}
 	}
 
-    if (!curl_transfers || !curl_running)
+    if (!filedownload.remaining || !filedownload.http_running)
     {
 		curl_multi_cleanup(multi_handle);
 		curl_global_cleanup();
 		multi_handle = NULL;
     }
-	curl_running = false;
+
+	filedownload.http_running = false;
+#ifdef HAVE_THREADS
+	I_unlock_mutex(downloadmutex);
+#endif
 }
 
 HTTP_login *

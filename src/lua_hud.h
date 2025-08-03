@@ -32,6 +32,7 @@ enum hud {
 	hud_wanted,
 	hud_speedometer,
 	hud_statdisplay,
+	hud_inputdisplay,
 	hud_nametags,
 	hud_driftgauge,
 	hud_freeplay,
@@ -50,9 +51,6 @@ extern boolean hud_interplatch; // string mode was toggled
 
 boolean LUA_HudEnabled(enum hud option);
 
-void LUAh_GameHUD(huddrawlist_h list);
-void LUAh_ScoresHUD(huddrawlist_h list);
-void LUAh_IntermissionHUD(huddrawlist_h list);
-void LUAh_VoteHUD(huddrawlist_h list);
+void LUA_SetHudHook(int hook, huddrawlist_h list);
 
 #endif // __LUA_HUD_H__

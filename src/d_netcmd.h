@@ -15,7 +15,16 @@
 #ifndef __D_NETCMD__
 #define __D_NETCMD__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "command.h"
+
+void SendWeaponPref(void);
+void SendWeaponPref2(void);
+void SendWeaponPref3(void);
+void SendWeaponPref4(void);
 
 // console vars
 extern consvar_t cv_playername;
@@ -43,25 +52,12 @@ extern consvar_t cv_seenames, cv_allowseenames;
 extern consvar_t cv_usemouse;
 //WTF
 extern consvar_t cv_mouseturn;
-extern consvar_t cv_usejoystick;
-extern consvar_t cv_usejoystick2;
-extern consvar_t cv_usejoystick3;
-extern consvar_t cv_usejoystick4;
+extern consvar_t cv_usejoystick[4]; //MAXSPLITSCREENPLAYERS
 #ifdef LJOYSTICK
 extern consvar_t cv_joyport;
 extern consvar_t cv_joyport2;
 #endif
-extern consvar_t cv_joyscale;
-extern consvar_t cv_joyscale2;
-extern consvar_t cv_joyscale3;
-extern consvar_t cv_joyscale4;
-
-// splitscreen with second mouse
-extern consvar_t cv_mouse2port;
-extern consvar_t cv_usemouse2;
-#if defined (__unix__) || defined (__APPLE__) || defined (UNIXCOMMON)
-extern consvar_t cv_mouse2opt;
-#endif
+extern consvar_t cv_joyscale[4]; //MAXSPLITSCREENPLAYERS
 
 // normally in p_mobj but the .h is not read
 extern consvar_t cv_itemrespawntime;
@@ -128,6 +124,7 @@ extern consvar_t cv_kartvoterulechanges;
 extern consvar_t cv_kartgametypepreference;
 extern consvar_t cv_kartspeedometer;
 extern consvar_t cv_kartvoices;
+extern consvar_t cv_karthitemdialog;
 
 extern consvar_t cv_karteliminatelast;
 
@@ -161,10 +158,12 @@ extern consvar_t cv_pingstyle;
 //extern consvar_t cv_smallpos;
 extern consvar_t cv_showminimapnames;
 extern consvar_t cv_minihead;
+extern consvar_t cv_showminimapangle;
 
-extern consvar_t cv_showlapemblem; 
+extern consvar_t cv_showlapemblem;
 
 extern consvar_t cv_showviewpointtext;
+extern consvar_t cv_showdownloadprompt;
 extern consvar_t cv_luaimmersion;
 extern consvar_t cv_fakelocalskin;
 extern consvar_t cv_showlocalskinmenus;
@@ -183,9 +182,7 @@ extern consvar_t cv_nametagdist;
 extern consvar_t cv_showownnametag;
 extern consvar_t cv_smallnametags;
 extern consvar_t cv_nametagrestat;
-extern consvar_t cv_nametaghop;
 extern consvar_t cv_nametagscore;
-extern consvar_t cv_shownametagfinish;
 extern consvar_t cv_shownametagspectator;
 
 #define SKINSELECTSPIN_PAIN 25
@@ -201,13 +198,19 @@ extern consvar_t cv_ps_thinkframe_page;
 extern consvar_t cv_ps_samplesize;
 extern consvar_t cv_ps_descriptor;
 
+<<<<<<< HEAD
 extern consvar_t cv_director, cv_kartdebugdirector;
+=======
+extern consvar_t cv_director, cv_kartdebugdirector, cv_showdirectorhud;
+>>>>>>> Saturn-Next
 
 extern consvar_t cv_showtrackaddon;
 
 extern consvar_t cv_showspecstuff;
 
 extern consvar_t cv_betainterscreen;
+
+extern consvar_t cv_laglesscam;
 
 typedef enum
 {
@@ -306,8 +309,6 @@ typedef union {
 #pragma pack()
 #endif
 
-extern tic_t driftsparkGrowTimer[16];
-
 // add game commands, needs cleanup
 void D_RegisterServerCommands(void);
 void D_RegisterClientCommands(void);
@@ -326,8 +327,13 @@ void ClearAdminPlayers(void);
 void RemoveAdminPlayer(INT32 playernum);
 void ItemFinder_OnChange(void);
 void D_SetPassword(const char *pw);
+INT32 D_LookupPlayer(const char *s);
 
 // used for the player setup menu
 UINT8 CanChangeSkin(INT32 playernum);
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif

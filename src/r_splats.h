@@ -59,9 +59,6 @@ typedef struct floorsplat_s
 	struct floorsplat_s *nextvis;
 } floorsplat_t;
 
-// p_setup.c
-fixed_t P_SegLength(seg_t *seg);
-
 // call at P_SetupLevel()
 void R_ClearLevelSplats(void);
 
@@ -77,5 +74,7 @@ void R_AddFloorSplat(subsector_t *subsec, mobj_t *mobj, const char *picname, fix
 void R_ClearVisibleFloorSplats(void);
 void R_AddVisibleFloorSplats(subsector_t *subsec);
 void R_DrawVisibleFloorSplats(void);
+
+void R_AllocFloorSpriteTables(void);
 
 #endif /*__R_SPLATS_H__*/

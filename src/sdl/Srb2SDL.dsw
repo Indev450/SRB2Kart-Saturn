@@ -36,18 +36,6 @@ Package=<4>
 
 ###############################################################################
 
-Project: "s_openal"=..\hardware\s_openal\s_openal.dsp - Package Owner=<4>
-
-Package=<5>
-{{{
-}}}
-
-Package=<4>
-{{{
-}}}
-
-###############################################################################
-
 Project: "zlib"=..\..\libs\zlib\projects\visualc6\zlib.dsp - Package Owner=<4>
 
 Package=<5>

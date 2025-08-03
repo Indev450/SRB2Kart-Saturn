@@ -20,14 +20,21 @@
 #ifndef __HWR_MAIN_H__
 #define __HWR_MAIN_H__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#include "hw_gl.h"
 #include "hw_glob.h"
 #include "hw_data.h"
 #include "hw_defs.h"
+#include "hw_portal.h"
 
 #include "../am_map.h"
 #include "../d_player.h"
 #include "../r_defs.h"
 #include "../m_perfstats.h"
+#include "../v_video.h"
 
 #define GLENCORE
 
@@ -35,15 +42,32 @@
 void HWR_Startup(void);
 void HWR_Shutdown(void);
 
-extern float gr_viewwidth, gr_viewheight, gr_baseviewwindowx, gr_baseviewwindowy;
+extern float gl_viewwidth, gl_viewheight, gl_baseviewwindowx, gl_baseviewwindowy;
 
-extern float gr_basewindowcenterx, gr_basewindowcentery;
+extern float gl_basewindowcenterx, gl_basewindowcentery;
 
 extern unsigned msaa;
 extern boolean a2c;
 
 extern FTransform atransform;
-extern float gr_viewsin, gr_viewcos;
+extern float gl_viewsin, gl_viewcos;
+
+extern boolean gl_drawing_stencil;
+
+extern seg_t *gl_curline;
+extern side_t *gl_sidedef;
+extern line_t *gl_linedef;
+extern sector_t *gl_frontsector;
+extern sector_t *gl_backsector;
+
+enum
+{
+	HWR_STENCIL_NORMAL,
+	HWR_STENCIL_BEGIN,
+	HWR_STENCIL_REVERSE,
+	HWR_STENCIL_DEPTH,
+	HWR_STENCIL_SKY
+};
 
 // Performance stats
 extern ps_metric_t ps_hw_nodesorttime;
@@ -62,12 +86,12 @@ extern ps_metric_t ps_hw_numcolors;
 extern ps_metric_t ps_hw_batchsorttime;
 extern ps_metric_t ps_hw_batchdrawtime;
 
-extern boolean gr_shadersavailable;
+extern boolean gl_shadersavailable;
 
 // hw_draw.c
-void HWR_DrawPatch(GLPatch_t *gpatch, INT32 x, INT32 y, INT32 option);
-void HWR_DrawStretchyFixedPatch(GLPatch_t *gpatch, fixed_t x, fixed_t y, fixed_t pscale, fixed_t vscale, INT32 option, const UINT8 *colormap);
-void HWR_DrawCroppedPatch(GLPatch_t *gpatch, fixed_t x, fixed_t y, fixed_t pscale, INT32 option, fixed_t sx, fixed_t sy, fixed_t w, fixed_t h);
+void HWR_DrawPatch(patch_t *gpatch, INT32 x, INT32 y, INT32 option);
+void HWR_DrawStretchyFixedPatch(patch_t *gpatch, fixed_t x, fixed_t y, fixed_t pscale, fixed_t vscale, INT32 option, const UINT8 *colormap, INT32 bflags);
+void HWR_DrawCroppedPatch(patch_t *gpatch, fixed_t x, fixed_t y, fixed_t pscale, INT32 option, fixed_t sx, fixed_t sy, fixed_t w, fixed_t h);
 void HWR_DrawFill(INT32 x, INT32 y, INT32 w, INT32 h, INT32 color);
 void HWR_DrawConsoleFill(INT32 x, INT32 y, INT32 w, INT32 h, UINT32 color, INT32 options);	// Lat: separate flags from color since color needs to be an uint to work right.
 void HWR_DrawDiag(INT32 x, INT32 y, INT32 wh, INT32 color);
@@ -81,44 +105,46 @@ UINT8 *HWR_GetScreenshot(void);
 boolean HWR_Screenshot(const char *lbmname);
 
 // hw_main.c
-void HWR_RenderFrame(INT32 viewnumber, player_t *player, boolean skybox);
-void HWR_RenderPlayerView(INT32 viewnumber, player_t *player);
 void HWR_SetViewSize(void);
 void HWR_AddCommands(void);
-void HWR_SetTransform(float fpov, player_t *player);
-void HWR_ClearClipper(void);
 
-boolean HWR_UseShader(void);
-boolean HWR_ShouldUsePaletteRendering(void);
-boolean HWR_PalRenderFlashpal(void);
-void HWR_TogglePaletteRendering(void);
+void HWR_RenderPlayerView(void);
+void HWR_RenderViewpoint(gl_portal_t *rootportal, player_t *player, int stencil_level, boolean allow_portals);
+void HWR_RenderPortalViewpoint(gl_portal_t *rootportal, player_t *player, int stencil_level, boolean allow_portals);
+
+void HWR_ClearSkyDome(void);
+void HWR_BuildSkyDome(void);
+
+void HWR_SetTransform(float fpov);
+void HWR_ClearClipper(void);
+void HWR_SetStencilState(int state, int level);
 
 // My original intention was to split hw_main.c
 // into files like hw_bsp.c, hw_sprites.c...
 
 // hw_main.c: Lighting and fog
-void HWR_Lighting(FSurfaceInfo *Surface, INT32 light_level, extracolormap_t *colormap);
-UINT8 HWR_FogBlockAlpha(INT32 light, extracolormap_t *colormap); // Let's see if this can work
+void HWR_Lighting(FSurfaceInfo *Surface, INT32 light_level, extracolormap_t *colormap, const boolean directional);
 
+UINT8 HWR_GetTranstableAlpha(INT32 transtablenum);
+FBITFIELD HWR_GetBlendModeFlag(INT32 ast);
+FBITFIELD HWR_SurfaceBlend(INT32 style, INT32 transtablenum, FSurfaceInfo *pSurf);
 FBITFIELD HWR_TranstableToAlpha(INT32 transtablenum, FSurfaceInfo *pSurf);
 
-// Get amount of memory used by gpu textures in bytes
-INT32 HWR_GetTextureUsed(void);
+// Get amount of memory used by gpu textures in bytes;
+FUNCINLINE static ATTRINLINE INT32 HWR_GetTextureUsed(void)
+{
+	return GL_GetTextureUsed();
+}
 
 // hw_main.c: Post-rendering
-void HWR_DoPostProcessor(player_t *player);
-void HWR_StartScreenWipe(void);
-void HWR_EndScreenWipe(void);
-void HWR_DrawIntermissionBG(void);
 void HWR_DoWipe(UINT8 wipenum, UINT8 scrnnum);
-void HWR_RenderVhsEffect(fixed_t upbary, fixed_t downbary, UINT8 updistort, UINT8 downdistort, UINT8 barsize);
-void HWR_MakeScreenFinalTexture(void);
-void HWR_DrawScreenFinalTexture(INT32 width, INT32 height);
 
-// hw_main.c: Planes
-void HWR_RenderPlane(subsector_t *subsector, extrasubsector_t *xsub, boolean isceiling, fixed_t fixedheight, FBITFIELD PolyFlags, INT32 lightlevel, lumpnum_t lumpnum, sector_t *FOFsector, UINT8 alpha, extracolormap_t *planecolormap);
-void HWR_AddTransparentFloor(lumpnum_t lumpnum, extrasubsector_t *xsub, boolean isceiling, fixed_t fixedheight, INT32 lightlevel, INT32 alpha, sector_t *FOFSector, FBITFIELD blend, boolean fogplane, extracolormap_t *planecolormap);
+FUNCINLINE static ATTRINLINE void HWR_StartScreenWipe(void)
+{
+	GL_MakeScreenTexture(HWD_SCREENTEXTURE_WIPE_START);
+}
 
+<<<<<<< HEAD
 void HWR_RenderPolyObjectPlane(polyobj_t *polysector, boolean isceiling, fixed_t fixedheight, FBITFIELD blendmode, UINT8 lightlevel, lumpnum_t lumpnum, sector_t *FOFsector, UINT8 alpha, extracolormap_t *planecolormap);
 void HWR_AddTransparentPolyobjectFloor(lumpnum_t lumpnum, polyobj_t *polysector, boolean isceiling, fixed_t fixedheight, INT32 lightlevel, INT32 alpha, sector_t *FOFSector, FBITFIELD blend, extracolormap_t *planecolormap);
 
@@ -136,49 +162,105 @@ void HWR_AddSprites(sector_t *sec);
 void HWR_ProjectSprite(mobj_t *thing);
 void HWR_ProjectPrecipitationSprite(precipmobj_t *thing);
 void HWR_DrawSprites(void);
+=======
+FUNCINLINE static ATTRINLINE void HWR_EndScreenWipe(void)
+{
+	GL_MakeScreenTexture(HWD_SCREENTEXTURE_WIPE_END);
+}
+
+FUNCINLINE static ATTRINLINE void HWR_DrawIntermissionBG(void)
+{
+	GL_DrawScreenTexture(HWD_SCREENTEXTURE_GENERIC1, NULL, 0);
+}
+
+FUNCINLINE static ATTRINLINE void HWR_RenderVhsEffect(fixed_t upbary, fixed_t downbary, UINT8 updistort, UINT8 downdistort, UINT8 barsize)
+{
+	GL_RenderVhsEffect(upbary, downbary, updistort, downdistort, barsize);
+}
+
+FUNCINLINE static ATTRINLINE void HWR_MakeScreenFinalTexture(void)
+{
+	GL_MakeScreenTexture(HWD_SCREENTEXTURE_GENERIC2);
+}
+
+FUNCINLINE static ATTRINLINE void HWR_DrawScreenFinalTexture(INT32 width, INT32 height, boolean useshader)
+{
+	GL_DrawScreenFinalTexture(HWD_SCREENTEXTURE_GENERIC2, width, height, useshader);
+}
+
+// hw_main.c: Segs
+void HWR_ProcessSeg(void); // Sort of like GLWall::Process in GZDoom
+>>>>>>> Saturn-Next
 
 // hw_bsp.c
 void HWR_CreatePlanePolygons(INT32 bspnum);
-extern boolean gr_maphasportals;
-
-// hw_cache.c
-void HWR_LoadTextures(size_t pnumtextures);
-RGBA_t *HWR_GetTexturePalette(void);
-
-void HWR_SetShaderState(void);
+extern boolean gl_maphasportals;
+extern boolean gl_maphashorizonlines;
 
 // Console variables
-extern consvar_t cv_grshaders;
-#ifdef USE_FBO_OGL
-extern consvar_t cv_grframebuffer;
-#endif
-extern consvar_t cv_splitwallfix;
-extern consvar_t cv_grshearing;
-extern consvar_t cv_grfov;
-extern consvar_t cv_grmdls;
-extern consvar_t cv_grfog;
-extern consvar_t cv_grfogdensity;
-extern consvar_t cv_grfiltermode;
-extern consvar_t cv_granisotropicmode;
-extern consvar_t cv_grcorrecttricks;
-extern consvar_t cv_grfovchange;
-extern consvar_t cv_grsolvetjoin;
-extern consvar_t cv_grspritebillboarding;
-extern consvar_t cv_grfakecontrast;
-extern consvar_t cv_grslopecontrast;
-extern consvar_t cv_grhorizonlines;
-extern consvar_t cv_grfallbackplayermodel;
-extern consvar_t cv_grbatching;
-extern consvar_t cv_grrenderdistance;
-extern consvar_t cv_grpaletterendering;
-extern consvar_t cv_grpalettedepth;
-extern consvar_t cv_grflashpal;
-extern consvar_t cv_lightdither;
-extern consvar_t cv_grscreentextures;
-extern consvar_t cv_grportals;
-extern consvar_t cv_nostencil;
-extern consvar_t cv_secbright;
+extern CV_PossibleValue_t glanisotropicmode_cons_t[];
 
-extern CV_PossibleValue_t granisotropicmode_cons_t[];
+extern consvar_t cv_gltexturedepth;
+
+extern consvar_t cv_glscreentextures;
+#ifdef USE_FBO_OGL
+extern consvar_t cv_glframebuffer;
+#endif
+
+extern consvar_t cv_glmdls;
+extern consvar_t cv_glfallbackplayermodel;
+
+extern consvar_t cv_glspritebillboarding;
+extern consvar_t cv_glshearing;
+
+extern consvar_t cv_glfakecontrast;
+extern consvar_t cv_glslopecontrast;
+
+extern consvar_t cv_glshaders;
+
+extern consvar_t cv_gllightdither;
+
+extern consvar_t cv_glfiltermode;
+extern consvar_t cv_glanisotropicmode;
+
+extern consvar_t cv_glsolvetjoin;
+
+extern consvar_t cv_glbatching;
+
+extern consvar_t cv_glwireframe;
+
+extern consvar_t cv_glrenderdistance;
+
+extern consvar_t cv_glhorizonlines;
+extern consvar_t cv_glportals;
+
+extern consvar_t cv_glpaletterendering;
+extern consvar_t cv_glpalettedepth;
+extern consvar_t cv_glflashpal;
+
+FUNCINLINE static ATTRINLINE boolean HWR_UseShader(void)
+{
+	return (cv_glshaders.value && gl_shadersavailable);
+}
+
+FUNCINLINE static ATTRINLINE boolean HWR_ShouldUsePaletteRendering(void)
+{
+	return (cv_glpaletterendering.value && (pLocalPalette != NULL) && HWR_UseShader());
+}
+
+FUNCINLINE static ATTRINLINE boolean HWR_PalRenderFlashpal(void)
+{
+	return (cv_glflashpal.value && HWR_ShouldUsePaletteRendering());
+}
+
+// Returns a pointer to the palette which should be used for caching textures.
+FUNCINLINE static ATTRINLINE RGBA_t *HWR_GetTexturePalette(void)
+{
+	return HWR_ShouldUsePaletteRendering() ? mapPalette : pLocalPalette;
+}
+
+#ifdef __cplusplus
+}// extern "C"
+#endif
 
 #endif

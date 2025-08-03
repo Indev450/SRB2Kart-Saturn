@@ -10,6 +10,7 @@
 /// \file  k_director.h
 /// \brief SRB2kart automatic spectator camera.
 
+<<<<<<< HEAD
 extern struct directorinfo
 {
     tic_t cooldown; // how long has it been since we last switched?
@@ -22,6 +23,9 @@ extern struct directorinfo
     INT32 boredom[MAXPLAYERS];       // how long has a given position had no credible attackers?
 } directorinfo;
 
+=======
+boolean K_DirectorIsAvailable(void);
+>>>>>>> Saturn-Next
 void K_InitDirector(void);
 void K_UpdateDirector(void);
 void K_DrawDirectorDebugger(void);

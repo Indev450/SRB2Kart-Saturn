@@ -10,7 +10,6 @@
 /// \brief Tally screens, or "Intermissions" as they were formally called in Doom
 
 extern boolean usebuffer;
-extern char *luaVoteScreen;
 
 void Y_IntermissionDrawer(void);
 void Y_Ticker(void);
@@ -22,6 +21,23 @@ void Y_VoteTicker(void);
 void Y_StartVote(void);
 void Y_EndVote(void);
 void Y_SetupVoteFinish(SINT8 pick, SINT8 level);
+
+typedef struct
+{
+	UINT8 *color[MAXPLAYERS]; // Winner's color #
+	INT32 *character[MAXPLAYERS]; // Winner's character #
+	INT32 num[MAXPLAYERS]; // Winner's player #
+	char *name[MAXPLAYERS]; // Winner's name
+	INT32 numplayers; // Number of players being displayed
+	char levelstring[64]; // holds levelnames up to 64 characters
+	// SRB2kart
+	UINT8 increase[MAXPLAYERS]; // how much did the score increase by?
+	UINT8 jitter[MAXPLAYERS]; // wiggle
+	UINT32 val[MAXPLAYERS]; // Gametype-specific value
+	UINT8 pos[MAXPLAYERS]; // player positions. used for ties
+	boolean rankingsmode; // rankings mode
+	boolean encore; // encore mode
+} y_data_t;
 
 typedef enum
 {
@@ -38,3 +54,37 @@ typedef enum
 	int_classicrace, // Competition
 } intertype_t;
 extern intertype_t intertype;
+
+// Votescreen stuff
+typedef struct
+{
+	boolean race;       // non lua race patch replaced
+	boolean widerace;   // non lua widescreen race patch replaced
+	boolean battle;     // non lua battle patch replaced
+	boolean widebattle; // non lua widescreen battle patch replaced
+} votereplace_t;
+
+// VEXTRN - Vote (V) Extra (EXT) Race (R) Normal (N - Normal sized patch)
+// VEXTRW - Vote (V) Extra (EXT) Race (R) Normal (W - Wide patch)
+// VEXTBN - Vote (V) Extra (EXT) Battle (B) Normal (N - Normal sized patch)
+// VEXTBW - Vote (V) Extra (EXT) Battle (B) Normal (W - Wide patch)
+typedef struct
+{
+	char Prefix[5];                 // Race = INTSX, Battle = BTLSX
+	char luaPrefix[5];              // prefix for lua votescreens
+
+	INT32 currentAnimFrame;         // current animated background frame
+
+	INT32 foundLuaVoteFrames;       // normal lua patch frames
+	INT32 foundLuaVoteWideFrames;   // widescreen lua patch frames
+
+	votereplace_t replaced;         // checks which non lua patch has been replaced
+
+	patch_t *bgpatch;               // votebackground patch
+	patch_t *widebgpatch;           // wide votebackground patch
+
+	patch_t *cursor[5];             // cursor patches
+	patch_t *randomlvl;             // randomlevel patch
+	patch_t *rubyicon;              // encore ruby patch
+} votescreen_t;
+extern votescreen_t VoteScreen;

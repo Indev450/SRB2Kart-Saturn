@@ -1,5 +1,9 @@
 /* backtrace.h -- Public header file for stack backtrace library.
+<<<<<<< HEAD
    Copyright (C) 2012-2021 Free Software Foundation, Inc.
+=======
+   Copyright (C) 2012-2024 Free Software Foundation, Inc.
+>>>>>>> Saturn-Next
    Written by Ian Lance Taylor, Google.
 
 Redistribution and use in source and binary forms, with or without

@@ -16,14 +16,18 @@
 #include "p_slopes.h" // P_GetZAt
 #include "z_zone.h"
 #include "r_main.h"
+#include "r_skins.h"
 #include "r_things.h"
 #include "m_random.h"
 #include "s_sound.h"
 #include "g_game.h"
+#include "g_input.h"
 #include "hu_stuff.h"	// HU_AddChatText
 #include "console.h"
 #include "k_kart.h" // SRB2Kart
+#include "k_hud.h" // SRB2Kart
 #include "d_netcmd.h" // IsPlayerAdmin
+#include "d_main.h"
 
 #include "lua_script.h"
 #include "lua_libs.h"
@@ -256,6 +260,7 @@ static int lib_pAproxDistance(lua_State *L)
 	fixed_t dy = luaL_checkfixed(L, 2);
 	//HUDSAFE
 	//LUA_Deprecated(L, "P_AproxDistance", "FixedHypot");
+	LUA_LogDeprecated(L, "P_AproxDistance", "FixedHypot");
 	lua_pushfixed(L, FixedHypot(dx, dy));
 	return 1;
 }
@@ -1056,6 +1061,7 @@ static int lib_pTeleportMove(lua_State *L)
 	if (!thing)
 		return LUA_ErrInvalid(L, "mobj_t");
 	//LUA_Deprecated(L, "P_TeleportMove", "P_SetOrigin\" or \"P_MoveOrigin");
+	LUA_LogDeprecated(L, "P_TeleportMove", "P_SetOrigin\" or \"P_MoveOrigin");
 	lua_pushboolean(L, P_MoveOrigin(thing, x, y, z));
 	LUA_PushUserdata(L, tmthing, META_MOBJ);
 	P_SetTarget(&tmthing, ptmthing);
@@ -1123,6 +1129,18 @@ static int lib_pCheckSight(lua_State *L)
 	if (!t1 || !t2)
 		return LUA_ErrInvalid(L, "mobj_t");
 	lua_pushboolean(L, P_CheckSight(t1, t2));
+	return 1;
+}
+
+// DONT USE THIS FOR ANYTHING GAMEPLAY, THIS WILL DESYNCH!
+static int lib_pCheckSightFast(lua_State *L)
+{
+	mobj_t *t1 = *((mobj_t **)luaL_checkudata(L, 1, META_MOBJ));
+	mobj_t *t2 = *((mobj_t **)luaL_checkudata(L, 2, META_MOBJ));
+	//HUDSAFE?
+	if (!t1 || !t2)
+		return LUA_ErrInvalid(L, "mobj_t");
+	lua_pushboolean(L, P_CheckSightFast(t1, t2));
 	return 1;
 }
 
@@ -1276,6 +1294,7 @@ static int lib_pPlayRinglossSound(lua_State *L)
 {
 	mobj_t *source = *((mobj_t **)luaL_checkudata(L, 1, META_MOBJ));
 	player_t *player = NULL;
+	mobj_t *damager = NULL;
 	NOHUD
 	if (!source)
 		return LUA_ErrInvalid(L, "mobj_t");
@@ -1285,8 +1304,15 @@ static int lib_pPlayRinglossSound(lua_State *L)
 		if (!player)
 			return LUA_ErrInvalid(L, "player_t");
 	}
+	if (!lua_isnoneornil(L, 3))
+	{
+		damager = *((mobj_t **)luaL_checkudata(L, 1, META_MOBJ));
+
+		if (!damager)
+			return LUA_ErrInvalid(L, "mobj_t");
+	}
 	if (!player || P_IsLocalPlayer(player))
-		P_PlayRinglossSound(source);
+		P_PlayRinglossSound(source, damager);
 	return 0;
 }
 
@@ -1390,11 +1416,9 @@ static int lib_pSetMobjStateNF(lua_State *L)
 static int lib_pDoSuperTransformation(lua_State *L)
 {
 	player_t *player = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
-	boolean giverings = lua_optboolean(L, 2);
 	NOHUD
 	if (!player)
 		return LUA_ErrInvalid(L, "player_t");
-	P_DoSuperTransformation(player, giverings);
 	return 0;
 }
 
@@ -1562,8 +1586,9 @@ static int lib_pSetSkyboxMobj(lua_State *L)
 // Shhh, neither does P_StartQuake.
 static int lib_pStartQuake(lua_State *L)
 {
+	tic_t	q_time 		= (tic_t)luaL_checkinteger(L, 2);
 	fixed_t q_intensity = luaL_checkinteger(L, 1);
-	UINT16  q_time = (UINT16)luaL_checkinteger(L, 2);
+	fixed_t q_radius 	= luaL_optinteger(L, 4, 512<<FRACBITS);
 	static mappoint_t q_epicenter = {0,0,0};
 
 	NOHUD
@@ -1615,11 +1640,8 @@ static int lib_pStartQuake(lua_State *L)
 	}
 	else
 		quake.epicenter = NULL;
-	quake.radius = luaL_optinteger(L, 4, 512*FRACUNIT);
 
-	// These things are actually used in 2.1.
-	quake.intensity = q_intensity;
-	quake.time = q_time;
+	P_StartQuake(q_time, q_intensity, q_radius);
 	return 0;
 }
 
@@ -1648,7 +1670,7 @@ static int lib_pGetZAt(lua_State *L)
 	if (!slope)
 		return LUA_ErrInvalid(L, "pslope_t");
 
-	lua_pushfixed(L, P_GetZAt(slope, x, y));
+	lua_pushfixed(L, P_GetSlopeZAt(slope, x, y));
 	return 1;
 }
 
@@ -1828,7 +1850,7 @@ static int lib_sStartSoundAtVolume(lua_State *L)
 			return LUA_ErrInvalid(L, "player_t");
 	}
 	if (!player || P_IsLocalPlayer(player))
-	S_StartSoundAtVolume(origin, sound_id, volume);
+		S_StartSoundAtVolume(origin, sound_id, volume);
 	return 0;
 }
 
@@ -1930,7 +1952,7 @@ static int lib_sChangeMusic(lua_State *L)
 		music_flags = (UINT16)((music_num & 0x7FFF0000) >> 16);
 	else
 #endif
-	music_flags = (UINT16)luaL_optinteger(L, 4, 0);
+		music_flags = (UINT16)luaL_optinteger(L, 4, 0);
 
 	position = (UINT32)luaL_optinteger(L, 5, 0);
 	prefadems = (UINT32)luaL_optinteger(L, 6, 0);
@@ -2448,16 +2470,15 @@ static int lib_gExitLevel(lua_State *L)
 
 static int lib_gIsSpecialStage(lua_State *L)
 {
-	INT32 mapnum = luaL_optinteger(L, 1, gamemap);
 	//HUDSAFE
-	lua_pushboolean(L, G_IsSpecialStage(mapnum));
+	lua_pushboolean(L, false);
 	return 1;
 }
 
 static int lib_gGametypeUsesLives(lua_State *L)
 {
 	//HUDSAFE
-	lua_pushboolean(L, G_GametypeUsesLives());
+	lua_pushboolean(L, false);
 	return 1;
 }
 
@@ -2574,10 +2595,22 @@ static int lib_kOvertakeSound(lua_State *L)
 static int lib_kHitEmSound(lua_State *L)
 {
 	mobj_t *mobj = *((mobj_t **)luaL_checkudata(L, 1, META_MOBJ));
+	mobj_t *victim = NULL;
+
+	if (!lua_isnoneornil(L, 2))
+	{
+		victim = *((mobj_t **)luaL_checkudata(L, 2, META_MOBJ));
+		if (!victim)
+			return LUA_ErrInvalid(L, "mobj_t");
+	}
+
 	NOHUD
 	if (!mobj->player)
 		return luaL_error(L, "K_PlayHitEmSound: mobj_t isn't a player object.");	//Nothing bad would happen if we let it run the func, but telling why it ain't doing anything is helpful.
-	K_PlayHitEmSound(mobj);
+	if (victim && !victim->player)
+		return luaL_error(L, "K_PlayHitEmSound: mobj_t isn't a player object.");	//Same as above
+
+	K_PlayHitEmSound(mobj, victim);
 	return 0;
 }
 
@@ -3018,6 +3051,58 @@ static int lib_kSetHyuCountdown(lua_State *L)
 	return 0;
 }
 
+// G_INPUT
+////////////
+
+static int lib_gSetPlayerGamepadIndicatorColor(lua_State *L)
+{
+	INT32 player = -1;
+	player_t *plr = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));    // retrieve player
+	UINT16 color = (UINT16)luaL_checkinteger(L, 2); // skincolor
+
+	for (int i = 0; i < MAXSPLITSCREENPLAYERS; ++i)
+	{
+		if (plr - players == displayplayers[i])
+		{
+			player = i;
+			break;
+		}
+	}
+
+	// Not a local player
+	if (player == -1) return 0;
+
+	// pls update with color 0 when youre done with changing led stuff so it can get player color again
+	G_SetPlayerGamepadIndicatorColor(player, color);
+
+	return 0;
+}
+
+static int lib_gPlayerDeviceRumble(lua_State *L)
+{
+	INT32 player = -1;
+	player_t *plr = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));    // retrieve player
+	UINT16 low_strength = (UINT16)luaL_checkinteger(L, 2); // low frequency rumble motor strenght
+	UINT16 high_strength = (UINT16)luaL_checkinteger(L, 3); // high frequency rumble motor strenght
+	UINT32 duration = (UINT32)luaL_optinteger(L, 4, 84); // duration of rumble in ms
+
+	for (int i = 0; i < MAXSPLITSCREENPLAYERS; ++i)
+	{
+		if (plr - players == displayplayers[i])
+		{
+			player = i;
+			break;
+		}
+	}
+
+	// Not a local player
+	if (player == -1) return 0;
+
+	G_PlayerDeviceRumble(player, low_strength, high_strength, duration);
+
+	return 0;
+}
+
 static luaL_Reg lib[] = {
 	{"print", lib_print},
 	{"chatprint", lib_chatprint},
@@ -3103,7 +3188,6 @@ static luaL_Reg lib[] = {
 	{"P_LookForEnemies",lib_pLookForEnemies},
 	{"P_NukeEnemies",lib_pNukeEnemies},
 	{"P_HomingAttack",lib_pHomingAttack},
-	//{"P_SuperReady",lib_pSuperReady},
 	{"P_Telekinesis",lib_pTelekinesis},
 
 	// p_map
@@ -3116,6 +3200,7 @@ static luaL_Reg lib[] = {
 	{"P_SlideMove",lib_pSlideMove},
 	{"P_BounceMove",lib_pBounceMove},
 	{"P_CheckSight", lib_pCheckSight},
+	{"P_CheckSightFast", lib_pCheckSightFast},
 	{"P_CheckHoopPosition",lib_pCheckHoopPosition},
 	{"P_RadiusAttack",lib_pRadiusAttack},
 	{"P_FloorzAtPos",lib_pFloorzAtPos},
@@ -3266,6 +3351,10 @@ static luaL_Reg lib[] = {
 	{"K_SetExitCountdown",lib_kSetExitCountdown},
 	{"K_SetIndirectItemCooldown",lib_kSetIndirectItemCountdown},
 	{"K_SetHyudoroCooldown",lib_kSetHyuCountdown},
+
+	//g_input
+	{"G_SetPlayerGamepadIndicatorColor",lib_gSetPlayerGamepadIndicatorColor},
+	{"G_PlayerDeviceRumble",lib_gPlayerDeviceRumble},
 
 	{NULL, NULL}
 };

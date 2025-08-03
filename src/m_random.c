@@ -14,12 +14,17 @@
 
 #include "doomdef.h"
 #include "doomtype.h"
+<<<<<<< HEAD
 #include "doomstat.h" // totalplaytime
 #include "i_system.h" // I_GetRandomBytes
+=======
+#include "k_stats.h" // kartstats.totalplaytime
+>>>>>>> Saturn-Next
 
 #include "m_random.h"
 #include "m_fixed.h"
 
+<<<<<<< HEAD
 
 // SFC32 random number generator implementation
 
@@ -135,6 +140,8 @@ static rnstate_t m_randomstate = {
 
 
 
+=======
+>>>>>>> Saturn-Next
 // ---------------------------
 // RNG functions (not synched)
 // ---------------------------
@@ -414,6 +421,7 @@ void P_SetRandSeedD(const char *rfile, INT32 rline, UINT32 seed)
   */
 UINT32 M_RandomizedSeed(void)
 {
+<<<<<<< HEAD
 	UINT32 seed;
 
 	do {
@@ -421,4 +429,7 @@ UINT32 M_RandomizedSeed(void)
 	} while(seed == 0);
 
 	return seed;
+=======
+	return ((kartstats.totalplaytime & 0xFFFF) << 16)|M_RandomFixed();
+>>>>>>> Saturn-Next
 }

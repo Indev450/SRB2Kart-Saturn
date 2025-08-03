@@ -10,9 +10,13 @@
 /// \file  lua_script.h
 /// \brief Lua scripting basics
 
+#ifndef LUA_SCRIPT_H
+#define LUA_SCRIPT_H
+
 #include "m_fixed.h"
 #include "doomtype.h"
 #include "d_player.h"
+#include "p_saveg.h"
 
 #include "blua/lua.h"
 #include "blua/lualib.h"
@@ -56,18 +60,15 @@ void LUA_InvalidateUserdata(void *data);
 void LUA_InvalidateLevel(void);
 void LUA_InvalidateMapthings(void);
 void LUA_InvalidatePlayer(player_t *player);
-void LUA_Step(void);
-void LUA_Archive(void);
-void LUA_UnArchive(void);
-
-void LUA_ArchiveDemo(void);
-void LUA_UnArchiveDemo(void);
+//void LUA_Step(void);
+void LUA_Archive(savebuffer_t *save, boolean network);
+void LUA_UnArchive(savebuffer_t *save, boolean network);
 
 void Got_Luacmd(UINT8 **cp, INT32 playernum); // lua_consolelib.c
 void LUA_CVarChanged(const char *name); // lua_consolelib.c
 int Lua_optoption(lua_State *L, int narg, int def, int list_ref);
 int Lua_CreateFieldTable(lua_State *L, const char *const lst[]);
-void LUAh_NetArchiveHook(lua_CFunction archFunc);
+void LUA_HookNetArchive(lua_CFunction archFunc, savebuffer_t *save);
 
 // Console wrapper
 void COM_Lua_f(void);
@@ -79,9 +80,18 @@ void COM_Lua_f(void);
 #define LUA_Deprecated(L,this_func,use_instead)\
 {\
 	static UINT8 seen = 0;\
-	if (!seen) {\
+	if (UNLIKELY(!seen)) {\
 		seen = 1;\
 		CONS_Alert(CONS_WARNING,"\"%s\" is deprecated and will be removed.\nUse \"%s\" instead.\n", this_func, use_instead);\
+	}\
+}
+
+#define LUA_LogDeprecated(L,this_func,use_instead)\
+{\
+	static UINT8 seen = 0;\
+	if (UNLIKELY(!seen)) {\
+		seen = 1;\
+		CON_LogMessage(va("\"%s\" is deprecated and will be removed.\nUse \"%s\" instead.\n", this_func, use_instead));\
 	}\
 }
 
@@ -90,8 +100,10 @@ void COM_Lua_f(void);
 #define LUA_UsageWarning(L, warningmsg)\
 {\
 	static UINT8 seen = 0;\
-	if (!seen) {\
+	if (UNLIKELY(!seen)) {\
 		seen = 1;\
 		CONS_Alert(CONS_WARNING,"%s\n", warningmsg);\
 	}\
 }
+
+#endif/*LUA_SCRIPT_H*/

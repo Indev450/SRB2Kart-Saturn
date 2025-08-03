@@ -15,6 +15,7 @@
 #define __G_INPUT__
 
 #include "d_event.h"
+#include "doomstat.h"
 #include "keys.h"
 #include "command.h"
 
@@ -65,7 +66,7 @@ typedef enum
 	KEY_2MOUSEWHEELUP = KEY_MOUSEWHEELDOWN + 1,
 	KEY_2MOUSEWHEELDOWN = KEY_2MOUSEWHEELUP + 1,
 
-	NUMINPUTS = KEY_2MOUSEWHEELDOWN + 1,
+	NUMINPUTS = KEY_2MOUSEWHEELDOWN + 1, // FIXME: all the mouse 2 stuff should be removed, but it screws up mappings somehow
 } key_input_e;
 
 typedef enum
@@ -99,39 +100,50 @@ typedef enum
 	gc_custom2, // Lua scriptable
 	gc_custom3, // Lua scriptable
 	gc_director,
+<<<<<<< HEAD
+=======
+	gc_freecam, // Toggle for freecam while ingame
+	gc_camfloat, // alternative button for raising cam
+	gc_camsink, // alternative button for sinking
+	gc_strafeleft,
+	gc_straferight,
+>>>>>>> Saturn-Next
 	num_gamecontrols
 } gamecontrols_e;
 
 // mouse values are used once
 extern consvar_t cv_mousesens, cv_mouseysens;
-extern consvar_t cv_mousesens2, cv_mouseysens2;
 extern consvar_t cv_controlperkey, cv_turnsmooth;
+extern consvar_t cv_rumble[MAXSPLITSCREENPLAYERS];
+extern consvar_t cv_gamepadled[MAXSPLITSCREENPLAYERS];
 
 extern INT32 mousex, mousey;
 extern INT32 mlooky; //mousey with mlookSensitivity
-extern INT32 mouse2x, mouse2y, mlook2y;
 
-extern INT32 joyxmove[JOYAXISSET], joyymove[JOYAXISSET], joy2xmove[JOYAXISSET], joy2ymove[JOYAXISSET],
-	joy3xmove[JOYAXISSET], joy3ymove[JOYAXISSET], joy4xmove[JOYAXISSET], joy4ymove[JOYAXISSET];
+extern INT32 joyxmove[MAXSPLITSCREENPLAYERS][JOYAXISSET], joyymove[MAXSPLITSCREENPLAYERS][JOYAXISSET];
 
 // current state of the keys: true if pushed
 extern UINT8 gamekeydown[NUMINPUTS];
 
 // two key codes (or virtual key) per game control
-extern INT32 gamecontrol[num_gamecontrols][2];
-extern INT32 gamecontrolbis[num_gamecontrols][2]; // secondary splitscreen player
-extern INT32 gamecontrol3[num_gamecontrols][2];
-extern INT32 gamecontrol4[num_gamecontrols][2];
-#define PLAYER1INPUTDOWN(gc) (gamekeydown[gamecontrol[gc][0]] || gamekeydown[gamecontrol[gc][1]])
-#define PLAYER2INPUTDOWN(gc) (gamekeydown[gamecontrolbis[gc][0]] || gamekeydown[gamecontrolbis[gc][1]])
-#define PLAYER3INPUTDOWN(gc) (gamekeydown[gamecontrol3[gc][0]] || gamekeydown[gamecontrol3[gc][1]])
-#define PLAYER4INPUTDOWN(gc) (gamekeydown[gamecontrol4[gc][0]] || gamekeydown[gamecontrol4[gc][1]])
+extern INT32 gamecontrol[MAXSPLITSCREENPLAYERS][num_gamecontrols][2];
+
+#define PLAYER1INPUTDOWN(gc) (gamekeydown[gamecontrol[0][gc][0]] || gamekeydown[gamecontrol[0][gc][1]])
+#define PLAYER2INPUTDOWN(gc) (gamekeydown[gamecontrol[1][gc][0]] || gamekeydown[gamecontrol[1][gc][1]])
+#define PLAYER3INPUTDOWN(gc) (gamekeydown[gamecontrol[2][gc][0]] || gamekeydown[gamecontrol[2][gc][1]])
+#define PLAYER4INPUTDOWN(gc) (gamekeydown[gamecontrol[3][gc][0]] || gamekeydown[gamecontrol[3][gc][1]])
 
 // peace to my little coder fingers!
 // check a gamecontrol being active or not
 
+UINT16 G_GetSkinColor(INT32 playernum);
+void G_SetPlayerGamepadIndicatorColor(INT32 playernum, UINT16 color);
+void G_ResetAllDeviceRumbles(void);
+void G_PlayerDeviceRumble(INT32 playernum, UINT16 low_strength, UINT16 high_strength, UINT32 duration);
+
 // remaps the input event to a game control.
 void G_MapEventsToControls(event_t *ev);
+void G_ResetControls(void);
 
 // returns the name of a key
 const char *G_KeynumToString(INT32 keynum);

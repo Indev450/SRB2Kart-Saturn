@@ -14,20 +14,26 @@
 #define __DEHACKED_H__
 
 #include "m_fixed.h" // for get_number
+#include "info.h"
 
-typedef enum
-{
-	UNDO_NONE    = 0x00,
-	UNDO_NEWLINE = 0x01,
-	UNDO_SPACE   = 0x02,
-	UNDO_CUTLINE = 0x04,
-	UNDO_HEADER  = 0x07,
-	UNDO_ENDTEXT = 0x08,
-	UNDO_TODO = 0,
-	UNDO_DONE = 0,
-} undotype_f;
+// Free slot names
+// The crazy word-reading stuff uses these.
+extern char *FREE_STATES[NUMSTATEFREESLOTS];
+extern char *FREE_MOBJS[NUMMOBJFREESLOTS];
+extern UINT8 used_spr[(NUMSPRITEFREESLOTS / 8) + 1]; // Bitwise flag for sprite freeslot in use! I would use ceil() here if I could, but it only saves 1 byte of memory anyway.
 
-#define DEH_WriteUndoline(a,b,c)
+extern const char *const STATE_LIST[];
+extern const char *const MOBJTYPE_LIST[];
+extern const char *const MOBJFLAG_LIST[];
+extern const char *const MOBJFLAG2_LIST[]; // \tMF2_(\S+).*// (.+) --> \t"\1", // \2
+extern const char *const MOBJEFLAG_LIST[];
+extern const char *const MAPTHINGFLAG_LIST[4];
+extern const char *const PLAYERFLAG_LIST[];
+extern const char *const ML_LIST[]; // Linedef flags
+extern const char *COLOR_ENUMS[];
+extern const char *const POWERS_LIST[];
+extern const char *const KARTSTUFF_LIST[];
+extern const char *const HUDITEMS_LIST[];
 
 void DEH_LoadDehackedLump(lumpnum_t lumpnum);
 void DEH_LoadDehackedLumpPwad(UINT16 wad, UINT16 lump);
