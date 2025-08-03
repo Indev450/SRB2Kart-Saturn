@@ -1097,8 +1097,6 @@ void GL_SetStates(void)
 	pglScalef(1.0f, 1.0f, -1.0f);
 	pglGetFloatv(GL_MODELVIEW_MATRIX, modelMatrix); // added for new coronas' code (without depth buffer)
 }
-<<<<<<< HEAD
-=======
 
 // -----------------+
 // DeleteTexture    : Deletes a texture from the GPU and frees its data
@@ -1135,7 +1133,6 @@ void GL_DeleteTexture(GLMipmap_t *pTexInfo)
 
 	pTexInfo->downloaded = 0;
 }
->>>>>>> Saturn-Next
 
 #ifdef USE_FBO_OGL
 static void GL_Framebuffer_GenerateAttachments(void)
@@ -1269,40 +1266,6 @@ void GL_Framebuffer_Disable(void)
 	GL_Framebuffer_Delete();
 }
 #endif
-// -----------------+
-// DeleteTexture    : Deletes a texture from the GPU and frees its data
-// -----------------+
-EXPORT void HWRAPI(DeleteTexture) (GLMipmap_t *pTexInfo)
-{
-	FTextureInfo *head = TexCacheHead;
-
-	if (!pTexInfo)
-		return;
-	else if (pTexInfo->downloaded)
-		pglDeleteTextures(1, (GLuint *)&pTexInfo->downloaded);
-
-	while (head)
-	{
-		if (head->downloaded == pTexInfo->downloaded)
-		{
-			if (head->next)
-				head->next->prev = head->prev;
-			else // no next -> tail is being deleted -> update TexCacheTail
-				TexCacheTail = head->prev;
-			if (head->prev)
-				head->prev->next = head->next;
-			else // no prev -> head is being deleted -> update TexCacheHead
-				TexCacheHead = head->next;
-			free(head);
-			break;
-		}
-
-		head = head->next;
-	}
-
-	pTexInfo->downloaded = 0;
-}
-
 
 // -----------------+
 // Flush            : flush OpenGL textures
@@ -1892,11 +1855,8 @@ void GL_UpdateTexture(GLMipmap_t *pTexInfo)
 	const GLvoid *ptex = NULL;
 	RGBA_t *tex = NULL;
 
-<<<<<<< HEAD
-=======
 	GLint texformat = 0;
 
->>>>>>> Saturn-Next
 	// Generate a new texture name.
 	if (!num)
 	{

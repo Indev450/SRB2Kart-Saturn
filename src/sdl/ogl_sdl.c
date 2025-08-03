@@ -219,37 +219,10 @@ boolean OglSdlSurface(INT32 w, INT32 h)
 #endif
 	}
 
-<<<<<<< HEAD
-	if (cv_vidwait.value)
-	{
-		if (SDL_GL_SetSwapInterval(-1) != 0) // try async vsync
-			SDL_GL_SetSwapInterval(1); // normal vsync
-	}
-	else
-		SDL_GL_SetSwapInterval(0);
-	
-	//SDL_GL_SetSwapInterval(cv_vidwait.value ? -1 : 0);
-	
-	// The screen textures need to be flushed if the width or height change so that they be remade for the correct size
-	if (screen_width != w || screen_height != h)
-	{
-		FlushScreenTextures();
-#ifdef USE_FBO_OGL
-		GLFramebuffer_DeleteAttachments();
-#endif
-	}
-
-	screen_width = (GLint)w;
-	screen_height = (GLint)h;
-
-	SetModelView(w, h);
-	SetStates();
-=======
 	SDL_GL_SetSwapInterval(cv_vidwait.value ? 1 : 0);
 
 	GL_SetModelView(w, h);
 	GL_SetStates();
->>>>>>> Saturn-Next
 	pglClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT);
 
 #ifdef USE_FBO_OGL
@@ -284,20 +257,12 @@ void OglSdlFinishUpdate(boolean waitvbl)
 
 	if (oldwaitvbl != waitvbl)
 	{
-		if (waitvbl)
-		{
-			if (SDL_GL_SetSwapInterval(-1) != 0) // try async vsync
-				SDL_GL_SetSwapInterval(1); // normal vsync
-		}
-		else
-			SDL_GL_SetSwapInterval(0);
-
-		//SDL_GL_SetSwapInterval(waitvbl ? -1 : 0);
+		SDL_GL_SetSwapInterval(waitvbl ? 1 : 0);
 	}
 
 	oldwaitvbl = waitvbl;
 
-	SDL_GL_GetDrawableSize(window, &sdlw, &sdlh);
+	SDL_GetWindowSize(window, &sdlw, &sdlh);
 	HWR_MakeScreenFinalTexture();
 
 #ifdef USE_FBO_OGL

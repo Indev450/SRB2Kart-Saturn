@@ -596,11 +596,7 @@ fixed_t P_MobjFloorZ(mobj_t *mobj, sector_t *sector, sector_t *boundsec, fixed_t
 
 		// If the highest point is in the sector, then we have it easy! Just get the Z at that point
 		if (R_PointInSubsector(testx, testy)->sector == (boundsec ? boundsec : sector))
-<<<<<<< HEAD
-				return P_GetZAt(slope, testx, testy);
-=======
 			return P_GetSlopeZAt(slope, testx, testy);
->>>>>>> Saturn-Next
 
 		// If boundsec is set, we're looking for specials. In that case, iterate over every line in this sector to find the TRUE highest/lowest point
 		if (perfect)
@@ -680,11 +676,7 @@ fixed_t P_MobjCeilingZ(mobj_t *mobj, sector_t *sector, sector_t *boundsec, fixed
 
 		// If the highest point is in the sector, then we have it easy! Just get the Z at that point
 		if (R_PointInSubsector(testx, testy)->sector == (boundsec ? boundsec : sector))
-<<<<<<< HEAD
-				return P_GetZAt(slope, testx, testy);
-=======
 			return P_GetSlopeZAt(slope, testx, testy);
->>>>>>> Saturn-Next
 
 		// If boundsec is set, we're looking for specials. In that case, iterate over every line in this sector to find the TRUE highest/lowest point
 		if (perfect)
@@ -913,11 +905,7 @@ static void P_PlayerFlip(mobj_t *mo)
 
 		for (i = 0; i <= splitscreen; i++)
 		{
-<<<<<<< HEAD
-			if (!(mo->player-players == displayplayers[i]))
-=======
 			if (mo->player-players != displayplayers[i])
->>>>>>> Saturn-Next
 				continue;
 
 			localaiming[i] = mo->player->aiming;
@@ -1236,11 +1224,7 @@ static void P_PushableCheckBustables(mobj_t *mo)
 		if (!node->m_sector)
 			break;
 
-<<<<<<< HEAD
-		if (!(node->m_sector->ffloors))
-=======
 		if (!node->m_sector->ffloors)
->>>>>>> Saturn-Next
 			continue;
 
 		ffloor_t *rover;
@@ -1248,31 +1232,19 @@ static void P_PushableCheckBustables(mobj_t *mo)
 
 		for (rover = node->m_sector->ffloors; rover; rover = rover->next)
 		{
-<<<<<<< HEAD
-			if (!(rover->flags & FF_EXISTS)) continue;
-
-			if (!(rover->flags & FF_BUSTUP)) continue;
-
-			// Needs ML_EFFECT4 flag for pushables to break it
-			if (!(rover->master->flags & ML_EFFECT4)) continue;
-=======
 			if (!(rover->flags & FF_EXISTS) || !(rover->flags & FF_BUSTUP))
 				continue;
 
 			// Needs ML_EFFECT4 flag for pushables to break it
 			if (!(rover->master->flags & ML_EFFECT4))
 				continue;
->>>>>>> Saturn-Next
 
 			if (rover->master->frontsector->crumblestate)
 				continue;
 
 			topheight = P_GetFOFTopZ(mo, node->m_sector, rover, mo->x, mo->y, NULL);
 			bottomheight = P_GetFOFBottomZ(mo, node->m_sector, rover, mo->x, mo->y, NULL);
-<<<<<<< HEAD
-=======
 
->>>>>>> Saturn-Next
 			// Height checks
 			if (rover->flags & FF_SHATTERBOTTOM)
 			{
@@ -2504,20 +2476,6 @@ static void P_PlayerZMovement(mobj_t *mo)
 							subsector_t *newsubsec;
 							size_t i;
 
-<<<<<<< HEAD
-							if (newsubsec->sector != sec)
-								continue;
-
-							if (!newsubsec->polyList)
-								continue;
-
-							polyobj_t *po = newsubsec->polyList;
-							sector_t *polysec;
-
-							while(po)
-							{
-								if (!P_MobjInsidePolyobj(po, mo) || !(po->flags & POF_SOLID))
-=======
 							for (i = 0; i < numsubsectors; i++)
 							{
 								newsubsec = &subsectors[i];
@@ -2532,34 +2490,36 @@ static void P_PlayerZMovement(mobj_t *mo)
 								sector_t *polysec;
 
 								while(po)
->>>>>>> Saturn-Next
 								{
+									if (!P_MobjInsidePolyobj(po, mo) || !(po->flags & POF_SOLID))
+									{
+										po = (polyobj_t *)(po->link.next);
+										continue;
+									}
+
+									// We're inside it! Yess...
+									polysec = po->lines[0]->backsector;
+
+									// Moving polyobjects should act like conveyors if the player lands on one. (I.E. none of the momentum cut thing below) -Red
+									if ((mo->z == polysec->ceilingheight || mo->z+mo->height == polysec->floorheight) && po->thinker)
+										stopmovecut = true;
+
+									if (!(po->flags & POF_LDEXEC))
+									{
+										po = (polyobj_t *)(po->link.next);
+										continue;
+									}
+
+									if (mo->z == polysec->ceilingheight)
+									{
+										// We're landing on a PO, so check for
+										// a linedef executor.
+										// Trigger tags are 32000 + the PO's ID number.
+										P_LinedefExecute((INT16)(32000 + po->id), mo, NULL);
+									}
+
 									po = (polyobj_t *)(po->link.next);
-									continue;
 								}
-
-								// We're inside it! Yess...
-								polysec = po->lines[0]->backsector;
-
-								// Moving polyobjects should act like conveyors if the player lands on one. (I.E. none of the momentum cut thing below) -Red
-								if ((mo->z == polysec->ceilingheight || mo->z+mo->height == polysec->floorheight) && po->thinker)
-									stopmovecut = true;
-
-								if (!(po->flags & POF_LDEXEC))
-								{
-									po = (polyobj_t *)(po->link.next);
-									continue;
-								}
-
-								if (mo->z == polysec->ceilingheight)
-								{
-									// We're landing on a PO, so check for
-									// a linedef executor.
-									// Trigger tags are 32000 + the PO's ID number.
-									P_LinedefExecute((INT16)(32000 + po->id), mo, NULL);
-								}
-
-								po = (polyobj_t *)(po->link.next);
 							}
 						}
 					}
@@ -2957,8 +2917,6 @@ void P_MobjCheckWater(mobj_t *mobj)
 		p->powers[pw_underwater] = 0;
 	}
 
-	K_SpawnWaterRunParticles(mobj);
-
 	// The rest of this code only executes on a water state change.
 	if (waterwasnotset || !!(mobj->eflags & MFE_UNDERWATER) == wasinwater)
 		return;
@@ -3158,15 +3116,8 @@ static boolean P_CameraCheckHeat(camera_t *thiscam)
 	sector_t *sector;
 	fixed_t halfheight;
 
-<<<<<<< HEAD
-	if (!thiscam)
-		return false;
-
-	halfheight = thiscam->z + (thiscam->height >> 1);
-=======
 	if (!thiscam || !thiscam->subsector)
 		return false;
->>>>>>> Saturn-Next
 
 	// see if we are in water
 	sector = thiscam->subsector->sector;
@@ -3203,15 +3154,8 @@ static boolean P_CameraCheckWater(camera_t *thiscam)
 	sector_t *sector;
 	fixed_t halfheight;
 
-<<<<<<< HEAD
-	if (!thiscam)
-		return false;
-
-	halfheight = thiscam->z + (thiscam->height >> 1);
-=======
 	if (!thiscam || !thiscam->subsector)
 		return false;
->>>>>>> Saturn-Next
 
 	// see if we are in water
 	sector = thiscam->subsector->sector;
@@ -3308,18 +3252,6 @@ void P_CalcChasePostImg(player_t *player, camera_t *thiscam)
 			postimgtype |= POSTIMG_HEAT;
 	}
 
-<<<<<<< HEAD
-	if (postimg != postimg_none)
-	{
-		for (i = 0; i <= splitscreen; i++)
-		{
-			if (!(player == &players[displayplayers[i]]))
-				continue;
-
-			postimgtype[i] = postimg;
-		}
-	}
-=======
 	thiscam->postimg = postimgtype;
 }
 
@@ -3333,7 +3265,6 @@ boolean P_CameraThinker(player_t *player, camera_t *thiscam, boolean resetcalled
 		return true;
 
 	P_CalcChasePostImg(player, thiscam);
->>>>>>> Saturn-Next
 
 	if (thiscam->momx || thiscam->momy)
 	{
@@ -4715,15 +4646,16 @@ static void P_Boss7Thinker(mobj_t *mobj)
 			if (P_AproxDistance(players[i].mo->x - mobj->x, players[i].mo->y - mobj->y) > (mobj->radius + players[i].mo->radius))
 				continue;
 
-			if (!(players[i].mo->z > mobj->z + mobj->height - FRACUNIT && players[i].mo->z < mobj->z + mobj->height + 128*FRACUNIT)) // You can't be in the vicinity, either...
-				continue;
+			if (players[i].mo->z > mobj->z + mobj->height - FRACUNIT
+				&& players[i].mo->z < mobj->z + mobj->height + 128*FRACUNIT) // You can't be in the vicinity, either...
+			{
+				// Punch him!
+				P_DamageMobj(players[i].mo, mobj, mobj, 1);
+				mobj->state->nextstate = mobj->info->spawnstate;
 
-			// Punch him!
-			P_DamageMobj(players[i].mo, mobj, mobj, 1);
-			mobj->state->nextstate = mobj->info->spawnstate;
-
-			// Laugh
-			S_StartSound(0, sfx_bewar1 + P_RandomKey(4));
+				// Laugh
+				S_StartSound(0, sfx_bewar1 + P_RandomKey(4));
+			}
 		}
 	}
 	else if (mobj->state == &states[S_BLACKEGG_GOOP])
@@ -5443,11 +5375,7 @@ mobj_t *P_GetClosestAxis(mobj_t *source)
 
 		mo2 = (mobj_t *)th;
 
-<<<<<<< HEAD
-		if (!(mo2->type == MT_AXIS))
-=======
 		if (mo2->type != MT_AXIS)
->>>>>>> Saturn-Next
 			continue;
 
 		if (closestaxis == NULL)
@@ -6147,18 +6075,7 @@ static void P_MobjSceneryThink(mobj_t *mobj)
 	if (P_MobjWasRemoved(mobj))
 		return;
 
-<<<<<<< HEAD
-	mobj->flags2 &= ~MF2_PUSHED;
-	mobj->eflags &= ~(MFE_SPRUNG|MFE_JUSTBOUNCEDWALL);
-
-	P_SetTarget(&tmfloorthing, NULL);
-	P_SetTarget(&tmhitthing, NULL);
-
-	// 970 allows ANY mobj to trigger a linedef exec
-	if (mobj->subsector && GETSECSPECIAL(mobj->subsector->sector->special, 2) == 8)
-=======
 	switch (mobj->type)
->>>>>>> Saturn-Next
 	{
 		case MT_HOOP:
 			if (mobj->fuse > 1)
@@ -7174,13 +7091,6 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 				P_SetTarget(&mobj->target, NULL);
 				for (i = 0; i < MAXPLAYERS; i++)
 				{
-<<<<<<< HEAD
-					if (!(playeringame[i] && players[i].mo
-					&& players[i].mare == mobj->threshold && players[i].health > 1))
-						continue;
-
-					fixed_t dist = P_AproxDistance(players[i].mo->x - mobj->x, players[i].mo->y - mobj->y);
-=======
 					if (!playeringame[i] || !players[i].mo)
 						continue;
 
@@ -7189,7 +7099,6 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 
 					fixed_t dist = P_AproxDistance(players[i].mo->x - mobj->x, players[i].mo->y - mobj->y);
 
->>>>>>> Saturn-Next
 					if (!(dist < shortest))
 						continue;
 
@@ -10179,24 +10088,6 @@ void P_RemoveMobj(mobj_t *mobj)
 	// repair hnext chain
 	mobj_t *cachenext = mobj->hnext;
 
-<<<<<<< HEAD
-	if (mobj->hnext && !P_MobjWasRemoved(mobj->hnext))
-	{
-		if (mobj->hnext->hprev == mobj)
-		{
-			P_SetTarget(&mobj->hnext->hprev, mobj->hprev);
-		}
-
-		P_SetTarget(&mobj->hnext, NULL);
-	}
-
-	if (mobj->hprev && !P_MobjWasRemoved(mobj->hprev))
-	{
-		if (mobj->hprev->hnext == mobj)
-		{
-			P_SetTarget(&mobj->hprev->hnext, cachenext);
-		}
-=======
 	if (!P_MobjWasRemoved(mobj->hnext))
 	{
 		P_SetTarget(&mobj->hnext->hprev, mobj->hprev);
@@ -10208,11 +10099,7 @@ void P_RemoveMobj(mobj_t *mobj)
 		P_SetTarget(&mobj->hprev->hnext, cachenext);
 		P_SetTarget(&mobj->hprev, NULL);
 	}
->>>>>>> Saturn-Next
 
-		P_SetTarget(&mobj->hprev, NULL);
-	}
-	
 	// clear the reference from the mapthing
 	if (mobj->spawnpoint)
 		mobj->spawnpoint->mobj = NULL;
@@ -10249,18 +10136,7 @@ void P_RemoveMobj(mobj_t *mobj)
 #endif
 }
 
-<<<<<<< HEAD
-// This does not need to be added to Lua.
-// To test it in Lua, check mobj.valid
-boolean P_MobjWasRemoved(mobj_t *mobj)
-{
-    return !(mobj && mobj->thinker.function.acp1 == (actionf_p1)P_MobjThinker);
-}
-
-void P_RemovePrecipMobj(precipmobj_t *mobj)
-=======
 void P_FreePrecipMobj(precipmobj_t *mobj)
->>>>>>> Saturn-Next
 {
 	// unlink from sector and block lists
 	P_UnsetPrecipThingPosition(mobj);
@@ -10470,21 +10346,6 @@ void P_PrecipitationEffects(void)
 		fixed_t closedist, newdist;
 
 		// Essentially check in a 1024 unit radius of the player for an outdoor area.
-<<<<<<< HEAD
-		yl = players[displayplayers[0]].mo->y - 1024*FRACUNIT;
-		yh = players[displayplayers[0]].mo->y + 1024*FRACUNIT;
-		xl = players[displayplayers[0]].mo->x - 1024*FRACUNIT;
-		xh = players[displayplayers[0]].mo->x + 1024*FRACUNIT;
-		closedist = 2048*FRACUNIT;
-
-		for (y = yl; y >= yl && y <= yh; y += FRACUNIT*64)
-			for (x = xl; x >= xl && x <= xh; x += FRACUNIT*64)
-			{
-				if (!(R_PointInSubsector(x, y)->sector->ceilingpic == skyflatnum)) // Found the outdoors!
-					continue;
-
-				newdist = S_CalculateSoundDistance(players[displayplayers[0]].mo->x, players[displayplayers[0]].mo->y, 0, x, y, 0);
-=======
 #define RADIUSSTEP (64*FRACUNIT)
 #define SEARCHRADIUS (16*RADIUSSTEP)
 		yl = yh = pmo->y;
@@ -10513,7 +10374,6 @@ void P_PrecipitationEffects(void)
 
 				newdist = S_CalculateSoundDistance(pmo->x, pmo->y, 0, (fixed_t)x, (fixed_t)y, 0);
 
->>>>>>> Saturn-Next
 				if (newdist < closedist)
 					closedist = newdist;
 			}
@@ -10913,13 +10773,6 @@ void P_AfterPlayerSpawn(INT32 playernum)
 
 	if (p->spectator == false)
 	{
-<<<<<<< HEAD
-		if (!camera[i].chase)
-			continue;
-
-		if (displayplayers[i] == playernum)
-			P_ResetCamera(p, &camera[i]);
-=======
 		for (i = 0; i <= splitscreen; i++)
 		{
 			if (!camera[i].chase)
@@ -10930,7 +10783,6 @@ void P_AfterPlayerSpawn(INT32 playernum)
 
 			P_ResetCamera(p, &camera[i]);
 		}
->>>>>>> Saturn-Next
 	}
 
 	if (CheckForReverseGravity)
@@ -11617,14 +11469,9 @@ ML_NOCLIMB : Direction not controllable
 		mobj->threshold = min(mthing->extrainfo, 7);
 		break;
 	case MT_TUBEWAYPOINT:
-	{
-		UINT8 sequence = mthing->angle >> 8;
-		UINT8 id = mthing->angle & 255;
-		mobj->health = id;
-		mobj->threshold = sequence;
-		P_AddWaypoint(sequence, id, mobj);
+		mobj->health = mthing->angle & 255;
+		mobj->threshold = mthing->angle >> 8;
 		break;
-	}
 	case MT_NIGHTSDRONE:
 		if (mthing->angle > 0)
 			mobj->health = mthing->angle;

@@ -1473,11 +1473,6 @@ boolean G_Responder(event_t *ev)
 					P_ToggleDemoCamera(i);
 				}
 			}
-			if (ev->data1 == gamecontrol[gc_director][0]
-				|| ev->data1 == gamecontrol[gc_director][1])
-			{
-				K_ToggleDirector();
-			}
 
 			return true;
 

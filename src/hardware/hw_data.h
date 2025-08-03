@@ -54,13 +54,8 @@ struct GLMipmap_s
 	UINT16					width, height;
 	UINT32					downloaded; // The GPU has this texture.
 
-<<<<<<< HEAD
-	struct	GLMipmap_s 		*nextcolormap;
-	const 	UINT8 			*colormap;
-=======
 	struct	GLMipmap_s		*nextcolormap;
 	struct GLColormap_s		*colormap;
->>>>>>> Saturn-Next
 };
 typedef struct GLMipmap_s GLMipmap_t;
 

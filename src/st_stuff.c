@@ -557,15 +557,6 @@ static void ST_overlayDrawer(void)
 			directortoggletimer = 0;
 		}
 
-		if (demo.playback || !P_IsLocalPlayer(stplyr))
-		{
-			char directortext[20] = {0};
-
-			snprintf(directortext, 20, "Director: %s", cv_director.value ? "On" : "Off");
-
-			V_DrawString(1, BASEVIDHEIGHT-8-1, V_SNAPTOLEFT|V_SNAPTOBOTTOM|V_HUDTRANSHALF|V_ALLOWLOWERCASE, directortext);
-		}
-
 		if (cv_showviewpointtext.value)
 		{
 			if (!(multiplayer && demo.playback))

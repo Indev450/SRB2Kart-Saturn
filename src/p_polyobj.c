@@ -1803,12 +1803,12 @@ void T_PolyObjMove(polymove_t *th)
 //
 void T_PolyObjWaypoint(polywaypoint_t *th)
 {
+	mobj_t *mo2;
 	mobj_t *target = NULL;
 	mobj_t *waypoint = NULL;
-	mobj_t *mo2;
+	thinker_t *wp;
 	fixed_t adjustx, adjusty, adjustz;
 	fixed_t momx, momy, momz, dist;
-	thinker_t *wp;
 	INT32 start;
 	polyobj_t *po = Polyobj_GetForNum(th->polyObjNum);
 	polyobj_t *oldpo = po;
@@ -1825,7 +1825,7 @@ void T_PolyObjWaypoint(polywaypoint_t *th)
 #endif
 
 	// check for displacement due to override and reattach when possible
-	if (!po->thinker)
+	if (po->thinker == NULL)
 		po->thinker = &th->thinker;
 
 	// Find out target first.
@@ -1913,9 +1913,6 @@ void T_PolyObjWaypoint(polywaypoint_t *th)
 		{
 			CONS_Debug(DBG_POLYOBJ, "Looking for next waypoint...\n");
 
-<<<<<<< HEAD
-			waypoint = (th->direction == -1) ? P_GetPreviousWaypoint(target, false) : P_GetNextWaypoint(target, false);
-=======
 			// Find next waypoint
 			for (wp = thinkercap.next; wp != &thinkercap; wp = wp->next)
 			{
@@ -1947,7 +1944,6 @@ void T_PolyObjWaypoint(polywaypoint_t *th)
 					}
 				}
 			}
->>>>>>> Saturn-Next
 
 			if (!waypoint && th->wrap) // If specified, wrap waypoints
 			{
@@ -1957,9 +1953,6 @@ void T_PolyObjWaypoint(polywaypoint_t *th)
 					th->stophere = true;
 				}
 
-<<<<<<< HEAD
-				waypoint = (th->direction == -1) ? P_GetLastWaypoint(th->sequence) : P_GetFirstWaypoint(th->sequence);
-=======
 				for (wp = thinkercap.next; wp != &thinkercap; wp = wp->next)
 				{
 					if (wp->function != (actionf_p1)P_MobjThinker) // Not a mobj thinker
@@ -1989,7 +1982,6 @@ void T_PolyObjWaypoint(polywaypoint_t *th)
 						}
 					}
 				}
->>>>>>> Saturn-Next
 			}
 			else if (!waypoint && th->comeback) // Come back to the start
 			{
@@ -1998,9 +1990,6 @@ void T_PolyObjWaypoint(polywaypoint_t *th)
 				if (!th->continuous)
 					th->comeback = false;
 
-<<<<<<< HEAD
-				waypoint = (th->direction == -1) ? P_GetPreviousWaypoint(target, false) : P_GetNextWaypoint(target, false);
-=======
 				for (wp = thinkercap.next; wp != &thinkercap; wp = wp->next)
 				{
 					if (wp->function != (actionf_p1)P_MobjThinker) // Not a mobj thinker
@@ -2031,7 +2020,6 @@ void T_PolyObjWaypoint(polywaypoint_t *th)
 						}
 					}
 				}
->>>>>>> Saturn-Next
 			}
 		}
 
@@ -2481,9 +2469,11 @@ INT32 EV_DoPolyObjWaypoint(polywaypointdata_t *pwdata)
 	polyobj_t *po;
 	polyobj_t *oldpo;
 	polywaypoint_t *th;
+	mobj_t *mo2;
 	mobj_t *first = NULL;
 	mobj_t *last = NULL;
 	mobj_t *target = NULL;
+	thinker_t *wp;
 	INT32 start;
 
 	if (!(po = Polyobj_GetForNum(pwdata->polyObjNum)))
@@ -2509,7 +2499,10 @@ INT32 EV_DoPolyObjWaypoint(polywaypointdata_t *pwdata)
 	th->polyObjNum = pwdata->polyObjNum;
 	th->speed = pwdata->speed;
 	th->sequence = pwdata->sequence; // Used to specify sequence #
-	th->direction = pwdata->reverse ? -1 : 1;
+	if (pwdata->reverse)
+		th->direction = -1;
+	else
+		th->direction = 1;
 
 	th->comeback = pwdata->comeback;
 	th->continuous = pwdata->continuous;
@@ -2517,10 +2510,6 @@ INT32 EV_DoPolyObjWaypoint(polywaypointdata_t *pwdata)
 	th->stophere = false;
 
 	// Find the first waypoint we need to use
-<<<<<<< HEAD
-	first = (th->direction == -1) ? P_GetLastWaypoint(th->sequence) : P_GetFirstWaypoint(th->sequence);
-	last = (th->direction == -1) ? P_GetFirstWaypoint(th->sequence) : P_GetLastWaypoint(th->sequence);
-=======
 	for (wp = thinkercap.next; wp != &thinkercap; wp = wp->next)
 	{
 		if (wp->function != (actionf_p1)P_MobjThinker) // Not a mobj thinker
@@ -2559,7 +2548,6 @@ INT32 EV_DoPolyObjWaypoint(polywaypointdata_t *pwdata)
 			}
 		}
 	}
->>>>>>> Saturn-Next
 
 	if (!first)
 	{

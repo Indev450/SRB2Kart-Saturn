@@ -584,27 +584,10 @@ void M_SaveConfig(const char *filename)
 {
 	FILE *f;
 	char *filepath;
-	char backupfile[MAX_WADPATH+4];
 
 	// make sure not to write back the config until it's been correctly loaded
 	if (!loaded_config)
 		return;
-
-	// Create backup of the config file
-	snprintf(backupfile, sizeof backupfile, "%s.bak", configfile);
-	backupfile[sizeof backupfile - 1] = '\0';
-
-	FILE *config = fopen(configfile, "r");
-
-	if (config != NULL)
-	{
-		fclose(config);
-		if (FIL_CopyFile(configfile, backupfile) == false)
-		{
-			CONS_Alert(CONS_WARNING,"Failed to create a backup of the configuration file. Will not attempt to write to file\n");
-			return;
-		}
-	}
 
 	// can change the file name
 	if (filename)

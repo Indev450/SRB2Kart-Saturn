@@ -12,36 +12,20 @@
 
 //#include "k_kart.h"
 #include "doomdef.h"
-<<<<<<< HEAD
-#include "g_game.h"
-=======
 #include "doomstat.h"
 #include "g_game.h"
 #include "m_random.h"
->>>>>>> Saturn-Next
 #include "v_video.h"
 #include "k_director.h"
 #include "d_netcmd.h"
 #include "p_local.h"
-<<<<<<< HEAD
-=======
 #include "st_stuff.h"
 
 #include "r_fps.h"
->>>>>>> Saturn-Next
 
 #define SWITCHTIME TICRATE * 5		// cooldown between unforced switches
 #define BOREDOMTIME 3 * TICRATE / 2 // how long until players considered far apart?
 #define TRANSFERTIME TICRATE		// how long to delay reaction shots?
-<<<<<<< HEAD
-#define BREAKAWAYDIST 4000			// how *far* until players considered far apart?
-#define WALKBACKDIST 600			// how close should a trailing player be before we switch?
-#define PINCHDIST 30000				// how close should the leader be to be considered "end of race"?
-
-struct directorinfo directorinfo;
-
-static fixed_t P_ScaleFromMap(fixed_t n, fixed_t scale)
-=======
 #define BREAKAWAYDIST 2000			// how *far* until players considered far apart?
 #define WALKBACKDIST 400			// how close should a trailing player be before we switch?
 #define PINCHDIST 20000				// how close should the leader be to be considered "end of race"?
@@ -79,16 +63,10 @@ static inline boolean race_rules(void)
 }
 
 static fixed_t ScaleFromMap(fixed_t n, fixed_t scale)
->>>>>>> Saturn-Next
 {
 	return FixedMul(n, FixedDiv(scale, mapobjectscale));
 }
 
-<<<<<<< HEAD
-static boolean K_DirectorIsEnabled(void)
-{
-	return cv_director.value && (gamestate == GS_LEVEL && (!playeringame[consoleplayer] || players[consoleplayer].spectator || demo.playback));
-=======
 boolean K_DirectorIsAvailable(void)
 {
 	if (splitscreen || dedicated || (demo.playback && demo.title) || modeattacking)
@@ -141,7 +119,6 @@ static void K_SetupFinishMo(void)
 				break; // found it
 		}
 	}
->>>>>>> Saturn-Next
 }
 
 void K_InitDirector(void)
@@ -152,11 +129,8 @@ void K_InitDirector(void)
 	directorinfo.freeze = 0;
 	directorinfo.attacker = 0;
 	directorinfo.maxdist = 0;
-<<<<<<< HEAD
-=======
 	directorinfo.viewplayer = NULL;
 	directorinfo.chaosleep = 0;
->>>>>>> Saturn-Next
 
 	for (playernum = 0; playernum < MAXPLAYERS; playernum++)
 	{
@@ -164,67 +138,6 @@ void K_InitDirector(void)
 		directorinfo.gap[playernum] = INT32_MAX;
 		directorinfo.boredom[playernum] = 0;
 	}
-<<<<<<< HEAD
-}
-
-/*static fixed_t K_GetFinishGap(INT32 leader, INT32 follower)
-{
-	fixed_t dista = players[follower].distancetofinish;
-	fixed_t distb = players[leader].distancetofinish;
-
-	if (players[follower].position < players[leader].position)
-	{
-		return distb - dista;
-	}
-	else
-	{
-		return dista - distb;
-	}
-}*/
-
-static fixed_t K_GetDistanceToFinish(player_t player)
-{
-	mobj_t *mo;
-	fixed_t dist = 0;
-	int maxMoveCount = -1;
-	int maxAngle = -1;
-
-	if (!(mapheaderinfo[gamemap - 1]->levelflags & LF_SECTIONRACE))
-	{
-		for (mo = waypointcap; mo != NULL; mo = mo->tracer)
-		{
-			if (mo->spawnpoint->angle != 0)
-				continue;
-
-			dist = P_AproxDistance(P_AproxDistance(mo->x - player.mo->x,
-												mo->y - player.mo->y),
-							mo->z - player.mo->z) / FRACUNIT;
-
-							break;
-		}
-	}
-	else
-	{
-		for (mo = waypointcap; mo != NULL; mo = mo->tracer)
-		{
-			if (mo->movecount > maxMoveCount)
-				maxMoveCount = mo->movecount;
-			if (mo->spawnpoint->angle > maxAngle)
-				maxAngle = mo->spawnpoint->angle;
-
-			if (!(mo->movecount == maxMoveCount && mo->spawnpoint->angle == maxAngle)) // sprint maps finishline waypoint is the one with highest movecount AND angle
-				continue;
-
-			dist = P_AproxDistance(P_AproxDistance(mo->x - player.mo->x,
-												   mo->y - player.mo->y),
-						  mo->z - player.mo->z) / FRACUNIT;
-
-			break;
-		}
-	}
-
-	return dist;
-=======
 
 	K_SetupFinishMo();
 }
@@ -237,7 +150,6 @@ static fixed_t K_GetDistanceToFinish(player_t player)
 	return P_AproxDistance(P_AproxDistance(finishmo->x - player.mo->x,
 										   finishmo->y - player.mo->y),
 										   finishmo->z - player.mo->z) / FRACUNIT;
->>>>>>> Saturn-Next
 }
 
 static fixed_t K_GetFinishGap(INT32 leader, INT32 follower)
@@ -261,17 +173,10 @@ static void K_UpdateDirectorPositions(void)
 	INT32 position;
 	player_t* target;
 
-<<<<<<< HEAD
-	memset(directorinfo.sortedplayers, -1, sizeof(directorinfo.sortedplayers));
-
-	for (playernum = 0; playernum < MAXPLAYERS; playernum++)
-	{
-=======
 	for (playernum = 0; playernum < MAXPLAYERS; playernum++)
 	{
 		directorinfo.sortedplayers[playernum] = -1;
 
->>>>>>> Saturn-Next
 		target = &players[playernum];
 
 		if (playeringame[playernum] && !target->spectator && target->kartstuff[k_position] > 0)
@@ -289,19 +194,11 @@ static void K_UpdateDirectorPositions(void)
 			continue;
 		}
 
-<<<<<<< HEAD
-		directorinfo.gap[position] = P_ScaleFromMap(K_GetFinishGap(directorinfo.sortedplayers[position], directorinfo.sortedplayers[position + 1]), FRACUNIT);
-
-		if (directorinfo.gap[position] >= BREAKAWAYDIST)
-		{
-			directorinfo.boredom[position] = min(BOREDOMTIME * 2, directorinfo.boredom[position] + 1);
-=======
 		directorinfo.gap[position] = ScaleFromMap(K_GetFinishGap(directorinfo.sortedplayers[position], directorinfo.sortedplayers[position + 1]), FRACUNIT);
 
 		if (directorinfo.gap[position] >= BREAKAWAYDIST)
 		{
 			directorinfo.boredom[position] = (INT32)(min(BOREDOMTIME * 2, directorinfo.boredom[position] + 1));
->>>>>>> Saturn-Next
 		}
 		else if (directorinfo.boredom[position] > 0)
 		{
@@ -315,25 +212,11 @@ static void K_UpdateDirectorPositions(void)
 		return;
 	}
 
-<<<<<<< HEAD
-	directorinfo.maxdist = P_ScaleFromMap(K_GetDistanceToFinish(players[directorinfo.sortedplayers[0]]), FRACUNIT);
-=======
 	directorinfo.maxdist = ScaleFromMap(K_GetDistanceToFinish(players[directorinfo.sortedplayers[0]]), FRACUNIT);
->>>>>>> Saturn-Next
 }
 
 static boolean K_CanSwitchDirector(void)
 {
-<<<<<<< HEAD
-	/*INT32 *displayplayerp = &displayplayers[0];
-
-	if (players[*displayplayerp].trickpanel > 0)
-	{
-		return false;
-	}*/
-
-=======
->>>>>>> Saturn-Next
 	if (directorinfo.cooldown > 0)
 	{
 		return false;
@@ -344,11 +227,7 @@ static boolean K_CanSwitchDirector(void)
 
 static void K_DirectorSwitch(INT32 player, boolean force)
 {
-<<<<<<< HEAD
-	if (P_IsDisplayPlayer(&players[player]))
-=======
 	if (!K_DirectorIsEnabled())
->>>>>>> Saturn-Next
 	{
 		return;
 	}
@@ -365,10 +244,7 @@ static void K_DirectorSwitch(INT32 player, boolean force)
 
 	G_ResetView(1, player, true);
 	directorinfo.cooldown = SWITCHTIME;
-<<<<<<< HEAD
-=======
 	directorinfo.chaosleep = 0;
->>>>>>> Saturn-Next
 }
 
 static void K_DirectorForceSwitch(INT32 player, INT32 time)
@@ -380,8 +256,6 @@ static void K_DirectorForceSwitch(INT32 player, INT32 time)
 
 	directorinfo.attacker = player;
 	directorinfo.freeze = time;
-<<<<<<< HEAD
-=======
 	directorinfo.chaosleep = 0;
 }
 
@@ -402,7 +276,6 @@ static void K_DirectorSwitchRandom(void)
 
 	if (randomplayer != -1)
 		K_DirectorSwitch(randomplayer, true);
->>>>>>> Saturn-Next
 }
 
 void K_DirectorFollowAttack(player_t *player, mobj_t *inflictor, mobj_t *source)
@@ -412,11 +285,7 @@ void K_DirectorFollowAttack(player_t *player, mobj_t *inflictor, mobj_t *source)
 		return;
 	}
 
-<<<<<<< HEAD
-	if (!P_IsDisplayPlayer(player))
-=======
 	if (directorinfo.viewplayer != player)
->>>>>>> Saturn-Next
 	{
 		return;
 	}
@@ -449,10 +318,7 @@ void K_DrawDirectorDebugger(void)
 	V_DrawThinString(120, 0, V_70TRANS, va("BORED"));
 	V_DrawThinString(150, 0, V_70TRANS, va("COOLDOWN: %d", directorinfo.cooldown));
 	V_DrawThinString(230, 0, V_70TRANS, va("MAXDIST: %d", directorinfo.maxdist));
-<<<<<<< HEAD
-=======
 	V_DrawThinString(310, 0, V_70TRANS, va("SLEEPTIME: %d", directorinfo.chaosleep));
->>>>>>> Saturn-Next
 
 	for (position = 0; position < MAXPLAYERS - 1; position++)
 	{
@@ -466,17 +332,10 @@ void K_DrawDirectorDebugger(void)
 		V_DrawThinString(10, ytxt, V_70TRANS, va("%d", position));
 		V_DrawThinString(20, ytxt, V_70TRANS, va("%d", position + 1));
 
-<<<<<<< HEAD
-		/*if (players[leader].positiondelay)
-		{
-			V_DrawThinString(40, ytxt, V_70TRANS, va("NG"));
-		}*/
-=======
 		if (players[leader].kartstuff[k_positiondelay])
 		{
 			V_DrawThinString(40, ytxt, V_70TRANS, va("NG"));
 		}
->>>>>>> Saturn-Next
 
 		V_DrawThinString(80, ytxt, V_70TRANS, va("%d", directorinfo.gap[position]));
 
@@ -496,13 +355,8 @@ void K_DrawDirectorDebugger(void)
 
 void K_UpdateDirector(void)
 {
-<<<<<<< HEAD
-	INT32 *displayplayerp = &displayplayers[0];
-	INT32 targetposition;
-=======
 	INT32 targetposition;
 	directorinfo.viewplayer = &players[displayplayers[0]];
->>>>>>> Saturn-Next
 
 	if (!K_DirectorIsEnabled())
 	{
@@ -511,12 +365,8 @@ void K_UpdateDirector(void)
 
 	K_UpdateDirectorPositions();
 
-<<<<<<< HEAD
-	if (directorinfo.cooldown > 0) {
-=======
 	if (directorinfo.cooldown > 0)
 	{
->>>>>>> Saturn-Next
 		directorinfo.cooldown--;
 	}
 
@@ -530,20 +380,14 @@ void K_UpdateDirector(void)
 	}
 
 	// if there's only one player left in the list, just switch to that player
-<<<<<<< HEAD
-	if (directorinfo.sortedplayers[0] != -1 && directorinfo.sortedplayers[1] == -1)
-=======
 	if (directorinfo.sortedplayers[0] != -1 && (directorinfo.sortedplayers[1] == -1 ||
 		// TODO: Battle; I just threw this together quick. Focus on leader.
 		!race_rules()))
->>>>>>> Saturn-Next
 	{
 		K_DirectorSwitch(directorinfo.sortedplayers[0], false);
 		return;
 	}
 
-<<<<<<< HEAD
-=======
 	// insta switch if the player were watching finishes
 	if (players[displayplayers[0]].exiting)
 	{
@@ -565,7 +409,6 @@ void K_UpdateDirector(void)
 		return;
 	}
 
->>>>>>> Saturn-Next
 	// aaight, time to walk through the standings to find the first interesting pair
 	// NB: targetposition/sortedplayers is 0-indexed, aiming at the "back half" of a given pair by default.
 	// we adjust for this when comparing to player->position or when looking at the leading player, Don't Freak Out
@@ -605,10 +448,6 @@ void K_UpdateDirector(void)
 
 		target = directorinfo.sortedplayers[targetposition];
 
-<<<<<<< HEAD
-		// if we're certain the back half of the pair is actually in this position, try to switch
-		if (*displayplayerp != target /*&& !players[target].positiondelay*/)
-=======
 		// stop here since we're already viewing this player
 		if (displayplayers[0] == target)
 		{
@@ -617,18 +456,12 @@ void K_UpdateDirector(void)
 
 		// if we're certain the back half of the pair is actually in this position, try to switch
 		if (!players[target].kartstuff[k_positiondelay])
->>>>>>> Saturn-Next
 		{
 			K_DirectorSwitch(target, false);
 		}
 
-<<<<<<< HEAD
-		// even if we're not certain, if we're certain we're watching the WRONG player, try to switch
-		if (players[*displayplayerp].kartstuff[k_position] != targetposition+1 /*&& !players[target].positiondelay*/)
-=======
 		// even if we're not certain, if we're cetain we're watching the WRONG player, try to switch
 		if (directorinfo.viewplayer->kartstuff[k_position] != targetposition+1 && !directorinfo.viewplayer->kartstuff[k_positiondelay])
->>>>>>> Saturn-Next
 		{
 			K_DirectorSwitch(target, false);
 		}
@@ -639,14 +472,6 @@ void K_UpdateDirector(void)
 
 void K_ToggleDirector(void)
 {
-<<<<<<< HEAD
-	if (!K_DirectorIsEnabled())
-	{
-		directorinfo.cooldown = 0; // switch immediately
-	}
-
-	COM_ImmedExecute("add director 1");
-=======
 	if (!K_DirectorIsAvailable())
 		return;
 
@@ -659,5 +484,4 @@ void K_ToggleDirector(void)
 	directortoggletimer = 0;
 
 	CV_SetValue(&cv_director, (cv_director.value ^ 1));
->>>>>>> Saturn-Next
 }

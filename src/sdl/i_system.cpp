@@ -41,20 +41,13 @@ typedef DWORD (WINAPI *p_timeGetTime) (void);
 typedef UINT (WINAPI *p_timeEndPeriod) (UINT);
 typedef HANDLE (WINAPI *p_OpenFileMappingA) (DWORD, BOOL, LPCSTR);
 typedef LPVOID (WINAPI *p_MapViewOfFile) (HANDLE, DWORD, DWORD, DWORD, SIZE_T);
-
-<<<<<<< HEAD:src/sdl/i_system.c
-// This is for RtlGenRandom.
-#define SystemFunction036 NTAPI SystemFunction036
-#include <ntsecapi.h>
-#undef SystemFunction036
 #endif
-=======
+
 // A little more than the minimum sleep duration on Windows.
 // May be incorrect for other platforms, but we don't currently have a way to
 // query the scheduler granularity. SDL will do what's needed to make this as
 // low as possible though.
 #define MIN_SLEEP_DURATION_MS 2.1
->>>>>>> Saturn-Next:src/sdl/i_system.cpp
 
 #include <stdio.h>
 #include <time.h>
@@ -69,6 +62,7 @@ typedef LPVOID (WINAPI *p_MapViewOfFile) (HANDLE, DWORD, DWORD, DWORD, SIZE_T);
 #include <fcntl.h>
 #endif
 
+#include <stdio.h>
 #ifdef _WIN32
 #include <conio.h>
 #endif
@@ -213,18 +207,6 @@ static char returnWadPath[256];
 #include "../byteptr.h"
 #endif
 
-<<<<<<< HEAD:src/sdl/i_system.c
-// A little more than the minimum sleep duration on Windows.
-// May be incorrect for other platforms, but we don't currently have a way to
-// query the scheduler granularity. SDL will do what's needed to make this as
-// low as possible though.
-#if defined(_WIN32)
-#define MIN_SLEEP_DURATION_MS 1.6
-#else
-#define MIN_SLEEP_DURATION_MS 2.1
-#endif
-
-=======
 #ifdef HAVE_THREADS
 #include "../core/thread_pool.h"
 static std::thread::id g_main_thread_id;
@@ -232,7 +214,6 @@ static std::thread::id g_main_thread_id;
 
 INT32 numcontrollers = 0;
 
->>>>>>> Saturn-Next:src/sdl/i_system.cpp
 #ifdef HAVE_LIBBACKTRACE
 #include <backtrace.h>
 // TODO - move this to some header file instead
@@ -1823,18 +1804,6 @@ void I_Sleep(UINT32 ms)
 
 void I_SleepDuration(precise_t duration)
 {
-<<<<<<< HEAD:src/sdl/i_system.c
-	#if defined(__linux__) || defined(__FreeBSD__)
-	UINT64 precision = I_GetPrecisePrecision();
-	struct timespec ts = {
-		.tv_sec = duration / precision,
-		.tv_nsec = duration * 1000000000 / precision % 1000000000,
-	};
-	int status;
-	do status = clock_nanosleep(CLOCK_MONOTONIC, 0, &ts, &ts);
-	while (status == EINTR);
-	#else
-=======
 #if defined(__linux__) || defined(__FreeBSD__) || defined(__HAIKU__)
 	UINT64 precision = I_GetPrecisePrecision();
 	precise_t dest = I_GetPreciseTime() + duration;
@@ -1854,7 +1823,6 @@ void I_SleepDuration(precise_t duration)
 	// busy-wait the rest
 	while (((INT64)dest - (INT64)I_GetPreciseTime()) > 0);
 #elif defined (MIN_SLEEP_DURATION_MS)
->>>>>>> Saturn-Next:src/sdl/i_system.cpp
 	UINT64 precision = I_GetPrecisePrecision();
 	INT32 sleepvalue = cv_sleep.value;
 	UINT64 delaygranularity;
@@ -1885,7 +1853,7 @@ void I_SleepDuration(precise_t duration)
 		// Otherwise, this is a spinloop.
 		cur = I_GetPreciseTime();
 	}
-	#endif
+#endif
 }
 
 #ifdef NEWSIGNALHANDLER
@@ -2412,38 +2380,6 @@ INT32 I_PutEnv(char *variable)
 	return SDL_putenv(variable);
 #else
 	return putenv(variable);
-#endif
-}
-
-size_t I_GetRandomBytes(char *destination, size_t count)
-{
-#if defined (__unix__) || defined (UNIXCOMMON) || defined(__APPLE__)
-	FILE *rndsource;
-	size_t actual_bytes;
-
-	if (!(rndsource = fopen("/dev/urandom", "r")))
-		if (!(rndsource = fopen("/dev/random", "r")))
-			actual_bytes = 0;
-
-	if (rndsource)
-	{
-		actual_bytes = fread(destination, 1, count, rndsource);
-		fclose(rndsource);
-	}
-
-	if (actual_bytes == 0)
-		I_OutputMsg("I_GetRandomBytes(): couldn't get any random bytes");
-
-	return actual_bytes;
-#elif defined (_WIN32)
-	if (RtlGenRandom(destination, count))
-		return count;
-
-	I_OutputMsg("I_GetRandomBytes(): couldn't get any random bytes");
-	return 0;
-#else
-	#warning SDL I_GetRandomBytes is not implemented on this platform.
-	return 0;
 #endif
 }
 

@@ -461,24 +461,6 @@ static inline void P_RunThinkers(void)
 	}
 }
 
-<<<<<<< HEAD
-void P_RunChaseCameras(void)
-{
-	UINT8 i;
-
-	if (!splitscreen)
-	{
-		if (camera[0].chase)
-			P_MoveChaseCamera(&players[displayplayers[0]], &camera[0], false);
-	}
-	else
-	{
-		for (i = 0; i <= splitscreen; i++)
-		{
-			if (camera[i].chase)
-				P_MoveChaseCamera(&players[displayplayers[i]], &camera[i], false);
-		}
-=======
 // Controller rumble!
 // this keeps track of a bunch of things
 // and makes your controller rumble accordingly
@@ -659,7 +641,6 @@ static inline void P_ResetSpriteStuff(void)
 		mo->spriteyscale  = mo->realyscale;
 		mo->spritexoffset = mo->realxoffset;
 		mo->spriteyoffset = mo->realyoffset;
->>>>>>> Saturn-Next
 	}
 }
 

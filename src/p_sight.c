@@ -45,24 +45,12 @@ typedef INT32 (*divlinecrossfunc)(fixed_t x1, fixed_t y1, fixed_t x2, fixed_t y2
 static INT32 P_DivlineSide(fixed_t x, fixed_t y, const divline_t *node)
 {
 	fixed_t left, right;
-<<<<<<< HEAD
-	return
-=======
 
 	return(
->>>>>>> Saturn-Next
 		!node->dx ? x == node->x ? 2 : x <= node->x ? node->dy > 0 : node->dy < 0 :
 		!node->dy ? y == node->y ? 2 : y <= node->y ? node->dx < 0 : node->dx > 0 :
 		(right = ((y - node->y) >> FRACBITS) * (node->dx >> FRACBITS)) <
 		(left  = ((x - node->x) >> FRACBITS) * (node->dy >> FRACBITS)) ? 0 :
-<<<<<<< HEAD
-		right == left ? 2 : 1;
-}
-
-static INT32 P_DivlineCrossed(fixed_t x1, fixed_t y1, fixed_t x2, fixed_t y2, const divline_t *node)
-{
-	return (P_DivlineSide(x1, y1, node) == P_DivlineSide(x2, y2, node));
-=======
 		right == left ? 2 : 1);
 }
 
@@ -83,7 +71,6 @@ static inline INT32 P_DivlineCrossed(fixed_t x1, fixed_t y1, fixed_t x2, fixed_t
 static inline INT32 P_DivlineCrossedFast(fixed_t x1, fixed_t y1, fixed_t x2, fixed_t y2, const divline_t *node)
 {
 	return (P_DivlineSideFast(x1, y1, node) == P_DivlineSideFast(x2, y2, node));
->>>>>>> Saturn-Next
 }
 
 static boolean P_CrossSubsecPolyObj(polyobj_t *po, register los_t *los)
@@ -131,13 +118,6 @@ static boolean P_CrossSubsecPolyObj(polyobj_t *po, register los_t *los)
 		if (P_DivlineCrossed(los->strace.x, los->strace.y, los->t2x, los->t2y, &divl))
 			continue;
 
-<<<<<<< HEAD
-		// stop because it is not two sided
-		//if (!(po->flags & POF_TESTHEIGHT))
-			//return false;
-
-=======
->>>>>>> Saturn-Next
 		frac = P_InterceptVector(&los->strace, &divl);
 
 		// get slopes of top and bottom of this polyobject line
@@ -215,22 +195,14 @@ static boolean P_CrossSubsector(size_t num, register los_t *los, boolean fast)
 		v2 = line->v2;
 
 		// line isn't crossed?
-<<<<<<< HEAD
-		if (P_DivlineCrossed(v1->x, v1->y, v2->x, v2->y, &los->strace))
-=======
 		if (divlinecrossFunc(v1->x, v1->y, v2->x, v2->y, &los->strace))
->>>>>>> Saturn-Next
 			continue;
 
 		divl.dx = v2->x - (divl.x = v1->x);
 		divl.dy = v2->y - (divl.y = v1->y);
 
 		// line isn't crossed?
-<<<<<<< HEAD
-		if (P_DivlineCrossed(los->strace.x, los->strace.y, los->t2x, los->t2y, &divl))
-=======
 		if (divlinecrossFunc(los->strace.x, los->strace.y, los->t2x, los->t2y, &divl))
->>>>>>> Saturn-Next
 			continue;
 
 		// stop because it is not two sided anyway
@@ -337,52 +309,22 @@ static boolean P_CrossSubsector(size_t num, register los_t *los, boolean fast)
 //  if strace crosses the given node successfully.
 //
 // killough 4/20/98: rewritten to remove tail recursion, clean up, and optimize
-<<<<<<< HEAD
-// cph - Made to use R_PointOnSide instead of P_DivlineSide, since the latter
-//  could return 2 which was ambigous, and the former is
-//  better optimised; also removes two casts :-)
-
-static boolean P_CrossBSPNode(INT32 bspnum, register los_t *los)
-=======
 static boolean P_CrossBSPNode(INT32 bspnum, register los_t *los, boolean fast)
->>>>>>> Saturn-Next
 {
 	const divlinefunc divlineFunc = fast ? P_DivlineSideFast : P_DivlineSide;
 
 	while (!(bspnum & NF_SUBSECTOR))
 	{
 		register node_t *bsp = nodes + bspnum;
-<<<<<<< HEAD
-		INT32 side = R_PointOnSide(los->strace.x, los->strace.y, bsp);
-		INT32 side2 = R_PointOnSide(los->t2x, los->t2y, bsp);
-=======
 
 		INT32 side = divlineFunc(los->strace.x, los->strace.y, (divline_t *)bsp) & 1;
 		INT32 side2 = divlineFunc(los->t2x, los->t2y, (divline_t *) bsp);
->>>>>>> Saturn-Next
 
 		if (side == side2)
 		{
 			// doesn't touch the other side
 			bspnum = bsp->children[side];
 		}
-<<<<<<< HEAD
-		else
-		{
-			// the partition plane is crossed here
-			if (!P_CrossBSPNode(bsp->children[side], los))
-			{
-				return false;  // cross the starting side
-			}
-			else
-			{
-				bspnum = bsp->children[side ^ 1];  // cross the ending side
-			}
-		}
-	}
-
-	return P_CrossSubsector((bspnum == -1 ? 0 : bspnum & ~NF_SUBSECTOR), los);
-=======
 		else // the partition plane is crossed here
 		{
 			if (!P_CrossBSPNode(bsp->children[side], los, fast))
@@ -393,7 +335,6 @@ static boolean P_CrossBSPNode(INT32 bspnum, register los_t *los, boolean fast)
 	}
 
 	return P_CrossSubsector((bspnum == -1 ? 0 : bspnum & ~NF_SUBSECTOR), los, fast);
->>>>>>> Saturn-Next
 }
 
 //

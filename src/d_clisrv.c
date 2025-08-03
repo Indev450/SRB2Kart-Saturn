@@ -164,8 +164,6 @@ UINT8 hu_redownloadinggamestate = 0;
 static UINT8 gamestate_resend_counter[MAXNETNODES];
 #endif
 
-static UINT8 gamestate_resend_counter[MAXNETNODES];
-
 // kart, true when a player is connecting or disconnecting so that the gameplay has stopped in its tracks
 boolean hu_stopped = false;
 
@@ -178,11 +176,7 @@ static UINT8 mynode; // my address pointofview server
 #ifdef SATURNPAK
 static boolean cl_redownloadinggamestate = false;
 boolean is_client_saturn[MAXNETNODES];
-<<<<<<< HEAD
-#define ISSATURN 69
-=======
 #endif
->>>>>>> Saturn-Next
 
 #ifdef SATURNJOIN
 #define ISSATURN 69
@@ -1542,13 +1536,9 @@ static boolean CL_SendJoin(void)
 	netbuffer->u.clientcfg.subversion = SUBVERSION;
 	strncpy(netbuffer->u.clientcfg.application, SRB2APPLICATION,
 			sizeof netbuffer->u.clientcfg.application);
-<<<<<<< HEAD
-	netbuffer->u.clientcfg.issaturn = ISSATURN;
-=======
 #ifdef SATURNJOIN
 	netbuffer->u.clientcfg.issaturn = ISSATURN;
 #endif
->>>>>>> Saturn-Next
 
 	return HSendPacket(servernode, false, 0, sizeof (clientconfig_pak));
 }
@@ -4092,13 +4082,9 @@ consvar_t cv_joinrefusemessage = {"joinrefusemessage", "The server is not accept
 
 consvar_t cv_allownewplayer = {"allowjoin", "On", CV_SAVE|CV_CALL, CV_OnOff, Joinable_OnChange, 0, NULL, NULL, 0, 0, NULL};
 
-<<<<<<< HEAD
-consvar_t cv_allownewsaturnplayer = {"allowsaturnjoin", "On", CV_SAVE|CV_HIDEN, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
-=======
 #ifdef SATURNJOIN
 consvar_t cv_allownewsaturnplayer = {"allowsaturnjoin", "On", CV_HIDEN, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 #endif
->>>>>>> Saturn-Next
 
 #ifdef VANILLAJOINNEXTROUND
 consvar_t cv_joinnextround = {"joinnextround", "Off", CV_SAVE|CV_NETVAR, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL}; /// \todo not done
@@ -4114,20 +4100,14 @@ consvar_t cv_discordinvites = {"discordinvites", "Everyone", CV_SAVE|CV_CALL, di
 static CV_PossibleValue_t resynchattempts_cons_t[] = {{0, "MIN"}, {20, "MAX"}, {0, NULL}};
 consvar_t cv_resynchattempts = {"resynchattempts", "2", CV_SAVE, resynchattempts_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
-<<<<<<< HEAD
-=======
 #ifdef SATURNPAK
->>>>>>> Saturn-Next
 static CV_PossibleValue_t gamestateattempts_cons_t[] = {{0, "MIN"}, {30, "MAX"}, {0, NULL}};
 consvar_t cv_gamestateattempts = {"gamestateresendattempts", "10", CV_SAVE, gamestateattempts_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 static CV_PossibleValue_t resynchcooldown_cons_t[] = {{0, "MIN"}, {20, "MAX"}, {0, NULL}};
 consvar_t cv_resynchcooldown = {"gamestatecooldown", "5", CV_SAVE, resynchcooldown_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL	};
-<<<<<<< HEAD
-=======
 #endif
 
->>>>>>> Saturn-Next
 consvar_t cv_blamecfail = {"blamecfail", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL	};
 
 // max file size to send to a player (in kilobytes)
@@ -4156,18 +4136,10 @@ static void Joinable_OnChange(void)
 	if (!server)
 		return;
 
-<<<<<<< HEAD
-	// disabling joins should also disable saturn joins unless its called with CV_StealthSet and vice versa to make life a bit easier
-	if (!cv_allownewplayer.value)
-		CV_Set(&cv_allownewsaturnplayer, "Off");
-	else if (cv_allownewplayer.value)
-		CV_Set(&cv_allownewsaturnplayer, "On");
-=======
 #ifdef SATURNJOIN
 	// disabling joins should also disable saturn joins unless its called with CV_StealthSet and vice versa to make life a bit easier
 	CV_SetValue(&cv_allownewsaturnplayer, cv_allownewplayer.value);
 #endif
->>>>>>> Saturn-Next
 
 	maxplayer = (UINT8)(min((dedicated ? MAXPLAYERS-1 : MAXPLAYERS), cv_maxplayers.value));
 
@@ -4480,15 +4452,9 @@ static void Got_AddPlayer(UINT8 **p, INT32 playernum)
 	if (server && multiplayer && motd[0] != '\0')
 		COM_BufAddText(va("sayto %d %s\n", newplayernum, motd));
 
-<<<<<<< HEAD
-	D_AddAutoloadFiles();
-
-	LUAh_PlayerJoin(newplayernum);
-=======
 	D_AddPostloadFiles();
 
 	LUA_HookInt(newplayernum, HOOK(PlayerJoin));
->>>>>>> Saturn-Next
 
 	if (newplayernum == consoleplayer)
 		LUA_HookVoid(HOOK(ServerJoin));
@@ -4792,15 +4758,11 @@ static void HandleConnect(SINT8 node)
 	{
 		SV_SendRefuse(node, va(M_GetText("Different SRB2Kart versions cannot\nplay a netgame!\n(server version %d.%d)"), VERSION, SUBVERSION));
 	}
-<<<<<<< HEAD
-	else if ((!cv_allownewplayer.value && node && netbuffer->u.clientcfg.issaturn != ISSATURN) || (!cv_allownewsaturnplayer.value && node && netbuffer->u.clientcfg.issaturn == ISSATURN))
-=======
 #ifdef SATURNJOIN
 	else if ((!cv_allownewplayer.value && node && netbuffer->u.clientcfg.issaturn != ISSATURN) || (!cv_allownewsaturnplayer.value && node && netbuffer->u.clientcfg.issaturn == ISSATURN))
 #else
 	else if (!cv_allownewplayer.value && node)
 #endif
->>>>>>> Saturn-Next
 	{
 		SV_SendRefuse(node, M_GetText(cv_joinrefusemessage.string));
 	}
@@ -4865,8 +4827,6 @@ static void HandleConnect(SINT8 node)
 #ifdef JOININGAME
 		if (nodewaiting[node])
 		{
-			netbuffer->packettype = PT_ISSATURN;
-			HSendPacket(node, false, 0, 0);
 			if (node && newnode)
 			{
 				SV_SendSaveGame(node, false); // send a complete game state
@@ -5294,17 +5254,11 @@ static void HandlePacketFromAwayNode(SINT8 node)
   * \sa HandlePacketFromPlayer
   *
   */
-static boolean CheckForSpeedHacks(UINT8 p, tic_t faketic)
+static boolean CheckForSpeedHacks(UINT8 p)
 {
-<<<<<<< HEAD
-	if (netcmds[faketic%TICQUEUE][p].forwardmove > MAXPLMOVE || netcmds[faketic%TICQUEUE][p].forwardmove < -MAXPLMOVE
-		|| netcmds[faketic%TICQUEUE][p].sidemove > MAXPLMOVE || netcmds[faketic%TICQUEUE][p].sidemove < -MAXPLMOVE
-		|| netcmds[faketic%TICQUEUE][p].driftturn > KART_FULLTURN || netcmds[faketic%TICQUEUE][p].driftturn < -KART_FULLTURN)
-=======
 	if (netcmds[maketic%BACKUPTICS][p].forwardmove > MAXPLMOVE || netcmds[maketic%BACKUPTICS][p].forwardmove < -MAXPLMOVE
 		|| netcmds[maketic%BACKUPTICS][p].sidemove > MAXPLMOVE || netcmds[maketic%BACKUPTICS][p].sidemove < -MAXPLMOVE
 		|| netcmds[maketic%BACKUPTICS][p].driftturn > KART_FULLTURN || netcmds[maketic%BACKUPTICS][p].driftturn < -KART_FULLTURN)
->>>>>>> Saturn-Next
 	{
 		CONS_Alert(CONS_WARNING, M_GetText("Illegal movement value received from node %d\n"), playernode[p]);
 		SendKick(p, KICK_MSG_CON_FAIL);
@@ -5825,165 +5779,7 @@ static void HandlePacketFromPlayer(SINT8 node)
 		case PT_CLIENT4MIS:
 		case PT_NODEKEEPALIVE:
 		case PT_NODEKEEPALIVEMIS:
-<<<<<<< HEAD
-			if (client)
-				break;
-
-			// Ignore tics from those not synched
-			if (resynch_inprogress[node])
-				break;
-
-			// To save bytes, only the low byte of tic numbers are sent
-			// Use ExpandTics to figure out what the rest of the bytes are
-			realstart = ExpandTics(netbuffer->u.clientpak.client_tic, nettics[node]);
-			realend = ExpandTics(netbuffer->u.clientpak.resendfrom, nettics[node]);
-
-			if (netbuffer->packettype == PT_CLIENTMIS || netbuffer->packettype == PT_CLIENT2MIS
-				|| netbuffer->packettype == PT_CLIENT3MIS || netbuffer->packettype == PT_CLIENT4MIS
-				|| netbuffer->packettype == PT_NODEKEEPALIVEMIS
-				|| supposedtics[node] < realend)
-			{
-				supposedtics[node] = realend;
-			}
-			// Discard out of order packet
-			if (nettics[node] > realend)
-			{
-				DEBFILE(va("out of order ticcmd discarded nettics = %u\n", nettics[node]));
-				break;
-			}
-
-			// Update the nettics
-			nettics[node] = realend;
-
-			// This should probably still timeout though, as the node should always have a player 1 number
-			if (netconsole == -1)
-				break;
-
-			// If a client sends a ticcmd it should mean they are done receiving the savegame
-			sendingsavegame[node] = false;
-
-			// As long as clients send valid ticcmds, the server can keep running, so reset the timeout
-			/// \todo Use a separate cvar for that kind of timeout?
-			freezetimeout[node] = I_GetTime() + connectiontimeout;
-			
-			// If we've alredy received a ticcmd for this tic, just submit it for the next one.
-			tic_t faketic = maketic;
-			if ((!!(netcmds[maketic % TICQUEUE][netconsole].angleturn & TICCMD_RECEIVED))
-				&& (maketic - firstticstosend < TICQUEUE - 1))
-				faketic++;
-
-			// Don't do anything for packets of type NODEKEEPALIVE?
-			// Sryder 2018/07/01: Update the freezetimeout still!
-			if (netbuffer->packettype == PT_NODEKEEPALIVE
-				|| netbuffer->packettype == PT_NODEKEEPALIVEMIS)
-				break;
-
-			// Copy ticcmd
-			G_MoveTiccmd(&netcmds[faketic%TICQUEUE][netconsole], &netbuffer->u.clientpak.cmd, 1);
-
-			// Check ticcmd for "speed hacks"
-			if (CheckForSpeedHacks((UINT8)netconsole, faketic))
-				break;
-
-			// Splitscreen cmd
-			if (((netbuffer->packettype == PT_CLIENT2CMD || netbuffer->packettype == PT_CLIENT2MIS)
-				|| (netbuffer->packettype == PT_CLIENT3CMD || netbuffer->packettype == PT_CLIENT3MIS)
-				|| (netbuffer->packettype == PT_CLIENT4CMD || netbuffer->packettype == PT_CLIENT4MIS))
-				&& (nodetoplayer2[node] >= 0))
-			{
-				G_MoveTiccmd(&netcmds[faketic%TICQUEUE][(UINT8)nodetoplayer2[node]],
-					&netbuffer->u.client2pak.cmd2, 1);
-
-				if (CheckForSpeedHacks((UINT8)nodetoplayer2[node], faketic))
-					break;
-			}
-
-			if (((netbuffer->packettype == PT_CLIENT3CMD || netbuffer->packettype == PT_CLIENT3MIS)
-				|| (netbuffer->packettype == PT_CLIENT4CMD || netbuffer->packettype == PT_CLIENT4MIS))
-				&& (nodetoplayer3[node] >= 0))
-			{
-				G_MoveTiccmd(&netcmds[faketic%TICQUEUE][(UINT8)nodetoplayer3[node]],
-					&netbuffer->u.client3pak.cmd3, 1);
-
-				if (CheckForSpeedHacks((UINT8)nodetoplayer3[node], faketic))
-					break;
-			}
-
-			if ((netbuffer->packettype == PT_CLIENT4CMD || netbuffer->packettype == PT_CLIENT4MIS)
-				&& (nodetoplayer4[node] >= 0))
-			{
-				G_MoveTiccmd(&netcmds[faketic%TICQUEUE][(UINT8)nodetoplayer4[node]],
-					&netbuffer->u.client4pak.cmd4, 1);
-
-				if (CheckForSpeedHacks((UINT8)nodetoplayer4[node], faketic))
-					break;
-			}
-
-			// A delay before we check resynching
-			// Used on join or just after a synch fail
-			if (resynch_delay[node])
-			{
-				--resynch_delay[node];
-				break;
-			}
-
-			if ((gamestate_resend_counter[node] != 0) && (I_GetTime() % ((max(cv_resynchcooldown.value, 1) * TICRATE) *2) == 0))
-				gamestate_resend_counter[node]--;
-
-			// Check player consistancy during the level
-			if (((!can_receive_gamestate[node]) && realstart <= gametic && realstart > gametic - TICQUEUE+1 && gamestate == GS_LEVEL
-				&& consistancy[realstart%TICQUEUE] != SHORT(netbuffer->u.clientpak.consistancy)) || (can_receive_gamestate[node] && realstart <= gametic && realstart + TICQUEUE - 1 > gametic && gamestate == GS_LEVEL
-				&& consistancy[realstart%TICQUEUE] != SHORT(netbuffer->u.clientpak.consistancy)
-				&& !resendingsavegame[node] && savegameresendcooldown[node] <= I_GetTime()))
-			{
-				// we need to send this so the client can tell us if it can receive the savegame
-				netbuffer->packettype = PT_WILLRESENDGAMESTATE;
-				HSendPacket(node, true, 0, 0);
-
-				if (can_receive_gamestate[node])
-					resendingsavegame[node] = true;
-				else
-				{
-					SV_RequireResynch(node);
-					resendingsavegame[node] = false;
-				}
-
-				if ((!can_receive_gamestate[node] && cv_resynchattempts.value && resynch_score[node] <= (unsigned)cv_resynchattempts.value*250) || (can_receive_gamestate[node] && (gamestate_resend_counter[node] < cv_gamestateattempts.value)))
-				{
-					if (can_receive_gamestate[node] && resendingsavegame[node])
-					{
-						gamestate_resend_counter[node]++;
-						DEBFILE(va("gamestate counter %d for player %d\n", gamestate_resend_counter[node], netconsole));
-					}
-
-					if (cv_blamecfail.value)
-						CONS_Printf(M_GetText("Synch failure for player %d (%s); expected %hd, got %hd\n"),
-							netconsole+1, player_names[netconsole],
-							consistancy[realstart%TICQUEUE],
-							SHORT(netbuffer->u.clientpak.consistancy));
-					DEBFILE(va("Restoring player %d (synch failure) [%update] %d!=%d\n",
-						netconsole, realstart, consistancy[realstart%TICQUEUE],
-						SHORT(netbuffer->u.clientpak.consistancy)));
-					break;
-				}
-				else
-				{
-					UINT8 buf[3];
-
-					buf[0] = (UINT8)netconsole;
-					buf[1] = KICK_MSG_CON_FAIL;
-					SendNetXCmd(XD_KICK, &buf, 2);
-					DEBFILE(va("player %d kicked (synch failure) [%u] %d!=%d\n",
-						netconsole, realstart, consistancy[realstart%TICQUEUE],
-						SHORT(netbuffer->u.clientpak.consistancy)));
-					break;
-				}
-			}
-			else if (resynch_score[node])
-				--resynch_score[node];
-=======
 			PT_ClientCmd(netconsole, node);
->>>>>>> Saturn-Next
 			break;
 		case PT_BASICKEEPALIVE:
 			PT_BasicKeepAlive(netconsole, node);
@@ -6021,13 +5817,7 @@ static void HandlePacketFromPlayer(SINT8 node)
 			PT_CanReceiveGamestate(node);
 			break;
 		case PT_RECEIVEDGAMESTATE:
-<<<<<<< HEAD
-			sendingsavegame[node] = false;
-			resendingsavegame[node] = false;
-			savegameresendcooldown[node] = I_GetTime() + cv_resynchcooldown.value * TICRATE; // I_GetTime() + 5 * TICRATE;
-=======
 			PT_ReceivedGamestate(node);
->>>>>>> Saturn-Next
 			break;
 		case PT_WILLRESENDGAMESTATE:
 			PT_WillResendGamestate();

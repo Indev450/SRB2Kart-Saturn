@@ -524,27 +524,10 @@ static boolean R_CheckBBox(const fixed_t *bspcoord)
 	INT32 sx1, sx2, boxpos;
 	const INT32* check;
 
-<<<<<<< HEAD:src/r_bsp.c
-	// Find the corners of the box that define the edges from current viewpoint.
-	if (viewx <= bspcoord[BOXLEFT])
-		boxpos = 0;
-	else if (viewx < bspcoord[BOXRIGHT])
-		boxpos = 1;
-	else
-		boxpos = 2;
-
-	if (viewy >= bspcoord[BOXTOP])
-		boxpos |= 0;
-	else if (viewy > bspcoord[BOXBOTTOM])
-		boxpos |= 1<<2;
-	else
-		boxpos |= 2<<2;
-=======
 	// Find the corners of the box
 	// that define the edges from current viewpoint.
 	boxpos = (viewx <= bspcoord[BOXLEFT] ? 0 : viewx < bspcoord[BOXRIGHT ] ? 1 : 2) +
 	(viewy >= bspcoord[BOXTOP ] ? 0 : viewy > bspcoord[BOXBOTTOM] ? 4 : 8);
->>>>>>> Saturn-Next:src/r_bsp.cpp
 
 	if (boxpos == 5)
 		return true;
@@ -990,11 +973,7 @@ static void R_Subsector(size_t num)
 					polysec->floorpic_angle-po->angle,
 					(light == -1 ? frontsector->extra_colormap : frontsector->lightlist[light].extra_colormap), NULL, po
 					,NULL // will ffloors be slopable eventually?
-<<<<<<< HEAD:src/r_bsp.c
-					, R_NoEncore(polysec, false));
-=======
 					, R_NoEncore(polysec, false), false, frontsector);
->>>>>>> Saturn-Next:src/r_bsp.cpp
 
 				ffloor[numffloors].height = polysec->floorheight;
 				ffloor[numffloors].polyobj = po;
@@ -1018,11 +997,7 @@ static void R_Subsector(size_t num)
 					(light == -1 ? frontsector->lightlevel : *frontsector->lightlist[light].lightlevel), polysec->ceiling_xoffs, polysec->ceiling_yoffs, polysec->ceilingpic_angle-po->angle,
 					(light == -1 ? frontsector->extra_colormap : frontsector->lightlist[light].extra_colormap), NULL, po
 					,NULL // will ffloors be slopable eventually?
-<<<<<<< HEAD:src/r_bsp.c
-					, R_NoEncore(polysec, true));
-=======
 					, R_NoEncore(polysec, true), false, frontsector);
->>>>>>> Saturn-Next:src/r_bsp.cpp
 
 				ffloor[numffloors].polyobj = po;
 				ffloor[numffloors].height = polysec->ceilingheight;

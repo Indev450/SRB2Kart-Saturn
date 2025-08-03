@@ -15,10 +15,6 @@ extern "C" {
 
 #define KART_FULLTURN 800
 
-<<<<<<< HEAD
-void K_LoadExtraVFX(void);
-=======
->>>>>>> Saturn-Next
 
 extern UINT8 colortranslations[MAXTRANSLATIONS][16];
 extern const char *KartColor_Names[MAXSKINCOLORS];
@@ -90,7 +86,6 @@ void K_CalculateBattleWanted(void);
 void K_CheckBumpers(void);
 void K_CheckSpectateStatus(void);
 void K_UpdateSpectateGrief(void);
-void K_SpawnWaterRunParticles(mobj_t *mobj);
 
 // sound stuff for lua
 void K_PlayAttackTaunt(mobj_t *source);

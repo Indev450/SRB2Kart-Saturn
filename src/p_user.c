@@ -2385,7 +2385,6 @@ static void P_MovePlayer(player_t *player)
 			S_StartSound(player->mo, sfx_floush);
 	}
 
-
 	////////////////////////////
 	//SPINNING AND SPINDASHING//
 	////////////////////////////
@@ -2461,7 +2460,10 @@ static void P_MovePlayer(player_t *player)
 
 static void P_DoZoomTube(player_t *player)
 {
+	INT32 sequence;
 	fixed_t speed;
+	thinker_t *th;
+	mobj_t *mo2;
 	mobj_t *waypoint = NULL;
 	fixed_t dist;
 	boolean reverse;
@@ -2474,6 +2476,8 @@ static void P_DoZoomTube(player_t *player)
 	player->powers[pw_flashing] = 1;
 
 	speed = abs(player->speed);
+
+	sequence = player->mo->tracer->threshold;
 
 	// change slope
 	dist = P_AproxDistance(P_AproxDistance(player->mo->tracer->x - player->mo->x, player->mo->tracer->y - player->mo->y), player->mo->tracer->z - player->mo->z);
@@ -2506,9 +2510,6 @@ static void P_DoZoomTube(player_t *player)
 		CONS_Debug(DBG_GAMELOGIC, "Looking for next waypoint...\n");
 
 		// Find next waypoint
-<<<<<<< HEAD
-		waypoint = reverse ? P_GetPreviousWaypoint(player->mo->tracer, false) : P_GetNextWaypoint(player->mo->tracer, false);
-=======
 		for (th = thinkercap.next; th != &thinkercap; th = th->next)
 		{
 			if (th->function != (actionf_p1)P_MobjThinker) // Not a mobj thinker
@@ -2531,7 +2532,6 @@ static void P_DoZoomTube(player_t *player)
 			waypoint = mo2;
 			break;
 		}
->>>>>>> Saturn-Next
 
 		if (waypoint)
 		{
@@ -4313,12 +4313,8 @@ static INT32 Quaketilt(player_t *player)
 	INT32 delta;
 	fixed_t speed;
 
-<<<<<<< HEAD
-	boolean sliptiding = player->kartstuff[k_drift] ? 0 : player->kartstuff[k_aizdriftstrat];
-=======
 	moma = R_PointToAngle2(0, 0, player->mo->momx, player->mo->momy);
 	delta = (INT32)( player->mo->angle - moma );
->>>>>>> Saturn-Next
 
 	if (delta == (INT32)ANGLE_180)/* FUCK YOU HAVE A HACK */
 	{
@@ -4349,10 +4345,7 @@ static INT32 Quaketilt(player_t *player)
 		tilt = ANGLE_22h;
 		lowb = 10*FRACUNIT;
 	}
-<<<<<<< HEAD
-=======
 
->>>>>>> Saturn-Next
 	lowb = FixedMul(lowb, player->mo->scale);
 	moma = FixedMul(FixedDiv(delta, ANGLE_90), tilt);
 	speed = abs( player->mo->momx + player->mo->momy );
@@ -4370,19 +4363,6 @@ static void DoABarrelRoll(player_t *player)
 {
 	angle_t slope = 0;
 	angle_t delta;
-	fixed_t smoothing;
-
-	if (player->exiting)
-	{
-		return;
-	}
-
-	if (player->kartstuff[k_respawn])
-	{
-		player->tilt = 0;
-		return;
-	}
-
 	fixed_t smoothing;
 
 	if (player->exiting)
@@ -4420,11 +4400,7 @@ static void DoABarrelRoll(player_t *player)
 	smoothing = FixedDiv(AbsAngle(slope), ANGLE_45);
 
 	delta = FixedDiv(delta, cv_tiltsmoothing.value *
-<<<<<<< HEAD
-	FixedDiv(FRACUNIT, FRACUNIT + smoothing));
-=======
 			FixedDiv(FRACUNIT, FRACUNIT + smoothing));
->>>>>>> Saturn-Next
 
 	if (delta)
 		player->tilt += delta;

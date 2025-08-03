@@ -496,16 +496,11 @@ static CV_PossibleValue_t ps_descriptor_cons_t[] = {
 	{1, "Average"}, {2, "SD"}, {3, "Minimum"}, {4, "Maximum"}, {0, NULL}};
 consvar_t cv_ps_descriptor = {"ps_descriptor", "Average", 0, ps_descriptor_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
-<<<<<<< HEAD
-consvar_t cv_director = {"director", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_kartdebugdirector = {"debugdirector", "Off", 0, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
-=======
 // only there to better keep track of it globally
 consvar_t cv_director = {"director", "Off", CV_HIDEN, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 consvar_t cv_kartdebugdirector = {"debugdirector", "Off", 0, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_showdirectorhud = {"showdirectorhud", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
->>>>>>> Saturn-Next
 
 consvar_t cv_showtrackaddon = {"showtrackaddon", "Yes", CV_SAVE, CV_YesNo, NULL, 0, NULL, NULL, 0, 0, NULL};
 
@@ -732,15 +727,10 @@ void D_RegisterServerCommands(void)
 #endif
 	CV_RegisterVar(&cv_maxplayers);
 	CV_RegisterVar(&cv_resynchattempts);
-<<<<<<< HEAD
-	CV_RegisterVar(&cv_gamestateattempts);
-	CV_RegisterVar(&cv_resynchcooldown);
-=======
 #ifdef SATURNPAK
 	CV_RegisterVar(&cv_gamestateattempts);
 	CV_RegisterVar(&cv_resynchcooldown);
 #endif
->>>>>>> Saturn-Next
 	CV_RegisterVar(&cv_maxsend);
 	CV_RegisterVar(&cv_noticedownload);
 	CV_RegisterVar(&cv_downloadspeed);
@@ -748,11 +738,7 @@ void D_RegisterServerCommands(void)
 	CV_RegisterVar(&cv_httpsource);
 #ifndef NONET
 	CV_RegisterVar(&cv_allownewplayer);
-<<<<<<< HEAD
-	CV_RegisterVar(&cv_allownewsaturnplayer);
-=======
 
->>>>>>> Saturn-Next
 	CV_RegisterVar(&cv_joinrefusemessage);
 	CV_RegisterVar(&cv_chatlogsize);
 #ifdef VANILLAJOINNEXTROUND
@@ -967,9 +953,6 @@ void D_RegisterClientCommands(void)
 	CV_RegisterVar(&cv_kartdebugdirector);
 	CV_RegisterVar(&cv_showdirectorhud);
 
-	CV_RegisterVar(&cv_director);
-	CV_RegisterVar(&cv_kartdebugdirector);
-
 	CV_RegisterVar(&cv_luaimmersion);
 	CV_RegisterVar(&cv_fakelocalskin);
 
@@ -1049,29 +1032,6 @@ void D_RegisterClientCommands(void)
 	CV_RegisterVar(&cv_paralleldrawmasked);
 
 	CV_RegisterVar(&cv_soundtest);
-<<<<<<< HEAD
-
-	CV_RegisterVar(&cv_nametag);
-	CV_RegisterVar(&cv_nametagtrans);
-	CV_RegisterVar(&cv_nametagfacerank);
-	CV_RegisterVar(&cv_nametagmaxplayers);
-	CV_RegisterVar(&cv_nametagmaxlenght);
-	//CV_RegisterVar(&cv_nametagscaling);
-	CV_RegisterVar(&cv_nametagdist);
-	CV_RegisterVar(&cv_showownnametag);
-	CV_RegisterVar(&cv_smallnametags);
-	CV_RegisterVar(&cv_nametagrestat);
-	CV_RegisterVar(&cv_nametaghop);
-	CV_RegisterVar(&cv_nametagscore);
-	CV_RegisterVar(&cv_shownametagfinish);
-	CV_RegisterVar(&cv_shownametagspectator);
-
-	CV_RegisterVar(&cv_driftgauge);
-	CV_RegisterVar(&cv_driftgaugeofs);
-	CV_RegisterVar(&cv_driftgaugetrans);
-	CV_RegisterVar(&cv_driftgaugestyle);
-=======
->>>>>>> Saturn-Next
 
 	CV_RegisterVar(&cv_perfstats);
 	CV_RegisterVar(&cv_ps_thinkframe_page);

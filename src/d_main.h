@@ -47,9 +47,6 @@ extern boolean dial_speedo_clr;   // dial speedometer colour check
 extern boolean kartz_speedo;      // kartZ speedo
 extern boolean kartz_speedo_smol; // kartZ speedo but smol
 
-<<<<<<< HEAD
-void D_AddAutoloadFiles(void);
-=======
 extern boolean clr_hud;           // colour hud check
 extern boolean driftgaugegfx_clr; // driftgauge colour check
 extern boolean big_lap;           // bigger lap counter
@@ -62,13 +59,11 @@ extern boolean joystickicon;      // Extra icons for the joystick input display
 extern boolean minidoticon;       // Dot icon for minimap player angle display
 extern boolean minilighticon;     // mkwii-style minimap headlight
 //
->>>>>>> Saturn-Next
 
 // autoload stuff
 extern boolean autoloading;
 extern boolean autoloaded;
 extern boolean postautoloaded;
-extern boolean wasautoloaded;
 
 void D_AddPostloadFiles(void);
 

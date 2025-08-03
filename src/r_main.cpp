@@ -296,55 +296,6 @@ static void FlipCam4_OnChange(void)
 	SendWeaponPref4();
 }
 
-<<<<<<< HEAD:src/r_main.c
-//
-// R_PointOnSide
-// Traverse BSP (sub) tree,
-// check point against partition plane.
-// Returns side 0 (front) or 1 (back).
-//
-// killough 5/2/98: reformatted
-//
-FUNCINLINE ATTRINLINE PUREFUNC INT32 R_PointOnSide(fixed_t x, fixed_t y, const node_t *restrict node)
-{
-	if (!node->dx)
-		return x <= node->x ? node->dy > 0 : node->dy < 0;
-
-	if (!node->dy)
-		return y <= node->y ? node->dx < 0 : node->dx > 0;
-
-	x -= node->x;
-	y -= node->y;
-
-	// Try to quickly decide by looking at sign bits.	
-	// also use a mask to avoid branch prediction
-	INT32 mask = (node->dy ^ node->dx ^ x ^ y) >> 31;
-	return (mask & ((node->dy ^ x) < 0)) |  // (left is negative)
-		(~mask & (FixedMul(y, node->dx>>FRACBITS) >= FixedMul(node->dy>>FRACBITS, x)));
-}
-
-// killough 5/2/98: reformatted
-FUNCINLINE ATTRINLINE PUREFUNC INT32 R_PointOnSegSide(fixed_t x, fixed_t y, const seg_t *line)
-{
-	fixed_t lx = line->v1->x;
-	fixed_t ly = line->v1->y;
-	fixed_t ldx = line->v2->x - lx;
-	fixed_t ldy = line->v2->y - ly;
-
-	if (!ldx)
-		return x <= lx ? ldy > 0 : ldy < 0;
-
-	if (!ldy)
-		return y <= ly ? ldx < 0 : ldx > 0;
-
-	x -= lx;
-	y -= ly;
-
-	// Try to quickly decide by looking at sign bits.
-	if ((ldy ^ ldx ^ x ^ y) < 0)
-		return (ldy ^ x) < 0;          // (left is negative)
-	return FixedMul(y, ldx>>FRACBITS) >= FixedMul(ldy>>FRACBITS, x);
-=======
 static void Precipstuff_OnChange(void)
 {
 	if (gamestate == GS_LEVEL)
@@ -352,7 +303,6 @@ static void Precipstuff_OnChange(void)
 		P_PurgePrecipitation();
 		P_SpawnPrecipitation();
 	}
->>>>>>> Saturn-Next:src/r_main.cpp
 }
 
 //
@@ -889,20 +839,10 @@ void R_ApplyViewMorph(void)
 	VID_BlitLinearScreen(tmpscr, vid.screens[0], vid.width, vid.height, vid.width, vid.width);
 }
 
-<<<<<<< HEAD:src/r_main.c
-static inline int intsign(int n) {
-	return n < 0 ? -1 : n > 0 ? 1 : 0;
-}
-
-angle_t R_ViewRollAngle(const player_t *player)
-{
-	angle_t roll = 0;
-=======
 angle_t R_ViewRollAngle(const player_t *player)
 {
 	angle_t roll = 0;
 	const UINT8 viewnum = R_GetViewNumber();
->>>>>>> Saturn-Next:src/r_main.cpp
 
 	if (gamestate != GS_LEVEL)
 	{
@@ -921,11 +861,7 @@ angle_t R_ViewRollAngle(const player_t *player)
 
 	if (cv_tilting.value)
 	{
-<<<<<<< HEAD:src/r_main.c
-		if (!player->spectator && !demo.freecam)
-=======
 		if (!player->spectator && !camera[viewnum].freecam)
->>>>>>> Saturn-Next:src/r_main.cpp
 			roll += player->tilt;
 
 		if (cv_actionmovie.value)
@@ -1117,25 +1053,9 @@ void R_Init(void)
 }
 
 //
-<<<<<<< HEAD:src/r_main.c
-// R_PointInSubsector
-//
-FUNCINLINE ATTRINLINE subsector_t *R_PointInSubsector(fixed_t x, fixed_t y)
-{
-	size_t nodenum = numnodes-1;
-
-	while (!(nodenum & NF_SUBSECTOR))
-		nodenum = nodes[nodenum].children[R_PointOnSide(x, y, nodes+nodenum)];
-
-	return &subsectors[nodenum & ~NF_SUBSECTOR];
-}
-
-//
-=======
->>>>>>> Saturn-Next:src/r_main.cpp
 // R_IsPointInSubsector, same as above but returns 0 if not in subsector
 //
-FUNCINLINE ATTRINLINE subsector_t *R_IsPointInSubsector(fixed_t x, fixed_t y)
+subsector_t *R_IsPointInSubsector(fixed_t x, fixed_t y)
 {
 	node_t *node;
 	INT32 side, i;
@@ -1167,77 +1087,6 @@ mobj_t *viewmobj;
 
 static void R_SetupCommonFrame(player_t * player, sector_t * sector)
 {
-<<<<<<< HEAD:src/r_main.c
-	camera_t *thiscam = &camera[0];
-	UINT8 i;
-
-	if (splitscreen)
-	{
-		for (i = 0; i <= splitscreen; i++)
-		{
-			if (player == &players[displayplayers[i]])
-			{
-				thiscam = &camera[i];
-				R_SetViewContext(VIEWCONTEXT_SKY1 + i);
-				break;
-			}
-		}
-	}
-	else
-	{
-		R_SetViewContext(VIEWCONTEXT_SKY1);
-	}
-
-	// cut-away view stuff
-	newview->sky = true;
-	viewmobj = skyboxmo[0];
-#ifdef PARANOIA
-	if (!viewmobj)
-	{
-		const size_t playeri = (size_t)(player - players);
-		I_Error("R_SkyboxFrame: viewmobj null (player %s)", sizeu1(playeri));
-	}
-#endif
-	if (player->awayviewtics)
-	{
-		newview->aim = player->awayviewaiming;
-		newview->angle = player->awayviewmobj->angle;
-	}
-	else if (thiscam->chase)
-	{
-		newview->aim = thiscam->aiming;
-		newview->angle = thiscam->angle;
-	}
-	else
-	{
-		newview->aim = player->aiming;
-		newview->angle = player->mo->angle;
-		if (!demo.playback && player->playerstate != PST_DEAD)
-		{
-			if (player == &players[consoleplayer])
-			{
-				newview->angle = localangle[0]; // WARNING: camera uses this
-				newview->aim = localaiming[0];
-			}
-			else if (splitscreen)
-			{
-				for (i = 1; i <= splitscreen; i++)
-				{
-					if (player == &players[displayplayers[i]])
-					{
-						newview->angle = localangle[i];
-						newview->aim = localaiming[i];
-						break;
-					}
-				}
-			}
-		}
-	}
-	newview->angle += viewmobj->angle;
-	newview->roll = R_ViewRollAngle(player);
-
-=======
->>>>>>> Saturn-Next:src/r_main.cpp
 	newview->player = player;
 
 	newview->x += quake.x;
@@ -1458,53 +1307,6 @@ void R_SetupFrame(UINT8 pnum, boolean skybox)
 		viewmobj = player->mo;
 		I_Assert(viewmobj != NULL);
 
-<<<<<<< HEAD:src/r_main.c
-		newview->aim = player->aiming;
-		newview->angle = viewmobj->angle;
-
-		if (!demo.playback && player->playerstate != PST_DEAD)
-		{
-			if (player == &players[consoleplayer])
-			{
-				newview->angle = localangle[0]; // WARNING: camera uses this
-				newview->aim = localaiming[0];
-			}
-			else if (splitscreen)
-			{
-				UINT8 i;
-				for (i = 1; i <= splitscreen; i++)
-				{
-					if (player == &players[displayplayers[i]])
-					{
-						newview->angle = localangle[i];
-						newview->aim = localaiming[i];
-						break;
-					}
-				}
-			}
-		}
-	}
-	newview->roll = R_ViewRollAngle(player);
-	newview->z += quake.z;
-
-	newview->player = player;
-
-	if (chasecam && !player->awayviewtics && !player->spectator)
-	{
-		newview->x = thiscam->x;
-		newview->y = thiscam->y;
-		newview->x += quake.x;
-		newview->y += quake.y;
-
-		if (thiscam->subsector && thiscam->subsector->sector)
-			newview->sector = thiscam->subsector->sector;
-		else
-			newview->sector = R_PointInSubsector(newview->x, newview->y)->sector;
-	}
-	else
-	{
-=======
->>>>>>> Saturn-Next:src/r_main.cpp
 		newview->x = viewmobj->x;
 		newview->y = viewmobj->y;
 		newview->z = player->viewz;

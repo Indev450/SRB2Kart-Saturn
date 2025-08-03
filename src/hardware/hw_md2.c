@@ -25,12 +25,8 @@
 #include "../doomstat.h"
 
 #ifdef HWRENDER
-<<<<<<< HEAD
-#include "hw_drv.h"
-=======
 
 #include "hw_gl.h"
->>>>>>> Saturn-Next
 #include "hw_md2.h"
 #include "../d_main.h"
 #include "../r_bsp.h"

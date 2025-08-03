@@ -414,11 +414,7 @@ typedef struct mobj_s
 	boolean init_salty;
 
 	// WARNING: New fields must be added separately to savegame and Lua.
-<<<<<<< HEAD
-	struct mobj_s *watertrail[4];
-=======
 	boolean islocal; // BEWARE: islocal does not exist in vanilla, strictly to be used for locally loaded addons to not cause desynchs with the mobj linedef trigger check. DO NOT USE THIS IN ACTUAL ADDONS YOU INTEND TO USE ON YOUR SERVER
->>>>>>> Saturn-Next
 } mobj_t;
 
 //

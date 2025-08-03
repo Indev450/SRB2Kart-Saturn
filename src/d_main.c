@@ -72,7 +72,6 @@
 #include "filesrch.h" // refreshdirmenu, pathisdirectory
 #include "d_protocol.h"
 #include "m_perfstats.h"
-#include "m_random.h"
 #include "k_kart.h"
 #include "k_hud.h"
 
@@ -452,11 +451,7 @@ static boolean D_Display(void)
 
 		if (rendermode == render_soft && !splitscreen)
 		{
-<<<<<<< HEAD
-			R_InterpolateViewRollAngle(rendertimefrac);
-=======
 			R_InterpolateViewRollAngle(rendertimefrac_unpaused);
->>>>>>> Saturn-Next
 			R_CheckViewMorph();
 		}
 
@@ -609,93 +604,7 @@ static boolean D_Display(void)
 		if (cv_renderview.value)
 		{
 			PS_START_TIMING(ps_rendercalltime);
-<<<<<<< HEAD
-
-			R_ApplyLevelInterpolators(R_UsingFrameInterpolation() ? rendertimefrac : FRACUNIT);
-
-			for (i = 0; i <= splitscreen; i++)
-			{
-				if (players[displayplayers[i]].mo || players[displayplayers[i]].playerstate == PST_DEAD)
-				{
-					if (i == 0) // Initialize for P1
-					{
-						viewwindowy = 0;
-						viewwindowx = 0;
-
-						topleft = screens[0] + viewwindowy*vid.width + viewwindowx;
-						objectsdrawn = 0;
-					}
-
-					viewssnum = i;
-
-#ifdef HWRENDER
-					if (rendermode != render_soft)
-						HWR_RenderPlayerView(i, &players[displayplayers[i]]);
-					else
-#endif
-					if (rendermode != render_none)
-					{
-						if (i > 0) // Splitscreen-specific
-						{
-							switch (i)
-							{
-								case 1:
-									if (splitscreen > 1)
-									{
-										viewwindowx = viewwidth;
-										viewwindowy = 0;
-									}
-									else
-									{
-										viewwindowx = 0;
-										viewwindowy = viewheight;
-									}
-									M_Memcpy(ylookup, ylookup2, viewheight*sizeof (ylookup[0]));
-									break;
-								case 2:
-									viewwindowx = 0;
-									viewwindowy = viewheight;
-									M_Memcpy(ylookup, ylookup3, viewheight*sizeof (ylookup[0]));
-									break;
-								case 3:
-									viewwindowx = viewwidth;
-									viewwindowy = viewheight;
-									M_Memcpy(ylookup, ylookup4, viewheight*sizeof (ylookup[0]));
-								default:
-									break;
-							}
-
-
-							topleft = screens[0] + viewwindowy*vid.width + viewwindowx;
-						}
-
-						R_RenderPlayerView(&players[displayplayers[i]]);
-
-						if (i > 0)
-							M_Memcpy(ylookup, ylookup1, viewheight*sizeof (ylookup[0]));
-					}
-				}
-			}
-
-			if (rendermode == render_soft)
-			{
-					if (!splitscreen)
-						R_ApplyViewMorph();
-
-				for (i = 0; i <= splitscreen; i++)
-				{
-					if (!postimgtype[i])
-						continue;
-
-					V_DoPostProcessor(i, postimgtype[i], postimgparam[i]);
-				}
-			}
-
-			R_RestoreLevelInterpolators();
-
-=======
 			D_Renderview();
->>>>>>> Saturn-Next
 			PS_STOP_TIMING(ps_rendercalltime);
 		}
 
@@ -869,19 +778,11 @@ void D_SRB2Loop(void)
 		precise_t enterprecise = I_GetPreciseTime();
 		precise_t finishprecise = enterprecise;
 
-<<<<<<< HEAD
-		{
-			// Casting the return value of a function is bad practice (apparently)
-			double budget = round((1.0 / R_GetFramerateCap()) * I_GetPrecisePrecision());
-			capbudget = (precise_t) budget;
-		}
-=======
 		Z_Frame_Reset();
 
 		// Casting the return value of a function is bad practice (apparently)
 		double budget = ((R_GetFramerateCap() == 0) ? 0.0 : round((1.0 / R_GetFramerateCap()) * I_GetPrecisePrecision()));
 		capbudget = (precise_t)budget;
->>>>>>> Saturn-Next
 
 		boolean ranwipe = false;
 
@@ -937,19 +838,11 @@ void D_SRB2Loop(void)
 			else if (rendertimeout < entertic) // in case the server hang or netsplit
 			{
 				// Lagless camera! Yay!
-<<<<<<< HEAD
-				if (gamestate == GS_LEVEL && netgame)
-				{
-					// Evaluate the chase cam once for every local realtic
-					// This might actually be better suited inside G_Ticker or TryRunTics
-					for (tic_t chasecamtics = 0; chasecamtics < realtics; chasecamtics++)
-=======
 				if (cv_laglesscam.value && gamestate == GS_LEVEL && netgame)
 				{
 					// Evaluate the chase cam once for every local realtic
 					// This might actually be better suited inside G_Ticker or TryRunTics
 					for (tic_t chasecamtics = 0; (chasecamtics < realtics); chasecamtics++)
->>>>>>> Saturn-Next
 					{
 						P_RunChaseCameras();
 					}
@@ -1314,35 +1207,6 @@ static void D_FindAddonsToAutoload(void)
 	fclose(autoloadconfigfile);
 }
 
-<<<<<<< HEAD
-void D_AddAutoloadFiles(void)
-{
-	if (wasautoloaded && postautoloaded)
-		return;
-
-	if (!wasautoloaded && !modeattacking)
-	{
-		CONS_Printf("D_AutoloadFile(): Loading autoloaded addons...\n");
-		if (W_AddAutoloadedLocalFiles(autoloadwadfiles) == 0)
-			CONS_Printf("D_AutoloadFile(): Are you sure you put in valid files or what?\n");
-		D_CleanFile(autoloadwadfiles);
-
-		wasautoloaded = true;
-	}
-
-	if ((!postautoloaded) && netgame)
-	{
-		CONS_Printf("D_AutoloadFile(): Loading postloaded addons...\n");
-		if (W_AddAutoloadedLocalFiles(autoloadwadfilespost) == 0)
-			CONS_Printf("D_AutoloadFile(): Are you sure you put in valid files or what?\n");
-		D_CleanFile(autoloadwadfilespost);
-
-		postautoloaded = true;
-	}
-}
-
-void D_CleanFile(char **filearray)
-=======
 static void D_AddAutoloadFiles(void)
 {
 	if (wasautoloaded)
@@ -1370,7 +1234,6 @@ void D_AddPostloadFiles(void)
 }
 
 static void D_CleanFile(char **filearray)
->>>>>>> Saturn-Next
 {
 	size_t pnumwadfiles;
 	for (pnumwadfiles = 0; filearray[pnumwadfiles]; pnumwadfiles++)
@@ -1489,12 +1352,8 @@ static void IdentifyVersion(void)
 		found_extra2_kart = true;
 	}
 
-<<<<<<< HEAD
-	if (FIL_ReadFileOK(va(pandf,srb2waddir,"extra3.kart"))) {
-=======
 	if (FIL_ReadFileOK(va(pandf,srb2waddir,"extra3.kart")))
 	{
->>>>>>> Saturn-Next
 		D_AddFile(va(pandf,srb2waddir,"extra3.kart"), startupwadfiles);
 		found_extra3_kart = true;
 	}
@@ -1884,12 +1743,8 @@ void D_SRB2Main(void)
 
 	D_SetupProtocol();
 
-	// seed M_Random because it is necessary; seed P_Random for scripts that
-	// might want to use random numbers immediately at start
-	if (!M_RandomSeedFromOS())
-		M_RandomSeed((UINT32)time(NULL)); // less good but serviceable
-
-	P_SetRandSeed(M_RandomizedSeed());
+	// rand() needs seeded regardless of password
+	srand((unsigned int)time(NULL));
 
 	if (M_CheckParm("-password") && M_IsNextParm())
 		D_SetPassword(M_GetNextParm());
@@ -1985,93 +1840,9 @@ void D_SRB2Main(void)
 
 	D_CheckSaturnExtraFiles(); // check all the saturn stuff :3
 
-<<<<<<< HEAD
-	if (found_extra_kart || found_extra2_kart || found_extra3_kart) // found the funny, add it in!
-	{
-		// HAYA: These are seperated for a reason lmao
-		if (found_extra_kart)
-			mainwads++;
-		if (found_extra2_kart)
-			mainwads++;
-		if (found_extra3_kart)
-			mainwads++;
-
-		// now check for extra speedometer stuff
-		if (W_CheckMultipleLumps("SP_SMSTC", "K_TRNULL", "SP_MKMH", "SP_MMPH", "SP_MFRAC", "SP_MPERC", NULL))
-		{
-			xtra_speedo = true;
-			PUSHSPEEDO(2, "Small");
-		}
-
-		if (W_LumpExists("SC_SMSTC"))
-			xtra_speedo_clr = true;
-
-		// now check for achii speedometer stuff
-		if (W_CheckMultipleLumps("SP_AMSTC", "K_TRNULL", "SP_AKMH", "SP_AMPH", "SP_AFRAC", "SP_APERC", NULL))
-		{
-			achi_speedo = true;
-			PUSHSPEEDO(3, "Achii");
-		}
-
-		if (W_CheckMultipleLumps("SC_AMSTC", "K_TRNULL", "SC_AKMH", "SC_AMPH", "SC_AFRAC", "SC_APERC", NULL))
-			achi_speedo_clr = true;
-
-		// check for bigger lap count
-		if (W_CheckMultipleLumps("K_STLAPB", "K_STLA2B", NULL))
-			big_lap = true;
-
-		// now check for colour hud stuff
-		if (W_CheckMultipleLumps("K_SCTIME", "K_SCTIMW", "K_SCLAPS", "K_SCLAPW", \
-			"K_SCBALN", "K_SCBALW", "K_SCKARM", "K_SCTOUT", "K_ISMULC", "K_ITMULC", "K_ITBC", "K_ITBCD", "K_ISBC", "K_ISBCD", NULL))
-			clr_hud = true;
-
-		// check for bigger lap count but color** its color bitch
-		if (W_CheckMultipleLumps("K_SCLAPB", "K_SCLA2B", NULL))
-			big_lap_color = true;
-
-		// kartzspeedo
-		if (W_CheckMultipleLumps("K_KZSP1", "K_KZSP2", "K_KZSP3", "K_KZSP4", "K_KZSP5", \
-			"K_KZSP6", "K_KZSP7", "K_KZSP8", "K_KZSP9", "K_KZSP10", "K_KZSP11", "K_KZSP12", \
-			"K_KZSP13", "K_KZSP14", "K_KZSP15", "K_KZSP16", "K_KZSP17", "K_KZSP18", "K_KZSP19", \
-			"K_KZSP20", "K_KZSP21", "K_KZSP22", "K_KZSP23", "K_KZSP24", "K_KZSP25", NULL))
-		{
-			kartzspeedo = true;
-			PUSHSPEEDO(4, "P-Meter");
-		}
-
-		// stat display for extended player setup
-		if (W_CheckMultipleLumps("K_STATNB", "K_STATN1", "K_STATN2", "K_STATN3", "K_STATN4", \
-			"K_STATN5", "K_STATN6", NULL))
-			statdp = true;
-
-		// Nametag stuffs
-		if (W_CheckMultipleLumps("NTLINE", "NTLINEV", "NTSP", "NTWH", NULL))
-			nametaggfx = true;
-
-		if (W_CheckMultipleLumps("K_DGAU","K_DCAU","K_DGSU","K_DCSU", NULL))
-			driftgaugegfx = true;
-
-		if (found_extra3_kart)
-		{
-			// 80x11 speedometer crap
-			if (W_LumpExists("SP_SM3TC"))
-			{
-				xtra_speedo3 = true;
-				PUSHSPEEDO(5, "Extra");
-			}
-
-			if (W_LumpExists("SC_SM3TC"))
-				xtra_speedo_clr3 = true;
-		}
-	}
-
-#undef PUSHSPEEDO
-	memcpy(speedo_cons_t, speedo_cons_temp, sizeof(speedo_cons_t));
-=======
 	// Do it before P_InitMapData because PNG patch
 	// conversion sometimes needs the palette
 	V_ReloadPalette();
->>>>>>> Saturn-Next
 
 	//
 	// search for maps
@@ -2271,11 +2042,8 @@ void D_SRB2Main(void)
 	CONS_Printf("ST_Init(): Init status bar.\n");
 	ST_Init();
 
-<<<<<<< HEAD
-=======
 	D_AddAutoloadFiles();
 
->>>>>>> Saturn-Next
 	// Set up splitscreen players before joining!
 	if (!dedicated && (M_CheckParm("-splitscreen") && M_IsNextParm()))
 	{

@@ -861,14 +861,11 @@ static const char *gamecontrolname[num_gamecontrols] =
 	"custom2",
 	"custom3",
 	"director",
-<<<<<<< HEAD
-=======
 	"freecam",
 	"camfloat",
 	"camsink",
 	"strafeleft",
 	"straferight",
->>>>>>> Saturn-Next
 };
 
 #define NUMKEYNAMES (sizeof (keynames)/sizeof (keyname_t))

@@ -385,13 +385,9 @@ typedef struct
 	UINT8 subversion; // Contains build version
 	UINT8 localplayers;	// number of splitscreen players
 	UINT8 mode;
-<<<<<<< HEAD
-	UINT8 issaturn;
-=======
 #ifdef SATURNJOIN
 	UINT8 issaturn;
 #endif
->>>>>>> Saturn-Next
 } ATTRPACK clientconfig_pak;
 
 #define SV_SPEEDMASK 0x03		// used to send kartspeed
@@ -604,9 +600,6 @@ extern consvar_t
 #ifdef VANILLAJOINNEXTROUND
 	cv_joinnextround,
 #endif
-<<<<<<< HEAD
-	cv_netticbuffer, cv_allownewplayer, cv_allownewsaturnplayer, cv_joinrefusemessage, cv_maxplayers, cv_resynchattempts, cv_resynchcooldown, cv_gamestateattempts, cv_blamecfail, cv_maxsend, cv_noticedownload, cv_downloadspeed;
-=======
 	cv_netticbuffer, cv_allownewplayer,
 #ifdef SATURNJOIN
 	cv_allownewsaturnplayer,
@@ -616,7 +609,6 @@ extern consvar_t
 	cv_resynchcooldown, cv_gamestateattempts,
 #endif
 	cv_blamecfail, cv_maxsend, cv_noticedownload, cv_downloadspeed;
->>>>>>> Saturn-Next
 
 extern consvar_t cv_connectawaittime;
 

@@ -1863,191 +1863,8 @@ static void P_NetArchiveThinkers(savebuffer_t *save)
 			continue;
 		}
 #ifdef PARANOIA
-<<<<<<< HEAD
-		else if (th->function.acp1 == (actionf_p1)P_NullPrecipThinker);
-#endif
-		else if (th->function.acp1 == (actionf_p1)T_MoveCeiling)
-		{
-			SaveCeilingThinker(th, tc_ceiling);
-			continue;
-		}
-		else if (th->function.acp1 == (actionf_p1)T_CrushCeiling)
-		{
-			SaveCeilingThinker(th, tc_crushceiling);
-			continue;
-		}
-		else if (th->function.acp1 == (actionf_p1)T_MoveFloor)
-		{
-			SaveFloormoveThinker(th, tc_floor);
-			continue;
-		}
-		else if (th->function.acp1 == (actionf_p1)T_LightningFlash)
-		{
-			SaveLightflashThinker(th, tc_flash);
-			continue;
-		}
-		else if (th->function.acp1 == (actionf_p1)T_StrobeFlash)
-		{
-			SaveStrobeThinker(th, tc_strobe);
-			continue;
-		}
-		else if (th->function.acp1 == (actionf_p1)T_Glow)
-		{
-			SaveGlowThinker(th, tc_glow);
-			continue;
-		}
-		else if (th->function.acp1 == (actionf_p1)T_FireFlicker)
-		{
-			SaveFireflickerThinker(th, tc_fireflicker);
-			continue;
-		}
-		else if (th->function.acp1 == (actionf_p1)T_MoveElevator)
-		{
-			SaveElevatorThinker(th, tc_elevator);
-			continue;
-		}
-		else if (th->function.acp1 == (actionf_p1)T_ContinuousFalling)
-		{
-			SaveSpecialLevelThinker(th, tc_continuousfalling);
-			continue;
-		}
-		else if (th->function.acp1 == (actionf_p1)T_ThwompSector)
-		{
-			SaveSpecialLevelThinker(th, tc_thwomp);
-			continue;
-		}
-		else if (th->function.acp1 == (actionf_p1)T_NoEnemiesSector)
-		{
-			SaveSpecialLevelThinker(th, tc_noenemies);
-			continue;
-		}
-		else if (th->function.acp1 == (actionf_p1)T_EachTimeThinker)
-		{
-			SaveSpecialLevelThinker(th, tc_eachtime);
-			continue;
-		}
-		else if (th->function.acp1 == (actionf_p1)T_RaiseSector)
-		{
-			SaveSpecialLevelThinker(th, tc_raisesector);
-			continue;
-		}
-		else if (th->function.acp1 == (actionf_p1)T_CameraScanner)
-		{
-			SaveElevatorThinker(th, tc_camerascanner);
-			continue;
-		}
-		else if (th->function.acp1 == (actionf_p1)T_Scroll)
-		{
-			SaveScrollThinker(th, tc_scroll);
-			continue;
-		}
-		else if (th->function.acp1 == (actionf_p1)T_Friction)
-		{
-			SaveFrictionThinker(th, tc_friction);
-			continue;
-		}
-		else if (th->function.acp1 == (actionf_p1)T_Pusher)
-		{
-			SavePusherThinker(th, tc_pusher);
-			continue;
-		}
-		else if (th->function.acp1 == (actionf_p1)T_BounceCheese)
-		{
-			SaveSpecialLevelThinker(th, tc_bouncecheese);
-			continue;
-		}
-		else if (th->function.acp1 == (actionf_p1)T_StartCrumble)
-		{
-			SaveElevatorThinker(th, tc_startcrumble);
-			continue;
-		}
-		else if (th->function.acp1 == (actionf_p1)T_MarioBlock)
-		{
-			SaveSpecialLevelThinker(th, tc_marioblock);
-			continue;
-		}
-		else if (th->function.acp1 == (actionf_p1)T_MarioBlockChecker)
-		{
-			SaveSpecialLevelThinker(th, tc_marioblockchecker);
-			continue;
-		}
-		else if (th->function.acp1 == (actionf_p1)T_SpikeSector)
-		{
-			SaveSpecialLevelThinker(th, tc_spikesector);
-			continue;
-		}
-		else if (th->function.acp1 == (actionf_p1)T_FloatSector)
-		{
-			SaveSpecialLevelThinker(th, tc_floatsector);
-			continue;
-		}
-		else if (th->function.acp1 == (actionf_p1)T_BridgeThinker)
-		{
-			SaveSpecialLevelThinker(th, tc_bridgethinker);
-			continue;
-		}
-		else if (th->function.acp1 == (actionf_p1)T_LaserFlash)
-		{
-			SaveLaserThinker(th, tc_laserflash);
-			continue;
-		}
-		else if (th->function.acp1 == (actionf_p1)T_LightFade)
-		{
-			SaveLightlevelThinker(th, tc_lightfade);
-			continue;
-		}
-		else if (th->function.acp1 == (actionf_p1)T_ExecutorDelay)
-		{
-			SaveExecutorThinker(th, tc_executor);
-			continue;
-		}
-		else if (th->function.acp1 == (actionf_p1)T_Disappear)
-		{
-			SaveDisappearThinker(th, tc_disappear);
-			continue;
-		}
-		else if (th->function.acp1 == (actionf_p1)T_PolyObjRotate)
-		{
-			SavePolyrotatetThinker(th, tc_polyrotate);
-			continue;
-		}
-		else if (th->function.acp1 == (actionf_p1)T_PolyObjMove)
-		{
-			SavePolymoveThinker(th, tc_polymove);
-			continue;
-		}
-		else if (th->function.acp1 == (actionf_p1)T_PolyObjWaypoint)
-		{
-			SavePolywaypointThinker(th, tc_polywaypoint);
-			continue;
-		}
-		else if (th->function.acp1 == (actionf_p1)T_PolyDoorSlide)
-		{
-			SavePolyslidedoorThinker(th, tc_polyslidedoor);
-			continue;
-		}
-		else if (th->function.acp1 == (actionf_p1)T_PolyDoorSwing)
-		{
-			SavePolyswingdoorThinker(th, tc_polyswingdoor);
-			continue;
-		}
-		else if (th->function.acp1 == (actionf_p1)T_PolyObjFlag)
-		{
-			SavePolymoveThinker(th, tc_polyflag);
-			continue;
-		}
-		else if (th->function.acp1 == (actionf_p1)T_PolyObjDisplace)
-		{
-			SavePolydisplaceThinker(th, tc_polydisplace);
-			continue;
-		}
-#ifdef PARANOIA
-		else if (th->function.acp1 != P_RemoveThinkerDelayed) // wait garbage collection
-			I_Error("unknown thinker type %p", th->function.acp1);
-=======
 		else if (th->function != (actionf_p1)P_RemoveThinkerDelayed) // wait garbage collection
 			I_Error("unknown thinker type %p", th->function);
->>>>>>> Saturn-Next
 #endif
 	}
 
@@ -3217,66 +3034,10 @@ static void P_RelinkPointers(void)
 
 		if (player)
 		{
-<<<<<<< HEAD
-			temp = (UINT32)(size_t)mobj->tracer;
-			mobj->tracer = NULL;
-			if (!P_SetTarget(&mobj->tracer, P_FindNewPosition(temp)))
-				CONS_Debug(DBG_GAMELOGIC, "tracer not found on %d\n", mobj->type);
-		}
-		if (mobj->target)
-		{
-			temp = (UINT32)(size_t)mobj->target;
-			mobj->target = NULL;
-			if (!P_SetTarget(&mobj->target, P_FindNewPosition(temp)))
-				CONS_Debug(DBG_GAMELOGIC, "target not found on %d\n", mobj->type);
-		}
-		if (mobj->hnext)
-		{
-			temp = (UINT32)(size_t)mobj->hnext;
-			mobj->hnext = NULL;
-			if (!P_SetTarget(&mobj->hnext, P_FindNewPosition(temp)))
-				CONS_Debug(DBG_GAMELOGIC, "hnext not found on %d\n", mobj->type);
-		}
-		if (mobj->hprev)
-		{
-			temp = (UINT32)(size_t)mobj->hprev;
-			mobj->hprev = NULL;
-			if (!P_SetTarget(&mobj->hprev, P_FindNewPosition(temp)))
-				CONS_Debug(DBG_GAMELOGIC, "hprev not found on %d\n", mobj->type);
-		}
-		if (mobj->player && mobj->player->capsule)
-		{
-			temp = (UINT32)(size_t)mobj->player->capsule;
-			mobj->player->capsule = NULL;
-			if (!P_SetTarget(&mobj->player->capsule, P_FindNewPosition(temp)))
-				CONS_Debug(DBG_GAMELOGIC, "capsule not found on %d\n", mobj->type);
-		}
-		if (mobj->player && mobj->player->axis1)
-		{
-			temp = (UINT32)(size_t)mobj->player->axis1;
-			mobj->player->axis1 = NULL;
-			if (!P_SetTarget(&mobj->player->axis1, P_FindNewPosition(temp)))
-				CONS_Debug(DBG_GAMELOGIC, "axis1 not found on %d\n", mobj->type);
-		}
-		if (mobj->player && mobj->player->axis2)
-		{
-			temp = (UINT32)(size_t)mobj->player->axis2;
-			mobj->player->axis2 = NULL;
-			if (!P_SetTarget(&mobj->player->axis2, P_FindNewPosition(temp)))
-				CONS_Debug(DBG_GAMELOGIC, "axis2 not found on %d\n", mobj->type);
-		}
-		if (mobj->player && mobj->player->awayviewmobj)
-		{
-			temp = (UINT32)(size_t)mobj->player->awayviewmobj;
-			mobj->player->awayviewmobj = NULL;
-			if (!P_SetTarget(&mobj->player->awayviewmobj, P_FindNewPosition(temp)))
-				CONS_Debug(DBG_GAMELOGIC, "awayviewmobj not found on %d\n", mobj->type);
-=======
 			RELINK(player->capsule, "capsule");
 			RELINK(player->axis1, "axis1");
 			RELINK(player->axis2, "axis2");
 			RELINK(player->awayviewmobj, "awayviewmobj");
->>>>>>> Saturn-Next
 		}
 #undef RELINK
 	}
@@ -3532,7 +3293,6 @@ FUNCINLINE static ATTRINLINE boolean P_NetUnArchiveMisc(savebuffer_t *save, bool
 {
 	UINT32 pig;
 	INT32 i;
-	UINT8 *old_save_p;
 
 	if (READUINT32(save->p) != ARCHIVEBLOCK_MISC)
 		I_Error("Bad $$$.sav at archive block Misc");
@@ -3570,16 +3330,11 @@ FUNCINLINE static ATTRINLINE boolean P_NetUnArchiveMisc(savebuffer_t *save, bool
 
 	encoremode = (boolean)READUINT8(save->p);
 
-	// FIXME: save_p should not be global!!!
-	old_save_p = save_p;
-
 	if (!P_SetupLevel(true, reloading))
 	{
 		CONS_Alert(CONS_ERROR, M_GetText("Can't load the level!\n"));
 		return false;
 	}
-
-	save_p = old_save_p;
 
 	// get the time
 	leveltime = READUINT32(save->p);
@@ -3713,11 +3468,7 @@ boolean P_LoadGame(savebuffer_t *save, INT16 mapoverride)
 	P_UnArchivePlayer(save);
 
 	// Savegame end marker
-<<<<<<< HEAD
-	if (READUINT8(save_p) != 0x1d)
-=======
 	if (READUINT8(save->p) != 0x1d)
->>>>>>> Saturn-Next
 	{
 		CONS_Alert(CONS_ERROR, M_GetText("Corrupt Luabanks! (Failed consistency check)\n"));
 		return false;

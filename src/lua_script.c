@@ -366,18 +366,7 @@ void LUA_DumpFile(const char *filename)
 }
 #endif
 
-static void createMathLibState(void)
-{
-	mL = lua_newstate(LUA_Alloc, NULL);
-	lua_atpanic(mL, LUA_Panic);
-
-	// open only enum lib
-	lua_pushcfunction(mL, LUA_EnumLib);
-	lua_pushboolean(mL, true);
-	lua_call(mL, 1, 0);
-}
-
-fixed_t LUA_EvalMathEx(const char *word, const char **error)
+fixed_t LUA_EvalMath(const char *word)
 {
 	char buf[1024], *b;
 	const char *p;
@@ -386,7 +375,15 @@ fixed_t LUA_EvalMathEx(const char *word, const char **error)
 	// make a new state so SOC can't interefere with scripts
 	// allocate state
 	if (mL == NULL)
-		createMathLibState();
+	{
+		mL = lua_newstate(LUA_Alloc, NULL);
+		lua_atpanic(mL, LUA_Panic);
+
+		// open only enum lib
+		lua_pushcfunction(mL, LUA_EnumLib);
+		lua_pushboolean(mL, true);
+		lua_call(mL, 1, 0);
+	}
 
 	// change ^ into ^^ for Lua.
 	strcpy(buf, "return ");
@@ -404,11 +401,6 @@ fixed_t LUA_EvalMathEx(const char *word, const char **error)
 	if (luaL_dostring(mL, buf))
 	{
 		p = lua_tostring(mL, -1);
-<<<<<<< HEAD
-		while (*p++ != ':' && *p) ;
-		p += 3; // "1: "
-		if (error) *error = p;
-=======
 
 		// If there is [string "..."]:1: text, skip it
 		if (strstr(p, ":") != NULL)
@@ -418,55 +410,9 @@ fixed_t LUA_EvalMathEx(const char *word, const char **error)
 			p += 3; // "1: "
 		}
 		CONS_Alert(CONS_WARNING, "%s\n", p);
->>>>>>> Saturn-Next
 	}
 	else
 		res = lua_tointeger(mL, -1);
-
-	return res;
-}
-
-fixed_t LUA_EvalMath(const char *word)
-{
-	const char *error = NULL;
-	fixed_t res = LUA_EvalMathEx(word, &error);
-
-	if (error)
-		CONS_Alert(CONS_WARNING, "%s\n", error);
-
-	return res;
-}
-
-// A hack to prevent lua from crashing game if constant doesn't exist
-static int lua_get_constant(lua_State *L)
-{
-	lua_pushvalue(mL, LUA_GLOBALSINDEX);
-	lua_pushvalue(L, 1);
-	lua_gettable(L, -2);
-
-	return 1;
-}
-
-fixed_t LUA_GetConstant(const char *word)
-{
-	if (mL == NULL)
-		createMathLibState();
-
-	fixed_t res = 0;
-
-	lua_pushcfunction(mL, lua_get_constant);
-	lua_pushstring(mL, word);
-
-	if (lua_pcall(mL, 1, 1, 0) == 0)
-	{
-		if (lua_isnumber(mL, -1))
-			res = lua_tointeger(mL, -1);
-	}
-	else
-	{
-		// Pop error message
-		lua_pop(mL, 1);
-	}
 
 	return res;
 }
@@ -1314,40 +1260,7 @@ void LUA_UnArchive(savebuffer_t *save, boolean network)
 		UnArchiveExtVars(&save->p, &players[i], network);
 	}
 
-<<<<<<< HEAD
-	do {
-		mobjnum = READUINT32(save_p); // read a mobjnum	
-		for (th = thinkercap.next; th != &thinkercap; th = th->next)
-		{
-			if (th->function.acp1 != (actionf_p1)P_MobjThinker)
-				continue;
-			if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
-				continue;
-			if (((mobj_t *)th)->mobjnum != mobjnum) // find matching mobj
-				continue;
-			UnArchiveExtVars(th); // apply variables
-		}
-	} while(mobjnum != UINT32_MAX); // repeat until end of mobjs marker.
-
-	LUAh_NetArchiveHook(NetUnArchive); // call the NetArchive hook in unarchive mode
-	UnArchiveTables();
-
-	if (gL)
-		lua_pop(gL, 1); // pop tables
-}
-
-// simplified versions of LUA_Archive for demos
-void LUA_ArchiveDemo(void)
-{
-	INT32 i;
-
-	if (gL)
-		lua_newtable(gL); // tables to be archived.
-
-	for (i = 0; i < MAXPLAYERS; i++)
-=======
 	if (network == true)
->>>>>>> Saturn-Next
 	{
 		do {
 			mobjnum = READUINT32(save->p); // read a mobjnum

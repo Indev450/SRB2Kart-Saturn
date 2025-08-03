@@ -152,101 +152,6 @@ mapthing_t *playerstarts[MAXPLAYERS];
 mapthing_t *bluectfstarts[MAXPLAYERS];
 mapthing_t *redctfstarts[MAXPLAYERS];
 
-// Maintain waypoints
-mobj_t *waypoints[NUMWAYPOINTSEQUENCES][WAYPOINTSEQUENCESIZE];
-UINT16 numwaypoints[NUMWAYPOINTSEQUENCES];
-
-void P_AddWaypoint(UINT8 sequence, UINT8 id, mobj_t *waypoint)
-{
-	waypoints[sequence][id] = waypoint;
-	if (id >= numwaypoints[sequence])
-		numwaypoints[sequence] = id + 1;
-}
-
-static void P_ResetWaypoints(void)
-{
-	UINT16 sequence, id;
-	for (sequence = 0; sequence < NUMWAYPOINTSEQUENCES; sequence++)
-	{
-		for (id = 0; id < numwaypoints[sequence]; id++)
-			waypoints[sequence][id] = NULL;
-
-		numwaypoints[sequence] = 0;
-	}
-}
-
-mobj_t *P_GetFirstWaypoint(UINT8 sequence)
-{
-	return waypoints[sequence][0];
-}
-
-mobj_t *P_GetLastWaypoint(UINT8 sequence)
-{
-	return waypoints[sequence][numwaypoints[sequence] - 1];
-}
-
-mobj_t *P_GetPreviousWaypoint(mobj_t *current, boolean wrap)
-{
-	UINT8 sequence = current->threshold;
-	UINT8 id = current->health;
-
-	if (id == 0)
-	{
-		if (!wrap)
-			return NULL;
-
-		id = numwaypoints[sequence] - 1;
-	}
-	else
-		id--;
-
-	return waypoints[sequence][id];
-}
-
-mobj_t *P_GetNextWaypoint(mobj_t *current, boolean wrap)
-{
-	UINT8 sequence = current->threshold;
-	UINT8 id = current->health;
-
-	if (id == numwaypoints[sequence] - 1)
-	{
-		if (!wrap)
-			return NULL;
-
-		id = 0;
-	}
-	else
-		id++;
-
-	return waypoints[sequence][id];
-}
-
-mobj_t *P_GetClosestWaypoint(UINT8 sequence, mobj_t *mo)
-{
-	UINT8 wp;
-	mobj_t *mo2, *result = NULL;
-	fixed_t bestdist = 0;
-	fixed_t curdist;
-
-	for (wp = 0; wp < numwaypoints[sequence]; wp++)
-	{
-		mo2 = waypoints[sequence][wp];
-
-		if (!mo2)
-			continue;
-
-		curdist = P_AproxDistance(P_AproxDistance(mo->x - mo2->x, mo->y - mo2->y), mo->z - mo2->z);
-
-		if (result && curdist > bestdist)
-			continue;
-
-		result = mo2;
-		bestdist = curdist;
-	}
-
-	return result;
-}
-
 // Global state for PartialAddWadFile/MultiSetupWadFiles
 // Might be replacable with parameters, but non-trivial when the functions are called on separate tics
 static SINT8 partadd_stage = -1;
@@ -2784,158 +2689,9 @@ static boolean P_RunSpecialWipe(boolean reloadinggamestate)
 	return false;
 }
 
-<<<<<<< HEAD
-	if (!S_PrecacheSound())
-		S_ClearSfx();
-
-	// As oddly named as this is, this handles music only.
-	// We should be fine starting it here.
-	if (!reloadinggamestate)
-		S_Start();
-
-	levelfadecol = (encoremode && !ranspecialwipe ? 122 : 120);
-
-	// Let's fade to white here
-	// But only if we didn't do the encore startup wipe
-	if (!ranspecialwipe && !demo.rewinding && !reloadinggamestate)
-	{
-		if(rendermode != render_none)
-		{
-			F_WipeStartScreen();
-			V_DrawFill(0, 0, BASEVIDWIDTH, BASEVIDHEIGHT, levelfadecol);
-
-			F_WipeEndScreen();
-			F_RunWipe(wipedefs[(encoremode ? wipe_level_final : wipe_level_toblack)], false);
-		}
-		else //dedicated servers
-		{
-			F_RunWipe(wipedefs[(encoremode ? wipe_level_final : wipe_level_toblack)], false);
-		}
-	}
-
-	// Reset the palette now all fades have been done
-	if (rendermode != render_none)
-		V_SetPaletteLump(GetPalette()); // Set the level palette
-
-	// Print "SPEEDING OFF TO [ZONE] [ACT 1]..."
-	/*if (rendermode != render_none)
-	{
-		// Don't include these in the fade!
-		char tx[64];
-		V_DrawSmallString(1, 191, V_ALLOWLOWERCASE, M_GetText("Speeding off to..."));
-		snprintf(tx, 63, "%s%s%s",
-			mapheaderinfo[gamemap-1]->lvlttl,
-			(strlen(mapheaderinfo[gamemap-1]->zonttl) > 0) ? va(" %s",mapheaderinfo[gamemap-1]->zonttl) : // SRB2kart
-			((mapheaderinfo[gamemap-1]->levelflags & LF_NOZONE) ? "" : " Zone"),
-			(strlen(mapheaderinfo[gamemap-1]->actnum) > 0) ? va(", Act %s",mapheaderinfo[gamemap-1]->actnum) : "");
-		V_DrawSmallString(1, 195, V_ALLOWLOWERCASE, tx);
-		I_UpdateNoVsync();
-	}*/
-
-	LUA_InvalidateLevel();
-
-	for (ss = sectors; sectors+numsectors != ss; ss++)
-	{
-		Z_Free(ss->attached);
-		Z_Free(ss->attachedsolid);
-	}
-
-	// Clear pointers that would be left dangling by the purge
-	R_FlushTranslationColormapCache();
-
-	Z_FreeTags(PU_LEVEL, PU_PURGELEVEL - 1);
-
-#if defined (WALLSPLATS) || defined (FLOORSPLATS)
-	// clear the splats from previous level
-	R_ClearLevelSplats();
-#endif
-
-	R_InitializeLevelInterpolators();
-
-	P_InitThinkers();
-	R_InitMobjInterpolators();
-	P_InitCachedActions();
-
-	/// \note for not spawning precipitation, etc. when loading netgame snapshots
-	if (skipprecip)
-	{
-		fromnetsave = 1;
-		loadprecip = 0;
-		loademblems = 0;
-		midgamejoin = 1;
-	}
-
-	// internal game map
-	maplumpname = G_BuildMapName(gamemap);
-	lastloadedmaplumpnum = W_CheckNumForName(maplumpname);
-	if (lastloadedmaplumpnum == INT16_MAX)
-		I_Error("Map %s not found.\n", maplumpname);
-
-	curmapvirt = vres_GetMap(lastloadedmaplumpnum);
-
-	R_ReInitColormaps(mapheaderinfo[gamemap-1]->palette,
-		(encoremode ? W_CheckNumForName(va("%sE", maplumpname)) : LUMPERROR));
-	CON_SetupBackColormap();
-
-	// SRB2 determines the sky texture to be used depending on the map header.
-	P_SetupLevelSky(mapheaderinfo[gamemap-1]->skynum, true);
-
-	numdmstarts = numredctfstarts = numbluectfstarts = 0;
-
-	// reset the player starts
-	for (i = 0; i < MAXPLAYERS; i++)
-		playerstarts[i] = NULL;
-	for (i = 0; i < 2; i++)
-		skyboxmo[i] = NULL;
-
-	P_ResetWaypoints();
-
-	P_MapStart();
-
-	if (lastloadedmaplumpnum)
-		P_LoadMapFromFile();
-
-	P_ResetDynamicSlopes();
-
-	P_LoadThings();
-
-	P_SpawnSecretItems(loademblems);
-
-	for (numcoopstarts = 0; numcoopstarts < MAXPLAYERS; numcoopstarts++)
-		if (!playerstarts[numcoopstarts])
-			break;
-
-	globalweather = mapheaderinfo[gamemap-1]->weather;
-
-	// set up world state
-	P_SpawnSpecials(fromnetsave);
-
-	if (loadprecip) //  ugly hack for P_NetUnArchiveMisc (and P_LoadNetGame)
-		P_SpawnPrecipitation();
-
-#ifdef HWRENDER // not win32 only 19990829 by Kin
-	if (rendermode == render_opengl)
-	{
-		HWR_FreeExtraSubsectors();
-
-		// stuff like HWR_CreatePlanePolygons is called there
-		HWR_LoadLevel();
-	}
-#endif
-
-	// oh god I hope this helps
-	// (addendum: apparently it does!
-	//  none of this needs to be done because it's not the beginning of the map when
-	//  a netgame save is being loaded, and could actively be harmful by messing with
-	//  the client's view of the data.)
-	if (fromnetsave)
-		goto netgameskip;
-	// ==========
-=======
 static void P_SetupPlayer(void)
 {
 	INT32 i;
->>>>>>> Saturn-Next
 
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
@@ -3018,8 +2774,6 @@ static void P_SetupPlayer(void)
 		I_mkdir(va("%s"PATHSEP"replay"PATHSEP"online", srb2home), 0755);
 		G_RecordDemo(buf);
 	}
-
-	K_InitDirector();
 
 	wantedcalcdelay = wantedfrequency*2;
 	indirectitemcooldown = 0;
@@ -3335,8 +3089,6 @@ boolean P_SetupLevel(boolean fromnetsave, boolean reloadinggamestate)
 
 	G_AddMapToBuffer(gamemap-1);
 
-	K_LoadExtraVFX();
-
 	return true;
 }
 
@@ -3619,9 +3371,6 @@ boolean P_MultiSetupWadFiles(boolean fullsetup)
 		ST_LoadGraphics();
 		ST_ReloadSkinFaceGraphics();
 
-<<<<<<< HEAD
-		if (fullsetup)
-=======
 		// reload minimap stuff while were in the map since it may get replaced otherwise
 		if (gamestate == GS_LEVEL)
 			P_InitMinimapInfo();
@@ -3629,7 +3378,6 @@ boolean P_MultiSetupWadFiles(boolean fullsetup)
 		if (!partadd_important)
 			partadd_stage = -1; // everything done
 		else if (fullsetup)
->>>>>>> Saturn-Next
 			++partadd_stage; // run next stage too
 	}
 
@@ -3643,17 +3391,15 @@ boolean P_MultiSetupWadFiles(boolean fullsetup)
 		// Reload all textures, unconditionally for better or worse.
 		R_LoadTextures();
 
-		// Reload ANIMATED / ANIMDEFS
-		P_InitPicAnims();
-
-		if (!partadd_important)
-			partadd_stage = -1; // everything done
-		else if (fullsetup)
+		if (fullsetup)
 			++partadd_stage;
 	}
 
 	if (partadd_stage == 2)
 	{
+		// Reload ANIMATED / ANIMDEFS
+		P_InitPicAnims();
+
 		// reload status bar (warning should have valid player!)
 		if (gamestate == GS_LEVEL)
 			ST_Start();

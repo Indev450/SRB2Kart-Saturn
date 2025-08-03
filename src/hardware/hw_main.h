@@ -144,25 +144,6 @@ FUNCINLINE static ATTRINLINE void HWR_StartScreenWipe(void)
 	GL_MakeScreenTexture(HWD_SCREENTEXTURE_WIPE_START);
 }
 
-<<<<<<< HEAD
-void HWR_RenderPolyObjectPlane(polyobj_t *polysector, boolean isceiling, fixed_t fixedheight, FBITFIELD blendmode, UINT8 lightlevel, lumpnum_t lumpnum, sector_t *FOFsector, UINT8 alpha, extracolormap_t *planecolormap);
-void HWR_AddTransparentPolyobjectFloor(lumpnum_t lumpnum, polyobj_t *polysector, boolean isceiling, fixed_t fixedheight, INT32 lightlevel, INT32 alpha, sector_t *FOFSector, FBITFIELD blend, extracolormap_t *planecolormap);
-
-// hw_main.c: Segs
-void HWR_ProcessSeg(void); // Sort of like GLWall::Process in GZDoom
-void HWR_RenderWall(FOutVector *wallVerts, FSurfaceInfo *pSurf, FBITFIELD blend, boolean fogwall, INT32 lightlevel, extracolormap_t *wallcolormap);
-void HWR_ProjectWall(FOutVector *wallVerts, FSurfaceInfo *pSurf, FBITFIELD blendmode, INT32 lightlevel, extracolormap_t *wallcolormap);
-void HWR_AddTransparentWall(FOutVector *wallVerts, FSurfaceInfo * pSurf, INT32 texnum, boolean noencore, FBITFIELD blend, boolean fogwall, INT32 lightlevel, extracolormap_t *wallcolormap);
-// moved HWR_SplitWall to hw_main.c
-void HWR_DrawSkyWall(FOutVector *wallVerts, FSurfaceInfo *Surf);
-void HWR_DrawSkyBackground(float fpov);
-
-// hw_main.c: Sprites
-void HWR_AddSprites(sector_t *sec);
-void HWR_ProjectSprite(mobj_t *thing);
-void HWR_ProjectPrecipitationSprite(precipmobj_t *thing);
-void HWR_DrawSprites(void);
-=======
 FUNCINLINE static ATTRINLINE void HWR_EndScreenWipe(void)
 {
 	GL_MakeScreenTexture(HWD_SCREENTEXTURE_WIPE_END);
@@ -190,7 +171,6 @@ FUNCINLINE static ATTRINLINE void HWR_DrawScreenFinalTexture(INT32 width, INT32 
 
 // hw_main.c: Segs
 void HWR_ProcessSeg(void); // Sort of like GLWall::Process in GZDoom
->>>>>>> Saturn-Next
 
 // hw_bsp.c
 void HWR_CreatePlanePolygons(INT32 bspnum);

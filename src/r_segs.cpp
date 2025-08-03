@@ -1557,8 +1557,6 @@ static void R_RenderSegLoop(drawcolumndata_t* dc)
 		topfrac += topstep;
 		bottomfrac += bottomstep;
 	}
-	
-	//colfunc = wallcolfunc;
 }
 
 static void R_MarkSegBounds(void)
@@ -2029,25 +2027,6 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 				ds_p->tsilheight = INT32_MIN;
 				ds_p->silhouette |= SIL_TOP;
 			}
-<<<<<<< HEAD:src/r_segs.c
-
-			//SoM: 3/25/2000: This code fixes an automap bug that didn't check
-			// frontsector->ceiling and backsector->floor to see if a door was closed.
-			// Without the following code, sprites get displayed behind closed doors.
-			if (doorclosed || (worldhigh <= worldbottom && worldhighslope <= worldbottomslope))
-			{
-				ds_p->sprbottomclip = negonearray;
-				ds_p->bsilheight = INT32_MAX;
-				ds_p->silhouette |= SIL_BOTTOM;
-			}
-			if (doorclosed || (worldlow >= worldtop && worldlowslope >= worldtopslope))
-			{                   // killough 1/17/98, 2/8/98
-				ds_p->sprtopclip = screenheightarray;
-				ds_p->tsilheight = INT32_MIN;
-				ds_p->silhouette |= SIL_TOP;
-			}
-=======
->>>>>>> Saturn-Next:src/r_segs.cpp
 		}
 
 		if (worldlow != worldbottom
@@ -2922,17 +2901,10 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 		}
 	}
 	else
-<<<<<<< HEAD:src/r_segs.c
-#endif
-
-	R_RenderSegLoop();
-	colfunc = wallcolfunc;
-=======
 	{
 		rw_silhouette = &ds_p->silhouette;
 		rw_tsilheight = &ds_p->tsilheight;
 		rw_bsilheight = &ds_p->bsilheight;
->>>>>>> Saturn-Next:src/r_segs.cpp
 
 		R_RenderSegLoop(&dc);
 	}

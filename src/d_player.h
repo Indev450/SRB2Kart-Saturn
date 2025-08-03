@@ -556,12 +556,6 @@ typedef struct player_s
 	tic_t grieftime;
 	UINT8 griefstrikes;
 
-<<<<<<< HEAD
-	UINT8 splitscreenindex;
-#ifdef HWRENDER
-	fixed_t fovadd; // adjust FOV for hw rendering
-#endif
-=======
 	tic_t hitemtimer;
 	UINT8 hitemvictim;
 
@@ -574,7 +568,6 @@ typedef struct player_s
 	squishdance_t squishdance;
 
 	fixed_t fovadd; // adjust FOV for hw rendering
->>>>>>> Saturn-Next
 } player_t;
 
 #endif

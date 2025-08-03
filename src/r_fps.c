@@ -36,7 +36,7 @@ static CV_PossibleValue_t fpscap_cons_t[] = {
 #else
 	{TICRATE, "MIN"},
 #endif
-	{500, "MAX"},
+	{300, "MAX"},
 	{-1, "Unlimited"},
 	{0, "Match refresh rate"},
 	{0, NULL}
@@ -190,11 +190,7 @@ static void R_SetupFreelook(void)
 
 void R_InterpolateViewRollAngle(fixed_t frac)
 {
-<<<<<<< HEAD
-	viewroll = oldview->roll + R_LerpAngle(oldview->roll, newview->roll, frac);
-=======
 	viewroll = R_LerpAngleView(oldview->roll, newview->roll, frac);
->>>>>>> Saturn-Next
 }
 
 void R_InterpolateView(fixed_t frac, boolean forceinvalid)
@@ -216,15 +212,9 @@ void R_InterpolateView(fixed_t frac, boolean forceinvalid)
 	viewy = R_LerpFixedView(prevview->y, newview->y, frac);
 	viewz = R_LerpFixedView(prevview->z, newview->z, frac);
 
-<<<<<<< HEAD
-	viewangle = R_LerpAngle(prevview->angle, newview->angle, frac);
-	aimingangle = R_LerpAngle(prevview->aim, newview->aim, frac);
-	viewroll = R_LerpAngle(prevview->roll, newview->roll, frac);
-=======
 	viewangle = R_LerpAngleView(prevview->angle, newview->angle, frac);
 	aimingangle = R_LerpAngleView(prevview->aim, newview->aim, frac);
 	viewroll = R_LerpAngleView(prevview->roll, newview->roll, frac);
->>>>>>> Saturn-Next
 
 	viewsin = FINESINE(viewangle>>ANGLETOFINESHIFT);
 	viewcos = FINECOSINE(viewangle>>ANGLETOFINESHIFT);
@@ -393,43 +383,18 @@ void R_InterpolatePrecipMobjState(precipmobj_t *mobj, fixed_t frac, interpmobjst
 		out->x = mobj->x;
 		out->y = mobj->y;
 		out->z = mobj->z;
-<<<<<<< HEAD
-		out->scale = mapobjectscale;
-		out->subsector = mobj->subsector;
-		out->angle = mobj->angle;
-		out->spritexscale = mobj->spritexscale;
-		out->spriteyscale = mobj->spriteyscale;
-		out->spritexoffset = mobj->spritexoffset;
-		out->spriteyoffset = mobj->spriteyoffset;
-=======
 		out->scale = cv_mobjscaleprecip.value ? mapobjectscale : FRACUNIT;
 		//out->subsector = mobj->subsector;
 		//out->angle = mobj->angle;
->>>>>>> Saturn-Next
 		return;
 	}
 
 		out->x = R_LerpFixed(mobj->old_x, mobj->x, frac);
 		out->y = R_LerpFixed(mobj->old_y, mobj->y, frac);
 		out->z = R_LerpFixed(mobj->old_z, mobj->z, frac);
-<<<<<<< HEAD
-		out->scale = mapobjectscale;
-		out->spritexscale = mobj->spritexscale;
-		out->spriteyscale = mobj->spriteyscale;
-		out->spritexoffset = mobj->spritexoffset;
-		out->spriteyoffset = mobj->spriteyoffset;
-
-		//out->subsector = R_PointInSubsector(out->x, out->y); // i dont understand lol
-		out->subsector = mobj->subsector;
-
-		//IFCHANGED(angle, old_angle)
-			//out->angle = R_LerpAngle(mobj->old_angle, mobj->angle, frac);
-		out->angle = mobj->angle;
-=======
 		out->scale = cv_mobjscaleprecip.value ? mapobjectscale : FRACUNIT;
 		//out->subsector = R_PointInSubsector(out->x, out->y); // this is unused
 		//out->angle = R_LerpAngle(mobj->old_angle, mobj->angle, frac);
->>>>>>> Saturn-Next
 }
 
 static void AddInterpolator(levelinterpolator_t* interpolator)

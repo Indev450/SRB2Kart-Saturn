@@ -806,11 +806,7 @@ static inline ssize_t SOCK_SendToAddr(SOCKET_TYPE socket, mysockaddr_t *sockaddr
 	return sendto(socket, (char *)&doomcom->data, doomcom->datalength, 0, &sockaddr->any, d);
 }
 
-<<<<<<< HEAD
-#define ALLOWEDERROR(x) ((x) == ECONNREFUSED || (x) == EWOULDBLOCK || (x) == EHOSTUNREACH || (x) == ENETUNREACH)
-=======
 #define ALLOWEDERROR(x) ((x) == ECONNREFUSED || (x) == EWOULDBLOCK || (x) == EHOSTUNREACH || (x) == ENETUNREACH || (x) == EADDRNOTAVAIL)
->>>>>>> Saturn-Next
 
 static void SOCK_Send(void)
 {
@@ -830,17 +826,12 @@ static void SOCK_Send(void)
 				if (myfamily[i] == broadcastaddress[j].any.sa_family)
 				{
 					c = SOCK_SendToAddr(mysockets[i], &broadcastaddress[j]);
-<<<<<<< HEAD
-					if (c == ERRSOCKET && !ALLOWEDERROR(errno))
-						break;
-=======
 					if (c == ERRSOCKET)
 					{
 						e = errno;
 						if (!ALLOWEDERROR(e))
 							break;
 					}
->>>>>>> Saturn-Next
 				}
 			}
 		}
@@ -852,17 +843,12 @@ static void SOCK_Send(void)
 			if (myfamily[i] == clientaddress[doomcom->remotenode].any.sa_family)
 			{
 				c = SOCK_SendToAddr(mysockets[i], &clientaddress[doomcom->remotenode]);
-<<<<<<< HEAD
-				if (c == ERRSOCKET && !ALLOWEDERROR(errno))
-					break;
-=======
 				if (c == ERRSOCKET)
 				{
 					e = errno;
 					if (!ALLOWEDERROR(e))
 						break;
 				}
->>>>>>> Saturn-Next
 			}
 		}
 	}
@@ -877,14 +863,8 @@ static void SOCK_Send(void)
 
 	if (c == ERRSOCKET && e != 0) // 0 means no socket for the address family was found
 	{
-<<<<<<< HEAD
-		int e = errno; // save error code so it can't be modified later
-		if (!ALLOWEDERROR(e))
-			I_Error("SOCK_Send, error sending to node %d (%s) #%u: %s", doomcom->remotenode,
-=======
 		if (!ALLOWEDERROR(e))
 			I_Error("SOCK_Send, error sending to node %d (%s) #%u, %s", doomcom->remotenode,
->>>>>>> Saturn-Next
 				SOCK_GetNodeAddress(doomcom->remotenode), e, strerror(e));
 	}
 }
