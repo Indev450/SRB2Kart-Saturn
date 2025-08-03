@@ -1182,7 +1182,7 @@ void R_DrawSinglePlane(drawspandata_t* ds, visplane_t *pl, boolean allow_paralle
 	levelflat = &levelflats[pl->picnum];
 
 	// Get the texture
-	ds->source = (UINT8 *)W_CacheLumpNum(levelflat->lumpnum, PU_STATIC); // Stay here until Z_ChangeTag
+	ds->source = R_GetFlat(levelflat->lumpnum);
 
 	if (ds->source == NULL)
 		return;
@@ -1387,8 +1387,6 @@ using the palette colors.
 		}
 	}
 #endif
-
-	Z_ChangeTag(ds->source, PU_CACHE);
 }
 
 void R_PlaneBounds(visplane_t *plane)
