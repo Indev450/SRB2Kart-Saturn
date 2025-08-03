@@ -650,6 +650,27 @@ size_t P_PrecacheLevelFlats(void)
 	return flatmem;
 }
 
+// check if our flat contains cyan pixels
+// not sure if this is the best way to do it but it works
+static void P_CheckCyanFlat(levelflat_t *levelflat)
+{
+	// only need this for software
+	if (rendermode != render_soft)
+		return;
+
+	const UINT8 *flat = R_GetFlat(levelflat->lumpnum);
+	const size_t size = W_LumpLength(levelflat->lumpnum);
+
+	for (size_t steppy = 0; steppy < size; steppy++)
+	{
+		if (flat[steppy] == TRANSPARENTPIXEL)
+		{
+			levelflat->cyan = true;
+			break;
+		}
+	}
+}
+
 // help function for P_LoadSectors, find a flat in the active wad files,
 // allocate an id for it, and set the levelflat (to speedup search)
 //
@@ -661,7 +682,7 @@ INT32 P_AddLevelFlat(const char *flatname, levelflat_t *levelflat)
 	//  first scan through the already found flats
 	//
 	for (i = 0; i < numlevelflats; i++, levelflat++)
-		if (strnicmp(levelflat->name,flatname,8) == 0)
+		if (strnicmp(levelflat->name, flatname, 8) == 0)
 			break;
 
 	// that flat was already found in the level, return the id
@@ -675,20 +696,7 @@ INT32 P_AddLevelFlat(const char *flatname, levelflat_t *levelflat)
 		levelflat->lumpnum = R_GetFlatNumForName(flatname);
 		levelflat->baselumpnum = LUMPERROR;
 
-		// check if our flat contains cyan pixels
-		// not sure if this is the best way to do it but it works
-		{
-			const UINT8 *flat = (UINT8 *)W_CacheLumpNum(levelflat->lumpnum, PU_LEVEL);
-			size_t size = W_LumpLength(levelflat->lumpnum);
-			for (size_t steppy = 0; steppy < size; steppy++)
-			{
-				if (flat[steppy] == TRANSPARENTPIXEL)
-				{
-					levelflat->cyan = true;
-					break;
-				}
-			}
-		}
+		P_CheckCyanFlat(levelflat);
 
 #ifndef ZDEBUG
 		CONS_Debug(DBG_SETUP, "flat #%03d: %s\n", atoi(sizeu1(numlevelflats)), levelflat->name);
@@ -735,20 +743,7 @@ INT32 P_AddLevelFlatRuntime(const char *flatname)
 		levelflat->lumpnum = R_GetFlatNumForName(flatname);
 		levelflat->baselumpnum = LUMPERROR;
 
-		// check if our flat contains cyan pixels
-		// not sure if this is the best way to do it but it works
-		{
-			const UINT8 *flat = (UINT8 *)W_CacheLumpNum(levelflat->lumpnum, PU_LEVEL);
-			size_t size = W_LumpLength(levelflat->lumpnum);
-			for (size_t steppy = 0; steppy < size; steppy++)
-			{
-				if (flat[steppy] == TRANSPARENTPIXEL)
-				{
-					levelflat->cyan = true;
-					break;
-				}
-			}
-		}
+		P_CheckCyanFlat(levelflat);
 
 #ifndef ZDEBUG
 		CONS_Debug(DBG_SETUP, "flat #%03d: %s\n", atoi(sizeu1(numlevelflats)), levelflat->name);
