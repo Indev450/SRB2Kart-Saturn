@@ -184,8 +184,14 @@ sources+=\
 	$(call List,Sourcefile)\
 	$(call List,core/Sourcefile)
 
+ifdef NOBLUAJIT
+lualib:=
 sources+=\
 	$(call List,blua/Sourcefile)
+else
+opts+=-DLUAJIT_INTONLY
+lualib:=../libs/bluajit/src/libbluajit.a
+endif
 
 depends:=$(basename $(filter %.c %.cpp %.s,$(sources)))
 objects:=$(basename $(filter %.c %.cpp %.s %.nas,$(sources)))
@@ -357,9 +363,14 @@ ifdef UPX
 endif
 
 # original executable with debugging symbols
-$(dbg) : $(objects) | $$(@D)/
+$(dbg) : $(objects) $(lualib) | $$(@D)/
 	$(call Echo,Linking $(@F)...)
 	$(.)$(LD) -o $@ $^ $(libs)
+
+ifndef NOBLUAJIT
+$(lualib):
+	@$(MAKE) -C ../libs/bluajit $(MAKECMDGOALS)
+endif
 
 # disassembly of executable
 $(dbg).txt : $(dbg)
@@ -422,6 +433,13 @@ clean :
 
 distclean :
 	$(call _rm,../bin ../objs ../dep ../make comptime.h)
+
+ifndef NOBLUAJIT
+	$(call _rm,$(objdir)/buildvm* $(objdir)/minilua* $(objdir)/lj_vm*)
+
+cleanjit:
+	$(call _rm,$(objdir)/buildvm* $(objdir)/minilua* $(objdir)/lj_vm* $(ALL_HDRGEN) $(LJVMCORE_O) $(ALL_GEN))
+endif
 
 info:
 ifdef WINDOWSHELL

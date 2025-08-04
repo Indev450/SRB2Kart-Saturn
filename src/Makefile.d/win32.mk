@@ -69,6 +69,11 @@ LIBOPENMPT_opts:=-I$(lib)/inc
 LIBOPENMPT_libs:=-L$(lib)/lib/$(x86) -lopenmpt
 $(eval $(call _set,LIBOPENMPT))
 
+lib:=../libs/bluajit
+BLUAJIT_opts:=-I$(lib)/src
+BLUAJIT_libs:=-L$(lib)/lib/$(x86) -lbluajit
+$(eval $(call _set,BLUAJIT))
+
 lib:=../libs/SDL2_mixer/$(mingw)
 
 ifdef SDL

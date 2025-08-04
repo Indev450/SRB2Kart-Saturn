@@ -11,7 +11,12 @@
 /// \brief libraries for Lua scripting
 
 #include "doomtype.h"
+
+#ifdef NOBLUAJIT
 #include "blua/lua.h"
+#else
+#include <lua.h>
+#endif
 
 extern lua_State *gL;
 
