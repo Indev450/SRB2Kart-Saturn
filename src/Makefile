@@ -116,6 +116,8 @@
 # SDL_CONFIG= - sdl-config command.
 # SDL_CFLAGS=, SDL_LDFLAGS=
 
+NOBLUAJIT=1
+
 clean_targets=cleandep clean distclean info
 
 .PHONY : $(clean_targets) all
@@ -184,8 +186,13 @@ sources+=\
 	$(call List,Sourcefile)\
 	$(call List,core/Sourcefile)
 
+ifdef NOBLUAJIT
 sources+=\
 	$(call List,blua/Sourcefile)
+else
+include bluajit/Makefile.cfg
+include bluajit/Makefile.cfg2
+endif
 
 depends:=$(basename $(filter %.c %.cpp %.s,$(sources)))
 objects:=$(basename $(filter %.c %.cpp %.s %.nas,$(sources)))
@@ -379,16 +386,6 @@ endif
 # I wish I could make dependencies out of rc files :(
 $(objdir)/win32/Srb2win.res : \
 	win32/afxres.h win32/resource.h
-clean:
-	$(REMOVE) *~ *.flc
-	$(REMOVE) $(OBJDIR)/*.o
-ifndef NOBLUAJIT
-	$(REMOVE) $(OBJDIR)/buildvm* $(OBJDIR)/minilua* $(OBJDIR)/lj_vm* $(ALL_HDRGEN)
-
-cleanjit:
-	$(REMOVE) $(LJVMCORE_O) $(ALL_GEN)
-	$(REMOVE) $(OBJDIR)/buildvm* $(OBJDIR)/minilua* $(OBJDIR)/lj_vm* $(ALL_HDRGEN)
-endif
 
 # dependency recipe template
 # 1: source file suffix
@@ -432,6 +429,13 @@ clean :
 
 distclean :
 	$(call _rm,../bin ../objs ../dep ../make comptime.h)
+
+ifndef NOBLUAJIT
+	$(call _rm,$(objdir)/buildvm* $(objdir)/minilua* $(objdir)/lj_vm*)
+
+cleanjit:
+	$(call _rm,$(objdir)/buildvm* $(objdir)/minilua* $(objdir)/lj_vm* $(ALL_HDRGEN) $(LJVMCORE_O) $(ALL_GEN))
+endif
 
 info:
 ifdef WINDOWSHELL

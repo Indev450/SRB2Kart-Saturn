@@ -786,7 +786,11 @@ static void bcemit_branch_f(FuncState *fs, ExpDesc *e)
     pc = NO_JMP;  /* Never jump. */
   else if (e->k == VJMP)
     pc = e->u.s.info;
-  else if (e->k == VKSTR || e->k == VKNUM || e->k == VKTRUE)
+  else if (e->k == VKSTR || e->k == VKTRUE
+#if !LJ_INTONLY
+    || e->k == VKNUM
+#endif
+  )
     expr_toreg_nobranch(fs, e, NO_REG), pc = bcemit_jmp(fs);
   else
     pc = bcemit_branch(fs, e, 1);
@@ -1147,7 +1151,7 @@ static void lex_match(LexState *ls, LexToken what, LexToken who, BCLine line)
 static GCstr *lex_str(LexState *ls)
 {
   GCstr *s;
-  if (ls->tok != TK_name && (LJ_52 || ls->tok != TK_goto))
+  if (ls->tok != TK_name && LJ_52)
     err_token(ls, TK_name);
   s = strV(&ls->tokval);
   lj_lex_next(ls);
@@ -1876,7 +1880,7 @@ static void expr_table(LexState *ls, ExpDesc *e)
       if (!expr_isk(&key)) expr_index(fs, e, &key);
       if (expr_isnumk(&key) && expr_numiszero(&key)) needarr = 1; else nhash++;
       lex_check(ls, '=');
-    } else if ((ls->tok == TK_name || (!LJ_52 && ls->tok == TK_goto)) &&
+    } else if ((ls->tok == TK_name) &&
 	       lj_lex_lookahead(ls) == '=') {
       expr_str(ls, &key);
       lex_check(ls, '=');
@@ -1972,7 +1976,7 @@ static BCReg parse_params(LexState *ls, int needself)
     var_new_lit(ls, nparams++, "self");
   if (ls->tok != ')') {
     do {
-      if (ls->tok == TK_name || (!LJ_52 && ls->tok == TK_goto)) {
+      if (ls->tok == TK_name) {
 	var_new(ls, nparams++, lex_str(ls));
       } else if (ls->tok == TK_dots) {
 	lj_lex_next(ls);
@@ -2150,7 +2154,7 @@ static void expr_primary(LexState *ls, ExpDesc *v)
     expr(ls, v);
     lex_match(ls, ')', '(', line);
     expr_discharge(ls->fs, v);
-  } else if (ls->tok == TK_name || (!LJ_52 && ls->tok == TK_goto)) {
+  } else if (ls->tok == TK_name) {
     var_lookup(ls, v);
   } else if (ls->tok == '$') {
     uint64_t i = ls->tokval.u64;
@@ -2990,13 +2994,6 @@ static int parse_stmt(LexState *ls)
   case TK_label:
     parse_label(ls);
     break;
-  case TK_goto:
-    if (LJ_52 || lj_lex_lookahead(ls) == TK_name) {
-      lj_lex_next(ls);
-      parse_goto(ls);
-      break;
-    }
-    /* fallthrough */
   default:
     parse_call_assign(ls);
     break;
