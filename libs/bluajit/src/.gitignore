@@ -1,4 +1,4 @@
-luajit
+bluajit
 luajit.h
 luajit_relver.txt
 lj_bcdef.h

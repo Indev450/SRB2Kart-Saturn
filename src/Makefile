@@ -116,8 +116,6 @@
 # SDL_CONFIG= - sdl-config command.
 # SDL_CFLAGS=, SDL_LDFLAGS=
 
-NOBLUAJIT=1
-
 clean_targets=cleandep clean distclean info
 
 .PHONY : $(clean_targets) all
@@ -190,8 +188,7 @@ ifdef NOBLUAJIT
 sources+=\
 	$(call List,blua/Sourcefile)
 else
-include bluajit/Makefile.cfg
-include bluajit/Makefile.cfg2
+opts+=-DLUAJIT_INTONLY
 endif
 
 depends:=$(basename $(filter %.c %.cpp %.s,$(sources)))
