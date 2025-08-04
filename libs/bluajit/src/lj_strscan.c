@@ -496,8 +496,9 @@ StrScanFmt lj_strscan_scan(const uint8_t *p, MSize len, TValue *o,
 #endif
 
 #if LJ_INTONLY
-    /* Skip trailing whitespace */
-    while (lj_char_isspace(*p)) p++;
+	/* Skip trailing spaces */
+	while (lj_char_isspace(*p)) p++;
+
     if (*p || p < pe)
       return STRSCAN_ERROR;
 #else
