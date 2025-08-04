@@ -160,6 +160,20 @@ LUALIB_API void (luaL_addstring) (luaL_Buffer *B, const char *s);
 LUALIB_API void (luaL_addvalue) (luaL_Buffer *B);
 LUALIB_API void (luaL_pushresult) (luaL_Buffer *B);
 
+/* }====================================================== */
+
+
+/* compatibility with ref system */
+
+/* pre-defined references */
+#define lua_ref(L,lock) ((lock) ? luaL_ref(L, LUA_REGISTRYINDEX) : \
+(lua_pushstring(L, "unlocked references are obsolete"), lua_error(L), 0))
+
+#define lua_unref(L,ref)        luaL_unref(L, LUA_REGISTRYINDEX, (ref))
+
+#define lua_getref(L,ref)       lua_rawgeti(L, LUA_REGISTRYINDEX, (ref))
+
+#define luaL_reg	luaL_Reg
 
 /* }====================================================== */
 

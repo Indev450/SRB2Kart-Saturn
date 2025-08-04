@@ -29,7 +29,6 @@
 #include <lauxlib.h>
 #define abs_index(L, i)		((i) > 0 || (i) <= LUA_REGISTRYINDEX ? (i) : \
 					lua_gettop(L) + (i) + 1)
-#define lua_getref(L,ref)       lua_rawgeti(L, LUA_REGISTRYINDEX, (ref))
 extern consvar_t cv_luajit;
 #endif
 
