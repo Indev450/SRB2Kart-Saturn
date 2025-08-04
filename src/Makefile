@@ -379,6 +379,16 @@ endif
 # I wish I could make dependencies out of rc files :(
 $(objdir)/win32/Srb2win.res : \
 	win32/afxres.h win32/resource.h
+clean:
+	$(REMOVE) *~ *.flc
+	$(REMOVE) $(OBJDIR)/*.o
+ifndef NOBLUAJIT
+	$(REMOVE) $(OBJDIR)/buildvm* $(OBJDIR)/minilua* $(OBJDIR)/lj_vm* $(ALL_HDRGEN)
+
+cleanjit:
+	$(REMOVE) $(LJVMCORE_O) $(ALL_GEN)
+	$(REMOVE) $(OBJDIR)/buildvm* $(OBJDIR)/minilua* $(OBJDIR)/lj_vm* $(ALL_HDRGEN)
+endif
 
 # dependency recipe template
 # 1: source file suffix
