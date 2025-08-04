@@ -2647,18 +2647,6 @@ static void parse_continue(LexState *ls)
   gola_new(ls, NAME_CONTINUE, VSTACK_GOTO, bcemit_jmp(ls->fs));
 }
 
-/* Parse 'goto' statement. */
-static void parse_goto(LexState *ls)
-{
-  FuncState *fs = ls->fs;
-  GCstr *name = lex_str(ls);
-  VarInfo *vl = gola_findlabel(ls, name);
-  if (vl)  /* Treat backwards goto within same scope like a loop. */
-    bcemit_AJ(fs, BC_LOOP, vl->slot, -1);  /* No BC range check. */
-  fs->bl->flags |= FSCOPE_GOLA;
-  gola_new(ls, name, VSTACK_GOTO, bcemit_jmp(fs));
-}
-
 /* Parse label. */
 static void parse_label(LexState *ls)
 {
