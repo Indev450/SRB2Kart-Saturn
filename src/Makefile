@@ -185,10 +185,12 @@ sources+=\
 	$(call List,core/Sourcefile)
 
 ifdef NOBLUAJIT
+lualib:=
 sources+=\
 	$(call List,blua/Sourcefile)
 else
 opts+=-DLUAJIT_INTONLY
+lualib:=../libs/bluajit/src/libbluajit.a
 endif
 
 depends:=$(basename $(filter %.c %.cpp %.s,$(sources)))
@@ -361,9 +363,14 @@ ifdef UPX
 endif
 
 # original executable with debugging symbols
-$(dbg) : $(objects) | $$(@D)/
+$(dbg) : $(objects) $(lualib) | $$(@D)/
 	$(call Echo,Linking $(@F)...)
 	$(.)$(LD) -o $@ $^ $(libs)
+
+ifndef NOBLUAJIT
+$(lualib):
+	@$(MAKE) -C ../libs/bluajit $(MAKECMDGOALS)
+endif
 
 # disassembly of executable
 $(dbg).txt : $(dbg)
