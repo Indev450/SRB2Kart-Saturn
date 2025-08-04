@@ -35,7 +35,7 @@ CC= $(DEFAULT_CC)
 # to slow down the C part by not omitting it. Debugging, tracebacks and
 # unwinding are not affected -- the assembler part has frame unwind
 # information and GCC emits it where needed (x64) or with -g (see CCDEBUG).
-CCOPT= -O2 -fomit-frame-pointer
+#CCOPT= -O2 -fomit-frame-pointer
 # Use this if you want to generate a smaller binary (but it's slower):
 #CCOPT= -Os -fomit-frame-pointer
 # Note: it's no longer recommended to use -O3 with GCC 4.x.
@@ -46,7 +46,7 @@ CCOPT= -O2 -fomit-frame-pointer
 # x86/x64 only: For GCC 4.2 or higher and if you don't intend to distribute
 # the binaries to a different machine you could also use: -march=native
 #
-CCOPT_x86= -march=i686 -msse -msse2 -mfpmath=sse
+#CCOPT_x86= -march=i686 -msse -msse2 -mfpmath=sse
 CCOPT_x64=
 CCOPT_arm=
 CCOPT_arm64=
@@ -111,6 +111,7 @@ XCFLAGS+= -DLUAJIT_NUMMODE=2
 #
 # Change number type to int32_t. Requires dual-number mode.
 XCFLAGS+= -DLUAJIT_INTONLY
+OPTS+=-DLUAJIT_INTONLY
 #
 # Disable LJ_GC64 mode for x64.
 #XCFLAGS+= -DLUAJIT_DISABLE_GC64

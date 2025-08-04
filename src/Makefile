@@ -282,6 +282,9 @@ opts+=$(foreach v,$(passthru_opts),$(if $($(v)),-D$(v)))
 
 CXXFLAGS+=-std=c++17 # force c17 for c++ since most vpss run older ubuntu versions with old compilers
 
+ifndef NOBLUAJIT
+jitopts+=$(CFLAGS) # dont pass any of our WFLAGS to jit unless you want to have a fun time (:
+endif
 opts+=$(WFLAGS) $(CFLAGS)
 cxxopts:=$(opts) $(CXXFLAGS)
 opts+=$(CWFLAGS) # warning flags that shouldnt be passed to c++ compiler
@@ -369,7 +372,7 @@ $(dbg) : $(objects) $(lualib) | $$(@D)/
 
 ifndef NOBLUAJIT
 $(lualib):
-	@$(MAKE) -C ../libs/bluajit $(MAKECMDGOALS)
+	@$(MAKE) -C ../libs/bluajit $(MAKECMDGOALS) CCOPT="$(jitopts)"
 endif
 
 # disassembly of executable
