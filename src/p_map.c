@@ -2394,11 +2394,9 @@ boolean P_TryMove(mobj_t *thing, fixed_t x, fixed_t y, boolean allowdropoff)
 			//All things are affected by their scale.
 			fixed_t maxstep = FixedMul(MAXSTEPMOVE, mapobjectscale);
 
-			INT32 special = 0;
-
 			if (thing->player)
 			{
-				special = GETSECSPECIAL(R_PointInSubsector(x, y)->sector->special, 1);
+				const INT32 special = GETSECSPECIAL(R_PointInSubsector(x, y)->sector->special, 1);
 
 				// If using type Section1:13, double the maxstep.
 				if (P_PlayerTouchingSectorSpecial(thing->player, 1, 13)
@@ -2452,7 +2450,7 @@ boolean P_TryMove(mobj_t *thing, fixed_t x, fixed_t y, boolean allowdropoff)
 			else if (maxstep > 0 && !(
 				thing->player && (
 				P_PlayerTouchingSectorSpecial(thing->player, 1, 14)
-				|| special == 14)
+				|| GETSECSPECIAL(R_PointInSubsector(x, y)->sector->special, 1) == 14)
 				)) // Step down
 			{
 				// If the floor difference is MAXSTEPMOVE or less, and the sector isn't Section1:14, ALWAYS
@@ -2622,6 +2620,8 @@ static boolean P_ThingHeightClip(mobj_t *thing)
 	if (thing->flags & MF_NOCLIPHEIGHT)
 		return true;
 
+	const boolean onfloor = P_IsObjectOnGround(thing);//(thing->z <= thing->floorz);
+
 	P_CheckPosition(thing, thing->x, thing->y);
 
 	if (P_MobjWasRemoved(thing))
@@ -2637,8 +2637,6 @@ static boolean P_ThingHeightClip(mobj_t *thing)
 	// you'll still get crushed, right?
 	if (tmfloorz > oldfloorz+thing->height)
 		return true;
-
-	const boolean onfloor = P_IsObjectOnGround(thing);//(thing->z <= thing->floorz);
 
 	if (onfloor && !(thing->flags & MF_NOGRAVITY) && floormoved)
 	{
