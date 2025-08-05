@@ -1,3 +1,5 @@
 [submodule "libs/bluajit"]
 	path = libs/bluajit
 	url = https://github.com/Indev450/bluajit
+[submodule "libs/bluajit/"]
+	branch = bluajit-install
