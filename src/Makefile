@@ -64,6 +64,10 @@
 # DEBUGMODE=1 - Enable various debugging capabilities.
 #               Also disables optimizations.
 #
+# Potentially Unsafe
+# ------------------
+# HAVE_BLUAJIT=1 - Enable compiling with BluaJIT instead of blua, can have potential bugs
+#
 # Development flags:
 #
 # VALGRIND=1 - Enable Valgrind memory debugging support.
@@ -184,7 +188,7 @@ sources+=\
 	$(call List,Sourcefile)\
 	$(call List,core/Sourcefile)
 
-ifdef NOBLUAJIT
+ifndef HAVE_BLUAJIT
 lualib:=
 sources+=\
 	$(call List,blua/Sourcefile)
@@ -367,7 +371,7 @@ $(dbg) : $(objects) $(lualib) | $$(@D)/
 	$(call Echo,Linking $(@F)...)
 	$(.)$(LD) -o $@ $^ $(libs)
 
-ifndef NOBLUAJIT
+ifdef HAVE_BLUAJIT
 $(lualib) ::
 	@$(MAKE) -C ../libs/bluajit $(MAKECMDGOALS) CCOPT="$(opts)"
 endif
@@ -434,7 +438,7 @@ clean :
 distclean :
 	$(call _rm,../bin ../objs ../dep ../make comptime.h)
 
-ifndef NOBLUAJIT
+ifdef HAVE_BLUAJIT
 	$(call _rm,$(objdir)/buildvm* $(objdir)/minilua* $(objdir)/lj_vm*)
 
 cleanjit:

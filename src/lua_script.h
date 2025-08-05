@@ -18,7 +18,7 @@
 #include "d_player.h"
 #include "p_saveg.h"
 
-#ifdef NOBLUAJIT
+#ifndef HAVE_BLUAJIT
 #include "blua/lua.h"
 #include "blua/lualib.h"
 #include "blua/lauxlib.h"

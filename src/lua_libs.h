@@ -12,7 +12,7 @@
 
 #include "doomtype.h"
 
-#ifdef NOBLUAJIT
+#ifndef HAVE_BLUAJIT
 #include "blua/lua.h"
 #else
 #include <lua.h>

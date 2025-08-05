@@ -7,7 +7,7 @@ passthru_opts+=\
 	MOBJCONSISTANCY PACKETDROP ZDEBUG\
 	HAVE_MINIUPNPC\
 	HAVE_DISCORDRPC DEVELOP\
-	NOBLUAJIT
+	HAVE_BLUAJIT
 
 # build with debugging information
 ifdef DEBUGMODE

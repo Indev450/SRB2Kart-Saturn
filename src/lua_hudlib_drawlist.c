@@ -12,7 +12,7 @@
 
 #include "lua_hudlib_drawlist.h"
 #include "lua_hud.h"
-#ifdef NOBLUAJIT
+#ifndef HAVE_BLUAJIT
 #include "blua/lstate.h" // shhhhhh
 #else
 #include "lua_script.h"
@@ -332,7 +332,7 @@ static UINT64 GetItemId(void)
 	if (!hud_interpolate)
 		return 0;
 
-#ifdef NOBLUAJIT
+#ifndef HAVE_BLUAJIT
 	UINT64 id = (uintptr_t)gL->savedpc;
 #else
 	// he who controls the JIT controls the API
