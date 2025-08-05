@@ -368,7 +368,7 @@ $(dbg) : $(objects) $(lualib) | $$(@D)/
 	$(.)$(LD) -o $@ $^ $(libs)
 
 ifndef NOBLUAJIT
-$(lualib):
+$(lualib) ::
 	@$(MAKE) -C ../libs/bluajit $(MAKECMDGOALS) CCOPT="$(opts)"
 endif
 
