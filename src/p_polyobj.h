@@ -269,6 +269,7 @@ typedef struct polydisplacedata_s
 //
 
 polyobj_t *Polyobj_GetForNum(INT32 id);
+polyobj_t *Polyobj_GetChild(polyobj_t *po, INT32 *start);
 void Polyobj_InitLevel(void);
 void Polyobj_MoveOnLoad(polyobj_t *po, angle_t angle, fixed_t x, fixed_t y);
 boolean P_PointInsidePolyobj(polyobj_t *po, fixed_t x, fixed_t y);
