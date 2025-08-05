@@ -26,7 +26,7 @@ ifeq (${DEDICATED},1)
 EXENAME?=lsrb2kartd
 endif
 
-ifndef NOBLUAJIT
+ifdef HAVE_BLUAJIT
 libs+=-L../libs/bluajit/src/ -l:libbluajit.a
 opts+=-I../libs/bluajit/src/
 endif

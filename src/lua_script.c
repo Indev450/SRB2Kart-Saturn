@@ -35,7 +35,7 @@
 
 #include "doomstat.h"
 
-#ifndef NOBLUAJIT
+#ifdef HAVE_BLUAJIT
 #include "d_main.h"
 #include "i_system.h"
 static void LuaJit_OnChange(void);
@@ -69,7 +69,7 @@ static lua_CFunction liblist[] = {
 	NULL
 };
 
-#ifndef NOBLUAJIT
+#ifdef HAVE_BLUAJIT
 static void LuaJit_OnChange(void)
 {
 	if (!gL)
@@ -208,7 +208,7 @@ static int noglobals(lua_State *L)
 	return luaL_error(L, "Implicit global " LUA_QS " prevented. Create a local variable instead.", csname);
 }
 
-#ifndef NOBLUAJIT
+#ifdef HAVE_BLUAJIT
 // print all the ISA extensions because it looks cool!
 // absolutely not stolen from luajit.c
 static void print_jit_status(boolean verbose)
@@ -274,7 +274,7 @@ void LUA_ClearState(void)
 	// lua state is ready!
 	gL = L;
 
-#ifndef NOBLUAJIT
+#ifdef HAVE_BLUAJIT
 	print_jit_status(true);
 #endif
 }
