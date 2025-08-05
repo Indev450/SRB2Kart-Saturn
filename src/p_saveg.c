@@ -2414,7 +2414,10 @@ static void LoadElevatorThinker(savebuffer_t *save, actionf_p1 thinker, UINT8 fl
 	P_AddThinker(&ht->thinker);
 
 	// interpolation
-	R_CreateInterpolator_SectorPlane(&ht->thinker, ht->sector, (floorOrCeiling & 2));
+	if (floorOrCeiling & 2)
+		R_CreateInterpolator_SectorPlane(&ht->thinker, ht->sector, true);
+	if (floorOrCeiling & 1)
+		R_CreateInterpolator_SectorPlane(&ht->thinker, ht->sector, false);
 }
 
 //
