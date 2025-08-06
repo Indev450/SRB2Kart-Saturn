@@ -189,7 +189,7 @@ static void Snd_LockAudio(void) //Alam: Lock audio data and uninstall audio call
 {
 	if (Snd_Mutex) SDL_LockMutex(Snd_Mutex);
 	else if (sound_disabled) return;
-	else if (midi_disabled && digital_disabled) SDL_LockAudio();
+	else if (music_disabled) SDL_LockAudio();
 #ifdef HAVE_MIXER
 	else if (musicStarted) Mix_SetPostMix(NULL, NULL);
 #endif
@@ -199,7 +199,7 @@ static void Snd_UnlockAudio(void) //Alam: Unlock audio data and reinstall audio 
 {
 	if (Snd_Mutex) SDL_UnlockMutex(Snd_Mutex);
 	else if (sound_disabled) return;
-	else if (midi_disabled && digital_disabled) SDL_UnlockAudio();
+	else if (music_disabled) SDL_UnlockAudio();
 #ifdef HAVE_MIXER
 	else if (musicStarted) Mix_SetPostMix(audio.callback, audio.userdata);
 #endif
@@ -1061,7 +1061,7 @@ void I_ShutdownSound(void)
 
 	CONS_Printf("I_ShutdownSound: ");
 
-	if (midi_disabled && digital_disabled)
+	if (music_disabled)
 		SDL_CloseAudio();
 	CONS_Printf("%s", M_GetText("shut down\n"));
 	sound_started = false;
@@ -1078,11 +1078,7 @@ void I_UpdateSound(void)
 void I_StartupSound(void)
 {
 #ifndef HAVE_MIXER
-#ifndef NO_MIDI
-	midi_disabled =
-#endif
-	digital_disabled = true;
-#endif
+	music_disabled = true;
 
 	memset(channels, 0, sizeof (channels)); //Alam: Clean it
 
