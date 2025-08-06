@@ -38,7 +38,7 @@ extern consvar_t cv_audbuffersize;
 //extern consvar_t cv_resetmusic;
 extern consvar_t cv_gamedigimusic;
 #ifndef NO_MIDI
-extern consvar_t cv_gamemidimusic, cv_midimusicvolume;
+extern consvar_t cv_midimusicvolume;
 #endif
 extern consvar_t cv_gamesounds;
 extern consvar_t cv_playmusicifunfocused;
@@ -148,8 +148,6 @@ void S_StopSound(void *origin);
 // Music Status
 //
 
-boolean S_DigMusicDisabled(void);
-boolean S_MIDIMusicDisabled(void);
 boolean S_MusicDisabled(void);
 boolean S_MusicPlaying(void);
 boolean S_MusicPaused(void);
@@ -159,8 +157,6 @@ musictype_t S_MusicType(void);
 const char *S_MusicName(void);
 boolean S_MusicInfo(char *mname, UINT16 *mflags, boolean *looping);
 boolean S_MusicExists(const char *mname, boolean checkMIDI, boolean checkDigi);
-#define S_DigExists(a) S_MusicExists(a, false, true)
-#define S_MIDIExists(a) S_MusicExists(a, true, false)
 
 //
 // Music Effects
@@ -281,10 +277,7 @@ void S_UpdateSounds(void);
 FUNCMATH fixed_t S_CalculateSoundDistance(fixed_t px1, fixed_t py1, fixed_t pz1, fixed_t px2, fixed_t py2, fixed_t pz2);
 
 void S_SetSfxVolume(INT32 volume);
-void S_SetMusicVolume(INT32 digvolume, INT32 seqvolume);
-#define S_SetDigMusicVolume(a) S_SetMusicVolume(a,-1)
-#define S_SetMIDIMusicVolume(a) S_SetMusicVolume(-1,a)
-#define S_InitMusicVolume() S_SetMusicVolume(-1,-1)
+void S_SetMusicVolume(INT32 volume);
 
 INT32 S_OriginPlaying(void *origin);
 INT32 S_IdPlaying(sfxenum_t id);
