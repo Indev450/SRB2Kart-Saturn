@@ -367,7 +367,7 @@ static void ST_drawDebugInfo(void)
 {
 	INT32 height = 192;
 
-	if (!stplyr->mo)
+	if (!cv_debug || !stplyr->mo)
 		return;
 
 	if (cv_debug & DBG_BASIC)
@@ -791,5 +791,6 @@ void ST_Drawer(void)
 		else
 			V_DrawFadeScreen(120, 15-timeinmap); // Then gradually fade out from there
 	}
+
 	ST_drawDebugInfo();
 }
