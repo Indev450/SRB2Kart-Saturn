@@ -435,7 +435,7 @@ void HU_Start(void)
 
 void HU_Shiftform(void)
 {
-	shiftxform = cv_keyboardlayout.value == 3 ? french_shiftxform : english_shiftxform;
+	shiftxform = (cv_keyboardlayout.value == 3) ? french_shiftxform : english_shiftxform;
 }
 
 //======================================================================
@@ -471,8 +471,8 @@ static INT16 addy = 0; // use this to make the messages scroll smoothly when one
 static void HU_removeChatText_Mini(void)
 {
 	// MPC: Don't create new arrays, just iterate through an existing one
-	size_t i;
-	for(i=0;i<chat_nummsg_min-1;i++) {
+	for (size_t i = 0; i < chat_nummsg_min - 1; i++)
+	{
 		strcpy(chat_mini[i], chat_mini[i+1]);
 		chat_timers[i] = chat_timers[i+1];
 	}
@@ -491,8 +491,8 @@ static void HU_removeChatText_Log(void)
 		return;
 
 	free(chat_log[0]);
-	size_t i;
-	for(i=0;i<chat_nummsg_log-1;i++)
+
+	for (size_t i = 0; i < chat_nummsg_log - 1;i++)
 	{
 		chat_log[i] = chat_log[i+1];
 	}
@@ -1130,14 +1130,14 @@ void HU_Ticker(void)
 		size_t i = 0;
 
 		// handle spam while we're at it:
-		for(; (i<MAXPLAYERS); i++)
+		for(; (i < MAXPLAYERS); i++)
 		{
 			if (stop_spamming[i] > 0)
 				stop_spamming[i]--;
 		}
 
 		// handle chat timers
-		for (i=0; (i<chat_nummsg_min); i++)
+		for (i = 0; (i < chat_nummsg_min); i++)
 		{
 			if (chat_timers[i] > 0)
 				chat_timers[i]--;
@@ -1262,7 +1262,7 @@ static void HU_SendChatMessage(void)
 		nodenum[2] = '\0';
 
 		// check for undesirable characters in our "number"
-		if 	(((nodenum[0] < '0') || (nodenum[0] > '9')) || ((nodenum[1] < '0') || (nodenum[1] > '9')))
+		if (((nodenum[0] < '0') || (nodenum[0] > '9')) || ((nodenum[1] < '0') || (nodenum[1] > '9')))
 		{
 			// check if nodenum[1] is a space
 			if (nodenum[1] == ' ')
@@ -1534,7 +1534,7 @@ static void HU_drawMiniChat(void)
 	if (splitscreen > 1)
 		boxw = max(64, boxw/2);
 
-	for (; i>0; i--)
+	for (; i > 0; i--)
 	{
 		char *msg = CHAT_WordWrap(x+2, boxw-(charwidth*2), V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_ALLOWLOWERCASE, chat_mini[i-1]);
 		size_t j = 0;
@@ -1607,7 +1607,7 @@ static void HU_drawMiniChat(void)
 	i = 0;
 	prev_linereturn = false;
 
-	for (; i<=(chat_nummsg_min-1); i++) // iterate through our hot messages
+	for (; i <= (chat_nummsg_min-1); i++) // iterate through our hot messages
 	{
 		INT32 clrflag = 0;
 		INT32 timer = ((cv_chattime.value*TICRATE)-chat_timers[i]) - cv_chattime.value*TICRATE+9; // see below...
@@ -1783,7 +1783,6 @@ static void HU_drawChatLog(INT32 offset)
 		if (msg)
 			Z_Free(msg);
 	}
-
 
 	if (((chat_scroll >= chat_maxscroll) || (chat_scrollmedown)) && !(justscrolleddown || justscrolledup || chat_scrolltime)) // was already at the bottom of the page before new maxscroll calculation and was NOT scrolling.
 	{
