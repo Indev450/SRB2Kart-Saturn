@@ -5274,21 +5274,10 @@ static void M_DrawSkyRoom(void)
 			(music_disabled ? warningflags : highlightflags),
 			(music_disabled ? "OFF" : "ON"));
 
-#ifndef NO_MIDI
-		V_DrawRightAlignedString(BASEVIDWIDTH - currentMenu->x,
-			currentMenu->y+currentMenu->menuitems[5].alphaKey,
-			(music_disabled ? warningflags : highlightflags),
-			(music_disabled ? "OFF" : "ON"));
-#endif
-
 		if (itemOn == 0)
 			lengthstring = 8*(sound_disabled ? 3 : 2);
 		else if (itemOn == 2)
 			lengthstring = 8*(music_disabled ? 3 : 2);
-#ifndef NO_MIDI
-		else if (itemOn == 5)
-			lengthstring = 8*(music_disabled ? 3 : 2);
-#endif
 	}
 
 	for (i = 0; i < currentMenu->numitems; ++i)
