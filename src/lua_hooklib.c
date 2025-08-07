@@ -1138,3 +1138,43 @@ boolean LUA_HookPlayerExplode(player_t *player, mobj_t *inflictor, mobj_t *sourc
 {
 	return kartdamage_hook(player, inflictor, source, HOOK(PlayerExplode), res_true);
 }
+
+void LUA_HookSetupVote(INT16 result[], INT16 maxresults, UINT8 gt, UINT8 secondgt)
+{
+	Hook_State hook;
+	if (prepare_hook(&hook, 0, HOOK(SetupVote)))
+	{
+		// { 0, 0, 0, 0, }
+		lua_newtable(gL);
+		for (int i = 1; i <= maxresults; ++i)
+		{
+			lua_pushinteger(gL, 0);
+			lua_rawseti(gL, -2, i);
+		}
+
+		// call_hooks does lua_settop(gL, 0) so we need to store our table somewhere
+		lua_pushvalue(gL, -1);
+		lua_setfield(gL, LUA_REGISTRYINDEX, "SetupVoteResults");
+
+		lua_pushinteger(gL, gt);
+		lua_pushinteger(gL, secondgt);
+		lua_pushinteger(gL, prevmap+1); // prevmap is gamemap-1 so we offset it back
+
+		call_hooks(&hook, 0, res_none);
+
+		lua_getfield(gL, LUA_REGISTRYINDEX, "SetupVoteResults");
+		for (int i = 1; i <= maxresults; ++i)
+		{
+			lua_rawgeti(gL, -1, i);
+			result[i-1] = lua_tointeger(gL, -1);
+			lua_pop(gL, 1);
+
+			if (result[i-1] && (result[i-1] < 0 || !mapheaderinfo[result[i-1]-1]))
+			{
+				CONS_Alert(CONS_WARNING, "Unknown map #%d for vote\n", result[i-1]);
+				result[i-1] = 0;
+			}
+		}
+		lua_pop(gL, 1);
+	}
+}
