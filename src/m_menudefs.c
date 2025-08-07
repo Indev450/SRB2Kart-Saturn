@@ -1075,7 +1075,8 @@ static menuitem_t OP_SoundOptionsMenu[] =
 	{IT_STRING|IT_CVAR|IT_CV_NOPRINT,			NULL, "Music",							&cv_gamedigimusic,		 	30},
 	{IT_STRING|IT_CVAR|IT_CV_SLIDER,			NULL, "Music Volume",					&cv_digmusicvolume,		 	38},
 
-#ifndef NO_MIDI
+//#ifndef NO_MIDI
+#if 0
 	{IT_STRING|IT_CVAR|IT_CV_SLIDER, 			NULL, "MIDI Volume",					&cv_midimusicvolume,	 	46},
 
 	{IT_STRING|IT_CVAR,							NULL, "Reverse L/R Channels",			&stereoreverse,			 	60},
@@ -1110,7 +1111,8 @@ static const char* OP_SoundTooltips[] =
 	"Volume of Sound effects.",
 	"Turn Music on or off.",
 	"Volume of Music.",
-#ifndef NO_MIDI
+//#ifndef NO_MIDI
+#if 0
 	"Volume of Midi Music.",
 #endif
 	"Reverse left and right channels of audio.",

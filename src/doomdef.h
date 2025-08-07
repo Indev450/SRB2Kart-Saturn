@@ -650,7 +650,8 @@ extern const char *compdate, *comptime, *comprevision, *compbranch;
 #define NOCLIPCAM
 
 /// SRB2Kart: MIDI support is shitty and busted and we don't want it, lets throw it behind a define
-#define NO_MIDI
+// yall didnt properly disable it so it always worked lol (:
+//#define NO_MIDI
 
 /// Sprite rotation
 #define ROTSPRITE
