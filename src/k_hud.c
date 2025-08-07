@@ -4167,7 +4167,7 @@ static void K_drawInput(void)
 
 	const UINT8  hudcolor = K_GetHudColor();
 	const INT32  accent1 = splitflags|colortranslations[hudcolor][5];
-	const INT32  accent2 = splitflags|colortranslations[hudcolor][9];
+	const INT32  accent2 = splitflags|colortranslations[hudcolor][7];
 	const UINT8 *hudcolormap = R_GetTranslationColormap(0, hudcolor, GTC_CACHE);
 
 	const ticcmd_t *cmd = &stplyr->cmd;

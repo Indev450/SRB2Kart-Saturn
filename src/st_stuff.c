@@ -438,8 +438,20 @@ static void ST_drawLevelTitle(void)
 	zonttl = mapheaderinfo[gamemap-1]->zonttl; // SRB2kart
 	actnum = mapheaderinfo[gamemap-1]->actnum;
 	dupcalc = (vid.width/vid.dupx);
-	gtc = G_GetGametypeColor(gametype);
+
 	bary = (splitscreen) ? BASEVIDHEIGHT/2 : 163;
+
+	if (K_UseColorHud())
+	{
+		if (gametype == GT_RACE)
+			gtc = colortranslations[K_GetHudColor()][7]; // idk if this should also apply to other gametypes?
+		else if (modeattacking || gamestate == GS_TIMEATTACK)
+			gtc = colortranslations[K_GetHudColor()][4];
+		else
+			gtc = G_GetGametypeColor(gametype);
+	}
+	else
+		gtc = G_GetGametypeColor(gametype);
 
 	lvlw = V_LevelNameWidth(lvlttl);
 
