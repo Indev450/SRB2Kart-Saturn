@@ -52,6 +52,7 @@
 #include "md5.h" // demo checksums
 #include "k_director.h" // SRB2kart
 #include "k_kart.h" // SRB2kart
+#include "k_hud.h"
 #include "k_stats.h" // SRB2kart
 #include "r_fps.h" // frame interpolation/uncapped
 
@@ -2772,6 +2773,19 @@ UINT8 G_SometimesGetDifferentGametype(UINT8 prefgametype)
 //
 UINT8 G_GetGametypeColor(INT16 gt)
 {
+	if (K_UseColorHud())
+	{
+		if (modeattacking // == ATTACKING_RECORD
+			|| gamestate == GS_TIMEATTACK)
+			return colortranslations[K_GetHudColor()][4];
+		if (gt == GT_MATCH)
+			return colortranslations[K_GetHudColor()][11];
+		if (gt == GT_RACE && cv_kartencore.value) // use opposite colour for encore
+			return colortranslations[KartColor_Opposite[K_GetHudColor()*2]][11];
+
+		return colortranslations[K_GetHudColor()][7]; // FALLBACK
+	}
+
 	if (modeattacking // == ATTACKING_RECORD
 	|| gamestate == GS_TIMEATTACK)
 		return orangemap[120];

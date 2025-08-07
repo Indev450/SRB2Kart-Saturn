@@ -438,13 +438,8 @@ static void ST_drawLevelTitle(void)
 	zonttl = mapheaderinfo[gamemap-1]->zonttl; // SRB2kart
 	actnum = mapheaderinfo[gamemap-1]->actnum;
 	dupcalc = (vid.width/vid.dupx);
-
+	gtc = G_GetGametypeColor(gametype);
 	bary = (splitscreen) ? BASEVIDHEIGHT/2 : 163;
-
-	if (K_UseColorHud() && gametype == GT_RACE)
-		gtc = colortranslations[K_GetHudColor()][7]; // idk if this should also apply to other gametypes?
-	else
-		gtc = G_GetGametypeColor(gametype);
 
 	lvlw = V_LevelNameWidth(lvlttl);
 
