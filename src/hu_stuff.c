@@ -2318,14 +2318,15 @@ static void HU_DrawSongCreditsBox(void)
 		y = -BOXCREDITHEIGHT*dup + (FixedMul(BOXCREDITHEIGHT*FRACUNIT, FixedDiv(t*FRACUNIT, TICRATE*FRACUNIT/2))*dup - interpoffset)/FRACUNIT;
 	}
 
-	bgt = (NUMTRANSMAPS/2) + (cursongcredit.trans/2);
+	bgt = (NUMTRANSMAPS/2) + (cursongcredit.trans/2) - 2; // arbitrary value
 
 	if (bgt < NUMTRANSMAPS)
 	{
-		const UINT8 accent = colortranslations[K_GetHudColor()][9];
+		const UINT8 accent = colortranslations[K_GetHudColor()][7];
 		V_DrawFill(x, y, strwidth*dup, BOXCREDITHEIGHT*dup, accent|flags|(bgt<<V_ALPHASHIFT));
 		V_DrawFill(x+dup, y+dup, (strwidth-2)*dup, (BOXCREDITHEIGHT-2)*dup, accent|flags|(bgt<<V_ALPHASHIFT));
 	}
+
 	if (cursongcredit.trans < NUMTRANSMAPS)
 	{
 		V_DrawSmallString(x+2*dup, y+2*dup, V_ALLOWLOWERCASE|flags|(cursongcredit.trans<<V_ALPHASHIFT), str);
