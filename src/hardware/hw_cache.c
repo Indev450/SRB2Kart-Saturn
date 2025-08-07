@@ -600,7 +600,6 @@ void HWR_FreeMapTextures(void)
 
 static void HWR_PrecacheLevelFlats(void)
 {
-	levelflat_t levelflat;
 	lumpnum_t lump;
 	size_t i, j;
 	INT32 k;
@@ -614,28 +613,22 @@ static void HWR_PrecacheLevelFlats(void)
 		{
 			sector_t *sec = &sectors[i];
 
-			// sector checked already?
-			if (sec->validcount == validcount)
-				continue;
-
-			sec->validcount = validcount;
-
 			// gotta check sector floor and ceiling
 			for (j = 0; j < 2; j++)
 			{
 				const boolean ceiling = (j == 0);
-				INT32 pic = ceiling ? sec->ceilingpic : sec->floorpic;
+				const INT32 pic = ceiling ? sec->ceilingpic : sec->floorpic;
 
-				levelflat = levelflats[pic];
+				const levelflat_t *levelflat = &levelflats[pic];
 
-				lump = levelflat.lumpnum;
+				lump = levelflat->lumpnum;
 				HWR_GetFlat(lump, R_NoEncore(sec, ceiling));
 
-				if (levelflat.speed) // it is an animated flat
+				if (levelflat->speed) // it is an animated flat
 				{
-					for (k = 1; k < levelflat.numpics; k++)
+					for (k = 1; k < levelflat->numpics; k++)
 					{
-						lump = levelflat.baselumpnum + k;
+						lump = levelflat->baselumpnum + k;
 						HWR_GetFlat(lump, R_NoEncore(sec, ceiling));
 					}
 				}
@@ -649,18 +642,18 @@ static void HWR_PrecacheLevelFlats(void)
 		// just load every flat in the level
 		for (i = 0; i < numlevelflats; i++)
 		{
-			levelflat = levelflats[i];
-			lump = levelflat.lumpnum;
+			const levelflat_t *levelflat = &levelflats[i];
+			lump = levelflat->lumpnum;
 
 			HWR_GetFlat(lump, false);
 
-			if (levelflat.speed) // it is an animated flat
+			if (!levelflat->speed) // is it an animated flat ?
+				continue;
+
+			for (k = 1; k < levelflat->numpics; k++)
 			{
-				for (k = 1; k < levelflat.numpics; k++)
-				{
-					lump = levelflat.baselumpnum + k;
-					HWR_GetFlat(lump, false);
-				}
+				lump = levelflat->baselumpnum + k;
+				HWR_GetFlat(lump, false);
 			}
 		}
 	}
@@ -670,52 +663,55 @@ static void HWR_PrecacheLevelTextures(void)
 {
 	char *texturepresent;
 	anim_t *anim;
-	size_t i, j;
+	size_t i, j, f;
 	INT32 h;
 
 	texturepresent = calloc(numtextures, sizeof (*texturepresent));
-	if (texturepresent == NULL) I_Error("%s: Out of memory looking up textures", "HWR_PrecacheLevel");
+	if (texturepresent == NULL)
+		I_Error("%s: Out of memory looking up textures", "HWR_PrecacheLevel");
+
+	// Sky texture is always present.
+	// Note that F_SKY1 is the name used to indicate a sky floor/ceiling as a flat,
+	// while the sky texture is stored like a wall texture, with a skynum dependent name.
+	texturepresent[skytexture] = 1;
+	HWR_GetTexture(skytexture, false);
 
 	for (i = 0; i < numlines; i++)
 	{
-		line_t *line = &lines[i];
+		const line_t *line = &lines[i];
 #ifdef GLENCORE
-		const int noencoremap = ((line->flags & ML_TFERLINE) ? 2 : 1);
+		const int noencoremap = ((encoremap && (line->flags & ML_TFERLINE)) ? 2 : 1);
 #else
 		const int noencoremap = 1;
 #endif
-
-		// line checked already?
-		if (line->validcount == validcount)
-			continue;
-
-		line->validcount = validcount;
-
 		// two sides
 		for (j = 0; j < 2; j++)
 		{
-			side_t *side = &sides[line->sidenum[j]];
-
-			// Single-side linedef
+			// check if single-sided linedef
 			if (line->sidenum[j] == 0xffff)
 				continue;
 
-			if (side->toptexture >= 0 && side->toptexture < numtextures)
+			const side_t *side = &sides[line->sidenum[j]];
+			const INT32 sidetex[] = {side->toptexture, side->midtexture, side->bottomtexture};
+
+			// gotta check from top to bottom uwu
+			for (f = 0; f < 3; f++)
 			{
-				texturepresent[side->toptexture] = 1|noencoremap;
-			}
-			if (side->midtexture >= 0 && side->midtexture < numtextures)
-			{
-				texturepresent[side->midtexture] = 1|noencoremap;
-			}
-			if (side->bottomtexture >= 0 && side->bottomtexture < numtextures)
-			{
-				texturepresent[side->bottomtexture] = 1|noencoremap;
+				const INT32 texnum = sidetex[f];
+				if (texnum < 0 || texnum >= numtextures || texturepresent[texnum])
+					continue;
+
+				texturepresent[texnum] = 1|noencoremap;
+
+				HWR_GetTexture(texnum, false);
+#ifdef GLENCORE
+				if (noencoremap & 2)
+					HWR_GetTexture(texnum, true);
+#endif
 			}
 		}
 	}
 
-	// check for animated textures
 	for (anim = anims; anim < lastanim; anim++)
 	{
 		if (!anim->istexture)
@@ -726,47 +722,21 @@ static void HWR_PrecacheLevelTextures(void)
 		if (!texpresent)
 			continue;
 
-		if (texpresent & 1)
+		for (h = 1; h < anim->numpics; h++)
 		{
-			for (h = 1; h < anim->numpics; h++)
+			if (texpresent & 1)
 			{
 				HWR_GetTexture(anim->basepic+h, false);
 			}
-		}
 #ifdef GLENCORE
-		if (texpresent & 2)
-		{
-			for (h = 1; h < anim->numpics; h++)
+			if (texpresent & 2)
 			{
 				HWR_GetTexture(anim->basepic+h, true);
 			}
-		}
 #endif
+		}
 	}
 
-	// Sky texture is always present.
-	// Note that F_SKY1 is the name used to indicate a sky floor/ceiling as a flat,
-	// while the sky texture is stored like a wall texture, with a skynum dependent name.
-	texturepresent[skytexture] = 1;
-
-	for (i = 0; i < (unsigned)numtextures; i++)
-	{
-		const char texpresent = texturepresent[i];
-
-		if (!texpresent)
-			continue;
-
-		if (texpresent & 1)
-		{
-			HWR_GetTexture(i, false);
-		}
-#ifdef GLENCORE
-		if (texpresent & 2)
-		{
-			HWR_GetTexture(i, true);
-		}
-#endif
-	}
 	free(texturepresent);
 }
 
@@ -775,21 +745,19 @@ static void HWR_PrecacheLevelSprites(void)
 	patch_t *spritepatch;
 	char *spritepresent;
 	size_t i, j, k;
-	lumpnum_t lump;
 
 	thinker_t *th;
-	mobj_t *mo;
-	spriteframe_t *sf;
 
 	spritepresent = calloc(numsprites, sizeof (*spritepresent));
-	if (spritepresent == NULL) I_Error("%s: Out of memory looking up sprites", "HWR_PrecacheLevel");
+	if (spritepresent == NULL)
+		I_Error("%s: Out of memory looking up sprites", "HWR_PrecacheLevel");
 
 	for (th = thinkercap.next; th != &thinkercap; th = th->next)
 	{
 		if (th->function != (actionf_p1)P_MobjThinker)
 			continue;
 
-		mo = (mobj_t *)th;
+		const mobj_t *mo = (mobj_t *)th;
 
 		// ogl is weird
 		// for some reason it does not want to preload sprites with colormaps
@@ -807,10 +775,10 @@ static void HWR_PrecacheLevelSprites(void)
 
 		for (j = 0; j < sprites[i].numframes; j++)
 		{
-			sf = &sprites[i].spriteframes[j];
+			const spriteframe_t *sf = &sprites[i].spriteframes[j];
 
 #define cacheang(a) {\
-				lump = sf->lumppat[a];\
+				const lumpnum_t lump = sf->lumppat[a];\
 				spritepatch = (patch_t *)W_CachePatchNum(lump, PU_SPRITE);\
 				if (spritepatch != NULL)\
 					HWR_GetPatch(spritepatch);\
