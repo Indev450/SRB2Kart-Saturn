@@ -111,8 +111,6 @@ static y_voteclient voteclient;
 static INT32 votetic;
 static INT32 voteendtic = -1;
 
-static void Y_UnloadVoteData(void);
-
 //
 // SRB2Kart - Y_CalculateMatchData and ancillary functions
 //
@@ -1572,16 +1570,8 @@ void Y_StartVote(void)
 //
 void Y_EndVote(void)
 {
-	Y_UnloadVoteData();
-	voteendtic = -1;
-}
-
-//
-// Y_UnloadVoteData
-//
-static void Y_UnloadVoteData(void)
-{
 	voteclient.loaded = false;
+	voteendtic = -1;
 }
 
 //
