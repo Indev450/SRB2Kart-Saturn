@@ -73,7 +73,6 @@ static huddrawlist_h luahuddrawlist_intermission = NULL;
 static huddrawlist_h luahuddrawlist_vote = NULL;
 
 static void Y_FollowIntermission(void);
-static void Y_UnloadData(void);
 
 // SRB2Kart: voting stuff
 // Level images
@@ -789,7 +788,7 @@ void Y_StartIntermission(void)
 			break;
 	}
 
-	bgtile = W_CachePatchName("SRB2BACK", PU_PATCH);
+	bgtile = W_CachePatchName("SRB2BACK", PU_PATCH_LOWPRIORITY);
 
 	LUA_HUD_DestroyDrawList(luahuddrawlist_intermission);
 	luahuddrawlist_intermission = LUA_HUD_CreateDrawList();
@@ -802,9 +801,6 @@ void Y_StartIntermission(void)
 //
 void Y_EndIntermission(void)
 {
-	if (!dedicated)
-		Y_UnloadData();
-
 	endtic = -1;
 	sorttic = -1;
 	intertype = int_none;
@@ -819,20 +815,6 @@ static void Y_FollowIntermission(void)
 	// or simply go to the next level.
 	// No need to duplicate the code here!
 	G_AfterIntermission();
-}
-
-#define UNLOAD(x) {if ((x) != NULL) {Patch_Free(x);} x = NULL;}
-
-//
-// Y_UnloadData
-//
-static void Y_UnloadData(void)
-{
-	// unload the background patches
-	UNLOAD(VoteScreen.bgpatch);
-	UNLOAD(VoteScreen.widebgpatch);
-	UNLOAD(bgtile);
-	//UNLOAD(interpic);
 }
 
 // SRB2Kart: Voting!
@@ -877,8 +859,8 @@ static void Y_VoteScreenCheck(void)
 
 	// non lua vote background handling
 	boolean prefbattletype = ((votelevels[0][1] & ~0x80) == GT_MATCH);
-	VoteScreen.widebgpatch = W_CachePatchName((prefbattletype ? "BATTLSCW" : "INTERSCW"), PU_PATCH);
-	VoteScreen.bgpatch = W_CachePatchName((prefbattletype ? "BATTLSCR" : "INTERSCR"), PU_PATCH);
+	VoteScreen.widebgpatch = W_CachePatchName((prefbattletype ? "BATTLSCW" : "INTERSCW"), PU_PATCH_LOWPRIORITY);
+	VoteScreen.bgpatch = W_CachePatchName((prefbattletype ? "BATTLSCR" : "INTERSCR"), PU_PATCH_LOWPRIORITY);
 }
 
 //
@@ -926,7 +908,7 @@ static void Y_DrawLuaVoteScreenPatch(boolean widePatch)
 	// Draw non animated patch
 	if (!tempfoundAnimLuaVoteFrames)
 	{
-		votebg = W_CachePatchName(va("%s1", tempPrefix), PU_PATCH);
+		votebg = W_CachePatchName(va("%s1", tempPrefix), PU_PATCH_LOWPRIORITY);
 		Y_VoteBackgroundDrawer(votebg);
 		return;
 	}
@@ -939,7 +921,7 @@ static void Y_DrawLuaVoteScreenPatch(boolean widePatch)
 
 	nextframe = (VoteScreen.currentAnimFrame + 1);
 
-	votebg = W_CachePatchName(va("%s%d", tempPrefix, nextframe), PU_PATCH);
+	votebg = W_CachePatchName(va("%s%d", tempPrefix, nextframe), PU_PATCH_LOWPRIORITY);
 
 	Y_VoteBackgroundDrawer(votebg);
 
@@ -1481,14 +1463,14 @@ static void Y_InitVoteDrawing(void)
 	// setup the background patches
 	Y_VoteScreenCheck();
 
-	VoteScreen.cursor[0] = W_CachePatchName("M_CURSOR", PU_PATCH);
-	VoteScreen.cursor[1] = W_CachePatchName("P1CURSOR", PU_PATCH);
-	VoteScreen.cursor[2] = W_CachePatchName("P2CURSOR", PU_PATCH);
-	VoteScreen.cursor[3] = W_CachePatchName("P3CURSOR", PU_PATCH);
-	VoteScreen.cursor[4] = W_CachePatchName("P4CURSOR", PU_PATCH);
+	VoteScreen.cursor[0] = W_CachePatchName("M_CURSOR", PU_PATCH_LOWPRIORITY);
+	VoteScreen.cursor[1] = W_CachePatchName("P1CURSOR", PU_PATCH_LOWPRIORITY);
+	VoteScreen.cursor[2] = W_CachePatchName("P2CURSOR", PU_PATCH_LOWPRIORITY);
+	VoteScreen.cursor[3] = W_CachePatchName("P3CURSOR", PU_PATCH_LOWPRIORITY);
+	VoteScreen.cursor[4] = W_CachePatchName("P4CURSOR", PU_PATCH_LOWPRIORITY);
 
-	VoteScreen.randomlvl = W_CachePatchName("RANDOMLV", PU_PATCH);
-	VoteScreen.rubyicon  = W_CachePatchName("RUBYICON", PU_PATCH);
+	VoteScreen.randomlvl = W_CachePatchName("RANDOMLV", PU_PATCH_LOWPRIORITY);
+	VoteScreen.rubyicon  = W_CachePatchName("RUBYICON", PU_PATCH_LOWPRIORITY);
 }
 
 void Y_StartVote(void)
@@ -1573,9 +1555,9 @@ void Y_StartVote(void)
 		{
 			lumpnum = W_CheckNumForName(va("%sP", G_BuildMapName(votelevels[i][0]+1)));
 			if (lumpnum != LUMPERROR)
-				levelinfo[i].pic = W_CachePatchName(va("%sP", G_BuildMapName(votelevels[i][0]+1)), PU_PATCH);
+				levelinfo[i].pic = W_CachePatchName(va("%sP", G_BuildMapName(votelevels[i][0]+1)), PU_PATCH_LOWPRIORITY);
 			else
-				levelinfo[i].pic = W_CachePatchName("BLANKLVL", PU_PATCH);
+				levelinfo[i].pic = W_CachePatchName("BLANKLVL", PU_PATCH_LOWPRIORITY);
 		}
 	}
 
@@ -1600,24 +1582,6 @@ void Y_EndVote(void)
 static void Y_UnloadVoteData(void)
 {
 	voteclient.loaded = false;
-
-	if (dedicated)
-		return;
-
-	UNLOAD(VoteScreen.widebgpatch);
-	UNLOAD(VoteScreen.bgpatch);
-	UNLOAD(VoteScreen.cursor[0]);
-	UNLOAD(VoteScreen.cursor[1]);
-	UNLOAD(VoteScreen.cursor[2]);
-	UNLOAD(VoteScreen.cursor[3]);
-	UNLOAD(VoteScreen.cursor[4]);
-	UNLOAD(VoteScreen.randomlvl);
-	UNLOAD(VoteScreen.rubyicon);
-
-	UNLOAD(levelinfo[3].pic);
-	UNLOAD(levelinfo[2].pic);
-	UNLOAD(levelinfo[1].pic);
-	UNLOAD(levelinfo[0].pic);
 }
 
 //
