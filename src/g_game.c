@@ -2780,8 +2780,6 @@ UINT8 G_GetGametypeColor(INT16 gt)
 			return colortranslations[K_GetHudColor()][4];
 		if (gt == GT_MATCH)
 			return colortranslations[K_GetHudColor()][11];
-		if (gt == GT_RACE && cv_kartencore.value) // use opposite colour for encore
-			return colortranslations[KartColor_Opposite[K_GetHudColor()*2]][11];
 
 		return colortranslations[K_GetHudColor()][7]; // FALLBACK
 	}
