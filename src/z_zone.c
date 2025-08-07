@@ -503,7 +503,7 @@ void Z_CheckHeap(INT32 tag)
 		{
 			I_Error("Z_CheckHeap %d: block %u"
 #ifdef ZDEBUG
-				"(owned by %s:%d)"
+				" (owned by %s:%d)"
 #endif
 				" should not exist", i, blocknumon
 #ifdef ZDEBUG
@@ -514,13 +514,13 @@ void Z_CheckHeap(INT32 tag)
 #endif
 		if (block->user != NULL && *(block->user) != given)
 		{
-			I_Error("Z_CheckHeap"
+			I_Error("Z_CheckHeap :"
 #ifdef ZDEBUG
-				"at %s %d :"
+				" %s %d"
 #endif
-				"block %u"
+				" block %u"
 #ifdef ZDEBUG
-				"(owned by %s:%d)"
+				" (owned by %s:%d)"
 #endif
 				" doesn't have a proper user"
 #ifdef ZDEBUG
@@ -534,13 +534,13 @@ void Z_CheckHeap(INT32 tag)
 		}
 		if (block->next->prev != block)
 		{
-			I_Error("Z_CheckHeap"
+			I_Error("Z_CheckHeap :"
 #ifdef ZDEBUG
-				"at %s %d :"
+				" %s %d"
 #endif
-				"block %u"
+				" block %u"
 #ifdef ZDEBUG
-				"(owned by %s:%d)"
+				" (owned by %s:%d)"
 #endif
 				" lacks proper backlink"
 #ifdef ZDEBUG
@@ -554,13 +554,13 @@ void Z_CheckHeap(INT32 tag)
 		}
 		if (block->prev->next != block)
 		{
-			I_Error("Z_CheckHeap"
+			I_Error("Z_CheckHeap :"
 #ifdef ZDEBUG
-				"at %s %d :"
+				" %s %d"
 #endif
-				"block %u"
+				" block %u"
 #ifdef ZDEBUG
-				"(owned by %s:%d)"
+				" (owned by %s:%d)"
 #endif
 				" lacks proper forward link"
 #ifdef ZDEBUG
@@ -574,13 +574,13 @@ void Z_CheckHeap(INT32 tag)
 		}
 		if (block->id != ZONEID)
 		{
-			I_Error("Z_CheckHeap"
+			I_Error("Z_CheckHeap :"
 #ifdef ZDEBUG
-				"at %s %d :"
+				" %s %d"
 #endif
-				"block %u"
+				" block %u"
 #ifdef ZDEBUG
-				"(owned by %s:%d)"
+				" (owned by %s:%d)"
 #endif
 				" have the wrong ID"
 #ifdef ZDEBUG
