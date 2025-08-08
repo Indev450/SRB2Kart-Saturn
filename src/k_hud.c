@@ -1340,10 +1340,10 @@ static void K_drawKartStats(void)
 	spdxoffset = 0;
 	spdoffset = 0;
 
-	flags = V_SNAPTOBOTTOM|V_SNAPTOLEFT;
-
 	if (!LUA_HudEnabled(hud_statdisplay))
 		return;
+
+	flags = V_SNAPTOBOTTOM|V_SNAPTOLEFT;
 
 	//Internal offset for speedometer
 
@@ -1351,29 +1351,65 @@ static void K_drawKartStats(void)
 
 	if (cv_kartspeedometer.value && (!splitscreen))
 	{
-		if ((speedostyle == SPEEDO_EXTRA) || (speedostyle == SPEEDO_ACHII) || (speedostyle == SPEEDO_EXTRA3))
-			spdoffset = -10;
-		else if (speedostyle == SPEEDO_DIAL)
+		switch (speedostyle)
 		{
-			spdxoffset = 11;
-			spdoffset = 14;
+			case SPEEDO_EXTRA:
+			case SPEEDO_ACHII:
+			case SPEEDO_EXTRA3:
+				spdoffset = -10;
+				break;
+			case SPEEDO_DIAL:
+				spdxoffset = 11;
+				spdoffset = 14;
+				break;
+			default:
+				spdoffset = -14;
+				break;
 		}
-		else
-			spdoffset = -14;
 	}
 	else
 		spdoffset = 0;
 
-	if ((speedostyle != SPEEDO_DIAL) || (splitscreen))
-		spdoffset += (G_BattleGametype() ? (stplyr->kartstuff[k_bumper] ? -5 : -8) : 0);
+	if (G_BattleGametype() && ((speedostyle != SPEEDO_DIAL) || splitscreen))
+		spdoffset += ((stplyr->kartstuff[k_bumper] ? -5 : -8));
 
 	// Customizations c:
 	if (!splitscreen)
 	{
+		skin_t *fakeskin;
+		INT32 flags2;
+
 		x += 18 + cv_stat_xoffset.value + spdxoffset;
 		y += cv_stat_yoffset.value + spdoffset;
+
+		flags |= V_HUDTRANS;
+		flags2 = flags|V_ALLOWLOWERCASE|V_SkinColorToHighlightcolor(stplyr->skincolor);
+
+		fakeskin = K_GetPlayerSkin(stplyr);
+
+		// Skin name
+		if (K_IsHighResolution()) // V_DrawSmallString becomes a mess at low resolutions lel
+		{
+			V_DrawSmallString(x+20, y+12, flags2, fakeskin->realname);
+		}
+		else
+		{
+			V_DrawThinString(x+20, y+7, flags2, fakeskin->realname);
+		}
+
+		// Icon and stats
+		if (K_UseHighResPortraits())
+			V_DrawSmallMappedPatch(x, y, flags, R_GetSkinFaceWant(stplyr), R_GetLocalTranslationColormap(fakeskin, fakeskin, stplyr->skincolor, GTC_CACHE, stplyr->skinlocal));
+		else
+			V_DrawMappedPatch(x, y, flags, R_GetSkinFaceRank(stplyr), R_GetLocalTranslationColormap(fakeskin, fakeskin, stplyr->skincolor, GTC_CACHE, stplyr->skinlocal));
+
+		V_DrawMappedPatch(x-3, y-2, flags, kp_facenum[min(9, max(1, stplyr->kartspeed))], R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_BLUEBERRY, GTC_CACHE));
+		V_DrawMappedPatch(x+10, y+10, flags, kp_facenum[min(9, max(1, stplyr->kartweight))], R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_BURGUNDY, GTC_CACHE));
+
+		return;
 	}
-	else if (splitscreen == 1)	// I tried my best, but this is still mess :/ < :Blobcatpats: c:
+
+	if (splitscreen == 1) // I tried my best, but this is still mess :/ < :Blobcatpats: c:
 	{
 		x -= 10;
 		y -= 40;
@@ -1411,35 +1447,8 @@ static void K_drawKartStats(void)
 
 	flags |= V_HUDTRANS;
 
-	if (!splitscreen)
-	{
-		skin_t *fakeskin;
-		fakeskin = K_GetPlayerSkin(stplyr);
-
-		// Skin name
-		if (K_IsHighResolution()) // V_DrawSmallString becomes a mess at low resolutions lel
-		{
-			V_DrawSmallString(x+20, y+12, flags|V_ALLOWLOWERCASE|V_SkinColorToHighlightcolor(stplyr->skincolor), fakeskin->realname);
-		}
-		else
-		{
-			V_DrawThinString(x+20, y+7, flags|V_ALLOWLOWERCASE|V_SkinColorToHighlightcolor(stplyr->skincolor), fakeskin->realname);
-		}
-
-		// Icon and stats
-		if (K_UseHighResPortraits())
-			V_DrawSmallMappedPatch(x, y, flags, R_GetSkinFaceWant(stplyr), R_GetLocalTranslationColormap(fakeskin, fakeskin, stplyr->skincolor, GTC_CACHE, stplyr->skinlocal));
-		else
-			V_DrawMappedPatch(x, y, flags, R_GetSkinFaceRank(stplyr), R_GetLocalTranslationColormap(fakeskin, fakeskin, stplyr->skincolor, GTC_CACHE, stplyr->skinlocal));
-
-		V_DrawMappedPatch(x-3, y-2, flags, kp_facenum[min(9, max(1, stplyr->kartspeed))], R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_BLUEBERRY, GTC_CACHE));
-		V_DrawMappedPatch(x+10, y+10, flags, kp_facenum[min(9, max(1, stplyr->kartweight))], R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_BURGUNDY, GTC_CACHE));
-	}
-	else
-	{
-		// In splitscreen, just draw a string with stats
-		V_DrawString(x, y+10, flags, va("\x84%dS \x87%dW", stplyr->kartspeed, stplyr->kartweight));
-	}
+	// In splitscreen, just draw a string with stats
+	V_DrawString(x, y+10, flags, va("\x84%dS \x87%dW", stplyr->kartspeed, stplyr->kartweight));
 }
 
 static void K_drawKartItem(void)

@@ -1070,29 +1070,26 @@ enum
 static menuitem_t OP_SoundOptionsMenu[] =
 {
 	{IT_STRING|IT_CVAR|IT_CV_NOPRINT,			NULL, "SFX",							&cv_gamesounds,			 	10},
-	{IT_STRING|IT_CVAR|IT_CV_SLIDER,
-												NULL, "SFX Volume",						&cv_soundvolume,		 	18},
+	{IT_STRING|IT_CVAR|IT_CV_SLIDER,			NULL, "SFX Volume",						&cv_soundvolume,		 	18},
 
 	{IT_STRING|IT_CVAR|IT_CV_NOPRINT,			NULL, "Music",							&cv_gamedigimusic,		 	30},
-	{IT_STRING|IT_CVAR|IT_CV_SLIDER,
-												NULL, "Music Volume",					&cv_digmusicvolume,		 	38},
+	{IT_STRING|IT_CVAR|IT_CV_SLIDER,			NULL, "Music Volume",					&cv_digmusicvolume,		 	38},
 
-#ifndef NO_MIDI
-	{IT_STRING|IT_CVAR,			NULL, "MIDI",					&cv_gamemidimusic,		 50},
-	{IT_STRING|IT_CVAR|IT_CV_SLIDER,
-								NULL, "MIDI Volume",			&cv_midimusicvolume,	 58},
+//#ifndef NO_MIDI
+#if 0
+	{IT_STRING|IT_CVAR|IT_CV_SLIDER, 			NULL, "MIDI Volume",					&cv_midimusicvolume,	 	46},
 
-	{IT_STRING|IT_CVAR,							NULL, "Reverse L/R Channels",			&stereoreverse,			 	50},
+	{IT_STRING|IT_CVAR,							NULL, "Reverse L/R Channels",			&stereoreverse,			 	60},
 
-	{IT_STRING|IT_CVAR,							NULL, "Chat Notifications",				&cv_chatnotifications,	 	65},
-	{IT_STRING|IT_CVAR,							NULL, "Character voices",				&cv_kartvoices,			 	75},
-	{IT_STRING|IT_CVAR,							NULL, "Hit Em Delay",				    &cv_karthitemdialog,		85},
-	{IT_STRING|IT_CVAR,							NULL, "Powerup Warning",				&cv_kartinvinsfx,		 	95},
+	{IT_STRING|IT_CVAR,							NULL, "Chat Notifications",				&cv_chatnotifications,	 	75},
+	{IT_STRING|IT_CVAR,							NULL, "Character voices",				&cv_kartvoices,			 	85},
+	{IT_STRING|IT_CVAR,							NULL, "Hit Em Delay",				    &cv_karthitemdialog,		95},
+	{IT_STRING|IT_CVAR,							NULL, "Powerup Warning",				&cv_kartinvinsfx,		 	105},
 
-	{IT_KEYHANDLER|IT_STRING,					NULL, "Sound Test",						M_HandleSoundTest,			105},
-	{IT_STRING|IT_CALL,							NULL, "Music Test",						M_MusicTest,				115},
+	{IT_KEYHANDLER|IT_STRING,					NULL, "Sound Test",						M_HandleSoundTest,			115},
+	{IT_STRING|IT_CALL,							NULL, "Music Test",						M_MusicTest,				125},
 
-	{IT_STRING|IT_SUBMENU, 						NULL, "Advanced Settings...", 			&OP_SoundAdvancedDef, 		125}
+	{IT_STRING|IT_SUBMENU, 						NULL, "Advanced Settings...", 			&OP_SoundAdvancedDef, 		135}
 #else
 	{IT_STRING|IT_CVAR,							NULL, "Reverse L/R Channels",			&stereoreverse,			 	60},
 
@@ -1114,8 +1111,8 @@ static const char* OP_SoundTooltips[] =
 	"Volume of Sound effects.",
 	"Turn Music on or off.",
 	"Volume of Music.",
-#ifndef NO_MIDI
-	"Turn Midi Music on or off.",
+//#ifndef NO_MIDI
+#if 0
 	"Volume of Midi Music.",
 #endif
 	"Reverse left and right channels of audio.",

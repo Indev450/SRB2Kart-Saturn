@@ -14,6 +14,6 @@ sources+=dedicated/i_threads.c
 endif
 
 NOOPENMPT=1
-NOGME=1
+NOLIBGME=1
 NOHW=1
 NOUPNP=1

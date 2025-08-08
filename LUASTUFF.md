@@ -192,6 +192,18 @@ from `0` to `#musicdefs-1`, or string indices (which is equal to calling `S_Find
 Hook is called whenever `S_ShowMusicCredit` (either from game or mod) is called. Takes musicdef as only argument, returning true
 will overwrite vanilla behavior (not show music credit), can be used to implement custom music credit pop-ups.
 
+## addHook("SetupVote", function(result, gt, secondgt, prevmap))
+
+Hook is called whenever server sets up options for vote screen. `result` is table where lua can store options to,
+(for example, `result[1] = 1` will force green hills as first option), gt is current gametype, secondgt is
+alternative gametype picked for 3rd entry (for example, gt can be `GT_RACE`, and secondgt can be `GT_MATCH`)
+prevmap is the previous map that was played (small note - in game code, it is offset by -1, but for lua its offset back,
+so if previous gamemap was 1, prevmap would also be 1. Which means you can safely do mapheaderinfo[prevmap] to get info on previous map)
+
+Limitations: currently, game can only change gametype for 3rd option in map (meaning for example, if current gametype is race, and you
+put battle map in first option, when it gets picked that map will be still run in race gametype). That means, game will only handle maps with
+different gametype if it is put in 3rd vote option.
+
 # Other changes
 
 ## P_PlayRinglossSound(source, damager)

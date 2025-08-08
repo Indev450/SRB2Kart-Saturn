@@ -66,6 +66,7 @@
 	X (IntermissionThinker),/* Y_Ticker */\
 	X (VoteThinker),/*SRB2KART*/\
 	X (ServerJoin),/* SRB2KART - Saturn 32p*/\
+	X (SetupVote),/*SRB2KART - Saturn*/
 
 #define STRING_HOOK_LIST(X) \
 	X (BotAI),/* B_BuildTailsTiccmd by skin name */\
@@ -140,3 +141,8 @@ int LUA_HookShouldSquish(player_t *player, mobj_t *inflictor, mobj_t *source); /
 boolean LUA_HookPlayerSpin(player_t *player, mobj_t *inflictor, mobj_t *source); // SRB2KART: Hook for K_SpinPlayer. Allows Lua to execute code and/or overwrite its behavior.
 boolean LUA_HookPlayerExplode(player_t *player, mobj_t *inflictor, mobj_t *source); // SRB2KART: Hook for K_ExplodePlayer. Allows Lua to execute code and/or overwrite its behavior.
 boolean LUA_HookPlayerSquish(player_t *player, mobj_t *inflictor, mobj_t *source); // SRB2KART: Hook for K_SquishPlayer. Allows Lua to execute code and/or overwrite its behavior.
+
+// SRB2KART - Saturn: Allows changing vote level picks
+// (note: function format in lua doesn't include maxresults, so its function(result, gametype, secondgametype, prevmap)
+// to get maxresults use #result)
+void LUA_HookSetupVote(INT16 result[], INT16 maxresults, UINT8 gt, UINT8 secondgt);

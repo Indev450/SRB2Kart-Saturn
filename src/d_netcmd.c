@@ -2505,6 +2505,14 @@ void D_SetupVote(void)
 	UINT8 gt = (cv_kartgametypepreference.value == -1) ? gametype : cv_kartgametypepreference.value;
 	UINT8 secondgt = G_SometimesGetDifferentGametype(gt);
 	INT16 votebuffer[4] = {-1,-1,-1,0};
+	INT16 luamaps[4] = {0, 0, 0, 0};
+
+	LUA_HookSetupVote(luamaps, sizeof(luamaps)/sizeof(luamaps[0]), gt, secondgt);
+
+	// Correct secondgt if needed
+	UINT8 typeoflevel = mapheaderinfo[luamaps[2]-1]->typeoflevel;
+	if (luamaps[2] && (typeoflevel & G_TOLFlag(secondgt&(~0x80))) == 0)
+		secondgt = ((typeoflevel & TOL_RACE) ? GT_RACE : GT_MATCH)|(secondgt&0x80);
 
 	if (cv_kartencore.value && gt == GT_RACE)
 		WRITEUINT8(p, (gt|0x80));
@@ -2513,10 +2521,13 @@ void D_SetupVote(void)
 	WRITEUINT8(p, secondgt);
 	secondgt &= ~0x80;
 
+
 	for (i = 0; i < 4; i++)
 	{
 		UINT16 m;
-		if (i == 2) // sometimes a different gametype
+		if (luamaps[i])
+			m = luamaps[i]-1;
+		else if (i == 2) // sometimes a different gametype
 			m = G_RandMap(G_TOLFlag(secondgt), prevmap, false, 0, true, votebuffer);
 		else if (i >= 3) // unknown-random and force-unknown MAP HELL
 			m = G_RandMap(G_TOLFlag(gt), prevmap, false, (i-2), (i < 4), votebuffer);
