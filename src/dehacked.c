@@ -178,6 +178,9 @@ FUNCPRINTF static void deh_warning(const char *first, ...)
 	else
 		CONS_Alert(CONS_WARNING, "Line %u: %s\n", dbg_line, buf);
 
+	if (dbg_line != -1 && (M_CheckParm("-strict") || M_CheckParm("-strict-soc")))
+		I_Error("deh_warning: %s", buf);
+
 	deh_num_warning++;
 
 	Z_Free(buf);

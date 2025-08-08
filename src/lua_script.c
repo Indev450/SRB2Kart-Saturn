@@ -24,6 +24,7 @@
 #include "p_slopes.h" // for P_SlopeById
 #include "s_sound.h"
 #include "m_menu.h"
+#include "m_argv.h"
 #ifdef LUA_ALLOW_BYTECODE
 #include "d_netfil.h" // for LUA_DumpFile
 #endif
@@ -302,7 +303,11 @@ static inline void LUA_LoadFile(MYFILE *f, char *name)
 
 	lua_pushcfunction(gL, LUA_GetErrorMessage);
 	if (luaL_loadbuffer(gL, f->data, f->size, va("@%s",name)) || lua_pcall(gL, 0, 0, lua_gettop(gL) - 1)) {
-		CONS_Alert(CONS_WARNING,"%s\n",lua_tostring(gL,-1));
+		if (M_CheckParm("-strict") || M_CheckParm("-strict-lua"))
+			I_Error("Lua error: %s", lua_tostring(gL, -1));
+		else
+			CONS_Alert(CONS_WARNING,"%s\n",lua_tostring(gL,-1));
+
 		lua_pop(gL,1);
 	}
 	lua_gc(gL, LUA_GCCOLLECT, 0);
