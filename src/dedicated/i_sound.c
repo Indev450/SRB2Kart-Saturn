@@ -69,13 +69,11 @@ void I_ShutdownSound(void){}
 
 	\return	sfx handle
 */
-INT32 I_StartSound(sfxenum_t id, UINT8 vol, UINT8 sep, UINT8 pitch, UINT8 priority, INT32 channel)
+INT32 I_StartSound(sfxenum_t id, UINT8 vol, UINT8 sep, INT32 channel)
 {
 	(void)id;
 	(void)vol;
 	(void)sep;
-	(void)pitch;
-	(void)priority;
 	(void)channel;
 	return 0;
 }
@@ -116,12 +114,11 @@ boolean I_SoundIsPlaying(INT32 handle)
 
 	\return	void
 */
-void I_UpdateSoundParams(INT32 handle, UINT8 vol, UINT8 sep, UINT8 pitch)
+void I_UpdateSoundParams(INT32 handle, UINT8 vol, UINT8 sep)
 {
 	(void)handle;
 	(void)vol;
 	(void)sep;
-	(void)pitch;
 }
 
 /**	\brief	The I_SetSfxVolume function
