@@ -1129,8 +1129,8 @@ static UINT8 UnArchiveValue(UINT8 **p, int TABLESINDEX, boolean network)
 	case ARCH_MOBJ:
 		if (network == false) // for replays :chaosleep:
 		{
-			*p += sizeof(UINT32);	// Skip this data, we can't read a mobj here, it'd point to garbage and crash the game.
-			return 3;	// Don't set the field
+			*p += sizeof(UINT32); // Skip this data, we can't read a mobj here, it'd point to garbage and crash the game.
+			return 3; // Don't set the field
 		}
 
 		LUA_PushUserdata(gL, P_FindNewPosition(READUINT32(*p)), META_MOBJ);
@@ -1205,9 +1205,9 @@ static void UnArchiveExtVars(UINT8 **p, void *pointer, boolean network)
 			CONS_Alert(CONS_ERROR, "Unexpected end marker when reading ExtVars (field '%s')\n", field);
 			break;
 		}
-		else if (ret == 3)	// This will return 3 if we shouldn't set this field.
+		else if (ret == 3) // This will return 3 if we shouldn't set this field.
 		{
-			CONS_Alert(CONS_WARNING,"Cannot read mobj_t stored in player variable \'%s\'. Desyncs may occur.\n", field);
+			//CONS_Alert(CONS_WARNING,"Cannot read mobj_t stored in player variable \'%s\'. Desyncs may occur.\n", field);
 			continue;
 		}
 
@@ -1261,7 +1261,7 @@ static void UnArchiveTables(UINT8 **p, boolean network)
 			ret = UnArchiveValue(p, TABLESINDEX, network);
 			if (ret == 3)
 			{
-				CONS_Alert(CONS_WARNING,"Couldn't read mobj_t\n");
+				//CONS_Alert(CONS_WARNING,"Couldn't read mobj_t\n");
 				lua_pushnil(gL);
 			}
 			else if (ret == 1) // read key
@@ -1276,7 +1276,7 @@ static void UnArchiveTables(UINT8 **p, boolean network)
 			}
 			else if (ret == 3)
 			{
-				CONS_Alert(CONS_WARNING,"Couldn't read mobj_t\n");
+				//CONS_Alert(CONS_WARNING,"Couldn't read mobj_t\n");
 				lua_pushnil(gL);
 			}
 			else if (ret == 2) // read value
