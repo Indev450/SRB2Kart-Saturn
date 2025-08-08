@@ -97,7 +97,7 @@ opts+=-DHAVE_VALGRIND
 endif
 
 default_packages:=\
-	GME/libgme/LIBGME\
+	LIBGME/libgme/LIBGME\
 	OPENMPT/libopenmpt/LIBOPENMPT\
 	ZLIB/zlib\
 
