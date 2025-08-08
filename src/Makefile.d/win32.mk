@@ -42,6 +42,10 @@ libs+=-Wl,--large-address-aware
 NOLIBBACKTRACE=1
 endif
 
+ifndef NODISCORDRPC
+HAVE_DISCORDRPC=1
+endif
+
 ifndef MINGW64
 32=32
 x86=x86

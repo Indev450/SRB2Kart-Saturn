@@ -74,13 +74,6 @@ libs+=-lbacktrace
 opts+=-DHAVE_LIBBACKTRACE
 endif
 
-#windoze hack
-ifdef MINGW
-ifndef NODISCORDRPC
-HAVE_DISCORDRPC=1
-endif
-endif
-
 ifdef HAVE_DISCORDRPC
 $(eval $(call Propogate_flags,DISCORDRPC))
 libs+=-ldiscord-rpc
