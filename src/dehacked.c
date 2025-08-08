@@ -2855,7 +2855,7 @@ static void DEH_LoadDehackedFile(MYFILE *f, UINT16 wad)
 	dbg_line = -1; // start at -1 so the first line is 0.
 	while (!myfeof(f))
 	{
-		char origpos[128];
+		char origpos[256];
 		INT32 size = 0;
 		char *traverse;
 
@@ -2869,6 +2869,12 @@ static void DEH_LoadDehackedFile(MYFILE *f, UINT16 wad)
 		{
 			traverse++;
 			size++;
+		}
+
+		if (size > (int)sizeof(origpos))
+		{
+			deh_warning("Line is too long");
+			size = sizeof(origpos)-1;
 		}
 
 		strncpy(origpos, s, size);
