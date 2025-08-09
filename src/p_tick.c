@@ -488,7 +488,7 @@ static void P_DeviceRumbleTick(void)
 		UINT16 low = 0, high = 0;
 		UINT16 lenght = 57; // in ms
 
-		const player_t *player = ((i == 0) ? &players[consoleplayer] : &players[displayplayers[i]]);
+		const player_t *player = P_GetLocalPlayerForNum(i);
 
 		// allow lua to do some crap for spectators
 		if (player->spectator || !player->mo)
