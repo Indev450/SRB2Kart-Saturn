@@ -745,7 +745,7 @@ boolean preparefilemenu(boolean samedepth, boolean replayhut)
 		if (stat(menupath, &fsstat) < 0)
 #else
 		// if we wanna follow symlinks we can check with FILE_ATTRIBUTE_REPARSE_POINT
-		DWORD fileattr = GetFileAttributes(searchpath);
+		DWORD fileattr = GetFileAttributes(menupath);
 		if (fileattr == INVALID_FILE_ATTRIBUTES)
 #endif
 			; // was the file (re)moved? can't stat it
@@ -827,7 +827,7 @@ boolean preparefilemenu(boolean samedepth, boolean replayhut)
 		if (stat(menupath, &fsstat) < 0)
 #else
 		// if we wanna follow symlinks we can check with FILE_ATTRIBUTE_REPARSE_POINT
-		DWORD fileattr = GetFileAttributes(searchpath);
+		DWORD fileattr = GetFileAttributes(menupath);
 		if (fileattr == INVALID_FILE_ATTRIBUTES)
 #endif
 			; // was the file (re)moved? can't stat it
