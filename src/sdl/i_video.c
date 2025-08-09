@@ -117,6 +117,10 @@ boolean highcolor = false;
 
 static void KeyboardLayout_OnChange(void)
 {
+	if (cv_keyboardlayout.value == 2)
+		SDL_StartTextInput();
+	else
+		SDL_StopTextInput();
 	HU_Shiftform();
 }
 
@@ -367,7 +371,9 @@ static INT32 GetTypedChar(SDL_Keysym keysym)
 		if (SDL_PeepEvents(&next_event, 1, SDL_PEEKEVENT, SDL_FIRSTEVENT, SDL_LASTEVENT) == 1 && next_event.type == SDL_TEXTINPUT)
 		{
 			if (next_event.text.text[1] == '\0') // limit to ASCII
+			{
 				return next_event.text.text[0];
+			}
 		}
 	}
 
