@@ -58,7 +58,7 @@ static char *searchFont(const char *fontsearchDir)
 	filestatus_t fstemp;
 
 	strcpy(tempsw, FONTFILE);
-	fstemp = filesearch(tempsw, fontsearchDir, NULL, true, 20);
+	fstemp = filesearch(tempsw, fontsearchDir, NULL, true, 20, true);
 	if (fstemp == FS_FOUND)
 	{
 		return tempsw;
