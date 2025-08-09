@@ -734,30 +734,44 @@ boolean preparefilemenu(boolean samedepth, boolean replayhut)
 		if (!dent)
 			break;
 		else if (dent->d_name[0]=='.' &&
-				(dent->d_name[1]=='\0' ||
-					(dent->d_name[1]=='.' &&
-						dent->d_name[2]=='\0')))
+					(dent->d_name[1]=='\0' ||
+						(dent->d_name[1]=='.' &&
+							dent->d_name[2]=='\0')))
 			continue; // we don't want to scan uptree
 
 		strcpy(&menupath[menupathindex[menudepthleft]],dent->d_name);
 
-		if (stat(menupath,&fsstat) < 0) // do we want to follow symlinks? if not: change it to lstat
+#if defined(__linux__) || defined(__FreeBSD__)
+		if (stat(menupath, &fsstat) < 0)
+#else
+		// if we wanna follow symlinks we can check with FILE_ATTRIBUTE_REPARSE_POINT
+		DWORD fileattr = GetFileAttributes(searchpath);
+		if (fileattr == INVALID_FILE_ATTRIBUTES)
+#endif
 			; // was the file (re)moved? can't stat it
 		else // is a file or directory
 		{
+#if defined(__linux__) || defined(__FreeBSD__)
 			if (!S_ISDIR(fsstat.st_mode)) // file
+#else
+			if (!(fileattr & FILE_ATTRIBUTE_DIRECTORY))
+#endif
 			{
 				size_t len = strlen(dent->d_name)+1;
 				if (replayhut)
 				{
-					if (strcasecmp(".lmp", dent->d_name+len-5)) continue; // Not a replay
+					if (strcasecmp(".lmp", dent->d_name+len-5))
+						continue; // Not a replay
 				}
 				else if (!cv_addons_showall.value)
 				{
 					UINT8 ext;
 					for (ext = 0; ext < NUM_EXT_TABLE; ext++)
-						if (!strcasecmp(exttable[ext]+1, dent->d_name+len-(exttable[ext][0]))) break; // extension comparison
-					if (ext == NUM_EXT_TABLE) continue; // not an addfile-able (or exec-able) file
+						if (!strcasecmp(exttable[ext]+1, dent->d_name+len-(exttable[ext][0])))
+							break; // extension comparison
+
+					if (ext == NUM_EXT_TABLE)
+						continue; // not an addfile-able (or exec-able) file
 				}
 			}
 			else // directory
@@ -802,14 +816,20 @@ boolean preparefilemenu(boolean samedepth, boolean replayhut)
 		if (!dent)
 			break;
 		else if (dent->d_name[0]=='.' &&
-				(dent->d_name[1]=='\0' ||
-					(dent->d_name[1]=='.' &&
-						dent->d_name[2]=='\0')))
+					(dent->d_name[1]=='\0' ||
+						(dent->d_name[1]=='.' &&
+							dent->d_name[2]=='\0')))
 			continue; // we don't want to scan uptree
 
 		strcpy(&menupath[menupathindex[menudepthleft]],dent->d_name);
 
-		if (stat(menupath,&fsstat) < 0) // do we want to follow symlinks? if not: change it to lstat
+#if defined(__linux__) || defined(__FreeBSD__)
+		if (stat(menupath, &fsstat) < 0)
+#else
+		// if we wanna follow symlinks we can check with FILE_ATTRIBUTE_REPARSE_POINT
+		DWORD fileattr = GetFileAttributes(searchpath);
+		if (fileattr == INVALID_FILE_ATTRIBUTES)
+#endif
 			; // was the file (re)moved? can't stat it
 		else // is a file or directory
 		{
@@ -818,20 +838,31 @@ boolean preparefilemenu(boolean samedepth, boolean replayhut)
 			UINT8 ext = EXT_FOLDER;
 			UINT8 folder;
 
+#if defined(__linux__) || defined(__FreeBSD__)
 			if (!S_ISDIR(fsstat.st_mode)) // file
+#else
+			if (!(fileattr & FILE_ATTRIBUTE_DIRECTORY))
+#endif
 			{
-				if (!((numfolders+pos) < sizecoredirmenu)) continue; // crash prevention
+				if (!((numfolders+pos) < sizecoredirmenu))
+					continue; // crash prevention
 
 				if (replayhut)
 				{
-					if (strcasecmp(".lmp", dent->d_name+len-5)) continue; // Not a replay
+					if (strcasecmp(".lmp", dent->d_name+len-5))
+						continue; // Not a replay
+
 					ext = EXT_TXT; // This isn't used anywhere but better safe than sorry for messing with this...
 				}
 				else
 				{
 					for (; ext < NUM_EXT_TABLE; ext++)
-						if (!strcasecmp(exttable[ext]+1, dent->d_name+len-(exttable[ext][0]))) break; // extension comparison
-					if (ext == NUM_EXT_TABLE && !cv_addons_showall.value) continue; // not an addfile-able (or exec-able) file
+						if (!strcasecmp(exttable[ext]+1, dent->d_name+len-(exttable[ext][0])))
+							break; // extension comparison
+
+					if (ext == NUM_EXT_TABLE && !cv_addons_showall.value)
+						continue; // not an addfile-able (or exec-able) file
+
 					ext += EXT_START; // moving to be appropriate position
 
 					if (ext >= EXT_LOADSTART)
@@ -848,6 +879,7 @@ boolean preparefilemenu(boolean samedepth, boolean replayhut)
 
 							if (strcmp(dent->d_name, filenamebuf[i]))
 								continue;
+
 							if (cv_addons_md5.value && !checkfilemd5(menupath, wadfiles[i]->md5sum))
 								continue;
 
@@ -874,9 +906,11 @@ boolean preparefilemenu(boolean samedepth, boolean replayhut)
 
 			if (!(temp = Z_Malloc((len+DIR_STRING+folder) * sizeof (char), PU_STATIC, NULL)))
 				I_Error("preparefilemenu(): could not create file entry.");
+
 			temp[DIR_TYPE] = ext;
 			temp[DIR_LEN] = (UINT8)(len);
 			strlcpy(temp+DIR_STRING, dent->d_name, len);
+
 			if (folder)
 			{
 				strcpy(temp+len, PATHSEP);
