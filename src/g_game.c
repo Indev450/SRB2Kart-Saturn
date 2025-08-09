@@ -897,22 +897,7 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 	th = turnheld[forplayer];
 	rd = resetdown[forplayer];
 
-	switch (ssplayer)
-	{
-		case 2:
-			G_CopyTiccmd(cmd, I_BaseTiccmd2(), 1);
-			break;
-		case 3:
-			G_CopyTiccmd(cmd, I_BaseTiccmd3(), 1);
-			break;
-		case 4:
-			G_CopyTiccmd(cmd, I_BaseTiccmd4(), 1);
-			break;
-		case 1:
-		default:
-			G_CopyTiccmd(cmd, I_BaseTiccmd(), 1); // empty, or external driver
-			break;
-	}
+	memset(cmd, 0, sizeof(ticcmd_t));
 
 	// why build a ticcmd if we're paused?
 	// Or, for that matter, if we're being reborn.

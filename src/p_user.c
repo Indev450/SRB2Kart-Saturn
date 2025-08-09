@@ -3133,23 +3133,6 @@ static ticcmd_t *P_CameraCmd(camera_t *cam, UINT8 num)
 	lang = cam->localangle;
 	laim = cam->localaiming;
 
-	switch (forplayer)
-	{
-		case 2:
-			G_CopyTiccmd(cmd, I_BaseTiccmd2(), 1);
-			break;
-		case 3:
-			G_CopyTiccmd(cmd, I_BaseTiccmd3(), 1);
-			break;
-		case 4:
-			G_CopyTiccmd(cmd, I_BaseTiccmd4(), 1);
-			break;
-		case 1:
-		default:
-			G_CopyTiccmd(cmd, I_BaseTiccmd(), 1); // empty, or external driver
-			break;
-	}
-
 	cmd->angleturn = (INT16)(lang >> 16);
 	cmd->aiming = G_ClipAimingPitch(&laim);
 

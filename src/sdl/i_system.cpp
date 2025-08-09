@@ -1710,42 +1710,6 @@ void I_UpdateMumble(const mobj_t *mobj, const listener_t listener)
 #undef WINMUMBLE
 #endif // NOMUMBLE
 
-/**	\brief empty ticcmd for player 1
-*/
-static ticcmd_t emptycmd;
-
-ticcmd_t *I_BaseTiccmd(void)
-{
-	return &emptycmd;
-}
-
-/**	\brief empty ticcmd for player 2
-*/
-static ticcmd_t emptycmd2;
-
-ticcmd_t *I_BaseTiccmd2(void)
-{
-	return &emptycmd2;
-}
-
-/**	\brief empty ticcmd for player 3
-*/
-static ticcmd_t emptycmd3;
-
-ticcmd_t *I_BaseTiccmd3(void)
-{
-	return &emptycmd3;
-}
-
-/**	\brief empty ticcmd for player 4
-*/
-static ticcmd_t emptycmd4;
-
-ticcmd_t *I_BaseTiccmd4(void)
-{
-	return &emptycmd4;
-}
-
 //
 // I_GetTime
 // returns time in 1/TICRATE second tics

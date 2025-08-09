@@ -89,7 +89,7 @@ precise_t I_GetPreciseTime(void)
 	return 0;
 }
 
-UINT64 I_GetPrecisePrecision(void) 
+UINT64 I_GetPrecisePrecision(void)
 {
 	return 1000000;
 }
@@ -97,16 +97,6 @@ UINT64 I_GetPrecisePrecision(void)
 void I_GetEvent(void){}
 
 void I_OsPolling(void){}
-
-ticcmd_t *I_BaseTiccmd(void)
-{
-  return NULL;
-}
-
-ticcmd_t *I_BaseTiccmd2(void)
-{
-  return NULL;
-}
 
 void I_Quit(void)
 {
