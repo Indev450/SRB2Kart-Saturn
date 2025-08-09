@@ -484,9 +484,11 @@ filestatus_t filesearch(char *filename, const char *startpath, const UINT8 *want
 		// FIXME: should we also follow symlinks?
 		if ((dent->d_type == DT_DIR && depthleft) || (dent->d_type == DT_LNK && depthleft))
 #else
-		if (stat(searchpath, &fsstat) < 0) // do we want to follow symlinks? if not: change it to lstat
+		// if we wanna follow symlinks we can check with FILE_ATTRIBUTE_REPARSE_POINT
+		DWORD fileattr = GetFileAttributes(searchpath);
+		if (fileattr == INVALID_FILE_ATTRIBUTES)
 			; // was the file (re)moved? can't stat it
-		else if (S_ISDIR(fsstat.st_mode) && depthleft)
+		else if ((fileattr & FILE_ATTRIBUTE_DIRECTORY) && depthleft)
 #endif
 		{
 			searchpathindex[--depthleft] = strlen(searchpath) + 1;
