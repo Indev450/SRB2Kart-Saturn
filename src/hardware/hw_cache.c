@@ -328,7 +328,7 @@ static void HWR_GenerateTexture(INT32 texnum, GLMapTexture_t *gltex, boolean noe
 	gltex->mipmap.format = textureformat;
 
 	// hack the Legacy skies..
-	if (UNLIKELY(strncmp(texture->name, "SKY", 3) == 0 &&
+	if (UNLIKELY(memcmp(texture->name, "SKY", 3) == 0 &&
 		(texture->name[4] == 0 || texture->name[5] == 0)))
 	{
 		skyspecial = true;
