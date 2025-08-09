@@ -884,7 +884,7 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 		return;
 
 	const UINT8 forplayer = (ssplayer-1);
-	player_t *player = ((ssplayer == 1) ? &players[consoleplayer] : &players[displayplayers[forplayer]]);
+	player_t *player = P_GetLocalPlayerForNum(forplayer);
 
 	camera_t *thiscam = &camera[forplayer];
 	const boolean freecam = camera[forplayer].freecam;

@@ -180,6 +180,7 @@ void P_CalcChasePostImg(player_t *player, camera_t *thiscam);
 boolean P_PlayerInPain(player_t *player);
 void P_DoPlayerPain(player_t *player, mobj_t *source, mobj_t *inflictor);
 void P_ResetPlayer(player_t *player);
+player_t *P_GetLocalPlayerForNum(UINT8 pnum);
 boolean P_IsLocalPlayer(const player_t *player);
 boolean P_IsDisplayPlayer(const player_t *player);
 
