@@ -973,6 +973,17 @@ fixed_t P_GetPlayerSpinHeight(player_t *player)
 }
 
 //
+// P_GetLocalPlayerForNum
+//
+// Returns the player
+// on the local machine for given number.
+//
+player_t *P_GetLocalPlayerForNum(UINT8 pnum)
+{
+	return (pnum == 0 ? &players[consoleplayer] : &players[displayplayers[pnum]]);
+}
+
+//
 // P_IsLocalPlayer
 //
 // Returns true if player is
@@ -3673,7 +3684,7 @@ static boolean P_CheckNoclipCameraPosition(player_t *player, camera_t *thiscam, 
 static void P_MoveCameraToSpawn(UINT8 playernum)
 {
 	camera_t *thiscam = &camera[playernum];
-	player_t *player = playernum == 0 ? &players[consoleplayer] : &players[displayplayers[playernum]];
+	player_t *player = P_GetLocalPlayerForNum(playernum);
 
 	if (!thiscam || !player->mo)
 		return;
