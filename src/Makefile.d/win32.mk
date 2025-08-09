@@ -15,6 +15,7 @@ endif
 
 sources+=win32/Srb2win.rc
 opts+=-DSTDC_HEADERS
+libs+=-Wl,-Bstatic -lstdc++ -lpthread -lgcc -Wl,-Bdynamic
 libs+=-ladvapi32 -lkernel32 -lmsvcrt -luser32
 
 ifndef DEDICATED
