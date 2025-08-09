@@ -12,6 +12,7 @@
 ///	        FS_MD5SUMBAD;
 ///	        FS_FOUND
 
+#include "d_main.h"
 #include <stdio.h>
 #ifdef __GNUC__
 #include <dirent.h>
@@ -353,33 +354,57 @@ INT32 pathisdirectory(const char *path)
 	return 0;
 }
 
-filestatus_t filesearch(char *filename, const char *startpath, const UINT8 *wantedmd5sum, boolean completepath, int maxsearchdepth)
+// skip those folders, they will not have any addons
+#ifdef _WIN32
+static const char *exclude_paths[] = {
+	"\\logs\\",
+	"\\luafiles\\",
+	"\\replay\\",
+	"\\mdls\\",
+	"\\gifs\\",
+	"\\screenshots\\",
+	NULL
+};
+#else
+static const char *exclude_paths[] = {
+	"/logs/",
+	"/luafiles/",
+	"/replay/",
+	"/mdls/",
+	"/gifs/",
+	"/screenshots/",
+	NULL
+};
+#endif
+
+filestatus_t filesearch(char *filename, const char *startpath, const UINT8 *wantedmd5sum, boolean completepath, int maxsearchdepth, boolean skipexclude)
 {
 	filestatus_t retval = FS_NOTFOUND;
 	DIR **dirhandle;
 	struct dirent *dent;
 	struct stat fsstat;
 	int found = 0;
-	char *searchname = strdup(filename);
+	char *searchname;
 	int depthleft = maxsearchdepth;
 	char searchpath[1024];
 	size_t *searchpathindex;
 
-	dirhandle = (DIR**) malloc(maxsearchdepth * sizeof(DIR*));
-	searchpathindex = (size_t *) malloc(maxsearchdepth * sizeof(size_t));
+	dirhandle = (DIR**)malloc(maxsearchdepth * sizeof(DIR*));
+	searchpathindex = (size_t *)malloc(maxsearchdepth * sizeof(size_t));
 
-	strcpy(searchpath,startpath);
+	strcpy(searchpath, startpath);
 	searchpathindex[--depthleft] = strlen(searchpath) + 1;
 
 	dirhandle[depthleft] = opendir(searchpath);
 
 	if (dirhandle[depthleft] == NULL)
 	{
-		free(searchname);
 		free(dirhandle);
 		free(searchpathindex);
 		return FS_NOTFOUND;
 	}
+
+	searchname = strdup(filename);
 
 	if (searchpath[searchpathindex[depthleft]-2] != PATHSEP[0])
 	{
@@ -409,6 +434,33 @@ filestatus_t filesearch(char *filename, const char *startpath, const UINT8 *want
 			continue;
 		}
 
+		// skip some folders that wont have addons in them
+		if (skipexclude)
+		{
+			boolean skipfolder = false;
+
+			for (const char **path = exclude_paths; *path != NULL; path++)
+			{
+				if (**path == '\0')
+					continue;
+#ifdef _WIN32
+				if (strstr(searchpath, *path)) // windows doesent care if lower or uppercase
+#else
+				if (strcasestr(searchpath, *path))
+#endif
+				{
+					skipfolder = true;
+					break;
+				}
+			}
+
+			if (skipfolder)
+			{
+				closedir(dirhandle[depthleft++]);
+				continue;
+			}
+		}
+
 		// okay, now we actually want searchpath to incorporate d_name
 		strcpy(&searchpath[searchpathindex[depthleft]], dent->d_name);
 
@@ -423,7 +475,7 @@ filestatus_t filesearch(char *filename, const char *startpath, const UINT8 *want
 
 		// Symlinks aren't always directory symlinks. Dunno if this would resolve recursive
 		// symlinks, but i think stat already does that
-		if (dent->d_type == DT_LNK && stat(searchpath,&fsstat) == 0 && !S_ISDIR(fsstat.st_mode))
+		if (dent->d_type == DT_LNK && stat(searchpath, &fsstat) == 0 && !S_ISDIR(fsstat.st_mode))
 		{
 			dent->d_type = DT_UNKNOWN;
 		}
@@ -432,7 +484,7 @@ filestatus_t filesearch(char *filename, const char *startpath, const UINT8 *want
 		// FIXME: should we also follow symlinks?
 		if ((dent->d_type == DT_DIR && depthleft) || (dent->d_type == DT_LNK && depthleft))
 #else
-		if (stat(searchpath,&fsstat) < 0) // do we want to follow symlinks? if not: change it to lstat
+		if (stat(searchpath, &fsstat) < 0) // do we want to follow symlinks? if not: change it to lstat
 			; // was the file (re)moved? can't stat it
 		else if (S_ISDIR(fsstat.st_mode) && depthleft)
 #endif
