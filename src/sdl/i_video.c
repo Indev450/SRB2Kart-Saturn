@@ -626,7 +626,7 @@ static void I_CheckDesktopRes(void)
 		return;
 	}
 
-	if (SDL_GetCurrentDisplayMode(currentDisplayIndex, &curmode) != 0)
+	if (SDL_GetDesktopDisplayMode(currentDisplayIndex, &curmode) != 0)
 	{
 		return;
 	}
@@ -1652,7 +1652,7 @@ static UINT32 VID_GetRefreshRate(void)
 		return 0;
 	}
 
-	if (SDL_GetCurrentDisplayMode(index, &m) != 0)
+	if (SDL_GetDesktopDisplayMode(index, &m) != 0)
 	{
 		// Error has occurred.
 		return 0;
