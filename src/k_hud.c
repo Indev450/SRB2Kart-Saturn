@@ -3496,7 +3496,7 @@ static void K_drawKartMinimapIcon(fixed_t objx, fixed_t objy, INT32 hudx, INT32 
 	fixed_t amnumxpos, amnumypos;
 	INT32 amxpos, amypos;
 	fixed_t scale = FRACUNIT;
-	patch_t *AutomapPic;
+	patch_t *AutomapPic = NULL;
 	INT16 w, h;
 
 	AutomapPic = minimapinfo.minimap_pic;
@@ -3553,7 +3553,6 @@ static void K_drawKartMinimapHead(mobj_t *mo, INT32 x, INT32 y, INT32 flags)
 	INT32 amxpos, amypos, wntdamxpos, wntdamypos;
 	fixed_t scale = FRACUNIT;
 	patch_t *minimaphead = NULL;
-	boolean minihead = K_useSmallMinimapHead(mo->player);
 
 #ifdef ROTSPRITE
 	angle_t rollangle = 0;
@@ -3562,6 +3561,9 @@ static void K_drawKartMinimapHead(mobj_t *mo, INT32 x, INT32 y, INT32 flags)
 
 	skin = K_GetMobjSkin(mo);
 	minimaphead = (skinlocal ? localfacemmapprefix : facemmapprefix)[K_GetMobjSkinNum(skin, skinlocal)];
+
+	if (minimaphead == NULL)
+		return;
 
 	amnumxpos =  (FixedMul(lerp(mo->old_x, mo->x), minimapinfo.zoom) - minimapinfo.offs_x);
 	amnumypos = -(FixedMul(lerp(mo->old_y, mo->y), minimapinfo.zoom) - minimapinfo.offs_y);
@@ -3577,6 +3579,7 @@ static void K_drawKartMinimapHead(mobj_t *mo, INT32 x, INT32 y, INT32 flags)
 		V_DrawCenteredSmallStringAtFixed(amxpos + (4*FRACUNIT), amypos - (3*FRACUNIT), V_ALLOWLOWERCASE|flags|V_SkinColorToHighlightcolor(mo->color), player_names[player - players]);
 	}
 
+	const boolean minihead = K_useSmallMinimapHead(mo->player);
 
 	// thx wanted reticle for having weird offsets very cool
 	wntdamxpos = minihead ? amxpos + (1<<FRACBITS) : amxpos - (4<<FRACBITS);
@@ -3746,7 +3749,7 @@ static void K_drawKartMinimap(void)
 	splitflags |= V_HUDTRANS;
 
 	const SINT8 icondotradius = ((cv_minihead.value == 1) && !cv_showminimapnames.value) ? 8 : 10;
-	patch_t* minipatch;
+	patch_t* minipatch = NULL;
 	INT32 rot;
 	INT32 blending;
 
@@ -3794,7 +3797,7 @@ static void K_drawKartMinimap(void)
 			else if (cv_showminimapangle.value == MINIANGLE_LIGHT)
 			{
 				rot = R_GetRollAngle(ang);
-				minipatch = W_CachePatchNameRotated("MMAPHDLT", rot, PU_PATCH);
+				minipatch = (patch_t *)W_CachePatchNameRotated("MMAPHDLT", rot, PU_PATCH);
 
 				blending = B_ADD;
 				xoff = yoff = 0;
