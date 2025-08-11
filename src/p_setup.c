@@ -2569,12 +2569,14 @@ static void P_InitMinimapInfo(void)
 
 	node_t *bsp = &nodes[numnodes-1];
 
+	if (minimapinfo.minimap_pic)
+		Patch_Free(minimapinfo.minimap_pic);
 	minimapinfo.minimap_pic = NULL;
 
 	lumpnum = W_CheckNumForName(va("%sR", G_BuildMapName(gamemap)));
 
 	if (lumpnum != LUMPERROR)
-		minimapinfo.minimap_pic = W_CachePatchName(va("%sR", G_BuildMapName(gamemap)), PU_HUDGFX);
+		minimapinfo.minimap_pic = W_CachePatchName(va("%sR", G_BuildMapName(gamemap)), PU_PATCH);
 
 	minimapinfo.min_x = bsp->bbox[0][BOXLEFT];
 	minimapinfo.max_x = bsp->bbox[0][BOXRIGHT];
