@@ -1110,19 +1110,10 @@ static int lib_pCheckSight(lua_State *L)
 	//HUDSAFE?
 	if (!t1 || !t2)
 		return LUA_ErrInvalid(L, "mobj_t");
-	lua_pushboolean(L, P_CheckSight(t1, t2));
-	return 1;
-}
-
-// DONT USE THIS FOR ANYTHING GAMEPLAY, THIS WILL DESYNCH!
-static int lib_pCheckSightFast(lua_State *L)
-{
-	mobj_t *t1 = *((mobj_t **)luaL_checkudata(L, 1, META_MOBJ));
-	mobj_t *t2 = *((mobj_t **)luaL_checkudata(L, 2, META_MOBJ));
-	//HUDSAFE?
-	if (!t1 || !t2)
-		return LUA_ErrInvalid(L, "mobj_t");
-	lua_pushboolean(L, P_CheckSightFast(t1, t2));
+	if (hud_running)
+		lua_pushboolean(L, P_CheckSightFast(t1, t2));
+	else
+		lua_pushboolean(L, P_CheckSight(t1, t2));
 	return 1;
 }
 
@@ -1684,7 +1675,10 @@ FUNCINLINE static ATTRINLINE int lib_rPointToDist(lua_State *L)
 	fixed_t x = luaL_checkfixed(L, 1);
 	fixed_t y = luaL_checkfixed(L, 2);
 	//HUDSAFE
-	lua_pushfixed(L, R_PointToDist(x, y));
+	if (hud_running)
+		lua_pushfixed(L, R_QuickCamDist(x, y) << FRACBITS);
+	else
+		lua_pushfixed(L, R_PointToDist(x, y));
 	return 1;
 }
 
@@ -1695,7 +1689,10 @@ FUNCINLINE static ATTRINLINE int lib_rPointToDist2(lua_State *L)
 	fixed_t px1 = luaL_checkfixed(L, 3);
 	fixed_t py1 = luaL_checkfixed(L, 4);
 	//HUDSAFE
-	lua_pushfixed(L, R_PointToDist2(px2, py2, px1, py1));
+	if (hud_running)
+		lua_pushfixed(L, R_QuickDist(px2, py2, px1, py1) << FRACBITS);
+	else
+		lua_pushfixed(L, R_PointToDist2(px2, py2, px1, py1));
 	return 1;
 }
 
@@ -1704,7 +1701,10 @@ FUNCINLINE static ATTRINLINE int lib_rPointInSubsector(lua_State *L)
 	fixed_t x = luaL_checkfixed(L, 1);
 	fixed_t y = luaL_checkfixed(L, 2);
 	//HUDSAFE
-	LUA_PushUserdata(L, R_PointInSubsector(x, y), META_SUBSECTOR);
+	if (hud_running)
+		LUA_PushUserdata(L, R_PointInSubsectorFast(x, y), META_SUBSECTOR);
+	else
+		LUA_PushUserdata(L, R_PointInSubsector(x, y), META_SUBSECTOR);
 	return 1;
 }
 
@@ -3180,7 +3180,6 @@ static luaL_Reg lib[] = {
 	{"P_SlideMove",lib_pSlideMove},
 	{"P_BounceMove",lib_pBounceMove},
 	{"P_CheckSight", lib_pCheckSight},
-	{"P_CheckSightFast", lib_pCheckSightFast},
 	{"P_CheckHoopPosition",lib_pCheckHoopPosition},
 	{"P_RadiusAttack",lib_pRadiusAttack},
 	{"P_FloorzAtPos",lib_pFloorzAtPos},
