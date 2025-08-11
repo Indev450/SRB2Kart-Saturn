@@ -219,13 +219,13 @@ static boolean GetFreeAcknum(UINT8 *freeack)
 	node_t *node = &nodes[doomcom->remotenode];
 	INT32 i, numfreeslot = 0;
 
-	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
-
 	if (cmpack((UINT8)((node->remotefirstack + MAXACKTOSEND) % 256), node->nextacknum) < 0)
 	{
 		DEBFILE(va("too fast %d %d\n",node->remotefirstack,node->nextacknum));
 		return false;
 	}
+
+	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
 
 	for (i = 0; i < MAXACKPACKETS; i++)
 	{
@@ -461,6 +461,7 @@ void Net_ConnectionTimeout(INT32 node)
 	// Don't timeout several times
 	if (nodes[node].flags & NF_TIMEOUT)
 		return;
+
 	nodes[node].flags |= NF_TIMEOUT;
 
 	// Send a very special packet to self (hack the reboundstore queue)
@@ -487,11 +488,11 @@ void Net_AckTicker(void)
 
 	for (i = 0; i < MAXACKPACKETS; i++)
 	{
-		const INT32 nodei = ackpak[i].destinationnode;
-		node_t *node = &nodes[nodei];
-
 		if (ackpak[i].acknum && ackpak[i].senttime + NODETIMEOUT < I_GetTime())
 		{
+			const INT32 nodei = ackpak[i].destinationnode;
+			node_t *node = &nodes[nodei];
+
 			if (ackpak[i].resentnum > 10 && (node->flags & NF_CLOSE))
 			{
 				DEBFILE(va("ack %d sent 10 times so connection is supposed lost: node %d\n",
@@ -540,12 +541,13 @@ void Net_UnAcknowledgePacket(INT32 node)
 #ifdef NONET
 	(void)node;
 #else
-	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
 	INT32 hm1 = (nodes[node].acktosend_head-1+MAXACKTOSEND) % MAXACKTOSEND;
 	DEBFILE(va("UnAcknowledge node %d\n", node));
 
 	if (!node)
 		return;
+
+	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
 
 	if (nodes[node].acktosend[hm1] == netbuffer->ack)
 	{
@@ -683,13 +685,14 @@ void Net_CloseConnection(INT32 node)
 	(void)node;
 #else
 	INT32 i;
-	boolean forceclose = (node & FORCECLOSE) != 0;
 
 	if (node == -1)
 	{
 		DEBFILE(M_GetText("Net_CloseConnection: node -1 detected!\n"));
 		return; // nope, just ignore it
 	}
+
+	boolean forceclose = (node & FORCECLOSE) != 0;
 
 	node &= ~FORCECLOSE;
 
@@ -1258,13 +1261,12 @@ SINT8 I_NetMakeNode(const char *hostname)
 
 void D_SetDoomcom(void)
 {
-	if (doomcom) return;
+	if (doomcom)
+		return;
+
 	doomcom = Z_Calloc(sizeof (doomcom_t), PU_STATIC, NULL);
 	doomcom->id = DOOMCOM_ID;
 	doomcom->numslots = doomcom->numnodes = 1;
-	doomcom->gametype = 0;
-	doomcom->consoleplayer = 0;
-	doomcom->extratics = 0;
 }
 
 //
