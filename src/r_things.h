@@ -42,8 +42,10 @@ extern "C" {
 
 #ifdef __cplusplus
 #define R_QuickCamDist(x, y) std::max(std::abs(((x)>>FRACBITS) - (viewx>>FRACBITS)), std::abs(((y)>>FRACBITS) - (viewy>>FRACBITS)))
+#define R_QuickDist(x1, y1, x, y) std::max(std::abs(((x)>>FRACBITS) - (x1>>FRACBITS)), std::abs(((y)>>FRACBITS) - (y1>>FRACBITS)))
 #else
 #define R_QuickCamDist(x, y) max(abs(((x)>>FRACBITS) - (viewx>>FRACBITS)), abs(((y)>>FRACBITS) - (viewy>>FRACBITS)))
+#define R_QuickDist(x1, y1, x, y) max(abs(((x)>>FRACBITS) - (x1>>FRACBITS)), abs(((y)>>FRACBITS) - (y1>>FRACBITS)))
 #endif
 
 // Constant arrays used for psprite clipping
