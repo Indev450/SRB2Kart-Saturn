@@ -881,10 +881,16 @@ static void HWR_CacheFlat(GLMipmap_t *glMipmap, lumpnum_t flatlumpnum)
 	size_t steppy;
 #endif
 	size_t size, pflatsize;
+	const char *flatname = W_CheckNameForNum(flatlumpnum);
 
 	// setup the texture info
 	glMipmap->format = GL_TEXFMT_P_8;
 	glMipmap->flags = TF_WRAPXY|TF_CHROMAKEYED;
+
+	if (UNLIKELY(memcmp(flatname, "GBA_RRF5", 8) == 0 && flatname[8] == 0))
+	{
+		glMipmap->flags &= ~TF_CHROMAKEYED;
+	}
 
 	size = W_LumpLength(flatlumpnum);
 
@@ -913,8 +919,7 @@ static void HWR_CacheFlat(GLMipmap_t *glMipmap, lumpnum_t flatlumpnum)
 			break;
 	}
 
-	glMipmap->width  = (UINT16)pflatsize;
-	glMipmap->height = (UINT16)pflatsize;
+	glMipmap->width = glMipmap->height = (UINT16)pflatsize;
 
 	// the flat raw data needn't be converted with palettized textures
 	W_ReadLump(flatlumpnum, Z_Malloc(size, PU_HWRCACHE, &glMipmap->data));

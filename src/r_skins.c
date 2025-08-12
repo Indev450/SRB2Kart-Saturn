@@ -684,7 +684,7 @@ next_token:
 
 			// skip to end of this skin's frames
 			lastlump = lump;
-			while (W_CheckNameForNumPwad(wadnum,lastlump) && memcmp(W_CheckNameForNumPwad(wadnum, lastlump),csprname,4)==0)
+			while (W_CheckNameForNumPwad(wadnum, lastlump) && memcmp(W_CheckNameForNumPwad(wadnum, lastlump), csprname,4)==0)
 				lastlump++;
 			// allocate (or replace) sprite frames, and set spritedef
 			R_AddSingleSpriteDef(csprname, &skin->spritedef, wadnum, lump, lastlump);
@@ -711,10 +711,10 @@ next_token:
 				UINT16 localllump = 0, lstart = UINT16_MAX, lend = UINT16_MAX;
 				const char *lname;
 
-				while ((lname = W_CheckNameForNumPwad(wadnum,localllump)))
+				while ((lname = W_CheckNameForNumPwad(wadnum, localllump)))
 				{
 					// If this is a valid sprite...
-					if (!memcmp(lname,sprname,4) && lname[4] && lname[5] && lname[5] >= '0' && lname[5] <= '8')
+					if (!memcmp(lname, sprname,4) && lname[4] && lname[5] && lname[5] >= '0' && lname[5] <= '8')
 					{
 						if (lstart == UINT16_MAX)
 							lstart = localllump;
