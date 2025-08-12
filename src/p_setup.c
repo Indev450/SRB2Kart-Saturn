@@ -537,7 +537,6 @@ static void P_SetupDirectionalLight(void)
 
 		oldmap = gamemap;
 		oldencore = encoremode;
-		return;
 	}
 
 	maplighting.contrast = lighting->light_contrast;

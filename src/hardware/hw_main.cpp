@@ -381,7 +381,7 @@ void HWR_ObjectLightLevelPost(gl_vissprite_t *spr, const sector_t *sector, INT32
 			fixed_t extralight = R_GetSpriteDirectionalLighting(R_PointToAngle(spr->mobj->x, spr->mobj->y));
 
 			// Less change in contrast in dark sectors
-			extralight = FixedMul(extralight, CLAMP(*lightlevel, 0, 255) * FRACUNIT / 255);
+			extralight = FixedMul(extralight, std::min(std::max(0, *lightlevel), 255) * FRACUNIT / 255);
 
 			// simple OGL approximation
 			fixed_t tr = R_QuickCamDist(spr->mobj->x, spr->mobj->y) << FRACBITS;
@@ -462,6 +462,7 @@ void HWR_Lighting(FSurfaceInfo *Surface, INT32 light_level, extracolormap_t *col
 		V_CubeApply(&tint_color.s.red, &tint_color.s.green, &tint_color.s.blue);
 		V_CubeApply(&fade_color.s.red, &fade_color.s.green, &fade_color.s.blue);
 	}
+
 	Surface->PolyColor.rgba = poly_color.rgba;
 	Surface->TintColor.rgba = tint_color.rgba;
 	Surface->FadeColor.rgba = fade_color.rgba;
@@ -1242,6 +1243,7 @@ static void HWR_DrawSkyWallList(void)
 
 	HWR_SetCurrentTexture(NULL);
 	GL_UnSetShader();
+
 	for (i = 0; i < skyWallVertexArraySize; i++)
 	{
 		GL_DrawPolygon(&surf, skyWallVertexArray + i * 4, 4, PF_Occlude|PF_Invisible|PF_NoTexture|PF_Skydecal);
@@ -5361,6 +5363,7 @@ static void HWR_DrawSkyBackground(void)
 
 	if (HWR_UseShader())
 		GL_SetShader(HWR_GetShaderFromTarget(SHADER_SKY));
+
 	GL_SetTransform(&dometransform);
 	GL_RenderSkyDome(&gl_sky);
 }
@@ -5743,13 +5746,19 @@ void HWR_RenderPlayerView(void)
 		if (cv_ripplewater.value)
 			GL_SetShaderInfo(HWD_SHADERINFO_LEVELTIME, (INT32)leveltime); // The water surface shader needs the leveltime.
 
-		const angle_t light_angle = maplighting.angle - viewangle + ANGLE_90; // I fucking hate OGL's coordinate system
-		GL_SetShaderInfo(HWD_SHADERINFO_LIGHT_X, FINECOSINE(light_angle >> ANGLETOFINESHIFT));
-		GL_SetShaderInfo(HWD_SHADERINFO_LIGHT_Y, 0);
-		GL_SetShaderInfo(HWD_SHADERINFO_LIGHT_Z,  -FINESINE(light_angle >> ANGLETOFINESHIFT));
+		if (cv_glmdls.value)
+		{
+			if (maplighting.directional)
+			{
+				const angle_t light_angle = maplighting.angle - viewangle + ANGLE_90; // I fucking hate OGL's coordinate system
+				GL_SetShaderInfo(HWD_SHADERINFO_LIGHT_X, FINECOSINE(light_angle >> ANGLETOFINESHIFT));
+				GL_SetShaderInfo(HWD_SHADERINFO_LIGHT_Y, 0);
+				GL_SetShaderInfo(HWD_SHADERINFO_LIGHT_Z,  -FINESINE(light_angle >> ANGLETOFINESHIFT));
+			}
 
-		GL_SetShaderInfo(HWD_SHADERINFO_LIGHT_CONTRAST, maplighting.contrast);
-		GL_SetShaderInfo(HWD_SHADERINFO_LIGHT_BACKLIGHT, maplighting.backlight);
+			GL_SetShaderInfo(HWD_SHADERINFO_LIGHT_CONTRAST, maplighting.contrast);
+			GL_SetShaderInfo(HWD_SHADERINFO_LIGHT_BACKLIGHT, maplighting.backlight);
+		}
 	}
 
 	if (viewssnum > 3)

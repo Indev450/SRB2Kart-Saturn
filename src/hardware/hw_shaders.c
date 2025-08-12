@@ -35,7 +35,7 @@ static struct {
 	// Sprite shader
 	{GLSL_DEFAULT_VERTEX_SHADER, GLSL_WALL_FRAGMENT_SHADER},
 
-	// Model shader
+	// Model shader + diffuse lighting from above
 	{GLSL_MODEL_LIGHTING_VERTEX_SHADER, GLSL_WALL_FRAGMENT_SHADER},
 
 	// Water shader
