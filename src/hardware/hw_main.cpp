@@ -378,7 +378,7 @@ void HWR_ObjectLightLevelPost(gl_vissprite_t *spr, const sector_t *sector, INT32
 			fixed_t extralight = R_GetSpriteDirectionalLighting(R_PointToAngle(spr->mobj->x, spr->mobj->y));
 
 			// Less change in contrast in dark sectors
-			extralight = FixedMul(extralight, CLAMP(*lightlevel, 0, 255) * FRACUNIT / 255);
+			extralight = FixedMul(extralight, std::min(std::max(0, *lightlevel), 255) * FRACUNIT / 255);
 
 			// simple OGL approximation
 			fixed_t tr = R_QuickCamDist(spr->mobj->x, spr->mobj->y) << FRACBITS;
@@ -459,6 +459,7 @@ void HWR_Lighting(FSurfaceInfo *Surface, INT32 light_level, extracolormap_t *col
 		V_CubeApply(&tint_color.s.red, &tint_color.s.green, &tint_color.s.blue);
 		V_CubeApply(&fade_color.s.red, &fade_color.s.green, &fade_color.s.blue);
 	}
+
 	Surface->PolyColor.rgba = poly_color.rgba;
 	Surface->TintColor.rgba = tint_color.rgba;
 	Surface->FadeColor.rgba = fade_color.rgba;
@@ -548,9 +549,9 @@ static void HWR_RenderPlane(subsector_t *subsector, extrasubsector_t *xsub, bool
 	INT32 i;
 
 	float height; // constant y for all points on the convex flat polygon
-	float flatxref, flatyref = 0.0f;
-	float fflatsize = 64.0f;
-	INT32 flatflag = 63;
+	static float flatxref = 0.0f, flatyref = 0.0f;
+	static float fflatsize = 64.0f;
+	static INT32 flatflag = 63;
 	size_t len;
 
 	float tempxsow, tempytow;
@@ -1013,10 +1014,10 @@ static void HWR_SplitWall(sector_t *sector, FOutVector *wallVerts, INT32 texnum,
 
 	float diff;
 
-	fixed_t v1x = FloatToFixed(wallVerts[0].x);
-	fixed_t v1y = FloatToFixed(wallVerts[0].z);
-	fixed_t v2x = FloatToFixed(wallVerts[1].x);
-	fixed_t v2y = FloatToFixed(wallVerts[1].z);
+	const fixed_t v1x = FloatToFixed(wallVerts[0].x);
+	const fixed_t v1y = FloatToFixed(wallVerts[0].z);
+	const fixed_t v2x = FloatToFixed(wallVerts[1].x);
+	const fixed_t v2y = FloatToFixed(wallVerts[1].z);
 
 	const UINT8 alpha = Surf->PolyColor.s.alpha;
 	FUINT lightnum = HWR_CalcWallLight(sector->lightlevel, gl_curline, NULL);
@@ -1222,6 +1223,7 @@ static void HWR_DrawSkyWallList(void)
 
 	HWR_SetCurrentTexture(NULL);
 	GL_UnSetShader();
+
 	for (i = 0; i < skyWallVertexArraySize; i++)
 	{
 		GL_DrawPolygon(&surf, skyWallVertexArray + i * 4, 4, PF_Occlude|PF_Invisible|PF_NoTexture|PF_Skydecal);
@@ -5304,19 +5306,14 @@ static void HWR_DrawSkyBackground(void)
 {
 	FTransform dometransform;
 
-	if (drewsky)
-		return;
-
-	if (HWR_IsWireframeMode())
+	if (drewsky || HWR_IsWireframeMode())
 		return;
 
 	GL_SetBlend(PF_Translucent|PF_NoDepthTest|PF_Modulated);
 
 	memcpy(&dometransform, &atransform, sizeof(FTransform));
 
-	dometransform.x      = 0.0;
-	dometransform.y      = 0.0;
-	dometransform.z      = 0.0;
+	dometransform.x = dometransform.y = dometransform.z = 0.0;
 
 	//04/01/2000: Hurdler: added for T&L
 	//                     It should replace all other gl_viewxxx when finished
@@ -5333,6 +5330,7 @@ static void HWR_DrawSkyBackground(void)
 
 	if (HWR_UseShader())
 		GL_SetShader(HWR_GetShaderFromTarget(SHADER_SKY));
+
 	GL_SetTransform(&dometransform);
 	GL_RenderSkyDome(&gl_sky);
 }
@@ -5349,7 +5347,6 @@ static inline void HWR_ClearView(void)
 						ZCLIP_PLANE, FAR_ZCLIP_DEFAULT);
 	GL_ClearBuffer(false, true, true, NULL);
 }
-
 
 // -----------------+
 // HWR_SetViewSize  : set projection and scaling values
@@ -5581,7 +5578,7 @@ void HWR_RenderViewpoint(gl_portal_t *rootportal, player_t *player, int stencil_
 			drewsky = false;
 			HWR_DrawSkyBackground();
 			HWR_SetStencilState(HWR_STENCIL_NORMAL, 0);
-			GL_ClearBuffer(false, false, true, 0);// clear skywall markings from the stencil buffer
+			GL_ClearBuffer(false, false, true, NULL);// clear skywall markings from the stencil buffer
 			HWR_SetTransform(fpov);// restore transform
 		}
 	}
@@ -5700,13 +5697,7 @@ void HWR_RenderPlayerView(void)
 	// Clear the color buffer, stops HOMs. Also seems to fix the skybox issue on Intel GPUs.
 	if (viewssnum == 0) // Only do it if it's the first screen being rendered
 	{
-		FRGBAFloat ClearColor;
-
-		ClearColor.red = 0.0f;
-		ClearColor.green = 0.0f;
-		ClearColor.blue = 0.0f;
-		ClearColor.alpha = 1.0f;
-
+		static FRGBAFloat ClearColor = {0.0f, 0.0f, 0.0f, 1.0f};
 		GL_ClearBuffer(true, false, false, &ClearColor);
 	}
 
@@ -5715,13 +5706,19 @@ void HWR_RenderPlayerView(void)
 		if (cv_ripplewater.value)
 			GL_SetShaderInfo(HWD_SHADERINFO_LEVELTIME, (INT32)leveltime); // The water surface shader needs the leveltime.
 
-		const angle_t light_angle = maplighting.angle - viewangle + ANGLE_90; // I fucking hate OGL's coordinate system
-		GL_SetShaderInfo(HWD_SHADERINFO_LIGHT_X, FINECOSINE(light_angle >> ANGLETOFINESHIFT));
-		GL_SetShaderInfo(HWD_SHADERINFO_LIGHT_Y, 0);
-		GL_SetShaderInfo(HWD_SHADERINFO_LIGHT_Z,  -FINESINE(light_angle >> ANGLETOFINESHIFT));
+		if (cv_glmdls.value)
+		{
+			if (maplighting.directional)
+			{
+				const angle_t light_angle = maplighting.angle - viewangle + ANGLE_90; // I fucking hate OGL's coordinate system
+				GL_SetShaderInfo(HWD_SHADERINFO_LIGHT_X, FINECOSINE(light_angle >> ANGLETOFINESHIFT));
+				GL_SetShaderInfo(HWD_SHADERINFO_LIGHT_Y, 0);
+				GL_SetShaderInfo(HWD_SHADERINFO_LIGHT_Z,  -FINESINE(light_angle >> ANGLETOFINESHIFT));
+			}
 
-		GL_SetShaderInfo(HWD_SHADERINFO_LIGHT_CONTRAST, maplighting.contrast);
-		GL_SetShaderInfo(HWD_SHADERINFO_LIGHT_BACKLIGHT, maplighting.backlight);
+			GL_SetShaderInfo(HWD_SHADERINFO_LIGHT_CONTRAST, maplighting.contrast);
+			GL_SetShaderInfo(HWD_SHADERINFO_LIGHT_BACKLIGHT, maplighting.backlight);
+		}
 	}
 
 	if (viewssnum > 3)
