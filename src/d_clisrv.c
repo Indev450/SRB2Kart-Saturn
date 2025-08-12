@@ -4396,6 +4396,7 @@ static void Got_AddPlayer(UINT8 **p, INT32 playernum)
 				displayplayers[i] = newplayernum;
 			DEBFILE("spawning me\n");
 		}
+
 		D_SendPlayerConfig();
 		addedtogame = true;
 	}
@@ -6770,6 +6771,69 @@ void NetKeepAlive(void)
 // If a tree falls in the forest but nobody is around to hear it, does it make a tic?
 #define DEDICATEDIDLETIME (10*TICRATE)
 
+#ifdef DEDICATEDIDLETIME
+static void DedicatedIdleUpdate(INT32 *realtics)
+{
+	INT32 i;
+	static tic_t dedicatedidle = 0;
+
+	if (!server || !dedicated || gamestate != GS_LEVEL)
+		return;
+
+	boolean empty = true;
+	for (i = 0; i < MAXPLAYERS; i++)
+		if (playeringame[i])
+		{
+			empty = false;
+			break;
+		}
+
+	if (empty)
+	{
+		if (leveltime == 2)
+		{
+			// On next tick...
+			dedicatedidle = DEDICATEDIDLETIME - 1;
+		}
+		else if (dedicatedidle >= DEDICATEDIDLETIME)
+		{
+			if (D_GetExistingTextcmd(gametic, 0) || D_GetExistingTextcmd(gametic + 1, 0))
+			{
+				CONS_Printf("DEDICATED: Awakening from idle (Netxcmd detected...)\n");
+				dedicatedidle = 0;
+			}
+			else
+			{
+				(*realtics) = 0;
+			}
+		}
+		else
+		{
+			dedicatedidle += (*realtics);
+
+			if (dedicatedidle >= DEDICATEDIDLETIME)
+			{
+				const char *idlereason = "at round start";
+				if (leveltime > 3)
+					idlereason = va("for %d seconds", dedicatedidle / TICRATE);
+
+				CONS_Printf("DEDICATED: No players %s, idling...\n", idlereason);
+				(*realtics) = 0;
+				dedicatedidle = DEDICATEDIDLETIME;
+			}
+		}
+	}
+	else
+	{
+		if (dedicatedidle >= DEDICATEDIDLETIME)
+		{
+			CONS_Printf("DEDICATED: Awakening from idle (Player detected...)\n");
+		}
+		dedicatedidle = 0;
+	}
+}
+#endif
+
 void NetUpdate(void)
 {
 	static tic_t resptime = 0;
@@ -6783,54 +6847,6 @@ void NetUpdate(void)
 	if (realtics <= 0) // nothing new to update
 		return;
 
-#ifdef DEDICATEDIDLETIME
-	if (server && dedicated && gamestate == GS_LEVEL)
-	{
-		static tic_t dedicatedidle = 0;
-
-		for (i = 1; i < MAXNETNODES; ++i)
-			if (nodeingame[i])
-			{
-				if (dedicatedidle == DEDICATEDIDLETIME)
-				{
-					CONS_Printf("DEDICATED: Awakening from idle (Node %d detected...)\n", i);
-					dedicatedidle = 0;
-				}
-				break;
-			}
-
-		if (i == MAXNETNODES)
-		{
-			if (leveltime == 2)
-			{
-				// On next tick...
-				dedicatedidle = DEDICATEDIDLETIME-1;
-			}
-			else if (dedicatedidle == DEDICATEDIDLETIME)
-			{
-				if (D_GetExistingTextcmd(gametic, 0) || D_GetExistingTextcmd(gametic+1, 0))
-				{
-					CONS_Printf("DEDICATED: Awakening from idle (Netxcmd detected...)\n");
-					dedicatedidle = 0;
-				}
-				else
-				{
-					realtics = 0;
-				}
-			}
-			else if (++dedicatedidle == DEDICATEDIDLETIME)
-			{
-				const char *idlereason = "at round start";
-				if (leveltime > 3)
-					idlereason = va("for %d seconds", dedicatedidle/TICRATE);
-
-				CONS_Printf("DEDICATED: No nodes %s, idling...\n", idlereason);
-				realtics = 0;
-			}
-		}
-	}
-#endif
-
 	if (realtics > 5)
 	{
 		if (server)
@@ -6838,6 +6854,10 @@ void NetUpdate(void)
 		else
 			realtics = 5;
 	}
+
+#ifdef DEDICATEDIDLETIME
+	DedicatedIdleUpdate(&realtics);
+#endif
 
 	gametime = nowtime;
 
