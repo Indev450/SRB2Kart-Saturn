@@ -3003,21 +3003,28 @@ static void CV_PlayerCam4_OnChange(void)
 }
 
 consvar_t cv_cam_dist[MAXSPLITSCREENPLAYERS] = {
-	{"cam_dist", "160", CV_FLOAT|CV_SAVE|CV_CALL|CV_NOINIT, NULL, CV_PlayerCam1_OnChange, 0, NULL, NULL, 0, 0, NULL},
+	{"cam_dist",  "160", CV_FLOAT|CV_SAVE|CV_CALL|CV_NOINIT, NULL, CV_PlayerCam1_OnChange, 0, NULL, NULL, 0, 0, NULL},
 	{"cam2_dist", "160", CV_FLOAT|CV_SAVE|CV_CALL|CV_NOINIT, NULL, CV_PlayerCam2_OnChange, 0, NULL, NULL, 0, 0, NULL},
 	{"cam3_dist", "160", CV_FLOAT|CV_SAVE|CV_CALL|CV_NOINIT, NULL, CV_PlayerCam3_OnChange, 0, NULL, NULL, 0, 0, NULL},
 	{"cam4_dist", "160", CV_FLOAT|CV_SAVE|CV_CALL|CV_NOINIT, NULL, CV_PlayerCam4_OnChange, 0, NULL, NULL, 0, 0, NULL}
 };
 
 consvar_t cv_cam_height[MAXSPLITSCREENPLAYERS] = {
-	{"cam_height", "50", CV_FLOAT|CV_SAVE|CV_CALL|CV_NOINIT, NULL, CV_PlayerCam1_OnChange, 0, NULL, NULL, 0, 0, NULL},
+	{"cam_height",  "50", CV_FLOAT|CV_SAVE|CV_CALL|CV_NOINIT, NULL, CV_PlayerCam1_OnChange, 0, NULL, NULL, 0, 0, NULL},
 	{"cam2_height", "50", CV_FLOAT|CV_SAVE|CV_CALL|CV_NOINIT, NULL, CV_PlayerCam2_OnChange, 0, NULL, NULL, 0, 0, NULL},
 	{"cam3_height", "50", CV_FLOAT|CV_SAVE|CV_CALL|CV_NOINIT, NULL, CV_PlayerCam3_OnChange, 0, NULL, NULL, 0, 0, NULL},
 	{"cam4_height", "50", CV_FLOAT|CV_SAVE|CV_CALL|CV_NOINIT, NULL, CV_PlayerCam4_OnChange, 0, NULL, NULL, 0, 0, NULL},
 };
 
+consvar_t cv_cam_pitch[MAXSPLITSCREENPLAYERS] = {
+	{"cam_pitch",  "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"cam2_pitch", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"cam3_pitch", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"cam4_pitch", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL}
+};
+
 consvar_t cv_cam_still[MAXSPLITSCREENPLAYERS] = {
-	{"cam_still", "Off", 0, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"cam_still",  "Off", 0, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL},
 	{"cam2_still", "Off", 0, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL},
 	{"cam3_still", "Off", 0, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL},
 	{"cam4_still", "Off", 0, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL}
@@ -3025,7 +3032,7 @@ consvar_t cv_cam_still[MAXSPLITSCREENPLAYERS] = {
 
 static CV_PossibleValue_t cam_speed_cons_t[] = {{0, "MIN"}, {1*FRACUNIT, "MAX"}, {0, NULL}};
 consvar_t cv_cam_speed[MAXSPLITSCREENPLAYERS] = {
-	{"cam_speed", "0.4", CV_FLOAT|CV_SAVE, cam_speed_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"cam_speed",  "0.4", CV_FLOAT|CV_SAVE, cam_speed_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
 	{"cam2_speed", "0.4", CV_FLOAT|CV_SAVE, cam_speed_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
 	{"cam3_speed", "0.4", CV_FLOAT|CV_SAVE, cam_speed_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
 	{"cam4_speed", "0.4", CV_FLOAT|CV_SAVE, cam_speed_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL}
@@ -3034,14 +3041,14 @@ consvar_t cv_cam_speed[MAXSPLITSCREENPLAYERS] = {
 
 static CV_PossibleValue_t cam_rotate_cons_t[] = {{-720, "MIN"}, {720, "MAX"}, {0, NULL}};
 consvar_t cv_cam_rotate[MAXSPLITSCREENPLAYERS] = {
-	{"cam_rotate", "0", CV_CALL|CV_NOINIT, cam_rotate_cons_t, CV_CamRotate_OnChange, 0, NULL, NULL, 0, 0, NULL},
+	{"cam_rotate",  "0", CV_CALL|CV_NOINIT, cam_rotate_cons_t, CV_CamRotate_OnChange, 0, NULL, NULL, 0, 0, NULL},
 	{"cam2_rotate", "0", CV_CALL|CV_NOINIT, cam_rotate_cons_t, CV_CamRotate2_OnChange, 0, NULL, NULL, 0, 0, NULL},
 	{"cam3_rotate", "0", CV_CALL|CV_NOINIT, cam_rotate_cons_t, CV_CamRotate3_OnChange, 0, NULL, NULL, 0, 0, NULL},
 	{"cam4_rotate", "0", CV_CALL|CV_NOINIT, cam_rotate_cons_t, CV_CamRotate4_OnChange, 0, NULL, NULL, 0, 0, NULL}
 };
 
 consvar_t cv_cam_timeover[MAXSPLITSCREENPLAYERS] = {
-	{"cam_timeover", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"cam_timeover",  "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL},
 	{"cam2_timeover", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL},
 	{"cam3_timeover", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL},
 	{"cam4_timeover", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL}
@@ -3049,7 +3056,7 @@ consvar_t cv_cam_timeover[MAXSPLITSCREENPLAYERS] = {
 
 static CV_PossibleValue_t freecam_speed_cons_t[] = {{0, "MIN"}, {10, "MAX"}, {0, NULL}};
 consvar_t cv_freecam_speed[MAXSPLITSCREENPLAYERS] = {
-	{"freecam_speed", "1", CV_SAVE, freecam_speed_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"freecam_speed",  "1", CV_SAVE, freecam_speed_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
 	{"freecam2_speed", "1", CV_SAVE, freecam_speed_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
 	{"freecam3_speed", "1", CV_SAVE, freecam_speed_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
 	{"freecam4_speed", "1", CV_SAVE, freecam_speed_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL}
@@ -3063,13 +3070,13 @@ consvar_t cv_actionmovie = {"actionmovie", "Off", CV_SAVE, CV_OnOff, NULL, 0, NU
 
 consvar_t cv_screenquake = {"quakescreenshake", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
-static CV_PossibleValue_t lookbackmom_cons_t[] = {{0, "Off"}, {1, "On"}, {2, "Double"}, {0, NULL}};
+static CV_PossibleValue_t cam_lookbackmom_cons_t[] = {{0, "Off"}, {1, "On"}, {2, "Double"}, {0, NULL}};
 
-consvar_t cv_lookbackmom[MAXSPLITSCREENPLAYERS] = {
-	{"cameralookbackmom", "Off", CV_SAVE, lookbackmom_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
-	{"cameralookbackmom2", "Off", CV_SAVE, lookbackmom_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
-	{"cameralookbackmom3", "Off", CV_SAVE, lookbackmom_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
-	{"cameralookbackmom4", "Off", CV_SAVE, lookbackmom_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL}
+consvar_t cv_cam_lookbackmom[MAXSPLITSCREENPLAYERS] = {
+	{"cameralookbackmom",  "Off", CV_SAVE, cam_lookbackmom_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"cameralookbackmom2", "Off", CV_SAVE, cam_lookbackmom_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"cameralookbackmom3", "Off", CV_SAVE, cam_lookbackmom_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"cameralookbackmom4", "Off", CV_SAVE, cam_lookbackmom_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL}
 };
 
 fixed_t t_cam_rotate[MAXSPLITSCREENPLAYERS] = {-42, -42, -42, -42};
@@ -3696,8 +3703,8 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 	static boolean lookbackactive[MAXSPLITSCREENPLAYERS];
 	static UINT8 lookbackdelay[MAXSPLITSCREENPLAYERS];
 	UINT8 num = 0;
-	angle_t angle = 0, focusangle = 0, focusaiming = 0;
-	fixed_t x, y, z, dist, viewpointx, viewpointy, camspeed, camdist, camheight, pviewheight;
+	angle_t angle = 0, focusangle = 0, focusaiming = 0, pitch = 0;
+	fixed_t x, y, z, dist, distxy, distz, viewpointx, viewpointy, camspeed, camdist, camheight, pviewheight;
 	fixed_t pan, xpan, ypan;
 	INT32 camrotate;
 	boolean camstill, lookback, lookbackdown;
@@ -3740,8 +3747,6 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 		return true;
 
 	mo = player->mo;
-
-	const boolean vflip = (mo->eflags & MFE_VERTICALFLIP);
 
 	if (cv_cam_timeover[num].value && (player->pflags & PF_TIMEOVER))
 		timeover = (player->kartstuff[k_timeovercam] > 2*TICRATE ? 2 : 1); // 1 for momentum keep, 2 for turnaround
@@ -3799,6 +3804,8 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 
 	if (P_CameraThinker(player, thiscam, resetcalled))
 		return true;
+
+	const boolean vflip = (mo->eflags & MFE_VERTICALFLIP);
 
 	camspeed = cv_cam_speed[num].value;
 	camstill = cv_cam_still[num].value;
@@ -3896,8 +3903,41 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 	if (player->kartstuff[k_boostcam])
 		dist -= FixedMul(11*dist/16, player->kartstuff[k_boostcam]);
 
-	x = mo->x - FixedMul(FINECOSINE((angle>>ANGLETOFINESHIFT) & FINEMASK), dist);
-	y = mo->y - FixedMul(FINESINE((angle>>ANGLETOFINESHIFT) & FINEMASK), dist);
+	if (cv_cam_pitch[num].value)
+	{
+		if (mo->standingslope)
+		{
+			pitch = (angle_t)FixedMul(P_ReturnThrustX(mo, thiscam->angle - mo->standingslope->xydirection, FRACUNIT), (fixed_t)mo->standingslope->zangle);
+
+			if (vflip)
+			{
+				if (pitch >= ANGLE_180)
+					pitch = 0;
+			}
+			else
+			{
+				if (pitch < ANGLE_180)
+					pitch = 0;
+			}
+		}
+		pitch = thiscam->pitch + (angle_t)FixedMul(pitch - thiscam->pitch, camspeed/4);
+
+#ifdef HWRENDER
+		if (rendermode == render_opengl)
+			distxy = FixedMul(dist, FINECOSINE((pitch>>ANGLETOFINESHIFT) & FINEMASK));
+		else
+#endif
+			distxy = dist;
+		distz = -FixedMul(dist, FINESINE((pitch>>ANGLETOFINESHIFT) & FINEMASK));
+	}
+	else
+	{
+		distxy = dist;
+		distz = 0;
+	}
+
+	x = mo->x - FixedMul(FINECOSINE((angle>>ANGLETOFINESHIFT) & FINEMASK), distxy);
+	y = mo->y - FixedMul(FINESINE((angle>>ANGLETOFINESHIFT) & FINEMASK), distxy);
 
 	// SRB2Kart: set camera panning
 	if (camstill || resetcalled || player->playerstate == PST_DEAD)
@@ -3929,10 +3969,26 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 
 	pviewheight = FixedMul(32<<FRACBITS, mo->scale);
 
-	if (vflip)
-		z = mo->z + mo->height - pviewheight - camheight;
+	if (cv_cam_pitch[num].value)
+	{
+		if (vflip)
+		{
+			distz = min(-camheight, distz);
+			z = mo->z + mo->height - pviewheight + distz;
+		}
+		else
+		{
+			distz = max(camheight, distz);
+			z = mo->z + pviewheight + distz;
+		}
+	}
 	else
-		z = mo->z + pviewheight + camheight;
+	{
+		if (vflip)
+			z = mo->z + mo->height - pviewheight - camheight;
+		else
+			z = mo->z + pviewheight + camheight;
+	}
 
 #ifndef NOCLIPCAM // Disable all z-clipping for noclip cam
 	if (P_CheckNoclipCameraPosition(player, thiscam, x, y, z, resetcalled))
@@ -3974,16 +4030,17 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 		// when looking back, camera's momentum
 		// should inherit the momentum of the player
 		// if value is 2, add extra
-		if (cv_lookbackmom[num].value && lookback && lookbackdelay[num])
+		if (cv_cam_lookbackmom[num].value && lookback && lookbackdelay[num])
 		{
-			thiscam->momx += cv_lookbackmom[num].value*mo->momx;
-			thiscam->momy += cv_lookbackmom[num].value*mo->momy;
+			thiscam->momx += cv_cam_lookbackmom[num].value*mo->momx;
+			thiscam->momy += cv_cam_lookbackmom[num].value*mo->momy;
 		}
 
 		thiscam->momz = FixedMul(z - thiscam->z, camspeed/2);
 	}
 
 	thiscam->pan = pan;
+	thiscam->pitch = pitch;
 
 	// compute aming to look the viewed point
 	f1 = viewpointx-thiscam->x;
@@ -3991,9 +4048,17 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 	dist = FixedHypot(f1, f2);
 
 	if (vflip)
+	{
 		angle = R_PointToAngle2(0, thiscam->z + thiscam->height, dist, mo->z + mo->height - P_GetPlayerHeight(player));
+		if (thiscam->pitch < ANGLE_180 && thiscam->pitch > angle)
+			angle += (thiscam->pitch - angle)/2;
+	}
 	else
+	{
 		angle = R_PointToAngle2(0, thiscam->z, dist, mo->z + P_GetPlayerHeight(player));
+		if (thiscam->pitch >= ANGLE_180 && thiscam->pitch < angle)
+			angle -= (angle - thiscam->pitch)/2;
+	}
 
 	if (player->playerstate != PST_DEAD && !((player->pflags & PF_NIGHTSMODE) && player->exiting))
 		angle += (focusaiming < ANGLE_180 ? focusaiming/2 : InvAngle(InvAngle(focusaiming)/2)); // overcomplicated version of '((signed)focusaiming)/2;'
