@@ -1346,14 +1346,15 @@ static const char* OP_CamOptionsTooltips[] =
 };
 
 #define OP_CAMMENU(pnum) \
-{IT_STRING | IT_CVAR, NULL,						"Flipcam",   				&cv_flipcam[pnum],			30}, \
-{IT_STRING | IT_CVAR | IT_CV_BIGFLOAT, NULL,	"Camera Distance",   		&cv_cam_dist[pnum],		    50}, \
-{IT_STRING | IT_CVAR | IT_CV_BIGFLOAT, NULL,	"Camera Height",   			&cv_cam_height[pnum],		60}, \
-{IT_STRING | IT_CVAR, NULL,						"Camera Speed",   			&cv_cam_speed[pnum],		70}, \
-{IT_STRING | IT_CVAR, NULL, 					"Camera Lookback Momentum", &cv_lookbackmom[pnum], 	    90}, \
-{IT_STRING | IT_CVAR, NULL, 					"Camera Vertical Look",     &cv_verticallook[pnum],    100}, \
-{IT_STRING | IT_CVAR, NULL,						"Freecam Speed",   			&cv_freecam_speed[pnum],   120}, \
-{IT_STRING | IT_CVAR, NULL,						"Third Person Camera",   	&cv_chasecam[pnum],	       135}, \
+	{IT_STRING | IT_CVAR, NULL,						"Flipcam",   				&cv_flipcam[pnum],			30}, \
+	{IT_STRING | IT_CVAR | IT_CV_BIGFLOAT, NULL,	"Camera Distance",   		&cv_cam_dist[pnum],		    50}, \
+	{IT_STRING | IT_CVAR | IT_CV_BIGFLOAT, NULL,	"Camera Height",   			&cv_cam_height[pnum],		60}, \
+	{IT_STRING | IT_CVAR, NULL,						"Camera Slope Pitch",   	&cv_cam_pitch[pnum],		70}, \
+	{IT_STRING | IT_CVAR, NULL,						"Camera Speed",   			&cv_cam_speed[pnum],		80}, \
+	{IT_STRING | IT_CVAR, NULL, 					"Camera Lookback Momentum", &cv_cam_lookbackmom[pnum], 100}, \
+	{IT_STRING | IT_CVAR, NULL, 					"Camera Vertical Look",     &cv_verticallook[pnum],    110}, \
+	{IT_STRING | IT_CVAR, NULL,						"Freecam Speed",   			&cv_freecam_speed[pnum],   130}, \
+	{IT_STRING | IT_CVAR, NULL,						"Third Person Camera",   	&cv_chasecam[pnum],	       145}, \
 
 static menuitem_t OP_Player1CamOptionsMenu[] =
 {
@@ -1385,6 +1386,7 @@ static const char* OP_PlayerCamOptionsTooltips[] =
 	"Should the Camera flip on gravity flipped sections?.",
 	"Camera distance relative to the Player.",
 	"Height of the Camera",
+	"Pitch Camera on Upwards or Downhill Slopes",
 	"Speed of the Camera",
 	"Should looking back inherit the Players Momentum?\nEither inherit Player Momentum or double of it\nmay make looking back while boosting or going in high speed less jarring",
 	"Allows looking up/down by holding\naim forward/backward while standing still.",

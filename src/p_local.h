@@ -128,6 +128,9 @@ typedef struct camera_s
 	// SRB2Kart: camera pans while drifting
 	fixed_t pan;
 
+	// SRB2Kart: camera pitches on slopes
+	angle_t pitch;
+
 	// postproccess effects
 	UINT8 postimg;
 } camera_t;
@@ -144,9 +147,11 @@ enum
 
 extern camera_t camera[MAXSPLITSCREENPLAYERS];
 extern consvar_t cv_cam_dist[MAXSPLITSCREENPLAYERS];
-extern consvar_t cv_cam_still[MAXSPLITSCREENPLAYERS];
 extern consvar_t cv_cam_height[MAXSPLITSCREENPLAYERS];
+extern consvar_t cv_cam_pitch[MAXSPLITSCREENPLAYERS];
 extern consvar_t cv_cam_speed[MAXSPLITSCREENPLAYERS];
+extern consvar_t cv_cam_lookbackmom[MAXSPLITSCREENPLAYERS];
+extern consvar_t cv_cam_still[MAXSPLITSCREENPLAYERS];
 extern consvar_t cv_cam_rotate[MAXSPLITSCREENPLAYERS];
 extern consvar_t cv_cam_timeover[MAXSPLITSCREENPLAYERS];
 
@@ -159,8 +164,6 @@ extern consvar_t cv_tiltsmoothing;
 extern consvar_t cv_actionmovie;
 
 extern consvar_t cv_screenquake;
-
-extern consvar_t cv_lookbackmom[MAXSPLITSCREENPLAYERS];
 
 extern consvar_t cv_verticallook[MAXSPLITSCREENPLAYERS];
 
