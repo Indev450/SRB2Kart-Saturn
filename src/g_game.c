@@ -807,6 +807,60 @@ static fixed_t forwardmove[2] = {25<<FRACBITS>>16, 50<<FRACBITS>>16};
 static fixed_t sidemove[2] = {2<<FRACBITS>>16, 4<<FRACBITS>>16};
 static fixed_t angleturn[3] = {KART_FULLTURN/2, KART_FULLTURN, KART_FULLTURN/4}; // + slow turn
 
+static void G_HandleLocalDriftturn(ticcmd_t *cmd, UINT8 ssplayer)
+{
+	INT32 axis = 0;
+	boolean turnleft, turnright;
+
+	const UINT8 forplayer = (ssplayer-1);
+
+	const boolean analogjoystickmove = cv_usejoystick[forplayer].value && !Joystick[forplayer].bGamepadStyle;
+	const boolean gamepadjoystickmove = cv_usejoystick[forplayer].value && Joystick[forplayer].bGamepadStyle;
+
+	turnright = InputDown(gc_turnright, ssplayer);
+	turnleft = InputDown(gc_turnleft, ssplayer);
+
+	axis = JoyAxis(AXISTURN, ssplayer);
+
+	if (encoremode)
+	{
+		turnright ^= turnleft; // swap these using three XORs
+		turnleft ^= turnright;
+		turnright ^= turnleft;
+		axis = -axis;
+	}
+
+	if (gamepadjoystickmove && axis != 0)
+	{
+		turnright = turnright || (axis > 0);
+		turnleft = turnleft || (axis < 0);
+	}
+
+	cmd->driftturn = 0;
+
+	// let movement keys cancel each other out
+	if (turnright && !(turnleft))
+	{
+		cmd->driftturn = (INT16)(cmd->driftturn - (angleturn[1]));
+	}
+	else if (turnleft && !(turnright))
+	{
+		cmd->driftturn = (INT16)(cmd->driftturn + (angleturn[1]));
+	}
+
+	if (analogjoystickmove && axis != 0)
+	{
+		// JOYAXISRANGE should be 1023 (divide by 1024)
+		cmd->driftturn = (INT16)(cmd->driftturn - (((axis * angleturn[1]) >> 10)));
+	}
+
+	if (cv_mouseturn.value)
+	{
+		//THIS WORKS WTF????????
+		cmd->driftturn = (INT16)(cmd->driftturn - ((mousex*(encoremode ? -1 : 1)*8)));
+	}
+}
+
 //
 // G_BuildLocalTiccmd
 // extremely basic cut down ticcmd builder
@@ -839,6 +893,16 @@ static void G_BuildLocalTiccmd(ticcmd_t *cmd, UINT8 ssplayer, boolean freecam)
 
 	CHECKINPUT(gc_accelerate, AXISMOVE, BT_ACCELERATE);
 	CHECKINPUT(gc_brake, AXISBRAKE, BT_BRAKE);
+
+	// for lua menus during spec
+	axis = JoyAxis(AXISAIM, ssplayer);
+	if (InputDown(gc_aimforward, ssplayer) || (usejoystick && axis < 0))
+		cmd->buttons |= BT_FORWARD;
+	if (InputDown(gc_aimbackward, ssplayer) || (usejoystick && axis > 0))
+		cmd->buttons |= BT_BACKWARD;
+
+	G_HandleLocalDriftturn(cmd, ssplayer);
+	//
 
 #undef CHECKINPUT
 
