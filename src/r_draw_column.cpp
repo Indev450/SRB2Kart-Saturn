@@ -217,7 +217,7 @@ static void R_DrawColumnTemplate(drawcolumndata_t *dc)
 				{
 					if (frac < 0)
 						// adjust in case we underread
-						frac += FRACUNIT;
+						frac += fracstep;
 
 					// texture has no height, so just go
 					while (--count >= 0)
