@@ -1424,6 +1424,7 @@ static const char* OP_ChatOptionsTooltips[] =
 	"Chat mode used for in-game chat.",
 	"Width of chat box.",
 	"Height of chat box.",
+	"Center text in the chat message pop ups.",
 	"Chatbox background.",
 	"Fadeout time for new chat message.",
 	"Spam protection for in-game chat.",
