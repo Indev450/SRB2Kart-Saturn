@@ -144,6 +144,10 @@ ifdef GCC81
  WFLAGS+=-Wno-error=multistatement-macros
 endif
 
+ifeq ($(CC),clang)
+ WFLAGS+= -Wno-unknown-pragmas -Wno-cast-align
+endif
+
 ifdef NONX86
   ifdef X86_64 # yeah that SEEMS contradictory
   opts+=-march=nocona

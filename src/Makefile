@@ -131,8 +131,18 @@ endif
 include Makefile.d/util.mk
 
 ifdef PREFIX
+ifdef USECLANG
+CC:=$(PREFIX)-clang
+CXX:=$(PREFIX)-clang++
+else
 CC:=$(PREFIX)-gcc
 CXX:=$(PREFIX)-g++
+endif
+endif
+
+ifdef USECLANG
+CC=clang
+CXX=clang++
 endif
 
 OBJDUMP_OPTS?=--wide --source --line-numbers
@@ -236,7 +246,7 @@ endif
 # build with profiling information
 ifdef PROFILEMODE
 opts+=-pg
-libs+=-pg
+LDFLAGS+=-pg
 endif
 
 ifdef DEBUGMODE
@@ -248,10 +258,10 @@ ifdef USELTO
 # compile with LTO
 ifdef MINGW
 opts+=-flto=auto -g
-libs+=-flto=auto -g
+LDFLAGS+=-flto=auto -g
 else
 opts+=-flto=auto
-libs+=-flto=auto
+LDFLAGS+=-flto=auto
 endif
 endif
 endif
@@ -265,8 +275,10 @@ else
 opts+=-fsanitize=address
 libs+=-fsanitize=address
 endif
-opts+=-fsanitize=address
-libs+=-fsanitize=address
+endif
+
+ifeq ($(CC),clang)
+ LDFLAGS+= -fuse-ld=lld
 endif
 
 # debug_opts also get passed to windres
@@ -281,6 +293,7 @@ cxxopts:=$(opts) $(CXXFLAGS)
 opts+=$(CWFLAGS) # warning flags that shouldnt be passed to c++ compiler
 
 libs+=$(LDFLAGS) -lstdc++ -lpthread
+
 asflags:=$(ASFLAGS) -x assembler-with-cpp
 
 cc=$(CC)

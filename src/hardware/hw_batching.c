@@ -99,7 +99,8 @@ void HWR_ProcessPolygon(FSurfaceInfo *pSurf, FOutVector *pOutVerts, FUINT iNumPt
 			polygonArrayAllocSize *= 2;
 			polygonArray = realloc(polygonArray, polygonArrayAllocSize * sizeof(PolygonArrayEntry));
 			// also need to redo the index array, dont need to copy it though
-			polygonArraySorted = realloc(polygonArraySorted, polygonArrayAllocSize * sizeof(PolygonArrayEntry*));
+			free(polygonArraySorted);
+			polygonArraySorted = malloc(polygonArrayAllocSize * sizeof(PolygonArrayEntry *));
 		}
 
 		while (unsortedVertexArraySize + (int)iNumPts > unsortedVertexArrayAllocSize)
