@@ -131,8 +131,18 @@ endif
 include Makefile.d/util.mk
 
 ifdef PREFIX
+ifdef USECLANG
+CC:=$(PREFIX)-clang
+CXX:=$(PREFIX)-clang++
+else
 CC:=$(PREFIX)-gcc
 CXX:=$(PREFIX)-g++
+endif
+endif
+
+ifdef USECLANG
+CC=clang
+CXX=clang++
 endif
 
 OBJDUMP_OPTS?=--wide --source --line-numbers
@@ -267,6 +277,8 @@ libs+=-fsanitize=address
 endif
 endif
 
+ifeq ($(CC),clang)
+ LDFLAGS+= -fuse-ld=lld
 endif
 
 # debug_opts also get passed to windres
