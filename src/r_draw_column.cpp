@@ -57,7 +57,7 @@ static constexpr UINT8 R_GetColumnTranslucent(drawcolumndata_t* dc, UINT8 * rest
 }
 
 template<DrawColumnType Type>
-static constexpr UINT8 R_DrawColumnPixel(drawcolumndata_t* dc, UINT8 * restrict dest, UINT32 bit, const restrict UINT8 *source, const restrict UINT8 *colormap)
+static constexpr UINT8 R_DrawColumnPixel(drawcolumndata_t* dc, UINT8 * restrict dest, UINT32 bit, const UINT8 * restrict source, const UINT8 * restrict colormap)
 {
 	UINT8 col = source[bit];
 
