@@ -373,7 +373,7 @@ $(dbg) : $(objects) $(lualib) | $$(@D)/
 
 ifdef HAVE_BLUAJIT
 $(lualib) ::
-	@$(MAKE) -C ../libs/bluajit $(MAKECMDGOALS) CCOPT="$(opts)"
+	@$(MAKE) -C ../libs/bluajit $(MAKECMDGOALS) CC="$(CC)" CCOPT="$(opts)" LDFLAGS="$(LDFLAGS)"
 endif
 
 # disassembly of executable
