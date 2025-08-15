@@ -2729,9 +2729,9 @@ void G_LoadDemoTitle(menudemo_t *pdemo)
 	}
 
 	info_p += 12; // DEMOHEADER
+	info_p++; // VERSION
+	info_p++; // SUBVERSION
 
-	READUINT8(info_p);
-	READUINT8(info_p);
 	pdemoversion = READUINT16(info_p);
 
 	memset(pdemo->date, 0, sizeof(pdemo->date));
