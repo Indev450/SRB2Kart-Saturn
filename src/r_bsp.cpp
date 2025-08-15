@@ -48,7 +48,7 @@ boolean g_walloffscreen;
 
 boolean R_NoEncore(sector_t *sector, boolean ceiling)
 {
-	boolean invertencore = (GETSECSPECIAL(sector->special, 2) == 15);
+	boolean invertencore = (GETSECSPECIAL(sector->special, 2) == 12 || GETSECSPECIAL(sector->special, 2) == 15); // keeping this incase its used
 #if 0 // perfect implementation
 	INT32 val = GETSECSPECIAL(sector->special, 3);
 	if (val != 1 && val != 3 // spring panel
