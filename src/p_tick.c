@@ -16,6 +16,7 @@
 #endif
 
 #include "doomstat.h"
+#include "dehacked.h"
 #include "g_game.h"
 #include "g_input.h"
 #include "p_local.h"
