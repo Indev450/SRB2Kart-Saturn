@@ -442,7 +442,7 @@ void P_UpdateSegLightOffset(seg_t *li)
 
 	extralight = -contrastFixed + FixedMul(light, contrastFixed * 2);
 
-	// Between -2 and 2 for software, -8 and 8 for hardware
+	// Between -1 and 1 for software, -8 and 8 for hardware
 	li->lightOffset = FixedFloor((extralight / 8) + (FRACUNIT / 2)) / FRACUNIT;
 #ifdef HWRENDER
 	li->hwLightOffset = FixedFloor(extralight + (FRACUNIT / 2)) / FRACUNIT;
