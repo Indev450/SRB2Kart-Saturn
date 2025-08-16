@@ -615,8 +615,21 @@ static void CV_constextsize_OnChange(void)
 void VID_BlitLinearScreen(const UINT8 *srcptr, UINT8 *destptr, INT32 width, INT32 height, size_t srcrowbytes,
 	size_t destrowbytes)
 {
-	if ((srcrowbytes == destrowbytes) && (srcrowbytes == (size_t)width))
-		M_Memcpy(destptr, srcptr, srcrowbytes * height);
+	if (srcrowbytes == destrowbytes)
+	{
+		size_t i = srcrowbytes * height;
+#if defined(__SSE__)
+		while (i >= 16)
+		{
+			// TODO: find where the buffer is misaligned at times and align it
+			_mm_storeu_ps((float *)destptr, _mm_loadu_ps((const float *)srcptr));
+			srcptr += 16;
+			destptr += 16;
+			i -= 16;
+		}
+#endif
+		M_Memcpy(destptr, srcptr, i);
+	}
 	else
 	{
 		while (height--)
@@ -3779,17 +3792,32 @@ UINT8 GetColorLUTDirect(colorlookup_t *lut, UINT8 r, UINT8 g, UINT8 b)
 void V_Init(void)
 {
 	INT32 i;
-	UINT8 *base = vid.buffer;
 	const INT32 screensize = vid.rowbytes * vid.height;
 
 	for (i = 0; i < NUMSCREENS; i++)
+	{
+#if defined(__SSE__)
+		aligned_free(vid.screens[i]);
+#else
+		free(vid.screens[i]);
+#endif
 		vid.screens[i] = NULL;
+	}
 
 	// start address of NUMSCREENS * width*height vidbuffers
-	if (base)
+	if (screensize > 0)
 	{
 		for (i = 0; i < NUMSCREENS; i++)
-			vid.screens[i] = base + i*screensize;
+		{
+			// we need to allocate these relative to their cpu restrictions to not trigger segfaults
+			// TODO: add support for sve and neon
+#if defined(__SSE__)
+			vid.screens[i] = aligned_alloc(128, screensize);
+#else
+			vid.screens[i] = malloc(screensize);
+#endif
+			memset(vid.screens[i], 0, screensize);
+		}
 	}
 
 #ifdef DEBUG

@@ -23,6 +23,18 @@ extern "C" {
 #include "r_defs.h"
 #include "r_main.h"
 
+#if defined(__SSE__)
+#ifdef _WIN32
+#include <malloc.h>
+#define aligned_alloc(align, size) _aligned_malloc(size, align)
+#define aligned_free(ptr) _aligned_free(ptr)
+#else
+#define aligned_free(ptr) free(ptr)
+#endif
+
+#include <immintrin.h>
+#endif
+
 //
 // VIDEO
 //
