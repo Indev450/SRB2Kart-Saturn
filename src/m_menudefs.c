@@ -1404,18 +1404,19 @@ static menuitem_t OP_ChatOptionsMenu[] =
 	                      NULL, "Chat Box Width",			&cv_chatwidth,			20},
 	{IT_STRING | IT_CVAR | IT_CV_SLIDER,
 	                      NULL, "Chat Box Height",			&cv_chatheight,			30},
+	{IT_STRING | IT_CVAR, NULL, "Center Text in Chat",		&cv_chatcentertext,		40},
 
-	{IT_STRING | IT_CVAR, NULL, "Chat Background Tint",		&cv_chatbacktint,		45},
-	{IT_STRING | IT_CVAR, NULL, "Message Fadeout Time",		&cv_chattime,			55},
-	{IT_STRING | IT_CVAR, NULL, "Spam Protection",			&cv_chatspamprotection,	65},
-	{IT_STRING | IT_CVAR, NULL, "Max Chat Messages",		&cv_chatlogsize,		75},
+	{IT_STRING | IT_CVAR, NULL, "Chat Background Tint",		&cv_chatbacktint,		55},
+	{IT_STRING | IT_CVAR, NULL, "Message Fadeout Time",		&cv_chattime,			65},
+	{IT_STRING | IT_CVAR, NULL, "Spam Protection",			&cv_chatspamprotection,	75},
+	{IT_STRING | IT_CVAR, NULL, "Max Chat Messages",		&cv_chatlogsize,		85},
 
-	{IT_STRING | IT_CVAR, NULL, "Local ping display",		&cv_showping,			95},	// shows ping above the framerate if we want to.
-	{IT_STRING | IT_CVAR, NULL, "Ping display style",		&cv_pingstyle,			105},
-	{IT_STRING | IT_CVAR, NULL, "Ping measurement",			&cv_pingmeasurement,	115},
-	{IT_STRING | IT_CVAR, NULL, "Ping icon",				&cv_pingicon,			125},
+	{IT_STRING | IT_CVAR, NULL, "Local ping display",		&cv_showping,			105},	// shows ping above the framerate if we want to.
+	{IT_STRING | IT_CVAR, NULL, "Ping display style",		&cv_pingstyle,			115},
+	{IT_STRING | IT_CVAR, NULL, "Ping measurement",			&cv_pingmeasurement,	125},
+	{IT_STRING | IT_CVAR, NULL, "Ping icon",				&cv_pingicon,			135},
 
-	{IT_STRING | IT_CVAR, NULL, "Show IP address in playerlist",		&cv_shownodeip,	135},
+	{IT_STRING | IT_CVAR, NULL, "Show IP address in playerlist",		&cv_shownodeip,	145},
 };
 
 static const char* OP_ChatOptionsTooltips[] =
@@ -1423,6 +1424,7 @@ static const char* OP_ChatOptionsTooltips[] =
 	"Chat mode used for in-game chat.",
 	"Width of chat box.",
 	"Height of chat box.",
+	"Center text in the chat message pop ups.",
 	"Chatbox background.",
 	"Fadeout time for new chat message.",
 	"Spam protection for in-game chat.",

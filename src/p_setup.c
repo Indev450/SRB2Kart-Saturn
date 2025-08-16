@@ -442,7 +442,7 @@ void P_UpdateSegLightOffset(seg_t *li)
 
 	extralight = -contrastFixed + FixedMul(light, contrastFixed * 2);
 
-	// Between -2 and 2 for software, -8 and 8 for hardware
+	// Between -1 and 1 for software, -8 and 8 for hardware
 	li->lightOffset = FixedFloor((extralight / 8) + (FRACUNIT / 2)) / FRACUNIT;
 #ifdef HWRENDER
 	li->hwLightOffset = FixedFloor(extralight + (FRACUNIT / 2)) / FRACUNIT;
@@ -1747,33 +1747,33 @@ static void P_CreateBlockMap(void)
 
 			// Now we simply iterate block-by-block until we reach the end block.
 			for (curblockx = bxstart; curblockx <= bxend; curblockx++)
-			for (curblocky = bystart; curblocky <= byend; curblocky++)
-			{
-				size_t b = curblocky * bmapwidth + curblockx;
-
-				if (b >= tot)
-					continue;
-
-				if (!straight && !(LineInBlock((fixed_t)x, (fixed_t)y, (fixed_t)v2x, (fixed_t)v2y, (fixed_t)(curblockx << MAPBTOFRAC), (fixed_t)(curblocky << MAPBTOFRAC))))
-					continue;
-
-				// Increase size of allocated list if necessary
-				if (bmap[b].n >= bmap[b].nalloc)
+				for (curblocky = bystart; curblocky <= byend; curblocky++)
 				{
-					// Graue 02-29-2004: make code more readable, don't realloc a null pointer
-					// (because it crashes for me, and because the comp.lang.c FAQ says so)
-					if (bmap[b].nalloc == 0)
-						bmap[b].nalloc = 8;
-					else
-						bmap[b].nalloc *= 2;
-					bmap[b].list = Z_Realloc(bmap[b].list, bmap[b].nalloc * sizeof (*bmap->list), PU_CACHE, &bmap[b].list);
-					if (!bmap[b].list)
-						I_Error("Out of Memory in P_CreateBlockMap");
-				}
+					size_t b = curblocky * bmapwidth + curblockx;
 
-				// Add linedef to end of list
-				bmap[b].list[bmap[b].n++] = (INT32)i;
-			}
+					if (b >= tot)
+						continue;
+
+					if (!straight && !(LineInBlock((fixed_t)x, (fixed_t)y, (fixed_t)v2x, (fixed_t)v2y, (fixed_t)(curblockx << MAPBTOFRAC), (fixed_t)(curblocky << MAPBTOFRAC))))
+						continue;
+
+					// Increase size of allocated list if necessary
+					if (bmap[b].n >= bmap[b].nalloc)
+					{
+						// Graue 02-29-2004: make code more readable, don't realloc a null pointer
+						// (because it crashes for me, and because the comp.lang.c FAQ says so)
+						if (bmap[b].nalloc == 0)
+							bmap[b].nalloc = 8;
+						else
+							bmap[b].nalloc *= 2;
+						bmap[b].list = Z_Realloc(bmap[b].list, bmap[b].nalloc * sizeof (*bmap->list), PU_CACHE, &bmap[b].list);
+						if (!bmap[b].list)
+							I_Error("Out of Memory in P_CreateBlockMap");
+					}
+
+					// Add linedef to end of list
+					bmap[b].list[bmap[b].n++] = (INT32)i;
+				}
 		}
 
 		// Compute the total size of the blockmap.

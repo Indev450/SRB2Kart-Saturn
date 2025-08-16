@@ -108,7 +108,7 @@ FUNCINLINE static ATTRINLINE PUREFUNC INT32 R_PointOnSide(fixed_t x, fixed_t y, 
 
 // This is not as accurate
 // SHOULD NOT BE USED FOR ANYTHING GAMEPLAY RELATED!!
-FUNCINLINE static ATTRINLINE PUREFUNC INT32 R_PointOnSideFast(fixed_t x, fixed_t y, const node_t *node)
+FUNCINLINE static ATTRINLINE PUREFUNC INT32 R_PointOnSideFast(fixed_t x, fixed_t y, const node_t* restrict node)
 {
 	// use cross product to determine side quickly
 	INT64 v = ((INT64)y - node->y) * node->dx - ((INT64)x - node->x) * node->dy;
@@ -201,7 +201,7 @@ extern consvar_t cv_secbright;
 
 extern consvar_t cv_randomdirlight;
 
-static inline INT32 R_GetSoftLightlevel(INT32 llevel)
+FUNCINLINE static ATTRINLINE INT32 R_GetSoftLightlevel(INT32 llevel)
 {
 	return CLAMP(llevel, cv_secbright.value, 255) >> LIGHTSEGSHIFT;
 }

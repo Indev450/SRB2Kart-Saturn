@@ -168,13 +168,8 @@ static      INT32        mousemovex = 0, mousemovey = 0;
 
 // SDL vars
 static      SDL_Surface *vidSurface = NULL;
-static      SDL_Surface *bufSurface = NULL;
 static      SDL_Surface *icoSurface = NULL;
-static      SDL_Color    localPalette[256];
-#if 0
-static      SDL_Rect   **modeList = NULL;
-static       Uint8       BitsPerPixel = 16;
-#endif
+static      UINT32       localPalette[256];
 Uint16      realwidth = BASEVIDWIDTH;
 Uint16      realheight = BASEVIDHEIGHT;
 static       SDL_bool    mousegrabok = SDL_TRUE;
@@ -223,7 +218,6 @@ static INT32 windowedModes[MAXWINMODES][2] =
 static INT32 custom_width = 0;
 static INT32 custom_height = 0;
 
-static void Impl_VideoSetupSDLBuffer(void);
 static void Impl_VideoSetupBuffer(void);
 static SDL_bool Impl_CreateWindow(SDL_bool fullscreen);
 static void Impl_SetWindowIcon(void);
@@ -520,7 +514,6 @@ static void VID_Command_Info_f (void)
 	if (!M_CheckParm("-noblit"))
 		videoblitok = SDL_TRUE;
 
-	SurfaceInfo(bufSurface, M_GetText("Current Engine Mode"));
 	SurfaceInfo(vidSurface, M_GetText("Current Video Mode"));
 }
 
@@ -1347,7 +1340,7 @@ static void SDLSetMode(INT32 width, INT32 height, SDL_bool fullscreen)
 {
 	static SDL_bool wasfullscreen = SDL_FALSE;
 	Uint32 rmask, gmask, bmask, amask;
-	int bpp = 16;
+	int bpp;
 	int sw_texture_format = SDL_PIXELFORMAT_ABGR8888;
 
 	realwidth = vid.width;
@@ -1414,16 +1407,6 @@ static void SDLSetMode(INT32 width, INT32 height, SDL_bool fullscreen)
 		if (texture != NULL)
 		{
 			SDL_DestroyTexture(texture);
-		}
-
-		if (!usesdl2soft)
-		{
-			sw_texture_format = SDL_PIXELFORMAT_RGB565;
-		}
-		else
-		{
-			bpp = 32;
-			sw_texture_format = SDL_PIXELFORMAT_RGBA8888;
 		}
 
 		texture = SDL_CreateTexture(renderer, sw_texture_format, SDL_TEXTUREACCESS_STREAMING, width, height);
@@ -1500,19 +1483,18 @@ void I_FinishUpdate(void)
 
 	if (rendermode == render_soft && vid.screens[0])
 	{
-		if (!bufSurface) //Double-Check
-		{
-			Impl_VideoSetupSDLBuffer();
-		}
 
-		if (bufSurface)
-		{
-			SDL_BlitSurface(bufSurface, &src_rect, vidSurface, &src_rect);
-			// Fury -- there's no way around UpdateTexture, the GL backend uses it anyway
-			SDL_LockSurface(vidSurface);
-			SDL_UpdateTexture(texture, &src_rect, vidSurface->pixels, vidSurface->pitch);
-			SDL_UnlockSurface(vidSurface);
-		}
+		SDL_LockSurface(vidSurface);
+		// copy pixels ourselves to the video surface (prevents a crash in libsdl)
+		UINT32 *dst = vidSurface->pixels;
+		UINT8 *src = vid.screens[0];
+		for (int32_t i = 0; i < vid.width * vid.height; i++)
+			*dst++ = localPalette[*src++];
+		SDL_UnlockSurface(vidSurface);
+		// Fury -- there's no way around UpdateTexture, the GL backend uses it anyway
+		SDL_LockSurface(vidSurface);
+		SDL_UpdateTexture(texture, &src_rect, vidSurface->pixels, vidSurface->pitch);
+		SDL_UnlockSurface(vidSurface);
 
 		SDL_RenderClear(renderer);
 		SDL_RenderCopy(renderer, texture, &src_rect, NULL);
@@ -1559,14 +1541,11 @@ void I_SetPalette(RGBA_t *palette)
 
 	for (i = 0; i < 256; i++)
 	{
-		localPalette[i].r = palette[i].s.red;
-		localPalette[i].g = palette[i].s.green;
-		localPalette[i].b = palette[i].s.blue;
+		localPalette[i] = 0xff000000;
+		localPalette[i] |= palette[i].s.red << 0;
+		localPalette[i] |= palette[i].s.green << 8;
+		localPalette[i] |= palette[i].s.blue << 16;
 	}
-
-	//if (vidSurface) SDL_SetPaletteColors(vidSurface->format->palette, localPalette, 0, 256);
-	// Fury -- SDL2 vidSurface is a 32-bit surface buffer copied to the texture. It's not palletized, like bufSurface.
-	if (bufSurface) SDL_SetPaletteColors(bufSurface->format->palette, localPalette, 0, 256);
 }
 
 // return number of fullscreen + X11 modes
@@ -1687,15 +1666,6 @@ INT32 VID_SetMode(INT32 modeNum)
 
 	SDLSetMode(vid.width, vid.height, USE_FULLSCREEN);
 	Impl_VideoSetupBuffer();
-
-	if (rendermode == render_soft)
-	{
-		if (bufSurface)
-		{
-			SDL_FreeSurface(bufSurface);
-			bufSurface = NULL;
-		}
-	}
 
 	src_rect.w = vid.width;
 	src_rect.h = vid.height;
@@ -1824,36 +1794,19 @@ static void Impl_SetWindowIcon(void)
 	SDL_SetWindowIcon(window, icoSurface);
 }
 
-static void Impl_VideoSetupSDLBuffer(void)
-{
-	if (bufSurface != NULL)
-	{
-		SDL_FreeSurface(bufSurface);
-		bufSurface = NULL;
-	}
-	// Set up the SDL palletized buffer (copied to vidbuffer before being rendered to texture)
-	bufSurface = SDL_CreateRGBSurfaceFrom(vid.screens[0], vid.width, vid.height, 8,
-		(int)vid.rowbytes, 0x00000000, 0x00000000, 0x00000000, 0x00000000); // 256 mode
-
-	if (bufSurface)
-	{
-		SDL_SetPaletteColors(bufSurface->format->palette, localPalette, 0, 256);
-	}
-	else
-	{
-		I_Error("%s", M_GetText("No system memory for SDL buffer surface\n"));
-	}
-}
-
 static void Impl_VideoSetupBuffer(void)
 {
 	// Set up game's software render buffer
+	size_t size;
+
 	vid.rowbytes = vid.width;
 
 	if (vid.buffer)
 		free(vid.buffer);
 
-	vid.buffer = calloc(vid.rowbytes*vid.height, NUMSCREENS);
+	size = vid.rowbytes*vid.height * NUMSCREENS;
+
+	vid.buffer = calloc(size, NUMSCREENS);
 
 	if (!vid.buffer)
 	{
@@ -2114,10 +2067,6 @@ void I_ShutdownGraphics(void)
 		if (vid.buffer)
 			free(vid.buffer);
 		vid.buffer = NULL;
-
-		if (bufSurface)
-			SDL_FreeSurface(bufSurface);
-		bufSurface = NULL;
 	}
 
 	I_OutputMsg("I_ShutdownGraphics(): ");
