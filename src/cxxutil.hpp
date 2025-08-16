@@ -61,7 +61,7 @@ struct SourceLocation {
 
 class IErrorAssertHandler {
 public:
-	static void handle(const SourceLocation& source_location, const char* expression) {
+	[[ noreturn ]] static void handle(const SourceLocation& source_location, const char* expression) {
 		I_Error("Assertion failed at %s:%u: %s != true",
 				source_location.file_name,
 				source_location.line_number,
