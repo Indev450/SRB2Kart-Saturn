@@ -993,7 +993,6 @@ void D_SRB2Loop(void)
 			Discord_RunCallbacks();
 		}
 #endif
-
 		// Fully completed frame made.
 		finishprecise = I_GetPreciseTime();
 
@@ -1031,6 +1030,7 @@ void D_SRB2Loop(void)
 				I_SleepDuration(capbudget - elapsed);
 			}
 		}
+
 		// Capture the time once more to get the real delta time.
 		finishprecise = I_GetPreciseTime();
 		deltasecs = (double)((INT64)(finishprecise - enterprecise)) / I_GetPrecisePrecision();

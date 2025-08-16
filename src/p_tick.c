@@ -648,7 +648,8 @@ static inline void P_ResetSpriteStuff(void)
 
 		mo = (mobj_t *)th;
 
-		if (!mo || (mo->sprite == SPR_NULL) || (mo->flags2 & MF2_DONTDRAW) || (mo->type == MT_SHADOW))
+		if (!mo || (mo->sprite == SPR_NULL)
+		|| (mo->flags2 & MF2_DONTDRAW) || (mo->type == MT_SHADOW))
 			continue;
 
 		mo->spritexscale  = mo->realxscale;
@@ -725,9 +726,9 @@ void P_Ticker(boolean run)
 				if (playeringame[i])
 					G_WriteDemoTiccmd(&players[i].cmd, i);
 		}
+
 		if (demo.playback)
 		{
-
 #ifdef DEMO_COMPAT_100
 			if (demo.version == 0x0001)
 			{

@@ -1845,10 +1845,10 @@ void G_Ticker(boolean run)
 	{
 		for (i = 0; i < MAXPLAYERS; i++) // read/write demo and check turbo cheat
 		{
-			cmd = &players[i].cmd;
-
 			if (!playeringame[i])
 				continue;
+
+			cmd = &players[i].cmd;
 
 			//@TODO all this throwdir stuff shouldn't be here! But it stays for now to maintain 1.0.4 compat...
 			// Remove for 1.1!
