@@ -467,15 +467,8 @@ void R_CheckTextureCache(INT32 tex)
 		R_GenerateTexture(tex);
 }
 
-//
-// R_GetColumn
-//
-UINT8 *R_GetColumn(fixed_t tex, INT32 col)
+static inline INT32 wrap_column(fixed_t tex, INT32 col)
 {
-	UINT8 *data;
-
-	data = texturecache[tex];
-
 	if (texturewidthmask[tex])
 		col &= texturewidthmask[tex];  // set by load textures
 	else
@@ -488,14 +481,22 @@ UINT8 *R_GetColumn(fixed_t tex, INT32 col)
 		col = ((col % texwidth) + texwidth) % texwidth;
 	}
 
-	if (!data)
+	return col;
+}
+
+//
+// R_GetColumn
+//
+UINT8 *R_GetColumn(fixed_t tex, INT32 col)
+{
+	if (!texturecache[tex])
 	{
 		// This must be here because cache can be freed by other operations.
 		// To prevent must lock individual texture cache on every draw.
-		data = R_GenerateTexture(tex);
+		R_GenerateTexture(tex);
 	}
 
-	return data + LONG(texturecolumnofs[tex][col]);
+	return texturecache[tex] + LONG(texturecolumnofs[tex][wrap_column(tex, col)]);
 }
 
 // convert flats to hicolor as they are requested
@@ -527,7 +528,7 @@ void R_ParseTEXTURESLump(UINT16 wadNum, UINT16 lumpNum, INT32 *index);
 static INT32
 Rloadtextures (INT32 i, INT32 w)
 {
-	UINT16 j;
+	UINT16 j, numlumps = 0;
 	INT32 k;
 	UINT16 texstart, texend, texturesLumpPos;
 	softwarepatch_t *patchlump;
@@ -558,8 +559,10 @@ Rloadtextures (INT32 i, INT32 w)
 	if (texstart == INT16_MAX || texend == INT16_MAX)
 		return i;
 
+	numlumps = texend - texstart;
+
 	// Work through each lump between the markers in the WAD.
-	for (j = 0; j < (texend - texstart); j++)
+	for (j = 0; j < numlumps; j++)
 	{
 		UINT16 wadnum = (UINT16)w;
 		lumpnum_t lumpnum = texstart + j;
@@ -1822,6 +1825,20 @@ void R_ClearTextureNumCache(boolean btell)
 	tidcachelen = 0;
 }
 
+static void AddTextureToCache(const char *name, UINT32 hash, INT32 id)
+{
+	tidcachelen++;
+	Z_Realloc(tidcache, tidcachelen * sizeof(*tidcache), PU_STATIC, &tidcache);
+	strncpy(tidcache[tidcachelen-1].name, name, 8);
+	tidcache[tidcachelen-1].name[8] = '\0';
+#ifndef ZDEBUG
+	CONS_Debug(DBG_SETUP, "texture #%s: %s\n", sizeu1(tidcachelen), tidcache[tidcachelen-1].name);
+#endif
+	tidcache[tidcachelen-1].hash = hash;
+	tidcache[tidcachelen-1].id = id;
+}
+
+
 //
 // R_CheckTextureNumForName
 //
@@ -1843,19 +1860,10 @@ INT32 R_CheckTextureNumForName(const char *name)
 			return tidcache[i].id;
 
 	// Need to parse the list backwards, so textures loaded more recently are used in lieu of ones loaded earlier
-	//for (i = 0; i < numtextures; i++) <- old
-	for (i = (numtextures - 1); i >= 0; i--) // <- new
+	for (i = (numtextures - 1); i >= 0; i--)
 		if (textures[i]->hash == hash && !strncasecmp(textures[i]->name, name, 8))
 		{
-			tidcachelen++;
-			Z_Realloc(tidcache, tidcachelen * sizeof(*tidcache), PU_STATIC, &tidcache);
-			strncpy(tidcache[tidcachelen-1].name, name, 8);
-			tidcache[tidcachelen-1].name[8] = '\0';
-#ifndef ZDEBUG
-			CONS_Debug(DBG_SETUP, "texture #%s: %s\n", sizeu1(tidcachelen), tidcache[tidcachelen-1].name);
-#endif
-			tidcache[tidcachelen-1].hash = hash;
-			tidcache[tidcachelen-1].id = i;
+			AddTextureToCache(name, hash, i);
 			return i;
 		}
 
