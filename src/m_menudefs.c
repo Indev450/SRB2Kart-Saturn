@@ -1186,8 +1186,6 @@ static menuitem_t OP_FocusOptionsMenu[] =
 	{IT_STRING|IT_CVAR,	NULL, "Background FPS Cap",         				&cv_fpscapbg,          		80},
 
 	{IT_STRING|IT_CVAR,	NULL, "Show \"FOCUS LOST\"",						&cv_showfocuslost,		   100},
-
-	{IT_STRING|IT_CVAR,	NULL, "Always Grab Mouse While Focused",			&cv_alwaysgrabmouse,	   120},
 };
 
 static const char* OP_FocusOptionsTooltips[] =
@@ -1198,7 +1196,6 @@ static const char* OP_FocusOptionsTooltips[] =
 	"Should the game pause while the game is unfocused?",
 	"Set manual framerate cap while the game is unfocused.",
 	"Should the FOCUS LOST window appear\n while the game is unfocused?",
-	"Should the mouse cursor be grabbed and hidden\n while the game is in focus?",
 };
 
 static menuitem_t OP_DataOptionsMenu[] =

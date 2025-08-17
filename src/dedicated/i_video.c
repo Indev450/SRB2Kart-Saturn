@@ -35,8 +35,6 @@ consvar_t cv_vidwait = {"vid_wait", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL
 static CV_PossibleValue_t keyboardlayout_cons_t[] = {{1,"Default US"}, {2, "Native"}, {3, "AZERTY"}, {0, NULL}};
 consvar_t cv_keyboardlayout = {"keyboardlayout", "Default US", CV_SAVE, keyboardlayout_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
-consvar_t cv_alwaysgrabmouse = {"alwaysgrabmouse", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
-
 INT32 numcontrollers = 0;
 
 UINT8 graphics_started = 0; // Is used in console.c and screen.c
