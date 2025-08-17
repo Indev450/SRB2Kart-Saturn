@@ -3284,9 +3284,10 @@ boolean P_CameraThinker(player_t *player, camera_t *thiscam, boolean resetcalled
 
 			if (!resetcalled && !(player->pflags & PF_NOCLIP || leveltime < introtime) && !P_CheckSightFast(&dummy, player->mo)) // TODO: "P_CheckCameraSight" instead.
 				P_ResetCamera(player, thiscam);
+#ifndef NOCLIPCAM
 			else
 				P_SlideCameraMove(thiscam);
-
+#endif
 			if (resetcalled) // Okay this means the camera is fully reset.
 				return true;
 		}

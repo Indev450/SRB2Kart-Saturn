@@ -2689,6 +2689,7 @@ static fixed_t tmxmove, tmymove;
 //
 // P_HitCameraSlideLine
 //
+#ifndef NOCLIPCAM
 static void P_HitCameraSlideLine(line_t *ld, camera_t *thiscam)
 {
 	INT32 side;
@@ -2728,6 +2729,7 @@ static void P_HitCameraSlideLine(line_t *ld, camera_t *thiscam)
 	tmxmove = FixedMul(newlen, FINECOSINE(lineangle));
 	tmymove = FixedMul(newlen, FINESINE(lineangle));
 }
+#endif
 
 //
 // P_HitSlideLine
@@ -2847,6 +2849,7 @@ static void P_HitBounceLine(line_t *ld)
 //
 // PTR_SlideCameraTraverse
 //
+#ifndef NOCLIPCAM
 static boolean PTR_SlideCameraTraverse(intercept_t *in)
 {
 	line_t *li;
@@ -2893,6 +2896,7 @@ isblocking:
 
 	return false; // stop
 }
+#endif
 
 //
 // PTR_SlideTraverse
@@ -2963,6 +2967,7 @@ isblocking:
 //
 // Tries to slide the camera along a wall.
 //
+#ifndef NOCLIPCAM
 void P_SlideCameraMove(camera_t *thiscam)
 {
 	fixed_t leadx, leady, trailx, traily, newx, newy;
@@ -3056,6 +3061,7 @@ stairstep:
 	if (!retval)
 		goto retry;
 }
+#endif
 
 //
 // P_SlideMove
