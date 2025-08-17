@@ -800,12 +800,12 @@ void R_CheckViewMorph(void)
 
 void R_ApplyViewMorph(void)
 {
+	if (!viewmorph.use)
+		return;
+
 	UINT8 *tmpscr = vid.screens[4];
 	UINT8 *srcscr = vid.screens[0];
 	INT32 p, end = vid.width * vid.height;
-
-	if (!viewmorph.use)
-		return;
 
 	if (cv_debug & DBG_VIEWMORPH)
 	{
