@@ -1227,7 +1227,8 @@ static void P_LoadLineDefs2(void)
 {
 	size_t i = numlines;
 	register line_t *ld = lines;
-	for (;i--;ld++)
+
+	for (; i--; ld++)
 	{
 		ld->frontsector = sides[ld->sidenum[0]].sector; //e6y: Can't be -1 here
 		ld->backsector  = ld->sidenum[1] != 0xffff ? sides[ld->sidenum[1]].sector : 0;
@@ -1242,41 +1243,46 @@ static void P_LoadLineDefs2(void)
 		}
 
 		// Compile linedef 'text' from both sidedefs 'text' for appropriate specials.
-		switch(ld->special)
+		switch (ld->special)
 		{
-		case 443: // Calls a named Lua function
-			if (sides[ld->sidenum[0]].text)
-			{
-				size_t len = strlen(sides[ld->sidenum[0]].text)+1;
-				if (ld->sidenum[1] != 0xffff && sides[ld->sidenum[1]].text)
-					len += strlen(sides[ld->sidenum[1]].text);
-				ld->text = Z_Malloc(len, PU_LEVEL, NULL);
-				M_Memcpy(ld->text, sides[ld->sidenum[0]].text, strlen(sides[ld->sidenum[0]].text)+1);
-				if (ld->sidenum[1] != 0xffff && sides[ld->sidenum[1]].text)
-					M_Memcpy(ld->text+strlen(ld->text)+1, sides[ld->sidenum[1]].text, strlen(sides[ld->sidenum[1]].text)+1);
-			}
-			break;
+			case 443: // Calls a named Lua function
+				if (sides[ld->sidenum[0]].text)
+				{
+					size_t len = strlen(sides[ld->sidenum[0]].text)+1;
+
+					if (ld->sidenum[1] != 0xffff && sides[ld->sidenum[1]].text)
+						len += strlen(sides[ld->sidenum[1]].text);
+
+					ld->text = Z_Malloc(len, PU_LEVEL, NULL);
+					M_Memcpy(ld->text, sides[ld->sidenum[0]].text, strlen(sides[ld->sidenum[0]].text)+1);
+
+					if (ld->sidenum[1] != 0xffff && sides[ld->sidenum[1]].text)
+						M_Memcpy(ld->text+strlen(ld->text)+1, sides[ld->sidenum[1]].text, strlen(sides[ld->sidenum[1]].text)+1);
+				}
+				break;
+
+			// Set alpha for translucent walls
+			case 900 ... 908:
+				ld->alpha = ((909 - ld->special) << FRACBITS)/10;
+				break;
+
+			// Set alpha for additive/subtractive/reverse subtractive walls
+			case 910 ... 919: // additive
+				ld->alpha = ((10 - ld->special % 10) << FRACBITS)/10;
+				ld->blendmode = AST_ADD;
+				break;
+			case 920 ... 929: // subtractive
+				ld->alpha = ((10 - ld->special % 10) << FRACBITS)/10;
+				ld->blendmode = AST_SUBTRACT;
+				break;
+			case 930 ... 939: // reverse subtractive
+				ld->alpha = ((10 - ld->special % 10) << FRACBITS)/10;
+				ld->blendmode = AST_REVERSESUBTRACT;
+				break;
+			case 940: // modulate
+				ld->blendmode = AST_MODULATE;
+				break;
 		}
-
-		// Set alpha for translucent walls
-		if (ld->special >= 900 && ld->special < 909)
-			ld->alpha = ((909 - ld->special) << FRACBITS)/10;
-
-		// Set alpha for additive/subtractive/reverse subtractive walls
-		if (ld->special >= 910 && ld->special <= 939)
-			ld->alpha = ((10 - ld->special % 10) << FRACBITS)/10;
-
-		if (ld->special >= 910 && ld->special <= 919) // additive
-			ld->blendmode = AST_ADD;
-
-		if (ld->special >= 920 && ld->special <= 929) // subtractive
-			ld->blendmode = AST_SUBTRACT;
-
-		if (ld->special >= 930 && ld->special <= 939) // reverse subtractive
-			ld->blendmode = AST_REVERSESUBTRACT;
-
-		if (ld->special == 940) // modulate
-			ld->blendmode = AST_MODULATE;
 	}
 }
 
