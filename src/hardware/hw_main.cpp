@@ -1926,6 +1926,19 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 		{
 			for (rover = gl_backsector->ffloors; rover; rover = rover->next)
 			{
+				boolean bothsides = false;
+				// Skip if it exists on both sectors.
+				ffloor_t * r2;
+				for (r2 = gl_frontsector->ffloors; r2; r2 = r2->next)
+					if (rover->master == r2->master)
+					{
+						bothsides = true;
+						break;
+					}
+
+				if (bothsides)
+					continue;
+
 				const ffloortype_e roverflags = rover->flags;
 
 				if (!(roverflags & FF_EXISTS) || !(roverflags & FF_RENDERSIDES) || (roverflags & FF_INVERTSIDES))
@@ -2077,6 +2090,17 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 		{
 			for (rover = gl_frontsector->ffloors; rover; rover = rover->next)
 			{
+				boolean bothsides = false;
+				// Skip if it exists on both sectors.
+				ffloor_t * r2;
+				for (r2 = gl_backsector->ffloors; r2; r2 = r2->next)
+					if (rover->master == r2->master)
+					{
+						bothsides = true;
+						break;
+					}
+
+				if (bothsides) continue;
 				const ffloortype_e roverflags = rover->flags;
 
 				if (!(roverflags & FF_EXISTS) || !(roverflags & FF_RENDERSIDES) || !(roverflags & FF_ALLSIDES))
