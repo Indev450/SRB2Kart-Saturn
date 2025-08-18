@@ -1144,8 +1144,8 @@ static void HWR_SplitWall(sector_t *sector, FOutVector *wallVerts, INT32 texnum,
 
 		// Found a break
 		// The heights are clamped to ensure the polygon doesn't cross itself.
-		bot    = CLAMP(bheight, realbot, top);
-		endbot = CLAMP(endbheight, endrealbot, endtop);
+		bot    = std::max(bheight, realbot);
+		endbot = std::max(endbheight, endrealbot);
 
 		Surf->PolyColor.s.alpha = alpha;
 
@@ -2602,7 +2602,9 @@ static boolean HWR_CheckBBox(const fixed_t *bspcoord)
 			else // node
 				mindist = 0;
 		}
-		if (mindist > current_bsp_culling_distance) return false;
+
+		if (mindist > current_bsp_culling_distance)
+			return false;
 	}
 
 	angle1 = R_PointToAngle64(px1, py1);
@@ -3860,8 +3862,8 @@ static void HWR_SplitSprite(gl_vissprite_t *spr, const boolean papersprite)
 
 		// Found a break
 		// The heights are clamped to ensure the polygon doesn't cross itself.
-		bot    = CLAMP(bheight, realbot, top);
-		endbot = CLAMP(endbheight, endrealbot, endtop);
+		bot    = std::max(bheight, realbot);
+		endbot = std::max(endbheight, endrealbot);
 
 		wallVerts[3].t = towtop + ((realtop - top) * towmult);
 		wallVerts[2].t = towtop + ((endrealtop - endtop) * towmult);
