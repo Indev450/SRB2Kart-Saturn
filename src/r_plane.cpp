@@ -1072,15 +1072,15 @@ void R_DrawSinglePlane(drawspandata_t* ds, visplane_t *pl, boolean allow_paralle
 			{
 				if ((pl->ffloor->flags & FF_CUTEXTRA) && (rover->flags & FF_EXTRA))
 				{
-					if (!(rover->flags & FF_EXTRA))
-						continue;
-
-					// The plane is from an extra 3D floor... Check the flags so
-					// there are no undesired cuts.
-					if (((pl->ffloor->flags & (FF_FOG|FF_SWIMMABLE)) == (rover->flags & (FF_FOG|FF_SWIMMABLE)))
-						&& pl->height < *rover->topheight
-						&& pl->height > *rover->bottomheight)
-						return;
+					if (pl->ffloor->flags & FF_EXTRA)
+					{
+						// The plane is from an extra 3D floor... Check the flags so
+						// there are no undesired cuts.
+						if (((pl->ffloor->flags & (FF_FOG|FF_SWIMMABLE)) == (rover->flags & (FF_FOG|FF_SWIMMABLE)))
+							&& pl->height < *rover->topheight
+							&& pl->height > *rover->bottomheight)
+							return;
+					}
 				}
 			}
 
