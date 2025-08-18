@@ -1266,131 +1266,96 @@ static void P_LoadLineDefs2(void)
 	}
 }
 
+#ifdef HWRENDER
+static void P_LoadSideColormapsGL(char *colorstr, sector_t *sec)
+{
+	RGBA_t color;
+	size_t j;
+
+#define HEX2INT(x) (x >= '0' && x <= '9' ? x - '0' : x >= 'a' && x <= 'f' ? x - 'a' + 10 : x >= 'A' && x <= 'F' ? x - 'A' + 10 : 0)
+#define ALPHA2INT(x) (x >= 'a' && x <= 'z' ? x - 'a' : x >= 'A' && x <= 'Z' ? x - 'A' : x >= '0' && x <= '9' ? 25 : 0)
+
+	// encore mode colormaps!
+	// do it like software by aproximating a color to a palette index, and then convert it to its encore variant and then back to a color code.
+	// do this for both the start and fade colormaps.
+	color.s.red   = (HEX2INT(colorstr[1]) << 4) + HEX2INT(colorstr[2]);
+	color.s.green = (HEX2INT(colorstr[3]) << 4) + HEX2INT(colorstr[4]);
+	color.s.blue  = (HEX2INT(colorstr[5]) << 4) + HEX2INT(colorstr[6]);
+#ifdef GLENCORE
+	if (encoremap)
+	{
+		j = encoremap[NearestColor(color.s.red, color.s.green, color.s.blue)];
+		color = pLocalPalette[j]; // note: this sets alpha to 255, we will reset it below
+	}
+#endif
+	color.s.alpha = 0; // reset/init the alpha, so the addition below will work correctly
+	sec->extra_colormap->rgba = color.rgba;
+
+	// alpha
+	if (colorstr[7])
+		sec->extra_colormap->rgba += (ALPHA2INT(colorstr[7]) << 24);
+	else
+		sec->extra_colormap->rgba += (25 << 24);
+
+#undef ALPHA2INT
+#undef HEX2INT
+}
+#endif
+
 static void P_LoadSideColormaps(mapsidedef_t *msd, side_t *sd, sector_t *sec)
 {
 	INT32 num;
 
 #ifdef HWRENDER
-	if (rendermode == render_opengl)
-	{
-		// for now, full support of toptexture only
-		if ((msd->toptexture[0] == '#' && msd->toptexture[1] && msd->toptexture[2] && msd->toptexture[3] && msd->toptexture[4] && msd->toptexture[5] && msd->toptexture[6])
-			|| (msd->bottomtexture[0] == '#' && msd->bottomtexture[1] && msd->bottomtexture[2] && msd->bottomtexture[3] && msd->bottomtexture[4] && msd->bottomtexture[5] && msd->bottomtexture[6]))
-		{
-			char *col;
-			RGBA_t color;
-			size_t j;
-
-			sec->extra_colormap = &extra_colormaps[R_CreateColormap(msd->toptexture, msd->midtexture, msd->bottomtexture)];
-			sd->toptexture = sd->bottomtexture = 0;
-#define HEX2INT(x) (x >= '0' && x <= '9' ? x - '0' : x >= 'a' && x <= 'f' ? x - 'a' + 10 : x >= 'A' && x <= 'F' ? x - 'A' + 10 : 0)
-#define ALPHA2INT(x) (x >= 'a' && x <= 'z' ? x - 'a' : x >= 'A' && x <= 'Z' ? x - 'A' : x >= '0' && x <= '9' ? 25 : 0)
-
-			if (msd->toptexture[0] == '#' && msd->toptexture[1] && msd->toptexture[2] && msd->toptexture[3] && msd->toptexture[4] && msd->toptexture[5] && msd->toptexture[6])
-			{
-				col = msd->toptexture;
-
-				// encore mode colormaps!
-				// do it like software by aproximating a color to a palette index, and then convert it to its encore variant and then back to a color code.
-				// do this for both the start and fade colormaps.
-
-				color.s.red = (HEX2INT(col[1]) << 4) + HEX2INT(col[2]);
-				color.s.green = (HEX2INT(col[3]) << 4) + HEX2INT(col[4]);
-				color.s.blue = (HEX2INT(col[5]) << 4) + HEX2INT(col[6]);
-
-#ifdef GLENCORE
-				if (encoremap)
-				{
-					j = encoremap[NearestColor(color.s.red, color.s.green, color.s.blue)];
-					color = pLocalPalette[j]; // note: this sets alpha to 255, we will reset it below
-				}
+	const boolean docolor = (rendermode == render_opengl) ?
+		(msd->toptexture[0] == '#' && strlen(msd->toptexture) >= 7) : (msd->toptexture[0] == '#');
+	const boolean doalpha = (rendermode == render_opengl) ?
+		(msd->bottomtexture[0] == '#' && strlen(msd->bottomtexture) >= 7) : (msd->bottomtexture[0] == '#');
+#else
+	const boolean docolor = (msd->toptexture[0] == '#');
+	const boolean doalpha = (msd->bottomtexture[0] == '#');
 #endif
-				color.s.alpha = 0; // reset/init the alpha, so the addition below will work correctly
-				sec->extra_colormap->rgba = color.rgba;
 
-				// alpha
-				if (msd->toptexture[7])
-					sec->extra_colormap->rgba += (ALPHA2INT(col[7]) << 24);
-				else
-					sec->extra_colormap->rgba += (25 << 24);
+	if (docolor || doalpha)
+	{
+		sec->extra_colormap = &extra_colormaps[R_CreateColormap(msd->toptexture, msd->midtexture, msd->bottomtexture)];
+		sd->toptexture = sd->bottomtexture = 0;
+
+#ifdef HWRENDER
+		if (rendermode == render_opengl)
+		{
+			if (docolor)
+			{
+				P_LoadSideColormapsGL(msd->toptexture, sec);
 			}
 			else
 				sec->extra_colormap->rgba = 0;
 
-			if (msd->bottomtexture[0] == '#' && msd->bottomtexture[1] && msd->bottomtexture[2] && msd->bottomtexture[3] && msd->bottomtexture[4] && msd->bottomtexture[5] && msd->bottomtexture[6])
+			if (doalpha)
 			{
-				col = msd->bottomtexture;
-
-				// do the exact same thing as above here.
-
-				color.s.red = (HEX2INT(col[1]) << 4) + HEX2INT(col[2]);
-				color.s.green = (HEX2INT(col[3]) << 4) + HEX2INT(col[4]);
-				color.s.blue = (HEX2INT(col[5]) << 4) + HEX2INT(col[6]);
-
-#ifdef GLENCORE
-				if (encoremap)
-				{
-					j = encoremap[NearestColor(color.s.red, color.s.green, color.s.blue)];
-					color = pLocalPalette[j]; // note: this sets alpha to 255, we will reset it below
-				}
-#endif
-				color.s.alpha = 0; // reset/init the alpha, so the addition below will work correctly
-				sec->extra_colormap->fadergba = color.rgba;
-
-				// alpha
-				if (msd->bottomtexture[7])
-					sec->extra_colormap->fadergba += (ALPHA2INT(col[7]) << 24);
-				else
-					sec->extra_colormap->fadergba += (25 << 24);
+				P_LoadSideColormapsGL(msd->bottomtexture, sec);
 			}
 			else
 				sec->extra_colormap->fadergba = 0x19000000; // default alpha, (25 << 24)
-#undef ALPHA2INT
-#undef HEX2INT
 		}
-		else
-		{
-			if ((num = R_CheckTextureNumForName(msd->toptexture)) == -1)
-				sd->toptexture = 0;
-			else
-				sd->toptexture = num;
-
-			if ((num = R_CheckTextureNumForName(msd->midtexture)) == -1)
-				sd->midtexture = 0;
-			else
-				sd->midtexture = num;
-
-			if ((num = R_CheckTextureNumForName(msd->bottomtexture)) == -1)
-				sd->bottomtexture = 0;
-			else
-				sd->bottomtexture = num;
-		}
+#endif
 	}
-#endif
-#ifdef HWRENDER
 	else
-#endif
 	{
-		if (msd->toptexture[0] == '#' || msd->bottomtexture[0] == '#')
-		{
-			sec->extra_colormap = &extra_colormaps[R_CreateColormap(msd->toptexture, msd->midtexture, msd->bottomtexture)];
-			sd->toptexture = sd->bottomtexture = 0;
-		}
+		if ((num = R_CheckTextureNumForName(msd->toptexture)) == -1)
+			sd->toptexture = 0;
 		else
-		{
-			if ((num = R_CheckTextureNumForName(msd->toptexture)) == -1)
-				sd->toptexture = 0;
-			else
-				sd->toptexture = num;
-			if ((num = R_CheckTextureNumForName(msd->midtexture)) == -1)
-				sd->midtexture = 0;
-			else
-				sd->midtexture = num;
-			if ((num = R_CheckTextureNumForName(msd->bottomtexture)) == -1)
-				sd->bottomtexture = 0;
-			else
-				sd->bottomtexture = num;
-		}
+			sd->toptexture = num;
+
+		if ((num = R_CheckTextureNumForName(msd->midtexture)) == -1)
+			sd->midtexture = 0;
+		else
+			sd->midtexture = num;
+
+		if ((num = R_CheckTextureNumForName(msd->bottomtexture)) == -1)
+			sd->bottomtexture = 0;
+		else
+			sd->bottomtexture = num;
 	}
 }
 
