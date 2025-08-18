@@ -177,8 +177,6 @@ void R_PortalClearClipSegs(INT32 start, INT32 end)
 sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec, INT32 *floorlightlevel,
 	INT32 *ceilinglightlevel, boolean back)
 {
-	INT32 mapnum = -1;
-
 	if (floorlightlevel)
 		*floorlightlevel = sec->floorlightsec == -1 ?
 			sec->lightlevel : sectors[sec->floorlightsec].lightlevel;
@@ -187,10 +185,10 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec, INT32 *floorlightlevel,
 		*ceilinglightlevel = sec->ceilinglightsec == -1 ?
 			sec->lightlevel : sectors[sec->ceilinglightsec].lightlevel;
 
-	// If the sector has a midmap, it's probably from 280 type
-	if (sec->midmap != -1)
-		mapnum = sec->midmap;
-	else if (sec->heightsec != -1)
+	// if (sec->midmap != -1)
+	//	mapnum = sec->midmap;
+	// In original colormap code, this block did not run if sec->midmap was set
+	if (!sec->extra_colormap && sec->heightsec != -1)
 	{
 		const sector_t *s = &sectors[sec->heightsec];
 		mobj_t *pviewmobj = viewplayer->mo;
@@ -213,8 +211,6 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec, INT32 *floorlightlevel,
 		// Replace floor and ceiling height with other sector's heights.
 		tempsec->floorheight = s->floorheight;
 		tempsec->ceilingheight = s->ceilingheight;
-
-		mapnum = s->midmap;
 
 		if ((underwater && (tempsec->  floorheight = sec->floorheight,
 			tempsec->ceilingheight = s->floorheight - 1, !back)) || viewz <= s->floorheight)
@@ -241,7 +237,6 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec, INT32 *floorlightlevel,
 					tempsec->ceiling_yoffs = s->ceiling_yoffs;
 					tempsec->ceilingpic_angle = s->ceilingpic_angle;
 				}
-				mapnum = s->bottommap;
 			}
 
 			tempsec->lightlevel = s->lightlevel;
@@ -264,8 +259,6 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec, INT32 *floorlightlevel,
 			tempsec->floor_xoffs = tempsec->ceiling_xoffs = s->ceiling_xoffs;
 			tempsec->floor_yoffs = tempsec->ceiling_yoffs = s->ceiling_yoffs;
 			tempsec->floorpic_angle = tempsec->ceilingpic_angle = s->ceilingpic_angle;
-
-			mapnum = s->topmap;
 
 			if (s->floorpic == skyflatnum) // SKYFIX?
 			{
@@ -296,11 +289,6 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec, INT32 *floorlightlevel,
 		}
 		sec = tempsec;
 	}
-
-	if (mapnum >= 0 && (size_t)mapnum < num_extra_colormaps)
-		sec->extra_colormap = &extra_colormaps[mapnum];
-	else
-		sec->extra_colormap = NULL;
 
 	return sec;
 }
@@ -826,8 +814,9 @@ static void R_Subsector(size_t num)
 
 	sub->sector->extra_colormap = frontsector->extra_colormap;
 
-	if ((P_GetSectorFloorZAt(frontsector, viewx, viewy) < viewz || (frontsector->heightsec != -1
-		&& sectors[frontsector->heightsec].ceilingpic == skyflatnum)))
+	if (P_GetSectorFloorZAt(frontsector, viewx, viewy) < viewz
+		|| frontsector->floorpic == skyflatnum
+		|| (frontsector->heightsec != -1 && sectors[frontsector->heightsec].ceilingpic == skyflatnum))
 	{
 		floorplane = R_FindPlane(frontsector->floorheight, frontsector->floorpic, floorlightlevel,
 			frontsector->floor_xoffs, frontsector->floor_yoffs, frontsector->floorpic_angle, floorcolormap, NULL
@@ -838,9 +827,9 @@ static void R_Subsector(size_t num)
 	else
 		floorplane = NULL;
 
-	if ((P_GetSectorCeilingZAt(frontsector, viewx, viewy) > viewz || frontsector->ceilingpic == skyflatnum
-		|| (frontsector->heightsec != -1
-		&& sectors[frontsector->heightsec].floorpic == skyflatnum)))
+	if (P_GetSectorCeilingZAt(frontsector, viewx, viewy) > viewz
+		|| frontsector->ceilingpic == skyflatnum
+		|| (frontsector->heightsec != -1 && sectors[frontsector->heightsec].floorpic == skyflatnum))
 	{
 		ceilingplane = R_FindPlane(frontsector->ceilingheight, frontsector->ceilingpic,
 			ceilinglightlevel, frontsector->ceiling_xoffs, frontsector->ceiling_yoffs, frontsector->ceilingpic_angle,
@@ -889,12 +878,15 @@ static void R_Subsector(size_t num)
 				light = R_GetPlaneLight(frontsector, planecenterz,
 					viewz < heightcheck);
 
-				ffloor[numffloors].plane = R_FindPlane(*rover->bottomheight, *rover->bottompic,
-					*frontsector->lightlist[light].lightlevel, *rover->bottomxoffs,
-					*rover->bottomyoffs, *rover->bottomangle, frontsector->lightlist[light].extra_colormap, rover
+				ffloor[numffloors].plane = R_FindPlane(
+					*rover->bottomheight, *rover->bottompic,
+					*frontsector->lightlist[light].lightlevel,
+					*rover->bottomxoffs, *rover->bottomyoffs, *rover->bottomangle,
+					frontsector->lightlist[light].extra_colormap, rover
 					, NULL
 					, *rover->b_slope
-					, R_NoEncore(rover->master->frontsector, true), true, frontsector);
+					, R_NoEncore(rover->master->frontsector, true), true, frontsector
+				);
 
 				ffloor[numffloors].slope = *rover->b_slope;
 
@@ -923,12 +915,15 @@ static void R_Subsector(size_t num)
 			{
 				light = R_GetPlaneLight(frontsector, planecenterz, viewz < heightcheck);
 
-				ffloor[numffloors].plane = R_FindPlane(*rover->topheight, *rover->toppic,
-					*frontsector->lightlist[light].lightlevel, *rover->topxoffs, *rover->topyoffs, *rover->topangle,
+				ffloor[numffloors].plane = R_FindPlane(
+					*rover->topheight, *rover->toppic,
+					*frontsector->lightlist[light].lightlevel,
+					*rover->topxoffs, *rover->topyoffs, *rover->topangle,
 					frontsector->lightlist[light].extra_colormap, rover
 					, NULL
 					, *rover->t_slope
-					, R_NoEncore(rover->master->frontsector, false), false, frontsector);
+					, R_NoEncore(rover->master->frontsector, false), false, frontsector
+				);
 
 				ffloor[numffloors].slope = *rover->t_slope;
 
@@ -1056,7 +1051,7 @@ void R_Prep3DFloors(sector_t *sector)
 	ffloor_t *rover;
 	ffloor_t *best;
 	fixed_t bestheight, maxheight;
-	INT32 count, i, mapnum;
+	INT32 count, i;
 	sector_t *sec;
 	pslope_t *bestslope = NULL;
 	fixed_t heighttest; // I think it's better to check the Z height at the sector's center
@@ -1139,12 +1134,6 @@ void R_Prep3DFloors(sector_t *sector)
 		sector->lightlist[i].flags = best->flags;
 		sector->lightlist[i].slope = bestslope;
 		sec = &sectors[best->secnum];
-		mapnum = sec->midmap;
-
-		if (mapnum >= 0 && (size_t)mapnum < num_extra_colormaps)
-			sec->extra_colormap = &extra_colormaps[mapnum];
-		else
-			sec->extra_colormap = NULL;
 
 		if (best->flags & FF_NOSHADE)
 		{
