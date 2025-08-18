@@ -1174,7 +1174,7 @@ static void HWR_SplitWall(sector_t *sector, FOutVector *wallVerts, INT32 texnum,
 	bot = realbot;
 	endbot = endrealbot;
 
-	if ((endtop <= endrealbot) && (top <= realbot))
+	if ((endtop <= endrealbot) || (top <= realbot))
 		return;
 
 	Surf->PolyColor.s.alpha = alpha;
@@ -3911,7 +3911,7 @@ static void HWR_SplitSprite(gl_vissprite_t *spr, const boolean papersprite)
 	bot = realbot;
 	endbot = endrealbot;
 
-	if ((endtop <= endrealbot) && (top <= realbot))
+	if ((endtop <= endrealbot) || (top <= realbot))
 		return;
 
 	// If we're ever down here, somehow the above loop hasn't draw all the light levels of sprite
