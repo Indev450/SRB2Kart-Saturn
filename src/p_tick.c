@@ -614,38 +614,6 @@ static void P_RunQuakes(void)
 	--quake.time;
 }
 
-// Reset our Sprite scales and offsets
-// at the start of our tic
-// this is just to make things simpler
-// as we dont have to reset it ourselves after use
-// done at the start so lua can still overwrite everything
-static inline void P_ResetSpriteStuff(void)
-{
-	thinker_t *th;
-
-	if (rendermode == render_none)
-		return;
-
-	for (th = thinkercap.next; th != &thinkercap; th = th->next)
-	{
-		mobj_t *mo;
-
-		if (th->function != (actionf_p1)P_MobjThinker) // not a mobj
-			continue;
-
-		mo = (mobj_t *)th;
-
-		if (!mo || (mo->sprite == SPR_NULL)
-		|| (mo->flags2 & MF2_DONTDRAW) || (mo->type == MT_SHADOW))
-			continue;
-
-		mo->spritexscale  = mo->realxscale;
-		mo->spriteyscale  = mo->realyscale;
-		mo->spritexoffset = mo->realxoffset;
-		mo->spriteyoffset = mo->realyoffset;
-	}
-}
-
 //
 // P_Ticker
 //
@@ -746,8 +714,6 @@ void P_Ticker(boolean run)
 
 		ps_lua_mobjhooks.value.i = 0;
 		ps_checkposition_calls.value.i = 0;
-
-		P_ResetSpriteStuff();
 
 		PS_START_TIMING(ps_lua_prethinkframe_time);
 		LUA_HookPreThinkFrame();
