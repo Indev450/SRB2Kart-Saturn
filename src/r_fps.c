@@ -401,6 +401,9 @@ void R_InterpolatePrecipMobjState(precipmobj_t *mobj, fixed_t frac, interpmobjst
 
 static void AddInterpolator(levelinterpolator_t* interpolator)
 {
+	if (rendermode == render_none)
+		return;
+
 	if (levelinterpolators_len >= levelinterpolators_size)
 	{
 		if (levelinterpolators_size == 0)
@@ -747,6 +750,9 @@ static size_t interpolated_mobjs_capacity = 0;
 // reasons.
 void R_AddMobjInterpolator(mobj_t *mobj)
 {
+	if (rendermode == render_none)
+		return;
+
 	if (interpolated_mobjs_len >= interpolated_mobjs_capacity)
 	{
 		if (interpolated_mobjs_capacity == 0)
@@ -819,6 +825,9 @@ void R_UpdateMobjInterpolators(void)
 //
 void R_ResetMobjInterpolationState(mobj_t *mobj)
 {
+	if (rendermode == render_none)
+		return;
+
 	mobj->old_x2 = mobj->old_x;
 	mobj->old_y2 = mobj->old_y;
 	mobj->old_z2 = mobj->old_z;
