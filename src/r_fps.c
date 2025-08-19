@@ -862,6 +862,19 @@ void R_ResetMobjInterpolationState(mobj_t *mobj)
 		mobj->player->old_frameangle = mobj->player->frameangle;
 	}
 
+	// Reset our Sprite scales and offsets
+	// at the start of the tic
+	// this is just to make things simpler
+	// as we dont have to reset it ourselves after use
+	// done at the start so lua can still overwrite everything
+
+	// technically not interpolation related
+	// but this saves us another thinkerloop and multiple checks lel
+	mobj->spritexscale  = mobj->realxscale;
+	mobj->spriteyscale  = mobj->realyscale;
+	mobj->spritexoffset = mobj->realxoffset;
+	mobj->spriteyoffset = mobj->realyoffset;
+
 	mobj->resetinterp = false;
 }
 
