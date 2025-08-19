@@ -9855,7 +9855,6 @@ mobj_t *P_SpawnShadowMobj(mobj_t * caster)
 	mobj->radius = info->radius;
 	mobj->height = info->height;
 	mobj->flags = info->flags;
-	mobj->blendmode = AST_TRANSLUCENT;
 
 	mobj->health = info->spawnhealth;
 
@@ -9891,7 +9890,10 @@ mobj_t *P_SpawnShadowMobj(mobj_t * caster)
 	}
 
 	// Sprite rendering
-	mobj->spritexscale = mobj->spriteyscale = mobj->scale;
+	mobj->blendmode = AST_TRANSLUCENT;
+	mobj->realxscale = mobj->realyscale = mobj->scale;
+	mobj->spritexscale = mobj->realxscale;
+	mobj->spriteyscale = mobj->realyscale;
 
 	// set subsector and/or block links
 	P_SetThingPosition(mobj);
