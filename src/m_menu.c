@@ -7046,7 +7046,7 @@ static INT32 M_FindFirstMap(INT32 gtype)
 {
 	INT32 i;
 
-	if (mapheaderinfo[gamemap] && (mapheaderinfo[gamemap]->typeoflevel & gtype))
+	if (mapheaderinfo[gamemap-1] && (mapheaderinfo[gamemap-1]->typeoflevel & gtype))
 		return gamemap;
 
 	for (i = 0; i < NUMMAPS; i++)
