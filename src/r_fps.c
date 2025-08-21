@@ -401,9 +401,6 @@ void R_InterpolatePrecipMobjState(precipmobj_t *mobj, fixed_t frac, interpmobjst
 
 static void AddInterpolator(levelinterpolator_t* interpolator)
 {
-	if (rendermode == render_none)
-		return;
-
 	if (levelinterpolators_len >= levelinterpolators_size)
 	{
 		if (levelinterpolators_size == 0)
@@ -429,6 +426,9 @@ static void AddInterpolator(levelinterpolator_t* interpolator)
 
 static levelinterpolator_t *CreateInterpolator(levelinterpolator_type_e type, thinker_t *thinker)
 {
+	if (rendermode == render_none)
+		return NULL;
+
 	levelinterpolator_t *ret = (levelinterpolator_t*) Z_Calloc(
 		sizeof(levelinterpolator_t), PU_LEVEL, NULL
 	);
@@ -444,6 +444,10 @@ static levelinterpolator_t *CreateInterpolator(levelinterpolator_type_e type, th
 void R_CreateInterpolator_SectorPlane(thinker_t *thinker, sector_t *sector, boolean ceiling)
 {
 	levelinterpolator_t *interp = CreateInterpolator(LVLINTERP_SectorPlane, thinker);
+
+	if (interp == NULL)
+		return;
+
 	interp->sectorplane.sector = sector;
 	interp->sectorplane.ceiling = ceiling;
 	if (ceiling)
@@ -459,6 +463,10 @@ void R_CreateInterpolator_SectorPlane(thinker_t *thinker, sector_t *sector, bool
 void R_CreateInterpolator_SectorScroll(thinker_t *thinker, sector_t *sector, boolean ceiling)
 {
 	levelinterpolator_t *interp = CreateInterpolator(LVLINTERP_SectorScroll, thinker);
+
+	if (interp == NULL)
+		return;
+
 	interp->sectorscroll.sector = sector;
 	interp->sectorscroll.ceiling = ceiling;
 	if (ceiling)
@@ -476,6 +484,10 @@ void R_CreateInterpolator_SectorScroll(thinker_t *thinker, sector_t *sector, boo
 void R_CreateInterpolator_SideScroll(thinker_t *thinker, side_t *side)
 {
 	levelinterpolator_t *interp = CreateInterpolator(LVLINTERP_SideScroll, thinker);
+
+	if (interp == NULL)
+		return;
+
 	interp->sidescroll.side = side;
 	interp->sidescroll.oldtextureoffset = interp->sidescroll.baktextureoffset = side->textureoffset;
 	interp->sidescroll.oldrowoffset = interp->sidescroll.bakrowoffset = side->rowoffset;
@@ -484,6 +496,10 @@ void R_CreateInterpolator_SideScroll(thinker_t *thinker, side_t *side)
 void R_CreateInterpolator_Polyobj(thinker_t *thinker, polyobj_t *polyobj)
 {
 	levelinterpolator_t *interp = CreateInterpolator(LVLINTERP_Polyobj, thinker);
+
+	if (interp == NULL)
+		return;
+
 	interp->polyobj.polyobj = polyobj;
 	interp->polyobj.vertices_size = polyobj->numVertices;
 
@@ -503,6 +519,10 @@ void R_CreateInterpolator_Polyobj(thinker_t *thinker, polyobj_t *polyobj)
 /*void R_CreateInterpolator_DynSlope(thinker_t *thinker, pslope_t *slope)
 {
 	levelinterpolator_t *interp = CreateInterpolator(LVLINTERP_DynSlope, thinker);
+
+	if (interp == NULL)
+		return;
+
 	interp->dynslope.slope = slope;
 
 	FV3_Copy(&interp->dynslope.oldo, &slope->o);
