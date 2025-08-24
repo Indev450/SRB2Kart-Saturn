@@ -10170,8 +10170,7 @@ void P_RemoveSavegameMobj(mobj_t *mobj)
 	R_RemoveMobjInterpolator(mobj);
 
 	// just set its reference count to 0 to not trigger the assert in P_UnlinkThinker
-	if (th->references != 0)
-		th->references = 0;
+	th->references = 0;
 
 	// free block
 	// Here we use the same code as R_RemoveThinkerDelayed, but without reference counting (we're removing everything so it shouldn't matter) and without touching currentthinker since we aren't in P_RunThinkers
