@@ -18,6 +18,7 @@
 #define INT32 int32_t
 #endif
 
+#include "../doomdef.h"
 
 /*
 ** ==================================================================
@@ -534,7 +535,7 @@
 #endif
 #define lua_number2str(s,n)	sprintf((s), LUA_NUMBER_FMT, (n))
 #define LUAI_MAXNUMBER2STR	12 /* 10 digits, sign, and \0 */
-#define lua_str2number(s,p)	strtol((s), (p), 10)
+#define lua_str2number(s,p)	 max(INT32_MIN, min((strtol((s), (p), 10)), INT32_MAX));
 
 
 /*
