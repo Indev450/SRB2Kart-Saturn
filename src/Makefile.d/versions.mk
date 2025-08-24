@@ -150,7 +150,7 @@ endif
 
 ifdef NONX86
   ifdef X86_64 # yeah that SEEMS contradictory
-  opts+=-march=nocona
+  opts+=-march=x86-64-v2
   endif
   opts+=-march=native
 else
