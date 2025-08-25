@@ -1208,23 +1208,29 @@ filestatus_t findfile(char *filename, const UINT8 *wantedmd5sum, boolean complet
 		// if not found at all, just move on without doing anything
 	}
 
-	// next, check SRB2's "home" directory
-	homecheck = filesearch(filename, srb2home, wantedmd5sum, completepath, 10);
+	// next, check SRB2's "home" directory (if non-'.')
+	if (strcmp(srb2home, "."))
+	{
+		homecheck = filesearch(filename, srb2home, wantedmd5sum, completepath, 10);
 
-	if (homecheck == FS_FOUND) // we found the file, so return that we have :)
-		return FS_FOUND;
-	else if (homecheck == FS_MD5SUMBAD) // file has a bad md5; move on and look for a file with the right md5
-		badmd5 = true;
-	// if not found at all, just move on without doing anything
+		if (homecheck == FS_FOUND) // we found the file, so return that we have :)
+			return FS_FOUND;
+		else if (homecheck == FS_MD5SUMBAD) // file has a bad md5; move on and look for a file with the right md5
+			badmd5 = true;
+		// if not found at all, just move on without doing anything
+	}
 
-	// next, check SRB2's "path" directory
-	homecheck = filesearch(filename, srb2path, wantedmd5sum, completepath, 10);
+	// next, check SRB2's "path" directory (also if non-'.')
+	if (strcmp(srb2path, "."))
+	{
+		homecheck = filesearch(filename, srb2path, wantedmd5sum, completepath, 10);
 
-	if (homecheck == FS_FOUND) // we found the file, so return that we have :)
-		return FS_FOUND;
-	else if (homecheck == FS_MD5SUMBAD) // file has a bad md5; move on and look for a file with the right md5
-		badmd5 = true;
-	// if not found at all, just move on without doing anything
+		if (homecheck == FS_FOUND) // we found the file, so return that we have :)
+			return FS_FOUND;
+		else if (homecheck == FS_MD5SUMBAD) // file has a bad md5; move on and look for a file with the right md5
+			badmd5 = true;
+		// if not found at all, just move on without doing anything
+	}
 
 	// finally check "." directory
 	homecheck = filesearch(filename, ".", wantedmd5sum, completepath, 10);
