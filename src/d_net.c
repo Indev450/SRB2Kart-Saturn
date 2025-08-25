@@ -713,6 +713,12 @@ void Net_CloseConnection(INT32 node)
 		Net_SendAcks(node);
 		Net_SendAcks(node);
 	}
+	else
+	{
+		// if the connection hasn't acknowledged anything, it's possible for it to permanently occupy the node.
+		// to prevent this, drop the connection.
+		forceclose = true;
+ 	}
 
 	// check if we are waiting for an ack from this node
 	for (i = 0; i < MAXACKPACKETS; i++)
