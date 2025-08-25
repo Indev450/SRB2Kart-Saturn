@@ -535,8 +535,11 @@
 #endif
 #define lua_number2str(s,n)	sprintf((s), LUA_NUMBER_FMT, (n))
 #define LUAI_MAXNUMBER2STR	12 /* 10 digits, sign, and \0 */
-#define lua_str2number(s,p)	 max(INT32_MIN, min((strtol((s), (p), 10)), INT32_MAX));
-
+#define lua_str2number(s,p) ({ \
+		long nmr = strtol((s), (p), 10); \
+		nmr = max(INT32_MIN, min((nmr), INT32_MAX)); \
+		nmr; \
+	})
 
 /*
 @@ The luai_num* macros define the primitive operations over numbers.
