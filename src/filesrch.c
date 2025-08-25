@@ -388,6 +388,7 @@ filestatus_t filesearch(char *filename, const char *startpath, const UINT8 *want
 	int depthleft = maxsearchdepth;
 	char searchpath[1024];
 	size_t *searchpathindex;
+	boolean folderchanged = true;
 
 	dirhandle = (DIR**)malloc(maxsearchdepth * sizeof(DIR*));
 	searchpathindex = (size_t *)malloc(maxsearchdepth * sizeof(size_t));
@@ -422,6 +423,7 @@ filestatus_t filesearch(char *filename, const char *startpath, const UINT8 *want
 		if (!dent)
 		{
 			closedir(dirhandle[depthleft++]);
+			folderchanged = true;
 			continue;
 		}
 
@@ -435,7 +437,7 @@ filestatus_t filesearch(char *filename, const char *startpath, const UINT8 *want
 		}
 
 		// skip some folders that wont have addons in them
-		if (skipexclude)
+		if (skipexclude && folderchanged)
 		{
 			boolean skipfolder = false;
 
@@ -457,6 +459,7 @@ filestatus_t filesearch(char *filename, const char *startpath, const UINT8 *want
 			if (skipfolder)
 			{
 				closedir(dirhandle[depthleft++]);
+				folderchanged = true;
 				continue;
 			}
 		}
@@ -503,6 +506,8 @@ filestatus_t filesearch(char *filename, const char *startpath, const UINT8 *want
 
 			searchpath[searchpathindex[depthleft]-1] = PATHSEP[0];
 			searchpath[searchpathindex[depthleft]] = 0;
+			folderchanged = true;
+			continue;
 		}
 		else if (!strcasecmp(searchname, dent->d_name))
 		{
@@ -523,6 +528,8 @@ filestatus_t filesearch(char *filename, const char *startpath, const UINT8 *want
 					break;
 			}
 		}
+
+		folderchanged = false;
 	}
 
 	for (; depthleft < maxsearchdepth; closedir(dirhandle[depthleft++]));
