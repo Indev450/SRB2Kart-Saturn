@@ -743,6 +743,22 @@ static lumpinfo_t* ResGetLumpsZip (FILE* handle, UINT16* nlmp)
 	return lumpinfo;
 }
 
+static UINT16 W_InitFileError (const char *filename, boolean exitworthy)
+{
+	if (exitworthy)
+	{
+#ifdef _DEBUG
+		CONS_Error(va("%s was not found or not valid.\nCheck the log for more details.\n", filename));
+#else
+		I_Error("%s was not found or not valid.\nCheck the log for more details.\n", filename);
+#endif
+	}
+	else
+		CONS_Printf(M_GetText("Errors occurred while loading %s; not added.\n"), filename);
+	return INT16_MAX;
+}
+
+
 //  Allocate a wadfile, setup the lumpinfo (directory) and
 //  lumpcache, add the wadfile to the current active wadfiles
 //
@@ -788,14 +804,14 @@ UINT16 W_InitFile(const char *filename, boolean local)
 	{
 		CONS_Alert(CONS_ERROR, M_GetText("Maximum wad files reached\n"));
 		refreshdirmenu |= REFRESHDIR_MAX;
-		return INT16_MAX;
+		return W_InitFileError(filename, false); // startup
 	}
 
 	// open wad file
 	if ((handle = W_OpenWadFile(&filename, true)) == NULL)
-		return INT16_MAX;
+		return W_InitFileError(filename, false); // startup
 
-	important = !local && !W_VerifyNMUSlumps(filename);
+	important = !local && !W_VerifyNMUSlumps(filename, handle, false); // startup
 
 #ifndef NOMD5
 	//
@@ -812,7 +828,7 @@ UINT16 W_InitFile(const char *filename, boolean local)
 			CONS_Alert(CONS_ERROR, M_GetText("%s is already loaded\n"), filename);
 			if (handle)
 				fclose(handle);
-			return INT16_MAX;
+			return W_InitFileError(filename, false);
 		}
 	}
 #endif
@@ -838,7 +854,7 @@ UINT16 W_InitFile(const char *filename, boolean local)
 	if (lumpinfo == NULL)
 	{
 		fclose(handle);
-		return INT16_MAX;
+		return W_InitFileError(filename, false); // startup
 	}
 
 	//
@@ -926,11 +942,13 @@ INT32 W_InitMultipleFiles(char **filenames, boolean addons)
 	INT32 rc = 1;
 	INT32 overallrc = 1;
 
+	(void)addons;
+
 	// will be realloced as lumps are added
 	for (; *filenames; filenames++)
 	{
-		if (addons && !W_VerifyNMUSlumps(*filenames))
-			G_SetGameModified(true, false);
+		// Previously, W_VerifyNMUSlumps was called to mark game modified
+		// for addons... but W_InitFile already does exactly that!
 
 		//CONS_Debug(DBG_SETUP, "Loading %s\n", *filenames);
 		rc = W_InitFile(*filenames, false);
@@ -2240,38 +2258,6 @@ static int W_VerifyPK3(FILE *fp, lumpchecklist_t *checklist, boolean status)
 	}
 }
 
-// Note: This never opens lumps themselves and therefore doesn't have to
-// deal with compressed lumps.
-static int W_VerifyFile(const char *filename, lumpchecklist_t *checklist,
-	boolean status)
-{
-	FILE *handle;
-	int goodfile = false;
-
-	if (!checklist)
-		I_Error("No checklist for %s\n", filename);
-	// open wad file
-	if ((handle = W_OpenWadFile(&filename, false)) == NULL)
-		return -1;
-
-	if (stricmp(&filename[strlen(filename) - 4], ".pk3") == 0)
-		goodfile = W_VerifyPK3(handle, checklist, status);
-	else
-	{
-		// detect wad file by the absence of the other supported extensions
-		if (stricmp(&filename[strlen(filename) - 4], ".soc")
-		&& stricmp(&filename[strlen(filename) - 4], ".lua"))
-		{
-			goodfile = W_VerifyWAD(handle, checklist, status);
-		}
-	}
-
-	fclose(handle);
-
-	return goodfile;
-}
-
-
 /** Checks a wad for lumps other than music and sound.
   * Used during game load to verify music.dta is a good file and during a
   * netgame join (on the server side) to see if a wad is important enough to
@@ -2283,7 +2269,7 @@ static int W_VerifyFile(const char *filename, lumpchecklist_t *checklist,
   *         file exists with that filename
   * \author Alam Arias
   */
-int W_VerifyNMUSlumps(const char *filename)
+int W_VerifyNMUSlumps(const char *filename, FILE *handle, boolean exit_on_error)
 {
 	lumpchecklist_t NMUSlist[] =
 	{
@@ -2320,7 +2306,25 @@ int W_VerifyNMUSlumps(const char *filename)
 #endif
 		{NULL, 0},
 	};
-	return W_VerifyFile(filename, NMUSlist, false);
+
+	int status = 0;
+
+	if (stricmp(&filename[strlen(filename) - 4], ".pk3") == 0)
+		status = W_VerifyPK3(handle, NMUSlist, false);
+	else
+	{
+		// detect wad file by the absence of the other supported extensions
+		if (stricmp(&filename[strlen(filename) - 4], ".soc")
+			&& stricmp(&filename[strlen(filename) - 4], ".lua"))
+		{
+			status = W_VerifyWAD(handle, NMUSlist, false);
+		}
+	}
+
+	if (status == -1)
+		W_InitFileError(filename, exit_on_error);
+
+	return status;
 }
 
 static int W_NameStartsWith(const char *name, lumpchecklist_t *checklist)
