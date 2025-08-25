@@ -1398,16 +1398,24 @@ static void IdentifyVersion(void)
 
 #if !defined (HAVE_SDL) || defined (HAVE_MIXER)
 #define MUSICTEST(str) \
+	musicpath = va(pandf,srb2waddir,str);\
+	handle = W_OpenWadFile(&musicpath, false); \
+	if (handle) \
 	{\
-		const char *musicpath = va(pandf,srb2waddir,str);\
-		int ms = W_VerifyNMUSlumps(musicpath); \
+		int ms = W_VerifyNMUSlumps(musicpath, handle, false); \
+		fclose(handle); \
+		if (ms == 0) \
+			I_Error("File " str " has been modified with non-music/sound lumps"); \
 		if (ms == 1) \
 			D_AddFile(musicpath, startupwadfiles); \
-		else if (ms == 0) \
-			I_Error("File "str" has been modified with non-music/sound lumps"); \
 	}
-	MUSICTEST("sounds.kart")
-	MUSICTEST("music.kart")
+	{
+		const char *musicpath;
+		FILE *handle;
+
+		MUSICTEST("sounds.kart")
+		MUSICTEST("music.kart")
+	}
 #undef MUSICTEST
 #endif
 }
