@@ -262,7 +262,10 @@ static boolean GetFreeAcknum(UINT8 *freeack)
 	CONS_Debug(DBG_NETPLAY, "No more free ackpacket\n");
 #endif
 	if (netbuffer->packettype < PT_CANFAIL)
-		I_Error("Connection lost\n");
+	{
+		CONS_Alert(CONS_WARNING, "Connection from %s is not acknowledging packets, killing connection\n", I_GetNodeAddress(doomcom->remotenode));
+		Net_CloseConnection(doomcom->remotenode | FORCECLOSE);
+	}
 
 	return false;
 }
