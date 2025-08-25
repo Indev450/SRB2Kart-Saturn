@@ -12,7 +12,6 @@
 ///	        FS_MD5SUMBAD;
 ///	        FS_FOUND
 
-#include "d_main.h"
 #include <stdio.h>
 #ifdef __GNUC__
 #include <dirent.h>
