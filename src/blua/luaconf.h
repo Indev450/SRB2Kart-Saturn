@@ -18,7 +18,14 @@
 #define INT32 int32_t
 #endif
 
-#include "../doomdef.h"
+#ifndef __cplusplus
+#ifndef min // Double-Check with WATTCP-32's cdefs.h
+#define min(x, y) (((x) < (y)) ? (x) : (y))
+#endif
+#ifndef max // Double-Check with WATTCP-32's cdefs.h
+#define max(x, y) (((x) > (y)) ? (x) : (y))
+#endif
+#endif
 
 /*
 ** ==================================================================
