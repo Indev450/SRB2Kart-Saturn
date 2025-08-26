@@ -134,23 +134,13 @@ void P_ClosestPointOnLine3D(fixed_t x, fixed_t y, fixed_t z, line_t *line, verte
 // P_PointOnLineSide
 // Returns 0 or 1
 //
-INT32 P_PointOnLineSide(fixed_t x, fixed_t y, const line_t *line)
+INT32 PUREFUNC P_PointOnLineSide(fixed_t x, fixed_t y, const line_t *line)
 {
-	fixed_t dx, dy, left, right;
-
-	if (!line->dx)
-		return x <= line->v1->x ? line->dy > 0 : line->dy < 0;
-
-	if (!line->dy)
-		return y <= line->v1->y ? line->dx < 0 : line->dx > 0;
-
-	dx = (x - line->v1->x);
-	dy = (y - line->v1->y);
-
-	left = FixedMul(line->dy>>FRACBITS, dx);
-	right = FixedMul(dy, line->dx>>FRACBITS);
-
-	return right < left ? 0 : 1;
+	return
+	!line->dx ? x <= line->v1->x ? line->dy > 0 : line->dy < 0 :
+	!line->dy ? y <= line->v1->y ? line->dx < 0 : line->dx > 0 :
+	FixedMul(y-line->v1->y, line->dx>>FRACBITS) >=
+	FixedMul(line->dy>>FRACBITS, x-line->v1->x);
 }
 
 //
@@ -158,7 +148,7 @@ INT32 P_PointOnLineSide(fixed_t x, fixed_t y, const line_t *line)
 // Considers the line to be infinite
 // Returns side 0 or 1, -1 if box crosses the line.
 //
-INT32 P_BoxOnLineSide(fixed_t *tmbox, const line_t *ld)
+INT32 PUREFUNC P_BoxOnLineSide(fixed_t *tmbox, const line_t *ld)
 {
 	INT32 p1, p2;
 
@@ -208,27 +198,13 @@ INT32 P_BoxOnLineSide(fixed_t *tmbox, const line_t *ld)
 // P_PointOnDivlineSide
 // Returns 0 or 1.
 //
-static INT32 P_PointOnDivlineSide(fixed_t x, fixed_t y, divline_t *line)
+static INT32 PUREFUNC P_PointOnDivlineSide(fixed_t x, fixed_t y, divline_t *line)
 {
-	fixed_t dx, dy, left, right;
-
-	if (!line->dx)
-		return x <= line->x ? line->dy > 0 : line->dy < 0;
-
-	if (!line->dy)
-		return y <= line->y ? line->dx < 0 : line->dx > 0;
-
-	dx = (x - line->x);
-	dy = (y - line->y);
-
-	// try to quickly decide by looking at sign bits
-	if ((line->dy ^ line->dx ^ dx ^ dy) & 0x80000000)
-		return ((line->dy ^ dx) & 0x80000000) ? 1 : 0;
-
-	left = FixedMul(line->dy>>8, dx>>8);
-	right = FixedMul(dy>>8, line->dx>>8);
-
-	return right < left ? 0 : 1;
+	return
+	!line->dx ? x <= line->x ? line->dy > 0 : line->dy < 0 :
+	!line->dy ? y <= line->y ? line->dx < 0 : line->dx > 0 :
+	(line->dy^line->dx^(x -= line->x)^(y -= line->y)) < 0 ? (line->dy^x) < 0 :
+	FixedMul(y>>8, line->dx>>8) >= FixedMul(line->dy>>8, x>>8);
 }
 
 
@@ -248,7 +224,7 @@ void P_MakeDivline(line_t *li, divline_t *dl)
 // Returns the fractional intercept point along the first divline.
 // This is only called by the addthings and addlines traversers.
 //
-fixed_t P_InterceptVector(divline_t *v2, divline_t *v1)
+fixed_t PUREFUNC P_InterceptVector(divline_t *v2, divline_t *v1)
 {
 	fixed_t frac, num, den;
 
