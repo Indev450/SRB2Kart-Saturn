@@ -341,6 +341,7 @@ char *refreshdirname = NULL;
 // direrror is set if there was an error.
 INT32 pathisdirectory(const char *path)
 {
+#ifndef _WIN32
 	struct stat fsstat;
 
 	if (stat(path, &fsstat) < 0)
@@ -348,7 +349,21 @@ INT32 pathisdirectory(const char *path)
 		return -1;
 	}
 	else if (S_ISDIR(fsstat.st_mode))
+	{
 		return 1;
+	}
+
+#else
+	DWORD fileattr = GetFileAttributes(path);
+	if (fileattr == INVALID_FILE_ATTRIBUTES)
+	{
+		return -1;
+	}
+	else if (fileattr & FILE_ATTRIBUTE_DIRECTORY)
+	{
+		return 1;
+	}
+#endif
 
 	return 0;
 }
