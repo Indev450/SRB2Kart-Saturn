@@ -1792,10 +1792,7 @@ FUNCINLINE static ATTRINLINE int lib_rPointToDist(lua_State *L)
 	fixed_t x = luaL_checkfixed(L, 1);
 	fixed_t y = luaL_checkfixed(L, 2);
 	//HUDSAFE
-	if (hud_running)
-		lua_pushfixed(L, R_QuickCamDist(x, y) << FRACBITS);
-	else
-		lua_pushfixed(L, R_PointToDist(x, y));
+	lua_pushfixed(L, R_PointToDist(x, y));
 	return 1;
 }
 
@@ -1806,10 +1803,7 @@ FUNCINLINE static ATTRINLINE int lib_rPointToDist2(lua_State *L)
 	fixed_t px1 = luaL_checkfixed(L, 3);
 	fixed_t py1 = luaL_checkfixed(L, 4);
 	//HUDSAFE
-	if (hud_running)
-		lua_pushfixed(L, R_QuickDist(px2, py2, px1, py1) << FRACBITS);
-	else
-		lua_pushfixed(L, R_PointToDist2(px2, py2, px1, py1));
+	lua_pushfixed(L, R_PointToDist2(px2, py2, px1, py1));
 	return 1;
 }
 
