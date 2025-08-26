@@ -1179,7 +1179,7 @@ filestatus_t findfile(char *filename, const UINT8 *wantedmd5sum, boolean complet
 		if (cv_addons_option.value == 3 && *cv_addons_folder.string != '\0')
 		{
 			// first, check any custom directory if specified
-			homecheck = filesearch(filename, cv_addons_folder.string, wantedmd5sum, completepath, 10, false);
+			homecheck = filesearch(filename, cv_addons_folder.string, wantedmd5sum, completepath, 10);
 
 			if (homecheck == FS_FOUND) // we found the file, so return that we have :)
 				return FS_FOUND;
@@ -1189,7 +1189,7 @@ filestatus_t findfile(char *filename, const UINT8 *wantedmd5sum, boolean complet
 		}
 
 		// next, check "DOWNLOAD" directory
-		homecheck = filesearch(filename, "DOWNLOAD", wantedmd5sum, completepath, 10, false);
+		homecheck = filesearch(filename, "DOWNLOAD", wantedmd5sum, completepath, 10);
 
 		if (homecheck == FS_FOUND) // we found the file, so return that we have :)
 			return FS_FOUND;
@@ -1198,7 +1198,7 @@ filestatus_t findfile(char *filename, const UINT8 *wantedmd5sum, boolean complet
 		// if not found at all, just move on without doing anything
 
 		// next, check "addons" directory
-		homecheck = filesearch(filename, "addons", wantedmd5sum, completepath, 10, false);
+		homecheck = filesearch(filename, "addons", wantedmd5sum, completepath, 10);
 
 		if (homecheck == FS_FOUND) // we found the file, so return that we have :)
 			return FS_FOUND;
@@ -1208,7 +1208,7 @@ filestatus_t findfile(char *filename, const UINT8 *wantedmd5sum, boolean complet
 	}
 
 	// next, check SRB2's "home" directory
-	homecheck = filesearch(filename, srb2home, wantedmd5sum, completepath, 10, true);
+	homecheck = filesearch(filename, srb2home, wantedmd5sum, completepath, 10);
 
 	if (homecheck == FS_FOUND) // we found the file, so return that we have :)
 		return FS_FOUND;
@@ -1217,7 +1217,7 @@ filestatus_t findfile(char *filename, const UINT8 *wantedmd5sum, boolean complet
 	// if not found at all, just move on without doing anything
 
 	// next, check SRB2's "path" directory
-	homecheck = filesearch(filename, srb2path, wantedmd5sum, completepath, 10, true);
+	homecheck = filesearch(filename, srb2path, wantedmd5sum, completepath, 10);
 
 	if (homecheck == FS_FOUND) // we found the file, so return that we have :)
 		return FS_FOUND;
@@ -1226,7 +1226,7 @@ filestatus_t findfile(char *filename, const UINT8 *wantedmd5sum, boolean complet
 	// if not found at all, just move on without doing anything
 
 	// finally check "." directory
-	homecheck = filesearch(filename, ".", wantedmd5sum, completepath, 10, true);
+	homecheck = filesearch(filename, ".", wantedmd5sum, completepath, 10);
 
 	if (homecheck != FS_NOTFOUND) // if not found this time, fall back on the below return statement
 		return homecheck; // otherwise return the result we got
