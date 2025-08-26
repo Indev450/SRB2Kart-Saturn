@@ -391,7 +391,7 @@ static const char *exclude_paths[] = {
 };
 #endif
 
-filestatus_t filesearch(char *filename, const char *startpath, const UINT8 *wantedmd5sum, boolean completepath, int maxsearchdepth, boolean skipexclude)
+filestatus_t filesearch(char *filename, const char *startpath, const UINT8 *wantedmd5sum, boolean completepath, int maxsearchdepth)
 {
 	filestatus_t retval = FS_NOTFOUND;
 	DIR **dirhandle;
@@ -404,7 +404,7 @@ filestatus_t filesearch(char *filename, const char *startpath, const UINT8 *want
 	int depthleft = maxsearchdepth;
 	char searchpath[1024];
 	size_t *searchpathindex;
-	boolean folderchanged = true;
+	boolean folderchanged = true; // tells us if we changed folders during traversal
 
 	dirhandle = (DIR**)malloc(maxsearchdepth * sizeof(DIR*));
 	searchpathindex = (size_t *)malloc(maxsearchdepth * sizeof(size_t));
@@ -453,7 +453,7 @@ filestatus_t filesearch(char *filename, const char *startpath, const UINT8 *want
 		}
 
 		// skip some folders that wont have addons in them
-		if (skipexclude && folderchanged)
+		if (folderchanged)
 		{
 			boolean skipfolder = false;
 
@@ -500,7 +500,6 @@ filestatus_t filesearch(char *filename, const char *startpath, const UINT8 *want
 		}
 
 		// Linux and FreeBSD has a special field for file type on dirent, so use that to speed up lookups.
-		// FIXME: should we also follow symlinks?
 		if ((dent->d_type == DT_DIR && depthleft) || (dent->d_type == DT_LNK && depthleft))
 #elif defined (_WIN32)
 		// if we wanna follow symlinks we can check with FILE_ATTRIBUTE_REPARSE_POINT

@@ -1862,7 +1862,7 @@ static const char *searchWad(const char *searchDir)
 	filestatus_t fstemp;
 
 	strcpy(tempsw, WADKEYWORD1);
-	fstemp = filesearch(tempsw, searchDir, NULL, true, 20, true);
+	fstemp = filesearch(tempsw, searchDir, NULL, true, 20);
 	if (fstemp == FS_FOUND)
 	{
 		pathonly(tempsw);
@@ -1870,7 +1870,7 @@ static const char *searchWad(const char *searchDir)
 	}
 
 	strcpy(tempsw, WADKEYWORD2);
-	fstemp = filesearch(tempsw, searchDir, NULL, true, 20, true);
+	fstemp = filesearch(tempsw, searchDir, NULL, true, 20);
 	if (fstemp == FS_FOUND)
 	{
 		pathonly(tempsw);
