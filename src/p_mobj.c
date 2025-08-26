@@ -615,6 +615,7 @@ fixed_t P_MobjFloorZ(mobj_t *mobj, sector_t *sector, sector_t *boundsec, fixed_t
 
 			for (i = 0; i < boundsec->linecount; i++)
 			{
+				fixed_t highline;
 				ld = boundsec->lines[i];
 
 				if (bbox[BOXRIGHT] <= ld->bbox[BOXLEFT] || bbox[BOXLEFT] >= ld->bbox[BOXRIGHT]
@@ -625,9 +626,15 @@ fixed_t P_MobjFloorZ(mobj_t *mobj, sector_t *sector, sector_t *boundsec, fixed_t
 					continue;
 
 				if (lowest)
-					finalheight = min(finalheight, HighestOnLine(mobj->radius, x, y, ld, slope, true));
+				{
+					highline = HighestOnLine(mobj->radius, x, y, ld, slope, true);
+					finalheight = min(finalheight, highline);
+				}
 				else
-					finalheight = max(finalheight, HighestOnLine(mobj->radius, x, y, ld, slope, false));
+				{
+					highline = HighestOnLine(mobj->radius, x, y, ld, slope, false);
+					finalheight = max(finalheight, highline);
+				}
 			}
 
 			return finalheight;
@@ -695,6 +702,7 @@ fixed_t P_MobjCeilingZ(mobj_t *mobj, sector_t *sector, sector_t *boundsec, fixed
 
 			for (i = 0; i < boundsec->linecount; i++)
 			{
+				fixed_t highline;
 				ld = boundsec->lines[i];
 
 				if (bbox[BOXRIGHT] <= ld->bbox[BOXLEFT] || bbox[BOXLEFT] >= ld->bbox[BOXRIGHT]
@@ -705,9 +713,15 @@ fixed_t P_MobjCeilingZ(mobj_t *mobj, sector_t *sector, sector_t *boundsec, fixed
 					continue;
 
 				if (lowest)
-					finalheight = min(finalheight, HighestOnLine(mobj->radius, x, y, ld, slope, true));
+				{
+					highline = HighestOnLine(mobj->radius, x, y, ld, slope, true);
+					finalheight = min(finalheight, highline);
+				}
 				else
-					finalheight = max(finalheight, HighestOnLine(mobj->radius, x, y, ld, slope, false));
+				{
+					highline = HighestOnLine(mobj->radius, x, y, ld, slope, false);
+					finalheight = max(finalheight, highline);
+				}
 			}
 
 			return finalheight;
@@ -776,6 +790,7 @@ fixed_t P_CameraFloorZ(camera_t *mobj, sector_t *sector, sector_t *boundsec, fix
 
 			for (i = 0; i < boundsec->linecount; i++)
 			{
+				fixed_t highline;
 				ld = boundsec->lines[i];
 
 				if (bbox[BOXRIGHT] <= ld->bbox[BOXLEFT] || bbox[BOXLEFT] >= ld->bbox[BOXRIGHT]
@@ -786,9 +801,15 @@ fixed_t P_CameraFloorZ(camera_t *mobj, sector_t *sector, sector_t *boundsec, fix
 					continue;
 
 				if (lowest)
-					finalheight = min(finalheight, HighestOnLine(mobj->radius, x, y, ld, slope, true));
+				{
+					highline = HighestOnLine(mobj->radius, x, y, ld, slope, true);
+					finalheight = min(finalheight, highline);
+				}
 				else
-					finalheight = max(finalheight, HighestOnLine(mobj->radius, x, y, ld, slope, false));
+				{
+					highline = HighestOnLine(mobj->radius, x, y, ld, slope, false);
+					finalheight = max(finalheight, highline);
+				}
 			}
 
 			return finalheight;
@@ -856,6 +877,7 @@ fixed_t P_CameraCeilingZ(camera_t *mobj, sector_t *sector, sector_t *boundsec, f
 
 			for (i = 0; i < boundsec->linecount; i++)
 			{
+				fixed_t highline;
 				ld = boundsec->lines[i];
 
 				if (bbox[BOXRIGHT] <= ld->bbox[BOXLEFT] || bbox[BOXLEFT] >= ld->bbox[BOXRIGHT]
@@ -866,9 +888,15 @@ fixed_t P_CameraCeilingZ(camera_t *mobj, sector_t *sector, sector_t *boundsec, f
 					continue;
 
 				if (lowest)
-					finalheight = min(finalheight, HighestOnLine(mobj->radius, x, y, ld, slope, true));
+				{
+					highline = HighestOnLine(mobj->radius, x, y, ld, slope, true);
+					finalheight = min(finalheight, highline);
+				}
 				else
-					finalheight = max(finalheight, HighestOnLine(mobj->radius, x, y, ld, slope, false));
+				{
+					highline = HighestOnLine(mobj->radius, x, y, ld, slope, false);
+					finalheight = max(finalheight, highline);
+				}
 			}
 
 			return finalheight;
@@ -986,10 +1014,6 @@ fixed_t P_GetMobjGravity(mobj_t *mo)
 
 	if (mo->player)
 	{
-		//if ((mo->player->pflags & PF_GLIDING)
-		//|| (mo->player->charability == CA_FLY && (mo->player->powers[pw_tailsfly]
-		//	|| (mo->state >= &states[S_PLAY_SPC1] && mo->state <= &states[S_PLAY_SPC4]))))
-		//	gravityadd = gravityadd/3; // less gravity while flying/gliding
 		if (UNLIKELY(mo->player->climbing || (mo->player->pflags & PF_NIGHTSMODE)))
 			return 0;
 
