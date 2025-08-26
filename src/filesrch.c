@@ -381,7 +381,9 @@ filestatus_t filesearch(char *filename, const char *startpath, const UINT8 *want
 	filestatus_t retval = FS_NOTFOUND;
 	DIR **dirhandle;
 	struct dirent *dent;
+#ifndef _WIN32
 	struct stat fsstat;
+#endif
 	int found = 0;
 	char *searchname;
 	int depthleft = maxsearchdepth;
@@ -485,12 +487,16 @@ filestatus_t filesearch(char *filename, const char *startpath, const UINT8 *want
 		// Linux and FreeBSD has a special field for file type on dirent, so use that to speed up lookups.
 		// FIXME: should we also follow symlinks?
 		if ((dent->d_type == DT_DIR && depthleft) || (dent->d_type == DT_LNK && depthleft))
-#else
+#elif defined (_WIN32)
 		// if we wanna follow symlinks we can check with FILE_ATTRIBUTE_REPARSE_POINT
 		DWORD fileattr = GetFileAttributes(searchpath);
 		if (fileattr == INVALID_FILE_ATTRIBUTES)
 			; // was the file (re)moved? can't stat it
 		else if ((fileattr & FILE_ATTRIBUTE_DIRECTORY) && depthleft)
+#else
+		if (stat(searchpath,&fsstat) < 0) // do we want to follow symlinks? if not: change it to lstat
+			; // was the file (re)moved? can't stat it
+		else if (S_ISDIR(fsstat.st_mode) && depthleft)
 #endif
 		{
 			searchpathindex[--depthleft] = strlen(searchpath) + 1;
@@ -704,7 +710,9 @@ boolean preparefilemenu(boolean samedepth, boolean replayhut)
 {
 	DIR *dirhandle;
 	struct dirent *dent;
+#ifndef _WIN32
 	struct stat fsstat;
+#endif
 	size_t pos = 0, folderpos = 0, numfolders = 0;
 	char *tempname = NULL;
 
@@ -747,7 +755,7 @@ boolean preparefilemenu(boolean samedepth, boolean replayhut)
 
 		strcpy(&menupath[menupathindex[menudepthleft]],dent->d_name);
 
-#if defined(__linux__) || defined(__FreeBSD__)
+#ifndef _WIN32
 		if (stat(menupath, &fsstat) < 0)
 #else
 		// if we wanna follow symlinks we can check with FILE_ATTRIBUTE_REPARSE_POINT
@@ -757,7 +765,7 @@ boolean preparefilemenu(boolean samedepth, boolean replayhut)
 			; // was the file (re)moved? can't stat it
 		else // is a file or directory
 		{
-#if defined(__linux__) || defined(__FreeBSD__)
+#ifndef _WIN32
 			if (!S_ISDIR(fsstat.st_mode)) // file
 #else
 			if (!(fileattr & FILE_ATTRIBUTE_DIRECTORY))
@@ -829,7 +837,7 @@ boolean preparefilemenu(boolean samedepth, boolean replayhut)
 
 		strcpy(&menupath[menupathindex[menudepthleft]],dent->d_name);
 
-#if defined(__linux__) || defined(__FreeBSD__)
+#ifndef _WIN32
 		if (stat(menupath, &fsstat) < 0)
 #else
 		// if we wanna follow symlinks we can check with FILE_ATTRIBUTE_REPARSE_POINT
@@ -844,7 +852,7 @@ boolean preparefilemenu(boolean samedepth, boolean replayhut)
 			UINT8 ext = EXT_FOLDER;
 			UINT8 folder;
 
-#if defined(__linux__) || defined(__FreeBSD__)
+#ifndef _WIN32
 			if (!S_ISDIR(fsstat.st_mode)) // file
 #else
 			if (!(fileattr & FILE_ATTRIBUTE_DIRECTORY))
