@@ -66,7 +66,6 @@
 // ==========================================================================
 
 #define ABS(x) ((x) < 0 ? -(x) : (x))
-#define SOFTLIGHT(llevel) HWR_ShouldUsePaletteRendering() ? ((llevel) >> LIGHTSEGSHIFT) << LIGHTSEGSHIFT : (llevel)
 
 // false if shaders have not been initialized yet, or if shaders are not available
 boolean gl_shadersavailable = false;
@@ -414,7 +413,8 @@ void HWR_Lighting(FSurfaceInfo *Surface, INT32 light_level, extracolormap_t *col
 	fade_color.rgba = (colormap != NULL) ? (UINT32)colormap->fadergba : GL_DEFAULTFOG;
 
 	// Shift the lightlevel for Palette rendering mode to replicate software´s limited 32 lightlevels
-	light_level = SOFTLIGHT(light_level);
+	if (HWR_ShouldUsePaletteRendering())
+		light_level = (light_level >> LIGHTSEGSHIFT) << LIGHTSEGSHIFT;
 
 	// Clamp the light level, since it can sometimes go out of the 0-255 range from animations
 	light_level = CLAMP(light_level, cv_secbright.value, 255);
