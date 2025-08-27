@@ -3591,27 +3591,13 @@ static void HWR_RotateSpritePolyToAim(gl_vissprite_t *spr, FOutVector *wallVerts
 	float basey, lowy;
 
 	// do interpolation
-	if (R_UsingFrameInterpolation() && !paused && R_CheckInterpDist(spr->mobj))
+	if (precip)
 	{
-		if (precip)
-		{
-			R_InterpolatePrecipMobjState((precipmobj_t *)spr->mobj, rendertimefrac, &interp);
-		}
-		else
-		{
-			R_InterpolateMobjState(spr->mobj, rendertimefrac, &interp);
-		}
+		R_InterpolatePrecipMobjState((precipmobj_t *)spr->mobj, R_CheckInterpDist(spr->mobj) ? R_GetTimeFrac(RTF_LEVEL) : FRACUNIT, &interp);
 	}
 	else
 	{
-		if (precip)
-		{
-			R_InterpolatePrecipMobjState((precipmobj_t *)spr->mobj, FRACUNIT, &interp);
-		}
-		else
-		{
-			R_InterpolateMobjState(spr->mobj, FRACUNIT, &interp);
-		}
+		R_InterpolateMobjState(spr->mobj, R_CheckInterpDist(spr->mobj) ? R_GetTimeFrac(RTF_LEVEL) : FRACUNIT, &interp);
 	}
 
 	if (!precip && P_MobjFlip(spr->mobj) == -1) // precip doesn't have eflags so they can't flip
@@ -4734,14 +4720,7 @@ static void HWR_ProjectSprite(mobj_t *thing)
 	// uncapped/interpolation
 	interpmobjstate_t interp = {};
 
-	if (R_UsingFrameInterpolation() && !paused && R_CheckInterpDist(thing))
-	{
-		R_InterpolateMobjState(thing, rendertimefrac, &interp);
-	}
-	else
-	{
-		R_InterpolateMobjState(thing, FRACUNIT, &interp);
-	}
+	R_InterpolateMobjState(thing, R_CheckInterpDist(thing) ? R_GetTimeFrac(RTF_LEVEL) : FRACUNIT, &interp);
 
 	if (interp.spritexscale < 1 || interp.spriteyscale < 1)
 		return;
@@ -5097,14 +5076,7 @@ static void HWR_ProjectPrecipitationSprite(precipmobj_t *thing)
 	interpmobjstate_t interp = {};
 
 	// do interpolation
-	if (R_UsingFrameInterpolation() && !paused && R_CheckInterpDist((mobj_t*)thing))
-	{
-		R_InterpolatePrecipMobjState(thing, rendertimefrac, &interp);
-	}
-	else
-	{
-		R_InterpolatePrecipMobjState(thing, FRACUNIT, &interp);
-	}
+	R_InterpolatePrecipMobjState(thing, R_CheckInterpDist((mobj_t*)thing) ? R_GetTimeFrac(RTF_LEVEL) : FRACUNIT, &interp);
 
 	// Visibility check by the blend mode.
 	if (thing->frame & FF_TRANSMASK)
@@ -6099,7 +6071,7 @@ static void HWR_DoPostProcessor(player_t *player)
 	{
 		// 10 by 10 grid. 2 coordinates (xy)
 		float v[SCREENVERTS][SCREENVERTS][2];
-		float disStart = (leveltime-1) + FixedToFloat(rendertimefrac);
+		float disStart = (leveltime-1) + FixedToFloat(R_GetTimeFrac(RTF_LEVEL));
 
 		UINT8 x, y;
 		INT32 WAVELENGTH;

@@ -587,7 +587,7 @@ void LUA_HUD_DrawList(huddrawlist_h list)
 {
 	size_t i;
 	size_t j = 0;
-	fixed_t frac = R_UsingFrameInterpolation() ? rendertimefrac : FRACUNIT;
+	fixed_t frac = R_GetTimeFrac(RTF_INTER);
 	fixed_t lerpx = 0, lerpy = 0;
 	drawitem_t *latchitem = NULL;
 	drawitem_t *oldlatchitem = NULL;

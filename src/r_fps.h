@@ -30,8 +30,18 @@ extern consvar_t cv_precipinterp;
 extern ps_metric_t ps_interp_frac;
 extern ps_metric_t ps_interp_lag;
 
-UINT32 R_GetFramerateCap(void);
+typedef enum
+{
+	RTF_LEVEL,
+	RTF_INTER,
+	RTF_MENU,
+} timefrac_e;
+
 boolean R_UsingFrameInterpolation(void);
+
+UINT32 R_GetFramerateCap(void);
+fixed_t R_GetTimeFrac(timefrac_e level);
+void R_SetTimeFrac(fixed_t frac);
 
 enum viewcontext_e
 {

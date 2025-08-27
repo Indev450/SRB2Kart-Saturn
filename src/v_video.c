@@ -1768,9 +1768,8 @@ void V_DrawVhsEffect(boolean rewind)
 	if (rewind)
 		V_DrawVhsEffect(false); // experimentation
 
-	fixed_t frac = R_UsingFrameInterpolation() ? renderdeltatics : FRACUNIT;
-	upbary -= frac * (vid.dupy * (rewind ? 3 : 1.8f));
-	downbary += frac * (vid.dupy * (rewind ? 2 : 1));
+	upbary -= renderdeltatics * (vid.dupy * (rewind ? 3 : 1.8f));
+	downbary += renderdeltatics * (vid.dupy * (rewind ? 2 : 1));
 
 	if (upbary < -barsize*FRACUNIT) upbary = vid.height<<FRACBITS;
 	if (downbary > vid.height<<FRACBITS) downbary = -barsize*FRACUNIT;
@@ -3583,7 +3582,7 @@ void V_DoPostProcessor(INT32 view, INT32 param)
 	{
 		INT32 y;
 		// Set disStart to a range from 0 to FINEANGLE, incrementing by 128 per tic
-		angle_t disStart = (((leveltime-1)*128) + (rendertimefrac / (FRACUNIT/128))) & FINEMASK;
+		angle_t disStart = (((leveltime-1)*128) + (R_GetTimeFrac(RTF_LEVEL) / (FRACUNIT/128))) & FINEMASK;
 		INT32 newpix;
 		INT32 sine;
 		//UINT8 *transme = transtables + ((tr_trans50-1)<<FF_TRANSSHIFT);

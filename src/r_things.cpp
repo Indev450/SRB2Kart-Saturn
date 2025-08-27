@@ -1148,6 +1148,7 @@ fixed_t R_GetShadowZ(mobj_t *thing, pslope_t **shadowslope)
 		*shadowslope = groundslope;
 
 	return groundz;
+
 #undef CHECKZ
 }
 
@@ -1241,14 +1242,7 @@ static void R_ProjectSprite(mobj_t *thing)
 	interpmobjstate_t interp = {};
 
 	// do interpolation
-	if (R_UsingFrameInterpolation() && !paused && R_CheckInterpDist(oldthing))
-	{
-		R_InterpolateMobjState(oldthing, rendertimefrac, &interp);
-	}
-	else
-	{
-		R_InterpolateMobjState(oldthing, FRACUNIT, &interp);
-	}
+	R_InterpolateMobjState(oldthing, R_CheckInterpDist(oldthing) ? R_GetTimeFrac(RTF_LEVEL) : FRACUNIT, &interp);
 
 	this_scale = interp.scale;
 
@@ -1887,14 +1881,7 @@ static void R_ProjectPrecipitationSprite(precipmobj_t *thing)
 	interpmobjstate_t interp = {};
 
 	// do interpolation
-	if (R_UsingFrameInterpolation() && !paused && R_CheckInterpDist((mobj_t*)thing))
-	{
-		R_InterpolatePrecipMobjState(thing, rendertimefrac, &interp);
-	}
-	else
-	{
-		R_InterpolatePrecipMobjState(thing, FRACUNIT, &interp);
-	}
+	R_InterpolatePrecipMobjState(thing, R_CheckInterpDist((mobj_t*)thing) ? R_GetTimeFrac(RTF_LEVEL) : FRACUNIT, &interp);
 
 	this_scale = interp.scale;
 

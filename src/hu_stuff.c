@@ -2303,7 +2303,7 @@ static void HU_DrawSongCreditsBox(void)
 	INT32 t = cursongcredit.anim;
 	INT32 bgt;
 
-	fixed_t interpoffset = FixedMul(BOXCREDITHEIGHT*dup*FRACUNIT/(TICRATE/2), R_GetHudUncap());
+	fixed_t interpoffset = FixedMul(BOXCREDITHEIGHT*dup*FRACUNIT/(TICRATE/2), R_GetTimeFrac(RTF_MENU));
 
 	if (t > BOXCREDITSLIDEIN)
 	{
