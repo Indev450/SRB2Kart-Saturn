@@ -326,7 +326,7 @@ static void D_Renderview(void)
 	if (automapactive)
 		return;
 
-	R_ApplyLevelInterpolators(rendertimefrac);
+	R_ApplyLevelInterpolators(R_GetTimeFrac(RTF_LEVEL));
 
 	if (rendermode == render_soft)
 	{
@@ -448,7 +448,7 @@ static boolean D_Display(void)
 
 		if (rendermode == render_soft && !splitscreen)
 		{
-			R_InterpolateViewRollAngle(rendertimefrac_unpaused);
+			R_InterpolateViewRollAngle(R_GetTimeFrac(RTF_LEVEL));
 			R_CheckViewMorph();
 		}
 
@@ -808,7 +808,7 @@ void D_SRB2Loop(void)
 				debugload--;
 #endif
 
-		interp = (R_UsingFrameInterpolation() && !dedicated);
+		interp = !dedicated && R_UsingFrameInterpolation();
 		doDisplay = false;
 
 		renderisnewtic = (realtics > 0 || singletics);
@@ -871,29 +871,11 @@ void D_SRB2Loop(void)
 
 			const boolean lagging = ((deltatics >= 1.0) || hu_stopped);
 
-			if (!(paused || P_AutoPause()) && !lagging)
-			{
-				rendertimefrac = g_time.timefrac;
-			}
-			else
-			{
-				rendertimefrac = FRACUNIT;
-			}
-
-			if (!lagging)
-			{
-				rendertimefrac_unpaused = g_time.timefrac;
-			}
-			else
-			{
-				rendertimefrac_unpaused = FRACUNIT;
-			}
+			R_SetTimeFrac(lagging ? FRACUNIT : g_time.timefrac);
 		}
 		else
 		{
-			renderdeltatics = realtics * FRACUNIT;
-			rendertimefrac = FRACUNIT;
-			rendertimefrac_unpaused = FRACUNIT;
+			R_SetTimeFrac(FRACUNIT);
 		}
 
 		if (interp || doDisplay)

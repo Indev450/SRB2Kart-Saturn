@@ -6732,7 +6732,7 @@ static void M_DrawConnectMenu(void)
 	{
 		const float ease = serverlistslidex / 2.f;
 		const INT32 offx = serverlistslidex > 0 ? BASEVIDWIDTH : -(BASEVIDWIDTH);
-		const INT32 x = (FLOAT_TO_FIXED(serverlistslidex) + ease * rendertimefrac) / FRACUNIT;
+		const INT32 x = (FLOAT_TO_FIXED(serverlistslidex) + ease * R_GetTimeFrac(RTF_MENU)) / FRACUNIT;
 
 		M_DrawServerLines(currentMenu->x + x - offx, oldserverlistpage);
 		M_DrawServerLines(currentMenu->x + x, serverlistpage);

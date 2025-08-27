@@ -165,7 +165,7 @@ static void R_CalculatePlaneRipple(drawspandata_t* ds, angle_t angle)
 static void R_UpdatePlaneRipple(drawspandata_t* ds)
 {
 	ds->waterofs = (leveltime & 1)*16384;
-	ds->planeripple.offset = ((leveltime-1)*140) + ((rendertimefrac*140) / FRACUNIT);
+	ds->planeripple.offset = ((leveltime-1)*140) + ((R_GetTimeFrac(RTF_LEVEL)*140) / FRACUNIT);
 }
 
 static bool R_CheckMapPlane(const char* funcname, INT32 y, INT32 x1, INT32 x2)
