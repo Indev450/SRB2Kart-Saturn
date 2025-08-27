@@ -572,7 +572,7 @@ fixed_t P_MobjFloorZ(mobj_t *mobj, sector_t *sector, sector_t *boundsec, fixed_t
 	if (sector->f_slope)
 	{
 		fixed_t testx, testy;
-		static fixed_t oldtestx = 0, oldtesty = 0;
+		static fixed_t oldtestx = INT32_MIN, oldtesty = INT32_MIN;
 		static subsector_t *subsec = NULL;
 		pslope_t *slope = sector->f_slope;
 
@@ -596,7 +596,7 @@ fixed_t P_MobjFloorZ(mobj_t *mobj, sector_t *sector, sector_t *boundsec, fixed_t
 		testx += x;
 		testy += y;
 
-		if (oldtestx != testx || oldtesty != testy)
+		if (subsec == NULL || oldtestx != testx || oldtesty != testy)
 			subsec = R_PointInSubsector(testx, testy);
 
 		oldtestx = testx;
@@ -667,7 +667,7 @@ fixed_t P_MobjCeilingZ(mobj_t *mobj, sector_t *sector, sector_t *boundsec, fixed
 	if (sector->c_slope)
 	{
 		fixed_t testx, testy;
-		static fixed_t oldtestx = 0, oldtesty = 0;
+		static fixed_t oldtestx = INT32_MIN, oldtesty = INT32_MIN;
 		static subsector_t *subsec = NULL;
 		pslope_t *slope = sector->c_slope;
 
@@ -691,7 +691,7 @@ fixed_t P_MobjCeilingZ(mobj_t *mobj, sector_t *sector, sector_t *boundsec, fixed
 		testx += x;
 		testy += y;
 
-		if (oldtestx != testx || oldtesty != testy)
+		if (subsec == NULL || oldtestx != testx || oldtesty != testy)
 			subsec = R_PointInSubsector(testx, testy);
 
 		oldtestx = testx;
