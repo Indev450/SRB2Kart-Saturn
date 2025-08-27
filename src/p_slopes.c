@@ -84,7 +84,8 @@ static void P_UpdateSlopeLightOffset(pslope_t *slope)
 		light = FixedDiv(R_PointToAngle2(0, 0, abs(slope->d.x), abs(slope->d.y)), ANGLE_90);
 	}
 
-	zMul = min(FRACUNIT, abs(slope->zdelta)*3/2); // *3/2, to make 60 degree slopes match walls.
+	const int delta = abs(slope->zdelta)*3/2; // *3/2, to make 60 degree slopes match walls.
+	zMul = min(FRACUNIT, delta);
 	contrastFixed = FixedMul(contrastFixed, zMul);
 
 	extralight = -contrastFixed + FixedMul(light, contrastFixed * 2);
@@ -123,10 +124,14 @@ static void P_ReconfigureVertexSlope(pslope_t *slope)
 	vec2.z = (slope->vertices[2]->z - slope->vertices[0]->z) << FRACBITS;
 
 	// ugggggggh fixed-point maaaaaaath
+	const int absx1 = abs(vec1.x); const int absy1 = abs(vec1.y); const int absz1 = abs(vec1.z);
+	const int absx2 = abs(vec2.x); const int absy2 = abs(vec2.y); const int absz2 = abs(vec2.z);
+
 	slope->extent = max(
-		max(max(abs(vec1.x), abs(vec1.y)), abs(vec1.z)),
-		max(max(abs(vec2.x), abs(vec2.y)), abs(vec2.z))
+		max(max(absx1, absy1), absz1),
+		max(max(absx2, absy2), absz2)
 	) >> (FRACBITS+5);
+
 	vec1.x /= slope->extent;
 	vec1.y /= slope->extent;
 	vec1.z /= slope->extent;

@@ -4960,7 +4960,9 @@ static void K_MoveHeldObjects(player_t *player)
 				mobj_t *cur = player->mo->hnext;
 				mobj_t *targ = player->mo;
 
-				if (P_IsObjectOnGround(player->mo) && player->speed > 0)
+				const boolean ponground = P_IsObjectOnGround(player->mo);
+
+				if (ponground && player->speed > 0)
 					player->kartstuff[k_bananadrag]++;
 
 				while (!P_MobjWasRemoved(cur))
@@ -5017,13 +5019,18 @@ static void K_MoveHeldObjects(player_t *player)
 							targz -= 8*(2*FRACUNIT)/7;
 					}*/
 
-					if (cv_bananajitter.value && P_IsObjectOnGround(player->mo) && player->speed > 0 && player->kartstuff[k_bananadrag] > TICRATE
-						&& M_RandomChance(min(FRACUNIT/2, FixedDiv(player->speed, K_GetKartSpeed(player, false))/2)))
+					if (cv_bananajitter.value && ponground
+						&& player->speed > 0 && player->kartstuff[k_bananadrag] > TICRATE)
 					{
-						if (leveltime & 1)
-							cur->spriteyoffset += 8*(2*FRACUNIT)/7;
-						else
-							cur->spriteyoffset -= 8*(2*FRACUNIT)/7;
+						const fixed_t halfpspeed = FixedDiv(player->speed, K_GetKartSpeed(player, false))/2;
+
+						if (M_RandomChance(min(FRACUNIT/2, halfpspeed)))
+						{
+							if (leveltime & 1)
+								cur->spriteyoffset += 8*(2*FRACUNIT)/7;
+							else
+								cur->spriteyoffset -= 8*(2*FRACUNIT)/7;
+						}
 					}
 
 					if (speed > dist)

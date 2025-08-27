@@ -622,7 +622,8 @@ static lumpinfo_t* ResGetLumpsZip (FILE* handle, UINT16* nlmp)
 	// Look for central directory end signature near end of file.
 	// Contains entry number (number of lumps), and central directory start offset.
 	fseek(handle, 0, SEEK_END);
-	if (!ResFindSignature(handle, pat_end, max(0, ftell(handle) - (22 + 65536))))
+	const long startpos = ftell(handle) - (22 + 65536);
+	if (!ResFindSignature(handle, pat_end, max(0, startpos)))
 	{
 		CONS_Alert(CONS_ERROR, "Missing central directory\n");
 		return NULL;
@@ -818,20 +819,20 @@ UINT16 W_InitFile(const char *filename, boolean local)
 
 	switch(type = ResourceFileDetect(filename))
 	{
-	case RET_SOC:
-		lumpinfo = ResGetLumpsStandalone(handle, &numlumps, "OBJCTCFG");
-		break;
-	case RET_LUA:
-		lumpinfo = ResGetLumpsStandalone(handle, &numlumps, "LUA_INIT");
-		break;
-	case RET_PK3:
-		lumpinfo = ResGetLumpsZip(handle, &numlumps);
-		break;
-	case RET_WAD:
-		lumpinfo = ResGetLumpsWad(handle, &numlumps, filename);
-		break;
-	default:
-		CONS_Alert(CONS_ERROR, "Unsupported file format\n");
+		case RET_SOC:
+			lumpinfo = ResGetLumpsStandalone(handle, &numlumps, "OBJCTCFG");
+			break;
+		case RET_LUA:
+			lumpinfo = ResGetLumpsStandalone(handle, &numlumps, "LUA_INIT");
+			break;
+		case RET_PK3:
+			lumpinfo = ResGetLumpsZip(handle, &numlumps);
+			break;
+		case RET_WAD:
+			lumpinfo = ResGetLumpsWad(handle, &numlumps, filename);
+			break;
+		default:
+			CONS_Alert(CONS_ERROR, "Unsupported file format\n");
 	}
 
 	if (lumpinfo == NULL)
@@ -884,21 +885,21 @@ UINT16 W_InitFile(const char *filename, boolean local)
 	// TODO: HACK ALERT - Load Lua & SOC stuff right here. I feel like this should be out of this place, but... Let's stick with this for now.
 	switch (wadfile->type)
 	{
-	case RET_WAD:
-		W_LoadDehackedLumps(numwadfiles - 1);
-		break;
-	case RET_PK3:
-		W_LoadDehackedLumpsPK3(numwadfiles - 1);
-		break;
-	case RET_SOC:
-		CONS_Printf(M_GetText("Loading SOC from %s\n"), wadfile->filename);
-		DEH_LoadDehackedLumpPwad(numwadfiles - 1, 0);
-		break;
-	case RET_LUA:
-		LUA_LoadLump(numwadfiles - 1, 0);
-		break;
-	default:
-		break;
+		case RET_WAD:
+			W_LoadDehackedLumps(numwadfiles - 1);
+			break;
+		case RET_PK3:
+			W_LoadDehackedLumpsPK3(numwadfiles - 1);
+			break;
+		case RET_SOC:
+			CONS_Printf(M_GetText("Loading SOC from %s\n"), wadfile->filename);
+			DEH_LoadDehackedLumpPwad(numwadfiles - 1, 0);
+			break;
+		case RET_LUA:
+			LUA_LoadLump(numwadfiles - 1, 0);
+			break;
+		default:
+			break;
 	}
 
 	if (refreshdirmenu & REFRESHDIR_GAMEDATA)
@@ -2136,7 +2137,8 @@ static int W_VerifyPK3(FILE *fp, lumpchecklist_t *checklist, boolean status)
 	fseek(fp, 0, SEEK_END);
 	file_size = ftell(fp);
 
-	if (!ResFindSignature(fp, pat_end, max(0, ftell(fp) - (22 + 65536))))
+	const long size = file_size - (22 + 65536);
+	if (!ResFindSignature(fp, pat_end, max(0, size)))
 		return true;
 
 	fseek(fp, -4, SEEK_CUR);
@@ -2409,7 +2411,8 @@ static int W_CheckPK3Contains(FILE *fp, lumpchecklist_t *checklist)
 	fseek(fp, 0, SEEK_END);
 	file_size = ftell(fp);
 
-	if (!ResFindSignature(fp, pat_end, max(0, ftell(fp) - (22 + 65536))))
+	const long startpos = file_size - (22 + 65536);
+	if (!ResFindSignature(fp, pat_end, max(0, startpos)))
 		return true;
 
 	fseek(fp, -4, SEEK_CUR);

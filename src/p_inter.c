@@ -558,7 +558,9 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 				{
 					special->momx = toucher->momx;
 					special->momy = toucher->momy;
-					special->momz = flip * max(P_AproxDistance(toucher->momx, toucher->momy) / 4, FixedMul(special->info->speed, special->scale));
+					const fixed_t dist = P_AproxDistance(toucher->momx, toucher->momy) / 4;
+					const fixed_t scale = FixedMul(special->info->speed, special->scale);
+					special->momz = flip * max(dist, scale);
 					if (flip * toucher->momz > 0)
 						special->momz += toucher->momz / 8;
 					if ((statenum_t)(special->state-states) != special->info->seestate)
