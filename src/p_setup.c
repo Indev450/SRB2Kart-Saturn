@@ -1287,7 +1287,7 @@ static void P_LoadLineDefs2(void)
 }
 
 #ifdef HWRENDER
-static void P_LoadSideColormapsGL(char *colorstr, sector_t *sec)
+static void P_LoadSideColormapsGL(char *colorstr, INT32 *rgba)
 {
 	RGBA_t color;
 	size_t j;
@@ -1309,13 +1309,13 @@ static void P_LoadSideColormapsGL(char *colorstr, sector_t *sec)
 	}
 #endif
 	color.s.alpha = 0; // reset/init the alpha, so the addition below will work correctly
-	sec->extra_colormap->rgba = color.rgba;
+	*rgba = color.rgba;
 
 	// alpha
 	if (colorstr[7])
-		sec->extra_colormap->rgba += (ALPHA2INT(colorstr[7]) << 24);
+		*rgba += (ALPHA2INT(colorstr[7]) << 24);
 	else
-		sec->extra_colormap->rgba += (25 << 24);
+		*rgba += (25 << 24);
 
 #undef ALPHA2INT
 #undef HEX2INT
@@ -1346,14 +1346,14 @@ static void P_LoadSideColormaps(mapsidedef_t *msd, side_t *sd, sector_t *sec)
 		{
 			if (docolor)
 			{
-				P_LoadSideColormapsGL(msd->toptexture, sec);
+				P_LoadSideColormapsGL(msd->toptexture, &sec->extra_colormap->rgba);
 			}
 			else
 				sec->extra_colormap->rgba = 0;
 
 			if (doalpha)
 			{
-				P_LoadSideColormapsGL(msd->bottomtexture, sec);
+				P_LoadSideColormapsGL(msd->bottomtexture, &sec->extra_colormap->fadergba);
 			}
 			else
 				sec->extra_colormap->fadergba = 0x19000000; // default alpha, (25 << 24)
