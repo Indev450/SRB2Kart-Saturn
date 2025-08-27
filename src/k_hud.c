@@ -2490,8 +2490,9 @@ static void K_DrawDialSpeedometer(fixed_t speed,
 	const UINT8 infoidx = (infoactive) ? 1 : 0;
 	patch_t* dialpatch;
 
+	const fixed_t spd = FixedDiv(speed, divisor);
 	const angle_t speedangle =
-		FixedAngle(((min(135 * FRACUNIT, FixedDiv(speed, divisor)) - (45 * FRACUNIT))));
+		FixedAngle(((min(135 * FRACUNIT, spd) - (45 * FRACUNIT))));
 
 	rot = R_GetRollAngle(speedangle);
 

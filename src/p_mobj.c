@@ -7582,7 +7582,8 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 				{
 					if (mobj->tracer->player)
 					{
-						fixed_t speeddifference = abs(topspeed - min(mobj->tracer->player->speed, K_GetKartSpeed(mobj->tracer->player, false)));
+						const fixed_t pspeed = K_GetKartSpeed(mobj->tracer->player, false);
+						fixed_t speeddifference = abs(topspeed - min(mobj->tracer->player->speed, pspeed));
 						topspeed = topspeed - FixedMul(speeddifference, FRACUNIT-FixedDiv(distaway, distbarrier));
 					}
 				}

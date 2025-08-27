@@ -163,7 +163,8 @@ UINT8 *PutFileNeeded(UINT16 firstfile)
 		nameonly(strcpy(wadfilename, wadfiles[i]->filename));
 
 		// Look below at the WRITE macros to understand what these numbers mean.
-		if (p + 1 + 4 + min(strlen(wadfilename) + 1, MAX_WADPATH) + 16 > p_start + MAXFILENEEDED)
+		const size_t len = strlen(wadfilename) + 1;
+		if (p + 1 + 4 + min(len, MAX_WADPATH) + 16 > p_start + MAXFILENEEDED)
 		{
 			// Too many files to send all at once
 			if (netbuffer->packettype == PT_MOREFILESNEEDED)
