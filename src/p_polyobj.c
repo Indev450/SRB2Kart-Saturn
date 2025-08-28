@@ -998,7 +998,7 @@ static void Polyobj_pushThing(polyobj_t *po, line_t *line, mobj_t *mo)
 	vertex_t closest;
 
 	// calculate angle of line and subtract 90 degrees to get normal
-	lineangle = R_PointToAngle2(0, 0, line->dx, line->dy) - ANGLE_90;
+	lineangle = line->angle - ANGLE_90;
 	lineangle >>= ANGLETOFINESHIFT;
 	momx = FixedMul(po->thrust, FINECOSINE(lineangle));
 	momy = FixedMul(po->thrust, FINESINE(lineangle));
@@ -1273,6 +1273,8 @@ static void Polyobj_rotateLine(line_t *ld)
 	// set dx, dy
 	ld->dx = v2->x - v1->x;
 	ld->dy = v2->y - v1->y;
+
+	ld->angle = R_PointToAngle2(0, 0, ld->dx, ld->dy);
 
 	// determine slopetype
 	ld->slopetype = !ld->dx ? ST_VERTICAL : !ld->dy ? ST_HORIZONTAL :
@@ -2875,7 +2877,7 @@ INT32 EV_DoPolyObjFlag(line_t *pfdata)
 	th->polyObjNum = pfdata->tag;
 	th->distance   = 0;
 	th->speed      = P_AproxDistance(pfdata->dx, pfdata->dy)>>FRACBITS;
-	th->angle      = R_PointToAngle2(pfdata->v1->x, pfdata->v1->y, pfdata->v2->x, pfdata->v2->y)>>ANGLETOFINESHIFT;
+	th->angle      = pfdata->angle >> ANGLETOFINESHIFT;
 	th->momx       = sides[pfdata->sidenum[0]].textureoffset>>FRACBITS;
 
 	// save current positions

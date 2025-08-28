@@ -2709,7 +2709,7 @@ static void P_HitCameraSlideLine(line_t *ld, camera_t *thiscam)
 	}
 
 	side = P_PointOnLineSide(thiscam->x, thiscam->y, ld);
-	lineangle = R_PointToAngle2(0, 0, ld->dx, ld->dy);
+	lineangle = ld->angle;
 
 	if (side == 1)
 		lineangle += ANGLE_180;
@@ -2756,7 +2756,7 @@ static void P_HitSlideLine(line_t *ld)
 
 	side = P_PointOnLineSide(slidemo->x, slidemo->y, ld);
 
-	lineangle = R_PointToAngle2(0, 0, ld->dx, ld->dy);
+	lineangle = ld->angle;
 
 	if (side == 1)
 		lineangle += ANGLE_180;
@@ -2789,7 +2789,7 @@ static void P_PlayerHitBounceLine(line_t *ld)
 	fixed_t movelen;
 
 	side = P_PointOnLineSide(slidemo->x, slidemo->y, ld);
-	lineangle = R_PointToAngle2(0, 0, ld->dx, ld->dy)-ANGLE_90;
+	lineangle = ld->angle-ANGLE_90;
 
 	if (side == 1)
 		lineangle += ANGLE_180;
@@ -2827,7 +2827,7 @@ static void P_HitBounceLine(line_t *ld)
 		return;
 	}
 
-	lineangle = R_PointToAngle2(0, 0, ld->dx, ld->dy);
+	lineangle = ld->angle;
 
 	if (lineangle >= ANGLE_180)
 		lineangle -= ANGLE_180;

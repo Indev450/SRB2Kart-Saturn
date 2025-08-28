@@ -974,7 +974,7 @@ static boolean PolyDoor(line_t *line)
 		case 480: // Polyobj_DoorSlide
 			pdd.doorType = POLY_DOOR_SLIDE;
 			pdd.speed    = sides[line->sidenum[0]].textureoffset / 8;
-			pdd.angle    = R_PointToAngle2(line->v1->x, line->v1->y, line->v2->x, line->v2->y); // angle of motion
+			pdd.angle    = line->angle; // angle of motion
 			pdd.distance = sides[line->sidenum[0]].rowoffset;
 
 			if (line->sidenum[1] != 0xffff)
@@ -1010,7 +1010,7 @@ static boolean PolyMove(line_t *line)
 
 	pmd.polyObjNum = line->tag;
 	pmd.speed      = sides[line->sidenum[0]].textureoffset / 8;
-	pmd.angle      = R_PointToAngle2(line->v1->x, line->v1->y, line->v2->x, line->v2->y);
+	pmd.angle      = line->angle;
 	pmd.distance   = sides[line->sidenum[0]].rowoffset;
 
 	pmd.overRide = (line->special == 483); // Polyobj_OR_Move
@@ -3523,7 +3523,7 @@ DoneSection2:
 				angle_t lineangle;
 				fixed_t linespeed;
 
-				lineangle = R_PointToAngle2(lines[i].v1->x, lines[i].v1->y, lines[i].v2->x, lines[i].v2->y);
+				lineangle = lines[i].angle;
 				linespeed = P_AproxDistance(lines[i].v2->x-lines[i].v1->x, lines[i].v2->y-lines[i].v1->y);
 
 				player->mo->angle = lineangle;
@@ -5471,7 +5471,7 @@ void P_SpawnSpecials(INT32 fromnetsave, boolean reloadinggamestate)
 			case 5: // Change camera info
 				sec = sides[*lines[i].sidenum].sector - sectors;
 				for (s = -1; (s = P_FindSectorFromLineTag(lines + i, s)) >= 0 ;)
-					P_AddCameraScanner(&sectors[sec], &sectors[s], R_PointToAngle2(lines[i].v2->x, lines[i].v2->y, lines[i].v1->x, lines[i].v1->y));
+					P_AddCameraScanner(&sectors[sec], &sectors[s], lines[i].angle);
 				break;
 
 #ifdef PARANOIA
@@ -5482,7 +5482,7 @@ void P_SpawnSpecials(INT32 fromnetsave, boolean reloadinggamestate)
 			case 7: // Flat alignment - redone by toast
 				if ((lines[i].flags & (ML_NOSONIC|ML_NOTAILS)) != (ML_NOSONIC|ML_NOTAILS)) // If you can do something...
 				{
-					angle_t flatangle = InvAngle(R_PointToAngle2(lines[i].v1->x, lines[i].v1->y, lines[i].v2->x, lines[i].v2->y));
+					angle_t flatangle = InvAngle(lines[i].angle);
 					fixed_t xoffs;
 					fixed_t yoffs;
 
