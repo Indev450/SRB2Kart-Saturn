@@ -225,8 +225,7 @@ boolean P_DoSpring(mobj_t *spring, mobj_t *object)
 			{
 				for (UINT8 j = 0; j <= splitscreen; ++j)
 				{
-					INT32 id = (j == 0 ? consoleplayer : displayplayers[j]);
-					if (object->player == &players[id])
+					if (object->player == P_GetLocalPlayerForNum(j))
 					{
 						localangle[j] = spring->angle;
 						break;
