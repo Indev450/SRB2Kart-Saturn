@@ -1088,7 +1088,7 @@ static void R_SetupCommonFrame(player_t * player, sector_t * sector)
 	else
 		newview->sector = R_PointInSubsectorFast(newview->x, newview->y)->sector;
 
-	R_InterpolateView(R_GetTimeFrac(RTF_LEVEL), false);
+	R_InterpolateView(R_GetTimeFrac(RTF_CAMERA), false);
 }
 
 static void R_SetupAimingFrame(player_t *player, camera_t *thiscam)
