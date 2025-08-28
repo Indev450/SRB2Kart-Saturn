@@ -3537,9 +3537,7 @@ DoneSection2:
 				{
 					for (UINT8 j = 0; j <= splitscreen; ++j)
 					{
-						INT32 id = (j == 0 ? consoleplayer : displayplayers[j]);
-
-						if (player == &players[id])
+						if (player == P_GetLocalPlayerForNum(j))
 						{
 							localangle[j] = player->mo->angle;
 							break;
@@ -5483,6 +5481,7 @@ void P_SpawnSpecials(INT32 fromnetsave, boolean reloadinggamestate)
 				if ((lines[i].flags & (ML_NOSONIC|ML_NOTAILS)) != (ML_NOSONIC|ML_NOTAILS)) // If you can do something...
 				{
 					angle_t flatangle = InvAngle(lines[i].angle);
+
 					fixed_t xoffs;
 					fixed_t yoffs;
 
@@ -7482,8 +7481,7 @@ void T_Pusher(pusher_t *p)
 				{
 					for (UINT8 i = 0; i <= splitscreen; ++i)
 					{
-						INT32 id = (i == 0 ? consoleplayer : displayplayers[i]);
-						if (thing->player == &players[id])
+						if (thing->player == P_GetLocalPlayerForNum(i))
 						{
 							if (thing->angle - localangle[i] > ANGLE_180)
 								localangle[i] -= (localangle[i] - thing->angle) / 8;
