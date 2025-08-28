@@ -1982,7 +1982,7 @@ void P_CheckHoopPosition(mobj_t *hoopthing, fixed_t x, fixed_t y, fixed_t z, fix
 //
 // P_CheckCameraPosition
 //
-boolean P_CheckCameraPosition(fixed_t x, fixed_t y, camera_t *thiscam)
+static boolean P_CheckCameraPosition(fixed_t x, fixed_t y, camera_t *thiscam)
 {
 	INT32 xl, xh, yl, yh, bx, by;
 	sector_t *newsec;
