@@ -113,11 +113,11 @@ boolean R_UsingFrameInterpolation(void)
 // just for the sake of the intermission background...
 fixed_t R_GetTimeFrac(timefrac_e level)
 {
-	// level interp. pauses if level isn't ticking
-	if (level <= RTF_LEVEL && gamestate != GS_LEVEL) // !G_GamestateUsesLevel()
+	// level interp. pauses if level isn't active
+	if ((level <= RTF_LEVEL || level == RTF_CAMERA) && gamestate != GS_LEVEL) // !G_GamestateUsesLevel()
 		return FRACUNIT;
 
-	// intermission interp. keeps interp even if level isn't ticking, but pauses if game is paused
+	// intermission interp. pauses if game is paused
 	if (level <= RTF_INTER && (paused || P_AutoPause()))
 		return FRACUNIT;
 

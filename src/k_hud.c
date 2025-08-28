@@ -1073,7 +1073,7 @@ static void K_initKartHUD(void)
 
 	// K_GetScreenCoords needs the right view* variables
 	R_SetViewContext(stplyrnum);
-	R_InterpolateView(R_GetTimeFrac(RTF_LEVEL), !cv_uncappedhud.value);
+	R_InterpolateView(R_GetTimeFrac(RTF_CAMERA), !cv_uncappedhud.value);
 }
 
 UINT8 K_GetHudColor(void)

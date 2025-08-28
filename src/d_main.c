@@ -448,7 +448,7 @@ static boolean D_Display(void)
 
 		if (rendermode == render_soft && !splitscreen)
 		{
-			R_InterpolateViewRollAngle(R_GetTimeFrac(RTF_LEVEL));
+			R_InterpolateViewRollAngle(R_GetTimeFrac(RTF_CAMERA));
 			R_CheckViewMorph();
 		}
 
