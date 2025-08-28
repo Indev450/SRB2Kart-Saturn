@@ -3752,7 +3752,7 @@ I_mutex replayquerymutex;
 #endif/*HAVE_THREADS*/
 
 
-#define MAXREPLAYQUERY 40
+#define MAXREPLAYQUERY 37
 static char replayqueryinput_buffer[MAXREPLAYQUERY+1]; // The input typed
 static textinput_t replayqueryinput;
 
@@ -4454,7 +4454,7 @@ static void M_DrawReplayHut(void)
 		DrawReplayHutReplayInfo();
 	}
 
-	x -= 40;
+	x = 4;
 
 	// Draw search query
 	M_DrawTextBoxFlags(x, 200 - 22, MAXREPLAYQUERY, 1, V_SNAPTOBOTTOM);
