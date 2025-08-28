@@ -1147,6 +1147,8 @@ static void P_SetupLines(void)
 		ld->dx = v2->x - v1->x;
 		ld->dy = v2->y - v1->y;
 
+		ld->angle = R_PointToAngle2(0, 0, ld->dx, ld->dy);
+
 		ld->alpha = FRACUNIT;
 		ld->blendmode = 0;
 
