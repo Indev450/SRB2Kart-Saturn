@@ -1535,12 +1535,12 @@ static boolean CL_SendJoin(void)
 	netbuffer->u.clientcfg.version = VERSION;
 	netbuffer->u.clientcfg.subversion = SUBVERSION;
 	strncpy(netbuffer->u.clientcfg.application, SRB2APPLICATION,
-			sizeof netbuffer->u.clientcfg.application);
+			sizeof(netbuffer->u.clientcfg.application));
 #ifdef SATURNJOIN
 	netbuffer->u.clientcfg.issaturn = ISSATURN;
 #endif
 
-	return HSendPacket(servernode, false, 0, sizeof (clientconfig_pak));
+	return HSendPacket(servernode, false, 0, sizeof(clientconfig_pak));
 }
 
 static void SV_SendServerInfo(INT32 node, tic_t servertime)
@@ -4706,6 +4706,10 @@ static void HandleConnect(SINT8 node)
 		if (playernode[i] != UINT8_MAX) // We use this to count players because it is affected by SV_AddWaitingPlayers when more than one client joins on the same tic, unlike playeringame and D_NumPlayers. UINT8_MAX denotes no node for that player
 			connectedplayers++;
 
+#ifdef SATURNJOIN
+	const boolean issaturn = (((doomcom->datalength-BASEPACKETSIZE) == sizeof(clientconfig_pak)) && netbuffer->u.clientcfg.issaturn == ISSATURN); // Check the packet lenght to skip potential garbo data!
+#endif
+
 	if (bannednode && bannednode[node].banid != SIZE_MAX)
 	{
 		const char *reason = NULL;
@@ -4759,7 +4763,7 @@ static void HandleConnect(SINT8 node)
 		SV_SendRefuse(node, va(M_GetText("Different SRB2Kart versions cannot\nplay a netgame!\n(server version %d.%d)"), VERSION, SUBVERSION));
 	}
 #ifdef SATURNJOIN
-	else if ((!cv_allownewplayer.value && node && netbuffer->u.clientcfg.issaturn != ISSATURN) || (!cv_allownewsaturnplayer.value && node && netbuffer->u.clientcfg.issaturn == ISSATURN))
+	else if (((!cv_allownewplayer.value && !issaturn) || (!cv_allownewsaturnplayer.value && issaturn)) && node)
 #else
 	else if (!cv_allownewplayer.value && node)
 #endif
@@ -4787,16 +4791,15 @@ static void HandleConnect(SINT8 node)
 #ifndef NONET
 		boolean newnode = false;
 #endif
-
 		// client authorised to join
 		nodewaiting[node] = (UINT8)(netbuffer->u.clientcfg.localplayers - playerpernode[node]);
+
 		if (!nodeingame[node])
 		{
 			gamestate_t backupstate = gamestate;
 #ifndef NONET
 			newnode = true;
 #endif
-
 			SV_AddNode(node);
 
 			/// \note Wait what???
@@ -4818,12 +4821,14 @@ static void HandleConnect(SINT8 node)
 				/// \todo fix this !!!
 				return; // restart the while
 			}
+
 			SV_SendServerInfo(node, 0); // Dunno if 0 time is good idea
 			//if (gamestate != GS_LEVEL) // GS_INTERMISSION, etc?
 			//	SV_SendPlayerConfigs(node); // send bare minimum player info
 			G_SetGamestate(backupstate);
 			DEBFILE("new node joined\n");
 		}
+
 #ifdef JOININGAME
 		if (nodewaiting[node])
 		{
@@ -4832,6 +4837,7 @@ static void HandleConnect(SINT8 node)
 				SV_SendSaveGame(node, false); // send a complete game state
 				DEBFILE("send savegame\n");
 			}
+
 			SV_AddWaitingPlayers();
 		}
 #else
@@ -5566,7 +5572,6 @@ static void PT_TextCmd(INT32 netconsole, SINT8 node)
 
 static void PT_ClientQuit(INT32 netconsole, SINT8 node)
 {
-
 	if (client)
 		return;
 
@@ -6982,6 +6987,7 @@ void NetUpdate(void)
 #endif
 		CON_Ticker();
 	}
+
 	SV_FileSendTicker();
 }
 
