@@ -2967,6 +2967,9 @@ boolean R_CheckInterpDist(mobj_t *thing)
 	if (!cv_maxinterpdist.value)
 		return true;
 
+	if (!R_UsingFrameInterpolation())
+		return false;
+
 	const INT32 dist = R_QuickCamDist(thing->x, thing->y);
 
 	return (dist < cv_maxinterpdist.value);

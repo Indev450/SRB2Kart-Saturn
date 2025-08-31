@@ -140,7 +140,6 @@ static tic_t last_view_update;
 static int oldview_invalid[MAXSPLITSCREENPLAYERS] = {0, 0, 0, 0};
 viewvars_t *newview = &pview_new[0];
 
-
 enum viewcontext_e viewcontext = VIEWCONTEXT_PLAYER1;
 
 static levelinterpolator_t **levelinterpolators;
