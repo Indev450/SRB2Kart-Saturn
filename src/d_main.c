@@ -875,6 +875,7 @@ void D_SRB2Loop(void)
 		}
 		else
 		{
+			renderdeltatics = realtics * FRACUNIT;
 			R_SetTimeFrac(FRACUNIT);
 		}
 
