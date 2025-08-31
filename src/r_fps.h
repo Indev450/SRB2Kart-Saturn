@@ -44,6 +44,8 @@ UINT32 R_GetFramerateCap(void);
 fixed_t R_GetTimeFrac(timefrac_e level);
 void R_SetTimeFrac(fixed_t frac);
 
+#define R_GetMobjTimeFrac(mobj) (R_CheckInterpDist(mobj) ? R_GetTimeFrac(RTF_LEVEL) : FRACUNIT)
+
 enum viewcontext_e
 {
 	VIEWCONTEXT_PLAYER1 = 0,

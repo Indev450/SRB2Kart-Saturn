@@ -1190,7 +1190,7 @@ void HWR_DrawMD2(gl_vissprite_t *spr)
 		spriteinfo_t *sprinfo;
 		interpmobjstate_t interp;
 
-		R_InterpolateMobjState(spr->mobj, R_CheckInterpDist(spr->mobj) ? R_GetTimeFrac(RTF_LEVEL) : FRACUNIT, &interp);
+		R_InterpolateMobjState(spr->mobj, R_GetMobjTimeFrac(spr->mobj), &interp);
 
 		// Apparently people don't like jump frames like that, so back it goes
 		//if (tics > durs)

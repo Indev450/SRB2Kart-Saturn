@@ -3593,11 +3593,11 @@ static void HWR_RotateSpritePolyToAim(gl_vissprite_t *spr, FOutVector *wallVerts
 	// do interpolation
 	if (precip)
 	{
-		R_InterpolatePrecipMobjState((precipmobj_t *)spr->mobj, R_CheckInterpDist(spr->mobj) ? R_GetTimeFrac(RTF_LEVEL) : FRACUNIT, &interp);
+		R_InterpolatePrecipMobjState((precipmobj_t *)spr->mobj, R_GetMobjTimeFrac(spr->mobj), &interp);
 	}
 	else
 	{
-		R_InterpolateMobjState(spr->mobj, R_CheckInterpDist(spr->mobj) ? R_GetTimeFrac(RTF_LEVEL) : FRACUNIT, &interp);
+		R_InterpolateMobjState(spr->mobj, R_GetMobjTimeFrac(spr->mobj), &interp);
 	}
 
 	if (!precip && P_MobjFlip(spr->mobj) == -1) // precip doesn't have eflags so they can't flip
@@ -4720,7 +4720,7 @@ static void HWR_ProjectSprite(mobj_t *thing)
 	// uncapped/interpolation
 	interpmobjstate_t interp = {};
 
-	R_InterpolateMobjState(thing, R_CheckInterpDist(thing) ? R_GetTimeFrac(RTF_LEVEL) : FRACUNIT, &interp);
+	R_InterpolateMobjState(thing, R_GetMobjTimeFrac(thing), &interp);
 
 	if (interp.spritexscale < 1 || interp.spriteyscale < 1)
 		return;
@@ -5076,7 +5076,7 @@ static void HWR_ProjectPrecipitationSprite(precipmobj_t *thing)
 	interpmobjstate_t interp = {};
 
 	// do interpolation
-	R_InterpolatePrecipMobjState(thing, R_CheckInterpDist((mobj_t*)thing) ? R_GetTimeFrac(RTF_LEVEL) : FRACUNIT, &interp);
+	R_InterpolatePrecipMobjState(thing, R_GetMobjTimeFrac((mobj_t*)thing), &interp);
 
 	// Visibility check by the blend mode.
 	if (thing->frame & FF_TRANSMASK)
