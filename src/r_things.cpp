@@ -1242,7 +1242,7 @@ static void R_ProjectSprite(mobj_t *thing)
 	interpmobjstate_t interp = {};
 
 	// do interpolation
-	R_InterpolateMobjState(oldthing, R_CheckInterpDist(oldthing) ? R_GetTimeFrac(RTF_LEVEL) : FRACUNIT, &interp);
+	R_InterpolateMobjState(oldthing, R_GetMobjTimeFrac(oldthing), &interp);
 
 	this_scale = interp.scale;
 
@@ -1873,7 +1873,7 @@ static void R_ProjectPrecipitationSprite(precipmobj_t *thing)
 	interpmobjstate_t interp = {};
 
 	// do interpolation
-	R_InterpolatePrecipMobjState(thing, R_CheckInterpDist((mobj_t*)thing) ? R_GetTimeFrac(RTF_LEVEL) : FRACUNIT, &interp);
+	R_InterpolatePrecipMobjState(thing, R_GetMobjTimeFrac((mobj_t*)thing), &interp);
 
 	this_scale = interp.scale;
 
