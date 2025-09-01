@@ -5594,29 +5594,28 @@ static void PT_Resynched(SINT8 node)
 static void PT_ServerTics(SINT8 node)
 {
 	tic_t realend, realstart;
-	UINT8 *pak, *txtpak = NULL, numtxtpak;
 
 	// Only accept PT_SERVERTICS from the server.
 	if (!FromServer(node, "PT_SERVERTICS"))
 		return;
 
 	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
+	servertics_pak *packet = &netbuffer->u.serverpak;
 
-	realstart = ExpandTics(netbuffer->u.serverpak.starttic, maketic);
-	realend = realstart + netbuffer->u.serverpak.numtics;
-
-	if (!txtpak)
-		txtpak = (UINT8 *)&netbuffer->u.serverpak.cmds[netbuffer->u.serverpak.numslots
-		* netbuffer->u.serverpak.numtics];
+	realstart = ExpandTics(packet->starttic, maketic);
+	realend = realstart + packet->numtics;
 
 	if (realend > gametic + CLIENTBACKUPTICS)
 		realend = gametic + CLIENTBACKUPTICS;
 	cl_packetmissed = realstart > neededtic;
 
+	UINT8 *pak = (UINT8 *)&packet->cmds;
+	UINT8 *txtpak = (UINT8 *)&packet->cmds[packet->numslots * packet->numtics];
+
 	if (realstart <= neededtic && realend > neededtic)
 	{
 		tic_t i, j;
-		pak = (UINT8 *)&netbuffer->u.serverpak.cmds;
+		pak = (UINT8 *)&packet->cmds;
 
 		for (i = realstart; i < realend; i++)
 		{
@@ -5625,10 +5624,10 @@ static void PT_ServerTics(SINT8 node)
 
 			// copy the tics
 			pak = G_ScpyTiccmd(netcmds[i%BACKUPTICS], pak,
-							   netbuffer->u.serverpak.numslots*sizeof (ticcmd_t));
+							   packet->numslots*sizeof (ticcmd_t));
 
 			// copy the textcmds
-			numtxtpak = *txtpak++;
+			UINT8 numtxtpak = *txtpak++;
 
 			for (j = 0; j < numtxtpak; j++)
 			{
@@ -5652,11 +5651,6 @@ static void PT_ServerTics(SINT8 node)
 	else
 	{
 		DEBFILE(va("frame not in bound: %u (bounds are from %u to %u)\n", neededtic, realstart, realend));
-		/*if (realend < neededtic - 2 * TICRATE || neededtic + 2 * TICRATE < realstart)
-		 *	I_Error("Received an out of order PT_SERVERTICS packet!\n"
-		 *			"Got tics %d-%d, needed tic %d\n\n"
-		 *			"Please report this crash on the Master Board,\n"
-		 *			"IRC or Discord so it can be fixed.\n", (INT32)realstart, (INT32)realend, (INT32)neededtic);*/
 	}
 }
 
