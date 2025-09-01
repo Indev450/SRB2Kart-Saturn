@@ -1497,7 +1497,6 @@ static boolean CL_SendJoin(void)
 	else if (botingame)
 		localplayers++;
 
-	neededtic = 0;
 	netbuffer->u.clientcfg.localplayers = localplayers;
 	netbuffer->u.clientcfg._255 = 255;
 	netbuffer->u.clientcfg.packetversion = PACKETVERSION;
@@ -5595,55 +5594,70 @@ static void PT_Resynched(SINT8 node)
 static void PT_ServerTics(SINT8 node)
 {
 	tic_t realend, realstart;
+	UINT8 *pak, *txtpak = NULL, numtxtpak;
+
 	// Only accept PT_SERVERTICS from the server.
 	if (!FromServer(node, "PT_SERVERTICS"))
 		return;
 
 	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
-	servertics_pak *packet = &netbuffer->u.serverpak;
 
-	realstart = ExpandTics(packet->starttic, maketic);
-	realend = realstart + packet->numtics;
+	realstart = ExpandTics(netbuffer->u.serverpak.starttic, maketic);
+	realend = realstart + netbuffer->u.serverpak.numtics;
+
+	if (!txtpak)
+		txtpak = (UINT8 *)&netbuffer->u.serverpak.cmds[netbuffer->u.serverpak.numslots
+		* netbuffer->u.serverpak.numtics];
 
 	if (realend > gametic + CLIENTBACKUPTICS)
 		realend = gametic + CLIENTBACKUPTICS;
 	cl_packetmissed = realstart > neededtic;
 
-	UINT8 *pak = (UINT8 *)&packet->cmds;
-	UINT8 *txtpak = (UINT8 *)&packet->cmds[packet->numslots * packet->numtics];
-
-	tic_t j, i;
-
-	for (i = realstart; i < realend; i++)
+	if (realstart <= neededtic && realend > neededtic)
 	{
-		// clear first
-		D_Clearticcmd(i);
+		tic_t i, j;
+		pak = (UINT8 *)&netbuffer->u.serverpak.cmds;
 
-		// copy the tics
-		pak = G_ScpyTiccmd(netcmds[i%BACKUPTICS], pak,
-						   packet->numslots*sizeof (ticcmd_t));
-
-		// copy the textcmds
-		UINT8 numtxtpak = *txtpak++;
-
-		for (j = 0; j < numtxtpak; j++)
+		for (i = realstart; i < realend; i++)
 		{
-			INT32 playernum = *txtpak++; // playernum
-			const size_t txtsize = txtpak[0]+1;
+			// clear first
+			D_Clearticcmd(i);
 
-			if (playernum < 0 || playernum >= MAXPLAYERS)
+			// copy the tics
+			pak = G_ScpyTiccmd(netcmds[i%BACKUPTICS], pak,
+							   netbuffer->u.serverpak.numslots*sizeof (ticcmd_t));
+
+			// copy the textcmds
+			numtxtpak = *txtpak++;
+
+			for (j = 0; j < numtxtpak; j++)
 			{
-				CONS_Alert(CONS_WARNING, "Got bogus NetXCmd packet targetting player %d\n", playernum);
-				return;
+				INT32 playernum = *txtpak++; // playernum
+				const size_t txtsize = txtpak[0]+1;
+
+				if (playernum < 0 || playernum >= MAXPLAYERS)
+				{
+					CONS_Alert(CONS_WARNING, "Got bogus NetXCmd packet targetting player %d\n", playernum);
+					return;
+				}
+
+				if (i >= gametic) // Don't copy old net commands
+					M_Memcpy(D_GetTextcmd(i, playernum), txtpak, txtsize);
+				txtpak += txtsize;
 			}
-
-			if (i >= gametic) // Don't copy old net commands
-				M_Memcpy(D_GetTextcmd(i, playernum), txtpak, txtsize);
-			txtpak += txtsize;
 		}
-	}
 
-	neededtic = realend;
+		neededtic = realend;
+	}
+	else
+	{
+		DEBFILE(va("frame not in bound: %u (bounds are from %u to %u)\n", neededtic, realstart, realend));
+		/*if (realend < neededtic - 2 * TICRATE || neededtic + 2 * TICRATE < realstart)
+		 *	I_Error("Received an out of order PT_SERVERTICS packet!\n"
+		 *			"Got tics %d-%d, needed tic %d\n\n"
+		 *			"Please report this crash on the Master Board,\n"
+		 *			"IRC or Discord so it can be fixed.\n", (INT32)realstart, (INT32)realend, (INT32)neededtic);*/
+	}
 }
 
 static void PT_Resynching(SINT8 node)
