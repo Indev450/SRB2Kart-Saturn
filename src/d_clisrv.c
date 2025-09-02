@@ -1359,6 +1359,7 @@ static inline void CL_DrawConnectionStatus(void)
 				const char *map = va("%sP", serverlist[joinnode].info.mapname);
 				patch_t *current_map = W_LumpExists(map) ? W_CachePatchName(map, PU_CACHE) : NULL;
 
+				// check first if we may have the map icon loaded already
 				if (current_map != NULL)
 					V_DrawSmallScaledPatch(10, 18, 0, current_map);
 				else if (map_icon_data != NULL && map_icon_request_count <= 5)
