@@ -25,6 +25,9 @@
 
 #include "screen.h" // MAXVIDWIDTH, MAXVIDHEIGHT
 
+#define MAP_ICON_WIDTH 160
+#define MAP_ICON_HEIGHT 100
+
 //
 // ClipWallSegment
 // Clips the given range of columns

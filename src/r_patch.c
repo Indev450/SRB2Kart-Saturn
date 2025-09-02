@@ -451,6 +451,114 @@ void *Patch_CreateGL(patch_t *patch)
 }
 #endif // HWRENDER
 
+//
+// R_MaskedFlatToPatch
+//
+// Convert raw pixels to a patch.
+//
+void *R_PixelsToPatch(UINT8 *raw, INT16 width, INT16 height, INT16 leftoffset, INT16 topoffset, size_t *destsize)
+{
+	INT16 x, y;
+	UINT8 *img;
+	UINT8 *imgptr = imgbuf;
+	UINT8 *colpointers, *startofspan;
+	size_t size = 0;
+
+	if (!raw)
+		return NULL;
+
+	// Write image size and offset
+	WRITEINT16(imgptr, width);
+	WRITEINT16(imgptr, height);
+	WRITEINT16(imgptr, leftoffset);
+	WRITEINT16(imgptr, topoffset);
+
+	// Leave placeholder to column pointers
+	colpointers = imgptr;
+	imgptr += width*4;
+
+	// Write columns
+	for (x = 0; x < width; x++)
+	{
+		int lastStartY = 0;
+		int spanSize = 0;
+		startofspan = NULL;
+
+		// Write column pointer
+		WRITEINT32(colpointers, imgptr - imgbuf);
+
+		// Write pixels
+		for (y = 0; y < height; y++)
+		{
+			UINT8 pixel = raw[((y * width) + x)];
+
+			// Start new column if we need to
+			if (!startofspan || spanSize == 255)
+			{
+				int writeY = y;
+
+				// If we reached the span size limit, finish the previous span
+				if (startofspan)
+					WRITEUINT8(imgptr, 0);
+
+				if (y > 254)
+				{
+					// Make sure we're aligned to 254
+					if (lastStartY < 254)
+					{
+						WRITEUINT8(imgptr, 254);
+						WRITEUINT8(imgptr, 0);
+						imgptr += 2;
+						lastStartY = 254;
+					}
+
+					// Write stopgap empty spans if needed
+					writeY = y - lastStartY;
+
+					while (writeY > 254)
+					{
+						WRITEUINT8(imgptr, 254);
+						WRITEUINT8(imgptr, 0);
+						imgptr += 2;
+						writeY -= 254;
+					}
+				}
+
+				startofspan = imgptr;
+				WRITEUINT8(imgptr, writeY);
+				imgptr += 2;
+				spanSize = 0;
+
+				lastStartY = y;
+			}
+
+			// Write the pixel
+			WRITEUINT8(imgptr, pixel);
+			spanSize++;
+			startofspan[1] = spanSize;
+		}
+
+		if (startofspan)
+			WRITEUINT8(imgptr, 0);
+
+		WRITEUINT8(imgptr, 0xFF);
+	}
+
+	size = imgptr-imgbuf;
+	img = Z_Malloc(size, PU_STATIC, NULL);
+	memcpy(img, imgbuf, size);
+
+	if (destsize != NULL)
+		*destsize = size;
+
+	patch_t *converted = Patch_Create((softwarepatch_t *)img, size, NULL);
+#ifdef HWRENDER
+	Patch_CreateGL(converted);
+#endif
+	Z_Free(img);
+
+	return converted;
+}
 
 //
 // R_MaskedFlatToPatch
@@ -614,4 +722,40 @@ UINT16 R_GetPatchPixel(patch_t *patch, INT32 x, INT32 y, boolean flip)
 	}
 
 	return 0xFF00;
+}
+
+void R_PatchToPixels(patch_t *patch, UINT8 *dst)
+{
+	for (INT32 x = 0; x < patch->width; ++x)
+	{
+		INT32 y = 0;
+		INT32 prevdelta = -1;
+
+		column_t *column = (column_t *)((UINT8 *)patch->columns + (patch->columnofs[x]));
+
+		while (column->topdelta != 0xff)
+		{
+			INT32 topdelta = column->topdelta;
+
+			if (topdelta <= prevdelta)
+				topdelta += prevdelta;
+
+			prevdelta = topdelta;
+
+			for (; y-topdelta < column->length; ++y)
+			{
+				UINT8 pixel = 0;
+
+				if (y >= topdelta)
+				{
+					UINT8 *source = (UINT8*)(column) + 3;
+					pixel = source[y-topdelta];
+				}
+
+				dst[(y*patch->width) + x] = pixel;
+			}
+
+			column = (column_t *)((UINT8 *)column + column->length + 4);
+		}
+	}
 }
