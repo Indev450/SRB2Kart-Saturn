@@ -726,7 +726,9 @@ UINT16 R_GetPatchPixel(patch_t *patch, INT32 x, INT32 y, boolean flip)
 
 void R_PatchToPixels(patch_t *patch, UINT8 *dst)
 {
-	for (INT32 x = 0; x < patch->width; ++x)
+	const INT16 width = patch->width;
+
+	for (INT32 x = 0; x < width; ++x)
 	{
 		INT32 y = 0;
 		INT32 prevdelta = -1;
@@ -752,7 +754,7 @@ void R_PatchToPixels(patch_t *patch, UINT8 *dst)
 					pixel = source[y-topdelta];
 				}
 
-				dst[(y*patch->width) + x] = pixel;
+				dst[(y*width) + x] = pixel;
 			}
 
 			column = (column_t *)((UINT8 *)column + column->length + 4);
