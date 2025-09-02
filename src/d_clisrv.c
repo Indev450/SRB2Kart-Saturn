@@ -96,6 +96,7 @@ static UINT8 map_icon_needed; // amount of fragments we need to get the full dat
 static INT32 map_icon_read; // amount of bytes we have read
 static UINT32 map_icon_missing; // bitmask of fragments we haven't received yet
 static tic_t map_icon_last_request; // last time we sent an icon request, to avoid flood
+static int map_icon_request_count; // current count of icon requests sent
 static UINT8 *map_icon_data;
 static patch_t *map_icon;
 
@@ -1191,6 +1192,10 @@ static inline void CL_DrawConnectionStatus(void)
 	if (!menuactive) // menu already draws its own fade
 		V_DrawFadeScreen(0xFF00, 16); // force default
 
+	// reset the counter for mapicon
+	if (cl_mode != CL_VIEWSERVER)
+		map_icon_request_count = 0;
+
 	if (cl_mode != CL_DOWNLOADFILES && cl_mode != CL_LOADFILES && cl_mode != CL_CHECKFILES && cl_mode != CL_VIEWSERVER
 #ifdef HAVE_CURL
 	&& cl_mode != CL_DOWNLOADHTTPFILES
@@ -1324,7 +1329,7 @@ static inline void CL_DrawConnectionStatus(void)
 
 				if (current_map != NULL)
 					V_DrawSmallScaledPatch(10, 18, 0, current_map);
-				else if (map_icon_data != NULL)
+				else if (map_icon_data != NULL && map_icon_request_count <= 5)
 				{
 					if (I_GetTime() - map_icon_last_request > MAP_ICON_REQUEST_FREQUENCY)
 					{
@@ -1334,6 +1339,7 @@ static inline void CL_DrawConnectionStatus(void)
 						// failed to retrieve map icon, request it again
 						HSendPacket(servernode, false, 0, 0);
 						map_icon_last_request = I_GetTime();
+						map_icon_request_count++;
 					}
 
 					V_DrawFill(10, 18, MAP_ICON_WIDTH / 2, MAP_ICON_HEIGHT / 2, 31);
@@ -5054,6 +5060,7 @@ static void PT_MapIcon(void)
 	UINT8 *icondata = netbuffer->u.mapicondata;
 
 	map_icon_last_request = I_GetTime();
+	map_icon_request_count = 0;
 
 	UINT8 index = READUINT8(icondata);
 	if (index & 0x80)
