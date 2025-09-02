@@ -131,24 +131,11 @@ void P_ClosestPointOnLine3D(fixed_t x, fixed_t y, fixed_t z, line_t *line, verte
 }
 
 //
-// P_PointOnLineSide
-// Returns 0 or 1
-//
-INT32 PUREFUNC P_PointOnLineSide(fixed_t x, fixed_t y, const line_t *line)
-{
-	return
-	!line->dx ? x <= line->v1->x ? line->dy > 0 : line->dy < 0 :
-	!line->dy ? y <= line->v1->y ? line->dx < 0 : line->dx > 0 :
-	FixedMul(y-line->v1->y, line->dx>>FRACBITS) >=
-	FixedMul(line->dy>>FRACBITS, x-line->v1->x);
-}
-
-//
 // P_BoxOnLineSide
 // Considers the line to be infinite
 // Returns side 0 or 1, -1 if box crosses the line.
 //
-INT32 PUREFUNC P_BoxOnLineSide(fixed_t *tmbox, const line_t *ld)
+PUREFUNC INT32 P_BoxOnLineSide(fixed_t *tmbox, const line_t *ld)
 {
 	INT32 p1, p2;
 
@@ -198,7 +185,7 @@ INT32 PUREFUNC P_BoxOnLineSide(fixed_t *tmbox, const line_t *ld)
 // P_PointOnDivlineSide
 // Returns 0 or 1.
 //
-static INT32 PUREFUNC P_PointOnDivlineSide(fixed_t x, fixed_t y, divline_t *line)
+FUNCINLINE static ATTRINLINE PUREFUNC INT32 P_PointOnDivlineSide(fixed_t x, fixed_t y, divline_t *line)
 {
 	return
 	!line->dx ? x <= line->x ? line->dy > 0 : line->dy < 0 :
@@ -206,7 +193,6 @@ static INT32 PUREFUNC P_PointOnDivlineSide(fixed_t x, fixed_t y, divline_t *line
 	(line->dy^line->dx^(x -= line->x)^(y -= line->y)) < 0 ? (line->dy^x) < 0 :
 	FixedMul(y>>8, line->dx>>8) >= FixedMul(line->dy>>8, x>>8);
 }
-
 
 //
 // P_MakeDivline
@@ -224,7 +210,7 @@ void P_MakeDivline(line_t *li, divline_t *dl)
 // Returns the fractional intercept point along the first divline.
 // This is only called by the addthings and addlines traversers.
 //
-fixed_t PUREFUNC P_InterceptVector(divline_t *v2, divline_t *v1)
+PUREFUNC fixed_t P_InterceptVector(divline_t *v2, divline_t *v1)
 {
 	fixed_t frac, num, den;
 
