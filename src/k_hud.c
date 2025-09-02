@@ -3087,9 +3087,11 @@ static void K_drawNameTags(void)
 		else
 			flipped = players[i].mo->eflags & MFE_VERTICALFLIP;
 
+#ifdef HWRENDER
 		// Needs extra offset. Not perfect but this will do for now
 		if (rendermode == render_opengl && !cv_glshearing.value && cv_smallnametags.value)
 			namey -= dup*6;
+#endif
 
 		if (cv_smallnametags.value || !nametaggfx)
 		{
