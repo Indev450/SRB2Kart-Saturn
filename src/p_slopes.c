@@ -623,7 +623,7 @@ void P_SpawnSlope_Line(int linenum)
 		}
 	}
 
-	if(!line->tag)
+	if (!line->tag)
 		return;
 }
 
