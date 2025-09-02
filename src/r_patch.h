@@ -57,6 +57,8 @@ void R_LoadSpriteInfoLumps(UINT16 wadnum, UINT16 numlumps);
 void R_ParseSPRTINFOLump(UINT16 wadNum, UINT16 lumpNum);
 
 void *R_MaskedFlatToPatch(UINT16 *raw, INT16 width, INT16 height, INT16 leftoffset, INT16 topoffset, size_t *destsize);
+void *R_PixelsToPatch(UINT8 *raw, INT16 width, INT16 height, INT16 leftoffset, INT16 topoffset, size_t *destsize);
 UINT16 R_GetPatchPixel(patch_t *patch, INT32 x, INT32 y, boolean flip);
+void R_PatchToPixels(patch_t *patch, UINT8 *dst); // Important: dst must have enough space for patch->width*patch->height pixels!
 
 #endif // __R_PATCH__

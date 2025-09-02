@@ -1201,6 +1201,7 @@ boolean HGetPacket(void)
 			GotAcks();
 			continue;
 		}
+		doomcom->datalength -= BASEPACKETSIZE;
 		break;
 	}
 #endif // ifndef NONET

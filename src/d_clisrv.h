@@ -120,6 +120,8 @@ typedef enum
 	PT_ISSATURN, 			// Saturn specific identifier packet
 #endif
 
+	PT_MAPICON,       // Send map image icon (gamespy).
+	PT_NEEDMAPICON,   // Request missed map icon (gamespy).
 	NUMPACKETTYPE
 } packettype_t;
 
@@ -513,6 +515,7 @@ typedef struct
 		INT32 filesneedednum;               //           4 bytes
 		filesneededconfig_pak filesneededcfg; //       ??? bytes
 		UINT32 pingtable[MAXPLAYERS+1];     //          68 bytes
+		UINT8 mapicondata[0];
 	} u; // This is needed to pack diff packet types data together
 } ATTRPACK doomdata_t;
 
@@ -564,7 +567,6 @@ typedef enum
 	KR_TIMEOUT, //Connection Timeout
 	KR_BAN, //Banned by server
 	KR_LEAVE, //Quit the game
-
 } kickreason_t;
 
 /* the max number of name changes in some time period */
