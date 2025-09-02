@@ -16,6 +16,8 @@
 #include <unistd.h> //for unlink
 #endif
 
+#include <zlib.h>
+
 #include "i_time.h"
 #include "i_net.h"
 #include "i_system.h"
@@ -86,6 +88,17 @@ boolean nodownload = false;
 boolean serverrunning = false;
 INT32 serverplayer = 0;
 char motd[254], server_context[8]; // Message of the Day, Unique Context (even without Mumble support)
+
+#define MAP_ICON_REQUEST_FREQUENCY 8
+
+static UINT8 map_icon_index; // amount of fragments we have retrieved
+static UINT8 map_icon_needed; // amount of fragments we need to get the full data set
+static INT32 map_icon_read; // amount of bytes we have read
+static UINT32 map_icon_missing; // bitmask of fragments we haven't received yet
+static tic_t map_icon_last_request; // last time we sent an icon request, to avoid flood
+static int map_icon_request_count; // current count of icon requests sent
+static UINT8 *map_icon_data;
+static patch_t *map_icon;
 
 plrinfo playerinfo[MAXPLAYERS];
 SINT8 joinnode = 0; // used for CL_VIEWSERVER
@@ -1179,6 +1192,10 @@ static inline void CL_DrawConnectionStatus(void)
 	if (!menuactive) // menu already draws its own fade
 		V_DrawFadeScreen(0xFF00, 16); // force default
 
+	// reset the counter for mapicon
+	if (cl_mode != CL_VIEWSERVER)
+		map_icon_request_count = 0;
+
 	if (cl_mode != CL_DOWNLOADFILES && cl_mode != CL_LOADFILES && cl_mode != CL_CHECKFILES && cl_mode != CL_VIEWSERVER
 #ifdef HAVE_CURL
 	&& cl_mode != CL_DOWNLOADHTTPFILES
@@ -1305,9 +1322,42 @@ static inline void CL_DrawConnectionStatus(void)
 
 			V_DrawThinString(12 + 80, 18, V_ALLOWLOWERCASE, va("%s", serverlist[joinnode].info.servername));
 
-			const char *map = va("%sP", serverlist[joinnode].info.mapname);
-			patch_t *current_map = W_LumpExists(map) ? W_CachePatchName(map, PU_CACHE) : W_CachePatchName("BLANKLVL", PU_CACHE);
-			V_DrawSmallScaledPatch(10, 18, 0, current_map);
+			if (map_icon == NULL)
+			{
+				const char *map = va("%sP", serverlist[joinnode].info.mapname);
+				patch_t *current_map = W_LumpExists(map) ? W_CachePatchName(map, PU_CACHE) : NULL;
+
+				// check first if we may have the map icon loaded already
+				if (current_map != NULL)
+					V_DrawSmallScaledPatch(10, 18, 0, current_map);
+				else if (map_icon_data != NULL && map_icon_request_count <= 5)
+				{
+					if (I_GetTime() - map_icon_last_request > MAP_ICON_REQUEST_FREQUENCY)
+					{
+						doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
+						netbuffer->packettype = PT_NEEDMAPICON;
+
+						// failed to retrieve map icon, request it again
+						HSendPacket(servernode, false, 0, 0);
+						map_icon_last_request = I_GetTime();
+						map_icon_request_count++;
+					}
+
+					V_DrawFill(10, 18, MAP_ICON_WIDTH / 2, MAP_ICON_HEIGHT / 2, 31);
+					char dots[4] = "...";
+					if ((I_GetTime() & 0xf) < 4)
+						dots[0] = '\0';
+					else if ((I_GetTime() & 0xf) < 8)
+						dots[1] = '\0';
+					else if ((I_GetTime() & 0xf) < 12)
+						dots[2] = '\0';
+					V_DrawString(10 + MAP_ICON_WIDTH / 4 - V_StringWidth("...", 0) / 2, 18 + MAP_ICON_HEIGHT / 4 - 3, 0, dots);
+				}
+				else
+					V_DrawSmallScaledPatch(10, 18, 0, W_CachePatchName("BLANKLVL", PU_CACHE));
+			}
+			else
+				V_DrawSmallScaledPatch(10, 18, 0, map_icon);
 
 			V_DrawThinString(12 + 80, 38, V_ALLOWLOWERCASE, va("%s", serverlist[joinnode].info.maptitle));
 			V_DrawThinString(12 + 80, 48, V_ALLOWLOWERCASE, va("%s", Gametype_Names[serverlist[joinnode].info.gametype]));
@@ -1688,6 +1738,83 @@ static void SV_SendPlayerInfo(INT32 node)
 	}
 
 	HSendPacket(node, false, 0, sizeof(plrinfo) * MSCOMPAT_MAXPLAYERS);
+}
+
+static void SV_SendMapIcon(INT32 node)
+{
+	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
+
+	const char *map = va("%sP", G_BuildMapName(gamemap));
+	if (!W_LumpExists(map))
+	{
+		// send an empty icon to tell the client there is no map icon
+		netbuffer->packettype = PT_MAPICON;
+		UINT8 *icondata = netbuffer->u.mapicondata;
+		WRITEUINT8(icondata, 0x80);
+		HSendPacket(node, false, 0, 1);
+		return;
+	}
+
+	patch_t *current_map = W_CachePatchName(map, PU_CACHE);
+	if (current_map->width != MAP_ICON_WIDTH || current_map->height != MAP_ICON_HEIGHT)
+	{
+		// we only support 160x100 for now
+		netbuffer->packettype = PT_MAPICON;
+		UINT8 *icondata = netbuffer->u.mapicondata;
+		WRITEUINT8(icondata, 0x80);
+		HSendPacket(node, false, 0, 1);
+		return;
+	}
+
+	UINT8 *data = Z_Malloc(2 * current_map->width * current_map->height, PU_STATIC, NULL);
+	UINT8 *pixeldata = data + current_map->width * current_map->height;
+
+	R_PatchToPixels(current_map, pixeldata);
+
+	z_stream stream;
+	stream.zalloc = NULL;
+	stream.zfree = NULL;
+	stream.opaque = NULL;
+	if (deflateInit(&stream, Z_DEFAULT_COMPRESSION) != Z_OK)
+	{
+		CONS_Alert(CONS_WARNING, "Cannot compress map icon, not enough memory\n");
+		Z_Free(data);
+		return;
+	}
+
+	stream.next_in = pixeldata;
+	stream.avail_in = current_map->width * current_map->height;
+	stream.next_out = data;
+	stream.avail_out = current_map->width * current_map->height;
+	if (deflate(&stream, Z_FINISH) != Z_STREAM_END)
+	{
+		CONS_Alert(CONS_WARNING, "Cannot compress map icon, error occured during compression\n");
+		deflateEnd(&stream);
+		Z_Free(data);
+		return;
+	}
+	size_t count = stream.total_out;
+	deflateEnd(&stream);
+
+	size_t index = 0;
+
+	for (size_t i = 0; i < count; i += MAXPACKETLENGTH-BASEPACKETSIZE-1)
+	{
+		size_t size = min(MAXPACKETLENGTH-BASEPACKETSIZE-1, count-i);
+
+		UINT8 *icondata = netbuffer->u.mapicondata;
+		netbuffer->packettype = PT_MAPICON;
+
+		if (count-i <= MAXPACKETLENGTH-BASEPACKETSIZE-1)
+			WRITEUINT8(icondata, 0x80 | index);
+		else
+			WRITEUINT8(icondata, index);
+		index++;
+
+		WRITEMEM(icondata, &data[i], size);
+		HSendPacket(node, false, 0, size + 1);
+	}
+	Z_Free(data);
 }
 
 /** Sends a PT_SERVERCFG packet
@@ -2672,9 +2799,26 @@ static boolean CL_ServerConnectionTicker(const char *tmpsave, tic_t *oldtic, tic
 		if (cl_mode == CL_VIEWSERVER)
 		{
 			if (key == KEY_ENTER || key == KEY_JOY1)
+			{
 				cl_mode = CL_CHECKFILES;
+				if (map_icon != NULL)
+					Patch_Free(map_icon);
+				map_icon = NULL;
+				if (map_icon_data != NULL)
+					Z_Free(map_icon_data);
+				map_icon_data = NULL;
+			}
 			else if (key == KEY_ESCAPE || key == KEY_JOY1+1)
+			{
 				cl_mode = CL_ABORTED;
+				if (map_icon != NULL)
+					Patch_Free(map_icon);
+				map_icon = NULL;
+				if (map_icon_data != NULL)
+					Z_Free(map_icon_data);
+				map_icon_data = NULL;
+				map_icon_request_count = 0;
+			}
 		}
 
 		// Only ESC and non-keyboard keys abort connection
@@ -4676,7 +4820,7 @@ static void HandleConnect(SINT8 node)
 			connectedplayers++;
 
 #ifdef SATURNJOIN
-	const boolean issaturn = (((doomcom->datalength-BASEPACKETSIZE) == sizeof(clientconfig_pak)) && netbuffer->u.clientcfg.issaturn == ISSATURN); // Check the packet lenght to skip potential garbo data!
+	const boolean issaturn = (((doomcom->datalength) == sizeof(clientconfig_pak)) && netbuffer->u.clientcfg.issaturn == ISSATURN); // Check the packet lenght to skip potential garbo data!
 #endif
 
 	if (bannednode && bannednode[node].banid != SIZE_MAX)
@@ -4885,6 +5029,17 @@ static void HandleServerInfo(SINT8 node)
 
 	if (client && cl_mode > CL_SEARCHING && node == servernode)
 		memcpy(connectedservername, netbuffer->u.serverinfo.servername, MAXSERVERNAME);
+
+	if (map_icon_data != NULL)
+		Z_Free(map_icon_data);
+	if (map_icon != NULL)
+		Patch_Free(map_icon);
+	map_icon_data = Z_Malloc(MAP_ICON_WIDTH * MAP_ICON_HEIGHT, PU_CACHE, NULL);
+	map_icon_index = 0;
+	map_icon_needed = 0xff;
+	map_icon_read = 0;
+	map_icon_missing = 0xffffffff;
+	map_icon_last_request = I_GetTime();
 }
 
 static void HandlePlayerInfo(void)
@@ -4894,6 +5049,101 @@ static void HandlePlayerInfo(void)
 
 	for (i = 0; i < MAXPLAYERS; i++)
 		playerinfo[i] = netbuffer->u.playerinfo[i];
+}
+
+static void PT_MapIcon(void)
+{
+	if (map_icon_data == NULL)
+		return;
+
+	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
+
+	UINT8 *icondata = netbuffer->u.mapicondata;
+
+	map_icon_last_request = I_GetTime();
+	map_icon_request_count = 0;
+
+	UINT8 index = READUINT8(icondata);
+	if (index & 0x80)
+		map_icon_needed = (index & 0x7f) + 1;
+	index &= 0x7f;
+
+	// check if we already got this fragment
+	if (map_icon_missing & ((UINT32)1 << index))
+	{
+		map_icon_missing &= ~((UINT32)1 << index);
+		INT32 offset = index * (MAXPACKETLENGTH-BASEPACKETSIZE-1);
+		if (offset + doomcom->datalength-1 > MAP_ICON_WIDTH * MAP_ICON_HEIGHT)
+		{
+			CONS_Alert(CONS_WARNING, "Excess amount of data for map icon (expected %d, got %d)\n", MAP_ICON_WIDTH * MAP_ICON_HEIGHT, offset + doomcom->datalength-1);
+			Z_Free(map_icon_data);
+			map_icon_data = NULL;
+			return;
+		}
+
+		READMEM(icondata, &map_icon_data[offset], doomcom->datalength-1);
+		map_icon_read += doomcom->datalength-1;
+		map_icon_index++;
+	}
+
+	if (map_icon_index >= map_icon_needed)
+	{
+		if (map_icon_read == 0)
+		{
+			// map has no icon
+			Z_Free(map_icon_data);
+			map_icon_data = NULL;
+			return;
+		}
+
+		UINT8 *data = Z_Malloc(MAP_ICON_WIDTH * MAP_ICON_HEIGHT, PU_STATIC, NULL);
+		z_stream stream;
+		stream.zalloc = NULL;
+		stream.zfree = NULL;
+		stream.opaque = NULL;
+		stream.next_in = map_icon_data;
+		stream.avail_in = map_icon_read;
+		if (inflateInit(&stream) != Z_OK)
+		{
+			CONS_Alert(CONS_WARNING, "Cannot decompress map icon, not enough memory\n");
+			Z_Free(data);
+			Z_Free(map_icon_data);
+			map_icon_data = NULL;
+			return;
+		}
+		stream.next_out = data;
+		stream.avail_out = MAP_ICON_WIDTH * MAP_ICON_HEIGHT;
+		if (inflate(&stream, Z_FINISH) != Z_STREAM_END)
+		{
+			CONS_Alert(CONS_WARNING, "Failed to decompress map icon, map icon is invalid or corrupted\n");
+			deflateEnd(&stream);
+			Z_Free(data);
+			Z_Free(map_icon_data);
+			map_icon_data = NULL;
+			return;
+		}
+		inflateEnd(&stream);
+		Z_Free(map_icon_data);
+		map_icon_data = NULL;
+
+		if (stream.total_out > MAP_ICON_WIDTH * MAP_ICON_HEIGHT)
+		{
+			CONS_Alert(CONS_WARNING, "Excess amount of data for map icon (expected %d, got %ld)\n", MAP_ICON_WIDTH * MAP_ICON_HEIGHT, stream.total_out);
+			Z_Free(data);
+			return;
+		}
+		else if (stream.total_out < MAP_ICON_WIDTH * MAP_ICON_HEIGHT)
+		{
+			CONS_Alert(CONS_WARNING, "Insufficient amount of data for map icon (expected %d, got %ld)\n", MAP_ICON_WIDTH * MAP_ICON_HEIGHT, stream.total_out);
+			Z_Free(data);
+			return;
+		}
+
+		//map_icon = Patch_CreateFromData(MAP_ICON_WIDTH, MAP_ICON_HEIGHT, data);
+		map_icon = (patch_t *)R_PixelsToPatch(data, MAP_ICON_WIDTH, MAP_ICON_HEIGHT, 0, 0, NULL);
+
+		Z_Free(data);
+	}
 }
 
 static void PT_TellFilesNeeded(SINT8 node)
@@ -4944,8 +5194,15 @@ static void PT_AskInfo(SINT8 node)
 		doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
 		SV_SendServerInfo(node, (tic_t)LONG(netbuffer->u.askinfo.time));
 		SV_SendPlayerInfo(node); // Send extra info
+		//SV_SendMapIcon(node); // idk i dont think we need this here
 	}
 
+	Net_CloseConnection(node);
+}
+
+static void PT_NeedMapIcon(SINT8 node)
+{
+	SV_SendMapIcon(node);
 	Net_CloseConnection(node);
 }
 
@@ -5208,6 +5465,12 @@ static void HandlePacketFromAwayNode(SINT8 node)
 			break; // This is not an "unknown packet"
 		case PT_PLAYERINFO:
 			HandlePlayerInfo();
+			break;
+		case PT_MAPICON:
+			PT_MapIcon();
+			break;
+		case PT_NEEDMAPICON:
+			PT_NeedMapIcon(node);
 			break;
 		case PT_SERVERTICS:
 			// Do not remove my own server (we have just get a out of order packet)
@@ -5497,10 +5760,10 @@ static void PT_TextCmd(INT32 netconsole, SINT8 node)
 
 		// ignore if the textcmd size var is actually larger than it should be
 		// BASEPACKETSIZE + 1 (for size) + textcmd[0] should == datalength
-		if (netbuffer->u.textcmd[0] > (size_t)doomcom->datalength-BASEPACKETSIZE-1)
+		if (netbuffer->u.textcmd[0] > (size_t)doomcom->datalength-1)
 		{
 			DEBFILE(va("GetPacket: Bad Textcmd packet size! (expected %d, actual %s, node %u, player %d)\n",
-					   netbuffer->u.textcmd[0], sizeu1((size_t)doomcom->datalength-BASEPACKETSIZE-1),
+					   netbuffer->u.textcmd[0], sizeu1((size_t)doomcom->datalength-1),
 					   node, netconsole));
 			Net_UnAcknowledgePacket(node);
 			return;
