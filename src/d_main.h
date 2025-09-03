@@ -90,6 +90,7 @@ const char *D_Home(void);
 //
 // BASE LEVEL
 //
+void D_ClearState(void);
 void D_StartTitle(void);
 
 #ifdef __cplusplus
