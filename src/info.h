@@ -5147,8 +5147,4 @@ extern mobjinfo_t mobjinfo[NUMMOBJTYPES];
 
 void P_PatchInfoTables(void);
 
-void P_BackupTables(void);
-
-void P_ResetData(INT32 flags);
-
 #endif

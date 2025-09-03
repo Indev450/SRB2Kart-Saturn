@@ -626,13 +626,6 @@ extern const char *compdate, *comptime, *comprevision, *compbranch;
 ///	    	Most modifications should probably enable this.
 //#define SAVEGAME_OTHERVERSIONS
 
-///	Allow the use of the SOC RESETINFO command.
-///	\note	Builds that are tight on memory should disable this.
-///	    	This stops the game from storing backups of the states, sprites, and mobjinfo tables.
-///	    	Though this info is compressed under normal circumstances, it's still a lot of extra
-///	    	memory that never gets touched.
-#define ALLOW_RESETDATA
-
 #ifndef NONET
 ///	Display a connection screen on join attempts.
 #define CLIENT_LOADINGSCREEN
