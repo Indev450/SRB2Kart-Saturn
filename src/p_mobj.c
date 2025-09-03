@@ -143,6 +143,8 @@ static void P_CyclePlayerMobjState(mobj_t *mobj)
 	}
 }
 
+#define MAX_RECURSION 20
+
 //
 // P_SetPlayerMobjState
 // Returns true if the mobj is still present.
@@ -154,12 +156,7 @@ boolean P_SetPlayerMobjState(mobj_t *mobj, statenum_t state)
 	state_t *st;
 	player_t *player = mobj->player;
 
-	// remember states seen, to detect cycles:
-	static statenum_t seenstate_tab[NUMSTATES]; // fast transition table
-	statenum_t *seenstate = seenstate_tab; // pointer to table
-	static INT32 recursion; // detects recursion
-	statenum_t i; // initial state
-	statenum_t tempstate[NUMSTATES]; // for use with recursion
+	INT32 recursion = 0;
 
 #ifdef PARANOIA
 	if (player == NULL)
@@ -194,11 +191,6 @@ boolean P_SetPlayerMobjState(mobj_t *mobj, statenum_t state)
 			break;
 	}
 
-	if (recursion++) // if recursion detected,
-		memset(seenstate = tempstate, 0, sizeof tempstate); // clear state table
-
-	i = state;
-
 	do
 	{
 		if (UNLIKELY(state == S_NULL))
@@ -232,17 +224,14 @@ boolean P_SetPlayerMobjState(mobj_t *mobj, statenum_t state)
 				return false;
 		}
 
-		seenstate[state] = 1 + st->nextstate;
-
 		state = st->nextstate;
-	} while (!mobj->tics && !seenstate[state]);
 
-	if (UNLIKELY(!mobj->tics))
-		CONS_Alert(CONS_WARNING, M_GetText("State cycle detected, exiting.\n"));
-
-	if (!--recursion)
-		for (;(state = seenstate[i]) > S_NULL; i = state - 1)
-			seenstate[i] = S_NULL; // erase memory of states
+		if (++recursion > MAX_RECURSION)
+		{
+			CONS_Alert(CONS_WARNING, M_GetText("State cycle detected, exiting.\n"));
+			break;
+		}
+	} while (!mobj->tics);
 
 	return true;
 }
@@ -252,12 +241,7 @@ boolean P_SetMobjState(mobj_t *mobj, statenum_t state)
 {
 	state_t *st;
 
-	// remember states seen, to detect cycles:
-	static statenum_t seenstate_tab[NUMSTATES]; // fast transition table
-	statenum_t *seenstate = seenstate_tab; // pointer to table
-	static INT32 recursion; // detects recursion
-	statenum_t i = state; // initial state
-	statenum_t tempstate[NUMSTATES]; // for use with recursion
+	INT32 recursion = 0;
 
 #ifdef PARANOIA
 	if (mobj->player != NULL)
@@ -266,9 +250,6 @@ boolean P_SetMobjState(mobj_t *mobj, statenum_t state)
 
 	if (mobj->player != NULL)
 		return P_SetPlayerMobjState(mobj, state);
-
-	if (recursion++) // if recursion detected,
-		memset(seenstate = tempstate, 0, sizeof tempstate); // clear state table
 
 	do
 	{
@@ -299,17 +280,14 @@ boolean P_SetMobjState(mobj_t *mobj, statenum_t state)
 				return false;
 		}
 
-		seenstate[state] = 1 + st->nextstate;
-
 		state = st->nextstate;
-	} while (!mobj->tics && !seenstate[state]);
 
-	if (UNLIKELY(!mobj->tics))
-		CONS_Alert(CONS_WARNING, M_GetText("State cycle detected, exiting.\n"));
-
-	if (!--recursion)
-		for (;(state = seenstate[i]) > S_NULL; i = state - 1)
-			seenstate[i] = S_NULL; // erase memory of states
+		if (++recursion > MAX_RECURSION)
+		{
+			CONS_Alert(CONS_WARNING, M_GetText("State cycle detected, exiting.\n"));
+			break;
+		}
+	} while (!mobj->tics);
 
 	return true;
 }
