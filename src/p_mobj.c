@@ -572,8 +572,6 @@ fixed_t P_MobjFloorZ(mobj_t *mobj, sector_t *sector, sector_t *boundsec, fixed_t
 	if (sector->f_slope)
 	{
 		fixed_t testx, testy;
-		static fixed_t oldtestx = 0, oldtesty = 0;
-		static subsector_t *subsec = NULL;
 		pslope_t *slope = sector->f_slope;
 
 		// Get the corner of the object that should be the highest on the slope
@@ -596,14 +594,8 @@ fixed_t P_MobjFloorZ(mobj_t *mobj, sector_t *sector, sector_t *boundsec, fixed_t
 		testx += x;
 		testy += y;
 
-		if (oldtestx != testx || oldtesty != testy)
-			subsec = R_PointInSubsector(testx, testy);
-
-		oldtestx = testx;
-		oldtesty = testy;
-
 		// If the highest point is in the sector, then we have it easy! Just get the Z at that point
-		if (subsec->sector == (boundsec ? boundsec : sector))
+		if (R_PointInSubsector(testx, testy)->sector == (boundsec ? boundsec : sector))
 			return P_GetSlopeZAt(slope, testx, testy);
 
 		// If boundsec is set, we're looking for specials. In that case, iterate over every line in this sector to find the TRUE highest/lowest point
@@ -667,8 +659,6 @@ fixed_t P_MobjCeilingZ(mobj_t *mobj, sector_t *sector, sector_t *boundsec, fixed
 	if (sector->c_slope)
 	{
 		fixed_t testx, testy;
-		static fixed_t oldtestx = 0, oldtesty = 0;
-		static subsector_t *subsec = NULL;
 		pslope_t *slope = sector->c_slope;
 
 		// Get the corner of the object that should be the highest on the slope
@@ -691,14 +681,8 @@ fixed_t P_MobjCeilingZ(mobj_t *mobj, sector_t *sector, sector_t *boundsec, fixed
 		testx += x;
 		testy += y;
 
-		if (oldtestx != testx || oldtesty != testy)
-			subsec = R_PointInSubsector(testx, testy);
-
-		oldtestx = testx;
-		oldtesty = testy;
-
 		// If the highest point is in the sector, then we have it easy! Just get the Z at that point
-		if (subsec->sector == (boundsec ? boundsec : sector))
+		if (R_PointInSubsector(testx, testy)->sector == (boundsec ? boundsec : sector))
 			return P_GetSlopeZAt(slope, testx, testy);
 
 		// If boundsec is set, we're looking for specials. In that case, iterate over every line in this sector to find the TRUE highest/lowest point
