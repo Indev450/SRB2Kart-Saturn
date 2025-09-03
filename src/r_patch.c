@@ -491,6 +491,16 @@ void *R_PixelsToPatch(UINT8 *raw, INT16 width, INT16 height, INT16 leftoffset, I
 		for (y = 0; y < height; y++)
 		{
 			UINT8 pixel = raw[((y * width) + x)];
+			UINT8 opaque = (pixel != 0xf7); // If not 247 (0xf7), we have a pixel
+
+			// End span if we have a transparent pixel
+			if (!opaque)
+			{
+				if (startofspan)
+					WRITEUINT8(imgptr, 0);
+				startofspan = NULL;
+				continue;
+			}
 
 			// Start new column if we need to
 			if (!startofspan || spanSize == 255)
@@ -727,6 +737,9 @@ UINT16 R_GetPatchPixel(patch_t *patch, INT32 x, INT32 y, boolean flip)
 void R_PatchToPixels(patch_t *patch, UINT8 *dst)
 {
 	const INT16 width = patch->width;
+
+	// init out destination to cyan so we can easily check for it when we convert it back to a patch
+	memset(dst, 0xf7, (width * patch->height)); // should this be here or should this be taken care of before passing it?
 
 	for (INT32 x = 0; x < width; ++x)
 	{
