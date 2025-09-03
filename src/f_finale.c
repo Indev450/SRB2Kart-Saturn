@@ -950,7 +950,7 @@ void F_GameEndTicker(void)
 	if (timetonext > 0)
 		timetonext--;
 	else
-		D_StartTitle();
+		G_EndGame();
 }
 
 // ==============

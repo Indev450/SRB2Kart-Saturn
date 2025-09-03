@@ -630,7 +630,6 @@ const char *G_BuildMapName(INT32 map)
 		map = G_RandMap(G_TOLFlag(cv_newgametype.value), map, false, 0, false, NULL)+1;
 	}
 
-
 	if (map < 100 && map >= 0) // ...but why use signed integer in first place? idk but this prevents warning (and potential buffer overflow lol)
 		sprintf(&mapname[3], "%.2d", map);
 	else
@@ -3362,8 +3361,29 @@ void G_EndGame(void)
 		}
 	}
 
-	// 1100 or competitive multiplayer, so go back to title screen.
-	D_StartTitle();
+	if (netgame)
+	{
+		if (!demo.title)
+			S_StopMusic();
+
+		G_SetGamestate(GS_WAITINGPLAYERS); // hack to prevent a command repeat
+
+		if (server)
+		{
+			char mapname[6];
+
+			strlcpy(mapname, G_BuildMapName(spstage_start), sizeof (mapname));
+			strlwr(mapname);
+			mapname[5] = '\0';
+
+			COM_BufAddText(va("map %s\n", mapname));
+		}
+
+		return;
+	}
+
+	// Time to return to the menu.
+	Command_ExitGame_f();
 }
 
 //

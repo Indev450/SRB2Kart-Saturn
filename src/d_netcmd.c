@@ -5605,7 +5605,9 @@ void Command_ExitGame_f(void)
 		closefilemenu(true);
 
 	if (!modeattacking)
+	{
 		D_StartTitle();
+	}
 }
 
 void Command_Retry_f(void)

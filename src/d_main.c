@@ -966,34 +966,11 @@ void D_SRB2Loop(void)
 // =========================================================================
 
 //
-// D_StartTitle
+// D_ClearState
 //
-void D_StartTitle(void)
+void D_ClearState(void)
 {
 	INT32 i;
-
-	if (netgame)
-	{
-		if (gametype == GT_RACE) // SRB2kart
-		{
-			G_SetGamestate(GS_WAITINGPLAYERS); // hack to prevent a command repeat
-
-			if (server)
-			{
-				char mapname[6];
-
-				strlcpy(mapname, G_BuildMapName(spstage_start), sizeof (mapname));
-				strlwr(mapname);
-				mapname[5] = '\0';
-
-				COM_BufAddText(va("map %s\n", mapname));
-			}
-		}
-
-		return;
-	}
-
-	M_ClearMenus(true);
 
 	// okay, stop now
 	// (otherwise the game still thinks we're playing!)
@@ -1024,8 +1001,28 @@ void D_StartTitle(void)
 	gametype = GT_RACE; // SRB2kart
 	paused = false;
 
-	S_ResetKeepAndSpecialMus(); // just in case
+	netgame = false; // title menu shouldnt be a netgame lmao
 
+	// clear cmd building stuff
+	memset(gamekeydown, 0, sizeof(gamekeydown));
+	memset(joyxmove, 0, sizeof(joyxmove));
+	memset(joyymove, 0, sizeof(joyymove));
+	mousex = mousey = 0;
+	G_ResetAllDeviceRumbles();
+
+	S_ResetKeepAndSpecialMus(); // just in case
+}
+
+//
+// D_StartTitle
+//
+void D_StartTitle(void)
+{
+	if (!demo.title)
+		S_StopMusic();
+
+	D_ClearState();
+	M_ClearMenus(true);
 	F_StartTitleScreen();
 }
 
