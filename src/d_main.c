@@ -1852,9 +1852,6 @@ void D_SRB2Main(void)
 	I_InitializeTime();
 	setlocale(LC_TIME, "");
 
-	// Make backups of some SOCcable tables.
-	P_BackupTables();
-
 	// Setup default unlockable conditions
 	M_SetupDefaultConditionSets();
 

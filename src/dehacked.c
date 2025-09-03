@@ -2638,7 +2638,7 @@ static void readmaincfg(MYFILE *f)
 			}
 			else if (fastcmp(word, "RESETDATA"))
 			{
-				P_ResetData(value);
+				CONS_Alert(CONS_WARNING, M_GetText("RESETDATA is obsolete and no longer has any effect.\n"));
 			}
 			else if (fastcmp(word, "CUSTOMVERSION"))
 			{
