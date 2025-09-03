@@ -1359,7 +1359,11 @@ static inline void CL_DrawConnectionStatus(void)
 			else
 				V_DrawSmallScaledPatch(10, 18, 0, map_icon);
 
-			V_DrawThinString(12 + 80, 38, V_ALLOWLOWERCASE, va("%s", serverlist[joinnode].info.maptitle));
+			if (serverlist[joinnode].info.iszone)
+				V_DrawThinString(12 + 80, 38, V_ALLOWLOWERCASE, va("%s Zone", serverlist[joinnode].info.maptitle));
+			else
+				V_DrawThinString(12 + 80, 38, V_ALLOWLOWERCASE, va("%s", serverlist[joinnode].info.maptitle));
+
 			V_DrawThinString(12 + 80, 48, V_ALLOWLOWERCASE, va("%s", Gametype_Names[serverlist[joinnode].info.gametype]));
 
 			if (fileneedednum > 0)
@@ -1599,59 +1603,38 @@ static void SV_SendServerInfo(INT32 node, tic_t servertime)
 
 	CopyCaretColors(netbuffer->u.serverinfo.servername, cv_servername.string,
 		MAXSERVERNAME);
-	strncpy(netbuffer->u.serverinfo.mapname, G_BuildMapName(gamemap), 7);
+	strncpy(netbuffer->u.serverinfo.mapname, G_BuildMapName(gamemap), sizeof(netbuffer->u.serverinfo.mapname)-1);
 
-	M_Memcpy(netbuffer->u.serverinfo.mapmd5, mapmd5, 16);
+	M_Memcpy(netbuffer->u.serverinfo.mapmd5, mapmd5, sizeof(netbuffer->u.serverinfo.mapmd5));
 
-	if (!(mapheaderinfo[gamemap-1]->levelflags & LF_NOZONE) && !(mapheaderinfo[prevmap]->zonttl[0]))
-		netbuffer->u.serverinfo.iszone = 1;
-	else
-		netbuffer->u.serverinfo.iszone = 0;
+	netbuffer->u.serverinfo.iszone = 0;
 
-	memset(netbuffer->u.serverinfo.maptitle, 0, 33);
+	memset(netbuffer->u.serverinfo.maptitle, 0, sizeof(netbuffer->u.serverinfo.maptitle));
 	memset(netbuffer->u.serverinfo.httpsource, 0, MAX_MIRROR_LENGTH);
 
 	if (!(mapheaderinfo[gamemap-1]->menuflags & LF2_HIDEINMENU) && mapheaderinfo[gamemap-1]->lvlttl[0])
 	{
-		//strncpy(netbuffer->u.serverinfo.maptitle, (char *)mapheaderinfo[gamemap-1]->lvlttl, 33);
-		// set up the levelstring
-		if (netbuffer->u.serverinfo.iszone || (mapheaderinfo[gamemap-1]->levelflags & LF_NOZONE))
+		strncpy(netbuffer->u.serverinfo.maptitle, mapheaderinfo[gamemap-1]->lvlttl, sizeof(netbuffer->u.serverinfo.maptitle)-1);
+
+		if (!(mapheaderinfo[gamemap-1]->levelflags & LF_NOZONE))
 		{
-			if (mapheaderinfo[gamemap-1]->actnum[0])
-				snprintf(netbuffer->u.serverinfo.maptitle,
-					33,
-					"%s %s",
-					mapheaderinfo[gamemap-1]->lvlttl, mapheaderinfo[gamemap-1]->actnum);
+			if (mapheaderinfo[gamemap-1]->zonttl[0])
+			{
+				strncat(netbuffer->u.serverinfo.maptitle, " ", sizeof(netbuffer->u.serverinfo.maptitle)-1);
+				strncat(netbuffer->u.serverinfo.maptitle, mapheaderinfo[gamemap-1]->zonttl,
+						sizeof(netbuffer->u.serverinfo.maptitle)-1);
+			}
 			else
-				snprintf(netbuffer->u.serverinfo.maptitle,
-					33,
-					"%s",
-					mapheaderinfo[gamemap-1]->lvlttl);
+			{
+				netbuffer->u.serverinfo.iszone = 1; // ms and clients will append this themselves
+			}
 		}
-		else
+
+		if (mapheaderinfo[gamemap-1]->actnum[0])
 		{
-			if (mapheaderinfo[gamemap-1]->actnum[0])
-			{
-				if (snprintf(netbuffer->u.serverinfo.maptitle,
-					33,
-					"%s %s %s",
-					mapheaderinfo[gamemap-1]->lvlttl, mapheaderinfo[gamemap-1]->zonttl, mapheaderinfo[gamemap-1]->actnum) < 0)
-				{
-					// If there's an encoding error, send UNKNOWN, we accept that the above may be truncated
-					strncpy(netbuffer->u.serverinfo.maptitle, "Unknown", 33);
-				}
-			}
-			else
-			{
-				if (snprintf(netbuffer->u.serverinfo.maptitle,
-					33,
-					"%s %s",
-					mapheaderinfo[gamemap-1]->lvlttl, mapheaderinfo[gamemap-1]->zonttl) < 0)
-				{
-					// If there's an encoding error, send UNKNOWN, we accept that the above may be truncated
-					strncpy(netbuffer->u.serverinfo.maptitle, "Unknown", 33);
-				}
-			}
+			strncat(netbuffer->u.serverinfo.maptitle, " ", sizeof(netbuffer->u.serverinfo.maptitle)-1);
+			strncat(netbuffer->u.serverinfo.maptitle, mapheaderinfo[gamemap-1]->actnum,
+					sizeof(netbuffer->u.serverinfo.maptitle)-1);
 		}
 	}
 	else
