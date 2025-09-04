@@ -13,6 +13,7 @@
 
 #include "m_aatree.h"
 #include "z_zone.h"
+#include "m_misc.h"
 
 // A partial implementation of AA trees,
 // according to the algorithms given on Wikipedia.
@@ -26,6 +27,13 @@ typedef struct aatree_node_s
 
 	struct aatree_node_s *left, *right;
 } aatree_node_t;
+
+typedef struct aatree_entry_s
+{
+	struct aatree_entry_s *next;
+	char *key;
+	void *value;
+} aatree_entry_t;
 
 struct aatree_s
 {
@@ -143,7 +151,75 @@ static aatree_node_t *M_AATreeSet_Node(aatree_node_t *node, UINT32 flags, INT32 
 
 void M_AATreeSet(aatree_t *aatree, INT32 key, void* value)
 {
+	I_Assert((aatree->flags & AATREE_STRING) == 0);
 	aatree->root = M_AATreeSet_Node(aatree->root, aatree->flags, key, value);
+}
+
+static aatree_node_t *M_AATreeSetString_Node(aatree_node_t *node, UINT32 flags, INT32 hash, const char *key, void* value)
+{
+	if (!node)
+	{
+		// Nothing here, so just add where we are
+		aatree_entry_t *entry = Z_Malloc(sizeof(aatree_entry_t), PU_STATIC, NULL);
+		entry->next = NULL;
+		entry->key = Z_StrDup(key);
+		if (value && (flags & AATREE_ZUSER)) Z_SetUser(value, &entry->value);
+		else entry->value = value;
+
+		node = Z_Malloc(sizeof (aatree_node_t), PU_STATIC, NULL);
+		node->key = hash;
+		node->value = entry;
+		node->left = node->right = NULL;
+		node->depth = 1;
+	}
+	else
+	{
+		if (hash < node->key)
+			node->left = M_AATreeSetString_Node(node->left, flags, hash, key, value);
+		else if (hash > node->key)
+			node->right = M_AATreeSetString_Node(node->right, flags, hash, key, value);
+		else
+		{
+			aatree_entry_t *entry = node->value;
+			if (entry != NULL && strcmp(entry->key, key) != 0)
+				entry = entry->next;
+			if (entry != NULL)
+			{
+				if (value && (flags & AATREE_ZUSER)) Z_SetUser(value, &entry->value);
+				else entry->value = value;
+			}
+			else
+			{
+				entry = Z_Malloc(sizeof(aatree_entry_t), PU_STATIC, NULL);
+				entry->next = node->value;
+				entry->key = Z_StrDup(key);
+				if (value && (flags & AATREE_ZUSER)) Z_SetUser(value, &entry->value);
+				else entry->value = value;
+				node->value = entry;
+			}
+		}
+
+		node = M_AATreeRebalance(node);
+		if (node->left == NULL && node->right == NULL)
+			node->depth = 1;
+		else if (node->left == NULL)
+			node->depth = node->right->depth + 1;
+		else if (node->right == NULL)
+			node->depth = node->left->depth + 1;
+		else if (node->left->depth > node->right->depth)
+			node->depth = node->left->depth + 1;
+		else
+			node->depth = node->right->depth + 1;
+	}
+
+	return node;
+}
+
+void M_AATreeSetString(aatree_t *aatree, const char *key, void *value)
+{
+	I_Assert((aatree->flags & AATREE_STRING) == AATREE_STRING);
+	UINT32 hash = FNV1a_HashString(key);
+	aatree->root = M_AATreeSetString_Node(aatree->root, aatree->flags, hash, key, value);
 }
 
 // Caveat: we don't distinguish between nodes that don't exists
@@ -165,7 +241,18 @@ static void *M_AATreeGet_Node(aatree_node_t *node, INT32 key)
 
 void *M_AATreeGet(aatree_t *aatree, INT32 key)
 {
+	I_Assert((aatree->flags & AATREE_STRING) == 0);
 	return M_AATreeGet_Node(aatree->root, key);
+}
+
+void *M_AATreeGetString(aatree_t *aatree, const char *key)
+{
+	I_Assert((aatree->flags & AATREE_STRING) == AATREE_STRING);
+	UINT32 hash = FNV1a_HashString(key);
+	aatree_entry_t *entry = M_AATreeGet_Node(aatree->root, hash);
+	while (entry != NULL && strcmp(entry->key, key) != 0)
+		entry = entry->next;
+	return entry != NULL ? entry->value : NULL;
 }
 
 static void M_AATreeIterate_Node(aatree_node_t *node, aatree_iter_t callback)

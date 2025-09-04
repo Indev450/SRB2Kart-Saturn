@@ -853,8 +853,8 @@ UINT16 W_InitFile(const char *filename, boolean local)
 	fseek(handle, 0, SEEK_END);
 	wadfile->filesize = (unsigned)ftell(handle);
 	wadfile->type = type;
-	wadfile->startfolders = M_AATreeAlloc(0);
-	wadfile->endfolders = M_AATreeAlloc(0);
+	wadfile->startfolders = M_AATreeAlloc(AATREE_STRING);
+	wadfile->endfolders = M_AATreeAlloc(AATREE_STRING);
 
 	// already generated, just copy it over
 	M_Memcpy(&wadfile->md5sum, &md5sum, 16);
@@ -1095,9 +1095,8 @@ UINT16 W_CheckNumForFolderStartPK3(const char *name, UINT16 wad, UINT16 startlum
 	INT32 i;
 	lumpinfo_t *lump_p = wadfiles[wad]->lumpinfo + startlump;
 	name_length = strlen(name);
-	UINT32 hash = quickncasehash(name, name_length);
 
-	void *val = M_AATreeGet(wadfiles[wad]->startfolders, hash);
+	void *val = M_AATreeGetString(wadfiles[wad]->startfolders, name);
 	if (val != NULL)
 		return (uintptr_t)val;
 
@@ -1109,14 +1108,12 @@ UINT16 W_CheckNumForFolderStartPK3(const char *name, UINT16 wad, UINT16 startlum
 			if (strlen(lump_p->fullname) == name_length)
 				i++;
 
-			M_AATreeSet(wadfiles[wad]->startfolders, hash, (void *)(uintptr_t)i);
-
+			M_AATreeSetString(wadfiles[wad]->startfolders, name, (void *)(uintptr_t)i);
 			return i;
 		}
 	}
 
-	M_AATreeSet(wadfiles[wad]->startfolders, hash, (void *)INT16_MAX);
-
+	M_AATreeSetString(wadfiles[wad]->startfolders, name, (void *)INT16_MAX);
 	return INT16_MAX;
 }
 
@@ -1128,9 +1125,8 @@ UINT16 W_CheckNumForFolderEndPK3(const char *name, UINT16 wad, UINT16 startlump)
 	INT32 i;
 	lumpinfo_t *lump_p = wadfiles[wad]->lumpinfo + startlump;
 	size_t name_length = strlen(name);
-	UINT32 hash = quickncasehash(name, name_length);
 
-	void *val = M_AATreeGet(wadfiles[wad]->endfolders, hash);
+	void *val = M_AATreeGetString(wadfiles[wad]->endfolders, name);
 	if (val != NULL)
 		return (uintptr_t)val;
 
@@ -1140,8 +1136,7 @@ UINT16 W_CheckNumForFolderEndPK3(const char *name, UINT16 wad, UINT16 startlump)
 			break;
 	}
 
-	M_AATreeSet(wadfiles[wad]->endfolders, hash, (void *)(uintptr_t)i);
-
+	M_AATreeSetString(wadfiles[wad]->endfolders, name, (void *)(uintptr_t)i);
 	return i;
 }
 
