@@ -272,6 +272,10 @@ typedef struct mobj_s
 	// List: thinker links.
 	thinker_t thinker;
 
+	// More list: links in sector (if needed)
+	struct mobj_s *bnext;
+	struct mobj_s **bprev; // killough 8/11/98: change to ptr-to-ptr
+
 	// Info for drawing: position.
 	fixed_t x, y, z;
 	fixed_t old_x, old_y, old_z; // position interpolation
@@ -279,10 +283,6 @@ typedef struct mobj_s
 
 	mobjtype_t type;
 	const mobjinfo_t *info; // &mobjinfo[mobj->type]
-
-	// More list: links in sector (if needed)
-	struct mobj_s *bnext;
-	struct mobj_s **bprev; // killough 8/11/98: change to ptr-to-ptr
 
 	// More drawing info: to determine current sprite.
 	angle_t angle, pitch, roll; // orientation
@@ -293,7 +293,7 @@ typedef struct mobj_s
 	UINT32 frame; // frame number, plus bits see p_pspr.h
 	UINT16 anim_duration; // for FF_ANIMATE states
 
-	INT32 blendmode; // blend mode
+	UINT8 blendmode; // blend mode
 	fixed_t spritexscale, spriteyscale;
 	fixed_t spritexoffset, spriteyoffset;
 	fixed_t old_spritexscale, old_spriteyscale;
@@ -329,18 +329,11 @@ typedef struct mobj_s
 	fixed_t momx, momy, momz;
 	fixed_t pmomz; // If you're on a moving floor, its "momz" would be here
 
-	INT32 tics; // state tic counter
 	state_t *state;
+	INT32 tics; // state tic counter
 	UINT32 flags; // flags from mobjinfo tables
 	UINT32 flags2; // MF2_ flags
 	UINT16 eflags; // extra flags
-
-	void *skin; // overrides 'sprite' when non-NULL (for player bodies to 'remember' the skin)
-	void *localskin;
-	boolean skinlocal;
-	// Player and mobj sprites in multiplayer modes are modified
-	//  using an internal color lookup table for re-indexing.
-	UINT8 color; // This replaces MF_TRANSLATION. Use 0 for default (no translation).
 
 	// Interaction info, by BLOCKMAP.
 	// Links in blocks (if needed).
@@ -351,21 +344,29 @@ typedef struct mobj_s
 	struct mobj_s *hnext;
 	struct mobj_s *hprev;
 
+	void *skin; // overrides 'sprite' when non-NULL (for player bodies to 'remember' the skin)
+	void *localskin;
+	boolean skinlocal;
+
+	// Player and mobj sprites in multiplayer modes are modified
+	//  using an internal color lookup table for re-indexing.
+	UINT8 color; // This replaces MF_TRANSLATION. Use 0 for default (no translation).
+
 	INT32 health; // for player this is rings + 1
 
 	// Movement direction, movement generation (zig-zagging).
 	angle_t movedir; // dirtype_t 0-7; also used by Deton for up/down angle
 	INT32 movecount; // when 0, select a new dir
 
-	struct mobj_s *target; // Thing being chased/attacked (or NULL), and originator for missiles.
-
 	INT32 reactiontime; // If not 0, don't attack yet.
 
-	INT32 threshold; // If >0, the target will be chased no matter what.
+	struct mobj_s *target; // Thing being chased/attacked (or NULL), and originator for missiles.
 
 	// Additional info record for player avatars only.
 	// Only valid if type == MT_PLAYER
 	struct player_s *player;
+
+	INT32 threshold; // If >0, the target will be chased no matter what.
 
 	INT32 lastlook; // Player number last looked for.
 
@@ -429,6 +430,10 @@ typedef struct precipmobj_s
 	// List: thinker links.
 	thinker_t thinker;
 
+	// More list: links in sector (if needed)
+	struct precipmobj_s *bnext;
+	struct precipmobj_s **bprev; // killough 8/11/98: change to ptr-to-ptr
+
 	// Info for drawing: position.
 	fixed_t x, y, z;
 	fixed_t old_x, old_y, old_z; // position interpolation
@@ -436,10 +441,6 @@ typedef struct precipmobj_s
 
 	mobjtype_t type;
 	const mobjinfo_t *info; // &mobjinfo[mobj->type]
-
-	// More list: links in sector (if needed)
-	struct precipmobj_s *bnext;
-	struct precipmobj_s **bprev; // killough 8/11/98: change to ptr-to-ptr
 
 	// More drawing info: to determine current sprite.
 	angle_t angle, pitch, roll; // orientation
@@ -450,7 +451,7 @@ typedef struct precipmobj_s
 	UINT32 frame; // frame number, plus bits see p_pspr.h
 	UINT16 anim_duration; // for FF_ANIMATE states
 
-	INT32 blendmode; // blend mode
+	UINT8 blendmode; // blend mode
 	fixed_t spritexscale, spriteyscale;
 	fixed_t spritexoffset, spriteyoffset;
 	fixed_t old_spritexscale, old_spriteyscale;
@@ -486,9 +487,9 @@ typedef struct precipmobj_s
 	fixed_t momx, momy, momz;
 	fixed_t precipflags; // fixed_t so it uses the same spot as "pmomz" even as we use precipflags_t for it
 
-	INT32 tics; // state tic counter
 	state_t *state;
-	INT32 flags; // flags from mobjinfo tables
+	INT32 tics; // state tic counter
+	UINT32 flags; // flags from mobjinfo tables
 	tic_t lastThink;
 } precipmobj_t;
 
