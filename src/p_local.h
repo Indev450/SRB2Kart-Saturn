@@ -258,7 +258,7 @@ void P_PlayVictorySound(mobj_t *source);
 extern mapthing_t *itemrespawnque[ITEMQUESIZE];
 extern tic_t itemrespawntime[ITEMQUESIZE];
 extern size_t iquehead, iquetail;
-extern consvar_t cv_gravity/*, cv_viewheight*/;
+extern consvar_t cv_gravity;
 
 void P_RespawnSpecials(void);
 

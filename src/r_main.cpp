@@ -1596,10 +1596,6 @@ void R_RegisterEngineStuff(void)
 
 	CV_RegisterVar(&cv_ripplewater);
 
-	// Default viewheight is changeable,
-	// initialized to standard viewheight
-	//CV_RegisterVar(&cv_viewheight);
-
 	// Frame interpolation/uncapped
 	CV_RegisterVar(&cv_fpscap);
 	CV_RegisterVar(&cv_fpscapbg);
