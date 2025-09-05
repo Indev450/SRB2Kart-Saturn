@@ -38,8 +38,6 @@
 #include "k_kart.h"
 
 // protos.
-//static CV_PossibleValue_t viewheight_cons_t[] = {{16, "MIN"}, {56, "MAX"}, {0, NULL}};
-//consvar_t cv_viewheight = {"viewheight", VIEWHEIGHTS, 0, viewheight_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 #ifdef WALLSPLATS
 consvar_t cv_splats = {"splats", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 #endif
@@ -486,6 +484,8 @@ boolean P_InsideANonSolidFFloor(mobj_t *mobj, ffloor_t *rover)
 // usage will handle that later.
 static fixed_t HighestOnLine(fixed_t radius, fixed_t x, fixed_t y, line_t *line, pslope_t *slope, boolean actuallylowest)
 {
+	int absval = 0;
+
 	// Alright, so we're sitting on a line that contains our slope sector, and need to figure out the highest point we're touching...
 	// The solution is simple! Get the line's vertices, and pull each one in along its line until it touches the object's bounding box
 	// (assuming it isn't already inside), then test each point's slope Z and return the higher of the two.
@@ -495,73 +495,94 @@ static fixed_t HighestOnLine(fixed_t radius, fixed_t x, fixed_t y, line_t *line,
 	v2.x = line->v2->x;
 	v2.y = line->v2->y;
 
-	if (abs(v1.x-x) > radius)
+	absval = abs(v1.x-x);
+
+	if (absval > radius)
 	{
 		// v1's x is out of range, so rein it in
-		fixed_t diff = abs(v1.x-x) - radius;
+		fixed_t diff = absval - radius;
 
-		if (v1.x < x) { // Moving right
+		if (v1.x < x) // Moving right
+		{
 			v1.x += diff;
 			v1.y += FixedMul(diff, FixedDiv(line->dy, line->dx));
-		} else { // Moving left
+		}
+		else // Moving left
+		{
 			v1.x -= diff;
 			v1.y -= FixedMul(diff, FixedDiv(line->dy, line->dx));
 		}
 	}
 
-	if (abs(v1.y-y) > radius)
+	absval = abs(v1.y-y);
+
+	if (absval > radius)
 	{
 		// v1's y is out of range, so rein it in
-		fixed_t diff = abs(v1.y-y) - radius;
+		fixed_t diff = absval - radius;
 
-		if (v1.y < y) { // Moving up
+		if (v1.y < y) // Moving up
+		{
 			v1.y += diff;
 			v1.x += FixedMul(diff, FixedDiv(line->dx, line->dy));
-		} else { // Moving down
+		}
+		else // Moving down
+		{
 			v1.y -= diff;
 			v1.x -= FixedMul(diff, FixedDiv(line->dx, line->dy));
 		}
 	}
 
-	if (abs(v2.x-x) > radius)
+	absval = abs(v2.x-x);
+
+	if (absval > radius)
 	{
 		// v1's x is out of range, so rein it in
-		fixed_t diff = abs(v2.x-x) - radius;
+		fixed_t diff = absval - radius;
 
-		if (v2.x < x) { // Moving right
+		if (v2.x < x) // Moving right
+		{
 			v2.x += diff;
 			v2.y += FixedMul(diff, FixedDiv(line->dy, line->dx));
-		} else { // Moving left
+		}
+		else // Moving left
+		{
 			v2.x -= diff;
 			v2.y -= FixedMul(diff, FixedDiv(line->dy, line->dx));
 		}
 	}
 
-	if (abs(v2.y-y) > radius)
+	absval = abs(v2.y-y);
+
+	if (absval > radius)
 	{
 		// v2's y is out of range, so rein it in
-		fixed_t diff = abs(v2.y-y) - radius;
+		fixed_t diff = absval - radius;
 
-		if (v2.y < y) { // Moving up
+		if (v2.y < y) // Moving up
+		{
 			v2.y += diff;
 			v2.x += FixedMul(diff, FixedDiv(line->dx, line->dy));
-		} else { // Moving down
+		}
+		else // Moving down
+		{
 			v2.y -= diff;
 			v2.x -= FixedMul(diff, FixedDiv(line->dx, line->dy));
 		}
 	}
 
+	const fixed_t v1z = P_GetSlopeZAt(slope, v1.x, v1.y);
+	const fixed_t v2z = P_GetSlopeZAt(slope, v2.x, v2.y);
+
 	// Return the higher of the two points
 	if (actuallylowest)
-		return min(
-			P_GetSlopeZAt(slope, v1.x, v1.y),
-			P_GetSlopeZAt(slope, v2.x, v2.y)
-		);
+	{
+		return min(v1z, v2z);
+	}
 	else
-		return max(
-			P_GetSlopeZAt(slope, v1.x, v1.y),
-			P_GetSlopeZAt(slope, v2.x, v2.y)
-		);
+	{
+		return max(v1z, v2z);
+	}
 }
 
 fixed_t P_MobjFloorZ(mobj_t *mobj, sector_t *sector, sector_t *boundsec, fixed_t x, fixed_t y, line_t *line, boolean lowest, boolean perfect)
@@ -1138,8 +1159,10 @@ static void P_SceneryXYFriction(mobj_t *mo, fixed_t oldx, fixed_t oldy)
 	I_Assert(mo != NULL);
 	I_Assert(!P_MobjWasRemoved(mo));
 
-	if (abs(mo->momx) < FixedMul(FRACUNIT/32, mo->scale)
-		&& abs(mo->momy) < FixedMul(FRACUNIT/32, mo->scale))
+	const fixed_t fric_scale = FixedMul(FRACUNIT/32, mo->scale);
+
+	if (abs(mo->momx) < fric_scale
+		&& abs(mo->momy) < fric_scale)
 	{
 		mo->momx = 0;
 		mo->momy = 0;
@@ -1191,8 +1214,8 @@ static void P_XYFriction(mobj_t *mo, fixed_t oldx, fixed_t oldy)
 			mo->momx = FixedMul(mo->momx, ns);
 			mo->momy = FixedMul(mo->momy, ns);
 		}
-		else if (abs(player->rmomx) < FixedMul(FRACUNIT, mo->scale)
-		    && abs(player->rmomy) < FixedMul(FRACUNIT, mo->scale)
+		else if (abs(player->rmomx) < mo->scale
+		    && abs(player->rmomy) < mo->scale
 		    && (!(player->cmd.forwardmove && !(twodlevel || mo->flags2 & MF2_TWOD)) && !player->cmd.sidemove && !(player->pflags & PF_SPINNING))
 			&& !(player->mo->standingslope && (!(player->mo->standingslope->flags & SL_NOPHYSICS)) && (abs(player->mo->standingslope->zdelta) >= FRACUNIT/2))
 				)
@@ -1266,7 +1289,7 @@ static void P_PushableCheckBustables(mobj_t *mo)
 			if (rover->master->frontsector->crumblestate)
 				continue;
 
-			topheight = P_GetFOFTopZ(mo, node->m_sector, rover, mo->x, mo->y, NULL);
+			topheight    = P_GetFOFTopZ(mo, node->m_sector, rover, mo->x, mo->y, NULL);
 			bottomheight = P_GetFOFBottomZ(mo, node->m_sector, rover, mo->x, mo->y, NULL);
 
 			// Height checks
@@ -1345,7 +1368,7 @@ void P_XYMovement(mobj_t *mo)
 	fixed_t oldx, oldy; // reducing bobbing/momentum on ice when up against walls
 	boolean moved;
 	pslope_t *oldslope = NULL;
-	vector3_t slopemom = {0,0,0};
+	vector3_t slopemom = {0, 0, 0};
 	fixed_t predictedz = 0;
 
 	I_Assert(mo != NULL);
@@ -1377,7 +1400,7 @@ void P_XYMovement(mobj_t *mo)
 	oldy = mo->y;
 
 	// adjust various things based on slope
-	if (mo->standingslope && abs(mo->standingslope->zdelta) > FRACUNIT>>8)
+	if (mo->standingslope && abs(mo->standingslope->zdelta) > FRACUNIT >> 8)
 	{
 		if (!P_IsObjectOnGround(mo)) // We fell off at some point? Do the twisty thing!
 		{
@@ -1770,7 +1793,7 @@ static void P_AdjustMobjFloorZ_FFloors(mobj_t *mo, sector_t *sector, UINT8 motyp
 			    || (rover->flags & FF_BLOCKOTHERS && !mo->player))) // solid to others?
 			continue;
 
-		topheight = P_GetFOFTopZ(mo, sector, rover, mo->x, mo->y, NULL);
+		topheight    = P_GetFOFTopZ(mo, sector, rover, mo->x, mo->y, NULL);
 		bottomheight = P_GetFOFBottomZ(mo, sector, rover, mo->x, mo->y, NULL);
 
 		if (rover->flags & FF_QUICKSAND)
@@ -1794,16 +1817,18 @@ static void P_AdjustMobjFloorZ_FFloors(mobj_t *mo, sector_t *sector, UINT8 motyp
 			}
 		}
 
-		delta1 = mo->z - (bottomheight + ((topheight - bottomheight)/2));
-		delta2 = thingtop - (bottomheight + ((topheight - bottomheight)/2));
+		const fixed_t mid = (bottomheight + ((topheight - bottomheight) / 2));
 
-		if (topheight > mo->floorz && abs(delta1) < abs(delta2)
+		delta1 = abs(mo->z - mid);
+		delta2 = abs(thingtop - mid);
+
+		if (topheight > mo->floorz && delta1 < delta2
 			&& !(rover->flags & FF_REVERSEPLATFORM)
 			&& ((P_MobjFlip(mo)*mo->momz >= 0) || (!(rover->flags & FF_PLATFORM)))) // In reverse gravity, only clip for FOFs that are intangible from their bottom (the "top" you're falling through) if you're coming from above ("below" in your frame of reference)
 		{
 			mo->floorz = topheight;
 		}
-		if (bottomheight < mo->ceilingz && abs(delta1) >= abs(delta2)
+		if (bottomheight < mo->ceilingz && delta1 >= delta2
 			&& !(rover->flags & FF_PLATFORM)
 			&& ((P_MobjFlip(mo)*mo->momz >= 0) || (!(rover->flags & FF_REVERSEPLATFORM)))) // In normal gravity, only clip for FOFs that are intangible from the top if you're coming from below
 		{
@@ -1852,13 +1877,15 @@ static void P_AdjustMobjFloorZ_PolyObjs(mobj_t *mo, subsector_t *subsec)
 			polybottom = INT32_MIN;
 		}
 
-		delta1 = mo->z - (polybottom + ((polytop - polybottom)/2));
-		delta2 = thingtop - (polybottom + ((polytop - polybottom)/2));
+		const fixed_t mid = polybottom + ((polytop - polybottom) / 2);
 
-		if (polytop > mo->floorz && abs(delta1) < abs(delta2))
+		delta1 = abs(mo->z - mid);
+		delta2 = abs(thingtop - mid);
+
+		if (polytop > mo->floorz && delta1 < delta2)
 			mo->floorz = polytop;
 
-		if (polybottom < mo->ceilingz && abs(delta1) >= abs(delta2))
+		if (polybottom < mo->ceilingz && delta1 >= delta2)
 			mo->ceilingz = polybottom;
 
 		po = (polyobj_t *)(po->link.next);
