@@ -822,7 +822,7 @@ static void Y_FollowIntermission(void)
 //
 // Y_VoteScreenCheck
 //
-static void Y_VoteScreenCheck(void)
+void Y_VoteScreenCheck(void)
 {
 	strcpy(VoteScreen.Prefix, "INTS");
 
@@ -1574,6 +1574,22 @@ void Y_EndVote(void)
 {
 	voteclient.loaded = false;
 	voteendtic = -1;
+}
+
+//
+// Y_VoteClear
+// Resets patches to prevent dangling pointers
+//
+void Y_VoteClear(void)
+{
+	VoteScreen.bgpatch = NULL;
+	VoteScreen.widebgpatch = NULL;
+
+	for (size_t i = 0; i < sizeof(VoteScreen.cursor)/sizeof(VoteScreen.cursor[0]); ++i)
+		VoteScreen.cursor[i] = NULL;
+
+	VoteScreen.randomlvl = NULL;
+	VoteScreen.rubyicon = NULL;
 }
 
 //
