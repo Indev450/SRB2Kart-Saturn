@@ -2901,6 +2901,8 @@ boolean P_SetupLevel(boolean fromnetsave, boolean reloadinggamestate)
 	//Patch_FreeTag(PU_PATCH_ROTATED); // we keep those ty!
 	Z_FreeTags(PU_LEVEL, PU_PURGELEVEL - 1);
 
+	Y_VoteClear();
+
 #if defined (WALLSPLATS) || defined (FLOORSPLATS)
 	// clear the splats from previous level
 	R_ClearLevelSplats();

@@ -1577,6 +1577,22 @@ void Y_EndVote(void)
 }
 
 //
+// Y_VoteClear
+// Resets patches to prevent dangling pointers
+//
+void Y_VoteClear(void)
+{
+	VoteScreen.bgpatch = NULL;
+	VoteScreen.widebgpatch = NULL;
+
+	for (size_t i = 0; i < sizeof(VoteScreen.cursor)/sizeof(VoteScreen.cursor[0]); ++i)
+		VoteScreen.cursor[i] = NULL;
+
+	VoteScreen.randomlvl = NULL;
+	VoteScreen.rubyicon = NULL;
+}
+
+//
 // Y_SetupVoteFinish
 //
 void Y_SetupVoteFinish(SINT8 pick, SINT8 level)
