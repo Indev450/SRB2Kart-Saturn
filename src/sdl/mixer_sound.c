@@ -114,9 +114,7 @@ static UINT32 fading_timer;
 static UINT32 fading_duration;
 static INT32 fading_id;
 static void (*fading_callback)(void);
-#if !SDL_VERSION_ATLEAST(2, 32, 56)
 static boolean fading_do_callback;
-#endif
 
 #ifdef HAVE_LIBGME
 static Music_Emu *gme;
@@ -143,9 +141,7 @@ static void var_cleanup(void)
 	 is_fading = false;
 
 	fading_callback = NULL;
-#if !SDL_VERSION_ATLEAST(2, 32, 56)
 	fading_do_callback = false;
-#endif
 
 	internal_volume = 100;
 }
@@ -263,7 +259,6 @@ void I_ShutdownSound(void)
 
 void I_UpdateSound(void)
 {
-#if !SDL_VERSION_ATLEAST(2, 32, 56)
 	if (fading_do_callback)
 	{
 		if (fading_callback)
@@ -271,7 +266,6 @@ void I_UpdateSound(void)
 		fading_callback = NULL;
 		fading_do_callback = false;
 	}
-#endif
 }
 
 /// ------------------------
@@ -596,14 +590,8 @@ static UINT32 get_adjusted_position(UINT32 position)
 
 static void do_fading_callback(void)
 {
-#if SDL_VERSION_ATLEAST(2, 32, 56)
-	if (fading_callback)
-		(*fading_callback)();
-	fading_callback = NULL;
-#else
 	// TODO: Should I use a mutex here or something?
 	fading_do_callback = true;
-#endif
 }
 
 /// ------------------------
