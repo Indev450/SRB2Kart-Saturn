@@ -3142,8 +3142,8 @@ void GL_PostImgRedraw(float points[SCREENVERTS][SCREENVERTS][2])
 		return;
 
 	// X/Y stretch fix for all resolutions(!)
-	xfix = (float)(screen_texsizew)/((float)((screen_width)/(float)(SCREENVERTS-1)));
-	yfix = (float)(screen_texsizeh)/((float)((screen_height)/(float)(SCREENVERTS-1)));
+	xfix = (float)screen_texsizew/((float)(screen_width/(float)(SCREENVERTS-1)));
+	yfix = (float)screen_texsizeh/((float)(screen_height/(float)(SCREENVERTS-1)));
 
 	pglDisable(GL_DEPTH_TEST);
 	pglDisable(GL_BLEND);
@@ -3230,12 +3230,9 @@ void GL_DrawScreenTexture(int tex, FSurfaceInfo *surf, FBITFIELD polyflags)
 	if (gl_enable_screen_textures != 2)
 		return;
 
-	xfix = 1/((float)(screen_texsizew)/((float)((screen_width))));
-	yfix = 1/((float)(screen_texsizeh)/((float)((screen_height))));
+	xfix = 1/((float)screen_texsizew/(float)screen_width);
+	yfix = 1/((float)screen_texsizeh/(float)screen_height);
 
-	// const float screenVerts[12]
-
-	// float fix[8];
 	fix[0] = 0.0f;
 	fix[1] = 0.0f;
 	fix[2] = 0.0f;
@@ -3289,12 +3286,9 @@ void GL_DoScreenWipe(int wipeStart, int wipeEnd)
 	if (!gl_enable_screen_textures)
 		return;
 
-	xfix = 1/((float)(screen_texsizew)/((float)((screen_width))));
-	yfix = 1/((float)(screen_texsizeh)/((float)((screen_height))));
+	xfix = 1/((float)screen_texsizew/(float)screen_width);
+	yfix = 1/((float)screen_texsizeh/(float)screen_height);
 
-	// const float screenVerts[12]
-
-	// float fix[8];
 	fix[0] = 0.0f;
 	fix[1] = 0.0f;
 	fix[2] = 0.0f;
@@ -3364,8 +3358,8 @@ void GL_RenderVhsEffect(fixed_t upbary, fixed_t downbary, UINT8 updistort, UINT8
 	if (gl_enable_screen_textures != 2)
 		return;
 
-	xfix = 1/((float)(screen_texsizew)/((float)((screen_width))));
-	yfix = 1/((float)(screen_texsizeh)/((float)((screen_height))));
+	xfix = 1/((float)screen_texsizew/(float)screen_width);
+	yfix = 1/((float)screen_texsizeh/(float)screen_height);
 
 	const GLfloat scrwf = (float)screen_width;
 	const GLfloat scrwh = (float)screen_height;
@@ -3494,8 +3488,8 @@ void GL_DrawScreenFinalTexture(int tex, INT32 width, INT32 height, boolean usesh
 	if (gl_enable_screen_textures != 2)
 		return;
 
-	xfix = 1/((float)(screen_texsizew)/((float)((screen_width))));
-	yfix = 1/((float)(screen_texsizeh)/((float)((screen_height))));
+	xfix = 1/((float)screen_texsizew/(float)screen_width);
+	yfix = 1/((float)screen_texsizeh/(float)screen_height);
 
 	origaspect = (float)screen_width / screen_height;
 	newaspect = (float)width / height;
