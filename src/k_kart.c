@@ -48,12 +48,12 @@ void K_LoadExtraVFX(void)
 
 	LOADVFX(stardust, "MT_STARDUST");
 
-	LOADVFX(watertrail, "MT_WATERTRAIL");
-	LOADVFX(watertrailunderlay, "MT_WATERTRAILUNDERLAY");
-	LOADVFX(watertrail_minstate, "S_WATERTRAIL1");
-	LOADVFX(watertrail_maxstate, "S_WATERTRAILLAST");
-	LOADVFX(watertrailunderlay_minstate, "S_WATERTRAILUNDERLAY1");
-	LOADVFX(watertrailunderlay_maxstate, "S_WATERTRAILUNDERLAYLAST");
+	LOADVFX(watertrail, "MT_WOTERTRAIL");
+	LOADVFX(watertrailunderlay, "MT_WOTERTRAILUNDERLAY");
+	LOADVFX(watertrail_minstate, "S_WOTERTRAIL1");
+	LOADVFX(watertrail_maxstate, "S_WOTERTRAILLAST");
+	LOADVFX(watertrailunderlay_minstate, "S_WOTERTRAILUNDERLAY1");
+	LOADVFX(watertrailunderlay_maxstate, "S_WOTERTRAILUNDERLAYLAST");
 
 #undef LOADVFX
 
