@@ -2917,6 +2917,17 @@ static void CL_ConnectToServer(void)
 		 serverlist[i].info.version, serverlist[i].info.subversion);
 	}
 	SL_ClearServerList(servernode);
+
+	if (map_icon_data != NULL)
+		Z_Free(map_icon_data);
+	if (map_icon != NULL)
+		Patch_Free(map_icon);
+	map_icon_data = Z_Malloc(MAP_ICON_WIDTH * MAP_ICON_HEIGHT, PU_CACHE, NULL);
+	map_icon_index = 0;
+	map_icon_needed = 0xff;
+	map_icon_read = 0;
+	map_icon_missing = 0xffffffff;
+	map_icon_last_request = I_GetTime();
 #endif
 
 	do
@@ -4973,17 +4984,6 @@ static void HandleTimeout(SINT8 node)
 	M_StartMessage(M_GetText("Server Timeout\n\nPress Esc\n"), NULL, MM_NOTHING);
 }
 
-// Helper function for packets that should only be sent by the server
-// If it is NOT from the server, bail out and close the connection!
-static boolean ServerOnly(SINT8 node)
-{
-	if (node == servernode)
-		return false;
-
-	Net_CloseConnection(node);
-	return true;
-}
-
 #ifndef NONET
 /** Called when a PT_SERVERINFO packet is received
   *
@@ -5012,17 +5012,6 @@ static void HandleServerInfo(SINT8 node)
 
 	if (client && cl_mode > CL_SEARCHING && node == servernode)
 		memcpy(connectedservername, netbuffer->u.serverinfo.servername, MAXSERVERNAME);
-
-	if (map_icon_data != NULL)
-		Z_Free(map_icon_data);
-	if (map_icon != NULL)
-		Patch_Free(map_icon);
-	map_icon_data = Z_Malloc(MAP_ICON_WIDTH * MAP_ICON_HEIGHT, PU_CACHE, NULL);
-	map_icon_index = 0;
-	map_icon_needed = 0xff;
-	map_icon_read = 0;
-	map_icon_missing = 0xffffffff;
-	map_icon_last_request = I_GetTime();
 }
 
 static void HandlePlayerInfo(void)
@@ -5034,9 +5023,23 @@ static void HandlePlayerInfo(void)
 		playerinfo[i] = netbuffer->u.playerinfo[i];
 }
 
+// Helper function for packets that should only be sent by the server
+// If it is NOT from the server, bail out and close the connection!
+static boolean ServerOnly(SINT8 node)
+{
+	if (node == servernode)
+		return false;
+
+	Net_CloseConnection(node);
+	return true;
+}
+
 static void PT_MapIcon(void)
 {
 	if (map_icon_data == NULL)
+		return;
+
+	if (ServerOnly(doomcom->remotenode))
 		return;
 
 	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
