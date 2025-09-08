@@ -3348,7 +3348,6 @@ void GL_DoScreenWipe(int wipeStart, int wipeEnd)
 
 void GL_RenderVhsEffect(fixed_t upbary, fixed_t downbary, UINT8 updistort, UINT8 downdistort, UINT8 barsize)
 {
-	int tex = HWD_SCREENTEXTURE_VHS;
 	float xfix, yfix;
 	float fix[8];
 	GLubyte color[4] = {255, 255, 255, 255};
@@ -3368,14 +3367,19 @@ void GL_RenderVhsEffect(fixed_t upbary, fixed_t downbary, UINT8 updistort, UINT8
 	xfix = 1/((float)(screen_texsizew)/((float)((screen_width))));
 	yfix = 1/((float)(screen_texsizeh)/((float)((screen_height))));
 
-	// Slight fuzziness
-	GL_MakeScreenTexture(tex);
-	GL_SetBlend(PF_Modulated|PF_Translucent|PF_NoDepthTest);
-	pglBindTexture(GL_TEXTURE_2D, screenTextures[tex]);
+	const GLfloat scrwf = (float)screen_width;
+	const GLfloat scrwh = (float)screen_height;
 
-	for (i = 0; i < 1; i += 2.f/vid.height)
+	// Slight fuzziness
+	GL_MakeScreenTexture(HWD_SCREENTEXTURE_VHS);
+	GL_SetBlend(PF_Modulated|PF_Translucent|PF_NoDepthTest);
+	pglBindTexture(GL_TEXTURE_2D, screenTextures[HWD_SCREENTEXTURE_VHS]);
+
+	const float stride = 2.f/scrwh;
+
+	for (i = 0; i < 1; i += stride)
 	{
-		fix[2] = (float)(rand() % 128) / -22000 * xfix;
+		fix[2] = (float)(rand() % 128) / -22000.f * xfix;
 		fix[0] = fix[2];
 		fix[6] = fix[0] + xfix;
 		fix[4] = fix[2] + xfix;
@@ -3393,8 +3397,8 @@ void GL_RenderVhsEffect(fixed_t upbary, fixed_t downbary, UINT8 updistort, UINT8
 	}
 
 	// Upward bar
-	GL_MakeScreenTexture(tex);
-	pglBindTexture(GL_TEXTURE_2D, screenTextures[tex]);
+	//GL_MakeScreenTexture(HWD_SCREENTEXTURE_VHS);
+	//pglBindTexture(GL_TEXTURE_2D, screenTextures[HWD_SCREENTEXTURE_VHS]);
 
 	color[0] = color[1] = color[2] = 190;
 	color[3] = 250;
@@ -3402,14 +3406,14 @@ void GL_RenderVhsEffect(fixed_t upbary, fixed_t downbary, UINT8 updistort, UINT8
 
 	fix[0] = 0.0f;
 	fix[6] = xfix;
-	fix[2] = (float)updistort / screen_width * xfix;
+	fix[2] = (float)updistort / scrwf * xfix;
 	fix[4] = fix[2] + fix[6];
 
-	screenVerts[1] = screenVerts[10] = 2.0f*upbary/screen_height - 1.0f;
-	screenVerts[4] = screenVerts[7] = screenVerts[1] + (float)barsize/screen_height;
+	screenVerts[1] = screenVerts[10] = 2.0f*upbary/scrwh - 1.0f;
+	screenVerts[4] = screenVerts[7] = screenVerts[1] + (float)barsize/scrwh;
 
-	fix[1] = fix[7] = (float)upbary/screen_height * yfix;
-	fix[3] = fix[5] = fix[1] + (float)barsize/2/screen_height * yfix;
+	fix[1] = fix[7] = (float)upbary/scrwh * yfix;
+	fix[3] = fix[5] = fix[1] + (float)barsize/2/scrwh * yfix;
 
 	pglTexCoordPointer(2, GL_FLOAT, 0, fix);
 	pglVertexPointer(3, GL_FLOAT, 0, screenVerts);
@@ -3422,19 +3426,19 @@ void GL_RenderVhsEffect(fixed_t upbary, fixed_t downbary, UINT8 updistort, UINT8
 	pglDrawArrays(GL_TRIANGLE_FAN, 0, 4);
 
 	// Downward bar
-	GL_MakeScreenTexture(tex);
-	pglBindTexture(GL_TEXTURE_2D, screenTextures[tex]);
+	//GL_MakeScreenTexture(HWD_SCREENTEXTURE_VHS);
+	//pglBindTexture(GL_TEXTURE_2D, screenTextures[HWD_SCREENTEXTURE_VHS]);
 
 	fix[0] = 0.0f;
 	fix[6] = xfix;
-	fix[2] = (float)downdistort / screen_width * -xfix;
+	fix[2] = (float)downdistort / scrwf * -xfix;
 	fix[4] = fix[2] + fix[6];
 
-	screenVerts[1] = screenVerts[10] = 2.0f*downbary/screen_height - 1.0f;
-	screenVerts[4] = screenVerts[7] = screenVerts[1] + (float)barsize/screen_height;
+	screenVerts[1] = screenVerts[10] = 2.0f*downbary/scrwh - 1.0f;
+	screenVerts[4] = screenVerts[7] = screenVerts[1] + (float)barsize/scrwh;
 
-	fix[1] = fix[7] = (float)downbary/screen_height * yfix;
-	fix[3] = fix[5] = fix[1] + (float)barsize/2/screen_height * yfix;
+	fix[1] = fix[7] = (float)downbary/scrwh * yfix;
+	fix[3] = fix[5] = fix[1] + (float)barsize/2/scrwh * yfix;
 
 	pglTexCoordPointer(2, GL_FLOAT, 0, fix);
 	pglVertexPointer(3, GL_FLOAT, 0, screenVerts);
@@ -3450,10 +3454,12 @@ void GL_RenderVhsEffect(fixed_t upbary, fixed_t downbary, UINT8 updistort, UINT8
 // Create a texture from the screen.
 void GL_MakeScreenTexture(int tex)
 {
-	boolean firstTime = (screenTextures[tex] == 0);
+	boolean firstTime;
 
 	if (!gl_enable_screen_textures)
 		return;
+
+	firstTime = (screenTextures[tex] == 0);
 
 	// Create screen texture
 	if (firstTime)
@@ -3539,7 +3545,7 @@ void GL_DrawScreenFinalTexture(int tex, INT32 width, INT32 height, boolean usesh
 	pglBindTexture(GL_TEXTURE_2D, screenTextures[tex]);
 
 	if (useshader)
-		pglUseProgram(gl_shaders[SHADER_PALETTE_POSTPROCESS].program); // palette postprocess shader
+		pglUseProgram(gl_shaders[SHADER_PALETTE_POSTPROCESS].program); // Final postprocess step of palette rendering, after everything else has been drawn.
 
 	pglColor4ubv(white);
 
@@ -3557,6 +3563,7 @@ void GL_DrawScreenFinalTexture(int tex, INT32 width, INT32 height, boolean usesh
 void GL_SetPaletteLookup(UINT8 *lut)
 {
 	GLenum internalFormat;
+
 	if (gl_version[0] == '1' || gl_version[0] == '2')
 	{
 		// if the OpenGL version is below 3.0, then the GL_R8 format may not be available.
@@ -3584,6 +3591,7 @@ void GL_SetPaletteLookup(UINT8 *lut)
 UINT32 GL_CreateLightTable(RGBA_t *hw_lighttable)
 {
 	LTListItem *item = malloc(sizeof(LTListItem));
+
 	if (!LightTablesTail)
 	{
 		LightTablesHead = LightTablesTail = item;
@@ -3593,6 +3601,7 @@ UINT32 GL_CreateLightTable(RGBA_t *hw_lighttable)
 		LightTablesTail->next = item;
 		LightTablesTail = item;
 	}
+
 	item->next = NULL;
 	pglGenTextures(1, &item->id);
 	pglBindTexture(GL_TEXTURE_2D, item->id);
