@@ -29,8 +29,6 @@
 
 rendermode_t rendermode = render_none;
 
-boolean highcolor = false;
-
 // synchronize page flipping with screen refresh
 consvar_t cv_vidwait = {"vid_wait", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
@@ -153,7 +151,7 @@ boolean I_UseNativeKeyboard(void)
 	return false;
 }
 
-void I_SetBorderlessWindow(void) 
+void I_SetBorderlessWindow(void)
 {
 
 }

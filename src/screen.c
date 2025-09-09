@@ -8,7 +8,7 @@
 // See the 'LICENSE' file for more details.
 //-----------------------------------------------------------------------------
 /// \file  screen.c
-/// \brief Handles multiple resolutions, 8bpp/16bpp(highcolor) modes
+/// \brief Handles multiple resolutions
 
 #include "doomdef.h"
 #include "doomstat.h"
@@ -37,7 +37,7 @@
 // global video state
 // ------------------
 viddef_t vid;
-INT32 setmodeneeded; //video mode change needed if > 0 (the mode number to set + 1)
+INT32 setmodeneeded; // video mode change needed if > 0 (the mode number to set + 1)
 
 static CV_PossibleValue_t shittyscreen_cons_t[] = {{0, "Okay"}, {1, "Shitty"}, {2, "Extra Shitty"}, {0, NULL}};
 

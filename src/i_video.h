@@ -40,11 +40,6 @@ typedef enum
 */
 extern rendermode_t rendermode;
 
-
-/**	\brief use highcolor modes if true
-*/
-extern boolean highcolor;
-
 /**	\brief setup video mode
 */
 void I_StartupGraphics(void);
