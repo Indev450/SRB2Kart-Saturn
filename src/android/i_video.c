@@ -10,11 +10,7 @@
 
 rendermode_t rendermode = render_soft;
 
-boolean highcolor = false;
-
 boolean allow_fullscreen = false;
-
-
 
 consvar_t cv_vidwait = {"vid_wait", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
