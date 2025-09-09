@@ -65,7 +65,7 @@ void I_WaitVBL(INT32 count)
   (void)count;
 }
 
-void I_ReadScreen(UINT8 *scr)
+void I_ReadScreen(UINT8 * restrict scr, INT32 scale)
 {
   (void)scr;
 }

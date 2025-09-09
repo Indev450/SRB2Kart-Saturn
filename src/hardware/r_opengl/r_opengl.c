@@ -25,9 +25,6 @@
 
 // Eeeeh not sure is this right way, but it works < sry :c < sry again it had to go :c
 
-// requires GL 4.3
-//#define GLDEBUGMESSAGE
-
 #if defined (HWRENDER) && !defined (NOROPENGL)
 
 #include "../../r_fps.h" // For R_GetTimeFrac, used for the leveltime shader uniform
@@ -41,6 +38,8 @@
 
 #include "../../i_video.h"
 
+// requires GL 4.3
+//#define GLDEBUGMESSAGE
 #ifdef GLDEBUGMESSAGE
 #include "../../console.h"
 #endif
@@ -342,6 +341,7 @@ static void GL_MSG_Error(const char *format, ...)
 /* Raster functions */
 #define pglPixelStorei glPixelStorei
 #define pglReadPixels glReadPixels
+#define pglGetTexImage glGetTexImage
 
 /* Texture mapping */
 #define pglTexEnvi glTexEnvi
@@ -455,6 +455,8 @@ typedef void (APIENTRY * PFNglPixelStorei) (GLenum pname, GLint param);
 static PFNglPixelStorei pglPixelStorei;
 typedef void (APIENTRY  * PFNglReadPixels) (GLint x, GLint y, GLsizei width, GLsizei height, GLenum format, GLenum type, GLvoid *pixels);
 static PFNglReadPixels pglReadPixels;
+typedef void (APIENTRY  * PFNglGetTexImage) (GLenum target, GLint level, GLenum format, GLenum type, GLvoid *pixels);
+static PFNglGetTexImage pglGetTexImage;
 
 /* Texture mapping */
 typedef void (APIENTRY * PFNglTexEnvi) (GLenum target, GLenum pname, GLint param);
@@ -651,6 +653,7 @@ boolean SetupGLfunc(void)
 
 	GetGLfunc(glPixelStorei)
 	GetGLfunc(glReadPixels)
+	GetGLfunc(glGetTexImage)
 
 	GetGLfunc(glTexEnvi)
 	GetGLfunc(glTexParameteri)
@@ -1487,6 +1490,54 @@ void GL_ReadScreenTexture(int tex, UINT16 *dst_data)
 	}
 
 	free(row);
+}
+
+// nope, definitely not faster. software has the same flickering/z-fighting bugs with laggy GIF recording anyway
+//#define GETTEXIMAGE
+
+#ifdef GETTEXIMAGE
+#define TEXWIDTH screen_texsizew
+#else
+#define TEXWIDTH screen_width
+#endif
+
+// -----------------------+
+// ReadScreenFinalTexture : Reads out the final screen texture
+// Returns                : 24bit RGB pixel array stored in dest
+// -----------------------+
+void GL_ReadScreenFinalTexture(UINT8 * restrict dest, INT32 scale)
+{
+	const INT32 stride = (screen_width/scale)*3;
+	INT32 scanlines = screen_height;
+	GLubyte * restrict image;
+
+#ifdef GETTEXIMAGE
+	image = malloc(screen_texsizew*screen_texsizeh*3); // oof
+	pglBindTexture(GL_TEXTURE_2D, screenTextures[HWD_SCREENTEXTURE_GENERIC2]);
+	pglGetTexImage(GL_TEXTURE_2D, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
+	tex_downloaded = screenTextures[HWD_SCREENTEXTURE_GENERIC2];
+#else
+	image = malloc(screen_width*screen_height*3);
+	pglPixelStorei(GL_PACK_ALIGNMENT, 1);
+	pglReadPixels(0, 0, screen_width, screen_height, GL_RGB, GL_UNSIGNED_BYTE, image);
+#endif
+
+	// TODO the downscaling happens in the screen capture code now,
+	// yet we're still doing this on the CPU? sheesh...
+	// this is where actual knowledge of OpenGL would've come in handy
+	image += scanlines*TEXWIDTH*3;
+	while ((scanlines -= scale) >= 0)
+	{
+		image -= TEXWIDTH*scale*3;
+		if (scale == 1)
+			memcpy(dest, image, stride);
+		else for (size_t i = 0; i < stride; i += 3)
+			memcpy(dest + i, image + i*scale, 3);
+		dest += stride;
+	}
+
+	// ...yet still, restrict doesn't make the inner loop any faster
+	free(image - ((screen_height % scale) * TEXWIDTH*3));
 }
 
 // -----------------+
