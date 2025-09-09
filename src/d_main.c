@@ -1018,9 +1018,6 @@ void D_ClearState(void)
 //
 void D_StartTitle(void)
 {
-	if (!demo.title)
-		S_StopMusic();
-
 	D_ClearState();
 	M_ClearMenus(true);
 	F_StartTitleScreen();

@@ -3363,9 +3363,6 @@ void G_EndGame(void)
 
 	if (netgame)
 	{
-		if (!demo.title)
-			S_StopMusic();
-
 		G_SetGamestate(GS_WAITINGPLAYERS); // hack to prevent a command repeat
 
 		if (server)
