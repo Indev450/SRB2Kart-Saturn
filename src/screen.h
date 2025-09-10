@@ -8,7 +8,7 @@
 // See the 'LICENSE' file for more details.
 //-----------------------------------------------------------------------------
 /// \file  screen.h
-/// \brief Handles multiple resolutions, 8bpp/16bpp(highcolor) modes
+/// \brief Handles multiple resolutions
 
 #ifndef __SCREEN_H__
 #define __SCREEN_H__

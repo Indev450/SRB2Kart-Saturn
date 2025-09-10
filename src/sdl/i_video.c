@@ -113,8 +113,6 @@ unsigned msaa = 0;
 boolean a2c = false;
 #endif
 
-boolean highcolor = false;
-
 static void KeyboardLayout_OnChange(void)
 {
 	if (cv_keyboardlayout.value == 2)
