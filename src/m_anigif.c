@@ -57,6 +57,7 @@ static UINT8 *scrbuf_lineend;
 static UINT8 *scrbuf_writeend;
 static INT16 scrbuf_downscaleamt = 1;
 static UINT16 scrbuf_width, scrbuf_height;
+static UINT8 *scrbuf_screens;
 
 // OPTIMIZE gif output
 // ---
@@ -494,8 +495,8 @@ static void GIF_rgbconvert(UINT8 * restrict linear, UINT8 * restrict scr)
 static void GIF_framewrite(void)
 {
 	UINT8 *p;
-	UINT8 *base_screen = vid.screens[0];
-	UINT8 *movie_screen = vid.screens[2];
+	UINT8 *base_screen = scrbuf_screens;
+	UINT8 *movie_screen = scrbuf_screens;
 	INT32 blitx, blity, blitw, blith;
 
 	if (!gifframe_data)
@@ -505,15 +506,18 @@ static void GIF_framewrite(void)
 	if (!gif_out)
 		return;
 
+	// select your framebuffer
+	if (gif_frames & 1)
+		base_screen += scrbuf_width*scrbuf_height;
+	else
+		movie_screen += scrbuf_width*scrbuf_height;
+
 	// blit to temp screen
 	if (rendermode == render_soft)
 		I_ReadScreen(movie_screen, scrbuf_downscaleamt);
 #ifdef HWRENDER
 	else if (rendermode == render_opengl)
 	{
-		// save previous frame (software already does this elsewhere...?)
-		memcpy(base_screen, movie_screen, scrbuf_width * scrbuf_height);
-
 		UINT8 *linear = HWR_GetScreenshot(scrbuf_downscaleamt);
 		GIF_rgbconvert(linear, movie_screen);
 		//free(linear); // Allocated 'statically', no need to free now
@@ -657,12 +661,22 @@ INT32 GIF_open(const char *filename)
 	return 1;
 }
 
+static void GIF_checkscreens(void)
+{
+	if (scrbuf_screens == NULL)
+		Z_Malloc(scrbuf_width * scrbuf_height * 2, PU_STATIC, &scrbuf_screens);
+
+	I_Assert(scrbuf_width == vid.width / scrbuf_downscaleamt);
+	I_Assert(scrbuf_height == vid.height / scrbuf_downscaleamt);
+}
+
 //
 // GIF_frame
 // writes a frame into the output gif
 //
 void GIF_frame(void)
 {
+	GIF_checkscreens();
 	// there's not much actually needed here, is there.
 	GIF_framewrite();
 }
@@ -692,6 +706,8 @@ INT32 GIF_close(void)
 	if (giflzw_hashTable)
 		Z_Free(giflzw_hashTable);
 	giflzw_hashTable = NULL;
+
+	Z_Free(scrbuf_screens);
 
 	CONS_Printf(M_GetText("Animated gif closed; wrote %d frames\n"), gif_frames);
 	return 1;
