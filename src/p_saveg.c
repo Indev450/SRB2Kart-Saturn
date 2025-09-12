@@ -112,7 +112,6 @@ static void P_NetArchivePlayers(savebuffer_t *save, boolean resending)
 {
 	INT32 i, j;
 	UINT16 flags;
-//	size_t q;
 
 	WRITEUINT32(save->p, ARCHIVEBLOCK_PLAYERS);
 
@@ -131,166 +130,168 @@ static void P_NetArchivePlayers(savebuffer_t *save, boolean resending)
 		if (resending)
 			WRITESTRINGN(save->p, player_names[i], MAXPLAYERNAME);
 
-		WRITEANGLE(save->p, players[i].aiming);
-		WRITEANGLE(save->p, players[i].awayviewaiming);
-		WRITEINT32(save->p, players[i].awayviewtics);
-		WRITEINT32(save->p, players[i].health);
+		const player_t *player = &players[i];
 
-		WRITESINT8(save->p, players[i].pity);
-		WRITEINT32(save->p, players[i].currentweapon);
-		WRITEINT32(save->p, players[i].ringweapons);
+		WRITEANGLE(save->p, player->aiming);
+		WRITEANGLE(save->p, player->awayviewaiming);
+		WRITEINT32(save->p, player->awayviewtics);
+		WRITEINT32(save->p, player->health);
+
+		WRITESINT8(save->p, player->pity);
+		WRITEINT32(save->p, player->currentweapon);
+		WRITEINT32(save->p, player->ringweapons);
 
 		for (j = 0; j < NUMPOWERS; j++)
-			WRITEUINT16(save->p, players[i].powers[j]);
+			WRITEUINT16(save->p, player->powers[j]);
 		for (j = 0; j < NUMKARTSTUFF; j++)
-			WRITEINT32(save->p, players[i].kartstuff[j]);
+			WRITEINT32(save->p, player->kartstuff[j]);
 
-		WRITEANGLE(save->p, players[i].frameangle);
+		WRITEANGLE(save->p, player->frameangle);
 
-		WRITEUINT8(save->p, players[i].playerstate);
-		WRITEUINT32(save->p, players[i].pflags);
-		WRITEUINT8(save->p, players[i].panim);
-		WRITEUINT8(save->p, players[i].spectator);
+		WRITEUINT8(save->p, player->playerstate);
+		WRITEUINT32(save->p, player->pflags);
+		WRITEUINT8(save->p, player->panim);
+		WRITEUINT8(save->p, player->spectator);
 
-		WRITEUINT16(save->p, players[i].flashpal);
-		WRITEUINT16(save->p, players[i].flashcount);
+		WRITEUINT16(save->p, player->flashpal);
+		WRITEUINT16(save->p, player->flashcount);
 
 		if (resending)
 		{
-			WRITEUINT8(save->p, players[i].skincolor);
-			WRITEINT32(save->p, players[i].skin);
+			WRITEUINT8(save->p, player->skincolor);
+			WRITEINT32(save->p, player->skin);
 		}
 
-		WRITEUINT32(save->p, players[i].score);
-		WRITEFIXED(save->p, players[i].dashspeed);
-		WRITEINT32(save->p, players[i].dashtime);
-		WRITESINT8(save->p, players[i].lives);
-		WRITESINT8(save->p, players[i].continues);
-		WRITESINT8(save->p, players[i].xtralife);
-		WRITEUINT8(save->p, players[i].gotcontinue);
-		WRITEFIXED(save->p, players[i].speed);
-		WRITEUINT8(save->p, players[i].jumping);
-		WRITEUINT8(save->p, players[i].secondjump);
-		WRITEUINT8(save->p, players[i].fly1);
-		WRITEUINT8(save->p, players[i].scoreadd);
-		WRITEUINT32(save->p, players[i].glidetime);
-		WRITEUINT8(save->p, players[i].climbing);
-		WRITEINT32(save->p, players[i].deadtimer);
-		WRITEUINT32(save->p, players[i].exiting);
-		WRITEUINT8(save->p, players[i].homing);
-		WRITEUINT32(save->p, players[i].skidtime);
+		WRITEUINT32(save->p, player->score);
+		WRITEFIXED(save->p, player->dashspeed);
+		WRITEINT32(save->p, player->dashtime);
+		WRITESINT8(save->p, player->lives);
+		WRITESINT8(save->p, player->continues);
+		WRITESINT8(save->p, player->xtralife);
+		WRITEUINT8(save->p, player->gotcontinue);
+		WRITEFIXED(save->p, player->speed);
+		WRITEUINT8(save->p, player->jumping);
+		WRITEUINT8(save->p, player->secondjump);
+		WRITEUINT8(save->p, player->fly1);
+		WRITEUINT8(save->p, player->scoreadd);
+		WRITEUINT32(save->p, player->glidetime);
+		WRITEUINT8(save->p, player->climbing);
+		WRITEINT32(save->p, player->deadtimer);
+		WRITEUINT32(save->p, player->exiting);
+		WRITEUINT8(save->p, player->homing);
+		WRITEUINT32(save->p, player->skidtime);
 
 		////////////////////////////
 		// Conveyor Belt Movement //
 		////////////////////////////
-		WRITEFIXED(save->p, players[i].cmomx); // Conveyor momx
-		WRITEFIXED(save->p, players[i].cmomy); // Conveyor momy
-		WRITEFIXED(save->p, players[i].rmomx); // "Real" momx (momx - cmomx)
-		WRITEFIXED(save->p, players[i].rmomy); // "Real" momy (momy - cmomy)
+		WRITEFIXED(save->p, player->cmomx); // Conveyor momx
+		WRITEFIXED(save->p, player->cmomy); // Conveyor momy
+		WRITEFIXED(save->p, player->rmomx); // "Real" momx (momx - cmomx)
+		WRITEFIXED(save->p, player->rmomy); // "Real" momy (momy - cmomy)
 
 		/////////////////////
 		// Race Mode Stuff //
 		/////////////////////
-		WRITEINT16(save->p, players[i].numboxes);
-		WRITEINT16(save->p, players[i].totalring);
-		WRITEUINT32(save->p, players[i].realtime);
-		WRITEUINT8(save->p, players[i].laps);
+		WRITEINT16(save->p, player->numboxes);
+		WRITEINT16(save->p, player->totalring);
+		WRITEUINT32(save->p, player->realtime);
+		WRITEUINT8(save->p, player->laps);
 
 		////////////////////
 		// CTF Mode Stuff //
 		////////////////////
-		WRITEINT32(save->p, players[i].ctfteam);
-		WRITEUINT16(save->p, players[i].gotflag);
+		WRITEINT32(save->p, player->ctfteam);
+		WRITEUINT16(save->p, player->gotflag);
 
-		WRITEINT32(save->p, players[i].weapondelay);
-		WRITEINT32(save->p, players[i].tossdelay);
+		WRITEINT32(save->p, player->weapondelay);
+		WRITEINT32(save->p, player->tossdelay);
 
-		WRITEUINT32(save->p, players[i].starposttime);
-		WRITEINT16(save->p, players[i].starpostx);
-		WRITEINT16(save->p, players[i].starposty);
-		WRITEINT16(save->p, players[i].starpostz);
-		WRITEINT32(save->p, players[i].starpostnum);
-		WRITEANGLE(save->p, players[i].starpostangle);
+		WRITEUINT32(save->p, player->starposttime);
+		WRITEINT16(save->p, player->starpostx);
+		WRITEINT16(save->p, player->starposty);
+		WRITEINT16(save->p, player->starpostz);
+		WRITEINT32(save->p, player->starpostnum);
+		WRITEANGLE(save->p, player->starpostangle);
 
-		WRITEANGLE(save->p, players[i].angle_pos);
-		WRITEANGLE(save->p, players[i].old_angle_pos);
+		WRITEANGLE(save->p, player->angle_pos);
+		WRITEANGLE(save->p, player->old_angle_pos);
 
-		WRITEINT32(save->p, players[i].flyangle);
-		WRITEUINT32(save->p, players[i].drilltimer);
-		WRITEINT32(save->p, players[i].linkcount);
-		WRITEUINT32(save->p, players[i].linktimer);
-		WRITEINT32(save->p, players[i].anotherflyangle);
-		WRITEUINT32(save->p, players[i].nightstime);
-		WRITEUINT32(save->p, players[i].bumpertime);
-		WRITEINT32(save->p, players[i].drillmeter);
-		WRITEUINT8(save->p, players[i].drilldelay);
-		WRITEUINT8(save->p, players[i].bonustime);
-		WRITEUINT8(save->p, players[i].mare);
+		WRITEINT32(save->p, player->flyangle);
+		WRITEUINT32(save->p, player->drilltimer);
+		WRITEINT32(save->p, player->linkcount);
+		WRITEUINT32(save->p, player->linktimer);
+		WRITEINT32(save->p, player->anotherflyangle);
+		WRITEUINT32(save->p, player->nightstime);
+		WRITEUINT32(save->p, player->bumpertime);
+		WRITEINT32(save->p, player->drillmeter);
+		WRITEUINT8(save->p, player->drilldelay);
+		WRITEUINT8(save->p, player->bonustime);
+		WRITEUINT8(save->p, player->mare);
 
-		WRITEUINT32(save->p, players[i].marebegunat);
-		WRITEUINT32(save->p, players[i].startedtime);
-		WRITEUINT32(save->p, players[i].finishedtime);
-		WRITEINT16(save->p, players[i].finishedrings);
-		WRITEUINT32(save->p, players[i].marescore);
-		WRITEUINT32(save->p, players[i].lastmarescore);
-		WRITEUINT8(save->p, players[i].lastmare);
-		WRITEINT32(save->p, players[i].maxlink);
-		WRITEUINT8(save->p, players[i].texttimer);
-		WRITEUINT8(save->p, players[i].textvar);
+		WRITEUINT32(save->p, player->marebegunat);
+		WRITEUINT32(save->p, player->startedtime);
+		WRITEUINT32(save->p, player->finishedtime);
+		WRITEINT16(save->p, player->finishedrings);
+		WRITEUINT32(save->p, player->marescore);
+		WRITEUINT32(save->p, player->lastmarescore);
+		WRITEUINT8(save->p, player->lastmare);
+		WRITEINT32(save->p, player->maxlink);
+		WRITEUINT8(save->p, player->texttimer);
+		WRITEUINT8(save->p, player->textvar);
 
-		if (players[i].capsule)
+		if (player->capsule)
 			flags |= CAPSULE;
 
-		if (players[i].awayviewmobj)
+		if (player->awayviewmobj)
 			flags |= AWAYVIEW;
 
-		if (players[i].axis1)
+		if (player->axis1)
 			flags |= FIRSTAXIS;
 
-		if (players[i].axis2)
+		if (player->axis2)
 			flags |= SECONDAXIS;
 
-		WRITEINT16(save->p, players[i].lastsidehit);
-		WRITEINT16(save->p, players[i].lastlinehit);
+		WRITEINT16(save->p, player->lastsidehit);
+		WRITEINT16(save->p, player->lastlinehit);
 
-		WRITEUINT32(save->p, players[i].losstime);
+		WRITEUINT32(save->p, player->losstime);
 
-		WRITEUINT8(save->p, players[i].timeshit);
+		WRITEUINT8(save->p, player->timeshit);
 
-		WRITEINT32(save->p, players[i].onconveyor);
+		WRITEINT32(save->p, player->onconveyor);
 
-		WRITEUINT32(save->p, players[i].jointime);
-		WRITEUINT32(save->p, players[i].spectatorreentry);
+		WRITEUINT32(save->p, player->jointime);
+		WRITEUINT32(save->p, player->spectatorreentry);
 
-		WRITEUINT32(save->p, players[i].grieftime);
-		WRITEUINT8(save->p, players[i].griefstrikes);
+		WRITEUINT32(save->p, player->grieftime);
+		WRITEUINT8(save->p, player->griefstrikes);
 
-		WRITEUINT8(save->p, players[i].splitscreenindex);
+		WRITEUINT8(save->p, player->splitscreenindex);
 
 		WRITEUINT16(save->p, flags);
 
 		if (flags & CAPSULE)
-			WRITEUINT32(save->p, players[i].capsule->mobjnum);
+			WRITEUINT32(save->p, player->capsule->mobjnum);
 
 		if (flags & FIRSTAXIS)
-			WRITEUINT32(save->p, players[i].axis1->mobjnum);
+			WRITEUINT32(save->p, player->axis1->mobjnum);
 
 		if (flags & SECONDAXIS)
-			WRITEUINT32(save->p, players[i].axis2->mobjnum);
+			WRITEUINT32(save->p, player->axis2->mobjnum);
 
 		if (flags & AWAYVIEW)
-			WRITEUINT32(save->p, players[i].awayviewmobj->mobjnum);
+			WRITEUINT32(save->p, player->awayviewmobj->mobjnum);
 
-		WRITEUINT32(save->p, players[i].charflags);
+		WRITEUINT32(save->p, player->charflags);
 		// SRB2kart
-		WRITEUINT8(save->p, players[i].kartspeed);
-		WRITEUINT8(save->p, players[i].kartweight);
+		WRITEUINT8(save->p, player->kartspeed);
+		WRITEUINT8(save->p, player->kartweight);
 		//
 
 		for (j = 0; j < MAXPREDICTTICS; j++)
 		{
-			WRITEINT16(save->p, players[i].lturn_max[j]);
-			WRITEINT16(save->p, players[i].rturn_max[j]);
+			WRITEINT16(save->p, player->lturn_max[j]);
+			WRITEINT16(save->p, player->rturn_max[j]);
 		}
 	}
 }
@@ -322,157 +323,159 @@ static void P_NetUnArchivePlayers(savebuffer_t *save, boolean reloading)
 		if (reloading)
 			READSTRINGN(save->p, player_names[i], MAXPLAYERNAME);
 
-		players[i].aiming = READANGLE(save->p);
-		players[i].awayviewaiming = READANGLE(save->p);
-		players[i].awayviewtics = READINT32(save->p);
-		players[i].health = READINT32(save->p);
+		player_t *player = &players[i];
 
-		players[i].pity = READSINT8(save->p);
-		players[i].currentweapon = READINT32(save->p);
-		players[i].ringweapons = READINT32(save->p);
+		player->aiming = READANGLE(save->p);
+		player->awayviewaiming = READANGLE(save->p);
+		player->awayviewtics = READINT32(save->p);
+		player->health = READINT32(save->p);
+
+		player->pity = READSINT8(save->p);
+		player->currentweapon = READINT32(save->p);
+		player->ringweapons = READINT32(save->p);
 
 		for (j = 0; j < NUMPOWERS; j++)
-			players[i].powers[j] = READUINT16(save->p);
+			player->powers[j] = READUINT16(save->p);
 		for (j = 0; j < NUMKARTSTUFF; j++)
-			players[i].kartstuff[j] = READINT32(save->p);
+			player->kartstuff[j] = READINT32(save->p);
 
-		players[i].frameangle = READANGLE(save->p);
+		player->frameangle = READANGLE(save->p);
 
-		players[i].playerstate = READUINT8(save->p);
-		players[i].pflags = READUINT32(save->p);
-		players[i].panim = READUINT8(save->p);
-		players[i].spectator = READUINT8(save->p);
+		player->playerstate = READUINT8(save->p);
+		player->pflags = READUINT32(save->p);
+		player->panim = READUINT8(save->p);
+		player->spectator = READUINT8(save->p);
 
-		players[i].flashpal = READUINT16(save->p);
-		players[i].flashcount = READUINT16(save->p);
+		player->flashpal = READUINT16(save->p);
+		player->flashcount = READUINT16(save->p);
 
 		if (reloading)
 		{
-			players[i].skincolor = READUINT8(save->p);
-			players[i].skin = READINT32(save->p);
+			player->skincolor = READUINT8(save->p);
+			player->skin = READINT32(save->p);
 		}
 
-		players[i].score = READUINT32(save->p);
-		players[i].dashspeed = READFIXED(save->p); // dashing speed
-		players[i].dashtime = READINT32(save->p); // dashing speed
-		players[i].lives = READSINT8(save->p);
-		players[i].continues = READSINT8(save->p); // continues that player has acquired
-		players[i].xtralife = READSINT8(save->p); // Ring Extra Life counter
-		players[i].gotcontinue = READUINT8(save->p); // got continue from stage
-		players[i].speed = READFIXED(save->p); // Player's speed (distance formula of MOMX and MOMY values)
-		players[i].jumping = READUINT8(save->p); // Jump counter
-		players[i].secondjump = READUINT8(save->p);
-		players[i].fly1 = READUINT8(save->p); // Tails flying
-		players[i].scoreadd = READUINT8(save->p); // Used for multiple enemy attack bonus
-		players[i].glidetime = READUINT32(save->p); // Glide counter for thrust
-		players[i].climbing = READUINT8(save->p); // Climbing on the wall
-		players[i].deadtimer = READINT32(save->p); // End game if game over lasts too long
-		players[i].exiting = READUINT32(save->p); // Exitlevel timer
-		players[i].homing = READUINT8(save->p); // Are you homing?
-		players[i].skidtime = READUINT32(save->p); // Skid timer
+		player->score = READUINT32(save->p);
+		player->dashspeed = READFIXED(save->p); // dashing speed
+		player->dashtime = READINT32(save->p); // dashing speed
+		player->lives = READSINT8(save->p);
+		player->continues = READSINT8(save->p); // continues that player has acquired
+		player->xtralife = READSINT8(save->p); // Ring Extra Life counter
+		player->gotcontinue = READUINT8(save->p); // got continue from stage
+		player->speed = READFIXED(save->p); // Player's speed (distance formula of MOMX and MOMY values)
+		player->jumping = READUINT8(save->p); // Jump counter
+		player->secondjump = READUINT8(save->p);
+		player->fly1 = READUINT8(save->p); // Tails flying
+		player->scoreadd = READUINT8(save->p); // Used for multiple enemy attack bonus
+		player->glidetime = READUINT32(save->p); // Glide counter for thrust
+		player->climbing = READUINT8(save->p); // Climbing on the wall
+		player->deadtimer = READINT32(save->p); // End game if game over lasts too long
+		player->exiting = READUINT32(save->p); // Exitlevel timer
+		player->homing = READUINT8(save->p); // Are you homing?
+		player->skidtime = READUINT32(save->p); // Skid timer
 
 		////////////////////////////
 		// Conveyor Belt Movement //
 		////////////////////////////
-		players[i].cmomx = READFIXED(save->p); // Conveyor momx
-		players[i].cmomy = READFIXED(save->p); // Conveyor momy
-		players[i].rmomx = READFIXED(save->p); // "Real" momx (momx - cmomx)
-		players[i].rmomy = READFIXED(save->p); // "Real" momy (momy - cmomy)
+		player->cmomx = READFIXED(save->p); // Conveyor momx
+		player->cmomy = READFIXED(save->p); // Conveyor momy
+		player->rmomx = READFIXED(save->p); // "Real" momx (momx - cmomx)
+		player->rmomy = READFIXED(save->p); // "Real" momy (momy - cmomy)
 
 		/////////////////////
 		// Race Mode Stuff //
 		/////////////////////
-		players[i].numboxes = READINT16(save->p); // Number of item boxes obtained for Race Mode
-		players[i].totalring = READINT16(save->p); // Total number of rings obtained for Race Mode
-		players[i].realtime = READUINT32(save->p); // integer replacement for leveltime
-		players[i].laps = READUINT8(save->p); // Number of laps (optional)
+		player->numboxes = READINT16(save->p); // Number of item boxes obtained for Race Mode
+		player->totalring = READINT16(save->p); // Total number of rings obtained for Race Mode
+		player->realtime = READUINT32(save->p); // integer replacement for leveltime
+		player->laps = READUINT8(save->p); // Number of laps (optional)
 
 		////////////////////
 		// CTF Mode Stuff //
 		////////////////////
-		players[i].ctfteam = READINT32(save->p); // 1 == Red, 2 == Blue
-		players[i].gotflag = READUINT16(save->p); // 1 == Red, 2 == Blue Do you have the flag?
+		player->ctfteam = READINT32(save->p); // 1 == Red, 2 == Blue
+		player->gotflag = READUINT16(save->p); // 1 == Red, 2 == Blue Do you have the flag?
 
-		players[i].weapondelay = READINT32(save->p);
-		players[i].tossdelay = READINT32(save->p);
+		player->weapondelay = READINT32(save->p);
+		player->tossdelay = READINT32(save->p);
 
-		players[i].starposttime = READUINT32(save->p);
-		players[i].starpostx = READINT16(save->p);
-		players[i].starposty = READINT16(save->p);
-		players[i].starpostz = READINT16(save->p);
-		players[i].starpostnum = READINT32(save->p);
-		players[i].starpostangle = READANGLE(save->p);
+		player->starposttime = READUINT32(save->p);
+		player->starpostx = READINT16(save->p);
+		player->starposty = READINT16(save->p);
+		player->starpostz = READINT16(save->p);
+		player->starpostnum = READINT32(save->p);
+		player->starpostangle = READANGLE(save->p);
 
-		players[i].angle_pos = READANGLE(save->p);
-		players[i].old_angle_pos = READANGLE(save->p);
+		player->angle_pos = READANGLE(save->p);
+		player->old_angle_pos = READANGLE(save->p);
 
-		players[i].flyangle = READINT32(save->p);
-		players[i].drilltimer = READUINT32(save->p);
-		players[i].linkcount = READINT32(save->p);
-		players[i].linktimer = READUINT32(save->p);
-		players[i].anotherflyangle = READINT32(save->p);
-		players[i].nightstime = READUINT32(save->p);
-		players[i].bumpertime = READUINT32(save->p);
-		players[i].drillmeter = READINT32(save->p);
-		players[i].drilldelay = READUINT8(save->p);
-		players[i].bonustime = (boolean)READUINT8(save->p);
-		players[i].mare = READUINT8(save->p);
+		player->flyangle = READINT32(save->p);
+		player->drilltimer = READUINT32(save->p);
+		player->linkcount = READINT32(save->p);
+		player->linktimer = READUINT32(save->p);
+		player->anotherflyangle = READINT32(save->p);
+		player->nightstime = READUINT32(save->p);
+		player->bumpertime = READUINT32(save->p);
+		player->drillmeter = READINT32(save->p);
+		player->drilldelay = READUINT8(save->p);
+		player->bonustime = (boolean)READUINT8(save->p);
+		player->mare = READUINT8(save->p);
 
-		players[i].marebegunat = READUINT32(save->p);
-		players[i].startedtime = READUINT32(save->p);
-		players[i].finishedtime = READUINT32(save->p);
-		players[i].finishedrings = READINT16(save->p);
-		players[i].marescore = READUINT32(save->p);
-		players[i].lastmarescore = READUINT32(save->p);
-		players[i].lastmare = READUINT8(save->p);
-		players[i].maxlink = READINT32(save->p);
-		players[i].texttimer = READUINT8(save->p);
-		players[i].textvar = READUINT8(save->p);
+		player->marebegunat = READUINT32(save->p);
+		player->startedtime = READUINT32(save->p);
+		player->finishedtime = READUINT32(save->p);
+		player->finishedrings = READINT16(save->p);
+		player->marescore = READUINT32(save->p);
+		player->lastmarescore = READUINT32(save->p);
+		player->lastmare = READUINT8(save->p);
+		player->maxlink = READINT32(save->p);
+		player->texttimer = READUINT8(save->p);
+		player->textvar = READUINT8(save->p);
 
-		players[i].lastsidehit = READINT16(save->p);
-		players[i].lastlinehit = READINT16(save->p);
+		player->lastsidehit = READINT16(save->p);
+		player->lastlinehit = READINT16(save->p);
 
-		players[i].losstime = READUINT32(save->p);
+		player->losstime = READUINT32(save->p);
 
-		players[i].timeshit = READUINT8(save->p);
+		player->timeshit = READUINT8(save->p);
 
-		players[i].onconveyor = READINT32(save->p);
+		player->onconveyor = READINT32(save->p);
 
-		players[i].jointime = READUINT32(save->p);
-		players[i].spectatorreentry = READUINT32(save->p);
+		player->jointime = READUINT32(save->p);
+		player->spectatorreentry = READUINT32(save->p);
 
-		players[i].grieftime = READUINT32(save->p);
-		players[i].griefstrikes = READUINT8(save->p);
+		player->grieftime = READUINT32(save->p);
+		player->griefstrikes = READUINT8(save->p);
 
-		players[i].splitscreenindex = READUINT8(save->p);
+		player->splitscreenindex = READUINT8(save->p);
 
 		flags = READUINT16(save->p);
 
 		if (flags & CAPSULE)
-			players[i].capsule = (mobj_t *)(size_t)READUINT32(save->p);
+			player->capsule = (mobj_t *)(size_t)READUINT32(save->p);
 
 		if (flags & FIRSTAXIS)
-			players[i].axis1 = (mobj_t *)(size_t)READUINT32(save->p);
+			player->axis1 = (mobj_t *)(size_t)READUINT32(save->p);
 
 		if (flags & SECONDAXIS)
-			players[i].axis2 = (mobj_t *)(size_t)READUINT32(save->p);
+			player->axis2 = (mobj_t *)(size_t)READUINT32(save->p);
 
 		if (flags & AWAYVIEW)
-			players[i].awayviewmobj = (mobj_t *)(size_t)READUINT32(save->p);
+			player->awayviewmobj = (mobj_t *)(size_t)READUINT32(save->p);
 
-		players[i].viewheight = 32<<FRACBITS;
+		player->viewheight = 32<<FRACBITS;
 
-		//SetPlayerSkinByNum(i, players[i].skin);
-		players[i].charflags = READUINT32(save->p);
+		//SetPlayerSkinByNum(i, player->skin);
+		player->charflags = READUINT32(save->p);
 		// SRB2kart
-		players[i].kartspeed = READUINT8(save->p);
-		players[i].kartweight = READUINT8(save->p);
+		player->kartspeed = READUINT8(save->p);
+		player->kartweight = READUINT8(save->p);
 		//
 
 		for (j = 0; j < MAXPREDICTTICS; j++)
 		{
-			players[i].lturn_max[j] = READINT16(save->p);
-			players[i].rturn_max[j] = READINT16(save->p);
+			player->lturn_max[j] = READINT16(save->p);
+			player->rturn_max[j] = READINT16(save->p);
 		}
 	}
 }
@@ -813,6 +816,7 @@ static void UnArchiveFFloors(savebuffer_t *save, const sector_t *ss)
 
 static void UnArchiveSectors(savebuffer_t *save)
 {
+	sector_t *ss;
 	UINT16 i;
 	UINT8 diff, diff2;
 
@@ -832,47 +836,49 @@ static void UnArchiveSectors(savebuffer_t *save)
 		else
 			diff2 = 0;
 
+		ss = &sectors[i];
+
 		if (diff & SD_FLOORHT)
-			sectors[i].floorheight = READFIXED(save->p);
+			ss->floorheight = READFIXED(save->p);
 		if (diff & SD_CEILHT)
-			sectors[i].ceilingheight = READFIXED(save->p);
+			ss->ceilingheight = READFIXED(save->p);
 		if (diff & SD_FLOORPIC)
 		{
-			sectors[i].floorpic = P_AddLevelFlatRuntime((char *)save->p);
+			ss->floorpic = P_AddLevelFlatRuntime((char *)save->p);
 			save->p += 8;
 		}
 		if (diff & SD_CEILPIC)
 		{
-			sectors[i].ceilingpic = P_AddLevelFlatRuntime((char *)save->p);
+			ss->ceilingpic = P_AddLevelFlatRuntime((char *)save->p);
 			save->p += 8;
 		}
 		if (diff & SD_LIGHT)
-			sectors[i].lightlevel = READINT16(save->p);
+			ss->lightlevel = READINT16(save->p);
 		if (diff & SD_SPECIAL)
-			sectors[i].special = READINT16(save->p);
+			ss->special = READINT16(save->p);
 
 		if (diff2 & SD_FXOFFS)
-			sectors[i].floor_xoffs = READFIXED(save->p);
+			ss->floor_xoffs = READFIXED(save->p);
 		if (diff2 & SD_FYOFFS)
-			sectors[i].floor_yoffs = READFIXED(save->p);
+			ss->floor_yoffs = READFIXED(save->p);
 		if (diff2 & SD_CXOFFS)
-			sectors[i].ceiling_xoffs = READFIXED(save->p);
+			ss->ceiling_xoffs = READFIXED(save->p);
 		if (diff2 & SD_CYOFFS)
-			sectors[i].ceiling_yoffs = READFIXED(save->p);
+			ss->ceiling_yoffs = READFIXED(save->p);
 		if (diff2 & SD_TAG)
-			sectors[i].tag = READINT16(save->p); // DON'T use P_ChangeSectorTag
+			ss->tag = READINT16(save->p); // DON'T use P_ChangeSectorTag
 		if (diff2 & SD_TAGLIST)
 		{
-			sectors[i].firsttag = READINT32(save->p);
-			sectors[i].nexttag = READINT32(save->p);
+			ss->firsttag = READINT32(save->p);
+			ss->nexttag = READINT32(save->p);
 		}
 		if (diff2 & SD_FLOORANG)
-			sectors[i].floorpic_angle  = READANGLE(save->p);
+			ss->floorpic_angle  = READANGLE(save->p);
 		if (diff2 & SD_CEILANG)
-			sectors[i].ceilingpic_angle = READANGLE(save->p);
+			ss->ceilingpic_angle = READANGLE(save->p);
 
 		if (diff & SD_FFLOORS)
-			UnArchiveFFloors(save, &sectors[i]);
+			UnArchiveFFloors(save, ss);
 	}
 }
 
