@@ -774,6 +774,7 @@ static void SV_EndFileSend(INT32 node)
 		case SF_FILE: // It's a file, close it and free its filename
 			if (cv_noticedownload.value)
 				CONS_Printf("Ending file transfer (id %d) for node %d\n", p->fileid, node);
+
 			if (transferFiles[p->fileid].file)
 			{
 				if (transferFiles[p->fileid].count > 0)
@@ -787,6 +788,7 @@ static void SV_EndFileSend(INT32 node)
 					transferFiles[p->fileid].file = NULL;
 				}
 			}
+
 			free(p->id.filename);
 			break;
 		case SF_Z_RAM: // It's a memory block allocated with Z_Alloc or the likes, use Z_Free
@@ -822,10 +824,11 @@ void SV_FileSendTicker(void)
 	size_t size;
 	filetx_t *f;
 	INT32 packetsent, ram, i, j;
-	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
 
 	if (!filestosend) // No file to send
 		return;
+
+	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
 
 	packetsent = cv_downloadspeed.value;
 
@@ -958,8 +961,8 @@ void Got_Filetxpak(void)
 	static INT32 filetime = 0;
 
 	if (!(strcmp(filename, "srb2.srb")
-		&& strcmp(filename, "srb2.wad")
-		&& strcmp(filename, "patch.dta")
+		//&& strcmp(filename, "srb2.wad")
+		//&& strcmp(filename, "patch.dta")
 		//&& strcmp(filename, "music.dta")
 		&& strcmp(filename, "gfx.kart")
 		&& strcmp(filename, "textures.kart")
@@ -1002,6 +1005,7 @@ void Got_Filetxpak(void)
 			pos &= ~0x80000000;
 			file->totalsize = pos + size;
 		}
+
 		// We can receive packet in the wrong order, anyway all os support gaped file
 		fseek(file->file, pos, SEEK_SET);
 		if (fwrite(netbuffer->u.filetxpak.data,size,1,file->file) != 1)
