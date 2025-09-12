@@ -1233,7 +1233,7 @@ void P_ChangeSectorTag(UINT32 sector, INT16 newtag)
   * \sa P_FindSectorFromTag, P_ChangeSectorTag
   * \author Lee Killough
   */
-static inline void P_InitTagLists(void)
+void P_InitTagLists(void)
 {
 	register size_t i;
 

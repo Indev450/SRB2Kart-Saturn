@@ -3530,15 +3530,12 @@ static void P_ReloadSaveLevelData(void)
 		ss->floorpic_angle = spawnss->floorpic_angle;
 		ss->ceilingpic_angle = spawnss->ceilingpic_angle;
 		ss->tag = spawnss->tag;
-		ss->nexttag = spawnss->nexttag;
-		ss->firsttag = spawnss->firsttag;
-
-		//ss->flags = spawnss->flags;
-		//ss->gravity = spawnss->gravity;
+		ss->firsttag = ss->nexttag = -1;
 
 		if (ss->ffloors)
 		{
 			ffloor_t *rover;
+
 			for (rover = ss->ffloors; rover; rover = rover->next)
 			{
 				rover->flags = rover->spawnflags;
@@ -3554,9 +3551,11 @@ static void P_ReloadSaveLevelData(void)
 
 	for (i = 0; i < numlines; i++, spawnli++, li++)
 	{
-		//li->flags = spawnli->flags;
 		li->special = spawnli->special;
 		li->callcount = 0;
+
+		li->tag = spawnli->tag;
+		li->firsttag = li->nexttag = -1;
 
 		if (li->sidenum[0] != 0xffff)
 		{
@@ -3580,6 +3579,8 @@ static void P_ReloadSaveLevelData(void)
 			si->midtexture = spawnsi->midtexture;
 		}
 	}
+
+	P_InitTagLists();
 }
 
 FUNCINLINE static ATTRINLINE boolean P_NetUnArchiveMisc(savebuffer_t *save, boolean reloading)
