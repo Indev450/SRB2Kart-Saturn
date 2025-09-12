@@ -1696,11 +1696,9 @@ void P_LinedefExecute(INT16 tag, mobj_t *actor, sector_t *caller)
 		 || lines[masterline].special == 306 // Character ability - Each time
 		 || lines[masterline].special == 310 // CTF Red team - Each time
 		 || lines[masterline].special == 312 // CTF Blue team - Each time
-		 || lines[masterline].special == 322) // Trigger on X calls - Each Time
-			continue;
-
-		if (lines[masterline].special < 300
-			|| lines[masterline].special > 399)
+		 || lines[masterline].special == 322 // Trigger on X calls - Each Time
+		 || lines[masterline].special < 300
+		 || lines[masterline].special > 399)
 			continue;
 
 		if (!P_RunTriggerLinedef(&lines[masterline], actor, caller))
@@ -1718,7 +1716,6 @@ static boolean is_rain_type (INT32 weathernum)
 		case PRECIP_STORM_NOSTRIKES:
 		case PRECIP_BLANK:
 			return true;
-
 		default:
 			return false;
 	}
