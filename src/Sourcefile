@@ -50,7 +50,7 @@ z_zone.c
 r_bsp.c
 r_data.c
 r_draw.c
-r_fps.c
+r_fps.cpp
 r_main.cpp
 r_patch.c
 r_patchrotation.c
