@@ -2159,52 +2159,54 @@ static void P_LevelInitStuff(boolean reloadinggamestate)
 
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
-		players[i].lives = 1; // SRB2Kart
+		player_t *player = &players[i];
 
-		players[i].realtime = racecountdown = exitcountdown = 0;
+		player->lives = 1; // SRB2Kart
+
+		player->realtime = racecountdown = exitcountdown = 0;
 
 		for (INT32 j = 0; j < LAP__MAX; j++)
 		{
-			players[i].laptime[j] = 0;
+			player->laptime[j] = 0;
 		}
 
-		players[i].driftsparkGrowTimer = 0;
+		player->driftsparkGrowTimer = 0;
 
-		players[i].gotcontinue = false;
+		player->gotcontinue = false;
 
-		players[i].xtralife = players[i].deadtimer = players[i].numboxes = players[i].totalring = players[i].laps = 0;
-		players[i].health = 1;
-		players[i].aiming = 0;
-		players[i].pflags &= ~PF_TIMEOVER;
+		player->xtralife = player->deadtimer = player->numboxes = player->totalring = player->laps = 0;
+		player->health = 1;
+		player->aiming = 0;
+		player->pflags &= ~PF_TIMEOVER;
 
-		players[i].losstime = 0;
-		players[i].timeshit = 0;
+		player->losstime = 0;
+		player->timeshit = 0;
 
-		players[i].marescore = players[i].lastmarescore = players[i].maxlink = 0;
-		players[i].startedtime = players[i].finishedtime = players[i].finishedrings = 0;
-		players[i].lastmare = players[i].marebegunat = 0;
+		player->marescore = player->lastmarescore = player->maxlink = 0;
+		player->startedtime = player->finishedtime = player->finishedrings = 0;
+		player->lastmare = player->marebegunat = 0;
 
 		// Don't show anything
-		players[i].textvar = players[i].texttimer = 0;
+		player->textvar = player->texttimer = 0;
 
-		players[i].linkcount = players[i].linktimer = 0;
-		players[i].flyangle = players[i].anotherflyangle = 0;
-		players[i].nightstime = players[i].mare = 0;
-		P_SetTarget(&players[i].capsule, NULL);
-		players[i].drillmeter = 40*20;
+		player->linkcount = player->linktimer = 0;
+		player->flyangle = player->anotherflyangle = 0;
+		player->nightstime = player->mare = 0;
+		P_SetTarget(&player->capsule, NULL);
+		player->drillmeter = 40*20;
 
-		players[i].exiting = 0;
-		P_ResetPlayer(&players[i]);
+		player->exiting = 0;
+		P_ResetPlayer(player);
 
-		players[i].spectatorreentry = 0; // SRB2Kart 1.4
+		player->spectatorreentry = 0; // SRB2Kart 1.4
 
-		players[i].mo = NULL;
+		player->mo = NULL;
 
 		// we must unset axis details too
-		players[i].axis1 = players[i].axis2 = NULL;
+		player->axis1 = player->axis2 = NULL;
 
 		// and this stupid flag as a result
-		players[i].pflags &= ~PF_TRANSFERTOCLOSEST;
+		player->pflags &= ~PF_TRANSFERTOCLOSEST;
 	}
 
 	// SRB2Kart: map load variables
