@@ -404,7 +404,7 @@ static levelinterpolator_t *CreateInterpolator(levelinterpolator_type_e type, th
 	if (rendermode == render_none)
 		return NULL;
 
-	auto* ret = &levelinterpolators.emplace_back(levelinterpolator_t { type, thinker });
+	auto* ret = &levelinterpolators.emplace_back(levelinterpolator_t{ type, thinker, {} });
 	return ret;
 }
 
