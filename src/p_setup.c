@@ -569,9 +569,7 @@ static void P_LoadRawSegs(UINT8 *data)
 #ifdef HWRENDER
 		if (rendermode == render_opengl)
 			li->flength = P_SegLengthFloat(li);
-		li->pv1 = li->pv2 = NULL;
 #endif
-
 		li->angle = (SHORT(ml->angle))<<FRACBITS;
 		li->offset = (SHORT(ml->offset))<<FRACBITS;
 		rawlinedef = SHORT(ml->linedef);
@@ -582,9 +580,6 @@ static void P_LoadRawSegs(UINT8 *data)
 		li->frontsector = sides[ldef->sidenum[rawside]].sector;
 		if (ldef->flags & ML_TWOSIDED)
 			li->backsector = sides[ldef->sidenum[rawside^1]].sector;
-		else
-			li->backsector = 0;
-
 		P_UpdateSegLightOffset(li);
 	}
 }
@@ -598,13 +593,8 @@ FUNCINLINE static ATTRINLINE void P_LoadRawSubsectors(void *data)
 
 	for (i = 0; i < numsubsectors; i++, ss++, ms++)
 	{
-		ss->sector = NULL;
 		ss->numlines = SHORT(ms->numsegs);
 		ss->firstline = (UINT16)SHORT(ms->firstseg);
-#ifdef FLOORSPLATS
-		ss->splats = NULL;
-#endif
-		ss->validcount = 0;
 	}
 }
 
