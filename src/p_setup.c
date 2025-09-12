@@ -3241,7 +3241,7 @@ UINT16 P_PartialAddWadFile(const char *wadfilename, boolean local)
 
 	sreplaces = mreplaces = digmreplaces = 0;
 
-	if ((numlumps = W_InitFile(wadfilename, local)) == INT16_MAX)
+	if ((numlumps = W_InitFile(wadfilename, local, false)) == INT16_MAX)
 	{
 		refreshdirmenu |= REFRESHDIR_NOTLOADED;
 		CONS_Printf(M_GetText("Errors occurred while loading %s; not added.\n"), wadfilename);

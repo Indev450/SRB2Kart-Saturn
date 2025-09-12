@@ -770,7 +770,7 @@ static UINT16 W_InitFileError (const char *filename, boolean exitworthy)
 //
 // Can now load dehacked files (.soc)
 //
-UINT16 W_InitFile(const char *filename, boolean local)
+UINT16 W_InitFile(const char *filename, boolean local, boolean startup)
 {
 	FILE *handle;
 	lumpinfo_t *lumpinfo = NULL;
@@ -804,14 +804,14 @@ UINT16 W_InitFile(const char *filename, boolean local)
 	{
 		CONS_Alert(CONS_ERROR, M_GetText("Maximum wad files reached\n"));
 		refreshdirmenu |= REFRESHDIR_MAX;
-		return W_InitFileError(filename, false); // startup
+		return W_InitFileError(filename, startup);
 	}
 
 	// open wad file
 	if ((handle = W_OpenWadFile(&filename, true)) == NULL)
-		return W_InitFileError(filename, false); // startup
+		return W_InitFileError(filename, startup);
 
-	important = !local && !W_VerifyNMUSlumps(filename, handle, false); // startup
+	important = !local && !W_VerifyNMUSlumps(filename, handle, startup);
 
 #ifndef NOMD5
 	//
@@ -854,7 +854,7 @@ UINT16 W_InitFile(const char *filename, boolean local)
 	if (lumpinfo == NULL)
 	{
 		fclose(handle);
-		return W_InitFileError(filename, false); // startup
+		return W_InitFileError(filename, startup);
 	}
 
 	//
@@ -951,7 +951,7 @@ INT32 W_InitMultipleFiles(char **filenames, boolean addons)
 		// for addons... but W_InitFile already does exactly that!
 
 		//CONS_Debug(DBG_SETUP, "Loading %s\n", *filenames);
-		rc = W_InitFile(*filenames, false);
+		rc = W_InitFile(*filenames, false, true);
 
 		if (rc == INT16_MAX)
 			CONS_Printf(M_GetText("Errors occurred while loading %s; not added.\n"), *filenames);
