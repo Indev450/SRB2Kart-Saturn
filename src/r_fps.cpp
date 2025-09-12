@@ -145,16 +145,6 @@ enum viewcontext_e viewcontext = VIEWCONTEXT_PLAYER1;
 
 static std::vector<levelinterpolator_t> levelinterpolators;
 
-static inline fixed_t R_LerpFixedView(fixed_t from, fixed_t to, fixed_t frac)
-{
-	return from + FixedMul(frac, to - from);
-}
-
-static inline angle_t R_LerpAngleView(angle_t from, angle_t to, fixed_t frac)
-{
-	return from + FixedMul(frac, to - from);
-}
-
 static inline fixed_t R_LerpFixed(fixed_t from, fixed_t to, fixed_t frac)
 {
 	return ((from == to) ? to : (from + FixedMul(frac, to - from)));
@@ -212,7 +202,7 @@ static void R_SetupFreelook(void)
 
 void R_InterpolateViewRollAngle(fixed_t frac)
 {
-	viewroll = R_LerpAngleView(oldview->roll, newview->roll, frac);
+	viewroll = R_LerpAngle(oldview->roll, newview->roll, frac);
 }
 
 void R_InterpolateView(fixed_t frac, boolean forceinvalid)
@@ -230,13 +220,13 @@ void R_InterpolateView(fixed_t frac, boolean forceinvalid)
 		prevview = newview;
 	}
 
-	viewx = R_LerpFixedView(prevview->x, newview->x, frac);
-	viewy = R_LerpFixedView(prevview->y, newview->y, frac);
-	viewz = R_LerpFixedView(prevview->z, newview->z, frac);
+	viewx = R_LerpFixed(prevview->x, newview->x, frac);
+	viewy = R_LerpFixed(prevview->y, newview->y, frac);
+	viewz = R_LerpFixed(prevview->z, newview->z, frac);
 
-	viewangle = R_LerpAngleView(prevview->angle, newview->angle, frac);
-	aimingangle = R_LerpAngleView(prevview->aim, newview->aim, frac);
-	viewroll = R_LerpAngleView(prevview->roll, newview->roll, frac);
+	viewangle = R_LerpAngle(prevview->angle, newview->angle, frac);
+	aimingangle = R_LerpAngle(prevview->aim, newview->aim, frac);
+	viewroll = R_LerpAngle(prevview->roll, newview->roll, frac);
 
 	viewsin = FINESINE(viewangle>>ANGLETOFINESHIFT);
 	viewcos = FINECOSINE(viewangle>>ANGLETOFINESHIFT);
