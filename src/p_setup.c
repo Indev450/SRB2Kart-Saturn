@@ -821,8 +821,6 @@ static void P_LoadRawSectors(UINT8 *data)
 	havesnakerpad = false;
 #endif
 
-	memset(ss, 0, sizeof(sector_t) * numsectors);
-
 	// For each counted sector, copy the sector raw data from our cache pointer ms, to the global table pointer ss.
 	for (i = 0; i < numsectors; i++, ss++, ms++)
 	{
