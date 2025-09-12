@@ -693,14 +693,14 @@ static void ArchiveLines(savebuffer_t *save)
 			si = &sides[li->sidenum[0]];
 			spawnsi = &spawnsides[li->sidenum[0]];
 
-			if (si->textureoffset != spawnsi[li->sidenum[0]].textureoffset)
+			if (si->textureoffset != spawnsi->textureoffset)
 				diff |= LD_S1TEXOFF;
 			//SoM: 4/1/2000: Some textures are colormaps. Don't worry about invalid textures.
-			if (si->toptexture != spawnsi[li->sidenum[0]].toptexture)
+			if (si->toptexture != spawnsi->toptexture)
 				diff |= LD_S1TOPTEX;
-			if (si->bottomtexture != spawnsi[li->sidenum[0]].bottomtexture)
+			if (si->bottomtexture != spawnsi->bottomtexture)
 				diff |= LD_S1BOTTEX;
-			if (si->midtexture != spawnsi[li->sidenum[0]].midtexture)
+			if (si->midtexture != spawnsi->midtexture)
 				diff |= LD_S1MIDTEX;
 		}
 		if (li->sidenum[1] != 0xffff)
@@ -708,13 +708,13 @@ static void ArchiveLines(savebuffer_t *save)
 			si = &sides[li->sidenum[1]];
 			spawnsi = &spawnsides[li->sidenum[1]];
 
-			if (si->textureoffset != spawnsi[li->sidenum[1]].textureoffset)
+			if (si->textureoffset != spawnsi->textureoffset)
 				diff2 |= LD_S2TEXOFF;
-			if (si->toptexture != spawnsi[li->sidenum[1]].toptexture)
+			if (si->toptexture != spawnsi->toptexture)
 				diff2 |= LD_S2TOPTEX;
-			if (si->bottomtexture != spawnsi[li->sidenum[1]].bottomtexture)
+			if (si->bottomtexture != spawnsi->bottomtexture)
 				diff2 |= LD_S2BOTTEX;
-			if (si->midtexture != spawnsi[li->sidenum[1]].midtexture)
+			if (si->midtexture != spawnsi->midtexture)
 				diff2 |= LD_S2MIDTEX;
 
 			if (diff2)
