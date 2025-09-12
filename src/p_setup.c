@@ -3025,6 +3025,8 @@ boolean P_SetupLevel(boolean fromnetsave, boolean reloadinggamestate)
 
 	G_AddMapToBuffer(gamemap-1);
 
+	D_ResetDeviceLED();
+
 	return true;
 }
 
