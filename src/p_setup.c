@@ -3039,6 +3039,8 @@ boolean P_SetupLevel(boolean fromnetsave, boolean reloadinggamestate)
 	if (!reloadinggamestate)
 		K_LoadExtraVFX();
 
+	D_ResetDeviceLED();
+
 	return true;
 }
 

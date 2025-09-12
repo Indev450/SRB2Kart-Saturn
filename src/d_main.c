@@ -220,11 +220,12 @@ static void D_GamePadMenuScrollTicker(void)
 }
 #undef SCROLLDELAY
 
+static UINT16 curcolor[MAXSPLITSCREENPLAYERS] = {0};
+
 static void D_DeviceLEDTick(void)
 {
 	UINT8 i;
 	static UINT16 color[MAXSPLITSCREENPLAYERS] = {0};
-	static UINT16 curcolor[MAXSPLITSCREENPLAYERS] = {0};
 
 	if (numcontrollers == 0)
 	{
@@ -244,6 +245,11 @@ static void D_DeviceLEDTick(void)
 		G_SetPlayerGamepadIndicatorColor(i, color[i]);
 		curcolor[i] = color[i];
 	}
+}
+
+void D_ResetDeviceLED(void)
+{
+	memset(curcolor, 0, sizeof(curcolor));
 }
 
 //
@@ -1081,6 +1087,7 @@ void D_StartTitle(void)
 	D_ClearState();
 	M_ClearMenus(true);
 	F_StartTitleScreen();
+	D_ResetDeviceLED();
 }
 
 //
