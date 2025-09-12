@@ -3498,6 +3498,84 @@ static void P_NetArchiveMisc(savebuffer_t *save, boolean resending)
 		WRITEUINT8(save->p, 0x2e);
 }
 
+static void P_ReloadSaveLevelData(void)
+{
+	size_t i;
+
+	// Only reload stuff that can we modify in the save states themselves.
+	// This is still orders of magnitude faster than a full level reload.
+	// Considered memcpy, but it's complicated -- save that for local saves.
+
+	sector_t *ss = sectors;
+	sector_t *spawnss = spawnsectors;
+
+	for (i = 0; i < numsectors; i++, ss++, spawnss++)
+	{
+		ss->floorheight = spawnss->floorheight;
+		ss->ceilingheight = spawnss->ceilingheight;
+		ss->floorpic = spawnss->floorpic;
+		ss->ceilingpic = spawnss->ceilingpic;
+		ss->lightlevel = spawnss->lightlevel;
+		ss->special = spawnss->special;
+		ss->floor_xoffs = spawnss->floor_xoffs;
+		ss->floor_yoffs = spawnss->floor_yoffs;
+		ss->ceiling_xoffs = spawnss->ceiling_xoffs;
+		ss->ceiling_yoffs = spawnss->ceiling_yoffs;
+		ss->floorpic_angle = spawnss->floorpic_angle;
+		ss->ceilingpic_angle = spawnss->ceilingpic_angle;
+		ss->tag = spawnss->tag;
+		ss->nexttag = spawnss->nexttag;
+		ss->firsttag = spawnss->firsttag;
+
+		//ss->flags = spawnss->flags;
+		//ss->gravity = spawnss->gravity;
+
+		if (ss->ffloors)
+		{
+			ffloor_t *rover;
+			for (rover = ss->ffloors; rover; rover = rover->next)
+			{
+				rover->flags = rover->spawnflags;
+				rover->alpha = rover->spawnalpha;
+			}
+		}
+	}
+
+	line_t *li = lines;
+	line_t *spawnli = spawnlines;
+	side_t *si = NULL;
+	side_t *spawnsi = NULL;
+
+	for (i = 0; i < numlines; i++, spawnli++, li++)
+	{
+		//li->flags = spawnli->flags;
+		li->special = spawnli->special;
+		li->callcount = 0;
+
+		if (li->sidenum[0] != 0xffff)
+		{
+			si = &sides[li->sidenum[0]];
+			spawnsi = &spawnsides[li->sidenum[0]];
+
+			si->textureoffset = spawnsi->textureoffset;
+			si->toptexture = spawnsi->toptexture;
+			si->bottomtexture = spawnsi->bottomtexture;
+			si->midtexture = spawnsi->midtexture;
+		}
+
+		if (li->sidenum[1] != 0xffff)
+		{
+			si = &sides[li->sidenum[1]];
+			spawnsi = &spawnsides[li->sidenum[1]];
+
+			si->textureoffset = spawnsi->textureoffset;
+			si->toptexture = spawnsi->toptexture;
+			si->bottomtexture = spawnsi->bottomtexture;
+			si->midtexture = spawnsi->midtexture;
+		}
+	}
+}
+
 FUNCINLINE static ATTRINLINE boolean P_NetUnArchiveMisc(savebuffer_t *save, boolean reloading)
 {
 	UINT32 pig;
@@ -3554,6 +3632,10 @@ FUNCINLINE static ATTRINLINE boolean P_NetUnArchiveMisc(savebuffer_t *save, bool
 			CONS_Alert(CONS_ERROR, M_GetText("Can't load the level!\n"));
 			return false;
 		}
+	}
+	else
+	{
+		P_ReloadSaveLevelData();
 	}
 
 	// get the time
