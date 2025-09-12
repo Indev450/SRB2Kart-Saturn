@@ -798,7 +798,6 @@ static const sector_t sector_default = {
 	.ceilinglightsec = -1,
 	.maxattached = 1,
 	.moved = true,
-	.verticalflip = false,
 };
 
 // Sets up the ingame sectors structures.
