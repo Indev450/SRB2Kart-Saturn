@@ -1282,7 +1282,7 @@ static void IdentifyVersion(void)
 			srb2waddir = tempsrb2path;
 		else
 		{
-			srb2waddir = srb2path;
+			srb2waddir = ".";
 		}
 	}
 
