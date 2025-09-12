@@ -50,8 +50,8 @@ consvar_t cv_fpscapbg = {"fpscapbackground", "Match refresh rate", CV_SAVE, fpsc
 
 consvar_t cv_precipinterp = {"precipinterpolation", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
-ps_metric_t ps_interp_frac = {0};
-ps_metric_t ps_interp_lag  = {0};
+ps_metric_t ps_interp_frac = {};
+ps_metric_t ps_interp_lag  = {};
 
 static boolean R_UseBackgroundFramerateCap(void)
 {
@@ -425,12 +425,12 @@ static void AddInterpolator(levelinterpolator_t* interpolator)
 			levelinterpolators_size *= 2;
 		}
 
-		levelinterpolators = Z_Realloc(
+		levelinterpolators = static_cast<levelinterpolator_t**>(Z_Realloc(
 			(void*) levelinterpolators,
 			sizeof(levelinterpolator_t*) * levelinterpolators_size,
 			PU_LEVEL,
 			NULL
-		);
+		));
 	}
 
 	levelinterpolators[levelinterpolators_len] = interpolator;
@@ -516,8 +516,8 @@ void R_CreateInterpolator_Polyobj(thinker_t *thinker, polyobj_t *polyobj)
 	interp->polyobj.polyobj = polyobj;
 	interp->polyobj.vertices_size = polyobj->numVertices;
 
-	interp->polyobj.oldvertices = Z_Calloc(sizeof(fixed_t) * 2 * polyobj->numVertices, PU_LEVEL, NULL);
-	interp->polyobj.bakvertices = Z_Calloc(sizeof(fixed_t) * 2 * polyobj->numVertices, PU_LEVEL, NULL);
+	interp->polyobj.oldvertices = static_cast<fixed_t*>(Z_Calloc(sizeof(fixed_t) * 2 * polyobj->numVertices, PU_LEVEL, NULL));
+	interp->polyobj.bakvertices = static_cast<fixed_t*>(Z_Calloc(sizeof(fixed_t) * 2 * polyobj->numVertices, PU_LEVEL, NULL));
 	for (size_t i = 0; i < polyobj->numVertices; i++)
 	{
 		interp->polyobj.oldvertices[i * 2    ] = interp->polyobj.bakvertices[i * 2    ] = polyobj->vertices[i]->x;
@@ -797,12 +797,12 @@ void R_AddMobjInterpolator(mobj_t *mobj)
 			interpolated_mobjs_capacity *= 2;
 		}
 
-		interpolated_mobjs = Z_Realloc(
+		interpolated_mobjs = static_cast<mobj_t**>(Z_Realloc(
 			interpolated_mobjs,
 			sizeof(mobj_t *) * interpolated_mobjs_capacity,
 			PU_LEVEL,
 			NULL
-		);
+		));
 	}
 
 	interpolated_mobjs[interpolated_mobjs_len] = mobj;
