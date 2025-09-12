@@ -1125,18 +1125,12 @@ static void P_SetupLines(void)
 		vertex_t *v1 = ld->v1;
 		vertex_t *v2 = ld->v2;
 
-#ifdef WALLSPLATS
-		ld->splats = NULL;
-#endif
-
-		ld->polyobj = NULL;
 		ld->dx = v2->x - v1->x;
 		ld->dy = v2->y - v1->y;
 
 		ld->angle = R_PointToAngle2(0, 0, ld->dx, ld->dy);
 
 		ld->alpha = FRACUNIT;
-		ld->blendmode = 0;
 
 		if (!ld->dx)
 			ld->slopetype = ST_VERTICAL;
@@ -1174,7 +1168,7 @@ static void P_SetupLines(void)
 			// cph 2002/07/20 - these errors are fatal if not fixed, so apply them
 			UINT8 j;
 
-			for (j=0; j < 2; j++)
+			for (j = 0; j < 2; j++)
 			{
 				if (ld->sidenum[j] != 0xffff && ld->sidenum[j] >= (UINT16)numsides)
 				{
@@ -1184,10 +1178,7 @@ static void P_SetupLines(void)
 			}
 		}
 
-		ld->frontsector = ld->backsector = NULL;
-		ld->validcount = 0;
 		ld->firsttag = ld->nexttag = -1;
-		ld->callcount = 0;
 
 		// killough 11/98: fix common wad errors (missing sidedefs):
 		if (ld->sidenum[0] == 0xffff)
