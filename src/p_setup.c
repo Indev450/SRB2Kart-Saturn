@@ -111,6 +111,9 @@ node_t *nodes;
 line_t *lines;
 side_t *sides;
 mapthing_t *mapthings;
+sector_t *spawnsectors;
+line_t *spawnlines;
+side_t *spawnsides;
 INT32 numstarposts;
 boolean levelloading;
 UINT8 levelfadecol;
@@ -2024,10 +2027,10 @@ static void P_LoadMapData(const virtres_t* virt)
 		I_Error("LINEDEFS lump not found");
 
 	// Traditional doom map format just assumes the number of elements from the lump sizes.
-	numvertexes  = virtvertexes->size / sizeof (mapvertex_t);
-	numsectors   = virtsectors->size  / sizeof (mapsector_t);
-	numsides     = virtsidedefs->size / sizeof (mapsidedef_t);
-	numlines     = virtlinedefs->size / sizeof (maplinedef_t);
+	numvertexes  = virtvertexes->size / sizeof(mapvertex_t);
+	numsectors   = virtsectors->size  / sizeof(mapsector_t);
+	numsides     = virtsidedefs->size / sizeof(mapsidedef_t);
+	numlines     = virtlinedefs->size / sizeof(maplinedef_t);
 	nummapthings = virtthings->size   / (5 * sizeof (INT16));
 
 	if (numvertexes <= 0)
@@ -2039,11 +2042,11 @@ static void P_LoadMapData(const virtres_t* virt)
 	if (numlines <= 0)
 		I_Error("Level has no linedefs");
 
-	vertexes  = Z_Calloc(numvertexes * sizeof (*vertexes), PU_LEVEL, NULL);
-	sectors   = Z_Calloc(numsectors * sizeof (*sectors), PU_LEVEL, NULL);
-	sides     = Z_Calloc(numsides * sizeof (*sides), PU_LEVEL, NULL);
-	lines     = Z_Calloc(numlines * sizeof (*lines), PU_LEVEL, NULL);
-	mapthings = Z_Calloc(nummapthings * sizeof (*mapthings), PU_LEVEL, NULL);
+	vertexes  = Z_Calloc(numvertexes * sizeof(*vertexes), PU_LEVEL, NULL);
+	sectors   = Z_Calloc(numsectors * sizeof(*sectors), PU_LEVEL, NULL);
+	sides     = Z_Calloc(numsides * sizeof(*sides), PU_LEVEL, NULL);
+	lines     = Z_Calloc(numlines * sizeof(*lines), PU_LEVEL, NULL);
+	mapthings = Z_Calloc(nummapthings * sizeof(*mapthings), PU_LEVEL, NULL);
 
 	// Strict map data
 	P_LoadRawVertexes(virtvertexes->data);
@@ -2051,6 +2054,15 @@ static void P_LoadMapData(const virtres_t* virt)
 	P_LoadRawLineDefs(virtlinedefs->data);
 	P_SetupLines();
 	P_LoadRawSideDefs2(virtsidedefs->data);
+
+	// Copy relevant map data for NetArchive purposes.
+	spawnsectors = Z_Calloc(numsectors * sizeof(*sectors), PU_LEVEL, NULL);
+	spawnlines   = Z_Calloc(numlines * sizeof(*lines), PU_LEVEL, NULL);
+	spawnsides   = Z_Calloc(numsides * sizeof(*sides), PU_LEVEL, NULL);
+
+	memcpy(spawnsectors, sectors, numsectors * sizeof(*sectors));
+	memcpy(spawnlines, lines, numlines * sizeof(*lines));
+	memcpy(spawnsides, sides, numsides * sizeof(*sides));
 }
 
 /** Sets up a sky texture to use for the level.
@@ -2096,9 +2108,7 @@ static void P_LevelInitStuff(boolean reloadinggamestate)
 	// special stage tokens, emeralds, and ring total
 	tokenbits = 0;
 	runemeraldmanager = false;
-	nummaprings = 0;
-	nummapboxes = 0;
-	numgotboxes = 0;
+	nummaprings = nummapboxes = numgotboxes = 0;
 
 	// emerald hunt
 	hunt1 = hunt2 = hunt3 = NULL;
@@ -2108,6 +2118,7 @@ static void P_LevelInitStuff(boolean reloadinggamestate)
 		countdowntimer = mapheaderinfo[gamemap-1]->countdown * TICRATE;
 	else
 		countdowntimer = 0;
+
 	countdowntimeup = false;
 
 	// clear ctf pointers
@@ -2124,8 +2135,6 @@ static void P_LevelInitStuff(boolean reloadinggamestate)
 
 	// special stage
 	stagefailed = false;
-	// Reset temporary record data
-	//memset(&ntemprecords, 0, sizeof(nightsdata_t));
 
 	// earthquake camera
 	memset(&quake,0,sizeof(struct quake));
