@@ -63,6 +63,9 @@ INT32 P_CheckLevelFlat(const char *flatname);
 
 extern size_t nummapthings;
 extern mapthing_t *mapthings;
+extern sector_t *spawnsectors;
+extern line_t *spawnlines;
+extern side_t *spawnsides;
 
 void P_SetupLevelSky(INT32 skynum, boolean global);
 boolean P_SetupLevel(boolean fromnetsave, boolean reloadinggamestate);
