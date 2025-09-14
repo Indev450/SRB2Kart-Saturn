@@ -802,10 +802,6 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 						if (!P_PlayerTouchingSectorSpecial(player, 4, 2 + flagteam))
 						{
 							CONS_Printf(M_GetText("%s returned the %c%s%c to base.\n"), plname, flagcolor, flagtext, 0x80);
-
-							// The fuse code plays this sound effect
-							//if (players[consoleplayer].ctfteam == player->ctfteam)
-							//	S_StartSound(NULL, sfx_hoop1);
 						}
 					}
 				}
@@ -873,14 +869,14 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 
 					toucher->angle = special->angle;
 
-					if (player == &players[consoleplayer])
-						localangle[0] = toucher->angle;
-					else if (player == &players[displayplayers[1]])
-						localangle[1] = toucher->angle;
-					else if (player == &players[displayplayers[2]])
-						localangle[2] = toucher->angle;
-					else if (player == &players[displayplayers[3]])
-						localangle[3] = toucher->angle;
+					for (UINT8 i = 0; i <= splitscreen; i++)
+					{
+						if (player == P_GetLocalPlayerForNum(i))
+						{
+							localangle[i] = toucher->angle;
+							break;
+						}
+					}
 
 					P_ResetPlayer(player);
 
@@ -1626,25 +1622,20 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source)
 				S_FadeOutStopMusic(cv_respawnfademusicout.value);
 		}
 
-		if (target->player == &players[consoleplayer])
+		for (UINT8 i = 0; i <= splitscreen; i++)
 		{
-			// don't die in auto map,
-			// switch view prior to dying
-			if (automapactive)
-				AM_Stop();
+			if (target->player == P_GetLocalPlayerForNum(i))
+			{
+				// don't die in auto map,
+				// switch view prior to dying
+				if (i == 0 && automapactive)
+					AM_Stop();
 
-			//added : 22-02-98: recenter view for next life...
-			localaiming[0] = 0;
+				// added : 22-02-98: recenter view for next life...
+				localaiming[i] = 0;
+				break;
+			}
 		}
-		if (target->player == &players[displayplayers[1]])
-		{
-			// added : 22-02-98: recenter view for next life...
-			localaiming[1] = 0;
-		}
-		if (target->player == &players[displayplayers[2]])
-			localaiming[2] = 0;
-		if (target->player == &players[displayplayers[3]])
-			localaiming[3] = 0;
 
 		if (G_BattleGametype())
 			K_CheckBumpers();

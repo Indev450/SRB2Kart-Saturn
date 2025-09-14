@@ -267,14 +267,14 @@ int player_aiming_setter(lua_State *L)
     player_t *plr = GETPLAYER();
 
     plr->aiming = luaL_checkangle(L, 2);
-    if (plr == &players[consoleplayer])
-        localaiming[0] = plr->aiming;
-    else if (plr == &players[displayplayers[1]])
-        localaiming[1] = plr->aiming;
-    else if (plr == &players[displayplayers[2]])
-        localaiming[2] = plr->aiming;
-    else if (plr == &players[displayplayers[3]])
-        localaiming[3] = plr->aiming;
+	for (UINT8 i = 0; i <= splitscreen; i++)
+	{
+		if (plr == P_GetLocalPlayerForNum(i))
+		{
+			localangle[i] = plr->aiming;
+			break;
+		}
+	}
 
     return 0;
 }

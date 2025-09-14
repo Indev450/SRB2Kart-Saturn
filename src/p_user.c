@@ -980,7 +980,18 @@ fixed_t P_GetPlayerSpinHeight(player_t *player)
 //
 player_t *P_GetLocalPlayerForNum(UINT8 pnum)
 {
-	return (pnum == 0 ? &players[consoleplayer] : &players[displayplayers[pnum]]);
+	return (&players[P_GetLocalPlayerNumForNum(pnum)]);
+}
+
+//
+// P_GetLocalPlayerNumForNum
+//
+// Returns the player number
+// on the local machine for given number.
+//
+INT32 P_GetLocalPlayerNumForNum(UINT8 pnum)
+{
+	return (pnum == 0 ? consoleplayer : displayplayers[pnum]);
 }
 
 //
@@ -993,15 +1004,29 @@ boolean P_IsLocalPlayer(const player_t *player)
 {
 	UINT8 i;
 
-	if (player == &players[consoleplayer])
-		return true;
-	else if (splitscreen)
+	for (i = 0; i <= splitscreen; i++)
 	{
-		for (i = 1; i <= splitscreen; i++) // Skip P1
-		{
-			if (player == &players[displayplayers[i]])
-				return true;
-		}
+		if (player == P_GetLocalPlayerForNum(i))
+			return true;
+	}
+
+	return false;
+}
+
+//
+// P_IsLocalPlayer
+//
+// Returns true if playernum is
+// on the local machine.
+//
+boolean P_IsLocalPlayerNum(UINT8 pnum)
+{
+	UINT8 i;
+
+	for (i = 0; i <= splitscreen; i++)
+	{
+		if (pnum == P_GetLocalPlayerNumForNum(i))
+			return true;
 	}
 
 	return false;
@@ -2575,14 +2600,14 @@ static void P_DoZoomTube(player_t *player)
 	{
 		player->mo->angle = R_PointToAngle2(player->mo->x, player->mo->y, player->mo->tracer->x, player->mo->tracer->y);
 
-		if (player == &players[consoleplayer])
-			localangle[0] = player->mo->angle;
-		else if (player == &players[displayplayers[1]])
-			localangle[1] = player->mo->angle;
-		else if (player == &players[displayplayers[2]])
-			localangle[2] = player->mo->angle;
-		else if (player == &players[displayplayers[3]])
-			localangle[3] = player->mo->angle;
+		for (UINT8 i = 0; i <= splitscreen; i++)
+		{
+			if (player == P_GetLocalPlayerForNum(i))
+			{
+				localangle[i] = player->mo->angle;
+				break;
+			}
+		}
 	}
 }
 
@@ -2768,14 +2793,14 @@ void P_HomingAttack(mobj_t *source, mobj_t *enemy) // Home in on your target
 
 	if (source->player)
 	{
-		if (source->player == &players[consoleplayer])
-			localangle[0] = source->angle;
-		else if (source->player == &players[displayplayers[1]])
-			localangle[1] = source->angle;
-		else if (source->player == &players[displayplayers[2]])
-			localangle[2] = source->angle;
-		else if (source->player == &players[displayplayers[3]])
-			localangle[3] = source->angle;
+		for (UINT8 i = 0; i <= splitscreen; i++)
+		{
+			if (source->player == P_GetLocalPlayerForNum(i))
+			{
+				localangle[i] = source->angle;
+				break;
+			}
+		}
 	}
 
 	// change slope
@@ -4115,19 +4140,12 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 
 void P_ResetLocalCamAiming(player_t *player)
 {
-	UINT8 i;
-
-	if (player == &players[consoleplayer])
-		localaiming[0] = 0;
-	else if (splitscreen)
+	for (UINT8 i = 0; i <= splitscreen; i++)
 	{
-		for (i = 1; i <= splitscreen; i++) // Skip P1
+		if (player == P_GetLocalPlayerForNum(i))
 		{
-			if (player == &players[displayplayers[i]])
-			{
-				localaiming[i] = 0;
-				break;
-			}
+			localangle[i] = 0;
+			break;
 		}
 	}
 }
@@ -5152,14 +5170,14 @@ void P_PlayerAfterThink(player_t *player)
 			player->mo->tracer->target->health += cmd->sidemove;
 			player->mo->angle += cmd->sidemove << ANGLETOFINESHIFT; // 2048 --> ANGLE_MAX
 
-			if (player == &players[consoleplayer])
-				localangle[0] = player->mo->angle; // Adjust the local control angle.
-			else if (player == &players[displayplayers[1]])
-				localangle[1] = player->mo->angle;
-			else if (player == &players[displayplayers[2]])
-				localangle[2] = player->mo->angle;
-			else if (player == &players[displayplayers[3]])
-				localangle[3] = player->mo->angle;
+			for (UINT8 i = 0; i <= splitscreen; i++)
+			{
+				if (player == P_GetLocalPlayerForNum(i))
+				{
+					localangle[i] = player->mo->angle; // Adjust the local control angle.
+					break;
+				}
+			}
 		}
 	}
 

@@ -2405,23 +2405,23 @@ void G_SpawnPlayer(INT32 playernum, boolean starpost)
 	{
 		if (nummapthings)
 		{
-			if (playernum == consoleplayer
-				|| (splitscreen && playernum == displayplayers[1])
-				|| (splitscreen > 1 && playernum == displayplayers[2])
-				|| (splitscreen > 2 && playernum == displayplayers[3]))
-				CONS_Alert(CONS_ERROR, M_GetText("No player spawns found, spawning at the first mapthing!\n"));
+			if (P_IsLocalPlayerNum(playernum))
+			{
+				CONS_Alert(CONS_ERROR, "No player spawns found, spawning at the first mapthing!\n");
+			}
+
 			spawnpoint = &mapthings[0];
 		}
 		else
 		{
-			if (playernum == consoleplayer
-			|| (splitscreen && playernum == displayplayers[1])
-			|| (splitscreen > 1 && playernum == displayplayers[2])
-			|| (splitscreen > 2 && playernum == displayplayers[3]))
-				CONS_Alert(CONS_ERROR, M_GetText("No player spawns found, spawning at the origin!\n"));
-			//P_MovePlayerToSpawn handles this fine if the spawnpoint is NULL.
+			if (P_IsLocalPlayerNum(playernum))
+			{
+				CONS_Alert(CONS_ERROR, "No player spawns found, spawning at the origin!\n");
+				//P_MovePlayerToSpawn handles this fine if the spawnpoint is NULL.
+			}
 		}
 	}
+
 	P_MovePlayerToSpawn(playernum, spawnpoint);
 
 	LUA_HookPlayer(&players[playernum], HOOK(PlayerSpawn)); // Lua hook for player spawning :)
@@ -2433,11 +2433,11 @@ mapthing_t *G_FindCTFStart(INT32 playernum)
 
 	if (!numredctfstarts && !numbluectfstarts) //why even bother, eh?
 	{
-		if (playernum == consoleplayer
-			|| (splitscreen && playernum == displayplayers[1])
-			|| (splitscreen > 1 && playernum == displayplayers[2])
-			|| (splitscreen > 2 && playernum == displayplayers[3]))
-			CONS_Alert(CONS_WARNING, M_GetText("No CTF starts in this map!\n"));
+		if (P_IsLocalPlayerNum(playernum))
+		{
+			CONS_Alert(CONS_WARNING, "No CTF starts in this map!\n");
+		}
+
 		return NULL;
 	}
 
@@ -2445,11 +2445,11 @@ mapthing_t *G_FindCTFStart(INT32 playernum)
 	{
 		if (!numredctfstarts)
 		{
-			if (playernum == consoleplayer
-				|| (splitscreen && playernum == displayplayers[1])
-				|| (splitscreen > 1 && playernum == displayplayers[2])
-				|| (splitscreen > 2 && playernum == displayplayers[3]))
-				CONS_Alert(CONS_WARNING, M_GetText("No Red Team starts in this map!\n"));
+			if (P_IsLocalPlayerNum(playernum))
+			{
+				CONS_Alert(CONS_WARNING, "No Red Team starts in this map!\n");
+			}
+
 			return NULL;
 		}
 
@@ -2460,22 +2460,22 @@ mapthing_t *G_FindCTFStart(INT32 playernum)
 				return redctfstarts[i];
 		}
 
-		if (playernum == consoleplayer
-			|| (splitscreen && playernum == displayplayers[1])
-			|| (splitscreen > 1 && playernum == displayplayers[2])
-			|| (splitscreen > 2 && playernum == displayplayers[3]))
-			CONS_Alert(CONS_WARNING, M_GetText("Could not spawn at any Red Team starts!\n"));
+		if (P_IsLocalPlayerNum(playernum))
+		{
+			CONS_Alert(CONS_WARNING, "Could not spawn at any Red Team starts!\n");
+		}
+
 		return NULL;
 	}
 	else if (!players[playernum].ctfteam || players[playernum].ctfteam == 2) //blue
 	{
 		if (!numbluectfstarts)
 		{
-			if (playernum == consoleplayer
-				|| (splitscreen && playernum == displayplayers[1])
-				|| (splitscreen > 1 && playernum == displayplayers[2])
-				|| (splitscreen > 2 && playernum == displayplayers[3]))
-				CONS_Alert(CONS_WARNING, M_GetText("No Blue Team starts in this map!\n"));
+			if (P_IsLocalPlayerNum(playernum))
+			{
+				CONS_Alert(CONS_WARNING, "No Blue Team starts in this map!\n");
+			}
+
 			return NULL;
 		}
 
@@ -2485,11 +2485,12 @@ mapthing_t *G_FindCTFStart(INT32 playernum)
 			if (G_CheckSpot(playernum, bluectfstarts[i]))
 				return bluectfstarts[i];
 		}
-		if (playernum == consoleplayer
-			|| (splitscreen && playernum == displayplayers[1])
-			|| (splitscreen > 1 && playernum == displayplayers[2])
-			|| (splitscreen > 2 && playernum == displayplayers[3]))
-			CONS_Alert(CONS_WARNING, M_GetText("Could not spawn at any Blue Team starts!\n"));
+
+		if (P_IsLocalPlayerNum(playernum))
+		{
+			CONS_Alert(CONS_WARNING, "Could not spawn at any Blue Team starts!\n");
+		}
+
 		return NULL;
 	}
 	//should never be reached but it gets stuff to shut up
@@ -2508,19 +2509,20 @@ mapthing_t *G_FindMatchStart(INT32 playernum)
 			if (G_CheckSpot(playernum, deathmatchstarts[i]))
 				return deathmatchstarts[i];
 		}
-		if (playernum == consoleplayer
-			|| (splitscreen && playernum == displayplayers[1])
-			|| (splitscreen > 1 && playernum == displayplayers[2])
-			|| (splitscreen > 2 && playernum == displayplayers[3]))
-			CONS_Alert(CONS_WARNING, M_GetText("Could not spawn at any Deathmatch starts!\n"));
+
+		if (P_IsLocalPlayerNum(playernum))
+		{
+			CONS_Alert(CONS_WARNING, "Could not spawn at any Deathmatch starts!\n");
+		}
+
 		return NULL;
 	}
 
-	if (playernum == consoleplayer
-		|| (splitscreen && playernum == displayplayers[1])
-		|| (splitscreen > 1 && playernum == displayplayers[2])
-		|| (splitscreen > 2 && playernum == displayplayers[3]))
-		CONS_Alert(CONS_WARNING, M_GetText("No Deathmatch starts in this map!\n"));
+	if (P_IsLocalPlayerNum(playernum))
+	{
+		CONS_Alert(CONS_WARNING, "No Deathmatch starts in this map!\n");
+	}
+
 	return NULL;
 }
 
@@ -2584,19 +2586,19 @@ mapthing_t *G_FindRaceStart(INT32 playernum)
 		// Just spawn there.
 		//return playerstarts[0];
 
-		if (playernum == consoleplayer
-			|| (splitscreen && playernum == displayplayers[1])
-			|| (splitscreen > 1 && playernum == displayplayers[2])
-			|| (splitscreen > 2 && playernum == displayplayers[3]))
-			CONS_Alert(CONS_WARNING, M_GetText("Could not spawn at any Race starts!\n"));
+		if (P_IsLocalPlayerNum(playernum))
+		{
+			CONS_Alert(CONS_WARNING, "Could not spawn at any Race starts!\n");
+		}
+
 		return NULL;
 	}
 
-	if (playernum == consoleplayer
-		|| (splitscreen && playernum == displayplayers[1])
-		|| (splitscreen > 1 && playernum == displayplayers[2])
-		|| (splitscreen > 2 && playernum == displayplayers[3]))
-		CONS_Alert(CONS_WARNING, M_GetText("No Race starts in this map!\n"));
+	if (P_IsLocalPlayerNum(playernum))
+	{
+		CONS_Alert(CONS_WARNING, "No Race starts in this map!\n");
+	}
+
 	return NULL;
 }
 

@@ -943,7 +943,6 @@ static void Got_Saycmd(UINT8 **p, INT32 playernum)
 
 	// before we do anything, let's verify the guy isn't spamming, get this easier on us.
 
-	//if (stop_spamming[playernum] != 0 && cv_chatspamprotection.value && !(flags & HU_CSAY))
 	if (stop_spamming[playernum] != 0 && consoleplayer != playernum && cv_chatspamprotection.value && !(flags & HU_CSAY))
 	{
 		CONS_Debug(DBG_NETPLAY,"Received SAY cmd too quickly from Player %d (%s), assuming as spam and blocking message.\n", playernum+1, player_names[playernum]);
@@ -1039,6 +1038,7 @@ static void Got_Saycmd(UINT8 **p, INT32 playernum)
 			tempchar = (char *)Z_Calloc(strlen(cstart) + strlen(adminchar) + 1, PU_STATIC, NULL);
 		else if (IsPlayerAdmin(playernum))
 			tempchar = (char *)Z_Calloc(strlen(cstart) + strlen(remotechar) + 1, PU_STATIC, NULL);
+
 		if (tempchar)
 		{
 			if (playernum == serverplayer)
@@ -1073,17 +1073,6 @@ static void Got_Saycmd(UINT8 **p, INT32 playernum)
 		}
 		else // To everyone or sayteam, it doesn't change anything.
 			fmt2 = "%s<%s%s%s>\x80 %s%s";
-		/*else // To your team
-		{
-			if (players[playernum].ctfteam == 1) // red
-				prefix = "\x85[TEAM]";
-			else if (players[playernum].ctfteam == 2) // blue
-				prefix = "\x84[TEAM]";
-			else
-				prefix = "\x83"; // makes sure this doesn't implode if you sayteam on non-team gamemodes
-
-			fmt2 = "%s<%s%s>\x80%s %s%s";
-		}*/
 
 		HU_AddChatText(va(fmt2, prefix, cstart, dispname, cend, textcolor, msg), cv_chatnotifications.value); // add to chat
 
@@ -1847,12 +1836,6 @@ static void HU_DrawChat(void)
 	if (teamtalk)
 	{
 		talk = ttalk;
-#if 0
-		if (players[consoleplayer].ctfteam == 1)
-			t = 0x500;  // Red
-		else if (players[consoleplayer].ctfteam == 2)
-			t = 0x400; // Blue
-#endif
 	}
 
 	if (CHAT_MUTE)
@@ -2049,6 +2032,7 @@ static void HU_DrawChat(void)
 			V_DrawSmallString(chatx + boxw + 4, p_dispy - (6*count), V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_ALLOWLOWERCASE, va("\x82%d\x80 - %s", i, player_names[i]));
 			count++;
 		}
+
 		if (count == 0) // no results.
 		{
 			V_DrawFillConsoleMap(chatx + boxw + 2, p_dispy - (6*count), 48, 6, 239 | V_SNAPTOBOTTOM | V_SNAPTOLEFT); // fill it like the chat so the text doesn't become hard to read because of the hud.

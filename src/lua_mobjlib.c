@@ -251,14 +251,15 @@ int mobj_angle_setter(lua_State *L)
     mobj_t *mo = GETMO();
 
     mo->angle = luaL_checkangle(L, 2);
-    if (mo->player == &players[consoleplayer])
-        localangle[0] = mo->angle;
-    else if (mo->player == &players[displayplayers[1]])
-        localangle[1] = mo->angle;
-    else if (mo->player == &players[displayplayers[2]])
-        localangle[2] = mo->angle;
-    else if (mo->player == &players[displayplayers[3]])
-        localangle[3] = mo->angle;
+    for (UINT8 i = 0; i <= splitscreen; i++)
+    {
+        if (mo->player == P_GetLocalPlayerForNum(i))
+        {
+            localangle[i] = mo->angle;
+            break;
+        }
+    }
+
     return 0;
 }
 
