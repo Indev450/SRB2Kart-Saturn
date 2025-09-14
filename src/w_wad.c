@@ -253,6 +253,7 @@ static inline void W_LoadDehackedLumpsPK3(UINT16 wadnum)
 			lumpinfo_t *lump_p = &wadfiles[wadnum]->lumpinfo[posStart];
 			size_t length = strlen(wadfiles[wadnum]->filename) + 1 + strlen(lump_p->fullname); // length of file name, '|', and lump name
 			char *name = malloc(length + 1);
+
 			sprintf(name, "%s|%s", wadfiles[wadnum]->filename, lump_p->fullname);
 			name[length] = '\0';
 			CONS_Printf(M_GetText("Loading SOC from %s\n"), name);
@@ -278,6 +279,7 @@ static inline void W_LoadDehackedLumps(UINT16 wadnum)
 	{
 		lumpinfo_t *lump_p = wadfiles[wadnum]->lumpinfo;
 		for (lump = 0; lump < wadfiles[wadnum]->numlumps; lump++, lump_p++)
+		{
 			if (memcmp(lump_p->name,"SOC_",4)==0) // Check for generic SOC lump
 			{	// shameless copy+paste of code from LUA_LoadLump
 				size_t length = strlen(wadfiles[wadnum]->filename) + 1 + strlen(lump_p->fullname); // length of file name, '|', and lump name
@@ -299,6 +301,7 @@ static inline void W_LoadDehackedLumps(UINT16 wadnum)
 				CONS_Printf(M_GetText("Loading object config from %s\n"), wadfiles[wadnum]->filename);
 				DEH_LoadDehackedLumpPwad(wadnum, lump);
 			}
+		}
 	}
 }
 
@@ -353,11 +356,13 @@ UINT32 W_HashLumpName(const char *name)
  */
 static restype_t ResourceFileDetect (const char* filename)
 {
-	if (!stricmp(&filename[strlen(filename) - 4], ".pk3"))
+	size_t len = strlen(filename) - 4;
+
+	if (!stricmp(&filename[len], ".pk3"))
 		return RET_PK3;
-	if (!stricmp(&filename[strlen(filename) - 4], ".soc"))
+	if (!stricmp(&filename[len], ".soc"))
 		return RET_SOC;
-	if (!stricmp(&filename[strlen(filename) - 4], ".lua"))
+	if (!stricmp(&filename[len], ".lua"))
 		return RET_LUA;
 
 	return RET_WAD;
@@ -368,6 +373,7 @@ static restype_t ResourceFileDetect (const char* filename)
 static lumpinfo_t* ResGetLumpsStandalone (FILE* handle, UINT16* numlumps, const char* lumpname)
 {
 	lumpinfo_t* lumpinfo = Z_Calloc(sizeof (*lumpinfo), PU_STATIC, NULL);
+
 	lumpinfo->position = 0;
 	fseek(handle, 0, SEEK_END);
 	lumpinfo->size = ftell(handle);
@@ -1445,9 +1451,11 @@ boolean W_IsLumpWad(lumpnum_t lumpnum)
 	{
 		const char *lumpfullName = (wadfiles[WADFILENUM(lumpnum)]->lumpinfo + LUMPNUM(lumpnum))->fullname;
 
-		if (strlen(lumpfullName) < 4)
+		size_t len = strlen(lumpfullName);
+
+		if (len < 4)
 			return false; // can't possibly be a WAD can it?
-		return !strnicmp(lumpfullName + strlen(lumpfullName) - 4, ".wad", 4);
+		return !strnicmp(lumpfullName + len - 4, ".wad", 4);
 	}
 
 	return false; // WADs should never be inside non-PK3s as far as SRB2 is concerned
@@ -2308,16 +2316,17 @@ int W_VerifyNMUSlumps(const char *filename, FILE *handle, boolean exit_on_error)
 	};
 
 	int status = 0;
+	size_t len = strlen(filename) - 4;
 
-	if (stricmp(&filename[strlen(filename) - 4], ".pk3") == 0)
+	if (stricmp(&filename[len], ".pk3") == 0)
 	{
 		status = W_VerifyPK3(handle, NMUSlist, false);
 	}
 	else
 	{
 		// detect wad file by the absence of the other supported extensions
-		if (stricmp(&filename[strlen(filename) - 4], ".soc")
-			&& stricmp(&filename[strlen(filename) - 4], ".lua"))
+		if (stricmp(&filename[len], ".soc")
+			&& stricmp(&filename[len], ".lua"))
 		{
 			status = W_VerifyWAD(handle, NMUSlist, false);
 
@@ -2538,13 +2547,15 @@ static int W_CheckFileContains(const char *filename, lumpchecklist_t *checklist)
 	if ((handle = W_OpenWadFile(&filename, false)) == NULL)
 		return -1;
 
-	if (stricmp(&filename[strlen(filename) - 4], ".pk3") == 0)
+	size_t len = strlen(filename) - 4;
+
+	if (stricmp(&filename[len], ".pk3") == 0)
 		contains = W_CheckPK3Contains(handle, checklist);
 	else
 	{
 		// detect wad file by the absence of the other supported extensions
-		if (stricmp(&filename[strlen(filename) - 4], ".soc")
-		&& stricmp(&filename[strlen(filename) - 4], ".lua"))
+		if (stricmp(&filename[len], ".soc")
+		&& stricmp(&filename[len], ".lua"))
 		{
 			contains = W_CheckWADContains(handle, checklist);
 		}
@@ -2623,6 +2634,7 @@ virtres_t* vres_GetMap(lumpnum_t lumpnum)
 			vlumps[i].size = vsizecache[realentry];
 
 			const char *name = (fileinfo + realentry)->name;
+
 			if (strlen(name) == 5 && memcmp(name, "MAP", 3) == 0)
 			{
 				numlumps--; // We skip map marker, so 1 of entries becomes empty
@@ -2660,6 +2672,7 @@ virtres_t* vres_GetMap(lumpnum_t lumpnum)
 		{
 			// Check if it is map marker. It is not always first lump sadly, so we need to expect it anywhere
 			const char *name = W_CheckNameForNum(lumpnum);
+
 			if (strlen(name) == 5 && memcmp(name, "MAP", 3) == 0)
 			{
 				--i; // Decrement so on next iteration we write on same i, so we don't leave corrupted vlumps entry

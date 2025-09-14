@@ -1057,25 +1057,23 @@ static INT32 D_DetectFileType(const char* filename)
 {
 	if (pathisdirectory(filename) == 1)
 		return 1;
-	else
-	{
-		if (!stricmp(&filename[strlen(filename) - 4], ".wad"))
-			return 2;
-		else if (!stricmp(&filename[strlen(filename) - 4], ".pk3"))
-			return 3;
-		else if (!stricmp(&filename[strlen(filename) - 5], ".kart"))
-			return 4;
 
-		else if (!stricmp(&filename[strlen(filename) - 4], ".lua"))
-			return 5;
-		else if (!stricmp(&filename[strlen(filename) - 4], ".soc"))
-			return 6;
+	const size_t len = strlen(filename);
 
-		else if (!stricmp(&filename[strlen(filename) - 4], ".cfg"))
-			return 7;
-		else if (!stricmp(&filename[strlen(filename) - 4], ".txt"))
-			return 8;
-	}
+	if (!stricmp(&filename[len - 4], ".wad"))
+		return 2;
+	else if (!stricmp(&filename[len - 4], ".pk3"))
+		return 3;
+	else if (!stricmp(&filename[len - 5], ".kart"))
+		return 4;
+	else if (!stricmp(&filename[len - 4], ".lua"))
+		return 5;
+	else if (!stricmp(&filename[len - 4], ".soc"))
+		return 6;
+	else if (!stricmp(&filename[len - 4], ".cfg"))
+		return 7;
+	else if (!stricmp(&filename[len - 4], ".txt"))
+		return 8;
 
 	return 0;
 }
@@ -1241,34 +1239,10 @@ static boolean AddIWAD(void)
 	return false;
 }
 
-// extra graphic patches for saturn specific thingies
+// Optional saturn extra files
 boolean found_extra_kart  = false;
 boolean found_extra2_kart = false;
 boolean found_extra3_kart = false;
-
-boolean xtra_speedo       = false; // extra speedometer check
-boolean xtra_speedo_clr   = false; // extra speedometer colour check
-boolean xtra_speedo3      = false; // 80x 11 extra speedometer check
-boolean xtra_speedo_clr3  = false; // 80x 11 extra speedometer colour check
-boolean achi_speedo       = false; // achiiro speedometer check
-boolean achi_speedo_clr   = false; // extra speedometer colour check
-boolean dial_speedo       = false; // dial speedometer check
-boolean dial_speedo_clr   = false; // dial speedometer colour check
-boolean kartz_speedo      = false; // kartZ speedo
-boolean kartz_speedo_smol = false; // kartZ speedo but smol
-
-boolean clr_hud           = false; // colour hud check
-boolean driftgaugegfx_clr = false; // driftgauge colour check
-boolean big_lap           = false; // bigger lap counter
-boolean big_lap_color     = false; // bigger lap counter but colour
-boolean statdp            = false; // stat display for extended player setup
-boolean nametaggfx        = false; // Nametag stuffs
-boolean driftgaugegfx     = false; // Driftgauge stuffs
-boolean multiitem_icon    = false; // Extra icons for Sneakers, Banana and Jawz
-boolean joystickicon      = false; // Extra icons for the joystick input display
-boolean minidoticon       = false; // Dot graphic for minimap player angle display
-boolean minilighticon     = false; // mkwii-style minimap headlight
-//
 
 static void IdentifyVersion(void)
 {
@@ -1318,30 +1292,39 @@ static void IdentifyVersion(void)
 	D_AddFile(va(pandf,srb2waddir,"patch.dta"));
 #endif
 
-	D_AddFile(va(pandf,srb2waddir,"gfx.kart"), startupwadfiles);
-	D_AddFile(va(pandf,srb2waddir,"textures.kart"), startupwadfiles);
-	D_AddFile(va(pandf,srb2waddir,"chars.kart"), startupwadfiles);
-	D_AddFile(va(pandf,srb2waddir,"maps.kart"), startupwadfiles);
+	D_AddFile(va(pandf, srb2waddir, "gfx.kart"), startupwadfiles);
+	D_AddFile(va(pandf, srb2waddir, "textures.kart"), startupwadfiles);
+	D_AddFile(va(pandf, srb2waddir, "chars.kart"), startupwadfiles);
+	D_AddFile(va(pandf, srb2waddir, "maps.kart"), startupwadfiles);
 #ifdef USE_PATCH_KART
 	D_AddFile(va(pandf,srb2waddir,"patch.kart"), startupwadfiles);
 #endif
+
+	const char *path = NULL;
+
+	path = va(pandf, srb2waddir, "extra.kart");
+
 	// completely optional
-	if (FIL_ReadFileOK(va(pandf,srb2waddir,"extra.kart")))
+	if (FIL_ReadFileOK(path))
 	{
-		D_AddFile(va(pandf,srb2waddir,"extra.kart"), startupwadfiles);
+		D_AddFile(path, startupwadfiles);
 		found_extra_kart = true;
 	}
 
+	path = va(pandf, srb2waddir, "extra2.kart");
+
 	// completely optional 2: Back with a vengence
-	if (FIL_ReadFileOK(va(pandf,srb2waddir,"extra2.kart")))
+	if (FIL_ReadFileOK(path))
 	{
-		D_AddFile(va(pandf,srb2waddir,"extra2.kart"), startupwadfiles);
+		D_AddFile(path, startupwadfiles);
 		found_extra2_kart = true;
 	}
 
-	if (FIL_ReadFileOK(va(pandf,srb2waddir,"extra3.kart")))
+	path = va(pandf, srb2waddir, "extra3.kart");
+
+	if (FIL_ReadFileOK(path))
 	{
-		D_AddFile(va(pandf,srb2waddir,"extra3.kart"), startupwadfiles);
+		D_AddFile(path, startupwadfiles);
 		found_extra3_kart = true;
 	}
 
@@ -1378,11 +1361,12 @@ static inline void D_MakeTitleString(char *s)
 	char *t;
 	const char *u;
 	INT32 i;
+	const size_t len = (80-strlen(s))/2;
 
 	for (i = 0, t = temp; i < 82; i++)
 		*t++=' ';
 
-	for (t = temp + (80-strlen(s))/2, u = s; *u != '\0' ;)
+	for (t = temp + len, u = s; *u != '\0' ;)
 		*t++ = *u++;
 
 	u = compdate;
@@ -1395,6 +1379,31 @@ static inline void D_MakeTitleString(char *s)
 	temp[80] = '\0';
 	strcpy(s, temp);
 }
+
+// extra graphic patches for saturn specific thingies
+boolean xtra_speedo       = false; // extra speedometer check
+boolean xtra_speedo_clr   = false; // extra speedometer colour check
+boolean xtra_speedo3      = false; // 80x 11 extra speedometer check
+boolean xtra_speedo_clr3  = false; // 80x 11 extra speedometer colour check
+boolean achi_speedo       = false; // achiiro speedometer check
+boolean achi_speedo_clr   = false; // extra speedometer colour check
+boolean dial_speedo       = false; // dial speedometer check
+boolean dial_speedo_clr   = false; // dial speedometer colour check
+boolean kartz_speedo      = false; // kartZ speedo
+boolean kartz_speedo_smol = false; // kartZ speedo but smol
+
+boolean clr_hud           = false; // colour hud check
+boolean driftgaugegfx_clr = false; // driftgauge colour check
+boolean big_lap           = false; // bigger lap counter
+boolean big_lap_color     = false; // bigger lap counter but colour
+boolean statdp            = false; // stat display for extended player setup
+boolean nametaggfx        = false; // Nametag stuffs
+boolean driftgaugegfx     = false; // Driftgauge stuffs
+boolean multiitem_icon    = false; // Extra icons for Sneakers, Banana and Jawz
+boolean joystickicon      = false; // Extra icons for the joystick input display
+boolean minidoticon       = false; // Dot graphic for minimap player angle display
+boolean minilighticon     = false; // mkwii-style minimap headlight
+//
 
 static void D_CheckSaturnExtraFiles(void)
 {
@@ -1497,12 +1506,14 @@ static void D_CheckSaturnExtraFiles(void)
 			PUSHCONS(inputdisplay_cons_temp, last_inputdisplay_i, 3, "StickGFX");
 		}
 
+		// minimap dot
 		if (W_LumpExists("MMAPDOT"))
 		{
 			minidoticon = true;
 			PUSHCONS(minimapdot_cons_temp, last_minimapdot_i, 1, "Dot");
 		}
 
+		// minimap headlight
 		if (W_LumpExists("MMAPHDLT"))
 		{
 			minilighticon = true;
@@ -1981,13 +1992,7 @@ void D_SRB2Main(void)
 	R_Init();
 
 	// setting up sound
-	if (dedicated)
-	{
-		sound_disabled = true;
-		music_disabled = true;
-	}
-
-	if (M_CheckParm("-noaudio")) // combines -nosound and -nomusic
+	if (dedicated || M_CheckParm("-noaudio")) // combines -nosound and -nomusic
 	{
 		sound_disabled = true;
 		music_disabled = true;
@@ -2124,12 +2129,6 @@ void D_SRB2Main(void)
 		return;
 	}
 #endif
-
-	/*if (M_CheckParm("-ultimatemode"))
-	{
-		autostart = true;
-		ultimatemode = true;
-	}*/
 
 	if (autostart || netgame)
 	{
@@ -2275,6 +2274,9 @@ const char *D_Home(void)
 	}
 #endif// !__CYGWIN__
 #endif// _WIN32
-	if (usehome) return userhome;
-	else return NULL;
+
+	if (usehome)
+		return userhome;
+	else
+		return NULL;
 }
