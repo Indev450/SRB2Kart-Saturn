@@ -24,6 +24,8 @@ extern "C" {
 #pragma interface
 #endif
 
+void I_SetTextInput(void);
+
 typedef enum
 {
 	/// Software

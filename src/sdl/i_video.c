@@ -115,9 +115,7 @@ boolean a2c = false;
 
 static void KeyboardLayout_OnChange(void)
 {
-	if (cv_keyboardlayout.value == 2)
-		SDL_StartTextInput();
-	else
+	if (cv_keyboardlayout.value != 2)
 		SDL_StopTextInput();
 	HU_Shiftform();
 }
@@ -228,6 +226,23 @@ void RefreshOGLSDLSurface(void)
 		OglSdlSurface(vid.width, vid.height);
 }
 #endif
+
+void I_SetTextInput(void)
+{
+	static boolean input_active = false;
+	boolean use_native = I_UseNativeKeyboard();
+
+	if (use_native && !input_active)
+	{
+		SDL_StartTextInput();
+		input_active = true;
+	}
+	else if (!use_native && input_active)
+	{
+		SDL_StopTextInput();
+		input_active = false;
+	}
+}
 
 static INT32 Impl_SDL_Scancode_To_Keycode(SDL_Scancode code)
 {
@@ -1923,6 +1938,8 @@ void I_StartupGraphics(void)
 	SDL_RaiseWindow(window);
 
 	graphics_started = true;
+
+	SDL_StopTextInput();
 }
 
 void I_ShutdownGraphics(void)
