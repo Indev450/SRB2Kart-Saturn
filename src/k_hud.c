@@ -1089,6 +1089,11 @@ boolean K_UseColorHud(void)
 	return (cv_colorizedhud.value && clr_hud);
 }
 
+// Since all our extra Saturn things are in optional files
+// we gotta do a bunch of extra checks to determine
+// if the according Assets are actually loaded
+// see D_CheckSaturnExtraFiles in d_main.c
+
 enum
 {
 	SPEEDO_VANILLA,
@@ -1175,7 +1180,7 @@ boolean K_UseHighResPortraits(void)
 	return (cv_highresportrait.value && K_IsHighResolution());
 }
 
-// returns the players faceprefix
+// returns the players faceprefix patch
 // accounts for localskins
 patch_t *K_GetFacePrefix(player_t *player, INT32 skinnum)
 {
@@ -4013,7 +4018,6 @@ static void K_drawBattleFullscreen(void)
 			}
 			else
 				V_DrawFixedPatch(x<<FRACBITS, ty<<FRACBITS, scale, 0, kp_timeoutsticker, NULL);
-
 
 			V_DrawKartString(x-txoff, ty, 0, va("%d", stplyr->kartstuff[k_comebacktimer]/TICRATE));
 		}
