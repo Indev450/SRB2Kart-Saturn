@@ -369,27 +369,15 @@ INT32 pathisdirectory(const char *path)
 }
 
 // skip those folders, they will not have any addons
-#ifdef _WIN32
 static const char *exclude_paths[] = {
-	"\\logs\\",
-	"\\luafiles\\",
-	"\\replay\\",
-	"\\mdls\\",
-	"\\gifs\\",
-	"\\screenshots\\",
+	"logs",
+	"luafiles",
+	"replay",
+	"mdls",
+	"gifs",
+	"screenshots",
 	NULL
 };
-#else
-static const char *exclude_paths[] = {
-	"/logs/",
-	"/luafiles/",
-	"/replay/",
-	"/mdls/",
-	"/gifs/",
-	"/screenshots/",
-	NULL
-};
-#endif
 
 filestatus_t filesearch(char *filename, const char *startpath, const UINT8 *wantedmd5sum, boolean completepath, int maxsearchdepth)
 {
@@ -404,7 +392,6 @@ filestatus_t filesearch(char *filename, const char *startpath, const UINT8 *want
 	int depthleft = maxsearchdepth;
 	char searchpath[1024];
 	size_t *searchpathindex;
-	boolean folderchanged = true; // tells us if we changed folders during traversal
 
 	dirhandle = (DIR**)malloc(maxsearchdepth * sizeof(DIR*));
 	searchpathindex = (size_t *)malloc(maxsearchdepth * sizeof(size_t));
@@ -439,7 +426,6 @@ filestatus_t filesearch(char *filename, const char *startpath, const UINT8 *want
 		if (!dent)
 		{
 			closedir(dirhandle[depthleft++]);
-			folderchanged = true;
 			continue;
 		}
 
@@ -452,103 +438,92 @@ filestatus_t filesearch(char *filename, const char *startpath, const UINT8 *want
 			continue;
 		}
 
-		// skip some folders that wont have addons in them
-		if (folderchanged)
-		{
-			boolean skipfolder = false;
-
-			for (const char **path = exclude_paths; *path != NULL; path++)
-			{
-				if (**path == '\0')
-					continue;
-#ifdef _WIN32
-				if (strstr(searchpath, *path)) // windows doesent care if lower or uppercase
-#else
-				if (strcasestr(searchpath, *path))
-#endif
-				{
-					skipfolder = true;
-					break;
-				}
-			}
-
-			if (skipfolder)
-			{
-				closedir(dirhandle[depthleft++]);
-				folderchanged = true;
-				continue;
-			}
-		}
-
 		// okay, now we actually want searchpath to incorporate d_name
 		strcpy(&searchpath[searchpathindex[depthleft]], dent->d_name);
 
-#if defined(__linux__) || defined(__FreeBSD__)
-		if (dent->d_type == DT_UNKNOWN && lstat(searchpath, &fsstat) == 0)
-		{
-			if (S_ISDIR(fsstat.st_mode))
+#if defined(__linux__) || defined(__FreeBSD__) || defined(__OpenBSD__)
+		if (dent->d_type == DT_UNKNOWN || dent->d_type == DT_LNK)
+			if (stat(searchpath, &fsstat) == 0 && S_ISDIR(fsstat.st_mode))
 				dent->d_type = DT_DIR;
-			else if (S_ISLNK(fsstat.st_mode))
-				dent->d_type = DT_LNK;
-		}
-
-		// Symlinks aren't always directory symlinks. Dunno if this would resolve recursive
-		// symlinks, but i think stat already does that
-		if (dent->d_type == DT_LNK && stat(searchpath, &fsstat) == 0 && !S_ISDIR(fsstat.st_mode))
-		{
-			dent->d_type = DT_UNKNOWN;
-		}
 
 		// Linux and FreeBSD has a special field for file type on dirent, so use that to speed up lookups.
-		if ((dent->d_type == DT_DIR && depthleft) || (dent->d_type == DT_LNK && depthleft))
+		if (dent->d_type == DT_DIR)
 #elif defined (_WIN32)
 		// if we wanna follow symlinks we can check with FILE_ATTRIBUTE_REPARSE_POINT
 		DWORD fileattr = GetFileAttributes(searchpath);
 		if (fileattr == INVALID_FILE_ATTRIBUTES)
-			; // was the file (re)moved? can't stat it
-		else if ((fileattr & FILE_ATTRIBUTE_DIRECTORY) && depthleft)
+			continue; // was the file (re)moved? can't stat it
+
+		if (fileattr & FILE_ATTRIBUTE_DIRECTORY)
 #else
 		if (stat(searchpath,&fsstat) < 0) // do we want to follow symlinks? if not: change it to lstat
-			; // was the file (re)moved? can't stat it
-		else if (S_ISDIR(fsstat.st_mode) && depthleft)
+			continue; // was the file (re)moved? can't stat it
+
+		if (S_ISDIR(fsstat.st_mode))
 #endif
 		{
-			searchpathindex[--depthleft] = strlen(searchpath) + 1;
-			dirhandle[depthleft] = opendir(searchpath);
+			// I am a folder!
 
-			if (!dirhandle[depthleft])
+			if (!depthleft)
+				continue; // No additional folder delving permitted...
+
+			const char **path = exclude_paths;
+
+			if (depthleft == maxsearchdepth-1)
 			{
-				// can't open it... maybe no read-permissions
-				// go back to previous dir
-				depthleft++;
+				// When we're at the root of the search, we exclude certain folders.
+
+				boolean skipfolder = false;
+
+				for (; *path != NULL; path++)
+				{
+					if (strcasecmp(*path, dent->d_name))
+					{
+						skipfolder = true;
+						break;
+					}
+				}
+
+				if (skipfolder)
+				{
+					continue;
+				}
 			}
 
-			searchpath[searchpathindex[depthleft]-1] = PATHSEP[0];
-			searchpath[searchpathindex[depthleft]] = 0;
-			folderchanged = true;
+			if (strcasecmp(".git", dent->d_name) // sanity if you're weird like me
+				&& (dirhandle[depthleft-1] = opendir(searchpath)) != NULL)
+			{
+				// Got read permissions!
+				searchpathindex[--depthleft] = strlen(searchpath) + 1;
+
+				searchpath[searchpathindex[depthleft]-1] = PATHSEP[0];
+				searchpath[searchpathindex[depthleft]] = 0;
+			}
+
 			continue;
 		}
-		else if (!strcasecmp(searchname, dent->d_name))
-		{
-			switch (checkfilemd5(searchpath, wantedmd5sum))
-			{
-				case FS_FOUND:
-					if (completepath)
-						strcpy(filename, searchpath);
-					else
-						strcpy(filename, dent->d_name);
-					retval = FS_FOUND;
-					found = 1;
-					break;
-				case FS_MD5SUMBAD:
-					retval = FS_MD5SUMBAD;
-					break;
-				default: // prevent some compiler warnings
-					break;
-			}
-		}
 
-		folderchanged = false;
+		// I am a file!
+
+		if (strcasecmp(searchname, dent->d_name))
+			continue; // Not what we're looking for!
+
+		switch (checkfilemd5(searchpath, wantedmd5sum))
+		{
+			case FS_FOUND:
+				if (completepath)
+					strcpy(filename, searchpath);
+				else
+					strcpy(filename, dent->d_name);
+				retval = FS_FOUND;
+				found = 1;
+				break;
+			case FS_MD5SUMBAD:
+				retval = FS_MD5SUMBAD;
+				break;
+			default: // prevent some compiler warnings
+				break;
+		}
 	}
 
 	for (; depthleft < maxsearchdepth; closedir(dirhandle[depthleft++]));
