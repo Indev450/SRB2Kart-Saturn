@@ -1369,21 +1369,7 @@ void Y_VoteTicker(void)
 			UINT8 p;
 			boolean pressed = false;
 
-			switch (i)
-			{
-				case 1:
-					p = displayplayers[1];
-					break;
-				case 2:
-					p = displayplayers[2];
-					break;
-				case 3:
-					p = displayplayers[3];
-					break;
-				default:
-					p = consoleplayer;
-					break;
-			}
+			p = P_GetLocalPlayerNumForNum(i);
 
 			if (voteclient.playerinfo[i].delay)
 				voteclient.playerinfo[i].delay--;

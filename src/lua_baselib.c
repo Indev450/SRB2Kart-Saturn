@@ -243,6 +243,7 @@ static int lib_chatprintf(lua_State *L)
 	plr = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));	// retrieve player
 	if (!plr)
 		return LUA_ErrInvalid(L, "player_t");
+
 	if (plr != &players[consoleplayer])
 		return 0;
 
