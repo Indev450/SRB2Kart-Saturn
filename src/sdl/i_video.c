@@ -166,7 +166,6 @@ static      SDL_Surface *icoSurface = NULL;
 static      UINT32       localPalette[256];
 Uint16      realwidth = BASEVIDWIDTH;
 Uint16      realheight = BASEVIDHEIGHT;
-static       SDL_bool    mousegrabok = SDL_TRUE;
 #define HalfWarpMouse(x,y) if (wrapmouseok) SDL_WarpMouseInWindow(window, (Uint16)(x/2),(Uint16)(y/2))
 static       SDL_bool    exposevideo = SDL_FALSE;
 static       SDL_bool    usesdl2soft = SDL_FALSE;
@@ -1928,9 +1927,6 @@ void I_StartupGraphics(void)
 	Impl_SetWindowIcon();
 
 	VID_SetMode(VID_GetModeForSize(BASEVIDWIDTH, BASEVIDHEIGHT));
-
-	if (M_CheckParm("-nomousegrab"))
-		mousegrabok = SDL_FALSE;
 
 	realwidth = (Uint16)vid.width;
 	realheight = (Uint16)vid.height;
