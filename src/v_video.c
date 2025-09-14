@@ -3791,7 +3791,7 @@ UINT8 GetColorLUTDirect(colorlookup_t *lut, UINT8 r, UINT8 g, UINT8 b)
 void V_Init(void)
 {
 	INT32 i;
-	const INT32 screensize = vid.rowbytes * vid.height;
+	INT32 screensize = vid.rowbytes * vid.height;
 
 	for (i = 0; i < NUMSCREENS; i++)
 	{
@@ -3811,7 +3811,9 @@ void V_Init(void)
 			// we need to allocate these relative to their cpu restrictions to not trigger segfaults
 			// TODO: add support for sve and neon
 #if defined(__SSE__)
-			vid.screens[i] = aligned_alloc(128, screensize);
+			while (screensize & 15)
+				screensize++;
+			vid.screens[i] = aligned_alloc(16, screensize);
 #else
 			vid.screens[i] = malloc(screensize);
 #endif
