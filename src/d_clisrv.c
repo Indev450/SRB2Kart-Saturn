@@ -1728,7 +1728,7 @@ static void SV_SendMapIcon(INT32 node)
 	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
 
 	const char *map = va("%sP", G_BuildMapName(gamemap));
-	if (!W_LumpExists(map))
+	if (!W_LumpExists(map) || (mapheaderinfo[gamemap-1]->menuflags & LF2_HIDEINMENU))
 	{
 		// send an empty icon to tell the client there is no map icon
 		netbuffer->packettype = PT_MAPICON;
