@@ -477,7 +477,7 @@ filestatus_t filesearch(char *filename, const char *startpath, const UINT8 *want
 
 				for (; *path != NULL; path++)
 				{
-					if (strcasecmp(*path, dent->d_name))
+					if (strcasecmp(*path, dent->d_name) == 0)
 					{
 						skipfolder = true;
 						break;
