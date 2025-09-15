@@ -700,13 +700,6 @@ void G_WriteAllGhostTics(void)
 		if (multiplayer && ((counter % cv_netdemosyncquality.value) != 0)) // Only write 1 in this many ghost datas per tic to cut down on multiplayer replay size.
 			continue;
 
-		if (((ghostext[i].flags && (ghostext[i].flags & EZT_HIT)) || ghostext[i].hits)
-			&& !ghostext[i].hitlist) // hitlist might be freed during resynch, beware PU_LEVEL!
-		{
-			ghostext[i].hits = 0;
-			continue;
-		}
-
 		CHECKSPACE(1);
 
 		WRITEUINT8(demobuf.p, i);
@@ -914,7 +907,9 @@ void G_WriteGhostTic(mobj_t *ghost, INT32 playernum)
 				P_SetTarget(ghostext[playernum].hitlist+i, NULL);
 			}
 
+			Z_Free(ghostext[playernum].hitlist);
 			ghostext[playernum].hits = 0;
+			ghostext[playernum].hitlist = NULL;
 		}
 
 		if (ghostext[playernum].flags & EZT_SPRITE)
