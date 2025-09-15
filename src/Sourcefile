@@ -19,7 +19,7 @@ hu_stuff.c
 i_tcp.c
 i_time.c
 info.c
-lzf.c
+lzfx.c
 m_aatree.c
 m_anigif.c
 m_argv.c

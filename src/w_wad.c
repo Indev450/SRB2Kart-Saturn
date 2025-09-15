@@ -37,7 +37,7 @@
 
 #ifdef ZWAD
 #include <errno.h>
-#include "lzf.h"
+#include "lzfx.h"
 #endif
 
 #include "doomdef.h"
