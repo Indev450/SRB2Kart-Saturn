@@ -601,22 +601,22 @@ static void ArchiveSectors(savebuffer_t *save)
 		if (ss->special != spawnss->special)
 			diff |= SD_SPECIAL;
 
-		if (ss->floor_xoffs != ss->spawn_flr_xoffs)
+		if (ss->floor_xoffs != spawnss->floor_xoffs)
 			diff2 |= SD_FXOFFS;
-		if (ss->floor_yoffs != ss->spawn_flr_yoffs)
+		if (ss->floor_yoffs != spawnss->floor_yoffs)
 			diff2 |= SD_FYOFFS;
-		if (ss->ceiling_xoffs != ss->spawn_ceil_xoffs)
+		if (ss->ceiling_xoffs != spawnss->ceiling_xoffs)
 			diff2 |= SD_CXOFFS;
-		if (ss->ceiling_yoffs != ss->spawn_ceil_yoffs)
+		if (ss->ceiling_yoffs != spawnss->ceiling_yoffs)
 			diff2 |= SD_CYOFFS;
-		if (ss->floorpic_angle != ss->spawn_flrpic_angle)
+		if (ss->floorpic_angle != spawnss->floorpic_angle)
 			diff2 |= SD_FLOORANG;
-		if (ss->ceilingpic_angle != ss->spawn_flrpic_angle)
+		if (ss->ceilingpic_angle != spawnss->ceilingpic_angle)
 			diff2 |= SD_CEILANG;
 
 		if (ss->tag != spawnss->tag)
 			diff2 |= SD_TAG;
-		if (ss->nexttag != ss->spawn_nexttag || ss->firsttag != ss->spawn_firsttag)
+		if (ss->nexttag != spawnss->nexttag || ss->firsttag != spawnss->firsttag)
 			diff2 |= SD_TAGLIST;
 
 		if (ss->ffloors && CheckFFloorDiff(ss))
@@ -3609,7 +3609,7 @@ FUNCINLINE static ATTRINLINE boolean P_NetUnArchiveMisc(savebuffer_t *save, bool
 
 	// gamemap changed; we assume that its map header is always valid,
 	// so make it so
-	if(!mapheaderinfo[gamemap-1])
+	if (!mapheaderinfo[gamemap-1])
 		P_AllocMapHeader(gamemap-1);
 
 	// tell the sound code to reset the music since we're skipping what

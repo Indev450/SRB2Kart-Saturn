@@ -781,8 +781,6 @@ INT32 P_CheckLevelFlat(const char *flatname)
 static const sector_t sector_default = {
 	.nexttag = -1,
 	.firsttag = -1,
-	.spawn_nexttag = -1,
-	.spawn_firsttag = -1,
 	.heightsec = -1,
 	.camsec = -1,
 	.floorlightsec = -1,

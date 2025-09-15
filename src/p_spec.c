@@ -1242,8 +1242,6 @@ void P_InitTagLists(void)
 		size_t j = (unsigned)sectors[i].tag % numsectors;
 		sectors[i].nexttag = sectors[j].firsttag;
 		sectors[j].firsttag = (INT32)i;
-		sectors[i].spawn_nexttag = sectors[i].nexttag;
-		sectors[j].spawn_firsttag = sectors[j].firsttag;
 	}
 
 	for (i = numlines - 1; i != (size_t)-1; i--)
@@ -5520,22 +5518,16 @@ void P_SpawnSpecials(INT32 fromnetsave, boolean reloadinggamestate)
 					{
 						if (!(lines[i].flags & ML_NOSONIC)) // Modify floor flat alignment unless NOSONIC flag is set
 						{
-							sectors[s].spawn_flrpic_angle = sectors[s].floorpic_angle = flatangle;
+							sectors[s].floorpic_angle = flatangle;
 							sectors[s].floor_xoffs += xoffs;
 							sectors[s].floor_yoffs += yoffs;
-							// saved for netgames
-							sectors[s].spawn_flr_xoffs = sectors[s].floor_xoffs;
-							sectors[s].spawn_flr_yoffs = sectors[s].floor_yoffs;
 						}
 
 						if (!(lines[i].flags & ML_NOTAILS)) // Modify ceiling flat alignment unless NOTAILS flag is set
 						{
-							sectors[s].spawn_ceilpic_angle = sectors[s].ceilingpic_angle = flatangle;
+							sectors[s].ceilingpic_angle = flatangle;
 							sectors[s].ceiling_xoffs += xoffs;
 							sectors[s].ceiling_yoffs += yoffs;
-							// saved for netgames
-							sectors[s].spawn_ceil_xoffs = sectors[s].ceiling_xoffs;
-							sectors[s].spawn_ceil_yoffs = sectors[s].ceiling_yoffs;
 						}
 					}
 				}
