@@ -1432,7 +1432,7 @@ static void SaveGlowThinker(savebuffer_t *save, const thinker_t *th, const UINT8
 //
 // Saves a fireflicker_t thinker
 //
-static inline void SaveFireflickerThinker(savebuffer_t *save, const thinker_t *th, const UINT8 type)
+static void SaveFireflickerThinker(savebuffer_t *save, const thinker_t *th, const UINT8 type)
 {
 	const fireflicker_t *ht = (const void *)th;
 	WRITEUINT8(save->p, type);
