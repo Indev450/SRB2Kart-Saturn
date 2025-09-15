@@ -2278,10 +2278,13 @@ static void LoadSpecialLevelThinker(savebuffer_t *save, actionf_p1 thinker, UINT
 	P_AddThinker(&ht->thinker);
 
 	// interpolation
-	if (floorOrCeiling & 2)
-		R_CreateInterpolator_SectorPlane(&ht->thinker, ht->sector, true);
-	if (floorOrCeiling & 1)
-		R_CreateInterpolator_SectorPlane(&ht->thinker, ht->sector, false);
+	if (ht->sector)
+	{
+		if (floorOrCeiling & 2)
+			R_CreateInterpolator_SectorPlane(&ht->thinker, ht->sector, true);
+		if (floorOrCeiling & 1)
+			R_CreateInterpolator_SectorPlane(&ht->thinker, ht->sector, false);
+	}
 }
 
 //
@@ -2315,7 +2318,8 @@ static void LoadCeilingThinker(savebuffer_t *save, actionf_p1 thinker)
 	P_AddThinker(&ht->thinker);
 
 	// interpolation
-	R_CreateInterpolator_SectorPlane(&ht->thinker, ht->sector, true);
+	if (ht->sector)
+		R_CreateInterpolator_SectorPlane(&ht->thinker, ht->sector, true);
 }
 
 //
@@ -2344,7 +2348,8 @@ static void LoadFloormoveThinker(savebuffer_t *save, actionf_p1 thinker)
 	P_AddThinker(&ht->thinker);
 
 	// interpolation
-	R_CreateInterpolator_SectorPlane(&ht->thinker, ht->sector, false);
+	if (ht->sector)
+		R_CreateInterpolator_SectorPlane(&ht->thinker, ht->sector, false);
 }
 
 //
@@ -2470,10 +2475,13 @@ static void LoadElevatorThinker(savebuffer_t *save, actionf_p1 thinker, UINT8 fl
 	P_AddThinker(&ht->thinker);
 
 	// interpolation
-	if (floorOrCeiling & 2)
-		R_CreateInterpolator_SectorPlane(&ht->thinker, ht->sector, true);
-	if (floorOrCeiling & 1)
-		R_CreateInterpolator_SectorPlane(&ht->thinker, ht->sector, false);
+	if (ht->sector)
+	{
+		if (floorOrCeiling & 2)
+			R_CreateInterpolator_SectorPlane(&ht->thinker, ht->sector, true);
+		if (floorOrCeiling & 1)
+			R_CreateInterpolator_SectorPlane(&ht->thinker, ht->sector, false);
+	}
 }
 
 //
@@ -2578,10 +2586,14 @@ static inline void LoadLaserThinker(savebuffer_t *save, actionf_p1 thinker)
 	ht->sector = LoadSector(READUINT32(save->p));
 	ht->sec = LoadSector(READUINT32(save->p));
 	ht->sourceline = LoadLine(READUINT32(save->p));
+
 	for (rover = ht->sector->ffloors; rover; rover = rover->next)
+	{
 		if (rover->secnum == (size_t)(ht->sec - sectors)
 		&& rover->master == ht->sourceline)
 			ht->ffloor = rover;
+	}
+
 	P_AddThinker(&ht->thinker);
 }
 
