@@ -2677,7 +2677,7 @@ static inline void LoadPolyrotatetThinker(savebuffer_t *save, actionf_p1 thinker
 
 	if (!(po = Polyobj_GetForNum(ht->polyObjNum)))
 	{
-		CONS_Debug(DBG_POLYOBJ, "EV_DoPolyObjRotate: bad polyobj %d\n", ht->polyObjNum);
+		CONS_Debug(DBG_POLYOBJ, "LoadPolyrotatetThinker: bad polyobj %d\n", ht->polyObjNum);
 		return;
 	}
 
@@ -2708,7 +2708,7 @@ static void LoadPolymoveThinker(savebuffer_t *save, actionf_p1 thinker)
 
 	if (!(po = Polyobj_GetForNum(ht->polyObjNum)))
 	{
-		CONS_Debug(DBG_POLYOBJ, "EV_DoPolyObjRotate: bad polyobj %d\n", ht->polyObjNum);
+		CONS_Debug(DBG_POLYOBJ, "LoadPolymoveThinker: bad polyobj %d\n", ht->polyObjNum);
 		return;
 	}
 
@@ -2747,7 +2747,7 @@ static inline void LoadPolywaypointThinker(savebuffer_t *save, actionf_p1 thinke
 
 	if (!(po = Polyobj_GetForNum(ht->polyObjNum)))
 	{
-		CONS_Debug(DBG_POLYOBJ, "EV_DoPolyObjRotate: bad polyobj %d\n", ht->polyObjNum);
+		CONS_Debug(DBG_POLYOBJ, "LoadPolywaypointThinker: bad polyobj %d\n", ht->polyObjNum);
 		return;
 	}
 
@@ -2802,7 +2802,7 @@ static inline void LoadPolyslidedoorThinker(savebuffer_t *save, actionf_p1 think
 
 	if (!(po = Polyobj_GetForNum(ht->polyObjNum)))
 	{
-		CONS_Debug(DBG_POLYOBJ, "EV_DoPolyObjRotate: bad polyobj %d\n", ht->polyObjNum);
+		CONS_Debug(DBG_POLYOBJ, "LoadPolyslidedoorThinker: bad polyobj %d\n", ht->polyObjNum);
 		return;
 	}
 
@@ -2835,7 +2835,7 @@ static inline void LoadPolyswingdoorThinker(savebuffer_t *save, actionf_p1 think
 
 	if (!(po = Polyobj_GetForNum(ht->polyObjNum)))
 	{
-		CONS_Debug(DBG_POLYOBJ, "EV_DoPolyObjRotate: bad polyobj %d\n", ht->polyObjNum);
+		CONS_Debug(DBG_POLYOBJ, "LoadPolyswingdoorThinker: bad polyobj %d\n", ht->polyObjNum);
 		return;
 	}
 
@@ -2865,7 +2865,7 @@ static inline void LoadPolydisplaceThinker(savebuffer_t *save, actionf_p1 thinke
 
 	if (!(po = Polyobj_GetForNum(ht->polyObjNum)))
 	{
-		CONS_Debug(DBG_POLYOBJ, "EV_DoPolyObjRotate: bad polyobj %d\n", ht->polyObjNum);
+		CONS_Debug(DBG_POLYOBJ, "LoadPolydisplaceThinker: bad polyobj %d\n", ht->polyObjNum);
 		return;
 	}
 
