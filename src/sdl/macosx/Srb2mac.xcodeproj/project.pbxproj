@@ -9,7 +9,7 @@
 /* Begin PBXBuildFile section */
 		002F39FA09D0881F00EBEB88 /* SDL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 002F39F909D0881F00EBEB88 /* SDL.framework */; };
 		002F3A0009D0884600EBEB88 /* SDL.framework in Copy Frameworks into .app bundle */ = {isa = PBXBuildFile; fileRef = 002F39F909D0881F00EBEB88 /* SDL.framework */; };
-		1E308E720B71172D0015728C /* lzfx.c in Sources */ = {isa = PBXBuildFile; fileRef = 1E44B2240B67EADE00BAD059 /* lzfx.c */; };
+		1E308E720B71172D0015728C /* lzf.c in Sources */ = {isa = PBXBuildFile; fileRef = 1E44B2240B67EADE00BAD059 /* lzf.c */; };
 		1E32C4290B6E6D5D0029E058 /* libpng.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1E32C4140B6E6D5D0029E058 /* libpng.framework */; };
 		1E32C42B0B6E6D6E0029E058 /* libpng.framework in Copy Frameworks into .app bundle */ = {isa = PBXBuildFile; fileRef = 1E32C4140B6E6D5D0029E058 /* libpng.framework */; };
 		1E44AE750B67CC2B00BAD059 /* hw_bsp.c in Sources */ = {isa = PBXBuildFile; fileRef = 1E44AE610B67CC2B00BAD059 /* hw_bsp.c */; };
@@ -351,8 +351,8 @@
 		1E44AFEC0B67D0AB00BAD059 /* r_opengl.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; name = r_opengl.c; path = ../../hardware/r_opengl/r_opengl.c; sourceTree = SOURCE_ROOT; };
 		1E44B0560B67D81E00BAD059 /* SDL_macosx_main.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; name = SDL_macosx_main.h; path = ../SDL_main/SDL_macosx_main.h; sourceTree = SOURCE_ROOT; };
 		1E44B0570B67D81E00BAD059 /* SDL_macosx_main.m */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.objc; name = SDL_macosx_main.m; path = ../SDL_main/SDL_macosx_main.m; sourceTree = SOURCE_ROOT; };
-		1E44B2240B67EADE00BAD059 /* lzfx.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; name = lzfx.c; path = ../../lzfx.c; sourceTree = SOURCE_ROOT; };
-		1E44B2250B67EADE00BAD059 /* lzfx.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; name = lzfx.h; path = ../../lzfx.h; sourceTree = SOURCE_ROOT; };
+		1E44B2240B67EADE00BAD059 /* lzf.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; name = lzf.c; path = ../../lzf.c; sourceTree = SOURCE_ROOT; };
+		1E44B2250B67EADE00BAD059 /* lzf.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; name = lzf.h; path = ../../lzf.h; sourceTree = SOURCE_ROOT; };
 		1E66921B0B690C5B00B7313A /* SDL_mixer.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SDL_mixer.framework; path = /Library/Frameworks/SDL_mixer.framework; sourceTree = "<absolute>"; };
 		29B97324FDCFA39411CA2CEA /* AppKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppKit.framework; path = /System/Library/Frameworks/AppKit.framework; sourceTree = "<absolute>"; };
 		29B97325FDCFA39411CA2CEA /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = /System/Library/Frameworks/Foundation.framework; sourceTree = "<absolute>"; };
@@ -713,8 +713,8 @@
 		1E44AF170B67CE1000BAD059 /* W_Wad */ = {
 			isa = PBXGroup;
 			children = (
-				1E44B2240B67EADE00BAD059 /* lzfx.c */,
-				1E44B2250B67EADE00BAD059 /* lzfx.h */,
+				1E44B2240B67EADE00BAD059 /* lzf.c */,
+				1E44B2250B67EADE00BAD059 /* lzf.h */,
 				1E44AF1C0B67CE3600BAD059 /* md5.c */,
 				1E44AF1D0B67CE3600BAD059 /* md5.h */,
 				1E44AFA70B67CF6400BAD059 /* w_wad.c */,
@@ -1128,7 +1128,7 @@
 				1E44AFEB0B67D06200BAD059 /* mac_alert.c in Sources */,
 				1E44AFED0B67D0AB00BAD059 /* r_opengl.c in Sources */,
 				1E44B0590B67D81E00BAD059 /* SDL_macosx_main.m in Sources */,
-				1E308E720B71172D0015728C /* lzfx.c in Sources */,
+				1E308E720B71172D0015728C /* lzf.c in Sources */,
 				676BB5200E0DE06100C95963 /* m_queue.c in Sources */,
 				676BB5220E0DE06100C95963 /* p_polyobj.c in Sources */,
 				67B83BFA14F57EAB00AAAE4E /* lapi.c in Sources */,

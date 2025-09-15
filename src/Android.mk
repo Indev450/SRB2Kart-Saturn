@@ -22,13 +22,13 @@ LOCAL_SRC_FILES :=      am_map.c \
                         hu_stuff.c \
                         i_tcp.c \
                         info.c \
-                        lzfx.c \
+                        lzf.c \
                         m_argv.c \
                         m_bbox.c \
                         m_cheat.c \
                         m_fixed.c \
                         m_menu.c \
-			m_textinput.c \
+						m_textinput.c \
                         m_misc.c \
                         m_queue.c \
                         m_random.c \

@@ -39,15 +39,22 @@
 		6755C7A91017FE2500A80195 = {
 			fileEncoding = 30;
 			isa = PBXFileReference;
-			name = lzfx.c;
-			path = ../../lzfx.c;
+			name = lzf.c;
+			path = ../../lzf.c;
 			refType = 2;
 		};
 		6755C7AA1017FE2500A80195 = {
 			fileEncoding = 30;
 			isa = PBXFileReference;
-			name = lzfx.h;
-			path = ../../lzfx.h;
+			name = lzf.h;
+			path = ../../lzf.h;
+			refType = 2;
+		};
+		6755C7AB1017FE2500A80195 = {
+			fileEncoding = 30;
+			isa = PBXFileReference;
+			name = m_dllist.h;
+			path = ../../m_dllist.h;
 			refType = 2;
 		};
 		6755C7AC1017FE2500A80195 = {

@@ -19,6 +19,7 @@
 #include "m_misc.h"
 #include "z_zone.h"
 #include "d_player.h"
+#include "lzf.h"
 
 char sprnames[NUMSPRITES + 1][5] =
 {

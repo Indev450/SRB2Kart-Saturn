@@ -45,7 +45,7 @@
 #include "r_local.h"
 #include "m_argv.h"
 #include "p_setup.h"
-#include "lzfx.h"
+#include "lzf.h"
 #include "lua_script.h"
 #include "lua_hook.h"
 #include "k_kart.h"

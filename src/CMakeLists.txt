@@ -22,7 +22,7 @@ set(SRB2_CORE_SOURCES
 	hu_stuff.c
 	i_tcp.c
 	info.c
-	lzfx.c
+	lzf.c
 	m_aatree.c
 	m_anigif.c
 	m_argv.c
@@ -90,7 +90,7 @@ set(SRB2_CORE_HEADERS
 	i_video.h
 	info.h
 	keys.h
-	lzfx.h
+	lzf.h
 	m_aatree.h
 	m_anigif.h
 	m_argv.h

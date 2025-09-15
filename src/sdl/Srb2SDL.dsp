@@ -984,11 +984,11 @@ SOURCE=..\sounds.h
 # PROP Default_Filter ""
 # Begin Source File
 
-SOURCE=..\lzfx.c
+SOURCE=..\lzf.c
 # End Source File
 # Begin Source File
 
-SOURCE=..\lzfx.h
+SOURCE=..\lzf.h
 # End Source File
 # Begin Source File
 
