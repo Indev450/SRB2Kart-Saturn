@@ -548,7 +548,6 @@ typedef struct seg_s
 	// new pointers so that AdjustSegs doesn't mess with v1/v2
 	polyvertex_t *pv1; // polyvertex_t
 	polyvertex_t *pv2; // polyvertex_t
-	float flength; // length of the seg, used by hardware renderer
 #endif
 
 	polyobj_t *polyseg;
