@@ -1371,8 +1371,8 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 	{
 		vs.x = gl_curline->pv1->x;
 		vs.y = gl_curline->pv1->y;
-		v1x = FloatToFixed(vs.x);
-		v1y = FloatToFixed(vs.y);
+		v1x = gl_curline->pv1->x2;
+		v1y = gl_curline->pv1->y2;
 	}
 	else
 	{
@@ -1386,8 +1386,8 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 	{
 		ve.x = gl_curline->pv2->x;
 		ve.y = gl_curline->pv2->y;
-		v2x = FloatToFixed(ve.x);
-		v2y = FloatToFixed(ve.y);
+		v2x = gl_curline->pv2->x2;
+		v2y = gl_curline->pv2->y2;
 	}
 	else
 	{
@@ -2248,8 +2248,8 @@ static boolean CheckClip(sector_t * afrontsector, sector_t * abacksector)
 
 		if (LIKELY(gl_curline->pv1))
 		{
-			v1x = FloatToFixed(gl_curline->pv1->x);
-			v1y = FloatToFixed(gl_curline->pv1->y);
+			v1x = gl_curline->pv1->x2;
+			v1y = gl_curline->pv1->y2;
 		}
 		else
 		{
@@ -2259,8 +2259,8 @@ static boolean CheckClip(sector_t * afrontsector, sector_t * abacksector)
 
 		if (LIKELY(gl_curline->pv2))
 		{
-			v2x = FloatToFixed(gl_curline->pv2->x);
-			v2y = FloatToFixed(gl_curline->pv2->y);
+			v2x = gl_curline->pv2->x2;
+			v2y = gl_curline->pv2->y2;
 		}
 		else
 		{
@@ -2476,8 +2476,8 @@ static void HWR_AddLine(seg_t *line)
 
 	if (LIKELY(gl_curline->pv1))
 	{
-		v1x = FloatToFixed(gl_curline->pv1->x);
-		v1y = FloatToFixed(gl_curline->pv1->y);
+		v1x = gl_curline->pv1->x2;
+		v1y = gl_curline->pv1->y2;
 	}
 	else
 	{
@@ -2487,8 +2487,8 @@ static void HWR_AddLine(seg_t *line)
 
 	if (LIKELY(gl_curline->pv2))
 	{
-		v2x = FloatToFixed(gl_curline->pv2->x);
-		v2y = FloatToFixed(gl_curline->pv2->y);
+		v2x = gl_curline->pv2->x2;
+		v2y = gl_curline->pv2->y2;
 	}
 	else
 	{

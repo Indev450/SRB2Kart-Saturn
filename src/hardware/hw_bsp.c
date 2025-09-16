@@ -175,9 +175,9 @@ static void SplitPoly (fdivline_t *bsp,         //splitting parametric line
 
 	INT32 ps = -1, pe = -1;
 	INT32  nptfront, nptback;
-	polyvertex_t vs = {0,0,0};
-	polyvertex_t ve = {0,0,0};
-	polyvertex_t lastpv = {0,0,0};
+	polyvertex_t vs = {};
+	polyvertex_t ve = {};
+	polyvertex_t lastpv = {};
 	float fracs = 0.0f, frace = 0.0f;        //used to tell which poly is on
 	                                         // the front side of the bsp partition line
 	INT32 psonline = 0, peonline = 0;
@@ -349,8 +349,8 @@ static poly_t *CutOutSubsecPoly(seg_t *lseg, INT32 count, poly_t *poly)
 	INT32 i, j;
 	polyvertex_t *pv;
 	INT32 nump = 0, ps, pe;
-	polyvertex_t vs = {0, 0, 0}, ve = {0, 0, 0},
-				 p1 = {0, 0, 0}, p2 = {0, 0, 0};
+	polyvertex_t vs = {}, ve = {},
+				 p1 = {}, p2 = {};
 	float fracs = 0.0f;
 	fdivline_t cutseg; // x, y, dx, dy as start of node_t struct
 	poly_t *temppoly;
@@ -936,6 +936,11 @@ static void AdjustSegs(void)
 				pv->y = FIXED_TO_FLOAT(lseg->v2->y);
 				lseg->pv2 = pv;
 			}
+
+			lseg->pv1->x2 = FloatToFixed(lseg->pv1->x);
+			lseg->pv1->y2 = FloatToFixed(lseg->pv1->y);
+			lseg->pv2->x2 = FloatToFixed(lseg->pv2->x);
+			lseg->pv2->y2 = FloatToFixed(lseg->pv2->y);
 		}
 	}
 }
