@@ -215,27 +215,6 @@ void G_LoadMetal(UINT8 **buffer)
 	metal_p = metalbuffer + READUINT32(*buffer);
 }
 
-ticcmd_t *G_CopyTiccmd(ticcmd_t* dest, const ticcmd_t* src, const size_t n)
-{
-	return M_Memcpy(dest, src, n*sizeof(*src));
-}
-
-ticcmd_t *G_MoveTiccmd(ticcmd_t* dest, const ticcmd_t* src, const size_t n)
-{
-	size_t i;
-	for (i = 0; i < n; i++)
-	{
-		dest[i].forwardmove = src[i].forwardmove;
-		dest[i].sidemove = src[i].sidemove;
-		dest[i].angleturn = SHORT(src[i].angleturn);
-		dest[i].aiming = (INT16)SHORT(src[i].aiming);
-		dest[i].buttons = (UINT16)SHORT(src[i].buttons);
-		dest[i].driftturn = (INT16)SHORT(src[i].driftturn);
-		dest[i].latency = (INT16)SHORT(src[i].latency);
-	}
-	return dest;
-}
-
 // Finds a skin with the closest stats if the expected skin doesn't exist.
 static INT32 GetSkinNumClosestToStats(UINT8 kartspeed, UINT8 kartweight)
 {
