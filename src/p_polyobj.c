@@ -442,8 +442,6 @@ static void Polyobj_findSegs(polyobj_t *po, seg_t *seg)
 				if (r != po->segCount)
 					continue;
 
-				segs[s].dontrenderme = true;
-
 				Polyobj_addSeg(po, &segs[s]);
 			}
 		}
@@ -502,7 +500,6 @@ newseg:
 						if (r != po->segCount)
 							continue;
 
-						segs[q].dontrenderme = true;
 						Polyobj_addSeg(po, &segs[q]);
 					}
 				}

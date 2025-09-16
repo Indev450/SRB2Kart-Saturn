@@ -443,7 +443,7 @@ typedef struct line_s
 	sector_t *backsector;
 
 	size_t validcount; // if == validcount, already checked
-#if 1//#ifdef WALLSPLATS
+#ifdef WALLSPLATS
 	void *splats; // wallsplat_t list
 #endif
 	INT32 firsttag, nexttag; // improves searches for tags.
@@ -490,7 +490,7 @@ typedef struct subsector_s
 	INT16 numlines;
 	UINT32 firstline;
 	struct polyobj_s *polyList; // haleyjd 02/19/06: list of polyobjects
-#if 1//#ifdef FLOORSPLATS
+#ifdef FLOORSPLATS
 	void *splats; // floorsplat_t list
 #endif
 	size_t validcount;
@@ -544,6 +544,7 @@ typedef struct seg_s
 	sector_t *backsector;
 
 	fixed_t length;	// precalculated seg length
+
 #ifdef HWRENDER
 	// new pointers so that AdjustSegs doesn't mess with v1/v2
 	polyvertex_t *pv1;
@@ -551,7 +552,6 @@ typedef struct seg_s
 #endif
 
 	polyobj_t *polyseg;
-	boolean dontrenderme;
 
 	// Fake contrast calculated on level load
 	SINT8 lightOffset;
@@ -639,15 +639,6 @@ typedef struct drawseg_s
 	vertex_t leftpos, rightpos; // Used for rendering FOF walls with slopes
 } drawseg_t;
 
-typedef enum
-{
-	PALETTE         = 0,  // 1 byte is the index in the doom palette (as usual)
-	INTENSITY       = 1,  // 1 byte intensity
-	INTENSITY_ALPHA = 2,  // 2 byte: alpha then intensity
-	RGB24           = 3,  // 24 bit rgb
-	RGBA32          = 4,  // 32 bit rgba
-} pic_mode_t;
-
 // rotsprite
 #ifdef ROTSPRITE
 typedef struct
@@ -691,26 +682,6 @@ typedef struct
 	INT32 columnofs[];     // only [width] used
 	// the [0] is &columnofs[width]
 } ATTRPACK softwarepatch_t;
-
-#ifdef _MSC_VER
-#pragma warning(disable :  4200)
-#endif
-
-// a pic is an unmasked block of pixels, stored in horizontal way
-typedef struct
-{
-	INT16 width;
-	UINT8 zero;       // set to 0 allow autodetection of pic_t
-	                 // mode instead of patch or raw
-	UINT8 mode;       // see pic_mode_t above
-	INT16 height;
-	INT16 reserved1; // set to 0
-	UINT8 data[0];
-} ATTRPACK pic_t;
-
-#ifdef _MSC_VER
-#pragma warning(default : 4200)
-#endif
 
 #if defined(_MSC_VER)
 #pragma pack()
