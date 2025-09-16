@@ -399,25 +399,6 @@ static inline fixed_t P_SegLength(seg_t *seg)
 	return FixedHypot(dx, dy)<<1;
 }
 
-#ifdef HWRENDER
-/** Computes the length of a seg as a float.
-  * This is needed for OpenGL.
-  *
-  * \param seg Seg to compute length for.
-  * \return Length as a float.
-  */
-static inline float P_SegLengthFloat(seg_t *seg)
-{
-	float dx, dy;
-
-	// make a vector (start at origin)
-	dx = FIXED_TO_FLOAT(seg->v2->x - seg->v1->x);
-	dy = FIXED_TO_FLOAT(seg->v2->y - seg->v1->y);
-
-	return hypotf(dx, dy);
-}
-#endif
-
 /** Updates the light offset
   *
   * \param li Seg to update the light offsets of
