@@ -650,7 +650,8 @@ static boolean SV_SendFile(INT32 node, const char *filename, UINT8 fileid)
 {
 	filetx_t **q; // A pointer to the "next" field of the last file in the list
 	filetx_t *p; // The new file request
-	INT32 i;
+	UINT16 wadnum;
+
 	char wadfilename[MAX_WADPATH];
 
 	if (cv_noticedownload.value)
@@ -676,20 +677,21 @@ static boolean SV_SendFile(INT32 node, const char *filename, UINT8 fileid)
 	nameonly(p->id.filename);
 
 	// Look for the requested file through all loaded files
-	for (i = 0; wadfiles[i]; i++)
+	for (wadnum = 0; wadfiles[wadnum]; wadnum++)
 	{
-		strlcpy(wadfilename, wadfiles[i]->filename, MAX_WADPATH);
+		strlcpy(wadfilename, wadfiles[wadnum]->filename, MAX_WADPATH);
 		nameonly(wadfilename);
+
 		if (!stricmp(wadfilename, p->id.filename))
 		{
 			// Copy file name with full path
-			strlcpy(p->id.filename, wadfiles[i]->filename, MAX_WADPATH);
+			strlcpy(p->id.filename, wadfiles[wadnum]->filename, MAX_WADPATH);
 			break;
 		}
 	}
 
 	// Handle non-loaded file requests
-	if (!wadfiles[i])
+	if (!wadfiles[wadnum])
 	{
 		DEBFILE(va("%s not found in wadfiles\n", filename));
 		// This formerly checked if (!findfile(p->id.filename, NULL, true))
@@ -704,7 +706,7 @@ static boolean SV_SendFile(INT32 node, const char *filename, UINT8 fileid)
 	}
 
 	// Handle huge file requests (i.e. bigger than cv_maxsend.value KB)
-	if (cv_maxsend.value != -1 && wadfiles[i]->filesize > (UINT32)cv_maxsend.value * 1024)
+	if (cv_maxsend.value != -1 && wadfiles[wadnum]->filesize > (UINT32)cv_maxsend.value * 1024)
 	{
 		// Too big
 		// Don't inform client (client sucks, man)
