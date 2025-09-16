@@ -3864,8 +3864,8 @@ static void G_StopTimingDemo(void)
 	D_StartTitle();
 }
 
-
-boolean G_CheckDemoStatus(void)
+// Clean up all ghosts
+void G_FreeGhosts(void)
 {
 	while (ghosts)
 	{
@@ -3874,6 +3874,12 @@ boolean G_CheckDemoStatus(void)
 		ghosts = next;
 	}
 	ghosts = NULL;
+}
+
+
+boolean G_CheckDemoStatus(void)
+{
+	G_FreeGhosts();
 
 	// DO NOT end metal sonic demos here
 

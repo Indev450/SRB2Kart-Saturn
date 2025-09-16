@@ -174,6 +174,7 @@ void G_ResetDemoRecording(void);
 void G_DoPlayDemo(char *defdemoname);
 void G_TimeDemo(const char *name);
 void G_AddGhost(char *defdemoname);
+void G_FreeGhosts(void);
 void G_UpdateStaffGhostName(lumpnum_t l);
 void G_DoPlayMetal(void);
 void G_DoneLevelLoad(void);

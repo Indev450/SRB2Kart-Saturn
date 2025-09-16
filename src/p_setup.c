@@ -2697,6 +2697,55 @@ static void P_SetupPlayer(void)
 	}
 }
 
+void P_FreeLevelState(void)
+{
+	sector_t *ss;
+
+	if (numsectors)
+	{
+		LUA_InvalidateLevel();
+
+		for (ss = sectors; sectors+numsectors != ss; ss++)
+		{
+			Z_Free(ss->attached);
+			Z_Free(ss->attachedsolid);
+		}
+
+		// This is the simplest guard against double frees.
+		// No valid map has zero sectors. Or, come to think
+		// of it, less than two in general! ~toast 310525
+		numsectors = 0;
+	}
+
+	// Clear pointers that would be left dangling by the purge
+	R_FlushTranslationColormapCache();
+
+#ifdef HWRENDER
+	// Free GPU textures before freeing patches.
+	if (vid.glstate == VID_GL_LIBRARY_LOADED)
+	{
+		if (rendermode == render_opengl)
+			HWR_ClearAllTextures();
+
+		// Delete light table textures
+		HWR_ClearLightTables();
+	}
+#endif
+
+	G_FreeGhosts(); // ghosts are allocated with PU_LEVEL
+
+	Patch_FreeTag(PU_PATCH_LOWPRIORITY);
+	//Patch_FreeTag(PU_PATCH_ROTATED); // we keep those ty!
+	Z_FreeTags(PU_LEVEL, PU_PURGELEVEL - 1);
+
+	Y_VoteClear();
+
+#if defined (WALLSPLATS) || defined (FLOORSPLATS)
+	// clear the splats from previous level
+	R_ClearLevelSplats();
+#endif
+}
+
 /** Loads a level from a lump or external wad.
   *
   * \param fromnetsave If true, skip some stuff because we're loading a netgame snapshot.
@@ -2709,7 +2758,6 @@ boolean P_SetupLevel(boolean fromnetsave, boolean reloadinggamestate)
 	// Map header should always be in place at this point
 	INT32 i;
 	boolean ranspecialwipe = false;
-	sector_t *ss;
 	lumpnum_t encoreLump = LUMPERROR;
 	UINT8 levelfadecol;
 
@@ -2815,36 +2863,7 @@ boolean P_SetupLevel(boolean fromnetsave, boolean reloadinggamestate)
 		I_UpdateNoVsync();
 	}*/
 
-	LUA_InvalidateLevel();
-
-	for (ss = sectors; sectors+numsectors != ss; ss++)
-	{
-		Z_Free(ss->attached);
-		Z_Free(ss->attachedsolid);
-	}
-
-	// Clear pointers that would be left dangling by the purge
-	R_FlushTranslationColormapCache();
-
-#ifdef HWRENDER
-	// Free GPU textures before freeing patches.
-	if (rendermode == render_opengl && (vid.glstate == VID_GL_LIBRARY_LOADED))
-		HWR_ClearAllTextures();
-
-	// Delete light table textures
-	HWR_ClearLightTables();
-#endif
-
-	Patch_FreeTag(PU_PATCH_LOWPRIORITY);
-	//Patch_FreeTag(PU_PATCH_ROTATED); // we keep those ty!
-	Z_FreeTags(PU_LEVEL, PU_PURGELEVEL - 1);
-
-	Y_VoteClear();
-
-#if defined (WALLSPLATS) || defined (FLOORSPLATS)
-	// clear the splats from previous level
-	R_ClearLevelSplats();
-#endif
+	P_FreeLevelState();
 
 	R_InitializeLevelInterpolators();
 

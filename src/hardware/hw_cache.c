@@ -1391,8 +1391,7 @@ UINT32 HWR_GetLightTableID(extracolormap_t *colormap)
 // call become invalid and must not be used.
 void HWR_ClearLightTables(void)
 {
-	if (vid.glstate == VID_GL_LIBRARY_LOADED)
-		GL_ClearLightTables();
+	GL_ClearLightTables();
 }
 
 #endif //HWRENDER
