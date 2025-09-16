@@ -1399,7 +1399,7 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 	// x offset the texture
 	const fixed_t texturehpeg = gl_sidedef->textureoffset + gl_curline->offset;
 	const float cliplow  = (float)texturehpeg;
-	const float cliphigh = (float)(texturehpeg + (gl_curline->flength*FRACUNIT));
+	const float cliphigh = (float)(texturehpeg + gl_curline->length);
 
 	FUINT lightnum = gl_frontsector->lightlevel;
 	extracolormap_t *colormap = gl_frontsector->extra_colormap;

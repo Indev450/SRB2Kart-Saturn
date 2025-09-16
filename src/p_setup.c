@@ -565,10 +565,6 @@ static void P_LoadSegs(UINT8 *data)
 		li->v2 = &vertexes[SHORT(ml->v2)];
 
 		li->length = P_SegLength(li);
-#ifdef HWRENDER
-		if (rendermode == render_opengl)
-			li->flength = P_SegLengthFloat(li);
-#endif
 		li->angle = (SHORT(ml->angle))<<FRACBITS;
 		li->offset = (SHORT(ml->offset))<<FRACBITS;
 		rawlinedef = SHORT(ml->linedef);

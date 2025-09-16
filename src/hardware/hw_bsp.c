@@ -936,23 +936,6 @@ static void AdjustSegs(void)
 				pv->y = FIXED_TO_FLOAT(lseg->v2->y);
 				lseg->pv2 = pv;
 			}
-
-			// recompute length
-			{
-				float x,y;
-
-				const polyvertex_t *pv1 = (polyvertex_t *)lseg->pv1;
-				const polyvertex_t *pv2 = (polyvertex_t *)lseg->pv2;
-
-				x = pv2->x - pv1->x + 0.5f;
-				y = pv2->y - pv1->y + 0.5f;
-
-				lseg->flength = hypotf(x, y);
-
-				// BP: debug see this kind of segs
-				//if (nearv2 > NEARDIST*NEARDIST || nearv1 > NEARDIST*NEARDIST)
-				//    lseg->length = 1;
-			}
 		}
 	}
 }
