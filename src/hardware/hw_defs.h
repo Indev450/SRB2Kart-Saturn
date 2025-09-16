@@ -95,9 +95,8 @@ typedef struct
 // a vertex of a Doom 'plane' polygon
 typedef struct
 {
-	float x;
-	float y;
-	float z;
+	float x, y, z;
+	fixed_t x2, y2, z2;
 } polyvertex_t;
 
 #ifdef _MSC_VER
