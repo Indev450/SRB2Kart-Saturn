@@ -982,6 +982,7 @@ void D_ClearState(void)
 	// (otherwise the game still thinks we're playing!)
 	SV_StopServer();
 	SV_ResetServer();
+	serverlistultimatecount = 0;
 
 	for (i = 0; i < MAXPLAYERS; i++)
 		CL_ClearPlayer(i);
@@ -997,8 +998,11 @@ void D_ClearState(void)
 	// reset modeattacking
 	modeattacking = ATTACKING_NONE;
 
-	// empty maptol so mario/etc sounds don't play in sound test when they shouldn't
+	// empty some other semi-important state
 	maptol = 0;
+	nextmapoverride = 0;
+	skipstats = 0;
+	gamemap = 1;
 
 	gameaction = ga_nothing;
 	memset(displayplayers, 0, sizeof(displayplayers));
@@ -1007,16 +1011,26 @@ void D_ClearState(void)
 	gametype = GT_RACE; // SRB2kart
 	paused = false;
 
-	netgame = false; // title menu shouldnt be a netgame lmao
-
 	// clear cmd building stuff
 	memset(gamekeydown, 0, sizeof(gamekeydown));
 	memset(joyxmove, 0, sizeof(joyxmove));
 	memset(joyymove, 0, sizeof(joyymove));
 	mousex = mousey = 0;
+
+	// Reset the palette
+	if (rendermode != render_none)
+		V_SetPaletteLump("PLAYPAL");
+
 	G_ResetAllDeviceRumbles();
 
+	S_StopSounds();
 	S_ResetKeepAndSpecialMus(); // just in case
+
+	P_FreeLevelState();
+
+	netgame = false; // title menu shouldnt be a netgame lmao
+	G_SetGamestate(GS_NULL);
+	wipegamestate = GS_NULL;
 }
 
 //
@@ -1024,6 +1038,7 @@ void D_ClearState(void)
 //
 void D_StartTitle(void)
 {
+	demo.title = false;
 	D_ClearState();
 	M_ClearMenus(true);
 	F_StartTitleScreen();

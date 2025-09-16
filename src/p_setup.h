@@ -67,6 +67,7 @@ extern line_t *spawnlines;
 extern side_t *spawnsides;
 
 void P_SetupLevelSky(INT32 skynum, boolean global);
+void P_FreeLevelState(void);
 boolean P_SetupLevel(boolean fromnetsave, boolean reloadinggamestate);
 
 #ifdef HWRENDER
