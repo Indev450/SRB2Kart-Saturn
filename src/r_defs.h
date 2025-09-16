@@ -15,6 +15,7 @@
 #define __R_DEFS__
 
 // Some more or less basic data types we depend on.
+#include "hardware/hw_defs.h"
 #include "m_fixed.h"
 
 // We rely on the thinker data struct to handle sound origins in sectors.
@@ -545,8 +546,8 @@ typedef struct seg_s
 	fixed_t length;	// precalculated seg length
 #ifdef HWRENDER
 	// new pointers so that AdjustSegs doesn't mess with v1/v2
-	void *pv1; // polyvertex_t
-	void *pv2; // polyvertex_t
+	polyvertex_t *pv1;
+	polyvertex_t *pv2;
 	float flength; // length of the seg, used by hardware renderer
 #endif
 

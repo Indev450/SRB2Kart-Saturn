@@ -70,7 +70,7 @@ static INT32 totalsubsecpolys = 0;
 static poly_t *HWR_AllocPoly(INT32 numpts)
 {
 	poly_t *p;
-	size_t size = sizeof (poly_t) + sizeof (polyvertex_t) * numpts;
+	size_t size = sizeof(poly_t) + sizeof(polyvertex_t) * numpts;
 	p = Z_Malloc(size, PU_HWRPLANE, NULL);
 	p->numpts = numpts;
 	return p;
@@ -79,7 +79,7 @@ static poly_t *HWR_AllocPoly(INT32 numpts)
 static polyvertex_t *HWR_AllocVertex(void)
 {
 	polyvertex_t *p;
-	size_t size = sizeof (polyvertex_t);
+	size_t size = sizeof(polyvertex_t);
 	p = Z_Malloc(size, PU_HWRPLANE, NULL);
 	return p;
 }

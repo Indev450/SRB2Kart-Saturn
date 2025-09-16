@@ -767,8 +767,8 @@ static void HWR_RenderPlane(subsector_t *subsector, extrasubsector_t *xsub, bool
 
 			if (line->pv1)
 			{
-				x1 = ((polyvertex_t *)line->pv1)->x;
-				y1 = ((polyvertex_t *)line->pv1)->y;
+				x1 = line->pv1->x;
+				y1 = line->pv1->y;
 			}
 			else
 			{
@@ -777,8 +777,8 @@ static void HWR_RenderPlane(subsector_t *subsector, extrasubsector_t *xsub, bool
 
 			if (line->pv2)
 			{
-				xd = ((polyvertex_t *)line->pv2)->x - x1;
-				yd = ((polyvertex_t *)line->pv2)->y - y1;
+				xd = line->pv2->x - x1;
+				yd = line->pv2->y - y1;
 			}
 			else
 			{
@@ -848,11 +848,11 @@ static void HWR_DrawSegsSplats(FSurfaceInfo * pSurf)
 
 	M_ClearBox(segbbox);
 	M_AddToBox(segbbox,
-		FloatToFixed(((polyvertex_t *)gl_curline->pv1)->x),
-		FloatToFixed(((polyvertex_t *)gl_curline->pv1)->y));
+		FloatToFixed(gl_curline->pv1->x),
+		FloatToFixed(gl_curline->pv1->y));
 	M_AddToBox(segbbox,
-		FloatToFixed(((polyvertex_t *)gl_curline->pv2)->x),
-		FloatToFixed(((polyvertex_t *)gl_curline->pv2)->y));
+		FloatToFixed(gl_curline->pv2->x),
+		FloatToFixed(gl_curline->pv2->y));
 
 	splat = (wallsplat_t *)gl_curline->linedef->splats;
 	for (; splat; splat = splat->next)
@@ -1349,8 +1349,8 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 
 	if (LIKELY(gl_curline->pv1))
 	{
-		vs.x = ((polyvertex_t *)gl_curline->pv1)->x;
-		vs.y = ((polyvertex_t *)gl_curline->pv1)->y;
+		vs.x = gl_curline->pv1->x;
+		vs.y = gl_curline->pv1->y;
 		v1x = FloatToFixed(vs.x);
 		v1y = FloatToFixed(vs.y);
 	}
@@ -1364,8 +1364,8 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 
 	if (LIKELY(gl_curline->pv2))
 	{
-		ve.x = ((polyvertex_t *)gl_curline->pv2)->x;
-		ve.y = ((polyvertex_t *)gl_curline->pv2)->y;
+		ve.x = gl_curline->pv2->x;
+		ve.y = gl_curline->pv2->y;
 		v2x = FloatToFixed(ve.x);
 		v2y = FloatToFixed(ve.y);
 	}
@@ -2228,8 +2228,8 @@ static boolean CheckClip(sector_t * afrontsector, sector_t * abacksector)
 
 		if (LIKELY(gl_curline->pv1))
 		{
-			v1x = FloatToFixed(((polyvertex_t *)gl_curline->pv1)->x);
-			v1y = FloatToFixed(((polyvertex_t *)gl_curline->pv1)->y);
+			v1x = FloatToFixed(gl_curline->pv1->x);
+			v1y = FloatToFixed(gl_curline->pv1->y);
 		}
 		else
 		{
@@ -2239,8 +2239,8 @@ static boolean CheckClip(sector_t * afrontsector, sector_t * abacksector)
 
 		if (LIKELY(gl_curline->pv2))
 		{
-			v2x = FloatToFixed(((polyvertex_t *)gl_curline->pv2)->x);
-			v2y = FloatToFixed(((polyvertex_t *)gl_curline->pv2)->y);
+			v2x = FloatToFixed(gl_curline->pv2->x);
+			v2y = FloatToFixed(gl_curline->pv2->y);
 		}
 		else
 		{
@@ -2456,8 +2456,8 @@ static void HWR_AddLine(seg_t *line)
 
 	if (LIKELY(gl_curline->pv1))
 	{
-		v1x = FloatToFixed(((polyvertex_t *)gl_curline->pv1)->x);
-		v1y = FloatToFixed(((polyvertex_t *)gl_curline->pv1)->y);
+		v1x = FloatToFixed(gl_curline->pv1->x);
+		v1y = FloatToFixed(gl_curline->pv1->y);
 	}
 	else
 	{
@@ -2467,8 +2467,8 @@ static void HWR_AddLine(seg_t *line)
 
 	if (LIKELY(gl_curline->pv2))
 	{
-		v2x = FloatToFixed(((polyvertex_t *)gl_curline->pv2)->x);
-		v2y = FloatToFixed(((polyvertex_t *)gl_curline->pv2)->y);
+		v2x = FloatToFixed(gl_curline->pv2->x);
+		v2y = FloatToFixed(gl_curline->pv2->y);
 	}
 	else
 	{
