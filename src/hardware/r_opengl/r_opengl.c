@@ -1511,7 +1511,7 @@ void GL_ReadScreenFinalTexture(UINT8 * restrict dest, INT32 scale)
 		image -= screen_width*scale*3;
 		if (scale == 1)
 			memcpy(dest, image, stride);
-		else for (size_t i = 0; i < stride; i += 3)
+		else for (INT32 i = 0; i < stride; i += 3)
 			memcpy(dest + i, image + i*scale, 3);
 		dest += stride;
 	}
