@@ -67,7 +67,7 @@ p_floor.c
 p_inter.c
 p_lights.c
 p_map.c
-p_maputl.c
+p_maputl.cpp
 p_mobj.c
 p_polyobj.c
 p_saveg.c

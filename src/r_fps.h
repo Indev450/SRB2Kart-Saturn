@@ -22,6 +22,7 @@ extern "C" {
 #include "m_fixed.h"
 #include "p_local.h"
 #include "r_state.h"
+#include "r_things.h"
 #include "m_perfstats.h"
 
 extern consvar_t cv_fpscap, cv_fpscapbg;
@@ -44,7 +45,15 @@ UINT32 R_GetFramerateCap(void);
 fixed_t R_GetTimeFrac(timefrac_e level);
 void R_SetTimeFrac(fixed_t frac);
 
-#define R_GetMobjTimeFrac(mobj) (R_CheckInterpDist(mobj) ? R_GetTimeFrac(RTF_LEVEL) : FRACUNIT)
+static inline fixed_t R_GetMobjTimeFrac(mobj_t *mo)
+{
+    return R_CheckMobjInterpDist(mo) ? R_GetTimeFrac(RTF_LEVEL) : FRACUNIT;
+}
+
+static inline fixed_t R_GetPrecipMobjTimeFrac(precipmobj_t *mo)
+{
+    return R_CheckPrecipMobjInterpDist(mo) ? R_GetTimeFrac(RTF_LEVEL) : FRACUNIT;
+}
 
 enum viewcontext_e
 {

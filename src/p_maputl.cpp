@@ -730,7 +730,8 @@ void P_UnsetPrecipThingPosition(precipmobj_t *thing)
 		bnext->bprev = bprev;
 }
 
-static void P_LinkToBlockMap(mobj_t *thing, mobj_t **bmap)
+template<typename T>
+static void P_LinkToBlockMap(T *thing, T **bmap)
 {
 	const INT32 blockx = (unsigned)(thing->x - bmaporgx) >> MAPBLOCKSHIFT;
 	const INT32 blocky = (unsigned)(thing->y - bmaporgy) >> MAPBLOCKSHIFT;
@@ -742,8 +743,8 @@ static void P_LinkToBlockMap(mobj_t *thing, mobj_t **bmap)
 		// pointer-to-pointer prev pointers --
 		// allows head nodes to be treated like everything else
 
-		mobj_t **link = &bmap[(blocky * bmapwidth) + blockx];
-		mobj_t *bnext = *link;
+		T **link = &bmap[(blocky * bmapwidth) + blockx];
+		T *bnext = *link;
 
 		thing->bnext = bnext;
 
@@ -871,10 +872,7 @@ void P_SetUnderlayPosition(mobj_t *thing)
 void P_SetPrecipitationThingPosition(precipmobj_t *thing)
 {
 	thing->subsector = R_PointInSubsectorFast(thing->x, thing->y);
-
-	// NOTE: this works because bnext/bprev are at the same
-	// offsets in precipmobj_t and mobj_t
-	P_LinkToBlockMap((mobj_t*)thing, (mobj_t**)precipblocklinks);
+	P_LinkToBlockMap(thing, precipblocklinks);
 }
 
 //
@@ -1003,7 +1001,7 @@ static void P_CheckIntercepts(void)
 		else
 			max_intercepts *= 2;
 
-		intercepts = Z_Realloc(intercepts, sizeof (*intercepts) * max_intercepts, PU_STATIC, NULL);
+		intercepts = static_cast<intercept_t*>(Z_Realloc(intercepts, sizeof (*intercepts) * max_intercepts, PU_STATIC, NULL));
 
 		intercept_p = intercepts + count;
 	}

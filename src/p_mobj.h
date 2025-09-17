@@ -447,39 +447,16 @@ typedef struct precipmobj_s
 	// Info for drawing: position.
 	fixed_t x, y, z;
 	fixed_t old_x, old_y, old_z; // position interpolation
-	fixed_t old_x2, old_y2, old_z2;
 
 	mobjtype_t type;
 	const mobjinfo_t *info; // &mobjinfo[mobj->type]
 
 	// More drawing info: to determine current sprite.
-	angle_t angle, pitch, roll; // orientation
-	angle_t old_angle, old_pitch, old_roll; // orientation interpolation
-	angle_t old_angle2, old_pitch2, old_roll2;
-	angle_t rollangle;
 	spritenum_t sprite; // used to find patch_t and flip value
 	UINT32 frame; // frame number, plus bits see p_pspr.h
 	UINT16 anim_duration; // for FF_ANIMATE states
 
-	UINT8 blendmode; // blend mode
-	fixed_t spritexscale, spriteyscale;
-	fixed_t spritexoffset, spriteyoffset;
-	fixed_t old_spritexscale, old_spriteyscale;
-	fixed_t old_spritexscale2, old_spriteyscale2;
-	fixed_t old_spritexoffset, old_spriteyoffset;
-	fixed_t old_spritexoffset2, old_spriteyoffset2;
 	INT16 lightlevel; // Add to sector lightlevel, -255 - 255
-
-	fixed_t realxscale, realyscale; // funn-E streeetch
-	fixed_t realxoffset, realyoffset;
-
-	fixed_t stretchslam; // "squish" effect when you land
-
-	//sloperollangle
-	angle_t sloperoll, slopepitch;
-	angle_t old_sloperoll, old_slopepitch;
-	angle_t old_sloperoll2, old_slopepitch2;
-	angle_t pitch_sprite, roll_sprite;
 
 	struct mprecipsecnode_s *touching_sectorlist; // a linked list of sectors where this object appears
 
@@ -488,10 +465,6 @@ typedef struct precipmobj_s
 	// The closest interval over all contacted sectors (or things).
 	fixed_t floorz; // Nearest floor below.
 	fixed_t ceilingz; // Nearest ceiling above.
-
-	// For movement checking.
-	fixed_t radius; // Fixed at 2*FRACUNIT
-	fixed_t height; // Fixed at 4*FRACUNIT
 
 	// Momentums, used to update position.
 	fixed_t momx, momy, momz;
