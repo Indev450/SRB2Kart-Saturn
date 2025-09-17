@@ -30,8 +30,7 @@ extern consvar_t cv_addons_option, cv_addons_folder, cv_addons_md5, cv_addons_sh
 
 */
 
-filestatus_t filesearch(char *filename, const char *startpath, const UINT8 *wantedmd5sum,
-	boolean completepath, int maxsearchdepth);
+filestatus_t filesearch(char *filename, const char *startpath, const UINT8 *wantedmd5sum, boolean completepath, int maxsearchdepth);
 
 #define menudepth 20
 
