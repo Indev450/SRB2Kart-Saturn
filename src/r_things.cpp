@@ -1262,7 +1262,7 @@ static void R_ProjectSprite(mobj_t *thing)
 	tx = FixedMul(tr_x, viewsin) - FixedMul(tr_y, viewcos); // sideways distance
 
 	// too far off the side?
-	if (!papersprite && abs(tx) > (INT64)FixedMul(tz, fovtan)<<2) // papersprite clipping is handled later
+	if (!papersprite && abs(tx) > (INT64)FixedMul(tz, fovtan) << 2) // papersprite clipping is handled later
 		return;
 
 	// aspect ratio stuff
@@ -1826,7 +1826,7 @@ static void R_ProjectSprite(mobj_t *thing)
 #endif
 		vis->patch = static_cast<patch_t*>(W_CachePatchNum(sprframe->lumppat[rot], PU_SPRITE));
 
-	vis->precip = false;
+	vis->precip = NULL;
 
 	vis->vflip = vflip;
 
@@ -1873,7 +1873,7 @@ static void R_ProjectPrecipitationSprite(precipmobj_t *thing)
 	interpmobjstate_t interp = {};
 
 	// do interpolation
-	R_InterpolatePrecipMobjState(thing, R_GetMobjTimeFrac((mobj_t*)thing), &interp);
+	R_InterpolatePrecipMobjState(thing, R_GetPrecipMobjTimeFrac(thing), &interp);
 
 	this_scale = interp.scale;
 
@@ -2014,7 +2014,7 @@ static void R_ProjectPrecipitationSprite(precipmobj_t *thing)
 
 	// Fullbright
 	vis->colormap = colormaps;
-	vis->precip = true;
+	vis->precip = thing;
 	vis->vflip = false;
 	vis->isScaled = false;
 }
@@ -2954,7 +2954,8 @@ fixed_t R_DoPlayerFade(mobj_t *thing)
 	return fadealpha;
 }
 
-boolean R_CheckInterpDist(mobj_t *thing)
+template<typename T>
+static boolean R_CheckInterpDist(T *thing)
 {
 	if (!cv_maxinterpdist.value)
 		return true;
@@ -2965,6 +2966,16 @@ boolean R_CheckInterpDist(mobj_t *thing)
 	const INT32 dist = R_QuickCamDist(thing->x, thing->y);
 
 	return (dist < cv_maxinterpdist.value);
+}
+
+boolean R_CheckPrecipMobjInterpDist(precipmobj_t *thing)
+{
+	return R_CheckInterpDist(thing);
+}
+
+boolean R_CheckMobjInterpDist(mobj_t *thing)
+{
+	return R_CheckInterpDist(thing);
 }
 
 boolean R_ThingIsFullBright(mobj_t *thing)

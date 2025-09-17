@@ -3573,7 +3573,7 @@ static void HWR_RotateSpritePolyToAim(gl_vissprite_t *spr, FOutVector *wallVerts
 	// do interpolation
 	if (precip)
 	{
-		R_InterpolatePrecipMobjState((precipmobj_t *)spr->mobj, R_GetMobjTimeFrac(spr->mobj), &interp);
+		R_InterpolatePrecipMobjState(spr->precip, R_GetPrecipMobjTimeFrac(spr->precip), &interp);
 	}
 	else
 	{
@@ -4073,7 +4073,7 @@ static void HWR_DrawPrecipitationSprite(gl_vissprite_t *spr)
 
 	INT32 shader = SHADER_NONE;
 
-	const mobj_t *sprmo = spr->mobj;
+	const precipmobj_t *sprmo = spr->precip;
 
 	if (UNLIKELY(!sprmo || !sprmo->subsector))
 		return;
@@ -4121,7 +4121,7 @@ static void HWR_DrawPrecipitationSprite(gl_vissprite_t *spr)
 	{
 		INT32 light;
 
-		light = R_GetPlaneLight(sector, sprmo->z + sprmo->height, false); // Always use the light at the top instead of whatever I was doing before
+		light = R_GetPlaneLight(sector, sprmo->z, false); // Always use the light at the top instead of whatever I was doing before
 
 		if (!(sprmo->frame & FF_FULLBRIGHT))
 			lightlevel = static_cast<INT32>(*sector->lightlist[light].lightlevel);
@@ -4183,8 +4183,8 @@ static int CompareVisSprites(const void *p1, const void *p2)
 	// "boolean to int"
 
 	// check for precip first, because then sprX->mobj is actually a precipmobj_t and does not have flags2 or tracer
-	const int transparency1 = (!spr1->precip && (spr1->mobj->flags2 & MF2_SHADOW)) || (spr1->mobj->frame & FF_TRANSMASK);
-	const int transparency2 = (!spr2->precip && (spr2->mobj->flags2 & MF2_SHADOW)) || (spr2->mobj->frame & FF_TRANSMASK);
+	const int transparency1 = (spr1->precip ? (spr1->precip->frame & FF_TRANSMASK) : ((spr1->mobj->flags2 & MF2_SHADOW)) || (spr1->mobj->frame & FF_TRANSMASK));
+	const int transparency2 = (spr2->precip ? (spr2->precip->frame & FF_TRANSMASK) : ((spr2->mobj->flags2 & MF2_SHADOW)) || (spr2->mobj->frame & FF_TRANSMASK));
 
 	idiff = transparency1 - transparency2;
 	if (idiff != 0) return idiff;
@@ -5016,7 +5016,7 @@ static void HWR_ProjectSprite(mobj_t *thing)
 
 	vis->vflip = vflip;
 
-	vis->precip = false;
+	vis->precip = NULL;
 }
 
 // Precipitation projector for hardware mode
@@ -5048,7 +5048,7 @@ static void HWR_ProjectPrecipitationSprite(precipmobj_t *thing)
 	interpmobjstate_t interp = {};
 
 	// do interpolation
-	R_InterpolatePrecipMobjState(thing, R_GetMobjTimeFrac((mobj_t*)thing), &interp);
+	R_InterpolatePrecipMobjState(thing, R_GetPrecipMobjTimeFrac(thing), &interp);
 
 	// transform the origin point
 	tr_x = FixedToFloat(interp.x);
@@ -5126,7 +5126,7 @@ static void HWR_ProjectPrecipitationSprite(precipmobj_t *thing)
 	vis->dispoffset = 0; // Monster Iestyn: 23/11/15: HARDWARE SUPPORT AT LAST
 	vis->gpatch = (patch_t *)W_CachePatchNum(sprframe->lumppat[rot], PU_SPRITE);
 	vis->flip = flip;
-	vis->mobj = (mobj_t *)thing;
+	vis->mobj = NULL;
 
 	vis->colormap = NULL;
 
@@ -5139,7 +5139,7 @@ static void HWR_ProjectPrecipitationSprite(precipmobj_t *thing)
 	vis->gzt = FixedToFloat(interp.z) + (FixedToFloat(spritecachedinfo[lumpoff].topoffset) * this_scale);
 	vis->gz = vis->gzt - (FixedToFloat(spritecachedinfo[lumpoff].height) * this_scale);
 
-	vis->precip = true;
+	vis->precip = thing;
 }
 
 

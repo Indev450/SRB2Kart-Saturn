@@ -93,7 +93,8 @@ transnum_t R_GetThingTransTable(fixed_t alpha, transnum_t transmap);
 
 boolean R_ThingVisible(mobj_t *thing);
 boolean R_ThingWithinDist(mobj_t *thing, INT32 limit_dist);
-boolean R_CheckInterpDist(mobj_t *thing);
+boolean R_CheckPrecipMobjInterpDist(precipmobj_t *thing);
+boolean R_CheckMobjInterpDist(mobj_t *thing);
 fixed_t R_DoPlayerFade(mobj_t *thing);
 
 boolean R_ThingIsFullBright(mobj_t *thing);
@@ -170,7 +171,8 @@ typedef struct vissprite_s
 
 	INT16 *clipbot, *cliptop;
 
-	boolean precip;
+	precipmobj_t *precip;
+
 	boolean vflip; // Flip vertically
 	boolean isScaled;
 	INT32 dispoffset; // copy of info->dispoffset, affects ordering but not drawing
