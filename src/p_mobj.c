@@ -6202,6 +6202,7 @@ static void P_MobjSceneryThink(mobj_t *mobj)
 				fixed_t x = P_RandomRange(-35, 35)*mobj->scale;
 				fixed_t y = P_RandomRange(-35, 35)*mobj->scale;
 				fixed_t z = P_RandomRange(0, 70)*mobj->scale;
+
 				mobj_t *smoke = P_SpawnMobj(mobj->x + x, mobj->y + y, mobj->z + z, MT_SMOKE);
 				P_SetMobjState(smoke, S_OPAQUESMOKE1);
 				K_MatchGenericExtraFlags(smoke, mobj);
@@ -6215,6 +6216,7 @@ static void P_MobjSceneryThink(mobj_t *mobj)
 				fixed_t x = P_RandomRange(-16, 16)*mobj->scale;
 				fixed_t y = P_RandomRange(-16, 16)*mobj->scale;
 				fixed_t z = P_RandomRange(0, 32)*mobj->scale*P_MobjFlip(mobj);
+
 				if (leveltime % 2 == 0)
 				{
 					mobj_t *smoke = P_SpawnMobj(mobj->x + x, mobj->y + y, mobj->z + z, MT_BOSSEXPLODE);
@@ -7793,7 +7795,13 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 				smoke->momy = mobj->target->momy/2;
 				smoke->momz = mobj->target->momz/2;
 
-				P_Thrust(smoke, mobj->angle+FixedAngle(P_RandomRange(135, 225)<<FRACBITS), P_RandomRange(0, 8) * mobj->target->scale);
+				fixed_t rand_angle;
+				fixed_t rand_move;
+
+				rand_move = P_RandomRange(0, 8) * mobj->target->scale;
+				rand_angle = mobj->angle+FixedAngle(P_RandomRange(135, 225)<<FRACBITS);
+
+				P_Thrust(smoke, rand_angle, rand_move);
 			}
 			break;
 		case MT_SPARKLETRAIL:
@@ -8061,11 +8069,18 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 				}
 				else
 				{
-					P_SpawnMobj(mobj->x + (P_RandomRange(-48,48)*mobj->scale),
-						mobj->y + (P_RandomRange(-48,48)*mobj->scale),
-						mobj->z + (24*mobj->scale) + (P_RandomRange(-8,8)*mobj->scale),
-						MT_SIGNSPARKLE);
+					fixed_t rand_x;
+					fixed_t rand_y;
+					fixed_t rand_z;
+
+					rand_z = mobj->z + (24*mobj->scale) + (P_RandomRange(-8,8)*mobj->scale);
+					rand_y = mobj->y + (P_RandomRange(-48,48)*mobj->scale);
+					rand_x = mobj->x + (P_RandomRange(-48,48)*mobj->scale);
+
+					P_SpawnMobj(rand_x, rand_y, rand_z, MT_SIGNSPARKLE);
+
 					mobj->flags &= ~MF_NOGRAVITY;
+
 					if (abs(mobj->z - mobj->movefactor) <= (512*mobj->scale) && !mobj->cvmem)
 					{
 						if (mobj->info->seesound)
@@ -8095,6 +8110,7 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 
 			{
 				angle_t facing = P_RandomRange(0, 90);
+
 				if (facing >= 45)
 					facing = InvAngle((facing - 45)*ANG1);
 				else
@@ -8127,7 +8143,14 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 			else // fire + smoke pillar
 			{
 				UINT8 i;
-				mobj_t *fire = P_SpawnMobj(mobj->x + (P_RandomRange(-32, 32)*mobj->scale), mobj->y + (P_RandomRange(-32, 32)*mobj->scale), mobj->z, MT_THOK);
+
+				fixed_t rand_x;
+				fixed_t rand_y;
+
+				rand_y = mobj->y + (P_RandomRange(-32, 32)*mobj->scale);
+				rand_x = mobj->x + (P_RandomRange(-32, 32)*mobj->scale);
+
+				mobj_t *fire = P_SpawnMobj(rand_x, rand_y, mobj->z, MT_THOK);
 
 				fire->sprite = SPR_FPRT;
 				fire->frame = FF_FULLBRIGHT|FF_TRANS30;
@@ -8139,7 +8162,10 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 
 				for (i = 0; i < 2; i++)
 				{
-					mobj_t *smoke = P_SpawnMobj(mobj->x + (P_RandomRange(-16, 16)*mobj->scale), mobj->y + (P_RandomRange(-16, 16)*mobj->scale), mobj->z, MT_SMOKE);
+					rand_y = mobj->y + (P_RandomRange(-16, 16)*mobj->scale);
+					rand_x = mobj->x + (P_RandomRange(-16, 16)*mobj->scale);
+
+					mobj_t *smoke = P_SpawnMobj(rand_x, rand_y, mobj->z, MT_SMOKE);
 
 					P_SetMobjState(smoke, S_FZSLOWSMOKE1);
 					smoke->scale = mobj->scale;
@@ -8164,8 +8190,10 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 					cur = cur->hnext;
 				}
 			}
+
 			if (!S_SoundPlaying(mobj, mobj->info->seesound))
 				S_StartSound(mobj, mobj->info->seesound);
+
 			break;
 		case MT_FROGGER:
 			{
@@ -8363,9 +8391,15 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 
 				if (!P_MobjWasRemoved(mobj->tracer) && !(leveltime % 10))
 				{
-					mobj_t *dust = P_SpawnMobj(mobj->x + (P_RandomRange(-4, 4)<<FRACBITS),
-						mobj->y + (P_RandomRange(-4, 4)<<FRACBITS),
-						mobj->z + (P_RandomRange(0, 2)<<FRACBITS), MT_BBZDUST);
+					fixed_t rand_x;
+					fixed_t rand_y;
+					fixed_t rand_z;
+
+					rand_z = mobj->z + (P_RandomRange(0, 2)<<FRACBITS);
+					rand_y = mobj->y + (P_RandomRange(-4, 4)<<FRACBITS);
+					rand_x = mobj->x + (P_RandomRange(-4, 4)<<FRACBITS);
+
+					mobj_t *dust = P_SpawnMobj(rand_x, rand_y, rand_z, MT_BBZDUST);
 					P_SetScale(dust, mobj->scale/2);
 					P_InstaThrust(dust, FixedAngle(P_RandomRange(0,359)<<FRACBITS), abs(mobj->tracer->momz)/2);
 

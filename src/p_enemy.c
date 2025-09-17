@@ -8035,8 +8035,15 @@ void A_JawzExplode(void *thing)
 	{
 		INT32 speed, speed2;
 
-		truc = P_SpawnMobj(actor->x + P_RandomRange(-8, 8)*FRACUNIT, actor->y + P_RandomRange(-8, 8)*FRACUNIT,
-			actor->z + P_RandomRange(0, 8)*FRACUNIT, MT_BOOMPARTICLE);
+		fixed_t rand_x;
+		fixed_t rand_y;
+		fixed_t rand_z;
+
+		rand_z = actor->z + P_RandomRange(0, 8)*FRACUNIT;
+		rand_y = actor->y + P_RandomRange(-8, 8)*FRACUNIT;
+		rand_x = actor->x + P_RandomRange(-8, 8)*FRACUNIT;
+
+		truc = P_SpawnMobj(rand_x, rand_y, rand_z, MT_BOOMPARTICLE);
 		truc->scale = actor->scale*2;
 
 		speed = FixedMul(7*FRACUNIT, actor->scale)>>FRACBITS;
@@ -8205,10 +8212,16 @@ void A_SPBChase(void *thing)
 				: (16*R_PointToDist2(0, 0, actor->tracer->momx, actor->tracer->momy))/15) // Going faster than the target
 				&& xyspeed > K_GetKartSpeed(actor->tracer->player, false)/4) // Don't display speedup lines at pitifully low speeds
 			{
-				mobj_t *fast = P_SpawnMobj(actor->x + (P_RandomRange(-24,24) * actor->scale),
-					actor->y + (P_RandomRange(-24,24) * actor->scale),
-					actor->z + (actor->height/2) + (P_RandomRange(-24,24) * actor->scale),
-					MT_FASTLINE);
+
+				fixed_t rand_x;
+				fixed_t rand_y;
+				fixed_t rand_z;
+
+				rand_z = actor->z + (actor->height/2) + (P_RandomRange(-24,24) * actor->scale);
+				rand_y = actor->y + (P_RandomRange(-24,24) * actor->scale);
+				rand_x = actor->x + (P_RandomRange(-24,24) * actor->scale);
+
+				mobj_t *fast = P_SpawnMobj(rand_x, rand_y, rand_z, MT_FASTLINE);
 				fast->angle = R_PointToAngle2(0, 0, actor->momx, actor->momy);
 				//fast->momx = (3*actor->momx)/4;
 				//fast->momy = (3*actor->momy)/4;
@@ -8416,8 +8429,15 @@ void A_FZBoomSmoke(void *thing)
 
 	for (i = 0; i < 8+(4*var1); i++)
 	{
-		mobj_t *smoke = P_SpawnMobj(actor->x + (P_RandomRange(-rad, rad)*actor->scale), actor->y + (P_RandomRange(-rad, rad)*actor->scale),
-			actor->z + (P_RandomRange(0, 72)*actor->scale), MT_THOK);
+		fixed_t rand_x;
+		fixed_t rand_y;
+		fixed_t rand_z;
+
+		rand_z = actor->z + (P_RandomRange(0, 72)*actor->scale);
+		rand_y = actor->y + (P_RandomRange(-rad, rad)*actor->scale);
+		rand_x = actor->x + (P_RandomRange(-rad, rad)*actor->scale);
+
+		mobj_t *smoke = P_SpawnMobj(rand_x, rand_y, rand_z, MT_THOK);
 
 		P_SetMobjState(smoke, S_FZEROSMOKE1);
 		smoke->tics += P_RandomRange(-3, 4);
@@ -8593,7 +8613,15 @@ void A_MementosTPParticles(void *thing)
 
 	for (; i < 4; i++)
 	{
-		particle = P_SpawnMobj(actor->x + (P_RandomRange(-256, 256)<<FRACBITS), actor->y + (P_RandomRange(-256, 256)<<FRACBITS), actor->z + (P_RandomRange(48, 256)<<FRACBITS), MT_MEMENTOSPARTICLE);
+		fixed_t rand_x;
+		fixed_t rand_y;
+		fixed_t rand_z;
+
+		rand_z = actor->z + (P_RandomRange(48, 256)<<FRACBITS);
+		rand_y = actor->y + (P_RandomRange(-256, 256)<<FRACBITS);
+		rand_x = actor->x + (P_RandomRange(-256, 256)<<FRACBITS);
+
+		particle = P_SpawnMobj(rand_x, rand_y, rand_z, MT_MEMENTOSPARTICLE);
 		particle->frame = 0;
 		particle->color = ((i%2) ? (SKINCOLOR_RED) : (SKINCOLOR_BLACK));
 		particle->destscale = 1;
@@ -8656,9 +8684,15 @@ void A_ReaperThinker(void *thing)
 	if (actor->scale < 2<<FRACBITS)	// we haven't finished growing YET.
 	{
 		// Spawn particles as we grow out of the floor, ゴ ゴ ゴ ゴ
-		for (; i<16; i++)
+		for (; i < 16; i++)
 		{
-			particle = P_SpawnMobj(actor->x + (P_RandomRange(-60, 60)<<FRACBITS), actor->y + (P_RandomRange(-60, 60)<<FRACBITS), actor->z, MT_THOK);
+			fixed_t rand_x;
+			fixed_t rand_y;
+
+			rand_y = actor->y + (P_RandomRange(-60, 60)<<FRACBITS);
+			rand_x = actor->x + (P_RandomRange(-60, 60)<<FRACBITS);
+
+			particle = P_SpawnMobj(rand_x, rand_y, actor->z, MT_THOK);
 			particle->momz = 20<<FRACBITS;
 			particle->color = ((i%2 !=0) ? (SKINCOLOR_RED) : (SKINCOLOR_BLACK));
 			particle->frame = 0;
@@ -8813,11 +8847,15 @@ void A_FlameParticle(void *thing)
 	if (LUA_CallAction(A_FLAMEPARTICLE, actor))
 		return;
 
-	par = P_SpawnMobj(
-		actor->x + (P_RandomRange(-rad, rad)<<FRACBITS),
-		actor->y + (P_RandomRange(-rad, rad)<<FRACBITS),
-		actor->z + (P_RandomRange(hei/2, hei)<<FRACBITS),
-		actor->info->painchance);
+	fixed_t rand_x;
+	fixed_t rand_y;
+	fixed_t rand_z;
+
+	rand_z = actor->z + (P_RandomRange(hei/2, hei)<<FRACBITS);
+	rand_y = actor->y + (P_RandomRange(-rad, rad)<<FRACBITS);
+	rand_x = actor->x + (P_RandomRange(-rad, rad)<<FRACBITS);
+
+	par = P_SpawnMobj(rand_x, rand_y, rand_z, actor->info->painchance);
 	par->momz = actor->scale<<1;
 }
 
