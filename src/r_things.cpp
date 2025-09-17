@@ -2010,7 +2010,7 @@ static void R_ProjectPrecipitationSprite(precipmobj_t *thing)
 	vis->patch = static_cast<patch_t*>(W_CachePatchNum(sprframe->lumppat[0], PU_SPRITE));
 
 	// specific translucency
-	if ((thing->blendmode != AST_COPY) && cv_translucency.value)
+	if (thing->frame & FF_TRANSMASK)
 		vis->transmap = R_GetTranslucencyTable((thing->frame & FF_TRANSMASK) >> FF_TRANSSHIFT);
 	else
 		vis->transmap = NULL;
