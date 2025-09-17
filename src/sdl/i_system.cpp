@@ -522,6 +522,8 @@ static void I_ReportSignal(int num, int coredumped)
 #ifndef NEWSIGNALHANDLER
 FUNCNORETURN static ATTRNORETURN void signal_handler(INT32 num)
 {
+	g_in_exiting_signal_handler = true;
+
 #ifdef HAVE_THREADS
 	if (g_main_thread_id != std::this_thread::get_id())
 	{
@@ -531,8 +533,6 @@ FUNCNORETURN static ATTRNORETURN void signal_handler(INT32 num)
 		exit(-2);
 	}
 #endif
-
-	g_in_exiting_signal_handler = true;
 
 	D_QuitNetGame(); // Fix server freezes
 
