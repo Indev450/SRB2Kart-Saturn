@@ -5044,18 +5044,18 @@ static void HWR_ProjectPrecipitationSprite(precipmobj_t *thing)
 		return;
 	}
 
-	// uncapped/interpolation
-	interpmobjstate_t interp = {};
-
-	// do interpolation
-	R_InterpolatePrecipMobjState(thing, R_GetMobjTimeFrac((mobj_t*)thing), &interp);
-
 	// Visibility check by the blend mode.
 	if (thing->frame & FF_TRANSMASK)
 	{
 		if (!R_BlendLevelVisible(thing->blendmode, (thing->frame & FF_TRANSMASK)>>FF_TRANSSHIFT))
 			return;
 	}
+
+	// uncapped/interpolation
+	interpmobjstate_t interp = {};
+
+	// do interpolation
+	R_InterpolatePrecipMobjState(thing, R_GetMobjTimeFrac((mobj_t*)thing), &interp);
 
 	// transform the origin point
 	tr_x = FixedToFloat(interp.x);
