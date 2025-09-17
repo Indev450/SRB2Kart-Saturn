@@ -1598,7 +1598,7 @@ size_t W_ReadLumpHeaderPwad(UINT16 wad, UINT16 lump, void *dest, size_t size, si
 #ifdef NO_PNG_LUMPS
 		{
 			size_t bytesread = fread(dest, 1, size, handle);
-			ErrorIfPNG(dest, bytesread, wadfiles[wad]->filename, l->fullname);
+			ErrorIfPNG((UINT8 *)dest, bytesread, wadfiles[wad]->filename, l->fullname);
 			return bytesread;
 		}
 #else
@@ -1639,7 +1639,7 @@ size_t W_ReadLumpHeaderPwad(UINT16 wad, UINT16 lump, void *dest, size_t size, si
 			Z_Free(rawData);
 			Z_Free(decData);
 #ifdef NO_PNG_LUMPS
-			ErrorIfPNG(dest, size, wadfiles[wad]->filename, l->fullname);
+			ErrorIfPNG((UINT8 *)dest, size, wadfiles[wad]->filename, l->fullname);
 #endif
 			return size;
 #else
@@ -1696,7 +1696,7 @@ size_t W_ReadLumpHeaderPwad(UINT16 wad, UINT16 lump, void *dest, size_t size, si
 			Z_Free(rawData);
 
 #ifdef NO_PNG_LUMPS
-			ErrorIfPNG(dest, size, wadfiles[wad]->filename, l->fullname);
+			ErrorIfPNG((UINT8 *)dest, size, wadfiles[wad]->filename, l->fullname);
 #endif
 			return size;
 		}
@@ -1885,7 +1885,7 @@ void *W_CacheSoftwarePatchNumPwad(UINT16 wad, UINT16 lump, INT32 tag)
 		ptr = lumpdata;
 
 		dest = Z_Calloc(sizeof(patch_t), tag, &lumpcache[lump]);
-		Patch_Create(ptr, len, dest);
+		Patch_Create((softwarepatch_t*)(ptr), len, dest);
 
 		Z_Free(ptr);
 	}
@@ -1997,7 +1997,7 @@ void *W_CachePatchNameRotated(const char *name, INT32 rotationangle, INT32 tag)
 	{
 		INT32 xpivot = 0, ypivot = 0;
 
-		ptr = W_CachePatchNum(num, PU_PATCH);
+		ptr = (patch_t *)W_CachePatchNum(num, PU_PATCH);
 
 		// >y pivot centered
 		// >x pivot not centered
