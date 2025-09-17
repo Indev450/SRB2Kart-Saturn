@@ -259,27 +259,21 @@ static inline boolean UseVanillaSynch(INT32 node)
 
 static inline void *G_DcpyTiccmd(void* dest, const ticcmd_t* src, const size_t n)
 {
-	const size_t d = n / sizeof(ticcmd_t);
-	const size_t r = n % sizeof(ticcmd_t);
 	UINT8 *ret = dest;
 
-	if (r)
-		M_Memcpy(dest, src, n);
-	else if (d)
-		G_MoveTiccmd(dest, src, d);
+	if (n)
+		G_MoveTiccmd(dest, src, n/sizeof(ticcmd_t));
+
 	return ret+n;
 }
 
 static inline void *G_ScpyTiccmd(ticcmd_t* dest, void* src, const size_t n)
 {
-	const size_t d = n / sizeof(ticcmd_t);
-	const size_t r = n % sizeof(ticcmd_t);
 	UINT8 *ret = src;
 
-	if (r)
-		M_Memcpy(dest, src, n);
-	else if (d)
-		G_MoveTiccmd(dest, src, d);
+	if (n)
+		G_MoveTiccmd(dest, src, n/sizeof(ticcmd_t));
+
 	return ret+n;
 }
 
