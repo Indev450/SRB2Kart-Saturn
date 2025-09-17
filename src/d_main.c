@@ -1088,7 +1088,6 @@ void D_ClearState(void)
 
 	P_FreeLevelState();
 
-	netgame = false; // title menu shouldnt be a netgame lmao
 	G_SetGamestate(GS_NULL);
 	wipegamestate = GS_NULL;
 }
@@ -1100,6 +1099,7 @@ void D_StartTitle(void)
 {
 	demo.title = false;
 	D_ClearState();
+	netgame = false; // title menu shouldnt be a netgame lmao
 	M_ClearMenus(true);
 	F_StartTitleScreen();
 	D_ResetDeviceLED();
