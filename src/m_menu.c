@@ -3924,13 +3924,12 @@ static void PrepReplayList(boolean reset)
 
 	replayquerycheck = replayqueryfound = 0;
 
-	if (demolist)
-		Z_Free(demolist);
-
+	Z_Free(demolist);
 	demolist = Z_Calloc(sizeof(menudemo_t) * sizedirmenu, PU_STATIC, NULL);
 
 	// If directory didn't change, keep demolist_all
-	if (!reset) return;
+	if (!reset)
+		return;
 
 	Lock_search_state();
 
@@ -4586,17 +4585,23 @@ static void M_DrawReplayStartMenu(void)
 		V_DrawSmallString(4, BASEVIDHEIGHT-14, V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_ALLOWLOWERCASE, warning);
 }
 
+void M_ResetDemoList(void)
+{
+	Z_Free(demolist_all);
+	demolist_all = NULL;
+
+	Z_Free(demolist);
+	demolist = NULL;
+
+	demo.inreplayhut = false;
+}
+
 static boolean M_QuitReplayHut(void)
 {
 	// D_StartTitle does its own wipe, since GS_TIMEATTACK is now a complete gamestate.
 	menuactive = false;
 	D_StartTitle();
-
-	if (demolist)
-		Z_Free(demolist);
-	demolist = NULL;
-
-	demo.inreplayhut = false;
+	M_ResetDemoList();
 
 	return true;
 }
