@@ -5044,13 +5044,6 @@ static void HWR_ProjectPrecipitationSprite(precipmobj_t *thing)
 		return;
 	}
 
-	// Visibility check by the blend mode.
-	if (thing->frame & FF_TRANSMASK)
-	{
-		if (!R_BlendLevelVisible(thing->blendmode, (thing->frame & FF_TRANSMASK)>>FF_TRANSSHIFT))
-			return;
-	}
-
 	// uncapped/interpolation
 	interpmobjstate_t interp = {};
 
