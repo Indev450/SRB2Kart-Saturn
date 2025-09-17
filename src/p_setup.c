@@ -2339,9 +2339,7 @@ static void P_RunLevelScript(const char *scriptname)
 		lumpnum_t lumpnum;
 		char newname[9];
 
-		strncpy(newname, scriptname, 8);
-
-		newname[8] = '\0';
+		strlcpy(newname, scriptname, sizeof(newname));
 
 		lumpnum = W_CheckNumForName(newname);
 
@@ -3310,6 +3308,12 @@ UINT16 P_PartialAddWadFile(const char *wadfilename, boolean local)
 	if (!mapsadded)
 		CONS_Printf(M_GetText("No maps added\n"));
 
+#ifdef HWRENDER
+	// Free GPU textures before freeing patches.
+	if (rendermode == render_opengl && (vid.glstate == VID_GL_LIBRARY_LOADED))
+		HWR_ClearAllTextures();
+#endif
+
 	//
 	// search for sprite replacements
 	//
@@ -3320,7 +3324,7 @@ UINT16 P_PartialAddWadFile(const char *wadfilename, boolean local)
 	// Reload it all anyway, just in case they
 	// added some textures but didn't insert a
 	// TEXTURES/etc. list.
-	//R_LoadTexturesPwad(wadnum);
+	R_LoadTexturesPwad(wadnum);
 
 	// everything from MultiSetupWadFile until ST_Start was here originally
 
@@ -3384,13 +3388,8 @@ boolean P_MultiSetupWadFiles(boolean fullsetup)
 
 	if (partadd_stage == 1)
 	{
-#ifdef HWRENDER
-		// Free GPU textures before freeing patches.
-		if (rendermode == render_opengl && (vid.glstate == VID_GL_LIBRARY_LOADED))
-			HWR_ClearAllTextures();
-#endif
 		// Reload all textures, unconditionally for better or worse.
-		R_LoadTextures();
+		//R_LoadTextures();
 
 		if (fullsetup)
 			++partadd_stage;
