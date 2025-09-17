@@ -683,6 +683,12 @@ static void M_ResetCvars(void)
 	}
 }
 
+// This is not a particular elegant solution, but it seems to make do for our purposes
+static boolean M_CheckTextInput(void)
+{
+	return (menuactive && currentMenu && (itemOn < currentMenu->numitems) && (((currentMenu->menuitems[itemOn].status & IT_CVARTYPE) == IT_CV_STRING) || (currentMenu->menuitems[itemOn].status == IT_MSGHANDLER && currentMenu->menuitems[itemOn].alphaKey != MM_EVENTHANDLER) || ((currentMenu->menuitems[itemOn].status & IT_TYPE) == IT_KEYHANDLER)));
+}
+
 // If current menu item is IT_CV_STRING, setup menuinput
 static void M_CheckStringItem(void)
 {
@@ -1030,7 +1036,6 @@ boolean M_Responder(event_t *ev)
 	// Handle menuitems which need a specific key handling
 	if (routine && (currentMenu->menuitems[itemOn].status & IT_TYPE) == IT_KEYHANDLER)
 	{
-		menu_text_input = true;
 		ch = M_ShiftChar(ch);
 		routine(ch);
 		return true;
@@ -1070,7 +1075,6 @@ boolean M_Responder(event_t *ev)
 	{
 		if ((currentMenu->menuitems[itemOn].status & IT_CVARTYPE) == IT_CV_STRING)
 		{
-			menu_text_input = true;
 			if (M_ChangeStringCvar(ch))
 				return true;
 			else
@@ -1724,6 +1728,10 @@ void M_Ticker(void)
 		M_HutCheckReplays(cv_replaysearchrate.value);
 
 	interpTimerHackAllow = true;
+
+	menu_text_input = M_CheckTextInput();
+
+	I_SetTextInput();
 
 	//added : 30-01-98 : test mode for five seconds
 	if (vidm_testingmode > 0)
@@ -3716,6 +3724,7 @@ static void M_HandleAddons(INT32 choice)
 		default:
 			break;
 	}
+
 	if (exitmenu)
 	{
 		closefilemenu(true);
@@ -3915,13 +3924,12 @@ static void PrepReplayList(boolean reset)
 
 	replayquerycheck = replayqueryfound = 0;
 
-	if (demolist)
-		Z_Free(demolist);
-
+	Z_Free(demolist);
 	demolist = Z_Calloc(sizeof(menudemo_t) * sizedirmenu, PU_STATIC, NULL);
 
 	// If directory didn't change, keep demolist_all
-	if (!reset) return;
+	if (!reset)
+		return;
 
 	Lock_search_state();
 
@@ -4577,17 +4585,23 @@ static void M_DrawReplayStartMenu(void)
 		V_DrawSmallString(4, BASEVIDHEIGHT-14, V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_ALLOWLOWERCASE, warning);
 }
 
+void M_ResetDemoList(void)
+{
+	Z_Free(demolist_all);
+	demolist_all = NULL;
+
+	Z_Free(demolist);
+	demolist = NULL;
+
+	demo.inreplayhut = false;
+}
+
 static boolean M_QuitReplayHut(void)
 {
 	// D_StartTitle does its own wipe, since GS_TIMEATTACK is now a complete gamestate.
 	menuactive = false;
 	D_StartTitle();
-
-	if (demolist)
-		Z_Free(demolist);
-	demolist = NULL;
-
-	demo.inreplayhut = false;
+	M_ResetDemoList();
 
 	return true;
 }
@@ -6732,7 +6746,7 @@ static void M_DrawConnectMenu(void)
 	{
 		const float ease = serverlistslidex / 2.f;
 		const INT32 offx = serverlistslidex > 0 ? BASEVIDWIDTH : -(BASEVIDWIDTH);
-		const INT32 x = (FLOAT_TO_FIXED(serverlistslidex) + ease * rendertimefrac) / FRACUNIT;
+		const INT32 x = (FLOAT_TO_FIXED(serverlistslidex) + ease * R_GetTimeFrac(RTF_MENU)) / FRACUNIT;
 
 		M_DrawServerLines(currentMenu->x + x - offx, oldserverlistpage);
 		M_DrawServerLines(currentMenu->x + x, serverlistpage);
@@ -6991,7 +7005,7 @@ void M_PopupMasterServerConnectError(void)
 {
 	if (!CV_IsSetToDefault(&cv_masterserver) && cv_masterserver_nagattempts.value > 0)
 	{
-		M_StartMessage(M_GetText("There was a problem connecting to\ncustom Master Server\n\nYou've changed the Server Browser address.\nUnless you're from the future, this probably isn't what you want.\n\n\x83Press Accel\x80 to fix this and continue.\n"), connect_error_continue == STARTSERVER_MENU ? M_PreStartServerMenuChoice : M_PreConnectMenuChoice,MM_EVENTHANDLER);
+		M_StartMessage(M_GetText("There was a problem connecting to\ncustom Master Server\n\nYou've changed the Server Browser address.\nUnless you're from the future, this probably isn't what you want.\n\n\x83Press Accel\x80 to fix this and continue.\n"), connect_error_continue == STARTSERVER_MENU ? M_PreStartServerMenuChoice : M_PreConnectMenuChoice, MM_EVENTHANDLER);
 	}
 	else
 	{
@@ -9163,7 +9177,6 @@ static void M_DrawControl(void)
 	char tmp[50];
 	INT32 x, y, i, max, cursory = 0, iter;
 	INT32 keys[2];
-	menu_text_input = false; //never use native layout for control setup
 
 	x = currentMenu->x;
 	y = currentMenu->y;
@@ -9263,12 +9276,10 @@ static void M_ChangecontrolResponse(event_t *ev)
 	INT32        control;
 	INT32        found;
 	INT32        ch = ev->data1;
-	menu_text_input = false; //never use native layout for control setup
 
 	// ESCAPE cancels; dummy out PAUSE
 	if (ch != KEY_ESCAPE && ch != KEY_PAUSE)
 	{
-
 		switch (ev->type)
 		{
 			// ignore mouse/joy movements, just get buttons
@@ -9298,6 +9309,7 @@ static void M_ChangecontrolResponse(event_t *ev)
 			found = 0;
 		else if (setupcontrols[control][1] ==ch)
 			found = 1;
+
 		if (found >= 0)
 		{
 			// replace mouse and joy clicks by double clicks
@@ -9325,9 +9337,11 @@ static void M_ChangecontrolResponse(event_t *ev)
 				found = 0;
 				setupcontrols[control][1] = KEY_NULL;  //replace key 1,clear key2
 			}
+
 			(void)G_CheckDoubleUsage(ch, true);
 			setupcontrols[control][found] = ch;
 		}
+
 		S_StartSound(NULL, sfx_s221);
 	}
 	else if (ch == KEY_PAUSE)

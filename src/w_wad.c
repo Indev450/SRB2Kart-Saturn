@@ -96,6 +96,7 @@ typedef struct lumpnum_cache_s
 {
 	char lumpname[LUMPNUMCACHENAME];
 	lumpnum_t lumpnum;
+	UINT32 hash;
 } lumpnum_cache_t;
 
 static lumpnum_cache_t lumpnumcache[LUMPNUMCACHESIZE];
@@ -227,6 +228,7 @@ FILE *W_OpenWadFile(const char **filename, boolean useerrors)
 			return NULL;
 		}
 	}
+
 	return handle;
 }
 
@@ -247,11 +249,15 @@ static inline void W_LoadDehackedLumpsPK3(UINT16 wadnum)
 	if (posStart != INT16_MAX)
 	{
 		posEnd = W_CheckNumForFolderEndPK3("SOC/", wadnum, posStart);
-		for(; posStart < posEnd; posStart++)
+		size_t len = strlen(wadfiles[wadnum]->filename);
+
+		for (; posStart < posEnd; posStart++)
 		{
 			lumpinfo_t *lump_p = &wadfiles[wadnum]->lumpinfo[posStart];
-			size_t length = strlen(wadfiles[wadnum]->filename) + 1 + strlen(lump_p->fullname); // length of file name, '|', and lump name
+
+			size_t length = len + 1 + strlen(lump_p->fullname); // length of file name, '|', and lump name
 			char *name = malloc(length + 1);
+
 			sprintf(name, "%s|%s", wadfiles[wadnum]->filename, lump_p->fullname);
 			name[length] = '\0';
 			CONS_Printf(M_GetText("Loading SOC from %s\n"), name);
@@ -269,6 +275,7 @@ static inline void W_LoadDehackedLumps(UINT16 wadnum)
 	// Find Lua scripts before SOCs to allow new A_Actions in SOC editing.
 	{
 		lumpinfo_t *lump_p = wadfiles[wadnum]->lumpinfo;
+
 		for (lump = 0; lump < wadfiles[wadnum]->numlumps; lump++, lump_p++)
 			if (memcmp(lump_p->name,"LUA_",4)==0)
 				LUA_LoadLump(wadnum, lump);
@@ -276,11 +283,15 @@ static inline void W_LoadDehackedLumps(UINT16 wadnum)
 
 	{
 		lumpinfo_t *lump_p = wadfiles[wadnum]->lumpinfo;
+		size_t len = strlen(wadfiles[wadnum]->filename);
+
 		for (lump = 0; lump < wadfiles[wadnum]->numlumps; lump++, lump_p++)
-			if (memcmp(lump_p->name,"SOC_",4)==0) // Check for generic SOC lump
+		{
+			if (memcmp(lump_p->name,"SOC_",4) == 0) // Check for generic SOC lump
 			{	// shameless copy+paste of code from LUA_LoadLump
-				size_t length = strlen(wadfiles[wadnum]->filename) + 1 + strlen(lump_p->fullname); // length of file name, '|', and lump name
+				size_t length = len + 1 + strlen(lump_p->fullname); // length of file name, '|', and lump name
 				char *name = malloc(length + 1);
+
 				sprintf(name, "%s|%s", wadfiles[wadnum]->filename, lump_p->fullname);
 				name[length] = '\0';
 
@@ -288,16 +299,17 @@ static inline void W_LoadDehackedLumps(UINT16 wadnum)
 				DEH_LoadDehackedLumpPwad(wadnum, lump);
 				free(name);
 			}
-			else if (memcmp(lump_p->name,"MAINCFG",8)==0) // Check for MAINCFG
+			else if (memcmp(lump_p->name,"MAINCFG",8) == 0) // Check for MAINCFG
 			{
 				CONS_Printf(M_GetText("Loading main config from %s\n"), wadfiles[wadnum]->filename);
 				DEH_LoadDehackedLumpPwad(wadnum, lump);
 			}
-			else if (memcmp(lump_p->name,"OBJCTCFG",8)==0) // Check for OBJCTCFG
+			else if (memcmp(lump_p->name,"OBJCTCFG",8) == 0) // Check for OBJCTCFG
 			{
 				CONS_Printf(M_GetText("Loading object config from %s\n"), wadfiles[wadnum]->filename);
 				DEH_LoadDehackedLumpPwad(wadnum, lump);
 			}
+		}
 	}
 }
 
@@ -321,14 +333,18 @@ static inline INT32 W_MakeFileMD5(const char *filename, void *resblock)
 	if ((fhandle = fopen(filename, "rb")) != NULL)
 	{
 		tic_t t = I_GetTime();
+
 		CONS_Debug(DBG_SETUP, "Making MD5 for %s\n",filename);
+
 		if (md5_stream(fhandle, resblock) == 1)
 		{
 			fclose(fhandle);
 			return 1;
 		}
+
 		CONS_Debug(DBG_SETUP, "MD5 calc for %s took %f seconds\n",
 			filename, (float)(I_GetTime() - t)/NEWTICRATE);
+
 		fclose(fhandle);
 		return 0;
 	}
@@ -350,13 +366,15 @@ UINT32 W_HashLumpName(const char *name)
 /** Detect a file type.
  * \todo Actually detect the wad/pkzip headers and whatnot, instead of just checking the extensions.
  */
-static restype_t ResourceFileDetect (const char* filename)
+static restype_t ResourceFileDetect(const char* filename)
 {
-	if (!stricmp(&filename[strlen(filename) - 4], ".pk3"))
+	size_t len = strlen(filename) - 4;
+
+	if (!stricmp(&filename[len], ".pk3"))
 		return RET_PK3;
-	if (!stricmp(&filename[strlen(filename) - 4], ".soc"))
+	if (!stricmp(&filename[len], ".soc"))
 		return RET_SOC;
-	if (!stricmp(&filename[strlen(filename) - 4], ".lua"))
+	if (!stricmp(&filename[len], ".lua"))
 		return RET_LUA;
 
 	return RET_WAD;
@@ -364,9 +382,10 @@ static restype_t ResourceFileDetect (const char* filename)
 
 /** Create a 1-lump lumpinfo_t for standalone files.
  */
-static lumpinfo_t* ResGetLumpsStandalone (FILE* handle, UINT16* numlumps, const char* lumpname)
+static lumpinfo_t* ResGetLumpsStandalone(FILE* handle, UINT16* numlumps, const char* lumpname)
 {
 	lumpinfo_t* lumpinfo = Z_Calloc(sizeof (*lumpinfo), PU_STATIC, NULL);
+
 	lumpinfo->position = 0;
 	fseek(handle, 0, SEEK_END);
 	lumpinfo->size = ftell(handle);
@@ -416,7 +435,9 @@ static lumpinfo_t* ResGetLumpsWad (FILE* handle, UINT16* nlmp, const char* filen
 	}
 
 	if (memcmp(header.identification, "ZWAD", 4) == 0)
+	{
 		compressed = 1;
+	}
 	else if (memcmp(header.identification, "IWAD", 4) != 0
 		&& memcmp(header.identification, "PWAD", 4) != 0
 		&& memcmp(header.identification, "SDLL", 4) != 0)
@@ -431,6 +452,7 @@ static lumpinfo_t* ResGetLumpsWad (FILE* handle, UINT16* nlmp, const char* filen
 	// read wad file directory
 	i = header.numlumps * sizeof (*fileinfo);
 	fileinfov = fileinfo = malloc(i);
+
 	if (fseek(handle, header.infotableofs, SEEK_SET) == -1
 		|| fread(fileinfo, 1, i, handle) < i)
 	{
@@ -443,13 +465,16 @@ static lumpinfo_t* ResGetLumpsWad (FILE* handle, UINT16* nlmp, const char* filen
 
 	// fill in lumpinfo for this wad
 	lump_p = lumpinfo = Z_Malloc(numlumps * sizeof (*lumpinfo), PU_STATIC, NULL);
+
 	for (i = 0; i < numlumps; i++, lump_p++, fileinfo++)
 	{
 		lump_p->position = LONG(fileinfo->filepos);
 		lump_p->size = lump_p->disksize = LONG(fileinfo->size);
+
 		if (compressed) // wad is compressed, lump might be
 		{
 			UINT32 realsize = 0;
+
 			if (fseek(handle, lump_p->position, SEEK_SET)
 				== -1 || fread(&realsize, 1, sizeof realsize,
 				handle) < sizeof realsize)
@@ -457,6 +482,7 @@ static lumpinfo_t* ResGetLumpsWad (FILE* handle, UINT16* nlmp, const char* filen
 				I_Error("corrupt compressed file: %s; maybe %s", /// \todo Avoid the bailout?
 					filename, M_FileError(handle));
 			}
+
 			realsize = LONG(realsize);
 			if (realsize != 0)
 			{
@@ -473,7 +499,10 @@ static lumpinfo_t* ResGetLumpsWad (FILE* handle, UINT16* nlmp, const char* filen
 			lump_p->disksize -= 4;
 		}
 		else
+		{
 			lump_p->compression = CM_NOCOMPRESSION;
+		}
+
 		memset(lump_p->name, 0x00, 9);
 		strncpy(lump_p->name, fileinfo->name, 8);
 		lump_p->namelength = strlen(lump_p->name);
@@ -521,12 +550,15 @@ static boolean ResFindSignature (FILE* handle, char endPat[], UINT32 startpos)
 	char* buffer = (char*)(malloc(buffer_size));
 
 	size_t bytes_read = 0;
-	while ((bytes_read = fread(buffer, 1, buffer_size, handle)) > 0) {
-		for (size_t i = 0; i < bytes_read; i++) {
+	while ((bytes_read = fread(buffer, 1, buffer_size, handle)) > 0)
+	{
+		for (size_t i = 0; i < bytes_read; i++)
+		{
 			c = (int)buffer[i];
 
 			if (*s != c && s > endPat) // No match?
 				s = endPat; // We "reset" the counter by sending the s pointer back to the start of the array.
+
 			if (*s == c)
 			{
 				s++;
@@ -541,6 +573,7 @@ static boolean ResFindSignature (FILE* handle, char endPat[], UINT32 startpos)
 				}
 			}
 		}
+
 		chunkpos += bytes_read;
 	}
 
@@ -605,7 +638,7 @@ typedef struct zlentry_s
 
 /** Create a lumpinfo_t array for a PKZip file.
  */
-static lumpinfo_t* ResGetLumpsZip (FILE* handle, UINT16* nlmp)
+static lumpinfo_t* ResGetLumpsZip(FILE* handle, UINT16* nlmp)
 {
     zend_t zend;
     zlentry_t zlentry;
@@ -615,13 +648,14 @@ static lumpinfo_t* ResGetLumpsZip (FILE* handle, UINT16* nlmp)
 	lumpinfo_t *lump_p;
 	size_t i;
 
-	char pat_central[] = {0x50, 0x4b, 0x01, 0x02, 0x00};
-	char pat_end[] = {0x50, 0x4b, 0x05, 0x06, 0x00};
+	static const char pat_central[] = {0x50, 0x4b, 0x01, 0x02, 0x00};
+	static char pat_end[] = {0x50, 0x4b, 0x05, 0x06, 0x00};
 
 	// Look for central directory end signature near end of file.
 	// Contains entry number (number of lumps), and central directory start offset.
 	fseek(handle, 0, SEEK_END);
-	if (!ResFindSignature(handle, pat_end, max(0, ftell(handle) - (22 + 65536))))
+	const long startpos = ftell(handle) - (22 + 65536);
+	if (!ResFindSignature(handle, pat_end, max(0, startpos)))
 	{
 		CONS_Alert(CONS_ERROR, "Missing central directory\n");
 		return NULL;
@@ -741,6 +775,23 @@ static lumpinfo_t* ResGetLumpsZip (FILE* handle, UINT16* nlmp)
 	return lumpinfo;
 }
 
+static UINT16 W_InitFileError (const char *filename, boolean exitworthy)
+{
+	if (exitworthy)
+	{
+#ifdef _DEBUG
+		CONS_Error(va("%s was not found or not valid.\nCheck the log for more details.\n", filename));
+#else
+		I_Error("%s was not found or not valid.\nCheck the log for more details.\n", filename);
+#endif
+	}
+	else
+		CONS_Printf(M_GetText("Errors occurred while loading %s; not added.\n"), filename);
+
+	return INT16_MAX;
+}
+
+
 //  Allocate a wadfile, setup the lumpinfo (directory) and
 //  lumpcache, add the wadfile to the current active wadfiles
 //
@@ -752,7 +803,7 @@ static lumpinfo_t* ResGetLumpsZip (FILE* handle, UINT16* nlmp)
 //
 // Can now load dehacked files (.soc)
 //
-UINT16 W_InitFile(const char *filename, boolean local)
+UINT16 W_InitFile(const char *filename, boolean local, boolean startup)
 {
 	FILE *handle;
 	lumpinfo_t *lumpinfo = NULL;
@@ -768,8 +819,8 @@ UINT16 W_InitFile(const char *filename, boolean local)
 	if (!(refreshdirmenu & REFRESHDIR_ADDFILE))
 		refreshdirmenu = REFRESHDIR_NORMAL|REFRESHDIR_ADDFILE; // clean out cons_alerts that happened earlier
 
-	if (refreshdirname)
-		Z_Free(refreshdirname);
+	Z_Free(refreshdirname);
+
 	if (dirmenu)
 	{
 		refreshdirname = Z_StrDup(filename);
@@ -779,6 +830,7 @@ UINT16 W_InitFile(const char *filename, boolean local)
 		refreshdirname = NULL;
 
 	CONS_Printf("Loading %s\n", filename);
+
 	//
 	// check if limit of active wadfiles
 	//
@@ -786,14 +838,14 @@ UINT16 W_InitFile(const char *filename, boolean local)
 	{
 		CONS_Alert(CONS_ERROR, M_GetText("Maximum wad files reached\n"));
 		refreshdirmenu |= REFRESHDIR_MAX;
-		return INT16_MAX;
+		return W_InitFileError(filename, startup);
 	}
 
 	// open wad file
 	if ((handle = W_OpenWadFile(&filename, true)) == NULL)
-		return INT16_MAX;
+		return W_InitFileError(filename, startup);
 
-	important = !local && !W_VerifyNMUSlumps(filename);
+	important = !local && !W_VerifyNMUSlumps(filename, handle, startup);
 
 #ifndef NOMD5
 	//
@@ -810,33 +862,33 @@ UINT16 W_InitFile(const char *filename, boolean local)
 			CONS_Alert(CONS_ERROR, M_GetText("%s is already loaded\n"), filename);
 			if (handle)
 				fclose(handle);
-			return INT16_MAX;
+			return W_InitFileError(filename, false);
 		}
 	}
 #endif
 
 	switch(type = ResourceFileDetect(filename))
 	{
-	case RET_SOC:
-		lumpinfo = ResGetLumpsStandalone(handle, &numlumps, "OBJCTCFG");
-		break;
-	case RET_LUA:
-		lumpinfo = ResGetLumpsStandalone(handle, &numlumps, "LUA_INIT");
-		break;
-	case RET_PK3:
-		lumpinfo = ResGetLumpsZip(handle, &numlumps);
-		break;
-	case RET_WAD:
-		lumpinfo = ResGetLumpsWad(handle, &numlumps, filename);
-		break;
-	default:
-		CONS_Alert(CONS_ERROR, "Unsupported file format\n");
+		case RET_SOC:
+			lumpinfo = ResGetLumpsStandalone(handle, &numlumps, "OBJCTCFG");
+			break;
+		case RET_LUA:
+			lumpinfo = ResGetLumpsStandalone(handle, &numlumps, "LUA_INIT");
+			break;
+		case RET_PK3:
+			lumpinfo = ResGetLumpsZip(handle, &numlumps);
+			break;
+		case RET_WAD:
+			lumpinfo = ResGetLumpsWad(handle, &numlumps, filename);
+			break;
+		default:
+			CONS_Alert(CONS_ERROR, "Unsupported file format\n");
 	}
 
 	if (lumpinfo == NULL)
 	{
 		fclose(handle);
-		return INT16_MAX;
+		return W_InitFileError(filename, startup);
 	}
 
 	//
@@ -851,8 +903,8 @@ UINT16 W_InitFile(const char *filename, boolean local)
 	fseek(handle, 0, SEEK_END);
 	wadfile->filesize = (unsigned)ftell(handle);
 	wadfile->type = type;
-	wadfile->startfolders = M_AATreeAlloc(0);
-	wadfile->endfolders = M_AATreeAlloc(0);
+	wadfile->startfolders = M_AATreeAlloc(AATREE_STRING);
+	wadfile->endfolders = M_AATreeAlloc(AATREE_STRING);
 
 	// already generated, just copy it over
 	M_Memcpy(&wadfile->md5sum, &md5sum, 16);
@@ -883,21 +935,21 @@ UINT16 W_InitFile(const char *filename, boolean local)
 	// TODO: HACK ALERT - Load Lua & SOC stuff right here. I feel like this should be out of this place, but... Let's stick with this for now.
 	switch (wadfile->type)
 	{
-	case RET_WAD:
-		W_LoadDehackedLumps(numwadfiles - 1);
-		break;
-	case RET_PK3:
-		W_LoadDehackedLumpsPK3(numwadfiles - 1);
-		break;
-	case RET_SOC:
-		CONS_Printf(M_GetText("Loading SOC from %s\n"), wadfile->filename);
-		DEH_LoadDehackedLumpPwad(numwadfiles - 1, 0);
-		break;
-	case RET_LUA:
-		LUA_LoadLump(numwadfiles - 1, 0);
-		break;
-	default:
-		break;
+		case RET_WAD:
+			W_LoadDehackedLumps(numwadfiles - 1);
+			break;
+		case RET_PK3:
+			W_LoadDehackedLumpsPK3(numwadfiles - 1);
+			break;
+		case RET_SOC:
+			CONS_Printf(M_GetText("Loading SOC from %s\n"), wadfile->filename);
+			DEH_LoadDehackedLumpPwad(numwadfiles - 1, 0);
+			break;
+		case RET_LUA:
+			LUA_LoadLump(numwadfiles - 1, 0);
+			break;
+		default:
+			break;
 	}
 
 	if (refreshdirmenu & REFRESHDIR_GAMEDATA)
@@ -924,14 +976,16 @@ INT32 W_InitMultipleFiles(char **filenames, boolean addons)
 	INT32 rc = 1;
 	INT32 overallrc = 1;
 
+	(void)addons;
+
 	// will be realloced as lumps are added
 	for (; *filenames; filenames++)
 	{
-		if (addons && !W_VerifyNMUSlumps(*filenames))
-			G_SetGameModified(true, false);
+		// Previously, W_VerifyNMUSlumps was called to mark game modified
+		// for addons... but W_InitFile already does exactly that!
 
 		//CONS_Debug(DBG_SETUP, "Loading %s\n", *filenames);
-		rc = W_InitFile(*filenames, false);
+		rc = W_InitFile(*filenames, false, true);
 
 		if (rc == INT16_MAX)
 			CONS_Printf(M_GetText("Errors occurred while loading %s; not added.\n"), *filenames);
@@ -1031,11 +1085,14 @@ UINT16 W_CheckNumForNamePwad(const char *name, UINT16 wad, UINT16 startlump)
 	if (startlump < wadfiles[wad]->numlumps)
 	{
 		lumpinfo_t *lump_p = wadfiles[wad]->lumpinfo + startlump;
+
 		for (i = startlump; i < wadfiles[wad]->numlumps; i++, lump_p++)
+		{
 			if (lump_p->namelength == namelen
 				&& lump_p->hash.name == hash
 				&& !memcmp(lump_p->name, uname, sizeof(uname) - 1))
 				return i;
+		}
 	}
 
 	// not found.
@@ -1066,11 +1123,14 @@ UINT16 W_CheckNumForLongNamePwad(const char *name, UINT16 wad, UINT16 startlump)
 	if (startlump < wadfiles[wad]->numlumps)
 	{
 		lumpinfo_t *lump_p = wadfiles[wad]->lumpinfo + startlump;
+
 		for (i = startlump; i < wadfiles[wad]->numlumps; i++, lump_p++)
+		{
 			if (lump_p->longnamelength == namelen
 				&& lump_p->hash.longname == hash
 				&& !stricmp(lump_p->longname, name))
 				return i;
+		}
 	}
 
 	// not found.
@@ -1093,9 +1153,8 @@ UINT16 W_CheckNumForFolderStartPK3(const char *name, UINT16 wad, UINT16 startlum
 	INT32 i;
 	lumpinfo_t *lump_p = wadfiles[wad]->lumpinfo + startlump;
 	name_length = strlen(name);
-	UINT32 hash = quickncasehash(name, name_length);
 
-	void *val = M_AATreeGet(wadfiles[wad]->startfolders, hash);
+	void *val = M_AATreeGetString(wadfiles[wad]->startfolders, name);
 	if (val != NULL)
 		return (uintptr_t)val;
 
@@ -1107,14 +1166,12 @@ UINT16 W_CheckNumForFolderStartPK3(const char *name, UINT16 wad, UINT16 startlum
 			if (strlen(lump_p->fullname) == name_length)
 				i++;
 
-			M_AATreeSet(wadfiles[wad]->startfolders, hash, (void *)(uintptr_t)i);
-
+			M_AATreeSetString(wadfiles[wad]->startfolders, name, (void *)(uintptr_t)i);
 			return i;
 		}
 	}
 
-	M_AATreeSet(wadfiles[wad]->startfolders, hash, (void *)INT16_MAX);
-
+	M_AATreeSetString(wadfiles[wad]->startfolders, name, (void *)INT16_MAX);
 	return INT16_MAX;
 }
 
@@ -1126,9 +1183,8 @@ UINT16 W_CheckNumForFolderEndPK3(const char *name, UINT16 wad, UINT16 startlump)
 	INT32 i;
 	lumpinfo_t *lump_p = wadfiles[wad]->lumpinfo + startlump;
 	size_t name_length = strlen(name);
-	UINT32 hash = quickncasehash(name, name_length);
 
-	void *val = M_AATreeGet(wadfiles[wad]->endfolders, hash);
+	void *val = M_AATreeGetString(wadfiles[wad]->endfolders, name);
 	if (val != NULL)
 		return (uintptr_t)val;
 
@@ -1138,8 +1194,7 @@ UINT16 W_CheckNumForFolderEndPK3(const char *name, UINT16 wad, UINT16 startlump)
 			break;
 	}
 
-	M_AATreeSet(wadfiles[wad]->endfolders, hash, (void *)(uintptr_t)i);
-
+	M_AATreeSetString(wadfiles[wad]->endfolders, name, (void *)(uintptr_t)i);
 	return i;
 }
 
@@ -1161,6 +1216,63 @@ UINT16 W_CheckNumForFullNamePK3(const char *name, UINT16 wad, UINT16 startlump)
 	return INT16_MAX;
 }
 
+static lumpnum_t CheckLumpInCache(const char *name, boolean longname)
+{
+	if (longname)
+	{
+		UINT32 hash = quickncasehash(name, 32);
+
+		// Loop backwards so that we check most recent entries first
+		for (INT32 i = lumpnumcacheindex + LUMPNUMCACHESIZE; i > lumpnumcacheindex; i--)
+		{
+			if (lumpnumcache[i & (LUMPNUMCACHESIZE - 1)].hash == hash
+				&& stricmp(lumpnumcache[i & (LUMPNUMCACHESIZE - 1)].lumpname, name) == 0)
+			{
+				lumpnumcacheindex = i & (LUMPNUMCACHESIZE - 1);
+				return lumpnumcache[lumpnumcacheindex].lumpnum;
+			}
+		}
+	}
+	else
+	{
+		UINT32 hash = quickncasehash(name, 8);
+
+		// Loop backwards so that we check most recent entries first
+		for (INT32 i = lumpnumcacheindex + LUMPNUMCACHESIZE; i > lumpnumcacheindex; i--)
+		{
+			if (lumpnumcache[i & (LUMPNUMCACHESIZE - 1)].hash == hash
+				&& lumpnumcache[i & (LUMPNUMCACHESIZE - 1)].lumpname[8] == '\0'
+				&& strnicmp(lumpnumcache[i & (LUMPNUMCACHESIZE - 1)].lumpname, name, 8) == 0)
+			{
+				lumpnumcacheindex = i & (LUMPNUMCACHESIZE - 1);
+				return lumpnumcache[lumpnumcacheindex].lumpnum;
+			}
+		}
+	}
+
+	return LUMPERROR;
+}
+
+static void AddLumpToCache(lumpnum_t lumpnum, const char *name, boolean longname)
+{
+	if (longname && strlen(name) >= LUMPNUMCACHENAME)
+		return;
+
+	lumpnumcacheindex = (lumpnumcacheindex + 1) & (LUMPNUMCACHESIZE - 1);
+	memset(lumpnumcache[lumpnumcacheindex].lumpname, '\0', LUMPNUMCACHENAME);
+	if (longname)
+	{
+		strlcpy(lumpnumcache[lumpnumcacheindex].lumpname, name, LUMPNUMCACHENAME);
+		lumpnumcache[lumpnumcacheindex].hash = quickncasehash(name, LUMPNUMCACHENAME);
+	}
+	else
+	{
+		strncpy(lumpnumcache[lumpnumcacheindex].lumpname, name, 8);
+		lumpnumcache[lumpnumcacheindex].hash = quickncasehash(name, 8);
+	}
+	lumpnumcache[lumpnumcacheindex].lumpnum = lumpnum;
+}
+
 //
 // W_CheckNumForName
 // Returns LUMPERROR if name not found.
@@ -1173,22 +1285,15 @@ lumpnum_t W_CheckNumForName(const char *name)
 	if (!*name) // some doofus gave us an empty string?
 		return LUMPERROR;
 
-	// Check the lumpnumcache first. Loop backwards so that we check
-	// most recent entries first
-	for (i = lumpnumcacheindex + LUMPNUMCACHESIZE; i > lumpnumcacheindex; i--)
-	{
-		if (!lumpnumcache[i & (LUMPNUMCACHESIZE - 1)].lumpname[8]
-			&& strncmp(lumpnumcache[i & (LUMPNUMCACHESIZE - 1)].lumpname, name, 8) == 0)
-		{
-			lumpnumcacheindex = i & (LUMPNUMCACHESIZE - 1);
-			return lumpnumcache[lumpnumcacheindex].lumpnum;
-		}
-	}
+	// Check the lumpnumcache first.
+	lumpnum_t cachenum = CheckLumpInCache(name, false);
+	if (cachenum != LUMPERROR)
+		return cachenum;
 
 	// scan wad files backwards so patch lump files take precedence
 	for (i = numwadfiles - 1; i >= 0; i--)
 	{
-		check = W_CheckNumForNamePwad(name,(UINT16)i,0);
+		check = W_CheckNumForNamePwad(name, (UINT16)i, 0);
 		if (check != INT16_MAX)
 			break; //found it
 	}
@@ -1200,12 +1305,11 @@ lumpnum_t W_CheckNumForName(const char *name)
 	else
 	{
 		// Update the cache.
-		lumpnumcacheindex = (lumpnumcacheindex + 1) & (LUMPNUMCACHESIZE - 1);
-		memset(lumpnumcache[lumpnumcacheindex].lumpname, '\0', LUMPNUMCACHENAME);
-		strncpy(lumpnumcache[lumpnumcacheindex].lumpname, name, 8);
-		lumpnumcache[lumpnumcacheindex].lumpnum = (i<<16)+check;
+		lumpnum_t lumpnum = (i << 16) + check;
 
-		return lumpnumcache[lumpnumcacheindex].lumpnum;
+		AddLumpToCache(lumpnum, name, false);
+
+		return lumpnum;
 	}
 }
 
@@ -1223,23 +1327,17 @@ lumpnum_t W_CheckNumForLongName(const char *name)
 	if (!*name) // some doofus gave us an empty string?
 		return LUMPERROR;
 
-	// Check the lumpnumcache first. Loop backwards so that we check
-	// most recent entries first
-	for (i = lumpnumcacheindex + LUMPNUMCACHESIZE; i > lumpnumcacheindex; i--)
-	{
-		if (strcmp(lumpnumcache[i & (LUMPNUMCACHESIZE - 1)].lumpname, name) == 0)
-		{
-			lumpnumcacheindex = i & (LUMPNUMCACHESIZE - 1);
-			return lumpnumcache[lumpnumcacheindex].lumpnum;
-		}
-	}
+	// Check the lumpnumcache first.
+	lumpnum_t cachenum = CheckLumpInCache(name, true);
+	if (cachenum != LUMPERROR)
+		return cachenum;
 
 	if (check == INT16_MAX)
 	{
 		// scan wad files backwards so patch lump files take precedence
 		for (i = numwadfiles - 1; i >= 0; i--)
 		{
-			check = W_CheckNumForLongNamePwad(name,(UINT16)i,0);
+			check = W_CheckNumForLongNamePwad(name, (UINT16)i, 0);
 			if (check != INT16_MAX)
 				break; //found it
 		}
@@ -1251,16 +1349,12 @@ lumpnum_t W_CheckNumForLongName(const char *name)
 	}
 	else
 	{
-		if (strlen(name) < LUMPNUMCACHENAME)
-		{
-			// Update the cache.
-			lumpnumcacheindex = (lumpnumcacheindex + 1) & (LUMPNUMCACHESIZE - 1);
-			memset(lumpnumcache[lumpnumcacheindex].lumpname, '\0', LUMPNUMCACHENAME);
-			strlcpy(lumpnumcache[lumpnumcacheindex].lumpname, name, LUMPNUMCACHENAME);
-			lumpnumcache[lumpnumcacheindex].lumpnum = (i << 16) + check;
-		}
+		// Update the cache.
+		lumpnum_t lumpnum = (i << 16) + check;
 
-		return (i << 16) + check;
+		AddLumpToCache(lumpnum, name, true);
+
+		return lumpnum;
 	}
 }
 
@@ -1391,9 +1485,11 @@ boolean W_IsLumpWad(lumpnum_t lumpnum)
 	{
 		const char *lumpfullName = (wadfiles[WADFILENUM(lumpnum)]->lumpinfo + LUMPNUM(lumpnum))->fullname;
 
-		if (strlen(lumpfullName) < 4)
+		size_t len = strlen(lumpfullName);
+
+		if (len < 4)
 			return false; // can't possibly be a WAD can it?
-		return !strnicmp(lumpfullName + strlen(lumpfullName) - 4, ".wad", 4);
+		return !strnicmp(lumpfullName + len - 4, ".wad", 4);
 	}
 
 	return false; // WADs should never be inside non-PK3s as far as SRB2 is concerned
@@ -1419,26 +1515,27 @@ boolean W_IsLumpFolder(UINT16 wad, UINT16 lump)
 /* report a zlib or i/o error */
 void zerr(int ret)
 {
-	    CONS_Printf("zpipe: ");
-    switch (ret) {
-    case Z_ERRNO:
-        if (ferror(stdin))
-            CONS_Printf("error reading stdin\n");
-        if (ferror(stdout))
-            CONS_Printf("error writing stdout\n");
-        break;
-    case Z_STREAM_ERROR:
-        CONS_Printf("invalid compression level\n");
-        break;
-    case Z_DATA_ERROR:
-        CONS_Printf("invalid or incomplete deflate data\n");
-        break;
-    case Z_MEM_ERROR:
-        CONS_Printf("out of memory\n");
-        break;
-    case Z_VERSION_ERROR:
-        CONS_Printf("zlib version mismatch!\n");
-    }
+	CONS_Printf("zpipe: ");
+	switch (ret)
+	{
+		case Z_ERRNO:
+			if (ferror(stdin))
+				CONS_Printf("error reading stdin\n");
+			if (ferror(stdout))
+				CONS_Printf("error writing stdout\n");
+			break;
+		case Z_STREAM_ERROR:
+			CONS_Printf("invalid compression level\n");
+			break;
+		case Z_DATA_ERROR:
+			CONS_Printf("invalid or incomplete deflate data\n");
+			break;
+		case Z_MEM_ERROR:
+			CONS_Printf("out of memory\n");
+			break;
+		case Z_VERSION_ERROR:
+			CONS_Printf("zlib version mismatch!\n");
+	}
 }
 #endif
 
@@ -1447,15 +1544,15 @@ void zerr(int ret)
 #ifdef NO_PNG_LUMPS
 static void ErrorIfPNG(UINT8 *d, size_t s, char *f, char *l)
 {
-    if (s < 67) // http://garethrees.org/2007/11/14/pngcrush/
-        return;
-    // Check for PNG file signature using memcmp
-    // As it may be faster on CPUs with slow unaligned memory access
-    // Ref: http://www.libpng.org/pub/png/spec/1.2/PNG-Rationale.html#R.PNG-file-signature
-    if (memcmp(&d[0], "\x89\x50\x4e\x47\x0d\x0a\x1a\x0a", 8) == 0)
-    {
-        I_Error("W_Wad: Lump \"%s\" in file \"%s\" is a .PNG - please convert to either Doom or Flat (raw) image format.", l, f);
-    }
+	if (s < 67) // http://garethrees.org/2007/11/14/pngcrush/
+		return;
+	// Check for PNG file signature using memcmp
+	// As it may be faster on CPUs with slow unaligned memory access
+	// Ref: http://www.libpng.org/pub/png/spec/1.2/PNG-Rationale.html#R.PNG-file-signature
+	if (memcmp(&d[0], "\x89\x50\x4e\x47\x0d\x0a\x1a\x0a", 8) == 0)
+	{
+		I_Error("W_Wad: Lump \"%s\" in file \"%s\" is a .PNG - please convert to either Doom or Flat (raw) image format.", l, f);
+	}
 }
 #endif
 
@@ -1501,7 +1598,7 @@ size_t W_ReadLumpHeaderPwad(UINT16 wad, UINT16 lump, void *dest, size_t size, si
 #ifdef NO_PNG_LUMPS
 		{
 			size_t bytesread = fread(dest, 1, size, handle);
-			ErrorIfPNG(dest, bytesread, wadfiles[wad]->filename, l->fullname);
+			ErrorIfPNG((UINT8 *)dest, bytesread, wadfiles[wad]->filename, l->fullname);
 			return bytesread;
 		}
 #else
@@ -1542,7 +1639,7 @@ size_t W_ReadLumpHeaderPwad(UINT16 wad, UINT16 lump, void *dest, size_t size, si
 			Z_Free(rawData);
 			Z_Free(decData);
 #ifdef NO_PNG_LUMPS
-			ErrorIfPNG(dest, size, wadfiles[wad]->filename, l->fullname);
+			ErrorIfPNG((UINT8 *)dest, size, wadfiles[wad]->filename, l->fullname);
 #endif
 			return size;
 #else
@@ -1560,10 +1657,10 @@ size_t W_ReadLumpHeaderPwad(UINT16 wad, UINT16 lump, void *dest, size_t size, si
 			int zErr; // Helper var.
 			z_stream strm;
 			unsigned long rawSize = l->disksize;
-			unsigned long decSize = l->size;
+			unsigned long decSize = size;
 
 			rawData = Z_Malloc(rawSize, PU_STATIC, NULL);
-			decData = Z_Malloc(decSize, PU_STATIC, NULL);
+			decData = dest;
 
 			if (fread(rawData, 1, rawSize, handle) < rawSize)
 				I_Error("wad %d, lump %d: cannot read compressed data", wad, lump);
@@ -1581,12 +1678,8 @@ size_t W_ReadLumpHeaderPwad(UINT16 wad, UINT16 lump, void *dest, size_t size, si
 			zErr = inflateInit2(&strm, -15);
 			if (zErr == Z_OK)
 			{
-				zErr = inflate(&strm, Z_FINISH);
-				if (zErr == Z_STREAM_END)
-				{
-					M_Memcpy(dest, decData, size);
-				}
-				else
+				zErr = inflate(&strm, Z_SYNC_FLUSH);
+				if (zErr != Z_OK && zErr != Z_STREAM_END)
 				{
 					size = 0;
 					zerr(zErr);
@@ -1601,10 +1694,9 @@ size_t W_ReadLumpHeaderPwad(UINT16 wad, UINT16 lump, void *dest, size_t size, si
 			}
 
 			Z_Free(rawData);
-			Z_Free(decData);
 
 #ifdef NO_PNG_LUMPS
-			ErrorIfPNG(dest, size, wadfiles[wad]->filename, l->fullname);
+			ErrorIfPNG((UINT8 *)dest, size, wadfiles[wad]->filename, l->fullname);
 #endif
 			return size;
 		}
@@ -1793,7 +1885,7 @@ void *W_CacheSoftwarePatchNumPwad(UINT16 wad, UINT16 lump, INT32 tag)
 		ptr = lumpdata;
 
 		dest = Z_Calloc(sizeof(patch_t), tag, &lumpcache[lump]);
-		Patch_Create(ptr, len, dest);
+		Patch_Create((softwarepatch_t*)(ptr), len, dest);
 
 		Z_Free(ptr);
 	}
@@ -1905,7 +1997,7 @@ void *W_CachePatchNameRotated(const char *name, INT32 rotationangle, INT32 tag)
 	{
 		INT32 xpivot = 0, ypivot = 0;
 
-		ptr = W_CachePatchNum(num, PU_PATCH);
+		ptr = (patch_t *)W_CachePatchNum(num, PU_PATCH);
 
 		// >y pivot centered
 		// >x pivot not centered
@@ -2096,7 +2188,8 @@ static int W_VerifyPK3(FILE *fp, lumpchecklist_t *checklist, boolean status)
 	fseek(fp, 0, SEEK_END);
 	file_size = ftell(fp);
 
-	if (!ResFindSignature(fp, pat_end, max(0, ftell(fp) - (22 + 65536))))
+	const long size = file_size - (22 + 65536);
+	if (!ResFindSignature(fp, pat_end, max(0, size)))
 		return true;
 
 	fseek(fp, -4, SEEK_CUR);
@@ -2203,38 +2296,6 @@ static int W_VerifyPK3(FILE *fp, lumpchecklist_t *checklist, boolean status)
 	}
 }
 
-// Note: This never opens lumps themselves and therefore doesn't have to
-// deal with compressed lumps.
-static int W_VerifyFile(const char *filename, lumpchecklist_t *checklist,
-	boolean status)
-{
-	FILE *handle;
-	int goodfile = false;
-
-	if (!checklist)
-		I_Error("No checklist for %s\n", filename);
-	// open wad file
-	if ((handle = W_OpenWadFile(&filename, false)) == NULL)
-		return -1;
-
-	if (stricmp(&filename[strlen(filename) - 4], ".pk3") == 0)
-		goodfile = W_VerifyPK3(handle, checklist, status);
-	else
-	{
-		// detect wad file by the absence of the other supported extensions
-		if (stricmp(&filename[strlen(filename) - 4], ".soc")
-		&& stricmp(&filename[strlen(filename) - 4], ".lua"))
-		{
-			goodfile = W_VerifyWAD(handle, checklist, status);
-		}
-	}
-
-	fclose(handle);
-
-	return goodfile;
-}
-
-
 /** Checks a wad for lumps other than music and sound.
   * Used during game load to verify music.dta is a good file and during a
   * netgame join (on the server side) to see if a wad is important enough to
@@ -2246,7 +2307,7 @@ static int W_VerifyFile(const char *filename, lumpchecklist_t *checklist,
   *         file exists with that filename
   * \author Alam Arias
   */
-int W_VerifyNMUSlumps(const char *filename)
+int W_VerifyNMUSlumps(const char *filename, FILE *handle, boolean exit_on_error)
 {
 	lumpchecklist_t NMUSlist[] =
 	{
@@ -2283,7 +2344,31 @@ int W_VerifyNMUSlumps(const char *filename)
 #endif
 		{NULL, 0},
 	};
-	return W_VerifyFile(filename, NMUSlist, false);
+
+	int status = 0;
+	size_t len = strlen(filename) - 4;
+
+	if (stricmp(&filename[len], ".pk3") == 0)
+	{
+		status = W_VerifyPK3(handle, NMUSlist, false);
+	}
+	else
+	{
+		// detect wad file by the absence of the other supported extensions
+		if (stricmp(&filename[len], ".soc")
+			&& stricmp(&filename[len], ".lua"))
+		{
+			status = W_VerifyWAD(handle, NMUSlist, false);
+
+			// repair file handle in this specific case
+			fseek(handle, 0, SEEK_SET);
+		}
+	}
+
+	if (status == -1)
+		W_InitFileError(filename, exit_on_error);
+
+	return status;
 }
 
 static int W_NameStartsWith(const char *name, lumpchecklist_t *checklist)
@@ -2369,7 +2454,8 @@ static int W_CheckPK3Contains(FILE *fp, lumpchecklist_t *checklist)
 	fseek(fp, 0, SEEK_END);
 	file_size = ftell(fp);
 
-	if (!ResFindSignature(fp, pat_end, max(0, ftell(fp) - (22 + 65536))))
+	const long startpos = file_size - (22 + 65536);
+	if (!ResFindSignature(fp, pat_end, max(0, startpos)))
 		return true;
 
 	fseek(fp, -4, SEEK_CUR);
@@ -2491,13 +2577,15 @@ static int W_CheckFileContains(const char *filename, lumpchecklist_t *checklist)
 	if ((handle = W_OpenWadFile(&filename, false)) == NULL)
 		return -1;
 
-	if (stricmp(&filename[strlen(filename) - 4], ".pk3") == 0)
+	size_t len = strlen(filename) - 4;
+
+	if (stricmp(&filename[len], ".pk3") == 0)
 		contains = W_CheckPK3Contains(handle, checklist);
 	else
 	{
 		// detect wad file by the absence of the other supported extensions
-		if (stricmp(&filename[strlen(filename) - 4], ".soc")
-		&& stricmp(&filename[strlen(filename) - 4], ".lua"))
+		if (stricmp(&filename[len], ".soc")
+		&& stricmp(&filename[len], ".lua"))
 		{
 			contains = W_CheckWADContains(handle, checklist);
 		}
@@ -2576,6 +2664,7 @@ virtres_t* vres_GetMap(lumpnum_t lumpnum)
 			vlumps[i].size = vsizecache[realentry];
 
 			const char *name = (fileinfo + realentry)->name;
+
 			if (strlen(name) == 5 && memcmp(name, "MAP", 3) == 0)
 			{
 				numlumps--; // We skip map marker, so 1 of entries becomes empty
@@ -2613,6 +2702,7 @@ virtres_t* vres_GetMap(lumpnum_t lumpnum)
 		{
 			// Check if it is map marker. It is not always first lump sadly, so we need to expect it anywhere
 			const char *name = W_CheckNameForNum(lumpnum);
+
 			if (strlen(name) == 5 && memcmp(name, "MAP", 3) == 0)
 			{
 				--i; // Decrement so on next iteration we write on same i, so we don't leave corrupted vlumps entry
@@ -2679,7 +2769,10 @@ virtlump_t* vres_Find(const virtres_t* vres, const char* name)
 {
 	UINT32 i;
 	for (i = 0; i < vres->numlumps; i++)
+	{
 		if (fastcmp(name, vres->vlumps[i].name))
 			return &vres->vlumps[i];
+	}
+
 	return NULL;
 }

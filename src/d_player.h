@@ -568,6 +568,8 @@ typedef struct player_s
 	squishdance_t squishdance;
 
 	fixed_t fovadd; // adjust FOV for hw rendering
+
+	SINT8 driftlevel; // just for controller rumble for now
 } player_t;
 
 #endif

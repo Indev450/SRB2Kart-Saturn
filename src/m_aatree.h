@@ -18,6 +18,7 @@
 
 // Flags for AA trees.
 #define AATREE_ZUSER	1		// Treat values as z_zone-allocated blocks and set their user fields
+#define AATREE_STRING	2		// Use strings for keys rather than ints
 
 typedef struct aatree_s aatree_t;
 typedef void (*aatree_iter_t)(INT32 key, void *value);
@@ -25,7 +26,9 @@ typedef void (*aatree_iter_t)(INT32 key, void *value);
 aatree_t *M_AATreeAlloc(UINT32 flags);
 void M_AATreeFree(aatree_t *aatree);
 void M_AATreeSet(aatree_t *aatree, INT32 key, void* value);
+void M_AATreeSetString(aatree_t *aatree, const char *key, void *value);
 void *M_AATreeGet(aatree_t *aatree, INT32 key);
+void *M_AATreeGetString(aatree_t *aatree, const char *key);
 void M_AATreeIterate(aatree_t *aatree, aatree_iter_t callback);
 
 #endif

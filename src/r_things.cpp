@@ -1148,6 +1148,7 @@ fixed_t R_GetShadowZ(mobj_t *thing, pslope_t **shadowslope)
 		*shadowslope = groundslope;
 
 	return groundz;
+
 #undef CHECKZ
 }
 
@@ -1241,14 +1242,7 @@ static void R_ProjectSprite(mobj_t *thing)
 	interpmobjstate_t interp = {};
 
 	// do interpolation
-	if (R_UsingFrameInterpolation() && !paused && R_CheckInterpDist(oldthing))
-	{
-		R_InterpolateMobjState(oldthing, rendertimefrac, &interp);
-	}
-	else
-	{
-		R_InterpolateMobjState(oldthing, FRACUNIT, &interp);
-	}
+	R_InterpolateMobjState(oldthing, R_GetMobjTimeFrac(oldthing), &interp);
 
 	this_scale = interp.scale;
 
@@ -1268,7 +1262,7 @@ static void R_ProjectSprite(mobj_t *thing)
 	tx = FixedMul(tr_x, viewsin) - FixedMul(tr_y, viewcos); // sideways distance
 
 	// too far off the side?
-	if (!papersprite && abs(tx) > (INT64)FixedMul(tz, fovtan)<<2) // papersprite clipping is handled later
+	if (!papersprite && abs(tx) > (INT64)FixedMul(tz, fovtan) << 2) // papersprite clipping is handled later
 		return;
 
 	// aspect ratio stuff
@@ -1832,7 +1826,7 @@ static void R_ProjectSprite(mobj_t *thing)
 #endif
 		vis->patch = static_cast<patch_t*>(W_CachePatchNum(sprframe->lumppat[rot], PU_SPRITE));
 
-	vis->precip = false;
+	vis->precip = NULL;
 
 	vis->vflip = vflip;
 
@@ -1879,14 +1873,7 @@ static void R_ProjectPrecipitationSprite(precipmobj_t *thing)
 	interpmobjstate_t interp = {};
 
 	// do interpolation
-	if (R_UsingFrameInterpolation() && !paused && R_CheckInterpDist((mobj_t*)thing))
-	{
-		R_InterpolatePrecipMobjState(thing, rendertimefrac, &interp);
-	}
-	else
-	{
-		R_InterpolatePrecipMobjState(thing, FRACUNIT, &interp);
-	}
+	R_InterpolatePrecipMobjState(thing, R_GetPrecipMobjTimeFrac(thing), &interp);
 
 	this_scale = interp.scale;
 
@@ -2015,7 +2002,7 @@ static void R_ProjectPrecipitationSprite(precipmobj_t *thing)
 	vis->patch = static_cast<patch_t*>(W_CachePatchNum(sprframe->lumppat[0], PU_SPRITE));
 
 	// specific translucency
-	if ((thing->blendmode != AST_COPY) && cv_translucency.value)
+	if (thing->frame & FF_TRANSMASK)
 		vis->transmap = R_GetTranslucencyTable((thing->frame & FF_TRANSMASK) >> FF_TRANSSHIFT);
 	else
 		vis->transmap = NULL;
@@ -2027,7 +2014,7 @@ static void R_ProjectPrecipitationSprite(precipmobj_t *thing)
 
 	// Fullbright
 	vis->colormap = colormaps;
-	vis->precip = true;
+	vis->precip = thing;
 	vis->vflip = false;
 	vis->isScaled = false;
 }
@@ -2967,14 +2954,28 @@ fixed_t R_DoPlayerFade(mobj_t *thing)
 	return fadealpha;
 }
 
-boolean R_CheckInterpDist(mobj_t *thing)
+template<typename T>
+static boolean R_CheckInterpDist(T *thing)
 {
 	if (!cv_maxinterpdist.value)
 		return true;
 
+	if (!R_UsingFrameInterpolation())
+		return false;
+
 	const INT32 dist = R_QuickCamDist(thing->x, thing->y);
 
 	return (dist < cv_maxinterpdist.value);
+}
+
+boolean R_CheckPrecipMobjInterpDist(precipmobj_t *thing)
+{
+	return R_CheckInterpDist(thing);
+}
+
+boolean R_CheckMobjInterpDist(mobj_t *thing)
+{
+	return R_CheckInterpDist(thing);
 }
 
 boolean R_ThingIsFullBright(mobj_t *thing)

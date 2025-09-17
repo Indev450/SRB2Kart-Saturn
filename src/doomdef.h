@@ -115,8 +115,8 @@ extern char  logfilename[1024];
 #else
 #define VERSION    1 // Game version
 #define SUBVERSION 6 // more precise version number
-#define VERSIONSTRING "Saturn v8.3"
-#define VERSIONSTRINGW L"Saturn v8.3"
+#define VERSIONSTRING "Saturn - Testing"
+#define VERSIONSTRINGW L"Saturn - Testing"
 // Hey! If you change this, add 1 to the MODVERSION below! Otherwise we can't force updates!
 // And change CMakeLists.txt (not src/, but in root), for CMake users!
 // AND appveyor.yml, for the build bots!
@@ -625,13 +625,6 @@ extern const char *compdate, *comptime, *comprevision, *compbranch;
 ///	\note	XMOD port.
 ///	    	Most modifications should probably enable this.
 //#define SAVEGAME_OTHERVERSIONS
-
-///	Allow the use of the SOC RESETINFO command.
-///	\note	Builds that are tight on memory should disable this.
-///	    	This stops the game from storing backups of the states, sprites, and mobjinfo tables.
-///	    	Though this info is compressed under normal circumstances, it's still a lot of extra
-///	    	memory that never gets touched.
-#define ALLOW_RESETDATA
 
 #ifndef NONET
 ///	Display a connection screen on join attempts.

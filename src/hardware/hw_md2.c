@@ -1176,6 +1176,8 @@ void HWR_DrawMD2(gl_vissprite_t *spr)
 
 	// Look at HWR_ProjectSprite for more
 	{
+		md2_t *md2s;
+		int skinnum;
 		patch_t *gpatch, *blendgpatch;
 		GLPatch_t *hwrPatch = NULL, *hwrBlendPatch = NULL;
 		INT32 durs = spr->mobj->state->tics;
@@ -1188,16 +1190,7 @@ void HWR_DrawMD2(gl_vissprite_t *spr)
 		spriteinfo_t *sprinfo;
 		interpmobjstate_t interp;
 
-		if (R_UsingFrameInterpolation() && !paused && R_CheckInterpDist(spr->mobj))
-		{
-			R_InterpolateMobjState(spr->mobj, rendertimefrac, &interp);
-		}
-		else
-		{
-			R_InterpolateMobjState(spr->mobj, FRACUNIT, &interp);
-		}
-		md2_t *md2s;
-		int skinnum;
+		R_InterpolateMobjState(spr->mobj, R_GetMobjTimeFrac(spr->mobj), &interp);
 
 		// Apparently people don't like jump frames like that, so back it goes
 		//if (tics > durs)
@@ -1375,7 +1368,7 @@ void HWR_DrawMD2(gl_vissprite_t *spr)
 
 #ifdef USE_MODEL_NEXTFRAME
 		// Interpolate the model interpolation. (lol)
-		tics -= FixedToFloat(rendertimefrac);
+		tics -= FixedToFloat(R_GetTimeFrac(RTF_LEVEL));
 
 		if (cv_glmdls.value == 1 && tics <= durs)
 		{

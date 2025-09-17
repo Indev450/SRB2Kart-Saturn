@@ -630,7 +630,6 @@ const char *G_BuildMapName(INT32 map)
 		map = G_RandMap(G_TOLFlag(cv_newgametype.value), map, false, 0, false, NULL)+1;
 	}
 
-
 	if (map < 100 && map >= 0) // ...but why use signed integer in first place? idk but this prevents warning (and potential buffer overflow lol)
 		sprintf(&mapname[3], "%.2d", map);
 	else
@@ -808,6 +807,60 @@ static fixed_t forwardmove[2] = {25<<FRACBITS>>16, 50<<FRACBITS>>16};
 static fixed_t sidemove[2] = {2<<FRACBITS>>16, 4<<FRACBITS>>16};
 static fixed_t angleturn[3] = {KART_FULLTURN/2, KART_FULLTURN, KART_FULLTURN/4}; // + slow turn
 
+static void G_HandleLocalDriftturn(ticcmd_t *cmd, UINT8 ssplayer)
+{
+	INT32 axis = 0;
+	boolean turnleft, turnright;
+
+	const UINT8 forplayer = (ssplayer-1);
+
+	const boolean analogjoystickmove = cv_usejoystick[forplayer].value && !Joystick[forplayer].bGamepadStyle;
+	const boolean gamepadjoystickmove = cv_usejoystick[forplayer].value && Joystick[forplayer].bGamepadStyle;
+
+	turnright = InputDown(gc_turnright, ssplayer);
+	turnleft = InputDown(gc_turnleft, ssplayer);
+
+	axis = JoyAxis(AXISTURN, ssplayer);
+
+	if (encoremode)
+	{
+		turnright ^= turnleft; // swap these using three XORs
+		turnleft ^= turnright;
+		turnright ^= turnleft;
+		axis = -axis;
+	}
+
+	if (gamepadjoystickmove && axis != 0)
+	{
+		turnright = turnright || (axis > 0);
+		turnleft = turnleft || (axis < 0);
+	}
+
+	cmd->driftturn = 0;
+
+	// let movement keys cancel each other out
+	if (turnright && !(turnleft))
+	{
+		cmd->driftturn = (INT16)(cmd->driftturn - (angleturn[1]));
+	}
+	else if (turnleft && !(turnright))
+	{
+		cmd->driftturn = (INT16)(cmd->driftturn + (angleturn[1]));
+	}
+
+	if (analogjoystickmove && axis != 0)
+	{
+		// JOYAXISRANGE should be 1023 (divide by 1024)
+		cmd->driftturn = (INT16)(cmd->driftturn - (((axis * angleturn[1]) >> 10)));
+	}
+
+	if (cv_mouseturn.value)
+	{
+		//THIS WORKS WTF????????
+		cmd->driftturn = (INT16)(cmd->driftturn - ((mousex*(encoremode ? -1 : 1)*8)));
+	}
+}
+
 //
 // G_BuildLocalTiccmd
 // extremely basic cut down ticcmd builder
@@ -840,6 +893,16 @@ static void G_BuildLocalTiccmd(ticcmd_t *cmd, UINT8 ssplayer, boolean freecam)
 
 	CHECKINPUT(gc_accelerate, AXISMOVE, BT_ACCELERATE);
 	CHECKINPUT(gc_brake, AXISBRAKE, BT_BRAKE);
+
+	// for lua menus during spec
+	axis = JoyAxis(AXISAIM, ssplayer);
+	if (InputDown(gc_aimforward, ssplayer) || (usejoystick && axis < 0))
+		cmd->buttons |= BT_FORWARD;
+	if (InputDown(gc_aimbackward, ssplayer) || (usejoystick && axis > 0))
+		cmd->buttons |= BT_BACKWARD;
+
+	G_HandleLocalDriftturn(cmd, ssplayer);
+	//
 
 #undef CHECKINPUT
 
@@ -898,22 +961,7 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 	th = turnheld[forplayer];
 	rd = resetdown[forplayer];
 
-	switch (ssplayer)
-	{
-		case 2:
-			G_CopyTiccmd(cmd, I_BaseTiccmd2(), 1);
-			break;
-		case 3:
-			G_CopyTiccmd(cmd, I_BaseTiccmd3(), 1);
-			break;
-		case 4:
-			G_CopyTiccmd(cmd, I_BaseTiccmd4(), 1);
-			break;
-		case 1:
-		default:
-			G_CopyTiccmd(cmd, I_BaseTiccmd(), 1); // empty, or external driver
-			break;
-	}
+	memset(cmd, 0, sizeof(ticcmd_t));
 
 	// why build a ticcmd if we're paused?
 	// Or, for that matter, if we're being reborn.
@@ -1164,6 +1212,27 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 	}
 }
 
+ticcmd_t *G_CopyTiccmd(ticcmd_t* dest, const ticcmd_t* src, const size_t n)
+{
+	return M_Memcpy(dest, src, n*sizeof(*src));
+}
+
+ticcmd_t *G_MoveTiccmd(ticcmd_t* dest, const ticcmd_t* src, const size_t n)
+{
+	size_t i;
+	for (i = 0; i < n; i++)
+	{
+		dest[i].forwardmove = src[i].forwardmove;
+		dest[i].sidemove = src[i].sidemove;
+		dest[i].angleturn = SHORT(src[i].angleturn);
+		dest[i].aiming = (INT16)SHORT(src[i].aiming);
+		dest[i].buttons = (UINT16)SHORT(src[i].buttons);
+		dest[i].driftturn = (INT16)SHORT(src[i].driftturn);
+		dest[i].latency = (INT16)SHORT(src[i].latency);
+	}
+	return dest;
+}
+
 //
 // G_DoLoadLevel
 //
@@ -1197,7 +1266,7 @@ static void G_DoLoadLevel(boolean resetplayer)
 	}
 
 	// Setup the level.
-	if (!P_SetupLevel(false,false))
+	if (!P_SetupLevel(false, false))
 	{
 		// fail so reset game stuff
 		Command_ExitGame_f();
@@ -2357,23 +2426,23 @@ void G_SpawnPlayer(INT32 playernum, boolean starpost)
 	{
 		if (nummapthings)
 		{
-			if (playernum == consoleplayer
-				|| (splitscreen && playernum == displayplayers[1])
-				|| (splitscreen > 1 && playernum == displayplayers[2])
-				|| (splitscreen > 2 && playernum == displayplayers[3]))
-				CONS_Alert(CONS_ERROR, M_GetText("No player spawns found, spawning at the first mapthing!\n"));
+			if (P_IsLocalPlayerNum(playernum))
+			{
+				CONS_Alert(CONS_ERROR, "No player spawns found, spawning at the first mapthing!\n");
+			}
+
 			spawnpoint = &mapthings[0];
 		}
 		else
 		{
-			if (playernum == consoleplayer
-			|| (splitscreen && playernum == displayplayers[1])
-			|| (splitscreen > 1 && playernum == displayplayers[2])
-			|| (splitscreen > 2 && playernum == displayplayers[3]))
-				CONS_Alert(CONS_ERROR, M_GetText("No player spawns found, spawning at the origin!\n"));
-			//P_MovePlayerToSpawn handles this fine if the spawnpoint is NULL.
+			if (P_IsLocalPlayerNum(playernum))
+			{
+				CONS_Alert(CONS_ERROR, "No player spawns found, spawning at the origin!\n");
+				//P_MovePlayerToSpawn handles this fine if the spawnpoint is NULL.
+			}
 		}
 	}
+
 	P_MovePlayerToSpawn(playernum, spawnpoint);
 
 	LUA_HookPlayer(&players[playernum], HOOK(PlayerSpawn)); // Lua hook for player spawning :)
@@ -2385,11 +2454,11 @@ mapthing_t *G_FindCTFStart(INT32 playernum)
 
 	if (!numredctfstarts && !numbluectfstarts) //why even bother, eh?
 	{
-		if (playernum == consoleplayer
-			|| (splitscreen && playernum == displayplayers[1])
-			|| (splitscreen > 1 && playernum == displayplayers[2])
-			|| (splitscreen > 2 && playernum == displayplayers[3]))
-			CONS_Alert(CONS_WARNING, M_GetText("No CTF starts in this map!\n"));
+		if (P_IsLocalPlayerNum(playernum))
+		{
+			CONS_Alert(CONS_WARNING, "No CTF starts in this map!\n");
+		}
+
 		return NULL;
 	}
 
@@ -2397,11 +2466,11 @@ mapthing_t *G_FindCTFStart(INT32 playernum)
 	{
 		if (!numredctfstarts)
 		{
-			if (playernum == consoleplayer
-				|| (splitscreen && playernum == displayplayers[1])
-				|| (splitscreen > 1 && playernum == displayplayers[2])
-				|| (splitscreen > 2 && playernum == displayplayers[3]))
-				CONS_Alert(CONS_WARNING, M_GetText("No Red Team starts in this map!\n"));
+			if (P_IsLocalPlayerNum(playernum))
+			{
+				CONS_Alert(CONS_WARNING, "No Red Team starts in this map!\n");
+			}
+
 			return NULL;
 		}
 
@@ -2412,22 +2481,22 @@ mapthing_t *G_FindCTFStart(INT32 playernum)
 				return redctfstarts[i];
 		}
 
-		if (playernum == consoleplayer
-			|| (splitscreen && playernum == displayplayers[1])
-			|| (splitscreen > 1 && playernum == displayplayers[2])
-			|| (splitscreen > 2 && playernum == displayplayers[3]))
-			CONS_Alert(CONS_WARNING, M_GetText("Could not spawn at any Red Team starts!\n"));
+		if (P_IsLocalPlayerNum(playernum))
+		{
+			CONS_Alert(CONS_WARNING, "Could not spawn at any Red Team starts!\n");
+		}
+
 		return NULL;
 	}
 	else if (!players[playernum].ctfteam || players[playernum].ctfteam == 2) //blue
 	{
 		if (!numbluectfstarts)
 		{
-			if (playernum == consoleplayer
-				|| (splitscreen && playernum == displayplayers[1])
-				|| (splitscreen > 1 && playernum == displayplayers[2])
-				|| (splitscreen > 2 && playernum == displayplayers[3]))
-				CONS_Alert(CONS_WARNING, M_GetText("No Blue Team starts in this map!\n"));
+			if (P_IsLocalPlayerNum(playernum))
+			{
+				CONS_Alert(CONS_WARNING, "No Blue Team starts in this map!\n");
+			}
+
 			return NULL;
 		}
 
@@ -2437,11 +2506,12 @@ mapthing_t *G_FindCTFStart(INT32 playernum)
 			if (G_CheckSpot(playernum, bluectfstarts[i]))
 				return bluectfstarts[i];
 		}
-		if (playernum == consoleplayer
-			|| (splitscreen && playernum == displayplayers[1])
-			|| (splitscreen > 1 && playernum == displayplayers[2])
-			|| (splitscreen > 2 && playernum == displayplayers[3]))
-			CONS_Alert(CONS_WARNING, M_GetText("Could not spawn at any Blue Team starts!\n"));
+
+		if (P_IsLocalPlayerNum(playernum))
+		{
+			CONS_Alert(CONS_WARNING, "Could not spawn at any Blue Team starts!\n");
+		}
+
 		return NULL;
 	}
 	//should never be reached but it gets stuff to shut up
@@ -2460,19 +2530,20 @@ mapthing_t *G_FindMatchStart(INT32 playernum)
 			if (G_CheckSpot(playernum, deathmatchstarts[i]))
 				return deathmatchstarts[i];
 		}
-		if (playernum == consoleplayer
-			|| (splitscreen && playernum == displayplayers[1])
-			|| (splitscreen > 1 && playernum == displayplayers[2])
-			|| (splitscreen > 2 && playernum == displayplayers[3]))
-			CONS_Alert(CONS_WARNING, M_GetText("Could not spawn at any Deathmatch starts!\n"));
+
+		if (P_IsLocalPlayerNum(playernum))
+		{
+			CONS_Alert(CONS_WARNING, "Could not spawn at any Deathmatch starts!\n");
+		}
+
 		return NULL;
 	}
 
-	if (playernum == consoleplayer
-		|| (splitscreen && playernum == displayplayers[1])
-		|| (splitscreen > 1 && playernum == displayplayers[2])
-		|| (splitscreen > 2 && playernum == displayplayers[3]))
-		CONS_Alert(CONS_WARNING, M_GetText("No Deathmatch starts in this map!\n"));
+	if (P_IsLocalPlayerNum(playernum))
+	{
+		CONS_Alert(CONS_WARNING, "No Deathmatch starts in this map!\n");
+	}
+
 	return NULL;
 }
 
@@ -2536,19 +2607,19 @@ mapthing_t *G_FindRaceStart(INT32 playernum)
 		// Just spawn there.
 		//return playerstarts[0];
 
-		if (playernum == consoleplayer
-			|| (splitscreen && playernum == displayplayers[1])
-			|| (splitscreen > 1 && playernum == displayplayers[2])
-			|| (splitscreen > 2 && playernum == displayplayers[3]))
-			CONS_Alert(CONS_WARNING, M_GetText("Could not spawn at any Race starts!\n"));
+		if (P_IsLocalPlayerNum(playernum))
+		{
+			CONS_Alert(CONS_WARNING, "Could not spawn at any Race starts!\n");
+		}
+
 		return NULL;
 	}
 
-	if (playernum == consoleplayer
-		|| (splitscreen && playernum == displayplayers[1])
-		|| (splitscreen > 1 && playernum == displayplayers[2])
-		|| (splitscreen > 2 && playernum == displayplayers[3]))
-		CONS_Alert(CONS_WARNING, M_GetText("No Race starts in this map!\n"));
+	if (P_IsLocalPlayerNum(playernum))
+	{
+		CONS_Alert(CONS_WARNING, "No Race starts in this map!\n");
+	}
+
 	return NULL;
 }
 
@@ -3313,8 +3384,26 @@ void G_EndGame(void)
 		}
 	}
 
-	// 1100 or competitive multiplayer, so go back to title screen.
-	D_StartTitle();
+	if (netgame)
+	{
+		G_SetGamestate(GS_WAITINGPLAYERS); // hack to prevent a command repeat
+
+		if (server)
+		{
+			char mapname[6];
+
+			strlcpy(mapname, G_BuildMapName(spstage_start), sizeof (mapname));
+			strlwr(mapname);
+			mapname[5] = '\0';
+
+			COM_BufAddText(va("map %s\n", mapname));
+		}
+
+		return;
+	}
+
+	// Time to return to the menu.
+	Command_ExitGame_f();
 }
 
 //

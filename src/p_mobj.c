@@ -11,6 +11,7 @@
 /// \file  p_mobj.c
 /// \brief Moving object handling. Spawn functions
 
+#include "d_think.h"
 #include "doomdef.h"
 #include "g_game.h"
 #include "g_input.h"
@@ -38,8 +39,6 @@
 #include "k_kart.h"
 
 // protos.
-//static CV_PossibleValue_t viewheight_cons_t[] = {{16, "MIN"}, {56, "MAX"}, {0, NULL}};
-//consvar_t cv_viewheight = {"viewheight", VIEWHEIGHTS, 0, viewheight_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 #ifdef WALLSPLATS
 consvar_t cv_splats = {"splats", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 #endif
@@ -49,7 +48,6 @@ actioncache_t actioncachehead;
 static mobj_t *overlaycap = NULL;
 static mobj_t *shadowcap = NULL;
 mobj_t *waypointcap = NULL;
-mobj_t *mobjcache = NULL;
 
 void P_InitCachedActions(void)
 {
@@ -145,6 +143,8 @@ static void P_CyclePlayerMobjState(mobj_t *mobj)
 	}
 }
 
+#define MAX_RECURSION 20
+
 //
 // P_SetPlayerMobjState
 // Returns true if the mobj is still present.
@@ -156,12 +156,7 @@ boolean P_SetPlayerMobjState(mobj_t *mobj, statenum_t state)
 	state_t *st;
 	player_t *player = mobj->player;
 
-	// remember states seen, to detect cycles:
-	static statenum_t seenstate_tab[NUMSTATES]; // fast transition table
-	statenum_t *seenstate = seenstate_tab; // pointer to table
-	static INT32 recursion; // detects recursion
-	statenum_t i; // initial state
-	statenum_t tempstate[NUMSTATES]; // for use with recursion
+	INT32 recursion = 0;
 
 #ifdef PARANOIA
 	if (player == NULL)
@@ -196,11 +191,6 @@ boolean P_SetPlayerMobjState(mobj_t *mobj, statenum_t state)
 			break;
 	}
 
-	if (recursion++) // if recursion detected,
-		memset(seenstate = tempstate, 0, sizeof tempstate); // clear state table
-
-	i = state;
-
 	do
 	{
 		if (UNLIKELY(state == S_NULL))
@@ -234,17 +224,14 @@ boolean P_SetPlayerMobjState(mobj_t *mobj, statenum_t state)
 				return false;
 		}
 
-		seenstate[state] = 1 + st->nextstate;
-
 		state = st->nextstate;
-	} while (!mobj->tics && !seenstate[state]);
 
-	if (UNLIKELY(!mobj->tics))
-		CONS_Alert(CONS_WARNING, M_GetText("State cycle detected, exiting.\n"));
-
-	if (!--recursion)
-		for (;(state = seenstate[i]) > S_NULL; i = state - 1)
-			seenstate[i] = S_NULL; // erase memory of states
+		if (++recursion > MAX_RECURSION)
+		{
+			CONS_Alert(CONS_WARNING, M_GetText("State cycle detected, exiting.\n"));
+			break;
+		}
+	} while (!mobj->tics);
 
 	return true;
 }
@@ -254,12 +241,7 @@ boolean P_SetMobjState(mobj_t *mobj, statenum_t state)
 {
 	state_t *st;
 
-	// remember states seen, to detect cycles:
-	static statenum_t seenstate_tab[NUMSTATES]; // fast transition table
-	statenum_t *seenstate = seenstate_tab; // pointer to table
-	static INT32 recursion; // detects recursion
-	statenum_t i = state; // initial state
-	statenum_t tempstate[NUMSTATES]; // for use with recursion
+	INT32 recursion = 0;
 
 #ifdef PARANOIA
 	if (mobj->player != NULL)
@@ -268,9 +250,6 @@ boolean P_SetMobjState(mobj_t *mobj, statenum_t state)
 
 	if (mobj->player != NULL)
 		return P_SetPlayerMobjState(mobj, state);
-
-	if (recursion++) // if recursion detected,
-		memset(seenstate = tempstate, 0, sizeof tempstate); // clear state table
 
 	do
 	{
@@ -301,17 +280,14 @@ boolean P_SetMobjState(mobj_t *mobj, statenum_t state)
 				return false;
 		}
 
-		seenstate[state] = 1 + st->nextstate;
-
 		state = st->nextstate;
-	} while (!mobj->tics && !seenstate[state]);
 
-	if (UNLIKELY(!mobj->tics))
-		CONS_Alert(CONS_WARNING, M_GetText("State cycle detected, exiting.\n"));
-
-	if (!--recursion)
-		for (;(state = seenstate[i]) > S_NULL; i = state - 1)
-			seenstate[i] = S_NULL; // erase memory of states
+		if (++recursion > MAX_RECURSION)
+		{
+			CONS_Alert(CONS_WARNING, M_GetText("State cycle detected, exiting.\n"));
+			break;
+		}
+	} while (!mobj->tics);
 
 	return true;
 }
@@ -486,6 +462,8 @@ boolean P_InsideANonSolidFFloor(mobj_t *mobj, ffloor_t *rover)
 // usage will handle that later.
 static fixed_t HighestOnLine(fixed_t radius, fixed_t x, fixed_t y, line_t *line, pslope_t *slope, boolean actuallylowest)
 {
+	int absval = 0;
+
 	// Alright, so we're sitting on a line that contains our slope sector, and need to figure out the highest point we're touching...
 	// The solution is simple! Get the line's vertices, and pull each one in along its line until it touches the object's bounding box
 	// (assuming it isn't already inside), then test each point's slope Z and return the higher of the two.
@@ -495,73 +473,94 @@ static fixed_t HighestOnLine(fixed_t radius, fixed_t x, fixed_t y, line_t *line,
 	v2.x = line->v2->x;
 	v2.y = line->v2->y;
 
-	if (abs(v1.x-x) > radius)
+	absval = abs(v1.x-x);
+
+	if (absval > radius)
 	{
 		// v1's x is out of range, so rein it in
-		fixed_t diff = abs(v1.x-x) - radius;
+		fixed_t diff = absval - radius;
 
-		if (v1.x < x) { // Moving right
+		if (v1.x < x) // Moving right
+		{
 			v1.x += diff;
 			v1.y += FixedMul(diff, FixedDiv(line->dy, line->dx));
-		} else { // Moving left
+		}
+		else // Moving left
+		{
 			v1.x -= diff;
 			v1.y -= FixedMul(diff, FixedDiv(line->dy, line->dx));
 		}
 	}
 
-	if (abs(v1.y-y) > radius)
+	absval = abs(v1.y-y);
+
+	if (absval > radius)
 	{
 		// v1's y is out of range, so rein it in
-		fixed_t diff = abs(v1.y-y) - radius;
+		fixed_t diff = absval - radius;
 
-		if (v1.y < y) { // Moving up
+		if (v1.y < y) // Moving up
+		{
 			v1.y += diff;
 			v1.x += FixedMul(diff, FixedDiv(line->dx, line->dy));
-		} else { // Moving down
+		}
+		else // Moving down
+		{
 			v1.y -= diff;
 			v1.x -= FixedMul(diff, FixedDiv(line->dx, line->dy));
 		}
 	}
 
-	if (abs(v2.x-x) > radius)
+	absval = abs(v2.x-x);
+
+	if (absval > radius)
 	{
 		// v1's x is out of range, so rein it in
-		fixed_t diff = abs(v2.x-x) - radius;
+		fixed_t diff = absval - radius;
 
-		if (v2.x < x) { // Moving right
+		if (v2.x < x) // Moving right
+		{
 			v2.x += diff;
 			v2.y += FixedMul(diff, FixedDiv(line->dy, line->dx));
-		} else { // Moving left
+		}
+		else // Moving left
+		{
 			v2.x -= diff;
 			v2.y -= FixedMul(diff, FixedDiv(line->dy, line->dx));
 		}
 	}
 
-	if (abs(v2.y-y) > radius)
+	absval = abs(v2.y-y);
+
+	if (absval > radius)
 	{
 		// v2's y is out of range, so rein it in
-		fixed_t diff = abs(v2.y-y) - radius;
+		fixed_t diff = absval - radius;
 
-		if (v2.y < y) { // Moving up
+		if (v2.y < y) // Moving up
+		{
 			v2.y += diff;
 			v2.x += FixedMul(diff, FixedDiv(line->dx, line->dy));
-		} else { // Moving down
+		}
+		else // Moving down
+		{
 			v2.y -= diff;
 			v2.x -= FixedMul(diff, FixedDiv(line->dx, line->dy));
 		}
 	}
 
+	const fixed_t v1z = P_GetSlopeZAt(slope, v1.x, v1.y);
+	const fixed_t v2z = P_GetSlopeZAt(slope, v2.x, v2.y);
+
 	// Return the higher of the two points
 	if (actuallylowest)
-		return min(
-			P_GetSlopeZAt(slope, v1.x, v1.y),
-			P_GetSlopeZAt(slope, v2.x, v2.y)
-		);
+	{
+		return min(v1z, v2z);
+	}
 	else
-		return max(
-			P_GetSlopeZAt(slope, v1.x, v1.y),
-			P_GetSlopeZAt(slope, v2.x, v2.y)
-		);
+	{
+		return max(v1z, v2z);
+	}
 }
 
 fixed_t P_MobjFloorZ(mobj_t *mobj, sector_t *sector, sector_t *boundsec, fixed_t x, fixed_t y, line_t *line, boolean lowest, boolean perfect)
@@ -615,6 +614,7 @@ fixed_t P_MobjFloorZ(mobj_t *mobj, sector_t *sector, sector_t *boundsec, fixed_t
 
 			for (i = 0; i < boundsec->linecount; i++)
 			{
+				fixed_t highline;
 				ld = boundsec->lines[i];
 
 				if (bbox[BOXRIGHT] <= ld->bbox[BOXLEFT] || bbox[BOXLEFT] >= ld->bbox[BOXRIGHT]
@@ -625,9 +625,15 @@ fixed_t P_MobjFloorZ(mobj_t *mobj, sector_t *sector, sector_t *boundsec, fixed_t
 					continue;
 
 				if (lowest)
-					finalheight = min(finalheight, HighestOnLine(mobj->radius, x, y, ld, slope, true));
+				{
+					highline = HighestOnLine(mobj->radius, x, y, ld, slope, true);
+					finalheight = min(finalheight, highline);
+				}
 				else
-					finalheight = max(finalheight, HighestOnLine(mobj->radius, x, y, ld, slope, false));
+				{
+					highline = HighestOnLine(mobj->radius, x, y, ld, slope, false);
+					finalheight = max(finalheight, highline);
+				}
 			}
 
 			return finalheight;
@@ -695,6 +701,7 @@ fixed_t P_MobjCeilingZ(mobj_t *mobj, sector_t *sector, sector_t *boundsec, fixed
 
 			for (i = 0; i < boundsec->linecount; i++)
 			{
+				fixed_t highline;
 				ld = boundsec->lines[i];
 
 				if (bbox[BOXRIGHT] <= ld->bbox[BOXLEFT] || bbox[BOXLEFT] >= ld->bbox[BOXRIGHT]
@@ -705,9 +712,15 @@ fixed_t P_MobjCeilingZ(mobj_t *mobj, sector_t *sector, sector_t *boundsec, fixed
 					continue;
 
 				if (lowest)
-					finalheight = min(finalheight, HighestOnLine(mobj->radius, x, y, ld, slope, true));
+				{
+					highline = HighestOnLine(mobj->radius, x, y, ld, slope, true);
+					finalheight = min(finalheight, highline);
+				}
 				else
-					finalheight = max(finalheight, HighestOnLine(mobj->radius, x, y, ld, slope, false));
+				{
+					highline = HighestOnLine(mobj->radius, x, y, ld, slope, false);
+					finalheight = max(finalheight, highline);
+				}
 			}
 
 			return finalheight;
@@ -776,6 +789,7 @@ fixed_t P_CameraFloorZ(camera_t *mobj, sector_t *sector, sector_t *boundsec, fix
 
 			for (i = 0; i < boundsec->linecount; i++)
 			{
+				fixed_t highline;
 				ld = boundsec->lines[i];
 
 				if (bbox[BOXRIGHT] <= ld->bbox[BOXLEFT] || bbox[BOXLEFT] >= ld->bbox[BOXRIGHT]
@@ -786,9 +800,15 @@ fixed_t P_CameraFloorZ(camera_t *mobj, sector_t *sector, sector_t *boundsec, fix
 					continue;
 
 				if (lowest)
-					finalheight = min(finalheight, HighestOnLine(mobj->radius, x, y, ld, slope, true));
+				{
+					highline = HighestOnLine(mobj->radius, x, y, ld, slope, true);
+					finalheight = min(finalheight, highline);
+				}
 				else
-					finalheight = max(finalheight, HighestOnLine(mobj->radius, x, y, ld, slope, false));
+				{
+					highline = HighestOnLine(mobj->radius, x, y, ld, slope, false);
+					finalheight = max(finalheight, highline);
+				}
 			}
 
 			return finalheight;
@@ -856,6 +876,7 @@ fixed_t P_CameraCeilingZ(camera_t *mobj, sector_t *sector, sector_t *boundsec, f
 
 			for (i = 0; i < boundsec->linecount; i++)
 			{
+				fixed_t highline;
 				ld = boundsec->lines[i];
 
 				if (bbox[BOXRIGHT] <= ld->bbox[BOXLEFT] || bbox[BOXLEFT] >= ld->bbox[BOXRIGHT]
@@ -866,9 +887,15 @@ fixed_t P_CameraCeilingZ(camera_t *mobj, sector_t *sector, sector_t *boundsec, f
 					continue;
 
 				if (lowest)
-					finalheight = min(finalheight, HighestOnLine(mobj->radius, x, y, ld, slope, true));
+				{
+					highline = HighestOnLine(mobj->radius, x, y, ld, slope, true);
+					finalheight = min(finalheight, highline);
+				}
 				else
-					finalheight = max(finalheight, HighestOnLine(mobj->radius, x, y, ld, slope, false));
+				{
+					highline = HighestOnLine(mobj->radius, x, y, ld, slope, false);
+					finalheight = max(finalheight, highline);
+				}
 			}
 
 			return finalheight;
@@ -986,10 +1013,6 @@ fixed_t P_GetMobjGravity(mobj_t *mo)
 
 	if (mo->player)
 	{
-		//if ((mo->player->pflags & PF_GLIDING)
-		//|| (mo->player->charability == CA_FLY && (mo->player->powers[pw_tailsfly]
-		//	|| (mo->state >= &states[S_PLAY_SPC1] && mo->state <= &states[S_PLAY_SPC4]))))
-		//	gravityadd = gravityadd/3; // less gravity while flying/gliding
 		if (UNLIKELY(mo->player->climbing || (mo->player->pflags & PF_NIGHTSMODE)))
 			return 0;
 
@@ -1114,8 +1137,10 @@ static void P_SceneryXYFriction(mobj_t *mo, fixed_t oldx, fixed_t oldy)
 	I_Assert(mo != NULL);
 	I_Assert(!P_MobjWasRemoved(mo));
 
-	if (abs(mo->momx) < FixedMul(FRACUNIT/32, mo->scale)
-		&& abs(mo->momy) < FixedMul(FRACUNIT/32, mo->scale))
+	const fixed_t fric_scale = FixedMul(FRACUNIT/32, mo->scale);
+
+	if (abs(mo->momx) < fric_scale
+		&& abs(mo->momy) < fric_scale)
 	{
 		mo->momx = 0;
 		mo->momy = 0;
@@ -1167,8 +1192,8 @@ static void P_XYFriction(mobj_t *mo, fixed_t oldx, fixed_t oldy)
 			mo->momx = FixedMul(mo->momx, ns);
 			mo->momy = FixedMul(mo->momy, ns);
 		}
-		else if (abs(player->rmomx) < FixedMul(FRACUNIT, mo->scale)
-		    && abs(player->rmomy) < FixedMul(FRACUNIT, mo->scale)
+		else if (abs(player->rmomx) < mo->scale
+		    && abs(player->rmomy) < mo->scale
 		    && (!(player->cmd.forwardmove && !(twodlevel || mo->flags2 & MF2_TWOD)) && !player->cmd.sidemove && !(player->pflags & PF_SPINNING))
 			&& !(player->mo->standingslope && (!(player->mo->standingslope->flags & SL_NOPHYSICS)) && (abs(player->mo->standingslope->zdelta) >= FRACUNIT/2))
 				)
@@ -1242,7 +1267,7 @@ static void P_PushableCheckBustables(mobj_t *mo)
 			if (rover->master->frontsector->crumblestate)
 				continue;
 
-			topheight = P_GetFOFTopZ(mo, node->m_sector, rover, mo->x, mo->y, NULL);
+			topheight    = P_GetFOFTopZ(mo, node->m_sector, rover, mo->x, mo->y, NULL);
 			bottomheight = P_GetFOFBottomZ(mo, node->m_sector, rover, mo->x, mo->y, NULL);
 
 			// Height checks
@@ -1321,7 +1346,7 @@ void P_XYMovement(mobj_t *mo)
 	fixed_t oldx, oldy; // reducing bobbing/momentum on ice when up against walls
 	boolean moved;
 	pslope_t *oldslope = NULL;
-	vector3_t slopemom = {0,0,0};
+	vector3_t slopemom = {0, 0, 0};
 	fixed_t predictedz = 0;
 
 	I_Assert(mo != NULL);
@@ -1353,7 +1378,7 @@ void P_XYMovement(mobj_t *mo)
 	oldy = mo->y;
 
 	// adjust various things based on slope
-	if (mo->standingslope && abs(mo->standingslope->zdelta) > FRACUNIT>>8)
+	if (mo->standingslope && abs(mo->standingslope->zdelta) > FRACUNIT >> 8)
 	{
 		if (!P_IsObjectOnGround(mo)) // We fell off at some point? Do the twisty thing!
 		{
@@ -1746,7 +1771,7 @@ static void P_AdjustMobjFloorZ_FFloors(mobj_t *mo, sector_t *sector, UINT8 motyp
 			    || (rover->flags & FF_BLOCKOTHERS && !mo->player))) // solid to others?
 			continue;
 
-		topheight = P_GetFOFTopZ(mo, sector, rover, mo->x, mo->y, NULL);
+		topheight    = P_GetFOFTopZ(mo, sector, rover, mo->x, mo->y, NULL);
 		bottomheight = P_GetFOFBottomZ(mo, sector, rover, mo->x, mo->y, NULL);
 
 		if (rover->flags & FF_QUICKSAND)
@@ -1770,16 +1795,18 @@ static void P_AdjustMobjFloorZ_FFloors(mobj_t *mo, sector_t *sector, UINT8 motyp
 			}
 		}
 
-		delta1 = mo->z - (bottomheight + ((topheight - bottomheight)/2));
-		delta2 = thingtop - (bottomheight + ((topheight - bottomheight)/2));
+		const fixed_t mid = (bottomheight + ((topheight - bottomheight) / 2));
 
-		if (topheight > mo->floorz && abs(delta1) < abs(delta2)
+		delta1 = abs(mo->z - mid);
+		delta2 = abs(thingtop - mid);
+
+		if (topheight > mo->floorz && delta1 < delta2
 			&& !(rover->flags & FF_REVERSEPLATFORM)
 			&& ((P_MobjFlip(mo)*mo->momz >= 0) || (!(rover->flags & FF_PLATFORM)))) // In reverse gravity, only clip for FOFs that are intangible from their bottom (the "top" you're falling through) if you're coming from above ("below" in your frame of reference)
 		{
 			mo->floorz = topheight;
 		}
-		if (bottomheight < mo->ceilingz && abs(delta1) >= abs(delta2)
+		if (bottomheight < mo->ceilingz && delta1 >= delta2
 			&& !(rover->flags & FF_PLATFORM)
 			&& ((P_MobjFlip(mo)*mo->momz >= 0) || (!(rover->flags & FF_REVERSEPLATFORM)))) // In normal gravity, only clip for FOFs that are intangible from the top if you're coming from below
 		{
@@ -1828,13 +1855,15 @@ static void P_AdjustMobjFloorZ_PolyObjs(mobj_t *mo, subsector_t *subsec)
 			polybottom = INT32_MIN;
 		}
 
-		delta1 = mo->z - (polybottom + ((polytop - polybottom)/2));
-		delta2 = thingtop - (polybottom + ((polytop - polybottom)/2));
+		const fixed_t mid = polybottom + ((polytop - polybottom) / 2);
 
-		if (polytop > mo->floorz && abs(delta1) < abs(delta2))
+		delta1 = abs(mo->z - mid);
+		delta2 = abs(thingtop - mid);
+
+		if (polytop > mo->floorz && delta1 < delta2)
 			mo->floorz = polytop;
 
-		if (polybottom < mo->ceilingz && abs(delta1) >= abs(delta2))
+		if (polybottom < mo->ceilingz && delta1 >= delta2)
 			mo->ceilingz = polybottom;
 
 		po = (polyobj_t *)(po->link.next);
@@ -3284,9 +3313,10 @@ boolean P_CameraThinker(player_t *player, camera_t *thiscam, boolean resetcalled
 
 			if (!resetcalled && !(player->pflags & PF_NOCLIP || leveltime < introtime) && !P_CheckSightFast(&dummy, player->mo)) // TODO: "P_CheckCameraSight" instead.
 				P_ResetCamera(player, thiscam);
+#ifndef NOCLIPCAM
 			else
 				P_SlideCameraMove(thiscam);
-
+#endif
 			if (resetcalled) // Okay this means the camera is fully reset.
 				return true;
 		}
@@ -6172,6 +6202,7 @@ static void P_MobjSceneryThink(mobj_t *mobj)
 				fixed_t x = P_RandomRange(-35, 35)*mobj->scale;
 				fixed_t y = P_RandomRange(-35, 35)*mobj->scale;
 				fixed_t z = P_RandomRange(0, 70)*mobj->scale;
+
 				mobj_t *smoke = P_SpawnMobj(mobj->x + x, mobj->y + y, mobj->z + z, MT_SMOKE);
 				P_SetMobjState(smoke, S_OPAQUESMOKE1);
 				K_MatchGenericExtraFlags(smoke, mobj);
@@ -6185,6 +6216,7 @@ static void P_MobjSceneryThink(mobj_t *mobj)
 				fixed_t x = P_RandomRange(-16, 16)*mobj->scale;
 				fixed_t y = P_RandomRange(-16, 16)*mobj->scale;
 				fixed_t z = P_RandomRange(0, 32)*mobj->scale*P_MobjFlip(mobj);
+
 				if (leveltime % 2 == 0)
 				{
 					mobj_t *smoke = P_SpawnMobj(mobj->x + x, mobj->y + y, mobj->z + z, MT_BOSSEXPLODE);
@@ -7541,7 +7573,8 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 				{
 					if (mobj->tracer->player)
 					{
-						fixed_t speeddifference = abs(topspeed - min(mobj->tracer->player->speed, K_GetKartSpeed(mobj->tracer->player, false)));
+						const fixed_t pspeed = K_GetKartSpeed(mobj->tracer->player, false);
+						fixed_t speeddifference = abs(topspeed - min(mobj->tracer->player->speed, pspeed));
 						topspeed = topspeed - FixedMul(speeddifference, FRACUNIT-FixedDiv(distaway, distbarrier));
 					}
 				}
@@ -7762,7 +7795,13 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 				smoke->momy = mobj->target->momy/2;
 				smoke->momz = mobj->target->momz/2;
 
-				P_Thrust(smoke, mobj->angle+FixedAngle(P_RandomRange(135, 225)<<FRACBITS), P_RandomRange(0, 8) * mobj->target->scale);
+				fixed_t rand_angle;
+				fixed_t rand_move;
+
+				rand_move = P_RandomRange(0, 8) * mobj->target->scale;
+				rand_angle = mobj->angle+FixedAngle(P_RandomRange(135, 225)<<FRACBITS);
+
+				P_Thrust(smoke, rand_angle, rand_move);
 			}
 			break;
 		case MT_SPARKLETRAIL:
@@ -8030,11 +8069,18 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 				}
 				else
 				{
-					P_SpawnMobj(mobj->x + (P_RandomRange(-48,48)*mobj->scale),
-						mobj->y + (P_RandomRange(-48,48)*mobj->scale),
-						mobj->z + (24*mobj->scale) + (P_RandomRange(-8,8)*mobj->scale),
-						MT_SIGNSPARKLE);
+					fixed_t rand_x;
+					fixed_t rand_y;
+					fixed_t rand_z;
+
+					rand_z = mobj->z + (24*mobj->scale) + (P_RandomRange(-8,8)*mobj->scale);
+					rand_y = mobj->y + (P_RandomRange(-48,48)*mobj->scale);
+					rand_x = mobj->x + (P_RandomRange(-48,48)*mobj->scale);
+
+					P_SpawnMobj(rand_x, rand_y, rand_z, MT_SIGNSPARKLE);
+
 					mobj->flags &= ~MF_NOGRAVITY;
+
 					if (abs(mobj->z - mobj->movefactor) <= (512*mobj->scale) && !mobj->cvmem)
 					{
 						if (mobj->info->seesound)
@@ -8064,6 +8110,7 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 
 			{
 				angle_t facing = P_RandomRange(0, 90);
+
 				if (facing >= 45)
 					facing = InvAngle((facing - 45)*ANG1);
 				else
@@ -8096,7 +8143,14 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 			else // fire + smoke pillar
 			{
 				UINT8 i;
-				mobj_t *fire = P_SpawnMobj(mobj->x + (P_RandomRange(-32, 32)*mobj->scale), mobj->y + (P_RandomRange(-32, 32)*mobj->scale), mobj->z, MT_THOK);
+
+				fixed_t rand_x;
+				fixed_t rand_y;
+
+				rand_y = mobj->y + (P_RandomRange(-32, 32)*mobj->scale);
+				rand_x = mobj->x + (P_RandomRange(-32, 32)*mobj->scale);
+
+				mobj_t *fire = P_SpawnMobj(rand_x, rand_y, mobj->z, MT_THOK);
 
 				fire->sprite = SPR_FPRT;
 				fire->frame = FF_FULLBRIGHT|FF_TRANS30;
@@ -8108,7 +8162,10 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 
 				for (i = 0; i < 2; i++)
 				{
-					mobj_t *smoke = P_SpawnMobj(mobj->x + (P_RandomRange(-16, 16)*mobj->scale), mobj->y + (P_RandomRange(-16, 16)*mobj->scale), mobj->z, MT_SMOKE);
+					rand_y = mobj->y + (P_RandomRange(-16, 16)*mobj->scale);
+					rand_x = mobj->x + (P_RandomRange(-16, 16)*mobj->scale);
+
+					mobj_t *smoke = P_SpawnMobj(rand_x, rand_y, mobj->z, MT_SMOKE);
 
 					P_SetMobjState(smoke, S_FZSLOWSMOKE1);
 					smoke->scale = mobj->scale;
@@ -8133,8 +8190,10 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 					cur = cur->hnext;
 				}
 			}
+
 			if (!S_SoundPlaying(mobj, mobj->info->seesound))
 				S_StartSound(mobj, mobj->info->seesound);
+
 			break;
 		case MT_FROGGER:
 			{
@@ -8332,9 +8391,15 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 
 				if (!P_MobjWasRemoved(mobj->tracer) && !(leveltime % 10))
 				{
-					mobj_t *dust = P_SpawnMobj(mobj->x + (P_RandomRange(-4, 4)<<FRACBITS),
-						mobj->y + (P_RandomRange(-4, 4)<<FRACBITS),
-						mobj->z + (P_RandomRange(0, 2)<<FRACBITS), MT_BBZDUST);
+					fixed_t rand_x;
+					fixed_t rand_y;
+					fixed_t rand_z;
+
+					rand_z = mobj->z + (P_RandomRange(0, 2)<<FRACBITS);
+					rand_y = mobj->y + (P_RandomRange(-4, 4)<<FRACBITS);
+					rand_x = mobj->x + (P_RandomRange(-4, 4)<<FRACBITS);
+
+					mobj_t *dust = P_SpawnMobj(rand_x, rand_y, rand_z, MT_BBZDUST);
 					P_SetScale(dust, mobj->scale/2);
 					P_InstaThrust(dust, FixedAngle(P_RandomRange(0,359)<<FRACBITS), abs(mobj->tracer->momz)/2);
 
@@ -9210,7 +9275,7 @@ void P_PushableThinker(mobj_t *mobj)
 
 	sec = mobj->subsector->sector;
 
-	if (GETSECSPECIAL(sec->special, 2) == 1 && mobj->z == sec->floorheight)
+	if (mobj->z == sec->floorheight && GETSECSPECIAL(sec->special, 2) == 1)
 		P_LinedefExecute(sec->tag, mobj, sec);
 	{
 		sector_t *sec2;
@@ -9363,21 +9428,11 @@ void P_SceneryThinker(mobj_t *mobj)
 // GAME SPAWN FUNCTIONS
 //
 
-FUNCINLINE static ATTRINLINE mobj_t *P_AllocMobj(void)
+mobj_t *P_AllocateMobj(void)
 {
-	mobj_t *mobj;
-
-	if (mobjcache != NULL)
-	{
-		mobj = mobjcache;
-		mobjcache = mobjcache->hnext;
-		memset(mobj, 0, sizeof(*mobj));
-	}
-	else
-	{
-		mobj = Z_Calloc(sizeof (*mobj), PU_LEVEL, NULL);
-	}
-
+	mobj_t* mobj = (mobj_t*)Z_LevelPoolCalloc(sizeof(mobj_t));
+	mobj->thinker.alloctype = TAT_LEVELPOOL;
+	mobj->thinker.size = sizeof(mobj_t);
 	return mobj;
 }
 
@@ -9390,7 +9445,7 @@ mobj_t *P_SpawnMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type)
 	state_t *st;
 	mobj_t *mobj;
 
-	mobj = P_AllocMobj();
+	mobj = P_AllocateMobj();
 
 	// this is officially a mobj, declared as soon as possible.
 	mobj->thinker.function = (actionf_p1)P_MobjThinker;
@@ -9841,7 +9896,7 @@ mobj_t *P_SpawnShadowMobj(mobj_t * caster)
 	state_t *st;
 	mobj_t *mobj;
 
-	mobj = P_AllocMobj();
+	mobj = P_AllocateMobj();
 
 	// this is officially a mobj, declared as soon as possible.
 	mobj->thinker.function = (actionf_p1)P_MobjThinker;
@@ -9955,7 +10010,9 @@ static precipmobj_t *P_SpawnPrecipMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype
 {
 	const mobjinfo_t *info = &mobjinfo[type];
 	state_t *st;
-	precipmobj_t *mobj = Z_Calloc(sizeof (*mobj), PU_LEVEL, NULL);
+	precipmobj_t *mobj = Z_LevelPoolCalloc(sizeof(precipmobj_t));
+	mobj->thinker.alloctype = TAT_LEVELPOOL;
+	mobj->thinker.size = sizeof(precipmobj_t);
 	fixed_t starting_floorz;
 
 	mobj->type = type;
@@ -10111,14 +10168,6 @@ void P_RemoveMobj(mobj_t *mobj)
 	// free block
 	if (mobj->flags & MF_NOTHINK && !mobj->thinker.next)
 	{ // Uh-oh, the mobj doesn't think, P_RemoveThinker would never go through!
-		if (!mobj->thinker.references)
-		{
-			// no references, dump it directly in the mobj cache
-			mobj->hnext = mobjcache;
-			mobjcache = mobj;
-			return;
-		}
-
 		// Add thinker just to delay removing it until refrences are gone.
 		mobj->flags &= ~MF_NOTHINK;
 		P_AddThinker((thinker_t *)mobj);
@@ -10169,8 +10218,7 @@ void P_RemoveSavegameMobj(mobj_t *mobj)
 	R_RemoveMobjInterpolator(mobj);
 
 	// just set its reference count to 0 to not trigger the assert in P_UnlinkThinker
-	if (th->references != 0)
-		th->references = 0;
+	th->references = 0;
 
 	// free block
 	// Here we use the same code as R_RemoveThinkerDelayed, but without reference counting (we're removing everything so it shouldn't matter) and without touching currentthinker since we aren't in P_RunThinkers
@@ -10225,7 +10273,7 @@ void P_SpawnPrecipitation(void)
 				continue;
 
 			// Exists, but is too small for reasonable precipitation.
-			if (FixedDiv(precipsector->sector->ceilingheight - precipsector->sector->floorheight, mapobjectscale) < 64<<FRACBITS)
+			if (FixedDiv(precipsector->sector->ceilingheight - precipsector->sector->floorheight, mapobjectscale) < 256<<FRACBITS)
 				continue;
 
 			// Don't set z properly yet...
@@ -10716,17 +10764,12 @@ void P_SpawnPlayer(INT32 playernum)
 	{
 		if (!p->spectator)
 		{
-			if (playernum == consoleplayer)
-				camera[0].freecam = false;
-			else if (splitscreen)
+			for (UINT8 i = 0; i <= splitscreen; i++)
 			{
-				for (i = 1; i <= splitscreen; i++)
+				if (playernum == P_GetLocalPlayerNumForNum(i))
 				{
-					if (playernum == displayplayers[i])
-					{
-						camera[i].freecam = false;
-						break;
-					}
+					camera[i].freecam = false;
+					break;
 				}
 			}
 		}

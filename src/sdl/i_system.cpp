@@ -149,16 +149,32 @@ typedef LPVOID (WINAPI *p_MapViewOfFile) (HANDLE, DWORD, DWORD, DWORD, SIZE_T);
 #include <errno.h>
 #endif
 
-// Locations for searching the srb2.srb
+// Locations to directly check for srb2.pk3 in
+const char *wadDefaultPaths[] = {
 #if defined (__unix__) || defined(__APPLE__) || defined (UNIXCOMMON)
-#define DEFAULTWADLOCATION1 "/usr/local/share/games/SRB2Kart"
-#define DEFAULTWADLOCATION2 "/usr/local/games/SRB2Kart"
-#define DEFAULTWADLOCATION3 "/usr/share/games/SRB2Kart"
-#define DEFAULTWADLOCATION4 "/usr/games/SRB2Kart"
-#define DEFAULTSEARCHPATH1 "/usr/local/games"
-#define DEFAULTSEARCHPATH2 "/usr/games"
-#define DEFAULTSEARCHPATH3 "/usr/local"
+	"/usr/local/share/games/SRB2Kart",
+	"/usr/local/games/SRB2Kart",
+	"/usr/share/games/SRB2Kart",
+	"/usr/games/SRB2Kart",
+#elif defined (_WIN32)
+	"c:\\games\\srb2kart",
+	"\\games\\srb2kart",
 #endif
+	NULL
+};
+
+// Folders to recurse through looking for srb2.pk3
+const char *wadSearchPaths[] = {
+#if defined (__unix__) || defined(__APPLE__) || defined (UNIXCOMMON)
+	"/usr/local/games",
+	"/usr/games",
+	"/usr/local",
+#elif defined (_WIN32)
+	"c:\\games",
+	"\\games",
+#endif
+	NULL
+};
 
 /**	\brief WAD file to look for
 */
@@ -506,6 +522,8 @@ static void I_ReportSignal(int num, int coredumped)
 #ifndef NEWSIGNALHANDLER
 FUNCNORETURN static ATTRNORETURN void signal_handler(INT32 num)
 {
+	g_in_exiting_signal_handler = true;
+
 #ifdef HAVE_THREADS
 	if (g_main_thread_id != std::this_thread::get_id())
 	{
@@ -515,8 +533,6 @@ FUNCNORETURN static ATTRNORETURN void signal_handler(INT32 num)
 		exit(-2);
 	}
 #endif
-
-	g_in_exiting_signal_handler = true;
 
 	D_QuitNetGame(); // Fix server freezes
 
@@ -1647,7 +1663,7 @@ void I_UpdateMumble(const mobj_t *mobj, const listener_t listener)
 	{
 		UINT8 *p = mumble->context;
 		WRITEMEM(p, server_context, 8);
-		WRITEINT16_2(p, gamemap);
+		WRITEINT16(p, gamemap);
 		mumble->context_len = (UINT32)(p - mumble->context);
 	}
 
@@ -1684,42 +1700,6 @@ void I_UpdateMumble(const mobj_t *mobj, const listener_t listener)
 }
 #undef WINMUMBLE
 #endif // NOMUMBLE
-
-/**	\brief empty ticcmd for player 1
-*/
-static ticcmd_t emptycmd;
-
-ticcmd_t *I_BaseTiccmd(void)
-{
-	return &emptycmd;
-}
-
-/**	\brief empty ticcmd for player 2
-*/
-static ticcmd_t emptycmd2;
-
-ticcmd_t *I_BaseTiccmd2(void)
-{
-	return &emptycmd2;
-}
-
-/**	\brief empty ticcmd for player 3
-*/
-static ticcmd_t emptycmd3;
-
-ticcmd_t *I_BaseTiccmd3(void)
-{
-	return &emptycmd3;
-}
-
-/**	\brief empty ticcmd for player 4
-*/
-static ticcmd_t emptycmd4;
-
-ticcmd_t *I_BaseTiccmd4(void)
-{
-	return &emptycmd4;
-}
 
 //
 // I_GetTime
@@ -1960,6 +1940,11 @@ INT32 I_StartupSystem(void)
 	 SDLcompiled.major, SDLcompiled.minor, SDLcompiled.patch);
 	I_OutputMsg("Linked with SDL version: %d.%d.%d\n",
 	 SDLlinked.major, SDLlinked.minor, SDLlinked.patch);
+
+#if (SDL_VERSION_ATLEAST(2, 0, 18))
+	SDL_SetHint(SDL_HINT_APP_NAME, "SRB2Kart Saturn");
+#endif
+
 	if (SDL_Init(0) < 0)
 		I_Error("SRB2: SDL System Error: %s", SDL_GetError()); //Alam: Oh no....
 #ifndef NOMUMBLE
@@ -1977,7 +1962,7 @@ void I_Quit(void)
 
 	/* prevent recursive I_Quit() */
 	if (quiting) goto death;
-	SDLforceUngrabMouse();
+	SDL_ShowCursor(SDL_TRUE);
 	quiting = SDL_FALSE;
 	I_ShutdownConsole();
 	M_SaveConfig(NULL); //save game config, cvars..
@@ -2056,8 +2041,6 @@ void I_Error(const char *error, ...)
 	if (shutdowning)
 	{
 		errorcount++;
-		if (errorcount == 1)
-			SDLforceUngrabMouse();
 		// try to shutdown each subsystem separately
 		if (errorcount == 2)
 			I_ShutdownMusic();
@@ -2447,14 +2430,6 @@ static boolean isWadPathOk(const char *path)
 		return true;
 	}
 
-	sprintf(wad3path, pandf, path, WADKEYWORD2);
-
-	if (FIL_ReadFileOK(wad3path))
-	{
-		free(wad3path);
-		return true;
-	}
-
 	free(wad3path);
 	return false;
 }
@@ -2493,24 +2468,32 @@ static const char *searchWad(const char *searchDir)
 		return tempsw;
 	}
 
-	strcpy(tempsw, WADKEYWORD2);
-	fstemp = filesearch(tempsw, searchDir, NULL, true, 20);
-	if (fstemp == FS_FOUND)
-	{
-		pathonly(tempsw);
-		return tempsw;
-	}
 	return NULL;
 }
 
-/**	\brief go through all possible paths and look for srb2.srb
+#define CHECKWADPATH(ret) \
+do { \
+	I_OutputMsg(",%s", ret); \
+	if (isWadPathOk(ret)) \
+		return ret; \
+} while (0)
 
-  \return path to srb2.srb if any
+#define SEARCHWAD(str) \
+do { \
+	WadPath = searchWad(str); \
+	if (WadPath) \
+		return WadPath; \
+} while (0)
+
+/**	\brief go through all possible paths and look for srb2.pk3
+
+  \return path to srb2.pk3 if any
 */
 static const char *locateWad(void)
 {
 	const char *envstr;
 	const char *WadPath;
+	int i;
 
 	I_OutputMsg("SRB2WADDIR");
 	// does SRB2WADDIR exist?
@@ -2518,89 +2501,25 @@ static const char *locateWad(void)
 		return envstr;
 
 #ifndef NOCWD
-	I_OutputMsg(",.");
 	// examine current dir
 	strcpy(returnWadPath, ".");
+	I_OutputMsg(",%s", returnWadPath);
 	if (isWadPathOk(returnWadPath))
 		return NULL;
 #endif
 
-
-#ifdef DEFAULTDIR
-	I_OutputMsg(",HOME/" DEFAULTDIR);
-	// examine user jart directory
-	if ((envstr = I_GetEnv("HOME")) != NULL)
-	{
-		sprintf(returnWadPath, "%s" PATHSEP DEFAULTDIR, envstr);
-		if (isWadPathOk(returnWadPath))
-			return returnWadPath;
-	}
-#endif
-
-
-#ifdef CMAKECONFIG
-#ifndef NDEBUG
-	I_OutputMsg(","CMAKE_ASSETS_DIR);
-	strcpy(returnWadPath, CMAKE_ASSETS_DIR);
-	if (isWadPathOk(returnWadPath))
-	{
-		return returnWadPath;
-	}
-#endif
-#endif
-
 #ifdef __APPLE__
 	OSX_GetResourcesPath(returnWadPath);
-	I_OutputMsg(",%s", returnWadPath);
-	if (isWadPathOk(returnWadPath))
-	{
-		return returnWadPath;
-	}
+	CHECKWADPATH(returnWadPath);
 #endif
 
 	// examine default dirs
-#ifdef DEFAULTWADLOCATION1
-	I_OutputMsg("," DEFAULTWADLOCATION1);
-	strcpy(returnWadPath, DEFAULTWADLOCATION1);
-	if (isWadPathOk(returnWadPath))
-		return returnWadPath;
-#endif
-#ifdef DEFAULTWADLOCATION2
-	I_OutputMsg("," DEFAULTWADLOCATION2);
-	strcpy(returnWadPath, DEFAULTWADLOCATION2);
-	if (isWadPathOk(returnWadPath))
-		return returnWadPath;
-#endif
-#ifdef DEFAULTWADLOCATION3
-	I_OutputMsg("," DEFAULTWADLOCATION3);
-	strcpy(returnWadPath, DEFAULTWADLOCATION3);
-	if (isWadPathOk(returnWadPath))
-		return returnWadPath;
-#endif
-#ifdef DEFAULTWADLOCATION4
-	I_OutputMsg("," DEFAULTWADLOCATION4);
-	strcpy(returnWadPath, DEFAULTWADLOCATION4);
-	if (isWadPathOk(returnWadPath))
-		return returnWadPath;
-#endif
-#ifdef DEFAULTWADLOCATION5
-	I_OutputMsg("," DEFAULTWADLOCATION5);
-	strcpy(returnWadPath, DEFAULTWADLOCATION5);
-	if (isWadPathOk(returnWadPath))
-		return returnWadPath;
-#endif
-#ifdef DEFAULTWADLOCATION6
-	I_OutputMsg("," DEFAULTWADLOCATION6);
-	strcpy(returnWadPath, DEFAULTWADLOCATION6);
-	if (isWadPathOk(returnWadPath))
-		return returnWadPath;
-#endif
-#ifdef DEFAULTWADLOCATION7
-	I_OutputMsg("," DEFAULTWADLOCATION7);
-	strcpy(returnWadPath, DEFAULTWADLOCATION7);
-	if (isWadPathOk(returnWadPath))
-		return returnWadPath;
-#endif
+	for (i = 0; wadDefaultPaths[i]; i++)
+	{
+		strcpy(returnWadPath, wadDefaultPaths[i]);
+		CHECKWADPATH(returnWadPath);
+	}
+
 #ifndef NOHOME
 	// find in $HOME
 	I_OutputMsg(",HOME/" DEFAULTDIR);
@@ -2610,33 +2529,18 @@ static const char *locateWad(void)
 		strcpy(tmp, envstr);
 		strcat(tmp, PATHSEP);
 		strcat(tmp, DEFAULTDIR);
-		WadPath = searchWad(tmp);
+		CHECKWADPATH(tmp);
 		free(tmp);
-		if (WadPath)
-			return WadPath;
 	}
 #endif
-#ifdef DEFAULTSEARCHPATH1
-	// find in /usr/local
-	I_OutputMsg(", in:" DEFAULTSEARCHPATH1);
-	WadPath = searchWad(DEFAULTSEARCHPATH1);
-	if (WadPath)
-		return WadPath;
-#endif
-#ifdef DEFAULTSEARCHPATH2
-	// find in /usr/games
-	I_OutputMsg(", in:" DEFAULTSEARCHPATH2);
-	WadPath = searchWad(DEFAULTSEARCHPATH2);
-	if (WadPath)
-		return WadPath;
-#endif
-#ifdef DEFAULTSEARCHPATH3
-	// find in ???
-	I_OutputMsg(", in:" DEFAULTSEARCHPATH3);
-	WadPath = searchWad(DEFAULTSEARCHPATH3);
-	if (WadPath)
-		return WadPath;
-#endif
+
+	// search paths
+	for (i = 0; wadSearchPaths[i]; i++)
+	{
+		I_OutputMsg(", in:%s", wadSearchPaths[i]);
+		SEARCHWAD(wadSearchPaths[i]);
+	}
+
 	// if nothing was found
 	return NULL;
 }
@@ -2653,8 +2557,10 @@ const char *I_LocateWad(void)
 	{
 		// change to the directory where we found srb2.srb
 #if defined (_WIN32)
+		waddir = _fullpath(NULL, waddir, MAX_PATH);
 		SetCurrentDirectoryA(waddir);
 #else
+		waddir = realpath(waddir, NULL);
 		if (chdir(waddir) == -1)
 			I_OutputMsg("Couldn't change working directory\n");
 #endif

@@ -119,7 +119,37 @@ void HWR_ProcessPolygon(FSurfaceInfo *pSurf, FOutVector *pOutVerts, FUINT iNumPt
 		polygonArray[polygonArraySize].texture = current_texture;
 		polygonArray[polygonArraySize].shader = (shader_target != SHADER_NONE) ? HWR_GetShaderFromTarget(shader_target) : shader_target;
 		polygonArray[polygonArraySize].horizonSpecial = horizonSpecial;
+		// default to maximum value so skybox ánd horizon lines come first
+		polygonArray[polygonArraySize].hash = INT32_MIN+polygonArraySize;
 		polygonArraySize++;
+
+		if (!(PolyFlags & PF_NoTexture) && !horizonSpecial)
+		{
+			// use FNV-1a to hash polygons for later sorting.
+			INT32 hash = 0x811c9dc5;
+#define DIGEST(h, x) h ^= (x); h *= 0x01000193
+			if (current_texture)
+			{
+				DIGEST(hash, current_texture->downloaded);
+			}
+
+			DIGEST(hash, PolyFlags);
+			DIGEST(hash, pSurf->PolyColor.rgba);
+
+			if (cv_glshaders.value && gl_shadersavailable)
+			{
+				DIGEST(hash, shader_target);
+				DIGEST(hash, pSurf->TintColor.rgba);
+				DIGEST(hash, pSurf->FadeColor.rgba);
+				DIGEST(hash, pSurf->LightInfo.light_level);
+				DIGEST(hash, pSurf->LightInfo.fade_start);
+				DIGEST(hash, pSurf->LightInfo.fade_end);
+				DIGEST(hash, pSurf->LightInfo.directional);
+			}
+#undef DIGEST
+			// remove the sign bit to ensure that skybox and horizon line comes first.
+			polygonArray[polygonArraySize-1].hash = (hash & INT32_MAX);
+		}
 
 		memcpy(&unsortedVertexArray[unsortedVertexArraySize], pOutVerts, iNumPts * sizeof(FOutVector));
 		unsortedVertexArraySize += iNumPts;
@@ -346,52 +376,56 @@ void HWR_RenderBatches(void)
 		{
 			// check if a state change is required, set the change bools and next vars
 			const PolygonArrayEntry *nextEntry = polygonArraySorted[polygonReadPos];
-			nextShader      = nextEntry->shader;
-			nextTexture     = nextEntry->texture;
-			nextPolyFlags   = nextEntry->polyFlags;
-			nextSurfaceInfo = nextEntry->surf;
 
-			if (nextPolyFlags & PF_NoTexture)
-				nextTexture = 0;
-
-			if (currentShader != nextShader && HWR_UseShader())
+			if (entry->hash != nextEntry->hash)
 			{
-				changeState = true;
-				changeShader = true;
-			}
+				nextShader      = nextEntry->shader;
+				nextTexture     = nextEntry->texture;
+				nextPolyFlags   = nextEntry->polyFlags;
+				nextSurfaceInfo = nextEntry->surf;
 
-			if (currentTexture != nextTexture)
-			{
-				changeState = true;
-				changeTexture = true;
-			}
+				if (nextPolyFlags & PF_NoTexture)
+					nextTexture = 0;
 
-			if (currentPolyFlags != nextPolyFlags)
-			{
-				changeState = true;
-				changePolyFlags = true;
-			}
-
-			if (HWR_UseShader())
-			{
-				if (currentSurfaceInfo.PolyColor.rgba != nextSurfaceInfo.PolyColor.rgba ||
-					currentSurfaceInfo.TintColor.rgba != nextSurfaceInfo.TintColor.rgba ||
-					currentSurfaceInfo.FadeColor.rgba != nextSurfaceInfo.FadeColor.rgba ||
-					currentSurfaceInfo.LightInfo.light_level != nextSurfaceInfo.LightInfo.light_level ||
-					currentSurfaceInfo.LightInfo.fade_start  != nextSurfaceInfo.LightInfo.fade_start  ||
-					currentSurfaceInfo.LightInfo.fade_end    != nextSurfaceInfo.LightInfo.fade_end    ||
-					currentSurfaceInfo.LightInfo.directional != nextSurfaceInfo.LightInfo.directional)
+				if (currentShader != nextShader && HWR_UseShader())
 				{
 					changeState = true;
-					changeSurfaceInfo = true;
+					changeShader = true;
 				}
-			}
-			else
-			{
-				if (currentSurfaceInfo.PolyColor.rgba != nextSurfaceInfo.PolyColor.rgba)
+
+				if (currentTexture != nextTexture)
 				{
 					changeState = true;
-					changeSurfaceInfo = true;
+					changeTexture = true;
+				}
+
+				if (currentPolyFlags != nextPolyFlags)
+				{
+					changeState = true;
+					changePolyFlags = true;
+				}
+
+				if (HWR_UseShader())
+				{
+					if (currentSurfaceInfo.PolyColor.rgba != nextSurfaceInfo.PolyColor.rgba ||
+						currentSurfaceInfo.TintColor.rgba != nextSurfaceInfo.TintColor.rgba ||
+						currentSurfaceInfo.FadeColor.rgba != nextSurfaceInfo.FadeColor.rgba ||
+						currentSurfaceInfo.LightInfo.light_level != nextSurfaceInfo.LightInfo.light_level ||
+						currentSurfaceInfo.LightInfo.fade_start  != nextSurfaceInfo.LightInfo.fade_start  ||
+						currentSurfaceInfo.LightInfo.fade_end    != nextSurfaceInfo.LightInfo.fade_end    ||
+						currentSurfaceInfo.LightInfo.directional != nextSurfaceInfo.LightInfo.directional)
+					{
+						changeState = true;
+						changeSurfaceInfo = true;
+					}
+				}
+				else
+				{
+					if (currentSurfaceInfo.PolyColor.rgba != nextSurfaceInfo.PolyColor.rgba)
+					{
+						changeState = true;
+						changeSurfaceInfo = true;
+					}
 				}
 			}
 		}

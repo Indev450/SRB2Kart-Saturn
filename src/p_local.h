@@ -14,6 +14,10 @@
 #ifndef __P_LOCAL__
 #define __P_LOCAL__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "command.h"
 #include "d_player.h"
 #include "d_think.h"
@@ -67,7 +71,6 @@
 // both the head and tail of the thinker list
 extern thinker_t thinkercap;
 extern thinker_t precipcap;
-extern mobj_t *mobjcache;
 
 void P_InitThinkers(void);
 void P_AddThinker(thinker_t *thinker);
@@ -174,7 +177,9 @@ fixed_t P_GetPlayerSpinHeight(player_t *player);
 void P_AddPlayerScore(player_t *player, UINT32 amount);
 void P_ResetCamera(player_t *player, camera_t *thiscam);
 boolean P_TryCameraMove(fixed_t x, fixed_t y, camera_t *thiscam);
+#ifndef NOCLIPCAM
 void P_SlideCameraMove(camera_t *thiscam);
+#endif
 //void P_DemoCameraMovement(camera_t *cam, UINT8 num);
 boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcalled);
 void P_ResetLocalCamAiming(player_t *player);
@@ -184,7 +189,9 @@ boolean P_PlayerInPain(player_t *player);
 void P_DoPlayerPain(player_t *player, mobj_t *source, mobj_t *inflictor);
 void P_ResetPlayer(player_t *player);
 player_t *P_GetLocalPlayerForNum(UINT8 pnum);
+INT32 P_GetLocalPlayerNumForNum(UINT8 pnum);
 boolean P_IsLocalPlayer(const player_t *player);
+boolean P_IsLocalPlayerNum(UINT8 pnum);
 boolean P_IsDisplayPlayer(const player_t *player);
 
 boolean P_SpectatorJoinGame(player_t *player);
@@ -256,10 +263,11 @@ void P_PlayVictorySound(mobj_t *source);
 extern mapthing_t *itemrespawnque[ITEMQUESIZE];
 extern tic_t itemrespawntime[ITEMQUESIZE];
 extern size_t iquehead, iquetail;
-extern consvar_t cv_gravity/*, cv_viewheight*/;
+extern consvar_t cv_gravity;
 
 void P_RespawnSpecials(void);
 
+mobj_t *P_AllocateMobj(void);
 mobj_t *P_SpawnMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type);
 
 mobj_t *P_SpawnShadowMobj(mobj_t * caster);
@@ -383,7 +391,6 @@ void P_SetThingPosition(mobj_t *thing);
 void P_SetUnderlayPosition(mobj_t *thing);
 
 boolean P_CheckPosition(mobj_t *thing, fixed_t x, fixed_t y);
-boolean P_CheckCameraPosition(fixed_t x, fixed_t y, camera_t *thiscam);
 boolean P_TryMove(mobj_t *thing, fixed_t x, fixed_t y, boolean allowdropoff);
 boolean P_Move(mobj_t *actor, fixed_t speed);
 boolean P_SetOrigin(mobj_t *thing, fixed_t x, fixed_t y, fixed_t z);
@@ -482,5 +489,9 @@ boolean P_CheckMissileSpawn(mobj_t *th);
 void P_Thrust(mobj_t *mo, angle_t angle, fixed_t move);
 void P_ExplodeMissile(mobj_t *mo);
 void P_CheckGravity(mobj_t *mo, boolean affect);
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif // __P_LOCAL__

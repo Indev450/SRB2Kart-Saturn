@@ -230,7 +230,7 @@ boolean SetPlayerSkin(INT32 playernum, const char *skinname)
 
 	if (P_IsLocalPlayer(player))
 		CONS_Alert(CONS_WARNING, M_GetText("Skin '%s' not found.\n"), skinname);
-	else if(server || IsPlayerAdmin(consoleplayer))
+	else if (server || IsPlayerAdmin(consoleplayer))
 		CONS_Alert(CONS_WARNING, M_GetText("Player %d (%s) skin '%s' not found\n"), playernum, player_names[playernum], skinname);
 
 	SetPlayerSkinByNum(playernum, 0);
@@ -335,7 +335,7 @@ void SetPlayerSkinByNum(INT32 playernum, INT32 skinnum)
 
 	if (P_IsLocalPlayer(player))
 		CONS_Alert(CONS_WARNING, M_GetText("Skin %d not found\n"), skinnum);
-	else if(server || IsPlayerAdmin(consoleplayer))
+	else if (server || IsPlayerAdmin(consoleplayer))
 		CONS_Alert(CONS_WARNING, "Player %d (%s) skin %d not found\n", playernum, player_names[playernum], skinnum);
 
 	SetPlayerSkinByNum(playernum, 0); // not found put the sonic skin
@@ -684,7 +684,7 @@ next_token:
 
 			// skip to end of this skin's frames
 			lastlump = lump;
-			while (W_CheckNameForNumPwad(wadnum,lastlump) && memcmp(W_CheckNameForNumPwad(wadnum, lastlump),csprname,4)==0)
+			while (W_CheckNameForNumPwad(wadnum, lastlump) && memcmp(W_CheckNameForNumPwad(wadnum, lastlump), csprname,4)==0)
 				lastlump++;
 			// allocate (or replace) sprite frames, and set spritedef
 			R_AddSingleSpriteDef(csprname, &skin->spritedef, wadnum, lump, lastlump);
@@ -711,10 +711,10 @@ next_token:
 				UINT16 localllump = 0, lstart = UINT16_MAX, lend = UINT16_MAX;
 				const char *lname;
 
-				while ((lname = W_CheckNameForNumPwad(wadnum,localllump)))
+				while ((lname = W_CheckNameForNumPwad(wadnum, localllump)))
 				{
 					// If this is a valid sprite...
-					if (!memcmp(lname,sprname,4) && lname[4] && lname[5] && lname[5] >= '0' && lname[5] <= '8')
+					if (!memcmp(lname, sprname,4) && lname[4] && lname[5] && lname[5] >= '0' && lname[5] <= '8')
 					{
 						if (lstart == UINT16_MAX)
 							lstart = localllump;

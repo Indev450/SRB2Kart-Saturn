@@ -211,17 +211,10 @@ tic_t firstconnectattempttime = 0;
 // Must be a power of two
 #define TEXTCMD_HASH_SIZE 4
 
-typedef struct textcmdplayer_s
-{
-	INT32 playernum;
-	UINT8 cmd[MAXTEXTCMD];
-	struct textcmdplayer_s *next;
-} textcmdplayer_t;
-
 typedef struct textcmdtic_s
 {
 	tic_t tic;
-	textcmdplayer_t *playercmds[TEXTCMD_HASH_SIZE];
+	UINT8 *playercmds[MAXPLAYERS];
 	struct textcmdtic_s *next;
 } textcmdtic_t;
 
@@ -407,22 +400,13 @@ static void D_FreeTextcmd(tic_t tic)
 
 	if (textcmdtic)
 	{
-		INT32 i;
-
 		// Remove this tic from the list.
 		*tctprev = textcmdtic->next;
 
 		// Free all players.
-		for (i = 0; i < TEXTCMD_HASH_SIZE; i++)
+		for (INT32 i = 0; i < MAXPLAYERS; i++)
 		{
-			textcmdplayer_t *textcmdplayer = textcmdtic->playercmds[i];
-
-			while (textcmdplayer)
-			{
-				textcmdplayer_t *tcpnext = textcmdplayer->next;
-				Z_Free(textcmdplayer);
-				textcmdplayer = tcpnext;
-			}
+			Z_Free(textcmdtic->playercmds[i]);
 		}
 
 		// Free this tic's own memory.
@@ -439,10 +423,8 @@ static UINT8* D_GetExistingTextcmd(tic_t tic, INT32 playernum)
 	// Do we have an entry for the tic? If so, look for player.
 	if (textcmdtic)
 	{
-		textcmdplayer_t *textcmdplayer = textcmdtic->playercmds[playernum & (TEXTCMD_HASH_SIZE - 1)];
-		while (textcmdplayer && textcmdplayer->playernum != playernum) textcmdplayer = textcmdplayer->next;
-
-		if (textcmdplayer) return textcmdplayer->cmd;
+		UINT8 *cmd = textcmdtic->playercmds[playernum];
+		if (cmd) return cmd;
 	}
 
 	return NULL;
@@ -453,7 +435,6 @@ static UINT8* D_GetTextcmd(tic_t tic, INT32 playernum)
 {
 	textcmdtic_t *textcmdtic = textcmds[tic & (TEXTCMD_HASH_SIZE - 1)];
 	textcmdtic_t **tctprev = &textcmds[tic & (TEXTCMD_HASH_SIZE - 1)];
-	textcmdplayer_t *textcmdplayer, **tcpprev;
 
 	// Look for the tic.
 	while (textcmdtic && textcmdtic->tic != tic)
@@ -469,24 +450,11 @@ static UINT8* D_GetTextcmd(tic_t tic, INT32 playernum)
 		textcmdtic->tic = tic;
 	}
 
-	tcpprev = &textcmdtic->playercmds[playernum & (TEXTCMD_HASH_SIZE - 1)];
-	textcmdplayer = *tcpprev;
-
-	// Look for the player.
-	while (textcmdplayer && textcmdplayer->playernum != playernum)
-	{
-		tcpprev = &textcmdplayer->next;
-		textcmdplayer = textcmdplayer->next;
-	}
-
 	// If we don't have an entry for the player, make it.
-	if (!textcmdplayer)
-	{
-		textcmdplayer = *tcpprev = Z_Calloc(sizeof (textcmdplayer_t), PU_STATIC, NULL);
-		textcmdplayer->playernum = playernum;
-	}
+	if (!textcmdtic->playercmds[playernum])
+		textcmdtic->playercmds[playernum] = Z_Calloc(MAXTEXTCMD, PU_STATIC, NULL);
 
-	return textcmdplayer->cmd;
+	return textcmdtic->playercmds[playernum];
 }
 
 static void ExtraDataTicker(void)
@@ -4243,8 +4211,8 @@ consvar_t cv_resynchcooldown = {"gamestatecooldown", "5", CV_SAVE, resynchcooldo
 consvar_t cv_blamecfail = {"blamecfail", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL	};
 
 // max file size to send to a player (in kilobytes)
-static CV_PossibleValue_t maxsend_cons_t[] = {{0, "MIN"}, {51200, "MAX"}, {0, NULL}};
-consvar_t cv_maxsend = {"maxsend", "MAX", CV_SAVE, maxsend_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+static CV_PossibleValue_t maxsend_cons_t[] = {{-1, "MIN"}, {999999999, "MAX"}, {0, NULL}};
+consvar_t cv_maxsend = {"maxsend", "204800", CV_SAVE, maxsend_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_noticedownload = {"noticedownload", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 // Speed of file downloading (in packets per tic)
@@ -4560,6 +4528,7 @@ static void Got_AddPlayer(UINT8 **p, INT32 playernum)
 				displayplayers[i] = newplayernum;
 			DEBFILE("spawning me\n");
 		}
+
 		D_SendPlayerConfig();
 		addedtogame = true;
 	}
@@ -5868,29 +5837,28 @@ static void PT_Resynched(SINT8 node)
 static void PT_ServerTics(SINT8 node)
 {
 	tic_t realend, realstart;
-	UINT8 *pak, *txtpak = NULL, numtxtpak;
 
 	// Only accept PT_SERVERTICS from the server.
 	if (!FromServer(node, "PT_SERVERTICS"))
 		return;
 
 	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
+	servertics_pak *packet = &netbuffer->u.serverpak;
 
-	realstart = ExpandTics(netbuffer->u.serverpak.starttic, maketic);
-	realend = realstart + netbuffer->u.serverpak.numtics;
-
-	if (!txtpak)
-		txtpak = (UINT8 *)&netbuffer->u.serverpak.cmds[netbuffer->u.serverpak.numslots
-		* netbuffer->u.serverpak.numtics];
+	realstart = ExpandTics(packet->starttic, maketic);
+	realend = realstart + packet->numtics;
 
 	if (realend > gametic + CLIENTBACKUPTICS)
 		realend = gametic + CLIENTBACKUPTICS;
 	cl_packetmissed = realstart > neededtic;
 
+	UINT8 *pak = (UINT8 *)&packet->cmds;
+	UINT8 *txtpak = (UINT8 *)&packet->cmds[packet->numslots * packet->numtics];
+
 	if (realstart <= neededtic && realend > neededtic)
 	{
 		tic_t i, j;
-		pak = (UINT8 *)&netbuffer->u.serverpak.cmds;
+		pak = (UINT8 *)&packet->cmds;
 
 		for (i = realstart; i < realend; i++)
 		{
@@ -5899,10 +5867,10 @@ static void PT_ServerTics(SINT8 node)
 
 			// copy the tics
 			pak = G_ScpyTiccmd(netcmds[i%BACKUPTICS], pak,
-							   netbuffer->u.serverpak.numslots*sizeof (ticcmd_t));
+							   packet->numslots*sizeof (ticcmd_t));
 
 			// copy the textcmds
-			numtxtpak = *txtpak++;
+			UINT8 numtxtpak = *txtpak++;
 
 			for (j = 0; j < numtxtpak; j++)
 			{
@@ -5926,11 +5894,6 @@ static void PT_ServerTics(SINT8 node)
 	else
 	{
 		DEBFILE(va("frame not in bound: %u (bounds are from %u to %u)\n", neededtic, realstart, realend));
-		/*if (realend < neededtic - 2 * TICRATE || neededtic + 2 * TICRATE < realstart)
-		 *	I_Error("Received an out of order PT_SERVERTICS packet!\n"
-		 *			"Got tics %d-%d, needed tic %d\n\n"
-		 *			"Please report this crash on the Master Board,\n"
-		 *			"IRC or Discord so it can be fixed.\n", (INT32)realstart, (INT32)realend, (INT32)neededtic);*/
 	}
 }
 
@@ -7050,6 +7013,69 @@ void NetKeepAlive(void)
 // If a tree falls in the forest but nobody is around to hear it, does it make a tic?
 #define DEDICATEDIDLETIME (10*TICRATE)
 
+#ifdef DEDICATEDIDLETIME
+static void DedicatedIdleUpdate(INT32 *realtics)
+{
+	INT32 i;
+	static tic_t dedicatedidle = 0;
+
+	if (!server || !dedicated || gamestate != GS_LEVEL)
+		return;
+
+	boolean empty = true;
+	for (i = 0; i < MAXPLAYERS; i++)
+		if (playeringame[i])
+		{
+			empty = false;
+			break;
+		}
+
+	if (empty)
+	{
+		if (leveltime == 2)
+		{
+			// On next tick...
+			dedicatedidle = DEDICATEDIDLETIME - 1;
+		}
+		else if (dedicatedidle >= DEDICATEDIDLETIME)
+		{
+			if (D_GetExistingTextcmd(gametic, 0) || D_GetExistingTextcmd(gametic + 1, 0))
+			{
+				CONS_Printf("DEDICATED: Awakening from idle (Netxcmd detected...)\n");
+				dedicatedidle = 0;
+			}
+			else
+			{
+				(*realtics) = 0;
+			}
+		}
+		else
+		{
+			dedicatedidle += (*realtics);
+
+			if (dedicatedidle >= DEDICATEDIDLETIME)
+			{
+				const char *idlereason = "at round start";
+				if (leveltime > 3)
+					idlereason = va("for %d seconds", dedicatedidle / TICRATE);
+
+				CONS_Printf("DEDICATED: No players %s, idling...\n", idlereason);
+				(*realtics) = 0;
+				dedicatedidle = DEDICATEDIDLETIME;
+			}
+		}
+	}
+	else
+	{
+		if (dedicatedidle >= DEDICATEDIDLETIME)
+		{
+			CONS_Printf("DEDICATED: Awakening from idle (Player detected...)\n");
+		}
+		dedicatedidle = 0;
+	}
+}
+#endif
+
 void NetUpdate(void)
 {
 	static tic_t resptime = 0;
@@ -7063,54 +7089,6 @@ void NetUpdate(void)
 	if (realtics <= 0) // nothing new to update
 		return;
 
-#ifdef DEDICATEDIDLETIME
-	if (server && dedicated && gamestate == GS_LEVEL)
-	{
-		static tic_t dedicatedidle = 0;
-
-		for (i = 1; i < MAXNETNODES; ++i)
-			if (nodeingame[i])
-			{
-				if (dedicatedidle == DEDICATEDIDLETIME)
-				{
-					CONS_Printf("DEDICATED: Awakening from idle (Node %d detected...)\n", i);
-					dedicatedidle = 0;
-				}
-				break;
-			}
-
-		if (i == MAXNETNODES)
-		{
-			if (leveltime == 2)
-			{
-				// On next tick...
-				dedicatedidle = DEDICATEDIDLETIME-1;
-			}
-			else if (dedicatedidle == DEDICATEDIDLETIME)
-			{
-				if (D_GetExistingTextcmd(gametic, 0) || D_GetExistingTextcmd(gametic+1, 0))
-				{
-					CONS_Printf("DEDICATED: Awakening from idle (Netxcmd detected...)\n");
-					dedicatedidle = 0;
-				}
-				else
-				{
-					realtics = 0;
-				}
-			}
-			else if (++dedicatedidle == DEDICATEDIDLETIME)
-			{
-				const char *idlereason = "at round start";
-				if (leveltime > 3)
-					idlereason = va("for %d seconds", dedicatedidle/TICRATE);
-
-				CONS_Printf("DEDICATED: No nodes %s, idling...\n", idlereason);
-				realtics = 0;
-			}
-		}
-	}
-#endif
-
 	if (realtics > 5)
 	{
 		if (server)
@@ -7118,6 +7096,10 @@ void NetUpdate(void)
 		else
 			realtics = 5;
 	}
+
+#ifdef DEDICATEDIDLETIME
+	DedicatedIdleUpdate(&realtics);
+#endif
 
 	gametime = nowtime;
 

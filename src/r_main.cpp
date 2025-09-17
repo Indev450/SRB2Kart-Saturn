@@ -70,8 +70,6 @@ boolean skyVisiblePerPlayer[MAXSPLITSCREENPLAYERS]; // saved values of skyVisibl
 sector_t *viewsector;
 player_t *viewplayer;
 
-fixed_t rendertimefrac;
-fixed_t rendertimefrac_unpaused;
 fixed_t renderdeltatics;
 boolean renderisnewtic;
 
@@ -412,16 +410,6 @@ angle_t R_PlayerSliptideAngle(player_t *player)
 		ang = R_PointToAngle(mo->x, mo->y) - mo->angle;
 
 	return FixedMul(FINECOSINE((ang) >> ANGLETOFINESHIFT), mo->player->sliproll * mo->player->kartstuff[k_aizdriftstrat]);
-}
-
-INT32 R_GetHudUncap(void)
-{
-	return cv_uncappedhud.value ? rendertimefrac & FRACMASK : 0;
-}
-
-INT32 R_GetMenuUncap(void)
-{
-	return cv_uncappedhud.value ? rendertimefrac_unpaused & FRACMASK : 0;
 }
 
 //
@@ -800,12 +788,12 @@ void R_CheckViewMorph(void)
 
 void R_ApplyViewMorph(void)
 {
+	if (!viewmorph.use)
+		return;
+
 	UINT8 *tmpscr = vid.screens[4];
 	UINT8 *srcscr = vid.screens[0];
 	INT32 p, end = vid.width * vid.height;
-
-	if (!viewmorph.use)
-		return;
 
 	if (cv_debug & DBG_VIEWMORPH)
 	{
@@ -1045,7 +1033,7 @@ void R_Init(void)
 	R_InitLightTables();
 
 	//I_OutputMsg("\nR_InitTranslucencyTables\n");
-	R_InitTranslucencyTables();
+	//R_InitTranslucencyTables();
 
 	R_InitDrawNodes();
 
@@ -1100,7 +1088,7 @@ static void R_SetupCommonFrame(player_t * player, sector_t * sector)
 	else
 		newview->sector = R_PointInSubsectorFast(newview->x, newview->y)->sector;
 
-	R_InterpolateView(rendertimefrac_unpaused, false);
+	R_InterpolateView(R_GetTimeFrac(RTF_CAMERA), false);
 }
 
 static void R_SetupAimingFrame(player_t *player, camera_t *thiscam)
@@ -1607,10 +1595,6 @@ void R_RegisterEngineStuff(void)
 	CV_RegisterVar(&cv_playerfade);
 
 	CV_RegisterVar(&cv_ripplewater);
-
-	// Default viewheight is changeable,
-	// initialized to standard viewheight
-	//CV_RegisterVar(&cv_viewheight);
 
 	// Frame interpolation/uncapped
 	CV_RegisterVar(&cv_fpscap);

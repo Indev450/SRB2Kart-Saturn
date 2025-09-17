@@ -10,10 +10,14 @@
 
 #include "memory.h"
 
-#include <array>
 #include <new>
+#include <cstdint>
 
+#include "../cxxutil.hpp"
 #include "../z_zone.h"
+#include "../lua_script.h"
+
+using namespace srb2;
 
 namespace
 {
@@ -57,6 +61,90 @@ void LinearMemory::reset() noexcept
 }
 
 } // namespace
+
+PoolAllocator::~PoolAllocator()
+{
+	release();
+}
+
+constexpr static size_t nearest_multiple(size_t v, size_t divisor)
+{
+	return (v + (divisor - 1)) & ~(divisor - 1);
+}
+
+PoolAllocator::ChunkFooter* PoolAllocator::allocate_chunk()
+{
+	uint8_t* chunk = (uint8_t*)Z_Malloc(nearest_multiple(blocks_ * block_size_, alignof(ChunkFooter)) + sizeof(ChunkFooter), tag_, nullptr);
+	ChunkFooter* footer = (ChunkFooter*)(chunk + (blocks_ * block_size_));
+	footer->next = nullptr;
+	footer->start = (void*)chunk;
+	for (size_t i = 0; i < blocks_; i++)
+	{
+		FreeBlock* cur = (FreeBlock*)(chunk + (i * block_size_));
+		FreeBlock* next = (FreeBlock*)(chunk + ((i + 1) * block_size_));
+		cur->next = next;
+	}
+	((FreeBlock*)(chunk + ((blocks_ - 1) * block_size_)))->next = nullptr;
+	return footer;
+}
+
+void* PoolAllocator::allocate()
+{
+	if (first_chunk_ == nullptr)
+	{
+		SRB2_ASSERT(head_ == nullptr);
+
+		// No chunks allocated yet
+		first_chunk_ = allocate_chunk();
+		head_ = (FreeBlock*)first_chunk_->start;
+	}
+
+	if (head_->next == nullptr)
+	{
+		// Current chunk will be full; allocate another at the end of the list
+		ChunkFooter* last_chunk = first_chunk_;
+		while (last_chunk->next != nullptr)
+		{
+			last_chunk = last_chunk->next;
+		}
+		ChunkFooter* new_chunk = allocate_chunk();
+		last_chunk->next = new_chunk;
+		head_->next = (FreeBlock*)new_chunk->start;
+	}
+
+	FreeBlock* ret = head_;
+	head_ = head_->next;
+	return ret;
+}
+
+void PoolAllocator::deallocate(void* p)
+{
+	// Required in case this block is reused
+	LUA_InvalidateUserdata(p);
+
+	FreeBlock* block = reinterpret_cast<FreeBlock*>(p);
+	block->next = head_;
+	head_ = block;
+}
+
+void PoolAllocator::release()
+{
+	ChunkFooter* next = nullptr;
+	for (ChunkFooter* i = first_chunk_; i != nullptr; i = next)
+	{
+		uint8_t *chunk = (uint8_t*)i->start;
+		for (size_t j = 0; j < blocks_; j++)
+		{
+			// Invalidate all blocks that possibly weren't passed to deallocate
+			LUA_InvalidateUserdata(chunk + (j * block_size_));
+		}
+		next = i->next;
+		Z_Free(i->start);
+	}
+
+	first_chunk_ = nullptr;
+	head_ = nullptr;
+}
 
 static LinearMemory g_frame_memory {4 * 1024 * 1024};
 

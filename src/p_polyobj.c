@@ -155,7 +155,6 @@ FUNCINLINE static ATTRINLINE void PolyObj_AddThinker(thinker_t *th)
 	thinkercap.next = th;
 
 	th->references = 0;
-	th->cachable = false; // not initialising this made the mobjcache die thx!
 #ifdef PARANOIA
 	th->debug_mobjtype = MT_NULL;
 #endif
@@ -443,8 +442,6 @@ static void Polyobj_findSegs(polyobj_t *po, seg_t *seg)
 				if (r != po->segCount)
 					continue;
 
-				segs[s].dontrenderme = true;
-
 				Polyobj_addSeg(po, &segs[s]);
 			}
 		}
@@ -503,7 +500,6 @@ newseg:
 						if (r != po->segCount)
 							continue;
 
-						segs[q].dontrenderme = true;
 						Polyobj_addSeg(po, &segs[q]);
 					}
 				}
@@ -998,7 +994,7 @@ static void Polyobj_pushThing(polyobj_t *po, line_t *line, mobj_t *mo)
 	vertex_t closest;
 
 	// calculate angle of line and subtract 90 degrees to get normal
-	lineangle = R_PointToAngle2(0, 0, line->dx, line->dy) - ANGLE_90;
+	lineangle = line->angle - ANGLE_90;
 	lineangle >>= ANGLETOFINESHIFT;
 	momx = FixedMul(po->thrust, FINECOSINE(lineangle));
 	momy = FixedMul(po->thrust, FINESINE(lineangle));
@@ -1274,6 +1270,8 @@ static void Polyobj_rotateLine(line_t *ld)
 	ld->dx = v2->x - v1->x;
 	ld->dy = v2->y - v1->y;
 
+	ld->angle = R_PointToAngle2(0, 0, ld->dx, ld->dy);
+
 	// determine slopetype
 	ld->slopetype = !ld->dx ? ST_VERTICAL : !ld->dy ? ST_HORIZONTAL :
 			FixedDiv(ld->dy, ld->dx) > 0 ? ST_POSITIVE : ST_NEGATIVE;
@@ -1381,16 +1379,18 @@ static void Polyobj_rotateThings(polyobj_t *po, vector2_t origin, angle_t delta,
 
 					Polyobj_slideThing(mo, newxoff-oldxoff, newyoff-oldyoff);
 
-					if (turnthings == 2 || (turnthings == 1 && !mo->player)) {
+					if (turnthings == 2 || (turnthings == 1 && !mo->player))
+					{
 						mo->angle += delta;
-						if (mo->player == &players[consoleplayer])
-							localangle[0] += delta;
-						else if (mo->player == &players[displayplayers[1]])
-							localangle[1] += delta;
-						else if (mo->player == &players[displayplayers[2]])
-							localangle[2] += delta;
-						else if (mo->player == &players[displayplayers[3]])
-							localangle[3] += delta;
+
+						for (UINT8 i = 0; i <= splitscreen; i++)
+						{
+							if (mo->player == P_GetLocalPlayerForNum(i))
+							{
+								localangle[i] += delta;
+								break;
+							}
+						}
 					}
 				}
 			}
@@ -2356,7 +2356,9 @@ INT32 EV_DoPolyObjRotate(polyrotdata_t *prdata)
 		return 0;
 
 	// create a new thinker
-	th = Z_Malloc(sizeof(polyrotate_t), PU_LEVSPEC, NULL);
+	th = Z_LevelPoolMalloc(sizeof(polyrotate_t));
+	th->thinker.alloctype = TAT_LEVELPOOL;
+	th->thinker.size = sizeof(polyrotate_t);
 	th->thinker.function = (actionf_p1)T_PolyObjRotate;
 	PolyObj_AddThinker(&th->thinker);
 	po->thinker = &th->thinker;
@@ -2424,7 +2426,9 @@ INT32 EV_DoPolyObjMove(polymovedata_t *pmdata)
 		return 0;
 
 	// create a new thinker
-	th = Z_Malloc(sizeof(polymove_t), PU_LEVSPEC, NULL);
+	th = Z_LevelPoolMalloc(sizeof(polymove_t));
+	th->thinker.alloctype = TAT_LEVELPOOL;
+	th->thinker.size = sizeof(polymove_t);
 	th->thinker.function = (actionf_p1)T_PolyObjMove;
 	PolyObj_AddThinker(&th->thinker);
 	po->thinker = &th->thinker;
@@ -2490,7 +2494,9 @@ INT32 EV_DoPolyObjWaypoint(polywaypointdata_t *pwdata)
 		return 0;
 
 	// create a new thinker
-	th = Z_Malloc(sizeof(polywaypoint_t), PU_LEVSPEC, NULL);
+	th = Z_LevelPoolMalloc(sizeof(polywaypoint_t));
+	th->thinker.alloctype = TAT_LEVELPOOL;
+	th->thinker.size = sizeof(polywaypoint_t);
 	th->thinker.function = (actionf_p1)T_PolyObjWaypoint;
 	PolyObj_AddThinker(&th->thinker);
 	po->thinker = &th->thinker;
@@ -2626,7 +2632,9 @@ static void Polyobj_doSlideDoor(polyobj_t *po, polydoordata_t *doordata)
 	INT32 start;
 
 	// allocate and add a new slide door thinker
-	th = Z_Malloc(sizeof(polyslidedoor_t), PU_LEVSPEC, NULL);
+	th = Z_LevelPoolMalloc(sizeof(polyslidedoor_t));
+	th->thinker.alloctype = TAT_LEVELPOOL;
+	th->thinker.size = sizeof(polyslidedoor_t);
 	th->thinker.function = (actionf_p1)T_PolyDoorSlide;
 	PolyObj_AddThinker(&th->thinker);
 
@@ -2677,7 +2685,9 @@ static void Polyobj_doSwingDoor(polyobj_t *po, polydoordata_t *doordata)
 	INT32 start;
 
 	// allocate and add a new swing door thinker
-	th = Z_Malloc(sizeof(polyswingdoor_t), PU_LEVSPEC, NULL);
+	th = Z_LevelPoolMalloc(sizeof(polyswingdoor_t));
+	th->thinker.alloctype = TAT_LEVELPOOL;
+	th->thinker.size = sizeof(polyswingdoor_t);
 	th->thinker.function = (actionf_p1)T_PolyDoorSwing;
 	PolyObj_AddThinker(&th->thinker);
 
@@ -2762,7 +2772,9 @@ INT32 EV_DoPolyObjDisplace(polydisplacedata_t *prdata)
 		return 0;
 
 	// create a new thinker
-	th = Z_Malloc(sizeof(polydisplace_t), PU_LEVSPEC, NULL);
+	th = Z_LevelPoolMalloc(sizeof(polydisplace_t));
+	th->thinker.alloctype = TAT_LEVELPOOL;
+	th->thinker.size = sizeof(polydisplace_t);
 	th->thinker.function = (actionf_p1)T_PolyObjDisplace;
 	PolyObj_AddThinker(&th->thinker);
 	po->thinker = &th->thinker;
@@ -2866,7 +2878,9 @@ INT32 EV_DoPolyObjFlag(line_t *pfdata)
 	}
 
 	// create a new thinker
-	th = Z_Malloc(sizeof(polymove_t), PU_LEVSPEC, NULL);
+	th = Z_LevelPoolMalloc(sizeof(polymove_t));
+	th->thinker.alloctype = TAT_LEVELPOOL;
+	th->thinker.size = sizeof(polymove_t);
 	th->thinker.function = (actionf_p1)T_PolyObjFlag;
 	PolyObj_AddThinker(&th->thinker);
 	po->thinker = &th->thinker;
@@ -2875,7 +2889,7 @@ INT32 EV_DoPolyObjFlag(line_t *pfdata)
 	th->polyObjNum = pfdata->tag;
 	th->distance   = 0;
 	th->speed      = P_AproxDistance(pfdata->dx, pfdata->dy)>>FRACBITS;
-	th->angle      = R_PointToAngle2(pfdata->v1->x, pfdata->v1->y, pfdata->v2->x, pfdata->v2->y)>>ANGLETOFINESHIFT;
+	th->angle      = pfdata->angle >> ANGLETOFINESHIFT;
 	th->momx       = sides[pfdata->sidenum[0]].textureoffset>>FRACBITS;
 
 	// save current positions
@@ -2898,6 +2912,5 @@ INT32 EV_DoPolyObjFlag(line_t *pfdata)
 	// action was successful
 	return 1;
 }
-
 
 // EOF

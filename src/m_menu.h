@@ -319,6 +319,7 @@ void GameFocus_menu_Onchange (void);
 void M_UpdateOGLMenu(void);
 #endif
 
+void M_ResetDemoList(void);
 void M_ReplayHut(INT32 choice);
 void M_SetPlaybackMenuPointer(void);
 

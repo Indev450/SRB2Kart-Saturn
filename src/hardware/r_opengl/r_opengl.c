@@ -27,6 +27,8 @@
 
 #if defined (HWRENDER) && !defined (NOROPENGL)
 
+#include "../../r_fps.h" // For R_GetTimeFrac, used for the leveltime shader uniform
+
 #include "r_opengl.h"
 #include "r_vbo.h"
 
@@ -889,7 +891,7 @@ void GL_SetShaderInfo(hwdshaderinfo_t info, INT32 value)
 	switch (info)
 	{
 		case HWD_SHADERINFO_LEVELTIME:
-			shader_leveltime = (((float)(value-1)) + FIXED_TO_FLOAT(rendertimefrac)) / TICRATE;
+			shader_leveltime = (((float)(value-1)) + FIXED_TO_FLOAT(R_GetTimeFrac(RTF_LEVEL))) / TICRATE;
 			break;
 		case HWD_SHADERINFO_LIGHT_X:
 			shader_light_x = FixedToFloat(value);

@@ -225,8 +225,7 @@ boolean P_DoSpring(mobj_t *spring, mobj_t *object)
 			{
 				for (UINT8 j = 0; j <= splitscreen; ++j)
 				{
-					INT32 id = (j == 0 ? consoleplayer : displayplayers[j]);
-					if (object->player == &players[id])
+					if (object->player == P_GetLocalPlayerForNum(j))
 					{
 						localangle[j] = spring->angle;
 						break;
@@ -1982,7 +1981,7 @@ void P_CheckHoopPosition(mobj_t *hoopthing, fixed_t x, fixed_t y, fixed_t z, fix
 //
 // P_CheckCameraPosition
 //
-boolean P_CheckCameraPosition(fixed_t x, fixed_t y, camera_t *thiscam)
+static boolean P_CheckCameraPosition(fixed_t x, fixed_t y, camera_t *thiscam)
 {
 	INT32 xl, xh, yl, yh, bx, by;
 	sector_t *newsec;
@@ -2396,13 +2395,15 @@ boolean P_TryMove(mobj_t *thing, fixed_t x, fixed_t y, boolean allowdropoff)
 
 			if (thing->player)
 			{
+				const INT32 special = GETSECSPECIAL(R_PointInSubsector(x, y)->sector->special, 1);
+
 				// If using type Section1:13, double the maxstep.
 				if (P_PlayerTouchingSectorSpecial(thing->player, 1, 13)
-				|| GETSECSPECIAL(R_PointInSubsector(x, y)->sector->special, 1) == 13)
+				|| special == 13)
 					maxstep <<= 1;
 				// If using type Section1:12, no maxstep. For ledges you don't want the player to climb! (see: Egg Zeppelin & SMK port walls)
 				else if (P_PlayerTouchingSectorSpecial(thing->player, 1, 12)
-				|| GETSECSPECIAL(R_PointInSubsector(x, y)->sector->special, 1) == 12)
+				|| special == 12)
 					maxstep = 0;
 			}
 
@@ -2614,10 +2615,11 @@ static boolean P_ThingHeightClip(mobj_t *thing)
 {
 	boolean floormoved;
 	fixed_t oldfloorz = thing->floorz;
-	boolean onfloor = P_IsObjectOnGround(thing);//(thing->z <= thing->floorz);
 
 	if (thing->flags & MF_NOCLIPHEIGHT)
 		return true;
+
+	const boolean onfloor = P_IsObjectOnGround(thing);//(thing->z <= thing->floorz);
 
 	P_CheckPosition(thing, thing->x, thing->y);
 
@@ -2686,6 +2688,7 @@ static fixed_t tmxmove, tmymove;
 //
 // P_HitCameraSlideLine
 //
+#ifndef NOCLIPCAM
 static void P_HitCameraSlideLine(line_t *ld, camera_t *thiscam)
 {
 	INT32 side;
@@ -2705,7 +2708,7 @@ static void P_HitCameraSlideLine(line_t *ld, camera_t *thiscam)
 	}
 
 	side = P_PointOnLineSide(thiscam->x, thiscam->y, ld);
-	lineangle = R_PointToAngle2(0, 0, ld->dx, ld->dy);
+	lineangle = ld->angle;
 
 	if (side == 1)
 		lineangle += ANGLE_180;
@@ -2725,6 +2728,7 @@ static void P_HitCameraSlideLine(line_t *ld, camera_t *thiscam)
 	tmxmove = FixedMul(newlen, FINECOSINE(lineangle));
 	tmymove = FixedMul(newlen, FINESINE(lineangle));
 }
+#endif
 
 //
 // P_HitSlideLine
@@ -2751,7 +2755,7 @@ static void P_HitSlideLine(line_t *ld)
 
 	side = P_PointOnLineSide(slidemo->x, slidemo->y, ld);
 
-	lineangle = R_PointToAngle2(0, 0, ld->dx, ld->dy);
+	lineangle = ld->angle;
 
 	if (side == 1)
 		lineangle += ANGLE_180;
@@ -2784,7 +2788,7 @@ static void P_PlayerHitBounceLine(line_t *ld)
 	fixed_t movelen;
 
 	side = P_PointOnLineSide(slidemo->x, slidemo->y, ld);
-	lineangle = R_PointToAngle2(0, 0, ld->dx, ld->dy)-ANGLE_90;
+	lineangle = ld->angle-ANGLE_90;
 
 	if (side == 1)
 		lineangle += ANGLE_180;
@@ -2822,7 +2826,7 @@ static void P_HitBounceLine(line_t *ld)
 		return;
 	}
 
-	lineangle = R_PointToAngle2(0, 0, ld->dx, ld->dy);
+	lineangle = ld->angle;
 
 	if (lineangle >= ANGLE_180)
 		lineangle -= ANGLE_180;
@@ -2844,6 +2848,7 @@ static void P_HitBounceLine(line_t *ld)
 //
 // PTR_SlideCameraTraverse
 //
+#ifndef NOCLIPCAM
 static boolean PTR_SlideCameraTraverse(intercept_t *in)
 {
 	line_t *li;
@@ -2890,6 +2895,7 @@ isblocking:
 
 	return false; // stop
 }
+#endif
 
 //
 // PTR_SlideTraverse
@@ -2960,6 +2966,7 @@ isblocking:
 //
 // Tries to slide the camera along a wall.
 //
+#ifndef NOCLIPCAM
 void P_SlideCameraMove(camera_t *thiscam)
 {
 	fixed_t leadx, leady, trailx, traily, newx, newy;
@@ -3053,6 +3060,7 @@ stairstep:
 	if (!retval)
 		goto retry;
 }
+#endif
 
 //
 // P_SlideMove
@@ -3815,11 +3823,8 @@ boolean P_CheckSector(sector_t *sector, boolean crunch)
  Lots of new Boom functions that work faster and add functionality.
 */
 
-static msecnode_t *headsecnode = NULL;
-
 void P_Initsecnode(void)
 {
-	headsecnode = NULL;
 }
 
 // P_GetSecnode() retrieves a node from the freelist. The calling routine
@@ -3827,24 +3832,14 @@ void P_Initsecnode(void)
 
 static msecnode_t *P_GetSecnode(void)
 {
-	msecnode_t *node;
-
-	if (headsecnode)
-	{
-		node = headsecnode;
-		headsecnode = headsecnode->m_thinglist_next;
-	}
-	else
-		node = Z_Calloc(sizeof (*node), PU_LEVEL, NULL);
-	return node;
+	return Z_LevelPoolCalloc(sizeof(msecnode_t));
 }
 
 // P_PutSecnode() returns a node to the freelist.
 
 static inline void P_PutSecnode(msecnode_t *node)
 {
-	node->m_thinglist_next = headsecnode;
-	headsecnode = node;
+	Z_LevelPoolFree(node, sizeof(msecnode_t));
 }
 
 // P_AddSecnode() searches the current list to see if this sector is
@@ -3949,9 +3944,9 @@ void P_DelSeclist(msecnode_t *node)
 
 static inline boolean PIT_GetSectors(line_t *ld)
 {
-	if (tmbbox[BOXRIGHT] <= ld->bbox[BOXLEFT] ||
-		tmbbox[BOXLEFT] >= ld->bbox[BOXRIGHT] ||
-		tmbbox[BOXTOP] <= ld->bbox[BOXBOTTOM] ||
+	if (tmbbox[BOXRIGHT]  <= ld->bbox[BOXLEFT]   ||
+		tmbbox[BOXLEFT]   >= ld->bbox[BOXRIGHT]  ||
+		tmbbox[BOXTOP]    <= ld->bbox[BOXBOTTOM] ||
 		tmbbox[BOXBOTTOM] >= ld->bbox[BOXTOP])
 		return true;
 
@@ -4071,7 +4066,7 @@ void P_CreateSecNodeList(mobj_t *thing, fixed_t x, fixed_t y)
  * Must clear tmthing at tic end, as it might contain a pointer to a removed thinker, or the level might have ended/been ended and we clear the objects it was pointing too. Hopefully we don't need to carry this between tics for sync. */
 void P_MapStart(void)
 {
-	if (tmthing)
+	if (UNLIKELY(tmthing))
 		I_Error("P_MapStart: tmthing set!");
 }
 

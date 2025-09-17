@@ -131,34 +131,11 @@ void P_ClosestPointOnLine3D(fixed_t x, fixed_t y, fixed_t z, line_t *line, verte
 }
 
 //
-// P_PointOnLineSide
-// Returns 0 or 1
-//
-INT32 P_PointOnLineSide(fixed_t x, fixed_t y, const line_t *line)
-{
-	fixed_t dx, dy, left, right;
-
-	if (!line->dx)
-		return x <= line->v1->x ? line->dy > 0 : line->dy < 0;
-
-	if (!line->dy)
-		return y <= line->v1->y ? line->dx < 0 : line->dx > 0;
-
-	dx = (x - line->v1->x);
-	dy = (y - line->v1->y);
-
-	left = FixedMul(line->dy>>FRACBITS, dx);
-	right = FixedMul(dy, line->dx>>FRACBITS);
-
-	return right < left ? 0 : 1;
-}
-
-//
 // P_BoxOnLineSide
 // Considers the line to be infinite
 // Returns side 0 or 1, -1 if box crosses the line.
 //
-INT32 P_BoxOnLineSide(fixed_t *tmbox, const line_t *ld)
+PUREFUNC INT32 P_BoxOnLineSide(fixed_t *tmbox, const line_t *ld)
 {
 	INT32 p1, p2;
 
@@ -208,29 +185,14 @@ INT32 P_BoxOnLineSide(fixed_t *tmbox, const line_t *ld)
 // P_PointOnDivlineSide
 // Returns 0 or 1.
 //
-static INT32 P_PointOnDivlineSide(fixed_t x, fixed_t y, divline_t *line)
+FUNCINLINE static ATTRINLINE PUREFUNC INT32 P_PointOnDivlineSide(fixed_t x, fixed_t y, divline_t *line)
 {
-	fixed_t dx, dy, left, right;
-
-	if (!line->dx)
-		return x <= line->x ? line->dy > 0 : line->dy < 0;
-
-	if (!line->dy)
-		return y <= line->y ? line->dx < 0 : line->dx > 0;
-
-	dx = (x - line->x);
-	dy = (y - line->y);
-
-	// try to quickly decide by looking at sign bits
-	if ((line->dy ^ line->dx ^ dx ^ dy) & 0x80000000)
-		return ((line->dy ^ dx) & 0x80000000) ? 1 : 0;
-
-	left = FixedMul(line->dy>>8, dx>>8);
-	right = FixedMul(dy>>8, line->dx>>8);
-
-	return right < left ? 0 : 1;
+	return
+	!line->dx ? x <= line->x ? line->dy > 0 : line->dy < 0 :
+	!line->dy ? y <= line->y ? line->dx < 0 : line->dx > 0 :
+	(line->dy^line->dx^(x -= line->x)^(y -= line->y)) < 0 ? (line->dy^x) < 0 :
+	FixedMul(y>>8, line->dx>>8) >= FixedMul(line->dy>>8, x>>8);
 }
-
 
 //
 // P_MakeDivline
@@ -248,7 +210,7 @@ void P_MakeDivline(line_t *li, divline_t *dl)
 // Returns the fractional intercept point along the first divline.
 // This is only called by the addthings and addlines traversers.
 //
-fixed_t P_InterceptVector(divline_t *v2, divline_t *v1)
+PUREFUNC fixed_t P_InterceptVector(divline_t *v2, divline_t *v1)
 {
 	fixed_t frac, num, den;
 
@@ -768,7 +730,8 @@ void P_UnsetPrecipThingPosition(precipmobj_t *thing)
 		bnext->bprev = bprev;
 }
 
-static void P_LinkToBlockMap(mobj_t *thing, mobj_t **bmap)
+template<typename T>
+static void P_LinkToBlockMap(T *thing, T **bmap)
 {
 	const INT32 blockx = (unsigned)(thing->x - bmaporgx) >> MAPBLOCKSHIFT;
 	const INT32 blocky = (unsigned)(thing->y - bmaporgy) >> MAPBLOCKSHIFT;
@@ -780,8 +743,8 @@ static void P_LinkToBlockMap(mobj_t *thing, mobj_t **bmap)
 		// pointer-to-pointer prev pointers --
 		// allows head nodes to be treated like everything else
 
-		mobj_t **link = &bmap[(blocky * bmapwidth) + blockx];
-		mobj_t *bnext = *link;
+		T **link = &bmap[(blocky * bmapwidth) + blockx];
+		T *bnext = *link;
 
 		thing->bnext = bnext;
 
@@ -909,10 +872,7 @@ void P_SetUnderlayPosition(mobj_t *thing)
 void P_SetPrecipitationThingPosition(precipmobj_t *thing)
 {
 	thing->subsector = R_PointInSubsectorFast(thing->x, thing->y);
-
-	// NOTE: this works because bnext/bprev are at the same
-	// offsets in precipmobj_t and mobj_t
-	P_LinkToBlockMap((mobj_t*)thing, (mobj_t**)precipblocklinks);
+	P_LinkToBlockMap(thing, precipblocklinks);
 }
 
 //
@@ -1041,7 +1001,7 @@ static void P_CheckIntercepts(void)
 		else
 			max_intercepts *= 2;
 
-		intercepts = Z_Realloc(intercepts, sizeof (*intercepts) * max_intercepts, PU_STATIC, NULL);
+		intercepts = static_cast<intercept_t*>(Z_Realloc(intercepts, sizeof (*intercepts) * max_intercepts, PU_STATIC, NULL));
 
 		intercept_p = intercepts + count;
 	}

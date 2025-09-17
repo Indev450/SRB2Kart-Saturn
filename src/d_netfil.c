@@ -163,7 +163,8 @@ UINT8 *PutFileNeeded(UINT16 firstfile)
 		nameonly(strcpy(wadfilename, wadfiles[i]->filename));
 
 		// Look below at the WRITE macros to understand what these numbers mean.
-		if (p + 1 + 4 + min(strlen(wadfilename) + 1, MAX_WADPATH) + 16 > p_start + MAXFILENEEDED)
+		const size_t len = strlen(wadfilename) + 1;
+		if (p + 1 + 4 + min(len, MAX_WADPATH) + 16 > p_start + MAXFILENEEDED)
 		{
 			// Too many files to send all at once
 			if (netbuffer->packettype == PT_MOREFILESNEEDED)
@@ -178,7 +179,7 @@ UINT8 *PutFileNeeded(UINT16 firstfile)
 		// Store in the upper four bits
 		if (!cv_downloading.value)
 			filestatus += (2 << 4); // Won't send
-		else if ((wadfiles[i]->filesize <= (UINT32)cv_maxsend.value * 1024))
+		else if (cv_maxsend.value == -1 || wadfiles[i]->filesize <= (UINT32)cv_maxsend.value * 1024)
 			filestatus += (1 << 4); // Will send if requested
 		// else
 			// filestatus += (0 << 4); -- Won't send, too big
@@ -212,6 +213,7 @@ void D_ParseFileneeded(INT32 fileneedednum_parm, UINT8 *fileneededstr, UINT16 fi
 
 	fileneedednum = firstfile + fileneedednum_parm;
 	p = (UINT8 *)fileneededstr;
+
 	for (i = firstfile; i < fileneedednum; i++)
 	{
 		fileneeded[i].status = FS_NOTCHECKED; // We haven't even started looking for the file yet
@@ -648,7 +650,8 @@ static boolean SV_SendFile(INT32 node, const char *filename, UINT8 fileid)
 {
 	filetx_t **q; // A pointer to the "next" field of the last file in the list
 	filetx_t *p; // The new file request
-	INT32 i;
+	UINT16 wadnum;
+
 	char wadfilename[MAX_WADPATH];
 
 	if (cv_noticedownload.value)
@@ -674,20 +677,21 @@ static boolean SV_SendFile(INT32 node, const char *filename, UINT8 fileid)
 	nameonly(p->id.filename);
 
 	// Look for the requested file through all loaded files
-	for (i = 0; wadfiles[i]; i++)
+	for (wadnum = 0; wadfiles[wadnum]; wadnum++)
 	{
-		strlcpy(wadfilename, wadfiles[i]->filename, MAX_WADPATH);
+		strlcpy(wadfilename, wadfiles[wadnum]->filename, MAX_WADPATH);
 		nameonly(wadfilename);
+
 		if (!stricmp(wadfilename, p->id.filename))
 		{
 			// Copy file name with full path
-			strlcpy(p->id.filename, wadfiles[i]->filename, MAX_WADPATH);
+			strlcpy(p->id.filename, wadfiles[wadnum]->filename, MAX_WADPATH);
 			break;
 		}
 	}
 
 	// Handle non-loaded file requests
-	if (!wadfiles[i])
+	if (!wadfiles[wadnum])
 	{
 		DEBFILE(va("%s not found in wadfiles\n", filename));
 		// This formerly checked if (!findfile(p->id.filename, NULL, true))
@@ -702,7 +706,7 @@ static boolean SV_SendFile(INT32 node, const char *filename, UINT8 fileid)
 	}
 
 	// Handle huge file requests (i.e. bigger than cv_maxsend.value KB)
-	if (wadfiles[i]->filesize > (UINT32)cv_maxsend.value * 1024)
+	if (cv_maxsend.value != -1 && wadfiles[wadnum]->filesize > (UINT32)cv_maxsend.value * 1024)
 	{
 		// Too big
 		// Don't inform client (client sucks, man)
@@ -773,6 +777,7 @@ static void SV_EndFileSend(INT32 node)
 		case SF_FILE: // It's a file, close it and free its filename
 			if (cv_noticedownload.value)
 				CONS_Printf("Ending file transfer (id %d) for node %d\n", p->fileid, node);
+
 			if (transferFiles[p->fileid].file)
 			{
 				if (transferFiles[p->fileid].count > 0)
@@ -786,6 +791,7 @@ static void SV_EndFileSend(INT32 node)
 					transferFiles[p->fileid].file = NULL;
 				}
 			}
+
 			free(p->id.filename);
 			break;
 		case SF_Z_RAM: // It's a memory block allocated with Z_Alloc or the likes, use Z_Free
@@ -821,10 +827,11 @@ void SV_FileSendTicker(void)
 	size_t size;
 	filetx_t *f;
 	INT32 packetsent, ram, i, j;
-	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
 
 	if (!filestosend) // No file to send
 		return;
+
+	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
 
 	packetsent = cv_downloadspeed.value;
 
@@ -957,8 +964,8 @@ void Got_Filetxpak(void)
 	static INT32 filetime = 0;
 
 	if (!(strcmp(filename, "srb2.srb")
-		&& strcmp(filename, "srb2.wad")
-		&& strcmp(filename, "patch.dta")
+		//&& strcmp(filename, "srb2.wad")
+		//&& strcmp(filename, "patch.dta")
 		//&& strcmp(filename, "music.dta")
 		&& strcmp(filename, "gfx.kart")
 		&& strcmp(filename, "textures.kart")
@@ -1001,6 +1008,7 @@ void Got_Filetxpak(void)
 			pos &= ~0x80000000;
 			file->totalsize = pos + size;
 		}
+
 		// We can receive packet in the wrong order, anyway all os support gaped file
 		fseek(file->file, pos, SEEK_SET);
 		if (fwrite(netbuffer->u.filetxpak.data,size,1,file->file) != 1)
@@ -1207,23 +1215,29 @@ filestatus_t findfile(char *filename, const UINT8 *wantedmd5sum, boolean complet
 		// if not found at all, just move on without doing anything
 	}
 
-	// next, check SRB2's "home" directory
-	homecheck = filesearch(filename, srb2home, wantedmd5sum, completepath, 10);
+	// next, check SRB2's "home" directory (if non-'.')
+	if (strcmp(srb2home, "."))
+	{
+		homecheck = filesearch(filename, srb2home, wantedmd5sum, completepath, 10);
 
-	if (homecheck == FS_FOUND) // we found the file, so return that we have :)
-		return FS_FOUND;
-	else if (homecheck == FS_MD5SUMBAD) // file has a bad md5; move on and look for a file with the right md5
-		badmd5 = true;
-	// if not found at all, just move on without doing anything
+		if (homecheck == FS_FOUND) // we found the file, so return that we have :)
+			return FS_FOUND;
+		else if (homecheck == FS_MD5SUMBAD) // file has a bad md5; move on and look for a file with the right md5
+			badmd5 = true;
+		// if not found at all, just move on without doing anything
+	}
 
-	// next, check SRB2's "path" directory
-	homecheck = filesearch(filename, srb2path, wantedmd5sum, completepath, 10);
+	// next, check SRB2's "path" directory (also if non-'.')
+	if (strcmp(srb2path, "."))
+	{
+		homecheck = filesearch(filename, srb2path, wantedmd5sum, completepath, 10);
 
-	if (homecheck == FS_FOUND) // we found the file, so return that we have :)
-		return FS_FOUND;
-	else if (homecheck == FS_MD5SUMBAD) // file has a bad md5; move on and look for a file with the right md5
-		badmd5 = true;
-	// if not found at all, just move on without doing anything
+		if (homecheck == FS_FOUND) // we found the file, so return that we have :)
+			return FS_FOUND;
+		else if (homecheck == FS_MD5SUMBAD) // file has a bad md5; move on and look for a file with the right md5
+			badmd5 = true;
+		// if not found at all, just move on without doing anything
+	}
 
 	// finally check "." directory
 	homecheck = filesearch(filename, ".", wantedmd5sum, completepath, 10);

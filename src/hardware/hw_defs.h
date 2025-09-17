@@ -19,7 +19,7 @@
 #ifndef _HWR_DEFS_
 #define _HWR_DEFS_
 #include "../doomtype.h"
-#include "../r_defs.h"
+#include "../m_fixed.h"
 
 #define ZCLIP_PLANE 4.0f // Used for the actual game drawing
 #define NZCLIP_PLANE 0.9f // Seems to be only used for the HUD and screen textures
@@ -95,9 +95,8 @@ typedef struct
 // a vertex of a Doom 'plane' polygon
 typedef struct
 {
-	float x;
-	float y;
-	float z;
+	float x, y, z;
+	fixed_t x2, y2, z2;
 } polyvertex_t;
 
 #ifdef _MSC_VER

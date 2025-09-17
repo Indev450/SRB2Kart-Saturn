@@ -29,6 +29,7 @@
 #include "z_zone.h"
 #include "console.h" // Until buffering gets finished
 #include "k_kart.h" // SRB2kart
+#include "i_threads.h"
 
 #ifdef HWRENDER
 #include "hardware/hw_main.h"
@@ -110,7 +111,25 @@ static UINT8 **localtranslationtablecache[MAXLOCALSKINS] = {NULL};
 
 CV_PossibleValue_t Color_cons_t[MAXSKINCOLORS+1];
 
-static void R_GenerateBlendTables(void);
+struct GenerateBlendTables_State
+{
+	RGBA_t *LocalPalette;
+};
+
+static void R_GenerateBlendTables_Core(struct GenerateBlendTables_State *state);
+static void R_AllocateBlendTables(void);
+
+#ifdef HAVE_THREADS
+static void R_GenerateBlendTables_Thread(void *userdata)
+{
+	struct GenerateBlendTables_State *state = static_cast<struct GenerateBlendTables_State *>(userdata);
+
+	R_GenerateBlendTables_Core(state);
+
+	free(state->LocalPalette);
+	free(state);
+}
+#endif
 
 /** \brief Initializes the translucency tables used by the Software renderer.
 */
@@ -131,6 +150,7 @@ void R_InitTranslucencyTables(void)
 	W_ReadLump(W_GetNumForName("TRANS80"), transtables+0x70000);
 	W_ReadLump(W_GetNumForName("TRANS90"), transtables+0x80000);
 
+	R_AllocateBlendTables();
 	R_GenerateBlendTables();
 }
 
@@ -241,14 +261,36 @@ static void BlendTab_GenerateMaps(INT32 tab, INT32 style, void (*genfunc)(UINT8 
 	}
 }
 
-static void R_GenerateBlendTables(void)
+static void R_AllocateBlendTables(void)
 {
 	INT32 i;
 
 	for (i = 0; i < NUMBLENDMAPS; i++)
+	{
 		blendtables[i] = static_cast<UINT8*>(Z_Malloc(BlendTab_Count[i] * 0x10000, PU_STATIC, NULL));
+	}
+}
 
-	InitColorLUT(&transtab_lut, pLocalPalette, false);
+void R_GenerateBlendTables(void)
+{
+#ifdef HAVE_THREADS
+	// Allocate copies for the worker thread since the originals can be freed in the main thread.
+	struct GenerateBlendTables_State *state = static_cast<struct GenerateBlendTables_State *>(malloc(sizeof *state));
+	size_t palsize = 256 * sizeof(RGBA_t);
+
+	state->LocalPalette = static_cast<RGBA_t *>(memcpy(malloc(palsize), pLocalPalette, palsize));
+
+	I_spawn_thread("blend-tables",
+			R_GenerateBlendTables_Thread, state);
+#else
+	struct GenerateBlendTables_State state = {pLocalPalette, pGammaCorrectedPalette};
+	R_GenerateBlendTables_Core(&state);
+#endif
+}
+
+static void R_GenerateBlendTables_Core(struct GenerateBlendTables_State *state)
+{
+	InitColorLUT(&transtab_lut, state->LocalPalette, false);
 
 	// Additive
 	BlendTab_GenerateMaps(blendtab_add, AST_ADD, BlendTab_Translucent);

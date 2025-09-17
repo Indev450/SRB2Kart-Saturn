@@ -220,11 +220,12 @@ static void D_GamePadMenuScrollTicker(void)
 }
 #undef SCROLLDELAY
 
+static UINT16 curcolor[MAXSPLITSCREENPLAYERS] = {0};
+
 static void D_DeviceLEDTick(void)
 {
 	UINT8 i;
 	static UINT16 color[MAXSPLITSCREENPLAYERS] = {0};
-	static UINT16 curcolor[MAXSPLITSCREENPLAYERS] = {0};
 
 	if (numcontrollers == 0)
 	{
@@ -244,6 +245,11 @@ static void D_DeviceLEDTick(void)
 		G_SetPlayerGamepadIndicatorColor(i, color[i]);
 		curcolor[i] = color[i];
 	}
+}
+
+void D_ResetDeviceLED(void)
+{
+	memset(curcolor, 0, sizeof(curcolor));
 }
 
 //
@@ -326,7 +332,7 @@ static void D_Renderview(void)
 	if (automapactive)
 		return;
 
-	R_ApplyLevelInterpolators(rendertimefrac);
+	R_ApplyLevelInterpolators(R_GetTimeFrac(RTF_LEVEL));
 
 	if (rendermode == render_soft)
 	{
@@ -448,7 +454,7 @@ static boolean D_Display(void)
 
 		if (rendermode == render_soft && !splitscreen)
 		{
-			R_InterpolateViewRollAngle(rendertimefrac_unpaused);
+			R_InterpolateViewRollAngle(R_GetTimeFrac(RTF_CAMERA));
 			R_CheckViewMorph();
 		}
 
@@ -808,7 +814,7 @@ void D_SRB2Loop(void)
 				debugload--;
 #endif
 
-		interp = (R_UsingFrameInterpolation() && !dedicated);
+		interp = !dedicated && R_UsingFrameInterpolation();
 		doDisplay = false;
 
 		renderisnewtic = (realtics > 0 || singletics);
@@ -871,29 +877,12 @@ void D_SRB2Loop(void)
 
 			const boolean lagging = ((deltatics >= 1.0) || hu_stopped);
 
-			if (!(paused || P_AutoPause()) && !lagging)
-			{
-				rendertimefrac = g_time.timefrac;
-			}
-			else
-			{
-				rendertimefrac = FRACUNIT;
-			}
-
-			if (!lagging)
-			{
-				rendertimefrac_unpaused = g_time.timefrac;
-			}
-			else
-			{
-				rendertimefrac_unpaused = FRACUNIT;
-			}
+			R_SetTimeFrac(lagging ? FRACUNIT : g_time.timefrac);
 		}
 		else
 		{
 			renderdeltatics = realtics * FRACUNIT;
-			rendertimefrac = FRACUNIT;
-			rendertimefrac_unpaused = FRACUNIT;
+			R_SetTimeFrac(FRACUNIT);
 		}
 
 		if (interp || doDisplay)
@@ -983,39 +972,17 @@ void D_SRB2Loop(void)
 // =========================================================================
 
 //
-// D_StartTitle
+// D_ClearState
 //
-void D_StartTitle(void)
+void D_ClearState(void)
 {
 	INT32 i;
-
-	if (netgame)
-	{
-		if (gametype == GT_RACE) // SRB2kart
-		{
-			G_SetGamestate(GS_WAITINGPLAYERS); // hack to prevent a command repeat
-
-			if (server)
-			{
-				char mapname[6];
-
-				strlcpy(mapname, G_BuildMapName(spstage_start), sizeof (mapname));
-				strlwr(mapname);
-				mapname[5] = '\0';
-
-				COM_BufAddText(va("map %s\n", mapname));
-			}
-		}
-
-		return;
-	}
-
-	M_ClearMenus(true);
 
 	// okay, stop now
 	// (otherwise the game still thinks we're playing!)
 	SV_StopServer();
 	SV_ResetServer();
+	serverlistultimatecount = 0;
 
 	for (i = 0; i < MAXPLAYERS; i++)
 		CL_ClearPlayer(i);
@@ -1031,8 +998,11 @@ void D_StartTitle(void)
 	// reset modeattacking
 	modeattacking = ATTACKING_NONE;
 
-	// empty maptol so mario/etc sounds don't play in sound test when they shouldn't
+	// empty some other semi-important state
 	maptol = 0;
+	nextmapoverride = 0;
+	skipstats = 0;
+	gamemap = 1;
 
 	gameaction = ga_nothing;
 	memset(displayplayers, 0, sizeof(displayplayers));
@@ -1041,9 +1011,38 @@ void D_StartTitle(void)
 	gametype = GT_RACE; // SRB2kart
 	paused = false;
 
+	// clear cmd building stuff
+	memset(gamekeydown, 0, sizeof(gamekeydown));
+	memset(joyxmove, 0, sizeof(joyxmove));
+	memset(joyymove, 0, sizeof(joyymove));
+	mousex = mousey = 0;
+
+	// Reset the palette
+	if (rendermode != render_none)
+		V_SetPaletteLump("PLAYPAL");
+
+	G_ResetAllDeviceRumbles();
+
+	S_StopSounds();
 	S_ResetKeepAndSpecialMus(); // just in case
 
+	P_FreeLevelState();
+
+	G_SetGamestate(GS_NULL);
+	wipegamestate = GS_NULL;
+}
+
+//
+// D_StartTitle
+//
+void D_StartTitle(void)
+{
+	demo.title = false;
+	D_ClearState();
+	netgame = false; // title menu shouldnt be a netgame lmao
+	M_ClearMenus(true);
 	F_StartTitleScreen();
+	D_ResetDeviceLED();
 }
 
 //
@@ -1073,25 +1072,23 @@ static INT32 D_DetectFileType(const char* filename)
 {
 	if (pathisdirectory(filename) == 1)
 		return 1;
-	else
-	{
-		if (!stricmp(&filename[strlen(filename) - 4], ".wad"))
-			return 2;
-		else if (!stricmp(&filename[strlen(filename) - 4], ".pk3"))
-			return 3;
-		else if (!stricmp(&filename[strlen(filename) - 5], ".kart"))
-			return 4;
 
-		else if (!stricmp(&filename[strlen(filename) - 4], ".lua"))
-			return 5;
-		else if (!stricmp(&filename[strlen(filename) - 4], ".soc"))
-			return 6;
+	const size_t len = strlen(filename);
 
-		else if (!stricmp(&filename[strlen(filename) - 4], ".cfg"))
-			return 7;
-		else if (!stricmp(&filename[strlen(filename) - 4], ".txt"))
-			return 8;
-	}
+	if (!stricmp(&filename[len - 4], ".wad"))
+		return 2;
+	else if (!stricmp(&filename[len - 4], ".pk3"))
+		return 3;
+	else if (!stricmp(&filename[len - 5], ".kart"))
+		return 4;
+	else if (!stricmp(&filename[len - 4], ".lua"))
+		return 5;
+	else if (!stricmp(&filename[len - 4], ".soc"))
+		return 6;
+	else if (!stricmp(&filename[len - 4], ".cfg"))
+		return 7;
+	else if (!stricmp(&filename[len - 4], ".txt"))
+		return 8;
 
 	return 0;
 }
@@ -1257,11 +1254,148 @@ static boolean AddIWAD(void)
 	return false;
 }
 
-// extra graphic patches for saturn specific thingies
+// Optional saturn extra files
 boolean found_extra_kart  = false;
 boolean found_extra2_kart = false;
 boolean found_extra3_kart = false;
 
+static void IdentifyVersion(void)
+{
+	const char *srb2waddir = NULL;
+
+#if defined (__unix__) || defined (UNIXCOMMON) || defined (HAVE_SDL)
+	// change to the directory where 'srb2.srb' is found
+	srb2waddir = I_LocateWad();
+#endif
+
+	char tempsrb2path[256] = ".";
+	getcwd(tempsrb2path, 256);
+
+	// get the current directory (possible problem on NT with "." as current dir)
+	if (!srb2waddir)
+	{
+		if (tempsrb2path[0])
+			srb2waddir = tempsrb2path;
+		else
+		{
+			srb2waddir = ".";
+		}
+	}
+
+#if (1) // reduce the amount of findfile by only using full cwd in this func
+	if (strcmp(tempsrb2path, srb2waddir))
+#endif
+	{
+		strlcpy(srb2path, srb2waddir, sizeof (srb2path));
+	}
+
+	// Load the IWAD
+	if (!AddIWAD())
+	{
+		I_Error("SRB2.SRB not found! Expected in %s\n", srb2waddir);
+	}
+
+	// will be overwritten in case of -cdrom or unix/win home
+	snprintf(configfile, sizeof configfile, "%s" PATHSEP CONFIGFILENAME, srb2waddir);
+	configfile[sizeof configfile - 1] = '\0';
+
+	// if you change the ordering of this or add/remove a file, be sure to update the md5
+	// checking in D_SRB2Main
+
+#ifdef USE_PATCH_DTA
+	// Add our crappy patches to fix our bugs
+	D_AddFile(va(pandf,srb2waddir,"patch.dta"));
+#endif
+
+	D_AddFile(va(pandf, srb2waddir, "gfx.kart"), startupwadfiles);
+	D_AddFile(va(pandf, srb2waddir, "textures.kart"), startupwadfiles);
+	D_AddFile(va(pandf, srb2waddir, "chars.kart"), startupwadfiles);
+	D_AddFile(va(pandf, srb2waddir, "maps.kart"), startupwadfiles);
+#ifdef USE_PATCH_KART
+	D_AddFile(va(pandf,srb2waddir,"patch.kart"), startupwadfiles);
+#endif
+
+	const char *path = NULL;
+
+	path = va(pandf, srb2waddir, "extra.kart");
+
+	// completely optional
+	if (FIL_ReadFileOK(path))
+	{
+		D_AddFile(path, startupwadfiles);
+		found_extra_kart = true;
+	}
+
+	path = va(pandf, srb2waddir, "extra2.kart");
+
+	// completely optional 2: Back with a vengence
+	if (FIL_ReadFileOK(path))
+	{
+		D_AddFile(path, startupwadfiles);
+		found_extra2_kart = true;
+	}
+
+	path = va(pandf, srb2waddir, "extra3.kart");
+
+	if (FIL_ReadFileOK(path))
+	{
+		D_AddFile(path, startupwadfiles);
+		found_extra3_kart = true;
+	}
+
+#if !defined (HAVE_SDL) || defined (HAVE_MIXER)
+#define MUSICTEST(str) \
+	musicpath = va(pandf,srb2waddir,str);\
+	handle = W_OpenWadFile(&musicpath, false); \
+	if (handle) \
+	{\
+		int ms = W_VerifyNMUSlumps(musicpath, handle, false); \
+		fclose(handle); \
+		if (ms == 0) \
+			I_Error("File " str " has been modified with non-music/sound lumps"); \
+		if (ms == 1) \
+			D_AddFile(musicpath, startupwadfiles); \
+	}
+	{
+		const char *musicpath;
+		FILE *handle;
+
+		MUSICTEST("sounds.kart")
+		MUSICTEST("music.kart")
+	}
+#undef MUSICTEST
+#endif
+}
+
+//
+// Center the title string, then add the date and time of compilation.
+//
+static inline void D_MakeTitleString(char *s)
+{
+	char temp[82];
+	char *t;
+	const char *u;
+	INT32 i;
+	const size_t len = (80-strlen(s))/2;
+
+	for (i = 0, t = temp; i < 82; i++)
+		*t++=' ';
+
+	for (t = temp + len, u = s; *u != '\0' ;)
+		*t++ = *u++;
+
+	u = compdate;
+	for (t = temp + 1, i = 11; i-- ;)
+		*t++ = *u++;
+	u = comptime;
+	for (t = temp + 71, i = 8; i-- ;)
+		*t++ = *u++;
+
+	temp[80] = '\0';
+	strcpy(s, temp);
+}
+
+// extra graphic patches for saturn specific thingies
 boolean xtra_speedo       = false; // extra speedometer check
 boolean xtra_speedo_clr   = false; // extra speedometer colour check
 boolean xtra_speedo3      = false; // 80x 11 extra speedometer check
@@ -1285,118 +1419,6 @@ boolean joystickicon      = false; // Extra icons for the joystick input display
 boolean minidoticon       = false; // Dot graphic for minimap player angle display
 boolean minilighticon     = false; // mkwii-style minimap headlight
 //
-
-static void IdentifyVersion(void)
-{
-	const char *srb2waddir = NULL;
-
-#if defined (__unix__) || defined (UNIXCOMMON) || defined (HAVE_SDL)
-	// change to the directory where 'srb2.srb' is found
-	srb2waddir = I_LocateWad();
-#endif
-
-	// get the current directory (possible problem on NT with "." as current dir)
-	if (srb2waddir)
-	{
-		strlcpy(srb2path, srb2waddir, sizeof(srb2path));
-	}
-	else
-	{
-		if (getcwd(srb2path, sizeof(srb2path)))
-			srb2waddir = srb2path;
-		else
-		{
-			srb2waddir = srb2path;
-		}
-	}
-
-	// Load the IWAD
-	if (!AddIWAD())
-	{
-		I_Error("SRB2.SRB not found! Expected in %s\n", srb2waddir);
-	}
-
-	// will be overwritten in case of -cdrom or unix/win home
-	snprintf(configfile, sizeof configfile, "%s" PATHSEP CONFIGFILENAME, srb2waddir);
-	configfile[sizeof configfile - 1] = '\0';
-
-	// if you change the ordering of this or add/remove a file, be sure to update the md5
-	// checking in D_SRB2Main
-
-#ifdef USE_PATCH_DTA
-	// Add our crappy patches to fix our bugs
-	D_AddFile(va(pandf,srb2waddir,"patch.dta"));
-#endif
-
-	D_AddFile(va(pandf,srb2waddir,"gfx.kart"), startupwadfiles);
-	D_AddFile(va(pandf,srb2waddir,"textures.kart"), startupwadfiles);
-	D_AddFile(va(pandf,srb2waddir,"chars.kart"), startupwadfiles);
-	D_AddFile(va(pandf,srb2waddir,"maps.kart"), startupwadfiles);
-#ifdef USE_PATCH_KART
-	D_AddFile(va(pandf,srb2waddir,"patch.kart"), startupwadfiles);
-#endif
-	// completely optional
-	if (FIL_ReadFileOK(va(pandf,srb2waddir,"extra.kart")))
-	{
-		D_AddFile(va(pandf,srb2waddir,"extra.kart"), startupwadfiles);
-		found_extra_kart = true;
-	}
-
-	// completely optional 2: Back with a vengence
-	if (FIL_ReadFileOK(va(pandf,srb2waddir,"extra2.kart")))
-	{
-		D_AddFile(va(pandf,srb2waddir,"extra2.kart"), startupwadfiles);
-		found_extra2_kart = true;
-	}
-
-	if (FIL_ReadFileOK(va(pandf,srb2waddir,"extra3.kart")))
-	{
-		D_AddFile(va(pandf,srb2waddir,"extra3.kart"), startupwadfiles);
-		found_extra3_kart = true;
-	}
-
-#if !defined (HAVE_SDL) || defined (HAVE_MIXER)
-#define MUSICTEST(str) \
-	{\
-		const char *musicpath = va(pandf,srb2waddir,str);\
-		int ms = W_VerifyNMUSlumps(musicpath); \
-		if (ms == 1) \
-			D_AddFile(musicpath, startupwadfiles); \
-		else if (ms == 0) \
-			I_Error("File "str" has been modified with non-music/sound lumps"); \
-	}
-	MUSICTEST("sounds.kart")
-	MUSICTEST("music.kart")
-#undef MUSICTEST
-#endif
-}
-
-//
-// Center the title string, then add the date and time of compilation.
-//
-static inline void D_MakeTitleString(char *s)
-{
-	char temp[82];
-	char *t;
-	const char *u;
-	INT32 i;
-
-	for (i = 0, t = temp; i < 82; i++)
-		*t++=' ';
-
-	for (t = temp + (80-strlen(s))/2, u = s; *u != '\0' ;)
-		*t++ = *u++;
-
-	u = compdate;
-	for (t = temp + 1, i = 11; i-- ;)
-		*t++ = *u++;
-	u = comptime;
-	for (t = temp + 71, i = 8; i-- ;)
-		*t++ = *u++;
-
-	temp[80] = '\0';
-	strcpy(s, temp);
-}
 
 static void D_CheckSaturnExtraFiles(void)
 {
@@ -1499,12 +1521,14 @@ static void D_CheckSaturnExtraFiles(void)
 			PUSHCONS(inputdisplay_cons_temp, last_inputdisplay_i, 3, "StickGFX");
 		}
 
+		// minimap dot
 		if (W_LumpExists("MMAPDOT"))
 		{
 			minidoticon = true;
 			PUSHCONS(minimapdot_cons_temp, last_minimapdot_i, 1, "Dot");
 		}
 
+		// minimap headlight
 		if (W_LumpExists("MMAPHDLT"))
 		{
 			minilighticon = true;
@@ -1785,9 +1809,6 @@ void D_SRB2Main(void)
 	I_InitializeTime();
 	setlocale(LC_TIME, "");
 
-	// Make backups of some SOCcable tables.
-	P_BackupTables();
-
 	// Setup default unlockable conditions
 	M_SetupDefaultConditionSets();
 
@@ -1920,8 +1941,12 @@ void D_SRB2Main(void)
 	// setup loading screen
 	SCR_Startup();
 
+	// Do this in background; lots of number crunching
+	R_InitTranslucencyTables();
+
 	// we need the font of the console
 	CONS_Printf("HU_Init(): Setting up heads up display.\n");
+
 	HU_Init();
 
 	COM_Init();
@@ -1983,13 +2008,7 @@ void D_SRB2Main(void)
 	R_Init();
 
 	// setting up sound
-	if (dedicated)
-	{
-		sound_disabled = true;
-		music_disabled = true;
-	}
-
-	if (M_CheckParm("-noaudio")) // combines -nosound and -nomusic
+	if (dedicated || M_CheckParm("-noaudio")) // combines -nosound and -nomusic
 	{
 		sound_disabled = true;
 		music_disabled = true;
@@ -2126,12 +2145,6 @@ void D_SRB2Main(void)
 		return;
 	}
 #endif
-
-	/*if (M_CheckParm("-ultimatemode"))
-	{
-		autostart = true;
-		ultimatemode = true;
-	}*/
 
 	if (autostart || netgame)
 	{
@@ -2277,6 +2290,9 @@ const char *D_Home(void)
 	}
 #endif// !__CYGWIN__
 #endif// _WIN32
-	if (usehome) return userhome;
-	else return NULL;
+
+	if (usehome)
+		return userhome;
+	else
+		return NULL;
 }

@@ -95,8 +95,6 @@ extern consvar_t cv_highreshudscale;
 extern consvar_t cv_vidwait;
 extern consvar_t cv_timescale;
 
-extern consvar_t cv_alwaysgrabmouse;
-
 extern consvar_t cv_votebgscaling;
 
 void R_SetColumnFunc(size_t id);

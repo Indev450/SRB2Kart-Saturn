@@ -4405,7 +4405,9 @@ static void Command_Addfile(void)
 	char buf[256];
 	char *buf_p = buf;
 	INT32 i;
-	int musiconly; // W_VerifyNMUSlumps isn't boolean
+	int musiconly = -1; // W_VerifyNMUSlumps isn't boolean
+
+	FILE *fhandle = NULL;
 
 	if (COM_Argc() != 2)
 	{
@@ -4420,9 +4422,18 @@ static void Command_Addfile(void)
 		if (!isprint(fn[i]) || fn[i] == ';')
 			return;
 
-	musiconly = W_VerifyNMUSlumps(fn);
+	if (fhandle)
+	{
+		fclose(fhandle);
+		fhandle = NULL;
+	}
 
-	if (!musiconly)
+	if ((fhandle = W_OpenWadFile(&fn, true)) != NULL)
+	{
+		musiconly = W_VerifyNMUSlumps(fn, fhandle, false);
+	}
+
+	if (musiconly == -1)
 	{
 		// ... But only so long as they contain nothing more then music and sprites.
 		if (netgame && !(server || IsPlayerAdmin(consoleplayer)))
@@ -4446,36 +4457,31 @@ static void Command_Addfile(void)
 			break;
 	++p;
 
-	WRITESTRINGN(buf_p,p,240);
-
 	// calculate and check md5
 	{
 		UINT8 md5sum[16];
 #ifdef NOMD5
 		memset(md5sum,0,16);
 #else
-		FILE *fhandle;
 
-		if ((fhandle = W_OpenWadFile(&fn, true)) != NULL)
 		{
 			tic_t t = I_GetTime();
 			CONS_Debug(DBG_SETUP, "Making MD5 for %s\n",fn);
 			md5_stream(fhandle, md5sum);
 			CONS_Debug(DBG_SETUP, "MD5 calc for %s took %f second\n", fn, (float)(I_GetTime() - t)/TICRATE);
-			fclose(fhandle);
 		}
-		else // file not found
-			return;
 
 		for (i = 0; i < numwadfiles; i++)
 		{
-			if (!memcmp(wadfiles[i]->md5sum, md5sum, 16))
-			{
-				CONS_Alert(CONS_ERROR, M_GetText("%s is already loaded\n"), fn);
-				return;
-			}
+			if (memcmp(wadfiles[i]->md5sum, md5sum, 16))
+				continue;
+
+			CONS_Alert(CONS_ERROR, M_GetText("%s is already loaded\n"), fn);
+			goto addfile_finally;
 		}
 #endif
+		// Finally okay to write this important data
+		WRITESTRINGN(buf_p,p,240);
 		WRITEMEM(buf_p, md5sum, 16);
 	}
 
@@ -4483,6 +4489,10 @@ static void Command_Addfile(void)
 		SendNetXCmd(XD_REQADDFILE, buf, buf_p - buf);
 	else
 		SendNetXCmd(XD_ADDFILE, buf, buf_p - buf);
+
+addfile_finally:
+	if (fhandle)
+		fclose(fhandle);
 }
 
 /** Adds something at runtime.
@@ -5606,7 +5616,9 @@ void Command_ExitGame_f(void)
 		closefilemenu(true);
 
 	if (!modeattacking)
+	{
 		D_StartTitle();
+	}
 }
 
 void Command_Retry_f(void)

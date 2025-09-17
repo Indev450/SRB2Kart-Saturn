@@ -66,7 +66,6 @@
 // ==========================================================================
 
 #define ABS(x) ((x) < 0 ? -(x) : (x))
-#define SOFTLIGHT(llevel) HWR_ShouldUsePaletteRendering() ? ((llevel) >> LIGHTSEGSHIFT) << LIGHTSEGSHIFT : (llevel)
 
 // false if shaders have not been initialized yet, or if shaders are not available
 boolean gl_shadersavailable = false;
@@ -413,8 +412,12 @@ void HWR_Lighting(FSurfaceInfo *Surface, INT32 light_level, extracolormap_t *col
 	tint_color.rgba = (colormap != NULL) ? (UINT32)colormap->rgba : GL_DEFAULTMIX;
 	fade_color.rgba = (colormap != NULL) ? (UINT32)colormap->fadergba : GL_DEFAULTFOG;
 
+	// Shift the lightlevel for Palette rendering mode to replicate software´s limited 32 lightlevels
+	if (HWR_ShouldUsePaletteRendering())
+		light_level = (light_level >> LIGHTSEGSHIFT) << LIGHTSEGSHIFT;
+
 	// Clamp the light level, since it can sometimes go out of the 0-255 range from animations
-	light_level = CLAMP(SOFTLIGHT(light_level), cv_secbright.value, 255);
+	light_level = CLAMP(light_level, cv_secbright.value, 255);
 
 	// Crappy backup coloring if you can't do shaders
 	if (!HWR_UseShader())
@@ -764,8 +767,8 @@ static void HWR_RenderPlane(subsector_t *subsector, extrasubsector_t *xsub, bool
 
 			if (line->pv1)
 			{
-				x1 = ((polyvertex_t *)line->pv1)->x;
-				y1 = ((polyvertex_t *)line->pv1)->y;
+				x1 = line->pv1->x;
+				y1 = line->pv1->y;
 			}
 			else
 			{
@@ -774,8 +777,8 @@ static void HWR_RenderPlane(subsector_t *subsector, extrasubsector_t *xsub, bool
 
 			if (line->pv2)
 			{
-				xd = ((polyvertex_t *)line->pv2)->x - x1;
-				yd = ((polyvertex_t *)line->pv2)->y - y1;
+				xd = line->pv2->x - x1;
+				yd = line->pv2->y - y1;
 			}
 			else
 			{
@@ -845,11 +848,11 @@ static void HWR_DrawSegsSplats(FSurfaceInfo * pSurf)
 
 	M_ClearBox(segbbox);
 	M_AddToBox(segbbox,
-		FloatToFixed(((polyvertex_t *)gl_curline->pv1)->x),
-		FloatToFixed(((polyvertex_t *)gl_curline->pv1)->y));
+		FloatToFixed(gl_curline->pv1->x),
+		FloatToFixed(gl_curline->pv1->y));
 	M_AddToBox(segbbox,
-		FloatToFixed(((polyvertex_t *)gl_curline->pv2)->x),
-		FloatToFixed(((polyvertex_t *)gl_curline->pv2)->y));
+		FloatToFixed(gl_curline->pv2->x),
+		FloatToFixed(gl_curline->pv2->y));
 
 	splat = (wallsplat_t *)gl_curline->linedef->splats;
 	for (; splat; splat = splat->next)
@@ -1124,8 +1127,8 @@ static void HWR_SplitWall(sector_t *sector, FOutVector *wallVerts, INT32 texnum,
 
 		// Found a break
 		// The heights are clamped to ensure the polygon doesn't cross itself.
-		bot    = CLAMP(bheight, realbot, top);
-		endbot = CLAMP(endbheight, endrealbot, endtop);
+		bot    = std::max(bheight, realbot);
+		endbot = std::max(endbheight, endrealbot);
 
 		Surf->PolyColor.s.alpha = alpha;
 
@@ -1346,10 +1349,10 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 
 	if (LIKELY(gl_curline->pv1))
 	{
-		vs.x = ((polyvertex_t *)gl_curline->pv1)->x;
-		vs.y = ((polyvertex_t *)gl_curline->pv1)->y;
-		v1x = FloatToFixed(vs.x);
-		v1y = FloatToFixed(vs.y);
+		vs.x = gl_curline->pv1->x;
+		vs.y = gl_curline->pv1->y;
+		v1x = gl_curline->pv1->x2;
+		v1y = gl_curline->pv1->y2;
 	}
 	else
 	{
@@ -1361,10 +1364,10 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 
 	if (LIKELY(gl_curline->pv2))
 	{
-		ve.x = ((polyvertex_t *)gl_curline->pv2)->x;
-		ve.y = ((polyvertex_t *)gl_curline->pv2)->y;
-		v2x = FloatToFixed(ve.x);
-		v2y = FloatToFixed(ve.y);
+		ve.x = gl_curline->pv2->x;
+		ve.y = gl_curline->pv2->y;
+		v2x = gl_curline->pv2->x2;
+		v2y = gl_curline->pv2->y2;
 	}
 	else
 	{
@@ -1396,7 +1399,7 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 	// x offset the texture
 	const fixed_t texturehpeg = gl_sidedef->textureoffset + gl_curline->offset;
 	const float cliplow  = (float)texturehpeg;
-	const float cliphigh = (float)(texturehpeg + (gl_curline->flength*FRACUNIT));
+	const float cliphigh = (float)(texturehpeg + gl_curline->length);
 
 	FUINT lightnum = gl_frontsector->lightlevel;
 	extracolormap_t *colormap = gl_frontsector->extra_colormap;
@@ -1906,6 +1909,19 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 		{
 			for (rover = gl_backsector->ffloors; rover; rover = rover->next)
 			{
+				boolean bothsides = false;
+				// Skip if it exists on both sectors.
+				ffloor_t * r2;
+				for (r2 = gl_frontsector->ffloors; r2; r2 = r2->next)
+					if (rover->master == r2->master)
+					{
+						bothsides = true;
+						break;
+					}
+
+				if (bothsides)
+					continue;
+
 				const ffloortype_e roverflags = rover->flags;
 
 				if (!(roverflags & FF_EXISTS) || !(roverflags & FF_RENDERSIDES) || (roverflags & FF_INVERTSIDES))
@@ -2057,6 +2073,17 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 		{
 			for (rover = gl_frontsector->ffloors; rover; rover = rover->next)
 			{
+				boolean bothsides = false;
+				// Skip if it exists on both sectors.
+				ffloor_t * r2;
+				for (r2 = gl_backsector->ffloors; r2; r2 = r2->next)
+					if (rover->master == r2->master)
+					{
+						bothsides = true;
+						break;
+					}
+
+				if (bothsides) continue;
 				const ffloortype_e roverflags = rover->flags;
 
 				if (!(roverflags & FF_EXISTS) || !(roverflags & FF_RENDERSIDES) || !(roverflags & FF_ALLSIDES))
@@ -2201,8 +2228,8 @@ static boolean CheckClip(sector_t * afrontsector, sector_t * abacksector)
 
 		if (LIKELY(gl_curline->pv1))
 		{
-			v1x = FloatToFixed(((polyvertex_t *)gl_curline->pv1)->x);
-			v1y = FloatToFixed(((polyvertex_t *)gl_curline->pv1)->y);
+			v1x = gl_curline->pv1->x2;
+			v1y = gl_curline->pv1->y2;
 		}
 		else
 		{
@@ -2212,8 +2239,8 @@ static boolean CheckClip(sector_t * afrontsector, sector_t * abacksector)
 
 		if (LIKELY(gl_curline->pv2))
 		{
-			v2x = FloatToFixed(((polyvertex_t *)gl_curline->pv2)->x);
-			v2y = FloatToFixed(((polyvertex_t *)gl_curline->pv2)->y);
+			v2x = gl_curline->pv2->x2;
+			v2y = gl_curline->pv2->y2;
 		}
 		else
 		{
@@ -2429,8 +2456,8 @@ static void HWR_AddLine(seg_t *line)
 
 	if (LIKELY(gl_curline->pv1))
 	{
-		v1x = FloatToFixed(((polyvertex_t *)gl_curline->pv1)->x);
-		v1y = FloatToFixed(((polyvertex_t *)gl_curline->pv1)->y);
+		v1x = gl_curline->pv1->x2;
+		v1y = gl_curline->pv1->y2;
 	}
 	else
 	{
@@ -2440,8 +2467,8 @@ static void HWR_AddLine(seg_t *line)
 
 	if (LIKELY(gl_curline->pv2))
 	{
-		v2x = FloatToFixed(((polyvertex_t *)gl_curline->pv2)->x);
-		v2y = FloatToFixed(((polyvertex_t *)gl_curline->pv2)->y);
+		v2x = gl_curline->pv2->x2;
+		v2y = gl_curline->pv2->y2;
 	}
 	else
 	{
@@ -2558,7 +2585,9 @@ static boolean HWR_CheckBBox(const fixed_t *bspcoord)
 			else // node
 				mindist = 0;
 		}
-		if (mindist > current_bsp_culling_distance) return false;
+
+		if (mindist > current_bsp_culling_distance)
+			return false;
 	}
 
 	angle1 = R_PointToAngle64(px1, py1);
@@ -3542,27 +3571,13 @@ static void HWR_RotateSpritePolyToAim(gl_vissprite_t *spr, FOutVector *wallVerts
 	float basey, lowy;
 
 	// do interpolation
-	if (R_UsingFrameInterpolation() && !paused && R_CheckInterpDist(spr->mobj))
+	if (precip)
 	{
-		if (precip)
-		{
-			R_InterpolatePrecipMobjState((precipmobj_t *)spr->mobj, rendertimefrac, &interp);
-		}
-		else
-		{
-			R_InterpolateMobjState(spr->mobj, rendertimefrac, &interp);
-		}
+		R_InterpolatePrecipMobjState(spr->precip, R_GetPrecipMobjTimeFrac(spr->precip), &interp);
 	}
 	else
 	{
-		if (precip)
-		{
-			R_InterpolatePrecipMobjState((precipmobj_t *)spr->mobj, FRACUNIT, &interp);
-		}
-		else
-		{
-			R_InterpolateMobjState(spr->mobj, FRACUNIT, &interp);
-		}
+		R_InterpolateMobjState(spr->mobj, R_GetMobjTimeFrac(spr->mobj), &interp);
 	}
 
 	if (!precip && P_MobjFlip(spr->mobj) == -1) // precip doesn't have eflags so they can't flip
@@ -3816,8 +3831,8 @@ static void HWR_SplitSprite(gl_vissprite_t *spr, const boolean papersprite)
 
 		// Found a break
 		// The heights are clamped to ensure the polygon doesn't cross itself.
-		bot    = CLAMP(bheight, realbot, top);
-		endbot = CLAMP(endbheight, endrealbot, endtop);
+		bot    = std::max(bheight, realbot);
+		endbot = std::max(endbheight, endrealbot);
 
 		wallVerts[3].t = towtop + ((realtop - top) * towmult);
 		wallVerts[2].t = towtop + ((endrealtop - endtop) * towmult);
@@ -4058,7 +4073,7 @@ static void HWR_DrawPrecipitationSprite(gl_vissprite_t *spr)
 
 	INT32 shader = SHADER_NONE;
 
-	const mobj_t *sprmo = spr->mobj;
+	const precipmobj_t *sprmo = spr->precip;
 
 	if (UNLIKELY(!sprmo || !sprmo->subsector))
 		return;
@@ -4106,7 +4121,7 @@ static void HWR_DrawPrecipitationSprite(gl_vissprite_t *spr)
 	{
 		INT32 light;
 
-		light = R_GetPlaneLight(sector, sprmo->z + sprmo->height, false); // Always use the light at the top instead of whatever I was doing before
+		light = R_GetPlaneLight(sector, sprmo->z, false); // Always use the light at the top instead of whatever I was doing before
 
 		if (!(sprmo->frame & FF_FULLBRIGHT))
 			lightlevel = static_cast<INT32>(*sector->lightlist[light].lightlevel);
@@ -4168,8 +4183,8 @@ static int CompareVisSprites(const void *p1, const void *p2)
 	// "boolean to int"
 
 	// check for precip first, because then sprX->mobj is actually a precipmobj_t and does not have flags2 or tracer
-	const int transparency1 = (!spr1->precip && (spr1->mobj->flags2 & MF2_SHADOW)) || (spr1->mobj->frame & FF_TRANSMASK);
-	const int transparency2 = (!spr2->precip && (spr2->mobj->flags2 & MF2_SHADOW)) || (spr2->mobj->frame & FF_TRANSMASK);
+	const int transparency1 = (spr1->precip ? (spr1->precip->frame & FF_TRANSMASK) : ((spr1->mobj->flags2 & MF2_SHADOW)) || (spr1->mobj->frame & FF_TRANSMASK));
+	const int transparency2 = (spr2->precip ? (spr2->precip->frame & FF_TRANSMASK) : ((spr2->mobj->flags2 & MF2_SHADOW)) || (spr2->mobj->frame & FF_TRANSMASK));
 
 	idiff = transparency1 - transparency2;
 	if (idiff != 0) return idiff;
@@ -4685,14 +4700,7 @@ static void HWR_ProjectSprite(mobj_t *thing)
 	// uncapped/interpolation
 	interpmobjstate_t interp = {};
 
-	if (R_UsingFrameInterpolation() && !paused && R_CheckInterpDist(thing))
-	{
-		R_InterpolateMobjState(thing, rendertimefrac, &interp);
-	}
-	else
-	{
-		R_InterpolateMobjState(thing, FRACUNIT, &interp);
-	}
+	R_InterpolateMobjState(thing, R_GetMobjTimeFrac(thing), &interp);
 
 	if (interp.spritexscale < 1 || interp.spriteyscale < 1)
 		return;
@@ -5008,7 +5016,7 @@ static void HWR_ProjectSprite(mobj_t *thing)
 
 	vis->vflip = vflip;
 
-	vis->precip = false;
+	vis->precip = NULL;
 }
 
 // Precipitation projector for hardware mode
@@ -5040,21 +5048,7 @@ static void HWR_ProjectPrecipitationSprite(precipmobj_t *thing)
 	interpmobjstate_t interp = {};
 
 	// do interpolation
-	if (R_UsingFrameInterpolation() && !paused && R_CheckInterpDist((mobj_t*)thing))
-	{
-		R_InterpolatePrecipMobjState(thing, rendertimefrac, &interp);
-	}
-	else
-	{
-		R_InterpolatePrecipMobjState(thing, FRACUNIT, &interp);
-	}
-
-	// Visibility check by the blend mode.
-	if (thing->frame & FF_TRANSMASK)
-	{
-		if (!R_BlendLevelVisible(thing->blendmode, (thing->frame & FF_TRANSMASK)>>FF_TRANSSHIFT))
-			return;
-	}
+	R_InterpolatePrecipMobjState(thing, R_GetPrecipMobjTimeFrac(thing), &interp);
 
 	// transform the origin point
 	tr_x = FixedToFloat(interp.x);
@@ -5132,7 +5126,7 @@ static void HWR_ProjectPrecipitationSprite(precipmobj_t *thing)
 	vis->dispoffset = 0; // Monster Iestyn: 23/11/15: HARDWARE SUPPORT AT LAST
 	vis->gpatch = (patch_t *)W_CachePatchNum(sprframe->lumppat[rot], PU_SPRITE);
 	vis->flip = flip;
-	vis->mobj = (mobj_t *)thing;
+	vis->mobj = NULL;
 
 	vis->colormap = NULL;
 
@@ -5145,7 +5139,7 @@ static void HWR_ProjectPrecipitationSprite(precipmobj_t *thing)
 	vis->gzt = FixedToFloat(interp.z) + (FixedToFloat(spritecachedinfo[lumpoff].topoffset) * this_scale);
 	vis->gz = vis->gzt - (FixedToFloat(spritecachedinfo[lumpoff].height) * this_scale);
 
-	vis->precip = true;
+	vis->precip = thing;
 }
 
 
@@ -6042,7 +6036,7 @@ static void HWR_DoPostProcessor(player_t *player)
 	{
 		// 10 by 10 grid. 2 coordinates (xy)
 		float v[SCREENVERTS][SCREENVERTS][2];
-		float disStart = (leveltime-1) + FixedToFloat(rendertimefrac);
+		float disStart = (leveltime-1) + FixedToFloat(R_GetTimeFrac(RTF_LEVEL));
 
 		UINT8 x, y;
 		INT32 WAVELENGTH;

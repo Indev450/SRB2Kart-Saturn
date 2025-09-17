@@ -87,9 +87,12 @@ void D_ProcessEvents(void);
 
 const char *D_Home(void);
 
+void D_ResetDeviceLED(void);
+
 //
 // BASE LEVEL
 //
+void D_ClearState(void);
 void D_StartTitle(void);
 
 #ifdef __cplusplus

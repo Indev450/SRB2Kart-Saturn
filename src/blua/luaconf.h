@@ -18,6 +18,14 @@
 #define INT32 int32_t
 #endif
 
+#ifndef __cplusplus
+#ifndef min // Double-Check with WATTCP-32's cdefs.h
+#define min(x, y) (((x) < (y)) ? (x) : (y))
+#endif
+#ifndef max // Double-Check with WATTCP-32's cdefs.h
+#define max(x, y) (((x) > (y)) ? (x) : (y))
+#endif
+#endif
 
 /*
 ** ==================================================================
@@ -534,8 +542,11 @@
 #endif
 #define lua_number2str(s,n)	sprintf((s), LUA_NUMBER_FMT, (n))
 #define LUAI_MAXNUMBER2STR	12 /* 10 digits, sign, and \0 */
-#define lua_str2number(s,p)	strtol((s), (p), 10)
-
+#define lua_str2number(s,p) ({ \
+		long nmr = strtol((s), (p), 10); \
+		nmr = max(INT32_MIN, min((nmr), INT32_MAX)); \
+		nmr; \
+	})
 
 /*
 @@ The luai_num* macros define the primitive operations over numbers.

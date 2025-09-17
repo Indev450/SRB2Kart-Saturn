@@ -70,7 +70,7 @@ static INT32 totalsubsecpolys = 0;
 static poly_t *HWR_AllocPoly(INT32 numpts)
 {
 	poly_t *p;
-	size_t size = sizeof (poly_t) + sizeof (polyvertex_t) * numpts;
+	size_t size = sizeof(poly_t) + sizeof(polyvertex_t) * numpts;
 	p = Z_Malloc(size, PU_HWRPLANE, NULL);
 	p->numpts = numpts;
 	return p;
@@ -79,7 +79,7 @@ static poly_t *HWR_AllocPoly(INT32 numpts)
 static polyvertex_t *HWR_AllocVertex(void)
 {
 	polyvertex_t *p;
-	size_t size = sizeof (polyvertex_t);
+	size_t size = sizeof(polyvertex_t);
 	p = Z_Malloc(size, PU_HWRPLANE, NULL);
 	return p;
 }
@@ -175,9 +175,9 @@ static void SplitPoly (fdivline_t *bsp,         //splitting parametric line
 
 	INT32 ps = -1, pe = -1;
 	INT32  nptfront, nptback;
-	polyvertex_t vs = {0,0,0};
-	polyvertex_t ve = {0,0,0};
-	polyvertex_t lastpv = {0,0,0};
+	polyvertex_t vs = {};
+	polyvertex_t ve = {};
+	polyvertex_t lastpv = {};
 	float fracs = 0.0f, frace = 0.0f;        //used to tell which poly is on
 	                                         // the front side of the bsp partition line
 	INT32 psonline = 0, peonline = 0;
@@ -349,8 +349,8 @@ static poly_t *CutOutSubsecPoly(seg_t *lseg, INT32 count, poly_t *poly)
 	INT32 i, j;
 	polyvertex_t *pv;
 	INT32 nump = 0, ps, pe;
-	polyvertex_t vs = {0, 0, 0}, ve = {0, 0, 0},
-				 p1 = {0, 0, 0}, p2 = {0, 0, 0};
+	polyvertex_t vs = {}, ve = {},
+				 p1 = {}, p2 = {};
 	float fracs = 0.0f;
 	fdivline_t cutseg; // x, y, dx, dy as start of node_t struct
 	poly_t *temppoly;
@@ -937,22 +937,10 @@ static void AdjustSegs(void)
 				lseg->pv2 = pv;
 			}
 
-			// recompute length
-			{
-				float x,y;
-
-				const polyvertex_t *pv1 = (polyvertex_t *)lseg->pv1;
-				const polyvertex_t *pv2 = (polyvertex_t *)lseg->pv2;
-
-				x = pv2->x - pv1->x + 0.5f;
-				y = pv2->y - pv1->y + 0.5f;
-
-				lseg->flength = hypotf(x, y);
-
-				// BP: debug see this kind of segs
-				//if (nearv2 > NEARDIST*NEARDIST || nearv1 > NEARDIST*NEARDIST)
-				//    lseg->length = 1;
-			}
+			lseg->pv1->x2 = FloatToFixed(lseg->pv1->x);
+			lseg->pv1->y2 = FloatToFixed(lseg->pv1->y);
+			lseg->pv2->x2 = FloatToFixed(lseg->pv2->x);
+			lseg->pv2->y2 = FloatToFixed(lseg->pv2->y);
 		}
 	}
 }

@@ -14,20 +14,24 @@
 
 #include "r_fps.h"
 
+#include <vector>
+
+#include "p_mobj.h"
 #include "r_main.h"
 #include "g_game.h"
 #include "k_kart.h" // saltyhop stuffs
 #include "i_video.h"
 #include "r_plane.h"
-#include "p_spec.h"
 #include "r_state.h"
 #include "z_zone.h"
-#include "console.h" // con_startup_loadprogress
 #include "i_time.h"
 
 #ifdef HWRENDER
 #include "hardware/hw_main.h" // for cv_grshearing
 #endif
+
+// The fraction of a tic being drawn (for interpolation between two tics)
+static fixed_t rendertimefrac;
 
 static CV_PossibleValue_t fpscap_cons_t[] = {
 #ifdef DEVELOP
@@ -47,8 +51,8 @@ consvar_t cv_fpscapbg = {"fpscapbackground", "Match refresh rate", CV_SAVE, fpsc
 
 consvar_t cv_precipinterp = {"precipinterpolation", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
-ps_metric_t ps_interp_frac = {0};
-ps_metric_t ps_interp_lag  = {0};
+ps_metric_t ps_interp_frac = {};
+ps_metric_t ps_interp_lag  = {};
 
 static boolean R_UseBackgroundFramerateCap(void)
 {
@@ -106,6 +110,27 @@ boolean R_UsingFrameInterpolation(void)
 	return (R_GetFramerateCap() != TICRATE || cv_timescale.value < FRACUNIT);
 }
 
+// this wacky function exists now because rendertimefrac is stopped outside levels
+// just for the sake of the intermission background...
+fixed_t R_GetTimeFrac(timefrac_e level)
+{
+	// level interp. pauses if level isn't active
+	if ((level <= RTF_LEVEL || level == RTF_CAMERA) && gamestate != GS_LEVEL) // !G_GamestateUsesLevel()
+		return FRACUNIT;
+
+	// intermission interp. pauses if game is paused
+	if (level <= RTF_INTER && (paused || P_AutoPause()))
+		return FRACUNIT;
+
+	// menu interp. interpolates no matter what
+	return rendertimefrac;
+}
+
+void R_SetTimeFrac(fixed_t frac)
+{
+	rendertimefrac = frac;
+}
+
 static viewvars_t pview_old[MAXSPLITSCREENPLAYERS];
 static viewvars_t pview_new[MAXSPLITSCREENPLAYERS];
 static viewvars_t skyview_old[MAXSPLITSCREENPLAYERS];
@@ -116,22 +141,9 @@ static tic_t last_view_update;
 static int oldview_invalid[MAXSPLITSCREENPLAYERS] = {0, 0, 0, 0};
 viewvars_t *newview = &pview_new[0];
 
-
 enum viewcontext_e viewcontext = VIEWCONTEXT_PLAYER1;
 
-static levelinterpolator_t **levelinterpolators;
-static size_t levelinterpolators_len;
-static size_t levelinterpolators_size;
-
-static inline fixed_t R_LerpFixedView(fixed_t from, fixed_t to, fixed_t frac)
-{
-	return from + FixedMul(frac, to - from);
-}
-
-static inline angle_t R_LerpAngleView(angle_t from, angle_t to, fixed_t frac)
-{
-	return from + FixedMul(frac, to - from);
-}
+static std::vector<levelinterpolator_t> levelinterpolators;
 
 static inline fixed_t R_LerpFixed(fixed_t from, fixed_t to, fixed_t frac)
 {
@@ -190,7 +202,7 @@ static void R_SetupFreelook(void)
 
 void R_InterpolateViewRollAngle(fixed_t frac)
 {
-	viewroll = R_LerpAngleView(oldview->roll, newview->roll, frac);
+	viewroll = R_LerpAngle(oldview->roll, newview->roll, frac);
 }
 
 void R_InterpolateView(fixed_t frac, boolean forceinvalid)
@@ -208,13 +220,13 @@ void R_InterpolateView(fixed_t frac, boolean forceinvalid)
 		prevview = newview;
 	}
 
-	viewx = R_LerpFixedView(prevview->x, newview->x, frac);
-	viewy = R_LerpFixedView(prevview->y, newview->y, frac);
-	viewz = R_LerpFixedView(prevview->z, newview->z, frac);
+	viewx = R_LerpFixed(prevview->x, newview->x, frac);
+	viewy = R_LerpFixed(prevview->y, newview->y, frac);
+	viewz = R_LerpFixed(prevview->z, newview->z, frac);
 
-	viewangle = R_LerpAngleView(prevview->angle, newview->angle, frac);
-	aimingangle = R_LerpAngleView(prevview->aim, newview->aim, frac);
-	viewroll = R_LerpAngleView(prevview->roll, newview->roll, frac);
+	viewangle = R_LerpAngle(prevview->angle, newview->angle, frac);
+	aimingangle = R_LerpAngle(prevview->aim, newview->aim, frac);
+	viewroll = R_LerpAngle(prevview->roll, newview->roll, frac);
 
 	viewsin = FINESINE(viewangle>>ANGLETOFINESHIFT);
 	viewcos = FINECOSINE(viewangle>>ANGLETOFINESHIFT);
@@ -301,22 +313,12 @@ void R_SetViewContext(enum viewcontext_e _viewcontext)
 
 /*fixed_t R_InterpolateFixed(fixed_t from, fixed_t to)
 {
-	if (!R_UsingFrameInterpolation())
-	{
-		return to;
-	}
-
-	return (R_LerpFixed(from, to, rendertimefrac));
+	return R_LerpFixed(from, to, R_GetTimeFrac(RTF_LEVEL));
 }*/
 
 angle_t R_InterpolateAngle(angle_t from, angle_t to)
 {
-	if (!R_UsingFrameInterpolation())
-	{
-		return to;
-	}
-
-	return (R_LerpAngle(from, to, rendertimefrac));
+	return R_LerpAngle(from, to, R_GetTimeFrac(RTF_LEVEL));
 }
 
 void R_InterpolateMobjState(mobj_t *mobj, fixed_t frac, interpmobjstate_t *out)
@@ -397,48 +399,22 @@ void R_InterpolatePrecipMobjState(precipmobj_t *mobj, fixed_t frac, interpmobjst
 		//out->angle = R_LerpAngle(mobj->old_angle, mobj->angle, frac);
 }
 
-static void AddInterpolator(levelinterpolator_t* interpolator)
-{
-	if (levelinterpolators_len >= levelinterpolators_size)
-	{
-		if (levelinterpolators_size == 0)
-		{
-			levelinterpolators_size = 128;
-		}
-		else
-		{
-			levelinterpolators_size *= 2;
-		}
-
-		levelinterpolators = Z_Realloc(
-			(void*) levelinterpolators,
-			sizeof(levelinterpolator_t*) * levelinterpolators_size,
-			PU_LEVEL,
-			NULL
-		);
-	}
-
-	levelinterpolators[levelinterpolators_len] = interpolator;
-	levelinterpolators_len += 1;
-}
-
 static levelinterpolator_t *CreateInterpolator(levelinterpolator_type_e type, thinker_t *thinker)
 {
-	levelinterpolator_t *ret = (levelinterpolator_t*) Z_Calloc(
-		sizeof(levelinterpolator_t), PU_LEVEL, NULL
-	);
+	if (rendermode == render_none)
+		return NULL;
 
-	ret->type = type;
-	ret->thinker = thinker;
-
-	AddInterpolator(ret);
-
+	auto* ret = &levelinterpolators.emplace_back(levelinterpolator_t{ type, thinker, {} });
 	return ret;
 }
 
 void R_CreateInterpolator_SectorPlane(thinker_t *thinker, sector_t *sector, boolean ceiling)
 {
 	levelinterpolator_t *interp = CreateInterpolator(LVLINTERP_SectorPlane, thinker);
+
+	if (interp == NULL)
+		return;
+
 	interp->sectorplane.sector = sector;
 	interp->sectorplane.ceiling = ceiling;
 	if (ceiling)
@@ -454,6 +430,10 @@ void R_CreateInterpolator_SectorPlane(thinker_t *thinker, sector_t *sector, bool
 void R_CreateInterpolator_SectorScroll(thinker_t *thinker, sector_t *sector, boolean ceiling)
 {
 	levelinterpolator_t *interp = CreateInterpolator(LVLINTERP_SectorScroll, thinker);
+
+	if (interp == NULL)
+		return;
+
 	interp->sectorscroll.sector = sector;
 	interp->sectorscroll.ceiling = ceiling;
 	if (ceiling)
@@ -471,6 +451,10 @@ void R_CreateInterpolator_SectorScroll(thinker_t *thinker, sector_t *sector, boo
 void R_CreateInterpolator_SideScroll(thinker_t *thinker, side_t *side)
 {
 	levelinterpolator_t *interp = CreateInterpolator(LVLINTERP_SideScroll, thinker);
+
+	if (interp == NULL)
+		return;
+
 	interp->sidescroll.side = side;
 	interp->sidescroll.oldtextureoffset = interp->sidescroll.baktextureoffset = side->textureoffset;
 	interp->sidescroll.oldrowoffset = interp->sidescroll.bakrowoffset = side->rowoffset;
@@ -479,11 +463,15 @@ void R_CreateInterpolator_SideScroll(thinker_t *thinker, side_t *side)
 void R_CreateInterpolator_Polyobj(thinker_t *thinker, polyobj_t *polyobj)
 {
 	levelinterpolator_t *interp = CreateInterpolator(LVLINTERP_Polyobj, thinker);
+
+	if (interp == NULL)
+		return;
+
 	interp->polyobj.polyobj = polyobj;
 	interp->polyobj.vertices_size = polyobj->numVertices;
 
-	interp->polyobj.oldvertices = Z_Calloc(sizeof(fixed_t) * 2 * polyobj->numVertices, PU_LEVEL, NULL);
-	interp->polyobj.bakvertices = Z_Calloc(sizeof(fixed_t) * 2 * polyobj->numVertices, PU_LEVEL, NULL);
+	interp->polyobj.oldvertices = static_cast<fixed_t*>(Z_Calloc(sizeof(fixed_t) * 2 * polyobj->numVertices, PU_LEVEL, NULL));
+	interp->polyobj.bakvertices = static_cast<fixed_t*>(Z_Calloc(sizeof(fixed_t) * 2 * polyobj->numVertices, PU_LEVEL, NULL));
 	for (size_t i = 0; i < polyobj->numVertices; i++)
 	{
 		interp->polyobj.oldvertices[i * 2    ] = interp->polyobj.bakvertices[i * 2    ] = polyobj->vertices[i]->x;
@@ -498,6 +486,10 @@ void R_CreateInterpolator_Polyobj(thinker_t *thinker, polyobj_t *polyobj)
 /*void R_CreateInterpolator_DynSlope(thinker_t *thinker, pslope_t *slope)
 {
 	levelinterpolator_t *interp = CreateInterpolator(LVLINTERP_DynSlope, thinker);
+
+	if (interp == NULL)
+		return;
+
 	interp->dynslope.slope = slope;
 
 	FV3_Copy(&interp->dynslope.oldo, &slope->o);
@@ -511,9 +503,7 @@ void R_CreateInterpolator_Polyobj(thinker_t *thinker, polyobj_t *polyobj)
 
 void R_InitializeLevelInterpolators(void)
 {
-	levelinterpolators_len = 0;
-	levelinterpolators_size = 0;
-	levelinterpolators = NULL;
+	levelinterpolators.clear();
 }
 
 static void RecalculatePolyobjectSegAngles(polyobj_t *polyobj)
@@ -578,40 +568,32 @@ static void UpdateLevelInterpolatorState(levelinterpolator_t *interp)
 
 void R_UpdateLevelInterpolators(void)
 {
-	size_t i;
-
-	for (i = 0; i < levelinterpolators_len; i++)
+	for (levelinterpolator_t& interp : levelinterpolators)
 	{
-		levelinterpolator_t *interp = levelinterpolators[i];
-
-		UpdateLevelInterpolatorState(interp);
+		UpdateLevelInterpolatorState(&interp);
 	}
 }
 
 void R_ClearLevelInterpolatorState(thinker_t *thinker)
 {
-	size_t i;
-
-	for (i = 0; i < levelinterpolators_len; i++)
+	for (levelinterpolator_t& interp : levelinterpolators)
 	{
-		levelinterpolator_t *interp = levelinterpolators[i];
-
-		if (interp->thinker == thinker)
+		if (interp.thinker == thinker)
 		{
 			// Do it twice to make the old state match the new
-			UpdateLevelInterpolatorState(interp);
-			UpdateLevelInterpolatorState(interp);
+			UpdateLevelInterpolatorState(&interp);
+			UpdateLevelInterpolatorState(&interp);
 		}
 	}
 }
 
 void R_ApplyLevelInterpolators(fixed_t frac)
 {
-	size_t i, ii;
+	size_t ii;
 
-	for (i = 0; i < levelinterpolators_len; i++)
+	for (levelinterpolator_t& i : levelinterpolators)
 	{
-		levelinterpolator_t *interp = levelinterpolators[i];
+		levelinterpolator_t* interp = &i;
 
 		switch (interp->type)
 		{
@@ -661,11 +643,11 @@ void R_ApplyLevelInterpolators(fixed_t frac)
 
 void R_RestoreLevelInterpolators(void)
 {
-	size_t i, ii;
+	size_t ii;
 
-	for (i = 0; i < levelinterpolators_len; i++)
+	for (levelinterpolator_t& i : levelinterpolators)
 	{
-		levelinterpolator_t *interp = levelinterpolators[i];
+		levelinterpolator_t* interp = &i;
 
 		switch (interp->type)
 		{
@@ -721,51 +703,30 @@ void R_DestroyLevelInterpolators(thinker_t *thinker)
 {
 	size_t i;
 
-	for (i = 0; i < levelinterpolators_len; i++)
+	for (i = 0; i < levelinterpolators.size(); i++)
 	{
-		levelinterpolator_t *interp = levelinterpolators[i];
+		levelinterpolator_t* interp = &levelinterpolators[i];
 
 		if (interp->thinker == thinker)
 		{
 			// Swap the tail of the level interpolators to this spot
-			levelinterpolators[i] = levelinterpolators[levelinterpolators_len - 1];
-			levelinterpolators_len -= 1;
+			levelinterpolators[i] = *levelinterpolators.rbegin();
 
-			Z_Free(interp);
-			i -= 1;
+			levelinterpolators.pop_back();
 		}
 	}
 }
 
-static mobj_t **interpolated_mobjs = NULL;
-static size_t interpolated_mobjs_len = 0;
-static size_t interpolated_mobjs_capacity = 0;
+static std::vector<mobj_t*> interpolated_mobjs;
 
 // NOTE: This will NOT check that the mobj has already been added, for perf
 // reasons.
 void R_AddMobjInterpolator(mobj_t *mobj)
 {
-	if (interpolated_mobjs_len >= interpolated_mobjs_capacity)
-	{
-		if (interpolated_mobjs_capacity == 0)
-		{
-			interpolated_mobjs_capacity = 256;
-		}
-		else
-		{
-			interpolated_mobjs_capacity *= 2;
-		}
+	if (rendermode == render_none)
+		return;
 
-		interpolated_mobjs = Z_Realloc(
-			interpolated_mobjs,
-			sizeof(mobj_t *) * interpolated_mobjs_capacity,
-			PU_LEVEL,
-			NULL
-		);
-	}
-
-	interpolated_mobjs[interpolated_mobjs_len] = mobj;
-	interpolated_mobjs_len += 1;
+	interpolated_mobjs.push_back(mobj);
 
 	R_ResetMobjInterpolationState(mobj);
 	mobj->resetinterp = true;
@@ -773,18 +734,12 @@ void R_AddMobjInterpolator(mobj_t *mobj)
 
 void R_RemoveMobjInterpolator(mobj_t *mobj)
 {
-	size_t i;
-
-	if (interpolated_mobjs_len == 0) return;
-
-	for (i = 0; i < interpolated_mobjs_len; i++)
+	for (size_t i = 0; i < interpolated_mobjs.size(); i++)
 	{
 		if (interpolated_mobjs[i] == mobj)
 		{
-			interpolated_mobjs[i] = interpolated_mobjs[
-				interpolated_mobjs_len - 1
-			];
-			interpolated_mobjs_len -= 1;
+			interpolated_mobjs[i] = *interpolated_mobjs.rbegin();
+			interpolated_mobjs.pop_back();
 			return;
 		}
 	}
@@ -792,19 +747,13 @@ void R_RemoveMobjInterpolator(mobj_t *mobj)
 
 void R_InitMobjInterpolators(void)
 {
-	// apparently it's not acceptable to free something already unallocated
-	// Z_Free(interpolated_mobjs);
-	interpolated_mobjs = NULL;
-	interpolated_mobjs_len = 0;
-	interpolated_mobjs_capacity = 0;
+	interpolated_mobjs.clear();
 }
 
 void R_UpdateMobjInterpolators(void)
 {
-	size_t i;
-	for (i = 0; i < interpolated_mobjs_len; i++)
+	for (mobj_t* mobj : interpolated_mobjs)
 	{
-		mobj_t *mobj = interpolated_mobjs[i];
 		if (!P_MobjWasRemoved(mobj))
 			R_ResetMobjInterpolationState(mobj);
 	}
@@ -817,6 +766,9 @@ void R_UpdateMobjInterpolators(void)
 //
 void R_ResetMobjInterpolationState(mobj_t *mobj)
 {
+	if (rendermode == render_none)
+		return;
+
 	mobj->old_x2 = mobj->old_x;
 	mobj->old_y2 = mobj->old_y;
 	mobj->old_z2 = mobj->old_z;
@@ -883,16 +835,7 @@ void R_ResetMobjInterpolationState(mobj_t *mobj)
 //
 void R_ResetPrecipitationMobjInterpolationState(precipmobj_t *mobj)
 {
-	mobj->old_x2 = mobj->old_x;
-	mobj->old_y2 = mobj->old_y;
-	mobj->old_z2 = mobj->old_z;
-	mobj->old_angle2 = mobj->old_angle;
 	mobj->old_x = mobj->x;
 	mobj->old_y = mobj->y;
 	mobj->old_z = mobj->z;
-	mobj->old_angle = mobj->angle;
-	mobj->old_spritexscale = mobj->spritexscale;
-	mobj->old_spriteyscale = mobj->spriteyscale;
-	mobj->old_spritexoffset = mobj->spritexoffset;
-	mobj->old_spriteyoffset = mobj->spriteyoffset;
 }

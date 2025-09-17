@@ -795,7 +795,7 @@ boolean P_IsObjectInGoop(mobj_t *mo)
 //
 boolean P_IsObjectOnGround(mobj_t *mo)
 {
-	if (P_IsObjectInGoop(mo))
+	if (UNLIKELY(P_IsObjectInGoop(mo)))
 	{
 		// but I don't want you to ever 'stand' while submerged in goo.
 		// You're in constant vertical momentum, even if you get stuck on something.
@@ -980,7 +980,18 @@ fixed_t P_GetPlayerSpinHeight(player_t *player)
 //
 player_t *P_GetLocalPlayerForNum(UINT8 pnum)
 {
-	return (pnum == 0 ? &players[consoleplayer] : &players[displayplayers[pnum]]);
+	return (&players[P_GetLocalPlayerNumForNum(pnum)]);
+}
+
+//
+// P_GetLocalPlayerNumForNum
+//
+// Returns the player number
+// on the local machine for given number.
+//
+INT32 P_GetLocalPlayerNumForNum(UINT8 pnum)
+{
+	return (pnum == 0 ? consoleplayer : displayplayers[pnum]);
 }
 
 //
@@ -993,15 +1004,29 @@ boolean P_IsLocalPlayer(const player_t *player)
 {
 	UINT8 i;
 
-	if (player == &players[consoleplayer])
-		return true;
-	else if (splitscreen)
+	for (i = 0; i <= splitscreen; i++)
 	{
-		for (i = 1; i <= splitscreen; i++) // Skip P1
-		{
-			if (player == &players[displayplayers[i]])
-				return true;
-		}
+		if (player == P_GetLocalPlayerForNum(i))
+			return true;
+	}
+
+	return false;
+}
+
+//
+// P_IsLocalPlayer
+//
+// Returns true if playernum is
+// on the local machine.
+//
+boolean P_IsLocalPlayerNum(UINT8 pnum)
+{
+	UINT8 i;
+
+	for (i = 0; i <= splitscreen; i++)
+	{
+		if (pnum == P_GetLocalPlayerNumForNum(i))
+			return true;
 	}
 
 	return false;
@@ -2575,14 +2600,14 @@ static void P_DoZoomTube(player_t *player)
 	{
 		player->mo->angle = R_PointToAngle2(player->mo->x, player->mo->y, player->mo->tracer->x, player->mo->tracer->y);
 
-		if (player == &players[consoleplayer])
-			localangle[0] = player->mo->angle;
-		else if (player == &players[displayplayers[1]])
-			localangle[1] = player->mo->angle;
-		else if (player == &players[displayplayers[2]])
-			localangle[2] = player->mo->angle;
-		else if (player == &players[displayplayers[3]])
-			localangle[3] = player->mo->angle;
+		for (UINT8 i = 0; i <= splitscreen; i++)
+		{
+			if (player == P_GetLocalPlayerForNum(i))
+			{
+				localangle[i] = player->mo->angle;
+				break;
+			}
+		}
 	}
 }
 
@@ -2768,14 +2793,14 @@ void P_HomingAttack(mobj_t *source, mobj_t *enemy) // Home in on your target
 
 	if (source->player)
 	{
-		if (source->player == &players[consoleplayer])
-			localangle[0] = source->angle;
-		else if (source->player == &players[displayplayers[1]])
-			localangle[1] = source->angle;
-		else if (source->player == &players[displayplayers[2]])
-			localangle[2] = source->angle;
-		else if (source->player == &players[displayplayers[3]])
-			localangle[3] = source->angle;
+		for (UINT8 i = 0; i <= splitscreen; i++)
+		{
+			if (source->player == P_GetLocalPlayerForNum(i))
+			{
+				localangle[i] = source->angle;
+				break;
+			}
+		}
 	}
 
 	// change slope
@@ -3139,23 +3164,6 @@ static ticcmd_t *P_CameraCmd(camera_t *cam, UINT8 num)
 
 	lang = cam->localangle;
 	laim = cam->localaiming;
-
-	switch (forplayer)
-	{
-		case 2:
-			G_CopyTiccmd(cmd, I_BaseTiccmd2(), 1);
-			break;
-		case 3:
-			G_CopyTiccmd(cmd, I_BaseTiccmd3(), 1);
-			break;
-		case 4:
-			G_CopyTiccmd(cmd, I_BaseTiccmd4(), 1);
-			break;
-		case 1:
-		default:
-			G_CopyTiccmd(cmd, I_BaseTiccmd(), 1); // empty, or external driver
-			break;
-	}
 
 	cmd->angleturn = (INT16)(lang >> 16);
 	cmd->aiming = G_ClipAimingPitch(&laim);
@@ -3966,7 +3974,8 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 		if (player->kartstuff[k_drift] != 0)
 		{
 			fixed_t panmax = (dist/5);
-			pan = FixedDiv(FixedMul(min((fixed_t)player->kartstuff[k_driftcharge], K_GetKartDriftSparkValue(player)), panmax), K_GetKartDriftSparkValue(player));
+			const INT32 sparkval = K_GetKartDriftSparkValue(player);
+			pan = FixedDiv(FixedMul(min((fixed_t)player->kartstuff[k_driftcharge], sparkval), panmax), sparkval);
 			if (pan > panmax)
 				pan = panmax;
 			if (player->kartstuff[k_drift] < 0)
@@ -4131,19 +4140,12 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 
 void P_ResetLocalCamAiming(player_t *player)
 {
-	UINT8 i;
-
-	if (player == &players[consoleplayer])
-		localaiming[0] = 0;
-	else if (splitscreen)
+	for (UINT8 i = 0; i <= splitscreen; i++)
 	{
-		for (i = 1; i <= splitscreen; i++) // Skip P1
+		if (player == P_GetLocalPlayerForNum(i))
 		{
-			if (player == &players[displayplayers[i]])
-			{
-				localaiming[i] = 0;
-				break;
-			}
+			localangle[i] = 0;
+			break;
 		}
 	}
 }
@@ -4530,6 +4532,8 @@ void P_PlayerThink(player_t *player)
 	if (!player->mo)
 		I_Error("p_playerthink: players[%s].mo == NULL", sizeu1(playeri));
 #endif
+
+	player->driftlevel = 0; // idk where to put this
 
 	// todo: Figure out what is actually causing these problems in the first place...
 	if ((player->health <= 0 || player->mo->health <= 0) && player->playerstate == PST_LIVE) //you should be DEAD!
@@ -5166,14 +5170,14 @@ void P_PlayerAfterThink(player_t *player)
 			player->mo->tracer->target->health += cmd->sidemove;
 			player->mo->angle += cmd->sidemove << ANGLETOFINESHIFT; // 2048 --> ANGLE_MAX
 
-			if (player == &players[consoleplayer])
-				localangle[0] = player->mo->angle; // Adjust the local control angle.
-			else if (player == &players[displayplayers[1]])
-				localangle[1] = player->mo->angle;
-			else if (player == &players[displayplayers[2]])
-				localangle[2] = player->mo->angle;
-			else if (player == &players[displayplayers[3]])
-				localangle[3] = player->mo->angle;
+			for (UINT8 i = 0; i <= splitscreen; i++)
+			{
+				if (player == P_GetLocalPlayerForNum(i))
+				{
+					localangle[i] = player->mo->angle; // Adjust the local control angle.
+					break;
+				}
+			}
 		}
 	}
 

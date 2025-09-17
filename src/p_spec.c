@@ -15,6 +15,7 @@
 ///        utility functions, etc.
 ///        Line Tag handling. Line and Sector triggers.
 
+#include "d_think.h"
 #include "doomdef.h"
 #include "g_game.h"
 #include "p_local.h"
@@ -974,7 +975,7 @@ static boolean PolyDoor(line_t *line)
 		case 480: // Polyobj_DoorSlide
 			pdd.doorType = POLY_DOOR_SLIDE;
 			pdd.speed    = sides[line->sidenum[0]].textureoffset / 8;
-			pdd.angle    = R_PointToAngle2(line->v1->x, line->v1->y, line->v2->x, line->v2->y); // angle of motion
+			pdd.angle    = line->angle; // angle of motion
 			pdd.distance = sides[line->sidenum[0]].rowoffset;
 
 			if (line->sidenum[1] != 0xffff)
@@ -1010,7 +1011,7 @@ static boolean PolyMove(line_t *line)
 
 	pmd.polyObjNum = line->tag;
 	pmd.speed      = sides[line->sidenum[0]].textureoffset / 8;
-	pmd.angle      = R_PointToAngle2(line->v1->x, line->v1->y, line->v2->x, line->v2->y);
+	pmd.angle      = line->angle;
 	pmd.distance   = sides[line->sidenum[0]].rowoffset;
 
 	pmd.overRide = (line->special == 483); // Polyobj_OR_Move
@@ -1232,7 +1233,7 @@ void P_ChangeSectorTag(UINT32 sector, INT16 newtag)
   * \sa P_FindSectorFromTag, P_ChangeSectorTag
   * \author Lee Killough
   */
-static inline void P_InitTagLists(void)
+void P_InitTagLists(void)
 {
 	register size_t i;
 
@@ -1241,8 +1242,6 @@ static inline void P_InitTagLists(void)
 		size_t j = (unsigned)sectors[i].tag % numsectors;
 		sectors[i].nexttag = sectors[j].firsttag;
 		sectors[j].firsttag = (INT32)i;
-		sectors[i].spawn_nexttag = sectors[i].nexttag;
-		sectors[j].spawn_firsttag = sectors[j].firsttag;
 	}
 
 	for (i = numlines - 1; i != (size_t)-1; i--)
@@ -1300,7 +1299,9 @@ static void P_AddExecutorDelay(line_t *line, mobj_t *mobj, sector_t *sector)
 	if (!line->backsector)
 		I_Error("P_AddExecutorDelay: Line has no backsector!\n");
 
-	e = Z_Calloc(sizeof (*e), PU_LEVSPEC, NULL);
+	e = Z_LevelPoolCalloc(sizeof (*e));
+	e->thinker.alloctype = TAT_LEVELPOOL;
+	e->thinker.size = sizeof (*e);
 
 	e->thinker.function = (actionf_p1)T_ExecutorDelay;
 	e->line = line;
@@ -1693,11 +1694,9 @@ void P_LinedefExecute(INT16 tag, mobj_t *actor, sector_t *caller)
 		 || lines[masterline].special == 306 // Character ability - Each time
 		 || lines[masterline].special == 310 // CTF Red team - Each time
 		 || lines[masterline].special == 312 // CTF Blue team - Each time
-		 || lines[masterline].special == 322) // Trigger on X calls - Each Time
-			continue;
-
-		if (lines[masterline].special < 300
-			|| lines[masterline].special > 399)
+		 || lines[masterline].special == 322 // Trigger on X calls - Each Time
+		 || lines[masterline].special < 300
+		 || lines[masterline].special > 399)
 			continue;
 
 		if (!P_RunTriggerLinedef(&lines[masterline], actor, caller))
@@ -1715,7 +1714,6 @@ static boolean is_rain_type (INT32 weathernum)
 		case PRECIP_STORM_NOSTRIKES:
 		case PRECIP_BLANK:
 			return true;
-
 		default:
 			return false;
 	}
@@ -3523,7 +3521,7 @@ DoneSection2:
 				angle_t lineangle;
 				fixed_t linespeed;
 
-				lineangle = R_PointToAngle2(lines[i].v1->x, lines[i].v1->y, lines[i].v2->x, lines[i].v2->y);
+				lineangle = lines[i].angle;
 				linespeed = P_AproxDistance(lines[i].v2->x-lines[i].v1->x, lines[i].v2->y-lines[i].v1->y);
 
 				player->mo->angle = lineangle;
@@ -3537,9 +3535,7 @@ DoneSection2:
 				{
 					for (UINT8 j = 0; j <= splitscreen; ++j)
 					{
-						INT32 id = (j == 0 ? consoleplayer : displayplayers[j]);
-
-						if (player == &players[id])
+						if (player == P_GetLocalPlayerForNum(j))
 						{
 							localangle[j] = player->mo->angle;
 							break;
@@ -4767,6 +4763,11 @@ static ffloor_t *P_AddFakeFloor(sector_t *sec, sector_t *sec2, line_t *master, f
 	ffloor->t_slope = &sec2->c_slope;
 	ffloor->b_slope = &sec2->f_slope;
 
+	// mark the target sector as having slopes, if the FOF has any of its own
+	// (this fixes FOF slopes glitching initially at level load in software mode)
+	if (sec2->hasslope)
+		sec->hasslope = true;
+
 	if ((flags & FF_SOLID) && (master->flags & ML_EFFECT1)) // Block player only
 		flags &= ~FF_BLOCKOTHERS;
 
@@ -4904,7 +4905,10 @@ static void P_AddSpikeThinker(sector_t *sec, INT32 referrer)
 	levelspecthink_t *spikes;
 
 	// create and initialize new thinker
-	spikes = Z_Calloc(sizeof (*spikes), PU_LEVSPEC, NULL);
+	spikes = Z_LevelPoolCalloc(sizeof (*spikes));
+	spikes->thinker.alloctype = TAT_LEVELPOOL;
+	spikes->thinker.size = sizeof (*spikes);
+
 	P_AddThinker(&spikes->thinker);
 
 	spikes->thinker.function = (actionf_p1)T_SpikeSector;
@@ -4926,7 +4930,9 @@ static void P_AddFloatThinker(sector_t *sec, INT32 tag, line_t *sourceline)
 	levelspecthink_t *floater;
 
 	// create and initialize new thinker
-	floater = Z_Calloc(sizeof (*floater), PU_LEVSPEC, NULL);
+	floater = Z_LevelPoolCalloc(sizeof (*floater));
+	floater->thinker.alloctype = TAT_LEVELPOOL;
+	floater->thinker.size = sizeof (*floater);
 	P_AddThinker(&floater->thinker);
 
 	floater->thinker.function = (actionf_p1)T_FloatSector;
@@ -4955,7 +4961,9 @@ static void P_AddBlockThinker(sector_t *sec, line_t *sourceline)
 	levelspecthink_t *block;
 
 	// create and initialize new elevator thinker
-	block = Z_Calloc(sizeof (*block), PU_LEVSPEC, NULL);
+	block = Z_LevelPoolCalloc(sizeof (*block));
+	block->thinker.alloctype = TAT_LEVELPOOL;
+	block->thinker.size = sizeof (*block);
 	P_AddThinker(&block->thinker);
 
 	block->thinker.function = (actionf_p1)T_MarioBlockChecker;
@@ -4984,7 +4992,9 @@ static void P_AddRaiseThinker(sector_t *sec, line_t *sourceline)
 {
 	levelspecthink_t *raise;
 
-	raise = Z_Calloc(sizeof (*raise), PU_LEVSPEC, NULL);
+	raise = Z_LevelPoolCalloc(sizeof (*raise));
+	raise->thinker.alloctype = TAT_LEVELPOOL;
+	raise->thinker.size = sizeof (*raise);
 	P_AddThinker(&raise->thinker);
 
 	raise->thinker.function = (actionf_p1)T_RaiseSector;
@@ -5027,7 +5037,9 @@ static void P_AddOldAirbob(sector_t *sec, line_t *sourceline, boolean noadjust)
 {
 	levelspecthink_t *airbob;
 
-	airbob = Z_Calloc(sizeof (*airbob), PU_LEVSPEC, NULL);
+	airbob = Z_LevelPoolCalloc(sizeof (*airbob));
+	airbob->thinker.alloctype = TAT_LEVELPOOL;
+	airbob->thinker.size = sizeof (*airbob);
 	P_AddThinker(&airbob->thinker);
 
 	airbob->thinker.function = (actionf_p1)T_RaiseSector;
@@ -5092,7 +5104,9 @@ static inline void P_AddThwompThinker(sector_t *sec, sector_t *actionsector, lin
 		return;
 
 	// create and initialize new elevator thinker
-	thwomp = Z_Calloc(sizeof (*thwomp), PU_LEVSPEC, NULL);
+	thwomp = Z_LevelPoolCalloc(sizeof (*thwomp));
+	thwomp->thinker.alloctype = TAT_LEVELPOOL;
+	thwomp->thinker.size = sizeof (*thwomp);
 	P_AddThinker(&thwomp->thinker);
 
 	thwomp->thinker.function = (actionf_p1)T_ThwompSector;
@@ -5133,7 +5147,9 @@ static inline void P_AddNoEnemiesThinker(sector_t *sec, line_t *sourceline)
 	levelspecthink_t *nobaddies;
 
 	// create and initialize new thinker
-	nobaddies = Z_Calloc(sizeof (*nobaddies), PU_LEVSPEC, NULL);
+	nobaddies = Z_LevelPoolCalloc(sizeof (*nobaddies));
+	nobaddies->thinker.alloctype = TAT_LEVELPOOL;
+	nobaddies->thinker.size = sizeof (*nobaddies);
 	P_AddThinker(&nobaddies->thinker);
 
 	nobaddies->thinker.function = (actionf_p1)T_NoEnemiesSector;
@@ -5155,7 +5171,9 @@ static inline void P_AddEachTimeThinker(sector_t *sec, line_t *sourceline)
 	levelspecthink_t *eachtime;
 
 	// create and initialize new thinker
-	eachtime = Z_Calloc(sizeof (*eachtime), PU_LEVSPEC, NULL);
+	eachtime = Z_LevelPoolCalloc(sizeof (*eachtime));
+	eachtime->thinker.alloctype = TAT_LEVELPOOL;
+	eachtime->thinker.size = sizeof (*eachtime);
 	P_AddThinker(&eachtime->thinker);
 
 	eachtime->thinker.function = (actionf_p1)T_EachTimeThinker;
@@ -5177,7 +5195,9 @@ static inline void P_AddCameraScanner(sector_t *sourcesec, sector_t *actionsecto
 	elevator_t *elevator; // Why not? LOL
 
 	// create and initialize new elevator thinker
-	elevator = Z_Calloc(sizeof (*elevator), PU_LEVSPEC, NULL);
+	elevator = Z_LevelPoolCalloc(sizeof (*elevator));
+	elevator->thinker.alloctype = TAT_LEVELPOOL;
+	elevator->thinker.size = sizeof (*elevator);
 	P_AddThinker(&elevator->thinker);
 
 	elevator->thinker.function = (actionf_p1)T_CameraScanner;
@@ -5259,13 +5279,14 @@ void T_LaserFlash(laserthink_t *flash)
   */
 static inline void EV_AddLaserThinker(sector_t *sec, sector_t *sec2, line_t *line, thinkerlist_t *secthinkers)
 {
-	laserthink_t *flash;
 	ffloor_t *ffloor = P_AddFakeFloor(sec, sec2, line, laserflags, secthinkers);
 
 	if (!ffloor)
 		return;
 
-	flash = Z_Calloc(sizeof (*flash), PU_LEVSPEC, NULL);
+	laserthink_t *flash = Z_LevelPoolCalloc(sizeof (*flash));
+	flash->thinker.alloctype = TAT_LEVELPOOL;
+	flash->thinker.size = sizeof (*flash);
 
 	P_AddThinker(&flash->thinker);
 
@@ -5466,7 +5487,7 @@ void P_SpawnSpecials(INT32 fromnetsave, boolean reloadinggamestate)
 			case 5: // Change camera info
 				sec = sides[*lines[i].sidenum].sector - sectors;
 				for (s = -1; (s = P_FindSectorFromLineTag(lines + i, s)) >= 0 ;)
-					P_AddCameraScanner(&sectors[sec], &sectors[s], R_PointToAngle2(lines[i].v2->x, lines[i].v2->y, lines[i].v1->x, lines[i].v1->y));
+					P_AddCameraScanner(&sectors[sec], &sectors[s], lines[i].angle);
 				break;
 
 #ifdef PARANOIA
@@ -5477,7 +5498,7 @@ void P_SpawnSpecials(INT32 fromnetsave, boolean reloadinggamestate)
 			case 7: // Flat alignment - redone by toast
 				if ((lines[i].flags & (ML_NOSONIC|ML_NOTAILS)) != (ML_NOSONIC|ML_NOTAILS)) // If you can do something...
 				{
-					angle_t flatangle = InvAngle(R_PointToAngle2(lines[i].v1->x, lines[i].v1->y, lines[i].v2->x, lines[i].v2->y));
+					angle_t flatangle = InvAngle(lines[i].angle);
 					fixed_t xoffs;
 					fixed_t yoffs;
 
@@ -5496,22 +5517,16 @@ void P_SpawnSpecials(INT32 fromnetsave, boolean reloadinggamestate)
 					{
 						if (!(lines[i].flags & ML_NOSONIC)) // Modify floor flat alignment unless NOSONIC flag is set
 						{
-							sectors[s].spawn_flrpic_angle = sectors[s].floorpic_angle = flatangle;
+							sectors[s].floorpic_angle = flatangle;
 							sectors[s].floor_xoffs += xoffs;
 							sectors[s].floor_yoffs += yoffs;
-							// saved for netgames
-							sectors[s].spawn_flr_xoffs = sectors[s].floor_xoffs;
-							sectors[s].spawn_flr_yoffs = sectors[s].floor_yoffs;
 						}
 
 						if (!(lines[i].flags & ML_NOTAILS)) // Modify ceiling flat alignment unless NOTAILS flag is set
 						{
-							sectors[s].spawn_ceilpic_angle = sectors[s].ceilingpic_angle = flatangle;
+							sectors[s].ceilingpic_angle = flatangle;
 							sectors[s].ceiling_xoffs += xoffs;
 							sectors[s].ceiling_yoffs += yoffs;
-							// saved for netgames
-							sectors[s].spawn_ceil_xoffs = sectors[s].ceiling_xoffs;
-							sectors[s].spawn_ceil_yoffs = sectors[s].ceiling_yoffs;
 						}
 					}
 				}
@@ -6278,7 +6293,7 @@ void P_SpawnSpecials(INT32 fromnetsave, boolean reloadinggamestate)
 
 			case 606: // HACK! Copy colormaps. Just plain colormaps.
 				for (s = -1; (s = P_FindSectorFromLineTag(lines + i, s)) >= 0 ;)
-					sectors[s].midmap = lines[i].frontsector->midmap;
+					sectors[s].extra_colormap = lines[i].frontsector->extra_colormap;
 				break;
 
 			case 720:
@@ -6632,8 +6647,11 @@ void T_Scroll(scroll_t *s)
   */
 static void Add_Scroller(INT32 type, fixed_t dx, fixed_t dy, INT32 control, INT32 affectee, INT32 accel, INT32 exclusive)
 {
-	scroll_t *s = Z_Calloc(sizeof *s, PU_LEVSPEC, NULL);
+	scroll_t *s = Z_LevelPoolCalloc(sizeof (*s));
+	s->thinker.alloctype = TAT_LEVELPOOL;
+	s->thinker.size = sizeof (*s);
 	s->thinker.function = (actionf_p1)T_Scroll;
+
 	s->type = type;
 	s->dx = dx;
 	s->dy = dy;
@@ -6801,7 +6819,9 @@ static void P_SpawnScrollers(void)
   */
 static void Add_MasterDisappearer(tic_t appeartime, tic_t disappeartime, tic_t offset, INT32 line, INT32 sourceline)
 {
-	disappear_t *d = Z_Malloc(sizeof *d, PU_LEVSPEC, NULL);
+	disappear_t *d = Z_LevelPoolCalloc(sizeof (*d));
+	d->thinker.alloctype = TAT_LEVELPOOL;
+	d->thinker.size = sizeof (*d);
 
 	d->thinker.function = (actionf_p1)T_Disappear;
 	d->appeartime = appeartime;
@@ -6886,7 +6906,9 @@ void T_Disappear(disappear_t *d)
   */
 static void Add_Friction(INT32 friction, INT32 movefactor, INT32 affectee, INT32 referrer)
 {
-	friction_t *f = Z_Calloc(sizeof *f, PU_LEVSPEC, NULL);
+	friction_t *f = Z_LevelPoolCalloc(sizeof (*f));
+	f->thinker.alloctype = TAT_LEVELPOOL;
+	f->thinker.size = sizeof (*f);
 
 	f->thinker.function = (actionf_p1)T_Friction;
 	f->friction = friction;
@@ -7041,7 +7063,9 @@ static void P_SpawnFriction(void)
   */
 static void Add_Pusher(pushertype_e type, fixed_t x_mag, fixed_t y_mag, mobj_t *source, INT32 affectee, INT32 referrer, INT32 exclusive, INT32 slider)
 {
-	pusher_t *p = Z_Calloc(sizeof *p, PU_LEVSPEC, NULL);
+	pusher_t *p = Z_LevelPoolCalloc(sizeof (*p));
+	p->thinker.alloctype = TAT_LEVELPOOL;
+	p->thinker.size = sizeof (*p);
 
 	p->thinker.function = (actionf_p1)T_Pusher;
 	p->source = source;
@@ -7477,8 +7501,7 @@ void T_Pusher(pusher_t *p)
 				{
 					for (UINT8 i = 0; i <= splitscreen; ++i)
 					{
-						INT32 id = (i == 0 ? consoleplayer : displayplayers[i]);
-						if (thing->player == &players[id])
+						if (thing->player == P_GetLocalPlayerForNum(i))
 						{
 							if (thing->angle - localangle[i] > ANGLE_180)
 								localangle[i] -= (localangle[i] - thing->angle) / 8;

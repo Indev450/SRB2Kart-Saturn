@@ -1,5 +1,5 @@
 i_net.c
-i_system.c
+i_system.cpp
 i_main.c
 i_video.c
 dosstr.c

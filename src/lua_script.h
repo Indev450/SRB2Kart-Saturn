@@ -13,6 +13,10 @@
 #ifndef LUA_SCRIPT_H
 #define LUA_SCRIPT_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "m_fixed.h"
 #include "doomtype.h"
 #include "d_player.h"
@@ -48,7 +52,9 @@ void LUA_LoadLump(UINT16 wad, UINT16 lump);
 #ifdef LUA_ALLOW_BYTECODE
 void LUA_DumpFile(const char *filename);
 #endif
+fixed_t LUA_EvalMathEx(const char *word, const char **error);
 fixed_t LUA_EvalMath(const char *word);
+fixed_t LUA_GetConstant(const char *word);
 
 // Need better name for this ;-;
 void LUA_InvalidateMathlibCache(const char *name);
@@ -103,5 +109,9 @@ void COM_Lua_f(void);
 		CONS_Alert(CONS_WARNING,"%s\n", warningmsg);\
 	}\
 }
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif/*LUA_SCRIPT_H*/

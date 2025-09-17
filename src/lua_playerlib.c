@@ -267,14 +267,14 @@ int player_aiming_setter(lua_State *L)
     player_t *plr = GETPLAYER();
 
     plr->aiming = luaL_checkangle(L, 2);
-    if (plr == &players[consoleplayer])
-        localaiming[0] = plr->aiming;
-    else if (plr == &players[displayplayers[1]])
-        localaiming[1] = plr->aiming;
-    else if (plr == &players[displayplayers[2]])
-        localaiming[2] = plr->aiming;
-    else if (plr == &players[displayplayers[3]])
-        localaiming[3] = plr->aiming;
+	for (UINT8 i = 0; i <= splitscreen; i++)
+	{
+		if (plr == P_GetLocalPlayerForNum(i))
+		{
+			localangle[i] = plr->aiming;
+			break;
+		}
+	}
 
     return 0;
 }
@@ -438,7 +438,7 @@ static int lib_getPlayer(lua_State *L)
 }
 
 // #players -> MAXPLAYERS
-static int lib_lenPlayer(lua_State *L)
+FUNCINLINE static ATTRINLINE int lib_lenPlayer(lua_State *L)
 {
 	lua_pushinteger(L, MAXPLAYERS);
 	return 1;
@@ -448,47 +448,29 @@ static int lib_lenPlayer(lua_State *L)
 
 static int lib_iterateDisplayplayers(lua_State *L)
 {
-	INT32 i = -1;
-	INT32 temp = -1;
-	INT32 iter = 0;
+	INT32 i = lua_tonumber(L, lua_upvalueindex(1));
 
 	if (lua_gettop(L) < 2)
 	{
-		//return luaL_error(L, "Don't call displayplayers.iterate() directly, use it as 'for player in displayplayers.iterate do <block> end'.");
-		lua_pushcfunction(L, lib_iterateDisplayplayers);
+		lua_pushcclosure(L, lib_iterateDisplayplayers, 1);
 		return 1;
 	}
-	lua_settop(L, 2);
-	lua_remove(L, 1); // state is unused.
-	if (!lua_isnil(L, 1))
+
+	if (i <= splitscreen)
 	{
-		temp = (INT32)(*((player_t **)luaL_checkudata(L, 1, META_PLAYER)) - players);	// get the player # of the last iterated player.
+		if (!playeringame[displayplayers[i]])
+			return 0;
 
-		// @FIXME:
-		// I didn't quite find a better way for this; Here, we go back to which player in displayplayers we last iterated to resume the for loop below for this new function call
-		// I don't understand enough about how the Lua stacks work to get this to work in possibly a single line.
-		// So anyone feel free to correct this!
-
-		for (; iter < MAXSPLITSCREENPLAYERS; iter++)
-		{
-			if (displayplayers[iter] == temp)
-			{
-				i = iter;
-				break;
-			}
-		}
-	}
-
-	for (i++; i < MAXSPLITSCREENPLAYERS; i++)
-	{
-		if (i > splitscreen || !playeringame[displayplayers[i]])
-			return 0;	// Stop! There are no more players for us to go through. There will never be a player gap in displayplayers.
-
-		if (!players[displayplayers[i]].mo)
-			continue;
-
+		// Return player and splitscreen index.
 		LUA_PushUserdata(L, &players[displayplayers[i]], META_PLAYER);
-		lua_pushinteger(L, i);	// push this to recall what number we were on for the next function call. I suppose this also means you can retrieve the splitscreen player number with 'for p, n in displayplayers.iterate'!
+		lua_pushnumber(L, i);
+
+		// Update splitscreen index value for next iteration.
+		lua_pushnumber(L, i + 1);
+		lua_pushvalue(L, -1);
+		lua_replace(L, lua_upvalueindex(1));
+		lua_pop(L, 1);
+
 		return 2;
 	}
 	return 0;
@@ -516,14 +498,14 @@ static int lib_getDisplayplayers(lua_State *L)
 	field = luaL_checkstring(L, 2);
 	if (fastcmp(field,"iterate"))
 	{
-		lua_pushcfunction(L, lib_iterateDisplayplayers);
+		lua_pushcclosure(L, lib_iterateDisplayplayers, 1);
 		return 1;
 	}
 	return 0;
 }
 
 // #displayplayers -> MAXSPLITSCREENPLAYERS
-static int lib_lenDisplayplayers(lua_State *L)
+FUNCINLINE static ATTRINLINE int lib_lenDisplayplayers(lua_State *L)
 {
 	lua_pushinteger(L, MAXSPLITSCREENPLAYERS);
 	return 1;
@@ -631,7 +613,7 @@ static int player_set(lua_State *L)
 
 #undef NOSET
 
-static int player_num(lua_State *L)
+FUNCINLINE static ATTRINLINE int player_num(lua_State *L)
 {
 	player_t *plr = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
 	if (!plr)
@@ -668,7 +650,7 @@ static int power_set(lua_State *L)
 }
 
 // #powers -> NUMPOWERS
-static int power_len(lua_State *L)
+FUNCINLINE static ATTRINLINE int power_len(lua_State *L)
 {
 	lua_pushinteger(L, NUMPOWERS);
 	return 1;
@@ -702,7 +684,7 @@ static int kartstuff_set(lua_State *L)
 }
 
 // #kartstuff -> NUMKARTSTUFF
-static int kartstuff_len(lua_State *L)
+FUNCINLINE static ATTRINLINE int kartstuff_len(lua_State *L)
 {
 	lua_pushinteger(L, NUMKARTSTUFF);
 	return 1;

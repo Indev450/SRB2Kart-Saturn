@@ -34,6 +34,8 @@
 #include "y_inter.h"
 #include "m_cond.h"
 
+#include "r_fps.h" // R_GetTimeFrac
+
 // Stage of animation:
 // 0 = text, 1 = art screen
 static INT32 finalecount;
@@ -170,8 +172,8 @@ static void F_SkyScroll(INT32 scrollspeed)
 	w = (vid.width / vid.dupx)<<FRACBITS;
 
 	// The scroll offset MUST be clamped before shifting by FRACBITS, or else it'll overflow in about 3 minutes
-	animtimer = ((((finalecount * scrollspeed) % (pat->width*16))<<FRACBITS) + (R_GetMenuUncap() * scrollspeed))/16;
-	anim2 = (pat2->width<<FRACBITS) - ((((finalecount * scrollspeed) % (pat2->width*16))<<FRACBITS) + (R_GetMenuUncap() * scrollspeed))/16;
+	animtimer = ((((finalecount * scrollspeed) % (pat->width*16))<<FRACBITS) + (R_GetTimeFrac(RTF_MENU) * scrollspeed))/16;
+	anim2 = (pat2->width<<FRACBITS) - ((((finalecount * scrollspeed) % (pat2->width*16))<<FRACBITS) + (R_GetTimeFrac(RTF_MENU) * scrollspeed))/16;
 
 	// SRB2Kart: F_DrawPatchCol is over-engineered; recoded to be less shitty and error-prone
 	if (rendermode != render_none)
@@ -948,7 +950,7 @@ void F_GameEndTicker(void)
 	if (timetonext > 0)
 		timetonext--;
 	else
-		D_StartTitle();
+		G_EndGame();
 }
 
 // ==============
@@ -1003,7 +1005,7 @@ void F_TitleScreenDrawer(void)
 		if (finalecount >= 20)
 			V_DrawSmallScaledPatch(84, 87, 0, ttkart);
 		else if (finalecount >= 10)
-			V_DrawSciencePatch((84<<FRACBITS) - 18*(((20 - finalecount)<<FRACBITS) - R_GetMenuUncap()), 87<<FRACBITS, 0, ttkart, FRACUNIT/2);
+			V_DrawSciencePatch((84<<FRACBITS) - 18*(((20 - finalecount)<<FRACBITS) - R_GetTimeFrac(RTF_MENU)), 87<<FRACBITS, 0, ttkart, FRACUNIT/2);
 	}
 	else if (finalecount < 52)
 	{
@@ -1019,8 +1021,8 @@ void F_TitleScreenDrawer(void)
 
 		F_SkyScroll(titlescrollspeed);
 
-		V_DrawSciencePatch(0, -40*FixedDiv(((finalecount % 70)<<FRACBITS) + R_GetMenuUncap(), 70<<FRACBITS), V_SNAPTOTOP|V_SNAPTOLEFT, ttcheckers, FRACUNIT);
-		V_DrawSciencePatch(280<<FRACBITS, -(40<<FRACBITS) + 40*FixedDiv(((finalecount % 70)<<FRACBITS) + R_GetMenuUncap(), 70<<FRACBITS), V_SNAPTOTOP|V_SNAPTORIGHT, ttcheckers, FRACUNIT);
+		V_DrawSciencePatch(0, -40*FixedDiv(((finalecount % 70)<<FRACBITS) + R_GetTimeFrac(RTF_MENU), 70<<FRACBITS), V_SNAPTOTOP|V_SNAPTOLEFT, ttcheckers, FRACUNIT);
+		V_DrawSciencePatch(280<<FRACBITS, -(40<<FRACBITS) + 40*FixedDiv(((finalecount % 70)<<FRACBITS) + R_GetTimeFrac(RTF_MENU), 70<<FRACBITS), V_SNAPTOTOP|V_SNAPTORIGHT, ttcheckers, FRACUNIT);
 
 		if (transval)
 			V_DrawFadeScreen(120, 10 - transval);

@@ -126,6 +126,7 @@ static int lib_chatprintf(lua_State *L)
 	plr = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));	// retrieve player
 	if (!plr)
 		return LUA_ErrInvalid(L, "player_t");
+
 	if (plr != &players[consoleplayer])
 		return 0;
 
@@ -236,7 +237,7 @@ static int lib_pRandomChance(lua_State *L)
 // P_MAPUTIL
 ///////////////
 
-static int lib_pAproxDistance(lua_State *L)
+FUNCINLINE static ATTRINLINE int lib_pAproxDistance(lua_State *L)
 {
 	fixed_t dx = luaL_checkfixed(L, 1);
 	fixed_t dy = luaL_checkfixed(L, 2);
@@ -1110,19 +1111,10 @@ static int lib_pCheckSight(lua_State *L)
 	//HUDSAFE?
 	if (!t1 || !t2)
 		return LUA_ErrInvalid(L, "mobj_t");
-	lua_pushboolean(L, P_CheckSight(t1, t2));
-	return 1;
-}
-
-// DONT USE THIS FOR ANYTHING GAMEPLAY, THIS WILL DESYNCH!
-static int lib_pCheckSightFast(lua_State *L)
-{
-	mobj_t *t1 = *((mobj_t **)luaL_checkudata(L, 1, META_MOBJ));
-	mobj_t *t2 = *((mobj_t **)luaL_checkudata(L, 2, META_MOBJ));
-	//HUDSAFE?
-	if (!t1 || !t2)
-		return LUA_ErrInvalid(L, "mobj_t");
-	lua_pushboolean(L, P_CheckSightFast(t1, t2));
+	if (hud_running)
+		lua_pushboolean(L, P_CheckSightFast(t1, t2));
+	else
+		lua_pushboolean(L, P_CheckSight(t1, t2));
 	return 1;
 }
 
@@ -1643,7 +1635,7 @@ static int lib_evCrumbleChain(lua_State *L)
 // P_SLOPES
 ////////////
 
-static int lib_pGetZAt(lua_State *L)
+FUNCINLINE static ATTRINLINE int lib_pGetZAt(lua_State *L)
 {
 	pslope_t *slope = *((pslope_t **)luaL_checkudata(L, 1, META_SLOPE));
 	fixed_t x = luaL_checkfixed(L, 2);
@@ -1659,7 +1651,7 @@ static int lib_pGetZAt(lua_State *L)
 // R_DEFS
 ////////////
 
-static int lib_rPointToAngle(lua_State *L)
+FUNCINLINE static ATTRINLINE int lib_rPointToAngle(lua_State *L)
 {
 	fixed_t x = luaL_checkfixed(L, 1);
 	fixed_t y = luaL_checkfixed(L, 2);
@@ -1668,7 +1660,7 @@ static int lib_rPointToAngle(lua_State *L)
 	return 1;
 }
 
-static int lib_rPointToAngle2(lua_State *L)
+FUNCINLINE static ATTRINLINE int lib_rPointToAngle2(lua_State *L)
 {
 	fixed_t px2 = luaL_checkfixed(L, 1);
 	fixed_t py2 = luaL_checkfixed(L, 2);
@@ -1679,7 +1671,7 @@ static int lib_rPointToAngle2(lua_State *L)
 	return 1;
 }
 
-static int lib_rPointToDist(lua_State *L)
+FUNCINLINE static ATTRINLINE int lib_rPointToDist(lua_State *L)
 {
 	fixed_t x = luaL_checkfixed(L, 1);
 	fixed_t y = luaL_checkfixed(L, 2);
@@ -1688,7 +1680,7 @@ static int lib_rPointToDist(lua_State *L)
 	return 1;
 }
 
-static int lib_rPointToDist2(lua_State *L)
+FUNCINLINE static ATTRINLINE int lib_rPointToDist2(lua_State *L)
 {
 	fixed_t px2 = luaL_checkfixed(L, 1);
 	fixed_t py2 = luaL_checkfixed(L, 2);
@@ -1699,12 +1691,15 @@ static int lib_rPointToDist2(lua_State *L)
 	return 1;
 }
 
-static int lib_rPointInSubsector(lua_State *L)
+FUNCINLINE static ATTRINLINE int lib_rPointInSubsector(lua_State *L)
 {
 	fixed_t x = luaL_checkfixed(L, 1);
 	fixed_t y = luaL_checkfixed(L, 2);
 	//HUDSAFE
-	LUA_PushUserdata(L, R_PointInSubsector(x, y), META_SUBSECTOR);
+	if (hud_running)
+		LUA_PushUserdata(L, R_PointInSubsectorFast(x, y), META_SUBSECTOR);
+	else
+		LUA_PushUserdata(L, R_PointInSubsector(x, y), META_SUBSECTOR);
 	return 1;
 }
 
@@ -3180,7 +3175,6 @@ static luaL_Reg lib[] = {
 	{"P_SlideMove",lib_pSlideMove},
 	{"P_BounceMove",lib_pBounceMove},
 	{"P_CheckSight", lib_pCheckSight},
-	{"P_CheckSightFast", lib_pCheckSightFast},
 	{"P_CheckHoopPosition",lib_pCheckHoopPosition},
 	{"P_RadiusAttack",lib_pRadiusAttack},
 	{"P_FloorzAtPos",lib_pFloorzAtPos},

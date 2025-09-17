@@ -215,27 +215,6 @@ void G_LoadMetal(UINT8 **buffer)
 	metal_p = metalbuffer + READUINT32(*buffer);
 }
 
-ticcmd_t *G_CopyTiccmd(ticcmd_t* dest, const ticcmd_t* src, const size_t n)
-{
-	return M_Memcpy(dest, src, n*sizeof(*src));
-}
-
-ticcmd_t *G_MoveTiccmd(ticcmd_t* dest, const ticcmd_t* src, const size_t n)
-{
-	size_t i;
-	for (i = 0; i < n; i++)
-	{
-		dest[i].forwardmove = src[i].forwardmove;
-		dest[i].sidemove = src[i].sidemove;
-		dest[i].angleturn = SHORT(src[i].angleturn);
-		dest[i].aiming = (INT16)SHORT(src[i].aiming);
-		dest[i].buttons = (UINT16)SHORT(src[i].buttons);
-		dest[i].driftturn = (INT16)SHORT(src[i].driftturn);
-		dest[i].latency = (INT16)SHORT(src[i].latency);
-	}
-	return dest;
-}
-
 // Finds a skin with the closest stats if the expected skin doesn't exist.
 static INT32 GetSkinNumClosestToStats(UINT8 kartspeed, UINT8 kartweight)
 {
@@ -700,13 +679,6 @@ void G_WriteAllGhostTics(void)
 		if (multiplayer && ((counter % cv_netdemosyncquality.value) != 0)) // Only write 1 in this many ghost datas per tic to cut down on multiplayer replay size.
 			continue;
 
-		if (((ghostext[i].flags && (ghostext[i].flags & EZT_HIT)) || ghostext[i].hits)
-			&& !ghostext[i].hitlist) // hitlist might be freed during resynch, beware PU_LEVEL!
-		{
-			ghostext[i].hits = 0;
-			continue;
-		}
-
 		CHECKSPACE(1);
 
 		WRITEUINT8(demobuf.p, i);
@@ -914,7 +886,9 @@ void G_WriteGhostTic(mobj_t *ghost, INT32 playernum)
 				P_SetTarget(ghostext[playernum].hitlist+i, NULL);
 			}
 
+			Z_Free(ghostext[playernum].hitlist);
 			ghostext[playernum].hits = 0;
+			ghostext[playernum].hitlist = NULL;
 		}
 
 		if (ghostext[playernum].flags & EZT_SPRITE)
@@ -2729,9 +2703,9 @@ void G_LoadDemoTitle(menudemo_t *pdemo)
 	}
 
 	info_p += 12; // DEMOHEADER
+	info_p++; // VERSION
+	info_p++; // SUBVERSION
 
-	READUINT8(info_p);
-	READUINT8(info_p);
 	pdemoversion = READUINT16(info_p);
 
 	memset(pdemo->date, 0, sizeof(pdemo->date));
@@ -3869,8 +3843,8 @@ static void G_StopTimingDemo(void)
 	D_StartTitle();
 }
 
-
-boolean G_CheckDemoStatus(void)
+// Clean up all ghosts
+void G_FreeGhosts(void)
 {
 	while (ghosts)
 	{
@@ -3879,6 +3853,12 @@ boolean G_CheckDemoStatus(void)
 		ghosts = next;
 	}
 	ghosts = NULL;
+}
+
+
+boolean G_CheckDemoStatus(void)
+{
+	G_FreeGhosts();
 
 	// DO NOT end metal sonic demos here
 

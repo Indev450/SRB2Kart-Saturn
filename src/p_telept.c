@@ -65,17 +65,12 @@ void P_MixUp(mobj_t *thing, fixed_t x, fixed_t y, fixed_t z, angle_t angle,
 			thing->reactiontime = TICRATE/2; // don't move for about half a second
 
 		// absolute angle position
-		if (thing == players[consoleplayer].mo)
-			localangle[0] = angle;
-		else if (splitscreen)
+		for (i = 0; i <= splitscreen; i++)
 		{
-			for (i = 1; i <= splitscreen; i++)
+			if (thing == P_GetLocalPlayerForNum(i)->mo)
 			{
-				if (thing == players[displayplayers[i]].mo)
-				{
-					localangle[i] = angle;
-					break;
-				}
+				localangle[i] = angle;
+				break;
 			}
 		}
 

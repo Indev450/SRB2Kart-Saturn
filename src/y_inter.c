@@ -45,6 +45,8 @@
 #include "lua_hook.h" // IntermissionThinker hook
 #include "lua_hud.h" // intermission hud hook
 
+#include "r_fps.h" // R_GetTimeFrac
+
 #ifdef HWRENDER
 #include "hardware/hw_main.h"
 #endif
@@ -471,9 +473,9 @@ void Y_IntermissionDrawer(void)
 		INT64 count = (intertic - sorttic);
 
 		if (count < 8)
-			x -= ((((count<<FRACBITS) + R_GetHudUncap()) * vid.width)>>FRACBITS) / (8 * vid.dupx);
+			x -= ((((count<<FRACBITS) + R_GetTimeFrac(RTF_INTER)) * vid.width)>>FRACBITS) / (8 * vid.dupx);
 		else if (count < 16)
-			x += (((((16 - count)<<FRACBITS) - R_GetHudUncap()) * vid.width)>>FRACBITS) / (8 * vid.dupx);
+			x += (((((16 - count)<<FRACBITS) - R_GetTimeFrac(RTF_INTER)) * vid.width)>>FRACBITS) / (8 * vid.dupx);
 	}
 
 	if (intertype == int_race || intertype == int_match)
@@ -1367,21 +1369,7 @@ void Y_VoteTicker(void)
 			UINT8 p;
 			boolean pressed = false;
 
-			switch (i)
-			{
-				case 1:
-					p = displayplayers[1];
-					break;
-				case 2:
-					p = displayplayers[2];
-					break;
-				case 3:
-					p = displayplayers[3];
-					break;
-				default:
-					p = consoleplayer;
-					break;
-			}
+			p = P_GetLocalPlayerNumForNum(i);
 
 			if (voteclient.playerinfo[i].delay)
 				voteclient.playerinfo[i].delay--;

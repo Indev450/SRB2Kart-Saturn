@@ -171,7 +171,7 @@ FILE *W_OpenWadFile(const char **filename, boolean useerrors);
 //
 // if local is true, it wouldn't check if file adds complex things, therefore
 // allowing to still join server without the "you have wrong addons loaded" error
-UINT16 W_InitFile(const char *filename, boolean local);
+UINT16 W_InitFile(const char *filename, boolean local, boolean startup);
 
 // W_InitMultipleFiles returns 1 if all is okay, 0 otherwise,
 // so that it stops with a message if a file was not found, but not if all is okay.
@@ -249,7 +249,7 @@ void W_UnlockCachedPatch(void *patch);
 
 void W_VerifyFileMD5(UINT16 wadfilenum, const char *matchmd5);
 
-int W_VerifyNMUSlumps(const char *filename);
+int W_VerifyNMUSlumps(const char *filename, FILE *handle, boolean exit_on_error);
 
 int W_CheckPostLoadList(const char *filename);
 

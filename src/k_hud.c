@@ -1073,7 +1073,7 @@ static void K_initKartHUD(void)
 
 	// K_GetScreenCoords needs the right view* variables
 	R_SetViewContext(stplyrnum);
-	R_InterpolateView(rendertimefrac_unpaused, !cv_uncappedhud.value);
+	R_InterpolateView(R_GetTimeFrac(RTF_CAMERA), !cv_uncappedhud.value);
 }
 
 UINT8 K_GetHudColor(void)
@@ -1088,6 +1088,11 @@ boolean K_UseColorHud(void)
 {
 	return (cv_colorizedhud.value && clr_hud);
 }
+
+// Since all our extra Saturn things are in optional files
+// we gotta do a bunch of extra checks to determine
+// if the according Assets are actually loaded
+// see D_CheckSaturnExtraFiles in d_main.c
 
 enum
 {
@@ -1175,7 +1180,7 @@ boolean K_UseHighResPortraits(void)
 	return (cv_highresportrait.value && K_IsHighResolution());
 }
 
-// returns the players faceprefix
+// returns the players faceprefix patch
 // accounts for localskins
 patch_t *K_GetFacePrefix(player_t *player, INT32 skinnum)
 {
@@ -1766,7 +1771,7 @@ static void K_drawKartItem(void)
 
 	if (cv_fancyroulette.value && stplyr->kartstuff[k_itemroulette] && !stplyr->deadtimer)
 	{
-		fixed_t frac = R_GetHudUncap();
+		fixed_t frac = R_GetTimeFrac(RTF_LEVEL);
 		UINT8   fancystep = (offset ? 6 : 10);
 		fixed_t fancyoffset = (stplyr->kartstuff[k_itemroulette] % 3)-1;
 
@@ -2490,8 +2495,9 @@ static void K_DrawDialSpeedometer(fixed_t speed,
 	const UINT8 infoidx = (infoactive) ? 1 : 0;
 	patch_t* dialpatch;
 
+	const fixed_t spd = FixedDiv(speed, divisor);
 	const angle_t speedangle =
-		FixedAngle(((min(135 * FRACUNIT, FixedDiv(speed, divisor)) - (45 * FRACUNIT))));
+		FixedAngle(((min(135 * FRACUNIT, spd) - (45 * FRACUNIT))));
 
 	rot = R_GetRollAngle(speedangle);
 
@@ -2824,7 +2830,7 @@ static void K_drawKartBumpersOrKarma(void)
 	}
 }
 
-#define lerp(from, to) cv_uncappedhud.value ? from + FixedMul(rendertimefrac, to - from) : to
+#define lerp(from, to) cv_uncappedhud.value ? from + FixedMul(R_GetTimeFrac(RTF_LEVEL), to - from) : to
 
 // converts mobj coordinates into screen coordinates
 // NOTE: use with V_NOSCALESTART!
@@ -3502,7 +3508,7 @@ static void K_drawKartMinimapIcon(fixed_t objx, fixed_t objy, INT32 hudx, INT32 
 	fixed_t amnumxpos, amnumypos;
 	INT32 amxpos, amypos;
 	fixed_t scale = FRACUNIT;
-	patch_t *AutomapPic;
+	patch_t *AutomapPic = NULL;
 	INT16 w, h;
 
 	AutomapPic = minimapinfo.minimap_pic;
@@ -3559,7 +3565,6 @@ static void K_drawKartMinimapHead(mobj_t *mo, INT32 x, INT32 y, INT32 flags)
 	INT32 amxpos, amypos, wntdamxpos, wntdamypos;
 	fixed_t scale = FRACUNIT;
 	patch_t *minimaphead = NULL;
-	boolean minihead = K_useSmallMinimapHead(mo->player);
 
 #ifdef ROTSPRITE
 	angle_t rollangle = 0;
@@ -3568,6 +3573,9 @@ static void K_drawKartMinimapHead(mobj_t *mo, INT32 x, INT32 y, INT32 flags)
 
 	skin = K_GetMobjSkin(mo);
 	minimaphead = (skinlocal ? localfacemmapprefix : facemmapprefix)[K_GetMobjSkinNum(skin, skinlocal)];
+
+	if (minimaphead == NULL)
+		return;
 
 	amnumxpos =  (FixedMul(lerp(mo->old_x, mo->x), minimapinfo.zoom) - minimapinfo.offs_x);
 	amnumypos = -(FixedMul(lerp(mo->old_y, mo->y), minimapinfo.zoom) - minimapinfo.offs_y);
@@ -3583,6 +3591,7 @@ static void K_drawKartMinimapHead(mobj_t *mo, INT32 x, INT32 y, INT32 flags)
 		V_DrawCenteredSmallStringAtFixed(amxpos + (4*FRACUNIT), amypos - (3*FRACUNIT), V_ALLOWLOWERCASE|flags|V_SkinColorToHighlightcolor(mo->color), player_names[player - players]);
 	}
 
+	const boolean minihead = K_useSmallMinimapHead(mo->player);
 
 	// thx wanted reticle for having weird offsets very cool
 	wntdamxpos = minihead ? amxpos + (1<<FRACBITS) : amxpos - (4<<FRACBITS);
@@ -3752,7 +3761,7 @@ static void K_drawKartMinimap(void)
 	splitflags |= V_HUDTRANS;
 
 	const SINT8 icondotradius = ((cv_minihead.value == 1) && !cv_showminimapnames.value) ? 8 : 10;
-	patch_t* minipatch;
+	patch_t* minipatch = NULL;
 	INT32 rot;
 	INT32 blending;
 
@@ -3800,7 +3809,7 @@ static void K_drawKartMinimap(void)
 			else if (cv_showminimapangle.value == MINIANGLE_LIGHT)
 			{
 				rot = R_GetRollAngle(ang);
-				minipatch = W_CachePatchNameRotated("MMAPHDLT", rot, PU_PATCH);
+				minipatch = (patch_t *)W_CachePatchNameRotated("MMAPHDLT", rot, PU_PATCH);
 
 				blending = B_ADD;
 				xoff = yoff = 0;
@@ -3874,7 +3883,7 @@ static void K_drawKartFinish(void)
 
 		x = ((vid.width<<FRACBITS)/vid.dupx);
 		xval = (kp_racefinish[pnum]->width<<FRACBITS);
-		x = (FixedMul(((TICRATE - stplyr->kartstuff[k_cardanimation])<<FRACBITS) - R_GetHudUncap(), xval > x ? xval : x))/TICRATE;
+		x = (FixedMul(((TICRATE - stplyr->kartstuff[k_cardanimation])<<FRACBITS) - R_GetTimeFrac(RTF_LEVEL), xval > x ? xval : x))/TICRATE;
 
 		if (splitscreen && stplyrnum == 1)
 			x = -x;
@@ -3893,7 +3902,8 @@ static void K_drawBattleFullscreen(void)
 	// fill in the fractional bits
 	if (cardanim && cardanim != 164*FRACUNIT)
 	{
-		INT32 frac = R_GetHudUncap() * ((164 - stplyr->kartstuff[k_cardanimation])/8 + 1);
+		INT32 frac = R_GetTimeFrac(RTF_LEVEL) * ((164 - stplyr->kartstuff[k_cardanimation])/8 + 1);
+
 		if (stplyr->exiting)
 			cardanim += frac;
 		else
@@ -3996,7 +4006,6 @@ static void K_drawBattleFullscreen(void)
 			}
 			else
 				V_DrawFixedPatch(x<<FRACBITS, ty<<FRACBITS, scale, 0, kp_timeoutsticker, NULL);
-
 
 			V_DrawKartString(x-txoff, ty, 0, va("%d", stplyr->kartstuff[k_comebacktimer]/TICRATE));
 		}
@@ -4190,7 +4199,7 @@ static void K_drawInput(void)
 	if (timeinmap < 113)
 	{
 		INT32 count = ((INT32)(timeinmap) - 105);
-		INT32 frac = count > 0 && count < 6 ? R_GetHudUncap() << (FRACBITS - count - 11) : 0;
+		INT32 frac = count > 0 && count < 6 ? R_GetTimeFrac(RTF_LEVEL) << (FRACBITS - count - 11) : 0;
 
 		offs = 64*FRACUNIT;
 		while (count-- > 0)
@@ -4380,8 +4389,8 @@ static void K_drawLapStartAnim(void)
 	UINT8 *colormap = R_GetTranslationColormap(TC_DEFAULT, K_GetHudColor(), GTC_CACHE);
 	INT32 vflags = V_SNAPTOTOP|V_HUDTRANS;
 
-	fixed_t slideout = max(0, 32*(((progress - 76)*FRACUNIT) + R_GetHudUncap()));
-	fixed_t slidein = max(0, 32*(((stplyr->kartstuff[k_lapanimation] - 76)*FRACUNIT) - R_GetHudUncap()));
+	fixed_t slideout = max(0, 32*(((progress - 76)*FRACUNIT) + R_GetTimeFrac(RTF_LEVEL)));
+	fixed_t slidein = max(0, 32*(((stplyr->kartstuff[k_lapanimation] - 76)*FRACUNIT) - R_GetTimeFrac(RTF_LEVEL)));
 
 	// First, draw the emblem and hand
 	INT32 emblemx = (BASEVIDWIDTH << (FRACBITS - 1)) + slidein;
@@ -4392,7 +4401,7 @@ static void K_drawLapStartAnim(void)
 	INT32 hand = stplyr->kartstuff[k_laphand];
 	if (hand >= 1 && hand <= 3)
 	{
-		y += 4*FRACUNIT - abs((int)(leveltime % 8)*FRACUNIT + R_GetHudUncap() - 4*FRACUNIT);
+		y += 4*FRACUNIT - abs((int)(leveltime % 8)*FRACUNIT + R_GetTimeFrac(RTF_LEVEL) - 4*FRACUNIT);
 		V_DrawFixedPatch(emblemx, y, FRACUNIT, vflags, kp_lapanim_hand[hand - 1], NULL);
 	}
 
@@ -4718,7 +4727,7 @@ void K_drawKartHUD(void)
 			if (timeinmap < 113)
 			{
 				INT32 count = ((INT32)(timeinmap) - 104);
-				INT32 frac = count > 0 ? R_GetHudUncap() << max(0, FRACBITS - count - 9) : 0;
+				INT32 frac = count > 0 ? R_GetTimeFrac(RTF_LEVEL) << max(0, FRACBITS - count - 9) : 0;
 
 				offs = 256*FRACUNIT;
 				while (count-- > 0)

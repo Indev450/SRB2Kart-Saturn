@@ -11,6 +11,7 @@
 /// \file  p_saveg.c
 /// \brief Archiving: SaveGame I/O
 
+#include "d_think.h"
 #include "doomdef.h"
 #include "byteptr.h"
 #include "d_main.h"
@@ -111,7 +112,6 @@ static void P_NetArchivePlayers(savebuffer_t *save, boolean resending)
 {
 	INT32 i, j;
 	UINT16 flags;
-//	size_t q;
 
 	WRITEUINT32(save->p, ARCHIVEBLOCK_PLAYERS);
 
@@ -130,166 +130,168 @@ static void P_NetArchivePlayers(savebuffer_t *save, boolean resending)
 		if (resending)
 			WRITESTRINGN(save->p, player_names[i], MAXPLAYERNAME);
 
-		WRITEANGLE(save->p, players[i].aiming);
-		WRITEANGLE(save->p, players[i].awayviewaiming);
-		WRITEINT32(save->p, players[i].awayviewtics);
-		WRITEINT32(save->p, players[i].health);
+		const player_t *player = &players[i];
 
-		WRITESINT8(save->p, players[i].pity);
-		WRITEINT32(save->p, players[i].currentweapon);
-		WRITEINT32(save->p, players[i].ringweapons);
+		WRITEANGLE(save->p, player->aiming);
+		WRITEANGLE(save->p, player->awayviewaiming);
+		WRITEINT32(save->p, player->awayviewtics);
+		WRITEINT32(save->p, player->health);
+
+		WRITESINT8(save->p, player->pity);
+		WRITEINT32(save->p, player->currentweapon);
+		WRITEINT32(save->p, player->ringweapons);
 
 		for (j = 0; j < NUMPOWERS; j++)
-			WRITEUINT16(save->p, players[i].powers[j]);
+			WRITEUINT16(save->p, player->powers[j]);
 		for (j = 0; j < NUMKARTSTUFF; j++)
-			WRITEINT32(save->p, players[i].kartstuff[j]);
+			WRITEINT32(save->p, player->kartstuff[j]);
 
-		WRITEANGLE(save->p, players[i].frameangle);
+		WRITEANGLE(save->p, player->frameangle);
 
-		WRITEUINT8(save->p, players[i].playerstate);
-		WRITEUINT32(save->p, players[i].pflags);
-		WRITEUINT8(save->p, players[i].panim);
-		WRITEUINT8(save->p, players[i].spectator);
+		WRITEUINT8(save->p, player->playerstate);
+		WRITEUINT32(save->p, player->pflags);
+		WRITEUINT8(save->p, player->panim);
+		WRITEUINT8(save->p, player->spectator);
 
-		WRITEUINT16(save->p, players[i].flashpal);
-		WRITEUINT16(save->p, players[i].flashcount);
+		WRITEUINT16(save->p, player->flashpal);
+		WRITEUINT16(save->p, player->flashcount);
 
 		if (resending)
 		{
-			WRITEUINT8(save->p, players[i].skincolor);
-			WRITEINT32(save->p, players[i].skin);
+			WRITEUINT8(save->p, player->skincolor);
+			WRITEINT32(save->p, player->skin);
 		}
 
-		WRITEUINT32(save->p, players[i].score);
-		WRITEFIXED(save->p, players[i].dashspeed);
-		WRITEINT32(save->p, players[i].dashtime);
-		WRITESINT8(save->p, players[i].lives);
-		WRITESINT8(save->p, players[i].continues);
-		WRITESINT8(save->p, players[i].xtralife);
-		WRITEUINT8(save->p, players[i].gotcontinue);
-		WRITEFIXED(save->p, players[i].speed);
-		WRITEUINT8(save->p, players[i].jumping);
-		WRITEUINT8(save->p, players[i].secondjump);
-		WRITEUINT8(save->p, players[i].fly1);
-		WRITEUINT8(save->p, players[i].scoreadd);
-		WRITEUINT32(save->p, players[i].glidetime);
-		WRITEUINT8(save->p, players[i].climbing);
-		WRITEINT32(save->p, players[i].deadtimer);
-		WRITEUINT32(save->p, players[i].exiting);
-		WRITEUINT8(save->p, players[i].homing);
-		WRITEUINT32(save->p, players[i].skidtime);
+		WRITEUINT32(save->p, player->score);
+		WRITEFIXED(save->p, player->dashspeed);
+		WRITEINT32(save->p, player->dashtime);
+		WRITESINT8(save->p, player->lives);
+		WRITESINT8(save->p, player->continues);
+		WRITESINT8(save->p, player->xtralife);
+		WRITEUINT8(save->p, player->gotcontinue);
+		WRITEFIXED(save->p, player->speed);
+		WRITEUINT8(save->p, player->jumping);
+		WRITEUINT8(save->p, player->secondjump);
+		WRITEUINT8(save->p, player->fly1);
+		WRITEUINT8(save->p, player->scoreadd);
+		WRITEUINT32(save->p, player->glidetime);
+		WRITEUINT8(save->p, player->climbing);
+		WRITEINT32(save->p, player->deadtimer);
+		WRITEUINT32(save->p, player->exiting);
+		WRITEUINT8(save->p, player->homing);
+		WRITEUINT32(save->p, player->skidtime);
 
 		////////////////////////////
 		// Conveyor Belt Movement //
 		////////////////////////////
-		WRITEFIXED(save->p, players[i].cmomx); // Conveyor momx
-		WRITEFIXED(save->p, players[i].cmomy); // Conveyor momy
-		WRITEFIXED(save->p, players[i].rmomx); // "Real" momx (momx - cmomx)
-		WRITEFIXED(save->p, players[i].rmomy); // "Real" momy (momy - cmomy)
+		WRITEFIXED(save->p, player->cmomx); // Conveyor momx
+		WRITEFIXED(save->p, player->cmomy); // Conveyor momy
+		WRITEFIXED(save->p, player->rmomx); // "Real" momx (momx - cmomx)
+		WRITEFIXED(save->p, player->rmomy); // "Real" momy (momy - cmomy)
 
 		/////////////////////
 		// Race Mode Stuff //
 		/////////////////////
-		WRITEINT16(save->p, players[i].numboxes);
-		WRITEINT16(save->p, players[i].totalring);
-		WRITEUINT32(save->p, players[i].realtime);
-		WRITEUINT8(save->p, players[i].laps);
+		WRITEINT16(save->p, player->numboxes);
+		WRITEINT16(save->p, player->totalring);
+		WRITEUINT32(save->p, player->realtime);
+		WRITEUINT8(save->p, player->laps);
 
 		////////////////////
 		// CTF Mode Stuff //
 		////////////////////
-		WRITEINT32(save->p, players[i].ctfteam);
-		WRITEUINT16(save->p, players[i].gotflag);
+		WRITEINT32(save->p, player->ctfteam);
+		WRITEUINT16(save->p, player->gotflag);
 
-		WRITEINT32(save->p, players[i].weapondelay);
-		WRITEINT32(save->p, players[i].tossdelay);
+		WRITEINT32(save->p, player->weapondelay);
+		WRITEINT32(save->p, player->tossdelay);
 
-		WRITEUINT32(save->p, players[i].starposttime);
-		WRITEINT16(save->p, players[i].starpostx);
-		WRITEINT16(save->p, players[i].starposty);
-		WRITEINT16(save->p, players[i].starpostz);
-		WRITEINT32(save->p, players[i].starpostnum);
-		WRITEANGLE(save->p, players[i].starpostangle);
+		WRITEUINT32(save->p, player->starposttime);
+		WRITEINT16(save->p, player->starpostx);
+		WRITEINT16(save->p, player->starposty);
+		WRITEINT16(save->p, player->starpostz);
+		WRITEINT32(save->p, player->starpostnum);
+		WRITEANGLE(save->p, player->starpostangle);
 
-		WRITEANGLE(save->p, players[i].angle_pos);
-		WRITEANGLE(save->p, players[i].old_angle_pos);
+		WRITEANGLE(save->p, player->angle_pos);
+		WRITEANGLE(save->p, player->old_angle_pos);
 
-		WRITEINT32(save->p, players[i].flyangle);
-		WRITEUINT32(save->p, players[i].drilltimer);
-		WRITEINT32(save->p, players[i].linkcount);
-		WRITEUINT32(save->p, players[i].linktimer);
-		WRITEINT32(save->p, players[i].anotherflyangle);
-		WRITEUINT32(save->p, players[i].nightstime);
-		WRITEUINT32(save->p, players[i].bumpertime);
-		WRITEINT32(save->p, players[i].drillmeter);
-		WRITEUINT8(save->p, players[i].drilldelay);
-		WRITEUINT8(save->p, players[i].bonustime);
-		WRITEUINT8(save->p, players[i].mare);
+		WRITEINT32(save->p, player->flyangle);
+		WRITEUINT32(save->p, player->drilltimer);
+		WRITEINT32(save->p, player->linkcount);
+		WRITEUINT32(save->p, player->linktimer);
+		WRITEINT32(save->p, player->anotherflyangle);
+		WRITEUINT32(save->p, player->nightstime);
+		WRITEUINT32(save->p, player->bumpertime);
+		WRITEINT32(save->p, player->drillmeter);
+		WRITEUINT8(save->p, player->drilldelay);
+		WRITEUINT8(save->p, player->bonustime);
+		WRITEUINT8(save->p, player->mare);
 
-		WRITEUINT32(save->p, players[i].marebegunat);
-		WRITEUINT32(save->p, players[i].startedtime);
-		WRITEUINT32(save->p, players[i].finishedtime);
-		WRITEINT16(save->p, players[i].finishedrings);
-		WRITEUINT32(save->p, players[i].marescore);
-		WRITEUINT32(save->p, players[i].lastmarescore);
-		WRITEUINT8(save->p, players[i].lastmare);
-		WRITEINT32(save->p, players[i].maxlink);
-		WRITEUINT8(save->p, players[i].texttimer);
-		WRITEUINT8(save->p, players[i].textvar);
+		WRITEUINT32(save->p, player->marebegunat);
+		WRITEUINT32(save->p, player->startedtime);
+		WRITEUINT32(save->p, player->finishedtime);
+		WRITEINT16(save->p, player->finishedrings);
+		WRITEUINT32(save->p, player->marescore);
+		WRITEUINT32(save->p, player->lastmarescore);
+		WRITEUINT8(save->p, player->lastmare);
+		WRITEINT32(save->p, player->maxlink);
+		WRITEUINT8(save->p, player->texttimer);
+		WRITEUINT8(save->p, player->textvar);
 
-		if (players[i].capsule)
+		if (player->capsule)
 			flags |= CAPSULE;
 
-		if (players[i].awayviewmobj)
+		if (player->awayviewmobj)
 			flags |= AWAYVIEW;
 
-		if (players[i].axis1)
+		if (player->axis1)
 			flags |= FIRSTAXIS;
 
-		if (players[i].axis2)
+		if (player->axis2)
 			flags |= SECONDAXIS;
 
-		WRITEINT16(save->p, players[i].lastsidehit);
-		WRITEINT16(save->p, players[i].lastlinehit);
+		WRITEINT16(save->p, player->lastsidehit);
+		WRITEINT16(save->p, player->lastlinehit);
 
-		WRITEUINT32(save->p, players[i].losstime);
+		WRITEUINT32(save->p, player->losstime);
 
-		WRITEUINT8(save->p, players[i].timeshit);
+		WRITEUINT8(save->p, player->timeshit);
 
-		WRITEINT32(save->p, players[i].onconveyor);
+		WRITEINT32(save->p, player->onconveyor);
 
-		WRITEUINT32(save->p, players[i].jointime);
-		WRITEUINT32(save->p, players[i].spectatorreentry);
+		WRITEUINT32(save->p, player->jointime);
+		WRITEUINT32(save->p, player->spectatorreentry);
 
-		WRITEUINT32(save->p, players[i].grieftime);
-		WRITEUINT8(save->p, players[i].griefstrikes);
+		WRITEUINT32(save->p, player->grieftime);
+		WRITEUINT8(save->p, player->griefstrikes);
 
-		WRITEUINT8(save->p, players[i].splitscreenindex);
+		WRITEUINT8(save->p, player->splitscreenindex);
 
 		WRITEUINT16(save->p, flags);
 
 		if (flags & CAPSULE)
-			WRITEUINT32(save->p, players[i].capsule->mobjnum);
+			WRITEUINT32(save->p, player->capsule->mobjnum);
 
 		if (flags & FIRSTAXIS)
-			WRITEUINT32(save->p, players[i].axis1->mobjnum);
+			WRITEUINT32(save->p, player->axis1->mobjnum);
 
 		if (flags & SECONDAXIS)
-			WRITEUINT32(save->p, players[i].axis2->mobjnum);
+			WRITEUINT32(save->p, player->axis2->mobjnum);
 
 		if (flags & AWAYVIEW)
-			WRITEUINT32(save->p, players[i].awayviewmobj->mobjnum);
+			WRITEUINT32(save->p, player->awayviewmobj->mobjnum);
 
-		WRITEUINT32(save->p, players[i].charflags);
+		WRITEUINT32(save->p, player->charflags);
 		// SRB2kart
-		WRITEUINT8(save->p, players[i].kartspeed);
-		WRITEUINT8(save->p, players[i].kartweight);
+		WRITEUINT8(save->p, player->kartspeed);
+		WRITEUINT8(save->p, player->kartweight);
 		//
 
 		for (j = 0; j < MAXPREDICTTICS; j++)
 		{
-			WRITEINT16(save->p, players[i].lturn_max[j]);
-			WRITEINT16(save->p, players[i].rturn_max[j]);
+			WRITEINT16(save->p, player->lturn_max[j]);
+			WRITEINT16(save->p, player->rturn_max[j]);
 		}
 	}
 }
@@ -321,157 +323,159 @@ static void P_NetUnArchivePlayers(savebuffer_t *save, boolean reloading)
 		if (reloading)
 			READSTRINGN(save->p, player_names[i], MAXPLAYERNAME);
 
-		players[i].aiming = READANGLE(save->p);
-		players[i].awayviewaiming = READANGLE(save->p);
-		players[i].awayviewtics = READINT32(save->p);
-		players[i].health = READINT32(save->p);
+		player_t *player = &players[i];
 
-		players[i].pity = READSINT8(save->p);
-		players[i].currentweapon = READINT32(save->p);
-		players[i].ringweapons = READINT32(save->p);
+		player->aiming = READANGLE(save->p);
+		player->awayviewaiming = READANGLE(save->p);
+		player->awayviewtics = READINT32(save->p);
+		player->health = READINT32(save->p);
+
+		player->pity = READSINT8(save->p);
+		player->currentweapon = READINT32(save->p);
+		player->ringweapons = READINT32(save->p);
 
 		for (j = 0; j < NUMPOWERS; j++)
-			players[i].powers[j] = READUINT16(save->p);
+			player->powers[j] = READUINT16(save->p);
 		for (j = 0; j < NUMKARTSTUFF; j++)
-			players[i].kartstuff[j] = READINT32(save->p);
+			player->kartstuff[j] = READINT32(save->p);
 
-		players[i].frameangle = READANGLE(save->p);
+		player->frameangle = READANGLE(save->p);
 
-		players[i].playerstate = READUINT8(save->p);
-		players[i].pflags = READUINT32(save->p);
-		players[i].panim = READUINT8(save->p);
-		players[i].spectator = READUINT8(save->p);
+		player->playerstate = READUINT8(save->p);
+		player->pflags = READUINT32(save->p);
+		player->panim = READUINT8(save->p);
+		player->spectator = READUINT8(save->p);
 
-		players[i].flashpal = READUINT16(save->p);
-		players[i].flashcount = READUINT16(save->p);
+		player->flashpal = READUINT16(save->p);
+		player->flashcount = READUINT16(save->p);
 
 		if (reloading)
 		{
-			players[i].skincolor = READUINT8(save->p);
-			players[i].skin = READINT32(save->p);
+			player->skincolor = READUINT8(save->p);
+			player->skin = READINT32(save->p);
 		}
 
-		players[i].score = READUINT32(save->p);
-		players[i].dashspeed = READFIXED(save->p); // dashing speed
-		players[i].dashtime = READINT32(save->p); // dashing speed
-		players[i].lives = READSINT8(save->p);
-		players[i].continues = READSINT8(save->p); // continues that player has acquired
-		players[i].xtralife = READSINT8(save->p); // Ring Extra Life counter
-		players[i].gotcontinue = READUINT8(save->p); // got continue from stage
-		players[i].speed = READFIXED(save->p); // Player's speed (distance formula of MOMX and MOMY values)
-		players[i].jumping = READUINT8(save->p); // Jump counter
-		players[i].secondjump = READUINT8(save->p);
-		players[i].fly1 = READUINT8(save->p); // Tails flying
-		players[i].scoreadd = READUINT8(save->p); // Used for multiple enemy attack bonus
-		players[i].glidetime = READUINT32(save->p); // Glide counter for thrust
-		players[i].climbing = READUINT8(save->p); // Climbing on the wall
-		players[i].deadtimer = READINT32(save->p); // End game if game over lasts too long
-		players[i].exiting = READUINT32(save->p); // Exitlevel timer
-		players[i].homing = READUINT8(save->p); // Are you homing?
-		players[i].skidtime = READUINT32(save->p); // Skid timer
+		player->score = READUINT32(save->p);
+		player->dashspeed = READFIXED(save->p); // dashing speed
+		player->dashtime = READINT32(save->p); // dashing speed
+		player->lives = READSINT8(save->p);
+		player->continues = READSINT8(save->p); // continues that player has acquired
+		player->xtralife = READSINT8(save->p); // Ring Extra Life counter
+		player->gotcontinue = READUINT8(save->p); // got continue from stage
+		player->speed = READFIXED(save->p); // Player's speed (distance formula of MOMX and MOMY values)
+		player->jumping = READUINT8(save->p); // Jump counter
+		player->secondjump = READUINT8(save->p);
+		player->fly1 = READUINT8(save->p); // Tails flying
+		player->scoreadd = READUINT8(save->p); // Used for multiple enemy attack bonus
+		player->glidetime = READUINT32(save->p); // Glide counter for thrust
+		player->climbing = READUINT8(save->p); // Climbing on the wall
+		player->deadtimer = READINT32(save->p); // End game if game over lasts too long
+		player->exiting = READUINT32(save->p); // Exitlevel timer
+		player->homing = READUINT8(save->p); // Are you homing?
+		player->skidtime = READUINT32(save->p); // Skid timer
 
 		////////////////////////////
 		// Conveyor Belt Movement //
 		////////////////////////////
-		players[i].cmomx = READFIXED(save->p); // Conveyor momx
-		players[i].cmomy = READFIXED(save->p); // Conveyor momy
-		players[i].rmomx = READFIXED(save->p); // "Real" momx (momx - cmomx)
-		players[i].rmomy = READFIXED(save->p); // "Real" momy (momy - cmomy)
+		player->cmomx = READFIXED(save->p); // Conveyor momx
+		player->cmomy = READFIXED(save->p); // Conveyor momy
+		player->rmomx = READFIXED(save->p); // "Real" momx (momx - cmomx)
+		player->rmomy = READFIXED(save->p); // "Real" momy (momy - cmomy)
 
 		/////////////////////
 		// Race Mode Stuff //
 		/////////////////////
-		players[i].numboxes = READINT16(save->p); // Number of item boxes obtained for Race Mode
-		players[i].totalring = READINT16(save->p); // Total number of rings obtained for Race Mode
-		players[i].realtime = READUINT32(save->p); // integer replacement for leveltime
-		players[i].laps = READUINT8(save->p); // Number of laps (optional)
+		player->numboxes = READINT16(save->p); // Number of item boxes obtained for Race Mode
+		player->totalring = READINT16(save->p); // Total number of rings obtained for Race Mode
+		player->realtime = READUINT32(save->p); // integer replacement for leveltime
+		player->laps = READUINT8(save->p); // Number of laps (optional)
 
 		////////////////////
 		// CTF Mode Stuff //
 		////////////////////
-		players[i].ctfteam = READINT32(save->p); // 1 == Red, 2 == Blue
-		players[i].gotflag = READUINT16(save->p); // 1 == Red, 2 == Blue Do you have the flag?
+		player->ctfteam = READINT32(save->p); // 1 == Red, 2 == Blue
+		player->gotflag = READUINT16(save->p); // 1 == Red, 2 == Blue Do you have the flag?
 
-		players[i].weapondelay = READINT32(save->p);
-		players[i].tossdelay = READINT32(save->p);
+		player->weapondelay = READINT32(save->p);
+		player->tossdelay = READINT32(save->p);
 
-		players[i].starposttime = READUINT32(save->p);
-		players[i].starpostx = READINT16(save->p);
-		players[i].starposty = READINT16(save->p);
-		players[i].starpostz = READINT16(save->p);
-		players[i].starpostnum = READINT32(save->p);
-		players[i].starpostangle = READANGLE(save->p);
+		player->starposttime = READUINT32(save->p);
+		player->starpostx = READINT16(save->p);
+		player->starposty = READINT16(save->p);
+		player->starpostz = READINT16(save->p);
+		player->starpostnum = READINT32(save->p);
+		player->starpostangle = READANGLE(save->p);
 
-		players[i].angle_pos = READANGLE(save->p);
-		players[i].old_angle_pos = READANGLE(save->p);
+		player->angle_pos = READANGLE(save->p);
+		player->old_angle_pos = READANGLE(save->p);
 
-		players[i].flyangle = READINT32(save->p);
-		players[i].drilltimer = READUINT32(save->p);
-		players[i].linkcount = READINT32(save->p);
-		players[i].linktimer = READUINT32(save->p);
-		players[i].anotherflyangle = READINT32(save->p);
-		players[i].nightstime = READUINT32(save->p);
-		players[i].bumpertime = READUINT32(save->p);
-		players[i].drillmeter = READINT32(save->p);
-		players[i].drilldelay = READUINT8(save->p);
-		players[i].bonustime = (boolean)READUINT8(save->p);
-		players[i].mare = READUINT8(save->p);
+		player->flyangle = READINT32(save->p);
+		player->drilltimer = READUINT32(save->p);
+		player->linkcount = READINT32(save->p);
+		player->linktimer = READUINT32(save->p);
+		player->anotherflyangle = READINT32(save->p);
+		player->nightstime = READUINT32(save->p);
+		player->bumpertime = READUINT32(save->p);
+		player->drillmeter = READINT32(save->p);
+		player->drilldelay = READUINT8(save->p);
+		player->bonustime = (boolean)READUINT8(save->p);
+		player->mare = READUINT8(save->p);
 
-		players[i].marebegunat = READUINT32(save->p);
-		players[i].startedtime = READUINT32(save->p);
-		players[i].finishedtime = READUINT32(save->p);
-		players[i].finishedrings = READINT16(save->p);
-		players[i].marescore = READUINT32(save->p);
-		players[i].lastmarescore = READUINT32(save->p);
-		players[i].lastmare = READUINT8(save->p);
-		players[i].maxlink = READINT32(save->p);
-		players[i].texttimer = READUINT8(save->p);
-		players[i].textvar = READUINT8(save->p);
+		player->marebegunat = READUINT32(save->p);
+		player->startedtime = READUINT32(save->p);
+		player->finishedtime = READUINT32(save->p);
+		player->finishedrings = READINT16(save->p);
+		player->marescore = READUINT32(save->p);
+		player->lastmarescore = READUINT32(save->p);
+		player->lastmare = READUINT8(save->p);
+		player->maxlink = READINT32(save->p);
+		player->texttimer = READUINT8(save->p);
+		player->textvar = READUINT8(save->p);
 
-		players[i].lastsidehit = READINT16(save->p);
-		players[i].lastlinehit = READINT16(save->p);
+		player->lastsidehit = READINT16(save->p);
+		player->lastlinehit = READINT16(save->p);
 
-		players[i].losstime = READUINT32(save->p);
+		player->losstime = READUINT32(save->p);
 
-		players[i].timeshit = READUINT8(save->p);
+		player->timeshit = READUINT8(save->p);
 
-		players[i].onconveyor = READINT32(save->p);
+		player->onconveyor = READINT32(save->p);
 
-		players[i].jointime = READUINT32(save->p);
-		players[i].spectatorreentry = READUINT32(save->p);
+		player->jointime = READUINT32(save->p);
+		player->spectatorreentry = READUINT32(save->p);
 
-		players[i].grieftime = READUINT32(save->p);
-		players[i].griefstrikes = READUINT8(save->p);
+		player->grieftime = READUINT32(save->p);
+		player->griefstrikes = READUINT8(save->p);
 
-		players[i].splitscreenindex = READUINT8(save->p);
+		player->splitscreenindex = READUINT8(save->p);
 
 		flags = READUINT16(save->p);
 
 		if (flags & CAPSULE)
-			players[i].capsule = (mobj_t *)(size_t)READUINT32(save->p);
+			player->capsule = (mobj_t *)(size_t)READUINT32(save->p);
 
 		if (flags & FIRSTAXIS)
-			players[i].axis1 = (mobj_t *)(size_t)READUINT32(save->p);
+			player->axis1 = (mobj_t *)(size_t)READUINT32(save->p);
 
 		if (flags & SECONDAXIS)
-			players[i].axis2 = (mobj_t *)(size_t)READUINT32(save->p);
+			player->axis2 = (mobj_t *)(size_t)READUINT32(save->p);
 
 		if (flags & AWAYVIEW)
-			players[i].awayviewmobj = (mobj_t *)(size_t)READUINT32(save->p);
+			player->awayviewmobj = (mobj_t *)(size_t)READUINT32(save->p);
 
-		players[i].viewheight = 32<<FRACBITS;
+		player->viewheight = 32<<FRACBITS;
 
-		//SetPlayerSkinByNum(i, players[i].skin);
-		players[i].charflags = READUINT32(save->p);
+		//SetPlayerSkinByNum(i, player->skin);
+		player->charflags = READUINT32(save->p);
 		// SRB2kart
-		players[i].kartspeed = READUINT8(save->p);
-		players[i].kartweight = READUINT8(save->p);
+		player->kartspeed = READUINT8(save->p);
+		player->kartweight = READUINT8(save->p);
 		//
 
 		for (j = 0; j < MAXPREDICTTICS; j++)
 		{
-			players[i].lturn_max[j] = READINT16(save->p);
-			players[i].rturn_max[j] = READINT16(save->p);
+			player->lturn_max[j] = READINT16(save->p);
+			player->rturn_max[j] = READINT16(save->p);
 		}
 	}
 }
@@ -514,259 +518,311 @@ static void P_NetUnArchivePlayers(savebuffer_t *save, boolean reloading)
 #define LD_S2BOTTEX 0x04
 #define LD_S2MIDTEX 0x08
 
-//
-// P_NetArchiveWorld
-//
-static void P_NetArchiveWorld(savebuffer_t *save)
+#define FD_FLAGS 0x01
+#define FD_ALPHA 0x02
+
+// Check if any of the sector's FOFs differ from how they spawned
+static boolean CheckFFloorDiff(const sector_t *ss)
+{
+	ffloor_t *rover;
+
+	for (rover = ss->ffloors; rover; rover = rover->next)
+	{
+		if (rover->flags != rover->spawnflags
+			|| rover->alpha != rover->spawnalpha)
+		{
+			return true; // we found an FOF that changed!
+			// don't bother checking for more, we do that later
+		}
+	}
+
+	return false;
+}
+
+// Special case: save the stats of all modified ffloors along with their ffloor "number"s
+// we don't bother with ffloors that haven't changed, that would just add to savegame even more than is really needed
+static void ArchiveFFloors(savebuffer_t *save, const sector_t *ss)
+{
+	size_t j = 0; // ss->ffloors is saved as ffloor #0, ss->ffloors->next is #1, etc
+	ffloor_t *rover;
+	UINT8 fflr_diff;
+
+	for (rover = ss->ffloors; rover; rover = rover->next)
+	{
+		fflr_diff = 0; // reset diff flags
+
+		if (rover->flags != rover->spawnflags)
+			fflr_diff |= FD_FLAGS;
+		if (rover->alpha != rover->spawnalpha)
+			fflr_diff |= FD_ALPHA;
+
+		if (fflr_diff)
+		{
+			WRITEUINT16(save->p, j); // save ffloor "number"
+			WRITEUINT8(save->p, fflr_diff);
+
+			if (fflr_diff & FD_FLAGS)
+				WRITEUINT32(save->p, rover->flags);
+			if (fflr_diff & FD_ALPHA)
+				WRITEINT16(save->p, rover->alpha);
+		}
+
+		j++;
+	}
+
+	WRITEUINT16(save->p, 0xffff);
+}
+
+static void ArchiveSectors(savebuffer_t *save)
 {
 	size_t i;
-	const line_t *li = lines;
-	const side_t *si;
-	UINT8 *put;
-
-	// reload the map just to see difference
-	virtres_t* virt = vres_GetMap(lastloadedmaplumpnum);
-	mapsector_t  *ms  = (mapsector_t*) vres_Find(virt, "SECTORS")->data;
-	mapsidedef_t *msd = (mapsidedef_t*) vres_Find(virt, "SIDEDEFS")->data;
-	maplinedef_t *mld = (maplinedef_t*) vres_Find(virt, "LINEDEFS")->data;
 	const sector_t *ss = sectors;
+	const sector_t *spawnss = spawnsectors;
 	UINT8 diff, diff2;
 
-	WRITEUINT32(save->p, ARCHIVEBLOCK_WORLD);
-	put = save->p;
-
-	for (i = 0; i < numsectors; i++, ss++, ms++)
+	for (i = 0; i < numsectors; i++, ss++, spawnss++)
 	{
 		diff = diff2 = 0;
-		if (ss->floorheight != SHORT(ms->floorheight)<<FRACBITS)
+		if (ss->floorheight != spawnss->floorheight)
 			diff |= SD_FLOORHT;
-		if (ss->ceilingheight != SHORT(ms->ceilingheight)<<FRACBITS)
+		if (ss->ceilingheight != spawnss->ceilingheight)
 			diff |= SD_CEILHT;
+
 		//
 		// flats
 		//
-		if (ss->floorpic != P_CheckLevelFlat(ms->floorpic))
+		if (ss->floorpic != spawnss->floorpic)
 			diff |= SD_FLOORPIC;
-		if (ss->ceilingpic != P_CheckLevelFlat(ms->ceilingpic))
+		if (ss->ceilingpic != spawnss->ceilingpic)
 			diff |= SD_CEILPIC;
 
-		if (ss->lightlevel != SHORT(ms->lightlevel))
+		if (ss->lightlevel != spawnss->lightlevel)
 			diff |= SD_LIGHT;
-		if (ss->special != SHORT(ms->special))
+		if (ss->special != spawnss->special)
 			diff |= SD_SPECIAL;
 
-		if (ss->floor_xoffs != ss->spawn_flr_xoffs)
+		if (ss->floor_xoffs != spawnss->floor_xoffs)
 			diff2 |= SD_FXOFFS;
-		if (ss->floor_yoffs != ss->spawn_flr_yoffs)
+		if (ss->floor_yoffs != spawnss->floor_yoffs)
 			diff2 |= SD_FYOFFS;
-		if (ss->ceiling_xoffs != ss->spawn_ceil_xoffs)
+		if (ss->ceiling_xoffs != spawnss->ceiling_xoffs)
 			diff2 |= SD_CXOFFS;
-		if (ss->ceiling_yoffs != ss->spawn_ceil_yoffs)
+		if (ss->ceiling_yoffs != spawnss->ceiling_yoffs)
 			diff2 |= SD_CYOFFS;
-		if (ss->floorpic_angle != ss->spawn_flrpic_angle)
+		if (ss->floorpic_angle != spawnss->floorpic_angle)
 			diff2 |= SD_FLOORANG;
-		if (ss->ceilingpic_angle != ss->spawn_flrpic_angle)
+		if (ss->ceilingpic_angle != spawnss->ceilingpic_angle)
 			diff2 |= SD_CEILANG;
 
-		if (ss->tag != SHORT(ms->tag))
+		if (ss->tag != spawnss->tag)
 			diff2 |= SD_TAG;
-		if (ss->nexttag != ss->spawn_nexttag || ss->firsttag != ss->spawn_firsttag)
+		if (ss->nexttag != spawnss->nexttag || ss->firsttag != spawnss->firsttag)
 			diff2 |= SD_TAGLIST;
 
-		// Check if any of the sector's FOFs differ from how they spawned
-		if (ss->ffloors)
-		{
-			ffloor_t *rover;
-			for (rover = ss->ffloors; rover; rover = rover->next)
-			{
-				if (rover->flags != rover->spawnflags
-				|| rover->alpha != rover->spawnalpha)
-					{
-						diff |= SD_FFLOORS; // we found an FOF that changed!
-						break; // don't bother checking for more, we do that later
-					}
-			}
-		}
+		if (ss->ffloors && CheckFFloorDiff(ss))
+			diff |= SD_FFLOORS;
 
 		if (diff2)
 			diff |= SD_DIFF2;
 
 		if (diff)
 		{
-			WRITEUINT16(put, i);
-			WRITEUINT8(put, diff);
+			WRITEUINT16(save->p, i);
+			WRITEUINT8(save->p, diff);
+
 			if (diff & SD_DIFF2)
-				WRITEUINT8(put, diff2);
+				WRITEUINT8(save->p, diff2);
 			if (diff & SD_FLOORHT)
-				WRITEFIXED(put, ss->floorheight);
+				WRITEFIXED(save->p, ss->floorheight);
 			if (diff & SD_CEILHT)
-				WRITEFIXED(put, ss->ceilingheight);
+				WRITEFIXED(save->p, ss->ceilingheight);
 			if (diff & SD_FLOORPIC)
-				WRITEMEM(put, levelflats[ss->floorpic].name, 8);
+				WRITEMEM(save->p, levelflats[ss->floorpic].name, 8);
 			if (diff & SD_CEILPIC)
-				WRITEMEM(put, levelflats[ss->ceilingpic].name, 8);
+				WRITEMEM(save->p, levelflats[ss->ceilingpic].name, 8);
 			if (diff & SD_LIGHT)
-				WRITEINT16(put, ss->lightlevel);
+				WRITEINT16(save->p, ss->lightlevel);
 			if (diff & SD_SPECIAL)
-				WRITEINT16(put, ss->special);
+				WRITEINT16(save->p, ss->special);
 			if (diff2 & SD_FXOFFS)
-				WRITEFIXED(put, ss->floor_xoffs);
+				WRITEFIXED(save->p, ss->floor_xoffs);
 			if (diff2 & SD_FYOFFS)
-				WRITEFIXED(put, ss->floor_yoffs);
+				WRITEFIXED(save->p, ss->floor_yoffs);
 			if (diff2 & SD_CXOFFS)
-				WRITEFIXED(put, ss->ceiling_xoffs);
+				WRITEFIXED(save->p, ss->ceiling_xoffs);
 			if (diff2 & SD_CYOFFS)
-				WRITEFIXED(put, ss->ceiling_yoffs);
+				WRITEFIXED(save->p, ss->ceiling_yoffs);
 			if (diff2 & SD_TAG) // save only the tag
-				WRITEINT16(put, ss->tag);
+				WRITEINT16(save->p, ss->tag);
 			if (diff2 & SD_FLOORANG)
-				WRITEANGLE(put, ss->floorpic_angle);
+				WRITEANGLE(save->p, ss->floorpic_angle);
 			if (diff2 & SD_CEILANG)
-				WRITEANGLE(put, ss->ceilingpic_angle);
+				WRITEANGLE(save->p, ss->ceilingpic_angle);
 			if (diff2 & SD_TAGLIST) // save both firsttag and nexttag
 			{ // either of these could be changed even if tag isn't
-				WRITEINT32(put, ss->firsttag);
-				WRITEINT32(put, ss->nexttag);
+				WRITEINT32(save->p, ss->firsttag);
+				WRITEINT32(save->p, ss->nexttag);
 			}
 
-			// Special case: save the stats of all modified ffloors along with their ffloor "number"s
-			// we don't bother with ffloors that haven't changed, that would just add to savegame even more than is really needed
 			if (diff & SD_FFLOORS)
-			{
-				size_t j = 0; // ss->ffloors is saved as ffloor #0, ss->ffloors->next is #1, etc
-				ffloor_t *rover;
-				UINT8 fflr_diff;
-				for (rover = ss->ffloors; rover; rover = rover->next)
-				{
-					fflr_diff = 0; // reset diff flags
-					if (rover->flags != rover->spawnflags)
-						fflr_diff |= 1;
-					if (rover->alpha != rover->spawnalpha)
-						fflr_diff |= 2;
-
-					if (fflr_diff)
-					{
-						WRITEUINT16(put, j); // save ffloor "number"
-						WRITEUINT8(put, fflr_diff);
-						if (fflr_diff & 1)
-							WRITEUINT32(put, rover->flags);
-						if (fflr_diff & 2)
-							WRITEINT16(put, rover->alpha);
-					}
-					j++;
-				}
-				WRITEUINT16(put, 0xffff);
-			}
+				ArchiveFFloors(save, ss);
 		}
 	}
 
-	WRITEUINT16(put, 0xffff);
+	WRITEUINT16(save->p, 0xffff);
+}
 
-	// do lines
-	for (i = 0; i < numlines; i++, mld++, li++)
+static void ArchiveLines(savebuffer_t *save)
+{
+	size_t i;
+	const line_t *li = lines;
+	const line_t *spawnli = spawnlines;
+	const side_t *si;
+	const side_t *spawnsi;
+	UINT8 diff, diff2;
+
+	for (i = 0; i < numlines; i++, spawnli++, li++)
 	{
 		diff = diff2 = 0;
 
-		if (li->special != SHORT(mld->special))
+		if (li->special != spawnli->special)
 			diff |= LD_SPECIAL;
 
-		if (SHORT(mld->special) == 321 || SHORT(mld->special) == 322) // only reason li->callcount would be non-zero is if either of these are involved
+		if (spawnli->special == 321 || spawnli->special == 322) // only reason li->callcount would be non-zero is if either of these are involved
 			diff |= LD_CLLCOUNT;
 
 		if (li->sidenum[0] != 0xffff)
 		{
 			si = &sides[li->sidenum[0]];
-			if (si->textureoffset != SHORT(msd[li->sidenum[0]].textureoffset)<<FRACBITS)
+			spawnsi = &spawnsides[li->sidenum[0]];
+
+			if (si->textureoffset != spawnsi->textureoffset)
 				diff |= LD_S1TEXOFF;
 			//SoM: 4/1/2000: Some textures are colormaps. Don't worry about invalid textures.
-			if (R_CheckTextureNumForName(msd[li->sidenum[0]].toptexture) != -1
-					&& si->toptexture != R_TextureNumForName(msd[li->sidenum[0]].toptexture))
+			if (si->toptexture != spawnsi->toptexture)
 				diff |= LD_S1TOPTEX;
-			if (R_CheckTextureNumForName(msd[li->sidenum[0]].bottomtexture) != -1
-					&& si->bottomtexture != R_TextureNumForName(msd[li->sidenum[0]].bottomtexture))
+			if (si->bottomtexture != spawnsi->bottomtexture)
 				diff |= LD_S1BOTTEX;
-			if (R_CheckTextureNumForName(msd[li->sidenum[0]].midtexture) != -1
-					&& si->midtexture != R_TextureNumForName(msd[li->sidenum[0]].midtexture))
+			if (si->midtexture != spawnsi->midtexture)
 				diff |= LD_S1MIDTEX;
 		}
 		if (li->sidenum[1] != 0xffff)
 		{
 			si = &sides[li->sidenum[1]];
-			if (si->textureoffset != SHORT(msd[li->sidenum[1]].textureoffset)<<FRACBITS)
+			spawnsi = &spawnsides[li->sidenum[1]];
+
+			if (si->textureoffset != spawnsi->textureoffset)
 				diff2 |= LD_S2TEXOFF;
-			if (R_CheckTextureNumForName(msd[li->sidenum[1]].toptexture) != -1
-					&& si->toptexture != R_TextureNumForName(msd[li->sidenum[1]].toptexture))
+			if (si->toptexture != spawnsi->toptexture)
 				diff2 |= LD_S2TOPTEX;
-			if (R_CheckTextureNumForName(msd[li->sidenum[1]].bottomtexture) != -1
-					&& si->bottomtexture != R_TextureNumForName(msd[li->sidenum[1]].bottomtexture))
+			if (si->bottomtexture != spawnsi->bottomtexture)
 				diff2 |= LD_S2BOTTEX;
-			if (R_CheckTextureNumForName(msd[li->sidenum[1]].midtexture) != -1
-					&& si->midtexture != R_TextureNumForName(msd[li->sidenum[1]].midtexture))
+			if (si->midtexture != spawnsi->midtexture)
 				diff2 |= LD_S2MIDTEX;
+
 			if (diff2)
 				diff |= LD_DIFF2;
 		}
 
 		if (diff)
 		{
-			WRITEINT16(put, i);
-			WRITEUINT8(put, diff);
+			WRITEINT16(save->p, i);
+			WRITEUINT8(save->p, diff);
 			if (diff & LD_DIFF2)
-				WRITEUINT8(put, diff2);
+				WRITEUINT8(save->p, diff2);
 			if (diff & LD_FLAG)
-				WRITEINT16(put, li->flags);
+				WRITEINT16(save->p, li->flags);
 			if (diff & LD_SPECIAL)
-				WRITEINT16(put, li->special);
+				WRITEINT16(save->p, li->special);
 			if (diff & LD_CLLCOUNT)
-				WRITEINT16(put, li->callcount);
+				WRITEINT16(save->p, li->callcount);
 
 			si = &sides[li->sidenum[0]];
 			if (diff & LD_S1TEXOFF)
-				WRITEFIXED(put, si->textureoffset);
+				WRITEFIXED(save->p, si->textureoffset);
 			if (diff & LD_S1TOPTEX)
-				WRITEINT32(put, si->toptexture);
+				WRITEINT32(save->p, si->toptexture);
 			if (diff & LD_S1BOTTEX)
-				WRITEINT32(put, si->bottomtexture);
+				WRITEINT32(save->p, si->bottomtexture);
 			if (diff & LD_S1MIDTEX)
-				WRITEINT32(put, si->midtexture);
+				WRITEINT32(save->p, si->midtexture);
 
 			si = &sides[li->sidenum[1]];
 			if (diff2 & LD_S2TEXOFF)
-				WRITEFIXED(put, si->textureoffset);
+				WRITEFIXED(save->p, si->textureoffset);
 			if (diff2 & LD_S2TOPTEX)
-				WRITEINT32(put, si->toptexture);
+				WRITEINT32(save->p, si->toptexture);
 			if (diff2 & LD_S2BOTTEX)
-				WRITEINT32(put, si->bottomtexture);
+				WRITEINT32(save->p, si->bottomtexture);
 			if (diff2 & LD_S2MIDTEX)
-				WRITEINT32(put, si->midtexture);
+				WRITEINT32(save->p, si->midtexture);
 		}
 	}
-	WRITEUINT16(put, 0xffff);
-	R_ClearTextureNumCache(false);
 
-	vres_Free(virt);
-	save->p = put;
+	WRITEUINT16(save->p, 0xffff);
 }
 
 //
-// P_NetUnArchiveWorld
+// P_NetArchiveWorld
 //
-static void P_NetUnArchiveWorld(savebuffer_t *save)
+static void P_NetArchiveWorld(savebuffer_t *save)
 {
+	WRITEUINT32(save->p, ARCHIVEBLOCK_WORLD);
+
+	ArchiveSectors(save);
+	ArchiveLines(save);
+	R_ClearTextureNumCache(false);
+}
+
+static void UnArchiveFFloors(savebuffer_t *save, const sector_t *ss)
+{
+	UINT16 j = 0; // number of current ffloor in loop
+	UINT16 fflr_i; // saved ffloor "number" of next modified ffloor
+	UINT16 fflr_diff; // saved ffloor diff
+	ffloor_t *rover;
+
+	rover = ss->ffloors;
+	if (!rover) // it is assumed sectors[i].ffloors actually exists, but just in case...
+		I_Error("Sector does not have any ffloors!");
+
+	fflr_i = READUINT16(save->p); // get first modified ffloor's number ready
+	for (;;) // for some reason the usual for (rover = x; ...) thing doesn't work here?
+	{
+		if (fflr_i == 0xffff) // end of modified ffloors list, let's stop already
+			break;
+		// should NEVER need to be checked
+		//if (rover == NULL)
+		//break;
+		if (j != fflr_i) // this ffloor was not modified
+		{
+			j++;
+			rover = rover->next;
+			continue;
+		}
+
+		fflr_diff = READUINT8(save->p);
+
+		if (fflr_diff & FD_FLAGS)
+			rover->flags = (ffloortype_e)READUINT32(save->p);
+		if (fflr_diff & FD_ALPHA)
+			rover->alpha = READINT16(save->p);
+
+		fflr_i = READUINT16(save->p); // get next ffloor "number" ready
+
+		j++;
+		rover = rover->next;
+	}
+}
+
+static void UnArchiveSectors(savebuffer_t *save)
+{
+	sector_t *ss;
 	UINT16 i;
-	line_t *li;
-	side_t *si;
-	UINT8 *get;
 	UINT8 diff, diff2;
-
-	if (READUINT32(save->p) != ARCHIVEBLOCK_WORLD)
-		I_Error("Bad $$$.sav at archive block World");
-
-	get = save->p;
 
 	for (;;)
 	{
-		i = READUINT16(get);
+		i = READUINT16(save->p);
 
 		if (i == 0xffff)
 			break;
@@ -774,137 +830,120 @@ static void P_NetUnArchiveWorld(savebuffer_t *save)
 		if (i > numsectors)
 			I_Error("Invalid sector number %u from server (expected end at %s)", i, sizeu1(numsectors));
 
-		diff = READUINT8(get);
+		diff = READUINT8(save->p);
 		if (diff & SD_DIFF2)
-			diff2 = READUINT8(get);
+			diff2 = READUINT8(save->p);
 		else
 			diff2 = 0;
 
+		ss = &sectors[i];
+
 		if (diff & SD_FLOORHT)
-			sectors[i].floorheight = READFIXED(get);
+			ss->floorheight = READFIXED(save->p);
 		if (diff & SD_CEILHT)
-			sectors[i].ceilingheight = READFIXED(get);
+			ss->ceilingheight = READFIXED(save->p);
 		if (diff & SD_FLOORPIC)
 		{
-			sectors[i].floorpic = P_AddLevelFlatRuntime((char *)get);
-			get += 8;
+			ss->floorpic = P_AddLevelFlatRuntime((char *)save->p);
+			save->p += 8;
 		}
 		if (diff & SD_CEILPIC)
 		{
-			sectors[i].ceilingpic = P_AddLevelFlatRuntime((char *)get);
-			get += 8;
+			ss->ceilingpic = P_AddLevelFlatRuntime((char *)save->p);
+			save->p += 8;
 		}
 		if (diff & SD_LIGHT)
-			sectors[i].lightlevel = READINT16(get);
+			ss->lightlevel = READINT16(save->p);
 		if (diff & SD_SPECIAL)
-			sectors[i].special = READINT16(get);
+			ss->special = READINT16(save->p);
 
 		if (diff2 & SD_FXOFFS)
-			sectors[i].floor_xoffs = READFIXED(get);
+			ss->floor_xoffs = READFIXED(save->p);
 		if (diff2 & SD_FYOFFS)
-			sectors[i].floor_yoffs = READFIXED(get);
+			ss->floor_yoffs = READFIXED(save->p);
 		if (diff2 & SD_CXOFFS)
-			sectors[i].ceiling_xoffs = READFIXED(get);
+			ss->ceiling_xoffs = READFIXED(save->p);
 		if (diff2 & SD_CYOFFS)
-			sectors[i].ceiling_yoffs = READFIXED(get);
+			ss->ceiling_yoffs = READFIXED(save->p);
 		if (diff2 & SD_TAG)
-			sectors[i].tag = READINT16(get); // DON'T use P_ChangeSectorTag
+			ss->tag = READINT16(save->p); // DON'T use P_ChangeSectorTag
 		if (diff2 & SD_TAGLIST)
 		{
-			sectors[i].firsttag = READINT32(get);
-			sectors[i].nexttag = READINT32(get);
+			ss->firsttag = READINT32(save->p);
+			ss->nexttag = READINT32(save->p);
 		}
 		if (diff2 & SD_FLOORANG)
-			sectors[i].floorpic_angle  = READANGLE(get);
+			ss->floorpic_angle  = READANGLE(save->p);
 		if (diff2 & SD_CEILANG)
-			sectors[i].ceilingpic_angle = READANGLE(get);
+			ss->ceilingpic_angle = READANGLE(save->p);
 
 		if (diff & SD_FFLOORS)
-		{
-			UINT16 j = 0; // number of current ffloor in loop
-			UINT16 fflr_i; // saved ffloor "number" of next modified ffloor
-			UINT16 fflr_diff; // saved ffloor diff
-			ffloor_t *rover;
-
-			rover = sectors[i].ffloors;
-			if (!rover) // it is assumed sectors[i].ffloors actually exists, but just in case...
-				I_Error("Sector does not have any ffloors!");
-
-			fflr_i = READUINT16(get); // get first modified ffloor's number ready
-			for (;;) // for some reason the usual for (rover = x; ...) thing doesn't work here?
-			{
-				if (fflr_i == 0xffff) // end of modified ffloors list, let's stop already
-					break;
-				// should NEVER need to be checked
-				//if (rover == NULL)
-					//break;
-				if (j != fflr_i) // this ffloor was not modified
-				{
-					j++;
-					rover = rover->next;
-					continue;
-				}
-
-				fflr_diff = READUINT8(get);
-
-				if (fflr_diff & 1)
-					rover->flags = READUINT32(get);
-				if (fflr_diff & 2)
-					rover->alpha = READINT16(get);
-
-				fflr_i = READUINT16(get); // get next ffloor "number" ready
-
-				j++;
-				rover = rover->next;
-			}
-		}
+			UnArchiveFFloors(save, ss);
 	}
+}
+
+static void UnArchiveLines(savebuffer_t *save)
+{
+	UINT16 i;
+	line_t *li;
+	side_t *si;
+	UINT8 diff, diff2;
 
 	for (;;)
 	{
-		i = READUINT16(get);
+		i = READUINT16(save->p);
 
 		if (i == 0xffff)
 			break;
 		if (i > numlines)
 			I_Error("Invalid line number %u from server", i);
 
-		diff = READUINT8(get);
+		diff = READUINT8(save->p);
 		li = &lines[i];
 
 		if (diff & LD_DIFF2)
-			diff2 = READUINT8(get);
+			diff2 = READUINT8(save->p);
 		else
 			diff2 = 0;
 		if (diff & LD_FLAG)
-			li->flags = READINT16(get);
+			li->flags = READINT16(save->p);
 		if (diff & LD_SPECIAL)
-			li->special = READINT16(get);
+			li->special = READINT16(save->p);
 		if (diff & LD_CLLCOUNT)
-			li->callcount = READINT16(get);
+			li->callcount = READINT16(save->p);
 
 		si = &sides[li->sidenum[0]];
 		if (diff & LD_S1TEXOFF)
-			si->textureoffset = READFIXED(get);
+			si->textureoffset = READFIXED(save->p);
 		if (diff & LD_S1TOPTEX)
-			si->toptexture = READINT32(get);
+			si->toptexture = READINT32(save->p);
 		if (diff & LD_S1BOTTEX)
-			si->bottomtexture = READINT32(get);
+			si->bottomtexture = READINT32(save->p);
 		if (diff & LD_S1MIDTEX)
-			si->midtexture = READINT32(get);
+			si->midtexture = READINT32(save->p);
 
 		si = &sides[li->sidenum[1]];
 		if (diff2 & LD_S2TEXOFF)
-			si->textureoffset = READFIXED(get);
+			si->textureoffset = READFIXED(save->p);
 		if (diff2 & LD_S2TOPTEX)
-			si->toptexture = READINT32(get);
+			si->toptexture = READINT32(save->p);
 		if (diff2 & LD_S2BOTTEX)
-			si->bottomtexture = READINT32(get);
+			si->bottomtexture = READINT32(save->p);
 		if (diff2 & LD_S2MIDTEX)
-			si->midtexture = READINT32(get);
+			si->midtexture = READINT32(save->p);
 	}
+}
 
-	save->p = get;
+//
+// P_NetUnArchiveWorld
+//
+static void P_NetUnArchiveWorld(savebuffer_t *save)
+{
+	if (READUINT32(save->p) != ARCHIVEBLOCK_WORLD)
+		I_Error("Bad $$$.sav at archive block World");
+
+	UnArchiveSectors(save);
+	UnArchiveLines(save);
 }
 
 //
@@ -1393,7 +1432,7 @@ static void SaveGlowThinker(savebuffer_t *save, const thinker_t *th, const UINT8
 //
 // Saves a fireflicker_t thinker
 //
-static inline void SaveFireflickerThinker(savebuffer_t *save, const thinker_t *th, const UINT8 type)
+static void SaveFireflickerThinker(savebuffer_t *save, const thinker_t *th, const UINT8 type)
 {
 	const fireflicker_t *ht = (const void *)th;
 	WRITEUINT8(save->p, type);
@@ -1926,22 +1965,19 @@ static inline player_t *LoadPlayer(UINT32 player)
 // Loads a mobj_t from a save game
 //
 
-FUNCINLINE static ATTRINLINE mobj_t *AllocMobj(void)
+static mobjtype_t g_doomednum_to_mobjtype[UINT16_MAX];
+
+static void CalculateDoomednumToMobjtype(void)
 {
-	mobj_t *mobj;
+	memset(g_doomednum_to_mobjtype, MT_NULL, sizeof(g_doomednum_to_mobjtype));
 
-	if (mobjcache != NULL)
+	for (size_t i = MT_NULL+1; i < NUMMOBJTYPES; i++)
 	{
-		mobj = mobjcache;
-		mobjcache = mobjcache->hnext;
-		memset(mobj, 0, sizeof(*mobj));
+		if (mobjinfo[i].doomednum > 0 && mobjinfo[i].doomednum <= UINT16_MAX)
+		{
+			g_doomednum_to_mobjtype[ mobjinfo[i].doomednum ] = i;
+		}
 	}
-	else
-	{
-		mobj = Z_Calloc(sizeof (*mobj), PU_LEVEL, NULL);
-	}
-
-	return mobj;
 }
 
 static void LoadMobjThinker(savebuffer_t *save, actionf_p1 thinker)
@@ -1975,12 +2011,12 @@ static void LoadMobjThinker(savebuffer_t *save, actionf_p1 thinker)
 			return;
 		}
 
-		mobj = AllocMobj();
+		mobj = P_AllocateMobj();
 		mobj->spawnpoint = &mapthings[spawnpointnum];
 		mapthings[spawnpointnum].mobj = mobj;
 	}
 	else
-		mobj = AllocMobj();
+		mobj = P_AllocateMobj();
 
 	// declare this as a valid mobj as soon as possible.
 	mobj->thinker.function = thinker;
@@ -1993,18 +2029,23 @@ static void LoadMobjThinker(savebuffer_t *save, actionf_p1 thinker)
 		mobj->type = READUINT32(save->p);
 	else
 	{
-		for (i = 0; i < NUMMOBJTYPES; i++)
-			if (mobj->spawnpoint && mobj->spawnpoint->type == mobjinfo[i].doomednum)
-				break;
-		if (i == NUMMOBJTYPES)
+		mobjtype_t new_type = MT_NULL;
+		if (mobj->spawnpoint)
+		{
+			new_type = g_doomednum_to_mobjtype[mobj->spawnpoint->type];
+		}
+
+		if (new_type <= MT_NULL || new_type >= NUMMOBJTYPES)
 		{
 			if (mobj->spawnpoint)
-				CONS_Alert(CONS_ERROR, "Found mobj with unknown map thing type %d\n", mobj->spawnpoint->type);
+				CONS_Alert(CONS_ERROR, "Found mobj with unknown map thing doomednum %d\n", mobj->spawnpoint->type);
 			else
-				CONS_Alert(CONS_ERROR, "Found mobj with unknown map thing type NULL\n");
+				CONS_Alert(CONS_ERROR, "Found mobj with unknown map thing doomednum NULL\n");
+
 			I_Error("Savegame corrupted");
 		}
-		mobj->type = i;
+
+		mobj->type = new_type;
 	}
 
 	mobj->info = &mobjinfo[mobj->type];
@@ -2081,15 +2122,12 @@ static void LoadMobjThinker(savebuffer_t *save, actionf_p1 thinker)
 		i = READUINT8(save->p);
 		mobj->player = &players[i];
 		mobj->player->mo = mobj;
+
 		// added for angle prediction
-		if (consoleplayer == i)
-			localangle[0] = mobj->angle;
-		if (displayplayers[1] == i)
-			localangle[1] = mobj->angle;
-		if (displayplayers[2] == i)
-			localangle[2] = mobj->angle;
-		if (displayplayers[3] == i)
-			localangle[3] = mobj->angle;
+		if (i == P_GetLocalPlayerNumForNum(i))
+		{
+			localangle[i] = mobj->angle;
+		}
 	}
 	if (diff & MD_MOVEDIR)
 		mobj->movedir = READANGLE(save->p);
@@ -2214,9 +2252,13 @@ static void LoadMobjThinker(savebuffer_t *save, actionf_p1 thinker)
 //
 static void LoadSpecialLevelThinker(savebuffer_t *save, actionf_p1 thinker, UINT8 floorOrCeiling)
 {
-	levelspecthink_t *ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
+	levelspecthink_t *ht = (levelspecthink_t*)Z_LevelPoolMalloc(sizeof (*ht));
+	ht->thinker.alloctype = TAT_LEVELPOOL;
+	ht->thinker.size = sizeof (*ht);
+
 	size_t i;
 	ht->thinker.function = thinker;
+
 	for (i = 0; i < 16; i++)
 	{
 		ht->vars[i] = READFIXED(save->p); //var[16]
@@ -2236,10 +2278,13 @@ static void LoadSpecialLevelThinker(savebuffer_t *save, actionf_p1 thinker, UINT
 	P_AddThinker(&ht->thinker);
 
 	// interpolation
-	if (floorOrCeiling & 2)
-		R_CreateInterpolator_SectorPlane(&ht->thinker, ht->sector, true);
-	if (floorOrCeiling & 1)
-		R_CreateInterpolator_SectorPlane(&ht->thinker, ht->sector, false);
+	if (ht->sector)
+	{
+		if (floorOrCeiling & 2)
+			R_CreateInterpolator_SectorPlane(&ht->thinker, ht->sector, true);
+		if (floorOrCeiling & 1)
+			R_CreateInterpolator_SectorPlane(&ht->thinker, ht->sector, false);
+	}
 }
 
 //
@@ -2249,7 +2294,9 @@ static void LoadSpecialLevelThinker(savebuffer_t *save, actionf_p1 thinker, UINT
 //
 static void LoadCeilingThinker(savebuffer_t *save, actionf_p1 thinker)
 {
-	ceiling_t *ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
+	ceiling_t *ht = (ceiling_t*)Z_LevelPoolMalloc(sizeof (*ht));
+	ht->thinker.alloctype = TAT_LEVELPOOL;
+	ht->thinker.size = sizeof (*ht);
 	ht->thinker.function = thinker;
 	ht->type = READUINT8(save->p);
 	ht->sector = LoadSector(READUINT32(save->p));
@@ -2271,7 +2318,8 @@ static void LoadCeilingThinker(savebuffer_t *save, actionf_p1 thinker)
 	P_AddThinker(&ht->thinker);
 
 	// interpolation
-	R_CreateInterpolator_SectorPlane(&ht->thinker, ht->sector, true);
+	if (ht->sector)
+		R_CreateInterpolator_SectorPlane(&ht->thinker, ht->sector, true);
 }
 
 //
@@ -2281,7 +2329,9 @@ static void LoadCeilingThinker(savebuffer_t *save, actionf_p1 thinker)
 //
 static void LoadFloormoveThinker(savebuffer_t *save, actionf_p1 thinker)
 {
-	floormove_t *ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
+	floormove_t *ht = (floormove_t*)Z_LevelPoolMalloc(sizeof (*ht));
+	ht->thinker.alloctype = TAT_LEVELPOOL;
+	ht->thinker.size = sizeof (*ht);
 	ht->thinker.function = thinker;
 	ht->type = READUINT8(save->p);
 	ht->crush = READUINT8(save->p);
@@ -2298,7 +2348,8 @@ static void LoadFloormoveThinker(savebuffer_t *save, actionf_p1 thinker)
 	P_AddThinker(&ht->thinker);
 
 	// interpolation
-	R_CreateInterpolator_SectorPlane(&ht->thinker, ht->sector, false);
+	if (ht->sector)
+		R_CreateInterpolator_SectorPlane(&ht->thinker, ht->sector, false);
 }
 
 //
@@ -2308,7 +2359,9 @@ static void LoadFloormoveThinker(savebuffer_t *save, actionf_p1 thinker)
 //
 static void LoadLightflashThinker(savebuffer_t *save, actionf_p1 thinker)
 {
-	lightflash_t *ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
+	lightflash_t *ht = (lightflash_t*)Z_LevelPoolMalloc(sizeof (*ht));
+	ht->thinker.alloctype = TAT_LEVELPOOL;
+	ht->thinker.size = sizeof (*ht);
 	ht->thinker.function = thinker;
 	ht->sector = LoadSector(READUINT32(save->p));
 	ht->maxlight = READINT32(save->p);
@@ -2325,7 +2378,9 @@ static void LoadLightflashThinker(savebuffer_t *save, actionf_p1 thinker)
 //
 static void LoadStrobeThinker(savebuffer_t *save, actionf_p1 thinker)
 {
-	strobe_t *ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
+	strobe_t *ht = (strobe_t*)Z_LevelPoolMalloc(sizeof (*ht));
+	ht->thinker.alloctype = TAT_LEVELPOOL;
+	ht->thinker.size = sizeof (*ht);
 	ht->thinker.function = thinker;
 	ht->sector = LoadSector(READUINT32(save->p));
 	ht->count = READINT32(save->p);
@@ -2345,7 +2400,9 @@ static void LoadStrobeThinker(savebuffer_t *save, actionf_p1 thinker)
 //
 static void LoadGlowThinker(savebuffer_t *save, actionf_p1 thinker)
 {
-	glow_t *ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
+	glow_t *ht = (glow_t*)Z_LevelPoolMalloc(sizeof (*ht));
+	ht->thinker.alloctype = TAT_LEVELPOOL;
+	ht->thinker.size = sizeof (*ht);
 	ht->thinker.function = thinker;
 	ht->sector = LoadSector(READUINT32(save->p));
 	ht->minlight = READINT32(save->p);
@@ -2364,7 +2421,9 @@ static void LoadGlowThinker(savebuffer_t *save, actionf_p1 thinker)
 //
 static void LoadFireflickerThinker(savebuffer_t *save, actionf_p1 thinker)
 {
-	fireflicker_t *ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
+	fireflicker_t *ht = (fireflicker_t*)Z_LevelPoolMalloc(sizeof (*ht));
+	ht->thinker.alloctype = TAT_LEVELPOOL;
+	ht->thinker.size = sizeof (*ht);
 	ht->thinker.function = thinker;
 	ht->sector = LoadSector(READUINT32(save->p));
 	ht->count = READINT32(save->p);
@@ -2383,7 +2442,9 @@ static void LoadFireflickerThinker(savebuffer_t *save, actionf_p1 thinker)
 //
 static void LoadElevatorThinker(savebuffer_t *save, actionf_p1 thinker, UINT8 floorOrCeiling)
 {
-	elevator_t *ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
+	elevator_t *ht = (elevator_t*)Z_LevelPoolMalloc(sizeof (*ht));
+	ht->thinker.alloctype = TAT_LEVELPOOL;
+	ht->thinker.size = sizeof (*ht);
 	ht->thinker.function = thinker;
 	ht->type = READUINT8(save->p);
 	ht->sector = LoadSector(READUINT32(save->p));
@@ -2414,10 +2475,13 @@ static void LoadElevatorThinker(savebuffer_t *save, actionf_p1 thinker, UINT8 fl
 	P_AddThinker(&ht->thinker);
 
 	// interpolation
-	if (floorOrCeiling & 2)
-		R_CreateInterpolator_SectorPlane(&ht->thinker, ht->sector, true);
-	if (floorOrCeiling & 1)
-		R_CreateInterpolator_SectorPlane(&ht->thinker, ht->sector, false);
+	if (ht->sector)
+	{
+		if (floorOrCeiling & 2)
+			R_CreateInterpolator_SectorPlane(&ht->thinker, ht->sector, true);
+		if (floorOrCeiling & 1)
+			R_CreateInterpolator_SectorPlane(&ht->thinker, ht->sector, false);
+	}
 }
 
 //
@@ -2427,7 +2491,9 @@ static void LoadElevatorThinker(savebuffer_t *save, actionf_p1 thinker, UINT8 fl
 //
 static void LoadScrollThinker(savebuffer_t *save, actionf_p1 thinker)
 {
-	scroll_t *ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
+	scroll_t *ht = (scroll_t*)Z_LevelPoolMalloc(sizeof (*ht));
+	ht->thinker.alloctype = TAT_LEVELPOOL;
+	ht->thinker.size = sizeof (*ht);
 	ht->thinker.function = thinker;
 	ht->dx = READFIXED(save->p);
 	ht->dy = READFIXED(save->p);
@@ -2465,7 +2531,9 @@ static void LoadScrollThinker(savebuffer_t *save, actionf_p1 thinker)
 //
 static inline void LoadFrictionThinker(savebuffer_t *save, actionf_p1 thinker)
 {
-	friction_t *ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
+	friction_t *ht = (friction_t*)Z_LevelPoolMalloc(sizeof (*ht));
+	ht->thinker.alloctype = TAT_LEVELPOOL;
+	ht->thinker.size = sizeof (*ht);
 	ht->thinker.function = thinker;
 	ht->friction = READINT32(save->p);
 	ht->movefactor = READINT32(save->p);
@@ -2482,7 +2550,9 @@ static inline void LoadFrictionThinker(savebuffer_t *save, actionf_p1 thinker)
 //
 static void LoadPusherThinker(savebuffer_t *save, actionf_p1 thinker)
 {
-	pusher_t *ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
+	pusher_t *ht = (pusher_t*)Z_LevelPoolMalloc(sizeof (*ht));
+	ht->thinker.alloctype = TAT_LEVELPOOL;
+	ht->thinker.size = sizeof (*ht);
 	ht->thinker.function = thinker;
 	ht->type = READUINT8(save->p);
 	ht->x_mag = READINT32(save->p);
@@ -2508,16 +2578,22 @@ static void LoadPusherThinker(savebuffer_t *save, actionf_p1 thinker)
 //
 static inline void LoadLaserThinker(savebuffer_t *save, actionf_p1 thinker)
 {
-	laserthink_t *ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
+	laserthink_t *ht = (laserthink_t*)Z_LevelPoolMalloc(sizeof (*ht));
+	ht->thinker.alloctype = TAT_LEVELPOOL;
+	ht->thinker.size = sizeof (*ht);
 	ffloor_t *rover = NULL;
 	ht->thinker.function = thinker;
 	ht->sector = LoadSector(READUINT32(save->p));
 	ht->sec = LoadSector(READUINT32(save->p));
 	ht->sourceline = LoadLine(READUINT32(save->p));
+
 	for (rover = ht->sector->ffloors; rover; rover = rover->next)
+	{
 		if (rover->secnum == (size_t)(ht->sec - sectors)
 		&& rover->master == ht->sourceline)
 			ht->ffloor = rover;
+	}
+
 	P_AddThinker(&ht->thinker);
 }
 
@@ -2528,7 +2604,9 @@ static inline void LoadLaserThinker(savebuffer_t *save, actionf_p1 thinker)
 //
 FUNCINLINE static ATTRINLINE void LoadLightlevelThinker(savebuffer_t *save, actionf_p1 thinker)
 {
-	lightlevel_t *ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
+	lightlevel_t *ht = (lightlevel_t*)Z_LevelPoolMalloc(sizeof (*ht));
+	ht->thinker.alloctype = TAT_LEVELPOOL;
+	ht->thinker.size = sizeof (*ht);
 	ht->thinker.function = thinker;
 	ht->sector = LoadSector(READUINT32(save->p));
 	ht->destlevel = READINT32(save->p);
@@ -2545,7 +2623,9 @@ FUNCINLINE static ATTRINLINE void LoadLightlevelThinker(savebuffer_t *save, acti
 //
 static inline void LoadExecutorThinker(savebuffer_t *save, actionf_p1 thinker)
 {
-	executor_t *ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
+	executor_t *ht = (executor_t*)Z_LevelPoolMalloc(sizeof (*ht));
+	ht->thinker.alloctype = TAT_LEVELPOOL;
+	ht->thinker.size = sizeof (*ht);
 	ht->thinker.function = thinker;
 	ht->line = LoadLine(READUINT32(save->p));
 	ht->caller = LoadMobj(READUINT32(save->p));
@@ -2561,7 +2641,9 @@ static inline void LoadExecutorThinker(savebuffer_t *save, actionf_p1 thinker)
 //
 static inline void LoadDisappearThinker(savebuffer_t *save, actionf_p1 thinker)
 {
-	disappear_t *ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
+	disappear_t *ht = (disappear_t*)Z_LevelPoolMalloc(sizeof (*ht));
+	ht->thinker.alloctype = TAT_LEVELPOOL;
+	ht->thinker.size = sizeof (*ht);
 	ht->thinker.function = thinker;
 	ht->appeartime = READUINT32(save->p);
 	ht->disappeartime = READUINT32(save->p);
@@ -2580,7 +2662,9 @@ static inline void LoadDisappearThinker(savebuffer_t *save, actionf_p1 thinker)
 //
 static inline void LoadPolyrotatetThinker(savebuffer_t *save, actionf_p1 thinker)
 {
-	polyrotate_t *ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
+	polyrotate_t *ht = (polyrotate_t*)Z_LevelPoolMalloc(sizeof (*ht));
+	ht->thinker.alloctype = TAT_LEVELPOOL;
+	ht->thinker.size = sizeof (*ht);
 	ht->thinker.function = thinker;
 	ht->polyObjNum = READINT32(save->p);
 	ht->speed = READINT32(save->p);
@@ -2593,7 +2677,7 @@ static inline void LoadPolyrotatetThinker(savebuffer_t *save, actionf_p1 thinker
 
 	if (!(po = Polyobj_GetForNum(ht->polyObjNum)))
 	{
-		CONS_Debug(DBG_POLYOBJ, "EV_DoPolyObjRotate: bad polyobj %d\n", ht->polyObjNum);
+		CONS_Debug(DBG_POLYOBJ, "LoadPolyrotatetThinker: bad polyobj %d\n", ht->polyObjNum);
 		return;
 	}
 
@@ -2607,7 +2691,9 @@ static inline void LoadPolyrotatetThinker(savebuffer_t *save, actionf_p1 thinker
 //
 static void LoadPolymoveThinker(savebuffer_t *save, actionf_p1 thinker)
 {
-	polymove_t *ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
+	polymove_t *ht = (polymove_t*)Z_LevelPoolMalloc(sizeof (*ht));
+	ht->thinker.alloctype = TAT_LEVELPOOL;
+	ht->thinker.size = sizeof (*ht);
 	ht->thinker.function = thinker;
 	ht->polyObjNum = READINT32(save->p);
 	ht->speed = READINT32(save->p);
@@ -2622,7 +2708,7 @@ static void LoadPolymoveThinker(savebuffer_t *save, actionf_p1 thinker)
 
 	if (!(po = Polyobj_GetForNum(ht->polyObjNum)))
 	{
-		CONS_Debug(DBG_POLYOBJ, "EV_DoPolyObjRotate: bad polyobj %d\n", ht->polyObjNum);
+		CONS_Debug(DBG_POLYOBJ, "LoadPolymoveThinker: bad polyobj %d\n", ht->polyObjNum);
 		return;
 	}
 
@@ -2636,7 +2722,9 @@ static void LoadPolymoveThinker(savebuffer_t *save, actionf_p1 thinker)
 //
 static inline void LoadPolywaypointThinker(savebuffer_t *save, actionf_p1 thinker)
 {
-	polywaypoint_t *ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
+	polywaypoint_t *ht = (polywaypoint_t*)Z_LevelPoolMalloc(sizeof (*ht));
+	ht->thinker.alloctype = TAT_LEVELPOOL;
+	ht->thinker.size = sizeof (*ht);
 	ht->thinker.function = thinker;
 	ht->polyObjNum = READINT32(save->p);
 	ht->speed = READINT32(save->p);
@@ -2659,7 +2747,7 @@ static inline void LoadPolywaypointThinker(savebuffer_t *save, actionf_p1 thinke
 
 	if (!(po = Polyobj_GetForNum(ht->polyObjNum)))
 	{
-		CONS_Debug(DBG_POLYOBJ, "EV_DoPolyObjRotate: bad polyobj %d\n", ht->polyObjNum);
+		CONS_Debug(DBG_POLYOBJ, "LoadPolywaypointThinker: bad polyobj %d\n", ht->polyObjNum);
 		return;
 	}
 
@@ -2690,7 +2778,9 @@ static inline void LoadPolywaypointThinker(savebuffer_t *save, actionf_p1 thinke
 //
 static inline void LoadPolyslidedoorThinker(savebuffer_t *save, actionf_p1 thinker)
 {
-	polyslidedoor_t *ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
+	polyslidedoor_t *ht = (polyslidedoor_t*)Z_LevelPoolMalloc(sizeof (*ht));
+	ht->thinker.alloctype = TAT_LEVELPOOL;
+	ht->thinker.size = sizeof (*ht);
 	ht->thinker.function = thinker;
 	ht->polyObjNum = READINT32(save->p);
 	ht->delay = READINT32(save->p);
@@ -2712,7 +2802,7 @@ static inline void LoadPolyslidedoorThinker(savebuffer_t *save, actionf_p1 think
 
 	if (!(po = Polyobj_GetForNum(ht->polyObjNum)))
 	{
-		CONS_Debug(DBG_POLYOBJ, "EV_DoPolyObjRotate: bad polyobj %d\n", ht->polyObjNum);
+		CONS_Debug(DBG_POLYOBJ, "LoadPolyslidedoorThinker: bad polyobj %d\n", ht->polyObjNum);
 		return;
 	}
 
@@ -2726,7 +2816,9 @@ static inline void LoadPolyslidedoorThinker(savebuffer_t *save, actionf_p1 think
 //
 static inline void LoadPolyswingdoorThinker(savebuffer_t *save, actionf_p1 thinker)
 {
-	polyswingdoor_t *ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
+	polyswingdoor_t *ht = (polyswingdoor_t*)Z_LevelPoolMalloc(sizeof (*ht));
+	ht->thinker.alloctype = TAT_LEVELPOOL;
+	ht->thinker.size = sizeof (*ht);
 	ht->thinker.function = thinker;
 	ht->polyObjNum = READINT32(save->p);
 	ht->delay = READINT32(save->p);
@@ -2743,7 +2835,7 @@ static inline void LoadPolyswingdoorThinker(savebuffer_t *save, actionf_p1 think
 
 	if (!(po = Polyobj_GetForNum(ht->polyObjNum)))
 	{
-		CONS_Debug(DBG_POLYOBJ, "EV_DoPolyObjRotate: bad polyobj %d\n", ht->polyObjNum);
+		CONS_Debug(DBG_POLYOBJ, "LoadPolyswingdoorThinker: bad polyobj %d\n", ht->polyObjNum);
 		return;
 	}
 
@@ -2757,7 +2849,9 @@ static inline void LoadPolyswingdoorThinker(savebuffer_t *save, actionf_p1 think
 //
 static inline void LoadPolydisplaceThinker(savebuffer_t *save, actionf_p1 thinker)
 {
-	polydisplace_t *ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
+	polydisplace_t *ht = (polydisplace_t*)Z_LevelPoolMalloc(sizeof (*ht));
+	ht->thinker.alloctype = TAT_LEVELPOOL;
+	ht->thinker.size = sizeof (*ht);
 	ht->thinker.function = thinker;
 	ht->polyObjNum = READINT32(save->p);
 	ht->controlSector = LoadSector(READUINT32(save->p));
@@ -2771,7 +2865,7 @@ static inline void LoadPolydisplaceThinker(savebuffer_t *save, actionf_p1 thinke
 
 	if (!(po = Polyobj_GetForNum(ht->polyObjNum)))
 	{
-		CONS_Debug(DBG_POLYOBJ, "EV_DoPolyObjRotate: bad polyobj %d\n", ht->polyObjNum);
+		CONS_Debug(DBG_POLYOBJ, "LoadPolydisplaceThinker: bad polyobj %d\n", ht->polyObjNum);
 		return;
 	}
 
@@ -2793,6 +2887,10 @@ static void P_NetUnArchiveThinkers(savebuffer_t *save)
 	if (READUINT32(save->p) != ARCHIVEBLOCK_THINKERS)
 		I_Error("Bad $$$.sav at archive block Thinkers");
 
+	// Pre-calculate this lookup, because it was wasting
+	// a shit ton of time loading mobj thinkers.
+	CalculateDoomednumToMobjtype();
+
 	// remove all the current thinkers
 	currentthinker = thinkercap.next;
 	for (currentthinker = thinkercap.next; currentthinker != &thinkercap; currentthinker = next)
@@ -2805,7 +2903,14 @@ static void P_NetUnArchiveThinkers(savebuffer_t *save)
 		{
 			(next->prev = currentthinker->prev)->next = next;
 			R_DestroyLevelInterpolators(currentthinker);
-			Z_Free(currentthinker);
+			if (currentthinker->alloctype == TAT_LEVELPOOL)
+			{
+				Z_LevelPoolFree(currentthinker, currentthinker->size);
+			}
+			else
+			{
+				Z_Free(currentthinker);
+			}
 		}
 	}
 
@@ -3408,10 +3513,91 @@ static void P_NetArchiveMisc(savebuffer_t *save, boolean resending)
 		WRITEUINT8(save->p, 0x2e);
 }
 
+static void P_ReloadSaveLevelData(void)
+{
+	size_t i;
+
+	// Only reload stuff that can we modify in the save states themselves.
+	// This is still orders of magnitude faster than a full level reload.
+	// Considered memcpy, but it's complicated -- save that for local saves.
+
+	sector_t *ss = sectors;
+	sector_t *spawnss = spawnsectors;
+
+	for (i = 0; i < numsectors; i++, ss++, spawnss++)
+	{
+		ss->floorheight = spawnss->floorheight;
+		ss->ceilingheight = spawnss->ceilingheight;
+		ss->floorpic = spawnss->floorpic;
+		ss->ceilingpic = spawnss->ceilingpic;
+		ss->lightlevel = spawnss->lightlevel;
+		ss->special = spawnss->special;
+		ss->floor_xoffs = spawnss->floor_xoffs;
+		ss->floor_yoffs = spawnss->floor_yoffs;
+		ss->ceiling_xoffs = spawnss->ceiling_xoffs;
+		ss->ceiling_yoffs = spawnss->ceiling_yoffs;
+		ss->floorpic_angle = spawnss->floorpic_angle;
+		ss->ceilingpic_angle = spawnss->ceilingpic_angle;
+		ss->tag = spawnss->tag;
+		ss->firsttag = ss->nexttag = -1;
+
+		if (ss->ffloors)
+		{
+			ffloor_t *rover;
+
+			for (rover = ss->ffloors; rover; rover = rover->next)
+			{
+				rover->flags = rover->spawnflags;
+				rover->alpha = rover->spawnalpha;
+			}
+		}
+	}
+
+	line_t *li = lines;
+	line_t *spawnli = spawnlines;
+	side_t *si = NULL;
+	side_t *spawnsi = NULL;
+
+	for (i = 0; i < numlines; i++, spawnli++, li++)
+	{
+		li->special = spawnli->special;
+		li->callcount = 0;
+
+		li->tag = spawnli->tag;
+		li->firsttag = li->nexttag = -1;
+
+		if (li->sidenum[0] != 0xffff)
+		{
+			si = &sides[li->sidenum[0]];
+			spawnsi = &spawnsides[li->sidenum[0]];
+
+			si->textureoffset = spawnsi->textureoffset;
+			si->toptexture = spawnsi->toptexture;
+			si->bottomtexture = spawnsi->bottomtexture;
+			si->midtexture = spawnsi->midtexture;
+		}
+
+		if (li->sidenum[1] != 0xffff)
+		{
+			si = &sides[li->sidenum[1]];
+			spawnsi = &spawnsides[li->sidenum[1]];
+
+			si->textureoffset = spawnsi->textureoffset;
+			si->toptexture = spawnsi->toptexture;
+			si->bottomtexture = spawnsi->bottomtexture;
+			si->midtexture = spawnsi->midtexture;
+		}
+	}
+
+	P_InitTagLists();
+}
+
 FUNCINLINE static ATTRINLINE boolean P_NetUnArchiveMisc(savebuffer_t *save, boolean reloading)
 {
 	UINT32 pig;
 	INT32 i;
+
+	const INT16 prevgamemap = gamemap;
 
 	if (READUINT32(save->p) != ARCHIVEBLOCK_MISC)
 		I_Error("Bad $$$.sav at archive block Misc");
@@ -3423,7 +3609,7 @@ FUNCINLINE static ATTRINLINE boolean P_NetUnArchiveMisc(savebuffer_t *save, bool
 
 	// gamemap changed; we assume that its map header is always valid,
 	// so make it so
-	if(!mapheaderinfo[gamemap-1])
+	if (!mapheaderinfo[gamemap-1])
 		P_AllocMapHeader(gamemap-1);
 
 	// tell the sound code to reset the music since we're skipping what
@@ -3449,10 +3635,23 @@ FUNCINLINE static ATTRINLINE boolean P_NetUnArchiveMisc(savebuffer_t *save, bool
 
 	encoremode = (boolean)READUINT8(save->p);
 
-	if (!P_SetupLevel(true, reloading))
+	// Only reload the level during a gamestate reload
+	// if the map is horribly mismatched somehow. Minor
+	// differences in level state are already handled
+	// by other parts of the reload, so doing this
+	// on *every* reload wastes lots of time that we
+	// will need for rollback down the road.
+	if (!reloading || prevgamemap != gamemap)
 	{
-		CONS_Alert(CONS_ERROR, M_GetText("Can't load the level!\n"));
-		return false;
+		if (!P_SetupLevel(true, reloading))
+		{
+			CONS_Alert(CONS_ERROR, M_GetText("Can't load the level!\n"));
+			return false;
+		}
+	}
+	else
+	{
+		P_ReloadSaveLevelData();
 	}
 
 	// get the time
