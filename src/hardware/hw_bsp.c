@@ -36,7 +36,11 @@ extrasubsector_t *extrasubsectors = NULL;
 // newsubsectors are subsectors without segs, added for the plane polygons
 #define NEWSUBSECTORS 50
 static size_t totsubsectors;
+#ifdef PARANOIA
 size_t addsubsector;
+#else
+static size_t addsubsector;
+#endif
 
 typedef struct
 {

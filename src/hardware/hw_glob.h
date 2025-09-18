@@ -42,7 +42,7 @@ typedef struct gl_vissprite_s
 	mobj_t *mobj;
 	precipmobj_t *precip; // Tails 08-25-2002
 	boolean vflip;
-   //Hurdler: 25/04/2000: now support colormap in hardware mode
+    //Hurdler: 25/04/2000: now support colormap in hardware mode
 	UINT8 *colormap;
 	INT32 dispoffset; // copy of info->dispoffset, affects ordering but not drawing
 } gl_vissprite_t;
@@ -53,7 +53,9 @@ void HWR_ObjectLightLevelPost(gl_vissprite_t *spr, const sector_t *sector, INT32
 // hw_bsp.c
 // --------
 extern extrasubsector_t *extrasubsectors;
+#ifdef PARANOIA
 extern size_t addsubsector;
+#endif
 
 void HWR_FreeExtraSubsectors(void);
 
@@ -82,15 +84,11 @@ void HWR_GetFlat(lumpnum_t flatlumpnum, boolean noencoremap);
 // ^ some flats must NOT be remapped to encore, since we remap them as we cache them for ease, adding a toggle here seems wise.
 
 void HWR_FreeTexture(patch_t *patch);
-void HWR_FreeTextureData(patch_t *patch);
-void HWR_FreeTextureColormaps(patch_t *patch);
 void HWR_ClearAllTextures(void);
-void HWR_FreeColormapCache(void);
 void HWR_UnlockCachedPatch(GLPatch_t *gpatch);
 
 void HWR_SetPalette(RGBA_t *palette);
 void HWR_SetMapPalette(void);
-UINT32 HWR_CreateLightTable(UINT8 *lighttable);
 UINT32 HWR_GetLightTableID(extracolormap_t *colormap);
 void HWR_ClearLightTables(void);
 
