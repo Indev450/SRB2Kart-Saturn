@@ -271,7 +271,7 @@ int player_aiming_setter(lua_State *L)
 	{
 		if (plr == P_GetLocalPlayerForNum(i))
 		{
-			localangle[i] = plr->aiming;
+			localaiming[i] = plr->aiming;
 			break;
 		}
 	}
