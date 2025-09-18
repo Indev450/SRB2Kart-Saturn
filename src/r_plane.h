@@ -114,7 +114,7 @@ typedef struct planemgr_s
 	polyobj_t *polyobj;
 } visffloor_t;
 
-extern visffloor_t ffloor[MAXFFLOORS];
+extern visffloor_t visffloor[MAXFFLOORS];
 extern INT32 numffloors;
 
 #ifdef __cplusplus
