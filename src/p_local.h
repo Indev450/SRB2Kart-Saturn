@@ -412,7 +412,6 @@ boolean P_CheckSector(sector_t *sector, boolean crunch);
 void P_DelSeclist(msecnode_t *node);
 
 void P_CreateSecNodeList(mobj_t *thing, fixed_t x, fixed_t y);
-void P_Initsecnode(void);
 
 void P_RadiusAttack(mobj_t *spot, mobj_t *source, fixed_t damagedist);
 
