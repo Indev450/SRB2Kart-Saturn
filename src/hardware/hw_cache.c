@@ -322,8 +322,6 @@ static void HWR_GenerateTexture(INT32 texnum, GLMapTexture_t *gltex, boolean noe
 	INT32 i, idx;
 	boolean skyspecial = false; // poor hack for Legacy large skies..
 
-	RGBA_t *palette;
-
 	texture = textures[texnum];
 
 	gltex->mipmap.flags = TF_CHROMAKEYED | TF_WRAPXY;
@@ -360,7 +358,7 @@ static void HWR_GenerateTexture(INT32 texnum, GLMapTexture_t *gltex, boolean noe
 		INT32 j;
 		RGBA_t col;
 
-		palette = HWR_GetTexturePalette();
+		const RGBA_t *palette = HWR_GetTexturePalette();
 
 		col = palette[HWR_CHROMAKEY_EQUIVALENTCOLORINDEX];
 
@@ -882,16 +880,11 @@ static void HWR_CacheFlat(GLMipmap_t *glMipmap, lumpnum_t flatlumpnum)
 	size_t steppy;
 #endif
 	size_t size, pflatsize;
-	const char *flatname = W_CheckNameForNum(flatlumpnum);
+	boolean haschromakey = false;
 
 	// setup the texture info
 	glMipmap->format = GL_TEXFMT_P_8;
 	glMipmap->flags = TF_WRAPXY|TF_CHROMAKEYED;
-
-	if (UNLIKELY(memcmp(flatname, "GBA_RRF5", 8) == 0 && flatname[8] == 0))
-	{
-		glMipmap->flags &= ~TF_CHROMAKEYED;
-	}
 
 	size = W_LumpLength(flatlumpnum);
 
@@ -930,11 +923,25 @@ static void HWR_CacheFlat(GLMipmap_t *glMipmap, lumpnum_t flatlumpnum)
 	for (steppy = 0; steppy < size; steppy++)
 	{
 		if (flat[steppy] == HWR_PATCHES_CHROMAKEY_COLORINDEX)
+		{
+			haschromakey = true;
 			continue;
+		}
 
 		flat[steppy] = glMipmap->colormap->source[flat[steppy]];
 	}
 #endif
+
+	if (haschromakey)
+	{
+		const char *flatname = W_CheckNameForNum(flatlumpnum);
+
+		// hack for gba rainbow roads cyan floors
+		if (UNLIKELY(memcmp(flatname, "GBA_RRF5", 8) == 0 && flatname[8] == 0))
+		{
+			glMipmap->flags &= ~TF_CHROMAKEYED;
+		}
+	}
 }
 
 // Download a Doom 'flat' to the hardware cache and make it ready for use
@@ -1121,11 +1128,10 @@ static void HWR_DrawFadeMaskInCache(GLMipmap_t *mipmap, INT32 pblockwidth, INT32
 	UINT8 *flat;
 	UINT8 *dest, *src, texel;
 	RGBA_t col;
-	RGBA_t *palette = HWR_GetTexturePalette();
+	const RGBA_t *palette = HWR_GetTexturePalette();
 
 	// Place the flats data into flat
-	W_ReadLump(fademasklumpnum, Z_Malloc(W_LumpLength(fademasklumpnum),
-		PU_HWRCACHE, &flat));
+	W_ReadLump(fademasklumpnum, Z_Malloc(W_LumpLength(fademasklumpnum), PU_HWRCACHE, &flat));
 
 	stepy = ((INT32)fmheight<<FRACBITS)/pblockheight;
 	stepx = ((INT32)fmwidth<<FRACBITS)/pblockwidth;
