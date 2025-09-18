@@ -96,20 +96,17 @@
 // platform independant focus loss
 UINT8 window_notinfocus = false;
 
-//
-// DEMO LOOP
-//
-//static INT32 demosequence;
-static char *startupwadfiles[MAX_WADFILES];
+static char *startupiwadfiles[MAX_WADFILES];
 static char *startuppwads[MAX_WADFILES];
 
 // autoloading
-char *autoloadwadfiles[MAX_WADFILES];
-char *autoloadwadfilespost[MAX_WADFILES];
+static char *autoloadwadfiles[MAX_WADFILES];
+static char *autoloadwadfilespost[MAX_WADFILES];
 boolean autoloading;
 boolean autoloaded;
 boolean postautoloaded = false;
 boolean wasautoloaded = false;
+//
 
 boolean devparm = false; // started game with -devparm
 
@@ -1247,7 +1244,7 @@ static boolean AddIWAD(void)
 
 	if (FIL_ReadFileOK(path))
 	{
-		D_AddFile(path, startupwadfiles);
+		D_AddFile(path, startupiwadfiles);
 		return true;
 	}
 
@@ -1307,12 +1304,12 @@ static void IdentifyVersion(void)
 	D_AddFile(va(pandf,srb2waddir,"patch.dta"));
 #endif
 
-	D_AddFile(va(pandf, srb2waddir, "gfx.kart"), startupwadfiles);
-	D_AddFile(va(pandf, srb2waddir, "textures.kart"), startupwadfiles);
-	D_AddFile(va(pandf, srb2waddir, "chars.kart"), startupwadfiles);
-	D_AddFile(va(pandf, srb2waddir, "maps.kart"), startupwadfiles);
+	D_AddFile(va(pandf, srb2waddir, "gfx.kart"), startupiwadfiles);
+	D_AddFile(va(pandf, srb2waddir, "textures.kart"), startupiwadfiles);
+	D_AddFile(va(pandf, srb2waddir, "chars.kart"), startupiwadfiles);
+	D_AddFile(va(pandf, srb2waddir, "maps.kart"), startupiwadfiles);
 #ifdef USE_PATCH_KART
-	D_AddFile(va(pandf,srb2waddir,"patch.kart"), startupwadfiles);
+	D_AddFile(va(pandf,srb2waddir,"patch.kart"), startupiwadfiles);
 #endif
 
 	const char *path = NULL;
@@ -1322,7 +1319,7 @@ static void IdentifyVersion(void)
 	// completely optional
 	if (FIL_ReadFileOK(path))
 	{
-		D_AddFile(path, startupwadfiles);
+		D_AddFile(path, startupiwadfiles);
 		found_extra_kart = true;
 	}
 
@@ -1331,7 +1328,7 @@ static void IdentifyVersion(void)
 	// completely optional 2: Back with a vengence
 	if (FIL_ReadFileOK(path))
 	{
-		D_AddFile(path, startupwadfiles);
+		D_AddFile(path, startupiwadfiles);
 		found_extra2_kart = true;
 	}
 
@@ -1339,7 +1336,7 @@ static void IdentifyVersion(void)
 
 	if (FIL_ReadFileOK(path))
 	{
-		D_AddFile(path, startupwadfiles);
+		D_AddFile(path, startupiwadfiles);
 		found_extra3_kart = true;
 	}
 
@@ -1354,7 +1351,7 @@ static void IdentifyVersion(void)
 		if (ms == 0) \
 			I_Error("File " str " has been modified with non-music/sound lumps"); \
 		if (ms == 1) \
-			D_AddFile(musicpath, startupwadfiles); \
+			D_AddFile(musicpath, startupiwadfiles); \
 	}
 	{
 		const char *musicpath;
@@ -1819,8 +1816,8 @@ void D_SRB2Main(void)
 	// load wad, including the main wad file
 	CONS_Printf("W_InitMultipleFiles(): Adding IWAD and main PWADs.\n");
 
-	W_InitMultipleFiles(startupwadfiles, false);
-	D_CleanFile(startupwadfiles);
+	W_InitMultipleFiles(startupiwadfiles, false);
+	D_CleanFile(startupiwadfiles);
 	mainwads = 0;
 
 #ifndef DEVELOP
@@ -1884,37 +1881,42 @@ void D_SRB2Main(void)
 	}
 
 	W_InitMultipleFiles(startuppwads, true);
-	D_CleanFile(startuppwads);
 
-	//
-	// search for maps... again.
-	//
-	for (wadnum = mainwads+1; wadnum < numwadfiles; wadnum++)
+	// Only search for pwad maps if we actually have a pwad added
+	if (startuppwads[0] != NULL)
 	{
-		lumpinfo = wadfiles[wadnum]->lumpinfo;
-		for (i = 0; i < wadfiles[wadnum]->numlumps; i++, lumpinfo++)
+		//
+		// search for maps... again.
+		//
+		for (wadnum = mainwads+1; wadnum < numwadfiles; wadnum++)
 		{
-			name = lumpinfo->name;
-
-			if (memcmp(name, "MAP", 3) == 0) // Ignore the headers
+			lumpinfo = wadfiles[wadnum]->lumpinfo;
+			for (i = 0; i < wadfiles[wadnum]->numlumps; i++, lumpinfo++)
 			{
-				INT16 num;
-				if (name[5] != '\0')
-					continue;
-				num = (INT16)M_MapNumber(name[3], name[4]);
+				name = lumpinfo->name;
 
-				// we want to record whether this map exists. if it doesn't have a header, we can assume it's not relephant
-				if (num <= NUMMAPS && mapheaderinfo[num - 1])
+				if (memcmp(name, "MAP", 3) == 0) // Ignore the headers
 				{
-					if (mapheaderinfo[num - 1]->menuflags & LF2_EXISTSHACK)
-						G_SetGameModified(multiplayer, true); // oops, double-defined - no record attack privileges for you
-					mapheaderinfo[num - 1]->menuflags |= LF2_EXISTSHACK;
-				}
+					INT16 num;
+					if (name[5] != '\0')
+						continue;
+					num = (INT16)M_MapNumber(name[3], name[4]);
 
-				CONS_Printf("%s\n", name);
+					// we want to record whether this map exists. if it doesn't have a header, we can assume it's not relephant
+					if (num <= NUMMAPS && mapheaderinfo[num - 1])
+					{
+						if (mapheaderinfo[num - 1]->menuflags & LF2_EXISTSHACK)
+							G_SetGameModified(multiplayer, true); // oops, double-defined - no record attack privileges for you
+						mapheaderinfo[num - 1]->menuflags |= LF2_EXISTSHACK;
+					}
+
+					CONS_Printf("%s\n", name);
+				}
 			}
 		}
 	}
+
+	D_CleanFile(startuppwads);
 
 	cht_Init();
 
