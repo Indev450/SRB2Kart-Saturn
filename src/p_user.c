@@ -4144,7 +4144,7 @@ void P_ResetLocalCamAiming(player_t *player)
 	{
 		if (player == P_GetLocalPlayerForNum(i))
 		{
-			localangle[i] = 0;
+			localaiming[i] = 0;
 			break;
 		}
 	}
