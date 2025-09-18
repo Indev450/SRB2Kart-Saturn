@@ -2384,44 +2384,6 @@ static void P_LoadRecordGhosts(void)
 	free(gpath);
 }
 
-static void P_SetupCamera(UINT8 pnum, camera_t *cam)
-{
-	if (players[pnum].mo && (server || addedtogame))
-	{
-		cam->x = players[pnum].mo->x;
-		cam->y = players[pnum].mo->y;
-		cam->z = players[pnum].mo->z;
-		cam->angle = players[pnum].mo->angle;
-	}
-	else
-	{
-		mapthing_t *thing;
-
-		switch (gametype)
-		{
-			case GT_MATCH:
-			case GT_TAG:
-				thing = deathmatchstarts[0];
-				break;
-			default:
-				thing = playerstarts[0];
-				break;
-		}
-
-		if (!thing)
-			return; // we can't do jack shit
-
-		cam->x = thing->x;
-		cam->y = thing->y;
-		cam->z = thing->z;
-		cam->angle = FixedAngle((fixed_t)thing->angle << FRACBITS);
-	}
-
-	cam->subsector = R_PointInSubsectorFast(cam->x, cam->y); // make sure camera has a subsector set -- Monster Iestyn (12/11/18)
-
-	cam->chase = false; // tell camera to reset its position next tic
-}
-
 static void P_InitCamera(void)
 {
 	INT32 i;
@@ -2431,10 +2393,7 @@ static void P_InitCamera(void)
 
 	for (i = 0; i <= splitscreen; i++)
 	{
-		if (camera[i].freecam)
-			continue;
-
-		P_SetupCamera(displayplayers[i], &camera[i]);
+		P_SetupCamera(&camera[i]);
 	}
 
 	// Though, I don't think anyone would care about cam_rotate being reset back to the only value that makes sense :P
@@ -2442,6 +2401,8 @@ static void P_InitCamera(void)
 	{
 		if (!cv_cam_rotate[i].changed)
 			CV_Set(&cv_cam_rotate[i], cv_cam_rotate[i].defaultvalue);
+		if (!cv_chasecam[i].changed)
+			CV_SetValue(&cv_chasecam[i], true); // srb2kart: always on
 	}
 
 	displayplayers[0] = consoleplayer; // Start with your OWN view, please!
@@ -2797,15 +2758,6 @@ boolean P_SetupLevel(boolean fromnetsave, boolean reloadinggamestate)
 	if (mapheaderinfo[gamemap-1]->forcecharacter[0] != '\0'
 	&& atoi(mapheaderinfo[gamemap-1]->forcecharacter) != 255)
 		P_ForceCharacter(mapheaderinfo[gamemap-1]->forcecharacter);
-
-	if (!dedicated)
-	{
-		for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
-		{
-			if (!cv_chasecam[i].changed)
-				CV_SetValue(&cv_chasecam[i], true); // srb2kart: always on
-		}
-	}
 
 	// Initial height of PointOfView
 	// will be set by player think.
