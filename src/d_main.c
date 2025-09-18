@@ -147,8 +147,6 @@ boolean dedicated = false;
 
 boolean loaded_config = false; // true once config.cfg loaded AND executed
 
-static void D_CleanFile(char **filearray);
-
 //
 // D_PostEvent
 // Called by the I/O functions when input is detected
@@ -1063,6 +1061,16 @@ static void D_AddFile(const char *file, char **filearray)
 	filearray[pnumwadfiles] = newfile;
 }
 
+static void D_CleanFile(char **filearray)
+{
+	size_t pnumwadfiles;
+	for (pnumwadfiles = 0; filearray[pnumwadfiles]; pnumwadfiles++)
+	{
+		free(filearray[pnumwadfiles]);
+		filearray[pnumwadfiles] = NULL;
+	}
+}
+
 // Taken from TSoURDt3rd
 // https://github.com/StarManiaKG/The-Story-of-Uncapped-Revengence-Discord-the-3rd/blob/main/src/STAR/star_functions.c
 static INT32 D_DetectFileType(const char* filename)
@@ -1224,16 +1232,6 @@ void D_AddPostloadFiles(void)
 	postautoloaded = true;
 }
 
-static void D_CleanFile(char **filearray)
-{
-	size_t pnumwadfiles;
-	for (pnumwadfiles = 0; filearray[pnumwadfiles]; pnumwadfiles++)
-	{
-		free(filearray[pnumwadfiles]);
-		filearray[pnumwadfiles] = NULL;
-	}
-}
-
 // ==========================================================================
 // Identify the SRB2 version, and IWAD file to use.
 // ==========================================================================
@@ -1362,6 +1360,27 @@ static void IdentifyVersion(void)
 	}
 #undef MUSICTEST
 #endif
+}
+
+//
+// search for maps
+//
+static void D_CheckMaps(boolean checkreplaced)
+{
+	INT32 i;
+	char *name;
+	UINT16 wadnum;
+	lumpinfo_t *lumpinfo;
+
+	for (wadnum = 0; wadnum < mainwads; wadnum++)
+	{
+		lumpinfo = wadfiles[wadnum]->lumpinfo;
+		for (i = 0; i < wadfiles[wadnum]->numlumps; i++, lumpinfo++)
+		{
+			name = lumpinfo->name;
+			P_CheckMapReplacements(name, checkreplaced);
+		}
+	}
 }
 
 //
@@ -1615,12 +1634,9 @@ static void D_CheckSaturnExtraFiles(void)
 //
 void D_SRB2Main(void)
 {
-	INT32 p, i;
+	INT32 p;
 	char srb2[82]; // srb2 title banner
 	char title[82];
-	lumpinfo_t *lumpinfo;
-	UINT16 wadnum;
-	char *name;
 
 	INT32 pstartmap = 1;
 	boolean autostart = false;
@@ -1678,9 +1694,7 @@ void D_SRB2Main(void)
 
 #if defined (__OS2__) && !defined (HAVE_SDL)
 	// set PM window title
-	snprintf(pmData->title, sizeof (pmData->title),
-		"SRB2Kart" VERSIONSTRING ": %s",
-		title);
+	snprintf(pmData->title, sizeof (pmData->title), "SRB2Kart" VERSIONSTRING ": %s", title);
 	pmData->title[sizeof (pmData->title) - 1] = '\0';
 #endif
 
@@ -1854,60 +1868,14 @@ void D_SRB2Main(void)
 	// conversion sometimes needs the palette
 	V_ReloadPalette();
 
-	//
-	// search for maps
-	//
-	for (wadnum = 0; wadnum < mainwads; wadnum++)
-	{
-		lumpinfo = wadfiles[wadnum]->lumpinfo;
-		for (i = 0; i < wadfiles[wadnum]->numlumps; i++, lumpinfo++)
-		{
-			name = lumpinfo->name;
-
-			if (memcmp(name, "MAP", 3) == 0 && name[5] == '\0') // Ignore the headers
-			{
-				INT16 num = (INT16)M_MapNumber(name[3], name[4]);
-
-				// we want to record whether this map exists. if it doesn't have a header, we can assume it's not relephant
-				if (num <= NUMMAPS && mapheaderinfo[num - 1])
-				{
-					mapheaderinfo[num - 1]->menuflags |= LF2_EXISTSHACK;
-				}
-			}
-		}
-	}
+	D_CheckMaps(false);
 
 	W_InitMultipleFiles(startuppwads, true);
 
 	// Only search for pwad maps if we actually have a pwad added
 	if (startuppwads[0] != NULL)
 	{
-		//
-		// search for maps... again.
-		//
-		for (wadnum = mainwads+1; wadnum < numwadfiles; wadnum++)
-		{
-			lumpinfo = wadfiles[wadnum]->lumpinfo;
-			for (i = 0; i < wadfiles[wadnum]->numlumps; i++, lumpinfo++)
-			{
-				name = lumpinfo->name;
-
-				if (memcmp(name, "MAP", 3) == 0 && name[5] == '\0') // Ignore the headers
-				{
-					INT16 num = (INT16)M_MapNumber(name[3], name[4]);
-
-					// we want to record whether this map exists. if it doesn't have a header, we can assume it's not relephant
-					if (num <= NUMMAPS && mapheaderinfo[num - 1])
-					{
-						if (mapheaderinfo[num - 1]->menuflags & LF2_EXISTSHACK)
-							G_SetGameModified(multiplayer, true); // oops, double-defined - no record attack privileges for you
-						mapheaderinfo[num - 1]->menuflags |= LF2_EXISTSHACK;
-					}
-
-					CONS_Printf("%s\n", name);
-				}
-			}
-		}
+		D_CheckMaps(true);
 	}
 
 	D_CleanFile(startuppwads);

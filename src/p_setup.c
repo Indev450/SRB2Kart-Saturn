@@ -3043,33 +3043,33 @@ static boolean P_CheckSoundReplacements(UINT16 wadnum, char *name, size_t i)
 
 	return false;
 }
-
 //
-// search for maps
+// P_CheckReplacMapReplacements
 //
-static boolean P_CheckMapReplacements(char *name)
+// search for maps and check if they replace another map when checkreplaced is set
+//
+boolean P_CheckMapReplacements(char *name, boolean checkreplaced)
 {
-	if (memcmp(name, "MAP", 3) == 0) // Ignore the headers
+	if (memcmp(name, "MAP", 3) == 0 && name[5] == '\0') // Ignore the headers
 	{
-		INT16 num;
-
-		if (name[5] != '\0')
-			return false;
-
-		num = (INT16)M_MapNumber(name[3], name[4]);
+		INT16 num = (INT16)M_MapNumber(name[3], name[4]);
 
 		// we want to record whether this map exists. if it doesn't have a header, we can assume it's not relephant
 		if (num <= NUMMAPS && mapheaderinfo[num-1])
 		{
-			if (mapheaderinfo[num-1]->menuflags & LF2_EXISTSHACK)
+			if (checkreplaced && mapheaderinfo[num-1]->menuflags & LF2_EXISTSHACK)
 				G_SetGameModified(multiplayer, true); // oops, double-defined - no record attack privileges for you
 			mapheaderinfo[num-1]->menuflags |= LF2_EXISTSHACK;
 		}
 
-		if (num == gamemap)
-			partadd_replacescurrentmap = true;
+		if (checkreplaced)
+		{
+			if (num == gamemap)
+				partadd_replacescurrentmap = true;
 
-		CONS_Printf("%s\n", name);
+			CONS_Printf("%s\n", name);
+		}
+
 		return true;
 	}
 
@@ -3153,7 +3153,7 @@ UINT16 P_PartialAddWadFile(const char *wadfilename, boolean local)
 		if (P_CheckSoundReplacements(wadnum, name, i))
 			continue;
 
-		if (P_CheckMapReplacements(name))
+		if (P_CheckMapReplacements(name, true))
 		{
 			mapsadded = true;
 			continue;
