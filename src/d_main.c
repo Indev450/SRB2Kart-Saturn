@@ -1864,12 +1864,9 @@ void D_SRB2Main(void)
 		{
 			name = lumpinfo->name;
 
-			if (memcmp(name, "MAP", 3) == 0) // Ignore the headers
+			if (memcmp(name, "MAP", 3) == 0 && name[5] == '\0') // Ignore the headers
 			{
-				INT16 num;
-				if (name[5] != '\0')
-					continue;
-				num = (INT16)M_MapNumber(name[3], name[4]);
+				INT16 num = (INT16)M_MapNumber(name[3], name[4]);
 
 				// we want to record whether this map exists. if it doesn't have a header, we can assume it's not relephant
 				if (num <= NUMMAPS && mapheaderinfo[num - 1])
@@ -1895,12 +1892,9 @@ void D_SRB2Main(void)
 			{
 				name = lumpinfo->name;
 
-				if (memcmp(name, "MAP", 3) == 0) // Ignore the headers
+				if (memcmp(name, "MAP", 3) == 0 && name[5] == '\0') // Ignore the headers
 				{
-					INT16 num;
-					if (name[5] != '\0')
-						continue;
-					num = (INT16)M_MapNumber(name[3], name[4]);
+					INT16 num = (INT16)M_MapNumber(name[3], name[4]);
 
 					// we want to record whether this map exists. if it doesn't have a header, we can assume it's not relephant
 					if (num <= NUMMAPS && mapheaderinfo[num - 1])
