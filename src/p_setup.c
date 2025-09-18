@@ -2634,26 +2634,20 @@ static void P_SetupPlayer(void)
 	thwompsactive = false;
 	spbplace = -1;
 
-	startedInFreePlay = false;
+	startedInFreePlay = true;
+	for (UINT8 nump = 0, i = 0; i < MAXPLAYERS; i++)
 	{
-		UINT8 nump = 0;
-		for (i = 0; i < MAXPLAYERS; i++)
+		if (!playeringame[i] || players[i].spectator)
 		{
-			if (!playeringame[i] || players[i].spectator)
-			{
-				continue;
-			}
-
-			nump++;
-			if (nump == 2)
-			{
-				break;
-			}
+			continue;
 		}
 
-		if (nump <= 1)
+		nump++;
+
+		if (nump > 1)
 		{
-			startedInFreePlay = true;
+			startedInFreePlay = false;
+			break;
 		}
 	}
 }
