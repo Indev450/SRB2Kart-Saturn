@@ -1240,7 +1240,7 @@ void R_SetupFrame(UINT8 pnum, boolean skybox)
 		thiscam->reset = false;
 	}
 
-	if (player->spectator)
+	if (player->spectator || thiscam->freecam)
 	{
 		// Free flying spectator uses demo freecam. This
 		// requires chasecam to be enabled.
