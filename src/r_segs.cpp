@@ -1244,13 +1244,13 @@ static void R_RenderSegLoop(drawcolumndata_t* dc)
 
 			for (i = 0; i < numffloors; i++)
 			{
-				if (ffloor[i].polyobj && (!curline->polyseg || ffloor[i].polyobj != curline->polyseg))
+				if (visffloor[i].polyobj && (!curline->polyseg || visffloor[i].polyobj != curline->polyseg))
 					continue;
 
-				if (ffloor[i].height < viewz)
+				if (visffloor[i].height < viewz)
 				{
-					INT32 top_w = (ffloor[i].f_frac >> HEIGHTBITS) + 1;
-					INT32 bottom_w = ffloor[i].f_clip[rw_x];
+					INT32 top_w = (visffloor[i].f_frac >> HEIGHTBITS) + 1;
+					INT32 bottom_w = visffloor[i].f_clip[rw_x];
 
 					if (top_w < top)
 						top_w = top;
@@ -1259,22 +1259,22 @@ static void R_RenderSegLoop(drawcolumndata_t* dc)
 						bottom_w = bottom;
 
 					// Polyobject-specific hack to fix plane leaking -Red
-					if (ffloor[i].polyobj && top_w >= bottom_w)
+					if (visffloor[i].polyobj && top_w >= bottom_w)
 					{
-						ffloor[i].plane->top[rw_x] = 0xFFFF;
-						ffloor[i].plane->bottom[rw_x] = 0x0000; // fix for sky plane drawing crashes - Monster Iestyn 25/05/18
+						visffloor[i].plane->top[rw_x] = 0xFFFF;
+						visffloor[i].plane->bottom[rw_x] = 0x0000; // fix for sky plane drawing crashes - Monster Iestyn 25/05/18
 					}
 					else if (top_w <= bottom_w)
 					{
 						fftop = (INT16)top_w;
 						ffbottom = (INT16)bottom_w;
 
-						ffloor[i].plane->top[rw_x] = fftop;
-						ffloor[i].plane->bottom[rw_x] = ffbottom;
+						visffloor[i].plane->top[rw_x] = fftop;
+						visffloor[i].plane->bottom[rw_x] = ffbottom;
 
 						// Lactozilla: Cull part of the column by the 3D floor if it can't be seen
 						// "bottom" is the top pixel of the floor column
-						if (ffbottom >= bottom-1 && R_FFloorCanClip(&ffloor[i]) && !curline->polyseg)
+						if (ffbottom >= bottom-1 && R_FFloorCanClip(&visffloor[i]) && !curline->polyseg)
 						{
 							rw_floormarked = true;
 							floorclip[rw_x] = fftop;
@@ -1293,10 +1293,10 @@ static void R_RenderSegLoop(drawcolumndata_t* dc)
 						}
 					}
 				}
-				else if (ffloor[i].height > viewz)
+				else if (visffloor[i].height > viewz)
 				{
-					INT32 top_w = ffloor[i].c_clip[rw_x] + 1;
-					INT32 bottom_w = (ffloor[i].f_frac >> HEIGHTBITS);
+					INT32 top_w = visffloor[i].c_clip[rw_x] + 1;
+					INT32 bottom_w = (visffloor[i].f_frac >> HEIGHTBITS);
 
 					if (top_w < top)
 						top_w = top;
@@ -1305,22 +1305,22 @@ static void R_RenderSegLoop(drawcolumndata_t* dc)
 						bottom_w = bottom;
 
 					// Polyobject-specific hack to fix plane leaking -Red
-					if (ffloor[i].polyobj && top_w >= bottom_w)
+					if (visffloor[i].polyobj && top_w >= bottom_w)
 					{
-						ffloor[i].plane->top[rw_x] = 0xFFFF;
-						ffloor[i].plane->bottom[rw_x] = 0x0000; // fix for sky plane drawing crashes - Monster Iestyn 25/05/18
+						visffloor[i].plane->top[rw_x] = 0xFFFF;
+						visffloor[i].plane->bottom[rw_x] = 0x0000; // fix for sky plane drawing crashes - Monster Iestyn 25/05/18
 					}
 					else if (top_w <= bottom_w)
 					{
 						fftop = (INT16)top_w;
 						ffbottom = (INT16)bottom_w;
 
-						ffloor[i].plane->top[rw_x] = fftop;
-						ffloor[i].plane->bottom[rw_x] = ffbottom;
+						visffloor[i].plane->top[rw_x] = fftop;
+						visffloor[i].plane->bottom[rw_x] = ffbottom;
 
 						// Lactozilla: Cull part of the column by the 3D floor if it can't be seen
 						// "top" is the height of the ceiling column
-						if (fftop <= top+1 && R_FFloorCanClip(&ffloor[i]) && !curline->polyseg)
+						if (fftop <= top+1 && R_FFloorCanClip(&visffloor[i]) && !curline->polyseg)
 						{
 							rw_ceilingmarked = true;
 							ceilingclip[rw_x] = ffbottom;
@@ -1538,19 +1538,19 @@ static void R_RenderSegLoop(drawcolumndata_t* dc)
 
 		for (i = 0; i < numffloors; i++)
 		{
-			if (curline->polyseg && (ffloor[i].polyobj != curline->polyseg))
+			if (curline->polyseg && (visffloor[i].polyobj != curline->polyseg))
 				continue;
 
-			ffloor[i].f_frac += ffloor[i].f_step;
+			visffloor[i].f_frac += visffloor[i].f_step;
 		}
 
 		for (i = 0; i < numbackffloors; i++)
 		{
-			if (curline->polyseg && (ffloor[i].polyobj != curline->polyseg))
+			if (curline->polyseg && (visffloor[i].polyobj != curline->polyseg))
 				continue;
 
-			ffloor[i].f_clip[rw_x] = ffloor[i].c_clip[rw_x] = (INT16)((ffloor[i].b_frac >> HEIGHTBITS) & 0xFFFF);
-			ffloor[i].b_frac += ffloor[i].b_step;
+			visffloor[i].f_clip[rw_x] = visffloor[i].c_clip[rw_x] = (INT16)((visffloor[i].b_frac >> HEIGHTBITS) & 0xFFFF);
+			visffloor[i].b_frac += visffloor[i].b_step;
 		}
 
 		rw_scale += rw_scalestep;
@@ -1881,11 +1881,11 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 	{
 		for (i = 0; i < numffloors; i++)
 		{
-			if (ffloor[i].polyobj && (!ds_p->curline->polyseg || ffloor[i].polyobj != ds_p->curline->polyseg))
+			if (visffloor[i].polyobj && (!ds_p->curline->polyseg || visffloor[i].polyobj != ds_p->curline->polyseg))
 				continue;
 
-			ffloor[i].f_pos       = P_GetZAt(ffloor[i].slope, segleft .x, segleft .y, ffloor[i].height) - viewz;
-			ffloor[i].f_pos_slope = P_GetZAt(ffloor[i].slope, segright.x, segright.y, ffloor[i].height) - viewz;
+			visffloor[i].f_pos       = P_GetZAt(visffloor[i].slope, segleft .x, segleft .y, visffloor[i].height) - viewz;
+			visffloor[i].f_pos_slope = P_GetZAt(visffloor[i].slope, segright.x, segright.y, visffloor[i].height) - viewz;
 		}
 	}
 
@@ -2630,19 +2630,19 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 	{
 		for (i = 0; i < numffloors; i++)
 		{
-			ffloor[i].f_pos >>= 4;
-			ffloor[i].f_pos_slope >>= 4;
+			visffloor[i].f_pos >>= 4;
+			visffloor[i].f_pos_slope >>= 4;
 
 			if (linedef->special == HORIZONSPECIAL) // Horizon lines extend FOFs in contact with them too.
 			{
-				ffloor[i].f_step = 0;
-				ffloor[i].f_frac = (centeryfrac>>4);
+				visffloor[i].f_step = 0;
+				visffloor[i].f_frac = (centeryfrac>>4);
 				topfrac++; // Prevent 1px HOM
 			}
 			else
 			{
-				ffloor[i].f_frac = (centeryfrac>>4) - FixedMul(ffloor[i].f_pos, rw_scale);
-				ffloor[i].f_step = ((centeryfrac>>4) - FixedMul(ffloor[i].f_pos_slope, ds_p->scale2) - ffloor[i].f_frac)/(range);
+				visffloor[i].f_frac = (centeryfrac>>4) - FixedMul(visffloor[i].f_pos, rw_scale);
+				visffloor[i].f_step = ((centeryfrac>>4) - FixedMul(visffloor[i].f_pos_slope, ds_p->scale2) - visffloor[i].f_frac)/(range);
 			}
 		}
 	}
@@ -2686,14 +2686,14 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 
 			auto setup_back_fof = [&]
 			{
-				//ffloor[i].slope = *rover->b_slope;
-				ffloor[i].b_pos = roverleft;
-				ffloor[i].b_pos_slope = roverright;
-				ffloor[i].b_pos >>= 4;
-				ffloor[i].b_pos_slope >>= 4;
-				ffloor[i].b_frac = (centeryfrac >> 4) - FixedMul(ffloor[i].b_pos, rw_scale);
-				ffloor[i].b_step = (centeryfrac >> 4) - FixedMul(ffloor[i].b_pos_slope, ds_p->scale2);
-				ffloor[i].b_step = (ffloor[i].b_step-ffloor[i].b_frac)/(range);
+				//visffloor[i].slope = *rover->b_slope;
+				visffloor[i].b_pos = roverleft;
+				visffloor[i].b_pos_slope = roverright;
+				visffloor[i].b_pos >>= 4;
+				visffloor[i].b_pos_slope >>= 4;
+				visffloor[i].b_frac = (centeryfrac >> 4) - FixedMul(visffloor[i].b_pos, rw_scale);
+				visffloor[i].b_step = (centeryfrac >> 4) - FixedMul(visffloor[i].b_pos_slope, ds_p->scale2);
+				visffloor[i].b_step = (visffloor[i].b_step-visffloor[i].b_frac)/(range);
 			};
 
 			if (backsector->ffloors)
@@ -2788,20 +2788,20 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 			{
 				auto setup_back_polyobj = [&](fixed_t height)
 				{
-					if (ffloor[i].plane->minx > ds_p->x1)
-						ffloor[i].plane->minx = ds_p->x1;
+					if (visffloor[i].plane->minx > ds_p->x1)
+						visffloor[i].plane->minx = ds_p->x1;
 
-					if (ffloor[i].plane->maxx < ds_p->x2)
-						ffloor[i].plane->maxx = ds_p->x2;
+					if (visffloor[i].plane->maxx < ds_p->x2)
+						visffloor[i].plane->maxx = ds_p->x2;
 
-					ffloor[i].slope = NULL;
-					ffloor[i].b_pos = height;
-					ffloor[i].b_pos = (ffloor[i].b_pos - viewz) >> 4;
-					ffloor[i].b_step = FixedMul(-rw_scalestep, ffloor[i].b_pos);
-					ffloor[i].b_frac = (centeryfrac >> 4) - FixedMul(ffloor[i].b_pos, rw_scale);
+					visffloor[i].slope = NULL;
+					visffloor[i].b_pos = height;
+					visffloor[i].b_pos = (visffloor[i].b_pos - viewz) >> 4;
+					visffloor[i].b_step = FixedMul(-rw_scalestep, visffloor[i].b_pos);
+					visffloor[i].b_frac = (centeryfrac >> 4) - FixedMul(visffloor[i].b_pos, rw_scale);
 				};
 
-				while (i < numffloors && ffloor[i].polyobj != curline->polyseg)
+				while (i < numffloors && visffloor[i].polyobj != curline->polyseg)
 					i++;
 
 				if (i < numffloors && backsector->floorheight <= frontsector->ceilingheight &&
@@ -2862,8 +2862,8 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 
 			for (i = 0; i < numffloors; i++)
 			{
-				ds_p->ffloorplanes[i] = ffloor[i].plane =
-					R_CheckPlane(ffloor[i].plane, rw_x, rw_stopx - 1);
+				ds_p->ffloorplanes[i] = visffloor[i].plane =
+					R_CheckPlane(visffloor[i].plane, rw_x, rw_stopx - 1);
 			}
 
 			firstseg = ds_p;
@@ -2871,7 +2871,7 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 		else
 		{
 			for (i = 0; i < numffloors; i++)
-				R_ExpandPlane(ffloor[i].plane, rw_x, rw_stopx - 1);
+				R_ExpandPlane(visffloor[i].plane, rw_x, rw_stopx - 1);
 		}
 
 		// FIXME hack to fix planes disappearing when a seg goes behind the camera. This NEEDS to be changed to be done properly. -Red
@@ -2879,13 +2879,14 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 		{
 			for (i = 0; i < numffloors; i++)
 			{
-				if (!ffloor[i].polyobj || ffloor[i].polyobj != curline->polyseg)
+				if (!visffloor[i].polyobj || visffloor[i].polyobj != curline->polyseg)
 					continue;
-				if (ffloor[i].plane->minx > rw_x)
-					ffloor[i].plane->minx = rw_x;
 
-				if (ffloor[i].plane->maxx < rw_stopx - 1)
-					ffloor[i].plane->maxx = rw_stopx - 1;
+				if (visffloor[i].plane->minx > rw_x)
+					visffloor[i].plane->minx = rw_x;
+
+				if (visffloor[i].plane->maxx < rw_stopx - 1)
+					visffloor[i].plane->maxx = rw_stopx - 1;
 			}
 		}
 
