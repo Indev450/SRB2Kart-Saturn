@@ -322,9 +322,6 @@ void R_LoadSpriteInfoLumps(UINT16 wadnum, UINT16 numlumps)
 	}
 }
 
-
-static unsigned char imgbuf[1<<26];
-
 //
 // Creates a patch.
 // Assumes a PU_PATCH zone memory tag and no user, but can always be set later
@@ -451,6 +448,8 @@ void *Patch_CreateGL(patch_t *patch)
 }
 #endif // HWRENDER
 
+static UINT8 *imgbuf = NULL;
+
 //
 // R_MaskedFlatToPatch
 //
@@ -460,12 +459,16 @@ void *R_PixelsToPatch(UINT8 *raw, INT16 width, INT16 height, INT16 leftoffset, I
 {
 	INT16 x, y;
 	UINT8 *img;
-	UINT8 *imgptr = imgbuf;
 	UINT8 *colpointers, *startofspan;
 	size_t size = 0;
 
 	if (!raw)
 		return NULL;
+
+	if (!imgbuf)
+		imgbuf = Z_Malloc(1<<26, PU_STATIC, NULL);
+
+	UINT8 *imgptr = imgbuf;
 
 	// Write image size and offset
 	WRITEINT16(imgptr, width);
@@ -580,12 +583,16 @@ void *R_MaskedFlatToPatch(UINT16 *raw, INT16 width, INT16 height, INT16 leftoffs
 {
 	INT16 x, y;
 	UINT8 *img;
-	UINT8 *imgptr = imgbuf;
 	UINT8 *colpointers, *startofspan;
 	size_t size = 0;
 
 	if (!raw)
 		return NULL;
+
+	if (!imgbuf)
+		imgbuf = Z_Malloc(1<<26, PU_STATIC, NULL);
+
+	UINT8 *imgptr = imgbuf;
 
 	// Write image size and offset
 	WRITEINT16(imgptr, width);
