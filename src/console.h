@@ -10,6 +10,9 @@
 /// \file  console.h
 /// \brief Console drawing and input
 
+#ifndef __CONSOLE__
+#define __CONSOLE__
+
 #include "d_event.h"
 #include "command.h"
 #include "i_threads.h"
@@ -62,3 +65,5 @@ void CON_ToggleOff(void);
 boolean CON_Ready(void);
 
 void CON_LogMessage(const char *msg);
+
+#endif

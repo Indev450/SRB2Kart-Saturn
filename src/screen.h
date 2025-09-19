@@ -93,7 +93,6 @@ extern consvar_t cv_paralleldrawmasked;
 extern consvar_t cv_highreshudscale;
 // wait for page flipping to end or not
 extern consvar_t cv_vidwait;
-extern consvar_t cv_timescale;
 
 extern consvar_t cv_votebgscaling;
 
