@@ -99,10 +99,11 @@ static int lib_chatprint(lua_State *L)
 {
 	const char *str = luaL_checkstring(L, 1);	// retrieve string
 	boolean sound = lua_optboolean(L, 2);	// retrieve sound boolean
-	int len = strlen(str);
 
 	if (str == NULL)	// error if we don't have a string!
 		return luaL_error(L, LUA_QL("tostring") " must return a string to " LUA_QL("chatprint"));
+
+	int len = strlen(str);
 
 	if (len > 255)	// string is too long!!!
 		return luaL_error(L, "String exceeds the 255 characters limit of the chat buffer.");
@@ -117,7 +118,6 @@ static int lib_chatprintf(lua_State *L)
 	int n = lua_gettop(L);  /* number of arguments */
 	const char *str = luaL_checkstring(L, 2);	// retrieve string
 	boolean sound = lua_optboolean(L, 3);	// sound?
-	int len = strlen(str);
 	player_t *plr;
 
 	if (n < 2)
@@ -132,6 +132,8 @@ static int lib_chatprintf(lua_State *L)
 
 	if (str == NULL)	// error if we don't have a string!
 		return luaL_error(L, LUA_QL("tostring") " must return a string to " LUA_QL("chatprintf"));
+
+	int len = strlen(str);
 
 	if (len > 255)	// string is too long!!!
 		return luaL_error(L, "String exceeds the 255 characters limit of the chat buffer.");
