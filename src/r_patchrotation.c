@@ -39,9 +39,9 @@ INT32 R_GetRollAngle(angle_t rollangle)
 angle_t R_RotationAngle(angle_t ang, angle_t camang, interpmobjstate_t *interp)
 {
 	return FixedMul(FINECOSINE((ang) >> ANGLETOFINESHIFT), interp->roll) +
-	FixedMul(FINESINE((ang) >> ANGLETOFINESHIFT), interp->pitch) +
-	FixedMul(FINECOSINE((camang) >> ANGLETOFINESHIFT), interp->sloperoll) +
-	FixedMul(FINESINE((camang) >> ANGLETOFINESHIFT), interp->slopepitch);
+		   FixedMul(FINESINE((ang) >> ANGLETOFINESHIFT), interp->pitch) +
+		   FixedMul(FINECOSINE((camang) >> ANGLETOFINESHIFT), interp->sloperoll) +
+		   FixedMul(FINESINE((camang) >> ANGLETOFINESHIFT), interp->slopepitch);
 }
 
 patch_t *Patch_GetRotatedSprite(spriteframe_t *sprite, size_t frame, size_t spriteangle, boolean flip, void *info, INT32 rotationangle)
@@ -73,7 +73,7 @@ patch_t *Patch_GetRotatedSprite(spriteframe_t *sprite, size_t frame, size_t spri
 		if (lump == LUMPERROR)
 			return NULL;
 
-		patch = W_CachePatchNum(lump, PU_SPRITE);
+		patch = (patch_t *)W_CachePatchNum(lump, PU_SPRITE);
 
 		if (sprinfo->available)
 		{
@@ -127,8 +127,10 @@ void RotatedPatch_DoRotation(rotsprite_t *rotsprite, patch_t *patch, INT32 angle
 	UINT32 i;
 	patch_t *rotated;
 
-	UINT16 *rawdst, *rawconv;
+	static UINT16 *rawdst = NULL, *rawconv = NULL;
+	UINT16 *rawout;
 	size_t size;
+	static size_t dst_capacity = 0, conv_capacity = 0;
 	INT32 bflip = (flip != 0x00);
 
 	INT32 width = patch->width;
@@ -181,7 +183,14 @@ void RotatedPatch_DoRotation(rotsprite_t *rotsprite, patch_t *patch, INT32 angle
 	size = (newwidth * newheight);
 	if (!size)
 		size = (width * height);
-	rawdst = Z_Malloc(size * sizeof(UINT16), PU_STATIC, NULL);
+
+	if (size > dst_capacity)
+	{
+		// no realloc since we dont care about the old data
+		Z_Free(rawdst);
+		rawdst = Z_Malloc(size * sizeof(UINT16), PU_STATIC, NULL);
+		dst_capacity = size;
+	}
 
 	for (i = 0; i < size; i++)
 		rawdst[i] = 0xFF00;
@@ -224,7 +233,14 @@ void RotatedPatch_DoRotation(rotsprite_t *rotsprite, patch_t *patch, INT32 angle
 		UINT16 *src, *dest;
 
 		size = (width * height);
-		rawconv = Z_Calloc(size * sizeof(UINT16), PU_STATIC, NULL);
+
+		if (size > conv_capacity)
+		{
+			// no realloc since we dont care about the old data
+			Z_Free(rawconv);
+			rawconv = Z_Calloc(size * sizeof(UINT16), PU_STATIC, NULL);
+			conv_capacity = size;
+		}
 
 		src = &rawdst[(miny * newwidth) + minx];
 		dest = rawconv;
@@ -240,21 +256,21 @@ void RotatedPatch_DoRotation(rotsprite_t *rotsprite, patch_t *patch, INT32 angle
 		ox -= minx;
 		oy -= miny;
 
-		Z_Free(rawdst);
+		rawout = rawconv;
 	}
 	else
 	{
-		rawconv = rawdst;
 		width = newwidth;
 		height = newheight;
+
+		rawout = rawdst;
 	}
 
 	// make patch
-	rotated = (patch_t *)R_MaskedFlatToPatch(rawconv, width, height, 0, 0, &size);
+	rotated = (patch_t *)R_MaskedFlatToPatch(rawout, width, height, 0, 0, &size);
 
 	Z_ChangeTag(rotated, PU_PATCH_ROTATED);
 	Z_SetUser(rotated, (void **)(&rotsprite->patches[idx]));
-	Z_Free(rawconv);
 
 	rotated->leftoffset = ox;
 	rotated->topoffset = oy;
