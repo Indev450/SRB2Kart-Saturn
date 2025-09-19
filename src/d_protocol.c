@@ -60,7 +60,7 @@ static boolean RegisterProtocols(const char *path)
 	HKEY hKey = OpenKey(HKEY_CURRENT_USER,"Software\\Classes\\srb2kart");
 	SetStringValue(hKey, "URL Protocol", "");
 	RegCloseKey(hKey);
-	hKey = OpenKey(HKEY_CURRENT_USER,"Software\\Classes\\srb2kart\\shell\\open\\command");	
+	hKey = OpenKey(HKEY_CURRENT_USER,"Software\\Classes\\srb2kart\\shell\\open\\command");
 	SetStringValue(hKey, "", va("\"%s\" \"%%1\"", path));
 	RegCloseKey(hKey);
 #elif defined (__unix__) || defined (UNIXCOMMON)
@@ -76,12 +76,12 @@ static boolean RegisterProtocols(const char *path)
 
 	if (system("which update-desktop-database > /dev/null 2>&1"))
 	{
-		// command not found, probably doesn't have freedesktop, so let's ignore		
+		// command not found, probably doesn't have freedesktop, so let's ignore
 		CONS_Alert(CONS_ERROR, "Unable to register protocols. Your system doesn't seem to have freedesktop.\n");
 		return false;
 	}
 
-	if (stat(applicationsfolder, &sb) == -1) 
+	if (stat(applicationsfolder, &sb) == -1)
 	{
 		// location doesn't exist, so let's actually create it
 		newfolder = true;
@@ -119,12 +119,13 @@ static boolean RegisterProtocols(const char *path)
 
 	if (!alreadyexists)
 		fprintf(mimefile, "x-scheme-handler/srb2kart=srb2kart-handler.desktop;\n");
-	
+
 	if (newfolder)
 	{
 		if (system(va("update-desktop-database %s/.local/share/applications/", homedir)) == -1)
 		{
 			CONS_Alert(CONS_ERROR, "Unable to register protocols. Could not run call to run update-desktop-database sucessfully.\n");
+			fclose(mimefile);
 			return false;
 		}
 	}
@@ -206,7 +207,7 @@ void D_SetupProtocol(void)
 
 	fp = fopen(protocolfile, "a+");
 	result = fgets(buffer, PATH_MAX, fp);
-	if (result) 
+	if (result)
 	{
 		if (strcmp(buffer, "no") == 0)
         {
