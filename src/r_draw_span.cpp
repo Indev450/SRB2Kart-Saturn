@@ -343,7 +343,7 @@ static void R_DrawTiltedSpanTemplate(drawspandata_t* ds)
 		}
 		else
 		{
-			double left = width;
+			float left = width;
 			iz += ds->szp.x * left;
 			uz += ds->sup.x * left;
 			vz += ds->svp.x * left;

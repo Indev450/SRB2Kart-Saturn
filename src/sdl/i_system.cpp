@@ -357,7 +357,6 @@ static void write_backtrace(bt_crash_reason_t reason)
 	buf.pos = backtrace;
 	buf.size = BUFSIZE;
 
-
 	if (!out)
 	{
 		fprintf(stderr, "\nWARNING: Couldn't open crash log for writing! Make sure your permissions are correct. Please save the below report!\n");

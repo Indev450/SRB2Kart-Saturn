@@ -194,8 +194,9 @@ static void GL_MSG_Warning(const char *format, ...)
 	CONS_Alert(CONS_WARNING, "%s", str);
 #endif
 #ifdef DEBUG_TO_FILE
-		if (!gllogstream)
+	if (!gllogstream)
 		gllogstream = fopen("ogllog.txt", "w");
+
 	fwrite(str, strlen(str), 1, gllogstream);
 #endif
 }
@@ -2826,7 +2827,7 @@ void GL_DrawModelEx(model_t *model, INT32 frameIndex, float duration, float tics
 	scaley = vscale;
 	scalez = hscale;
 
-	if (duration > 0.0 && tics >= 0.0) // don't interpolate if instantaneous or infinite in length
+	if (duration > 0.0f && tics >= 0.0f) // don't interpolate if instantaneous or infinite in length
 	{
 		float newtime = (duration - tics); // + 1;
 
@@ -3363,10 +3364,10 @@ void GL_RenderVhsEffect(fixed_t upbary, fixed_t downbary, UINT8 updistort, UINT8
 		fix[6] = fix[0] + xfix;
 		fix[4] = fix[2] + xfix;
 		fix[1] = fix[7] = i*yfix;
-		fix[3] = fix[5] = (i+0.015)*yfix;
+		fix[3] = fix[5] = (i+0.015f)*yfix;
 
 		screenVerts[1] = screenVerts[10] = 2*i - 1.0f;
-		screenVerts[4] = screenVerts[7] = screenVerts[1] + 0.03;
+		screenVerts[4] = screenVerts[7] = screenVerts[1] + 0.03f;
 
 		pglColor4ubv(color);
 

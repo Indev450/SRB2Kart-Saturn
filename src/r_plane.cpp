@@ -411,8 +411,8 @@ visplane_t *R_FindPlane(fixed_t height, INT32 picnum, INT32 lightlevel,
 			float x = vx / (float)FRACUNIT;
 			float y = vy / (float)FRACUNIT;
 
-			vx = (x * cos(ang) + y * sin(ang)) * FRACUNIT;
-			vy = (-x * sin(ang) + y * cos(ang)) * FRACUNIT;
+			vx = (x * cosf(ang) + y * sinf(ang)) * FRACUNIT;
+			vy = (-x * sinf(ang) + y * cosf(ang)) * FRACUNIT;
 
 			xoff = vx;
 			yoff = vy;
@@ -431,8 +431,8 @@ visplane_t *R_FindPlane(fixed_t height, INT32 picnum, INT32 lightlevel,
 			float ang = ANG2RAD(polyobj->angle);
 			float x = FixedToFloat(polyobj->centerPt.x);
 			float y = FixedToFloat(polyobj->centerPt.y);
-			xoff -= FloatToFixed(x * cos(ang) + y * sin(ang));
-			yoff -= FloatToFixed(x * sin(ang) - y * cos(ang));
+			xoff -= FloatToFixed(x * cosf(ang) + y * sinf(ang));
+			yoff -= FloatToFixed(x * sinf(ang) - y * cosf(ang));
 		}
 		else
 		{
@@ -914,8 +914,8 @@ static void R_SetSlopePlaneOrigin(drawspandata_t *ds, pslope_t *slope, fixed_t x
 	// p is the texture origin in view space
 	// Don't add in the offsets at this stage, because doing so can result in
 	// errors if the flat is rotated.
-	p->x = vxf * cos(ang) - vyf * sin(ang);
-	p->z = vxf * sin(ang) + vyf * cos(ang);
+	p->x = vxf * cosf(ang) - vyf * sinf(ang);
+	p->z = vxf * sinf(ang) + vyf * cosf(ang);
 	p->y = (R_GetSlopeZAt(slope, -xoff, yoff) - zpos) / (float)FRACUNIT;
 }
 

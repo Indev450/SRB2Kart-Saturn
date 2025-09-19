@@ -107,22 +107,22 @@ static boolean InitCube(void)
 	{
 		{
 			{
-				{0.0, 0.0, 0.0}, // black corner
-				{0.0, 0.0, 1.0}  // blue corner
+				{0.0f, 0.0f, 0.0f}, // black corner
+				{0.0f, 0.0f, 1.0f}  // blue corner
 			},
 			{
-				{0.0, 1.0, 0.0}, // green corner
-				{0.0, 1.0, 1.0}  // cyan corner
+				{0.0f, 1.0f, 0.0f}, // green corner
+				{0.0f, 1.0f, 1.0f}  // cyan corner
 			}
 		},
 		{
 			{
-				{1.0, 0.0, 0.0}, // red corner
-				{1.0, 0.0, 1.0}  // magenta corner
+				{1.0f, 0.0f, 0.0f}, // red corner
+				{1.0f, 0.0f, 1.0f}  // magenta corner
 			},
 			{
-				{1.0, 1.0, 0.0}, // yellow corner
-				{1.0, 1.0, 1.0}  // white corner
+				{1.0f, 1.0f, 0.0f}, // yellow corner
+				{1.0f, 1.0f, 1.0f}  // white corner
 			}
 		}
 	};
@@ -145,9 +145,9 @@ static boolean InitCube(void)
 #endif
 
 #define gammascale 8
-	globalgammamul = (cv_globalgamma.value ? ((255 - (gammascale*abs(cv_globalgamma.value)))/255.0) : 1.0);
-	globalgammaoffs = ((cv_globalgamma.value > 0) ? ((gammascale*cv_globalgamma.value)/255.0) : 0.0);
-	desatur[0] = desatur[1] = desatur[2] = globalgammaoffs + (0.33*globalgammamul);
+	globalgammamul = (cv_globalgamma.value ? ((255.0f - (gammascale*abs(cv_globalgamma.value))) / 255.0f) : 1.0f);
+	globalgammaoffs = ((cv_globalgamma.value > 0) ? ((gammascale*cv_globalgamma.value) / 255.0f) : 0.0f);
+	desatur[0] = desatur[1] = desatur[2] = globalgammaoffs + (0.33f * globalgammamul);
 
 	if (doinggamma
 		|| diffcons(cv_rhue)
@@ -171,8 +171,8 @@ static boolean InitCube(void)
 		working[1][1][1][0] = working[1][1][1][1] = working[1][1][1][2] = globalgammaoffs+globalgammamul;
 
 #define dohue(hue, gamma, loc) \
-		tempgammamul = (gamma ? ((255 - (gammascale*abs(gamma)))/255.0)*globalgammamul : globalgammamul);\
-		tempgammaoffs = ((gamma > 0) ? ((gammascale*gamma)/255.0) + globalgammaoffs : globalgammaoffs);\
+		tempgammamul = (gamma ? ((255.0f - (gammascale*abs(gamma)))/255.0f)*globalgammamul : globalgammamul);\
+		tempgammaoffs = ((gamma > 0) ? ((gammascale*gamma)/255.0f) + globalgammaoffs : globalgammaoffs);\
 		mod = ((hue % huecoloursteps)*(tempgammamul)/huecoloursteps);\
 		switch (hue/huecoloursteps)\
 		{\
@@ -223,14 +223,14 @@ static boolean InitCube(void)
 	{\
 		float work, mod, tempgammamul, tempgammaoffs;\
 		apply = true;\
-		work = (cv_sat.value/10.0);\
-		mod = ((hue % huecoloursteps)*(1.0)/huecoloursteps);\
+		work = (cv_sat.value/10.0f);\
+		mod = ((hue % huecoloursteps)*(1.0f)/huecoloursteps);\
 		if (hue & huecoloursteps)\
 			mod = 2-mod;\
 		else\
 			mod += 1;\
-		tempgammamul = (gamma ? ((255 - (gammascale*abs(gamma)))/255.0)*globalgammamul : globalgammamul);\
-		tempgammaoffs = ((gamma > 0) ? ((gammascale*gamma)/255.0) + globalgammaoffs : globalgammaoffs);\
+		tempgammamul = (gamma ? ((255.0f - (gammascale*abs(gamma)))/255.0f)*globalgammamul : globalgammamul);\
+		tempgammaoffs = ((gamma > 0) ? ((gammascale*gamma)/255.0f) + globalgammaoffs : globalgammaoffs);\
 		for (q = 0; q < 3; q++)\
 			dosaturation(working[r][g][b][q], (tempgammaoffs+(desatur[q]*mod*tempgammamul)));\
 	}
@@ -246,7 +246,7 @@ static boolean InitCube(void)
 
 	if diffconssat(cv_globalsaturation)
 	{
-		float work = (cv_globalsaturation.value/10.0);
+		float work = (cv_globalsaturation.value/10.0f);
 
 		apply = true;
 
@@ -272,10 +272,10 @@ static boolean InitCube(void)
 		return false;
 
 #define dowork(i, j, k, l) \
-	if (working[i][j][k][l] > 1.0)\
-		working[i][j][k][l] = 1.0;\
-	else if (working[i][j][k][l] < 0.0)\
-		working[i][j][k][l] = 0.0;\
+	if (working[i][j][k][l] > 1.0f)\
+		working[i][j][k][l] = 1.0f;\
+	else if (working[i][j][k][l] < 0.0f)\
+		working[i][j][k][l] = 0.0f;\
 	Cubepal[i][j][k][l] = working[i][j][k][l]
 	for (q = 0; q < 3; q++)
 	{
@@ -466,7 +466,7 @@ void V_CubeApply(UINT8 *red, UINT8 *green, UINT8 *blue)
 	if (!Cubeapply)
 		return;
 
-	linear = (*red/255.0);
+	linear = (*red/255.0f);
 #define dolerp(e1, e2) ((1 - linear)*e1 + linear*e2)
 	for (q = 0; q < 3; q++)
 	{
@@ -475,19 +475,19 @@ void V_CubeApply(UINT8 *red, UINT8 *green, UINT8 *blue)
 		working[2][q] = dolerp(Cubepal[0][0][1][q], Cubepal[1][0][1][q]);
 		working[3][q] = dolerp(Cubepal[0][1][1][q], Cubepal[1][1][1][q]);
 	}
-	linear = (*green/255.0);
+	linear = (*green/255.0f);
 	for (q = 0; q < 3; q++)
 	{
 		working[0][q] = dolerp(working[0][q], working[1][q]);
 		working[1][q] = dolerp(working[2][q], working[3][q]);
 	}
-	linear = (*blue/255.0);
+	linear = (*blue/255.0f);
 	for (q = 0; q < 3; q++)
 	{
 		working[0][q] = 255*dolerp(working[0][q], working[1][q]);
-		if (working[0][q] > 255.0)
-			working[0][q] = 255.0;
-		else if (working[0][q]  < 0.0)
+		if (working[0][q] > 255.0f)
+			working[0][q] = 255.0f;
+		else if (working[0][q] < 0.0f)
 			working[0][q] = 0.0;
 	}
 #undef dolerp

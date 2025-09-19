@@ -684,8 +684,8 @@ static void HWR_RenderPlane(subsector_t *subsector, extrasubsector_t *xsub, bool
 		tempxsow = flatxref;
 		tempytow = flatyref;
 		anglef = ANG2RAD(InvAngle(angle));
-		flatxref = (tempxsow * cos(anglef)) - (tempytow * sin(anglef));
-		flatyref = (tempxsow * sin(anglef)) + (tempytow * cos(anglef));
+		flatxref = (tempxsow * cosf(anglef)) - (tempytow * sinf(anglef));
+		flatyref = (tempxsow * sinf(anglef)) + (tempytow * cosf(anglef));
 	}
 
 #define SETUP3DVERT(vert, vx, vy) {\
@@ -698,8 +698,8 @@ static void HWR_RenderPlane(subsector_t *subsector, extrasubsector_t *xsub, bool
 		{\
 			tempxsow = vert->s;\
 			tempytow = vert->t;\
-			vert->s = (tempxsow * cos(anglef)) - (tempytow * sin(anglef));\
-			vert->t = (tempxsow * sin(anglef)) + (tempytow * cos(anglef));\
+			vert->s = (tempxsow * cosf(anglef)) - (tempytow * sinf(anglef));\
+			vert->t = (tempxsow * sinf(anglef)) + (tempytow * cosf(anglef));\
 		}\
 \
 		vert->x = (vx);\
