@@ -661,9 +661,6 @@ void K_GenerateKartColormap(UINT8 *dest_colormap, INT32 skinnum, UINT8 color, bo
 	if (color >= MAXTRANSLATIONS)
 		I_Error("Invalid skin color #%hu.", (UINT16)color);
 
-	if (skinnum < 0 && skinnum > TC_DEFAULT)
-		I_Error("Invalid translation colormap index %d.", skinnum);
-
 	starttranscolor = (skinnum != TC_DEFAULT) ? K_GetSkinArray(local)[skinnum].starttranscolor : DEFAULT_STARTTRANSCOLOR;
 
 	if (starttranscolor >= NUM_PALETTE_ENTRIES)
