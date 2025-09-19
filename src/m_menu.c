@@ -2143,7 +2143,8 @@ static void M_DrawSplitText(INT32 x, INT32 y, INT32 option, const char* str, INT
 	char** clines = NULL;
 	INT16 num_lines = 0;
 
-	if (icopy == NULL) return;
+	if (icopy == NULL)
+		return;
 
 	char* tok = strtok(icopy, "\n");
 
@@ -2151,16 +2152,25 @@ static void M_DrawSplitText(INT32 x, INT32 y, INT32 option, const char* str, INT
 	{
 		char* line = strdup(tok);
 
-		if (line == NULL) return;
+		if (line == NULL)
+		{
+			goto cleanup;
+		}
 
-		clines = realloc(clines, (num_lines + 1) * sizeof(char*));
+		char **tmp = realloc(clines, (num_lines + 1) * sizeof(char *));
+
+		if (tmp == NULL)
+		{
+			free(line);
+			goto cleanup;
+		}
+
+		clines = tmp;
 		clines[num_lines] = line;
 		num_lines++;
 
 		tok = strtok(NULL, "\n");
 	}
-
-	free(icopy);
 
 	INT16 yoffset;
 	yoffset = (((5*10 - num_lines*10)));
@@ -2180,11 +2190,17 @@ static void M_DrawSplitText(INT32 x, INT32 y, INT32 option, const char* str, INT
         V_DrawCenteredThinString(x, y + yoffset, option, clines[i]);
 		V_DrawCenteredThinString(x, y + yoffset, option|V_YELLOWMAP|((9 - alpha) << V_ALPHASHIFT), clines[i]);
 		yoffset += 10;
-        // Remember to free the memory for each line when you're done with it.
-        free(clines[i]);
     }
 
-	free(clines);
+cleanup:
+	if (clines)
+	{
+		// Remember to free the memory for each line when you're done with it.
+		for (int i = 0; i < num_lines; i++)
+			free(clines[i]);
+		free(clines);
+	}
+	free(icopy);
 }
 
 static void M_DoToolTips(menu_t* menu)
