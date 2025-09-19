@@ -496,7 +496,7 @@ void HWR_DrawCroppedPatch(patch_t *gpatch, fixed_t x, fixed_t y, fixed_t pscale,
 void HWR_DrawFlatFill(INT32 x, INT32 y, INT32 w, INT32 h, lumpnum_t flatlumpnum)
 {
 	FOutVector  v[4];
-	double dflatsize;
+	float dflatsize;
 	INT32 flatflag;
 	const size_t len = W_LumpLength(flatlumpnum);
 

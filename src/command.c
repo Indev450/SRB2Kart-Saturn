@@ -838,7 +838,7 @@ static void COM_Help_f(void)
 			{
 				{
 					if (!stricmp(cvar->PossibleValue[0].strvalue, "MIN") && !stricmp(cvar->PossibleValue[1].strvalue, "MAX"))
-					{	
+					{
 						if (floatmode)
 						{
 							float fu = FIXED_TO_FLOAT(cvar->PossibleValue[0].value);
@@ -1044,7 +1044,7 @@ static void COM_Add_f(void)
 
 	if (( cvar->flags & CV_FLOAT ))
 	{
-		float n =FIXED_TO_FLOAT (cvar->value) + atof(COM_Argv(2));
+		float n = FIXED_TO_FLOAT(cvar->value) + (float)atof(COM_Argv(2));
 		CV_Set(cvar, va("%ld%s", (long)n, M_Ftrim(n)));
 	}
 	else
