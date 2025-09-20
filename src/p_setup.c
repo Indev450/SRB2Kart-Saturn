@@ -628,6 +628,15 @@ static void P_CheckCyanFlat(levelflat_t *levelflat)
 	if (rendermode != render_soft)
 		return;
 
+	const char *flatname = W_CheckNameForNum(levelflat->lumpnum);
+
+	// hack for gba rainbow roads cyan floors
+	if (UNLIKELY(memcmp(flatname, "GBA_RRF5", 8) == 0 && flatname[8] == 0))
+	{
+		levelflat->cyan = false;
+		return;
+	}
+
 	const UINT8 *flat = R_GetFlat(levelflat->lumpnum);
 	const size_t size = W_LumpLength(levelflat->lumpnum);
 
