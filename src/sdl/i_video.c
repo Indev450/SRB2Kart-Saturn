@@ -626,7 +626,8 @@ static void Impl_HandleWindowEvent(SDL_WindowEvent evt)
 		case SDL_WINDOWEVENT_FOCUS_GAINED:
 			kbfocus = SDL_TRUE;
 			mousefocus = SDL_TRUE;
-			SDL_ShowCursor(SDL_FALSE);
+			if (!cv_mousevisible.value)
+				SDL_ShowCursor(SDL_FALSE);
 			break;
 		case SDL_WINDOWEVENT_FOCUS_LOST:
 			kbfocus = SDL_FALSE;
@@ -1208,7 +1209,11 @@ void I_StartupMouse(void)
 	if (disable_mouse)
 		return;
 
-	SDL_ShowCursor(SDL_FALSE);
+	if (!cv_mousevisible.value)
+		SDL_ShowCursor(SDL_FALSE);
+	else
+		SDL_ShowCursor(SDL_TRUE);
+
 	SDL_SetWindowGrab(window, SDL_FALSE);
 	SDL_SetRelativeMouseMode(SDL_FALSE);
 }

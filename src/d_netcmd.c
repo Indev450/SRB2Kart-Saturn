@@ -277,7 +277,8 @@ consvar_t cv_skipmapcheck = {"skipmapcheck", "Off", CV_SAVE, CV_OnOff, NULL, 0, 
 INT32 cv_debug;
 
 static void UseMouse_OnChange(void);
-consvar_t cv_usemouse = {"use_mouse", "Off", CV_SAVE|CV_CALL,usemouse_cons_t, UseMouse_OnChange, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_usemouse = {"use_mouse", "Off", CV_SAVE|CV_CALL, usemouse_cons_t, UseMouse_OnChange, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_mousevisible = {"mousevisible", "Off", CV_SAVE|CV_CALL, CV_OnOff, UseMouse_OnChange, 0, NULL, NULL, 0, 0, NULL};
 
 static void UseMouse_OnChange(void)
 {
@@ -1008,6 +1009,7 @@ void D_RegisterClientCommands(void)
 	CV_RegisterVar(&cv_invertmouse);
 	CV_RegisterVar(&cv_mousesens);
 	CV_RegisterVar(&cv_mouseysens);
+	CV_RegisterVar(&cv_mousevisible);
 
 	// s_sound.c
 	CV_RegisterVar(&cv_soundvolume);
