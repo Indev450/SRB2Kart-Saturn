@@ -50,6 +50,7 @@ extern consvar_t cv_splitplayers;
 extern consvar_t cv_seenames, cv_allowseenames;
 #endif
 extern consvar_t cv_usemouse;
+extern consvar_t cv_mousevisible;
 //WTF
 extern consvar_t cv_mouseturn;
 extern consvar_t cv_usejoystick[4]; //MAXSPLITSCREENPLAYERS
