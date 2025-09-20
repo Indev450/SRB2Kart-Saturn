@@ -1530,12 +1530,7 @@ static void SendNameAndColor(void)
 		if (players[consoleplayer].mo)
 			players[consoleplayer].mo->color = players[consoleplayer].skincolor;
 
-		if (metalrecording)
-		{ // Metal Sonic is Sonic, obviously.
-			SetPlayerSkinByNum(consoleplayer, 0);
-			CV_StealthSet(&cv_skin, skins[0].name);
-		}
-		else if ((foundskin = R_SkinAvailable(cv_skin.string)) != -1)
+		if ((foundskin = R_SkinAvailable(cv_skin.string)) != -1)
 		{
 			cv_skin.value = foundskin;
 			SetPlayerSkin(consoleplayer, cv_skin.string);
@@ -2325,8 +2320,6 @@ static void Command_Playdemo_f(void)
 	// disconnect from server here?
 	if (demo.playback)
 		G_StopDemo();
-	if (metalplayback)
-		G_StopMetalDemo();
 
 	// open the demo file
 	strcpy(name, COM_Argv(1));
@@ -2373,8 +2366,6 @@ static void Command_Timedemo_f(void)
 	// disconnect from server here?
 	if (demo.playback)
 		G_StopDemo();
-	if (metalplayback)
-		G_StopMetalDemo();
 
 	// open the demo file
 	strcpy (name, COM_Argv(1));
@@ -2931,8 +2922,6 @@ static void Got_Mapcmd(UINT8 **cp, INT32 playernum)
 	if (demo.timing)
 		G_DoneLevelLoad();
 
-	if (metalrecording)
-		G_BeginMetal();
 	if (demo.recording) // Okay, level loaded, character spawned and skinned,
 		G_BeginRecording(); // I AM NOW READY TO RECORD.
 	demo.deferstart = true;

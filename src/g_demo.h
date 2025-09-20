@@ -87,13 +87,9 @@ typedef struct menudemo_s {
 	} standings[MAXPLAYERS];
 } menudemo_t;
 
-extern mobj_t *metalplayback;
-
 // Only called by startup code.
 void G_RecordDemo(const char *name);
-void G_RecordMetal(void);
 void G_BeginRecording(void);
-void G_BeginMetal(void);
 
 // Only called by shutdown code.
 void G_WriteStanding(UINT8 ranking, char *name, INT32 skinnum, UINT8 color, UINT32 val);
@@ -147,11 +143,6 @@ void G_StoreRewindInfo(void);
 void G_PreviewRewind(tic_t previewtime);
 void G_ConfirmRewind(tic_t rewindtime);
 
-void G_ReadMetalTic(mobj_t *metal);
-void G_WriteMetalTic(mobj_t *metal);
-void G_SaveMetal(UINT8 **buffer);
-void G_LoadMetal(UINT8 **buffer);
-
 // Your naming conventions are stupid and useless.
 // There is no conflict here.
 typedef struct demoghost {
@@ -176,10 +167,7 @@ void G_TimeDemo(const char *name);
 void G_AddGhost(char *defdemoname);
 void G_FreeGhosts(void);
 void G_UpdateStaffGhostName(lumpnum_t l);
-void G_DoPlayMetal(void);
 void G_DoneLevelLoad(void);
-void G_StopMetalDemo(void);
-ATTRNORETURN void FUNCNORETURN G_StopMetalRecording(void);
 void G_StopDemo(void);
 boolean G_CheckDemoStatus(void);
 void G_SaveDemo(void);

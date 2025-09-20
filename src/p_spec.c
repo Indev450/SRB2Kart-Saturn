@@ -2678,6 +2678,7 @@ static void P_ProcessLineSpecial(line_t *line, mobj_t *mo, sector_t *callsec)
 				size_t linenum;
 				side_t *set = &sides[line->sidenum[0]], *this;
 				boolean always = !(line->flags & ML_NOCLIMB); // If noclimb: Only change mid texture if mid texture already exists on tagged lines, etc.
+
 				for (linenum = 0; linenum < numlines; linenum++)
 				{
 					if (lines[linenum].special == 439)
@@ -2688,25 +2689,29 @@ static void P_ProcessLineSpecial(line_t *line, mobj_t *mo, sector_t *callsec)
 
 					// Front side
 					this = &sides[lines[linenum].sidenum[0]];
-					if (always || this->toptexture) this->toptexture = set->toptexture;
-					if (always || this->midtexture) this->midtexture = set->midtexture;
-					if (always || this->bottomtexture) this->bottomtexture = set->bottomtexture;
+					if (always || this->toptexture)
+						this->toptexture = set->toptexture;
+					if (always || this->midtexture)
+						this->midtexture = set->midtexture;
+					if (always || this->bottomtexture)
+						this->bottomtexture = set->bottomtexture;
 
 					if (lines[linenum].sidenum[1] == 0xffff)
 						continue; // One-sided stops here.
 
 					// Back side
 					this = &sides[lines[linenum].sidenum[1]];
-					if (always || this->toptexture) this->toptexture = set->toptexture;
-					if (always || this->midtexture) this->midtexture = set->midtexture;
-					if (always || this->bottomtexture) this->bottomtexture = set->bottomtexture;
+					if (always || this->toptexture)
+						this->toptexture = set->toptexture;
+					if (always || this->midtexture)
+						this->midtexture = set->midtexture;
+					if (always || this->bottomtexture)
+						this->bottomtexture = set->bottomtexture;
 				}
 			}
 			break;
 
-		case 440: // Play race countdown and start Metal Sonic
-			if (!metalrecording && !metalplayback)
-				G_DoPlayMetal();
+		case 440: // Play race countdown and start Metal Sonic // srb2kart: unused
 			break;
 
 		case 441: // Trigger unlockable

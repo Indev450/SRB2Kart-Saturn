@@ -383,10 +383,6 @@ typedef struct player_s
 	fixed_t viewz;
 	// Base height above floor for viewz.
 	fixed_t viewheight;
-	// Bob/squat speed.
-	//fixed_t deltaviewheight;
-	// bounded/scaled total momentum.
-	//fixed_t bob;
 
 	angle_t viewrollangle;
 	angle_t tilt;

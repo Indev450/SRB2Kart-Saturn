@@ -836,7 +836,7 @@ boolean CON_Responder(event_t *ev)
 	// check for console toggle key
 	if (ev->type != ev_console)
 	{
-		if (modeattacking || metalrecording)
+		if (modeattacking)
 			return false;
 
 		if (ev->data1 >= KEY_MOUSE1) // See also: HUD_Responder

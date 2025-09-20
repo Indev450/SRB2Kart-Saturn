@@ -3451,10 +3451,6 @@ void CL_RemovePlayer(INT32 playernum, INT32 reason)
 
 void CL_Reset(void)
 {
-	if (metalrecording)
-		G_StopMetalRecording();
-	if (metalplayback)
-		G_StopMetalDemo();
 	if (demo.recording)
 		G_CheckDemoStatus();
 
@@ -4700,8 +4696,6 @@ boolean SV_SpawnServer(void)
 {
 	if (demo.playback)
 		G_StopDemo(); // reset engine parameter
-	if (metalplayback)
-		G_StopMetalDemo();
 
 	if (!serverrunning)
 	{
