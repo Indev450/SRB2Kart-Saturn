@@ -4505,7 +4505,7 @@ static void P_DoFunnyDance(player_t *player)
 {
 	fixed_t bpm; // 140bpm ish
 
-	if (player->spectator || !player->mo || player->kartstuff[k_respawn] || player->mo->salty_jump) // this looks jank as hell during hop
+	if (player->spectator || !player->mo || player->kartstuff[k_respawn] || player->mo->salty.jump) // this looks jank as hell during hop
 		return;
 
 	player->squishdance.bounce = 0;
