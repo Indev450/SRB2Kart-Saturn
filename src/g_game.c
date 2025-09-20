@@ -3065,11 +3065,6 @@ static void G_DoCompleted(void)
 
 	gameaction = ga_nothing;
 
-	if (metalplayback)
-		G_StopMetalDemo();
-	if (metalrecording)
-		G_StopMetalRecording();
-
 	K_StatRound();
 
 	for (i = 0; i < MAXPLAYERS; i++)

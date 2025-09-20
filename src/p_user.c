@@ -1399,7 +1399,7 @@ static void P_CheckBustableBlocks(player_t *player)
 					if (!(rover->flags & FF_SHATTER) && !(rover->flags & FF_SPINBUST)
 						&& !((player->pflags & PF_SPINNING) && !(player->pflags & PF_JUMPED))
 						&& (!player->powers[pw_super])
-						&& !(player->pflags & PF_DRILLING) && !metalrecording)
+						&& !(player->pflags & PF_DRILLING))
 						continue;
 
 					topheight = P_GetFOFTopZ(player->mo, node->m_sector, rover, player->mo->x, player->mo->y, NULL);
@@ -1447,9 +1447,6 @@ static void P_CheckBustableBlocks(player_t *player)
 						player->mo->momx >>= 1;
 						player->mo->momy >>= 1;
 					}
-
-					//if (metalrecording)
-					//	G_RecordBustup(rover);
 
 					EV_CrumbleChain(node->m_sector, rover);
 

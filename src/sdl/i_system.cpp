@@ -1983,8 +1983,6 @@ void I_Quit(void)
 
 	if (demo.recording)
 		G_CheckDemoStatus();
-	if (metalrecording)
-		G_StopMetalRecording();
 
 	D_QuitNetGame();
 	I_ShutdownMusic();
@@ -2109,8 +2107,6 @@ void I_Error(const char *error, ...)
 	// Shutdown. Here might be other errors.
 	if (demo.recording)
 		G_CheckDemoStatus();
-	if (metalrecording)
-		G_StopMetalRecording();
 
 	D_QuitNetGame();
 	I_ShutdownMusic();

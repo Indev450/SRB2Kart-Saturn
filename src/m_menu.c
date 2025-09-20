@@ -7111,8 +7111,6 @@ static void M_StartServer(INT32 choice)
 
 	if (demo.playback)
 		G_StopDemo();
-	if (metalrecording)
-		G_StopMetalDemo();
 
 	if (!cv_nextmap.value)
 		CV_SetValue(&cv_nextmap, G_RandMap(G_TOLFlag(cv_newgametype.value), -1, false, 0, false, NULL)+1);

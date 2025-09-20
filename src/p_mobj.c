@@ -11131,17 +11131,9 @@ void P_SpawnMapThing(mapthing_t *mthing)
 		else
 		{
 			// save spots for respawning in network games
-			if (!metalrecording)
-				playerstarts[mthing->type-1] = mthing;
+			playerstarts[mthing->type-1] = mthing;
 		}
 
-		return;
-	}
-
-	// If recording, you ARE Metal Sonic. Do not spawn it, do not save normal spawnpoints.
-	if (metalrecording && mthing->type == mobjinfo[MT_METALSONIC_RACE].doomednum)
-	{
-		playerstarts[0] = mthing;
 		return;
 	}
 
@@ -11162,19 +11154,10 @@ void P_SpawnMapThing(mapthing_t *mthing)
 		i = MT_UNKNOWN;
 	}
 
-	if (metalrecording) // Metal Sonic can't use these things.
-	{
-		if (mobjinfo[i].flags & (MF_ENEMY|MF_BOSS) || i == MT_EMMY || i == MT_STARPOST)
-			return;
-	}
-
 	if (i >= MT_EMERALD1 && i <= MT_EMERALD7) // Pickupable Emeralds
 	{
 		if (gametype != GT_COOP) // Don't place emeralds in non-coop modes
 			return;
-
-		if (metalrecording)
-			return; // Metal Sonic isn't for collecting emeralds.
 
 		if (emeralds & mobjinfo[i].speed) // You already have this emerald!
 			return;
@@ -11762,7 +11745,7 @@ ML_NOCLIMB : Direction not controllable
 			mobj->fuse = mthing->angle + mobj->info->speed;
 		}
 		// Use per-thing collision for spikes if the deaf flag is checked.
-		if (mthing->options & MTF_AMBUSH && !metalrecording)
+		if (mthing->options & MTF_AMBUSH)
 		{
 			P_UnsetThingPosition(mobj);
 			mobj->flags &= ~(MF_NOBLOCKMAP|MF_NOGRAVITY|MF_NOCLIPHEIGHT);

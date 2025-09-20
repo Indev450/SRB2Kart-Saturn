@@ -1575,9 +1575,6 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source)
 	// Let EVERYONE know what happened to a player! 01-29-2002 Tails
 	if (target->player && !target->player->spectator)
 	{
-		if (metalrecording) // Ack! Metal Sonic shouldn't die! Cut the tape, end recording!
-			G_StopMetalRecording();
-
 		target->flags2 &= ~MF2_DONTDRAW;
 	}
 
@@ -2293,18 +2290,15 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 	}
 
 	// Everything above here can't be forced.
-	if (!metalrecording)
-	{
-		UINT8 shouldForce = LUA_HookShouldDamage(target, inflictor, source, damage);
+	UINT8 shouldForce = LUA_HookShouldDamage(target, inflictor, source, damage);
 
-		if (P_MobjWasRemoved(target))
-			return (shouldForce == 1); // mobj was removed
+	if (P_MobjWasRemoved(target))
+		return (shouldForce == 1); // mobj was removed
 
-		if (shouldForce == 1)
-			force = true;
-		else if (shouldForce == 2)
-			return false;
-	}
+	if (shouldForce == 1)
+		force = true;
+	else if (shouldForce == 2)
+		return false;
 
 	if (!force)
 	{

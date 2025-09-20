@@ -71,7 +71,6 @@ extern boolean majormods;
 extern UINT16 mainwads;
 extern boolean savemoddata; // This mod saves time/emblem data.
 extern boolean imcontinuing; // Temporary flag while continuing
-extern boolean metalrecording;
 
 #define ATTACKING_NONE   0
 #define ATTACKING_RECORD 1

@@ -949,9 +949,6 @@ static void P_SpawnMapThings(void)
 				huntemeralds[emer3 - 1]->z<<FRACBITS, MT_EMERHUNT);
 	}
 
-	if (metalrecording) // Metal Sonic gets no rings to distract him.
-		return;
-
 	// Run through the list of mapthings again to spawn hoops and rings
 	for (i = 0, mt = mapthings; i < nummapthings; i++, mt++)
 	{
@@ -2734,9 +2731,6 @@ boolean P_SetupLevel(boolean fromnetsave, boolean reloadinggamestate)
 
 	if (netgame || multiplayer)
 		cv_debug = botskin = 0;
-
-	if (metalplayback)
-		G_StopMetalDemo();
 
 	// Clear CECHO messages
 	HU_ClearCEcho();
