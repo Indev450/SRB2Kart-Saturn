@@ -4623,7 +4623,7 @@ static void HWR_AddPrecipitationSprites(void)
 		return;
 	}
 
-	drawdist = ((fixed_t)(cv_drawdist_precip.value) * (cv_mobjscaleprecip.value ? mapobjectscale : FRACUNIT));
+	drawdist = ((fixed_t)(cv_drawdist_precip.value) * mapobjectscale);
 
 	// No to infinite precipitation draw distance.
 	if (cv_drawdist_precip.value == 0)

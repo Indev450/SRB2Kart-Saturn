@@ -1799,7 +1799,7 @@ void P_SwitchWeather(INT32 weathernum)
 			precipmobj->tics = st->tics;
 			precipmobj->sprite = st->sprite;
 			precipmobj->frame = st->frame;
-			precipmobj->momz = (cv_mobjscaleprecip.value ? FixedMul(mobjinfo[type].speed, mapobjectscale) : mobjinfo[type].speed);
+			precipmobj->momz = FixedMul(mobjinfo[type].speed, mapobjectscale);
 
 			precipmobj->precipflags &= ~(PCF_INVISIBLE|PCF_SPLASH); // P_PrecipThinker will add this again if it needs to
 		}

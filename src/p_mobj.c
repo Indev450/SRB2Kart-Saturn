@@ -3620,7 +3620,7 @@ boolean P_PrecipThinker(precipmobj_t *mobj)
 			return false;
 
 		mobj->z = mobj->ceilingz;
-		mobj->momz = cv_mobjscaleprecip.value ? FixedMul(mobj->info->speed, mapobjectscale) : mobj->info->speed;
+		mobj->momz = FixedMul(mobj->info->speed, mapobjectscale);
 		mobj->precipflags &= ~PCF_SPLASH;
 		R_ResetPrecipitationMobjInterpolationState(mobj);
 	}
@@ -10039,7 +10039,7 @@ static precipmobj_t *P_SpawnPrecipMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype
 	mobj->ceilingz                   = P_GetSectorCeilingZAt(mobj->subsector->sector, x, y);
 
 	mobj->z = z;
-	mobj->momz = cv_mobjscaleprecip.value ? FixedMul(info->speed, mapobjectscale) : info->speed;
+	mobj->momz = FixedMul(info->speed, mapobjectscale);
 
 	mobj->thinker.function = (actionf_p1)P_NullPrecipThinker;
 	P_AddPrecipThinker(&mobj->thinker);
@@ -10242,7 +10242,6 @@ void P_SpawnPrecipitation(void)
 	if (dedicated || !cv_drawdist_precip.value || curWeather == PRECIP_NONE || curWeather == PRECIP_STORM_NORAIN)
 		return;
 
-	const fixed_t precipmoscale = (cv_mobjscaleprecip.value ? mapobjectscale : FRACUNIT);
 	const INT32 density = (cv_lessprecip.value ? 2 : 1); // only spawn half as much
 
 	// Use the blockmap to narrow down our placing patterns
@@ -10253,7 +10252,7 @@ void P_SpawnPrecipitation(void)
 
 		// If mobjscale < FRACUNIT, each blockmap cell covers
 		// more area so spawn more precipitation in that area.
-		for (j = 0; j < FRACUNIT; j += precipmoscale)
+		for (j = 0; j < FRACUNIT; j += mapobjectscale)
 		{
 			INT32 floorz;
 			INT32 ceilingz;
