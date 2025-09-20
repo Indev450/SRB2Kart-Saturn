@@ -275,6 +275,16 @@ typedef enum {
 	NUMMOBJVFX,
 } mobjvfx_t;
 
+typedef struct salty_s
+{
+	bool init;
+	bool ready;
+	bool tapping;
+	fixed_t zoffset;
+	fixed_t momz;
+	bool jump;
+} salty_t;
+
 // Map Object definition.
 typedef struct mobj_s
 {
@@ -416,12 +426,7 @@ typedef struct mobj_s
 	tic_t slamsoundtimer; // Funni slam sound when landing
 
 	// saltyhop! hardcode edition
-	boolean salty_ready;
-	boolean salty_tapping;
-	fixed_t salty_zoffset;
-	fixed_t salty_momz;
-	boolean salty_jump;
-	boolean init_salty;
+	salty_t salty;
 
 	// WARNING: New fields must be added separately to savegame and Lua.
 	struct mobj_s *vfx[NUMMOBJVFX];
