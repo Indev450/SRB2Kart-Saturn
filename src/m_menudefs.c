@@ -933,29 +933,28 @@ static menuitem_t OP_ExpOptionsMenu[] =
 {
 	{IT_HEADER, NULL, "Advanced Video Options", NULL, 0},
 	{IT_STRING|IT_CVAR,		NULL, "Interpolation Distance",			&cv_maxinterpdist,		 	 10},
-	{IT_STRING | IT_CVAR, 	NULL, "Weather Interpolation", 			&cv_precipinterp, 		 	 15},
 
-	{IT_STRING | IT_CVAR, 	NULL, "Less Weather Effects", 			&cv_lessprecip, 		 	 25},
+	{IT_STRING | IT_CVAR, 	NULL, "Less Weather Effects", 			&cv_lessprecip, 		 	 20},
 
-	{IT_STRING | IT_CVAR,   NULL, "Minimum Sector Brightness",		&cv_secbright,	  		 	 35},
+	{IT_STRING | IT_CVAR,   NULL, "Minimum Sector Brightness",		&cv_secbright,	  		 	 30},
 
-	//{IT_STRING | IT_CVAR,  NULL, "Randomized Directional Light",	&cv_randomdirlight,	  		 50}, // should this ever come back
+	//{IT_STRING | IT_CVAR,  NULL, "Randomized Directional Light",	&cv_randomdirlight,	  		 45}, // should this ever come back
 
-	{IT_STRING | IT_CVAR,	NULL, "Skyboxes",						&cv_skybox,				 	 45},
+	{IT_STRING | IT_CVAR,	NULL, "Skyboxes",						&cv_skybox,				 	 40},
 
-	{IT_STRING | IT_CVAR,	NULL, "FPS counter sampling",			&cv_accuratefps,			 55},
+	{IT_STRING | IT_CVAR,	NULL, "FPS counter sampling",			&cv_accuratefps,			 50},
 
-	{IT_STRING | IT_CVAR,	NULL, "Votescreen Scaling",				&cv_votebgscaling,			 65},
+	{IT_STRING | IT_CVAR,	NULL, "Votescreen Scaling",				&cv_votebgscaling,			 60},
 
 #ifdef HWRENDER
-	{IT_STRING | IT_CVAR, 	NULL, "Screen Textures", 				&cv_glscreentextures, 		 75},
+	{IT_STRING | IT_CVAR, 	NULL, "Screen Textures", 				&cv_glscreentextures, 		 70},
 #ifdef USE_FBO_OGL
-	{IT_STRING | IT_CVAR, 	NULL, "FBO Downsampling support", 		&cv_glframebuffer, 			 80},
-	{IT_STRING | IT_CVAR, 	NULL, "Palette Depth", 					&cv_glpalettedepth, 		 90},
-	{IT_DISABLED, 			NULL, "", 								NULL,     			 		100},	// dummy text
-#else
+	{IT_STRING | IT_CVAR, 	NULL, "FBO Downsampling support", 		&cv_glframebuffer, 			 75},
 	{IT_STRING | IT_CVAR, 	NULL, "Palette Depth", 					&cv_glpalettedepth, 		 85},
-	{IT_DISABLED, 			NULL, "", 								NULL,     			 		95},	// dummy text
+	{IT_DISABLED, 			NULL, "", 								NULL,     			 		 95},	// dummy text
+#else
+	{IT_STRING | IT_CVAR, 	NULL, "Palette Depth", 					&cv_glpalettedepth, 		 80},
+	{IT_DISABLED, 			NULL, "", 								NULL,     			 		 90},	// dummy text
 #endif
 #endif
 };
@@ -964,7 +963,6 @@ static const char* OP_ExpTooltips[] =
 {
 	NULL,
 	"How far Mobj interpolation should take effect.",
-	"Should weather be interpolated? Weather should look about the\nsame but perform a bit better when disabled.",
 	"When weather is on this will cut the object amount used in half.",
 	"Sets minimum sector brightness, useful for dark areas",
 	//"Should the directional lightning be randomized each map?\nTakes effect on next map load.",
@@ -984,7 +982,6 @@ enum
 {
 	op_exp_header,
 	op_exp_interpdist,
-	op_exp_precipinter,
 	op_exp_lessprecip,
 	op_exp_secbright,
 	//op_exp_dirlight,
