@@ -11805,228 +11805,141 @@ ML_NOCLIMB : Direction not controllable
 	mthing->mobj = mobj;
 }
 
-void P_SpawnHoopsAndRings(mapthing_t *mthing)
+static void P_SpawnNiGHTSHoop(fixed_t x, fixed_t y, fixed_t z, fixed_t hoopsize, fixed_t hoopplacement, angle_t closestangle, INT16 spewangle, mobj_t *hoopcenter, mobj_t **nextmobj, mobjtype_t type)
 {
-	mobj_t *mobj = NULL;
-	INT32 /*r,*/ i;
-	fixed_t x, y, z, finalx, finaly, finalz;
-	sector_t *sec;
+	INT32 i;
+	angle_t fa;
 	TVector v, *res;
-	angle_t closestangle, fa;
+	mobj_t *mobj = NULL;
+
+	for (i = 0; i < hoopsize; i++)
+	{
+		fa = i*(FINEANGLES/hoopsize);
+		v[0] = FixedMul(FINECOSINE(fa), hoopplacement);
+		v[1] = 0;
+		v[2] = FixedMul(FINESINE(fa), hoopplacement);
+		v[3] = FRACUNIT;
+
+		res = VectorMatrixMultiply(v, *RotateXMatrix(FixedAngle(spewangle)));
+		M_Memcpy(&v, res, sizeof (v));
+		res = VectorMatrixMultiply(v, *RotateZMatrix(closestangle));
+		M_Memcpy(&v, res, sizeof (v));
+
+		mobj = P_SpawnMobj(x + v[0], y + v[1], z + v[2], type);
+
+		if (P_MobjWasRemoved(mobj))
+			continue;
+
+		mobj->z -= mobj->height/2;
+
+		if (hoopcenter)
+		{
+			P_SetTarget(&mobj->target, hoopcenter); // Link the sprite to the center.
+
+			mobj->fuse = 0;
+
+			// Link all the sprites in the hoop together
+			if (nextmobj && *nextmobj)
+			{
+				P_SetTarget(&mobj->hprev, *nextmobj);
+				P_SetTarget(&mobj->hprev->hnext, mobj);
+			}
+			else
+				P_SetTarget(&mobj->hprev, P_SetTarget(&mobj->hnext, NULL));
+		}
+		else
+		{
+			// Link all the collision sprites together.
+			P_SetTarget(&mobj->hnext, NULL);
+			P_SetTarget(&mobj->hprev, *nextmobj);
+			P_SetTarget(&mobj->hprev->hnext, mobj);
+		}
+
+		*nextmobj = mobj;
+	}
+}
+
+void P_SpawnHoops(mapthing_t *mthing)
+{
+	fixed_t x, y, z;
+	fixed_t spewangle;
+	fixed_t sizefactor;
+	fixed_t hoopsize, hoopplacement;
+	sector_t *sec;
+	angle_t closestangle;
+
+	mobj_t *hoopcenter;
+	mobj_t *nextmobj = NULL;
+
+	// srb2kart - no rings or ring-like objects in R1
+	if (mthing->type != 1705 && mthing->type != 1713)
+		return;
 
 	x = mthing->x << FRACBITS;
 	y = mthing->y << FRACBITS;
 
 	sec = R_PointInSubsector(x, y)->sector;
 
-	// NiGHTS hoop!
-	if (mthing->type == 1705)
-	{
-		mobj_t *nextmobj = NULL;
-		mobj_t *hoopcenter;
-		INT16 spewangle;
-
+	// Save our flags!
+	if (mthing->type == 1713)
+		z = (mthing->options >> ZSHIFT) << FRACBITS;
+	else
 		z = mthing->options << FRACBITS;
 
-		hoopcenter = P_SpawnMobj(x, y, z, MT_HOOPCENTER);
-		hoopcenter->spawnpoint = mthing;
+	hoopcenter = P_SpawnMobj(x, y, z, MT_HOOPCENTER);
 
-		z += P_GetSectorFloorZAt(sec, x, y);
-
-		hoopcenter->z = z - hoopcenter->height/2;
-
-		P_UnsetThingPosition(hoopcenter);
-		hoopcenter->x = x;
-		hoopcenter->y = y;
-		P_SetThingPosition(hoopcenter);
-
-		// Scale 0-255 to 0-359 =(
-		closestangle = FixedAngle(FixedMul((mthing->angle>>8)*FRACUNIT,
-			360*(FRACUNIT/256)));
-
-		hoopcenter->movedir = FixedInt(FixedMul((mthing->angle&255)*FRACUNIT,
-			360*(FRACUNIT/256)));
-		hoopcenter->movecount = FixedInt(AngleFixed(closestangle));
-
-		// For the hoop when it flies away
-		hoopcenter->extravalue1 = 32;
-		hoopcenter->extravalue2 = 8 * FRACUNIT;
-
-		spewangle = (INT16)hoopcenter->movedir;
-
-		// Create the hoop!
-		for (i = 0; i < 32; i++)
-		{
-			fa = i*(FINEANGLES/32);
-			v[0] = FixedMul(FINECOSINE(fa),96*FRACUNIT);
-			v[1] = 0;
-			v[2] = FixedMul(FINESINE(fa),96*FRACUNIT);
-			v[3] = FRACUNIT;
-
-			res = VectorMatrixMultiply(v, *RotateXMatrix(FixedAngle(spewangle*FRACUNIT)));
-			M_Memcpy(&v, res, sizeof (v));
-			res = VectorMatrixMultiply(v, *RotateZMatrix(closestangle));
-			M_Memcpy(&v, res, sizeof (v));
-
-			finalx = x + v[0];
-			finaly = y + v[1];
-			finalz = z + v[2];
-
-			mobj = P_SpawnMobj(finalx, finaly, finalz, MT_HOOP);
-
-			mobj->z -= mobj->height/2;
-
-			P_SetTarget(&mobj->target, hoopcenter); // Link the sprite to the center.
-			mobj->fuse = 0;
-
-			// Link all the sprites in the hoop together
-			if (nextmobj)
-			{
-				P_SetTarget(&mobj->hprev, nextmobj);
-				P_SetTarget(&mobj->hprev->hnext, mobj);
-			}
-			else
-				mobj->hprev = mobj->hnext = NULL;
-
-			nextmobj = mobj;
-		}
-
-		// Create the collision detectors!
-		for (i = 0; i < 16; i++)
-		{
-			fa = i*FINEANGLES/16;
-			v[0] = FixedMul(FINECOSINE(fa),32*FRACUNIT);
-			v[1] = 0;
-			v[2] = FixedMul(FINESINE(fa),32*FRACUNIT);
-			v[3] = FRACUNIT;
-			res = VectorMatrixMultiply(v, *RotateXMatrix(FixedAngle(spewangle*FRACUNIT)));
-			M_Memcpy(&v, res, sizeof (v));
-			res = VectorMatrixMultiply(v, *RotateZMatrix(closestangle));
-			M_Memcpy(&v, res, sizeof (v));
-
-			finalx = x + v[0];
-			finaly = y + v[1];
-			finalz = z + v[2];
-
-			mobj = P_SpawnMobj(finalx, finaly, finalz, MT_HOOPCOLLIDE);
-			mobj->z -= mobj->height/2;
-
-			// Link all the collision sprites together.
-			mobj->hnext = NULL;
-			P_SetTarget(&mobj->hprev, nextmobj);
-			P_SetTarget(&mobj->hprev->hnext, mobj);
-
-			nextmobj = mobj;
-		}
-		// Create the collision detectors!
-		for (i = 0; i < 16; i++)
-		{
-			fa = i*FINEANGLES/16;
-			v[0] = FixedMul(FINECOSINE(fa),64*FRACUNIT);
-			v[1] = 0;
-			v[2] = FixedMul(FINESINE(fa),64*FRACUNIT);
-			v[3] = FRACUNIT;
-			res = VectorMatrixMultiply(v, *RotateXMatrix(FixedAngle(spewangle*FRACUNIT)));
-			M_Memcpy(&v, res, sizeof (v));
-			res = VectorMatrixMultiply(v, *RotateZMatrix(closestangle));
-			M_Memcpy(&v, res, sizeof (v));
-
-			finalx = x + v[0];
-			finaly = y + v[1];
-			finalz = z + v[2];
-
-			mobj = P_SpawnMobj(finalx, finaly, finalz, MT_HOOPCOLLIDE);
-			mobj->z -= mobj->height/2;
-
-			// Link all the collision sprites together.
-			mobj->hnext = NULL;
-			P_SetTarget(&mobj->hprev, nextmobj);
-			P_SetTarget(&mobj->hprev->hnext, mobj);
-
-			nextmobj = mobj;
-		}
+	if (P_MobjWasRemoved(hoopcenter))
 		return;
-	}
-	// CUSTOMIZABLE NiGHTS hoop!
-	else if (mthing->type == 1713)
+
+	hoopcenter->spawnpoint = mthing;
+
+	z += P_GetSectorFloorZAt(sec, x, y);
+
+	hoopcenter->z -= hoopcenter->height/2;
+
+	P_UnsetThingPosition(hoopcenter);
+	hoopcenter->x = x;
+	hoopcenter->y = y;
+	P_SetThingPosition(hoopcenter);
+
+	// Scale 0-255 to 0-359 =(
+	closestangle = FixedAngle(FixedMul((mthing->angle >> 8)*FRACUNIT, 360*(FRACUNIT/256)));
+
+	hoopcenter->movedir = FixedInt(FixedMul((mthing->angle & 255)*FRACUNIT, 360*(FRACUNIT/256)));
+	hoopcenter->movecount = FixedInt(AngleFixed(closestangle));
+
+	spewangle = (fixed_t)((INT16)hoopcenter->movedir * FRACUNIT);
+
+	if (mthing->type == 1713) // CUSTOMIZABLE NiGHTS hoop!
 	{
-		mobj_t *nextmobj = NULL;
-		mobj_t *hoopcenter;
-		INT16 spewangle;
-		INT32 hoopsize;
-		INT32 hoopplacement;
-
-		// Save our flags!
-		z = (mthing->options>>ZSHIFT) << FRACBITS;
-
-		hoopcenter = P_SpawnMobj(x, y, z, MT_HOOPCENTER);
-		hoopcenter->spawnpoint = mthing;
-
-		z += P_GetSectorFloorZAt(sec, x, y);
-		hoopcenter->z = z - hoopcenter->height/2;
-
-		P_UnsetThingPosition(hoopcenter);
-		hoopcenter->x = x;
-		hoopcenter->y = y;
-		P_SetThingPosition(hoopcenter);
-
-		// Scale 0-255 to 0-359 =(
-		closestangle = FixedAngle(FixedMul((mthing->angle>>8)*FRACUNIT,
-			360*(FRACUNIT/256)));
-
-		hoopcenter->movedir = FixedInt(FixedMul((mthing->angle&255)*FRACUNIT,
-			360*(FRACUNIT/256)));
-		hoopcenter->movecount = FixedInt(AngleFixed(closestangle));
-
-		spewangle = (INT16)hoopcenter->movedir;
-
 		// Super happy fun time
 		// For each flag add 4 fracunits to the size
 		// Default (0 flags) is 8 fracunits
 		hoopsize = 8 + (4 * (mthing->options & 0xF));
-		hoopplacement = hoopsize * (4*FRACUNIT);
+		sizefactor = 4*FRACUNIT;
+		hoopplacement = hoopsize * sizefactor;
 
 		// For the hoop when it flies away
 		hoopcenter->extravalue1 = hoopsize;
 		hoopcenter->extravalue2 = FixedDiv(hoopplacement, 12*FRACUNIT);
+	}
+	else                      // NiGHTS hoop!
+	{
+		hoopsize = 32;
+		sizefactor = 32*FRACUNIT;
+		hoopplacement = 96*FRACUNIT;
 
-		// Create the hoop!
-		for (i = 0; i < hoopsize; i++)
-		{
-			fa = i*(FINEANGLES/hoopsize);
-			v[0] = FixedMul(FINECOSINE(fa), hoopplacement);
-			v[1] = 0;
-			v[2] = FixedMul(FINESINE(fa), hoopplacement);
-			v[3] = FRACUNIT;
+		// For the hoop when it flies away
+		hoopcenter->extravalue1 = hoopsize;
+		hoopcenter->extravalue2 = 8 * FRACUNIT;
+	}
 
-			res = VectorMatrixMultiply(v, *RotateXMatrix(FixedAngle(spewangle*FRACUNIT)));
-			M_Memcpy(&v, res, sizeof (v));
-			res = VectorMatrixMultiply(v, *RotateZMatrix(closestangle));
-			M_Memcpy(&v, res, sizeof (v));
+	// Create the hoop!
+	P_SpawnNiGHTSHoop(x, y, z, hoopsize, hoopplacement, closestangle, spewangle, hoopcenter, &nextmobj, MT_HOOP);
 
-			finalx = x + v[0];
-			finaly = y + v[1];
-			finalz = z + v[2];
-
-			mobj = P_SpawnMobj(finalx, finaly, finalz, MT_HOOP);
-
-			mobj->z -= mobj->height/2;
-			P_SetTarget(&mobj->target, hoopcenter); // Link the sprite to the center.
-			mobj->fuse = 0;
-
-			// Link all the sprites in the hoop together
-			if (nextmobj)
-			{
-				P_SetTarget(&mobj->hprev, nextmobj);
-				P_SetTarget(&mobj->hprev->hnext, mobj);
-			}
-			else
-				mobj->hprev = mobj->hnext = NULL;
-
-			nextmobj = mobj;
-		}
-
-		// Create the collision detectors!
+	// Create the collision detectors!
+	if (mthing->type == 1713)
+	{
 		// Create them until the size is less than 8
 		// But always create at least ONE set of collision detectors
 		do
@@ -12036,39 +11949,16 @@ void P_SpawnHoopsAndRings(mapthing_t *mthing)
 			else
 				hoopsize /= 2;
 
-			hoopplacement = hoopsize * (4*FRACUNIT);
+			hoopplacement = hoopsize * sizefactor;
 
-			for (i = 0; i < hoopsize; i++)
-			{
-				fa = i*FINEANGLES/hoopsize;
-				v[0] = FixedMul(FINECOSINE(fa), hoopplacement);
-				v[1] = 0;
-				v[2] = FixedMul(FINESINE(fa), hoopplacement);
-				v[3] = FRACUNIT;
-				res = VectorMatrixMultiply(v, *RotateXMatrix(FixedAngle(spewangle*FRACUNIT)));
-				M_Memcpy(&v, res, sizeof (v));
-				res = VectorMatrixMultiply(v, *RotateZMatrix(closestangle));
-				M_Memcpy(&v, res, sizeof (v));
-
-				finalx = x + v[0];
-				finaly = y + v[1];
-				finalz = z + v[2];
-
-				mobj = P_SpawnMobj(finalx, finaly, finalz, MT_HOOPCOLLIDE);
-				mobj->z -= mobj->height/2;
-
-				// Link all the collision sprites together.
-				mobj->hnext = NULL;
-				P_SetTarget(&mobj->hprev, nextmobj);
-				P_SetTarget(&mobj->hprev->hnext, mobj);
-
-				nextmobj = mobj;
-			}
+			P_SpawnNiGHTSHoop(x, y, z, hoopsize, hoopplacement, closestangle, spewangle, NULL, &nextmobj, MT_HOOPCOLLIDE);
 		} while (hoopsize >= 8);
-
-		return;
 	}
-	else return; // srb2kart - no rings or ring-like objects in R1
+	else
+	{
+		P_SpawnNiGHTSHoop(x, y, z, hoopsize/2, sizefactor, closestangle, spewangle, NULL, &nextmobj, MT_HOOPCOLLIDE);
+		P_SpawnNiGHTSHoop(x, y, z, hoopsize/2, sizefactor*2, closestangle, spewangle, NULL, &nextmobj, MT_HOOPCOLLIDE);
+	}
 }
 
 //

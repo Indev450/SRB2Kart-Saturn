@@ -2007,7 +2007,7 @@ static void LoadMobjThinker(savebuffer_t *save, actionf_p1 thinker)
 
 		if (mapthings[spawnpointnum].type == 1705 || mapthings[spawnpointnum].type == 1713) // NiGHTS Hoop special case
 		{
-			P_SpawnHoopsAndRings(&mapthings[spawnpointnum]);
+			P_SpawnHoops(&mapthings[spawnpointnum]);
 			return;
 		}
 

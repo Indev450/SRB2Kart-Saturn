@@ -948,10 +948,9 @@ static void P_SpawnMapThings(void)
 			mt->mobj = NULL;
 
 			// Z for objects Tails 05-26-2002
-			mt->z = (INT16)(R_PointInSubsector(mt->x << FRACBITS, mt->y << FRACBITS)
-				->sector->floorheight>>FRACBITS);
+			mt->z = (INT16)(R_PointInSubsector(mt->x << FRACBITS, mt->y << FRACBITS)->sector->floorheight>>FRACBITS);
 
-			P_SpawnHoopsAndRings(mt);
+			P_SpawnHoops(mt);
 		}
 	}
 }
