@@ -2094,8 +2094,7 @@ void R_AddPrecipitationSprites(void)
 		return;
 	}
 
-	const fixed_t precipscale = (cv_mobjscaleprecip.value ? mapobjectscale : FRACUNIT);
-	const fixed_t drawdist = ((fixed_t)(cv_drawdist_precip.value) * precipscale);
+	const fixed_t drawdist = ((fixed_t)(cv_drawdist_precip.value) * mapobjectscale);
 
 	// no, no infinite draw distance for precipitation. this option at zero is supposed to turn it off
 	if (drawdist == 0)
