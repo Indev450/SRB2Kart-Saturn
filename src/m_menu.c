@@ -1825,17 +1825,10 @@ void M_Init(void)
 		OP_VideoOptionsMenu[op_video_ogl].status = IT_DISABLED;
 
 		OP_ExpOptionsMenu[op_exp_glscrtx].status = IT_DISABLED;
-#ifdef USE_FBO_OGL
-		OP_ExpOptionsMenu[op_exp_fbo].status = IT_DISABLED;
-#endif
 		OP_ExpOptionsMenu[op_exp_paldepth].status = IT_DISABLED;
 	}
 	else if (rendermode == render_opengl)
 	{
-#ifdef USE_FBO_OGL
-		if (!supportFBO)
-			OP_ExpOptionsMenu[op_exp_fbo].status = IT_GRAYEDOUT;
-#endif
 		if (!gl_shadersavailable)
 		{
 			OP_OpenGLOptionsMenu[op_gl_shader].status = IT_GRAYEDOUT;

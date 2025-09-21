@@ -183,9 +183,6 @@ extern CV_PossibleValue_t glanisotropicmode_cons_t[];
 extern consvar_t cv_gltexturedepth;
 
 extern consvar_t cv_glscreentextures;
-#ifdef USE_FBO_OGL
-extern consvar_t cv_glframebuffer;
-#endif
 
 extern consvar_t cv_glmdls;
 extern consvar_t cv_glfallbackplayermodel;

@@ -161,9 +161,6 @@ static void COM_HWR_glinfo(void);
 //
 
 static void CV_screentextures_OnChange(void);
-#ifdef USE_FBO_OGL
-static void CV_glframebuffer_OnChange(void);
-#endif
 static void CV_glshaders_OnChange(void);
 static void CV_gllightdithering_OnChange(void);
 static void CV_filtermode_OnChange(void);
@@ -205,10 +202,6 @@ static CV_PossibleValue_t glpalettedepth_cons_t[] = {{16, "16 bits"}, {24, "24 b
 //  - intermission background
 //  - full screen scaling (use native resolution or windowed mode to avoid this)
 consvar_t cv_glscreentextures = {"gr_screentextures", "All", CV_CALL|CV_SAVE, glscreentextures_cons_t, CV_screentextures_OnChange, 0, NULL, NULL, 0, 0, NULL};
-
-#ifdef USE_FBO_OGL
-consvar_t cv_glframebuffer = {"gr_framebuffer", "Off", CV_SAVE|CV_CALL|CV_NOINIT, CV_OnOff, CV_glframebuffer_OnChange, 0, NULL, NULL, 0, 0, NULL};
-#endif
 
 consvar_t cv_glmdls = {"gr_mdls", "Off", CV_SAVE|CV_CALL, CV_OnOff, M_UpdateOGLMenu, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_glfallbackplayermodel = {"gr_fallbackplayermodel", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
@@ -253,28 +246,10 @@ static void CV_screentextures_OnChange(void)
 	{
 		if (cv_glpaletterendering.value != 0)
 			CV_SetValue(&cv_glpaletterendering, 0);
-
-#ifdef USE_FBO_OGL
-		if (cv_glframebuffer.value != 0)
-			CV_SetValue(&cv_glframebuffer, 0);
-#endif
 	}
 	GL_SetSpecialState(HWD_SET_SCREEN_TEXTURES, cv_glscreentextures.value);
 	M_UpdateOGLMenu();
 }
-
-#ifdef USE_FBO_OGL
-static void CV_glframebuffer_OnChange(void)
-{
-	ONLY_IF_GL_LOADED
-	if ((cv_glframebuffer.value != 0 && cv_glscreentextures.value != 2) || (!supportFBO && cv_glframebuffer.value != 0)) // screen FBO needs screen textures
-		CV_SetValue(&cv_glframebuffer, 0);
-
-	I_DownSample();
-	RefreshOGLSDLSurface();
-	M_UpdateOGLMenu();
-}
-#endif
 
 static void CV_glshaders_OnChange(void)
 {
@@ -5800,10 +5775,6 @@ void HWR_AddCommands(void)
 	CV_RegisterVar(&cv_gltexturedepth);
 
 	CV_RegisterVar(&cv_glscreentextures);
-
-#ifdef USE_FBO_OGL
-	CV_RegisterVar(&cv_glframebuffer);
-#endif
 
 	CV_RegisterVar(&cv_glmdls);
 	CV_RegisterVar(&cv_glfallbackplayermodel);

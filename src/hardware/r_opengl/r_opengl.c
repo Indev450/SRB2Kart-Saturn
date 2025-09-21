@@ -1265,7 +1265,7 @@ void GL_DeleteTexture(GLMipmap_t *pTexInfo)
 #ifdef USE_FBO_OGL
 static void GL_Framebuffer_GenerateAttachments(void)
 {
-	if (!supportFBO || !UseScreenFBO())
+	if (!supportFBO)
 		return;
 
 	// Bind the framebuffer
@@ -1347,7 +1347,7 @@ static void GL_Framebuffer_DeleteAttachments(void)
 
 static void GL_Framebuffer_Generate(void)
 {
-	if (!supportFBO || !UseScreenFBO())
+	if (!supportFBO)
 		return;
 
 	// Generate the framebuffer
@@ -1384,7 +1384,7 @@ void GL_Framebuffer_Unbind(void)
 
 void GL_Framebuffer_Enable(void)
 {
-	if (!supportFBO || !UseScreenFBO())
+	if (!supportFBO)
 		return;
 
 	if (FramebufferObject == 0)
