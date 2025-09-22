@@ -210,6 +210,7 @@ boolean OglSdlSurface(INT32 w, INT32 h)
 
 #if defined (__unix__)
 #ifdef USE_FBO_OGL
+		// TODO: delet this since nvidia fixed their shit on 575
 		char videodriver[4] = {'S','D','L',0};
 		if (supportFBO && strstr((const char*)gl_renderer, "NVIDIA")
 			&& (*strncpy(videodriver, SDL_GetCurrentVideoDriver(), sizeof(videodriver)-1) != '\0')
