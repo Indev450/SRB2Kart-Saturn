@@ -25,6 +25,9 @@
 
 // Eeeeh not sure is this right way, but it works < sry :c < sry again it had to go :c
 
+// requires GL 4.3
+//#define GLDEBUGMESSAGE
+
 #if defined (HWRENDER) && !defined (NOROPENGL)
 
 #include "../../r_fps.h" // For R_GetTimeFrac, used for the leveltime shader uniform
@@ -40,6 +43,10 @@
 #include "../../f_finale.h"
 #include "../../r_local.h" // For rendertimefrac, used for the leveltime shader uniform
 #include "../../i_video.h"
+
+#ifdef GLDEBUGMESSAGE
+#include "../../console.h"
+#endif
 
 struct GLRGBAFloat
 {
@@ -353,6 +360,10 @@ static void GL_MSG_Error(const char *format, ...)
 #define pglCopyTexImage2D glCopyTexImage2D
 #define pglCopyTexSubImage2D glCopyTexSubImage2D
 
+#ifdef GLDEBUGMESSAGE
+#define pglDebugMessageCallback glDebugMessageCallback
+#endif
+
 #else //!STATIC_OPENGL
 
 /* 1.0 functions */
@@ -552,6 +563,11 @@ static PFNglColorPointer pglColorPointer;
 /* 2.0 functions */
 typedef void (APIENTRY * PFNglBlendEquation) (GLenum mode);
 static PFNglBlendEquation pglBlendEquation;
+
+#ifdef GLDEBUGMESSAGE
+typedef void (APIENTRY * PFNglDebugMessageCallback) (void (APIENTRY *DEBUGPROC)(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar *message, const void *userParam), const void *userParam);
+static PFNglDebugMessageCallback pglDebugMessageCallback;
+#endif
 
 /* 1.2 Parms */
 /* GL_CLAMP_TO_EDGE_EXT */
@@ -863,6 +879,10 @@ void SetupGLFunc4(void)
 	GetGLfunc(glUniform2fv);
 	GetGLfunc(glUniform3fv);
 	GetGLfunc(glGetUniformLocation);
+
+#ifdef GLDEBUGMESSAGE
+	GetGLfunc(glDebugMessageCallback);
+#endif
 
 #ifdef USE_FBO_OGL
 	const int fbocheck = GLFramebuffer_CheckExt();
@@ -1190,6 +1210,72 @@ void GL_SetModelView(GLint w, GLint h)
 	pglGetFloatv(GL_PROJECTION_MATRIX, projMatrix);
 }
 
+#ifdef GLDEBUGMESSAGE
+// smol helper for logmessage
+static const char* AlertType(alerttype_t level)
+{
+	switch (level)
+	{
+		case CONS_ERROR:   return "ERROR:";
+		case CONS_WARNING: return "WARNING:";
+		case CONS_NOTICE:  return "NOTICE:";
+		default:           return "";
+	}
+}
+
+static void APIENTRY DebugMessage(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar *message, const void *userParam)
+{
+	const char *debugsource, *debugtype;
+
+	(void)id;
+	(void)length;
+	(void)userParam;
+
+	switch (source)
+	{
+#define S(s) case GL_DEBUG_SOURCE_##s: debugsource = #s; break
+		S(API);
+		S(WINDOW_SYSTEM);
+		S(SHADER_COMPILER);
+		S(THIRD_PARTY);
+		S(APPLICATION);
+		S(OTHER);
+#undef S
+	default:
+		debugsource = "unknown";
+		break;
+	}
+
+	switch (type)
+	{
+#define S(s) case GL_DEBUG_TYPE_##s: debugtype = #s; break
+		S(ERROR);
+		S(DEPRECATED_BEHAVIOR);
+		S(UNDEFINED_BEHAVIOR);
+		S(PORTABILITY);
+		S(PERFORMANCE);
+		S(MARKER);
+		S(PUSH_GROUP);
+		S(POP_GROUP);
+		S(OTHER);
+#undef S
+	default:
+		debugtype = "unknown";
+		break;
+	}
+
+	alerttype_t level = severity == GL_DEBUG_SEVERITY_HIGH ? CONS_ERROR
+	                  : severity == GL_DEBUG_SEVERITY_MEDIUM ? CONS_WARNING
+	                  : CONS_NOTICE;
+
+	//CONS_Alert(level, "OpenGL (%s) (%s): %s\n", debugsource, debugtype, message);
+
+	char buf[1024];
+	snprintf(buf, sizeof(buf), "%s OpenGL (%s) (%s): %s\n", AlertType(level), debugsource, debugtype, message);
+	CON_LogMessage(buf);
+}
+#endif
+
 // -----------------+
 // SetStates        : Set permanent states
 // -----------------+
@@ -1226,6 +1312,12 @@ void GL_SetStates(void)
 	pglLoadIdentity();
 	pglScalef(1.0f, 1.0f, -1.0f);
 	pglGetFloatv(GL_MODELVIEW_MATRIX, modelMatrix); // added for new coronas' code (without depth buffer)
+
+#ifdef GLDEBUGMESSAGE
+	pglEnable(GL_DEBUG_OUTPUT);
+	pglEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
+	pglDebugMessageCallback(&DebugMessage, NULL);
+#endif
 }
 
 // -----------------+
