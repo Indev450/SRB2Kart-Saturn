@@ -128,7 +128,6 @@ GLfloat projMatrix[16];
 static GLint   viewport[4];
 
 #ifdef USE_FBO_OGL
-GLuint FramebufferObject, FramebufferTexture, RenderbufferObject;
 
 enum
 {
@@ -344,6 +343,10 @@ static void GL_MSG_Error(const char *format, ...)
 #define pglCopyTexImage2D glCopyTexImage2D
 #define pglCopyTexSubImage2D glCopyTexSubImage2D
 
+#ifdef GLDEBUGMESSAGE
+#define pglDebugMessageCallback glDebugMessageCallback
+#endif
+
 #else //!STATIC_OPENGL
 
 /* 1.0 functions */
@@ -484,6 +487,29 @@ typedef void (APIENTRY * PFNglDeleteRenderbuffers) (GLsizei n, GLuint *renderbuf
 static PFNglDeleteRenderbuffers pglDeleteRenderbuffers;
 typedef void (APIENTRY * PFNglRenderbufferStorage) (GLenum target, GLenum internalformat, GLsizei width, GLsizei height);
 static PFNglRenderbufferStorage pglRenderbufferStorage;
+
+typedef void (APIENTRY * PFNglRenderbufferStorageMultisample) (GLenum target, GLsizei samples, GLenum internalformat, GLsizei width, GLsizei height);
+static PFNglRenderbufferStorageMultisample pglRenderbufferStorageMultisample;
+
+typedef void (APIENTRY * PFNglBlitFramebuffer) (GLint srcX0, GLint srcY0, GLint srcX1, GLint srcY1, GLint dstX0, GLint dstY0, GLint dstX1, GLint dstY1, GLbitfield mask, GLenum filter);
+static PFNglBlitFramebuffer pglBlitFramebuffer;
+
+typedef void (APIENTRY * PFNglTexImage2DMultisample) ( 	GLenum target,
+														GLsizei samples,
+														GLenum internalformat,
+														GLsizei width,
+														GLsizei height,
+														GLboolean fixedsamplelocations);
+
+static PFNglTexImage2DMultisample pglTexImage2DMultisample;
+
+
+typedef void (APIENTRY * PFNglDrawBuffer) ( 	GLenum buf);
+static PFNglDrawBuffer pglDrawBuffer;
+
+typedef void (APIENTRY * PFNglReadBuffer) ( 	GLenum mode);
+static PFNglReadBuffer pglReadBuffer;
+
 typedef void (APIENTRY * PFNglFramebufferRenderbuffer) (GLenum target, GLenum attachment, GLenum renderbuffertarget, GLenum renderbuffer);
 static PFNglFramebufferRenderbuffer pglFramebufferRenderbuffer;
 
@@ -509,6 +535,9 @@ static PFNglRenderbufferStorageEXT pglRenderbufferStorageEXT;
 typedef void (APIENTRY * PFNglFramebufferRenderbufferEXT) (GLenum target, GLenum attachment, GLenum renderbuffertarget, GLenum renderbuffer);
 static PFNglFramebufferRenderbufferEXT pglFramebufferRenderbufferEXT;
 #endif // USE_FBO_OGL
+
+typedef GLenum (APIENTRY * PFNglGetError) ( 	void);
+static PFNglGetError pglGetError;
 
 #endif //!STATIC_OPENGL
 
@@ -543,6 +572,11 @@ static PFNglColorPointer pglColorPointer;
 /* 2.0 functions */
 typedef void (APIENTRY * PFNglBlendEquation) (GLenum mode);
 static PFNglBlendEquation pglBlendEquation;
+
+#ifdef GLDEBUGMESSAGE
+typedef void (APIENTRY * PFNglDebugMessageCallback) (void (APIENTRY *DEBUGPROC)(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar *message, const void *userParam), const void *userParam);
+static PFNglDebugMessageCallback pglDebugMessageCallback;
+#endif
 
 /* 1.2 Parms */
 /* GL_CLAMP_TO_EDGE_EXT */
@@ -855,6 +889,10 @@ void SetupGLFunc4(void)
 	GetGLfunc(glUniform3fv);
 	GetGLfunc(glGetUniformLocation);
 
+#ifdef GLDEBUGMESSAGE
+	GetGLfunc(glDebugMessageCallback);
+#endif
+
 #ifdef USE_FBO_OGL
 	const int fbocheck = GLFramebuffer_CheckExt();
 
@@ -871,7 +909,12 @@ void SetupGLFunc4(void)
 			GetGLfunc(glBindRenderbuffer);
 			GetGLfunc(glDeleteRenderbuffers);
 			GetGLfunc(glRenderbufferStorage);
+			GetGLfunc(glRenderbufferStorageMultisample);
+			GetGLfunc(glBlitFramebuffer);
 			GetGLfunc(glFramebufferRenderbuffer);
+			GetGLfunc(glTexImage2DMultisample);
+			GetGLfunc(glDrawBuffer);
+			GetGLfunc(glReadBuffer);
 
 			// check if ALL functions are availible
 			// what a mouthful
@@ -1188,6 +1231,53 @@ void GL_SetModelView(GLint w, GLint h)
 	pglGetFloatv(GL_PROJECTION_MATRIX, projMatrix);
 }
 
+#ifdef GLDEBUGMESSAGE
+static void APIENTRY DebugMessage(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar *message, const void *userParam)
+{
+	const char *debugsource, *debugtype;
+
+	switch (source)
+	{
+#define S(s) case GL_DEBUG_SOURCE_##s: debugsource = #s; break
+		S(API);
+		S(WINDOW_SYSTEM);
+		S(SHADER_COMPILER);
+		S(THIRD_PARTY);
+		S(APPLICATION);
+		S(OTHER);
+#undef S
+	default:
+		debugsource = "unknown";
+		break;
+	}
+
+	switch (type)
+	{
+#define S(s) case GL_DEBUG_TYPE_##s: debugtype = #s; break
+		S(ERROR);
+		S(DEPRECATED_BEHAVIOR);
+		S(UNDEFINED_BEHAVIOR);
+		S(PORTABILITY);
+		S(PERFORMANCE);
+		S(MARKER);
+		S(PUSH_GROUP);
+		S(POP_GROUP);
+		S(OTHER);
+#undef S
+	default:
+		debugtype = "unknown";
+		break;
+	}
+
+	alerttype_t level = severity == GL_DEBUG_SEVERITY_HIGH ? CONS_ERROR
+	                  : severity == GL_DEBUG_SEVERITY_MEDIUM ? CONS_WARNING
+	                  : CONS_NOTICE;
+	//CONS_Alert(level, "OpenGL (%s) (%s): %s\n", debugsource, debugtype, message);
+
+	printf("OpenGL (%s) (%s): %s\n", debugsource, debugtype, message);
+}
+#endif
+
 // -----------------+
 // SetStates        : Set permanent states
 // -----------------+
@@ -1224,6 +1314,14 @@ void GL_SetStates(void)
 	pglLoadIdentity();
 	pglScalef(1.0f, 1.0f, -1.0f);
 	pglGetFloatv(GL_MODELVIEW_MATRIX, modelMatrix); // added for new coronas' code (without depth buffer)
+
+	pglEnable(GL_MULTISAMPLE);
+
+#ifdef GLDEBUGMESSAGE
+	pglEnable(GL_DEBUG_OUTPUT);
+	pglEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
+	pglDebugMessageCallback(&DebugMessage, NULL);
+#endif
 }
 
 // -----------------+
@@ -1262,64 +1360,80 @@ void GL_DeleteTexture(GLMipmap_t *pTexInfo)
 	pTexInfo->downloaded = 0;
 }
 
-#ifdef USE_FBO_OGL
-static void GL_Framebuffer_GenerateAttachments(void)
+enum
 {
-	if (!supportFBO || !UseScreenFBO())
+	FBO_RESOLV,
+	FBO_MSAA,
+};
+
+enum
+{
+	RBO_COLOR,
+	RBO_DEPTH,
+};
+
+typedef struct
+{
+	GLuint fbobject;
+	GLuint rbo[2];
+} glfbo_t;
+
+static glfbo_t FBO[2] = {};
+
+static bool fboInit = false;
+
+static void GL_Framebuffer_Generate(void)
+{
+	if (!supportFBO || fboInit)
 		return;
 
-	// Bind the framebuffer
-	pglBindFramebuffer(FBO_FRAMEBUFFER, FramebufferObject);
+	if (!FBO[FBO_MSAA].fbobject)
+		pglGenFramebuffers(1, &FBO[FBO_MSAA].fbobject);
 
-	// Generate the framebuffer texture
-	if (!FramebufferTexture)
+	pglBindFramebuffer(GL_FRAMEBUFFER, FBO[FBO_MSAA].fbobject);
+
+	if (!FBO[FBO_MSAA].rbo[RBO_COLOR])
 	{
-		pglGenTextures(1, &FramebufferTexture);
-		pglBindTexture(GL_TEXTURE_2D, FramebufferTexture);
-		pglTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, screen_width, screen_height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
-		pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-		pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-		pglBindTexture(GL_TEXTURE_2D, 0);
-
-		// Attach the framebuffer texture to the framebuffer
-		pglFramebufferTexture2D(FBO_FRAMEBUFFER, FBO_COLOR_ATTACHMENT, GL_TEXTURE_2D, FramebufferTexture, 0);
+		pglGenRenderbuffers(1, &FBO[FBO_MSAA].rbo[RBO_COLOR]);
+		pglBindRenderbuffer(GL_RENDERBUFFER, FBO[FBO_MSAA].rbo[RBO_COLOR]);
+		pglRenderbufferStorageMultisample(GL_RENDERBUFFER, 4, GL_RGBA8, screen_width, screen_height);
+		pglFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, FBO[FBO_MSAA].rbo[RBO_COLOR]);
 	}
 
-	// Generate the renderbuffer
-	if (!RenderbufferObject)
+	if (!FBO[FBO_MSAA].rbo[RBO_DEPTH])
 	{
-		pglGenRenderbuffers(1, &RenderbufferObject);
-
-		pglBindRenderbuffer(FBO_RENDERBUFFER, RenderbufferObject);
-
-		if (supportFBO == FBO_ARB)
-		{
-			pglRenderbufferStorage(FBO_RENDERBUFFER, FBO_DEPTH_STENCIL, screen_width, screen_height);
-			pglFramebufferRenderbuffer(FBO_FRAMEBUFFER, FBO_DEPTH_ATTACHMENT, FBO_RENDERBUFFER, RenderbufferObject);
-		}
-		else if (supportFBO == FBO_EXT || supportFBO == FBO_EXT_STENCIL)
-		{
-			pglRenderbufferStorage(FBO_RENDERBUFFER, FBO_DEPTH_STENCIL, screen_width, screen_height);
-			// attach a renderbuffer to depth attachment point
-			pglFramebufferRenderbuffer(FBO_FRAMEBUFFER, FBO_DEPTH_ATTACHMENT, FBO_RENDERBUFFER, RenderbufferObject);
-
-			if (supportFBO == FBO_EXT_STENCIL)
-			{
-				// attach a renderbuffer to stencil attachment point
-				pglFramebufferRenderbuffer(FBO_FRAMEBUFFER, GL_STENCIL_ATTACHMENT_EXT, FBO_RENDERBUFFER, RenderbufferObject);
-			}
-		}
-
-		// Clear the renderbuffer
-		GL_ClearBuffer(true, true, true, NULL);
-
-		pglBindRenderbuffer(FBO_RENDERBUFFER, 0);
+		pglGenRenderbuffers(1, &FBO[FBO_MSAA].rbo[RBO_DEPTH]);
+		pglBindRenderbuffer(GL_RENDERBUFFER, FBO[FBO_MSAA].rbo[RBO_DEPTH]);
+		pglRenderbufferStorageMultisample(GL_RENDERBUFFER, 4, GL_DEPTH24_STENCIL8, screen_width, screen_height);
+		pglFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, FBO[FBO_MSAA].rbo[RBO_DEPTH]);
 	}
 
-	// Unbind the framebuffer
-	pglBindFramebuffer(FBO_FRAMEBUFFER, 0);
+	if (!FBO[FBO_RESOLV].fbobject)
+		pglGenFramebuffers(1, &FBO[FBO_RESOLV].fbobject);
 
-	fboinit = true;
+	pglBindFramebuffer(GL_FRAMEBUFFER, FBO[FBO_RESOLV].fbobject);
+
+	if (!FBO[FBO_RESOLV].rbo[RBO_COLOR])
+	{
+		pglGenRenderbuffers(1, &FBO[FBO_RESOLV].rbo[RBO_COLOR]);
+		pglBindRenderbuffer(GL_RENDERBUFFER, FBO[FBO_RESOLV].rbo[RBO_COLOR]);
+		pglRenderbufferStorageMultisample(GL_RENDERBUFFER, 4, GL_RGBA8, screen_width, screen_height);
+		pglFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, FBO[FBO_RESOLV].rbo[RBO_COLOR]);
+	}
+
+	if (!FBO[FBO_RESOLV].rbo[RBO_DEPTH])
+	{
+		pglGenRenderbuffers(1, &FBO[FBO_RESOLV].rbo[RBO_DEPTH]);
+		pglBindRenderbuffer(GL_RENDERBUFFER, FBO[FBO_RESOLV].rbo[RBO_DEPTH]);
+		pglRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, screen_width, screen_height);
+		pglFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, FBO[FBO_RESOLV].rbo[RBO_DEPTH]);
+	}
+
+	// unbind
+	pglBindFramebuffer(GL_FRAMEBUFFER, 0);
+	pglBindRenderbuffer(GL_RENDERBUFFER, 0);
+
+	fboInit = true;
 }
 
 static void GL_Framebuffer_DeleteAttachments(void)
@@ -1327,47 +1441,51 @@ static void GL_Framebuffer_DeleteAttachments(void)
 	if (!supportFBO || !fboinit)
 		return;
 
-	if (!FramebufferObject && !RenderbufferObject && !FramebufferTexture)
-		return;
+	if (FBO[FBO_MSAA].rbo[RBO_COLOR])
+	{
+		pglDeleteRenderbuffers(1, &FBO[FBO_MSAA].rbo[RBO_COLOR]);
+		FBO[FBO_MSAA].rbo[RBO_COLOR] = 0;
+	}
 
-	// Unbind the framebuffer
-	pglBindFramebuffer(FBO_FRAMEBUFFER, 0);
-	pglBindRenderbuffer(FBO_RENDERBUFFER, 0);
+	if (FBO[FBO_MSAA].rbo[RBO_DEPTH])
+	{
+		pglDeleteRenderbuffers(1, &FBO[FBO_MSAA].rbo[RBO_DEPTH]);
+		FBO[FBO_MSAA].rbo[RBO_DEPTH] = 0;
+	}
 
-	if (FramebufferTexture)
-		pglDeleteTextures(1, &FramebufferTexture);
+	if (FBO[FBO_RESOLV].rbo[RBO_COLOR])
+	{
+		pglDeleteRenderbuffers(1, &FBO[FBO_RESOLV].rbo[RBO_COLOR]);
+		FBO[FBO_RESOLV].rbo[RBO_COLOR] = 0;
+	}
 
-	if (RenderbufferObject)
-		pglDeleteRenderbuffers(1, &RenderbufferObject);
+	if (FBO[FBO_RESOLV].rbo[RBO_DEPTH])
+	{
+		pglDeleteRenderbuffers(1, &FBO[FBO_RESOLV].rbo[RBO_DEPTH]);
+		FBO[FBO_RESOLV].rbo[RBO_DEPTH] = 0;
+	}
 
-	FramebufferTexture = 0;
-	RenderbufferObject = 0;
-	fboinit = false;
-}
-
-static void GL_Framebuffer_Generate(void)
-{
-	if (!supportFBO || !UseScreenFBO())
-		return;
-
-	// Generate the framebuffer
-	if (!FramebufferObject)
-		pglGenFramebuffers(1, &FramebufferObject);
-
-	if (pglCheckFramebufferStatus(FBO_FRAMEBUFFER) == (GLenum)FBO_COMPLETE)
-		GL_Framebuffer_GenerateAttachments();
+	fboInit = false;
 }
 
 static void GL_Framebuffer_Delete(void)
 {
-	if (!supportFBO || !fboinit)
+	if (!supportFBO)
 		return;
 
-	if (FramebufferObject)
-		pglDeleteFramebuffers(1, &FramebufferObject);
-
 	GL_Framebuffer_DeleteAttachments();
-	FramebufferObject = 0;
+
+	if (FBO[FBO_MSAA].fbobject)
+	{
+		pglDeleteFramebuffers(1, &FBO[FBO_MSAA].fbobject);
+		FBO[FBO_MSAA].fbobject = 0;
+	}
+
+	if (FBO[FBO_RESOLV].fbobject)
+	{
+		pglDeleteFramebuffers(1, &FBO[FBO_RESOLV].fbobject);
+		FBO[FBO_RESOLV].fbobject = 0;
+	}
 }
 
 void GL_Framebuffer_Unbind(void)
@@ -1375,41 +1493,36 @@ void GL_Framebuffer_Unbind(void)
 	if (!supportFBO || !fboinit)
 		return;
 
-	if (!FramebufferObject && !RenderbufferObject)
-		return;
+	pglBindFramebuffer(GL_READ_FRAMEBUFFER, FBO[FBO_MSAA].fbobject);
+	pglBindFramebuffer(GL_DRAW_FRAMEBUFFER, FBO[FBO_RESOLV].fbobject);
 
-	pglBindFramebuffer(FBO_FRAMEBUFFER, 0);
-	pglBindRenderbuffer(FBO_RENDERBUFFER, 0);
+	pglBlitFramebuffer(0, 0, screen_width, screen_height,
+						0, 0, screen_width, screen_height,
+						GL_COLOR_BUFFER_BIT,
+						GL_NEAREST);
+
+	// back to default framebuffer
+	pglBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
 void GL_Framebuffer_Enable(void)
 {
-	if (!supportFBO || !UseScreenFBO())
+	if (!supportFBO)
 		return;
 
-	if (FramebufferObject == 0)
-		GL_Framebuffer_Generate();
-	else if (!FramebufferTexture || !RenderbufferObject)
-		GL_Framebuffer_GenerateAttachments();
-
-	pglBindFramebuffer(FBO_FRAMEBUFFER, FramebufferObject);
-	pglBindRenderbuffer(FBO_RENDERBUFFER, RenderbufferObject);
+	GL_Framebuffer_Generate();
+	pglBindFramebuffer(GL_FRAMEBUFFER, FBO[FBO_MSAA].fbobject);
 }
 
 void GL_Framebuffer_Disable(void)
 {
-	if (!supportFBO || !fboinit)
+	if (!supportFBO)
 		return;
 
-	if (!FramebufferObject && !RenderbufferObject)
-		return;
-
-	pglBindFramebuffer(FBO_FRAMEBUFFER, 0);
-	pglBindRenderbuffer(FBO_RENDERBUFFER, 0);
-
+	pglBindFramebuffer(GL_FRAMEBUFFER, 0);
 	GL_Framebuffer_Delete();
 }
-#endif
+
 
 // -----------------+
 // Flush            : flush OpenGL textures

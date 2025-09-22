@@ -71,18 +71,9 @@ PFNglGetString pglGetString;
 #endif
 
 #ifdef USE_FBO_OGL
-
-#if defined (__unix__)
-static boolean xwaylandcrap = false;
-#endif
-
 boolean UseScreenFBO(void)
 {
-	return ((supportFBO && cv_glframebuffer.value && downsample)
-#if defined (__unix__)
-	|| (supportFBO && xwaylandcrap)
-#endif
-	);
+	return (supportFBO && cv_glframebuffer.value);
 }
 #endif
 
@@ -207,16 +198,6 @@ boolean OglSdlSurface(INT32 w, INT32 h)
 			maximumAnisotropy = 1;
 
 		glanisotropicmode_cons_t[1].value = maximumAnisotropy;
-
-#if defined (__unix__)
-#ifdef USE_FBO_OGL
-		char videodriver[4] = {'S','D','L',0};
-		if (supportFBO && strstr((const char*)gl_renderer, "NVIDIA")
-			&& (*strncpy(videodriver, SDL_GetCurrentVideoDriver(), sizeof(videodriver)-1) != '\0')
-			&& (strncasecmp("x11",videodriver,4) == 0))
-			xwaylandcrap = true;
-#endif
-#endif
 	}
 
 	SDL_GL_SetSwapInterval(cv_vidwait.value ? 1 : 0);
@@ -294,13 +275,6 @@ void OglSdlFinishUpdate(boolean waitvbl)
 	if (!I_CheckNativeRes() || WipeInAction)
 #endif
 		HWR_DrawScreenFinalTexture(realwidth, realheight, false);
-
-#if defined (__unix__)
-#ifdef USE_FBO_OGL
-	if (loaded_config)
-		xwaylandcrap = false;
-#endif
-#endif
 }
 
 #endif //HWRENDER
