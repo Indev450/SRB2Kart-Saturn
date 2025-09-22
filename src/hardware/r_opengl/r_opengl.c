@@ -3108,7 +3108,12 @@ static void GL_Framebuffer_Generate(void)
 		pglGenFramebuffers(1, &framebufferobject.fboobj);
 
 	if (pglCheckFramebufferStatus(GL_FRAMEBUFFER_EXT) != GL_FRAMEBUFFER_COMPLETE_EXT)
+	{
+		// if this fails, dont retry it a gazillion times
+		// this wouldnt recover
+		supportFBO = false;
 		return;
+	}
 
 	// Bind the framebuffer
 	pglBindFramebuffer(GL_FRAMEBUFFER_EXT, framebufferobject.fboobj);
