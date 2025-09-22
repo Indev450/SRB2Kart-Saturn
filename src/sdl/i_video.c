@@ -133,6 +133,7 @@ static void Impl_SetVsync(void);
 static INT32 desktopwidth = 0, desktopheight = 0;
 
 static void I_CheckDesktopRes(void);
+
 // synchronize page flipping with screen refresh
 consvar_t cv_vidwait = {"vid_wait", "Off", CV_SAVE|CV_CALL|CV_NOINIT, CV_OnOff, Impl_SetVsync, 0, NULL, NULL, 0, 0, NULL};
 static consvar_t cv_stretch = {"stretch", "Off", CV_SAVE|CV_NOSHOWHELP, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
@@ -209,6 +210,15 @@ static INT32 custom_height = 0;
 static void Impl_VideoSetupBuffer(void);
 static SDL_bool Impl_CreateWindow(SDL_bool fullscreen);
 static void Impl_SetWindowIcon(void);
+
+#ifdef USE_FBO_OGL
+boolean downsample = false;
+void RefreshOGLSDLSurface(void)
+{
+	if (rendermode == render_opengl)
+		OglSdlSurface(vid.width, vid.height);
+}
+#endif
 
 void I_SetTextInput(void)
 {
@@ -544,6 +554,43 @@ boolean I_CheckNativeRes(void)
 	return (vid.width == desktopwidth && vid.height == desktopheight);
 }
 
+#ifdef USE_FBO_OGL
+void I_DownSample(void)
+{
+	boolean needrefresh = false;
+
+	if (!cv_glframebuffer.value || !supportFBO || (cv_glscreentextures.value == 0)) // no sense to do this crap if we cant benefit from it
+	{
+		downsample = false;
+		return;
+	}
+
+	if (I_CheckNativeRes() && (downsample == true))
+	{
+		downsample = false;
+		RefreshOGLSDLSurface();
+		return;
+	}
+
+	if ((vid.width > desktopwidth) || (vid.height > desktopheight)) //check if current resolution is higher than current display resolution
+	{
+		downsample = true;
+		needrefresh = true;
+	}
+	else if (downsample == true)
+	{
+		downsample = false;
+		needrefresh = true;
+	}
+
+	if (needrefresh)
+	{
+		RefreshOGLSDLSurface();
+		needrefresh = false;
+	}
+}
+#endif
+
 static void Impl_HandleWindowEvent(SDL_WindowEvent evt)
 {
 #define FOCUSUNION (mousefocus | (kbfocus << 1) | (windowmoved << 2))
@@ -589,6 +636,9 @@ static void Impl_HandleWindowEvent(SDL_WindowEvent evt)
 	if (windowmoved && rendermode == render_opengl)
 	{
 		I_CheckDesktopRes();
+#ifdef USE_FBO_OGL
+		I_DownSample();
+#endif
 	}
 
 	if (mousefocus && kbfocus)
@@ -1239,6 +1289,9 @@ static void SDLSetMode(INT32 width, INT32 height, SDL_bool fullscreen)
 	if (rendermode == render_opengl)
 	{
 		I_CheckDesktopRes();
+#ifdef USE_FBO_OGL
+		I_DownSample();
+#endif
 		OglSdlSurface(vid.width, vid.height);
 	}
 #endif

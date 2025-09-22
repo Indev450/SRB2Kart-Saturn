@@ -144,6 +144,14 @@ boolean I_CheckNativeRes(void);
 
 void I_SetBorderlessWindow(void);
 
+#ifdef USE_FBO_OGL
+
+void RefreshOGLSDLSurface(void);
+void I_DownSample(void);
+boolean UseScreenFBO(void);
+extern boolean downsample;
+#endif
+
 #ifdef __cplusplus
 } // extern "C"
 #endif

@@ -948,8 +948,14 @@ static menuitem_t OP_ExpOptionsMenu[] =
 
 #ifdef HWRENDER
 	{IT_STRING | IT_CVAR, 	NULL, "Screen Textures", 				&cv_glscreentextures, 		 70},
+#ifdef USE_FBO_OGL
+	{IT_STRING | IT_CVAR, 	NULL, "FBO Downsampling support", 		&cv_glframebuffer, 			 75},
+	{IT_STRING | IT_CVAR, 	NULL, "Palette Depth", 					&cv_glpalettedepth, 		 85},
+	{IT_DISABLED, 			NULL, "", 								NULL,     			 		 95},	// dummy text
+#else
 	{IT_STRING | IT_CVAR, 	NULL, "Palette Depth", 					&cv_glpalettedepth, 		 80},
 	{IT_DISABLED, 			NULL, "", 								NULL,     			 		 90},	// dummy text
+#endif
 #endif
 };
 
@@ -965,6 +971,9 @@ static const char* OP_ExpTooltips[] =
 	"Different methods of scaling the votescreen backgrounds.",
 #ifdef HWRENDER
 	"Should the game do Screen Textures? Provides a good boost to frames\nat the cost of some visual effects not working when disabled.",
+#ifdef USE_FBO_OGL
+	"Allows the game to downsample from a higher resolution than your display\nin OpenGL renderer mode. Requires a GPU with atleast OpenGL 3.0 support.",
+#endif
 	"Change the bit depth of the Lookup Palette in Palette rendering mode\n 16 bits is like software looks ingame\nwhile 24 bits is how software looks in screenshots.",
 #endif
 };
@@ -981,6 +990,9 @@ enum
 	op_exp_votescrn,
 #ifdef HWRENDER
 	op_exp_glscrtx,
+#ifdef USE_FBO_OGL
+	op_exp_fbo,
+#endif
 	op_exp_paldepth,
 #endif
 };
@@ -2914,6 +2926,9 @@ void GameFocus_menu_Onchange(void)
 #ifdef HWRENDER
 void M_UpdateOGLMenu(void)
 {
+#ifdef USE_FBO_OGL
+	OP_ExpOptionsMenu[op_exp_fbo].status = (!supportFBO || cv_glscreentextures.value != 2) ? IT_GRAYEDOUT : IT_STRING | IT_CVAR;
+#endif
 	OP_ExpOptionsMenu[op_exp_paldepth].status = (!HWR_ShouldUsePaletteRendering()) ? IT_GRAYEDOUT : IT_STRING | IT_CVAR;
 
 	OP_OpenGLOptionsMenu[op_gl_falbckmdls].status = (!cv_glmdls.value) ? IT_GRAYEDOUT : IT_STRING | IT_CVAR;

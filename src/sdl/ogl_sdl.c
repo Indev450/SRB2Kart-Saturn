@@ -70,6 +70,22 @@ PFNglGetIntegerv pglGetIntegerv;
 PFNglGetString pglGetString;
 #endif
 
+#ifdef USE_FBO_OGL
+
+#if defined (__unix__)
+static boolean xwaylandcrap = false;
+#endif
+
+boolean UseScreenFBO(void)
+{
+	return ((supportFBO && cv_glframebuffer.value && downsample)
+#if defined (__unix__)
+	|| (supportFBO && xwaylandcrap)
+#endif
+	);
+}
+#endif
+
 /**	\brief SDL video display surface
 */
 INT32 oglflags = 0;
@@ -191,6 +207,16 @@ boolean OglSdlSurface(INT32 w, INT32 h)
 			maximumAnisotropy = 1;
 
 		glanisotropicmode_cons_t[1].value = maximumAnisotropy;
+
+#if defined (__unix__)
+#ifdef USE_FBO_OGL
+		char videodriver[4] = {'S','D','L',0};
+		if (supportFBO && strstr((const char*)gl_renderer, "NVIDIA")
+			&& (*strncpy(videodriver, SDL_GetCurrentVideoDriver(), sizeof(videodriver)-1) != '\0')
+			&& (strncasecmp("x11",videodriver,4) == 0))
+			xwaylandcrap = true;
+#endif
+#endif
 	}
 
 	SDL_GL_SetSwapInterval(cv_vidwait.value ? 1 : 0);
@@ -200,7 +226,10 @@ boolean OglSdlSurface(INT32 w, INT32 h)
 	pglClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT);
 
 #ifdef USE_FBO_OGL
-	GL_Framebuffer_Enable();
+	if (UseScreenFBO())
+		GL_Framebuffer_Enable();
+	else
+		GL_Framebuffer_Disable();
 #endif
 
 	if (!first_init)
@@ -222,6 +251,10 @@ void OglSdlFinishUpdate(boolean waitvbl)
 	static boolean oldwaitvbl = false;
 	int sdlw, sdlh;
 
+#ifdef USE_FBO_OGL
+	const boolean usefbo = UseScreenFBO();
+#endif
+
 	if (oldwaitvbl != waitvbl)
 	{
 		SDL_GL_SetSwapInterval(waitvbl ? 1 : 0);
@@ -233,18 +266,41 @@ void OglSdlFinishUpdate(boolean waitvbl)
 	HWR_MakeScreenFinalTexture();
 
 #ifdef USE_FBO_OGL
-	GL_Framebuffer_Unbind();
+	if (usefbo)
+	{
+		GL_Framebuffer_Unbind();
+	}
 #endif
 
 	HWR_DrawScreenFinalTexture(sdlw, sdlh, HWR_ShouldUsePaletteRendering());
 
 #ifdef USE_FBO_OGL
-	GL_Framebuffer_Enable();
+	if (usefbo)
+	{
+		GL_Framebuffer_Enable();
+	}
 #endif
 
 	SDL_GL_SwapWindow(window);
 
 	GL_GClipRect(0, 0, realwidth, realheight, NZCLIP_PLANE, FAR_ZCLIP_DEFAULT);
+
+	// Sryder:	We need to draw the final screen texture again into the other buffer in the original position so that
+	//			effects that want to take the old screen can do so after this
+	// well we dont need it on native res it seems
+#ifdef USE_FBO_OGL
+	if ((!I_CheckNativeRes() && !usefbo) || WipeInAction)
+#else
+	if (!I_CheckNativeRes() || WipeInAction)
+#endif
+		HWR_DrawScreenFinalTexture(realwidth, realheight, false);
+
+#if defined (__unix__)
+#ifdef USE_FBO_OGL
+	if (loaded_config)
+		xwaylandcrap = false;
+#endif
+#endif
 }
 
 #endif //HWRENDER
