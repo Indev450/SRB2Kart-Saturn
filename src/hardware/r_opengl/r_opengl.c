@@ -3211,6 +3211,14 @@ void GL_Framebuffer_Disable(void)
 }
 #endif
 
+static const float defaultscreenVerts[12] =
+{
+	-1.0f, -1.0f, 1.0f,
+	-1.0f,  1.0f, 1.0f,
+	 1.0f,  1.0f, 1.0f,
+	 1.0f, -1.0f, 1.0f
+};
+
 INT32 GL_GetTextureUsed(void)
 {
 	FTextureInfo *tmp = TexCacheHead;
@@ -3242,16 +3250,16 @@ void GL_PostImgRedraw(float points[SCREENVERTS][SCREENVERTS][2])
 	float float_x, float_y, float_nextx, float_nexty;
 	float xfix, yfix;
 
-	const float blackBack[16] =
+	if (gl_enable_screen_textures != 2)
+		return;
+
+	static const float blackBack[16] =
 	{
 		-16.0f, -16.0f, 6.0f,
 		-16.0f,  16.0f, 6.0f,
 		 16.0f,  16.0f, 6.0f,
 		 16.0f, -16.0f, 6.0f
 	};
-
-	if (gl_enable_screen_textures != 2)
-		return;
 
 	// X/Y stretch fix for all resolutions(!)
 	xfix = (float)screen_texsizew/((float)(screen_width/(float)(SCREENVERTS-1)));
@@ -3331,14 +3339,6 @@ void GL_DrawScreenTexture(int tex, FSurfaceInfo *surf, FBITFIELD polyflags)
 	float fix[8];
 	float xfix, yfix;
 
-	const float screenVerts[12] =
-	{
-		-1.0f, -1.0f, 1.0f,
-		-1.0f,  1.0f, 1.0f,
-		 1.0f,  1.0f, 1.0f,
-		 1.0f, -1.0f, 1.0f
-	};
-
 	if (gl_enable_screen_textures != 2)
 		return;
 
@@ -3363,7 +3363,7 @@ void GL_DrawScreenTexture(int tex, FSurfaceInfo *surf, FBITFIELD polyflags)
 		pglColor4ubv(white);
 
 	pglTexCoordPointer(2, GL_FLOAT, 0, fix);
-	pglVertexPointer(3, GL_FLOAT, 0, screenVerts);
+	pglVertexPointer(3, GL_FLOAT, 0, defaultscreenVerts);
 	pglDrawArrays(GL_TRIANGLE_FAN, 0, 4);
 
 	tex_downloaded = screenTextures[tex];
@@ -3377,15 +3377,10 @@ void GL_DoScreenWipe(int wipeStart, int wipeEnd)
 
 	INT32 fademaskdownloaded = tex_downloaded; // the fade mask that has been set
 
-	const float screenVerts[12] =
-	{
-		-1.0f, -1.0f, 1.0f,
-		-1.0f,  1.0f, 1.0f,
-		 1.0f,  1.0f, 1.0f,
-		 1.0f, -1.0f, 1.0f
-	};
-
 	float fix[8];
+
+	if (!gl_enable_screen_textures)
+		return;
 
 	const float defaultST[8] =
 	{
@@ -3394,9 +3389,6 @@ void GL_DoScreenWipe(int wipeStart, int wipeEnd)
 		1.0f, 0.0f,
 		1.0f, 1.0f
 	};
-
-	if (!gl_enable_screen_textures)
-		return;
 
 	xfix = 1/((float)screen_texsizew/(float)screen_width);
 	yfix = 1/((float)screen_texsizeh/(float)screen_height);
@@ -3419,7 +3411,7 @@ void GL_DoScreenWipe(int wipeStart, int wipeEnd)
 	pglBindTexture(GL_TEXTURE_2D, screenTextures[wipeStart]);
 	pglColor4ubv(white);
 	pglTexCoordPointer(2, GL_FLOAT, 0, fix);
-	pglVertexPointer(3, GL_FLOAT, 0, screenVerts);
+	pglVertexPointer(3, GL_FLOAT, 0, defaultscreenVerts);
 	pglDrawArrays(GL_TRIANGLE_FAN, 0, 4);
 
 	GL_SetBlend(PF_Modulated|PF_Translucent|PF_NoDepthTest);
@@ -3438,7 +3430,7 @@ void GL_DoScreenWipe(int wipeStart, int wipeEnd)
 
 	pglClientActiveTexture(GL_TEXTURE0);
 	pglTexCoordPointer(2, GL_FLOAT, 0, fix);
-	pglVertexPointer(3, GL_FLOAT, 0, screenVerts);
+	pglVertexPointer(3, GL_FLOAT, 0, defaultscreenVerts);
 	pglClientActiveTexture(GL_TEXTURE1);
 	pglEnableClientState(GL_TEXTURE_COORD_ARRAY);
 	pglTexCoordPointer(2, GL_FLOAT, 0, defaultST);
@@ -3456,8 +3448,12 @@ void GL_RenderVhsEffect(fixed_t upbary, fixed_t downbary, UINT8 updistort, UINT8
 {
 	float xfix, yfix;
 	float fix[8];
-	GLubyte color[4] = {255, 255, 255, 255};
 	float i;
+
+	if (gl_enable_screen_textures != 2)
+		return;
+
+	GLubyte color[4] = {255, 255, 255, 255};
 
 	float screenVerts[12] =
 	{
@@ -3466,9 +3462,6 @@ void GL_RenderVhsEffect(fixed_t upbary, fixed_t downbary, UINT8 updistort, UINT8
 		 1.0f,  1.0f, 1.0f,
 		 1.0f, -1.0f, 1.0f
 	};
-
-	if (gl_enable_screen_textures != 2)
-		return;
 
 	xfix = 1/((float)screen_texsizew/(float)screen_width);
 	yfix = 1/((float)screen_texsizeh/(float)screen_height);
@@ -3594,8 +3587,8 @@ void GL_DrawScreenFinalTexture(int tex, INT32 width, INT32 height, boolean usesh
 	float xoff = 1, yoff = 1; // xoffset and yoffset for the polygon to have black bars around the screen
 	FRGBAFloat clearColour;
 
-	float off[12];
-	float fix[8];
+	static float off[12];
+	static float fix[8];
 
 	if (gl_enable_screen_textures != 2)
 		return;
