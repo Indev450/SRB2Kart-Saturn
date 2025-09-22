@@ -1234,133 +1234,6 @@ void GL_DeleteTexture(GLMipmap_t *pTexInfo)
 	pTexInfo->downloaded = 0;
 }
 
-#ifdef USE_FBO_OGL
-static void GL_Framebuffer_DeleteAttachments(void)
-{
-	if (!supportFBO || !framebufferobject.init)
-		return;
-
-	// Unbind the framebuffer
-	pglBindFramebuffer(GL_FRAMEBUFFER_EXT, 0);
-	pglBindRenderbuffer(GL_RENDERBUFFER_EXT, 0);
-
-	if (framebufferobject.tex)
-		pglDeleteTextures(1, &framebufferobject.tex);
-
-	if (framebufferobject.rboobj)
-		pglDeleteRenderbuffers(1, &framebufferobject.rboobj);
-
-	framebufferobject.tex = 0;
-	framebufferobject.rboobj = 0;
-	framebufferobject.init = false;
-}
-
-static void GL_Framebuffer_Generate(void)
-{
-	if (!supportFBO || framebufferobject.init || !UseScreenFBO())
-		return;
-
-	// Generate the framebuffer
-	if (!framebufferobject.fboobj)
-		pglGenFramebuffers(1, &framebufferobject.fboobj);
-
-	if (pglCheckFramebufferStatus(GL_FRAMEBUFFER_EXT) != GL_FRAMEBUFFER_COMPLETE_EXT)
-		return;
-
-	// Bind the framebuffer
-	pglBindFramebuffer(GL_FRAMEBUFFER_EXT, framebufferobject.fboobj);
-
-	// Generate the framebuffer texture
-	if (!framebufferobject.tex)
-	{
-		pglGenTextures(1, &framebufferobject.tex);
-		pglBindTexture(GL_TEXTURE_2D, framebufferobject.tex);
-		pglTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, screen_width, screen_height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
-		pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-		pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-		pglBindTexture(GL_TEXTURE_2D, 0);
-
-		// Attach the framebuffer texture to the framebuffer
-		pglFramebufferTexture2D(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_2D, framebufferobject.tex, 0);
-	}
-
-	// Generate the renderbuffer
-	if (!framebufferobject.rboobj)
-	{
-		pglGenRenderbuffers(1, &framebufferobject.rboobj);
-
-		pglBindRenderbuffer(GL_RENDERBUFFER_EXT, framebufferobject.rboobj);
-
-		if (supportFBO == FBO_ARB)
-		{
-			pglRenderbufferStorage(GL_RENDERBUFFER_EXT, GL_DEPTH24_STENCIL8, screen_width, screen_height);
-			pglFramebufferRenderbuffer(GL_FRAMEBUFFER_EXT, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER_EXT, framebufferobject.rboobj);
-		}
-		else if (supportFBO == FBO_EXT || supportFBO == FBO_EXT_STENCIL)
-		{
-			pglRenderbufferStorage(GL_RENDERBUFFER_EXT, (supportFBO == FBO_EXT_STENCIL) ? GL_DEPTH_STENCIL_EXT : GL_DEPTH_COMPONENT, screen_width, screen_height);
-
-			// attach a renderbuffer to depth attachment point
-			pglFramebufferRenderbuffer(GL_FRAMEBUFFER_EXT, GL_DEPTH_ATTACHMENT_EXT, GL_RENDERBUFFER_EXT, framebufferobject.rboobj);
-
-			if (supportFBO == FBO_EXT_STENCIL)
-			{
-				// attach a renderbuffer to stencil attachment point
-				pglFramebufferRenderbuffer(GL_FRAMEBUFFER_EXT, GL_STENCIL_ATTACHMENT_EXT, GL_RENDERBUFFER_EXT, framebufferobject.rboobj);
-			}
-		}
-
-		// Clear the renderbuffer
-		GL_ClearBuffer(true, true, true, NULL);
-
-		pglBindRenderbuffer(GL_RENDERBUFFER_EXT, 0);
-	}
-
-	// Unbind the framebuffer
-	pglBindFramebuffer(GL_FRAMEBUFFER_EXT, 0);
-
-	framebufferobject.init = true;
-}
-
-void GL_Framebuffer_Unbind(void)
-{
-	if (!supportFBO || !framebufferobject.init)
-		return;
-
-	pglBindFramebuffer(GL_FRAMEBUFFER_EXT, 0);
-	pglBindRenderbuffer(GL_RENDERBUFFER_EXT, 0);
-}
-
-void GL_Framebuffer_Enable(void)
-{
-	if (!supportFBO || !UseScreenFBO())
-		return;
-
-	GL_Framebuffer_Generate();
-
-	pglBindFramebuffer(GL_FRAMEBUFFER_EXT, framebufferobject.fboobj);
-	pglBindRenderbuffer(GL_RENDERBUFFER_EXT, framebufferobject.rboobj);
-}
-
-void GL_Framebuffer_Disable(void)
-{
-	if (!supportFBO || !framebufferobject.init)
-		return;
-
-	fbo_shader = false;
-
-	pglBindFramebuffer(GL_FRAMEBUFFER_EXT, 0);
-	pglBindRenderbuffer(GL_RENDERBUFFER_EXT, 0);
-
-	// delet our fbo
-	if (framebufferobject.fboobj)
-		pglDeleteFramebuffers(1, &framebufferobject.fboobj);
-
-	framebufferobject.fboobj = 0;
-	GL_Framebuffer_DeleteAttachments();
-}
-#endif
-
 // -----------------+
 // Flush            : flush OpenGL textures
 //                  : Clear list of downloaded mipmaps
@@ -3203,6 +3076,135 @@ void GL_SetTransform(FTransform *stransform)
 
 	pglGetFloatv(GL_MODELVIEW_MATRIX, modelMatrix); // added for new coronas' code (without depth buffer)
 }
+
+#ifdef USE_FBO_OGL
+static void GL_Framebuffer_DeleteAttachments(void)
+{
+	if (!supportFBO || !framebufferobject.init)
+		return;
+
+	// Unbind the framebuffer
+	pglBindFramebuffer(GL_FRAMEBUFFER_EXT, 0);
+	pglBindRenderbuffer(GL_RENDERBUFFER_EXT, 0);
+
+	if (framebufferobject.tex)
+		pglDeleteTextures(1, &framebufferobject.tex);
+
+	if (framebufferobject.rboobj)
+		pglDeleteRenderbuffers(1, &framebufferobject.rboobj);
+
+	framebufferobject.tex = 0;
+	framebufferobject.rboobj = 0;
+	framebufferobject.init = false;
+}
+
+static void GL_Framebuffer_Generate(void)
+{
+	if (!supportFBO || framebufferobject.init || !UseScreenFBO())
+		return;
+
+	// Generate the framebuffer
+	if (!framebufferobject.fboobj)
+		pglGenFramebuffers(1, &framebufferobject.fboobj);
+
+	if (pglCheckFramebufferStatus(GL_FRAMEBUFFER_EXT) != GL_FRAMEBUFFER_COMPLETE_EXT)
+		return;
+
+	// Bind the framebuffer
+	pglBindFramebuffer(GL_FRAMEBUFFER_EXT, framebufferobject.fboobj);
+
+	// Generate the framebuffer texture
+	if (!framebufferobject.tex)
+	{
+		pglGenTextures(1, &framebufferobject.tex);
+		pglBindTexture(GL_TEXTURE_2D, framebufferobject.tex);
+		pglTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, screen_width, screen_height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+		pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		Clamp2D(GL_TEXTURE_WRAP_S);
+		Clamp2D(GL_TEXTURE_WRAP_T);
+		pglBindTexture(GL_TEXTURE_2D, 0);
+
+		// Attach the framebuffer texture to the framebuffer
+		pglFramebufferTexture2D(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_2D, framebufferobject.tex, 0);
+	}
+
+	// Generate the renderbuffer
+	if (!framebufferobject.rboobj)
+	{
+		pglGenRenderbuffers(1, &framebufferobject.rboobj);
+
+		pglBindRenderbuffer(GL_RENDERBUFFER_EXT, framebufferobject.rboobj);
+
+		if (supportFBO == FBO_ARB)
+		{
+			pglRenderbufferStorage(GL_RENDERBUFFER_EXT, GL_DEPTH24_STENCIL8, screen_width, screen_height);
+			pglFramebufferRenderbuffer(GL_FRAMEBUFFER_EXT, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER_EXT, framebufferobject.rboobj);
+		}
+		else if (supportFBO == FBO_EXT || supportFBO == FBO_EXT_STENCIL)
+		{
+			pglRenderbufferStorage(GL_RENDERBUFFER_EXT, (supportFBO == FBO_EXT_STENCIL) ? GL_DEPTH_STENCIL_EXT : GL_DEPTH_COMPONENT, screen_width, screen_height);
+
+			// attach a renderbuffer to depth attachment point
+			pglFramebufferRenderbuffer(GL_FRAMEBUFFER_EXT, GL_DEPTH_ATTACHMENT_EXT, GL_RENDERBUFFER_EXT, framebufferobject.rboobj);
+
+			if (supportFBO == FBO_EXT_STENCIL)
+			{
+				// attach a renderbuffer to stencil attachment point
+				pglFramebufferRenderbuffer(GL_FRAMEBUFFER_EXT, GL_STENCIL_ATTACHMENT_EXT, GL_RENDERBUFFER_EXT, framebufferobject.rboobj);
+			}
+		}
+
+		// Clear the renderbuffer
+		GL_ClearBuffer(true, true, true, NULL);
+
+		pglBindRenderbuffer(GL_RENDERBUFFER_EXT, 0);
+	}
+
+	// Unbind the framebuffer
+	pglBindFramebuffer(GL_FRAMEBUFFER_EXT, 0);
+
+	framebufferobject.init = true;
+}
+
+void GL_Framebuffer_Unbind(void)
+{
+	if (!supportFBO || !framebufferobject.init)
+		return;
+
+	pglBindFramebuffer(GL_FRAMEBUFFER_EXT, 0);
+	pglBindRenderbuffer(GL_RENDERBUFFER_EXT, 0);
+}
+
+void GL_Framebuffer_Enable(void)
+{
+	if (!supportFBO || !UseScreenFBO())
+		return;
+
+	GL_Framebuffer_Generate();
+
+	pglBindFramebuffer(GL_FRAMEBUFFER_EXT, framebufferobject.fboobj);
+	pglBindRenderbuffer(GL_RENDERBUFFER_EXT, framebufferobject.rboobj);
+}
+
+void GL_Framebuffer_Disable(void)
+{
+	if (!supportFBO || !framebufferobject.init)
+		return;
+
+	fbo_shader = false;
+
+	pglBindFramebuffer(GL_FRAMEBUFFER_EXT, 0);
+	pglBindRenderbuffer(GL_RENDERBUFFER_EXT, 0);
+
+	// delet our fbo
+	if (framebufferobject.fboobj)
+		pglDeleteFramebuffers(1, &framebufferobject.fboobj);
+
+	framebufferobject.fboobj = 0;
+	GL_Framebuffer_DeleteAttachments();
+}
+#endif
 
 INT32 GL_GetTextureUsed(void)
 {
