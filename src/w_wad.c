@@ -2359,11 +2359,11 @@ int W_VerifyNMUSlumps(const char *filename, FILE *handle, boolean exit_on_error)
 			&& stricmp(&filename[len], ".lua"))
 		{
 			status = W_VerifyWAD(handle, NMUSlist, false);
-
-			// repair file handle in this specific case
-			fseek(handle, 0, SEEK_SET);
 		}
 	}
+
+	// repair file handle
+	fseek(handle, 0, SEEK_SET);
 
 	if (status == -1)
 		W_InitFileError(filename, exit_on_error);
