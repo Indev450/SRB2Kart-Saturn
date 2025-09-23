@@ -4417,18 +4417,15 @@ static void Command_Addfile(void)
 		if (!isprint(fn[i]) || fn[i] == ';')
 			return;
 
-	if (fhandle)
-	{
-		fclose(fhandle);
-		fhandle = NULL;
-	}
-
 	if ((fhandle = W_OpenWadFile(&fn, true)) != NULL)
 	{
 		musiconly = W_VerifyNMUSlumps(fn, fhandle, false);
 	}
 
 	if (musiconly == -1)
+		return; // file not found
+
+	if (!musiconly)
 	{
 		// ... But only so long as they contain nothing more then music and sprites.
 		if (netgame && !(server || IsPlayerAdmin(consoleplayer)))
@@ -4456,7 +4453,7 @@ static void Command_Addfile(void)
 	{
 		UINT8 md5sum[16];
 #ifdef NOMD5
-		memset(md5sum,0,16);
+		memset(md5sum, 0, 16);
 #else
 
 		{
@@ -4464,30 +4461,27 @@ static void Command_Addfile(void)
 			CONS_Debug(DBG_SETUP, "Making MD5 for %s\n",fn);
 			md5_stream(fhandle, md5sum);
 			CONS_Debug(DBG_SETUP, "MD5 calc for %s took %f second\n", fn, (float)(I_GetTime() - t)/TICRATE);
+			fclose(fhandle);
 		}
 
 		for (i = 0; i < numwadfiles; i++)
 		{
-			if (memcmp(wadfiles[i]->md5sum, md5sum, 16))
-				continue;
-
-			CONS_Alert(CONS_ERROR, M_GetText("%s is already loaded\n"), fn);
-			goto addfile_finally;
+			if (!memcmp(wadfiles[i]->md5sum, md5sum, 16))
+			{
+				CONS_Alert(CONS_ERROR, M_GetText("%s is already loaded\n"), fn);
+				return;
+			}
 		}
 #endif
 		// Finally okay to write this important data
-		WRITESTRINGN(buf_p,p,240);
+		WRITESTRINGN(buf_p, p, 240);
 		WRITEMEM(buf_p, md5sum, 16);
 	}
 
 	if (IsPlayerAdmin(consoleplayer) && (!server)) // Request to add file
 		SendNetXCmd(XD_REQADDFILE, buf, buf_p - buf);
 	else
-		SendNetXCmd(XD_ADDFILE, buf, buf_p - buf);
-
-addfile_finally:
-	if (fhandle)
-		fclose(fhandle);
+		SendNetXCmd(XD_ADDFILE, buf, buf_p - buf);;
 }
 
 /** Adds something at runtime.
