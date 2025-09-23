@@ -4390,6 +4390,14 @@ static void Command_Addfilelocal(void)
 	P_AddWadFile(fn, true);
 }
 
+static void CloseFileHandle(FILE **fhandle)
+{
+	if (*fhandle)
+	{
+		fclose(*fhandle);
+		*fhandle = NULL;
+	}
+}
 
 /** Adds a pwad at runtime.
   * Searches for sounds, maps, music, new images.
@@ -4402,7 +4410,7 @@ static void Command_Addfile(void)
 	INT32 i;
 	int musiconly = -1; // W_VerifyNMUSlumps isn't boolean
 
-	FILE *fhandle = NULL;
+	CLEANUP(CloseFileHandle) FILE *fhandle = NULL;
 
 	if (COM_Argc() != 2)
 	{
@@ -4422,7 +4430,7 @@ static void Command_Addfile(void)
 		musiconly = W_VerifyNMUSlumps(fn, fhandle, false);
 	}
 
-	if (musiconly == -1)
+	if (fhandle == NULL || musiconly == -1)
 		return; // file not found
 
 	if (!musiconly)
@@ -4461,7 +4469,6 @@ static void Command_Addfile(void)
 			CONS_Debug(DBG_SETUP, "Making MD5 for %s\n",fn);
 			md5_stream(fhandle, md5sum);
 			CONS_Debug(DBG_SETUP, "MD5 calc for %s took %f second\n", fn, (float)(I_GetTime() - t)/TICRATE);
-			fclose(fhandle);
 		}
 
 		for (i = 0; i < numwadfiles; i++)
