@@ -2417,9 +2417,6 @@ struct minimapinfo minimapinfo;
 static void P_InitMinimapInfo(void)
 {
 	lumpnum_t lumpnum;
-	fixed_t a;
-	fixed_t b;
-
 	node_t *bsp = &nodes[numnodes-1];
 
 	if (minimapinfo.minimap_pic)
@@ -2449,30 +2446,17 @@ static void P_InitMinimapInfo(void)
 	// it's because mapwidth and height would otherwise overflow for maps larger than half the size possible...
 	// map boundaries and sizes will ALWAYS be whole numbers thankfully
 	// later calculations take into consideration that these are actually not in terms of FRACUNIT though
-	minimapinfo.map_w = (minimapinfo.max_x >>= FRACBITS) - (minimapinfo.min_x >>= FRACBITS);
-	minimapinfo.map_h = (minimapinfo.max_y >>= FRACBITS) - (minimapinfo.min_y >>= FRACBITS);
+	minimapinfo.min_x >>= FRACBITS;
+	minimapinfo.max_x >>= FRACBITS;
+	minimapinfo.min_y >>= FRACBITS;
+	minimapinfo.max_y >>= FRACBITS;
+	minimapinfo.map_w = minimapinfo.max_x - minimapinfo.min_x;
+	minimapinfo.map_h = minimapinfo.max_y - minimapinfo.min_y;
 
-	minimapinfo.minimap_w = minimapinfo.minimap_h = 100;
+	minimapinfo.minimap_w = FixedDiv(minimapinfo.minimap_pic->width, minimapinfo.map_w);
+	minimapinfo.minimap_h = FixedDiv(minimapinfo.minimap_pic->height, minimapinfo.map_h);
 
-	a = FixedDiv(minimapinfo.minimap_w<<FRACBITS, minimapinfo.map_w<<4);
-	b = FixedDiv(minimapinfo.minimap_h<<FRACBITS, minimapinfo.map_h<<4);
-
-	if (a < b)
-	{
-		minimapinfo.minimap_h = FixedMul(a, minimapinfo.map_h)>>(FRACBITS-4);
-		minimapinfo.zoom = a;
-	}
-	else
-	{
-		if (a != b)
-		{
-			minimapinfo.minimap_w = FixedMul(b, minimapinfo.map_w)>>(FRACBITS-4);
-		}
-		minimapinfo.zoom = b;
-	}
-
-	minimapinfo.zoom >>= (FRACBITS-4);
-	minimapinfo.zoom -= (minimapinfo.zoom/20);
+	minimapinfo.zoom = FixedMul(min(minimapinfo.minimap_w, minimapinfo.minimap_h), FRACUNIT-FRACUNIT/20);
 
 	// These should always be small enough to be bitshift back right now
 	minimapinfo.offs_x = FixedMul((minimapinfo.min_x + minimapinfo.map_w/2) << FRACBITS, minimapinfo.zoom);

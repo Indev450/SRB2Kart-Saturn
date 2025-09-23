@@ -3530,7 +3530,7 @@ static void K_drawKartMinimapIcon(fixed_t objx, fixed_t objy, INT32 hudx, INT32 
 		return; // no pic, just get outta here
 	}
 
-	amnumxpos = (FixedMul(objx, minimapinfo.zoom) - minimapinfo.offs_x);
+	amnumxpos =  (FixedMul(objx, minimapinfo.zoom) - minimapinfo.offs_x);
 	amnumypos = -(FixedMul(objy, minimapinfo.zoom) - minimapinfo.offs_y);
 
 	if (encoremode)
