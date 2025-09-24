@@ -177,6 +177,17 @@ FUNCINLINE static ATTRINLINE void Z_Pfree(void *p)
 	Z_Free(*(void **)p);
 }
 
+// for use with CLEANUP macro
+// not sure where to put this
+FUNCINLINE static ATTRINLINE void pfree(void *p)
+{
+	if (*(void **)p)
+	{
+		free(*(void **)p);
+		*(void **)p = NULL;
+	}
+}
+
 #ifdef __cplusplus
 } // extern "C"
 #endif
