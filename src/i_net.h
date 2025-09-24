@@ -39,10 +39,6 @@ extern "C" {
 
 extern INT16 hardware_MAXPACKETLENGTH;
 
-#if defined(_MSC_VER)
-#pragma pack(1)
-#endif
-
 typedef struct
 {
 	/// Supposed to be DOOMCOM_ID
@@ -93,10 +89,6 @@ typedef struct
 } ATTRPACK holepunch_t;
 
 #define HOLEPUNCH_DATA(d) (holepunch_t *)&(d)->data
-#endif
-
-#if defined(_MSC_VER)
-#pragma pack()
 #endif
 
 extern doomcom_t *doomcom;

@@ -17,20 +17,12 @@
 /// \file
 /// \brief SDL specific part of the OpenGL API for SRB2
 
-#ifdef _MSC_VER
-#pragma warning(disable : 4214 4244)
-#endif
-
 #ifdef HAVE_SDL
 #define _MATH_DEFINES_DEFINED
 
 #include "SDL.h"
 
 #include "sdlmain.h"
-
-#ifdef _MSC_VER
-#pragma warning(default : 4214 4244)
-#endif
 
 #include "../doomdef.h"
 #include "../d_main.h"

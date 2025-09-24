@@ -29,11 +29,7 @@ extern SDL_bool framebuffer;
 #include "../m_fixed.h"
 
 // SDL2 stub macro
-#ifdef _MSC_VER
-#define SDL2STUB() CONS_Printf("SDL2: stubbed: %s:%d\n", __FUNCTION__, __LINE__)
-#else
 #define SDL2STUB() CONS_Printf("SDL2: stubbed: %s:%d\n", __func__, __LINE__)
-#endif
 
 // So m_menu knows whether to store cv_usejoystick value or string
 #define JOYSTICK_HOTPLUG

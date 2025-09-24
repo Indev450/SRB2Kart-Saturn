@@ -46,20 +46,12 @@
 ** =======================================================
 */
 
-#ifdef _MSC_VER
-#pragma warning(disable : 4324)
-#endif
-
 /* chain list of long jump buffers */
 struct lua_longjmp {
   struct lua_longjmp *previous;
   luai_jmpbuf b;
   volatile int status;  /* error code */
 };
-
-#ifdef _MSC_VER
-#pragma warning(default :  4324)
-#endif
 
 void luaD_seterrorobj (lua_State *L, int lerrcode, StkId oldtop) {
   switch (lerrcode) {

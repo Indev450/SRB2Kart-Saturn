@@ -50,10 +50,6 @@ typedef enum
 #define TICCMD_RECEIVED 1
 #define TICCMD_XY 2
 
-#if defined(_MSC_VER)
-#pragma pack(1)
-#endif
-
 typedef struct
 {
 	SINT8 forwardmove; // -MAXPLMOVE to MAXPLMOVE (50)
@@ -64,9 +60,5 @@ typedef struct
 	INT16 driftturn; // SRB2Kart: Used for getting drift turn speed
 	UINT8 latency; // Netgames: how many tics ago was this ticcmd generated from this player's end?
 } ATTRPACK ticcmd_t;
-
-#if defined(_MSC_VER)
-#pragma pack()
-#endif
 
 #endif

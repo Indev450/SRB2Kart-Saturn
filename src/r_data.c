@@ -34,10 +34,6 @@
 #include <malloc.h> // alloca(sizeof)
 #endif
 
-#if defined(_MSC_VER)
-#pragma pack(1)
-#endif
-
 // Not sure if this is necessary, but it was in w_wad.c, so I'm putting it here too -Shadow Hog
 #include <errno.h>
 
@@ -70,11 +66,6 @@ typedef struct
 	INT16 patchcount;
 	mappatch_t patches[1];
 } ATTRPACK maptexture_t;
-
-#if defined(_MSC_VER)
-#pragma pack()
-#endif
-
 
 // Store lists of lumps for F_START/F_END etc.
 typedef struct

@@ -48,12 +48,6 @@ LUAI_FUNC void luaD_reallocCI (lua_State *L, int newsize);
 LUAI_FUNC void luaD_reallocstack (lua_State *L, int newsize);
 LUAI_FUNC void luaD_growstack (lua_State *L, int n);
 
-#ifdef _MSC_VER
- #ifndef  ATTRNORETURN
-  #define ATTRNORETURN __declspec(noreturn)
- #endif
-#endif
-
 #ifndef ATTRNORETURN
 #define ATTRNORETURN
 #endif

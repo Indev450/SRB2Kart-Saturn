@@ -16,10 +16,6 @@
 
 #include "i_threads.h"
 
-#if defined(_MSC_VER)
-#pragma pack(1)
-#endif
-
 typedef union
 {
 	char buffer[16]; // information such as password
@@ -50,13 +46,9 @@ typedef struct
 	INT32 hostonly;
 } ATTRPACK msg_ban_t;
 
-#if defined(_MSC_VER)
-#pragma pack()
-#endif
-
 // ================================ GLOBALS ===============================
 #ifdef MASTERSERVER
-extern consvar_t cv_masterserver; 
+extern consvar_t cv_masterserver;
 #endif
 extern consvar_t cv_servername;
 extern consvar_t cv_server_contact;

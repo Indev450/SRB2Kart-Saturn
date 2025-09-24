@@ -11,14 +11,6 @@
 /// \file  m_fixed.c
 /// \brief Fixed point implementation
 
-#if 0 //#ifndef NO_M
-#include <math.h>
-#define HAVE_SQRT
- #if 0 //#ifndef _WIN32 // MSVCRT does not have *f() functions
- #define HAVE_SQRTF
- #endif
-#endif
-
 #include "doomdef.h"
 #include "m_fixed.h"
 #include "tables.h" // ANGLETOFINESHIFT

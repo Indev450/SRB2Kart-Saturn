@@ -28,31 +28,6 @@ extern "C" {
 #endif
 
 /* 7.18.1.1  Exact-width integer types */
-#ifdef _MSC_VER
-#define UINT8 unsigned __int8
-#define SINT8 signed __int8
-
-#define UINT16 unsigned __int16
-#define INT16 __int16
-
-#define INT32 __int32
-#define UINT32 unsigned __int32
-
-#define INT64  __int64
-#define UINT64 unsigned __int64
-
-typedef long ssize_t;
-
-/* Older Visual C++ headers don't have the Win64-compatible typedefs... */
-#if (_MSC_VER <= 1200)
-	#ifndef DWORD_PTR
-		#define DWORD_PTR DWORD
-	#endif
-	#ifndef PDWORD_PTR
-		#define PDWORD_PTR PDWORD
-	#endif
-#endif
-#else
 #define __STDC_LIMIT_MACROS
 #include <stdint.h>
 
@@ -66,7 +41,6 @@ typedef long ssize_t;
 #define UINT32 uint32_t
 #define INT64  int64_t
 #define UINT64 uint64_t
-#endif
 
 #ifdef __APPLE_CC__
 #define DIRECTFULLSCREEN 1
@@ -76,16 +50,7 @@ typedef long ssize_t;
 
 /* Strings and some misc platform specific stuff */
 
-#if defined (_MSC_VER) || defined (__OS2__)
-	// Microsoft VisualC++
-#ifdef _MSC_VER
-#if (_MSC_VER <= 1800) // MSVC 2013 and back
-	#define snprintf                _snprintf
-#if (_MSC_VER <= 1200) // MSVC 6.0 and back
-	#define vsnprintf               _vsnprintf
-#endif
-#endif
-#endif
+#if defined (__OS2__)
 	#define strncasecmp             strnicmp
 	#define strcasecmp              stricmp
 	#define inline                  __inline
@@ -270,13 +235,6 @@ typedef int32_t boolean;
 	#endif
 
 	#define ATTRUNUSED __attribute__((unused))
-
-#elif defined (_MSC_VER)
-	#define ATTRNORETURN __declspec(noreturn)
-	#define ATTRINLINE __forceinline
-	#if _MSC_VER > 1200 // >= MSVC 6.0
-		#define ATTRNOINLINE __declspec(noinline)
-	#endif
 #endif
 
 #ifndef FUNCPRINTF
@@ -368,7 +326,7 @@ typedef UINT8 bitarray_t;
 static inline int
 in_bit_array (const bitarray_t * const array, const int value)
 {
-	return (array[value >> 3] & (1<<(value & 7)));
+	return(array[value >> 3] & (1<<(value & 7)));
 }
 
 static inline void

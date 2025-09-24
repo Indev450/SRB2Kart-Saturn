@@ -25,10 +25,6 @@
 #ifndef M_DLLIST_H__
 #define M_DLLIST_H__
 
-#ifdef _MSC_VER
-#pragma warning(disable : 4706)
-#endif
-
 typedef struct mdllistitem_s
 {
 	struct mdllistitem_s *next;

@@ -47,17 +47,6 @@
 #define ASMCALL
 #endif
 
-#ifdef _MSC_VER
-#pragma warning(disable : 4127 4152 4213 4514)
-#ifdef _WIN64
-#pragma warning(disable : 4306)
-#endif
-#endif
-// warning level 4
-// warning C4127: conditional expression is constant
-// warning C4152: nonstandard extension, function/data pointer conversion in expression
-// warning C4213: nonstandard extension used : cast on l-value
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -560,7 +549,7 @@ UINT32 quickncasehash (const char *p, size_t n)
 #endif
 
 #ifdef __cplusplus
-#if defined(__GNUC__) || defined(__clang__) || defined(_MSC_VER)
+#if defined(__GNUC__) || defined(__clang__)
 	#define restrict __restrict
 #else
 	#define restrict
