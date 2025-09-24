@@ -283,7 +283,7 @@ void R_GenerateBlendTables(void)
 	I_spawn_thread("blend-tables",
 			R_GenerateBlendTables_Thread, state);
 #else
-	struct GenerateBlendTables_State state = {pLocalPalette, pGammaCorrectedPalette};
+	struct GenerateBlendTables_State state = {pLocalPalette};
 	R_GenerateBlendTables_Core(&state);
 #endif
 }
