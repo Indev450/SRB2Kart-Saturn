@@ -20,9 +20,6 @@
 
 #include <string.h>
 #include <sys/types.h>
-#ifdef _MSC_VER
-#pragma warning(disable :  4127)
-#endif
 
 #if defined (STDC_HEADERS) || defined (_LIBC)
  #include <stdlib.h>

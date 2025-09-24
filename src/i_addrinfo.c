@@ -43,11 +43,7 @@
 
 #ifndef I_getaddrinfo
 
-#if !defined (_MSC_VER) || (_MSC_VER >= 1800) // MSVC 2013 and forward
 #include <stdbool.h>
-#else
-typedef char bool;
-#endif
 
 #ifdef _WIN32
 // it seems windows doesn't define that... maybe some other OS? OS/2

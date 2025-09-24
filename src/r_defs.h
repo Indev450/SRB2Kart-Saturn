@@ -576,20 +576,12 @@ typedef struct
 	UINT16 children[2];
 } node_t;
 
-#if defined(_MSC_VER)
-#pragma pack(1)
-#endif
-
 // posts are runs of non masked source pixels
 typedef struct
 {
 	UINT8 topdelta; // -1 is the last post in a column
 	UINT8 length;   // length data bytes follows
 } ATTRPACK post_t;
-
-#if defined(_MSC_VER)
-#pragma pack()
-#endif
 
 // column_t is a list of 0 or more post_t, (UINT8)-1 terminated
 typedef post_t column_t;
@@ -669,10 +661,6 @@ typedef struct
 #endif
 } patch_t;
 
-#if defined(_MSC_VER)
-#pragma pack(1)
-#endif
-
 typedef struct
 {
 	INT16 width;          // bounding box size
@@ -682,10 +670,6 @@ typedef struct
 	INT32 columnofs[];     // only [width] used
 	// the [0] is &columnofs[width]
 } ATTRPACK softwarepatch_t;
-
-#if defined(_MSC_VER)
-#pragma pack()
-#endif
 
 // Possible alpha types for a patch.
 enum patchalphastyle {AST_COPY, AST_TRANSLUCENT, AST_ADD, AST_SUBTRACT, AST_REVERSESUBTRACT, AST_MODULATE, AST_OVERLAY};

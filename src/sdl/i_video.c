@@ -24,18 +24,9 @@
 
 #include <signal.h>
 
-#ifdef _MSC_VER
-#pragma warning(disable : 4214 4244)
-#endif
-
 #ifdef HAVE_SDL
 #define _MATH_DEFINES_DEFINED
 #include "SDL.h"
-
-#ifdef _MSC_VER
-#include <windows.h>
-#pragma warning(default : 4214 4244)
-#endif
 
 #ifdef HAVE_TTF
 #include "i_ttf.h"

@@ -133,10 +133,6 @@ void Command_Droprate(void);
 void Command_Numnodes(void);
 #endif
 
-#if defined(_MSC_VER)
-#pragma pack(1)
-#endif
-
 // Client to server packet
 typedef struct
 {
@@ -175,10 +171,6 @@ typedef struct
 	INT16 consistancy;
 	ticcmd_t cmd, cmd2, cmd3, cmd4;
 } ATTRPACK client4cmd_pak;
-
-#ifdef _MSC_VER
-#pragma warning(disable :  4200)
-#endif
 
 // Server to client packet
 // this packet is too large
@@ -372,10 +364,6 @@ typedef struct {
 	UINT8 data[0]; // Size is variable using hardware_MAXPACKETLENGTH
 } ATTRPACK filetx_pak;
 
-#ifdef _MSC_VER
-#pragma warning(default : 4200)
-#endif
-
 #define MAXAPPLICATION 16
 
 typedef struct
@@ -518,10 +506,6 @@ typedef struct
 		UINT8 mapicondata[0];
 	} u; // This is needed to pack diff packet types data together
 } ATTRPACK doomdata_t;
-
-#if defined(_MSC_VER)
-#pragma pack()
-#endif
 
 #define MAXSERVERLIST (MAXNETNODES-1)
 typedef struct

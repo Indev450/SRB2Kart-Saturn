@@ -11,10 +11,8 @@
 
 #ifdef HAVE_LIBGME
 #ifdef HAVE_ZLIB
-#ifndef _MSC_VER
 #ifndef _LARGEFILE64_SOURCE
 #define _LARGEFILE64_SOURCE
-#endif
 #endif
 
 #ifndef _LFS64_LARGEFILE
@@ -46,14 +44,7 @@ write netcode into the sound code, OKAY?
 #include "../z_zone.h"
 #include "../byteptr.h"
 
-#ifdef _MSC_VER
-#pragma warning(disable : 4214 4244)
-#endif
 #include "SDL.h"
-#ifdef _MSC_VER
-#pragma warning(default : 4214 4244)
-#endif
-
 #include "SDL_mixer.h"
 
 /* This is the version number macro for the current SDL_mixer version: */

@@ -54,8 +54,6 @@ typedef LPVOID (WINAPI *p_MapViewOfFile) (HANDLE, DWORD, DWORD, DWORD, SIZE_T);
 #include <string.h>
 #ifdef __GNUC__
 #include <unistd.h>
-#elif defined (_MSC_VER)
-#include <direct.h>
 #endif
 #if defined (__unix__) || defined (UNIXCOMMON)
 #include <fcntl.h>
@@ -64,10 +62,6 @@ typedef LPVOID (WINAPI *p_MapViewOfFile) (HANDLE, DWORD, DWORD, DWORD, SIZE_T);
 #include <stdio.h>
 #ifdef _WIN32
 #include <conio.h>
-#endif
-
-#ifdef _MSC_VER
-#pragma warning(disable : 4214 4244)
 #endif
 
 #if defined (__unix__) || defined(__APPLE__) || (defined (UNIXCOMMON) && !defined (__HAIKU__))
@@ -872,10 +866,6 @@ void I_OutputMsg(const char *fmt, ...)
 #ifdef HAVE_TTF
 	if (TTF_WasInit()) I_TTFDrawText(currentfont, solid, DEFAULTFONTFGR, DEFAULTFONTFGG, DEFAULTFONTFGB,  DEFAULTFONTFGA,
 	DEFAULTFONTBGR, DEFAULTFONTBGG, DEFAULTFONTBGB, DEFAULTFONTBGA, txt);
-#endif
-
-#if defined (_WIN32) && defined (_MSC_VER)
-	OutputDebugStringA(txt);
 #endif
 
 	len = strlen(txt);

@@ -52,10 +52,6 @@ mobj_t *skyboxmo[2];
 // This must be updated whenever we up the max flat size - quicker to assume rather than figuring out the sqrt of the specific flat's filesize.
 #define MAXFLATSIZE (2048<<FRACBITS)
 
-#if defined(_MSC_VER)
-#pragma pack(1)
-#endif
-
 /** Animated texture definition.
   * Used for ::harddefs and for loading an ANIMATED lump from a wad.
   *
@@ -72,10 +68,6 @@ typedef struct
 	char startname[9]; ///< Name of the first frame, null-terminated.
 	INT32 speed ; ///< Number of tics for which each frame is shown.
 } ATTRPACK animdef_t;
-
-#if defined(_MSC_VER)
-#pragma pack()
-#endif
 
 typedef struct
 {

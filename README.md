@@ -98,6 +98,7 @@ Check the LUASTUFF file for more information on all the lua things Saturn has.
 ## Compiling
 
 See [SRB2 Wiki/Source code compiling](http://wiki.srb2.org/wiki/Source_code_compiling). The compiling process for SRB2Kart is largely identical to SRB2.
+Visual C++ (MSVC) is unsupported
 
 ## Disclaimer
 Kart Krew is in no way affiliated with SEGA or Sonic Team. We do not claim ownership of any of SEGA's intellectual property used in SRB2.
