@@ -108,7 +108,6 @@ extern char  logfilename[1024];
 #define VERSIONSTRINGW L"Saturn lugdev Zzz..."
 // Hey! If you change this, add 1 to the MODVERSION below! Otherwise we can't force updates!
 // And change CMakeLists.txt (not src/, but in root), for CMake users!
-// AND appveyor.yml, for the build bots!
 #endif
 
 // Maintain compatibility with 1.0.x record attack replays?
