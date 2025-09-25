@@ -145,10 +145,9 @@ enum
 
 typedef struct
 {
-	GLuint fboobj;
-	GLuint tex;
-	GLuint rboobj;
-
+	GLuint fboobj; // actual Framebuffer Object
+	GLuint rboobj; // Renderbuffer Object
+	GLuint tex;    // Framebuffer texture
 	boolean init;
 } fboobj_t;
 
@@ -295,7 +294,6 @@ static void GL_MSG_Error(const char *format, ...)
 /* 1.0 functions */
 /* Miscellaneous */
 #define pglClearColor glClearColor
-//glClear
 #define pglColorMask glColorMask
 #define pglAlphaFunc glAlphaFunc
 #define pglBlendFunc glBlendFunc
@@ -305,6 +303,7 @@ static void GL_MSG_Error(const char *format, ...)
 #define pglEnable glEnable
 #define pglDisable glDisable
 #define pglGetFloatv glGetFloatv
+#define pglPolygonMode glPolygonMode
 
 /* Depth Buffer */
 #define pglClearDepth glClearDepth
@@ -318,6 +317,7 @@ static void GL_MSG_Error(const char *format, ...)
 #define pglPushMatrix glPushMatrix
 #define pglPopMatrix glPopMatrix
 #define pglLoadIdentity glLoadIdentity
+#define pglMultMatrixf glMultMatrixf
 #define pglMultMatrixd glMultMatrixd
 #define pglRotatef glRotatef
 #define pglScalef glScalef
@@ -347,8 +347,8 @@ static void GL_MSG_Error(const char *format, ...)
 /* Texture mapping */
 #define pglTexEnvi glTexEnvi
 #define pglTexParameteri glTexParameteri
+#define pglTexImage1D glTexImage1D
 #define pglTexImage2D glTexImage2D
-#define pglTexImage3D glTexImage3D
 #define pglTexSubImage2D glTexSubImage2D
 
 /* 1.1 functions */
@@ -595,77 +595,77 @@ static PFNglDebugMessageCallback pglDebugMessageCallback;
 boolean SetupGLfunc(void)
 {
 #ifndef STATIC_OPENGL
-#define GETOPENGLFUNC(func, proc) \
-	func = GetGLFunc(#proc); \
-	if (!func) \
+#define GetGLfunc(func) \
+	p##func = GetGLFunc(#func); \
+	if (!p##func) \
 	{ \
-		GL_MSG_Warning("failed to get OpenGL function: %s", #proc); \
+		GL_MSG_Warning("failed to get OpenGL function: %s", #func); \
 	} \
 
-	GETOPENGLFUNC(pglClearColor, glClearColor)
+	GetGLfunc(glClearColor)
 
-	GETOPENGLFUNC(pglClear, glClear)
-	GETOPENGLFUNC(pglColorMask, glColorMask)
-	GETOPENGLFUNC(pglAlphaFunc, glAlphaFunc)
-	GETOPENGLFUNC(pglBlendFunc, glBlendFunc)
-	GETOPENGLFUNC(pglCullFace, glCullFace)
-	GETOPENGLFUNC(pglPolygonOffset, glPolygonOffset)
-	GETOPENGLFUNC(pglScissor, glScissor)
-	GETOPENGLFUNC(pglEnable, glEnable)
-	GETOPENGLFUNC(pglDisable, glDisable)
-	GETOPENGLFUNC(pglGetFloatv, glGetFloatv)
-	GETOPENGLFUNC(pglGetIntegerv, glGetIntegerv)
-	GETOPENGLFUNC(pglGetString, glGetString)
-	GETOPENGLFUNC(pglPolygonMode, glPolygonMode)
+	GetGLfunc(glClear)
+	GetGLfunc(glColorMask)
+	GetGLfunc(glAlphaFunc)
+	GetGLfunc(glBlendFunc)
+	GetGLfunc(glCullFace)
+	GetGLfunc(glPolygonOffset)
+	GetGLfunc(glScissor)
+	GetGLfunc(glEnable)
+	GetGLfunc(glDisable)
+	GetGLfunc(glGetFloatv)
+	GetGLfunc(glGetIntegerv)
+	GetGLfunc(glGetString)
+	GetGLfunc(glPolygonMode)
 
-	GETOPENGLFUNC(pglClearDepth, glClearDepth)
-	GETOPENGLFUNC(pglDepthFunc, glDepthFunc)
-	GETOPENGLFUNC(pglDepthMask, glDepthMask)
-	GETOPENGLFUNC(pglDepthRange, glDepthRange)
+	GetGLfunc(glClearDepth)
+	GetGLfunc(glDepthFunc)
+	GetGLfunc(glDepthMask)
+	GetGLfunc(glDepthRange)
 
-	GETOPENGLFUNC(pglMatrixMode, glMatrixMode)
-	GETOPENGLFUNC(pglViewport, glViewport)
-	GETOPENGLFUNC(pglPushMatrix, glPushMatrix)
-	GETOPENGLFUNC(pglPopMatrix, glPopMatrix)
-	GETOPENGLFUNC(pglLoadIdentity, glLoadIdentity)
-	GETOPENGLFUNC(pglMultMatrixf, glMultMatrixf)
-	GETOPENGLFUNC(pglRotatef, glRotatef)
-	GETOPENGLFUNC(pglScalef, glScalef)
-	GETOPENGLFUNC(pglTranslatef, glTranslatef)
+	GetGLfunc(glMatrixMode)
+	GetGLfunc(glViewport)
+	GetGLfunc(glPushMatrix)
+	GetGLfunc(glPopMatrix)
+	GetGLfunc(glLoadIdentity)
+	GetGLfunc(glMultMatrixf)
+	GetGLfunc(glRotatef)
+	GetGLfunc(glScalef)
+	GetGLfunc(glTranslatef)
 
-	GETOPENGLFUNC(pglColor4ubv, glColor4ubv)
+	GetGLfunc(glColor4ubv)
 
-	GETOPENGLFUNC(pglVertexPointer, glVertexPointer)
-	GETOPENGLFUNC(pglNormalPointer, glNormalPointer)
-	GETOPENGLFUNC(pglTexCoordPointer, glTexCoordPointer)
-	GETOPENGLFUNC(pglDrawArrays, glDrawArrays)
-	GETOPENGLFUNC(pglDrawElements, glDrawElements)
-	GETOPENGLFUNC(pglEnableClientState, glEnableClientState)
-	GETOPENGLFUNC(pglDisableClientState, glDisableClientState)
+	GetGLfunc(glVertexPointer)
+	GetGLfunc(glNormalPointer)
+	GetGLfunc(glTexCoordPointer)
+	GetGLfunc(glDrawArrays)
+	GetGLfunc(glDrawElements)
+	GetGLfunc(glEnableClientState)
+	GetGLfunc(glDisableClientState)
 
-	GETOPENGLFUNC(pglShadeModel, glShadeModel)
-	GETOPENGLFUNC(pglLightfv, glLightfv)
-	GETOPENGLFUNC(pglLightModelfv, glLightModelfv)
-	GETOPENGLFUNC(pglMaterialfv, glMaterialfv)
-	GETOPENGLFUNC(pglMateriali, glMateriali)
+	GetGLfunc(glShadeModel)
+	GetGLfunc(glLightfv)
+	GetGLfunc(glLightModelfv)
+	GetGLfunc(glMaterialfv)
+	GetGLfunc(glMateriali)
 
-	GETOPENGLFUNC(pglPixelStorei, glPixelStorei)
-	GETOPENGLFUNC(pglReadPixels, glReadPixels)
+	GetGLfunc(glPixelStorei)
+	GetGLfunc(glReadPixels)
 
-	GETOPENGLFUNC(pglTexEnvi, glTexEnvi)
-	GETOPENGLFUNC(pglTexParameteri, glTexParameteri)
-	GETOPENGLFUNC(pglTexImage1D, glTexImage1D)
-	GETOPENGLFUNC(pglTexImage2D, glTexImage2D)
-	GETOPENGLFUNC(pglTexSubImage2D, glTexSubImage2D)
+	GetGLfunc(glTexEnvi)
+	GetGLfunc(glTexParameteri)
+	GetGLfunc(glTexImage1D)
+	GetGLfunc(glTexImage2D)
+	GetGLfunc(glTexSubImage2D)
 
-	GETOPENGLFUNC(pglGenTextures, glGenTextures)
-	GETOPENGLFUNC(pglDeleteTextures, glDeleteTextures)
-	GETOPENGLFUNC(pglBindTexture, glBindTexture)
+	GetGLfunc(glGenTextures)
+	GetGLfunc(glDeleteTextures)
+	GetGLfunc(glBindTexture)
 
-	GETOPENGLFUNC(pglCopyTexImage2D, glCopyTexImage2D)
-	GETOPENGLFUNC(pglCopyTexSubImage2D, glCopyTexSubImage2D)
+	GetGLfunc(glCopyTexImage2D)
+	GetGLfunc(glCopyTexSubImage2D)
 
-#undef GETOPENGLFUNC
+#undef GetGLfunc
 #endif
 	return true;
 }
@@ -838,6 +838,7 @@ void SetupGLFunc4(void)
 
 	/* 1.2 funcs */
 	GetGLfunc(glTexImage3D);
+
 	/* 1.3 funcs */
 	GetGLfunc(glActiveTexture);
 	GetGLfunc(glMultiTexCoord2f);

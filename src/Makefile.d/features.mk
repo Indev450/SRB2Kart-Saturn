@@ -18,7 +18,9 @@ ifndef NOHW
 opts+=-DHWRENDER
 
 ifndef NOSCREENFBO
+ifndef STATIC_OPENGL
 opts+=-DUSE_FBO_OGL
+endif
 endif
 
 sources+=$(call List,hardware/Sourcefile)
