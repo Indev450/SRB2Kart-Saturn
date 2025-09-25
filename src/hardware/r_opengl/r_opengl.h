@@ -64,6 +64,8 @@ extern FILE             *gllogstream;
 
 FUNCPRINTF void GL_DBG_Printf(const char *format, ...);
 
+extern boolean supportstencil;
+
 void *GetGLFunc(const char *proc);
 boolean SetupGLfunc(void);
 void SetupGLFunc4(void);

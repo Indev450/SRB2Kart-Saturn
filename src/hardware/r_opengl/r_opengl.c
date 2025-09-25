@@ -35,13 +35,10 @@
 #include "r_opengl.h"
 #include "r_vbo.h"
 
-#include "../hw_batching.h"
 #include "../hw_clip.h"
 #include "../hw_main.h"
 #include "../hw_shaders.h"
 
-#include "../../f_finale.h"
-#include "../../r_local.h" // For rendertimefrac, used for the leveltime shader uniform
 #include "../../i_video.h"
 
 #ifdef GLDEBUGMESSAGE
@@ -168,6 +165,9 @@ GL_DEPTH_STENCIL_ATTACHMENT GL_DEPTH_ATTACHMENT_EXT
 static void GL_Framebuffer_DeleteAttachments(void);
 #endif
 
+// needed for glportals
+boolean supportstencil = false;
+
 // Sryder:	NextTexAvail is broken for these because palette changes or changes to the texture filter or antialiasing
 //			flush all of the stored textures, leaving them unavailable at times such as between levels
 //			These need to start at 0 and be set to their number, and be reset to 0 when deleted so that Intel GPUs
@@ -210,7 +210,6 @@ FUNCPRINTF void GL_DBG_Printf(const char *format, ...)
 //                  :
 // Returns          :
 // -----------------+
-
 
 static void GL_MSG_Warning(const char *format, ...)
 {
@@ -567,6 +566,7 @@ boolean SetupGLfunc(void)
 	if (!p##func) \
 	{ \
 		GL_MSG_Warning("failed to get OpenGL function: %s", #func); \
+		return false; \
 	} \
 
 	GetGLfunc(glClearColor)
@@ -697,8 +697,6 @@ static INT32 gl_enable_screen_textures = 2;
 
 static GLint gl_portal_stencil_level = 0;
 
-static INT32 gl_portal_mode = HWD_PORTAL_NORMAL;
-
 // 13062019
 typedef enum
 {
@@ -797,13 +795,17 @@ static int GLFramebuffer_CheckExt(void)
 }
 #endif
 
+
 void SetupGLFunc4(void)
 {
+// critical functions for operation
 #define GetGLfunc(func) \
 	p##func = GetGLFunc(#func); \
 	if (!p##func) \
 	{ \
-		GL_MSG_Warning("failed to get OpenGL function: %s", #func); \
+		I_Error("Failed to get critical OpenGL function: %s. Possible reasons include:\n" \
+				"- GPU vendor has dropped OpenGL support on your GPU and OS. (Old GPU?)\n" \
+				"- GPU drivers are missing or broken. You may need to update your drivers.", #func); \
 	} \
 
 	/* 1.2 funcs */
@@ -821,6 +823,15 @@ void SetupGLFunc4(void)
 	GetGLfunc(glBufferData);
 	GetGLfunc(glDeleteBuffers);
 	GetGLfunc(glColorPointer);
+#undef GetGLfunc
+
+// noncritical functions for operation
+#define GetGLfunc(func) \
+	p##func = GetGLFunc(#func); \
+	if (!p##func) \
+	{ \
+		GL_MSG_Warning("failed to get OpenGL function: %s", #func); \
+	} \
 
 	/* 2.0 funcs */
 	GetGLfunc(glBlendEquation);
@@ -855,7 +866,23 @@ void SetupGLFunc4(void)
 	GetGLfunc(glDebugMessageCallback);
 #endif
 
+	if (pglStencilFuncSeparate && pglStencilOpSeparate)
+	{
+		supportstencil = true;
+	}
+#undef GetGLfunc
+
 #ifdef USE_FBO_OGL
+#define GetGLfunc(func) \
+	p##func = GetGLFunc(#func); \
+	if (!p##func) \
+	{ \
+		GL_MSG_Warning("failed to get OpenGL FBO function: %s\n", #func); \
+		GL_DBG_Printf("\nFBO: No framebuffer object support\n"); \
+		supportFBO = false; \
+		return; \
+	} \
+
 	const int fbocheck = GLFramebuffer_CheckExt();
 
 	if (fbocheck != FBO_NONE)
@@ -873,17 +900,7 @@ void SetupGLFunc4(void)
 			GetGLfunc(glRenderbufferStorage);
 			GetGLfunc(glFramebufferRenderbuffer);
 
-			// check if ALL functions are availible
-			// what a mouthful
-			if (pglGenFramebuffers && pglBindFramebuffer &&
-				pglDeleteFramebuffers && pglFramebufferTexture2D &&
-				pglCheckFramebufferStatus && pglGenRenderbuffers &&
-				pglBindRenderbuffer && pglDeleteRenderbuffers &&
-				pglRenderbufferStorage && pglFramebufferRenderbuffer)
-			{
-				supportFBO = fbocheck;
-				GL_DBG_Printf("\nFBO: ARB extensions found\n");
-			}
+			GL_DBG_Printf("\nFBO: ARB extensions found\n");
 		}
 		else if (fbocheck == FBO_EXT || fbocheck == FBO_EXT_STENCIL) // uh oh only support for EXT prefix fbos...
 		{
@@ -898,40 +915,31 @@ void SetupGLFunc4(void)
 			GetGLfunc(glRenderbufferStorageEXT);
 			GetGLfunc(glFramebufferRenderbufferEXT);
 
-			// check if ALL functions are availible
-			// what a mouthful
-			if (pglGenFramebuffersEXT && pglBindFramebufferEXT &&
-				pglDeleteFramebuffersEXT && pglFramebufferTexture2DEXT &&
-				pglCheckFramebufferStatusEXT && pglGenRenderbuffersEXT &&
-				pglBindRenderbufferEXT && pglDeleteRenderbuffersEXT &&
-				pglRenderbufferStorageEXT && pglFramebufferRenderbufferEXT)
-			{
-				// remapping galore huehue
-				// do this so we dont have to dupe half our code
-				pglGenFramebuffers = pglGenFramebuffersEXT;
-				pglBindFramebuffer = pglBindFramebufferEXT;
-				pglDeleteFramebuffers  = pglDeleteFramebuffersEXT;
-				pglFramebufferTexture2D = pglFramebufferTexture2DEXT;
-				pglCheckFramebufferStatus = pglCheckFramebufferStatusEXT;
-				pglGenRenderbuffers = pglGenRenderbuffersEXT;
-				pglBindRenderbuffer = pglBindRenderbufferEXT;
-				pglDeleteRenderbuffers = pglDeleteRenderbuffersEXT;
-				pglRenderbufferStorage = pglRenderbufferStorageEXT;
-				pglFramebufferRenderbuffer = pglFramebufferRenderbufferEXT;
+			// remapping galore huehue
+			// do this so we dont have to dupe half our code
+			pglGenFramebuffers = pglGenFramebuffersEXT;
+			pglBindFramebuffer = pglBindFramebufferEXT;
+			pglDeleteFramebuffers  = pglDeleteFramebuffersEXT;
+			pglFramebufferTexture2D = pglFramebufferTexture2DEXT;
+			pglCheckFramebufferStatus = pglCheckFramebufferStatusEXT;
+			pglGenRenderbuffers = pglGenRenderbuffersEXT;
+			pglBindRenderbuffer = pglBindRenderbufferEXT;
+			pglDeleteRenderbuffers = pglDeleteRenderbuffersEXT;
+			pglRenderbufferStorage = pglRenderbufferStorageEXT;
+			pglFramebufferRenderbuffer = pglFramebufferRenderbufferEXT;
 
-				supportFBO = fbocheck;
-
-				if (fbocheck == FBO_EXT)
-					GL_DBG_Printf("\nFBO: EXT extensions found, no stencil\n");
-				else if (fbocheck == FBO_EXT_STENCIL)
-					GL_DBG_Printf("\nFBO: EXT extensions with packed depth-stencil\n");
-			}
+			if (fbocheck == FBO_EXT)
+				GL_DBG_Printf("\nFBO: EXT extensions found, no stencil\n");
+			else if (fbocheck == FBO_EXT_STENCIL)
+				GL_DBG_Printf("\nFBO: EXT extensions with packed depth-stencil\n");
 		}
+
+		supportFBO = fbocheck;
 	}
 	else
 		GL_DBG_Printf("\nFBO: No framebuffer object support\n");
-#endif
 #undef GetGLfunc
+#endif
 }
 
 boolean GL_InitShaders(void)
@@ -2614,7 +2622,9 @@ void GL_SetSpecialState(hwdspecialstate_t IdState, INT32 Value)
 			break;
 
 		case HWD_SET_PORTAL_MODE:
-			gl_portal_mode = Value;
+			if (!supportstencil)
+				break;
+
 			switch (Value)
 			{
 				case HWD_PORTAL_NORMAL:

@@ -2223,7 +2223,7 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 
 static inline boolean HWR_UsePortals(void)
 {
-	return cv_glportals.value && gl_maphasportals;
+	return supportstencil && cv_glportals.value && gl_maphasportals;
 }
 
 // From PrBoom:
