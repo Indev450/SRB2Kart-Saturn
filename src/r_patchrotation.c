@@ -241,6 +241,10 @@ void RotatedPatch_DoRotation(rotsprite_t *rotsprite, patch_t *patch, INT32 angle
 			rawconv = Z_Calloc(size * sizeof(UINT16), PU_STATIC, NULL);
 			conv_capacity = size;
 		}
+		else
+		{
+			memset(rawconv, 0, conv_capacity * sizeof(UINT16));
+		}
 
 		src = &rawdst[(miny * newwidth) + minx];
 		dest = rawconv;
