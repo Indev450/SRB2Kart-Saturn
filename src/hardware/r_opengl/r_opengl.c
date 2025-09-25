@@ -882,6 +882,7 @@ void SetupGLFunc4(void)
 				pglRenderbufferStorage && pglFramebufferRenderbuffer)
 			{
 				supportFBO = fbocheck;
+				GL_DBG_Printf("\nFBO: ARB extensions found\n");
 			}
 		}
 		else if (fbocheck == FBO_EXT || fbocheck == FBO_EXT_STENCIL) // uh oh only support for EXT prefix fbos...
@@ -919,25 +920,16 @@ void SetupGLFunc4(void)
 				pglFramebufferRenderbuffer = pglFramebufferRenderbufferEXT;
 
 				supportFBO = fbocheck;
+
+				if (fbocheck == FBO_EXT)
+					GL_DBG_Printf("\nFBO: EXT extensions found, no stencil\n");
+				else if (fbocheck == FBO_EXT_STENCIL)
+					GL_DBG_Printf("\nFBO: EXT extensions with packed depth-stencil\n");
 			}
 		}
 	}
-
-	/*switch (supportFBO)
-	{
-		case FBO_ARB:
-			GL_DBG_Printf("\nFBO: ARB extensions found\n");
-			break;
-		case FBO_EXT:
-			GL_DBG_Printf("\nFBO: EXT extensions found, no stencil\n");
-			break;
-		case FBO_EXT_STENCIL:
-			GL_DBG_Printf("\nFBO: EXT extensions with packed depth-stencil\n");
-			break;
-		case FBO_NONE:
-			GL_DBG_Printf("\nFBO: No framebuffer object support\n");
-			break;
-	}*/
+	else
+		GL_DBG_Printf("\nFBO: No framebuffer object support\n");
 #endif
 #undef GetGLfunc
 }
