@@ -1243,8 +1243,10 @@ void M_SaveFrame(void)
 					I_ReadScreen(linear, 1);
 				}
 #ifdef HWRENDER
-				else
-					linear = HWR_GetScreenshot();
+				else if (rendermode == render_opengl)
+				{
+					linear = HWR_GetScreenshot(1);
+				}
 #endif
 				M_PNGFrame(apng_ptr, apng_info_ptr, (png_bytep)linear);
 #ifdef HWRENDER
@@ -1506,7 +1508,7 @@ void M_DoScreenShot(void)
 	char pathname[MAX_WADPATH];
 	boolean ret = false;
 	UINT8 *linear = NULL;
-	UINT8 *palette;
+	UINT8 *palette = NULL;
 
 	// Don't take multiple screenshots, obviously
 	takescreenshot = false;
