@@ -1419,11 +1419,12 @@ void I_ReadScreen(UINT8 * restrict scr, INT32 scale)
 	else
 	{
 		UINT8 * restrict source = vid.screens[0];
-		INT32 w = vid.width/scale*scale, h = vid.height/scale*scale;
+		uintptr_t w = vid.width/scale*scale, h = vid.height/scale*scale;
 
 		// size_t saves a lea + movsxd over INT32. mind your types!
-		for (size_t y = 0; y < h; y += scale)
-			for (size_t x = 0; x < w; x += scale)
+		// uintptr_t is even better since it's guaranteed to be the size of a pointer
+		for (uintptr_t y = 0; y < h; y += scale)
+			for (uintptr_t x = 0; x < w; x += scale)
 				*scr++ = source[y*vid.width + x];
 	}
 }
