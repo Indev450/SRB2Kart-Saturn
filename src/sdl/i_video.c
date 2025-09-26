@@ -1423,12 +1423,23 @@ void I_UpdateNoVsync(void)
 //
 // I_ReadScreen
 //
-void I_ReadScreen(UINT8 *scr)
+void I_ReadScreen(UINT8 * restrict scr, INT32 scale)
 {
 	if (rendermode != render_soft)
 		I_Error ("I_ReadScreen: called while in non-software mode");
-	else
+	else if (scale == 1)
 		VID_BlitLinearScreen(vid.screens[0], scr, vid.width, vid.height, vid.rowbytes, vid.rowbytes);
+	else
+	{
+		UINT8 * restrict source = vid.screens[0];
+		uintptr_t w = vid.width/scale*scale, h = vid.height/scale*scale;
+
+		// size_t saves a lea + movsxd over INT32. mind your types!
+		// uintptr_t is even better since it's guaranteed to be the size of a pointer
+		for (uintptr_t y = 0; y < h; y += scale)
+			for (uintptr_t x = 0; x < w; x += scale)
+				*scr++ = source[y*vid.width + x];
+	}
 }
 
 //

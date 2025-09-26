@@ -121,6 +121,9 @@ void SCR_SetMode(void)
 	if (!setmodeneeded || WipeInAction)
 		return; // should never happen and don't change it during a wipe, BAD!
 
+	if (vid.modenum != setmodeneeded - 1)
+		M_StopMovie(); // nope, cry about it
+
 	VID_SetMode(--setmodeneeded);
 
 	V_SetPalette(0);

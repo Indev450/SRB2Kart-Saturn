@@ -23,7 +23,6 @@
 #include "hw_glob.h"
 #include "hw_gl.h"
 
-#include "../m_misc.h" //FIL_WriteFile()
 #include "../r_draw.h" //viewborderlump
 #include "../r_main.h"
 #include "../w_wad.h"
@@ -1218,42 +1217,18 @@ static inline boolean saveTGA(const char *file_name, void *buffer,
 // --------------------------------------------------------------------------
 // screen shot
 // --------------------------------------------------------------------------
-
-UINT8 *HWR_GetScreenshot(void)
+UINT8 *HWR_GetScreenshot(INT32 scale)
 {
 	static UINT8 *buf = NULL;
 
-	buf = realloc(buf, vid.width * vid.height * 3);
+	buf = realloc(buf, (vid.width/scale)*(vid.height/scale)*3);
 
 	if (!buf)
 		return NULL;
 
 	// returns 24bit 888 RGB
-	GL_ReadScreenTexture(HWD_SCREENTEXTURE_GENERIC2, (void *)buf);
+	GL_ReadScreenTexture(HWD_SCREENTEXTURE_GENERIC2, (void *)buf, scale);
 	return buf;
-}
-
-boolean HWR_Screenshot(const char *pathname)
-{
-	boolean ret;
-	UINT8 *buf = malloc(vid.width * vid.height * 3 * sizeof (*buf));
-
-	if (!buf)
-	{
-		CONS_Debug(DBG_RENDER, "HWR_Screenshot: Failed to allocate memory\n");
-		return false;
-	}
-
-	// returns 24bit 888 RGB
-	GL_ReadScreenTexture(HWD_SCREENTEXTURE_GENERIC2, (void *)buf);
-
-#ifdef USE_PNG
-	ret = M_SavePNG(pathname, buf, vid.width, vid.height, NULL);
-#else
-	ret = saveTGA(pathname, buf, vid.width, vid.height);
-#endif
-	free(buf);
-	return ret;
 }
 
 #endif //HWRENDER

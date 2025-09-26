@@ -104,8 +104,7 @@ void HWR_DrawConsoleBack(UINT32 color, INT32 height);
 void HWR_DrawViewBorder(INT32 clearlines);
 void HWR_DrawFlatFill(INT32 x, INT32 y, INT32 w, INT32 h, lumpnum_t flatlumpnum);
 
-UINT8 *HWR_GetScreenshot(void);
-boolean HWR_Screenshot(const char *lbmname);
+UINT8 *HWR_GetScreenshot(INT32 scale);
 
 // hw_main.c
 void HWR_SetViewSize(void);
