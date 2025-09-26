@@ -850,12 +850,6 @@ void D_RegisterClientCommands(void)
 	CV_RegisterVar(&cv_zlib_memory);
 	CV_RegisterVar(&cv_zlib_strategy);
 	CV_RegisterVar(&cv_zlib_window_bits);
-	// APNG variables
-	CV_RegisterVar(&cv_zlib_levela);
-	CV_RegisterVar(&cv_zlib_memorya);
-	CV_RegisterVar(&cv_zlib_strategya);
-	CV_RegisterVar(&cv_zlib_window_bitsa);
-	CV_RegisterVar(&cv_apng_delay);
 	// GIF variables
 	CV_RegisterVar(&cv_gif_optimize);
 	CV_RegisterVar(&cv_gif_downscale);
