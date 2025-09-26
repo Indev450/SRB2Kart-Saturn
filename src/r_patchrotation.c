@@ -122,6 +122,28 @@ static void RotatedPatch_CalculateDimensions(
 	*newheight = max(height, max(h1, h2));
 }
 
+static void RotatedPatch_AllocImgBuf(UINT16 **buf, size_t size, size_t *capacity)
+{
+	if (!*buf)
+	{
+		*buf = Z_Malloc(*capacity, PU_STATIC, NULL);
+	}
+
+	size_t allocsize = size * sizeof(UINT16);
+
+	// make sure our buffer always fits with what we need
+	if (allocsize > *capacity)
+	{
+		while (*capacity < allocsize)
+			*capacity *= 2;
+
+		Z_Free(*buf);
+		*buf = Z_Malloc(*capacity, PU_STATIC, NULL);
+	}
+
+	//CONS_Printf("RotatedPatch_AllocBuf: Allocated %.2f KB\n", *capacity / 1024.0);
+}
+
 void RotatedPatch_DoRotation(rotsprite_t *rotsprite, patch_t *patch, INT32 angle, INT32 xpivot, INT32 ypivot, boolean flip)
 {
 	UINT32 i;
@@ -130,7 +152,7 @@ void RotatedPatch_DoRotation(rotsprite_t *rotsprite, patch_t *patch, INT32 angle
 	static UINT16 *rawdst = NULL, *rawconv = NULL;
 	UINT16 *rawout;
 	size_t size;
-	static size_t dst_capacity = 0, conv_capacity = 0;
+	static size_t dst_capacity = (1024 * 1024), conv_capacity = (1024 * 1024); // 1 MB should be enough for most cases
 	INT32 bflip = (flip != 0x00);
 
 	INT32 width = patch->width;
@@ -184,13 +206,7 @@ void RotatedPatch_DoRotation(rotsprite_t *rotsprite, patch_t *patch, INT32 angle
 	if (!size)
 		size = (width * height);
 
-	if (size > dst_capacity)
-	{
-		// no realloc since we dont care about the old data
-		Z_Free(rawdst);
-		rawdst = Z_Malloc(size * sizeof(UINT16), PU_STATIC, NULL);
-		dst_capacity = size;
-	}
+	RotatedPatch_AllocImgBuf(&rawdst, size, &dst_capacity);
 
 	for (i = 0; i < size; i++)
 		rawdst[i] = 0xFF00;
@@ -234,17 +250,8 @@ void RotatedPatch_DoRotation(rotsprite_t *rotsprite, patch_t *patch, INT32 angle
 
 		size = (width * height);
 
-		if (size > conv_capacity)
-		{
-			// no realloc since we dont care about the old data
-			Z_Free(rawconv);
-			rawconv = Z_Calloc(size * sizeof(UINT16), PU_STATIC, NULL);
-			conv_capacity = size;
-		}
-		else
-		{
-			memset(rawconv, 0, conv_capacity * sizeof(UINT16));
-		}
+		RotatedPatch_AllocImgBuf(&rawconv, size, &conv_capacity);
+		memset(rawconv, 0, conv_capacity * sizeof(UINT16));
 
 		src = &rawdst[(miny * newwidth) + minx];
 		dest = rawconv;
