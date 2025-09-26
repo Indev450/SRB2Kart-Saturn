@@ -1220,7 +1220,7 @@ void I_OsPolling(void)
 	if (consolevent)
 		I_GetConsoleEvents();
 
-	if (SDL_WasInit(SDL_INIT_JOYSTICK | SDL_INIT_GAMECONTROLLER) == (SDL_INIT_JOYSTICK | SDL_INIT_GAMECONTROLLER))
+	if (SDL_WasInit(SDL_INIT_JOYSTICK|SDL_INIT_GAMECONTROLLER) == (SDL_INIT_JOYSTICK|SDL_INIT_GAMECONTROLLER))
 	{
 		SDL_GameControllerUpdate();
 
@@ -1428,7 +1428,7 @@ void I_ReadScreen(UINT8 * restrict scr, INT32 scale)
 	if (rendermode != render_soft)
 		I_Error ("I_ReadScreen: called while in non-software mode");
 	else if (scale == 1)
-		VID_BlitLinearScreen(vid.screens[0], scr, vid.width, vid.height, vid.rowbytes, vid.rowbytes);
+		VID_BlitLinearScreen(vid.screens[0], scr, vid.width, vid.height, vid.width, vid.width);
 	else
 	{
 		UINT8 * restrict source = vid.screens[0];
@@ -1559,6 +1559,7 @@ INT32 VID_SetMode(INT32 modeNum)
 		// just set the desktop resolution as a fallback
 		SDL_DisplayMode mode;
 		SDL_GetWindowDisplayMode(window, &mode);
+
 		if (mode.w >= 2048)
 		{
 			vid.width = 1920;
@@ -1569,6 +1570,7 @@ INT32 VID_SetMode(INT32 modeNum)
 			vid.width = mode.w;
 			vid.height = mode.h;
 		}
+
 		vid.modenum = -1;
 	}
 
@@ -1607,8 +1609,11 @@ static SDL_bool Impl_CreateContext(void)
 	if (rendermode == render_soft)
 	{
 		int flags = 0; // Use this to set SDL_RENDERER_* flags now
+
 		if (usesdl2soft)
+		{
 			flags |= SDL_RENDERER_SOFTWARE;
+		}
 		else if (cv_vidwait.value)
 		{
 #if SDL_VERSION_ATLEAST(2, 0, 18)
@@ -1663,9 +1668,9 @@ static SDL_bool Impl_CreateWindow(SDL_bool fullscreen)
 		flags |= SDL_WINDOW_OPENGL;
 
 	if (msaa)
-    {
-        SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
-        SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, msaa);
+	{
+		SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
+		SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, msaa);
 	}
 
 	// Without a 24-bit depth buffer many visuals are ruined by z-fighting.
@@ -1680,8 +1685,7 @@ static SDL_bool Impl_CreateWindow(SDL_bool fullscreen)
 #endif
 
 	// Create a window
-	window = SDL_CreateWindow("SRB2Kart "VERSIONSTRING, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
-			realwidth, realheight, flags);
+	window = SDL_CreateWindow("SRB2Kart "VERSIONSTRING, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, realwidth, realheight, flags);
 
 	if (window == NULL)
 	{
@@ -1707,12 +1711,10 @@ static void Impl_VideoSetupBuffer(void)
 	// Set up game's software render buffer
 	size_t size;
 
-	vid.rowbytes = vid.width;
-
 	if (vid.buffer)
 		free(vid.buffer);
 
-	size = vid.rowbytes*vid.height * NUMSCREENS;
+	size = vid.width*vid.height * NUMSCREENS;
 
 	vid.buffer = calloc(size, NUMSCREENS);
 
@@ -1722,8 +1724,7 @@ static void Impl_VideoSetupBuffer(void)
 	}
 }
 
-static FILE *
-OpenRendererFile (const char * mode)
+static FILE * OpenRendererFile(const char * mode)
 {
 	char * path = va(pandf,srb2home,"renderer.txt");
 	return fopen(path, mode);
@@ -1740,11 +1741,11 @@ void I_StartupGraphics(void)
 	if (graphics_started)
 		return;
 
-	COM_AddCommand ("vid_nummodes", VID_Command_NumModes_f);
-	COM_AddCommand ("vid_modelist", VID_Command_ModeList_f);
-	COM_AddCommand ("vid_mode", VID_Command_Mode_f);
-	CV_RegisterVar (&cv_vidwait);
-	CV_RegisterVar (&cv_stretch);
+	COM_AddCommand("vid_nummodes", VID_Command_NumModes_f);
+	COM_AddCommand("vid_modelist", VID_Command_ModeList_f);
+	COM_AddCommand("vid_mode", VID_Command_Mode_f);
+	CV_RegisterVar(&cv_vidwait);
+	CV_RegisterVar(&cv_stretch);
 	disable_mouse = M_CheckParm("-nomouse");
 	disable_fullscreen = M_CheckParm("-win") ? 1 : 0;
 
@@ -1843,7 +1844,6 @@ void I_StartupGraphics(void)
 					if (strcasecmp(word, "a2c") == 0)
 					{
 						a2c = true;
-
 						CONS_Printf("Using a2c because it was specified to be used earlier\n");
 					}
 				}
@@ -1997,7 +1997,8 @@ static void Impl_SetVsync(void)
 		SDL_RenderSetVSync(renderer, cv_vidwait.value);
 #endif
 #ifdef HWRENDER
-	if (!renderer && rendermode == render_opengl && sdlglcontext != NULL && SDL_GL_GetCurrentContext() == sdlglcontext)
+	if (!renderer && rendermode == render_opengl &&
+	sdlglcontext != NULL && SDL_GL_GetCurrentContext() == sdlglcontext)
 	{
 		SDL_GL_SetSwapInterval(cv_vidwait.value ? 1 : 0);
 	}

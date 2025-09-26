@@ -612,8 +612,7 @@ static void CV_constextsize_OnChange(void)
 // --------------------------------------------------------------------------
 // Copy a rectangular area from one bitmap to another (8bpp)
 // --------------------------------------------------------------------------
-void VID_BlitLinearScreen(const UINT8 *srcptr, UINT8 *destptr, INT32 width, INT32 height, size_t srcrowbytes,
-	size_t destrowbytes)
+void VID_BlitLinearScreen(const UINT8 *srcptr, UINT8 *destptr, INT32 width, INT32 height, size_t srcrowbytes, size_t destrowbytes)
 {
 	if (srcrowbytes == destrowbytes && srcrowbytes == width)
 	{
@@ -790,7 +789,7 @@ void V_DrawStretchyFixedPatch(fixed_t x, fixed_t y, fixed_t pscale, fixed_t vsca
 	if (!desttop)
 		return;
 
-	deststop = desttop + vid.rowbytes * vid.height;
+	deststop = desttop + vid.width * vid.height;
 
 	if (scrn & V_NOSCALESTART)
 	{
@@ -1041,7 +1040,7 @@ void V_DrawCroppedPatch(fixed_t x, fixed_t y, fixed_t pscale, INT32 scrn, patch_
 	if (!desttop)
 		return;
 
-	deststop = desttop + vid.rowbytes * vid.height;
+	deststop = desttop + vid.width * vid.height;
 
 	if (scrn & V_NOSCALESTART)
 	{
@@ -1191,7 +1190,7 @@ void V_DrawBlock(INT32 x, INT32 y, INT32 scrn, INT32 width, INT32 height, const 
 #endif
 
 	dest = vid.screens[scrn] + y*vid.width + x;
-	deststop = vid.screens[scrn] + vid.rowbytes * vid.height;
+	deststop = vid.screens[scrn] + vid.width * vid.height;
 
 	while (height--)
 	{
@@ -1288,7 +1287,7 @@ void V_DrawFill(INT32 x, INT32 y, INT32 w, INT32 h, INT32 c)
 		h = vid.height-y;
 
 	dest = vid.screens[0] + y*vid.width + x;
-	deststop = vid.screens[0] + vid.rowbytes * vid.height;
+	deststop = vid.screens[0] + vid.width * vid.height;
 
 	if (alphalevel)
 	{
@@ -1573,7 +1572,7 @@ void V_DrawDiag(INT32 x, INT32 y, INT32 wh, INT32 c)
 		h = w;
 
 	dest = vid.screens[0] + y*vid.width + x;
-	deststop = vid.screens[0] + vid.rowbytes * vid.height;
+	deststop = vid.screens[0] + vid.width * vid.height;
 
 	c &= 255;
 
@@ -1645,7 +1644,7 @@ void V_DrawFlatFill(INT32 x, INT32 y, INT32 w, INT32 h, lumpnum_t flatnum)
 	dupx = dupy = (vid.dupx < vid.dupy ? vid.dupx : vid.dupy);
 
 	dest = vid.screens[0] + y*dupy*vid.width + x*dupx;
-	deststop = vid.screens[0] + vid.rowbytes * vid.height;
+	deststop = vid.screens[0] + vid.width * vid.height;
 
 	// from V_DrawScaledPatch
 	if (vid.width != BASEVIDWIDTH * dupx)
@@ -1771,8 +1770,10 @@ void V_DrawVhsEffect(boolean rewind)
 	upbary -= renderdeltatics * (vid.dupy * (rewind ? 3 : 1.8f));
 	downbary += renderdeltatics * (vid.dupy * (rewind ? 2 : 1));
 
-	if (upbary < -barsize*FRACUNIT) upbary = vid.height<<FRACBITS;
-	if (downbary > vid.height<<FRACBITS) downbary = -barsize*FRACUNIT;
+	if (upbary < -barsize*FRACUNIT)
+		upbary = vid.height<<FRACBITS;
+	if (downbary > vid.height<<FRACBITS)
+		downbary = -barsize*FRACUNIT;
 
 	fixed_t uby = upbary>>FRACBITS, dby = downbary>>FRACBITS;
 
@@ -1794,18 +1795,20 @@ void V_DrawVhsEffect(boolean rewind)
 			thismapstart -= (2<<FF_TRANSSHIFT) - (5<<8);
 			offs += updistort * 2.0f * min(y-uby, uby+barsize-y) / barsize;
 		}
+
 		if (y >= dby && y < dby+barsize)
 		{
 			thismapstart -= (2<<FF_TRANSSHIFT) - (5<<8);
 			offs -= downdistort * 2.0f * min(y-dby, dby+barsize-y) / barsize;
 		}
+
 		offs += M_RandomKey(vid.dupx<<1);
 
 		// lazy way to avoid crashes
-		if (y == 0 && offs < 0) offs = 0;
-		else if (y >= vid.height-2 && offs > 0) offs = 0;
+		if ((y == 0 && offs < 0) || (y >= vid.height-2 && offs > 0))
+			offs = 0;
 
-		for (x = min(pos+vid.rowbytes*2, vid.rowbytes*vid.height); pos < x; pos++)
+		for (x = min(pos+(size_t)vid.width*2, (size_t)vid.width*vid.height); pos < x; pos++)
 		{
 			tmp[pos] = thismapstart[buf[pos+offs]];
 #ifdef HQ_VHS
@@ -1814,7 +1817,7 @@ void V_DrawVhsEffect(boolean rewind)
 		}
 	}
 
-	memcpy(buf, tmp, vid.rowbytes*vid.height);
+	memcpy(buf, tmp, vid.width*vid.height);
 }
 
 //
@@ -1829,11 +1832,11 @@ void V_DrawVhsEffect(boolean rewind)
 void V_DrawFadeScreen(UINT16 color, UINT8 strength)
 {
 #ifdef HWRENDER
-    if (rendermode != render_soft && rendermode != render_none)
-    {
-        HWR_FadeScreenMenuBack(color, strength);
-        return;
-    }
+	if (rendermode == render_opengl)
+	{
+		HWR_FadeScreenMenuBack(color, strength);
+		return;
+	}
 #endif
 
 	const UINT8 *fadetable =
@@ -1842,7 +1845,7 @@ void V_DrawFadeScreen(UINT16 color, UINT8 strength)
 		: ((color & 0xFF00) // Color is not palette index?
 		? ((UINT8 *)colormaps + strength*256) // Do COLORMAP fade.
 		: ((UINT8 *)transtables + ((9-strength)<<FF_TRANSSHIFT) + color*256)); // Else, do TRANSMAP** fade.
-	const UINT8 *deststop = vid.screens[0] + vid.rowbytes * vid.height;
+	const UINT8 *deststop = vid.screens[0] + vid.width * vid.height;
 	UINT8 *buf = vid.screens[0];
 
 	// heavily simplified -- we don't need to know x or y
@@ -1867,7 +1870,7 @@ void V_DrawFadeConsBack(INT32 plines)
 
 	// heavily simplified -- we don't need to know x or y position,
 	// just the stop position
-	deststop = vid.screens[0] + vid.rowbytes * min(plines, vid.height);
+	deststop = vid.screens[0] + vid.width * min(plines, vid.height);
 	for (buf = vid.screens[0]; buf < deststop; ++buf)
 		*buf = consolebgmap[*buf];
 }
@@ -3791,7 +3794,7 @@ UINT8 GetColorLUTDirect(colorlookup_t *lut, UINT8 r, UINT8 g, UINT8 b)
 void V_Init(void)
 {
 	INT32 i;
-	INT32 screensize = vid.rowbytes * vid.height;
+	INT32 screensize = vid.width * vid.height;
 
 	for (i = 0; i < NUMSCREENS; i++)
 	{
