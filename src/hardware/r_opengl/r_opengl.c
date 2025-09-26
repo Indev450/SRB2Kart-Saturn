@@ -1417,7 +1417,7 @@ static void GL_Framebuffer_Generate(void)
 	{
 		pglGenRenderbuffers(1, &FBO[FBO_RESOLV].rbo[RBO_COLOR]);
 		pglBindRenderbuffer(GL_RENDERBUFFER, FBO[FBO_RESOLV].rbo[RBO_COLOR]);
-		pglRenderbufferStorageMultisample(GL_RENDERBUFFER, 4, GL_RGBA8, screen_width, screen_height);
+		pglRenderbufferStorage(GL_RENDERBUFFER, GL_RGBA8, screen_width, screen_height);
 		pglFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, FBO[FBO_RESOLV].rbo[RBO_COLOR]);
 	}
 
