@@ -52,8 +52,6 @@ endif
 ifdef LINUX
 opts+=-D_LARGEFILE64_SOURCE
 endif
-opts+=-DHAVE_PNG
-sources+=apng.c
 endif
 endif
 
