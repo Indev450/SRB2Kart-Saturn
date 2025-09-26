@@ -1222,7 +1222,8 @@ UINT8 *HWR_GetScreenshot(INT32 scale)
 	if (!buf)
 		return NULL;
 
-	GL_ReadScreenFinalTexture(buf, scale);
+	// returns 24bit 888 RGB
+	GL_ReadScreenTexture(HWD_SCREENTEXTURE_GENERIC2, (void *)buf, scale);
 	return buf;
 }
 

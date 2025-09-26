@@ -1443,23 +1443,14 @@ void SetupGLInfo(void)
 	sscanf((const char*)versionGL, "%d.%d", &majorGL, &minorGL);
 }
 
-// Writes screen texture tex into dst_data.
-// Pixel format is 24-bit RGB. Row order is top to bottom.
-// Dimensions are screen_width * screen_height.
-void GL_ReadScreenTexture(int tex, UINT16 *dst_data)
+// ------------------+
+// ReadScreenTexture : Reads out a screen texture
+// ------------------+
+void GL_ReadScreenTexture(int tex, UINT8 *restrict dest, INT32 scale)
 {
-	INT32 i;
-	int dst_stride = screen_width * 3; // stride between rows of image data
-	GLubyte *top, *bottom;
-	GLubyte *row;
-
-	row = malloc(dst_stride);
-
-	if (!row)
-		return;
-
-	top = (GLvoid*)dst_data;
-	bottom = top + dst_stride * (screen_height - 1);
+	const INT32 stride = (screen_width/scale)*3;
+	INT32 scanlines = screen_height;
+	GLubyte * restrict image;
 
 	// at the time this function is called, generic2 can be found drawn on the framebuffer
 	// if some other screen texture is needed, draw it to the framebuffer
@@ -1468,39 +1459,12 @@ void GL_ReadScreenTexture(int tex, UINT16 *dst_data)
 	if (tex != HWD_SCREENTEXTURE_GENERIC2)
 		GL_DrawScreenTexture(tex, NULL, 0);
 
-	pglPixelStorei(GL_PACK_ALIGNMENT, 1);
-	pglReadPixels(0, 0, screen_width, screen_height, GL_RGB, GL_UNSIGNED_BYTE, dst_data);
-
-	if (tex != HWD_SCREENTEXTURE_GENERIC2)
-		GL_DrawScreenTexture(HWD_SCREENTEXTURE_GENERIC2, NULL, 0);
-
-	// Flip image upside down.
-	// In other words, convert OpenGL's "bottom->top" row order into "top->bottom".
-	for (i = 0; i < screen_height/2; i++)
-	{
-		memcpy(row, top, dst_stride);
-		memcpy(top, bottom, dst_stride);
-		memcpy(bottom, row, dst_stride);
-		top += dst_stride;
-		bottom -= dst_stride;
-	}
-
-	free(row);
-}
-
-// -----------------------+
-// ReadScreenFinalTexture : Reads out the final screen texture
-// Returns                : 24bit RGB pixel array stored in dest
-// -----------------------+
-void GL_ReadScreenFinalTexture(UINT8 * restrict dest, INT32 scale)
-{
-	const INT32 stride = (screen_width/scale)*3;
-	INT32 scanlines = screen_height;
-	GLubyte * restrict image;
-
 	image = malloc(screen_width*screen_height*3);
 	pglPixelStorei(GL_PACK_ALIGNMENT, 1);
 	pglReadPixels(0, 0, screen_width, screen_height, GL_RGB, GL_UNSIGNED_BYTE, image);
+
+	if (tex != HWD_SCREENTEXTURE_GENERIC2)
+		GL_DrawScreenTexture(HWD_SCREENTEXTURE_GENERIC2, NULL, 0);
 
 	// TODO the downscaling happens in the screen capture code now,
 	// yet we're still doing this on the CPU? sheesh...
