@@ -104,7 +104,7 @@ static void R_DrawSpanTemplate(drawspandata_t* ds)
 	UINT8 * restrict dest = R_Address(ds->x1, ds->y);
 	UINT8 * restrict dsrc;
 
-	const UINT8 * restrict deststop = vid.screens[0] + vid.rowbytes * vid.height;
+	const UINT8 * restrict deststop = vid.screens[0] + vid.width * vid.height;
 
 	if (dest+8 > deststop)
 	{

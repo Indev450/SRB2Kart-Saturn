@@ -58,7 +58,6 @@ typedef struct viddef_s
 	// screens[4] = fade screen end, postimage tempoarary buffer
 
 	UINT8 *buffer; // invisible screens buffer
-	size_t rowbytes; // bytes per scanline of the VIDEO mode
 	INT32 width; // PIXELS per scanline
 	INT32 height;
 	boolean recalc; // if true, recalc vid-based stuff
