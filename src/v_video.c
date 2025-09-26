@@ -615,7 +615,7 @@ static void CV_constextsize_OnChange(void)
 void VID_BlitLinearScreen(const UINT8 *srcptr, UINT8 *destptr, INT32 width, INT32 height, size_t srcrowbytes,
 	size_t destrowbytes)
 {
-	if (srcrowbytes == destrowbytes && srcrowbytes == width)
+	if (srcrowbytes == destrowbytes && srcrowbytes == (size_t)width)
 	{
 		size_t i = srcrowbytes * height;
 #if defined(__SSE__)
