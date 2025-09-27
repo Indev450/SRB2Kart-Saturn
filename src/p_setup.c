@@ -2442,10 +2442,38 @@ static void P_InitMinimapInfo(void)
 	minimapinfo.map_w = minimapinfo.max_x - minimapinfo.min_x;
 	minimapinfo.map_h = minimapinfo.max_y - minimapinfo.min_y;
 
-	minimapinfo.minimap_w = FixedDiv(minimapinfo.minimap_pic->width, minimapinfo.map_w);
-	minimapinfo.minimap_h = FixedDiv(minimapinfo.minimap_pic->height, minimapinfo.map_h);
+	if (minimapinfo.minimap_pic)
+	{
+		minimapinfo.minimap_w = FixedDiv(minimapinfo.minimap_pic->width, minimapinfo.map_w);
+		minimapinfo.minimap_h = FixedDiv(minimapinfo.minimap_pic->height, minimapinfo.map_h);
+		minimapinfo.zoom = FixedMul(min(minimapinfo.minimap_w, minimapinfo.minimap_h), FRACUNIT-FRACUNIT/20);
+	}
+	else // fallback to somewhat inaccurate calc, so automap can still work
+	{
+		fixed_t a, b;
+		minimapinfo.minimap_w = minimapinfo.minimap_h = 100;
 
-	minimapinfo.zoom = FixedMul(min(minimapinfo.minimap_w, minimapinfo.minimap_h), FRACUNIT-FRACUNIT/20);
+		a = FixedDiv(minimapinfo.minimap_w<<FRACBITS, minimapinfo.map_w<<4);
+		b = FixedDiv(minimapinfo.minimap_h<<FRACBITS, minimapinfo.map_h<<4);
+
+		if (a < b)
+		{
+			minimapinfo.minimap_h = FixedMul(a, minimapinfo.map_h)>>(FRACBITS-4);
+			minimapinfo.zoom = a;
+		}
+		else
+		{
+			if (a != b)
+			{
+				minimapinfo.minimap_w = FixedMul(b, minimapinfo.map_w)>>(FRACBITS-4);
+			}
+
+			minimapinfo.zoom = b;
+		}
+
+		minimapinfo.zoom >>= (FRACBITS-4);
+		minimapinfo.zoom -= (minimapinfo.zoom/20);
+	}
 
 	// These should always be small enough to be bitshift back right now
 	minimapinfo.offs_x = FixedMul((minimapinfo.min_x + minimapinfo.map_w/2) << FRACBITS, minimapinfo.zoom);
