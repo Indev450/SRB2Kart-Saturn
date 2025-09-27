@@ -3645,7 +3645,8 @@ static void HWR_SplitSprite(gl_vissprite_t *spr, const boolean papersprite)
 	float towtop, towbot, towmult;
 	float bheight;
 	float realheight, heightmult;
-	const sector_t *sector = spr->mobj->subsector->sector;
+	mobj_t *sprmo = spr->mobj;
+	const sector_t *sector = sprmo->subsector->sector;
 	const lightlist_t *list = sector->lightlist;
 	float endrealtop, endrealbot, endtop, endbot;
 	float endbheight;
@@ -3665,9 +3666,9 @@ static void HWR_SplitSprite(gl_vissprite_t *spr, const boolean papersprite)
 
 	// Draw shadow BEFORE sprite
 	if (UNLIKELY(cv_shadow.value // Shadows enabled
-		&& (spr->mobj->flags & (MF_SCENERY|MF_SPAWNCEILING|MF_NOGRAVITY)) != (MF_SCENERY|MF_SPAWNCEILING|MF_NOGRAVITY) // Ceiling scenery have no shadow.
-		&& !(spr->mobj->flags2 & MF2_DEBRIS) // Debris have no corona or shadow.
-		&& (spr->mobj->z >= spr->mobj->floorz))) // Without this, your shadow shows on the floor, even after you die and fall through the ground.
+		&& (sprmo->flags & (MF_SCENERY|MF_SPAWNCEILING|MF_NOGRAVITY)) != (MF_SCENERY|MF_SPAWNCEILING|MF_NOGRAVITY) // Ceiling scenery have no shadow.
+		&& !(sprmo->flags2 & MF2_DEBRIS) // Debris have no corona or shadow.
+		&& (sprmo->z >= sprmo->floorz))) // Without this, your shadow shows on the floor, even after you die and fall through the ground.
 	{
 		////////////////////
 		// SHADOW SPRITE! //
@@ -3729,24 +3730,24 @@ static void HWR_SplitSprite(gl_vissprite_t *spr, const boolean papersprite)
 	memcpy(wallVerts, baseWallVerts, sizeof(baseWallVerts));
 
 	INT32 blendmode;
-	if (spr->mobj->frame & FF_BLENDMASK)
-		blendmode = ((spr->mobj->frame & FF_BLENDMASK) >> FF_BLENDSHIFT) + 1;
+	if (sprmo->frame & FF_BLENDMASK)
+		blendmode = ((sprmo->frame & FF_BLENDMASK) >> FF_BLENDSHIFT) + 1;
 	else
-		blendmode = spr->mobj->blendmode;
+		blendmode = sprmo->blendmode;
 
 	if (UNLIKELY(!cv_translucency.value)) // translucency disabled
 	{
 		Surf.PolyColor.s.alpha = 0xFF;
 		blend = PF_Translucent|PF_Occlude;
 	}
-	else if (spr->mobj->flags2 & MF2_SHADOW)
+	else if (sprmo->flags2 & MF2_SHADOW)
 	{
 		Surf.PolyColor.s.alpha = 0x40;
 		blend = HWR_GetBlendModeFlag(blendmode);
 	}
-	else if (spr->mobj->frame & FF_TRANSMASK)
+	else if (sprmo->frame & FF_TRANSMASK)
 	{
-		INT32 trans = (spr->mobj->frame & FF_TRANSMASK)>>FF_TRANSSHIFT;
+		INT32 trans = (sprmo->frame & FF_TRANSMASK)>>FF_TRANSSHIFT;
 		blend = HWR_SurfaceBlend(blendmode, trans, &Surf);
 	}
 	else
@@ -3759,8 +3760,8 @@ static void HWR_SplitSprite(gl_vissprite_t *spr, const boolean papersprite)
 		blend = HWR_GetBlendModeFlag(blendmode)|PF_Occlude;
 	}
 
-	if (cv_playerfade.value && spr->mobj->player)
-		Surf.PolyColor.s.alpha = FixedMul(R_DoPlayerFade(spr->mobj), Surf.PolyColor.s.alpha);
+	if (cv_playerfade.value && sprmo->player)
+		Surf.PolyColor.s.alpha = FixedMul(R_DoPlayerFade(sprmo), Surf.PolyColor.s.alpha);
 
 	if (HWR_UseShader())
 	{
@@ -3777,11 +3778,11 @@ static void HWR_SplitSprite(gl_vissprite_t *spr, const boolean papersprite)
 	i = 0;
 	temp = FloatToFixed(realtop);
 
-	lightset = HWR_OverrideObjectLightLevel(spr->mobj, &lightlevel);
+	lightset = HWR_OverrideObjectLightLevel(sprmo, &lightlevel);
 
 	for (i = 1; i < sector->numlights; i++)
 	{
-		const fixed_t h = P_GetLightZAt(&sector->lightlist[i], spr->mobj->x, spr->mobj->y);
+		const fixed_t h = P_GetLightZAt(&sector->lightlist[i], sprmo->x, sprmo->y);
 
 		if (!(h <= temp))
 			continue;
@@ -3845,7 +3846,7 @@ static void HWR_SplitSprite(gl_vissprite_t *spr, const boolean papersprite)
 		wallVerts[1].y = endbot;
 
 		// The x and y only need to be adjusted in the case that it's not a papersprite
-		if (cv_glspritebillboarding.value && spr->mobj && !papersprite)
+		if (cv_glspritebillboarding.value && sprmo && !papersprite)
 		{
 			// Get the x and z of the vertices so billboarding draws correctly
 			realheight = realbot - realtop;
@@ -3867,7 +3868,7 @@ static void HWR_SplitSprite(gl_vissprite_t *spr, const boolean papersprite)
 			wallVerts[1].z = baseWallVerts[2].z + (baseWallVerts[2].z - baseWallVerts[1].z) * heightmult;
 		}
 
-		HWR_Lighting(&Surf, lightlevel, colormap, P_SectorUsesDirectionalLighting(sector) && !(spr->mobj->frame & FF_FULLBRIGHT));
+		HWR_Lighting(&Surf, lightlevel, colormap, P_SectorUsesDirectionalLighting(sector) && !(sprmo->frame & FF_FULLBRIGHT));
 
 		Surf.PolyColor.s.alpha = alpha;
 
@@ -3916,7 +3917,7 @@ static void HWR_DrawSprite(gl_vissprite_t *spr)
 
 	INT32 shader = SHADER_NONE;
 
-	const mobj_t *sprmo = spr->mobj;
+	mobj_t *sprmo = spr->mobj;
 
 	if (UNLIKELY(!sprmo || !sprmo->subsector))
 		return;
@@ -4007,9 +4008,9 @@ static void HWR_DrawSprite(gl_vissprite_t *spr)
 
 	// colormap test
 	INT32 lightlevel = 255;
-	const boolean lightset = HWR_OverrideObjectLightLevel(spr->mobj, &lightlevel);
+	const boolean lightset = HWR_OverrideObjectLightLevel(sprmo, &lightlevel);
 	extracolormap_t *colormap = sector->extra_colormap;
-	const boolean fullbright = R_ThingIsFullBright(spr->mobj);
+	const boolean fullbright = R_ThingIsFullBright(sprmo);
 
 	if (!lightset)
 	{
@@ -4051,7 +4052,7 @@ static void HWR_DrawSprite(gl_vissprite_t *spr)
 	}
 
 	if (cv_playerfade.value && sprmo->player)
-		Surf.PolyColor.s.alpha = FixedMul(R_DoPlayerFade(spr->mobj), Surf.PolyColor.s.alpha);
+		Surf.PolyColor.s.alpha = FixedMul(R_DoPlayerFade(sprmo), Surf.PolyColor.s.alpha);
 
 	if (HWR_UseShader())
 	{
@@ -4189,7 +4190,7 @@ static int CompareVisSprites(const void *p1, const void *p2)
 	idiff = transparency1 - transparency2;
 	if (idiff != 0) return idiff;
 
-	fdiff = spr2->tz - spr1->tz;// this order seems correct when checking with apitrace. Back to front.
+	fdiff = spr2->tz - spr1->tz; // this order seems correct when checking with apitrace. Back to front.
 	if (fabsf(fdiff) < 1.0E-36f)
 		return spr1->dispoffset - spr2->dispoffset;// smallest dispoffset first if sprites are at (almost) same location.
 	else if (fdiff > 0)
@@ -4675,6 +4676,7 @@ static void HWR_ProjectSprite(mobj_t *thing)
 #ifdef ROTSPRITE
 	spriteinfo_t *sprinfo;
 #endif
+	skin_t *sprskin = NULL;
 	size_t lumpoff;
 	unsigned rot;
 	UINT8 flip;
@@ -4750,9 +4752,11 @@ static void HWR_ProjectSprite(mobj_t *thing)
 	//Fab : 02-08-98: 'skin' override spritedef currently used for skin
 	if ((thing->skin || thing->localskin) && thing->sprite == SPR_PLAY)
 	{
-		sprdef = &K_GetMobjSkin(thing)->spritedef;
+		sprskin = K_GetMobjSkin(thing);
+
+		sprdef = &sprskin->spritedef;
 #ifdef ROTSPRITE
-		sprinfo = &K_GetMobjSkin(thing)->sprinfo;
+		sprinfo = &sprskin->sprinfo;
 #endif
 	}
 	else
@@ -4837,8 +4841,8 @@ static void HWR_ProjectSprite(mobj_t *thing)
 			flip ^= (1<<rot);
 	}
 
-	if ((thing->skin || thing->localskin) && K_GetMobjSkin(thing)->flags & SF_HIRES)
-		this_scale *= FixedToFloat(K_GetMobjSkin(thing)->highresscale);
+	if (sprskin && (sprskin->flags & SF_HIRES))
+		this_scale *= FixedToFloat(sprskin->highresscale);
 
 	spr_width = spritecachedinfo[lumpoff].width;
 	spr_height = spritecachedinfo[lumpoff].height;
