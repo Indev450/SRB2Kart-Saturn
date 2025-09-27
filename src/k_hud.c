@@ -2283,7 +2283,7 @@ void HU_DrawTabRankings(INT32 x, INT32 y, playersort_t *tab, INT32 scorelines, I
 {
 	INT32 i, rightoffset = 240;
 	const UINT8 *colormap;
-	const INT32 dupadjust = cv_betainterscreen.value ? 314 : (vid.width/vid.dupx), duptweak = cv_betainterscreen.value ? -3 : (dupadjust - BASEVIDWIDTH)/2;
+	const INT32 dupadjust = cv_betainterscreen.value ? 314 : vid.scaledwidth, duptweak = cv_betainterscreen.value ? -3 : (dupadjust - BASEVIDWIDTH)/2;
 
 	boolean (*_isHighlightedPlayer)(const player_t *) = (demo.playback ? P_IsDisplayPlayer : P_IsLocalPlayer);
 
@@ -2466,7 +2466,7 @@ static void K_DrawDialNum(INT32 x, INT32 y, boolean colorized, INT32 flags, INT3
 		w = skp_dialnum[0]->width;
 
 	if (flags & V_NOSCALESTART)
-		w *= vid.dupx;
+		w *= vid.dup;
 
 	if (num < 0)
 		num = -num;
@@ -2992,7 +2992,6 @@ static void K_drawNameTags(void)
 	char *tag;
 	patch_t *icon = NULL;
 
-	INT32 dup;
 	UINT8 *cm = NULL;
 	UINT8 tagcolor = 0;
 	INT32 vflags = 0;
@@ -3077,13 +3076,12 @@ static void K_drawNameTags(void)
 		tag = va("%s%s ", HU_SkinColorToConsoleColor(players[i].mo->color), player_names[i]);
 		icon = R_GetSkinFaceMini(players[i].mo->player);
 
-		dup = vid.dupx;
 		cm = R_GetTranslationColormap(players[i].skin, players[i].mo->color, GTC_CACHE);
 		tagcolor = colortranslations[players[i].mo->color][7];
 		vflags = trans | V_NOSCALESTART;
 		usenametagrestat = ((cv_nametagrestat.value == 1 && (players[i].kartspeed != skins[players[i].skin].kartspeed || players[i].kartweight != skins[players[i].skin].kartweight)) || cv_nametagrestat.value == 2);
 		tagwidthsmall = cv_smallnametags.value ? V_SmallStringWidth(player_names[i], V_ALLOWLOWERCASE) : V_ThinStringWidth(player_names[i], V_ALLOWLOWERCASE);
-		tagwidth = dup*tagwidthsmall;
+		tagwidth = vid.dup*tagwidthsmall;
 
 		// If flipcam is on, other player is flipped relative to us when we have different
 		// verticalflip flag value. Otherwise, they are simply flipped when verticalflip flag says so
@@ -3095,36 +3093,36 @@ static void K_drawNameTags(void)
 #ifdef HWRENDER
 		// Needs extra offset. Not perfect but this will do for now
 		if (rendermode == render_opengl && !cv_glshearing.value && cv_smallnametags.value)
-			namey -= dup*6;
+			namey -= vid.dup*6;
 #endif
 
 		if (cv_smallnametags.value || !nametaggfx)
 		{
 			if (flipped)
-				namey += dup*5;
+				namey += vid.dup*5;
 			else // small offset
-				namey -= dup*3;
+				namey -= vid.dup*3;
 
 			if (nametaggfx && cv_smallnametags.value == 1)
 			{
 				if (cv_nametagfacerank.value)
-					tagwidthsmall += icon->width - dup;
+					tagwidthsmall += icon->width - vid.dup;
 
 				// Have to draw the nametag using patches here since drawfill can't draw at this scale...
 				if (!flipped)
 					V_DrawFixedPatch(namex<<FRACBITS, namey<<FRACBITS, FRACUNIT/2, vflags, nametagline, cm);
 
-				V_DrawStretchyFixedPatch(((namex+dup*3)<<FRACBITS), namey<<FRACBITS,
+				V_DrawStretchyFixedPatch(((namex+vid.dup*3)<<FRACBITS), namey<<FRACBITS,
 					tagwidthsmall<<FRACBITS, FRACUNIT/2, vflags, nametagpic, cm, 0);
 
-				namex += dup*2;
-				namey -= dup*4;
+				namex += vid.dup*2;
+				namey -= vid.dup*4;
 			}
 
 			if (cv_nametagfacerank.value)
 			{
 				V_DrawFixedPatch(namex<<FRACBITS, (namey - icon->height/2)<<FRACBITS, FRACUNIT/2, vflags, icon,  cm);
-				namex += dup*(1+icon->width/2); // add offset to other stuff
+				namex += vid.dup*(1+icon->width/2); // add offset to other stuff
 			}
 
 			//Name
@@ -3132,71 +3130,72 @@ static void K_drawNameTags(void)
 
 			if (usenametagrestat)
 			{
-				V_DrawSmallString(namex, namey - dup*5, vflags, va("\x84S%d ", players[i].kartspeed));
-				V_DrawSmallString(namex + dup*10, namey - dup*5, vflags, va("\x87W%d ", players[i].kartweight));
+				V_DrawSmallString(namex, namey - vid.dup*5, vflags, va("\x84S%d ", players[i].kartspeed));
+				V_DrawSmallString(namex + vid.dup*10, namey - vid.dup*5, vflags, va("\x87W%d ", players[i].kartweight));
 			}
 
 			if (cv_nametagscore.value)
 			{
 				INT32 yofs = usenametagrestat ? 10 : 5;
-				V_DrawSmallString(namex, namey - dup*yofs, V_ALLOWLOWERCASE | vflags, va("\x8A%d ", players[i].score));
+				V_DrawSmallString(namex, namey - vid.dup*yofs, V_ALLOWLOWERCASE | vflags, va("\x8A%d ", players[i].score));
 			}
 		}
 		else
 		{
 			if (cv_nametagfacerank.value)
-				tagwidth += dup*(icon->width+1);
+				tagwidth += vid.dup*(icon->width+1);
 
 			if (flipped)
 			{
-				for	(j = 0; j < 4; j++)
+				for (j = 0; j < 4; j++)
 				{
-					V_DrawFill(namex, namey, dup*3, dup*4, 31 | vflags);
-					V_DrawFill(namex+dup, namey, dup, dup*4, tagcolor | vflags);
-					namey += dup*4;
-					namex += dup;
+					V_DrawFill(namex, namey, vid.dup*3, vid.dup*4, 31 | vflags);
+					V_DrawFill(namex+vid.dup, namey, vid.dup, vid.dup*4, tagcolor | vflags);
+					namey += vid.dup*4;
+					namex += vid.dup;
 				}
-				namey -= dup*3;
-				V_DrawFill(namex, namey+dup*2, dup, dup, 31 | vflags); // a single black pixel
-				V_DrawFill(namex+dup, namey, tagwidth, dup*3, 31 | vflags);
-				V_DrawFill(namex+dup, namey+dup, tagwidth - dup, dup, tagcolor | vflags);
-				namex += dup*2;
+
+				namey -= vid.dup*3;
+				V_DrawFill(namex, namey+vid.dup*2, vid.dup, vid.dup, 31 | vflags); // a single black pixel
+				V_DrawFill(namex+vid.dup, namey, tagwidth, vid.dup*3, 31 | vflags);
+				V_DrawFill(namex+vid.dup, namey+vid.dup, tagwidth - vid.dup, vid.dup, tagcolor | vflags);
+				namex += vid.dup*2;
 			}
 			else
 			{
 				for (j = 0; j < 4; j++)
 				{
-					namey -= dup*4;
-					V_DrawFill(namex, namey, dup*3, dup*4, 31 | vflags);
-					V_DrawFill(namex+dup, namey, dup, dup*4, tagcolor | vflags);
-					namex += dup;
+					namey -= vid.dup*4;
+					V_DrawFill(namex, namey, vid.dup*3, vid.dup*4, 31 | vflags);
+					V_DrawFill(namex+vid.dup, namey, vid.dup, vid.dup*4, tagcolor | vflags);
+					namex += vid.dup;
 				}
 
-				V_DrawFill(namex, namey, dup, dup, 31 | vflags);
-				V_DrawFill(namex+dup, namey, tagwidth - dup*2, dup*3, 31 | vflags);
-				V_DrawFill(namex+dup, namey+dup, tagwidth - dup*3, dup, tagcolor | vflags);
+				V_DrawFill(namex, namey, vid.dup, vid.dup, 31 | vflags);
+				V_DrawFill(namex+vid.dup, namey, tagwidth - vid.dup*2, vid.dup*3, 31 | vflags);
+				V_DrawFill(namex+vid.dup, namey+vid.dup, tagwidth - vid.dup*3, vid.dup, tagcolor | vflags);
 			}
 
 			if (cv_nametagfacerank.value)
 			{
-				V_DrawMappedPatch(namex, namey - dup*(icon->height+1), vflags, icon, cm);
-				namex += dup*(icon->height+1); // add offset to other stuff
+				V_DrawMappedPatch(namex, namey - vid.dup*(icon->height+1), vflags, icon, cm);
+				namex += vid.dup*(icon->height+1); // add offset to other stuff
 			}
 
-			V_DrawThinString(namex, namey - dup*10, V_ALLOWLOWERCASE | vflags, tag);
+			V_DrawThinString(namex, namey - vid.dup*10, V_ALLOWLOWERCASE | vflags, tag);
 
 			if (usenametagrestat)
 			{
-				V_DrawScaledPatch(namex, namey - dup*20, vflags, nametagspeed);
-				V_DrawScaledPatch(namex + dup*18, namey - dup*20, vflags, nametagweight);
-				V_DrawString(namex + dup*9, namey - dup*19, V_ALLOWLOWERCASE | vflags, va("\x84%d ", players[i].kartspeed));
-				V_DrawString(namex + dup*27, namey - dup*19, V_ALLOWLOWERCASE | vflags, va("\x87%d ", players[i].kartweight));
+				V_DrawScaledPatch(namex, namey - vid.dup*20, vflags, nametagspeed);
+				V_DrawScaledPatch(namex + vid.dup*18, namey - vid.dup*20, vflags, nametagweight);
+				V_DrawString(namex + vid.dup*9, namey - vid.dup*19, V_ALLOWLOWERCASE | vflags, va("\x84%d ", players[i].kartspeed));
+				V_DrawString(namex + vid.dup*27, namey - vid.dup*19, V_ALLOWLOWERCASE | vflags, va("\x87%d ", players[i].kartweight));
 			}
 
 			if (cv_nametagscore.value)
 			{
 				INT32 yofs = usenametagrestat ? 25 : 15;
-				V_DrawSmallString(namex, namey - dup*yofs, V_ALLOWLOWERCASE | vflags, va("\x8A%d ", players[i].score));
+				V_DrawSmallString(namex, namey - vid.dup*yofs, V_ALLOWLOWERCASE | vflags, va("\x8A%d ", players[i].score));
 			}
 		}
 	}
@@ -3207,7 +3206,6 @@ static void K_drawDriftGauge(void)
 {
 	vector2_t pos = {0};
 	fixed_t basex, basey;
-	const int dup = vid.dupx;
 	int i;
 	UINT8 *colormap = NULL;
 
@@ -3271,16 +3269,16 @@ skipcrap:
 
 				if (gaugestyle == GAUGE_DEFAULT || gaugestyle == GAUGE_BIGNUM || gaugestyle == GAUGE_EXTRA)
 				{
-					barx = basex - dup*23;
-					BAR_WIDTH = dup*47;
+					barx = basex - vid.dup*23;
+					BAR_WIDTH = vid.dup*47;
 				}
 				else
 				{
-					barx = basex - dup*12;
-					BAR_WIDTH = dup*23;
+					barx = basex - vid.dup*12;
+					BAR_WIDTH = vid.dup*23;
 				}
 
-				bary = basey - dup*2;
+				bary = basey - vid.dup*2;
 
 				if (gaugestyle == GAUGE_EXTRA) // i hate hud code i hate hud code i hate hud code i hate hud code i hate hud code.....
 				{
@@ -3292,7 +3290,7 @@ skipcrap:
 					else
 						driftpatch = skp_smallsticker3;
 
-					V_DrawStretchyFixedPatch((basex - dup*30)<<FRACBITS, ((basey<<FRACBITS) - FixedMul(dup<<FRACBITS, 21*FRACUNIT/10)), XTRA3PSCALE, XTRA3VSCALE, V_NOSCALESTART|V_OFFSET|drifttrans, driftpatch, colormap, 0);
+					V_DrawStretchyFixedPatch((basex - vid.dup*30)<<FRACBITS, ((basey<<FRACBITS) - FixedMul(vid.dup<<FRACBITS, 21*FRACUNIT/10)), XTRA3PSCALE, XTRA3VSCALE, V_NOSCALESTART|V_OFFSET|drifttrans, driftpatch, colormap, 0);
 				}
 				else
 				{
@@ -3304,7 +3302,7 @@ skipcrap:
 					else
 						driftpatch = (gaugestyle == GAUGE_SMALL ? driftgaugesmall : driftgauge);
 
-					V_DrawMappedPatch(gaugestyle == GAUGE_SMALL ? basex + dup*11 : basex, basey, V_NOSCALESTART|V_OFFSET|drifttrans, driftpatch, colormap);
+					V_DrawMappedPatch(gaugestyle == GAUGE_SMALL ? basex + vid.dup*11 : basex, basey, V_NOSCALESTART|V_OFFSET|drifttrans, driftpatch, colormap);
 				}
 
 				if (driftcharge >= driftval*4) // rainbow sparks
@@ -3312,7 +3310,7 @@ skipcrap:
 					colormap = R_GetTranslationColormap(TC_RAINBOW, K_RainbowColor(), GTC_CACHE);
 
 					for (i = 0; i < 4; i++)
-						V_DrawFill(barx, bary+dup*1+dup*i, BAR_WIDTH, dup, (driftrainbow[min((leveltime % 18) + 1, 17)] + i*2) | V_NOSCALESTART|drifttrans);
+						V_DrawFill(barx, bary+vid.dup*1+vid.dup*i, BAR_WIDTH, vid.dup, (driftrainbow[min((leveltime % 18) + 1, 17)] + i*2) | V_NOSCALESTART|drifttrans);
 				}
 				else // none/blue/red
 				{
@@ -3324,17 +3322,17 @@ skipcrap:
 					for (i = 0; i < 4; i++)
 					{
 						if (driftcharge >= driftval)
-							V_DrawFill(barx, bary+dup*1+dup*i, BAR_WIDTH, dup, driftcolors[driftlevel-1][i] | V_NOSCALESTART|drifttrans);
+							V_DrawFill(barx, bary+vid.dup*1+vid.dup*i, BAR_WIDTH, vid.dup, driftcolors[driftlevel-1][i] | V_NOSCALESTART|drifttrans);
 
-						V_DrawFill(barx, bary+dup*1+dup*i, width, dup, driftcolors[driftlevel][i] | V_NOSCALESTART|drifttrans);
+						V_DrawFill(barx, bary+vid.dup*1+vid.dup*i, width, vid.dup, driftcolors[driftlevel][i] | V_NOSCALESTART|drifttrans);
 					}
 				}
 
 				// right, also draw a cool number
 				if (gaugestyle == GAUGE_BIGNUM)
-					V_DrawPaddedTallColorNum(basex + (dup*32), basey, V_NOSCALESTART|V_OFFSET|drifttrans, driftcharge*100 / driftval, 3, colormap);
+					V_DrawPaddedTallColorNum(basex + (vid.dup*32), basey, V_NOSCALESTART|V_OFFSET|drifttrans, driftcharge*100 / driftval, 3, colormap);
 				else
-					V_DrawPingNum((gaugestyle == GAUGE_SMALL ? basex + (dup*22) : basex + (dup*32)), basey, V_NOSCALESTART|V_OFFSET|drifttrans, driftcharge*100 / driftval, colormap);
+					V_DrawPingNum((gaugestyle == GAUGE_SMALL ? basex + (vid.dup*22) : basex + (vid.dup*32)), basey, V_NOSCALESTART|V_OFFSET|drifttrans, driftcharge*100 / driftval, colormap);
 			}
 			break;
 		case GAUGE_NUMONLY:
@@ -3344,7 +3342,7 @@ skipcrap:
 				else
 					colormap = R_GetTranslationColormap(TC_RAINBOW, driftskins[driftlevel], GTC_CACHE);
 
-				V_DrawPaddedTallColorNum(basex + (dup*16), basey, V_NOSCALESTART|V_OFFSET|drifttrans, driftcharge*100 / driftval, 3, colormap);
+				V_DrawPaddedTallColorNum(basex + (vid.dup*16), basey, V_NOSCALESTART|V_OFFSET|drifttrans, driftcharge*100 / driftval, 3, colormap);
 			}
 			break;
 		default:
@@ -3893,7 +3891,7 @@ static void K_drawKartFinish(void)
 		if (splitscreen) // wide splitscreen
 			pnum += 4;
 
-		x = ((vid.width<<FRACBITS)/vid.dupx);
+		x = ((vid.width<<FRACBITS)/vid.dup);
 		xval = (kp_racefinish[pnum]->width<<FRACBITS);
 		x = (FixedMul(((TICRATE - stplyr->kartstuff[k_cardanimation])<<FRACBITS) - R_GetTimeFrac(RTF_LEVEL), xval > x ? xval : x))/TICRATE;
 
@@ -4113,7 +4111,7 @@ static void K_drawKartFirstPerson(void)
 	if (splitscreen == 1)
 	{
 		scale = (2*FRACUNIT)/3;
-		y += FRACUNIT/(vid.dupx < vid.dupy ? vid.dupx : vid.dupy); // correct a one-pixel gap on the screen view (not the basevid view)
+		y += FRACUNIT/vid.dup; // correct a one-pixel gap on the screen view (not the basevid view)
 	}
 	else if (splitscreen)
 		scale = FRACUNIT/2;

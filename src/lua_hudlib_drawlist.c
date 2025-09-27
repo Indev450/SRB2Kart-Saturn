@@ -205,73 +205,68 @@ static void CalcStringCoords(drawitem_t *item, const char *string)
 {
 	if (!(item->flags & V_NOSCALESTART) && cv_uncappedhud.value)
 	{
-		INT32 dupx = vid.dupx;
-		INT32 dupy = vid.dupy;
+		INT32 dup = vid.dup;
 
 		item->flags |= V_NOSCALESTART;
 
 		if (item->flags & V_SCALEPATCHMASK) switch ((item->flags & V_SCALEPATCHMASK) >> V_SCALEPATCHSHIFT)
 		{
 			case 1: // V_NOSCALEPATCH
-				dupx = dupy = 1;
+				dup = 1;
 				break;
 			case 2: // V_SMALLSCALEPATCH
-				dupx = vid.smalldupx;
-				dupy = vid.smalldupy;
+				dup = vid.smalldup;
 				break;
 			case 3: // V_MEDSCALEPATCH
-				dupx = vid.meddupx;
-				dupy = vid.meddupy;
+				dup = vid.meddup;
 				break;
 			default:
 				break;
 		}
 
-		// only use one dup, to avoid stretching (har har)
-		dupx = dupy = (dupx < dupy ? dupx : dupy);
-
-		INT32 x = item->x * dupx;
-		INT32 y = item->y * dupy;
+		INT32 x = item->x * dup;
+		INT32 y = item->y * dup;
 
 		if (item->flags & V_SPLITSCREEN)
-			y += (BASEVIDHEIGHT * (dupy - 1))/2;
+			y += (BASEVIDHEIGHT * (dup - 1))/2;
 
 		if (item->flags & V_HORZSCREEN)
-			x += (BASEVIDWIDTH * (dupx - 1))/2;
+			x += (BASEVIDWIDTH * (dup - 1))/2;
 
-		if (vid.width != BASEVIDWIDTH * dupx)
+		if (vid.width != BASEVIDWIDTH * dup)
 		{
-			// dupx adjustments pretend that screen width is BASEVIDWIDTH * dupx,
+			// dup adjustments pretend that screen width is BASEVIDWIDTH * dup,
 			// so center this imaginary screen
 			if ((item->flags & (V_HORZSCREEN|V_SNAPTOLEFT)) == (V_HORZSCREEN|V_SNAPTOLEFT))
-				x += (vid.width/2 - (BASEVIDWIDTH/2 * dupx));
+				x += (vid.width/2 - (BASEVIDWIDTH/2 * dup));
 			else if (item->flags & V_SNAPTORIGHT)
-				x += (vid.width - (BASEVIDWIDTH * dupx));
+				x += (vid.width - (BASEVIDWIDTH * dup));
 			else if (!(item->flags & V_SNAPTOLEFT))
-				x += (vid.width - (BASEVIDWIDTH * dupx)) / 2;
+				x += (vid.width - (BASEVIDWIDTH * dup)) / 2;
 		}
-		if (vid.height != BASEVIDHEIGHT * dupy)
+
+		if (vid.height != BASEVIDHEIGHT * dup)
 		{
 			// same thing here
 			if ((item->flags & (V_SPLITSCREEN|V_SNAPTOTOP)) == (V_SPLITSCREEN|V_SNAPTOTOP))
-				y += (vid.height/2 - (BASEVIDHEIGHT/2 * dupy));
+				y += (vid.height/2 - (BASEVIDHEIGHT/2 * dup));
 			else if (item->flags & V_SNAPTOBOTTOM)
-				y += (vid.height - (BASEVIDHEIGHT * dupy));
+				y += (vid.height - (BASEVIDHEIGHT * dup));
 			else if (!(item->flags & V_SNAPTOTOP))
-				y += (vid.height - (BASEVIDHEIGHT * dupy)) / 2;
+				y += (vid.height - (BASEVIDHEIGHT * dup)) / 2;
 		}
 
 		// need to compensate for dup here
 		if (item->type == DI_DrawString)
 		{
 			if (item->align == align_center)
-				x -= (V_StringWidth(string, item->flags) * (dupx - 1))/2;
+				x -= (V_StringWidth(string, item->flags) * (dup - 1))/2;
 			if (item->align == align_right)
-				x -= V_StringWidth(string, item->flags) * (dupx - 1);
+				x -= V_StringWidth(string, item->flags) * (dup - 1);
 			if (item->align == align_smallright)
-				x -= V_SmallStringWidth(string, item->flags) * (dupx - 1);
+				x -= V_SmallStringWidth(string, item->flags) * (dup - 1);
 			if (item->align == align_thinright)
-				x -= V_ThinStringWidth(string, item->flags) * (dupx - 1);
+				x -= V_ThinStringWidth(string, item->flags) * (dup - 1);
 		}
 
 		item->x = x;
@@ -283,40 +278,39 @@ static void CalcFillCoords(drawitem_t *item)
 {
 	if (!(item->flags & V_NOSCALESTART) && cv_uncappedhud.value)
 	{
-		INT32 dupx = vid.dupx;
-		INT32 dupy = vid.dupy;
-		INT32 x = item->x * dupx;
-		INT32 y = item->y * dupy;
+		INT32 dup = vid.dup;
+		INT32 x = item->x * dup;
+		INT32 y = item->y * dup;
 		INT32 c = item->c;
 
 		item->flags |= V_NOSCALESTART;
-		item->w *= dupx;
-		item->h *= dupy;
+		item->w *= dup;
+		item->h *= dup;
 
 		// Center it if necessary
-		if (vid.width != BASEVIDWIDTH * dupx)
+		if (vid.width != BASEVIDWIDTH * dup)
 		{
-			// dupx adjustments pretend that screen width is BASEVIDWIDTH * dupx,
+			// dup adjustments pretend that screen width is BASEVIDWIDTH * dup,
 			// so center this imaginary screen
 			if (c & V_SNAPTORIGHT)
-				x += (vid.width - (BASEVIDWIDTH * dupx));
+				x += (vid.width - (BASEVIDWIDTH * dup));
 			else if (!(c & V_SNAPTOLEFT))
-				x += (vid.width - (BASEVIDWIDTH * dupx)) / 2;
+				x += (vid.width - (BASEVIDWIDTH * dup)) / 2;
 		}
 
-		if (vid.height != BASEVIDHEIGHT * dupy)
+		if (vid.height != BASEVIDHEIGHT * dup)
 		{
 			// same thing here
 			if (c & V_SNAPTOBOTTOM)
-				y += (vid.height - (BASEVIDHEIGHT * dupy));
+				y += (vid.height - (BASEVIDHEIGHT * dup));
 			else if (!(c & V_SNAPTOTOP))
-				y += (vid.height - (BASEVIDHEIGHT * dupy)) / 2;
+				y += (vid.height - (BASEVIDHEIGHT * dup)) / 2;
 		}
 
 		if (c & V_SPLITSCREEN)
-			y += (BASEVIDHEIGHT * dupy)/2;
+			y += (BASEVIDHEIGHT * dup)/2;
 		if (c & V_HORZSCREEN)
-			x += (BASEVIDWIDTH * dupx)/2;
+			x += (BASEVIDWIDTH * dup)/2;
 
 		item->x = x;
 		item->y = y;

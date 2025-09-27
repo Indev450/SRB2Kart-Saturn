@@ -2277,10 +2277,10 @@ static void HU_DrawSongCreditsBox(void)
 	INT32 strwidth = V_SmallStringWidth(str, V_ALLOWLOWERCASE) + 4;
 
 	// dup dup dup dup
-	INT32 dup = min(vid.dupx, vid.dupy);
+	INT32 dup = vid.dup;
 
 	// Center it
-	INT32 x = (BASEVIDWIDTH/2 - strwidth/2)*dup + ((vid.width - (BASEVIDWIDTH * vid.dupx)) / 2);
+	INT32 x = (BASEVIDWIDTH/2 - strwidth/2)*dup + ((vid.width - (BASEVIDWIDTH * dup)) / 2);
 	INT32 y = 0;
 
 	INT32 flags = V_SNAPTOTOP|V_NOSCALESTART;
@@ -2668,14 +2668,14 @@ static inline void HU_DrawSpectatorTicker(void)
 	INT32 i;
 	INT32 length = 0, height = 174;
 	INT32 totallength = 0, templength = -8;
-	INT32 dupadjust = (vid.width/vid.dupx), duptweak = (dupadjust - BASEVIDWIDTH)/2;
+	INT32 duptweak = (vid.scaledwidth - BASEVIDWIDTH)/2;
 
 	for (i = 0; i < MAXPLAYERS; i++)
 		if (playeringame[i] && players[i].spectator)
 			totallength += (signed)strlen(player_names[i]) * 8 + 16;
 
-	length -= (leveltime % (totallength + dupadjust+8));
-	length += dupadjust;
+	length -= (leveltime % (totallength + vid.scaledwidth+8));
+	length += vid.scaledwidth;
 
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
@@ -2743,7 +2743,7 @@ static inline void HU_DrawSpectatorTicker(void)
 				}
 			}
 
-			if ((length += len) >= dupadjust+8)
+			if ((length += len) >= vid.scaledwidth+8)
 				break;
 		}
 	}

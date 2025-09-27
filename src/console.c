@@ -479,18 +479,18 @@ static void CON_RecalcSize(void)
 
 	switch (cv_constextsize.value)
 	{
-	case V_NOSCALEPATCH:
-		con_scalefactor = 1;
-		break;
-	case V_SMALLSCALEPATCH:
-		con_scalefactor = vid.smalldupx;
-		break;
-	case V_MEDSCALEPATCH:
-		con_scalefactor = vid.meddupx;
-		break;
-	default:	// Full scaling
-		con_scalefactor = vid.dupx;
-		break;
+		case V_NOSCALEPATCH:
+			con_scalefactor = 1;
+			break;
+		case V_SMALLSCALEPATCH:
+			con_scalefactor = vid.smalldup;
+			break;
+		case V_MEDSCALEPATCH:
+			con_scalefactor = vid.meddup;
+			break;
+		default:	// Full scaling
+			con_scalefactor = vid.dup;
+			break;
 	}
 
 	con_recalc = false;
@@ -607,7 +607,7 @@ static void CON_MoveConsole(void)
 	}
 
 	// Not instant - Increment fracmovement fractionally
-	fracmovement += FixedMul(cons_speed.value*vid.fdupy, (cv_uncappedhud.value ? renderdeltatics : FRACUNIT));
+	fracmovement += FixedMul(cons_speed.value*vid.fdup, (cv_uncappedhud.value ? renderdeltatics : FRACUNIT));
 
 	if (con_curlines < con_destlines) // Move the console downwards
 	{
