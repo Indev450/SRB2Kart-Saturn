@@ -1405,7 +1405,7 @@ INT32 GL_isExtAvailable(const char *extension, const GLubyte *start)
 // Init             : Initialise the OpenGL interface API
 // Returns          :
 // -----------------+
-boolean GL_Init (void)
+boolean GL_Init(void)
 {
 	return SetupGLfunc();
 }

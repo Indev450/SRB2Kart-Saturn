@@ -205,15 +205,8 @@ static void Impl_SetWindowIcon(void);
 
 #ifdef USE_FBO_OGL
 boolean downsample = false;
-
 float InvSupersampleFactorX = 0.0;
 float InvSupersampleFactorY = 0.0;
-
-void RefreshOGLSDLSurface(void)
-{
-	if (rendermode == render_opengl)
-		OglSdlSurface(vid.width, vid.height);
-}
 #endif
 
 void I_SetTextInput(void)
@@ -434,44 +427,6 @@ static INT32 Impl_SDL_Keysym_To_Keycode(SDL_Keysym keysym)
 	return Impl_SDL_Scancode_To_Keycode(scancode);
 }
 
-static void VID_Command_NumModes_f (void)
-{
-	CONS_Printf(M_GetText("%d video mode(s) available(s)\n"), VID_NumModes());
-}
-
-static void VID_Command_ModeList_f(void)
-{
-	// List windowed modes
-	INT32 i = 0;
-
-	CONS_Printf("NOTE: Under SDL2, all modes are supported on all platforms.\n");
-	CONS_Printf("Under opengl, fullscreen only supports native desktop resolution.\n");
-	CONS_Printf("Under software, the mode is stretched up to desktop resolution.\n");
-
-	for (i = 0; i < MAXWINMODES; i++)
-	{
-		CONS_Printf("%2d: %dx%d\n", i, windowedModes[i][0], windowedModes[i][1]);
-	}
-}
-
-static void VID_Command_Mode_f (void)
-{
-	INT32 modenum;
-
-	if (COM_Argc()!= 2)
-	{
-		CONS_Printf(M_GetText("vid_mode <modenum> : set video mode, current video mode %i\n"), vid.modenum);
-		return;
-	}
-
-	modenum = atoi(COM_Argv(1));
-
-	if (modenum >= VID_NumModes())
-		CONS_Printf(M_GetText("Video mode not present\n"));
-	else
-		setmodeneeded = modenum+1; // request vid mode change
-}
-
 static INT32 SDLJoyAxis(const Sint16 axis, evtype_t which)
 {
 	// -32768 to 32767
@@ -517,82 +472,6 @@ static INT32 SDLJoyAxis(const Sint16 axis, evtype_t which)
 	}
 	return raxis;
 }
-
-// Get the desktop resolution from the current display the gamewindow resides on
-static void I_CheckDesktopRes(void)
-{
-	int currentDisplayIndex = -1;
-	SDL_DisplayMode curmode;
-
-	desktopwidth = 0;
-	desktopheight = 0;
-
-	currentDisplayIndex = SDL_GetWindowDisplayIndex(window);
-
-	// No valid index
-	if (currentDisplayIndex < 0)
-	{
-		return;
-	}
-
-	if (SDL_GetDesktopDisplayMode(currentDisplayIndex, &curmode) != 0)
-	{
-		return;
-	}
-
-	desktopwidth = curmode.w;
-	desktopheight = curmode.h;
-}
-
-// Check if the game resolution matches the desktop resolution
-boolean I_CheckNativeRes(void)
-{
-	return (vid.width == desktopwidth && vid.height == desktopheight);
-}
-
-#ifdef USE_FBO_OGL
-void I_DownSample(void)
-{
-	boolean needrefresh = false;
-
-	if (!cv_glframebuffer.value || !supportFBO || (cv_glscreentextures.value == 0)) // no sense to do this crap if we cant benefit from it
-	{
-		downsample = false;
-		return;
-	}
-
-	if (I_CheckNativeRes() && (downsample == true))
-	{
-		downsample = false;
-		I_ResetFBOSurface();
-		return;
-	}
-
-	if ((vid.width > desktopwidth) || (vid.height > desktopheight)) //check if current resolution is higher than current display resolution
-	{
-		downsample = true;
-		needrefresh = true;
-	}
-	else if (downsample == true)
-	{
-		downsample = false;
-		needrefresh = true;
-	}
-
-	if (needrefresh)
-	{
-		I_ResetFBOSurface();
-		needrefresh = false;
-	}
-}
-
-static void I_ResetFBOSurface(void)
-{
-	InvSupersampleFactorX = (float)(desktopwidth) / vid.width;
-	InvSupersampleFactorY = (float)(desktopheight) / vid.height;
-	RefreshOGLSDLSurface();
-}
-#endif
 
 static void Impl_HandleWindowEvent(SDL_WindowEvent evt)
 {
@@ -1242,6 +1121,127 @@ void I_OsPolling(void)
 	if (mod & KMOD_CAPS) capslock = true;
 }
 
+static void VID_Command_NumModes_f (void)
+{
+	CONS_Printf(M_GetText("%d video mode(s) available(s)\n"), VID_NumModes());
+}
+
+static void VID_Command_ModeList_f(void)
+{
+	// List windowed modes
+	INT32 i = 0;
+
+	CONS_Printf("NOTE: Under SDL2, all modes are supported on all platforms.\n"
+	"Under opengl, fullscreen only supports native desktop resolution.\n"
+	"Under software, the mode is stretched up to desktop resolution.\n");
+
+	for (i = 0; i < MAXWINMODES; i++)
+	{
+		CONS_Printf("%2d: %dx%d\n", i, windowedModes[i][0], windowedModes[i][1]);
+	}
+}
+
+static void VID_Command_Mode_f (void)
+{
+	INT32 modenum;
+
+	if (COM_Argc()!= 2)
+	{
+		CONS_Printf("vid_mode <modenum> : set video mode, current video mode %i\n", vid.modenum);
+		return;
+	}
+
+	modenum = atoi(COM_Argv(1));
+
+	if (modenum >= VID_NumModes())
+		CONS_Printf("Video mode not present\n");
+	else
+		setmodeneeded = modenum+1; // request vid mode change
+}
+
+// Get the desktop resolution from the current display the gamewindow resides on
+static void I_CheckDesktopRes(void)
+{
+	int currentDisplayIndex = -1;
+	SDL_DisplayMode curmode;
+
+	desktopwidth = 0;
+	desktopheight = 0;
+
+	currentDisplayIndex = SDL_GetWindowDisplayIndex(window);
+
+	// No valid index
+	if (currentDisplayIndex < 0)
+	{
+		return;
+	}
+
+	if (SDL_GetDesktopDisplayMode(currentDisplayIndex, &curmode) != 0)
+	{
+		return;
+	}
+
+	desktopwidth = curmode.w;
+	desktopheight = curmode.h;
+}
+
+// Check if the game resolution matches the desktop resolution
+boolean I_CheckNativeRes(void)
+{
+	return (vid.width == desktopwidth && vid.height == desktopheight);
+}
+
+#ifdef USE_FBO_OGL
+
+void RefreshOGLSDLSurface(void)
+{
+	if (rendermode == render_opengl)
+		OglSdlSurface(vid.width, vid.height);
+}
+
+void I_DownSample(void)
+{
+	boolean needrefresh = false;
+
+	if (!cv_glframebuffer.value || !supportFBO || (cv_glscreentextures.value == 0)) // no sense to do this crap if we cant benefit from it
+	{
+		downsample = false;
+		return;
+	}
+
+	if (I_CheckNativeRes() && (downsample == true))
+	{
+		downsample = false;
+		I_ResetFBOSurface();
+		return;
+	}
+
+	if ((vid.width > desktopwidth) || (vid.height > desktopheight)) //check if current resolution is higher than current display resolution
+	{
+		downsample = true;
+		needrefresh = true;
+	}
+	else if (downsample == true)
+	{
+		downsample = false;
+		needrefresh = true;
+	}
+
+	if (needrefresh)
+	{
+		I_ResetFBOSurface();
+		needrefresh = false;
+	}
+}
+
+static void I_ResetFBOSurface(void)
+{
+	InvSupersampleFactorX = (float)(desktopwidth) / vid.width;
+	InvSupersampleFactorY = (float)(desktopheight) / vid.height;
+	RefreshOGLSDLSurface();
+}
+#endif
+
 static void SDLSetMode(INT32 width, INT32 height, SDL_bool fullscreen)
 {
 	static SDL_bool wasfullscreen = SDL_FALSE;
@@ -1361,7 +1361,9 @@ void I_FinishUpdate(void)
 		if (cv_ticrate.value)
 			SCR_DisplayTicRate();
 
-		if (cv_showping.value && ((netgame && consoleplayer != serverplayer) || (simulated_lag != 0 && consoleplayer == serverplayer && Playing())))
+		const boolean isserverplayer = consoleplayer == serverplayer;
+
+		if (cv_showping.value && ((netgame && !isserverplayer) || (simulated_lag != 0 && isserverplayer && Playing())))
 			SCR_DisplayLocalPing();
 	}
 
@@ -1841,6 +1843,7 @@ void I_StartupGraphics(void)
 
 	{
 		FILE * file = OpenRendererFile("w");
+
 		if (file != NULL)
 		{
 			if (rendermode == render_soft)
@@ -1878,6 +1881,7 @@ void I_StartupGraphics(void)
 
 		if (vid.glstate == VID_GL_LIBRARY_ERROR)
 		{
+			CONS_Alert(CONS_ERROR, "Could not initialize OpenGL\n" "Falling back to Software mode.\n");
 			rendermode = render_soft;
 		}
 	}
