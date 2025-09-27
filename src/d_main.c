@@ -352,8 +352,7 @@ static void D_Renderview(void)
 	{
 		// V_DrawPatchFill, but for the fourth screen only
 		patch_t *pat = W_CachePatchName("SRB2BACK", PU_CACHE);
-		INT32 dupz = (vid.dupx < vid.dupy ? vid.dupx : vid.dupy);
-		INT32 x, y, pw = SHORT(pat->width) * dupz, ph = SHORT(pat->height) * dupz;
+		INT32 x, y, pw = SHORT(pat->width) * vid.dup, ph = SHORT(pat->height) * vid.dup;
 
 		for (x = vid.width>>1; x < vid.width; x += pw)
 		{

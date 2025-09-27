@@ -47,8 +47,6 @@
 // global video state
 typedef struct viddef_s
 {
-	INT32 modenum; // vidmode num indexes videomodes list
-
 	// Each screen is [vid.width*vid.height];
 	UINT8 *screens[5];
 	// screens[0] = main display window
@@ -57,14 +55,18 @@ typedef struct viddef_s
 	// screens[3] = fade screen start
 	// screens[4] = fade screen end, postimage tempoarary buffer
 
-	INT32 width; // PIXELS per scanline
+	INT32 width;       // PIXELS per scanline
 	INT32 height;
-	boolean recalc; // if true, recalc vid-based stuff
-	INT32 dupx, dupy; // scale 1, 2, 3 value for menus & overlays
-	INT32/*fixed_t*/ fdupx, fdupy; // same as dupx, dupy, but exact value when aspect ratio isn't 320/200
 
-	UINT8 smalldupx, smalldupy; // factor for a little bit of scaling
-	UINT8 meddupx, meddupy; // factor for moderate, but not full, scaling
+	INT32 modenum;     // vidmode num indexes videomodes list
+	boolean recalc;    // if true, recalc vid-based stuff
+
+	INT32 dup;         // scale 1, 2, 3 value for menus & overlays
+	INT32 fdup;        // same as dup, but exact value when aspect ratio isn't 320/200
+	UINT8 smalldup;    // factor for a little bit of scaling
+	UINT8 meddup;      // factor for moderate, but not full, scaling
+
+	INT32 scaledwidth; // width / dup
 #ifdef HWRENDER
 	INT32 glstate;
 #endif

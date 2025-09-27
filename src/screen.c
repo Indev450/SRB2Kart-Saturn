@@ -182,19 +182,7 @@ void SCR_Startup(void)
 
 	vid.modenum = 0;
 
-	vid.dupx = vid.width / BASEVIDWIDTH;
-	vid.dupy = vid.height / BASEVIDHEIGHT;
-	vid.dupx = vid.dupy = (vid.dupx < vid.dupy ? vid.dupx : vid.dupy);
-	vid.fdupx = FixedDiv(vid.width*FRACUNIT, BASEVIDWIDTH*FRACUNIT);
-	vid.fdupy = FixedDiv(vid.height*FRACUNIT, BASEVIDHEIGHT*FRACUNIT);
-
-	vid.fdupx = vid.fdupy = (vid.fdupx < vid.fdupy ? vid.fdupx : vid.fdupy);
-
-	vid.meddupx = (UINT8)(vid.dupx >> 1) + 1;
-	vid.meddupy = (UINT8)(vid.dupy >> 1) + 1;
-
-	vid.smalldupx = (UINT8)(vid.dupx / 3) + 1;
-	vid.smalldupy = (UINT8)(vid.dupy / 3) + 1;
+	V_Recalc();
 
 	V_Init();
 	CV_RegisterVar(&cv_highreshudscale);
@@ -239,29 +227,7 @@ void SCR_Recalc(void)
 	if (dedicated)
 		return;
 
-	// scale 1,2,3 times in x and y the patches for the menus and overlays...
-	// calculated once and for all, used by routines in v_video.c
-	vid.dupx = vid.width / BASEVIDWIDTH;
-	vid.dupy = vid.height / BASEVIDHEIGHT;
-	vid.dupx = vid.dupy = (vid.dupx < vid.dupy ? vid.dupx : vid.dupy);
-	vid.fdupx = FixedDiv(vid.width*FRACUNIT, BASEVIDWIDTH*FRACUNIT);
-	vid.fdupy = FixedDiv(vid.height*FRACUNIT, BASEVIDHEIGHT*FRACUNIT);
-
-	if ((vid.width > 720) && (vid.height > 1280)) // ehhhh well this thing has so many issues, so ill lock it to higher resolutions instead
-	{
-		vid.dupx = FixedDiv(vid.dupx, cv_highreshudscale.value);
-		vid.dupy = FixedDiv(vid.dupy, cv_highreshudscale.value);
-		vid.fdupx = FixedDiv(vid.fdupx, cv_highreshudscale.value);
-		vid.fdupy = FixedDiv(vid.fdupy, cv_highreshudscale.value);
-	}
-
-	vid.fdupx = vid.fdupy = (vid.fdupx < vid.fdupy ? vid.fdupx : vid.fdupy);
-
-	vid.meddupx = (UINT8)(vid.dupx >> 1) + 1;
-	vid.meddupy = (UINT8)(vid.dupy >> 1) + 1;
-
-	vid.smalldupx = (UINT8)(vid.dupx / 3) + 1;
-	vid.smalldupy = (UINT8)(vid.dupy / 3) + 1;
+	V_Recalc();
 
 	// toggle off (then back on) the automap because some screensize-dependent values will
 	// be calculated next time the automap is activated.

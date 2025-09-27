@@ -437,8 +437,7 @@ static void ST_drawLevelTitle(void)
 	subttl = mapheaderinfo[gamemap-1]->subttl;
 	zonttl = mapheaderinfo[gamemap-1]->zonttl; // SRB2kart
 	actnum = mapheaderinfo[gamemap-1]->actnum;
-	dupcalc = (vid.width/vid.dupx);
-
+	dupcalc = vid.scaledwidth;
 	bary = (splitscreen) ? BASEVIDHEIGHT/2 : 163;
 
 	if (K_UseColorHud())
@@ -601,7 +600,7 @@ static void ST_overlayDrawer(void)
 				}
 				else if (splitscreen)
 				{
-					V_DrawCenteredThinString((vid.width/vid.dupx)/4, BASEVIDHEIGHT/2 - 12, V_HUDTRANSHALF|V_ALLOWLOWERCASE|K_calcSplitFlags(V_SNAPTOBOTTOM|V_SNAPTOLEFT), player_names[stplyr-players]);
+					V_DrawCenteredThinString(vid.scaledwidth/4, BASEVIDHEIGHT/2 - 12, V_HUDTRANSHALF|V_ALLOWLOWERCASE|K_calcSplitFlags(V_SNAPTOBOTTOM|V_SNAPTOLEFT), player_names[stplyr-players]);
 				}
 			}
 		}
