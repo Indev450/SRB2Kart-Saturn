@@ -198,7 +198,6 @@ static INT32 windowedModes[MAXWINMODES][2] =
 static INT32 custom_width = 0;
 static INT32 custom_height = 0;
 
-static void Impl_VideoSetupBuffer(void);
 static SDL_bool Impl_CreateWindow(SDL_bool fullscreen);
 static void Impl_SetWindowIcon(void);
 
@@ -1302,12 +1301,6 @@ static void SDLSetMode(INT32 width, INT32 height, SDL_bool fullscreen)
 		}
 
 		texture = SDL_CreateTexture(renderer, sw_texture_format, SDL_TEXTUREACCESS_STREAMING, width, height);
-
-		if (vid.buffer)
-		{
-			free(vid.buffer);
-			vid.buffer = NULL;
-		}
 	}
 }
 
@@ -1413,7 +1406,7 @@ void I_UpdateNoVsync(void)
 void I_ReadScreen(UINT8 * restrict scr, INT32 scale)
 {
 	if (rendermode != render_soft)
-		I_Error ("I_ReadScreen: called while in non-software mode");
+		I_Error("I_ReadScreen: called while in non-software mode");
 	else if (scale == 1)
 		VID_BlitLinearScreen(vid.screens[0], scr, vid.width, vid.height, vid.width, vid.width);
 	else
@@ -1562,7 +1555,6 @@ INT32 VID_SetMode(INT32 modeNum)
 	}
 
 	SDLSetMode(vid.width, vid.height, USE_FULLSCREEN);
-	Impl_VideoSetupBuffer();
 
 	src_rect.w = vid.width;
 	src_rect.h = vid.height;
@@ -1691,24 +1683,6 @@ static void Impl_SetWindowIcon(void)
 	}
 
 	SDL_SetWindowIcon(window, icoSurface);
-}
-
-static void Impl_VideoSetupBuffer(void)
-{
-	// Set up game's software render buffer
-	size_t size;
-
-	if (vid.buffer)
-		free(vid.buffer);
-
-	size = vid.width*vid.height * NUMSCREENS;
-
-	vid.buffer = calloc(size, NUMSCREENS);
-
-	if (!vid.buffer)
-	{
-		I_Error("%s", M_GetText("Not enough memory for video buffer\n"));
-	}
 }
 
 static FILE * OpenRendererFile(const char * mode)
@@ -1871,7 +1845,6 @@ void I_StartupGraphics(void)
 			if (a2c)
 				fputs("a2c\n", file);
 #endif
-
 			fclose(file);
 		}
 		else
@@ -1930,20 +1903,11 @@ void I_StartupGraphics(void)
 
 void I_ShutdownGraphics(void)
 {
-	const rendermode_t oldrendermode = rendermode;
-
 	rendermode = render_none;
 
 	if (icoSurface)
 		SDL_FreeSurface(icoSurface);
 	icoSurface = NULL;
-
-	if (oldrendermode == render_soft)
-	{
-		if (vid.buffer)
-			free(vid.buffer);
-		vid.buffer = NULL;
-	}
 
 	I_OutputMsg("I_ShutdownGraphics(): ");
 
@@ -1963,6 +1927,7 @@ void I_ShutdownGraphics(void)
 		SDL_GL_DeleteContext(sdlglcontext);
 	}
 #endif
+
 	SDL_QuitSubSystem(SDL_INIT_VIDEO);
 	framebuffer = SDL_FALSE;
 }
