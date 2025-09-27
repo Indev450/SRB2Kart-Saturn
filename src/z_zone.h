@@ -51,7 +51,7 @@ enum
 
 	PU_PATCH                 = 14, // static entire execution time
 	PU_PATCH_LOWPRIORITY     = 15, // lower priority patch, static until level exited
-	PU_PATCH_ROTATED         = 16, // rotated patch, static until level exited or WAD added
+	PU_PATCH_ROTATED         = 16, // rotated patch, static entire execution time
 	PU_PATCH_DATA            = 17, // patch data, lifetime depends on the patch that owns it
 	PU_SPRITE                = 18, // sprite patch, static until WAD added
 	PU_HUDGFX                = 19, // HUD patch, static until WAD added
