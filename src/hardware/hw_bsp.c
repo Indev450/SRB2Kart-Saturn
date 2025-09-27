@@ -974,7 +974,7 @@ void HWR_CreatePlanePolygons(INT32 bspnum)
 	CONS_Debug(DBG_RENDER, "Looking for boundaries of map...\n");
 #endif
 	M_ClearBox(rootbbox);
-	for (i = 0;i < numvertexes; i++)
+	for (i = 0; i < numvertexes; i++)
 		M_AddToBox(rootbbox, vertexes[i].x, vertexes[i].y);
 
 #ifdef DEBUG_HWBSP
@@ -986,7 +986,7 @@ void HWR_CreatePlanePolygons(INT32 bspnum)
 	// allocate extra data for each subsector present in map
 	totsubsectors = numsubsectors + NEWSUBSECTORS;
 	extrasubsectors = calloc(totsubsectors, sizeof(*extrasubsectors));
-	if (UNLIKELY(extrasubsectors == NULL))
+	if (UNLIKELY(!extrasubsectors))
 		I_Error("couldn't malloc extrasubsectors totsubsectors %s\n", sizeu1(totsubsectors));
 
 	// number of the first new subsector that might be added
@@ -1009,11 +1009,13 @@ void HWR_CreatePlanePolygons(INT32 bspnum)
 	rootpv->y = FIXED_TO_FLOAT(rootbbox[BOXBOTTOM]);  //ll
 	rootpv++;
 
-	WalkBSPNode(bspnum, rootp, NULL,rootbbox);
+	WalkBSPNode(bspnum, rootp, NULL, rootbbox);
 
-	i = SolveTProblem();
 #ifdef DEBUG_HWBSP
+	i = SolveTProblem();
 	CONS_Debug(DBG_RENDER, "%d point divides a polygon line\n",i);
+#else
+	SolveTProblem();
 #endif
 	AdjustSegs();
 

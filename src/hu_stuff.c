@@ -1234,8 +1234,8 @@ static void HU_SendChatMessage(void)
 	if (len > 4 && strnicmp(msg, "/pm", 3) == 0) // used /pm
 	{
 		INT32 spc = 1; // used if nodenum[1] is a space.
-		char *nodenum = (char*) malloc(3);
 		const char *newmsg;
+		CLEANUP(pfree) char *nodenum = (char*) malloc(3);
 
 		// what we're gonna do now is check if the node exists
 		// with that logic, characters 4 and 5 are our numbers:
@@ -1260,7 +1260,6 @@ static void HU_SendChatMessage(void)
 			else
 			{
 				HU_AddChatText("\x82NOTICE: \x80Invalid command format. Correct format is \'/pm<node> \'.", false);
-				free(nodenum);
 				return;
 			}
 		}
@@ -1270,13 +1269,11 @@ static void HU_SendChatMessage(void)
 			if (msg[5] != ' ')
 			{
 				HU_AddChatText("\x82NOTICE: \x80Invalid command format. Correct format is \'/pm<node> \'.", false);
-				free(nodenum);
 				return;
 			}
 		}
 
 		target = atoi((const char*) nodenum); // turn that into a number
-		free(nodenum);
 		//CONS_Printf("%d\n", target);
 
 		// check for target player, if it doesn't exist then we can't send the message!
@@ -1292,6 +1289,7 @@ static void HU_SendChatMessage(void)
 		newmsg = msg+5+spc;
 		strlcpy(msg, newmsg, HU_MAXMSGLEN + 1);
 	}
+
 	if (ci > 3) // don't send target+flags+empty message.
 	{
 		if (teamtalk)
