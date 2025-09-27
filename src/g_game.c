@@ -3584,6 +3584,8 @@ void G_SaveGameData(boolean force)
 		if (!FIL_CopyFile(gamedatafilename, backupfile))
 		{
 			CONS_Alert(CONS_WARNING,"Failed to create a backup of save data. Will not attempt to write to save data\n");
+			free(save.buffer);
+			save.p = save.buffer = NULL;
 			return;
 		}
 	}
