@@ -30,9 +30,39 @@ static precise_t enterprecise, oldenterprecise;
 static fixed_t entertic, oldentertics;
 static double tictimer;
 
+// experiment to prevent timing issues
+// this returns the global time state accounted with how much time has passed
+// since it was last updated
+static void I_GetTimeAndFrac(tic_t *outtics, fixed_t *outfrac)
+{
+	double ticratescaled;
+	double elapsedseconds;
+
+	ticratescaled = (double)TICRATE * FixedToDouble(cv_timescale.value);
+
+	elapsedseconds = (double)(I_GetPreciseTime() - oldenterprecise) / I_GetPrecisePrecision();
+
+	double fractional, integral;
+	fractional = modf((tictimer + elapsedseconds) * ticratescaled, &integral);
+
+	if (outtics)
+		*outtics = g_time.time + (tic_t)integral;
+	if (outfrac)
+		*outfrac = DoubleToFixed(fractional);
+}
+
 tic_t I_GetTime(void)
 {
-	return g_time.time;
+	tic_t tic;
+	I_GetTimeAndFrac(&tic, NULL);
+	return tic;
+}
+
+fixed_t I_GetTimeFrac(void)
+{
+	fixed_t frac;
+	I_GetTimeAndFrac(NULL, &frac);
+	return frac;
 }
 
 void I_InitializeTime(void)
