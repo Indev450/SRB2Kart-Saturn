@@ -34,6 +34,8 @@ extern consvar_t cv_timescale;
 */
 tic_t I_GetTime(void);
 
+fixed_t I_GetTimeFrac(void);
+
 /**	\brief  Initializes timing system.
 */
 void I_InitializeTime(void);
