@@ -1191,7 +1191,7 @@ boolean I_LoadSong(char *data, size_t len)
 			else if (!strncmp(p, key3, key3len)) // is it LOOPMS=?
 			{
 				p += key3len; // skip MS=
-				loop_point = atof(p) / 1000.f; // LOOPMS works by real time, as miliseconds.
+				loop_point = atof(p) / 1000.0; // LOOPMS works by real time, as miliseconds.
 				// Everything that uses LOOPMS will work perfectly with SDL_Mixer.
 			}
 		}
