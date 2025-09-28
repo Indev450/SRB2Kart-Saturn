@@ -606,17 +606,21 @@ static void ST_overlayDrawer(void)
 		}
 	}
 
-	if ((!(netgame || multiplayer) || !hu_showscores) && !forceshowhud)
+	// dont draw those if we force the hud to show in the saturn options
+	if (!forceshowhud)
 	{
-		if (renderisnewtic)
+		if (!(netgame || multiplayer) || !hu_showscores)
 		{
-			LUA_HUDHOOK(game, luahuddrawlist_game[stplyrnum]);
+			if (renderisnewtic)
+			{
+				LUA_HUDHOOK(game, luahuddrawlist_game[stplyrnum]);
+			}
 		}
-	}
 
-	// draw level title Tails
-	if (!(hu_showscores && (netgame || multiplayer) && !mapreset) && LUA_HudEnabled(hud_stagetitle) && !forceshowhud)
-		ST_drawLevelTitle();
+		// draw level title Tails
+		if (stplyrnum == 0 && !(hu_showscores && (netgame || multiplayer) && !mapreset) && LUA_HudEnabled(hud_stagetitle))
+			ST_drawLevelTitle();
+	}
 
 	if (!hu_showscores && netgame && !mapreset)
 	{
