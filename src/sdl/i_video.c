@@ -111,11 +111,6 @@ static void KeyboardLayout_OnChange(void)
 	HU_Shiftform();
 }
 
-boolean I_UseNativeKeyboard(void)
-{
-	return (cv_keyboardlayout.value == 2) && (chat_on || CON_Ready() || (menu_text_input && menuactive));
-}
-
 static CV_PossibleValue_t keyboardlayout_cons_t[] = {{1,"Default US"}, {2, "Native"}, {3, "AZERTY"}, {0, NULL}};
 consvar_t cv_keyboardlayout = {"keyboardlayout", "Default US", CV_SAVE|CV_CALL, keyboardlayout_cons_t, KeyboardLayout_OnChange, 0, NULL, NULL, 0, 0, NULL};
 
@@ -208,23 +203,6 @@ boolean downsample = false;
 float InvSupersampleFactorX = 0.0;
 float InvSupersampleFactorY = 0.0;
 #endif
-
-void I_SetTextInput(void)
-{
-	static boolean input_active = false;
-	boolean use_native = I_UseNativeKeyboard();
-
-	if (use_native && !input_active)
-	{
-		SDL_StartTextInput();
-		input_active = true;
-	}
-	else if (!use_native && input_active)
-	{
-		SDL_StopTextInput();
-		input_active = false;
-	}
-}
 
 static INT32 Impl_SDL_Scancode_To_Keycode(SDL_Scancode code)
 {
@@ -319,36 +297,6 @@ static INT32 Impl_SDL_Scancode_To_Keycode(SDL_Scancode code)
 	return 0;
 }
 
-// Get the equivalent ASCII (Unicode?) character for a keypress.
-static INT32 GetTypedChar(SDL_Keysym keysym)
-{
-	SDL_Event next_event;
-	SDL_Keycode keycode = keysym.sym;
-	SDL_Scancode scancode = keysym.scancode;
-
-	if (I_UseNativeKeyboard()) // only use this this if on chat or console or the current menu wants inputs from us (except if its the control setup menu ig)
-	{
-		// Special cases, where we always return a fixed value.
-		switch (keycode)
-		{
-			case SDLK_BACKSPACE: return KEY_BACKSPACE;
-			case SDLK_RETURN:    return KEY_ENTER;
-			default:
-				break;
-		}
-
-		if (SDL_PeepEvents(&next_event, 1, SDL_PEEKEVENT, SDL_FIRSTEVENT, SDL_LASTEVENT) == 1 && next_event.type == SDL_TEXTINPUT)
-		{
-			if (next_event.text.text[1] == '\0') // limit to ASCII
-			{
-				return next_event.text.text[0];
-			}
-		}
-	}
-
-	return Impl_SDL_Scancode_To_Keycode(scancode); // fallback to scancodes
-}
-
 static INT32 Impl_SDL_Keysym_To_Keycode(SDL_Keysym keysym)
 {
 	SDL_Keycode keycode = keysym.sym;
@@ -424,6 +372,60 @@ static INT32 Impl_SDL_Keysym_To_Keycode(SDL_Keysym keysym)
 		default:                  break;
 	}
 
+	return Impl_SDL_Scancode_To_Keycode(scancode);
+}
+
+static boolean native_input_active = false;
+
+// used to supress the games shift/alt handling
+boolean I_UseNativeKeyboard(void)
+{
+	return (cv_keyboardlayout.value == 2 && native_input_active);
+}
+
+void I_SetTextInput(boolean enable)
+{
+	if (enable && !native_input_active)
+	{
+		SDL_StartTextInput();
+		native_input_active = true;
+	}
+	else if (!enable && native_input_active)
+	{
+		SDL_StopTextInput();
+		native_input_active = false;
+	}
+}
+
+// Get the equivalent ASCII (Unicode?) character for a keypress.
+static INT32 GetTypedChar(SDL_Keysym keysym)
+{
+	SDL_Event next_event;
+	SDL_Keycode keycode = keysym.sym;
+	SDL_Scancode scancode = keysym.scancode;
+
+	// only use this this if on chat or console or the current menu wants inputs from us (except if its the control setup menu ig)
+	if (native_input_active)
+	{
+		// Special cases, where we always return a fixed value.
+		switch (keycode)
+		{
+			case SDLK_BACKSPACE: return KEY_BACKSPACE;
+			case SDLK_RETURN:    return KEY_ENTER;
+			default:
+				break;
+		}
+
+		if (SDL_PeepEvents(&next_event, 1, SDL_PEEKEVENT, SDL_FIRSTEVENT, SDL_LASTEVENT) == 1 && next_event.type == SDL_TEXTINPUT)
+		{
+			if (next_event.text.text[1] == '\0') // limit to ASCII
+			{
+				return next_event.text.text[0];
+			}
+		}
+	}
+
+	// otherwise fallback to scancodes
 	return Impl_SDL_Scancode_To_Keycode(scancode);
 }
 

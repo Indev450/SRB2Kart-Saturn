@@ -116,8 +116,6 @@ void M_QuitResponse(INT32 ch);
 // Determines whether to show a level in the list
 boolean M_CanShowLevelInList(INT32 mapnum, INT32 gt);
 
-extern boolean menu_text_input;
-
 // flags for items in the menu
 // menu handle (what we do when key is pressed
 #define IT_TYPE             14     // (2+4+8)

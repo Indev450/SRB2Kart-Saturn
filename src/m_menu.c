@@ -157,8 +157,6 @@ boolean browselocalskins = false;
 boolean menuactive = false;
 boolean fromlevelselect = false;
 
-boolean menu_text_input = false;
-
 char menu_text_input_buf[MAXSTRINGLENGTH];
 static textinput_t menuinput;
 
@@ -684,9 +682,28 @@ static void M_ResetCvars(void)
 }
 
 // This is not a particular elegant solution, but it seems to make do for our purposes
-static boolean M_CheckTextInput(void)
+static void M_SetTextInput(void)
 {
-	return (menuactive && currentMenu && (itemOn < currentMenu->numitems) && (((currentMenu->menuitems[itemOn].status & IT_CVARTYPE) == IT_CV_STRING) || (currentMenu->menuitems[itemOn].status == IT_MSGHANDLER && currentMenu->menuitems[itemOn].alphaKey != MM_EVENTHANDLER) || ((currentMenu->menuitems[itemOn].status & IT_TYPE) == IT_KEYHANDLER)));
+	// dont reset our native input state when console is open
+	if (CON_Ready())
+		return;
+
+	I_SetTextInput(false);
+
+	if (!menuactive || !currentMenu)
+	{
+		return;
+	}
+
+	// check if the current entry requieres some kind of keyboard input from us
+	// except for MM_EVENTHANDLER since thats to be used for the control setup
+	const UINT16 status = currentMenu->menuitems[itemOn].status;
+	if ((itemOn < currentMenu->numitems)
+		&& (((status & IT_CVARTYPE) == IT_CV_STRING) || ((status & IT_TYPE) == IT_KEYHANDLER)
+		|| (status == IT_MSGHANDLER && currentMenu->menuitems[itemOn].alphaKey != MM_EVENTHANDLER)))
+	{
+		I_SetTextInput(true);
+	}
 }
 
 // If current menu item is IT_CV_STRING, setup menuinput
@@ -717,6 +734,7 @@ static void M_NextOpt(void)
 	} while (oldItemOn != itemOn && (currentMenu->menuitems[itemOn].status & IT_TYPE) == IT_SPACE);
 
 	M_CheckStringItem();
+	M_SetTextInput();
 }
 
 static void M_PrevOpt(void)
@@ -732,6 +750,7 @@ static void M_PrevOpt(void)
 	} while (oldItemOn != itemOn && (currentMenu->menuitems[itemOn].status & IT_TYPE) == IT_SPACE);
 
 	M_CheckStringItem();
+	M_SetTextInput();
 }
 
 // lock out further input in a tic when important buttons are pressed
@@ -1653,6 +1672,8 @@ void M_EndModeAttackRun(void)
 //
 void M_ClearMenus(boolean callexitmenufunc)
 {
+	M_SetTextInput();
+
 	if (!menuactive)
 		return;
 
@@ -1702,6 +1723,7 @@ void M_SetupNextMenu(menu_t *menudef)
 	}
 
 	M_CheckStringItem();
+	M_SetTextInput();
 }
 
 //
@@ -1730,10 +1752,6 @@ void M_Ticker(void)
 		M_HutCheckReplays(cv_replaysearchrate.value);
 
 	interpTimerHackAllow = true;
-
-	menu_text_input = M_CheckTextInput();
-
-	I_SetTextInput();
 
 	//added : 30-01-98 : test mode for five seconds
 	if (vidm_testingmode > 0)
