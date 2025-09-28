@@ -509,7 +509,7 @@ INT32 CL_CheckFiles(void)
 
 		for (i = 0, j = mainwads+1; i < fileneedednum || j < numwadfiles;)
 		{
-			if (j < numwadfiles && (!wadfiles[j]->important || wadfiles[j]->localfile))
+			if (j < numwadfiles && !wadfiles[j]->important) // TODO: add checks for localfiles that dont contain anything "allowed" (maps and stuff like that)
 			{
 				// Unimportant on our side. still don't care.
 				++j;

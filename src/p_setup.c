@@ -3171,8 +3171,6 @@ UINT16 P_PartialAddWadFile(const char *wadfilename, boolean local)
 	if (wadfiles[wadnum]->important)
 		partadd_important = true;
 
-	wadfiles[wadnum]->localfile = local;
-
 	lumpinfo = wadfiles[wadnum]->lumpinfo;
 	for (i = 0; i < numlumps; i++, lumpinfo++)
 	{
