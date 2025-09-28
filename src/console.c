@@ -729,6 +729,8 @@ void CON_ToggleOff(void)
 	con_forcepic = 0;
 	con_clipviewtop = -1; // remove console clipping of view
 
+	I_SetTextInput(false);
+
 	Unlock_state();
 }
 
@@ -768,9 +770,13 @@ void CON_Ticker(void)
 		{
 			con_destlines = 0;
 			CON_ClearHUD();
+			I_SetTextInput(false);
 		}
 		else
+		{
 			CON_ChangeHeight();
+			I_SetTextInput(true);
+		}
 	}
 
 	// clip the view, so that the part under the console is not drawn
@@ -787,9 +793,13 @@ void CON_Ticker(void)
 
 	// check if console ready for prompt
 	if (con_destlines >= minheight)
+	{
 		consoleready = true;
+	}
 	else
+	{
 		consoleready = false;
+	}
 
 	// make overlay messages disappear after a while
 	for (i = 0; i < con_hudlines; i++)

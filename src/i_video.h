@@ -24,7 +24,8 @@ extern "C" {
 #pragma interface
 #endif
 
-void I_SetTextInput(void);
+boolean I_UseNativeKeyboard(void);
+void I_SetTextInput(boolean enable);
 
 typedef enum
 {
@@ -137,8 +138,6 @@ void I_BeginRead(void);
 void I_EndRead(void);
 
 UINT32 I_GetRefreshRate(void);
-
-boolean I_UseNativeKeyboard(void);
 
 boolean I_CheckNativeRes(void);
 
