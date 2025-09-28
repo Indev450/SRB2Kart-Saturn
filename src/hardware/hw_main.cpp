@@ -4211,7 +4211,7 @@ static int CompareVisSprites(const void *p1, const void *p2)
 
 	fdiff = spr2->tz - spr1->tz; // this order seems correct when checking with apitrace. Back to front.
 	if (fabsf(fdiff) < 1.0E-36f)
-		return spr1->dispoffset - spr2->dispoffset;// smallest dispoffset first if sprites are at (almost) same location.
+		return spr1->dispoffset - spr2->dispoffset; // smallest dispoffset first if sprites are at (almost) same location.
 	else if (fdiff > 0)
 		return 1;
 	else
