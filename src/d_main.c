@@ -1103,26 +1103,28 @@ static void D_AutoloadFile(const char *file, char **filearray)
 	char *newfile;
 	INT32 fileType = D_DetectFileType(file);
 
-	for (pnumwadfiles = 0; filearray[pnumwadfiles]; pnumwadfiles++)
-		;
-
-	newfile = malloc(strlen(file) + 1);
-	if (!newfile)
-		I_Error("No more free memory to AutoloadFile %s",file);
-
 	if (!fileType)
 	{
 		CONS_Printf("D_AutoloadFile: File %s is unknown or invalid\n", file);
-		free(newfile);
 		return;
 	}
 
-	strcpy(newfile, file);
+	for (pnumwadfiles = 0; filearray[pnumwadfiles]; pnumwadfiles++)
+		;
 
 	if (fileType <= 6)
+	{
+		newfile = malloc(strlen(file) + 1);
+		if (!newfile)
+			I_Error("No more free memory to AutoloadFile %s",file);
+
+		strcpy(newfile, file);
 		filearray[pnumwadfiles] = newfile;
+	}
 	else
-		COM_BufAddText(va("exec %s\n", newfile));
+	{
+		COM_BufAddText(va("exec %s\n", file));
+	}
 }
 
 static char *strremove(char *str, const char *sub)
