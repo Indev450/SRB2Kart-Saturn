@@ -494,9 +494,6 @@ INT32 CL_CheckFiles(void)
 	size_t filestoload = 0;
 	boolean downloadrequired = false;
 
-//	if (M_CheckParm("-nofiles"))
-//		return 1;
-
 	// the first is the iwad (the main wad file)
 	// we don't care if it's called srb2.srb or srb2.wad.
 	// Never download the IWAD, just assume it's there and identical
@@ -510,8 +507,6 @@ INT32 CL_CheckFiles(void)
 	{
 		CONS_Debug(DBG_NETPLAY, "game is modified; only doing basic checks\n");
 
-		boolean have_important = false;
-
 		for (i = 0, j = mainwads+1; i < fileneedednum || j < numwadfiles;)
 		{
 			if (j < numwadfiles && (!wadfiles[j]->important || wadfiles[j]->localfile))
@@ -523,15 +518,7 @@ INT32 CL_CheckFiles(void)
 
 			// If this test is true, we've reached the end of one file list.
 			if (i >= fileneedednum || j >= numwadfiles)
-			{
-				// We are missing some of important files, or have too much
-				// important files.
-				if (have_important)
-					return 2;
-
-				// All checked files weren't important, don't care about them.
-				break;
-			}
+				return 2;
 
 			// For the sake of speed, only bother with a md5 check
 			if (memcmp(wadfiles[j]->md5sum, fileneeded[i].md5sum, 16))
@@ -539,14 +526,12 @@ INT32 CL_CheckFiles(void)
 
 			// It's accounted for! let's keep going.
 			CONS_Debug(DBG_NETPLAY, "'%s' accounted for\n", fileneeded[i].filename);
-			have_important = true;
 			fileneeded[i].status = FS_OPEN;
 			++i;
 			++j;
 		}
 
-		if (have_important)
-			return 1;
+		return 1;
 	}
 
 	for (i = 0; i < fileneedednum; i++)
