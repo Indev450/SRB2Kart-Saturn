@@ -1901,7 +1901,6 @@ static int lib_sChangeMusic(lua_State *L)
 			music_compat_name[0] = 0; // becomes empty string
 		music_compat_name[6] = 0;
 		music_name = (const char *)&music_compat_name;
-		music_flags = 0;
 	}
 	else
 	{
@@ -2088,7 +2087,6 @@ static int lib_sMusicExists(lua_State *L)
 	}
 	else
 	{
-		music_num = 0;
 		music_name = luaL_checkstring(L, 1);
 	}
 #else

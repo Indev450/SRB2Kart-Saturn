@@ -773,7 +773,6 @@ void D_SRB2Loop(void)
 		// capbudget is the minimum precise_t duration of a single loop iteration
 		precise_t capbudget;
 		precise_t enterprecise = I_GetPreciseTime();
-		precise_t finishprecise = enterprecise;
 
 		Z_Frame_Reset();
 
@@ -917,7 +916,7 @@ void D_SRB2Loop(void)
 		}
 #endif
 		// Fully completed frame made.
-		finishprecise = I_GetPreciseTime();
+		precise_t finishprecise = I_GetPreciseTime();
 
 		// Use the time before sleep for frameskip calculations:
 		// post-sleep time is literally being intentionally wasted
@@ -1114,6 +1113,7 @@ static void D_AutoloadFile(const char *file, char **filearray)
 	if (!fileType)
 	{
 		CONS_Printf("D_AutoloadFile: File %s is unknown or invalid\n", file);
+		free(newfile);
 		return;
 	}
 

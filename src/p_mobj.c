@@ -1454,7 +1454,6 @@ void P_XYMovement(mobj_t *mo)
 		else if (mo->flags & MF_BOUNCE)
 		{
 			P_BounceMove(mo);
-			xmove = ymove = 0;
 			S_StartSound(mo, mo->info->activesound);
 
 			//{ SRB2kart - Orbinaut, Ballhog
@@ -1485,7 +1484,7 @@ void P_XYMovement(mobj_t *mo)
 					P_KillMobj(mo, NULL, NULL);
 
 					P_SetObjectMomZ(mo, 8*FRACUNIT, false);
-					P_InstaThrust(mo, R_PointToAngle2(mo->x, mo->y, mo->x + xmove, mo->y + ymove)+ANGLE_90, 16*FRACUNIT);
+					P_InstaThrust(mo, R_PointToAngle2(mo->x, mo->y, mo->x, mo->y)+ANGLE_90, 16*FRACUNIT);
 				}
 			}
 			//}
@@ -1534,7 +1533,6 @@ void P_XYMovement(mobj_t *mo)
 		else if (player || mo->flags & (MF_SLIDEME|MF_PUSHABLE)) // try to slide along it
 		{
 			P_SlideMove(mo, false);
-			xmove = ymove = 0;
 		}
 		else if (mo->type == MT_SPINFIRE)
 		{
@@ -4991,7 +4989,7 @@ static void P_Boss9Thinker(mobj_t *mobj)
 		{
 			mobj_t *spawner;
 			fixed_t dist = 0;
-			angle = 0x06000000*leveltime;
+			angle = ANGLE_135*leveltime;
 
 			// Alter your energy bubble's size/position
 			if (mobj->health > 3)
@@ -12284,7 +12282,7 @@ mobj_t *P_SPMAngle(mobj_t *source, mobjtype_t type, angle_t angle, UINT8 allowai
 	// angle at which you fire, is player angle
 	an = angle;
 
-	if (allowaim) // aiming allowed?
+	if (source->player && allowaim) // aiming allowed?
 		slope = AIMINGTOSLOPE(source->player->aiming);
 
 	x = source->x;
@@ -12315,7 +12313,7 @@ mobj_t *P_SPMAngle(mobj_t *source, mobjtype_t type, angle_t angle, UINT8 allowai
 	th->momx = FixedMul(th->info->speed, FINECOSINE(an>>ANGLETOFINESHIFT));
 	th->momy = FixedMul(th->info->speed, FINESINE(an>>ANGLETOFINESHIFT));
 
-	if (allowaim)
+	if (source->player && allowaim)
 	{
 		th->momx = FixedMul(th->momx,FINECOSINE(source->player->aiming>>ANGLETOFINESHIFT));
 		th->momy = FixedMul(th->momy,FINECOSINE(source->player->aiming>>ANGLETOFINESHIFT));

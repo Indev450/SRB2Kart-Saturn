@@ -66,6 +66,7 @@ void M_AATreeFree(aatree_t *aatree)
 
 static aatree_node_t *M_AATreeRotateRight(aatree_node_t *node)
 {
+	I_Assert(node->left != NULL);
 	aatree_node_t *newnode = node->left;
 	aatree_node_t *tmp = newnode->right;
 	newnode->right = node;
@@ -75,6 +76,7 @@ static aatree_node_t *M_AATreeRotateRight(aatree_node_t *node)
 
 static aatree_node_t *M_AATreeRotateLeft(aatree_node_t *node)
 {
+	I_Assert(node->right != NULL);
 	aatree_node_t *newnode = node->right;
 	aatree_node_t *tmp = newnode->left;
 	newnode->left = node;

@@ -2211,6 +2211,9 @@ static void R_CreateDrawNodes(maskcount_t* mask, drawnode_t* head, boolean temps
 	fixed_t scale = 0;
 	const INT32 vidheight = vid.height;
 
+	if (mask->drawsegs[0] == mask->drawsegs[1])
+		return;
+
 	// Add the 3D floors, thicksides, and masked textures...
 	for (ds = drawsegs + mask->drawsegs[1]; ds-- > drawsegs + mask->drawsegs[0];)
 	{
@@ -2372,9 +2375,7 @@ static void R_CreateDrawNodes(maskcount_t* mask, drawnode_t* head, boolean temps
 						continue;
 				}
 
-				entry = R_CreateDrawNode(NULL);
-				(entry->prev = r2->prev)->next = entry;
-				(entry->next = r2)->prev = entry;
+				entry = R_CreateDrawNode(r2);
 				entry->sprite = rover;
 				break;
 			}
@@ -2408,9 +2409,7 @@ static void R_CreateDrawNodes(maskcount_t* mask, drawnode_t* head, boolean temps
 				    (botplanecameraz > viewz && rover->gz > botplaneobjectz))
 #endif
 				{
-					entry = R_CreateDrawNode(NULL);
-					(entry->prev = r2->prev)->next = entry;
-					(entry->next = r2)->prev = entry;
+					entry = R_CreateDrawNode(r2);
 					entry->sprite = rover;
 					break;
 				}
@@ -2427,9 +2426,7 @@ static void R_CreateDrawNodes(maskcount_t* mask, drawnode_t* head, boolean temps
 
 				if (rover->sortscale < scale)
 				{
-					entry = R_CreateDrawNode(NULL);
-					(entry->prev = r2->prev)->next = entry;
-					(entry->next = r2)->prev = entry;
+					entry = R_CreateDrawNode(r2);
 					entry->sprite = rover;
 					break;
 				}
@@ -2444,9 +2441,7 @@ static void R_CreateDrawNodes(maskcount_t* mask, drawnode_t* head, boolean temps
 				if (r2->sprite->sortscale > rover->sortscale
 				 || (r2->sprite->sortscale == rover->sortscale && r2->sprite->dispoffset > rover->dispoffset))
 				{
-					entry = R_CreateDrawNode(NULL);
-					(entry->prev = r2->prev)->next = entry;
-					(entry->next = r2)->prev = entry;
+					entry = R_CreateDrawNode(r2);
 					entry->sprite = rover;
 					break;
 				}

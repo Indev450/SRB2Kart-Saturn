@@ -2251,7 +2251,7 @@ static void M_DrawGenericMenu(void)
 				/* FALLTHRU */
 			case IT_NOTHING:
 			case IT_DYBIGSPACE:
-				y = currentMenu->y+currentMenu->menuitems[i].alphaKey;//+= LINEHEIGHT;
+				y = currentMenu->y+currentMenu->menuitems[i].alphaKey;
 				break;
 			case IT_BIGSLIDER:
 				M_DrawThermo(x, y, (consvar_t *)currentMenu->menuitems[i].itemaction);
@@ -2382,17 +2382,17 @@ static void M_DrawGenericScrollMenu(void)
 	y = currentMenu->y;
 
 	if (currentMenu->menuitems[currentMenu->numitems-1].alphaKey < scrollareaheight)
-		tempcentery = currentMenu->y; // Not tall enough to scroll, but this thinker is used in case it becomes so
+		tempcentery = y; // Not tall enough to scroll, but this thinker is used in case it becomes so
 	else if ((currentMenu->menuitems[itemOn].alphaKey*2 - currentMenu->menuitems[0].alphaKey*2) <= scrollareaheight)
-		tempcentery = currentMenu->y - currentMenu->menuitems[0].alphaKey*2;
+		tempcentery = y - currentMenu->menuitems[0].alphaKey*2;
 	else if ((currentMenu->menuitems[currentMenu->numitems-1].alphaKey*2 - currentMenu->menuitems[itemOn].alphaKey*2) <= scrollareaheight)
-		tempcentery = currentMenu->y - currentMenu->menuitems[currentMenu->numitems-1].alphaKey*2 + 2*scrollareaheight;
+		tempcentery = y - currentMenu->menuitems[currentMenu->numitems-1].alphaKey*2 + 2*scrollareaheight;
 	else
-		tempcentery = currentMenu->y - currentMenu->menuitems[itemOn].alphaKey*2 + scrollareaheight;
+		tempcentery = y - currentMenu->menuitems[itemOn].alphaKey*2 + scrollareaheight;
 
 	for (i = 0; i < currentMenu->numitems; i++)
 	{
-		if (currentMenu->menuitems[i].status != IT_DISABLED && currentMenu->menuitems[i].alphaKey*2 + tempcentery >= currentMenu->y)
+		if (currentMenu->menuitems[i].status != IT_DISABLED && currentMenu->menuitems[i].alphaKey*2 + tempcentery >= y)
 			break;
 	}
 
@@ -2404,14 +2404,14 @@ static void M_DrawGenericScrollMenu(void)
 
 	for (max = bottom; max > 0; max--)
 	{
-		if (currentMenu->menuitems[max-1].status != IT_DISABLED && currentMenu->menuitems[max-1].alphaKey*2 + tempcentery <= (currentMenu->y + 2*scrollareaheight))
+		if (currentMenu->menuitems[max-1].status != IT_DISABLED && currentMenu->menuitems[max-1].alphaKey*2 + tempcentery <= (y + 2*scrollareaheight))
 			break;
 	}
 
 	if (i)
-		V_DrawString(currentMenu->x - 20, currentMenu->y - (skullAnimCounter/5), highlightflags, "\x1A"); // up arrow
+		V_DrawString(x - 20, y - (skullAnimCounter/5), highlightflags, "\x1A"); // up arrow
 	if (max != bottom)
-		V_DrawString(currentMenu->x - 20, currentMenu->y + 2*scrollareaheight + (skullAnimCounter/5), highlightflags, "\x1B"); // down arrow
+		V_DrawString(x - 20, y + 2*scrollareaheight + (skullAnimCounter/5), highlightflags, "\x1B"); // down arrow
 
 	// draw title (or big pic)
 	M_DrawMenuTitle();
@@ -2449,7 +2449,7 @@ static void M_DrawGenericScrollMenu(void)
 							case IT_CV_INVISSLIDER: // monitor toggles use this
 								break;
 							case IT_CV_STRING:
-								if (y + 12 > (currentMenu->y + 2*scrollareaheight))
+								if (y + 12 > (y + 2*scrollareaheight))
 									break;
 								M_DrawTextBox(x, y + 4, MAXSTRINGLENGTH, 1);
 
@@ -2487,8 +2487,7 @@ static void M_DrawGenericScrollMenu(void)
 	}
 
 	// DRAW THE SKULL CURSOR
-	V_DrawScaledPatch(currentMenu->x - 24, cursory, 0,
-		(patch_t *)W_CachePatchName("M_CURSOR", PU_PATCH));
+	V_DrawScaledPatch(x - 24, cursory, 0, (patch_t *)W_CachePatchName("M_CURSOR", PU_PATCH));
 
 	// dumb hack
 	// tooltips
@@ -6154,8 +6153,7 @@ static boolean M_QuitTimeAttackMenu(void)
 // Player has selected the "START" from the time attack screen
 static void M_ChooseTimeAttack(INT32 choice)
 {
-	char *gpath;
-	const size_t glen = strlen("replay")+1+strlen(timeattackfolder)+1+strlen("MAPXX")+1;
+	const char *mapname = G_BuildMapName(cv_nextmap.value);
 	char nameofdemo[256];
 	(void)choice;
 	emeralds = 0;
@@ -6165,20 +6163,14 @@ static void M_ChooseTimeAttack(INT32 choice)
 	I_mkdir(va("%s"PATHSEP"replay", srb2home), 0755);
 	I_mkdir(va("%s"PATHSEP"replay"PATHSEP"%s", srb2home, timeattackfolder), 0755);
 
-	if ((gpath = malloc(glen)) == NULL)
-		I_Error("Out of memory for replay filepath\n");
-
-	sprintf(gpath,"replay"PATHSEP"%s"PATHSEP"%s", timeattackfolder, G_BuildMapName(cv_nextmap.value));
-	snprintf(nameofdemo, sizeof nameofdemo, "%s-%s-last", gpath, cv_chooseskin.string);
+	snprintf(nameofdemo, sizeof nameofdemo, "replay"PATHSEP"%s"PATHSEP"%s-%s-last", timeattackfolder, mapname, cv_chooseskin.string);
 
 	if (!cv_autorecord.value)
 		remove(va("%s"PATHSEP"%s.lmp", srb2home, nameofdemo));
 	else
 		G_RecordDemo(nameofdemo);
 
-	G_DeferedInitNew(false, G_BuildMapName(cv_nextmap.value), (UINT8)(cv_chooseskin.value-1), 0, false);
-
-	free(gpath);
+	G_DeferedInitNew(false, mapname, (UINT8)(cv_chooseskin.value-1), 0, false);
 }
 
 static void M_HandleStaffReplay(INT32 choice)
@@ -6398,9 +6390,7 @@ void M_SetWaitingMode(int mode)
 #ifdef HAVE_THREADS
 	I_lock_mutex(&m_menu_mutex);
 #endif
-	{
-		m_waiting_mode = mode;
-	}
+	m_waiting_mode = mode;
 #ifdef HAVE_THREADS
 	I_unlock_mutex(m_menu_mutex);
 #endif
@@ -6413,9 +6403,7 @@ int M_GetWaitingMode(void)
 #ifdef HAVE_THREADS
 	I_lock_mutex(&m_menu_mutex);
 #endif
-	{
-		mode = m_waiting_mode;
-	}
+	mode = m_waiting_mode;
 #ifdef HAVE_THREADS
 	I_unlock_mutex(m_menu_mutex);
 #endif
@@ -6430,9 +6418,7 @@ static void Spawn_masterserver_thread(const char *name, void (*thread)(int*))
 	int *id = malloc(sizeof *id);
 
 	I_lock_mutex(&ms_QueryId_mutex);
-	{
-		*id = ms_QueryId;
-	}
+	*id = ms_QueryId;
 	I_unlock_mutex(ms_QueryId_mutex);
 
 	I_spawn_thread(name, (I_thread_fn)thread, id);
@@ -6443,9 +6429,7 @@ static int Same_instance(int id)
 	int okay;
 
 	I_lock_mutex(&ms_QueryId_mutex);
-	{
-		okay = ( id == ms_QueryId );
-	}
+	okay = ( id == ms_QueryId );
 	I_unlock_mutex(ms_QueryId_mutex);
 
 	return okay;
@@ -6476,9 +6460,7 @@ static void Fetch_servers_thread(int *id)
 
 #ifdef HAVE_THREADS
 			I_lock_mutex(&ms_ServerList_mutex);
-			{
-				ms_ServerList = server_list;
-			}
+			ms_ServerList = server_list;
 			I_unlock_mutex(ms_ServerList_mutex);
 #else
 			CL_QueryServerList(server_list);
@@ -9848,7 +9830,6 @@ static void M_DrawColorMenu(void)
 								else
 									V_DrawString(x + 8, y + 12, V_ALLOWLOWERCASE, cv->string);
 
-								y += 16;
 								break;
 							default:
 								V_DrawRightAlignedString(BASEVIDWIDTH - x, y,

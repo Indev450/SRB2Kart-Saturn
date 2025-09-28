@@ -2834,15 +2834,12 @@ static void P_HitBounceLine(line_t *ld)
 	moveangle = R_PointToAngle2(0, 0, tmxmove, tmymove);
 	deltaangle = moveangle + 2*(lineangle - moveangle);
 
-	lineangle >>= ANGLETOFINESHIFT;
 	deltaangle >>= ANGLETOFINESHIFT;
 
 	movelen = P_AproxDistance(tmxmove, tmymove);
 
 	tmxmove = FixedMul(movelen, FINECOSINE(deltaangle));
 	tmymove = FixedMul(movelen, FINESINE(deltaangle));
-
-	deltaangle = R_PointToAngle2(0, 0, tmxmove, tmymove);
 }
 
 //
@@ -3050,7 +3047,8 @@ stairstep:
 	tmxmove = FixedMul(thiscam->momx, bestslidefrac);
 	tmymove = FixedMul(thiscam->momy, bestslidefrac);
 
-	P_HitCameraSlideLine(bestslideline, thiscam); // clip the moves
+	if (bestslideline != NULL)
+		P_HitCameraSlideLine(bestslideline, thiscam); // clip the moves
 
 	thiscam->momx = tmxmove;
 	thiscam->momy = tmymove;
@@ -3189,7 +3187,8 @@ stairstep:
 	tmxmove = FixedMul(mo->momx, bestslidefrac);
 	tmymove = FixedMul(mo->momy, bestslidefrac);
 
-	P_HitSlideLine(bestslideline); // clip the moves
+	if (bestslideline != NULL)
+		P_HitSlideLine(bestslideline); // clip the moves
 
 	if (UNLIKELY((twodlevel || (mo->flags2 & MF2_TWOD)) && mo->player))
 	{
@@ -3460,7 +3459,8 @@ bounceback:
 		tmymove = FixedMul(mmomy, (FRACUNIT - (FRACUNIT>>2) - (FRACUNIT>>3)));
 	}
 
-	P_HitBounceLine(bestslideline); // clip the moves
+	if (bestslideline != NULL)
+		P_HitBounceLine(bestslideline); // clip the moves
 
 	mo->momx = tmxmove;
 	mo->momy = tmymove;

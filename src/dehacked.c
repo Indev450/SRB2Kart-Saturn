@@ -754,7 +754,7 @@ static void readlevelheader(MYFILE *f, INT32 num, INT32 wadnum)
 			strupr(word);
 
 			// Now get the part after
-			word2 = tmp += 2;
+			word2 = tmp + 2;
 			i = atoi(word2); // used for numerical settings
 
 			// CHEAP HACK: move this over here for lowercase subtitles
@@ -1393,7 +1393,7 @@ static void readhuditem(MYFILE *f, INT32 num)
 			strupr(word);
 
 			// Now get the part after
-			word2 = tmp += 2;
+			word2 = tmp + 2;
 			strupr(word2);
 
 			i = atoi(word2); // used for numerical settings
@@ -1862,7 +1862,7 @@ static void reademblemdata(MYFILE *f, INT32 num)
 			strupr(word);
 
 			// Now get the part after
-			word2 = tmp += 2;
+			word2 = tmp + 2;
 			value = atoi(word2); // used for numerical settings
 
 			// Up here to allow lowercase in hints
@@ -1989,7 +1989,7 @@ static void readextraemblemdata(MYFILE *f, INT32 num)
 			strupr(word);
 
 			// Now get the part after
-			word2 = tmp += 2;
+			word2 = tmp + 2;
 			strupr(word2);
 
 			value = atoi(word2); // used for numerical settings
@@ -2067,7 +2067,7 @@ static void readunlockable(MYFILE *f, INT32 num)
 			strupr(word);
 
 			// Now get the part after
-			word2 = tmp += 2;
+			word2 = tmp + 2;
 			strupr(word2);
 
 			i = atoi(word2); // used for numerical settings
@@ -2336,7 +2336,7 @@ static void readconditionset(MYFILE *f, UINT8 setnum)
 			strupr(word);
 
 			// Now get the part after
-			word2 = tmp += 2;
+			word2 = tmp + 2;
 			strupr(word2);
 
 			if (fastncmp(word, "CONDITION", 9))
@@ -2470,7 +2470,7 @@ static void readmaincfg(MYFILE *f)
 			strupr(word);
 
 			// Now get the part after
-			word2 = tmp += 2;
+			word2 = tmp + 2;
 			strupr(word2);
 
 			value = atoi(word2); // used for numerical settings
@@ -2649,7 +2649,7 @@ static void readwipes(MYFILE *f)
 {
 	char *s = Z_Malloc(MAXLINELEN, PU_STATIC, NULL);
 	char *word = s;
-	char *pword = word;
+	char *pword;
 	char *word2;
 	char *tmp;
 	INT32 value;
@@ -2682,7 +2682,7 @@ static void readwipes(MYFILE *f)
 			strupr(word);
 
 			// Now get the part after
-			word2 = tmp += 2;
+			word2 = tmp + 2;
 			value = atoi(word2); // used for numerical settings
 
 			if (value < -1 || value > 99)

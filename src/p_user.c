@@ -340,23 +340,23 @@ void P_DoPlayerPain(player_t *player, mobj_t *source, mobj_t *inflictor)
 	angle_t ang;
 	fixed_t fallbackspeed;
 
-	if (inflictor && (inflictor->type != MT_PLAYER && inflictor->type != MT_ORBINAUT && inflictor->type != MT_ORBINAUT_SHIELD
-		&& inflictor->type != MT_JAWZ && inflictor->type != MT_JAWZ_DUD && inflictor->type != MT_JAWZ_SHIELD
-		&& inflictor->type != MT_SMK_THWOMP))
-	{
-		if (player->mo->eflags & MFE_VERTICALFLIP)
-			player->mo->z--;
-		else
-			player->mo->z++;
-
-		if (player->mo->eflags & MFE_UNDERWATER)
-			P_SetObjectMomZ(player->mo, FixedDiv(10511*FRACUNIT,2600*FRACUNIT), false);
-		else
-			P_SetObjectMomZ(player->mo, FixedDiv(69*FRACUNIT,10*FRACUNIT), false);
-	}
-
 	if (inflictor)
 	{
+		if (inflictor->type != MT_PLAYER && inflictor->type != MT_ORBINAUT && inflictor->type != MT_ORBINAUT_SHIELD
+			&& inflictor->type != MT_JAWZ && inflictor->type != MT_JAWZ_DUD && inflictor->type != MT_JAWZ_SHIELD
+			&& inflictor->type != MT_SMK_THWOMP)
+		{
+			if (player->mo->eflags & MFE_VERTICALFLIP)
+				player->mo->z--;
+			else
+				player->mo->z++;
+
+			if (player->mo->eflags & MFE_UNDERWATER)
+				P_SetObjectMomZ(player->mo, FixedDiv(10511*FRACUNIT,2600*FRACUNIT), false);
+			else
+				P_SetObjectMomZ(player->mo, FixedDiv(69*FRACUNIT,10*FRACUNIT), false);
+		}
+
 		ang = R_PointToAngle2(inflictor->x, inflictor->y, player->mo->x, player->mo->y); // SRB2kart
 
 		// explosion and rail rings send you farther back, making it more difficult

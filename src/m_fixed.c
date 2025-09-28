@@ -518,12 +518,12 @@ fixed_t FV3_Normal(const vector3_t *a_triangle, vector3_t *a_normal)
 fixed_t FV3_Strength(const vector3_t *a_1, const vector3_t *dir)
 {
 	vector3_t normal;
-	fixed_t dist = FV3_NormalizeEx(a_1, &normal);
+	FV3_NormalizeEx(a_1, &normal);
 	fixed_t dot = FV3_Dot(&normal, dir);
 
 	FV3_ClosestPointOnVector(dir, a_1, &normal);
 
-	dist = FV3_Magnitude(&normal);
+	fixed_t dist = FV3_Magnitude(&normal);
 
 	if (dot < 0) // Not facing same direction, so negate result.
 		dist = -dist;

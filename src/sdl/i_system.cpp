@@ -2542,7 +2542,7 @@ const char *I_LocateWad(void)
 		SetCurrentDirectoryA(waddir);
 #else
 		waddir = realpath(waddir, NULL);
-		if (chdir(waddir) == -1)
+		if (waddir == NULL || chdir(waddir) == -1)
 			I_OutputMsg("Couldn't change working directory\n");
 #endif
 	}

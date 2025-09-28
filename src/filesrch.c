@@ -444,10 +444,13 @@ boolean preparefilemenu(boolean samedepth, boolean replayhut)
 		Z_Free(dirmenu);
 	dirmenu = NULL;
 
-	for (; sizecoredirmenu > 0; sizecoredirmenu--) // clear out existing items
+	if (coredirmenu != NULL)
 	{
-		Z_Free(coredirmenu[sizecoredirmenu-1]);
-		coredirmenu[sizecoredirmenu-1] = NULL;
+		for (; sizecoredirmenu > 0; sizecoredirmenu--) // clear out existing items
+		{
+			Z_Free(coredirmenu[sizecoredirmenu-1]);
+			coredirmenu[sizecoredirmenu-1] = NULL;
+		}
 	}
 
 	while (true)

@@ -3722,7 +3722,7 @@ static void HWR_SplitSprite(gl_vissprite_t *spr, const boolean papersprite)
 	towmult = (towbot - towtop) / (top - bot);
 
 	endrealtop = endtop = baseWallVerts[2].y;
-	endrealbot = endbot = baseWallVerts[1].y;
+	endrealbot = baseWallVerts[1].y;
 
 	// copy the contents of baseWallVerts into the drawn wallVerts array
 	// baseWallVerts is used to know the final shape to easily get the vertex
@@ -3775,7 +3775,6 @@ static void HWR_SplitSprite(gl_vissprite_t *spr, const boolean papersprite)
 	lightlevel = *list[sector->numlights - 1].lightlevel;
 
 	colormap = list[sector->numlights - 1].extra_colormap;
-	i = 0;
 	temp = FloatToFixed(realtop);
 
 	lightset = HWR_OverrideObjectLightLevel(sprmo, &lightlevel);
@@ -3919,7 +3918,7 @@ static void HWR_DrawSprite(gl_vissprite_t *spr)
 
 	mobj_t *sprmo = spr->mobj;
 
-	if (UNLIKELY(!sprmo || !sprmo->subsector))
+	if (UNLIKELY(!sprmo->subsector))
 		return;
 
 	const boolean papersprite = (sprmo->frame & FF_PAPERSPRITE);
@@ -4510,41 +4509,43 @@ static void HWR_DrawSprites(void)
 			HWR_DrawPrecipitationSprite(spr);
 			continue;
 		}
-
-		if constexpr (Type == DrawSpritesType::kModels)
+		else if (spr->mobj)
 		{
-			if (spr->mobj && spr->mobj->skin && spr->mobj->sprite == SPR_PLAY)
+			if constexpr (Type == DrawSpritesType::kModels)
 			{
-				md2_t *md2;
-
-				if (spr->mobj->localskin)
+				if (spr->mobj->skin && spr->mobj->sprite == SPR_PLAY)
 				{
-					if (spr->mobj->skinlocal)
-						md2 = &md2_localplayermodels[(skin_t *)spr->mobj->localskin - localskins];
+					md2_t *md2;
+
+					if (spr->mobj->localskin)
+					{
+						if (spr->mobj->skinlocal)
+							md2 = &md2_localplayermodels[(skin_t *)spr->mobj->localskin - localskins];
+						else
+							md2 = &md2_playermodels     [(skin_t *)spr->mobj->localskin -      skins];
+					}
 					else
-						md2 = &md2_playermodels     [(skin_t *)spr->mobj->localskin -      skins];
+						md2 = &md2_playermodels[(skin_t *)spr->mobj->skin - skins];
+
+					// 8/1/19: Only don't display player models if no default SPR_PLAY is found.
+					if (((md2->notfound || md2->scale < 0.0f) && ((!cv_glfallbackplayermodel.value) || md2_models[SPR_PLAY].notfound || md2_models[SPR_PLAY].scale < 0.0f)) || spr->mobj->state == &states[S_PLAY_SIGN])
+						HWR_DrawSprite(spr);
+					else
+						HWR_DrawMD2(spr);
 				}
 				else
-					md2 = &md2_playermodels[(skin_t *)spr->mobj->skin - skins];
-
-				// 8/1/19: Only don't display player models if no default SPR_PLAY is found.
-				if (((md2->notfound || md2->scale < 0.0f) && ((!cv_glfallbackplayermodel.value) || md2_models[SPR_PLAY].notfound || md2_models[SPR_PLAY].scale < 0.0f)) || spr->mobj->state == &states[S_PLAY_SIGN])
-					HWR_DrawSprite(spr);
-				else
-					HWR_DrawMD2(spr);
+				{
+					if (md2_models[spr->mobj->sprite].notfound || md2_models[spr->mobj->sprite].scale < 0.0f)
+						HWR_DrawSprite(spr);
+					else
+						HWR_DrawMD2(spr);
+				}
 			}
-			else
+
+			if constexpr (Type == DrawSpritesType::kSprites)
 			{
-				if (md2_models[spr->mobj->sprite].notfound || md2_models[spr->mobj->sprite].scale < 0.0f)
-					HWR_DrawSprite(spr);
-				else
-					HWR_DrawMD2(spr);
+				HWR_DrawSprite(spr);
 			}
-		}
-
-		if constexpr (Type == DrawSpritesType::kSprites)
-		{
-			HWR_DrawSprite(spr);
 		}
 	}
 }
@@ -5263,8 +5264,6 @@ void HWR_BuildSkyDome(void)
 		sky->loops[sky->loopcount].vertexcount = col_count;
 		sky->loops[sky->loopcount].use_texture = false;
 		sky->loopcount++;
-
-		delta = 0.0f;
 
 		for (c = 0; c < col_count; c++)
 		{
