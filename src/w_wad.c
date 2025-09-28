@@ -797,7 +797,7 @@ UINT16 W_InitFile(const char *filename, boolean local, boolean startup)
 	size_t i;
 #endif
 	UINT8 md5sum[16];
-	boolean important;
+	int important;
 
 	if (!(refreshdirmenu & REFRESHDIR_ADDFILE))
 		refreshdirmenu = REFRESHDIR_NORMAL|REFRESHDIR_ADDFILE; // clean out cons_alerts that happened earlier
@@ -827,7 +827,22 @@ UINT16 W_InitFile(const char *filename, boolean local, boolean startup)
 	if ((handle = W_OpenWadFile(&filename, true)) == NULL)
 		return W_InitFileError(filename, startup);
 
-	important = !local && !W_VerifyNMUSlumps(filename, handle, startup);
+	if (local)
+	{
+		important = 0;
+	}
+	else
+	{
+		important = W_VerifyNMUSlumps(filename, handle, startup);
+
+		if (important == -1)
+		{
+			fclose(handle);
+			return INT16_MAX;
+		}
+
+		important = !important;
+	}
 
 #ifndef NOMD5
 	//
