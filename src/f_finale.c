@@ -1150,13 +1150,6 @@ void F_TitleScreenTicker(boolean run)
 		// Setup demo name
 		snprintf(dname, 9, "%sS%02u", mapname, numstaff);
 
-		/*if ((l = W_CheckNumForName(dname)) == LUMPERROR) -- we KNOW it exists now
-		{
-			CONS_Alert(CONS_ERROR, M_GetText("Demo lump \"%s\" doesn't exist\n"), dname);
-			F_StartIntro();
-			return;
-		}*/
-
 loadreplay:
 		demo.title = demo.fromtitle = true;
 		demo.ignorefiles = true;

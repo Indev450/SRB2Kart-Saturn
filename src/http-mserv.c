@@ -218,6 +218,7 @@ HMS_connect (const char *format, ...)
 	buffer->errbuf[0] = 0x00;
 
 	cc = curl_easy_setopt(curl, CURLOPT_ERRORBUFFER, buffer->errbuf);
+	if (cc != CURLE_OK) I_OutputMsg("libcurl: %s\n", buffer->errbuf);
 
 	if (cv_masterserver_debug.value == 2)
 	{

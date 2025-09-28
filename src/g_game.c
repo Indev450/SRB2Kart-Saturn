@@ -4155,8 +4155,6 @@ INT32 G_FindMap(const char *mapname, char **foundmapnamep,
 		if (!( realmapname = G_BuildMapTitle(mapnum) ))
 			continue;
 
-		aprop = realmapname;
-
 		/* Now that we found a perfect match no need to fucking guess. */
 		if (strnicmp(realmapname, mapname, mapnamelen) == 0)
 		{
@@ -4184,6 +4182,7 @@ INT32 G_FindMap(const char *mapname, char **foundmapnamep,
 					writesimplefreq(freq, &freqc,
 							mapnum, aprop - realmapname, mapnamelen);
 				}
+
 				if (apromapnum == 0)
 				{
 					apromapnum = mapnum;

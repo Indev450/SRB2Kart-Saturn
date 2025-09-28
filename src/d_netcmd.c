@@ -5285,7 +5285,7 @@ retryscramble:
 	memset(&scrambleplayers, 0, sizeof(scrambleplayers));
 	memset(&scrambleteams, 0, sizeof(scrambleplayers));
 	scrambletotal = scramblecount = 0;
-	blue = red = maxcomposition = newteam = playercount = 0;
+	blue = red = newteam = playercount = 0;
 	repick = true;
 
 	// Put each player's node in the array.

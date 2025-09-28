@@ -2082,12 +2082,17 @@ static inline boolean P_TagDamage(mobj_t *target, mobj_t *inflictor, mobj_t *sou
 
 	// Don't allow players on the same team to hurt one another,
 	// unless cv_friendlyfire is on.
-	if (!cv_friendlyfire.value && (player->pflags & PF_TAGIT) == (source->player->pflags & PF_TAGIT))
+	if (!cv_friendlyfire.value
+		&& (player->pflags & PF_TAGIT) == (source->player->pflags & PF_TAGIT))
 	{
-		if (!(inflictor->flags & MF_FIRE))
-			P_GivePlayerRings(player, 1);
-		if (inflictor->flags2 & MF2_BOUNCERING)
-			inflictor->fuse = 0; // bounce ring disappears at -1 not 0
+		if (inflictor)
+		{
+			if (!(inflictor->flags & MF_FIRE))
+				P_GivePlayerRings(player, 1);
+			if (inflictor->flags2 & MF2_BOUNCERING)
+				inflictor->fuse = 0; // bounce ring disappears at -1 not 0
+		}
+
 		return false;
 	}
 
@@ -2136,12 +2141,16 @@ static inline boolean P_PlayerHitsPlayer(mobj_t *target, mobj_t *inflictor, mobj
 	{
 		// Don't allow players on the same team to hurt one another,
 		// unless cv_friendlyfire is on.
-		if (!cv_friendlyfire.value && target->player->ctfteam == source->player->ctfteam)
+		if (!cv_friendlyfire.value
+			&& target->player->ctfteam == source->player->ctfteam)
 		{
-			if (!(inflictor->flags & MF_FIRE))
-				P_GivePlayerRings(target->player, 1);
-			if (inflictor->flags2 & MF2_BOUNCERING)
-				inflictor->fuse = 0; // bounce ring disappears at -1 not 0
+			if (inflictor)
+			{
+				if (!(inflictor->flags & MF_FIRE))
+					P_GivePlayerRings(target->player, 1);
+				if (inflictor->flags2 & MF2_BOUNCERING)
+					inflictor->fuse = 0; // bounce ring disappears at -1 not 0
+			}
 
 			return false;
 		}

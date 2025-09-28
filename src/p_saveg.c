@@ -2892,7 +2892,6 @@ static void P_NetUnArchiveThinkers(savebuffer_t *save)
 	CalculateDoomednumToMobjtype();
 
 	// remove all the current thinkers
-	currentthinker = thinkercap.next;
 	for (currentthinker = thinkercap.next; currentthinker != &thinkercap; currentthinker = next)
 	{
 		next = currentthinker->next;

@@ -712,11 +712,9 @@ static void COM_CEcho_f(void)
 
 	for (i = 1; i < COM_Argc(); i++)
 	{
-		strncat(cechotext, COM_Argv(i), sizeof(cechotext)-1);
-		strncat(cechotext, " ", sizeof(cechotext)-1);
+		strlcpy(cechotext, COM_Argv(i), sizeof(cechotext)-1);
+		strlcat(cechotext, " ", sizeof(cechotext)-1);
 	}
-
-	cechotext[sizeof(cechotext) - 1] = '\0';
 
 	HU_DoCEcho(cechotext);
 }

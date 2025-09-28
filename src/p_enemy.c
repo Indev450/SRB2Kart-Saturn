@@ -6747,10 +6747,11 @@ void A_Boss3Path(void *thing)
 		actor->momx = 0;
 		actor->momy = 0;
 		actor->momz = 0;
-		P_SetTarget(&actor->target, actor->tracer->target);
+		if (actor->tracer)
+			P_SetTarget(&actor->target, actor->tracer->target);
 		var1 = 0, var2 = 0;
 		A_FaceTarget(actor);
-		if (actor->tracer->state == &states[actor->tracer->info->missilestate])
+		if (actor && actor->tracer && actor->tracer->state == &states[actor->tracer->info->missilestate])
 			P_SetMobjState(actor, actor->info->missilestate);
 		return;
 	}
@@ -9787,7 +9788,7 @@ void A_SetCustomValue(void *thing)
 	if (cv_debug)
 		CONS_Printf("Init custom value is %d\n", actor->cusval);
 
-	if (locvar1 == 0 && locvar2 == 4)
+	if (locvar1 == 0 && (locvar2 == 3 || locvar2 == 4))
 		return; // DON'T DIVIDE BY ZERO
 
 	// no need for a "temp" value here, just modify the cusval directly
@@ -9856,7 +9857,7 @@ void A_UseCusValMemo(void *thing)
 		tempM = actor->cvmem;
 	}
 
-	if (tempM == 0 && locvar2 == 4)
+	if (locvar1 == 0 && (locvar2 == 3 || locvar2 == 4))
 		return; // DON'T DIVIDE BY ZERO
 
 	// now get new value for cusval/cvmem using the other
@@ -9933,7 +9934,7 @@ void A_RelayCustomValue(void *thing)
 	else // tracer's custom value
 		tempT = actor->tracer->cusval;
 
-	if (temp == 0 && locvar2 == 4)
+	if (locvar1 == 0 && (locvar2 == 3 || locvar2 == 4))
 		return; // DON'T DIVIDE BY ZERO
 
 	// now get new cusval using target's and the reference

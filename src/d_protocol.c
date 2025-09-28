@@ -207,13 +207,14 @@ void D_SetupProtocol(void)
 
 	fp = fopen(protocolfile, "a+");
 	result = fgets(buffer, PATH_MAX, fp);
+
 	if (result)
 	{
 		if (strcmp(buffer, "no") == 0)
-        {
-            fclose(fp);
-            return;
-        }
+		{
+			fclose(fp);
+			return;
+		}
 		else if (strcmp(buffer, exe_path) != 0)
 		{
 			// overwrite
@@ -232,6 +233,7 @@ void D_SetupProtocol(void)
 		else
 			fprintf(fp, "no");
 	}
+
 	fclose(fp);
 }
 

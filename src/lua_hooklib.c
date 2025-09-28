@@ -825,7 +825,7 @@ static void res_botai(Hook_State *hook)
 {
 	BotAI_State *botai = hook->userdata;
 
-	int k[8];
+	int k[8] = { 0 };
 
 	int fields = 0;
 

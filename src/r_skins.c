@@ -530,8 +530,9 @@ void R_AddSkins(UINT16 wadnum, boolean local)
 			if ((stoken[0] == '/' && stoken[1] == '/')
 				|| (stoken[0] == '#'))// skip comments
 			{
-				stoken = strtok(NULL, "\r\n"); // skip end of line
-				goto next_token;              // find the real next token
+				strtok(NULL, "\r\n"); // skip end of line
+				stoken = strtok(NULL, "\r\n= ");
+				continue; // find the real next token
 			}
 
 			value = strtok(NULL, "\r\n= ");
@@ -575,6 +576,7 @@ void R_AddSkins(UINT16 wadnum, boolean local)
 					for (value = skin->realname; *value; value++)
 						if (*value == '_') *value = ' '; // turn _ into spaces.
 				}
+
 				if (!hudname)
 				{
 					STRBUFCPY(skin->hudname, skin->name);
@@ -625,27 +627,29 @@ void R_AddSkins(UINT16 wadnum, boolean local)
 				strncpy(skin->facemmap, value, sizeof(skin->facemmap)-1);
 				skin->facemmap[sizeof(skin->facemmap)-1] = '\0';
 			}
-
-#define FULLPROCESS(field) else if (!stricmp(stoken, #field)) skin->field = get_number(value);
-			// character type identification
-			FULLPROCESS(flags)
-#undef FULLPROCESS
-
-#define GETKARTSTAT(field) \
-	else if (!stricmp(stoken, #field)) \
-	{ \
-		skin->field = atoi(value); \
-		if (skin->field < 1) skin->field = 1; \
-		if (skin->field > 9) skin->field = 9; \
-	}
-			GETKARTSTAT(kartspeed)
-			GETKARTSTAT(kartweight)
-#undef GETKARTSTAT
-
+			else if (!stricmp(stoken, "flags")) // character type identification
+			{
+				skin->flags = get_number(value);
+			}
+			else if (!stricmp(stoken, "kartspeed"))
+			{
+				skin->kartspeed = atoi(value);
+				if (skin->kartspeed < 1)
+					skin->kartspeed = 1;
+				if (skin->kartspeed > 9)
+					skin->kartspeed = 9;
+			}
+			else if (!stricmp(stoken, "kartweight"))
+			{
+				skin->kartweight = atoi(value);
+				if (skin->kartweight < 1)
+					skin->kartweight = 1;
+				if (skin->kartweight > 9)
+					skin->kartweight = 9;
+			}
 			// custom translation table
 			else if (!stricmp(stoken, "startcolor"))
 				skin->starttranscolor = atoi(value);
-
 			else if (!stricmp(stoken, "prefcolor"))
 				skin->prefcolor = K_GetKartColorByName(value);
 			else if (!stricmp(stoken, "highresscale"))
@@ -672,7 +676,7 @@ void R_AddSkins(UINT16 wadnum, boolean local)
 				if (!found)
 					CONS_Debug(DBG_SETUP, "R_AddSkins: Unknown keyword '%s' in S_SKIN lump# %d (WAD %s)\n", stoken, lump, wadfiles[wadnum]->filename);
 			}
-next_token:
+
 			stoken = strtok(NULL, "\r\n= ");
 		}
 		free(buf2);

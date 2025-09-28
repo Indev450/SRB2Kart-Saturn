@@ -2017,7 +2017,7 @@ const char *I_LocateWad(void)
 #if defined (_WIN32)
 		SetCurrentDirectoryA(waddir);
 #else
-		if (chdir(waddir) == -1)
+		if (waddir == NULL || chdir(waddir) == -1)
 			I_OutputMsg("Couldn't change working directory\n");
 #endif
 	}

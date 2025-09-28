@@ -1002,7 +1002,7 @@ static void Got_Saycmd(UINT8 **p, INT32 playernum)
 	|| target == 0 // To everyone
 	|| consoleplayer == target-1) // To you
 	{
-		const char *prefix = "", *cstart = "", *cend = "", *adminchar = "\x82~\x83", *remotechar = "\x82@\x83", *fmt2, *textcolor = "\x80";
+		const char *prefix, *cstart, *adminchar = "\x82~\x83", *remotechar = "\x82@\x83", *fmt2, *textcolor = "\x80";
 		char *tempchar = NULL;
 
 		// player is a spectator?
@@ -1026,9 +1026,7 @@ static void Got_Saycmd(UINT8 **p, INT32 playernum)
 		}
 		else
 		{
-			const UINT8 color = players[playernum].skincolor;
-
-			cstart = HU_SkinColorToConsoleColor(color);
+			cstart = HU_SkinColorToConsoleColor(players[playernum].skincolor);
 		}
 
 		prefix = cstart;
@@ -1054,13 +1052,13 @@ static void Got_Saycmd(UINT8 **p, INT32 playernum)
 		// name, color end, and the message itself.
 		// '\4' makes the message yellow and beeps; '\3' just beeps.
 		if (action)
-			fmt2 = "* %s%s%s%s \x82%s%s";
+			fmt2 = "* %s%s%s %s%s";
 		else if (target-1 == consoleplayer) // To you
 		{
 			prefix = "\x82[PM]";
 			cstart = "\x82";
 			textcolor = "\x82";
-			fmt2 = "%s<%s%s>%s\x80 %s%s";
+			fmt2 = "%s<%s%s> %s%s";
 		}
 		else if (target > 0) // By you, to another player
 		{
@@ -1068,13 +1066,13 @@ static void Got_Saycmd(UINT8 **p, INT32 playernum)
 			dispname = player_names[target-1];
 			prefix = "\x82[TO]";
 			cstart = "\x82";
-			fmt2 = "%s<%s%s>%s\x80 %s%s";
+			fmt2 = "%s<%s%s> %s%s";
 
 		}
 		else // To everyone or sayteam, it doesn't change anything.
-			fmt2 = "%s<%s%s%s>\x80 %s%s";
+			fmt2 = "%s<%s%s> %s%s";
 
-		HU_AddChatText(va(fmt2, prefix, cstart, dispname, cend, textcolor, msg), cv_chatnotifications.value); // add to chat
+		HU_AddChatText(va(fmt2, prefix, cstart, dispname, textcolor, msg), cv_chatnotifications.value); // add to chat
 
 		if (tempchar)
 			Z_Free(tempchar);

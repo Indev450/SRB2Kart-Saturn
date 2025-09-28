@@ -701,7 +701,6 @@ static void HWR_CreateBlendedTexture(patch_t *gpatch, patch_t *blendgpatch, GLMi
 	UINT8 colorbrightnesses[17];
 	UINT8 color_match_lookup[256]; // optimization attempt
 
-	blendcolor = palette[0]; // initialize
 	memset(translation, 0, sizeof(translation));
 	memset(cutoff, 0, sizeof(cutoff));
 
@@ -902,25 +901,7 @@ static void HWR_CreateBlendedTexture(patch_t *gpatch, patch_t *blendgpatch, GLMi
 						continue;
 					}
 
-					firsti = 0;
-					mul = 0;
-					mulmax = 1;
-
-					/*for (i = 0; i < translen; i++)
-					{
-						if (brightness > colorbrightnesses[i]) // don't allow greater matches (because calculating a makeshift gradient for this is already a huge mess as is)
-							continue;
-
-						compare = abs((INT16)(colorbrightnesses[i]) - (INT16)(brightness));
-
-						if (compare < brightdif)
-						{
-							brightdif = (UINT16)compare;
-							firsti = i; // best matching color that's equal brightness or darker
-						}
-					}*/
 					firsti = color_match_lookup[brightness];
-
 					secondi = firsti+1; // next color in line
 
 					m = (INT16)brightness - (INT16)colorbrightnesses[secondi];
@@ -985,7 +966,7 @@ static void HWR_CreateBlendedTexture(patch_t *gpatch, patch_t *blendgpatch, GLMi
 				UINT32 tempcolor;
 				UINT16 colorbright;
 
-				SETBRIGHTNESS(colorbright,blendcolor.s.red,blendcolor.s.green,blendcolor.s.blue);
+				SETBRIGHTNESS(colorbright, blendcolor.s.red, blendcolor.s.green, blendcolor.s.blue);
 				if (colorbright == 0)
 					colorbright = 1; // no dividing by 0 please
 
@@ -1126,10 +1107,7 @@ void HWR_DrawMD2(gl_vissprite_t *spr)
 	FTransform p;
 	FSurfaceInfo Surf;
 
-	if (!cv_glmdls.value)
-		return;
-
-	if (spr->precip)
+	if (!cv_glmdls.value || spr->precip)
 		return;
 
 	memset(&p, 0x00, sizeof(FTransform));
