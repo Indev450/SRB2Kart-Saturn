@@ -783,7 +783,7 @@ static void R_Subsector(size_t num)
 				if (!(rover->flags & FF_EXISTS) || !(rover->flags & FF_RENDERPLANES))
 					continue;
 
-				sector_t *controlSec = &sectors[rover->secnum];
+				const sector_t *controlSec = &sectors[rover->secnum];
 
 				if (controlSec->moved != true)
 					continue;

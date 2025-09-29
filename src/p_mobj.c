@@ -3554,28 +3554,28 @@ animonly:
 static void P_CalculatePrecipFloor(precipmobj_t *mobj, boolean spawn)
 {
 	// recalculate floorz each time
-	const sector_t *mobjsecsubsec;
+	const sector_t *sec;
 
 	if (mobj && mobj->subsector && mobj->subsector->sector)
-		mobjsecsubsec = mobj->subsector->sector;
+		sec = mobj->subsector->sector;
 	else
 		return;
 
 	// no need to recalc anything if not moved
-	if (!spawn && !mobjsecsubsec->moved)
+	if (!spawn && !sec->moved)
 		return;
 
-	mobj->floorz = P_GetSectorFloorZAt(mobjsecsubsec, mobj->x, mobj->y);
+	mobj->floorz = P_GetSectorFloorZAt(sec, mobj->x, mobj->y);
 
-	if (mobjsecsubsec->ffloors)
+	if (sec->ffloors)
 	{
 		ffloor_t *rover;
 		fixed_t topheight;
 
-		for (rover = mobjsecsubsec->ffloors; rover; rover = rover->next)
+		for (rover = sec->ffloors; rover; rover = rover->next)
 		{
 			// If it exists, it'll get rained on.
-			if (!(rover->flags & FF_EXISTS))
+			if (!(rover->flags & FF_EXISTS) || !(rover->flags & FF_RENDERPLANES))
 				continue;
 
 			if (!(rover->flags & FF_BLOCKOTHERS) && !(rover->flags & FF_SWIMMABLE))
