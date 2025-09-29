@@ -3655,7 +3655,8 @@ boolean P_PrecipThinker(precipmobj_t *mobj)
 	if (mobj->precipflags & PCF_SPLASH)
 		return true;
 
-	if (renderisnewtic)
+	// only recalc this twice a second (doubt anyone will notice this lulul)
+	if ((leveltime % 17) == 0)
 		P_CalculatePrecipFloor(mobj, false);
 
 	// adjust height
