@@ -3003,7 +3003,7 @@ static void HWR_Subsector(size_t num)
 
 				const sector_t *controlSec = &sectors[rover->secnum];
 
-				if (!controlSec->moved)
+				if (controlSec->moved != true)
 					continue;
 
 				anyMoved = true;
