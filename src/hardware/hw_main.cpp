@@ -4770,11 +4770,11 @@ static void HWR_ProjectSprite(mobj_t *thing)
 
 	rot = (thing->frame & FF_FRAMEMASK);
 
-	//Fab : 02-08-98: 'skin' override spritedef currently used for skin
-	if ((thing->skin || thing->localskin) && thing->sprite == SPR_PLAY)
-	{
-		sprskin = K_GetMobjSkin(thing);
+	sprskin = K_GetMobjSkin(thing);
 
+	//Fab : 02-08-98: 'skin' override spritedef currently used for skin
+	if (sprskin && thing->sprite == SPR_PLAY)
+	{
 		sprdef = &sprskin->spritedef;
 #ifdef ROTSPRITE
 		sprinfo = &sprskin->sprinfo;

@@ -1190,6 +1190,7 @@ static void R_ProjectSprite(mobj_t *thing)
 #ifdef ROTSPRITE
 	spriteinfo_t *sprinfo;
 #endif
+	skin_t *sprskin = NULL;
 	size_t lump;
 
 	size_t rot;
@@ -1231,23 +1232,21 @@ static void R_ProjectSprite(mobj_t *thing)
 	if (!thing || thing->subsector == NULL)
 		return;
 
-	mobj_t *oldthing = thing;
-
-	const boolean mirrored = thing->mirrored;
-	const boolean vflip = (thing->eflags & MFE_VERTICALFLIP);
-	const boolean hflip = (!(thing->frame & FF_HORIZONTALFLIP) != !mirrored);
-	const boolean papersprite = (thing->frame & FF_PAPERSPRITE);
-
 	// uncapped/interpolation
 	interpmobjstate_t interp = {};
 
 	// do interpolation
-	R_InterpolateMobjState(oldthing, R_GetMobjTimeFrac(oldthing), &interp);
+	R_InterpolateMobjState(thing, R_GetMobjTimeFrac(thing), &interp);
 
 	this_scale = interp.scale;
 
 	if (this_scale < 1)
 		return;
+
+	const boolean mirrored = thing->mirrored;
+	const boolean vflip = (thing->eflags & MFE_VERTICALFLIP);
+	const boolean hflip = (!(thing->frame & FF_HORIZONTALFLIP) != !mirrored);
+	const boolean papersprite = (thing->frame & FF_PAPERSPRITE);
 
 	// transform the origin point
 	tr_x = interp.x - viewx;
@@ -1283,12 +1282,14 @@ static void R_ProjectSprite(mobj_t *thing)
 	const boolean shouldrotate = (interp.sloperoll || interp.slopepitch || interp.roll || interp.pitch || thing->rollangle || sliprollrotate);
 #endif
 
+	sprskin = K_GetMobjSkin(thing);
+
 	//Fab : 02-08-98: 'skin' override spritedef currently used for skin
-	if ((thing->skin || thing->localskin) && thing->sprite == SPR_PLAY)
+	if (sprskin && thing->sprite == SPR_PLAY)
 	{
-		sprdef = &K_GetMobjSkin(thing)->spritedef;
+		sprdef = &sprskin->spritedef;
 #ifdef ROTSPRITE
-		sprinfo = &K_GetMobjSkin(thing)->sprinfo;
+		sprinfo = &sprskin->sprinfo;
 #endif
 
 		if (rot >= sprdef->numframes)
@@ -1313,7 +1314,8 @@ static void R_ProjectSprite(mobj_t *thing)
 		sprinfo = &spriteinfo[thing->sprite];
 #endif
 		rot = (thing->frame & FF_FRAMEMASK);
-		if (!thing->skin)
+
+		if (!sprskin)
 		{
 			thing->state->sprite = thing->sprite;
 			thing->state->frame = thing->frame;
@@ -1439,9 +1441,9 @@ static void R_ProjectSprite(mobj_t *thing)
 	spritexscale = interp.spritexscale;
 	spriteyscale = interp.spriteyscale;
 
-	if ((thing->skin || thing->localskin) && K_GetMobjSkin(thing)->flags & SF_HIRES)
+	if (sprskin && sprskin->flags & SF_HIRES)
 	{
-		fixed_t highresscale = ((skin_t *)thing->skin)->highresscale;
+		fixed_t highresscale = sprskin->highresscale;
 		spritexscale = FixedMul(spritexscale, highresscale);
 		spriteyscale = FixedMul(spriteyscale, highresscale);
 	}
@@ -1483,34 +1485,38 @@ static void R_ProjectSprite(mobj_t *thing)
 		// Get paperoffset (offset) and paperoffset (distance)
 		paperoffset = -FixedMul(tr_x, cosmul) - FixedMul(tr_y, sinmul);
 		paperdistance = -FixedMul(tr_x, sinmul) + FixedMul(tr_y, cosmul);
+
 		if (paperdistance < 0)
 		{
 			paperoffset = -paperoffset;
 			paperdistance = -paperdistance;
 		}
+
 		centerangle = viewangle - interp.angle;
 
 		tr_x += FixedMul(offset2, cosmul);
 		tr_y += FixedMul(offset2, sinmul);
-		tz2 = FixedMul(tr_x, viewcos) + FixedMul(tr_y, viewsin);
 
+		tz2 = FixedMul(tr_x, viewcos) + FixedMul(tr_y, viewsin);
 		tx2 = FixedMul(tr_x, viewsin) - FixedMul(tr_y, viewcos);
 
-		if (std::max(tz, tz2) < FixedMul(MINZ, this_scale)) // non-papersprite clipping is handled earlier
+		const fixed_t minz_scale = FixedMul(MINZ, this_scale);
+
+		if (std::max(tz, tz2) < minz_scale) // non-papersprite clipping is handled earlier
 			return;
 
 		// Needs partially clipped
-		if (tz < FixedMul(MINZ, this_scale))
+		if (tz < minz_scale)
 		{
-			fixed_t div = FixedDiv(tz2-tz, FixedMul(MINZ, this_scale)-tz);
+			fixed_t div = FixedDiv(tz2-tz, minz_scale-tz);
 			tx += FixedDiv(tx2-tx, div);
-			tz = FixedMul(MINZ, this_scale);
+			tz = minz_scale;
 		}
-		else if (tz2 < FixedMul(MINZ, this_scale))
+		else if (tz2 < minz_scale)
 		{
-			fixed_t div = FixedDiv(tz-tz2, FixedMul(MINZ, this_scale)-tz2);
+			fixed_t div = FixedDiv(tz-tz2, minz_scale-tz2);
 			tx2 += FixedDiv(tx-tx2, div);
-			tz2 = FixedMul(MINZ, this_scale);
+			tz2 = minz_scale;
 		}
 
 		if ((tx2 / 4) < -(FixedMul(tz2, fovtan)) || (tx / 4) > FixedMul(tz, fovtan)) // too far off the side?
@@ -1519,7 +1525,7 @@ static void R_ProjectSprite(mobj_t *thing)
 		yscale = FixedDiv(projectiony, tz);
 		xscale = FixedDiv(projection, tz);
 
-		x1 = (centerxfrac + FixedMul(tx,xscale))>>FRACBITS;
+		x1 = (centerxfrac + FixedMul(tx, xscale))>>FRACBITS;
 
 		// off the right side?
 		if (x1 > viewwidth)
@@ -1528,7 +1534,7 @@ static void R_ProjectSprite(mobj_t *thing)
 		yscale2 = FixedDiv(projectiony, tz2);
 		xscale2 = FixedDiv(projection, tz2);
 
-		x2 = (centerxfrac + FixedMul(tx2,xscale2))>>FRACBITS;
+		x2 = (centerxfrac + FixedMul(tx2, xscale2))>>FRACBITS;
 
 		// off the left side
 		if (x2 < 0)
@@ -1563,14 +1569,14 @@ static void R_ProjectSprite(mobj_t *thing)
 		scalestep = 0;
 		yscale = sortscale;
 		tx += offset;
-		x1 = centerx + (FixedMul(tx,xscale) / FRACUNIT);
+		x1 = centerx + (FixedMul(tx, xscale) / FRACUNIT);
 
 		// off the right side?
 		if (x1 > viewwidth)
 			return;
 
 		tx += offset2;
-		x2 = (centerx + (FixedMul(tx,xscale) / FRACUNIT)) - 1;
+		x2 = (centerx + (FixedMul(tx, xscale) / FRACUNIT)) - 1;
 
 		// off the left side
 		if (x2 < 0)
@@ -1589,24 +1595,24 @@ static void R_ProjectSprite(mobj_t *thing)
 
 	// Determine the blendmode and translucency value
 	INT32 blendmode;
-	if (oldthing->frame & FF_BLENDMASK)
-		blendmode = ((oldthing->frame & FF_BLENDMASK) >> FF_BLENDSHIFT) + 1;
+	if (thing->frame & FF_BLENDMASK)
+		blendmode = ((thing->frame & FF_BLENDMASK) >> FF_BLENDSHIFT) + 1;
 	else
-		blendmode = oldthing->blendmode;
+		blendmode = thing->blendmode;
 
-	if (oldthing->flags2 & MF2_SHADOW || thing->flags2 & MF2_SHADOW) // actually only the player should use this (temporary invisibility)
+	if (thing->flags2 & MF2_SHADOW || thing->flags2 & MF2_SHADOW) // actually only the player should use this (temporary invisibility)
 		trans = tr_trans80; // because now the translucency is set through FF_TRANSMASK
-	else if (oldthing->frame & FF_TRANSMASK)
+	else if (thing->frame & FF_TRANSMASK)
 	{
-		trans = (oldthing->frame & FF_TRANSMASK) >> FF_TRANSSHIFT;
+		trans = (thing->frame & FF_TRANSMASK) >> FF_TRANSSHIFT;
 		if (!R_BlendLevelVisible(blendmode, trans))
 			return;
 	}
 	else
 		trans = 0;
 
-	if (cv_playerfade.value && oldthing->player)
-		trans = static_cast<INT32>(R_GetThingTransTable(R_DoPlayerFade(oldthing), static_cast<transnum_t>(trans)));
+	if (cv_playerfade.value && thing->player)
+		trans = static_cast<INT32>(R_GetThingTransTable(R_DoPlayerFade(thing), static_cast<transnum_t>(trans)));
 
 	//SoM: 3/17/2000: Disregard sprites that are out of view..
 	if (vflip)
@@ -1614,7 +1620,7 @@ static void R_ProjectSprite(mobj_t *thing)
 		// When vertical flipped, draw sprites from the top down, at least as far as offsets are concerned.
 		// sprite height - sprite topoffset is the proper inverse of the vertical offset, of course.
 		// remember gz and gzt should be seperated by sprite height, not thing height - thing height can be shorter than the sprite itself sometimes!
-		gz = interp.z + oldthing->height - FixedMul(spr_topoffset, FixedMul(spriteyscale, this_scale));
+		gz = interp.z + thing->height - FixedMul(spr_topoffset, FixedMul(spriteyscale, this_scale));
 		gzt = gz + FixedMul(spr_height, FixedMul(spriteyscale, this_scale));
 	}
 	else
@@ -1629,9 +1635,9 @@ static void R_ProjectSprite(mobj_t *thing)
 			return;
 	}
 
-	if (oldthing->frame & FF_ABSOLUTELIGHTLEVEL)
+	if (thing->frame & FF_ABSOLUTELIGHTLEVEL)
 	{
-		const UINT8 n = R_ThingLightLevel(oldthing);
+		const UINT8 n = R_ThingLightLevel(thing);
 		// n = uint8 aka 0 - 255, so the shift will always be 0 - LIGHTLEVELS - 1
 		lights_array = scalelight[n >> LIGHTSEGSHIFT];
 	}
@@ -1792,11 +1798,11 @@ static void R_ProjectSprite(mobj_t *thing)
 	else
 		vis->transmap = NULL;
 
-	if (R_ThingIsFullBright(oldthing) || oldthing->flags2 & MF2_SHADOW || thing->flags2 & MF2_SHADOW)
+	if (R_ThingIsFullBright(thing) || thing->flags2 & MF2_SHADOW)
 		vis->cut = static_cast<spritecut_e>(vis->cut | SC_FULLBRIGHT);
-	else if (R_ThingIsSemiBright(oldthing))
+	else if (R_ThingIsSemiBright(thing))
 		vis->cut = static_cast<spritecut_e>(vis->cut | SC_SEMIBRIGHT);
-	else if (R_ThingIsFullDark(oldthing))
+	else if (R_ThingIsFullDark(thing))
 		vis->cut = static_cast<spritecut_e>(vis->cut | SC_FULLDARK);
 
 	//
