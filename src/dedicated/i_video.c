@@ -145,8 +145,9 @@ UINT32 I_GetRefreshRate(void)
 	return 0;
 }
 
-void I_SetTextInput(void)
+void I_SetTextInput(boolean enable)
 {
+	(void)enable;
 }
 
 boolean I_UseNativeKeyboard(void)
