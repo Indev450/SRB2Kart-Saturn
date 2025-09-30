@@ -213,12 +213,9 @@ int main(int argc, char **argv)
 
 	//I_OutputMsg("I_StartupSystem() ...\n");
 	I_StartupSystem();
-#if defined (_WIN32)
-	{
-#ifdef DRMINGW
-		ExcHndlInit();
-#endif
-	}
+
+#ifdef HAVE_DRMINGW
+	InitDrMingw();
 #endif
 
 	// startup SRB2

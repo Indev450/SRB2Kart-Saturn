@@ -213,346 +213,9 @@ static char returnWadPath[256];
 #include "../byteptr.h"
 #endif
 
-#ifdef HAVE_THREADS
-#include "../core/thread_pool.h"
-static std::thread::id g_main_thread_id;
-#endif
-
-INT32 numcontrollers = 0;
-
-#ifdef HAVE_LIBBACKTRACE
-#include <backtrace.h>
-// TODO - move this to some header file instead
-extern struct backtrace_state *bt_state;
-
-typedef enum {
-	BTCRASH_SIGNAL,
-	BTCRASH_ERRORMSG,
-} bt_crash_type_t;
-
-typedef struct bt_crash_reason_s {
-	bt_crash_type_t type;
-
-	union {
-		INT32 signal;
-		const char *errormsg;
-	} value;
-} bt_crash_reason_t;
-
-#define BT_CRASH_REASON_SIGNAL(num) (bt_crash_reason_t){ .type = BTCRASH_SIGNAL, .value = { .signal = num } }
-#define BT_CRASH_REASON_ERRORMSG(msg) (bt_crash_reason_t){ .type = BTCRASH_ERRORMSG, .value = { .errormsg = msg } }
-
-static void printsignal(FILE *fp, INT32 num)
-{
-	switch (num)
-		{
-		case SIGILL:
-			fprintf(fp, "SIGILL - illegal instruction - invalid function image");
-			break;
-		case SIGFPE:
-			fprintf(fp, "SIGFPE - mathematical exception");
-			break;
-		case SIGSEGV:
-			fprintf(fp, "SIGSEGV - segment violation");
-			break;
-		case SIGABRT:
-			fprintf(fp, "SIGABRT - abnormal termination triggered by abort call");
-			break;
-		default:
-			fprintf(fp, "Signal number %d", num);
-		}
-}
-
-typedef struct bt_out_buf_s {
-	boolean error;
-	char *pos;
-	size_t size;
-} bt_out_buf_t;
-
-static void bt_syminfo_cb(void *data, uintptr_t pc, const char *symname, uintptr_t symval, uintptr_t symsize)
-{
-	(void)symval;
-	(void)symsize;
-
-	bt_out_buf_t *buf = (bt_out_buf_t*)data;
-
-	if (!symname)
-		symname = "???";
-
-	int n = snprintf(buf->pos, buf->size, "%p %s\n", (void*)pc, symname);
-
-	if (n <= 0)
-	{
-		buf->size = 0;
-		return;
-	}
-
-	buf->pos += n;
-	buf->size -= n;
-}
-
-static int bt_simple_cb(void *data, uintptr_t pc)
-{
-	bt_out_buf_t *buf = (bt_out_buf_t*)data;
-
-	backtrace_syminfo(bt_state, pc, bt_syminfo_cb, NULL, data);
-
-	if (!buf->size) return 1;
-
-	return 0;
-}
-
-static int bt_full_cb(void *data, uintptr_t pc, const char *filename, int lineno, const char *function)
-{
-	bt_out_buf_t *buf = (bt_out_buf_t*)data;
-
-	if (!filename) filename = "???";
-	if (!function) function = "???";
-
-	int n = snprintf(buf->pos, buf->size, "%p %s\n\t%s:%d\n", (void*)pc, function, filename, lineno);
-
-	if (n <= 0) return 1;
-
-	buf->pos += n;
-	buf->size -= n;
-
-	if (!buf->size) return 1;
-
-	return 0;
-}
-
-static void bt_error_cb(void *data, const char *msg, int errnum)
-{
-	(void)msg; // We don't need this
-
-	bt_out_buf_t *buf = (bt_out_buf_t*)data;
-
-	// No debug info
-	if (errnum == -1)
-		buf->error = true;
-}
-
-static void write_backtrace(bt_crash_reason_t reason)
-{
-	FILE *out = fopen(va("%s" PATHSEP "%s", srb2home, "srb2kart-crash-log.txt"), "a");
-
-	time_t rawtime;
-	struct tm *timeinfo;
-
-	const size_t BUFSIZE = 8192;
-	char backtrace[BUFSIZE];
-
-	bt_out_buf_t buf;
-	buf.error = false;
-	buf.pos = backtrace;
-	buf.size = BUFSIZE;
-
-	if (!out)
-	{
-		fprintf(stderr, "\nWARNING: Couldn't open crash log for writing! Make sure your permissions are correct. Please save the below report!\n");
-		out = stderr;
-	}
-
-	// Get the current time as a string.
-	time(&rawtime);
-	timeinfo = localtime(&rawtime);
-
-	fprintf(out, "------------------------\n\n");
-
-	fprintf(out, "Program name: %s %s\n", SRB2APPLICATION, VERSIONSTRING);
-
-	if (compdate && comptime && comprevision && compbranch)
-		fprintf(out, "Compiled: %s %s, commit %s, branch %s\n", compdate, comptime, comprevision, compbranch);
-
-	if (gamestate == GS_LEVEL)
-	{
-		char *title = G_BuildMapTitle(gamemap);
-
-		if (title)
-		{
-			fprintf(out, "Game map: %s (%s)\n", title, G_BuildMapName(gamemap));
-			Z_Free(title);
-		}
-		else
-			fprintf(out, "Game map: %s\n", G_BuildMapName(gamemap));
-	}
-
-	fprintf(out, "Time of crash: %s\n", asctime(timeinfo));
-
-	fprintf(out, "Caused by: ");
-
-	switch (reason.type)
-	{
-		case BTCRASH_SIGNAL:
-			printsignal(out, reason.value.signal);
-		break;
-
-		case BTCRASH_ERRORMSG:
-			fprintf(out, "%s", reason.value.errormsg);
-		break;
-	}
-
-	fprintf(out, "\nBacktrace:\n");
-
-	// Try to get full backtrace, it will print files and line numbers
-	backtrace_full(bt_state, 2, bt_full_cb, bt_error_cb, (void*)&buf);
-
-	if (buf.error)
-	{
-		// Fall back to simple backtrace, only prints function names
-		backtrace_simple(bt_state, 2, bt_simple_cb, NULL, (void*)&buf);
-	}
-
-	fputs(backtrace, out);
-
-	if (out != stderr)
-	{
-		fclose(out);
-		fprintf(stderr, "Crash report created, find srb2kart-crash-log.txt in your SRB2Kart directory\n");
-	}
-}
-
-#endif
-
-/**	\brief	The JoyReset function
-
-	\param	JoySet	Joystick info to reset
-
-	\return	void
-*/
-static void JoyReset(SDLJoyInfo_t *JoySet)
-{
-	if (JoySet->dev)
-	{
-		SDL_GameControllerClose(JoySet->dev);
-	}
-	JoySet->dev = NULL;
-	JoySet->oldjoy = -1;
-	JoySet->axises = JoySet->buttons = JoySet->hats = JoySet->balls = 0;
-	//JoySet->scale
-}
-
-/**	\brief joystick up and running
-*/
-static INT32 joystick_started[MAXSPLITSCREENPLAYERS] = {0, 0, 0, 0};
-
-/**	\brief SDL info about joystick
-*/
-SDLJoyInfo_t JoyInfo[MAXSPLITSCREENPLAYERS];
-
 SDL_bool consolevent = SDL_FALSE;
 SDL_bool framebuffer = SDL_FALSE;
-
 UINT8 keyboard_started = false;
-boolean g_in_exiting_signal_handler = false;
-
-static void I_ReportSignal(int num, int coredumped)
-{
-	//static char msg[] = "oh no! back to reality!\r\n";
-	const char *      sigmsg;
-	char msg[256];
-
-	switch (num)
-	{
-//	case SIGINT:
-//		sigmsg = "SIGINT - interrupted";
-//		break;
-	case SIGILL:
-		sigmsg = "SIGILL - illegal instruction - invalid function image";
-		break;
-	case SIGFPE:
-		sigmsg = "SIGFPE - mathematical exception";
-		break;
-	case SIGSEGV:
-		sigmsg = "SIGSEGV - segment violation";
-		break;
-//	case SIGTERM:
-//		sigmsg = "SIGTERM - Software termination signal from kill";
-//		break;
-//	case SIGBREAK:
-//		sigmsg = "SIGBREAK - Ctrl-Break sequence";
-//		break;
-	case SIGABRT:
-		sigmsg = "SIGABRT - abnormal termination triggered by abort call";
-		break;
-	default:
-		sprintf(msg,"signal number %d", num);
-		if (coredumped)
-			sigmsg = 0;
-		else
-			sigmsg = msg;
-	}
-
-	if (coredumped)
-	{
-		if (sigmsg)
-			sprintf(msg, "%s (core dumped)", sigmsg);
-		else
-			strcat(msg, " (core dumped)");
-	}
-	else
-	{
-		sprintf(msg, "%s", sigmsg);
-	}
-
-#ifdef HAVE_LIBBACKTRACE
-	strncat(msg, "\n\nCrash report has been saved into srb2kart-crash-log.txt", 255);
-#elif defined(_WIN32) && !defined(__MINGW64__)
-	strncat(msg, "\n\nCrash report has been saved into srb2kart.rpt", 255);
-#endif
-
-	I_OutputMsg("\nProcess killed by signal: %s\n\n", sigmsg);
-
-	SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR,
-		"Process killed by signal",
-		msg, NULL);
-}
-
-#ifndef NEWSIGNALHANDLER
-FUNCNORETURN static ATTRNORETURN void signal_handler(INT32 num)
-{
-	g_in_exiting_signal_handler = true;
-
-#ifdef HAVE_THREADS
-	if (g_main_thread_id != std::this_thread::get_id())
-	{
-		// Do not attempt any sort of recovery if this signal triggers off the main thread
-		signal(num, SIG_DFL);
-		raise(num);
-		exit(-2);
-	}
-#endif
-
-	D_QuitNetGame(); // Fix server freezes
-
-#ifdef HAVE_LIBBACKTRACE
-	write_backtrace(BT_CRASH_REASON_SIGNAL(num));
-#endif
-
-	I_ReportSignal(num, 0);
-	I_ShutdownSystem();
-	signal(num, SIG_DFL);               //default signal action
-	raise(num);
-	I_Quit();
-}
-#endif
-
-FUNCNORETURN static ATTRNORETURN void quit_handler(int num)
-{
-#ifdef HAVE_THREADS
-	if (g_main_thread_id != std::this_thread::get_id())
-	{
-		// Do not attempt any sort of recovery if this signal triggers off the main thread
-		signal(num, SIG_DFL);
-		raise(num);
-		exit(-2);
-	}
-#endif
-
-	signal(num, SIG_DFL); //default signal action
-	raise(num);
-	I_Quit();
-}
 
 #ifdef HAVE_TERMIOS
 // TERMIOS console code from Quake3: thank you!
@@ -581,16 +244,6 @@ static struct termios tty_tc;
 // NOTE: if the user is editing a line when something gets printed to the early console then it won't look good
 //   so we provide tty_Clear and tty_Show to be called before and after a stdout or stderr output
 // =============================================================
-
-// flush stdin, I suspect some terminals are sending a LOT of garbage
-// FIXME TTimo relevant?
-#if 0
-static inline void tty_FlushIn(void)
-{
-	char key;
-	while (read(STDIN_FILENO, &key, 1)!=-1);
-}
-#endif
 
 // do a backspace
 // TTimo NOTE: it seems on some terminals just sending '\b' is not enough
@@ -787,6 +440,7 @@ static void Impl_HandleKeyboardConsoleEvent(KEY_EVENT_RECORD evt, HANDLE co)
 				//event.data1 = MapVirtualKey(evt.wVirtualKeyCode,2); // convert in to char
 				event.data1 = evt.uChar.AsciiChar;
 		}
+
 		if (co != INVALID_HANDLE_VALUE && GetFileType(co) == FILE_TYPE_CHAR && GetConsoleMode(co, &t))
 		{
 			if (event.data1 && event.data1 != KEY_LSHIFT && event.data1 != KEY_RSHIFT)
@@ -804,6 +458,7 @@ static void Impl_HandleKeyboardConsoleEvent(KEY_EVENT_RECORD evt, HANDLE co)
 			}
 		}
 	}
+
 	if (event.data1) D_PostEvent(&event);
 }
 
@@ -888,56 +543,6 @@ static inline void I_StartupConsole(void)
 static inline void I_ShutdownConsole(void){}
 #endif
 
-//
-// StartupKeyboard
-//
-static void I_RegisterSignals (void)
-{
-#ifdef HAVE_THREADS
-	g_main_thread_id = std::this_thread::get_id();
-#endif
-
-#ifdef SIGINT
-	signal(SIGINT , quit_handler);
-#endif
-#ifdef SIGBREAK
-	signal(SIGBREAK , quit_handler);
-#endif
-#ifdef SIGTERM
-	signal(SIGTERM , quit_handler);
-#endif
-
-	// If these defines don't exist,
-	// then compilation would have failed above us...
-#ifndef NEWSIGNALHANDLER
-	signal(SIGILL , signal_handler);
-	signal(SIGSEGV , signal_handler);
-	signal(SIGABRT , signal_handler);
-	signal(SIGFPE , signal_handler);
-#endif
-}
-
-#ifdef NEWSIGNALHANDLER
-static void signal_handler_child(INT32 num)
-{
-#ifdef HAVE_LIBBACKTRACE
-	write_backtrace(BT_CRASH_REASON_SIGNAL(num));
-#endif
-
-	signal(num, SIG_DFL);               //default signal action
-	raise(num);
-}
-
-static void I_RegisterChildSignals(void)
-{
-	// If these defines don't exist,
-	// then compilation would have failed above us...
-	signal(SIGILL , signal_handler_child);
-	signal(SIGSEGV , signal_handler_child);
-	signal(SIGABRT , signal_handler_child);
-	signal(SIGFPE , signal_handler_child);
-}
-#endif
 
 //
 //I_OutputMsg
@@ -1094,6 +699,33 @@ INT32 I_GetKey (void)
 
 	return rc;
 }
+
+/**	\brief	The JoyReset function
+
+	\param	JoySet	Joystick info to reset
+
+	\return	void
+*/
+static void JoyReset(SDLJoyInfo_t *JoySet)
+{
+	if (JoySet->dev)
+	{
+		SDL_GameControllerClose(JoySet->dev);
+	}
+	JoySet->dev = NULL;
+	JoySet->oldjoy = -1;
+	JoySet->axises = JoySet->buttons = JoySet->hats = JoySet->balls = 0;
+	//JoySet->scale
+}
+
+/**	\brief joystick up and running
+*/
+static INT32 joystick_started[MAXSPLITSCREENPLAYERS] = {0, 0, 0, 0};
+
+/**	\brief SDL info about joystick
+*/
+SDLJoyInfo_t JoyInfo[MAXSPLITSCREENPLAYERS];
+INT32 numcontrollers = 0;
 
 //
 // I_JoyScale
@@ -1820,6 +1452,350 @@ void I_SleepDuration(precise_t duration)
 	}
 #endif
 }
+
+#ifdef HAVE_THREADS
+#include "../core/thread_pool.h"
+static std::thread::id g_main_thread_id;
+#endif
+
+boolean g_in_exiting_signal_handler = false;
+
+static void I_PrintSignal(INT32 signal_num, boolean core_dumped, char *signal_msg)
+{
+	const char *sigmsg;
+
+	switch (signal_num)
+	{
+#ifdef SIGINT
+		case SIGINT:
+			sigmsg = ("SIGINT - SRB2Kart-Saturn was interrupted prematurely by the user.");
+			break;
+#endif
+		case SIGILL: // illegal instruction - invalid function image
+			sigmsg = ("SIGILL - SRB2Kart-Saturn has attempted to execute an illegal instruction and needs to close.");
+			break;
+		case SIGFPE: // mathematical exception
+			sigmsg = ("SIGFPE - SRB2Kart-Saturn has encountered a mathematical exception and needs to close.");
+			break;
+		case SIGSEGV: // segment violation
+			sigmsg = ("SIGSEGV - SRB2Kart-Saturn has attempted to access a memory location that it shouldn't and needs to close.");
+			break;
+#ifdef SIGTERM
+		case SIGTERM: // Software termination signal from kill
+			sigmsg = ("SIGTERM - SRB2Kart-Saturn was terminated by a kill signal.");
+			break;
+#endif
+#ifdef SIGBREAK
+		case SIGBREAK: // Ctrl-Break sequence
+			sigmsg =("SIGBREAK - SRB2Kart-Saturn was terminated by a Ctrl-Break sequence.")
+			break;
+#endif
+		case SIGABRT: // abnormal termination triggered by abort call
+			sigmsg = ("SIGABRT - SRB2Kart-Saturn was terminated by an abort signal.");
+			break;
+		default:
+			sprintf(signal_msg, "Signal number %d", signal_num);
+			sigmsg = (core_dumped ? "Unknown signal" : signal_msg);
+			break;
+	}
+
+	if (core_dumped)
+	{
+		if (sigmsg)
+			sprintf(signal_msg, "%s (core dumped)", sigmsg);
+		else
+			strcat(signal_msg, " (core dumped)");
+	}
+	else
+	{
+		sprintf(signal_msg, "%s", sigmsg);
+	}
+}
+
+static void I_ReportSignal(int num, int coredumped)
+{
+	char sigmsg[512];
+
+	I_PrintSignal(num, coredumped, sigmsg);
+
+	size_t len = strlen(sigmsg);
+	snprintf(sigmsg + len, sizeof(sigmsg) - len, "\n\nCrash report has been saved into %s", CRASH_LOGFILE_NAME);
+	I_OutputMsg("\nProcess killed by signal: %s\n\n", sigmsg);
+	SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Process killed by signal", sigmsg, NULL);
+}
+
+#ifndef NEWSIGNALHANDLER
+FUNCNORETURN static ATTRNORETURN void signal_handler(INT32 num)
+{
+	g_in_exiting_signal_handler = true;
+
+#ifdef HAVE_THREADS
+	if (g_main_thread_id != std::this_thread::get_id())
+	{
+		// Do not attempt any sort of recovery if this signal triggers off the main thread
+		signal(num, SIG_DFL);
+		raise(num);
+		exit(-2);
+	}
+#endif
+
+	D_QuitNetGame(); // Fix server freezes
+
+#ifdef HAVE_LIBBACKTRACE
+	write_backtrace(BT_CRASH_REASON_SIGNAL(num));
+#endif
+
+	I_ReportSignal(num, 0);
+	I_ShutdownSystem();
+	signal(num, SIG_DFL);               //default signal action
+	raise(num);
+	I_Quit();
+}
+#endif
+
+FUNCNORETURN static ATTRNORETURN void quit_handler(int num)
+{
+#ifdef HAVE_THREADS
+	if (g_main_thread_id != std::this_thread::get_id())
+	{
+		// Do not attempt any sort of recovery if this signal triggers off the main thread
+		signal(num, SIG_DFL);
+		raise(num);
+		exit(-2);
+	}
+#endif
+
+	signal(num, SIG_DFL); //default signal action
+	raise(num);
+	I_Quit();
+}
+
+#ifdef HAVE_LIBBACKTRACE
+#include <backtrace.h>
+// TODO - move this to some header file instead
+extern struct backtrace_state *bt_state;
+
+typedef enum {
+	BTCRASH_SIGNAL,
+	BTCRASH_ERRORMSG,
+} bt_crash_type_t;
+
+typedef struct bt_crash_reason_s {
+	bt_crash_type_t type;
+
+	union {
+		INT32 signal;
+		const char *errormsg;
+	} value;
+} bt_crash_reason_t;
+
+#define BT_CRASH_REASON_SIGNAL(num) (bt_crash_reason_t){ .type = BTCRASH_SIGNAL, .value = { .signal = num } }
+#define BT_CRASH_REASON_ERRORMSG(msg) (bt_crash_reason_t){ .type = BTCRASH_ERRORMSG, .value = { .errormsg = msg } }
+
+typedef struct bt_out_buf_s {
+	boolean error;
+	char *pos;
+	size_t size;
+} bt_out_buf_t;
+
+static void bt_syminfo_cb(void *data, uintptr_t pc, const char *symname, uintptr_t symval, uintptr_t symsize)
+{
+	(void)symval;
+	(void)symsize;
+
+	bt_out_buf_t *buf = (bt_out_buf_t*)data;
+
+	if (!symname)
+		symname = "???";
+
+	int n = snprintf(buf->pos, buf->size, "%p %s\n", (void*)pc, symname);
+
+	if (n <= 0)
+	{
+		buf->size = 0;
+		return;
+	}
+
+	buf->pos += n;
+	buf->size -= n;
+}
+
+static int bt_simple_cb(void *data, uintptr_t pc)
+{
+	bt_out_buf_t *buf = (bt_out_buf_t*)data;
+
+	backtrace_syminfo(bt_state, pc, bt_syminfo_cb, NULL, data);
+
+	if (!buf->size) return 1;
+
+	return 0;
+}
+
+static int bt_full_cb(void *data, uintptr_t pc, const char *filename, int lineno, const char *function)
+{
+	bt_out_buf_t *buf = (bt_out_buf_t*)data;
+
+	if (!filename) filename = "???";
+	if (!function) function = "???";
+
+	int n = snprintf(buf->pos, buf->size, "%p %s\n\t%s:%d\n", (void*)pc, function, filename, lineno);
+
+	if (n <= 0) return 1;
+
+	buf->pos += n;
+	buf->size -= n;
+
+	if (!buf->size) return 1;
+
+	return 0;
+}
+
+static void bt_error_cb(void *data, const char *msg, int errnum)
+{
+	(void)msg; // We don't need this
+
+	bt_out_buf_t *buf = (bt_out_buf_t*)data;
+
+	// No debug info
+	if (errnum == -1)
+		buf->error = true;
+}
+
+static void write_backtrace(bt_crash_reason_t reason)
+{
+	char sig_msg[512];
+	const char *filename = va("%s" PATHSEP CRASH_LOGFILE_NAME, srb2home);
+	FILE *out = fopen(filename, "a+");
+
+	time_t rawtime;
+	struct tm *timeinfo;
+
+	const size_t BUFSIZE = 8192;
+	char backtrace[BUFSIZE];
+
+	bt_out_buf_t buf;
+	buf.error = false;
+	buf.pos = backtrace;
+	buf.size = BUFSIZE;
+
+	if (!out)
+	{
+		fprintf(stderr, "\nWARNING: Couldn't open crash log for writing! Make sure your permissions are correct. Please save the below report!\n");
+		out = stderr;
+	}
+
+	// Get the current time as a string.
+	time(&rawtime);
+	timeinfo = localtime(&rawtime);
+
+	fprintf(out, "------------------------\n\n");
+
+	fprintf(out, "Program name: %s %s\n", SRB2APPLICATION, VERSIONSTRING);
+
+	fprintf(out, "Platform: %s\n", I_GetSysName());
+
+	if (compdate && comptime && comprevision && compbranch)
+		fprintf(out, "Compiled: %s %s, commit %s, branch %s\n", compdate, comptime, comprevision, compbranch);
+
+	if (gamestate == GS_LEVEL && gamemap)
+	{
+		char *map_title = G_BuildMapTitle(gamemap);
+		const char *map_name = G_BuildMapName(gamemap);
+
+		if (map_title && map_name)
+		{
+			fprintf(out, "Game map: %s (%s)\n", map_title, map_name);
+			Z_Free(map_title);
+		}
+		else if (map_name)
+		{
+			fprintf(out, "Game map: %s\n", map_name);
+		}
+	}
+
+	fprintf(out, "Time of crash: %s\n", asctime(timeinfo));
+
+	fprintf(out, "Caused by: ");
+
+	switch (reason.type)
+	{
+		case BTCRASH_SIGNAL:
+			I_PrintSignal(reason.value.signal, false, sig_msg);
+			fprintf(out, "%s", sig_msg);
+		break;
+
+		case BTCRASH_ERRORMSG:
+			fprintf(out, "%s", reason.value.errormsg);
+		break;
+	}
+
+	fprintf(out, "\nBacktrace:\n");
+
+	// Try to get full backtrace, it will print files and line numbers
+	backtrace_full(bt_state, 2, bt_full_cb, bt_error_cb, (void*)&buf);
+
+	if (buf.error)
+	{
+		// Fall back to simple backtrace, only prints function names
+		backtrace_simple(bt_state, 2, bt_simple_cb, NULL, (void*)&buf);
+	}
+
+	fputs(backtrace, out);
+
+	if (out != stderr)
+	{
+		fclose(out);
+		fprintf(stderr, "Crash report created, find %s in your SRB2Kart directory\n", CRASH_LOGFILE_NAME);
+	}
+}
+#endif
+
+static void I_RegisterSignals(void)
+{
+#ifdef HAVE_THREADS
+	g_main_thread_id = std::this_thread::get_id();
+#endif
+
+#ifdef SIGINT
+	signal(SIGINT,   quit_handler);
+#endif
+#ifdef SIGBREAK
+	signal(SIGBREAK, quit_handler);
+#endif
+#ifdef SIGTERM
+	signal(SIGTERM,  quit_handler);
+#endif
+#ifndef NEWSIGNALHANDLER
+	// If these defines don't exist,
+	// then compilation would have failed above us...
+	signal(SIGILL,  signal_handler);
+	signal(SIGSEGV, signal_handler);
+	signal(SIGABRT, signal_handler);
+	signal(SIGFPE,  signal_handler);
+#endif
+}
+
+#ifdef NEWSIGNALHANDLER
+static void signal_handler_child(INT32 num)
+{
+	g_in_exiting_signal_handler = true;
+#ifdef HAVE_LIBBACKTRACE
+	write_backtrace(BT_CRASH_REASON_SIGNAL(num));
+#endif
+	signal(num, SIG_DFL); // default signal action
+	raise(num);
+}
+
+static void I_RegisterChildSignals(void)
+{
+	// If these defines don't exist,
+	// then compilation would have failed above us...
+	signal(SIGILL,  signal_handler_child);
+	signal(SIGSEGV, signal_handler_child);
+	signal(SIGABRT, signal_handler_child);
+	signal(SIGFPE,  signal_handler_child);
+}
+#endif
 
 #ifdef NEWSIGNALHANDLER
 FUNCNORETURN static ATTRNORETURN void newsignalhandler_Warn(const char *pr)
@@ -2696,6 +2672,11 @@ size_t I_GetFreeMem(size_t *total)
 	}
 	return 48<<20;
 #endif
+}
+
+const char *I_GetSysName(void)
+{
+	return SDL_GetPlatform();
 }
 
 // note CPUAFFINITY code used to reside here

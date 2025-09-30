@@ -21,14 +21,31 @@
 
 #include <tchar.h>
 
+#ifdef HAVE_DRMINGW
+#include "exchndl.h"
+#endif
+
 #include "../doomdef.h" //just for VERSION
 #include "win_dbg.h"
 #include "../m_argv.h" //print the parameter in the log
 
 LPTOP_LEVEL_EXCEPTION_FILTER prevExceptionFilter = NULL;
 
-#ifdef BUGTRAP
+// --------------------------------------------------------------------------
+// Initialises the DrMingw exception-handling library. Returns true if
+// successful.
+// --------------------------------------------------------------------------
+#ifdef HAVE_DRMINGW
+BOOL InitDrMingw(void)
+{
+	CONS_Printf("Setting up DrMingw debugger...\n");
+	ExcHndlInit();
+	ExcHndlSetLogFileNameA(CRASH_LOGFILE_NAME);
+	return TRUE;
+}
+#endif
 
+#ifdef BUGTRAP
 
 typedef void (APIENTRY *BT_SETSUPPORTURL)(LPCTSTR pszSupportURL);
 typedef void (APIENTRY *BT_SETFLAGS)(DWORD dwFlags);
