@@ -579,9 +579,6 @@ boolean CL_LoadServerFiles(void)
 {
 	INT32 i;
 
-//	if (M_CheckParm("-nofiles"))
-//		return;
-
 	for (i = 0; i < fileneedednum; i++)
 	{
 		if (fileneeded[i].status == FS_OPEN)
@@ -617,6 +614,7 @@ boolean CL_LoadServerFiles(void)
 				fileneeded[i].status, s);
 		}
 	}
+
 	return true;
 }
 

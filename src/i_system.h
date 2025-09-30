@@ -239,6 +239,10 @@ const char *I_ClipboardPaste(void);
 
 void I_RegisterSysCommands(void);
 
+/** \brief Returns the system name.
+ */
+const char *I_GetSysName(void);
+
 #ifdef __cplusplus
 } // extern "C"
 #endif
