@@ -338,7 +338,7 @@ static void WriteNetXCmd(UINT8 *cmd, netxcmd_t id, const void *param, size_t npa
 
 void SendNetXCmdForPlayer(UINT8 playerid, netxcmd_t id, const void *param, size_t nparam)
 {
-	if (localtextcmd[playerid][0]+2+nparam > MAXTEXTCMD)
+	if (textcmdbuf[playerid] != NULL || localtextcmd[playerid][0]+2+nparam > MAXTEXTCMD)
 	{
 		textcmdbuf_t *buf = textcmdbuf[playerid];
 
@@ -373,16 +373,12 @@ void SendNetXCmdForPlayer(UINT8 playerid, netxcmd_t id, const void *param, size_
 		{
 			WriteNetXCmd(buf->cmd, id, param, nparam);
 		}
+
 		return;
 	}
+
 	WriteNetXCmd(localtextcmd[playerid], id, param, nparam);
 }
-
-/*UINT8 GetFreeXCmdSize(UINT8 playerid)
-{
-	// -1 for the size and another -1 for the ID.
-	return (UINT8)(localtextcmd[playerid][0] - 2);
-}*/
 
 // Frees all textcmd memory for the specified tic
 static void D_FreeTextcmd(tic_t tic)
@@ -422,7 +418,8 @@ static UINT8* D_GetExistingTextcmd(tic_t tic, INT32 playernum)
 	if (textcmdtic)
 	{
 		UINT8 *cmd = textcmdtic->playercmds[playernum];
-		if (cmd) return cmd;
+		if (cmd)
+			return cmd;
 	}
 
 	return NULL;
@@ -460,6 +457,7 @@ static void ExtraDataTicker(void)
 	INT32 i;
 
 	for (i = 0; i < MAXPLAYERS; i++)
+	{
 		if (playeringame[i] || i == 0)
 		{
 			UINT8 *bufferstart = D_GetExistingTextcmd(gametic, i);
@@ -474,8 +472,7 @@ static void ExtraDataTicker(void)
 				{
 					if (*curpos < MAXNETXCMD && listnetxcmd[*curpos])
 					{
-						const UINT8 id = *curpos;
-						curpos++;
+						const UINT8 id = *curpos++;
 						DEBFILE(va("executing x_cmd %s ply %u ", netxcmdnames[id - 1], i));
 						(listnetxcmd[id])(&curpos, i);
 						DEBFILE("done\n");
@@ -487,12 +484,14 @@ static void ExtraDataTicker(void)
 							SendKick(i, KICK_MSG_CON_FAIL);
 							DEBFILE(va("player %d kicked [gametic=%u] reason as follows:\n", i, gametic));
 						}
+
 						CONS_Alert(CONS_WARNING, M_GetText("Got unknown net command [%s]=%d (max %d)\n"), sizeu1(curpos - bufferstart), *curpos, bufferstart[0]);
 						break;
 					}
 				}
 			}
 		}
+	}
 
 	// If you are a client, you can safely forget the net commands for this tic
 	// If you are the server, you need to remember them until every client has been aknowledged,
@@ -1504,7 +1503,7 @@ static boolean CL_AskFileList(INT32 firstfile)
 	netbuffer->packettype = PT_TELLFILESNEEDED;
 	netbuffer->u.filesneedednum = firstfile;
 
-	return HSendPacket(servernode, false, 0, sizeof (INT32));
+	return HSendPacket(servernode, false, 0, sizeof(INT32));
 }
 
 /** Sends a special packet to declare how many players in local
@@ -1886,7 +1885,7 @@ static void SV_SendSaveGame(INT32 node, boolean resending)
 	UINT8 *buffertosend;
 
 	// first save it in a malloced buffer
-	save.buffer = (UINT8 *)malloc(SAVEGAMESIZE);
+	save.buffer = (UINT8 *)Z_Malloc(SAVEGAMESIZE, PU_STATIC, NULL);
 	if (!save.buffer)
 	{
 		CONS_Alert(CONS_ERROR, M_GetText("No more free memory for savegame\n"));
@@ -1901,7 +1900,7 @@ static void SV_SendSaveGame(INT32 node, boolean resending)
 	length = save.p - save.buffer;
 	if (length > SAVEGAMESIZE)
 	{
-		free(save.buffer);
+		Z_Free(save.buffer);
 		save.p = NULL;
 		I_Error("Savegame buffer overrun");
 	}
@@ -1919,8 +1918,7 @@ static void SV_SendSaveGame(INT32 node, boolean resending)
 	if ((compressedlen = lzf_compress(save.buffer + sizeof(UINT32), length - sizeof(UINT32), compressedsave + sizeof(UINT32), length - sizeof(UINT32) - 1)))
 	{
 		// Compressing succeeded; send compressed data
-
-		free(save.buffer);
+		Z_Free(save.buffer);
 
 		// State that we're compressed.
 		buffertosend = compressedsave;
@@ -1961,7 +1959,7 @@ static void SV_SavedGame(void)
 	sprintf(tmpsave, "%s" PATHSEP TMPSAVENAME, srb2home);
 
 	// first save it in a malloced buffer
-	save.p = save.buffer = (UINT8 *)malloc(SAVEGAMESIZE);
+	save.p = save.buffer = (UINT8 *)Z_Malloc(SAVEGAMESIZE, PU_STATIC, NULL);
 	if (!save.p)
 	{
 		CONS_Alert(CONS_ERROR, M_GetText("No more free memory for savegame\n"));
@@ -1973,7 +1971,7 @@ static void SV_SavedGame(void)
 	length = save.p - save.buffer;
 	if (length > SAVEGAMESIZE)
 	{
-		free(save.buffer);
+		Z_Free(save.buffer);
 		save.p = NULL;
 		I_Error("Savegame buffer overrun");
 	}
@@ -1982,7 +1980,7 @@ static void SV_SavedGame(void)
 	if (!FIL_WriteFile(tmpsave, save.buffer, length))
 		CONS_Printf(M_GetText("Didn't save %s for netgame"), tmpsave);
 
-	free(save.buffer);
+	Z_Free(save.buffer);
 	save.p = NULL;
 }
 
@@ -5391,11 +5389,8 @@ static void PT_ClientCmd(INT32 netconsole, SINT8 node)
 {
 	tic_t realend, realstart;
 
-	if (client)
-		return;
-
 	// Ignore tics from those not synched
-	if (resynch_inprogress[node])
+	if (client || resynch_inprogress[node])
 		return;
 
 	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
@@ -5551,7 +5546,8 @@ static void PT_ClientCmd(INT32 netconsole, SINT8 node)
 		--resynch_score[node];
 #else
 	// Check player consistancy during the level
-	if (realstart <= gametic && realstart > gametic - BACKUPTICS+1 && gamestate == GS_LEVEL
+	if (gamestate == GS_LEVEL
+		&& (realstart <= gametic && realstart + BACKUPTICS - 1 > gametic)
 		&& consistancy[realstart%BACKUPTICS] != SHORT(netbuffer->u.clientpak.consistancy))
 	{
 		SV_RequireResynch(node);
@@ -5559,10 +5555,13 @@ static void PT_ClientCmd(INT32 netconsole, SINT8 node)
 		if (cv_resynchattempts.value && resynch_score[node] <= (unsigned)cv_resynchattempts.value*250)
 		{
 			if (cv_blamecfail.value)
+			{
 				CONS_Printf(M_GetText("Synch failure for player %d (%s); expected %hd, got %hd\n"),
 					netconsole+1, player_names[netconsole],
 					consistancy[realstart%BACKUPTICS],
 					SHORT(netbuffer->u.clientpak.consistancy));
+			}
+
 			DEBFILE(va("Restoring player %d (synch failure) [%update] %d!=%d\n",
 				netconsole, realstart, consistancy[realstart%BACKUPTICS],
 				SHORT(netbuffer->u.clientpak.consistancy)));
@@ -5959,16 +5958,17 @@ static void GetPackets(void)
 	{
 		node = (SINT8)doomcom->remotenode;
 
-		if (netbuffer->packettype == PT_CLIENTJOIN && server)
+		if (server && netbuffer->packettype == PT_CLIENTJOIN)
 		{
 			if (!levelloading) // Otherwise just ignore
 			{
 				HandleConnect(node);
 			}
+
 			continue;
 		}
 
-		if (node == servernode && client && cl_mode != CL_SEARCHING)
+		if (client && node == servernode && cl_mode != CL_SEARCHING)
 		{
 			if (netbuffer->packettype == PT_SERVERSHUTDOWN)
 			{
@@ -6027,7 +6027,8 @@ static INT16 Consistancy(void)
 	{
 		if (!playeringame[i])
 			ret ^= 0xCCCC;
-		else if (!players[i].mo || gamestate != GS_LEVEL);
+		else if (!players[i].mo || gamestate != GS_LEVEL)
+			;
 		else
 		{
 			ret += players[i].mo->x;
@@ -6036,6 +6037,7 @@ static INT16 Consistancy(void)
 			ret *= i+1;
 		}
 	}
+
 	// I give up
 	// Coop desynching enemies is painful
 	if (gamestate == GS_LEVEL)
@@ -6876,7 +6878,7 @@ void NetKeepAlive(void)
 
 	UpdatePingTable();
 
-// Sryder: What is FILESTAMP??? << lmao
+	// Sryder: What is FILESTAMP??? << lmao
 
 	GetPackets();
 
@@ -7146,7 +7148,7 @@ void CL_ClearRewinds(void)
 	while ((head = rewindhead))
 	{
 		rewindhead = rewindhead->next;
-		free(head);
+		Z_Free(head);
 	}
 }
 
@@ -7158,7 +7160,7 @@ rewind_t *CL_SaveRewindPoint(size_t demopos)
 	if (rewindhead && rewindhead->leveltime + REWIND_POINT_INTERVAL > leveltime)
 		return NULL;
 
-	rewind = (rewind_t *)malloc(sizeof (rewind_t));
+	rewind = (rewind_t *)Z_Malloc(sizeof(rewind_t), PU_STATIC, NULL);
 	if (!rewind)
 		return NULL;
 
@@ -7181,7 +7183,7 @@ rewind_t *CL_RewindToTime(tic_t time)
 	while (rewindhead && rewindhead->leveltime > time)
 	{
 		rewind = rewindhead->next;
-		free(rewindhead);
+		Z_Free(rewindhead);
 		rewindhead = rewind;
 	}
 

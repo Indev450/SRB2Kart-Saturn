@@ -1015,7 +1015,7 @@ void P_WriteThings(lumpnum_t lumpnum)
 
 	data = W_CacheLumpNum(lumpnum, PU_LEVEL);
 
-	save.p = save.buffer = (UINT8 *)malloc(nummapthings * sizeof (mapthing_t));
+	save.p = save.buffer = (UINT8 *)Z_Malloc(nummapthings * sizeof(mapthing_t), PU_STATIC, NULL);
 
 	if (!save.p)
 	{
@@ -1040,7 +1040,7 @@ void P_WriteThings(lumpnum_t lumpnum)
 	length = save.p - save.buffer;
 
 	FIL_WriteFile(va("newthings%d.lmp", gamemap), save.buffer, length);
-	free(save.buffer);
+	Z_Free(save.buffer);
 	save.p = NULL;
 
 	CONS_Printf(M_GetText("newthings%d.lmp saved.\n"), gamemap);

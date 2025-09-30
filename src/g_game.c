@@ -3564,7 +3564,7 @@ void G_SaveGameData(boolean force)
 	if (!gamedataloaded)
 		return; // If never loaded (-nodata), don't save
 
-	save.p = save.buffer = (UINT8 *)malloc(GAMEDATASIZE);
+	save.p = save.buffer = (UINT8 *)Z_Malloc(GAMEDATASIZE, PU_STATIC, NULL);
 	if (!save.p)
 	{
 		CONS_Alert(CONS_ERROR, M_GetText("No more free memory for saving game data\n"));
@@ -3584,7 +3584,7 @@ void G_SaveGameData(boolean force)
 		if (!FIL_CopyFile(gamedatafilename, backupfile))
 		{
 			CONS_Alert(CONS_WARNING,"Failed to create a backup of save data. Will not attempt to write to save data\n");
-			free(save.buffer);
+			Z_Free(save.buffer);
 			save.p = save.buffer = NULL;
 			return;
 		}
@@ -3657,7 +3657,7 @@ void G_SaveGameData(boolean force)
 	length = save.p - save.buffer;
 
 	FIL_WriteFile(va(pandf, srb2home, gamedatafilename), save.buffer, length);
-	free(save.buffer);
+	Z_Free(save.buffer);
 	save.p = save.buffer = NULL;
 }
 
@@ -3827,7 +3827,7 @@ void G_SaveGame(UINT32 savegameslot)
 		char name[VERSIONSIZE];
 		size_t length;
 
-		save.p = save.buffer = (UINT8 *)malloc(SAVEGAMESIZE);
+		save.p = save.buffer = (UINT8 *)Z_Malloc(SAVEGAMESIZE, PU_STATIC, NULL);
 		if (!save.p)
 		{
 			CONS_Alert(CONS_ERROR, M_GetText("No more free memory for saving game data\n"));
@@ -3842,7 +3842,7 @@ void G_SaveGame(UINT32 savegameslot)
 
 		length = save.p - save.buffer;
 		saved = FIL_WriteFile(backup, save.buffer, length);
-		free(save.buffer);
+		Z_Free(save.buffer);
 		save.p = save.buffer = NULL;
 	}
 
