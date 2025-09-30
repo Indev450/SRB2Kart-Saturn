@@ -1104,10 +1104,6 @@ static void SV_AcknowledgeResynchAck(INT32 node, UINT8 rsg)
 
 static INT16 Consistancy(void);
 
-#ifndef NONET
-#define JOININGAME
-#endif
-
 typedef enum
 {
 	CL_SEARCHING,
@@ -1117,9 +1113,7 @@ typedef enum
 	CL_LOADFILES,
 	CL_SETUPFILES,
 	CL_WAITJOINRESPONSE,
-#ifdef JOININGAME
 	CL_DOWNLOADSAVEGAME,
-#endif
 	CL_CONNECTED,
 	CL_ABORTED,
 	CL_VIEWSERVER,
@@ -1210,7 +1204,6 @@ static inline void CL_DrawConnectionStatus(void)
 
 		switch (cl_mode)
 		{
-#ifdef JOININGAME
 			case CL_DOWNLOADSAVEGAME:
 				if (filedownload.current != -1)
 				{
@@ -1236,7 +1229,6 @@ static inline void CL_DrawConnectionStatus(void)
 				else
 					cltext = M_GetText("Waiting to download game state...");
 				break;
-#endif
 			case CL_ASKFULLFILELIST:
 			case CL_CONFIRMCONNECT:
 			case CL_LEGACYREQUESTFAILED:
@@ -1877,7 +1869,6 @@ static boolean SV_SendServerConfig(INT32 node)
 	return waspacketsent;
 }
 
-#ifdef JOININGAME
 #define SAVEGAMESIZE (768*1024)
 
 #ifdef SATURNPAK
@@ -2110,7 +2101,6 @@ static void CL_ReloadReceivedSavegame(void)
 
 	CONS_Printf(M_GetText("Game state reloaded\n"));
 }
-#endif
 #endif
 
 #ifndef NONET
@@ -2715,12 +2705,12 @@ static boolean CL_ServerConnectionTicker(const char *tmpsave, tic_t *oldtic, tic
 				), NULL, MM_NOTHING);
 				return false;
 			}
-#ifdef JOININGAME
+
 			// prepare structures to save the file
 			// WARNING: this can be useless in case of server not in GS_LEVEL
 			// but since the network layer doesn't provide ordered packets...
 			CL_PrepareDownloadSaveGame(tmpsave);
-#endif
+
 			if (I_GetTime() >= *asksent && CL_SendJoin())
 			{
 				*asksent = I_GetTime() + NEWTICRATE*3;
@@ -2733,7 +2723,6 @@ static boolean CL_ServerConnectionTicker(const char *tmpsave, tic_t *oldtic, tic
 				cl_mode = CL_ASKJOIN;
 			}
 			break;
-#ifdef JOININGAME
 		case CL_DOWNLOADSAVEGAME:
 			// At this state, the first (and only) needed file is the gamestate
 			if (fileneeded[0].status == FS_FOUND)
@@ -2745,7 +2734,6 @@ static boolean CL_ServerConnectionTicker(const char *tmpsave, tic_t *oldtic, tic
 			} // don't break case continue to CL_CONNECTED
 			else
 				break;
-#endif
 		case CL_CONNECTED:
 		case CL_CONFIRMCONNECT: //logic is handled by M_ConfirmConnect
 		default:
@@ -2851,11 +2839,9 @@ static void CL_ConnectToServer(void)
 #ifndef NONET
 	tic_t asksent;
 #endif
-#ifdef JOININGAME
 	char tmpsave[264];
 
 	sprintf(tmpsave, "%s" PATHSEP TMPSAVENAME, srb2home);
-#endif
 
 #ifdef CLIENT_LOADINGSCREEN
 	filedownload.current = -1;
@@ -2863,11 +2849,9 @@ static void CL_ConnectToServer(void)
 
 	cl_mode = CL_SEARCHING;
 
-#ifdef JOININGAME
 	// Don't get a corrupt savegame error because tmpsave already exists
 	if (FIL_FileExists(tmpsave) && unlink(tmpsave) == -1)
 		I_Error("Can't delete %s\n", tmpsave);
-#endif
 
 	if (netgame)
 	{
@@ -4924,7 +4908,6 @@ static void HandleConnect(SINT8 node)
 			DEBFILE("new node joined\n");
 		}
 
-#ifdef JOININGAME
 		if (nodewaiting[node])
 		{
 			if (node && newnode)
@@ -4935,12 +4918,6 @@ static void HandleConnect(SINT8 node)
 
 			SV_AddWaitingPlayers();
 		}
-#else
-#ifndef NONET
-		// I guess we have no use for this if we aren't doing mid-level joins?
-		(void)newnode;
-#endif
-#endif
 	}
 }
 
@@ -5281,11 +5258,8 @@ static void PT_ServerCFG(SINT8 node)
 		playernode[(UINT8)serverplayer] = servernode;
 
 	if (netgame)
-#ifdef JOININGAME
 		CONS_Printf(M_GetText("Join accepted, waiting for complete game state...\n"));
-#else
-		CONS_Printf(M_GetText("Join accepted, waiting for next level change...\n"));
-#endif
+
 	DEBFILE(va("Server accept join gametic=%u mynode=%d\n", gametic, mynode));
 
 #ifdef SATURNPAK
@@ -5308,16 +5282,13 @@ static void PT_ServerCFG(SINT8 node)
 	scp = netbuffer->u.servercfg.varlengthinputs;
 	CV_LoadPlayerNames(&scp);
 	CV_LoadNetVars(&scp);
-#ifdef JOININGAME
+
 	/// \note Wait. What if a Lua script uses some global custom variables synched with the NetVars hook?
 	///       Shouldn't them be downloaded even at intermission time?
 	///       Also, according to HandleConnect, the server will send the savegame even during intermission...
 	/// Sryder 2018-07-05: If we don't want to send the player config another way we need to send the gamestate
 	///                    At almost any gamestate there could be joiners... So just always send gamestate?
 	cl_mode = ((server) ? CL_CONNECTED : CL_DOWNLOADSAVEGAME);
-#else
-	cl_mode = CL_CONNECTED;
-#endif
 }
 
 static void PT_FileFragmentFromAwayNode(SINT8 node)
