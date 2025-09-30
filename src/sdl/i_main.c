@@ -236,11 +236,6 @@ int main(int argc, char **argv)
 	// never return
 	D_SRB2Loop();
 
-#ifdef BUGTRAP
-	// This is safe even if BT didn't start.
-	ShutdownBugTrap();
-#endif
-
 	// return to OS
 	return 0;
 }

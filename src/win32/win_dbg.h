@@ -24,12 +24,6 @@
 BOOL InitDrMingw(void);
 #endif
 
-#ifdef BUGTRAP
-BOOL InitBugTrap(void);
-void ShutdownBugTrap(void);
-BOOL IsBugTrapLoaded(void);
-#endif
-
 // called in the exception filter of the __try block, writes all useful debugging information
 // to a file, using only win32 functions in case the C runtime is in a bad state.
 LONG WINAPI RecordExceptionInfo(PEXCEPTION_POINTERS data/*, LPCSTR Message, LPSTR lpCmdLine*/);
