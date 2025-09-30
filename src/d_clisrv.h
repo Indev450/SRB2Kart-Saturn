@@ -583,9 +583,6 @@ extern tic_t lowest_lag;
 extern consvar_t cv_mindelay, cv_gentlemens;
 
 extern consvar_t
-#ifdef VANILLAJOINNEXTROUND
-	cv_joinnextround,
-#endif
 	cv_netticbuffer, cv_allownewplayer,
 #ifdef SATURNJOIN
 	cv_allownewsaturnplayer,

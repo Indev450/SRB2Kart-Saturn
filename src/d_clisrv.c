@@ -4132,10 +4132,6 @@ consvar_t cv_allownewplayer = {"allowjoin", "On", CV_SAVE|CV_CALL, CV_OnOff, Joi
 consvar_t cv_allownewsaturnplayer = {"allowsaturnjoin", "On", CV_HIDEN, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 #endif
 
-#ifdef VANILLAJOINNEXTROUND
-consvar_t cv_joinnextround = {"joinnextround", "Off", CV_SAVE|CV_NETVAR, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL}; /// \todo not done
-#endif
-
 static CV_PossibleValue_t maxplayers_cons_t[] = {{2, "MIN"}, {MAXPLAYERS, "MAX"}, {0, NULL}};
 consvar_t cv_maxplayers = {"maxplayers", "8", CV_SAVE|CV_CALL, maxplayers_cons_t, Joinable_OnChange, 0, NULL, NULL, 0, 0, NULL};
 
@@ -4847,10 +4843,6 @@ static void HandleConnect(SINT8 node)
 			// you get a free second before desynch checks. use it wisely.
 			SV_InitResynchVars(node);
 
-#ifdef VANILLAJOINNEXTROUND
-			if (cv_joinnextround.value && gameaction == ga_nothing)
-				G_SetGamestate(GS_WAITINGPLAYERS);
-#endif
 			if (!SV_SendServerConfig(node))
 			{
 				G_SetGamestate(backupstate);
