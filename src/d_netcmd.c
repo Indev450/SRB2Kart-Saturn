@@ -721,10 +721,8 @@ void D_RegisterServerCommands(void)
 	CV_RegisterVar(&cv_killingdead);
 
 	// d_clisrv
-#ifndef NONET
 #ifdef SATURNJOIN
 	CV_RegisterVar(&cv_allownewsaturnplayer); // need to register it before cv_maxplayers && cv_allownewplayer
-#endif
 #endif
 	CV_RegisterVar(&cv_maxplayers);
 	CV_RegisterVar(&cv_resynchattempts);
@@ -737,7 +735,6 @@ void D_RegisterServerCommands(void)
 	CV_RegisterVar(&cv_downloadspeed);
     CV_RegisterVar(&cv_connectawaittime);
 	CV_RegisterVar(&cv_httpsource);
-#ifndef NONET
 	CV_RegisterVar(&cv_allownewplayer);
 
 	CV_RegisterVar(&cv_joinrefusemessage);
@@ -748,7 +745,6 @@ void D_RegisterServerCommands(void)
 	CV_RegisterVar(&cv_showjoinaddress);
 	CV_RegisterVar(&cv_shownodeip);
 	CV_RegisterVar(&cv_blamecfail);
-#endif
 
 	COM_AddCommand("ping", Command_Ping_f);
 	CV_RegisterVar(&cv_nettimeout);

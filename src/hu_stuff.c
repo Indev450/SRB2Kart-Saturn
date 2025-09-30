@@ -275,14 +275,12 @@ static INT32 cechoflags = 0;
 
 static tic_t resynch_ticker = 0;
 
-#ifndef NONET
 // just after
 static void Command_Say_f(void);
 static void Command_Sayto_f(void);
 static void Command_Sayteam_f(void);
 static void Command_CSay_f(void);
 static void Got_Saycmd(UINT8 **p, INT32 playernum);
-#endif
 
 void HU_LoadGraphics(void)
 {
@@ -399,13 +397,11 @@ void HU_LoadGraphics(void)
 //
 void HU_Init(void)
 {
-#ifndef NONET
 	COM_AddCommand("say", Command_Say_f);
 	COM_AddCommand("sayto", Command_Sayto_f);
 	COM_AddCommand("sayteam", Command_Sayteam_f);
 	COM_AddCommand("csay", Command_CSay_f);
 	RegisterNetXCmd(XD_SAY, Got_Saycmd);
-#endif
 
 	// set shift translation table
 	shiftxform = english_shiftxform;
@@ -441,8 +437,6 @@ void HU_Shiftform(void)
 //======================================================================
 //                            EXECUTION
 //======================================================================
-
-#ifndef NONET
 
 // EVERY CHANGE IN THIS SCRIPT IS LOL XD! BY VINCYTM
 
@@ -522,11 +516,9 @@ static void Chatlogsize_OnChange(void)
 #undef reallocarray
 	chat_nummsg_log = min(chat_nummsg_log, (UINT32)cv_chatlogsize.value);
 }
-#endif
 
 void HU_AddChatText(const char *text, boolean playsound)
 {
-#ifndef NONET
 	if (playsound && cv_consolechat.value != 2)	// Don't play the sound if we're using hidden chat.
 		S_StartSound(NULL, sfx_radio);
 	// reguardless of our preferences, put all of this in the chat buffer in case we decide to change from oldchat mid-game.
@@ -559,13 +551,7 @@ void HU_AddChatText(const char *text, boolean playsound)
 		CON_LogMessage(text);
 		CON_LogMessage("\n"); // Add newline. Don't use va for that, since `text` might be refering to va's buffer itself
 	}
-#else
-	(void)playsound;
-	CONS_Printf("%s\n", text);
-#endif
 }
-
-#ifndef NONET
 
 /** Runs a say command, sending an ::XD_SAY message.
   * A say command consists of a signed 8-bit integer for the target, an
@@ -1087,8 +1073,6 @@ static void Got_Saycmd(UINT8 **p, INT32 playernum)
 #endif
 }
 
-#endif
-
 //
 //
 void HU_Ticker(void)
@@ -1145,8 +1129,6 @@ void HU_Ticker(void)
 
 	HU_TickSongCredits();
 }
-
-#ifndef NONET
 
 static boolean teamtalk = false;
 /*static char chatchars[QUEUESIZE];
@@ -1299,7 +1281,6 @@ static void HU_SendChatMessage(void)
 		SendNetXCmd(XD_SAY, buf, 2 + strlen(&buf[2]) + 1);
 	}
 }
-#endif
 
 void HU_clearChatChars(void)
 {
@@ -1308,12 +1289,10 @@ void HU_clearChatChars(void)
 	I_SetTextInput(false);
 }
 
-#ifndef NONET
 static boolean justscrolleddown;
 static boolean justscrolledup;
 static INT16 typelines = 1; // number of drawfill lines we need when drawing the chat. it's some weird hack and might be one frame off but I'm lazy to make another loop.
 // It's up here since it has to be reset when we open the chat.
-#endif
 
 //
 // Returns true if key eaten
@@ -1345,7 +1324,6 @@ boolean HU_Responder(event_t *ev)
 			return false;
 	}
 
-#ifndef NONET
 	if (!chat_on)
 	{
 		// enter chat mode
@@ -1423,7 +1401,6 @@ boolean HU_Responder(event_t *ev)
 		}
 		return true;
 	}
-#endif
 
 	return false;
 }
@@ -1431,8 +1408,6 @@ boolean HU_Responder(event_t *ev)
 //======================================================================
 //                         HEADS UP DRAWING
 //======================================================================
-
-#ifndef NONET
 
 #define HU_DrawEmote(x, y, emote, flags) M_DrawEmote((x), (y), (emote), hu_emoteanim, (flags))
 
@@ -2115,7 +2090,6 @@ static void HU_DrawChat_Old(void)
 		}
 	}
 }
-#endif
 
 static void HU_DrawCEcho(void)
 {
@@ -2342,7 +2316,6 @@ void HU_Drawer(void)
 	if (cv_vhseffect.value && ((paused && !camera[R_GetViewNumber()].freecam) || (demo.playback && cv_playbackspeed.value > 1)))
 		V_DrawVhsEffect(demo.rewinding);
 
-#ifndef NONET
 	// draw chat string plus cursor
 	if (chat_on)
 	{
@@ -2359,7 +2332,6 @@ void HU_Drawer(void)
 		if (!OLDCHAT && cv_consolechat.value < 2 && netgame) // Don't display minimized chat if you set the mode to Window (Hidden)
 			HU_drawMiniChat(); // draw messages in a cool fashion.
 	}
-#endif
 
 	if (cechotimer)
 		HU_DrawCEcho();

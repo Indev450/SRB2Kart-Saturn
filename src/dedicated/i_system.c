@@ -1385,13 +1385,12 @@ void I_Quit(void)
 	static boolean quiting = false;
 
 	/* prevent recursive I_Quit() */
-	if (quiting) goto death;
+	if (quiting)
+		goto death;
 	quiting = false;
 	I_ShutdownConsole();
 	M_SaveConfig(NULL); //save game config, cvars..
-#ifndef NONET
 	D_SaveBan(); // save the ban list
-#endif
 	G_SaveGameData(false); // Tails 12-08-2002
 	//added:16-02-98: when recording a demo, should exit using 'q' key,
 	//        but sometimes we forget and use 'F10'.. so save here too.
@@ -1495,9 +1494,7 @@ void I_Error(const char *error, ...)
 	I_ShutdownConsole();
 
 	M_SaveConfig(NULL); // save game config, cvars..
-#ifndef NONET
 	D_SaveBan(); // save the ban list
-#endif
 	G_SaveGameData(false); // Tails 12-08-2002
 
 	// Shutdown. Here might be other errors.

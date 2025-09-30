@@ -30,13 +30,11 @@ ifndef NOMD5
 sources+=md5.c
 endif
 
-ifndef NONET
 ifndef NOSATURNJOIN
 opts+=-DDOSATURNJOIN
 endif
 ifndef NOSATURNPAK
 opts+=-DDOSATURNPAK
-endif
 endif
 
 ifndef NOZLIB

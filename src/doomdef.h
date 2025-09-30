@@ -597,7 +597,6 @@ extern const char *compdate, *comptime, *comprevision, *compbranch;
 // None of these that are disabled in the normal build are guaranteed to work perfectly
 // Compile them at your own risk!
 
-#ifndef NONET
 //-- SATURN __
 /// Detect if a client is on Saturn in the clientconfig.
 /// To seperately allow them to join or block joining from vanilla clients.
@@ -612,7 +611,6 @@ extern const char *compdate, *comptime, *comprevision, *compbranch;
 #define SATURNPAK
 #endif
 //-- <(￣︶￣)> __
-#endif
 
 /// Undefine to use the new method of Gamma correction see colour cube in v_video.c
 #define BACKWARDSCOMPATCORRECTION
@@ -634,10 +632,8 @@ extern const char *compdate, *comptime, *comprevision, *compbranch;
 ///	    	Most modifications should probably enable this.
 //#define SAVEGAME_OTHERVERSIONS
 
-#ifndef NONET
-///	Display a connection screen on join attempts.
+/// Display a connection screen on join attempts.
 #define CLIENT_LOADINGSCREEN
-#endif
 
 /// Backwards compatibility with musicslots.
 /// \note	You should leave this enabled unless you're working with a future SRB2 version.
@@ -659,7 +655,7 @@ extern const char *compdate, *comptime, *comprevision, *compbranch;
 #define ROTANGLES 72 // Needs to be a divisor of 360 (45, 60, 90, 120...)
 #define ROTANGDIFF (360 / ROTANGLES)
 
-#if defined (HAVE_CURL) && ! defined (NONET)
+#if defined (HAVE_CURL)
 #define MASTERSERVER
 #define HOLEPUNCH
 #else

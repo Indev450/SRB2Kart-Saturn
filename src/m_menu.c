@@ -174,13 +174,12 @@ levellist_mode_t levellistmode = LLM_CREATESERVER;
 UINT8 maplistoption = 0;
 
 static char joystickInfo[8][29];
-#ifndef NONET
+
 static UINT32 serverlistpage;
 static UINT32 oldserverlistpage;
 static float serverlistslidex;
 static INT32 serverlistsearched[MAXSERVERLIST] = {0};
 static UINT32 serverlistsearchedcount = 0;
-#endif
 
 //static saveinfo_t savegameinfo[MAXSAVEGAMES]; // Extra info about the save games.
 
@@ -206,11 +205,9 @@ static INT32 vidm_column_size;
 
 static void M_StopMessage(INT32 choice);
 
-#ifndef NONET
 static void M_HandleServerPage(INT32 choice);
 static void M_HandleServerSearch(INT32 choice);
 static void M_SearchServerList(void);
-#endif
 
 // Prototyping is fun, innit?
 // ==========================================================================
@@ -262,7 +259,6 @@ static void M_ModeAttackEndGame(INT32 choice);
 static void M_SetGuestReplay(INT32 choice);
 
 // Multiplayer
-#ifndef NONET
 static void M_PreStartServerMenu(INT32 choice);
 #ifdef MASTERSERVER
 static void M_PreStartServerMenuChoice(event_t *ev);
@@ -276,7 +272,6 @@ static void M_ConnectMenuModChecks(INT32 choice);
 #endif
 static void M_Refresh(INT32 choice);
 static void M_Connect(INT32 choice);
-#endif
 static void M_StartOfflineServerMenu(INT32 choice);
 static void M_StartServer(INT32 choice);
 static void M_SetupMultiPlayer(void);
@@ -359,28 +354,21 @@ static void M_DrawVideoMode(void);
 static void M_DrawColorMenu(void);
 static void M_DrawMonitorToggles(void);
 static void M_DrawMPMainMenu(void);
-#ifndef NONET
 static void M_DrawConnectMenu(void);
-#endif
 static void M_DrawJoystick(void);
 static void M_DrawSetupMultiPlayerMenu(void);
 static void M_DrawLocalSkinMenu(void);
 
 // Handling functions
-#ifndef NONET
 static boolean M_CancelConnect(void);
-#endif
 static boolean M_QuitMultiPlayerMenu(void);
 static void M_HandleAddons(INT32 choice);
 static void M_HandleSoundTest(INT32 choice);
 static void M_HandleMusicTest(INT32 choice);
 static void M_HandleImageDef(INT32 choice);
-//static void M_HandleLoadSave(INT32 choice);
 static void M_HandleLevelStats(INT32 choice);
-#ifndef NONET
 static void M_HandleConnectIP(INT32 choice);
 static void M_ConnectLastServer(INT32 choice);
-#endif
 static void M_HandleSetupMultiPlayer(INT32 choice);
 static void M_HandleVideoMode(INT32 choice);
 static void M_ResetCvars(void);
@@ -642,12 +630,11 @@ static void M_ChangeCvar(INT32 choice)
 		}
 		else
 		{
-#ifndef NONET
 			if (cv == &cv_nettimeout || cv == &cv_jointimeout)
 				choice *= (TICRATE/7);
 			else if (cv == &cv_maxsend)
 				choice *= 512;
-#endif
+
 			CV_AddValue(cv,choice);
 		}
 	}
@@ -1884,9 +1871,7 @@ void M_Init(void)
 	if (!minidoticon && !minilighticon)
 		OP_SaturnHudMenu[sh_minidot].status = IT_GRAYEDOUT;
 
-#ifndef NONET
 	CV_RegisterVar(&cv_serversort);
-#endif
 
 	//todo put this somewhere better...
 	CV_RegisterVar(&cv_allcaps);
@@ -6504,7 +6489,6 @@ static void Fetch_servers_thread(int *id)
 
 #define S_LINEY(n) currentMenu->y + SERVERHEADERHEIGHT + (n * SERVERLINEHEIGHT)
 
-#ifndef NONET
 static UINT32 localservercount;
 
 static void M_SearchServerList(void)
@@ -6840,11 +6824,9 @@ static int ServerListEntryComparator_modified(const void *entry1, const void *en
 	// Default to strcmp.
 	return strcmp(sa->info.servername, sb->info.servername);
 }
-#endif
 
 void M_SortServerList(void)
 {
-#ifndef NONET
 	switch(cv_serversort.value)
 	{
 	case 0:		// Ping.
@@ -6866,11 +6848,10 @@ void M_SortServerList(void)
 		qs22j(serverlist, serverlistcount, sizeof(serverelem_t), ServerListEntryComparator_gametype);
 		break;
 	}
+
 	M_SearchServerList();
-#endif
 }
 
-#ifndef NONET
 #ifdef UPDATE_ALERT
 #ifdef MASTERSERVER
 static void M_CheckMODVersion(int id)
@@ -7054,7 +7035,6 @@ static void M_PreConnectMenuChoice(event_t *ev)
 	M_ConnectMenuModChecks(-1);
 }
 #endif
-#endif //NONET
 
 //===========================================================================
 // Start Server Menu
@@ -7341,7 +7321,6 @@ static void M_StartOfflineServerMenu(INT32 choice)
 	M_SetupNextMenu(&MP_OfflineServerDef);
 }
 
-#ifndef NONET
 static void M_StartServerMenu(INT32 choice)
 {
 	(void)choice;
@@ -7361,15 +7340,12 @@ static void M_StartServerMenu(INT32 choice)
 #define SETUPM_IP_MAXSIZE ((28-1)*8)
 static char setupm_ip[64];
 static textinput_t setupm_input_ip;
-#endif
 
 void M_Multiplayer(INT32 choice)
 {
 	(void)choice;
-#ifndef NONET
 	memset(setupm_ip, 0, sizeof(setupm_ip));
 	M_TextInputInit(&setupm_input_ip, setupm_ip, sizeof(setupm_ip));
-#endif
 	M_SetupNextMenu(&MP_MainDef);
 }
 
@@ -7385,20 +7361,17 @@ static void M_DrawMPMainMenu(void)
 	// use generic drawer for cursor, items and title
 	M_DrawGenericMenu();
 
-#ifndef NONET
 #if MAXPLAYERS != 16
 Update the maxplayers label...
 #endif
 	V_DrawRightAlignedString(BASEVIDWIDTH-x, y+MP_MainMenu[4].alphaKey,
 		((itemOn == 4) ? highlightflags : 0)|MENUCAPS, "(2-16 Players)");
-#endif
 
 	V_DrawRightAlignedString(BASEVIDWIDTH-x, y+MP_MainMenu[5].alphaKey,
 		((itemOn == 5) ? highlightflags : 0)|MENUCAPS,
 		"(2-4 players)"
 		);
 
-#ifndef NONET
 	y += MP_MainMenu[9].alphaKey;
 
 	V_DrawFill(x+5, y+4+5, /*16*8 + 6,*/ BASEVIDWIDTH - 2*(x+5), 8+6, 239);
@@ -7408,7 +7381,6 @@ Update the maxplayers label...
 		V_DrawString(x+8,y+12, V_ALLOWLOWERCASE, setupm_ip);
 	else
 		M_DrawTextInputScroll(x+8, y+12, &setupm_input_ip, 0, SETUPM_IP_MAXSIZE);
-#endif
 
 	// character bar, ripped off the color bar :V
 	{
@@ -7550,8 +7522,6 @@ static void M_SetupMultiHandler(INT32 choice)
 	}
 }
 
-#ifndef NONET
-
 // Tails 11-19-2002
 static void M_ConnectIP(INT32 choice)
 {
@@ -7575,7 +7545,6 @@ static void M_ConnectIP(INT32 choice)
 	if (rendermode == render_soft)
 		I_FinishUpdate(); // page flip or blit buffer
 }
-
 
 //Join Last server
 static void M_ConnectLastServer(INT32 choice)
@@ -7647,7 +7616,6 @@ static void M_HandleConnectIP(INT32 choice)
 			M_ClearMenus(true);
 	}
 }
-#endif //!NONET
 
 // ========================
 // MULTIPLAYER PLAYER SETUP

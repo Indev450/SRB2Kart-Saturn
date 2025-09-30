@@ -1006,17 +1006,16 @@ void Got_Filetxpak(void)
 			file->file = NULL;
 			file->status = FS_FOUND;
 			file->justdownloaded = true;
-			CONS_Printf(M_GetText("Downloading %s...(done)\n"),
-				filename);
-#ifndef NONET
+			CONS_Printf(M_GetText("Downloading %s...(done)\n"), filename);
+
 			filedownload.completednum++;
 			filedownload.completedsize += file->totalsize;
-#endif
 		}
 	}
 	else if (!file->justdownloaded)
 	{
 		const char *s;
+
 		switch(file->status)
 		{
 		case FS_NOTFOUND:
@@ -1035,6 +1034,7 @@ void Got_Filetxpak(void)
 			s = "unknown";
 			break;
 		}
+
 		I_Error("Received a file not requested (file id: %d, file status: %s)\n", filenum, s);
 	}
 
