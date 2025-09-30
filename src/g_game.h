@@ -129,9 +129,7 @@ extern consvar_t cv_playerblendeffects;
 
 extern consvar_t cv_cechotoggle;
 
-#ifndef NONET
 extern consvar_t cv_chatlogsize;
-#endif
 
 typedef enum
 {

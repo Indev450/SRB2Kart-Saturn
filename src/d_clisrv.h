@@ -642,16 +642,9 @@ void D_QuitNetGame(void);
 //? How many ticks to run?
 boolean TryRunTics(tic_t realtic);
 
-// extra data for lmps
-// these functions scare me. they contain magic.
-/*boolean AddLmpExtradata(UINT8 **demo_p, INT32 playernum);
-void ReadLmpExtraData(UINT8 **demo_pointer, INT32 playernum);*/
-
-#ifndef NONET
 // translate a playername in a player number return -1 if not found and
 // print a error message in the console
 SINT8 nametonum(const char *name);
-#endif
 
 extern char motd[254], server_context[8];
 extern UINT8 playernode[MAXPLAYERS];
@@ -663,7 +656,6 @@ INT32 D_NumPlayers(void);
 void D_ResetTiccmds(void);
 
 tic_t GetLag(INT32 node);
-//UINT8 GetFreeXCmdSize(UINT8 playerid);
 
 extern UINT8 hu_resynching;
 #ifdef SATURNPAK

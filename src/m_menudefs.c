@@ -62,9 +62,7 @@ menu_t OP_DiscordOptionsDef;
 #endif
 menu_t OP_HUDOptionsDef, OP_ChatOptionsDef;
 menu_t OP_GameOptionsDef, OP_ServerOptionsDef;
-#ifndef NONET
 menu_t OP_AdvServerOptionsDef;
-#endif
 menu_t OP_MonitorToggleDef;
 
 menu_t OP_AccessibilityDef;
@@ -516,15 +514,10 @@ static menuitem_t MP_MainMenu[] =
 	{IT_STRING|IT_KEYHANDLER,NULL, "Player setup...",     M_SetupMultiHandler,                 18},
 
 	{IT_HEADER, NULL, "Host a game", NULL, 100-24},
-#ifndef NONET
 	{IT_STRING|IT_CALL,       NULL, "Internet/LAN...",           M_PreStartServerMenu,     110-24},
-#else
-	{IT_GRAYEDOUT,            NULL, "Internet/LAN...",           NULL,                     110-24},
-#endif
 	{IT_STRING|IT_CALL,       NULL, "Offline...",                M_StartOfflineServerMenu, 118-24},
 
 	{IT_HEADER, NULL, "Join a game", NULL, 132-24},
-#ifndef NONET
 #ifndef MASTERSERVER
 	{IT_GRAYEDOUT,       NULL, "Internet server browser...",NULL,                          142-24},
 #else
@@ -532,14 +525,8 @@ static menuitem_t MP_MainMenu[] =
 #endif
 	{IT_STRING|IT_CALL, NULL, "Join last server",     M_ConnectLastServer,                 150-24},
 	{IT_STRING|IT_KEYHANDLER, NULL, "Specify IPv4 address:",     M_HandleConnectIP,        158-24},
-#else
-	{IT_GRAYEDOUT,            NULL, "Internet server browser...",NULL,                     142-24},
-	{IT_GRAYEDOUT,            NULL, "Join last server",     NULL,               	       150-24},
-	{IT_GRAYEDOUT,            NULL, "Specify IPv4 address:",     NULL,                     158-24},
-#endif
 };
 
-#ifndef NONET
 static menuitem_t MP_ServerMenu[] =
 {
 	{IT_STRING|IT_CVAR,                NULL, "Max. Player Count",     &cv_maxplayers,        10},
@@ -555,7 +542,6 @@ static menuitem_t MP_ServerMenu[] =
 
 	{IT_WHITESTRING|IT_CALL,           NULL, "Start",                 M_StartServer,        130},
 };
-#endif
 
 // Separated offline and normal servers.
 static menuitem_t MP_OfflineServerMenu[] =
@@ -573,7 +559,6 @@ static menuitem_t MP_PlayerSetupMenu[] =
 	{IT_KEYHANDLER | IT_STRING,   NULL, "Color",     M_HandleSetupMultiPlayer, 152},
 };
 
-#ifndef NONET
 static menuitem_t MP_ConnectMenu[] =
 {
 	{IT_STRING | IT_CVAR,       NULL, "Sort By",  &cv_serversort,      0},
@@ -601,7 +586,6 @@ enum
 	mp_connect_search,
 	FIRSTSERVERLINE
 };
-#endif
 
 // ------------------------------------
 // Options and most (?) of its submenus
@@ -1473,16 +1457,13 @@ static const char* OP_GameTooltips[] =
 
 static menuitem_t OP_ServerOptionsMenu[] =
 {
-#ifndef NONET
 	{IT_STRING | IT_CVAR | IT_CV_STRING,
 	                         NULL, "Server Name",					&cv_servername,			 10},
-#endif
 	{IT_STRING | IT_CVAR,    NULL, "Intermission Timer",			&cv_inttime,			 40},
 	{IT_STRING | IT_CVAR,    NULL, "Map Progression",				&cv_advancemap,			 50},
 	{IT_STRING | IT_CVAR,    NULL, "Voting Timer",					&cv_votetime,			 60},
 	{IT_STRING | IT_CVAR,    NULL, "Voting Rule Changes",			&cv_kartvoterulechanges, 70},
 
-#ifndef NONET
 	{IT_STRING | IT_CVAR,    NULL, "Max. Player Count",				&cv_maxplayers,			 90},
 	{IT_STRING | IT_CVAR,    NULL, "Allow Players to Join",			&cv_allownewplayer,		100},
 	{IT_STRING | IT_CVAR,    NULL, "Allow Addon Downloading",		&cv_downloading,		110},
@@ -1490,29 +1471,23 @@ static menuitem_t OP_ServerOptionsMenu[] =
 	{IT_STRING | IT_CVAR,    NULL, "Mute All Chat",					&cv_mute,				130},
 
 	{IT_SUBMENU|IT_STRING,   NULL, "Advanced Options...",			&OP_AdvServerOptionsDef,150},
-#endif
 };
 
 static const char* OP_ServerOptionsTooltips[] =
 {
-#ifndef NONET
 	"Name of server.",
-#endif
 	"Length of intermission after races.",
 	"How the next map to be played is choosen.",
 	"How long map voting is.",
 	"How often should other gamemodes appear.",
-#ifndef NONET
 	"Max amount of players allowed in this server.",
 	"Allow players to join this server.",
 	"Allow players to download addons.",
 	"Who has permission to pause the server?",
 	"Completely mute in game chat.",
 	"Options for advanced server settings.",
-#endif
 };
 
-#ifndef NONET
 static menuitem_t OP_AdvServerOptionsMenu[] =
 {
 #ifndef MASTERSERVER
@@ -1570,7 +1545,6 @@ static const char* OP_AdvServerOptionsTooltips[] =
 	"Log player resync attempts.",
 	"Log player file transfers.",
 };
-#endif
 
 #define ITEMTOGGLEBOTTOMRIGHT
 
@@ -2398,17 +2372,12 @@ menu_t MP_MainDef =
 	M_DrawMPMainMenu,
 	42, 30,
 	0,
-#ifndef NONET
 	M_CancelConnect,
-#else
-	NULL,
-#endif
 	NULL
 };
 
 menu_t MP_OfflineServerDef = MAPICONMENUSTYLE("M_MULTI", MP_OfflineServerMenu, &MP_MainDef);
 
-#ifndef NONET
 menu_t MP_ServerDef = MAPICONMENUSTYLE("M_MULTI", MP_ServerMenu, &MP_MainDef);
 
 menu_t MP_ConnectDef =
@@ -2423,7 +2392,7 @@ menu_t MP_ConnectDef =
 	M_CancelConnect,
 	NULL
 };
-#endif
+
 menu_t MP_PlayerSetupDef =
 {
 	NULL, //"M_SPLAYR"
@@ -2553,9 +2522,7 @@ menu_t OP_FocusOptionsDef = DEFAULTMENUSTYLE(NULL, OP_FocusOptionsMenu, &OP_Main
 
 menu_t OP_GameOptionsDef = DEFAULTMENUSTYLE("M_GAME", OP_GameOptionsMenu, &OP_MainDef, 30, 20, OP_GameTooltips);
 menu_t OP_ServerOptionsDef = DEFAULTMENUSTYLE("M_SERVER", OP_ServerOptionsMenu, &OP_MainDef, 24, 20, OP_ServerOptionsTooltips);
-#ifndef NONET
 menu_t OP_AdvServerOptionsDef = DEFAULTSCROLLSTYLE("M_SERVER", OP_AdvServerOptionsMenu, &OP_ServerOptionsDef, 24, 30, OP_AdvServerOptionsTooltips);
-#endif
 
 menu_t OP_MonitorToggleDef =
 {

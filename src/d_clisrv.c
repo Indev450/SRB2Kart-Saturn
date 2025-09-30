@@ -2103,7 +2103,6 @@ static void CL_ReloadReceivedSavegame(void)
 }
 #endif
 
-#ifndef NONET
 static void SendAskInfo(INT32 node)
 {
 	tic_t asktime;
@@ -2277,7 +2276,6 @@ void CL_TimeoutServerList(void)
 		}
 	}
 }
-#endif // ifndef NONET
 
 static void CL_ConfirmConnect(void)
 {
@@ -2308,7 +2306,6 @@ static void CL_ConfirmConnect(void)
 
 static void M_ConfirmConnect(event_t *ev)
 {
-#ifndef NONET
 	if (ev->type == ev_keydown)
 	{
 		if (ev->data1 == ' ' || ev->data1 == 'y' || ev->data1 == KEY_ENTER || ev->data1 == gamecontrol[0][gc_accelerate][0] || ev->data1 == gamecontrol[0][gc_accelerate][1])
@@ -2323,9 +2320,6 @@ static void M_ConfirmConnect(event_t *ev)
 			M_ClearMenus(true);
 		}
 	}
-#else
-	(void)ev;
-#endif
 }
 
 void CL_AbortConnection(void)
@@ -2420,29 +2414,25 @@ static boolean CL_FinishedFileList(void)
 		if (!filedownload.http_failed)
 #endif
 		{
-#ifndef NONET
 			filedownload.completednum = 0;
 			filedownload.completedsize = 0;
 
 			filedownload.totalnum = 0;
 			filedownload.totalsize = 0;
-#endif
 
 			for (i = 0; i < fileneedednum; i++)
+			{
 				if (fileneeded[i].status == FS_NOTFOUND || fileneeded[i].status == FS_MD5SUMBAD)
 				{
-#ifndef NONET
 					filedownload.totalnum++;
 					filedownload.totalsize += fileneeded[i].totalsize;
-#endif
 				}
+			}
 
-#ifndef NONET
 			if (filedownload.totalsize>>20 >= 10)
 				downloadsize = Z_StrDup(va("%uM",filedownload.totalsize>>20));
 			else
 				downloadsize = Z_StrDup(va("%uK",filedownload.totalsize>>10));
-#endif
 
 			if (cv_showdownloadprompt.value)
 			{
@@ -2496,7 +2486,6 @@ static boolean CL_FinishedFileList(void)
   */
 static boolean CL_ServerConnectionSearchTicker(tic_t *asksent)
 {
-#ifndef NONET
 	INT32 i;
 
 	// serverlist is updated by GetPacket function
@@ -2515,6 +2504,7 @@ static boolean CL_ServerConnectionSearchTicker(tic_t *asksent)
 			if (i < 0)
 				return true;
 		}
+
 		joinnode = i;
 
 		// Quit here rather than downloading files and being refused later.
@@ -2535,6 +2525,7 @@ static boolean CL_ServerConnectionSearchTicker(tic_t *asksent)
 				CONS_Printf("We received a http url from the server, however it will not be used as this build lacks curl support (%s)\n", serverlist[i].info.httpsource);
 #endif
 			D_ParseFileneeded(serverlist[i].info.fileneedednum, serverlist[i].info.fileneeded, 0);
+
 			if (serverlist[i].info.kartvars & SV_LOTSOFADDONS)
 			{
 				cl_mode = CL_ASKFULLFILELIST;
@@ -2559,11 +2550,6 @@ static boolean CL_ServerConnectionSearchTicker(tic_t *asksent)
 		SendAskInfo(servernode);
 		*asksent = I_GetTime() + NEWTICRATE;
 	}
-#else
-	(void)asksent;
-	// No netgames, so we skip this state.
-	cl_mode = CL_ASKJOIN;
-#endif // ifndef NONET/else
 
 	return true;
 }
@@ -2582,10 +2568,6 @@ static boolean CL_ServerConnectionTicker(const char *tmpsave, tic_t *oldtic, tic
 {
 	boolean waitmore;
 	INT32 i;
-
-#ifdef NONET
-	(void)tmpsave;
-#endif
 
 	switch (cl_mode)
 	{
@@ -2836,9 +2818,7 @@ static void CL_ConnectToServer(void)
 {
 	INT32 pnumnodes, nodewaited = doomcom->numnodes, i;
 	tic_t oldtic;
-#ifndef NONET
 	tic_t asksent;
-#endif
 	char tmpsave[264];
 
 	sprintf(tmpsave, "%s" PATHSEP TMPSAVENAME, srb2home);
@@ -2873,7 +2853,6 @@ static void CL_ConnectToServer(void)
 	ClearAdminPlayers();
 	pnumnodes = 1;
 	oldtic = 0;
-#ifndef NONET
 	asksent = 0;
 	firstconnectattempttime = I_GetTime();
 
@@ -2906,16 +2885,11 @@ static void CL_ConnectToServer(void)
 	map_icon_read = 0;
 	map_icon_missing = 0xffffffff;
 	map_icon_last_request = I_GetTime();
-#endif
 
 	do
 	{
 		// If the connection was aborted for some reason, leave
-#ifndef NONET
 		if (!CL_ServerConnectionTicker(tmpsave, &oldtic, &asksent))
-#else
-		if (!CL_ServerConnectionTicker((char*)NULL, &oldtic, (tic_t *)NULL))
-#endif
 		{
 			if (P_PartialAddGetStage() >= 0)
 				P_MultiSetupWadFiles(true); // in case any partial adds were done
@@ -2932,16 +2906,14 @@ static void CL_ConnectToServer(void)
 	}
 	while (!(cl_mode == CL_CONNECTED && (client || (server && nodewaited <= pnumnodes))));
 
-#ifndef NONET
 	if (netgame)
 		F_StartWaitingPlayers();
-#endif
+
 	DEBFILE(va("Synchronisation Finished\n"));
 
 	displayplayers[0] = consoleplayer;
 }
 
-#ifndef NONET
 static void Command_ShowBan(void) //Print out ban list
 {
 	size_t i;
@@ -3327,8 +3299,6 @@ static void Command_Packetstat(void)
 	}
 }
 
-#endif
-
 static void ResetNode(INT32 node);
 
 //
@@ -3460,10 +3430,8 @@ void CL_Reset(void)
 	memset(fileneeded, 0, sizeof(fileneeded));
 	memset(packetstat, 0, sizeof(packetstat));
 
-#ifndef NONET
 	filedownload.totalnum = 0;
 	filedownload.totalsize = 0;
-#endif
 	firstconnectattempttime = 0;
 	serverisfull = false;
 	connectiontimeout = (tic_t)cv_nettimeout.value; //reset this temporary hack
@@ -3481,7 +3449,6 @@ void CL_Reset(void)
 	// D_StartTitle should get done now, but the calling function will handle it
 }
 
-#ifndef NONET
 static void Command_GetPlayerNum(void)
 {
 	INT32 i;
@@ -3808,7 +3775,6 @@ static void Command_Kick(void)
 	else
 		CONS_Printf(M_GetText("Only the server or a remote admin can use this.\n"));
 }
-#endif
 
 static void Got_KickCmd(UINT8 **p, INT32 playernum)
 {
@@ -4236,7 +4202,6 @@ void D_ClientServerInit(void)
 	DEBFILE(va("- - -== SRB2Kart v%d.%d "VERSIONSTRING" debugfile ==- - -\n",
 		VERSION, SUBVERSION));
 
-#ifndef NONET
 	COM_AddCommand("getplayernum", Command_GetPlayerNum);
 	COM_AddCommand("kick", Command_Kick);
 	COM_AddCommand("ban", Command_Ban);
@@ -4262,17 +4227,13 @@ void D_ClientServerInit(void)
 #ifdef _DEBUG
 	COM_AddCommand("numnodes", Command_Numnodes);
 #endif
-#endif
-
 	RegisterNetXCmd(XD_KICK, Got_KickCmd);
 	RegisterNetXCmd(XD_ADDPLAYER, Got_AddPlayer);
 	RegisterNetXCmd(XD_REMOVEPLAYER, Got_RemovePlayer);
-#ifndef NONET
 #ifdef DUMPCONSISTENCY
 	CV_RegisterVar(&cv_dumpconsistency);
 #endif
 	D_LoadBan(false);
-#endif
 
 	gametic = 0;
 	localgametic = 0;
@@ -4867,18 +4828,17 @@ static void HandleConnect(SINT8 node)
 	}
 	else
 	{
-#ifndef NONET
 		boolean newnode = false;
-#endif
+
 		// client authorised to join
 		nodewaiting[node] = (UINT8)(netbuffer->u.clientcfg.localplayers - playerpernode[node]);
 
 		if (!nodeingame[node])
 		{
 			gamestate_t backupstate = gamestate;
-#ifndef NONET
+
 			newnode = true;
-#endif
+
 			SV_AddNode(node);
 
 			/// \note Wait what???
@@ -4949,7 +4909,6 @@ static void HandleTimeout(SINT8 node)
 	M_StartMessage(M_GetText("Server Timeout\n\nPress Esc\n"), NULL, MM_NOTHING);
 }
 
-#ifndef NONET
 /** Called when a PT_SERVERINFO packet is received
   *
   * \param node The packet sender
@@ -5315,8 +5274,6 @@ static void PT_RequestFile(SINT8 node)
 	else
 		Net_CloseConnection(node); // nope
 }
-
-#endif
 
 #ifdef SATURNPAK
 static void PT_WillResendGamestate(void)
@@ -6046,13 +6003,11 @@ static void GetPackets(void)
 			}
 		}
 
-#ifndef NONET
 		if (netbuffer->packettype == PT_SERVERINFO)
 		{
 			HandleServerInfo(node);
 			continue;
 		}
-#endif
 
 		/*if (netbuffer->packettype == PT_PLAYERINFO)
 			 continue; // We do nothing with PLAYERINFO, that's for the MS browser. Not quite true anymore :p*/

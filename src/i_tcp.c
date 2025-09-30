@@ -42,13 +42,6 @@
 
 #include "doomdef.h"
 
-#if defined (NOMD5) && !defined (NONET)
-//#define NONET
-#endif
-
-#ifdef NONET
-#undef HAVE_MINIUPNPC
-#else
 #include <time.h>
 #ifdef USE_WINSOCK1
 	#include <winsock.h>
@@ -71,7 +64,7 @@
 	#if defined (__unix__) || defined (__APPLE__) || defined (UNIXCOMMON)
 		#include <sys/time.h>
 	#endif // UNIXCOMMON
-#endif // !NONET
+#endif
 
 #ifdef USE_WINSOCK
 	// some undefined under win32
@@ -139,8 +132,6 @@ typedef union
 static UINT8 UPNP_support = TRUE;
 #endif
 
-#endif // !NONET
-
 #include "i_system.h"
 #include "i_time.h"
 #include "i_net.h"
@@ -164,7 +155,7 @@ static UINT8 UPNP_support = TRUE;
 #include "i_addrinfo.h"
 #define DEFAULTPORT "5029"
 
-#if defined (USE_WINSOCK) && !defined (NONET)
+#if defined (USE_WINSOCK)
 typedef SOCKET SOCKET_TYPE;
 #define ERRSOCKET (SOCKET_ERROR)
 #else
@@ -181,8 +172,6 @@ typedef unsigned long SOCKET_TYPE;
 #ifdef USE_WINSOCK1
 typedef int socklen_t;
 #endif
-
-#ifndef NONET
 
 typedef struct
 {
@@ -206,7 +195,6 @@ static banned_t *banned;
 #ifdef HOLEPUNCH
 static const INT32 hole_punch_magic = MSBF_LONG (0x52eb11);
 #endif
-#endif
 
 static size_t numbans = 0;
 static size_t banned_size = 0;
@@ -216,8 +204,6 @@ static boolean init_tcp_driver = false;
 
 static const char *serverport_name = DEFAULTPORT;
 static const char *clientport_name;/* any port */
-
-#ifndef NONET
 
 #ifdef USE_WINSOCK
 // stupid microsoft makes things complicated
@@ -423,83 +409,62 @@ static const char *SOCK_AddrToStr(mysockaddr_t *sk)
 #endif
 	return s;
 }
-#endif
 
 static const char *SOCK_GetNodeAddress(INT32 node)
 {
 	if (node == 0)
 		return "self";
-#ifdef NONET
-	return NULL;
-#else
+
 	if (!nodeconnected[node])
 		return NULL;
+
 	return SOCK_AddrToStr(&clientaddress[node]);
-#endif
 }
 
 static const char *SOCK_GetBanAddress(size_t ban)
 {
 	if (ban >= numbans)
 		return NULL;
-#ifdef NONET
-	return NULL;
-#else
+
 	return SOCK_AddrToStr(&banned[ban].address);
-#endif
 }
 
 static const char *SOCK_GetBanMask(size_t ban)
 {
-#ifdef NONET
-	(void)ban;
-#else
 	static char s[16]; //255.255.255.255 netmask? no, just CDIR for only
+
 	if (ban >= numbans)
 		return NULL;
+
 	if (sprintf(s,"%d",banned[ban].mask) > 0)
 		return s;
-#endif
+
 	return NULL;
 }
 
 static const char *SOCK_GetBanUsername(size_t ban)
 {
-#ifdef NONET
-	(void)ban;
-	return NULL;
-#else
 	if (ban >= numbans)
 		return NULL;
+
 	return banned[ban].username;
-#endif
 }
 
 static const char *SOCK_GetBanReason(size_t ban)
 {
-#ifdef NONET
-	(void)ban;
-	return NULL;
-#else
 	if (ban >= numbans)
 		return NULL;
+
 	return banned[ban].reason;
-#endif
 }
 
 static time_t SOCK_GetUnbanTime(size_t ban)
 {
-#ifdef NONET
-	(void)ban;
-	return NO_BAN_TIME;
-#else
 	if (ban >= numbans)
 		return NO_BAN_TIME;
-	return banned[ban].timestamp;
-#endif
-}
 
-#ifndef NONET
+	return banned[ban].timestamp;
+}
 
 #ifdef HAVE_IPV6
 static boolean SOCK_cmpipv6(mysockaddr_t *a, mysockaddr_t *b, UINT8 mask)
@@ -624,9 +589,7 @@ void Command_Numnodes(void)
 				connected, ingame);
 }
 #endif
-#endif
 
-#ifndef NONET
 #ifdef HOLEPUNCH
 /* not one of the reserved "local" addresses */
 static boolean
@@ -783,9 +746,7 @@ static boolean SOCK_Get(void)
 	doomcom->remotenode = -1; // no packet
 	return false;
 }
-#endif
 
-#ifndef NONET
 static inline ssize_t SOCK_SendToAddr(SOCKET_TYPE socket, mysockaddr_t *sockaddr)
 {
 	socklen_t d4 = (socklen_t)sizeof(struct sockaddr_in);
@@ -869,9 +830,7 @@ static void SOCK_Send(void)
 	}
 }
 #undef ALLOWEDERROR
-#endif //NONET
 
-#ifndef NONET
 static void SOCK_FreeNodenum(INT32 numnode)
 {
 	// can't disconnect from self :)
@@ -886,13 +845,10 @@ static void SOCK_FreeNodenum(INT32 numnode)
 	// put invalid address
 	memset(&clientaddress[numnode], 0, sizeof (clientaddress[numnode]));
 }
-#endif
 
 //
 // UDPsocket
 //
-#ifndef NONET
-
 // allocate a socket
 static SOCKET_TYPE UDP_Bind(int family, struct sockaddr *addr, socklen_t addrlen)
 {
@@ -1252,12 +1208,11 @@ static boolean UDP_Socket(void)
 
 	return true;
 }
-#endif
 
 boolean I_InitTcpDriver(void)
 {
 	boolean tcp_was_up = init_tcp_driver;
-#ifndef NONET
+
 	if (!init_tcp_driver)
 	{
 #ifdef USE_WINSOCK
@@ -1312,7 +1267,7 @@ boolean I_InitTcpDriver(void)
 #endif
 		init_tcp_driver = true;
 	}
-#endif
+
 	if (!tcp_was_up && init_tcp_driver)
 	{
 		I_AddExitFunc(I_ShutdownTcpDriver);
@@ -1326,7 +1281,6 @@ boolean I_InitTcpDriver(void)
 	return init_tcp_driver;
 }
 
-#ifndef NONET
 static void SOCK_CloseSocket(void)
 {
 	size_t i;
@@ -1340,11 +1294,9 @@ static void SOCK_CloseSocket(void)
 
 	mysocketses = 0;
 }
-#endif
 
 void I_ShutdownTcpDriver(void)
 {
-#ifndef NONET
 	SOCK_CloseSocket();
 
 	CONS_Printf("I_ShutdownTcpDriver: ");
@@ -1354,10 +1306,8 @@ void I_ShutdownTcpDriver(void)
 #endif
 	CONS_Printf("shut down\n");
 	init_tcp_driver = false;
-#endif
 }
 
-#ifndef NONET
 static boolean SOCK_GetAddr(struct sockaddr_in *sin, const char *address, const char *port, boolean test)
 {
 	struct my_addrinfo *ai = NULL, *runp, hints;
@@ -1486,11 +1436,9 @@ static void SOCK_RegisterHolePunch(void)
 	rendezvous(4);
 }
 #endif
-#endif
 
 static boolean SOCK_OpenSocket(void)
 {
-#ifndef NONET
 	size_t i;
 
 	memset(clientaddress, 0, sizeof (clientaddress));
@@ -1513,9 +1461,6 @@ static boolean SOCK_OpenSocket(void)
 	// build the socket but close it first
 	SOCK_CloseSocket();
 	return UDP_Socket();
-#else
-	return false;
-#endif
 }
 
 static void AddBannedIndex(void)
@@ -1544,11 +1489,6 @@ static boolean SOCK_Ban(INT32 node)
 	if (node > MAXNETNODES)
 		return false;
 
-#ifdef NONET
-	(void)ban;
-	return false;
-#else
-
 	ban = numbans;
 	AddBannedIndex();
 
@@ -1568,15 +1508,10 @@ static boolean SOCK_Ban(INT32 node)
 #endif
 
 	return true;
-#endif
 }
 
 static boolean SOCK_SetBanUsername(const char *username)
 {
-#ifdef NONET
-	(void)username;
-	return false;
-#else
 	if (username == NULL || strlen(username) == 0)
 	{
 		username = "Direct IP ban";
@@ -1589,16 +1524,12 @@ static boolean SOCK_SetBanUsername(const char *username)
 	}
 
 	banned[numbans - 1].username = Z_StrDup(username);
+
 	return true;
-#endif
 }
 
 static boolean SOCK_SetBanReason(const char *reason)
 {
-#ifdef NONET
-	(void)reason;
-	return false;
-#else
 	if (reason == NULL || strlen(reason) == 0)
 	{
 		reason = "No reason given";
@@ -1611,28 +1542,18 @@ static boolean SOCK_SetBanReason(const char *reason)
 	}
 
 	banned[numbans - 1].reason = Z_StrDup(reason);
+
 	return true;
-#endif
 }
 
 static boolean SOCK_SetUnbanTime(time_t timestamp)
 {
-#ifdef NONET
-	(void)reason;
-	return false;
-#else
 	banned[numbans - 1].timestamp = timestamp;
 	return true;
-#endif
 }
 
 static boolean SOCK_SetBanAddress(const char *address, const char *mask)
 {
-#ifdef NONET
-	(void)address;
-	(void)mask;
-	return false;
-#else
 	struct my_addrinfo *ai, *runp, hints;
 	int gaie;
 
@@ -1693,7 +1614,6 @@ static boolean SOCK_SetBanAddress(const char *address, const char *mask)
 	I_freeaddrinfo(ai);
 
 	return true;
-#endif
 }
 
 static void SOCK_ClearBans(void)

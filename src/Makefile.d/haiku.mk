@@ -19,9 +19,7 @@ else ifeq (${DEDICATED},1)
 EXENAME?=srb2haikud
 endif
 
-ifndef NONET
 libs+=-lnetwork
-endif
 
 define _set =
 $(1)_CFLAGS?=$($(1)_opts)
