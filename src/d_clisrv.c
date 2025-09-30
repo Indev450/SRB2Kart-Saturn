@@ -54,11 +54,9 @@
 #include "d_main.h"
 #include "r_fps.h"
 
-#ifdef CLIENT_LOADINGSCREEN
 // cl loading screen
 #include "v_video.h"
 #include "f_finale.h"
-#endif
 
 #ifdef HAVE_DISCORDRPC
 #include "discord.h"
@@ -1165,8 +1163,6 @@ static void CV_LoadPlayerNames(UINT8 **p)
 	}
 }
 
-#ifdef CLIENT_LOADINGSCREEN
-
 //
 // CL_DrawConnectionStatus
 //
@@ -1501,7 +1497,6 @@ static inline void CL_DrawConnectionStatus(void)
 		}
 	}
 }
-#endif
 
 static boolean CL_AskFileList(INT32 firstfile)
 {
@@ -2778,7 +2773,6 @@ static boolean CL_ServerConnectionTicker(const char *tmpsave, tic_t *oldtic, tic
 		}
 		*oldtic = I_GetTime();
 
-#ifdef CLIENT_LOADINGSCREEN
 		if (client && cl_mode != CL_CONNECTED && cl_mode != CL_ABORTED)
 		{
 			F_TitleScreenTicker(true);
@@ -2795,10 +2789,6 @@ static boolean CL_ServerConnectionTicker(const char *tmpsave, tic_t *oldtic, tic
 			if (moviemode)
 				M_SaveFrame();
 		}
-#else
-		CON_Drawer();
-		I_UpdateNoVsync();
-#endif
 	}
 	else
 	{
@@ -2823,10 +2813,7 @@ static void CL_ConnectToServer(void)
 
 	sprintf(tmpsave, "%s" PATHSEP TMPSAVENAME, srb2home);
 
-#ifdef CLIENT_LOADINGSCREEN
 	filedownload.current = -1;
-#endif
-
 	cl_mode = CL_SEARCHING;
 
 	// Don't get a corrupt savegame error because tmpsave already exists

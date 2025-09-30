@@ -230,9 +230,7 @@ void D_ParseFileneeded(INT32 fileneedednum_parm, UINT8 *fileneededstr, UINT16 fi
 
 void CL_PrepareDownloadSaveGame(const char *tmpsave)
 {
-#ifdef CLIENT_LOADINGSCREEN
 	filedownload.current = -1;
-#endif
 	fileneedednum = 1;
 	fileneeded[0].status = FS_REQUESTED;
 	fileneeded[0].justdownloaded = false;
@@ -1045,9 +1043,7 @@ void Got_Filetxpak(void)
 		filetime = 0;
 	}
 
-#ifdef CLIENT_LOADINGSCREEN
 	filedownload.current = filenum;
-#endif
 }
 
 /** \brief Checks if a node is downloading a file
