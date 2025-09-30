@@ -138,8 +138,7 @@ static void InitLogging(void)
 
 		if (M_IsPathAbsolute(reldir))
 		{
-			left = snprintf(logfilename, sizeof logfilename,
-					"%s"PATHSEP, reldir);
+			left = snprintf(logfilename, sizeof logfilename, "%s"PATHSEP, reldir);
 		}
 		else
 #ifdef DEFAULTDIR
@@ -155,13 +154,10 @@ static void InitLogging(void)
 					"."PATHSEP"%s"PATHSEP, reldir);
 		}
 
-		strftime(&logfilename[left], sizeof logfilename - left,
-				format, timeinfo);
+		strftime(&logfilename[left], sizeof logfilename - left, format, timeinfo);
 	}
 
-	M_MkdirEachUntil(logfilename,
-			M_PathParts(logdir) - 1,
-			M_PathParts(logfilename) - 1, 0755);
+	M_MkdirEachUntil(logfilename, M_PathParts(logdir) - 1, M_PathParts(logfilename) - 1, 0755);
 
 #if defined (__unix__) || defined(__APPLE__) || defined (UNIXCOMMON)
 	logstream = fopen(logfilename, "w");
@@ -224,11 +220,6 @@ int main(int argc, char **argv)
 	CONS_Printf("Entering main game loop...\n");
 	// never return
 	D_SRB2Loop();
-
-#ifdef BUGTRAP
-	// This is safe even if BT didn't start.
-	ShutdownBugTrap();
-#endif
 
 	// return to OS
 	return 0;
