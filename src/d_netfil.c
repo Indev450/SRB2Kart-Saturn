@@ -35,7 +35,8 @@
 #endif
 
 #ifdef HAVE_CURL
-#include "curl/curl.h"
+#include <curl/curl.h>
+#include "m_curl.h"
 #endif
 
 #include "doomdef.h"
@@ -1400,6 +1401,8 @@ void CURLPrepareFile(const char* url, int dfilenum)
 		cc = curl_easy_setopt(http_handle, CURLOPT_PROGRESSFUNCTION, curlprogress_callback);
 		if (cc != CURLE_OK) I_OutputMsg("libcurl: %s\n", curl_errbuf);
 #endif
+
+		M_SetCURLArgs(http_handle, curl_errbuf);
 
 		curl_curfile->status = FS_DOWNLOADING;
 
