@@ -205,6 +205,7 @@ filestatus_t filesearch(char *filename, const char *startpath, const UINT8 *want
 					}
 				}
 
+				// This folder is excluded
 				if (skipfolder)
 				{
 					continue;
@@ -420,9 +421,6 @@ boolean preparefilemenu(boolean samedepth, boolean replayhut)
 {
 	DIR *dirhandle;
 	struct dirent *dent;
-#ifndef _WIN32
-	struct stat fsstat;
-#endif
 	size_t pos = 0, folderpos = 0, numfolders = 0;
 	char *tempname = NULL;
 
@@ -468,23 +466,16 @@ boolean preparefilemenu(boolean samedepth, boolean replayhut)
 
 		strcpy(&menupath[menupathindex[menudepthleft]],dent->d_name);
 
-#ifndef _WIN32
-		if (stat(menupath, &fsstat) < 0)
-#else
-		// if we wanna follow symlinks we can check with FILE_ATTRIBUTE_REPARSE_POINT
-		DWORD fileattr = GetFileAttributes(menupath);
-		if (fileattr == INVALID_FILE_ATTRIBUTES)
-#endif
+		INT32 isdir = pathisdirectory(menupath);
+
+		if (isdir == -1)
 			; // was the file (re)moved? can't stat it
 		else // is a file or directory
 		{
-#ifndef _WIN32
-			if (!S_ISDIR(fsstat.st_mode)) // file
-#else
-			if (!(fileattr & FILE_ATTRIBUTE_DIRECTORY))
-#endif
+			if (isdir == 0) // file
 			{
 				size_t len = strlen(dent->d_name)+1;
+
 				if (replayhut)
 				{
 					if (strcasecmp(".lmp", dent->d_name+len-5))
@@ -550,13 +541,9 @@ boolean preparefilemenu(boolean samedepth, boolean replayhut)
 
 		strcpy(&menupath[menupathindex[menudepthleft]],dent->d_name);
 
-#ifndef _WIN32
-		if (stat(menupath, &fsstat) < 0)
-#else
-		// if we wanna follow symlinks we can check with FILE_ATTRIBUTE_REPARSE_POINT
-		DWORD fileattr = GetFileAttributes(menupath);
-		if (fileattr == INVALID_FILE_ATTRIBUTES)
-#endif
+		INT32 isdir = pathisdirectory(menupath);
+
+		if (isdir == -1)
 			; // was the file (re)moved? can't stat it
 		else // is a file or directory
 		{
@@ -565,11 +552,7 @@ boolean preparefilemenu(boolean samedepth, boolean replayhut)
 			UINT8 ext = EXT_FOLDER;
 			UINT8 folder;
 
-#ifndef _WIN32
-			if (!S_ISDIR(fsstat.st_mode)) // file
-#else
-			if (!(fileattr & FILE_ATTRIBUTE_DIRECTORY))
-#endif
+			if (isdir == 0) // file
 			{
 				if (!((numfolders+pos) < sizecoredirmenu))
 					continue; // crash prevention

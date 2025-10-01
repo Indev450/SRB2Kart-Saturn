@@ -353,7 +353,7 @@ static inline INT32 W_MakeFileMD5(const char *filename, void *resblock)
 // Invalidates the cache of lump numbers. Call this whenever a wad is added.
 static void W_InvalidateLumpnumCache(void)
 {
-	memset(lumpnumcache, 0, sizeof (lumpnumcache));
+	memset(lumpnumcache, 0, sizeof(lumpnumcache));
 }
 
 UINT32 W_HashLumpName(const char *name)
@@ -383,12 +383,10 @@ static restype_t ResourceFileDetect(const char* filename)
 static lumpinfo_t* ResGetLumpsStandalone(FILE* handle, UINT16* numlumps, const char* lumpname)
 {
 	lumpinfo_t* lumpinfo = Z_Calloc(sizeof (*lumpinfo), PU_STATIC, NULL);
-
 	lumpinfo->position = 0;
 	fseek(handle, 0, SEEK_END);
 	lumpinfo->size = ftell(handle);
 	fseek(handle, 0, SEEK_SET);
-
 	strlcpy(lumpinfo->name, lumpname, sizeof(lumpinfo->name));
 	lumpinfo->namelength = strlen(lumpinfo->name);
 	lumpinfo->hash.name = W_HashLumpName(lumpname);
@@ -863,7 +861,9 @@ UINT16 W_InitFile(const char *filename, boolean local, boolean startup)
 	}
 #endif
 
-	switch(type = ResourceFileDetect(filename))
+	type = ResourceFileDetect(filename);
+
+	switch (type)
 	{
 		case RET_SOC:
 			lumpinfo = ResGetLumpsStandalone(handle, &numlumps, "OBJCTCFG");
@@ -950,9 +950,10 @@ UINT16 W_InitFile(const char *filename, boolean local, boolean startup)
 
 	if (refreshdirmenu & REFRESHDIR_GAMEDATA)
 		G_LoadGameData();
-	DEH_UpdateMaxFreeslots();
 
+	DEH_UpdateMaxFreeslots();
 	W_InvalidateLumpnumCache();
+
 	return wadfile->numlumps;
 }
 
@@ -1059,14 +1060,14 @@ const char *W_CheckNameForNum(lumpnum_t lumpnum)
 UINT16 W_CheckNumForNamePwad(const char *name, UINT16 wad, UINT16 startlump)
 {
 	UINT16 i;
-	static char uname[9];
+	static char uname[8 + 1];
 	UINT32 hash;
 	size_t namelen;
 
 	if (!TestValidLump(wad, 0))
 		return INT16_MAX;
 
-	memset(uname, 0, sizeof uname);
+	memset(uname, 0, sizeof(uname));
 	strncpy(uname, name, sizeof(uname)-1);
 	strupr(uname);
 	namelen = strlen(uname);
@@ -1134,7 +1135,7 @@ UINT16 W_CheckNumForLongNamePwad(const char *name, UINT16 wad, UINT16 startlump)
 	return INT16_MAX;
 }
 
-UINT16 W_CheckNumForMarkerStartPwad (const char *name, UINT16 wad, UINT16 startlump)
+UINT16 W_CheckNumForMarkerStartPwad(const char *name, UINT16 wad, UINT16 startlump)
 {
 	UINT16 marker;
 	marker = W_CheckNumForNamePwad(name, wad, startlump);
@@ -1305,7 +1306,7 @@ lumpnum_t W_CheckNumForName(const char *name)
 	else
 	{
 		// Update the cache.
-		lumpnum_t lumpnum = (i << 16) + check;
+		lumpnum_t lumpnum = (i << 16) | check;
 		AddLumpToCache(lumpnum, name, false);
 
 		return lumpnum;
@@ -1331,16 +1332,13 @@ lumpnum_t W_CheckNumForLongName(const char *name)
 	if (cachenum != LUMPERROR)
 		return cachenum;
 
-	if (check == INT16_MAX)
+	// scan wad files backwards so patch lump files take precedence
+	for (i = numwadfiles - 1; i >= 0; i--)
 	{
-		// scan wad files backwards so patch lump files take precedence
-		for (i = numwadfiles - 1; i >= 0; i--)
-		{
-			check = W_CheckNumForLongNamePwad(name, (UINT16)i, 0);
+		check = W_CheckNumForLongNamePwad(name, (UINT16)i, 0);
 
-			if (check != INT16_MAX)
-				break; //found it
-		}
+		if (check != INT16_MAX)
+			break; //found it
 	}
 
 	if (check == INT16_MAX)
@@ -1350,7 +1348,7 @@ lumpnum_t W_CheckNumForLongName(const char *name)
 	else
 	{
 		// Update the cache.
-		lumpnum_t lumpnum = (i << 16) + check;
+		lumpnum_t lumpnum = (i << 16) | check;
 		AddLumpToCache(lumpnum, name, true);
 
 		return lumpnum;
@@ -1878,16 +1876,15 @@ void *W_CacheSoftwarePatchNumPwad(UINT16 wad, UINT16 lump, INT32 tag)
 	if (!lumpcache[lump])
 	{
 		size_t len = W_LumpLengthPwad(wad, lump);
-		void *ptr, *dest, *lumpdata = Z_Malloc(len, PU_STATIC, NULL);
+		void *dest, *lumpdata = Z_Malloc(len, PU_STATIC, NULL);
 
 		// read the lump in full
 		W_ReadLumpHeaderPwad(wad, lump, lumpdata, 0, 0);
-		ptr = lumpdata;
 
 		dest = Z_Calloc(sizeof(patch_t), tag, &lumpcache[lump]);
-		Patch_Create((softwarepatch_t*)(ptr), len, dest);
+		Patch_Create((softwarepatch_t*)lumpdata, len, dest);
 
-		Z_Free(ptr);
+		Z_Free(lumpdata);
 	}
 	else
 		Z_ChangeTag(lumpcache[lump], tag);
@@ -1909,9 +1906,12 @@ void *W_CachePatchNumPwad(UINT16 wad, UINT16 lump, INT32 tag)
 
 	patch = (patch_t *)W_CacheSoftwarePatchNumPwad(wad, lump, tag);
 
+	if (patch == NULL)
+		return NULL;
+
 #ifdef HWRENDER
 	// Software-only compile cache the data without conversion
-	if (patch != NULL && rendermode == render_opengl)
+	if (rendermode == render_opengl)
 		Patch_CreateGL(patch);
 #endif
 
@@ -2093,8 +2093,7 @@ void W_VerifyFileMD5(UINT16 wadfilenum, const char *matchmd5)
 // formats. checklist assumed to be valid.
 static int W_VerifyName(const char *name, lumpchecklist_t *checklist, boolean status)
 {
-	size_t j;
-	for (j = 0; checklist[j].len && checklist[j].name; ++j)
+	for (size_t j = 0; checklist[j].len && checklist[j].name; ++j)
 	{
 		if ((strncasecmp(name, checklist[j].name,
 						checklist[j].len) != false) == status)
@@ -2102,6 +2101,7 @@ static int W_VerifyName(const char *name, lumpchecklist_t *checklist, boolean st
 			return true;
 		}
 	}
+
 	return false;
 }
 
@@ -2363,13 +2363,7 @@ int W_VerifyNMUSlumps(const char *filename, FILE *handle, boolean exit_on_error)
 
 static int W_NameStartsWith(const char *name, lumpchecklist_t *checklist)
 {
-	size_t j;
-	for (j = 0; checklist[j].len && checklist[j].name; ++j)
-	{
-		if (strncasecmp(name, checklist[j].name, checklist[j].len) == 0)
-			return true;
-	}
-	return false;
+	return W_VerifyName(name, checklist, false);
 }
 
 // Checks if file contains at least one lump which name starts with one of strings in checklist
