@@ -1917,7 +1917,7 @@ INT32 I_StartupSystem(void)
 //
 // I_Quit
 //
-void I_Quit(void)
+FUNCNORETURN void ATTRNORETURN I_Quit(void)
 {
 	static SDL_bool quiting = SDL_FALSE;
 
@@ -1981,7 +1981,7 @@ static INT32 errorcount = 0;
 */
 static boolean shutdowning = false;
 
-void I_Error(const char *error, ...)
+FUNCIERROR void ATTRNORETURN I_Error(const char *error, ...)
 {
 	va_list argptr;
 	char buffer[8192];
