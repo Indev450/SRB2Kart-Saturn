@@ -928,17 +928,19 @@ static menuitem_t OP_ExpOptionsMenu[] =
 
 	{IT_STRING | IT_CVAR,	NULL, "FPS counter sampling",			&cv_accuratefps,			 50},
 
-	{IT_STRING | IT_CVAR,	NULL, "Votescreen Scaling",				&cv_votebgscaling,			 60},
+	{IT_STRING | IT_CVAR,	NULL, "Frameskip",						&cv_frameskip,			 	 60},
+
+	{IT_STRING | IT_CVAR,	NULL, "Votescreen Scaling",				&cv_votebgscaling,			 70},
 
 #ifdef HWRENDER
-	{IT_STRING | IT_CVAR, 	NULL, "Screen Textures", 				&cv_glscreentextures, 		 70},
+	{IT_STRING | IT_CVAR, 	NULL, "Screen Textures", 				&cv_glscreentextures, 		 80},
 #ifdef USE_FBO_OGL
-	{IT_STRING | IT_CVAR, 	NULL, "FBO Downsampling support", 		&cv_glframebuffer, 			 75},
-	{IT_STRING | IT_CVAR, 	NULL, "Palette Depth", 					&cv_glpalettedepth, 		 85},
-	{IT_DISABLED, 			NULL, "", 								NULL,     			 		 95},	// dummy text
+	{IT_STRING | IT_CVAR, 	NULL, "FBO Downsampling support", 		&cv_glframebuffer, 			 85},
+	{IT_STRING | IT_CVAR, 	NULL, "Palette Depth", 					&cv_glpalettedepth, 		 95},
+	{IT_DISABLED, 			NULL, "", 								NULL,     			 		105}, // dummy text
 #else
-	{IT_STRING | IT_CVAR, 	NULL, "Palette Depth", 					&cv_glpalettedepth, 		 80},
-	{IT_DISABLED, 			NULL, "", 								NULL,     			 		 90},	// dummy text
+	{IT_STRING | IT_CVAR, 	NULL, "Palette Depth", 					&cv_glpalettedepth, 		 90},
+	{IT_DISABLED, 			NULL, "", 								NULL,     			 		100}, // dummy text
 #endif
 #endif
 };
@@ -952,6 +954,7 @@ static const char* OP_ExpTooltips[] =
 	//"Should the directional lightning be randomized each map?\nTakes effect on next map load.",
 	"Toggle being able to see the sky.",
 	"Change the FPS counter sampling method\nInaccurate updates slower and might miss frame drops and such\nAccurate updates faster and is more accurate, but might be less readable", // how to ingles??
+	"Skips rendering frames if game logic takes too long preventing issues during performance drops." // idk im shit as describing things
 	"Different methods of scaling the votescreen backgrounds.",
 #ifdef HWRENDER
 	"Should the game do Screen Textures? Provides a good boost to frames\nat the cost of some visual effects not working when disabled.",
@@ -971,6 +974,7 @@ enum
 	//op_exp_dirlight,
 	op_exp_skybox,
 	op_exp_accuratefps,
+	op_exp_frameskip,
 	op_exp_votescrn,
 #ifdef HWRENDER
 	op_exp_glscrtx,
