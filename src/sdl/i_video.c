@@ -416,6 +416,10 @@ static INT32 GetTypedChar(SDL_Keysym keysym)
 				break;
 		}
 
+		// Special case for console key
+		if (scancode == SDL_SCANCODE_GRAVE)
+			return '`';
+
 		if (SDL_PeepEvents(&next_event, 1, SDL_PEEKEVENT, SDL_FIRSTEVENT, SDL_LASTEVENT) == 1 && next_event.type == SDL_TEXTINPUT)
 		{
 			if (next_event.text.text[1] == '\0') // limit to ASCII
