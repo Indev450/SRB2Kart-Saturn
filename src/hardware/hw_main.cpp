@@ -768,7 +768,8 @@ static void HWR_RenderPlane(subsector_t *subsector, extrasubsector_t *xsub, bool
 			}
 			else
 			{
-				x1 = y1 = FixedToFloat(line->v1->x);
+				x1 = FixedToFloat(line->v1->x);
+				y1 = FixedToFloat(line->v1->y);
 			}
 
 			if (line->pv2)
