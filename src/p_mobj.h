@@ -291,14 +291,14 @@ typedef struct mobj_s
 	// List: thinker links.
 	thinker_t thinker;
 
-	// More list: links in sector (if needed)
-	struct mobj_s *bnext;
-	struct mobj_s **bprev; // killough 8/11/98: change to ptr-to-ptr
-
 	// Info for drawing: position.
 	fixed_t x, y, z;
 	fixed_t old_x, old_y, old_z; // position interpolation
 	fixed_t old_x2, old_y2, old_z2;
+
+	// More list: links in sector (if needed)
+	struct mobj_s *bnext;
+	struct mobj_s **bprev; // killough 8/11/98: change to ptr-to-ptr
 
 	mobjtype_t type;
 	const mobjinfo_t *info; // &mobjinfo[mobj->type]

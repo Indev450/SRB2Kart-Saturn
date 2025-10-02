@@ -1146,7 +1146,7 @@ void M_DoScreenShot(void)
 	char pathname[MAX_WADPATH];
 	boolean ret = false;
 	UINT8 *linear = NULL;
-	UINT8 *palette;
+	UINT8 *palette = NULL;
 
 	// Don't take multiple screenshots, obviously
 	takescreenshot = false;
