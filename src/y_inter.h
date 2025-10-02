@@ -9,6 +9,9 @@
 /// \file  y_inter.h
 /// \brief Tally screens, or "Intermissions" as they were formally called in Doom
 
+#ifndef __Y_INTER__
+#define __Y_INTER__
+
 extern boolean usebuffer;
 
 void Y_IntermissionDrawer(void);
@@ -90,3 +93,5 @@ typedef struct
 	patch_t *rubyicon;              // encore ruby patch
 } votescreen_t;
 extern votescreen_t VoteScreen;
+
+#endif // __Y_INTER__

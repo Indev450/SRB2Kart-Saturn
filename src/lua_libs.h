@@ -10,6 +10,9 @@
 /// \file  lua_libs.h
 /// \brief libraries for Lua scripting
 
+#ifndef __LUA_LIBS__
+#define __LUA_LIBS__
+
 #include "doomtype.h"
 
 #ifndef HAVE_BLUAJIT
@@ -78,3 +81,5 @@ int LUA_ThinkerLib(lua_State *L);
 int LUA_MapLib(lua_State *L);
 int LUA_BlockmapLib(lua_State *L);
 int LUA_HudLib(lua_State *L);
+
+#endif //__LUA_LIBS__

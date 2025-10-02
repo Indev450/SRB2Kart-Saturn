@@ -10,9 +10,14 @@
 /// \file  k_director.h
 /// \brief SRB2kart automatic spectator camera.
 
+#ifndef __K_DIRECTOR__
+#define __K_DIRECTOR__
+
 boolean K_DirectorIsAvailable(void);
 void K_InitDirector(void);
 void K_UpdateDirector(void);
 void K_DrawDirectorDebugger(void);
 void K_DirectorFollowAttack(player_t *player, mobj_t *inflictor, mobj_t *source);
 void K_ToggleDirector(void);
+
+#endif
