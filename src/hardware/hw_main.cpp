@@ -729,6 +729,9 @@ static void HWR_RenderPlane(subsector_t *subsector, extrasubsector_t *xsub, bool
 
 		for (i = 0; i < subsector->numlines; i++, line++)
 		{
+			if (line->polyseg)
+				continue;
+
 			line_t* ld = line->linedef;
 
 			// this check sucks and is a hotspot lel
@@ -1308,15 +1311,25 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 
 	const boolean noencore = (gl_linedef->flags & ML_TFERLINE);
 
-	vs.x = (gl_curline->fv1.x);
-	vs.y = (gl_curline->fv1.y);
 	v1x = gl_curline->v1->x;
 	v1y = gl_curline->v1->y;
-
-	ve.x = (gl_curline->fv2.x);
-	ve.y = (gl_curline->fv2.y);
 	v2x = gl_curline->v2->x;
 	v2y = gl_curline->v2->y;
+
+	if (gl_curline->polyseg)
+	{
+		vs.x = FixedToFloat(v1x);
+		vs.y = FixedToFloat(v1y);
+		ve.x = FixedToFloat(v2x);
+		ve.y = FixedToFloat(v2y);
+	}
+	else
+	{
+		vs.x = gl_curline->fv1.x;
+		vs.y = gl_curline->fv1.y;
+		ve.x = gl_curline->fv2.x;
+		ve.y = gl_curline->fv2.y;
+	}
 
 #define SLOPEPARAMS(slope, end1, end2, normalheight) \
 	end1 = P_GetZAt(slope, v1x, v1y, normalheight);  \
