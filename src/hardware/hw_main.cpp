@@ -761,27 +761,11 @@ static void HWR_RenderPlane(subsector_t *subsector, extrasubsector_t *xsub, bool
 			P_ClosestPointOnLine(viewx, viewy, ld, &v);
 			dist = FixedToFloat(R_PointToDist(v.x, v.y));
 
-			if (line->pv1)
-			{
-				x1 = line->pv1->x;
-				y1 = line->pv1->y;
-			}
-			else
-			{
-				x1 = FixedToFloat(line->v1->x);
-				y1 = FixedToFloat(line->v1->y);
-			}
+			x1 = (line->fv1.x);
+			y1 = (line->fv1.y);
 
-			if (line->pv2)
-			{
-				xd = line->pv2->x - x1;
-				yd = line->pv2->y - y1;
-			}
-			else
-			{
-				xd = FixedToFloat(line->v2->x) - x1;
-				yd = FixedToFloat(line->v2->y) - y1;
-			}
+			xd = (line->fv2.x) - x1;
+			yd = (line->fv2.y) - y1;
 
 			// Based on the seg length and the distance from the line, split horizon into multiple poly sets to reduce distortion
 			dist = sqrtf((xd*xd) + (yd*yd)) / dist / 16.0f;
@@ -845,11 +829,11 @@ static void HWR_DrawSegsSplats(FSurfaceInfo * pSurf)
 
 	M_ClearBox(segbbox);
 	M_AddToBox(segbbox,
-		FloatToFixed(gl_curline->pv1->x),
-		FloatToFixed(gl_curline->pv1->y));
+		FloatToFixed(gl_curline->fv1.x),
+		FloatToFixed(gl_curline->fv1.y));
 	M_AddToBox(segbbox,
-		FloatToFixed(gl_curline->pv2->x),
-		FloatToFixed(gl_curline->pv2->y));
+		FloatToFixed(gl_curline->fv2.x),
+		FloatToFixed(gl_curline->fv2.y));
 
 	splat = (wallsplat_t *)gl_curline->linedef->splats;
 	for (; splat; splat = splat->next)
@@ -1344,35 +1328,15 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 
 	const boolean noencore = (gl_linedef->flags & ML_TFERLINE);
 
-	if (LIKELY(gl_curline->pv1))
-	{
-		vs.x = gl_curline->pv1->x;
-		vs.y = gl_curline->pv1->y;
-		v1x = gl_curline->pv1->x2;
-		v1y = gl_curline->pv1->y2;
-	}
-	else
-	{
-		vs.x = FixedToFloat(gl_curline->v1->x);
-		vs.y = FixedToFloat(gl_curline->v1->y);
-		v1x = gl_curline->v1->x;
-		v1y = gl_curline->v1->y;
-	}
+	vs.x = (gl_curline->fv1.x);
+	vs.y = (gl_curline->fv1.y);
+	v1x = gl_curline->v1->x;
+	v1y = gl_curline->v1->y;
 
-	if (LIKELY(gl_curline->pv2))
-	{
-		ve.x = gl_curline->pv2->x;
-		ve.y = gl_curline->pv2->y;
-		v2x = gl_curline->pv2->x2;
-		v2y = gl_curline->pv2->y2;
-	}
-	else
-	{
-		ve.x = FixedToFloat(gl_curline->v2->x);
-		ve.y = FixedToFloat(gl_curline->v2->y);
-		v2x = gl_curline->v2->x;
-		v2y = gl_curline->v2->y;
-	}
+	ve.x = (gl_curline->fv2.x);
+	ve.y = (gl_curline->fv2.y);
+	v2x = gl_curline->v2->x;
+	v2y = gl_curline->v2->y;
 
 #define SLOPEPARAMS(slope, end1, end2, normalheight) \
 	end1 = P_GetZAt(slope, v1x, v1y, normalheight);  \
@@ -2223,27 +2187,11 @@ static boolean CheckClip(sector_t * afrontsector, sector_t * abacksector)
 	{
 		fixed_t v1x, v1y, v2x, v2y; // the seg's vertexes as fixed_t
 
-		if (LIKELY(gl_curline->pv1))
-		{
-			v1x = gl_curline->pv1->x2;
-			v1y = gl_curline->pv1->y2;
-		}
-		else
-		{
-			v1x = gl_curline->v1->x;
-			v1y = gl_curline->v1->y;
-		}
+		v1x = gl_curline->v1->x;
+		v1y = gl_curline->v1->y;
 
-		if (LIKELY(gl_curline->pv2))
-		{
-			v2x = gl_curline->pv2->x2;
-			v2y = gl_curline->pv2->y2;
-		}
-		else
-		{
-			v2x = gl_curline->v2->x;
-			v2y = gl_curline->v2->y;
-		}
+		v2x = gl_curline->v2->x;
+		v2y = gl_curline->v2->y;
 
 #define SLOPEPARAMS(slope, end1, end2, normalheight) \
 		end1 = P_GetZAt(slope, v1x, v1y, normalheight); \
@@ -2448,27 +2396,11 @@ static void HWR_AddLine(seg_t *line)
 
 	gl_curline = line;
 
-	if (LIKELY(gl_curline->pv1))
-	{
-		v1x = gl_curline->pv1->x2;
-		v1y = gl_curline->pv1->y2;
-	}
-	else
-	{
-		v1x = gl_curline->v1->x;
-		v1y = gl_curline->v1->y;
-	}
+	v1x = gl_curline->v1->x;
+	v1y = gl_curline->v1->y;
 
-	if (LIKELY(gl_curline->pv2))
-	{
-		v2x = gl_curline->pv2->x2;
-		v2y = gl_curline->pv2->y2;
-	}
-	else
-	{
-		v2x = gl_curline->v2->x;
-		v2y = gl_curline->v2->y;
-	}
+	v2x = gl_curline->v2->x;
+	v2y = gl_curline->v2->y;
 
 	// OPTIMIZE: quickly reject orthogonal back sides.
 	angle1 = R_PointToAngle64(v1x, v1y);

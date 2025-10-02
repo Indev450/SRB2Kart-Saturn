@@ -114,6 +114,11 @@ typedef struct
 	fixed_t x, y, z;
 } vertex_t;
 
+typedef struct
+{
+	float x, y/*, z*/;
+} floatvertex_t;
+
 // Forward of linedefs, for sectors.
 struct line_s;
 
@@ -543,12 +548,11 @@ typedef struct seg_s
 	sector_t *frontsector;
 	sector_t *backsector;
 
-	fixed_t length;	// precalculated seg length
+	fixed_t length; // precalculated seg length
 
 #ifdef HWRENDER
-	// new pointers so that AdjustSegs doesn't mess with v1/v2
-	polyvertex_t *pv1;
-	polyvertex_t *pv2;
+	floatvertex_t fv1;
+	floatvertex_t fv2;
 #endif
 
 	polyobj_t *polyseg;
