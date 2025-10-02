@@ -15,6 +15,7 @@
 
 #ifndef __R_SKINS__
 #define __R_SKINS__
+
 #ifdef __cplusplus
 extern "C" {
 #endif
