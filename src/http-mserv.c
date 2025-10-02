@@ -16,6 +16,7 @@ Documentation available here.
 
 #ifdef HAVE_CURL
 #include <curl/curl.h>
+#include "m_curl.h"
 #endif
 
 #include "doomdef.h"
@@ -257,6 +258,8 @@ HMS_connect (const char *format, ...)
 
 	cc = curl_easy_setopt(curl, CURLOPT_WRITEDATA, buffer);
 	if (cc != CURLE_OK) I_OutputMsg("libcurl: %s\n", buffer->errbuf);
+
+	M_SetCURLArgs(curl, buffer->errbuf);
 
 	curl_free(quack_token);
 	free(url);

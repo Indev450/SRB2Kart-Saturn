@@ -34,6 +34,7 @@ m_misc.c
 m_perfstats.c
 m_queue.c
 m_random.c
+m_curl.c
 mserv.c
 http-mserv.c
 qs22j.c
