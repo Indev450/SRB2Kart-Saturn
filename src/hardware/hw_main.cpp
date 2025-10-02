@@ -578,21 +578,13 @@ static void HWR_RenderPlane(subsector_t *subsector, extrasubsector_t *xsub, bool
 	if (nrPlaneVerts < 3)   //not even a triangle ?
 		return;
 
+	const sector_t *sec = FOFsector ? FOFsector : gl_frontsector;
+
 	// Get the slope pointer to simplify future code
-	if (FOFsector)
-	{
-		if (FOFsector->f_slope && !isceiling)
-			slope = FOFsector->f_slope;
-		else if (FOFsector->c_slope && isceiling)
-			slope = FOFsector->c_slope;
-	}
-	else
-	{
-		if (gl_frontsector->f_slope && !isceiling)
-			slope = gl_frontsector->f_slope;
-		else if (gl_frontsector->c_slope && isceiling)
-			slope = gl_frontsector->c_slope;
-	}
+	if (sec->f_slope && !isceiling)
+		slope = sec->f_slope;
+	else if (sec->c_slope && isceiling)
+		slope = sec->c_slope;
 
 	// Set fixedheight to the slope's height from our viewpoint, if we have a slope
 	if (slope)
@@ -648,42 +640,24 @@ static void HWR_RenderPlane(subsector_t *subsector, extrasubsector_t *xsub, bool
 	flatxref = (float)(((fixed_t)pv->x & (~flatflag)) / fflatsize);
 	flatyref = (float)(((fixed_t)pv->y & (~flatflag)) / fflatsize);
 
-	if (FOFsector != NULL)
+	if (!isceiling) // it's a floor
 	{
-		if (!isceiling) // it's a floor
-		{
-			scrollx = FixedToFloat(FOFsector->floor_xoffs)/fflatsize;
-			scrolly = FixedToFloat(FOFsector->floor_yoffs)/fflatsize;
-			angle = FOFsector->floorpic_angle;
-		}
-		else // it's a ceiling
-		{
-			scrollx = FixedToFloat(FOFsector->ceiling_xoffs)/fflatsize;
-			scrolly = FixedToFloat(FOFsector->ceiling_yoffs)/fflatsize;
-			angle = FOFsector->ceilingpic_angle;
-		}
+		scrollx = FixedToFloat(sec->floor_xoffs)/fflatsize;
+		scrolly = FixedToFloat(sec->floor_yoffs)/fflatsize;
+		angle = sec->floorpic_angle;
 	}
-	else if (gl_frontsector)
+	else // it's a ceiling
 	{
-		if (!isceiling) // it's a floor
-		{
-			scrollx = FixedToFloat(gl_frontsector->floor_xoffs)/fflatsize;
-			scrolly = FixedToFloat(gl_frontsector->floor_yoffs)/fflatsize;
-			angle = gl_frontsector->floorpic_angle;
-		}
-		else // it's a ceiling
-		{
-			scrollx = FixedToFloat(gl_frontsector->ceiling_xoffs)/fflatsize;
-			scrolly = FixedToFloat(gl_frontsector->ceiling_yoffs)/fflatsize;
-			angle = gl_frontsector->ceilingpic_angle;
-		}
+		scrollx = FixedToFloat(sec->ceiling_xoffs)/fflatsize;
+		scrolly = FixedToFloat(sec->ceiling_yoffs)/fflatsize;
+		angle = sec->ceilingpic_angle;
 	}
 
 	if (angle) // Only needs to be done if there's an altered angle
 	{
 		tempxsow = flatxref;
 		tempytow = flatyref;
-		anglef = ANG2RAD(InvAngle(angle));
+		anglef   = ANG2RAD(InvAngle(angle));
 		flatxref = (tempxsow * cosf(anglef)) - (tempytow * sinf(anglef));
 		flatyref = (tempxsow * sinf(anglef)) + (tempytow * cosf(anglef));
 	}
@@ -775,14 +749,16 @@ static void HWR_RenderPlane(subsector_t *subsector, extrasubsector_t *xsub, bool
 
 		for (i = 0; i < subsector->numlines; i++, line++)
 		{
+			line_t* ld = line->linedef;
+
 			// this check sucks and is a hotspot lel
-			if (LIKELY(line->linedef->special != HORIZONSPECIAL))
+			if (LIKELY(ld->special != HORIZONSPECIAL))
 				continue;
 
 			if (R_PointOnSegSide(viewx, viewy, line) != 0)
 				continue;
 
-			P_ClosestPointOnLine(viewx, viewy, line->linedef, &v);
+			P_ClosestPointOnLine(viewx, viewy, ld, &v);
 			dist = FixedToFloat(R_PointToDist(v.x, v.y));
 
 			if (line->pv1)
@@ -2469,9 +2445,6 @@ static void HWR_AddLine(seg_t *line)
 
 	fixed_t v1x, v1y, v2x, v2y; // the seg's vertexes as fixed_t
 
-	if (line->polyseg && !(line->polyseg->flags & POF_RENDERSIDES))
-		return;
-
 	gl_curline = line;
 
 	if (LIKELY(gl_curline->pv1))
@@ -2634,7 +2607,12 @@ static inline void HWR_AddPolyObjectSegs(void)
 		// Render the polyobject's lines
 		for (j = 0; j < po_ptrs[i]->segCount; ++j)
 		{
-			HWR_AddLine(po_ptrs[i]->segs[j]);
+			seg_t *seg = po_ptrs[i]->segs[j];
+
+			if (!(seg->polyseg->flags & POF_RENDERSIDES))
+				continue;
+
+			HWR_AddLine(seg);
 		}
 	}
 }
@@ -3235,7 +3213,7 @@ doaddline:
 		//         without talking about the overdraw of course.
 		sub->sector->validcount = validcount;/// \todo fix that in a better way
 
-		if (UNLIKELY(numPolyObjects))
+		if (UNLIKELY(numpolys))
 		{
 			while (count--)
 			{
