@@ -92,7 +92,7 @@ extern char  logfilename[1024];
 
 // not sure if this belongs here lul
 // TODO: figure out whats preventing 32bit windows from working with libbacktrace
-#if defined(_WIN32) && !defined(MINGW64)
+#if defined(_WIN32) && !defined(__MINGW64__)
 #define HAVE_DRMINGW
 #endif
 
