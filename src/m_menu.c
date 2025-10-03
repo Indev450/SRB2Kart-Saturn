@@ -1430,7 +1430,7 @@ void M_Drawer(void)
 			{
 #ifdef DEVELOP // Development -- show revision / branch info
 				V_DrawThinString(vid.dup, vid.height - 20*vid.dup, V_NOSCALESTART|V_TRANSLUCENT|V_ALLOWLOWERCASE, compbranch);
-				V_DrawThinString(vid.dup, vid.height - 10*vid.dup, V_NOSCALESTART|V_TRANSLUCENT|V_ALLOWLOWERCASE, M_GetRevision());
+				V_DrawThinString(vid.dup, vid.height - 10*vid.dup, V_NOSCALESTART|V_TRANSLUCENT|V_ALLOWLOWERCASE, comprevision);
 #else // Regular build
 #ifdef SATURN_TESTING // ok not regular build lmao, we dont need to show this stuff in Saturn release builds
 				V_DrawThinString(vid.dup, vid.height - 20*vid.dup, V_NOSCALESTART|V_TRANSLUCENT|V_ALLOWLOWERCASE, comprevision);
