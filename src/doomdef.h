@@ -120,6 +120,9 @@ extern char  logfilename[1024];
 #define SUBVERSION 6 // more precise version number
 #define VERSIONSTRING "Saturn lugdev Zzz..."
 #define VERSIONSTRINGW L"Saturn lugdev Zzz..."
+
+#define SATURN_TESTING // comment out for saturn release builds!
+
 // Hey! If you change this, add 1 to the MODVERSION below! Otherwise we can't force updates!
 // And change CMakeLists.txt (not src/, but in root), for CMake users!
 #endif
