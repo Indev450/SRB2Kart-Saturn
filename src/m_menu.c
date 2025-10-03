@@ -1432,10 +1432,11 @@ void M_Drawer(void)
 				V_DrawThinString(vid.dup, vid.height - 20*vid.dup, V_NOSCALESTART|V_TRANSLUCENT|V_ALLOWLOWERCASE, compbranch);
 				V_DrawThinString(vid.dup, vid.height - 10*vid.dup, V_NOSCALESTART|V_TRANSLUCENT|V_ALLOWLOWERCASE, comprevision);
 #else // Regular build
-				V_DrawThinString(vid.dup, vid.height - 20*vid.dup, V_NOSCALESTART|V_TRANSLUCENT|V_ALLOWLOWERCASE, comprevision); // Removeur this for release! im just lazy to make a new flag or smth
+#ifdef SATURN_TESTING // ok not regular build lmao, we dont need to show this stuff in Saturn release builds
+				V_DrawThinString(vid.dup, vid.height - 20*vid.dup, V_NOSCALESTART|V_TRANSLUCENT|V_ALLOWLOWERCASE, comprevision);
+#endif
 				V_DrawThinString(vid.dup, vid.height - 10*vid.dup, V_NOSCALESTART|V_TRANSLUCENT|V_ALLOWLOWERCASE, va("%s", VERSIONSTRING));
 #endif
-
 #ifdef HWRENDER
 				if (rendermode == render_opengl)
 					V_DrawThinString(0, 0, V_GREENMAP|V_SNAPTOTOP|V_SNAPTOLEFT|V_TRANSLUCENT|V_ALLOWLOWERCASE, ("Opengl"));
