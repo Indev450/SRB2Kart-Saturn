@@ -1468,122 +1468,7 @@ void I_SleepDuration(precise_t duration)
 #endif
 }
 
-#ifdef HAVE_THREADS
-#include "../core/thread_pool.h"
-static std::thread::id g_main_thread_id;
-#endif
-
-boolean g_in_exiting_signal_handler = false;
-
-static void I_PrintSignal(INT32 signal_num, boolean core_dumped, char *signal_msg)
-{
-	const char *sigmsg;
-
-	switch (signal_num)
-	{
-#ifdef SIGINT
-		case SIGINT:
-			sigmsg = ("SIGINT - SRB2Kart-Saturn was interrupted prematurely by the user.");
-			break;
-#endif
-		case SIGILL: // illegal instruction - invalid function image
-			sigmsg = ("SIGILL - SRB2Kart-Saturn has attempted to execute an illegal instruction and needs to close.");
-			break;
-		case SIGFPE: // mathematical exception
-			sigmsg = ("SIGFPE - SRB2Kart-Saturn has encountered a mathematical exception and needs to close.");
-			break;
-		case SIGSEGV: // segment violation
-			sigmsg = ("SIGSEGV - SRB2Kart-Saturn has attempted to access a memory location that it shouldn't and needs to close.");
-			break;
-#ifdef SIGTERM
-		case SIGTERM: // Software termination signal from kill
-			sigmsg = ("SIGTERM - SRB2Kart-Saturn was terminated by a kill signal.");
-			break;
-#endif
-#ifdef SIGBREAK
-		case SIGBREAK: // Ctrl-Break sequence
-			sigmsg =("SIGBREAK - SRB2Kart-Saturn was terminated by a Ctrl-Break sequence.")
-			break;
-#endif
-		case SIGABRT: // abnormal termination triggered by abort call
-			sigmsg = ("SIGABRT - SRB2Kart-Saturn was terminated by an abort signal.");
-			break;
-		default:
-			sprintf(signal_msg, "Signal number %d", signal_num);
-			sigmsg = (core_dumped ? "Unknown signal" : signal_msg);
-			break;
-	}
-
-	if (core_dumped)
-	{
-		if (sigmsg)
-			sprintf(signal_msg, "%s (core dumped)", sigmsg);
-		else
-			strcat(signal_msg, " (core dumped)");
-	}
-	else
-	{
-		sprintf(signal_msg, "%s", sigmsg);
-	}
-}
-
-static void I_ReportSignal(int num, int coredumped)
-{
-	char sigmsg[512];
-
-	I_PrintSignal(num, coredumped, sigmsg);
-
-	size_t len = strlen(sigmsg);
-	snprintf(sigmsg + len, sizeof(sigmsg) - len, "\n\nCrash report has been saved into %s", CRASH_LOGFILE_NAME);
-	I_OutputMsg("\nProcess killed by signal: %s\n\n", sigmsg);
-	SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Process killed by signal", sigmsg, NULL);
-}
-
-#ifndef NEWSIGNALHANDLER
-FUNCNORETURN static ATTRNORETURN void signal_handler(INT32 num)
-{
-	g_in_exiting_signal_handler = true;
-
-#ifdef HAVE_THREADS
-	if (g_main_thread_id != std::this_thread::get_id())
-	{
-		// Do not attempt any sort of recovery if this signal triggers off the main thread
-		signal(num, SIG_DFL);
-		raise(num);
-		exit(-2);
-	}
-#endif
-
-	D_QuitNetGame(); // Fix server freezes
-
-#ifdef HAVE_LIBBACKTRACE
-	write_backtrace(BT_CRASH_REASON_SIGNAL(num));
-#endif
-
-	I_ReportSignal(num, 0);
-	I_ShutdownSystem();
-	signal(num, SIG_DFL);               //default signal action
-	raise(num);
-	I_Quit();
-}
-#endif
-
-FUNCNORETURN static ATTRNORETURN void quit_handler(int num)
-{
-#ifdef HAVE_THREADS
-	if (g_main_thread_id != std::this_thread::get_id())
-	{
-		// Do not attempt any sort of recovery if this signal triggers off the main thread
-		signal(num, SIG_DFL);
-		raise(num);
-		exit(-2);
-	}
-#endif
-
-	signal(num, SIG_DFL); //default signal action
-	raise(num);
-	I_Quit();
-}
+static void I_PrintSignal(INT32 signal_num, boolean core_dumped, char *signal_msg);
 
 #ifdef HAVE_LIBBACKTRACE
 #include <backtrace.h>
@@ -1764,6 +1649,123 @@ static void write_backtrace(bt_crash_reason_t reason)
 	}
 }
 #endif
+
+#ifdef HAVE_THREADS
+#include "../core/thread_pool.h"
+static std::thread::id g_main_thread_id;
+#endif
+
+boolean g_in_exiting_signal_handler = false;
+
+static void I_PrintSignal(INT32 signal_num, boolean core_dumped, char *signal_msg)
+{
+	const char *sigmsg;
+
+	switch (signal_num)
+	{
+#ifdef SIGINT
+		case SIGINT:
+			sigmsg = ("SIGINT - SRB2Kart-Saturn was interrupted prematurely by the user.");
+			break;
+#endif
+		case SIGILL: // illegal instruction - invalid function image
+			sigmsg = ("SIGILL - SRB2Kart-Saturn has attempted to execute an illegal instruction and needs to close.");
+			break;
+		case SIGFPE: // mathematical exception
+			sigmsg = ("SIGFPE - SRB2Kart-Saturn has encountered a mathematical exception and needs to close.");
+			break;
+		case SIGSEGV: // segment violation
+			sigmsg = ("SIGSEGV - SRB2Kart-Saturn has attempted to access a memory location that it shouldn't and needs to close.");
+			break;
+#ifdef SIGTERM
+		case SIGTERM: // Software termination signal from kill
+			sigmsg = ("SIGTERM - SRB2Kart-Saturn was terminated by a kill signal.");
+			break;
+#endif
+#ifdef SIGBREAK
+		case SIGBREAK: // Ctrl-Break sequence
+			sigmsg =("SIGBREAK - SRB2Kart-Saturn was terminated by a Ctrl-Break sequence.");
+			break;
+#endif
+		case SIGABRT: // abnormal termination triggered by abort call
+			sigmsg = ("SIGABRT - SRB2Kart-Saturn was terminated by an abort signal.");
+			break;
+		default:
+			sprintf(signal_msg, "Signal number %d", signal_num);
+			sigmsg = (core_dumped ? "Unknown signal" : signal_msg);
+			break;
+	}
+
+	if (core_dumped)
+	{
+		if (sigmsg)
+			sprintf(signal_msg, "%s (core dumped)", sigmsg);
+		else
+			strcat(signal_msg, " (core dumped)");
+	}
+	else
+	{
+		sprintf(signal_msg, "%s", sigmsg);
+	}
+}
+
+static void I_ReportSignal(int num, int coredumped)
+{
+	char sigmsg[512];
+
+	I_PrintSignal(num, coredumped, sigmsg);
+
+	size_t len = strlen(sigmsg);
+	snprintf(sigmsg + len, sizeof(sigmsg) - len, "\n\nCrash report has been saved into %s", CRASH_LOGFILE_NAME);
+	I_OutputMsg("\nProcess killed by signal: %s\n\n", sigmsg);
+	SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Process killed by signal", sigmsg, NULL);
+}
+
+#ifndef NEWSIGNALHANDLER
+FUNCNORETURN static ATTRNORETURN void signal_handler(INT32 num)
+{
+	g_in_exiting_signal_handler = true;
+
+#ifdef HAVE_THREADS
+	if (g_main_thread_id != std::this_thread::get_id())
+	{
+		// Do not attempt any sort of recovery if this signal triggers off the main thread
+		signal(num, SIG_DFL);
+		raise(num);
+		exit(-2);
+	}
+#endif
+
+	D_QuitNetGame(); // Fix server freezes
+
+#ifdef HAVE_LIBBACKTRACE
+	write_backtrace(BT_CRASH_REASON_SIGNAL(num));
+#endif
+
+	I_ReportSignal(num, 0);
+	I_ShutdownSystem();
+	signal(num, SIG_DFL);               //default signal action
+	raise(num);
+	I_Quit();
+}
+#endif
+
+FUNCNORETURN static ATTRNORETURN void quit_handler(int num)
+{
+#ifdef HAVE_THREADS
+	if (g_main_thread_id != std::this_thread::get_id())
+	{
+		// Do not attempt any sort of recovery if this signal triggers off the main thread
+		signal(num, SIG_DFL);
+		raise(num);
+		exit(-2);
+	}
+#endif
+
+	signal(num, SIG_DFL); //default signal action
+	raise(num);
+	I_Quit();
+}
 
 static void I_RegisterSignals(void)
 {

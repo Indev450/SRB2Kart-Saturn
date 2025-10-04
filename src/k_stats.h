@@ -1,3 +1,14 @@
+// SONIC ROBO BLAST 2 KART SATURN
+//-----------------------------------------------------------------------------
+// Copyright (C) 2025 by Indev.
+//
+// This program is free software distributed under the
+// terms of the GNU General Public License, version 2.
+// See the 'LICENSE' file for more details.
+//-----------------------------------------------------------------------------
+/// \file  k_stats.h
+/// \brief Game statistics handling
+
 #ifndef __K_STATS__
 #define __K_STATS__
 

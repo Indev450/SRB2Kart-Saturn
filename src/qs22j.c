@@ -18,7 +18,6 @@
 #include <stdint.h>
 
 #include "qs22j.h"
-#include "doomdef.h"
 
 #define INSORTTHRESH	5			// if n < this use insertion sort
 									// MUST be >= 2
@@ -89,7 +88,7 @@ static inline char *med3(char *a, char *b, char *c, int (*compar)(const void *, 
 void qs22j(void *base, size_t nmemb, size_t size, int (*compar)(const void *, const void *))
 {
 	// we have nothing to sort
-	if (UNLIKELY(nmemb <= 1))
+	if (__builtin_expect(!!(nmemb <= 1), 0) ) //UNLIKELY - thx windoze
 	{
 		return;
 	}

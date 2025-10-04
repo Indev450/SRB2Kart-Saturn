@@ -1,3 +1,14 @@
+// SONIC ROBO BLAST 2 KART SATURN
+//-----------------------------------------------------------------------------
+// Copyright (C) 2025 by Indev.
+//
+// This program is free software distributed under the
+// terms of the GNU General Public License, version 2.
+// See the 'LICENSE' file for more details.
+//-----------------------------------------------------------------------------
+/// \file  lua_udatalib.c
+/// \brief Implementation of lua userdata object metatables based on getter/setter functions
+
 #include "doomtype.h"
 #include "m_fixed.h"
 #include "lua_udatalib.h"
