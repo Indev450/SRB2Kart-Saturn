@@ -6,7 +6,7 @@
 // terms of the GNU General Public License, version 2.
 // See the 'LICENSE' file for more details.
 //-----------------------------------------------------------------------------
-/// \file  k_stats.h
+/// \file  k_stats.c
 /// \brief Game statistics handling
 
 #include "k_stats.h"
