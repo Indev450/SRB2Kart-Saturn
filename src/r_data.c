@@ -375,7 +375,7 @@ UINT8 *R_GenerateTexture(size_t texnum)
 			return block;
 		}
 
-		pdata = W_CacheLumpNumPwad(wadnum, lumpnum, PU_LEVEL);
+		pdata = (UINT8*)W_CacheLumpNumPwad(wadnum, lumpnum, PU_LEVEL);
 		realpatch = (softwarepatch_t *)pdata;
 
 		// Check the patch for holes.
@@ -450,8 +450,7 @@ UINT8 *R_GenerateTexture(size_t texnum)
 	{
 		wadnum = patch->wad;
 		lumpnum = patch->lump;
-		pdata = W_CacheLumpNumPwad(wadnum, lumpnum, PU_LEVEL);
-		lumplength = W_LumpLengthPwad(wadnum, lumpnum);
+		pdata = (UINT8*)W_CacheLumpNumPwad(wadnum, lumpnum, PU_LEVEL);
 		realpatch = (softwarepatch_t *)pdata;
 
 		x1 = patch->originx;
