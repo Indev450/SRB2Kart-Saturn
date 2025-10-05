@@ -152,7 +152,18 @@ static void R_Render2sidedMultiPatchColumn(drawcolumndata_t* dc, column_t *colum
 
 transnum_t R_GetLinedefTransTable(fixed_t alpha)
 {
-	return static_cast<transnum_t>((20*(FRACUNIT - alpha - 1) + FRACUNIT) >> (FRACBITS+1));
+	if (alpha >= FRACUNIT)
+	{
+		return static_cast<transnum_t>(0);
+	}
+	else if (alpha <= 0)
+	{
+		return NUMTRANSMAPS;
+	}
+	else
+	{
+		return static_cast<transnum_t>((20*(FRACUNIT - alpha - 1) + FRACUNIT) >> (FRACBITS+1));
+	}
 }
 
 static inline boolean R_OverflowTest(drawcolumndata_t* dc)
@@ -1916,8 +1927,7 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 
 	numbackffloors = 0;
 
-	for (i = 0; i < MAXFFLOORS; i++)
-		ds_p->thicksides[i] = NULL;
+	memset(ds_p->thicksides, 0, MAXFFLOORS * sizeof(*ds_p->thicksides));
 
 	if (numffloors)
 	{
