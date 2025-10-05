@@ -215,7 +215,7 @@ static void R_GetTiltedLighting(std::vector<INT32>& tiltlighting, const drawspan
 	}
 
 	R_CalcTiltedLighting(tiltlighting, ds->x1, ds->x2, lightstart, lightend);
-	//CONS_Printf("tilted lighting %f to %f (foc %f)\n", lightstart, lightend, focallengthf);
+	//CONS_Printf("tilted lighting %f to %f (foc %f)\n", FixedToFloat(lightstart), FixedToFloat(lightend), focallengthf);
 }
 
 template<DrawSpanType Type>
