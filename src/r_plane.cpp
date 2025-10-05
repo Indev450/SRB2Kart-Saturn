@@ -60,10 +60,6 @@ INT32 numffloors;
 #define visplane_hash(picnum,lightlevel,height) \
   ((unsigned)((picnum)*3+(lightlevel)+(height)*7) & VISPLANEHASHMASK)
 
-//SoM: 3/23/2000: Use boom opening limit removal
-size_t maxopenings;
-INT16 *openings, *lastopening; /// \todo free leak
-
 //
 // Clip values are the solid pixel bounding the range.
 //  floorclip starts out SCREENHEIGHT
@@ -339,13 +335,13 @@ void R_ClearPlanes(void)
 	R_ClearFFloorClips();
 
 	for (i = 0; i < MAXVISPLANES; i++)
+	{
 		for (*freehead = visplanes[i], visplanes[i] = NULL;
 			freehead && *freehead ;)
 		{
 			freehead = &(*freehead)->next;
 		}
-
-	lastopening = openings;
+	}
 
 	// left to right mapping
 	angle = (viewangle-ANGLE_90)>>ANGLETOFINESHIFT;
