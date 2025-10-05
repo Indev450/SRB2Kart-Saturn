@@ -1088,7 +1088,7 @@ void D_ClearState(void)
 	S_StopSounds();
 	S_ResetKeepAndSpecialMus(); // just in case
 
-	P_FreeLevelState();
+	//P_FreeLevelState();
 
 	G_SetGamestate(GS_NULL);
 	wipegamestate = GS_NULL;
