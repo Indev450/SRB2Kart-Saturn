@@ -241,11 +241,12 @@ static INT32 tidcachelen = 0;
 // R_DrawColumnInCache
 // Clip and draw a column from a patch into a cached post.
 //
-static inline void R_DrawColumnInCache(column_t *patch, UINT8 *cache, INT32 originy, INT32 cacheheight)
+static inline void R_DrawColumnInCache(column_t *patch, UINT8 *cache, texpatch_t *originPatch, INT32 cacheheight)
 {
 	INT32 count, position;
 	UINT8 *source;
 	INT32 topdelta, prevdelta = -1;
+	INT32 originy = originPatch->originy;
 
 	while (patch->topdelta != 0xff)
 	{
@@ -374,7 +375,7 @@ UINT8 *R_GenerateTexture(size_t texnum)
 			return block;
 		}
 
-		pdata = W_CacheLumpNumPwad(patch->wad, patch->lump, PU_LEVEL);
+		pdata = W_CacheLumpNumPwad(wadnum, lumpnum, PU_LEVEL);
 		realpatch = (softwarepatch_t *)pdata;
 
 		// Check the patch for holes.
@@ -383,7 +384,7 @@ UINT8 *R_GenerateTexture(size_t texnum)
 
 		colofs = (UINT8 *)realpatch->columnofs;
 
-		for (x = 0; x < texture->width; x++)
+		for (x = 0; x < texture->width && !holey; x++)
 		{
 			column_t *col = (column_t *)((UINT8 *)realpatch + LONG(*(UINT32 *)&colofs[x<<2]));
 
@@ -483,7 +484,7 @@ UINT8 *R_GenerateTexture(size_t texnum)
 
 			// generate column ofset lookup
 			*(UINT32 *)&colofs[x<<2] = LONG((x * texture->height) + (texture->width*4));
-			R_DrawColumnInCache(patchcol, block + LONG(*(UINT32 *)&colofs[x<<2]), patch->originy, texture->height);
+			R_DrawColumnInCache(patchcol, block + LONG(*(UINT32 *)&colofs[x<<2]), patch, texture->height);
 		}
 	}
 
