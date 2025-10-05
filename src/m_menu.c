@@ -2713,6 +2713,10 @@ static void M_PrepareLevelSelect(void)
 //
 boolean M_CanShowLevelInList(INT32 mapnum, INT32 gt)
 {
+	// invalid mapnum
+	if (mapnum < -1)
+		return false;
+
 	// Random map!
 	if (mapnum == -1)
 		return (gamestate != GS_TIMEATTACK && !modeattacking);
@@ -7220,7 +7224,7 @@ static void M_DrawLevelSelectOnly(boolean leftfade, boolean rightfade)
 			if (i == oldval)
 				return;
 
-			if(!mapheaderinfo[i])
+			if (i >= 0 && !mapheaderinfo[i])
 				continue; // Don't allocate the header.  That just makes memory usage skyrocket.
 
 		} while (!M_CanShowLevelInList(i, cv_newgametype.value));
@@ -7258,7 +7262,7 @@ static void M_DrawLevelSelectOnly(boolean leftfade, boolean rightfade)
 			if (i == oldval)
 				return;
 
-			if(!mapheaderinfo[i])
+			if (i >= 0 && !mapheaderinfo[i])
 				continue; // Don't allocate the header.  That just makes memory usage skyrocket.
 
 		} while (!M_CanShowLevelInList(i, cv_newgametype.value));
