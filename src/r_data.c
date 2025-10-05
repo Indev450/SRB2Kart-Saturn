@@ -94,7 +94,7 @@ static UINT32 **texturecolumnofs; // column offset lookup table for each texture
 UINT8 **texturecache; // graphics data for each generated full-size texture
 
 // texture width is a power of 2, so it can easily repeat along sidedefs using a simple mask
-static INT32 *texturewidthmask;
+static INT32 *texturewidth;
 
 fixed_t *textureheight; // needed for texture pegging
 
@@ -260,6 +260,7 @@ static inline void R_DrawColumnInCache(column_t *patch, UINT8 *cache, INT32 orig
 		if (position < 0)
 		{
 			count += position;
+			source -= position; // start further down the column
 			position = 0;
 		}
 
@@ -271,6 +272,50 @@ static inline void R_DrawColumnInCache(column_t *patch, UINT8 *cache, INT32 orig
 
 		patch = (column_t *)((UINT8 *)patch + patch->length + 4);
 	}
+}
+
+static UINT8 *R_AllocateTextureBlock(size_t blocksize, UINT8 **user)
+{
+	texturememory += blocksize;
+
+	return Z_Malloc(blocksize, PU_LEVEL, user);
+}
+
+static UINT8 *R_AllocateDummyTextureBlock(size_t width, UINT8 **user)
+{
+	// Allocate dummy data. Keep 4-bytes aligned.
+	// Column offsets will be initialized to 0, which points to the 0xff byte (empty column flag).
+	size_t blocksize = 4 + (width * 4);
+	UINT8 *block = R_AllocateTextureBlock(blocksize, user);
+
+	memset(block, 0, blocksize);
+	block[0] = 0xff;
+
+	return block;
+}
+
+static boolean R_CheckTextureLumpLength(texture_t *texture, size_t patch)
+{
+	UINT16 wadnum = texture->patches[patch].wad;
+	UINT16 lumpnum = texture->patches[patch].lump;
+	size_t lumplength = W_LumpLengthPwad(wadnum, lumpnum);
+
+	// The header does not exist
+	if (lumplength < offsetof(softwarepatch_t, columnofs))
+	{
+		CONS_Alert(
+			CONS_ERROR,
+			 "%.8s: texture lump data is too small. Expected %s bytes, got %s. (%s)\n",
+				   texture->name,
+			 sizeu1(offsetof(softwarepatch_t, columnofs)),
+				   sizeu2(lumplength),
+				   wadfiles[wadnum]->lumpinfo[lumpnum].fullname
+		);
+
+		return false;
+	}
+
+	return true;
 }
 
 //
@@ -297,6 +342,10 @@ UINT8 *R_GenerateTexture(size_t texnum)
 	column_t *patchcol;
 	UINT8 *colofs;
 
+	UINT16 wadnum;
+	lumpnum_t lumpnum;
+	size_t lumplength;
+
 	I_Assert(texnum <= (size_t)numtextures);
 	texture = textures[texnum];
 	I_Assert(texture != NULL);
@@ -311,45 +360,57 @@ UINT8 *R_GenerateTexture(size_t texnum)
 	{
 		boolean holey = false;
 		patch = texture->patches;
+
+		wadnum = patch->wad;
+		lumpnum = patch->lump;
+		lumplength = W_LumpLengthPwad(wadnum, lumpnum);
+
+		// The header does not exist
+		if (R_CheckTextureLumpLength(texture, 0) == false)
+		{
+			block = R_AllocateDummyTextureBlock(texture->width, &texturecache[texnum]);
+			texturecolumnofs[texnum] = (UINT32*)&block[4];
+			textures[texnum]->holes = true;
+			return block;
+		}
+
 		pdata = W_CacheLumpNumPwad(patch->wad, patch->lump, PU_LEVEL);
 		realpatch = (softwarepatch_t *)pdata;
 
 		// Check the patch for holes.
 		if (texture->width > SHORT(realpatch->width) || texture->height > SHORT(realpatch->height))
 			holey = true;
-		else
+
+		colofs = (UINT8 *)realpatch->columnofs;
+
+		for (x = 0; x < texture->width; x++)
 		{
-			colofs = (UINT8 *)realpatch->columnofs;
+			column_t *col = (column_t *)((UINT8 *)realpatch + LONG(*(UINT32 *)&colofs[x<<2]));
 
-			for (x = 0; x < texture->width; x++)
+			INT32 topdelta, prevdelta = -1, y = 0;
+
+			while (col->topdelta != 0xff)
 			{
-				column_t *col = (column_t *)((UINT8 *)realpatch + LONG(*(UINT32 *)&colofs[x<<2]));
-
-				INT32 topdelta, prevdelta = -1, y = 0;
-
-				while (col->topdelta != 0xff)
-				{
-					topdelta = col->topdelta;
-					if (topdelta <= prevdelta)
-						topdelta += prevdelta;
-					prevdelta = topdelta;
-					if (topdelta > y)
-						break;
-					y = topdelta + col->length + 1;
-					col = (column_t *)((UINT8 *)col + col->length + 4);
-				}
-
-				if (y < texture->height)
-					holey = true; // this texture is HOLEy! D:
+				topdelta = col->topdelta;
+				if (topdelta <= prevdelta)
+					topdelta += prevdelta;
+				prevdelta = topdelta;
+				if (topdelta > y)
+					break;
+				y = topdelta + col->length + 1;
+				col = (column_t *)((UINT8 *)col + col->length + 4);
 			}
+
+			if (y < texture->height)
+				holey = true; // this texture is HOLEy! D:
 		}
 
 		// If the patch uses transparency, we have to save it this way.
 		if (holey)
 		{
 			texture->holes = true;
-			blocksize = W_LumpLengthPwad(patch->wad, patch->lump);
-			block = Z_Calloc(blocksize, PU_LEVEL, &texturecache[texnum]);
+			blocksize = lumplength;
+			block = Z_Calloc(blocksize, PU_LEVEL, &texturecache[texnum]); // will change tag at end of this function
 			M_Memcpy(block, realpatch, blocksize);
 			texturememory += blocksize;
 
@@ -365,7 +426,6 @@ UINT8 *R_GenerateTexture(size_t texnum)
 
 			goto done;
 		}
-
 		// Otherwise, do multipatch format.
 	}
 
@@ -387,7 +447,10 @@ UINT8 *R_GenerateTexture(size_t texnum)
 	// Composite the columns together.
 	for (i = 0, patch = texture->patches; i < texture->patchcount; i++, patch++)
 	{
-		pdata = W_CacheLumpNumPwad(patch->wad, patch->lump, PU_LEVEL);
+		wadnum = patch->wad;
+		lumpnum = patch->lump;
+		pdata = W_CacheLumpNumPwad(wadnum, lumpnum, PU_LEVEL);
+		lumplength = W_LumpLengthPwad(wadnum, lumpnum);
 		realpatch = (softwarepatch_t *)pdata;
 
 		x1 = patch->originx;
@@ -439,6 +502,7 @@ INT32 R_GetTextureNum(INT32 texnum)
 {
 	if (texnum < 0 || texnum >= numtextures)
 		return 0;
+
 	return texturetranslation[texnum];
 }
 
@@ -456,17 +520,12 @@ void R_CheckTextureCache(INT32 tex)
 
 static inline INT32 wrap_column(fixed_t tex, INT32 col)
 {
-	if (texturewidthmask[tex])
-		col &= texturewidthmask[tex];  // set by load textures
-	else
-	{
-		const INT16 texwidth = textures[tex]->width;
+	INT32 width = texturewidth[tex];
 
-		// Odd width texture, cannot just mask.
-		// Sometime gets colnum = -1 or = width, even without tiling.
-		// Test LostCiv, Map 20, crates.
-		col = ((col % texwidth) + texwidth) % texwidth;
-	}
+	if (width & (width - 1))
+		col = (UINT32)col % width;
+	else
+		col &= (width - 1);
 
 	return col;
 }
@@ -516,7 +575,6 @@ static INT32
 Rloadtextures (INT32 i, INT32 w)
 {
 	UINT16 j, numlumps = 0;
-	INT32 k;
 	UINT16 texstart, texend, texturesLumpPos;
 	softwarepatch_t *patchlump;
 	texpatch_t *patch;
@@ -568,8 +626,10 @@ Rloadtextures (INT32 i, INT32 w)
 		// Set texture properties.
 		M_Memcpy(texture->name, W_CheckNameForNumPwad(wadnum, lumpnum), sizeof(texture->name));
 		texture->hash = quickncasehash(texture->name, 8);
+
 		texture->width = SHORT(patchlump->width);
 		texture->height = SHORT(patchlump->height);
+
 		texture->type = TEXTURETYPE_SINGLEPATCH;
 		texture->patchcount = 1;
 		texture->holes = false;
@@ -583,25 +643,7 @@ Rloadtextures (INT32 i, INT32 w)
 
 		Z_Free(patchlump);
 
-		// determine width power of 2
-#if 1
-        // [WDJ] only need to determine if exact power of 2.
-        k = 1;
-        while (k < texture->width)
-            k<<=1;
-#else
-		// Largest power of 2 that fits within width.
-		k = 1;
-		while (k << 1 <= texture->width)
-			k <<= 1;
-#endif
-		if (k != texture->width)
-		{
-			// Odd width
-			k = 1;  // make texturewidthmask = 0
-		}
-
-		texturewidthmask[i] = k - 1;
+		texturewidth[i] = texture->width;
 		textureheight[i] = texture->height << FRACBITS;
 		i++;
 	}
@@ -709,7 +751,7 @@ static void R_AllocateTextures(INT32 add)
 	// Allocate texture referencing cache.
 	recallocuser(&texturecache, oldsize, newsize);
 	// Allocate texture width table.
-	recallocuser(&texturewidthmask, oldsize, newsize);
+	recallocuser(&texturewidth, oldsize, newsize);
 	// Allocate texture height table.
 	recallocuser(&textureheight, oldsize, newsize);
 	// Create translation table for global animation.
@@ -1181,7 +1223,7 @@ void R_ParseTEXTURESLump(UINT16 wadNum, UINT16 lumpNum, INT32 *texindex)
 			newTexture = R_ParseTexture(true);
 			// Store the new texture
 			textures[*texindex] = newTexture;
-			texturewidthmask[*texindex] = newTexture->width - 1;
+			texturewidth[*texindex] = newTexture->width;
 			textureheight[*texindex] = newTexture->height << FRACBITS;
 			// Increment i back in R_LoadTextures()
 			(*texindex)++;
