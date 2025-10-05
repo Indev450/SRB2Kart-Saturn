@@ -1775,7 +1775,7 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 	angle_t       distangle, offsetangle;
 	boolean longboi;
 	INT32           lightnum;
-	INT32           i, p;
+	INT32           i = 0, p;
 	lightlist_t   *light;
 	r_lightlist_t *rlight;
 	INT32 range;
