@@ -196,7 +196,7 @@ static void R_RenderMaskedSegLoop(drawcolumndata_t* dc, drawseg_t *drawseg, INT3
 
 	ldef = curline->linedef;
 
-	range = std::max(drawseg->x2-drawseg->x1, 1);
+	range = std::max<INT32>(drawseg->x2-drawseg->x1, 1);
 
 	// Setup lighting based on the presence/lack-of 3D floors.
 	dc->numlights = 0;
@@ -694,7 +694,7 @@ void R_RenderThickSideRange(drawseg_t *drawseg, INT32 x1, INT32 x2, ffloor_t *pf
 		fog = true;
 	}
 
-	range = std::max(drawseg->x2-drawseg->x1, 1);
+	range = std::max<INT32>(drawseg->x2-drawseg->x1, 1);
 	//SoM: Moved these up here so they are available for my lightlist calculations
 	rw_scalestep = drawseg->scalestep;
 	spryscale = drawseg->scale1 + (x1 - drawseg->x1)*rw_scalestep;
@@ -1679,10 +1679,10 @@ void R_AllocSegMemory(void)
 	fixed_t *frontscale_p = frontscaletable;
 	fixed_t *maskedheight_p = maskedheighttable;
 
-	for (drawseg_t *ds = drawsegs; ds < lastseg; ds++)
+	for (drawseg_t *drawseg = drawsegs; drawseg < lastseg; drawseg++)
 	{
-		ds->frontscale = frontscale_p;
-		ds->maskedtextureheight = maskedheight_p;
+		drawseg->frontscale = frontscale_p;
+		drawseg->maskedtextureheight = maskedheight_p;
 		frontscale_p += viewwidth;
 		maskedheight_p += viewwidth;
 	}
@@ -1708,20 +1708,20 @@ static void R_AllocClippingTables(size_t range)
 	openings = static_cast<INT16*>(Z_Realloc(openings, numopenings * sizeof (*openings), PU_STATIC, NULL));
 	lastopening = openings + pos;
 
-	if (!oldopenings)
+	if (oldopenings == NULL)
 		return;
 
 	// borrowed fix from *cough* zdoom *cough*
 	// [RH] We also need to adjust the openings pointers that
 	//    were already stored in drawsegs.
-	for (drawseg_t *ds = drawsegs; ds < ds_p; ds++)
+	for (drawseg_t *drawseg = drawsegs; drawseg < ds_p; drawseg++)
 	{
 		// Check if it's in range of the openings
 #define CHECK(which) \
-		if (which + ds->x1 >= oldopenings && which + ds->x1 <= oldlast) \
+		if (which + drawseg->x1 >= oldopenings && which + drawseg->x1 <= oldlast) \
 			which = (which - oldopenings) + openings
-		CHECK(ds->sprtopclip);
-		CHECK(ds->sprbottomclip);
+		CHECK(drawseg->sprtopclip);
+		CHECK(drawseg->sprbottomclip);
 #undef CHECK
 	}
 }
@@ -1745,17 +1745,17 @@ static void R_AllocTextureColumnTables(size_t range)
 	texturecolumntable = static_cast<fixed_t*>(Z_Realloc(texturecolumntable, texturecolumntablesize * sizeof (*texturecolumntable), PU_STATIC, NULL));
 	curtexturecolumntable = texturecolumntable + pos;
 
-	if (!oldtable)
+	if (oldtable == NULL)
 		return;
 
-	for (drawseg_t *ds = drawsegs; ds < ds_p; ds++)
+	for (drawseg_t *drawseg = drawsegs; drawseg < ds_p; drawseg++)
 	{
 		// Check if it's in range of the tables
 #define CHECK(which) \
-		if (which + ds->x1 >= oldtable && which + ds->x1 <= oldlast) \
+		if (which + drawseg->x1 >= oldtable && which + drawseg->x1 <= oldlast) \
 			which = (which - oldtable) + texturecolumntable
-		CHECK(ds->maskedtexturecol);
-		CHECK(ds->thicksidecol);
+		CHECK(drawseg->maskedtexturecol);
+		CHECK(drawseg->thicksidecol);
 #undef CHECK
 	}
 }
@@ -1778,6 +1778,7 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 	INT32 range;
 	vertex_t segleft, segright;
 	fixed_t ceilingfrontslide, floorfrontslide, ceilingbackslide, floorbackslide;
+	const INT32 twosidedmidtexture = R_GetTextureNum(curline->sidedef->midtexture);
 	drawcolumndata_t dc = {};
 
 	maskedtextureheight = NULL;
@@ -2407,7 +2408,7 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 			ds_p->numthicksides = numthicksides = i;
 		}
 
-		if (sidedef->midtexture > 0 && sidedef->midtexture < numtextures)
+		if (twosidedmidtexture)
 		{
 			// masked midtexture
 
@@ -3018,13 +3019,13 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 		if (!(ds_p->silhouette & SIL_TOP))
 		{
 			ds_p->silhouette |= SIL_TOP;
-			ds_p->tsilheight = (sidedef->midtexture > 0 && sidedef->midtexture < numtextures) ? INT32_MIN : INT32_MAX;
+			ds_p->tsilheight = (twosidedmidtexture) ? INT32_MIN : INT32_MAX;
 		}
 
 		if (!(ds_p->silhouette & SIL_BOTTOM))
 		{
 			ds_p->silhouette |= SIL_BOTTOM;
-			ds_p->bsilheight = (sidedef->midtexture > 0 && sidedef->midtexture < numtextures) ? INT32_MAX : INT32_MIN;
+			ds_p->bsilheight = (twosidedmidtexture) ? INT32_MAX : INT32_MIN;
 		}
 	}
 
