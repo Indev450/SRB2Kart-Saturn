@@ -4161,7 +4161,10 @@ static void Joinable_OnChange(void)
 	UINT8 maxplayer;
 
 	if (!server)
+	{
+		CONS_Alert(CONS_NOTICE, ("Only the server can change: %s %s\n"), cv_allownewplayer.name, cv_allownewplayer.string);
 		return;
+	}
 
 #ifdef SATURNJOIN
 	// disabling joins should also disable saturn joins unless its called with CV_StealthSet and vice versa to make life a bit easier

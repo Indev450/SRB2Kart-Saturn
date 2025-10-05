@@ -1650,13 +1650,13 @@ static void CV_SetCVar(consvar_t *var, const char *value, boolean stealth)
 		UINT8 *p = buf;
 		if (!(server || (IsPlayerAdmin(consoleplayer))))
 		{
-			CONS_Printf(M_GetText("Only the server or admin can change: %s %s\n"), var->name, var->string);
+			CONS_Alert(CONS_NOTICE, "Only the server or admin can change: %s %s\n", var->name, var->string);
 			return;
 		}
 
 		if (var == &cv_kartencore && !M_SecretUnlocked(SECRET_ENCORE))
 		{
-			CONS_Printf(M_GetText("You haven't unlocked Encore Mode yet!\n"));
+			CONS_Alert(CONS_NOTICE, "You haven't unlocked Encore Mode yet!\n");
 			return;
 		}
 
@@ -1664,7 +1664,7 @@ static void CV_SetCVar(consvar_t *var, const char *value, boolean stealth)
 		{
 			if (!stricmp(value, "Hard") || atoi(value) == 2)
 			{
-				CONS_Printf(M_GetText("You haven't unlocked this yet!\n"));
+				CONS_Alert(CONS_NOTICE, "You haven't unlocked this yet!\n");
 				return;
 			}
 		}
@@ -1681,14 +1681,13 @@ static void CV_SetCVar(consvar_t *var, const char *value, boolean stealth)
 		else
 			Setvalue(var, value, stealth);
 	}
+	else if ((var->flags & CV_NOTINNET) && netgame)
+	{
+		CONS_Alert(CONS_NOTICE, "This variable can't be changed while in netgame: %s %s\n", var->name, var->string);
+		return;
+	}
 	else
-		if ((var->flags & CV_NOTINNET) && netgame)
-		{
-			CONS_Printf(M_GetText("This variable can't be changed while in netgame: %s %s\n"), var->name, var->string);
-			return;
-		}
-		else
-			Setvalue(var, value, stealth);
+		Setvalue(var, value, stealth);
 }
 
 /** Sets a value to a variable without calling its callback function.
