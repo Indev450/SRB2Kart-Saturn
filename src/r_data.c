@@ -445,6 +445,12 @@ UINT8 *R_GenerateTexture(size_t texnum)
 	// texture data after the lookup table
 	blocktex = block + (texture->width*4);
 
+	for (x = 0; x < texture->width; ++x)
+	{
+		// generate column ofset lookup
+		*(UINT32 *)&colofs[x<<2] = LONG((x * texture->height) + (texture->width*4));
+	}
+
 	// Composite the columns together.
 	for (i = 0, patch = texture->patches; i < texture->patchcount; i++, patch++)
 	{
@@ -481,8 +487,6 @@ UINT8 *R_GenerateTexture(size_t texnum)
 		{
 			patchcol = (column_t *)((UINT8 *)realpatch + LONG(realpatch->columnofs[x-x1]));
 
-			// generate column ofset lookup
-			*(UINT32 *)&colofs[x<<2] = LONG((x * texture->height) + (texture->width*4));
 			R_DrawColumnInCache(patchcol, block + LONG(*(UINT32 *)&colofs[x<<2]), patch, texture->height);
 		}
 	}
