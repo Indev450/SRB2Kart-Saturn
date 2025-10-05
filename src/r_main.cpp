@@ -1400,6 +1400,7 @@ void R_RenderPlayerView(player_t *player)
 
 		R_ClearClipSegs();
 		R_ClearDrawSegs();
+		R_ClearSegTables();
 		R_ClearPlanes();
 		R_ClearSprites();
 
@@ -1434,6 +1435,7 @@ void R_RenderPlayerView(player_t *player)
 		R_ClearClipSegs();
 	}
 	R_ClearDrawSegs();
+	R_ClearSegTables();
 	R_ClearSprites();
 
 	// check for new console commands.
