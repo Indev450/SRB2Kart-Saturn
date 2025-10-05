@@ -1221,8 +1221,9 @@ static void R_RenderSegLoop(drawcolumndata_t* dc)
 	{
 		// mark floor / ceiling areas
 		yl = (topfrac+HEIGHTUNIT-1)>>HEIGHTBITS;
+		yh = bottomfrac>>HEIGHTBITS;
 
-		// no space above wall?
+		// Mark ceiling
 		top = ceilingclip[rw_x]+1;
 
 		// no space above wall?
@@ -1239,10 +1240,10 @@ static void R_RenderSegLoop(drawcolumndata_t* dc)
 			}
 		}
 
-		yh = bottomfrac>>HEIGHTBITS;
-
+		// Mark floor
 		bottom = floorclip[rw_x]-1;
 
+		// no space below floor?
 		if (yh > bottom)
 			yh = bottom;
 
@@ -1584,7 +1585,7 @@ static void R_RenderSegLoop(drawcolumndata_t* dc)
 
 static void R_MarkSegBounds(void)
 {
-	INT32     yl, yh;
+	INT32 yl, yh;
 	INT32 top, bottom;
 	INT16 topclip, bottomclip;
 
@@ -1593,8 +1594,9 @@ static void R_MarkSegBounds(void)
 	{
 		// mark floor / ceiling areas
 		yl = (topfrac+HEIGHTUNIT-1)>>HEIGHTBITS;
+		yh = bottomfrac>>HEIGHTBITS;
 
-		// no space above wall?
+		// Mark ceiling
 		top = ceilingclip[rw_x]+1;
 
 		// no space above wall?
@@ -1611,10 +1613,10 @@ static void R_MarkSegBounds(void)
 			}
 		}
 
-		yh = bottomfrac>>HEIGHTBITS;
-
+		// Mark floor
 		bottom = floorclip[rw_x]-1;
 
+		// no space below floor?
 		if (yh > bottom)
 			yh = bottom;
 
@@ -1638,12 +1640,6 @@ static void R_MarkSegBounds(void)
 
 		if (markfloor) // no bottom wall
 			floorclip[rw_x] = bottomclip;
-
-		if ((markceiling || markfloor) && (floorclip[rw_x] <= ceilingclip[rw_x] + 1))
-		{
-			solidcol[rw_x] = 1;
-			didsolidcol = true;
-		}
 
 		rw_scale += rw_scalestep;
 		topfrac += topstep;
