@@ -44,7 +44,7 @@ static constexpr UINT8 R_GetColumnTranslated(drawcolumndata_t* dc, UINT8 col, co
 }
 
 template<DrawColumnType Type>
-static constexpr UINT8 R_GetColumnTranslucent(drawcolumndata_t* dc, UINT8 * restrict dest, UINT8 col, const UINT8 * restrict colormap)
+static constexpr UINT8 R_GetColumnTranslucent(drawcolumndata_t* dc, UINT8 col, const UINT8 * restrict colormap)
 {
 	col = R_GetColumnTranslated<Type>(dc, col, colormap);
 
@@ -71,7 +71,7 @@ static constexpr UINT8 R_DrawColumnPixel(drawcolumndata_t* dc, UINT8 * restrict 
 		}
 	}
 
-	return R_GetColumnTranslucent<Type>(dc, dest, col, colormap);
+	return R_GetColumnTranslucent<Type>(dc, col, colormap);
 }
 
 /**	\brief The R_DrawColumn function

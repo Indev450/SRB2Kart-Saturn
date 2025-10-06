@@ -22,7 +22,7 @@ static inline UINT8 R_DrawFlushColumnPixel(UINT8 dest, UINT8 source)
 	}
 	else if constexpr (Type & ColumnFlushType::FLUSH_TRANS)
 	{
-		return temp_dc.tranmap[(dest << 8) + source];
+		return temp_dc.tranmap[(source << 8) + dest];
 	}
 	else if constexpr (Type & ColumnFlushType::FLUSH_COLORMAP)
 	{
@@ -30,7 +30,7 @@ static inline UINT8 R_DrawFlushColumnPixel(UINT8 dest, UINT8 source)
 	}
 	else if constexpr (Type & ColumnFlushType::FLUSH_COLORMAP_TRANS)
 	{
-		return temp_dc.tranmap[(dest << 8) + temp_dc.translation[source]];
+		return temp_dc.tranmap[(temp_dc.translation[source] << 8) + dest];
 	}
 }
 
@@ -180,10 +180,10 @@ static void R_FlushQuad(void)
 	{
 		while (--count >= 0)
 		{
-			dest[0] = temp_dc.tranmap[(dest[0] << 8) + source[0]];
-			dest[1] = temp_dc.tranmap[(dest[1] << 8) + source[1]];
-			dest[2] = temp_dc.tranmap[(dest[2] << 8) + source[2]];
-			dest[3] = temp_dc.tranmap[(dest[3] << 8) + source[3]];
+			dest[0] = temp_dc.tranmap[(source[0] << 8) + dest[0]];
+			dest[1] = temp_dc.tranmap[(source[1] << 8) + dest[1]];
+			dest[2] = temp_dc.tranmap[(source[2] << 8) + dest[2]];
+			dest[3] = temp_dc.tranmap[(source[3] << 8) + dest[3]];
 			source += 4;
 			dest += stride;
 		}
@@ -204,10 +204,10 @@ static void R_FlushQuad(void)
 	{
 		while (--count >= 0)
 		{
-			dest[0] = temp_dc.tranmap[(dest[0] << 8) + temp_dc.translation[source[0]]];
-			dest[1] = temp_dc.tranmap[(dest[1] << 8) + temp_dc.translation[source[1]]];
-			dest[2] = temp_dc.tranmap[(dest[2] << 8) + temp_dc.translation[source[2]]];
-			dest[3] = temp_dc.tranmap[(dest[3] << 8) + temp_dc.translation[source[3]]];
+			dest[0] = temp_dc.tranmap[(temp_dc.translation[source[0]] << 8) + dest[0]];
+			dest[1] = temp_dc.tranmap[(temp_dc.translation[source[1]] << 8) + dest[1]];
+			dest[2] = temp_dc.tranmap[(temp_dc.translation[source[2]] << 8) + dest[2]];
+			dest[3] = temp_dc.tranmap[(temp_dc.translation[source[3]] << 8) + dest[3]];
 			source += 4;
 			dest += stride;
 		}
