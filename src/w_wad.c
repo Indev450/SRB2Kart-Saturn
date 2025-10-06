@@ -45,6 +45,7 @@
 #include "w_wad.h"
 #include "z_zone.h"
 #include "fastcmp.h"
+#include "console.h"
 
 #include "g_game.h" // G_LoadGameData
 #include "d_main.h"
@@ -760,11 +761,7 @@ static UINT16 W_InitFileError(const char *filename, boolean exitworthy)
 {
 	if (exitworthy)
 	{
-#ifdef _DEBUG
 		CONS_Error(va("%s was not found or not valid.\nCheck the log for more details.\n", filename));
-#else
-		I_Error("%s was not found or not valid.\nCheck the log for more details.\n", filename);
-#endif
 	}
 	else
 		CONS_Printf(M_GetText("Errors occurred while loading %s; not added.\n"), filename);
