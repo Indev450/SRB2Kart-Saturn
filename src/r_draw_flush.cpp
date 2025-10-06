@@ -22,14 +22,24 @@ enum ColumnFlushType
 	FLUSH_COLORMAP_TRANS
 };
 
-static int temp_x = 0;
-static int tempyl[4], tempyh[4];
-static UINT8 tempbuf[MAXVIDWIDTH * 4];
-static int startx = 0;
-static int commontop, commonbot;
-static ColumnFlushType temptype = FLUSH_NONE;
-static const UINT8 *temptranmap = NULL;
-static const UINT8 *temptranslation = NULL;
+typedef struct drawcolumndata_temp_s
+{
+	intptr_t    x;
+	intptr_t    yl[4], yh[4];
+
+	// e6y: resolution limitation is removed
+	// not for now kek
+	UINT8 buf[MAXVIDWIDTH * 4];
+
+	intptr_t    startx;
+	ColumnFlushType    type;
+	intptr_t   commontop, commonbot;
+	const UINT8 *tranmap;
+	// SoM 7-28-04: Fix the fuzz problem.
+	const UINT8 *translation;
+} drawcolumndata_temp_t;
+
+drawcolumndata_temp_t temp_dc = {};
 
 static void R_FlushColumns(void);
 
@@ -62,12 +72,12 @@ static void R_FlushWholeOpaque(void)
 	INT32 count, yl;
 	const restrict INT32 stride = vid.width;
 
-	while (--temp_x >= 0)
+	while (--temp_dc.x >= 0)
 	{
-		yl = tempyl[temp_x];
-		source = &tempbuf[temp_x + (yl << 2)];
-		dest = R_Address(startx + temp_x, yl);
-		count = tempyh[temp_x] - yl + 1;
+		yl = temp_dc.yl[temp_dc.x];
+		source = &temp_dc.buf[temp_dc.x + (yl << 2)];
+		dest = R_Address(temp_dc.startx + temp_dc.x, yl);
+		count = temp_dc.yh[temp_dc.x] - yl + 1;
 
 		while (--count >= 0)
 		{
@@ -95,15 +105,15 @@ static void R_FlushHTOpaque(void)
 
 	while (colnum < 4)
 	{
-		yl = tempyl[colnum];
-		yh = tempyh[colnum];
+		yl = temp_dc.yl[colnum];
+		yh = temp_dc.yh[colnum];
 
 		// flush column head
-		if (yl < commontop)
+		if (yl < temp_dc.commontop)
 		{
-			source = &tempbuf[colnum + (yl << 2)];
-			dest = R_Address(startx + colnum, yl);
-			count = commontop - yl;
+			source = &temp_dc.buf[colnum + (yl << 2)];
+			dest = R_Address(temp_dc.startx + colnum, yl);
+			count = temp_dc.commontop - yl;
 
 			while (--count >= 0)
 			{
@@ -114,11 +124,11 @@ static void R_FlushHTOpaque(void)
 		}
 
 		// flush column tail
-		if (yh > commonbot)
+		if (yh > temp_dc.commonbot)
 		{
-			source = &tempbuf[colnum + ((commonbot + 1) << 2)];
-			dest = R_Address(startx + colnum, commonbot + 1);
-			count = yh - commonbot;
+			source = &temp_dc.buf[colnum + ((temp_dc.commonbot + 1) << 2)];
+			dest = R_Address(temp_dc.startx + colnum, temp_dc.commonbot + 1);
+			count = yh - temp_dc.commonbot;
 
 			while (--count >= 0)
 			{
@@ -133,12 +143,12 @@ static void R_FlushHTOpaque(void)
 
 static void R_FlushQuadOpaque(void)
 {
-	UINT8 *source = &tempbuf[commontop << 2];
-	UINT8 *dest = R_Address(startx, commontop);
+	UINT8 *source = &temp_dc.buf[temp_dc.commontop << 2];
+	UINT8 *dest = R_Address(temp_dc.startx, temp_dc.commontop);
 	INT32 count;
 	const restrict INT32 stride = vid.width;
 
-	count = commonbot - commontop + 1;
+	count = temp_dc.commonbot - temp_dc.commontop + 1;
 
 	if ((sizeof(int) == 4) && (((intptr_t)source % 4) == 0) && (((intptr_t)dest % 4) == 0))
 	{
@@ -180,16 +190,16 @@ static void R_FlushWholeTrans(void)
 	INT32 count, yl;
 	const restrict INT32 stride = vid.width;
 
-	while (--temp_x >= 0)
+	while (--temp_dc.x >= 0)
 	{
-		yl = tempyl[temp_x];
-		source = &tempbuf[temp_x + (yl << 2)];
-		dest = R_Address(startx + temp_x, yl);
-		count = tempyh[temp_x] - yl + 1;
+		yl = temp_dc.yl[temp_dc.x];
+		source = &temp_dc.buf[temp_dc.x + (yl << 2)];
+		dest = R_Address(temp_dc.startx + temp_dc.x, yl);
+		count = temp_dc.yh[temp_dc.x] - yl + 1;
 
 		while (--count >= 0)
 		{
-			*dest = temptranmap[(*dest << 8) + *source];
+			*dest = temp_dc.tranmap[(*dest << 8) + *source];
 			source += 4;
 			dest += stride;
 		}
@@ -206,34 +216,34 @@ static void R_FlushHTTrans(void)
 
 	while (colnum < 4)
 	{
-		yl = tempyl[colnum];
-		yh = tempyh[colnum];
+		yl = temp_dc.yl[colnum];
+		yh = temp_dc.yh[colnum];
 
 		// flush column head
-		if (yl < commontop)
+		if (yl < temp_dc.commontop)
 		{
-			source = &tempbuf[colnum + (yl << 2)];
-			dest = R_Address(startx + colnum, yl);
-			count = commontop - yl;
+			source = &temp_dc.buf[colnum + (yl << 2)];
+			dest = R_Address(temp_dc.startx + colnum, yl);
+			count = temp_dc.commontop - yl;
 
 			while (--count >= 0)
 			{
-				*dest = temptranmap[(*dest << 8) + *source];
+				*dest = temp_dc.tranmap[(*dest << 8) + *source];
 				source += 4;
 				dest += stride;
 			}
 		}
 
 		// flush column tail
-		if (yh > commonbot)
+		if (yh > temp_dc.commonbot)
 		{
-			source = &tempbuf[colnum + ((commonbot + 1) << 2)];
-			dest = R_Address(startx + colnum, commonbot + 1);
-			count = yh - commonbot;
+			source = &temp_dc.buf[colnum + ((temp_dc.commonbot + 1) << 2)];
+			dest = R_Address(temp_dc.startx + colnum, temp_dc.commonbot + 1);
+			count = yh - temp_dc.commonbot;
 
 			while (--count >= 0)
 			{
-				*dest = temptranmap[(*dest << 8) + *source];
+				*dest = temp_dc.tranmap[(*dest << 8) + *source];
 				source += 4;
 				dest += stride;
 			}
@@ -245,19 +255,19 @@ static void R_FlushHTTrans(void)
 
 static void R_FlushQuadTrans(void)
 {
-	UINT8 *source = &tempbuf[commontop << 2];
-	UINT8 *dest = R_Address(startx, commontop);
+	UINT8 *source = &temp_dc.buf[temp_dc.commontop << 2];
+	UINT8 *dest = R_Address(temp_dc.startx, temp_dc.commontop);
 	INT32 count;
 	const restrict INT32 stride = vid.width;
 
-	count = commonbot - commontop + 1;
+	count = temp_dc.commonbot - temp_dc.commontop + 1;
 
 	while (--count >= 0)
 	{
-		dest[0] = temptranmap[(dest[0] << 8) + source[0]];
-		dest[1] = temptranmap[(dest[1] << 8) + source[1]];
-		dest[2] = temptranmap[(dest[2] << 8) + source[2]];
-		dest[3] = temptranmap[(dest[3] << 8) + source[3]];
+		dest[0] = temp_dc.tranmap[(dest[0] << 8) + source[0]];
+		dest[1] = temp_dc.tranmap[(dest[1] << 8) + source[1]];
+		dest[2] = temp_dc.tranmap[(dest[2] << 8) + source[2]];
+		dest[3] = temp_dc.tranmap[(dest[3] << 8) + source[3]];
 		source += 4;
 		dest += stride;
 	}
@@ -270,16 +280,16 @@ static void R_FlushWholeColormap(void)
 	INT32 count, yl;
 	const restrict INT32 stride = vid.width;
 
-	while (--temp_x >= 0)
+	while (--temp_dc.x >= 0)
 	{
-		yl = tempyl[temp_x];
-		source = &tempbuf[temp_x + (yl << 2)];
-		dest = R_Address(startx + temp_x, yl);
-		count = tempyh[temp_x] - yl + 1;
+		yl = temp_dc.yl[temp_dc.x];
+		source = &temp_dc.buf[temp_dc.x + (yl << 2)];
+		dest = R_Address(temp_dc.startx + temp_dc.x, yl);
+		count = temp_dc.yh[temp_dc.x] - yl + 1;
 
 		while (--count >= 0)
 		{
-			*dest = temptranslation[*source];
+			*dest = temp_dc.translation[*source];
 			source += 4;
 			dest += stride;
 		}
@@ -296,34 +306,34 @@ static void R_FlushHTColormap(void)
 
 	while (colnum < 4)
 	{
-		yl = tempyl[colnum];
-		yh = tempyh[colnum];
+		yl = temp_dc.yl[colnum];
+		yh = temp_dc.yh[colnum];
 
 		// flush column head
-		if (yl < commontop)
+		if (yl < temp_dc.commontop)
 		{
-			source = &tempbuf[colnum + (yl << 2)];
-			dest = R_Address(startx + colnum, yl);
-			count = commontop - yl;
+			source = &temp_dc.buf[colnum + (yl << 2)];
+			dest = R_Address(temp_dc.startx + colnum, yl);
+			count = temp_dc.commontop - yl;
 
 			while (--count >= 0)
 			{
-				*dest = temptranslation[*source];
+				*dest = temp_dc.translation[*source];
 				source += 4;
 				dest += stride;
 			}
 		}
 
 		// flush column tail
-		if (yh > commonbot)
+		if (yh > temp_dc.commonbot)
 		{
-			source = &tempbuf[colnum + ((commonbot + 1) << 2)];
-			dest = R_Address(startx + colnum, commonbot + 1);
-			count = yh - commonbot;
+			source = &temp_dc.buf[colnum + ((temp_dc.commonbot + 1) << 2)];
+			dest = R_Address(temp_dc.startx + colnum, temp_dc.commonbot + 1);
+			count = yh - temp_dc.commonbot;
 
 			while (--count >= 0)
 			{
-				*dest = temptranslation[*source];
+				*dest = temp_dc.translation[*source];
 				source += 4;
 				dest += stride;
 			}
@@ -335,19 +345,19 @@ static void R_FlushHTColormap(void)
 
 static void R_FlushQuadColormap(void)
 {
-	UINT8 *source = &tempbuf[commontop << 2];
-	UINT8 *dest = R_Address(startx, commontop);
+	UINT8 *source = &temp_dc.buf[temp_dc.commontop << 2];
+	UINT8 *dest = R_Address(temp_dc.startx, temp_dc.commontop);
 	INT32 count;
 	const restrict INT32 stride = vid.width;
 
-	count = commonbot - commontop + 1;
+	count = temp_dc.commonbot - temp_dc.commontop + 1;
 
 	while (--count >= 0)
 	{
-		dest[0] = temptranslation[source[0]];
-		dest[1] = temptranslation[source[1]];
-		dest[2] = temptranslation[source[2]];
-		dest[3] = temptranslation[source[3]];
+		dest[0] = temp_dc.translation[source[0]];
+		dest[1] = temp_dc.translation[source[1]];
+		dest[2] = temp_dc.translation[source[2]];
+		dest[3] = temp_dc.translation[source[3]];
 		source += 4;
 		dest += stride;
 	}
@@ -360,16 +370,16 @@ static void R_FlushWholeColormapTrans(void)
 	INT32 count, yl;
 	const restrict INT32 stride = vid.width;
 
-	while (--temp_x >= 0)
+	while (--temp_dc.x >= 0)
 	{
-		yl = tempyl[temp_x];
-		source = &tempbuf[temp_x + (yl << 2)];
-		dest = R_Address(startx + temp_x, yl);
-		count = tempyh[temp_x] - yl + 1;
+		yl = temp_dc.yl[temp_dc.x];
+		source = &temp_dc.buf[temp_dc.x + (yl << 2)];
+		dest = R_Address(temp_dc.startx + temp_dc.x, yl);
+		count = temp_dc.yh[temp_dc.x] - yl + 1;
 
 		while (--count >= 0)
 		{
-			*dest = temptranmap[(*dest << 8) + temptranslation[*source]];
+			*dest = temp_dc.tranmap[(*dest << 8) + temp_dc.translation[*source]];
 			source += 4;
 			dest += stride;
 		}
@@ -386,34 +396,34 @@ static void R_FlushHTColormapTrans(void)
 
 	while (colnum < 4)
 	{
-		yl = tempyl[colnum];
-		yh = tempyh[colnum];
+		yl = temp_dc.yl[colnum];
+		yh = temp_dc.yh[colnum];
 
 		// flush column head
-		if (yl < commontop)
+		if (yl < temp_dc.commontop)
 		{
-			source = &tempbuf[colnum + (yl << 2)];
-			dest = R_Address(startx + colnum, yl);
-			count = commontop - yl;
+			source = &temp_dc.buf[colnum + (yl << 2)];
+			dest = R_Address(temp_dc.startx + colnum, yl);
+			count = temp_dc.commontop - yl;
 
 			while (--count >= 0)
 			{
-				*dest = temptranmap[(*dest << 8) + temptranslation[*source]];
+				*dest = temp_dc.tranmap[(*dest << 8) + temp_dc.translation[*source]];
 				source += 4;
 				dest += stride;
 			}
 		}
 
 		// flush column tail
-		if (yh > commonbot)
+		if (yh > temp_dc.commonbot)
 		{
-			source = &tempbuf[colnum + ((commonbot + 1) << 2)];
-			dest = R_Address(startx + colnum, commonbot + 1);
-			count = yh - commonbot;
+			source = &temp_dc.buf[colnum + ((temp_dc.commonbot + 1) << 2)];
+			dest = R_Address(temp_dc.startx + colnum, temp_dc.commonbot + 1);
+			count = yh - temp_dc.commonbot;
 
 			while (--count >= 0)
 			{
-				*dest = temptranmap[(*dest << 8) + temptranslation[*source]];
+				*dest = temp_dc.tranmap[(*dest << 8) + temp_dc.translation[*source]];
 				source += 4;
 				dest += stride;
 			}
@@ -425,19 +435,19 @@ static void R_FlushHTColormapTrans(void)
 
 static void R_FlushQuadColormapTrans(void)
 {
-	UINT8 *source = &tempbuf[commontop << 2];
-	UINT8 *dest = R_Address(startx, commontop);
+	UINT8 *source = &temp_dc.buf[temp_dc.commontop << 2];
+	UINT8 *dest = R_Address(temp_dc.startx, temp_dc.commontop);
 	INT32 count;
 	const restrict INT32 stride = vid.width;
 
-	count = commonbot - commontop + 1;
+	count = temp_dc.commonbot - temp_dc.commontop + 1;
 
 	while (--count >= 0)
 	{
-		dest[0] = temptranmap[(dest[0] << 8) + temptranslation[source[0]]];
-		dest[1] = temptranmap[(dest[1] << 8) + temptranslation[source[1]]];
-		dest[2] = temptranmap[(dest[2] << 8) + temptranslation[source[2]]];
-		dest[3] = temptranmap[(dest[3] << 8) + temptranslation[source[3]]];
+		dest[0] = temp_dc.tranmap[(dest[0] << 8) + temp_dc.translation[source[0]]];
+		dest[1] = temp_dc.tranmap[(dest[1] << 8) + temp_dc.translation[source[1]]];
+		dest[2] = temp_dc.tranmap[(dest[2] << 8) + temp_dc.translation[source[2]]];
+		dest[3] = temp_dc.tranmap[(dest[3] << 8) + temp_dc.translation[source[3]]];
 		source += 4;
 		dest += stride;
 	}
@@ -449,7 +459,7 @@ static void (*R_FlushQuadColumn)(void) = R_QuadFlushError;
 
 static void R_FlushColumns(void)
 {
-	if (temp_x != 4 || commontop >= commonbot)
+	if (temp_dc.x != 4 || temp_dc.commontop >= temp_dc.commonbot)
 		R_FlushWholeColumns();
 	else
 	{
@@ -457,7 +467,7 @@ static void R_FlushColumns(void)
 		R_FlushQuadColumn();
 	}
 
-	temp_x = 0;
+	temp_dc.x = 0;
 }
 
 //
@@ -465,10 +475,10 @@ static void R_FlushColumns(void)
 //
 void R_ResetColumnBuffer(void)
 {
-	if (temp_x)
+	if (temp_dc.x)
 		R_FlushColumns();
 
-	temptype = FLUSH_NONE;
+	temp_dc.type = FLUSH_NONE;
 	R_FlushWholeColumns = R_FlushWholeError;
 	R_FlushHTColumns = R_FlushHTError;
 	R_FlushQuadColumn = R_QuadFlushError;
@@ -476,124 +486,124 @@ void R_ResetColumnBuffer(void)
 
 static UINT8 *R_GetBufferOpaque(drawcolumndata_t *dc)
 {
-	if (temp_x == 4 ||
-		(temp_x && (temptype != FLUSH_OPAQUE || temp_x + startx != dc->x)))
+	if (temp_dc.x == 4 ||
+		(temp_dc.x && (temp_dc.type != FLUSH_OPAQUE || temp_dc.x + temp_dc.startx != dc->x)))
 		R_FlushColumns();
 
-	if (!temp_x)
+	if (!temp_dc.x)
 	{
-		startx = dc->x;
-		tempyl[0] = commontop = dc->yl;
-		tempyh[0] = commonbot = dc->yh;
-		temptype = FLUSH_OPAQUE;
+		temp_dc.startx = dc->x;
+		temp_dc.yl[0] = temp_dc.commontop = dc->yl;
+		temp_dc.yh[0] = temp_dc.commonbot = dc->yh;
+		temp_dc.type = FLUSH_OPAQUE;
 		R_FlushWholeColumns = R_FlushWholeOpaque;
 		R_FlushHTColumns = R_FlushHTOpaque;
 		R_FlushQuadColumn = R_FlushQuadOpaque;
-		temp_x += 1;
-		return &tempbuf[dc->yl << 2];
+		temp_dc.x += 1;
+		return &temp_dc.buf[dc->yl << 2];
 	}
 
-	tempyl[temp_x] = dc->yl;
-	tempyh[temp_x] = dc->yh;
+	temp_dc.yl[temp_dc.x] = dc->yl;
+	temp_dc.yh[temp_dc.x] = dc->yh;
 
-	if (dc->yl > commontop)
-		commontop = dc->yl;
-	if (dc->yh < commonbot)
-		commonbot = dc->yh;
+	if (dc->yl > temp_dc.commontop)
+		temp_dc.commontop = dc->yl;
+	if (dc->yh < temp_dc.commonbot)
+		temp_dc.commonbot = dc->yh;
 
-	return &tempbuf[(dc->yl << 2) + temp_x++];
+	return &temp_dc.buf[(dc->yl << 2) + temp_dc.x++];
 }
 
 static UINT8 *R_GetBufferTrans(drawcolumndata_t *dc)
 {
-	if (temp_x == 4 || dc->transmap != temptranmap ||
-		(temp_x && (temptype != FLUSH_TRANS || temp_x + startx != dc->x)))
+	if (temp_dc.x == 4 || dc->transmap != temp_dc.tranmap ||
+		(temp_dc.x && (temp_dc.type != FLUSH_TRANS || temp_dc.x + temp_dc.startx != dc->x)))
 		R_FlushColumns();
 
-	if (!temp_x)
+	if (!temp_dc.x)
 	{
-		startx = dc->x;
-		tempyl[0] = commontop = dc->yl;
-		tempyh[0] = commonbot = dc->yh;
-		temptype = FLUSH_TRANS;
-		temptranmap = dc->transmap;
+		temp_dc.startx = dc->x;
+		temp_dc.yl[0] = temp_dc.commontop = dc->yl;
+		temp_dc.yh[0] = temp_dc.commonbot = dc->yh;
+		temp_dc.type = FLUSH_TRANS;
+		temp_dc.tranmap = dc->transmap;
 		R_FlushWholeColumns = R_FlushWholeTrans;
 		R_FlushHTColumns = R_FlushHTTrans;
 		R_FlushQuadColumn = R_FlushQuadTrans;
-		temp_x += 1;
-		return &tempbuf[dc->yl << 2];
+		temp_dc.x += 1;
+		return &temp_dc.buf[dc->yl << 2];
 	}
 
-	tempyl[temp_x] = dc->yl;
-	tempyh[temp_x] = dc->yh;
+	temp_dc.yl[temp_dc.x] = dc->yl;
+	temp_dc.yh[temp_dc.x] = dc->yh;
 
-	if (dc->yl > commontop)
-		commontop = dc->yl;
-	if (dc->yh < commonbot)
-		commonbot = dc->yh;
+	if (dc->yl > temp_dc.commontop)
+		temp_dc.commontop = dc->yl;
+	if (dc->yh < temp_dc.commonbot)
+		temp_dc.commonbot = dc->yh;
 
-	return &tempbuf[(dc->yl << 2) + temp_x++];
+	return &temp_dc.buf[(dc->yl << 2) + temp_dc.x++];
 }
 
 static UINT8 *R_GetBufferColormap(drawcolumndata_t *dc)
 {
-	if (temp_x == 4 || dc->translation != temptranslation ||
-		(temp_x && (temptype != FLUSH_COLORMAP || temp_x + startx != dc->x)))
+	if (temp_dc.x == 4 || dc->translation != temp_dc.translation ||
+		(temp_dc.x && (temp_dc.type != FLUSH_COLORMAP || temp_dc.x + temp_dc.startx != dc->x)))
 		R_FlushColumns();
 
-	if (!temp_x)
+	if (!temp_dc.x)
 	{
-		startx = dc->x;
-		tempyl[0] = commontop = dc->yl;
-		tempyh[0] = commonbot = dc->yh;
-		temptype = FLUSH_COLORMAP;
-		temptranslation = dc->translation;
+		temp_dc.startx = dc->x;
+		temp_dc.yl[0] = temp_dc.commontop = dc->yl;
+		temp_dc.yh[0] = temp_dc.commonbot = dc->yh;
+		temp_dc.type = FLUSH_COLORMAP;
+		temp_dc.translation = dc->translation;
 		R_FlushWholeColumns = R_FlushWholeColormap;
 		R_FlushHTColumns = R_FlushHTColormap;
 		R_FlushQuadColumn = R_FlushQuadColormap;
-		temp_x += 1;
-		return &tempbuf[dc->yl << 2];
+		temp_dc.x += 1;
+		return &temp_dc.buf[dc->yl << 2];
 	}
 
-	tempyl[temp_x] = dc->yl;
-	tempyh[temp_x] = dc->yh;
+	temp_dc.yl[temp_dc.x] = dc->yl;
+	temp_dc.yh[temp_dc.x] = dc->yh;
 
-	if (dc->yl > commontop)
-		commontop = dc->yl;
-	if (dc->yh < commonbot)
-		commonbot = dc->yh;
+	if (dc->yl > temp_dc.commontop)
+		temp_dc.commontop = dc->yl;
+	if (dc->yh < temp_dc.commonbot)
+		temp_dc.commonbot = dc->yh;
 
-	return &tempbuf[(dc->yl << 2) + temp_x++];
+	return &temp_dc.buf[(dc->yl << 2) + temp_dc.x++];
 }
 
 static UINT8 *R_GetBufferColormapTrans(drawcolumndata_t *dc)
 {
-	if (temp_x == 4 || dc->translation != temptranslation || dc->transmap != temptranmap ||
-		(temp_x && (temptype != FLUSH_COLORMAP_TRANS || temp_x + startx != dc->x)))
+	if (temp_dc.x == 4 || dc->translation != temp_dc.translation || dc->transmap != temp_dc.tranmap ||
+		(temp_dc.x && (temp_dc.type != FLUSH_COLORMAP_TRANS || temp_dc.x + temp_dc.startx != dc->x)))
 		R_FlushColumns();
 
-	if (!temp_x)
+	if (!temp_dc.x)
 	{
-		startx = dc->x;
-		tempyl[0] = commontop = dc->yl;
-		tempyh[0] = commonbot = dc->yh;
-		temptype = FLUSH_COLORMAP_TRANS;
-		temptranslation = dc->translation;
-		temptranmap = dc->transmap;
+		temp_dc.startx = dc->x;
+		temp_dc.yl[0] = temp_dc.commontop = dc->yl;
+		temp_dc.yh[0] = temp_dc.commonbot = dc->yh;
+		temp_dc.type = FLUSH_COLORMAP_TRANS;
+		temp_dc.translation = dc->translation;
+		temp_dc.tranmap = dc->transmap;
 		R_FlushWholeColumns = R_FlushWholeColormapTrans;
 		R_FlushHTColumns = R_FlushHTColormapTrans;
 		R_FlushQuadColumn = R_FlushQuadColormapTrans;
-		temp_x += 1;
-		return &tempbuf[dc->yl << 2];
+		temp_dc.x += 1;
+		return &temp_dc.buf[dc->yl << 2];
 	}
 
-	tempyl[temp_x] = dc->yl;
-	tempyh[temp_x] = dc->yh;
+	temp_dc.yl[temp_dc.x] = dc->yl;
+	temp_dc.yh[temp_dc.x] = dc->yh;
 
-	if (dc->yl > commontop)
-		commontop = dc->yl;
-	if (dc->yh < commonbot)
-		commonbot = dc->yh;
+	if (dc->yl > temp_dc.commontop)
+		temp_dc.commontop = dc->yl;
+	if (dc->yh < temp_dc.commonbot)
+		temp_dc.commonbot = dc->yh;
 
-	return &tempbuf[(dc->yl << 2) + temp_x++];
+	return &temp_dc.buf[(dc->yl << 2) + temp_dc.x++];
 }
