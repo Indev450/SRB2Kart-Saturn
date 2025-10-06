@@ -48,11 +48,11 @@ static constexpr UINT8 R_GetColumnTranslucent(drawcolumndata_t* dc, UINT8 * rest
 {
 	col = R_GetColumnTranslated<Type>(dc, col, colormap);
 
-	if constexpr (Type & DrawColumnType::DC_TRANSMAP)
+	/*if constexpr (Type & DrawColumnType::DC_TRANSMAP)
 	{
 		return *(dc->transmap + (col << 8) + (*dest));
 	}
-	else
+	else*/
 	{
 		return col;
 	}
