@@ -160,21 +160,21 @@ static void R_FlushQuad(void)
 			while(--count >= 0)
 			{
 				*(int *)dest =   *(int *)source;
-				source += 4      * sizeof(UINT8);
-				dest   += stride * sizeof(UINT8);
+				source += 4;
+				dest   += stride;
 			}
 		}
 		else
 #endif
 		{
-			while(--count >= 0)
+			while (--count >= 0)
 			{
 				dest[0] = source[0];
 				dest[1] = source[1];
 				dest[2] = source[2];
 				dest[3] = source[3];
-				source += 4      * sizeof(UINT8);
-				dest   += stride * sizeof(UINT8);
+				source += 4;
+				dest   += stride;
 			}
 		}
 	}
