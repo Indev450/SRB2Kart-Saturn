@@ -14,7 +14,7 @@
 /// \note  no includes because this is included as part of r_draw.cpp
 
 template<ColumnFlushType Type>
-static inline UINT8 R_DrawFlushColumnPixel(UINT8 dest, UINT8 source)
+FUNCINLINE static ATTRINLINE UINT8 R_DrawFlushColumnPixel(UINT8 restrict dest, UINT8 restrict source)
 {
 	if constexpr (Type & ColumnFlushType::FLUSH_OPAQUE)
 	{

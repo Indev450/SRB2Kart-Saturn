@@ -44,20 +44,21 @@ static constexpr UINT8 R_GetColumnTranslated(drawcolumndata_t* dc, UINT8 col, co
 	return colormap[col];
 }
 
-template<DrawColumnType Type>
+// translucency is handled on flush side now!
+/*template<DrawColumnType Type>
 static constexpr UINT8 R_GetColumnTranslucent(drawcolumndata_t* dc, UINT8 col, const UINT8 * restrict colormap)
 {
 	col = R_GetColumnTranslated<Type>(dc, col, colormap);
 
-	/*if constexpr (Type & DrawColumnType::DC_TRANSMAP)
+	if constexpr (Type & DrawColumnType::DC_TRANSMAP)
 	{
 		return *(dc->transmap + (col << 8) + (*dest));
 	}
-	else*/
+	else
 	{
 		return col;
 	}
-}
+}*/
 
 template<DrawColumnType Type>
 static constexpr UINT8 R_DrawColumnPixel(drawcolumndata_t* dc, UINT8 * restrict dest, UINT32 bit, const UINT8 * restrict source, const UINT8 * restrict colormap)
@@ -72,7 +73,8 @@ static constexpr UINT8 R_DrawColumnPixel(drawcolumndata_t* dc, UINT8 * restrict 
 		}
 	}
 
-	return R_GetColumnTranslucent<Type>(dc, col, colormap);
+	//return R_GetColumnTranslucent<Type>(dc, col, colormap);
+	return R_GetColumnTranslated<Type>(dc, col, colormap);
 }
 
 /**	\brief The R_DrawColumn function
