@@ -208,7 +208,7 @@ static void R_DrawColumnTemplate(drawcolumndata_t *dc)
 
 		// Framebuffer destination address.
 		// SoM: MAGIC
-		if constexpr (Type & (DrawColumnType::DC_COLORMAP | DrawColumnType::DC_TRANSMAP))
+		if constexpr ((Type & (DrawColumnType::DC_COLORMAP | DrawColumnType::DC_TRANSMAP)) == (DrawColumnType::DC_COLORMAP | DrawColumnType::DC_TRANSMAP))
 			dest = R_GetBufferColormapTrans(dc);
 		else if constexpr (Type & DrawColumnType::DC_TRANSMAP)
 			dest = R_GetBufferTrans(dc);
