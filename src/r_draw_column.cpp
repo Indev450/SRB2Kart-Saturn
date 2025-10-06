@@ -84,8 +84,18 @@ static void R_DrawColumnTemplate(drawcolumndata_t *dc)
 {
 	INT32 count;
 
+	// leban 1/17/99:
+	// removed the + 1 here, adjusted the if test, and added an increment
+	// later.  this helps a compiler pipeline a bit better.  the x86
+	// assembler also does this.
 	count = dc->yh - dc->yl;
 
+	// leban 1/17/99:
+	// this case isn't executed too often.  depending on how many instructions
+	// there are between here and the second if test below, this case could
+	// be moved down and might save instructions overall.  since there are
+	// probably different wads that favor one way or the other, i'll leave
+	// this alone for now.
 	if (count < 0) // Zero length, column does not exceed a pixel.
 	{
 		return;
@@ -285,7 +295,7 @@ static void R_DrawColumnTemplate(drawcolumndata_t *dc)
 						{
 							// Re-map color indices from wall texture column
 							//  using a lighting/special effects LUT.
-							// heightmask is the Tutti-Frutti fix
+							// heightmask is the Tutti-Frutti fix -- killough
 
 							// -1 is the lower clamp bound because column posts have a "safe" byte before the real data
 							// and a few bytes after as well

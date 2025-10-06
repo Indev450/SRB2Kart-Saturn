@@ -516,8 +516,10 @@ typedef struct drawcolumndata_temp_s
 
 drawcolumndata_temp_t temp_dc = {};
 
-static void R_FlushColumns(void);
-
+//
+// Error functions that will abort if R_FlushColumns tries to flush
+// columns without a column type.
+//
 static void R_FlushWholeError(void)
 {
 	I_Error("R_FlushWholeColumns called without being initialized.\n");
@@ -553,10 +555,17 @@ static void R_FlushColumns(void)
 //
 // R_ResetColumnBuffer
 //
+// haleyjd 09/13/04: new function to call from main rendering loop
+// which gets rid of the unnecessary reset of various variables during
+// column drawing.
+//
 void R_ResetColumnBuffer(void)
 {
+	// haleyjd 10/06/05: this must not be done if x == 0!
 	if (temp_dc.x)
+	{
 		R_FlushColumns();
+	}
 
 	temp_dc.type = FLUSH_NONE;
 	R_FlushWholeColumns = R_FlushWholeError;
