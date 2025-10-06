@@ -71,9 +71,7 @@ static constexpr UINT8 R_DrawColumnPixel(drawcolumndata_t* dc, UINT8 * restrict 
 		}
 	}
 
-	//return R_GetColumnTranslucent<Type>(dc, dest, col, colormap);
-	// dont return any other shit for now
-	return col;
+	return R_GetColumnTranslucent<Type>(dc, dest, col, colormap);
 }
 
 /**	\brief The R_DrawColumn function
@@ -210,13 +208,13 @@ static void R_DrawColumnTemplate(drawcolumndata_t *dc)
 
 		// Framebuffer destination address.
 		// SoM: MAGIC
-		/*if constexpr (Type & (DrawColumnType::DC_COLORMAP | DrawColumnType::DC_TRANSMAP))
+		if constexpr (Type & (DrawColumnType::DC_COLORMAP | DrawColumnType::DC_TRANSMAP))
 			dest = R_GetBufferColormapTrans(dc);
 		else if constexpr (Type & DrawColumnType::DC_TRANSMAP)
 			dest = R_GetBufferTrans(dc);
 		else if constexpr (Type & DrawColumnType::DC_COLORMAP)
 			dest = R_GetBufferColormap(dc);
-		else*/
+		else
 			dest = R_GetBufferOpaque(dc);
 
 		count++;
