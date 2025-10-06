@@ -204,11 +204,12 @@ static void R_DrawColumnTemplate(drawcolumndata_t *dc)
 		const UINT8 * restrict source = dc->source;
 		const lighttable_t * restrict colormap = dc->colormap;
 
-		UINT8 * restrict dest;
-
 		// Framebuffer destination address.
 		// SoM: MAGIC
-		if constexpr ((Type & (DrawColumnType::DC_COLORMAP | DrawColumnType::DC_TRANSMAP)) == (DrawColumnType::DC_COLORMAP | DrawColumnType::DC_TRANSMAP))
+		UINT8 * restrict dest;
+
+		if constexpr ((Type & (DrawColumnType::DC_COLORMAP | DrawColumnType::DC_TRANSMAP))
+						   == (DrawColumnType::DC_COLORMAP | DrawColumnType::DC_TRANSMAP))
 			dest = R_GetBufferColormapTrans(dc);
 		else if constexpr (Type & DrawColumnType::DC_TRANSMAP)
 			dest = R_GetBufferTrans(dc);
