@@ -491,11 +491,11 @@ void R_FlushTranslationColormapCache(void)
 
 enum ColumnFlushType
 {
-	FLUSH_NONE,
-	FLUSH_OPAQUE,
-	FLUSH_TRANS,
-	FLUSH_COLORMAP,
-	FLUSH_COLORMAP_TRANS
+	FLUSH_NONE				= 0x0000,
+	FLUSH_OPAQUE			= 0x0001,
+	FLUSH_TRANS				= 0x0002,
+	FLUSH_COLORMAP			= 0x0004,
+	FLUSH_COLORMAP_TRANS	= 0x0008,
 };
 
 typedef struct drawcolumndata_temp_s
