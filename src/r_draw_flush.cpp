@@ -65,7 +65,7 @@ static void R_FlushWhole(void)
 }
 
 #define DEFINE_GETFLUSHWHOLE_FUNC(name, flags) \
-	static inline void name(void) \
+	FUNCINLINE static ATTRINLINE void name(void) \
 	{ \
 		constexpr ColumnFlushType opt = static_cast<ColumnFlushType>(flags); \
 		R_FlushWhole<opt>(); \
@@ -131,7 +131,7 @@ static void R_FlushHT(void)
 }
 
 #define DEFINE_GETFLUSHHT_FUNC(name, flags) \
-	static inline void name(void) \
+	FUNCINLINE static ATTRINLINE void name(void) \
 	{ \
 		constexpr ColumnFlushType opt = static_cast<ColumnFlushType>(flags); \
 		R_FlushHT<opt>(); \
@@ -215,7 +215,7 @@ static void R_FlushQuad(void)
 }
 
 #define DEFINE_GETFLUSHQUAD_FUNC(name, flags) \
-	static inline void name(void) \
+	FUNCINLINE static ATTRINLINE void name(void) \
 	{ \
 		constexpr ColumnFlushType opt = static_cast<ColumnFlushType>(flags); \
 		R_FlushQuad<opt>(); \
@@ -285,7 +285,7 @@ static UINT8 *R_GetBuffer(drawcolumndata_t *dc)
 }
 
 #define DEFINE_GETBUF_FUNC(name, flags) \
-	static inline UINT8 *name(drawcolumndata_t *dc) \
+	FUNCINLINE static ATTRINLINE UINT8 *name(drawcolumndata_t *dc) \
 	{ \
 		constexpr ColumnFlushType opt = static_cast<ColumnFlushType>(flags); \
 		return R_GetBuffer<opt>(dc); \

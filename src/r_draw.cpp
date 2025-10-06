@@ -621,11 +621,26 @@ void R_InitViewBuffer(INT32 width, INT32 height)
 	linesize     = vid.width;      // killough 11/98
 	renderscreen = vid.screens[0]; // haleyjd 07/02/14
 
+	INT32 bufsize = (linesize * 4) * sizeof(*temp_dc.buf);
+
 	if (temp_dc.buf)
-		Z_Free(temp_dc.buf);
+	{
+#if defined(__SSE__)
+		aligned_free(temp_dc.buf);
+#else
+		free(temp_dc.buf);
+#endif
+	}
 
 	memset(&temp_dc, 0, sizeof(temp_dc));
-	temp_dc.buf = static_cast<UINT8*>(Z_Calloc((vid.height * 4) * sizeof(*temp_dc.buf), PU_STATIC, NULL));
+
+#if defined(__SSE__)
+	while (bufsize & 15)
+		bufsize++;
+	temp_dc.buf = static_cast<UINT8*>(aligned_alloc(16, bufsize));
+#else
+	temp_dc.buf = static_cast<UINT8*>(Z_Calloc(bufsize, PU_STATIC, NULL));
+#endif
 }
 
 /**	\brief viewborder patches lump numbers
