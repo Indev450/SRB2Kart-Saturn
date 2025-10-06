@@ -13,51 +13,6 @@
 /// \brief column flush functions
 /// \note  no includes because this is included as part of r_draw.cpp
 
-enum ColumnFlushType
-{
-	FLUSH_NONE,
-	FLUSH_OPAQUE,
-	FLUSH_TRANS,
-	FLUSH_COLORMAP,
-	FLUSH_COLORMAP_TRANS
-};
-
-typedef struct drawcolumndata_temp_s
-{
-	intptr_t    x;
-	intptr_t    yl[4], yh[4];
-
-	// e6y: resolution limitation is removed
-	// not for now kek
-	UINT8 buf[MAXVIDWIDTH * 4];
-
-	intptr_t    startx;
-	ColumnFlushType    type;
-	intptr_t   commontop, commonbot;
-	const UINT8 *tranmap;
-	// SoM 7-28-04: Fix the fuzz problem.
-	const UINT8 *translation;
-} drawcolumndata_temp_t;
-
-drawcolumndata_temp_t temp_dc = {};
-
-static void R_FlushColumns(void);
-
-static void R_FlushWholeError(void)
-{
-	I_Error("R_FlushWholeColumns called without being initialized.\n");
-}
-
-static void R_FlushHTError(void)
-{
-	I_Error("R_FlushHTColumns called without being initialized.\n");
-}
-
-static void R_QuadFlushError(void)
-{
-	I_Error("R_FlushQuadColumn called without being initialized.\n");
-}
-
 //
 // R_FlushWholeOpaque
 //
@@ -451,37 +406,6 @@ static void R_FlushQuadColormapTrans(void)
 		source += 4;
 		dest += stride;
 	}
-}
-
-static void (*R_FlushWholeColumns)(void) = R_FlushWholeError;
-static void (*R_FlushHTColumns)(void) = R_FlushHTError;
-static void (*R_FlushQuadColumn)(void) = R_QuadFlushError;
-
-static void R_FlushColumns(void)
-{
-	if (temp_dc.x != 4 || temp_dc.commontop >= temp_dc.commonbot)
-		R_FlushWholeColumns();
-	else
-	{
-		R_FlushHTColumns();
-		R_FlushQuadColumn();
-	}
-
-	temp_dc.x = 0;
-}
-
-//
-// R_ResetColumnBuffer
-//
-void R_ResetColumnBuffer(void)
-{
-	if (temp_dc.x)
-		R_FlushColumns();
-
-	temp_dc.type = FLUSH_NONE;
-	R_FlushWholeColumns = R_FlushWholeError;
-	R_FlushHTColumns = R_FlushHTError;
-	R_FlushQuadColumn = R_QuadFlushError;
 }
 
 static UINT8 *R_GetBufferOpaque(drawcolumndata_t *dc)

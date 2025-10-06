@@ -489,6 +489,81 @@ void R_FlushTranslationColormapCache(void)
 // in reality, the few routines that can work for either mode, are
 // put here
 
+enum ColumnFlushType
+{
+	FLUSH_NONE,
+	FLUSH_OPAQUE,
+	FLUSH_TRANS,
+	FLUSH_COLORMAP,
+	FLUSH_COLORMAP_TRANS
+};
+
+typedef struct drawcolumndata_temp_s
+{
+	intptr_t    x;
+	intptr_t    yl[4], yh[4];
+
+	// e6y: resolution limitation is removed
+	UINT8 *buf;
+
+	intptr_t    startx;
+	ColumnFlushType    type;
+	intptr_t   commontop, commonbot;
+	const UINT8 *tranmap;
+	// SoM 7-28-04: Fix the fuzz problem.
+	const UINT8 *translation;
+} drawcolumndata_temp_t;
+
+drawcolumndata_temp_t temp_dc = {};
+
+static void R_FlushColumns(void);
+
+static void R_FlushWholeError(void)
+{
+	I_Error("R_FlushWholeColumns called without being initialized.\n");
+}
+
+static void R_FlushHTError(void)
+{
+	I_Error("R_FlushHTColumns called without being initialized.\n");
+}
+
+static void R_QuadFlushError(void)
+{
+	I_Error("R_FlushQuadColumn called without being initialized.\n");
+}
+
+static void (*R_FlushWholeColumns)(void) = R_FlushWholeError;
+static void (*R_FlushHTColumns)(void) = R_FlushHTError;
+static void (*R_FlushQuadColumn)(void) = R_QuadFlushError;
+
+static void R_FlushColumns(void)
+{
+	if (temp_dc.x != 4 || temp_dc.commontop >= temp_dc.commonbot)
+		R_FlushWholeColumns();
+	else
+	{
+		R_FlushHTColumns();
+		R_FlushQuadColumn();
+	}
+
+	temp_dc.x = 0;
+}
+
+//
+// R_ResetColumnBuffer
+//
+void R_ResetColumnBuffer(void)
+{
+	if (temp_dc.x)
+		R_FlushColumns();
+
+	temp_dc.type = FLUSH_NONE;
+	R_FlushWholeColumns = R_FlushWholeError;
+	R_FlushHTColumns = R_FlushHTError;
+	R_FlushQuadColumn = R_QuadFlushError;
+}
+
 /**	\brief	The R_InitViewBuffer function
 
 	Creates lookup tables for getting the framebuffer address
@@ -536,6 +611,12 @@ void R_InitViewBuffer(INT32 width, INT32 height)
 
 	linesize     = vid.width;      // killough 11/98
 	renderscreen = vid.screens[0]; // haleyjd 07/02/14
+
+	if (temp_dc.buf)
+		Z_Free(temp_dc.buf);
+
+	memset(&temp_dc, 0, sizeof(temp_dc));
+	temp_dc.buf = static_cast<UINT8*>(Z_Calloc((vid.height * 4) * sizeof(*temp_dc.buf), PU_STATIC, NULL));
 }
 
 /**	\brief viewborder patches lump numbers
