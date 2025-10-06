@@ -154,7 +154,8 @@ static void R_FlushQuad(void)
 
 	if constexpr (Type & ColumnFlushType::FLUSH_OPAQUE)
 	{
-		if ((sizeof(int) == 4) && (((intptr_t)source % 4) == 0) && (((intptr_t)dest % 4) == 0))
+#if __SIZEOF_INT__ == 4
+		if ((((intptr_t)source % 4) == 0) && (((intptr_t)dest % 4) == 0))
 		{
 			while(--count >= 0)
 			{
@@ -164,6 +165,7 @@ static void R_FlushQuad(void)
 			}
 		}
 		else
+#endif
 		{
 			while(--count >= 0)
 			{
