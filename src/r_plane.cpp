@@ -739,7 +739,7 @@ void R_DrawPlanes(void)
 #endif
 }
 
-static void R_DrawSkyPlane(visplane_t *pl, void(*colfunc2)(drawcolumndata_t*), boolean allow_parallel);
+static void R_DrawSkyPlane(visplane_t *pl, boolean allow_parallel);
 
 void R_DrawSkyPlanes(void)
 {
@@ -757,7 +757,7 @@ void R_DrawSkyPlanes(void)
 			if (pl->picnum != skyflatnum || pl->ffloor || pl->polyobj)
 				continue;
 
-			R_DrawSkyPlane(pl, colfunc, cv_parallelsoftware.value);
+			R_DrawSkyPlane(pl, cv_parallelsoftware.value);
 		}
 	}
 #ifdef HAVE_THREADS
@@ -767,7 +767,7 @@ void R_DrawSkyPlanes(void)
 #endif
 }
 
-static void R_DrawSkyPlane(visplane_t *pl, void(*colfunc2)(drawcolumndata_t*), boolean allow_parallel)
+static void R_DrawSkyPlane(visplane_t *pl, boolean allow_parallel)
 {
 	INT32 x;
 
