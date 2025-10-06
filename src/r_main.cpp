@@ -1405,11 +1405,11 @@ void R_RenderPlayerView(player_t *player)
 		R_ClearSprites();
 
 		R_RenderViewpoint(&masks[nummasks - 1], false);
+		R_ResetColumnBuffer();
 
 		R_ClipSprites(drawsegs, NULL);
 		R_DrawSkyPlanes(); // draw the fucker again to prevent some artifacts
 		R_DrawPlanes();
-		R_ResetColumnBuffer();
 		R_DrawMasked(masks, nummasks);
 		R_ResetColumnBuffer();
 	}
@@ -1447,6 +1447,7 @@ void R_RenderPlayerView(player_t *player)
 	PS_START_TIMING(ps_bsptime);
 	R_RenderViewpoint(&masks[nummasks - 1], true);
 	PS_STOP_TIMING(ps_bsptime);
+	R_ResetColumnBuffer();
 	PS_START_TIMING(ps_sw_spritecliptime);
 	R_ClipSprites(drawsegs, NULL);
 	PS_STOP_TIMING(ps_sw_spritecliptime);
@@ -1496,7 +1497,6 @@ void R_RenderPlayerView(player_t *player)
 	if (!skybox)
 		R_DrawSkyPlanes();
 	R_DrawPlanes();
-	R_ResetColumnBuffer();
 	PS_STOP_TIMING(ps_sw_planetime);
 	// draw mid texture and sprite
 	// And now 3D floors/sides!
@@ -1504,7 +1504,6 @@ void R_RenderPlayerView(player_t *player)
 	R_DrawMasked(masks, nummasks);
 	PS_STOP_TIMING(ps_sw_maskedtime);
 	free(masks);
-
 	R_ResetColumnBuffer();
 
 	// Check for new console commands.
