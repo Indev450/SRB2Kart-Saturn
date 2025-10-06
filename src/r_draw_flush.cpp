@@ -438,7 +438,7 @@ static UINT8 *R_GetBufferOpaque(drawcolumndata_t *dc)
 
 static UINT8 *R_GetBufferTrans(drawcolumndata_t *dc)
 {
-	if (temp_dc.x == 4 || dc->transmap != temp_dc.tranmap ||
+	if (temp_dc.x == 4 ||
 		(temp_dc.x && (temp_dc.type != FLUSH_TRANS || temp_dc.x + temp_dc.startx != dc->x)))
 		R_FlushColumns();
 
@@ -469,7 +469,7 @@ static UINT8 *R_GetBufferTrans(drawcolumndata_t *dc)
 
 static UINT8 *R_GetBufferColormap(drawcolumndata_t *dc)
 {
-	if (temp_dc.x == 4 || dc->translation != temp_dc.translation ||
+	if (temp_dc.x == 4 ||
 		(temp_dc.x && (temp_dc.type != FLUSH_COLORMAP || temp_dc.x + temp_dc.startx != dc->x)))
 		R_FlushColumns();
 
@@ -500,7 +500,7 @@ static UINT8 *R_GetBufferColormap(drawcolumndata_t *dc)
 
 static UINT8 *R_GetBufferColormapTrans(drawcolumndata_t *dc)
 {
-	if (temp_dc.x == 4 || dc->translation != temp_dc.translation || dc->transmap != temp_dc.tranmap ||
+	if (temp_dc.x == 4 ||
 		(temp_dc.x && (temp_dc.type != FLUSH_COLORMAP_TRANS || temp_dc.x + temp_dc.startx != dc->x)))
 		R_FlushColumns();
 
