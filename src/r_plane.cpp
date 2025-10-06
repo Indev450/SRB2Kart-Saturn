@@ -716,13 +716,10 @@ void R_DrawPlanes(void)
 	visplane_t *pl;
 	INT32 i;
 	drawspandata_t ds = {};
-#ifdef HAVE_THREADS
-	srb2::ThreadPool::Sema tp_sema;
-#endif
-
 	R_UpdatePlaneRipple(&ds);
 
 #ifdef HAVE_THREADS
+	srb2::ThreadPool::Sema tp_sema;
 	srb2::g_main_threadpool->begin_sema();
 #endif
 	for (i = 0; i < MAXVISPLANES; i++, pl++)
@@ -837,7 +834,8 @@ static void R_DrawSkyPlane(visplane_t *pl, void(*colfunc2)(drawcolumndata_t*), b
 				dc.x = x + i;
 				dc.source = R_GetColumn(texture, -angle); // get negative of angle for each column to display sky correct way round! --Monster Iestyn 27/01/18
 
-				colfunc2(&dc);
+				//colfunc2(&dc);
+				R_DrawSkyColumn(&dc);
 			}
 		};
 
@@ -874,7 +872,8 @@ static void R_DrawSkyPlane(visplane_t *pl, void(*colfunc2)(drawcolumndata_t*), b
 		R_GetColumn(texturetranslation[skytexture],
 					-angle); // get negative of angle for each column to display sky correct way round! --Monster Iestyn 27/01/18
 
-		colfunc2(&dc);
+		//colfunc2(&dc);
+		R_DrawSkyColumn(&dc);
 	}
 #endif
 }

@@ -252,6 +252,9 @@ void R_Draw2sMultiPatchTranslucentColumn(drawcolumndata_t* dc);
 
 void R_DrawFogColumn(drawcolumndata_t* dc);
 
+void R_ResetColumnBuffer(void);
+void R_DrawSkyColumn(drawcolumndata_t *dc);
+
 // span drawers
 void R_DrawSpan(drawspandata_t* ds);
 

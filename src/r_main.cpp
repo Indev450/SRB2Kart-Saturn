@@ -1409,7 +1409,9 @@ void R_RenderPlayerView(player_t *player)
 		R_ClipSprites(drawsegs, NULL);
 		R_DrawSkyPlanes(); // draw the fucker again to prevent some artifacts
 		R_DrawPlanes();
+		//R_ResetColumnBuffer();
 		R_DrawMasked(masks, nummasks);
+		//R_ResetColumnBuffer();
 	}
 	PS_STOP_TIMING(ps_skyboxtime);
 
@@ -1493,6 +1495,7 @@ void R_RenderPlayerView(player_t *player)
 	PS_START_TIMING(ps_sw_planetime);
 	if (!skybox)
 		R_DrawSkyPlanes();
+	R_ResetColumnBuffer();
 	R_DrawPlanes();
 	PS_STOP_TIMING(ps_sw_planetime);
 	// draw mid texture and sprite
@@ -1500,6 +1503,7 @@ void R_RenderPlayerView(player_t *player)
 	PS_START_TIMING(ps_sw_maskedtime);
 	R_DrawMasked(masks, nummasks);
 	PS_STOP_TIMING(ps_sw_maskedtime);
+	R_ResetColumnBuffer();
 
 	free(masks);
 
