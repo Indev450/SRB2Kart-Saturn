@@ -4,13 +4,17 @@
 // Copyright (C) 2020 by Sonic Team Junior.
 // Copyright (C) 2000 by DooM Legacy Team.
 // Copyright (C) 1996 by id Software, Inc.
+// Copyright (C) 1999 by Chi Hoang, Lee Killough, Jim Flynn, Rand Phares, Ty Halderman
+// Copyright (C) 1999-2000 by Jess Haas, Nicolas Kalkhof, Colin Phipps, Florian Schulze
+// Copyright (C) Copyright 2005, 2006 by Florian Schulze, Colin Phipps, Neil Stevens, Andrey Budko
+// Copyright (C) 2013 by James Haley, Stephen McGranahan, et al.
 //
 // This program is free software distributed under the
 // terms of the GNU General Public License, version 2.
 // See the 'LICENSE' file for more details.
 //-----------------------------------------------------------------------------
 /// \file  r_draw_flush.cpp
-/// \brief column flush functions
+/// \brief Optimized quad column buffer code. By SoM.
 /// \note  no includes because this is included as part of r_draw.cpp
 
 template<ColumnFlushType Type>
@@ -22,6 +26,7 @@ FUNCINLINE static ATTRINLINE UINT8 R_DrawFlushColumnPixel(UINT8 restrict dest, U
 	}
 	else if constexpr (Type & ColumnFlushType::FLUSH_TRANS)
 	{
+		// haleyjd 09/11/04: use temptranmap here
 		return temp_dc.transmap[(source << 8) + dest];
 	}
 	else if constexpr (Type & ColumnFlushType::FLUSH_COLORMAP)
@@ -30,6 +35,7 @@ FUNCINLINE static ATTRINLINE UINT8 R_DrawFlushColumnPixel(UINT8 restrict dest, U
 	}
 	else if constexpr (Type & ColumnFlushType::FLUSH_COLORMAP_TRANS)
 	{
+		// haleyjd 09/11/04: use temptranmap here
 		return temp_dc.transmap[(temp_dc.translation[source] << 8) + dest];
 	}
 }
@@ -142,6 +148,7 @@ DEFINE_GETFLUSHHT_FUNC(R_FlushHTTrans, FLUSH_TRANS)
 DEFINE_GETFLUSHHT_FUNC(R_FlushHTColormap, FLUSH_COLORMAP)
 DEFINE_GETFLUSHHT_FUNC(R_FlushHTColormapTrans, FLUSH_COLORMAP_TRANS)
 
+// Begin: Quad column flushing functions.
 template<ColumnFlushType Type>
 static void R_FlushQuad(void)
 {
@@ -168,6 +175,7 @@ static void R_FlushQuad(void)
 
 		while (--count >= 0)
 		{
+			// haleyjd 09/11/04: use temptranmap here
 			dest[0] = transmap[(source[0] << 8) + dest[0]];
 			dest[1] = transmap[(source[1] << 8) + dest[1]];
 			dest[2] = transmap[(source[2] << 8) + dest[2]];
@@ -201,6 +209,7 @@ static void R_FlushQuad(void)
 
 		while (--count >= 0)
 		{
+			// haleyjd 09/11/04: use temptranmap here
 			dest[0] = transmap[(translation[source[0]] << 8) + dest[0]];
 			dest[1] = transmap[(translation[source[1]] << 8) + dest[1]];
 			dest[2] = transmap[(translation[source[2]] << 8) + dest[2]];
@@ -223,6 +232,9 @@ DEFINE_GETFLUSHQUAD_FUNC(R_FlushQuadTrans, FLUSH_TRANS)
 DEFINE_GETFLUSHQUAD_FUNC(R_FlushQuadColormap, FLUSH_COLORMAP)
 DEFINE_GETFLUSHQUAD_FUNC(R_FlushQuadColormapTrans, FLUSH_COLORMAP_TRANS)
 
+// haleyjd 09/12/04: split up R_GetBuffer into various different
+// functions to minimize the number of branches and take advantage
+// of as much precalculated information as possible.
 template<ColumnFlushType Type>
 static UINT8 *R_GetBuffer(drawcolumndata_t *dc)
 {
