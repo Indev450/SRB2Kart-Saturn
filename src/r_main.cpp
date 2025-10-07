@@ -1453,6 +1453,7 @@ void R_RenderPlayerView(player_t *player)
 	PS_START_TIMING(ps_sw_spritecliptime);
 	R_ClipSprites(drawsegs, NULL);
 	PS_STOP_TIMING(ps_sw_spritecliptime);
+	R_ResetColumnBuffer();
 
 	ps_numsprites.value.i = numvisiblesprites;
 
@@ -1507,7 +1508,6 @@ void R_RenderPlayerView(player_t *player)
 	R_DrawMasked(masks, nummasks);
 	PS_STOP_TIMING(ps_sw_maskedtime);
 	free(masks);
-	R_ResetColumnBuffer();
 
 	// Check for new console commands.
 	NetUpdate();
