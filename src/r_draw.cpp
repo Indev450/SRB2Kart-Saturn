@@ -500,18 +500,18 @@ enum ColumnFlushType
 
 typedef struct drawcolumndata_temp_s
 {
-	intptr_t    x;
-	intptr_t    yl[4], yh[4];
+	INT32    x;
+	INT32    yl[4], yh[4];
 
 	// e6y: resolution limitation is removed
 	UINT8 *buf;
 
-	intptr_t    startx;
+	INT32    startx;
 	ColumnFlushType    type;
-	intptr_t   commontop, commonbot;
-	const UINT8 *tranmap;
+	INT32   commontop, commonbot;
+	UINT8 *transmap;
 	// SoM 7-28-04: Fix the fuzz problem.
-	const UINT8 *translation;
+	UINT8 *translation;
 } drawcolumndata_temp_t;
 
 drawcolumndata_temp_t temp_dc = {};
@@ -628,7 +628,7 @@ void R_InitViewBuffer(INT32 width, INT32 height)
 #if defined(__SSE__)
 		aligned_free(temp_dc.buf);
 #else
-		free(temp_dc.buf);
+		Z_Free(temp_dc.buf);
 #endif
 	}
 

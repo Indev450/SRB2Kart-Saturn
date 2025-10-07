@@ -22,7 +22,7 @@ FUNCINLINE static ATTRINLINE UINT8 R_DrawFlushColumnPixel(UINT8 restrict dest, U
 	}
 	else if constexpr (Type & ColumnFlushType::FLUSH_TRANS)
 	{
-		return temp_dc.tranmap[(source << 8) + dest];
+		return temp_dc.transmap[(source << 8) + dest];
 	}
 	else if constexpr (Type & ColumnFlushType::FLUSH_COLORMAP)
 	{
@@ -30,7 +30,7 @@ FUNCINLINE static ATTRINLINE UINT8 R_DrawFlushColumnPixel(UINT8 restrict dest, U
 	}
 	else if constexpr (Type & ColumnFlushType::FLUSH_COLORMAP_TRANS)
 	{
-		return temp_dc.tranmap[(temp_dc.translation[source] << 8) + dest];
+		return temp_dc.transmap[(temp_dc.translation[source] << 8) + dest];
 	}
 }
 
@@ -45,8 +45,8 @@ static void R_FlushWhole(void)
 {
 	UINT8 * restrict source;
 	UINT8 * restrict dest;
-	intptr_t count, yl;
-	const restrict intptr_t stride = vid.width;
+	INT32 count, yl;
+	const INT32 stride = vid.width;
 
 	while (--temp_dc.x >= 0)
 	{
@@ -87,9 +87,9 @@ static void R_FlushHT(void)
 {
 	UINT8 * restrict source;
 	UINT8 * restrict dest;
-	intptr_t count, colnum = 0;
-	intptr_t yl, yh;
-	const restrict intptr_t stride = vid.width;
+	INT32 count, colnum = 0;
+	INT32 yl, yh;
+	const INT32 stride = vid.width;
 
 	while (colnum < 4)
 	{
@@ -147,19 +147,17 @@ static void R_FlushQuad(void)
 {
 	UINT8 * restrict source = &temp_dc.buf[temp_dc.commontop << 2];
 	UINT8 * restrict dest = R_Address(temp_dc.startx, temp_dc.commontop);
-	intptr_t count;
-	const restrict intptr_t stride = vid.width;
-
-	count = temp_dc.commonbot - temp_dc.commontop + 1;
+	INT32 count = temp_dc.commonbot - temp_dc.commontop + 1;
+	const INT32 stride = vid.width;
 
 	if constexpr (Type & ColumnFlushType::FLUSH_OPAQUE)
 	{
 #if __SIZEOF_INT__ == 4
-		if ((((intptr_t)source % 4) == 0) && (((intptr_t)dest % 4) == 0))
+		if ((((uintptr_t)source | (uintptr_t)dest) & 3) == 0)
 		{
-			while(--count >= 0)
+			while (--count >= 0)
 			{
-				*(int *)dest =   *(int *)source;
+				*(UINT32 *)dest = *(UINT32 *)source;
 				source += 4;
 				dest   += stride;
 			}
@@ -180,36 +178,43 @@ static void R_FlushQuad(void)
 	}
 	else if constexpr (Type & ColumnFlushType::FLUSH_TRANS)
 	{
+		const UINT8 * restrict transmap = temp_dc.transmap;
+
 		while (--count >= 0)
 		{
-			dest[0] = temp_dc.tranmap[(source[0] << 8) + dest[0]];
-			dest[1] = temp_dc.tranmap[(source[1] << 8) + dest[1]];
-			dest[2] = temp_dc.tranmap[(source[2] << 8) + dest[2]];
-			dest[3] = temp_dc.tranmap[(source[3] << 8) + dest[3]];
+			dest[0] = transmap[(source[0] << 8) + dest[0]];
+			dest[1] = transmap[(source[1] << 8) + dest[1]];
+			dest[2] = transmap[(source[2] << 8) + dest[2]];
+			dest[3] = transmap[(source[3] << 8) + dest[3]];
 			source += 4;
 			dest += stride;
 		}
 	}
 	else if constexpr (Type & ColumnFlushType::FLUSH_COLORMAP)
 	{
+		const UINT8 * restrict translation = temp_dc.translation;
+
 		while (--count >= 0)
 		{
-			dest[0] = temp_dc.translation[source[0]];
-			dest[1] = temp_dc.translation[source[1]];
-			dest[2] = temp_dc.translation[source[2]];
-			dest[3] = temp_dc.translation[source[3]];
+			dest[0] = translation[source[0]];
+			dest[1] = translation[source[1]];
+			dest[2] = translation[source[2]];
+			dest[3] = translation[source[3]];
 			source += 4;
 			dest += stride;
 		}
 	}
 	else if constexpr (Type & ColumnFlushType::FLUSH_COLORMAP_TRANS)
 	{
+		const UINT8 * restrict transmap = temp_dc.transmap;
+		const UINT8 * restrict translation = temp_dc.translation;
+
 		while (--count >= 0)
 		{
-			dest[0] = temp_dc.tranmap[(temp_dc.translation[source[0]] << 8) + dest[0]];
-			dest[1] = temp_dc.tranmap[(temp_dc.translation[source[1]] << 8) + dest[1]];
-			dest[2] = temp_dc.tranmap[(temp_dc.translation[source[2]] << 8) + dest[2]];
-			dest[3] = temp_dc.tranmap[(temp_dc.translation[source[3]] << 8) + dest[3]];
+			dest[0] = transmap[(translation[source[0]] << 8) + dest[0]];
+			dest[1] = transmap[(translation[source[1]] << 8) + dest[1]];
+			dest[2] = transmap[(translation[source[2]] << 8) + dest[2]];
+			dest[3] = transmap[(translation[source[3]] << 8) + dest[3]];
 			source += 4;
 			dest += stride;
 		}
@@ -250,7 +255,7 @@ static UINT8 *R_GetBuffer(drawcolumndata_t *dc)
 		}
 		else if constexpr (Type & ColumnFlushType::FLUSH_TRANS)
 		{
-			temp_dc.tranmap = dc->transmap;
+			temp_dc.transmap = dc->transmap;
 			R_FlushWholeColumns = R_FlushWholeTrans;
 			R_FlushHTColumns = R_FlushHTTrans;
 			R_FlushQuadColumn = R_FlushQuadTrans;
@@ -264,7 +269,7 @@ static UINT8 *R_GetBuffer(drawcolumndata_t *dc)
 		}
 		else if constexpr (Type & ColumnFlushType::FLUSH_COLORMAP_TRANS)
 		{
-			temp_dc.tranmap = dc->transmap;
+			temp_dc.transmap = dc->transmap;
 			temp_dc.translation = dc->translation;
 			R_FlushWholeColumns = R_FlushWholeColormapTrans;
 			R_FlushHTColumns = R_FlushHTColormapTrans;
