@@ -2819,6 +2819,7 @@ void R_ClipSprites(drawseg_t* dsstart, portal_t* portal)
 
 	if (drawsegs_xrange_size < maxdrawsegs)
 	{
+		// haleyjd: fix reallocation to track 2x size
 		drawsegs_xrange_size = 2 * maxdrawsegs;
 
 		for (i = 0; i < DS_RANGES_COUNT; i++)
@@ -2857,6 +2858,9 @@ void R_ClipSprites(drawseg_t* dsstart, portal_t* portal)
 			drawsegs_xranges[0].count++;
 		}
 	}
+
+	// haleyjd: terminate with a nullptr user for faster loop - adds ~3 FPS
+	drawsegs_xranges[0].items[drawsegs_xranges[0].count].user = nullptr;
 
 	for (; clippedvissprites < visspritecount; clippedvissprites++)
 	{
