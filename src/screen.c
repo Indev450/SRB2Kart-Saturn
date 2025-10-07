@@ -84,7 +84,7 @@ UINT8 *scr_borderpatch; // flat used to fill the reduced view borders set at ST_
 
 // =========================================================================
 
-static void SCR_SetDrawFuncs(void)
+static void SCR_SetDrawFuncs(enum columncontext_e _columncontext)
 {
 	//
 	//  setup the right draw routines
@@ -103,13 +103,27 @@ static void SCR_SetDrawFuncs(void)
 	spanfuncs[SPANDRAWFUNC_FOG] = R_DrawFogSpan;
 	spanfuncs[SPANDRAWFUNC_TILTEDFOG] = R_DrawFogSpan_Tilted;
 
-	colfuncs[BASEDRAWFUNC] = R_DrawColumn;
-	colfuncs[COLDRAWFUNC_FUZZY] = R_DrawTranslucentColumn;
-	colfuncs[COLDRAWFUNC_TRANS] = R_DrawTranslatedColumn;
-	colfuncs[COLDRAWFUNC_SHADOWED] = R_DrawColumnShadowed;
-	colfuncs[COLDRAWFUNC_TRANSTRANS] = R_DrawTranslatedTranslucentColumn;
-	colfuncs[COLDRAWFUNC_TWOSMULTIPATCH] = R_Draw2sMultiPatchColumn;
-	colfuncs[COLDRAWFUNC_TWOSMULTIPATCHTRANS] = R_Draw2sMultiPatchTranslucentColumn;
+	if (_columncontext == COLUMNCONTEXT_FLUSH)
+	{
+		colfuncs[BASEDRAWFUNC] = R_DrawColumnFlush;
+		colfuncs[COLDRAWFUNC_FUZZY] = R_DrawTranslucentColumnFlush;
+		colfuncs[COLDRAWFUNC_TRANS] = R_DrawTranslatedColumnFlush;
+		colfuncs[COLDRAWFUNC_SHADOWED] = R_DrawColumnShadowedFlush;
+		colfuncs[COLDRAWFUNC_TRANSTRANS] = R_DrawTranslatedTranslucentColumnFlush;
+		colfuncs[COLDRAWFUNC_TWOSMULTIPATCH] = R_Draw2sMultiPatchColumnFlush;
+		colfuncs[COLDRAWFUNC_TWOSMULTIPATCHTRANS] = R_Draw2sMultiPatchTranslucentColumnFlush;
+	}
+	else
+	{
+		colfuncs[BASEDRAWFUNC] = R_DrawColumn;
+		colfuncs[COLDRAWFUNC_FUZZY] = R_DrawTranslucentColumn;
+		colfuncs[COLDRAWFUNC_TRANS] = R_DrawTranslatedColumn;
+		colfuncs[COLDRAWFUNC_SHADOWED] = R_DrawColumnShadowed;
+		colfuncs[COLDRAWFUNC_TRANSTRANS] = R_DrawTranslatedTranslucentColumn;
+		colfuncs[COLDRAWFUNC_TWOSMULTIPATCH] = R_Draw2sMultiPatchColumn;
+		colfuncs[COLDRAWFUNC_TWOSMULTIPATCHTRANS] = R_Draw2sMultiPatchTranslucentColumn;
+	}
+
 	colfuncs[COLDRAWFUNC_FOG] = R_DrawFogColumn;
 
 	R_SetColumnFunc(BASEDRAWFUNC);
@@ -131,10 +145,21 @@ void SCR_SetMode(void)
 
 	V_SetPalette(0);
 
-	SCR_SetDrawFuncs();
+	SCR_SetDrawFuncs(COLUMNCONTEXT_DIRECT);
 
 	// set the apprpriate drawer for the sky (tall or INT16)
 	setmodeneeded = 0;
+}
+
+// used to switch between column buffering and drawing them directly to screen
+// our sky "plane" drawer cannot handle the buffer system due to multithreading
+// (that would require alot of extra complexity for smth with massive diminishing results)
+// Our masked drawing step draws things in a very particular order, which results in alot of flushing to screen
+// effectively adding massive overhead during buffering, so we draw our masked thing directly to screen instead
+void R_SetColumnContext(enum columncontext_e _columncontext)
+{
+	columncontext = _columncontext;
+	SCR_SetDrawFuncs(_columncontext); // set our column drawers
 }
 
 void R_SetColumnFunc(size_t id)

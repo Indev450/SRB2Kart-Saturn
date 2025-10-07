@@ -30,7 +30,7 @@ enum DrawColumnType
 	DC_TRANSMAP			= 0x0002,
 	DC_HOLES			= 0x0004,
 	DC_LIGHTLIST		= 0x0008,
-	DC_SKY				= 0x0010,
+	DC_DIRECT			= 0x0010, // draw our columns directly to screen!
 };
 
 template<DrawColumnType Type>
@@ -45,8 +45,8 @@ static constexpr UINT8 R_GetColumnTranslated(drawcolumndata_t* dc, UINT8 col, co
 }
 
 // translucency is handled on flush side now!
-/*template<DrawColumnType Type>
-static constexpr UINT8 R_GetColumnTranslucent(drawcolumndata_t* dc, UINT8 col, const UINT8 * restrict colormap)
+template<DrawColumnType Type>
+static constexpr UINT8 R_GetColumnTranslucent(drawcolumndata_t* dc, UINT8 * restrict dest, UINT8 col, const UINT8 * restrict colormap)
 {
 	col = R_GetColumnTranslated<Type>(dc, col, colormap);
 
@@ -58,7 +58,7 @@ static constexpr UINT8 R_GetColumnTranslucent(drawcolumndata_t* dc, UINT8 col, c
 	{
 		return col;
 	}
-}*/
+}
 
 template<DrawColumnType Type>
 static constexpr UINT8 R_DrawColumnPixel(drawcolumndata_t* dc, UINT8 * restrict dest, UINT32 bit, const UINT8 * restrict source, const UINT8 * restrict colormap)
@@ -73,8 +73,14 @@ static constexpr UINT8 R_DrawColumnPixel(drawcolumndata_t* dc, UINT8 * restrict 
 		}
 	}
 
-	//return R_GetColumnTranslucent<Type>(dc, col, colormap);
-	return R_GetColumnTranslated<Type>(dc, col, colormap);
+	if constexpr (Type & DrawColumnType::DC_DIRECT)
+	{	// if we dont flush our columns, we need to handle translucency again
+		return R_GetColumnTranslucent<Type>(dc, dest, col, colormap);
+	}
+	else
+	{
+		return R_GetColumnTranslated<Type>(dc, col, colormap);
+	}
 }
 
 /**	\brief The R_DrawColumn function
@@ -212,7 +218,7 @@ static void R_DrawColumnTemplate(drawcolumndata_t *dc)
 		// SoM: MAGIC
 		UINT8 * restrict dest;
 
-		if constexpr (Type & DrawColumnType::DC_SKY)
+		if constexpr (Type & DrawColumnType::DC_DIRECT)
 			dest = R_Address(dc->x, dc->yl);
 		else if constexpr ((Type & (DrawColumnType::DC_COLORMAP | DrawColumnType::DC_TRANSMAP))
 								== (DrawColumnType::DC_COLORMAP | DrawColumnType::DC_TRANSMAP))
@@ -226,8 +232,8 @@ static void R_DrawColumnTemplate(drawcolumndata_t *dc)
 
 		restrict INT32 stride = 4; //SoM: Oh, Oh it's MAGIC! You know...
 
-		if constexpr (Type & DrawColumnType::DC_SKY)
-			stride = vid.width; // no MAGIC for the sky here X)
+		if constexpr (Type & DrawColumnType::DC_DIRECT)
+			stride = vid.width;
 
 		count++; // killough 1/99: minor tuning
 
@@ -349,14 +355,24 @@ static void R_DrawColumnTemplate(drawcolumndata_t *dc)
 		R_DrawColumnTemplate<opt>(dc); \
 	}
 
-DEFINE_COLUMN_FUNC(R_DrawColumn, DC_BASIC)
-DEFINE_COLUMN_FUNC(R_DrawTranslucentColumn, DC_TRANSMAP)
-DEFINE_COLUMN_FUNC(R_DrawTranslatedColumn, DC_COLORMAP)
-DEFINE_COLUMN_FUNC(R_DrawColumnShadowed, DC_LIGHTLIST)
-DEFINE_COLUMN_FUNC(R_DrawTranslatedTranslucentColumn, DC_COLORMAP|DC_TRANSMAP)
-DEFINE_COLUMN_FUNC(R_Draw2sMultiPatchColumn, DC_HOLES)
-DEFINE_COLUMN_FUNC(R_Draw2sMultiPatchTranslucentColumn, DC_HOLES|DC_TRANSMAP)
-DEFINE_COLUMN_FUNC(R_DrawSkyColumn, DC_SKY)
+DEFINE_COLUMN_FUNC(R_DrawColumn, DC_DIRECT|DC_BASIC)
+DEFINE_COLUMN_FUNC(R_DrawTranslucentColumn, DC_DIRECT|DC_TRANSMAP)
+DEFINE_COLUMN_FUNC(R_DrawTranslatedColumn, DC_DIRECT|DC_COLORMAP)
+DEFINE_COLUMN_FUNC(R_DrawColumnShadowed, DC_DIRECT|DC_LIGHTLIST)
+DEFINE_COLUMN_FUNC(R_DrawTranslatedTranslucentColumn, DC_DIRECT|DC_COLORMAP|DC_TRANSMAP)
+DEFINE_COLUMN_FUNC(R_Draw2sMultiPatchColumn, DC_DIRECT|DC_HOLES)
+DEFINE_COLUMN_FUNC(R_Draw2sMultiPatchTranslucentColumn, DC_DIRECT|DC_HOLES|DC_TRANSMAP)
+
+DEFINE_COLUMN_FUNC(R_DrawColumnFlush, DC_BASIC)
+DEFINE_COLUMN_FUNC(R_DrawTranslucentColumnFlush, DC_TRANSMAP)
+DEFINE_COLUMN_FUNC(R_DrawTranslatedColumnFlush, DC_COLORMAP)
+DEFINE_COLUMN_FUNC(R_DrawColumnShadowedFlush, DC_LIGHTLIST)
+DEFINE_COLUMN_FUNC(R_DrawTranslatedTranslucentColumnFlush, DC_COLORMAP|DC_TRANSMAP)
+DEFINE_COLUMN_FUNC(R_Draw2sMultiPatchColumnFlush, DC_HOLES)
+DEFINE_COLUMN_FUNC(R_Draw2sMultiPatchTranslucentColumnFlush, DC_HOLES|DC_TRANSMAP)
+
+//skymyass
+//DEFINE_COLUMN_FUNC(R_DrawSkyColumn, DC_SKY)
 
 /**	\brief The R_DrawFogColumn function
 	Fog wall.

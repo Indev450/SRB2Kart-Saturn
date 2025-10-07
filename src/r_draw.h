@@ -102,6 +102,16 @@ extern floatv3_t *ds_su, *ds_sv, *ds_sz;
 
 extern float focallengthf;
 
+enum columncontext_e
+{
+	COLUMNCONTEXT_DIRECT = 0,
+	COLUMNCONTEXT_FLUSH,
+};
+
+extern enum columncontext_e columncontext;
+void R_SetColumnContext(enum columncontext_e _columncontext);
+
+void R_ResetColumnBuffer(void);
 
 typedef void (coldrawfunc_t)(drawcolumndata_t*);
 typedef void (spandrawfunc_t)(drawspandata_t*);
@@ -250,10 +260,17 @@ void R_DrawTranslatedTranslucentColumn(drawcolumndata_t* dc);
 void R_Draw2sMultiPatchColumn(drawcolumndata_t* dc);
 void R_Draw2sMultiPatchTranslucentColumn(drawcolumndata_t* dc);
 
+// column drawers which use buffered drawing with flush
+void R_DrawColumnFlush(drawcolumndata_t* dc);
+void R_DrawTranslucentColumnFlush(drawcolumndata_t* dc);
+void R_DrawTranslatedColumnFlush(drawcolumndata_t* dc);
+void R_DrawColumnShadowedFlush(drawcolumndata_t* dc);
+void R_DrawTranslatedTranslucentColumnFlush(drawcolumndata_t* dc);
+void R_Draw2sMultiPatchColumnFlush(drawcolumndata_t* dc);
+void R_Draw2sMultiPatchTranslucentColumnFlush(drawcolumndata_t* dc);
+
 void R_DrawFogColumn(drawcolumndata_t* dc);
 
-void R_ResetColumnBuffer(void);
-void R_DrawSkyColumn(drawcolumndata_t *dc);
 
 // span drawers
 void R_DrawSpan(drawspandata_t* ds);
