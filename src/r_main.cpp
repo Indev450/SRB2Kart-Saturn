@@ -1405,7 +1405,6 @@ void R_RenderPlayerView(player_t *player)
 		R_ClearSprites();
 
 		R_RenderViewpoint(&masks[nummasks - 1], false);
-		R_ResetColumnBuffer();
 
 		R_ClipSprites(drawsegs, NULL);
 		R_DrawSkyPlanes(); // draw the fucker again to prevent some artifacts
@@ -1447,7 +1446,6 @@ void R_RenderPlayerView(player_t *player)
 	PS_START_TIMING(ps_bsptime);
 	R_RenderViewpoint(&masks[nummasks - 1], true);
 	PS_STOP_TIMING(ps_bsptime);
-	R_ResetColumnBuffer();
 	PS_START_TIMING(ps_sw_spritecliptime);
 	R_ClipSprites(drawsegs, NULL);
 	PS_STOP_TIMING(ps_sw_spritecliptime);
