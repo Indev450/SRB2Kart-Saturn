@@ -57,14 +57,14 @@ static void R_FlushWhole(void)
 	while (--temp_dc.x >= 0)
 	{
 		yl = temp_dc.yl[temp_dc.x];
-		source = &temp_dc.buf[temp_dc.x + (yl << 2)];
+		source = &temp_dc.buf[temp_dc.x + (yl << 3)];
 		dest = R_Address(temp_dc.startx + temp_dc.x, yl);
 		count = temp_dc.yh[temp_dc.x] - yl + 1;
 
 		while (--count >= 0)
 		{
 			*dest = R_DrawFlushColumnPixel<Type>(*dest, *source);
-			source += 4;
+			source += 8;
 			dest += stride;
 		}
 	}
@@ -97,7 +97,7 @@ static void R_FlushHT(void)
 	INT32 yl, yh;
 	const INT32 stride = vid.width;
 
-	while (colnum < 4)
+	while (colnum < 8)
 	{
 		yl = temp_dc.yl[colnum];
 		yh = temp_dc.yh[colnum];
@@ -105,14 +105,14 @@ static void R_FlushHT(void)
 		// flush column head
 		if (yl < temp_dc.commontop)
 		{
-			source = &temp_dc.buf[colnum + (yl << 2)];
+			source = &temp_dc.buf[colnum + (yl << 3)];
 			dest   = R_Address(temp_dc.startx + colnum, yl);
 			count  = temp_dc.commontop - yl;
 
 			while (--count >= 0)
 			{
 				*dest = R_DrawFlushColumnPixel<Type>(*dest, *source);
-				source += 4;
+				source += 8;
 				dest += stride;
 			}
 		}
@@ -120,14 +120,14 @@ static void R_FlushHT(void)
 		// flush column tail
 		if (yh > temp_dc.commonbot)
 		{
-			source = &temp_dc.buf[colnum + ((temp_dc.commonbot + 1) << 2)];
+			source = &temp_dc.buf[colnum + ((temp_dc.commonbot + 1) << 3)];
 			dest   = R_Address(temp_dc.startx + colnum, temp_dc.commonbot + 1);
 			count   = yh - temp_dc.commonbot;
 
 			while (--count >= 0)
 			{
 				*dest = R_DrawFlushColumnPixel<Type>(*dest, *source);
-				source += 4;
+				source += 8;
 				dest += stride;
 			}
 		}
@@ -157,11 +157,11 @@ static void R_FlushQuad(void)
 
 	if constexpr (Type & ColumnFlushType::FLUSH_OPAQUE)
 	{
-		const INT32 *source = reinterpret_cast<const INT32 *>(temp_dc.buf + (temp_dc.commontop << 2));
-		INT32 *dest = reinterpret_cast<INT32 *>(R_Address(temp_dc.startx, temp_dc.commontop));
-		INT32 deststep = stride / 4;
+		const INT64 *source = reinterpret_cast<const INT64 *>(temp_dc.buf + (temp_dc.commontop << 3));
+		INT64 *dest = reinterpret_cast<INT64 *>(R_Address(temp_dc.startx, temp_dc.commontop));
+		INT32 deststep = stride / 8;
 
-		while(--count >= 0)
+		while (--count >= 0)
 		{
 			*dest = *source++;
 			dest += deststep;
@@ -169,7 +169,7 @@ static void R_FlushQuad(void)
 	}
 	else if constexpr (Type & ColumnFlushType::FLUSH_TRANS)
 	{
-		const UINT8 * restrict source = temp_dc.buf + (temp_dc.commontop << 2);
+		const UINT8 * restrict source = temp_dc.buf + (temp_dc.commontop << 3);
 		UINT8 * restrict dest = R_Address(temp_dc.startx, temp_dc.commontop);
 		const UINT8 * restrict transmap = temp_dc.transmap;
 
@@ -180,13 +180,17 @@ static void R_FlushQuad(void)
 			dest[1] = transmap[(source[1] << 8) + dest[1]];
 			dest[2] = transmap[(source[2] << 8) + dest[2]];
 			dest[3] = transmap[(source[3] << 8) + dest[3]];
-			source += 4;
+			dest[4] = transmap[(source[4] << 8) + dest[4]];
+			dest[5] = transmap[(source[5] << 8) + dest[5]];
+			dest[6] = transmap[(source[6] << 8) + dest[6]];
+			dest[7] = transmap[(source[7] << 8) + dest[7]];
+			source += 8;
 			dest += stride;
 		}
 	}
 	else if constexpr (Type & ColumnFlushType::FLUSH_COLORMAP)
 	{
-		const UINT8 * restrict source = temp_dc.buf + (temp_dc.commontop << 2);
+		const UINT8 * restrict source = temp_dc.buf + (temp_dc.commontop << 3);
 		UINT8 * restrict dest = R_Address(temp_dc.startx, temp_dc.commontop);
 		const UINT8 * restrict translation = temp_dc.translation;
 
@@ -196,13 +200,17 @@ static void R_FlushQuad(void)
 			dest[1] = translation[source[1]];
 			dest[2] = translation[source[2]];
 			dest[3] = translation[source[3]];
-			source += 4;
+			dest[4] = translation[source[4]];
+			dest[5] = translation[source[5]];
+			dest[6] = translation[source[6]];
+			dest[7] = translation[source[7]];
+			source += 8;
 			dest += stride;
 		}
 	}
 	else if constexpr (Type & ColumnFlushType::FLUSH_COLORMAP_TRANS)
 	{
-		const UINT8 * restrict source = temp_dc.buf + (temp_dc.commontop << 2);
+		const UINT8 * restrict source = temp_dc.buf + (temp_dc.commontop << 3);
 		UINT8 * restrict dest = R_Address(temp_dc.startx, temp_dc.commontop);
 		const UINT8 * restrict transmap = temp_dc.transmap;
 		const UINT8 * restrict translation = temp_dc.translation;
@@ -214,7 +222,11 @@ static void R_FlushQuad(void)
 			dest[1] = transmap[(translation[source[1]] << 8) + dest[1]];
 			dest[2] = transmap[(translation[source[2]] << 8) + dest[2]];
 			dest[3] = transmap[(translation[source[3]] << 8) + dest[3]];
-			source += 4;
+			dest[4] = transmap[(translation[source[4]] << 8) + dest[4]];
+			dest[5] = transmap[(translation[source[5]] << 8) + dest[5]];
+			dest[6] = transmap[(translation[source[6]] << 8) + dest[6]];
+			dest[7] = transmap[(translation[source[7]] << 8) + dest[7]];
+			source += 8;
 			dest += stride;
 		}
 	}
@@ -239,7 +251,7 @@ template<ColumnFlushType Type>
 static UINT8 *R_GetBuffer(drawcolumndata_t *dc)
 {
 	// haleyjd: reordered predicates
-	if (temp_dc.x == 4 ||
+	if (temp_dc.x == 8 ||
 		(temp_dc.x && (temp_dc.type != Type || temp_dc.x + temp_dc.startx != dc->x)))
 		R_FlushColumns();
 
@@ -280,7 +292,7 @@ static UINT8 *R_GetBuffer(drawcolumndata_t *dc)
 			R_FlushQuadColumn = R_FlushQuadColormapTrans;
 		}
 
-		return &temp_dc.buf[dc->yl << 2];
+		return &temp_dc.buf[dc->yl << 3];
 	}
 
 	temp_dc.yl[temp_dc.x] = dc->yl;
@@ -291,7 +303,7 @@ static UINT8 *R_GetBuffer(drawcolumndata_t *dc)
 	if (dc->yh < temp_dc.commonbot)
 		temp_dc.commonbot = dc->yh;
 
-	return &temp_dc.buf[(dc->yl << 2) + temp_dc.x++];
+	return &temp_dc.buf[(dc->yl << 3) + temp_dc.x++];
 }
 
 #define DEFINE_GETBUF_FUNC(name, flags) \

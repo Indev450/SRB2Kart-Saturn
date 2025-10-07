@@ -1409,11 +1409,11 @@ void R_RenderPlayerView(player_t *player)
 		R_RenderViewpoint(&masks[nummasks - 1], false);
 
 		R_ClipSprites(drawsegs, NULL);
+		R_ResetColumnBuffer();
 		R_SetColumnContext(COLUMNCONTEXT_DIRECT);
 		R_DrawSkyPlanes(); // draw the fucker again to prevent some artifacts
 		R_DrawPlanes();
 		R_DrawMasked(masks, nummasks);
-		R_ResetColumnBuffer();
 	}
 	PS_STOP_TIMING(ps_skyboxtime);
 

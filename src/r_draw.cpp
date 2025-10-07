@@ -503,7 +503,7 @@ enum ColumnFlushType
 typedef struct drawcolumndata_temp_s
 {
 	INT32    x;
-	INT32    yl[4], yh[4];
+	INT32    yl[8], yh[8];
 
 	// e6y: resolution limitation is removed
 	UINT8 *buf;
@@ -543,7 +543,7 @@ static void (*R_FlushQuadColumn)(void) = R_QuadFlushError;
 
 static void R_FlushColumns(void)
 {
-	if (temp_dc.x != 4 || temp_dc.commontop >= temp_dc.commonbot)
+	if (temp_dc.x != 8 || temp_dc.commontop >= temp_dc.commonbot)
 		R_FlushWholeColumns();
 	else
 	{
@@ -623,7 +623,7 @@ void R_InitViewBuffer(INT32 width, INT32 height)
 	linesize     = vid.width;      // killough 11/98
 	renderscreen = vid.screens[0]; // haleyjd 07/02/14
 
-	INT32 bufsize = (linesize * 4) * sizeof(*temp_dc.buf);
+	INT32 bufsize = (linesize * 8) * sizeof(*temp_dc.buf);
 
 	if (temp_dc.buf)
 	{

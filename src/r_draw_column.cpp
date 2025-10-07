@@ -230,7 +230,7 @@ static void R_DrawColumnTemplate(drawcolumndata_t *dc)
 		else
 			dest = R_GetBufferOpaque(dc);
 
-		restrict INT32 stride = 4; //SoM: Oh, Oh it's MAGIC! You know...
+		restrict INT32 stride = 8; //SoM: Oh, Oh it's MAGIC! You know...
 
 		if constexpr (Type & DrawColumnType::DC_DIRECT)
 			stride = vid.width;
