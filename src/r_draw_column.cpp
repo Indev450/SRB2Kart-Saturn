@@ -199,6 +199,7 @@ static void R_DrawColumnTemplate(drawcolumndata_t *dc)
 		// killough 2/1/98: more performance tuning
 
 		intptr_t frac;
+		// Looks familiar.
 		const intptr_t fracstep = dc->iscale;
 		const intptr_t heightmask = dc->sourcelength-1; // CPhipps - specify type
 		constexpr INT32 npow2min = -1;
@@ -223,12 +224,12 @@ static void R_DrawColumnTemplate(drawcolumndata_t *dc)
 		else
 			dest = R_GetBufferOpaque(dc);
 
-		restrict INT32 stride = 4;
+		restrict INT32 stride = 4; //SoM: Oh, Oh it's MAGIC! You know...
 
 		if constexpr (Type & DrawColumnType::DC_SKY)
-			stride = vid.width;
+			stride = vid.width; // no MAGIC for the sky here X)
 
-		count++;
+		count++; // killough 1/99: minor tuning
 
 		// Determine scaling, which is the only mapping to be done.
 		frac = (dc->texturemid + FixedMul((dc->yl << FRACBITS) - centeryfrac, fracstep));
