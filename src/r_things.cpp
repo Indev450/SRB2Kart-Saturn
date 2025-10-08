@@ -94,13 +94,6 @@ static drawseg_xrange_item_t *drawsegs_xrange;
 static size_t drawsegs_xrange_size = 0;
 static INT32 drawsegs_xrange_count = 0;
 
-INT32 R_ThingLightLevel(mobj_t* thing)
-{
-	INT32 lightlevel = thing->lightlevel;
-
-	return lightlevel;
-}
-
 //
 // Sprite rotation 0 is facing the viewer,
 //  rotation 1 is one angle turn CLOCKWISE around the axis.
