@@ -63,7 +63,10 @@ extern fixed_t windowtop;
 extern fixed_t windowbottom;
 extern INT32 lengthcol;
 
-INT32 R_ThingLightLevel(mobj_t *thing);
+FUNCINLINE static ATTRINLINE INT32 R_ThingLightLevel(mobj_t* thing)
+{
+	return (INT32)thing->lightlevel;
+}
 fixed_t R_GetSpriteDirectionalLighting(angle_t angle);
 
 fixed_t R_GetShadowZ(mobj_t *thing, pslope_t **shadowslope);
@@ -83,7 +86,7 @@ typedef struct
 {
 	size_t drawsegs[2];
 	size_t vissprites[2];
-	fixed_t viewx, viewy, viewz;			/**< View z stored at the time of the BSP traversal for the view/portal. Masked sorting/drawing needs it. */
+	fixed_t viewx, viewy, viewz; /**< View z stored at the time of the BSP traversal for the view/portal. Masked sorting/drawing needs it. */
 	sector_t* viewsector;
 } maskcount_t;
 
