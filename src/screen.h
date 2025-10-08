@@ -96,6 +96,7 @@ extern consvar_t cv_vidwait;
 
 extern consvar_t cv_votebgscaling;
 
+//void R_SetColumnContext(enum columncontext_e _columncontext); // declared in r_draw!
 void R_SetColumnFunc(size_t id);
 void R_SetSpanFunc(size_t id);
 boolean R_CheckColumnFunc(size_t id);

@@ -50,7 +50,8 @@ enum DrawSpanType
 };
 
 template<DrawSpanType Type>
-static constexpr UINT8 R_GetSpanTranslated(drawspandata_t* ds, UINT8 col)
+FUNCINLINE static ATTRINLINE constexpr UINT8
+R_GetSpanTranslated(const drawspandata_t* ds, UINT8 col)
 {
 	if constexpr (Type & DrawSpanType::DS_COLORMAP)
 	{
@@ -63,7 +64,8 @@ static constexpr UINT8 R_GetSpanTranslated(drawspandata_t* ds, UINT8 col)
 }
 
 template<DrawSpanType Type>
-static constexpr UINT8 R_GetSpanTranslucent(drawspandata_t* ds, UINT8 *dsrc, const UINT8 *colormap, UINT8 col)
+FUNCINLINE static ATTRINLINE constexpr UINT8
+R_GetSpanTranslucent(const drawspandata_t* ds, UINT8 *dsrc, const UINT8 *colormap, UINT8 col)
 {
 	col = colormap[R_GetSpanTranslated<Type>(ds, col)];
 
@@ -78,7 +80,8 @@ static constexpr UINT8 R_GetSpanTranslucent(drawspandata_t* ds, UINT8 *dsrc, con
 }
 
 template<DrawSpanType Type>
-static constexpr UINT8 R_DrawSpanPixel(drawspandata_t* ds, UINT8 *dsrc, const UINT8 *colormap, UINT32 bit, const UINT8 *source)
+FUNCINLINE static ATTRINLINE constexpr UINT8
+R_DrawSpanPixel(const drawspandata_t* ds, UINT8 *dsrc, const UINT8 *colormap, UINT32 bit, const UINT8 *source)
 {
 	UINT8 col = source[bit];
 

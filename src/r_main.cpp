@@ -1391,6 +1391,8 @@ void R_RenderPlayerView(player_t *player)
 		R_SetFov(fov);
 	}
 
+	R_SetColumnContext(COLUMNCONTEXT_FLUSH);
+
 	Portal_InitList();
 
 	PS_START_TIMING(ps_skyboxtime);
@@ -1407,6 +1409,8 @@ void R_RenderPlayerView(player_t *player)
 		R_RenderViewpoint(&masks[nummasks - 1], false);
 
 		R_ClipSprites(drawsegs, NULL);
+		R_ResetColumnBuffer();
+		R_SetColumnContext(COLUMNCONTEXT_DIRECT);
 		R_DrawSkyPlanes(); // draw the fucker again to prevent some artifacts
 		R_DrawPlanes();
 		R_DrawMasked(masks, nummasks);
@@ -1441,6 +1445,7 @@ void R_RenderPlayerView(player_t *player)
 	// check for new console commands.
 	NetUpdate();
 
+	R_SetColumnContext(COLUMNCONTEXT_FLUSH);
 	ps_numbspcalls.value.i = ps_numpolyobjects.value.i = ps_numdrawnodes.value.i = 0;
 	PS_START_TIMING(ps_bsptime);
 	R_RenderViewpoint(&masks[nummasks - 1], true);
@@ -1448,6 +1453,7 @@ void R_RenderPlayerView(player_t *player)
 	PS_START_TIMING(ps_sw_spritecliptime);
 	R_ClipSprites(drawsegs, NULL);
 	PS_STOP_TIMING(ps_sw_spritecliptime);
+	R_ResetColumnBuffer();
 
 	ps_numsprites.value.i = numvisiblesprites;
 
@@ -1490,6 +1496,7 @@ void R_RenderPlayerView(player_t *player)
 	}
 	PS_STOP_TIMING(ps_sw_portaltime);
 
+	R_SetColumnContext(COLUMNCONTEXT_DIRECT);
 	PS_START_TIMING(ps_sw_planetime);
 	if (!skybox)
 		R_DrawSkyPlanes();
@@ -1500,7 +1507,6 @@ void R_RenderPlayerView(player_t *player)
 	PS_START_TIMING(ps_sw_maskedtime);
 	R_DrawMasked(masks, nummasks);
 	PS_STOP_TIMING(ps_sw_maskedtime);
-
 	free(masks);
 
 	// Check for new console commands.

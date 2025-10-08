@@ -489,6 +489,92 @@ void R_FlushTranslationColormapCache(void)
 // in reality, the few routines that can work for either mode, are
 // put here
 
+enum columncontext_e columncontext = COLUMNCONTEXT_DIRECT;
+
+enum ColumnFlushType
+{
+	FLUSH_NONE				= 0x0000,
+	FLUSH_OPAQUE			= 0x0001,
+	FLUSH_TRANS				= 0x0002,
+	FLUSH_COLORMAP			= 0x0004,
+	FLUSH_COLORMAP_TRANS	= 0x0008,
+};
+
+typedef struct drawcolumndata_temp_s
+{
+	INT32    x;
+	INT32    yl[8], yh[8];
+
+	// e6y: resolution limitation is removed
+	UINT8 *buf;
+
+	INT32    startx;
+	ColumnFlushType    type;
+	INT32   commontop, commonbot;
+	UINT8 *transmap;
+	// SoM 7-28-04: Fix the fuzz problem.
+	UINT8 *translation;
+} drawcolumndata_temp_t;
+
+drawcolumndata_temp_t temp_dc = {};
+
+//
+// Error functions that will abort if R_FlushColumns tries to flush
+// columns without a column type.
+//
+static void R_FlushWholeError(void)
+{
+	I_Error("R_FlushWholeColumns called without being initialized.\n");
+}
+
+static void R_FlushHTError(void)
+{
+	I_Error("R_FlushHTColumns called without being initialized.\n");
+}
+
+static void R_QuadFlushError(void)
+{
+	I_Error("R_FlushQuadColumn called without being initialized.\n");
+}
+
+static void (*R_FlushWholeColumns)(void) = R_FlushWholeError;
+static void (*R_FlushHTColumns)(void) = R_FlushHTError;
+static void (*R_FlushQuadColumn)(void) = R_QuadFlushError;
+
+static void R_FlushColumns(void)
+{
+	if (temp_dc.x != 8 || temp_dc.commontop >= temp_dc.commonbot)
+		R_FlushWholeColumns();
+	else
+	{
+		R_FlushHTColumns();
+		R_FlushQuadColumn();
+	}
+
+	temp_dc.x = 0;
+}
+
+//
+// R_ResetColumnBuffer
+//
+// haleyjd 09/13/04: new function to call from main rendering loop
+// which gets rid of the unnecessary reset of various variables during
+// column drawing.
+//
+void R_ResetColumnBuffer(void)
+{
+	// haleyjd 10/06/05: this must not be done if x == 0!
+	if (temp_dc.x)
+	{
+		R_FlushColumns();
+	}
+
+	temp_dc.type = FLUSH_NONE;
+	R_FlushWholeColumns = R_FlushWholeError;
+	R_FlushHTColumns = R_FlushHTError;
+	R_FlushQuadColumn = R_QuadFlushError;
+}
+
 /**	\brief	The R_InitViewBuffer function
 
 	Creates lookup tables for getting the framebuffer address
@@ -536,6 +622,27 @@ void R_InitViewBuffer(INT32 width, INT32 height)
 
 	linesize     = vid.width;      // killough 11/98
 	renderscreen = vid.screens[0]; // haleyjd 07/02/14
+
+	INT32 bufsize = (linesize * 8) * sizeof(*temp_dc.buf);
+
+	if (temp_dc.buf)
+	{
+#if defined(__SSE__)
+		aligned_free(temp_dc.buf);
+#else
+		Z_Free(temp_dc.buf);
+#endif
+	}
+
+	memset(&temp_dc, 0, sizeof(temp_dc));
+
+#if defined(__SSE__)
+	while (bufsize & 15)
+		bufsize++;
+	temp_dc.buf = static_cast<UINT8*>(aligned_alloc(16, bufsize));
+#else
+	temp_dc.buf = static_cast<UINT8*>(Z_Calloc(bufsize, PU_STATIC, NULL));
+#endif
 }
 
 /**	\brief viewborder patches lump numbers
