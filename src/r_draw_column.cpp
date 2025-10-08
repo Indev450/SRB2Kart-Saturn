@@ -34,7 +34,8 @@ enum DrawColumnType
 };
 
 template<DrawColumnType Type>
-static constexpr UINT8 R_GetColumnTranslated(drawcolumndata_t* dc, UINT8 col, const UINT8 * restrict colormap)
+FUNCINLINE static ATTRINLINE constexpr UINT8
+R_GetColumnTranslated(const drawcolumndata_t* dc, UINT8 col, const UINT8 * restrict colormap)
 {
 	if constexpr (Type & DrawColumnType::DC_COLORMAP)
 	{
@@ -46,7 +47,8 @@ static constexpr UINT8 R_GetColumnTranslated(drawcolumndata_t* dc, UINT8 col, co
 
 // translucency is handled on flush side now!
 template<DrawColumnType Type>
-static constexpr UINT8 R_GetColumnTranslucent(drawcolumndata_t* dc, UINT8 * restrict dest, UINT8 col, const UINT8 * restrict colormap)
+FUNCINLINE static ATTRINLINE constexpr UINT8
+R_GetColumnTranslucent(const drawcolumndata_t* dc, UINT8 * restrict dest, UINT8 col, const UINT8 * restrict colormap)
 {
 	col = R_GetColumnTranslated<Type>(dc, col, colormap);
 
@@ -61,7 +63,8 @@ static constexpr UINT8 R_GetColumnTranslucent(drawcolumndata_t* dc, UINT8 * rest
 }
 
 template<DrawColumnType Type>
-static constexpr UINT8 R_DrawColumnPixel(drawcolumndata_t* dc, UINT8 * restrict dest, UINT32 bit, const UINT8 * restrict source, const UINT8 * restrict colormap)
+FUNCINLINE static ATTRINLINE constexpr UINT8
+R_DrawColumnPixel(const drawcolumndata_t* dc, UINT8 * restrict dest, UINT32 bit, const UINT8 * restrict source, const UINT8 * restrict colormap)
 {
 	UINT8 col = source[bit];
 
@@ -74,7 +77,7 @@ static constexpr UINT8 R_DrawColumnPixel(drawcolumndata_t* dc, UINT8 * restrict 
 	}
 
 	if constexpr (Type & DrawColumnType::DC_DIRECT)
-	{	// if we dont flush our columns, we need to handle translucency again
+	{	// if we dont buffer our columns, we need to handle translucency again
 		return R_GetColumnTranslucent<Type>(dc, dest, col, colormap);
 	}
 	else

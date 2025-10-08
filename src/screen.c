@@ -155,7 +155,7 @@ void SCR_SetMode(void)
 // our sky "plane" drawer cannot handle the buffer system due to multithreading
 // (that would require alot of extra complexity for smth with massive diminishing results)
 // Our masked drawing step draws things in a very particular order, which results in alot of flushing to screen
-// effectively adding massive overhead during buffering, so we draw our masked thing directly to screen instead
+// effectively adding massive overhead due to excessive flushing, so we draw our masked thing directly to screen instead
 void R_SetColumnContext(enum columncontext_e _columncontext)
 {
 	columncontext = _columncontext;
