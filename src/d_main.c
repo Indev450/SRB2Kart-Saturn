@@ -952,12 +952,6 @@ void D_SRB2Loop(void)
 				// always update console and hud
 				// otherwise it may take minutes to open it
 				CON_Drawer();
-
-				if (gamestate == GS_LEVEL)
-				{
-					ST_Drawer();
-					HU_Drawer();
-				}
 			}
 		}
 
