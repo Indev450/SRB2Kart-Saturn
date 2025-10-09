@@ -2541,17 +2541,91 @@ Ping_conversion (UINT32 lag)
 // HU_drawPing
 //
 
+static void HU_drawOldPing(INT32 x, INT32 y, UINT32 lag, INT32 flags, boolean gentleman)
+{
+	const INT32 measureid = cv_pingmeasurement.value ? 1 : 0;
+
+	if (vid.width >= 640)	// how sad, we're using a shit resolution.
+	{
+		if (measureid == 1)
+		{
+			V_DrawRightAlignedSmallString(x+12, y+13, V_ALLOWLOWERCASE|flags, va("%dms", Ping_conversion(lag)));
+		}
+		else if (measureid == 0)
+		{
+			V_DrawRightAlignedSmallString(x+12, y+13, flags, va("d%d", Ping_conversion(lag)));
+		}
+	}
+
+	if (cv_pingicon.value)
+	{
+		UINT8 numbars = 0; // how many ping bars do we draw?
+		UINT8 barcolor = 31; // color we use for the bars (green, yellow, red or black)
+		SINT8 i = 0;
+		SINT8 yoffset = 6;
+
+		switch (lag)
+		{
+			case 0 ... 1:
+				numbars = 3;
+				barcolor = 215; // Blue
+				break;
+			case 2 ... 3:
+				numbars = 3;
+				barcolor = 184; // Green
+				break;
+			case 4 ... 6:
+				numbars = 2;    // Apparently ternaries w/ multiple statements don't look good in C so I decided against it.
+				barcolor = 103; // Yellow
+				break;
+			case 7 ... 9:
+				numbars = 1;
+				barcolor = 155; // Red
+				break;
+			default:            // Brazil
+				numbars = 0;
+				barcolor = 31;  // black
+				break;
+		}
+
+		if (gentleman)
+		{
+			barcolor = 194; // make it purplish
+			// bars get indirectly set earlier
+		}
+
+		for (i = 0; (i < 3); i++) // Draw the ping bar
+		{
+			V_DrawFill(x+2 *(i-1)+7, y+8+yoffset-4, 2, 8-yoffset, 31|flags);
+			if (i < numbars)
+				V_DrawFill(x+2 *(i-1)+7, y+8+yoffset-3, 1, 8-yoffset-1, barcolor|flags);
+
+			yoffset -= 2;
+		}
+	}
+}
+
+static void HU_drawKartPing(INT32 x, INT32 y, UINT32 lag, INT32 flags, boolean gentleman)
+{
+	const INT32 measureid = cv_pingmeasurement.value ? 1 : 0;
+
+	if (measureid == 1)
+		V_DrawScaledPatch(x+11 - pingmeasure[measureid]->width, y+9, flags, pingmeasure[measureid]);
+
+	if (cv_pingicon.value)
+	{
+		INT32 gfxnum = Ping_gfx_num(lag); // gfx to draw
+		V_DrawScaledPatch(x+2, y, flags, pinggfx[gfxnum]);
+	}
+
+	x = V_DrawPingNum(x + (measureid == 1 ? 11 - pingmeasure[measureid]->width : 10), y+9, flags, Ping_conversion(lag), Ping_gfx_colormap(lag, gentleman));
+
+	if (measureid == 0)
+		V_DrawScaledPatch(x+1 - pingmeasure[measureid]->width, y+9, flags, pingmeasure[measureid]);
+}
+
 void HU_drawPlayerPing(INT32 x, INT32 y, INT32 pnum, INT32 flags)
 {
-	INT32 measureid = cv_pingmeasurement.value ? 1 : 0;
-	INT32 gfxnum; // gfx to draw
-
-	//SRB2/Kart v1.0 style
-	UINT8 numbars = 0; // how many ping bars do we draw?
-	UINT8 barcolor = 31; // color we use for the bars (green, yellow, red or black)
-	SINT8 i = 0;
-	SINT8 yoffset = 6;
-
 	UINT32 lag = playerpingtable[pnum];
 	const boolean gentleman = (cv_mindelay.value && (lag < (tic_t)simulated_lag));
 
@@ -2562,74 +2636,11 @@ void HU_drawPlayerPing(INT32 x, INT32 y, INT32 pnum, INT32 flags)
 
 	if (cv_pingstyle.value == 0) // kart
 	{
-		gfxnum = Ping_gfx_num(lag);
-
-		if (measureid == 1)
-			V_DrawScaledPatch(x+11 - pingmeasure[measureid]->width, y+9, flags, pingmeasure[measureid]);
-
-		if (cv_pingicon.value)
-			V_DrawScaledPatch(x+2, y, flags, pinggfx[gfxnum]);
-
-		x = V_DrawPingNum(x + (measureid == 1 ? 11 - pingmeasure[measureid]->width : 10), y+9, flags, Ping_conversion(lag), Ping_gfx_colormap(lag, gentleman));
-
-		if (measureid == 0)
-			V_DrawScaledPatch(x+1 - pingmeasure[measureid]->width, y+9, flags, pingmeasure[measureid]);
+		HU_drawKartPing(x, y, lag, flags, gentleman);
 	}
 	else if (cv_pingstyle.value == 1) // old style ping
 	{
-		if (vid.width >= 640)	// how sad, we're using a shit resolution.
-		{
-			if (measureid == 1)
-			{
-				V_DrawRightAlignedSmallString(x+12, y+13, V_ALLOWLOWERCASE|flags, va("%dms", Ping_conversion(lag)));
-			}
-			else if (measureid == 0)
-			{
-				V_DrawRightAlignedSmallString(x+12, y+13, flags, va("d%d", Ping_conversion(lag)));
-			}
-		}
-
-		if (cv_pingicon.value)
-		{
-			switch (lag)
-			{
-				case 0 ... 1:
-					numbars = 3;
-					barcolor = 215; // Blue
-					break;
-				case 2 ... 3:
-					numbars = 3;
-					barcolor = 184; // Green
-					break;
-				case 4 ... 6:
-					numbars = 2;    // Apparently ternaries w/ multiple statements don't look good in C so I decided against it.
-					barcolor = 103; // Yellow
-					break;
-				case 7 ... 9:
-					numbars = 1;
-					barcolor = 155; // Red
-					break;
-				default:            // Brazil
-					numbars = 0;
-					barcolor = 31;  // black
-					break;
-			}
-
-			if (gentleman)
-			{
-				barcolor = 194; // make it purplish
-				// bars get indirectly set earlier
-			}
-
-			for (i = 0; (i < 3); i++) // Draw the ping bar
-			{
-				V_DrawFill(x+2 *(i-1)+7, y+8+yoffset-4, 2, 8-yoffset, 31|flags);
-				if (i < numbars)
-					V_DrawFill(x+2 *(i-1)+7, y+8+yoffset-3, 1, 8-yoffset-1, barcolor|flags);
-
-				yoffset -= 2;
-			}
-		}
+		HU_drawOldPing(x, y, lag, flags, gentleman);
 	}
 }
 

@@ -425,74 +425,97 @@ void SCR_CalculateFPS(void)
 #endif
 }
 
+static void SCR_DrawOldTicRate(UINT32 cap, UINT32 benchmark, double fps, INT32 fpsflags)
+{
+	const char *fps_string;
+	INT32 ticcntcolor = 0;
+
+	if (fps > (benchmark - 5))
+		ticcntcolor = V_GREENMAP;
+	else if (fps < 20)
+		ticcntcolor = V_REDMAP;
+
+	if (cap != 0)
+		fps_string = va("%d/%d\x82", (INT32)fps, cap);
+	else
+		fps_string = va("%d\x82", (INT32)fps);
+
+	// draw "FPS"
+	if (cv_ticrate.value == 3)
+		V_DrawRightAlignedString(319, 181, V_YELLOWMAP|fpsflags, "FPS");
+
+	V_DrawRightAlignedString(319, 190, ticcntcolor|fpsflags, fps_string);
+}
+
+static void SCR_DrawKartTicRate(UINT32 cap, UINT32 benchmark, double fps, INT32 fpsflags)
+{
+	UINT8 *ticcntcolor = NULL;
+	INT32 x = 318;
+
+	// draw "FPS"
+	if (cv_ticrate.value == 1)
+	{
+		ticcntcolor = R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_YELLOW, GTC_CACHE);
+		V_DrawFixedPatch(306<<FRACBITS, 183<<FRACBITS, FRACUNIT, fpsflags, framecounter, ticcntcolor);
+	}
+
+	if (fps > (benchmark - 5))
+		ticcntcolor = R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_MINT, GTC_CACHE);
+	else if (fps < 20)
+		ticcntcolor = R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_RASPBERRY, GTC_CACHE);
+	else
+		ticcntcolor = NULL;
+
+	if (cap != 0)
+	{
+		UINT32 digits = 1;
+		UINT32 c2 = cap;
+
+		while (c2 > 0)
+		{
+			c2 = c2 / 10;
+			digits++;
+		}
+
+		// draw total frame:
+		V_DrawPingNum(x, 190, fpsflags, cap, ticcntcolor);
+
+		x -= digits * 4;
+
+		// draw "/"
+		V_DrawFixedPatch(x<<FRACBITS, 190<<FRACBITS, FRACUNIT, fpsflags, frameslash, ticcntcolor);
+	}
+
+	// draw our actual framerate
+	V_DrawPingNum(x, 190, fpsflags, fps, ticcntcolor);
+}
+
 void SCR_DisplayTicRate(void)
 {
-	UINT32 cap = R_GetFramerateCap();
-	UINT32 benchmark = (cap == 0) ? I_GetRefreshRate() : cap;
-	double fps = round(averageFPS);
-	INT32 fpsflags = V_LocalTransFlag()|V_SNAPTOBOTTOM|V_SNAPTORIGHT;
+	UINT32 cap, benchmark;
+	double fps;
+	INT32 fpsflags;
 
 	if (gamestate == GS_NULL)
 		return;
 
-	// new kart counter
-	if (cv_ticrate.value == 1 || cv_ticrate.value == 2)
+	cap = R_GetFramerateCap();
+	benchmark = (cap == 0) ? I_GetRefreshRate() : cap;
+	fps = round(averageFPS);
+	fpsflags = V_LocalTransFlag()|V_SNAPTOBOTTOM|V_SNAPTORIGHT;
+
+	switch (cv_ticrate.value)
 	{
-		const UINT8 *ticcntcolor = NULL;
-		INT32 x = 318;
-
-		// draw "FPS"
-		if (cv_ticrate.value == 1)
-			V_DrawFixedPatch(306<<FRACBITS, 183<<FRACBITS, FRACUNIT, fpsflags, framecounter, R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_YELLOW, GTC_CACHE));
-
-		if (fps > (benchmark - 5))
-			ticcntcolor = R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_MINT, GTC_CACHE);
-		else if (fps < 20)
-			ticcntcolor = R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_RASPBERRY, GTC_CACHE);
-
-		if (cap != 0)
-		{
-			UINT32 digits = 1;
-			UINT32 c2 = cap;
-
-			while (c2 > 0)
-			{
-				c2 = c2 / 10;
-				digits++;
-			}
-
-			// draw total frame:
-			V_DrawPingNum(x, 190, fpsflags, cap, ticcntcolor);
-
-			x -= digits * 4;
-
-			// draw "/"
-			V_DrawFixedPatch(x<<FRACBITS, 190<<FRACBITS, FRACUNIT, fpsflags, frameslash, ticcntcolor);
-		}
-
-		// draw our actual framerate
-		V_DrawPingNum(x, 190, fpsflags, fps, ticcntcolor);
-	}
-	else if (cv_ticrate.value == 3 || cv_ticrate.value == 4) // kart v1.0/srb2 counter
-	{
-		const char *fps_string;
-		INT32 ticcntcolor2 = 0;
-
-		if (fps > (benchmark - 5))
-			ticcntcolor2 = V_GREENMAP;
-		else if (fps < 20)
-			ticcntcolor2 = V_REDMAP;
-
-		if (cap != 0)
-			fps_string = va("%d/%d\x82", (INT32)fps, cap);
-		else
-			fps_string = va("%d\x82", (INT32)fps);
-
-		// draw "FPS"
-		if (cv_ticrate.value == 3)
-			V_DrawRightAlignedString(319, 181, V_YELLOWMAP|fpsflags, "FPS");
-
-		V_DrawRightAlignedString(319, 190, ticcntcolor2|fpsflags, fps_string);
+		case 1: // new kart counter
+		case 2:
+			SCR_DrawKartTicRate(cap, benchmark, fps, fpsflags);
+			break;
+		case 3: // kart v1.0/srb2 counter
+		case 4:
+			SCR_DrawOldTicRate(cap, benchmark, fps, fpsflags);
+			break;
+		default:
+			break;
 	}
 }
 
@@ -507,7 +530,6 @@ void SCR_DisplayLocalPing(void)
 	if (cv_showping.value == 1 || (cv_showping.value == 2 && ping > servermaxping)) // only show 2 (warning) if our ping is at a bad level
 	{
 		INT32 dispy = (cv_ticrate.value == 1) ? 165 : ((cv_ticrate.value == 2 || cv_ticrate.value == 4) ? 172 : ((cv_ticrate.value == 3) ? 163 : 181)); // absolute buttpain
-
 		HU_drawPlayerPing(308, dispy, consoleplayer, pingflags); // consoleplayer's ping is everyone's ping in a splitnetgame :P
 	}
 }
