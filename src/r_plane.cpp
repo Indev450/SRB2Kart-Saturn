@@ -750,6 +750,13 @@ void R_DrawSkyPlanes(void)
 	visplane_t *pl;
 	INT32 i;
 
+	// If we're not supposed to draw the sky (e.g. for skyboxes), don't do anything!
+	// This probably utterly ruins sky rendering for FOFs and polyobjects, unfortunately
+	if (!newview->sky)
+	{
+		return;
+	}
+
 #ifdef HAVE_THREADS
 	srb2::ThreadPool::Sema tp_sema;
 	srb2::g_main_threadpool->begin_sema();
@@ -777,13 +784,6 @@ static void R_DrawSkyPlane(visplane_t *pl, void(*colfunc2)(drawcolumndata_t*), b
 
 	if (!(pl->minx <= pl->maxx))
 		return;
-
-	// If we're not supposed to draw the sky (e.g. for skyboxes), don't do anything!
-	// This probably utterly ruins sky rendering for FOFs and polyobjects, unfortunately
-	if (!newview->sky)
-	{
-		return;
-	}
 
 	drawcolumndata_t dc = {};
 	const INT32 texture = texturetranslation[skytexture];
