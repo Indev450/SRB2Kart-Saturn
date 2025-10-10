@@ -115,7 +115,7 @@ static void R_DrawSpanTemplate(drawspandata_t* ds)
 	}
 
 	intptr_t count = (ds->x2 - ds->x1 + 1);
-	size_t i;
+	//size_t i;
 
 	xposition = ds->xfrac; yposition = ds->yfrac;
 	xstep = ds->xstep; ystep = ds->ystep;
@@ -235,7 +235,7 @@ static void R_DrawTiltedSpanTemplate(drawspandata_t* ds)
 	UINT32 stepu, stepv;
 	UINT32 bit;
 
-	INT32 x1 = ds->x1;
+	//INT32 x1 = ds->x1;
 	const INT32 nflatxshift = ds->nflatxshift;
 	const INT32 nflatyshift = ds->nflatyshift;
 	const INT32 nflatmask = ds->nflatmask;
@@ -307,11 +307,11 @@ static void R_DrawTiltedSpanTemplate(drawspandata_t* ds)
 		u = (INT64)(startu);
 		v = (INT64)(startv);
 
-		x1 = ds->x1;
+		//x1 = ds->x1;
 
 		// not sure which one does a better job
 
-		/*for (i = SPANSIZE-1; i >= 0; i--)
+		for (i = SPANSIZE-1; i >= 0; i--)
 		{
 			bit = ((v >> nflatyshift) & nflatmask) | (u >> nflatxshift);
 			colormap = ds->planezlight[tiltlighting[ds->x1++]] + (ds->colormap - colormaps);
@@ -320,9 +320,9 @@ static void R_DrawTiltedSpanTemplate(drawspandata_t* ds)
 			dsrc += stride;
 			u += stepu;
 			v += stepv;
-		}*/
+		}
 
-		for (i = 0; i < SPANSIZE; i++)
+		/*for (i = 0; i < SPANSIZE; i++)
 		{
 			bit = (((v + stepv * i) >> nflatyshift) & nflatmask) | ((u + stepu * i) >> nflatxshift);
 			colormap = ds->planezlight[tiltlighting[x1 + i]] + (ds->colormap - colormaps);
@@ -331,7 +331,7 @@ static void R_DrawTiltedSpanTemplate(drawspandata_t* ds)
 
 		ds->x1 += SPANSIZE;
 		dest += SPANSIZE * stride;
-		dsrc += SPANSIZE * stride;
+		dsrc += SPANSIZE * stride;*/
 		startu = endu;
 		startv = endv;
 		width -= SPANSIZE;
