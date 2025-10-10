@@ -1415,17 +1415,10 @@ void I_ReadScreen(UINT8 * restrict scr, INT32 scale)
 {
 	if (rendermode != render_soft)
 		I_Error("I_ReadScreen: called while in non-software mode");
-	else if (scale == 1)
-	{
-		UINT8 *buffer = vid.screens[0];
-
-		for (int y = 0; y < vid.height; y++)
-			for (int x = 0; x < vid.width; x++)
-				scr[(y * vid.width) + x] = buffer[(x * vid.height) + y];
-	}
 	else
 	{
 		UINT8 * restrict source = vid.screens[0];
+
 		uintptr_t w = vid.width/scale*scale, h = vid.height/scale*scale;
 
 		// size_t saves a lea + movsxd over INT32. mind your types!
