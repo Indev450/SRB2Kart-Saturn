@@ -31,7 +31,8 @@ enum DrawColumnType
 };
 
 template<DrawColumnType Type>
-static constexpr UINT8 R_GetColumnTranslated(drawcolumndata_t* dc, UINT8 col, const UINT8 * restrict colormap)
+FUNCINLINE static ATTRINLINE constexpr UINT8
+R_GetColumnTranslated(drawcolumndata_t* dc, UINT8 col, const UINT8 * restrict colormap)
 {
 	if constexpr (Type & DrawColumnType::DC_COLORMAP)
 	{
@@ -42,7 +43,8 @@ static constexpr UINT8 R_GetColumnTranslated(drawcolumndata_t* dc, UINT8 col, co
 }
 
 template<DrawColumnType Type>
-static constexpr UINT8 R_GetColumnTranslucent(drawcolumndata_t* dc, UINT8 * restrict dest, UINT8 col, const UINT8 * restrict colormap)
+FUNCINLINE static ATTRINLINE constexpr UINT8
+R_GetColumnTranslucent(drawcolumndata_t* dc, UINT8 * restrict dest, UINT8 col, const UINT8 * restrict colormap)
 {
 	col = R_GetColumnTranslated<Type>(dc, col, colormap);
 
@@ -57,7 +59,8 @@ static constexpr UINT8 R_GetColumnTranslucent(drawcolumndata_t* dc, UINT8 * rest
 }
 
 template<DrawColumnType Type>
-static constexpr UINT8 R_DrawColumnPixel(drawcolumndata_t* dc, UINT8 * restrict dest, UINT32 bit, const UINT8 * restrict source, const UINT8 * restrict colormap)
+FUNCINLINE static ATTRINLINE constexpr UINT8
+R_DrawColumnPixel(drawcolumndata_t* dc, UINT8 * restrict dest, UINT32 bit, const UINT8 * restrict source, const UINT8 * restrict colormap)
 {
 	UINT8 col = source[bit];
 
@@ -187,7 +190,6 @@ static void R_DrawColumnTemplate(drawcolumndata_t *dc)
 		const intptr_t heightmask = dc->sourcelength-1;
 		constexpr INT32 npow2min = -1;
 		const INT32 npow2max = dc->sourcelength;
-		const INT32 stride = 1;
 
 		const UINT8 * restrict source = dc->source;
 		const lighttable_t * restrict colormap = dc->colormap;
@@ -208,12 +210,12 @@ static void R_DrawColumnTemplate(drawcolumndata_t *dc)
 					while(count--)
 					{
 						*dest = R_DrawColumnPixel<Type>(dc, dest, (frac>>FRACBITS) & heightmask, source, colormap);
-						dest += stride;
+						dest += 1;
 						frac += fracstep;
 					}
 				}
 				break;
-			case -1:
+			case npow2min:
 				{
 					if (frac < 0)
 						// adjust in case we underread
@@ -223,7 +225,7 @@ static void R_DrawColumnTemplate(drawcolumndata_t *dc)
 					while (--count >= 0)
 					{
 						*dest = R_DrawColumnPixel<Type>(dc, dest, frac>>FRACBITS, source, colormap);
-						dest += stride;
+						dest += 1;
 						frac += fracstep;
 					}
 				}
@@ -235,11 +237,11 @@ static void R_DrawColumnTemplate(drawcolumndata_t *dc)
 						while ((count -= 2) >= 0) // texture height is a power of 2 -- killough
 						{
 							*dest = R_DrawColumnPixel<Type>(dc, dest, (frac>>FRACBITS) & heightmask, source, colormap);
-							dest += stride;
+							dest += 1;
 							frac += fracstep;
 
 							*dest = R_DrawColumnPixel<Type>(dc, dest, (frac>>FRACBITS) & heightmask, source, colormap);
-							dest += stride;
+							dest += 1;
 							frac += fracstep;
 						}
 
@@ -277,7 +279,7 @@ static void R_DrawColumnTemplate(drawcolumndata_t *dc)
 							// and a few bytes after as well
 							*dest = R_DrawColumnPixel<Type>(dc, dest, CLAMP((frac >> FRACBITS), npow2min, npow2max), source, colormap);
 
-							dest += stride;
+							dest += 1;
 
 #if __SIZEOF_POINTER__ < 8  // 64-bit systems have large enough numbers for this to be a non-issue
 							// Avoid overflow.
@@ -343,7 +345,6 @@ void R_DrawFogColumn(drawcolumndata_t* dc)
 	// Framebuffer destination address.
 	dest = R_Address(dc->x, dc->yl);
 
-	const INT32 stride = 1;
 	const lighttable_t * restrict colormap = dc->colormap;
 
 	// Determine scaling, which is the only mapping to be done.
@@ -351,6 +352,6 @@ void R_DrawFogColumn(drawcolumndata_t* dc)
 	{
 		// Simple. Apply the colormap to what's already on the screen.
 		*dest = colormap[*dest];
-		dest += stride;
+		dest  += 1;
 	} while (count--);
 }
