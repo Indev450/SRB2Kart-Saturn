@@ -663,7 +663,7 @@ void V_DrawStretchyFixedPatch(fixed_t x, fixed_t y, fixed_t pscale, fixed_t vsca
 	fixed_t col, ofs, colfrac, rowfrac, fdup, vdup;
 	INT32 dup;
 	const column_t *column;
-	UINT8 *desttop, *dest, *deststart, *destend;
+	UINT8 *desttop, *dest/*, *deststart, *destend*/;
 	const UINT8 *source, *deststop;
 	fixed_t pwidth; // patch width
 	fixed_t offx = 0; // x offset
@@ -853,8 +853,8 @@ void V_DrawStretchyFixedPatch(fixed_t x, fixed_t y, fixed_t pscale, fixed_t vsca
 	else
 		pwidth = patch->width * dup;
 
-	deststart = desttop;
-	destend = desttop + pwidth*vid.height;
+	//deststart = desttop;
+	//destend = desttop + pwidth*vid.height;
 
 	for (col = 0; (col>>FRACBITS) < patch->width; col += colfrac, ++offx, desttop += vid.height)
 	{
