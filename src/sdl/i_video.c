@@ -1416,7 +1416,13 @@ void I_ReadScreen(UINT8 * restrict scr, INT32 scale)
 	if (rendermode != render_soft)
 		I_Error("I_ReadScreen: called while in non-software mode");
 	else if (scale == 1)
-		VID_BlitLinearScreen(vid.screens[0], scr, vid.width, vid.height, vid.width, vid.width);
+	{
+		UINT8 *buffer = vid.screens[0];
+
+		for (int y = 0; y < vid.height; y++)
+			for (int x = 0; x < vid.width; x++)
+				scr[(y * vid.width) + x] = buffer[(x * vid.height) + y];
+	}
 	else
 	{
 		UINT8 * restrict source = vid.screens[0];
@@ -1426,7 +1432,7 @@ void I_ReadScreen(UINT8 * restrict scr, INT32 scale)
 		// uintptr_t is even better since it's guaranteed to be the size of a pointer
 		for (uintptr_t y = 0; y < h; y += scale)
 			for (uintptr_t x = 0; x < w; x += scale)
-				*scr++ = source[y*vid.width + x];
+				*scr++ = source[y*vid.height + x];
 	}
 }
 

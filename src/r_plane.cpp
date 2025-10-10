@@ -1156,13 +1156,14 @@ void R_DrawSinglePlane(drawspandata_t* ds, visplane_t *pl, boolean allow_paralle
 						}
 					}
 
-					offset = (scry*vid.width) + scrx;
+					//offset = (scry*vid.width) + scrx;
+					offset = (scrx*vid.height) + scry;
 
 					// No idea if this works
 					VID_BlitLinearScreen(renderscreen + offset,
-										 vid.screens[1] + (top*vid.width), // intentionally not +offset
+										 vid.screens[1] + top, // intentionally not +offset
 										 viewwidth, bottom-top,
-										 vid.width, vid.width);
+										 vid.height, vid.height);
 				}
 			}
 		}

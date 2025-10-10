@@ -255,7 +255,7 @@ static void R_DrawTiltedSpanTemplate(drawspandata_t* ds)
 
 	if constexpr (Type & DS_RIPPLE)
 	{
-		dsrc = vid.screens[1] + (ds->y + ds->bgofs) * stride + ds->x1;
+		dsrc = vid.screens[1] + (ds->y + ds->bgofs) + ds->x1 * stride;
 	}
 	else
 	{
@@ -370,8 +370,8 @@ static void R_DrawTiltedSpanTemplate(drawspandata_t* ds)
 				colormap = ds->planezlight[tiltlighting[ds->x1]] + (ds->colormap - colormaps);
 				*dest = R_DrawSpanPixel<Type>(ds, dsrc, colormap, bit, source);
 				dest += stride;
-				ds->x1++;
 				dsrc += stride;
+				ds->x1++;
 				u += stepu;
 				v += stepv;
 			}
@@ -407,7 +407,9 @@ void R_DrawFogSpan(drawspandata_t* ds)
 
 	intptr_t count = ds->x2 - ds->x1 + 1;
 
-	while (count >= 4)
+	const INT32 stride = vid.height;
+
+	/*while (count >= 4)
 	{
 		dest[0] = colormap[dest[0]];
 		dest[1] = colormap[dest[1]];
@@ -416,12 +418,12 @@ void R_DrawFogSpan(drawspandata_t* ds)
 
 		dest += 4;
 		count -= 4;
-	}
+	}*/
 
 	while (count--)
 	{
 		*dest = colormap[*dest];
-		dest++;
+		dest += stride;
 	}
 }
 
@@ -442,7 +444,7 @@ void R_DrawFogSpan_Tilted(drawspandata_t* ds)
 	{
 		UINT8 *colormap = ds->planezlight[tiltlighting[ds->x1++]] + (ds->colormap - colormaps);
 		*dest = colormap[*dest];
-		dest++;
+		dest += stride;
 	}
 	while (--width >= 0);
 }

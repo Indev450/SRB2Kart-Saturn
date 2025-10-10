@@ -785,7 +785,7 @@ static void AM_drawPixel(INT32 xx, INT32 yy, INT32 cc)
 {
 	if (xx < 0 || yy < 0 || xx >= f_w || yy >= f_h)
 		return; // off the screen
-	am_buf[(yy*f_w) + xx] = cc;
+	am_buf[(xx*f_h) + yy] = cc;
 }
 
 //

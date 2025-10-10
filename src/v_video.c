@@ -614,9 +614,6 @@ static void CV_constextsize_OnChange(void)
 // --------------------------------------------------------------------------
 void VID_BlitLinearScreen(const UINT8 *restrict srcptr, UINT8 *restrict destptr, INT32 width, INT32 height, size_t srcrowbytes, size_t destrowbytes)
 {
-	//:skull:
-	return;
-
 	if (srcrowbytes == destrowbytes && srcrowbytes == (size_t)height)
 	{
 		size_t i = srcrowbytes * width;
@@ -846,7 +843,6 @@ void V_DrawStretchyFixedPatch(fixed_t x, fixed_t y, fixed_t pscale, fixed_t vsca
 	}
 	desttop += (x*vid.height) + y;
 
-
 	if (pscale != FRACUNIT) // scale width properly
 	{
 		pwidth = patch->width<<FRACBITS;
@@ -860,8 +856,6 @@ void V_DrawStretchyFixedPatch(fixed_t x, fixed_t y, fixed_t pscale, fixed_t vsca
 	deststart = desttop;
 	destend = desttop + pwidth*vid.height;
 
-	const INT32 stride = vid.width;
-
 	for (col = 0; (col>>FRACBITS) < patch->width; col += colfrac, ++offx, desttop += vid.height)
 	{
 		INT32 topdelta, prevdelta = -1;
@@ -869,14 +863,14 @@ void V_DrawStretchyFixedPatch(fixed_t x, fixed_t y, fixed_t pscale, fixed_t vsca
 		{
 			if (x+pwidth-offx < 0) // don't draw off the left of the screen (WRAP PREVENTION)
 				break;
-			if (x+pwidth-offx >= stride) // don't draw off the right of the screen (WRAP PREVENTION)
+			if (x+pwidth-offx >= vid.width) // don't draw off the right of the screen (WRAP PREVENTION)
 				continue;
 		}
 		else
 		{
 			if (x+offx < 0) // don't draw off the left of the screen (WRAP PREVENTION)
 				continue;
-			if (x+offx >= stride) // don't draw off the right of the screen (WRAP PREVENTION)
+			if (x+offx >= vid.width) // don't draw off the right of the screen (WRAP PREVENTION)
 				break;
 		}
 		column = (const column_t *)((const UINT8 *)(patch->columns) + (patch->columnofs[col>>FRACBITS]));
@@ -925,7 +919,7 @@ void V_DrawStretchyFixedPatch(fixed_t x, fixed_t y, fixed_t pscale, fixed_t vsca
 					UINT8 *col_start = vid.screens[0] + ((x + offx)*vid.height);
 					deststop = col_start + vid.height;
 
-					for (ofs = 0; dest < deststop && (ofs>>FRACBITS) < column->length; ofs += rowfrac)
+					for (ofs = 0; dest < deststop && (size_t)(ofs>>FRACBITS) < column->length; ofs += rowfrac)
 					{
 						if (dest >= col_start) // don't draw off the top of the screen (CRASH PREVENTION)
 							*dest = *(v_colormap + source[ofs>>FRACBITS]);
@@ -951,7 +945,7 @@ void V_DrawStretchyFixedPatch(fixed_t x, fixed_t y, fixed_t pscale, fixed_t vsca
 					UINT8 *col_start = vid.screens[0] + ((x + offx)*vid.height);
 					deststop = col_start + vid.height;
 
-					for (ofs = 0; dest < deststop && (ofs>>FRACBITS) < column->length; ofs += rowfrac)
+					for (ofs = 0; dest < deststop && (size_t)(ofs>>FRACBITS) < column->length; ofs += rowfrac)
 					{
 						if (dest >= col_start) // don't draw off the top of the screen (CRASH PREVENTION)
 							*dest = *(v_translevel + ((source[ofs>>FRACBITS]<<8)&0xff00) + (*dest&0xff));
@@ -972,13 +966,16 @@ void V_DrawStretchyFixedPatch(fixed_t x, fixed_t y, fixed_t pscale, fixed_t vsca
 					dest = desttop;
 					if (scrn & V_FLIP)
 						dest = deststart + (destend - desttop);
-					dest += FixedInt(FixedMul(topdelta<<FRACBITS,vdup))*stride;
+					dest += FixedInt(FixedMul(topdelta<<FRACBITS,vdup));
 
-					for (ofs = 0; dest < deststop && (ofs>>FRACBITS) < column->length; ofs += rowfrac)
+					UINT8 *col_start = vid.screens[0] + ((x + offx)*vid.height);
+					deststop = col_start + vid.height;
+
+					for (ofs = 0; dest < deststop && (size_t)(ofs>>FRACBITS) < column->length; ofs += rowfrac)
 					{
-						if (dest >= vid.screens[scrn&V_PARAMMASK]) // don't draw off the top of the screen (CRASH PREVENTION)
+						if (dest >= col_start) // don't draw off the top of the screen (CRASH PREVENTION)
 							*dest = *(v_translevel + (((*(v_colormap + source[ofs>>FRACBITS]))<<8)&0xff00) + (*dest&0xff));
-						dest += stride;
+						dest++;
 					}
 					column = (const column_t *)((const UINT8 *)column + column->length + 4);
 				}
@@ -1048,13 +1045,10 @@ void V_DrawCroppedPatch(fixed_t x, fixed_t y, fixed_t pscale, INT32 scrn, patch_
 	if (!desttop)
 		return;
 
-	deststop = desttop + vid.width * vid.height;
-
 	if (scrn & V_NOSCALESTART)
 	{
 		x >>= FRACBITS;
 		y >>= FRACBITS;
-		desttop += (y*vid.width) + x;
 	}
 	else
 	{
@@ -1088,20 +1082,18 @@ void V_DrawCroppedPatch(fixed_t x, fixed_t y, fixed_t pscale, INT32 scrn, patch_
 					y += (vid.height - (BASEVIDHEIGHT * vid.dup)) / 2;
 			}
 		}
-
-		desttop += (y*vid.width) + x;
 	}
 
-	const INT32 stride = vid.width;
+	desttop += (y*vid.width) + x;
 
-	for (col = sx<<FRACBITS; (col>>FRACBITS) < patch->width && ((col>>FRACBITS) - sx) < w; col += colfrac, ++x, desttop++)
+	for (col = sx<<FRACBITS; (col>>FRACBITS) < patch->width && ((col>>FRACBITS) - sx) < w; col += colfrac, ++x, desttop += vid.height)
 	{
 		INT32 topdelta, prevdelta = -1;
 
 		if (x < 0) // don't draw off the left of the screen (WRAP PREVENTION)
 			continue;
 
-		if (x >= stride) // don't draw off the right of the screen (WRAP PREVENTION)
+		if (x >= vid.width) // don't draw off the right of the screen (WRAP PREVENTION)
 			break;
 
 		column = (const column_t *)((const UINT8 *)(patch->columns) + (patch->columnofs[col>>FRACBITS]));
@@ -1119,17 +1111,20 @@ void V_DrawCroppedPatch(fixed_t x, fixed_t y, fixed_t pscale, INT32 scrn, patch_
 					dest = desttop;
 					if (topdelta-sy > 0)
 					{
-						dest += FixedInt(FixedMul((topdelta-sy)<<FRACBITS,fdup))*stride;
+						dest += FixedInt(FixedMul((topdelta-sy)<<FRACBITS,fdup));
 						ofs = 0;
 					}
 					else
 						ofs = (sy-topdelta)<<FRACBITS;
 
-					for (; dest < deststop && (ofs>>FRACBITS) < column->length && (((ofs>>FRACBITS) - sy) + topdelta) < h; ofs += rowfrac)
+					UINT8 *col_start = vid.screens[0] + (x*vid.height);
+					deststop = col_start + vid.height;
+
+					for (; dest < deststop && (size_t)(ofs>>FRACBITS) < column->length && (((ofs>>FRACBITS) - sy) + topdelta) < h; ofs += rowfrac)
 					{
-						if (dest >= vid.screens[scrn&V_PARAMMASK]) // don't draw off the top of the screen (CRASH PREVENTION)
+						if (dest >= col_start) // don't draw off the top of the screen (CRASH PREVENTION)
 							*dest = source[ofs>>FRACBITS];
-						dest += stride;
+						dest++;
 					}
 					column = (const column_t *)((const UINT8 *)column + column->length + 4);
 				}
@@ -1146,17 +1141,20 @@ void V_DrawCroppedPatch(fixed_t x, fixed_t y, fixed_t pscale, INT32 scrn, patch_
 					dest = desttop;
 					if (topdelta-sy > 0)
 					{
-						dest += FixedInt(FixedMul((topdelta-sy)<<FRACBITS,fdup))*stride;
+						dest += FixedInt(FixedMul((topdelta-sy)<<FRACBITS,fdup));
 						ofs = 0;
 					}
 					else
 						ofs = (sy-topdelta)<<FRACBITS;
 
-					for (; dest < deststop && (ofs>>FRACBITS) < column->length && (((ofs>>FRACBITS) - sy) + topdelta) < h; ofs += rowfrac)
+					UINT8 *col_start = vid.screens[0] + (x*vid.height);
+					deststop = col_start + vid.height;
+
+					for (; dest < deststop && (size_t)(ofs>>FRACBITS) < column->length && (((ofs>>FRACBITS) - sy) + topdelta) < h; ofs += rowfrac)
 					{
-						if (dest >= vid.screens[scrn&V_PARAMMASK]) // don't draw off the top of the screen (CRASH PREVENTION)
+						if (dest >= col_start) // don't draw off the top of the screen (CRASH PREVENTION)
 							*dest = *(v_translevel + ((source[ofs>>FRACBITS]<<8)&0xff00) + (*dest&0xff));
-						dest += stride;
+						dest++;
 					}
 					column = (const column_t *)((const UINT8 *)column + column->length + 4);
 				}
@@ -1198,8 +1196,8 @@ void V_DrawBlock(INT32 x, INT32 y, INT32 scrn, INT32 width, INT32 height, const 
 		I_Error("Bad V_DrawBlock");
 #endif
 
-	dest = vid.screens[scrn] + y*vid.width + x;
-	deststop = vid.screens[scrn] + vid.width * vid.height;
+	dest = vid.screens[scrn] + x*vid.height + y;
+	deststop = vid.screens[scrn] + vid.height * vid.width;
 
 	while (height--)
 	{
@@ -1218,7 +1216,7 @@ void V_DrawBlock(INT32 x, INT32 y, INT32 scrn, INT32 width, INT32 height, const 
 // alug: now with translucency support X)
 void V_DrawFill(INT32 x, INT32 y, INT32 w, INT32 h, INT32 c)
 {
-	UINT8 *dest;
+	UINT8 *dest, *desttop;
 	const UINT8 *deststop;
 	UINT32 alphalevel = ((c & V_ALPHAMASK) >> V_ALPHASHIFT);
 
@@ -1294,8 +1292,8 @@ void V_DrawFill(INT32 x, INT32 y, INT32 w, INT32 h, INT32 c)
 	if (y + h > vid.height)
 		h = vid.height-y;
 
-	dest = vid.screens[0] + y*vid.width + x;
-	deststop = vid.screens[0] + vid.width * vid.height;
+	dest = desttop = vid.screens[0] + x*vid.height + y;
+	deststop = vid.screens[0] + vid.height * vid.width;
 
 	if (alphalevel)
 	{
@@ -1321,16 +1319,31 @@ void V_DrawFill(INT32 x, INT32 y, INT32 w, INT32 h, INT32 c)
 	if (alphalevel)
 	{
 		const UINT8 *fadetable = ((UINT8 *)transtables + ((alphalevel-1)<<FF_TRANSSHIFT) + (c*256));
-		for (;(--h >= 0) && dest < deststop; dest += vid.width)
+		for (;(--h >= 0) && desttop < deststop; desttop++)
 		{
-			for (x = 0; x < w; x++)
-				dest[x] = fadetable[dest[x]];
+			dest = desttop;
+
+			UINT8 *row_end = dest + (w * vid.height);
+			while (dest < row_end)
+			{
+				*dest = fadetable[*dest];
+				dest += vid.height;
+			}
 		}
 	}
 	else
 	{
-		for (;(--h >= 0) && dest < deststop; dest += vid.width)
-			memset(dest, c, w);
+		for (;(--h >= 0) && desttop < deststop; desttop++)
+		{
+			dest = desttop;
+
+			UINT8 *row_end = dest + (w * vid.height);
+			while (dest < row_end)
+			{
+				*dest = c;
+				dest += vid.height;
+			}
+		}
 	}
 }
 
@@ -1376,8 +1389,8 @@ static UINT32 V_GetHWConsBackColor(void)
 
 void V_DrawFillConsoleMap(INT32 x, INT32 y, INT32 w, INT32 h, INT32 c)
 {
-	UINT8 *dest;
-	INT32 u, v;
+	UINT8 *dest, *desttop;
+	INT32 v;
 	UINT32 alphalevel = 0;
 
 	if (rendermode == render_none)
@@ -1444,7 +1457,7 @@ void V_DrawFillConsoleMap(INT32 x, INT32 y, INT32 w, INT32 h, INT32 c)
 	if (y + h > vid.height)
 		h = vid.height-y;
 
-	dest = vid.screens[0] + y*vid.width + x;
+	dest = desttop = vid.screens[0] + x*vid.height + y;
 
 	if ((alphalevel = ((c & V_ALPHAMASK) >> V_ALPHASHIFT)))
 	{
@@ -1469,11 +1482,14 @@ void V_DrawFillConsoleMap(INT32 x, INT32 y, INT32 w, INT32 h, INT32 c)
 
 	if (!alphalevel)
 	{
-		for (v = 0; v < h; v++, dest += vid.width)
+		for (v = 0; v < h; v++, desttop++)
 		{
-			for (u = 0; u < w; u++)
+			dest = desttop;
+			UINT8 *row_end = dest + w*vid.height;
+			while (dest < row_end)
 			{
-				dest[u] = consolebgmap[dest[u]];
+				*dest = consolebgmap[*dest];
+				dest += vid.height;
 			}
 		}
 	}
@@ -1484,11 +1500,14 @@ void V_DrawFillConsoleMap(INT32 x, INT32 y, INT32 w, INT32 h, INT32 c)
 		w = clip(w,vid.width);
 		h = clip(h,vid.height);
 #undef clip
-		for (v = 0; v < h; v++, dest += vid.width)
+		for (v = 0; v < h; v++, desttop++)
 		{
-			for (u = 0; u < w; u++)
+			dest = desttop;
+			UINT8 *row_end = dest + w*vid.height;
+			while (dest < row_end)
 			{
-				dest[u] = fadetable[consolebgmap[dest[u]]];
+				*dest = fadetable[consolebgmap[*dest]];
+				dest += vid.height;
 			}
 		}
 	}
@@ -1503,7 +1522,8 @@ void V_DrawFillConsoleMap(INT32 x, INT32 y, INT32 w, INT32 h, INT32 c)
 //
 void V_DrawDiag(INT32 x, INT32 y, INT32 wh, INT32 c)
 {
-	UINT8 *dest;
+	UINT8 *dest, *desttop;
+
 	const UINT8 *deststop;
 	INT32 w, h, wait = 0;
 
@@ -1578,19 +1598,28 @@ void V_DrawDiag(INT32 x, INT32 y, INT32 wh, INT32 c)
 	if (h > w)
 		h = w;
 
-	dest = vid.screens[0] + y*vid.width + x;
-	deststop = vid.screens[0] + vid.width * vid.height;
+	dest = desttop = vid.screens[0] + x*vid.height + y;
+	deststop = vid.screens[0] + vid.height * vid.width;
 
 	c &= 255;
 
-	for (;(--h >= 0) && dest < deststop; dest += vid.width)
+	for (;(--h >= 0) && desttop < deststop; desttop++)
 	{
-		memset(dest, c, w);
+		dest = desttop;
+
+		UINT8 *row_end = dest + (w * vid.height);
+		while (dest < row_end)
+		{
+			*dest = c;
+			dest += vid.height;
+		}
+
 		if (wait)
 			wait--;
 		else
 			w--;
 	}
+
 }
 
 //
@@ -1601,7 +1630,7 @@ void V_DrawFlatFill(INT32 x, INT32 y, INT32 w, INT32 h, lumpnum_t flatnum)
 	INT32 u, v;
 	fixed_t dx, dy, xfrac, yfrac;
 	const UINT8 *src, *deststop;
-	UINT8 *flat, *dest;
+	UINT8 *flat, *dest, *desttop;
 	size_t size, lflatsize, flatshift;
 
 #ifdef HWRENDER
@@ -1648,7 +1677,7 @@ void V_DrawFlatFill(INT32 x, INT32 y, INT32 w, INT32 h, lumpnum_t flatnum)
 
 	flat = W_CacheLumpNum(flatnum, PU_CACHE);
 
-	dest = vid.screens[0] + y*vid.dup*vid.width + x*vid.dup;
+	dest = desttop = vid.screens[0] + y*vid.dup*vid.width + x*vid.dup;
 	deststop = vid.screens[0] + vid.width * vid.height;
 
 	// from V_DrawScaledPatch
@@ -1672,15 +1701,18 @@ void V_DrawFlatFill(INT32 x, INT32 y, INT32 w, INT32 h, lumpnum_t flatnum)
 	dy = FixedDiv(FRACUNIT, vid.dup<<(FRACBITS-2));
 
 	yfrac = 0;
-	for (v = 0; v < h; v++, dest += vid.width)
+	for (v = 0; v < h; v++, desttop++)
 	{
 		xfrac = 0;
 		src = flat + (((yfrac>>FRACBITS) & (lflatsize - 1)) << flatshift);
+		dest = desttop;
+
 		for (u = 0; u < w; u++)
 		{
-			if (&dest[u] > deststop)
+			if (dest > deststop)
 				return;
-			dest[u] = src[(xfrac>>FRACBITS)&(lflatsize-1)];
+			*dest = src[(xfrac>>FRACBITS)&(lflatsize-1)];
+			dest += vid.height;
 			xfrac += dx;
 		}
 		yfrac += dy;
@@ -1846,7 +1878,7 @@ void V_DrawFadeScreen(UINT16 color, UINT8 strength)
 		: ((color & 0xFF00) // Color is not palette index?
 		? ((UINT8 *)colormaps + strength*256) // Do COLORMAP fade.
 		: ((UINT8 *)transtables + ((9-strength)<<FF_TRANSSHIFT) + color*256)); // Else, do TRANSMAP** fade.
-	const UINT8 *deststop = vid.screens[0] + vid.width * vid.height;
+	const UINT8 *deststop = vid.screens[0] + vid.height * vid.width;
 	UINT8 *buf = vid.screens[0];
 
 	// heavily simplified -- we don't need to know x or y
@@ -1858,7 +1890,7 @@ void V_DrawFadeScreen(UINT16 color, UINT8 strength)
 // Simple translucency with one color, over a set number of lines starting from the top.
 void V_DrawFadeConsBack(INT32 plines)
 {
-	UINT8 *deststop, *buf;
+	UINT8 *deststop, *dest, *desttop;
 
 #ifdef HWRENDER // not win32 only 19990829 by Kin
 	if (rendermode == render_opengl)
@@ -1871,9 +1903,18 @@ void V_DrawFadeConsBack(INT32 plines)
 
 	// heavily simplified -- we don't need to know x or y position,
 	// just the stop position
-	deststop = vid.screens[0] + vid.width * min(plines, vid.height);
-	for (buf = vid.screens[0]; buf < deststop; ++buf)
-		*buf = consolebgmap[*buf];
+	dest = desttop = vid.screens[0];
+	deststop = vid.screens[0] + min(plines, vid.height);
+	for (; desttop < deststop; desttop++)
+	{
+		dest = desttop;
+		UINT8 *row_end = dest + (vid.width * vid.height);
+		while (dest < row_end)
+		{
+			*dest = consolebgmap[*dest];
+			dest += vid.height;
+		}
+	}
 }
 
 // Gets string colormap, used for 0x80 color codes
@@ -3608,7 +3649,7 @@ void V_DoPostProcessor(INT32 view, INT32 param)
 
 	if (thiscam->postimg & POSTIMG_WATER)
 	{
-		INT32 y;
+		INT32 y, x;
 		// Set disStart to a range from 0 to FINEANGLE, incrementing by 128 per tic
 		angle_t disStart = (((leveltime-1)*128) + (R_GetTimeFrac(RTF_LEVEL) / (FRACUNIT/128))) & FINEMASK;
 		INT32 newpix;
@@ -3618,7 +3659,7 @@ void V_DoPostProcessor(INT32 view, INT32 param)
 		for (y = yoffset; y < yoffset+viewheight; y++)
 		{
 			sine = (FINESINE(disStart)*5)>>FRACBITS;
-			newpix = abs(sine);
+			/*newpix = abs(sine);
 
 			if (sine < 0)
 			{
@@ -3641,7 +3682,7 @@ void V_DoPostProcessor(INT32 view, INT32 param)
 					tmpscr[(y*vid.width)+xoffset+viewwidth-newpix] = srcscr[(y*vid.width)+xoffset+(viewwidth-1)];
 					newpix--;
 				}
-			}
+			}*/
 
 			/*
 			 Unoptimized version
@@ -3657,6 +3698,18 @@ void V_DoPostProcessor(INT32 view, INT32 param)
 			 	tmpscr[y*vid.width + x] = srcscr[y*vid.width+newpix]; // *(transme + (srcscr[y*vid.width+x]<<8) + srcscr[y*vid.width+newpix]);
 			 }*/
 
+			for (x = 0; x < vid.width; x++)
+			{
+				newpix = (x + sine);
+
+				if (newpix < 0)
+					newpix = 0;
+				else if (newpix >= vid.width)
+					newpix = vid.width-1;
+
+				tmpscr[y + x*vid.height] = srcscr[y+newpix*vid.height]; // *(transme + (srcscr[y*vid.width+x]<<8) + srcscr[y*vid.width+newpix]);
+			}
+
 			disStart += 22;//the offset into the displacement map, increment each game loop
 			disStart &= FINEMASK; //clip it to FINEMASK
 		}
@@ -3667,7 +3720,7 @@ void V_DoPostProcessor(INT32 view, INT32 param)
 	}
 	else if (thiscam->postimg & POSTIMG_HEAT) // Heat wave
 	{
-		INT32 y;
+		INT32 y, x;
 
 		// Make sure table is built
 		if (heatshifter == NULL || lastheight != viewheight)
@@ -3692,11 +3745,12 @@ void V_DoPostProcessor(INT32 view, INT32 param)
 			if (heatshifter[heatindex[view]++])
 			{
 				// Shift this row of pixels to the right by 2
-				tmpscr[(y*vid.width)+xoffset] = srcscr[(y*vid.width)+xoffset];
-				M_Memcpy(&tmpscr[(y*vid.width)+xoffset], &srcscr[(y*vid.width)+xoffset+vid.dup], viewwidth-vid.dup);
+				tmpscr[y] = srcscr[y];
+				for (x = vid.dup; x < vid.width; x++)
+					tmpscr[y+x*vid.height] = srcscr[y+(x-vid.dup)*vid.height];
 			}
-			else
-				M_Memcpy(&tmpscr[(y*vid.width)+xoffset], &srcscr[(y*vid.width)+xoffset], viewwidth);
+			else for (x = 0; x < vid.width; x++)
+				tmpscr[y+x*vid.height] = srcscr[y+x*vid.height];
 
 			heatindex[view] %= viewheight;
 		}
@@ -3763,7 +3817,7 @@ void V_DoPostProcessor(INT32 view, INT32 param)
 	}
 
 	VID_BlitLinearScreen(srcscr+vid.width*yoffset+xoffset, tmpscr+vid.width*yoffset+xoffset,
-						 viewwidth, viewheight, vid.width, vid.width);
+						 viewwidth, viewheight, vid.height, vid.height);
 #endif
 }
 
