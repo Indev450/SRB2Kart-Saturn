@@ -3782,10 +3782,11 @@ void V_DoPostProcessor(INT32 view, INT32 param)
 
 	if ((thiscam->postimg & POSTIMG_FLIP) && !(thiscam->postimg & POSTIMG_MIRROR)) // Flip the screen upside-down
 	{
-		INT32 y, y2;
+		INT32 x, y, y2;
 
-		for (y = yoffset, y2 = yoffset+viewheight - 1; y < yoffset+viewheight; y++, y2--)
-			M_Memcpy(&tmpscr[(y2*vid.width)+xoffset], &srcscr[(y*vid.width)+xoffset], viewwidth);
+		for (x = xoffset; x < xoffset+viewwidth; x++)
+			for (y = yoffset, y2 = yoffset+(viewheight-1); y < yoffset+viewheight; y++, y2--)
+				tmpscr[x*vid.height + y2] = srcscr[x*vid.height + y];
 
 		UINT8 *tmp = tmpscr;
 		tmpscr = srcscr;
@@ -3793,11 +3794,10 @@ void V_DoPostProcessor(INT32 view, INT32 param)
 	}
 	else if ((thiscam->postimg & POSTIMG_MIRROR) && !(thiscam->postimg & POSTIMG_FLIP)) // Flip the screen on the x axis
 	{
-		INT32 y, x, x2;
+		INT32 x, x2;
 
-		for (y = yoffset; y < yoffset+viewheight; y++)
-			for (x = xoffset, x2 = xoffset+(viewwidth-1); x < xoffset+viewwidth; x++, x2--)
-				tmpscr[y*vid.width + x2] = srcscr[y*vid.width + x];
+		for (x = xoffset, x2 = xoffset+viewwidth - 1; x < xoffset+viewwidth; x++, x2--)
+			M_Memcpy(&tmpscr[(x2*vid.height)+yoffset], &srcscr[(x*vid.height)+yoffset], viewheight);
 
 		UINT8 *tmp = tmpscr;
 		tmpscr = srcscr;
