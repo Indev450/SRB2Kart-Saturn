@@ -30,7 +30,7 @@ extern INT32 linesize;
 
 FUNCINLINE static ATTRINLINE UINT8 *R_Address(INT32 px, INT32 py)
 {
-	return renderscreen + (py + viewwindowy) * linesize + (viewwindowx + px);
+	return renderscreen + (py + viewwindowy)  + (viewwindowx + px) * vid.height;
 }
 
 

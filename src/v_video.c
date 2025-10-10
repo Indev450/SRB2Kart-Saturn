@@ -614,9 +614,12 @@ static void CV_constextsize_OnChange(void)
 // --------------------------------------------------------------------------
 void VID_BlitLinearScreen(const UINT8 *restrict srcptr, UINT8 *restrict destptr, INT32 width, INT32 height, size_t srcrowbytes, size_t destrowbytes)
 {
-	if (srcrowbytes == destrowbytes && srcrowbytes == (size_t)width)
+	//:skull:
+	return;
+
+	if (srcrowbytes == destrowbytes && srcrowbytes == (size_t)height)
 	{
-		size_t i = srcrowbytes * height;
+		size_t i = srcrowbytes * width;
 #if defined(__SSE__)
 		while (i >= 16)
 		{
@@ -631,9 +634,9 @@ void VID_BlitLinearScreen(const UINT8 *restrict srcptr, UINT8 *restrict destptr,
 	}
 	else
 	{
-		while (height--)
+		while (width--)
 		{
-			M_Memcpy(destptr, srcptr, width);
+			M_Memcpy(destptr, srcptr, height);
 
 			destptr += destrowbytes;
 			srcptr += srcrowbytes;
@@ -791,13 +794,10 @@ void V_DrawStretchyFixedPatch(fixed_t x, fixed_t y, fixed_t pscale, fixed_t vsca
 	if (!desttop)
 		return;
 
-	deststop = desttop + vid.width * vid.height;
-
 	if (scrn & V_NOSCALESTART)
 	{
 		x >>= FRACBITS;
 		y >>= FRACBITS;
-		desttop += (y*vid.width) + x;
 	}
 	else
 	{
@@ -843,9 +843,9 @@ void V_DrawStretchyFixedPatch(fixed_t x, fixed_t y, fixed_t pscale, fixed_t vsca
 					y += (vid.height - (BASEVIDHEIGHT * dup)) / 2;
 			}
 		}
-
-		desttop += (y*vid.width) + x;
 	}
+	desttop += (x*vid.height) + y;
+
 
 	if (pscale != FRACUNIT) // scale width properly
 	{
@@ -858,11 +858,11 @@ void V_DrawStretchyFixedPatch(fixed_t x, fixed_t y, fixed_t pscale, fixed_t vsca
 		pwidth = patch->width * dup;
 
 	deststart = desttop;
-	destend = desttop + pwidth;
+	destend = desttop + pwidth*vid.height;
 
 	const INT32 stride = vid.width;
 
-	for (col = 0; (col>>FRACBITS) < patch->width; col += colfrac, ++offx, desttop++)
+	for (col = 0; (col>>FRACBITS) < patch->width; col += colfrac, ++offx, desttop += vid.height)
 	{
 		INT32 topdelta, prevdelta = -1;
 		if (scrn & V_FLIP) // offx is measured from right edge instead of left
@@ -894,13 +894,16 @@ void V_DrawStretchyFixedPatch(fixed_t x, fixed_t y, fixed_t pscale, fixed_t vsca
 					dest = desttop;
 					if (scrn & V_FLIP)
 						dest = deststart + (destend - desttop);
-					dest += FixedInt(FixedMul(topdelta<<FRACBITS,vdup))*stride;
+					dest += FixedInt(FixedMul(topdelta<<FRACBITS,vdup));
+
+					UINT8 *col_start = vid.screens[0] + ((x + offx)*vid.height);
+					deststop = col_start + vid.height;
 
 					for (ofs = 0; dest < deststop && (ofs>>FRACBITS) < column->length; ofs += rowfrac)
 					{
-						if (dest >= vid.screens[scrn&V_PARAMMASK]) // don't draw off the top of the screen (CRASH PREVENTION)
+						if (dest >= col_start) // don't draw off the top of the screen (CRASH PREVENTION)
 							*dest = source[ofs>>FRACBITS];
-						dest += stride;
+						dest++;
 					}
 					column = (const column_t *)((const UINT8 *)column + column->length + 4);
 				}
@@ -917,13 +920,16 @@ void V_DrawStretchyFixedPatch(fixed_t x, fixed_t y, fixed_t pscale, fixed_t vsca
 					dest = desttop;
 					if (scrn & V_FLIP)
 						dest = deststart + (destend - desttop);
-					dest += FixedInt(FixedMul(topdelta<<FRACBITS,vdup))*stride;
+					dest += FixedInt(FixedMul(topdelta<<FRACBITS,vdup));
+
+					UINT8 *col_start = vid.screens[0] + ((x + offx)*vid.height);
+					deststop = col_start + vid.height;
 
 					for (ofs = 0; dest < deststop && (ofs>>FRACBITS) < column->length; ofs += rowfrac)
 					{
-						if (dest >= vid.screens[scrn&V_PARAMMASK]) // don't draw off the top of the screen (CRASH PREVENTION)
+						if (dest >= col_start) // don't draw off the top of the screen (CRASH PREVENTION)
 							*dest = *(v_colormap + source[ofs>>FRACBITS]);
-						dest += stride;
+						dest++;
 					}
 					column = (const column_t *)((const UINT8 *)column + column->length + 4);
 				}
@@ -940,13 +946,16 @@ void V_DrawStretchyFixedPatch(fixed_t x, fixed_t y, fixed_t pscale, fixed_t vsca
 					dest = desttop;
 					if (scrn & V_FLIP)
 						dest = deststart + (destend - desttop);
-					dest += FixedInt(FixedMul(topdelta<<FRACBITS,vdup))*stride;
+					dest += FixedInt(FixedMul(topdelta<<FRACBITS,vdup));
+
+					UINT8 *col_start = vid.screens[0] + ((x + offx)*vid.height);
+					deststop = col_start + vid.height;
 
 					for (ofs = 0; dest < deststop && (ofs>>FRACBITS) < column->length; ofs += rowfrac)
 					{
-						if (dest >= vid.screens[scrn&V_PARAMMASK]) // don't draw off the top of the screen (CRASH PREVENTION)
+						if (dest >= col_start) // don't draw off the top of the screen (CRASH PREVENTION)
 							*dest = *(v_translevel + ((source[ofs>>FRACBITS]<<8)&0xff00) + (*dest&0xff));
-						dest += stride;
+						dest++;
 					}
 					column = (const column_t *)((const UINT8 *)column + column->length + 4);
 				}
@@ -3810,7 +3819,7 @@ UINT8 GetColorLUTDirect(colorlookup_t *lut, UINT8 r, UINT8 g, UINT8 b)
 void V_Init(void)
 {
 	INT32 i;
-	INT32 screensize = vid.width * vid.height;
+	INT32 screensize = vid.height * vid.width;
 
 	for (i = 0; i < NUMSCREENS; i++)
 	{

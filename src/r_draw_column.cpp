@@ -187,7 +187,7 @@ static void R_DrawColumnTemplate(drawcolumndata_t *dc)
 		const intptr_t heightmask = dc->sourcelength-1;
 		constexpr INT32 npow2min = -1;
 		const INT32 npow2max = dc->sourcelength;
-		const INT32 stride = vid.width;
+		const INT32 stride = 1;
 
 		const UINT8 * restrict source = dc->source;
 		const lighttable_t * restrict colormap = dc->colormap;
@@ -343,7 +343,7 @@ void R_DrawFogColumn(drawcolumndata_t* dc)
 	// Framebuffer destination address.
 	dest = R_Address(dc->x, dc->yl);
 
-	const INT32 stride = vid.width;
+	const INT32 stride = 1;
 	const lighttable_t * restrict colormap = dc->colormap;
 
 	// Determine scaling, which is the only mapping to be done.

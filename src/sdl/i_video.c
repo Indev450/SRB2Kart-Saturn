@@ -1304,7 +1304,7 @@ static void SDLSetMode(INT32 width, INT32 height, SDL_bool fullscreen)
 			SDL_DestroyTexture(texture);
 		}
 
-		texture = SDL_CreateTexture(renderer, sw_texture_format, SDL_TEXTUREACCESS_STREAMING, width, height);
+		texture = SDL_CreateTexture(renderer, sw_texture_format, SDL_TEXTUREACCESS_STREAMING, height, width);
 	}
 }
 
@@ -1339,6 +1339,7 @@ void I_UpdateNoBlit(void)
 // I_FinishUpdate
 //
 static SDL_Rect src_rect = { 0, 0, 0, 0 };
+static SDL_Rect dst_rect = { 0, 0, 0, 0 };
 
 void I_FinishUpdate(void)
 {
@@ -1368,13 +1369,13 @@ void I_FinishUpdate(void)
 		void *pixels;
 		int pitch;
 		SDL_LockTexture(texture, NULL, &pixels, &pitch);
-		int step = pitch / 4 - vid.width;
+		int step = pitch / 4 - vid.height;
 		UINT32 *restrict dst = pixels;
 		UINT8 *restrict src = vid.screens[0];
 		UINT32 *restrict palette = localPalette;
-		for (INT32 y = 0; y < vid.height; y++)
+		for (INT32 y = 0; y < vid.width; y++)
 		{
-			UINT8 *restrict end = src + vid.width;
+			UINT8 *restrict end = src + vid.height;
 			do *dst++ = palette[*src++];
 			while (src < end);
 			dst += step;
@@ -1382,7 +1383,8 @@ void I_FinishUpdate(void)
 		SDL_UnlockTexture(texture);
 
 		SDL_RenderClear(renderer);
-		SDL_RenderCopy(renderer, texture, &src_rect, NULL);
+		//SDL_RenderCopy(renderer, texture, &src_rect, NULL);
+		SDL_RenderCopyEx(renderer, texture, NULL, &dst_rect, 90.0, NULL, SDL_FLIP_VERTICAL);
 		SDL_RenderPresent(renderer);
 	}
 #ifdef HWRENDER
@@ -1562,8 +1564,15 @@ INT32 VID_SetMode(INT32 modeNum)
 
 	SDLSetMode(vid.width, vid.height, USE_FULLSCREEN);
 
-	src_rect.w = vid.width;
-	src_rect.h = vid.height;
+	src_rect.w = vid.height;
+	src_rect.h = vid.width;
+
+
+	dst_rect.x = (vid.width - vid.height) / 2;
+	dst_rect.y = (vid.height - vid.width) / 2;
+	dst_rect.w = vid.height;
+	dst_rect.h = vid.width;
+
 
 	refresh_rate = VID_GetRefreshRate();
 

@@ -107,9 +107,9 @@ static void R_DrawSpanTemplate(drawspandata_t* ds)
 	UINT8 * restrict dest = R_Address(ds->x1, ds->y);
 	UINT8 * restrict dsrc;
 
-	const UINT8 * restrict deststop = vid.screens[0] + vid.width * vid.height;
+	const UINT8 * restrict deststop = vid.screens[0] + vid.height *vid.width;
 
-	if (dest+8 > deststop)
+	if (dest > deststop)
 	{
 		return;
 	}
@@ -140,14 +140,14 @@ static void R_DrawSpanTemplate(drawspandata_t* ds)
 
 	if constexpr (Type & DS_RIPPLE)
 	{
-		dsrc = vid.screens[1] + (ds->y + ds->bgofs) * vid.width + ds->x1;
+		dsrc = vid.screens[1] + (ds->y + ds->bgofs) + ds->x1 * vid.height;
 	}
 	else
 	{
 		dsrc = dest;
 	}
 
-	while (count >= 8)
+	/*while (count >= 8)
 	{
 		// SoM: Why didn't I see this earlier? the spot variable is a waste now because we don't
 		// have the uber complicated math to calculate it now, so that was a memory write we didn't
@@ -167,7 +167,7 @@ static void R_DrawSpanTemplate(drawspandata_t* ds)
 		dsrc += 8;
 
 		count -= 8;
-	}
+	}*/
 
 	while (count-- && dest <= deststop)
 	{
@@ -175,8 +175,8 @@ static void R_DrawSpanTemplate(drawspandata_t* ds)
 
 		*dest = R_DrawSpanPixel<Type>(ds, dsrc, colormap, bit, source);
 
-		dest++;
-		dsrc++;
+		dest += vid.height;
+		dsrc += vid.height;
 
 		xposition += xstep;
 		yposition += ystep;
@@ -239,7 +239,7 @@ static void R_DrawTiltedSpanTemplate(drawspandata_t* ds)
 	const INT32 nflatxshift = ds->nflatxshift;
 	const INT32 nflatyshift = ds->nflatyshift;
 	const INT32 nflatmask = ds->nflatmask;
-	const INT32 stride = vid.width;
+	const INT32 stride = vid.height;
 	local_for_thread std::vector<INT32> tiltlighting;
 
 	iz = ds->szp.z + ds->szp.y*(centery-ds->y) + ds->szp.x*(ds->x1-centerx);
@@ -309,16 +309,29 @@ static void R_DrawTiltedSpanTemplate(drawspandata_t* ds)
 
 		x1 = ds->x1;
 
+		// not sure which one does a better job
+
+		/*for (i = SPANSIZE-1; i >= 0; i--)
+		{
+			bit = ((v >> nflatyshift) & nflatmask) | (u >> nflatxshift);
+			colormap = ds->planezlight[tiltlighting[ds->x1++]] + (ds->colormap - colormaps);
+			*dest = R_DrawSpanPixel<Type>(ds, dsrc, colormap, bit, source);
+			dest += stride;
+			dsrc += stride;
+			u += stepu;
+			v += stepv;
+		}*/
+
 		for (i = 0; i < SPANSIZE; i++)
 		{
 			bit = (((v + stepv * i) >> nflatyshift) & nflatmask) | ((u + stepu * i) >> nflatxshift);
 			colormap = ds->planezlight[tiltlighting[x1 + i]] + (ds->colormap - colormaps);
-			dest[i] = R_DrawSpanPixel<Type>(ds, &dsrc[i], colormap, bit, source);
+			dest[i * stride] = R_DrawSpanPixel<Type>(ds, &dsrc[i * stride], colormap, bit, source);
 		}
 
 		ds->x1 += SPANSIZE;
-		dest += SPANSIZE;
-		dsrc += SPANSIZE;
+		dest += SPANSIZE * stride;
+		dsrc += SPANSIZE * stride;
 		startu = endu;
 		startv = endv;
 		width -= SPANSIZE;
@@ -356,9 +369,9 @@ static void R_DrawTiltedSpanTemplate(drawspandata_t* ds)
 				bit = ((v >> ds->nflatyshift) & ds->nflatmask) | (u >> ds->nflatxshift);
 				colormap = ds->planezlight[tiltlighting[ds->x1]] + (ds->colormap - colormaps);
 				*dest = R_DrawSpanPixel<Type>(ds, dsrc, colormap, bit, source);
-				dest++;
+				dest += stride;
 				ds->x1++;
-				dsrc++;
+				dsrc += stride;
 				u += stepu;
 				v += stepv;
 			}
