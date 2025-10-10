@@ -873,7 +873,9 @@ void V_DrawStretchyFixedPatch(fixed_t x, fixed_t y, fixed_t pscale, fixed_t vsca
 			if (x+offx >= vid.width) // don't draw off the right of the screen (WRAP PREVENTION)
 				break;
 		}
-		column = (const column_t *)((const UINT8 *)(patch->columns) + (patch->columnofs[col>>FRACBITS]));
+
+		INT32 realcol = (scrn & V_FLIP) ? ((patch->width-(col>>FRACBITS)-1)<<FRACBITS) : col;
+		column = (const column_t *)((const UINT8 *)(patch->columns) + (patch->columnofs[realcol>>FRACBITS]));
 
 		switch (patchdrawtype)
 		{
@@ -886,8 +888,6 @@ void V_DrawStretchyFixedPatch(fixed_t x, fixed_t y, fixed_t pscale, fixed_t vsca
 					prevdelta = topdelta;
 					source = (const UINT8 *)(column) + 3;
 					dest = desttop;
-					if (scrn & V_FLIP)
-						dest = deststart + (destend - desttop);
 					dest += FixedInt(FixedMul(topdelta<<FRACBITS,vdup));
 
 					UINT8 *col_start = vid.screens[0] + ((x + offx)*vid.height);
@@ -912,8 +912,6 @@ void V_DrawStretchyFixedPatch(fixed_t x, fixed_t y, fixed_t pscale, fixed_t vsca
 					prevdelta = topdelta;
 					source = (const UINT8 *)(column) + 3;
 					dest = desttop;
-					if (scrn & V_FLIP)
-						dest = deststart + (destend - desttop);
 					dest += FixedInt(FixedMul(topdelta<<FRACBITS,vdup));
 
 					UINT8 *col_start = vid.screens[0] + ((x + offx)*vid.height);
@@ -938,8 +936,6 @@ void V_DrawStretchyFixedPatch(fixed_t x, fixed_t y, fixed_t pscale, fixed_t vsca
 					prevdelta = topdelta;
 					source = (const UINT8 *)(column) + 3;
 					dest = desttop;
-					if (scrn & V_FLIP)
-						dest = deststart + (destend - desttop);
 					dest += FixedInt(FixedMul(topdelta<<FRACBITS,vdup));
 
 					UINT8 *col_start = vid.screens[0] + ((x + offx)*vid.height);
@@ -964,8 +960,6 @@ void V_DrawStretchyFixedPatch(fixed_t x, fixed_t y, fixed_t pscale, fixed_t vsca
 					prevdelta = topdelta;
 					source = (const UINT8 *)(column) + 3;
 					dest = desttop;
-					if (scrn & V_FLIP)
-						dest = deststart + (destend - desttop);
 					dest += FixedInt(FixedMul(topdelta<<FRACBITS,vdup));
 
 					UINT8 *col_start = vid.screens[0] + ((x + offx)*vid.height);
