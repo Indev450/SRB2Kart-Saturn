@@ -774,6 +774,7 @@ void D_SRB2Loop(void)
 		precise_t capbudget;
 		precise_t enterprecise = I_GetPreciseTime();
 
+		memset(&g_dc, 0, sizeof(g_dc));
 		Z_Frame_Reset();
 
 		// Casting the return value of a function is bad practice (apparently)
@@ -889,12 +890,6 @@ void D_SRB2Loop(void)
 				// always update console and hud
 				// otherwise it may take minutes to open it
 				CON_Drawer();
-
-				if (gamestate == GS_LEVEL)
-				{
-					ST_Drawer();
-					HU_Drawer();
-				}
 			}
 		}
 
@@ -1026,7 +1021,7 @@ void D_ClearState(void)
 	S_StopSounds();
 	S_ResetKeepAndSpecialMus(); // just in case
 
-	P_FreeLevelState();
+	//P_FreeLevelState();
 
 	G_SetGamestate(GS_NULL);
 	wipegamestate = GS_NULL;

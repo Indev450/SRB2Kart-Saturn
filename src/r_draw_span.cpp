@@ -25,6 +25,9 @@
 #define local_for_thread static
 #endif
 
+#include <vector>
+#include <algorithm>
+
 // ==========================================================================
 // SPANS
 // ==========================================================================
@@ -182,29 +185,37 @@ static void R_DrawSpanTemplate(drawspandata_t* ds)
 
 // R_CalcTiltedLighting
 // Exactly what it says on the tin. I wish I wasn't too lazy to explain things properly.
-static void R_CalcTiltedLighting(INT32 *lightbuffer, INT32 x1, INT32 x2, fixed_t start, fixed_t end)
+static void R_CalcTiltedLighting(std::vector<INT32>& lightbuffer, INT32 x1, INT32 x2, fixed_t start, fixed_t end)
 {
 	// ZDoom uses a different lighting setup to us, and I couldn't figure out how to adapt their version
 	// of this function. Here's my own.
-	INT32 i, left = x1, right = x2;
+	INT32 i;
 	const fixed_t step = (end-start)/(x2 - x1 + 1);
 
 	// I wanna do some optimizing by checking for out-of-range segments on either side to fill in all at once,
 	// but I'm too bad at coding to not crash the game trying to do that. I guess this is fast enough for now...
 
-	for (i = left; i <= right; i++)
+	for (i = x1; i <= x2; i++)
 	{
-		lightbuffer[i] = (start += step) >> FRACBITS;
-
-		if (lightbuffer[i] < 0)
-		{
-			lightbuffer[i] = 0;
-		}
-		else if (lightbuffer[i] >= MAXLIGHTSCALE)
-		{
-			lightbuffer[i] = MAXLIGHTSCALE-1;
-		}
+		fixed_t light = start >> FRACBITS;
+		lightbuffer[i] = CLAMP(light, 0, MAXLIGHTSCALE - 1);
+		start += step;
 	}
+}
+
+static void R_GetTiltedLighting(std::vector<INT32>& tiltlighting, const drawspandata_t* ds, const float iz, const int width, const INT32 stride)
+{
+	float planelightfloat = PLANELIGHTFLOAT;
+	const fixed_t lightstart = FloatToFixed(iz * planelightfloat);
+	const fixed_t lightend   = FloatToFixed((iz + ds->szp.x * width) * planelightfloat);
+
+	if (tiltlighting.size() != (size_t)viewwidth)
+	{
+		tiltlighting.resize(viewwidth);
+	}
+
+	R_CalcTiltedLighting(tiltlighting, ds->x1, ds->x2, lightstart, lightend);
+	//CONS_Printf("tilted lighting %f to %f (foc %f)\n", FixedToFloat(lightstart), FixedToFloat(lightend), focallengthf);
 }
 
 template<DrawSpanType Type>
@@ -223,35 +234,18 @@ static void R_DrawTiltedSpanTemplate(drawspandata_t* ds)
 	float endz, endu, endv;
 	UINT32 stepu, stepv;
 	UINT32 bit;
-	local_for_thread INT32 *tiltlighting = NULL;
-	local_for_thread INT32 oldviewwidth = 0;
-
-	// dont realloc every frame pls thx
-	if (tiltlighting == NULL || oldviewwidth != viewwidth)
-	{
-		tiltlighting = static_cast<INT32*>(realloc(tiltlighting, sizeof(*tiltlighting) * viewwidth));
-		oldviewwidth = viewwidth;
-	}
 
 	INT32 x1 = ds->x1;
 	const INT32 nflatxshift = ds->nflatxshift;
 	const INT32 nflatyshift = ds->nflatyshift;
 	const INT32 nflatmask = ds->nflatmask;
 	const INT32 stride = vid.width;
+	local_for_thread std::vector<INT32> tiltlighting;
 
 	iz = ds->szp.z + ds->szp.y*(centery-ds->y) + ds->szp.x*(ds->x1-centerx);
 
 	// Lighting is simple. It's just linear interpolation from start to end
-	{
-		float planelightfloat = PLANELIGHTFLOAT;
-		float lightstart, lightend;
-
-		lightend = (iz + ds->szp.x*width) * planelightfloat;
-		lightstart = iz * planelightfloat;
-
-		R_CalcTiltedLighting(tiltlighting, ds->x1, ds->x2, FLOAT_TO_FIXED(lightstart), FLOAT_TO_FIXED(lightend));
-		//CONS_Printf("tilted lighting %f to %f (foc %f)\n", lightstart, lightend, focallengthf);
-	}
+	R_GetTiltedLighting(tiltlighting, ds, iz, width, stride);
 
 	uz = ds->sup.z + ds->sup.y*(centery-ds->y) + ds->sup.x*(ds->x1-centerx);
 	vz = ds->svp.z + ds->svp.y*(centery-ds->y) + ds->svp.x*(ds->x1-centerx);
@@ -423,31 +417,13 @@ void R_DrawFogSpan_Tilted(drawspandata_t* ds)
 	int width = ds->x2 - ds->x1;
 	float iz = ds->szp.z + ds->szp.y*(centery-ds->y) + ds->szp.x*(ds->x1-centerx);
 	UINT8 * restrict dest;
-
-	local_for_thread INT32 *tiltlighting = NULL;
-	local_for_thread INT32 oldviewwidth = 0;
-
-	// dont realloc every frame pls thx
-	if (tiltlighting == NULL || oldviewwidth != viewwidth)
-	{
-		tiltlighting = static_cast<INT32*>(realloc(tiltlighting, sizeof(*tiltlighting) * viewwidth));
-		oldviewwidth = viewwidth;
-	}
+	local_for_thread std::vector<INT32> tiltlighting;
 
 	dest = R_Address(ds->x1, ds->y);
 	const INT32 stride = vid.width;
 
 	// Lighting is simple. It's just linear interpolation from start to end
-	{
-		float planelightfloat = PLANELIGHTFLOAT;
-		float lightstart, lightend;
-
-		lightend = (iz + ds->szp.x*width) * planelightfloat;
-		lightstart = iz * planelightfloat;
-
-		R_CalcTiltedLighting(tiltlighting, ds->x1, ds->x2, FLOAT_TO_FIXED(lightstart), FLOAT_TO_FIXED(lightend));
-		//CONS_Printf("tilted lighting %f to %f (foc %f)\n", lightstart, lightend, focallengthf);
-	}
+	R_GetTiltedLighting(tiltlighting, ds, iz, width, stride);
 
 	do
 	{

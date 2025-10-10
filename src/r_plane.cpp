@@ -60,10 +60,6 @@ INT32 numffloors;
 #define visplane_hash(picnum,lightlevel,height) \
   ((unsigned)((picnum)*3+(lightlevel)+(height)*7) & VISPLANEHASHMASK)
 
-//SoM: 3/23/2000: Use boom opening limit removal
-size_t maxopenings;
-INT16 *openings, *lastopening; /// \todo free leak
-
 //
 // Clip values are the solid pixel bounding the range.
 //  floorclip starts out SCREENHEIGHT
@@ -339,13 +335,13 @@ void R_ClearPlanes(void)
 	R_ClearFFloorClips();
 
 	for (i = 0; i < MAXVISPLANES; i++)
+	{
 		for (*freehead = visplanes[i], visplanes[i] = NULL;
 			freehead && *freehead ;)
 		{
 			freehead = &(*freehead)->next;
 		}
-
-	lastopening = openings;
+	}
 
 	// left to right mapping
 	angle = (viewangle-ANGLE_90)>>ANGLETOFINESHIFT;
@@ -789,6 +785,7 @@ static void R_DrawSkyPlane(visplane_t *pl, void(*colfunc2)(drawcolumndata_t*), b
 	}
 
 	drawcolumndata_t dc = {};
+	const INT32 texture = texturetranslation[skytexture];
 
 	// Reset column drawer function (note: couldn't we just call walldrawerfunc directly?)
 	// (that is, unless we'll need to switch drawers in future for some reason)
@@ -807,16 +804,13 @@ static void R_DrawSkyPlane(visplane_t *pl, void(*colfunc2)(drawcolumndata_t*), b
 		dc.colormap += COLORMAP_REMAPOFFSET;
 
 	dc.texturemid = skytexturemid;
-	dc.texheight = textureheight[skytexture] >>FRACBITS;
+	dc.texheight = textureheight[texture] >>FRACBITS;
 	dc.sourcelength = dc.texheight;
 
 	x = pl->minx;
 
 	// Precache the texture so we don't corrupt the zoned heap off-main thread
-	if (!texturecache[texturetranslation[skytexture]])
-	{
-		R_GenerateTexture(texturetranslation[skytexture]);
-	}
+	R_CheckTextureCache(texture);
 
 #ifdef HAVE_THREADS
 	while (x <= pl->maxx)
@@ -841,9 +835,7 @@ static void R_DrawSkyPlane(visplane_t *pl, void(*colfunc2)(drawcolumndata_t*), b
 
 				dc.iscale = FixedMul(skyscale, FINECOSINE(xtoviewangle[x + i]>>ANGLETOFINESHIFT));
 				dc.x = x + i;
-				dc.source =
-					R_GetColumn(texturetranslation[skytexture],
-						-angle); // get negative of angle for each column to display sky correct way round! --Monster Iestyn 27/01/18
+				dc.source = R_GetColumn(texture, -angle); // get negative of angle for each column to display sky correct way round! --Monster Iestyn 27/01/18
 
 				colfunc2(&dc);
 			}

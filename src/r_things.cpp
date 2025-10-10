@@ -94,13 +94,6 @@ static drawseg_xrange_item_t *drawsegs_xrange;
 static size_t drawsegs_xrange_size = 0;
 static INT32 drawsegs_xrange_count = 0;
 
-INT32 R_ThingLightLevel(mobj_t* thing)
-{
-	INT32 lightlevel = thing->lightlevel;
-
-	return lightlevel;
-}
-
 //
 // Sprite rotation 0 is facing the viewer,
 //  rotation 1 is one angle turn CLOCKWISE around the axis.
@@ -312,7 +305,7 @@ boolean R_AddSingleSpriteDef(const char *sprname, spritedef_t *spritedef, UINT16
 
 		// store sprite info in lookup tables
 		//FIXME : numspritelumps do not duplicate sprite replacements
-		W_ReadLumpHeaderPwad(wadnum, l, &patch, (sizeof(INT16) *4), 0);
+		W_ReadLumpHeaderPwad(wadnum, l, &patch, PNG_HEADER_SIZE, 0);
 		spritecachedinfo[numspritelumps].width = (INT32)(SHORT(patch.width))<<FRACBITS;
 		spritecachedinfo[numspritelumps].offset = (INT32)(SHORT(patch.leftoffset))<<FRACBITS;
 		spritecachedinfo[numspritelumps].topoffset = (INT32)(SHORT(patch.topoffset))<<FRACBITS;
@@ -2249,11 +2242,13 @@ static void R_CreateDrawNodes(maskcount_t* mask, drawnode_t* head, boolean temps
 			}
 			ds->curline->polyseg->visplane = NULL;
 		}
+
 		if (ds->maskedtexturecol)
 		{
 			entry = R_CreateDrawNode(head);
 			entry->seg = ds;
 		}
+
 		if (ds->numffloorplanes)
 		{
 			for (i = 0; i < ds->numffloorplanes; i++)
@@ -3028,7 +3023,7 @@ static void R_DrawMaskedList(drawnode_t* head)
 		else if (r2->seg && r2->seg->maskedtexturecol != NULL)
 		{
 			next = r2->prev;
-			R_RenderMaskedSegRange( r2->seg, r2->seg->x1, r2->seg->x2);
+			R_RenderMaskedSegRange(r2->seg, r2->seg->x1, r2->seg->x2);
 			r2->seg->maskedtexturecol = NULL;
 			R_DoneWithNode(r2);
 			r2 = next;

@@ -1,3 +1,14 @@
+// SONIC ROBO BLAST 2 KART SATURN
+//-----------------------------------------------------------------------------
+// Copyright (C) 2025 by Indev.
+//
+// This program is free software distributed under the
+// terms of the GNU General Public License, version 2.
+// See the 'LICENSE' file for more details.
+//-----------------------------------------------------------------------------
+/// \file  m_curl.c
+/// \brief Common curl-related functions shared across http-mserv and file download
+
 #include "m_curl.h"
 #include "doomtype.h"
 #include "i_system.h" // I_OutputMsg
