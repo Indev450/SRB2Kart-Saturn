@@ -249,16 +249,16 @@ static void F_DoWipe(fademask_t *fademask)
 			draw_linestart = scrypos[masky];
 			draw_lineend   = scrypos[masky + 1];
 
-			relativepos = (draw_linestart * vid.width) + draw_rowstart;
-			draw_linestogo = draw_lineend - draw_linestart;
+			relativepos = (draw_rowstart * vid.height) + draw_linestart;
+			draw_linestogo = draw_rowend - draw_rowstart;
 
 			if (*mask == 0)
 			{
 				// shortcut - memcpy source to work
 				while (draw_linestogo--)
 				{
-					M_Memcpy(w_base+relativepos, s_base+relativepos, draw_rowend-draw_rowstart);
-					relativepos += vid.width;
+					M_Memcpy(w_base+relativepos, s_base+relativepos, draw_lineend-draw_linestart);
+					relativepos += vid.height;
 				}
 			}
 			else if (*mask == 10)
@@ -266,8 +266,8 @@ static void F_DoWipe(fademask_t *fademask)
 				// shortcut - memcpy target to work
 				while (draw_linestogo--)
 				{
-					M_Memcpy(w_base+relativepos, e_base+relativepos, draw_rowend-draw_rowstart);
-					relativepos += vid.width;
+					M_Memcpy(w_base+relativepos, e_base+relativepos, draw_lineend-draw_linestart);
+					relativepos += vid.height;
 				}
 			}
 			else
@@ -281,12 +281,12 @@ static void F_DoWipe(fademask_t *fademask)
 					w = w_base + relativepos;
 					s = s_base + relativepos;
 					e = e_base + relativepos;
-					draw_rowstogo = draw_rowend - draw_rowstart;
+					draw_rowstogo = draw_lineend - draw_linestart;
 
 					while (draw_rowstogo--)
 						*w++ = transtbl[ ( *e++ << 8 ) + *s++ ];
 
-					relativepos += vid.width;
+					relativepos += vid.height;
 				}
 				// END DRAWING LOOP
 			}
