@@ -630,8 +630,9 @@ static void R_MakeSpans(void (*mapfunc)(drawspandata_t* ds, void(*spanfunc)(draw
 	// coarse enough to not be too slow due to task scheduling overhead.
 	// To safely do this, we need to copy part of spanstart to a local.
 	// This is essentially loop unrolling across threads.
-	constexpr const int kSpanTaskGranularity = 8;
+	constexpr const int kSpanTaskGranularity = 16;
 	drawspandata_t ds_copy = *ds;
+
 	while (t1 < t2 && t1 <= b1)
 	{
 		INT32 spanstartcopy[kSpanTaskGranularity] = {0};
@@ -813,12 +814,12 @@ static void R_DrawSkyPlane(visplane_t *pl, void(*colfunc2)(drawcolumndata_t*), b
 	R_CheckTextureCache(texture);
 
 #ifdef HAVE_THREADS
+	// Tune concurrency granularity here to maximize throughput
+	// The cheaper colfunc is, the more coarse the task should be
+	constexpr const int kSkyPlaneMacroColumns = 8;
+
 	while (x <= pl->maxx)
 	{
-		// Tune concurrency granularity here to maximize throughput
-		// The cheaper colfunc is, the more coarse the task should be
-		constexpr const int kSkyPlaneMacroColumns = 8;
-
 		auto thunk = [=]() mutable -> void {
 			for (int i = 0; i < kSkyPlaneMacroColumns && i + x <= pl->maxx; i++)
 			{
