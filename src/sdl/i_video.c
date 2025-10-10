@@ -1432,7 +1432,7 @@ void I_ReadScreen(UINT8 * restrict scr, INT32 scale)
 		// uintptr_t is even better since it's guaranteed to be the size of a pointer
 		for (uintptr_t y = 0; y < h; y += scale)
 			for (uintptr_t x = 0; x < w; x += scale)
-				*scr++ = source[y*vid.height + x];
+				*scr++ = source[x*vid.height + y];
 	}
 }
 
