@@ -893,7 +893,7 @@ void V_DrawStretchyFixedPatch(fixed_t x, fixed_t y, fixed_t pscale, fixed_t vsca
 					UINT8 *col_start = vid.screens[0] + ((x + offx)*vid.height);
 					deststop = col_start + vid.height;
 
-					for (ofs = 0; dest < deststop && (ofs>>FRACBITS) < column->length; ofs += rowfrac)
+					for (ofs = 0; dest < deststop && (size_t)(ofs>>FRACBITS) < column->length; ofs += rowfrac)
 					{
 						if (dest >= col_start) // don't draw off the top of the screen (CRASH PREVENTION)
 							*dest = source[ofs>>FRACBITS];
