@@ -210,7 +210,7 @@ static void R_DrawColumnTemplate(drawcolumndata_t *dc)
 					while(count--)
 					{
 						*dest = R_DrawColumnPixel<Type>(dc, dest, (frac>>FRACBITS) & heightmask, source, colormap);
-						dest += 1;
+						dest++;
 						frac += fracstep;
 					}
 				}
@@ -225,7 +225,7 @@ static void R_DrawColumnTemplate(drawcolumndata_t *dc)
 					while (--count >= 0)
 					{
 						*dest = R_DrawColumnPixel<Type>(dc, dest, frac>>FRACBITS, source, colormap);
-						dest += 1;
+						dest++;
 						frac += fracstep;
 					}
 				}
@@ -237,11 +237,11 @@ static void R_DrawColumnTemplate(drawcolumndata_t *dc)
 						while ((count -= 2) >= 0) // texture height is a power of 2 -- killough
 						{
 							*dest = R_DrawColumnPixel<Type>(dc, dest, (frac>>FRACBITS) & heightmask, source, colormap);
-							dest += 1;
+							dest++;
 							frac += fracstep;
 
 							*dest = R_DrawColumnPixel<Type>(dc, dest, (frac>>FRACBITS) & heightmask, source, colormap);
-							dest += 1;
+							dest++;
 							frac += fracstep;
 						}
 
@@ -279,7 +279,7 @@ static void R_DrawColumnTemplate(drawcolumndata_t *dc)
 							// and a few bytes after as well
 							*dest = R_DrawColumnPixel<Type>(dc, dest, CLAMP((frac >> FRACBITS), npow2min, npow2max), source, colormap);
 
-							dest += 1;
+							dest++;
 
 #if __SIZEOF_POINTER__ < 8  // 64-bit systems have large enough numbers for this to be a non-issue
 							// Avoid overflow.
@@ -352,6 +352,6 @@ void R_DrawFogColumn(drawcolumndata_t* dc)
 	{
 		// Simple. Apply the colormap to what's already on the screen.
 		*dest = colormap[*dest];
-		dest  += 1;
+		dest++;
 	} while (count--);
 }
