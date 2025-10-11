@@ -1778,7 +1778,7 @@ void V_DrawVhsEffect(boolean rewind)
 
 	UINT8 *buf = vid.screens[0], *tmp = vid.screens[4];
 	UINT16 y;
-	UINT32 x, pos = 0;
+	INT32 x;
 
 	UINT8 *normalmapstart = ((UINT8 *)transtables + (8<<FF_TRANSSHIFT|(19<<8)));
 #ifdef HQ_VHS
@@ -1812,32 +1812,40 @@ void V_DrawVhsEffect(boolean rewind)
 	}
 #endif
 
-	for (y = 0; y < vid.height; y+=2)
+	// Since we go through columns now instead of rows, we need to keep same random offset values for each row
+	// Don't need a random value for each row, just a bunch of values to cycle through will do
+#define ROWOFFSLEN 128
+	SINT8 rowoffs[ROWOFFSLEN];
+	for (y = 0; y < ROWOFFSLEN; y++)
+		rowoffs[y] = M_RandomKey(vid.dup<<1);
+
+	for (x = 0; x < vid.width; ++x)
 	{
-		thismapstart = normalmapstart;
-		offs = 0;
-
-		if (y >= uby && y < uby+barsize)
+		for (y = 0; y < vid.height; y++)
 		{
-			thismapstart -= (2<<FF_TRANSSHIFT) - (5<<8);
-			offs += updistort * 2.0f * min(y-uby, uby+barsize-y) / barsize;
-		}
+			offs = rowoffs[y/2 % ROWOFFSLEN];
 
-		if (y >= dby && y < dby+barsize)
-		{
-			thismapstart -= (2<<FF_TRANSSHIFT) - (5<<8);
-			offs -= downdistort * 2.0f * min(y-dby, dby+barsize-y) / barsize;
-		}
+			thismapstart = normalmapstart;
 
-		offs += M_RandomKey(vid.dup<<1);
+			if (y >= uby && y < uby+barsize)
+			{
+				thismapstart -= (2<<FF_TRANSSHIFT) - (5<<8);
+				offs += updistort * 2.0f * min(y-uby, uby+barsize-y) / barsize;
+			}
 
-		// lazy way to avoid crashes
-		if ((y == 0 && offs < 0) || (y >= vid.height-2 && offs > 0))
-			offs = 0;
+			if (y >= dby && y < dby+barsize)
+			{
+				thismapstart -= (2<<FF_TRANSSHIFT) - (5<<8);
+				offs -= downdistort * 2.0f * min(y-dby, dby+barsize-y) / barsize;
+			}
 
-		for (x = min(pos+(size_t)vid.width*2, (size_t)vid.width*vid.height); pos < x; pos++)
-		{
-			tmp[pos] = thismapstart[buf[pos+offs]];
+			INT32 pos = x*vid.height + y;
+			INT32 offspos = pos + offs*vid.height;
+
+			if (offspos < 0 || offspos > vid.width*vid.height)
+				offspos = pos;
+
+			tmp[pos] = thismapstart[buf[offspos]];
 #ifdef HQ_VHS
 			tmp[pos] = tmapstart[buf[pos]<<8 | tmp[pos]];
 #endif
@@ -1845,6 +1853,7 @@ void V_DrawVhsEffect(boolean rewind)
 	}
 
 	memcpy(buf, tmp, vid.width*vid.height);
+#undef ROWOFFSLEN
 }
 
 //
