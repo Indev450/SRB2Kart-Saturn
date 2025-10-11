@@ -120,6 +120,8 @@ static void R_DrawSpanTemplate(drawspandata_t* ds)
 	intptr_t count = (ds->x2 - ds->x1 + 1);
 	//size_t i;
 
+	const INT32 stride = vid.height;
+
 	xposition = ds->xfrac; yposition = ds->yfrac;
 	xstep = ds->xstep; ystep = ds->ystep;
 
@@ -178,8 +180,8 @@ static void R_DrawSpanTemplate(drawspandata_t* ds)
 
 		*dest = R_DrawSpanPixel<Type>(ds, dsrc, colormap, bit, source);
 
-		dest += vid.height;
-		dsrc += vid.height;
+		dest += stride;
+		dsrc += stride;
 
 		xposition += xstep;
 		yposition += ystep;
