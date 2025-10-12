@@ -2021,7 +2021,7 @@ FUNCIERROR void ATTRNORETURN I_Error(const char *error, ...)
 		if (errorcount > 20)
 		{
 			va_start(argptr, error);
-			vsprintf(buffer, error, argptr);
+			vsnprintf(buffer, 8192, error, argptr);
 			va_end(argptr);
 			// Implement message box with SDL_ShowSimpleMessageBox,
 			// which should fail gracefully if it can't put a message box up
@@ -2039,7 +2039,7 @@ FUNCIERROR void ATTRNORETURN I_Error(const char *error, ...)
 
 	// Display error message in the console before we start shutting it down
 	va_start(argptr, error);
-	vsprintf(buffer, error, argptr);
+	vsnprintf(buffer, 8192, error, argptr);
 	va_end(argptr);
 	I_OutputMsg("\nI_Error(): %s\n", buffer);
 
