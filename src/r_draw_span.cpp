@@ -254,15 +254,14 @@ static void R_DrawTiltedSpanTemplate(drawspandata_t* ds)
 	local_for_thread std::vector<INT32> tiltlighting;
 
 	iz = ds->szp.z + ds->szp.y*(centery-ds->y) + ds->szp.x*(ds->x1-centerx);
+	uz = ds->sup.z + ds->sup.y*(centery-ds->y) + ds->sup.x*(ds->x1-centerx);
+	vz = ds->svp.z + ds->svp.y*(centery-ds->y) + ds->svp.x*(ds->x1-centerx);
 
 	// Lighting is simple. It's just linear interpolation from start to end
 	R_GetTiltedLighting(tiltlighting, ds, iz, width, stride);
 
-	uz = ds->sup.z + ds->sup.y*(centery-ds->y) + ds->sup.x*(ds->x1-centerx);
-	vz = ds->svp.z + ds->svp.y*(centery-ds->y) + ds->svp.x*(ds->x1-centerx);
-
-	const UINT8 *source = ds->source;
-	const UINT8 *colormap = ds->colormap;
+	const UINT8 * restrict source = ds->source;
+	const UINT8 * restrict colormap = ds->colormap;
 
 	if constexpr (Type & DS_RIPPLE)
 	{
@@ -408,10 +407,10 @@ DEFINE_SPAN_COMBO(R_DrawTranslucentWaterSpan, DS_TRANSMAP|DS_RIPPLE)
 */
 void R_DrawFogSpan(drawspandata_t* ds)
 {
+	INT32 count = ds->x2 - ds->x1 + 1;
+
 	const UINT8 * restrict colormap = ds->colormap;
 	UINT8 * restrict dest = R_Address(ds->x1, ds->y);
-
-	intptr_t count = ds->x2 - ds->x1 + 1;
 
 	while (count >= 4)
 	{
