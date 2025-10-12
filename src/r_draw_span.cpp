@@ -323,7 +323,10 @@ static void R_DrawTiltedSpanTemplate(drawspandata_t* ds)
 		{
 			bit = (((v + stepv * i) >> nflatyshift) & nflatmask) | ((u + stepu * i) >> nflatxshift);
 			colormap = ds->planezlight[tiltlighting[x1 + i]] + (ds->colormap - colormaps);
-			dest[i] = R_DrawSpanPixel<Type>(ds, &dsrc[i], colormap, bit, source);
+			if constexpr (Type & DS_RIPPLE)
+				dest[i] = R_DrawSpanPixel<Type>(ds, &dsrc[i], colormap, bit, source);
+			else
+				dest[i] = R_DrawSpanPixel<Type>(ds, &dest[i], colormap, bit, source);
 		}
 
 		ds->x1 += SPANSIZE;
