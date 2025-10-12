@@ -458,17 +458,23 @@ static UINT8 *imgbuf = NULL;
 void *R_PixelsToPatch(UINT8 *raw, INT16 width, INT16 height, INT16 leftoffset, INT16 topoffset, size_t *destsize)
 {
 	INT16 x, y;
-	UINT8 *img;
+	UINT8 *img, *imgptr;
 	UINT8 *colpointers, *startofspan;
 	size_t size = 0;
 
 	if (!raw)
 		return NULL;
 
-	if (!imgbuf)
-		imgbuf = Z_Malloc(1<<26, PU_STATIC, NULL);
+	// Allocate a staging buffer with the maximum size needed for a patch of the same size as the input.
 
-	UINT8 *imgptr = imgbuf;
+	// round up to nearest multiple of 254-pixel posts, plus 1 more 254-pixel post for paranoia reasons
+	size_t maxcolumnsize = (2 + (height - 1) / 256) * 256;
+	// the patch header, and width columns of the max column size
+	size_t maxoutsize = maxcolumnsize * width + (8 + 4 * width);
+	// so, a 512x512 flat should maximally need 393,760 (384.53 KiB) bytes.
+	// quite a bit smaller than 64 megabytes, and much less annoying to the windows debug allocator!
+	imgbuf = Z_Malloc(maxoutsize, PU_STATIC, NULL);
+	imgptr = imgbuf;
 
 	// Write image size and offset
 	WRITEINT16(imgptr, width);
@@ -582,17 +588,23 @@ void *R_PixelsToPatch(UINT8 *raw, INT16 width, INT16 height, INT16 leftoffset, I
 void *R_MaskedFlatToPatch(UINT16 *raw, INT16 width, INT16 height, INT16 leftoffset, INT16 topoffset, size_t *destsize)
 {
 	INT16 x, y;
-	UINT8 *img;
+	UINT8 *img, *imgptr;
 	UINT8 *colpointers, *startofspan;
 	size_t size = 0;
 
 	if (!raw)
 		return NULL;
 
-	if (!imgbuf)
-		imgbuf = Z_Malloc(1<<26, PU_STATIC, NULL);
+	// Allocate a staging buffer with the maximum size needed for a patch of the same size as the input.
 
-	UINT8 *imgptr = imgbuf;
+	// round up to nearest multiple of 254-pixel posts, plus 1 more 254-pixel post for paranoia reasons
+	size_t maxcolumnsize = (2 + (height - 1) / 256) * 256;
+	// the patch header, and width columns of the max column size
+	size_t maxoutsize = maxcolumnsize * width + (8 + 4 * width);
+	// so, a 512x512 flat should maximally need 393,760 (384.53 KiB) bytes.
+	// quite a bit smaller than 64 megabytes, and much less annoying to the windows debug allocator!
+	imgbuf = Z_Malloc(maxoutsize, PU_STATIC, NULL);
+	imgptr = imgbuf;
 
 	// Write image size and offset
 	WRITEINT16(imgptr, width);
