@@ -53,7 +53,7 @@ r_data.c
 r_draw.c
 r_fps.cpp
 r_main.cpp
-r_patch.c
+r_patch.cpp
 r_patchrotation.c
 r_plane.cpp
 r_segs.cpp
