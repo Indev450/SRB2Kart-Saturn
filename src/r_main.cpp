@@ -1391,8 +1391,6 @@ void R_RenderPlayerView(player_t *player)
 		R_SetFov(fov);
 	}
 
-	R_SetColumnContext(COLUMNCONTEXT_FLUSH);
-
 	Portal_InitList();
 
 	PS_START_TIMING(ps_skyboxtime);
@@ -1406,6 +1404,7 @@ void R_RenderPlayerView(player_t *player)
 		R_ClearPlanes();
 		R_ClearSprites();
 
+		R_SetColumnContext(COLUMNCONTEXT_FLUSH);
 		R_RenderViewpoint(&masks[nummasks - 1], false);
 
 		R_ClipSprites(drawsegs, NULL);
