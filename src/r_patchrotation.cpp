@@ -15,6 +15,7 @@
 #include "r_patchrotation.h"
 #include "z_zone.h"
 #include "w_wad.h"
+#include <vector>
 
 #ifdef ROTSPRITE
 //
@@ -89,14 +90,14 @@ patch_t *Patch_GetRotatedSprite(spriteframe_t *sprite, size_t frame, size_t spri
 		RotatedPatch_DoRotation(rotsprite, patch, rotationangle, xpivot, ypivot, flip);
 	}
 
-	return rotsprite->patches[idx];
+	return static_cast<patch_t*>(rotsprite->patches[idx]);
 }
 
 rotsprite_t *RotatedPatch_Create(INT32 numangles)
 {
-	rotsprite_t *rotsprite = Z_Calloc(sizeof(rotsprite_t), PU_STATIC, NULL);
+	rotsprite_t *rotsprite = static_cast<rotsprite_t*>(Z_Calloc(sizeof(rotsprite_t), PU_STATIC, NULL));
 	rotsprite->angles = numangles;
-	rotsprite->patches = Z_Calloc(rotsprite->angles * 2 * sizeof(void *), PU_STATIC, NULL);
+	rotsprite->patches = static_cast<void**>(Z_Calloc(rotsprite->angles * 2 * sizeof(void *), PU_STATIC, NULL));
 	return rotsprite;
 }
 
@@ -118,30 +119,8 @@ static void RotatedPatch_CalculateDimensions(
 	h1 = FixedInt(FixedCeil(h1 + (FRACUNIT/2)));
 	h2 = FixedInt(FixedCeil(h2 + (FRACUNIT/2)));
 
-	*newwidth = max(width, max(w1, w2));
-	*newheight = max(height, max(h1, h2));
-}
-
-static void RotatedPatch_AllocImgBuf(UINT16 **buf, size_t size, size_t *capacity)
-{
-	if (!*buf)
-	{
-		*buf = Z_Malloc(*capacity, PU_STATIC, NULL);
-	}
-
-	size_t allocsize = size * sizeof(UINT16);
-
-	// make sure our buffer always fits with what we need
-	if (allocsize > *capacity)
-	{
-		while (*capacity < allocsize)
-			*capacity *= 2;
-
-		Z_Free(*buf);
-		*buf = Z_Malloc(*capacity, PU_STATIC, NULL);
-	}
-
-	//CONS_Printf("RotatedPatch_AllocBuf: Allocated %.2f KB\n", *capacity / 1024.0);
+	*newwidth = std::max(width, std::max(w1, w2));
+	*newheight = std::max(height, std::max(h1, h2));
 }
 
 void RotatedPatch_DoRotation(rotsprite_t *rotsprite, patch_t *patch, INT32 angle, INT32 xpivot, INT32 ypivot, boolean flip)
@@ -149,10 +128,10 @@ void RotatedPatch_DoRotation(rotsprite_t *rotsprite, patch_t *patch, INT32 angle
 	UINT32 i;
 	patch_t *rotated;
 
-	static UINT16 *rawdst = NULL, *rawconv = NULL;
+	static std::vector<UINT16> rawdst(1024 * 1024), rawconv(1024 * 1024); // 1 MB should be enough for most cases
+
 	UINT16 *rawout;
 	size_t size;
-	static size_t dst_capacity = (1024 * 1024), conv_capacity = (1024 * 1024); // 1 MB should be enough for most cases
 	INT32 bflip = (flip != 0x00);
 
 	INT32 width = patch->width;
@@ -206,7 +185,10 @@ void RotatedPatch_DoRotation(rotsprite_t *rotsprite, patch_t *patch, INT32 angle
 	if (!size)
 		size = (width * height);
 
-	RotatedPatch_AllocImgBuf(&rawdst, size, &dst_capacity);
+	while (rawdst.size() < size)
+	{
+		rawdst.resize(rawdst.size() * 2);
+	}
 
 	for (i = 0; i < size; i++)
 		rawdst[i] = 0xFF00;
@@ -250,11 +232,11 @@ void RotatedPatch_DoRotation(rotsprite_t *rotsprite, patch_t *patch, INT32 angle
 
 		size = (width * height);
 
-		RotatedPatch_AllocImgBuf(&rawconv, size, &conv_capacity);
-		memset(rawconv, 0, conv_capacity * sizeof(UINT16));
+		rawconv.resize(size);
+		memset(rawconv.data(), 0, size * sizeof(UINT16));
 
 		src = &rawdst[(miny * newwidth) + minx];
-		dest = rawconv;
+		dest = rawconv.data();
 		dy = height;
 
 		while (dy--)
@@ -267,14 +249,14 @@ void RotatedPatch_DoRotation(rotsprite_t *rotsprite, patch_t *patch, INT32 angle
 		ox -= minx;
 		oy -= miny;
 
-		rawout = rawconv;
+		rawout = rawconv.data();
 	}
 	else
 	{
 		width = newwidth;
 		height = newheight;
 
-		rawout = rawdst;
+		rawout = rawdst.data();
 	}
 
 	// make patch
