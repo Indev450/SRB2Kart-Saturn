@@ -84,8 +84,6 @@ enum
 extern viddef_t vid;
 extern INT32 setmodeneeded; // mode number to set if needed, or 0
 
-extern UINT8 *scr_borderpatch; // patch used to fill the view borders
-
 extern consvar_t cv_scr_width, cv_scr_height, cv_renderview, cv_frameskip, cv_fullscreen, cv_vhseffect, cv_shittyscreen;
 extern consvar_t cv_parallelsoftware;
 extern consvar_t cv_paralleldrawmasked;

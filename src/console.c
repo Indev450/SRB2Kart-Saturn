@@ -69,13 +69,8 @@ static boolean consoleready;  // console prompt is ready
        INT32 con_destlines; // vid lines used by console at final position
 static INT32 con_curlines;  // vid lines currently used by console
 
-       INT32 con_clipviewtop; // (useless)
-
 static UINT8  con_hudlines;             // number of console heads up message lines
 static UINT32 con_hudtime[MAXHUDLINES]; // remaining time of display for hud msg lines
-
-       INT32 con_clearlines;      // top screen lines to refresh when view reduced
-       boolean con_hudupdate;   // when messages scroll, we need a backgrnd refresh
 
 // console text output
 static char *con_line;          // console text output current line
@@ -392,9 +387,6 @@ void CON_Init(void)
 	CON_SetupColormaps();
 
 	Lock_state();
-
-	//note: CON_Ticker should always execute at least once before D_Display()
-	con_clipviewtop = -1; // -1 does not clip
 
 	con_hudlines = atoi(cons_hudlines.defaultvalue);
 
@@ -727,7 +719,6 @@ void CON_ToggleOff(void)
 	con_curlines = 0;
 	CON_ClearHUD();
 	con_forcepic = 0;
-	con_clipviewtop = -1; // remove console clipping of view
 
 	I_SetTextInput(false);
 
@@ -777,18 +768,6 @@ void CON_Ticker(void)
 			CON_ChangeHeight();
 			I_SetTextInput(true);
 		}
-	}
-
-	// clip the view, so that the part under the console is not drawn
-	con_clipviewtop = -1;
-	if (cons_backpic.value) // clip only when using an opaque background
-	{
-		if (con_curlines > 0)
-			con_clipviewtop = con_curlines - viewwindowy - 1 - 10;
-		// NOTE: BIG HACK::SUBTRACT 10, SO THAT WATER DON'T COPY LINES OF THE CONSOLE
-		//       WINDOW!!! (draw some more lines behind the bottom of the console)
-		if (con_clipviewtop < 0)
-			con_clipviewtop = -1; // maybe not necessary, provided it's < 0
 	}
 
 	// check if console ready for prompt
@@ -1100,9 +1079,6 @@ static void CON_Linefeed(void)
 
 	con_line = &con_buffer[(con_cy%con_totallines)*con_width];
 	memset(con_line, ' ', con_width);
-
-	// make sure the view borders are refreshed if hud messages scroll
-	con_hudupdate = true; // see HU_Erase()
 }
 
 // Outputs text into the console text buffer
@@ -1489,9 +1465,6 @@ static void CON_DrawHudlines(void)
 		//V_DrawCharacter(x, y, (p[c]&0xff) | cv_constextsize.value | V_NOSCALESTART, !cv_allcaps.value);
 		y += charheight;
 	}
-
-	// top screen lines that might need clearing when view is reduced
-	con_clearlines = y; // this is handled by HU_Erase();
 }
 
 // draw the console background, text, and prompt if enough place
@@ -1508,10 +1481,6 @@ static void CON_DrawConsole(void)
 
 	if (con_curlines <= 0)
 		return;
-
-	//FIXME: refresh borders only when console bg is translucent
-	con_clearlines = con_curlines; // clear console draw from view borders
-	con_hudupdate = true; // always refresh while console is on
 
 	// draw console background
 	if (cons_backpic.value || con_forcepic)

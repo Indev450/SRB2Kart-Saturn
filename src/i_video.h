@@ -94,8 +94,8 @@ INT32 VID_SetMode(INT32 modenum);
 	\return	name of video mode
 */
 const char *VID_GetModeName(INT32 modenum);
-void VID_PrepareModeList(void); /// note hack for SDL
 
+void VID_PrepareModeList(void);
 
 /**	\brief can video system do fullscreen
 */

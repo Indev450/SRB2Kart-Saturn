@@ -523,19 +523,16 @@ static boolean D_Display(void)
 		case GS_LEVEL:
 			if (!gametic)
 				break;
-			HU_Erase();
 			AM_Drawer();
 			break;
 
 		case GS_INTERMISSION:
 			Y_IntermissionDrawer();
-			HU_Erase();
 			HU_Drawer();
 			break;
 
 		case GS_VOTING:
 			Y_VoteDrawer();
-			HU_Erase();
 			HU_Drawer();
 			break;
 
@@ -550,7 +547,6 @@ static boolean D_Display(void)
 
 		case GS_CUTSCENE:
 			F_CutsceneDrawer();
-			HU_Erase();
 			HU_Drawer();
 			break;
 
@@ -560,7 +556,6 @@ static boolean D_Display(void)
 
 		case GS_EVALUATION:
 			F_GameEvaluationDrawer();
-			HU_Erase();
 			HU_Drawer();
 			break;
 
@@ -570,7 +565,6 @@ static boolean D_Display(void)
 
 		case GS_CREDITS:
 			F_CreditDrawer();
-			HU_Erase();
 			HU_Drawer();
 			break;
 
@@ -587,7 +581,6 @@ static boolean D_Display(void)
 			{
 				// I don't think HOM from nothing drawing is independent...
 				F_WaitingPlayersDrawer();
-				HU_Erase();
 				HU_Drawer();
 			}
 		case GS_TIMEATTACK:
@@ -1988,9 +1981,7 @@ void D_SRB2Main(void)
 
 	G_LoadGameData();
 
-#if defined (__unix__) || defined (UNIXCOMMON) || defined (HAVE_SDL)
 	VID_PrepareModeList(); // Regenerate Modelist according to cv_fullscreen
-#endif
 
 	// set user default mode or mode set at cmdline
 	SCR_CheckDefaultMode();

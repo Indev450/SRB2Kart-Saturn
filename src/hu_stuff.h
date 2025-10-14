@@ -117,7 +117,6 @@ void HU_TickSongCredits(void);
 void HU_DrawSongCredits(void);
 void HU_Drawer(void);
 char HU_dequeueChatChar(void);
-void HU_Erase(void);
 void HU_clearChatChars(void);
 void HU_drawPlayerPing(INT32 x, INT32 y, INT32 pnum, INT32 flags);	// Lat': Ping drawer for scoreboard.
 //void HU_DrawTeamTabRankings(playersort_t *tab, INT32 whiteplayer);
