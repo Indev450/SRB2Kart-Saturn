@@ -77,11 +77,6 @@ boolean gl_drawing_stencil = false;
 
 static INT32 current_bsp_culling_distance = 0;
 
-// base values set at SetViewSize
-float gl_baseviewwindowy, gl_baseviewwindowx;
-static float gl_viewwindowy, gl_viewwindowx; // top left corner of view window
-float gl_viewwidth, gl_viewheight; // viewport clipping boundaries (screen coords)
-
 FTransform atransform;
 
 // Float variants of viewx, viewy, viewz, etc.
@@ -5316,10 +5311,10 @@ static void HWR_DrawSkyBackground(void)
 // -----------------+
 static inline void HWR_ClearView(void)
 {
-	GL_GClipRect((INT32)gl_viewwindowx,
-				(INT32)gl_viewwindowy,
-				(INT32)(gl_viewwindowx + gl_viewwidth),
-				(INT32)(gl_viewwindowy + gl_viewheight),
+	GL_GClipRect(viewwindowx,
+				 viewwindowy,
+				(viewwindowx + viewwidth),
+				(viewwindowy + viewheight),
 						ZCLIP_PLANE, FAR_ZCLIP_DEFAULT);
 	GL_ClearBuffer(false, true, true, NULL);
 }
@@ -5329,19 +5324,6 @@ static inline void HWR_ClearView(void)
 // -----------------+
 void HWR_SetViewSize(void)
 {
-	// setup view size
-	gl_viewwidth = (float)vid.width;
-	gl_viewheight = (float)vid.height;
-
-	if (splitscreen)
-		gl_viewheight /= 2;
-
-	if (splitscreen > 1)
-		gl_viewwidth /= 2;
-
-	gl_baseviewwindowy = 0;
-	gl_baseviewwindowx = 0;
-
 	GL_FlushScreenTextures();
 }
 
@@ -5594,20 +5576,6 @@ extern "C" {
 // ==========================================================================
 static void HWR_RenderFrame(player_t *player, boolean skybox)
 {
-	// set window position
-	gl_viewwindowx = gl_baseviewwindowx;
-	gl_viewwindowy = gl_baseviewwindowy;
-
-	if ((splitscreen == 1 && viewssnum == 1) || (splitscreen > 1 && viewssnum > 1))
-	{
-		gl_viewwindowy += gl_viewheight;
-	}
-
-	if (splitscreen > 1 && viewssnum & 1)
-	{
-		gl_viewwindowx += gl_viewwidth;
-	}
-
 	// check for new console commands.
 	NetUpdate();
 
@@ -5623,10 +5591,10 @@ static void HWR_RenderFrame(player_t *player, boolean skybox)
 
 	if (!skybox && cv_glrenderdistance.value)
 	{
-		GL_GClipRect((INT32)gl_viewwindowx,
-					(INT32)gl_viewwindowy,
-					(INT32)(gl_viewwindowx + gl_viewwidth),
-					(INT32)(gl_viewwindowy + gl_viewheight),
+		GL_GClipRect(viewwindowx,
+					 viewwindowy,
+					(viewwindowx + viewwidth),
+					(viewwindowy + viewheight),
 					ZCLIP_PLANE, clipping_distances[cv_glrenderdistance.value - 1]);
 		current_bsp_culling_distance = bsp_culling_distances[cv_glrenderdistance.value - 1];
 	}

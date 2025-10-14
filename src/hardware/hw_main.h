@@ -42,10 +42,6 @@ extern "C" {
 void HWR_Startup(void);
 void HWR_Shutdown(void);
 
-extern float gl_viewwidth, gl_viewheight, gl_baseviewwindowx, gl_baseviewwindowy;
-
-extern float gl_basewindowcenterx, gl_basewindowcentery;
-
 extern unsigned msaa;
 extern boolean a2c;
 
