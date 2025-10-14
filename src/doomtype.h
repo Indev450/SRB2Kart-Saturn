@@ -43,7 +43,6 @@ extern "C" {
 #define UINT64 uint64_t
 
 #ifdef __APPLE_CC__
-#define DIRECTFULLSCREEN 1
 #define DEBUG_LOG
 #define NOIPX
 #endif

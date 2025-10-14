@@ -85,7 +85,6 @@ extern ps_metric_t ps_hw_batchdrawtime;
 extern boolean gl_shadersavailable;
 
 // hw_draw.c
-void HWR_DrawPatch(patch_t *gpatch, INT32 x, INT32 y, INT32 option);
 void HWR_DrawStretchyFixedPatch(patch_t *gpatch, fixed_t x, fixed_t y, fixed_t pscale, fixed_t vscale, INT32 option, const UINT8 *colormap, INT32 bflags);
 void HWR_DrawCroppedPatch(patch_t *gpatch, fixed_t x, fixed_t y, fixed_t pscale, INT32 option, fixed_t sx, fixed_t sy, fixed_t w, fixed_t h);
 void HWR_DrawFill(INT32 x, INT32 y, INT32 w, INT32 h, INT32 color);
@@ -94,7 +93,6 @@ void HWR_DrawDiag(INT32 x, INT32 y, INT32 wh, INT32 color);
 void HWR_drawAMline(const fline_t *fl, INT32 color);
 void HWR_FadeScreenMenuBack(UINT16 color, UINT8 strength);
 void HWR_DrawConsoleBack(UINT32 color, INT32 height);
-void HWR_DrawViewBorder(INT32 clearlines);
 void HWR_DrawFlatFill(INT32 x, INT32 y, INT32 w, INT32 h, lumpnum_t flatlumpnum);
 
 UINT8 *HWR_GetScreenshot(INT32 scale);
