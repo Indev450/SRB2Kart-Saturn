@@ -65,8 +65,6 @@
 // Globals
 // ==========================================================================
 
-#define ABS(x) ((x) < 0 ? -(x) : (x))
-
 // false if shaders have not been initialized yet, or if shaders are not available
 boolean gl_shadersavailable = false;
 
@@ -4295,7 +4293,7 @@ static int CompareDrawNodePlanes(const void *p1, const void *p2)
 	const INT32 n1 = *(const INT32*)p1;
 	const INT32 n2 = *(const INT32*)p2;
 
-	return ABS(drawnodes[n2].u.plane.fixedheight - viewz) - ABS(drawnodes[n1].u.plane.fixedheight - viewz);
+	return abs(drawnodes[n2].u.plane.fixedheight - viewz) - abs(drawnodes[n1].u.plane.fixedheight - viewz);
 }
 
 //
