@@ -653,6 +653,7 @@ void HWR_DrawConsoleBack(UINT32 color, INT32 height)
 // ------------------
 void HWR_DrawViewBorder(INT32 clearlines)
 {
+#if 0
 	INT32 x, y;
 	INT32 top, side;
 	INT32 baseviewwidth, baseviewheight;
@@ -663,10 +664,10 @@ void HWR_DrawViewBorder(INT32 clearlines)
 		clearlines = BASEVIDHEIGHT; // refresh all
 
 	// calc view size based on original game resolution
-	baseviewwidth =  FixedInt(FixedDiv(FLOAT_TO_FIXED(gl_viewwidth), vid.fdup)); //(cv_viewsize.value * BASEVIDWIDTH/10)&~7;
-	baseviewheight = FixedInt(FixedDiv(FLOAT_TO_FIXED(gl_viewheight), vid.fdup));
-	top = FixedInt(FixedDiv(FLOAT_TO_FIXED(gl_baseviewwindowy), vid.fdup));
-	side = FixedInt(FixedDiv(FLOAT_TO_FIXED(gl_baseviewwindowx), vid.fdup));
+	baseviewwidth =  FixedInt(FixedDiv(viewwidth * FRACUNIT, vid.fdup)); //(cv_viewsize.value * BASEVIDWIDTH/10)&~7;
+	baseviewheight = FixedInt(FixedDiv(viewheight * FRACUNIT, vid.fdup));
+	top = FixedInt(FixedDiv(baseviewwindowy * FRACUNIT, vid.fdup));
+	side = FixedInt(FixedDiv(baseviewwindowx * FRACUNIT, vid.fdup));
 
 	// top
 	HWR_DrawFlatFill(0, 0,
@@ -763,6 +764,9 @@ void HWR_DrawViewBorder(INT32 clearlines)
 				PU_PATCH),
 			basewindowx + baseviewwidth,
 			basewindowy + baseviewheight, 0);
+#else
+	(void)clearlines;
+#endif
 }
 
 
