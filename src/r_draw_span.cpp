@@ -50,7 +50,8 @@ enum DrawSpanType
 };
 
 template<DrawSpanType Type>
-static constexpr UINT8 R_GetSpanTranslated(drawspandata_t* ds, UINT8 col)
+FUNCINLINE static ATTRINLINE constexpr UINT8
+R_GetSpanTranslated(const drawspandata_t* ds, UINT8 col)
 {
 	if constexpr (Type & DrawSpanType::DS_COLORMAP)
 	{
@@ -63,7 +64,8 @@ static constexpr UINT8 R_GetSpanTranslated(drawspandata_t* ds, UINT8 col)
 }
 
 template<DrawSpanType Type>
-static constexpr UINT8 R_GetSpanTranslucent(drawspandata_t* ds, UINT8 *dsrc, const UINT8 *colormap, UINT8 col)
+FUNCINLINE static ATTRINLINE constexpr UINT8
+R_GetSpanTranslucent(const drawspandata_t* ds, UINT8 *dsrc, const UINT8 *colormap, UINT8 col)
 {
 	col = colormap[R_GetSpanTranslated<Type>(ds, col)];
 
@@ -78,7 +80,8 @@ static constexpr UINT8 R_GetSpanTranslucent(drawspandata_t* ds, UINT8 *dsrc, con
 }
 
 template<DrawSpanType Type>
-static constexpr UINT8 R_DrawSpanPixel(drawspandata_t* ds, UINT8 *dsrc, const UINT8 *colormap, UINT32 bit, const UINT8 *source)
+FUNCINLINE static ATTRINLINE constexpr UINT8
+R_DrawSpanPixel(const drawspandata_t* ds, UINT8 *dsrc, const UINT8 *colormap, UINT32 bit, const UINT8 *source)
 {
 	UINT8 col = source[bit];
 
@@ -157,14 +160,18 @@ static void R_DrawSpanTemplate(drawspandata_t* ds)
 		{
 			bit = ((yposition >> ds->nflatyshift) & ds->nflatmask) | (xposition >> ds->nflatxshift);
 
-			dest[i] = R_DrawSpanPixel<Type>(ds, &dsrc[i], colormap, bit, source);
+			if constexpr (Type & DS_RIPPLE)
+				dest[i] = R_DrawSpanPixel<Type>(ds, &dsrc[i], colormap, bit, source);
+			else
+				dest[i] = R_DrawSpanPixel<Type>(ds, &dest[i], colormap, bit, source);
 
 			xposition += xstep;
 			yposition += ystep;
 		}
 
 		dest += 8;
-		dsrc += 8;
+		if constexpr (Type & DS_RIPPLE)
+			dsrc += 8;
 
 		count -= 8;
 	}
@@ -173,10 +180,14 @@ static void R_DrawSpanTemplate(drawspandata_t* ds)
 	{
 		bit = ((yposition >> ds->nflatyshift) & ds->nflatmask) | (xposition >> ds->nflatxshift);
 
-		*dest = R_DrawSpanPixel<Type>(ds, dsrc, colormap, bit, source);
+		if constexpr (Type & DS_RIPPLE)
+			*dest = R_DrawSpanPixel<Type>(ds, dsrc, colormap, bit, source);
+		else
+			*dest = R_DrawSpanPixel<Type>(ds, dest, colormap, bit, source);
 
 		dest++;
-		dsrc++;
+		if constexpr (Type & DS_RIPPLE)
+			dsrc++;
 
 		xposition += xstep;
 		yposition += ystep;
@@ -243,15 +254,14 @@ static void R_DrawTiltedSpanTemplate(drawspandata_t* ds)
 	local_for_thread std::vector<INT32> tiltlighting;
 
 	iz = ds->szp.z + ds->szp.y*(centery-ds->y) + ds->szp.x*(ds->x1-centerx);
+	uz = ds->sup.z + ds->sup.y*(centery-ds->y) + ds->sup.x*(ds->x1-centerx);
+	vz = ds->svp.z + ds->svp.y*(centery-ds->y) + ds->svp.x*(ds->x1-centerx);
 
 	// Lighting is simple. It's just linear interpolation from start to end
 	R_GetTiltedLighting(tiltlighting, ds, iz, width, stride);
 
-	uz = ds->sup.z + ds->sup.y*(centery-ds->y) + ds->sup.x*(ds->x1-centerx);
-	vz = ds->svp.z + ds->svp.y*(centery-ds->y) + ds->svp.x*(ds->x1-centerx);
-
-	const UINT8 *source = ds->source;
-	const UINT8 *colormap = ds->colormap;
+	const UINT8 * restrict source = ds->source;
+	const UINT8 * restrict colormap = ds->colormap;
 
 	if constexpr (Type & DS_RIPPLE)
 	{
@@ -313,12 +323,16 @@ static void R_DrawTiltedSpanTemplate(drawspandata_t* ds)
 		{
 			bit = (((v + stepv * i) >> nflatyshift) & nflatmask) | ((u + stepu * i) >> nflatxshift);
 			colormap = ds->planezlight[tiltlighting[x1 + i]] + (ds->colormap - colormaps);
-			dest[i] = R_DrawSpanPixel<Type>(ds, &dsrc[i], colormap, bit, source);
+			if constexpr (Type & DS_RIPPLE)
+				dest[i] = R_DrawSpanPixel<Type>(ds, &dsrc[i], colormap, bit, source);
+			else
+				dest[i] = R_DrawSpanPixel<Type>(ds, &dest[i], colormap, bit, source);
 		}
 
 		ds->x1 += SPANSIZE;
 		dest += SPANSIZE;
-		dsrc += SPANSIZE;
+		if constexpr (Type & DS_RIPPLE)
+			dsrc += SPANSIZE;
 		startu = endu;
 		startv = endv;
 		width -= SPANSIZE;
@@ -332,7 +346,10 @@ static void R_DrawTiltedSpanTemplate(drawspandata_t* ds)
 			v = (INT64)(startv);
 			bit = ((v >> nflatyshift) & nflatmask) | (u >> nflatxshift);
 			colormap = ds->planezlight[tiltlighting[ds->x1]] + (ds->colormap - colormaps);
-			*dest = R_DrawSpanPixel<Type>(ds, dsrc, colormap, bit, source);
+			if constexpr (Type & DS_RIPPLE)
+				*dest = R_DrawSpanPixel<Type>(ds, dsrc, colormap, bit, source);
+			else
+				*dest = R_DrawSpanPixel<Type>(ds, dest, colormap, bit, source);
 			ds->x1++;
 		}
 		else
@@ -355,10 +372,14 @@ static void R_DrawTiltedSpanTemplate(drawspandata_t* ds)
 			{
 				bit = ((v >> ds->nflatyshift) & ds->nflatmask) | (u >> ds->nflatxshift);
 				colormap = ds->planezlight[tiltlighting[ds->x1]] + (ds->colormap - colormaps);
-				*dest = R_DrawSpanPixel<Type>(ds, dsrc, colormap, bit, source);
+				if constexpr (Type & DS_RIPPLE)
+					*dest = R_DrawSpanPixel<Type>(ds, dsrc, colormap, bit, source);
+				else
+					*dest = R_DrawSpanPixel<Type>(ds, dest, colormap, bit, source);
 				dest++;
+				if constexpr (Type & DS_RIPPLE)
+					dsrc++;
 				ds->x1++;
-				dsrc++;
 				u += stepu;
 				v += stepv;
 			}
@@ -389,10 +410,10 @@ DEFINE_SPAN_COMBO(R_DrawTranslucentWaterSpan, DS_TRANSMAP|DS_RIPPLE)
 */
 void R_DrawFogSpan(drawspandata_t* ds)
 {
+	INT32 count = ds->x2 - ds->x1 + 1;
+
 	const UINT8 * restrict colormap = ds->colormap;
 	UINT8 * restrict dest = R_Address(ds->x1, ds->y);
-
-	intptr_t count = ds->x2 - ds->x1 + 1;
 
 	while (count >= 4)
 	{
@@ -401,7 +422,7 @@ void R_DrawFogSpan(drawspandata_t* ds)
 		dest[2] = colormap[dest[2]];
 		dest[3] = colormap[dest[3]];
 
-		dest += 4;
+		dest  += 4;
 		count -= 4;
 	}
 

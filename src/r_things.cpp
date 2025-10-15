@@ -2801,6 +2801,11 @@ void R_ClipSprites(drawseg_t* dsstart, portal_t* portal)
 	drawseg_t* ds;
 	INT32 i;
 
+	if (visspritecount - clippedvissprites <= 0)
+	{
+		return;
+	}
+
 	// e6y
 	// Reducing of cache misses in the following R_DrawSprite()
 	// Makes sense for scenes with huge amount of drawsegs.
@@ -2808,11 +2813,6 @@ void R_ClipSprites(drawseg_t* dsstart, portal_t* portal)
 	for (i = 0; i < DS_RANGES_COUNT; i++)
 	{
 		drawsegs_xranges[i].count = 0;
-	}
-
-	if (visspritecount - clippedvissprites <= 0)
-	{
-		return;
 	}
 
 	if (drawsegs_xrange_size < maxdrawsegs)
