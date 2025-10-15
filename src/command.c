@@ -1913,13 +1913,14 @@ void CV_AddValue(consvar_t *var, INT32 increment)
 				max = (M_SecretUnlocked(SECRET_HARDSPEED) ? 3 : 2);
 			}
 #ifdef PARANOIA
-			if (currentindice == -1)
-				I_Error("CV_AddValue: current value %d not found in possible value\n",
-					var->value);
+			if (currentindice == -1 || max == 0)
+				I_Error("CV_AddValue: current value %d not found in possible value\n", var->value);
 #endif
-
-			newindice = (currentindice + increment + max) % max;
-			CV_Set(var, var->PossibleValue[newindice].strvalue);
+			if (max > 0)
+			{
+				newindice = (currentindice + increment + max) % max;
+				CV_Set(var, var->PossibleValue[newindice].strvalue);
+			}
 		}
 	}
 	else

@@ -28,8 +28,6 @@ typedef struct
 	float ambient[4], diffuse[4], specular[4], emissive[4];
 	float shininess;
 	boolean spheremap;
-//	Texture::texture_t *texture;
-//	Texture::texture_t *lightmap;
 } material_t;
 
 typedef struct
@@ -40,7 +38,6 @@ typedef struct
 	float *tangents;
 	char *colors;
 	unsigned int vboID;
-	vector_t *polyNormals;
 } mdlframe_t;
 
 typedef struct
@@ -70,7 +67,6 @@ typedef struct mesh_s
 typedef struct tag_s
 {
 	char name[64];
-//	matrix_t transform;
 } tag_t;
 
 typedef struct model_s
@@ -96,9 +92,7 @@ model_t *LoadModel(const char *filename, int ztag);
 void UnloadModel(model_t *model);
 void Optimize(model_t *model);
 void GenerateVertexNormals(model_t *model);
-void GeneratePolygonNormals(model_t *model, int ztag);
 void CreateVBOTiny(mesh_t *mesh, tinyframe_t *frame);
 void CreateVBO(mesh_t *mesh, mdlframe_t *frame);
-void DeleteVBOs(model_t *model);
 
 #endif

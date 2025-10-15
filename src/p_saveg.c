@@ -61,7 +61,7 @@ typedef enum
 //
 // P_ArchivePlayer
 //
-static inline void P_ArchivePlayer(savebuffer_t *save)
+FUNCINLINE static ATTRINLINE void P_ArchivePlayer(savebuffer_t *save)
 {
 	const player_t *player = &players[consoleplayer];
 	INT32 pllives = player->lives;
@@ -85,7 +85,7 @@ static inline void P_ArchivePlayer(savebuffer_t *save)
 //
 // P_UnArchivePlayer
 //
-static inline void P_UnArchivePlayer(savebuffer_t *save)
+FUNCINLINE static ATTRINLINE void P_UnArchivePlayer(savebuffer_t *save)
 {
 	savedata.skincolor = READUINT8(save->p);
 	savedata.skin = READUINT8(save->p);
@@ -1043,25 +1043,25 @@ typedef enum
 	tc_end
 } specials_e;
 
-static inline UINT32 SaveMobjnum(const mobj_t *mobj)
+FUNCINLINE static ATTRINLINE UINT32 SaveMobjnum(const mobj_t *mobj)
 {
 	if (mobj) return mobj->mobjnum;
 	return 0;
 }
 
-static inline UINT32 SaveSector(const sector_t *sector)
+FUNCINLINE static ATTRINLINE UINT32 SaveSector(const sector_t *sector)
 {
 	if (sector) return (UINT32)(sector - sectors);
 	return 0xFFFFFFFF;
 }
 
-static inline UINT32 SaveLine(const line_t *line)
+FUNCINLINE static ATTRINLINE UINT32 SaveLine(const line_t *line)
 {
 	if (line) return (UINT32)(line - lines);
 	return 0xFFFFFFFF;
 }
 
-static inline UINT32 SavePlayer(const player_t *player)
+FUNCINLINE static ATTRINLINE UINT32 SavePlayer(const player_t *player)
 {
 	if (player) return (UINT32)(player - players);
 	return 0xFFFFFFFF;
@@ -1476,7 +1476,7 @@ static void SaveElevatorThinker(savebuffer_t *save, const thinker_t *th, const U
 //
 // Saves a scroll_t thinker
 //
-static inline void SaveScrollThinker(savebuffer_t *save, const thinker_t *th, const UINT8 type)
+FUNCINLINE static ATTRINLINE void SaveScrollThinker(savebuffer_t *save, const thinker_t *th, const UINT8 type)
 {
 	const scroll_t *ht = (const void *)th;
 	WRITEUINT8(save->p, type);
@@ -1497,7 +1497,7 @@ static inline void SaveScrollThinker(savebuffer_t *save, const thinker_t *th, co
 //
 // Saves a friction_t thinker
 //
-static inline void SaveFrictionThinker(savebuffer_t *save, const thinker_t *th, const UINT8 type)
+FUNCINLINE static ATTRINLINE void SaveFrictionThinker(savebuffer_t *save, const thinker_t *th, const UINT8 type)
 {
 	const friction_t *ht = (const void *)th;
 	WRITEUINT8(save->p, type);
@@ -1513,7 +1513,7 @@ static inline void SaveFrictionThinker(savebuffer_t *save, const thinker_t *th, 
 //
 // Saves a pusher_t thinker
 //
-static inline void SavePusherThinker(savebuffer_t *save, const thinker_t *th, const UINT8 type)
+FUNCINLINE static ATTRINLINE void SavePusherThinker(savebuffer_t *save, const thinker_t *th, const UINT8 type)
 {
 	const pusher_t *ht = (const void *)th;
 	WRITEUINT8(save->p, type);
@@ -1598,7 +1598,7 @@ static void SaveDisappearThinker(savebuffer_t *save, const thinker_t *th, const 
 //
 // Saves a polyrotate_t thinker
 //
-static inline void SavePolyrotatetThinker(savebuffer_t *save, const thinker_t *th, const UINT8 type)
+FUNCINLINE static ATTRINLINE void SavePolyrotatetThinker(savebuffer_t *save, const thinker_t *th, const UINT8 type)
 {
 	const polyrotate_t *ht = (const void *)th;
 	WRITEUINT8(save->p, type);
@@ -1935,25 +1935,25 @@ mobj_t *P_FindNewPosition(UINT32 oldposition)
 	return NULL;
 }
 
-static inline mobj_t *LoadMobj(UINT32 mobjnum)
+FUNCINLINE static ATTRINLINE mobj_t *LoadMobj(UINT32 mobjnum)
 {
 	if (mobjnum == 0) return NULL;
 	return (mobj_t *)(size_t)mobjnum;
 }
 
-static inline sector_t *LoadSector(UINT32 sector)
+FUNCINLINE static ATTRINLINE sector_t *LoadSector(UINT32 sector)
 {
 	if (sector >= numsectors) return NULL;
 	return &sectors[sector];
 }
 
-static inline line_t *LoadLine(UINT32 line)
+FUNCINLINE static ATTRINLINE line_t *LoadLine(UINT32 line)
 {
 	if (line >= numlines) return NULL;
 	return &lines[line];
 }
 
-static inline player_t *LoadPlayer(UINT32 player)
+FUNCINLINE static ATTRINLINE player_t *LoadPlayer(UINT32 player)
 {
 	if (player >= MAXPLAYERS) return NULL;
 	return &players[player];
@@ -2529,7 +2529,7 @@ static void LoadScrollThinker(savebuffer_t *save, actionf_p1 thinker)
 //
 // Loads a friction_t from a save game
 //
-static inline void LoadFrictionThinker(savebuffer_t *save, actionf_p1 thinker)
+FUNCINLINE static ATTRINLINE void LoadFrictionThinker(savebuffer_t *save, actionf_p1 thinker)
 {
 	friction_t *ht = (friction_t*)Z_LevelPoolMalloc(sizeof (*ht));
 	ht->thinker.alloctype = TAT_LEVELPOOL;
@@ -2576,7 +2576,7 @@ static void LoadPusherThinker(savebuffer_t *save, actionf_p1 thinker)
 //
 // Loads a laserthink_t from a save game
 //
-static inline void LoadLaserThinker(savebuffer_t *save, actionf_p1 thinker)
+FUNCINLINE static ATTRINLINE void LoadLaserThinker(savebuffer_t *save, actionf_p1 thinker)
 {
 	laserthink_t *ht = (laserthink_t*)Z_LevelPoolMalloc(sizeof (*ht));
 	ht->thinker.alloctype = TAT_LEVELPOOL;
@@ -2621,7 +2621,7 @@ FUNCINLINE static ATTRINLINE void LoadLightlevelThinker(savebuffer_t *save, acti
 //
 // Loads a executor_t from a save game
 //
-static inline void LoadExecutorThinker(savebuffer_t *save, actionf_p1 thinker)
+FUNCINLINE static ATTRINLINE void LoadExecutorThinker(savebuffer_t *save, actionf_p1 thinker)
 {
 	executor_t *ht = (executor_t*)Z_LevelPoolMalloc(sizeof (*ht));
 	ht->thinker.alloctype = TAT_LEVELPOOL;
@@ -2639,7 +2639,7 @@ static inline void LoadExecutorThinker(savebuffer_t *save, actionf_p1 thinker)
 //
 // Loads a disappear_t thinker
 //
-static inline void LoadDisappearThinker(savebuffer_t *save, actionf_p1 thinker)
+FUNCINLINE static ATTRINLINE void LoadDisappearThinker(savebuffer_t *save, actionf_p1 thinker)
 {
 	disappear_t *ht = (disappear_t*)Z_LevelPoolMalloc(sizeof (*ht));
 	ht->thinker.alloctype = TAT_LEVELPOOL;
@@ -2660,7 +2660,7 @@ static inline void LoadDisappearThinker(savebuffer_t *save, actionf_p1 thinker)
 //
 // Loads a polyrotate_t thinker
 //
-static inline void LoadPolyrotatetThinker(savebuffer_t *save, actionf_p1 thinker)
+FUNCINLINE static ATTRINLINE void LoadPolyrotatetThinker(savebuffer_t *save, actionf_p1 thinker)
 {
 	polyrotate_t *ht = (polyrotate_t*)Z_LevelPoolMalloc(sizeof (*ht));
 	ht->thinker.alloctype = TAT_LEVELPOOL;
@@ -2720,7 +2720,7 @@ static void LoadPolymoveThinker(savebuffer_t *save, actionf_p1 thinker)
 //
 // Loads a polywaypoint_t thinker
 //
-static inline void LoadPolywaypointThinker(savebuffer_t *save, actionf_p1 thinker)
+FUNCINLINE static ATTRINLINE void LoadPolywaypointThinker(savebuffer_t *save, actionf_p1 thinker)
 {
 	polywaypoint_t *ht = (polywaypoint_t*)Z_LevelPoolMalloc(sizeof (*ht));
 	ht->thinker.alloctype = TAT_LEVELPOOL;
@@ -2776,7 +2776,7 @@ static inline void LoadPolywaypointThinker(savebuffer_t *save, actionf_p1 thinke
 //
 // loads a polyslidedoor_t thinker
 //
-static inline void LoadPolyslidedoorThinker(savebuffer_t *save, actionf_p1 thinker)
+FUNCINLINE static ATTRINLINE void LoadPolyslidedoorThinker(savebuffer_t *save, actionf_p1 thinker)
 {
 	polyslidedoor_t *ht = (polyslidedoor_t*)Z_LevelPoolMalloc(sizeof (*ht));
 	ht->thinker.alloctype = TAT_LEVELPOOL;
@@ -2814,7 +2814,7 @@ static inline void LoadPolyslidedoorThinker(savebuffer_t *save, actionf_p1 think
 //
 // Loads a polyswingdoor_t thinker
 //
-static inline void LoadPolyswingdoorThinker(savebuffer_t *save, actionf_p1 thinker)
+FUNCINLINE static ATTRINLINE void LoadPolyswingdoorThinker(savebuffer_t *save, actionf_p1 thinker)
 {
 	polyswingdoor_t *ht = (polyswingdoor_t*)Z_LevelPoolMalloc(sizeof (*ht));
 	ht->thinker.alloctype = TAT_LEVELPOOL;
@@ -2847,7 +2847,7 @@ static inline void LoadPolyswingdoorThinker(savebuffer_t *save, actionf_p1 think
 //
 // Loads a polydisplace_t thinker
 //
-static inline void LoadPolydisplaceThinker(savebuffer_t *save, actionf_p1 thinker)
+FUNCINLINE static ATTRINLINE void LoadPolydisplaceThinker(savebuffer_t *save, actionf_p1 thinker)
 {
 	polydisplace_t *ht = (polydisplace_t*)Z_LevelPoolMalloc(sizeof (*ht));
 	ht->thinker.alloctype = TAT_LEVELPOOL;
@@ -3115,7 +3115,7 @@ static void P_NetUnArchiveThinkers(savebuffer_t *save)
 #define PD_FLAGS  0x01
 #define PD_TRANS   0x02
 
-static inline void P_ArchivePolyObj(savebuffer_t *save, polyobj_t *po)
+FUNCINLINE static ATTRINLINE void P_ArchivePolyObj(savebuffer_t *save, polyobj_t *po)
 {
 	UINT8 diff = 0;
 	WRITEINT32(save->p, po->id);
@@ -3137,7 +3137,7 @@ static inline void P_ArchivePolyObj(savebuffer_t *save, polyobj_t *po)
 		WRITEINT32(save->p, po->translucency);
 }
 
-static inline void P_UnArchivePolyObj(savebuffer_t *save, polyobj_t *po)
+FUNCINLINE static ATTRINLINE void P_UnArchivePolyObj(savebuffer_t *save, polyobj_t *po)
 {
 	INT32 id;
 	UINT32 angle;
@@ -3172,7 +3172,7 @@ static inline void P_UnArchivePolyObj(savebuffer_t *save, polyobj_t *po)
 	Polyobj_MoveOnLoad(po, angle, x, y);
 }
 
-static inline void P_ArchivePolyObjects(savebuffer_t *save)
+FUNCINLINE static ATTRINLINE void P_ArchivePolyObjects(savebuffer_t *save)
 {
 	INT32 i;
 
@@ -3185,7 +3185,7 @@ static inline void P_ArchivePolyObjects(savebuffer_t *save)
 		P_ArchivePolyObj(save, &PolyObjects[i]);
 }
 
-static inline void P_UnArchivePolyObjects(savebuffer_t *save)
+FUNCINLINE static ATTRINLINE void P_UnArchivePolyObjects(savebuffer_t *save)
 {
 	INT32 i, numSavedPolys;
 
@@ -3203,7 +3203,7 @@ static inline void P_UnArchivePolyObjects(savebuffer_t *save)
 //
 // P_FinishMobjs
 //
-static inline void P_FinishMobjs(void)
+FUNCINLINE static ATTRINLINE void P_FinishMobjs(void)
 {
 	thinker_t *currentthinker;
 	mobj_t *mobj;
@@ -3220,7 +3220,7 @@ static inline void P_FinishMobjs(void)
 	}
 }
 
-static inline mobj_t *RelinkMobj(mobj_t **ptr)
+FUNCINLINE static ATTRINLINE mobj_t *RelinkMobj(mobj_t **ptr)
 {
 	UINT32 temp = (UINT32)(size_t)*ptr;
 	*ptr = NULL;
@@ -3269,7 +3269,7 @@ static void P_RelinkPointers(void)
 //
 // P_NetArchiveSpecials
 //
-static inline void P_NetArchiveSpecials(savebuffer_t *save)
+FUNCINLINE static ATTRINLINE void P_NetArchiveSpecials(savebuffer_t *save)
 {
 	size_t i, z;
 
@@ -3347,7 +3347,7 @@ static void P_NetUnArchiveSpecials(savebuffer_t *save)
 // =======================================================================
 //          Misc
 // =======================================================================
-static inline void P_ArchiveMisc(savebuffer_t *save)
+FUNCINLINE static ATTRINLINE void P_ArchiveMisc(savebuffer_t *save)
 {
 	if (gamecomplete)
 		WRITEINT16(save->p, gamemap | 8192);
@@ -3360,7 +3360,7 @@ static inline void P_ArchiveMisc(savebuffer_t *save)
 	WRITESTRINGN(save->p, timeattackfolder, sizeof(timeattackfolder));
 }
 
-static inline void P_UnArchiveSPGame(savebuffer_t *save, INT16 mapoverride)
+FUNCINLINE static ATTRINLINE void P_UnArchiveSPGame(savebuffer_t *save, INT16 mapoverride)
 {
 	char testname[sizeof(timeattackfolder)];
 
