@@ -521,17 +521,17 @@ drawcolumndata_temp_t temp_dc = {};
 // Error functions that will abort if R_FlushColumns tries to flush
 // columns without a column type.
 //
-static void R_FlushWholeError(void)
+FUNCNORETURN static ATTRNORETURN void R_FlushWholeError(void)
 {
 	I_Error("R_FlushWholeColumns called without being initialized.\n");
 }
 
-static void R_FlushHTError(void)
+FUNCNORETURN static ATTRNORETURN void R_FlushHTError(void)
 {
 	I_Error("R_FlushHTColumns called without being initialized.\n");
 }
 
-static void R_QuadFlushError(void)
+FUNCNORETURN static ATTRNORETURN void R_QuadFlushError(void)
 {
 	I_Error("R_FlushQuadColumn called without being initialized.\n");
 }
