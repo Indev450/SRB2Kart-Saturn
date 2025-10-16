@@ -4345,7 +4345,7 @@ static void K_drawInput(void)
 			target = 0;
 		else // turning of multiple strengths!
 		{
-			target = ((abs(cmd->driftturn) - 1)/125)+1;
+			target = ((abs(cmd->driftturn) - 1)/200)+1; // was 125, do we need another toggle for this? Zzz...
 			if (target > 4)
 				target = 4;
 			if (cmd->driftturn < 0)
