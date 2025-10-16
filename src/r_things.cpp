@@ -3072,6 +3072,9 @@ void R_DrawMasked(maskcount_t* masks, INT32 nummasks)
 
 	heads = static_cast<drawnode_t*>(calloc(nummasks, sizeof(drawnode_t)));
 
+	if (!heads)
+		I_Error("R_DrawMasked: No more free memory\n");
+
 	for (i = 0; i < nummasks; i++)
 	{
 		heads[i].next = heads[i].prev = &heads[i];
