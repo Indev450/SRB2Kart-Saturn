@@ -1025,30 +1025,26 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 	// let movement keys cancel each other out
 	if (turnright && !(turnleft))
 	{
-		cmd->angleturn = (INT16)(cmd->angleturn - (angleturn[tspeed]));
-		cmd->driftturn = (INT16)(cmd->driftturn - (angleturn[tspeed]));
+		cmd->angleturn -= angleturn[tspeed];
 		side += sidemove[1];
 	}
 	else if (turnleft && !(turnright))
 	{
-		cmd->angleturn = (INT16)(cmd->angleturn + (angleturn[tspeed]));
-		cmd->driftturn = (INT16)(cmd->driftturn + (angleturn[tspeed]));
+		cmd->angleturn += angleturn[tspeed];
 		side -= sidemove[1];
 	}
 
 	if (analogjoystickmove && axis != 0)
 	{
-		// JOYAXISRANGE should be 1023 (divide by 1024)
-		cmd->angleturn = (INT16)(cmd->angleturn - (((axis * angleturn[1]) >> 10))); // ANALOG!
-		cmd->driftturn = (INT16)(cmd->driftturn - (((axis * angleturn[1]) >> 10)));
-		side += ((axis * sidemove[0]) >> 10);
+		cmd->angleturn -= (axis * KART_FULLTURN) / JOYAXISRANGE;
+		side += (axis * sidemove[0]) / JOYAXISRANGE;
 	}
 
 	if (cv_mouseturn.value)
 	{
 		//THIS WORKS WTF????????
-		cmd->angleturn = (INT16)(cmd->angleturn - ((mousex*(encoremode ? -1 : 1)*8)));
-		cmd->driftturn = (INT16)(cmd->driftturn - ((mousex*(encoremode ? -1 : 1)*8)));
+		cmd->angleturn -= (mousex*(encoremode ? -1 : 1)*8);
+	}
 	}
 
 	if (objectplacing) // SRB2Kart: spectators need special controls // not anymore huehuehue
@@ -1161,10 +1157,8 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 	else if (cmd->angleturn < (-angleturn[1]))
 		cmd->angleturn = (-angleturn[1]);
 
-	if (cmd->driftturn > (angleturn[1]))
-		cmd->driftturn = (angleturn[1]);
-	else if (cmd->driftturn < (-angleturn[1]))
-		cmd->driftturn = (-angleturn[1]);
+	// until here both are the very same
+	cmd->driftturn = cmd->angleturn;
 
 	if (player->mo)
 		cmd->angleturn = K_GetKartTurnValue(player, cmd->angleturn);
