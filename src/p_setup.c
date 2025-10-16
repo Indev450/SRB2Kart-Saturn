@@ -544,7 +544,18 @@ static void P_LoadSegs(UINT8 *data)
 	{
 		li->v1 = &vertexes[SHORT(ml->v1)];
 		li->v2 = &vertexes[SHORT(ml->v2)];
+#ifdef HWRENDER
+		if (rendermode == render_opengl)
+		{
+			li->fv1.x = FixedToFloat(li->v1->x);
+			li->fv1.y = FixedToFloat(li->v1->y);
+			//li->fv1.z = FixedToFloat(li->v1->z); // z is unused in gl
 
+			li->fv2.x = FixedToFloat(li->v2->x);
+			li->fv2.y = FixedToFloat(li->v2->y);
+			//li->fv2.z = FixedToFloat(li->v2->z);
+		}
+#endif
 		li->length = P_SegLength(li);
 		li->angle = (SHORT(ml->angle))<<FRACBITS;
 		li->offset = (SHORT(ml->offset))<<FRACBITS;
