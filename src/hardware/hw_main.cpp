@@ -277,6 +277,7 @@ static void CV_glshaders_OnChange(void)
 	{
 		// can't do palette rendering without shaders, so update the state if needed
 		HWR_TogglePaletteRendering();
+		HWR_PrecacheLevel();
 	}
 	M_UpdateOGLMenu();
 }
@@ -294,18 +295,21 @@ static void CV_gltextureformat_OnChange(void)
 {
 	ONLY_IF_GL_LOADED
 	GL_SetSpecialState(HWD_SET_TEXTURE_FORMAT, cv_gltexturedepth.value);
+	HWR_PrecacheLevel();
 }
 
 static void CV_filtermode_OnChange(void)
 {
 	ONLY_IF_GL_LOADED
 	GL_SetSpecialState(HWD_SET_TEXTUREFILTERMODE, cv_glfiltermode.value);
+	HWR_PrecacheLevel();
 }
 
 static void CV_anisotropic_OnChange(void)
 {
 	ONLY_IF_GL_LOADED
 	GL_SetSpecialState(HWD_SET_TEXTUREANISOTROPICMODE, cv_glanisotropicmode.value);
+	HWR_PrecacheLevel();
 }
 
 static void CV_glpaletterendering_OnChange(void)
@@ -318,7 +322,9 @@ static void CV_glpaletterendering_OnChange(void)
 	{
 		HWR_CompileShaders();
 		HWR_TogglePaletteRendering();
+		HWR_PrecacheLevel();
 	}
+
 	M_UpdateOGLMenu();
 }
 
