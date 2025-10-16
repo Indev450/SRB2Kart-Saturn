@@ -29,10 +29,38 @@ consvar_t cv_timescale = {"timescale", "1.0", CV_NETVAR|CV_CHEAT|CV_FLOAT, times
 static precise_t enterprecise, oldenterprecise;
 static fixed_t entertic, oldentertics;
 static double tictimer;
+static double ticratescaled;
+
+// experiment to prevent timing issues
+// this returns the global time state accounted with how much time has passed
+// since it was last updated
+static void I_GetTimeAndFrac(tic_t *outtics, fixed_t *outfrac)
+{
+	double elapsedseconds;
+
+	elapsedseconds = (double)(I_GetPreciseTime() - oldenterprecise) / I_GetPrecisePrecision();
+
+	double fractional, integral;
+	fractional = modf((tictimer + elapsedseconds) * ticratescaled, &integral);
+
+	if (outtics)
+		*outtics = g_time.time + (tic_t)integral;
+	if (outfrac)
+		*outfrac = DoubleToFixed(fractional);
+}
 
 tic_t I_GetTime(void)
 {
-	return g_time.time;
+	tic_t tic;
+	I_GetTimeAndFrac(&tic, NULL);
+	return tic;
+}
+
+fixed_t I_GetTimeFrac(void)
+{
+	fixed_t frac;
+	I_GetTimeAndFrac(NULL, &frac);
+	return frac;
 }
 
 void I_InitializeTime(void)
@@ -51,11 +79,11 @@ void I_InitializeTime(void)
 	entertic = 0;
 	oldentertics = 0;
 	tictimer = 0.0;
+	ticratescaled = 1.0;
 }
 
 void I_UpdateTime(fixed_t timescale)
 {
-	double ticratescaled;
 	double elapsedseconds;
 	tic_t realtics;
 
