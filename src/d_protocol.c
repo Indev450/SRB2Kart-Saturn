@@ -22,6 +22,7 @@
 
 #ifdef HAVE_CURL
 #include <curl/curl.h>
+#include "m_curl.h"
 #endif
 
 #include "doomdef.h"
@@ -60,7 +61,7 @@ static boolean RegisterProtocols(const char *path)
 	HKEY hKey = OpenKey(HKEY_CURRENT_USER,"Software\\Classes\\srb2kart");
 	SetStringValue(hKey, "URL Protocol", "");
 	RegCloseKey(hKey);
-	hKey = OpenKey(HKEY_CURRENT_USER,"Software\\Classes\\srb2kart\\shell\\open\\command");	
+	hKey = OpenKey(HKEY_CURRENT_USER,"Software\\Classes\\srb2kart\\shell\\open\\command");
 	SetStringValue(hKey, "", va("\"%s\" \"%%1\"", path));
 	RegCloseKey(hKey);
 #elif defined (__unix__) || defined (UNIXCOMMON)
@@ -76,12 +77,12 @@ static boolean RegisterProtocols(const char *path)
 
 	if (system("which update-desktop-database > /dev/null 2>&1"))
 	{
-		// command not found, probably doesn't have freedesktop, so let's ignore		
+		// command not found, probably doesn't have freedesktop, so let's ignore
 		CONS_Alert(CONS_ERROR, "Unable to register protocols. Your system doesn't seem to have freedesktop.\n");
 		return false;
 	}
 
-	if (stat(applicationsfolder, &sb) == -1) 
+	if (stat(applicationsfolder, &sb) == -1)
 	{
 		// location doesn't exist, so let's actually create it
 		newfolder = true;
@@ -119,12 +120,13 @@ static boolean RegisterProtocols(const char *path)
 
 	if (!alreadyexists)
 		fprintf(mimefile, "x-scheme-handler/srb2kart=srb2kart-handler.desktop;\n");
-	
+
 	if (newfolder)
 	{
 		if (system(va("update-desktop-database %s/.local/share/applications/", homedir)) == -1)
 		{
 			CONS_Alert(CONS_ERROR, "Unable to register protocols. Could not run call to run update-desktop-database sucessfully.\n");
+			fclose(mimefile);
 			return false;
 		}
 	}
@@ -206,13 +208,14 @@ void D_SetupProtocol(void)
 
 	fp = fopen(protocolfile, "a+");
 	result = fgets(buffer, PATH_MAX, fp);
-	if (result) 
+
+	if (result)
 	{
 		if (strcmp(buffer, "no") == 0)
-        {
-            fclose(fp);
-            return;
-        }
+		{
+			fclose(fp);
+			return;
+		}
 		else if (strcmp(buffer, exe_path) != 0)
 		{
 			// overwrite
@@ -231,6 +234,7 @@ void D_SetupProtocol(void)
 		else
 			fprintf(fp, "no");
 	}
+
 	fclose(fp);
 }
 
@@ -254,8 +258,10 @@ void D_CreateProtocol(void)
 }
 
 #ifdef HAVE_CURL
+static char curl_errbuf[CURL_ERROR_SIZE];
 void D_DownloadReplay(const char *url, const char *path)
 {
+
 	FILE *fp = NULL;
 	CURL *curl;
 	CURLcode cc;
@@ -263,17 +269,29 @@ void D_DownloadReplay(const char *url, const char *path)
 	if (!curl)
 		I_Error("Unable to download replay. Error initializing CURL.");
 
+	cc = curl_easy_setopt(curl, CURLOPT_ERRORBUFFER, curl_errbuf);
+	if (cc != CURLE_OK) I_OutputMsg("libcurl: CURLOPT_ERRORBUFFER failed\n");
+	curl_errbuf[0] = 0x00;
+
 	fp = fopen(path, "wb");
 	CONS_Printf("REPLAY: URL: %s\n", url);
-	curl_easy_setopt(curl, CURLOPT_URL, url);
-       	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, curlwrite_data);
-       	curl_easy_setopt(curl, CURLOPT_WRITEDATA, fp);
 
-       	cc = curl_easy_perform(curl);
+	cc = curl_easy_setopt(curl, CURLOPT_URL, url);
+	if (cc != CURLE_OK) I_OutputMsg("libcurl: %s\n", curl_errbuf);
+
+	cc = curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, curlwrite_data);
+	if (cc != CURLE_OK) I_OutputMsg("libcurl: %s\n", curl_errbuf);
+
+	cc = curl_easy_setopt(curl, CURLOPT_WRITEDATA, fp);
+	if (cc != CURLE_OK) I_OutputMsg("libcurl: %s\n", curl_errbuf);
+
+	M_SetCURLArgs(curl, curl_errbuf);
+
+	cc = curl_easy_perform(curl);
 	if (cc != CURLE_OK)
-		I_Error("Unable to download replay. URL gave response code %u.", cc);
+		I_Error("Unable to download replay. libcurl: %s.", curl_errbuf);
 
-       	curl_easy_cleanup(curl);
-       	fclose(fp);
+	curl_easy_cleanup(curl);
+	fclose(fp);
 }
 #endif

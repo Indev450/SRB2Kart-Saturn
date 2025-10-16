@@ -18,7 +18,9 @@ ifndef NOHW
 opts+=-DHWRENDER
 
 ifndef NOSCREENFBO
+ifndef STATIC_OPENGL
 opts+=-DUSE_FBO_OGL
+endif
 endif
 
 sources+=$(call List,hardware/Sourcefile)
@@ -28,13 +30,11 @@ ifndef NOMD5
 sources+=md5.c
 endif
 
-ifndef NONET
 ifndef NOSATURNJOIN
 opts+=-DDOSATURNJOIN
 endif
 ifndef NOSATURNPAK
 opts+=-DDOSATURNPAK
-endif
 endif
 
 ifndef NOZLIB
@@ -50,7 +50,6 @@ ifdef LINUX
 opts+=-D_LARGEFILE64_SOURCE
 endif
 opts+=-DHAVE_PNG
-sources+=apng.c
 endif
 endif
 

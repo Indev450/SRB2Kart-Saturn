@@ -62,9 +62,7 @@ menu_t OP_DiscordOptionsDef;
 #endif
 menu_t OP_HUDOptionsDef, OP_ChatOptionsDef;
 menu_t OP_GameOptionsDef, OP_ServerOptionsDef;
-#ifndef NONET
 menu_t OP_AdvServerOptionsDef;
-#endif
 menu_t OP_MonitorToggleDef;
 
 menu_t OP_AccessibilityDef;
@@ -516,15 +514,10 @@ static menuitem_t MP_MainMenu[] =
 	{IT_STRING|IT_KEYHANDLER,NULL, "Player setup...",     M_SetupMultiHandler,                 18},
 
 	{IT_HEADER, NULL, "Host a game", NULL, 100-24},
-#ifndef NONET
 	{IT_STRING|IT_CALL,       NULL, "Internet/LAN...",           M_PreStartServerMenu,     110-24},
-#else
-	{IT_GRAYEDOUT,            NULL, "Internet/LAN...",           NULL,                     110-24},
-#endif
 	{IT_STRING|IT_CALL,       NULL, "Offline...",                M_StartOfflineServerMenu, 118-24},
 
 	{IT_HEADER, NULL, "Join a game", NULL, 132-24},
-#ifndef NONET
 #ifndef MASTERSERVER
 	{IT_GRAYEDOUT,       NULL, "Internet server browser...",NULL,                          142-24},
 #else
@@ -532,14 +525,8 @@ static menuitem_t MP_MainMenu[] =
 #endif
 	{IT_STRING|IT_CALL, NULL, "Join last server",     M_ConnectLastServer,                 150-24},
 	{IT_STRING|IT_KEYHANDLER, NULL, "Specify IPv4 address:",     M_HandleConnectIP,        158-24},
-#else
-	{IT_GRAYEDOUT,            NULL, "Internet server browser...",NULL,                     142-24},
-	{IT_GRAYEDOUT,            NULL, "Join last server",     NULL,               	       150-24},
-	{IT_GRAYEDOUT,            NULL, "Specify IPv4 address:",     NULL,                     158-24},
-#endif
 };
 
-#ifndef NONET
 static menuitem_t MP_ServerMenu[] =
 {
 	{IT_STRING|IT_CVAR,                NULL, "Max. Player Count",     &cv_maxplayers,        10},
@@ -555,7 +542,6 @@ static menuitem_t MP_ServerMenu[] =
 
 	{IT_WHITESTRING|IT_CALL,           NULL, "Start",                 M_StartServer,        130},
 };
-#endif
 
 // Separated offline and normal servers.
 static menuitem_t MP_OfflineServerMenu[] =
@@ -573,7 +559,6 @@ static menuitem_t MP_PlayerSetupMenu[] =
 	{IT_KEYHANDLER | IT_STRING,   NULL, "Color",     M_HandleSetupMultiPlayer, 152},
 };
 
-#ifndef NONET
 static menuitem_t MP_ConnectMenu[] =
 {
 	{IT_STRING | IT_CVAR,       NULL, "Sort By",  &cv_serversort,      0},
@@ -601,7 +586,6 @@ enum
 	mp_connect_search,
 	FIRSTSERVERLINE
 };
-#endif
 
 // ------------------------------------
 // Options and most (?) of its submenus
@@ -661,10 +645,16 @@ static menuitem_t OP_ControlsMenu[] =
 	{IT_CALL | IT_STRING, NULL, "Player 3 Controls...", &M_Setup3PControlsMenu, 30},
 	{IT_CALL | IT_STRING, NULL, "Player 4 Controls...", &M_Setup4PControlsMenu, 40},
 
-	{IT_SUBMENU | IT_STRING, NULL, "Mouse Options...", &OP_MouseOptionsDef,     60},
+	{IT_SUBMENU | IT_STRING, NULL, "Mouse Options...",  &OP_MouseOptionsDef,    60},
 
-	{IT_STRING | IT_CVAR, NULL, "Controls per key",    &cv_controlperkey,       80},
-	{IT_STRING | IT_CVAR, NULL, "Digital turn easing", &cv_turnsmooth,          90},
+	{IT_STRING | IT_CVAR, NULL, "Controls per key",     &cv_controlperkey,      80},
+	{IT_STRING | IT_CVAR, NULL, "Digital turn easing",  &cv_turnsmooth,         90},
+
+	// i hate our menus sincerly
+	{IT_STRING | IT_CVAR, NULL, "Lite Steer (P1)",      &cv_litesteer[0],       110},
+	{IT_STRING | IT_CVAR, NULL, "Lite Steer (P2)",      &cv_litesteer[1],       120},
+	{IT_STRING | IT_CVAR, NULL, "Lite Steer (P3)",      &cv_litesteer[2],       130},
+	{IT_STRING | IT_CVAR, NULL, "Lite Steer (P4)",      &cv_litesteer[3],       140},
 };
 
 static const char* OP_ControlsTooltips[] =
@@ -676,6 +666,11 @@ static const char* OP_ControlsTooltips[] =
 	"Options for mouse control.",
 	"Allowed amount of controls per key.",
 	"Turn smoothing for non-analog turning.",
+
+	"Hold DOWN on d-pad/keyboard for shallow turns (Player 1).",
+	"Hold DOWN on d-pad/keyboard for shallow turns (Player 2).",
+	"Hold DOWN on d-pad/keyboard for shallow turns (Player 3).",
+	"Hold DOWN on d-pad/keyboard for shallow turns (Player 4).",
 };
 
 static menuitem_t OP_AllControlsMenu[] =
@@ -933,18 +928,18 @@ static menuitem_t OP_ExpOptionsMenu[] =
 {
 	{IT_HEADER, NULL, "Advanced Video Options", NULL, 0},
 	{IT_STRING|IT_CVAR,		NULL, "Interpolation Distance",			&cv_maxinterpdist,		 	 10},
-	{IT_STRING | IT_CVAR, 	NULL, "Weather Interpolation", 			&cv_precipinterp, 		 	 15},
 
-	{IT_STRING | IT_CVAR, 	NULL, "Scale Weather with Mobjscale", 	&cv_mobjscaleprecip, 		 25},
-	{IT_STRING | IT_CVAR, 	NULL, "Less Weather Effects", 			&cv_lessprecip, 		 	 30},
+	{IT_STRING | IT_CVAR, 	NULL, "Less Weather Effects", 			&cv_lessprecip, 		 	 20},
 
-	{IT_STRING | IT_CVAR,   NULL, "Minimum Sector Brightness",		&cv_secbright,	  		 	 40},
+	{IT_STRING | IT_CVAR,   NULL, "Minimum Sector Brightness",		&cv_secbright,	  		 	 30},
 
-	//{IT_STRING | IT_CVAR,  NULL, "Randomized Directional Light",	&cv_randomdirlight,	  		 55}, // should this ever come back
+	//{IT_STRING | IT_CVAR,  NULL, "Randomized Directional Light",	&cv_randomdirlight,	  		 45}, // should this ever come back
 
-	{IT_STRING | IT_CVAR,	NULL, "Skyboxes",						&cv_skybox,				 	 50},
+	{IT_STRING | IT_CVAR,	NULL, "Skyboxes",						&cv_skybox,				 	 40},
 
-	{IT_STRING | IT_CVAR,	NULL, "FPS counter sampling",			&cv_accuratefps,			 60},
+	{IT_STRING | IT_CVAR,	NULL, "FPS counter sampling",			&cv_accuratefps,			 50},
+
+	{IT_STRING | IT_CVAR,	NULL, "Frameskip",						&cv_frameskip,			 	 60},
 
 	{IT_STRING | IT_CVAR,	NULL, "Votescreen Scaling",				&cv_votebgscaling,			 70},
 
@@ -953,10 +948,10 @@ static menuitem_t OP_ExpOptionsMenu[] =
 #ifdef USE_FBO_OGL
 	{IT_STRING | IT_CVAR, 	NULL, "FBO Downsampling support", 		&cv_glframebuffer, 			 85},
 	{IT_STRING | IT_CVAR, 	NULL, "Palette Depth", 					&cv_glpalettedepth, 		 95},
-	{IT_DISABLED, 			NULL, "", 								NULL,     			 		105},	// dummy text
+	{IT_DISABLED, 			NULL, "", 								NULL,     			 		105}, // dummy text
 #else
 	{IT_STRING | IT_CVAR, 	NULL, "Palette Depth", 					&cv_glpalettedepth, 		 90},
-	{IT_DISABLED, 			NULL, "", 								NULL,     			 		100},	// dummy text
+	{IT_DISABLED, 			NULL, "", 								NULL,     			 		100}, // dummy text
 #endif
 #endif
 };
@@ -965,13 +960,12 @@ static const char* OP_ExpTooltips[] =
 {
 	NULL,
 	"How far Mobj interpolation should take effect.",
-	"Should weather be interpolated? Weather should look about the\nsame but perform a bit better when disabled.",
-	"Should weather be scaled with Mapobjectscale?.",
 	"When weather is on this will cut the object amount used in half.",
 	"Sets minimum sector brightness, useful for dark areas",
 	//"Should the directional lightning be randomized each map?\nTakes effect on next map load.",
 	"Toggle being able to see the sky.",
 	"Change the FPS counter sampling method\nInaccurate updates slower and might miss frame drops and such\nAccurate updates faster and is more accurate, but might be less readable", // how to ingles??
+	"Skips rendering frames if game logic takes too long preventing issues during performance drops." // idk im shit as describing things
 	"Different methods of scaling the votescreen backgrounds.",
 #ifdef HWRENDER
 	"Should the game do Screen Textures? Provides a good boost to frames\nat the cost of some visual effects not working when disabled.",
@@ -986,13 +980,12 @@ enum
 {
 	op_exp_header,
 	op_exp_interpdist,
-	op_exp_precipinter,
-	op_exp_precipmoscale,
 	op_exp_lessprecip,
 	op_exp_secbright,
 	//op_exp_dirlight,
 	op_exp_skybox,
 	op_exp_accuratefps,
+	op_exp_frameskip,
 	op_exp_votescrn,
 #ifdef HWRENDER
 	op_exp_glscrtx,
@@ -1186,6 +1179,8 @@ static menuitem_t OP_FocusOptionsMenu[] =
 	{IT_STRING|IT_CVAR,	NULL, "Background FPS Cap",         				&cv_fpscapbg,          		80},
 
 	{IT_STRING|IT_CVAR,	NULL, "Show \"FOCUS LOST\"",						&cv_showfocuslost,		   100},
+
+	{IT_STRING|IT_CVAR,	NULL, "Visible Mouse",								&cv_mousevisible,	       120},
 };
 
 static const char* OP_FocusOptionsTooltips[] =
@@ -1196,6 +1191,7 @@ static const char* OP_FocusOptionsTooltips[] =
 	"Should the game pause while the game is unfocused?",
 	"Set manual framerate cap while the game is unfocused.",
 	"Should the FOCUS LOST window appear\n while the game is unfocused?",
+	"Displays the mouse cursor while the game is in focus.",
 };
 
 static menuitem_t OP_DataOptionsMenu[] =
@@ -1230,11 +1226,6 @@ static menuitem_t OP_ScreenshotOptionsMenu[] =
 
 	{IT_STRING|IT_CVAR, NULL, "Region Optimizing", &cv_gif_optimize,              90},
 	{IT_STRING|IT_CVAR, NULL, "Downscaling",       &cv_gif_downscale,             95},
-
-	{IT_STRING|IT_CVAR, NULL, "Memory Level",      &cv_zlib_memorya,              90},
-	{IT_STRING|IT_CVAR, NULL, "Compression Level", &cv_zlib_levela,               95},
-	{IT_STRING|IT_CVAR, NULL, "Strategy",          &cv_zlib_strategya,            100},
-	{IT_STRING|IT_CVAR, NULL, "Window Size",       &cv_zlib_window_bitsa,         105},
 };
 
 enum
@@ -1244,10 +1235,7 @@ enum
 	op_screenshot_capture = 10,
 	op_screenshot_gif_start = 11,
 	op_screenshot_gif_end = 12,
-	op_screenshot_apng_start = 13,
-	op_screenshot_apng_end = 16,
 };
-
 
 static menuitem_t OP_EraseDataMenu[] =
 {
@@ -1484,16 +1472,13 @@ static const char* OP_GameTooltips[] =
 
 static menuitem_t OP_ServerOptionsMenu[] =
 {
-#ifndef NONET
 	{IT_STRING | IT_CVAR | IT_CV_STRING,
 	                         NULL, "Server Name",					&cv_servername,			 10},
-#endif
 	{IT_STRING | IT_CVAR,    NULL, "Intermission Timer",			&cv_inttime,			 40},
 	{IT_STRING | IT_CVAR,    NULL, "Map Progression",				&cv_advancemap,			 50},
 	{IT_STRING | IT_CVAR,    NULL, "Voting Timer",					&cv_votetime,			 60},
 	{IT_STRING | IT_CVAR,    NULL, "Voting Rule Changes",			&cv_kartvoterulechanges, 70},
 
-#ifndef NONET
 	{IT_STRING | IT_CVAR,    NULL, "Max. Player Count",				&cv_maxplayers,			 90},
 	{IT_STRING | IT_CVAR,    NULL, "Allow Players to Join",			&cv_allownewplayer,		100},
 	{IT_STRING | IT_CVAR,    NULL, "Allow Addon Downloading",		&cv_downloading,		110},
@@ -1501,29 +1486,23 @@ static menuitem_t OP_ServerOptionsMenu[] =
 	{IT_STRING | IT_CVAR,    NULL, "Mute All Chat",					&cv_mute,				130},
 
 	{IT_SUBMENU|IT_STRING,   NULL, "Advanced Options...",			&OP_AdvServerOptionsDef,150},
-#endif
 };
 
 static const char* OP_ServerOptionsTooltips[] =
 {
-#ifndef NONET
 	"Name of server.",
-#endif
 	"Length of intermission after races.",
 	"How the next map to be played is choosen.",
 	"How long map voting is.",
 	"How often should other gamemodes appear.",
-#ifndef NONET
 	"Max amount of players allowed in this server.",
 	"Allow players to join this server.",
 	"Allow players to download addons.",
 	"Who has permission to pause the server?",
 	"Completely mute in game chat.",
 	"Options for advanced server settings.",
-#endif
 };
 
-#ifndef NONET
 static menuitem_t OP_AdvServerOptionsMenu[] =
 {
 #ifndef MASTERSERVER
@@ -1581,7 +1560,6 @@ static const char* OP_AdvServerOptionsTooltips[] =
 	"Log player resync attempts.",
 	"Log player file transfers.",
 };
-#endif
 
 #define ITEMTOGGLEBOTTOMRIGHT
 
@@ -2409,17 +2387,12 @@ menu_t MP_MainDef =
 	M_DrawMPMainMenu,
 	42, 30,
 	0,
-#ifndef NONET
 	M_CancelConnect,
-#else
-	NULL,
-#endif
 	NULL
 };
 
 menu_t MP_OfflineServerDef = MAPICONMENUSTYLE("M_MULTI", MP_OfflineServerMenu, &MP_MainDef);
 
-#ifndef NONET
 menu_t MP_ServerDef = MAPICONMENUSTYLE("M_MULTI", MP_ServerMenu, &MP_MainDef);
 
 menu_t MP_ConnectDef =
@@ -2434,7 +2407,7 @@ menu_t MP_ConnectDef =
 	M_CancelConnect,
 	NULL
 };
-#endif
+
 menu_t MP_PlayerSetupDef =
 {
 	NULL, //"M_SPLAYR"
@@ -2564,9 +2537,7 @@ menu_t OP_FocusOptionsDef = DEFAULTMENUSTYLE(NULL, OP_FocusOptionsMenu, &OP_Main
 
 menu_t OP_GameOptionsDef = DEFAULTMENUSTYLE("M_GAME", OP_GameOptionsMenu, &OP_MainDef, 30, 20, OP_GameTooltips);
 menu_t OP_ServerOptionsDef = DEFAULTMENUSTYLE("M_SERVER", OP_ServerOptionsMenu, &OP_MainDef, 24, 20, OP_ServerOptionsTooltips);
-#ifndef NONET
 menu_t OP_AdvServerOptionsDef = DEFAULTSCROLLSTYLE("M_SERVER", OP_AdvServerOptionsMenu, &OP_ServerOptionsDef, 24, 30, OP_AdvServerOptionsTooltips);
-#endif
 
 menu_t OP_MonitorToggleDef =
 {
@@ -2824,7 +2795,7 @@ void Screenshot_option_Onchange(void)
 void Moviemode_mode_Onchange(void)
 {
 	INT32 i, cstart, cend;
-	for (i = op_screenshot_gif_start; i <= op_screenshot_apng_end; ++i)
+	for (i = op_screenshot_gif_start; i <= op_screenshot_gif_end; ++i)
 		OP_ScreenshotOptionsMenu[i].status = IT_DISABLED;
 
 	switch (cv_moviemode.value)
@@ -2833,13 +2804,10 @@ void Moviemode_mode_Onchange(void)
 			cstart = op_screenshot_gif_start;
 			cend = op_screenshot_gif_end;
 			break;
-		case MM_APNG:
-			cstart = op_screenshot_apng_start;
-			cend = op_screenshot_apng_end;
-			break;
 		default:
 			return;
 	}
+
 	for (i = cstart; i <= cend; ++i)
 		OP_ScreenshotOptionsMenu[i].status = IT_STRING|IT_CVAR;
 }

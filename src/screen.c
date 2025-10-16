@@ -45,6 +45,9 @@ static CV_PossibleValue_t shittyscreen_cons_t[] = {{0, "Okay"}, {1, "Shitty"}, {
 consvar_t cv_scr_width = {"scr_width", "1280", CV_SAVE, CV_Unsigned, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_scr_height = {"scr_height", "800", CV_SAVE, CV_Unsigned, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_renderview = {"renderview", "On", 0, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+
+consvar_t cv_frameskip = {"frameskip", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+
 consvar_t cv_vhseffect = {"vhspause", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_shittyscreen = {"televisionsignal", "Okay", CV_NOSHOWHELP, shittyscreen_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
@@ -77,11 +80,7 @@ consvar_t cv_accuratefps = {"fpssampling", "1", CV_SAVE, accuratefps_cons_t, NUL
 //                           SCREEN VARIABLES
 // =========================================================================
 
-UINT8 *scr_borderpatch; // flat used to fill the reduced view borders set at ST_Init()
-
-// =========================================================================
-
-static void SCR_SetDrawFuncs(void)
+static void SCR_SetDrawFuncs(enum columncontext_e _columncontext)
 {
 	//
 	//  setup the right draw routines
@@ -100,13 +99,27 @@ static void SCR_SetDrawFuncs(void)
 	spanfuncs[SPANDRAWFUNC_FOG] = R_DrawFogSpan;
 	spanfuncs[SPANDRAWFUNC_TILTEDFOG] = R_DrawFogSpan_Tilted;
 
-	colfuncs[BASEDRAWFUNC] = R_DrawColumn;
-	colfuncs[COLDRAWFUNC_FUZZY] = R_DrawTranslucentColumn;
-	colfuncs[COLDRAWFUNC_TRANS] = R_DrawTranslatedColumn;
-	colfuncs[COLDRAWFUNC_SHADOWED] = R_DrawColumnShadowed;
-	colfuncs[COLDRAWFUNC_TRANSTRANS] = R_DrawTranslatedTranslucentColumn;
-	colfuncs[COLDRAWFUNC_TWOSMULTIPATCH] = R_Draw2sMultiPatchColumn;
-	colfuncs[COLDRAWFUNC_TWOSMULTIPATCHTRANS] = R_Draw2sMultiPatchTranslucentColumn;
+	if (_columncontext == COLUMNCONTEXT_FLUSH)
+	{
+		colfuncs[BASEDRAWFUNC] = R_DrawColumnFlush;
+		colfuncs[COLDRAWFUNC_FUZZY] = R_DrawTranslucentColumnFlush;
+		colfuncs[COLDRAWFUNC_TRANS] = R_DrawTranslatedColumnFlush;
+		colfuncs[COLDRAWFUNC_SHADOWED] = R_DrawColumnShadowedFlush;
+		colfuncs[COLDRAWFUNC_TRANSTRANS] = R_DrawTranslatedTranslucentColumnFlush;
+		colfuncs[COLDRAWFUNC_TWOSMULTIPATCH] = R_Draw2sMultiPatchColumnFlush;
+		colfuncs[COLDRAWFUNC_TWOSMULTIPATCHTRANS] = R_Draw2sMultiPatchTranslucentColumnFlush;
+	}
+	else
+	{
+		colfuncs[BASEDRAWFUNC] = R_DrawColumn;
+		colfuncs[COLDRAWFUNC_FUZZY] = R_DrawTranslucentColumn;
+		colfuncs[COLDRAWFUNC_TRANS] = R_DrawTranslatedColumn;
+		colfuncs[COLDRAWFUNC_SHADOWED] = R_DrawColumnShadowed;
+		colfuncs[COLDRAWFUNC_TRANSTRANS] = R_DrawTranslatedTranslucentColumn;
+		colfuncs[COLDRAWFUNC_TWOSMULTIPATCH] = R_Draw2sMultiPatchColumn;
+		colfuncs[COLDRAWFUNC_TWOSMULTIPATCHTRANS] = R_Draw2sMultiPatchTranslucentColumn;
+	}
+
 	colfuncs[COLDRAWFUNC_FOG] = R_DrawFogColumn;
 
 	R_SetColumnFunc(BASEDRAWFUNC);
@@ -121,14 +134,28 @@ void SCR_SetMode(void)
 	if (!setmodeneeded || WipeInAction)
 		return; // should never happen and don't change it during a wipe, BAD!
 
+	if (vid.modenum != setmodeneeded - 1)
+		M_StopMovie(); // nope, cry about it
+
 	VID_SetMode(--setmodeneeded);
 
 	V_SetPalette(0);
 
-	SCR_SetDrawFuncs();
+	SCR_SetDrawFuncs(COLUMNCONTEXT_DIRECT);
 
 	// set the apprpriate drawer for the sky (tall or INT16)
 	setmodeneeded = 0;
+}
+
+// used to switch between column buffering and drawing them directly to screen
+// our sky "plane" drawer cannot handle the buffer system due to multithreading
+// (that would require alot of extra complexity for smth with massive diminishing results)
+// Our masked drawing step draws things in a very particular order, which results in alot of flushing to screen
+// effectively adding massive overhead due to excessive flushing, so we draw our masked thing directly to screen instead
+void R_SetColumnContext(enum columncontext_e _columncontext)
+{
+	columncontext = _columncontext;
+	SCR_SetDrawFuncs(_columncontext); // set our column drawers
 }
 
 void R_SetColumnFunc(size_t id)
@@ -179,19 +206,7 @@ void SCR_Startup(void)
 
 	vid.modenum = 0;
 
-	vid.dupx = vid.width / BASEVIDWIDTH;
-	vid.dupy = vid.height / BASEVIDHEIGHT;
-	vid.dupx = vid.dupy = (vid.dupx < vid.dupy ? vid.dupx : vid.dupy);
-	vid.fdupx = FixedDiv(vid.width*FRACUNIT, BASEVIDWIDTH*FRACUNIT);
-	vid.fdupy = FixedDiv(vid.height*FRACUNIT, BASEVIDHEIGHT*FRACUNIT);
-
-	vid.fdupx = vid.fdupy = (vid.fdupx < vid.fdupy ? vid.fdupx : vid.fdupy);
-
-	vid.meddupx = (UINT8)(vid.dupx >> 1) + 1;
-	vid.meddupy = (UINT8)(vid.dupy >> 1) + 1;
-
-	vid.smalldupx = (UINT8)(vid.dupx / 3) + 1;
-	vid.smalldupy = (UINT8)(vid.dupy / 3) + 1;
+	V_Recalc();
 
 	V_Init();
 	CV_RegisterVar(&cv_highreshudscale);
@@ -236,29 +251,7 @@ void SCR_Recalc(void)
 	if (dedicated)
 		return;
 
-	// scale 1,2,3 times in x and y the patches for the menus and overlays...
-	// calculated once and for all, used by routines in v_video.c
-	vid.dupx = vid.width / BASEVIDWIDTH;
-	vid.dupy = vid.height / BASEVIDHEIGHT;
-	vid.dupx = vid.dupy = (vid.dupx < vid.dupy ? vid.dupx : vid.dupy);
-	vid.fdupx = FixedDiv(vid.width*FRACUNIT, BASEVIDWIDTH*FRACUNIT);
-	vid.fdupy = FixedDiv(vid.height*FRACUNIT, BASEVIDHEIGHT*FRACUNIT);
-
-	if ((vid.width > 720) && (vid.height > 1280)) // ehhhh well this thing has so many issues, so ill lock it to higher resolutions instead
-	{
-		vid.dupx = FixedDiv(vid.dupx, cv_highreshudscale.value);
-		vid.dupy = FixedDiv(vid.dupy, cv_highreshudscale.value);
-		vid.fdupx = FixedDiv(vid.fdupx, cv_highreshudscale.value);
-		vid.fdupy = FixedDiv(vid.fdupy, cv_highreshudscale.value);
-	}
-
-	vid.fdupx = vid.fdupy = (vid.fdupx < vid.fdupy ? vid.fdupx : vid.fdupy);
-
-	vid.meddupx = (UINT8)(vid.dupx >> 1) + 1;
-	vid.meddupy = (UINT8)(vid.dupy >> 1) + 1;
-
-	vid.smalldupx = (UINT8)(vid.dupx / 3) + 1;
-	vid.smalldupy = (UINT8)(vid.dupy / 3) + 1;
+	V_Recalc();
 
 	// toggle off (then back on) the automap because some screensize-dependent values will
 	// be calculated next time the automap is activated.
@@ -326,7 +319,6 @@ void SCR_SetDefaultMode(void)
 // Change fullscreen on/off according to cv_fullscreen
 void SCR_ChangeFullscreen(void)
 {
-#ifdef DIRECTFULLSCREEN
 	I_SetBorderlessWindow(); // Running this here so we can have borderless window at startup
 
 	// allow_fullscreen is set by VID_PrepareModeList
@@ -339,8 +331,8 @@ void SCR_ChangeFullscreen(void)
 		VID_PrepareModeList();
 		setmodeneeded = VID_GetModeForSize(vid.width, vid.height) + 1;
 	}
+
 	return;
-#endif
 }
 
 boolean SCR_IsAspectCorrect(INT32 width, INT32 height)
@@ -428,74 +420,97 @@ void SCR_CalculateFPS(void)
 #endif
 }
 
+static void SCR_DrawOldTicRate(UINT32 cap, UINT32 benchmark, double fps, INT32 fpsflags)
+{
+	const char *fps_string;
+	INT32 ticcntcolor = 0;
+
+	if (fps > (benchmark - 5))
+		ticcntcolor = V_GREENMAP;
+	else if (fps < 20)
+		ticcntcolor = V_REDMAP;
+
+	if (cap != 0)
+		fps_string = va("%d/%d\x82", (INT32)fps, cap);
+	else
+		fps_string = va("%d\x82", (INT32)fps);
+
+	// draw "FPS"
+	if (cv_ticrate.value == 3)
+		V_DrawRightAlignedString(319, 181, V_YELLOWMAP|fpsflags, "FPS");
+
+	V_DrawRightAlignedString(319, 190, ticcntcolor|fpsflags, fps_string);
+}
+
+static void SCR_DrawKartTicRate(UINT32 cap, UINT32 benchmark, double fps, INT32 fpsflags)
+{
+	UINT8 *ticcntcolor = NULL;
+	INT32 x = 318;
+
+	// draw "FPS"
+	if (cv_ticrate.value == 1)
+	{
+		ticcntcolor = R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_YELLOW, GTC_CACHE);
+		V_DrawFixedPatch(306<<FRACBITS, 183<<FRACBITS, FRACUNIT, fpsflags, framecounter, ticcntcolor);
+	}
+
+	if (fps > (benchmark - 5))
+		ticcntcolor = R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_MINT, GTC_CACHE);
+	else if (fps < 20)
+		ticcntcolor = R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_RASPBERRY, GTC_CACHE);
+	else
+		ticcntcolor = NULL;
+
+	if (cap != 0)
+	{
+		UINT32 digits = 1;
+		UINT32 c2 = cap;
+
+		while (c2 > 0)
+		{
+			c2 = c2 / 10;
+			digits++;
+		}
+
+		// draw total frame:
+		V_DrawPingNum(x, 190, fpsflags, cap, ticcntcolor);
+
+		x -= digits * 4;
+
+		// draw "/"
+		V_DrawFixedPatch(x<<FRACBITS, 190<<FRACBITS, FRACUNIT, fpsflags, frameslash, ticcntcolor);
+	}
+
+	// draw our actual framerate
+	V_DrawPingNum(x, 190, fpsflags, fps, ticcntcolor);
+}
+
 void SCR_DisplayTicRate(void)
 {
-	UINT32 cap = R_GetFramerateCap();
-	UINT32 benchmark = (cap == 0) ? I_GetRefreshRate() : cap;
-	double fps = round(averageFPS);
-	INT32 fpsflags = V_LocalTransFlag()|V_SNAPTOBOTTOM|V_SNAPTORIGHT;
+	UINT32 cap, benchmark;
+	double fps;
+	INT32 fpsflags;
 
 	if (gamestate == GS_NULL)
 		return;
 
-	// new kart counter
-	if (cv_ticrate.value == 1 || cv_ticrate.value == 2)
+	cap = R_GetFramerateCap();
+	benchmark = (cap == 0) ? I_GetRefreshRate() : cap;
+	fps = round(averageFPS);
+	fpsflags = V_LocalTransFlag()|V_SNAPTOBOTTOM|V_SNAPTORIGHT;
+
+	switch (cv_ticrate.value)
 	{
-		const UINT8 *ticcntcolor = NULL;
-		INT32 x = 318;
-
-		// draw "FPS"
-		if (cv_ticrate.value == 1)
-			V_DrawFixedPatch(306<<FRACBITS, 183<<FRACBITS, FRACUNIT, fpsflags, framecounter, R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_YELLOW, GTC_CACHE));
-
-		if (fps > (benchmark - 5))
-			ticcntcolor = R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_MINT, GTC_CACHE);
-		else if (fps < 20)
-			ticcntcolor = R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_RASPBERRY, GTC_CACHE);
-
-		if (cap != 0)
-		{
-			UINT32 digits = 1;
-			UINT32 c2 = cap;
-
-			while (c2 > 0)
-			{
-				c2 = c2 / 10;
-				digits++;
-			}
-
-			// draw total frame:
-			V_DrawPingNum(x, 190, fpsflags, cap, ticcntcolor);
-
-			x -= digits * 4;
-
-			// draw "/"
-			V_DrawFixedPatch(x<<FRACBITS, 190<<FRACBITS, FRACUNIT, fpsflags, frameslash, ticcntcolor);
-		}
-
-		// draw our actual framerate
-		V_DrawPingNum(x, 190, fpsflags, fps, ticcntcolor);
-	}
-	else if (cv_ticrate.value == 3 || cv_ticrate.value == 4) // kart v1.0/srb2 counter
-	{
-		const char *fps_string;
-		INT32 ticcntcolor2 = 0;
-
-		if (fps > (benchmark - 5))
-			ticcntcolor2 = V_GREENMAP;
-		else if (fps < 20)
-			ticcntcolor2 = V_REDMAP;
-
-		if (cap != 0)
-			fps_string = va("%d/%d\x82", (INT32)fps, cap);
-		else
-			fps_string = va("%d\x82", (INT32)fps);
-
-		// draw "FPS"
-		if (cv_ticrate.value == 3)
-			V_DrawRightAlignedString(319, 181, V_YELLOWMAP|fpsflags, "FPS");
-
-		V_DrawRightAlignedString(319, 190, ticcntcolor2|fpsflags, fps_string);
+		case 1: // new kart counter
+		case 2:
+			SCR_DrawKartTicRate(cap, benchmark, fps, fpsflags);
+			break;
+		case 3: // kart v1.0/srb2 counter
+		case 4:
+			SCR_DrawOldTicRate(cap, benchmark, fps, fpsflags);
+			break;
+		default:
+			break;
 	}
 }
 
@@ -510,7 +525,6 @@ void SCR_DisplayLocalPing(void)
 	if (cv_showping.value == 1 || (cv_showping.value == 2 && ping > servermaxping)) // only show 2 (warning) if our ping is at a bad level
 	{
 		INT32 dispy = (cv_ticrate.value == 1) ? 165 : ((cv_ticrate.value == 2 || cv_ticrate.value == 4) ? 172 : ((cv_ticrate.value == 3) ? 163 : 181)); // absolute buttpain
-
 		HU_drawPlayerPing(308, dispy, consoleplayer, pingflags); // consoleplayer's ping is everyone's ping in a splitnetgame :P
 	}
 }

@@ -15,6 +15,7 @@
 #include "r_patchrotation.h"
 #include "z_zone.h"
 #include "w_wad.h"
+#include <vector>
 
 #ifdef ROTSPRITE
 //
@@ -39,9 +40,9 @@ INT32 R_GetRollAngle(angle_t rollangle)
 angle_t R_RotationAngle(angle_t ang, angle_t camang, interpmobjstate_t *interp)
 {
 	return FixedMul(FINECOSINE((ang) >> ANGLETOFINESHIFT), interp->roll) +
-	FixedMul(FINESINE((ang) >> ANGLETOFINESHIFT), interp->pitch) +
-	FixedMul(FINECOSINE((camang) >> ANGLETOFINESHIFT), interp->sloperoll) +
-	FixedMul(FINESINE((camang) >> ANGLETOFINESHIFT), interp->slopepitch);
+		   FixedMul(FINESINE((ang) >> ANGLETOFINESHIFT), interp->pitch) +
+		   FixedMul(FINECOSINE((camang) >> ANGLETOFINESHIFT), interp->sloperoll) +
+		   FixedMul(FINESINE((camang) >> ANGLETOFINESHIFT), interp->slopepitch);
 }
 
 patch_t *Patch_GetRotatedSprite(spriteframe_t *sprite, size_t frame, size_t spriteangle, boolean flip, void *info, INT32 rotationangle)
@@ -73,7 +74,7 @@ patch_t *Patch_GetRotatedSprite(spriteframe_t *sprite, size_t frame, size_t spri
 		if (lump == LUMPERROR)
 			return NULL;
 
-		patch = W_CachePatchNum(lump, PU_SPRITE);
+		patch = (patch_t *)W_CachePatchNum(lump, PU_SPRITE);
 
 		if (sprinfo->available)
 		{
@@ -89,14 +90,14 @@ patch_t *Patch_GetRotatedSprite(spriteframe_t *sprite, size_t frame, size_t spri
 		RotatedPatch_DoRotation(rotsprite, patch, rotationangle, xpivot, ypivot, flip);
 	}
 
-	return rotsprite->patches[idx];
+	return static_cast<patch_t*>(rotsprite->patches[idx]);
 }
 
 rotsprite_t *RotatedPatch_Create(INT32 numangles)
 {
-	rotsprite_t *rotsprite = Z_Calloc(sizeof(rotsprite_t), PU_STATIC, NULL);
+	rotsprite_t *rotsprite = static_cast<rotsprite_t*>(Z_Calloc(sizeof(rotsprite_t), PU_STATIC, NULL));
 	rotsprite->angles = numangles;
-	rotsprite->patches = Z_Calloc(rotsprite->angles * 2 * sizeof(void *), PU_STATIC, NULL);
+	rotsprite->patches = static_cast<void**>(Z_Calloc(rotsprite->angles * 2 * sizeof(void *), PU_STATIC, NULL));
 	return rotsprite;
 }
 
@@ -118,8 +119,8 @@ static void RotatedPatch_CalculateDimensions(
 	h1 = FixedInt(FixedCeil(h1 + (FRACUNIT/2)));
 	h2 = FixedInt(FixedCeil(h2 + (FRACUNIT/2)));
 
-	*newwidth = max(width, max(w1, w2));
-	*newheight = max(height, max(h1, h2));
+	*newwidth = std::max(width, std::max(w1, w2));
+	*newheight = std::max(height, std::max(h1, h2));
 }
 
 void RotatedPatch_DoRotation(rotsprite_t *rotsprite, patch_t *patch, INT32 angle, INT32 xpivot, INT32 ypivot, boolean flip)
@@ -127,7 +128,9 @@ void RotatedPatch_DoRotation(rotsprite_t *rotsprite, patch_t *patch, INT32 angle
 	UINT32 i;
 	patch_t *rotated;
 
-	UINT16 *rawdst, *rawconv;
+	static std::vector<UINT16> rawdst(1024 * 1024), rawconv(1024 * 1024); // 1 MB should be enough for most cases
+
+	UINT16 *rawout;
 	size_t size;
 	INT32 bflip = (flip != 0x00);
 
@@ -181,7 +184,11 @@ void RotatedPatch_DoRotation(rotsprite_t *rotsprite, patch_t *patch, INT32 angle
 	size = (newwidth * newheight);
 	if (!size)
 		size = (width * height);
-	rawdst = Z_Malloc(size * sizeof(UINT16), PU_STATIC, NULL);
+
+	while (rawdst.size() < size)
+	{
+		rawdst.resize(rawdst.size() * 2);
+	}
 
 	for (i = 0; i < size; i++)
 		rawdst[i] = 0xFF00;
@@ -224,10 +231,12 @@ void RotatedPatch_DoRotation(rotsprite_t *rotsprite, patch_t *patch, INT32 angle
 		UINT16 *src, *dest;
 
 		size = (width * height);
-		rawconv = Z_Calloc(size * sizeof(UINT16), PU_STATIC, NULL);
+
+		rawconv.resize(size);
+		memset(rawconv.data(), 0, size * sizeof(UINT16));
 
 		src = &rawdst[(miny * newwidth) + minx];
-		dest = rawconv;
+		dest = rawconv.data();
 		dy = height;
 
 		while (dy--)
@@ -240,21 +249,21 @@ void RotatedPatch_DoRotation(rotsprite_t *rotsprite, patch_t *patch, INT32 angle
 		ox -= minx;
 		oy -= miny;
 
-		Z_Free(rawdst);
+		rawout = rawconv.data();
 	}
 	else
 	{
-		rawconv = rawdst;
 		width = newwidth;
 		height = newheight;
+
+		rawout = rawdst.data();
 	}
 
 	// make patch
-	rotated = (patch_t *)R_MaskedFlatToPatch(rawconv, width, height, 0, 0, &size);
+	rotated = (patch_t *)R_MaskedFlatToPatch(rawout, width, height, 0, 0, &size);
 
 	Z_ChangeTag(rotated, PU_PATCH_ROTATED);
 	Z_SetUser(rotated, (void **)(&rotsprite->patches[idx]));
-	Z_Free(rawconv);
 
 	rotated->leftoffset = ox;
 	rotated->topoffset = oy;

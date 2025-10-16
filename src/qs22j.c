@@ -85,9 +85,14 @@ static inline char *med3(char *a, char *b, char *c, int (*compar)(const void *, 
 		(COMP(b, c) > 0 ? b : COMP(a, c) > 0 ? c : a);
 }
 
-void qs22j(void *base, size_t nmemb, size_t size,
-                                     int (*compar)(const void *, const void *))
+void qs22j(void *base, size_t nmemb, size_t size, int (*compar)(const void *, const void *))
 {
+	// we have nothing to sort
+	if (__builtin_expect(!!(nmemb <= 1), 0) ) //UNLIKELY - thx windoze
+	{
+		return;
+	}
+
 	char *stack[2*8*sizeof(size_t)], **sp = stack;	// stack and stack pointer
 	char *left = base;								// set up char * base pointer
 	char *limit = left + nmemb * size;				// pointer past end of array
@@ -114,7 +119,7 @@ void qs22j(void *base, size_t nmemb, size_t size,
 		vecswapf = swapwords;
 		if (size == sizeof(pref_typ))
 			swap_type = 0;
-    } 
+    }
 	else if ((size % sizeof(DWORD)) == 0)
 	{
 		swapf = vecswapf = swapdwords;
@@ -123,6 +128,7 @@ void qs22j(void *base, size_t nmemb, size_t size,
 	{
 		swapf = vecswapf = swapwords;
 	}
+
 	for (;;)
 	{
 		nmemb = (limit - left) / size;
@@ -133,7 +139,7 @@ void qs22j(void *base, size_t nmemb, size_t size,
 			goto pop;
 
 		if (nmemb >= INSORTTHRESH)					// otherwise use insertion sort
-		{        
+		{
 			char *right = limit - size;
 			// best so far? fewer compares, a few more swaps
 			char *p = left + (nmemb / 2) * size;

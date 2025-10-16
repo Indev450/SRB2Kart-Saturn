@@ -24,18 +24,9 @@
 
 #include <signal.h>
 
-#ifdef _MSC_VER
-#pragma warning(disable : 4214 4244)
-#endif
-
 #ifdef HAVE_SDL
 #define _MATH_DEFINES_DEFINED
 #include "SDL.h"
-
-#ifdef _MSC_VER
-#include <windows.h>
-#pragma warning(default : 4214 4244)
-#endif
 
 #ifdef HAVE_TTF
 #include "i_ttf.h"
@@ -120,11 +111,6 @@ static void KeyboardLayout_OnChange(void)
 	HU_Shiftform();
 }
 
-boolean I_UseNativeKeyboard(void)
-{
-	return (cv_keyboardlayout.value == 2) && (chat_on || CON_Ready() || (menu_text_input && menuactive));
-}
-
 static CV_PossibleValue_t keyboardlayout_cons_t[] = {{1,"Default US"}, {2, "Native"}, {3, "AZERTY"}, {0, NULL}};
 consvar_t cv_keyboardlayout = {"keyboardlayout", "Default US", CV_SAVE|CV_CALL, keyboardlayout_cons_t, KeyboardLayout_OnChange, 0, NULL, NULL, 0, 0, NULL};
 
@@ -207,35 +193,12 @@ static INT32 windowedModes[MAXWINMODES][2] =
 static INT32 custom_width = 0;
 static INT32 custom_height = 0;
 
-static void Impl_VideoSetupBuffer(void);
 static SDL_bool Impl_CreateWindow(SDL_bool fullscreen);
 static void Impl_SetWindowIcon(void);
 
 #ifdef USE_FBO_OGL
 boolean downsample = false;
-void RefreshOGLSDLSurface(void)
-{
-	if (rendermode == render_opengl)
-		OglSdlSurface(vid.width, vid.height);
-}
 #endif
-
-void I_SetTextInput(void)
-{
-	static boolean input_active = false;
-	boolean use_native = I_UseNativeKeyboard();
-
-	if (use_native && !input_active)
-	{
-		SDL_StartTextInput();
-		input_active = true;
-	}
-	else if (!use_native && input_active)
-	{
-		SDL_StopTextInput();
-		input_active = false;
-	}
-}
 
 static INT32 Impl_SDL_Scancode_To_Keycode(SDL_Scancode code)
 {
@@ -330,36 +293,6 @@ static INT32 Impl_SDL_Scancode_To_Keycode(SDL_Scancode code)
 	return 0;
 }
 
-// Get the equivalent ASCII (Unicode?) character for a keypress.
-static INT32 GetTypedChar(SDL_Keysym keysym)
-{
-	SDL_Event next_event;
-	SDL_Keycode keycode = keysym.sym;
-	SDL_Scancode scancode = keysym.scancode;
-
-	if (I_UseNativeKeyboard()) // only use this this if on chat or console or the current menu wants inputs from us (except if its the control setup menu ig)
-	{
-		// Special cases, where we always return a fixed value.
-		switch (keycode)
-		{
-			case SDLK_BACKSPACE: return KEY_BACKSPACE;
-			case SDLK_RETURN:    return KEY_ENTER;
-			default:
-				break;
-		}
-
-		if (SDL_PeepEvents(&next_event, 1, SDL_PEEKEVENT, SDL_FIRSTEVENT, SDL_LASTEVENT) == 1 && next_event.type == SDL_TEXTINPUT)
-		{
-			if (next_event.text.text[1] == '\0') // limit to ASCII
-			{
-				return next_event.text.text[0];
-			}
-		}
-	}
-
-	return Impl_SDL_Scancode_To_Keycode(scancode); // fallback to scancodes
-}
-
 static INT32 Impl_SDL_Keysym_To_Keycode(SDL_Keysym keysym)
 {
 	SDL_Keycode keycode = keysym.sym;
@@ -438,42 +371,58 @@ static INT32 Impl_SDL_Keysym_To_Keycode(SDL_Keysym keysym)
 	return Impl_SDL_Scancode_To_Keycode(scancode);
 }
 
-static void VID_Command_NumModes_f (void)
+static boolean native_input_active = false;
+
+// used to supress the games shift/alt handling
+boolean I_UseNativeKeyboard(void)
 {
-	CONS_Printf(M_GetText("%d video mode(s) available(s)\n"), VID_NumModes());
+	return (cv_keyboardlayout.value == 2 && native_input_active);
 }
 
-static void VID_Command_ModeList_f(void)
+void I_SetTextInput(boolean enable)
 {
-	// List windowed modes
-	INT32 i = 0;
-
-	CONS_Printf("NOTE: Under SDL2, all modes are supported on all platforms.\n");
-	CONS_Printf("Under opengl, fullscreen only supports native desktop resolution.\n");
-	CONS_Printf("Under software, the mode is stretched up to desktop resolution.\n");
-
-	for (i = 0; i < MAXWINMODES; i++)
+	if (enable && !native_input_active)
 	{
-		CONS_Printf("%2d: %dx%d\n", i, windowedModes[i][0], windowedModes[i][1]);
+		SDL_StartTextInput();
+		native_input_active = true;
+	}
+	else if (!enable && native_input_active)
+	{
+		SDL_StopTextInput();
+		native_input_active = false;
 	}
 }
 
-static void VID_Command_Mode_f (void)
+// Get the equivalent ASCII (Unicode?) character for a keypress.
+static INT32 GetTypedChar(SDL_Keysym keysym)
 {
-	INT32 modenum;
+	SDL_Event next_event;
+	SDL_Keycode keycode = keysym.sym;
+	SDL_Scancode scancode = keysym.scancode;
 
-	if (COM_Argc()!= 2)
+	// only use this this if on chat or console or the current menu wants inputs from us (except if its the control setup menu ig)
+	if (native_input_active)
 	{
-		CONS_Printf(M_GetText("vid_mode <modenum> : set video mode, current video mode %i\n"), vid.modenum);
-		return;
+		// Special cases, where we always return a fixed value.
+		switch (keycode)
+		{
+			case SDLK_BACKSPACE: return KEY_BACKSPACE;
+			case SDLK_RETURN:    return KEY_ENTER;
+			default:
+				break;
+		}
+
+		if (SDL_PeepEvents(&next_event, 1, SDL_PEEKEVENT, SDL_FIRSTEVENT, SDL_LASTEVENT) == 1 && next_event.type == SDL_TEXTINPUT)
+		{
+			if (next_event.text.text[1] == '\0') // limit to ASCII
+			{
+				return next_event.text.text[0];
+			}
+		}
 	}
 
-	modenum = atoi(COM_Argv(1));
-
-	if (modenum >= VID_NumModes())
-		CONS_Printf(M_GetText("Video mode not present\n"));
-	else
-		setmodeneeded = modenum+1; // request vid mode change
+	// otherwise fallback to scancodes
+	return Impl_SDL_Scancode_To_Keycode(scancode);
 }
 
 static INT32 SDLJoyAxis(const Sint16 axis, evtype_t which)
@@ -522,75 +471,6 @@ static INT32 SDLJoyAxis(const Sint16 axis, evtype_t which)
 	return raxis;
 }
 
-// Get the desktop resolution from the current display the gamewindow resides on
-static void I_CheckDesktopRes(void)
-{
-	int currentDisplayIndex = -1;
-	SDL_DisplayMode curmode;
-
-	desktopwidth = 0;
-	desktopheight = 0;
-
-	currentDisplayIndex = SDL_GetWindowDisplayIndex(window);
-
-	// No valid index
-	if (currentDisplayIndex < 0)
-	{
-		return;
-	}
-
-	if (SDL_GetDesktopDisplayMode(currentDisplayIndex, &curmode) != 0)
-	{
-		return;
-	}
-
-	desktopwidth = curmode.w;
-	desktopheight = curmode.h;
-}
-
-// Check if the game resolution matches the desktop resolution
-boolean I_CheckNativeRes(void)
-{
-	return (vid.width == desktopwidth && vid.height == desktopheight);
-}
-
-#ifdef USE_FBO_OGL
-void I_DownSample(void)
-{
-	boolean needrefresh = false;
-
-	if (!cv_glframebuffer.value || !supportFBO || (cv_glscreentextures.value == 0)) // no sense to do this crap if we cant benefit from it
-	{
-		downsample = false;
-		return;
-	}
-
-	if (I_CheckNativeRes() && (downsample == true))
-	{
-		downsample = false;
-		RefreshOGLSDLSurface();
-		return;
-	}
-
-	if ((vid.width > desktopwidth) || (vid.height > desktopheight)) //check if current resolution is higher than current display resolution
-	{
-		downsample = true;
-		needrefresh = true;
-	}
-	else if (downsample == true)
-	{
-		downsample = false;
-		needrefresh = true;
-	}
-
-	if (needrefresh)
-	{
-		RefreshOGLSDLSurface();
-		needrefresh = false;
-	}
-}
-#endif
-
 static void Impl_HandleWindowEvent(SDL_WindowEvent evt)
 {
 #define FOCUSUNION (mousefocus | (kbfocus << 1) | (windowmoved << 2))
@@ -613,7 +493,8 @@ static void Impl_HandleWindowEvent(SDL_WindowEvent evt)
 		case SDL_WINDOWEVENT_FOCUS_GAINED:
 			kbfocus = SDL_TRUE;
 			mousefocus = SDL_TRUE;
-			SDL_ShowCursor(SDL_FALSE);
+			if (!cv_mousevisible.value)
+				SDL_ShowCursor(SDL_FALSE);
 			break;
 		case SDL_WINDOWEVENT_FOCUS_LOST:
 			kbfocus = SDL_FALSE;
@@ -1195,7 +1076,11 @@ void I_StartupMouse(void)
 	if (disable_mouse)
 		return;
 
-	SDL_ShowCursor(SDL_FALSE);
+	if (!cv_mousevisible.value)
+		SDL_ShowCursor(SDL_FALSE);
+	else
+		SDL_ShowCursor(SDL_TRUE);
+
 	SDL_SetWindowGrab(window, SDL_FALSE);
 	SDL_SetRelativeMouseMode(SDL_FALSE);
 }
@@ -1211,7 +1096,7 @@ void I_OsPolling(void)
 	if (consolevent)
 		I_GetConsoleEvents();
 
-	if (SDL_WasInit(SDL_INIT_JOYSTICK | SDL_INIT_GAMECONTROLLER) == (SDL_INIT_JOYSTICK | SDL_INIT_GAMECONTROLLER))
+	if (SDL_WasInit(SDL_INIT_JOYSTICK|SDL_INIT_GAMECONTROLLER) == (SDL_INIT_JOYSTICK|SDL_INIT_GAMECONTROLLER))
 	{
 		SDL_GameControllerUpdate();
 
@@ -1233,6 +1118,120 @@ void I_OsPolling(void)
 	if (mod & KMOD_RALT)     altdown |= 2;
 	if (mod & KMOD_CAPS) capslock = true;
 }
+
+static void VID_Command_NumModes_f (void)
+{
+	CONS_Printf(M_GetText("%d video mode(s) available(s)\n"), VID_NumModes());
+}
+
+static void VID_Command_ModeList_f(void)
+{
+	// List windowed modes
+	INT32 i = 0;
+
+	CONS_Printf("NOTE: Under SDL2, all modes are supported on all platforms.\n"
+	"Under opengl, fullscreen only supports native desktop resolution.\n"
+	"Under software, the mode is stretched up to desktop resolution.\n");
+
+	for (i = 0; i < MAXWINMODES; i++)
+	{
+		CONS_Printf("%2d: %dx%d\n", i, windowedModes[i][0], windowedModes[i][1]);
+	}
+}
+
+static void VID_Command_Mode_f (void)
+{
+	INT32 modenum;
+
+	if (COM_Argc()!= 2)
+	{
+		CONS_Printf("vid_mode <modenum> : set video mode, current video mode %i\n", vid.modenum);
+		return;
+	}
+
+	modenum = atoi(COM_Argv(1));
+
+	if (modenum >= VID_NumModes())
+		CONS_Printf("Video mode not present\n");
+	else
+		setmodeneeded = modenum+1; // request vid mode change
+}
+
+// Get the desktop resolution from the current display the gamewindow resides on
+static void I_CheckDesktopRes(void)
+{
+	int currentDisplayIndex = -1;
+	SDL_DisplayMode curmode;
+
+	desktopwidth = 0;
+	desktopheight = 0;
+
+	currentDisplayIndex = SDL_GetWindowDisplayIndex(window);
+
+	// No valid index
+	if (currentDisplayIndex < 0)
+	{
+		return;
+	}
+
+	if (SDL_GetDesktopDisplayMode(currentDisplayIndex, &curmode) != 0)
+	{
+		return;
+	}
+
+	desktopwidth = curmode.w;
+	desktopheight = curmode.h;
+}
+
+// Check if the game resolution matches the desktop resolution
+boolean I_CheckNativeRes(void)
+{
+	return (vid.width == desktopwidth && vid.height == desktopheight);
+}
+
+#ifdef USE_FBO_OGL
+
+void RefreshOGLSDLSurface(void)
+{
+	if (rendermode == render_opengl)
+		OglSdlSurface(vid.width, vid.height);
+}
+
+void I_DownSample(void)
+{
+	boolean needrefresh = false;
+
+	if (!cv_glframebuffer.value || !supportFBO || (cv_glscreentextures.value == 0)) // no sense to do this crap if we cant benefit from it
+	{
+		downsample = false;
+		return;
+	}
+
+	if (I_CheckNativeRes() && (downsample == true))
+	{
+		downsample = false;
+		RefreshOGLSDLSurface();
+		return;
+	}
+
+	if ((vid.width > desktopwidth) || (vid.height > desktopheight)) //check if current resolution is higher than current display resolution
+	{
+		downsample = true;
+		needrefresh = true;
+	}
+	else if (downsample == true)
+	{
+		downsample = false;
+		needrefresh = true;
+	}
+
+	if (needrefresh)
+	{
+		RefreshOGLSDLSurface();
+		needrefresh = false;
+	}
+}
+#endif
 
 static void SDLSetMode(INT32 width, INT32 height, SDL_bool fullscreen)
 {
@@ -1306,12 +1305,6 @@ static void SDLSetMode(INT32 width, INT32 height, SDL_bool fullscreen)
 		}
 
 		texture = SDL_CreateTexture(renderer, sw_texture_format, SDL_TEXTUREACCESS_STREAMING, width, height);
-
-		if (vid.buffer)
-		{
-			free(vid.buffer);
-			vid.buffer = NULL;
-		}
 	}
 }
 
@@ -1359,7 +1352,9 @@ void I_FinishUpdate(void)
 		if (cv_ticrate.value)
 			SCR_DisplayTicRate();
 
-		if (cv_showping.value && ((netgame && consoleplayer != serverplayer) || (simulated_lag != 0 && consoleplayer == serverplayer && Playing())))
+		const boolean isserverplayer = consoleplayer == serverplayer;
+
+		if (cv_showping.value && ((netgame && !isserverplayer) || (simulated_lag != 0 && isserverplayer && Playing())))
 			SCR_DisplayLocalPing();
 	}
 
@@ -1414,12 +1409,23 @@ void I_UpdateNoVsync(void)
 //
 // I_ReadScreen
 //
-void I_ReadScreen(UINT8 *scr)
+void I_ReadScreen(UINT8 * restrict scr, INT32 scale)
 {
 	if (rendermode != render_soft)
-		I_Error ("I_ReadScreen: called while in non-software mode");
+		I_Error("I_ReadScreen: called while in non-software mode");
+	else if (scale == 1)
+		VID_BlitLinearScreen(vid.screens[0], scr, vid.width, vid.height, vid.width, vid.width);
 	else
-		VID_BlitLinearScreen(vid.screens[0], scr, vid.width, vid.height, vid.rowbytes, vid.rowbytes);
+	{
+		UINT8 * restrict source = vid.screens[0];
+		uintptr_t w = vid.width/scale*scale, h = vid.height/scale*scale;
+
+		// size_t saves a lea + movsxd over INT32. mind your types!
+		// uintptr_t is even better since it's guaranteed to be the size of a pointer
+		for (uintptr_t y = 0; y < h; y += scale)
+			for (uintptr_t x = 0; x < w; x += scale)
+				*scr++ = source[y*vid.width + x];
+	}
 }
 
 //
@@ -1539,6 +1545,7 @@ INT32 VID_SetMode(INT32 modeNum)
 		// just set the desktop resolution as a fallback
 		SDL_DisplayMode mode;
 		SDL_GetWindowDisplayMode(window, &mode);
+
 		if (mode.w >= 2048)
 		{
 			vid.width = 1920;
@@ -1549,11 +1556,11 @@ INT32 VID_SetMode(INT32 modeNum)
 			vid.width = mode.w;
 			vid.height = mode.h;
 		}
+
 		vid.modenum = -1;
 	}
 
 	SDLSetMode(vid.width, vid.height, USE_FULLSCREEN);
-	Impl_VideoSetupBuffer();
 
 	src_rect.w = vid.width;
 	src_rect.h = vid.height;
@@ -1587,8 +1594,11 @@ static SDL_bool Impl_CreateContext(void)
 	if (rendermode == render_soft)
 	{
 		int flags = 0; // Use this to set SDL_RENDERER_* flags now
+
 		if (usesdl2soft)
+		{
 			flags |= SDL_RENDERER_SOFTWARE;
+		}
 		else if (cv_vidwait.value)
 		{
 #if SDL_VERSION_ATLEAST(2, 0, 18)
@@ -1643,9 +1653,9 @@ static SDL_bool Impl_CreateWindow(SDL_bool fullscreen)
 		flags |= SDL_WINDOW_OPENGL;
 
 	if (msaa)
-    {
-        SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
-        SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, msaa);
+	{
+		SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
+		SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, msaa);
 	}
 
 	// Without a 24-bit depth buffer many visuals are ruined by z-fighting.
@@ -1660,8 +1670,7 @@ static SDL_bool Impl_CreateWindow(SDL_bool fullscreen)
 #endif
 
 	// Create a window
-	window = SDL_CreateWindow("SRB2Kart "VERSIONSTRING, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
-			realwidth, realheight, flags);
+	window = SDL_CreateWindow("SRB2Kart "VERSIONSTRING, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, realwidth, realheight, flags);
 
 	if (window == NULL)
 	{
@@ -1682,28 +1691,7 @@ static void Impl_SetWindowIcon(void)
 	SDL_SetWindowIcon(window, icoSurface);
 }
 
-static void Impl_VideoSetupBuffer(void)
-{
-	// Set up game's software render buffer
-	size_t size;
-
-	vid.rowbytes = vid.width;
-
-	if (vid.buffer)
-		free(vid.buffer);
-
-	size = vid.rowbytes*vid.height * NUMSCREENS;
-
-	vid.buffer = calloc(size, NUMSCREENS);
-
-	if (!vid.buffer)
-	{
-		I_Error("%s", M_GetText("Not enough memory for video buffer\n"));
-	}
-}
-
-static FILE *
-OpenRendererFile (const char * mode)
+static FILE * OpenRendererFile(const char * mode)
 {
 	char * path = va(pandf,srb2home,"renderer.txt");
 	return fopen(path, mode);
@@ -1720,11 +1708,11 @@ void I_StartupGraphics(void)
 	if (graphics_started)
 		return;
 
-	COM_AddCommand ("vid_nummodes", VID_Command_NumModes_f);
-	COM_AddCommand ("vid_modelist", VID_Command_ModeList_f);
-	COM_AddCommand ("vid_mode", VID_Command_Mode_f);
-	CV_RegisterVar (&cv_vidwait);
-	CV_RegisterVar (&cv_stretch);
+	COM_AddCommand("vid_nummodes", VID_Command_NumModes_f);
+	COM_AddCommand("vid_modelist", VID_Command_ModeList_f);
+	COM_AddCommand("vid_mode", VID_Command_Mode_f);
+	CV_RegisterVar(&cv_vidwait);
+	CV_RegisterVar(&cv_stretch);
 	disable_mouse = M_CheckParm("-nomouse");
 	disable_fullscreen = M_CheckParm("-win") ? 1 : 0;
 
@@ -1823,7 +1811,6 @@ void I_StartupGraphics(void)
 					if (strcasecmp(word, "a2c") == 0)
 					{
 						a2c = true;
-
 						CONS_Printf("Using a2c because it was specified to be used earlier\n");
 					}
 				}
@@ -1847,6 +1834,7 @@ void I_StartupGraphics(void)
 
 	{
 		FILE * file = OpenRendererFile("w");
+
 		if (file != NULL)
 		{
 			if (rendermode == render_soft)
@@ -1864,7 +1852,6 @@ void I_StartupGraphics(void)
 			if (a2c)
 				fputs("a2c\n", file);
 #endif
-
 			fclose(file);
 		}
 		else
@@ -1885,6 +1872,7 @@ void I_StartupGraphics(void)
 
 		if (vid.glstate == VID_GL_LIBRARY_ERROR)
 		{
+			CONS_Alert(CONS_ERROR, "Could not initialize OpenGL\n" "Falling back to Software mode.\n");
 			rendermode = render_soft;
 		}
 	}
@@ -1923,20 +1911,11 @@ void I_StartupGraphics(void)
 
 void I_ShutdownGraphics(void)
 {
-	const rendermode_t oldrendermode = rendermode;
-
 	rendermode = render_none;
 
 	if (icoSurface)
 		SDL_FreeSurface(icoSurface);
 	icoSurface = NULL;
-
-	if (oldrendermode == render_soft)
-	{
-		if (vid.buffer)
-			free(vid.buffer);
-		vid.buffer = NULL;
-	}
 
 	I_OutputMsg("I_ShutdownGraphics(): ");
 
@@ -1956,6 +1935,7 @@ void I_ShutdownGraphics(void)
 		SDL_GL_DeleteContext(sdlglcontext);
 	}
 #endif
+
 	SDL_QuitSubSystem(SDL_INIT_VIDEO);
 	framebuffer = SDL_FALSE;
 }
@@ -1977,7 +1957,8 @@ static void Impl_SetVsync(void)
 		SDL_RenderSetVSync(renderer, cv_vidwait.value);
 #endif
 #ifdef HWRENDER
-	if (!renderer && rendermode == render_opengl && sdlglcontext != NULL && SDL_GL_GetCurrentContext() == sdlglcontext)
+	if (!renderer && rendermode == render_opengl &&
+	sdlglcontext != NULL && SDL_GL_GetCurrentContext() == sdlglcontext)
 	{
 		SDL_GL_SetSwapInterval(cv_vidwait.value ? 1 : 0);
 	}

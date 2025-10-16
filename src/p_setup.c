@@ -628,6 +628,15 @@ static void P_CheckCyanFlat(levelflat_t *levelflat)
 	if (rendermode != render_soft)
 		return;
 
+	const char *flatname = W_CheckNameForNum(levelflat->lumpnum);
+
+	// hack for gba rainbow roads cyan floors
+	if (UNLIKELY(memcmp(flatname, "GBA_RRF5", 8) == 0 && flatname[8] == 0))
+	{
+		levelflat->cyan = false;
+		return;
+	}
+
 	const UINT8 *flat = R_GetFlat(levelflat->lumpnum);
 	const size_t size = W_LumpLength(levelflat->lumpnum);
 
@@ -938,9 +947,6 @@ static void P_SpawnMapThings(void)
 				huntemeralds[emer3 - 1]->z<<FRACBITS, MT_EMERHUNT);
 	}
 
-	if (metalrecording) // Metal Sonic gets no rings to distract him.
-		return;
-
 	// Run through the list of mapthings again to spawn hoops and rings
 	for (i = 0, mt = mapthings; i < nummapthings; i++, mt++)
 	{
@@ -951,10 +957,9 @@ static void P_SpawnMapThings(void)
 			mt->mobj = NULL;
 
 			// Z for objects Tails 05-26-2002
-			mt->z = (INT16)(R_PointInSubsector(mt->x << FRACBITS, mt->y << FRACBITS)
-				->sector->floorheight>>FRACBITS);
+			mt->z = (INT16)(R_PointInSubsector(mt->x << FRACBITS, mt->y << FRACBITS)->sector->floorheight>>FRACBITS);
 
-			P_SpawnHoopsAndRings(mt);
+			P_SpawnHoops(mt);
 		}
 	}
 }
@@ -1010,7 +1015,7 @@ void P_WriteThings(lumpnum_t lumpnum)
 
 	data = W_CacheLumpNum(lumpnum, PU_LEVEL);
 
-	save.p = save.buffer = (UINT8 *)malloc(nummapthings * sizeof (mapthing_t));
+	save.p = save.buffer = (UINT8 *)Z_Malloc(nummapthings * sizeof(mapthing_t), PU_STATIC, NULL);
 
 	if (!save.p)
 	{
@@ -1035,7 +1040,7 @@ void P_WriteThings(lumpnum_t lumpnum)
 	length = save.p - save.buffer;
 
 	FIL_WriteFile(va("newthings%d.lmp", gamemap), save.buffer, length);
-	free(save.buffer);
+	Z_Free(save.buffer);
 	save.p = NULL;
 
 	CONS_Printf(M_GetText("newthings%d.lmp saved.\n"), gamemap);
@@ -2373,44 +2378,6 @@ static void P_LoadRecordGhosts(void)
 	free(gpath);
 }
 
-static void P_SetupCamera(UINT8 pnum, camera_t *cam)
-{
-	if (players[pnum].mo && (server || addedtogame))
-	{
-		cam->x = players[pnum].mo->x;
-		cam->y = players[pnum].mo->y;
-		cam->z = players[pnum].mo->z;
-		cam->angle = players[pnum].mo->angle;
-	}
-	else
-	{
-		mapthing_t *thing;
-
-		switch (gametype)
-		{
-			case GT_MATCH:
-			case GT_TAG:
-				thing = deathmatchstarts[0];
-				break;
-			default:
-				thing = playerstarts[0];
-				break;
-		}
-
-		if (!thing)
-			return; // we can't do jack shit
-
-		cam->x = thing->x;
-		cam->y = thing->y;
-		cam->z = thing->z;
-		cam->angle = FixedAngle((fixed_t)thing->angle << FRACBITS);
-	}
-
-	cam->subsector = R_PointInSubsectorFast(cam->x, cam->y); // make sure camera has a subsector set -- Monster Iestyn (12/11/18)
-
-	cam->chase = false; // tell camera to reset its position next tic
-}
-
 static void P_InitCamera(void)
 {
 	INT32 i;
@@ -2420,10 +2387,7 @@ static void P_InitCamera(void)
 
 	for (i = 0; i <= splitscreen; i++)
 	{
-		if (camera[i].freecam)
-			continue;
-
-		P_SetupCamera(displayplayers[i], &camera[i]);
+		P_SetupCamera(&camera[i]);
 	}
 
 	// Though, I don't think anyone would care about cam_rotate being reset back to the only value that makes sense :P
@@ -2431,6 +2395,8 @@ static void P_InitCamera(void)
 	{
 		if (!cv_cam_rotate[i].changed)
 			CV_Set(&cv_cam_rotate[i], cv_cam_rotate[i].defaultvalue);
+		if (!cv_chasecam[i].changed)
+			CV_SetValue(&cv_chasecam[i], true); // srb2kart: always on
 	}
 
 	displayplayers[0] = consoleplayer; // Start with your OWN view, please!
@@ -2440,9 +2406,6 @@ struct minimapinfo minimapinfo;
 static void P_InitMinimapInfo(void)
 {
 	lumpnum_t lumpnum;
-	fixed_t a;
-	fixed_t b;
-
 	node_t *bsp = &nodes[numnodes-1];
 
 	if (minimapinfo.minimap_pic)
@@ -2472,30 +2435,45 @@ static void P_InitMinimapInfo(void)
 	// it's because mapwidth and height would otherwise overflow for maps larger than half the size possible...
 	// map boundaries and sizes will ALWAYS be whole numbers thankfully
 	// later calculations take into consideration that these are actually not in terms of FRACUNIT though
-	minimapinfo.map_w = (minimapinfo.max_x >>= FRACBITS) - (minimapinfo.min_x >>= FRACBITS);
-	minimapinfo.map_h = (minimapinfo.max_y >>= FRACBITS) - (minimapinfo.min_y >>= FRACBITS);
+	minimapinfo.min_x >>= FRACBITS;
+	minimapinfo.max_x >>= FRACBITS;
+	minimapinfo.min_y >>= FRACBITS;
+	minimapinfo.max_y >>= FRACBITS;
+	minimapinfo.map_w = minimapinfo.max_x - minimapinfo.min_x;
+	minimapinfo.map_h = minimapinfo.max_y - minimapinfo.min_y;
 
-	minimapinfo.minimap_w = minimapinfo.minimap_h = 100;
-
-	a = FixedDiv(minimapinfo.minimap_w<<FRACBITS, minimapinfo.map_w<<4);
-	b = FixedDiv(minimapinfo.minimap_h<<FRACBITS, minimapinfo.map_h<<4);
-
-	if (a < b)
+	if (minimapinfo.minimap_pic)
 	{
-		minimapinfo.minimap_h = FixedMul(a, minimapinfo.map_h)>>(FRACBITS-4);
-		minimapinfo.zoom = a;
+		minimapinfo.minimap_w = FixedDiv(minimapinfo.minimap_pic->width, minimapinfo.map_w);
+		minimapinfo.minimap_h = FixedDiv(minimapinfo.minimap_pic->height, minimapinfo.map_h);
+		minimapinfo.zoom = FixedMul(min(minimapinfo.minimap_w, minimapinfo.minimap_h), FRACUNIT-FRACUNIT/20);
 	}
-	else
+	else // fallback to somewhat inaccurate calc, so automap can still work
 	{
-		if (a != b)
+		fixed_t a, b;
+		minimapinfo.minimap_w = minimapinfo.minimap_h = 100;
+
+		a = FixedDiv(minimapinfo.minimap_w<<FRACBITS, minimapinfo.map_w<<4);
+		b = FixedDiv(minimapinfo.minimap_h<<FRACBITS, minimapinfo.map_h<<4);
+
+		if (a < b)
 		{
-			minimapinfo.minimap_w = FixedMul(b, minimapinfo.map_w)>>(FRACBITS-4);
+			minimapinfo.minimap_h = FixedMul(a, minimapinfo.map_h)>>(FRACBITS-4);
+			minimapinfo.zoom = a;
 		}
-		minimapinfo.zoom = b;
-	}
+		else
+		{
+			if (a != b)
+			{
+				minimapinfo.minimap_w = FixedMul(b, minimapinfo.map_w)>>(FRACBITS-4);
+			}
 
-	minimapinfo.zoom >>= (FRACBITS-4);
-	minimapinfo.zoom -= (minimapinfo.zoom/20);
+			minimapinfo.zoom = b;
+		}
+
+		minimapinfo.zoom >>= (FRACBITS-4);
+		minimapinfo.zoom -= (minimapinfo.zoom/20);
+	}
 
 	// These should always be small enough to be bitshift back right now
 	minimapinfo.offs_x = FixedMul((minimapinfo.min_x + minimapinfo.map_w/2) << FRACBITS, minimapinfo.zoom);
@@ -2662,26 +2640,20 @@ static void P_SetupPlayer(void)
 	thwompsactive = false;
 	spbplace = -1;
 
-	startedInFreePlay = false;
+	startedInFreePlay = true;
+	for (UINT8 nump = 0, i = 0; i < MAXPLAYERS; i++)
 	{
-		UINT8 nump = 0;
-		for (i = 0; i < MAXPLAYERS; i++)
+		if (!playeringame[i] || players[i].spectator)
 		{
-			if (!playeringame[i] || players[i].spectator)
-			{
-				continue;
-			}
-
-			nump++;
-			if (nump == 2)
-			{
-				break;
-			}
+			continue;
 		}
 
-		if (nump <= 1)
+		nump++;
+
+		if (nump > 1)
 		{
-			startedInFreePlay = true;
+			startedInFreePlay = false;
+			break;
 		}
 	}
 }
@@ -2766,14 +2738,8 @@ boolean P_SetupLevel(boolean fromnetsave, boolean reloadinggamestate)
 	CON_Drawer(); // let the user know what we are going to do
 	I_FinishUpdate(); // page flip or blit buffer
 
-	// Initialize sector node list.
-	P_Initsecnode();
-
 	if (netgame || multiplayer)
 		cv_debug = botskin = 0;
-
-	if (metalplayback)
-		G_StopMetalDemo();
 
 	// Clear CECHO messages
 	HU_ClearCEcho();
@@ -2789,15 +2755,6 @@ boolean P_SetupLevel(boolean fromnetsave, boolean reloadinggamestate)
 	if (mapheaderinfo[gamemap-1]->forcecharacter[0] != '\0'
 	&& atoi(mapheaderinfo[gamemap-1]->forcecharacter) != 255)
 		P_ForceCharacter(mapheaderinfo[gamemap-1]->forcecharacter);
-
-	if (!dedicated)
-	{
-		for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
-		{
-			if (!cv_chasecam[i].changed)
-				CV_SetValue(&cv_chasecam[i], true); // srb2kart: always on
-		}
-	}
 
 	// Initial height of PointOfView
 	// will be set by player think.
@@ -3100,33 +3057,33 @@ static boolean P_CheckSoundReplacements(UINT16 wadnum, char *name, size_t i)
 
 	return false;
 }
-
 //
-// search for maps
+// P_CheckReplacMapReplacements
 //
-static boolean P_CheckMapReplacements(char *name)
+// search for maps and check if they replace another map when checkreplaced is set
+//
+boolean P_CheckMapReplacements(char *name, boolean checkreplaced)
 {
-	if (memcmp(name, "MAP", 3) == 0) // Ignore the headers
+	if (memcmp(name, "MAP", 3) == 0 && name[5] == '\0') // Ignore the headers
 	{
-		INT16 num;
-
-		if (name[5] != '\0')
-			return false;
-
-		num = (INT16)M_MapNumber(name[3], name[4]);
+		INT16 num = (INT16)M_MapNumber(name[3], name[4]);
 
 		// we want to record whether this map exists. if it doesn't have a header, we can assume it's not relephant
 		if (num <= NUMMAPS && mapheaderinfo[num-1])
 		{
-			if (mapheaderinfo[num-1]->menuflags & LF2_EXISTSHACK)
+			if (checkreplaced && mapheaderinfo[num-1]->menuflags & LF2_EXISTSHACK)
 				G_SetGameModified(multiplayer, true); // oops, double-defined - no record attack privileges for you
 			mapheaderinfo[num-1]->menuflags |= LF2_EXISTSHACK;
 		}
 
-		if (num == gamemap)
-			partadd_replacescurrentmap = true;
+		if (checkreplaced)
+		{
+			if (num == gamemap)
+				partadd_replacescurrentmap = true;
 
-		CONS_Printf("%s\n", name);
+			CONS_Printf("%s\n", name);
+		}
+
 		return true;
 	}
 
@@ -3200,8 +3157,6 @@ UINT16 P_PartialAddWadFile(const char *wadfilename, boolean local)
 	if (wadfiles[wadnum]->important)
 		partadd_important = true;
 
-	wadfiles[wadnum]->localfile = local;
-
 	lumpinfo = wadfiles[wadnum]->lumpinfo;
 	for (i = 0; i < numlumps; i++, lumpinfo++)
 	{
@@ -3210,7 +3165,7 @@ UINT16 P_PartialAddWadFile(const char *wadfilename, boolean local)
 		if (P_CheckSoundReplacements(wadnum, name, i))
 			continue;
 
-		if (P_CheckMapReplacements(name))
+		if (P_CheckMapReplacements(name, true))
 		{
 			mapsadded = true;
 			continue;

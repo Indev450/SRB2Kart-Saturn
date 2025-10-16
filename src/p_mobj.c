@@ -1454,7 +1454,6 @@ void P_XYMovement(mobj_t *mo)
 		else if (mo->flags & MF_BOUNCE)
 		{
 			P_BounceMove(mo);
-			xmove = ymove = 0;
 			S_StartSound(mo, mo->info->activesound);
 
 			//{ SRB2kart - Orbinaut, Ballhog
@@ -1485,7 +1484,7 @@ void P_XYMovement(mobj_t *mo)
 					P_KillMobj(mo, NULL, NULL);
 
 					P_SetObjectMomZ(mo, 8*FRACUNIT, false);
-					P_InstaThrust(mo, R_PointToAngle2(mo->x, mo->y, mo->x + xmove, mo->y + ymove)+ANGLE_90, 16*FRACUNIT);
+					P_InstaThrust(mo, R_PointToAngle2(mo->x, mo->y, mo->x, mo->y)+ANGLE_90, 16*FRACUNIT);
 				}
 			}
 			//}
@@ -1534,7 +1533,6 @@ void P_XYMovement(mobj_t *mo)
 		else if (player || mo->flags & (MF_SLIDEME|MF_PUSHABLE)) // try to slide along it
 		{
 			P_SlideMove(mo, false);
-			xmove = ymove = 0;
 		}
 		else if (mo->type == MT_SPINFIRE)
 		{
@@ -3553,31 +3551,27 @@ animonly:
 	}
 }
 
-static void P_CalculatePrecipFloor(precipmobj_t *mobj, boolean spawn)
+static void P_CalculatePrecipFloor(precipmobj_t *mobj)
 {
 	// recalculate floorz each time
-	const sector_t *mobjsecsubsec;
+	const sector_t *sec;
 
 	if (mobj && mobj->subsector && mobj->subsector->sector)
-		mobjsecsubsec = mobj->subsector->sector;
+		sec = mobj->subsector->sector;
 	else
 		return;
 
-	// no need to recalc anything if not moved
-	if (!spawn && !mobjsecsubsec->moved)
-		return;
+	mobj->floorz = P_GetSectorFloorZAt(sec, mobj->x, mobj->y);
 
-	mobj->floorz = P_GetSectorFloorZAt(mobjsecsubsec, mobj->x, mobj->y);
-
-	if (mobjsecsubsec->ffloors)
+	if (sec->ffloors)
 	{
 		ffloor_t *rover;
 		fixed_t topheight;
 
-		for (rover = mobjsecsubsec->ffloors; rover; rover = rover->next)
+		for (rover = sec->ffloors; rover; rover = rover->next)
 		{
 			// If it exists, it'll get rained on.
-			if (!(rover->flags & FF_EXISTS))
+			if (!(rover->flags & FF_EXISTS) || !(rover->flags & FF_RENDERPLANES))
 				continue;
 
 			if (!(rover->flags & FF_BLOCKOTHERS) && !(rover->flags & FF_SWIMMABLE))
@@ -3620,7 +3614,7 @@ boolean P_PrecipThinker(precipmobj_t *mobj)
 			return false;
 
 		mobj->z = mobj->ceilingz;
-		mobj->momz = cv_mobjscaleprecip.value ? FixedMul(mobj->info->speed, mapobjectscale) : mobj->info->speed;
+		mobj->momz = FixedMul(mobj->info->speed, mapobjectscale);
 		mobj->precipflags &= ~PCF_SPLASH;
 		R_ResetPrecipitationMobjInterpolationState(mobj);
 	}
@@ -3657,8 +3651,9 @@ boolean P_PrecipThinker(precipmobj_t *mobj)
 	if (mobj->precipflags & PCF_SPLASH)
 		return true;
 
-	if (renderisnewtic)
-		P_CalculatePrecipFloor(mobj, false);
+	// only recalc this twice a second (doubt anyone will notice this lulul)
+	if ((leveltime % 17) == 0)
+		P_CalculatePrecipFloor(mobj);
 
 	// adjust height
 	if ((mobj->z += mobj->momz) <= mobj->floorz)
@@ -4991,7 +4986,7 @@ static void P_Boss9Thinker(mobj_t *mobj)
 		{
 			mobj_t *spawner;
 			fixed_t dist = 0;
-			angle = 0x06000000*leveltime;
+			angle = ANGLE_135*leveltime;
 
 			// Alter your energy bubble's size/position
 			if (mobj->health > 3)
@@ -10039,12 +10034,12 @@ static precipmobj_t *P_SpawnPrecipMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype
 	mobj->ceilingz                   = P_GetSectorCeilingZAt(mobj->subsector->sector, x, y);
 
 	mobj->z = z;
-	mobj->momz = cv_mobjscaleprecip.value ? FixedMul(info->speed, mapobjectscale) : info->speed;
+	mobj->momz = FixedMul(info->speed, mapobjectscale);
 
 	mobj->thinker.function = (actionf_p1)P_NullPrecipThinker;
 	P_AddPrecipThinker(&mobj->thinker);
 
-	P_CalculatePrecipFloor(mobj, true);
+	P_CalculatePrecipFloor(mobj);
 
 	if (mobj->floorz != starting_floorz)
 		mobj->precipflags |= PCF_FOF;
@@ -10242,7 +10237,6 @@ void P_SpawnPrecipitation(void)
 	if (dedicated || !cv_drawdist_precip.value || curWeather == PRECIP_NONE || curWeather == PRECIP_STORM_NORAIN)
 		return;
 
-	const fixed_t precipmoscale = (cv_mobjscaleprecip.value ? mapobjectscale : FRACUNIT);
 	const INT32 density = (cv_lessprecip.value ? 2 : 1); // only spawn half as much
 
 	// Use the blockmap to narrow down our placing patterns
@@ -10253,7 +10247,7 @@ void P_SpawnPrecipitation(void)
 
 		// If mobjscale < FRACUNIT, each blockmap cell covers
 		// more area so spawn more precipitation in that area.
-		for (j = 0; j < FRACUNIT; j += precipmoscale)
+		for (j = 0; j < FRACUNIT; j += mapobjectscale)
 		{
 			INT32 floorz;
 			INT32 ceilingz;
@@ -11048,17 +11042,9 @@ void P_SpawnMapThing(mapthing_t *mthing)
 		else
 		{
 			// save spots for respawning in network games
-			if (!metalrecording)
-				playerstarts[mthing->type-1] = mthing;
+			playerstarts[mthing->type-1] = mthing;
 		}
 
-		return;
-	}
-
-	// If recording, you ARE Metal Sonic. Do not spawn it, do not save normal spawnpoints.
-	if (metalrecording && mthing->type == mobjinfo[MT_METALSONIC_RACE].doomednum)
-	{
-		playerstarts[0] = mthing;
 		return;
 	}
 
@@ -11079,19 +11065,10 @@ void P_SpawnMapThing(mapthing_t *mthing)
 		i = MT_UNKNOWN;
 	}
 
-	if (metalrecording) // Metal Sonic can't use these things.
-	{
-		if (mobjinfo[i].flags & (MF_ENEMY|MF_BOSS) || i == MT_EMMY || i == MT_STARPOST)
-			return;
-	}
-
 	if (i >= MT_EMERALD1 && i <= MT_EMERALD7) // Pickupable Emeralds
 	{
 		if (gametype != GT_COOP) // Don't place emeralds in non-coop modes
 			return;
-
-		if (metalrecording)
-			return; // Metal Sonic isn't for collecting emeralds.
 
 		if (emeralds & mobjinfo[i].speed) // You already have this emerald!
 			return;
@@ -11679,7 +11656,7 @@ ML_NOCLIMB : Direction not controllable
 			mobj->fuse = mthing->angle + mobj->info->speed;
 		}
 		// Use per-thing collision for spikes if the deaf flag is checked.
-		if (mthing->options & MTF_AMBUSH && !metalrecording)
+		if (mthing->options & MTF_AMBUSH)
 		{
 			P_UnsetThingPosition(mobj);
 			mobj->flags &= ~(MF_NOBLOCKMAP|MF_NOGRAVITY|MF_NOCLIPHEIGHT);
@@ -11822,228 +11799,141 @@ ML_NOCLIMB : Direction not controllable
 	mthing->mobj = mobj;
 }
 
-void P_SpawnHoopsAndRings(mapthing_t *mthing)
+static void P_SpawnNiGHTSHoop(fixed_t x, fixed_t y, fixed_t z, fixed_t hoopsize, fixed_t hoopplacement, angle_t closestangle, INT16 spewangle, mobj_t *hoopcenter, mobj_t **nextmobj, mobjtype_t type)
 {
-	mobj_t *mobj = NULL;
-	INT32 /*r,*/ i;
-	fixed_t x, y, z, finalx, finaly, finalz;
-	sector_t *sec;
+	INT32 i;
+	angle_t fa;
 	TVector v, *res;
-	angle_t closestangle, fa;
+	mobj_t *mobj = NULL;
+
+	for (i = 0; i < hoopsize; i++)
+	{
+		fa = i*(FINEANGLES/hoopsize);
+		v[0] = FixedMul(FINECOSINE(fa), hoopplacement);
+		v[1] = 0;
+		v[2] = FixedMul(FINESINE(fa), hoopplacement);
+		v[3] = FRACUNIT;
+
+		res = VectorMatrixMultiply(v, *RotateXMatrix(FixedAngle(spewangle)));
+		M_Memcpy(&v, res, sizeof (v));
+		res = VectorMatrixMultiply(v, *RotateZMatrix(closestangle));
+		M_Memcpy(&v, res, sizeof (v));
+
+		mobj = P_SpawnMobj(x + v[0], y + v[1], z + v[2], type);
+
+		if (P_MobjWasRemoved(mobj))
+			continue;
+
+		mobj->z -= mobj->height/2;
+
+		if (hoopcenter)
+		{
+			P_SetTarget(&mobj->target, hoopcenter); // Link the sprite to the center.
+
+			mobj->fuse = 0;
+
+			// Link all the sprites in the hoop together
+			if (nextmobj && *nextmobj)
+			{
+				P_SetTarget(&mobj->hprev, *nextmobj);
+				P_SetTarget(&mobj->hprev->hnext, mobj);
+			}
+			else
+				P_SetTarget(&mobj->hprev, P_SetTarget(&mobj->hnext, NULL));
+		}
+		else
+		{
+			// Link all the collision sprites together.
+			P_SetTarget(&mobj->hnext, NULL);
+			P_SetTarget(&mobj->hprev, *nextmobj);
+			P_SetTarget(&mobj->hprev->hnext, mobj);
+		}
+
+		*nextmobj = mobj;
+	}
+}
+
+void P_SpawnHoops(mapthing_t *mthing)
+{
+	fixed_t x, y, z;
+	fixed_t spewangle;
+	fixed_t sizefactor;
+	fixed_t hoopsize, hoopplacement;
+	sector_t *sec;
+	angle_t closestangle;
+
+	mobj_t *hoopcenter;
+	mobj_t *nextmobj = NULL;
+
+	// srb2kart - no rings or ring-like objects in R1
+	if (mthing->type != 1705 && mthing->type != 1713)
+		return;
 
 	x = mthing->x << FRACBITS;
 	y = mthing->y << FRACBITS;
 
 	sec = R_PointInSubsector(x, y)->sector;
 
-	// NiGHTS hoop!
-	if (mthing->type == 1705)
-	{
-		mobj_t *nextmobj = NULL;
-		mobj_t *hoopcenter;
-		INT16 spewangle;
-
+	// Save our flags!
+	if (mthing->type == 1713)
+		z = (mthing->options >> ZSHIFT) << FRACBITS;
+	else
 		z = mthing->options << FRACBITS;
 
-		hoopcenter = P_SpawnMobj(x, y, z, MT_HOOPCENTER);
-		hoopcenter->spawnpoint = mthing;
+	hoopcenter = P_SpawnMobj(x, y, z, MT_HOOPCENTER);
 
-		z += P_GetSectorFloorZAt(sec, x, y);
-
-		hoopcenter->z = z - hoopcenter->height/2;
-
-		P_UnsetThingPosition(hoopcenter);
-		hoopcenter->x = x;
-		hoopcenter->y = y;
-		P_SetThingPosition(hoopcenter);
-
-		// Scale 0-255 to 0-359 =(
-		closestangle = FixedAngle(FixedMul((mthing->angle>>8)*FRACUNIT,
-			360*(FRACUNIT/256)));
-
-		hoopcenter->movedir = FixedInt(FixedMul((mthing->angle&255)*FRACUNIT,
-			360*(FRACUNIT/256)));
-		hoopcenter->movecount = FixedInt(AngleFixed(closestangle));
-
-		// For the hoop when it flies away
-		hoopcenter->extravalue1 = 32;
-		hoopcenter->extravalue2 = 8 * FRACUNIT;
-
-		spewangle = (INT16)hoopcenter->movedir;
-
-		// Create the hoop!
-		for (i = 0; i < 32; i++)
-		{
-			fa = i*(FINEANGLES/32);
-			v[0] = FixedMul(FINECOSINE(fa),96*FRACUNIT);
-			v[1] = 0;
-			v[2] = FixedMul(FINESINE(fa),96*FRACUNIT);
-			v[3] = FRACUNIT;
-
-			res = VectorMatrixMultiply(v, *RotateXMatrix(FixedAngle(spewangle*FRACUNIT)));
-			M_Memcpy(&v, res, sizeof (v));
-			res = VectorMatrixMultiply(v, *RotateZMatrix(closestangle));
-			M_Memcpy(&v, res, sizeof (v));
-
-			finalx = x + v[0];
-			finaly = y + v[1];
-			finalz = z + v[2];
-
-			mobj = P_SpawnMobj(finalx, finaly, finalz, MT_HOOP);
-
-			mobj->z -= mobj->height/2;
-
-			P_SetTarget(&mobj->target, hoopcenter); // Link the sprite to the center.
-			mobj->fuse = 0;
-
-			// Link all the sprites in the hoop together
-			if (nextmobj)
-			{
-				P_SetTarget(&mobj->hprev, nextmobj);
-				P_SetTarget(&mobj->hprev->hnext, mobj);
-			}
-			else
-				mobj->hprev = mobj->hnext = NULL;
-
-			nextmobj = mobj;
-		}
-
-		// Create the collision detectors!
-		for (i = 0; i < 16; i++)
-		{
-			fa = i*FINEANGLES/16;
-			v[0] = FixedMul(FINECOSINE(fa),32*FRACUNIT);
-			v[1] = 0;
-			v[2] = FixedMul(FINESINE(fa),32*FRACUNIT);
-			v[3] = FRACUNIT;
-			res = VectorMatrixMultiply(v, *RotateXMatrix(FixedAngle(spewangle*FRACUNIT)));
-			M_Memcpy(&v, res, sizeof (v));
-			res = VectorMatrixMultiply(v, *RotateZMatrix(closestangle));
-			M_Memcpy(&v, res, sizeof (v));
-
-			finalx = x + v[0];
-			finaly = y + v[1];
-			finalz = z + v[2];
-
-			mobj = P_SpawnMobj(finalx, finaly, finalz, MT_HOOPCOLLIDE);
-			mobj->z -= mobj->height/2;
-
-			// Link all the collision sprites together.
-			mobj->hnext = NULL;
-			P_SetTarget(&mobj->hprev, nextmobj);
-			P_SetTarget(&mobj->hprev->hnext, mobj);
-
-			nextmobj = mobj;
-		}
-		// Create the collision detectors!
-		for (i = 0; i < 16; i++)
-		{
-			fa = i*FINEANGLES/16;
-			v[0] = FixedMul(FINECOSINE(fa),64*FRACUNIT);
-			v[1] = 0;
-			v[2] = FixedMul(FINESINE(fa),64*FRACUNIT);
-			v[3] = FRACUNIT;
-			res = VectorMatrixMultiply(v, *RotateXMatrix(FixedAngle(spewangle*FRACUNIT)));
-			M_Memcpy(&v, res, sizeof (v));
-			res = VectorMatrixMultiply(v, *RotateZMatrix(closestangle));
-			M_Memcpy(&v, res, sizeof (v));
-
-			finalx = x + v[0];
-			finaly = y + v[1];
-			finalz = z + v[2];
-
-			mobj = P_SpawnMobj(finalx, finaly, finalz, MT_HOOPCOLLIDE);
-			mobj->z -= mobj->height/2;
-
-			// Link all the collision sprites together.
-			mobj->hnext = NULL;
-			P_SetTarget(&mobj->hprev, nextmobj);
-			P_SetTarget(&mobj->hprev->hnext, mobj);
-
-			nextmobj = mobj;
-		}
+	if (P_MobjWasRemoved(hoopcenter))
 		return;
-	}
-	// CUSTOMIZABLE NiGHTS hoop!
-	else if (mthing->type == 1713)
+
+	hoopcenter->spawnpoint = mthing;
+
+	z += P_GetSectorFloorZAt(sec, x, y);
+
+	hoopcenter->z -= hoopcenter->height/2;
+
+	P_UnsetThingPosition(hoopcenter);
+	hoopcenter->x = x;
+	hoopcenter->y = y;
+	P_SetThingPosition(hoopcenter);
+
+	// Scale 0-255 to 0-359 =(
+	closestangle = FixedAngle(FixedMul((mthing->angle >> 8)*FRACUNIT, 360*(FRACUNIT/256)));
+
+	hoopcenter->movedir = FixedInt(FixedMul((mthing->angle & 255)*FRACUNIT, 360*(FRACUNIT/256)));
+	hoopcenter->movecount = FixedInt(AngleFixed(closestangle));
+
+	spewangle = (fixed_t)((INT16)hoopcenter->movedir * FRACUNIT);
+
+	if (mthing->type == 1713) // CUSTOMIZABLE NiGHTS hoop!
 	{
-		mobj_t *nextmobj = NULL;
-		mobj_t *hoopcenter;
-		INT16 spewangle;
-		INT32 hoopsize;
-		INT32 hoopplacement;
-
-		// Save our flags!
-		z = (mthing->options>>ZSHIFT) << FRACBITS;
-
-		hoopcenter = P_SpawnMobj(x, y, z, MT_HOOPCENTER);
-		hoopcenter->spawnpoint = mthing;
-
-		z += P_GetSectorFloorZAt(sec, x, y);
-		hoopcenter->z = z - hoopcenter->height/2;
-
-		P_UnsetThingPosition(hoopcenter);
-		hoopcenter->x = x;
-		hoopcenter->y = y;
-		P_SetThingPosition(hoopcenter);
-
-		// Scale 0-255 to 0-359 =(
-		closestangle = FixedAngle(FixedMul((mthing->angle>>8)*FRACUNIT,
-			360*(FRACUNIT/256)));
-
-		hoopcenter->movedir = FixedInt(FixedMul((mthing->angle&255)*FRACUNIT,
-			360*(FRACUNIT/256)));
-		hoopcenter->movecount = FixedInt(AngleFixed(closestangle));
-
-		spewangle = (INT16)hoopcenter->movedir;
-
 		// Super happy fun time
 		// For each flag add 4 fracunits to the size
 		// Default (0 flags) is 8 fracunits
 		hoopsize = 8 + (4 * (mthing->options & 0xF));
-		hoopplacement = hoopsize * (4*FRACUNIT);
+		sizefactor = 4*FRACUNIT;
+		hoopplacement = hoopsize * sizefactor;
 
 		// For the hoop when it flies away
 		hoopcenter->extravalue1 = hoopsize;
 		hoopcenter->extravalue2 = FixedDiv(hoopplacement, 12*FRACUNIT);
+	}
+	else                      // NiGHTS hoop!
+	{
+		hoopsize = 32;
+		sizefactor = 32*FRACUNIT;
+		hoopplacement = 96*FRACUNIT;
 
-		// Create the hoop!
-		for (i = 0; i < hoopsize; i++)
-		{
-			fa = i*(FINEANGLES/hoopsize);
-			v[0] = FixedMul(FINECOSINE(fa), hoopplacement);
-			v[1] = 0;
-			v[2] = FixedMul(FINESINE(fa), hoopplacement);
-			v[3] = FRACUNIT;
+		// For the hoop when it flies away
+		hoopcenter->extravalue1 = hoopsize;
+		hoopcenter->extravalue2 = 8 * FRACUNIT;
+	}
 
-			res = VectorMatrixMultiply(v, *RotateXMatrix(FixedAngle(spewangle*FRACUNIT)));
-			M_Memcpy(&v, res, sizeof (v));
-			res = VectorMatrixMultiply(v, *RotateZMatrix(closestangle));
-			M_Memcpy(&v, res, sizeof (v));
+	// Create the hoop!
+	P_SpawnNiGHTSHoop(x, y, z, hoopsize, hoopplacement, closestangle, spewangle, hoopcenter, &nextmobj, MT_HOOP);
 
-			finalx = x + v[0];
-			finaly = y + v[1];
-			finalz = z + v[2];
-
-			mobj = P_SpawnMobj(finalx, finaly, finalz, MT_HOOP);
-
-			mobj->z -= mobj->height/2;
-			P_SetTarget(&mobj->target, hoopcenter); // Link the sprite to the center.
-			mobj->fuse = 0;
-
-			// Link all the sprites in the hoop together
-			if (nextmobj)
-			{
-				P_SetTarget(&mobj->hprev, nextmobj);
-				P_SetTarget(&mobj->hprev->hnext, mobj);
-			}
-			else
-				mobj->hprev = mobj->hnext = NULL;
-
-			nextmobj = mobj;
-		}
-
-		// Create the collision detectors!
+	// Create the collision detectors!
+	if (mthing->type == 1713)
+	{
 		// Create them until the size is less than 8
 		// But always create at least ONE set of collision detectors
 		do
@@ -12053,39 +11943,16 @@ void P_SpawnHoopsAndRings(mapthing_t *mthing)
 			else
 				hoopsize /= 2;
 
-			hoopplacement = hoopsize * (4*FRACUNIT);
+			hoopplacement = hoopsize * sizefactor;
 
-			for (i = 0; i < hoopsize; i++)
-			{
-				fa = i*FINEANGLES/hoopsize;
-				v[0] = FixedMul(FINECOSINE(fa), hoopplacement);
-				v[1] = 0;
-				v[2] = FixedMul(FINESINE(fa), hoopplacement);
-				v[3] = FRACUNIT;
-				res = VectorMatrixMultiply(v, *RotateXMatrix(FixedAngle(spewangle*FRACUNIT)));
-				M_Memcpy(&v, res, sizeof (v));
-				res = VectorMatrixMultiply(v, *RotateZMatrix(closestangle));
-				M_Memcpy(&v, res, sizeof (v));
-
-				finalx = x + v[0];
-				finaly = y + v[1];
-				finalz = z + v[2];
-
-				mobj = P_SpawnMobj(finalx, finaly, finalz, MT_HOOPCOLLIDE);
-				mobj->z -= mobj->height/2;
-
-				// Link all the collision sprites together.
-				mobj->hnext = NULL;
-				P_SetTarget(&mobj->hprev, nextmobj);
-				P_SetTarget(&mobj->hprev->hnext, mobj);
-
-				nextmobj = mobj;
-			}
+			P_SpawnNiGHTSHoop(x, y, z, hoopsize, hoopplacement, closestangle, spewangle, NULL, &nextmobj, MT_HOOPCOLLIDE);
 		} while (hoopsize >= 8);
-
-		return;
 	}
-	else return; // srb2kart - no rings or ring-like objects in R1
+	else
+	{
+		P_SpawnNiGHTSHoop(x, y, z, hoopsize/2, sizefactor, closestangle, spewangle, NULL, &nextmobj, MT_HOOPCOLLIDE);
+		P_SpawnNiGHTSHoop(x, y, z, hoopsize/2, sizefactor*2, closestangle, spewangle, NULL, &nextmobj, MT_HOOPCOLLIDE);
+	}
 }
 
 //
@@ -12412,7 +12279,7 @@ mobj_t *P_SPMAngle(mobj_t *source, mobjtype_t type, angle_t angle, UINT8 allowai
 	// angle at which you fire, is player angle
 	an = angle;
 
-	if (allowaim) // aiming allowed?
+	if (source->player && allowaim) // aiming allowed?
 		slope = AIMINGTOSLOPE(source->player->aiming);
 
 	x = source->x;
@@ -12443,7 +12310,7 @@ mobj_t *P_SPMAngle(mobj_t *source, mobjtype_t type, angle_t angle, UINT8 allowai
 	th->momx = FixedMul(th->info->speed, FINECOSINE(an>>ANGLETOFINESHIFT));
 	th->momy = FixedMul(th->info->speed, FINESINE(an>>ANGLETOFINESHIFT));
 
-	if (allowaim)
+	if (source->player && allowaim)
 	{
 		th->momx = FixedMul(th->momx,FINECOSINE(source->player->aiming>>ANGLETOFINESHIFT));
 		th->momy = FixedMul(th->momy,FINECOSINE(source->player->aiming>>ANGLETOFINESHIFT));

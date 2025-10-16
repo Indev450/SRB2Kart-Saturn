@@ -266,20 +266,30 @@ typedef enum {
 	PCF_THUNK     = 1<<5, // Ran the thinker this tic.
 } precipflag_t;
 
+typedef struct salty_s
+{
+	bool init;
+	bool ready;
+	bool tapping;
+	fixed_t zoffset;
+	fixed_t momz;
+	bool jump;
+} salty_t;
+
 // Map Object definition.
 typedef struct mobj_s
 {
 	// List: thinker links.
 	thinker_t thinker;
 
-	// More list: links in sector (if needed)
-	struct mobj_s *bnext;
-	struct mobj_s **bprev; // killough 8/11/98: change to ptr-to-ptr
-
 	// Info for drawing: position.
 	fixed_t x, y, z;
 	fixed_t old_x, old_y, old_z; // position interpolation
 	fixed_t old_x2, old_y2, old_z2;
+
+	// More list: links in sector (if needed)
+	struct mobj_s *bnext;
+	struct mobj_s **bprev; // killough 8/11/98: change to ptr-to-ptr
 
 	mobjtype_t type;
 	const mobjinfo_t *info; // &mobjinfo[mobj->type]
@@ -407,12 +417,7 @@ typedef struct mobj_s
 	tic_t slamsoundtimer; // Funni slam sound when landing
 
 	// saltyhop! hardcode edition
-	boolean salty_ready;
-	boolean salty_tapping;
-	fixed_t salty_zoffset;
-	fixed_t salty_momz;
-	boolean salty_jump;
-	boolean init_salty;
+	salty_t salty;
 
 	// WARNING: New fields must be added separately to savegame and Lua.
 	boolean islocal; // BEWARE: islocal does not exist in vanilla, strictly to be used for locally loaded addons to not cause desynchs with the mobj linedef trigger check. DO NOT USE THIS IN ACTUAL ADDONS YOU INTEND TO USE ON YOUR SERVER
@@ -496,7 +501,7 @@ void P_MovePlayerToStarpost(INT32 playernum);
 void P_AfterPlayerSpawn(INT32 playernum);
 
 void P_SpawnMapThing(mapthing_t *mthing);
-void P_SpawnHoopsAndRings(mapthing_t *mthing);
+void P_SpawnHoops(mapthing_t *mthing);
 void P_SpawnHoopOfSomething(fixed_t x, fixed_t y, fixed_t z, fixed_t radius, INT32 number, mobjtype_t type, angle_t rotangle);
 void P_SpawnPrecipitation(void);
 void P_SpawnParaloop(fixed_t x, fixed_t y, fixed_t z, fixed_t radius, INT32 number, mobjtype_t type, statenum_t nstate, angle_t rotangle, boolean spawncenter);

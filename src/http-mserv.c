@@ -16,6 +16,7 @@ Documentation available here.
 
 #ifdef HAVE_CURL
 #include <curl/curl.h>
+#include "m_curl.h"
 #endif
 
 #include "doomdef.h"
@@ -71,7 +72,8 @@ struct HMS_buffer
 	CURL *curl;
 	char *buffer;
 	int   needle;
-	int    end;
+	int   end;
+	char *errbuf;
 };
 
 static void
@@ -143,6 +145,7 @@ HMS_connect (const char *format, ...)
 	size_t seek;
 	size_t token_length;
 	struct HMS_buffer *buffer;
+	CURLcode cc;
 
 	if (! hms_started)
 	{
@@ -186,9 +189,7 @@ HMS_connect (const char *format, ...)
 	seek = strlen(hms_api) + 1;/* + '/' */
 
 	va_start (ap, format);
-	url = malloc(seek + vsnprintf(0, 0, format, ap) +
-			sizeof HMS_QUERY_VERSION - 1 +
-			token_length + 1);
+	url = malloc(seek + vsnprintf(0, 0, format, ap) + sizeof HMS_QUERY_VERSION - 1 + token_length + 1);
 	va_end (ap);
 
 	sprintf(url, "%s/", hms_api);
@@ -214,29 +215,54 @@ HMS_connect (const char *format, ...)
 	buffer->end = DEFAULT_BUFFER_SIZE;
 	buffer->buffer = malloc(buffer->end);
 	buffer->needle = 0;
+	buffer->errbuf = malloc(CURL_ERROR_SIZE);
+	buffer->errbuf[0] = 0x00;
+
+	cc = curl_easy_setopt(curl, CURLOPT_ERRORBUFFER, buffer->errbuf);
+	if (cc != CURLE_OK) I_OutputMsg("libcurl: %s\n", buffer->errbuf);
 
 	if (cv_masterserver_debug.value == 2)
 	{
-		curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
-		curl_easy_setopt(curl, CURLOPT_STDERR, logstream);
+		cc = curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
+		if (cc != CURLE_OK) I_OutputMsg("libcurl: %s\n", buffer->errbuf);
+
+		cc = curl_easy_setopt(curl, CURLOPT_STDERR, logstream);
+		if (cc != CURLE_OK) I_OutputMsg("libcurl: %s\n", buffer->errbuf);
 	}
 
 	if (M_CheckParm("-bindaddr") && M_IsNextParm())
 	{
-		curl_easy_setopt(curl, CURLOPT_INTERFACE, M_GetNextParm());
+		cc = curl_easy_setopt(curl, CURLOPT_INTERFACE, M_GetNextParm());
+		if (cc != CURLE_OK) I_OutputMsg("libcurl: %s\n", buffer->errbuf);
 	}
 
-	curl_easy_setopt(curl, CURLOPT_URL, url);
-	curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
+	cc = curl_easy_setopt(curl, CURLOPT_URL, url);
+	if (cc != CURLE_OK) I_OutputMsg("libcurl: %s\n", buffer->errbuf);
+
+	cc = curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
+	if (cc != CURLE_OK) I_OutputMsg("libcurl: %s\n", buffer->errbuf);
 
 #ifdef HAVE_IPV6
 	if (!M_CheckParm("-ipv6"))
 #endif
-		curl_easy_setopt(curl, CURLOPT_IPRESOLVE, (long)CURL_IPRESOLVE_V4);
+	{
+		cc = curl_easy_setopt(curl, CURLOPT_IPRESOLVE, (long)CURL_IPRESOLVE_V4);
+		if (cc != CURLE_OK) I_OutputMsg("libcurl: %s\n", buffer->errbuf);
+	}
 
-	curl_easy_setopt(curl, CURLOPT_TIMEOUT, (long)cv_masterserver_timeout.value);
-	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, HMS_on_read);
-	curl_easy_setopt(curl, CURLOPT_WRITEDATA, buffer);
+	cc = curl_easy_setopt(curl, CURLOPT_TIMEOUT, (long)cv_masterserver_timeout.value);
+	if (cc != CURLE_OK) I_OutputMsg("libcurl: %s\n", buffer->errbuf);
+
+	cc = curl_easy_setopt(curl, CURLOPT_MAXREDIRS, 30L);
+	if (cc != CURLE_OK) I_OutputMsg("libcurl: %s\n", buffer->errbuf);
+
+	cc = curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, HMS_on_read);
+	if (cc != CURLE_OK) I_OutputMsg("libcurl: %s\n", buffer->errbuf);
+
+	cc = curl_easy_setopt(curl, CURLOPT_WRITEDATA, buffer);
+	if (cc != CURLE_OK) I_OutputMsg("libcurl: %s\n", buffer->errbuf);
+
+	M_SetCURLArgs(curl, buffer->errbuf);
 
 	curl_free(quack_token);
 	free(url);
@@ -257,16 +283,14 @@ HMS_do (struct HMS_buffer *buffer)
 	if (cc != CURLE_OK)
 	{
 		Contact_error();
-		Blame(
-				"From curl_easy_perform: %s\n",
-				curl_easy_strerror(cc)
-		);
+		Blame("From curl_easy_perform: %s\n", buffer->errbuf);
 		return 0;
 	}
 
 	buffer->buffer[buffer->needle] = '\0';
 
-	curl_easy_getinfo(buffer->curl, CURLINFO_RESPONSE_CODE, &status);
+	cc = curl_easy_getinfo(buffer->curl, CURLINFO_RESPONSE_CODE, &status);
+	if (cc != CURLE_OK) I_OutputMsg("libcurl: %s\n", buffer->errbuf);
 
 	if (status != 200)
 	{

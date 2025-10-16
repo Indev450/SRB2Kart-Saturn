@@ -96,20 +96,17 @@
 // platform independant focus loss
 UINT8 window_notinfocus = false;
 
-//
-// DEMO LOOP
-//
-//static INT32 demosequence;
-static char *startupwadfiles[MAX_WADFILES];
+static char *startupiwadfiles[MAX_WADFILES];
 static char *startuppwads[MAX_WADFILES];
 
 // autoloading
-char *autoloadwadfiles[MAX_WADFILES];
-char *autoloadwadfilespost[MAX_WADFILES];
+static char *autoloadwadfiles[MAX_WADFILES];
+static char *autoloadwadfilespost[MAX_WADFILES];
 boolean autoloading;
 boolean autoloaded;
 boolean postautoloaded = false;
 boolean wasautoloaded = false;
+//
 
 boolean devparm = false; // started game with -devparm
 
@@ -149,8 +146,6 @@ INT32 eventhead, eventtail;
 boolean dedicated = false;
 
 boolean loaded_config = false; // true once config.cfg loaded AND executed
-
-static void D_CleanFile(char **filearray);
 
 //
 // D_PostEvent
@@ -357,8 +352,7 @@ static void D_Renderview(void)
 	{
 		// V_DrawPatchFill, but for the fourth screen only
 		patch_t *pat = W_CachePatchName("SRB2BACK", PU_CACHE);
-		INT32 dupz = (vid.dupx < vid.dupy ? vid.dupx : vid.dupy);
-		INT32 x, y, pw = SHORT(pat->width) * dupz, ph = SHORT(pat->height) * dupz;
+		INT32 x, y, pw = SHORT(pat->width) * vid.dup, ph = SHORT(pat->height) * vid.dup;
 
 		for (x = vid.width>>1; x < vid.width; x += pw)
 		{
@@ -528,19 +522,16 @@ static boolean D_Display(void)
 		case GS_LEVEL:
 			if (!gametic)
 				break;
-			HU_Erase();
 			AM_Drawer();
 			break;
 
 		case GS_INTERMISSION:
 			Y_IntermissionDrawer();
-			HU_Erase();
 			HU_Drawer();
 			break;
 
 		case GS_VOTING:
 			Y_VoteDrawer();
-			HU_Erase();
 			HU_Drawer();
 			break;
 
@@ -555,7 +546,6 @@ static boolean D_Display(void)
 
 		case GS_CUTSCENE:
 			F_CutsceneDrawer();
-			HU_Erase();
 			HU_Drawer();
 			break;
 
@@ -565,7 +555,6 @@ static boolean D_Display(void)
 
 		case GS_EVALUATION:
 			F_GameEvaluationDrawer();
-			HU_Erase();
 			HU_Drawer();
 			break;
 
@@ -575,7 +564,6 @@ static boolean D_Display(void)
 
 		case GS_CREDITS:
 			F_CreditDrawer();
-			HU_Erase();
 			HU_Drawer();
 			break;
 
@@ -592,7 +580,6 @@ static boolean D_Display(void)
 			{
 				// I don't think HOM from nothing drawing is independent...
 				F_WaitingPlayersDrawer();
-				HU_Erase();
 				HU_Drawer();
 			}
 		case GS_TIMEATTACK:
@@ -615,7 +602,7 @@ static boolean D_Display(void)
 		{
 			if (rendermode == render_soft)
 			{
-				VID_BlitLinearScreen(vid.screens[0], vid.screens[1], vid.width, vid.height, vid.width, vid.rowbytes);
+				VID_BlitLinearScreen(vid.screens[0], vid.screens[1], vid.width, vid.height, vid.width, vid.width);
 			}
 
 			lastdraw = false;
@@ -779,8 +766,8 @@ void D_SRB2Loop(void)
 		// capbudget is the minimum precise_t duration of a single loop iteration
 		precise_t capbudget;
 		precise_t enterprecise = I_GetPreciseTime();
-		precise_t finishprecise = enterprecise;
 
+		memset(&g_dc, 0, sizeof(g_dc));
 		Z_Frame_Reset();
 
 		// Casting the return value of a function is bad practice (apparently)
@@ -873,7 +860,7 @@ void D_SRB2Loop(void)
 			// I looked at the possibility of putting in a float drawer for
 			// perfstats and it's very complicated, so we'll just do this instead...
 			ps_interp_frac.value.p = (precise_t)((FIXED_TO_FLOAT(g_time.timefrac)) * 1000.0f);
-			ps_interp_lag.value.p = (precise_t)((deltasecs) * 1000.0f);
+			ps_interp_lag.value.p = (precise_t)((deltasecs) * 1000.0);
 
 			const boolean lagging = ((deltatics >= 1.0) || hu_stopped);
 
@@ -896,12 +883,6 @@ void D_SRB2Loop(void)
 				// always update console and hud
 				// otherwise it may take minutes to open it
 				CON_Drawer();
-
-				if (gamestate == GS_LEVEL)
-				{
-					ST_Drawer();
-					HU_Drawer();
-				}
 			}
 		}
 
@@ -923,7 +904,7 @@ void D_SRB2Loop(void)
 		}
 #endif
 		// Fully completed frame made.
-		finishprecise = I_GetPreciseTime();
+		precise_t finishprecise = I_GetPreciseTime();
 
 		// Use the time before sleep for frameskip calculations:
 		// post-sleep time is literally being intentionally wasted
@@ -938,9 +919,16 @@ void D_SRB2Loop(void)
 		//
 		// Wipes run an inner loop and artificially increase
 		// the measured time.
-		if (!ranwipe && (frameskip < 3) && (deltatics > 1.0))
+		if (cv_frameskip.value)
 		{
-			frameskip++;
+			if (!ranwipe && (frameskip < 3) && (deltatics > 1.0))
+			{
+				frameskip++;
+			}
+			else
+			{
+				frameskip = 0;
+			}
 		}
 		else
 		{
@@ -1026,7 +1014,7 @@ void D_ClearState(void)
 	S_StopSounds();
 	S_ResetKeepAndSpecialMus(); // just in case
 
-	P_FreeLevelState();
+	//P_FreeLevelState();
 
 	G_SetGamestate(GS_NULL);
 	wipegamestate = GS_NULL;
@@ -1066,6 +1054,16 @@ static void D_AddFile(const char *file, char **filearray)
 	filearray[pnumwadfiles] = newfile;
 }
 
+static void D_CleanFile(char **filearray)
+{
+	size_t pnumwadfiles;
+	for (pnumwadfiles = 0; filearray[pnumwadfiles]; pnumwadfiles++)
+	{
+		free(filearray[pnumwadfiles]);
+		filearray[pnumwadfiles] = NULL;
+	}
+}
+
 // Taken from TSoURDt3rd
 // https://github.com/StarManiaKG/The-Story-of-Uncapped-Revengence-Discord-the-3rd/blob/main/src/STAR/star_functions.c
 static INT32 D_DetectFileType(const char* filename)
@@ -1100,25 +1098,28 @@ static void D_AutoloadFile(const char *file, char **filearray)
 	char *newfile;
 	INT32 fileType = D_DetectFileType(file);
 
-	for (pnumwadfiles = 0; filearray[pnumwadfiles]; pnumwadfiles++)
-		;
-
-	newfile = malloc(strlen(file) + 1);
-	if (!newfile)
-		I_Error("No more free memory to AutoloadFile %s",file);
-
 	if (!fileType)
 	{
 		CONS_Printf("D_AutoloadFile: File %s is unknown or invalid\n", file);
 		return;
 	}
 
-	strcpy(newfile, file);
+	for (pnumwadfiles = 0; filearray[pnumwadfiles]; pnumwadfiles++)
+		;
 
 	if (fileType <= 6)
+	{
+		newfile = malloc(strlen(file) + 1);
+		if (!newfile)
+			I_Error("No more free memory to AutoloadFile %s",file);
+
+		strcpy(newfile, file);
 		filearray[pnumwadfiles] = newfile;
+	}
 	else
-		COM_BufAddText(va("exec %s\n", newfile));
+	{
+		COM_BufAddText(va("exec %s\n", file));
+	}
 }
 
 static char *strremove(char *str, const char *sub)
@@ -1227,16 +1228,6 @@ void D_AddPostloadFiles(void)
 	postautoloaded = true;
 }
 
-static void D_CleanFile(char **filearray)
-{
-	size_t pnumwadfiles;
-	for (pnumwadfiles = 0; filearray[pnumwadfiles]; pnumwadfiles++)
-	{
-		free(filearray[pnumwadfiles]);
-		filearray[pnumwadfiles] = NULL;
-	}
-}
-
 // ==========================================================================
 // Identify the SRB2 version, and IWAD file to use.
 // ==========================================================================
@@ -1247,7 +1238,7 @@ static boolean AddIWAD(void)
 
 	if (FIL_ReadFileOK(path))
 	{
-		D_AddFile(path, startupwadfiles);
+		D_AddFile(path, startupiwadfiles);
 		return true;
 	}
 
@@ -1307,12 +1298,12 @@ static void IdentifyVersion(void)
 	D_AddFile(va(pandf,srb2waddir,"patch.dta"));
 #endif
 
-	D_AddFile(va(pandf, srb2waddir, "gfx.kart"), startupwadfiles);
-	D_AddFile(va(pandf, srb2waddir, "textures.kart"), startupwadfiles);
-	D_AddFile(va(pandf, srb2waddir, "chars.kart"), startupwadfiles);
-	D_AddFile(va(pandf, srb2waddir, "maps.kart"), startupwadfiles);
+	D_AddFile(va(pandf, srb2waddir, "gfx.kart"), startupiwadfiles);
+	D_AddFile(va(pandf, srb2waddir, "textures.kart"), startupiwadfiles);
+	D_AddFile(va(pandf, srb2waddir, "chars.kart"), startupiwadfiles);
+	D_AddFile(va(pandf, srb2waddir, "maps.kart"), startupiwadfiles);
 #ifdef USE_PATCH_KART
-	D_AddFile(va(pandf,srb2waddir,"patch.kart"), startupwadfiles);
+	D_AddFile(va(pandf,srb2waddir,"patch.kart"), startupiwadfiles);
 #endif
 
 	const char *path = NULL;
@@ -1322,7 +1313,7 @@ static void IdentifyVersion(void)
 	// completely optional
 	if (FIL_ReadFileOK(path))
 	{
-		D_AddFile(path, startupwadfiles);
+		D_AddFile(path, startupiwadfiles);
 		found_extra_kart = true;
 	}
 
@@ -1331,7 +1322,7 @@ static void IdentifyVersion(void)
 	// completely optional 2: Back with a vengence
 	if (FIL_ReadFileOK(path))
 	{
-		D_AddFile(path, startupwadfiles);
+		D_AddFile(path, startupiwadfiles);
 		found_extra2_kart = true;
 	}
 
@@ -1339,7 +1330,7 @@ static void IdentifyVersion(void)
 
 	if (FIL_ReadFileOK(path))
 	{
-		D_AddFile(path, startupwadfiles);
+		D_AddFile(path, startupiwadfiles);
 		found_extra3_kart = true;
 	}
 
@@ -1354,7 +1345,7 @@ static void IdentifyVersion(void)
 		if (ms == 0) \
 			I_Error("File " str " has been modified with non-music/sound lumps"); \
 		if (ms == 1) \
-			D_AddFile(musicpath, startupwadfiles); \
+			D_AddFile(musicpath, startupiwadfiles); \
 	}
 	{
 		const char *musicpath;
@@ -1365,6 +1356,27 @@ static void IdentifyVersion(void)
 	}
 #undef MUSICTEST
 #endif
+}
+
+//
+// search for maps
+//
+static void D_CheckMaps(boolean checkreplaced)
+{
+	INT32 i;
+	char *name;
+	UINT16 wadnum;
+	lumpinfo_t *lumpinfo;
+
+	for (wadnum = 0; wadnum < mainwads; wadnum++)
+	{
+		lumpinfo = wadfiles[wadnum]->lumpinfo;
+		for (i = 0; i < wadfiles[wadnum]->numlumps; i++, lumpinfo++)
+		{
+			name = lumpinfo->name;
+			P_CheckMapReplacements(name, checkreplaced);
+		}
+	}
 }
 
 //
@@ -1618,12 +1630,9 @@ static void D_CheckSaturnExtraFiles(void)
 //
 void D_SRB2Main(void)
 {
-	INT32 p, i;
+	INT32 p;
 	char srb2[82]; // srb2 title banner
 	char title[82];
-	lumpinfo_t *lumpinfo;
-	UINT16 wadnum;
-	char *name;
 
 	INT32 pstartmap = 1;
 	boolean autostart = false;
@@ -1681,9 +1690,7 @@ void D_SRB2Main(void)
 
 #if defined (__OS2__) && !defined (HAVE_SDL)
 	// set PM window title
-	snprintf(pmData->title, sizeof (pmData->title),
-		"SRB2Kart" VERSIONSTRING ": %s",
-		title);
+	snprintf(pmData->title, sizeof (pmData->title), "SRB2Kart" VERSIONSTRING ": %s", title);
 	pmData->title[sizeof (pmData->title) - 1] = '\0';
 #endif
 
@@ -1818,14 +1825,9 @@ void D_SRB2Main(void)
 
 	// load wad, including the main wad file
 	CONS_Printf("W_InitMultipleFiles(): Adding IWAD and main PWADs.\n");
-	if (!W_InitMultipleFiles(startupwadfiles, false))
-#ifdef _DEBUG
-		CONS_Error("A WAD file was not found or not valid.\nCheck the log to see which ones.\n");
-#else
-		I_Error("A WAD file was not found or not valid.\nCheck the log to see which ones.\n");
-#endif
-	D_CleanFile(startupwadfiles);
 
+	W_InitMultipleFiles(startupiwadfiles, false);
+	D_CleanFile(startupiwadfiles);
 	mainwads = 0;
 
 #ifndef DEVELOP
@@ -1862,65 +1864,17 @@ void D_SRB2Main(void)
 	// conversion sometimes needs the palette
 	V_ReloadPalette();
 
-	//
-	// search for maps
-	//
-	for (wadnum = 0; wadnum < mainwads; wadnum++)
+	D_CheckMaps(false);
+
+	W_InitMultipleFiles(startuppwads, true);
+
+	// Only search for pwad maps if we actually have a pwad added
+	if (startuppwads[0] != NULL)
 	{
-		lumpinfo = wadfiles[wadnum]->lumpinfo;
-		for (i = 0; i < wadfiles[wadnum]->numlumps; i++, lumpinfo++)
-		{
-			name = lumpinfo->name;
-
-			if (memcmp(name, "MAP", 3) == 0) // Ignore the headers
-			{
-				INT16 num;
-				if (name[5] != '\0')
-					continue;
-				num = (INT16)M_MapNumber(name[3], name[4]);
-
-				// we want to record whether this map exists. if it doesn't have a header, we can assume it's not relephant
-				if (num <= NUMMAPS && mapheaderinfo[num - 1])
-				{
-					mapheaderinfo[num - 1]->menuflags |= LF2_EXISTSHACK;
-				}
-			}
-		}
+		D_CheckMaps(true);
 	}
 
-	if (!W_InitMultipleFiles(startuppwads, true))
-		CONS_Error("A PWAD file was not found or not valid.\nCheck the log to see which ones.\n");
 	D_CleanFile(startuppwads);
-
-	//
-	// search for maps... again.
-	//
-	for (wadnum = mainwads+1; wadnum < numwadfiles; wadnum++)
-	{
-		lumpinfo = wadfiles[wadnum]->lumpinfo;
-		for (i = 0; i < wadfiles[wadnum]->numlumps; i++, lumpinfo++)
-		{
-			name = lumpinfo->name;
-
-			if (memcmp(name, "MAP", 3) == 0) // Ignore the headers
-			{
-				INT16 num;
-				if (name[5] != '\0')
-					continue;
-				num = (INT16)M_MapNumber(name[3], name[4]);
-
-				// we want to record whether this map exists. if it doesn't have a header, we can assume it's not relephant
-				if (num <= NUMMAPS && mapheaderinfo[num - 1])
-				{
-					if (mapheaderinfo[num - 1]->menuflags & LF2_EXISTSHACK)
-						G_SetGameModified(multiplayer, true); // oops, double-defined - no record attack privileges for you
-					mapheaderinfo[num - 1]->menuflags |= LF2_EXISTSHACK;
-				}
-
-				CONS_Printf("%s\n", name);
-			}
-		}
-	}
 
 	cht_Init();
 
@@ -1964,9 +1918,7 @@ void D_SRB2Main(void)
 
 	G_LoadGameData();
 
-#if defined (__unix__) || defined (UNIXCOMMON) || defined (HAVE_SDL)
 	VID_PrepareModeList(); // Regenerate Modelist according to cv_fullscreen
-#endif
 
 	// set user default mode or mode set at cmdline
 	SCR_CheckDefaultMode();
@@ -2060,12 +2012,7 @@ void D_SRB2Main(void)
 
 	// check for a driver that wants intermission stats
 	// start the apropriate game based on parms
-	if (M_CheckParm("-metal"))
-	{
-		G_RecordMetal();
-		autostart = true;
-	}
-	else if (M_CheckParm("-record") && M_IsNextParm())
+	if (M_CheckParm("-record") && M_IsNextParm())
 	{
 		G_RecordDemo(M_GetNextParm());
 		autostart = true;

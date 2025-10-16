@@ -283,7 +283,7 @@ static void Y_PlayerStandingsDrawer(y_data_t *standings, INT32 x, INT32 hilicol)
 
 #define NUMFORNEWCOLUMN 8
 	INT32 y = 41, gutter = ((standings->numplayers > NUMFORNEWCOLUMN) ? 0 : (BASEVIDWIDTH/2));
-	INT32 dupadjust = cv_betainterscreen.value ? 314 : (vid.width/vid.dupx), duptweak = cv_betainterscreen.value ? -3 : (dupadjust - BASEVIDWIDTH)/2;
+	INT32 dupadjust = cv_betainterscreen.value ? 314 : vid.scaledwidth, duptweak = cv_betainterscreen.value ? -3 : (dupadjust - BASEVIDWIDTH)/2;
 	const char *timeheader;
 
 	if (standings->rankingsmode)
@@ -450,7 +450,7 @@ void Y_IntermissionDrawer(void)
 	else
 	{
 		if (rendermode == render_soft)
-			VID_BlitLinearScreen(vid.screens[1], vid.screens[0], vid.width, vid.height, vid.width, vid.rowbytes);
+			VID_BlitLinearScreen(vid.screens[1], vid.screens[0], vid.width, vid.height, vid.width, vid.width);
 #ifdef HWRENDER
 		else if (rendermode == render_opengl)
 			HWR_DrawIntermissionBG();
@@ -473,9 +473,9 @@ void Y_IntermissionDrawer(void)
 		INT64 count = (intertic - sorttic);
 
 		if (count < 8)
-			x -= ((((count<<FRACBITS) + R_GetTimeFrac(RTF_INTER)) * vid.width)>>FRACBITS) / (8 * vid.dupx);
+			x -= ((((count<<FRACBITS) + R_GetTimeFrac(RTF_INTER)) * vid.width)>>FRACBITS) / (8 * vid.dup);
 		else if (count < 16)
-			x += (((((16 - count)<<FRACBITS) - R_GetTimeFrac(RTF_INTER)) * vid.width)>>FRACBITS) / (8 * vid.dupx);
+			x += (((((16 - count)<<FRACBITS) - R_GetTimeFrac(RTF_INTER)) * vid.width)>>FRACBITS) / (8 * vid.dup);
 	}
 
 	if (intertype == int_race || intertype == int_match)
@@ -883,8 +883,8 @@ static void Y_VoteBackgroundDrawer(patch_t *patch)
 			break;
 		case 0: // vanilla
 		default:
-			V_DrawScaledPatch(((vid.width/2) / vid.dupx) - (patch->width/2),
-							  (vid.height / vid.dupy) - patch->height,
+			V_DrawScaledPatch(((vid.width/2) / vid.dup) - (patch->width/2),
+							  (vid.height / vid.dup) - patch->height,
 							  V_SNAPTOTOP|V_SNAPTOLEFT, patch);
 			break;
 	}
@@ -935,7 +935,7 @@ static void Y_DrawLuaVoteScreenPatch(boolean widePatch)
 static void Y_DrawVoteScreenPatch(void)
 {
 	patch_t *votebg = NULL;
-	const boolean widescreen = (vid.width / vid.dupx > 320);
+	const boolean widescreen = (vid.scaledwidth > 320);
 
 	if (VoteScreen.foundLuaVoteWideFrames || VoteScreen.foundLuaVoteFrames)
 	{

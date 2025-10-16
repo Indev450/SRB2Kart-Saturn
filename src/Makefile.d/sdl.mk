@@ -10,7 +10,7 @@
 
 makedir:=$(makedir)/SDL
 
-opts+=-DDIRECTFULLSCREEN -DHAVE_SDL
+opts+=-DHAVE_SDL
 sources+=$(call List,sdl/Sourcefile)
 
 NOUPNP=1

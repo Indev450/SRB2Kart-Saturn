@@ -48,6 +48,7 @@ cv_palette, cv_palettenum;
 
 // Allocates buffer screens, call before R_Init.
 void V_Init(void);
+void V_Recalc(void);
 
 // Color look-up table
 #define CLUTINDEX(r, g, b) (((r) >> 3) << 11) | (((g) >> 2) << 5) | ((b) >> 3)

@@ -107,22 +107,22 @@ static boolean InitCube(void)
 	{
 		{
 			{
-				{0.0, 0.0, 0.0}, // black corner
-				{0.0, 0.0, 1.0}  // blue corner
+				{0.0f, 0.0f, 0.0f}, // black corner
+				{0.0f, 0.0f, 1.0f}  // blue corner
 			},
 			{
-				{0.0, 1.0, 0.0}, // green corner
-				{0.0, 1.0, 1.0}  // cyan corner
+				{0.0f, 1.0f, 0.0f}, // green corner
+				{0.0f, 1.0f, 1.0f}  // cyan corner
 			}
 		},
 		{
 			{
-				{1.0, 0.0, 0.0}, // red corner
-				{1.0, 0.0, 1.0}  // magenta corner
+				{1.0f, 0.0f, 0.0f}, // red corner
+				{1.0f, 0.0f, 1.0f}  // magenta corner
 			},
 			{
-				{1.0, 1.0, 0.0}, // yellow corner
-				{1.0, 1.0, 1.0}  // white corner
+				{1.0f, 1.0f, 0.0f}, // yellow corner
+				{1.0f, 1.0f, 1.0f}  // white corner
 			}
 		}
 	};
@@ -145,9 +145,9 @@ static boolean InitCube(void)
 #endif
 
 #define gammascale 8
-	globalgammamul = (cv_globalgamma.value ? ((255 - (gammascale*abs(cv_globalgamma.value)))/255.0) : 1.0);
-	globalgammaoffs = ((cv_globalgamma.value > 0) ? ((gammascale*cv_globalgamma.value)/255.0) : 0.0);
-	desatur[0] = desatur[1] = desatur[2] = globalgammaoffs + (0.33*globalgammamul);
+	globalgammamul = (cv_globalgamma.value ? ((255.0f - (gammascale*abs(cv_globalgamma.value))) / 255.0f) : 1.0f);
+	globalgammaoffs = ((cv_globalgamma.value > 0) ? ((gammascale*cv_globalgamma.value) / 255.0f) : 0.0f);
+	desatur[0] = desatur[1] = desatur[2] = globalgammaoffs + (0.33f * globalgammamul);
 
 	if (doinggamma
 		|| diffcons(cv_rhue)
@@ -171,8 +171,8 @@ static boolean InitCube(void)
 		working[1][1][1][0] = working[1][1][1][1] = working[1][1][1][2] = globalgammaoffs+globalgammamul;
 
 #define dohue(hue, gamma, loc) \
-		tempgammamul = (gamma ? ((255 - (gammascale*abs(gamma)))/255.0)*globalgammamul : globalgammamul);\
-		tempgammaoffs = ((gamma > 0) ? ((gammascale*gamma)/255.0) + globalgammaoffs : globalgammaoffs);\
+		tempgammamul = (gamma ? ((255.0f - (gammascale*abs(gamma)))/255.0f)*globalgammamul : globalgammamul);\
+		tempgammaoffs = ((gamma > 0) ? ((gammascale*gamma)/255.0f) + globalgammaoffs : globalgammaoffs);\
 		mod = ((hue % huecoloursteps)*(tempgammamul)/huecoloursteps);\
 		switch (hue/huecoloursteps)\
 		{\
@@ -223,14 +223,14 @@ static boolean InitCube(void)
 	{\
 		float work, mod, tempgammamul, tempgammaoffs;\
 		apply = true;\
-		work = (cv_sat.value/10.0);\
-		mod = ((hue % huecoloursteps)*(1.0)/huecoloursteps);\
+		work = (cv_sat.value/10.0f);\
+		mod = ((hue % huecoloursteps)*(1.0f)/huecoloursteps);\
 		if (hue & huecoloursteps)\
 			mod = 2-mod;\
 		else\
 			mod += 1;\
-		tempgammamul = (gamma ? ((255 - (gammascale*abs(gamma)))/255.0)*globalgammamul : globalgammamul);\
-		tempgammaoffs = ((gamma > 0) ? ((gammascale*gamma)/255.0) + globalgammaoffs : globalgammaoffs);\
+		tempgammamul = (gamma ? ((255.0f - (gammascale*abs(gamma)))/255.0f)*globalgammamul : globalgammamul);\
+		tempgammaoffs = ((gamma > 0) ? ((gammascale*gamma)/255.0f) + globalgammaoffs : globalgammaoffs);\
 		for (q = 0; q < 3; q++)\
 			dosaturation(working[r][g][b][q], (tempgammaoffs+(desatur[q]*mod*tempgammamul)));\
 	}
@@ -246,7 +246,7 @@ static boolean InitCube(void)
 
 	if diffconssat(cv_globalsaturation)
 	{
-		float work = (cv_globalsaturation.value/10.0);
+		float work = (cv_globalsaturation.value/10.0f);
 
 		apply = true;
 
@@ -272,10 +272,10 @@ static boolean InitCube(void)
 		return false;
 
 #define dowork(i, j, k, l) \
-	if (working[i][j][k][l] > 1.0)\
-		working[i][j][k][l] = 1.0;\
-	else if (working[i][j][k][l] < 0.0)\
-		working[i][j][k][l] = 0.0;\
+	if (working[i][j][k][l] > 1.0f)\
+		working[i][j][k][l] = 1.0f;\
+	else if (working[i][j][k][l] < 0.0f)\
+		working[i][j][k][l] = 0.0f;\
 	Cubepal[i][j][k][l] = working[i][j][k][l]
 	for (q = 0; q < 3; q++)
 	{
@@ -466,7 +466,7 @@ void V_CubeApply(UINT8 *red, UINT8 *green, UINT8 *blue)
 	if (!Cubeapply)
 		return;
 
-	linear = (*red/255.0);
+	linear = (*red/255.0f);
 #define dolerp(e1, e2) ((1 - linear)*e1 + linear*e2)
 	for (q = 0; q < 3; q++)
 	{
@@ -475,19 +475,19 @@ void V_CubeApply(UINT8 *red, UINT8 *green, UINT8 *blue)
 		working[2][q] = dolerp(Cubepal[0][0][1][q], Cubepal[1][0][1][q]);
 		working[3][q] = dolerp(Cubepal[0][1][1][q], Cubepal[1][1][1][q]);
 	}
-	linear = (*green/255.0);
+	linear = (*green/255.0f);
 	for (q = 0; q < 3; q++)
 	{
 		working[0][q] = dolerp(working[0][q], working[1][q]);
 		working[1][q] = dolerp(working[2][q], working[3][q]);
 	}
-	linear = (*blue/255.0);
+	linear = (*blue/255.0f);
 	for (q = 0; q < 3; q++)
 	{
 		working[0][q] = 255*dolerp(working[0][q], working[1][q]);
-		if (working[0][q] > 255.0)
-			working[0][q] = 255.0;
-		else if (working[0][q]  < 0.0)
+		if (working[0][q] > 255.0f)
+			working[0][q] = 255.0f;
+		else if (working[0][q] < 0.0f)
 			working[0][q] = 0.0;
 	}
 #undef dolerp
@@ -612,17 +612,16 @@ static void CV_constextsize_OnChange(void)
 // --------------------------------------------------------------------------
 // Copy a rectangular area from one bitmap to another (8bpp)
 // --------------------------------------------------------------------------
-void VID_BlitLinearScreen(const UINT8 *srcptr, UINT8 *destptr, INT32 width, INT32 height, size_t srcrowbytes,
-	size_t destrowbytes)
+void VID_BlitLinearScreen(const UINT8 *restrict srcptr, UINT8 *restrict destptr, INT32 width, INT32 height, size_t srcrowbytes, size_t destrowbytes)
 {
-	if (srcrowbytes == destrowbytes)
+	if (srcrowbytes == destrowbytes && srcrowbytes == (size_t)width)
 	{
 		size_t i = srcrowbytes * height;
 #if defined(__SSE__)
 		while (i >= 16)
 		{
 			// TODO: find where the buffer is misaligned at times and align it
-			_mm_storeu_ps((float *)destptr, _mm_loadu_ps((const float *)srcptr));
+			_mm_storeu_ps((void *)destptr, _mm_loadu_ps((const void *)srcptr));
 			srcptr += 16;
 			destptr += 16;
 			i -= 16;
@@ -662,7 +661,7 @@ void V_DrawStretchyFixedPatch(fixed_t x, fixed_t y, fixed_t pscale, fixed_t vsca
 	UINT32 blendmode;
 
 	fixed_t col, ofs, colfrac, rowfrac, fdup, vdup;
-	INT32 dupx, dupy;
+	INT32 dup;
 	const column_t *column;
 	UINT8 *desttop, *dest, *deststart, *destend;
 	const UINT8 *source, *deststop;
@@ -720,36 +719,38 @@ void V_DrawStretchyFixedPatch(fixed_t x, fixed_t y, fixed_t pscale, fixed_t vsca
 		patchdrawtype = (v_translevel) ? TRANSMAPPEDDRAW : MAPPEDDRAW;
 	}
 
-	dupx = vid.dupx;
-	dupy = vid.dupy;
+	dup = vid.dup;
 
 	if (scrn & V_SCALEPATCHMASK)
 	{
 		switch ((scrn & V_SCALEPATCHMASK) >> V_SCALEPATCHSHIFT)
 		{
 			case 1: // V_NOSCALEPATCH
-				dupx = dupy = 1;
+				dup = 1;
 				break;
 			case 2: // V_SMALLSCALEPATCH
-				dupx = vid.smalldupx;
-				dupy = vid.smalldupy;
+				dup = vid.smalldup;
 				break;
 			case 3: // V_MEDSCALEPATCH
-				dupx = vid.meddupx;
-				dupy = vid.meddupy;
+				dup = vid.meddup;
 				break;
 			default:
 				break;
 		}
 	}
 
-	// only use one dup, to avoid stretching (har har)
-	dupx = dupy = (dupx < dupy ? dupx : dupy);
-	fdup = vdup = FixedMul(dupx<<FRACBITS, pscale);
+	fdup = vdup = FixedMul(dup<<FRACBITS, pscale);
+
 	if (vscale != pscale)
-		vdup = FixedMul(dupx<<FRACBITS, vscale);
-	colfrac = FixedDiv(FRACUNIT, fdup);
-	rowfrac = FixedDiv(FRACUNIT, vdup);
+	{
+		vdup = FixedMul(dup<<FRACBITS, vscale);
+		colfrac = FixedDiv(FRACUNIT, fdup);
+		rowfrac = FixedDiv(FRACUNIT, vdup);
+	}
+	else
+	{
+		colfrac = rowfrac = FixedDiv(FRACUNIT, fdup);
+	}
 
 	// So it turns out offsets aren't scaled in V_NOSCALESTART unless V_OFFSET is applied ...poo, that's terrible
 	// For now let's just at least give V_OFFSET the ability to support V_FLIP
@@ -768,10 +769,10 @@ void V_DrawStretchyFixedPatch(fixed_t x, fixed_t y, fixed_t pscale, fixed_t vsca
 		// TODO: make some kind of vertical version of V_FLIP, maybe by deprecating V_OFFSET in future?!?
 		offsety = FixedMul(patch->topoffset<<FRACBITS, vscale);
 
-		if ((scrn & (V_NOSCALESTART|V_OFFSET)) == (V_NOSCALESTART|V_OFFSET)) // Multiply by dupx/dupy
+		if ((scrn & (V_NOSCALESTART|V_OFFSET)) == (V_NOSCALESTART|V_OFFSET)) // Multiply by dup
 		{
-			offsetx = FixedMul(offsetx, dupx<<FRACBITS);
-			offsety = FixedMul(offsety, dupy<<FRACBITS);
+			offsetx = FixedMul(offsetx, dup<<FRACBITS);
+			offsety = FixedMul(offsety, dup<<FRACBITS);
 		}
 
 		// Subtract the offsets from x/y positions
@@ -790,7 +791,7 @@ void V_DrawStretchyFixedPatch(fixed_t x, fixed_t y, fixed_t pscale, fixed_t vsca
 	if (!desttop)
 		return;
 
-	deststop = desttop + vid.rowbytes * vid.height;
+	deststop = desttop + vid.width * vid.height;
 
 	if (scrn & V_NOSCALESTART)
 	{
@@ -800,8 +801,8 @@ void V_DrawStretchyFixedPatch(fixed_t x, fixed_t y, fixed_t pscale, fixed_t vsca
 	}
 	else
 	{
-		x = FixedMul(x,dupx<<FRACBITS);
-		y = FixedMul(y,dupy<<FRACBITS);
+		x = FixedMul(x,dup<<FRACBITS);
+		y = FixedMul(y,dup<<FRACBITS);
 		x >>= FRACBITS;
 		y >>= FRACBITS;
 
@@ -819,26 +820,27 @@ void V_DrawStretchyFixedPatch(fixed_t x, fixed_t y, fixed_t pscale, fixed_t vsca
 				}
 			}
 
-			if (vid.width != BASEVIDWIDTH * dupx)
+			if (vid.width != BASEVIDWIDTH * dup)
 			{
-				// dupx adjustments pretend that screen width is BASEVIDWIDTH * dupx,
+				// dup adjustments pretend that screen width is BASEVIDWIDTH * dup,
 				// so center this imaginary screen
 				if ((scrn & (V_HORZSCREEN|V_SNAPTOLEFT)) == (V_HORZSCREEN|V_SNAPTOLEFT))
-					x += (vid.width/2 - (BASEVIDWIDTH/2 * dupx));
+					x += (vid.width/2 - (BASEVIDWIDTH/2 * dup));
 				else if (scrn & V_SNAPTORIGHT)
-					x += (vid.width - (BASEVIDWIDTH * dupx));
+					x += (vid.width - (BASEVIDWIDTH * dup));
 				else if (!(scrn & V_SNAPTOLEFT))
-					x += (vid.width - (BASEVIDWIDTH * dupx)) / 2;
+					x += (vid.width - (BASEVIDWIDTH * dup)) / 2;
 			}
-			if (vid.height != BASEVIDHEIGHT * dupy)
+
+			if (vid.height != BASEVIDHEIGHT * dup)
 			{
 				// same thing here
 				if ((scrn & (V_SPLITSCREEN|V_SNAPTOTOP)) == (V_SPLITSCREEN|V_SNAPTOTOP))
-					y += (vid.height/2 - (BASEVIDHEIGHT/2 * dupy));
+					y += (vid.height/2 - (BASEVIDHEIGHT/2 * dup));
 				else if (scrn & V_SNAPTOBOTTOM)
-					y += (vid.height - (BASEVIDHEIGHT * dupy));
+					y += (vid.height - (BASEVIDHEIGHT * dup));
 				else if (!(scrn & V_SNAPTOTOP))
-					y += (vid.height - (BASEVIDHEIGHT * dupy)) / 2;
+					y += (vid.height - (BASEVIDHEIGHT * dup)) / 2;
 			}
 		}
 
@@ -849,11 +851,11 @@ void V_DrawStretchyFixedPatch(fixed_t x, fixed_t y, fixed_t pscale, fixed_t vsca
 	{
 		pwidth = patch->width<<FRACBITS;
 		pwidth = FixedMul(pwidth, pscale);
-		pwidth = FixedMul(pwidth, dupx<<FRACBITS);
+		pwidth = FixedMul(pwidth, dup<<FRACBITS);
 		pwidth >>= FRACBITS;
 	}
 	else
-		pwidth = patch->width * dupx;
+		pwidth = patch->width * dup;
 
 	deststart = desttop;
 	destend = desttop + pwidth;
@@ -983,7 +985,6 @@ void V_DrawCroppedPatch(fixed_t x, fixed_t y, fixed_t pscale, INT32 scrn, patch_
 	UINT32 alphalevel = 0;
 
 	fixed_t col, ofs, colfrac, rowfrac, fdup;
-	INT32 dupx, dupy;
 	const column_t *column;
 	UINT8 *desttop, *dest;
 	const UINT8 *source, *deststop;
@@ -1027,11 +1028,8 @@ void V_DrawCroppedPatch(fixed_t x, fixed_t y, fixed_t pscale, INT32 scrn, patch_
 		}
 	}
 
-	// only use one dup, to avoid stretching (har har)
-	dupx = dupy = (vid.dupx < vid.dupy ? vid.dupx : vid.dupy);
-	fdup = FixedMul(dupx<<FRACBITS, pscale);
-	colfrac = FixedDiv(FRACUNIT, fdup);
-	rowfrac = FixedDiv(FRACUNIT, fdup);
+	fdup = FixedMul(vid.dup<<FRACBITS, pscale);
+	colfrac = rowfrac = FixedDiv(FRACUNIT, fdup);
 
 	y -= FixedMul(patch->topoffset<<FRACBITS, pscale);
 	x -= FixedMul(patch->leftoffset<<FRACBITS, pscale);
@@ -1041,7 +1039,7 @@ void V_DrawCroppedPatch(fixed_t x, fixed_t y, fixed_t pscale, INT32 scrn, patch_
 	if (!desttop)
 		return;
 
-	deststop = desttop + vid.rowbytes * vid.height;
+	deststop = desttop + vid.width * vid.height;
 
 	if (scrn & V_NOSCALESTART)
 	{
@@ -1051,8 +1049,8 @@ void V_DrawCroppedPatch(fixed_t x, fixed_t y, fixed_t pscale, INT32 scrn, patch_
 	}
 	else
 	{
-		x = FixedMul(x,dupx<<FRACBITS);
-		y = FixedMul(y,dupy<<FRACBITS);
+		x = FixedMul(x, vid.dup<<FRACBITS);
+		y = FixedMul(y, vid.dup<<FRACBITS);
 		x >>= FRACBITS;
 		y >>= FRACBITS;
 
@@ -1062,22 +1060,23 @@ void V_DrawCroppedPatch(fixed_t x, fixed_t y, fixed_t pscale, INT32 scrn, patch_
 			// if it's meant to cover the whole screen, black out the rest
 			// no the patch is cropped do not do this ever
 
-			if (vid.width != BASEVIDWIDTH * dupx)
+			if (vid.width != BASEVIDWIDTH * vid.dup)
 			{
-				// dupx adjustments pretend that screen width is BASEVIDWIDTH * dupx,
+				// vid.dup adjustments pretend that screen width is BASEVIDWIDTH * vid.dup,
 				// so center this imaginary screen
 				if (scrn & V_SNAPTORIGHT)
-					x += (vid.width - (BASEVIDWIDTH * dupx));
+					x += (vid.width - (BASEVIDWIDTH * vid.dup));
 				else if (!(scrn & V_SNAPTOLEFT))
-					x += (vid.width - (BASEVIDWIDTH * dupx)) / 2;
+					x += (vid.width - (BASEVIDWIDTH * vid.dup)) / 2;
 			}
-			if (vid.height != BASEVIDHEIGHT * dupy)
+
+			if (vid.height != BASEVIDHEIGHT * vid.dup)
 			{
 				// same thing here
 				if (scrn & V_SNAPTOBOTTOM)
-					y += (vid.height - (BASEVIDHEIGHT * dupy));
+					y += (vid.height - (BASEVIDHEIGHT * vid.dup));
 				else if (!(scrn & V_SNAPTOTOP))
-					y += (vid.height - (BASEVIDHEIGHT * dupy)) / 2;
+					y += (vid.height - (BASEVIDHEIGHT * vid.dup)) / 2;
 			}
 		}
 
@@ -1191,7 +1190,7 @@ void V_DrawBlock(INT32 x, INT32 y, INT32 scrn, INT32 width, INT32 height, const 
 #endif
 
 	dest = vid.screens[scrn] + y*vid.width + x;
-	deststop = vid.screens[scrn] + vid.rowbytes * vid.height;
+	deststop = vid.screens[scrn] + vid.width * vid.height;
 
 	while (height--)
 	{
@@ -1227,42 +1226,41 @@ void V_DrawFill(INT32 x, INT32 y, INT32 w, INT32 h, INT32 c)
 
 	if (!(c & V_NOSCALESTART))
 	{
-		INT32 dupx = vid.dupx, dupy = vid.dupy;
-
 		if (x == 0 && y == 0 && w == BASEVIDWIDTH && h == BASEVIDHEIGHT)
 		{ // Clear the entire screen, from dest to deststop. Yes, this really works.
 			memset(vid.screens[0], (c&255), vid.width * vid.height);
 			return;
 		}
 
-		x *= dupx;
-		y *= dupy;
-		w *= dupx;
-		h *= dupy;
+		x *= vid.dup;
+		y *= vid.dup;
+		w *= vid.dup;
+		h *= vid.dup;
 
 		// Center it if necessary
-		if (vid.width != BASEVIDWIDTH * dupx)
+		if (vid.width != BASEVIDWIDTH * vid.dup)
 		{
-			// dupx adjustments pretend that screen width is BASEVIDWIDTH * dupx,
+			// vid.dup adjustments pretend that screen width is BASEVIDWIDTH * vid.dup,
 			// so center this imaginary screen
 			if (c & V_SNAPTORIGHT)
-				x += (vid.width - (BASEVIDWIDTH * dupx));
+				x += (vid.width - (BASEVIDWIDTH * vid.dup));
 			else if (!(c & V_SNAPTOLEFT))
-				x += (vid.width - (BASEVIDWIDTH * dupx)) / 2;
+				x += (vid.width - (BASEVIDWIDTH * vid.dup)) / 2;
 		}
-		if (vid.height != BASEVIDHEIGHT * dupy)
+
+		if (vid.height != BASEVIDHEIGHT * vid.dup)
 		{
 			// same thing here
 			if (c & V_SNAPTOBOTTOM)
-				y += (vid.height - (BASEVIDHEIGHT * dupy));
+				y += (vid.height - (BASEVIDHEIGHT * vid.dup));
 			else if (!(c & V_SNAPTOTOP))
-				y += (vid.height - (BASEVIDHEIGHT * dupy)) / 2;
+				y += (vid.height - (BASEVIDHEIGHT * vid.dup)) / 2;
 		}
 
 		if (c & V_SPLITSCREEN)
-			y += (BASEVIDHEIGHT * dupy)/2;
+			y += (BASEVIDHEIGHT * vid.dup)/2;
 		if (c & V_HORZSCREEN)
-			x += (BASEVIDWIDTH * dupx)/2;
+			x += (BASEVIDWIDTH * vid.dup)/2;
 	}
 
 	if (x >= vid.width || y >= vid.height)
@@ -1288,7 +1286,7 @@ void V_DrawFill(INT32 x, INT32 y, INT32 w, INT32 h, INT32 c)
 		h = vid.height-y;
 
 	dest = vid.screens[0] + y*vid.width + x;
-	deststop = vid.screens[0] + vid.rowbytes * vid.height;
+	deststop = vid.screens[0] + vid.width * vid.height;
 
 	if (alphalevel)
 	{
@@ -1387,36 +1385,35 @@ void V_DrawFillConsoleMap(INT32 x, INT32 y, INT32 w, INT32 h, INT32 c)
 
 	if (!(c & V_NOSCALESTART))
 	{
-		INT32 dupx = vid.dupx, dupy = vid.dupy;
-
 		if (x == 0 && y == 0 && w == BASEVIDWIDTH && h == BASEVIDHEIGHT)
 		{ // Clear the entire screen, from dest to deststop. Yes, this really works.
 			memset(vid.screens[0], (UINT8)(c&255), vid.width * vid.height);
 			return;
 		}
 
-		x *= dupx;
-		y *= dupy;
-		w *= dupx;
-		h *= dupy;
+		x *= vid.dup;
+		y *= vid.dup;
+		w *= vid.dup;
+		h *= vid.dup;
 
 		// Center it if necessary
-		if (vid.width != BASEVIDWIDTH * dupx)
+		if (vid.width != BASEVIDWIDTH * vid.dup)
 		{
-			// dupx adjustments pretend that screen width is BASEVIDWIDTH * dupx,
+			// vid.dup adjustments pretend that screen width is BASEVIDWIDTH * vid.dup,
 			// so center this imaginary screen
 			if (c & V_SNAPTORIGHT)
-				x += (vid.width - (BASEVIDWIDTH * dupx));
+				x += (vid.width - (BASEVIDWIDTH * vid.dup));
 			else if (!(c & V_SNAPTOLEFT))
-				x += (vid.width - (BASEVIDWIDTH * dupx)) / 2;
+				x += (vid.width - (BASEVIDWIDTH * vid.dup)) / 2;
 		}
-		if (vid.height != BASEVIDHEIGHT * dupy)
+
+		if (vid.height != BASEVIDHEIGHT * vid.dup)
 		{
 			// same thing here
 			if (c & V_SNAPTOBOTTOM)
-				y += (vid.height - (BASEVIDHEIGHT * dupy));
+				y += (vid.height - (BASEVIDHEIGHT * vid.dup));
 			else if (!(c & V_SNAPTOTOP))
-				y += (vid.height - (BASEVIDHEIGHT * dupy)) / 2;
+				y += (vid.height - (BASEVIDHEIGHT * vid.dup)) / 2;
 		}
 	}
 
@@ -1478,8 +1475,10 @@ void V_DrawFillConsoleMap(INT32 x, INT32 y, INT32 w, INT32 h, INT32 c)
 		w = clip(w,vid.width);
 		h = clip(h,vid.height);
 #undef clip
-		for (v = 0; v < h; v++, dest += vid.width) {
-			for (u = 0; u < w; u++) {
+		for (v = 0; v < h; v++, dest += vid.width)
+		{
+			for (u = 0; u < w; u++)
+			{
 				dest[u] = fadetable[consolebgmap[dest[u]]];
 			}
 		}
@@ -1512,34 +1511,32 @@ void V_DrawDiag(INT32 x, INT32 y, INT32 wh, INT32 c)
 
 	if (!(c & V_NOSCALESTART))
 	{
-		INT32 dupx = vid.dupx, dupy = vid.dupy;
-
-		x *= dupx;
-		y *= dupy;
-		wh *= dupx;
+		x  *= vid.dup;
+		y  *= vid.dup;
+		wh *= vid.dup;
 
 		// Center it if necessary
-		if (vid.width != BASEVIDWIDTH * dupx)
+		if (vid.width != BASEVIDWIDTH * vid.dup)
 		{
-			// dupx adjustments pretend that screen width is BASEVIDWIDTH * dupx,
+			// vid.dup adjustments pretend that screen width is BASEVIDWIDTH * vid.dup,
 			// so center this imaginary screen
 			if (c & V_SNAPTORIGHT)
-				x += (vid.width - (BASEVIDWIDTH * dupx));
+				x += (vid.width - (BASEVIDWIDTH * vid.dup));
 			else if (!(c & V_SNAPTOLEFT))
-				x += (vid.width - (BASEVIDWIDTH * dupx)) / 2;
+				x += (vid.width - (BASEVIDWIDTH * vid.dup)) / 2;
 		}
-		if (vid.height != BASEVIDHEIGHT * dupy)
+		if (vid.height != BASEVIDHEIGHT * vid.dup)
 		{
 			// same thing here
 			if (c & V_SNAPTOBOTTOM)
-				y += (vid.height - (BASEVIDHEIGHT * dupy));
+				y += (vid.height - (BASEVIDHEIGHT * vid.dup));
 			else if (!(c & V_SNAPTOTOP))
-				y += (vid.height - (BASEVIDHEIGHT * dupy)) / 2;
+				y += (vid.height - (BASEVIDHEIGHT * vid.dup)) / 2;
 		}
 		if (c & V_SPLITSCREEN)
-			y += (BASEVIDHEIGHT * dupy)/2;
+			y += (BASEVIDHEIGHT * vid.dup)/2;
 		if (c & V_HORZSCREEN)
-			x += (BASEVIDWIDTH * dupx)/2;
+			x += (BASEVIDWIDTH * vid.dup)/2;
 	}
 
 	if (x >= vid.width || y >= vid.height)
@@ -1573,7 +1570,7 @@ void V_DrawDiag(INT32 x, INT32 y, INT32 wh, INT32 c)
 		h = w;
 
 	dest = vid.screens[0] + y*vid.width + x;
-	deststop = vid.screens[0] + vid.rowbytes * vid.height;
+	deststop = vid.screens[0] + vid.width * vid.height;
 
 	c &= 255;
 
@@ -1592,7 +1589,7 @@ void V_DrawDiag(INT32 x, INT32 y, INT32 wh, INT32 c)
 //
 void V_DrawFlatFill(INT32 x, INT32 y, INT32 w, INT32 h, lumpnum_t flatnum)
 {
-	INT32 u, v, dupx, dupy;
+	INT32 u, v;
 	fixed_t dx, dy, xfrac, yfrac;
 	const UINT8 *src, *deststop;
 	UINT8 *flat, *dest;
@@ -1642,29 +1639,28 @@ void V_DrawFlatFill(INT32 x, INT32 y, INT32 w, INT32 h, lumpnum_t flatnum)
 
 	flat = W_CacheLumpNum(flatnum, PU_CACHE);
 
-	dupx = dupy = (vid.dupx < vid.dupy ? vid.dupx : vid.dupy);
-
-	dest = vid.screens[0] + y*dupy*vid.width + x*dupx;
-	deststop = vid.screens[0] + vid.rowbytes * vid.height;
+	dest = vid.screens[0] + y*vid.dup*vid.width + x*vid.dup;
+	deststop = vid.screens[0] + vid.width * vid.height;
 
 	// from V_DrawScaledPatch
-	if (vid.width != BASEVIDWIDTH * dupx)
+	if (vid.width != BASEVIDWIDTH * vid.dup)
 	{
-		// dupx adjustments pretend that screen width is BASEVIDWIDTH * dupx,
+		// vid.dup adjustments pretend that screen width is BASEVIDWIDTH * vid.dup,
 		// so center this imaginary screen
-		dest += (vid.width - (BASEVIDWIDTH * dupx)) / 2;
+		dest += (vid.width - (BASEVIDWIDTH * vid.dup)) / 2;
 	}
-	if (vid.height != BASEVIDHEIGHT * dupy)
+
+	if (vid.height != BASEVIDHEIGHT * vid.dup)
 	{
 		// same thing here
-		dest += (vid.height - (BASEVIDHEIGHT * dupy)) * vid.width / 2;
+		dest += (vid.height - (BASEVIDHEIGHT * vid.dup)) * vid.width / 2;
 	}
 
-	w *= dupx;
-	h *= dupy;
+	w *= vid.dup;
+	h *= vid.dup;
 
-	dx = FixedDiv(FRACUNIT, dupx<<(FRACBITS-2));
-	dy = FixedDiv(FRACUNIT, dupy<<(FRACBITS-2));
+	dx = FixedDiv(FRACUNIT, vid.dup<<(FRACBITS-2));
+	dy = FixedDiv(FRACUNIT, vid.dup<<(FRACBITS-2));
 
 	yfrac = 0;
 	for (v = 0; v < h; v++, dest += vid.width)
@@ -1687,8 +1683,7 @@ void V_DrawFlatFill(INT32 x, INT32 y, INT32 w, INT32 h, lumpnum_t flatnum)
 //
 void V_DrawPatchFill(patch_t *pat)
 {
-	INT32 dupz = (vid.dupx < vid.dupy ? vid.dupx : vid.dupy);
-	INT32 x, y, pw = pat->width * dupz, ph = pat->height * dupz;
+	INT32 x, y, pw = pat->width * vid.dup, ph = pat->height * vid.dup;
 
 	for (x = 0; x < vid.width; x += pw)
 	{
@@ -1757,18 +1752,20 @@ void V_DrawVhsEffect(boolean rewind)
 	UINT8 *thismapstart;
 	SINT8 offs;
 
-	UINT8 barsize = vid.dupy<<5;
-	UINT8 updistort = vid.dupx<<(rewind ? 5 : 3);
+	UINT8 barsize = vid.dup<<5;
+	UINT8 updistort = vid.dup<<(rewind ? 5 : 3);
 	UINT8 downdistort = updistort>>1;
 
 	if (rewind)
 		V_DrawVhsEffect(false); // experimentation
 
-	upbary -= renderdeltatics * (vid.dupy * (rewind ? 3 : 1.8f));
-	downbary += renderdeltatics * (vid.dupy * (rewind ? 2 : 1));
+	upbary -= renderdeltatics * (vid.dup * (rewind ? 3 : 1.8f));
+	downbary += renderdeltatics * (vid.dup * (rewind ? 2 : 1));
 
-	if (upbary < -barsize*FRACUNIT) upbary = vid.height<<FRACBITS;
-	if (downbary > vid.height<<FRACBITS) downbary = -barsize*FRACUNIT;
+	if (upbary < -barsize*FRACUNIT)
+		upbary = vid.height<<FRACBITS;
+	if (downbary > vid.height<<FRACBITS)
+		downbary = -barsize*FRACUNIT;
 
 	fixed_t uby = upbary>>FRACBITS, dby = downbary>>FRACBITS;
 
@@ -1790,18 +1787,20 @@ void V_DrawVhsEffect(boolean rewind)
 			thismapstart -= (2<<FF_TRANSSHIFT) - (5<<8);
 			offs += updistort * 2.0f * min(y-uby, uby+barsize-y) / barsize;
 		}
+
 		if (y >= dby && y < dby+barsize)
 		{
 			thismapstart -= (2<<FF_TRANSSHIFT) - (5<<8);
 			offs -= downdistort * 2.0f * min(y-dby, dby+barsize-y) / barsize;
 		}
-		offs += M_RandomKey(vid.dupx<<1);
+
+		offs += M_RandomKey(vid.dup<<1);
 
 		// lazy way to avoid crashes
-		if (y == 0 && offs < 0) offs = 0;
-		else if (y >= vid.height-2 && offs > 0) offs = 0;
+		if ((y == 0 && offs < 0) || (y >= vid.height-2 && offs > 0))
+			offs = 0;
 
-		for (x = min(pos+vid.rowbytes*2, vid.rowbytes*vid.height); pos < x; pos++)
+		for (x = min(pos+(size_t)vid.width*2, (size_t)vid.width*vid.height); pos < x; pos++)
 		{
 			tmp[pos] = thismapstart[buf[pos+offs]];
 #ifdef HQ_VHS
@@ -1810,7 +1809,7 @@ void V_DrawVhsEffect(boolean rewind)
 		}
 	}
 
-	memcpy(buf, tmp, vid.rowbytes*vid.height);
+	memcpy(buf, tmp, vid.width*vid.height);
 }
 
 //
@@ -1825,11 +1824,11 @@ void V_DrawVhsEffect(boolean rewind)
 void V_DrawFadeScreen(UINT16 color, UINT8 strength)
 {
 #ifdef HWRENDER
-    if (rendermode != render_soft && rendermode != render_none)
-    {
-        HWR_FadeScreenMenuBack(color, strength);
-        return;
-    }
+	if (rendermode == render_opengl)
+	{
+		HWR_FadeScreenMenuBack(color, strength);
+		return;
+	}
 #endif
 
 	const UINT8 *fadetable =
@@ -1838,7 +1837,7 @@ void V_DrawFadeScreen(UINT16 color, UINT8 strength)
 		: ((color & 0xFF00) // Color is not palette index?
 		? ((UINT8 *)colormaps + strength*256) // Do COLORMAP fade.
 		: ((UINT8 *)transtables + ((9-strength)<<FF_TRANSSHIFT) + color*256)); // Else, do TRANSMAP** fade.
-	const UINT8 *deststop = vid.screens[0] + vid.rowbytes * vid.height;
+	const UINT8 *deststop = vid.screens[0] + vid.width * vid.height;
 	UINT8 *buf = vid.screens[0];
 
 	// heavily simplified -- we don't need to know x or y
@@ -1863,7 +1862,7 @@ void V_DrawFadeConsBack(INT32 plines)
 
 	// heavily simplified -- we don't need to know x or y position,
 	// just the stop position
-	deststop = vid.screens[0] + vid.rowbytes * min(plines, vid.height);
+	deststop = vid.screens[0] + vid.width * min(plines, vid.height);
 	for (buf = vid.screens[0]; buf < deststop; ++buf)
 		*buf = consolebgmap[*buf];
 }
@@ -2042,7 +2041,7 @@ char *V_WordWrap(INT32 x, INT32 w, INT32 option, const char *string)
 //
 void V_DrawString(INT32 x, INT32 y, INT32 option, const char *string)
 {
-	INT32 w, c, cx = x, cy = y, dupx, dupy, scrwidth, center = 0, left = 0;
+	INT32 w, c, cx = x, cy = y, dup, scrwidth, center = 0, left = 0;
 	const char *ch = string;
 	INT32 charflags = 0;
 	const UINT8 *colormap = NULL;
@@ -2053,14 +2052,14 @@ void V_DrawString(INT32 x, INT32 y, INT32 option, const char *string)
 
 	if (option & V_NOSCALESTART)
 	{
-		dupx = vid.dupx;
-		dupy = vid.dupy;
+		dup = vid.dup;
 		scrwidth = vid.width;
 	}
 	else
 	{
-		dupx = dupy = 1;
-		scrwidth = vid.width/vid.dupx;
+		dup = 1;
+		scrwidth = vid.scaledwidth;
+
 		if (!(option & V_SNAPTOLEFT))
 		{
 			left = (scrwidth - BASEVIDWIDTH)/2;
@@ -2104,9 +2103,9 @@ void V_DrawString(INT32 x, INT32 y, INT32 option, const char *string)
 			cx = x;
 
 			if (option & V_RETURN8)
-				cy += 8*dupy;
+				cy += 8*dup;
 			else
-				cy += 12*dupy;
+				cy += 12*dup;
 
 			continue;
 		}
@@ -2119,17 +2118,17 @@ void V_DrawString(INT32 x, INT32 y, INT32 option, const char *string)
 		// character does not exist or is a space
 		if (c < 0 || c >= HU_FONTSIZE || !hu_font[c])
 		{
-			cx += spacewidth * dupx;
+			cx += spacewidth * dup;
 			continue;
 		}
 
 		if (charwidth)
 		{
-			w = charwidth * dupx;
-			center = w/2 - hu_font[c]->width*dupx/2;
+			w = charwidth * dup;
+			center = w/2 - hu_font[c]->width*dup/2;
 		}
 		else
-			w = hu_font[c]->width * dupx;
+			w = hu_font[c]->width * dup;
 
 		if (cx > scrwidth)
 			break;
@@ -2148,7 +2147,7 @@ void V_DrawString(INT32 x, INT32 y, INT32 option, const char *string)
 // SRB2kart
 void V_DrawKartString(INT32 x, INT32 y, INT32 option, const char *string)
 {
-	INT32 w, c, cx = x, cy = y, dupx, dupy, scrwidth, center = 0, left = 0;
+	INT32 w, c, cx = x, cy = y, dup, scrwidth, center = 0, left = 0;
 	const char *ch = string;
 	INT32 charflags = 0;
 	const UINT8 *colormap = NULL;
@@ -2159,14 +2158,13 @@ void V_DrawKartString(INT32 x, INT32 y, INT32 option, const char *string)
 
 	if (option & V_NOSCALESTART)
 	{
-		dupx = vid.dupx;
-		dupy = vid.dupy;
+		dup = vid.dup;
 		scrwidth = vid.width;
 	}
 	else
 	{
-		dupx = dupy = 1;
-		scrwidth = vid.width/vid.dupx;
+		dup = 1;
+		scrwidth = vid.scaledwidth;
 		left = (scrwidth - BASEVIDWIDTH)/2;
 	}
 
@@ -2206,9 +2204,9 @@ void V_DrawKartString(INT32 x, INT32 y, INT32 option, const char *string)
 			cx = x;
 
 			if (option & V_RETURN8)
-				cy += 8*dupy;
+				cy += 8*dup;
 			else
-				cy += 12*dupy;
+				cy += 12*dup;
 
 			continue;
 		}
@@ -2221,17 +2219,17 @@ void V_DrawKartString(INT32 x, INT32 y, INT32 option, const char *string)
 		// character does not exist or is a space
 		if (c < 0 || c >= KART_FONTSIZE || !kart_font[c])
 		{
-			cx += spacewidth * dupx;
+			cx += spacewidth * dup;
 			continue;
 		}
 
 		if (charwidth)
 		{
-			w = charwidth * dupx;
-			center = w/2 - kart_font[c]->width*dupx/2;
+			w = charwidth * dup;
+			center = w/2 - kart_font[c]->width*dup/2;
 		}
 		else
-			w = kart_font[c]->width * dupx;
+			w = kart_font[c]->width * dup;
 
 		if (cx > scrwidth)
 			break;
@@ -2266,7 +2264,7 @@ void V_DrawRightAlignedString(INT32 x, INT32 y, INT32 option, const char *string
 //
 void V_DrawSmallString(INT32 x, INT32 y, INT32 option, const char *string)
 {
-	INT32 w, c, cx = x, cy = y, dupx, dupy, scrwidth, center = 0, left = 0;
+	INT32 w, c, cx = x, cy = y, dup, scrwidth, center = 0, left = 0;
 	const char *ch = string;
 	INT32 charflags = 0;
 	const UINT8 *colormap = NULL;
@@ -2277,14 +2275,13 @@ void V_DrawSmallString(INT32 x, INT32 y, INT32 option, const char *string)
 
 	if (option & V_NOSCALESTART)
 	{
-		dupx = vid.dupx;
-		dupy = vid.dupy;
+		dup = vid.dup;
 		scrwidth = vid.width;
 	}
 	else
 	{
-		dupx = dupy = 1;
-		scrwidth = vid.width/vid.dupx;
+		dup = 1;
+		scrwidth = vid.scaledwidth;
 		left = (scrwidth - BASEVIDWIDTH)/2;
 		scrwidth -= left;
 	}
@@ -2325,9 +2322,9 @@ void V_DrawSmallString(INT32 x, INT32 y, INT32 option, const char *string)
 			cx = x;
 
 			if (option & V_RETURN8)
-				cy += 4*dupy;
+				cy += 4*dup;
 			else
-				cy += 6*dupy;
+				cy += 6*dup;
 
 			continue;
 		}
@@ -2339,19 +2336,21 @@ void V_DrawSmallString(INT32 x, INT32 y, INT32 option, const char *string)
 
 		if (c < 0 || c >= HU_FONTSIZE || !hu_font[c])
 		{
-			cx += spacewidth * dupx;
+			cx += spacewidth * dup;
 			continue;
 		}
 
 		if (charwidth)
 		{
-			w = charwidth * dupx;
-			center = w/2 - hu_font[c]->width*dupx/4;
+			w = charwidth * dup;
+			center = w/2 - hu_font[c]->width*dup/4;
 		}
 		else
-			w = hu_font[c]->width * dupx / 2;
+			w = hu_font[c]->width * dup / 2;
+
 		if (cx > scrwidth)
 			break;
+
 		if (cx+left + w < 0) //left boundary check
 		{
 			cx += w;
@@ -2382,7 +2381,7 @@ void V_DrawRightAlignedSmallString(INT32 x, INT32 y, INT32 option, const char *s
 //
 void V_DrawThinString(INT32 x, INT32 y, INT32 option, const char *string)
 {
-	INT32 w, c, cx = x, cy = y, dupx, dupy, scrwidth, left = 0;
+	INT32 w, c, cx = x, cy = y, dup, scrwidth, left = 0;
 	const char *ch = string;
 	INT32 charflags = 0;
 	const UINT8 *colormap = NULL;
@@ -2393,14 +2392,13 @@ void V_DrawThinString(INT32 x, INT32 y, INT32 option, const char *string)
 
 	if (option & V_NOSCALESTART)
 	{
-		dupx = vid.dupx;
-		dupy = vid.dupy;
+		dup = vid.dup;
 		scrwidth = vid.width;
 	}
 	else
 	{
-		dupx = dupy = 1;
-		scrwidth = vid.width/vid.dupx;
+		dup = 1;
+		scrwidth = vid.scaledwidth;
 		left = (scrwidth - BASEVIDWIDTH)/2;
 		scrwidth -= left;
 	}
@@ -2442,9 +2440,9 @@ void V_DrawThinString(INT32 x, INT32 y, INT32 option, const char *string)
 			cx = x;
 
 			if (option & V_RETURN8)
-				cy += 8*dupy;
+				cy += 8*dup;
 			else
-				cy += 12*dupy;
+				cy += 12*dup;
 
 			continue;
 		}
@@ -2456,18 +2454,19 @@ void V_DrawThinString(INT32 x, INT32 y, INT32 option, const char *string)
 
 		if (c < 0 || c >= HU_FONTSIZE || !tny_font[c])
 		{
-			cx += spacewidth * dupx;
+			cx += spacewidth * dup;
 			continue;
 		}
 
 		if (charwidth)
-			w = charwidth * dupx;
+			w = charwidth * dup;
 		else
 			w = ((option & V_6WIDTHSPACE ? max(1, tny_font[c]->width-1) // Reuse this flag for the alternate bunched-up spacing
-				: tny_font[c]->width) * dupx);
+				: tny_font[c]->width) * dup);
 
 		if (cx > scrwidth)
 			break;
+
 		if (cx+left + w < 0) //left boundary check
 		{
 			cx += w;
@@ -2496,7 +2495,7 @@ void V_DrawRightAlignedThinString(INT32 x, INT32 y, INT32 option, const char *st
 void V_DrawStringAtFixed(fixed_t x, fixed_t y, INT32 option, const char *string)
 {
 	fixed_t cx = x, cy = y;
-	INT32 w, c, dupx, dupy, scrwidth, center = 0, left = 0;
+	INT32 w, c, dup, scrwidth, center = 0, left = 0;
 	const char *ch = string;
 	INT32 spacewidth = 4, charwidth = 0;
 
@@ -2505,14 +2504,13 @@ void V_DrawStringAtFixed(fixed_t x, fixed_t y, INT32 option, const char *string)
 
 	if (option & V_NOSCALESTART)
 	{
-		dupx = vid.dupx;
-		dupy = vid.dupy;
+		dup = vid.dup;
 		scrwidth = vid.width;
 	}
 	else
 	{
-		dupx = dupy = 1;
-		scrwidth = vid.width/vid.dupx;
+		dup = 1;
+		scrwidth = vid.scaledwidth;
 		left = (scrwidth - BASEVIDWIDTH)/2;
 		scrwidth -= left;
 	}
@@ -2535,16 +2533,18 @@ void V_DrawStringAtFixed(fixed_t x, fixed_t y, INT32 option, const char *string)
 	{
 		if (!*ch)
 			break;
+
 		if (*ch & 0x80) //color ignoring
 			continue;
+
 		if (*ch == '\n')
 		{
 			cx = x;
 
 			if (option & V_RETURN8)
-				cy += (8*dupy)<<FRACBITS;
+				cy += (8*dup)<<FRACBITS;
 			else
-				cy += (12*dupy)<<FRACBITS;
+				cy += (12*dup)<<FRACBITS;
 
 			continue;
 		}
@@ -2557,20 +2557,21 @@ void V_DrawStringAtFixed(fixed_t x, fixed_t y, INT32 option, const char *string)
 		// character does not exist or is a space
 		if (c < 0 || c >= HU_FONTSIZE || !hu_font[c])
 		{
-			cx += (spacewidth * dupx)<<FRACBITS;
+			cx += (spacewidth * dup)<<FRACBITS;
 			continue;
 		}
 
 		if (charwidth)
 		{
-			w = charwidth * dupx;
-			center = w/2 - hu_font[c]->width*(dupx/2);
+			w = charwidth * dup;
+			center = w/2 - hu_font[c]->width*(dup/2);
 		}
 		else
-			w = hu_font[c]->width * dupx;
+			w = hu_font[c]->width * dup;
 
 		if ((cx>>FRACBITS) > scrwidth)
 			break;
+
 		if ((cx>>FRACBITS)+left + w < 0) //left boundary check
 		{
 			cx += w<<FRACBITS;
@@ -2587,29 +2588,32 @@ void V_DrawStringAtFixed(fixed_t x, fixed_t y, INT32 option, const char *string)
 void V_DrawSmallStringAtFixed(fixed_t x, fixed_t y, INT32 option, const char *string)
 {
 	fixed_t cx = x, cy = y;
-	INT32 w, c, dupx, dupy, scrwidth, center = 0, left = 0;
+	INT32 w, c, dup, scrwidth, center = 0, left = 0;
 	const char *ch = string;
 	INT32 charflags = 0;
 	const UINT8 *colormap = NULL;
 	INT32 spacewidth = 2, charwidth = 0;
 	INT32 lowercase = (option & V_ALLOWLOWERCASE);
 	option &= ~V_FLIP; // which is also shared with V_ALLOWLOWERCASE...
+
 	if (option & V_NOSCALESTART)
 	{
-		dupx = vid.dupx;
-		dupy = vid.dupy;
+		dup = vid.dup;
 		scrwidth = vid.width;
 	}
 	else
 	{
-		dupx = dupy = 1;
-		scrwidth = vid.width/vid.dupx;
+		dup = 1;
+		scrwidth = vid.scaledwidth;
 		left = (scrwidth - BASEVIDWIDTH)/2;
 		scrwidth -= left;
 	}
+
 	if (option & V_NOSCALEPATCH)
-		scrwidth *= vid.dupx;
+		scrwidth *= vid.dup;
+
 	charflags = (option & V_CHARCOLORMASK);
+
 	switch (option & V_SPACINGMASK)
 	{
 		case V_MONOSPACE:
@@ -2623,10 +2627,12 @@ void V_DrawSmallStringAtFixed(fixed_t x, fixed_t y, INT32 option, const char *st
 		default:
 			break;
 	}
+
 	for (;;ch++)
 	{
 		if (!*ch)
 			break;
+
 		if (*ch & 0x80) //color parsing -x 2.16.09
 		{
 			// manually set flags override color codes
@@ -2634,39 +2640,47 @@ void V_DrawSmallStringAtFixed(fixed_t x, fixed_t y, INT32 option, const char *st
 				charflags = ((*ch & 0x7f) << V_CHARCOLORSHIFT) & V_CHARCOLORMASK;
 			continue;
 		}
+
 		if (*ch == '\n')
 		{
 			cx = x;
 			if (option & V_RETURN8)
-				cy += (4*dupy)<<FRACBITS;
+				cy += (4*dup)<<FRACBITS;
 			else
-				cy += (6*dupy)<<FRACBITS;
+				cy += (6*dup)<<FRACBITS;
 			continue;
 		}
+
 		c = *ch;
+
 		if (!lowercase)
 			c = toupper(c);
 		c -= HU_FONTSTART;
+
 		// character does not exist or is a space
 		if (c < 0 || c >= HU_FONTSIZE || !hu_font[c])
 		{
-			cx += (spacewidth * dupx)<<FRACBITS;
+			cx += (spacewidth * dup)<<FRACBITS;
 			continue;
 		}
+
 		if (charwidth)
 		{
-			w = charwidth * dupx;
-			center = w/2 - hu_font[c]->width*(dupx/4);
+			w = charwidth * dup;
+			center = w/2 - hu_font[c]->width*(dup/4);
 		}
 		else
-			w = hu_font[c]->width * dupx / 2;
+			w = hu_font[c]->width * dup / 2;
+
 		if ((cx>>FRACBITS) > scrwidth)
 			break;
+
 		if ((cx>>FRACBITS)+left + w < 0) //left boundary check
 		{
 			cx += w<<FRACBITS;
 			continue;
 		}
+
 		colormap = V_GetStringColormap(charflags);
 		V_DrawFixedPatch(cx + (center<<FRACBITS), cy, FRACUNIT/2, option, hu_font[c], colormap);
 		cx += w<<FRACBITS;
@@ -2682,7 +2696,7 @@ void V_DrawCenteredSmallStringAtFixed(fixed_t x, fixed_t y, INT32 option, const 
 void V_DrawThinStringAtFixed(fixed_t x, fixed_t y, INT32 option, const char *string)
 {
 	fixed_t cx = x, cy = y;
-	INT32 w, c, dupx, dupy, scrwidth, center = 0, left = 0;
+	INT32 w, c, dup, scrwidth, center = 0, left = 0;
 	const char *ch = string;
 	INT32 spacewidth = 4, charwidth = 0;
 	INT32 charflags = 0;
@@ -2692,14 +2706,13 @@ void V_DrawThinStringAtFixed(fixed_t x, fixed_t y, INT32 option, const char *str
 
 	if (option & V_NOSCALESTART)
 	{
-		dupx = vid.dupx;
-		dupy = vid.dupy;
+		dup = vid.dup;
 		scrwidth = vid.width;
 	}
 	else
 	{
-		dupx = dupy = 1;
-		scrwidth = vid.width/vid.dupx;
+		dup = 1;
+		scrwidth = vid.scaledwidth;
 		left = (scrwidth - BASEVIDWIDTH)/2;
 		scrwidth -= left;
 	}
@@ -2725,6 +2738,7 @@ void V_DrawThinStringAtFixed(fixed_t x, fixed_t y, INT32 option, const char *str
 	{
 		if (!*ch)
 			break;
+
 		if (*ch & 0x80) //color parsing -x 2.16.09
 		{
 			// manually set flags override color codes
@@ -2735,14 +2749,15 @@ void V_DrawThinStringAtFixed(fixed_t x, fixed_t y, INT32 option, const char *str
 			}
 			continue;
 		}
+
 		if (*ch == '\n')
 		{
 			cx = x;
 
 			if (option & V_RETURN8)
-				cy += (8*dupy)<<FRACBITS;
+				cy += (8*dup)<<FRACBITS;
 			else
-				cy += (12*dupy)<<FRACBITS;
+				cy += (12*dup)<<FRACBITS;
 
 			continue;
 		}
@@ -2755,20 +2770,21 @@ void V_DrawThinStringAtFixed(fixed_t x, fixed_t y, INT32 option, const char *str
 		// character does not exist or is a space
 		if (c < 0 || c >= HU_FONTSIZE || !tny_font[c])
 		{
-			cx += (spacewidth * dupx)<<FRACBITS;
+			cx += (spacewidth * dup)<<FRACBITS;
 			continue;
 		}
 
 		if (charwidth)
 		{
-			w = charwidth * dupx;
-			center = w/2 - tny_font[c]->width*(dupx/2);
+			w = charwidth * dup;
+			center = w/2 - tny_font[c]->width*(dup/2);
 		}
 		else
-			w = tny_font[c]->width * dupx;
+			w = tny_font[c]->width * dup;
 
 		if ((cx>>FRACBITS) > scrwidth)
 			break;
+
 		if ((cx>>FRACBITS)+left + w < 0) //left boundary check
 		{
 			cx += w<<FRACBITS;
@@ -2789,7 +2805,7 @@ void V_DrawTallNum(INT32 x, INT32 y, INT32 flags, INT32 num)
 	boolean neg;
 
 	if (flags & V_NOSCALESTART)
-		w *= vid.dupx;
+		w *= vid.dup;
 
 	if ((neg = num < 0))
 		num = -num;
@@ -2814,7 +2830,7 @@ void V_DrawPaddedTallNum(INT32 x, INT32 y, INT32 flags, INT32 num, INT32 digits)
 	INT32 w = tallnum[0]->width;
 
 	if (flags & V_NOSCALESTART)
-		w *= vid.dupx;
+		w *= vid.dup;
 
 	if (num < 0)
 		num = -num;
@@ -2835,7 +2851,7 @@ void V_DrawPaddedTallColorNum(INT32 x, INT32 y, INT32 flags, INT32 num, INT32 di
 	INT32 w = tallnum[0]->width;
 
 	if (flags & V_NOSCALESTART)
-		w *= vid.dupx;
+		w *= vid.dup;
 
 	if (num < 0)
 		num = -num;
@@ -2857,7 +2873,7 @@ INT32 V_DrawPingNum(INT32 x, INT32 y, INT32 flags, INT32 num, const UINT8 *color
 	INT32 w = pingnum[0]->width;	// this SHOULD always be 5 but I guess custom graphics exist.
 
 	if (flags & V_NOSCALESTART)
-		w *= vid.dupx;
+		w *= vid.dup;
 
 	if (num < 0)
 		num = -num;
@@ -2880,7 +2896,7 @@ void V_DrawRankNum(INT32 x, INT32 y, INT32 flags, INT32 num, INT32 digits, const
 	INT32 w = ranknum[0]->width - 1;
 
 	if (flags & V_NOSCALESTART)
-		w *= vid.dupx;
+		w *= vid.dup;
 
 	if (num < 0)
 		num = -num;
@@ -2900,7 +2916,7 @@ void V_DrawRankNum(INT32 x, INT32 y, INT32 flags, INT32 num, INT32 digits, const
 //
 void V_DrawCreditString(fixed_t x, fixed_t y, INT32 option, const char *string)
 {
-	INT32 w, c, dupx, dupy, scrwidth = BASEVIDWIDTH;
+	INT32 w, c, dup, scrwidth = BASEVIDWIDTH;
 	fixed_t cx = x, cy = y;
 	const char *ch = string;
 
@@ -2910,33 +2926,36 @@ void V_DrawCreditString(fixed_t x, fixed_t y, INT32 option, const char *string)
 
 	if (option & V_NOSCALESTART)
 	{
-		dupx = vid.dupx;
-		dupy = vid.dupy;
+		dup = vid.dup;
 		scrwidth = vid.width;
 	}
 	else
-		dupx = dupy = 1;
+		dup = 1;
 
 	for (;;)
 	{
 		c = *ch++;
+
 		if (!c)
 			break;
+
 		if (c == '\n')
 		{
 			cx = x;
-			cy += (12*dupy)<<FRACBITS;
+			cy += (12*dup)<<FRACBITS;
 			continue;
 		}
 
 		c = toupper(c) - CRED_FONTSTART;
+
 		if (c < 0 || c >= CRED_FONTSIZE)
 		{
-			cx += (16*dupx)<<FRACBITS;
+			cx += (16*dup)<<FRACBITS;
 			continue;
 		}
 
-		w = cred_font[c]->width * dupx;
+		w = cred_font[c]->width * dup;
+
 		if ((cx>>FRACBITS) > scrwidth)
 			break;
 
@@ -2973,19 +2992,18 @@ INT32 V_CreditStringWidth(const char *string)
 //
 void V_DrawLevelTitle(INT32 x, INT32 y, INT32 option, const char *string)
 {
-	INT32 w, c, cx = x, cy = y, dupx, dupy, scrwidth, left = 0;
+	INT32 w, c, cx = x, cy = y, dup, scrwidth, left = 0;
 	const char *ch = string;
 
 	if (option & V_NOSCALESTART)
 	{
-		dupx = vid.dupx;
-		dupy = vid.dupy;
+		dup = vid.dup;
 		scrwidth = vid.width;
 	}
 	else
 	{
-		dupx = dupy = 1;
-		scrwidth = vid.width/vid.dupx;
+		dup = 1;
+		scrwidth = vid.scaledwidth;
 		left = (scrwidth - BASEVIDWIDTH)/2;
 		scrwidth -= left;
 	}
@@ -2993,25 +3011,30 @@ void V_DrawLevelTitle(INT32 x, INT32 y, INT32 option, const char *string)
 	for (;;)
 	{
 		c = *ch++;
+
 		if (!c)
 			break;
+
 		if (c == '\n')
 		{
 			cx = x;
-			cy += 12*dupy;
+			cy += 12*dup;
 			continue;
 		}
 
 		c = toupper(c) - LT_FONTSTART;
+
 		if (c < 0 || c >= LT_FONTSIZE || !lt_font[c])
 		{
-			cx += 12*dupx;
+			cx += 12*dup;
 			continue;
 		}
 
-		w = lt_font[c]->width * dupx;
+		w = lt_font[c]->width * dup;
+
 		if (cx > scrwidth)
 			break;
+
 		if (cx+left + w < 0) //left boundary check
 		{
 			cx += w;
@@ -3071,6 +3094,9 @@ INT32 V_SubStringWidth(const char *string, INT32 length, INT32 option)
 	INT32 spacewidth = 4, charwidth = 0;
 	ssize_t i;
 
+	if (!string)
+		return 0;
+
 	if (length < 0)
 		length = strlen(string);
 
@@ -3113,6 +3139,9 @@ INT32 V_SmallSubStringWidth(const char *string, INT32 length, INT32 option)
 	INT32 spacewidth = 2, charwidth = 0;
 	ssize_t i;
 
+	if (!string)
+		return 0;
+
 	if (length < 0)
 		length = strlen(string);
 
@@ -3153,8 +3182,13 @@ INT32 V_ThinSubStringWidth(const char *string, INT32 length, INT32 option)
 {
 	INT32 c, w = 0;
 	INT32 spacewidth = 2, charwidth = 0;
-	boolean lowercase = (option & V_ALLOWLOWERCASE);
+	boolean lowercase;
 	ssize_t i;
+
+	if (!string)
+		return 0;
+
+	lowercase = (option & V_ALLOWLOWERCASE);
 
 	if (length < 0)
 		length = strlen(string);
@@ -3209,6 +3243,9 @@ INT32 V_SubStringLengthToFit(const char *string, INT32 width, INT32 option)
 	INT32 c, w = 0;
 	INT32 spacewidth = 4, charwidth = 0;
 	INT32 i;
+
+	if (!string)
+		return 0;
 
 	switch (option & V_SPACINGMASK)
 	{
@@ -3661,7 +3698,7 @@ void V_DoPostProcessor(INT32 view, INT32 param)
 			{
 				// Shift this row of pixels to the right by 2
 				tmpscr[(y*vid.width)+xoffset] = srcscr[(y*vid.width)+xoffset];
-				M_Memcpy(&tmpscr[(y*vid.width)+xoffset], &srcscr[(y*vid.width)+xoffset+vid.dupx], viewwidth-vid.dupx);
+				M_Memcpy(&tmpscr[(y*vid.width)+xoffset], &srcscr[(y*vid.width)+xoffset+vid.dup], viewwidth-vid.dup);
 			}
 			else
 				M_Memcpy(&tmpscr[(y*vid.width)+xoffset], &srcscr[(y*vid.width)+xoffset], viewwidth);
@@ -3787,7 +3824,7 @@ UINT8 GetColorLUTDirect(colorlookup_t *lut, UINT8 r, UINT8 g, UINT8 b)
 void V_Init(void)
 {
 	INT32 i;
-	INT32 screensize = vid.rowbytes * vid.height;
+	INT32 screensize = vid.width * vid.height;
 
 	for (i = 0; i < NUMSCREENS; i++)
 	{
@@ -3822,4 +3859,34 @@ void V_Init(void)
 	for (i = 0; i < NUMSCREENS; i++)
 		CONS_Debug(DBG_RENDER, " screens[%d] = %x\n", i, screens[i]);
 #endif
+}
+
+void V_Recalc(void)
+{
+	// scale 1,2,3 times in x and y the patches for the menus and overlays...
+	// calculated once and for all, used by routines in v_video.c and v_draw.c
+
+	// Set dup based on width or height, whichever is less
+	if (((vid.width*FRACUNIT) / BASEVIDWIDTH) < ((vid.height*FRACUNIT) / BASEVIDHEIGHT))
+	{
+		vid.dup = vid.width / BASEVIDWIDTH;
+		vid.fdup = (vid.width*FRACUNIT) / BASEVIDWIDTH;
+	}
+	else
+	{
+		vid.dup = vid.height / BASEVIDHEIGHT;
+		vid.fdup = (vid.height*FRACUNIT) / BASEVIDHEIGHT;
+	}
+
+	if (loaded_config // this could use a better name, since it is more and indicator that early startup is done and its safe to do sketchy shit now :chaosleep:
+	&& (vid.width > 720) && (vid.height > 1280)) // ehhhh well this thing has so many issues, so ill lock it to higher resolutions instead
+	{
+		vid.dup = FixedDiv(vid.dup, cv_highreshudscale.value);
+		vid.fdup = FixedDiv(vid.fdup, cv_highreshudscale.value);
+	}
+
+	vid.scaledwidth = (vid.width/vid.dup);
+
+	vid.meddup = (UINT8)(vid.dup >> 1) + 1;
+	vid.smalldup = (UINT8)(vid.dup / 3) + 1;
 }

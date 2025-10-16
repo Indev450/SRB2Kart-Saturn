@@ -97,7 +97,7 @@ FUNCINLINE static ATTRINLINE PUREFUNC INT32 R_PointOnSide(fixed_t x, fixed_t y, 
 
 	// Try to quickly decide by looking at sign bits.
 	// also use a mask to avoid branch prediction
-	INT32 mask = (node->dy ^ node->dx ^ x ^ y) >> 31;
+	INT32 mask = (((node->dy ^ node->dx ^ x ^ y) < 0) ? -1 : 0);
 	return (mask & ((node->dy ^ x) < 0)) |  // (left is negative)
 	       (~mask & (FixedMul(y, node->dx>>FRACBITS) >= FixedMul(node->dy>>FRACBITS, x)));
 }
@@ -186,7 +186,7 @@ extern consvar_t cv_shadow, cv_shadowoffs;
 extern consvar_t cv_ffloorclip, cv_spriteclip;
 extern consvar_t cv_softcyancut;
 extern consvar_t cv_translucency;
-extern consvar_t cv_drawdist, cv_drawdist_precip, cv_lessprecip, cv_mobjscaleprecip;
+extern consvar_t cv_drawdist, cv_drawdist_precip, cv_lessprecip;
 extern consvar_t cv_fov, cv_fovchange;
 extern consvar_t cv_skybox;
 extern consvar_t cv_tailspickup;

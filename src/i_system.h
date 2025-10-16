@@ -93,7 +93,7 @@ void I_OsPolling(void);
 
 /**	\brief Called by M_Responder when quit is selected, return exit code 0
 */
-void I_Quit(void) FUNCNORETURN;
+FUNCNORETURN void ATTRNORETURN I_Quit(void);
 
 
 /**	\brief to set up the first joystick scale
@@ -238,6 +238,10 @@ INT32 I_ClipboardCopy(const char *data, size_t size);
 const char *I_ClipboardPaste(void);
 
 void I_RegisterSysCommands(void);
+
+/** \brief Returns the system name.
+ */
+const char *I_GetSysName(void);
 
 #ifdef __cplusplus
 } // extern "C"

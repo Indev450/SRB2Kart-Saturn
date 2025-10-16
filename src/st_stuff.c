@@ -219,10 +219,6 @@ void ST_UnloadGraphics(void)
 
 void ST_LoadGraphics(void)
 {
-	// SRB2 border patch
-	//st_borderpatchnum = W_GetNumForName("GFZFLR01");
-	//scr_borderpatch = W_CacheLumpNum(st_borderpatchnum, PU_HUDGFX);
-
 	// the original Doom uses 'STF' as base name for all face graphics
 	// Graue 04-08-2004: face/name graphics are now indexed by skins
 	//                   but load them in R_AddSkins, that gets called
@@ -437,8 +433,7 @@ static void ST_drawLevelTitle(void)
 	subttl = mapheaderinfo[gamemap-1]->subttl;
 	zonttl = mapheaderinfo[gamemap-1]->zonttl; // SRB2kart
 	actnum = mapheaderinfo[gamemap-1]->actnum;
-	dupcalc = (vid.width/vid.dupx);
-
+	dupcalc = vid.scaledwidth;
 	bary = (splitscreen) ? BASEVIDHEIGHT/2 : 163;
 
 	if (K_UseColorHud())
@@ -601,23 +596,27 @@ static void ST_overlayDrawer(void)
 				}
 				else if (splitscreen)
 				{
-					V_DrawCenteredThinString((vid.width/vid.dupx)/4, BASEVIDHEIGHT/2 - 12, V_HUDTRANSHALF|V_ALLOWLOWERCASE|K_calcSplitFlags(V_SNAPTOBOTTOM|V_SNAPTOLEFT), player_names[stplyr-players]);
+					V_DrawCenteredThinString(vid.scaledwidth/4, BASEVIDHEIGHT/2 - 12, V_HUDTRANSHALF|V_ALLOWLOWERCASE|K_calcSplitFlags(V_SNAPTOBOTTOM|V_SNAPTOLEFT), player_names[stplyr-players]);
 				}
 			}
 		}
 	}
 
-	if ((!(netgame || multiplayer) || !hu_showscores) && !forceshowhud)
+	// dont draw those if we force the hud to show in the saturn options
+	if (!forceshowhud)
 	{
-		if (renderisnewtic)
+		if (!(netgame || multiplayer) || !hu_showscores)
 		{
-			LUA_HUDHOOK(game, luahuddrawlist_game[stplyrnum]);
+			if (renderisnewtic)
+			{
+				LUA_HUDHOOK(game, luahuddrawlist_game[stplyrnum]);
+			}
 		}
-	}
 
-	// draw level title Tails
-	if (!(hu_showscores && (netgame || multiplayer) && !mapreset) && LUA_HudEnabled(hud_stagetitle) && !forceshowhud)
-		ST_drawLevelTitle();
+		// draw level title Tails
+		if (stplyrnum == 0 && !(hu_showscores && (netgame || multiplayer) && !mapreset) && LUA_HudEnabled(hud_stagetitle))
+			ST_drawLevelTitle();
+	}
 
 	if (!hu_showscores && netgame && !mapreset)
 	{
@@ -791,7 +790,7 @@ void ST_Drawer(void)
 			LUA_HUD_DrawList(luahuddrawlist_game[i]);
 
 		// draw Midnight Channel's overlay ontop
-		if (mapheaderinfo[gamemap-1]->typeoflevel & TOL_TV)	// Very specific Midnight Channel stuff.
+		if (mapheaderinfo[gamemap-1]->typeoflevel & TOL_TV) // Very specific Midnight Channel stuff.
 			ST_MayonakaStatic();
 	}
 
@@ -799,7 +798,7 @@ void ST_Drawer(void)
 	if (timeinmap < 15)
 	{
 		if (timeinmap <= 5)
-			V_DrawFill(0,0,BASEVIDWIDTH,BASEVIDHEIGHT,120); // Pure white on first few frames, to hide SRB2's awful level load artifacts
+			V_DrawFill(0, 0, BASEVIDWIDTH, BASEVIDHEIGHT, 120); // Pure white on first few frames, to hide SRB2's awful level load artifacts
 		else
 			V_DrawFadeScreen(120, 15-timeinmap); // Then gradually fade out from there
 	}

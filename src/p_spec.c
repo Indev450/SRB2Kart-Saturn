@@ -52,10 +52,6 @@ mobj_t *skyboxmo[2];
 // This must be updated whenever we up the max flat size - quicker to assume rather than figuring out the sqrt of the specific flat's filesize.
 #define MAXFLATSIZE (2048<<FRACBITS)
 
-#if defined(_MSC_VER)
-#pragma pack(1)
-#endif
-
 /** Animated texture definition.
   * Used for ::harddefs and for loading an ANIMATED lump from a wad.
   *
@@ -72,10 +68,6 @@ typedef struct
 	char startname[9]; ///< Name of the first frame, null-terminated.
 	INT32 speed ; ///< Number of tics for which each frame is shown.
 } ATTRPACK animdef_t;
-
-#if defined(_MSC_VER)
-#pragma pack()
-#endif
 
 typedef struct
 {
@@ -1799,7 +1791,7 @@ void P_SwitchWeather(INT32 weathernum)
 			precipmobj->tics = st->tics;
 			precipmobj->sprite = st->sprite;
 			precipmobj->frame = st->frame;
-			precipmobj->momz = (cv_mobjscaleprecip.value ? FixedMul(mobjinfo[type].speed, mapobjectscale) : mobjinfo[type].speed);
+			precipmobj->momz = FixedMul(mobjinfo[type].speed, mapobjectscale);
 
 			precipmobj->precipflags &= ~(PCF_INVISIBLE|PCF_SPLASH); // P_PrecipThinker will add this again if it needs to
 		}
@@ -2678,6 +2670,7 @@ static void P_ProcessLineSpecial(line_t *line, mobj_t *mo, sector_t *callsec)
 				size_t linenum;
 				side_t *set = &sides[line->sidenum[0]], *this;
 				boolean always = !(line->flags & ML_NOCLIMB); // If noclimb: Only change mid texture if mid texture already exists on tagged lines, etc.
+
 				for (linenum = 0; linenum < numlines; linenum++)
 				{
 					if (lines[linenum].special == 439)
@@ -2688,25 +2681,29 @@ static void P_ProcessLineSpecial(line_t *line, mobj_t *mo, sector_t *callsec)
 
 					// Front side
 					this = &sides[lines[linenum].sidenum[0]];
-					if (always || this->toptexture) this->toptexture = set->toptexture;
-					if (always || this->midtexture) this->midtexture = set->midtexture;
-					if (always || this->bottomtexture) this->bottomtexture = set->bottomtexture;
+					if (always || this->toptexture)
+						this->toptexture = set->toptexture;
+					if (always || this->midtexture)
+						this->midtexture = set->midtexture;
+					if (always || this->bottomtexture)
+						this->bottomtexture = set->bottomtexture;
 
 					if (lines[linenum].sidenum[1] == 0xffff)
 						continue; // One-sided stops here.
 
 					// Back side
 					this = &sides[lines[linenum].sidenum[1]];
-					if (always || this->toptexture) this->toptexture = set->toptexture;
-					if (always || this->midtexture) this->midtexture = set->midtexture;
-					if (always || this->bottomtexture) this->bottomtexture = set->bottomtexture;
+					if (always || this->toptexture)
+						this->toptexture = set->toptexture;
+					if (always || this->midtexture)
+						this->midtexture = set->midtexture;
+					if (always || this->bottomtexture)
+						this->bottomtexture = set->bottomtexture;
 				}
 			}
 			break;
 
-		case 440: // Play race countdown and start Metal Sonic
-			if (!metalrecording && !metalplayback)
-				G_DoPlayMetal();
+		case 440: // Play race countdown and start Metal Sonic // srb2kart: unused
 			break;
 
 		case 441: // Trigger unlockable
@@ -6481,7 +6478,6 @@ void T_Scroll(scroll_t *s)
 
 		case sc_carry:
 			sec = sectors + s->affectee;
-			height = sec->floorheight;
 
 			// sec is the control sector, find the real sector(s) to use
 			for (i = 0; i < sec->linecount; i++)
@@ -6558,7 +6554,6 @@ void T_Scroll(scroll_t *s)
 
 		case sc_carry_ceiling: // carry on ceiling (FOF scrolling)
 			sec = sectors + s->affectee;
-			height = sec->ceilingheight;
 
 			// sec is the control sector, find the real sector(s) to use
 			for (i = 0; i < sec->linecount; i++)

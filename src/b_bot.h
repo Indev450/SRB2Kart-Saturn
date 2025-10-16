@@ -10,8 +10,13 @@
 /// \file  b_bot.h
 /// \brief Basic bot handling
 
+#ifndef __B_BOT__
+#define __B_BOT__
+
 void B_BuildTiccmd(player_t *player, ticcmd_t *cmd);
 void B_KeysToTiccmd(mobj_t *mo, ticcmd_t *cmd, boolean forward, boolean backward, boolean left, boolean right, boolean strafeleft, boolean straferight, boolean jump, boolean spin);
 boolean B_CheckRespawn(player_t *player);
 void B_MoveBlocked(player_t *player);
 void B_RespawnBot(INT32 playernum);
+
+#endif

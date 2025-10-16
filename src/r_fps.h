@@ -26,7 +26,6 @@ extern "C" {
 #include "m_perfstats.h"
 
 extern consvar_t cv_fpscap, cv_fpscapbg;
-extern consvar_t cv_precipinterp;
 
 extern ps_metric_t ps_interp_frac;
 extern ps_metric_t ps_interp_lag;

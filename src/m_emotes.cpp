@@ -1,3 +1,14 @@
+// SONIC ROBO BLAST 2 KART SATURN
+//-----------------------------------------------------------------------------
+// Copyright (C) 2025 by Indev.
+//
+// This program is free software distributed under the
+// terms of the GNU General Public License, version 2.
+// See the 'LICENSE' file for more details.
+//-----------------------------------------------------------------------------
+/// \file  m_emotes.cpp
+/// \brief Chat emotes handling
+
 #include <map>
 #include <string>
 #include <sstream>
@@ -81,7 +92,7 @@ void M_LoadEmotes(UINT16 wadnum)
 			if (emote_name.size() > MAXEMOTENAME)
 			{
 				CONS_Alert(CONS_WARNING, "EMOTES: Emote name is too long, truncating. (file %s, line %d)\n", wadfiles[wadnum]->filename, linenum);
-				emote_name = emote_name.substr(0, MAXEMOTENAME);
+				emote_name.resize(MAXEMOTENAME);
 			}
 
 			emote = &emotes[emote_name];
@@ -128,7 +139,7 @@ void M_LoadEmotes(UINT16 wadnum)
 					if (framelumpname.size() > 8)
 					{
 						CONS_Alert(CONS_WARNING, "EMOTES: Frame %d name is too long. (file %s, line %d)", numframes, wadfiles[wadnum]->filename, linenum);
-						framelumpname = framelumpname.substr(0, 8);
+						framelumpname.resize(8);
 					}
 
 					std::strncpy(emote->frames[numframes], framelumpname.c_str(), framelumpname.size()+1);

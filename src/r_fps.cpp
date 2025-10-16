@@ -49,8 +49,6 @@ static CV_PossibleValue_t fpscap_cons_t[] = {
 consvar_t cv_fpscap   = {"fpscap", "Match refresh rate", CV_SAVE, fpscap_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_fpscapbg = {"fpscapbackground", "Match refresh rate", CV_SAVE, fpscap_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
-consvar_t cv_precipinterp = {"precipinterpolation", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
-
 ps_metric_t ps_interp_frac = {};
 ps_metric_t ps_interp_lag  = {};
 
@@ -380,23 +378,19 @@ void R_InterpolateMobjState(mobj_t *mobj, fixed_t frac, interpmobjstate_t *out)
 
 void R_InterpolatePrecipMobjState(precipmobj_t *mobj, fixed_t frac, interpmobjstate_t *out)
 {
-	if (frac == FRACUNIT || !cv_precipinterp.value)
+	if (frac == FRACUNIT)
 	{
 		out->x = mobj->x;
 		out->y = mobj->y;
 		out->z = mobj->z;
-		out->scale = cv_mobjscaleprecip.value ? mapobjectscale : FRACUNIT;
-		//out->subsector = mobj->subsector;
-		//out->angle = mobj->angle;
+		out->scale = mapobjectscale;
 		return;
 	}
 
 		out->x = R_LerpFixed(mobj->old_x, mobj->x, frac);
 		out->y = R_LerpFixed(mobj->old_y, mobj->y, frac);
 		out->z = R_LerpFixed(mobj->old_z, mobj->z, frac);
-		out->scale = cv_mobjscaleprecip.value ? mapobjectscale : FRACUNIT;
-		//out->subsector = R_PointInSubsector(out->x, out->y); // this is unused
-		//out->angle = R_LerpAngle(mobj->old_angle, mobj->angle, frac);
+		out->scale = mapobjectscale;
 }
 
 static levelinterpolator_t *CreateInterpolator(levelinterpolator_type_e type, thinker_t *thinker)

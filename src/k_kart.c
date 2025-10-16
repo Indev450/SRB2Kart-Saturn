@@ -91,16 +91,10 @@ static void saltyhop_onchange(void)
 	{
 		player_t *player = &players[i];
 
-		if (!player || !playeringame[i] || P_MobjWasRemoved(player->mo))
+		if (!player || P_MobjWasRemoved(player->mo))
 			continue;
 
-		player->mo->salty_jump = false;
-		player->mo->salty_zoffset = 0;
-		player->mo->salty_momz = 0;
-
-		player->mo->salty_ready = false;
-		player->mo->salty_tapping = false;
-		player->mo->init_salty = false;
+		memset(&player->mo->salty, 0, sizeof(player->mo->salty));
 	}
 }
 
@@ -3339,70 +3333,70 @@ static void K_QuiteSaltyHop(player_t *player)
 		return;
 
 	// what the fuck is this haya
-	//fixed_t mos = FRACUNIT; // doesnt work correctly if it isnt :/
 	mobj_t *pmo = player->mo;
+	salty_t *psalt = &pmo->salty;
 	const boolean onground = P_IsObjectOnGround(pmo);
 
 	// ready?
 	if (!player->kartstuff[k_jmp])
 	{
-		pmo->salty_ready = true;
-		pmo->salty_tapping = false;
+		psalt->ready = true;
+		psalt->tapping = false;
 	}
-	else if (pmo->salty_ready)
+	else if (psalt->ready)
 	{
-		pmo->salty_ready = false;
-		pmo->salty_tapping = true;
+		psalt->ready = false;
+		psalt->tapping = true;
 	}
 	else
 	{
-		pmo->salty_tapping = false;
+		psalt->tapping = false;
 	}
 
 	// GO!
-	if (!pmo->init_salty)
+	if (!psalt->init)
 	{
-		pmo->salty_jump = false;
-		pmo->salty_zoffset = 0;
-		pmo->salty_momz = 0;
-		pmo->init_salty = true;
+		psalt->jump = false;
+		psalt->zoffset = 0;
+		psalt->momz = 0;
+		psalt->init = true;
 	}
-	else if (pmo->salty_jump)
+	else if (psalt->jump)
 	{
 		if (pmo->eflags & MFE_JUSTHITFLOOR)
 		{
-			pmo->salty_zoffset = 0;
+			psalt->zoffset = 0;
 		}
 		else if (onground)
 		{
-			pmo->salty_zoffset += pmo->salty_momz;
-			pmo->salty_momz -= (FRACUNIT*3/2);
+			psalt->zoffset += psalt->momz;
+			psalt->momz -= (FRACUNIT*3/2);
 		}
 		else
 		{
-			pmo->salty_zoffset *= (49/50)*FRACUNIT;
-			pmo->salty_momz = 0;
+			psalt->zoffset *= (49/50)*FRACUNIT;
+			psalt->momz = 0;
 		}
 
-		if (pmo->salty_zoffset <= 0)
+		if (psalt->zoffset <= 0)
 		{
 			if (cv_saltyhopsfx.value && !(pmo->eflags & MFE_JUSTHITFLOOR) && onground)
 				S_StartSound(pmo, sfx_s268);
-			pmo->salty_jump = false;
-			pmo->salty_zoffset = 0;
-			pmo->salty_momz = 0;
+			psalt->jump = false;
+			psalt->zoffset = 0;
+			psalt->momz = 0;
 			// shlamma damma
 			if (cv_saltysquish.value)
 				pmo->stretchslam += 8*FRACUNIT;
 		}
-		else if (cv_saltysquish.value && pmo->salty_zoffset >= 0)
+		else if (cv_saltysquish.value && psalt->zoffset >= 0)
 		{
 			// goofy ahh hack
 			pmo->spriteyscale += (FRACUNIT/8);
 			pmo->spritexscale -= (FRACUNIT/8);
 		}
 
-		pmo->spriteyoffset = FixedMul(pmo->salty_zoffset, cv_saltyheight.value);
+		pmo->spriteyoffset = FixedMul(psalt->zoffset, cv_saltyheight.value);
 
 		if (cv_saltyhopsfx.value)
 		{
@@ -3412,11 +3406,11 @@ static void K_QuiteSaltyHop(player_t *player)
 				S_StopSoundByID(pmo, sfx_drift);
 		}
 	}
-	else if (pmo->salty_tapping && onground && !player->kartstuff[k_spinouttimer] && !player->kartstuff[k_squishedtimer])
+	else if (psalt->tapping && onground && !player->kartstuff[k_spinouttimer] && !player->kartstuff[k_squishedtimer])
 	{
-		pmo->salty_jump = true;
-		pmo->salty_zoffset = 0;
-		pmo->salty_momz = 6*FRACUNIT;
+		psalt->jump = true;
+		psalt->zoffset = 0;
+		psalt->momz = 6*FRACUNIT;
 		if (cv_saltyhopsfx.value)
 			S_StartSound(pmo, sfx_s25a);
 	}
@@ -3443,7 +3437,7 @@ boolean K_ShouldSlopeRoll(mobj_t *mobj)
 		return false;
 
 	// seeing a character rotate mid-hop looks really janky
-	if (!cv_saltyroll.value && mobj->player && mobj->player->mo->salty_jump)
+	if (!cv_saltyroll.value && mobj->player && mobj->player->mo->salty.jump)
 		return false;
 
 	return K_CheckSlopeRollDist(mobj);

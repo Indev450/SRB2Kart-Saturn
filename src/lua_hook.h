@@ -10,6 +10,9 @@
 /// \file  lua_hook.h
 /// \brief hooks for Lua scripting
 
+#ifndef __LUA_HOOK__
+#define __LUA_HOOK__
+
 #include "r_defs.h"
 #include "d_player.h"
 #include "s_sound.h"
@@ -146,3 +149,5 @@ boolean LUA_HookPlayerSquish(player_t *player, mobj_t *inflictor, mobj_t *source
 // (note: function format in lua doesn't include maxresults, so its function(result, gametype, secondgametype, prevmap)
 // to get maxresults use #result)
 void LUA_HookSetupVote(INT16 result[], INT16 maxresults, UINT8 gt, UINT8 secondgt);
+
+#endif //__LUA_HOOK__

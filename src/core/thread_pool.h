@@ -1,4 +1,4 @@
-// BLANKART
+// SONIC ROBO BLAST 2 KART
 //-----------------------------------------------------------------------------
 // Copyright (C) 2024 by Ronald "Eidolon" Kinard
 // Copyright (C) 2024 by Kart Krew

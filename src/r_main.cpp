@@ -192,7 +192,6 @@ consvar_t cv_translucency    = {"translucency", "On", CV_SAVE, CV_OnOff, NULL, 0
 consvar_t cv_drawdist        = {"drawdist", "Infinite", CV_SAVE, drawdist_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_drawdist_precip = {"drawdist_precip", "1024", CV_SAVE|CV_CALL|CV_NOINIT, drawdist_precip_cons_t, Precipstuff_OnChange, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_lessprecip      = {"lessweathereffects", "Off", CV_SAVE|CV_CALL|CV_NOINIT, CV_OnOff, Precipstuff_OnChange, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_mobjscaleprecip = {"scaleprecipmobjscale", "Off", CV_SAVE|CV_CALL|CV_NOINIT, CV_OnOff, Precipstuff_OnChange, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_maxinterpdist   = {"maxinterpdist", "Infinite", CV_SAVE, maxinterpdist_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_playerfade      = {"playerfade", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_ripplewater     = {"waterripples", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
@@ -1024,8 +1023,6 @@ void R_Init(void)
 	//I_OutputMsg("\nR_InitData");
 	R_InitData();
 
-	//I_OutputMsg("\nR_InitViewBorder");
-	R_InitViewBorder();
 	R_SetViewSize(); // setsizeneeded is set true
 
 	// this is now done by SCR_Recalc() at the first mode set
@@ -1240,7 +1237,7 @@ void R_SetupFrame(UINT8 pnum, boolean skybox)
 		thiscam->reset = false;
 	}
 
-	if (player->spectator)
+	if (player->spectator || thiscam->freecam)
 	{
 		// Free flying spectator uses demo freecam. This
 		// requires chasecam to be enabled.
@@ -1401,12 +1398,16 @@ void R_RenderPlayerView(player_t *player)
 
 		R_ClearClipSegs();
 		R_ClearDrawSegs();
+		R_ClearSegTables();
 		R_ClearPlanes();
 		R_ClearSprites();
 
+		R_SetColumnContext(COLUMNCONTEXT_FLUSH);
 		R_RenderViewpoint(&masks[nummasks - 1], false);
 
 		R_ClipSprites(drawsegs, NULL);
+		R_ResetColumnBuffer();
+		R_SetColumnContext(COLUMNCONTEXT_DIRECT);
 		R_DrawSkyPlanes(); // draw the fucker again to prevent some artifacts
 		R_DrawPlanes();
 		R_DrawMasked(masks, nummasks);
@@ -1435,11 +1436,13 @@ void R_RenderPlayerView(player_t *player)
 		R_ClearClipSegs();
 	}
 	R_ClearDrawSegs();
+	R_ClearSegTables();
 	R_ClearSprites();
 
 	// check for new console commands.
 	NetUpdate();
 
+	R_SetColumnContext(COLUMNCONTEXT_FLUSH);
 	ps_numbspcalls.value.i = ps_numpolyobjects.value.i = ps_numdrawnodes.value.i = 0;
 	PS_START_TIMING(ps_bsptime);
 	R_RenderViewpoint(&masks[nummasks - 1], true);
@@ -1447,6 +1450,7 @@ void R_RenderPlayerView(player_t *player)
 	PS_START_TIMING(ps_sw_spritecliptime);
 	R_ClipSprites(drawsegs, NULL);
 	PS_STOP_TIMING(ps_sw_spritecliptime);
+	R_ResetColumnBuffer();
 
 	ps_numsprites.value.i = numvisiblesprites;
 
@@ -1483,12 +1487,14 @@ void R_RenderPlayerView(player_t *player)
 			R_RenderViewpoint(&masks[nummasks - 1], true);
 
 			R_ClipSprites(ds_p - (masks[nummasks - 1].drawsegs[1] - masks[nummasks - 1].drawsegs[0]), portal);
+			R_ResetColumnBuffer();
 
 			Portal_Remove(portal);
 		}
 	}
 	PS_STOP_TIMING(ps_sw_portaltime);
 
+	R_SetColumnContext(COLUMNCONTEXT_DIRECT);
 	PS_START_TIMING(ps_sw_planetime);
 	if (!skybox)
 		R_DrawSkyPlanes();
@@ -1499,7 +1505,6 @@ void R_RenderPlayerView(player_t *player)
 	PS_START_TIMING(ps_sw_maskedtime);
 	R_DrawMasked(masks, nummasks);
 	PS_STOP_TIMING(ps_sw_maskedtime);
-
 	free(masks);
 
 	// Check for new console commands.
@@ -1539,7 +1544,6 @@ void R_RegisterEngineStuff(void)
 	CV_RegisterVar(&cv_drawdist);
 	CV_RegisterVar(&cv_drawdist_precip);
 	CV_RegisterVar(&cv_lessprecip);
-	CV_RegisterVar(&cv_mobjscaleprecip);
 
 	CV_RegisterVar(&cv_fovchange);
 	CV_RegisterVar(&cv_fov);
@@ -1599,5 +1603,4 @@ void R_RegisterEngineStuff(void)
 	// Frame interpolation/uncapped
 	CV_RegisterVar(&cv_fpscap);
 	CV_RegisterVar(&cv_fpscapbg);
-	CV_RegisterVar(&cv_precipinterp);
 }

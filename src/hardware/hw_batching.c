@@ -455,7 +455,6 @@ void HWR_RenderBatches(void)
 			{
 				GL_SetShader(nextShader);
 				currentShader = nextShader;
-				changeShader = false;
 
 				ps_hw_numshaders.value.i++;
 			}
@@ -465,7 +464,6 @@ void HWR_RenderBatches(void)
 				// texture should be already ready for use from calls to GL_SetTexture during batch collection
 				GL_SetTexture(nextTexture);
 				currentTexture = nextTexture;
-				changeTexture = false;
 
 				ps_hw_numtextures.value.i++;
 			}
@@ -473,7 +471,6 @@ void HWR_RenderBatches(void)
 			if (changePolyFlags)
 			{
 				currentPolyFlags = nextPolyFlags;
-				changePolyFlags = false;
 
 				ps_hw_numpolyflags.value.i++;
 			}
@@ -481,7 +478,6 @@ void HWR_RenderBatches(void)
 			if (changeSurfaceInfo)
 			{
 				currentSurfaceInfo = nextSurfaceInfo;
-				changeSurfaceInfo = false;
 
 				ps_hw_numcolors.value.i++;
 			}

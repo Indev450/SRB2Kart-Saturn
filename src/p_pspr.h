@@ -94,7 +94,8 @@
 */
 typedef enum
 {
-	tr_trans10 = 1,
+	tr_trans0 = 0,
+	tr_trans10,
 	tr_trans20,
 	tr_trans30,
 	tr_trans40,

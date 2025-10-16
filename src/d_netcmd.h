@@ -50,6 +50,7 @@ extern consvar_t cv_splitplayers;
 extern consvar_t cv_seenames, cv_allowseenames;
 #endif
 extern consvar_t cv_usemouse;
+extern consvar_t cv_mousevisible;
 //WTF
 extern consvar_t cv_mouseturn;
 extern consvar_t cv_usejoystick[4]; //MAXSPLITSCREENPLAYERS
@@ -265,14 +266,6 @@ typedef enum
 
 extern const char *netxcmdnames[MAXNETXCMD - 1];
 
-#if defined(_MSC_VER)
-#pragma pack(1)
-#endif
-
-#ifdef _MSC_VER
-#pragma warning(disable :  4214)
-#endif
-
 //Packet composition for Command_TeamChange_f() ServerTeamChange, etc.
 //bitwise structs make packing bits a little easier, but byte alignment harder?
 //todo: decide whether to make the other netcommands conform, or just get rid of this experiment.
@@ -283,10 +276,6 @@ typedef struct {
 	UINT32 autobalance  : 1;  // value 0 to 1
 	UINT32 scrambled    : 1;  // value 0 to 1
 } ATTRPACK changeteam_packet_t;
-
-#ifdef _MSC_VER
-#pragma warning(default : 4214)
-#endif
 
 typedef struct {
 	UINT16 l; // liitle endian
@@ -300,10 +289,6 @@ typedef union {
 	changeteam_packet_t packet;
 	changeteam_value_t value;
 } ATTRPACK changeteam_union;
-
-#if defined(_MSC_VER)
-#pragma pack()
-#endif
 
 // add game commands, needs cleanup
 void D_RegisterServerCommands(void);

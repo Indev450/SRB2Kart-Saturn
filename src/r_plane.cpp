@@ -53,16 +53,12 @@ static visplane_t **freehead = &freetail;
 visplane_t *floorplane;
 visplane_t *ceilingplane;
 
-visffloor_t ffloor[MAXFFLOORS];
+visffloor_t visffloor[MAXFFLOORS];
 INT32 numffloors;
 
 //SoM: 3/23/2000: Boom visplane hashing routine.
 #define visplane_hash(picnum,lightlevel,height) \
   ((unsigned)((picnum)*3+(lightlevel)+(height)*7) & VISPLANEHASHMASK)
-
-//SoM: 3/23/2000: Use boom opening limit removal
-size_t maxopenings;
-INT16 *openings, *lastopening; /// \todo free leak
 
 //
 // Clip values are the solid pixel bounding the range.
@@ -134,8 +130,9 @@ void R_AllocPlaneMemory(void)
 
 	for (unsigned i = 0; i < MAXFFLOORS; i++)
 	{
-		ffloor[i].f_clip = ffloor_f_clip + (i * viewwidth);
-		ffloor[i].c_clip = ffloor_c_clip + (i * viewwidth);
+		visffloor_t *ffloor = &visffloor[i];
+		ffloor->f_clip = ffloor_f_clip + (i * viewwidth);
+		ffloor->c_clip = ffloor_c_clip + (i * viewwidth);
 	}
 
 	yslopetab = static_cast<fixed_t*>(Z_Realloc(yslopetab, sizeof(*yslopetab) * (viewheight * 16), PU_STATIC, NULL));
@@ -313,9 +310,9 @@ void R_ClearFFloorClips(void)
 	// opening / clipping determination
 	for (p = 0; p < MAXFFLOORS; p++)
 	{
-		visffloor_t *fffloor = &ffloor[p];
-		std::fill(fffloor->f_clip, fffloor->f_clip + viewwidth, static_cast<INT16>(viewheight));
-		std::fill(fffloor->c_clip, fffloor->c_clip + viewwidth, static_cast<INT16>(-1));
+		visffloor_t *ffloor = &visffloor[p];
+		std::fill(ffloor->f_clip, ffloor->f_clip + viewwidth, static_cast<INT16>(viewheight));
+		std::fill(ffloor->c_clip, ffloor->c_clip + viewwidth, static_cast<INT16>(-1));
 	}
 
 	numffloors = 0;
@@ -338,13 +335,13 @@ void R_ClearPlanes(void)
 	R_ClearFFloorClips();
 
 	for (i = 0; i < MAXVISPLANES; i++)
+	{
 		for (*freehead = visplanes[i], visplanes[i] = NULL;
 			freehead && *freehead ;)
 		{
 			freehead = &(*freehead)->next;
 		}
-
-	lastopening = openings;
+	}
 
 	// left to right mapping
 	angle = (viewangle-ANGLE_90)>>ANGLETOFINESHIFT;
@@ -410,8 +407,8 @@ visplane_t *R_FindPlane(fixed_t height, INT32 picnum, INT32 lightlevel,
 			float x = vx / (float)FRACUNIT;
 			float y = vy / (float)FRACUNIT;
 
-			vx = (x * cos(ang) + y * sin(ang)) * FRACUNIT;
-			vy = (-x * sin(ang) + y * cos(ang)) * FRACUNIT;
+			vx = (x * cosf(ang) + y * sinf(ang)) * FRACUNIT;
+			vy = (-x * sinf(ang) + y * cosf(ang)) * FRACUNIT;
 
 			xoff = vx;
 			yoff = vy;
@@ -430,8 +427,8 @@ visplane_t *R_FindPlane(fixed_t height, INT32 picnum, INT32 lightlevel,
 			float ang = ANG2RAD(polyobj->angle);
 			float x = FixedToFloat(polyobj->centerPt.x);
 			float y = FixedToFloat(polyobj->centerPt.y);
-			xoff -= FloatToFixed(x * cos(ang) + y * sin(ang));
-			yoff -= FloatToFixed(x * sin(ang) - y * cos(ang));
+			xoff -= FloatToFixed(x * cosf(ang) + y * sinf(ang));
+			yoff -= FloatToFixed(x * sinf(ang) - y * cosf(ang));
 		}
 		else
 		{
@@ -719,13 +716,10 @@ void R_DrawPlanes(void)
 	visplane_t *pl;
 	INT32 i;
 	drawspandata_t ds = {};
-#ifdef HAVE_THREADS
-	srb2::ThreadPool::Sema tp_sema;
-#endif
-
 	R_UpdatePlaneRipple(&ds);
 
 #ifdef HAVE_THREADS
+	srb2::ThreadPool::Sema tp_sema;
 	srb2::g_main_threadpool->begin_sema();
 #endif
 	for (i = 0; i < MAXVISPLANES; i++, pl++)
@@ -751,6 +745,13 @@ void R_DrawSkyPlanes(void)
 {
 	visplane_t *pl;
 	INT32 i;
+
+	// If we're not supposed to draw the sky (e.g. for skyboxes), don't do anything!
+	// This probably utterly ruins sky rendering for FOFs and polyobjects, unfortunately
+	if (!newview->sky)
+	{
+		return;
+	}
 
 #ifdef HAVE_THREADS
 	srb2::ThreadPool::Sema tp_sema;
@@ -780,16 +781,10 @@ static void R_DrawSkyPlane(visplane_t *pl, void(*colfunc2)(drawcolumndata_t*), b
 	if (!(pl->minx <= pl->maxx))
 		return;
 
-	// If we're not supposed to draw the sky (e.g. for skyboxes), don't do anything!
-	// This probably utterly ruins sky rendering for FOFs and polyobjects, unfortunately
-	if (!newview->sky)
-	{
-		return;
-	}
-
 	drawcolumndata_t dc = {};
+	const INT32 texture = texturetranslation[skytexture];
 
-	// Reset column drawer function (note: couldn't we just call walldrawerfunc directly?)
+	// Reset column drawer function (note: couldn't we just call colfuncs[BASEDRAWFUNC] directly?)
 	// (that is, unless we'll need to switch drawers in future for some reason)
 	R_SetColumnFunc(BASEDRAWFUNC);
 
@@ -806,16 +801,13 @@ static void R_DrawSkyPlane(visplane_t *pl, void(*colfunc2)(drawcolumndata_t*), b
 		dc.colormap += COLORMAP_REMAPOFFSET;
 
 	dc.texturemid = skytexturemid;
-	dc.texheight = textureheight[skytexture] >>FRACBITS;
+	dc.texheight = textureheight[texture] >>FRACBITS;
 	dc.sourcelength = dc.texheight;
 
 	x = pl->minx;
 
 	// Precache the texture so we don't corrupt the zoned heap off-main thread
-	if (!texturecache[texturetranslation[skytexture]])
-	{
-		R_GenerateTexture(texturetranslation[skytexture]);
-	}
+	R_CheckTextureCache(texture);
 
 #ifdef HAVE_THREADS
 	while (x <= pl->maxx)
@@ -840,9 +832,7 @@ static void R_DrawSkyPlane(visplane_t *pl, void(*colfunc2)(drawcolumndata_t*), b
 
 				dc.iscale = FixedMul(skyscale, FINECOSINE(xtoviewangle[x + i]>>ANGLETOFINESHIFT));
 				dc.x = x + i;
-				dc.source =
-					R_GetColumn(texturetranslation[skytexture],
-						-angle); // get negative of angle for each column to display sky correct way round! --Monster Iestyn 27/01/18
+				dc.source = R_GetColumn(texture, -angle); // get negative of angle for each column to display sky correct way round! --Monster Iestyn 27/01/18
 
 				colfunc2(&dc);
 			}
@@ -913,8 +903,8 @@ static void R_SetSlopePlaneOrigin(drawspandata_t *ds, pslope_t *slope, fixed_t x
 	// p is the texture origin in view space
 	// Don't add in the offsets at this stage, because doing so can result in
 	// errors if the flat is rotated.
-	p->x = vxf * cos(ang) - vyf * sin(ang);
-	p->z = vxf * sin(ang) + vyf * cos(ang);
+	p->x = vxf * cosf(ang) - vyf * sinf(ang);
+	p->z = vxf * sinf(ang) + vyf * cosf(ang);
 	p->y = (R_GetSlopeZAt(slope, -xoff, yoff) - zpos) / (float)FRACUNIT;
 }
 
@@ -1166,7 +1156,7 @@ void R_DrawSinglePlane(drawspandata_t* ds, visplane_t *pl, boolean allow_paralle
 					offset = (scry*vid.width) + scrx;
 
 					// No idea if this works
-					VID_BlitLinearScreen(renderscreen + offset,
+					VID_BlitLinearScreen(vid.screens[0] + offset,
 										 vid.screens[1] + (top*vid.width), // intentionally not +offset
 										 viewwidth, bottom-top,
 										 vid.width, vid.width);

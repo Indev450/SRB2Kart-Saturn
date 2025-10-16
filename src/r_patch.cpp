@@ -19,6 +19,7 @@
 #include "r_skins.h"
 #include "z_zone.h"
 #include "w_wad.h"
+#include <vector>
 
 #ifdef HWRENDER
 #include "hardware/hw_glob.h"
@@ -37,7 +38,7 @@ static void R_ParseSpriteInfoFrame(spriteinfo_t *info)
 	UINT8 frameFrame = 0xFF;
 	INT16 frameXPivot = 0;
 	INT16 frameYPivot = 0;
-	rotaxis_t frameRotAxis = 0;
+	rotaxis_t frameRotAxis = ROTAXIS_X;
 
 	// Sprite identifier
 	sprinfoToken = M_GetToken(NULL);
@@ -158,14 +159,14 @@ static void R_ParseSpriteInfo(boolean spr2)
 				I_Error("Error parsing SPRTINFO lump: Unknown sprite name \"%s\"", newSpriteName);
 			if (!memcmp(newSpriteName,sprnames[i],4))
 			{
-				sprnum = i;
+				sprnum = static_cast<spritenum_t>(i);
 				break;
 			}
 		}
 	}
 
 	// allocate a spriteinfo
-	info = Z_Calloc(sizeof(spriteinfo_t), PU_STATIC, NULL);
+	info = static_cast<spriteinfo_t*>(Z_Calloc(sizeof(spriteinfo_t), PU_STATIC, NULL));
 	info->available = true;
 
 	// Left Curly Brace
@@ -322,9 +323,6 @@ void R_LoadSpriteInfoLumps(UINT16 wadnum, UINT16 numlumps)
 	}
 }
 
-
-static unsigned char imgbuf[1<<26];
-
 //
 // Creates a patch.
 // Assumes a PU_PATCH zone memory tag and no user, but can always be set later
@@ -332,7 +330,7 @@ static unsigned char imgbuf[1<<26];
 
 patch_t *Patch_Create(softwarepatch_t *source, size_t srcsize, void *dest)
 {
-	patch_t *patch = (dest == NULL) ? Z_Calloc(sizeof(patch_t), PU_PATCH, NULL) : (patch_t *)(dest);
+	patch_t *patch = static_cast<patch_t*>((dest == NULL) ? Z_Calloc(sizeof(patch_t), PU_PATCH, NULL) : dest);
 
 	if (source)
 	{
@@ -344,7 +342,7 @@ patch_t *Patch_Create(softwarepatch_t *source, size_t srcsize, void *dest)
 		patch->height     = SHORT(source->height);
 		patch->leftoffset = SHORT(source->leftoffset);
 		patch->topoffset  = SHORT(source->topoffset);
-		patch->columnofs  = Z_Calloc(size, PU_PATCH_DATA, NULL);
+		patch->columnofs  = static_cast<INT32*>(Z_Calloc(size, PU_PATCH_DATA, NULL));
 
 		for (col = 0; col < source->width; col++)
 		{
@@ -360,7 +358,7 @@ patch_t *Patch_Create(softwarepatch_t *source, size_t srcsize, void *dest)
 		if (colsize <= 0)
 			I_Error("Patch_Create: no column data!");
 
-		patch->columns = Z_Calloc(colsize, PU_PATCH_DATA, NULL);
+		patch->columns = static_cast<UINT8*>(Z_Calloc(colsize, PU_PATCH_DATA, NULL));
 		M_Memcpy(patch->columns, ((UINT8 *)source + LONG(source->columnofs[0])), colsize);
 	}
 
@@ -432,8 +430,8 @@ void *Patch_AllocateHardwarePatch(patch_t *patch)
 {
 	if (!patch->hardware)
 	{
-		GLPatch_t *glPatch = Z_Calloc(sizeof(GLPatch_t), PU_HWRPATCHINFO, &patch->hardware);
-		glPatch->mipmap = Z_Calloc(sizeof(GLMipmap_t), PU_HWRPATCHINFO, &glPatch->mipmap);
+		GLPatch_t *glPatch = static_cast<GLPatch_t*>(Z_Calloc(sizeof(GLPatch_t), PU_HWRPATCHINFO, &patch->hardware));
+		glPatch->mipmap = static_cast<GLMipmap_t*>(Z_Calloc(sizeof(GLMipmap_t), PU_HWRPATCHINFO, &glPatch->mipmap));
 	}
 	return (void *)(patch->hardware);
 }
@@ -451,6 +449,9 @@ void *Patch_CreateGL(patch_t *patch)
 }
 #endif // HWRENDER
 
+// 1 MB should be enough for most cases
+static std::vector<UINT8> imgbuf(1024 * 1024);
+
 //
 // R_MaskedFlatToPatch
 //
@@ -459,13 +460,27 @@ void *Patch_CreateGL(patch_t *patch)
 void *R_PixelsToPatch(UINT8 *raw, INT16 width, INT16 height, INT16 leftoffset, INT16 topoffset, size_t *destsize)
 {
 	INT16 x, y;
-	UINT8 *img;
-	UINT8 *imgptr = imgbuf;
+	UINT8 *img, *imgptr;
 	UINT8 *colpointers, *startofspan;
 	size_t size = 0;
 
 	if (!raw)
 		return NULL;
+
+	// Allocate a staging buffer with the maximum size needed for a patch of the same size as the input.
+
+	// round up to nearest multiple of 254-pixel posts, plus 1 more 254-pixel post for paranoia reasons
+	size_t maxcolumnsize = (2 + (height - 1) / 256) * 256;
+	// the patch header, and width columns of the max column size
+	size_t maxoutsize = maxcolumnsize * width + (8 + 4 * width);
+	// so, a 512x512 flat should maximally need 393,760 (384.53 KiB) bytes.
+	// quite a bit smaller than 64 megabytes, and much less annoying to the windows debug allocator!
+	while (imgbuf.size() < maxoutsize)
+	{
+		imgbuf.resize(imgbuf.size() * 2);
+	}
+
+	imgptr = imgbuf.data();
 
 	// Write image size and offset
 	WRITEINT16(imgptr, width);
@@ -485,7 +500,7 @@ void *R_PixelsToPatch(UINT8 *raw, INT16 width, INT16 height, INT16 leftoffset, I
 		startofspan = NULL;
 
 		// Write column pointer
-		WRITEINT32(colpointers, imgptr - imgbuf);
+		WRITEINT32(colpointers, imgptr - imgbuf.data());
 
 		// Write pixels
 		for (y = 0; y < height; y++)
@@ -554,9 +569,9 @@ void *R_PixelsToPatch(UINT8 *raw, INT16 width, INT16 height, INT16 leftoffset, I
 		WRITEUINT8(imgptr, 0xFF);
 	}
 
-	size = imgptr-imgbuf;
-	img = Z_Malloc(size, PU_STATIC, NULL);
-	memcpy(img, imgbuf, size);
+	size = imgptr-imgbuf.data();
+	img = static_cast<UINT8*>(Z_Malloc(size, PU_STATIC, NULL));
+	memcpy(img, imgbuf.data(), size);
 
 	if (destsize != NULL)
 		*destsize = size;
@@ -579,13 +594,27 @@ void *R_PixelsToPatch(UINT8 *raw, INT16 width, INT16 height, INT16 leftoffset, I
 void *R_MaskedFlatToPatch(UINT16 *raw, INT16 width, INT16 height, INT16 leftoffset, INT16 topoffset, size_t *destsize)
 {
 	INT16 x, y;
-	UINT8 *img;
-	UINT8 *imgptr = imgbuf;
+	UINT8 *img, *imgptr;
 	UINT8 *colpointers, *startofspan;
 	size_t size = 0;
 
 	if (!raw)
 		return NULL;
+
+	// Allocate a staging buffer with the maximum size needed for a patch of the same size as the input.
+
+	// round up to nearest multiple of 254-pixel posts, plus 1 more 254-pixel post for paranoia reasons
+	size_t maxcolumnsize = (2 + (height - 1) / 256) * 256;
+	// the patch header, and width columns of the max column size
+	size_t maxoutsize = maxcolumnsize * width + (8 + 4 * width);
+	// so, a 512x512 flat should maximally need 393,760 (384.53 KiB) bytes.
+	// quite a bit smaller than 64 megabytes, and much less annoying to the windows debug allocator!
+	while (imgbuf.size() < maxoutsize)
+	{
+		imgbuf.resize(imgbuf.size() * 2);
+	}
+
+	imgptr = imgbuf.data();
 
 	// Write image size and offset
 	WRITEINT16(imgptr, width);
@@ -605,7 +634,7 @@ void *R_MaskedFlatToPatch(UINT16 *raw, INT16 width, INT16 height, INT16 leftoffs
 		startofspan = NULL;
 
 		// Write column pointer
-		WRITEINT32(colpointers, imgptr - imgbuf);
+		WRITEINT32(colpointers, imgptr - imgbuf.data());
 
 		// Write pixels
 		for (y = 0; y < height; y++)
@@ -675,9 +704,9 @@ void *R_MaskedFlatToPatch(UINT16 *raw, INT16 width, INT16 height, INT16 leftoffs
 		WRITEUINT8(imgptr, 0xFF);
 	}
 
-	size = imgptr-imgbuf;
-	img = Z_Malloc(size, PU_STATIC, NULL);
-	memcpy(img, imgbuf, size);
+	size = imgptr-imgbuf.data();
+	img = static_cast<UINT8*>(Z_Malloc(size, PU_STATIC, NULL));
+	memcpy(img, imgbuf.data(), size);
 
 	if (destsize != NULL)
 		*destsize = size;

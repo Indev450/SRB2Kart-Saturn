@@ -107,14 +107,6 @@ OutOfMemory(void)
     return FALSE;
 }
 
-#if defined(_MSC_VER)
-/* The VC++ compiler needs main/wmain defined */
-# define console_ansi_main main
-# if UNICODE
-#  define console_wmain wmain
-# endif
-#endif
-
 /* WinMain, main, and wmain eventually call into here. */
 static int
 main_utf8(int argc, char *argv[])

@@ -82,12 +82,6 @@ static boolean demosynced = true; // console warning message
 
 struct demovars_s demo;
 
-boolean metalrecording; // recording as metal sonic
-mobj_t *metalplayback;
-static UINT8 *metalbuffer = NULL;
-static UINT8 *metal_p;
-static UINT16 metalversion;
-
 consvar_t cv_resyncdemo = {"resyncdemo", "On", 0, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 // extra data stuff (events registered this frame while recording)
@@ -196,24 +190,9 @@ static ticcmd_t oldcmd[MAXPLAYERS];
 #define EZT_SPRITE 0x40 // Changed sprite set completely out of PLAY (NiGHTS, SOCs, whatever)
 #define EZT_KART   0x80 // SRB2Kart: Changed current held item/quantity and bumpers for battle
 
-static mobj_t oldmetal, oldghost[MAXPLAYERS];
+static mobj_t oldghost[MAXPLAYERS];
 
 static void G_ResetDemoPlayback(char *pdemoname);
-
-void G_SaveMetal(UINT8 **buffer)
-{
-	I_Assert(buffer != NULL && *buffer != NULL);
-
-	WRITEUINT32(*buffer, metal_p - metalbuffer);
-}
-
-void G_LoadMetal(UINT8 **buffer)
-{
-	I_Assert(buffer != NULL && *buffer != NULL);
-
-	G_DoPlayMetal();
-	metal_p = metalbuffer + READUINT32(*buffer);
-}
 
 // Finds a skin with the closest stats if the expected skin doesn't exist.
 static INT32 GetSkinNumClosestToStats(UINT8 kartspeed, UINT8 kartweight)
@@ -651,7 +630,7 @@ void G_GhostAddHit(INT32 playernum, mobj_t *victim)
 
 	ghostext[playernum].flags |= EZT_HIT;
 	ghostext[playernum].hits++;
-	ghostext[playernum].hitlist = Z_Realloc(ghostext[playernum].hitlist, ghostext[playernum].hits * sizeof(mobj_t *), PU_LEVEL, &ghostext[playernum].hitlist);
+	Z_Realloc(ghostext[playernum].hitlist, ghostext[playernum].hits * sizeof(mobj_t *), PU_STATIC, &ghostext[playernum].hitlist);
 	P_SetTarget(ghostext[playernum].hitlist + (ghostext[playernum].hits-1), victim);
 }
 
@@ -1269,15 +1248,15 @@ void G_GhostTicker(void)
 				{
 					switch (ziptic & EZT_THOKMASK)
 					{
-					case EZT_THOK:
-						type = (UINT32)mobjinfo[MT_PLAYER].painchance;
-						break;
-					case EZT_SPIN:
-						type = (UINT32)mobjinfo[MT_PLAYER].damage;
-						break;
-					case EZT_REV:
-						type = (UINT32)mobjinfo[MT_PLAYER].raisestate;
-						break;
+						case EZT_THOK:
+							type = (UINT32)mobjinfo[MT_PLAYER].painchance;
+							break;
+						case EZT_SPIN:
+							type = (UINT32)mobjinfo[MT_PLAYER].damage;
+							break;
+						case EZT_REV:
+							type = (UINT32)mobjinfo[MT_PLAYER].raisestate;
+							break;
 					}
 				}
 				if (type != -1)
@@ -1575,216 +1554,6 @@ void G_ConfirmRewind(tic_t rewindtime)
 		P_ResetCamera(&players[displayplayers[i]], &camera[i]);
 }
 
-void G_ReadMetalTic(mobj_t *metal)
-{
-	UINT8 ziptic;
-	UINT16 speed;
-	UINT8 statetype;
-
-	if (!metal_p)
-		return;
-	ziptic = READUINT8(metal_p);
-
-	// Read changes from the tic
-	if (ziptic & GZT_XYZ)
-	{
-		oldmetal.x = READFIXED(metal_p);
-		oldmetal.y = READFIXED(metal_p);
-		oldmetal.z = READFIXED(metal_p);
-		P_MoveOrigin(metal, oldmetal.x, oldmetal.y, oldmetal.z);
-		oldmetal.x = metal->x;
-		oldmetal.y = metal->y;
-		oldmetal.z = metal->z;
-	}
-	else
-	{
-		if (ziptic & GZT_MOMXY)
-		{
-			oldmetal.momx = READINT16(metal_p)<<8;
-			oldmetal.momy = READINT16(metal_p)<<8;
-		}
-		if (ziptic & GZT_MOMZ)
-			oldmetal.momz = READINT16(metal_p)<<8;
-		oldmetal.x += oldmetal.momx;
-		oldmetal.y += oldmetal.momy;
-		oldmetal.z += oldmetal.momz;
-	}
-	if (ziptic & GZT_ANGLE)
-		oldmetal.angle = READUINT8(metal_p)<<24;
-	if (ziptic & GZT_SPRITE)
-		metal_p++; // Currently unused. (Metal Sonic figures out what he's doing his own damn self.)
-
-	// Set movement, position, and angle
-	// oldmetal contains where you're supposed to be.
-	metal->momx = oldmetal.momx;
-	metal->momy = oldmetal.momy;
-	metal->momz = oldmetal.momz;
-	P_UnsetThingPosition(metal);
-	metal->x = oldmetal.x;
-	metal->y = oldmetal.y;
-	metal->z = oldmetal.z;
-	P_SetThingPosition(metal);
-	metal->angle = oldmetal.angle;
-
-	if (ziptic & GZT_EXTRA)
-	{ // But wait, there's more!
-		ziptic = READUINT8(metal_p);
-		if (ziptic & EZT_FLIP)
-			metal->eflags ^= MFE_VERTICALFLIP;
-		if (ziptic & EZT_SCALE)
-		{
-			metal->destscale = READFIXED(metal_p);
-			if (metal->destscale != metal->scale)
-				P_SetScale(metal, metal->destscale);
-		}
-	}
-
-	// Calculates player's speed based on distance-of-a-line formula
-	speed = FixedDiv(P_AproxDistance(oldmetal.momx, oldmetal.momy), metal->scale)>>FRACBITS;
-
-	// Use speed to decide an appropriate state
-	if (speed > 20) // default skin runspeed
-		statetype = 2;
-	else if (speed > 1) // stopspeed
-		statetype = 1;
-	else
-		statetype = 0;
-
-	// Set state
-	if (statetype != metal->threshold)
-	{
-		switch (statetype)
-		{
-		case 2: // run
-			P_SetMobjState(metal,metal->info->meleestate);
-			break;
-		case 1: // walk
-			P_SetMobjState(metal,metal->info->seestate);
-			break;
-		default: // stand
-			P_SetMobjState(metal,metal->info->spawnstate);
-			break;
-		}
-		metal->threshold = statetype;
-	}
-
-	// TODO: Modify state durations based on movement speed, similar to players?
-
-	if (*metal_p == DEMOMARKER)
-	{
-		// end of demo data stream
-		G_StopMetalDemo();
-		return;
-	}
-}
-
-void G_WriteMetalTic(mobj_t *metal)
-{
-	UINT8 ziptic = 0;
-	UINT8 *ziptic_p;
-
-	if (!demobuf.p) // demobuf.p will be NULL until the race start linedef executor is triggered!
-		return;
-
-	ziptic_p = demobuf.p++; // the ziptic, written at the end of this function
-
-	#define MAXMOM (0xFFFF<<8)
-
-	// GZT_XYZ is only useful if you've moved 256 FRACUNITS or more in a single tic.
-	if (abs(metal->x-oldmetal.x) > MAXMOM
-	|| abs(metal->y-oldmetal.y) > MAXMOM
-	|| abs(metal->z-oldmetal.z) > MAXMOM)
-	{
-		oldmetal.x = metal->x;
-		oldmetal.y = metal->y;
-		oldmetal.z = metal->z;
-		WRITEFIXED(demobuf.p,oldmetal.x);
-		WRITEFIXED(demobuf.p,oldmetal.y);
-		WRITEFIXED(demobuf.p,oldmetal.z);
-		ziptic |= GZT_XYZ;
-	}
-	else
-	{
-		// For moving normally:
-		// Store one full byte of movement, plus one byte of fractional movement.
-		INT16 momx = (INT16)((metal->x-oldmetal.x)>>8);
-		INT16 momy = (INT16)((metal->y-oldmetal.y)>>8);
-		if (momx != oldmetal.momx
-		|| momy != oldmetal.momy)
-		{
-			oldmetal.momx = momx;
-			oldmetal.momy = momy;
-			WRITEINT16(demobuf.p,momx);
-			WRITEINT16(demobuf.p,momy);
-			ziptic |= GZT_MOMXY;
-		}
-		momx = (INT16)((metal->z-oldmetal.z)>>8);
-		if (momx != oldmetal.momz)
-		{
-			oldmetal.momz = momx;
-			WRITEINT16(demobuf.p,momx);
-			ziptic |= GZT_MOMZ;
-		}
-
-		// This SHOULD set oldmetal.x/y/z to match metal->x/y/z
-		// but it keeps the fractional loss of one byte,
-		// so it will hopefully be made up for in future tics.
-		oldmetal.x += oldmetal.momx<<8;
-		oldmetal.y += oldmetal.momy<<8;
-		oldmetal.z += oldmetal.momz<<8;
-	}
-
-	#undef MAXMOM
-
-	// Only store the 8 most relevant bits of angle
-	// because exact values aren't too easy to discern to begin with when only 8 angles have different sprites
-	// and it does not affect movement at all anyway.
-	if (metal->angle>>24 != oldmetal.angle)
-	{
-		oldmetal.angle = metal->angle>>24;
-		WRITEUINT8(demobuf.p,oldmetal.angle);
-		ziptic |= GZT_ANGLE;
-	}
-
-	// Metal Sonic does not need our state changes.
-	// ... currently.
-
-	{
-		UINT8 *exttic_p = NULL;
-		UINT8 exttic = 0;
-		if ((metal->eflags & MFE_VERTICALFLIP) != (oldmetal.eflags & MFE_VERTICALFLIP))
-		{
-			if (!exttic_p)
-				exttic_p = demobuf.p++;
-			exttic |= EZT_FLIP;
-			oldmetal.eflags ^= MFE_VERTICALFLIP;
-		}
-		if (metal->scale != oldmetal.scale)
-		{
-			if (!exttic_p)
-				exttic_p = demobuf.p++;
-			exttic |= EZT_SCALE;
-			WRITEFIXED(demobuf.p,metal->scale);
-			oldmetal.scale = metal->scale;
-		}
-		if (exttic_p)
-		{
-			*exttic_p = exttic;
-			ziptic |= GZT_EXTRA;
-		}
-	}
-
-	*ziptic_p = ziptic;
-
-	// attention here for the ticcmd size!
-	// latest demos with mouse aiming byte in ticcmd
-	if (demobuf.p >= demoend - 32)
-	{
-		G_StopMetalRecording(); // no more space
-		return;
-	}
-}
-
 //
 // G_RecordDemo
 //
@@ -1813,23 +1582,6 @@ void G_RecordDemo(const char *name)
 		else
 			CONS_Alert(CONS_ERROR, "Failed to allocate demo buffer\n");
 	}
-}
-
-void G_RecordMetal(void)
-{
-	INT32 maxsize;
-	maxsize = cv_maxdemosize.value*1024*1024;
-	if (demobuf.buffer)
-		Z_Free(demobuf.buffer);
-	demobuf.p = NULL;
-	metalrecording = false;
-	demobuf.buffer = Z_Malloc(maxsize + 100*1024, PU_STATIC, NULL);
-	demoend = demobuf.buffer + maxsize;
-
-	if (demobuf.buffer)
-		metalrecording = true;
-	else
-		CONS_Alert(CONS_ERROR, "Failed to allocate demo buffer\n");
 }
 
 void G_BeginRecording(void)
@@ -2014,46 +1766,6 @@ void G_BeginRecording(void)
 				ghostext[i].flags |= EZT_FLIP;
 		}
 	}
-}
-
-void G_BeginMetal(void)
-{
-	mobj_t *mo = players[consoleplayer].mo;
-
-	if (demobuf.buffer == NULL)
-	{
-		CONS_Alert(CONS_ERROR, "No metal demo buffer allocated\n");
-		metalrecording = false;
-		return;
-	}
-
-	if (demobuf.p)
-	{
-		Z_Free(demobuf.buffer);
-		demobuf.buffer = NULL;
-		metalrecording = false;
-		return;
-	}
-
-	demobuf.p = demobuf.buffer;
-
-	// Write header.
-	M_Memcpy(demobuf.p, DEMOHEADER, 12); demobuf.p += 12;
-	WRITEUINT8(demobuf.p,VERSION);
-	WRITEUINT8(demobuf.p,SUBVERSION);
-	WRITEUINT16(demobuf.p,DEMOVERSION);
-
-	// demo checksum
-	demobuf.p += 16;
-
-	M_Memcpy(demobuf.p, "METL", 4); demobuf.p += 4;
-
-	// Set up our memory.
-	memset(&oldmetal,0,sizeof(oldmetal));
-	oldmetal.x = mo->x;
-	oldmetal.y = mo->y;
-	oldmetal.z = mo->z;
-	oldmetal.angle = mo->angle;
 }
 
 void G_WriteStanding(UINT8 ranking, char *name, INT32 skinnum, UINT8 color, UINT32 val)
@@ -3657,74 +3369,6 @@ void G_TimeDemo(const char *name)
 	G_DeferedPlayDemo(name);
 }
 
-void G_DoPlayMetal(void)
-{
-	lumpnum_t l;
-	mobj_t *mo = NULL;
-	thinker_t *th;
-
-	// it's an internal demo
-	if ((l = W_CheckNumForName(va("%sMS",G_BuildMapName(gamemap)))) == LUMPERROR)
-	{
-		CONS_Alert(CONS_WARNING, M_GetText("No bot recording for this map.\n"));
-		return;
-	}
-	else
-		metalbuffer = metal_p = W_CacheLumpNum(l, PU_STATIC);
-
-	// find metal sonic
-	for (th = thinkercap.next; th != &thinkercap; th = th->next)
-	{
-		if (th->function != (actionf_p1)P_MobjThinker)
-			continue;
-
-		mo = (mobj_t *)th;
-		if (mo->type == MT_METALSONIC_RACE)
-			break;
-	}
-	if (!mo)
-	{
-		CONS_Alert(CONS_ERROR, M_GetText("Failed to find bot entity.\n"));
-		Z_Free(metalbuffer);
-		return;
-	}
-
-	// read demo header
-    metal_p += 12; // DEMOHEADER
-	metal_p++; // VERSION
-	metal_p++; // SUBVERSION
-	metalversion = READUINT16(metal_p);
-	switch(metalversion)
-	{
-	case DEMOVERSION: // latest always supported
-		break;
-#ifdef DEMO_COMPAT_100
-	case 0x0001:
-		I_Error("You need to implement demo compat here, doofus! %s:%d", __FILE__, __LINE__);
-#endif
-	// too old, cannot support.
-	default:
-		CONS_Alert(CONS_WARNING, M_GetText("Failed to load bot recording for this map, format version incompatible.\n"));
-		Z_Free(metalbuffer);
-		return;
-	}
-	metal_p += 16; // demo checksum
-	if (memcmp(metal_p, "METL", 4))
-	{
-		CONS_Alert(CONS_WARNING, M_GetText("Failed to load bot recording for this map, wasn't recorded in Metal format.\n"));
-		Z_Free(metalbuffer);
-		return;
-	} metal_p += 4; // "METL"
-
-	// read initial tic
-	memset(&oldmetal,0,sizeof(oldmetal));
-	oldmetal.x = mo->x;
-	oldmetal.y = mo->y;
-	oldmetal.z = mo->z;
-	oldmetal.angle = mo->angle;
-	metalplayback = mo;
-}
-
 void G_DoneLevelLoad(void)
 {
 	CONS_Printf(M_GetText("Loaded level in %f sec\n"), (double)(I_GetTime() - demostarttime) / TICRATE);
@@ -3741,42 +3385,6 @@ void G_DoneLevelLoad(void)
 = Returns true if a new demo loop action will take place
 ===================
 */
-
-// Stops metal sonic's demo. Separate from other functions because metal + replays can coexist
-void G_StopMetalDemo(void)
-{
-	// Metal Sonic finishing doesn't end the game, dammit.
-	Z_Free(metalbuffer);
-	metalbuffer = NULL;
-	metalplayback = NULL;
-	metal_p = NULL;
-}
-
-// Stops metal sonic recording.
-ATTRNORETURN void FUNCNORETURN G_StopMetalRecording(void)
-{
-	boolean saved = false;
-	if (demobuf.p && demobuf.buffer != NULL)
-	{
-		UINT8 *p = demobuf.buffer+16; // checksum position
-#ifdef NOMD5
-		UINT8 i;
-		WRITEUINT8(demobuf.p, DEMOMARKER); // add the demo end marker
-		for (i = 0; i < 16; i++, p++)
-			*p = P_RandomByte(); // This MD5 was chosen by fair dice roll and most likely < 50% correct.
-#else
-		WRITEUINT8(demobuf.p, DEMOMARKER); // add the demo end marker
-		md5_buffer((char *)p+16, demobuf.p - (p+16), (void *)p); // make a checksum of everything after the checksum in the file.
-#endif
-		saved = FIL_WriteFile(va("%sMS.LMP", G_BuildMapName(gamemap)), demobuf.buffer, demobuf.p - demobuf.buffer); // finally output the file.
-	}
-	Z_Free(demobuf.buffer);
-	demobuf.buffer = NULL;
-	metalrecording = false;
-	if (saved)
-		I_Error("Saved to %sMS.LMP", G_BuildMapName(gamemap));
-	I_Error("Failed to save demo!");
-}
 
 // reset engine variable set for the demos
 // called from stopdemo command, map command, and g_checkdemoStatus.
@@ -3860,8 +3468,6 @@ boolean G_CheckDemoStatus(void)
 {
 	G_FreeGhosts();
 
-	// DO NOT end metal sonic demos here
-
 	if (demo.timing)
 	{
 		G_StopTimingDemo();
@@ -3907,18 +3513,15 @@ boolean G_CheckDemoStatus(void)
 
 void G_ResetDemoRecording(void)
 {
-	if (demobuf.buffer)
-		Z_Free(demobuf.buffer);
+	Z_Free(demobuf.buffer);
 	demobuf.buffer = NULL;
 	demo.recording = false;
 }
 
 static void G_ResetDemoPlayback(char *pdemoname)
 {
-	if (pdemoname)
-		Z_Free(pdemoname);
-	if (demobuf.buffer)
-		Z_Free(demobuf.buffer);
+	Z_Free(pdemoname);
+	Z_Free(demobuf.buffer);
 	demobuf.buffer = NULL;
 	demo.playback = false;
 	if (demo.title)
@@ -3966,7 +3569,8 @@ void G_SaveDemo(void)
 		size_t i, strindex = 0;
 		boolean dash = true;
 
-		for (i = 0; demo.titlename[i] && i < 127; i++)
+		//for (i = 0; demo.titlename[i] && i < 127; i++) ?????
+		for (i = 0; i < 64 && demo.titlename[i]; i++)
 		{
 			if ((demo.titlename[i] >= 'a' && demo.titlename[i] <= 'z') ||
 				(demo.titlename[i] >= '0' && demo.titlename[i] <= '9'))
@@ -3981,7 +3585,7 @@ void G_SaveDemo(void)
 				strindex++;
 				dash = false;
 			}
-			else if (!dash)
+			else if (strindex && !dash)
 			{
 				demo_slug[strindex] = '-';
 				strindex++;
@@ -3989,12 +3593,28 @@ void G_SaveDemo(void)
 			}
 		}
 
-		demo_slug[strindex] = 0;
-		if (dash) demo_slug[strindex-1] = 0;
+		if (dash && strindex)
+		{
+			strindex--;
+		}
+		demo_slug[strindex] = '\0';
 
-		writepoint = strstr(demoname, "-") + 1;
-		demo_slug[128 - (writepoint - demoname) - 4] = 0;
-		sprintf(writepoint, "%s.lmp", demo_slug);
+		if (demo_slug[0] != '\0')
+		{
+			// Slug is valid, write the chosen filename.
+			writepoint = strstr(demoname, "-");
+			if (!writepoint)
+				return;
+
+			writepoint++;
+
+			size_t flen = 128 - (writepoint - demoname) - 4;
+			if (flen > 0 && flen < 128)
+			{
+				demo_slug[flen] = '\0';
+				sprintf(writepoint, "%s.lmp", demo_slug);
+			}
+		}
 	}
 
 	length = *(UINT32 *)demoinfo_p;
@@ -4006,7 +3626,6 @@ void G_SaveDemo(void)
 	// Make a checksum of everything after the checksum in the file up to the end of the standard data. Extrainfo is freely modifiable.
 	md5_buffer((char *)p+16, (demobuf.buffer + length) - (p+16), p);
 #endif
-
 
 	if (FIL_WriteFile(va(pandf, srb2home, demoname), demobuf.buffer, demobuf.p - demobuf.buffer)) // finally output the file.
 		demo.savemode = DSM_SAVED;

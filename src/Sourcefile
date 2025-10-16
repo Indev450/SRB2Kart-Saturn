@@ -34,6 +34,7 @@ m_misc.c
 m_perfstats.c
 m_queue.c
 m_random.c
+m_curl.c
 mserv.c
 http-mserv.c
 qs22j.c
@@ -52,7 +53,7 @@ r_data.c
 r_draw.c
 r_fps.cpp
 r_main.cpp
-r_patch.c
+r_patch.cpp
 r_patchrotation.c
 r_plane.cpp
 r_segs.cpp

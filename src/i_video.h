@@ -24,7 +24,8 @@ extern "C" {
 #pragma interface
 #endif
 
-void I_SetTextInput(void);
+boolean I_UseNativeKeyboard(void);
+void I_SetTextInput(boolean enable);
 
 typedef enum
 {
@@ -93,8 +94,8 @@ INT32 VID_SetMode(INT32 modenum);
 	\return	name of video mode
 */
 const char *VID_GetModeName(INT32 modenum);
-void VID_PrepareModeList(void); /// note hack for SDL
 
+void VID_PrepareModeList(void);
 
 /**	\brief can video system do fullscreen
 */
@@ -126,7 +127,7 @@ void I_WaitVBL(INT32 count);
 
 	\return	void
 */
-void I_ReadScreen(UINT8 *scr);
+void I_ReadScreen(UINT8 * restrict scr, INT32 scale);
 
 /**	\brief Start disk icon
 */
@@ -137,8 +138,6 @@ void I_BeginRead(void);
 void I_EndRead(void);
 
 UINT32 I_GetRefreshRate(void);
-
-boolean I_UseNativeKeyboard(void);
 
 boolean I_CheckNativeRes(void);
 

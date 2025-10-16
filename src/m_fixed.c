@@ -11,14 +11,6 @@
 /// \file  m_fixed.c
 /// \brief Fixed point implementation
 
-#if 0 //#ifndef NO_M
-#include <math.h>
-#define HAVE_SQRT
- #if 0 //#ifndef _WIN32 // MSVCRT does not have *f() functions
- #define HAVE_SQRTF
- #endif
-#endif
-
 #include "doomdef.h"
 #include "m_fixed.h"
 #include "tables.h" // ANGLETOFINESHIFT
@@ -526,12 +518,12 @@ fixed_t FV3_Normal(const vector3_t *a_triangle, vector3_t *a_normal)
 fixed_t FV3_Strength(const vector3_t *a_1, const vector3_t *dir)
 {
 	vector3_t normal;
-	fixed_t dist = FV3_NormalizeEx(a_1, &normal);
+	FV3_NormalizeEx(a_1, &normal);
 	fixed_t dot = FV3_Dot(&normal, dir);
 
 	FV3_ClosestPointOnVector(dir, a_1, &normal);
 
-	dist = FV3_Magnitude(&normal);
+	fixed_t dist = FV3_Magnitude(&normal);
 
 	if (dot < 0) // Not facing same direction, so negate result.
 		dist = -dist;

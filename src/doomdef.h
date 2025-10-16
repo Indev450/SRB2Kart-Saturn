@@ -47,17 +47,6 @@
 #define ASMCALL
 #endif
 
-#ifdef _MSC_VER
-#pragma warning(disable : 4127 4152 4213 4514)
-#ifdef _WIN64
-#pragma warning(disable : 4306)
-#endif
-#endif
-// warning level 4
-// warning C4127: conditional expression is constant
-// warning C4152: nonstandard extension, function/data pointer conversion in expression
-// warning C4213: nonstandard extension used : cast on l-value
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -101,6 +90,14 @@ extern FILE *logstream;
 extern char  logfilename[1024];
 #endif
 
+#if defined (HAVE_LIBBACKTRACE)
+#define CRASH_LOGFILE_NAME "srb2kart-crash-log.txt"
+#elif defined (HAVE_DRMINGW)
+#define CRASH_LOGFILE_NAME "srb2kart-crash-log.RPT"
+#else
+#define CRASH_LOGFILE_NAME "(unknown crash log)"
+#endif
+
 /* A mod name to further distinguish versions. */
 #define SRB2APPLICATION "SRB2Kart"
 
@@ -115,11 +112,13 @@ extern char  logfilename[1024];
 #else
 #define VERSION    1 // Game version
 #define SUBVERSION 6 // more precise version number
-#define VERSIONSTRING "Saturn - Testing"
-#define VERSIONSTRINGW L"Saturn - Testing"
+#define VERSIONSTRING "Saturn v9"
+#define VERSIONSTRINGW L"Saturn v9"
+
+#define SATURN_TESTING // comment out for saturn release builds!
+
 // Hey! If you change this, add 1 to the MODVERSION below! Otherwise we can't force updates!
 // And change CMakeLists.txt (not src/, but in root), for CMake users!
-// AND appveyor.yml, for the build bots!
 #endif
 
 // Maintain compatibility with 1.0.x record attack replays?
@@ -416,7 +415,7 @@ enum {
 
 
 */
-void I_Error(const char *error, ...) FUNCIERROR;
+FUNCIERROR void ATTRNORETURN I_Error(const char *error, ...);
 
 /**	\brief	write a message to stderr (use before I_Quit) for when you need to quit with a msg, but need
  the return code 0 of I_Quit();
@@ -560,12 +559,18 @@ UINT32 quickncasehash (const char *p, size_t n)
 #endif
 
 #ifdef __cplusplus
-#if defined(__GNUC__) || defined(__clang__) || defined(_MSC_VER)
+#if defined(__GNUC__) || defined(__clang__)
 	#define restrict __restrict
 #else
 	#define restrict
 #endif
 #endif
+
+// the GNU cleanup attribute: plugging memory leaks since 2003!
+// on scope exit, the cleanup function is called with a pointer to the declared variable,
+// essentially behaving like a C++ destructor
+// NOTE: you WILL have nasal troubles if the variable is not initialized
+#define CLEANUP(f) __attribute__((__cleanup__(f)))
 
 // An assert-type mechanism.
 #ifdef PARANOIA
@@ -589,7 +594,6 @@ extern const char *compdate, *comptime, *comprevision, *compbranch;
 // None of these that are disabled in the normal build are guaranteed to work perfectly
 // Compile them at your own risk!
 
-#ifndef NONET
 //-- SATURN __
 /// Detect if a client is on Saturn in the clientconfig.
 /// To seperately allow them to join or block joining from vanilla clients.
@@ -604,7 +608,6 @@ extern const char *compdate, *comptime, *comprevision, *compbranch;
 #define SATURNPAK
 #endif
 //-- <(￣︶￣)> __
-#endif
 
 /// Undefine to use the new method of Gamma correction see colour cube in v_video.c
 #define BACKWARDSCOMPATCORRECTION
@@ -626,11 +629,6 @@ extern const char *compdate, *comptime, *comprevision, *compbranch;
 ///	    	Most modifications should probably enable this.
 //#define SAVEGAME_OTHERVERSIONS
 
-#ifndef NONET
-///	Display a connection screen on join attempts.
-#define CLIENT_LOADINGSCREEN
-#endif
-
 /// Backwards compatibility with musicslots.
 /// \note	You should leave this enabled unless you're working with a future SRB2 version.
 #define MUSICSLOT_COMPATIBILITY
@@ -651,7 +649,7 @@ extern const char *compdate, *comptime, *comprevision, *compbranch;
 #define ROTANGLES 72 // Needs to be a divisor of 360 (45, 60, 90, 120...)
 #define ROTANGDIFF (360 / ROTANGLES)
 
-#if defined (HAVE_CURL) && ! defined (NONET)
+#if defined (HAVE_CURL)
 #define MASTERSERVER
 #define HOLEPUNCH
 #else

@@ -175,16 +175,18 @@ extern fixed_t t_cam_rotate[MAXSPLITSCREENPLAYERS];
 fixed_t P_GetPlayerHeight(player_t *player);
 fixed_t P_GetPlayerSpinHeight(player_t *player);
 void P_AddPlayerScore(player_t *player, UINT32 amount);
+
+void P_SetupCamera(camera_t *cam);
 void P_ResetCamera(player_t *player, camera_t *thiscam);
 boolean P_TryCameraMove(fixed_t x, fixed_t y, camera_t *thiscam);
 #ifndef NOCLIPCAM
 void P_SlideCameraMove(camera_t *thiscam);
 #endif
-//void P_DemoCameraMovement(camera_t *cam, UINT8 num);
 boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcalled);
 void P_ResetLocalCamAiming(player_t *player);
 void P_ToggleDemoCamera(UINT8 viewnum);
 void P_CalcChasePostImg(player_t *player, camera_t *thiscam);
+
 boolean P_PlayerInPain(player_t *player);
 void P_DoPlayerPain(player_t *player, mobj_t *source, mobj_t *inflictor);
 void P_ResetPlayer(player_t *player);
@@ -410,7 +412,6 @@ boolean P_CheckSector(sector_t *sector, boolean crunch);
 void P_DelSeclist(msecnode_t *node);
 
 void P_CreateSecNodeList(mobj_t *thing, fixed_t x, fixed_t y);
-void P_Initsecnode(void);
 
 void P_RadiusAttack(mobj_t *spot, mobj_t *source, fixed_t damagedist);
 

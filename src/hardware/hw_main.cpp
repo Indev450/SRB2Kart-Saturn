@@ -65,8 +65,6 @@
 // Globals
 // ==========================================================================
 
-#define ABS(x) ((x) < 0 ? -(x) : (x))
-
 // false if shaders have not been initialized yet, or if shaders are not available
 boolean gl_shadersavailable = false;
 
@@ -76,11 +74,6 @@ static boolean gl_palette_rendering_state = false;
 boolean gl_drawing_stencil = false;
 
 static INT32 current_bsp_culling_distance = 0;
-
-// base values set at SetViewSize
-float gl_baseviewwindowy, gl_baseviewwindowx;
-static float gl_viewwindowy, gl_viewwindowx; // top left corner of view window
-float gl_viewwidth, gl_viewheight; // viewport clipping boundaries (screen coords)
 
 FTransform atransform;
 
@@ -575,21 +568,13 @@ static void HWR_RenderPlane(subsector_t *subsector, extrasubsector_t *xsub, bool
 	if (nrPlaneVerts < 3)   //not even a triangle ?
 		return;
 
+	const sector_t *sec = FOFsector ? FOFsector : gl_frontsector;
+
 	// Get the slope pointer to simplify future code
-	if (FOFsector)
-	{
-		if (FOFsector->f_slope && !isceiling)
-			slope = FOFsector->f_slope;
-		else if (FOFsector->c_slope && isceiling)
-			slope = FOFsector->c_slope;
-	}
-	else
-	{
-		if (gl_frontsector->f_slope && !isceiling)
-			slope = gl_frontsector->f_slope;
-		else if (gl_frontsector->c_slope && isceiling)
-			slope = gl_frontsector->c_slope;
-	}
+	if (sec->f_slope && !isceiling)
+		slope = sec->f_slope;
+	else if (sec->c_slope && isceiling)
+		slope = sec->c_slope;
 
 	// Set fixedheight to the slope's height from our viewpoint, if we have a slope
 	if (slope)
@@ -645,44 +630,26 @@ static void HWR_RenderPlane(subsector_t *subsector, extrasubsector_t *xsub, bool
 	flatxref = (float)(((fixed_t)pv->x & (~flatflag)) / fflatsize);
 	flatyref = (float)(((fixed_t)pv->y & (~flatflag)) / fflatsize);
 
-	if (FOFsector != NULL)
+	if (!isceiling) // it's a floor
 	{
-		if (!isceiling) // it's a floor
-		{
-			scrollx = FixedToFloat(FOFsector->floor_xoffs)/fflatsize;
-			scrolly = FixedToFloat(FOFsector->floor_yoffs)/fflatsize;
-			angle = FOFsector->floorpic_angle;
-		}
-		else // it's a ceiling
-		{
-			scrollx = FixedToFloat(FOFsector->ceiling_xoffs)/fflatsize;
-			scrolly = FixedToFloat(FOFsector->ceiling_yoffs)/fflatsize;
-			angle = FOFsector->ceilingpic_angle;
-		}
+		scrollx = FixedToFloat(sec->floor_xoffs)/fflatsize;
+		scrolly = FixedToFloat(sec->floor_yoffs)/fflatsize;
+		angle = sec->floorpic_angle;
 	}
-	else if (gl_frontsector)
+	else // it's a ceiling
 	{
-		if (!isceiling) // it's a floor
-		{
-			scrollx = FixedToFloat(gl_frontsector->floor_xoffs)/fflatsize;
-			scrolly = FixedToFloat(gl_frontsector->floor_yoffs)/fflatsize;
-			angle = gl_frontsector->floorpic_angle;
-		}
-		else // it's a ceiling
-		{
-			scrollx = FixedToFloat(gl_frontsector->ceiling_xoffs)/fflatsize;
-			scrolly = FixedToFloat(gl_frontsector->ceiling_yoffs)/fflatsize;
-			angle = gl_frontsector->ceilingpic_angle;
-		}
+		scrollx = FixedToFloat(sec->ceiling_xoffs)/fflatsize;
+		scrolly = FixedToFloat(sec->ceiling_yoffs)/fflatsize;
+		angle = sec->ceilingpic_angle;
 	}
 
 	if (angle) // Only needs to be done if there's an altered angle
 	{
 		tempxsow = flatxref;
 		tempytow = flatyref;
-		anglef = ANG2RAD(InvAngle(angle));
-		flatxref = (tempxsow * cos(anglef)) - (tempytow * sin(anglef));
-		flatyref = (tempxsow * sin(anglef)) + (tempytow * cos(anglef));
+		anglef   = ANG2RAD(InvAngle(angle));
+		flatxref = (tempxsow * cosf(anglef)) - (tempytow * sinf(anglef));
+		flatyref = (tempxsow * sinf(anglef)) + (tempytow * cosf(anglef));
 	}
 
 #define SETUP3DVERT(vert, vx, vy) {\
@@ -695,8 +662,8 @@ static void HWR_RenderPlane(subsector_t *subsector, extrasubsector_t *xsub, bool
 		{\
 			tempxsow = vert->s;\
 			tempytow = vert->t;\
-			vert->s = (tempxsow * cos(anglef)) - (tempytow * sin(anglef));\
-			vert->t = (tempxsow * sin(anglef)) + (tempytow * cos(anglef));\
+			vert->s = (tempxsow * cosf(anglef)) - (tempytow * sinf(anglef));\
+			vert->t = (tempxsow * sinf(anglef)) + (tempytow * cosf(anglef));\
 		}\
 \
 		vert->x = (vx);\
@@ -755,14 +722,16 @@ static void HWR_RenderPlane(subsector_t *subsector, extrasubsector_t *xsub, bool
 
 		for (i = 0; i < subsector->numlines; i++, line++)
 		{
+			line_t* ld = line->linedef;
+
 			// this check sucks and is a hotspot lel
-			if (LIKELY(line->linedef->special != HORIZONSPECIAL))
+			if (LIKELY(ld->special != HORIZONSPECIAL))
 				continue;
 
 			if (R_PointOnSegSide(viewx, viewy, line) != 0)
 				continue;
 
-			P_ClosestPointOnLine(viewx, viewy, line->linedef, &v);
+			P_ClosestPointOnLine(viewx, viewy, ld, &v);
 			dist = FixedToFloat(R_PointToDist(v.x, v.y));
 
 			if (line->pv1)
@@ -772,7 +741,8 @@ static void HWR_RenderPlane(subsector_t *subsector, extrasubsector_t *xsub, bool
 			}
 			else
 			{
-				x1 = y1 = FixedToFloat(line->v1->x);
+				x1 = FixedToFloat(line->v1->x);
+				y1 = FixedToFloat(line->v1->y);
 			}
 
 			if (line->pv2)
@@ -2203,7 +2173,7 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 
 static inline boolean HWR_UsePortals(void)
 {
-	return cv_glportals.value && gl_maphasportals;
+	return supportstencil && cv_glportals.value && gl_maphasportals;
 }
 
 // From PrBoom:
@@ -2449,9 +2419,6 @@ static void HWR_AddLine(seg_t *line)
 
 	fixed_t v1x, v1y, v2x, v2y; // the seg's vertexes as fixed_t
 
-	if (line->polyseg && !(line->polyseg->flags & POF_RENDERSIDES))
-		return;
-
 	gl_curline = line;
 
 	if (LIKELY(gl_curline->pv1))
@@ -2614,7 +2581,12 @@ static inline void HWR_AddPolyObjectSegs(void)
 		// Render the polyobject's lines
 		for (j = 0; j < po_ptrs[i]->segCount; ++j)
 		{
-			HWR_AddLine(po_ptrs[i]->segs[j]);
+			seg_t *seg = po_ptrs[i]->segs[j];
+
+			if (!(seg->polyseg->flags & POF_RENDERSIDES))
+				continue;
+
+			HWR_AddLine(seg);
 		}
 	}
 }
@@ -2925,7 +2897,7 @@ static void HWR_Subsector(size_t num)
 	extracolormap_t *ceilingcolormap;
 	ffloor_t *rover;
 
-#ifdef PARANOIA //no risk while developing, enough debugging nights!
+#ifdef PARANOIA // no risk while developing, enough debugging nights!
 	if (num >= addsubsector)
 		I_Error("HWR_Subsector: ss %s with numss = %s, addss = %s\n",
 			sizeu1(num), sizeu2(numsubsectors), sizeu3(addsubsector));
@@ -2983,7 +2955,7 @@ static void HWR_Subsector(size_t num)
 
 				const sector_t *controlSec = &sectors[rover->secnum];
 
-				if (!controlSec->moved)
+				if (controlSec->moved != true)
 					continue;
 
 				anyMoved = true;
@@ -3215,7 +3187,7 @@ doaddline:
 		//         without talking about the overdraw of course.
 		sub->sector->validcount = validcount;/// \todo fix that in a better way
 
-		if (UNLIKELY(numPolyObjects))
+		if (UNLIKELY(numpolys))
 		{
 			while (count--)
 			{
@@ -3645,7 +3617,8 @@ static void HWR_SplitSprite(gl_vissprite_t *spr, const boolean papersprite)
 	float towtop, towbot, towmult;
 	float bheight;
 	float realheight, heightmult;
-	const sector_t *sector = spr->mobj->subsector->sector;
+	mobj_t *sprmo = spr->mobj;
+	const sector_t *sector = sprmo->subsector->sector;
 	const lightlist_t *list = sector->lightlist;
 	float endrealtop, endrealbot, endtop, endbot;
 	float endbheight;
@@ -3665,9 +3638,9 @@ static void HWR_SplitSprite(gl_vissprite_t *spr, const boolean papersprite)
 
 	// Draw shadow BEFORE sprite
 	if (UNLIKELY(cv_shadow.value // Shadows enabled
-		&& (spr->mobj->flags & (MF_SCENERY|MF_SPAWNCEILING|MF_NOGRAVITY)) != (MF_SCENERY|MF_SPAWNCEILING|MF_NOGRAVITY) // Ceiling scenery have no shadow.
-		&& !(spr->mobj->flags2 & MF2_DEBRIS) // Debris have no corona or shadow.
-		&& (spr->mobj->z >= spr->mobj->floorz))) // Without this, your shadow shows on the floor, even after you die and fall through the ground.
+		&& (sprmo->flags & (MF_SCENERY|MF_SPAWNCEILING|MF_NOGRAVITY)) != (MF_SCENERY|MF_SPAWNCEILING|MF_NOGRAVITY) // Ceiling scenery have no shadow.
+		&& !(sprmo->flags2 & MF2_DEBRIS) // Debris have no corona or shadow.
+		&& (sprmo->z >= sprmo->floorz))) // Without this, your shadow shows on the floor, even after you die and fall through the ground.
 	{
 		////////////////////
 		// SHADOW SPRITE! //
@@ -3721,7 +3694,7 @@ static void HWR_SplitSprite(gl_vissprite_t *spr, const boolean papersprite)
 	towmult = (towbot - towtop) / (top - bot);
 
 	endrealtop = endtop = baseWallVerts[2].y;
-	endrealbot = endbot = baseWallVerts[1].y;
+	endrealbot = baseWallVerts[1].y;
 
 	// copy the contents of baseWallVerts into the drawn wallVerts array
 	// baseWallVerts is used to know the final shape to easily get the vertex
@@ -3729,24 +3702,24 @@ static void HWR_SplitSprite(gl_vissprite_t *spr, const boolean papersprite)
 	memcpy(wallVerts, baseWallVerts, sizeof(baseWallVerts));
 
 	INT32 blendmode;
-	if (spr->mobj->frame & FF_BLENDMASK)
-		blendmode = ((spr->mobj->frame & FF_BLENDMASK) >> FF_BLENDSHIFT) + 1;
+	if (sprmo->frame & FF_BLENDMASK)
+		blendmode = ((sprmo->frame & FF_BLENDMASK) >> FF_BLENDSHIFT) + 1;
 	else
-		blendmode = spr->mobj->blendmode;
+		blendmode = sprmo->blendmode;
 
 	if (UNLIKELY(!cv_translucency.value)) // translucency disabled
 	{
 		Surf.PolyColor.s.alpha = 0xFF;
 		blend = PF_Translucent|PF_Occlude;
 	}
-	else if (spr->mobj->flags2 & MF2_SHADOW)
+	else if (sprmo->flags2 & MF2_SHADOW)
 	{
 		Surf.PolyColor.s.alpha = 0x40;
 		blend = HWR_GetBlendModeFlag(blendmode);
 	}
-	else if (spr->mobj->frame & FF_TRANSMASK)
+	else if (sprmo->frame & FF_TRANSMASK)
 	{
-		INT32 trans = (spr->mobj->frame & FF_TRANSMASK)>>FF_TRANSSHIFT;
+		INT32 trans = (sprmo->frame & FF_TRANSMASK)>>FF_TRANSSHIFT;
 		blend = HWR_SurfaceBlend(blendmode, trans, &Surf);
 	}
 	else
@@ -3759,8 +3732,8 @@ static void HWR_SplitSprite(gl_vissprite_t *spr, const boolean papersprite)
 		blend = HWR_GetBlendModeFlag(blendmode)|PF_Occlude;
 	}
 
-	if (cv_playerfade.value && spr->mobj->player)
-		Surf.PolyColor.s.alpha = FixedMul(R_DoPlayerFade(spr->mobj), Surf.PolyColor.s.alpha);
+	if (cv_playerfade.value && sprmo->player)
+		Surf.PolyColor.s.alpha = FixedMul(R_DoPlayerFade(sprmo), Surf.PolyColor.s.alpha);
 
 	if (HWR_UseShader())
 	{
@@ -3774,14 +3747,13 @@ static void HWR_SplitSprite(gl_vissprite_t *spr, const boolean papersprite)
 	lightlevel = *list[sector->numlights - 1].lightlevel;
 
 	colormap = list[sector->numlights - 1].extra_colormap;
-	i = 0;
 	temp = FloatToFixed(realtop);
 
-	lightset = HWR_OverrideObjectLightLevel(spr->mobj, &lightlevel);
+	lightset = HWR_OverrideObjectLightLevel(sprmo, &lightlevel);
 
 	for (i = 1; i < sector->numlights; i++)
 	{
-		const fixed_t h = P_GetLightZAt(&sector->lightlist[i], spr->mobj->x, spr->mobj->y);
+		const fixed_t h = P_GetLightZAt(&sector->lightlist[i], sprmo->x, sprmo->y);
 
 		if (!(h <= temp))
 			continue;
@@ -3845,7 +3817,7 @@ static void HWR_SplitSprite(gl_vissprite_t *spr, const boolean papersprite)
 		wallVerts[1].y = endbot;
 
 		// The x and y only need to be adjusted in the case that it's not a papersprite
-		if (cv_glspritebillboarding.value && spr->mobj && !papersprite)
+		if (cv_glspritebillboarding.value && sprmo && !papersprite)
 		{
 			// Get the x and z of the vertices so billboarding draws correctly
 			realheight = realbot - realtop;
@@ -3867,7 +3839,7 @@ static void HWR_SplitSprite(gl_vissprite_t *spr, const boolean papersprite)
 			wallVerts[1].z = baseWallVerts[2].z + (baseWallVerts[2].z - baseWallVerts[1].z) * heightmult;
 		}
 
-		HWR_Lighting(&Surf, lightlevel, colormap, P_SectorUsesDirectionalLighting(sector) && !(spr->mobj->frame & FF_FULLBRIGHT));
+		HWR_Lighting(&Surf, lightlevel, colormap, P_SectorUsesDirectionalLighting(sector) && !(sprmo->frame & FF_FULLBRIGHT));
 
 		Surf.PolyColor.s.alpha = alpha;
 
@@ -3916,9 +3888,9 @@ static void HWR_DrawSprite(gl_vissprite_t *spr)
 
 	INT32 shader = SHADER_NONE;
 
-	const mobj_t *sprmo = spr->mobj;
+	mobj_t *sprmo = spr->mobj;
 
-	if (UNLIKELY(!sprmo || !sprmo->subsector))
+	if (UNLIKELY(!sprmo->subsector))
 		return;
 
 	const boolean papersprite = (sprmo->frame & FF_PAPERSPRITE);
@@ -4007,9 +3979,9 @@ static void HWR_DrawSprite(gl_vissprite_t *spr)
 
 	// colormap test
 	INT32 lightlevel = 255;
-	const boolean lightset = HWR_OverrideObjectLightLevel(spr->mobj, &lightlevel);
+	const boolean lightset = HWR_OverrideObjectLightLevel(sprmo, &lightlevel);
 	extracolormap_t *colormap = sector->extra_colormap;
-	const boolean fullbright = R_ThingIsFullBright(spr->mobj);
+	const boolean fullbright = R_ThingIsFullBright(sprmo);
 
 	if (!lightset)
 	{
@@ -4051,7 +4023,7 @@ static void HWR_DrawSprite(gl_vissprite_t *spr)
 	}
 
 	if (cv_playerfade.value && sprmo->player)
-		Surf.PolyColor.s.alpha = FixedMul(R_DoPlayerFade(spr->mobj), Surf.PolyColor.s.alpha);
+		Surf.PolyColor.s.alpha = FixedMul(R_DoPlayerFade(sprmo), Surf.PolyColor.s.alpha);
 
 	if (HWR_UseShader())
 	{
@@ -4189,9 +4161,9 @@ static int CompareVisSprites(const void *p1, const void *p2)
 	idiff = transparency1 - transparency2;
 	if (idiff != 0) return idiff;
 
-	fdiff = spr2->tz - spr1->tz;// this order seems correct when checking with apitrace. Back to front.
+	fdiff = spr2->tz - spr1->tz; // this order seems correct when checking with apitrace. Back to front.
 	if (fabsf(fdiff) < 1.0E-36f)
-		return spr1->dispoffset - spr2->dispoffset;// smallest dispoffset first if sprites are at (almost) same location.
+		return spr1->dispoffset - spr2->dispoffset; // smallest dispoffset first if sprites are at (almost) same location.
 	else if (fdiff > 0)
 		return 1;
 	else
@@ -4356,7 +4328,7 @@ static int CompareDrawNodePlanes(const void *p1, const void *p2)
 	const INT32 n1 = *(const INT32*)p1;
 	const INT32 n2 = *(const INT32*)p2;
 
-	return ABS(drawnodes[n2].u.plane.fixedheight - viewz) - ABS(drawnodes[n1].u.plane.fixedheight - viewz);
+	return abs(drawnodes[n2].u.plane.fixedheight - viewz) - abs(drawnodes[n1].u.plane.fixedheight - viewz);
 }
 
 //
@@ -4509,41 +4481,43 @@ static void HWR_DrawSprites(void)
 			HWR_DrawPrecipitationSprite(spr);
 			continue;
 		}
-
-		if constexpr (Type == DrawSpritesType::kModels)
+		else if (spr->mobj)
 		{
-			if (spr->mobj && spr->mobj->skin && spr->mobj->sprite == SPR_PLAY)
+			if constexpr (Type == DrawSpritesType::kModels)
 			{
-				md2_t *md2;
-
-				if (spr->mobj->localskin)
+				if (spr->mobj->skin && spr->mobj->sprite == SPR_PLAY)
 				{
-					if (spr->mobj->skinlocal)
-						md2 = &md2_localplayermodels[(skin_t *)spr->mobj->localskin - localskins];
+					md2_t *md2;
+
+					if (spr->mobj->localskin)
+					{
+						if (spr->mobj->skinlocal)
+							md2 = &md2_localplayermodels[(skin_t *)spr->mobj->localskin - localskins];
+						else
+							md2 = &md2_playermodels     [(skin_t *)spr->mobj->localskin -      skins];
+					}
 					else
-						md2 = &md2_playermodels     [(skin_t *)spr->mobj->localskin -      skins];
+						md2 = &md2_playermodels[(skin_t *)spr->mobj->skin - skins];
+
+					// 8/1/19: Only don't display player models if no default SPR_PLAY is found.
+					if (((md2->notfound || md2->scale < 0.0f) && ((!cv_glfallbackplayermodel.value) || md2_models[SPR_PLAY].notfound || md2_models[SPR_PLAY].scale < 0.0f)) || spr->mobj->state == &states[S_PLAY_SIGN])
+						HWR_DrawSprite(spr);
+					else
+						HWR_DrawMD2(spr);
 				}
 				else
-					md2 = &md2_playermodels[(skin_t *)spr->mobj->skin - skins];
-
-				// 8/1/19: Only don't display player models if no default SPR_PLAY is found.
-				if (((md2->notfound || md2->scale < 0.0f) && ((!cv_glfallbackplayermodel.value) || md2_models[SPR_PLAY].notfound || md2_models[SPR_PLAY].scale < 0.0f)) || spr->mobj->state == &states[S_PLAY_SIGN])
-					HWR_DrawSprite(spr);
-				else
-					HWR_DrawMD2(spr);
+				{
+					if (md2_models[spr->mobj->sprite].notfound || md2_models[spr->mobj->sprite].scale < 0.0f)
+						HWR_DrawSprite(spr);
+					else
+						HWR_DrawMD2(spr);
+				}
 			}
-			else
+
+			if constexpr (Type == DrawSpritesType::kSprites)
 			{
-				if (md2_models[spr->mobj->sprite].notfound || md2_models[spr->mobj->sprite].scale < 0.0f)
-					HWR_DrawSprite(spr);
-				else
-					HWR_DrawMD2(spr);
+				HWR_DrawSprite(spr);
 			}
-		}
-
-		if constexpr (Type == DrawSpritesType::kSprites)
-		{
-			HWR_DrawSprite(spr);
 		}
 	}
 }
@@ -4623,7 +4597,7 @@ static void HWR_AddPrecipitationSprites(void)
 		return;
 	}
 
-	drawdist = ((fixed_t)(cv_drawdist_precip.value) * (cv_mobjscaleprecip.value ? mapobjectscale : FRACUNIT));
+	drawdist = ((fixed_t)(cv_drawdist_precip.value) * mapobjectscale);
 
 	// No to infinite precipitation draw distance.
 	if (cv_drawdist_precip.value == 0)
@@ -4675,6 +4649,7 @@ static void HWR_ProjectSprite(mobj_t *thing)
 #ifdef ROTSPRITE
 	spriteinfo_t *sprinfo;
 #endif
+	skin_t *sprskin = NULL;
 	size_t lumpoff;
 	unsigned rot;
 	UINT8 flip;
@@ -4747,12 +4722,14 @@ static void HWR_ProjectSprite(mobj_t *thing)
 
 	rot = (thing->frame & FF_FRAMEMASK);
 
+	sprskin = K_GetMobjSkin(thing);
+
 	//Fab : 02-08-98: 'skin' override spritedef currently used for skin
-	if ((thing->skin || thing->localskin) && thing->sprite == SPR_PLAY)
+	if (sprskin && thing->sprite == SPR_PLAY)
 	{
-		sprdef = &K_GetMobjSkin(thing)->spritedef;
+		sprdef = &sprskin->spritedef;
 #ifdef ROTSPRITE
-		sprinfo = &K_GetMobjSkin(thing)->sprinfo;
+		sprinfo = &sprskin->sprinfo;
 #endif
 	}
 	else
@@ -4837,8 +4814,8 @@ static void HWR_ProjectSprite(mobj_t *thing)
 			flip ^= (1<<rot);
 	}
 
-	if ((thing->skin || thing->localskin) && K_GetMobjSkin(thing)->flags & SF_HIRES)
-		this_scale *= FixedToFloat(K_GetMobjSkin(thing)->highresscale);
+	if (sprskin && (sprskin->flags & SF_HIRES))
+		this_scale *= FixedToFloat(sprskin->highresscale);
 
 	spr_width = spritecachedinfo[lumpoff].width;
 	spr_height = spritecachedinfo[lumpoff].height;
@@ -5260,8 +5237,6 @@ void HWR_BuildSkyDome(void)
 		sky->loops[sky->loopcount].use_texture = false;
 		sky->loopcount++;
 
-		delta = 0.0f;
-
 		for (c = 0; c < col_count; c++)
 		{
 			HWR_SkyDomeVertex(sky, vertex_p, 1, c, yflip, 0.0f, true);
@@ -5334,10 +5309,10 @@ static void HWR_DrawSkyBackground(void)
 // -----------------+
 static inline void HWR_ClearView(void)
 {
-	GL_GClipRect((INT32)gl_viewwindowx,
-				(INT32)gl_viewwindowy,
-				(INT32)(gl_viewwindowx + gl_viewwidth),
-				(INT32)(gl_viewwindowy + gl_viewheight),
+	GL_GClipRect(viewwindowx,
+				 viewwindowy,
+				(viewwindowx + viewwidth),
+				(viewwindowy + viewheight),
 						ZCLIP_PLANE, FAR_ZCLIP_DEFAULT);
 	GL_ClearBuffer(false, true, true, NULL);
 }
@@ -5347,19 +5322,6 @@ static inline void HWR_ClearView(void)
 // -----------------+
 void HWR_SetViewSize(void)
 {
-	// setup view size
-	gl_viewwidth = (float)vid.width;
-	gl_viewheight = (float)vid.height;
-
-	if (splitscreen)
-		gl_viewheight /= 2;
-
-	if (splitscreen > 1)
-		gl_viewwidth /= 2;
-
-	gl_baseviewwindowy = 0;
-	gl_baseviewwindowx = 0;
-
 	GL_FlushScreenTextures();
 }
 
@@ -5370,7 +5332,9 @@ static void HWR_SetTransformAiming(FTransform *trans)
 	if (cv_glshearing.value)
 	{
 		fixed_t fixedaiming = AIMINGTODY(aimingangle);
-		trans->viewaiming = FixedToFloat(fixedaiming);
+		trans->viewaiming = FixedToFloat(fixedaiming) * ((float)vid.width / vid.height) / ((float)BASEVIDWIDTH / BASEVIDHEIGHT);
+		if (splitscreen == 1) // only for 2 player splitscreen
+			trans->viewaiming *= 2.125; // splitscreen adjusts fov with 0.8, so compensate (but only halfway, since splitscreen means only half the screen is used)
 		trans->shearing = true;
 		gl_aimingangle = 0;
 	}
@@ -5612,20 +5576,6 @@ extern "C" {
 // ==========================================================================
 static void HWR_RenderFrame(player_t *player, boolean skybox)
 {
-	// set window position
-	gl_viewwindowx = gl_baseviewwindowx;
-	gl_viewwindowy = gl_baseviewwindowy;
-
-	if ((splitscreen == 1 && viewssnum == 1) || (splitscreen > 1 && viewssnum > 1))
-	{
-		gl_viewwindowy += gl_viewheight;
-	}
-
-	if (splitscreen > 1 && viewssnum & 1)
-	{
-		gl_viewwindowx += gl_viewwidth;
-	}
-
 	// check for new console commands.
 	NetUpdate();
 
@@ -5641,10 +5591,10 @@ static void HWR_RenderFrame(player_t *player, boolean skybox)
 
 	if (!skybox && cv_glrenderdistance.value)
 	{
-		GL_GClipRect((INT32)gl_viewwindowx,
-					(INT32)gl_viewwindowy,
-					(INT32)(gl_viewwindowx + gl_viewwidth),
-					(INT32)(gl_viewwindowy + gl_viewheight),
+		GL_GClipRect(viewwindowx,
+					 viewwindowy,
+					(viewwindowx + viewwidth),
+					(viewwindowy + viewheight),
 					ZCLIP_PLANE, clipping_distances[cv_glrenderdistance.value - 1]);
 		current_bsp_culling_distance = bsp_culling_distances[cv_glrenderdistance.value - 1];
 	}

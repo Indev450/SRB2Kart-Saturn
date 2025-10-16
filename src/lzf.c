@@ -70,11 +70,7 @@
  * this is usually a loss, even with glibc's optimized memcpy
  */
 #ifndef USE_MEMCPY
-#ifdef _MSC_VER
-# define USE_MEMCPY 0
-#else
 # define USE_MEMCPY 1
-#endif
 #endif
 
 /*

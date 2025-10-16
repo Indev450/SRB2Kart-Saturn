@@ -40,13 +40,8 @@
 #include "i_ttf.h"
 #endif
 
-#if defined (_WIN32) && !defined (main)
-//#define SDLMAIN
-#endif
-
 #ifdef HAVE_LIBBACKTRACE
 #include <backtrace.h>
-
 struct backtrace_state *bt_state = NULL;
 #endif
 
@@ -68,13 +63,6 @@ char  logfilename[1024];
 
 #ifndef O_SEQUENTIAL
 #define O_SEQUENTIAL 0
-#endif
-#endif
-
-#ifdef _WIN32
-#ifndef _AMD64_
-#include "exchndl.h"
-#define DRMINGW
 #endif
 #endif
 
@@ -236,12 +224,9 @@ int main(int argc, char **argv)
 
 	//I_OutputMsg("I_StartupSystem() ...\n");
 	I_StartupSystem();
-#if defined (_WIN32)
-	{
-#ifdef DRMINGW
-		ExcHndlInit();
-#endif
-	}
+
+#ifdef HAVE_DRMINGW
+	InitDrMingw();
 #endif
 
 	// startup SRB2
@@ -250,11 +235,6 @@ int main(int argc, char **argv)
 	CONS_Printf("Entering main game loop...\n");
 	// never return
 	D_SRB2Loop();
-
-#ifdef BUGTRAP
-	// This is safe even if BT didn't start.
-	ShutdownBugTrap();
-#endif
 
 	// return to OS
 	return 0;

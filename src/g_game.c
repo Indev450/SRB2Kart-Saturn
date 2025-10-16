@@ -452,6 +452,13 @@ consvar_t cv_ydeadzone[MAXSPLITSCREENPLAYERS] = {
 	{"joy4_ydeadzone", "0.5", CV_FLOAT|CV_SAVE, deadzone_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL}
 };
 
+consvar_t cv_litesteer[MAXSPLITSCREENPLAYERS] = {
+	{"litesteer",  "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"litesteer2", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"litesteer3", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"litesteer4", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL}
+};
+
 static CV_PossibleValue_t driftsparkpulse_t[] = {{0, "MIN"}, {FRACUNIT*3, "MAX"}, {0, NULL}};
 consvar_t cv_driftsparkpulse = {"driftsparkpulse", "1.4", CV_FLOAT | CV_SAVE, driftsparkpulse_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
@@ -1024,30 +1031,32 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 	// let movement keys cancel each other out
 	if (turnright && !(turnleft))
 	{
-		cmd->angleturn = (INT16)(cmd->angleturn - (angleturn[tspeed]));
-		cmd->driftturn = (INT16)(cmd->driftturn - (angleturn[tspeed]));
+		cmd->angleturn -= angleturn[tspeed];
 		side += sidemove[1];
 	}
 	else if (turnleft && !(turnright))
 	{
-		cmd->angleturn = (INT16)(cmd->angleturn + (angleturn[tspeed]));
-		cmd->driftturn = (INT16)(cmd->driftturn + (angleturn[tspeed]));
+		cmd->angleturn += angleturn[tspeed];
 		side -= sidemove[1];
 	}
 
 	if (analogjoystickmove && axis != 0)
 	{
-		// JOYAXISRANGE should be 1023 (divide by 1024)
-		cmd->angleturn = (INT16)(cmd->angleturn - (((axis * angleturn[1]) >> 10))); // ANALOG!
-		cmd->driftturn = (INT16)(cmd->driftturn - (((axis * angleturn[1]) >> 10)));
-		side += ((axis * sidemove[0]) >> 10);
+		cmd->angleturn -= (axis * KART_FULLTURN) / JOYAXISRANGE;
+		side += (axis * sidemove[0]) / JOYAXISRANGE;
 	}
 
 	if (cv_mouseturn.value)
 	{
 		//THIS WORKS WTF????????
-		cmd->angleturn = (INT16)(cmd->angleturn - ((mousex*(encoremode ? -1 : 1)*8)));
-		cmd->driftturn = (INT16)(cmd->driftturn - ((mousex*(encoremode ? -1 : 1)*8)));
+		cmd->angleturn -= (mousex*(encoremode ? -1 : 1)*8);
+	}
+
+	// Digital users can input diagonal-back for shallow turns.
+	if (cv_litesteer[forplayer].value && InputDown(gc_aimbackward, ssplayer)
+		&& abs(cmd->angleturn) == KART_FULLTURN) // My keyboard hits 1024 but my keyboard only hits 1023, video games
+	{
+		cmd->angleturn /= 2;
 	}
 
 	if (objectplacing) // SRB2Kart: spectators need special controls // not anymore huehuehue
@@ -1160,10 +1169,8 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 	else if (cmd->angleturn < (-angleturn[1]))
 		cmd->angleturn = (-angleturn[1]);
 
-	if (cmd->driftturn > (angleturn[1]))
-		cmd->driftturn = (angleturn[1]);
-	else if (cmd->driftturn < (-angleturn[1]))
-		cmd->driftturn = (-angleturn[1]);
+	// until here both are the very same
+	cmd->driftturn = cmd->angleturn;
 
 	if (player->mo)
 		cmd->angleturn = K_GetKartTurnValue(player, cmd->angleturn);
@@ -3053,11 +3060,6 @@ static void G_DoCompleted(void)
 
 	gameaction = ga_nothing;
 
-	if (metalplayback)
-		G_StopMetalDemo();
-	if (metalrecording)
-		G_StopMetalRecording();
-
 	K_StatRound();
 
 	for (i = 0; i < MAXPLAYERS; i++)
@@ -3569,7 +3571,7 @@ void G_SaveGameData(boolean force)
 	if (!gamedataloaded)
 		return; // If never loaded (-nodata), don't save
 
-	save.p = save.buffer = (UINT8 *)malloc(GAMEDATASIZE);
+	save.p = save.buffer = (UINT8 *)Z_Malloc(GAMEDATASIZE, PU_STATIC, NULL);
 	if (!save.p)
 	{
 		CONS_Alert(CONS_ERROR, M_GetText("No more free memory for saving game data\n"));
@@ -3589,6 +3591,8 @@ void G_SaveGameData(boolean force)
 		if (!FIL_CopyFile(gamedatafilename, backupfile))
 		{
 			CONS_Alert(CONS_WARNING,"Failed to create a backup of save data. Will not attempt to write to save data\n");
+			Z_Free(save.buffer);
+			save.p = save.buffer = NULL;
 			return;
 		}
 	}
@@ -3660,7 +3664,7 @@ void G_SaveGameData(boolean force)
 	length = save.p - save.buffer;
 
 	FIL_WriteFile(va(pandf, srb2home, gamedatafilename), save.buffer, length);
-	free(save.buffer);
+	Z_Free(save.buffer);
 	save.p = save.buffer = NULL;
 }
 
@@ -3830,7 +3834,7 @@ void G_SaveGame(UINT32 savegameslot)
 		char name[VERSIONSIZE];
 		size_t length;
 
-		save.p = save.buffer = (UINT8 *)malloc(SAVEGAMESIZE);
+		save.p = save.buffer = (UINT8 *)Z_Malloc(SAVEGAMESIZE, PU_STATIC, NULL);
 		if (!save.p)
 		{
 			CONS_Alert(CONS_ERROR, M_GetText("No more free memory for saving game data\n"));
@@ -3845,7 +3849,7 @@ void G_SaveGame(UINT32 savegameslot)
 
 		length = save.p - save.buffer;
 		saved = FIL_WriteFile(backup, save.buffer, length);
-		free(save.buffer);
+		Z_Free(save.buffer);
 		save.p = save.buffer = NULL;
 	}
 
@@ -4146,8 +4150,6 @@ INT32 G_FindMap(const char *mapname, char **foundmapnamep,
 		if (!( realmapname = G_BuildMapTitle(mapnum) ))
 			continue;
 
-		aprop = realmapname;
-
 		/* Now that we found a perfect match no need to fucking guess. */
 		if (strnicmp(realmapname, mapname, mapnamelen) == 0)
 		{
@@ -4175,6 +4177,7 @@ INT32 G_FindMap(const char *mapname, char **foundmapnamep,
 					writesimplefreq(freq, &freqc,
 							mapnum, aprop - realmapname, mapnamelen);
 				}
+
 				if (apromapnum == 0)
 				{
 					apromapnum = mapnum;

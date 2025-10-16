@@ -69,13 +69,8 @@ static boolean consoleready;  // console prompt is ready
        INT32 con_destlines; // vid lines used by console at final position
 static INT32 con_curlines;  // vid lines currently used by console
 
-       INT32 con_clipviewtop; // (useless)
-
 static UINT8  con_hudlines;             // number of console heads up message lines
 static UINT32 con_hudtime[MAXHUDLINES]; // remaining time of display for hud msg lines
-
-       INT32 con_clearlines;      // top screen lines to refresh when view reduced
-       boolean con_hudupdate;   // when messages scroll, we need a backgrnd refresh
 
 // console text output
 static char *con_line;          // console text output current line
@@ -393,9 +388,6 @@ void CON_Init(void)
 
 	Lock_state();
 
-	//note: CON_Ticker should always execute at least once before D_Display()
-	con_clipviewtop = -1; // -1 does not clip
-
 	con_hudlines = atoi(cons_hudlines.defaultvalue);
 
 	Unlock_state();
@@ -479,18 +471,18 @@ static void CON_RecalcSize(void)
 
 	switch (cv_constextsize.value)
 	{
-	case V_NOSCALEPATCH:
-		con_scalefactor = 1;
-		break;
-	case V_SMALLSCALEPATCH:
-		con_scalefactor = vid.smalldupx;
-		break;
-	case V_MEDSCALEPATCH:
-		con_scalefactor = vid.meddupx;
-		break;
-	default:	// Full scaling
-		con_scalefactor = vid.dupx;
-		break;
+		case V_NOSCALEPATCH:
+			con_scalefactor = 1;
+			break;
+		case V_SMALLSCALEPATCH:
+			con_scalefactor = vid.smalldup;
+			break;
+		case V_MEDSCALEPATCH:
+			con_scalefactor = vid.meddup;
+			break;
+		default:	// Full scaling
+			con_scalefactor = vid.dup;
+			break;
 	}
 
 	con_recalc = false;
@@ -607,7 +599,7 @@ static void CON_MoveConsole(void)
 	}
 
 	// Not instant - Increment fracmovement fractionally
-	fracmovement += FixedMul(cons_speed.value*vid.fdupy, (cv_uncappedhud.value ? renderdeltatics : FRACUNIT));
+	fracmovement += FixedMul(cons_speed.value*vid.fdup, (cv_uncappedhud.value ? renderdeltatics : FRACUNIT));
 
 	if (con_curlines < con_destlines) // Move the console downwards
 	{
@@ -727,7 +719,8 @@ void CON_ToggleOff(void)
 	con_curlines = 0;
 	CON_ClearHUD();
 	con_forcepic = 0;
-	con_clipviewtop = -1; // remove console clipping of view
+
+	I_SetTextInput(false);
 
 	Unlock_state();
 }
@@ -768,28 +761,24 @@ void CON_Ticker(void)
 		{
 			con_destlines = 0;
 			CON_ClearHUD();
+			I_SetTextInput(false);
 		}
 		else
+		{
 			CON_ChangeHeight();
-	}
-
-	// clip the view, so that the part under the console is not drawn
-	con_clipviewtop = -1;
-	if (cons_backpic.value) // clip only when using an opaque background
-	{
-		if (con_curlines > 0)
-			con_clipviewtop = con_curlines - viewwindowy - 1 - 10;
-		// NOTE: BIG HACK::SUBTRACT 10, SO THAT WATER DON'T COPY LINES OF THE CONSOLE
-		//       WINDOW!!! (draw some more lines behind the bottom of the console)
-		if (con_clipviewtop < 0)
-			con_clipviewtop = -1; // maybe not necessary, provided it's < 0
+			I_SetTextInput(true);
+		}
 	}
 
 	// check if console ready for prompt
 	if (con_destlines >= minheight)
+	{
 		consoleready = true;
+	}
 	else
+	{
 		consoleready = false;
+	}
 
 	// make overlay messages disappear after a while
 	for (i = 0; i < con_hudlines; i++)
@@ -836,7 +825,7 @@ boolean CON_Responder(event_t *ev)
 	// check for console toggle key
 	if (ev->type != ev_console)
 	{
-		if (modeattacking || metalrecording)
+		if (modeattacking)
 			return false;
 
 		if (ev->data1 >= KEY_MOUSE1) // See also: HUD_Responder
@@ -1090,9 +1079,6 @@ static void CON_Linefeed(void)
 
 	con_line = &con_buffer[(con_cy%con_totallines)*con_width];
 	memset(con_line, ' ', con_width);
-
-	// make sure the view borders are refreshed if hud messages scroll
-	con_hudupdate = true; // see HU_Erase()
 }
 
 // Outputs text into the console text buffer
@@ -1272,7 +1258,7 @@ void CONS_Alert(alerttype_t level, const char *fmt, ...)
 		txt = malloc(8192);
 
 	va_start(argptr, fmt);
-	vsprintf(txt, fmt, argptr);
+	vsnprintf(txt, 8192, fmt, argptr);
 	va_end(argptr);
 
 	switch (level)
@@ -1308,7 +1294,7 @@ void CONS_Debug(INT32 debugflags, const char *fmt, ...)
 		txt = malloc(8192);
 
 	va_start(argptr, fmt);
-	vsprintf(txt, fmt, argptr);
+	vsnprintf(txt, 8192, fmt, argptr);
 	va_end(argptr);
 
 	// Again I am lazy, oh well
@@ -1479,9 +1465,6 @@ static void CON_DrawHudlines(void)
 		//V_DrawCharacter(x, y, (p[c]&0xff) | cv_constextsize.value | V_NOSCALESTART, !cv_allcaps.value);
 		y += charheight;
 	}
-
-	// top screen lines that might need clearing when view is reduced
-	con_clearlines = y; // this is handled by HU_Erase();
 }
 
 // draw the console background, text, and prompt if enough place
@@ -1498,10 +1481,6 @@ static void CON_DrawConsole(void)
 
 	if (con_curlines <= 0)
 		return;
-
-	//FIXME: refresh borders only when console bg is translucent
-	con_clearlines = con_curlines; // clear console draw from view borders
-	con_hudupdate = true; // always refresh while console is on
 
 	// draw console background
 	if (cons_backpic.value || con_forcepic)

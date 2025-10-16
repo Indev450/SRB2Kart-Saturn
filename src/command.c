@@ -712,11 +712,9 @@ static void COM_CEcho_f(void)
 
 	for (i = 1; i < COM_Argc(); i++)
 	{
-		strncat(cechotext, COM_Argv(i), sizeof(cechotext)-1);
-		strncat(cechotext, " ", sizeof(cechotext)-1);
+		strlcpy(cechotext, COM_Argv(i), sizeof(cechotext)-1);
+		strlcat(cechotext, " ", sizeof(cechotext)-1);
 	}
-
-	cechotext[sizeof(cechotext) - 1] = '\0';
 
 	HU_DoCEcho(cechotext);
 }
@@ -838,7 +836,7 @@ static void COM_Help_f(void)
 			{
 				{
 					if (!stricmp(cvar->PossibleValue[0].strvalue, "MIN") && !stricmp(cvar->PossibleValue[1].strvalue, "MAX"))
-					{	
+					{
 						if (floatmode)
 						{
 							float fu = FIXED_TO_FLOAT(cvar->PossibleValue[0].value);
@@ -1044,7 +1042,7 @@ static void COM_Add_f(void)
 
 	if (( cvar->flags & CV_FLOAT ))
 	{
-		float n =FIXED_TO_FLOAT (cvar->value) + atof(COM_Argv(2));
+		float n = FIXED_TO_FLOAT(cvar->value) + (float)atof(COM_Argv(2));
 		CV_Set(cvar, va("%ld%s", (long)n, M_Ftrim(n)));
 	}
 	else
@@ -1652,13 +1650,13 @@ static void CV_SetCVar(consvar_t *var, const char *value, boolean stealth)
 		UINT8 *p = buf;
 		if (!(server || (IsPlayerAdmin(consoleplayer))))
 		{
-			CONS_Printf(M_GetText("Only the server or admin can change: %s %s\n"), var->name, var->string);
+			CONS_Alert(CONS_NOTICE, "Only the server or admin can change: %s %s\n", var->name, var->string);
 			return;
 		}
 
 		if (var == &cv_kartencore && !M_SecretUnlocked(SECRET_ENCORE))
 		{
-			CONS_Printf(M_GetText("You haven't unlocked Encore Mode yet!\n"));
+			CONS_Alert(CONS_NOTICE, "You haven't unlocked Encore Mode yet!\n");
 			return;
 		}
 
@@ -1666,7 +1664,7 @@ static void CV_SetCVar(consvar_t *var, const char *value, boolean stealth)
 		{
 			if (!stricmp(value, "Hard") || atoi(value) == 2)
 			{
-				CONS_Printf(M_GetText("You haven't unlocked this yet!\n"));
+				CONS_Alert(CONS_NOTICE, "You haven't unlocked this yet!\n");
 				return;
 			}
 		}
@@ -1683,14 +1681,13 @@ static void CV_SetCVar(consvar_t *var, const char *value, boolean stealth)
 		else
 			Setvalue(var, value, stealth);
 	}
+	else if ((var->flags & CV_NOTINNET) && netgame)
+	{
+		CONS_Alert(CONS_NOTICE, "This variable can't be changed while in netgame: %s %s\n", var->name, var->string);
+		return;
+	}
 	else
-		if ((var->flags & CV_NOTINNET) && netgame)
-		{
-			CONS_Printf(M_GetText("This variable can't be changed while in netgame: %s %s\n"), var->name, var->string);
-			return;
-		}
-		else
-			Setvalue(var, value, stealth);
+		Setvalue(var, value, stealth);
 }
 
 /** Sets a value to a variable without calling its callback function.
@@ -1773,7 +1770,7 @@ void CV_AddValue(consvar_t *var, INT32 increment)
 				newvalue = var->value - 1;
 				do
 				{
-					if(increment > 0) // Going up!
+					if (increment > 0) // Going up!
 					{
 						if (++newvalue == NUMMAPS)
 							newvalue = -1;
@@ -1787,7 +1784,7 @@ void CV_AddValue(consvar_t *var, INT32 increment)
 					if (newvalue == oldvalue)
 						break; // don't loop forever if there's none of a certain gametype
 
-					if(!mapheaderinfo[newvalue])
+					if (newvalue >= 0 && !mapheaderinfo[newvalue])
 						continue; // Don't allocate the header.  That just makes memory usage skyrocket.
 
 				} while (!M_CanShowLevelInList(newvalue, gt));
@@ -1916,13 +1913,14 @@ void CV_AddValue(consvar_t *var, INT32 increment)
 				max = (M_SecretUnlocked(SECRET_HARDSPEED) ? 3 : 2);
 			}
 #ifdef PARANOIA
-			if (currentindice == -1)
-				I_Error("CV_AddValue: current value %d not found in possible value\n",
-					var->value);
+			if (currentindice == -1 || max == 0)
+				I_Error("CV_AddValue: current value %d not found in possible value\n", var->value);
 #endif
-
-			newindice = (currentindice + increment + max) % max;
-			CV_Set(var, var->PossibleValue[newindice].strvalue);
+			if (max > 0)
+			{
+				newindice = (currentindice + increment + max) % max;
+				CV_Set(var, var->PossibleValue[newindice].strvalue);
+			}
 		}
 	}
 	else

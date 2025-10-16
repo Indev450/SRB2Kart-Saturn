@@ -64,11 +64,7 @@ extern boolean minilighticon;     // mkwii-style minimap headlight
 extern boolean autoloading;
 extern boolean autoloaded;
 extern boolean postautoloaded;
-
 void D_AddPostloadFiles(void);
-
-extern char *autoloadwadfilespost[MAX_WADFILES];
-extern char *autoloadwadfiles[MAX_WADFILES];
 
 // the infinite loop of D_SRB2Loop() called from win_main for windows version
 void D_SRB2Loop(void) FUNCNORETURN;

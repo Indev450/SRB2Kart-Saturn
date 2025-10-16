@@ -715,7 +715,7 @@ static int libd_drawOnMinimap(lua_State *L)
 
 	// and NOW we can FINALLY DRAW OUR GOD DAMN PATCH :V
 	lua_getfield(L, LUA_REGISTRYINDEX, "HUD_DRAW_LIST");
-	list = (huddrawlist_h) lua_touserdata(L, -1);
+	list = (huddrawlist_h)lua_touserdata(L, -1);
 	lua_pop(L, 1);
 
 	if (LUA_HUD_IsDrawListValid(list))
@@ -1095,22 +1095,13 @@ FUNCINLINE static ATTRINLINE int libd_height(lua_State *L)
 	return 1;
 }
 
-FUNCINLINE static ATTRINLINE int libd_dupx(lua_State *L)
+FUNCINLINE static ATTRINLINE int libd_dup(lua_State *L)
 {
 	HUDONLY
-	lua_pushinteger(L, vid.dupx); // push integral scale (patch scale)
-	lua_pushfixed(L, vid.fdupx); // push fixed point scale (position scale)
+	lua_pushinteger(L, vid.dup); // push integral scale (patch scale)
+	lua_pushfixed(L, vid.fdup);  // push fixed point scale (position scale)
 	return 2;
 }
-
-FUNCINLINE static ATTRINLINE int libd_dupy(lua_State *L)
-{
-	HUDONLY
-	lua_pushinteger(L, vid.dupy); // push integral scale (patch scale)
-	lua_pushfixed(L, vid.fdupy); // push fixed point scale (position scale)
-	return 2;
-}
-
 FUNCINLINE static ATTRINLINE int libd_renderer(lua_State *L)
 {
 	HUDONLY
@@ -1208,8 +1199,8 @@ static luaL_Reg lib_draw[] = {
 	{"getColormap", libd_getColormap},
 	{"width", libd_width},
 	{"height", libd_height},
-	{"dupx", libd_dupx},
-	{"dupy", libd_dupy},
+	{"dupx", libd_dup},
+	{"dupy", libd_dup},
 	{"renderer", libd_renderer},
 	{"localTransFlag", libd_getlocaltransflag},
 	{"drawOnMinimap", libd_drawOnMinimap},

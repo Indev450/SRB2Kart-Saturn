@@ -51,7 +51,7 @@ enum
 
 	PU_PATCH                 = 14, // static entire execution time
 	PU_PATCH_LOWPRIORITY     = 15, // lower priority patch, static until level exited
-	PU_PATCH_ROTATED         = 16, // rotated patch, static until level exited or WAD added
+	PU_PATCH_ROTATED         = 16, // rotated patch, static entire execution time
 	PU_PATCH_DATA            = 17, // patch data, lifetime depends on the patch that owns it
 	PU_SPRITE                = 18, // sprite patch, static until WAD added
 	PU_HUDGFX                = 19, // HUD patch, static until WAD added
@@ -170,6 +170,23 @@ char *Z_StrDup(const char *in);
 void *Z_LevelPoolMalloc(size_t size);
 void *Z_LevelPoolCalloc(size_t size);
 void Z_LevelPoolFree(void *p, size_t size);
+
+// for use with CLEANUP macro
+FUNCINLINE static ATTRINLINE void Z_Pfree(void *p)
+{
+	Z_Free(*(void **)p);
+}
+
+// for use with CLEANUP macro
+// not sure where to put this
+FUNCINLINE static ATTRINLINE void pfree(void *p)
+{
+	if (*(void **)p)
+	{
+		free(*(void **)p);
+		*(void **)p = NULL;
+	}
+}
 
 #ifdef __cplusplus
 } // extern "C"

@@ -17,20 +17,12 @@
 /// \file
 /// \brief SDL specific part of the OpenGL API for SRB2
 
-#ifdef _MSC_VER
-#pragma warning(disable : 4214 4244)
-#endif
-
 #ifdef HAVE_SDL
 #define _MATH_DEFINES_DEFINED
 
 #include "SDL.h"
 
 #include "sdlmain.h"
-
-#ifdef _MSC_VER
-#pragma warning(default : 4214 4244)
-#endif
 
 #include "../doomdef.h"
 #include "../d_main.h"
@@ -106,11 +98,10 @@ boolean VID_LoadOGLAPI(void)
 
 	if (SDL_GL_LoadLibrary(OGLLibname) != 0)
 	{
-		CONS_Alert(CONS_ERROR, "Could not load OpenGL Library: %s\n"
-					"Falling back to Software mode.\n", SDL_GetError());
+		CONS_Alert(CONS_ERROR, "Could not load OpenGL Library: %s\n", SDL_GetError());
 		if (!M_CheckParm("-OGLlib"))
 			CONS_Printf("If you know what is the OpenGL library's name, use -OGLlib\n");
-		return 0;
+		return false;
 	}
 #endif
 	return true;
@@ -210,10 +201,11 @@ boolean OglSdlSurface(INT32 w, INT32 h)
 
 #if defined (__unix__)
 #ifdef USE_FBO_OGL
+		// TODO: delet this since nvidia fixed their shit on 575
 		char videodriver[4] = {'S','D','L',0};
 		if (supportFBO && strstr((const char*)gl_renderer, "NVIDIA")
 			&& (*strncpy(videodriver, SDL_GetCurrentVideoDriver(), sizeof(videodriver)-1) != '\0')
-			&& (strncasecmp("x11",videodriver,4) == 0))
+			&& (strncasecmp("x11", videodriver, 4) == 0))
 			xwaylandcrap = true;
 #endif
 #endif

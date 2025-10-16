@@ -277,7 +277,8 @@ consvar_t cv_skipmapcheck = {"skipmapcheck", "Off", CV_SAVE, CV_OnOff, NULL, 0, 
 INT32 cv_debug;
 
 static void UseMouse_OnChange(void);
-consvar_t cv_usemouse = {"use_mouse", "Off", CV_SAVE|CV_CALL,usemouse_cons_t, UseMouse_OnChange, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_usemouse = {"use_mouse", "Off", CV_SAVE|CV_CALL, usemouse_cons_t, UseMouse_OnChange, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_mousevisible = {"mousevisible", "Off", CV_SAVE|CV_CALL, CV_OnOff, UseMouse_OnChange, 0, NULL, NULL, 0, 0, NULL};
 
 static void UseMouse_OnChange(void)
 {
@@ -720,10 +721,8 @@ void D_RegisterServerCommands(void)
 	CV_RegisterVar(&cv_killingdead);
 
 	// d_clisrv
-#ifndef NONET
 #ifdef SATURNJOIN
 	CV_RegisterVar(&cv_allownewsaturnplayer); // need to register it before cv_maxplayers && cv_allownewplayer
-#endif
 #endif
 	CV_RegisterVar(&cv_maxplayers);
 	CV_RegisterVar(&cv_resynchattempts);
@@ -736,18 +735,15 @@ void D_RegisterServerCommands(void)
 	CV_RegisterVar(&cv_downloadspeed);
     CV_RegisterVar(&cv_connectawaittime);
 	CV_RegisterVar(&cv_httpsource);
-#ifndef NONET
 	CV_RegisterVar(&cv_allownewplayer);
 
 	CV_RegisterVar(&cv_joinrefusemessage);
+
 	CV_RegisterVar(&cv_chatlogsize);
-#ifdef VANILLAJOINNEXTROUND
-	CV_RegisterVar(&cv_joinnextround);
-#endif
+
 	CV_RegisterVar(&cv_showjoinaddress);
 	CV_RegisterVar(&cv_shownodeip);
 	CV_RegisterVar(&cv_blamecfail);
-#endif
 
 	COM_AddCommand("ping", Command_Ping_f);
 	CV_RegisterVar(&cv_nettimeout);
@@ -849,15 +845,10 @@ void D_RegisterClientCommands(void)
 	CV_RegisterVar(&cv_zlib_memory);
 	CV_RegisterVar(&cv_zlib_strategy);
 	CV_RegisterVar(&cv_zlib_window_bits);
-	// APNG variables
-	CV_RegisterVar(&cv_zlib_levela);
-	CV_RegisterVar(&cv_zlib_memorya);
-	CV_RegisterVar(&cv_zlib_strategya);
-	CV_RegisterVar(&cv_zlib_window_bitsa);
-	CV_RegisterVar(&cv_apng_delay);
 	// GIF variables
 	CV_RegisterVar(&cv_gif_optimize);
 	CV_RegisterVar(&cv_gif_downscale);
+	CV_RegisterVar(&cv_gif_dynamicdelay);
 
 #ifdef WALLSPLATS
 	CV_RegisterVar(&cv_splats);
@@ -993,6 +984,8 @@ void D_RegisterClientCommands(void)
 		CV_RegisterVar(&cv_xdeadzone[i]);
 		CV_RegisterVar(&cv_ydeadzone[i]);
 
+		CV_RegisterVar(&cv_litesteer[i]);
+
 		CV_RegisterVar(&cv_usejoystick[i]);
 		CV_RegisterVar(&cv_joyscale[i]);
 		CV_RegisterVar(&cv_rumble[i]);
@@ -1003,6 +996,7 @@ void D_RegisterClientCommands(void)
 	CV_RegisterVar(&cv_invertmouse);
 	CV_RegisterVar(&cv_mousesens);
 	CV_RegisterVar(&cv_mouseysens);
+	CV_RegisterVar(&cv_mousevisible);
 
 	// s_sound.c
 	CV_RegisterVar(&cv_soundvolume);
@@ -1024,6 +1018,7 @@ void D_RegisterClientCommands(void)
 	// screen.c
 	CV_RegisterVar(&cv_fullscreen);
 	CV_RegisterVar(&cv_renderview);
+	CV_RegisterVar(&cv_frameskip);
 	CV_RegisterVar(&cv_vhseffect);
 	CV_RegisterVar(&cv_shittyscreen);
 	CV_RegisterVar(&cv_scr_width);
@@ -1529,12 +1524,7 @@ static void SendNameAndColor(void)
 		if (players[consoleplayer].mo)
 			players[consoleplayer].mo->color = players[consoleplayer].skincolor;
 
-		if (metalrecording)
-		{ // Metal Sonic is Sonic, obviously.
-			SetPlayerSkinByNum(consoleplayer, 0);
-			CV_StealthSet(&cv_skin, skins[0].name);
-		}
-		else if ((foundskin = R_SkinAvailable(cv_skin.string)) != -1)
+		if ((foundskin = R_SkinAvailable(cv_skin.string)) != -1)
 		{
 			cv_skin.value = foundskin;
 			SetPlayerSkin(consoleplayer, cv_skin.string);
@@ -2324,8 +2314,6 @@ static void Command_Playdemo_f(void)
 	// disconnect from server here?
 	if (demo.playback)
 		G_StopDemo();
-	if (metalplayback)
-		G_StopMetalDemo();
 
 	// open the demo file
 	strcpy(name, COM_Argv(1));
@@ -2372,8 +2360,6 @@ static void Command_Timedemo_f(void)
 	// disconnect from server here?
 	if (demo.playback)
 		G_StopDemo();
-	if (metalplayback)
-		G_StopMetalDemo();
 
 	// open the demo file
 	strcpy (name, COM_Argv(1));
@@ -2930,8 +2916,6 @@ static void Got_Mapcmd(UINT8 **cp, INT32 playernum)
 	if (demo.timing)
 		G_DoneLevelLoad();
 
-	if (metalrecording)
-		G_BeginMetal();
 	if (demo.recording) // Okay, level loaded, character spawned and skinned,
 		G_BeginRecording(); // I AM NOW READY TO RECORD.
 	demo.deferstart = true;
@@ -4394,6 +4378,14 @@ static void Command_Addfilelocal(void)
 	P_AddWadFile(fn, true);
 }
 
+static void CloseFileHandle(FILE **fhandle)
+{
+	if (*fhandle)
+	{
+		fclose(*fhandle);
+		*fhandle = NULL;
+	}
+}
 
 /** Adds a pwad at runtime.
   * Searches for sounds, maps, music, new images.
@@ -4406,7 +4398,7 @@ static void Command_Addfile(void)
 	INT32 i;
 	int musiconly = -1; // W_VerifyNMUSlumps isn't boolean
 
-	FILE *fhandle = NULL;
+	CLEANUP(CloseFileHandle) FILE *fhandle = NULL;
 
 	if (COM_Argc() != 2)
 	{
@@ -4421,18 +4413,15 @@ static void Command_Addfile(void)
 		if (!isprint(fn[i]) || fn[i] == ';')
 			return;
 
-	if (fhandle)
-	{
-		fclose(fhandle);
-		fhandle = NULL;
-	}
-
 	if ((fhandle = W_OpenWadFile(&fn, true)) != NULL)
 	{
 		musiconly = W_VerifyNMUSlumps(fn, fhandle, false);
 	}
 
-	if (musiconly == -1)
+	if (fhandle == NULL || musiconly == -1)
+		return; // file not found
+
+	if (!musiconly)
 	{
 		// ... But only so long as they contain nothing more then music and sprites.
 		if (netgame && !(server || IsPlayerAdmin(consoleplayer)))
@@ -4460,7 +4449,7 @@ static void Command_Addfile(void)
 	{
 		UINT8 md5sum[16];
 #ifdef NOMD5
-		memset(md5sum,0,16);
+		memset(md5sum, 0, 16);
 #else
 
 		{
@@ -4472,26 +4461,22 @@ static void Command_Addfile(void)
 
 		for (i = 0; i < numwadfiles; i++)
 		{
-			if (memcmp(wadfiles[i]->md5sum, md5sum, 16))
-				continue;
-
-			CONS_Alert(CONS_ERROR, M_GetText("%s is already loaded\n"), fn);
-			goto addfile_finally;
+			if (!memcmp(wadfiles[i]->md5sum, md5sum, 16))
+			{
+				CONS_Alert(CONS_ERROR, M_GetText("%s is already loaded\n"), fn);
+				return;
+			}
 		}
 #endif
 		// Finally okay to write this important data
-		WRITESTRINGN(buf_p,p,240);
+		WRITESTRINGN(buf_p, p, 240);
 		WRITEMEM(buf_p, md5sum, 16);
 	}
 
 	if (IsPlayerAdmin(consoleplayer) && (!server)) // Request to add file
 		SendNetXCmd(XD_REQADDFILE, buf, buf_p - buf);
 	else
-		SendNetXCmd(XD_ADDFILE, buf, buf_p - buf);
-
-addfile_finally:
-	if (fhandle)
-		fclose(fhandle);
+		SendNetXCmd(XD_ADDFILE, buf, buf_p - buf);;
 }
 
 /** Adds something at runtime.
@@ -4682,7 +4667,7 @@ static void Got_Addfilecmd(UINT8 **cp, INT32 playernum)
 		return;
 	}
 
-	ncs = findfile(filename,md5sum,true);
+	ncs = findfile(filename, md5sum, true);
 
 	if (ncs != FS_FOUND || !P_AddWadFile(filename, false))
 	{
@@ -4895,18 +4880,7 @@ static void Command_Version_f(void)
 #endif
 
 	// OS
-	// Would be nice to use SDL_GetPlatform for this
-#if defined (_WIN32) || defined (_WIN64)
-	CONS_Printf("Windows ");
-#elif defined(__linux__)
-	CONS_Printf("Linux ");
-#elif defined(MACOSX)
-	CONS_Printf("macOS ");
-#elif defined(UNIXCOMMON)
-	CONS_Printf("Unix (Common) ");
-#else
-	CONS_Printf("Other OS ");
-#endif
+	CONS_Printf("%s ", I_GetSysName());
 
 	// Bitness
 	if (sizeof(void*) == 4)
@@ -5294,7 +5268,7 @@ retryscramble:
 	memset(&scrambleplayers, 0, sizeof(scrambleplayers));
 	memset(&scrambleteams, 0, sizeof(scrambleplayers));
 	scrambletotal = scramblecount = 0;
-	blue = red = maxcomposition = newteam = playercount = 0;
+	blue = red = newteam = playercount = 0;
 	repick = true;
 
 	// Put each player's node in the array.

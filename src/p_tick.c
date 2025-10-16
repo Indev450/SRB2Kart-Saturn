@@ -829,11 +829,6 @@ void P_Ticker(boolean run)
 
 		P_RunQuakes();
 
-		if (metalplayback)
-			G_ReadMetalTic(metalplayback);
-		if (metalrecording)
-			G_WriteMetalTic(players[consoleplayer].mo);
-
 		if (demo.recording)
 		{
 			G_WriteAllGhostTics();

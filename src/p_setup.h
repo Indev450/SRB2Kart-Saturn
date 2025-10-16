@@ -76,6 +76,8 @@ void HWR_LoadLevel(void);
 
 boolean P_AddWadFile(const char *wadfilename, boolean local);
 
+boolean P_CheckMapReplacements(char *name, boolean checkreplaced);
+
 // WARNING: The following functions should be grouped as follows:
 // any amount of PartialAdds followed by MultiSetups until returned true,
 // as soon as possible.

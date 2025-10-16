@@ -67,8 +67,6 @@ extern visplane_t *floorplane;
 extern visplane_t *ceilingplane;
 
 // Visplane related.
-extern INT16 *lastopening, *openings;
-extern size_t maxopenings;
 
 extern INT16 *floorclip, *ceilingclip;
 extern fixed_t *frontscale, *yslopetab;
@@ -114,7 +112,7 @@ typedef struct planemgr_s
 	polyobj_t *polyobj;
 } visffloor_t;
 
-extern visffloor_t ffloor[MAXFFLOORS];
+extern visffloor_t visffloor[MAXFFLOORS];
 extern INT32 numffloors;
 
 #ifdef __cplusplus

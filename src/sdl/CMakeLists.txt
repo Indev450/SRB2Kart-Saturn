@@ -92,7 +92,7 @@ if(${SDL2_FOUND})
 	source_group("Assembly" FILES ${SRB2_ASM_SOURCES} ${SRB2_NASM_SOURCES})
 	source_group("LUA" FILES ${SRB2_LUA_SOURCES} ${SRB2_LUA_HEADERS})
 	source_group("LUA\\Interpreter" FILES ${SRB2_BLUA_SOURCES} ${SRB2_BLUA_HEADERS})
-	
+
 
 	if(${SRB2_CONFIG_HWRENDER})
 		set(SRB2_SDL2_TOTAL_SOURCES ${SRB2_SDL2_TOTAL_SOURCES}
@@ -110,16 +110,6 @@ if(${SDL2_FOUND})
 		set(SRB2_SDL2_TOTAL_SOURCES ${SRB2_SDL2_TOTAL_SOURCES}
 			${SRB2_NASM_SOURCES}
 		)
-		if(MSVC)
-			set(SRB2_SDL2_TOTAL_SOURCES ${SRB2_SDL2_TOTAL_SOURCES}
-				${SRB2_NASM_OBJECTS}
-			)
-			set_source_files_properties(${SRB2_NASM_OBJECTS} PROPERTIES GENERATED ON)
-		else()
-			list(APPEND SRB2_SDL2_TOTAL_SOURCES ${SRB2_ASM_SOURCES})
-			set_source_files_properties(${SRB2_ASM_SOURCES} PROPERTIES LANGUAGE C)
-			set_source_files_properties(${SRB2_ASM_SOURCES} PROPERTIES COMPILE_FLAGS "-x assembler-with-cpp")
-		endif()
 	endif()
 
 	if(${CMAKE_SYSTEM} MATCHES Windows)
@@ -204,18 +194,6 @@ if(${SDL2_FOUND})
 			set(ASM_ASSEMBLER_OBJFORMAT ${CMAKE_ASM_NASM_OBJECT_FORMAT})
 			set_source_files_properties(${SRB2_NASM_SOURCES} LANGUAGE ASM_NASM)
 		endif()
-
-		if(MSVC)
-			# using assembler with msvc doesn't work, must do it manually
-			foreach(ASMFILE ${SRB2_NASM_SOURCES})
-				get_filename_component(ASMFILE_NAME ${ASMFILE} NAME_WE)
-				set(ASMFILE_NAME ${ASMFILE_NAME}.obj)
-				add_custom_command(TARGET SRB2SDL2 PRE_LINK
-					COMMAND ${ASM_ASSEMBLER_TEMP} ARGS -f ${ASM_ASSEMBLER_OBJFORMAT} -o ${CMAKE_CURRENT_BINARY_DIR}/${ASMFILE_NAME} ${ASMFILE}
-					COMMENT "assemble ${ASMFILE_NAME}."
-				)
-			endforeach()
-		endif()
 	endif()
 
 	if(${CMAKE_SYSTEM} MATCHES Windows)
@@ -224,31 +202,6 @@ if(${SDL2_FOUND})
 		)
 		target_compile_options(SRB2SDL2 PRIVATE
 			-U_WINDOWS
-		)
-	endif()
-
-	if(MSVC)
-		if(${SRB2_CONFIG_USE_INTERNAL_LIBRARIES})
-			set(SDL2_MAIN_FOUND ON)
-			if(${SRB2_SYSTEM_BITS} EQUAL 64)
-				set(SDL2_MAIN_INCLUDE_DIRS ${CMAKE_SOURCE_DIR}/libs/SDL2/x86_64-w64-mingw32/include/SDL2)
-				set(SDL2_MAIN_LIBRARIES "-L${CMAKE_SOURCE_DIR}/libs/SDL2/x86_64-w64-mingw32/lib -lSDL2main")
-			else() # 32-bit
-				set(SDL2_MAIN_INCLUDE_DIRS ${CMAKE_SOURCE_DIR}/libs/SDL2/i686-w64-mingw32/include/SDL2)
-				set(SDL2_MAIN_LIBRARIES "-L${CMAKE_SOURCE_DIR}/libs/SDL2/i686-w64-mingw32/lib -lSDL2main")
-			endif()
-		else()
-			find_package(SDL2_MAIN REQUIRED)
-		endif()
-		target_link_libraries(SRB2SDL2 PRIVATE
-			${SDL2_MAIN_LIBRARIES}
-		)
-		target_compile_options(SRB2SDL2 PRIVATE
-			/Umain
-			/D_CRT_SECURE_NO_WARNINGS # something about string functions.
-			/D_CRT_NONSTDC_NO_DEPRECATE
-			/DSDLMAIN
-			/D_WINSOCK_DEPRECATED_NO_WARNINGS # Don't care
 		)
 	endif()
 

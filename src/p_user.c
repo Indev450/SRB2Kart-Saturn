@@ -340,23 +340,23 @@ void P_DoPlayerPain(player_t *player, mobj_t *source, mobj_t *inflictor)
 	angle_t ang;
 	fixed_t fallbackspeed;
 
-	if (inflictor && (inflictor->type != MT_PLAYER && inflictor->type != MT_ORBINAUT && inflictor->type != MT_ORBINAUT_SHIELD
-		&& inflictor->type != MT_JAWZ && inflictor->type != MT_JAWZ_DUD && inflictor->type != MT_JAWZ_SHIELD
-		&& inflictor->type != MT_SMK_THWOMP))
-	{
-		if (player->mo->eflags & MFE_VERTICALFLIP)
-			player->mo->z--;
-		else
-			player->mo->z++;
-
-		if (player->mo->eflags & MFE_UNDERWATER)
-			P_SetObjectMomZ(player->mo, FixedDiv(10511*FRACUNIT,2600*FRACUNIT), false);
-		else
-			P_SetObjectMomZ(player->mo, FixedDiv(69*FRACUNIT,10*FRACUNIT), false);
-	}
-
 	if (inflictor)
 	{
+		if (inflictor->type != MT_PLAYER && inflictor->type != MT_ORBINAUT && inflictor->type != MT_ORBINAUT_SHIELD
+			&& inflictor->type != MT_JAWZ && inflictor->type != MT_JAWZ_DUD && inflictor->type != MT_JAWZ_SHIELD
+			&& inflictor->type != MT_SMK_THWOMP)
+		{
+			if (player->mo->eflags & MFE_VERTICALFLIP)
+				player->mo->z--;
+			else
+				player->mo->z++;
+
+			if (player->mo->eflags & MFE_UNDERWATER)
+				P_SetObjectMomZ(player->mo, FixedDiv(10511*FRACUNIT,2600*FRACUNIT), false);
+			else
+				P_SetObjectMomZ(player->mo, FixedDiv(69*FRACUNIT,10*FRACUNIT), false);
+		}
+
 		ang = R_PointToAngle2(inflictor->x, inflictor->y, player->mo->x, player->mo->y); // SRB2kart
 
 		// explosion and rail rings send you farther back, making it more difficult
@@ -1399,7 +1399,7 @@ static void P_CheckBustableBlocks(player_t *player)
 					if (!(rover->flags & FF_SHATTER) && !(rover->flags & FF_SPINBUST)
 						&& !((player->pflags & PF_SPINNING) && !(player->pflags & PF_JUMPED))
 						&& (!player->powers[pw_super])
-						&& !(player->pflags & PF_DRILLING) && !metalrecording)
+						&& !(player->pflags & PF_DRILLING))
 						continue;
 
 					topheight = P_GetFOFTopZ(player->mo, node->m_sector, rover, player->mo->x, player->mo->y, NULL);
@@ -1447,9 +1447,6 @@ static void P_CheckBustableBlocks(player_t *player)
 						player->mo->momx >>= 1;
 						player->mo->momy >>= 1;
 					}
-
-					//if (metalrecording)
-					//	G_RecordBustup(rover);
 
 					EV_CrumbleChain(node->m_sector, rover);
 
@@ -3439,14 +3436,41 @@ static void P_DemoCameraMovement(camera_t *cam, UINT8 num)
 	cam->subsector = R_PointInSubsectorFast(cam->x, cam->y);
 }
 
+void P_SetupCamera(camera_t *cam)
+{
+	mapthing_t *thing;
+
+	switch (gametype)
+	{
+		case GT_MATCH:
+		case GT_TAG:
+			thing = deathmatchstarts[0];
+			break;
+		default:
+			thing = playerstarts[0];
+			break;
+	}
+
+	if (!thing)
+		return; // we can't do jack shit
+
+	cam->x = thing->x << FRACBITS;
+	cam->y = thing->y << FRACBITS;
+	cam->angle = FixedAngle(thing->angle*FRACUNIT);
+
+	cam->subsector = R_PointInSubsectorFast(cam->x, cam->y); // make sure camera has a subsector set -- Monster Iestyn (12/11/18)
+	cam->z = P_GetSectorFloorZAt(cam->subsector->sector, cam->x, cam->y) + (32<<FRACBITS);
+
+	cam->chase = false; // tell camera to reset its position next tic
+}
+
 void P_ResetCamera(player_t *player, camera_t *thiscam)
 {
 	tic_t tries = 0;
-	fixed_t x, y, z;
 	UINT8 i;
 
 	if (thiscam->freecam)
-		return;	// do not reset the camera there.
+		return; // do not reset the camera there.
 
 	if (!player->mo)
 		return;
@@ -3455,17 +3479,15 @@ void P_ResetCamera(player_t *player, camera_t *thiscam)
 		return;
 
 	thiscam->chase = true;
-	x = player->mo->x - P_ReturnThrustX(player->mo, thiscam->angle, player->mo->radius);
-	y = player->mo->y - P_ReturnThrustY(player->mo, thiscam->angle, player->mo->radius);
-	if (player->mo->eflags & MFE_VERTICALFLIP)
-		z = player->mo->z + player->mo->height - (32<<FRACBITS) - 16*FRACUNIT;
-	else
-		z = player->mo->z + (32<<FRACBITS);
 
 	// set bits for the camera
-	thiscam->x = x;
-	thiscam->y = y;
-	thiscam->z = z;
+	thiscam->x = player->mo->x - P_ReturnThrustX(player->mo, thiscam->angle, player->mo->radius);
+	thiscam->y = player->mo->y - P_ReturnThrustY(player->mo, thiscam->angle, player->mo->radius);
+	if (player->mo->eflags & MFE_VERTICALFLIP)
+		thiscam->z = player->mo->z + player->mo->height - (32<<FRACBITS) - 16*FRACUNIT;
+	else
+		thiscam->z = player->mo->z + (32<<FRACBITS);
+
 	thiscam->reset = true;
 
 	for (i = 0; i <= splitscreen; i++)
@@ -3480,14 +3502,14 @@ void P_ResetCamera(player_t *player, camera_t *thiscam)
 
 	thiscam->relativex = 0;
 
-	thiscam->subsector = R_PointInSubsectorFast(thiscam->x,thiscam->y);
+	thiscam->subsector = R_PointInSubsectorFast(thiscam->x, thiscam->y);
 
 	thiscam->radius = 20*FRACUNIT;
 	thiscam->height = 16*FRACUNIT;
 
 	thiscam->reset_aiming = true;
 
-	while (!P_MoveChaseCamera(player,thiscam,true) && ++tries < 2*TICRATE);
+	while (!P_MoveChaseCamera(player, thiscam, true) && ++tries < 2*TICRATE);
 }
 
 #ifndef NOCLIPCAM // Disable all z-clipping for noclip cam
@@ -3696,28 +3718,19 @@ static boolean P_CheckNoclipCameraPosition(player_t *player, camera_t *thiscam, 
 }
 #endif
 
+// Freecam toggle button is a "shortcut" to reset
+// the camera to "spawn" position when spectator
 static void P_MoveCameraToSpawn(UINT8 playernum)
 {
 	camera_t *thiscam = &camera[playernum];
-	player_t *player = P_GetLocalPlayerForNum(playernum);
 
-	if (!thiscam || !player->mo)
+	if (!thiscam)
 		return;
 
-	thiscam->x = player->mo->x - P_ReturnThrustX(player->mo, thiscam->angle, player->mo->radius);
-	thiscam->y = player->mo->y - P_ReturnThrustY(player->mo, thiscam->angle, player->mo->radius);
-	if (player->mo->eflags & MFE_VERTICALFLIP)
-		thiscam->z = player->mo->z + player->mo->height - (32<<FRACBITS) - 16*FRACUNIT;
-	else
-		thiscam->z = player->mo->z + (32<<FRACBITS);
+	P_SetupCamera(thiscam);
 
-	thiscam->reset = true;
-
-	thiscam->angle = player->mo->angle;
 	thiscam->aiming = 0;
-
-	thiscam->subsector = R_PointInSubsectorFast(thiscam->x,thiscam->y);
-
+	thiscam->reset = true;
 	thiscam->reset_aiming = true;
 
 	R_ResetViewInterpolation(playernum);
@@ -3783,14 +3796,14 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 		if (player->spectator) // force cam off for spectators
 			return true;
 
-		if (!cv_chasecam[num].value && thiscam == &camera[num])
+		if (!cv_chasecam[num].value)
 			return true;
 	}
 
 	if (!thiscam->chase && !resetcalled)
 	{
 		focusangle = ((P_IsLocalPlayer(player)) ? localangle[num] : mo->angle);
-		camrotate = ((thiscam == &camera[num]) ? cv_cam_rotate[num].value : 0);
+		camrotate = cv_cam_rotate[num].value;
 
 		if (leveltime < introtime) // Whoooshy camera!
 		{
@@ -3912,7 +3925,7 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 	}
 
 	if (!resetcalled && (leveltime > starttime && timeover != 2)
-		&& (thiscam == &camera[num] && t_cam_rotate[num] != -42))
+		&& (t_cam_rotate[num] != -42))
 	{
 		angle = FixedAngle(camrotate*FRACUNIT);
 		thiscam->angle = angle;
@@ -4492,7 +4505,7 @@ static void P_DoFunnyDance(player_t *player)
 {
 	fixed_t bpm; // 140bpm ish
 
-	if (player->spectator || !player->mo || player->kartstuff[k_respawn] || player->mo->salty_jump) // this looks jank as hell during hop
+	if (player->spectator || !player->mo || player->kartstuff[k_respawn] || player->mo->salty.jump) // this looks jank as hell during hop
 		return;
 
 	player->squishdance.bounce = 0;

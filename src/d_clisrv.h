@@ -133,10 +133,6 @@ void Command_Droprate(void);
 void Command_Numnodes(void);
 #endif
 
-#if defined(_MSC_VER)
-#pragma pack(1)
-#endif
-
 // Client to server packet
 typedef struct
 {
@@ -175,10 +171,6 @@ typedef struct
 	INT16 consistancy;
 	ticcmd_t cmd, cmd2, cmd3, cmd4;
 } ATTRPACK client4cmd_pak;
-
-#ifdef _MSC_VER
-#pragma warning(disable :  4200)
-#endif
 
 // Server to client packet
 // this packet is too large
@@ -372,10 +364,6 @@ typedef struct {
 	UINT8 data[0]; // Size is variable using hardware_MAXPACKETLENGTH
 } ATTRPACK filetx_pak;
 
-#ifdef _MSC_VER
-#pragma warning(default : 4200)
-#endif
-
 #define MAXAPPLICATION 16
 
 typedef struct
@@ -519,10 +507,6 @@ typedef struct
 	} u; // This is needed to pack diff packet types data together
 } ATTRPACK doomdata_t;
 
-#if defined(_MSC_VER)
-#pragma pack()
-#endif
-
 #define MAXSERVERLIST (MAXNETNODES-1)
 typedef struct
 {
@@ -599,9 +583,6 @@ extern tic_t lowest_lag;
 extern consvar_t cv_mindelay, cv_gentlemens;
 
 extern consvar_t
-#ifdef VANILLAJOINNEXTROUND
-	cv_joinnextround,
-#endif
 	cv_netticbuffer, cv_allownewplayer,
 #ifdef SATURNJOIN
 	cv_allownewsaturnplayer,
@@ -658,16 +639,9 @@ void D_QuitNetGame(void);
 //? How many ticks to run?
 boolean TryRunTics(tic_t realtic);
 
-// extra data for lmps
-// these functions scare me. they contain magic.
-/*boolean AddLmpExtradata(UINT8 **demo_p, INT32 playernum);
-void ReadLmpExtraData(UINT8 **demo_pointer, INT32 playernum);*/
-
-#ifndef NONET
 // translate a playername in a player number return -1 if not found and
 // print a error message in the console
 SINT8 nametonum(const char *name);
-#endif
 
 extern char motd[254], server_context[8];
 extern UINT8 playernode[MAXPLAYERS];
@@ -679,7 +653,6 @@ INT32 D_NumPlayers(void);
 void D_ResetTiccmds(void);
 
 tic_t GetLag(INT32 node);
-//UINT8 GetFreeXCmdSize(UINT8 playerid);
 
 extern UINT8 hu_resynching;
 #ifdef SATURNPAK
@@ -687,7 +660,8 @@ extern UINT8 hu_redownloadinggamestate;
 #endif
 extern boolean hu_stopped; // kart, true when the game is stopped for players due to a disconnecting or connecting player
 
-typedef struct rewind_s {
+typedef struct rewind_s
+{
 	UINT8 savebuffer[(768*1024)];
 	tic_t leveltime;
 	size_t demopos;

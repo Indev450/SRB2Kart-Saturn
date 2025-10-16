@@ -89,9 +89,10 @@ void I_UpdateNoVsync(void)
 //
 // I_ReadScreen
 //
-void I_ReadScreen(UINT8 *scr)
+void I_ReadScreen(UINT8 * restrict scr, INT32 scale)
 {
 	(void)scr;
+	(void)scale;
 }
 
 //
@@ -144,8 +145,9 @@ UINT32 I_GetRefreshRate(void)
 	return 0;
 }
 
-void I_SetTextInput(void)
+void I_SetTextInput(boolean enable)
 {
+	(void)enable;
 }
 
 boolean I_UseNativeKeyboard(void)

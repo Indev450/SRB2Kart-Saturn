@@ -35,7 +35,8 @@
 #endif
 
 #ifdef HAVE_CURL
-#include "curl/curl.h"
+#include <curl/curl.h>
+#include "m_curl.h"
 #endif
 
 #include "doomdef.h"
@@ -120,6 +121,7 @@ file_download_t filedownload;
 
 #ifdef HAVE_CURL
 static CURL *http_handle;
+static char curl_errbuf[CURL_ERROR_SIZE];
 static CURLM *multi_handle;
 static UINT32 curl_dlnow;
 static UINT32 curl_dltotal;
@@ -229,9 +231,7 @@ void D_ParseFileneeded(INT32 fileneedednum_parm, UINT8 *fileneededstr, UINT16 fi
 
 void CL_PrepareDownloadSaveGame(const char *tmpsave)
 {
-#ifdef CLIENT_LOADINGSCREEN
 	filedownload.current = -1;
-#endif
 	fileneedednum = 1;
 	fileneeded[0].status = FS_REQUESTED;
 	fileneeded[0].justdownloaded = false;
@@ -493,9 +493,6 @@ INT32 CL_CheckFiles(void)
 	size_t filestoload = 0;
 	boolean downloadrequired = false;
 
-//	if (M_CheckParm("-nofiles"))
-//		return 1;
-
 	// the first is the iwad (the main wad file)
 	// we don't care if it's called srb2.srb or srb2.wad.
 	// Never download the IWAD, just assume it's there and identical
@@ -509,11 +506,9 @@ INT32 CL_CheckFiles(void)
 	{
 		CONS_Debug(DBG_NETPLAY, "game is modified; only doing basic checks\n");
 
-		boolean have_important = false;
-
 		for (i = 0, j = mainwads+1; i < fileneedednum || j < numwadfiles;)
 		{
-			if (j < numwadfiles && (!wadfiles[j]->important || wadfiles[j]->localfile))
+			if (j < numwadfiles && !wadfiles[j]->important) // TODO: add checks for localfiles that dont contain anything "allowed" (maps and stuff like that)
 			{
 				// Unimportant on our side. still don't care.
 				++j;
@@ -522,15 +517,7 @@ INT32 CL_CheckFiles(void)
 
 			// If this test is true, we've reached the end of one file list.
 			if (i >= fileneedednum || j >= numwadfiles)
-			{
-				// We are missing some of important files, or have too much
-				// important files.
-				if (have_important)
-					return 2;
-
-				// All checked files weren't important, don't care about them.
-				break;
-			}
+				return 2;
 
 			// For the sake of speed, only bother with a md5 check
 			if (memcmp(wadfiles[j]->md5sum, fileneeded[i].md5sum, 16))
@@ -538,14 +525,12 @@ INT32 CL_CheckFiles(void)
 
 			// It's accounted for! let's keep going.
 			CONS_Debug(DBG_NETPLAY, "'%s' accounted for\n", fileneeded[i].filename);
-			have_important = true;
 			fileneeded[i].status = FS_OPEN;
 			++i;
 			++j;
 		}
 
-		if (have_important)
-			return 1;
+		return 1;
 	}
 
 	for (i = 0; i < fileneedednum; i++)
@@ -593,9 +578,6 @@ boolean CL_LoadServerFiles(void)
 {
 	INT32 i;
 
-//	if (M_CheckParm("-nofiles"))
-//		return;
-
 	for (i = 0; i < fileneedednum; i++)
 	{
 		if (fileneeded[i].status == FS_OPEN)
@@ -631,6 +613,7 @@ boolean CL_LoadServerFiles(void)
 				fileneeded[i].status, s);
 		}
 	}
+
 	return true;
 }
 
@@ -1022,17 +1005,16 @@ void Got_Filetxpak(void)
 			file->file = NULL;
 			file->status = FS_FOUND;
 			file->justdownloaded = true;
-			CONS_Printf(M_GetText("Downloading %s...(done)\n"),
-				filename);
-#ifndef NONET
+			CONS_Printf(M_GetText("Downloading %s...(done)\n"), filename);
+
 			filedownload.completednum++;
 			filedownload.completedsize += file->totalsize;
-#endif
 		}
 	}
 	else if (!file->justdownloaded)
 	{
 		const char *s;
+
 		switch(file->status)
 		{
 		case FS_NOTFOUND:
@@ -1051,6 +1033,7 @@ void Got_Filetxpak(void)
 			s = "unknown";
 			break;
 		}
+
 		I_Error("Received a file not requested (file id: %d, file status: %s)\n", filenum, s);
 	}
 
@@ -1061,9 +1044,7 @@ void Got_Filetxpak(void)
 		filetime = 0;
 	}
 
-#ifdef CLIENT_LOADINGSCREEN
 	filedownload.current = filenum;
-#endif
 }
 
 /** \brief Checks if a node is downloading a file
@@ -1309,6 +1290,7 @@ static int curlprogress_callback(void *clientp, double dltotal, double dlnow, do
 void CURLPrepareFile(const char* url, int dfilenum)
 {
 	HTTP_login *login;
+	CURLcode cc;
 
 #ifdef PARANOIA
 	if (M_CheckParm("-nodownload"))
@@ -1317,14 +1299,33 @@ void CURLPrepareFile(const char* url, int dfilenum)
 
 	if (!multi_handle)
 	{
-		curl_global_init(CURL_GLOBAL_ALL);
-		multi_handle = curl_multi_init();
+		cc = curl_global_init(CURL_GLOBAL_ALL);
+		if (cc < 0)
+		{
+			I_OutputMsg("libcurl: curl_global_init() returned %d\n", cc);
+		}
+		else
+		{
+			multi_handle = curl_multi_init();
+		}
+		if (!multi_handle)
+		{
+			I_OutputMsg("libcurl: curl_multi_init() failed\n");
+			curl_global_cleanup();
+			return;
+		}
 	}
 
 	http_handle = curl_easy_init();
 
-	if (http_handle && multi_handle)
+	if (http_handle)
 	{
+		CURLMcode mc;
+
+		cc = curl_easy_setopt(http_handle, CURLOPT_ERRORBUFFER, curl_errbuf);
+		if (cc != CURLE_OK) I_OutputMsg("libcurl: CURLOPT_ERRORBUFFER failed\n");
+		curl_errbuf[0] = 0x00;
+
 		I_mkdir(downloaddir, 0755);
 
 		curl_curfile = &fileneeded[dfilenum];
@@ -1334,31 +1335,38 @@ void CURLPrepareFile(const char* url, int dfilenum)
 		curl_origfilesize = curl_curfile->currentsize;
 		curl_origtotalfilesize = curl_curfile->totalsize;
 
-		curl_easy_setopt(http_handle, CURLOPT_URL, va("%s/%s", url, curl_realname));
+		cc = curl_easy_setopt(http_handle, CURLOPT_URL, va("%s/%s", url, curl_realname));
+		if (cc != CURLE_OK) I_OutputMsg("libcurl: %s\n", curl_errbuf);
 
 		// Only allow HTTP and HTTPS
 #if (LIBCURL_VERSION_MAJOR <= 7) && (LIBCURL_VERSION_MINOR < 85)
-		curl_easy_setopt(http_handle, CURLOPT_PROTOCOLS, CURLPROTO_HTTP|CURLPROTO_HTTPS);
+		cc = curl_easy_setopt(http_handle, CURLOPT_PROTOCOLS, CURLPROTO_HTTP|CURLPROTO_HTTPS);
 #else
-		curl_easy_setopt(http_handle, CURLOPT_PROTOCOLS_STR, "http,https");
+		cc = curl_easy_setopt(http_handle, CURLOPT_PROTOCOLS_STR, "http,https");
 #endif
+		if (cc != CURLE_OK) I_OutputMsg("libcurl: %s\n", curl_errbuf);
 
-		curl_easy_setopt(http_handle, CURLOPT_USERAGENT, va("SRB2Kart/v%d.%d", VERSION, SUBVERSION)); // Set user agent as some servers won't accept invalid user agents.
+		// Set user agent, as some servers won't accept invalid user agents.
+		cc = curl_easy_setopt(http_handle, CURLOPT_USERAGENT, va("SRB2Kart/v%d.%d", VERSION, SUBVERSION));
+		if (cc != CURLE_OK) I_OutputMsg("libcurl: %s\n", curl_errbuf);
 
 		// Authenticate if the user so wishes
 		login = CURLGetLogin(url, NULL);
 
 		if (login)
 		{
-			curl_easy_setopt(http_handle, CURLOPT_USERPWD, login->auth);
+			cc = curl_easy_setopt(http_handle, CURLOPT_USERPWD, login->auth);
+			if (cc != CURLE_OK) I_OutputMsg("libcurl: %s\n", curl_errbuf);
 		}
 
 		// Follow a redirect request, if sent by the server.
-		curl_easy_setopt(http_handle, CURLOPT_FOLLOWLOCATION, 1L);
+		cc = curl_easy_setopt(http_handle, CURLOPT_FOLLOWLOCATION, 1L);
+		if (cc != CURLE_OK) I_OutputMsg("libcurl: %s\n", curl_errbuf);
 
-		curl_easy_setopt(http_handle, CURLOPT_FAILONERROR, 1L);
+		cc = curl_easy_setopt(http_handle, CURLOPT_FAILONERROR, 1L);
+		if (cc != CURLE_OK) I_OutputMsg("libcurl: %s\n", curl_errbuf);
 
-		CONS_Printf("Downloading %s from %s\n", curl_realname, url);
+		CONS_Printf("Downloading addon \"%s\" from %s\n", curl_realname, url);
 
 		strcatbf(curl_curfile->filename, downloaddir, "/");
 		curl_curfile->file = fopen(curl_curfile->filename, "wb");
@@ -1377,19 +1385,33 @@ void CURLPrepareFile(const char* url, int dfilenum)
 			return;
 		}
 
-		curl_easy_setopt(http_handle, CURLOPT_WRITEDATA, curl_curfile->file);
-		curl_easy_setopt(http_handle, CURLOPT_WRITEFUNCTION, curlwrite_data);
-		curl_easy_setopt(http_handle, CURLOPT_NOPROGRESS, 0L);
+		cc = curl_easy_setopt(http_handle, CURLOPT_WRITEDATA, curl_curfile->file);
+		if (cc != CURLE_OK) I_OutputMsg("libcurl: %s\n", curl_errbuf);
+
+		cc = curl_easy_setopt(http_handle, CURLOPT_WRITEFUNCTION, curlwrite_data);
+		if (cc != CURLE_OK) I_OutputMsg("libcurl: %s\n", curl_errbuf);
+
+		cc = curl_easy_setopt(http_handle, CURLOPT_NOPROGRESS, 0L);
+		if (cc != CURLE_OK) I_OutputMsg("libcurl: %s\n", curl_errbuf);
+
 #ifdef XFERINFOFUNCTION
-		curl_easy_setopt(http_handle, CURLOPT_XFERINFOFUNCTION, curlprogress_callbackx);
+		cc = curl_easy_setopt(http_handle, CURLOPT_XFERINFOFUNCTION, curlprogress_callbackx);
+		if (cc != CURLE_OK) I_OutputMsg("libcurl: %s\n", curl_errbuf);
 #else
-		curl_easy_setopt(http_handle, CURLOPT_PROGRESSFUNCTION, curlprogress_callback);
+		cc = curl_easy_setopt(http_handle, CURLOPT_PROGRESSFUNCTION, curlprogress_callback);
+		if (cc != CURLE_OK) I_OutputMsg("libcurl: %s\n", curl_errbuf);
 #endif
 
-		curl_curfile->status = FS_DOWNLOADING;
-		curl_multi_add_handle(multi_handle, http_handle);
+		M_SetCURLArgs(http_handle, curl_errbuf);
 
-		curl_multi_perform(multi_handle, &curl_runninghandles);
+		curl_curfile->status = FS_DOWNLOADING;
+
+		mc = curl_multi_add_handle(multi_handle, http_handle);
+		if (mc != CURLM_OK) I_OutputMsg("libcurl: %s\n", curl_multi_strerror(mc));
+
+		mc = curl_multi_perform(multi_handle, &curl_runninghandles);
+		if (mc != CURLM_OK) I_OutputMsg("libcurl: %s\n", curl_multi_strerror(mc));
+
 		curl_starttime = time(NULL);
 
 		filedownload.current = dfilenum;
@@ -1431,14 +1453,15 @@ void CURLGetFile(void)
     {
     	if (curl_runninghandles)
 		{
-			curl_multi_perform(multi_handle, &curl_runninghandles);
+			mc = curl_multi_perform(multi_handle, &curl_runninghandles);
+			if (mc != CURLM_OK) I_OutputMsg("libcurl: %s\n", curl_multi_strerror(mc));
 
 			/* wait for activity, timeout or "nothing" */
 			mc = curl_multi_wait(multi_handle, NULL, 0, 1000, NULL);
 
 			if (mc != CURLM_OK)
 			{
-				CONS_Alert(CONS_WARNING, "curl_multi_wait() failed, code %d.\n", mc);
+				CONS_Alert(CONS_WARNING, "curl_multi_wait() failed: %s.\n", curl_multi_strerror(mc));
 				continue;
 			}
 
@@ -1496,7 +1519,8 @@ void CURLGetFile(void)
 				Z_Free(filename);
 				curl_curfile->file = NULL;
 				filedownload.remaining--;
-				curl_multi_remove_handle(multi_handle, e);
+				mc = curl_multi_remove_handle(multi_handle, e);
+				if (mc != CURLM_OK) I_OutputMsg("libcurl: %s\n", curl_multi_strerror(mc));
 				curl_easy_cleanup(e);
 
 				if (!filedownload.remaining)
@@ -1507,7 +1531,8 @@ void CURLGetFile(void)
 
     if (!filedownload.remaining || !filedownload.http_running)
     {
-		curl_multi_cleanup(multi_handle);
+		mc = curl_multi_cleanup(multi_handle);
+		if (mc != CURLM_OK) I_OutputMsg("libcurl: %s\n", curl_multi_strerror(mc));
 		curl_global_cleanup();
 		multi_handle = NULL;
     }

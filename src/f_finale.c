@@ -169,7 +169,7 @@ static void F_SkyScroll(INT32 scrollspeed)
 	pat = W_CachePatchName("TITLEBG1", PU_PATCH_LOWPRIORITY);
 	pat2 = W_CachePatchName("TITLEBG2", PU_PATCH_LOWPRIORITY);
 
-	w = (vid.width / vid.dupx)<<FRACBITS;
+	w = (vid.scaledwidth << FRACBITS);
 
 	// The scroll offset MUST be clamped before shifting by FRACBITS, or else it'll overflow in about 3 minutes
 	animtimer = ((((finalecount * scrollspeed) % (pat->width*16))<<FRACBITS) + (R_GetTimeFrac(RTF_MENU) * scrollspeed))/16;
@@ -677,7 +677,7 @@ void F_CreditDrawer(void)
 			y += 12<<FRACBITS;
 			break;
 		}
-		if (((y>>FRACBITS) * vid.dupy) > vid.height)
+		if (((y>>FRACBITS) * vid.dup) > vid.height)
 			break;
 	}
 
@@ -685,8 +685,8 @@ void F_CreditDrawer(void)
 	if (finalecount)
 	{
 		const char *goodbyefornow = "See you in ""\x82""Dr. Robotnik's Ring Racers""\x80""!";
-		fixed_t lpad = ((vid.width/vid.dupx) - BASEVIDWIDTH)<<FRACBITS;
-		fixed_t w = V_StringWidth(goodbyefornow, V_ALLOWLOWERCASE)<<FRACBITS;
+		fixed_t lpad = (vid.scaledwidth - BASEVIDWIDTH) << FRACBITS;
+		fixed_t w = V_StringWidth(goodbyefornow, V_ALLOWLOWERCASE) << FRACBITS;
 		fixed_t x = FixedMul(((BASEVIDWIDTH<<FRACBITS)+w+lpad), ((finalecount-1)<<FRACBITS)/(5*TICRATE)) - w - (lpad/2);
 		V_DrawString(x>>FRACBITS, y>>FRACBITS, V_ALLOWLOWERCASE, goodbyefornow); // for some reason DrawStringAtFixed can't tolerate colour codes
 	}
@@ -707,7 +707,8 @@ void F_CreditTicker(void)
 			case 1: y += 30<<FRACBITS; break;
 			default: y += 12<<FRACBITS; break;
 		}
-		if (FixedMul(y,vid.dupy) > vid.height)
+
+		if (FixedMul(y, vid.dup) > vid.height)
 			break;
 	}
 
@@ -1148,13 +1149,6 @@ void F_TitleScreenTicker(boolean run)
 
 		// Setup demo name
 		snprintf(dname, 9, "%sS%02u", mapname, numstaff);
-
-		/*if ((l = W_CheckNumForName(dname)) == LUMPERROR) -- we KNOW it exists now
-		{
-			CONS_Alert(CONS_ERROR, M_GetText("Demo lump \"%s\" doesn't exist\n"), dname);
-			F_StartIntro();
-			return;
-		}*/
 
 loadreplay:
 		demo.title = demo.fromtitle = true;

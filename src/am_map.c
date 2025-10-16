@@ -265,6 +265,11 @@ static void AM_findMinMaxBoundaries(void)
 	max_w = minimapinfo.map_w << MAPBITS;
 	max_h = minimapinfo.map_h << MAPBITS;
 
+	if (max_w == 0)
+		max_w = 1;
+	if (max_h == 0)
+		max_h = 1;
+
 	a = FixedDiv(f_w<<FRACBITS, max_w);
 	b = FixedDiv(f_h<<FRACBITS, max_h);
 
@@ -354,7 +359,9 @@ static void AM_LevelInit(void)
 	AM_findMinMaxBoundaries();
 	scale_mtof = FixedDiv(min_scale_mtof*10, 7*FRACUNIT);
 	if (scale_mtof > max_scale_mtof)
-		scale_mtof = min_scale_mtof;
+		scale_mtof = max_scale_mtof;
+	if (scale_mtof == 0)
+		scale_mtof = 1;
 	scale_ftom = FixedDiv(FRACUNIT, scale_mtof);
 }
 

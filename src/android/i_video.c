@@ -42,7 +42,6 @@ INT32 VID_SetMode(INT32 modenum)
   vid.modenum = 0;
   vid.width = 320;
   vid.height = 240;
-  vid.buffer = android_surface;
   return 0;
 }
 
@@ -65,7 +64,7 @@ void I_WaitVBL(INT32 count)
   (void)count;
 }
 
-void I_ReadScreen(UINT8 *scr)
+void I_ReadScreen(UINT8 * restrict scr, INT32 scale)
 {
   (void)scr;
 }

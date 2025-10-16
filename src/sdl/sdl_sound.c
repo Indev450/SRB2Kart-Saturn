@@ -16,20 +16,13 @@
 /// \file
 /// \brief SDL interface for sound
 
-#include <math.h>
 #include "../doomdef.h"
 
-#ifdef _MSC_VER
-#pragma warning(disable : 4214 4244)
-#endif
+#if defined(HAVE_SDL) && SOUND == SOUND_SDL
 
-#if defined(HAVE_SDL) && SOUND==SOUND_SDL
+#include <math.h>
 
 #include "SDL.h"
-
-#ifdef _MSC_VER
-#pragma warning(default : 4214 4244)
-#endif
 
 #ifdef HAVE_MIXER
 #include <SDL_mixer.h>
@@ -220,11 +213,6 @@ static inline Uint16 Snd_LowerRate(Uint16 sr)
 	return sr*2; // just keep it just above the output sample rate
 }
 
-#ifdef _MSC_VER
-#pragma warning(disable :  4200)
-#pragma pack(1)
-#endif
-
 typedef struct
 {
 	Uint16 header;     // 3?
@@ -233,11 +221,6 @@ typedef struct
 	Uint16 dummy;      // 0
 	Uint8  data[0];    // data;
 } ATTRPACK dssfx_t;
-
-#ifdef _MSC_VER
-#pragma pack()
-#pragma warning(default : 4200)
-#endif
 
 //
 // This function loads the sound data from the WAD lump,
@@ -1418,4 +1401,5 @@ static boolean I_StartGMESong(const char *musicname, boolean looping)
 }
 #endif
 
+#endif
 #endif //HAVE_SDL

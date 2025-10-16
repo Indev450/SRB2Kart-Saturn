@@ -29,7 +29,6 @@
 #endif
 
 #ifdef MASTERSERVER
-
 static int     MSId;
 static int     MSRegisteredId = -1;
 
@@ -52,18 +51,12 @@ static I_cond  MSCond;
 #  define Unlock_state()
 #endif/*HAVE_THREADS*/
 
-#ifndef NONET
 static void Command_Listserv_f(void);
-#endif
-
 #endif/*MASTERSERVER*/
 
-
-
-static void Update_parameters (void);
+static void Update_parameters(void);
 
 #ifdef MASTERSERVER
-
 static void MasterServer_OnChange(void);
 
 static void Advertise_OnChange(void);
@@ -112,7 +105,6 @@ UINT16 current_port = 0;
   */
 void AddMServCommands(void)
 {
-#ifndef NONET
 #ifdef MASTERSERVER
 	CV_RegisterVar(&cv_masterserver);
 	CV_RegisterVar(&cv_masterserver_update_rate);
@@ -125,12 +117,10 @@ void AddMServCommands(void)
 #ifdef HOLEPUNCH
 	CV_RegisterVar(&cv_rendezvousserver);
 #endif
-
 	CV_RegisterVar(&cv_servername);
 	CV_RegisterVar(&cv_server_contact);
 #ifdef MASTERSERVER
 	COM_AddCommand("listserv", Command_Listserv_f);
-#endif
 #endif
 }
 
@@ -200,23 +190,17 @@ char *GetMODVersion(int id)
 }
 #endif
 
-#ifndef NONET
 /** Gets a list of game servers. Called from console.
   */
 static void Command_Listserv_f(void)
 {
 	CONS_Printf(M_GetText("Retrieving server list...\n"));
-
-	{
-		HMS_list_servers();
-	}
+	HMS_list_servers();
 }
-#endif
 
 static boolean firstmsrules = false;
 
-static void
-Get_masterserver_rules (boolean checkfirst)
+static void Get_masterserver_rules(boolean checkfirst)
 {
 	char rules[256];
 
