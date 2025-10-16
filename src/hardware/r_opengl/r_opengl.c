@@ -47,10 +47,6 @@
 #include "../../console.h"
 #endif
 
-#ifdef GLDEBUGMESSAGE
-#include "../../console.h"
-#endif
-
 struct GLRGBAFloat
 {
 	GLfloat red;
@@ -1466,7 +1462,7 @@ void GL_ReadScreenTexture(int tex, UINT8 *restrict dest, INT32 scale)
 // -----------------+
 void GL_SetPalette(RGBA_t *palette)
 {
-	size_t palsize = (sizeof(RGBA_t) * 256);
+	const size_t palsize = (sizeof(RGBA_t) * 256);
 	// on a palette change, you have to reload all of the textures
 	if (memcmp(&myPaletteData, palette, palsize))
 	{
