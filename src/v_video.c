@@ -3098,6 +3098,9 @@ INT32 V_SubStringWidth(const char *string, INT32 length, INT32 option)
 	INT32 spacewidth = 4, charwidth = 0;
 	ssize_t i;
 
+	if (!string)
+		return 0;
+
 	if (length < 0)
 		length = strlen(string);
 
@@ -3140,6 +3143,9 @@ INT32 V_SmallSubStringWidth(const char *string, INT32 length, INT32 option)
 	INT32 spacewidth = 2, charwidth = 0;
 	ssize_t i;
 
+	if (!string)
+		return 0;
+
 	if (length < 0)
 		length = strlen(string);
 
@@ -3180,8 +3186,13 @@ INT32 V_ThinSubStringWidth(const char *string, INT32 length, INT32 option)
 {
 	INT32 c, w = 0;
 	INT32 spacewidth = 2, charwidth = 0;
-	boolean lowercase = (option & V_ALLOWLOWERCASE);
+	boolean lowercase;
 	ssize_t i;
+
+	if (!string)
+		return 0;
+
+	lowercase = (option & V_ALLOWLOWERCASE);
 
 	if (length < 0)
 		length = strlen(string);
@@ -3236,6 +3247,9 @@ INT32 V_SubStringLengthToFit(const char *string, INT32 width, INT32 option)
 	INT32 c, w = 0;
 	INT32 spacewidth = 4, charwidth = 0;
 	INT32 i;
+
+	if (!string)
+		return 0;
 
 	switch (option & V_SPACINGMASK)
 	{
