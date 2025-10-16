@@ -3569,7 +3569,8 @@ void G_SaveDemo(void)
 		size_t i, strindex = 0;
 		boolean dash = true;
 
-		for (i = 0; demo.titlename[i] && i < 127; i++)
+		//for (i = 0; demo.titlename[i] && i < 127; i++) ?????
+		for (i = 0; i < 64 && demo.titlename[i]; i++)
 		{
 			if ((demo.titlename[i] >= 'a' && demo.titlename[i] <= 'z') ||
 				(demo.titlename[i] >= '0' && demo.titlename[i] <= '9'))
@@ -3584,7 +3585,7 @@ void G_SaveDemo(void)
 				strindex++;
 				dash = false;
 			}
-			else if (!dash)
+			else if (strindex && !dash)
 			{
 				demo_slug[strindex] = '-';
 				strindex++;
@@ -3592,12 +3593,28 @@ void G_SaveDemo(void)
 			}
 		}
 
-		demo_slug[strindex] = 0;
-		if (dash) demo_slug[strindex-1] = 0;
+		if (dash && strindex)
+		{
+			strindex--;
+		}
+		demo_slug[strindex] = '\0';
 
-		writepoint = strstr(demoname, "-") + 1;
-		demo_slug[128 - (writepoint - demoname) - 4] = 0;
-		sprintf(writepoint, "%s.lmp", demo_slug);
+		if (demo_slug[0] != '\0')
+		{
+			// Slug is valid, write the chosen filename.
+			writepoint = strstr(demoname, "-");
+			if (!writepoint)
+				return;
+
+			writepoint++;
+
+			size_t flen = 128 - (writepoint - demoname) - 4;
+			if (flen > 0 && flen < 128)
+			{
+				demo_slug[flen] = '\0';
+				sprintf(writepoint, "%s.lmp", demo_slug);
+			}
+		}
 	}
 
 	length = *(UINT32 *)demoinfo_p;

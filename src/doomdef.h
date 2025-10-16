@@ -90,12 +90,6 @@ extern FILE *logstream;
 extern char  logfilename[1024];
 #endif
 
-// not sure if this belongs here lul
-// TODO: figure out whats preventing 32bit windows from working with libbacktrace
-#if defined(_WIN32) && !defined(__MINGW64__)
-#define HAVE_DRMINGW
-#endif
-
 #if defined (HAVE_LIBBACKTRACE)
 #define CRASH_LOGFILE_NAME "srb2kart-crash-log.txt"
 #elif defined (HAVE_DRMINGW)

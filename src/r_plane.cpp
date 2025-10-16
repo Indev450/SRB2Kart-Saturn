@@ -716,13 +716,10 @@ void R_DrawPlanes(void)
 	visplane_t *pl;
 	INT32 i;
 	drawspandata_t ds = {};
-#ifdef HAVE_THREADS
-	srb2::ThreadPool::Sema tp_sema;
-#endif
-
 	R_UpdatePlaneRipple(&ds);
 
 #ifdef HAVE_THREADS
+	srb2::ThreadPool::Sema tp_sema;
 	srb2::g_main_threadpool->begin_sema();
 #endif
 	for (i = 0; i < MAXVISPLANES; i++, pl++)
@@ -748,6 +745,13 @@ void R_DrawSkyPlanes(void)
 {
 	visplane_t *pl;
 	INT32 i;
+
+	// If we're not supposed to draw the sky (e.g. for skyboxes), don't do anything!
+	// This probably utterly ruins sky rendering for FOFs and polyobjects, unfortunately
+	if (!newview->sky)
+	{
+		return;
+	}
 
 #ifdef HAVE_THREADS
 	srb2::ThreadPool::Sema tp_sema;
@@ -777,17 +781,10 @@ static void R_DrawSkyPlane(visplane_t *pl, void(*colfunc2)(drawcolumndata_t*), b
 	if (!(pl->minx <= pl->maxx))
 		return;
 
-	// If we're not supposed to draw the sky (e.g. for skyboxes), don't do anything!
-	// This probably utterly ruins sky rendering for FOFs and polyobjects, unfortunately
-	if (!newview->sky)
-	{
-		return;
-	}
-
 	drawcolumndata_t dc = {};
 	const INT32 texture = texturetranslation[skytexture];
 
-	// Reset column drawer function (note: couldn't we just call walldrawerfunc directly?)
+	// Reset column drawer function (note: couldn't we just call colfuncs[BASEDRAWFUNC] directly?)
 	// (that is, unless we'll need to switch drawers in future for some reason)
 	R_SetColumnFunc(BASEDRAWFUNC);
 
@@ -1159,7 +1156,7 @@ void R_DrawSinglePlane(drawspandata_t* ds, visplane_t *pl, boolean allow_paralle
 					offset = (scry*vid.width) + scrx;
 
 					// No idea if this works
-					VID_BlitLinearScreen(renderscreen + offset,
+					VID_BlitLinearScreen(vid.screens[0] + offset,
 										 vid.screens[1] + (top*vid.width), // intentionally not +offset
 										 viewwidth, bottom-top,
 										 vid.width, vid.width);

@@ -2518,8 +2518,6 @@ void R_InitDrawNodes(void)
 // R_DrawSprite
 //
 //Fab : 26-04-98:
-// NOTE : uses con_clipviewtop, so that when console is on,
-//        don't draw the part of sprites hidden under the console
 static void R_DrawSprite(vissprite_t *spr)
 {
 	mfloorclip = spr->clipbot;
@@ -2803,6 +2801,11 @@ void R_ClipSprites(drawseg_t* dsstart, portal_t* portal)
 	drawseg_t* ds;
 	INT32 i;
 
+	if (visspritecount - clippedvissprites <= 0)
+	{
+		return;
+	}
+
 	// e6y
 	// Reducing of cache misses in the following R_DrawSprite()
 	// Makes sense for scenes with huge amount of drawsegs.
@@ -2812,13 +2815,9 @@ void R_ClipSprites(drawseg_t* dsstart, portal_t* portal)
 		drawsegs_xranges[i].count = 0;
 	}
 
-	if (visspritecount - clippedvissprites <= 0)
-	{
-		return;
-	}
-
 	if (drawsegs_xrange_size < maxdrawsegs)
 	{
+		// haleyjd: fix reallocation to track 2x size
 		drawsegs_xrange_size = 2 * maxdrawsegs;
 
 		for (i = 0; i < DS_RANGES_COUNT; i++)
@@ -2857,6 +2856,9 @@ void R_ClipSprites(drawseg_t* dsstart, portal_t* portal)
 			drawsegs_xranges[0].count++;
 		}
 	}
+
+	// haleyjd: terminate with a nullptr user for faster loop - adds ~3 FPS
+	drawsegs_xranges[0].items[drawsegs_xranges[0].count].user = nullptr;
 
 	for (; clippedvissprites < visspritecount; clippedvissprites++)
 	{
@@ -3061,6 +3063,9 @@ void R_DrawMasked(maskcount_t* masks, INT32 nummasks)
 	drawnode_t *heads;	/**< Drawnode lists; as many as number of views/portals. */
 
 	heads = static_cast<drawnode_t*>(calloc(nummasks, sizeof(drawnode_t)));
+
+	if (!heads)
+		I_Error("R_DrawMasked: No more free memory\n");
 
 	for (i = 0; i < nummasks; i++)
 	{

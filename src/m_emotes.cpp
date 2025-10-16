@@ -92,7 +92,7 @@ void M_LoadEmotes(UINT16 wadnum)
 			if (emote_name.size() > MAXEMOTENAME)
 			{
 				CONS_Alert(CONS_WARNING, "EMOTES: Emote name is too long, truncating. (file %s, line %d)\n", wadfiles[wadnum]->filename, linenum);
-				emote_name = emote_name.substr(0, MAXEMOTENAME);
+				emote_name.resize(MAXEMOTENAME);
 			}
 
 			emote = &emotes[emote_name];
@@ -139,7 +139,7 @@ void M_LoadEmotes(UINT16 wadnum)
 					if (framelumpname.size() > 8)
 					{
 						CONS_Alert(CONS_WARNING, "EMOTES: Frame %d name is too long. (file %s, line %d)", numframes, wadfiles[wadnum]->filename, linenum);
-						framelumpname = framelumpname.substr(0, 8);
+						framelumpname.resize(8);
 					}
 
 					std::strncpy(emote->frames[numframes], framelumpname.c_str(), framelumpname.size()+1);
