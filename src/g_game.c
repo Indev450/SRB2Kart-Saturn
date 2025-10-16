@@ -452,6 +452,13 @@ consvar_t cv_ydeadzone[MAXSPLITSCREENPLAYERS] = {
 	{"joy4_ydeadzone", "0.5", CV_FLOAT|CV_SAVE, deadzone_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL}
 };
 
+consvar_t cv_litesteer[MAXSPLITSCREENPLAYERS] = {
+	{"litesteer",  "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"litesteer2", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"litesteer3", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"litesteer4", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL}
+};
+
 static CV_PossibleValue_t driftsparkpulse_t[] = {{0, "MIN"}, {FRACUNIT*3, "MAX"}, {0, NULL}};
 consvar_t cv_driftsparkpulse = {"driftsparkpulse", "1.4", CV_FLOAT | CV_SAVE, driftsparkpulse_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
@@ -1044,6 +1051,12 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 		//THIS WORKS WTF????????
 		cmd->angleturn -= (mousex*(encoremode ? -1 : 1)*8);
 	}
+
+	// Digital users can input diagonal-back for shallow turns.
+	if (cv_litesteer[forplayer].value && InputDown(gc_aimbackward, ssplayer)
+		&& abs(cmd->angleturn) == KART_FULLTURN) // My keyboard hits 1024 but my keyboard only hits 1023, video games
+	{
+		cmd->angleturn /= 2;
 	}
 
 	if (objectplacing) // SRB2Kart: spectators need special controls // not anymore huehuehue
