@@ -2,6 +2,8 @@
 # Mingw, if you don't know, that's Win32/Win64
 #
 
+sources+=$(call List,win32/Sourcefile)
+
 ifndef MINGW64
 EXENAME?=srb2kart-saturn_32bit.exe
 else
@@ -95,7 +97,7 @@ LIBBACKTRACE_libs:=-L$(lib)/lib/x86_64 -lbacktrace
 $(eval $(call _set,LIBBACKTRACE))
 else
 lib:=../libs/drmingw
-opts+=-I$(lib)/include
+opts+=-I$(lib)/include -DHAVE_DRMINGW
 libs+=-L$(lib)/lib/win32 -lmgwhelp -lexchndl
 endif
 
