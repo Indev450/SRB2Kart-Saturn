@@ -645,10 +645,16 @@ static menuitem_t OP_ControlsMenu[] =
 	{IT_CALL | IT_STRING, NULL, "Player 3 Controls...", &M_Setup3PControlsMenu, 30},
 	{IT_CALL | IT_STRING, NULL, "Player 4 Controls...", &M_Setup4PControlsMenu, 40},
 
-	{IT_SUBMENU | IT_STRING, NULL, "Mouse Options...", &OP_MouseOptionsDef,     60},
+	{IT_SUBMENU | IT_STRING, NULL, "Mouse Options...",  &OP_MouseOptionsDef,    60},
 
-	{IT_STRING | IT_CVAR, NULL, "Controls per key",    &cv_controlperkey,       80},
-	{IT_STRING | IT_CVAR, NULL, "Digital turn easing", &cv_turnsmooth,          90},
+	{IT_STRING | IT_CVAR, NULL, "Controls per key",     &cv_controlperkey,      80},
+	{IT_STRING | IT_CVAR, NULL, "Digital turn easing",  &cv_turnsmooth,         90},
+
+	// i hate our menus sincerly
+	{IT_STRING | IT_CVAR, NULL, "Lite Steer (P1)",      &cv_litesteer[0],       110},
+	{IT_STRING | IT_CVAR, NULL, "Lite Steer (P2)",      &cv_litesteer[1],       120},
+	{IT_STRING | IT_CVAR, NULL, "Lite Steer (P3)",      &cv_litesteer[2],       130},
+	{IT_STRING | IT_CVAR, NULL, "Lite Steer (P4)",      &cv_litesteer[3],       140},
 };
 
 static const char* OP_ControlsTooltips[] =
@@ -660,6 +666,11 @@ static const char* OP_ControlsTooltips[] =
 	"Options for mouse control.",
 	"Allowed amount of controls per key.",
 	"Turn smoothing for non-analog turning.",
+
+	"Hold DOWN on d-pad/keyboard for shallow turns (Player 1).",
+	"Hold DOWN on d-pad/keyboard for shallow turns (Player 2).",
+	"Hold DOWN on d-pad/keyboard for shallow turns (Player 3).",
+	"Hold DOWN on d-pad/keyboard for shallow turns (Player 4).",
 };
 
 static menuitem_t OP_AllControlsMenu[] =
