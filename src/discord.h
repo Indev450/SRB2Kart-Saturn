@@ -29,7 +29,9 @@ extern struct discordInfo_s {
 
 typedef struct discordRequest_s {
 	char *username; // Discord user name.
+#if 0 // Good night, sweet prince...
 	char *discriminator; // Discord discriminator (The little hashtag thing after the username). Separated for a "hide discriminators" cvar.
+#endif
 	char *userID; // The ID of the Discord user, gets used with Discord_Respond()
 
 	// HAHAHA, no.
@@ -44,6 +46,15 @@ typedef struct discordRequest_s {
 
 extern discordRequest_t *discordRequestList;
 
+/*--------------------------------------------------
+ *	const char *DRPC_HideUsername(const char *input);
+ *
+ *		Handle usernames while cv_discordstreamer is activated.
+ *		(The loss of discriminators is still a dumbass regression
+ *		that I will never forgive the Discord developers for.)
+ * --------------------------------------------------*/
+
+const char *DRPC_HideUsername(const char *input);
 
 /*--------------------------------------------------
 	void DRPC_RemoveRequest(void);
