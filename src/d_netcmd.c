@@ -1994,11 +1994,6 @@ static void Got_NameAndColor(UINT8 **cp, INT32 playernum)
 	}
 	else
 		SetPlayerSkinByNum(playernum, skin);
-
-#ifdef HAVE_DISCORDRPC
-	if (playernum == consoleplayer)
-		DRPC_UpdatePresence();
-#endif
 }
 
 void SendWeaponPref(void)

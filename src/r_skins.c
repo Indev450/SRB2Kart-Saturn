@@ -35,6 +35,8 @@
 
 CV_PossibleValue_t Forceskin_cons_t[MAXSKINS+2];
 
+#include "discord.h"
+
 INT32 numskins = 0;
 INT32 numallskins = 0;
 INT32 numlocalskins = 0;
@@ -328,7 +330,13 @@ void SetPlayerSkinByNum(INT32 playernum, INT32 skinnum)
 		if (player->mo)
 			P_SetScale(player->mo, player->mo->scale);
 
+		// for replays: We have changed our skin mid-game; let the game know so it can do the same in the replay!
 		demo_extradata[playernum] |= DXD_SKIN;
+
+#ifdef HAVE_DISCORDRPC
+		if (player - players == consoleplayer)
+			DRPC_UpdatePresence();
+#endif
 
 		return;
 	}
