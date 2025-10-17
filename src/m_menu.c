@@ -3107,7 +3107,7 @@ static void M_AddonsInternal(void)
 			break;
 	}
 
-	strlcpy(menupath, pathname, 1024);
+	strlcpy(menupath, pathname, MAXFILEPATH);
 	menupathindex[(menudepthleft = menudepth-1)] = strlen(menupath) + 1;
 
 	if (menupath[menupathindex[menudepthleft]-2] != PATHSEP[0])
@@ -3220,9 +3220,9 @@ static void M_DrawTemperature(INT32 x, fixed_t t)
 static char *M_AddonsHeaderPath(void)
 {
 	UINT32 len;
-	static char header[1024];
+	static char header[MAXFILEPATH];
 
-	strlcpy(header, va("%s folder%s", cv_addons_option.string, menupath+menupathindex[menudepth-1]-1), 1024);
+	strlcpy(header, va("%s folder%s", cv_addons_option.string, menupath+menupathindex[menudepth-1]-1), MAXFILEPATH);
 	len = strlen(header);
 	if (len > 34)
 	{
