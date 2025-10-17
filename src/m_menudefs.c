@@ -645,16 +645,20 @@ static menuitem_t OP_ControlsMenu[] =
 	{IT_CALL | IT_STRING, NULL, "Player 3 Controls...", &M_Setup3PControlsMenu, 30},
 	{IT_CALL | IT_STRING, NULL, "Player 4 Controls...", &M_Setup4PControlsMenu, 40},
 
-	{IT_SUBMENU | IT_STRING, NULL, "Mouse Options...",  &OP_MouseOptionsDef,    60},
+	{IT_SUBMENU | IT_STRING, NULL, "Mouse Options...",  &OP_MouseOptionsDef,    55},
 
-	{IT_STRING | IT_CVAR, NULL, "Controls per key",     &cv_controlperkey,      80},
-	{IT_STRING | IT_CVAR, NULL, "Digital turn easing",  &cv_turnsmooth,         90},
+	{IT_STRING | IT_CVAR, NULL, "Controls per key",     &cv_controlperkey,      75},
+
+	{IT_STRING | IT_CVAR, NULL, "Digital turn easing (P1)",  &cv_turnsmooth[0],         85},
+	{IT_STRING | IT_CVAR, NULL, "Digital turn easing (P2)",  &cv_turnsmooth[1],         95},
+	{IT_STRING | IT_CVAR, NULL, "Digital turn easing (P3)",  &cv_turnsmooth[2],         105},
+	{IT_STRING | IT_CVAR, NULL, "Digital turn easing (P4)",  &cv_turnsmooth[3],         115},
 
 	// i hate our menus sincerly
-	{IT_STRING | IT_CVAR, NULL, "Lite Steer (P1)",      &cv_litesteer[0],       110},
-	{IT_STRING | IT_CVAR, NULL, "Lite Steer (P2)",      &cv_litesteer[1],       120},
-	{IT_STRING | IT_CVAR, NULL, "Lite Steer (P3)",      &cv_litesteer[2],       130},
-	{IT_STRING | IT_CVAR, NULL, "Lite Steer (P4)",      &cv_litesteer[3],       140},
+	{IT_STRING | IT_CVAR, NULL, "Lite Steer (P1)",      &cv_litesteer[0],       135},
+	{IT_STRING | IT_CVAR, NULL, "Lite Steer (P2)",      &cv_litesteer[1],       145},
+	{IT_STRING | IT_CVAR, NULL, "Lite Steer (P3)",      &cv_litesteer[2],       155},
+	{IT_STRING | IT_CVAR, NULL, "Lite Steer (P4)",      &cv_litesteer[3],       165},
 };
 
 static const char* OP_ControlsTooltips[] =
@@ -665,7 +669,10 @@ static const char* OP_ControlsTooltips[] =
 	"Setup player 4 controls.",
 	"Options for mouse control.",
 	"Allowed amount of controls per key.",
-	"Turn smoothing for non-analog turning.",
+	"Turn smoothing for non-analog turning (Player 1).",
+	"Turn smoothing for non-analog turning (Player 2).",
+	"Turn smoothing for non-analog turning (Player 3).",
+	"Turn smoothing for non-analog turning (Player 4).",
 
 	"Hold DOWN on d-pad/keyboard for shallow turns (Player 1).",
 	"Hold DOWN on d-pad/keyboard for shallow turns (Player 2).",
@@ -2435,7 +2442,7 @@ menu_t OP_MainDef =
 	NULL
 };
 
-menu_t OP_ControlsDef     = DEFAULTMENUSTYLE("M_CONTRO", OP_ControlsMenu, &OP_MainDef, 60, 30, OP_ControlsTooltips);
+menu_t OP_ControlsDef     = DEFAULTMENUSTYLE("M_CONTRO", OP_ControlsMenu, &OP_MainDef, 40, 15, OP_ControlsTooltips);
 //WTF
 menu_t OP_MouseOptionsDef = DEFAULTMENUSTYLE("M_CONTRO", OP_MouseOptionsMenu, &OP_ControlsDef, 60, 30, OP_MouseTooltips);
 menu_t OP_AllControlsDef  = CONTROLMENUSTYLE(OP_AllControlsMenu, &OP_ControlsDef);

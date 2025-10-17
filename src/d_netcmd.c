@@ -964,10 +964,11 @@ void D_RegisterClientCommands(void)
 
 	// g_input.c
 	CV_RegisterVar(&cv_controlperkey);
-	CV_RegisterVar(&cv_turnsmooth);
 
 	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
 	{
+		CV_RegisterVar(&cv_turnsmooth[i]);
+
 		CV_RegisterVar(&cv_turnaxis[i]);
 		CV_RegisterVar(&cv_moveaxis[i]);
 		CV_RegisterVar(&cv_camturnaxis[i]);
