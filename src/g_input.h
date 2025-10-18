@@ -110,7 +110,8 @@ typedef enum
 
 // mouse values are used once
 extern consvar_t cv_mousesens, cv_mouseysens;
-extern consvar_t cv_controlperkey, cv_turnsmooth;
+extern consvar_t cv_controlperkey;
+extern consvar_t cv_turnsmooth[MAXSPLITSCREENPLAYERS];
 extern consvar_t cv_rumble[MAXSPLITSCREENPLAYERS];
 extern consvar_t cv_gamepadled[MAXSPLITSCREENPLAYERS];
 

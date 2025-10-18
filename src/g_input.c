@@ -37,7 +37,13 @@ static CV_PossibleValue_t turnsmooth_cons_t[] = {{2, "Slow"}, {1, "Fast"}, {0, "
 consvar_t cv_mousesens = {"mousesens", "20", CV_SAVE, mousesens_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_mouseysens = {"mouseysens", "20", CV_SAVE, mousesens_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_controlperkey = {"controlperkey", "One", CV_SAVE, onecontrolperkey_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_turnsmooth = {"turnsmoothing", "Slow", CV_SAVE, turnsmooth_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+
+consvar_t cv_turnsmooth[MAXSPLITSCREENPLAYERS] = {
+	{"turnsmoothing", "Slow", CV_SAVE, turnsmooth_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"turnsmoothing2", "Slow", CV_SAVE, turnsmooth_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"turnsmoothing3", "Slow", CV_SAVE, turnsmooth_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"turnsmoothing4", "Slow", CV_SAVE, turnsmooth_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL}
+};
 
 static void G_ResetPlayerDeviceRumble(INT32 player);
 static void rumble_off_handle(void);

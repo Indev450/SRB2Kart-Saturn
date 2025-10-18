@@ -3107,7 +3107,7 @@ static void M_AddonsInternal(void)
 			break;
 	}
 
-	strlcpy(menupath, pathname, 1024);
+	strlcpy(menupath, pathname, MAXFILEPATH);
 	menupathindex[(menudepthleft = menudepth-1)] = strlen(menupath) + 1;
 
 	if (menupath[menupathindex[menudepthleft]-2] != PATHSEP[0])
@@ -3220,9 +3220,9 @@ static void M_DrawTemperature(INT32 x, fixed_t t)
 static char *M_AddonsHeaderPath(void)
 {
 	UINT32 len;
-	static char header[1024];
+	static char header[MAXFILEPATH];
 
-	strlcpy(header, va("%s folder%s", cv_addons_option.string, menupath+menupathindex[menudepth-1]-1), 1024);
+	strlcpy(header, va("%s folder%s", cv_addons_option.string, menupath+menupathindex[menudepth-1]-1), MAXFILEPATH);
 	len = strlen(header);
 	if (len > 34)
 	{
@@ -3958,9 +3958,7 @@ static void PrepReplayList(boolean reset)
 
 	Lock_search_state();
 
-	if (demolist_all)
-		Z_Free(demolist_all);
-
+	Z_Free(demolist_all);
 	demolist_all = Z_Calloc(sizeof(menudemo_t) * sizedirmenu, PU_STATIC, NULL);
 
 	for (i = 0; i < sizedirmenu; i++)
@@ -3978,9 +3976,9 @@ static void PrepReplayList(boolean reset)
 		else
 		{
 			demolist_all[i].type = MD_NOTLOADED;
-			// FIXME - do something with buffer sizes. menupath is 1024 chars but filepath is only
-			// 256. I'm not really sure what to do here but don't want to leave warnings...
-			snprintf(demolist_all[i].filepath, 255, "%.254s%s", menupath, dirmenu[i] + DIR_STRING);
+			snprintf(demolist_all[i].filepath, sizeof(demolist_all[i].filepath),
+					 // 255 = UINT8 limit. dirmenu entries are restricted to this length (see DIR_LEN).
+					 "%s%.255s", menupath, dirmenu[i] + DIR_STRING);
 			sprintf(demolist_all[i].title, ".....");
 		}
 	}
@@ -10334,9 +10332,9 @@ static const char *M_GetDiscordName(discordRequest_t *r)
 		return "";
 
 	if (cv_discordstreamer.value)
-		return r->username;
+		return DRPC_HideUsername(r->username);
 
-	return va("%s#%s", r->username, r->discriminator);
+	return r->username;
 }
 
 // (this goes in k_hud.c when merged into v2)

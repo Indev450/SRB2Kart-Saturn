@@ -1021,8 +1021,8 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 	else
 		th = 0;
 
-	if (th < SLOWTURNTICS)
-		tspeed = cv_turnsmooth.value == 2 ? 2 : 0; // slow turn
+	if (th < (cv_turnsmooth[forplayer].value * 3))
+		tspeed = cv_turnsmooth[forplayer].value == 2 ? 2 : 0; // slow turn
 	else
 		tspeed = 1;
 
