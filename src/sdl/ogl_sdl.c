@@ -197,6 +197,9 @@ boolean OglSdlSurface(INT32 w, INT32 h)
 		else
 			maximumAnisotropy = 1;
 
+		if (GL_isExtAvailable("GL_ARB_texture_non_power_of_two", gl_extensions))
+			supportNPO2tex = true;
+
 		glanisotropicmode_cons_t[1].value = maximumAnisotropy;
 
 #if defined (__unix__)
