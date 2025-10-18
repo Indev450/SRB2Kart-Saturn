@@ -110,6 +110,7 @@ GLint   screen_texsizew  = 512; // Power-of-two screen texture render resolution
 GLint   screen_texsizeh  = 512; // Power-of-two screen texture render resolution
 GLbyte  screen_depth     = 0;
 GLint maximumAnisotropy  = 0;
+boolean supportNPO2tex   = false;
 static GLboolean MipMap  = GL_FALSE;
 static GLint min_filter  = GL_LINEAR;
 static GLint mag_filter  = GL_LINEAR;
@@ -1176,12 +1177,20 @@ void GL_SetModelView(GLint w, GLint h)
 
 	screen_texsizew = screen_texsizeh = 512;
 
-	// look for power of two that is large enough for the screen
-	while (screen_texsizew < w)
-		screen_texsizew <<= 1;
+	if (supportNPO2tex)
+	{
+		screen_texsizew = screen_width;
+		screen_texsizeh = screen_height;
+	}
+	else
+	{
+		// look for power of two that is large enough for the screen
+		while (screen_texsizew < w)
+			screen_texsizew <<= 1;
 
-	while (screen_texsizeh < h)
-		screen_texsizeh <<= 1;
+		while (screen_texsizeh < h)
+			screen_texsizeh <<= 1;
+	}
 
 	pglGetIntegerv(GL_MAX_TEXTURE_SIZE, &maxtexsize); // Get the maximum supported texture size
 	if ((screen_texsizew > maxtexsize || screen_texsizeh > maxtexsize) && maxtexsize > 0)
@@ -3692,7 +3701,6 @@ void GL_DrawScreenFinalTexture(int tex, INT32 width, INT32 height, boolean usesh
 	float xfix, yfix;
 	float origaspect, newaspect;
 	float xoff = 1, yoff = 1; // xoffset and yoffset for the polygon to have black bars around the screen
-	FRGBAFloat clearColour;
 
 	static float off[12];
 	static float fix[8];
@@ -3743,8 +3751,7 @@ void GL_DrawScreenFinalTexture(int tex, INT32 width, INT32 height, boolean usesh
 
 	pglViewport(0, 0, width, height);
 
-	clearColour.red = clearColour.green = clearColour.blue = 0;
-	clearColour.alpha = 1;
+	FRGBAFloat clearColour = {0, 0, 0, 1};
 	GL_ClearBuffer(true, false, false, &clearColour);
 	GL_SetBlend(PF_NoDepthTest);
 
