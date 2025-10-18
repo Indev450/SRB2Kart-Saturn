@@ -5387,7 +5387,6 @@ void P_SpawnSpecials(INT32 fromnetsave, boolean reloadinggamestate)
 	// set current weather
 	curWeather = mapheaderinfo[gamemap-1]->weather;
 
-	P_InitTagLists();   // Create xref tables for tags
 	P_SearchForDisableLinedefs(); // Disable linedefs are now allowed to disable *any* line
 
 	P_SpawnScrollers(); // Add generalized scrollers
