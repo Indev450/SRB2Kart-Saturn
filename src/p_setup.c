@@ -1983,6 +1983,7 @@ static void P_LoadMapData(const virtres_t* virt)
 	P_LoadLinedefs(virtlinedefs->data);
 	P_LoadSidedefs(virtsidedefs->data);
 	P_LoadThings(virtthings->data);
+	P_InitTagLists();   // Create xref tables for tags
 
 	// Copy relevant map data for NetArchive purposes.
 	spawnsectors = Z_Calloc(numsectors * sizeof(*sectors), PU_LEVEL, NULL);
