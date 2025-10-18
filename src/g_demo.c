@@ -3609,11 +3609,7 @@ void G_SaveDemo(void)
 			writepoint++;
 
 			size_t flen = 128 - (writepoint - demoname) - 4;
-			if (flen > 0 && flen < 128)
-			{
-				demo_slug[flen] = '\0';
-				sprintf(writepoint, "%s.lmp", demo_slug);
-			}
+			snprintf(writepoint, flen, "%s.lmp", demo_slug);
 		}
 	}
 
