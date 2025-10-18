@@ -31,7 +31,6 @@ FUNCINLINE static ATTRINLINE UINT8 *R_Address(INT32 px, INT32 py)
 	return vid.screens[0] + (py + viewwindowy) * vid.width + (viewwindowx + px);
 }
 
-
 typedef struct {
 	float x, y, z;
 } floatv3_t;

@@ -3832,11 +3832,15 @@ void V_Init(void)
 
 	for (i = 0; i < NUMSCREENS; i++)
 	{
+		if (vid.screens[i])
+		{
 #if defined(__SSE__)
-		aligned_free(vid.screens[i]);
+			aligned_free(vid.screens[i]);
 #else
-		free(vid.screens[i]);
+			free(vid.screens[i]);
 #endif
+		}
+
 		vid.screens[i] = NULL;
 	}
 
