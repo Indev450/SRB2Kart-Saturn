@@ -606,13 +606,8 @@ static void R_AllocViewMemory(void)
 	R_AllocVisSpriteMemory();
 }
 
-void R_InitViewBuffer(INT32 width, INT32 height)
+void R_InitViewBuffer(void)
 {
-	if (width > MAXVIDWIDTH)
-		width = MAXVIDWIDTH;
-	if (height > MAXVIDHEIGHT)
-		height = MAXVIDHEIGHT;
-
 	R_AllocViewMemory();
 
 	viewwindowx = 0;
@@ -636,8 +631,10 @@ void R_InitViewBuffer(INT32 width, INT32 height)
 		bufsize++;
 	temp_dc.buf = static_cast<UINT8*>(aligned_alloc(16, bufsize));
 #else
-	temp_dc.buf = static_cast<UINT8*>(Z_Calloc(bufsize, PU_STATIC, NULL));
+	temp_dc.buf = static_cast<UINT8*>(Z_Malloc(bufsize, PU_STATIC, NULL));
 #endif
+
+	memset(temp_dc.buf, 0, bufsize);
 }
 
 /**	\brief	The R_VideoErase function

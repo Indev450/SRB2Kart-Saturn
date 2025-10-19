@@ -358,24 +358,18 @@ static void R_DrawColumnTemplate(drawcolumndata_t *dc)
 		R_DrawColumnTemplate<opt>(dc); \
 	}
 
-DEFINE_COLUMN_FUNC(R_DrawColumn, DC_DIRECT|DC_BASIC)
-DEFINE_COLUMN_FUNC(R_DrawTranslucentColumn, DC_DIRECT|DC_TRANSMAP)
-DEFINE_COLUMN_FUNC(R_DrawTranslatedColumn, DC_DIRECT|DC_COLORMAP)
-DEFINE_COLUMN_FUNC(R_DrawColumnShadowed, DC_DIRECT|DC_LIGHTLIST)
-DEFINE_COLUMN_FUNC(R_DrawTranslatedTranslucentColumn, DC_DIRECT|DC_COLORMAP|DC_TRANSMAP)
-DEFINE_COLUMN_FUNC(R_Draw2sMultiPatchColumn, DC_DIRECT|DC_HOLES)
-DEFINE_COLUMN_FUNC(R_Draw2sMultiPatchTranslucentColumn, DC_DIRECT|DC_HOLES|DC_TRANSMAP)
+#define DEFINE_COLUMN_COMBO(name, flags) \
+	DEFINE_COLUMN_FUNC(name, flags|DC_DIRECT) \
+	DEFINE_COLUMN_FUNC(name ## _Flush, flags)
 
-DEFINE_COLUMN_FUNC(R_DrawColumnFlush, DC_BASIC)
-DEFINE_COLUMN_FUNC(R_DrawTranslucentColumnFlush, DC_TRANSMAP)
-DEFINE_COLUMN_FUNC(R_DrawTranslatedColumnFlush, DC_COLORMAP)
-DEFINE_COLUMN_FUNC(R_DrawColumnShadowedFlush, DC_LIGHTLIST)
-DEFINE_COLUMN_FUNC(R_DrawTranslatedTranslucentColumnFlush, DC_COLORMAP|DC_TRANSMAP)
-DEFINE_COLUMN_FUNC(R_Draw2sMultiPatchColumnFlush, DC_HOLES)
-DEFINE_COLUMN_FUNC(R_Draw2sMultiPatchTranslucentColumnFlush, DC_HOLES|DC_TRANSMAP)
+DEFINE_COLUMN_COMBO(R_DrawColumn, DC_BASIC)
+DEFINE_COLUMN_COMBO(R_DrawTranslucentColumn, DC_TRANSMAP)
+DEFINE_COLUMN_COMBO(R_DrawTranslatedColumn, DC_COLORMAP)
+DEFINE_COLUMN_COMBO(R_DrawColumnShadowed, DC_LIGHTLIST)
+DEFINE_COLUMN_COMBO(R_DrawTranslatedTranslucentColumn, DC_COLORMAP|DC_TRANSMAP)
+DEFINE_COLUMN_COMBO(R_Draw2sMultiPatchColumn, DC_HOLES)
+DEFINE_COLUMN_COMBO(R_Draw2sMultiPatchTranslucentColumn, DC_HOLES|DC_TRANSMAP)
 
-//skymyass
-//DEFINE_COLUMN_FUNC(R_DrawSkyColumn, DC_SKY)
 
 /**	\brief The R_DrawFogColumn function
 	Fog wall.

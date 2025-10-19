@@ -31,7 +31,6 @@ FUNCINLINE static ATTRINLINE UINT8 *R_Address(INT32 px, INT32 py)
 	return vid.screens[0] + (py + viewwindowy) * vid.width + (viewwindowx + px);
 }
 
-
 typedef struct {
 	float x, y, z;
 } floatv3_t;
@@ -164,6 +163,8 @@ void R_DrawMaskedColumn(drawcolumndata_t* dc, column_t *column);
 // r_draw.c
 // ------------------------------------------------
 
+// Custom player skin translation
+
 #define GTC_CACHE 1
 #define GTC_MENUCACHE GTC_CACHE
 //@TODO Add a separate caching mechanism for menu colormaps distinct from in-level GTC_CACHE. For now this is still preferable to memory leaks...
@@ -208,8 +209,7 @@ UINT8 *R_GetBlendTable(int style, INT32 alphalevel);
 
 boolean R_BlendLevelVisible(INT32 blendmode, INT32 alphalevel);
 
-// Custom player skin translation
-void R_InitViewBuffer(INT32 width, INT32 height);
+void R_InitViewBuffer(void);
 void R_VideoErase(size_t ofs, INT32 count);
 
 #define TRANSPARENTPIXEL 247
@@ -231,16 +231,15 @@ void R_Draw2sMultiPatchColumn(drawcolumndata_t* dc);
 void R_Draw2sMultiPatchTranslucentColumn(drawcolumndata_t* dc);
 
 // column drawers which use buffered drawing with flush
-void R_DrawColumnFlush(drawcolumndata_t* dc);
-void R_DrawTranslucentColumnFlush(drawcolumndata_t* dc);
-void R_DrawTranslatedColumnFlush(drawcolumndata_t* dc);
-void R_DrawColumnShadowedFlush(drawcolumndata_t* dc);
-void R_DrawTranslatedTranslucentColumnFlush(drawcolumndata_t* dc);
-void R_Draw2sMultiPatchColumnFlush(drawcolumndata_t* dc);
-void R_Draw2sMultiPatchTranslucentColumnFlush(drawcolumndata_t* dc);
+void R_DrawColumn_Flush(drawcolumndata_t* dc);
+void R_DrawTranslucentColumn_Flush(drawcolumndata_t* dc);
+void R_DrawTranslatedColumn_Flush(drawcolumndata_t* dc);
+void R_DrawColumnShadowed_Flush(drawcolumndata_t* dc);
+void R_DrawTranslatedTranslucentColumn_Flush(drawcolumndata_t* dc);
+void R_Draw2sMultiPatchColumn_Flush(drawcolumndata_t* dc);
+void R_Draw2sMultiPatchTranslucentColumn_Flush(drawcolumndata_t* dc);
 
 void R_DrawFogColumn(drawcolumndata_t* dc);
-
 
 // span drawers
 void R_DrawSpan(drawspandata_t* ds);
