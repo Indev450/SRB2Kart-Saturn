@@ -230,16 +230,15 @@ void R_Draw2sMultiPatchColumn(drawcolumndata_t* dc);
 void R_Draw2sMultiPatchTranslucentColumn(drawcolumndata_t* dc);
 
 // column drawers which use buffered drawing with flush
-void R_DrawColumnFlush(drawcolumndata_t* dc);
-void R_DrawTranslucentColumnFlush(drawcolumndata_t* dc);
-void R_DrawTranslatedColumnFlush(drawcolumndata_t* dc);
-void R_DrawColumnShadowedFlush(drawcolumndata_t* dc);
-void R_DrawTranslatedTranslucentColumnFlush(drawcolumndata_t* dc);
-void R_Draw2sMultiPatchColumnFlush(drawcolumndata_t* dc);
-void R_Draw2sMultiPatchTranslucentColumnFlush(drawcolumndata_t* dc);
+void R_DrawColumn_Flush(drawcolumndata_t* dc);
+void R_DrawTranslucentColumn_Flush(drawcolumndata_t* dc);
+void R_DrawTranslatedColumn_Flush(drawcolumndata_t* dc);
+void R_DrawColumnShadowed_Flush(drawcolumndata_t* dc);
+void R_DrawTranslatedTranslucentColumn_Flush(drawcolumndata_t* dc);
+void R_Draw2sMultiPatchColumn_Flush(drawcolumndata_t* dc);
+void R_Draw2sMultiPatchTranslucentColumn_Flush(drawcolumndata_t* dc);
 
 void R_DrawFogColumn(drawcolumndata_t* dc);
-
 
 // span drawers
 void R_DrawSpan(drawspandata_t* ds);
