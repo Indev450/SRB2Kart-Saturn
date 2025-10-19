@@ -163,6 +163,8 @@ void R_DrawMaskedColumn(drawcolumndata_t* dc, column_t *column);
 // r_draw.c
 // ------------------------------------------------
 
+// Custom player skin translation
+
 #define GTC_CACHE 1
 #define GTC_MENUCACHE GTC_CACHE
 //@TODO Add a separate caching mechanism for menu colormaps distinct from in-level GTC_CACHE. For now this is still preferable to memory leaks...
@@ -207,8 +209,7 @@ UINT8 *R_GetBlendTable(int style, INT32 alphalevel);
 
 boolean R_BlendLevelVisible(INT32 blendmode, INT32 alphalevel);
 
-// Custom player skin translation
-void R_InitViewBuffer(INT32 width, INT32 height);
+void R_InitViewBuffer(void);
 void R_VideoErase(size_t ofs, INT32 count);
 
 #define TRANSPARENTPIXEL 247
