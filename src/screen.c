@@ -101,13 +101,13 @@ static void SCR_SetDrawFuncs(enum columncontext_e _columncontext)
 
 	if (_columncontext == COLUMNCONTEXT_FLUSH)
 	{
-		colfuncs[BASEDRAWFUNC] = R_DrawColumnFlush;
-		colfuncs[COLDRAWFUNC_FUZZY] = R_DrawTranslucentColumnFlush;
-		colfuncs[COLDRAWFUNC_TRANS] = R_DrawTranslatedColumnFlush;
-		colfuncs[COLDRAWFUNC_SHADOWED] = R_DrawColumnShadowedFlush;
-		colfuncs[COLDRAWFUNC_TRANSTRANS] = R_DrawTranslatedTranslucentColumnFlush;
-		colfuncs[COLDRAWFUNC_TWOSMULTIPATCH] = R_Draw2sMultiPatchColumnFlush;
-		colfuncs[COLDRAWFUNC_TWOSMULTIPATCHTRANS] = R_Draw2sMultiPatchTranslucentColumnFlush;
+		colfuncs[BASEDRAWFUNC] = R_DrawColumn_Flush;
+		colfuncs[COLDRAWFUNC_FUZZY] = R_DrawTranslucentColumn_Flush;
+		colfuncs[COLDRAWFUNC_TRANS] = R_DrawTranslatedColumn_Flush;
+		colfuncs[COLDRAWFUNC_SHADOWED] = R_DrawColumnShadowed_Flush;
+		colfuncs[COLDRAWFUNC_TRANSTRANS] = R_DrawTranslatedTranslucentColumn_Flush;
+		colfuncs[COLDRAWFUNC_TWOSMULTIPATCH] = R_Draw2sMultiPatchColumn_Flush;
+		colfuncs[COLDRAWFUNC_TWOSMULTIPATCHTRANS] = R_Draw2sMultiPatchTranslucentColumn_Flush;
 	}
 	else
 	{
