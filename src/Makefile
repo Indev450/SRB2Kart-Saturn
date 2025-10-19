@@ -69,6 +69,7 @@
 # VALGRIND=1 - Enable Valgrind memory debugging support.
 # PROFILEMODE=1 - Enable performance profiling (gprof).
 # USEASAN=1 - Enable building with Address Sanitizer.
+# USEUBSAN=1 - Enable building with Undefined Behavior Sanitizer.
 # NOLIBBACKTRACE=1 - Disable using Libbacktrace for crashlog traces.
 #
 # General flags for building:
@@ -274,6 +275,17 @@ libs+=-fsanitize=address -g
 else
 opts+=-fsanitize=address
 libs+=-fsanitize=address
+endif
+endif
+
+ifdef USEUBSAN
+# compile with asan
+ifdef MINGW
+opts+=-fsanitize=undefined -g
+libs+=-fsanitize=undefined -g
+else
+opts+=-fsanitize=undefined
+libs+=-fsanitize=undefined
 endif
 endif
 
