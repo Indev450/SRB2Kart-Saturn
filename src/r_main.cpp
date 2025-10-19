@@ -1003,7 +1003,7 @@ static void R_InitViewMapping(void)
 static void R_SetupViewBuffers(void)
 {
 	R_CalcFov(cv_fov.value);
-	R_InitViewBuffer(viewwidth, viewheight);
+	R_InitViewBuffer();
 	R_InitViewMapping();
 }
 

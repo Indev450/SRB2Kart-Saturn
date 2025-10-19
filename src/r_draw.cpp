@@ -606,13 +606,8 @@ static void R_AllocViewMemory(void)
 	R_AllocVisSpriteMemory();
 }
 
-void R_InitViewBuffer(INT32 width, INT32 height)
+void R_InitViewBuffer(void)
 {
-	if (width > MAXVIDWIDTH)
-		width = MAXVIDWIDTH;
-	if (height > MAXVIDHEIGHT)
-		height = MAXVIDHEIGHT;
-
 	R_AllocViewMemory();
 
 	viewwindowx = 0;
