@@ -730,7 +730,6 @@ static void R_DrawFlippedMaskedColumn(drawcolumndata_t* dc, column_t *column)
 	dc->texturemid = basetexturemid;
 }
 
-
 // Based off of R_GetLinedefTransTable
 transnum_t R_GetThingTransTable(fixed_t alpha, transnum_t transmap)
 {

@@ -76,14 +76,8 @@ R_DrawColumnPixel(const drawcolumndata_t* dc, UINT8 * restrict dest, UINT32 bit,
 		}
 	}
 
-	if constexpr (Type & DrawColumnType::DC_DIRECT)
-	{	// if we dont buffer our columns, we need to handle translucency again
-		return R_GetColumnTranslucent<Type>(dc, dest, col, colormap);
-	}
-	else
-	{
-		return R_GetColumnTranslated<Type>(dc, col, colormap);
-	}
+	// if we dont buffer our columns, we need to handle translucency again
+	return R_GetColumnTranslucent<Type>(dc, dest, col, colormap);
 }
 
 /**	\brief The R_DrawColumn function
