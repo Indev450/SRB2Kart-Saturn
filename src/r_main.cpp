@@ -63,7 +63,7 @@ size_t loopcount;
 
 fixed_t viewx, viewy, viewz;
 angle_t viewangle, aimingangle, viewroll;
-UINT8 viewssnum;
+UINT8 viewssnum = 0;
 fixed_t viewcos, viewsin;
 boolean skyVisible;
 boolean skyVisiblePerPlayer[MAXSPLITSCREENPLAYERS]; // saved values of skyVisible for each splitscreen player
