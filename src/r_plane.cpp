@@ -739,7 +739,7 @@ void R_DrawPlanes(void)
 #endif
 }
 
-static void R_DrawSkyPlane(visplane_t *pl, void(*colfunc2)(drawcolumndata_t*), boolean allow_parallel);
+static void R_DrawSkyPlane(visplane_t *pl, void(*skycolfunc)(drawcolumndata_t*), boolean allow_parallel);
 
 void R_DrawSkyPlanes(void)
 {
@@ -774,7 +774,7 @@ void R_DrawSkyPlanes(void)
 #endif
 }
 
-static void R_DrawSkyPlane(visplane_t *pl, void(*colfunc2)(drawcolumndata_t*), boolean allow_parallel)
+static void R_DrawSkyPlane(visplane_t *pl, void(*skycolfunc)(drawcolumndata_t*), boolean allow_parallel)
 {
 	INT32 x;
 
@@ -834,7 +834,7 @@ static void R_DrawSkyPlane(visplane_t *pl, void(*colfunc2)(drawcolumndata_t*), b
 				dc.x = x + i;
 				dc.source = R_GetColumn(texture, -angle); // get negative of angle for each column to display sky correct way round! --Monster Iestyn 27/01/18
 
-				colfunc2(&dc);
+				skycolfunc(&dc);
 			}
 		};
 
@@ -868,10 +868,9 @@ static void R_DrawSkyPlane(visplane_t *pl, void(*colfunc2)(drawcolumndata_t*), b
 		dc.iscale = FixedMul(skyscale, FINECOSINE(xtoviewangle[x]>>ANGLETOFINESHIFT));
 		dc.x = x;
 		dc.source =
-		R_GetColumn(texturetranslation[skytexture],
-					-angle); // get negative of angle for each column to display sky correct way round! --Monster Iestyn 27/01/18
+		R_GetColumn(texturetranslation[skytexture], -angle); // get negative of angle for each column to display sky correct way round! --Monster Iestyn 27/01/18
 
-		colfunc2(&dc);
+		skycolfunc(&dc);
 	}
 #endif
 }
