@@ -254,10 +254,15 @@ ifdef STATIC
 libs+=-static
 endif
 
+ifeq ($(CC),gcc)
+ opts+=-mno-ms-bitfields
+ libs+=-mno-ms-bitfields
+endif
+
 # build with profiling information
 ifdef PROFILEMODE
 opts+=-pg
-LDFLAGS+=-pg
+libs+=-pg
 endif
 
 ifdef DEBUGMODE
@@ -267,40 +272,32 @@ debug_opts=-DNDEBUG
 opts+=-O3
 ifdef USELTO
 # compile with LTO
-ifdef MINGW
-opts+=-flto=auto -g
-LDFLAGS+=-flto=auto -g
-else
 opts+=-flto=auto
-LDFLAGS+=-flto=auto
-endif
+libs+=-flto=auto
 endif
 endif
 
 ifdef USEASAN
 # compile with asan
-ifdef MINGW
-opts+=-fsanitize=address -g
-libs+=-fsanitize=address -g
-else
 opts+=-fsanitize=address
 libs+=-fsanitize=address
-endif
 endif
 
 ifdef USEUBSAN
 # compile with asan
-ifdef MINGW
-opts+=-fsanitize=undefined -g
-libs+=-fsanitize=undefined -g
-else
 opts+=-fsanitize=undefined
 libs+=-fsanitize=undefined
 endif
-endif
 
 ifeq ($(CC),clang)
- LDFLAGS+= -fuse-ld=lld
+ libs+=-fuse-ld=lld
+endif
+
+ifdef MINGW
+# mingw needs this passed AFTER lto and the likes were passed
+# otherwise libbacktrace may break
+opts+=-g
+libs+=-g
 endif
 
 # debug_opts also get passed to windres
