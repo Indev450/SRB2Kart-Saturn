@@ -156,8 +156,8 @@ static void R_FlushQuad(void)
 
 	if constexpr (Type & ColumnFlushType::FLUSH_OPAQUE)
 	{
-		// aligned copy -- make sure our dest ptr AND viewwidth are a multiple of 8!
-		if (((uintptr_t)dest & 7) == 0 && (stride & 7) == 0)
+		// 8 byte aligned copy -- make sure our dest ptr, source ptr AND stride are a multiple of 8!
+		if ((((uintptr_t)dest | (uintptr_t)source | stride) & 7) == 0)
 		{
 			const INT64 *source64 = reinterpret_cast<const INT64 *>(source);
 			INT64 *dest64 = reinterpret_cast<INT64 *>(dest);
