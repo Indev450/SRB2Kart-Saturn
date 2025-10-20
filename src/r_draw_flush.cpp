@@ -156,6 +156,7 @@ static void R_FlushQuad(void)
 
 	if constexpr (Type & ColumnFlushType::FLUSH_OPAQUE)
 	{
+#if __SIZEOF_POINTER__ >= 8 // does not make much sense on 32bit targets
 		// 8 byte aligned copy -- make sure our dest ptr, source ptr AND stride are a multiple of 8!
 		if ((((uintptr_t)dest | (uintptr_t)source | stride) & 7) == 0)
 		{
@@ -170,6 +171,7 @@ static void R_FlushQuad(void)
 			}
 		}
 		else
+#endif
 		{
 			while (--count >= 0)
 			{
