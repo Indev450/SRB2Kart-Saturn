@@ -11972,7 +11972,7 @@ void P_SpawnHoops(mapthing_t *mthing)
 
 	z += P_GetSectorFloorZAt(sec, x, y);
 
-	hoopcenter->z -= hoopcenter->height/2;
+	hoopcenter->z = z - hoopcenter->height/2;
 
 	P_UnsetThingPosition(hoopcenter);
 	hoopcenter->x = x;
