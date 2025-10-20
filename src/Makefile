@@ -244,9 +244,8 @@ ifdef STATIC
 libs+=-static
 endif
 
-ifeq ($(CC),gcc)
+ifneq (,$(filter $(CC) $(CXX),gcc g++))
  opts+=-mno-ms-bitfields
- libs+=-mno-ms-bitfields
 endif
 
 # build with profiling information
@@ -279,7 +278,7 @@ opts+=-fsanitize=undefined
 libs+=-fsanitize=undefined
 endif
 
-ifeq ($(CC),clang)
+ifneq (,$(filter $(CC) $(CXX),clang clang++))
  libs+=-fuse-ld=lld
 endif
 
