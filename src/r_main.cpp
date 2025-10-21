@@ -960,6 +960,8 @@ void R_ExecuteSetViewSize(void)
 		}
 	}
 
+	R_SetupFreelook();
+
 	am_recalc = true;
 }
 
