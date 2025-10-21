@@ -46,15 +46,15 @@
 // good night sweet prince
 //#define SHITPLANESPARENCY
 
-visplane_t *visplanes[MAXVISPLANES];
+visplane_t *visplanes[MAXVISPLANES] = {};
 static visplane_t *freetail;
 static visplane_t **freehead = &freetail;
 
 visplane_t *floorplane;
 visplane_t *ceilingplane;
 
-visffloor_t visffloor[MAXFFLOORS];
-INT32 numffloors;
+visffloor_t visffloor[MAXFFLOORS] = {};
+INT32 numffloors = 0;
 
 //SoM: 3/23/2000: Boom visplane hashing routine.
 #define visplane_hash(picnum,lightlevel,height) \
@@ -65,8 +65,8 @@ INT32 numffloors;
 //  floorclip starts out SCREENHEIGHT
 //  ceilingclip starts out -1
 //
-INT16 *floorclip, *ceilingclip;
-fixed_t *frontscale;
+INT16 *floorclip = NULL, *ceilingclip = NULL;
+fixed_t *frontscale = NULL;
 
 //
 // spanstart holds the start of a plane span
@@ -81,13 +81,13 @@ static INT32 *spanstart;
 //                (this is to calculate yslopes only when really needed)
 //                (when mouselookin', yslope is moving into yslopetab)
 //                Check R_SetupFrame, R_SetViewSize for more...
-fixed_t *yslopetab;
-fixed_t *yslope;
+fixed_t *yslopetab = NULL;
+fixed_t *yslope = NULL;
 
 fixed_t basexscale, baseyscale;
 
-static INT16 *ffloor_f_clip;
-static INT16 *ffloor_c_clip;
+static INT16 *ffloor_f_clip = NULL;
+static INT16 *ffloor_c_clip = NULL;
 
 static void R_SetTiltedSpan(drawspandata_t* ds, INT32 span);
 static void R_SetSlopePlaneVectors(drawspandata_t* ds, visplane_t *pl, INT32 y, fixed_t xoff, fixed_t yoff);

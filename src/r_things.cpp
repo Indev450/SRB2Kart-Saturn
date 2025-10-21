@@ -60,8 +60,8 @@ typedef struct
 static lighttable_t **spritelights;
 
 // constant arrays used for psprite clipping and initializing clipping
-INT16 *negonearray;
-INT16 *screenheightarray;
+INT16 *negonearray = NULL;
+INT16 *screenheightarray = NULL;
 
 //
 // INITIALIZATION FUNCTIONS
@@ -539,8 +539,8 @@ void R_ClearSprites(void)
 	visspritecount = numvisiblesprites = clippedvissprites = 0;
 }
 
-static INT16 *vissprite_clipbot[MAXVISSPRITES >> VISSPRITECHUNKBITS];
-static INT16 *vissprite_cliptop[MAXVISSPRITES >> VISSPRITECHUNKBITS];
+static INT16 *vissprite_clipbot[MAXVISSPRITES >> VISSPRITECHUNKBITS] = {0};
+static INT16 *vissprite_cliptop[MAXVISSPRITES >> VISSPRITECHUNKBITS] = {0};
 
 static void R_AllocVisSpriteChunkMemory(UINT32 chunk)
 {
@@ -574,16 +574,16 @@ static vissprite_t overflowsprite;
 
 static vissprite_t *R_GetVisSprite(UINT32 num)
 {
-		UINT32 chunk = num >> VISSPRITECHUNKBITS;
+	UINT32 chunk = num >> VISSPRITECHUNKBITS;
 
-		// Allocate chunk if necessary
-		if (!visspritechunks[chunk])
-		{
-			Z_Malloc(sizeof(vissprite_t) * VISSPRITESPERCHUNK, PU_LEVEL, &visspritechunks[chunk]);
-			R_AllocVisSpriteChunkMemory(chunk);
-		}
+	// Allocate chunk if necessary
+	if (!visspritechunks[chunk])
+	{
+		Z_Malloc(sizeof(vissprite_t) * VISSPRITESPERCHUNK, PU_LEVEL, &visspritechunks[chunk]);
+		R_AllocVisSpriteChunkMemory(chunk);
+	}
 
-		return visspritechunks[chunk] + (num & VISSPRITEINDEXMASK);
+	return visspritechunks[chunk] + (num & VISSPRITEINDEXMASK);
 }
 
 static vissprite_t *R_NewVisSprite(void)

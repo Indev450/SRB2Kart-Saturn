@@ -88,7 +88,7 @@ INT32 viewangletox[FINEANGLES/2];
 // The xtoviewangleangle[] table maps a screen pixel
 // to the lowest viewangle that maps back to x ranges
 // from clipangle to -clipangle.
-angle_t *xtoviewangle;
+angle_t *xtoviewangle = NULL;
 
 lighttable_t *scalelight[LIGHTLEVELS][MAXLIGHTSCALE];
 lighttable_t *scalelightfixed[MAXLIGHTSCALE];
