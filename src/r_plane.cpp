@@ -616,14 +616,12 @@ void R_ExpandPlane(visplane_t *pl, INT32 start, INT32 stop)
 //
 static void R_MakeSpans(void (*mapfunc)(drawspandata_t* ds, void(*spanfunc)(drawspandata_t*), INT32, INT32, INT32, boolean), spandrawfunc_t* localspanfunc, drawspandata_t* ds, INT32 x, INT32 t1, INT32 b1, INT32 t2, INT32 b2, boolean allow_parallel)
 {
-	const INT32 vidheight = vid.height;
-
 	//    Alam: from r_splats's R_RenderFloorSplat
-	if (t1 >= vidheight) t1 = vidheight-1;
-	if (b1 >= vidheight) b1 = vidheight-1;
-	if (t2 >= vidheight) t2 = vidheight-1;
-	if (b2 >= vidheight) b2 = vidheight-1;
-	if (x-1 >= vid.width) x = vid.width;
+	if (t1 >= viewheight) t1 = viewheight-1;
+	if (b1 >= viewheight) b1 = viewheight-1;
+	if (t2 >= viewheight) t2 = viewheight-1;
+	if (b2 >= viewheight) b2 = viewheight-1;
+	if (x-1 >= viewwidth) x = viewwidth;
 
 #ifdef HAVE_THREADS
 	// We want to draw N spans per subtask to ensure the work is
