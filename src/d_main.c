@@ -347,20 +347,6 @@ static void D_Renderview(void)
 		}
 	}
 
-	// Draw over the fourth screen so you don't have to stare at a HOM :V
-	if (splitscreen == 2)
-	{
-		// V_DrawPatchFill, but for the fourth screen only
-		patch_t *pat = W_CachePatchName("SRB2BACK", PU_CACHE);
-		INT32 x, y, pw = SHORT(pat->width) * vid.dup, ph = SHORT(pat->height) * vid.dup;
-
-		for (x = vid.width>>1; x < vid.width; x += pw)
-		{
-			for (y = vid.height>>1; y < vid.height; y += ph)
-				V_DrawScaledPatch(x, y, V_NOSCALESTART, pat);
-		}
-	}
-
 	for (i = 0; i <= splitscreen; i++)
 	{
 		if (!P_MobjWasRemoved(players[displayplayers[i]].mo) || players[displayplayers[i]].playerstate == PST_DEAD)
@@ -399,17 +385,34 @@ static void D_Renderview(void)
 			if (rendermode == render_opengl)
 			{
 				HWR_RenderPlayerView();
-				R_RestoreLevelInterpolators();
-				continue;
 			}
+			else if (rendermode == render_soft)
 #endif
+
 			R_RenderPlayerView(&players[displayplayers[i]]);
 		}
 
-		if (i == 0)
-			R_ApplyViewMorph();
+		if (rendermode == render_soft)
+		{
+			if (i == 0)
+				R_ApplyViewMorph();
 
-		V_DoPostProcessor(i, postimgparam[i]);
+			V_DoPostProcessor(i, postimgparam[i]);
+		}
+	}
+
+	// Draw over the fourth screen so you don't have to stare at a HOM :V
+	if (splitscreen == 2)
+	{
+		// V_DrawPatchFill, but for the fourth screen only
+		patch_t *pat = W_CachePatchName("SRB2BACK", PU_PATCH);
+		INT32 x, y, pw = SHORT(pat->width) * vid.dup, ph = SHORT(pat->height) * vid.dup;
+
+		for (x = vid.width>>1; x < vid.width; x += pw)
+		{
+			for (y = vid.height>>1; y < vid.height; y += ph)
+				V_DrawScaledPatch(x, y, V_NOSCALESTART, pat);
+		}
 	}
 
 	R_RestoreLevelInterpolators();
