@@ -94,17 +94,17 @@ static UINT32 **texturecolumnofs; // column offset lookup table for each texture
 UINT8 **texturecache; // graphics data for each generated full-size texture
 
 // texture width is a power of 2, so it can easily repeat along sidedefs using a simple mask
-static INT32 *texturewidth;
+static INT32 *texturewidth = NULL;
 
-fixed_t *textureheight; // needed for texture pegging
+fixed_t *textureheight = NULL; // needed for texture pegging
 
-INT32 *texturetranslation;
+INT32 *texturetranslation = NULL;
 
 // needed for pre rendering
-sprcache_t *spritecachedinfo;
+sprcache_t *spritecachedinfo = NULL;
 
-lighttable_t *colormaps;
-UINT8 *encoremap;
+lighttable_t *colormaps = NULL;
+UINT8 *encoremap = NULL;
 #ifdef HASINVERT
 UINT8 invertmap[256];
 #endif
