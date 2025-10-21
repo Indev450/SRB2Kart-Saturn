@@ -630,7 +630,7 @@ void G_GhostAddHit(INT32 playernum, mobj_t *victim)
 
 	ghostext[playernum].flags |= EZT_HIT;
 	ghostext[playernum].hits++;
-	Z_Realloc(ghostext[playernum].hitlist, ghostext[playernum].hits * sizeof(mobj_t *), PU_STATIC, &ghostext[playernum].hitlist);
+	ghostext[playernum].hitlist = Z_Realloc(ghostext[playernum].hitlist, ghostext[playernum].hits * sizeof(mobj_t *), PU_LEVEL, &ghostext[playernum].hitlist);
 	P_SetTarget(ghostext[playernum].hitlist + (ghostext[playernum].hits-1), victim);
 }
 
