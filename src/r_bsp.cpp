@@ -77,7 +77,7 @@ void R_ClearDrawSegs(void)
 // CPhipps -
 // Instead of clipsegs, let's try using an array with one entry for each column,
 // indicating whether it's blocked by a solid wall yet or not.
-UINT8 *solidcol;
+UINT8 *solidcol = NULL;
 
 void R_AllocClipSegMemory(void)
 {

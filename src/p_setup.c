@@ -1997,9 +1997,9 @@ static void P_LoadMapData(const virtres_t* virt)
 	P_InitTagLists();   // Create xref tables for tags
 
 	// Copy relevant map data for NetArchive purposes.
-	spawnsectors = Z_Calloc(numsectors * sizeof(*sectors), PU_LEVEL, NULL);
-	spawnlines   = Z_Calloc(numlines * sizeof(*lines), PU_LEVEL, NULL);
-	spawnsides   = Z_Calloc(numsides * sizeof(*sides), PU_LEVEL, NULL);
+	spawnsectors = Z_Malloc(numsectors * sizeof(*sectors), PU_LEVEL, NULL);
+	spawnlines   = Z_Malloc(numlines * sizeof(*lines), PU_LEVEL, NULL);
+	spawnsides   = Z_Malloc(numsides * sizeof(*sides), PU_LEVEL, NULL);
 
 	memcpy(spawnsectors, sectors, numsectors * sizeof(*sectors));
 	memcpy(spawnlines, lines, numlines * sizeof(*lines));

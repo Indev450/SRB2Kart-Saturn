@@ -702,7 +702,13 @@ static void M_CheckStringItem(void)
 
 		// Just in case
 		memset(menu_text_input_buf, 0, sizeof menu_text_input_buf);
-		M_TextInputInit(&menuinput, menu_text_input_buf, sizeof menu_text_input_buf);
+
+		// special case: name input, cap it to prevent writing outside the textbox
+		// kinda ugly but itll work
+		if (cv == &cv_playername)
+			M_TextInputInit(&menuinput, menu_text_input_buf, MAXPLAYERNAME +1);
+		else
+			M_TextInputInit(&menuinput, menu_text_input_buf, sizeof menu_text_input_buf);
 
 		M_TextInputSetString(&menuinput, cv->string);
 	}
@@ -4333,7 +4339,7 @@ static void DrawReplayHutReplayInfo(void)
 static void M_DrawReplayHut(void)
 {
 	INT32 x, y, cursory = 0;
-	INT16 i;
+	INT32 i;
 	INT16 replaylistitem = currentMenu->numitems-2;
 	boolean processed_one_this_frame = false;
 	const INT32 scaledviewheight = (vid.height/vid.dup);
@@ -4406,7 +4412,7 @@ static void M_DrawReplayHut(void)
 		V_DrawCenteredString(160, 100, V_ALLOWLOWERCASE, msg);
 	}
 
-	for (i = 0; i < (INT16)replayqueryfound; i++)
+	for (i = 0; i < (INT32)replayqueryfound; i++)
 	{
 		INT32 localy = y+i*10;
 		INT32 localx = x;

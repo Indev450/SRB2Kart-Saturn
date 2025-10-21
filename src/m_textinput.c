@@ -239,8 +239,8 @@ void M_TextInputClear(textinput_t *input)
 void M_TextInputSetString(textinput_t *input, const char *c)
 {
 	memset(input->buffer, 0, input->buffer_size);
-	strcpy(input->buffer, c);
-	input->cursor = input->select = input->length = strlen(c);
+	strncpy(input->buffer, c, input->buffer_size);
+	input->cursor = input->select = input->length = strlen(input->buffer);
 }
 
 static boolean M_TextInputHandleBase(textinput_t *input, INT32 key, boolean emotes)

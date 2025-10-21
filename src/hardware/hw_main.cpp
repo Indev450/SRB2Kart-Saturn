@@ -3321,6 +3321,9 @@ static void HWR_DrawSpriteShadow(gl_vissprite_t *spr, patch_t *gpatch, GLPatch_t
 	fixed_t slopez;
 	float offset = 0;
 
+	if (!spr->mobj)
+		return;
+
 	R_GetShadowZ(spr->mobj, &floorslope);
 
 	mobjfloor = HWR_OpaqueFloorAtPos(
@@ -3332,14 +3335,7 @@ static void HWR_DrawSpriteShadow(gl_vissprite_t *spr, patch_t *gpatch, GLPatch_t
 		angle_t shadowdir;
 
 		// Set direction
-		if (splitscreen && R_GetViewNumber() == 1)
-			shadowdir = localangle[1] + FixedAngle(cv_cam_rotate[1].value);
-		else if (splitscreen > 1 && R_GetViewNumber() == 2)
-			shadowdir = localangle[2] + FixedAngle(cv_cam_rotate[2].value);
-		else if (splitscreen > 2 && R_GetViewNumber() == 3)
-			shadowdir = localangle[3] + FixedAngle(cv_cam_rotate[3].value);
-		else
-			shadowdir = localangle[0] + FixedAngle(cv_cam_rotate[0].value);
+		shadowdir = localangle[viewssnum] + FixedAngle(cv_cam_rotate[viewssnum].value);
 
 		// Find floorheight
 		floorheight = HWR_OpaqueFloorAtPos(
@@ -3351,18 +3347,17 @@ static void HWR_DrawSpriteShadow(gl_vissprite_t *spr, patch_t *gpatch, GLPatch_t
 		// Don't draw it, then!
 		if (spr->mobj->z < floorheight)
 			return;
-		else
-		{
-			fixed_t floorz;
-			floorz = HWR_OpaqueFloorAtPos(
-				spr->mobj->x + P_ReturnThrustX(spr->mobj, shadowdir, spr->mobj->z - floorheight),
-				spr->mobj->y + P_ReturnThrustY(spr->mobj, shadowdir, spr->mobj->z - floorheight),
-				spr->mobj->z, spr->mobj->height);
-			// The shadow would be falling on a wall? Don't draw it, then.
-			// Would draw midair otherwise.
-			if (floorz < floorheight)
-				return;
-		}
+
+		fixed_t floorz;
+		floorz = HWR_OpaqueFloorAtPos(
+			spr->mobj->x + P_ReturnThrustX(spr->mobj, shadowdir, spr->mobj->z - floorheight),
+			spr->mobj->y + P_ReturnThrustY(spr->mobj, shadowdir, spr->mobj->z - floorheight),
+			spr->mobj->z, spr->mobj->height);
+
+		// The shadow would be falling on a wall? Don't draw it, then.
+		// Would draw midair otherwise.
+		if (floorz < floorheight)
+			return;
 
 		floorheight = FixedInt(spr->mobj->z - floorheight);
 
@@ -3372,12 +3367,11 @@ static void HWR_DrawSpriteShadow(gl_vissprite_t *spr, patch_t *gpatch, GLPatch_t
 		floorheight = FixedInt(spr->mobj->z - mobjfloor);
 
 	// technically this_scale gets multiplied and added to sprite y/x scale, but this thing needs it for some crap so ill just throw it in here again
-	const boolean hires = (spr->mobj && spr->mobj->skin && K_GetMobjSkin(spr->mobj)->flags & SF_HIRES);
+	this_scale = FixedToFloat(spr->mobj->scale);
 
-	if (spr->mobj)
-		this_scale = FixedToFloat(spr->mobj->scale);
-	if (hires)
-		this_scale = this_scale * FixedToFloat(K_GetMobjSkin(spr->mobj)->highresscale);
+	const skin_t *moskin = K_GetMobjSkin(spr->mobj);
+	if (moskin && moskin->flags & SF_HIRES)
+		this_scale *= FixedToFloat(moskin->highresscale);
 
 	// create the sprite billboard
 	//
@@ -3998,7 +3992,7 @@ static void HWR_DrawPrecipitationSprite(gl_vissprite_t *spr)
 
 	const precipmobj_t *sprmo = spr->precip;
 
-	if (UNLIKELY(!sprmo || !sprmo->subsector))
+	if (UNLIKELY(!sprmo->subsector))
 		return;
 
 	// cache sprite graphics
