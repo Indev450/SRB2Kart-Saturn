@@ -172,7 +172,7 @@ static vector3_t *R_LerpVector3(const vector3_t *from, const vector3_t *to, fixe
 // recalc necessary stuff for mouseaiming
 // slopes are already calculated for the full possible view (which is 4*viewheight).
 // 18/08/18: (No it's actually 16*viewheight, thanks Lactozilla for finding this out)
-static void R_SetupFreelook(void)
+void R_SetupFreelook(void)
 {
 	// clip it in the case we are looking a hardware 90 degrees full aiming
 	// (lmps, network and use F12...)

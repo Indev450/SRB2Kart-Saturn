@@ -151,6 +151,7 @@ typedef struct levelinterpolator_s {
 	};
 } levelinterpolator_t;
 
+void R_SetupFreelook(void);
 // Interpolates the current view variables (r_state.h) against the selected view context in R_SetViewContext
 void R_InterpolateView(fixed_t frac, boolean forceinvalid);
 // Special function just for software
