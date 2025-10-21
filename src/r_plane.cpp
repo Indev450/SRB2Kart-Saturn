@@ -50,8 +50,8 @@ visplane_t *visplanes[MAXVISPLANES] = {};
 static visplane_t *freetail;
 static visplane_t **freehead = &freetail;
 
-visplane_t *floorplane;
-visplane_t *ceilingplane;
+visplane_t *floorplane = NULL;
+visplane_t *ceilingplane = NULL;
 
 visffloor_t visffloor[MAXFFLOORS] = {};
 INT32 numffloors = 0;
@@ -84,7 +84,7 @@ static INT32 *spanstart;
 fixed_t *yslopetab = NULL;
 fixed_t *yslope = NULL;
 
-fixed_t basexscale, baseyscale;
+fixed_t basexscale = 0, baseyscale = 0;
 
 static INT16 *ffloor_f_clip = NULL;
 static INT16 *ffloor_c_clip = NULL;
