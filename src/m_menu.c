@@ -702,7 +702,13 @@ static void M_CheckStringItem(void)
 
 		// Just in case
 		memset(menu_text_input_buf, 0, sizeof menu_text_input_buf);
-		M_TextInputInit(&menuinput, menu_text_input_buf, sizeof menu_text_input_buf);
+
+		// special case: name input, cap it to prevent writing outside the textbox
+		// kinda ugly but itll work
+		if (cv == &cv_playername)
+			M_TextInputInit(&menuinput, menu_text_input_buf, MAXPLAYERNAME +1);
+		else
+			M_TextInputInit(&menuinput, menu_text_input_buf, sizeof menu_text_input_buf);
 
 		M_TextInputSetString(&menuinput, cv->string);
 	}
