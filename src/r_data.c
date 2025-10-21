@@ -90,8 +90,8 @@ INT32 numtextures = 0; // total number of textures found,
 // size of following tables
 
 texture_t **textures = NULL;
-static UINT32 **texturecolumnofs; // column offset lookup table for each texture
-UINT8 **texturecache; // graphics data for each generated full-size texture
+static UINT32 **texturecolumnofs = NULL; // column offset lookup table for each texture
+UINT8 **texturecache = NULL; // graphics data for each generated full-size texture
 
 // texture width is a power of 2, so it can easily repeat along sidedefs using a simple mask
 static INT32 *texturewidth = NULL;
