@@ -43,13 +43,6 @@
 #define MINZ (FRACUNIT*16)
 #define BASEYCENTER (BASEVIDHEIGHT/2)
 
-typedef struct
-{
-	INT32 x1, x2;
-	INT32 column;
-	INT32 topclip, bottomclip;
-} maskdraw_t;
-
 //
 // Sprite rotation 0 is facing the viewer,
 //  rotation 1 is one angle turn CLOCKWISE around the axis.
@@ -600,8 +593,8 @@ static vissprite_t *R_NewVisSprite(void)
 // Masked means: partly transparent, i.e. stored
 //  in posts/runs of opaque pixels.
 //
-INT16 *mfloorclip;
-INT16 *mceilingclip;
+INT16 *mfloorclip = NULL;
+INT16 *mceilingclip = NULL;
 
 fixed_t spryscale = 0, sprtopscreen = 0, sprbotscreen = 0;
 fixed_t windowtop = 0, windowbottom = 0;
