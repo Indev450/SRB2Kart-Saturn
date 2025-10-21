@@ -4433,7 +4433,7 @@ static void Command_Addfile(void)
 	}
 
 	// Add file on your client directly if it is trivial, or you aren't in a netgame.
-	if (!(netgame || multiplayer) || musiconly)
+	if (!netgame || musiconly)
 	{
 		P_AddWadFile(fn, false);
 		return;
