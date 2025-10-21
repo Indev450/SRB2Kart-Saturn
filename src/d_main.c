@@ -364,16 +364,36 @@ static void D_Renderview(void)
 
 	for (i = 0; i <= splitscreen; i++)
 	{
-		const boolean issplitscreen = (i > 0);
-
 		if (!P_MobjWasRemoved(players[displayplayers[i]].mo) || players[displayplayers[i]].playerstate == PST_DEAD)
 		{
 			viewssnum = i;
 
-			if (!issplitscreen) // Initialize for P1
+			switch (i)
 			{
-				viewwindowy = viewwindowx = 0;
-				objectsdrawn = 0;
+				case 1:
+					if (splitscreen > 1)
+					{
+						viewwindowx = viewwidth;
+						viewwindowy = 0;
+					}
+					else
+					{
+						viewwindowx = 0;
+						viewwindowy = viewheight;
+					}
+					break;
+				case 2:
+					viewwindowx = 0;
+					viewwindowy = viewheight;
+					break;
+				case 3:
+					viewwindowx = viewwidth;
+					viewwindowy = viewheight;
+					break;
+				default: // Initialize for P1
+					viewwindowy = viewwindowx = 0;
+					objectsdrawn = 0;
+					break;
 			}
 
 #ifdef HWRENDER
@@ -384,38 +404,10 @@ static void D_Renderview(void)
 				continue;
 			}
 #endif
-			if (issplitscreen) // Splitscreen-specific
-			{
-				switch (i)
-				{
-					case 1:
-						if (splitscreen > 1)
-						{
-							viewwindowx = viewwidth;
-							viewwindowy = 0;
-						}
-						else
-						{
-							viewwindowx = 0;
-							viewwindowy = viewheight;
-						}
-						break;
-					case 2:
-						viewwindowx = 0;
-						viewwindowy = viewheight;
-						break;
-					case 3:
-						viewwindowx = viewwidth;
-						viewwindowy = viewheight;
-					default:
-						break;
-				}
-			}
-
 			R_RenderPlayerView(&players[displayplayers[i]]);
 		}
 
-		if (!issplitscreen)
+		if (i == 0)
 			R_ApplyViewMorph();
 
 		V_DoPostProcessor(i, postimgparam[i]);
