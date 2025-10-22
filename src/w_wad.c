@@ -261,7 +261,7 @@ static inline void W_LoadDehackedLumpsPK3(UINT16 wadnum)
 
 			sprintf(name, "%s|%s", wadfiles[wadnum]->filename, lump_p->fullname);
 			name[length] = '\0';
-			CONS_Printf(M_GetText("Loading SOC from %s\n"), name);
+			CONS_Printf("Loading SOC from %s\n", name);
 			DEH_LoadDehackedLumpPwad(wadnum, posStart);
 			free(name);
 		}

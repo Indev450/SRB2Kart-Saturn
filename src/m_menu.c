@@ -7179,17 +7179,21 @@ static void M_DrawLevelSelectOnly(boolean leftfade, boolean rightfade)
 			namescroll = 0;
 		}
 
-		if (renderisnewtic) namescroll++;
+		if (renderisnewtic)
+			namescroll++;
 
 		char *addonname = wadfiles[mapwads[cv_nextmap.value-1]]->filename;
 		INT32 len;
 		INT32 charlimit = min((size_t)(21 + (dupadjust/5)), sizeof(namescrollbuf)-1);
+
 		nameonly(addonname);
 		len = strlen(addonname);
+
 		if (len > charlimit)
 			M_ScrollString(addonname, len, namescrollbuf, charlimit, namescroll);
 		else
-			strncpy(namescrollbuf, addonname, sizeof(namescrollbuf));
+			strncpy(namescrollbuf, addonname, sizeof(namescrollbuf) - 1);
+
 		V_DrawThinString(x+w+5, y+i-8, V_TRANSLUCENT|MENUCAPS, namescrollbuf); // variable reuse...
 	}
 
