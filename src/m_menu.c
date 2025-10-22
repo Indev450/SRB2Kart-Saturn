@@ -8279,12 +8279,12 @@ static void M_DrawSetupMultiPlayerMenu(void)
 
 	sprframe = &sprdef->spriteframes[frame];
 
-	//minenice's speen css, it's a piece of shit but hey
+	// minenice's speen css, it's a piece of shit but hey
 	speenframe = (I_GetTime()*cv_skinselectspin.value/TICRATE + 1)%8;
 
-	//this is a very shitty solution for checking if a sprite needs flipping
-	//but it works
-	if ((sprframe->lumppat[speenframe] == sprframe->lumppat[8-speenframe]) && (speenframe > 4))
+	// this is a very shitty solution for checking if a sprite needs flipping
+	// but it works
+	if ((speenframe > 4) && (sprframe->lumppat[speenframe] == sprframe->lumppat[8-speenframe]))
 		flags = V_FLIP; // This sprite is left/right flipped!
 
 	patch = (patch_t *)W_CachePatchNum(sprframe->lumppat[speenframe], PU_PATCH);
