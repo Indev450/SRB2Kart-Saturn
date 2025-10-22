@@ -943,9 +943,10 @@ void R_ExecuteSetViewSize(void)
 	memset(scalelight, 0xFF, sizeof(scalelight));
 
 	// Calculate the light levels to use for each level/scale combination.
-	for (i = 0; i< LIGHTLEVELS; i++)
+	for (i = 0; i < LIGHTLEVELS; i++)
 	{
 		startmapl = ((LIGHTLEVELS - 1 - i)*2)*NUMCOLORMAPS/LIGHTLEVELS;
+
 		for (j = 0; j < MAXLIGHTSCALE; j++)
 		{
 			level = startmapl - j*vid.width/(viewwidth)/DISTMAP;

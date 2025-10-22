@@ -4429,7 +4429,7 @@ static void Command_Addfile(void)
 	}
 
 	// Add file on your client directly if it is trivial, or you aren't in a netgame.
-	if (!(netgame || multiplayer) || musiconly)
+	if (!netgame || musiconly)
 	{
 		P_AddWadFile(fn, false);
 		return;
@@ -4472,7 +4472,7 @@ static void Command_Addfile(void)
 	if (IsPlayerAdmin(consoleplayer) && (!server)) // Request to add file
 		SendNetXCmd(XD_REQADDFILE, buf, buf_p - buf);
 	else
-		SendNetXCmd(XD_ADDFILE, buf, buf_p - buf);;
+		SendNetXCmd(XD_ADDFILE, buf, buf_p - buf);
 }
 
 /** Adds something at runtime.
