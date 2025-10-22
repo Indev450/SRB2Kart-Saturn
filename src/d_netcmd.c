@@ -2596,14 +2596,18 @@ ConcatCommandArgv (int start, int end)
 		size += strlen(COM_Argv(i)) + 1;
 	}
 
-	final = ZZ_Alloc(size);
-	p = final;
+	p = final = ZZ_Alloc(size);
+
+	if (!p)
+		I_Error("ConcatCommandArgv: Out of memory!\n");
 
 	--end;/* handle the final argument separately */
+
 	for (i = start; i < end; ++i)
 	{
 		p += sprintf(p, "%s ", COM_Argv(i));
 	}
+
 	/* at this point "end" is actually the last argument's position */
 	strcpy(p, COM_Argv(end));
 
@@ -4214,23 +4218,32 @@ static void Command_MotD_f(void)
 
 	mymotd = Z_Malloc(sizeof(motd), PU_STATIC, NULL);
 
-	strlcpy(mymotd, COM_Argv(1), sizeof motd);
+	if (!mymotd)
+		return;
+		//I_Error("Command_MotD_f: Out of memory!\n"); // idk if this aint a bit too much lel
+
+	strlcpy(mymotd, COM_Argv(1), sizeof(motd));
+
 	for (i = 2; i < j; i++)
 	{
-		strlcat(mymotd, " ", sizeof motd);
-		strlcat(mymotd, COM_Argv(i), sizeof motd);
+		strlcat(mymotd, " ", sizeof(motd));
+		strlcat(mymotd, COM_Argv(i), sizeof(motd));
 	}
 
 	// Disallow non-printing characters and semicolons.
 	for (i = 0; mymotd[i] != '\0'; i++)
+	{
 		if (!isprint(mymotd[i]) || mymotd[i] == ';')
 		{
 			Z_Free(mymotd);
 			return;
 		}
+	}
 
 	if ((netgame || multiplayer) && client)
+	{
 		SendNetXCmd(XD_SETMOTD, mymotd, i); // send the actual size of the motd string, not the full buffer's size
+	}
 	else
 	{
 		strcpy(motd, mymotd);
