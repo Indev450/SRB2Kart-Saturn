@@ -4073,7 +4073,11 @@ char *G_BuildMapTitle(INT32 mapnum)
 
 		title = Z_Malloc(len, PU_STATIC, NULL);
 
+		if (!title)
+			return NULL;
+
 		sprintf(title, "%s", mapheaderinfo[mapnum-1]->lvlttl);
+
 		if (zonetext) sprintf(title + strlen(title), " %s", zonetext);
 		if (actnum) sprintf(title + strlen(title), " %s", actnum);
 	}
