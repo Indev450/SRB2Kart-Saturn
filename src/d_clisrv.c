@@ -823,7 +823,7 @@ static void resynch_read_player(resynch_pak *rsp)
 	P_SetThingPosition(players[i].mo);
 }
 
-static inline void resynch_write_ctf(resynchend_pak *rst)
+static void resynch_write_ctf(resynchend_pak *rst)
 {
 	mobj_t *mflag;
 	UINT8 i, j;
@@ -863,7 +863,7 @@ static inline void resynch_write_ctf(resynchend_pak *rst)
 	}
 }
 
-static inline void resynch_read_ctf(resynchend_pak *p)
+static void resynch_read_ctf(resynchend_pak *p)
 {
 	UINT8 i;
 
