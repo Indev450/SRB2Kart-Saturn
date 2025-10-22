@@ -2091,8 +2091,7 @@ static void P_ProcessLineSpecial(line_t *line, mobj_t *mo, sector_t *callsec)
 				// Change the music and apply position/fade operations
 				else
 				{
-					strncpy(mapmusic.name, sides[line->sidenum[0]].text, 7);
-					mapmusic.name[6] = 0;
+					strlcpy(mapmusic.name, sides[line->sidenum[0]].text, sizeof(mapmusic.name));
 
 					mapmusic.flags = tracknum & MUSIC_TRACKMASK;
 					if (!(line->flags & ML_BLOCKMONSTERS))
