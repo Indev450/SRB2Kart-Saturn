@@ -1442,7 +1442,7 @@ static INT32 errorcount = 0;
 */
 static boolean shutdowning = false;
 
-void I_Error(const char *error, ...)
+FUNCIERROR void ATTRNORETURN I_Error(const char *error, ...)
 {
 	va_list argptr;
 	char buffer[8192];

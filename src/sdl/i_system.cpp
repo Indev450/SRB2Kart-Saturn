@@ -545,13 +545,16 @@ static inline void I_ShutdownConsole(void){}
 
 
 //
-//I_OutputMsg
+// I_OutputMsg
 //
 void I_OutputMsg(const char *fmt, ...)
 {
 	size_t len;
 	char *txt;
 	va_list  argptr;
+
+	if (!fmt)
+		return;
 
 	va_start(argptr,fmt);
 	len = vsnprintf(NULL, 0, fmt, argptr);
@@ -560,6 +563,10 @@ void I_OutputMsg(const char *fmt, ...)
 		return;
 
 	txt = static_cast<char*>(malloc(len+1));
+
+	if (!txt)
+		I_Error("I_OutputMsg: Out of memory!\n");
+
 	va_start(argptr,fmt);
 	vsprintf(txt, fmt, argptr);
 	va_end(argptr);

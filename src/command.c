@@ -938,6 +938,8 @@ static void COM_Find_f(void)
 	}
 
 	help = COM_Argv(1);
+	if (!help)
+		return;
 	helplen = strlen(help);
 	CONS_Printf("\x82""Variables:\n");
 	matchesany = false;
