@@ -3411,11 +3411,6 @@ void G_StopDemo(void)
 	demo.rewinding = false;
 	CL_ClearRewinds();
 
-	if (gamestate == GS_LEVEL && rendermode != render_none)
-	{
-		V_SetPaletteLump("PLAYPAL"); // Reset the palette
-		R_ReInitColormaps(0, LUMPERROR);
-	}
 	if (gamestate == GS_INTERMISSION)
 		Y_EndIntermission(); // cleanup
 	if (gamestate == GS_VOTING)
@@ -3427,6 +3422,12 @@ void G_StopDemo(void)
 	wipegamestate = GS_NULL;
 	SV_StopServer();
 	SV_ResetServer();
+
+	if (gamestate == GS_LEVEL && rendermode != render_none)
+	{
+		V_SetPaletteLump("PLAYPAL"); // Reset the palette
+		R_ReInitColormaps(0, LUMPERROR);
+	}
 }
 
 // Stops timing a demo.
