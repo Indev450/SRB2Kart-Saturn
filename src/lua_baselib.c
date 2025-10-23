@@ -365,6 +365,32 @@ static int lib_pLookForPlayers(lua_State *L)
 	return 1;
 }
 
+static boolean checkLocalAddon(lua_State *L)
+{
+	char buf[128];
+	lua_Debug ar;
+	lua_getstack(L, 1, &ar);
+	lua_getinfo(L, "S", &ar);
+
+	strncpy(buf, ar.source, sizeof(buf)-1);
+	buf[127] = 0;
+
+	char *p;
+
+	if ((p = strstr(buf, "|")) != NULL)
+		*p = '\0';
+
+	UINT16 i;
+
+	for (i = 0; i < numwadfiles; ++i)
+	{
+		if (strcmp(wadfiles[i]->filename, buf+1) == 0) // buf+1 - skip "@"
+			break;
+	}
+
+	return (i < numwadfiles) && !wadfiles[i]->important;
+}
+
 // P_MOBJ
 ////////////
 
@@ -377,7 +403,9 @@ static int lib_pSpawnMobj(lua_State *L)
 	NOHUD
 	if (type >= NUMMOBJTYPES)
 		return luaL_error(L, "mobj type %d out of range (0 - %d)", type, NUMMOBJTYPES-1);
-	LUA_PushUserdata(L, P_SpawnMobj(x, y, z, type), META_MOBJ);
+	mobj_t *th = P_SpawnMobj(x, y, z, type);
+	th->islocal = checkLocalAddon(L);
+	LUA_PushUserdata(L, th, META_MOBJ);
 	return 1;
 }
 
@@ -403,7 +431,9 @@ static int lib_pSpawnMissile(lua_State *L)
 		return LUA_ErrInvalid(L, "mobj_t");
 	if (type >= NUMMOBJTYPES)
 		return luaL_error(L, "mobj type %d out of range (0 - %d)", type, NUMMOBJTYPES-1);
-	LUA_PushUserdata(L, P_SpawnMissile(source, dest, type), META_MOBJ);
+	mobj_t *th = P_SpawnMissile(source, dest, type);
+	th->islocal = checkLocalAddon(L);
+	LUA_PushUserdata(L, th, META_MOBJ);
 	return 1;
 }
 
@@ -420,7 +450,9 @@ static int lib_pSpawnXYZMissile(lua_State *L)
 		return LUA_ErrInvalid(L, "mobj_t");
 	if (type >= NUMMOBJTYPES)
 		return luaL_error(L, "mobj type %d out of range (0 - %d)", type, NUMMOBJTYPES-1);
-	LUA_PushUserdata(L, P_SpawnXYZMissile(source, dest, type, x, y, z), META_MOBJ);
+	mobj_t *th = P_SpawnXYZMissile(source, dest, type, x, y, z);
+	th->islocal = checkLocalAddon(L);
+	LUA_PushUserdata(L, th, META_MOBJ);
 	return 1;
 }
 
@@ -439,7 +471,9 @@ static int lib_pSpawnPointMissile(lua_State *L)
 		return LUA_ErrInvalid(L, "mobj_t");
 	if (type >= NUMMOBJTYPES)
 		return luaL_error(L, "mobj type %d out of range (0 - %d)", type, NUMMOBJTYPES-1);
-	LUA_PushUserdata(L, P_SpawnPointMissile(source, xa, ya, za, type, x, y, z), META_MOBJ);
+	mobj_t *th = P_SpawnPointMissile(source, xa, ya, za, type, x, y, z);
+	th->islocal = checkLocalAddon(L);
+	LUA_PushUserdata(L, th, META_MOBJ);
 	return 1;
 }
 
@@ -456,7 +490,9 @@ static int lib_pSpawnAlteredDirectionMissile(lua_State *L)
 		return LUA_ErrInvalid(L, "mobj_t");
 	if (type >= NUMMOBJTYPES)
 		return luaL_error(L, "mobj type %d out of range (0 - %d)", type, NUMMOBJTYPES-1);
-	LUA_PushUserdata(L, P_SpawnAlteredDirectionMissile(source, type, x, y, z, shiftingAngle), META_MOBJ);
+	mobj_t *th = P_SpawnAlteredDirectionMissile(source, type, x, y, z, shiftingAngle);
+	th->islocal = checkLocalAddon(L);
+	LUA_PushUserdata(L, th, META_MOBJ);
 	return 1;
 }
 
@@ -485,7 +521,9 @@ static int lib_pSPMAngle(lua_State *L)
 		return LUA_ErrInvalid(L, "mobj_t");
 	if (type >= NUMMOBJTYPES)
 		return luaL_error(L, "mobj type %d out of range (0 - %d)", type, NUMMOBJTYPES-1);
-	LUA_PushUserdata(L, P_SPMAngle(source, type, angle, allowaim, flags2), META_MOBJ);
+	mobj_t *th = P_SPMAngle(source, type, angle, allowaim, flags2);
+	th->islocal = checkLocalAddon(L);
+	LUA_PushUserdata(L, th, META_MOBJ);
 	return 1;
 }
 
@@ -499,7 +537,9 @@ static int lib_pSpawnPlayerMissile(lua_State *L)
 		return LUA_ErrInvalid(L, "mobj_t");
 	if (type >= NUMMOBJTYPES)
 		return luaL_error(L, "mobj type %d out of range (0 - %d)", type, NUMMOBJTYPES-1);
-	LUA_PushUserdata(L, P_SpawnPlayerMissile(source, type, flags2), META_MOBJ);
+	mobj_t *th = P_SpawnPlayerMissile(source, type, flags2);
+	th->islocal = checkLocalAddon(L);
+	LUA_PushUserdata(L, th, META_MOBJ);
 	return 1;
 }
 
