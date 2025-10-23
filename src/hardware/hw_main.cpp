@@ -5495,6 +5495,9 @@ void HWR_RenderViewpoint(gl_portal_t *rootportal, player_t *player, int stencil_
 
 	PS_STOP_TIMING(ps_bsptime);
 
+	if (LIKELY(cv_glbatching.value))
+		HWR_RenderBatches();
+
 	if constexpr (Type == RenderViewpointType::kPortal)
 	{
 		if (skyWallVertexArraySize) // if there are skywalls to draw using the alternate method
@@ -5523,8 +5526,6 @@ void HWR_RenderViewpoint(gl_portal_t *rootportal, player_t *player, int stencil_
 		HWR_DrawSprites<DrawSpritesType::kSprites>();
 	PS_STOP_TIMING(ps_hw_spritedrawtime);
 
-	if (LIKELY(cv_glbatching.value))
-		HWR_RenderBatches();
 
 	ps_numdrawnodes.value.i    = 0;
 	ps_hw_nodesorttime.value.p = 0;
