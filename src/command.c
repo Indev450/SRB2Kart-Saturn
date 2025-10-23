@@ -700,6 +700,7 @@ static void COM_Echo_f(void)
 
 	for (i = 1; i < COM_Argc(); i++)
 		CONS_Printf("%s ", COM_Argv(i));
+
 	CONS_Printf("\n");
 }
 
@@ -708,11 +709,11 @@ static void COM_Echo_f(void)
 static void COM_CEcho_f(void)
 {
 	size_t i;
-	char cechotext[1024] = "";
+	char cechotext[1024] = {0};
 
 	for (i = 1; i < COM_Argc(); i++)
 	{
-		strlcpy(cechotext, COM_Argv(i), sizeof(cechotext)-1);
+		strlcat(cechotext, COM_Argv(i), sizeof(cechotext)-1);
 		strlcat(cechotext, " ", sizeof(cechotext)-1);
 	}
 
