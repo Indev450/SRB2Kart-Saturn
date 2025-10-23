@@ -719,15 +719,11 @@ static void JoyReset(SDLJoyInfo_t *JoySet)
 	{
 		SDL_GameControllerClose(JoySet->dev);
 	}
+
 	JoySet->dev = NULL;
 	JoySet->oldjoy = -1;
 	JoySet->axises = JoySet->buttons = JoySet->hats = JoySet->balls = 0;
-	//JoySet->scale
 }
-
-/**	\brief joystick up and running
-*/
-static INT32 joystick_started[MAXSPLITSCREENPLAYERS] = {0, 0, 0, 0};
 
 /**	\brief SDL info about joystick
 */
@@ -788,10 +784,12 @@ void I_UpdateJoystickDeviceIndex(UINT8 player)
 	else
 	{
 		UINT8 joystickID, compareJoystick;
+
 		for (joystickID = 0; joystickID < MAXSPLITSCREENPLAYERS; joystickID++)
 		{
 			// is this cv_usejoystick used?
 			const INT32 value = atoi(cv_usejoystick[joystickID].string);
+
 			for (compareJoystick = 0; compareJoystick < MAXSPLITSCREENPLAYERS; compareJoystick++)
 			{
 				if (compareJoystick == player)
@@ -799,6 +797,7 @@ void I_UpdateJoystickDeviceIndex(UINT8 player)
 				if (value == JoyInfo[compareJoystick].oldjoy || value == cv_usejoystick[compareJoystick].value)
 					break;
 			}
+
 			if (compareJoystick == MAXSPLITSCREENPLAYERS)
 			{
 				// We DID make it through the whole loop, so we can use this one!
@@ -806,6 +805,7 @@ void I_UpdateJoystickDeviceIndex(UINT8 player)
 				break;
 			}
 		}
+
 		if (joystickID == MAXSPLITSCREENPLAYERS)
 		{
 			// We DID NOT make it through the whole loop, so we can't assign this joystick to anything.
@@ -828,14 +828,6 @@ void I_UpdateJoystickDeviceIndices(UINT8 excludePlayer)
 	}
 }
 
-/**	\brief Joystick buttons states
-*/
-static UINT64 lastjoybuttons[MAXSPLITSCREENPLAYERS] = {0,0,0,0};
-
-/**	\brief Joystick hats state
-*/
-static UINT64 lastjoyhats[MAXSPLITSCREENPLAYERS] = {0,0,0,0};
-
 /**	\brief	Shuts down joystick
 	\return void
 */
@@ -847,72 +839,32 @@ void I_ShutdownJoystick(UINT8 index)
 	event.data2 = 0;
 	event.data3 = 0;
 
-	lastjoybuttons[index] = lastjoyhats[index] = 0;
-
 	// emulate the up of all joystick buttons
 	for (i = 0; i < JOYBUTTONS; i++)
 	{
-		event.data1=KEY_JOY1 + i;
+		event.data1 = KEY_JOY1 + i;
 		D_PostEvent(&event);
 	}
 
 	// emulate the up of all joystick hats
 	for (i = 0; i < JOYHATS*4; i++)
 	{
-		event.data1=KEY_HAT1+i;
+		event.data1 = KEY_HAT1+i;
 		D_PostEvent(&event);
 	}
 
 	// reset joystick position
 	event.type = ev_joystick;
+
 	for (i = 0; i < JOYAXISSET; i++)
 	{
 		event.data1 = i;
 		D_PostEvent(&event);
 	}
 
-	joystick_started[index] = 0;
 	JoyReset(&JoyInfo[index]);
 
 	// don't shut down the subsystem here, because hotplugging
-}
-
-void I_GetJoystickEvents(UINT8 index)
-{
-	static event_t event = {};
-	INT32 i = 0;
-	UINT64 joyhats = 0;
-
-	if (!joystick_started[index])
-		return;
-
-	if (!JoyInfo[index].dev) //I_ShutdownJoystick();
-		return;
-
-	joyhats |= SDL_GameControllerGetButton(JoyInfo[index].dev, SDL_CONTROLLER_BUTTON_DPAD_UP);
-	joyhats |= SDL_GameControllerGetButton(JoyInfo[index].dev, SDL_CONTROLLER_BUTTON_DPAD_DOWN) << 1;
-	joyhats |= SDL_GameControllerGetButton(JoyInfo[index].dev, SDL_CONTROLLER_BUTTON_DPAD_LEFT) << 2;
-	joyhats |= SDL_GameControllerGetButton(JoyInfo[index].dev, SDL_CONTROLLER_BUTTON_DPAD_RIGHT) << 3;
-
-	if (joyhats != lastjoyhats[index])
-	{
-		INT64 j = 1; // keep only bits that changed since last time
-		INT64 newhats = joyhats ^ lastjoyhats[index];
-		lastjoyhats[index] = joyhats;
-
-		for (i = 0; i < JOYHATS*4; i++, j <<= 1)
-		{
-			if (newhats & j) // hat changed state?
-			{
-				if (joyhats & j)
-					event.type = ev_keydown;
-				else
-					event.type = ev_keyup;
-				event.data1 = KEY_HAT1 + i;
-				D_PostEvent(&event);
-			}
-		}
-	}
 }
 
 /**	\brief	Open joystick handle
@@ -931,6 +883,7 @@ static int joy_open(int playerIndex, int joyIndex)
 		CONS_Printf(M_GetText("Joystick subsystem not started\n"));
 		return -1;
 	}
+
 	if (SDL_WasInit(SDL_INIT_GAMECONTROLLER) == 0)
 	{
 		CONS_Printf(M_GetText("Game Controller subsystem not started\n"));
@@ -965,6 +918,7 @@ static int joy_open(int playerIndex, int joyIndex)
 		if (JoyInfo[playerIndex].dev == newdev // same device, nothing to do
 			|| (newdev == NULL && SDL_GameControllerGetAttached(JoyInfo[playerIndex].dev))) // we failed, but already have a working device
 			return SDL_CONTROLLER_AXIS_MAX;
+
 		// Else, we're changing devices, so send neutral joy events
 		CONS_Debug(DBG_GAMELOGIC, "Joystick1 device is changing; resetting events...\n");
 		I_ShutdownJoystick(playerIndex);
@@ -1058,14 +1012,13 @@ void I_InitJoystick(UINT8 index)
 		// SDL's device indexes are unstable, so cv_usejoystick may not match
 		// the actual device index. So let's cheat a bit and find the device's current index.
 		JoyInfo[index].oldjoy = I_GetJoystickDeviceIndex(JoyInfo[index].dev) + 1;
-		joystick_started[index] = 1;
 	}
 	else
 	{
 		if (JoyInfo[index].oldjoy)
 			I_ShutdownJoystick(index);
+
 		cv_usejoystick[index].value = 0;
-		joystick_started[index] = 0;
 	}
 
 	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
@@ -1130,8 +1083,10 @@ static void I_ShutdownInput(void)
 INT32 I_NumJoys(void)
 {
 	INT32 numjoy = 0;
+
 	if (SDL_WasInit(SDL_INIT_JOYSTICK) == SDL_INIT_JOYSTICK)
 		numjoy = SDL_NumJoysticks();
+
 	return numjoy;
 }
 
@@ -1142,15 +1097,18 @@ const char *I_GetJoyName(INT32 joyindex)
 	const char *tempname = NULL;
 	joyname[0] = 0;
 	joyindex--; //SDL's Joystick System starts at 0, not 1
+
 	if (SDL_WasInit(SDL_INIT_JOYSTICK) == SDL_INIT_JOYSTICK)
 	{
 		tempname = SDL_JoystickNameForIndex(joyindex);
+
 		if (tempname)
 		{
 			memcpy(joyname, tempname, 255);
 			joyname[255] = '\0';
 		}
 	}
+
 	return joyname;
 }
 
