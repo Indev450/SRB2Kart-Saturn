@@ -721,6 +721,7 @@ static void JoyReset(SDLJoyInfo_t *JoySet)
 	}
 
 	JoySet->dev = NULL;
+	JoySet->id = -1;
 	JoySet->oldjoy = -1;
 	JoySet->axises = JoySet->buttons = JoySet->hats = JoySet->balls = 0;
 }
@@ -779,7 +780,7 @@ void I_UpdateJoystickDeviceIndex(UINT8 player)
 	///////////////////////////////////////////////
 	if (JoyInfo[player].dev)
 	{
-		cv_usejoystick[player].value = I_GetJoystickDeviceIndex(JoyInfo[player].dev) + 1;
+		cv_usejoystick[player].value = JoyInfo[player].id + 1;
 	}
 	else
 	{
@@ -794,6 +795,7 @@ void I_UpdateJoystickDeviceIndex(UINT8 player)
 			{
 				if (compareJoystick == player)
 					continue;
+
 				if (value == JoyInfo[compareJoystick].oldjoy || value == cv_usejoystick[compareJoystick].value)
 					break;
 			}
@@ -925,6 +927,7 @@ static int joy_open(int playerIndex, int joyIndex)
 	}
 
 	JoyInfo[playerIndex].dev = newdev;
+	JoyInfo[playerIndex].id = I_GetJoystickDeviceIndex(JoyInfo[playerIndex].dev);
 
 	if (JoyInfo[playerIndex].dev == NULL)
 	{
@@ -1003,15 +1006,17 @@ void I_InitJoystick(UINT8 index)
 			break;
 	}
 
+	JoyInfo[index].id = I_GetJoystickDeviceIndex(JoyInfo[index].dev);
+
 	if (newcontroller && i < MAXSPLITSCREENPLAYERS) // don't override an active device
 	{
-		cv_usejoystick[index].value = I_GetJoystickDeviceIndex(JoyInfo[index].dev) + 1;
+		cv_usejoystick[index].value = JoyInfo[index].id + 1;
 	}
 	else if (newcontroller && joy_open(index, cv_usejoystick[index].value) != -1)
 	{
 		// SDL's device indexes are unstable, so cv_usejoystick may not match
 		// the actual device index. So let's cheat a bit and find the device's current index.
-		JoyInfo[index].oldjoy = I_GetJoystickDeviceIndex(JoyInfo[index].dev) + 1;
+		JoyInfo[index].oldjoy = JoyInfo[index].id + 1;
 	}
 	else
 	{
