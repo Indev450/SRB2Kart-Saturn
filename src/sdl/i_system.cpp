@@ -721,8 +721,8 @@ static void JoyReset(SDLJoyInfo_t *JoySet)
 	}
 
 	JoySet->dev = NULL;
-	JoySet->id = -1;
 	JoySet->oldjoy = -1;
+	JoySet->id = -1;
 	JoySet->axises = JoySet->buttons = JoySet->hats = JoySet->balls = 0;
 }
 
@@ -993,6 +993,11 @@ void I_InitJoystick(UINT8 index)
 			return;
 		}
 	}
+
+	JoyInfo[index].dev = NULL;
+	JoyInfo[index].oldjoy = -1;
+	JoyInfo[index].id = -1;
+	JoyInfo[index].axises = JoyInfo[index].buttons = JoyInfo[index].hats = JoyInfo[index].balls = 0;
 
 	if (cv_usejoystick[index].value)
 		newcontroller = SDL_GameControllerOpen(cv_usejoystick[index].value-1);
