@@ -73,7 +73,7 @@ write netcode into the sound code, OKAY?
 
 
 //static UINT16 BUFFERSIZE = 2048;
-static UINT16 SAMPLERATE = 44100;
+static const UINT16 SAMPLERATE = 44100;
 
 #ifdef HAVE_OPENMPT
 #include "libopenmpt/libopenmpt.h"
