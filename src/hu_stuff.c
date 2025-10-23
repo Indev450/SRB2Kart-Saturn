@@ -2846,12 +2846,8 @@ void HU_SetCEchoFlags(INT32 flags)
 
 void HU_DoCEcho(const char *msg)
 {
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wstringop-truncation" // This is fine, we set null byte later
-	strncpy(cechotext, msg, sizeof(cechotext));
-#pragma GCC diagnostic pop
-	strncat(cechotext, "\\", sizeof(cechotext) - strlen(cechotext) - 1);
-	cechotext[sizeof(cechotext) - 1] = '\0';
+	strlcpy(cechotext, msg, sizeof(cechotext));
+	strlcat(cechotext, "\\", sizeof(cechotext));
 
 	// just print it to console
 	if (cv_cechotoggle.value == 2)
