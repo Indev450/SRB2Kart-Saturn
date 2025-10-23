@@ -1817,7 +1817,7 @@ void S_ChangeMusicEx(const char *mmusic, UINT16 mflags, boolean looping, UINT32 
 	}
 }
 
-void S_ChangeMusicSpecial (const char *mmusic)
+void S_ChangeMusicSpecial(const char *mmusic)
 {
 	if (cv_resetspecialmusic.value)
 		S_ChangeMusic(mmusic, MUSIC_FORCERESET, true);
