@@ -1935,6 +1935,7 @@ UINT8 *V_GetStringColormap(INT32 colorflags)
 void V_DrawCharacter(INT32 x, INT32 y, INT32 c, boolean lowercaseallowed)
 {
 	INT32 w, flags;
+	const UINT8 *colormap = V_GetStringColormap(c);
 
 	flags = c & ~(V_CHARCOLORMASK | V_PARAMMASK);
 	c &= 0x7f;
@@ -1949,8 +1950,6 @@ void V_DrawCharacter(INT32 x, INT32 y, INT32 c, boolean lowercaseallowed)
 	w = hu_font[c]->width;
 	if (x + w > vid.width)
 		return;
-
-	const UINT8 *colormap = V_GetStringColormap(c);
 
 	if (colormap != NULL)
 		V_DrawMappedPatch(x, y, flags, hu_font[c], colormap);

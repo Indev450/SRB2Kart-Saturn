@@ -2855,8 +2855,20 @@ void HU_DoCEcho(const char *msg)
 		strncpy(temp, cechotext, sizeof(temp));
 
 		for (char *p = temp; *p != '\0'; ++p)
+		{
 			if (*p == '\\')
+			{
 				*p = '\n';
+				++p;
+				char *skip_p = p; // Point at which we will move part of string after all \'s
+
+				while (*p == '\\')
+					++p;
+
+				memmove(skip_p, p, strlen(p)+1); // move the rest of string with null byte
+				p = skip_p; // Restore p
+			}
+		}
 
 		CONS_Printf("%s\n", temp);
 
