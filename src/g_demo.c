@@ -3416,18 +3416,7 @@ void G_StopDemo(void)
 	if (gamestate == GS_VOTING)
 		Y_EndVote();
 
-	M_ClearMenus(true);
-
-	G_SetGamestate(GS_NULL);
-	wipegamestate = GS_NULL;
-	SV_StopServer();
-	SV_ResetServer();
-
-	if (gamestate == GS_LEVEL && rendermode != render_none)
-	{
-		V_SetPaletteLump("PLAYPAL"); // Reset the palette
-		R_ReInitColormaps(0, LUMPERROR);
-	}
+	D_ClearState();
 }
 
 // Stops timing a demo.
