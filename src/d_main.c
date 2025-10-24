@@ -979,6 +979,8 @@ void D_ClearState(void)
 {
 	INT32 i;
 
+	demo.title = false;
+
 	// okay, stop now
 	// (otherwise the game still thinks we're playing!)
 	CURLAbortFile();
@@ -1034,6 +1036,9 @@ void D_ClearState(void)
 	wipegamestate = GS_NULL;
 
 	M_ClearMenus(true);
+
+	// map palettes affect this
+	D_ResetDeviceLED();
 }
 
 //
@@ -1041,12 +1046,9 @@ void D_ClearState(void)
 //
 void D_StartTitle(void)
 {
-	demo.title = false;
 	D_ClearState();
-	multiplayer = false; // reset manually
-	netgame = false; // title menu shouldnt be a netgame lmao
+	multiplayer = netgame = false; // title menu shouldnt be a netgame or multiplayer lmao
 	F_StartTitleScreen();
-	D_ResetDeviceLED();
 }
 
 //
