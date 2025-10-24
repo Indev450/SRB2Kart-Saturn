@@ -759,8 +759,6 @@ static void Command_Manual_f(void)
 	itemOn = 0;
 }
 
-boolean dpadscrollstate[4] = {false, false, false, false};
-
 //
 // M_Responder
 //
@@ -807,19 +805,15 @@ boolean M_Responder(event_t *ev)
 				break;
 			case KEY_HAT1:
 				ch = KEY_UPARROW;
-				dpadscrollstate[DPAD_UP] = true;
 				break;
 			case KEY_HAT1 + 1:
 				ch = KEY_DOWNARROW;
-				dpadscrollstate[DPAD_DOWN] = true;
 				break;
 			case KEY_HAT1 + 2:
 				ch = KEY_LEFTARROW;
-				dpadscrollstate[DPAD_LEFT] = true;
 				break;
 			case KEY_HAT1 + 3:
 				ch = KEY_RIGHTARROW;
-				dpadscrollstate[DPAD_RIGHT] = true;
 				break;
 		}
 
@@ -833,24 +827,6 @@ boolean M_Responder(event_t *ev)
 					COM_ImmedExecute("add kartencore 1");
 				}
 			}
-		}
-	}
-	else if (ev->type == ev_keyup)
-	{
-		switch (ev->data1) // if you let go of those set those to false
-		{
-			case KEY_HAT1:
-				dpadscrollstate[DPAD_UP] = false;
-				break;
-			case KEY_HAT1 + 1:
-				dpadscrollstate[DPAD_DOWN] = false;
-				break;
-			case KEY_HAT1 + 2:
-				dpadscrollstate[DPAD_LEFT] = false;
-				break;
-			case KEY_HAT1 + 3:
-				dpadscrollstate[DPAD_RIGHT] = false;
-				break;
 		}
 	}
 	else if (menuactive)
@@ -1730,6 +1706,9 @@ void M_Ticker(void)
 
 	if (dedicated)
 		return;
+
+	if (menuactive)
+		I_HandleControllerHatRepeat();
 
 	if (--skullAnimCounter <= 0)
 		skullAnimCounter = 8;

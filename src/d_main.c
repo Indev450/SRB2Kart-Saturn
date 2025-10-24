@@ -165,57 +165,6 @@ UINT8 ctrldown = 0; // 0x1 left, 0x2 right
 UINT8 altdown = 0; // 0x1 left, 0x2 right
 boolean capslock = 0;	// gee i wonder what this does.
 
-static void D_PadMenuScrollInput(UINT8 input)
-{
-	event_t dpadev;
-	memset(&dpadev, 0, sizeof(event_t));
-	dpadev.type = ev_keydown;
-
-	switch (input)
-	{
-		case DPAD_UP:
-			dpadev.data1 = KEY_UPARROW;
-			break;
-		case DPAD_DOWN:
-			dpadev.data1 = KEY_DOWNARROW;
-			break;
-		case DPAD_LEFT:
-			dpadev.data1 = KEY_LEFTARROW;
-			break;
-		case DPAD_RIGHT:
-			dpadev.data1 = KEY_RIGHTARROW;
-			break;
-	}
-
-	D_PostEvent(&dpadev); // put into eventlist
-}
-
-#define SCROLLDELAY 19
-
-// Check if any dpad button is held
-// and pass it to the eventlist
-static void D_GamePadMenuScrollTicker(void)
-{
-	UINT8 i;
-	static UINT8 menuInputDelayTimer = 0;
-
-	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
-	{
-		if (dpadscrollstate[i])
-		{
-			if (menuInputDelayTimer < SCROLLDELAY)
-				menuInputDelayTimer++;
-			else if (menuInputDelayTimer == SCROLLDELAY)
-				D_PadMenuScrollInput(i);
-
-			return;
-		}
-	}
-
-	menuInputDelayTimer = 0;
-}
-#undef SCROLLDELAY
-
 static UINT16 curcolor[MAXSPLITSCREENPLAYERS] = {0};
 
 static void D_DeviceLEDTick(void)
@@ -901,11 +850,6 @@ void D_SRB2Loop(void)
 
 			if (!dedicated)
 			{
-				if (menuactive)
-				{
-					D_GamePadMenuScrollTicker();
-				}
-
 				D_DeviceLEDTick();
 			}
 		}

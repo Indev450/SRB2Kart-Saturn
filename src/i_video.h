@@ -143,6 +143,8 @@ boolean I_CheckNativeRes(void);
 
 void I_SetBorderlessWindow(void);
 
+void I_HandleControllerHatRepeat(void);
+
 #ifdef USE_FBO_OGL
 extern float InvSupersampleFactorX;
 extern float InvSupersampleFactorY;
