@@ -262,9 +262,6 @@ void G_ResetControls(void)
 
 	memset(joyxmove, 0, sizeof(joyxmove));
 	memset(joyymove, 0, sizeof(joyymove));
-
-	// reset those just in case the game missed the keyup event
-	memset(dpadscrollstate, false, sizeof(dpadscrollstate));
 }
 
 //
