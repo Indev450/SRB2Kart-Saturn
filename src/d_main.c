@@ -2163,11 +2163,14 @@ void D_SRB2Main(void)
 			const char *sskill = M_GetNextParm();
 
 			for (j = 0; kartspeed_cons_t[j].strvalue; j++)
-				if (!strcasecmp(kartspeed_cons_t[j].strvalue, sskill))
+			{
+				if (fasticmp(kartspeed_cons_t[j].strvalue, sskill))
 				{
 					newskill = (INT16)kartspeed_cons_t[j].value;
 					break;
 				}
+			}
+
 			if (!kartspeed_cons_t[j].strvalue) // reached end of the list with no match
 			{
 				j = atoi(sskill); // assume they gave us a skill number, which is okay too
