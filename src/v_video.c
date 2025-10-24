@@ -1739,26 +1739,28 @@ void V_DrawHorizontallyScaledFullScreenPatch(patch_t *patch)
 
 void V_DrawVhsEffect(boolean rewind)
 {
+	fixed_t uby, dby;
 	static fixed_t upbary = 100*FRACUNIT, downbary = 150*FRACUNIT;
 
-	UINT8 *buf = vid.screens[0], *tmp = vid.screens[4];
-	UINT16 y;
-	UINT32 x, pos = 0;
+	UINT8 barsize, updistort, downdistort;
 
-	UINT8 *normalmapstart = ((UINT8 *)transtables + (8<<FF_TRANSSHIFT|(19<<8)));
+	UINT16 y;
+	UINT32 x, pos;
+
+	UINT8 *buf, *tmp;
+	UINT8 *normalmapstart, *thismapstart;
 #ifdef HQ_VHS
-	UINT8 *tmapstart = ((UINT8 *)transtables + (6<<FF_TRANSSHIFT));
+	UINT8 *tmapstart;
 #endif
-	UINT8 *thismapstart;
 	SINT8 offs;
 
-	UINT8 barsize = vid.dup<<5;
+	barsize = vid.dup << 5;
 	barsize *= (((vid.height > 1440) && (cv_highreshudscale.value > 1)) ? 3 : 1);
 
-	UINT8 updistort = vid.dup<<(rewind ? 5 : 3);
+	updistort = vid.dup << (rewind ? 5 : 3);
 	updistort *= (((vid.height > 1440) && (cv_highreshudscale.value > 1)) ? 3 : 1);
 
-	UINT8 downdistort = updistort>>1;
+	downdistort = updistort >> 1;
 
 	if (rewind)
 		V_DrawVhsEffect(false); // experimentation
@@ -1767,11 +1769,12 @@ void V_DrawVhsEffect(boolean rewind)
 	downbary += renderdeltatics * (vid.dup * (rewind ? 2 : 1));
 
 	if (upbary < -barsize*FRACUNIT)
-		upbary = vid.height<<FRACBITS;
-	if (downbary > vid.height<<FRACBITS)
+		upbary = vid.height << FRACBITS;
+	if (downbary > vid.height << FRACBITS)
 		downbary = -barsize*FRACUNIT;
 
-	fixed_t uby = upbary>>FRACBITS, dby = downbary>>FRACBITS;
+	uby = upbary >> FRACBITS;
+	dby = downbary >> FRACBITS;
 
 #ifdef HWRENDER
 	if (rendermode == render_opengl)
@@ -1780,6 +1783,16 @@ void V_DrawVhsEffect(boolean rewind)
 		return;
 	}
 #endif
+
+	buf = vid.screens[0];
+	tmp = vid.screens[4];
+
+	normalmapstart = ((UINT8 *)transtables + (8<<FF_TRANSSHIFT|(19<<8)));
+#ifdef HQ_VHS
+	tmapstart = ((UINT8 *)transtables + (6<<FF_TRANSSHIFT));
+#endif
+
+	pos = 0;
 
 	for (y = 0; y < vid.height; y+=2)
 	{
@@ -1913,8 +1926,10 @@ UINT8 *V_GetStringColormap(INT32 colorflags)
 	}
 #else // optimised
 	colorflags = ((colorflags & V_CHARCOLORMASK) >> V_CHARCOLORSHIFT);
+
 	if (!colorflags || colorflags > 15) // INT32 is signed, but V_CHARCOLORMASK is a very restrictive mask.
 		return NULL;
+
 	return (purplemap+((colorflags-1)<<8));
 #endif
 }
@@ -1924,7 +1939,6 @@ UINT8 *V_GetStringColormap(INT32 colorflags)
 void V_DrawCharacter(INT32 x, INT32 y, INT32 c, boolean lowercaseallowed)
 {
 	INT32 w, flags;
-	const UINT8 *colormap = V_GetStringColormap(c);
 
 	flags = c & ~(V_CHARCOLORMASK | V_PARAMMASK);
 	c &= 0x7f;
@@ -1939,6 +1953,8 @@ void V_DrawCharacter(INT32 x, INT32 y, INT32 c, boolean lowercaseallowed)
 	w = hu_font[c]->width;
 	if (x + w > vid.width)
 		return;
+
+	const UINT8 *colormap = V_GetStringColormap(c);
 
 	if (colormap != NULL)
 		V_DrawMappedPatch(x, y, flags, hu_font[c], colormap);
@@ -2004,6 +2020,7 @@ char *V_WordWrap(INT32 x, INT32 w, INT32 option, const char *string)
 	for (i = 0; i < slen; ++i)
 	{
 		c = newstring[i];
+
 		if ((UINT8)c >= 0x80 && (UINT8)c <= 0x8F) //color parsing! -Inuyasha 2.16.09
 			continue;
 
