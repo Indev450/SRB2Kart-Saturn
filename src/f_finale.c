@@ -963,6 +963,7 @@ void F_StartTitleScreen(void)
 		finalecount = 0;
 	else
 		wipegamestate = GS_TITLESCREEN;
+
 	G_SetGamestate(GS_TITLESCREEN);
 	CON_ClearHUD();
 

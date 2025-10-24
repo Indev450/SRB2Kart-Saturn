@@ -1015,6 +1015,24 @@ void D_SRB2Loop(void)
 // D_SRB2Main
 // =========================================================================
 
+static void ResetSplitScreen(void)
+{
+	UINT8 i;
+
+	// recompute screen size
+	R_ExecuteSetViewSize();
+
+	if (!demo.playback && !botingame)
+	{
+		for (i = 1; i < MAXSPLITSCREENPLAYERS; i++)
+		{
+			if (i > splitscreen)
+				CL_RemoveSplitscreenPlayer(displayplayers[i]);
+			else
+				CL_AddSplitscreenPlayer();
+		}
+	}
+}
 //
 // D_ClearState
 //
@@ -1024,6 +1042,7 @@ void D_ClearState(void)
 
 	// okay, stop now
 	// (otherwise the game still thinks we're playing!)
+	CURLAbortFile();
 	SV_StopServer();
 	SV_ResetServer();
 	serverlistultimatecount = 0;
@@ -1032,7 +1051,8 @@ void D_ClearState(void)
 		CL_ClearPlayer(i);
 
 	splitscreen = 0;
-	SplitScreen_OnChange();
+	ResetSplitScreen(); // splitscreen onchange resets us to singleplayer :chaosleep:
+
 	botingame = false;
 	botskin = 0;
 	cv_debug = 0;
@@ -1051,7 +1071,6 @@ void D_ClearState(void)
 	gameaction = ga_nothing;
 	memset(displayplayers, 0, sizeof(displayplayers));
 	consoleplayer = 0;
-	//demosequence = -1;
 	gametype = GT_RACE; // SRB2kart
 	paused = false;
 
@@ -1074,6 +1093,8 @@ void D_ClearState(void)
 
 	G_SetGamestate(GS_NULL);
 	wipegamestate = GS_NULL;
+
+	M_ClearMenus(true);
 }
 
 //
@@ -1083,8 +1104,8 @@ void D_StartTitle(void)
 {
 	demo.title = false;
 	D_ClearState();
+	multiplayer = false; // reset manually
 	netgame = false; // title menu shouldnt be a netgame lmao
-	M_ClearMenus(true);
 	F_StartTitleScreen();
 	D_ResetDeviceLED();
 }
