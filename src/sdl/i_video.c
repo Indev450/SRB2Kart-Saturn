@@ -721,7 +721,7 @@ static void Impl_HandleMouseWheelEvent(SDL_MouseWheelEvent evt)
 	}
 }
 
-static Uint32 hatrepeattimer[MAXSPLITSCREENPLAYERS];
+static UINT8 hatrepeattimer[MAXSPLITSCREENPLAYERS];
 #define HATREPEATDELAY 19
 
 void I_HandleControllerHatRepeat(void)
