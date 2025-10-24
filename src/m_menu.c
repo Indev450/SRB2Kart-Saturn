@@ -9643,7 +9643,7 @@ static void M_DrawLocalSkinMenu(void)
 
 	//this is a very shitty solution for checking if a sprite needs flipping
 	//but it works
-	if ((sprframe->lumppat[speenframe] == sprframe->lumppat[8-speenframe]) && (speenframe > 4))
+	if ((speenframe > 4) && (sprframe->lumppat[speenframe] == sprframe->lumppat[8-speenframe]))
 	{
 		flags = V_FLIP; // This sprite is left/right flipped!
 	}
