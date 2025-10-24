@@ -277,7 +277,7 @@ static void DRPC_HandleJoinRequest(const DiscordUser *requestUser)
 		while (append != NULL)
 		{
 			// CHECK FOR DUPES!! Ignore any that already exist from the same user.
-			if (!strcmp(newRequest->userID, append->userID))
+			if (fastcmp(newRequest->userID, append->userID))
 			{
 				Discord_Respond(newRequest->userID, DISCORD_REPLY_IGNORE);
 				DRPC_RemoveRequest(newRequest);
@@ -419,7 +419,7 @@ static const char *DRPC_GetServerIP(void)
 	// If you're connected
 	if (I_GetNodeAddress && (address = I_GetNodeAddress(servernode)) != NULL)
 	{
-		if (strcmp(address, "self"))
+		if (!fastcmp(address, "self"))
 		{
 			// We're not the server, so we could successfully get the IP!
 			// No need to do anything else :)
@@ -684,7 +684,7 @@ void DRPC_UpdatePresence(void)
 		// Character image
 		while (supportedSkins[checkSkin] != NULL)
 		{
-			if (!strcmp(skins[players[consoleplayer].skin].name, supportedSkins[checkSkin]))
+			if (fastcmp(skins[players[consoleplayer].skin].name, supportedSkins[checkSkin]))
 			{
 				snprintf(charimg, 21, "char%s", supportedSkins[checkSkin]);
 				discordPresence.smallImageKey = charimg;

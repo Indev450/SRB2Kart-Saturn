@@ -92,7 +92,7 @@ FUNCINLINE static ATTRINLINE unsigned hook_in_list
 
 	for (type = 0; list[type] != NULL; ++type)
 	{
-		if (strcmp(name, list[type]) == 0)
+		if (fastcmp(name, list[type]))
 			break;
 	}
 
@@ -254,7 +254,7 @@ static int lib_addHook(lua_State *L)
 	{
 		add_hook(&hookIds[type]);
 	}
-	/*else if (strcmp(name, "HUD") == 0) // ehh this is cool and all, but i dont want modders potentially breaking vanilla clients lol
+	/*else if (fastcmp(name, "HUD")) // ehh this is cool and all, but i dont want modders potentially breaking vanilla clients lol
 	{
 		add_hud_hook(L, 3);
 	}*/
@@ -840,7 +840,7 @@ typedef struct {
 
 FUNCINLINE static ATTRINLINE boolean checkbotkey(const char *field)
 {
-	return lua_toboolean(gL, -1) && strcmp(lua_tostring(gL, -2), field) == 0;
+	return lua_toboolean(gL, -1) && fastcmp(lua_tostring(gL, -2), field);
 }
 
 static void res_botai(Hook_State *hook)

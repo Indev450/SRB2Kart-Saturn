@@ -1507,9 +1507,9 @@ static void SendNameAndColor(void)
 			CV_StealthSet(&cv_playercolor, cv_playercolor.defaultvalue);
 	}
 
-	if (!strcmp(cv_playername.string, player_names[consoleplayer])
+	if (fastcmp(cv_playername.string, player_names[consoleplayer])
 		&& cv_playercolor.value == players[consoleplayer].skincolor
-		&& !strcmp(cv_skin.string, skins[players[consoleplayer].skin].name))
+		&& fastcmp(cv_skin.string, skins[players[consoleplayer].skin].name))
 		return;
 
 	// We'll handle it later if we're not playing.
@@ -2321,8 +2321,8 @@ static void Command_Playdemo_f(void)
 
 	CONS_Printf(M_GetText("Playing back demo '%s'.\n"), name);
 
-	demo.loadfiles = strcmp(COM_Argv(2), "-addfiles") == 0;
-	demo.ignorefiles = strcmp(COM_Argv(2), "-force") == 0;
+	demo.loadfiles = fastcmp(COM_Argv(2), "-addfiles");
+	demo.ignorefiles = fastcmp(COM_Argv(2), "-force");
 
 	// Internal if no extension, external if one exists
 	// If external, convert the file name to a path in SRB2's home directory
@@ -5208,14 +5208,14 @@ static void Ringslinger_OnChange(void)
 static void Gravity_OnChange(void)
 {
 	if (!M_SecretUnlocked(SECRET_PANDORA) && !netgame && !cv_debug
-		&& strcmp(cv_gravity.string, cv_gravity.defaultvalue))
+		&& !fastcmp(cv_gravity.string, cv_gravity.defaultvalue))
 	{
 		CONS_Printf(M_GetText("You haven't earned this yet.\n"));
 		CV_StealthSet(&cv_gravity, cv_gravity.defaultvalue);
 		return;
 	}
 #ifndef NETGAME_GRAVITY
-	if(netgame)
+	if (netgame)
 	{
 		CV_StealthSet(&cv_gravity, cv_gravity.defaultvalue);
 		return;

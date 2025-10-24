@@ -3475,7 +3475,8 @@ void G_LoadGameData(void)
 	if (READUINT32(save.p) != 0xFCAFE211)
 	{
 		const char *gdfolder = "the SRB2Kart folder";
-		if (strcmp(srb2home,"."))
+
+		if (!fastcmp(srb2home,"."))
 			gdfolder = srb2home;
 
 		Z_Free(save.buffer);
@@ -3559,7 +3560,8 @@ void G_LoadGameData(void)
 	datacorrupt:
 	{
 		const char *gdfolder = "the SRB2Kart folder";
-		if (strcmp(srb2home,"."))
+
+		if (!fastcmp(srb2home,"."))
 			gdfolder = srb2home;
 
 		Z_Free(save.buffer);
@@ -3770,7 +3772,8 @@ void G_LoadGame(UINT32 slot, INT16 mapoverride)
 
 	memset(vcheck, 0, sizeof (vcheck));
 	sprintf(vcheck, "version %d", VERSION);
-	if (strcmp((const char *)save.p, (const char *)vcheck))
+
+	if (!fastcmp((const char *)save.p, (const char *)vcheck))
 	{
 #ifdef SAVEGAME_OTHERVERSIONS
 		M_StartMessage(M_GetText("Save game from different version.\nYou can load this savegame, but\nsaving afterwards will be disabled.\n\nDo you want to continue anyway?\n\n(Press 'Y' to confirm)\n"),
@@ -4048,7 +4051,7 @@ char *G_BuildMapTitle(INT32 mapnum)
 	if (!mapheaderinfo[mapnum-1])
 		P_AllocMapHeader(mapnum-1);
 
-	if (strcmp(mapheaderinfo[mapnum-1]->lvlttl, ""))
+	if (!fastcmp(mapheaderinfo[mapnum-1]->lvlttl, ""))
 	{
 		size_t len = 1;
 		const char *zonetext = NULL;

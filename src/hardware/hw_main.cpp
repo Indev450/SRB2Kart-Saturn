@@ -5814,7 +5814,7 @@ static void COM_HWR_glinfo(void)
 	{
 		argv = COM_Argv(i);
 
-		if (strcmp(argv, "--list-extensions") == 0 || strcmp(argv, "-l") == 0)
+		if (fastcmp(argv, "--list-extensions")|| fastcmp(argv, "-l"))
 		{
 			list_extensions = 1;
 		}

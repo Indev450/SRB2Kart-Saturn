@@ -24,6 +24,8 @@
 
 #include "lauxlib.h"
 
+#include "lfastcmp.h"
+
 
 #define FREELIST_REF	0	/* free list of references */
 
@@ -40,7 +42,7 @@ LUALIB_API int luaL_argerror (lua_State *L, int narg, const char *extramsg) {
   if (!lua_getstack(L, 0, &ar))  /* no stack frame? */
     return luaL_error(L, "bad argument #%d (%s)", narg, extramsg);
   lua_getinfo(L, "n", &ar);
-  if (strcmp(ar.namewhat, "method") == 0) {
+  if (fastcmp(ar.namewhat, "method")) {
     narg--;  /* do not count `self' */
     if (narg == 0)  /* error is in the self argument itself? */
       return luaL_error(L, "calling " LUA_QS " on bad self (%s)",
@@ -97,7 +99,7 @@ LUALIB_API int luaL_checkoption (lua_State *L, int narg, const char *def,
                              luaL_checkstring(L, narg);
   int i;
   for (i=0; lst[i]; i++)
-    if (strcmp(lst[i], name) == 0)
+    if (fastcmp(lst[i], name))
       return i;
   return luaL_argerror(L, narg,
                        lua_pushfstring(L, "invalid option " LUA_QS, name));

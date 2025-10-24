@@ -1010,7 +1010,7 @@ boolean CON_Responder(event_t *ev)
 		Lock_state();
 
 		// Only add command to history if it differs from previous one
-		if (strcmp(input.buffer, inputlines[(inputline-1) & 31]))
+		if (!fastcmp(input.buffer, inputlines[(inputline-1) & 31]))
 		{
 			inputline = (inputline+1) & 31;
 			M_TextInputInit(&input, inputlines[inputline], CON_MAXPROMPTCHARS);

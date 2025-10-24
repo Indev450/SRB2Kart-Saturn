@@ -879,7 +879,7 @@ static void COM_Help_f(void)
 		{
 			for (cmd = com_commands; cmd; cmd = cmd->next)
 			{
-				if (strcmp(cmd->name, help))
+				if (!fastcmp(cmd->name, help))
 					continue;
 
 				CONS_Printf("\x82""Command %s:\n", cmd->name);
@@ -1610,7 +1610,7 @@ void CV_ResetCheatNetVars(void)
 // Returns true if the variable's current value is its default value
 boolean CV_IsSetToDefault(consvar_t *v)
 {
-	return (!(strcmp(v->defaultvalue, v->string)));
+	return (fastcmp(v->defaultvalue, v->string));
 }
 
 // If any cheats CVars are not at their default settings, return true.
@@ -1622,7 +1622,7 @@ UINT8 CV_CheatsEnabled(void)
 	consvar_t *cvar;
 
 	for (cvar = consvar_vars; cvar; cvar = cvar->next)
-		if ((cvar->flags & CV_CHEAT) && strcmp(cvar->defaultvalue, cvar->string))
+		if ((cvar->flags & CV_CHEAT) && !fastcmp(cvar->defaultvalue, cvar->string))
 			return 1;
 	return 0;
 }
@@ -1799,7 +1799,7 @@ void CV_AddValue(consvar_t *var, INT32 increment)
 		}
 #define MINVAL 0
 #define MAXVAL 1
-		else if (var->PossibleValue[MINVAL].strvalue && !strcmp(var->PossibleValue[MINVAL].strvalue, "MIN"))
+		else if (var->PossibleValue[MINVAL].strvalue && fastcmp(var->PossibleValue[MINVAL].strvalue, "MIN"))
 		{ // SRB2Kart
 #ifdef PARANOIA
 			if (!var->PossibleValue[MAXVAL].strvalue)
@@ -2139,7 +2139,7 @@ void CV_SaveVariables(FILE *f)
 			char stringtowrite[MAXTEXTCMD+1];
 
 			// Silly hack for Min/Max vars
-			if (!strcmp(cvar->string, "MAX") || !strcmp(cvar->string, "MIN"))
+			if (fastcmp(cvar->string, "MAX") || fastcmp(cvar->string, "MIN"))
 			{
 				if (cvar->flags & CV_FLOAT)
 					sprintf(stringtowrite, "%f", FixedToFloat(cvar->value));

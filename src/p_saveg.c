@@ -3391,7 +3391,7 @@ FUNCINLINE static ATTRINLINE void P_UnArchiveSPGame(savebuffer_t *save, INT16 ma
 
 	READSTRINGN(save->p, testname, sizeof(testname));
 
-	if (strcmp(testname, timeattackfolder))
+	if (!fastcmp(testname, timeattackfolder))
 	{
 		if (modifiedgame)
 			I_Error("Save game not for this modification.");

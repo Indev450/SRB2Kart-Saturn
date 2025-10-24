@@ -69,6 +69,8 @@ extern "C" {
 #include <sys/stat.h>
 #include <ctype.h>
 
+#include "fastcmp.h"
+
 #ifdef _WIN32
 #include <io.h>
 #endif

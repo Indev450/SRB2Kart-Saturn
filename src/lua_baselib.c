@@ -56,7 +56,7 @@ static const char *whitelist[] = { // Allow scripters to write files of these ty
 
 static int StartsWith(const char *a, const char *b) // this is wolfs being lazy yet again
 {
-	if(strncmp(a, b, strlen(b)) == 0) return 1;
+	if (strncmp(a, b, strlen(b)) == 0) return 1;
 	return 0;
 };
 
@@ -78,6 +78,7 @@ static int lib_open(lua_State *L)
 			break;
 		}
 	}
+
 	if (strstr(filename, "..") || strchr(filename, ':') || StartsWith(filename, "\\")
 		|| StartsWith(filename, "/") || !pass)
 	{

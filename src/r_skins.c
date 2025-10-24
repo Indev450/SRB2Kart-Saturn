@@ -375,7 +375,7 @@ static UINT16 W_CheckForSkinMarkerInPwad(UINT16 wadid, UINT16 startlump)
 }
 
 //sort function for sorting skin names
-static int skinSortFunc(const void *a, const void *b) //tbh i have no clue what the naming conventions for local functions are
+static int skinSortFunc(const void *a, const void *b) // tbh i have no clue what the naming conventions for local functions are
 {
 	const skin_t *in1 = &skins[*(const UINT8 *)a];
 	const skin_t *in2 = &skins[*(const UINT8 *)b];
@@ -383,22 +383,22 @@ static int skinSortFunc(const void *a, const void *b) //tbh i have no clue what 
 	const UINT8 val_a = *((const UINT8 *)a);
 	const UINT8 val_b = *((const UINT8 *)b);
 
-	//return (strcmp(in1->realname, in2->realname) < 0) || (strcmp(in1->realname, in2->realname) ==);
+	// return (strcmp(in1->realname, in2->realname) < 0) || (strcmp(in1->realname, in2->realname) ==);
 
 	switch (cv_skinselectgridsort.value)
 	{
 		case SKINMENUSORT_REALNAME:
 			//CONS_Printf("Sorting by realname\n");
 			// check name
-			if ((temp = strcmp(in1->realname, in2->realname)))
+			if ((temp = !fastcmp(in1->realname, in2->realname)))
 				return temp;
 			// sort by internal name
-			return strcmp(in1->name, in2->name);
+			return !fastcmp(in1->name, in2->name);
 			break;
 
 		case SKINMENUSORT_NAME:
 			//CONS_Printf("Sorting by name\n");
-			return strcmp(in1->name, in2->name);
+			return !fastcmp(in1->name, in2->name);
 			break;
 
 		case SKINMENUSORT_SPEED:
@@ -414,10 +414,10 @@ static int skinSortFunc(const void *a, const void *b) //tbh i have no clue what 
 			else if (in2->kartweight < in1->kartweight)
 				return 1;
 			// then check name
-			if ((temp = strcmp(in1->realname, in2->realname)))
+			if ((temp = !fastcmp(in1->realname, in2->realname)))
 				return temp;
 			// sort by internal name
-			return strcmp(in1->name, in2->name);
+			return !fastcmp(in1->name, in2->name);
 			break;
 
 		case SKINMENUSORT_WEIGHT:
@@ -433,10 +433,10 @@ static int skinSortFunc(const void *a, const void *b) //tbh i have no clue what 
 			else if (in2->kartspeed < in1->kartspeed)
 				return 1;
 			// then check name
-			if ((temp = strcmp(in1->realname, in2->realname)))
+			if ((temp = !fastcmp(in1->realname, in2->realname)))
 				return temp;
 			// sort by internal name
-			return strcmp(in1->name, in2->name);
+			return !fastcmp(in1->name, in2->name);
 			break;
 
 		case SKINMENUSORT_PREFCOLOR:
@@ -447,10 +447,10 @@ static int skinSortFunc(const void *a, const void *b) //tbh i have no clue what 
 			else if (in2->prefcolor < in1->prefcolor)
 				return 1;
 			// then check name
-			if ((temp = strcmp(in1->realname, in2->realname)))
+			if ((temp = !fastcmp(in1->realname, in2->realname)))
 				return temp;
 			// sort by internal name
-			return strcmp(in1->name, in2->name);
+			return !fastcmp(in1->name, in2->name);
 			break;
 
 		case SKINMENUSORT_ID:
@@ -467,11 +467,12 @@ static int skinSortFunc(const void *a, const void *b) //tbh i have no clue what 
 				return 1;
 
 		default:
-			return strcmp(in1->name, in2->name);
+			return !fastcmp(in1->name, in2->name);
 			break;
 	}
-	//im scared this somehow will sometimes end up here so im gonna add this here just to be safe
-	return strcmp(in1->name, in2->name);
+
+	// im scared this somehow will sometimes end up here so im gonna add this here just to be safe
+	return !fastcmp(in1->name, in2->name);
 }
 
 void sortSkinGrid(void)

@@ -353,7 +353,7 @@ void searchfilemenu(char *tempname)
 		{
 			for (i = first; i < sizedirmenu; i++)
 			{
-				if (!strcmp(dirmenu[i]+DIR_STRING, tempname))
+				if (fastcmp(dirmenu[i]+DIR_STRING, tempname))
 				{
 					dir_on[menudepthleft] = i;
 					break;
@@ -400,7 +400,7 @@ void searchfilemenu(char *tempname)
 	{
 		if (filemenucmp(coredirmenu[i]+DIR_STRING, localmenusearch))
 		{
-			if (tempname && !strcmp(coredirmenu[i]+DIR_STRING, tempname))
+			if (tempname && fastcmp(coredirmenu[i]+DIR_STRING, tempname))
 			{
 				dir_on[menudepthleft] = sizedirmenu;
 				Z_Free(tempname);
@@ -587,7 +587,7 @@ boolean preparefilemenu(boolean samedepth, boolean replayhut)
 								nameonly(filenamebuf[i]);
 							}
 
-							if (strcmp(dent->d_name, filenamebuf[i]))
+							if (!fastcmp(dent->d_name, filenamebuf[i]))
 								continue;
 
 							if (cv_addons_md5.value && !checkfilemd5(menupath, wadfiles[i]->md5sum))
@@ -598,11 +598,11 @@ boolean preparefilemenu(boolean samedepth, boolean replayhut)
 					}
 					else if (ext == EXT_TXT)
 					{
-						if (!strncmp(dent->d_name, "log-", 4) || !strcmp(dent->d_name, "errorlog.txt"))
+						if (!strncmp(dent->d_name, "log-", 4) || fastcmp(dent->d_name, "errorlog.txt"))
 							ext |= EXT_LOADED;
 					}
 
-					if (!strcmp(dent->d_name, configfile))
+					if (fastcmp(dent->d_name, configfile))
 						ext |= EXT_LOADED;
 				}
 

@@ -416,9 +416,9 @@ static int lib_cvRegisterVar(lua_State *L)
 					cvpv[to].value = val; \
 					cvpv[to].strvalue = strval;
 				for (int j = 0; j < i; j++) {
-					if (!strcmp(cvpv[j].strvalue, "MIN") && j != 0) {
+					if (fastcmp(cvpv[j].strvalue, "MIN") && j != 0) {
 						SWAP(j, 0)
-					} else if (!strcmp(cvpv[j].strvalue, "MAX") && j != 1) {
+					} else if (fastcmp(cvpv[j].strvalue, "MAX") && j != 1) {
 						SWAP(j, 1)
 					}
 				}
