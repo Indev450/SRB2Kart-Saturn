@@ -156,9 +156,9 @@ static       SDL_bool    usesdl2soft = SDL_FALSE;
 static       SDL_bool    borderlesswindow = SDL_FALSE;
 
 // SDL2 vars
-SDL_Window   *window;
-SDL_Renderer *renderer;
-static SDL_Texture  *texture;
+SDL_Window   *window = NULL;
+SDL_Renderer *renderer = NULL;
+static SDL_Texture  *texture = NULL;
 static SDL_bool      havefocus = SDL_TRUE;
 static const char *fallback_resolution_name = "Fallback";
 
@@ -943,6 +943,7 @@ static void Impl_HandleControllerAddedEvent(SDL_Event evt)
 			cv_usejoystick[i].value = 0;
 		else if (atoi(cv_usejoystick[i].string) <= I_NumJoys() // don't mess if we intentionally set higher than NumJoys
 			&& cv_usejoystick[i].value) // update the cvar ONLY if a device exists
+
 		CV_SetValue(&cv_usejoystick[i], cv_usejoystick[i].value);
 	}
 
@@ -1141,9 +1142,11 @@ void I_OsPolling(void)
 	I_GetEvent();
 
 	mod = SDL_GetModState();
+
 	/* Handle here so that our state is always synched with the system. */
 	shiftdown = ctrldown = altdown = 0;
 	capslock = false;
+
 	if (mod & KMOD_LSHIFT) shiftdown |= 1;
 	if (mod & KMOD_RSHIFT) shiftdown |= 2;
 	if (mod & KMOD_LCTRL)   ctrldown |= 1;
@@ -1177,7 +1180,7 @@ static void VID_Command_Mode_f (void)
 {
 	INT32 modenum;
 
-	if (COM_Argc()!= 2)
+	if (COM_Argc() != 2)
 	{
 		CONS_Printf("vid_mode <modenum> : set video mode, current video mode %i\n", vid.modenum);
 		return;
@@ -1322,8 +1325,8 @@ static void SDLSetMode(INT32 width, INT32 height, SDL_bool fullscreen)
 #endif
 		OglSdlSurface(vid.width, vid.height);
 	}
+	else
 #endif
-
 	if (rendermode == render_soft)
 	{
 		SDL_RenderClear(renderer);
@@ -1339,6 +1342,11 @@ static void SDLSetMode(INT32 width, INT32 height, SDL_bool fullscreen)
 		}
 
 		texture = SDL_CreateTexture(renderer, sw_texture_format, SDL_TEXTUREACCESS_STREAMING, width, height);
+	}
+
+	if (graphics_started)
+	{
+		I_UpdateNoVsync();
 	}
 }
 
@@ -1388,7 +1396,8 @@ void I_FinishUpdate(void)
 
 		const boolean isserverplayer = consoleplayer == serverplayer;
 
-		if (cv_showping.value && ((netgame && !isserverplayer) || (simulated_lag != 0 && isserverplayer && Playing())))
+		if (cv_showping.value && ((netgame && !isserverplayer) ||
+		   (simulated_lag != 0 && isserverplayer && Playing())))
 			SCR_DisplayLocalPing();
 	}
 
@@ -1655,11 +1664,13 @@ static SDL_bool Impl_CreateContext(void)
 
 		if (!renderer)
 			renderer = SDL_CreateRenderer(window, -1, flags);
+
 		if (renderer == NULL)
 		{
 			CONS_Printf(M_GetText("Couldn't create rendering context: %s\n"), SDL_GetError());
 			return SDL_FALSE;
 		}
+
 		SDL_RenderSetLogicalSize(renderer, BASEVIDWIDTH, BASEVIDHEIGHT);
 	}
 
@@ -1762,6 +1773,7 @@ void I_StartupGraphics(void)
 #endif
 	{
 		const char *vd = SDL_GetCurrentVideoDriver();
+
 		//CONS_Printf(M_GetText("Starting up with video driver: %s\n"), vd);
 		if (vd && (strncasecmp(vd, "fbcon", 6) == 0))
 			framebuffer = SDL_TRUE;
@@ -1992,7 +2004,7 @@ static void Impl_SetVsync(void)
 #endif
 #ifdef HWRENDER
 	if (!renderer && rendermode == render_opengl &&
-	sdlglcontext != NULL && SDL_GL_GetCurrentContext() == sdlglcontext)
+		 sdlglcontext != NULL && SDL_GL_GetCurrentContext() == sdlglcontext)
 	{
 		SDL_GL_SetSwapInterval(cv_vidwait.value ? 1 : 0);
 	}
