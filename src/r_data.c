@@ -1391,6 +1391,7 @@ void R_ReInitColormaps(UINT16 num, lumpnum_t newencoremap)
 
 	// Load in the light tables, now 64k aligned for smokie...
 	lump = W_GetNumForName(colormap);
+
 	if (lump == LUMPERROR)
 		lump = basecolormaplump;
 	else

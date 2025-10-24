@@ -253,6 +253,7 @@ void SplitScreen_OnChange(void)
 			if (playeringame[i] && i != consoleplayer)
 			{
 				UINT8 j;
+
 				for (j = 1; j < MAXSPLITSCREENPLAYERS; j++)
 				{
 					if (displayplayers[j] == consoleplayer)
@@ -268,6 +269,7 @@ void SplitScreen_OnChange(void)
 		}
 	}
 }
+
 static void Fov_OnChange(void)
 {
 	R_SetViewSize();
