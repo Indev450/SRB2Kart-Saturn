@@ -163,22 +163,22 @@ model_t *LoadModel(const char *filename, int ztag)
 		return NULL;
 	}
 
-	if (!strcmp(extension, ".md3"))
+	if (fastcmp(extension, ".md3"))
 	{
 		if (!(model = MD3_LoadModel(filename, ztag, false)))
 			return NULL;
 	}
-	else if (!strcmp(extension, ".md3s")) // MD3 that will be converted in memory to use full floats
+	else if (fastcmp(extension, ".md3s")) // MD3 that will be converted in memory to use full floats
 	{
 		if (!(model = MD3_LoadModel(filename, ztag, true)))
 			return NULL;
 	}
-	else if (!strcmp(extension, ".md2"))
+	else if (fastcmp(extension, ".md2"))
 	{
 		if (!(model = MD2_LoadModel(filename, ztag, false)))
 			return NULL;
 	}
-	else if (!strcmp(extension, ".md2s"))
+	else if (fastcmp(extension, ".md2s"))
 	{
 		if (!(model = MD2_LoadModel(filename, ztag, true)))
 			return NULL;

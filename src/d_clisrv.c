@@ -2179,7 +2179,7 @@ static void SL_InsertServer(serverinfo_pak* info, SINT8 node)
 		if (info->subversion != SUBVERSION)
 			return; // Close, but no cigar.
 
-		if (strcmp(info->application, SRB2APPLICATION))
+		if (!fastcmp(info->application, SRB2APPLICATION))
 			return;/* that's a different mod */
 
 		i = serverlistcount++;
@@ -2224,7 +2224,7 @@ void CL_QueryServerList (msg_server_t *server_list)
 		// thwart nefarious servers who lie to the MS.
 
 		/* lol bruh, that version COMES from the servers */
-		//if (strcmp(version, server_list[i].version) == 0)
+		//if (fastcmp(version, server_list[i].version))
 		{
 			INT32 node = I_NetMakeNodewPort(server_list[i].ip, server_list[i].port);
 			if (node == -1)

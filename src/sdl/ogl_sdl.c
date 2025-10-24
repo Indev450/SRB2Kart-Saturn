@@ -170,8 +170,8 @@ boolean OglSdlSurface(INT32 w, INT32 h)
 			}
 		}
 
-		if (strcmp((const char*)gl_renderer, "GDI Generic") == 0 &&
-			strcmp((const char*)gl_version, "1.1.0") == 0)
+		if (fastcmp((const char*)gl_renderer, "GDI Generic") &&
+			fastcmp((const char*)gl_version, "1.1.0"))
 		{
 			// Oh no... Windows gave us the GDI Generic rasterizer, so something is wrong...
 			// The game will crash later on when unsupported OpenGL commands are encountered.

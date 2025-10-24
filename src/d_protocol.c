@@ -211,12 +211,12 @@ void D_SetupProtocol(void)
 
 	if (result)
 	{
-		if (strcmp(buffer, "no") == 0)
+		if (!fastcmp(buffer, "no"))
 		{
 			fclose(fp);
 			return;
 		}
-		else if (strcmp(buffer, exe_path) != 0)
+		else if (fastcmp(buffer, exe_path))
 		{
 			// overwrite
 			fclose(fp);
