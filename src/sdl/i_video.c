@@ -585,7 +585,9 @@ static void Impl_HandleKeyboardEvent(SDL_KeyboardEvent evt, Uint32 type)
 	}
 
 	if (event.data1)
+	{
 		D_PostEvent(&event);
+	}
 }
 
 static void Impl_HandleMouseMotionEvent(SDL_MouseMotionEvent evt)
@@ -720,6 +722,57 @@ static void Impl_HandleMouseWheelEvent(SDL_MouseWheelEvent evt)
 		{
 			D_PostEvent(&event);
 		}
+	}
+}
+
+static Uint32 hatrepeattimer[MAXSPLITSCREENPLAYERS];
+#define HATREPEATDELAY 19
+
+void I_HandleControllerHatRepeat(void)
+{
+	static event_t event = {ev_keydown, 0, 0, 0};
+
+	// why bother if theres no controllers?
+	if (numcontrollers == 0)
+		return;
+
+	static const SDL_GameControllerButton hatbutt[4] =
+	{
+		SDL_CONTROLLER_BUTTON_DPAD_UP,
+		SDL_CONTROLLER_BUTTON_DPAD_DOWN,
+		SDL_CONTROLLER_BUTTON_DPAD_LEFT,
+		SDL_CONTROLLER_BUTTON_DPAD_RIGHT
+	};
+
+	for (int i = 0; i < MAXSPLITSCREENPLAYERS; i++)
+	{
+		if (!cv_usejoystick[i].value)
+			continue;
+
+		SDL_GameController *controller = JoyInfo[i].dev;
+
+		if (!controller)
+			continue;
+
+		for (UINT8 h = 0; h < JOYHATS; h++)
+		{
+			if (SDL_GameControllerGetButton(controller, hatbutt[h]))
+			{
+				if (hatrepeattimer[i] < HATREPEATDELAY)
+				{
+					hatrepeattimer[i]++;
+				}
+				else if (hatrepeattimer[i] == HATREPEATDELAY)
+				{
+					event.data1 = KEY_HAT1 + (i * JOYHATS) + h;
+					D_PostEvent(&event);
+				}
+
+				return;
+			}
+		}
+
+		hatrepeattimer[i] = 0;
 	}
 }
 
