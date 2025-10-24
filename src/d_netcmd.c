@@ -2491,15 +2491,18 @@ void D_SetupVote(void)
 	INT32 i;
 	UINT8 gt = (cv_kartgametypepreference.value == -1) ? gametype : cv_kartgametypepreference.value;
 	UINT8 secondgt = G_SometimesGetDifferentGametype(gt);
-	INT16 votebuffer[4] = {-1,-1,-1,0};
+	INT16 votebuffer[4] = {-1,-1,-1, 0};
 	INT16 luamaps[4] = {0, 0, 0, 0};
 
 	LUA_HookSetupVote(luamaps, sizeof(luamaps)/sizeof(luamaps[0]), gt, secondgt);
 
 	// Correct secondgt if needed
-	UINT8 typeoflevel = mapheaderinfo[luamaps[2]-1]->typeoflevel;
-	if (luamaps[2] && (typeoflevel & G_TOLFlag(secondgt&(~0x80))) == 0)
-		secondgt = ((typeoflevel & TOL_RACE) ? GT_RACE : GT_MATCH)|(secondgt&0x80);
+	if (luamaps[2])
+	{
+		UINT8 typeoflevel = mapheaderinfo[luamaps[2]-1]->typeoflevel;
+		if ((typeoflevel & G_TOLFlag(secondgt&(~0x80))) == 0)
+			secondgt = ((typeoflevel & TOL_RACE) ? GT_RACE : GT_MATCH)|(secondgt&0x80);
+	}
 
 	if (cv_kartencore.value && gt == GT_RACE)
 		WRITEUINT8(p, (gt|0x80));
