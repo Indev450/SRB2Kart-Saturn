@@ -1828,7 +1828,7 @@ void S_StopMusic(void)
 		|| demo.title) // SRB2Kart: Demos don't interrupt title screen music
 		return;
 
-	mapmusic.resume = (cv_birdmusic.value && (strcasecmp(music.name, mapmusic.name) == 0)) ? I_GetSongPosition() : 0;
+	mapmusic.resume = (cv_birdmusic.value && fasticmp(music.name, mapmusic.name)) ? I_GetSongPosition() : 0;
 
 	S_SetKeepMusResume();
 
@@ -1964,7 +1964,7 @@ static void S_SetKeepMusResume(void)
 {
 	keepmusic.resume = 0;
 
-	if (strcasecmp(music.name, mapmusic.name) == 0)
+	if (fasticmp(music.name, mapmusic.name))
 	{
 		keepmusic.resume = I_GetSongPosition();
 	}
@@ -2148,19 +2148,19 @@ static void Command_Tunes_f(void)
 	tunenum = (UINT16)atoi(tunearg);
 	track = 0;
 
-	if (!strcasecmp(tunearg, "-show"))
+	if (fasticmp(tunearg, "-show"))
 	{
 		CONS_Printf(M_GetText("The current tune is: %s [track %d]\n"),
 			mapmusic.name, (mapmusic.flags & MUSIC_TRACKMASK));
 		return;
 	}
 
-	if (!strcasecmp(tunearg, "-none"))
+	if (fasticmp(tunearg, "-none"))
 	{
 		S_StopMusic();
 		return;
 	}
-	else if (!strcasecmp(tunearg, "-default"))
+	else if (fasticmp(tunearg, "-default"))
 	{
 		tunearg = mapheaderinfo[gamemap-1]->musname;
 		track = mapheaderinfo[gamemap-1]->mustrack;

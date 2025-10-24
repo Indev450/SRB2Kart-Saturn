@@ -49,7 +49,7 @@ INT32 M_CheckParm(const char *check)
 
 	for (i = 1; i < myargc; i++)
 	{
-		if (!strcasecmp(check, myargv[i]))
+		if (fasticmp(check, myargv[i]))
 		{
 			found = i;
 			return i;

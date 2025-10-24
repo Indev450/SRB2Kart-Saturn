@@ -198,7 +198,7 @@ filestatus_t filesearch(char *filename, const char *startpath, const UINT8 *want
 
 				for (; *path != NULL; path++)
 				{
-					if (strcasecmp(*path, dent->d_name) == 0)
+					if (fasticmp(*path, dent->d_name))
 					{
 						skipfolder = true;
 						break;
@@ -212,7 +212,7 @@ filestatus_t filesearch(char *filename, const char *startpath, const UINT8 *want
 				}
 			}
 
-			if (strcasecmp(".git", dent->d_name) // sanity if you're weird like me
+			if (!fasticmp(".git", dent->d_name) // sanity if you're weird like me
 				&& (dirhandle[depthleft-1] = opendir(searchpath)) != NULL)
 			{
 				// Got read permissions!
@@ -227,7 +227,7 @@ filestatus_t filesearch(char *filename, const char *startpath, const UINT8 *want
 
 		// I am a file!
 
-		if (strcasecmp(searchname, dent->d_name))
+		if (!fasticmp(searchname, dent->d_name))
 			continue; // Not what we're looking for!
 
 		switch (checkfilemd5(searchpath, wantedmd5sum))
@@ -478,14 +478,14 @@ boolean preparefilemenu(boolean samedepth, boolean replayhut)
 
 				if (replayhut)
 				{
-					if (strcasecmp(".lmp", dent->d_name+len-5))
+					if (!fasticmp(".lmp", dent->d_name+len-5))
 						continue; // Not a replay
 				}
 				else if (!cv_addons_showall.value)
 				{
 					UINT8 ext;
 					for (ext = 0; ext < NUM_EXT_TABLE; ext++)
-						if (!strcasecmp(exttable[ext]+1, dent->d_name+len-(exttable[ext][0])))
+						if (fasticmp(exttable[ext]+1, dent->d_name+len-(exttable[ext][0])))
 							break; // extension comparison
 
 					if (ext == NUM_EXT_TABLE)
@@ -559,7 +559,7 @@ boolean preparefilemenu(boolean samedepth, boolean replayhut)
 
 				if (replayhut)
 				{
-					if (strcasecmp(".lmp", dent->d_name+len-5))
+					if (!fasticmp(".lmp", dent->d_name+len-5))
 						continue; // Not a replay
 
 					ext = EXT_TXT; // This isn't used anywhere but better safe than sorry for messing with this...
@@ -567,7 +567,7 @@ boolean preparefilemenu(boolean samedepth, boolean replayhut)
 				else
 				{
 					for (; ext < NUM_EXT_TABLE; ext++)
-						if (!strcasecmp(exttable[ext]+1, dent->d_name+len-(exttable[ext][0])))
+						if (fasticmp(exttable[ext]+1, dent->d_name+len-(exttable[ext][0])))
 							break; // extension comparison
 
 					if (ext == NUM_EXT_TABLE && !cv_addons_showall.value)

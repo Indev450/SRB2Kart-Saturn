@@ -1864,11 +1864,11 @@ void I_StartupGraphics(void)
 
 				if (rendermode == render_none)
 				{
-					if (strcasecmp(word, "software") == 0)
+					if (fasticmp(word, "software"))
 					{
 						rendermode = render_soft;
 					}
-					else if (strcasecmp(word, "opengl") == 0)
+					else if (fasticmp(word, "opengl"))
 					{
 						rendermode = render_opengl;
 					}
@@ -1881,7 +1881,7 @@ void I_StartupGraphics(void)
 
 				if (!msaa_set)
 				{
-					if (strcasecmp(word, "msaa") == 0)
+					if (fasticmp(word, "msaa"))
 					{
 						const char *nextword = strtok(NULL, " \n");
 
@@ -1898,7 +1898,7 @@ void I_StartupGraphics(void)
 
 				if (!a2c_set)
 				{
-					if (strcasecmp(word, "a2c") == 0)
+					if (fasticmp(word, "a2c"))
 					{
 						a2c = true;
 						CONS_Printf("Using a2c because it was specified to be used earlier\n");

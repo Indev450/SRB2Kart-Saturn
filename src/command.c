@@ -359,7 +359,7 @@ size_t COM_CheckParm(const char *check)
 	size_t i;
 
 	for (i = 1; i < com_argc; i++)
-		if (!strcasecmp(check, com_argv[i]))
+		if (fasticmp(check, com_argv[i]))
 			return i;
 	return 0;
 }
