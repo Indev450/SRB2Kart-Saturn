@@ -652,8 +652,6 @@ static void Impl_HandleMouseButtonEvent(SDL_MouseButtonEvent evt, Uint32 type)
 	/// \todo inputEvent.button.which
 	if (USE_MOUSEINPUT)
 	{
-		SDL_memset(&event, 0, sizeof(event_t));
-
 		switch (type)
 		{
 			case SDL_MOUSEBUTTONUP:
@@ -698,8 +696,6 @@ static void Impl_HandleMouseWheelEvent(SDL_MouseWheelEvent evt)
 
 	if (USE_MOUSEINPUT)
 	{
-		SDL_memset(&event, 0, sizeof(event_t));
-
 		if (evt.y > 0)
 		{
 			event.data1 = KEY_MOUSEWHEELUP;
