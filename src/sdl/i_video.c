@@ -553,7 +553,7 @@ static void Impl_HandleWindowEvent(SDL_WindowEvent evt)
 
 static void Impl_HandleKeyboardEvent(SDL_KeyboardEvent evt, Uint32 type)
 {
-	event_t event;
+	event_t event = {0};
 
 	switch (type)
 	{
@@ -635,7 +635,7 @@ static void Impl_HandleMouseMotionEvent(SDL_MouseMotionEvent evt)
 
 static void Impl_HandleMouseButtonEvent(SDL_MouseButtonEvent evt, Uint32 type)
 {
-	event_t event;
+	event_t event = {0};
 
 	// Ignore the event if the mouse is not actually focused on the window.
 	// This can happen if you used the mouse to restore keyboard focus;
@@ -690,7 +690,7 @@ static void Impl_HandleMouseButtonEvent(SDL_MouseButtonEvent evt, Uint32 type)
 
 static void Impl_HandleMouseWheelEvent(SDL_MouseWheelEvent evt)
 {
-	event_t event;
+	event_t event = {0};
 
 	if (USE_MOUSEINPUT)
 	{
@@ -726,11 +726,11 @@ static Uint32 hatrepeattimer[MAXSPLITSCREENPLAYERS];
 
 void I_HandleControllerHatRepeat(void)
 {
-	static event_t event = {ev_keydown, 0, 0, 0};
-
 	// why bother if theres no controllers?
 	if (numcontrollers == 0)
 		return;
+
+	event_t event = {ev_keydown, 0, 0, 0};
 
 	static const SDL_GameControllerButton hatbutt[4] =
 	{
@@ -834,7 +834,7 @@ static void Impl_HandleControllerAxisEvent(SDL_ControllerAxisEvent evt)
 
 static void Impl_HandleControllerHatEvent(SDL_ControllerButtonEvent evt, Uint32 type)
 {
-	event_t event;
+	event_t event = {0};
 	UINT8 i;
 	static const int hat_buttons_base[] = {KEY_HAT1, KEY_2HAT1, KEY_3HAT1, KEY_4HAT1};
 
@@ -888,7 +888,7 @@ static void Impl_HandleControllerHatEvent(SDL_ControllerButtonEvent evt, Uint32 
 
 static void Impl_HandleControllerButtonEvent(SDL_ControllerButtonEvent evt, Uint32 type)
 {
-	event_t event;
+	event_t event = {0};
 	UINT8 i;
 	static const int buttons_base[] = {KEY_JOY1, KEY_2JOY1, KEY_3JOY1, KEY_4JOY1};
 
