@@ -41,8 +41,7 @@
 
 /**	\brief view info
 */
-INT32 linesize, viewwidth, viewheight, viewwindowx, viewwindowy;
-UINT8 *renderscreen;            // haleyjd
+INT32 viewwidth, viewheight, viewwindowx, viewwindowy;
 
 // =========================================================================
 //                      COLUMN DRAWING CODE STUFF
@@ -489,6 +488,92 @@ void R_FlushTranslationColormapCache(void)
 // in reality, the few routines that can work for either mode, are
 // put here
 
+enum columncontext_e columncontext = COLUMNCONTEXT_DIRECT;
+
+enum ColumnFlushType
+{
+	FLUSH_NONE				= 0x0000,
+	FLUSH_OPAQUE			= 0x0001,
+	FLUSH_TRANS				= 0x0002,
+	FLUSH_COLORMAP			= 0x0004,
+	FLUSH_COLORMAP_TRANS	= 0x0008,
+};
+
+typedef struct drawcolumndata_temp_s
+{
+	INT32    x;
+	INT32    yl[8], yh[8];
+
+	// e6y: resolution limitation is removed
+	UINT8 *buf;
+
+	INT32    startx;
+	ColumnFlushType    type;
+	INT32   commontop, commonbot;
+	UINT8 *transmap;
+	// SoM 7-28-04: Fix the fuzz problem.
+	UINT8 *translation;
+} drawcolumndata_temp_t;
+
+drawcolumndata_temp_t temp_dc = {};
+
+//
+// Error functions that will abort if R_FlushColumns tries to flush
+// columns without a column type.
+//
+FUNCNORETURN static ATTRNORETURN void R_FlushWholeError(void)
+{
+	I_Error("R_FlushWholeColumns called without being initialized.\n");
+}
+
+FUNCNORETURN static ATTRNORETURN void R_FlushHTError(void)
+{
+	I_Error("R_FlushHTColumns called without being initialized.\n");
+}
+
+FUNCNORETURN static ATTRNORETURN void R_QuadFlushError(void)
+{
+	I_Error("R_FlushQuadColumn called without being initialized.\n");
+}
+
+static void (*R_FlushWholeColumns)(void) = R_FlushWholeError;
+static void (*R_FlushHTColumns)(void) = R_FlushHTError;
+static void (*R_FlushQuadColumn)(void) = R_QuadFlushError;
+
+static void R_FlushColumns(void)
+{
+	if (temp_dc.x != 8 || temp_dc.commontop >= temp_dc.commonbot)
+		R_FlushWholeColumns();
+	else
+	{
+		R_FlushHTColumns();
+		R_FlushQuadColumn();
+	}
+
+	temp_dc.x = 0;
+}
+
+//
+// R_ResetColumnBuffer
+//
+// haleyjd 09/13/04: new function to call from main rendering loop
+// which gets rid of the unnecessary reset of various variables during
+// column drawing.
+//
+void R_ResetColumnBuffer(void)
+{
+	// haleyjd 10/06/05: this must not be done if x == 0!
+	if (temp_dc.x)
+	{
+		R_FlushColumns();
+	}
+
+	temp_dc.type = FLUSH_NONE;
+	R_FlushWholeColumns = R_FlushWholeError;
+	R_FlushHTColumns = R_FlushHTError;
+	R_FlushQuadColumn = R_QuadFlushError;
+}
+
 /**	\brief	The R_InitViewBuffer function
 
 	Creates lookup tables for getting the framebuffer address
@@ -521,40 +606,35 @@ static void R_AllocViewMemory(void)
 	R_AllocVisSpriteMemory();
 }
 
-
-void R_InitViewBuffer(INT32 width, INT32 height)
+void R_InitViewBuffer(void)
 {
-	if (width > MAXVIDWIDTH)
-		width = MAXVIDWIDTH;
-	if (height > MAXVIDHEIGHT)
-		height = MAXVIDHEIGHT;
-
 	R_AllocViewMemory();
 
 	viewwindowx = 0;
 	viewwindowy = 0;
 
-	linesize     = vid.width;      // killough 11/98
-	renderscreen = vid.screens[0]; // haleyjd 07/02/14
-}
+	INT32 bufsize = (vid.width * 8) * sizeof(*temp_dc.buf);
 
-/**	\brief viewborder patches lump numbers
-*/
-lumpnum_t viewborderlump[8];
+	if (temp_dc.buf)
+	{
+#if defined(__SSE__)
+		aligned_free(temp_dc.buf);
+#else
+		Z_Free(temp_dc.buf);
+#endif
+	}
 
-/**	\brief Store the lumpnumber of the viewborder patches
-*/
+	memset(&temp_dc, 0, sizeof(temp_dc));
 
-void R_InitViewBorder(void)
-{
-	viewborderlump[BRDR_T] = W_GetNumForName("brdr_t");
-	viewborderlump[BRDR_B] = W_GetNumForName("brdr_b");
-	viewborderlump[BRDR_L] = W_GetNumForName("brdr_l");
-	viewborderlump[BRDR_R] = W_GetNumForName("brdr_r");
-	viewborderlump[BRDR_TL] = W_GetNumForName("brdr_tl");
-	viewborderlump[BRDR_BL] = W_GetNumForName("brdr_bl");
-	viewborderlump[BRDR_TR] = W_GetNumForName("brdr_tr");
-	viewborderlump[BRDR_BR] = W_GetNumForName("brdr_br");
+#if defined(__SSE__)
+	while (bufsize & 15)
+		bufsize++;
+	temp_dc.buf = static_cast<UINT8*>(aligned_alloc(16, bufsize));
+#else
+	temp_dc.buf = static_cast<UINT8*>(Z_Malloc(bufsize, PU_STATIC, NULL));
+#endif
+
+	memset(temp_dc.buf, 0, bufsize);
 }
 
 /**	\brief	The R_VideoErase function
@@ -577,129 +657,6 @@ void R_VideoErase(size_t ofs, INT32 count)
 	//  at one point.
 	M_Memcpy(vid.screens[0] + ofs, vid.screens[1] + ofs, count);
 }
-
-
-#if 0
-/**	\brief R_FillBackScreen
-
-	Fills the back screen with a pattern for variable screen sizes
-	Also draws a beveled edge.
-*/
-void R_FillBackScreen(void)
-{
-	UINT8 *src, *dest;
-	patch_t *patch;
-	INT32 x, y, step, boff;
-
-	// quickfix, don't cache lumps in both modes
-	if (rendermode != render_soft)
-		return;
-
-	// draw pattern around the status bar too (when hires),
-	// so return only when in full-screen without status bar.
-	if (scaledviewwidth == vid.width && viewheight == vid.height)
-		return;
-
-	src = scr_borderpatch;
-	dest = vid.screens[1];
-
-	for (y = 0; y < vid.height; y++)
-	{
-		for (x = 0; x < vid.width/128; x++)
-		{
-			M_Memcpy (dest, src+((y&127)<<7), 128);
-			dest += 128;
-		}
-
-		if (vid.width&127)
-		{
-			M_Memcpy(dest, src+((y&127)<<7), vid.width&127);
-			dest += (vid.width&127);
-		}
-	}
-
-	// don't draw the borders when viewwidth is full vid.width.
-	if (scaledviewwidth == vid.width)
-		return;
-
-	step = 8;
-	boff = 8;
-
-	patch = W_CacheLumpNum(viewborderlump[BRDR_T], PU_CACHE);
-	for (x = 0; x < scaledviewwidth; x += step)
-		V_DrawPatch(viewwindowx + x, viewwindowy - boff, 1, patch);
-
-	patch = W_CacheLumpNum(viewborderlump[BRDR_B], PU_CACHE);
-	for (x = 0; x < scaledviewwidth; x += step)
-		V_DrawPatch(viewwindowx + x, viewwindowy + viewheight, 1, patch);
-
-	patch = W_CacheLumpNum(viewborderlump[BRDR_L], PU_CACHE);
-	for (y = 0; y < viewheight; y += step)
-		V_DrawPatch(viewwindowx - boff, viewwindowy + y, 1, patch);
-
-	patch = W_CacheLumpNum(viewborderlump[BRDR_R],PU_CACHE);
-	for (y = 0; y < viewheight; y += step)
-		V_DrawPatch(viewwindowx + scaledviewwidth, viewwindowy + y, 1,
-			patch);
-
-	// Draw beveled corners.
-	V_DrawPatch(viewwindowx - boff, viewwindowy - boff, 1,
-		W_CacheLumpNum(viewborderlump[BRDR_TL], PU_CACHE));
-	V_DrawPatch(viewwindowx + scaledviewwidth, viewwindowy - boff, 1,
-		W_CacheLumpNum(viewborderlump[BRDR_TR], PU_CACHE));
-	V_DrawPatch(viewwindowx - boff, viewwindowy + viewheight, 1,
-		W_CacheLumpNum(viewborderlump[BRDR_BL], PU_CACHE));
-	V_DrawPatch(viewwindowx + scaledviewwidth, viewwindowy + viewheight, 1,
-		W_CacheLumpNum(viewborderlump[BRDR_BR], PU_CACHE));
-}
-
-/**	\brief The R_DrawViewBorder
-
-  Draws the border around the view
-	for different size windows?
-*/
-void R_DrawViewBorder(void)
-{
-	INT32 top, side, ofs;
-
-	if (rendermode == render_none)
-		return;
-#ifdef HWRENDER
-	if (rendermode != render_soft)
-	{
-		HWR_DrawViewBorder(0);
-		return;
-	}
-	else
-#endif
-
-#ifdef DEBUG
-	fprintf(stderr,"RDVB: vidwidth %d vidheight %d scaledviewwidth %d viewheight %d\n",
-		vid.width, vid.height, scaledviewwidth, viewheight);
-#endif
-
-	if (scaledviewwidth == vid.width)
-		return;
-
-	top = (vid.height - viewheight)>>1;
-	side = (vid.width - scaledviewwidth)>>1;
-
-	// copy top and one line of left side
-	R_VideoErase(0, top*vid.width+side);
-
-	// copy one line of right side and bottom
-	ofs = (viewheight+top)*vid.width - side;
-	R_VideoErase(ofs, top*vid.width + side);
-
-	// copy sides using wraparound
-	ofs = top*vid.width + vid.width-side;
-	side <<= 1;
-
-    // simpler using our VID_Blit routine
-	VID_BlitLinearScreen(vid.screens[1] + ofs, vid.screens[0] + ofs, side, viewheight - 1,
-		vid.width, vid.width);
-}
-#endif
 
 // ==========================================================================
 //                   INCLUDE DRAWING CODE HERE

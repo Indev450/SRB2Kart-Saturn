@@ -23,10 +23,10 @@ extern "C" {
 
 // number of sprite lumps for spritewidth,offset,topoffset lookup tables
 // Fab: this is a hack : should allocate the lookup tables per sprite
-#if defined(__x86_64__) || defined(__amd64__) || defined(__aarch64__) || defined(__arm64__) // only for 64bit (idk how else to proper check lmao)
-#define MAXVISSPRITES 4096
-#else
+#if __SIZEOF_POINTER__ < 8
 #define MAXVISSPRITES 2048 // added 2-2-98 was 128
+#else
+#define MAXVISSPRITES 4096 // only for 64bit
 #endif
 
 #define VISSPRITECHUNKBITS 6	// 2^6 = 64 sprites per chunk
@@ -63,7 +63,10 @@ extern fixed_t windowtop;
 extern fixed_t windowbottom;
 extern INT32 lengthcol;
 
-INT32 R_ThingLightLevel(mobj_t *thing);
+FUNCINLINE static ATTRINLINE INT32 R_ThingLightLevel(mobj_t* thing)
+{
+	return (INT32)thing->lightlevel;
+}
 fixed_t R_GetSpriteDirectionalLighting(angle_t angle);
 
 fixed_t R_GetShadowZ(mobj_t *thing, pslope_t **shadowslope);
@@ -83,7 +86,7 @@ typedef struct
 {
 	size_t drawsegs[2];
 	size_t vissprites[2];
-	fixed_t viewx, viewy, viewz;			/**< View z stored at the time of the BSP traversal for the view/portal. Masked sorting/drawing needs it. */
+	fixed_t viewx, viewy, viewz; /**< View z stored at the time of the BSP traversal for the view/portal. Masked sorting/drawing needs it. */
 	sector_t* viewsector;
 } maskcount_t;
 

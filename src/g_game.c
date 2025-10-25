@@ -452,6 +452,13 @@ consvar_t cv_ydeadzone[MAXSPLITSCREENPLAYERS] = {
 	{"joy4_ydeadzone", "0.5", CV_FLOAT|CV_SAVE, deadzone_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL}
 };
 
+consvar_t cv_litesteer[MAXSPLITSCREENPLAYERS] = {
+	{"litesteer",  "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"litesteer2", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"litesteer3", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"litesteer4", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL}
+};
+
 static CV_PossibleValue_t driftsparkpulse_t[] = {{0, "MIN"}, {FRACUNIT*3, "MAX"}, {0, NULL}};
 consvar_t cv_driftsparkpulse = {"driftsparkpulse", "1.4", CV_FLOAT | CV_SAVE, driftsparkpulse_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
@@ -1014,8 +1021,8 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 	else
 		th = 0;
 
-	if (th < SLOWTURNTICS)
-		tspeed = cv_turnsmooth.value == 2 ? 2 : 0; // slow turn
+	if (th < (cv_turnsmooth[forplayer].value * 3))
+		tspeed = cv_turnsmooth[forplayer].value == 2 ? 2 : 0; // slow turn
 	else
 		tspeed = 1;
 
@@ -1024,30 +1031,32 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 	// let movement keys cancel each other out
 	if (turnright && !(turnleft))
 	{
-		cmd->angleturn = (INT16)(cmd->angleturn - (angleturn[tspeed]));
-		cmd->driftturn = (INT16)(cmd->driftturn - (angleturn[tspeed]));
+		cmd->angleturn -= angleturn[tspeed];
 		side += sidemove[1];
 	}
 	else if (turnleft && !(turnright))
 	{
-		cmd->angleturn = (INT16)(cmd->angleturn + (angleturn[tspeed]));
-		cmd->driftturn = (INT16)(cmd->driftturn + (angleturn[tspeed]));
+		cmd->angleturn += angleturn[tspeed];
 		side -= sidemove[1];
 	}
 
 	if (analogjoystickmove && axis != 0)
 	{
-		// JOYAXISRANGE should be 1023 (divide by 1024)
-		cmd->angleturn = (INT16)(cmd->angleturn - (((axis * angleturn[1]) >> 10))); // ANALOG!
-		cmd->driftturn = (INT16)(cmd->driftturn - (((axis * angleturn[1]) >> 10)));
-		side += ((axis * sidemove[0]) >> 10);
+		cmd->angleturn -= (axis * KART_FULLTURN) / JOYAXISRANGE;
+		side += (axis * sidemove[0]) / JOYAXISRANGE;
 	}
 
 	if (cv_mouseturn.value)
 	{
 		//THIS WORKS WTF????????
-		cmd->angleturn = (INT16)(cmd->angleturn - ((mousex*(encoremode ? -1 : 1)*8)));
-		cmd->driftturn = (INT16)(cmd->driftturn - ((mousex*(encoremode ? -1 : 1)*8)));
+		cmd->angleturn -= (mousex*(encoremode ? -1 : 1)*8);
+	}
+
+	// Digital users can input diagonal-back for shallow turns.
+	if (cv_litesteer[forplayer].value && InputDown(gc_aimbackward, ssplayer)
+		&& abs(cmd->angleturn) == KART_FULLTURN) // My keyboard hits 1024 but my keyboard only hits 1023, video games
+	{
+		cmd->angleturn /= 2;
 	}
 
 	if (objectplacing) // SRB2Kart: spectators need special controls // not anymore huehuehue
@@ -1160,10 +1169,8 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 	else if (cmd->angleturn < (-angleturn[1]))
 		cmd->angleturn = (-angleturn[1]);
 
-	if (cmd->driftturn > (angleturn[1]))
-		cmd->driftturn = (angleturn[1]);
-	else if (cmd->driftturn < (-angleturn[1]))
-		cmd->driftturn = (-angleturn[1]);
+	// until here both are the very same
+	cmd->driftturn = cmd->angleturn;
 
 	if (player->mo)
 		cmd->angleturn = K_GetKartTurnValue(player, cmd->angleturn);
@@ -4054,7 +4061,11 @@ char *G_BuildMapTitle(INT32 mapnum)
 
 		title = Z_Malloc(len, PU_STATIC, NULL);
 
+		if (!title)
+			return NULL;
+
 		sprintf(title, "%s", mapheaderinfo[mapnum-1]->lvlttl);
+
 		if (zonetext) sprintf(title + strlen(title), " %s", zonetext);
 		if (actnum) sprintf(title + strlen(title), " %s", actnum);
 	}

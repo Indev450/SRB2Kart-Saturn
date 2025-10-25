@@ -964,10 +964,11 @@ void D_RegisterClientCommands(void)
 
 	// g_input.c
 	CV_RegisterVar(&cv_controlperkey);
-	CV_RegisterVar(&cv_turnsmooth);
 
 	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
 	{
+		CV_RegisterVar(&cv_turnsmooth[i]);
+
 		CV_RegisterVar(&cv_turnaxis[i]);
 		CV_RegisterVar(&cv_moveaxis[i]);
 		CV_RegisterVar(&cv_camturnaxis[i]);
@@ -983,6 +984,8 @@ void D_RegisterClientCommands(void)
 		CV_RegisterVar(&cv_custom3axis[i]);
 		CV_RegisterVar(&cv_xdeadzone[i]);
 		CV_RegisterVar(&cv_ydeadzone[i]);
+
+		CV_RegisterVar(&cv_litesteer[i]);
 
 		CV_RegisterVar(&cv_usejoystick[i]);
 		CV_RegisterVar(&cv_joyscale[i]);
@@ -1991,11 +1994,6 @@ static void Got_NameAndColor(UINT8 **cp, INT32 playernum)
 	}
 	else
 		SetPlayerSkinByNum(playernum, skin);
-
-#ifdef HAVE_DISCORDRPC
-	if (playernum == consoleplayer)
-		DRPC_UpdatePresence();
-#endif
 }
 
 void SendWeaponPref(void)
@@ -2489,15 +2487,18 @@ void D_SetupVote(void)
 	INT32 i;
 	UINT8 gt = (cv_kartgametypepreference.value == -1) ? gametype : cv_kartgametypepreference.value;
 	UINT8 secondgt = G_SometimesGetDifferentGametype(gt);
-	INT16 votebuffer[4] = {-1,-1,-1,0};
+	INT16 votebuffer[4] = {-1,-1,-1, 0};
 	INT16 luamaps[4] = {0, 0, 0, 0};
 
 	LUA_HookSetupVote(luamaps, sizeof(luamaps)/sizeof(luamaps[0]), gt, secondgt);
 
 	// Correct secondgt if needed
-	UINT8 typeoflevel = mapheaderinfo[luamaps[2]-1]->typeoflevel;
-	if (luamaps[2] && (typeoflevel & G_TOLFlag(secondgt&(~0x80))) == 0)
-		secondgt = ((typeoflevel & TOL_RACE) ? GT_RACE : GT_MATCH)|(secondgt&0x80);
+	if (luamaps[2])
+	{
+		UINT8 typeoflevel = mapheaderinfo[luamaps[2]-1]->typeoflevel;
+		if ((typeoflevel & G_TOLFlag(secondgt&(~0x80))) == 0)
+			secondgt = ((typeoflevel & TOL_RACE) ? GT_RACE : GT_MATCH)|(secondgt&0x80);
+	}
 
 	if (cv_kartencore.value && gt == GT_RACE)
 		WRITEUINT8(p, (gt|0x80));
@@ -2598,14 +2599,18 @@ ConcatCommandArgv (int start, int end)
 		size += strlen(COM_Argv(i)) + 1;
 	}
 
-	final = ZZ_Alloc(size);
-	p = final;
+	p = final = ZZ_Alloc(size);
+
+	if (!p)
+		I_Error("ConcatCommandArgv: Out of memory!\n");
 
 	--end;/* handle the final argument separately */
+
 	for (i = start; i < end; ++i)
 	{
 		p += sprintf(p, "%s ", COM_Argv(i));
 	}
+
 	/* at this point "end" is actually the last argument's position */
 	strcpy(p, COM_Argv(end));
 
@@ -4216,23 +4221,32 @@ static void Command_MotD_f(void)
 
 	mymotd = Z_Malloc(sizeof(motd), PU_STATIC, NULL);
 
-	strlcpy(mymotd, COM_Argv(1), sizeof motd);
+	if (!mymotd)
+		return;
+		//I_Error("Command_MotD_f: Out of memory!\n"); // idk if this aint a bit too much lel
+
+	strlcpy(mymotd, COM_Argv(1), sizeof(motd));
+
 	for (i = 2; i < j; i++)
 	{
-		strlcat(mymotd, " ", sizeof motd);
-		strlcat(mymotd, COM_Argv(i), sizeof motd);
+		strlcat(mymotd, " ", sizeof(motd));
+		strlcat(mymotd, COM_Argv(i), sizeof(motd));
 	}
 
 	// Disallow non-printing characters and semicolons.
 	for (i = 0; mymotd[i] != '\0'; i++)
+	{
 		if (!isprint(mymotd[i]) || mymotd[i] == ';')
 		{
 			Z_Free(mymotd);
 			return;
 		}
+	}
 
 	if ((netgame || multiplayer) && client)
+	{
 		SendNetXCmd(XD_SETMOTD, mymotd, i); // send the actual size of the motd string, not the full buffer's size
+	}
 	else
 	{
 		strcpy(motd, mymotd);
@@ -4431,7 +4445,7 @@ static void Command_Addfile(void)
 	}
 
 	// Add file on your client directly if it is trivial, or you aren't in a netgame.
-	if (!(netgame || multiplayer) || musiconly)
+	if (!netgame || musiconly)
 	{
 		P_AddWadFile(fn, false);
 		return;
@@ -4474,7 +4488,7 @@ static void Command_Addfile(void)
 	if (IsPlayerAdmin(consoleplayer) && (!server)) // Request to add file
 		SendNetXCmd(XD_REQADDFILE, buf, buf_p - buf);
 	else
-		SendNetXCmd(XD_ADDFILE, buf, buf_p - buf);;
+		SendNetXCmd(XD_ADDFILE, buf, buf_p - buf);
 }
 
 /** Adds something at runtime.

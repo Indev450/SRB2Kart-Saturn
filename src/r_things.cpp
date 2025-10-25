@@ -43,13 +43,6 @@
 #define MINZ (FRACUNIT*16)
 #define BASEYCENTER (BASEVIDHEIGHT/2)
 
-typedef struct
-{
-	INT32 x1, x2;
-	INT32 column;
-	INT32 topclip, bottomclip;
-} maskdraw_t;
-
 //
 // Sprite rotation 0 is facing the viewer,
 //  rotation 1 is one angle turn CLOCKWISE around the axis.
@@ -60,8 +53,8 @@ typedef struct
 static lighttable_t **spritelights;
 
 // constant arrays used for psprite clipping and initializing clipping
-INT16 *negonearray;
-INT16 *screenheightarray;
+INT16 *negonearray = NULL;
+INT16 *screenheightarray = NULL;
 
 //
 // INITIALIZATION FUNCTIONS
@@ -93,13 +86,6 @@ static drawsegs_xrange_t drawsegs_xranges[DS_RANGES_COUNT];
 static drawseg_xrange_item_t *drawsegs_xrange;
 static size_t drawsegs_xrange_size = 0;
 static INT32 drawsegs_xrange_count = 0;
-
-INT32 R_ThingLightLevel(mobj_t* thing)
-{
-	INT32 lightlevel = thing->lightlevel;
-
-	return lightlevel;
-}
 
 //
 // Sprite rotation 0 is facing the viewer,
@@ -546,8 +532,8 @@ void R_ClearSprites(void)
 	visspritecount = numvisiblesprites = clippedvissprites = 0;
 }
 
-static INT16 *vissprite_clipbot[MAXVISSPRITES >> VISSPRITECHUNKBITS];
-static INT16 *vissprite_cliptop[MAXVISSPRITES >> VISSPRITECHUNKBITS];
+static INT16 *vissprite_clipbot[MAXVISSPRITES >> VISSPRITECHUNKBITS] = {0};
+static INT16 *vissprite_cliptop[MAXVISSPRITES >> VISSPRITECHUNKBITS] = {0};
 
 static void R_AllocVisSpriteChunkMemory(UINT32 chunk)
 {
@@ -581,16 +567,16 @@ static vissprite_t overflowsprite;
 
 static vissprite_t *R_GetVisSprite(UINT32 num)
 {
-		UINT32 chunk = num >> VISSPRITECHUNKBITS;
+	UINT32 chunk = num >> VISSPRITECHUNKBITS;
 
-		// Allocate chunk if necessary
-		if (!visspritechunks[chunk])
-		{
-			Z_Malloc(sizeof(vissprite_t) * VISSPRITESPERCHUNK, PU_LEVEL, &visspritechunks[chunk]);
-			R_AllocVisSpriteChunkMemory(chunk);
-		}
+	// Allocate chunk if necessary
+	if (!visspritechunks[chunk])
+	{
+		Z_Malloc(sizeof(vissprite_t) * VISSPRITESPERCHUNK, PU_LEVEL, &visspritechunks[chunk]);
+		R_AllocVisSpriteChunkMemory(chunk);
+	}
 
-		return visspritechunks[chunk] + (num & VISSPRITEINDEXMASK);
+	return visspritechunks[chunk] + (num & VISSPRITEINDEXMASK);
 }
 
 static vissprite_t *R_NewVisSprite(void)
@@ -607,8 +593,8 @@ static vissprite_t *R_NewVisSprite(void)
 // Masked means: partly transparent, i.e. stored
 //  in posts/runs of opaque pixels.
 //
-INT16 *mfloorclip;
-INT16 *mceilingclip;
+INT16 *mfloorclip = NULL;
+INT16 *mceilingclip = NULL;
 
 fixed_t spryscale = 0, sprtopscreen = 0, sprbotscreen = 0;
 fixed_t windowtop = 0, windowbottom = 0;
@@ -736,7 +722,6 @@ static void R_DrawFlippedMaskedColumn(drawcolumndata_t* dc, column_t *column)
 
 	dc->texturemid = basetexturemid;
 }
-
 
 // Based off of R_GetLinedefTransTable
 transnum_t R_GetThingTransTable(fixed_t alpha, transnum_t transmap)
@@ -2525,8 +2510,6 @@ void R_InitDrawNodes(void)
 // R_DrawSprite
 //
 //Fab : 26-04-98:
-// NOTE : uses con_clipviewtop, so that when console is on,
-//        don't draw the part of sprites hidden under the console
 static void R_DrawSprite(vissprite_t *spr)
 {
 	mfloorclip = spr->clipbot;
@@ -2826,6 +2809,7 @@ void R_ClipSprites(drawseg_t* dsstart, portal_t* portal)
 
 	if (drawsegs_xrange_size < maxdrawsegs)
 	{
+		// haleyjd: fix reallocation to track 2x size
 		drawsegs_xrange_size = 2 * maxdrawsegs;
 
 		for (i = 0; i < DS_RANGES_COUNT; i++)
@@ -2864,6 +2848,9 @@ void R_ClipSprites(drawseg_t* dsstart, portal_t* portal)
 			drawsegs_xranges[0].count++;
 		}
 	}
+
+	// haleyjd: terminate with a nullptr user for faster loop - adds ~3 FPS
+	drawsegs_xranges[0].items[drawsegs_xranges[0].count].user = nullptr;
 
 	for (; clippedvissprites < visspritecount; clippedvissprites++)
 	{
@@ -3068,6 +3055,9 @@ void R_DrawMasked(maskcount_t* masks, INT32 nummasks)
 	drawnode_t *heads;	/**< Drawnode lists; as many as number of views/portals. */
 
 	heads = static_cast<drawnode_t*>(calloc(nummasks, sizeof(drawnode_t)));
+
+	if (!heads)
+		I_Error("R_DrawMasked: No more free memory\n");
 
 	for (i = 0; i < nummasks; i++)
 	{

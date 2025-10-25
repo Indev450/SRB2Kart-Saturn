@@ -14,6 +14,10 @@
 #ifndef __R_PATCH__
 #define __R_PATCH__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "r_defs.h"
 
 // Structs
@@ -62,5 +66,9 @@ void *R_MaskedFlatToPatch(UINT16 *raw, INT16 width, INT16 height, INT16 leftoffs
 void *R_PixelsToPatch(UINT8 *raw, INT16 width, INT16 height, INT16 leftoffset, INT16 topoffset, size_t *destsize);
 UINT16 R_GetPatchPixel(patch_t *patch, INT32 x, INT32 y, boolean flip);
 void R_PatchToPixels(patch_t *patch, UINT8 *dst); // Important: dst must have enough space for patch->width*patch->height pixels!
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif // __R_PATCH__

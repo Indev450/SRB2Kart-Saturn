@@ -804,7 +804,7 @@ static void HWR_PrecacheLevelSprites(void)
 
 void HWR_PrecacheLevel(void)
 {
-	if (rendermode != render_opengl)
+	if (gamestate != GS_LEVEL)
 		return;
 
 	// Precache flats.

@@ -708,7 +708,7 @@ static boolean PIT_CheckThing(mobj_t *thing)
 			HU_SetCEchoFlags(0);
 			HU_SetCEchoDuration(5);
 			HU_DoCEcho(va("%s\\was hit by a kitchen sink.\\\\\\\\", player_names[thing->player-players]));
-			I_OutputMsg("%s was hit by a kitchen sink.\n", player_names[thing->player-players]);
+			//I_OutputMsg("%s was hit by a kitchen sink.\n", player_names[thing->player-players]);
 			P_DamageMobj(thing, tmthing, tmthing->target, DMG_INSTAKILL);
 			P_KillMobj(tmthing, thing, thing);
 		}
@@ -977,7 +977,7 @@ static boolean PIT_CheckThing(mobj_t *thing)
 			HU_SetCEchoFlags(0);
 			HU_SetCEchoDuration(5);
 			HU_DoCEcho(va("%s\\was hit by a kitchen sink.\\\\\\\\", player_names[tmthing->player-players]));
-			I_OutputMsg("%s was hit by a kitchen sink.\n", player_names[tmthing->player-players]);
+			//I_OutputMsg("%s was hit by a kitchen sink.\n", player_names[tmthing->player-players]);
 			P_DamageMobj(tmthing, thing, thing->target, DMG_INSTAKILL);
 			P_KillMobj(thing, tmthing, tmthing);
 		}

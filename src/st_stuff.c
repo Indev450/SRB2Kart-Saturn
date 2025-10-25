@@ -219,10 +219,6 @@ void ST_UnloadGraphics(void)
 
 void ST_LoadGraphics(void)
 {
-	// SRB2 border patch
-	//st_borderpatchnum = W_GetNumForName("GFZFLR01");
-	//scr_borderpatch = W_CacheLumpNum(st_borderpatchnum, PU_HUDGFX);
-
 	// the original Doom uses 'STF' as base name for all face graphics
 	// Graue 04-08-2004: face/name graphics are now indexed by skins
 	//                   but load them in R_AddSkins, that gets called
@@ -794,7 +790,7 @@ void ST_Drawer(void)
 			LUA_HUD_DrawList(luahuddrawlist_game[i]);
 
 		// draw Midnight Channel's overlay ontop
-		if (mapheaderinfo[gamemap-1]->typeoflevel & TOL_TV)	// Very specific Midnight Channel stuff.
+		if (mapheaderinfo[gamemap-1]->typeoflevel & TOL_TV) // Very specific Midnight Channel stuff.
 			ST_MayonakaStatic();
 	}
 
@@ -802,7 +798,7 @@ void ST_Drawer(void)
 	if (timeinmap < 15)
 	{
 		if (timeinmap <= 5)
-			V_DrawFill(0,0,BASEVIDWIDTH,BASEVIDHEIGHT,120); // Pure white on first few frames, to hide SRB2's awful level load artifacts
+			V_DrawFill(0, 0, BASEVIDWIDTH, BASEVIDHEIGHT, 120); // Pure white on first few frames, to hide SRB2's awful level load artifacts
 		else
 			V_DrawFadeScreen(120, 15-timeinmap); // Then gradually fade out from there
 	}

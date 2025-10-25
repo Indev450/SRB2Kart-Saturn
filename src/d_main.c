@@ -347,11 +347,65 @@ static void D_Renderview(void)
 		}
 	}
 
+	for (i = 0; i <= splitscreen; i++)
+	{
+		if (!P_MobjWasRemoved(players[displayplayers[i]].mo) || players[displayplayers[i]].playerstate == PST_DEAD)
+		{
+			viewssnum = i;
+
+			switch (i)
+			{
+				case 1:
+					if (splitscreen > 1)
+					{
+						viewwindowx = viewwidth;
+						viewwindowy = 0;
+					}
+					else
+					{
+						viewwindowx = 0;
+						viewwindowy = viewheight;
+					}
+					break;
+				case 2:
+					viewwindowx = 0;
+					viewwindowy = viewheight;
+					break;
+				case 3:
+					viewwindowx = viewwidth;
+					viewwindowy = viewheight;
+					break;
+				default: // Initialize for P1
+					viewwindowy = viewwindowx = 0;
+					objectsdrawn = 0;
+					break;
+			}
+
+#ifdef HWRENDER
+			if (rendermode == render_opengl)
+			{
+				HWR_RenderPlayerView();
+			}
+			else if (rendermode == render_soft)
+#endif
+
+			R_RenderPlayerView(&players[displayplayers[i]]);
+		}
+
+		if (rendermode == render_soft)
+		{
+			if (i == 0)
+				R_ApplyViewMorph();
+
+			V_DoPostProcessor(i, postimgparam[i]);
+		}
+	}
+
 	// Draw over the fourth screen so you don't have to stare at a HOM :V
 	if (splitscreen == 2)
 	{
 		// V_DrawPatchFill, but for the fourth screen only
-		patch_t *pat = W_CachePatchName("SRB2BACK", PU_CACHE);
+		patch_t *pat = W_CachePatchName("SRB2BACK", PU_PATCH);
 		INT32 x, y, pw = SHORT(pat->width) * vid.dup, ph = SHORT(pat->height) * vid.dup;
 
 		for (x = vid.width>>1; x < vid.width; x += pw)
@@ -359,65 +413,6 @@ static void D_Renderview(void)
 			for (y = vid.height>>1; y < vid.height; y += ph)
 				V_DrawScaledPatch(x, y, V_NOSCALESTART, pat);
 		}
-	}
-
-	for (i = 0; i <= splitscreen; i++)
-	{
-		const boolean issplitscreen = (i > 0);
-
-		if (!P_MobjWasRemoved(players[displayplayers[i]].mo) || players[displayplayers[i]].playerstate == PST_DEAD)
-		{
-			viewssnum = i;
-
-			if (!issplitscreen) // Initialize for P1
-			{
-				viewwindowy = viewwindowx = 0;
-				objectsdrawn = 0;
-			}
-
-#ifdef HWRENDER
-			if (rendermode == render_opengl)
-			{
-				HWR_RenderPlayerView();
-				R_RestoreLevelInterpolators();
-				continue;
-			}
-#endif
-			if (issplitscreen) // Splitscreen-specific
-			{
-				switch (i)
-				{
-					case 1:
-						if (splitscreen > 1)
-						{
-							viewwindowx = viewwidth;
-							viewwindowy = 0;
-						}
-						else
-						{
-							viewwindowx = 0;
-							viewwindowy = viewheight;
-						}
-						break;
-					case 2:
-						viewwindowx = 0;
-						viewwindowy = viewheight;
-						break;
-					case 3:
-						viewwindowx = viewwidth;
-						viewwindowy = viewheight;
-					default:
-						break;
-				}
-			}
-
-			R_RenderPlayerView(&players[displayplayers[i]]);
-		}
-
-		if (!issplitscreen)
-			R_ApplyViewMorph();
-
-		V_DoPostProcessor(i, postimgparam[i]);
 	}
 
 	R_RestoreLevelInterpolators();
@@ -522,19 +517,16 @@ static boolean D_Display(void)
 		case GS_LEVEL:
 			if (!gametic)
 				break;
-			HU_Erase();
 			AM_Drawer();
 			break;
 
 		case GS_INTERMISSION:
 			Y_IntermissionDrawer();
-			HU_Erase();
 			HU_Drawer();
 			break;
 
 		case GS_VOTING:
 			Y_VoteDrawer();
-			HU_Erase();
 			HU_Drawer();
 			break;
 
@@ -549,7 +541,6 @@ static boolean D_Display(void)
 
 		case GS_CUTSCENE:
 			F_CutsceneDrawer();
-			HU_Erase();
 			HU_Drawer();
 			break;
 
@@ -559,7 +550,6 @@ static boolean D_Display(void)
 
 		case GS_EVALUATION:
 			F_GameEvaluationDrawer();
-			HU_Erase();
 			HU_Drawer();
 			break;
 
@@ -569,7 +559,6 @@ static boolean D_Display(void)
 
 		case GS_CREDITS:
 			F_CreditDrawer();
-			HU_Erase();
 			HU_Drawer();
 			break;
 
@@ -586,7 +575,6 @@ static boolean D_Display(void)
 			{
 				// I don't think HOM from nothing drawing is independent...
 				F_WaitingPlayersDrawer();
-				HU_Erase();
 				HU_Drawer();
 			}
 		case GS_TIMEATTACK:
@@ -890,12 +878,6 @@ void D_SRB2Loop(void)
 				// always update console and hud
 				// otherwise it may take minutes to open it
 				CON_Drawer();
-
-				if (gamestate == GS_LEVEL)
-				{
-					ST_Drawer();
-					HU_Drawer();
-				}
 			}
 		}
 
@@ -972,6 +954,24 @@ void D_SRB2Loop(void)
 // D_SRB2Main
 // =========================================================================
 
+static void ResetSplitScreen(void)
+{
+	UINT8 i;
+
+	// recompute screen size
+	R_ExecuteSetViewSize();
+
+	if (!demo.playback && !botingame)
+	{
+		for (i = 1; i < MAXSPLITSCREENPLAYERS; i++)
+		{
+			if (i > splitscreen)
+				CL_RemoveSplitscreenPlayer(displayplayers[i]);
+			else
+				CL_AddSplitscreenPlayer();
+		}
+	}
+}
 //
 // D_ClearState
 //
@@ -979,8 +979,11 @@ void D_ClearState(void)
 {
 	INT32 i;
 
+	demo.title = false;
+
 	// okay, stop now
 	// (otherwise the game still thinks we're playing!)
+	CURLAbortFile();
 	SV_StopServer();
 	SV_ResetServer();
 	serverlistultimatecount = 0;
@@ -989,7 +992,8 @@ void D_ClearState(void)
 		CL_ClearPlayer(i);
 
 	splitscreen = 0;
-	SplitScreen_OnChange();
+	ResetSplitScreen(); // splitscreen onchange resets us to singleplayer :chaosleep:
+
 	botingame = false;
 	botskin = 0;
 	cv_debug = 0;
@@ -1008,7 +1012,6 @@ void D_ClearState(void)
 	gameaction = ga_nothing;
 	memset(displayplayers, 0, sizeof(displayplayers));
 	consoleplayer = 0;
-	//demosequence = -1;
 	gametype = GT_RACE; // SRB2kart
 	paused = false;
 
@@ -1031,6 +1034,11 @@ void D_ClearState(void)
 
 	G_SetGamestate(GS_NULL);
 	wipegamestate = GS_NULL;
+
+	M_ClearMenus(true);
+
+	// map palettes affect this
+	D_ResetDeviceLED();
 }
 
 //
@@ -1038,12 +1046,9 @@ void D_ClearState(void)
 //
 void D_StartTitle(void)
 {
-	demo.title = false;
 	D_ClearState();
-	netgame = false; // title menu shouldnt be a netgame lmao
-	M_ClearMenus(true);
+	multiplayer = netgame = false; // title menu shouldnt be a netgame or multiplayer lmao
 	F_StartTitleScreen();
-	D_ResetDeviceLED();
 }
 
 //
@@ -1931,9 +1936,7 @@ void D_SRB2Main(void)
 
 	G_LoadGameData();
 
-#if defined (__unix__) || defined (UNIXCOMMON) || defined (HAVE_SDL)
 	VID_PrepareModeList(); // Regenerate Modelist according to cv_fullscreen
-#endif
 
 	// set user default mode or mode set at cmdline
 	SCR_CheckDefaultMode();

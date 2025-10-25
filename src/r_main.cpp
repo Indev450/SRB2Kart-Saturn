@@ -63,7 +63,7 @@ size_t loopcount;
 
 fixed_t viewx, viewy, viewz;
 angle_t viewangle, aimingangle, viewroll;
-UINT8 viewssnum;
+UINT8 viewssnum = 0;
 fixed_t viewcos, viewsin;
 boolean skyVisible;
 boolean skyVisiblePerPlayer[MAXSPLITSCREENPLAYERS]; // saved values of skyVisible for each splitscreen player
@@ -88,7 +88,7 @@ INT32 viewangletox[FINEANGLES/2];
 // The xtoviewangleangle[] table maps a screen pixel
 // to the lowest viewangle that maps back to x ranges
 // from clipangle to -clipangle.
-angle_t *xtoviewangle;
+angle_t *xtoviewangle = NULL;
 
 lighttable_t *scalelight[LIGHTLEVELS][MAXLIGHTSCALE];
 lighttable_t *scalelightfixed[MAXLIGHTSCALE];
@@ -253,6 +253,7 @@ void SplitScreen_OnChange(void)
 			if (playeringame[i] && i != consoleplayer)
 			{
 				UINT8 j;
+
 				for (j = 1; j < MAXSPLITSCREENPLAYERS; j++)
 				{
 					if (displayplayers[j] == consoleplayer)
@@ -268,6 +269,7 @@ void SplitScreen_OnChange(void)
 		}
 	}
 }
+
 static void Fov_OnChange(void)
 {
 	R_SetViewSize();
@@ -943,9 +945,10 @@ void R_ExecuteSetViewSize(void)
 	memset(scalelight, 0xFF, sizeof(scalelight));
 
 	// Calculate the light levels to use for each level/scale combination.
-	for (i = 0; i< LIGHTLEVELS; i++)
+	for (i = 0; i < LIGHTLEVELS; i++)
 	{
 		startmapl = ((LIGHTLEVELS - 1 - i)*2)*NUMCOLORMAPS/LIGHTLEVELS;
+
 		for (j = 0; j < MAXLIGHTSCALE; j++)
 		{
 			level = startmapl - j*vid.width/(viewwidth)/DISTMAP;
@@ -959,6 +962,8 @@ void R_ExecuteSetViewSize(void)
 			scalelight[i][j] = colormaps + level*256;
 		}
 	}
+
+	R_SetupFreelook();
 
 	am_recalc = true;
 }
@@ -1003,7 +1008,7 @@ static void R_InitViewMapping(void)
 static void R_SetupViewBuffers(void)
 {
 	R_CalcFov(cv_fov.value);
-	R_InitViewBuffer(viewwidth, viewheight);
+	R_InitViewBuffer();
 	R_InitViewMapping();
 }
 
@@ -1023,8 +1028,6 @@ void R_Init(void)
 	//I_OutputMsg("\nR_InitData");
 	R_InitData();
 
-	//I_OutputMsg("\nR_InitViewBorder");
-	R_InitViewBorder();
 	R_SetViewSize(); // setsizeneeded is set true
 
 	// this is now done by SCR_Recalc() at the first mode set
@@ -1404,9 +1407,12 @@ void R_RenderPlayerView(player_t *player)
 		R_ClearPlanes();
 		R_ClearSprites();
 
+		R_SetColumnContext(COLUMNCONTEXT_FLUSH);
 		R_RenderViewpoint(&masks[nummasks - 1], false);
 
 		R_ClipSprites(drawsegs, NULL);
+		R_ResetColumnBuffer();
+		R_SetColumnContext(COLUMNCONTEXT_DIRECT);
 		R_DrawSkyPlanes(); // draw the fucker again to prevent some artifacts
 		R_DrawPlanes();
 		R_DrawMasked(masks, nummasks);
@@ -1441,6 +1447,7 @@ void R_RenderPlayerView(player_t *player)
 	// check for new console commands.
 	NetUpdate();
 
+	R_SetColumnContext(COLUMNCONTEXT_FLUSH);
 	ps_numbspcalls.value.i = ps_numpolyobjects.value.i = ps_numdrawnodes.value.i = 0;
 	PS_START_TIMING(ps_bsptime);
 	R_RenderViewpoint(&masks[nummasks - 1], true);
@@ -1448,6 +1455,7 @@ void R_RenderPlayerView(player_t *player)
 	PS_START_TIMING(ps_sw_spritecliptime);
 	R_ClipSprites(drawsegs, NULL);
 	PS_STOP_TIMING(ps_sw_spritecliptime);
+	R_ResetColumnBuffer();
 
 	ps_numsprites.value.i = numvisiblesprites;
 
@@ -1484,12 +1492,14 @@ void R_RenderPlayerView(player_t *player)
 			R_RenderViewpoint(&masks[nummasks - 1], true);
 
 			R_ClipSprites(ds_p - (masks[nummasks - 1].drawsegs[1] - masks[nummasks - 1].drawsegs[0]), portal);
+			R_ResetColumnBuffer();
 
 			Portal_Remove(portal);
 		}
 	}
 	PS_STOP_TIMING(ps_sw_portaltime);
 
+	R_SetColumnContext(COLUMNCONTEXT_DIRECT);
 	PS_START_TIMING(ps_sw_planetime);
 	if (!skybox)
 		R_DrawSkyPlanes();
@@ -1500,7 +1510,6 @@ void R_RenderPlayerView(player_t *player)
 	PS_START_TIMING(ps_sw_maskedtime);
 	R_DrawMasked(masks, nummasks);
 	PS_STOP_TIMING(ps_sw_maskedtime);
-
 	free(masks);
 
 	// Check for new console commands.

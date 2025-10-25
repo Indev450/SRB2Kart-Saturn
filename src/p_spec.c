@@ -2091,8 +2091,7 @@ static void P_ProcessLineSpecial(line_t *line, mobj_t *mo, sector_t *callsec)
 				// Change the music and apply position/fade operations
 				else
 				{
-					strncpy(mapmusic.name, sides[line->sidenum[0]].text, 7);
-					mapmusic.name[6] = 0;
+					strlcpy(mapmusic.name, sides[line->sidenum[0]].text, sizeof(mapmusic.name));
 
 					mapmusic.flags = tracknum & MUSIC_TRACKMASK;
 					if (!(line->flags & ML_BLOCKMONSTERS))
@@ -5387,7 +5386,6 @@ void P_SpawnSpecials(INT32 fromnetsave, boolean reloadinggamestate)
 	// set current weather
 	curWeather = mapheaderinfo[gamemap-1]->weather;
 
-	P_InitTagLists();   // Create xref tables for tags
 	P_SearchForDisableLinedefs(); // Disable linedefs are now allowed to disable *any* line
 
 	P_SpawnScrollers(); // Add generalized scrollers

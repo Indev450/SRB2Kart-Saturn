@@ -65,8 +65,6 @@
 // Globals
 // ==========================================================================
 
-#define ABS(x) ((x) < 0 ? -(x) : (x))
-
 // false if shaders have not been initialized yet, or if shaders are not available
 boolean gl_shadersavailable = false;
 
@@ -76,11 +74,6 @@ static boolean gl_palette_rendering_state = false;
 boolean gl_drawing_stencil = false;
 
 static INT32 current_bsp_culling_distance = 0;
-
-// base values set at SetViewSize
-float gl_baseviewwindowy, gl_baseviewwindowx;
-static float gl_viewwindowy, gl_viewwindowx; // top left corner of view window
-float gl_viewwidth, gl_viewheight; // viewport clipping boundaries (screen coords)
 
 FTransform atransform;
 
@@ -284,6 +277,7 @@ static void CV_glshaders_OnChange(void)
 	{
 		// can't do palette rendering without shaders, so update the state if needed
 		HWR_TogglePaletteRendering();
+		HWR_PrecacheLevel();
 	}
 	M_UpdateOGLMenu();
 }
@@ -301,18 +295,21 @@ static void CV_gltextureformat_OnChange(void)
 {
 	ONLY_IF_GL_LOADED
 	GL_SetSpecialState(HWD_SET_TEXTURE_FORMAT, cv_gltexturedepth.value);
+	HWR_PrecacheLevel();
 }
 
 static void CV_filtermode_OnChange(void)
 {
 	ONLY_IF_GL_LOADED
 	GL_SetSpecialState(HWD_SET_TEXTUREFILTERMODE, cv_glfiltermode.value);
+	HWR_PrecacheLevel();
 }
 
 static void CV_anisotropic_OnChange(void)
 {
 	ONLY_IF_GL_LOADED
 	GL_SetSpecialState(HWD_SET_TEXTUREANISOTROPICMODE, cv_glanisotropicmode.value);
+	HWR_PrecacheLevel();
 }
 
 static void CV_glpaletterendering_OnChange(void)
@@ -325,7 +322,9 @@ static void CV_glpaletterendering_OnChange(void)
 	{
 		HWR_CompileShaders();
 		HWR_TogglePaletteRendering();
+		HWR_PrecacheLevel();
 	}
+
 	M_UpdateOGLMenu();
 }
 
@@ -3377,6 +3376,9 @@ static void HWR_DrawSpriteShadow(gl_vissprite_t *spr, patch_t *gpatch, GLPatch_t
 	fixed_t slopez;
 	float offset = 0;
 
+	if (!spr->mobj)
+		return;
+
 	R_GetShadowZ(spr->mobj, &floorslope);
 
 	mobjfloor = HWR_OpaqueFloorAtPos(
@@ -3388,14 +3390,7 @@ static void HWR_DrawSpriteShadow(gl_vissprite_t *spr, patch_t *gpatch, GLPatch_t
 		angle_t shadowdir;
 
 		// Set direction
-		if (splitscreen && R_GetViewNumber() == 1)
-			shadowdir = localangle[1] + FixedAngle(cv_cam_rotate[1].value);
-		else if (splitscreen > 1 && R_GetViewNumber() == 2)
-			shadowdir = localangle[2] + FixedAngle(cv_cam_rotate[2].value);
-		else if (splitscreen > 2 && R_GetViewNumber() == 3)
-			shadowdir = localangle[3] + FixedAngle(cv_cam_rotate[3].value);
-		else
-			shadowdir = localangle[0] + FixedAngle(cv_cam_rotate[0].value);
+		shadowdir = localangle[viewssnum] + FixedAngle(cv_cam_rotate[viewssnum].value);
 
 		// Find floorheight
 		floorheight = HWR_OpaqueFloorAtPos(
@@ -3407,18 +3402,17 @@ static void HWR_DrawSpriteShadow(gl_vissprite_t *spr, patch_t *gpatch, GLPatch_t
 		// Don't draw it, then!
 		if (spr->mobj->z < floorheight)
 			return;
-		else
-		{
-			fixed_t floorz;
-			floorz = HWR_OpaqueFloorAtPos(
-				spr->mobj->x + P_ReturnThrustX(spr->mobj, shadowdir, spr->mobj->z - floorheight),
-				spr->mobj->y + P_ReturnThrustY(spr->mobj, shadowdir, spr->mobj->z - floorheight),
-				spr->mobj->z, spr->mobj->height);
-			// The shadow would be falling on a wall? Don't draw it, then.
-			// Would draw midair otherwise.
-			if (floorz < floorheight)
-				return;
-		}
+
+		fixed_t floorz;
+		floorz = HWR_OpaqueFloorAtPos(
+			spr->mobj->x + P_ReturnThrustX(spr->mobj, shadowdir, spr->mobj->z - floorheight),
+			spr->mobj->y + P_ReturnThrustY(spr->mobj, shadowdir, spr->mobj->z - floorheight),
+			spr->mobj->z, spr->mobj->height);
+
+		// The shadow would be falling on a wall? Don't draw it, then.
+		// Would draw midair otherwise.
+		if (floorz < floorheight)
+			return;
 
 		floorheight = FixedInt(spr->mobj->z - floorheight);
 
@@ -3428,12 +3422,11 @@ static void HWR_DrawSpriteShadow(gl_vissprite_t *spr, patch_t *gpatch, GLPatch_t
 		floorheight = FixedInt(spr->mobj->z - mobjfloor);
 
 	// technically this_scale gets multiplied and added to sprite y/x scale, but this thing needs it for some crap so ill just throw it in here again
-	const boolean hires = (spr->mobj && spr->mobj->skin && K_GetMobjSkin(spr->mobj)->flags & SF_HIRES);
+	this_scale = FixedToFloat(spr->mobj->scale);
 
-	if (spr->mobj)
-		this_scale = FixedToFloat(spr->mobj->scale);
-	if (hires)
-		this_scale = this_scale * FixedToFloat(K_GetMobjSkin(spr->mobj)->highresscale);
+	const skin_t *moskin = K_GetMobjSkin(spr->mobj);
+	if (moskin && moskin->flags & SF_HIRES)
+		this_scale *= FixedToFloat(moskin->highresscale);
 
 	// create the sprite billboard
 	//
@@ -4054,7 +4047,7 @@ static void HWR_DrawPrecipitationSprite(gl_vissprite_t *spr)
 
 	const precipmobj_t *sprmo = spr->precip;
 
-	if (UNLIKELY(!sprmo || !sprmo->subsector))
+	if (UNLIKELY(!sprmo->subsector))
 		return;
 
 	// cache sprite graphics
@@ -4335,7 +4328,7 @@ static int CompareDrawNodePlanes(const void *p1, const void *p2)
 	const INT32 n1 = *(const INT32*)p1;
 	const INT32 n2 = *(const INT32*)p2;
 
-	return ABS(drawnodes[n2].u.plane.fixedheight - viewz) - ABS(drawnodes[n1].u.plane.fixedheight - viewz);
+	return abs(drawnodes[n2].u.plane.fixedheight - viewz) - abs(drawnodes[n1].u.plane.fixedheight - viewz);
 }
 
 //
@@ -5316,10 +5309,10 @@ static void HWR_DrawSkyBackground(void)
 // -----------------+
 static inline void HWR_ClearView(void)
 {
-	GL_GClipRect((INT32)gl_viewwindowx,
-				(INT32)gl_viewwindowy,
-				(INT32)(gl_viewwindowx + gl_viewwidth),
-				(INT32)(gl_viewwindowy + gl_viewheight),
+	GL_GClipRect(viewwindowx,
+				 viewwindowy,
+				(viewwindowx + viewwidth),
+				(viewwindowy + viewheight),
 						ZCLIP_PLANE, FAR_ZCLIP_DEFAULT);
 	GL_ClearBuffer(false, true, true, NULL);
 }
@@ -5329,19 +5322,6 @@ static inline void HWR_ClearView(void)
 // -----------------+
 void HWR_SetViewSize(void)
 {
-	// setup view size
-	gl_viewwidth = (float)vid.width;
-	gl_viewheight = (float)vid.height;
-
-	if (splitscreen)
-		gl_viewheight /= 2;
-
-	if (splitscreen > 1)
-		gl_viewwidth /= 2;
-
-	gl_baseviewwindowy = 0;
-	gl_baseviewwindowx = 0;
-
 	GL_FlushScreenTextures();
 }
 
@@ -5352,7 +5332,9 @@ static void HWR_SetTransformAiming(FTransform *trans)
 	if (cv_glshearing.value)
 	{
 		fixed_t fixedaiming = AIMINGTODY(aimingangle);
-		trans->viewaiming = FixedToFloat(fixedaiming);
+		trans->viewaiming = FixedToFloat(fixedaiming) * ((float)vid.width / vid.height) / ((float)BASEVIDWIDTH / BASEVIDHEIGHT);
+		if (splitscreen == 1) // only for 2 player splitscreen
+			trans->viewaiming *= 2.125; // splitscreen adjusts fov with 0.8, so compensate (but only halfway, since splitscreen means only half the screen is used)
 		trans->shearing = true;
 		gl_aimingangle = 0;
 	}
@@ -5594,20 +5576,6 @@ extern "C" {
 // ==========================================================================
 static void HWR_RenderFrame(player_t *player, boolean skybox)
 {
-	// set window position
-	gl_viewwindowx = gl_baseviewwindowx;
-	gl_viewwindowy = gl_baseviewwindowy;
-
-	if ((splitscreen == 1 && viewssnum == 1) || (splitscreen > 1 && viewssnum > 1))
-	{
-		gl_viewwindowy += gl_viewheight;
-	}
-
-	if (splitscreen > 1 && viewssnum & 1)
-	{
-		gl_viewwindowx += gl_viewwidth;
-	}
-
 	// check for new console commands.
 	NetUpdate();
 
@@ -5623,10 +5591,10 @@ static void HWR_RenderFrame(player_t *player, boolean skybox)
 
 	if (!skybox && cv_glrenderdistance.value)
 	{
-		GL_GClipRect((INT32)gl_viewwindowx,
-					(INT32)gl_viewwindowy,
-					(INT32)(gl_viewwindowx + gl_viewwidth),
-					(INT32)(gl_viewwindowy + gl_viewheight),
+		GL_GClipRect(viewwindowx,
+					 viewwindowy,
+					(viewwindowx + viewwidth),
+					(viewwindowy + viewheight),
 					ZCLIP_PLANE, clipping_distances[cv_glrenderdistance.value - 1]);
 		current_bsp_culling_distance = bsp_culling_distances[cv_glrenderdistance.value - 1];
 	}

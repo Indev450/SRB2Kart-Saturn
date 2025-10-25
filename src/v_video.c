@@ -641,8 +641,8 @@ void VID_BlitLinearScreen(const UINT8 *restrict srcptr, UINT8 *restrict destptr,
 	}
 }
 
-static UINT8 hudplusalpha[11]  = { 10,  8,  6,  4,  2,  0,  0,  0,  0,  0,  0};
-static UINT8 hudminusalpha[11] = { 10,  9,  9,  8,  8,  7,  7,  6,  6,  5,  5};
+static const UINT8 hudplusalpha[11]  = { 10,  8,  6,  4,  2,  0,  0,  0,  0,  0,  0};
+static const UINT8 hudminusalpha[11] = { 10,  9,  9,  8,  8,  7,  7,  6,  6,  5,  5};
 UINT8 hudtrans = 0;
 
 static const UINT8 *v_colormap = NULL;
@@ -1739,59 +1739,69 @@ void V_DrawHorizontallyScaledFullScreenPatch(patch_t *patch)
 
 void V_DrawVhsEffect(boolean rewind)
 {
-	static fixed_t upbary = 100*FRACUNIT, downbary = 150*FRACUNIT;
+	static fixed_t upbary = 100, downbary = 150;
 
-	UINT8 *buf = vid.screens[0], *tmp = vid.screens[4];
+	UINT8 barsize, updistort, downdistort;
+
 	UINT16 y;
-	UINT32 x, pos = 0;
+	UINT32 x, pos;
 
-	UINT8 *normalmapstart = ((UINT8 *)transtables + (8<<FF_TRANSSHIFT|(19<<8)));
+	UINT8 *buf, *tmp;
+	UINT8 *normalmapstart, *thismapstart;
 #ifdef HQ_VHS
-	UINT8 *tmapstart = ((UINT8 *)transtables + (6<<FF_TRANSSHIFT));
+	UINT8 *tmapstart;
 #endif
-	UINT8 *thismapstart;
 	SINT8 offs;
 
-	UINT8 barsize = vid.dup<<5;
-	UINT8 updistort = vid.dup<<(rewind ? 5 : 3);
-	UINT8 downdistort = updistort>>1;
+	barsize = vid.dup << 5;
+	updistort = vid.dup << (rewind ? 5 : 3);
+	downdistort = updistort >> 1;
 
 	if (rewind)
 		V_DrawVhsEffect(false); // experimentation
 
-	upbary -= renderdeltatics * (vid.dup * (rewind ? 3 : 1.8f));
-	downbary += renderdeltatics * (vid.dup * (rewind ? 2 : 1));
+	upbary -= FixedMul(vid.dup * (rewind ? 3 : 1.8f), renderdeltatics);
+	downbary += FixedMul(vid.dup * (rewind ? 2 : 1), renderdeltatics);
 
-	if (upbary < -barsize*FRACUNIT)
-		upbary = vid.height<<FRACBITS;
-	if (downbary > vid.height<<FRACBITS)
-		downbary = -barsize*FRACUNIT;
+	if (upbary < -barsize)
+		upbary = vid.height;
 
-	fixed_t uby = upbary>>FRACBITS, dby = downbary>>FRACBITS;
+	if (downbary > vid.height)
+		downbary = -barsize;
 
 #ifdef HWRENDER
 	if (rendermode == render_opengl)
 	{
-		HWR_RenderVhsEffect(uby, dby, updistort, downdistort, barsize);
+		HWR_RenderVhsEffect(upbary, downbary, updistort, downdistort, barsize);
 		return;
 	}
 #endif
+
+	buf = vid.screens[0];
+	tmp = vid.screens[4];
+
+	normalmapstart = ((UINT8 *)transtables + (8<<FF_TRANSSHIFT|(19<<8)));
+#ifdef HQ_VHS
+	tmapstart = ((UINT8 *)transtables + (6<<FF_TRANSSHIFT));
+#endif
+
+	pos = 0;
 
 	for (y = 0; y < vid.height; y+=2)
 	{
 		thismapstart = normalmapstart;
 		offs = 0;
 
-		if (y >= uby && y < uby+barsize)
+		if (y >= upbary && y < upbary+barsize)
 		{
 			thismapstart -= (2<<FF_TRANSSHIFT) - (5<<8);
-			offs += updistort * 2.0f * min(y-uby, uby+barsize-y) / barsize;
+			offs += updistort * 2.0f * min(y-upbary, upbary+barsize-y) / barsize;
 		}
 
-		if (y >= dby && y < dby+barsize)
+		if (y >= downbary && y < downbary+barsize)
 		{
 			thismapstart -= (2<<FF_TRANSSHIFT) - (5<<8);
-			offs -= downdistort * 2.0f * min(y-dby, dby+barsize-y) / barsize;
+			offs -= downdistort * 2.0f * min(y-downbary, downbary+barsize-y) / barsize;
 		}
 
 		offs += M_RandomKey(vid.dup<<1);
@@ -1909,8 +1919,10 @@ UINT8 *V_GetStringColormap(INT32 colorflags)
 	}
 #else // optimised
 	colorflags = ((colorflags & V_CHARCOLORMASK) >> V_CHARCOLORSHIFT);
+
 	if (!colorflags || colorflags > 15) // INT32 is signed, but V_CHARCOLORMASK is a very restrictive mask.
 		return NULL;
+
 	return (purplemap+((colorflags-1)<<8));
 #endif
 }
@@ -2000,6 +2012,7 @@ char *V_WordWrap(INT32 x, INT32 w, INT32 option, const char *string)
 	for (i = 0; i < slen; ++i)
 	{
 		c = newstring[i];
+
 		if ((UINT8)c >= 0x80 && (UINT8)c <= 0x8F) //color parsing! -Inuyasha 2.16.09
 			continue;
 
@@ -3094,6 +3107,9 @@ INT32 V_SubStringWidth(const char *string, INT32 length, INT32 option)
 	INT32 spacewidth = 4, charwidth = 0;
 	ssize_t i;
 
+	if (!string)
+		return 0;
+
 	if (length < 0)
 		length = strlen(string);
 
@@ -3136,6 +3152,9 @@ INT32 V_SmallSubStringWidth(const char *string, INT32 length, INT32 option)
 	INT32 spacewidth = 2, charwidth = 0;
 	ssize_t i;
 
+	if (!string)
+		return 0;
+
 	if (length < 0)
 		length = strlen(string);
 
@@ -3176,8 +3195,13 @@ INT32 V_ThinSubStringWidth(const char *string, INT32 length, INT32 option)
 {
 	INT32 c, w = 0;
 	INT32 spacewidth = 2, charwidth = 0;
-	boolean lowercase = (option & V_ALLOWLOWERCASE);
+	boolean lowercase;
 	ssize_t i;
+
+	if (!string)
+		return 0;
+
+	lowercase = (option & V_ALLOWLOWERCASE);
 
 	if (length < 0)
 		length = strlen(string);
@@ -3232,6 +3256,9 @@ INT32 V_SubStringLengthToFit(const char *string, INT32 width, INT32 option)
 	INT32 c, w = 0;
 	INT32 spacewidth = 4, charwidth = 0;
 	INT32 i;
+
+	if (!string)
+		return 0;
 
 	switch (option & V_SPACINGMASK)
 	{
@@ -3814,11 +3841,15 @@ void V_Init(void)
 
 	for (i = 0; i < NUMSCREENS; i++)
 	{
+		if (vid.screens[i])
+		{
 #if defined(__SSE__)
-		aligned_free(vid.screens[i]);
+			aligned_free(vid.screens[i]);
 #else
-		free(vid.screens[i]);
+			free(vid.screens[i]);
 #endif
+		}
+
 		vid.screens[i] = NULL;
 	}
 

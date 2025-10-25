@@ -431,7 +431,7 @@ void HU_Start(void)
 
 void HU_Shiftform(void)
 {
-	shiftxform = cv_keyboardlayout.value == 3 ? french_shiftxform : english_shiftxform;
+	shiftxform = (cv_keyboardlayout.value == 3) ? french_shiftxform : english_shiftxform;
 }
 
 //======================================================================
@@ -465,8 +465,8 @@ static INT16 addy = 0; // use this to make the messages scroll smoothly when one
 static void HU_removeChatText_Mini(void)
 {
 	// MPC: Don't create new arrays, just iterate through an existing one
-	size_t i;
-	for(i=0;i<chat_nummsg_min-1;i++) {
+	for (size_t i = 0; i < chat_nummsg_min - 1; i++)
+	{
 		strcpy(chat_mini[i], chat_mini[i+1]);
 		chat_timers[i] = chat_timers[i+1];
 	}
@@ -485,8 +485,8 @@ static void HU_removeChatText_Log(void)
 		return;
 
 	free(chat_log[0]);
-	size_t i;
-	for(i=0;i<chat_nummsg_log-1;i++)
+
+	for (size_t i = 0; i < chat_nummsg_log - 1;i++)
 	{
 		chat_log[i] = chat_log[i+1];
 	}
@@ -1101,14 +1101,14 @@ void HU_Ticker(void)
 		size_t i = 0;
 
 		// handle spam while we're at it:
-		for(; (i<MAXPLAYERS); i++)
+		for(; (i < MAXPLAYERS); i++)
 		{
 			if (stop_spamming[i] > 0)
 				stop_spamming[i]--;
 		}
 
 		// handle chat timers
-		for (i=0; (i<chat_nummsg_min); i++)
+		for (i = 0; (i < chat_nummsg_min); i++)
 		{
 			if (chat_timers[i] > 0)
 				chat_timers[i]--;
@@ -1231,7 +1231,7 @@ static void HU_SendChatMessage(void)
 		nodenum[2] = '\0';
 
 		// check for undesirable characters in our "number"
-		if 	(((nodenum[0] < '0') || (nodenum[0] > '9')) || ((nodenum[1] < '0') || (nodenum[1] > '9')))
+		if (((nodenum[0] < '0') || (nodenum[0] > '9')) || ((nodenum[1] < '0') || (nodenum[1] > '9')))
 		{
 			// check if nodenum[1] is a space
 			if (nodenum[1] == ' ')
@@ -1499,7 +1499,7 @@ static void HU_drawMiniChat(void)
 	if (splitscreen > 1)
 		boxw = max(64, boxw/2);
 
-	for (; i>0; i--)
+	for (; i > 0; i--)
 	{
 		char *msg = CHAT_WordWrap(x+2, boxw-(charwidth*2), V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_ALLOWLOWERCASE, chat_mini[i-1]);
 		size_t j = 0;
@@ -1572,7 +1572,7 @@ static void HU_drawMiniChat(void)
 	i = 0;
 	prev_linereturn = false;
 
-	for (; i<=(chat_nummsg_min-1); i++) // iterate through our hot messages
+	for (; i <= (chat_nummsg_min-1); i++) // iterate through our hot messages
 	{
 		INT32 clrflag = 0;
 		INT32 timer = ((cv_chattime.value*TICRATE)-chat_timers[i]) - cv_chattime.value*TICRATE+9; // see below...
@@ -1748,7 +1748,6 @@ static void HU_drawChatLog(INT32 offset)
 		if (msg)
 			Z_Free(msg);
 	}
-
 
 	if (((chat_scroll >= chat_maxscroll) || (chat_scrollmedown)) && !(justscrolleddown || justscrolledup || chat_scrolltime)) // was already at the bottom of the page before new maxscroll calculation and was NOT scrolling.
 	{
@@ -2284,6 +2283,7 @@ static void HU_DrawSongCreditsBox(void)
 		V_DrawFill(x, y, strwidth*dup, BOXCREDITHEIGHT*dup, 28|flags|(bgt<<V_ALPHASHIFT));
 		V_DrawFill(x+dup, y+dup, (strwidth-2)*dup, (BOXCREDITHEIGHT-2)*dup, 30|flags|(bgt<<V_ALPHASHIFT));
 	}
+
 	if (cursongcredit.trans < NUMTRANSMAPS)
 	{
 		V_DrawSmallString(x+2*dup, y+2*dup, V_ALLOWLOWERCASE|flags|(cursongcredit.trans<<V_ALPHASHIFT), str);
@@ -2392,76 +2392,6 @@ void HU_Drawer(void)
 }
 
 //======================================================================
-//                 HUD MESSAGES CLEARING FROM SCREEN
-//======================================================================
-
-// Clear old messages from the borders around the view window
-// (only for reduced view, refresh the borders when needed)
-//
-// startline: y coord to start clear,
-// clearlines: how many lines to clear.
-//
-static INT32 oldclearlines;
-
-void HU_Erase(void)
-{
-	INT32 topline, bottomline;
-	INT32 y, yoffset;
-
-#ifdef HWRENDER
-	// clear hud msgs on double buffer (OpenGL mode)
-	boolean secondframe;
-	static INT32 secondframelines;
-#endif
-
-	if (con_clearlines == oldclearlines && !con_hudupdate && !chat_on)
-		return;
-
-#ifdef HWRENDER
-	// clear the other frame in double-buffer modes
-	secondframe = (con_clearlines != oldclearlines);
-	if (secondframe)
-		secondframelines = oldclearlines;
-#endif
-
-	// clear the message lines that go away, so use _oldclearlines_
-	bottomline = oldclearlines;
-	oldclearlines = con_clearlines;
-	if (chat_on && OLDCHAT)
-		if (bottomline < 8)
-			bottomline = 8; // only do it for consolechat. consolechat is gay.
-
-	if (automapactive || viewwindowx == 0) // hud msgs don't need to be cleared
-		return;
-
-	// software mode copies view border pattern & beveled edges from the backbuffer
-	if (rendermode == render_soft)
-	{
-		topline = 0;
-		for (y = topline, yoffset = y*vid.width; y < bottomline; y++, yoffset += vid.width)
-		{
-			if (y < viewwindowy || y >= viewwindowy + viewheight)
-				R_VideoErase(yoffset, vid.width); // erase entire line
-			else
-			{
-				R_VideoErase(yoffset, viewwindowx); // erase left border
-				// erase right border
-				R_VideoErase(yoffset + viewwindowx + viewwidth, viewwindowx);
-			}
-		}
-		con_hudupdate = false; // if it was set..
-	}
-#ifdef HWRENDER
-	else if (rendermode != render_none)
-	{
-		// refresh just what is needed from the view borders
-		HWR_DrawViewBorder(secondframelines);
-		con_hudupdate = secondframe;
-	}
-#endif
-}
-
-//======================================================================
 //                   IN-LEVEL MULTIPLAYER RANKINGS
 //======================================================================
 
@@ -2540,17 +2470,91 @@ Ping_conversion (UINT32 lag)
 // HU_drawPing
 //
 
+static void HU_drawOldPing(INT32 x, INT32 y, UINT32 lag, INT32 flags, boolean gentleman)
+{
+	const INT32 measureid = cv_pingmeasurement.value ? 1 : 0;
+
+	if (vid.width >= 640)	// how sad, we're using a shit resolution.
+	{
+		if (measureid == 1)
+		{
+			V_DrawRightAlignedSmallString(x+12, y+13, V_ALLOWLOWERCASE|flags, va("%dms", Ping_conversion(lag)));
+		}
+		else if (measureid == 0)
+		{
+			V_DrawRightAlignedSmallString(x+12, y+13, flags, va("d%d", Ping_conversion(lag)));
+		}
+	}
+
+	if (cv_pingicon.value)
+	{
+		UINT8 numbars = 0; // how many ping bars do we draw?
+		UINT8 barcolor = 31; // color we use for the bars (green, yellow, red or black)
+		SINT8 i = 0;
+		SINT8 yoffset = 6;
+
+		switch (lag)
+		{
+			case 0 ... 1:
+				numbars = 3;
+				barcolor = 215; // Blue
+				break;
+			case 2 ... 3:
+				numbars = 3;
+				barcolor = 184; // Green
+				break;
+			case 4 ... 6:
+				numbars = 2;    // Apparently ternaries w/ multiple statements don't look good in C so I decided against it.
+				barcolor = 103; // Yellow
+				break;
+			case 7 ... 9:
+				numbars = 1;
+				barcolor = 155; // Red
+				break;
+			default:            // Brazil
+				numbars = 0;
+				barcolor = 31;  // black
+				break;
+		}
+
+		if (gentleman)
+		{
+			barcolor = 194; // make it purplish
+			// bars get indirectly set earlier
+		}
+
+		for (i = 0; (i < 3); i++) // Draw the ping bar
+		{
+			V_DrawFill(x+2 *(i-1)+7, y+8+yoffset-4, 2, 8-yoffset, 31|flags);
+			if (i < numbars)
+				V_DrawFill(x+2 *(i-1)+7, y+8+yoffset-3, 1, 8-yoffset-1, barcolor|flags);
+
+			yoffset -= 2;
+		}
+	}
+}
+
+static void HU_drawKartPing(INT32 x, INT32 y, UINT32 lag, INT32 flags, boolean gentleman)
+{
+	const INT32 measureid = cv_pingmeasurement.value ? 1 : 0;
+
+	if (measureid == 1)
+		V_DrawScaledPatch(x+11 - pingmeasure[measureid]->width, y+9, flags, pingmeasure[measureid]);
+
+	if (cv_pingicon.value)
+	{
+		INT32 gfxnum = Ping_gfx_num(lag); // gfx to draw
+		V_DrawScaledPatch(x+2, y, flags, pinggfx[gfxnum]);
+	}
+
+	x = V_DrawPingNum(x + (measureid == 1 ? 11 - pingmeasure[measureid]->width : 10), y+9, flags, Ping_conversion(lag), Ping_gfx_colormap(lag, gentleman));
+
+	if (measureid == 0)
+		V_DrawScaledPatch(x+1 - pingmeasure[measureid]->width, y+9, flags, pingmeasure[measureid]);
+}
+
 void HU_drawPlayerPing(INT32 x, INT32 y, INT32 pnum, INT32 flags)
 {
-	INT32 measureid = cv_pingmeasurement.value ? 1 : 0;
-	INT32 gfxnum; // gfx to draw
-
-	//SRB2/Kart v1.0 style
-	UINT8 numbars = 0; // how many ping bars do we draw?
-	UINT8 barcolor = 31; // color we use for the bars (green, yellow, red or black)
-	SINT8 i = 0;
-	SINT8 yoffset = 6;
-
 	UINT32 lag = playerpingtable[pnum];
 	const boolean gentleman = (cv_mindelay.value && (lag < (tic_t)simulated_lag));
 
@@ -2561,74 +2565,11 @@ void HU_drawPlayerPing(INT32 x, INT32 y, INT32 pnum, INT32 flags)
 
 	if (cv_pingstyle.value == 0) // kart
 	{
-		gfxnum = Ping_gfx_num(lag);
-
-		if (measureid == 1)
-			V_DrawScaledPatch(x+11 - pingmeasure[measureid]->width, y+9, flags, pingmeasure[measureid]);
-
-		if (cv_pingicon.value)
-			V_DrawScaledPatch(x+2, y, flags, pinggfx[gfxnum]);
-
-		x = V_DrawPingNum(x + (measureid == 1 ? 11 - pingmeasure[measureid]->width : 10), y+9, flags, Ping_conversion(lag), Ping_gfx_colormap(lag, gentleman));
-
-		if (measureid == 0)
-			V_DrawScaledPatch(x+1 - pingmeasure[measureid]->width, y+9, flags, pingmeasure[measureid]);
+		HU_drawKartPing(x, y, lag, flags, gentleman);
 	}
 	else if (cv_pingstyle.value == 1) // old style ping
 	{
-		if (vid.width >= 640)	// how sad, we're using a shit resolution.
-		{
-			if (measureid == 1)
-			{
-				V_DrawRightAlignedSmallString(x+12, y+13, V_ALLOWLOWERCASE|flags, va("%dms", Ping_conversion(lag)));
-			}
-			else if (measureid == 0)
-			{
-				V_DrawRightAlignedSmallString(x+12, y+13, flags, va("d%d", Ping_conversion(lag)));
-			}
-		}
-
-		if (cv_pingicon.value)
-		{
-			switch (lag)
-			{
-				case 0 ... 1:
-					numbars = 3;
-					barcolor = 215; // Blue
-					break;
-				case 2 ... 3:
-					numbars = 3;
-					barcolor = 184; // Green
-					break;
-				case 4 ... 6:
-					numbars = 2;    // Apparently ternaries w/ multiple statements don't look good in C so I decided against it.
-					barcolor = 103; // Yellow
-					break;
-				case 7 ... 9:
-					numbars = 1;
-					barcolor = 155; // Red
-					break;
-				default:            // Brazil
-					numbars = 0;
-					barcolor = 31;  // black
-					break;
-			}
-
-			if (gentleman)
-			{
-				barcolor = 194; // make it purplish
-				// bars get indirectly set earlier
-			}
-
-			for (i = 0; (i < 3); i++) // Draw the ping bar
-			{
-				V_DrawFill(x+2 *(i-1)+7, y+8+yoffset-4, 2, 8-yoffset, 31|flags);
-				if (i < numbars)
-					V_DrawFill(x+2 *(i-1)+7, y+8+yoffset-3, 1, 8-yoffset-1, barcolor|flags);
-
-				yoffset -= 2;
-			}
-		}
+		HU_drawOldPing(x, y, lag, flags, gentleman);
 	}
 }
 
@@ -2904,12 +2845,8 @@ void HU_SetCEchoFlags(INT32 flags)
 
 void HU_DoCEcho(const char *msg)
 {
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wstringop-truncation" // This is fine, we set null byte later
-	strncpy(cechotext, msg, sizeof(cechotext));
-#pragma GCC diagnostic pop
-	strncat(cechotext, "\\", sizeof(cechotext) - strlen(cechotext) - 1);
-	cechotext[sizeof(cechotext) - 1] = '\0';
+	strlcpy(cechotext, msg, sizeof(cechotext));
+	strlcat(cechotext, "\\", sizeof(cechotext));
 
 	// just print it to console
 	if (cv_cechotoggle.value == 2)
@@ -2918,8 +2855,20 @@ void HU_DoCEcho(const char *msg)
 		strncpy(temp, cechotext, sizeof(temp));
 
 		for (char *p = temp; *p != '\0'; ++p)
+		{
 			if (*p == '\\')
+			{
 				*p = '\n';
+				++p;
+				char *skip_p = p; // Point at which we will move part of string after all \'s
+
+				while (*p == '\\')
+					++p;
+
+				memmove(skip_p, p, strlen(p)+1); // move the rest of string with null byte
+				p = skip_p; // Restore p
+			}
+		}
 
 		CONS_Printf("%s\n", temp);
 

@@ -46,15 +46,15 @@
 // good night sweet prince
 //#define SHITPLANESPARENCY
 
-visplane_t *visplanes[MAXVISPLANES];
+visplane_t *visplanes[MAXVISPLANES] = {};
 static visplane_t *freetail;
 static visplane_t **freehead = &freetail;
 
-visplane_t *floorplane;
-visplane_t *ceilingplane;
+visplane_t *floorplane = NULL;
+visplane_t *ceilingplane = NULL;
 
-visffloor_t visffloor[MAXFFLOORS];
-INT32 numffloors;
+visffloor_t visffloor[MAXFFLOORS] = {};
+INT32 numffloors = 0;
 
 //SoM: 3/23/2000: Boom visplane hashing routine.
 #define visplane_hash(picnum,lightlevel,height) \
@@ -65,8 +65,8 @@ INT32 numffloors;
 //  floorclip starts out SCREENHEIGHT
 //  ceilingclip starts out -1
 //
-INT16 *floorclip, *ceilingclip;
-fixed_t *frontscale;
+INT16 *floorclip = NULL, *ceilingclip = NULL;
+fixed_t *frontscale = NULL;
 
 //
 // spanstart holds the start of a plane span
@@ -81,13 +81,13 @@ static INT32 *spanstart;
 //                (this is to calculate yslopes only when really needed)
 //                (when mouselookin', yslope is moving into yslopetab)
 //                Check R_SetupFrame, R_SetViewSize for more...
-fixed_t *yslopetab;
-fixed_t *yslope;
+fixed_t *yslopetab = NULL;
+fixed_t *yslope = NULL;
 
-fixed_t basexscale, baseyscale;
+fixed_t basexscale = 0, baseyscale = 0;
 
-static INT16 *ffloor_f_clip;
-static INT16 *ffloor_c_clip;
+static INT16 *ffloor_f_clip = NULL;
+static INT16 *ffloor_c_clip = NULL;
 
 static void R_SetTiltedSpan(drawspandata_t* ds, INT32 span);
 static void R_SetSlopePlaneVectors(drawspandata_t* ds, visplane_t *pl, INT32 y, fixed_t xoff, fixed_t yoff);
@@ -616,14 +616,12 @@ void R_ExpandPlane(visplane_t *pl, INT32 start, INT32 stop)
 //
 static void R_MakeSpans(void (*mapfunc)(drawspandata_t* ds, void(*spanfunc)(drawspandata_t*), INT32, INT32, INT32, boolean), spandrawfunc_t* localspanfunc, drawspandata_t* ds, INT32 x, INT32 t1, INT32 b1, INT32 t2, INT32 b2, boolean allow_parallel)
 {
-	const INT32 vidheight = vid.height;
-
 	//    Alam: from r_splats's R_RenderFloorSplat
-	if (t1 >= vidheight) t1 = vidheight-1;
-	if (b1 >= vidheight) b1 = vidheight-1;
-	if (t2 >= vidheight) t2 = vidheight-1;
-	if (b2 >= vidheight) b2 = vidheight-1;
-	if (x-1 >= vid.width) x = vid.width;
+	if (t1 >= viewheight) t1 = viewheight-1;
+	if (b1 >= viewheight) b1 = viewheight-1;
+	if (t2 >= viewheight) t2 = viewheight-1;
+	if (b2 >= viewheight) b2 = viewheight-1;
+	if (x-1 >= viewwidth) x = viewwidth;
 
 #ifdef HAVE_THREADS
 	// We want to draw N spans per subtask to ensure the work is
@@ -716,13 +714,10 @@ void R_DrawPlanes(void)
 	visplane_t *pl;
 	INT32 i;
 	drawspandata_t ds = {};
-#ifdef HAVE_THREADS
-	srb2::ThreadPool::Sema tp_sema;
-#endif
-
 	R_UpdatePlaneRipple(&ds);
 
 #ifdef HAVE_THREADS
+	srb2::ThreadPool::Sema tp_sema;
 	srb2::g_main_threadpool->begin_sema();
 #endif
 	for (i = 0; i < MAXVISPLANES; i++, pl++)
@@ -742,12 +737,19 @@ void R_DrawPlanes(void)
 #endif
 }
 
-static void R_DrawSkyPlane(visplane_t *pl, void(*colfunc2)(drawcolumndata_t*), boolean allow_parallel);
+static void R_DrawSkyPlane(visplane_t *pl, void(*skycolfunc)(drawcolumndata_t*), boolean allow_parallel);
 
 void R_DrawSkyPlanes(void)
 {
 	visplane_t *pl;
 	INT32 i;
+
+	// If we're not supposed to draw the sky (e.g. for skyboxes), don't do anything!
+	// This probably utterly ruins sky rendering for FOFs and polyobjects, unfortunately
+	if (!newview->sky)
+	{
+		return;
+	}
 
 #ifdef HAVE_THREADS
 	srb2::ThreadPool::Sema tp_sema;
@@ -770,24 +772,17 @@ void R_DrawSkyPlanes(void)
 #endif
 }
 
-static void R_DrawSkyPlane(visplane_t *pl, void(*colfunc2)(drawcolumndata_t*), boolean allow_parallel)
+static void R_DrawSkyPlane(visplane_t *pl, void(*skycolfunc)(drawcolumndata_t*), boolean allow_parallel)
 {
 	INT32 x;
 
 	if (!(pl->minx <= pl->maxx))
 		return;
 
-	// If we're not supposed to draw the sky (e.g. for skyboxes), don't do anything!
-	// This probably utterly ruins sky rendering for FOFs and polyobjects, unfortunately
-	if (!newview->sky)
-	{
-		return;
-	}
-
 	drawcolumndata_t dc = {};
 	const INT32 texture = texturetranslation[skytexture];
 
-	// Reset column drawer function (note: couldn't we just call walldrawerfunc directly?)
+	// Reset column drawer function (note: couldn't we just call colfuncs[BASEDRAWFUNC] directly?)
 	// (that is, unless we'll need to switch drawers in future for some reason)
 	R_SetColumnFunc(BASEDRAWFUNC);
 
@@ -837,7 +832,7 @@ static void R_DrawSkyPlane(visplane_t *pl, void(*colfunc2)(drawcolumndata_t*), b
 				dc.x = x + i;
 				dc.source = R_GetColumn(texture, -angle); // get negative of angle for each column to display sky correct way round! --Monster Iestyn 27/01/18
 
-				colfunc2(&dc);
+				skycolfunc(&dc);
 			}
 		};
 
@@ -871,10 +866,9 @@ static void R_DrawSkyPlane(visplane_t *pl, void(*colfunc2)(drawcolumndata_t*), b
 		dc.iscale = FixedMul(skyscale, FINECOSINE(xtoviewangle[x]>>ANGLETOFINESHIFT));
 		dc.x = x;
 		dc.source =
-		R_GetColumn(texturetranslation[skytexture],
-					-angle); // get negative of angle for each column to display sky correct way round! --Monster Iestyn 27/01/18
+		R_GetColumn(texturetranslation[skytexture], -angle); // get negative of angle for each column to display sky correct way round! --Monster Iestyn 27/01/18
 
-		colfunc2(&dc);
+		skycolfunc(&dc);
 	}
 #endif
 }
@@ -1159,7 +1153,7 @@ void R_DrawSinglePlane(drawspandata_t* ds, visplane_t *pl, boolean allow_paralle
 					offset = (scry*vid.width) + scrx;
 
 					// No idea if this works
-					VID_BlitLinearScreen(renderscreen + offset,
+					VID_BlitLinearScreen(vid.screens[0] + offset,
 										 vid.screens[1] + (top*vid.width), // intentionally not +offset
 										 viewwidth, bottom-top,
 										 vid.width, vid.width);
