@@ -968,16 +968,16 @@ static const char* OP_ExpTooltips[] =
 	NULL,
 	"How far Mobj interpolation should take effect.",
 	"When weather is on this will cut the object amount used in half.",
-	"Sets minimum sector brightness, useful for dark areas",
+	"Sets minimum sector brightness, useful for dark areas.",
 	//"Should the directional lightning be randomized each map?\nTakes effect on next map load.",
 	"Toggle being able to see the sky.",
-	"Change the FPS counter sampling method\nInaccurate updates slower and might miss frame drops and such\nAccurate updates faster and is more accurate, but might be less readable", // how to ingles??
-	"Skips rendering frames if game logic takes too long preventing issues during performance drops." // idk im shit as describing things
+	"Change the FPS counter sampling method\nInaccurate updates slower\nand might miss sudden framerate changes and drops,\nproviding a more averaged result.\nAccurate updates faster, but might be less readable.", // how to ingles??
+	"Skips rendering frames if game logic takes too long\npreventing gameplay issues during performance drops.", // idk im shit as describing things
 	"Different methods of scaling the votescreen backgrounds.",
 #ifdef HWRENDER
 	"Should the game do Screen Textures? Provides a good boost to frames\nat the cost of some visual effects not working when disabled.",
 #ifdef USE_FBO_OGL
-	"Allows the game to downsample from a higher resolution than your display\nin OpenGL renderer mode. Requires a GPU with atleast OpenGL 3.0 support.",
+	"Allows the game to downsample from a higher resolution\nthan your display in OpenGL renderer mode.\nRequires a GPU with atleast OpenGL 2.1 support.",
 #endif
 	"Change the bit depth of the Lookup Palette in Palette rendering mode\n 16 bits is like software looks ingame\nwhile 24 bits is how software looks in screenshots.",
 #endif
@@ -1375,15 +1375,15 @@ static menuitem_t OP_Player4CamOptionsMenu[] =
 static const char* OP_PlayerCamOptionsTooltips[] =
 {
 	NULL,
-	"Should the Camera flip on gravity flipped sections?.",
+	"Should the Camera flip on gravity flipped sections?",
 	"Camera distance relative to the Player.",
-	"Height of the Camera",
-	"Pitch Camera on Upwards or Downhill Slopes",
-	"Speed of the Camera",
-	"Should looking back inherit the Players Momentum?\nEither inherit Player Momentum or double of it\nmay make looking back while boosting or going in high speed less jarring",
+	"Height of the Camera.",
+	"Pitch Camera on Upwards or Downhill Slopes.",
+	"Speed of the Camera.",
+	"Should looking back inherit the Players Momentum?\nEither inherit Player Momentum or double of it\nmay make looking back while boosting or going in high speed less jarring.",
 	"Allows looking up/down by holding\naim forward/backward while standing still.",
-	"Speed of the Freecam/Spectator Camera",
-	"Toggle between Third or First Person camera",
+	"Speed of the Freecam/Spectator Camera.",
+	"Toggle between Third or First Person camera.",
 };
 
 // Ok it's still called chatoptions but we'll put ping display in here to be clean
@@ -1763,7 +1763,7 @@ static const char* OP_PlayerDistortTooltips[] =
 	"Distance object rotation should be visable.",
 	"Player rotation when sliptiding.",
 	"Rotation of a player's boost trails and drift sparks.",
-	"Should banans rotate when thrown?\nAnd should they stay rotated when on the ground?.",
+	"Should banans rotate when thrown?\nAnd should they stay rotated when on the ground?",
 	"Player squash and stretch.",
 	"Player landing sound effect.",
 	"Kart hopping while drifting. This is purely visual.",
