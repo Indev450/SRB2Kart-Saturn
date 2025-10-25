@@ -109,6 +109,7 @@ ENUM (STRING_HOOK);
 
 extern boolean hook_cmd_running;	// This is used by PlayerCmd and lua_playerlib to prevent anything from being wirtten to player while we run PlayerCmd.
 extern int hook_defrosting;
+extern bool hook_important;
 
 void LUA_HookVoid(int hook);
 void LUA_HookHUD(int hook, huddrawlist_h drawlist);
