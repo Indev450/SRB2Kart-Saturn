@@ -21,6 +21,8 @@
 #include "m_fixed.h"
 #include "i_system.h"
 
+#include "f_finale.h"
+
 timestate_t g_time;
 
 static CV_PossibleValue_t timescale_cons_t[] = {{FRACUNIT/20, "MIN"}, {20*FRACUNIT, "MAX"}, {0, NULL}};
@@ -51,6 +53,10 @@ static void I_GetTimeAndFrac(tic_t *outtics, fixed_t *outfrac)
 
 tic_t I_GetTime(void)
 {
+	// Beware wipes run on their own loop which affects global time state!
+	if (WipeInAction)
+		return g_time.time;
+
 	tic_t tic;
 	I_GetTimeAndFrac(&tic, NULL);
 	return tic;
@@ -58,6 +64,10 @@ tic_t I_GetTime(void)
 
 fixed_t I_GetTimeFrac(void)
 {
+	// Beware wipes run on their own loop which affects global time state!
+	if (WipeInAction)
+		return g_time.timefrac;
+
 	fixed_t frac;
 	I_GetTimeAndFrac(NULL, &frac);
 	return frac;
