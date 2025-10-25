@@ -1386,7 +1386,7 @@ static void SetPlayerName(INT32 playernum, char *newname)
 {
 	if (EnsurePlayerNameIsGood(newname, playernum))
 	{
-		if (fasticmp(newname, player_names[playernum]))
+		if (!fasticmp(newname, player_names[playernum]))
 		{
 			if (netgame)
 				HU_AddChatText(va("\x82*%s renamed to %s", player_names[playernum], newname), false);
