@@ -818,26 +818,31 @@ static menuitem_t OP_VideoOptionsMenu[] =
 #if defined (__unix__) || defined (UNIXCOMMON) || defined (HAVE_SDL)
 	{IT_STRING|IT_CVAR,		NULL,	"Fullscreen",				  &cv_fullscreen,		  20},
 #endif
+#ifdef BACKWARDSCOMPATCORRECTION
 	{IT_STRING | IT_CVAR | IT_CV_SLIDER,
-							NULL,	"Brightness",				  &cv_globalgamma,		  30},
-
-	{IT_STRING | IT_CVAR | IT_CV_SLIDER,
-	                        NULL, 	"Saturation",      			  &cv_globalsaturation ,  40},
-
-	{IT_SUBMENU|IT_STRING, NULL, 	"Advanced Color Settings...", &OP_ColorOptionsDef,    50},
-
-	{IT_STRING | IT_CVAR,	NULL,	"Draw Distance",			  &cv_drawdist,			  65},
-	{IT_STRING | IT_CVAR,	NULL,	"Weather Draw Distance",	  &cv_drawdist_precip,	  75},
-
-	{IT_STRING | IT_CVAR,	NULL,	"Show FPS",					  &cv_ticrate,			  95},
-	{IT_STRING | IT_CVAR,	NULL,	"Vertical Sync",			  &cv_vidwait,			 105},
-	{IT_STRING | IT_CVAR,   NULL,   "FPS Cap",              	  &cv_fpscap,            115},
-	{IT_STRING | IT_CVAR,   NULL,   "Drift spark pulse size",	  &cv_driftsparkpulse,   125},
-	{IT_STRING | IT_CVAR, 	NULL, 	"VHS effect", 				  &cv_vhseffect, 		 135},
-#ifdef HWRENDER
-	{IT_SUBMENU|IT_STRING,	NULL,	"OpenGL Options...",		  &OP_OpenGLOptionsDef,	 145},
+							NULL,	"Gamma",				  	  &cv_globalgamma,		  30},
 #endif
-	{IT_SUBMENU|IT_STRING,  NULL,   "Advanced Video Options...",  &OP_ExpOptionsDef,     155},
+
+	{IT_STRING | IT_CVAR | IT_CV_SLIDER,
+							NULL,	"Brightness",				  &cv_globalbrightness,	  40},
+
+	{IT_STRING | IT_CVAR | IT_CV_SLIDER,
+	                        NULL, 	"Saturation",      			  &cv_globalsaturation ,  50},
+
+	{IT_SUBMENU|IT_STRING, NULL, 	"Advanced Color Settings...", &OP_ColorOptionsDef,    60},
+
+	{IT_STRING | IT_CVAR,	NULL,	"Draw Distance",			  &cv_drawdist,			  75},
+	{IT_STRING | IT_CVAR,	NULL,	"Weather Draw Distance",	  &cv_drawdist_precip,	  85},
+
+	{IT_STRING | IT_CVAR,	NULL,	"Show FPS",					  &cv_ticrate,			 105},
+	{IT_STRING | IT_CVAR,	NULL,	"Vertical Sync",			  &cv_vidwait,			 115},
+	{IT_STRING | IT_CVAR,   NULL,   "FPS Cap",              	  &cv_fpscap,            125},
+	{IT_STRING | IT_CVAR,   NULL,   "Drift spark pulse size",	  &cv_driftsparkpulse,   135},
+	{IT_STRING | IT_CVAR, 	NULL, 	"VHS effect", 				  &cv_vhseffect, 		 145},
+#ifdef HWRENDER
+	{IT_SUBMENU|IT_STRING,	NULL,	"OpenGL Options...",		  &OP_OpenGLOptionsDef,	 155},
+#endif
+	{IT_SUBMENU|IT_STRING,  NULL,   "Advanced Video Options...",  &OP_ExpOptionsDef,     165},
 };
 
 static const char* OP_VideoTooltips[] =
@@ -846,11 +851,12 @@ static const char* OP_VideoTooltips[] =
 #if defined (__unix__) || defined (UNIXCOMMON) || defined (HAVE_SDL)
 	"Enable fullscreen.",
 #endif
-	"Gamma (brightness) of the game.",
-	"Saturation of the game.",
+	"Increase the gamma of the displayed image.",
+	"Increase or decrease the brightness of the displayed image.",
+	"Reduce the saturation of the displayed image.",
 	"Advanced color settings of the game.",
-	"How far away objects are drawn.",
-	"How far away weather is drawn.",
+	"How far objects can be drawn.",
+	"Affects how far weather visuals can be drawn.",
 	"Show current game framerate and select the style.",
 	"Sync game framerate to refresh rate of monitor.",
 	"Set manual framerate cap.",

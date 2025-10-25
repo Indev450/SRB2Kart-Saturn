@@ -43,8 +43,13 @@ static void CV_palette_OnChange(void);
 consvar_t cv_palette = {"palette", "", CV_CALL|CV_NOINIT, NULL, CV_palette_OnChange, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_palettenum = {"palettenum", "0", CV_CALL|CV_NOINIT, CV_Unsigned, CV_palette_OnChange, 0, NULL, NULL, 0, 0, NULL};
 
-static CV_PossibleValue_t gamma_cons_t[] = {{-15, "MIN"}, {4, "MAX"}, {0, NULL}};
+#ifdef BACKWARDSCOMPATCORRECTION
+static CV_PossibleValue_t gamma_cons_t[] = {{0, "MIN"}, {4, "MAX"}, {0, NULL}};
 consvar_t cv_globalgamma = {"gamma", "0", CV_SAVE|CV_CALL, gamma_cons_t, CV_palette_OnChange, 0, NULL, NULL, 0, 0, NULL};
+#endif
+
+static CV_PossibleValue_t brightness_cons_t[] = {{-15, "MIN"}, {5, "MAX"}, {0, NULL}};
+consvar_t cv_globalbrightness = {"brightness", "0", CV_SAVE|CV_CALL, brightness_cons_t, CV_palette_OnChange, 0, NULL, NULL, 0, 0, NULL};
 
 static CV_PossibleValue_t saturation_cons_t[] = {{0, "MIN"}, {10, "MAX"}, {0, NULL}};
 consvar_t cv_globalsaturation = {"saturation", "10", CV_SAVE|CV_CALL, saturation_cons_t, CV_palette_OnChange, 0, NULL, NULL, 0, 0, NULL};
@@ -85,6 +90,7 @@ consvar_t cv_menucaps = {"menucaps", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NUL
 
 // local copy of the palette for V_GetColor()
 RGBA_t *pLocalPalette = NULL;
+RGBA_t *pGammaCorrectedPalette = NULL;
 
 static size_t currentPaletteSize;
 
@@ -138,15 +144,11 @@ static boolean InitCube(void)
 #define diffconsgamma(cv) (cv.value != 0)
 #define diffconssat(cv) (cv.value != 10)
 
-#ifdef BACKWARDSCOMPATCORRECTION
-	doinggamma = (cv_globalgamma.value < 0); //dont mess up gamma when raising brightness pls
-#else
-	doinggamma = diffcons(cv_globalgamma);
-#endif
+	doinggamma = diffcons(cv_globalbrightness);
 
 #define gammascale 8
-	globalgammamul = (cv_globalgamma.value ? ((255.0f - (gammascale*abs(cv_globalgamma.value))) / 255.0f) : 1.0f);
-	globalgammaoffs = ((cv_globalgamma.value > 0) ? ((gammascale*cv_globalgamma.value) / 255.0f) : 0.0f);
+	globalgammamul = (cv_globalbrightness.value ? ((255.0f - (gammascale*abs(cv_globalbrightness.value))) / 255.0f) : 1.0f);
+	globalgammaoffs = ((cv_globalbrightness.value > 0) ? ((gammascale*cv_globalbrightness.value) / 255.0f) : 0.0f);
 	desatur[0] = desatur[1] = desatur[2] = globalgammaoffs + (0.33f * globalgammamul);
 
 	if (doinggamma
@@ -302,24 +304,6 @@ same, I'm not gonna be the one to remove this base modification.
 toast 20/04/17
 ... welp yes i am (27/07/19, see the ifdef around it)
 */
-const UINT8 correctiontable[256] =
-	{1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,
-	17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,
-	33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,
-	49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,
-	65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,
-	81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96,
-	97,98,99,100,101,102,103,104,105,106,107,108,109,110,111,112,
-	113,114,115,116,117,118,119,120,121,122,123,124,125,126,127,128,
-	128,129,130,131,132,133,134,135,136,137,138,139,140,141,142,143,
-	144,145,146,147,148,149,150,151,152,153,154,155,156,157,158,159,
-	160,161,162,163,164,165,166,167,168,169,170,171,172,173,174,175,
-	176,177,178,179,180,181,182,183,184,185,186,187,188,189,190,191,
-	192,193,194,195,196,197,198,199,200,201,202,203,204,205,206,207,
-	208,209,210,211,212,213,214,215,216,217,218,219,220,221,222,223,
-	224,225,226,227,228,229,230,231,232,233,234,235,236,237,238,239,
-	240,241,242,243,244,245,246,247,248,249,250,251,252,253,254,255};
-
 const UINT8 gammatable[5][256] =
 {
 	{1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,
@@ -405,6 +389,26 @@ const UINT8 gammatable[5][256] =
 };
 #endif
 
+UINT32 V_GammaCorrect(UINT32 input, double power)
+{
+	RGBA_t result;
+	double linear;
+
+	result.rgba = input;
+
+	linear = ((double)result.s.red)/255.0f;
+	linear = pow(linear, power)*255.0f;
+	result.s.red = (UINT8)(linear);
+	linear = ((double)result.s.green)/255.0f;
+	linear = pow(linear, power)*255.0f;
+	result.s.green = (UINT8)(linear);
+	linear = ((double)result.s.blue)/255.0f;
+	linear = pow(linear, power)*255.0f;
+	result.s.blue = (UINT8)(linear);
+
+	return result.rgba;
+}
+
 // keep a copy of the palette so that we can get the RGB value for a color index at any time.
 static void LoadPalette(const char *lumpname)
 {
@@ -413,7 +417,7 @@ static void LoadPalette(const char *lumpname)
 	lumpnum_t lumpnum;
 
 #ifdef BACKWARDSCOMPATCORRECTION
-	const UINT8 *usegamma = gammatable[min(max(cv_globalgamma.value, 0), 4)];
+	const UINT8 *usegamma = gammatable[cv_globalgamma.value];
 #endif
 	Cubeapply = InitCube();
 
@@ -423,25 +427,18 @@ static void LoadPalette(const char *lumpname)
 	palsize = currentPaletteSize / 3;
 
 	Z_Free(pLocalPalette);
+	Z_Free(pGammaCorrectedPalette);
 
 	pLocalPalette = Z_Malloc(sizeof (*pLocalPalette)*palsize, PU_STATIC, NULL);
+	pGammaCorrectedPalette = Z_Malloc(sizeof (*pGammaCorrectedPalette)*palsize, PU_STATIC, NULL);
 
 	pal = W_CacheLumpNum(lumpnum, PU_CACHE);
 	for (i = 0; i < palsize; i++)
 	{
 #ifdef BACKWARDSCOMPATCORRECTION
-		if (cv_globalgamma.value >= 0 && cv_globalgamma.value <= 4)
-		{
-			pLocalPalette[i].s.red = usegamma[*pal++];
-			pLocalPalette[i].s.green = usegamma[*pal++];
-			pLocalPalette[i].s.blue = usegamma[*pal++];
-		}
-		else
-		{
-			pLocalPalette[i].s.red = correctiontable[*pal++];
-			pLocalPalette[i].s.green = correctiontable[*pal++];
-			pLocalPalette[i].s.blue = correctiontable[*pal++];
-		}
+		pLocalPalette[i].s.red = usegamma[*pal++];
+		pLocalPalette[i].s.green = usegamma[*pal++];
+		pLocalPalette[i].s.blue = usegamma[*pal++];
 #else
 		pLocalPalette[i].s.red = *pal++;
 		pLocalPalette[i].s.green = *pal++;
@@ -449,15 +446,17 @@ static void LoadPalette(const char *lumpname)
 #endif
 		pLocalPalette[i].s.alpha = 0xFF;
 
+		pGammaCorrectedPalette[i].rgba = V_GammaDecode(pLocalPalette[i].rgba);
+
 		if (!Cubeapply)
 			continue;
 
-		// lerp of colour cubing! if you want, make it smoother yourself
-		V_CubeApply(&pLocalPalette[i].s.red, &pLocalPalette[i].s.green, &pLocalPalette[i].s.blue);
+		V_CubeApply(&pGammaCorrectedPalette[i]);
+		pLocalPalette[i].rgba = V_GammaEncode(pGammaCorrectedPalette[i].rgba);
 	}
 }
 
-void V_CubeApply(UINT8 *red, UINT8 *green, UINT8 *blue)
+void V_CubeApply(RGBA_t *input)
 {
 	float working[4][3];
 	float linear;
@@ -466,7 +465,7 @@ void V_CubeApply(UINT8 *red, UINT8 *green, UINT8 *blue)
 	if (!Cubeapply)
 		return;
 
-	linear = (*red/255.0f);
+	linear = ((*input).s.red/255.0);
 #define dolerp(e1, e2) ((1 - linear)*e1 + linear*e2)
 	for (q = 0; q < 3; q++)
 	{
@@ -475,13 +474,15 @@ void V_CubeApply(UINT8 *red, UINT8 *green, UINT8 *blue)
 		working[2][q] = dolerp(Cubepal[0][0][1][q], Cubepal[1][0][1][q]);
 		working[3][q] = dolerp(Cubepal[0][1][1][q], Cubepal[1][1][1][q]);
 	}
-	linear = (*green/255.0f);
+
+	linear = ((*input).s.green/255.0);
 	for (q = 0; q < 3; q++)
 	{
 		working[0][q] = dolerp(working[0][q], working[1][q]);
 		working[1][q] = dolerp(working[2][q], working[3][q]);
 	}
-	linear = (*blue/255.0f);
+
+	linear = ((*input).s.blue/255.0);
 	for (q = 0; q < 3; q++)
 	{
 		working[0][q] = 255*dolerp(working[0][q], working[1][q]);
@@ -492,9 +493,9 @@ void V_CubeApply(UINT8 *red, UINT8 *green, UINT8 *blue)
 	}
 #undef dolerp
 
-	*red = (UINT8)(working[0][0]);
-	*green = (UINT8)(working[0][1]);
-	*blue = (UINT8)(working[0][2]);
+	(*input).s.red = (UINT8)(working[0][0]);
+	(*input).s.green = (UINT8)(working[0][1]);
+	(*input).s.blue = (UINT8)(working[0][2]);
 }
 
 const char *R_GetPalname(UINT16 num)
@@ -1329,37 +1330,37 @@ void V_DrawFill(INT32 x, INT32 y, INT32 w, INT32 h, INT32 c)
 // This is now a function since it's otherwise repeated 2 times and honestly looks retarded:
 static UINT32 V_GetHWConsBackColor(void)
 {
-	UINT8 r, g, b;
+	RGBA_t output;
 
 	switch (cons_backcolor.value)
 	{
-		case 0:		r = 0xff; g = 0xff; b = 0xff;	break; 	// White
-		case 1:		r = 0x80; g = 0x80; b = 0x80;	break; 	// Black
-		case 2:		r = 0xde; g = 0xb8; b = 0x87;	break;	// Sepia
-		case 3:		r = 0x40; g = 0x20; b = 0x10;	break; 	// Brown
-		case 4:		r = 0xfa; g = 0x80; b = 0x72;	break; 	// Pink
-		case 5:		r = 0xff; g = 0x69; b = 0xb4;	break; 	// Raspberry
-		case 6:		r = 0xff; g = 0x00; b = 0x00;	break; 	// Red
-		case 7:		r = 0xff; g = 0xd6; b = 0x83;	break;	// Creamsicle
-		case 8:		r = 0xff; g = 0x80; b = 0x00;	break; 	// Orange
-		case 9:		r = 0xda; g = 0xa5; b = 0x20;	break; 	// Gold
-		case 10:	r = 0x80; g = 0x80; b = 0x00;	break; 	// Yellow
-		case 11:	r = 0x00; g = 0xff; b = 0x00;	break; 	// Emerald
-		case 12:	r = 0x00; g = 0x80; b = 0x00;	break; 	// Green
-		case 13:	r = 0x40; g = 0x80; b = 0xff;	break; 	// Cyan
-		case 14:	r = 0x46; g = 0x82; b = 0xb4;	break; 	// Steel
-		case 15:	r = 0x1e; g = 0x90; b = 0xff;	break;	// Periwinkle
-		case 16:	r = 0x00; g = 0x00; b = 0xff;	break; 	// Blue
-		case 17:	r = 0xff; g = 0x00; b = 0xff;	break; 	// Purple
-		case 18:	r = 0xee; g = 0x82; b = 0xee;	break; 	// Lavender
+		case 0:		output.s.red = 0xff; output.s.green = 0xff; output.s.blue = 0xff;	break; 	// White
+		case 1:		output.s.red = 0x80; output.s.green = 0x80; output.s.blue = 0x80;	break; 	// Black
+		case 2:		output.s.red = 0xde; output.s.green = 0xb8; output.s.blue = 0x87;	break;	// Sepia
+		case 3:		output.s.red = 0x40; output.s.green = 0x20; output.s.blue = 0x10;	break; 	// Brown
+		case 4:		output.s.red = 0xfa; output.s.green = 0x80; output.s.blue = 0x72;	break; 	// Pink
+		case 5:		output.s.red = 0xff; output.s.green = 0x69; output.s.blue = 0xb4;	break; 	// Raspberry
+		case 6:		output.s.red = 0xff; output.s.green = 0x00; output.s.blue = 0x00;	break; 	// Red
+		case 7:		output.s.red = 0xff; output.s.green = 0xd6; output.s.blue = 0x83;	break;	// Creamsicle
+		case 8:		output.s.red = 0xff; output.s.green = 0x80; output.s.blue = 0x00;	break; 	// Orange
+		case 9:		output.s.red = 0xda; output.s.green = 0xa5; output.s.blue = 0x20;	break; 	// Gold
+		case 10:	output.s.red = 0x80; output.s.green = 0x80; output.s.blue = 0x00;	break; 	// Yellow
+		case 11:	output.s.red = 0x00; output.s.green = 0xff; output.s.blue = 0x00;	break; 	// Emerald
+		case 12:	output.s.red = 0x00; output.s.green = 0x80; output.s.blue = 0x00;	break; 	// Green
+		case 13:	output.s.red = 0x40; output.s.green = 0x80; output.s.blue = 0xff;	break; 	// Cyan
+		case 14:	output.s.red = 0x46; output.s.green = 0x82; output.s.blue = 0xb4;	break; 	// Steel
+		case 15:	output.s.red = 0x1e; output.s.green = 0x90; output.s.blue = 0xff;	break;	// Periwinkle
+		case 16:	output.s.red = 0x00; output.s.green = 0x00; output.s.blue = 0xff;	break; 	// Blue
+		case 17:	output.s.red = 0xff; output.s.green = 0x00; output.s.blue = 0xff;	break; 	// Purple
+		case 18:	output.s.red = 0xee; output.s.green = 0x82; output.s.blue = 0xee;	break; 	// Lavender
 		// Default green
-		default:	r = 0x00; g = 0x80; b = 0x00;	break;
+		default:	output.s.red = 0x00; output.s.green = 0x80; output.s.blue = 0x00;	break;
 	}
 
 	if (!HWR_ShouldUsePaletteRendering())
-		V_CubeApply(&r, &g, &b);
+		V_CubeApply(&output);
 
-	return (r << 24) | (g << 16) | (b << 8);
+	return (output.s.red << 24) | (output.s.green << 16) | (output.s.blue << 8);
 }
 #endif
 
@@ -3808,12 +3809,14 @@ void InitColorLUT(colorlookup_t *lut, RGBA_t *palette, boolean makecolors)
 			UINT8 r, g, b;
 
 			for (r = 0; r < 0xFF; r++)
-			for (g = 0; g < 0xFF; g++)
-			for (b = 0; b < 0xFF; b++)
 			{
-				i = CLUTINDEX(r, g, b);
-				if (lut->table[i] == 0xFFFF)
-					lut->table[i] = NearestPaletteColor(r, g, b, palette);
+				for (g = 0; g < 0xFF; g++)
+				{
+					for (b = 0; b < 0xFF; b++)
+					{
+						lut->table[i] = GetColorLUT(lut, r, g, b);
+					}
+				}
 			}
 		}
 	}
