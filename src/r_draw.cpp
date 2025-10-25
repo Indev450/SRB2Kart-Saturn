@@ -113,6 +113,7 @@ CV_PossibleValue_t Color_cons_t[MAXSKINCOLORS+1];
 struct GenerateBlendTables_State
 {
 	RGBA_t *LocalPalette;
+	RGBA_t *gammaCorrectedPalette;
 };
 
 static void R_GenerateBlendTables_Core(struct GenerateBlendTables_State *state);
@@ -126,6 +127,7 @@ static void R_GenerateBlendTables_Thread(void *userdata)
 	R_GenerateBlendTables_Core(state);
 
 	free(state->LocalPalette);
+	free(state->gammaCorrectedPalette);
 	free(state);
 }
 #endif
@@ -154,26 +156,33 @@ void R_InitTranslucencyTables(void)
 }
 
 static colorlookup_t transtab_lut;
+static colorlookup_t transtab_lut_corrected;
 
 static void BlendTab_Translucent(UINT8 *table, int style, UINT8 blendamt)
 {
 	INT16 bg, fg;
+	RGBA_t backrgba, frontrgba, result;
 
 	if (table == NULL)
 		I_Error("BlendTab_Translucent: input table was NULL!");
 
 	for (bg = 0; bg < 0x100; bg++)
 	{
+		backrgba = pGammaCorrectedPalette[bg];
+
 		for (fg = 0; fg < 0x100; fg++)
 		{
-			RGBA_t backrgba = V_GetColor(bg);
-			RGBA_t frontrgba = V_GetColor(fg);
-			RGBA_t result;
+			frontrgba = pGammaCorrectedPalette[fg];
 
+#if 0 // perfect implementation
 			result.rgba = ASTBlendPixel(backrgba, frontrgba, style, 0xFF);
 			result.rgba = ASTBlendPixel(result, frontrgba, AST_TRANSLUCENT, blendamt);
-
 			table[((bg * 0x100) + fg)] = GetColorLUT(&transtab_lut, result.s.red, result.s.green, result.s.blue);
+#else // performance scrabbler
+			result.rgba = ASTBlendPixel(backrgba, frontrgba, style, 0xFF);
+			result.rgba = ASTBlendPixel(result, frontrgba, AST_TRANSLUCENT, blendamt);
+			table[((bg * 0x100) + fg)] = GetColorLUT(&transtab_lut_corrected, result.s.red, result.s.green, result.s.blue); // pGammaCorrectedPalette
+#endif
 		}
 	}
 }
@@ -224,7 +233,7 @@ static void BlendTab_Modulative(UINT8 *table)
 			RGBA_t frontrgba = V_GetColor(fg);
 			RGBA_t result;
 			result.rgba = ASTBlendPixel(backrgba, frontrgba, AST_MODULATE, 0);
-			table[((bg * 0x100) + fg)] = GetColorLUT(&transtab_lut, result.s.red, result.s.green, result.s.blue);
+			table[((bg * 0x100) + fg)] = GetColorLUT(&transtab_lut_corrected, result.s.red, result.s.green, result.s.blue);
 		}
 	}
 }
@@ -278,11 +287,12 @@ void R_GenerateBlendTables(void)
 	size_t palsize = 256 * sizeof(RGBA_t);
 
 	state->LocalPalette = static_cast<RGBA_t *>(memcpy(malloc(palsize), pLocalPalette, palsize));
+	state->gammaCorrectedPalette = static_cast<RGBA_t *>(memcpy(malloc(palsize), pGammaCorrectedPalette, palsize));
 
 	I_spawn_thread("blend-tables",
 			R_GenerateBlendTables_Thread, state);
 #else
-	struct GenerateBlendTables_State state = {pLocalPalette};
+	struct GenerateBlendTables_State state = {pLocalPalette, pGammaCorrectedPalette};
 	R_GenerateBlendTables_Core(&state);
 #endif
 }
@@ -290,6 +300,7 @@ void R_GenerateBlendTables(void)
 static void R_GenerateBlendTables_Core(struct GenerateBlendTables_State *state)
 {
 	InitColorLUT(&transtab_lut, state->LocalPalette, false);
+	InitColorLUT(&transtab_lut_corrected, state->gammaCorrectedPalette, false);
 
 	// Additive
 	BlendTab_GenerateMaps(blendtab_add, AST_ADD, BlendTab_Translucent);
