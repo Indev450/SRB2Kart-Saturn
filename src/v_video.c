@@ -64,12 +64,12 @@ consvar_t cv_chue = {"chue", "12", CV_SAVE|CV_CALL, hue_cons_t, CV_palette_OnCha
 consvar_t cv_bhue = {"bhue", "16", CV_SAVE|CV_CALL, hue_cons_t, CV_palette_OnChange, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_mhue = {"mhue", "20", CV_SAVE|CV_CALL, hue_cons_t, CV_palette_OnChange, 0, NULL, NULL, 0, 0, NULL};
 
-consvar_t cv_rgamma = {"rgamma", "0", CV_SAVE|CV_CALL, gamma_cons_t, CV_palette_OnChange, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_ygamma = {"ygamma", "0", CV_SAVE|CV_CALL, gamma_cons_t, CV_palette_OnChange, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_ggamma = {"ggamma", "0", CV_SAVE|CV_CALL, gamma_cons_t, CV_palette_OnChange, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_cgamma = {"cgamma", "0", CV_SAVE|CV_CALL, gamma_cons_t, CV_palette_OnChange, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_bgamma = {"bgamma", "0", CV_SAVE|CV_CALL, gamma_cons_t, CV_palette_OnChange, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_mgamma = {"mgamma", "0", CV_SAVE|CV_CALL, gamma_cons_t, CV_palette_OnChange, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_rbrightness = {"rbrightness", "0", CV_SAVE|CV_CALL, brightness_cons_t, CV_palette_OnChange, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_ybrightness = {"ybrightness", "0", CV_SAVE|CV_CALL, brightness_cons_t, CV_palette_OnChange, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_gbrightness = {"gbrightness", "0", CV_SAVE|CV_CALL, brightness_cons_t, CV_palette_OnChange, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_cbrightness = {"cbrightness", "0", CV_SAVE|CV_CALL, brightness_cons_t, CV_palette_OnChange, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_bbrightness = {"bbrightness", "0", CV_SAVE|CV_CALL, brightness_cons_t, CV_palette_OnChange, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_mbrightness = {"mbrightness", "0", CV_SAVE|CV_CALL, brightness_cons_t, CV_palette_OnChange, 0, NULL, NULL, 0, 0, NULL};
 
 consvar_t cv_rsaturation = {"rsaturation", "10", CV_SAVE|CV_CALL, saturation_cons_t, CV_palette_OnChange, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_ysaturation = {"ysaturation", "10", CV_SAVE|CV_CALL, saturation_cons_t, CV_palette_OnChange, 0, NULL, NULL, 0, 0, NULL};
@@ -134,96 +134,96 @@ static boolean InitCube(void)
 	};
 
 	float desatur[3]; // grey
-	float globalgammamul, globalgammaoffs;
-	boolean doinggamma;
+	float globalbrightnessmul, globalbrightnessoffs;
+	boolean doingbrightness;
 
 	if (!loaded_config)
 		return false;
 
 #define diffcons(cv) (strcmp(cv.string, cv.defaultvalue))
-#define diffconsgamma(cv) (cv.value != 0)
+#define diffconsbrightness(cv) (cv.value != 0)
 #define diffconssat(cv) (cv.value != 10)
 
-	doinggamma = diffcons(cv_globalbrightness);
+	doingbrightness = diffcons(cv_globalbrightness);
 
-#define gammascale 8
-	globalgammamul = (cv_globalbrightness.value ? ((255.0f - (gammascale*abs(cv_globalbrightness.value))) / 255.0f) : 1.0f);
-	globalgammaoffs = ((cv_globalbrightness.value > 0) ? ((gammascale*cv_globalbrightness.value) / 255.0f) : 0.0f);
-	desatur[0] = desatur[1] = desatur[2] = globalgammaoffs + (0.33f * globalgammamul);
+#define brightnessscale 8
+	globalbrightnessmul = (cv_globalbrightness.value ? ((255.0f - (brightnessscale*abs(cv_globalbrightness.value))) / 255.0f) : 1.0f);
+	globalbrightnessoffs = ((cv_globalbrightness.value > 0) ? ((brightnessscale*cv_globalbrightness.value) / 255.0f) : 0.0f);
+	desatur[0] = desatur[1] = desatur[2] = globalbrightnessoffs + (0.33f * globalbrightnessmul);
 
-	if (doinggamma
+	if (doingbrightness
 		|| diffcons(cv_rhue)
 		|| diffcons(cv_yhue)
 		|| diffcons(cv_ghue)
 		|| diffcons(cv_chue)
 		|| diffcons(cv_bhue)
 		|| diffcons(cv_mhue)
-		|| diffconsgamma(cv_rgamma)
-		|| diffconsgamma(cv_ygamma)
-		|| diffconsgamma(cv_ggamma)
-		|| diffconsgamma(cv_cgamma)
-		|| diffconsgamma(cv_bgamma)
-		|| diffconsgamma(cv_mgamma)) // set the gamma'd/hued positions (saturation is done later)
+		|| diffconsbrightness(cv_rbrightness)
+		|| diffconsbrightness(cv_ybrightness)
+		|| diffconsbrightness(cv_gbrightness)
+		|| diffconsbrightness(cv_cbrightness)
+		|| diffconsbrightness(cv_bbrightness)
+		|| diffconsbrightness(cv_mbrightness)) // set the brightness'd/hued positions (saturation is done later)
 	{
-		float mod, tempgammamul, tempgammaoffs;
+		float mod, tempbrightnessmul, tempbrightnessoffs;
 
 		apply = true;
 
-		working[0][0][0][0] = working[0][0][0][1] = working[0][0][0][2] = globalgammaoffs;
-		working[1][1][1][0] = working[1][1][1][1] = working[1][1][1][2] = globalgammaoffs+globalgammamul;
+		working[0][0][0][0] = working[0][0][0][1] = working[0][0][0][2] = globalbrightnessoffs;
+		working[1][1][1][0] = working[1][1][1][1] = working[1][1][1][2] = globalbrightnessoffs+globalbrightnessmul;
 
-#define dohue(hue, gamma, loc) \
-		tempgammamul = (gamma ? ((255.0f - (gammascale*abs(gamma)))/255.0f)*globalgammamul : globalgammamul);\
-		tempgammaoffs = ((gamma > 0) ? ((gammascale*gamma)/255.0f) + globalgammaoffs : globalgammaoffs);\
-		mod = ((hue % huecoloursteps)*(tempgammamul)/huecoloursteps);\
+#define dohue(hue, brightness, loc) \
+		tempbrightnessmul = (brightness ? ((255.0f - (brightnessscale*abs(brightness)))/255.0f)*globalbrightnessmul : globalbrightnessmul);\
+		tempbrightnessoffs = ((brightness > 0) ? ((brightnessscale*brightness)/255.0f) + globalbrightnessoffs : globalbrightnessoffs);\
+		mod = ((hue % huecoloursteps)*(tempbrightnessmul)/huecoloursteps);\
 		switch (hue/huecoloursteps)\
 		{\
 			case 0:\
 			default:\
-				loc[0] = tempgammaoffs+tempgammamul;\
-				loc[1] = tempgammaoffs+mod;\
-				loc[2] = tempgammaoffs;\
+				loc[0] = tempbrightnessoffs+tempbrightnessmul;\
+				loc[1] = tempbrightnessoffs+mod;\
+				loc[2] = tempbrightnessoffs;\
 				break;\
 			case 1:\
-				loc[0] = tempgammaoffs+tempgammamul-mod;\
-				loc[1] = tempgammaoffs+tempgammamul;\
-				loc[2] = tempgammaoffs;\
+				loc[0] = tempbrightnessoffs+tempbrightnessmul-mod;\
+				loc[1] = tempbrightnessoffs+tempbrightnessmul;\
+				loc[2] = tempbrightnessoffs;\
 				break;\
 			case 2:\
-				loc[0] = tempgammaoffs;\
-				loc[1] = tempgammaoffs+tempgammamul;\
-				loc[2] = tempgammaoffs+mod;\
+				loc[0] = tempbrightnessoffs;\
+				loc[1] = tempbrightnessoffs+tempbrightnessmul;\
+				loc[2] = tempbrightnessoffs+mod;\
 				break;\
 			case 3:\
-				loc[0] = tempgammaoffs;\
-				loc[1] = tempgammaoffs+tempgammamul-mod;\
-				loc[2] = tempgammaoffs+tempgammamul;\
+				loc[0] = tempbrightnessoffs;\
+				loc[1] = tempbrightnessoffs+tempbrightnessmul-mod;\
+				loc[2] = tempbrightnessoffs+tempbrightnessmul;\
 				break;\
 			case 4:\
-				loc[0] = tempgammaoffs+mod;\
-				loc[1] = tempgammaoffs;\
-				loc[2] = tempgammaoffs+tempgammamul;\
+				loc[0] = tempbrightnessoffs+mod;\
+				loc[1] = tempbrightnessoffs;\
+				loc[2] = tempbrightnessoffs+tempbrightnessmul;\
 				break;\
 			case 5:\
-				loc[0] = tempgammaoffs+tempgammamul;\
-				loc[1] = tempgammaoffs;\
-				loc[2] = tempgammaoffs+tempgammamul-mod;\
+				loc[0] = tempbrightnessoffs+tempbrightnessmul;\
+				loc[1] = tempbrightnessoffs;\
+				loc[2] = tempbrightnessoffs+tempbrightnessmul-mod;\
 				break;\
 		}
-		dohue(cv_rhue.value, cv_rgamma.value, working[1][0][0]);
-		dohue(cv_yhue.value, cv_ygamma.value, working[1][1][0]);
-		dohue(cv_ghue.value, cv_ggamma.value, working[0][1][0]);
-		dohue(cv_chue.value, cv_cgamma.value, working[0][1][1]);
-		dohue(cv_bhue.value, cv_bgamma.value, working[0][0][1]);
-		dohue(cv_mhue.value, cv_mgamma.value, working[1][0][1]);
+		dohue(cv_rhue.value, cv_rbrightness.value, working[1][0][0]);
+		dohue(cv_yhue.value, cv_ybrightness.value, working[1][1][0]);
+		dohue(cv_ghue.value, cv_gbrightness.value, working[0][1][0]);
+		dohue(cv_chue.value, cv_cbrightness.value, working[0][1][1]);
+		dohue(cv_bhue.value, cv_bbrightness.value, working[0][0][1]);
+		dohue(cv_mhue.value, cv_mbrightness.value, working[1][0][1]);
 #undef dohue
 	}
 
 #define dosaturation(a, e) a = ((1 - work)*e + work*a)
-#define docvsat(cv_sat, hue, gamma, r, g, b) \
+#define docvsat(cv_sat, hue, brightness, r, g, b) \
 	if diffconssat(cv_sat)\
 	{\
-		float work, mod, tempgammamul, tempgammaoffs;\
+		float work, mod, tempbrightnessmul, tempbrightnessoffs;\
 		apply = true;\
 		work = (cv_sat.value/10.0f);\
 		mod = ((hue % huecoloursteps)*(1.0f)/huecoloursteps);\
@@ -231,20 +231,20 @@ static boolean InitCube(void)
 			mod = 2-mod;\
 		else\
 			mod += 1;\
-		tempgammamul = (gamma ? ((255.0f - (gammascale*abs(gamma)))/255.0f)*globalgammamul : globalgammamul);\
-		tempgammaoffs = ((gamma > 0) ? ((gammascale*gamma)/255.0f) + globalgammaoffs : globalgammaoffs);\
+		tempbrightnessmul = (brightness ? ((255.0f - (brightnessscale*abs(brightness)))/255.0f)*globalbrightnessmul : globalbrightnessmul);\
+		tempbrightnessoffs = ((brightness > 0) ? ((brightnessscale*brightness)/255.0f) + globalbrightnessoffs : globalbrightnessoffs);\
 		for (q = 0; q < 3; q++)\
-			dosaturation(working[r][g][b][q], (tempgammaoffs+(desatur[q]*mod*tempgammamul)));\
+			dosaturation(working[r][g][b][q], (tempbrightnessoffs+(desatur[q]*mod*tempbrightnessmul)));\
 	}
 
-	docvsat(cv_rsaturation, cv_rhue.value, cv_rgamma.value, 1, 0, 0);
-	docvsat(cv_ysaturation, cv_yhue.value, cv_ygamma.value, 1, 1, 0);
-	docvsat(cv_gsaturation, cv_ghue.value, cv_ggamma.value, 0, 1, 0);
-	docvsat(cv_csaturation, cv_chue.value, cv_cgamma.value, 0, 1, 1);
-	docvsat(cv_bsaturation, cv_bhue.value, cv_bgamma.value, 0, 0, 1);
-	docvsat(cv_msaturation, cv_mhue.value, cv_mgamma.value, 1, 0, 1);
+	docvsat(cv_rsaturation, cv_rhue.value, cv_rbrightness.value, 1, 0, 0);
+	docvsat(cv_ysaturation, cv_yhue.value, cv_ybrightness.value, 1, 1, 0);
+	docvsat(cv_gsaturation, cv_ghue.value, cv_gbrightness.value, 0, 1, 0);
+	docvsat(cv_csaturation, cv_chue.value, cv_cbrightness.value, 0, 1, 1);
+	docvsat(cv_bsaturation, cv_bhue.value, cv_bbrightness.value, 0, 0, 1);
+	docvsat(cv_msaturation, cv_mhue.value, cv_mbrightness.value, 1, 0, 1);
 
-#undef gammascale
+#undef brightnessscale
 
 	if diffconssat(cv_globalsaturation)
 	{
@@ -267,7 +267,7 @@ static boolean InitCube(void)
 #undef dosaturation
 
 #undef diffcons
-#undef diffconsgamma
+#undef diffconsbrightness
 #undef diffconssat
 
 	if (!apply)

@@ -45,7 +45,7 @@ cv_globalgamma,
 #endif
 cv_globalbrightness, cv_globalsaturation,
 cv_rhue, cv_yhue, cv_ghue, cv_chue, cv_bhue, cv_mhue,
-cv_rgamma, cv_ygamma, cv_ggamma, cv_cgamma, cv_bgamma, cv_mgamma,
+cv_rbrightness, cv_ybrightness, cv_gbrightness, cv_cbrightness, cv_bbrightness, cv_mbrightness,
 cv_rsaturation, cv_ysaturation, cv_gsaturation, cv_csaturation, cv_bsaturation, cv_msaturation,
 cv_palette, cv_palettenum;
 
