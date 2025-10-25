@@ -461,8 +461,8 @@ void HWR_Lighting(FSurfaceInfo *Surface, INT32 light_level, extracolormap_t *col
 	// in palette rendering mode, this is not needed since it properly takes the changes to the palette itself
 	if (!HWR_ShouldUsePaletteRendering())
 	{
-		V_CubeApply(&tint_color.s.red, &tint_color.s.green, &tint_color.s.blue);
-		V_CubeApply(&fade_color.s.red, &fade_color.s.green, &fade_color.s.blue);
+		V_CubeApply(&tint_color);
+		V_CubeApply(&fade_color);
 	}
 
 	Surface->PolyColor.rgba = poly_color.rgba;
@@ -5936,7 +5936,7 @@ static void HWR_DoPostProcessor(player_t *player)
 
 		Surf.PolyColor.s.alpha = 0xc0; // match software mode
 
-		V_CubeApply(&Surf.PolyColor.s.red, &Surf.PolyColor.s.green, &Surf.PolyColor.s.blue);
+		V_CubeApply(&Surf.PolyColor);
 
 		GL_DrawPolygon(&Surf, v, 4, PF_Modulated|PF_Translucent|PF_NoTexture|PF_NoDepthTest);
 	}

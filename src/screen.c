@@ -215,7 +215,10 @@ void SCR_Startup(void)
 	CV_RegisterVar(&cv_menucaps);
 	CV_RegisterVar(&cv_constextsize);
 
+#ifdef BACKWARDSCOMPATCORRECTION
 	CV_RegisterVar(&cv_globalgamma);
+#endif
+	CV_RegisterVar(&cv_globalbrightness);
 	CV_RegisterVar(&cv_globalsaturation);
 
 	CV_RegisterVar(&cv_rhue);
