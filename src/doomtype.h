@@ -63,7 +63,7 @@ extern "C" {
 #endif
 #if defined (__unix__) || defined (__APPLE__) || defined (UNIXCOMMON)
 	#undef stricmp
-	#define stricmp(x,y) !fasticmp(x,y)
+	#define stricmp(x,y) (!fasticmp(x,y))
 	#undef strnicmp
 	#define strnicmp(x,y,n) strncasecmp(x,y,n)
 #endif
