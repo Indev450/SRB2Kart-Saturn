@@ -6494,8 +6494,8 @@ static void Local_Maketic(INT32 realtics)
 
 	I_OsPolling();     // I_Getevent
 	D_ProcessEvents(); // menu responder, cons responder,
-	                   // game responder calls HU_Responder, AM_Responder, F_Responder,
-	                   // and G_MapEventsToControls
+					   // game responder calls HU_Responder, AM_Responder, F_Responder,
+					   // and G_MapEventsToControls
 	if (!dedicated)
 		rendergametic = gametic;
 
@@ -6991,7 +6991,17 @@ void NetUpdate(void)
 	realtics = nowtime - gametime;
 
 	if (realtics <= 0) // nothing new to update
+	{
+		// dont do shit!
+		if (!resynch_local_inprogress)
+		{
+			//Local_Maketic(realtics); // make local tic, and call menu?
+			GetPackets(); // get packet from client or from server
+			CL_SendClientCmd(); // Send tic cmd
+		}
+
 		return;
+	}
 
 	if (realtics > 5)
 	{
