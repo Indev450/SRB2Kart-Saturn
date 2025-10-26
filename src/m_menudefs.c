@@ -875,7 +875,10 @@ enum
 #if defined (__unix__) || defined (UNIXCOMMON) || defined (HAVE_SDL)
 	op_video_fullscreen,
 #endif
+#ifdef BACKWARDSCOMPATCORRECTION
 	op_video_gamma,
+#endif
+	op_video_bright,
 	op_video_sat,
 	op_video_color,
 	op_video_dd,
