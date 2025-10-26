@@ -208,15 +208,15 @@ static void R_CalcTiltedLighting(std::vector<INT32>& lightbuffer, INT32 x1, INT3
 
 	for (i = x1; i <= x2; i++)
 	{
-		fixed_t light = start >> FRACBITS;
+		const fixed_t light = start >> FRACBITS;
 		lightbuffer[i] = CLAMP(light, 0, MAXLIGHTSCALE - 1);
 		start += step;
 	}
 }
 
-static void R_GetTiltedLighting(std::vector<INT32>& tiltlighting, const drawspandata_t* ds, const float iz, const int width, const INT32 stride)
+static void R_GetTiltedLighting(std::vector<INT32>& tiltlighting, const drawspandata_t* ds, const float iz, const INT32 width, const INT32 stride)
 {
-	float planelightfloat = PLANELIGHTFLOAT;
+	const float planelightfloat = PLANELIGHTFLOAT;
 	const fixed_t lightstart = FloatToFixed(iz * planelightfloat);
 	const fixed_t lightend   = FloatToFixed((iz + ds->szp.x * width) * planelightfloat);
 
@@ -232,7 +232,7 @@ static void R_GetTiltedLighting(std::vector<INT32>& tiltlighting, const drawspan
 template<DrawSpanType Type>
 static void R_DrawTiltedSpanTemplate(drawspandata_t* ds)
 {
-	int width = ds->x2 - ds->x1;
+	INT32 width = ds->x2 - ds->x1;
 	float iz, uz, vz;
 	UINT32 u, v;
 	int i;
@@ -246,7 +246,6 @@ static void R_DrawTiltedSpanTemplate(drawspandata_t* ds)
 	UINT32 stepu, stepv;
 	UINT32 bit;
 
-	INT32 x1 = ds->x1;
 	const INT32 nflatxshift = ds->nflatxshift;
 	const INT32 nflatyshift = ds->nflatyshift;
 	const INT32 nflatmask = ds->nflatmask;
@@ -300,7 +299,6 @@ static void R_DrawTiltedSpanTemplate(drawspandata_t* ds)
 	izstep = ds->szp.x * SPANSIZE;
 	uzstep = ds->sup.x * SPANSIZE;
 	vzstep = ds->svp.x * SPANSIZE;
-	//x1 = 0;
 	width++;
 
 	while (width >= SPANSIZE)
@@ -317,7 +315,7 @@ static void R_DrawTiltedSpanTemplate(drawspandata_t* ds)
 		u = (INT64)(startu);
 		v = (INT64)(startv);
 
-		x1 = ds->x1;
+		const INT32 x1 = ds->x1;
 
 		for (i = 0; i < SPANSIZE; i++)
 		{
@@ -410,7 +408,7 @@ DEFINE_SPAN_COMBO(R_DrawTranslucentWaterSpan, DS_TRANSMAP|DS_RIPPLE)
 */
 void R_DrawFogSpan(drawspandata_t* ds)
 {
-	INT32 count = ds->x2 - ds->x1 + 1;
+	intptr_t count = ds->x2 - ds->x1 + 1;
 
 	const UINT8 * restrict colormap = ds->colormap;
 	UINT8 * restrict dest = R_Address(ds->x1, ds->y);
@@ -435,13 +433,12 @@ void R_DrawFogSpan(drawspandata_t* ds)
 
 void R_DrawFogSpan_Tilted(drawspandata_t* ds)
 {
-	int width = ds->x2 - ds->x1;
-	float iz = ds->szp.z + ds->szp.y*(centery-ds->y) + ds->szp.x*(ds->x1-centerx);
-	UINT8 * restrict dest;
-	local_for_thread std::vector<INT32> tiltlighting;
-
-	dest = R_Address(ds->x1, ds->y);
+	INT32 width = ds->x2 - ds->x1;
 	const INT32 stride = vid.width;
+	const float iz = ds->szp.z + ds->szp.y*(centery-ds->y) + ds->szp.x*(ds->x1-centerx);
+	UINT8 * restrict dest = R_Address(ds->x1, ds->y);
+
+	local_for_thread std::vector<INT32> tiltlighting;
 
 	// Lighting is simple. It's just linear interpolation from start to end
 	R_GetTiltedLighting(tiltlighting, ds, iz, width, stride);
