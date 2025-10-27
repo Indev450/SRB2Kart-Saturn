@@ -2551,6 +2551,17 @@ static boolean CL_ServerConnectionSearchTicker(tic_t *asksent)
 // idk if this is good kek
 static boolean addonsonly = false;
 
+static void FreeMapIcon(void)
+{
+	if (map_icon != NULL)
+		Patch_Free(map_icon);
+	map_icon = NULL;
+	if (map_icon_data != NULL)
+		Z_Free(map_icon_data);
+	map_icon_data = NULL;
+	map_icon_request_count = 0;
+}
+
 /** Called by CL_ConnectToServer
   *
   * \param tmpsave The name of the gamestate file???
@@ -2764,35 +2775,19 @@ static boolean CL_ServerConnectionTicker(const char *tmpsave, tic_t *oldtic, tic
 			{
 				addonsonly = false;
 				cl_mode = CL_CHECKFILES;
-				if (map_icon != NULL)
-					Patch_Free(map_icon);
-				map_icon = NULL;
-				if (map_icon_data != NULL)
-					Z_Free(map_icon_data);
-				map_icon_data = NULL;
+				FreeMapIcon();
 			}
 			else if (key == KEY_ESCAPE || key == KEY_JOY1+1)
 			{
 				addonsonly = false;
 				cl_mode = CL_ABORTED;
-				if (map_icon != NULL)
-					Patch_Free(map_icon);
-				map_icon = NULL;
-				if (map_icon_data != NULL)
-					Z_Free(map_icon_data);
-				map_icon_data = NULL;
-				map_icon_request_count = 0;
+				FreeMapIcon();
 			}
 			else if (key == KEY_SPACE || key == KEY_JOY1+3)
 			{
 				addonsonly = true;
 				cl_mode = CL_CHECKFILES;
-				if (map_icon != NULL)
-					Patch_Free(map_icon);
-				map_icon = NULL;
-				if (map_icon_data != NULL)
-					Z_Free(map_icon_data);
-				map_icon_data = NULL;
+				FreeMapIcon();
 			}
 		}
 
