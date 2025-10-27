@@ -1404,6 +1404,7 @@ static inline void CL_DrawConnectionStatus(void)
 			// Buttons
 			V_DrawFill(8, BASEVIDHEIGHT - 14, BASEVIDWIDTH - 16, 12, 239);
 			V_DrawThinString(16, BASEVIDHEIGHT - 12, V_ALLOWLOWERCASE, va("[%sESC%s] = Abort", "\x82", "\x80"));
+			V_DrawCenteredThinString(BASEVIDWIDTH/2, BASEVIDHEIGHT - 12, V_ALLOWLOWERCASE, va("[%sSPACE%s] = Load Addons", "\x82", "\x80"));
 			V_DrawRightAlignedThinString(BASEVIDWIDTH - 12, BASEVIDHEIGHT - 12, V_ALLOWLOWERCASE, va("[%sENTER%s] = Join", "\x82", "\x80"));
 		}
 		else if (filedownload.current != -1)
@@ -2547,6 +2548,9 @@ static boolean CL_ServerConnectionSearchTicker(tic_t *asksent)
 	return true;
 }
 
+// idk if this is good kek
+static boolean addonsonly = false;
+
 /** Called by CL_ConnectToServer
   *
   * \param tmpsave The name of the gamestate file???
@@ -2704,12 +2708,28 @@ static boolean CL_ServerConnectionTicker(const char *tmpsave, tic_t *oldtic, tic
 			{
 				// Gamestate is now handled within CL_LoadReceivedSavegame()
 				CL_LoadReceivedSavegame(false);
-				cl_mode = CL_CONNECTED;
+
+				if (addonsonly)
+				{
+					// close connection after savegame load
+					// we want the actual server state
+					// in case theres some stuff like records to be synched
+					CL_AbortConnection();
+					cl_mode = CL_ABORTED;
+				}
+				else
+				{
+					cl_mode = CL_CONNECTED;
+				}
+
+				addonsonly = false;
+
 				break;
 			} // don't break case continue to CL_CONNECTED
 			else
 				break;
 		case CL_CONNECTED:
+			addonsonly = false;
 		case CL_CONFIRMCONNECT: //logic is handled by M_ConfirmConnect
 		default:
 			break;
@@ -2717,9 +2737,11 @@ static boolean CL_ServerConnectionTicker(const char *tmpsave, tic_t *oldtic, tic
 		// Connection closed by cancel, timeout or refusal.
 		case CL_ABORTED:
 			cl_mode = CL_SEARCHING;
+			addonsonly = false;
 			return false;
-
 	}
+
+	//addonsonly = false;
 
 	GetPackets();
 	Net_AckTicker();
@@ -2740,6 +2762,7 @@ static boolean CL_ServerConnectionTicker(const char *tmpsave, tic_t *oldtic, tic
 		{
 			if (key == KEY_ENTER || key == KEY_JOY1)
 			{
+				addonsonly = false;
 				cl_mode = CL_CHECKFILES;
 				if (map_icon != NULL)
 					Patch_Free(map_icon);
@@ -2750,6 +2773,7 @@ static boolean CL_ServerConnectionTicker(const char *tmpsave, tic_t *oldtic, tic
 			}
 			else if (key == KEY_ESCAPE || key == KEY_JOY1+1)
 			{
+				addonsonly = false;
 				cl_mode = CL_ABORTED;
 				if (map_icon != NULL)
 					Patch_Free(map_icon);
@@ -2758,6 +2782,17 @@ static boolean CL_ServerConnectionTicker(const char *tmpsave, tic_t *oldtic, tic
 					Z_Free(map_icon_data);
 				map_icon_data = NULL;
 				map_icon_request_count = 0;
+			}
+			else if (key == KEY_SPACE || key == KEY_JOY1+3)
+			{
+				addonsonly = true;
+				cl_mode = CL_CHECKFILES;
+				if (map_icon != NULL)
+					Patch_Free(map_icon);
+				map_icon = NULL;
+				if (map_icon_data != NULL)
+					Z_Free(map_icon_data);
+				map_icon_data = NULL;
 			}
 		}
 
