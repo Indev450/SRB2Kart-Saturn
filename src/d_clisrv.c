@@ -1657,12 +1657,7 @@ static void SV_SendPlayerInfo(INT32 node)
 
 		netbuffer->u.playerinfo[i].node = i;
 
-		// Can't really change this because net compatibility, but the warning is annoying
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wstringop-truncation"
-		strncpy(netbuffer->u.playerinfo[i].name, (const char *)&player_names[i], MAXPLAYERNAME+1);
-#pragma GCC diagnostic pop
-		netbuffer->u.playerinfo[i].name[MAXPLAYERNAME] = '\0';
+		strlcpy(netbuffer->u.playerinfo[i].name, (const char *)&player_names[i], MAXPLAYERNAME+1);
 
 		//fetch IP address
 		//No, don't do that, you fuckface.
