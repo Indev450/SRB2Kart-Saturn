@@ -756,6 +756,9 @@ void D_RegisterServerCommands(void)
 	CV_RegisterVar(&cv_showping);
 	CV_RegisterVar(&cv_pingmeasurement);
 
+	CV_RegisterVar(&cv_usefakeseed);
+	CV_RegisterVar(&cv_fakeseedname);
+
 #ifdef SEENAMES
 	CV_RegisterVar(&cv_allowseenames);
 #endif

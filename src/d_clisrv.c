@@ -144,6 +144,10 @@ static CV_PossibleValue_t mindelay_cons_t[] = {{0, "MIN"}, {30, "MAX"}, {0, NULL
 consvar_t cv_mindelay = {"mindelay", "0", CV_SAVE, mindelay_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_gentlemens = {"gentlemensdelay", "Off", CV_SAVE|CV_CALL|CV_NOINIT, CV_OnOff, Lagless_OnChange, 0, NULL, NULL, 0, 0, NULL}; // this should be a netvar Zzz...
 
+// allows a fake player to appear on the ms and serverlist when your dedi server is empty
+consvar_t cv_usefakeseed = {"fakeseed", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_fakeseedname = {"fakeseedname", "Player 1", CV_SAVE, NULL, NULL, 0, NULL, NULL, 0, 0, NULL};
+
 SINT8 nodetoplayer[MAXNETNODES];
 SINT8 nodetoplayer2[MAXNETNODES]; // say the numplayer for this node if any (splitscreen)
 SINT8 nodetoplayer3[MAXNETNODES]; // say the numplayer for this node if any (splitscreen == 2)
@@ -1545,6 +1549,12 @@ static boolean CL_SendJoin(void)
 	return HSendPacket(servernode, false, 0, sizeof(clientconfig_pak));
 }
 
+static boolean UseFakeSeed(void)
+{
+	// due to complexity this will disable the moment a real player joins
+	return (dedicated && cv_usefakeseed.value && D_NumPlayers() == 0);
+}
+
 static void SV_SendServerInfo(INT32 node, tic_t servertime)
 {
 	UINT8 *p;
@@ -1567,7 +1577,12 @@ static void SV_SendServerInfo(INT32 node, tic_t servertime)
 	netbuffer->u.serverinfo.time = (tic_t)LONG(servertime);
 	netbuffer->u.serverinfo.leveltime = (tic_t)LONG(leveltime);
 
-	netbuffer->u.serverinfo.numberofplayer = (UINT8)D_NumPlayers();
+	// force 1 player
+	if (UseFakeSeed())
+		netbuffer->u.serverinfo.numberofplayer = (UINT8)1;
+	else
+		netbuffer->u.serverinfo.numberofplayer = (UINT8)D_NumPlayers();
+
 	netbuffer->u.serverinfo.maxplayer = (UINT8)(min((dedicated ? MAXPLAYERS-1 : MAXPLAYERS), cv_maxplayers.value));
 
 	// SRB2Kart: Vanilla's gametype constants for MS support
@@ -1645,6 +1660,37 @@ static void SV_SendPlayerInfo(INT32 node)
 	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
 
 	netbuffer->packettype = PT_PLAYERINFO;
+
+	// send a fake player to trick ms and serverbrowser
+	if (UseFakeSeed())
+	{
+		//printf("sending fake player lmao\n");
+		netbuffer->u.playerinfo[0].node = 0;
+
+		// fallback to smth, make sure this is always set
+		if (!cv_fakeseedname.string[0])
+			CV_Set(&cv_fakeseedname, "Player 1");
+		strlcpy(netbuffer->u.playerinfo[0].name, cv_fakeseedname.string, MAXPLAYERNAME+1);
+
+		memset(netbuffer->u.playerinfo[0].address, 0, 4);
+
+		// make it appear as spectator
+		netbuffer->u.playerinfo[0].team = 255;
+
+		// doesent really matter what we put here lel
+		netbuffer->u.playerinfo[0].score = LONG(42069);
+		netbuffer->u.playerinfo[0].timeinserver = SHORT(42069);
+		netbuffer->u.playerinfo[0].skin = (UINT8)1; // no clue wtf skin 1 is, tails maybe?
+
+		netbuffer->u.playerinfo[0].data = 0;
+
+		// mark every other slot as empty
+		for (i = 1; i < MSCOMPAT_MAXPLAYERS; i++)
+			netbuffer->u.playerinfo[i].node = 255;
+
+		HSendPacket(node, false, 0, sizeof(plrinfo) * MSCOMPAT_MAXPLAYERS);
+		return;
+	}
 
 	for (i = 0; i < MSCOMPAT_MAXPLAYERS; i++)
 	{
