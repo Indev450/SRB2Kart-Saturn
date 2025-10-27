@@ -2783,7 +2783,7 @@ static boolean CL_ServerConnectionTicker(const char *tmpsave, tic_t *oldtic, tic
 				cl_mode = CL_ABORTED;
 				FreeMapIcon();
 			}
-			else if (key == KEY_SPACE || key == KEY_JOY1+3)
+			else if (key == KEY_SPACE || key == KEY_JOY1+2)
 			{
 				addonsonly = true;
 				cl_mode = CL_CHECKFILES;
