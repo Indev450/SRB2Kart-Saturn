@@ -88,6 +88,8 @@ char *GetMODVersion(int id);
 #endif
 
 char *GetMasterServerRules(void);
+
+void Update_MS(void);
 #endif
 
 void AddMServCommands(void);

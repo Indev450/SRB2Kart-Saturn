@@ -145,8 +145,9 @@ consvar_t cv_mindelay = {"mindelay", "0", CV_SAVE, mindelay_cons_t, NULL, 0, NUL
 consvar_t cv_gentlemens = {"gentlemensdelay", "Off", CV_SAVE|CV_CALL|CV_NOINIT, CV_OnOff, Lagless_OnChange, 0, NULL, NULL, 0, 0, NULL}; // this should be a netvar Zzz...
 
 // allows a fake player to appear on the ms and serverlist when your dedi server is empty
-consvar_t cv_usefakeseed = {"fakeseed", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_fakeseedname = {"fakeseedname", "Player 1", CV_SAVE, NULL, NULL, 0, NULL, NULL, 0, 0, NULL};
+static void FakeSeed_OnChange(void);
+consvar_t cv_usefakeseed = {"fakeseed", "Off", CV_SAVE|CV_CALL|CV_NOINIT, CV_OnOff, FakeSeed_OnChange, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_fakeseedname = {"fakeseedname", "Player 1", CV_SAVE|CV_CALL|CV_NOINIT, NULL, FakeSeed_OnChange, 0, NULL, NULL, 0, 0, NULL};
 
 SINT8 nodetoplayer[MAXNETNODES];
 SINT8 nodetoplayer2[MAXNETNODES]; // say the numplayer for this node if any (splitscreen)
@@ -244,6 +245,13 @@ consvar_t cv_playbackspeed = {"playbackspeed", "1", 0, playbackspeed_cons_t, NUL
 consvar_t cv_httpsource = {"http_source", "", CV_SAVE, NULL, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 consvar_t cv_kicktime = {"kicktime", "10", CV_SAVE, CV_Unsigned, NULL, 0, NULL, NULL, 0, 0, NULL};
+
+static void FakeSeed_OnChange(void)
+{
+#ifdef MASTERSERVER
+	Update_MS();
+#endif
+}
 
 static boolean UseLocalDelay(void)
 {
