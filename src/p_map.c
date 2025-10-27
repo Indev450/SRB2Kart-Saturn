@@ -2189,7 +2189,7 @@ static boolean P_CheckCameraPosition(fixed_t x, fixed_t y, camera_t *thiscam)
 //
 boolean P_TryCameraMove(fixed_t x, fixed_t y, camera_t *thiscam)
 {
-	subsector_t *s;
+	subsector_t *subsec;
 	UINT8 i;
 
 	floatok = false;
@@ -2198,9 +2198,9 @@ boolean P_TryCameraMove(fixed_t x, fixed_t y, camera_t *thiscam)
 		return false;
 
 	if (thiscam->x != x || thiscam->y != y || thiscam->subsector == NULL)
-		s = R_PointInSubsectorFast(x, y);
+		subsec = R_PointInSubsectorFast(x, y);
 	else
-		s = thiscam->subsector;
+		subsec = thiscam->subsector;
 
 	if (players[displayplayers[0]].mo)
 	{
@@ -2220,7 +2220,7 @@ boolean P_TryCameraMove(fixed_t x, fixed_t y, camera_t *thiscam)
 				thiscam->ceilingz = thiscam->z + thiscam->height;
 				thiscam->x = x;
 				thiscam->y = y;
-				thiscam->subsector = s;
+				thiscam->subsector = subsec;
 				return true;
 			}
 		}
@@ -2232,6 +2232,7 @@ boolean P_TryCameraMove(fixed_t x, fixed_t y, camera_t *thiscam)
 				tryx -= MAXRADIUS;
 			else
 				tryx = x;
+
 			if (y-tryy > MAXRADIUS)
 				tryy += MAXRADIUS;
 			else if (y-tryy < -MAXRADIUS)
@@ -2249,14 +2250,14 @@ boolean P_TryCameraMove(fixed_t x, fixed_t y, camera_t *thiscam)
 
 			if (tmceilingz - thiscam->z < thiscam->height)
 			{
-				if (s == thiscam->subsector && tmceilingz >= thiscam->z)
+				if (subsec == thiscam->subsector && tmceilingz >= thiscam->z)
 				{
 					floatok = true;
 					thiscam->floorz = tmfloorz;
 					thiscam->ceilingz = tmfloorz + thiscam->height;
 					thiscam->x = x;
 					thiscam->y = y;
-					thiscam->subsector = s;
+					thiscam->subsector = subsec;
 					return true;
 				}
 				else
@@ -2281,7 +2282,7 @@ boolean P_TryCameraMove(fixed_t x, fixed_t y, camera_t *thiscam)
 	thiscam->ceilingz = tmceilingz;
 	thiscam->x = x;
 	thiscam->y = y;
-	thiscam->subsector = s;
+	thiscam->subsector = subsec;
 
 	return true;
 }
@@ -2394,6 +2395,7 @@ boolean P_TryMove(mobj_t *thing, fixed_t x, fixed_t y, boolean allowdropoff)
 				tryx -= radius;
 			else
 				tryx = x;
+
 			if (y-tryy > radius)
 				tryy += radius;
 			else if (y-tryy < -radius)
@@ -2425,12 +2427,15 @@ boolean P_TryMove(mobj_t *thing, fixed_t x, fixed_t y, boolean allowdropoff)
 			}
 
 			if (thing->type == MT_SKIM)
+			{
 				maxstep = 0;
+			}
 
 			if (tmceilingz - tmfloorz < thing->height)
 			{
 				if (tmfloorthing)
 					tmhitthing = tmfloorthing;
+
 				return false; // doesn't fit
 			}
 
@@ -2489,10 +2494,14 @@ boolean P_TryMove(mobj_t *thing, fixed_t x, fixed_t y, boolean allowdropoff)
 				if (thing->eflags & MFE_VERTICALFLIP)
 				{
 					if (tmdrpoffceilz - tmceilingz > maxstep)
+					{
 						return false;
+					}
 				}
 				else if (tmfloorz - tmdropoffz > maxstep)
+				{
 					return false; // don't stand over a dropoff
+				}
 			}
 		}
 	} while (tryx != x || tryy != y);
@@ -2568,6 +2577,7 @@ boolean P_SceneryTryMove(mobj_t *thing, fixed_t x, fixed_t y)
 
 	tryx = thing->x;
 	tryy = thing->y;
+
 	do {
 		if (x-tryx > MAXRADIUS)
 			tryx += MAXRADIUS;
@@ -2575,6 +2585,7 @@ boolean P_SceneryTryMove(mobj_t *thing, fixed_t x, fixed_t y)
 			tryx -= MAXRADIUS;
 		else
 			tryx = x;
+
 		if (y-tryy > MAXRADIUS)
 			tryy += MAXRADIUS;
 		else if (y-tryy < -MAXRADIUS)
@@ -2928,6 +2939,7 @@ static boolean PTR_SlideTraverse(intercept_t *in)
 	{
 		if (P_PointOnLineSide(slidemo->x, slidemo->y, li))
 			return true; // don't hit the back side
+
 		goto isblocking;
 	}
 
@@ -3346,10 +3358,12 @@ void P_BouncePlayerMove(mobj_t *mo)
 
 	{
 		mobj_t *fx = P_SpawnMobj(mo->x, mo->y, mo->z, MT_BUMP);
+
 		if (mo->eflags & MFE_VERTICALFLIP)
 			fx->eflags |= MFE_VERTICALFLIP;
 		else
 			fx->eflags &= ~MFE_VERTICALFLIP;
+
 		fx->scale = mo->scale;
 
 		S_StartSound(mo, sfx_s3k49);
@@ -3363,7 +3377,8 @@ void P_BouncePlayerMove(mobj_t *mo)
 	mo->player->cmomx = tmxmove;
 	mo->player->cmomy = tmymove;
 
-	if (!P_TryMove(mo, mo->x + tmxmove, mo->y + tmymove, true)) {
+	if (!P_TryMove(mo, mo->x + tmxmove, mo->y + tmymove, true))
+	{
 		P_TryMove(mo, mo->x - oldmomx, mo->y - oldmomy, true);
 	}
 }
@@ -3740,6 +3755,7 @@ boolean P_CheckSector(sector_t *sector, boolean crunch)
 	{
 		size_t i;
 		sector_t *sec;
+
 		for (i = 0; i < sector->numattached; i++)
 		{
 			sec = &sectors[sector->attached[i]];
@@ -3946,6 +3962,7 @@ static msecnode_t *P_DelSecnode(msecnode_t *node)
 
 	tp = node->m_sectorlist_prev;
 	tn = node->m_sectorlist_next;
+
 	if (tp)
 		tp->m_sectorlist_next = tn;
 	if (tn)
@@ -3956,6 +3973,7 @@ static msecnode_t *P_DelSecnode(msecnode_t *node)
 
 	sp = node->m_thinglist_prev;
 	sn = node->m_thinglist_next;
+
 	if (sp)
 		sp->m_thinglist_next = sn;
 	else
@@ -4003,7 +4021,7 @@ static inline boolean PIT_GetSectors(line_t *ld)
 	// allowed to move to this position, then the sector_list
 	// will be attached to the Thing's mobj_t at touching_sectorlist.
 
-	sector_list = P_AddSecnode(ld->frontsector,tmthing,sector_list);
+	sector_list = P_AddSecnode(ld->frontsector, tmthing, sector_list);
 
 	// Don't assume all lines are 2-sided, since some Things
 	// like MT_TFOG are allowed regardless of whether their radius takes
