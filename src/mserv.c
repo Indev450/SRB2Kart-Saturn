@@ -608,10 +608,17 @@ Update_parameters (void)
 	}
 #endif/*MASTERSERVER*/
 }
+
+#ifdef MASTERSERVER
+void Update_MS(void)
+{
+	Update_parameters();
+}
+#endif
+
 #ifdef MASTERSERVER
 static void MasterServer_OnChange(void)
 {
-
 	UnregisterServer();
 
 	Set_api(cv_masterserver.string);
