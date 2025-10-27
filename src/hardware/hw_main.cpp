@@ -93,7 +93,8 @@ sector_t *gl_backsector;
 static constexpr float clipping_distances[] = {1024.0f, 2048.0f, 4096.0f, 6144.0f, 8192.0f, 12288.0f, 16384.0f};
 // values for bsp culling
 // slightly higher than the far clipping plane to compensate for impreciseness
-static constexpr INT32 bsp_culling_distances[] = {(1024+512)*FRACUNIT, (2048+512)*FRACUNIT, (4096+512)*FRACUNIT,
+static constexpr INT32 bsp_culling_distances[] = {
+	(1024+512)*FRACUNIT, (2048+512)*FRACUNIT, (4096+512)*FRACUNIT,
 	(6144+512)*FRACUNIT, (8192+512)*FRACUNIT, (12288+512)*FRACUNIT, (16384+512)*FRACUNIT};
 
 // Performance stats
@@ -112,9 +113,6 @@ ps_metric_t ps_hw_numpolyflags = {};
 ps_metric_t ps_hw_numcolors = {};
 ps_metric_t ps_hw_batchsorttime = {};
 ps_metric_t ps_hw_batchdrawtime = {};
-
-// terrible optimization
-boolean havesnakerpad = false;
 
 static void HWR_SplitWall(sector_t *sector, FOutVector *wallVerts, INT32 texnum, boolean noencore, FSurfaceInfo* Surf, INT32 cutflag, ffloor_t *pfloor, FBITFIELD polyflags);
 static void HWR_RenderWall(FOutVector *wallVerts, FSurfaceInfo *pSurf, FBITFIELD blend, boolean fogwall, INT32 lightlevel, extracolormap_t *wallcolormap);
@@ -691,20 +689,15 @@ static void HWR_RenderPlane(subsector_t *subsector, extrasubsector_t *xsub, bool
 	if (slope)
 		lightlevel = HWR_CalcSlopeLight(lightlevel, slope, gl_frontsector, (FOFsector != NULL));
 
-	if (subsector && havesnakerpad && (lightlevel != 255) && (lumpnum != LUMPERROR))
+	// sneaker panel patches are either 64x64 or 128x128
+	if (lightlevel < 255 && (flatflag == 63 || flatflag == 127)
+	&& GETSECSPECIAL(sec->special, 4) == 6) // check if it has sneaker panel special
 	{
-		const sector_t *sec = subsector->sector;
+		const char *name = W_CheckNameForNum(lumpnum);
 
-		if (sec)
+		if (name && memcmp(name, "BOST", 4) == 0) // active panel patches
 		{
-			const char *name = W_CheckNameForNum(lumpnum);
-
-			if (name && memcmp(name, "BOST", 4) == 0) // kart sneakerpad
-			{
-				// check if it has sneaker panel special
-				if ((GETSECSPECIAL(sec->special, 4) == 6) || ((FOFsector != NULL) && (GETSECSPECIAL(FOFsector->special, 4) == 6))) // check the fof sector aswell
-					lightlevel = 255;
-			}
+			lightlevel = 255;
 		}
 	}
 

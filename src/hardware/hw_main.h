@@ -84,9 +84,6 @@ extern ps_metric_t ps_hw_batchdrawtime;
 
 extern boolean gl_shadersavailable;
 
-// terrible optimization lmao
-extern boolean havesnakerpad;
-
 // hw_draw.c
 void HWR_DrawStretchyFixedPatch(patch_t *gpatch, fixed_t x, fixed_t y, fixed_t pscale, fixed_t vscale, INT32 option, const UINT8 *colormap, INT32 bflags);
 void HWR_DrawCroppedPatch(patch_t *gpatch, fixed_t x, fixed_t y, fixed_t pscale, INT32 option, fixed_t sx, fixed_t sy, fixed_t w, fixed_t h);

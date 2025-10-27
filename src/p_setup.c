@@ -686,13 +686,6 @@ INT32 P_AddLevelFlat(const char *flatname, levelflat_t *levelflat)
 		levelflat->lumpnum = R_GetFlatNumForName(flatname);
 		levelflat->baselumpnum = LUMPERROR;
 
-#ifdef HWRENDER
-		if (!havesnakerpad && memcmp(levelflat->name, "BOST", 4) == 0)
-		{
-			havesnakerpad = true;
-		}
-#endif
-
 		P_CheckCyanFlat(levelflat);
 
 #ifndef ZDEBUG
@@ -802,10 +795,6 @@ static void P_LoadSectors(UINT8 *data)
 		I_Error("Ran out of memory while loading sectors\n");
 
 	numlevelflats = 0;
-
-#ifdef HWRENDER
-	havesnakerpad = false;
-#endif
 
 	// For each counted sector, copy the sector raw data from our cache pointer ms, to the global table pointer ss.
 	for (i = 0; i < numsectors; i++, ss++, ms++)
