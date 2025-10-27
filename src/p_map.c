@@ -2411,19 +2411,22 @@ boolean P_TryMove(mobj_t *thing, fixed_t x, fixed_t y, boolean allowdropoff)
 		{
 			//All things are affected by their scale.
 			fixed_t maxstep = FixedMul(MAXSTEPMOVE, mapobjectscale);
+			INT32 special = 0;
 
 			if (thing->player)
 			{
-				const INT32 special = GETSECSPECIAL(R_PointInSubsector(x, y)->sector->special, 1);
+				special = GETSECSPECIAL(R_PointInSubsector(x, y)->sector->special, 1);
 
 				// If using type Section1:13, double the maxstep.
-				if (P_PlayerTouchingSectorSpecial(thing->player, 1, 13)
-				|| special == 13)
+				if (P_PlayerTouchingSectorSpecial(thing->player, 1, 13) || special == 13)
+				{
 					maxstep <<= 1;
+				}
 				// If using type Section1:12, no maxstep. For ledges you don't want the player to climb! (see: Egg Zeppelin & SMK port walls)
-				else if (P_PlayerTouchingSectorSpecial(thing->player, 1, 12)
-				|| special == 12)
+				else if (P_PlayerTouchingSectorSpecial(thing->player, 1, 12) || special == 12)
+				{
 					maxstep = 0;
+				}
 			}
 
 			if (thing->type == MT_SKIM)
@@ -2468,11 +2471,8 @@ boolean P_TryMove(mobj_t *thing, fixed_t x, fixed_t y, boolean allowdropoff)
 					return false; // mobj must lower itself to fit
 				}
 			}
-			else if (maxstep > 0 && !(
-				thing->player && (
-				P_PlayerTouchingSectorSpecial(thing->player, 1, 14)
-				|| GETSECSPECIAL(R_PointInSubsector(x, y)->sector->special, 1) == 14)
-				)) // Step down
+			else if (maxstep > 0 && !(thing->player &&
+					(P_PlayerTouchingSectorSpecial(thing->player, 1, 14) || special == 14))) // Step down
 			{
 				// If the floor difference is MAXSTEPMOVE or less, and the sector isn't Section1:14, ALWAYS
 				// step down! Formerly required a Section1:13 sector for the full MAXSTEPMOVE, but no more.
@@ -2598,13 +2598,13 @@ boolean P_SceneryTryMove(mobj_t *thing, fixed_t x, fixed_t y)
 
 		if (!(thing->flags & MF_NOCLIP))
 		{
-			const fixed_t maxstep = FixedMul(MAXSTEPMOVE, mapobjectscale);
-
 			if (tmceilingz - tmfloorz < thing->height)
 				return false; // doesn't fit
 
 			if (tmceilingz - thing->z < thing->height)
 				return false; // mobj must lower itself to fit
+
+			const fixed_t maxstep = FixedMul(MAXSTEPMOVE, mapobjectscale);
 
 			if (tmfloorz - thing->z > maxstep)
 				return false; // too big a step up
