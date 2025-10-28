@@ -3494,11 +3494,6 @@ void G_StopDemo(void)
 	demo.rewinding = false;
 	CL_ClearRewinds();
 
-	if (gamestate == GS_INTERMISSION)
-		Y_EndIntermission(); // cleanup
-	if (gamestate == GS_VOTING)
-		Y_EndVote();
-
 	D_ClearState();
 }
 
