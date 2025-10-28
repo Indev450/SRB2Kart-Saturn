@@ -954,24 +954,6 @@ void D_SRB2Loop(void)
 // D_SRB2Main
 // =========================================================================
 
-static void ResetSplitScreen(void)
-{
-	UINT8 i;
-
-	// recompute screen size
-	R_ExecuteSetViewSize();
-
-	if (!demo.playback && !botingame)
-	{
-		for (i = 1; i < MAXSPLITSCREENPLAYERS; i++)
-		{
-			if (i > splitscreen)
-				CL_RemoveSplitscreenPlayer(displayplayers[i]);
-			else
-				CL_AddSplitscreenPlayer();
-		}
-	}
-}
 //
 // D_ClearState
 //
@@ -992,7 +974,9 @@ void D_ClearState(void)
 		CL_ClearPlayer(i);
 
 	splitscreen = 0;
-	ResetSplitScreen(); // splitscreen onchange resets us to singleplayer :chaosleep:
+
+	// recompute screen size
+	R_ExecuteSetViewSize();
 
 	botingame = false;
 	botskin = 0;
