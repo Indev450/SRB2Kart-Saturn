@@ -2774,7 +2774,6 @@ static boolean CL_ServerConnectionTicker(const char *tmpsave, tic_t *oldtic, tic
 					// close connection after savegame load
 					// we want the actual server state
 					// in case theres some stuff like records to be synched
-					CL_AbortConnection();
 					cl_mode = CL_ABORTED;
 				}
 				else
@@ -2782,14 +2781,11 @@ static boolean CL_ServerConnectionTicker(const char *tmpsave, tic_t *oldtic, tic
 					cl_mode = CL_CONNECTED;
 				}
 
-				addonsonly = false;
-
 				break;
 			} // don't break case continue to CL_CONNECTED
 			else
 				break;
 		case CL_CONNECTED:
-			addonsonly = false;
 		case CL_CONFIRMCONNECT: //logic is handled by M_ConfirmConnect
 		default:
 			break;
@@ -2797,11 +2793,8 @@ static boolean CL_ServerConnectionTicker(const char *tmpsave, tic_t *oldtic, tic
 		// Connection closed by cancel, timeout or refusal.
 		case CL_ABORTED:
 			cl_mode = CL_SEARCHING;
-			addonsonly = false;
 			return false;
 	}
-
-	//addonsonly = false;
 
 	GetPackets();
 	Net_AckTicker();
@@ -2828,7 +2821,6 @@ static boolean CL_ServerConnectionTicker(const char *tmpsave, tic_t *oldtic, tic
 			}
 			else if (key == KEY_ESCAPE || key == KEY_JOY1+1)
 			{
-				addonsonly = false;
 				cl_mode = CL_ABORTED;
 				FreeMapIcon();
 			}
@@ -2845,9 +2837,11 @@ static boolean CL_ServerConnectionTicker(const char *tmpsave, tic_t *oldtic, tic
 		{
 			CONS_Printf(M_GetText("Network game synchronization aborted.\n"));
 			CL_AbortConnection();
+			addonsonly = false;
 
 			return false;
 		}
+
 		*oldtic = I_GetTime();
 
 		if (client && cl_mode != CL_CONNECTED && cl_mode != CL_ABORTED)
