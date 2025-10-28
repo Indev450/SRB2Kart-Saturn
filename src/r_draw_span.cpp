@@ -262,6 +262,11 @@ static void R_DrawTiltedSpanTemplate(drawspandata_t* ds)
 	const UINT8 * restrict source = ds->source;
 	const UINT8 * restrict colormap = ds->colormap;
 
+	const ptrdiff_t colormap_diff = (colormap - colormaps);
+
+	const INT32 * restrict tiltlight = tiltlighting.data();
+	lighttable_t * const * restrict planezlight = ds->planezlight;
+
 	if constexpr (Type & DS_RIPPLE)
 	{
 		dsrc = vid.screens[1] + (ds->y + ds->bgofs) * stride + ds->x1;
@@ -320,7 +325,7 @@ static void R_DrawTiltedSpanTemplate(drawspandata_t* ds)
 		for (i = 0; i < SPANSIZE; i++)
 		{
 			bit = (((v + stepv * i) >> nflatyshift) & nflatmask) | ((u + stepu * i) >> nflatxshift);
-			colormap = ds->planezlight[tiltlighting[x1 + i]] + (ds->colormap - colormaps);
+			colormap = planezlight[tiltlight[x1 + i]] + colormap_diff;
 			if constexpr (Type & DS_RIPPLE)
 				dest[i] = R_DrawSpanPixel<Type>(ds, &dsrc[i], colormap, bit, source);
 			else
@@ -343,7 +348,7 @@ static void R_DrawTiltedSpanTemplate(drawspandata_t* ds)
 			u = (INT64)(startu);
 			v = (INT64)(startv);
 			bit = ((v >> nflatyshift) & nflatmask) | (u >> nflatxshift);
-			colormap = ds->planezlight[tiltlighting[ds->x1]] + (ds->colormap - colormaps);
+			colormap = planezlight[tiltlight[ds->x1]] + colormap_diff;
 			if constexpr (Type & DS_RIPPLE)
 				*dest = R_DrawSpanPixel<Type>(ds, dsrc, colormap, bit, source);
 			else
@@ -369,7 +374,7 @@ static void R_DrawTiltedSpanTemplate(drawspandata_t* ds)
 			for (; width != 0; width--)
 			{
 				bit = ((v >> ds->nflatyshift) & ds->nflatmask) | (u >> ds->nflatxshift);
-				colormap = ds->planezlight[tiltlighting[ds->x1]] + (ds->colormap - colormaps);
+				colormap = planezlight[tiltlight[ds->x1]] + colormap_diff;
 				if constexpr (Type & DS_RIPPLE)
 					*dest = R_DrawSpanPixel<Type>(ds, dsrc, colormap, bit, source);
 				else
@@ -437,15 +442,19 @@ void R_DrawFogSpan_Tilted(drawspandata_t* ds)
 	const INT32 stride = vid.width;
 	const float iz = ds->szp.z + ds->szp.y*(centery-ds->y) + ds->szp.x*(ds->x1-centerx);
 	UINT8 * restrict dest = R_Address(ds->x1, ds->y);
+	const ptrdiff_t colormap_diff = (ds->colormap - colormaps);
 
 	local_for_thread std::vector<INT32> tiltlighting;
 
 	// Lighting is simple. It's just linear interpolation from start to end
 	R_GetTiltedLighting(tiltlighting, ds, iz, width, stride);
 
+	const INT32 * restrict tiltlight = tiltlighting.data();
+	lighttable_t * const * restrict planezlight = ds->planezlight;
+
 	do
 	{
-		UINT8 *colormap = ds->planezlight[tiltlighting[ds->x1++]] + (ds->colormap - colormaps);
+		UINT8 *colormap = planezlight[tiltlight[ds->x1++]] + colormap_diff;
 		*dest = colormap[*dest];
 		dest++;
 	}

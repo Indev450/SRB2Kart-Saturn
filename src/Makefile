@@ -49,6 +49,7 @@
 #                    Already enabled by default for 32-bit
 #                    Windows.
 # NOCURL=1 - Disable libcurl--HTTP capability.
+# NOHOLEPUNCH=1 - Disable holepunch capability.
 # NOLIBGME=1 - Disable game music emu, retro VGM support.
 # NOOPENMPT=1 - Disable module (tracker) music support.
 # NOMIXER=1 - Disable SDL Mixer (audio playback).
