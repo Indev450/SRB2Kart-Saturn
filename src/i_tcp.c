@@ -752,7 +752,7 @@ static void SOCK_Send(void)
 	int e = 0; // save error code so it can't be modified later code and avoid calling WSAGetLastError() more then once
 	size_t i, j;
 
-	if (!nodeconnected[doomcom->remotenode])
+	if (doomcom->remotenode < 0 || !nodeconnected[doomcom->remotenode])
 		return;
 
 	if (doomcom->remotenode == BROADCASTADDR)
