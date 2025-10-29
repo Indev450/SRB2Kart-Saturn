@@ -746,6 +746,8 @@ static inline ssize_t SOCK_SendToAddr(SOCKET_TYPE socket, mysockaddr_t *sockaddr
 
 #define ALLOWEDERROR(x) ((x) == ECONNREFUSED || (x) == EWOULDBLOCK || (x) == EHOSTUNREACH || (x) == ENETUNREACH || (x) == EADDRNOTAVAIL)
 
+// FIXME: maybe retry if this failed somehow?
+// windows kinda dies rather often when some other network heavy thing runs besides kart
 static void SOCK_Send(void)
 {
 	ssize_t c = ERRSOCKET;
@@ -970,7 +972,7 @@ static SOCKET_TYPE UDP_Bind(int family, struct sockaddr *addr, socklen_t addrlen
 		e = errno;
 		I_OutputMsg("getting SO_RCVBUF failed: #%u, %s\n", e, strerror(e));
 	}
-	CONS_Printf(M_GetText("Network system buffer: %dKb\n"), opt>>10);
+	CONS_Printf(M_GetText("Network receive buffer: %dKb\n"), opt>>10);
 
 	//if (opt < 64<<10) // 64k minimum
 	if (opt < 256<<10) // no try 256k first
@@ -1007,6 +1009,53 @@ static SOCKET_TYPE UDP_Bind(int family, struct sockaddr *addr, socklen_t addrlen
 
 		if (opt < 64<<10)
 			CONS_Alert(CONS_WARNING, M_GetText("Can't set receive buffer length to at least 64k, file transfer will be bad\n"));
+	}
+
+	opt = 0;
+	opts = (socklen_t)sizeof(opt);
+	rc = getsockopt(s, SOL_SOCKET, SO_SNDBUF, (char *)&opt, &opts);
+	if (rc <= -1)
+	{
+		e = errno;
+		I_OutputMsg("getting SO_SNDBUF failed: #%u, %s\n", e, strerror(e));
+	}
+	CONS_Printf(M_GetText("Network send buffer: %dKb\n"), opt>>10);
+
+	//if (opt < 64<<10) // 64k minimum
+	if (opt < 256<<10) // no try 256k first
+	{
+		int buf_sizes[] = {256<<10, 128<<10, 64<<10}; // Try 256k, 128k, then 64k
+		size_t i;
+
+		for (i = 0; i < sizeof(buf_sizes) / sizeof(buf_sizes[0]); i++)
+		{
+			opt = buf_sizes[i];
+			opts = (socklen_t)sizeof(opt);
+			rc = setsockopt(s, SOL_SOCKET, SO_SNDBUF, (char *)&opt, opts);
+			if (rc <= -1)
+			{
+				e = errno;
+				I_OutputMsg("setting SO_SNDBUF to %dKb failed: #%u, %s\n", opt>>10, e, strerror(e));
+				continue;
+			}
+
+			opt = 0;
+			rc = getsockopt(s, SOL_SOCKET, SO_SNDBUF, (char *)&opt, &opts);
+			if (rc <= -1)
+			{
+				e = errno;
+				I_OutputMsg("getting SO_SNDBUF failed: #%u, %s\n", e, strerror(e));
+			}
+
+			if (opt >= buf_sizes[i])
+			{
+				CONS_Printf(M_GetText("Network system send buffer set to: %dKb\n"), opt>>10);
+				break;
+			}
+		}
+
+		if (opt < 64<<10)
+			CONS_Alert(CONS_WARNING, M_GetText("Can't set send buffer length to at least 64k, file transfer will be bad\n"));
 	}
 
 	rc = getsockname(s, &straddr.any, &len);
