@@ -1127,9 +1127,7 @@ boolean HGetPacket(void)
 
 	while (true)
 	{
-		I_NetGet();
-
-		if (doomcom->remotenode == -1) // No packet received
+		if (!I_NetGet()) // No packets received
 			return false;
 
 		getbytes += packetheaderlength + doomcom->datalength; // For stat
@@ -1165,6 +1163,7 @@ boolean HGetPacket(void)
 			GotAcks();
 			continue;
 		}
+
 		doomcom->datalength -= BASEPACKETSIZE;
 		break;
 	}
