@@ -28,14 +28,14 @@
 #endif
 
 #ifdef _WIN32
-#define USE_WINSOCK
+	#define USE_WINSOCK
 #endif //WIN32 OS
 
 #ifdef USE_WINSOCK
-#include <ws2tcpip.h>
-#define addrinfo_t ADDRINFOA
+	#include <ws2tcpip.h>
+	#define addrinfo_t ADDRINFOA
 #else
-#define addrinfo_t struct addrinfo
+	#define addrinfo_t struct addrinfo
 #endif
 
 #include "doomdef.h"
@@ -148,16 +148,16 @@ static UINT8 UPNP_support = TRUE;
 
 #define DEFAULTPORT "5029"
 
-#if defined (USE_WINSOCK)
-typedef SOCKET SOCKET_TYPE;
-#define ERRSOCKET (SOCKET_ERROR)
+#ifdef USE_WINSOCK
+	typedef SOCKET SOCKET_TYPE;
+	#define ERRSOCKET (SOCKET_ERROR)
 #else
-#if defined (__unix__) || defined (__APPLE__) || defined (__HAIKU__)
-typedef int SOCKET_TYPE;
-#else
-typedef unsigned long SOCKET_TYPE;
-#endif
-#define ERRSOCKET (-1)
+	#if defined (__unix__) || defined (__APPLE__) || defined (__HAIKU__)
+		typedef int SOCKET_TYPE;
+	#else
+		typedef unsigned long SOCKET_TYPE;
+	#endif
+	#define ERRSOCKET (-1)
 #endif
 
 #define IPV6_MULTICAST_ADDRESS "ff15::57e1:1a12"
@@ -345,17 +345,15 @@ static const char *SOCK_AddrToStr(mysockaddr_t *sk)
 {
 	static char s[64]; // 255.255.255.255:65535 or
 	// [ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff]:65535
-
 #ifdef HAVE_IPV6
 	int v6 = (sk->any.sa_family == AF_INET6);
 #else
 	int v6 = 0;
 #endif
-
 	void *addr;
 	int e = 0; // save error code so it can't be modified later code and avoid calling WSAGetLastError() more then once
 
-	if(sk->any.sa_family == AF_INET)
+	if (sk->any.sa_family == AF_INET)
 		addr = &sk->ip4.sin_addr;
 #ifdef HAVE_IPV6
 	else if(sk->any.sa_family == AF_INET6)
@@ -364,9 +362,11 @@ static const char *SOCK_AddrToStr(mysockaddr_t *sk)
 	else
 		addr = NULL;
 
-	if(addr == NULL)
+	if (addr == NULL)
+	{
 		sprintf(s, "No address");
-	else if(inet_ntop(sk->any.sa_family, addr, &s[v6], sizeof (s) - v6) == NULL)
+	}
+	else if (inet_ntop(sk->any.sa_family, addr, &s[v6], sizeof (s) - v6) == NULL)
 	{
 		e = errno;
 		sprintf(s, "Unknown family type, error #%u: %s", e, strerror(e));
@@ -381,7 +381,7 @@ static const char *SOCK_AddrToStr(mysockaddr_t *sk)
 			strcat(s, va(":%d", ntohs(sk->ip6.sin6_port)));
 	}
 #endif
-	else if(sk->any.sa_family == AF_INET  && sk->ip4.sin_port  != 0)
+	else if (sk->any.sa_family == AF_INET  && sk->ip4.sin_port != 0)
 		strcat(s, va(":%d", ntohs(sk->ip4.sin_port)));
 
 	return s;
@@ -480,7 +480,6 @@ static boolean SOCK_cmpaddr(mysockaddr_t *a, mysockaddr_t *b, UINT8 mask)
 	else
 		return false;
 }
-
 
 // This is a hack. For some reason, nodes aren't being freed properly.
 // This goes through and cleans up what nodes were supposed to be freed.
@@ -636,7 +635,7 @@ static boolean SOCK_Get(void)
 		c = recvfrom(mysockets[n], (char *)&doomcom->data, MAXPACKETLENGTH, 0,
 			(void *)&fromaddress, &fromlen);
 
-		if (c > 0)
+		if (c != ERRSOCKET)
 		{
 #ifdef USE_STUN
 			if (STUN_got_response(doomcom->data, c))
@@ -652,20 +651,21 @@ static boolean SOCK_Get(void)
 #endif
 
 			// find remote node number
-			for (j = 1; j <= MAXNETNODES; j++) //include LAN
+			for (j = 1; j <= MAXNETNODES; j++) // include LAN
 			{
 				if (SOCK_cmpaddr(&fromaddress, &clientaddress[j], 0))
 				{
 					doomcom->remotenode = (INT16)j; // good packet from a game player
 					doomcom->datalength = (INT16)c;
 					nodesocket[j] = mysockets[n];
-					return false;
+					return true;
 				}
 			}
 			// not found
 
 			// find a free slot
 			j = getfreenode();
+
 			if (j > 0)
 			{
 				const time_t curTime = time(NULL);
@@ -1269,7 +1269,7 @@ void I_ShutdownTcpDriver(void)
 	init_tcp_driver = false;
 }
 
-static boolean SOCK_GetAddr(struct sockaddr_in *sin, const char *address, const char *port, boolean test)
+static boolean SOCK_GetAddr(mysockaddr_t *sin, const char *address, const char *port, boolean test)
 {
 	addrinfo_t *ai = NULL, *runp, hints;
 	int gaie;
@@ -1330,7 +1330,7 @@ static SINT8 SOCK_NetMakeNodewPort(const char *address, const char *port)
 
 	if (newnode != -1)
 	{
-		if (!SOCK_GetAddr(&clientaddress[newnode].ip4, address, port, true))
+		if (!SOCK_GetAddr(&clientaddress[newnode], address, port, true))
 		{
 			nodeconnected[newnode] = false;
 			return -1;
@@ -1358,7 +1358,7 @@ static void rendezvous(int size)
 
 	if (tic != refreshtic)
 	{
-		if (SOCK_GetAddr(&rzv.ip4, host, (port ? port : "7777"), false))
+		if (SOCK_GetAddr(&rzv, host, (port ? port : "7777"), false))
 		{
 			refreshtic = tic;
 		}
