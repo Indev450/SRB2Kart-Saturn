@@ -1271,7 +1271,7 @@ void I_ShutdownTcpDriver(void)
 
 static boolean SOCK_GetAddr(mysockaddr_t *sin, const char *address, const char *port, boolean test)
 {
-	addrinfo_t *ai = NULL, *runp, hints;
+	addrinfo_t *ai, *runp, hints;
 	int gaie;
 	size_t i;
 
@@ -1287,10 +1287,7 @@ static boolean SOCK_GetAddr(mysockaddr_t *sin, const char *address, const char *
 	gaie = getaddrinfo(address, port, &hints, &ai);
 
 	if (gaie != 0)
-	{
-		freeaddrinfo(ai);
 		return false;
-	}
 
 	runp = ai;
 
