@@ -972,28 +972,41 @@ static SOCKET_TYPE UDP_Bind(int family, struct sockaddr *addr, socklen_t addrlen
 	}
 	CONS_Printf(M_GetText("Network system buffer: %dKb\n"), opt>>10);
 
-	if (opt < 64<<10) // 64k
+	//if (opt < 64<<10) // 64k minimum
+	if (opt < 256<<10) // no try 256k first
 	{
-		opt = 64<<10;
-		opts = (socklen_t)sizeof(opt);
-		rc = setsockopt(s, SOL_SOCKET, SO_RCVBUF, (char *)&opt, opts);
-		if (rc <= -1)
+		const int buf_sizes[] = {256<<10, 128<<10, 64<<10}; // Try 256k, 128k, then 64k
+		size_t i;
+
+		for (i = 0; i < sizeof(buf_sizes) / sizeof(buf_sizes[0]); i++)
 		{
-			e = errno;
-			I_OutputMsg("setting SO_RCVBUF failed: #%u, %s\n", e, strerror(e));
-		}
-		opt = 0;
-		rc = getsockopt(s, SOL_SOCKET, SO_RCVBUF, (char *)&opt, &opts);
-		if (rc <= -1)
-		{
-			e = errno;
-			I_OutputMsg("getting SO_RCVBUF failed: #%u, %s\n", e, strerror(e));
+			opt = buf_sizes[i];
+			opts = (socklen_t)sizeof(opt);
+			rc = setsockopt(s, SOL_SOCKET, SO_RCVBUF, (char *)&opt, opts);
+			if (rc <= -1)
+			{
+				e = errno;
+				I_OutputMsg("setting SO_RCVBUF to %dKb failed: #%u, %s\n", opt>>10, e, strerror(e));
+				continue;
+			}
+
+			opt = 0;
+			rc = getsockopt(s, SOL_SOCKET, SO_RCVBUF, (char *)&opt, &opts);
+			if (rc <= -1)
+			{
+				e = errno;
+				I_OutputMsg("getting SO_RCVBUF failed: #%u, %s\n", e, strerror(e));
+			}
+
+			if (opt >= buf_sizes[i])
+			{
+				CONS_Printf(M_GetText("Network system receive buffer set to: %dKb\n"), opt>>10);
+				break;
+			}
 		}
 
 		if (opt < 64<<10)
-			CONS_Alert(CONS_WARNING, M_GetText("Can't set buffer length to 64k, file transfer will be bad\n"));
-		else
-			CONS_Printf(M_GetText("Network system buffer set to: %dKb\n"), opt>>10);
+			CONS_Alert(CONS_WARNING, M_GetText("Can't set receive buffer length to at least 64k, file transfer will be bad\n"));
 	}
 
 	rc = getsockname(s, &straddr.any, &len);
