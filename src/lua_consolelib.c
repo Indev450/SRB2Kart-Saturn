@@ -531,7 +531,7 @@ static int lib_cvStealthSet(lua_State *L)
 
 static int lib_cvAddValue(lua_State *L)
 {
-	consvar_t *cvar = (consvar_t *)luaL_checkudata(L, 1, META_CVAR);
+	consvar_t *cvar = *(consvar_t **)luaL_checkudata(L, 1, META_CVAR);
 
 	CV_AddValue(cvar, (INT32)luaL_checknumber(L, 2));
 	return 0;
@@ -608,7 +608,7 @@ static int cvar_fields_ref = LUA_NOREF;
 
 static int cvar_get(lua_State *L)
 {
-	consvar_t *cvar = (consvar_t *)luaL_checkudata(L, 1, META_CVAR);
+	consvar_t *cvar = *(consvar_t **)luaL_checkudata(L, 1, META_CVAR);
 	enum cvar_e field = Lua_optoption(L, 2, -1, cvar_fields_ref);
 
 	switch (field)
