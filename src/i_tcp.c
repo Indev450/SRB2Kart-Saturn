@@ -752,10 +752,6 @@ static void SOCK_Send(void)
 	int e = 0; // save error code so it can't be modified later code and avoid calling WSAGetLastError() more then once
 	size_t i, j;
 
-#ifndef USE_WINSOCK
-	errno = 0;
-#endif
-
 	if (doomcom->remotenode < 0 || !nodeconnected[doomcom->remotenode])
 		return;
 
@@ -843,10 +839,6 @@ static SOCKET_TYPE UDP_Bind(int family, struct sockaddr *addr, socklen_t addrlen
 #endif
 	mysockaddr_t straddr;
 	socklen_t len = sizeof(straddr);
-
-#ifndef USE_WINSOCK
-	errno = 0;
-#endif
 
 	if (s == (SOCKET_TYPE)ERRSOCKET)
 		return (SOCKET_TYPE)ERRSOCKET;
