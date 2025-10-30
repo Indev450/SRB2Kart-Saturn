@@ -59,7 +59,15 @@ fixed_t LUA_GetConstant(const char *word);
 // Need better name for this ;-;
 void LUA_InvalidateMathlibCache(const char *name);
 
+typedef enum {
+	LPUSHED_NIL,
+	LPUSHED_NEW,
+	LPUSHED_EXISTING,
+} lpushed_t;
+
 void LUA_PushUserdata(lua_State *L, void *data, const char *meta);
+lpushed_t LUA_RawPushUserdata(lua_State *L, void *data);
+
 void LUA_InvalidateUserdata(void *data);
 void LUA_InvalidateLevel(void);
 void LUA_InvalidateMapthings(void);
