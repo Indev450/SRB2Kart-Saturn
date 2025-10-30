@@ -776,10 +776,6 @@ void D_RegisterServerCommands(void)
 	CV_RegisterVar(&cv_netdemosyncquality);
 	CV_RegisterVar(&cv_maxdemosize);
 	CV_RegisterVar(&cv_demochangemap);
-
-#ifdef HAVE_BLUAJIT
-	CV_RegisterVar(&cv_luajit);
-#endif
 }
 
 // =========================================================================

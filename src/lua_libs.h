@@ -14,12 +14,7 @@
 #define __LUA_LIBS__
 
 #include "doomtype.h"
-
-#ifndef HAVE_BLUAJIT
 #include "blua/lua.h"
-#else
-#include <lua.h>
-#endif
 
 extern lua_State *gL;
 

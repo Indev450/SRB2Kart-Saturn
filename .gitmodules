@@ -1,5 +1,0 @@
-[submodule "libs/bluajit"]
-	path = libs/bluajit
-	url = https://github.com/alufolie91/bluajit
-[submodule "libs/bluajit/"]
-	branch = stuff

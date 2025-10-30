@@ -8,7 +8,6 @@ passthru_opts+=\
 	HAVE_MINIUPNPC\
 	HAVE_DISCORDRPC DEVELOP\
 	NOHOLEPUNCH\
-	HAVE_BLUAJIT
 
 # build with debugging information
 ifdef DEBUGMODE

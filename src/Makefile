@@ -65,10 +65,6 @@
 # DEBUGMODE=1 - Enable various debugging capabilities.
 #               Also disables optimizations.
 #
-# Potentially Unsafe
-# ------------------
-# HAVE_BLUAJIT=1 - Enable compiling with BluaJIT instead of blua, can have potential bugs
-#
 # Development flags:
 #
 # VALGRIND=1 - Enable Valgrind memory debugging support.
@@ -200,14 +196,8 @@ sources+=\
 	$(call List,Sourcefile)\
 	$(call List,core/Sourcefile)
 
-ifndef HAVE_BLUAJIT
-lualib:=
 sources+=\
 	$(call List,blua/Sourcefile)
-else
-opts+=-DLUAJIT_INTONLY
-lualib:=../libs/bluajit/src/libbluajit.a
-endif
 
 depends:=$(basename $(filter %.c %.cpp %.s,$(sources)))
 objects:=$(basename $(filter %.c %.cpp %.s %.nas,$(sources)))
@@ -389,14 +379,9 @@ ifdef UPX
 endif
 
 # original executable with debugging symbols
-$(dbg) : $(objects) $(lualib) | $$(@D)/
+$(dbg) : $(objects) | $$(@D)/
 	$(call Echo,Linking $(@F)...)
 	$(.)$(LD) -o $@ $^ $(libs)
-
-ifdef HAVE_BLUAJIT
-$(lualib) ::
-	@$(MAKE) -C ../libs/bluajit $(MAKECMDGOALS) CC="$(CC)" CCOPT="$(opts)" LDFLAGS="$(LDFLAGS)"
-endif
 
 # disassembly of executable
 $(dbg).txt : $(dbg)
@@ -459,13 +444,6 @@ clean :
 
 distclean :
 	$(call _rm,../bin ../objs ../dep ../make comptime.h)
-
-ifdef HAVE_BLUAJIT
-	$(call _rm,$(objdir)/buildvm* $(objdir)/minilua* $(objdir)/lj_vm*)
-
-cleanjit:
-	$(call _rm,$(objdir)/buildvm* $(objdir)/minilua* $(objdir)/lj_vm* $(ALL_HDRGEN) $(LJVMCORE_O) $(ALL_GEN))
-endif
 
 info:
 ifdef WINDOWSHELL
