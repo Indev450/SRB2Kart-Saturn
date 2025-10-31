@@ -446,7 +446,7 @@ typedef struct
 } GLMapTextureSet_t; // idk i suck at naming things
 
 static size_t gl_numtextures = 0; // Texture count
-static GLMapTextureSet_t *gl_textures; // For all textures
+static GLMapTextureSet_t *gl_textures = NULL; // For all textures
 
 static void HWR_FreeTextureData(patch_t *patch)
 {
@@ -568,12 +568,12 @@ void HWR_ClearAllTextures(void)
 /*static void HWR_FreeColormapCache(void)
 {
 	HWR_FreePatchCache(false);
-}*/
+}
 
 void HWR_InitMapTextures(void)
 {
 	gl_textures = NULL;
-}
+}*/
 
 static void FreeMapTexture(GLMapTexture_t *tex)
 {

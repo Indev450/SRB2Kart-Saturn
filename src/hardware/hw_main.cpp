@@ -5767,7 +5767,7 @@ void HWR_Startup(void)
 		CONS_Printf("HWR_Startup()...\n");
 		textureformat = patchformat = GL_TEXFMT_RGBA;
 
-		HWR_InitMapTextures();
+		//HWR_InitMapTextures();
 		HWR_InitMD2();
 
 		gl_shadersavailable = HWR_InitShaders();
