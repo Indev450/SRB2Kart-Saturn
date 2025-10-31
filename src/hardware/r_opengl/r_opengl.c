@@ -1795,47 +1795,72 @@ static void GL_AllocTextureBuffer(GLMipmap_t *pTexInfo)
 	}
 }
 
-#define PADDING_CHECK(offset, alphaCheck) { from = to + (offset); if ((alphaCheck)) from = NULL; else goto foundFrom; }
-
-static void PadRGBABitmap(RGBA_t *tex, UINT16 w, UINT16 h)
+static void PadRGBABitmap(RGBA_t *tex, UINT16 w, UINT16 h, UINT32 flags)
 {
-	INT32 i;
-	boolean notLeft, notRight, notTop, notBottom;
-	RGBA_t *to = tex - 1, *from;
+	INT32 i, c1, c2, idxAdd;
+	UINT16 c1size, c2size;
+	RGBA_t *current, *prev, *next, *first;
+	boolean ignorePrev, wrap;
 
-	for (i = 0; i < w * h; i++)
+	for (i = 1; i >= 0; i--)
 	{
-		to++;
-		if (to->rgba != 0)
-			continue;
-		from = NULL;
+		c1size = i ? w : h;
+		c2size = i ? h : w;
+		idxAdd = i ? w : 1;
+		wrap = i ? flags & TF_WRAPY : flags & TF_WRAPX;
 
-		notLeft = i % w != 0;
-		notRight = i % w != w - 1;
-		notTop = i / w != 0;
-		notBottom = i / w != h - 1;
-
-		if (notRight) PADDING_CHECK(1, from->s.alpha == 0) // Check +X
-		if (notBottom) PADDING_CHECK(w, from->s.alpha == 0) // Check +Y
-		if (notLeft) PADDING_CHECK(-1, from->s.alpha == 0) // Check -X
-		if (notTop) PADDING_CHECK(-w, from->s.alpha == 0) // Check -Y
-		if (notRight && notBottom) PADDING_CHECK(1 + w, from->s.alpha == 0) // Check +X+Y
-		if (notLeft && notBottom) PADDING_CHECK(-1 + w, from->s.alpha == 0) // Check -X+Y
-		if (notLeft && notTop) PADDING_CHECK(-1 - w, from->s.alpha == 0) // Check -X-Y
-		if (notRight && notTop) PADDING_CHECK(1 - w, from->s.alpha == 0) // Check +X-Y
-
-foundFrom:
-		if (from != NULL)
+		for (c1 = 0; c1 < c1size; c1++)
 		{
-			*to = *from;
-			to->s.alpha = 0;
+			if (i)
+			{
+				first = current = tex + c1;
+				prev = wrap ? tex + (c1 + (h - 1) * w) : current;
+				next = tex + (c1 + w);
+			}
+			else
+			{
+				first = current = tex + (c1 * w);
+				prev = wrap ? tex + (w - 1 + c1 * w) : current;
+				next = tex + (1 + c1 * w);
+			}
+
+			ignorePrev = false;
+
+			for (c2 = 0; c2 < c2size; c2++)
+			{
+				if (c2 == c2size - 1)
+					next = wrap ? first : current;
+
+				if (current->rgba)
+				{
+					ignorePrev = false;
+				}
+				else if (prev->rgba && !ignorePrev)
+				{
+					*current = *prev;
+					current->s.alpha = 0;
+					ignorePrev = true;
+				}
+				else if (next->rgba)
+				{
+					*current = *next;
+					current->s.alpha = 0;
+					ignorePrev = false;
+				}
+				else
+				{
+					ignorePrev = false;
+				}
+
+				prev = current;
+				current = next;
+				next += idxAdd;
+			}
 		}
 	}
 }
 
-#undef PADDING_CHECK
-
-static void GenerateMipmaps(INT32 w, INT32 h, RGBA_t *tex, INT32 maxLOD)
+static void GenerateMipmaps(INT32 w, INT32 h, RGBA_t *tex, INT32 maxLOD, UINT32 flags)
 {
 	if (tex == NULL)
 	{
@@ -1897,7 +1922,7 @@ static void GenerateMipmaps(INT32 w, INT32 h, RGBA_t *tex, INT32 maxLOD)
 		h /= 2;
 
 		if (padTexture)
-			PadRGBABitmap(tex, w, h);
+			PadRGBABitmap(tex, w, h, flags);
 
 		pglTexSubImage2D(GL_TEXTURE_2D, m + 1, 0, 0, w, h, GL_RGBA, GL_UNSIGNED_BYTE, tex);
 	}
@@ -1911,7 +1936,7 @@ void GL_UpdateTexture(GLMipmap_t *pTexInfo)
 	// Upload a texture
 	GLuint num = pTexInfo->downloaded;
 	boolean update = true;
-	const boolean applyPadding = mag_filter == GL_LINEAR || min_filter == GL_LINEAR;
+	const boolean applyPadding = mag_filter == GL_LINEAR || min_filter == GL_LINEAR || true;
 
 	INT32 w = pTexInfo->width, h = pTexInfo->height;
 	INT32 i, j;
@@ -1972,7 +1997,7 @@ void GL_UpdateTexture(GLMipmap_t *pTexInfo)
 			}
 
 			if (applyPadding)
-				PadRGBABitmap(tex, w, h);
+				PadRGBABitmap(tex, w, h, pTexInfo->flags);
 
 			break;
 		case GL_TEXFMT_RGBA:
@@ -1988,7 +2013,7 @@ void GL_UpdateTexture(GLMipmap_t *pTexInfo)
 				ptex = tex;
 
 				if (applyPadding)
-					PadRGBABitmap(tex, w, h);
+					PadRGBABitmap(tex, w, h, pTexInfo->flags);
 			}
 
 			break;
@@ -2059,7 +2084,7 @@ void GL_UpdateTexture(GLMipmap_t *pTexInfo)
 		// Control the mipmap level of detail
 		pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_LOD, 0);
 		pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LOD, 5);
-		GenerateMipmaps(w, h, tex, 5);
+		GenerateMipmaps(w, h, tex, 5, pTexInfo->flags);
 	}
 	else
 	{
