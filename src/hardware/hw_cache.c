@@ -437,8 +437,16 @@ void HWR_MakePatch(const patch_t *patch, GLPatch_t *glPatch, GLMipmap_t *glMipma
 //             CACHING HANDLING
 // =================================================
 
+typedef struct
+{
+	GLMapTexture_t normal;
+#ifdef GLENCORE
+	GLMapTexture_t encore;
+#endif
+} GLMapTextureSet_t; // idk i suck at naming things
+
 static size_t gl_numtextures = 0; // Texture count
-static GLMapTexture_t *gl_textures; // For all textures
+static GLMapTextureSet_t *gl_textures; // For all textures
 
 static void HWR_FreeTextureData(patch_t *patch)
 {
@@ -578,13 +586,12 @@ void HWR_FreeMapTextures(void)
 {
 	size_t i;
 
-#ifdef GLENCORE
-	for (i = 0; i < gl_numtextures*2; i++)
-#else
 	for (i = 0; i < gl_numtextures; i++)
-#endif
 	{
-		FreeMapTexture(&gl_textures[i]);
+		FreeMapTexture(&gl_textures[i].normal);
+#ifdef GLENCORE
+		FreeMapTexture(&gl_textures[i].encore);
+#endif
 	}
 
 	// now the heap don't have any 'user' pointing to our
@@ -603,7 +610,7 @@ static void HWR_PrecacheLevelFlats(void)
 
 	// special case for encore
 #ifdef GLENCORE
-	if (encoremode)
+	if (encoremap)
 	{
 		// go through all sectors to determine if it should be remapped for encore
 		for (i = 0; i < numsectors; i++)
@@ -678,8 +685,6 @@ static void HWR_PrecacheLevelTextures(void)
 		const line_t *line = &lines[i];
 #ifdef GLENCORE
 		const int noencoremap = ((encoremap && (line->flags & ML_TFERLINE)) ? 2 : 1);
-#else
-		const int noencoremap = 1;
 #endif
 		// two sides
 		for (j = 0; j < 2; j++)
@@ -695,11 +700,14 @@ static void HWR_PrecacheLevelTextures(void)
 			for (f = 0; f < 3; f++)
 			{
 				const INT32 texnum = sidetex[f];
+
 				if (texnum < 0 || texnum >= numtextures || texturepresent[texnum])
 					continue;
-
+#ifdef GLENCORE
 				texturepresent[texnum] = 1|noencoremap;
-
+#else
+				texturepresent[texnum] = 1;
+#endif
 				HWR_GetTexture(texnum, false);
 #ifdef GLENCORE
 				if (noencoremap & 2)
@@ -823,11 +831,8 @@ void HWR_LoadMapTextures(size_t pnumtextures)
 	HWR_FreeMapTextures();
 
 	gl_numtextures = pnumtextures;
-#ifdef GLENCORE
-	gl_textures = calloc(gl_numtextures, sizeof (*gl_textures)*2); // *2 - 1 for encore-remapped texture and another for noencore texture (unused when not in encore)
-#else
-	gl_textures = calloc(gl_numtextures, sizeof (*gl_textures));
-#endif
+	gl_textures = calloc(gl_numtextures, sizeof(*gl_textures)); // *2 - 1 for encore-remapped texture and another for noencore texture (unused when not in encore), see: GLMapTextureSet_t
+
 	if (gl_textures == NULL)
 		I_Error("HWR_LoadMapTextures: ran out of memory for OpenGL textures. Sad!");
 }
@@ -851,7 +856,7 @@ GLMapTexture_t *HWR_GetTexture(INT32 tex, boolean noencore)
 	// Every texture in memory, stored in the
 	// hardware renderer's bit depth format. Wow!
 #ifdef GLENCORE
-	gltex = &gl_textures[tex*2 + (encoremap && !noencore ? 0 : 1)];
+	gltex = (encoremap && !noencore) ? &gl_textures[tex].encore : &gl_textures[tex].normal;
 #else
 	gltex = &gl_textures[tex];
 #endif
