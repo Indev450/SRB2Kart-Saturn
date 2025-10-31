@@ -603,7 +603,7 @@ static void HWR_PrecacheLevelFlats(void)
 
 	// special case for encore
 #ifdef GLENCORE
-	if (encoremode)
+	if (encoremap)
 	{
 		// go through all sectors to determine if it should be remapped for encore
 		for (i = 0; i < numsectors; i++)
@@ -678,8 +678,6 @@ static void HWR_PrecacheLevelTextures(void)
 		const line_t *line = &lines[i];
 #ifdef GLENCORE
 		const int noencoremap = ((encoremap && (line->flags & ML_TFERLINE)) ? 2 : 1);
-#else
-		const int noencoremap = 1;
 #endif
 		// two sides
 		for (j = 0; j < 2; j++)
@@ -695,11 +693,14 @@ static void HWR_PrecacheLevelTextures(void)
 			for (f = 0; f < 3; f++)
 			{
 				const INT32 texnum = sidetex[f];
+
 				if (texnum < 0 || texnum >= numtextures || texturepresent[texnum])
 					continue;
-
+#ifdef GLENCORE
 				texturepresent[texnum] = 1|noencoremap;
-
+#else
+				texturepresent[texnum] = 1;
+#endif
 				HWR_GetTexture(texnum, false);
 #ifdef GLENCORE
 				if (noencoremap & 2)
