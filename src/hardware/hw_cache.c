@@ -603,7 +603,7 @@ static void HWR_PrecacheLevelFlats(void)
 
 	// special case for encore
 #ifdef GLENCORE
-	if (encoremode)
+	if (encoremap)
 	{
 		// go through all sectors to determine if it should be remapped for encore
 		for (i = 0; i < numsectors; i++)
