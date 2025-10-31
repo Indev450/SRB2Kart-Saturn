@@ -1802,26 +1802,26 @@ static void PadRGBABitmap(RGBA_t *tex, UINT16 w, UINT16 h, UINT32 flags)
 	RGBA_t *current, *prev, *next, *first;
 	boolean ignorePrev, wrap;
 
-	for (i = 1; i >= 0; i--)
+	for (i = 0; i < 2; i++)
 	{
-		c1size = i ? w : h;
-		c2size = i ? h : w;
-		idxAdd = i ? w : 1;
-		wrap = i ? flags & TF_WRAPY : flags & TF_WRAPX;
+		c1size = i ? h : w;
+		c2size = i ? w : h;
+		idxAdd = i ? 1 : w;
+		wrap = i ? flags & TF_WRAPX : flags & TF_WRAPY;
 
 		for (c1 = 0; c1 < c1size; c1++)
 		{
 			if (i)
 			{
-				first = current = tex + c1;
-				prev = wrap ? tex + (c1 + (h - 1) * w) : current;
-				next = tex + (c1 + w);
-			}
-			else
-			{
 				first = current = tex + (c1 * w);
 				prev = wrap ? tex + (w - 1 + c1 * w) : current;
 				next = tex + (1 + c1 * w);
+			}
+			else
+			{
+				first = current = tex + c1;
+				prev = wrap ? tex + (c1 + (h - 1) * w) : current;
+				next = tex + (c1 + w);
 			}
 
 			ignorePrev = false;
@@ -2058,21 +2058,10 @@ void GL_UpdateTexture(GLMipmap_t *pTexInfo)
 	pglBindTexture(GL_TEXTURE_2D, num);
 	tex_downloaded = num;
 
-	const int transparent = (pTexInfo->flags & TF_TRANSPARENT);
+	pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, mag_filter);
+	pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, min_filter);
 
-	// disable texture filtering on any texture that has holes so there's no dumb borders or blending issues
-	if (transparent)
-	{
-		pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-		pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	}
-	else
-	{
-		pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, mag_filter);
-		pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, min_filter);
-	}
-
-	if (MipMap && !transparent) // No mipmaps on transparent stuff
+	if (MipMap && !(pTexInfo->flags & TF_TRANSPARENT)) // No mipmaps on transparent stuff
 	{
 		pglTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, GL_TRUE);
 
