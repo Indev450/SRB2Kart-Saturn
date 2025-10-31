@@ -1936,7 +1936,7 @@ void GL_UpdateTexture(GLMipmap_t *pTexInfo)
 	// Upload a texture
 	GLuint num = pTexInfo->downloaded;
 	boolean update = true;
-	const boolean applyPadding = mag_filter == GL_LINEAR || min_filter == GL_LINEAR || true;
+	const boolean applyPadding = mag_filter == GL_LINEAR || min_filter == GL_LINEAR;
 
 	INT32 w = pTexInfo->width, h = pTexInfo->height;
 	INT32 i, j;
