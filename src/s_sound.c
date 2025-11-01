@@ -1099,9 +1099,12 @@ void S_StartSoundName(void *mo, const char *soundname)
 	// Search existing sounds...
 	for (i = sfx_None + 1; i < NUMSFX; i++)
 	{
-		if (!S_sfx[i].name)
+		const sfxinfo_t *sfx = &S_sfx[i];
+
+		if (!sfx->name)
 			continue;
-		if (!stricmp(S_sfx[i].name, soundname))
+
+		if (fasticmp(sfx->name, soundname))
 		{
 			soundnum = i;
 			break;
@@ -1114,6 +1117,7 @@ void S_StartSoundName(void *mo, const char *soundname)
 		{
 			if (newsounds[i] == 0)
 				break;
+
 			if (!S_IdPlaying(newsounds[i]))
 			{
 				S_RemoveSoundFx(newsounds[i]);
@@ -1270,7 +1274,7 @@ ReadMusicDefFields (UINT16 wadnum, int line, char *stoken, musicdef_t **defp)
 	char *value;
 	char *textline;
 
-	if (!stricmp(stoken, "lump"))
+	if (fasticmp(stoken, "lump"))
 	{
 		value = strtok(NULL, " ");
 
@@ -1345,24 +1349,24 @@ skip_lump:
 	for (textline = def->field; *textline; textline++)\
 		if (*textline == '_') *textline = ' ';
 
-			if (!stricmp(stoken, "usage"))
+			if (fasticmp(stoken, "usage"))
 			{
 				ADDDEF(usage);
 			}
-			else if (!stricmp(stoken, "source"))
+			else if (fasticmp(stoken, "source"))
 			{
 				ADDDEF(source);
 			}
-			else if (!stricmp(stoken, "title"))
+			else if (fasticmp(stoken, "title"))
 			{
 				def->use_info = true;
 				ADDDEF(title);
 			}
-			else if (!stricmp(stoken, "alttitle"))
+			else if (fasticmp(stoken, "alttitle"))
 			{
 				ADDDEF(alttitle);
 			}
-			else if (!stricmp(stoken, "authors"))
+			else if (fasticmp(stoken, "authors"))
 			{
 				ADDDEF(authors);
 			}
@@ -1483,7 +1487,8 @@ musicdef_t *S_FindMusicCredit(const char *musname)
 
 		if (hash != def->hash)
 			continue;
-		if (stricmp(def->name, musname))
+
+		if (!fasticmp(def->name, musname))
 			continue;
 
 		return def;
@@ -1938,7 +1943,7 @@ static const char *musicexception_list[] = {
 // check if the current music is smth we dont want to keep (vote music, etc)
 static boolean S_CheckMusicException(void)
 {
-	if (stricmp(music.name, mapmusic.name))
+	if (!fasticmp(music.name, mapmusic.name))
 		return true;
 
 	// dumb hack but dont keepmusic music that is supposed to reset
@@ -1948,7 +1953,7 @@ static boolean S_CheckMusicException(void)
 	// in case somehow the mapmusic was replaced with smth we dont want to keep
 	for (size_t i = 0; i < sizeof(musicexception_list)/sizeof(musicexception_list[0]); i++)
 	{
-		if (!stricmp(music.name, musicexception_list[i]) || !stricmp(checkmusic, musicexception_list[i]))
+		if (fasticmp(music.name, musicexception_list[i]) || fasticmp(checkmusic, musicexception_list[i]))
 		{
 			return true;
 		}
@@ -2039,12 +2044,12 @@ static boolean S_SkipIntroMusic(void)
 		return false;
 
 	// check if menu music is playing, otherwise it may continue playing
-	if (!stricmp(music.name, "titles"))
+	if (fasticmp(music.name, "titles"))
 		return false;
 
 	char *maptitle = G_BuildMapTitle(gamemap); // Zzz...
 
-	if (maptitle && !stricmp(maptitle, "Wandering Falls")) // wandering balls changes its song when the race starts Zzz...
+	if (maptitle && fasticmp(maptitle, "Wandering Falls")) // wandering balls changes its song when the race starts Zzz...
 	{
 		Z_Free(maptitle);
 		return false;

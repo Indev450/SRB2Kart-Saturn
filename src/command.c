@@ -456,7 +456,7 @@ void COM_AddCommand(const char *name, com_func_t func)
 	// fail if the command already exists
 	for (cmd = com_commands; cmd; cmd = cmd->next)
 	{
-		if (!stricmp(name, cmd->name)) //case insensitive now that we have lower and uppercase!
+		if (fasticmp(name, cmd->name)) //case insensitive now that we have lower and uppercase!
 		{
 			// don't I_Error for Lua commands
 			// Lua commands can replace game commands, and they have priority.
@@ -492,7 +492,7 @@ int COM_AddLuaCommand(const char *name)
 	// command already exists
 	for (cmd = com_commands; cmd; cmd = cmd->next)
 	{
-		if (!stricmp(name, cmd->name)) //case insensitive now that we have lower and uppercase!
+		if (fasticmp(name, cmd->name)) //case insensitive now that we have lower and uppercase!
 		{
 			// replace the built in command.
 			cmd->function = COM_Lua_f;
@@ -519,7 +519,7 @@ static boolean COM_Exists(const char *com_name)
 	xcommand_t *cmd;
 
 	for (cmd = com_commands; cmd; cmd = cmd->next)
-		if (!stricmp(com_name, cmd->name))
+		if (fasticmp(com_name, cmd->name))
 			return true;
 
 	return false;
@@ -571,7 +571,7 @@ static void COM_ExecuteString(char *ptext)
 	// check functions
 	for (cmd = com_commands; cmd; cmd = cmd->next)
 	{
-		if (!stricmp(com_argv[0], cmd->name)) //case insensitive now that we have lower and uppercase!
+		if (fasticmp(com_argv[0], cmd->name)) //case insensitive now that we have lower and uppercase!
 		{
 			cmd->function();
 			return;
@@ -581,7 +581,7 @@ static void COM_ExecuteString(char *ptext)
 	// check aliases
 	for (a = com_alias; a; a = a->next)
 	{
-		if (!stricmp(com_argv[0], a->name))
+		if (fasticmp(com_argv[0], a->name))
 		{
 			if (recursion > MAX_ALIAS_RECURSION)
 				CONS_Alert(CONS_WARNING, M_GetText("Alias recursion cycle detected!\n"));
@@ -836,7 +836,7 @@ static void COM_Help_f(void)
 			if (cvar->PossibleValue)
 			{
 				{
-					if (!stricmp(cvar->PossibleValue[0].strvalue, "MIN") && !stricmp(cvar->PossibleValue[1].strvalue, "MAX"))
+					if (fasticmp(cvar->PossibleValue[0].strvalue, "MIN") && fasticmp(cvar->PossibleValue[1].strvalue, "MAX"))
 					{
 						if (floatmode)
 						{
@@ -1176,7 +1176,7 @@ consvar_t *CV_FindVar(const char *name)
 	consvar_t *cvar;
 
 	for (cvar = consvar_vars; cvar; cvar = cvar->next)
-		if (!stricmp(name,cvar->name))
+		if (fasticmp(name,cvar->name))
 			return cvar;
 
 	return NULL;
@@ -1366,7 +1366,7 @@ static void Setvalue(consvar_t *var, const char *valstr, boolean stealth)
 				v = INT32_MIN; // Invalid integer trigger
 		}
 
-		if (var->PossibleValue[0].strvalue && !stricmp(var->PossibleValue[0].strvalue, "MIN")) // bounded cvar
+		if (var->PossibleValue[0].strvalue && fasticmp(var->PossibleValue[0].strvalue, "MIN")) // bounded cvar
 		{
 #define MINVAL 0
 #define MAXVAL 1
@@ -1379,21 +1379,21 @@ static void Setvalue(consvar_t *var, const char *valstr, boolean stealth)
 
 			// search for other
 			for (i = MAXVAL+1; var->PossibleValue[i].strvalue; i++)
-				if (v == var->PossibleValue[i].value || !stricmp(var->PossibleValue[i].strvalue, valstr))
+				if (v == var->PossibleValue[i].value || fasticmp(var->PossibleValue[i].strvalue, valstr))
 				{
 					var->value = var->PossibleValue[i].value;
 					var->string = var->PossibleValue[i].strvalue;
 					goto finish;
 				}
 
-			if ((v != INT32_MIN && v < var->PossibleValue[MINVAL].value) || !stricmp(valstr, "MIN"))
+			if ((v != INT32_MIN && v < var->PossibleValue[MINVAL].value) || fasticmp(valstr, "MIN"))
 			{
 				v = var->PossibleValue[MINVAL].value;
 				valstr = var->PossibleValue[MINVAL].strvalue;
 				override = true;
 				overrideval = v;
 			}
-			else if ((v != INT32_MIN && v > var->PossibleValue[MAXVAL].value) || !stricmp(valstr, "MAX"))
+			else if ((v != INT32_MIN && v > var->PossibleValue[MAXVAL].value) || fasticmp(valstr, "MAX"))
 			{
 				v = var->PossibleValue[MAXVAL].value;
 				valstr = var->PossibleValue[MAXVAL].strvalue;
@@ -1411,7 +1411,7 @@ static void Setvalue(consvar_t *var, const char *valstr, boolean stealth)
 
 			// check first strings
 			for (i = 0; var->PossibleValue[i].strvalue; i++)
-				if (!stricmp(var->PossibleValue[i].strvalue, valstr))
+				if (fasticmp(var->PossibleValue[i].strvalue, valstr))
 					goto found;
 			if (v != INT32_MIN)
 			{
@@ -1424,9 +1424,9 @@ static void Setvalue(consvar_t *var, const char *valstr, boolean stealth)
 			if (var->PossibleValue == CV_OnOff || var->PossibleValue == CV_YesNo)
 			{
 				overrideval = -1;
-				if (!stricmp(valstr, "on") || !stricmp(valstr, "yes"))
+				if (fasticmp(valstr, "on") || fasticmp(valstr, "yes"))
 					overrideval = 1;
-				else if (!stricmp(valstr, "off") || !stricmp(valstr, "no"))
+				else if (fasticmp(valstr, "off") || fasticmp(valstr, "no"))
 					overrideval = 0;
 
 				if (overrideval != -1)
@@ -1647,7 +1647,7 @@ static void CV_SetCVar(consvar_t *var, const char *value, boolean stealth)
 	if (!var->string)
 		I_Error("CV_Set: %s no string set!\n", var->name);
 #endif
-	if (!var || !var->string || !value || !stricmp(var->string, value))
+	if (!var || !var->string || !value || fasticmp(var->string, value))
 		return; // no changes
 
 	if (var->flags & CV_NETVAR)
@@ -1669,7 +1669,7 @@ static void CV_SetCVar(consvar_t *var, const char *value, boolean stealth)
 
 		if (var == &cv_kartspeed && !M_SecretUnlocked(SECRET_HARDSPEED))
 		{
-			if (!stricmp(value, "Hard") || atoi(value) == 2)
+			if (fasticmp(value, "Hard") || atoi(value) == 2)
 			{
 				CONS_Alert(CONS_NOTICE, "You haven't unlocked this yet!\n");
 				return;
@@ -1975,12 +1975,12 @@ static boolean CV_FilterJoyAxisVars(consvar_t *v, const char *valstr)
 	{
 		if (joyaxis_default[i])
 		{
-			if (!stricmp(v->name, "joyaxis_fire"))
+			if (fasticmp(v->name, "joyaxis_fire"))
 			{
 				if (joyaxis_count[i] > 7) return false;
 				else if (joyaxis_count[i] == 7) return true;
 
-				if (!stricmp(valstr, "None")) joyaxis_count[i]++;
+				if (fasticmp(valstr, "None")) joyaxis_count[i]++;
 				else joyaxis_default[i] = false;
 			}
 			// reset all axis settings to defaults
@@ -2012,37 +2012,37 @@ static boolean CV_FilterJoyAxisVars(consvar_t *v, const char *valstr)
 // Block the Xbox DInput default axes and reset to the current defaults
 static boolean CV_FilterJoyAxisVars2(consvar_t *v, const char *valstr)
 {
-	if (!stricmp(v->name, "joyaxis_turn") && !stricmp(valstr, "X-Axis"))
+	if (fasticmp(v->name, "joyaxis_turn") && fasticmp(valstr, "X-Axis"))
 		return false;
-	if (!stricmp(v->name, "joyaxis2_turn") && !stricmp(valstr, "X-Axis"))
+	if (fasticmp(v->name, "joyaxis2_turn") && fasticmp(valstr, "X-Axis"))
 		return false;
-	if (!stricmp(v->name, "joyaxis3_turn") && !stricmp(valstr, "X-Axis"))
+	if (fasticmp(v->name, "joyaxis3_turn") && fasticmp(valstr, "X-Axis"))
 		return false;
-	if (!stricmp(v->name, "joyaxis4_turn") && !stricmp(valstr, "X-Axis"))
+	if (fasticmp(v->name, "joyaxis4_turn") && fasticmp(valstr, "X-Axis"))
 		return false;
-	if (!stricmp(v->name, "joyaxis_aim") && !stricmp(valstr, "Y-Axis"))
+	if (fasticmp(v->name, "joyaxis_aim") && fasticmp(valstr, "Y-Axis"))
 		return false;
-	if (!stricmp(v->name, "joyaxis2_aim") && !stricmp(valstr, "Y-Axis"))
+	if (fasticmp(v->name, "joyaxis2_aim") && fasticmp(valstr, "Y-Axis"))
 		return false;
-	if (!stricmp(v->name, "joyaxis3_aim") && !stricmp(valstr, "Y-Axis"))
+	if (fasticmp(v->name, "joyaxis3_aim") && fasticmp(valstr, "Y-Axis"))
 		return false;
-	if (!stricmp(v->name, "joyaxis4_aim") && !stricmp(valstr, "Y-Axis"))
+	if (fasticmp(v->name, "joyaxis4_aim") && fasticmp(valstr, "Y-Axis"))
 		return false;
-	if (!stricmp(v->name, "joyaxis_fire") && !stricmp(valstr, "None"))
+	if (fasticmp(v->name, "joyaxis_fire") && fasticmp(valstr, "None"))
 		return false;
-	if (!stricmp(v->name, "joyaxis2_fire") && !stricmp(valstr, "None"))
+	if (fasticmp(v->name, "joyaxis2_fire") && fasticmp(valstr, "None"))
 		return false;
-	if (!stricmp(v->name, "joyaxis3_fire") && !stricmp(valstr, "None"))
+	if (fasticmp(v->name, "joyaxis3_fire") && fasticmp(valstr, "None"))
 		return false;
-	if (!stricmp(v->name, "joyaxis4_fire") && !stricmp(valstr, "None"))
+	if (fasticmp(v->name, "joyaxis4_fire") && fasticmp(valstr, "None"))
 		return false;
-	if (!stricmp(v->name, "joyaxis_drift") && !stricmp(valstr, "None"))
+	if (fasticmp(v->name, "joyaxis_drift") && fasticmp(valstr, "None"))
 		return false;
-	if (!stricmp(v->name, "joyaxis2_drift") && !stricmp(valstr, "None"))
+	if (fasticmp(v->name, "joyaxis2_drift") && fasticmp(valstr, "None"))
 		return false;
-	if (!stricmp(v->name, "joyaxis3_drift") && !stricmp(valstr, "None"))
+	if (fasticmp(v->name, "joyaxis3_drift") && fasticmp(valstr, "None"))
 		return false;
-	if (!stricmp(v->name, "joyaxis4_drift") && !stricmp(valstr, "None"))
+	if (fasticmp(v->name, "joyaxis4_drift") && fasticmp(valstr, "None"))
 		return false;
 
 	return true;
@@ -2059,8 +2059,8 @@ static boolean CV_FilterVarByVersion(consvar_t *v, const char *valstr)
 
 	if (GETMAJOREXECVERSION(cv_execversion.value) < 8) // 8 = 1.4
 	{
-		if (!stricmp(v->name, "masterserver") // Replaces a hack in MasterServer_OnChange for the original SRB2 MS.
-			|| !stricmp(v->name, "gamma")) // Too easy to accidentially change in prior versions.
+		if (fasticmp(v->name, "masterserver") // Replaces a hack in MasterServer_OnChange for the original SRB2 MS.
+			|| fasticmp(v->name, "gamma")) // Too easy to accidentially change in prior versions.
 			return false;
 	}
 

@@ -6778,7 +6778,7 @@ static int ServerListEntryComparator_##key(const void *entry1, const void *entry
 	const serverelem_t *sa = (const serverelem_t*)entry1, *sb = (const serverelem_t*)entry2; \
 	if (sa->info.key != sb->info.key) \
 		return sa->info.key - sb->info.key; \
-	return !fastcmp(sa->info.servername, sb->info.servername); \
+	return strcmp(sa->info.servername, sb->info.servername); \
 }
 
 // This does descending instead of ascending.
@@ -6788,7 +6788,7 @@ static int ServerListEntryComparator_##key##_reverse(const void *entry1, const v
 	const serverelem_t *sa = (const serverelem_t*)entry1, *sb = (const serverelem_t*)entry2; \
 	if (sb->info.key != sa->info.key) \
 		return sb->info.key - sa->info.key; \
-	return !fastcmp(sb->info.servername, sa->info.servername); \
+	return strcmp(sb->info.servername, sa->info.servername); \
 }
 
 SERVER_LIST_ENTRY_COMPARATOR(time)
@@ -6809,8 +6809,8 @@ static int ServerListEntryComparator_modified(const void *entry1, const void *en
 	if (modstate_a != modstate_b)
 		return modstate_a - modstate_b;
 
-	// Default to !fastcmp.
-	return !fastcmp(sa->info.servername, sb->info.servername);
+	// Default to strcmp.
+	return strcmp(sa->info.servername, sb->info.servername);
 }
 
 void M_SortServerList(void)

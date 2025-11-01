@@ -126,7 +126,7 @@ tag_t *GetTagByName(model_t *model, char *name, int frame)
 		int i;
 		for (i = 0; i < model->numTags; i++)
 		{
-			if (!stricmp(iterator[i].name, name))
+			if (fasticmp(iterator[i].name, name))
 				return &iterator[i];
 		}
 	}
