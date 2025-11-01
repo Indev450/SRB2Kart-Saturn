@@ -23,7 +23,6 @@
 #include "r_main.h"
 #include "r_fps.h"
 #include "console.h"
-
 #include "i_video.h" // rendermode
 #include "z_zone.h"
 #include "m_misc.h"
@@ -134,7 +133,7 @@ static boolean InitCube(void)
 	if (!loaded_config)
 		return false;
 
-#define diffcons(cv) (strcmp(cv.string, cv.defaultvalue))
+#define diffcons(cv) (!fastcmp(cv.string, cv.defaultvalue))
 #define diffconsgamma(cv) (cv.value != 0)
 #define diffconssat(cv) (cv.value != 10)
 
@@ -596,7 +595,7 @@ void V_ResetPaletteCVars(void)
 	if (!loaded_config)
 		return;
 
-#define diffcons(cv) (strcmp(cv.string, cv.defaultvalue))
+#define diffcons(cv) (!fastcmp(cv.string, cv.defaultvalue))
 	if diffcons(cv_palette)
 		CV_StealthSetValue(&cv_palette, atoi(cv_palette.defaultvalue));
 	if diffcons(cv_palettenum)

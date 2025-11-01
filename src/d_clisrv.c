@@ -2174,7 +2174,7 @@ static void SL_InsertServer(serverinfo_pak* info, SINT8 node)
 		if (info->subversion != SUBVERSION)
 			return; // Close, but no cigar.
 
-		if (strcmp(info->application, SRB2APPLICATION))
+		if (!fastcmp(info->application, SRB2APPLICATION))
 			return;/* that's a different mod */
 
 		i = serverlistcount++;
@@ -2219,7 +2219,7 @@ void CL_QueryServerList (msg_server_t *server_list)
 		// thwart nefarious servers who lie to the MS.
 
 		/* lol bruh, that version COMES from the servers */
-		//if (strcmp(version, server_list[i].version) == 0)
+		//if (fastcmp(version, server_list[i].version))
 		{
 			INT32 node = I_NetMakeNodewPort(server_list[i].ip, server_list[i].port);
 			if (node == -1)
@@ -3215,7 +3215,7 @@ static void Command_connect(void)
 
 	server = false;
 
-	if (!stricmp(COM_Argv(1), "self"))
+	if (fasticmp(COM_Argv(1), "self"))
 	{
 		servernode = 0;
 		server = true;
@@ -3225,7 +3225,7 @@ static void Command_connect(void)
 	else
 	{
 		// used in menu to connect to a server in the list
-		if (netgame && !stricmp(COM_Argv(1), "node"))
+		if (netgame && fasticmp(COM_Argv(1), "node"))
 		{
 			servernode = (SINT8)atoi(COM_Argv(2));
 		}
@@ -3240,7 +3240,7 @@ static void Command_connect(void)
 			netgame = true;
 			multiplayer = true;
 
-			if (!stricmp(COM_Argv(1), "any"))
+			if (fasticmp(COM_Argv(1), "any"))
 				servernode = BROADCASTADDR;
 			else if (I_NetMakeNodewPort && COM_Argc() >= 3)
 				servernode = I_NetMakeNodewPort(COM_Argv(1), COM_Argv(2));
@@ -3264,6 +3264,7 @@ static void Command_connect(void)
 		splitscreen = cv_splitplayers.value-1;
 		SplitScreen_OnChange();
 	}
+
 	botingame = false;
 	botskin = 0;
 	CL_ConnectToServer();

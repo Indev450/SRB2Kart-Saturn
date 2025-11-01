@@ -423,7 +423,7 @@ void Command_SaveConfig_f(void)
 	FIL_ForceExtension(tmpstr, ".cfg");
 
 	M_SaveConfig(tmpstr);
-	if (stricmp(COM_Argv(2), "-silent"))
+	if (!fasticmp(COM_Argv(2), "-silent"))
 		CONS_Printf(M_GetText("config saved as %s\n"), configfile);
 }
 

@@ -3719,10 +3719,10 @@ static void M_HandleAddons(INT32 choice)
 							break;
 						case EXT_TXT:
 						case EXT_CFG:
-							if ((strcmp(dirmenu[dir_on[menudepthleft]]+DIR_STRING, CONFIGFILENAME) == 0)
-								|| (strcmp(dirmenu[dir_on[menudepthleft]]+DIR_STRING, AUTOLOADCONFIGFILENAME) == 0)
-								|| (strcmp(dirmenu[dir_on[menudepthleft]]+DIR_STRING, "kartserv.cfg") == 0)
-								|| (strcmp(dirmenu[dir_on[menudepthleft]]+DIR_STRING, "kartexec.cfg") == 0))
+							if (fastcmp(dirmenu[dir_on[menudepthleft]]+DIR_STRING, CONFIGFILENAME)
+								|| fastcmp(dirmenu[dir_on[menudepthleft]]+DIR_STRING, AUTOLOADCONFIGFILENAME)
+								|| fastcmp(dirmenu[dir_on[menudepthleft]]+DIR_STRING, "kartserv.cfg")
+								|| fastcmp(dirmenu[dir_on[menudepthleft]]+DIR_STRING, "kartexec.cfg"))
 							{
 								M_StartMessage(va("%c%s\x80\nYou can't autoload this builds' base console scripts, silly!\n They're already autoloaded on startup! \n\n(Press a key)\n", ('\x80' + (highlightflags>>V_CHARCOLORSHIFT)), dirmenu[dir_on[menudepthleft]]+DIR_STRING),NULL,MM_NOTHING);
 								S_StartSound(NULL, sfx_s26d);
@@ -3830,7 +3830,7 @@ static void ReplayNamesLoadThread(void* userdata)
 
 	Lock_search_state();
 
-	if (strcmp(menupath, replaydirpath) == 0)
+	if (fastcmp(menupath, replaydirpath))
 	{
 		memcpy(demolist_all, demolist_all_local, sizeof(menudemo_t)*sizedirmenu);
 		replaynamesloaded = true;
@@ -8808,7 +8808,7 @@ static boolean M_QuitMultiPlayerMenu(void)
 	size_t l;
 
 	// send name if changed
-	if (strcmp(setupm_name, setupm_cvname->string))
+	if (!fastcmp(setupm_name, setupm_cvname->string))
 	{
 		// remove trailing whitespaces
 		for (l= strlen(setupm_name)-1;
@@ -9469,7 +9469,7 @@ static void M_VideoModeMenu(INT32 choice)
 			// VESA mode, which is always a higher modenum
 			for (j = 0; j < vidm_nummodes; j++)
 			{
-				if (!strcmp(modedescs[j].desc, desc))
+				if (fastcmp(modedescs[j].desc, desc))
 				{
 					// mode(0): 320x200 is always standard VGA, not vesa
 					if (modedescs[j].modenum)

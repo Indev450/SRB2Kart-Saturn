@@ -183,7 +183,7 @@ static aatree_node_t *M_AATreeSetString_Node(aatree_node_t *node, UINT32 flags, 
 		else
 		{
 			aatree_entry_t *entry = node->value;
-			if (entry != NULL && strcmp(entry->key, key) != 0)
+			if (entry != NULL && !fastcmp(entry->key, key))
 				entry = entry->next;
 			if (entry != NULL)
 			{
@@ -252,7 +252,7 @@ void *M_AATreeGetString(aatree_t *aatree, const char *key)
 	I_Assert((aatree->flags & AATREE_STRING) == AATREE_STRING);
 	UINT32 hash = FNV1a_HashString(key);
 	aatree_entry_t *entry = M_AATreeGet_Node(aatree->root, hash);
-	while (entry != NULL && strcmp(entry->key, key) != 0)
+	while (entry != NULL && !fastcmp(entry->key, key))
 		entry = entry->next;
 	return entry != NULL ? entry->value : NULL;
 }

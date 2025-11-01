@@ -72,7 +72,7 @@ static void Sk_SetDefaultValue(skin_t *skin, boolean local)
 	//
 	// set default skin values
 	//
-	memset(skin, 0, sizeof (skin_t));
+	memset(skin, 0, sizeof(skin_t));
 
 	snprintf(skin->name, sizeof skin->name, "skin %u", K_GetMobjSkinNum(skin, local));
 	skin->name[sizeof skin->name - 1] = '\0';
@@ -188,7 +188,7 @@ INT32 R_SkinAvailable(const char *name)
 
 	for (i = 0; i < numskins; i++)
 	{
-		if (stricmp(skins[i].name, name) == 0)
+		if (fasticmp(skins[i].name, name))
 			return i;
 	}
 
@@ -203,7 +203,7 @@ INT32 R_AnySkinAvailable(const char *name)
 
 	for (i = 0; i < numallskins; i++)
 	{
-		if (stricmp(allskins[i].name, name) == 0)
+		if (fasticmp(allskins[i].name, name))
 			return i;
 	}
 
@@ -218,7 +218,7 @@ INT32 R_LocalSkinAvailable(const char *name, boolean local)
 	{
 		for (i = 0; i < numlocalskins; i++)
 		{
-			if (stricmp(localskins[i].name, name) == 0)
+			if (fasticmp(localskins[i].name, name))
 				return i;
 		}
 
@@ -236,7 +236,7 @@ boolean SetPlayerSkin(INT32 playernum, const char *skinname)
 	for (i = 0; i < numskins; i++)
 	{
 		// search in the skin list
-		if (stricmp(skins[i].name, skinname) == 0)
+		if (fasticmp(skins[i].name, skinname))
 		{
 			SetPlayerSkinByNum(playernum, i);
 			return true;
@@ -257,12 +257,12 @@ void SetLocalPlayerSkin(INT32 playernum, const char *skinname, consvar_t *cvar)
 	INT32 i;
 	player_t *player = &players[playernum];
 
-	if (stricmp(skinname, "none"))
+	if (!fasticmp(skinname, "none"))
 	{
 		for (i = 0; i < numlocalskins; i++)
 		{
 			// search in the localskin list
-			if (stricmp(localskins[i].name, skinname) == 0)
+			if (fasticmp(localskins[i].name, skinname))
 			{
 				player->localskin = 1 + i;
 				player->skinlocal = true;
@@ -280,7 +280,7 @@ void SetLocalPlayerSkin(INT32 playernum, const char *skinname, consvar_t *cvar)
 		for (i = 0; i < numskins; i++)
 		{
 			// search in the skin list
-			if (stricmp(skins[i].name, skinname) == 0)
+			if (fasticmp(skins[i].name, skinname))
 			{
 				player->localskin = 1 + i;
 				player->skinlocal = false;
@@ -530,7 +530,7 @@ void R_AddSkins(UINT16 wadnum, boolean local)
 		hudname = realname = false;
 
 		// parse
-		stoken = strtok (buf2, "\r\n= ");
+		stoken = strtok(buf2, "\r\n= ");
 		while (stoken)
 		{
 			if ((stoken[0] == '/' && stoken[1] == '/')
@@ -546,7 +546,7 @@ void R_AddSkins(UINT16 wadnum, boolean local)
 			if (!value)
 				I_Error("R_AddSkins: syntax error in S_SKIN lump# %d(%s) in WAD %s\n", lump, W_CheckNameForNumPwad(wadnum,lump), wadfiles[wadnum]->filename);
 
-			if (!stricmp(stoken, "name"))
+			if (fasticmp(stoken, "name"))
 			{
 				// the skin name must uniquely identify a single skin
 				// I'm lazy so if name is already used I leave the 'skin x'
@@ -592,7 +592,7 @@ void R_AddSkins(UINT16 wadnum, boolean local)
 						if (*value == '_') *value = ' '; // turn _ into spaces.
 				}
 			}
-			else if (!stricmp(stoken, "realname"))
+			else if (fasticmp(stoken, "realname"))
 			{ // Display name (eg. "Knuckles")
 				realname = true;
 				STRBUFCPY(skin->realname, value);
@@ -603,7 +603,7 @@ void R_AddSkins(UINT16 wadnum, boolean local)
 				if (!hudname)
 					STRBUFCPY(skin->hudname, skin->realname);
 			}
-			else if (!stricmp(stoken, "hudname"))
+			else if (fasticmp(stoken, "hudname"))
 			{ // Life icon name (eg. "K.T.E")
 				hudname = true;
 				STRBUFCPY(skin->hudname, value);
@@ -614,34 +614,34 @@ void R_AddSkins(UINT16 wadnum, boolean local)
 				if (!realname)
 					STRBUFCPY(skin->realname, skin->hudname);
 			}
-			else if (!stricmp(stoken, "sprite"))
+			else if (fasticmp(stoken, "sprite"))
 			{
 				strupr(value);
 				memcpy(skin->sprite, value, sizeof skin->sprite);
 			}
-			else if (!stricmp(stoken, "facerank"))
+			else if (fasticmp(stoken, "facerank"))
 			{
 				strupr(value);
 				memcpy(skin->facerank, value, sizeof(skin->facerank)-1);
 				skin->facerank[sizeof(skin->facerank)-1] = '\0';
 			}
-			else if (!stricmp(stoken, "facewant"))
+			else if (fasticmp(stoken, "facewant"))
 			{
 				strupr(value);
 				memcpy(skin->facewant, value, sizeof(skin->facewant)-1);
 				skin->facewant[sizeof(skin->facewant)-1] = '\0';
 			}
-			else if (!stricmp(stoken, "facemmap"))
+			else if (fasticmp(stoken, "facemmap"))
 			{
 				strupr(value);
 				strncpy(skin->facemmap, value, sizeof(skin->facemmap)-1);
 				skin->facemmap[sizeof(skin->facemmap)-1] = '\0';
 			}
-			else if (!stricmp(stoken, "flags")) // character type identification
+			else if (fasticmp(stoken, "flags")) // character type identification
 			{
 				skin->flags = get_number(value);
 			}
-			else if (!stricmp(stoken, "kartspeed"))
+			else if (fasticmp(stoken, "kartspeed"))
 			{
 				skin->kartspeed = atoi(value);
 
@@ -650,7 +650,7 @@ void R_AddSkins(UINT16 wadnum, boolean local)
 				if (skin->kartspeed > 9)
 					skin->kartspeed = 9;
 			}
-			else if (!stricmp(stoken, "kartweight"))
+			else if (fasticmp(stoken, "kartweight"))
 			{
 				skin->kartweight = atoi(value);
 
@@ -660,15 +660,15 @@ void R_AddSkins(UINT16 wadnum, boolean local)
 					skin->kartweight = 9;
 			}
 			// custom translation table
-			else if (!stricmp(stoken, "startcolor"))
+			else if (fasticmp(stoken, "startcolor"))
 			{
 				skin->starttranscolor = atoi(value);
 			}
-			else if (!stricmp(stoken, "prefcolor"))
+			else if (fasticmp(stoken, "prefcolor"))
 			{
 				skin->prefcolor = K_GetKartColorByName(value);
 			}
-			else if (!stricmp(stoken, "highresscale"))
+			else if (fasticmp(stoken, "highresscale"))
 			{
 				skin->highresscale = FLOAT_TO_FIXED(atof(value));
 			}
@@ -687,7 +687,7 @@ void R_AddSkins(UINT16 wadnum, boolean local)
 						continue;
 
 					if (sfx->skinsound != -1
-					&& !stricmp(sfx->name, stoken + 2))
+					&& fasticmp(sfx->name, stoken + 2))
 					{
 						skin->soundsid[sfx->skinsound] = S_AddSoundFx(value+2, sfx->singularity, sfx->pitch, true);
 						found = true;

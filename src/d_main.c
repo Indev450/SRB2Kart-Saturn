@@ -1078,19 +1078,19 @@ static INT32 D_DetectFileType(const char* filename)
 
 	const size_t len = strlen(filename);
 
-	if (!stricmp(&filename[len - 4], ".wad"))
+	if (fasticmp(&filename[len - 4], ".wad"))
 		return 2;
-	else if (!stricmp(&filename[len - 4], ".pk3"))
+	else if (fasticmp(&filename[len - 4], ".pk3"))
 		return 3;
-	else if (!stricmp(&filename[len - 5], ".kart"))
+	else if (fasticmp(&filename[len - 5], ".kart"))
 		return 4;
-	else if (!stricmp(&filename[len - 4], ".lua"))
+	else if (fasticmp(&filename[len - 4], ".lua"))
 		return 5;
-	else if (!stricmp(&filename[len - 4], ".soc"))
+	else if (fasticmp(&filename[len - 4], ".soc"))
 		return 6;
-	else if (!stricmp(&filename[len - 4], ".cfg"))
+	else if (fasticmp(&filename[len - 4], ".cfg"))
 		return 7;
-	else if (!stricmp(&filename[len - 4], ".txt"))
+	else if (fasticmp(&filename[len - 4], ".txt"))
 		return 8;
 
 	return 0;
@@ -1288,7 +1288,7 @@ static void IdentifyVersion(void)
 	}
 
 #if (1) // reduce the amount of findfile by only using full cwd in this func
-	if (strcmp(tempsrb2path, srb2waddir))
+	if (!fastcmp(tempsrb2path, srb2waddir))
 #endif
 	{
 		strlcpy(srb2path, srb2waddir, sizeof (srb2path));
@@ -2156,11 +2156,14 @@ void D_SRB2Main(void)
 			const char *sskill = M_GetNextParm();
 
 			for (j = 0; kartspeed_cons_t[j].strvalue; j++)
-				if (!strcasecmp(kartspeed_cons_t[j].strvalue, sskill))
+			{
+				if (fasticmp(kartspeed_cons_t[j].strvalue, sskill))
 				{
 					newskill = (INT16)kartspeed_cons_t[j].value;
 					break;
 				}
+			}
+
 			if (!kartspeed_cons_t[j].strvalue) // reached end of the list with no match
 			{
 				j = atoi(sskill); // assume they gave us a skill number, which is okay too

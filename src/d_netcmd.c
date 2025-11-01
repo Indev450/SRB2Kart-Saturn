@@ -1219,7 +1219,7 @@ static boolean EnsurePlayerNameIsGood(char *name, INT32 playernum)
 	for (ix = 0; ix < MAXPLAYERS; ix++)
 	{
 		if (ix != playernum && playeringame[ix]
-			&& strcasecmp(name, player_names[ix]) == 0)
+			&& fasticmp(name, player_names[ix]))
 		{
 			// We shouldn't kick people out just because
 			// they joined the game with the same name
@@ -1336,7 +1336,7 @@ static void CleanupPlayerName(INT32 playernum, const char *newname)
 		for (i = 0; i < MAXPLAYERS; i++)
 		{
 			if (i != playernum && playeringame[i]
-				&& strcasecmp(tmpname, player_names[i]) == 0)
+				&& fasticmp(tmpname, player_names[i]))
 			{
 				break;
 			}
@@ -1386,7 +1386,7 @@ static void SetPlayerName(INT32 playernum, char *newname)
 {
 	if (EnsurePlayerNameIsGood(newname, playernum))
 	{
-		if (strcasecmp(newname, player_names[playernum]) != 0)
+		if (!fasticmp(newname, player_names[playernum]))
 		{
 			if (netgame)
 				HU_AddChatText(va("\x82*%s renamed to %s", player_names[playernum], newname), false);
@@ -1508,9 +1508,9 @@ static void SendNameAndColor(void)
 			CV_StealthSet(&cv_playercolor, cv_playercolor.defaultvalue);
 	}
 
-	if (!strcmp(cv_playername.string, player_names[consoleplayer])
+	if (fastcmp(cv_playername.string, player_names[consoleplayer])
 		&& cv_playercolor.value == players[consoleplayer].skincolor
-		&& !strcmp(cv_skin.string, skins[players[consoleplayer].skin].name))
+		&& fastcmp(cv_skin.string, skins[players[consoleplayer].skin].name))
 		return;
 
 	// We'll handle it later if we're not playing.
@@ -1945,7 +1945,7 @@ static void Got_NameAndColor(const UINT8 **cp, INT32 playernum)
 	// set name
 	if (player_name_changes[playernum] < MAXNAMECHANGES)
 	{
-		if (strcasecmp(player_names[playernum], name) != 0)
+		if (!fasticmp(player_names[playernum], name))
 			SetPlayerName(playernum, name);
 	}
 
@@ -2324,8 +2324,8 @@ static void Command_Playdemo_f(void)
 
 	CONS_Printf(M_GetText("Playing back demo '%s'.\n"), name);
 
-	demo.loadfiles = strcmp(COM_Argv(2), "-addfiles") == 0;
-	demo.ignorefiles = strcmp(COM_Argv(2), "-force") == 0;
+	demo.loadfiles = fastcmp(COM_Argv(2), "-addfiles");
+	demo.ignorefiles = fastcmp(COM_Argv(2), "-force");
 
 	// Internal if no extension, external if one exists
 	// If external, convert the file name to a path in SRB2's home directory
@@ -3196,20 +3196,20 @@ static void Command_Teamchange_f(void)
 
 	if (G_GametypeHasTeams())
 	{
-		if (!strcasecmp(COM_Argv(1), "red") || !strcasecmp(COM_Argv(1), "1"))
+		if (fasticmp(COM_Argv(1), "red") || fasticmp(COM_Argv(1), "1"))
 			NetPacket.packet.newteam = 1;
-		else if (!strcasecmp(COM_Argv(1), "blue") || !strcasecmp(COM_Argv(1), "2"))
+		else if (fasticmp(COM_Argv(1), "blue") || fasticmp(COM_Argv(1), "2"))
 			NetPacket.packet.newteam = 2;
-		else if (!strcasecmp(COM_Argv(1), "spectator") || !strcasecmp(COM_Argv(1), "0"))
+		else if (fasticmp(COM_Argv(1), "spectator") || fasticmp(COM_Argv(1), "0"))
 			NetPacket.packet.newteam = 0;
 		else
 			error = true;
 	}
 	else if (G_GametypeHasSpectators())
 	{
-		if (!strcasecmp(COM_Argv(1), "spectator") || !strcasecmp(COM_Argv(1), "0"))
+		if (fasticmp(COM_Argv(1), "spectator") || fasticmp(COM_Argv(1), "0"))
 			NetPacket.packet.newteam = 0;
-		else if (!strcasecmp(COM_Argv(1), "playing") || !strcasecmp(COM_Argv(1), "1"))
+		else if (fasticmp(COM_Argv(1), "playing") || fasticmp(COM_Argv(1), "1"))
 			NetPacket.packet.newteam = 3;
 		else
 			error = true;
@@ -3286,20 +3286,20 @@ static void Command_Teamchange2_f(void)
 
 	if (G_GametypeHasTeams())
 	{
-		if (!strcasecmp(COM_Argv(1), "red") || !strcasecmp(COM_Argv(1), "1"))
+		if (fasticmp(COM_Argv(1), "red") || fasticmp(COM_Argv(1), "1"))
 			NetPacket.packet.newteam = 1;
-		else if (!strcasecmp(COM_Argv(1), "blue") || !strcasecmp(COM_Argv(1), "2"))
+		else if (fasticmp(COM_Argv(1), "blue") || fasticmp(COM_Argv(1), "2"))
 			NetPacket.packet.newteam = 2;
-		else if (!strcasecmp(COM_Argv(1), "spectator") || !strcasecmp(COM_Argv(1), "0"))
+		else if (fasticmp(COM_Argv(1), "spectator") || fasticmp(COM_Argv(1), "0"))
 			NetPacket.packet.newteam = 0;
 		else
 			error = true;
 	}
 	else if (G_GametypeHasSpectators())
 	{
-		if (!strcasecmp(COM_Argv(1), "spectator") || !strcasecmp(COM_Argv(1), "0"))
+		if (fasticmp(COM_Argv(1), "spectator") || fasticmp(COM_Argv(1), "0"))
 			NetPacket.packet.newteam = 0;
-		else if (!strcasecmp(COM_Argv(1), "playing") || !strcasecmp(COM_Argv(1), "1"))
+		else if (fasticmp(COM_Argv(1), "playing") || fasticmp(COM_Argv(1), "1"))
 			NetPacket.packet.newteam = 3;
 		else
 			error = true;
@@ -3377,20 +3377,20 @@ static void Command_Teamchange3_f(void)
 
 	if (G_GametypeHasTeams())
 	{
-		if (!strcasecmp(COM_Argv(1), "red") || !strcasecmp(COM_Argv(1), "1"))
+		if (fasticmp(COM_Argv(1), "red") || fasticmp(COM_Argv(1), "1"))
 			NetPacket.packet.newteam = 1;
-		else if (!strcasecmp(COM_Argv(1), "blue") || !strcasecmp(COM_Argv(1), "2"))
+		else if (fasticmp(COM_Argv(1), "blue") || fasticmp(COM_Argv(1), "2"))
 			NetPacket.packet.newteam = 2;
-		else if (!strcasecmp(COM_Argv(1), "spectator") || !strcasecmp(COM_Argv(1), "0"))
+		else if (fasticmp(COM_Argv(1), "spectator") || fasticmp(COM_Argv(1), "0"))
 			NetPacket.packet.newteam = 0;
 		else
 			error = true;
 	}
 	else if (G_GametypeHasSpectators())
 	{
-		if (!strcasecmp(COM_Argv(1), "spectator") || !strcasecmp(COM_Argv(1), "0"))
+		if (fasticmp(COM_Argv(1), "spectator") || fasticmp(COM_Argv(1), "0"))
 			NetPacket.packet.newteam = 0;
-		else if (!strcasecmp(COM_Argv(1), "playing") || !strcasecmp(COM_Argv(1), "1"))
+		else if (fasticmp(COM_Argv(1), "playing") || fasticmp(COM_Argv(1), "1"))
 			NetPacket.packet.newteam = 3;
 		else
 			error = true;
@@ -3468,20 +3468,20 @@ static void Command_Teamchange4_f(void)
 
 	if (G_GametypeHasTeams())
 	{
-		if (!strcasecmp(COM_Argv(1), "red") || !strcasecmp(COM_Argv(1), "1"))
+		if (fasticmp(COM_Argv(1), "red") || fasticmp(COM_Argv(1), "1"))
 			NetPacket.packet.newteam = 1;
-		else if (!strcasecmp(COM_Argv(1), "blue") || !strcasecmp(COM_Argv(1), "2"))
+		else if (fasticmp(COM_Argv(1), "blue") || fasticmp(COM_Argv(1), "2"))
 			NetPacket.packet.newteam = 2;
-		else if (!strcasecmp(COM_Argv(1), "spectator") || !strcasecmp(COM_Argv(1), "0"))
+		else if (fasticmp(COM_Argv(1), "spectator") || fasticmp(COM_Argv(1), "0"))
 			NetPacket.packet.newteam = 0;
 		else
 			error = true;
 	}
 	else if (G_GametypeHasSpectators())
 	{
-		if (!strcasecmp(COM_Argv(1), "spectator") || !strcasecmp(COM_Argv(1), "0"))
+		if (fasticmp(COM_Argv(1), "spectator") || fasticmp(COM_Argv(1), "0"))
 			NetPacket.packet.newteam = 0;
-		else if (!strcasecmp(COM_Argv(1), "playing") || !strcasecmp(COM_Argv(1), "1"))
+		else if (fasticmp(COM_Argv(1), "playing") || fasticmp(COM_Argv(1), "1"))
 			NetPacket.packet.newteam = 3;
 		else
 			error = true;
@@ -3567,33 +3567,33 @@ static void Command_ServerTeamChange_f(void)
 
 	if (G_TagGametype())
 	{
-		if (!strcasecmp(COM_Argv(2), "it") || !strcasecmp(COM_Argv(2), "1"))
+		if (fasticmp(COM_Argv(2), "it") || fasticmp(COM_Argv(2), "1"))
 			NetPacket.packet.newteam = 1;
-		else if (!strcasecmp(COM_Argv(2), "notit") || !strcasecmp(COM_Argv(2), "2"))
+		else if (fasticmp(COM_Argv(2), "notit") || fasticmp(COM_Argv(2), "2"))
 			NetPacket.packet.newteam = 2;
-		else if (!strcasecmp(COM_Argv(2), "playing") || !strcasecmp(COM_Argv(2), "3"))
+		else if (fasticmp(COM_Argv(2), "playing") || fasticmp(COM_Argv(2), "3"))
 			NetPacket.packet.newteam = 3;
-		else if (!strcasecmp(COM_Argv(2), "spectator") || !strcasecmp(COM_Argv(2), "0"))
+		else if (fasticmp(COM_Argv(2), "spectator") || fasticmp(COM_Argv(2), "0"))
 			NetPacket.packet.newteam = 0;
 		else
 			error = true;
 	}
 	else if (G_GametypeHasTeams())
 	{
-		if (!strcasecmp(COM_Argv(2), "red") || !strcasecmp(COM_Argv(2), "1"))
+		if (fasticmp(COM_Argv(2), "red") || fasticmp(COM_Argv(2), "1"))
 			NetPacket.packet.newteam = 1;
-		else if (!strcasecmp(COM_Argv(2), "blue") || !strcasecmp(COM_Argv(2), "2"))
+		else if (fasticmp(COM_Argv(2), "blue") || fasticmp(COM_Argv(2), "2"))
 			NetPacket.packet.newteam = 2;
-		else if (!strcasecmp(COM_Argv(2), "spectator") || !strcasecmp(COM_Argv(2), "0"))
+		else if (fasticmp(COM_Argv(2), "spectator") || fasticmp(COM_Argv(2), "0"))
 			NetPacket.packet.newteam = 0;
 		else
 			error = true;
 	}
 	else if (G_GametypeHasSpectators())
 	{
-		if (!strcasecmp(COM_Argv(2), "spectator") || !strcasecmp(COM_Argv(2), "0"))
+		if (fasticmp(COM_Argv(2), "spectator") || fasticmp(COM_Argv(2), "0"))
 			NetPacket.packet.newteam = 0;
-		else if (!strcasecmp(COM_Argv(2), "playing") || !strcasecmp(COM_Argv(2), "1"))
+		else if (fasticmp(COM_Argv(2), "playing") || fasticmp(COM_Argv(2), "1"))
 			NetPacket.packet.newteam = 3;
 		else
 			error = true;
@@ -5211,14 +5211,14 @@ static void Ringslinger_OnChange(void)
 static void Gravity_OnChange(void)
 {
 	if (!M_SecretUnlocked(SECRET_PANDORA) && !netgame && !cv_debug
-		&& strcmp(cv_gravity.string, cv_gravity.defaultvalue))
+		&& !fastcmp(cv_gravity.string, cv_gravity.defaultvalue))
 	{
 		CONS_Printf(M_GetText("You haven't earned this yet.\n"));
 		CV_StealthSet(&cv_gravity, cv_gravity.defaultvalue);
 		return;
 	}
 #ifndef NETGAME_GRAVITY
-	if(netgame)
+	if (netgame)
 	{
 		CV_StealthSet(&cv_gravity, cv_gravity.defaultvalue);
 		return;
