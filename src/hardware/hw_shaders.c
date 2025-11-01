@@ -586,7 +586,7 @@ void HWR_LoadCustomShadersFromFile(UINT16 wadnum, boolean PK3)
 			goto skip_field;
 		}
 
-		if (!stricmp(stoken, "GLSL"))
+		if (fasticmp(stoken, "GLSL"))
 		{
 			value = strtok(NULL, "\r\n ");
 			if (!value)
@@ -596,9 +596,9 @@ void HWR_LoadCustomShadersFromFile(UINT16 wadnum, boolean PK3)
 				goto skip_lump;
 			}
 
-			if (!stricmp(value, "VERTEX"))
+			if (fasticmp(value, "VERTEX"))
 				shadertype = 1;
-			else if (!stricmp(value, "FRAGMENT"))
+			else if (fasticmp(value, "FRAGMENT"))
 				shadertype = 2;
 
 skip_lump:
@@ -624,7 +624,7 @@ skip_lump:
 
 			for (i = 0; shaderxlat[i].type; i++)
 			{
-				if (!stricmp(shaderxlat[i].type, stoken))
+				if (fasticmp(shaderxlat[i].type, stoken))
 				{
 					size_t shader_string_length;
 					char *shader_source;

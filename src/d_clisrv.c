@@ -3215,7 +3215,7 @@ static void Command_connect(void)
 
 	server = false;
 
-	if (!stricmp(COM_Argv(1), "self"))
+	if (fasticmp(COM_Argv(1), "self"))
 	{
 		servernode = 0;
 		server = true;
@@ -3225,7 +3225,7 @@ static void Command_connect(void)
 	else
 	{
 		// used in menu to connect to a server in the list
-		if (netgame && !stricmp(COM_Argv(1), "node"))
+		if (netgame && fasticmp(COM_Argv(1), "node"))
 		{
 			servernode = (SINT8)atoi(COM_Argv(2));
 		}
@@ -3240,7 +3240,7 @@ static void Command_connect(void)
 			netgame = true;
 			multiplayer = true;
 
-			if (!stricmp(COM_Argv(1), "any"))
+			if (fasticmp(COM_Argv(1), "any"))
 				servernode = BROADCASTADDR;
 			else if (I_NetMakeNodewPort && COM_Argc() >= 3)
 				servernode = I_NetMakeNodewPort(COM_Argv(1), COM_Argv(2));
@@ -3264,6 +3264,7 @@ static void Command_connect(void)
 		splitscreen = cv_splitplayers.value-1;
 		SplitScreen_OnChange();
 	}
+
 	botingame = false;
 	botskin = 0;
 	CL_ConnectToServer();

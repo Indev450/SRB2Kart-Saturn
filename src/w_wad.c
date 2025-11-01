@@ -375,11 +375,11 @@ static restype_t ResourceFileDetect(const char* filename)
 {
 	size_t len = strlen(filename) - 4;
 
-	if (!stricmp(&filename[len], ".pk3"))
+	if (fasticmp(&filename[len], ".pk3"))
 		return RET_PK3;
-	if (!stricmp(&filename[len], ".soc"))
+	if (fasticmp(&filename[len], ".soc"))
 		return RET_SOC;
-	if (!stricmp(&filename[len], ".lua"))
+	if (fasticmp(&filename[len], ".lua"))
 		return RET_LUA;
 
 	return RET_WAD;
@@ -1130,7 +1130,7 @@ UINT16 W_CheckNumForLongNamePwad(const char *name, UINT16 wad, UINT16 startlump)
 		{
 			if (lump_p->longnamelength == namelen
 				&& lump_p->hash.longname == hash
-				&& !stricmp(lump_p->longname, name))
+				&& fasticmp(lump_p->longname, name))
 				return i;
 		}
 	}
@@ -1230,7 +1230,7 @@ static lumpnum_t CheckLumpInCache(const char *name, boolean longname)
 		for (INT32 i = lumpnumcacheindex + LUMPNUMCACHESIZE; i > lumpnumcacheindex; i--)
 		{
 			if (lumpnumcache[i & (LUMPNUMCACHESIZE - 1)].hash == hash
-				&& stricmp(lumpnumcache[i & (LUMPNUMCACHESIZE - 1)].lumpname, name) == 0)
+				&& fasticmp(lumpnumcache[i & (LUMPNUMCACHESIZE - 1)].lumpname, name))
 			{
 				lumpnumcacheindex = i & (LUMPNUMCACHESIZE - 1);
 				return lumpnumcache[lumpnumcacheindex].lumpnum;
