@@ -971,24 +971,25 @@ UINT16 W_InitFile(const char *filename, boolean local, boolean startup)
   * \return 1 if all files were loaded, 0 if at least one was missing or
   *           invalid.
   */
-INT32 W_InitMultipleFiles(char **filenames, boolean addons)
+INT32 W_InitMultipleFiles(char **filenames, size_t count, boolean addons)
 {
 	INT32 rc = 1;
 	INT32 overallrc = 1;
-
+	size_t i;
 	(void)addons;
 
-	// will be realloced as lumps are added
-	for (; *filenames; filenames++)
+	for (i = 0; i < count; i++)
 	{
+		const char *filename = filenames[i];
+
 		// Previously, W_VerifyNMUSlumps was called to mark game modified
 		// for addons... but W_InitFile already does exactly that!
 
 		//CONS_Debug(DBG_SETUP, "Loading %s\n", *filenames);
-		rc = W_InitFile(*filenames, false, true);
+		rc = W_InitFile(filename, false, true);
 
 		if (rc == INT16_MAX)
-			CONS_Printf(M_GetText("Errors occurred while loading %s; not added.\n"), *filenames);
+			CONS_Printf(M_GetText("Errors occurred while loading %s; not added.\n"), filename);
 
 		overallrc &= (rc != INT16_MAX) ? 1 : 0;
 	}

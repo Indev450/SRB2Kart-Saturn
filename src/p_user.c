@@ -4315,17 +4315,19 @@ static void P_CalcPostImg(player_t *player, camera_t *thiscam)
 {
 	sector_t *sector = NULL;
 	UINT8 postimgtype = 0;
-	//INT32 *param;
 	fixed_t pviewheight = 0;
+#ifdef MOTIONBLUR
+	INT32 *param;
 
-	/*for (i = 0; i <= splitscreen; i++)
+	for (i = 0; i <= splitscreen; i++)
 	{
 		if (player == &players[displayplayers[i]])
 		{
 			param = &postimgparam[i];
 			break;
 		}
-	}*/
+	}
+#endif
 
 	if (encoremode) // srb2kart
 		postimgtype |= POSTIMG_MIRROR;
@@ -4361,16 +4363,18 @@ static void P_CalcPostImg(player_t *player, camera_t *thiscam)
 	else if (P_CameraCheckHeatFirstperson(player, sector, pviewheight))
 		postimgtype |= POSTIMG_HEAT;
 
+#ifdef MOTIONBLUR
 	// Motion blur
 	// unused
-	/*if (player->speed > (35<<FRACBITS))
+	if (player->speed > (35<<FRACBITS))
 	{
 		postimgtype |= POSTIMG_MOTION;
 		*param = (player->speed - 32)/4;
 
 		if (*param > 5)
 			*param = 5;
-	}*/
+	}
+#endif
 
 	thiscam->postimg = postimgtype;
 }
