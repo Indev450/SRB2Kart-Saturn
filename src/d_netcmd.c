@@ -292,6 +292,10 @@ consvar_t cv_mouseturn = {"mouseturn", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, 
 // Lagless camera! Yay!
 consvar_t cv_laglesscam = {"lagless_camera", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
+// makes the camera use the saved angleturn in replays instead of the players angle
+// more accurate to how the recording player seen things in game, but may be jittery if they encountered net issues
+consvar_t cv_demoangturn = {"useangleturninreplays", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+
 consvar_t cv_verticallook[MAXSPLITSCREENPLAYERS] = {
 	{"verticallook",  "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL},
 	{"verticallook2", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL},
@@ -1046,6 +1050,7 @@ void D_RegisterClientCommands(void)
 	CV_RegisterVar(&cv_betainterscreen);
 
 	CV_RegisterVar(&cv_laglesscam);
+	CV_RegisterVar(&cv_demoangturn);
 
 	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
 	{
