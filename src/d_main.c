@@ -98,7 +98,9 @@
 UINT8 window_notinfocus = false;
 
 static char *startupiwadfiles[MAX_WADFILES];
+static size_t startupiwadcount = 0;
 static char *startuppwads[MAX_WADFILES];
+static size_t startuppwadcount = 0;
 
 // autoloading
 static char *autoloadwadfiles[MAX_WADFILES];
@@ -1049,13 +1051,9 @@ void D_StartTitle(void)
 //
 // D_AddFile
 //
-static void D_AddFile(const char *file, char **filearray)
+static void D_AddFile(const char *file, char **filearray, size_t count)
 {
-	size_t pnumwadfiles;
 	char *newfile;
-
-	for (pnumwadfiles = 0; filearray[pnumwadfiles]; pnumwadfiles++)
-		;
 
 	newfile = malloc(strlen(file) + 1);
 	if (!newfile)
@@ -1064,21 +1062,10 @@ static void D_AddFile(const char *file, char **filearray)
 	}
 	strcpy(newfile, file);
 
-	filearray[pnumwadfiles] = newfile;
+	filearray[count] = newfile;
 }
 
-static void D_CleanFile(char **filearray)
-{
-	size_t pnumwadfiles;
-
-	for (pnumwadfiles = 0; filearray[pnumwadfiles]; pnumwadfiles++)
-	{
-		free(filearray[pnumwadfiles]);
-		filearray[pnumwadfiles] = NULL;
-	}
-}
-
-static void D_CleanAutoloadFile(char **filearray, size_t count)
+static void D_CleanFile(char **filearray, size_t count)
 {
 	size_t i;
 
@@ -1240,7 +1227,7 @@ static void D_AddAutoloadFiles(void)
 	if (W_AddAutoloadedLocalFiles(autoloadwadfiles) == 0)
 		CONS_Printf("D_AutoloadFile(): Are you sure you put in valid files or what?\n");
 
-	D_CleanAutoloadFile(autoloadwadfiles, autoloadcount);
+	D_CleanFile(autoloadwadfiles, autoloadcount);
 
 	autoloadcount = 0;
 	autoloaded = true;
@@ -1256,7 +1243,7 @@ void D_AddPostloadFiles(void)
 	if (W_AddAutoloadedLocalFiles(autoloadwadfilespost) == 0)
 		CONS_Printf("D_AddPostloadFiles(): Are you sure you put in valid files or what?\n");
 
-	D_CleanAutoloadFile(autoloadwadfilespost, postloadcount);
+	D_CleanFile(autoloadwadfilespost, postloadcount);
 
 	postloadcount = 0;
 	postautoloaded = true;
@@ -1266,13 +1253,13 @@ void D_AddPostloadFiles(void)
 // Identify the SRB2 version, and IWAD file to use.
 // ==========================================================================
 
-static boolean AddIWAD(void)
+static boolean AddIWAD(const char * file, const char *dir)
 {
-	char * path = va(pandf, srb2path, "srb2.srb");
+	char * path = va(pandf, dir, file);
 
 	if (FIL_ReadFileOK(path))
 	{
-		D_AddFile(path, startupiwadfiles);
+		D_AddFile(path, startupiwadfiles, startupiwadcount++);
 		return true;
 	}
 
@@ -1313,7 +1300,7 @@ static void IdentifyVersion(void)
 	}
 
 	// Load the IWAD
-	if (!AddIWAD())
+	if (!AddIWAD("srb2.srb", srb2path)) // not sure why this uses srb2path and not srb2waddir?
 	{
 		I_Error("SRB2.SRB not found! Expected in %s\n", srb2waddir);
 	}
@@ -1327,48 +1314,51 @@ static void IdentifyVersion(void)
 
 #ifdef USE_PATCH_DTA
 	// Add our crappy patches to fix our bugs
-	D_AddFile(va(pandf,srb2waddir,"patch.dta"));
+	if (!AddIWAD("patch.dta", srb2waddir))
+	{
+		I_Error("patch.dta not found! Expected in %s\n", srb2waddir);
+	}
 #endif
+	if (!AddIWAD("gfx.kart", srb2waddir))
+	{
+		I_Error("gfx.kart not found! Expected in %s\n", srb2waddir);
+	}
 
-	D_AddFile(va(pandf, srb2waddir, "gfx.kart"), startupiwadfiles);
-	D_AddFile(va(pandf, srb2waddir, "textures.kart"), startupiwadfiles);
-	D_AddFile(va(pandf, srb2waddir, "chars.kart"), startupiwadfiles);
-	D_AddFile(va(pandf, srb2waddir, "maps.kart"), startupiwadfiles);
+	if (!AddIWAD("textures.kart", srb2waddir))
+	{
+		I_Error("textures.kart not found! Expected in %s\n", srb2waddir);
+	}
+
+	if (!AddIWAD("chars.kart", srb2waddir))
+	{
+		I_Error("chars.kart not found! Expected in %s\n", srb2waddir);
+	}
+
+	if (!AddIWAD("maps.kart", srb2waddir))
+	{
+		I_Error("maps.kart not found! Expected in %s\n", srb2waddir);
+	}
 #ifdef USE_PATCH_KART
-	D_AddFile(va(pandf,srb2waddir,"patch.kart"), startupiwadfiles);
+	if (!AddIWAD("patch.kart", srb2waddir))
+	{
+		I_Error("patch.kart not found! Expected in %s\n", srb2waddir);
+	}
 #endif
-
-	const char *path = NULL;
-
-	path = va(pandf, srb2waddir, "extra.kart");
 
 	// completely optional
-	if (FIL_ReadFileOK(path))
-	{
-		D_AddFile(path, startupiwadfiles);
+	if (AddIWAD("extra.kart", srb2waddir))
 		found_extra_kart = true;
-	}
-
-	path = va(pandf, srb2waddir, "extra2.kart");
 
 	// completely optional 2: Back with a vengence
-	if (FIL_ReadFileOK(path))
-	{
-		D_AddFile(path, startupiwadfiles);
+	if (AddIWAD("extra2.kart", srb2waddir))
 		found_extra2_kart = true;
-	}
 
-	path = va(pandf, srb2waddir, "extra3.kart");
-
-	if (FIL_ReadFileOK(path))
-	{
-		D_AddFile(path, startupiwadfiles);
+	if (AddIWAD("extra3.kart", srb2waddir))
 		found_extra3_kart = true;
-	}
 
 #if !defined (HAVE_SDL) || defined (HAVE_MIXER)
 #define MUSICTEST(str) \
-	musicpath = va(pandf,srb2waddir,str);\
+	musicpath = va(pandf, srb2waddir, str);\
 	handle = W_OpenWadFile(&musicpath, false); \
 	if (handle) \
 	{\
@@ -1377,7 +1367,7 @@ static void IdentifyVersion(void)
 		if (ms == 0) \
 			I_Error("File " str " has been modified with non-music/sound lumps"); \
 		if (ms == 1) \
-			D_AddFile(musicpath, startupiwadfiles); \
+			D_AddFile(musicpath, startupiwadfiles, startupiwadcount++); \
 	}
 	{
 		const char *musicpath;
@@ -1827,7 +1817,7 @@ void D_SRB2Main(void)
 				const char *s = M_GetNextParm();
 
 				if (s) // Check for NULL?
-					D_AddFile(s, startuppwads);
+					D_AddFile(s, startuppwads, startuppwadcount++);
 			}
 		}
 	}
@@ -1861,7 +1851,8 @@ void D_SRB2Main(void)
 	CONS_Printf("W_InitMultipleFiles(): Adding IWAD and main PWADs.\n");
 
 	W_InitMultipleFiles(startupiwadfiles, false);
-	D_CleanFile(startupiwadfiles);
+	D_CleanFile(startupiwadfiles, startupiwadcount);
+	startupiwadcount = 0;
 	mainwads = 0;
 
 #ifndef DEVELOP
@@ -1908,7 +1899,8 @@ void D_SRB2Main(void)
 		D_CheckMaps(true);
 	}
 
-	D_CleanFile(startuppwads);
+	D_CleanFile(startuppwads, startuppwadcount);
+	startuppwadcount = 0;
 
 	cht_Init();
 
