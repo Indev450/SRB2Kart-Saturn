@@ -107,8 +107,6 @@ static char *autoloadwadfiles[MAX_WADFILES];
 static char *autoloadwadfilespost[MAX_WADFILES];
 static size_t autoloadcount = 0;
 static size_t postloadcount = 0;
-static boolean autoloaded = false;
-static boolean postautoloaded = false;
 //
 
 boolean devparm = false; // started game with -devparm
@@ -1165,7 +1163,7 @@ static void D_FindAddonsToAutoload(void)
 	// If the file is found, run our shit
 	if (!autoloadconfigfile) // nope outta here
 	{
-		autoloaded = postautoloaded = true; // so D_AddAutoloadFiles can skip everything since nothings there to autoload
+		autoloadcount = postloadcount = 0; // so D_AddAutoloadFiles can skip everything since nothings there to autoload
 		return;
 	}
 
@@ -1219,7 +1217,8 @@ static void D_FindAddonsToAutoload(void)
 
 static void D_AddAutoloadFiles(void)
 {
-	if (autoloaded)
+	// nothing to autoload
+	if (autoloadcount == 0)
 		return;
 
 	CONS_Printf("D_AutoloadFile(): Loading autoloaded addons...\n");
@@ -1230,12 +1229,12 @@ static void D_AddAutoloadFiles(void)
 	D_CleanFile(autoloadwadfiles, autoloadcount);
 
 	autoloadcount = 0;
-	autoloaded = true;
 }
 
 void D_AddPostloadFiles(void)
 {
-	if (postautoloaded || !netgame)
+	// nothing to postload
+	if (postloadcount == 0 || !netgame)
 		return;
 
 	CONS_Printf("D_AddPostloadFiles(): Loading postloaded addons...\n");
@@ -1246,7 +1245,6 @@ void D_AddPostloadFiles(void)
 	D_CleanFile(autoloadwadfilespost, postloadcount);
 
 	postloadcount = 0;
-	postautoloaded = true;
 }
 
 // ==========================================================================
