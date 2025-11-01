@@ -1002,11 +1002,11 @@ static void D_AddFile(const char *file, char **filearray, size_t index)
 	filearray[index] = newfile;
 }
 
-static void D_CleanFile(char **filearray, size_t index)
+static void D_CleanFile(char **filearray, size_t count)
 {
 	size_t i;
 
-	for (i = 0; i < index; i++)
+	for (i = 0; i < count; i++)
 	{
 		free(filearray[i]);
 		filearray[i] = NULL;
@@ -1041,7 +1041,7 @@ static INT32 D_DetectFileType(const char* filename)
 }
 
 // autoload that shit
-static void D_AutoloadFile(const char *file, char **filearray, size_t count)
+static void D_AutoloadFile(const char *file, char **filearray, size_t index)
 {
 	char *newfile;
 	INT32 fileType = D_DetectFileType(file);
@@ -1059,7 +1059,7 @@ static void D_AutoloadFile(const char *file, char **filearray, size_t count)
 			I_Error("No more free memory to AutoloadFile %s",file);
 
 		strcpy(newfile, file);
-		filearray[count] = newfile;
+		filearray[index] = newfile;
 	}
 	else
 	{
