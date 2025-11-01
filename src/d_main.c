@@ -102,10 +102,8 @@ static char *startuppwads[MAX_WADFILES];
 // autoloading
 static char *autoloadwadfiles[MAX_WADFILES];
 static char *autoloadwadfilespost[MAX_WADFILES];
-boolean autoloading;
-boolean autoloaded;
+static boolean autoloaded = false;
 boolean postautoloaded = false;
-boolean wasautoloaded = false;
 //
 
 boolean devparm = false; // started game with -devparm
@@ -1158,7 +1156,7 @@ static void D_FindAddonsToAutoload(void)
 	// If the file is found, run our shit
 	if (!autoloadconfigfile) // nope outta here
 	{
-		wasautoloaded = postautoloaded = true; // so D_AddAutoloadFiles can skip everything since nothings there to autoload
+		autoloaded = postautoloaded = true; // so D_AddAutoloadFiles can skip everything since nothings there to autoload
 		return;
 	}
 
@@ -1206,7 +1204,7 @@ static void D_FindAddonsToAutoload(void)
 
 static void D_AddAutoloadFiles(void)
 {
-	if (wasautoloaded)
+	if (autoloaded)
 		return;
 
 	CONS_Printf("D_AutoloadFile(): Loading autoloaded addons...\n");
@@ -1214,7 +1212,7 @@ static void D_AddAutoloadFiles(void)
 		CONS_Printf("D_AutoloadFile(): Are you sure you put in valid files or what?\n");
 	D_CleanFile(autoloadwadfiles);
 
-	wasautoloaded = true;
+	autoloaded = true;
 }
 
 void D_AddPostloadFiles(void)
