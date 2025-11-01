@@ -280,7 +280,7 @@ static void Command_Say_f(void);
 static void Command_Sayto_f(void);
 static void Command_Sayteam_f(void);
 static void Command_CSay_f(void);
-static void Got_Saycmd(UINT8 **p, INT32 playernum);
+static void Got_Saycmd(const UINT8 **p, INT32 playernum);
 
 void HU_LoadGraphics(void)
 {
@@ -879,11 +879,12 @@ const char *HU_SkinColorToConsoleColor(skincolors_t color)
   * \sa DoSayCommand
   * \author Graue <graue@oceanbase.org>
   */
-static void Got_Saycmd(UINT8 **p, INT32 playernum)
+static void Got_Saycmd(const UINT8 **p, INT32 playernum)
 {
 	SINT8 target;
 	UINT8 flags;
 	const char *dispname;
+	char buf[HU_MAXMSGLEN + 1];
 	char *msg;
 	boolean action = false;
 	char *ptr;
@@ -893,8 +894,8 @@ static void Got_Saycmd(UINT8 **p, INT32 playernum)
 
 	target = READSINT8(*p);
 	flags = READUINT8(*p);
-	msg = (char *)*p;
-	SKIPSTRINGL(*p, HU_MAXMSGLEN + 1);
+	msg = buf;
+	READSTRINGL(*p, msg, HU_MAXMSGLEN + 1);
 
 	if ((cv_mute.value || flags & (HU_CSAY|HU_SERVER_SAY)) && playernum != serverplayer && !(IsPlayerAdmin(playernum)))
 	{
