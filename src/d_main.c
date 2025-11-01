@@ -102,6 +102,8 @@ static char *startuppwads[MAX_WADFILES];
 // autoloading
 static char *autoloadwadfiles[MAX_WADFILES];
 static char *autoloadwadfilespost[MAX_WADFILES];
+static size_t autoloadcount = 0;
+static size_t postloadcount = 0;
 static boolean autoloaded = false;
 boolean postautoloaded = false;
 //
@@ -1057,10 +1059,22 @@ static void D_AddFile(const char *file, char **filearray)
 static void D_CleanFile(char **filearray)
 {
 	size_t pnumwadfiles;
+
 	for (pnumwadfiles = 0; filearray[pnumwadfiles]; pnumwadfiles++)
 	{
 		free(filearray[pnumwadfiles]);
 		filearray[pnumwadfiles] = NULL;
+	}
+}
+
+static void D_CleanAutoloadFile(char **filearray, size_t count)
+{
+	size_t i;
+
+	for (i = 0; i < count; i++)
+	{
+		free(filearray[i]);
+		filearray[i] = NULL;
 	}
 }
 
@@ -1092,9 +1106,8 @@ static INT32 D_DetectFileType(const char* filename)
 }
 
 // autoload that shit
-static void D_AutoloadFile(const char *file, char **filearray)
+static void D_AutoloadFile(const char *file, char **filearray, size_t count)
 {
-	size_t pnumwadfiles;
 	char *newfile;
 	INT32 fileType = D_DetectFileType(file);
 
@@ -1104,9 +1117,6 @@ static void D_AutoloadFile(const char *file, char **filearray)
 		return;
 	}
 
-	for (pnumwadfiles = 0; filearray[pnumwadfiles]; pnumwadfiles++)
-		;
-
 	if (fileType <= 6)
 	{
 		newfile = malloc(strlen(file) + 1);
@@ -1114,7 +1124,7 @@ static void D_AutoloadFile(const char *file, char **filearray)
 			I_Error("No more free memory to AutoloadFile %s",file);
 
 		strcpy(newfile, file);
-		filearray[pnumwadfiles] = newfile;
+		filearray[count] = newfile;
 	}
 	else
 	{
@@ -1144,13 +1154,14 @@ static void D_FindAddonsToAutoload(void)
 {
 	FILE *autoloadconfigfile;
 	const char *autoloadpath;
+	char *newline;
+
 	boolean postload;
 
-	INT32 i;
 	char wadsToAutoload[256] = "";
 
 	// does it exist tho
-	autoloadpath = va("%s"PATHSEP"%s",srb2home,AUTOLOADCONFIGFILENAME);
+	autoloadpath = va("%s"PATHSEP"%s", srb2home, AUTOLOADCONFIGFILENAME);
 	autoloadconfigfile = fopen(autoloadpath, "r");
 
 	// If the file is found, run our shit
@@ -1160,26 +1171,27 @@ static void D_FindAddonsToAutoload(void)
 		return;
 	}
 
-	while (fgets(wadsToAutoload, sizeof wadsToAutoload, autoloadconfigfile) != NULL)
+	while (fgets(wadsToAutoload, sizeof(wadsToAutoload), autoloadconfigfile) != NULL)
 	{
 		postload = false;
+
 		// skip if commented or empty
-		if ((wadsToAutoload[1] == '\0' || wadsToAutoload[1] == '\n')
-			|| (wadsToAutoload[0] == '#'))
+		if (wadsToAutoload[0] == '\n' ||
+			wadsToAutoload[0] == '#'  ||
+			wadsToAutoload[0] == '\0')
 			continue;
+
 		// this marks it so that it loads after loading server addons
-		else if (fastncmp(wadsToAutoload, "postload ", 9))
+		if (fastncmp(wadsToAutoload, "postload ", 9))
 		{
 			strremove(wadsToAutoload, "postload ");
 			postload = true;
 		}
 
 		// Remove Any Empty or Skipped Lines
-		for (i = 0; wadsToAutoload[i] != '\0'; i++)
-		{
-			if (wadsToAutoload[i] == '\n')
-				wadsToAutoload[i] = '\0';
-		}
+		newline = strchr(wadsToAutoload, '\n');
+		if (newline)
+			*newline = '\0';
 
 		if (!postload && W_CheckPostLoadList(wadsToAutoload))
 		{
@@ -1189,14 +1201,19 @@ static void D_FindAddonsToAutoload(void)
 
 		// LOAD IT
 		if (!postload)
-			D_AutoloadFile(wadsToAutoload, autoloadwadfiles);
+		{
+			D_AutoloadFile(wadsToAutoload, autoloadwadfiles, autoloadcount);
+			autoloadcount++;
+		}
 		else
-			D_AutoloadFile(wadsToAutoload, autoloadwadfilespost);
-
-		// end it here
-		for (i = 0; wadsToAutoload[i] != '\0'; i++)
-			wadsToAutoload[i] = '\0';
+		{
+			D_AutoloadFile(wadsToAutoload, autoloadwadfilespost, postloadcount);
+			postloadcount++;
+		}
 	}
+
+	autoloadwadfiles[autoloadcount] = NULL;
+	autoloadwadfilespost[postloadcount] = NULL;
 
 	// we dont want memory leaks around here do we?
 	fclose(autoloadconfigfile);
@@ -1208,10 +1225,13 @@ static void D_AddAutoloadFiles(void)
 		return;
 
 	CONS_Printf("D_AutoloadFile(): Loading autoloaded addons...\n");
+
 	if (W_AddAutoloadedLocalFiles(autoloadwadfiles) == 0)
 		CONS_Printf("D_AutoloadFile(): Are you sure you put in valid files or what?\n");
-	D_CleanFile(autoloadwadfiles);
 
+	D_CleanAutoloadFile(autoloadwadfiles, autoloadcount);
+
+	autoloadcount = 0;
 	autoloaded = true;
 }
 
@@ -1221,10 +1241,13 @@ void D_AddPostloadFiles(void)
 		return;
 
 	CONS_Printf("D_AddPostloadFiles(): Loading postloaded addons...\n");
+
 	if (W_AddAutoloadedLocalFiles(autoloadwadfilespost) == 0)
 		CONS_Printf("D_AddPostloadFiles(): Are you sure you put in valid files or what?\n");
-	D_CleanFile(autoloadwadfilespost);
 
+	D_CleanAutoloadFile(autoloadwadfilespost, postloadcount);
+
+	postloadcount = 0;
 	postautoloaded = true;
 }
 
