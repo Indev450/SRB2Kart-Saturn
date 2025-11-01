@@ -105,7 +105,7 @@ static char *autoloadwadfilespost[MAX_WADFILES];
 static size_t autoloadcount = 0;
 static size_t postloadcount = 0;
 static boolean autoloaded = false;
-boolean postautoloaded = false;
+static boolean postautoloaded = false;
 //
 
 boolean devparm = false; // started game with -devparm
