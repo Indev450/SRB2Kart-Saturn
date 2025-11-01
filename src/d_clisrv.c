@@ -4649,10 +4649,21 @@ void SV_StopServer(void)
 		Y_EndIntermission();
 	if (gamestate == GS_VOTING)
 		Y_EndVote();
-	gamestate = wipegamestate = GS_NULL;
+
+	G_SetGamestate(GS_NULL);
+	wipegamestate = GS_NULL;
 
 	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
+	{
 		localtextcmd[i][0] = 0;
+
+		while (textcmdbuf[i] != NULL)
+		{
+			textcmdbuf_t *buf = textcmdbuf[i];
+			textcmdbuf[i] = textcmdbuf[i]->next;
+			Z_Free(buf);
+		}
+	}
 
 	for (i = firstticstosend; i < firstticstosend + BACKUPTICS; i++)
 		D_Clearticcmd(i);
