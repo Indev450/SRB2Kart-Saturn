@@ -6935,9 +6935,9 @@ static void M_ConnectMenuModChecks(INT32 choice)
 	(void)choice;
 	// okay never mind we want to COMMUNICATE to the player pre-emptively instead of letting them try and then get confused when it doesn't work
 
-	if (modifiedgame || autoloaded)
+	if (modifiedgame)
 	{
-		M_StartMessage(M_GetText("You have addons loaded.\nYou won't be able to join netgames!\n\nTo play online, restart the game\nand don't load any addons.\nSRB2Kart will automatically add\neverything you need when you join.\n\n(Press a key)\n"),M_ConnectMenu,MM_EVENTHANDLER);
+		M_StartMessage("You have addons loaded.\nYou won't be able to join netgames!\n\nTo play online, restart the game\nand don't load any addons.\nSRB2Kart will automatically add\neverything you need when you join.\n\n(Press a key)\n", M_ConnectMenu, MM_EVENTHANDLER);
 		return;
 	}
 
