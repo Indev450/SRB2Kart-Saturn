@@ -1051,7 +1051,7 @@ void D_StartTitle(void)
 //
 // D_AddFile
 //
-static void D_AddFile(const char *file, char **filearray, size_t count)
+static void D_AddFile(const char *file, char **filearray, size_t index)
 {
 	char *newfile;
 
@@ -1062,14 +1062,14 @@ static void D_AddFile(const char *file, char **filearray, size_t count)
 	}
 	strcpy(newfile, file);
 
-	filearray[count] = newfile;
+	filearray[index] = newfile;
 }
 
-static void D_CleanFile(char **filearray, size_t count)
+static void D_CleanFile(char **filearray, size_t index)
 {
 	size_t i;
 
-	for (i = 0; i < count; i++)
+	for (i = 0; i < index; i++)
 	{
 		free(filearray[i]);
 		filearray[i] = NULL;
@@ -1361,7 +1361,7 @@ static void IdentifyVersion(void)
 	musicpath = va(pandf, srb2waddir, str);\
 	handle = W_OpenWadFile(&musicpath, false); \
 	if (handle) \
-	{\
+	{ \
 		int ms = W_VerifyNMUSlumps(musicpath, handle, false); \
 		fclose(handle); \
 		if (ms == 0) \
@@ -1850,7 +1850,8 @@ void D_SRB2Main(void)
 	// load wad, including the main wad file
 	CONS_Printf("W_InitMultipleFiles(): Adding IWAD and main PWADs.\n");
 
-	W_InitMultipleFiles(startupiwadfiles, false);
+	W_InitMultipleFiles(startupiwadfiles, startupiwadcount, false);
+	//mainwads = startupiwadcount - musicwads;
 	D_CleanFile(startupiwadfiles, startupiwadcount);
 	startupiwadcount = 0;
 	mainwads = 0;
@@ -1891,10 +1892,10 @@ void D_SRB2Main(void)
 
 	D_CheckMaps(false);
 
-	W_InitMultipleFiles(startuppwads, true);
+	W_InitMultipleFiles(startuppwads, startuppwadcount, true);
 
 	// Only search for pwad maps if we actually have a pwad added
-	if (startuppwads[0] != NULL)
+	if (startuppwadcount > 0)
 	{
 		D_CheckMaps(true);
 	}
