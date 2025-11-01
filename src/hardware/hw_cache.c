@@ -812,7 +812,7 @@ static void HWR_PrecacheLevelTextures(void)
 
 void HWR_PrecacheLevel(void)
 {
-	if (gamestate != GS_LEVEL)
+	if (gamestate != GS_LEVEL || !cv_precachetextures.value)
 		return;
 
 	// Precache flats.
