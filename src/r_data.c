@@ -867,7 +867,7 @@ static texpatch_t *R_ParsePatch(boolean actuallyLoadPatch)
 		I_Error("Error parsing TEXTURES lump: Unexpected end of file where comma after \"%s\"'s patch name should be",patchName);
 	}
 
-	if (strcmp(texturesToken,",")!=0)
+	if (!fastcmp(texturesToken,","))
 	{
 		I_Error("Error parsing TEXTURES lump: Expected \",\" after %s's patch name, got \"%s\"",patchName,texturesToken);
 	}
@@ -907,7 +907,7 @@ static texpatch_t *R_ParsePatch(boolean actuallyLoadPatch)
 		I_Error("Error parsing TEXTURES lump: Unexpected end of file where comma after patch \"%s\"'s x coordinate should be",patchName);
 	}
 
-	if (strcmp(texturesToken,",")!=0)
+	if (!fastcmp(texturesToken,","))
 	{
 		I_Error("Error parsing TEXTURES lump: Expected \",\" after patch \"%s\"'s x coordinate, got \"%s\"",patchName,texturesToken);
 	}
@@ -996,7 +996,7 @@ static texture_t *R_ParseTexture(boolean actuallyLoadTexture)
 	{
 		I_Error("Error parsing TEXTURES lump: Unexpected end of file where comma after texture \"%s\"'s name should be",newTextureName);
 	}
-	else if (strcmp(texturesToken,",")!=0)
+	else if (!fastcmp(texturesToken,","))
 	{
 		I_Error("Error parsing TEXTURES lump: Expected \",\" after texture \"%s\"'s name, got \"%s\"",newTextureName,texturesToken);
 	}
@@ -1030,7 +1030,7 @@ static texture_t *R_ParseTexture(boolean actuallyLoadTexture)
 	{
 		I_Error("Error parsing TEXTURES lump: Unexpected end of file where comma after texture \"%s\"'s width should be",newTextureName);
 	}
-	if (strcmp(texturesToken,",")!=0)
+	if (!fastcmp(texturesToken,","))
 	{
 		I_Error("Error parsing TEXTURES lump: Expected \",\" after texture \"%s\"'s width, got \"%s\"",newTextureName,texturesToken);
 	}
@@ -1066,7 +1066,7 @@ static texture_t *R_ParseTexture(boolean actuallyLoadTexture)
 		I_Error("Error parsing TEXTURES lump: Unexpected end of file where open curly brace for texture \"%s\" should be",newTextureName);
 	}
 
-	if (strcmp(texturesToken,"{")==0)
+	if (fastcmp(texturesToken,"{"))
 	{
 		if (actuallyLoadTexture)
 		{
@@ -1084,7 +1084,7 @@ static texture_t *R_ParseTexture(boolean actuallyLoadTexture)
 		{
 			I_Error("Error parsing TEXTURES lump: Unexpected end of file where patch definition for texture \"%s\" should be",newTextureName);
 		}
-		while (strcmp(texturesToken,"}")!=0)
+		while (!fastcmp(texturesToken,"}"))
 		{
 			if (stricmp(texturesToken, "PATCH")==0)
 			{
@@ -1334,8 +1334,9 @@ lumpnum_t R_GetFlatNumForName(const char *name)
 
 	if (lump == LUMPERROR)
 	{
-		if (strcmp(name, SKYFLATNAME))
+		if (!fastcmp(name, SKYFLATNAME))
 			CONS_Debug(DBG_SETUP, "R_GetFlatNumForName: Could not find flat %.8s\n", name);
+
 		lump = W_CheckNumForName("REDFLR");
 	}
 

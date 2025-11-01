@@ -946,17 +946,17 @@ void Got_Filetxpak(void)
 	char *filename = file->filename;
 	static INT32 filetime = 0;
 
-	if (!(strcmp(filename, "srb2.srb")
-		//&& strcmp(filename, "srb2.wad")
-		//&& strcmp(filename, "patch.dta")
-		//&& strcmp(filename, "music.dta")
-		&& strcmp(filename, "gfx.kart")
-		&& strcmp(filename, "textures.kart")
-		&& strcmp(filename, "chars.kart")
-		&& strcmp(filename, "maps.kart")
-		&& strcmp(filename, "sounds.kart")
-		&& strcmp(filename, "music.kart")
-		&& strcmp(filename, "patch.kart")
+	if ((fastcmp(filename, "srb2.srb")
+		//|| fastcmp(filename, "srb2.wad")
+		//|| fastcmp(filename, "patch.dta")
+		//|| fastcmp(filename, "music.dta")
+		|| fastcmp(filename, "gfx.kart")
+		|| fastcmp(filename, "textures.kart")
+		|| fastcmp(filename, "chars.kart")
+		|| fastcmp(filename, "maps.kart")
+		|| fastcmp(filename, "sounds.kart")
+		|| fastcmp(filename, "music.kart")
+		|| fastcmp(filename, "patch.kart")
 		))
 		I_Error("Tried to download \"%s\"", filename);
 
@@ -1197,7 +1197,7 @@ filestatus_t findfile(char *filename, const UINT8 *wantedmd5sum, boolean complet
 	}
 
 	// next, check SRB2's "home" directory (if non-'.')
-	if (strcmp(srb2home, "."))
+	if (!fastcmp(srb2home, "."))
 	{
 		homecheck = filesearch(filename, srb2home, wantedmd5sum, completepath, 10);
 
@@ -1209,7 +1209,7 @@ filestatus_t findfile(char *filename, const UINT8 *wantedmd5sum, boolean complet
 	}
 
 	// next, check SRB2's "path" directory (also if non-'.')
-	if (strcmp(srb2path, "."))
+	if (!fastcmp(srb2path, "."))
 	{
 		homecheck = filesearch(filename, srb2path, wantedmd5sum, completepath, 10);
 
@@ -1554,7 +1554,7 @@ CURLGetLogin (const char *url, HTTP_login ***return_prev_next)
 			( login = (*prev_next));
 			prev_next = &login->next
 	){
-		if (strcmp(login->url, url) == 0)
+		if (fastcmp(login->url, url) != 0)
 		{
 			if (return_prev_next)
 				(*return_prev_next) = prev_next;

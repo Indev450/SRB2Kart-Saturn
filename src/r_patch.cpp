@@ -63,7 +63,7 @@ static void R_ParseSpriteInfoFrame(spriteinfo_t *info)
 		I_Error("Error parsing SPRTINFO lump: Missing sprite info");
 	else
 	{
-		if (strcmp(sprinfoToken,"{")==0)
+		if (fastcmp(sprinfoToken,"{"))
 		{
 			Z_Free(sprinfoToken);
 			sprinfoToken = M_GetToken(NULL);
@@ -71,7 +71,7 @@ static void R_ParseSpriteInfoFrame(spriteinfo_t *info)
 			{
 				I_Error("Error parsing SPRTINFO lump: Unexpected end of file where sprite info should be");
 			}
-			while (strcmp(sprinfoToken,"}")!=0)
+			while (!fastcmp(sprinfoToken,"}"))
 			{
 				if (stricmp(sprinfoToken, "XPIVOT")==0)
 				{
@@ -175,7 +175,7 @@ static void R_ParseSpriteInfo(boolean spr2)
 	{
 		I_Error("Error parsing SPRTINFO lump: Unexpected end of file where open curly brace for sprite \"%s\" should be",newSpriteName);
 	}
-	if (strcmp(sprinfoToken,"{")==0)
+	if (fastcmp(sprinfoToken,"{"))
 	{
 		Z_Free(sprinfoToken);
 		sprinfoToken = M_GetToken(NULL);
@@ -183,7 +183,7 @@ static void R_ParseSpriteInfo(boolean spr2)
 		{
 			I_Error("Error parsing SPRTINFO lump: Unexpected end of file where definition for sprite \"%s\" should be",newSpriteName);
 		}
-		while (strcmp(sprinfoToken,"}")!=0)
+		while (!fastcmp(sprinfoToken,"}"))
 		{
 			if (stricmp(sprinfoToken, "SKIN")==0)
 			{

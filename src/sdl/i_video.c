@@ -905,7 +905,7 @@ static void Impl_HandleControllerAddedEvent(SDL_Event evt)
 
 	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
 	{
-		if (!strcmp(cv_usejoystick[i].string, "0") || !cv_usejoystick[i].value)
+		if (fastcmp(cv_usejoystick[i].string, "0") || !cv_usejoystick[i].value)
 			cv_usejoystick[i].value = 0;
 		else if (atoi(cv_usejoystick[i].string) <= I_NumJoys() // don't mess if we intentionally set higher than NumJoys
 			&& cv_usejoystick[i].value) // update the cvar ONLY if a device exists
@@ -977,7 +977,7 @@ static void Impl_HandleControllerRemovedEvent(void)
 
 	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
 	{
-		if (!strcmp(cv_usejoystick[i].string, "0"))
+		if (fastcmp(cv_usejoystick[i].string, "0"))
 		{
 			cv_usejoystick[i].value = 0;
 		}
