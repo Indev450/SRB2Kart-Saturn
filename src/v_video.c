@@ -3581,6 +3581,9 @@ boolean *heatshifter = NULL;
 INT32 lastheight = 0;
 INT32 heatindex[MAXSPLITSCREENPLAYERS] = {0, 0, 0, 0};
 
+// unused motion blur effect, probably non functional
+//#define MOTIONBLUR
+
 //
 // V_DoPostProcessor
 //
@@ -3595,7 +3598,9 @@ void V_DoPostProcessor(INT32 view, INT32 param)
 	(void)type;
 	(void)param;
 #else
+#ifndef MOTIONBLUR
 	(void)param; // unused motion blur stuff
+#endif
 	INT32 yoffset, xoffset;
 
 #ifdef HWRENDER
@@ -3730,7 +3735,8 @@ void V_DoPostProcessor(INT32 view, INT32 param)
 		srcscr = tmp;
 	}
 
-	/*if (thiscam->postimg & POSTIMG_MOTION) // Motion Blur!
+#ifdef MOTIONBLUR
+	if (thiscam->postimg & POSTIMG_MOTION) // Motion Blur!
 	{
 		INT32 x, y;
 
@@ -3742,7 +3748,8 @@ void V_DoPostProcessor(INT32 view, INT32 param)
 			for (x = xoffset; x < xoffset+viewwidth; x++)
 				tmpscr[y*vid.width + x] =     colormaps[*(transme     + (srcscr   [(y*vid.width)+x ] <<8) + (tmpscr[(y*vid.width)+x]))];
 		}
-	}*/
+	}
+#endif
 
 	if ((thiscam->postimg & POSTIMG_FLIP) && !(thiscam->postimg & POSTIMG_MIRROR)) // Flip the screen upside-down
 	{

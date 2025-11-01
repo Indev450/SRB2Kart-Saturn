@@ -115,7 +115,9 @@ boolean devparm = false; // started game with -devparm
 boolean singletics = false; // timedemo
 boolean lastdraw = false;
 
+#ifdef MOTIONBLUR
 INT32 postimgparam[MAXSPLITSCREENPLAYERS];
+#endif
 
 // These variables are only true if
 // whether the respective sound system is disabled
@@ -399,7 +401,11 @@ static void D_Renderview(void)
 			if (i == 0)
 				R_ApplyViewMorph();
 
+#ifdef MOTIONBLUR
 			V_DoPostProcessor(i, postimgparam[i]);
+#else
+			V_DoPostProcessor(i, 0);
+#endif
 		}
 	}
 
