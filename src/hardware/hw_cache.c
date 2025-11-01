@@ -744,7 +744,7 @@ static void HWR_PrecacheLevelTextures(void)
 	free(texturepresent);
 }
 
-static void HWR_PrecacheLevelSprites(void)
+/*static void HWR_PrecacheLevelSprites(void)
 {
 	patch_t *spritepatch;
 	char *spritepresent;
@@ -807,7 +807,7 @@ static void HWR_PrecacheLevelSprites(void)
 		}
 	}
 	free(spritepresent);
-}
+}*/
 
 void HWR_PrecacheLevel(void)
 {
@@ -821,7 +821,7 @@ void HWR_PrecacheLevel(void)
 	HWR_PrecacheLevelTextures();
 
 	// Precache sprites.
-	HWR_PrecacheLevelSprites();
+	//HWR_PrecacheLevelSprites();
 }
 
 void HWR_LoadMapTextures(size_t pnumtextures)
