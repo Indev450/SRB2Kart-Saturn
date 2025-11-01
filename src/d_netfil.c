@@ -550,7 +550,8 @@ INT32 CL_CheckFiles(void)
 		for (j = mainwads+1; j < numwadfiles; j++)
 		{
 			nameonly(strcpy(wadfilename, wadfiles[j]->filename));
-			if (!stricmp(wadfilename, fileneeded[i].filename) &&
+
+			if (fasticmp(wadfilename, fileneeded[i].filename) &&
 				!memcmp(wadfiles[j]->md5sum, fileneeded[i].md5sum, 16))
 			{
 				CONS_Debug(DBG_NETPLAY, "already loaded\n");
@@ -665,7 +666,7 @@ static boolean SV_SendFile(INT32 node, const char *filename, UINT8 fileid)
 		strlcpy(wadfilename, wadfiles[wadnum]->filename, MAX_WADPATH);
 		nameonly(wadfilename);
 
-		if (!stricmp(wadfilename, p->id.filename))
+		if (fasticmp(wadfilename, p->id.filename))
 		{
 			// Copy file name with full path
 			strlcpy(p->id.filename, wadfiles[wadnum]->filename, MAX_WADPATH);

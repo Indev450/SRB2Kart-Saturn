@@ -1078,19 +1078,19 @@ static INT32 D_DetectFileType(const char* filename)
 
 	const size_t len = strlen(filename);
 
-	if (!stricmp(&filename[len - 4], ".wad"))
+	if (fasticmp(&filename[len - 4], ".wad"))
 		return 2;
-	else if (!stricmp(&filename[len - 4], ".pk3"))
+	else if (fasticmp(&filename[len - 4], ".pk3"))
 		return 3;
-	else if (!stricmp(&filename[len - 5], ".kart"))
+	else if (fasticmp(&filename[len - 5], ".kart"))
 		return 4;
-	else if (!stricmp(&filename[len - 4], ".lua"))
+	else if (fasticmp(&filename[len - 4], ".lua"))
 		return 5;
-	else if (!stricmp(&filename[len - 4], ".soc"))
+	else if (fasticmp(&filename[len - 4], ".soc"))
 		return 6;
-	else if (!stricmp(&filename[len - 4], ".cfg"))
+	else if (fasticmp(&filename[len - 4], ".cfg"))
 		return 7;
-	else if (!stricmp(&filename[len - 4], ".txt"))
+	else if (fasticmp(&filename[len - 4], ".txt"))
 		return 8;
 
 	return 0;

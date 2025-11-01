@@ -264,7 +264,7 @@ void G_ReadDemoExtraData(void)
 			kartspeed = READUINT8(demobuf.p);
 			kartweight = READUINT8(demobuf.p);
 
-			if (stricmp(skins[players[p].skin].name, name) != 0)
+			if (!fasticmp(skins[players[p].skin].name, name))
 				FindClosestSkinForStats(p, kartspeed, kartweight);
 
 			players[p].kartspeed = kartspeed;
@@ -277,7 +277,7 @@ void G_ReadDemoExtraData(void)
 			M_Memcpy(name, demobuf.p, 16);
 			demobuf.p += 16;
 			for (i = 0; i < MAXSKINCOLORS; i++)
-				if (!stricmp(KartColor_Names[i], name))				// SRB2kart
+				if (fasticmp(KartColor_Names[i], name)) // SRB2kart
 				{
 					players[p].skincolor = i;
 					if (players[p].mo)
@@ -2289,7 +2289,7 @@ void G_LoadDemoInfo(menudemo_t *pdemo)
 		{
 			for (UINT8 j = 0; kartspeed_cons_t[j].strvalue; j++)
 			{
-				if (!stricmp(kartspeed_cons_t[j].strvalue, svalue))
+				if (fasticmp(kartspeed_cons_t[j].strvalue, svalue))
 					pdemo->kartspeed = kartspeed_cons_t[j].value;
 			}
 		}
@@ -2321,7 +2321,7 @@ void G_LoadDemoInfo(menudemo_t *pdemo)
 
 		for (i = 0; i < numskins; i++)
 		{
-			if (stricmp(skins[i].name, temp) == 0)
+			if (fasticmp(skins[i].name, temp))
 			{
 				pdemo->standings[count].skin = i;
 				break;
@@ -2334,7 +2334,7 @@ void G_LoadDemoInfo(menudemo_t *pdemo)
 
 		for (i = 0; i < MAXSKINCOLORS; i++)
 		{
-			if (!stricmp(KartColor_Names[i],temp))				// SRB2kart
+			if (fasticmp(KartColor_Names[i],temp)) // SRB2kart
 			{
 				pdemo->standings[count].color = i;
 				break;
@@ -2807,7 +2807,7 @@ void G_DoPlayDemo(char *defdemoname)
 		// Set color
 		for (i = 0; i < MAXSKINCOLORS; i++)
 		{
-			if (!stricmp(KartColor_Names[i],color))				// SRB2kart
+			if (fasticmp(KartColor_Names[i],color)) // SRB2kart
 			{
 				players[0].skincolor = i;
 				break;
@@ -2947,7 +2947,7 @@ void G_DoPlayDemo(char *defdemoname)
 
 		for (i = 0; i < MAXSKINCOLORS; i++)
 		{
-			if (!stricmp(KartColor_Names[i],color))				// SRB2kart
+			if (fasticmp(KartColor_Names[i],color)) // SRB2kart
 			{
 				players[p].skincolor = i;
 				break;
@@ -2961,7 +2961,7 @@ void G_DoPlayDemo(char *defdemoname)
 		kartspeed[p] = READUINT8(demobuf.p);
 		kartweight[p] = READUINT8(demobuf.p);
 
-		if (stricmp(skins[players[p].skin].name, skin) != 0)
+		if (!fasticmp(skins[players[p].skin].name, skin))
 			FindClosestSkinForStats(p, kartspeed[p], kartweight[p]);
 
 		// Look for the next player
@@ -3242,7 +3242,7 @@ void G_AddGhost(char *defdemoname)
 
 	for (i = 0; i < numskins; i++)
 	{
-		if (!stricmp(skins[i].name,skin))
+		if (fasticmp(skins[i].name, skin))
 		{
 			ghskin = &skins[i];
 			break;
@@ -3317,7 +3317,7 @@ void G_AddGhost(char *defdemoname)
 
 	for (i = 0; i < MAXSKINCOLORS; i++)
 	{
-		if (!stricmp(KartColor_Names[i],color))				// SRB2kart
+		if (fasticmp(KartColor_Names[i],color)) // SRB2kart
 		{
 			gh->mo->color = (UINT8)i;
 			break;

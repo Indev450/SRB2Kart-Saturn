@@ -2768,7 +2768,7 @@ INT32 G_GetGametypeByName(const char *gametypestr)
 	INT32 i;
 
 	for (i = 0; i < NUMGAMETYPES; i++)
-		if (!stricmp(gametypestr, Gametype_Names[i]))
+		if (fasticmp(gametypestr, Gametype_Names[i]))
 			return i;
 
 	return -1; // unknown gametype
