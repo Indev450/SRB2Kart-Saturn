@@ -2061,7 +2061,7 @@ void GL_UpdateTexture(GLMipmap_t *pTexInfo)
 	pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, mag_filter);
 	pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, min_filter);
 
-	if (MipMap && !(pTexInfo->flags & TF_TRANSPARENT)) // No mipmaps on transparent stuff
+	if (MipMap)
 	{
 		pglTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, GL_TRUE);
 
@@ -2072,8 +2072,16 @@ void GL_UpdateTexture(GLMipmap_t *pTexInfo)
 
 		// Control the mipmap level of detail
 		pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_LOD, 0);
-		pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LOD, 5);
-		GenerateMipmaps(w, h, tex, 5, pTexInfo->flags);
+
+		if (pTexInfo->flags & TF_TRANSPARENT)
+		{
+			pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LOD, 0); // No mipmaps on transparent stuff
+		}
+		else
+		{
+			pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LOD, 4);
+			GenerateMipmaps(w, h, tex, 4, pTexInfo->flags);
+		}
 	}
 	else
 	{
