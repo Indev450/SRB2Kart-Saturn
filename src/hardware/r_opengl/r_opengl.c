@@ -2474,12 +2474,10 @@ void GL_DrawIndexedTriangles(FSurfaceInfo *pSurf, FOutVector *pOutVerts, FUINT i
 	// the DrawPolygon variant of this has some code about polyflags and wrapping here but havent noticed any problems from omitting it?
 }
 
-static const boolean gl_ext_arb_vertex_buffer_object = true;
-
-#define NULL_VBO_VERTEX ((gl_skyvertex_t*)NULL)
-#define sky_vbo_x (gl_ext_arb_vertex_buffer_object ? &NULL_VBO_VERTEX->x : &sky->data[0].x)
-#define sky_vbo_u (gl_ext_arb_vertex_buffer_object ? &NULL_VBO_VERTEX->u : &sky->data[0].u)
-#define sky_vbo_r (gl_ext_arb_vertex_buffer_object ? &NULL_VBO_VERTEX->r : &sky->data[0].r)
+//#define NULL_VBO_VERTEX ((gl_skyvertex_t*)NULL)
+#define sky_vbo_x ((void*)offsetof(gl_skyvertex_t, x))
+#define sky_vbo_u ((void*)offsetof(gl_skyvertex_t, u))
+#define sky_vbo_r ((void*)offsetof(gl_skyvertex_t, r))
 
 void GL_RenderSkyDome(gl_sky_t *sky)
 {
@@ -2491,30 +2489,23 @@ void GL_RenderSkyDome(gl_sky_t *sky)
 	if (sky->rebuild)
 	{
 		// delete VBO when already exists
-		if (gl_ext_arb_vertex_buffer_object)
-		{
-			if (sky->vbo)
-				pglDeleteBuffers(1, &sky->vbo);
-		}
+		if (sky->vbo)
+			pglDeleteBuffers(1, &sky->vbo);
 
-		if (gl_ext_arb_vertex_buffer_object)
-		{
-			// generate a new VBO and get the associated ID
-			pglGenBuffers(1, &sky->vbo);
+		// generate a new VBO and get the associated ID
+		pglGenBuffers(1, &sky->vbo);
 
-			// bind VBO in order to use
-			pglBindBuffer(GL_ARRAY_BUFFER, sky->vbo);
+		// bind VBO in order to use
+		pglBindBuffer(GL_ARRAY_BUFFER, sky->vbo);
 
-			// upload data to VBO
-			pglBufferData(GL_ARRAY_BUFFER, sky->vertex_count * sizeof(sky->data[0]), sky->data, GL_STATIC_DRAW);
-		}
+		// upload data to VBO
+		pglBufferData(GL_ARRAY_BUFFER, sky->vertex_count * sizeof(sky->data[0]), sky->data, GL_STATIC_DRAW);
 
 		sky->rebuild = false;
 	}
 
 	// bind VBO in order to use
-	if (gl_ext_arb_vertex_buffer_object)
-		pglBindBuffer(GL_ARRAY_BUFFER, sky->vbo);
+	pglBindBuffer(GL_ARRAY_BUFFER, sky->vbo);
 
 	// activate and specify pointers to arrays
 	pglVertexPointer(3, GL_FLOAT, sizeof(sky->data[0]), sky_vbo_x);
@@ -2558,8 +2549,7 @@ void GL_RenderSkyDome(gl_sky_t *sky)
 	pglColor4ubv(white);
 
 	// bind with 0, so, switch back to normal pointer operation
-	if (gl_ext_arb_vertex_buffer_object)
-		pglBindBuffer(GL_ARRAY_BUFFER, 0);
+	pglBindBuffer(GL_ARRAY_BUFFER, 0);
 
 	// deactivate color array
 	pglDisableClientState(GL_COLOR_ARRAY);
