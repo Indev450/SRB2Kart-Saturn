@@ -1718,7 +1718,7 @@ static void R_AllocClippingTables(size_t range)
 	{
 		// Check if it's in range of the openings
 #define CHECK(which) \
-		if (which + drawseg->x1 >= oldopenings && which + drawseg->x1 <= oldlast) \
+		if (which != NULL && which + drawseg->x1 >= oldopenings && which + drawseg->x1 <= oldlast) \
 			which = (which - oldopenings) + openings
 		CHECK(drawseg->sprtopclip);
 		CHECK(drawseg->sprbottomclip);
@@ -1752,7 +1752,7 @@ static void R_AllocTextureColumnTables(size_t range)
 	{
 		// Check if it's in range of the tables
 #define CHECK(which) \
-		if (which + drawseg->x1 >= oldtable && which + drawseg->x1 <= oldlast) \
+		if (which != NULL && which + drawseg->x1 >= oldtable && which + drawseg->x1 <= oldlast) \
 			which = (which - oldtable) + texturecolumntable
 		CHECK(drawseg->maskedtexturecol);
 		CHECK(drawseg->thicksidecol);
