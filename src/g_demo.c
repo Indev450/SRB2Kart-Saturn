@@ -395,7 +395,7 @@ void G_WriteDemoExtraData(void)
 				// Skin
 				memset(name, 0, 16);
 				strncpy(name, skins[players[i].skin].name, 16);
-				M_Memcpy(demobuf.p,name,16);
+				M_Memcpy(demobuf.p, name, 16);
 				demobuf.p += 16;
 
 				WRITEUINT8(demobuf.p, skins[players[i].skin].kartspeed);
@@ -407,7 +407,7 @@ void G_WriteDemoExtraData(void)
 				// Color
 				memset(name, 0, 16);
 				strncpy(name, KartColor_Names[players[i].skincolor], 16);
-				M_Memcpy(demobuf.p,name,16);
+				M_Memcpy(demobuf.p, name, 16);
 				demobuf.p += 16;
 			}
 
@@ -416,7 +416,7 @@ void G_WriteDemoExtraData(void)
 				// Name
 				memset(name, 0, 16);
 				memcpy(name, player_names[i], 15); // Keeping 1 null byte for safety, sorry players with name containing more than 15 characters
-				M_Memcpy(demobuf.p,name,16);
+				M_Memcpy(demobuf.p, name, 16);
 				demobuf.p += 16;
 			}
 
@@ -1763,19 +1763,19 @@ void G_BeginRecording(void)
 		// Name
 		memset(name, 0, 16);
 		memcpy(name, player_names[p], 15);
-		M_Memcpy(demobuf.p,name,16);
+		M_Memcpy(demobuf.p, name, 16);
 		demobuf.p += 16;
 
 		// Skin
 		memset(name, 0, 16);
 		strncpy(name, skins[player->skin].name, 16);
-		M_Memcpy(demobuf.p,name,16);
+		M_Memcpy(demobuf.p, name, 16);
 		demobuf.p += 16;
 
 		// Color
 		memset(name, 0, 16);
 		strncpy(name, KartColor_Names[player->skincolor], 16);
-		M_Memcpy(demobuf.p,name,16);
+		M_Memcpy(demobuf.p, name, 16);
 		demobuf.p += 16;
 
 		// Score, since Kart uses this to determine where you start on the map
