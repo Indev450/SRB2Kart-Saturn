@@ -30,6 +30,8 @@
 
 #include "core/memory.h"
 
+#include "cxxutil.hpp"
+
 #define HEIGHTBITS              12
 #define HEIGHTUNIT              (1<<HEIGHTBITS)
 
@@ -1890,8 +1892,8 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 
 		det = a1*b2 - a2*b1;
 
-		ds_p->leftpos.x = segleft.x = DoubleToFixed((b2*c1 - b1*c2)/det);
-		ds_p->leftpos.y = segleft.y = DoubleToFixed((a1*c2 - a2*c1)/det);
+		ds_p->leftpos.x = segleft.x = srb2::floattofixed<double>((b2*c1 - b1*c2)/det);
+		ds_p->leftpos.y = segleft.y = srb2::floattofixed<double>((a1*c2 - a2*c1)/det);
 
 		// right
 		temp = xtoviewangle[stop]+viewangle;
@@ -1902,8 +1904,8 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 
 		det = a1*b2 - a2*b1;
 
-		ds_p->rightpos.x = segright.x = DoubleToFixed((b2*c1 - b1*c2)/det);
-		ds_p->rightpos.y = segright.y = DoubleToFixed((a1*c2 - a2*c1)/det);
+		ds_p->rightpos.x = segright.x = srb2::floattofixed<double>((b2*c1 - b1*c2)/det);
+		ds_p->rightpos.y = segright.y = srb2::floattofixed<double>((a1*c2 - a2*c1)/det);
 	}
 
 #define SLOPEPARAMS(slope, end1, end2, normalheight) \
