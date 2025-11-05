@@ -144,8 +144,10 @@ ifdef GCC81
  WFLAGS+=-Wno-error=multistatement-macros
 endif
 
-ifeq ($(CC),clang)
- WFLAGS+= -Wno-unknown-pragmas -Wno-cast-align
+ifneq (,$(filter $(CC) $(CXX),clang clang++))
+ WFLAGS+= -Wno-unknown-pragmas
+ WFLAGS+= -Wno-cast-align
+ WFLAGS+= -Wno-cast-qual # not a fan, but clang really hates our read macros
 endif
 
 ifdef NONX86
