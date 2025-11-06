@@ -1018,6 +1018,8 @@ sfxenum_t S_AddSoundFx(const char *name, boolean singular, INT32 flags, boolean 
 	else
 		slot = sfx_freeslot0;
 
+    const int precache = S_CacheSound();
+
 	for (i = slot; i < NUMSFX; i++)
 	{
 		if (!S_sfx[i].priority)
@@ -1030,7 +1032,7 @@ sfxenum_t S_AddSoundFx(const char *name, boolean singular, INT32 flags, boolean 
             S_sfx[i].length = 0;
 			S_sfx[i].skinsound = -1;
 
-			if (S_PrecacheSound())
+			if (precache == SOUNDCACHE_PRECACHE)
 				S_sfx[i].data = I_GetSfx(&S_sfx[i]);
 			else
 				S_sfx[i].data = NULL;
