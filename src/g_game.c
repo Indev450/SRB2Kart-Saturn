@@ -570,6 +570,7 @@ static void G_SetSaveGameModified(void)
 	{
 		if (!unlockables[i].conditionset)
 			continue;
+
 		if (!unlockables[i].unlocked)
 		{
 			unlockables[i].unlocked = true;
@@ -595,7 +596,7 @@ void G_SetGameModified(boolean silent, boolean major)
 	G_SetSaveGameModified();
 
 	if (!silent)
-		CONS_Alert(CONS_NOTICE, M_GetText("Record Attack data will be saved to a seperate save file.\n"));
+		CONS_Alert(CONS_NOTICE, "Record Attack data will be saved to a seperate save file.\n");
 
 	// If in record attack recording, cancel it.
 	if (modeattacking)
@@ -634,6 +635,7 @@ const char *G_BuildMapName(INT32 map)
 			map = gamemap-1;
 		else
 			map = prevmap;
+
 		map = G_RandMap(G_TOLFlag(cv_newgametype.value), map, false, 0, false, NULL)+1;
 	}
 
@@ -687,11 +689,12 @@ INT32 JoyAxis(axis_input_e axissel, UINT8 player)
 {
 	INT32 retaxis;
 	INT32 axisval;
+	INT32 deadzone;
 	boolean flp = false;
 
 	UINT8 pnum = player-1;
 
-	//find what axis to get
+	// find what axis to get
 	switch (axissel)
 	{
 		case AXISTURN:
@@ -750,45 +753,33 @@ INT32 JoyAxis(axis_input_e axissel, UINT8 player)
 	{
 		axisval /= 2;
 		retaxis = joyxmove[pnum][axisval];
-
-		if (retaxis < (-JOYAXISRANGE))
-			retaxis = -JOYAXISRANGE;
-		if (retaxis > (+JOYAXISRANGE))
-			retaxis = +JOYAXISRANGE;
-		if (!Joystick[pnum].bGamepadStyle && axissel < AXISDEAD)
-		{
-			const INT32 jdeadzone = ((JOYAXISRANGE-1) * cv_xdeadzone[pnum].value) >> FRACBITS;
-			if (abs(retaxis) <= jdeadzone)
-				return 0;
-		}
-
-		if (flp)
-			retaxis = -retaxis; // flip it around
-
-		return retaxis;
+		deadzone = cv_xdeadzone[pnum].value;
 	}
 	else
 	{
 		axisval--;
 		axisval /= 2;
 		retaxis = joyymove[pnum][axisval];
-
-		if (retaxis < (-JOYAXISRANGE))
-			retaxis = -JOYAXISRANGE;
-		if (retaxis > (+JOYAXISRANGE))
-			retaxis = +JOYAXISRANGE;
-		if (!Joystick[pnum].bGamepadStyle && axissel < AXISDEAD)
-		{
-			const INT32 jdeadzone = ((JOYAXISRANGE-1) * cv_ydeadzone[pnum].value) >> FRACBITS;
-			if (abs(retaxis) <= jdeadzone)
-				return 0;
-		}
-
-		if (flp)
-			retaxis = -retaxis; // flip it around
-
-		return retaxis;
+		deadzone = cv_ydeadzone[pnum].value;
 	}
+
+	if (retaxis < (-JOYAXISRANGE))
+		retaxis = -JOYAXISRANGE;
+	if (retaxis > (+JOYAXISRANGE))
+		retaxis = +JOYAXISRANGE;
+
+	if (!Joystick[pnum].bGamepadStyle && axissel < AXISDEAD)
+	{
+		const INT32 jdeadzone = ((JOYAXISRANGE-1) * deadzone) >> FRACBITS;
+
+		if (abs(retaxis) <= jdeadzone)
+			return 0;
+	}
+
+	if (flp)
+		retaxis = -retaxis; // flip it around
+
+	return retaxis;
 }
 
 boolean InputDown(INT32 gc, UINT8 p)
@@ -806,9 +797,9 @@ boolean InputDown(INT32 gc, UINT8 p)
 	}
 }
 
-INT32 localaiming[MAXSPLITSCREENPLAYERS];
-angle_t localangle[MAXSPLITSCREENPLAYERS];
-boolean camspin[MAXSPLITSCREENPLAYERS];
+INT32 localaiming[MAXSPLITSCREENPLAYERS] = {0};
+angle_t localangle[MAXSPLITSCREENPLAYERS] = {0};
+boolean camspin[MAXSPLITSCREENPLAYERS] = {0};
 
 static fixed_t forwardmove[2] = {25<<FRACBITS>>16, 50<<FRACBITS>>16};
 static fixed_t sidemove[2] = {2<<FRACBITS>>16, 4<<FRACBITS>>16};
@@ -1210,7 +1201,7 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 	if (gamestate == GS_LEVEL)
 		LUA_HookTiccmd(player, cmd, HOOK(PlayerCmd));
 
-	//Reset away view if a command is given.
+	// Reset away view if a command is given.
 	if (displayplayers[0] != consoleplayer && ssplayer == 1
 	&& (cmd->forwardmove || cmd->sidemove || cmd->buttons))
 	{
@@ -1261,7 +1252,7 @@ static void G_DoLoadLevel(boolean resetplayer)
 
 	if (gamestate == GS_INTERMISSION)
 		Y_EndIntermission();
-	if (gamestate == GS_VOTING)
+	else if (gamestate == GS_VOTING)
 		Y_EndVote();
 
 	G_SetGamestate(GS_LEVEL);
@@ -2329,12 +2320,6 @@ void G_PlayerReborn(INT32 player)
 
 	if (gametype == GT_COOP)
 		P_FindEmerald(); // scan for emeralds to hunt for
-
-	// Reset Nights score and max link to 0 on death
-	p->maxlink = 0;
-
-	// If NiGHTS, find lowest mare to start with.
-	p->mare = 0;
 }
 
 //
@@ -2353,21 +2338,24 @@ static boolean G_CheckSpot(INT32 playernum, mapthing_t *mthing)
 	if (!mthing)
 		return false;
 
+	x = mthing->x << FRACBITS;
+	y = mthing->y << FRACBITS;
+
 	if (!players[playernum].mo)
 	{
 		// first spawn of level
 		for (i = 0; i < playernum; i++)
+		{
 			if (playeringame[i] && players[i].mo
-				&& players[i].mo->x == mthing->x << FRACBITS
-				&& players[i].mo->y == mthing->y << FRACBITS)
+				&& players[i].mo->x == x
+				&& players[i].mo->y == y)
 			{
 				return false;
 			}
+		}
+
 		return true;
 	}
-
-	x = mthing->x << FRACBITS;
-	y = mthing->y << FRACBITS;
 
 	if (!K_CheckPlayersRespawnColliding(playernum, x, y))
 		return false;
@@ -2870,17 +2858,23 @@ UINT8 G_GetGametypeColor(INT16 gt)
   */
 INT16 G_TOLFlag(INT32 pgametype)
 {
-	if (!multiplayer)                 return TOL_SP;
-	if (pgametype == GT_COOP)         return TOL_RACE; // SRB2kart
-	if (pgametype == GT_COMPETITION)  return TOL_COMPETITION;
-	if (pgametype == GT_RACE)         return TOL_RACE;
-	if (pgametype == GT_MATCH)        return TOL_MATCH;
-	if (pgametype == GT_TEAMMATCH)    return TOL_MATCH;
-	if (pgametype == GT_TAG)          return TOL_TAG;
-	if (pgametype == GT_HIDEANDSEEK)  return TOL_TAG;
-	if (pgametype == GT_CTF)          return TOL_CTF;
+	if (!multiplayer)         return TOL_SP;
 
-	CONS_Alert(CONS_ERROR, M_GetText("Unknown gametype! %d\n"), pgametype);
+	switch (pgametype)
+	{
+		case GT_COOP:         return TOL_RACE; // SRB2kart
+		case GT_COMPETITION:  return TOL_COMPETITION;
+		case GT_RACE:         return TOL_RACE;
+		case GT_MATCH:        return TOL_MATCH;
+		case GT_TEAMMATCH:    return TOL_MATCH;
+		case GT_TAG:          return TOL_TAG;
+		case GT_HIDEANDSEEK:  return TOL_TAG;
+		case GT_CTF:          return TOL_CTF;
+		default:
+			CONS_Alert(CONS_ERROR, "Unknown gametype! %d\n", pgametype);
+			break;
+	}
+
 	return INT16_MAX;
 }
 
@@ -3063,6 +3057,7 @@ static void G_DoCompleted(void)
 	K_StatRound();
 
 	for (i = 0; i < MAXPLAYERS; i++)
+	{
 		if (playeringame[i])
 		{
 			// SRB2Kart: exitlevel shouldn't get you the points
@@ -3072,8 +3067,10 @@ static void G_DoCompleted(void)
 				if (P_IsLocalPlayer(&players[i]))
 					j++;
 			}
+
 			G_PlayerFinishLevel(i); // take away cards and stuff
 		}
+	}
 
 	// play some generic music if there's no win/cool/lose music going on (for exitlevel commands)
 	if (G_RaceGametype() && ((multiplayer && demo.playback) || j == splitscreen+1) && (cv_inttime.value > 0))
@@ -3217,10 +3214,14 @@ void G_AfterIntermission(void)
 
 		return;
 	}
-	else if (demo.recording && (modeattacking || demo.savemode != DSM_NOTSAVING))
-		G_SaveDemo();
-	else if (demo.recording)
-		G_ResetDemoRecording();
+
+	if (demo.recording)
+	{
+		if (modeattacking || demo.savemode != DSM_NOTSAVING)
+			G_SaveDemo();
+		else
+			G_ResetDemoRecording();
+	}
 
 	if (modeattacking) // End the run.
 	{
@@ -3229,7 +3230,9 @@ void G_AfterIntermission(void)
 	}
 
 	if (mapheaderinfo[gamemap-1]->cutscenenum) // Start a custom cutscene.
+	{
 		F_StartCustomCutscene(mapheaderinfo[gamemap-1]->cutscenenum-1, false, false);
+	}
 	else
 	{
 		if (nextmap < 1100-1)
@@ -3366,10 +3369,13 @@ static void G_DoContinued(void)
 // when something new is added.
 void G_EndGame(void)
 {
-	if (demo.recording && (modeattacking || demo.savemode != DSM_NOTSAVING))
-		G_SaveDemo();
-	else if (demo.recording)
-		G_ResetDemoRecording();
+	if (demo.recording)
+	{
+		if (modeattacking || demo.savemode != DSM_NOTSAVING)
+			G_SaveDemo();
+		else
+			G_ResetDemoRecording();
+	}
 
 	// Only do evaluation and credits in coop games.
 	if (gametype == GT_COOP)
@@ -3379,6 +3385,7 @@ void G_EndGame(void)
 			F_StartCredits();
 			return;
 		}
+
 		if (nextmap == 1101-1) // end game with evaluation
 		{
 			F_StartGameEvaluation();
@@ -3478,9 +3485,8 @@ void G_LoadGameData(void)
 	modded = READUINT8(save.p);
 
 	// Aha! Someone's been screwing with the save file!
-	if ((modded && !savemoddata))
-		goto datacorrupt;
-	else if (modded != true && modded != false)
+	if ((modded && !savemoddata) ||
+		(modded != true && modded != false))
 		goto datacorrupt;
 
 	// TODO put another cipher on these things? meh, I don't care...
@@ -3545,7 +3551,7 @@ void G_LoadGameData(void)
 	return;
 
 	// Landing point for corrupt gamedata
-	datacorrupt:
+datacorrupt:
 	{
 		const char *gdfolder = "the SRB2Kart folder";
 
@@ -4266,18 +4272,21 @@ INT32 G_FindMapByNameOrCode(const char *mapname, char **realmapnamep)
 	{
 		if (mapname[0] == '*') // current map
 			return gamemap;
-		else if (mapname[0] == '?' && mapheaderinfo[gamemap-1])
+
+		if (mapname[0] == '?' && mapheaderinfo[gamemap-1])
 			return G_RandMap(G_TOLFlag(gametype), gamemap-1, false, 0, false, NULL)+1;
-		else if (mapname[0] == '+' && mapheaderinfo[gamemap-1]) // next map
+
+		if (mapname[0] == '+' && mapheaderinfo[gamemap-1]) // next map
 		{
 			newmapnum = mapheaderinfo[gamemap-1]->nextlevel;
+
 			if (newmapnum < 1 || newmapnum > NUMMAPS)
 			{
-				CONS_Alert(CONS_ERROR, M_GetText("NextLevel (%d) is not a valid map.\n"), newmapnum);
+				CONS_Alert(CONS_ERROR, "NextLevel (%d) is not a valid map.\n", newmapnum);
 				return 0;
 			}
-			else
-				return newmapnum;
+
+			return newmapnum;
 		}
 	}
 	else if (mapnamelen == 2)/* maybe two digit code */
