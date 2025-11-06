@@ -346,7 +346,7 @@ static void HWR_GenerateTexture(INT32 texnum, GLMapTexture_t *gltex, boolean noe
 
 	gltex->mipmap.colormap = Z_Calloc(sizeof(*gltex->mipmap.colormap), PU_HWRPATCHCOLMIPMAP, NULL);
 	gltex->mipmap.colormap->source = colormap;
-	M_Memcpy(gltex->mipmap.colormap->data, colormap, 256 * sizeof(UINT8));
+	memcpy(gltex->mipmap.colormap->data, colormap, 256 * sizeof(UINT8));
 
 	blockwidth = texture->width;
 	blockheight = texture->height;
@@ -969,7 +969,7 @@ void HWR_GetFlat(lumpnum_t flatlumpnum, boolean noencoremap)
 #endif
 		glMipmap->colormap = Z_Calloc(sizeof(*glMipmap->colormap), PU_HWRPATCHCOLMIPMAP, NULL);
 		glMipmap->colormap->source = colormap;
-		M_Memcpy(glMipmap->colormap->data, colormap, 256 * sizeof(UINT8));
+		memcpy(glMipmap->colormap->data, colormap, 256 * sizeof(UINT8));
 	}
 
 	if (!glMipmap->downloaded)
@@ -1067,7 +1067,7 @@ void HWR_GetMappedPatch(patch_t *patch, const UINT8 *colormap)
 		{
 			if (memcmp(glMipmap->colormap->data, colormap, 256 * sizeof(UINT8)))
 			{
-				M_Memcpy(glMipmap->colormap->data, colormap, 256 * sizeof(UINT8));
+				memcpy(glMipmap->colormap->data, colormap, 256 * sizeof(UINT8));
 				HWR_UpdatePatchMipmap(patch, glMipmap);
 			}
 			else
@@ -1090,7 +1090,7 @@ void HWR_GetMappedPatch(patch_t *patch, const UINT8 *colormap)
 
 	newMipmap->colormap = Z_Calloc(sizeof(*newMipmap->colormap), PU_HWRPATCHCOLMIPMAP, NULL);
 	newMipmap->colormap->source = colormap;
-	M_Memcpy(newMipmap->colormap->data, colormap, 256 * sizeof(UINT8));
+	memcpy(newMipmap->colormap->data, colormap, 256 * sizeof(UINT8));
 
 	HWR_LoadPatchMipmap(patch, newMipmap);
 }

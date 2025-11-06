@@ -817,7 +817,7 @@ static void P_LoadSectors(UINT8 *data)
 	skyflatnum = P_AddLevelFlat(SKYFLATNAME, foundflats);
 
 	// copy table for global usage
-	levelflats = M_Memcpy(Z_Calloc(numlevelflats * sizeof (*levelflats), PU_LEVEL, NULL), foundflats, numlevelflats * sizeof (levelflat_t));
+	levelflats = memcpy(Z_Calloc(numlevelflats * sizeof (*levelflats), PU_LEVEL, NULL), foundflats, numlevelflats * sizeof (levelflat_t));
 	free(foundflats);
 
 	// search for animated flats and set up
@@ -1188,10 +1188,10 @@ static void P_LoadLineDefs2(void)
 						len += strlen(sides[ld->sidenum[1]].text);
 
 					ld->text = Z_Malloc(len, PU_LEVEL, NULL);
-					M_Memcpy(ld->text, sides[ld->sidenum[0]].text, strlen(sides[ld->sidenum[0]].text)+1);
+					memcpy(ld->text, sides[ld->sidenum[0]].text, strlen(sides[ld->sidenum[0]].text)+1);
 
 					if (ld->sidenum[1] != 0xffff && sides[ld->sidenum[1]].text)
-						M_Memcpy(ld->text+strlen(ld->text)+1, sides[ld->sidenum[1]].text, strlen(sides[ld->sidenum[1]].text)+1);
+						memcpy(ld->text+strlen(ld->text)+1, sides[ld->sidenum[1]].text, strlen(sides[ld->sidenum[1]].text)+1);
 				}
 				break;
 
@@ -1320,14 +1320,14 @@ static void P_LoadSideChangeMusic(boolean firstside, mapsidedef_t *msd, side_t *
 
 	if (msd->bottomtexture[0] != '-' || msd->bottomtexture[1] != '\0')
 	{
-		M_Memcpy(process,msd->bottomtexture,8);
+		memcpy(process,msd->bottomtexture,8);
 		process[8] = '\0';
 		sd->bottomtexture = get_number(process);
 	}
 
 	if (!(msd->midtexture[0] == '-' && msd->midtexture[1] == '\0') || msd->midtexture[1] != '\0')
 	{
-		M_Memcpy(process,msd->midtexture,8);
+		memcpy(process,msd->midtexture,8);
 		process[8] = '\0';
 		sd->midtexture = get_number(process);
 	}
@@ -1337,15 +1337,15 @@ static void P_LoadSideChangeMusic(boolean firstside, mapsidedef_t *msd, side_t *
 
 	if (firstside || msd->toptexture[0] != '-' || msd->toptexture[1] != '\0')
 	{
-		M_Memcpy(process,msd->toptexture,8);
+		memcpy(process,msd->toptexture,8);
 		process[8] = '\0';
 
 		// If they type in O_ or D_ and their music name, just shrug,
 		// then copy the rest instead.
 		if ((process[0] == 'O' || process[0] == 'D') && process[7])
-			M_Memcpy(sd->text, process+2, 6);
+			memcpy(sd->text, process+2, 6);
 		else // Assume it's a proper music name.
-			M_Memcpy(sd->text, process, 6);
+			memcpy(sd->text, process, 6);
 		sd->text[6] = 0;
 	}
 	else
@@ -1393,7 +1393,7 @@ static void P_LoadSidedefs(void *data)
 				if (msd->toptexture[0] != '-' || msd->toptexture[1] != '\0')
 				{
 					char process[8+1];
-					M_Memcpy(process,msd->toptexture,8);
+					memcpy(process,msd->toptexture,8);
 					process[8] = '\0';
 					sd->toptexture = get_number(process);
 				}
@@ -1412,11 +1412,11 @@ static void P_LoadSidedefs(void *data)
 				if (msd->toptexture[0] == '-' && msd->toptexture[1] == '\0')
 					break;
 				else
-					M_Memcpy(process,msd->toptexture,8);
+					memcpy(process,msd->toptexture,8);
 				if (msd->midtexture[0] != '-' || msd->midtexture[1] != '\0')
-					M_Memcpy(process+strlen(process), msd->midtexture, 8);
+					memcpy(process+strlen(process), msd->midtexture, 8);
 				if (msd->bottomtexture[0] != '-' || msd->bottomtexture[1] != '\0')
-					M_Memcpy(process+strlen(process), msd->bottomtexture, 8);
+					memcpy(process+strlen(process), msd->bottomtexture, 8);
 				sd->toptexture = get_number(process);
 
 				break;
@@ -1429,13 +1429,13 @@ static void P_LoadSidedefs(void *data)
 				if (msd->toptexture[0] == '-' && msd->toptexture[1] == '\0')
 					break;
 				else
-					M_Memcpy(process,msd->toptexture,8);
+					memcpy(process,msd->toptexture,8);
 				if (msd->midtexture[0] != '-' || msd->midtexture[1] != '\0')
-					M_Memcpy(process+strlen(process), msd->midtexture, 8);
+					memcpy(process+strlen(process), msd->midtexture, 8);
 				if (msd->bottomtexture[0] != '-' || msd->bottomtexture[1] != '\0')
-					M_Memcpy(process+strlen(process), msd->bottomtexture, 8);
+					memcpy(process+strlen(process), msd->bottomtexture, 8);
 				sd->text = Z_Malloc(strlen(process)+1, PU_LEVEL, NULL);
-				M_Memcpy(sd->text, process, strlen(process)+1);
+				memcpy(sd->text, process, strlen(process)+1);
 
 				break;
 			}
@@ -1898,7 +1898,7 @@ static void P_LoadReject(UINT8 *data, size_t count)
 	else
 	{
 		rejectmatrix = Z_Malloc(count, PU_LEVEL, NULL); // allocate memory for the reject matrix
-		M_Memcpy(rejectmatrix, data, count); // copy the data into it
+		memcpy(rejectmatrix, data, count); // copy the data into it
 	}
 }
 
@@ -2212,7 +2212,7 @@ static void P_MakeMapMD5(virtres_t *virt, void *dest)
 	for (i = 0; i < 16; i++)
 		resmd5[i] = (linemd5[i] + sectormd5[i] + thingmd5[i] + sidedefmd5[i]) & 0xFF;
 
-	M_Memcpy(dest, &resmd5, 16);
+	memcpy(dest, &resmd5, 16);
 }
 
 static void P_LoadMapFromFile(void)

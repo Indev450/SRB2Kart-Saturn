@@ -142,7 +142,7 @@ void COM_BufInsertText(const char *ptext)
 	templen = com_text.cursize;
 	if (templen)
 	{
-		temp = M_Memcpy(ZZ_Alloc(templen), com_text.data, templen);
+		temp = memcpy(ZZ_Alloc(templen), com_text.data, templen);
 		VS_Clear(&com_text);
 	}
 
@@ -199,7 +199,7 @@ void COM_BufExecute(void)
 				break;
 		}
 
-		M_Memcpy(line, ptext, i);
+		memcpy(line, ptext, i);
 		line[i] = 0;
 
 		// flush the command text from the command buffer, _BEFORE_
@@ -1129,7 +1129,7 @@ void *VS_GetSpace(vsbuf_t *buf, size_t length)
   */
 void VS_Write(vsbuf_t *buf, const void *data, size_t length)
 {
-	M_Memcpy(VS_GetSpace(buf, length), data, length);
+	memcpy(VS_GetSpace(buf, length), data, length);
 }
 
 /** Prints text in a variable buffer. Like VS_Write() plus a
@@ -1146,9 +1146,9 @@ void VS_Print(vsbuf_t *buf, const char *data)
 	len = strlen(data) + 1;
 
 	if (buf->data[buf->cursize-1])
-		M_Memcpy((UINT8 *)VS_GetSpace(buf, len), data, len); // no trailing 0
+		memcpy((UINT8 *)VS_GetSpace(buf, len), data, len); // no trailing 0
 	else
-		M_Memcpy((UINT8 *)VS_GetSpace(buf, len-1) - 1, data, len); // write over trailing 0
+		memcpy((UINT8 *)VS_GetSpace(buf, len-1) - 1, data, len); // write over trailing 0
 }
 
 // =========================================================================

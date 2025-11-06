@@ -60,7 +60,7 @@ static int lib_concat(lua_State *L)
       return luaL_error(L, LUA_QL("tostring") " must return a string to "
 													 LUA_QL("__add"));
 		r = Z_Realloc(r, rl+sl, PU_STATIC, NULL);
-		M_Memcpy(r+rl, s, sl);
+		memcpy(r+rl, s, sl);
 		rl += sl;
     lua_pop(L, 1);  /* pop result */
   }

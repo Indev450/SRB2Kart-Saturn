@@ -252,10 +252,10 @@ void P_InitPicAnims(void)
 				// Populate the new array
 				for (currentPos = animatedLump; *currentPos != UINT8_MAX; i++, currentPos+=23)
 				{
-					M_Memcpy(&(animdefs[i].istexture), currentPos, 1); // istexture, 1 byte
-					M_Memcpy(animdefs[i].endname, (currentPos + 1), 9); // endname, 9 bytes
-					M_Memcpy(animdefs[i].startname, (currentPos + 10), 9); // startname, 9 bytes
-					M_Memcpy(&(animdefs[i].speed), (currentPos + 19), 4); // speed, 4 bytes
+					memcpy(&(animdefs[i].istexture), currentPos, 1); // istexture, 1 byte
+					memcpy(animdefs[i].endname, (currentPos + 1), 9); // endname, 9 bytes
+					memcpy(animdefs[i].startname, (currentPos + 10), 9); // startname, 9 bytes
+					memcpy(&(animdefs[i].speed), (currentPos + 19), 4); // speed, 4 bytes
 				}
 
 				Z_Free(animatedLump);

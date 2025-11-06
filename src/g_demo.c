@@ -257,7 +257,7 @@ void G_ReadDemoExtraData(void)
 			UINT8 kartspeed, kartweight;
 
 			// Skin
-			M_Memcpy(name, demobuf.p, 16);
+			memcpy(name, demobuf.p, 16);
 			demobuf.p += 16;
 			SetPlayerSkin(p, name);
 
@@ -274,7 +274,7 @@ void G_ReadDemoExtraData(void)
 		if (extradata & DXD_COLOR)
 		{
 			// Color
-			M_Memcpy(name, demobuf.p, 16);
+			memcpy(name, demobuf.p, 16);
 			demobuf.p += 16;
 			for (i = 0; i < MAXSKINCOLORS; i++)
 				if (fasticmp(KartColor_Names[i], name)) // SRB2kart
@@ -289,7 +289,7 @@ void G_ReadDemoExtraData(void)
 		if (extradata & DXD_NAME)
 		{
 			// Name
-			M_Memcpy(player_names[p],demobuf.p,16);
+			memcpy(player_names[p],demobuf.p,16);
 			demobuf.p += 16;
 		}
 
@@ -395,7 +395,7 @@ void G_WriteDemoExtraData(void)
 				// Skin
 				memset(name, 0, 16);
 				strncpy(name, skins[players[i].skin].name, 16);
-				M_Memcpy(demobuf.p, name, 16);
+				memcpy(demobuf.p, name, 16);
 				demobuf.p += 16;
 
 				WRITEUINT8(demobuf.p, skins[players[i].skin].kartspeed);
@@ -407,7 +407,7 @@ void G_WriteDemoExtraData(void)
 				// Color
 				memset(name, 0, 16);
 				strncpy(name, KartColor_Names[players[i].skincolor], 16);
-				M_Memcpy(demobuf.p, name, 16);
+				memcpy(demobuf.p, name, 16);
 				demobuf.p += 16;
 			}
 
@@ -416,7 +416,7 @@ void G_WriteDemoExtraData(void)
 				// Name
 				memset(name, 0, 16);
 				memcpy(name, player_names[i], 15); // Keeping 1 null byte for safety, sorry players with name containing more than 15 characters
-				M_Memcpy(demobuf.p, name, 16);
+				memcpy(demobuf.p, name, 16);
 				demobuf.p += 16;
 			}
 
@@ -1670,7 +1670,7 @@ void G_BeginRecording(void)
 		demoflags |= DF_LUAVARS;
 
 	// Setup header.
-	M_Memcpy(demobuf.p, DEMOHEADER, 12); demobuf.p += 12;
+	memcpy(demobuf.p, DEMOHEADER, 12); demobuf.p += 12;
 	WRITEUINT8(demobuf.p,VERSION);
 	WRITEUINT8(demobuf.p,SUBVERSION);
 	WRITEUINT16(demobuf.p,DEMOVERSION);
@@ -1701,9 +1701,9 @@ void G_BeginRecording(void)
 	demobuf.p += 16;
 
 	// game data
-	M_Memcpy(demobuf.p, "PLAY", 4); demobuf.p += 4;
+	memcpy(demobuf.p, "PLAY", 4); demobuf.p += 4;
 	WRITEINT16(demobuf.p,gamemap);
-	M_Memcpy(demobuf.p, mapmd5, 16); demobuf.p += 16;
+	memcpy(demobuf.p, mapmd5, 16); demobuf.p += 16;
 
 	WRITEUINT8(demobuf.p, demoflags);
 	WRITEUINT8(demobuf.p, gametype & 0xFF);
@@ -1763,19 +1763,19 @@ void G_BeginRecording(void)
 		// Name
 		memset(name, 0, 16);
 		memcpy(name, player_names[p], 15);
-		M_Memcpy(demobuf.p, name, 16);
+		memcpy(demobuf.p, name, 16);
 		demobuf.p += 16;
 
 		// Skin
 		memset(name, 0, 16);
 		strncpy(name, skins[player->skin].name, 16);
-		M_Memcpy(demobuf.p, name, 16);
+		memcpy(demobuf.p, name, 16);
 		demobuf.p += 16;
 
 		// Color
 		memset(name, 0, 16);
 		strncpy(name, KartColor_Names[player->skincolor], 16);
-		M_Memcpy(demobuf.p, name, 16);
+		memcpy(demobuf.p, name, 16);
 		demobuf.p += 16;
 
 		// Score, since Kart uses this to determine where you start on the map
@@ -1834,19 +1834,19 @@ void G_WriteStanding(UINT8 ranking, char *name, INT32 skinnum, UINT8 color, UINT
 	// Name
 	memset(temp, 0, 16);
 	strncpy(temp, name, 16);
-	M_Memcpy(demobuf.p,temp,16);
+	memcpy(demobuf.p,temp,16);
 	demobuf.p += 16;
 
 	// Skin
 	memset(temp, 0, 16);
 	strncpy(temp, skins[skinnum].name, 16);
-	M_Memcpy(demobuf.p,temp,16);
+	memcpy(demobuf.p,temp,16);
 	demobuf.p += 16;
 
 	// Color
 	memset(temp, 0, 16);
 	strncpy(temp, KartColor_Names[color], 16);
-	M_Memcpy(demobuf.p,temp,16);
+	memcpy(demobuf.p,temp,16);
 	demobuf.p += 16;
 
 	// Score/time/whatever
@@ -2212,7 +2212,7 @@ void G_LoadDemoInfo(menudemo_t *pdemo)
 	{
 		case DEMOVERSION: // latest always supported
 			// demo title
-			M_Memcpy(pdemo->title, info_p, 64);
+			memcpy(pdemo->title, info_p, 64);
 			info_p += 64;
 			break;
 #ifdef DEMO_COMPAT_100
@@ -2311,11 +2311,11 @@ void G_LoadDemoInfo(menudemo_t *pdemo)
 		pdemo->standings[count].ranking = READUINT8(extrainfo_p);
 
 		// Name
-		M_Memcpy(pdemo->standings[count].name, extrainfo_p, 16);
+		memcpy(pdemo->standings[count].name, extrainfo_p, 16);
 		extrainfo_p += 16;
 
 		// Skin
-		M_Memcpy(temp,extrainfo_p,16);
+		memcpy(temp,extrainfo_p,16);
 		extrainfo_p += 16;
 		pdemo->standings[count].skin = UINT8_MAX;
 
@@ -2329,7 +2329,7 @@ void G_LoadDemoInfo(menudemo_t *pdemo)
 		}
 
 		// Color
-		M_Memcpy(temp,extrainfo_p,16);
+		memcpy(temp,extrainfo_p,16);
 		extrainfo_p += 16;
 
 		for (i = 0; i < MAXSKINCOLORS; i++)
@@ -2494,7 +2494,7 @@ void G_LoadDemoTitle(menudemo_t *pdemo)
 	{
 		case DEMOVERSION: // latest always supported
 			// demo title
-			M_Memcpy(pdemo->title, info_p, 64);
+			memcpy(pdemo->title, info_p, 64);
 
 			// demo date
 			char *demodate;
@@ -2627,7 +2627,7 @@ void G_DoPlayDemo(char *defdemoname)
 	{
 		case DEMOVERSION: // latest always supported
 			// demo title
-			M_Memcpy(demo.titlename, demobuf.p, 64);
+			memcpy(demo.titlename, demobuf.p, 64);
 			demobuf.p += 64;
 			break;
 #ifdef DEMO_COMPAT_100
@@ -2766,15 +2766,15 @@ void G_DoPlayDemo(char *defdemoname)
 	if (demo.version == 0x0001)
 	{
 		// Player name
-		M_Memcpy(player_names[0],demobuf.p,16);
+		memcpy(player_names[0],demobuf.p,16);
 		demobuf.p += 16;
 
 		// Skin
-		M_Memcpy(skin,demobuf.p,16);
+		memcpy(skin,demobuf.p,16);
 		demobuf.p += 16;
 
 		// Color
-		M_Memcpy(color,demobuf.p,16);
+		memcpy(color,demobuf.p,16);
 		demobuf.p += 16;
 
 		demobuf.p += 5; // Backwards compat - some stats
@@ -2933,16 +2933,16 @@ void G_DoPlayDemo(char *defdemoname)
 		players[p].spectator = spectator;
 
 		// Name
-		M_Memcpy(player_names[p],demobuf.p,16);
+		memcpy(player_names[p],demobuf.p,16);
 		demobuf.p += 16;
 
 		// Skin
-		M_Memcpy(skin,demobuf.p,16);
+		memcpy(skin,demobuf.p,16);
 		demobuf.p += 16;
 		SetPlayerSkin(p, skin);
 
 		// Color
-		M_Memcpy(color,demobuf.p,16);
+		memcpy(color,demobuf.p,16);
 		demobuf.p += 16;
 
 		for (i = 0; i < MAXSKINCOLORS; i++)
@@ -3101,7 +3101,7 @@ void G_AddGhost(char *defdemoname)
 			return;
 	}
 
-	M_Memcpy(md5, p, 16); p += 16; // demo checksum
+	memcpy(md5, p, 16); p += 16; // demo checksum
 
 	for (gh = ghosts; gh; gh = gh->next)
 	{
@@ -3157,15 +3157,15 @@ void G_AddGhost(char *defdemoname)
 	if (ghostversion == 0x0001)
 	{
 		// Player name (TODO: Display this somehow if it doesn't match cv_playername!)
-		M_Memcpy(name, p,16);
+		memcpy(name, p,16);
 		p += 16;
 
 		// Skin
-		M_Memcpy(skin, p,16);
+		memcpy(skin, p,16);
 		p += 16;
 
 		// Color
-		M_Memcpy(color, p,16);
+		memcpy(color, p,16);
 		p += 16;
 
 		// Ghosts do not have a player structure to put this in.
@@ -3215,15 +3215,15 @@ void G_AddGhost(char *defdemoname)
 	}
 
 	// Player name (TODO: Display this somehow if it doesn't match cv_playername!)
-	M_Memcpy(name, p, 16);
+	memcpy(name, p, 16);
 	p += 16;
 
 	// Skin
-	M_Memcpy(skin, p, 16);
+	memcpy(skin, p, 16);
 	p += 16;
 
 	// Color
-	M_Memcpy(color, p, 16);
+	memcpy(color, p, 16);
 	p += 16;
 
 	p += 4; // score
@@ -3260,7 +3260,7 @@ void G_AddGhost(char *defdemoname)
 	gh = Z_Calloc(sizeof(demoghost), PU_LEVEL, NULL);
 	gh->next = ghosts;
 	gh->buffer = buffer;
-	M_Memcpy(gh->checksum, md5, 16);
+	memcpy(gh->checksum, md5, 16);
 	gh->p = p;
 	buffer = NULL; // buffer can't be freed now!
 
@@ -3409,7 +3409,7 @@ void G_UpdateStaffGhostName(lumpnum_t l)
 	if (ghostversion == 0x0001)
 	{
 		// Player name
-		M_Memcpy(dummystaffname, p,16);
+		memcpy(dummystaffname, p,16);
 		dummystaffname[16] = '\0';
 		return; // Not really a failure but whatever
 	}
@@ -3431,7 +3431,7 @@ void G_UpdateStaffGhostName(lumpnum_t l)
 	if (READUINT8(p) != 0)
 		return;
 
-	M_Memcpy(dummystaffname, p, 16);
+	memcpy(dummystaffname, p, 16);
 	dummystaffname[16] = '\0';
 
 	// Ok, no longer any reason to care, bye
@@ -3625,7 +3625,7 @@ void G_SaveDemo(void)
 	}
 	WRITEUINT8(demobuf.p, DW_END); // Mark end of demo extra data.
 
-	M_Memcpy(p, demo.titlename, 64); // Write demo title here
+	memcpy(p, demo.titlename, 64); // Write demo title here
 	p += 64;
 
 	if (multiplayer)

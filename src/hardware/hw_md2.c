@@ -1058,7 +1058,7 @@ static void HWR_GetBlendedTexture(patch_t *patch, patch_t *blendgpatch, INT32 sk
 			{
 				if (memcmp(glMipmap->colormap->data, colormap, 256 * sizeof(UINT8)))
 				{
-					M_Memcpy(glMipmap->colormap->data, colormap, 256 * sizeof(UINT8));
+					memcpy(glMipmap->colormap->data, colormap, 256 * sizeof(UINT8));
 					HWR_CreateBlendedTexture(patch, blendgpatch, glMipmap, skinnum, color);
 					GL_UpdateTexture(glMipmap);
 				}
@@ -1085,7 +1085,7 @@ static void HWR_GetBlendedTexture(patch_t *patch, patch_t *blendgpatch, INT32 sk
 
 	newMipmap->colormap = Z_Calloc(sizeof(*newMipmap->colormap), PU_HWRPATCHCOLMIPMAP, NULL);
 	newMipmap->colormap->source = colormap;
-	M_Memcpy(newMipmap->colormap->data, colormap, 256 * sizeof(UINT8));
+	memcpy(newMipmap->colormap->data, colormap, 256 * sizeof(UINT8));
 
 	HWR_CreateBlendedTexture(patch, blendgpatch, newMipmap, skinnum, color);
 
