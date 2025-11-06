@@ -189,29 +189,7 @@ static inline int32_t floattofixed(FloatT val)
 	static_assert(std::is_floating_point_v<FloatT>, "Input must be a floating-point type");
 
 	// fixed_t is just an int32_t, i dont wanna include doomtype here if it can be avoided
-
-	if (std::fpclassify(val) == FP_NAN)
-		return 0; // if stuffs not a number we sure screwed up lmao
-
-	// treat inifinity as "int min/max"
-	if (std::fpclassify(val) == FP_INFINITE)
-	{
-		// yes infinity can be signed kek
-		if (std::signbit(val))
-			return std::numeric_limits<int32_t>::min(); // negative infinity, so return min
-		else
-			return std::numeric_limits<int32_t>::max();
-	}
-
-	const FloatT ret = (val * 65536.0);
-
-	// make sure we fit into our targettype uwu
-	if (ret > static_cast<FloatT>(std::numeric_limits<int32_t>::max()))
-		return std::numeric_limits<int32_t>::max();
-	else if (ret < static_cast<FloatT>(std::numeric_limits<int32_t>::min()))
-		return std::numeric_limits<int32_t>::min();
-
-	return static_cast<int32_t>(ret);
+	return floattoint<FloatT, int32_t>(val * 65535.);
 }
 
 } // namespace srb2
