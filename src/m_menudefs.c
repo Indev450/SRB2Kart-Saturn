@@ -1162,8 +1162,10 @@ static menuitem_t OP_SoundAdvancedMenu[] =
 	{IT_STRING | IT_CVAR, 	NULL, "Keep Map Music", 			&cv_keepmusic, 		 80},
 	{IT_STRING | IT_CVAR, 	NULL, "Skip Intro Music", 			&cv_skipintromusic,  85},
 
-	{IT_STRING | IT_CVAR, 	NULL, "Audio Buffer Size", 			&cv_audbuffersize,   90},
-	{IT_DISABLED, 			NULL, "", 							NULL,     			100},	// dummy text
+	{IT_STRING | IT_CVAR, 	NULL, "Cache Sound", 				&cv_cachesound,   90},
+
+	{IT_STRING | IT_CVAR, 	NULL, "Audio Buffer Size", 			&cv_audbuffersize,   95},
+	{IT_DISABLED, 			NULL, "", 							NULL,     			105},	// dummy text
 };
 
 static const char* OP_SoundAdvancedTooltips[] =
@@ -1184,7 +1186,10 @@ static const char* OP_SoundAdvancedTooltips[] =
 	"Should the Invulnerability music be on or off?",
 	"Should music be kept when restarting the map?",
 	"Should the Intro fanfare be skipped\nand map music be played on map start?",
+	"Controls Sound effects caching.\nKeep will retain previously played sound effects in cache." // man idk how to describe this in a non awful way lmao
+	"\nOn will preload all sound effects.\nEliminates sound-related lag and stutters but increases memory usage.",
 	"Size of the Audio Buffer\nreducing it will result in less sound latency\nbut may cause issues such as crackling or distorted Sound.",
+	NULL,
 };
 
 static menuitem_t OP_FocusOptionsMenu[] =

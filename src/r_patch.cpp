@@ -147,7 +147,7 @@ static void R_ParseSpriteInfo(boolean spr2)
 	else
 	{
 		memset(&newSpriteName, 0, 5);
-		M_Memcpy(newSpriteName, sprinfoToken, sprinfoTokenLength);
+		memcpy(newSpriteName, sprinfoToken, sprinfoTokenLength);
 		// ^^ we've confirmed that the token is == 4 characters so it will never overflow a 5 byte char buffer
 		strupr(newSpriteName); // Just do this now so we don't have to worry about it
 	}
@@ -211,7 +211,7 @@ static void R_ParseSpriteInfo(boolean spr2)
 				// copy skin name yada yada
 				sprinfoTokenLength = strlen(sprinfoToken);
 				skinName = (char *)Z_Malloc((sprinfoTokenLength+1)*sizeof(char),PU_STATIC,NULL);
-				M_Memcpy(skinName,sprinfoToken,sprinfoTokenLength*sizeof(char));
+				memcpy(skinName,sprinfoToken,sprinfoTokenLength*sizeof(char));
 				skinName[sprinfoTokenLength] = '\0';
 				strlwr(skinName);
 				Z_Free(sprinfoToken);
@@ -240,11 +240,11 @@ static void R_ParseSpriteInfo(boolean spr2)
 							skin = &localskins[allskins[skinnum].localnum];
 						else
 							skin = &skins[allskins[skinnum].localnum];
-						M_Memcpy(&skin->sprinfo, info, sizeof(spriteinfo_t));
+						memcpy(&skin->sprinfo, info, sizeof(spriteinfo_t));
 					}
 				}
 				else
-					M_Memcpy(&spriteinfo[sprnum], info, sizeof(spriteinfo_t));
+					memcpy(&spriteinfo[sprnum], info, sizeof(spriteinfo_t));
 			}
 			else
 			{
@@ -371,7 +371,7 @@ patch_t *Patch_Create(softwarepatch_t *source, size_t srcsize, void *dest)
 			I_Error("Patch_Create: no column data!");
 
 		patch->columns = static_cast<UINT8*>(Z_Calloc(colsize, PU_PATCH_DATA, NULL));
-		M_Memcpy(patch->columns, ((UINT8 *)source + LONG(source->columnofs[0])), colsize);
+		memcpy(patch->columns, ((UINT8 *)source + LONG(source->columnofs[0])), colsize);
 	}
 
 	return patch;

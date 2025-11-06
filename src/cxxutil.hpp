@@ -147,6 +147,51 @@ public:
 template <class T>
 NotNull(T) -> NotNull<T>;
 
+// does a super safe cast from floating point to interger types
+// this prob could be better since i suck at ceepeepee
+// but atleast we can just template shit to our desired types
+template <typename FloatT, typename IntT>
+static inline IntT floattoint(FloatT val)
+{
+	// :chaosleep:
+	static_assert(std::is_floating_point_v<FloatT>, "Input must be a floating-point type");
+	static_assert(std::is_integral_v<IntT>, "Output must be a integer type");
+
+	if (std::fpclassify(val) == FP_NAN)
+		return 0; // if stuffs not a number we sure screwed up lmao
+
+	// treat inifinity as "int min/max"
+	if (std::fpclassify(val) == FP_INFINITE)
+	{
+		// yes infinity can be signed kek
+		if (std::signbit(val))
+			return std::numeric_limits<IntT>::min(); // negative infinity, so return min
+		else
+			return std::numeric_limits<IntT>::max();
+	}
+
+	// make sure we fit into our targettype uwu
+	if (val > static_cast<FloatT>(std::numeric_limits<IntT>::max()))
+		return std::numeric_limits<IntT>::max();
+	else if (val < static_cast<FloatT>(std::numeric_limits<IntT>::min()))
+		return std::numeric_limits<IntT>::min();
+
+	return static_cast<IntT>(val);
+}
+
+// safe float to fixed
+// which handles nan and inf
+// pretty much the same stuff as the above, but uh, idk how id use the above with this
+template <typename FloatT> // can use both float and doubles yay
+static inline int32_t floattofixed(FloatT val)
+{
+	// :chaosleep:
+	static_assert(std::is_floating_point_v<FloatT>, "Input must be a floating-point type");
+
+	// fixed_t is just an int32_t, i dont wanna include doomtype here if it can be avoided
+	return floattoint<FloatT, int32_t>(val * 65535.);
+}
+
 } // namespace srb2
 
 #endif // __SRB2_CXXUTIL_HPP__

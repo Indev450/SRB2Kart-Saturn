@@ -331,7 +331,7 @@ static void WriteNetXCmd(UINT8 *cmd, netxcmd_t id, const void *param, size_t npa
 	cmd[cmd[0]] = (UINT8)id;
 	if (param && nparam)
 	{
-		M_Memcpy(&cmd[cmd[0]+1], param, nparam);
+		memcpy(&cmd[cmd[0]+1], param, nparam);
 		cmd[0] = (UINT8)(cmd[0] + (UINT8)nparam);
 	}
 }
@@ -1585,7 +1585,7 @@ static void SV_SendServerInfo(INT32 node, tic_t servertime)
 		MAXSERVERNAME);
 	strncpy(netbuffer->u.serverinfo.mapname, G_BuildMapName(gamemap), sizeof(netbuffer->u.serverinfo.mapname)-1);
 
-	M_Memcpy(netbuffer->u.serverinfo.mapmd5, mapmd5, sizeof(netbuffer->u.serverinfo.mapmd5));
+	memcpy(netbuffer->u.serverinfo.mapmd5, mapmd5, sizeof(netbuffer->u.serverinfo.mapmd5));
 
 	netbuffer->u.serverinfo.iszone = 0;
 
@@ -4648,7 +4648,7 @@ void SV_StopServer(void)
 
 	if (gamestate == GS_INTERMISSION)
 		Y_EndIntermission();
-	if (gamestate == GS_VOTING)
+	else if (gamestate == GS_VOTING)
 		Y_EndVote();
 
 	G_SetGamestate(GS_NULL);
@@ -4664,6 +4664,8 @@ void SV_StopServer(void)
 			textcmdbuf[i] = textcmdbuf[i]->next;
 			Z_Free(buf);
 		}
+
+		textcmdbuf[i] = NULL;
 	}
 
 	for (i = firstticstosend; i < firstticstosend + BACKUPTICS; i++)
@@ -5687,7 +5689,7 @@ static void PT_TextCmd(INT32 netconsole, SINT8 node)
 		DEBFILE(va("textcmd put in tic %u at position %d (player %d) ftts %u mk %u\n",
 				   tic, textcmd[0]+1, netconsole, firstticstosend, maketic));
 
-		M_Memcpy(&textcmd[textcmd[0]+1], netbuffer->u.textcmd+1, netbuffer->u.textcmd[0]);
+		memcpy(&textcmd[textcmd[0]+1], netbuffer->u.textcmd+1, netbuffer->u.textcmd[0]);
 		textcmd[0] += (UINT8)netbuffer->u.textcmd[0];
 	}
 }
@@ -5794,7 +5796,7 @@ static void PT_ServerTics(SINT8 node)
 				}
 
 				if (i >= gametic) // Don't copy old net commands
-					M_Memcpy(D_GetTextcmd(i, playernum), txtpak, txtsize);
+					memcpy(D_GetTextcmd(i, playernum), txtpak, txtsize);
 				txtpak += txtsize;
 			}
 		}
@@ -6332,7 +6334,7 @@ static void CL_SendClientCmd(void)
 						break;
 				}
 
-				M_Memcpy(netbuffer->u.textcmd, localtextcmd[i], localtextcmd[i][0]+1);
+				memcpy(netbuffer->u.textcmd, localtextcmd[i], localtextcmd[i][0]+1);
 
 				// All extra data have been sent
 				if (HSendPacket(servernode, true, 0, localtextcmd[i][0]+1)) // Send can fail...
@@ -6342,7 +6344,7 @@ static void CL_SendClientCmd(void)
 					if (textcmdbuf[i] != NULL)
 					{
 						textcmdbuf_t *buf = textcmdbuf[i];
-						M_Memcpy(localtextcmd[i], textcmdbuf[i]->cmd, textcmdbuf[i]->cmd[0]+1);
+						memcpy(localtextcmd[i], textcmdbuf[i]->cmd, textcmdbuf[i]->cmd[0]+1);
 						textcmdbuf[i] = textcmdbuf[i]->next;
 						Z_Free(buf);
 					}
@@ -6455,7 +6457,7 @@ static void SV_SendTics(void)
 				{
 					(*ntextcmd)++;
 					WRITEUINT8(bufpos, j);
-					M_Memcpy(bufpos, textcmd, size + 1);
+					memcpy(bufpos, textcmd, size + 1);
 					bufpos += size + 1;
 				}
 			}

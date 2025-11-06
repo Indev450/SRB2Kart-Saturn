@@ -27,7 +27,7 @@ extern "C" {
 //
 
 #define WRITEUINT8(p,b)     do {   UINT8 *p_tmp = (  UINT8 *)p; const   UINT8 tv = (  UINT8)(b); memcpy(p, &tv, sizeof(  UINT8)); p_tmp++; *(void**)(&(p)) = (void *)p_tmp; } while (0)
-#define WRITESINT8(p,b)     do {   SINT8 *p_tmp = (  SINT8 *)p; const   SINT8 tv = (  UINT8)(b); memcpy(p, &tv, sizeof(  UINT8)); p_tmp++; *(void**)(&(p)) = (void *)p_tmp; } while (0)
+#define WRITESINT8(p,b)     do {   SINT8 *p_tmp = (  SINT8 *)p; const   SINT8 tv = (  SINT8)(b); memcpy(p, &tv, sizeof(  SINT8)); p_tmp++; *(void**)(&(p)) = (void *)p_tmp; } while (0)
 #define WRITEINT16(p,b)     do {   INT16 *p_tmp = (  INT16 *)p; const   INT16 tv = (  INT16)(b); memcpy(p, &tv, sizeof(  INT16)); p_tmp++; *(void**)(&(p)) = (void *)p_tmp; } while (0)
 #define WRITEUINT16(p,b)    do {  UINT16 *p_tmp = ( UINT16 *)p; const  UINT16 tv = ( UINT16)(b); memcpy(p, &tv, sizeof( UINT16)); p_tmp++; *(void**)(&(p)) = (void *)p_tmp; } while (0)
 #define WRITEINT32(p,b)     do {   INT32 *p_tmp = (  INT32 *)p; const   INT32 tv = (  INT32)(b); memcpy(p, &tv, sizeof(  INT32)); p_tmp++; *(void**)(&(p)) = (void *)p_tmp; } while (0)
@@ -124,7 +124,7 @@ FUNCINLINE static ATTRINLINE UINT32 readulong(void *ptr)
 #define READINT16(p)        readshort(&((const INT16*)(p = (const void*)&((const INT16*)p)[1]))[-1])
 #define READUINT16(p)       readushort(&((const UINT16*)(p = (const void*)&((const UINT16*)p)[1]))[-1])
 #define READINT32(p)        readlong(&((const INT32*)(p = (const void*)&((const INT32*)p)[1]))[-1])
-#define READUINT32(p)       readulong(&((const UINT32*)(p = (const void*)&((const UINT32*)p)[1]))
+#define READUINT32(p)       readulong(&((const UINT32*)(p = (const void*)&((const UINT32*)p)[1]))[-1])
 #define READCHAR(p)         ((const char*)(p = (const void*)&((const char*)p)[1]))[-1]
 #define READFIXED(p)        readlong(&((const fixed_t*)(p = (const void*)&((const fixed_t*)p)[1]))[-1])
 #define READANGLE(p)        readulong(&((const angle_t*)(p = (const void*)&((const angle_t*)p)[1]))[-1])

@@ -4221,8 +4221,8 @@ static void HWR_AddTransparentWall(FOutVector *wallVerts, FSurfaceInfo *pSurf, I
 {
 	wallinfo_t *wallinfo = static_cast<wallinfo_t*>(HWR_CreateDrawNode(DRAWNODE_WALL));
 
-	M_Memcpy(wallinfo->wallVerts, wallVerts, sizeof (wallinfo->wallVerts));
-	M_Memcpy(&wallinfo->Surf, pSurf, sizeof (FSurfaceInfo));
+	memcpy(wallinfo->wallVerts, wallVerts, sizeof (wallinfo->wallVerts));
+	memcpy(&wallinfo->Surf, pSurf, sizeof (FSurfaceInfo));
 	wallinfo->texnum = texnum;
 	wallinfo->noencore = noencore;
 	wallinfo->blend = blend;

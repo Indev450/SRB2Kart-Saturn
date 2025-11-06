@@ -201,7 +201,7 @@ static char *HWR_PreprocessShader(char *original)
 				CONS_Alert(CONS_ERROR, "HWR_PreprocessShader: Syntax error in #version. Expected version with 3 digits, but got %d digits.\n", version_number_len);
 				return NULL;
 			}
-			M_Memcpy(shader_glsl_version, read_pos, 3);
+			memcpy(shader_glsl_version, read_pos, 3);
 			ADVANCE(version_number_len)
 			version_len = (read_pos - original) - version_pos;
 			whitespace_len = strspn(read_pos, WHITESPACE_CHARS);
@@ -304,7 +304,7 @@ static char *HWR_PreprocessShader(char *original)
 	{
 		strcpy(write_pos, VERSION_PART);
 		write_pos += sizeof(VERSION_PART) - 1;
-		M_Memcpy(write_pos, shader_glsl_version, 3);
+		memcpy(write_pos, shader_glsl_version, 3);
 		write_pos += 3;
 		strcpy(write_pos, line_ending);
 		write_pos += line_ending_len;
@@ -344,7 +344,7 @@ static char *HWR_PreprocessShader(char *original)
 	}
 
 	// Copy the original shader.
-	M_Memcpy(write_pos, read_pos, original_len);
+	memcpy(write_pos, read_pos, original_len);
 
 	// Erase the original #version directive, if it exists and was copied.
 	if (new_len != original_len && version_pos != -1)
@@ -573,7 +573,7 @@ void HWR_LoadCustomShadersFromFile(UINT16 wadnum, boolean PK3)
 	size = W_LumpLengthPwad(wadnum, lump);
 
 	line = Z_Malloc(size+1, PU_STATIC, NULL);
-	M_Memcpy(line, shaderdef, size);
+	memcpy(line, shaderdef, size);
 	line[size] = '\0';
 
 	stoken = strtok(line, "\r\n ");

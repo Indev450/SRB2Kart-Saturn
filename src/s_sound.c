@@ -45,7 +45,7 @@ static void Command_ShowMusicCredit_f(void);
 static void GameSounds_OnChange(void);
 static void GameMusic_OnChange(void);
 
-static void SoundPrecache_OnChange(void);
+static void SoundCache_OnChange(void);
 static void BufferSize_OnChange(void);
 
 #ifdef HAVE_OPENMPT
@@ -68,7 +68,8 @@ consvar_t cv_audbuffersize = {"audiobuffersize", "2048", CV_SAVE|CV_CALL, audbuf
 consvar_t stereoreverse = {"stereoreverse", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 // if true, all sounds are loaded at game startup
-consvar_t precachesound = {"precachesound", "Off", CV_SAVE|CV_CALL|CV_NOINIT, CV_OnOff, SoundPrecache_OnChange, 0, NULL, NULL, 0, 0, NULL};
+static CV_PossibleValue_t cachesounds_cons_t[] = {{0, "Off"}, {1, "Keep"}, {2, "On"}, {0, NULL}};
+consvar_t cv_cachesound = {"cachesound", "1", CV_SAVE|CV_CALL|CV_NOINIT, cachesounds_cons_t, SoundCache_OnChange, 0, NULL, NULL, 0, 0, NULL};
 
 // actual general (maximum) sound & music volume, saved into the config
 static CV_PossibleValue_t soundvolume_cons_t[] = {{0, "MIN"}, {31, "MAX"}, {0, NULL}};
@@ -274,7 +275,7 @@ void S_RegisterSoundStuff(void)
 	}
 
 	CV_RegisterVar(&stereoreverse);
-	CV_RegisterVar(&precachesound);
+	CV_RegisterVar(&cv_cachesound);
 #if defined(HAVE_SDL) && SOUND==SOUND_SDL
 	CV_RegisterVar(&cv_samplerate);
 #endif
@@ -362,9 +363,15 @@ boolean S_SoundDisabled(void)
 	return (sound_disabled || (window_notinfocus && !cv_playsoundifunfocused.value));
 }
 
-boolean S_PrecacheSound(void)
+int S_CacheSound(void)
 {
-	return (!sound_disabled && (M_CheckParm("-precachesound") || precachesound.value));
+	if (sound_disabled)
+		return SOUNDCACHE_OFF;
+
+	if (M_CheckParm("-precachesound"))
+		return SOUNDCACHE_PRECACHE;
+
+	return cv_cachesound.value;
 }
 
 // Stop all sounds, load level info, THEN start sounds.
@@ -1150,27 +1157,34 @@ void S_InitSfxChannels(INT32 sfxVolume)
 
 	SetChannelsNum();
 
-	// Note that sounds have not been cached (yet).
-	for (i = 1; i < NUMSFX; i++)
-	{
-		S_sfx[i].lumpnum = LUMPERROR;
-	}
-
 	// Precache sounds if requested
-	if (S_PrecacheSound())
+	if (S_CacheSound() == SOUNDCACHE_PRECACHE)
 	{
 		// Initialize external data (all sounds) at start, keep static.
 		CONS_Printf(M_GetText("Pre-caching sounds..."));
 
-			for (i = 1; i < sfx_freeslot0; i++)
-				if (S_sfx[i].name && !S_sfx[i].data)
-					S_sfx[i].data = I_GetSfx(&S_sfx[i]);
+		// NUMSFX is a big number, so merge the loops
+		for (i = 1; i < NUMSFX; i++)
+		{
+			S_sfx[i].lumpnum = LUMPERROR;
 
-			for (i = sfx_freeslot0; i < NUMSFX; i++)
-				if (S_sfx[i].priority && !S_sfx[i].data)
-					S_sfx[i].data = I_GetSfx(&S_sfx[i]);
+			if (S_sfx[i].data)
+				continue;
+
+			if ((i < sfx_freeslot0 && S_sfx[i].name) ||
+				(i >= sfx_freeslot0 && S_sfx[i].priority))
+				S_sfx[i].data = I_GetSfx(&S_sfx[i]);
+		}
 
 		CONS_Printf(M_GetText("...pre-cached all sound data\n"));
+	}
+	else
+	{
+		// Note that sounds have not been cached (yet).
+		for (i = 1; i < NUMSFX; i++)
+		{
+			S_sfx[i].lumpnum = LUMPERROR;
+		}
 	}
 }
 
@@ -1409,7 +1423,7 @@ void S_LoadMusicDefs(UINT16 wadnum)
 		musdeftext = malloc(size+1);
 		if (!musdeftext)
 			I_Error("S_LoadMusicDefs: No more free memory for the parser\n");
-		M_Memcpy(musdeftext, lump, size);
+		memcpy(musdeftext, lump, size);
 		musdeftext[size] = '\0';
 
 		// Find music def
@@ -2277,13 +2291,13 @@ static void GameSounds_OnChange(void)
 	}
 }
 
-static void SoundPrecache_OnChange(void)
+static void SoundCache_OnChange(void)
 {
-	if (S_PrecacheSound())
+	if (S_CacheSound() != SOUNDCACHE_OFF)
 	{
 		S_InitSfxChannels(cv_soundvolume.value);
 	}
-	else if (!S_PrecacheSound())
+	else
 	{
 		S_ClearSfx();
 
