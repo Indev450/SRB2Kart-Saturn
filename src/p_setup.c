@@ -2766,7 +2766,8 @@ boolean P_SetupLevel(boolean fromnetsave, boolean reloadinggamestate)
 	// Make sure all sounds are stopped before Z_FreeTags.
 	S_StopSounds();
 
-	if (!S_PrecacheSound())
+	// if we dont intend to cache our sound effects, wipe them
+	if (S_CacheSound() == SOUNDCACHE_OFF)
 		S_ClearSfx();
 
 	// As oddly named as this is, this handles music only.
@@ -3034,7 +3035,7 @@ static boolean P_CheckSoundReplacements(UINT16 wadnum, char *name, size_t i)
 					I_FreeSfx(&S_sfx[j]);
 
 					// Re-cache it
-					if (S_PrecacheSound())
+					if (S_CacheSound() == SOUNDCACHE_PRECACHE)
 						S_sfx[j].data = I_GetSfx(&S_sfx[j]);
 
 					sreplaces++;
