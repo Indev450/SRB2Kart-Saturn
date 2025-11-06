@@ -269,7 +269,7 @@ static inline void R_DrawColumnInCache(column_t *patch, UINT8 *cache, texpatch_t
 			count = cacheheight - position;
 
 		if (count > 0)
-			M_Memcpy(cache + position, source, count);
+			memcpy(cache + position, source, count);
 
 		patch = (column_t *)((UINT8 *)patch + patch->length + 4);
 	}
@@ -412,7 +412,7 @@ UINT8 *R_GenerateTexture(size_t texnum)
 			texture->holes = true;
 			blocksize = lumplength;
 			block = Z_Calloc(blocksize, PU_LEVEL, &texturecache[texnum]); // will change tag at end of this function
-			M_Memcpy(block, realpatch, blocksize);
+			memcpy(block, realpatch, blocksize);
 			texturememory += blocksize;
 
 			// use the patch's column lookup
@@ -621,7 +621,7 @@ Rloadtextures (INT32 i, INT32 w)
 		texture = textures[i] = Z_Calloc(sizeof(texture_t) + sizeof(texpatch_t), PU_STATIC, NULL);
 
 		// Set texture properties.
-		M_Memcpy(texture->name, W_CheckNameForNumPwad(wadnum, lumpnum), sizeof(texture->name));
+		memcpy(texture->name, W_CheckNameForNumPwad(wadnum, lumpnum), sizeof(texture->name));
 		texture->hash = quickncasehash(texture->name, 8);
 
 		texture->width = SHORT(patchlump.width);
@@ -854,7 +854,7 @@ static texpatch_t *R_ParsePatch(boolean actuallyLoadPatch)
 			Z_Free(patchName);
 		}
 		patchName = (char *)Z_Malloc((texturesTokenLength+1)*sizeof(char),PU_STATIC,NULL);
-		M_Memcpy(patchName,texturesToken,texturesTokenLength*sizeof(char));
+		memcpy(patchName,texturesToken,texturesTokenLength*sizeof(char));
 		patchName[texturesTokenLength] = '\0';
 	}
 
@@ -985,7 +985,7 @@ static texture_t *R_ParseTexture(boolean actuallyLoadTexture)
 	else
 	{
 		memset(&newTextureName, 0, 9);
-		M_Memcpy(newTextureName, texturesToken, texturesTokenLength);
+		memcpy(newTextureName, texturesToken, texturesTokenLength);
 		// ^^ we've confirmed that the token is <= 8 characters so it will never overflow a 9 byte char buffer
 		strupr(newTextureName); // Just do this now so we don't have to worry about it
 	}
@@ -1077,7 +1077,7 @@ static texture_t *R_ParseTexture(boolean actuallyLoadTexture)
 		{
 			// Allocate memory for a zero-patch texture. Obviously, we'll be adding patches momentarily.
 			resultTexture = (texture_t *)Z_Calloc(sizeof(texture_t), PU_STATIC, NULL);
-			M_Memcpy(resultTexture->name, newTextureName, 8);
+			memcpy(resultTexture->name, newTextureName, 8);
 			resultTexture->hash = quickncasehash(newTextureName, 8);
 			resultTexture->width = newTextureWidth;
 			resultTexture->height = newTextureHeight;
@@ -1104,7 +1104,7 @@ static texture_t *R_ParseTexture(boolean actuallyLoadTexture)
 					// Make room for the new patch
 					resultTexture = Z_Realloc(resultTexture, sizeof(texture_t) + (resultTexture->patchcount+1)*sizeof(texpatch_t), PU_STATIC, NULL);
 					// Populate the uninitialized values in the new patch entry of our array
-					M_Memcpy(&resultTexture->patches[resultTexture->patchcount], newPatch, sizeof(texpatch_t));
+					memcpy(&resultTexture->patches[resultTexture->patchcount], newPatch, sizeof(texpatch_t));
 					// Account for the new number of patches in the texture
 					resultTexture->patchcount++;
 					// Then free up the memory assigned to R_ParsePatch, as it's unneeded now

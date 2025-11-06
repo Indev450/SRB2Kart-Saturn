@@ -902,7 +902,7 @@ void SV_FileSendTicker(void)
 
 		if (ram)
 		{
-			M_Memcpy(p->data, &f->id.ram[transfer[i].position], size);
+			memcpy(p->data, &f->id.ram[transfer[i].position], size);
 		}
 		else if (fread(p->data, 1, size, transferFiles[f->fileid].file) != size)
 		{
@@ -1104,7 +1104,7 @@ void nameonly(char *s)
 			ns = &(s[j+1]);
 			len = strlen(ns);
 #if 0
-				M_Memcpy(s, ns, len+1);
+				memcpy(s, ns, len+1);
 #else
 				memmove(s, ns, len+1);
 #endif

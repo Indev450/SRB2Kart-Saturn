@@ -626,13 +626,13 @@ void VID_BlitLinearScreen(const UINT8 *restrict srcptr, UINT8 *restrict destptr,
 			i -= 16;
 		}
 #endif
-		M_Memcpy(destptr, srcptr, i);
+		memcpy(destptr, srcptr, i);
 	}
 	else
 	{
 		while (height--)
 		{
-			M_Memcpy(destptr, srcptr, width);
+			memcpy(destptr, srcptr, width);
 
 			destptr += destrowbytes;
 			srcptr += srcrowbytes;
@@ -1193,7 +1193,7 @@ void V_DrawBlock(INT32 x, INT32 y, INT32 scrn, INT32 width, INT32 height, const 
 
 	while (height--)
 	{
-		M_Memcpy(dest, src, width);
+		memcpy(dest, src, width);
 
 		src += width;
 		dest += vid.width;
@@ -3647,7 +3647,7 @@ void V_DoPostProcessor(INT32 view, INT32 param)
 
 			if (sine < 0)
 			{
-				M_Memcpy(&tmpscr[(y*vid.width)+xoffset+newpix], &srcscr[(y*vid.width)+xoffset], viewwidth-newpix);
+				memcpy(&tmpscr[(y*vid.width)+xoffset+newpix], &srcscr[(y*vid.width)+xoffset], viewwidth-newpix);
 
 				// Cleanup edge
 				while (newpix)
@@ -3658,7 +3658,7 @@ void V_DoPostProcessor(INT32 view, INT32 param)
 			}
 			else
 			{
-				M_Memcpy(&tmpscr[(y*vid.width)+xoffset+0], &srcscr[(y*vid.width)+xoffset+sine], viewwidth-newpix);
+				memcpy(&tmpscr[(y*vid.width)+xoffset+0], &srcscr[(y*vid.width)+xoffset+sine], viewwidth-newpix);
 
 				// Cleanup edge
 				while (newpix)
@@ -3718,10 +3718,10 @@ void V_DoPostProcessor(INT32 view, INT32 param)
 			{
 				// Shift this row of pixels to the right by 2
 				tmpscr[(y*vid.width)+xoffset] = srcscr[(y*vid.width)+xoffset];
-				M_Memcpy(&tmpscr[(y*vid.width)+xoffset], &srcscr[(y*vid.width)+xoffset+vid.dup], viewwidth-vid.dup);
+				memcpy(&tmpscr[(y*vid.width)+xoffset], &srcscr[(y*vid.width)+xoffset+vid.dup], viewwidth-vid.dup);
 			}
 			else
-				M_Memcpy(&tmpscr[(y*vid.width)+xoffset], &srcscr[(y*vid.width)+xoffset], viewwidth);
+				memcpy(&tmpscr[(y*vid.width)+xoffset], &srcscr[(y*vid.width)+xoffset], viewwidth);
 
 			heatindex[view] %= viewheight;
 		}
@@ -3758,7 +3758,7 @@ void V_DoPostProcessor(INT32 view, INT32 param)
 		INT32 y, y2;
 
 		for (y = yoffset, y2 = yoffset+viewheight - 1; y < yoffset+viewheight; y++, y2--)
-			M_Memcpy(&tmpscr[(y2*vid.width)+xoffset], &srcscr[(y*vid.width)+xoffset], viewwidth);
+			memcpy(&tmpscr[(y2*vid.width)+xoffset], &srcscr[(y*vid.width)+xoffset], viewwidth);
 
 		UINT8 *tmp = tmpscr;
 		tmpscr = srcscr;

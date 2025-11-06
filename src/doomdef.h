@@ -453,11 +453,6 @@ extern char savegamename[256];
 //TODO: delet this
 #define M_GetText(x) (x)
 
-FUNCINLINE static ATTRINLINE void *M_Memcpy(void *dest, const void *src, size_t n)
-{
-	return memcpy(dest, src, n);
-}
-
 char *va(const char *format, ...) FUNCPRINTF;
 char *M_GetToken(const char *inputString);
 char *sizeu1(size_t num);

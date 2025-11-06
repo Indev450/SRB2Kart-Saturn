@@ -242,7 +242,7 @@ void GenerateVertexNormals(model_t *model)
 			float *vertPtr = frame->vertices;
 			float *oldNormals;
 
-			M_Memcpy(newNormals, frame->normals, sizeof(float)*3*mesh->numTriangles*3);
+			memcpy(newNormals, frame->normals, sizeof(float)*3*mesh->numTriangles*3);
 
 			for (k = 0; k < mesh->numVertices; k++)
 			{
@@ -402,7 +402,7 @@ void Optimize(model_t *model)
 				char *destByte;
 				char *srcByte;
 
-				M_Memcpy(&newMesh->uvs[uvCount],
+				memcpy(&newMesh->uvs[uvCount],
 					curMesh->uvs,
 					sizeof(float)*2*curMesh->numTriangles*3);
 
@@ -410,13 +410,13 @@ void Optimize(model_t *model)
 
 				dest = (float*)newMesh->frames[0].vertices;
 				src = (float*)curMesh->frames[0].vertices;
-				M_Memcpy(&dest[vertCount],
+				memcpy(&dest[vertCount],
 					src,
 					sizeof(float)*3*curMesh->numTriangles*3);
 
 				dest = (float*)newMesh->frames[0].normals;
 				src = (float*)curMesh->frames[0].normals;
-				M_Memcpy(&dest[vertCount],
+				memcpy(&dest[vertCount],
 					src,
 					sizeof(float)*3*curMesh->numTriangles*3);
 
@@ -427,7 +427,7 @@ void Optimize(model_t *model)
 
 				if (srcByte)
 				{
-					M_Memcpy(&destByte[colorCount],
+					memcpy(&destByte[colorCount],
 						srcByte,
 						sizeof(char)*4*curMesh->numTriangles*3);
 				}

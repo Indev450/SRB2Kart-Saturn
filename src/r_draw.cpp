@@ -655,7 +655,7 @@ void R_VideoErase(size_t ofs, INT32 count)
 	//  is not optimal, e.g. byte by byte on
 	//  a 32bit CPU, as GNU GCC/Linux libc did
 	//  at one point.
-	M_Memcpy(vid.screens[0] + ofs, vid.screens[1] + ofs, count);
+	memcpy(vid.screens[0] + ofs, vid.screens[1] + ofs, count);
 }
 
 // ==========================================================================

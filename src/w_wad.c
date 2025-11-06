@@ -906,7 +906,7 @@ UINT16 W_InitFile(const char *filename, boolean local, boolean startup)
 	wadfile->endfolders = M_AATreeAlloc(AATREE_STRING);
 
 	// already generated, just copy it over
-	M_Memcpy(&wadfile->md5sum, &md5sum, 16);
+	memcpy(&wadfile->md5sum, &md5sum, 16);
 
 	//
 	// set up caching
@@ -1637,7 +1637,7 @@ size_t W_ReadLumpHeaderPwad(UINT16 wad, UINT16 lump, void *dest, size_t size, si
 
 			if (!decData) // Did we get no data at all?
 				return 0;
-			M_Memcpy(dest, decData + offset, size);
+			memcpy(dest, decData + offset, size);
 			Z_Free(rawData);
 			Z_Free(decData);
 #ifdef NO_PNG_LUMPS

@@ -637,7 +637,7 @@ static void WalkBSPNode(INT32 bspnum, poly_t *poly, UINT16 *leafnode, fixed_t *b
 		WalkBSPNode(bsp->children[0], frontpoly, &bsp->children[0],bsp->bbox[0]);
 
 		// copy child bbox
-		M_Memcpy(bbox, bsp->bbox[0], 4*sizeof (fixed_t));
+		memcpy(bbox, bsp->bbox[0], 4*sizeof (fixed_t));
 	}
 	else
 		I_Error("WalkBSPNode: no front poly?");

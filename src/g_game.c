@@ -1210,12 +1210,12 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 	}
 }
 
-ticcmd_t *G_CopyTiccmd(ticcmd_t* dest, const ticcmd_t* src, const size_t n)
+ticcmd_t *G_CopyTiccmd(ticcmd_t* restrict dest, const ticcmd_t* restrict src, const size_t n)
 {
-	return M_Memcpy(dest, src, n*sizeof(*src));
+	return memcpy(dest, src, n*sizeof(*src));
 }
 
-ticcmd_t *G_MoveTiccmd(ticcmd_t* dest, const ticcmd_t* src, const size_t n)
+ticcmd_t *G_MoveTiccmd(ticcmd_t* restrict dest, const ticcmd_t* restrict src, const size_t n)
 {
 	size_t i;
 	for (i = 0; i < n; i++)
