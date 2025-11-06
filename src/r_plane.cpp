@@ -720,7 +720,7 @@ void R_DrawPlanes(void)
 	srb2::ThreadPool::Sema tp_sema;
 	srb2::g_main_threadpool->begin_sema();
 #endif
-	for (i = 0; i < MAXVISPLANES; i++, pl++)
+	for (i = 0; i < MAXVISPLANES; i++)
 	{
 		for (pl = visplanes[i]; pl; pl = pl->next)
 		{
@@ -755,7 +755,7 @@ void R_DrawSkyPlanes(void)
 	srb2::ThreadPool::Sema tp_sema;
 	srb2::g_main_threadpool->begin_sema();
 #endif
-	for (i = 0; i < MAXVISPLANES; i++, pl++)
+	for (i = 0; i < MAXVISPLANES; i++)
 	{
 		for (pl = visplanes[i]; pl; pl = pl->next)
 		{

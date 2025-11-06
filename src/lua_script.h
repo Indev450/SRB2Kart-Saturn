@@ -59,7 +59,15 @@ fixed_t LUA_GetConstant(const char *word);
 // Need better name for this ;-;
 void LUA_InvalidateMathlibCache(const char *name);
 
+typedef enum {
+	LPUSHED_NIL,
+	LPUSHED_NEW,
+	LPUSHED_EXISTING,
+} lpushed_t;
+
 void LUA_PushUserdata(lua_State *L, void *data, const char *meta);
+lpushed_t LUA_RawPushUserdata(lua_State *L, void *data);
+
 void LUA_InvalidateUserdata(void *data);
 void LUA_InvalidateLevel(void);
 void LUA_InvalidateMapthings(void);
@@ -68,8 +76,8 @@ void LUA_InvalidatePlayer(player_t *player);
 void LUA_Archive(savebuffer_t *save, boolean network);
 void LUA_UnArchive(savebuffer_t *save, boolean network);
 
-void Got_Luacmd(UINT8 **cp, INT32 playernum); // lua_consolelib.c
-void LUA_CVarChanged(const char *name); // lua_consolelib.c
+void Got_Luacmd(const UINT8 **cp, INT32 playernum); // lua_consolelib.c
+void LUA_CVarChanged(void *cvar); // lua_consolelib.c
 int Lua_optoption(lua_State *L, int narg, int def, int list_ref);
 int Lua_CreateFieldTable(lua_State *L, const char *const lst[]);
 void LUA_HookNetArchive(lua_CFunction archFunc, savebuffer_t *save);

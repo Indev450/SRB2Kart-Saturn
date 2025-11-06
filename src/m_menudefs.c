@@ -953,21 +953,23 @@ static menuitem_t OP_ExpOptionsMenu[] =
 
 	{IT_STRING | IT_CVAR,	NULL, "Skyboxes",						&cv_skybox,				 	 40},
 
-	{IT_STRING | IT_CVAR,	NULL, "FPS counter sampling",			&cv_accuratefps,			 50},
+	{IT_STRING | IT_CVAR,	NULL, "Precache Level Textures",		&cv_precachetextures,		 50},
 
-	{IT_STRING | IT_CVAR,	NULL, "Frameskip",						&cv_frameskip,			 	 60},
+	{IT_STRING | IT_CVAR,	NULL, "FPS counter sampling",			&cv_accuratefps,			 60},
 
-	{IT_STRING | IT_CVAR,	NULL, "Votescreen Scaling",				&cv_votebgscaling,			 70},
+	{IT_STRING | IT_CVAR,	NULL, "Frameskip",						&cv_frameskip,			 	 70},
+
+	{IT_STRING | IT_CVAR,	NULL, "Votescreen Scaling",				&cv_votebgscaling,			 80},
 
 #ifdef HWRENDER
-	{IT_STRING | IT_CVAR, 	NULL, "Screen Textures", 				&cv_glscreentextures, 		 80},
+	{IT_STRING | IT_CVAR, 	NULL, "Screen Textures", 				&cv_glscreentextures, 		 90},
 #ifdef USE_FBO_OGL
-	{IT_STRING | IT_CVAR, 	NULL, "FBO Downsampling support", 		&cv_glframebuffer, 			 85},
-	{IT_STRING | IT_CVAR, 	NULL, "Palette Depth", 					&cv_glpalettedepth, 		 95},
-	{IT_DISABLED, 			NULL, "", 								NULL,     			 		105}, // dummy text
+	{IT_STRING | IT_CVAR, 	NULL, "FBO Downsampling support", 		&cv_glframebuffer, 			 95},
+	{IT_STRING | IT_CVAR, 	NULL, "Palette Depth", 					&cv_glpalettedepth, 		105},
+	{IT_DISABLED, 			NULL, "", 								NULL,     			 		115}, // dummy text
 #else
-	{IT_STRING | IT_CVAR, 	NULL, "Palette Depth", 					&cv_glpalettedepth, 		 90},
-	{IT_DISABLED, 			NULL, "", 								NULL,     			 		100}, // dummy text
+	{IT_STRING | IT_CVAR, 	NULL, "Palette Depth", 					&cv_glpalettedepth, 		100},
+	{IT_DISABLED, 			NULL, "", 								NULL,     			 		110}, // dummy text
 #endif
 #endif
 };
@@ -980,6 +982,7 @@ static const char* OP_ExpTooltips[] =
 	"Sets minimum sector brightness, useful for dark areas.",
 	//"Should the directional lightning be randomized each map?\nTakes effect on next map load.",
 	"Toggle being able to see the sky.",
+	"Preload all level textures on level load.\nMassively reduces texture related stuttering during gameplay\nat the cost of longer level loading times.\nDisable this if you experience timeouts during level switches.",
 	"Change the FPS counter sampling method\nInaccurate updates slower\nand might miss sudden framerate changes and drops,\nproviding a more averaged result.\nAccurate updates faster, but might be less readable.", // how to ingles??
 	"Skips rendering frames if game logic takes too long\npreventing gameplay issues during performance drops.", // idk im shit as describing things
 	"Different methods of scaling the votescreen backgrounds.",
@@ -1000,6 +1003,7 @@ enum
 	op_exp_secbright,
 	//op_exp_dirlight,
 	op_exp_skybox,
+	op_exp_texcache,
 	op_exp_accuratefps,
 	op_exp_frameskip,
 	op_exp_votescrn,
@@ -1158,8 +1162,10 @@ static menuitem_t OP_SoundAdvancedMenu[] =
 	{IT_STRING | IT_CVAR, 	NULL, "Keep Map Music", 			&cv_keepmusic, 		 80},
 	{IT_STRING | IT_CVAR, 	NULL, "Skip Intro Music", 			&cv_skipintromusic,  85},
 
-	{IT_STRING | IT_CVAR, 	NULL, "Audio Buffer Size", 			&cv_audbuffersize,   90},
-	{IT_DISABLED, 			NULL, "", 							NULL,     			100},	// dummy text
+	{IT_STRING | IT_CVAR, 	NULL, "Cache Sound", 				&cv_cachesound,   90},
+
+	{IT_STRING | IT_CVAR, 	NULL, "Audio Buffer Size", 			&cv_audbuffersize,   95},
+	{IT_DISABLED, 			NULL, "", 							NULL,     			105},	// dummy text
 };
 
 static const char* OP_SoundAdvancedTooltips[] =
@@ -1180,7 +1186,10 @@ static const char* OP_SoundAdvancedTooltips[] =
 	"Should the Invulnerability music be on or off?",
 	"Should music be kept when restarting the map?",
 	"Should the Intro fanfare be skipped\nand map music be played on map start?",
+	"Controls Sound effects caching.\nKeep will retain previously played sound effects in cache." // man idk how to describe this in a non awful way lmao
+	"\nOn will preload all sound effects.\nEliminates sound-related lag and stutters but increases memory usage.",
 	"Size of the Audio Buffer\nreducing it will result in less sound latency\nbut may cause issues such as crackling or distorted Sound.",
+	NULL,
 };
 
 static menuitem_t OP_FocusOptionsMenu[] =

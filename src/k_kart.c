@@ -637,11 +637,14 @@ void K_GenerateKartColormap(UINT8 *dest_colormap, INT32 skinnum, UINT8 color, bo
 UINT8 K_GetKartColorByName(const char *name)
 {
 	UINT8 color = (UINT8)atoi(name);
+
 	if (color > 0 && color < MAXSKINCOLORS)
 		return color;
+
 	for (color = 1; color < MAXSKINCOLORS; color++)
-		if (!stricmp(KartColor_Names[color], name))
+		if (fasticmp(KartColor_Names[color], name))
 			return color;
+
 	return 0;
 }
 
@@ -2857,9 +2860,9 @@ void K_SpawnKartExplosion(fixed_t x, fixed_t y, fixed_t z, fixed_t radius, INT32
 		v[3] = FRACUNIT;
 
 		res = VectorMatrixMultiply(v, *RotateXMatrix(rotangle));
-		M_Memcpy(&v, res, sizeof (v));
+		memcpy(&v, res, sizeof (v));
 		res = VectorMatrixMultiply(v, *RotateZMatrix(closestangle));
-		M_Memcpy(&v, res, sizeof (v));
+		memcpy(&v, res, sizeof (v));
 
 		finalx = x + v[0];
 		finaly = y + v[1];

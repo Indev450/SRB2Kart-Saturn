@@ -46,13 +46,14 @@ static void R_ParseSpriteInfoFrame(spriteinfo_t *info)
 	{
 		I_Error("Error parsing SPRTINFO lump: Unexpected end of file where sprite frame should be");
 	}
+
 	sprinfoTokenLength = strlen(sprinfoToken);
 	if (sprinfoTokenLength != 1)
 	{
 		I_Error("Error parsing SPRTINFO lump: Invalid frame \"%s\"",sprinfoToken);
 	}
-	else
-		frameChar = sprinfoToken;
+
+	frameChar = sprinfoToken;
 
 	frameFrame = R_Char2Frame(frameChar[0]);
 	Z_Free(sprinfoToken);
@@ -61,52 +62,52 @@ static void R_ParseSpriteInfoFrame(spriteinfo_t *info)
 	sprinfoToken = M_GetToken(NULL);
 	if (sprinfoToken == NULL)
 		I_Error("Error parsing SPRTINFO lump: Missing sprite info");
-	else
+
+	if (fastcmp(sprinfoToken, "{"))
 	{
-		if (strcmp(sprinfoToken,"{")==0)
+		Z_Free(sprinfoToken);
+		sprinfoToken = M_GetToken(NULL);
+		if (sprinfoToken == NULL)
 		{
+			I_Error("Error parsing SPRTINFO lump: Unexpected end of file where sprite info should be");
+		}
+		while (!fastcmp(sprinfoToken, "}"))
+		{
+			if (fasticmp(sprinfoToken, "XPIVOT"))
+			{
+				Z_Free(sprinfoToken);
+				sprinfoToken = M_GetToken(NULL);
+				frameXPivot = atoi(sprinfoToken);
+			}
+			else if (fasticmp(sprinfoToken, "YPIVOT"))
+			{
+				Z_Free(sprinfoToken);
+				sprinfoToken = M_GetToken(NULL);
+				frameYPivot = atoi(sprinfoToken);
+			}
+			else if (fasticmp(sprinfoToken, "ROTAXIS"))
+			{
+				Z_Free(sprinfoToken);
+				sprinfoToken = M_GetToken(NULL);
+				if (fasticmp(sprinfoToken, "X") || fasticmp(sprinfoToken, "XAXIS") || fasticmp(sprinfoToken, "ROLL"))
+					frameRotAxis = ROTAXIS_X;
+				else if (fasticmp(sprinfoToken, "Y") || fasticmp(sprinfoToken, "YAXIS") || fasticmp(sprinfoToken, "PITCH"))
+					frameRotAxis = ROTAXIS_Y;
+				else if (fasticmp(sprinfoToken, "Z") || fasticmp(sprinfoToken, "ZAXIS") || fasticmp(sprinfoToken, "YAW"))
+					frameRotAxis = ROTAXIS_Z;
+			}
+
 			Z_Free(sprinfoToken);
+
 			sprinfoToken = M_GetToken(NULL);
 			if (sprinfoToken == NULL)
 			{
-				I_Error("Error parsing SPRTINFO lump: Unexpected end of file where sprite info should be");
-			}
-			while (strcmp(sprinfoToken,"}")!=0)
-			{
-				if (stricmp(sprinfoToken, "XPIVOT")==0)
-				{
-					Z_Free(sprinfoToken);
-					sprinfoToken = M_GetToken(NULL);
-					frameXPivot = atoi(sprinfoToken);
-				}
-				else if (stricmp(sprinfoToken, "YPIVOT")==0)
-				{
-					Z_Free(sprinfoToken);
-					sprinfoToken = M_GetToken(NULL);
-					frameYPivot = atoi(sprinfoToken);
-				}
-				else if (stricmp(sprinfoToken, "ROTAXIS")==0)
-				{
-					Z_Free(sprinfoToken);
-					sprinfoToken = M_GetToken(NULL);
-					if ((stricmp(sprinfoToken, "X")==0) || (stricmp(sprinfoToken, "XAXIS")==0) || (stricmp(sprinfoToken, "ROLL")==0))
-						frameRotAxis = ROTAXIS_X;
-					else if ((stricmp(sprinfoToken, "Y")==0) || (stricmp(sprinfoToken, "YAXIS")==0) || (stricmp(sprinfoToken, "PITCH")==0))
-						frameRotAxis = ROTAXIS_Y;
-					else if ((stricmp(sprinfoToken, "Z")==0) || (stricmp(sprinfoToken, "ZAXIS")==0) || (stricmp(sprinfoToken, "YAW")==0))
-						frameRotAxis = ROTAXIS_Z;
-				}
-				Z_Free(sprinfoToken);
-
-				sprinfoToken = M_GetToken(NULL);
-				if (sprinfoToken == NULL)
-				{
-					I_Error("Error parsing SPRTINFO lump: Unexpected end of file where sprite info or right curly brace should be");
-				}
+				I_Error("Error parsing SPRTINFO lump: Unexpected end of file where sprite info or right curly brace should be");
 			}
 		}
-		Z_Free(sprinfoToken);
 	}
+
+	Z_Free(sprinfoToken);
 
 	// set fields
 	info->pivot[frameFrame].x = frameXPivot;
@@ -137,6 +138,7 @@ static void R_ParseSpriteInfo(boolean spr2)
 	{
 		I_Error("Error parsing SPRTINFO lump: Unexpected end of file where sprite name should be");
 	}
+
 	sprinfoTokenLength = strlen(sprinfoToken);
 	if (sprinfoTokenLength != 4)
 	{
@@ -145,10 +147,11 @@ static void R_ParseSpriteInfo(boolean spr2)
 	else
 	{
 		memset(&newSpriteName, 0, 5);
-		M_Memcpy(newSpriteName, sprinfoToken, sprinfoTokenLength);
+		memcpy(newSpriteName, sprinfoToken, sprinfoTokenLength);
 		// ^^ we've confirmed that the token is == 4 characters so it will never overflow a 5 byte char buffer
 		strupr(newSpriteName); // Just do this now so we don't have to worry about it
 	}
+
 	Z_Free(sprinfoToken);
 
 	if (!spr2)
@@ -157,7 +160,8 @@ static void R_ParseSpriteInfo(boolean spr2)
 		{
 			if (i == NUMSPRITES)
 				I_Error("Error parsing SPRTINFO lump: Unknown sprite name \"%s\"", newSpriteName);
-			if (!memcmp(newSpriteName,sprnames[i],4))
+
+			if (!memcmp(newSpriteName,sprnames[i], 4))
 			{
 				sprnum = static_cast<spritenum_t>(i);
 				break;
@@ -175,17 +179,20 @@ static void R_ParseSpriteInfo(boolean spr2)
 	{
 		I_Error("Error parsing SPRTINFO lump: Unexpected end of file where open curly brace for sprite \"%s\" should be",newSpriteName);
 	}
-	if (strcmp(sprinfoToken,"{")==0)
+
+	if (fastcmp(sprinfoToken, "{"))
 	{
 		Z_Free(sprinfoToken);
+
 		sprinfoToken = M_GetToken(NULL);
 		if (sprinfoToken == NULL)
 		{
 			I_Error("Error parsing SPRTINFO lump: Unexpected end of file where definition for sprite \"%s\" should be",newSpriteName);
 		}
-		while (strcmp(sprinfoToken,"}")!=0)
+
+		while (!fastcmp(sprinfoToken, "}"))
 		{
-			if (stricmp(sprinfoToken, "SKIN")==0)
+			if (fasticmp(sprinfoToken, "SKIN"))
 			{
 				INT32 skinnum;
 				char *skinName = NULL;
@@ -204,7 +211,7 @@ static void R_ParseSpriteInfo(boolean spr2)
 				// copy skin name yada yada
 				sprinfoTokenLength = strlen(sprinfoToken);
 				skinName = (char *)Z_Malloc((sprinfoTokenLength+1)*sizeof(char),PU_STATIC,NULL);
-				M_Memcpy(skinName,sprinfoToken,sprinfoTokenLength*sizeof(char));
+				memcpy(skinName,sprinfoToken,sprinfoTokenLength*sizeof(char));
 				skinName[sprinfoTokenLength] = '\0';
 				strlwr(skinName);
 				Z_Free(sprinfoToken);
@@ -216,10 +223,11 @@ static void R_ParseSpriteInfo(boolean spr2)
 				skinnumbers[foundskins] = skinnum;
 				foundskins++;
 			}
-			else if (stricmp(sprinfoToken, "FRAME")==0)
+			else if (fasticmp(sprinfoToken, "FRAME"))
 			{
 				R_ParseSpriteInfoFrame(info);
 				Z_Free(sprinfoToken);
+
 				if (spr2)
 				{
 					if (!foundskins)
@@ -232,11 +240,11 @@ static void R_ParseSpriteInfo(boolean spr2)
 							skin = &localskins[allskins[skinnum].localnum];
 						else
 							skin = &skins[allskins[skinnum].localnum];
-						M_Memcpy(&skin->sprinfo, info, sizeof(spriteinfo_t));
+						memcpy(&skin->sprinfo, info, sizeof(spriteinfo_t));
 					}
 				}
 				else
-					M_Memcpy(&spriteinfo[sprnum], info, sizeof(spriteinfo_t));
+					memcpy(&spriteinfo[sprnum], info, sizeof(spriteinfo_t));
 			}
 			else
 			{
@@ -254,6 +262,7 @@ static void R_ParseSpriteInfo(boolean spr2)
 	{
 		I_Error("Error parsing SPRTINFO lump: Expected \"{\" for sprite \"%s\", got \"%s\"",newSpriteName,sprinfoToken);
 	}
+
 	Z_Free(sprinfoToken);
 	Z_Free(info);
 }
@@ -291,15 +300,18 @@ void R_ParseSPRTINFOLump(UINT16 wadNum, UINT16 lumpNum)
 	while (sprinfoToken != NULL)
 	{
 		CONS_Printf("Attempting to parse le SPRTINFO lump for ya..\n");
-		if (!stricmp(sprinfoToken, "SPRITE"))
+
+		if (fasticmp(sprinfoToken, "SPRITE"))
 			R_ParseSpriteInfo(false);
-		else if (!stricmp(sprinfoToken, "SPRITE2"))
+		else if (fasticmp(sprinfoToken, "SPRITE2"))
 			R_ParseSpriteInfo(true);
 		else
 			I_Error("Error parsing SPRTINFO lump: Unknown keyword \"%s\"", sprinfoToken);
+
 		Z_Free(sprinfoToken);
 		sprinfoToken = M_GetToken(NULL);
 	}
+
 	Z_Free((void *)sprinfoText);
 }
 
@@ -359,7 +371,7 @@ patch_t *Patch_Create(softwarepatch_t *source, size_t srcsize, void *dest)
 			I_Error("Patch_Create: no column data!");
 
 		patch->columns = static_cast<UINT8*>(Z_Calloc(colsize, PU_PATCH_DATA, NULL));
-		M_Memcpy(patch->columns, ((UINT8 *)source + LONG(source->columnofs[0])), colsize);
+		memcpy(patch->columns, ((UINT8 *)source + LONG(source->columnofs[0])), colsize);
 	}
 
 	return patch;

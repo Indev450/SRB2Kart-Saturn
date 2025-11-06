@@ -1237,7 +1237,7 @@ static void HWR_DrawSkyWall(FOutVector *wallVerts, FSurfaceInfo *Surf)
 // Returns true if the midtexture is visible, and false if... it isn't...
 static inline boolean HWR_BlendMidtextureSurface(FSurfaceInfo *pSurf)
 {
-	FUINT blendmode = PF_Masked;
+	FUINT blendmode = PF_Masked | PF_Translucent;
 
 	pSurf->PolyColor.s.alpha = 0xFF;
 
@@ -1259,8 +1259,6 @@ static inline boolean HWR_BlendMidtextureSurface(FSurfaceInfo *pSurf)
 			case 256:
 				if (gl_linedef->blendmode)
 					blendmode = HWR_SurfaceBlend(gl_linedef->blendmode, R_GetLinedefTransTable(gl_linedef->alpha), pSurf);
-				else
-					blendmode = PF_Translucent;
 				break;
 			default:
 				if (gl_linedef->blendmode)
@@ -1272,8 +1270,6 @@ static inline boolean HWR_BlendMidtextureSurface(FSurfaceInfo *pSurf)
 				}
 				else if (gl_linedef->alpha >= 0 && gl_linedef->alpha < FRACUNIT)
 					blendmode = HWR_TranstableToAlpha(R_GetLinedefTransTable(gl_linedef->alpha), pSurf);
-				else
-					blendmode = PF_Masked;
 				break;
 		}
 	}
@@ -4280,8 +4276,8 @@ static void HWR_AddTransparentWall(FOutVector *wallVerts, FSurfaceInfo *pSurf, I
 {
 	wallinfo_t *wallinfo = static_cast<wallinfo_t*>(HWR_CreateDrawNode(DRAWNODE_WALL));
 
-	M_Memcpy(wallinfo->wallVerts, wallVerts, sizeof (wallinfo->wallVerts));
-	M_Memcpy(&wallinfo->Surf, pSurf, sizeof (FSurfaceInfo));
+	memcpy(wallinfo->wallVerts, wallVerts, sizeof (wallinfo->wallVerts));
+	memcpy(&wallinfo->Surf, pSurf, sizeof (FSurfaceInfo));
 	wallinfo->texnum = texnum;
 	wallinfo->noencore = noencore;
 	wallinfo->blend = blend;
@@ -5840,7 +5836,7 @@ static void COM_HWR_glinfo(void)
 	{
 		argv = COM_Argv(i);
 
-		if (strcmp(argv, "--list-extensions") == 0 || strcmp(argv, "-l") == 0)
+		if (fastcmp(argv, "--list-extensions")|| fastcmp(argv, "-l"))
 		{
 			list_extensions = 1;
 		}

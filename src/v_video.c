@@ -23,7 +23,6 @@
 #include "r_main.h"
 #include "r_fps.h"
 #include "console.h"
-
 #include "i_video.h" // rendermode
 #include "z_zone.h"
 #include "m_misc.h"
@@ -140,8 +139,9 @@ static boolean InitCube(void)
 	if (!loaded_config)
 		return false;
 
-#define diffcons(cv) (strcmp(cv.string, cv.defaultvalue))
+#define diffcons(cv) (!fastcmp(cv.string, cv.defaultvalue))
 #define diffconsbrightness(cv) (cv.value != 0)
+
 #define diffconssat(cv) (cv.value != 10)
 
 	doingbrightness = diffcons(cv_globalbrightness);
@@ -597,7 +597,7 @@ void V_ResetPaletteCVars(void)
 	if (!loaded_config)
 		return;
 
-#define diffcons(cv) (strcmp(cv.string, cv.defaultvalue))
+#define diffcons(cv) (!fastcmp(cv.string, cv.defaultvalue))
 	if diffcons(cv_palette)
 		CV_StealthSetValue(&cv_palette, atoi(cv_palette.defaultvalue));
 	if diffcons(cv_palettenum)
@@ -628,13 +628,13 @@ void VID_BlitLinearScreen(const UINT8 *restrict srcptr, UINT8 *restrict destptr,
 			i -= 16;
 		}
 #endif
-		M_Memcpy(destptr, srcptr, i);
+		memcpy(destptr, srcptr, i);
 	}
 	else
 	{
 		while (height--)
 		{
-			M_Memcpy(destptr, srcptr, width);
+			memcpy(destptr, srcptr, width);
 
 			destptr += destrowbytes;
 			srcptr += srcrowbytes;
@@ -1195,7 +1195,7 @@ void V_DrawBlock(INT32 x, INT32 y, INT32 scrn, INT32 width, INT32 height, const 
 
 	while (height--)
 	{
-		M_Memcpy(dest, src, width);
+		memcpy(dest, src, width);
 
 		src += width;
 		dest += vid.width;
@@ -3585,6 +3585,9 @@ boolean *heatshifter = NULL;
 INT32 lastheight = 0;
 INT32 heatindex[MAXSPLITSCREENPLAYERS] = {0, 0, 0, 0};
 
+// unused motion blur effect, probably non functional
+//#define MOTIONBLUR
+
 //
 // V_DoPostProcessor
 //
@@ -3599,7 +3602,9 @@ void V_DoPostProcessor(INT32 view, INT32 param)
 	(void)type;
 	(void)param;
 #else
+#ifndef MOTIONBLUR
 	(void)param; // unused motion blur stuff
+#endif
 	INT32 yoffset, xoffset;
 
 #ifdef HWRENDER
@@ -3644,7 +3649,7 @@ void V_DoPostProcessor(INT32 view, INT32 param)
 
 			if (sine < 0)
 			{
-				M_Memcpy(&tmpscr[(y*vid.width)+xoffset+newpix], &srcscr[(y*vid.width)+xoffset], viewwidth-newpix);
+				memcpy(&tmpscr[(y*vid.width)+xoffset+newpix], &srcscr[(y*vid.width)+xoffset], viewwidth-newpix);
 
 				// Cleanup edge
 				while (newpix)
@@ -3655,7 +3660,7 @@ void V_DoPostProcessor(INT32 view, INT32 param)
 			}
 			else
 			{
-				M_Memcpy(&tmpscr[(y*vid.width)+xoffset+0], &srcscr[(y*vid.width)+xoffset+sine], viewwidth-newpix);
+				memcpy(&tmpscr[(y*vid.width)+xoffset+0], &srcscr[(y*vid.width)+xoffset+sine], viewwidth-newpix);
 
 				// Cleanup edge
 				while (newpix)
@@ -3715,10 +3720,10 @@ void V_DoPostProcessor(INT32 view, INT32 param)
 			{
 				// Shift this row of pixels to the right by 2
 				tmpscr[(y*vid.width)+xoffset] = srcscr[(y*vid.width)+xoffset];
-				M_Memcpy(&tmpscr[(y*vid.width)+xoffset], &srcscr[(y*vid.width)+xoffset+vid.dup], viewwidth-vid.dup);
+				memcpy(&tmpscr[(y*vid.width)+xoffset], &srcscr[(y*vid.width)+xoffset+vid.dup], viewwidth-vid.dup);
 			}
 			else
-				M_Memcpy(&tmpscr[(y*vid.width)+xoffset], &srcscr[(y*vid.width)+xoffset], viewwidth);
+				memcpy(&tmpscr[(y*vid.width)+xoffset], &srcscr[(y*vid.width)+xoffset], viewwidth);
 
 			heatindex[view] %= viewheight;
 		}
@@ -3734,7 +3739,8 @@ void V_DoPostProcessor(INT32 view, INT32 param)
 		srcscr = tmp;
 	}
 
-	/*if (thiscam->postimg & POSTIMG_MOTION) // Motion Blur!
+#ifdef MOTIONBLUR
+	if (thiscam->postimg & POSTIMG_MOTION) // Motion Blur!
 	{
 		INT32 x, y;
 
@@ -3746,14 +3752,15 @@ void V_DoPostProcessor(INT32 view, INT32 param)
 			for (x = xoffset; x < xoffset+viewwidth; x++)
 				tmpscr[y*vid.width + x] =     colormaps[*(transme     + (srcscr   [(y*vid.width)+x ] <<8) + (tmpscr[(y*vid.width)+x]))];
 		}
-	}*/
+	}
+#endif
 
 	if ((thiscam->postimg & POSTIMG_FLIP) && !(thiscam->postimg & POSTIMG_MIRROR)) // Flip the screen upside-down
 	{
 		INT32 y, y2;
 
 		for (y = yoffset, y2 = yoffset+viewheight - 1; y < yoffset+viewheight; y++, y2--)
-			M_Memcpy(&tmpscr[(y2*vid.width)+xoffset], &srcscr[(y*vid.width)+xoffset], viewwidth);
+			memcpy(&tmpscr[(y2*vid.width)+xoffset], &srcscr[(y*vid.width)+xoffset], viewwidth);
 
 		UINT8 *tmp = tmpscr;
 		tmpscr = srcscr;

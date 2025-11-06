@@ -550,7 +550,8 @@ INT32 CL_CheckFiles(void)
 		for (j = mainwads+1; j < numwadfiles; j++)
 		{
 			nameonly(strcpy(wadfilename, wadfiles[j]->filename));
-			if (!stricmp(wadfilename, fileneeded[i].filename) &&
+
+			if (fasticmp(wadfilename, fileneeded[i].filename) &&
 				!memcmp(wadfiles[j]->md5sum, fileneeded[i].md5sum, 16))
 			{
 				CONS_Debug(DBG_NETPLAY, "already loaded\n");
@@ -665,7 +666,7 @@ static boolean SV_SendFile(INT32 node, const char *filename, UINT8 fileid)
 		strlcpy(wadfilename, wadfiles[wadnum]->filename, MAX_WADPATH);
 		nameonly(wadfilename);
 
-		if (!stricmp(wadfilename, p->id.filename))
+		if (fasticmp(wadfilename, p->id.filename))
 		{
 			// Copy file name with full path
 			strlcpy(p->id.filename, wadfiles[wadnum]->filename, MAX_WADPATH);
@@ -901,7 +902,7 @@ void SV_FileSendTicker(void)
 
 		if (ram)
 		{
-			M_Memcpy(p->data, &f->id.ram[transfer[i].position], size);
+			memcpy(p->data, &f->id.ram[transfer[i].position], size);
 		}
 		else if (fread(p->data, 1, size, transferFiles[f->fileid].file) != size)
 		{
@@ -946,17 +947,17 @@ void Got_Filetxpak(void)
 	char *filename = file->filename;
 	static INT32 filetime = 0;
 
-	if (!(strcmp(filename, "srb2.srb")
-		//&& strcmp(filename, "srb2.wad")
-		//&& strcmp(filename, "patch.dta")
-		//&& strcmp(filename, "music.dta")
-		&& strcmp(filename, "gfx.kart")
-		&& strcmp(filename, "textures.kart")
-		&& strcmp(filename, "chars.kart")
-		&& strcmp(filename, "maps.kart")
-		&& strcmp(filename, "sounds.kart")
-		&& strcmp(filename, "music.kart")
-		&& strcmp(filename, "patch.kart")
+	if ((fastcmp(filename, "srb2.srb")
+		//|| fastcmp(filename, "srb2.wad")
+		//|| fastcmp(filename, "patch.dta")
+		//|| fastcmp(filename, "music.dta")
+		|| fastcmp(filename, "gfx.kart")
+		|| fastcmp(filename, "textures.kart")
+		|| fastcmp(filename, "chars.kart")
+		|| fastcmp(filename, "maps.kart")
+		|| fastcmp(filename, "sounds.kart")
+		|| fastcmp(filename, "music.kart")
+		|| fastcmp(filename, "patch.kart")
 		))
 		I_Error("Tried to download \"%s\"", filename);
 
@@ -1103,7 +1104,7 @@ void nameonly(char *s)
 			ns = &(s[j+1]);
 			len = strlen(ns);
 #if 0
-				M_Memcpy(s, ns, len+1);
+				memcpy(s, ns, len+1);
 #else
 				memmove(s, ns, len+1);
 #endif
@@ -1197,7 +1198,7 @@ filestatus_t findfile(char *filename, const UINT8 *wantedmd5sum, boolean complet
 	}
 
 	// next, check SRB2's "home" directory (if non-'.')
-	if (strcmp(srb2home, "."))
+	if (!fastcmp(srb2home, "."))
 	{
 		homecheck = filesearch(filename, srb2home, wantedmd5sum, completepath, 10);
 
@@ -1209,7 +1210,7 @@ filestatus_t findfile(char *filename, const UINT8 *wantedmd5sum, boolean complet
 	}
 
 	// next, check SRB2's "path" directory (also if non-'.')
-	if (strcmp(srb2path, "."))
+	if (!fastcmp(srb2path, "."))
 	{
 		homecheck = filesearch(filename, srb2path, wantedmd5sum, completepath, 10);
 
@@ -1554,7 +1555,7 @@ CURLGetLogin (const char *url, HTTP_login ***return_prev_next)
 			( login = (*prev_next));
 			prev_next = &login->next
 	){
-		if (strcmp(login->url, url) == 0)
+		if (fastcmp(login->url, url) != 0)
 		{
 			if (return_prev_next)
 				(*return_prev_next) = prev_next;

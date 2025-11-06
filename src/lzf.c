@@ -192,7 +192,7 @@ lzf_decompress (const void *const in_data,  size_t in_len,
 #endif
 
 #if USE_MEMCPY
-			M_Memcpy (op, ip, ctrl);
+			memcpy(op, ip, ctrl);
 			op += ctrl;
 			ip += ctrl;
 #else
@@ -435,7 +435,7 @@ lzf_compress (const void *const in_data,size_t in_len,
 
 			*op++ = MAX_LIT - 1;
 #if USE_MEMCPY
-			M_Memcpy (op, ip - MAX_LIT, MAX_LIT);
+			memcpy(op, ip - MAX_LIT, MAX_LIT);
 			op += MAX_LIT;
 			lit = 0;
 #else
