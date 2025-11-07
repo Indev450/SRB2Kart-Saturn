@@ -33,7 +33,7 @@
 
 #include "qs22j.h"
 
-CV_PossibleValue_t Forceskin_cons_t[MAXSKINS+2];
+CV_PossibleValue_t Forceskin_cons_t[MAXSKINS+2]; // huehuehuehuehue
 
 #include "discord.h"
 
@@ -41,6 +41,7 @@ INT32 numskins = 0;
 INT32 numallskins = 0;
 INT32 numlocalskins = 0;
 skin_t skins[MAXSKINS];
+
 UINT8 skinstats[9][9][MAXSKINS];
 UINT8 skinstatscount[9][9] = {
 	{0, 0, 0, 0, 0, 0, 0, 0, 0},
@@ -53,6 +54,7 @@ UINT8 skinstatscount[9][9] = {
 	{0, 1, 0, 0, 0, 0, 0, 0, 0},
 	{0, 0, 0, 0, 0, 0, 0, 0, 0}
 };
+
 UINT8 skinsorted[MAXSKINS];
 skin_t localskins[MAXLOCALSKINS];
 skin_t allskins[MAXSKINS+MAXLOCALSKINS];
@@ -70,13 +72,14 @@ static void Sk_SetDefaultValue(skin_t *skin, boolean local)
 	//
 	// set default skin values
 	//
-	memset(skin, 0, sizeof (skin_t));
+	memset(skin, 0, sizeof(skin_t));
+
 	snprintf(skin->name, sizeof skin->name, "skin %u", K_GetMobjSkinNum(skin, local));
 	skin->name[sizeof skin->name - 1] = '\0';
-	skin->wadnum = INT16_MAX;
-	strcpy(skin->sprite, "");
 
-	skin->flags = 0;
+	skin->wadnum = INT16_MAX;
+
+	strcpy(skin->sprite, "");
 
 	strcpy(skin->realname, "Someone");
 	strcpy(skin->hudname, "???");
@@ -95,8 +98,12 @@ static void Sk_SetDefaultValue(skin_t *skin, boolean local)
 	skin->highresscale = FRACUNIT>>1;
 
 	for (i = 0; i < sfx_skinsoundslot0; i++)
-		if (S_sfx[i].skinsound != -1)
-			skin->soundsid[S_sfx[i].skinsound] = i;
+	{
+		const INT32 skinsound = S_sfx[i].skinsound;
+
+		if (skinsound != -1)
+			skin->soundsid[skinsound] = i;
+	}
 }
 
 //
@@ -124,6 +131,7 @@ void R_InitSkins(void)
 	skin = &skins[0];
 	numskins = 1;
 	Sk_SetDefaultValue(skin, false);
+
 	memset(skinstats, 0, sizeof(skinstats));
 	memset(skinsorted, 0, sizeof(skinsorted));
 
@@ -132,13 +140,16 @@ void R_InitSkins(void)
 #ifdef SKINVALUES
 	skin_cons_t[0].strvalue = skins[0].name;
 #endif
-	skin->flags = 0;
+
 	strcpy(skin->realname,   "Sonic");
 	strcpy(skin->hudname,    "SONIC");
 
 	strncpy(skin->facerank, "PLAYRANK", 9);
 	strncpy(skin->facewant, "PLAYWANT", 9);
 	strncpy(skin->facemmap, "PLAYMMAP", 9);
+
+	skin->flags = 0;
+
 	skin->wadnum = 0; // god what have you brought to this world
 	skin->prefcolor = SKINCOLOR_BLUE;
 	skin->localskin = false;
@@ -177,9 +188,10 @@ INT32 R_SkinAvailable(const char *name)
 
 	for (i = 0; i < numskins; i++)
 	{
-		if (stricmp(skins[i].name,name) == 0)
+		if (fasticmp(skins[i].name, name))
 			return i;
 	}
+
 	return -1;
 }
 
@@ -191,9 +203,10 @@ INT32 R_AnySkinAvailable(const char *name)
 
 	for (i = 0; i < numallskins; i++)
 	{
-		if (stricmp(allskins[i].name,name) == 0)
+		if (fasticmp(allskins[i].name, name))
 			return i;
 	}
+
 	return -1;
 }
 
@@ -205,32 +218,32 @@ INT32 R_LocalSkinAvailable(const char *name, boolean local)
 	{
 		for (i = 0; i < numlocalskins; i++)
 		{
-			if (stricmp(localskins[i].name,name) == 0)
+			if (fasticmp(localskins[i].name, name))
 				return i;
 		}
+
 		return -1;
 	}
-	else
-		return R_SkinAvailable(name);
+
+	return R_SkinAvailable(name);
 }
 
 // network code calls this when a 'skin change' is received
 boolean SetPlayerSkin(INT32 playernum, const char *skinname)
 {
 	INT32 i;
-	player_t *player = &players[playernum];
 
 	for (i = 0; i < numskins; i++)
 	{
 		// search in the skin list
-		if (stricmp(skins[i].name, skinname) == 0)
+		if (fasticmp(skins[i].name, skinname))
 		{
 			SetPlayerSkinByNum(playernum, i);
 			return true;
 		}
 	}
 
-	if (P_IsLocalPlayer(player))
+	if (P_IsLocalPlayer(&players[playernum]))
 		CONS_Alert(CONS_WARNING, M_GetText("Skin '%s' not found.\n"), skinname);
 	else if (server || IsPlayerAdmin(consoleplayer))
 		CONS_Alert(CONS_WARNING, M_GetText("Player %d (%s) skin '%s' not found\n"), playernum, player_names[playernum], skinname);
@@ -244,15 +257,16 @@ void SetLocalPlayerSkin(INT32 playernum, const char *skinname, consvar_t *cvar)
 	INT32 i;
 	player_t *player = &players[playernum];
 
-	if (stricmp(skinname, "none"))
+	if (!fasticmp(skinname, "none"))
 	{
 		for (i = 0; i < numlocalskins; i++)
 		{
 			// search in the localskin list
-			if (stricmp(localskins[i].name, skinname) == 0)
+			if (fasticmp(localskins[i].name, skinname))
 			{
 				player->localskin = 1 + i;
 				player->skinlocal = true;
+
 				if (player->mo)
 				{
 					player->mo->localskin = &localskins[i];
@@ -266,10 +280,11 @@ void SetLocalPlayerSkin(INT32 playernum, const char *skinname, consvar_t *cvar)
 		for (i = 0; i < numskins; i++)
 		{
 			// search in the skin list
-			if (stricmp(skins[i].name, skinname) == 0)
+			if (fasticmp(skins[i].name, skinname))
 			{
 				player->localskin = 1 + i;
 				player->skinlocal = false;
+
 				if (player->mo)
 				{
 					player->mo->localskin = &skins[i];
@@ -284,6 +299,7 @@ void SetLocalPlayerSkin(INT32 playernum, const char *skinname, consvar_t *cvar)
 	{
 		player->localskin = 0;
 		player->skinlocal = false;
+
 		if (player->mo)
 		{
 			player->mo->localskin = 0;
@@ -318,6 +334,7 @@ void SetPlayerSkinByNum(INT32 playernum, INT32 skinnum)
 	if (skinnum >= 0 && skinnum < numskins) // Make sure it exists!
 	{
 		player->skin = skinnum;
+
 		if (player->mo)
 			player->mo->skin = skin;
 
@@ -360,117 +377,97 @@ void SetPlayerSkinByNum(INT32 playernum, INT32 skinnum)
 static UINT16 W_CheckForSkinMarkerInPwad(UINT16 wadid, UINT16 startlump)
 {
 	UINT16 i;
-	const char *S_SKIN = "S_SKIN";
 	lumpinfo_t *lump_p;
 
 	// scan forward, start at <startlump>
 	if (startlump < wadfiles[wadid]->numlumps)
 	{
 		lump_p = wadfiles[wadid]->lumpinfo + startlump;
+
 		for (i = startlump; i < wadfiles[wadid]->numlumps; i++, lump_p++)
-			if (memcmp(lump_p->name,S_SKIN,6)==0)
+		{
+			if (memcmp(lump_p->name, "S_SKIN", 6) == 0)
 				return i;
+		}
 	}
+
 	return INT16_MAX; // not found
 }
 
 //sort function for sorting skin names
-static int skinSortFunc(const void *a, const void *b) //tbh i have no clue what the naming conventions for local functions are
+static int skinSortFunc(const void *a, const void *b) // tbh i have no clue what the naming conventions for local functions are
 {
-	const skin_t *in1 = &skins[*(const UINT8 *)a];
-	const skin_t *in2 = &skins[*(const UINT8 *)b];
-	INT32 temp = 0;
-	const UINT8 val_a = *((const UINT8 *)a);
-	const UINT8 val_b = *((const UINT8 *)b);
+	int diff = 0;
+	const UINT8 val_a = *(const UINT8 *)a;
+	const UINT8 val_b = *(const UINT8 *)b;
+	const skin_t *in1 = &skins[val_a];
+	const skin_t *in2 = &skins[val_b];
 
-	//return (strcmp(in1->realname, in2->realname) < 0) || (strcmp(in1->realname, in2->realname) ==);
+	// return (strcmp(in1->realname, in2->realname) < 0) || (strcmp(in1->realname, in2->realname) ==);
 
 	switch (cv_skinselectgridsort.value)
 	{
 		case SKINMENUSORT_REALNAME:
-			//CONS_Printf("Sorting by realname\n");
+			// CONS_Printf("Sorting by realname\n");
 			// check name
-			if ((temp = strcmp(in1->realname, in2->realname)))
-				return temp;
-			// sort by internal name
-			return strcmp(in1->name, in2->name);
-			break;
+			diff = strcmp(in1->realname, in2->realname);
+			if (diff != 0) return diff;
 
-		case SKINMENUSORT_NAME:
-			//CONS_Printf("Sorting by name\n");
-			return strcmp(in1->name, in2->name);
 			break;
-
 		case SKINMENUSORT_SPEED:
-			//CONS_Printf("Sorting by speed\n");
+			// CONS_Printf("Sorting by speed\n");
 			// check speed
-			if (in1->kartspeed < in2->kartspeed)
-				return -1;
-			else if (in2->kartspeed < in1->kartspeed)
-				return 1;
+			diff = in1->kartspeed - in2->kartspeed;
+			if (diff != 0) return diff;
+
 			// then check weight
-			if (in1->kartweight < in2->kartweight)
-				return -1;
-			else if (in2->kartweight < in1->kartweight)
-				return 1;
-			// then check name
-			if ((temp = strcmp(in1->realname, in2->realname)))
-				return temp;
-			// sort by internal name
-			return strcmp(in1->name, in2->name);
-			break;
+			diff = in1->kartweight - in2->kartweight;
+			if (diff != 0) return diff;
 
+			// then check name
+			diff = strcmp(in1->realname, in2->realname);
+			if (diff != 0) return diff;
+
+			break;
 		case SKINMENUSORT_WEIGHT:
-			//CONS_Printf("Sorting by weight\n");
+			// CONS_Printf("Sorting by weight\n");
 			// check weight
-			if (in1->kartweight < in2->kartweight)
-				return -1;
-			else if (in2->kartweight < in1->kartweight)
-				return 1;
+			diff = in1->kartweight - in2->kartweight;
+			if (diff != 0) return diff;
+
 			// then check speed
-			if (in1->kartspeed < in2->kartspeed)
-				return -1;
-			else if (in2->kartspeed < in1->kartspeed)
-				return 1;
-			// then check name
-			if ((temp = strcmp(in1->realname, in2->realname)))
-				return temp;
-			// sort by internal name
-			return strcmp(in1->name, in2->name);
-			break;
+			diff = in1->kartspeed - in2->kartspeed;
+			if (diff != 0) return diff;
 
+			// then check name
+			diff = strcmp(in1->realname, in2->realname);
+			if (diff != 0) return diff;
+
+			break;
 		case SKINMENUSORT_PREFCOLOR:
-			//CONS_Printf("Sorting by prefcolor\n");
+			// CONS_Printf("Sorting by prefcolor\n");
 			// check prefcolor
-			if (in1->prefcolor < in2->prefcolor)
-				return -1;
-			else if (in2->prefcolor < in1->prefcolor)
-				return 1;
+			diff = in1->prefcolor - in2->prefcolor;
+			if (diff != 0) return diff;
+
 			// then check name
-			if ((temp = strcmp(in1->realname, in2->realname)))
-				return temp;
-			// sort by internal name
-			return strcmp(in1->name, in2->name);
+			diff = strcmp(in1->realname, in2->realname);
+			if (diff != 0) return diff;
+
 			break;
-
 		case SKINMENUSORT_ID:
-			//CONS_Printf("Sorting by id\n");
-			//how do i do by ID?????
-			//wait why dont i just convert the inputs to UINT32s
-			//please tell me im allowed to define variables in here since its a block
-
-			if (val_a == val_b)
-				return 0;
-			else if (val_a < val_b)
-				return -1;
-			else
-				return 1;
-
+			// CONS_Printf("Sorting by id\n");
+			// how do i do by ID?????
+			// wait why dont i just convert the inputs to UINT32s
+			// please tell me im allowed to define variables in here since its a block
+			return (int)val_a - (int)val_b;
+		case SKINMENUSORT_NAME:
 		default:
-			return strcmp(in1->name, in2->name);
 			break;
 	}
-	//im scared this somehow will sometimes end up here so im gonna add this here just to be safe
+
+	// im scared this somehow will sometimes end up here so im gonna add this here just to be safe
+	// now it will often end up here >:3
 	return strcmp(in1->name, in2->name);
 }
 
@@ -523,7 +520,7 @@ void R_AddSkins(UINT16 wadnum, boolean local)
 		buf2 = malloc(size+1);
 		if (!buf2)
 			I_Error("R_AddSkins: No more free memory\n");
-		M_Memcpy(buf2,buf,size);
+		memcpy(buf2,buf,size);
 		buf2[size] = '\0';
 
 		// set defaults
@@ -531,8 +528,9 @@ void R_AddSkins(UINT16 wadnum, boolean local)
 		Sk_SetDefaultValue(skin, local);
 		skin->wadnum = wadnum;
 		hudname = realname = false;
+
 		// parse
-		stoken = strtok (buf2, "\r\n= ");
+		stoken = strtok(buf2, "\r\n= ");
 		while (stoken)
 		{
 			if ((stoken[0] == '/' && stoken[1] == '/')
@@ -548,7 +546,7 @@ void R_AddSkins(UINT16 wadnum, boolean local)
 			if (!value)
 				I_Error("R_AddSkins: syntax error in S_SKIN lump# %d(%s) in WAD %s\n", lump, W_CheckNameForNumPwad(wadnum,lump), wadfiles[wadnum]->filename);
 
-			if (!stricmp(stoken, "name"))
+			if (fasticmp(stoken, "name"))
 			{
 				// the skin name must uniquely identify a single skin
 				// I'm lazy so if name is already used I leave the 'skin x'
@@ -562,18 +560,18 @@ void R_AddSkins(UINT16 wadnum, boolean local)
 				// using the default skin name's number set above
 				else
 				{
-					const size_t stringspace =
-						strlen(value) + sizeof lnumskins + 1;
+					const size_t stringspace = strlen(value) + sizeof lnumskins + 1;
 					char *value2 = Z_Malloc(stringspace, PU_STATIC, NULL);
-					snprintf(value2, stringspace,
-						"%s%d", value, lnumskins);
+
+					snprintf(value2, stringspace, "%s%d", value, lnumskins);
 					value2[stringspace - 1] = '\0';
+
 					if (R_LocalSkinAvailable(value2, local) == -1)
 					{
-						STRBUFCPY(skin->name,
-							value2);
+						STRBUFCPY(skin->name, value2);
 						strlwr(skin->name);
 					}
+
 					Z_Free(value2);
 				}
 
@@ -589,115 +587,134 @@ void R_AddSkins(UINT16 wadnum, boolean local)
 				{
 					STRBUFCPY(skin->hudname, skin->name);
 					strupr(skin->hudname);
+
 					for (value = skin->hudname; *value; value++)
 						if (*value == '_') *value = ' '; // turn _ into spaces.
 				}
 			}
-			else if (!stricmp(stoken, "realname"))
+			else if (fasticmp(stoken, "realname"))
 			{ // Display name (eg. "Knuckles")
 				realname = true;
 				STRBUFCPY(skin->realname, value);
+
 				for (value = skin->realname; *value; value++)
 					if (*value == '_') *value = ' '; // turn _ into spaces.
+
 				if (!hudname)
 					STRBUFCPY(skin->hudname, skin->realname);
 			}
-			else if (!stricmp(stoken, "hudname"))
+			else if (fasticmp(stoken, "hudname"))
 			{ // Life icon name (eg. "K.T.E")
 				hudname = true;
 				STRBUFCPY(skin->hudname, value);
+
 				for (value = skin->hudname; *value; value++)
 					if (*value == '_') *value = ' '; // turn _ into spaces.
+
 				if (!realname)
 					STRBUFCPY(skin->realname, skin->hudname);
 			}
-
-			else if (!stricmp(stoken, "sprite"))
+			else if (fasticmp(stoken, "sprite"))
 			{
 				strupr(value);
 				memcpy(skin->sprite, value, sizeof skin->sprite);
 			}
-			else if (!stricmp(stoken, "facerank"))
+			else if (fasticmp(stoken, "facerank"))
 			{
 				strupr(value);
 				memcpy(skin->facerank, value, sizeof(skin->facerank)-1);
 				skin->facerank[sizeof(skin->facerank)-1] = '\0';
 			}
-			else if (!stricmp(stoken, "facewant"))
+			else if (fasticmp(stoken, "facewant"))
 			{
 				strupr(value);
 				memcpy(skin->facewant, value, sizeof(skin->facewant)-1);
 				skin->facewant[sizeof(skin->facewant)-1] = '\0';
 			}
-			else if (!stricmp(stoken, "facemmap"))
+			else if (fasticmp(stoken, "facemmap"))
 			{
 				strupr(value);
 				strncpy(skin->facemmap, value, sizeof(skin->facemmap)-1);
 				skin->facemmap[sizeof(skin->facemmap)-1] = '\0';
 			}
-			else if (!stricmp(stoken, "flags")) // character type identification
+			else if (fasticmp(stoken, "flags")) // character type identification
 			{
 				skin->flags = get_number(value);
 			}
-			else if (!stricmp(stoken, "kartspeed"))
+			else if (fasticmp(stoken, "kartspeed"))
 			{
 				skin->kartspeed = atoi(value);
+
 				if (skin->kartspeed < 1)
 					skin->kartspeed = 1;
 				if (skin->kartspeed > 9)
 					skin->kartspeed = 9;
 			}
-			else if (!stricmp(stoken, "kartweight"))
+			else if (fasticmp(stoken, "kartweight"))
 			{
 				skin->kartweight = atoi(value);
+
 				if (skin->kartweight < 1)
 					skin->kartweight = 1;
 				if (skin->kartweight > 9)
 					skin->kartweight = 9;
 			}
 			// custom translation table
-			else if (!stricmp(stoken, "startcolor"))
+			else if (fasticmp(stoken, "startcolor"))
+			{
 				skin->starttranscolor = atoi(value);
-			else if (!stricmp(stoken, "prefcolor"))
+			}
+			else if (fasticmp(stoken, "prefcolor"))
+			{
 				skin->prefcolor = K_GetKartColorByName(value);
-			else if (!stricmp(stoken, "highresscale"))
+			}
+			else if (fasticmp(stoken, "highresscale"))
+			{
 				skin->highresscale = FLOAT_TO_FIXED(atof(value));
+			}
 			else
 			{
 				INT32 found = false;
 				sfxenum_t i;
+
 				// copy name of sounds that are remapped
 				// for this skin
 				for (i = 0; i < sfx_skinsoundslot0; i++)
 				{
-					if (!S_sfx[i].name)
+					const sfxinfo_t *sfx = &S_sfx[i];
+
+					if (!sfx->name)
 						continue;
-					if (S_sfx[i].skinsound != -1
-						&& !stricmp(S_sfx[i].name,
-							stoken + 2))
+
+					if (sfx->skinsound != -1
+					&& fasticmp(sfx->name, stoken + 2))
 					{
-						skin->soundsid[S_sfx[i].skinsound] =
-							S_AddSoundFx(value+2, S_sfx[i].singularity, S_sfx[i].pitch, true);
+						skin->soundsid[sfx->skinsound] = S_AddSoundFx(value+2, sfx->singularity, sfx->pitch, true);
 						found = true;
 					}
 				}
+
 				if (!found)
 					CONS_Debug(DBG_SETUP, "R_AddSkins: Unknown keyword '%s' in S_SKIN lump# %d (WAD %s)\n", stoken, lump, wadfiles[wadnum]->filename);
 			}
 
 			stoken = strtok(NULL, "\r\n= ");
 		}
+
 		free(buf2);
 
 		lump++; // if no sprite defined use spirte just after this one
+
 		if (skin->sprite[0] == '\0')
 		{
 			const char *csprname = W_CheckNameForNumPwad(wadnum, lump);
 
 			// skip to end of this skin's frames
 			lastlump = lump;
+
 			while (W_CheckNameForNumPwad(wadnum, lastlump) && memcmp(W_CheckNameForNumPwad(wadnum, lastlump), csprname,4)==0)
 				lastlump++;
+
 			// allocate (or replace) sprite frames, and set spritedef
 			R_AddSingleSpriteDef(csprname, &skin->spritedef, wadnum, lump, lastlump);
 		}
@@ -707,12 +724,15 @@ void R_AddSkins(UINT16 wadnum, boolean local)
 			size_t name;
 			boolean found = false;
 			const char *sprname = skin->sprite;
-			for (name = 0;sprnames[name][0] != '\0';name++)
+
+			for (name = 0; sprnames[name][0] != '\0'; name++)
+			{
 				if (strncmp(sprnames[name], sprname, 4) == 0)
 				{
-					found = true;
 					skin->spritedef = sprites[name];
+					found = true;
 				}
+			}
 
 			// not found so make a new one
 			// go through the entire current wad looking for our sprite
@@ -726,7 +746,7 @@ void R_AddSkins(UINT16 wadnum, boolean local)
 				while ((lname = W_CheckNameForNumPwad(wadnum, localllump)))
 				{
 					// If this is a valid sprite...
-					if (!memcmp(lname, sprname,4) && lname[4] && lname[5] && lname[5] >= '0' && lname[5] <= '8')
+					if (!memcmp(lname, sprname, 4) && lname[4] && lname[5] && lname[5] >= '0' && lname[5] <= '8')
 					{
 						if (lstart == UINT16_MAX)
 							lstart = localllump;
@@ -741,6 +761,7 @@ void R_AddSkins(UINT16 wadnum, boolean local)
 						}
 						// If not already set do nothing
 					}
+
 					++localllump;
 				}
 
@@ -760,7 +781,6 @@ void R_AddSkins(UINT16 wadnum, boolean local)
 		(local ? localskin_cons_t : skin_cons_t)[lnumskins].value = lnumskins;
 		(local ? localskin_cons_t : skin_cons_t)[lnumskins].strvalue = skin->name;
 #endif
-
 		if (!local)
 		{
 			// Update the forceskin possiblevalues

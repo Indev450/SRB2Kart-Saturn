@@ -97,15 +97,15 @@
 UINT8 window_notinfocus = false;
 
 static char *startupiwadfiles[MAX_WADFILES];
+static size_t startupiwadcount = 0;
 static char *startuppwads[MAX_WADFILES];
+static size_t startuppwadcount = 0;
 
 // autoloading
 static char *autoloadwadfiles[MAX_WADFILES];
 static char *autoloadwadfilespost[MAX_WADFILES];
-boolean autoloading;
-boolean autoloaded;
-boolean postautoloaded = false;
-boolean wasautoloaded = false;
+static size_t autoloadcount = 0;
+static size_t postloadcount = 0;
 //
 
 boolean devparm = false; // started game with -devparm
@@ -113,7 +113,9 @@ boolean devparm = false; // started game with -devparm
 boolean singletics = false; // timedemo
 boolean lastdraw = false;
 
+#ifdef MOTIONBLUR
 INT32 postimgparam[MAXSPLITSCREENPLAYERS];
+#endif
 
 // These variables are only true if
 // whether the respective sound system is disabled
@@ -163,57 +165,6 @@ UINT8 shiftdown = 0; // 0x1 left, 0x2 right
 UINT8 ctrldown = 0; // 0x1 left, 0x2 right
 UINT8 altdown = 0; // 0x1 left, 0x2 right
 boolean capslock = 0;	// gee i wonder what this does.
-
-static void D_PadMenuScrollInput(UINT8 input)
-{
-	event_t dpadev;
-	memset(&dpadev, 0, sizeof(event_t));
-	dpadev.type = ev_keydown;
-
-	switch (input)
-	{
-		case DPAD_UP:
-			dpadev.data1 = KEY_UPARROW;
-			break;
-		case DPAD_DOWN:
-			dpadev.data1 = KEY_DOWNARROW;
-			break;
-		case DPAD_LEFT:
-			dpadev.data1 = KEY_LEFTARROW;
-			break;
-		case DPAD_RIGHT:
-			dpadev.data1 = KEY_RIGHTARROW;
-			break;
-	}
-
-	D_PostEvent(&dpadev); // put into eventlist
-}
-
-#define SCROLLDELAY 19
-
-// Check if any dpad button is held
-// and pass it to the eventlist
-static void D_GamePadMenuScrollTicker(void)
-{
-	UINT8 i;
-	static UINT8 menuInputDelayTimer = 0;
-
-	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
-	{
-		if (dpadscrollstate[i])
-		{
-			if (menuInputDelayTimer < SCROLLDELAY)
-				menuInputDelayTimer++;
-			else if (menuInputDelayTimer == SCROLLDELAY)
-				D_PadMenuScrollInput(i);
-
-			return;
-		}
-	}
-
-	menuInputDelayTimer = 0;
-}
-#undef SCROLLDELAY
 
 static UINT16 curcolor[MAXSPLITSCREENPLAYERS] = {0};
 
@@ -397,7 +348,11 @@ static void D_Renderview(void)
 			if (i == 0)
 				R_ApplyViewMorph();
 
+#ifdef MOTIONBLUR
 			V_DoPostProcessor(i, postimgparam[i]);
+#else
+			V_DoPostProcessor(i, 0);
+#endif
 		}
 	}
 
@@ -839,11 +794,6 @@ void D_SRB2Loop(void)
 
 			if (!dedicated)
 			{
-				if (menuactive)
-				{
-					D_GamePadMenuScrollTicker();
-				}
-
 				D_DeviceLEDTick();
 			}
 		}
@@ -954,24 +904,6 @@ void D_SRB2Loop(void)
 // D_SRB2Main
 // =========================================================================
 
-static void ResetSplitScreen(void)
-{
-	UINT8 i;
-
-	// recompute screen size
-	R_ExecuteSetViewSize();
-
-	if (!demo.playback && !botingame)
-	{
-		for (i = 1; i < MAXSPLITSCREENPLAYERS; i++)
-		{
-			if (i > splitscreen)
-				CL_RemoveSplitscreenPlayer(displayplayers[i]);
-			else
-				CL_AddSplitscreenPlayer();
-		}
-	}
-}
 //
 // D_ClearState
 //
@@ -992,7 +924,9 @@ void D_ClearState(void)
 		CL_ClearPlayer(i);
 
 	splitscreen = 0;
-	ResetSplitScreen(); // splitscreen onchange resets us to singleplayer :chaosleep:
+
+	// recompute screen size
+	R_ExecuteSetViewSize();
 
 	botingame = false;
 	botskin = 0;
@@ -1054,13 +988,9 @@ void D_StartTitle(void)
 //
 // D_AddFile
 //
-static void D_AddFile(const char *file, char **filearray)
+static void D_AddFile(const char *file, char **filearray, size_t index)
 {
-	size_t pnumwadfiles;
 	char *newfile;
-
-	for (pnumwadfiles = 0; filearray[pnumwadfiles]; pnumwadfiles++)
-		;
 
 	newfile = malloc(strlen(file) + 1);
 	if (!newfile)
@@ -1069,16 +999,17 @@ static void D_AddFile(const char *file, char **filearray)
 	}
 	strcpy(newfile, file);
 
-	filearray[pnumwadfiles] = newfile;
+	filearray[index] = newfile;
 }
 
-static void D_CleanFile(char **filearray)
+static void D_CleanFile(char **filearray, size_t count)
 {
-	size_t pnumwadfiles;
-	for (pnumwadfiles = 0; filearray[pnumwadfiles]; pnumwadfiles++)
+	size_t i;
+
+	for (i = 0; i < count; i++)
 	{
-		free(filearray[pnumwadfiles]);
-		filearray[pnumwadfiles] = NULL;
+		free(filearray[i]);
+		filearray[i] = NULL;
 	}
 }
 
@@ -1091,28 +1022,27 @@ static INT32 D_DetectFileType(const char* filename)
 
 	const size_t len = strlen(filename);
 
-	if (!stricmp(&filename[len - 4], ".wad"))
+	if (fasticmp(&filename[len - 4], ".wad"))
 		return 2;
-	else if (!stricmp(&filename[len - 4], ".pk3"))
+	else if (fasticmp(&filename[len - 4], ".pk3"))
 		return 3;
-	else if (!stricmp(&filename[len - 5], ".kart"))
+	else if (fasticmp(&filename[len - 5], ".kart"))
 		return 4;
-	else if (!stricmp(&filename[len - 4], ".lua"))
+	else if (fasticmp(&filename[len - 4], ".lua"))
 		return 5;
-	else if (!stricmp(&filename[len - 4], ".soc"))
+	else if (fasticmp(&filename[len - 4], ".soc"))
 		return 6;
-	else if (!stricmp(&filename[len - 4], ".cfg"))
+	else if (fasticmp(&filename[len - 4], ".cfg"))
 		return 7;
-	else if (!stricmp(&filename[len - 4], ".txt"))
+	else if (fasticmp(&filename[len - 4], ".txt"))
 		return 8;
 
 	return 0;
 }
 
 // autoload that shit
-static void D_AutoloadFile(const char *file, char **filearray)
+static void D_AutoloadFile(const char *file, char **filearray, size_t index)
 {
-	size_t pnumwadfiles;
 	char *newfile;
 	INT32 fileType = D_DetectFileType(file);
 
@@ -1122,9 +1052,6 @@ static void D_AutoloadFile(const char *file, char **filearray)
 		return;
 	}
 
-	for (pnumwadfiles = 0; filearray[pnumwadfiles]; pnumwadfiles++)
-		;
-
 	if (fileType <= 6)
 	{
 		newfile = malloc(strlen(file) + 1);
@@ -1132,7 +1059,7 @@ static void D_AutoloadFile(const char *file, char **filearray)
 			I_Error("No more free memory to AutoloadFile %s",file);
 
 		strcpy(newfile, file);
-		filearray[pnumwadfiles] = newfile;
+		filearray[index] = newfile;
 	}
 	else
 	{
@@ -1162,42 +1089,44 @@ static void D_FindAddonsToAutoload(void)
 {
 	FILE *autoloadconfigfile;
 	const char *autoloadpath;
+	char *newline;
+
 	boolean postload;
 
-	INT32 i;
 	char wadsToAutoload[256] = "";
 
 	// does it exist tho
-	autoloadpath = va("%s"PATHSEP"%s",srb2home,AUTOLOADCONFIGFILENAME);
+	autoloadpath = va("%s"PATHSEP"%s", srb2home, AUTOLOADCONFIGFILENAME);
 	autoloadconfigfile = fopen(autoloadpath, "r");
 
 	// If the file is found, run our shit
 	if (!autoloadconfigfile) // nope outta here
 	{
-		wasautoloaded = postautoloaded = true; // so D_AddAutoloadFiles can skip everything since nothings there to autoload
+		autoloadcount = postloadcount = 0; // so D_AddAutoloadFiles can skip everything since nothings there to autoload
 		return;
 	}
 
-	while (fgets(wadsToAutoload, sizeof wadsToAutoload, autoloadconfigfile) != NULL)
+	while (fgets(wadsToAutoload, sizeof(wadsToAutoload), autoloadconfigfile) != NULL)
 	{
 		postload = false;
+
 		// skip if commented or empty
-		if ((wadsToAutoload[1] == '\0' || wadsToAutoload[1] == '\n')
-			|| (wadsToAutoload[0] == '#'))
+		if (wadsToAutoload[0] == '\n' ||
+			wadsToAutoload[0] == '#'  ||
+			wadsToAutoload[0] == '\0')
 			continue;
+
 		// this marks it so that it loads after loading server addons
-		else if (fastncmp(wadsToAutoload, "postload ", 9))
+		if (fastncmp(wadsToAutoload, "postload ", 9))
 		{
 			strremove(wadsToAutoload, "postload ");
 			postload = true;
 		}
 
 		// Remove Any Empty or Skipped Lines
-		for (i = 0; wadsToAutoload[i] != '\0'; i++)
-		{
-			if (wadsToAutoload[i] == '\n')
-				wadsToAutoload[i] = '\0';
-		}
+		newline = strchr(wadsToAutoload, '\n');
+		if (newline)
+			*newline = '\0';
 
 		if (!postload && W_CheckPostLoadList(wadsToAutoload))
 		{
@@ -1207,14 +1136,19 @@ static void D_FindAddonsToAutoload(void)
 
 		// LOAD IT
 		if (!postload)
-			D_AutoloadFile(wadsToAutoload, autoloadwadfiles);
+		{
+			D_AutoloadFile(wadsToAutoload, autoloadwadfiles, autoloadcount);
+			autoloadcount++;
+		}
 		else
-			D_AutoloadFile(wadsToAutoload, autoloadwadfilespost);
-
-		// end it here
-		for (i = 0; wadsToAutoload[i] != '\0'; i++)
-			wadsToAutoload[i] = '\0';
+		{
+			D_AutoloadFile(wadsToAutoload, autoloadwadfilespost, postloadcount);
+			postloadcount++;
+		}
 	}
+
+	autoloadwadfiles[autoloadcount] = NULL;
+	autoloadwadfilespost[postloadcount] = NULL;
 
 	// we dont want memory leaks around here do we?
 	fclose(autoloadconfigfile);
@@ -1222,41 +1156,47 @@ static void D_FindAddonsToAutoload(void)
 
 static void D_AddAutoloadFiles(void)
 {
-	if (wasautoloaded)
+	// nothing to autoload
+	if (autoloadcount == 0)
 		return;
 
 	CONS_Printf("D_AutoloadFile(): Loading autoloaded addons...\n");
+
 	if (W_AddAutoloadedLocalFiles(autoloadwadfiles) == 0)
 		CONS_Printf("D_AutoloadFile(): Are you sure you put in valid files or what?\n");
-	D_CleanFile(autoloadwadfiles);
 
-	wasautoloaded = true;
+	D_CleanFile(autoloadwadfiles, autoloadcount);
+
+	autoloadcount = 0;
 }
 
 void D_AddPostloadFiles(void)
 {
-	if (postautoloaded || !netgame)
+	// nothing to postload
+	if (postloadcount == 0 || !netgame)
 		return;
 
 	CONS_Printf("D_AddPostloadFiles(): Loading postloaded addons...\n");
+
 	if (W_AddAutoloadedLocalFiles(autoloadwadfilespost) == 0)
 		CONS_Printf("D_AddPostloadFiles(): Are you sure you put in valid files or what?\n");
-	D_CleanFile(autoloadwadfilespost);
 
-	postautoloaded = true;
+	D_CleanFile(autoloadwadfilespost, postloadcount);
+
+	postloadcount = 0;
 }
 
 // ==========================================================================
 // Identify the SRB2 version, and IWAD file to use.
 // ==========================================================================
 
-static boolean AddIWAD(void)
+static boolean AddIWAD(const char * file, const char *dir)
 {
-	char * path = va(pandf, srb2path, "srb2.srb");
+	char * path = va(pandf, dir, file);
 
 	if (FIL_ReadFileOK(path))
 	{
-		D_AddFile(path, startupiwadfiles);
+		D_AddFile(path, startupiwadfiles, startupiwadcount++);
 		return true;
 	}
 
@@ -1292,14 +1232,14 @@ static void IdentifyVersion(void)
 	}
 
 #if (1) // reduce the amount of findfile by only using full cwd in this func
-	if (strcmp(tempsrb2path, srb2waddir))
+	if (!fastcmp(tempsrb2path, srb2waddir))
 #endif
 	{
 		strlcpy(srb2path, srb2waddir, sizeof (srb2path));
 	}
 
 	// Load the IWAD
-	if (!AddIWAD())
+	if (!AddIWAD("srb2.srb", srb2path)) // not sure why this uses srb2path and not srb2waddir?
 	{
 		I_Error("SRB2.SRB not found! Expected in %s\n", srb2waddir);
 	}
@@ -1313,57 +1253,60 @@ static void IdentifyVersion(void)
 
 #ifdef USE_PATCH_DTA
 	// Add our crappy patches to fix our bugs
-	D_AddFile(va(pandf,srb2waddir,"patch.dta"));
+	if (!AddIWAD("patch.dta", srb2waddir))
+	{
+		I_Error("patch.dta not found! Expected in %s\n", srb2waddir);
+	}
 #endif
+	if (!AddIWAD("gfx.kart", srb2waddir))
+	{
+		I_Error("gfx.kart not found! Expected in %s\n", srb2waddir);
+	}
 
-	D_AddFile(va(pandf, srb2waddir, "gfx.kart"), startupiwadfiles);
-	D_AddFile(va(pandf, srb2waddir, "textures.kart"), startupiwadfiles);
-	D_AddFile(va(pandf, srb2waddir, "chars.kart"), startupiwadfiles);
-	D_AddFile(va(pandf, srb2waddir, "maps.kart"), startupiwadfiles);
+	if (!AddIWAD("textures.kart", srb2waddir))
+	{
+		I_Error("textures.kart not found! Expected in %s\n", srb2waddir);
+	}
+
+	if (!AddIWAD("chars.kart", srb2waddir))
+	{
+		I_Error("chars.kart not found! Expected in %s\n", srb2waddir);
+	}
+
+	if (!AddIWAD("maps.kart", srb2waddir))
+	{
+		I_Error("maps.kart not found! Expected in %s\n", srb2waddir);
+	}
 #ifdef USE_PATCH_KART
-	D_AddFile(va(pandf,srb2waddir,"patch.kart"), startupiwadfiles);
+	if (!AddIWAD("patch.kart", srb2waddir))
+	{
+		I_Error("patch.kart not found! Expected in %s\n", srb2waddir);
+	}
 #endif
-
-	const char *path = NULL;
-
-	path = va(pandf, srb2waddir, "extra.kart");
 
 	// completely optional
-	if (FIL_ReadFileOK(path))
-	{
-		D_AddFile(path, startupiwadfiles);
+	if (AddIWAD("extra.kart", srb2waddir))
 		found_extra_kart = true;
-	}
-
-	path = va(pandf, srb2waddir, "extra2.kart");
 
 	// completely optional 2: Back with a vengence
-	if (FIL_ReadFileOK(path))
-	{
-		D_AddFile(path, startupiwadfiles);
+	if (AddIWAD("extra2.kart", srb2waddir))
 		found_extra2_kart = true;
-	}
 
-	path = va(pandf, srb2waddir, "extra3.kart");
-
-	if (FIL_ReadFileOK(path))
-	{
-		D_AddFile(path, startupiwadfiles);
+	if (AddIWAD("extra3.kart", srb2waddir))
 		found_extra3_kart = true;
-	}
 
 #if !defined (HAVE_SDL) || defined (HAVE_MIXER)
 #define MUSICTEST(str) \
-	musicpath = va(pandf,srb2waddir,str);\
+	musicpath = va(pandf, srb2waddir, str);\
 	handle = W_OpenWadFile(&musicpath, false); \
 	if (handle) \
-	{\
+	{ \
 		int ms = W_VerifyNMUSlumps(musicpath, handle, false); \
 		fclose(handle); \
 		if (ms == 0) \
 			I_Error("File " str " has been modified with non-music/sound lumps"); \
 		if (ms == 1) \
-			D_AddFile(musicpath, startupiwadfiles); \
+			D_AddFile(musicpath, startupiwadfiles, startupiwadcount++); \
 	}
 	{
 		const char *musicpath;
@@ -1737,8 +1680,14 @@ void D_SRB2Main(void)
 		else
 		{
 			// use user specific config file
+			if (M_CheckParm("-workdir") && M_IsNextParm())
+				snprintf(srb2home, sizeof srb2home, "%s", M_GetNextParm());
+			else
 #ifdef DEFAULTDIR
-			snprintf(srb2home, sizeof srb2home, "%s" PATHSEP DEFAULTDIR, userhome);
+				snprintf(srb2home, sizeof srb2home, "%s" PATHSEP DEFAULTDIR, userhome);
+#else // DEFAULTDIR
+				snprintf(srb2home, sizeof srb2home, "%s", userhome);
+#endif // DEFAULTDIR
 			snprintf(downloaddir, sizeof downloaddir, "%s" PATHSEP "DOWNLOAD", srb2home);
 			if (dedicated)
 				snprintf(configfile, sizeof configfile, "%s" PATHSEP "d"CONFIGFILENAME, srb2home);
@@ -1747,17 +1696,6 @@ void D_SRB2Main(void)
 
 			// can't use sprintf since there is %u in savegamename
 			strcatbf(savegamename, srb2home, PATHSEP);
-#else
-			snprintf(srb2home, sizeof srb2home, "%s", userhome);
-			snprintf(downloaddir, sizeof downloaddir, "%s", userhome);
-			if (dedicated)
-				snprintf(configfile, sizeof configfile, "%s" PATHSEP "d"CONFIGFILENAME, userhome);
-			else
-				snprintf(configfile, sizeof configfile, "%s" PATHSEP CONFIGFILENAME, userhome);
-
-			// can't use sprintf since there is %u in savegamename
-			strcatbf(savegamename, userhome, PATHSEP);
-#endif
 		}
 
 		configfile[sizeof configfile - 1] = '\0';
@@ -1782,6 +1720,9 @@ void D_SRB2Main(void)
 			remove(testfile);
 		}
 	}
+
+	// make sure workdir exists
+	I_mkdir(srb2home, 0755);
 
 	// Create addons dir
 	snprintf(addonsdir, sizeof addonsdir, "%s%s%s", srb2home, PATHSEP, "addons");
@@ -1811,7 +1752,7 @@ void D_SRB2Main(void)
 				const char *s = M_GetNextParm();
 
 				if (s) // Check for NULL?
-					D_AddFile(s, startuppwads);
+					D_AddFile(s, startuppwads, startuppwadcount++);
 			}
 		}
 	}
@@ -1844,8 +1785,10 @@ void D_SRB2Main(void)
 	// load wad, including the main wad file
 	CONS_Printf("W_InitMultipleFiles(): Adding IWAD and main PWADs.\n");
 
-	W_InitMultipleFiles(startupiwadfiles, false);
-	D_CleanFile(startupiwadfiles);
+	W_InitMultipleFiles(startupiwadfiles, startupiwadcount, false);
+	//mainwads = startupiwadcount - musicwads;
+	D_CleanFile(startupiwadfiles, startupiwadcount);
+	startupiwadcount = 0;
 	mainwads = 0;
 
 #ifndef DEVELOP
@@ -1884,15 +1827,16 @@ void D_SRB2Main(void)
 
 	D_CheckMaps(false);
 
-	W_InitMultipleFiles(startuppwads, true);
+	W_InitMultipleFiles(startuppwads, startuppwadcount, true);
 
 	// Only search for pwad maps if we actually have a pwad added
-	if (startuppwads[0] != NULL)
+	if (startuppwadcount > 0)
 	{
 		D_CheckMaps(true);
 	}
 
-	D_CleanFile(startuppwads);
+	D_CleanFile(startuppwads, startuppwadcount);
+	startuppwadcount = 0;
 
 	cht_Init();
 
@@ -2156,11 +2100,14 @@ void D_SRB2Main(void)
 			const char *sskill = M_GetNextParm();
 
 			for (j = 0; kartspeed_cons_t[j].strvalue; j++)
-				if (!strcasecmp(kartspeed_cons_t[j].strvalue, sskill))
+			{
+				if (fasticmp(kartspeed_cons_t[j].strvalue, sskill))
 				{
 					newskill = (INT16)kartspeed_cons_t[j].value;
 					break;
 				}
+			}
+
 			if (!kartspeed_cons_t[j].strvalue) // reached end of the list with no match
 			{
 				j = atoi(sskill); // assume they gave us a skill number, which is okay too

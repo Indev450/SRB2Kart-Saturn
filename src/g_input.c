@@ -262,9 +262,6 @@ void G_ResetControls(void)
 
 	memset(joyxmove, 0, sizeof(joyxmove));
 	memset(joyymove, 0, sizeof(joyymove));
-
-	// reset those just in case the game missed the keyup event
-	memset(dpadscrollstate, false, sizeof(dpadscrollstate));
 }
 
 //
@@ -1033,7 +1030,7 @@ INT32 G_KeyStringtoNum(const char *keystr)
 		return atoi(&keystr[3]);
 
 	for (j = 0; j < NUMKEYNAMES; j++)
-		if (!stricmp(keynames[j].name, keystr))
+		if (fasticmp(keynames[j].name, keystr))
 			return keynames[j].keynum;
 
 	return 0;
@@ -1333,14 +1330,15 @@ static void setcontrol(INT32 (*gc)[2])
 		player = 0;
 
 	namectrl = COM_Argv(1);
-	for (numctrl = 0; numctrl < num_gamecontrols && stricmp(namectrl, gamecontrolname[numctrl]);
-		numctrl++)
+	for (numctrl = 0; numctrl < num_gamecontrols && !fasticmp(namectrl, gamecontrolname[numctrl]); numctrl++)
 		;
+
 	if (numctrl == num_gamecontrols)
 	{
 		CONS_Printf(M_GetText("Control '%s' unknown\n"), namectrl);
 		return;
 	}
+
 	keynum1 = G_KeyStringtoNum(COM_Argv(2));
 	keynum2 = G_KeyStringtoNum(COM_Argv(3));
 	keynum = G_FilterKeyByVersion(numctrl, 0, player, &keynum1, &keynum2, &nestedoverride);

@@ -35,7 +35,6 @@
 #include "i_system.h" // I_GetFreeMem
 #include "i_video.h" // rendermode
 #include "z_zone.h"
-#include "m_misc.h" // M_Memcpy
 #include "lua_script.h"
 
 #ifdef HWRENDER
@@ -383,7 +382,7 @@ void *Z_Realloc(void *ptr, size_t size, INT32 tag, void *user)
 	else
 		copysize = block->size;
 
-	M_Memcpy(rez, ptr, copysize);
+	memcpy(rez, ptr, copysize);
 
 #ifdef ZDEBUG
 	Z_Free2(ptr, file, line);

@@ -69,6 +69,8 @@ extern "C" {
 #include <sys/stat.h>
 #include <ctype.h>
 
+#include "fastcmp.h"
+
 #ifdef _WIN32
 #include <io.h>
 #endif
@@ -112,8 +114,8 @@ extern char  logfilename[1024];
 #else
 #define VERSION    1 // Game version
 #define SUBVERSION 6 // more precise version number
-#define VERSIONSTRING "Saturn v9"
-#define VERSIONSTRINGW L"Saturn v9"
+#define VERSIONSTRING "Saturn v9 - testing"
+#define VERSIONSTRINGW L"Saturn v9 - testing"
 
 #define SATURN_TESTING // comment out for saturn release builds!
 
@@ -451,11 +453,6 @@ extern char savegamename[256];
 //TODO: delet this
 #define M_GetText(x) (x)
 
-FUNCINLINE static ATTRINLINE void *M_Memcpy(void *dest, const void *src, size_t n)
-{
-	return memcpy(dest, src, n);
-}
-
 char *va(const char *format, ...) FUNCPRINTF;
 char *M_GetToken(const char *inputString);
 char *sizeu1(size_t num);
@@ -651,7 +648,9 @@ extern const char *compdate, *comptime, *comprevision, *compbranch;
 
 #if defined (HAVE_CURL)
 #define MASTERSERVER
+#ifndef NOHOLEPUNCH
 #define HOLEPUNCH
+#endif
 #else
 #undef UPDATE_ALERT
 #endif

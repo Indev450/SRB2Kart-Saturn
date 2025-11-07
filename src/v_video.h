@@ -40,9 +40,12 @@ extern "C" {
 //
 
 extern consvar_t cv_ticrate, cv_accuratefps, cv_allcaps, cv_constextsize, cv_menucaps,
-cv_globalgamma, cv_globalsaturation,
+#ifdef BACKWARDSCOMPATCORRECTION
+cv_globalgamma,
+#endif
+cv_globalbrightness, cv_globalsaturation,
 cv_rhue, cv_yhue, cv_ghue, cv_chue, cv_bhue, cv_mhue,
-cv_rgamma, cv_ygamma, cv_ggamma, cv_cgamma, cv_bgamma, cv_mgamma,
+cv_rbrightness, cv_ybrightness, cv_gbrightness, cv_cbrightness, cv_bbrightness, cv_mbrightness,
 cv_rsaturation, cv_ysaturation, cv_gsaturation, cv_csaturation, cv_bsaturation, cv_msaturation,
 cv_palette, cv_palettenum;
 
@@ -78,10 +81,15 @@ const char *R_GetPalname(UINT16 num);
 const char *GetPalette(void);
 
 extern RGBA_t *pLocalPalette;
+extern RGBA_t *pGammaCorrectedPalette;
 
 extern UINT8 hudtrans;
 
-void V_CubeApply(UINT8 *red, UINT8 *green, UINT8 *blue);
+UINT32 V_GammaCorrect(UINT32 input, double power);
+#define V_GammaDecode(input) V_GammaCorrect(input, 2.2f)
+#define V_GammaEncode(input) V_GammaCorrect(input, (1/2.2f))
+
+void V_CubeApply(RGBA_t *input);
 
 // Retrieve the ARGB value from a palette color index
 #define V_GetColor(color) (pLocalPalette[color&0xFF])

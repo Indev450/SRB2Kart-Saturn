@@ -241,7 +241,7 @@ void RotatedPatch_DoRotation(rotsprite_t *rotsprite, patch_t *patch, INT32 angle
 
 		while (dy--)
 		{
-			M_Memcpy(dest, src, width * sizeof(UINT16));
+			memcpy(dest, src, width * sizeof(UINT16));
 			dest += width;
 			src += newwidth;
 		}

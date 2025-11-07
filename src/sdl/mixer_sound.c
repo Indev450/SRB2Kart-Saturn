@@ -73,7 +73,7 @@ write netcode into the sound code, OKAY?
 
 
 //static UINT16 BUFFERSIZE = 2048;
-static UINT16 SAMPLERATE = 44100;
+static const UINT16 SAMPLERATE = 44100;
 
 #ifdef HAVE_OPENMPT
 #include "libopenmpt/libopenmpt.h"
@@ -169,9 +169,10 @@ void I_StartupSound(void)
 	if (sound_started)
 		return;
 
-#ifdef _WIN32
+#if defined(_WIN32) && !SDL_VERSION_ATLEAST(2,26,5)
 	// Force DirectSound instead of WASAPI
 	// SDL 2.0.6+ defaults to the latter and it screws up our sound effects
+	// SDL 2.26.5 brought imrovements to resampling so this just screws up other stuff now
 	SDL_setenv("SDL_AUDIODRIVER", "directsound", 1);
 #endif
 
@@ -266,13 +267,13 @@ void I_UpdateSound(void)
 
 // this is as fast as I can possibly make it.
 // sorry. more asm needed.
-static Mix_Chunk *ds2chunk(void *stream)
+static Mix_Chunk *ds2chunk(const void *stream)
 {
 	UINT16 ver, freq;
 	UINT32 samples, i, newsamples;
 	UINT8 *sound;
 
-	SINT8 *s;
+	const SINT8 *s;
 	INT16 *d;
 	INT16 o;
 	fixed_t step, frac;
@@ -325,7 +326,7 @@ static Mix_Chunk *ds2chunk(void *stream)
 
 	sound = Z_Malloc(newsamples<<2, PU_SOUND, NULL); // samples * frequency shift * bytes per sample * channels
 
-	s = (SINT8 *)stream;
+	s = (const SINT8 *)stream;
 	d = (INT16 *)sound;
 
 	i = 0;

@@ -312,9 +312,9 @@ static inline tic_t ExpandTics(INT32 low, tic_t basetic)
 // Some extra data function for handle textcmd buffer
 // -----------------------------------------------------------------
 
-static void (*listnetxcmd[MAXNETXCMD])(UINT8 **p, INT32 playernum);
+static void (*listnetxcmd[MAXNETXCMD])(const UINT8 **p, INT32 playernum);
 
-void RegisterNetXCmd(netxcmd_t id, void (*cmd_f)(UINT8 **p, INT32 playernum))
+void RegisterNetXCmd(netxcmd_t id, void (*cmd_f)(const UINT8 **p, INT32 playernum))
 {
 #ifdef PARANOIA
 	if (id >= MAXNETXCMD)
@@ -331,7 +331,7 @@ static void WriteNetXCmd(UINT8 *cmd, netxcmd_t id, const void *param, size_t npa
 	cmd[cmd[0]] = (UINT8)id;
 	if (param && nparam)
 	{
-		M_Memcpy(&cmd[cmd[0]+1], param, nparam);
+		memcpy(&cmd[cmd[0]+1], param, nparam);
 		cmd[0] = (UINT8)(cmd[0] + (UINT8)nparam);
 	}
 }
@@ -460,12 +460,12 @@ static void ExtraDataTicker(void)
 	{
 		if (playeringame[i] || i == 0)
 		{
-			UINT8 *bufferstart = D_GetExistingTextcmd(gametic, i);
+			const UINT8 *bufferstart = D_GetExistingTextcmd(gametic, i);
 
 			if (bufferstart)
 			{
-				UINT8 *curpos = bufferstart;
-				UINT8 *bufferend = &curpos[curpos[0]+1];
+				const UINT8 *curpos = bufferstart;
+				const UINT8 *bufferend = &curpos[curpos[0]+1];
 
 				curpos++;
 				while (curpos < bufferend)
@@ -1585,7 +1585,7 @@ static void SV_SendServerInfo(INT32 node, tic_t servertime)
 		MAXSERVERNAME);
 	strncpy(netbuffer->u.serverinfo.mapname, G_BuildMapName(gamemap), sizeof(netbuffer->u.serverinfo.mapname)-1);
 
-	M_Memcpy(netbuffer->u.serverinfo.mapmd5, mapmd5, sizeof(netbuffer->u.serverinfo.mapmd5));
+	memcpy(netbuffer->u.serverinfo.mapmd5, mapmd5, sizeof(netbuffer->u.serverinfo.mapmd5));
 
 	netbuffer->u.serverinfo.iszone = 0;
 
@@ -1656,12 +1656,7 @@ static void SV_SendPlayerInfo(INT32 node)
 
 		netbuffer->u.playerinfo[i].node = i;
 
-		// Can't really change this because net compatibility, but the warning is annoying
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wstringop-truncation"
-		strncpy(netbuffer->u.playerinfo[i].name, (const char *)&player_names[i], MAXPLAYERNAME+1);
-#pragma GCC diagnostic pop
-		netbuffer->u.playerinfo[i].name[MAXPLAYERNAME] = '\0';
+		strlcpy(netbuffer->u.playerinfo[i].name, (const char *)&player_names[i], MAXPLAYERNAME+1);
 
 		//fetch IP address
 		//No, don't do that, you fuckface.
@@ -2179,7 +2174,7 @@ static void SL_InsertServer(serverinfo_pak* info, SINT8 node)
 		if (info->subversion != SUBVERSION)
 			return; // Close, but no cigar.
 
-		if (strcmp(info->application, SRB2APPLICATION))
+		if (!fastcmp(info->application, SRB2APPLICATION))
 			return;/* that's a different mod */
 
 		i = serverlistcount++;
@@ -2224,7 +2219,7 @@ void CL_QueryServerList (msg_server_t *server_list)
 		// thwart nefarious servers who lie to the MS.
 
 		/* lol bruh, that version COMES from the servers */
-		//if (strcmp(version, server_list[i].version) == 0)
+		//if (fastcmp(version, server_list[i].version))
 		{
 			INT32 node = I_NetMakeNodewPort(server_list[i].ip, server_list[i].port);
 			if (node == -1)
@@ -3220,7 +3215,7 @@ static void Command_connect(void)
 
 	server = false;
 
-	if (!stricmp(COM_Argv(1), "self"))
+	if (fasticmp(COM_Argv(1), "self"))
 	{
 		servernode = 0;
 		server = true;
@@ -3230,7 +3225,7 @@ static void Command_connect(void)
 	else
 	{
 		// used in menu to connect to a server in the list
-		if (netgame && !stricmp(COM_Argv(1), "node"))
+		if (netgame && fasticmp(COM_Argv(1), "node"))
 		{
 			servernode = (SINT8)atoi(COM_Argv(2));
 		}
@@ -3245,7 +3240,7 @@ static void Command_connect(void)
 			netgame = true;
 			multiplayer = true;
 
-			if (!stricmp(COM_Argv(1), "any"))
+			if (fasticmp(COM_Argv(1), "any"))
 				servernode = BROADCASTADDR;
 			else if (I_NetMakeNodewPort && COM_Argc() >= 3)
 				servernode = I_NetMakeNodewPort(COM_Argv(1), COM_Argv(2));
@@ -3269,6 +3264,7 @@ static void Command_connect(void)
 		splitscreen = cv_splitplayers.value-1;
 		SplitScreen_OnChange();
 	}
+
 	botingame = false;
 	botskin = 0;
 	CL_ConnectToServer();
@@ -3761,7 +3757,7 @@ static void Command_Kick(void)
 		CONS_Printf(M_GetText("Only the server or a remote admin can use this.\n"));
 }
 
-static void Got_KickCmd(UINT8 **p, INT32 playernum)
+static void Got_KickCmd(const UINT8 **p, INT32 playernum)
 {
 	INT32 pnum, msg;
 	char buf[3 + MAX_REASONLENGTH];
@@ -4151,8 +4147,8 @@ consvar_t cv_connectawaittime = {"connectawaittime", "5", CV_SAVE, connectawaitt
 
 consvar_t cv_serverinfoscreen = {"serverinfoscreen", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
-static void Got_AddPlayer(UINT8 **p, INT32 playernum);
-static void Got_RemovePlayer(UINT8 **p, INT32 playernum);
+static void Got_AddPlayer(const UINT8 **p, INT32 playernum);
+static void Got_RemovePlayer(const UINT8 **p, INT32 playernum);
 
 static void Joinable_OnChange(void)
 {
@@ -4404,7 +4400,7 @@ static inline void SV_AddNode(INT32 node)
 }
 
 // Xcmd XD_ADDPLAYER
-static void Got_AddPlayer(UINT8 **p, INT32 playernum)
+static void Got_AddPlayer(const UINT8 **p, INT32 playernum)
 {
 	INT16 node, newplayernum;
 	UINT8 splitscreenplayer = 0;
@@ -4491,7 +4487,7 @@ static void Got_AddPlayer(UINT8 **p, INT32 playernum)
 }
 
 // Xcmd XD_REMOVEPLAYER
-static void Got_RemovePlayer(UINT8 **p, INT32 playernum)
+static void Got_RemovePlayer(const UINT8 **p, INT32 playernum)
 {
 	SINT8 pnum, reason;
 
@@ -4652,12 +4648,25 @@ void SV_StopServer(void)
 
 	if (gamestate == GS_INTERMISSION)
 		Y_EndIntermission();
-	if (gamestate == GS_VOTING)
+	else if (gamestate == GS_VOTING)
 		Y_EndVote();
-	gamestate = wipegamestate = GS_NULL;
+
+	G_SetGamestate(GS_NULL);
+	wipegamestate = GS_NULL;
 
 	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
+	{
 		localtextcmd[i][0] = 0;
+
+		while (textcmdbuf[i] != NULL)
+		{
+			textcmdbuf_t *buf = textcmdbuf[i];
+			textcmdbuf[i] = textcmdbuf[i]->next;
+			Z_Free(buf);
+		}
+
+		textcmdbuf[i] = NULL;
+	}
 
 	for (i = firstticstosend; i < firstticstosend + BACKUPTICS; i++)
 		D_Clearticcmd(i);
@@ -5220,7 +5229,7 @@ static void PT_ServerCFG(SINT8 node)
 
 	scp = netbuffer->u.servercfg.varlengthinputs;
 	CV_LoadPlayerNames(&scp);
-	CV_LoadNetVars(&scp);
+	scp += CV_LoadNetVars(scp);
 
 	/// \note Wait. What if a Lua script uses some global custom variables synched with the NetVars hook?
 	///       Shouldn't them be downloaded even at intermission time?
@@ -5680,7 +5689,7 @@ static void PT_TextCmd(INT32 netconsole, SINT8 node)
 		DEBFILE(va("textcmd put in tic %u at position %d (player %d) ftts %u mk %u\n",
 				   tic, textcmd[0]+1, netconsole, firstticstosend, maketic));
 
-		M_Memcpy(&textcmd[textcmd[0]+1], netbuffer->u.textcmd+1, netbuffer->u.textcmd[0]);
+		memcpy(&textcmd[textcmd[0]+1], netbuffer->u.textcmd+1, netbuffer->u.textcmd[0]);
 		textcmd[0] += (UINT8)netbuffer->u.textcmd[0];
 	}
 }
@@ -5787,7 +5796,7 @@ static void PT_ServerTics(SINT8 node)
 				}
 
 				if (i >= gametic) // Don't copy old net commands
-					M_Memcpy(D_GetTextcmd(i, playernum), txtpak, txtsize);
+					memcpy(D_GetTextcmd(i, playernum), txtpak, txtsize);
 				txtpak += txtsize;
 			}
 		}
@@ -6325,7 +6334,7 @@ static void CL_SendClientCmd(void)
 						break;
 				}
 
-				M_Memcpy(netbuffer->u.textcmd, localtextcmd[i], localtextcmd[i][0]+1);
+				memcpy(netbuffer->u.textcmd, localtextcmd[i], localtextcmd[i][0]+1);
 
 				// All extra data have been sent
 				if (HSendPacket(servernode, true, 0, localtextcmd[i][0]+1)) // Send can fail...
@@ -6335,7 +6344,7 @@ static void CL_SendClientCmd(void)
 					if (textcmdbuf[i] != NULL)
 					{
 						textcmdbuf_t *buf = textcmdbuf[i];
-						M_Memcpy(localtextcmd[i], textcmdbuf[i]->cmd, textcmdbuf[i]->cmd[0]+1);
+						memcpy(localtextcmd[i], textcmdbuf[i]->cmd, textcmdbuf[i]->cmd[0]+1);
 						textcmdbuf[i] = textcmdbuf[i]->next;
 						Z_Free(buf);
 					}
@@ -6448,7 +6457,7 @@ static void SV_SendTics(void)
 				{
 					(*ntextcmd)++;
 					WRITEUINT8(bufpos, j);
-					M_Memcpy(bufpos, textcmd, size + 1);
+					memcpy(bufpos, textcmd, size + 1);
 					bufpos += size + 1;
 				}
 			}

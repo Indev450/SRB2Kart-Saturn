@@ -458,8 +458,8 @@ void HWR_Lighting(FSurfaceInfo *Surface, INT32 light_level, extracolormap_t *col
 	// in palette rendering mode, this is not needed since it properly takes the changes to the palette itself
 	if (!HWR_ShouldUsePaletteRendering())
 	{
-		V_CubeApply(&tint_color.s.red, &tint_color.s.green, &tint_color.s.blue);
-		V_CubeApply(&fade_color.s.red, &fade_color.s.green, &fade_color.s.blue);
+		V_CubeApply(&tint_color);
+		V_CubeApply(&fade_color);
 	}
 
 	Surface->PolyColor.rgba = poly_color.rgba;
@@ -728,6 +728,9 @@ static void HWR_RenderPlane(subsector_t *subsector, extrasubsector_t *xsub, bool
 
 		for (i = 0; i < subsector->numlines; i++, line++)
 		{
+			if (line->polyseg)
+				continue;
+
 			line_t* ld = line->linedef;
 
 			// this check sucks and is a hotspot lel
@@ -740,27 +743,11 @@ static void HWR_RenderPlane(subsector_t *subsector, extrasubsector_t *xsub, bool
 			P_ClosestPointOnLine(viewx, viewy, ld, &v);
 			dist = FixedToFloat(R_PointToDist(v.x, v.y));
 
-			if (line->pv1)
-			{
-				x1 = line->pv1->x;
-				y1 = line->pv1->y;
-			}
-			else
-			{
-				x1 = FixedToFloat(line->v1->x);
-				y1 = FixedToFloat(line->v1->y);
-			}
+			x1 = (line->fv1.x);
+			y1 = (line->fv1.y);
 
-			if (line->pv2)
-			{
-				xd = line->pv2->x - x1;
-				yd = line->pv2->y - y1;
-			}
-			else
-			{
-				xd = FixedToFloat(line->v2->x) - x1;
-				yd = FixedToFloat(line->v2->y) - y1;
-			}
+			xd = (line->fv2.x) - x1;
+			yd = (line->fv2.y) - y1;
 
 			// Based on the seg length and the distance from the line, split horizon into multiple poly sets to reduce distortion
 			dist = sqrtf((xd*xd) + (yd*yd)) / dist / 16.0f;
@@ -824,11 +811,11 @@ static void HWR_DrawSegsSplats(FSurfaceInfo * pSurf)
 
 	M_ClearBox(segbbox);
 	M_AddToBox(segbbox,
-		FloatToFixed(gl_curline->pv1->x),
-		FloatToFixed(gl_curline->pv1->y));
+		FloatToFixed(gl_curline->fv1.x),
+		FloatToFixed(gl_curline->fv1.y));
 	M_AddToBox(segbbox,
-		FloatToFixed(gl_curline->pv2->x),
-		FloatToFixed(gl_curline->pv2->y));
+		FloatToFixed(gl_curline->fv2.x),
+		FloatToFixed(gl_curline->fv2.y));
 
 	splat = (wallsplat_t *)gl_curline->linedef->splats;
 	for (; splat; splat = splat->next)
@@ -1237,7 +1224,7 @@ static void HWR_DrawSkyWall(FOutVector *wallVerts, FSurfaceInfo *Surf)
 // Returns true if the midtexture is visible, and false if... it isn't...
 static inline boolean HWR_BlendMidtextureSurface(FSurfaceInfo *pSurf)
 {
-	FUINT blendmode = PF_Masked;
+	FUINT blendmode = PF_Masked | PF_Translucent;
 
 	pSurf->PolyColor.s.alpha = 0xFF;
 
@@ -1259,8 +1246,6 @@ static inline boolean HWR_BlendMidtextureSurface(FSurfaceInfo *pSurf)
 			case 256:
 				if (gl_linedef->blendmode)
 					blendmode = HWR_SurfaceBlend(gl_linedef->blendmode, R_GetLinedefTransTable(gl_linedef->alpha), pSurf);
-				else
-					blendmode = PF_Translucent;
 				break;
 			default:
 				if (gl_linedef->blendmode)
@@ -1272,8 +1257,6 @@ static inline boolean HWR_BlendMidtextureSurface(FSurfaceInfo *pSurf)
 				}
 				else if (gl_linedef->alpha >= 0 && gl_linedef->alpha < FRACUNIT)
 					blendmode = HWR_TranstableToAlpha(R_GetLinedefTransTable(gl_linedef->alpha), pSurf);
-				else
-					blendmode = PF_Masked;
 				break;
 		}
 	}
@@ -1323,34 +1306,24 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 
 	const boolean noencore = (gl_linedef->flags & ML_TFERLINE);
 
-	if (LIKELY(gl_curline->pv1))
-	{
-		vs.x = gl_curline->pv1->x;
-		vs.y = gl_curline->pv1->y;
-		v1x = gl_curline->pv1->x2;
-		v1y = gl_curline->pv1->y2;
-	}
-	else
-	{
-		vs.x = FixedToFloat(gl_curline->v1->x);
-		vs.y = FixedToFloat(gl_curline->v1->y);
-		v1x = gl_curline->v1->x;
-		v1y = gl_curline->v1->y;
-	}
+	v1x = gl_curline->v1->x;
+	v1y = gl_curline->v1->y;
+	v2x = gl_curline->v2->x;
+	v2y = gl_curline->v2->y;
 
-	if (LIKELY(gl_curline->pv2))
+	if (gl_curline->polyseg)
 	{
-		ve.x = gl_curline->pv2->x;
-		ve.y = gl_curline->pv2->y;
-		v2x = gl_curline->pv2->x2;
-		v2y = gl_curline->pv2->y2;
+		vs.x = FixedToFloat(v1x);
+		vs.y = FixedToFloat(v1y);
+		ve.x = FixedToFloat(v2x);
+		ve.y = FixedToFloat(v2y);
 	}
 	else
 	{
-		ve.x = FixedToFloat(gl_curline->v2->x);
-		ve.y = FixedToFloat(gl_curline->v2->y);
-		v2x = gl_curline->v2->x;
-		v2y = gl_curline->v2->y;
+		vs.x = gl_curline->fv1.x;
+		vs.y = gl_curline->fv1.y;
+		ve.x = gl_curline->fv2.x;
+		ve.y = gl_curline->fv2.y;
 	}
 
 #define SLOPEPARAMS(slope, end1, end2, normalheight) \
@@ -2202,27 +2175,11 @@ static boolean CheckClip(sector_t * afrontsector, sector_t * abacksector)
 	{
 		fixed_t v1x, v1y, v2x, v2y; // the seg's vertexes as fixed_t
 
-		if (LIKELY(gl_curline->pv1))
-		{
-			v1x = gl_curline->pv1->x2;
-			v1y = gl_curline->pv1->y2;
-		}
-		else
-		{
-			v1x = gl_curline->v1->x;
-			v1y = gl_curline->v1->y;
-		}
+		v1x = gl_curline->v1->x;
+		v1y = gl_curline->v1->y;
 
-		if (LIKELY(gl_curline->pv2))
-		{
-			v2x = gl_curline->pv2->x2;
-			v2y = gl_curline->pv2->y2;
-		}
-		else
-		{
-			v2x = gl_curline->v2->x;
-			v2y = gl_curline->v2->y;
-		}
+		v2x = gl_curline->v2->x;
+		v2y = gl_curline->v2->y;
 
 #define SLOPEPARAMS(slope, end1, end2, normalheight) \
 		end1 = P_GetZAt(slope, v1x, v1y, normalheight); \
@@ -2427,27 +2384,11 @@ static void HWR_AddLine(seg_t *line)
 
 	gl_curline = line;
 
-	if (LIKELY(gl_curline->pv1))
-	{
-		v1x = gl_curline->pv1->x2;
-		v1y = gl_curline->pv1->y2;
-	}
-	else
-	{
-		v1x = gl_curline->v1->x;
-		v1y = gl_curline->v1->y;
-	}
+	v1x = gl_curline->v1->x;
+	v1y = gl_curline->v1->y;
 
-	if (LIKELY(gl_curline->pv2))
-	{
-		v2x = gl_curline->pv2->x2;
-		v2y = gl_curline->pv2->y2;
-	}
-	else
-	{
-		v2x = gl_curline->v2->x;
-		v2y = gl_curline->v2->y;
-	}
+	v2x = gl_curline->v2->x;
+	v2y = gl_curline->v2->y;
 
 	// OPTIMIZE: quickly reject orthogonal back sides.
 	angle1 = R_PointToAngle64(v1x, v1y);
@@ -4280,8 +4221,8 @@ static void HWR_AddTransparentWall(FOutVector *wallVerts, FSurfaceInfo *pSurf, I
 {
 	wallinfo_t *wallinfo = static_cast<wallinfo_t*>(HWR_CreateDrawNode(DRAWNODE_WALL));
 
-	M_Memcpy(wallinfo->wallVerts, wallVerts, sizeof (wallinfo->wallVerts));
-	M_Memcpy(&wallinfo->Surf, pSurf, sizeof (FSurfaceInfo));
+	memcpy(wallinfo->wallVerts, wallVerts, sizeof (wallinfo->wallVerts));
+	memcpy(&wallinfo->Surf, pSurf, sizeof (FSurfaceInfo));
 	wallinfo->texnum = texnum;
 	wallinfo->noencore = noencore;
 	wallinfo->blend = blend;
@@ -5840,7 +5781,7 @@ static void COM_HWR_glinfo(void)
 	{
 		argv = COM_Argv(i);
 
-		if (strcmp(argv, "--list-extensions") == 0 || strcmp(argv, "-l") == 0)
+		if (fastcmp(argv, "--list-extensions")|| fastcmp(argv, "-l"))
 		{
 			list_extensions = 1;
 		}
@@ -5962,7 +5903,7 @@ static void HWR_DoPostProcessor(player_t *player)
 
 		Surf.PolyColor.s.alpha = 0xc0; // match software mode
 
-		V_CubeApply(&Surf.PolyColor.s.red, &Surf.PolyColor.s.green, &Surf.PolyColor.s.blue);
+		V_CubeApply(&Surf.PolyColor);
 
 		GL_DrawPolygon(&Surf, v, 4, PF_Modulated|PF_Translucent|PF_NoTexture|PF_NoDepthTest);
 	}

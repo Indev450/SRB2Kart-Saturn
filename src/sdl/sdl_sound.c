@@ -244,7 +244,7 @@ static void *getsfx(lumpnum_t sfxlump, size_t *len)
 
 		sfxcvt.len = (INT32)size-8; //Alam: Chop off the header
 		sfxcvt.buf = malloc(sfxcvt.len * sfxcvt.len_mult); //Alam: make room
-		if (sfxcvt.buf) M_Memcpy(sfxcvt.buf, &(sfx->data), sfxcvt.len); //Alam: copy the sfx sample
+		if (sfxcvt.buf) memcpy(sfxcvt.buf, &(sfx->data), sfxcvt.len); //Alam: copy the sfx sample
 
 		if (sfxcvt.buf && SDL_ConvertAudio(&sfxcvt) == 0) //Alam: let convert it!
 		{
@@ -255,9 +255,9 @@ static void *getsfx(lumpnum_t sfxlump, size_t *len)
 				paddedsfx = (dssfx_t *) Z_Malloc(size, PU_SOUND, NULL);
 
 				// Now copy and pad.
-				M_Memcpy(paddedsfx->data, sfxcvt.buf, sfxcvt.len_cvt);
+				memcpy(paddedsfx->data, sfxcvt.buf, sfxcvt.len_cvt);
 				free(sfxcvt.buf);
-				M_Memcpy(paddedsfx,sfx,8);
+				memcpy(paddedsfx,sfx,8);
 				paddedsfx->samplerate = SHORT(csr); // new freq
 		}
 		else //Alam: the convert failed, not needed or I couldn't malloc the buf
@@ -266,7 +266,7 @@ static void *getsfx(lumpnum_t sfxlump, size_t *len)
 			*len = size - 8;
 
 			// Allocate from zone memory then copy and pad
-			paddedsfx = (dssfx_t *)M_Memcpy(Z_Malloc(size, PU_SOUND, NULL), sfx, size);
+			paddedsfx = (dssfx_t *)memcpy(Z_Malloc(size, PU_SOUND, NULL), sfx, size);
 		}
 	}
 	else
@@ -276,7 +276,7 @@ static void *getsfx(lumpnum_t sfxlump, size_t *len)
 		*len = size - 8;
 
 		// Allocate from zone memory then copy and pad
-		paddedsfx = (dssfx_t *)M_Memcpy(Z_Malloc(size, PU_SOUND, NULL), sfx, size);
+		paddedsfx = (dssfx_t *)memcpy(Z_Malloc(size, PU_SOUND, NULL), sfx, size);
 	}
 
 	// Remove the cached lump.
@@ -1073,9 +1073,10 @@ void I_StartupSound(void)
 	// Configure sound device
 	CONS_Printf("I_StartupSound:\n");
 
-#ifdef _WIN32
+#if defined(_WIN32) && !SDL_VERSION_ATLEAST(2,26,5)
 	// Force DirectSound instead of WASAPI
 	// SDL 2.0.6+ defaults to the latter and it screws up our sound effects
+	// SDL 2.26.5 brought imrovements to resampling so this just screws up other stuff now
 	SDL_setenv("SDL_AUDIODRIVER", "directsound", 1);
 #endif
 

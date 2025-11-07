@@ -49,6 +49,7 @@
 #                    Already enabled by default for 32-bit
 #                    Windows.
 # NOCURL=1 - Disable libcurl--HTTP capability.
+# NOHOLEPUNCH=1 - Disable holepunch capability.
 # NOLIBGME=1 - Disable game music emu, retro VGM support.
 # NOOPENMPT=1 - Disable module (tracker) music support.
 # NOMIXER=1 - Disable SDL Mixer (audio playback).
@@ -280,6 +281,13 @@ endif
 
 ifneq (,$(filter $(CC) $(CXX),clang clang++))
  libs+=-fuse-ld=lld
+endif
+
+ifdef MINGW
+# mingw needs this passed AFTER lto and the likes were passed
+# otherwise libbacktrace may break
+opts+=-g
+libs+=-g
 endif
 
 ifdef MINGW
