@@ -207,11 +207,6 @@ void R_InterpolateView(fixed_t frac, boolean forceinvalid)
 {
 	viewvars_t* prevview = oldview;
 
-	if (FIXED_TO_FLOAT(frac) < 0)
-		frac = 0;
-	if (frac > FRACUNIT)
-		frac = FRACUNIT;
-
 	if (oldview_invalid[R_GetViewNumber()] != 0 || forceinvalid)
 	{
 		// interpolate from newview to newview

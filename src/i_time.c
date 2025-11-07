@@ -69,7 +69,15 @@ fixed_t I_GetTimeFrac(void)
 	double integral;
 	const double fractional = modf(timeinticks, &integral);
 
-	return DoubleToFixed(fractional);
+	if (fractional < 0)
+		return 0;
+
+	fixed_t outfrac = DoubleToFixed(fractional);
+
+	if (outfrac > FRACUNIT)
+		outfrac = FRACUNIT;
+
+	return outfrac;
 }
 
 void I_InitializeTime(void)
