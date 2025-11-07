@@ -1419,14 +1419,12 @@ void I_UpdateNoBlit(void)
 		if (rendermode == render_opengl)
 		{
 			OglSdlFinishUpdate(cv_vidwait.value);
+			return;
 		}
-		else
+
 #endif
-		if (rendermode == render_soft)
-		{
-			SDL_RenderCopy(renderer, texture, NULL, NULL);
-			SDL_RenderPresent(renderer);
-		}
+		SDL_RenderCopy(renderer, texture, NULL, NULL);
+		SDL_RenderPresent(renderer);
 	}
 
 	exposevideo = SDL_FALSE;
@@ -1461,7 +1459,15 @@ void I_FinishUpdate(void)
 		ST_AskToJoinEnvelope();
 #endif
 
-	if (rendermode == render_soft && vid.screens[0])
+#ifdef HWRENDER
+	if (rendermode == render_opengl)
+	{
+		OglSdlFinishUpdate(cv_vidwait.value);
+		return;
+	}
+#endif
+
+	if (vid.screens[0])
 	{
 		void *pixels;
 		int pitch;
@@ -1483,12 +1489,6 @@ void I_FinishUpdate(void)
 		SDL_RenderCopy(renderer, texture, &src_rect, NULL);
 		SDL_RenderPresent(renderer);
 	}
-#ifdef HWRENDER
-	else if (rendermode == render_opengl)
-	{
-		OglSdlFinishUpdate(cv_vidwait.value);
-	}
-#endif
 
 	exposevideo = SDL_FALSE;
 }
@@ -1511,7 +1511,8 @@ void I_ReadScreen(UINT8 * restrict scr, INT32 scale)
 {
 	if (rendermode != render_soft)
 		I_Error("I_ReadScreen: called while in non-software mode");
-	else if (scale == 1)
+
+	if (scale == 1)
 		VID_BlitLinearScreen(vid.screens[0], scr, vid.width, vid.height, vid.width, vid.width);
 	else
 	{
@@ -1686,8 +1687,9 @@ static SDL_bool Impl_CreateContext(void)
 		}
 
 		SDL_GL_MakeCurrent(window, sdlglcontext);
+
+		return SDL_TRUE;
 	}
-	else
 #endif
 	if (rendermode == render_soft)
 	{
@@ -1727,9 +1729,11 @@ static SDL_bool Impl_CreateContext(void)
 		}
 
 		SDL_RenderSetLogicalSize(renderer, BASEVIDWIDTH, BASEVIDHEIGHT);
+
+		return SDL_TRUE;
 	}
 
-	return SDL_TRUE;
+	return SDL_FALSE;
 }
 
 static SDL_bool Impl_CreateWindow(SDL_bool fullscreen)
