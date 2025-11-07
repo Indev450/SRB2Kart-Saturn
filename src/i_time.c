@@ -17,60 +17,59 @@
 
 #include "command.h"
 #include "doomtype.h"
-#include "d_netcmd.h"
 #include "m_fixed.h"
 #include "i_system.h"
-
-#include "f_finale.h"
-
-timestate_t g_time;
 
 static CV_PossibleValue_t timescale_cons_t[] = {{FRACUNIT/20, "MIN"}, {20*FRACUNIT, "MAX"}, {0, NULL}};
 consvar_t cv_timescale = {"timescale", "1.0", CV_NETVAR|CV_CHEAT|CV_FLOAT, timescale_cons_t, NULL, FRACUNIT, NULL, NULL, 0, 0, NULL};
 
-static precise_t enterprecise, oldenterprecise;
-static fixed_t entertic, oldentertics;
-static double tictimer;
-static double ticratescaled;
+static precise_t baseprecise;
+static precise_t oldenterprecise;
 
-// experiment to prevent timing issues
-// this returns the global time state accounted with how much time has passed
-// since it was last updated
-static void I_GetTimeAndFrac(tic_t *outtics, fixed_t *outfrac)
+static tic_t g_time;
+
+static fixed_t I_GetTimeScale(void)
 {
-	double elapsedseconds;
-
-	elapsedseconds = (double)(I_GetPreciseTime() - oldenterprecise) / I_GetPrecisePrecision();
-
-	double fractional, integral;
-	fractional = modf((tictimer + elapsedseconds) * ticratescaled, &integral);
-
-	if (outtics)
-		*outtics = g_time.time + (tic_t)integral;
-	if (outfrac)
-		*outfrac = DoubleToFixed(fractional);
+	return cv_timescale.value;
 }
 
+// get the current time that has passed since gamestart
 tic_t I_GetTime(void)
 {
-	// Beware wipes run on their own loop which affects global time state!
-	if (WipeInAction)
-		return g_time.time;
+	const double ticratescaled = (double)TICRATE * FixedToDouble(I_GetTimeScale());
 
-	tic_t tic;
-	I_GetTimeAndFrac(&tic, NULL);
-	return tic;
+	// stoopid gcc
+	const precise_t elapsed = I_GetPreciseTime() - baseprecise;
+	const UINT64 precision = I_GetPrecisePrecision();
+
+	// explictily do this in double precision
+	const double totaltime = (double)elapsed / (double)precision;
+	const double timeinticks = totaltime * ticratescaled;
+
+	return (tic_t)(timeinticks);
+}
+
+tic_t I_GetGlobalTime(void)
+{
+	return g_time;
 }
 
 fixed_t I_GetTimeFrac(void)
 {
-	// Beware wipes run on their own loop which affects global time state!
-	if (WipeInAction)
-		return g_time.timefrac;
+	const double ticratescaled = (double)TICRATE * FixedToDouble(I_GetTimeScale());
 
-	fixed_t frac;
-	I_GetTimeAndFrac(NULL, &frac);
-	return frac;
+	// stoopid gcc
+	const precise_t elapsed = I_GetPreciseTime() - baseprecise;
+	const UINT64 precision = I_GetPrecisePrecision();
+
+	// explictily do this in double precision
+	const double totaltime = (double)elapsed / (double)precision;
+	const double timeinticks = totaltime * ticratescaled;
+
+	double integral;
+	const double fractional = modf(timeinticks, &integral);
+
+	return DoubleToFixed(fractional);
 }
 
 void I_InitializeTime(void)
@@ -81,42 +80,32 @@ void I_InitializeTime(void)
 	// timing information for I_GetPreciseTime and sleeping
 	I_StartupTimer();
 
-	g_time.time = 0;
-	g_time.timefrac = 0;
+	g_time = 0;
 
-	enterprecise = I_GetPreciseTime();
-	oldenterprecise = enterprecise;
-	entertic = 0;
-	oldentertics = 0;
-	tictimer = 0.0;
-	ticratescaled = 1.0;
+	baseprecise = I_GetPreciseTime();
+	oldenterprecise = baseprecise;
 }
 
-void I_UpdateTime(fixed_t timescale)
+
+// Used to track the time between two calls
+// uhhh pretty much just for wipes and things like that
+// probably would be better to not use a time global
+// but i dont think it really matters too much in those cases
+void I_UpdateTime(void)
 {
-	double elapsedseconds;
-	tic_t realtics;
+	static tic_t oldentertics = 0;
 
 	// get real tics
-	ticratescaled = (double)((float)TICRATE * FixedToFloat(timescale));
+	const double ticratescaled = (double)TICRATE * FixedToDouble(I_GetTimeScale());
 
-	enterprecise = I_GetPreciseTime();
-	elapsedseconds = (double)(enterprecise - oldenterprecise) / I_GetPrecisePrecision();
-	tictimer += elapsedseconds;
-	while (tictimer > 1.0/ticratescaled)
-	{
-		entertic += 1;
-		tictimer -= 1.0/ticratescaled;
-	}
-	realtics = entertic - oldentertics;
+	const precise_t elapsed = I_GetPreciseTime() - baseprecise;
+	const UINT64 precision = I_GetPrecisePrecision();
+	const double totaltime = (double)elapsed / (double)precision;
+	const tic_t entertic = (tic_t)(totaltime * ticratescaled);
+
+	const tic_t realtics = entertic - oldentertics;
 	oldentertics = entertic;
-	oldenterprecise = enterprecise;
 
 	// Update global time state
-	g_time.time += realtics;
-	{
-		double fractional, integral;
-		fractional = modf(tictimer * ticratescaled, &integral);
-		g_time.timefrac = DoubleToFixed(fractional);
-	}
+	g_time += realtics;
 }

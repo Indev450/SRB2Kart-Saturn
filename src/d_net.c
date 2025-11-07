@@ -595,12 +595,12 @@ void Net_WaitAllAckReceived(UINT32 timeout)
 
 	HGetPacket();
 
-	while (timeout > I_GetTime() && !Net_AllAcksReceived())
+	while (timeout > I_GetGlobalTime() && !Net_AllAcksReceived())
 	{
-		while (tictac == I_GetTime())
+		while (tictac == I_GetGlobalTime())
 		{
 			I_Sleep(cv_sleep.value);
-			I_UpdateTime(cv_timescale.value);
+			I_UpdateTime();
 		}
 
 		tictac = I_GetTime();

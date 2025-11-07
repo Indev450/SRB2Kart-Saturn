@@ -368,10 +368,10 @@ void F_RunWipe(UINT8 wipetype, boolean drawMenu)
 			break;
 
 		// wait loop
-		while (!((nowtime = I_GetTime()) - lastwipetic))
+		while (!((nowtime = I_GetGlobalTime()) - lastwipetic))
 		{
 			I_Sleep(cv_sleep.value);
-			I_UpdateTime(cv_timescale.value);
+			I_UpdateTime();
 		}
 		lastwipetic = nowtime;
 
@@ -380,7 +380,7 @@ void F_RunWipe(UINT8 wipetype, boolean drawMenu)
 			HWR_DoWipe(wipetype, wipeframe-1); // send in the wipe type and wipeframe because we need to cache the graphic
 		else
 #endif
-		if (rendermode != render_none) //this allows F_RunWipe to be called in dedicated servers
+		if (rendermode != render_none) // this allows F_RunWipe to be called in dedicated servers
 			F_DoWipe(fmask);
 
 		I_OsPolling();
@@ -404,6 +404,7 @@ void F_RunWipe(UINT8 wipetype, boolean drawMenu)
 
 		NetKeepAlive(); // Update the network so we don't cause timeouts
 	}
+
 	WipeInAction = false;
 #endif
 }
