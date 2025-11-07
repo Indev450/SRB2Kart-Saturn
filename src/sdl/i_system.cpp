@@ -1312,55 +1312,7 @@ precise_t I_GetPreciseTime(void)
 
 UINT64 I_GetPrecisePrecision(void)
 {
-	return SDL_GetPerformanceFrequency();
-}
-
-static UINT32 frame_rate;
-
-static double frame_frequency;
-static UINT64 frame_epoch;
-static double elapsed_frames;
-
-static void I_InitFrameTime(const UINT64 now, const UINT32 cap)
-{
-	frame_rate = cap;
-	frame_epoch = now;
-
-	//elapsed_frames = 0.0;
-
-	if (frame_rate == 0)
-	{
-		// Shouldn't be used, but just in case...?
-		frame_frequency = 1.0;
-		return;
-	}
-
-	frame_frequency = timer_frequency / (double)frame_rate;
-}
-
-double I_GetFrameTime(void)
-{
-	const UINT64 now = SDL_GetPerformanceCounter();
-	const UINT32 cap = R_GetFramerateCap();
-
-	if (cap != frame_rate)
-	{
-		// Maybe do this in a OnChange function for cv_fpscap?
-		I_InitFrameTime(now, cap);
-	}
-
-	if (frame_rate == 0)
-	{
-		// Always advance a frame.
-		elapsed_frames += 1.0;
-	}
-	else
-	{
-		elapsed_frames += (now - frame_epoch) / frame_frequency;
-	}
-
-	frame_epoch = now; // moving epoch
-	return elapsed_frames;
+	return timer_frequency;
 }
 
 //
@@ -1369,9 +1321,6 @@ double I_GetFrameTime(void)
 void I_StartupTimer(void)
 {
 	timer_frequency = SDL_GetPerformanceFrequency();
-
-	I_InitFrameTime(0, R_GetFramerateCap());
-	elapsed_frames  = 0.0;
 }
 
 void I_Sleep(UINT32 ms)

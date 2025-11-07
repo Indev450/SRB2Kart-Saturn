@@ -2800,7 +2800,7 @@ static boolean CL_ServerConnectionTicker(const char *tmpsave, tic_t *oldtic, tic
 	Net_AckTicker();
 
 	// Call it only once by tic
-	if (*oldtic != I_GetTime())
+	if (*oldtic != I_GetGlobalTime())
 	{
 		INT32 key;
 
@@ -2842,7 +2842,7 @@ static boolean CL_ServerConnectionTicker(const char *tmpsave, tic_t *oldtic, tic
 			return false;
 		}
 
-		*oldtic = I_GetTime();
+		*oldtic = I_GetGlobalTime();
 
 		if (client && cl_mode != CL_CONNECTED && cl_mode != CL_ABORTED)
 		{
@@ -2864,7 +2864,7 @@ static boolean CL_ServerConnectionTicker(const char *tmpsave, tic_t *oldtic, tic
 	else
 	{
 		I_Sleep(cv_sleep.value);
-		I_UpdateTime(cv_timescale.value);
+		I_UpdateTime();
 	}
 
 	return true;
