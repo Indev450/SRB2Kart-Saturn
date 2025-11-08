@@ -25,9 +25,6 @@
 
 // Eeeeh not sure is this right way, but it works < sry :c < sry again it had to go :c
 
-// requires GL 4.3
-//#define GLDEBUGMESSAGE
-
 #if defined (HWRENDER) && !defined (NOROPENGL)
 
 #include "../../r_fps.h" // For R_GetTimeFrac, used for the leveltime shader uniform
