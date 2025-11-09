@@ -523,6 +523,7 @@ static void Impl_HandleWindowEvent(SDL_WindowEvent evt)
 #ifdef USE_FBO_OGL
 		I_DownSample();
 #endif
+		windowmoved = SDL_FALSE;
 	}
 
 	if (mousefocus && kbfocus)
