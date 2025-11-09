@@ -88,10 +88,6 @@
 
 /**	\brief
 */
-static INT32 numVidModes = -1;
-
-/**	\brief
-*/
 static char vidModeName[33][32]; // allow 33 different modes
 
 rendermode_t rendermode = render_none;
@@ -1546,10 +1542,7 @@ void I_SetPalette(RGBA_t *palette)
 // return number of fullscreen + X11 modes
 INT32 VID_NumModes(void)
 {
-	if (USE_FULLSCREEN && numVidModes != -1)
-		return numVidModes - firstEntry;
-	else
-		return MAXWINMODES;
+	return MAXWINMODES;
 }
 
 const char *VID_GetModeName(INT32 modeNum)
