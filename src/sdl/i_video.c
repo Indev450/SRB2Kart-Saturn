@@ -84,7 +84,7 @@
 #endif
 
 // maximum number of windowed modes (see windowedModes[][])
-#define MAXWINMODES (33)
+#define MAXWINMODES (128)
 
 static void I_FillScreenResolutionsList(boolean force);
 
