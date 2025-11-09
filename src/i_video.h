@@ -95,6 +95,7 @@ INT32 VID_SetMode(INT32 modenum);
 */
 const char *VID_GetModeName(INT32 modenum);
 
+void VID_RefreshModeList(void);
 void VID_PrepareModeList(void);
 
 /**	\brief can video system do fullscreen
