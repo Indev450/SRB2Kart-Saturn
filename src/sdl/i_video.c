@@ -1594,16 +1594,12 @@ const char *VID_GetModeName(INT32 modeNum)
 	if (modeNum > MAXWINMODES)
 		return NULL;
 
-	I_FillScreenResolutionsList();
-
 	return windowedModes[modeNum].name;
 }
 
 INT32 VID_GetModeForSize(INT32 w, INT32 h)
 {
 	int i;
-
-	I_FillScreenResolutionsList();
 
 	for (i = 0; i < MAXWINMODES; i++)
 	{
@@ -1657,8 +1653,6 @@ static UINT32 VID_GetRefreshRate(void)
 INT32 VID_SetMode(INT32 modeNum)
 {
 	vid.recalc = true;
-
-	I_FillScreenResolutionsList();
 
 	if (modeNum >= 0 && modeNum < MAXWINMODES)
 	{
