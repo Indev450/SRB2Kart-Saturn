@@ -1544,12 +1544,13 @@ static void I_FillScreenResolutionsList(boolean force)
 
 	INT32 custom_w = cv_scr_width.value;
 	INT32 custom_h = cv_scr_height.value;
-	boolean needcustom = true;
 
 	// make sure those are valid
 	if ((custom_w >= BASEVIDWIDTH && custom_h >= BASEVIDHEIGHT) &&
 		(custom_w <= MAXVIDWIDTH && custom_h <= MAXVIDHEIGHT))
 	{
+		boolean needcustom = true;
+
 		for (i = 0; i < list_size; i++)
 		{
 			if (windowedModes[i].w == custom_w && windowedModes[i].h == custom_h)
@@ -1701,7 +1702,6 @@ INT32 VID_SetMode(INT32 modeNum)
 
 	return SDL_TRUE;
 }
-
 
 static SDL_bool Impl_CreateContext(void)
 {
