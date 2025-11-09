@@ -1524,7 +1524,6 @@ void I_SetPalette(RGBA_t *palette)
 	}
 }
 
-
 // make sure the canonical resolutions are always available
 static const struct {
 	const int w, h;
@@ -1653,13 +1652,18 @@ static void I_FillScreenResolutionsList(boolean force)
 		// did not find mode from list, make custom resolution if the values somewhat make sense
 		if (needcustom)
 		{
-			snprintf(desired_resolution, sizeof(desired_resolution), "%dx%d", custom_w, custom_h);
+			if (list_size < MAXWINMODES)
+			{
+				snprintf(desired_resolution, sizeof(desired_resolution), "%dx%d", custom_w, custom_h);
 
-			// [FG] if the desired resolution not in the list, append it
-			windowedModes[list_size].name = strdup(desired_resolution);
-			windowedModes[list_size].w = custom_w;
-			windowedModes[list_size].h = custom_h;
-			list_size++;
+				// [FG] if the desired resolution not in the list, append it
+				windowedModes[list_size].name = strdup(desired_resolution);
+				windowedModes[list_size].w = custom_w;
+				windowedModes[list_size].h = custom_h;
+				list_size++;
+			}
+			else
+				CONS_Alert(CONS_ERROR, "Could not set custom resolution!\n");
 		}
 	}
 
