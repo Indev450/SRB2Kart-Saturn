@@ -282,7 +282,6 @@ static void M_SetupMultiHandler(INT32 choice);
 
 // Options
 // Split into multiple parts due to size
-static void M_VideoModeMenu(INT32 choice);
 static void M_Setup1PControlsMenu(void);
 static void M_Setup2PControlsMenu(void);
 static void M_Setup3PControlsMenu(void);
@@ -9420,7 +9419,7 @@ static void M_ResetControls(INT32 choice)
 
 static modedesc_t modedescs[MAXMODEDESCS];
 
-static void M_VideoModeMenu(INT32 choice)
+void M_VideoModeMenu(INT32 choice)
 {
 	INT32 i, j, vdup, nummodes, width, height;
 	const char *desc;

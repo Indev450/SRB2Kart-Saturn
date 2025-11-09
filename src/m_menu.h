@@ -221,6 +221,8 @@ extern menu_t *currentMenu;
 
 extern menu_t MainDef;
 extern menu_t SP_LoadDef;
+extern menu_t OP_VideoModeDef;
+void M_VideoModeMenu(INT32 choice);
 
 // Call upon joystick hotplug
 void M_SetupJoystickMenu(INT32 choice);

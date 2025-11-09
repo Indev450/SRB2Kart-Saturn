@@ -100,6 +100,7 @@ typedef struct
 
 static video_mode_t windowedModes[MAXWINMODES] = {{NULL, 0, 0}};
 static video_mode_t customMode = {NULL, 0, 0};
+static const char *fallback_resolution_name = "Fallback";
 
 rendermode_t rendermode = render_none;
 
@@ -166,7 +167,6 @@ SDL_Window   *window = NULL;
 SDL_Renderer *renderer = NULL;
 static SDL_Texture  *texture = NULL;
 static SDL_bool      havefocus = SDL_TRUE;
-static const char *fallback_resolution_name = "Fallback";
 
 static SDL_bool Impl_CreateWindow(SDL_bool fullscreen);
 static void Impl_SetWindowIcon(void);
@@ -1667,6 +1667,11 @@ static void I_FillScreenResolutionsList(void)
 	}
 
 	windowedModes[list_size].name = NULL;
+
+	// be sure to update the video menu
+	if (menuactive &&
+		currentMenu == &OP_VideoModeDef)
+		M_VideoModeMenu(0);
 }
 
 // return number of fullscreen + X11 modes
