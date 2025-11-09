@@ -503,6 +503,7 @@ static void Impl_HandleWindowEvent(SDL_WindowEvent evt)
 #endif
 		}
 #endif
+		windowmoved = SDL_FALSE;
 	}
 
 	if (mousefocus && kbfocus)
