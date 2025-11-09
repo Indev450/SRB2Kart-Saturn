@@ -1501,8 +1501,13 @@ static void I_FillScreenResolutionsList(void)
 	int count = 0;
 	char desired_resolution[256];
 
+	currentDisplayIndex = SDL_GetWindowDisplayIndex(window);
+
+	// No valid index
 	if (currentDisplayIndex < 0)
-		currentDisplayIndex = SDL_GetWindowDisplayIndex(window);
+	{
+		return;
+	}
 
 	// didnt change screen, no need to redo the list
 	if (currentDisplayIndex == oldDisplayIndex)
@@ -1511,12 +1516,6 @@ static void I_FillScreenResolutionsList(void)
 	}
 
 	oldDisplayIndex = currentDisplayIndex;
-
-	// No valid index
-	if (currentDisplayIndex < 0)
-	{
-		return;
-	}
 
 	// Don't call SDL_ListModes if SDL has not been initialized
 	count = SDL_GetNumDisplayModes(currentDisplayIndex);
