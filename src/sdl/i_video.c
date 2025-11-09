@@ -90,14 +90,14 @@ static void I_FillScreenResolutionsList(boolean force);
 
 typedef struct
 {
-	char *name;
+	const char *name;
 	INT32 w;
 	INT32 h;
 } video_mode_t;
 
-static video_mode_t windowedModes[MAXWINMODES] = {{NULL, 0, 0}};
+static video_mode_t windowedModes[MAXWINMODES];
 static const char *fallback_resolution_name = "Fallback";
-static int vid_nummodes;
+static int vid_nummodes = 0;
 
 rendermode_t rendermode = render_none;
 
@@ -1811,6 +1811,9 @@ static SDL_bool Impl_CreateContext(void)
 
 		SDL_GL_MakeCurrent(window, sdlglcontext);
 
+		// be sure to fill the resolution list the moment we have a window
+		I_FillScreenResolutionsList(false);
+
 		return SDL_TRUE;
 	}
 #endif
@@ -1852,6 +1855,9 @@ static SDL_bool Impl_CreateContext(void)
 		}
 
 		SDL_RenderSetLogicalSize(renderer, BASEVIDWIDTH, BASEVIDHEIGHT);
+
+		// be sure to fill the resolution list the moment we have a window
+		I_FillScreenResolutionsList(false);
 
 		return SDL_TRUE;
 	}
@@ -1904,9 +1910,6 @@ static SDL_bool Impl_CreateWindow(SDL_bool fullscreen)
 		CONS_Printf(M_GetText("Couldn't create window: %s\n"), SDL_GetError());
 		return SDL_FALSE;
 	}
-
-	// be sure to fill the resolution list the moment we have a window
-	I_FillScreenResolutionsList(false);
 
 	return Impl_CreateContext();
 }
@@ -2109,6 +2112,12 @@ void I_StartupGraphics(void)
 
 	// Fury: we do window initialization after GL setup to allow
 	// SDL_GL_LoadLibrary to work well on Windows
+
+	// make sure the default mode exists
+	windowedModes[0].name = "320x200";
+	windowedModes[0].w = 320;
+	windowedModes[0].h = 200;
+	vid_nummodes = 1;
 
 	// Create window
 	VID_SetMode(VID_GetModeForSize(BASEVIDWIDTH, BASEVIDHEIGHT));
