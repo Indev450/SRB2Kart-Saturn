@@ -489,18 +489,18 @@ static void Impl_HandleWindowEvent(SDL_WindowEvent evt)
 
 	if (windowmoved)
 	{
+		I_CheckDesktopRes();
+
 		// if we say moved our game window to a different screen
 		// refetch our resolutions
 		I_FillScreenResolutionsList(false);
-
 #ifdef HWRENDER
+#ifdef USE_FBO_OGL
 		if (rendermode == render_opengl)
 		{
-			I_CheckDesktopRes();
-#ifdef USE_FBO_OGL
 			I_DownSample();
-#endif
 		}
+#endif
 #endif
 		windowmoved = SDL_FALSE;
 	}
@@ -1175,6 +1175,11 @@ static void I_CheckDesktopRes(void)
 boolean I_CheckNativeRes(void)
 {
 	return (vid.width == desktopwidth && vid.height == desktopheight);
+}
+
+boolean I_CheckAboveDesktopRes(INT32 width, INT32 height)
+{
+	return (width > desktopwidth || height > desktopheight);
 }
 
 #ifdef USE_FBO_OGL
