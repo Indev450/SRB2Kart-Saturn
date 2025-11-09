@@ -86,6 +86,9 @@
 // maximum number of windowed modes (see windowedModes[][])
 #define MAXWINMODES (33)
 
+// detect our custom resolution
+#define CUSTOMMODENUM 9999
+
 static void I_FillScreenResolutionsList(void);
 
 typedef struct
@@ -96,10 +99,7 @@ typedef struct
 } video_mode_t;
 
 static video_mode_t windowedModes[MAXWINMODES] = {{NULL, 0, 0}};
-
-#define CUSTOMMODENUM 9999
-static INT32 custom_width = 0;
-static INT32 custom_height = 0;
+static video_mode_t customMode = {NULL, 0, 0};
 
 rendermode_t rendermode = render_none;
 
@@ -492,6 +492,8 @@ static void Impl_HandleWindowEvent(SDL_WindowEvent evt)
 
 	if (windowmoved)
 	{
+		// if we say moved our game window to a different screen
+		// refetch our resolutions
 		I_FillScreenResolutionsList();
 
 #ifdef HWRENDER
@@ -1473,7 +1475,7 @@ static void I_AppendResolution(SDL_DisplayMode *mode, int *current_resolution_in
 
 	snprintf(mode_name, sizeof(mode_name), "%dx%d", mode->w, mode->h);
 
-	for(i = 0; i < *list_size; i++)
+	for (i = 0; i < *list_size; i++)
 		if (!strcmp(mode_name, windowedModes[i].name))
 			return;
 
@@ -1481,7 +1483,7 @@ static void I_AppendResolution(SDL_DisplayMode *mode, int *current_resolution_in
 	windowedModes[*list_size].w = mode->w;
 	windowedModes[*list_size].h = mode->h;
 
-	if (mode->w == custom_width && mode->h == custom_height)
+	if (mode->w == customMode.w && mode->h == customMode.h)
 		*current_resolution_index = *list_size;
 
 	(*list_size)++;
@@ -1552,7 +1554,7 @@ static void I_FillScreenResolutionsList(void)
 		windowedModes[list_size].name = NULL;
 	}
 
-	snprintf(desired_resolution, sizeof(desired_resolution), "%dx%d", custom_width, custom_height);
+	snprintf(desired_resolution, sizeof(desired_resolution), "%dx%d", customMode.w, customMode.h);
 
 	// [FG] if the desired resolution not in the list, append it
 	if (current_resolution_index == -1)
@@ -1614,8 +1616,8 @@ INT32 VID_GetModeForSize(INT32 w, INT32 h)
 	if ((w >= BASEVIDWIDTH && h >= BASEVIDHEIGHT) &&
 		(rendermode == render_opengl || (w <= MAXVIDWIDTH && h <= MAXVIDHEIGHT)))
 	{
-		custom_width = w;
-		custom_height = h;
+		customMode.w = w;
+		customMode.h = h;
 		return CUSTOMMODENUM;
 	}
 
@@ -1659,11 +1661,11 @@ INT32 VID_SetMode(INT32 modeNum)
 		vid.height = windowedModes[modeNum].h;
 		vid.modenum = modeNum;
 	}
-	else if (modeNum == CUSTOMMODENUM && custom_width && custom_height)
+	else if (modeNum == CUSTOMMODENUM && customMode.w && customMode.h)
 	{
 		// at this point these values are assumed to be okay
-		vid.width = custom_width;
-		vid.height = custom_height;
+		vid.width = customMode.w;
+		vid.height = customMode.h;
 		vid.modenum = modeNum;
 	}
 
