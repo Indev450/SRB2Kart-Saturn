@@ -43,7 +43,7 @@
 consvar_t cv_splats = {"splats", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 #endif
 
-actioncache_t actioncachehead;
+actioncache_t actioncachehead = {};
 
 static mobj_t *overlaycap = NULL;
 static mobj_t *shadowcap = NULL;

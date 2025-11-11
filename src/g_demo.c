@@ -68,8 +68,8 @@ UINT8  numDemos      = 0; //3; -- i'm FED UP of losing my skincolour to a broken
 UINT32 demoDelayTime = 15*TICRATE;
 UINT32 demoIdleTime  = 3*TICRATE;
 
-boolean nodrawers; // for comparative timing purposes
-boolean noblit; // for comparative timing purposes
+boolean nodrawers = false; // for comparative timing purposes
+boolean noblit = false; // for comparative timing purposes
 static tic_t demostarttime; // for comparative timing purposes
 
 //@TODO put these all in a struct for namespacing purposes?
@@ -80,7 +80,7 @@ static UINT8 *demoend;
 static UINT8 demoflags;
 static boolean demosynced = true; // console warning message
 
-struct demovars_s demo;
+struct demovars_s demo = {};
 
 consvar_t cv_resyncdemo = {"resyncdemo", "On", 0, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 

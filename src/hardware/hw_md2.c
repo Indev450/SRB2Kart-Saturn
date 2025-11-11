@@ -72,10 +72,9 @@
 #include <errno.h>
 #endif
 
-md2_t md2_models[NUMSPRITES];
-md2_t md2_playermodels[MAXSKINS];
-md2_t md2_localplayermodels[MAXLOCALSKINS];
-
+md2_t md2_models[NUMSPRITES] = {};
+md2_t md2_playermodels[MAXSKINS] = {};
+md2_t md2_localplayermodels[MAXLOCALSKINS] = {};
 
 /*
  * free model

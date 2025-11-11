@@ -92,7 +92,7 @@
 // Map MD5, calculated on level load.
 // Sent to clients in PT_SERVERINFO.
 //
-unsigned char mapmd5[16];
+unsigned char mapmd5[16] = {};
 
 // true when level was loaded from netsave
 boolean midgamejoin = false;
@@ -102,22 +102,22 @@ boolean midgamejoin = false;
 // Store VERTEXES, LINEDEFS, SIDEDEFS, etc.
 //
 
-size_t numvertexes, numsegs, numsectors, numsubsectors, numnodes, numlines, numsides, nummapthings;
-vertex_t *vertexes;
-seg_t *segs;
-sector_t *sectors;
-subsector_t *subsectors;
-node_t *nodes;
-line_t *lines;
-side_t *sides;
-mapthing_t *mapthings;
-sector_t *spawnsectors;
-line_t *spawnlines;
-side_t *spawnsides;
-INT32 numstarposts;
-boolean levelloading;
+size_t numvertexes = 0, numsegs = 0, numsectors = 0, numsubsectors = 0, numnodes = 0, numlines = 0, numsides = 0, nummapthings = 0;
+vertex_t *vertexes = NULL;
+seg_t *segs = NULL;
+sector_t *sectors = NULL;
+subsector_t *subsectors = NULL;
+node_t *nodes = NULL;
+line_t *lines = NULL;
+side_t *sides = NULL;
+mapthing_t *mapthings = NULL;
+sector_t *spawnsectors = NULL;
+line_t *spawnlines = NULL;
+side_t *spawnsides = NULL;
+INT32 numstarposts = 0;
+boolean levelloading = false;
 
-virtres_t *curmapvirt;
+virtres_t *curmapvirt = NULL;
 
 // BLOCKMAP
 // Created from axis aligned bounding box
@@ -127,32 +127,32 @@ virtres_t *curmapvirt;
 // by spatial subdivision in 2D.
 //
 // Blockmap size.
-INT32 bmapwidth, bmapheight; // size in mapblocks
+INT32 bmapwidth = 0, bmapheight = 0; // size in mapblocks
 
-INT32 *blockmap; // INT32 for large maps
+INT32 *blockmap = NULL; // INT32 for large maps
 // offsets in blockmap are from here
-INT32 *blockmaplump; // Big blockmap
+INT32 *blockmaplump = NULL; // Big blockmap
 
 // origin of block map
-fixed_t bmaporgx, bmaporgy;
+fixed_t bmaporgx = 0, bmaporgy = 0;
 // for thing chains
-mobj_t **blocklinks;
-precipmobj_t **precipblocklinks;
+mobj_t **blocklinks = NULL;
+precipmobj_t **precipblocklinks = NULL;
 
 // REJECT
 // For fast sight rejection.
 // Speeds up enemy AI by skipping detailed LineOf Sight calculation.
 // Without special effect, this could be used as a PVS lookup as well.
 //
-UINT8 *rejectmatrix;
+UINT8 *rejectmatrix = NULL;
 
 // Maintain single and multi player starting spots.
-INT32 numdmstarts, numcoopstarts, numredctfstarts, numbluectfstarts;
+INT32 numdmstarts = 0, numcoopstarts = 0, numredctfstarts = 0, numbluectfstarts = 0;
 
-mapthing_t *deathmatchstarts[MAX_DM_STARTS];
-mapthing_t *playerstarts[MAXPLAYERS];
-mapthing_t *bluectfstarts[MAXPLAYERS];
-mapthing_t *redctfstarts[MAXPLAYERS];
+mapthing_t *deathmatchstarts[MAX_DM_STARTS] = {};
+mapthing_t *playerstarts[MAXPLAYERS] = {};
+mapthing_t *bluectfstarts[MAXPLAYERS] = {};
+mapthing_t *redctfstarts[MAXPLAYERS] = {};
 
 // Global state for PartialAddWadFile/MultiSetupWadFiles
 // Might be replacable with parameters, but non-trivial when the functions are called on separate tics

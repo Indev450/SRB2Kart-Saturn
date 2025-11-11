@@ -47,10 +47,10 @@ static INT32 toptexture, bottomtexture, midtexture;
 static bool topremap, bottomremap, midremap;
 static INT32 numthicksides, numbackffloors;
 
-angle_t rw_normalangle;
+angle_t rw_normalangle = 0;
 // angle to line origin
-angle_t rw_angle1;
-fixed_t rw_distance;
+angle_t rw_angle1 = 0;
+fixed_t rw_distance = 0;
 
 //
 // regular wall

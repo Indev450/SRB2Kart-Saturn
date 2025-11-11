@@ -75,19 +75,19 @@ boolean gl_drawing_stencil = false;
 
 static INT32 current_bsp_culling_distance = 0;
 
-FTransform atransform;
+FTransform atransform = {};
 
 // Float variants of viewx, viewy, viewz, etc.
 static float gl_viewx, gl_viewy, gl_viewz;
-float gl_viewsin, gl_viewcos;
+float gl_viewsin = 0.0f, gl_viewcos = 0.0f;
 static float gl_viewludsin, gl_viewludcos;
 static angle_t gl_aimingangle;
 
-seg_t *gl_curline;
-side_t *gl_sidedef;
-line_t *gl_linedef;
-sector_t *gl_frontsector;
-sector_t *gl_backsector;
+seg_t    *gl_curline = NULL;
+side_t   *gl_sidedef = NULL;
+line_t   *gl_linedef = NULL;
+sector_t *gl_frontsector = NULL;
+sector_t *gl_backsector = NULL;
 
 // values for the far clipping plane
 static constexpr float clipping_distances[] = {1024.0f, 2048.0f, 4096.0f, 6144.0f, 8192.0f, 12288.0f, 16384.0f};
@@ -5327,7 +5327,9 @@ void HWR_SetTransform(float fpov)
 			atransform.fliptype = TRANSFORM_FLIP;
 	}
 	else if (postimg & POSTIMG_MIRROR)
+	{
 		atransform.fliptype = TRANSFORM_MIRROR;
+	}
 
 	// Set transform.
 	GL_SetTransform(&atransform);

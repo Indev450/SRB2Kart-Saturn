@@ -26,11 +26,11 @@
 
 #include "qs22j.h"
 
-seg_t *curline;
-side_t *sidedef;
-line_t *linedef;
-sector_t *frontsector;
-sector_t *backsector;
+seg_t  *curline = NULL;
+side_t *sidedef = NULL;
+line_t *linedef = NULL;
+sector_t *frontsector = NULL;
+sector_t *backsector = NULL;
 
 // very ugly realloc() of drawsegs at run-time, I upped it to 512
 // instead of 256.. and someone managed to send me a level with
@@ -40,11 +40,11 @@ drawseg_t *drawsegs = NULL;
 drawseg_t *ds_p = NULL;
 
 // indicates doors closed wrt automap bugfix:
-INT32 doorclosed;
+INT32 doorclosed = 0;
 
 // A wall was drawn covering the whole screen, which means we
 // can block off the BSP across that seg.
-boolean g_walloffscreen;
+boolean g_walloffscreen = false;
 
 boolean R_NoEncore(sector_t *sector, boolean ceiling)
 {

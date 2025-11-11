@@ -78,14 +78,14 @@
 #define MAX_REASONLENGTH 30
 #define FORCECLOSE 0x8000
 
-static long long unsigned packetstat[NUMPACKETTYPE+1] = {0};
+static long long unsigned packetstat[NUMPACKETTYPE+1] = {};
 
 boolean server = true; // true or false but !server == client
 #define client (!server)
 boolean nodownload = false;
 boolean serverrunning = false;
 INT32 serverplayer = 0;
-char motd[254], server_context[8]; // Message of the Day, Unique Context (even without Mumble support)
+char motd[254] = {}, server_context[8] = {}; // Message of the Day, Unique Context (even without Mumble support)
 
 #define MAP_ICON_REQUEST_FREQUENCY 8
 
@@ -98,14 +98,13 @@ static int map_icon_request_count; // current count of icon requests sent
 static UINT8 *map_icon_data;
 static patch_t *map_icon;
 
-plrinfo playerinfo[MAXPLAYERS];
+plrinfo playerinfo[MAXPLAYERS] = {};
 SINT8 joinnode = 0; // used for CL_VIEWSERVER
 
-boolean player_muted[MAXPLAYERS] = {0};
+boolean player_muted[MAXPLAYERS] = {};
 
 // Server specific vars
-UINT8 playernode[MAXPLAYERS];
-
+UINT8 playernode[MAXPLAYERS] = {};
 
 // Minimum timeout for sending the savegame
 // The actual timeout will be longer depending on the savegame length
@@ -118,15 +117,15 @@ static tic_t savegameresendcooldown[MAXNETNODES]; // How long before we can rese
 static tic_t freezetimeout[MAXNETNODES]; // Until when can this node freeze the server before getting a timeout?
 
 UINT16 pingmeasurecount = 1;
-UINT32 realpingtable[MAXPLAYERS]; //the base table of ping where an average will be sent to everyone.
-UINT32 playerpingtable[MAXPLAYERS]; //table of player latency values.
+UINT32 realpingtable[MAXPLAYERS] = {}; //the base table of ping where an average will be sent to everyone.
+UINT32 playerpingtable[MAXPLAYERS] = {}; //table of player latency values.
 
 #define GENTLEMANSMOOTHING (TICRATE)
 static tic_t reference_lag;
 static UINT8 spike_time;
-tic_t lowest_lag;
-tic_t simulated_lag;
-boolean server_lagless;
+tic_t lowest_lag = 0;
+tic_t simulated_lag = 0;
+boolean server_lagless = true;
 
 static void Lagless_OnChange(void)
 {
@@ -144,12 +143,12 @@ static CV_PossibleValue_t mindelay_cons_t[] = {{0, "MIN"}, {30, "MAX"}, {0, NULL
 consvar_t cv_mindelay = {"mindelay", "0", CV_SAVE, mindelay_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_gentlemens = {"gentlemensdelay", "Off", CV_SAVE|CV_CALL|CV_NOINIT, CV_OnOff, Lagless_OnChange, 0, NULL, NULL, 0, 0, NULL}; // this should be a netvar Zzz...
 
-SINT8 nodetoplayer[MAXNETNODES];
-SINT8 nodetoplayer2[MAXNETNODES]; // say the numplayer for this node if any (splitscreen)
-SINT8 nodetoplayer3[MAXNETNODES]; // say the numplayer for this node if any (splitscreen == 2)
-SINT8 nodetoplayer4[MAXNETNODES]; // say the numplayer for this node if any (splitscreen == 3)
-UINT8 playerpernode[MAXNETNODES]; // used specialy for splitscreen
-boolean nodeingame[MAXNETNODES]; // set false as nodes leave game
+SINT8 nodetoplayer[MAXNETNODES]  = {};
+SINT8 nodetoplayer2[MAXNETNODES] = {}; // say the numplayer for this node if any (splitscreen)
+SINT8 nodetoplayer3[MAXNETNODES] = {}; // say the numplayer for this node if any (splitscreen == 2)
+SINT8 nodetoplayer4[MAXNETNODES] = {}; // say the numplayer for this node if any (splitscreen == 3)
+UINT8 playerpernode[MAXNETNODES] = {}; // used specialy for splitscreen
+boolean nodeingame[MAXNETNODES]  = {}; // set false as nodes leave game
 
 tic_t servermaxping = 20; // server's max delay, in frames. Defaults to 20
 static tic_t nettics[MAXNETNODES]; // what tic the client have received
@@ -196,7 +195,7 @@ boolean is_client_saturn[MAXNETNODES];
 static UINT8 localtextcmd[MAXSPLITSCREENPLAYERS][MAXTEXTCMD];
 static tic_t neededtic;
 SINT8 servernode = 0; // the number of the server node
-char connectedservername[MAXSERVERNAME+1];
+char connectedservername[MAXSERVERNAME+1] = {};
 /// \brief do we accept new players?
 /// \todo WORK!
 boolean acceptnewnode = true;
@@ -227,7 +226,7 @@ struct textcmdbuf_s
 static textcmdbuf_t *textcmdbuf[MAXSPLITSCREENPLAYERS] = {NULL};
 
 static ticcmd_t playercmds[MAXPLAYERS];
-ticcmd_t netcmds[BACKUPTICS][MAXPLAYERS];
+ticcmd_t netcmds[BACKUPTICS][MAXPLAYERS] = {};
 static textcmdtic_t *textcmds[TEXTCMD_HASH_SIZE] = {NULL};
 
 consvar_t cv_showjoinaddress = {"showjoinaddress", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
@@ -285,7 +284,7 @@ static inline void *G_ScpyTiccmd(ticcmd_t* dest, void* src, const size_t n)
 // Some software don't support largest packet
 // (original sersetup, not exactely, but the probability of sending a packet
 // of 512 bytes is like 0.1)
-UINT16 software_MAXPACKETLENGTH;
+UINT16 software_MAXPACKETLENGTH = 0;
 
 /** Guesses the value of a tic from its lowest byte and from maketic
   *

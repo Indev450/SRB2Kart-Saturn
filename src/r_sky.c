@@ -22,8 +22,6 @@
 #include "w_wad.h"
 #include "z_zone.h"
 
-#include "p_maputl.h" // P_PointOnLineSide
-
 //
 // sky mapping
 //
@@ -31,28 +29,28 @@
 /**	\brief Needed to store the number of the dummy sky flat.
 	Used for rendering, as well as tracking projectiles etc.
 */
-INT32 skyflatnum;
+INT32 skyflatnum = 0;
 
 /**	\brief the lump number of the sky texture
 */
-INT32 skytexture;
+INT32 skytexture = 0;
 
 /**	\brief the horizon line in a 256x128 sky texture
 */
-INT32 skytexturemid;
+INT32 skytexturemid = 0;
 
 /**	\brief the x offset of the sky texture
  */
-INT32 skytextureoffset;
+INT32 skytextureoffset = 0;
 
 /**	\brief the scale of the sky
 */
-fixed_t skyscale;
+fixed_t skyscale = 0;
 
 /** \brief used for keeping track of the current sky
 */
-INT32 levelskynum;
-INT32 globallevelskynum;
+INT32 levelskynum = 0;
+INT32 globallevelskynum = 0;
 
 
 /**	\brief	The R_SetupSkyDraw function
