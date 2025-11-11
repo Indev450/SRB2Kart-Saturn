@@ -1359,8 +1359,7 @@ static void K_KartItemRoulette(player_t *player, ticcmd_t *cmd)
 		spbrush = (spbplace != -1 && player->kartstuff[k_position] == spbplace+1);
 
 	// Initializes existing spawnchance values
-	for (i = 0; i < NUMKARTRESULTS; i++)
-		spawnchance[i] = 0;
+	spawnchance[0] = 0;
 
 	// Split into another function for a debug function below
 	useodds = K_FindUseodds(player, mashed, pingame, bestbumper, spbrush, dontforcespb);
@@ -6221,6 +6220,7 @@ void K_KartUpdatePosition(player_t *player)
 	fixed_t i, ppcd, pncd, ipcd, incd;
 	fixed_t pmo, imo;
 	mobj_t *mo;
+	boolean didinputplayer = false; // only check the "input players" distance "once" per call
 
 	if (player->spectator || !player->mo)
 		return;
@@ -6240,60 +6240,99 @@ void K_KartUpdatePosition(player_t *player)
 			else if (((players[i].starpostnum) + (numstarposts+1)*players[i].laps) ==
 				((player->starpostnum) + (numstarposts+1)*player->laps))
 			{
-				ppcd = pncd = ipcd = incd = 0;
+				// we need to preserve a wonky vanilla bug which will check the player against itself sometimes, nice!
+				const boolean selfcheckcompatmyass = &players[i] == player;
 
-				player->kartstuff[k_prevcheck] = players[i].kartstuff[k_prevcheck] = 0;
-				player->kartstuff[k_nextcheck] = players[i].kartstuff[k_nextcheck] = 0;
+				// time for hell
+				// if we check ourselves, we need to recalculate our distance
+				if (selfcheckcompatmyass)
+					didinputplayer = false;
+
+				ipcd = incd = 0;
+
+				players[i].kartstuff[k_prevcheck] = players[i].kartstuff[k_nextcheck] = 0;
+
+				if (!didinputplayer)
+				{
+					ppcd = pncd = 0;
+					player->kartstuff[k_prevcheck] = player->kartstuff[k_nextcheck] = 0;
+				}
 
 				// This checks every thing on the map, and looks for MT_BOSS3WAYPOINT (the thing we're using for checkpoint wp's, for now)
 				for (mo = waypointcap; mo != NULL; mo = mo->tracer)
 				{
-					const boolean isprevcheckpointp = mo->health == player->starpostnum;
-					const boolean isnextcheckpointp = mo->health == (player->starpostnum + 1);
-
-					if ((isprevcheckpointp || isnextcheckpointp) && (!mo->movecount || mo->movecount == player->laps+1))
+					if (!didinputplayer)
 					{
-						pmo = P_AproxDistance(P_AproxDistance(	mo->x - player->mo->x,
-																mo->y - player->mo->y),
-																mo->z - player->mo->z) / FRACUNIT;
+						const boolean isprevcheckpointp = mo->health == player->starpostnum;
+						const boolean isnextcheckpointp = mo->health == (player->starpostnum + 1);
 
-						if (isprevcheckpointp)
+						if ((isprevcheckpointp || isnextcheckpointp) && (!mo->movecount || mo->movecount == player->laps+1))
 						{
-							player->kartstuff[k_prevcheck] += pmo;
-							ppcd++;
-						}
+							pmo = P_AproxDistance(P_AproxDistance(	mo->x - player->mo->x,
+																	mo->y - player->mo->y),
+																	mo->z - player->mo->z) / FRACUNIT;
 
-						if (isnextcheckpointp)
-						{
-							player->kartstuff[k_nextcheck] += pmo;
-							pncd++;
+							if (isprevcheckpointp)
+							{
+								player->kartstuff[k_prevcheck] += pmo;
+								// pain and suffering but we gotta add this twice yay!
+								if (selfcheckcompatmyass)
+									player->kartstuff[k_prevcheck] += pmo;
+								ppcd++;
+							}
+
+							if (isnextcheckpointp)
+							{
+								player->kartstuff[k_nextcheck] += pmo;
+								// why? because the case below would recalculate the very same stuff we just did, so just add it twice (:
+								if (selfcheckcompatmyass)
+									player->kartstuff[k_nextcheck] += pmo;
+								pncd++;
+							}
 						}
 					}
 
-					const boolean isprevcheckpointi = mo->health == players[i].starpostnum;
-					const boolean isnextcheckpointi = mo->health == (players[i].starpostnum + 1);
-
-					if ((isprevcheckpointi || isnextcheckpointi) && (!mo->movecount || mo->movecount == players[i].laps+1))
+					if (!selfcheckcompatmyass)
 					{
-						imo = P_AproxDistance(P_AproxDistance(	mo->x - players[i].mo->x,
-																mo->y - players[i].mo->y),
-																mo->z - players[i].mo->z) / FRACUNIT;
+						const boolean isprevcheckpointi = mo->health == players[i].starpostnum;
+						const boolean isnextcheckpointi = mo->health == (players[i].starpostnum + 1);
 
-						if (isprevcheckpointi)
+						if ((isprevcheckpointi || isnextcheckpointi) && (!mo->movecount || mo->movecount == players[i].laps+1))
 						{
-							players[i].kartstuff[k_prevcheck] += imo;
-							ipcd++;
-						}
-						if (isnextcheckpointi )
-						{
-							players[i].kartstuff[k_nextcheck] += imo;
-							incd++;
+							imo = P_AproxDistance(P_AproxDistance(	mo->x - players[i].mo->x,
+																	mo->y - players[i].mo->y),
+																	mo->z - players[i].mo->z) / FRACUNIT;
+
+							if (isprevcheckpointi)
+							{
+								players[i].kartstuff[k_prevcheck] += imo;
+								ipcd++;
+							}
+
+							if (isnextcheckpointi)
+							{
+								players[i].kartstuff[k_nextcheck] += imo;
+								incd++;
+							}
 						}
 					}
 				}
 
-				if (ppcd > 1) player->kartstuff[k_prevcheck] /= ppcd;
-				if (pncd > 1) player->kartstuff[k_nextcheck] /= pncd;
+				if (!didinputplayer)
+				{
+					if (ppcd > 1) player->kartstuff[k_prevcheck] /= ppcd;
+					if (pncd > 1) player->kartstuff[k_nextcheck] /= pncd;
+
+					// just do this so the below can update shit without yet another case
+					if (selfcheckcompatmyass)
+					{
+						ipcd = ppcd;
+						incd = pncd;
+					}
+					else
+						didinputplayer = true; // we need to update it again after we checked ourselves :chaosleep:
+				}
+
 				if (ipcd > 1) players[i].kartstuff[k_prevcheck] /= ipcd;
 				if (incd > 1) players[i].kartstuff[k_nextcheck] /= incd;
 
