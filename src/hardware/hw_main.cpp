@@ -3474,7 +3474,7 @@ static void HWR_DrawSpriteShadow(gl_vissprite_t *spr, patch_t *gpatch, GLPatch_t
 // This is expecting a pointer to an array containing 4 wallVerts for a sprite
 static void HWR_RotateSpritePolyToAim(gl_vissprite_t *spr, FOutVector *wallVerts, const boolean precip, const boolean papersprite)
 {
-	if (!cv_glspritebillboarding.value || papersprite)
+	if (!cv_glspritebillboarding.value || cv_glshearing.value || papersprite)
 	{
 		return;
 	}
@@ -5310,8 +5310,12 @@ void HWR_SetTransform(float fpov)
 	HWR_SetTransformAiming(&atransform);
 	atransform.angley = (float)(viewangle>>ANGLETOFINESHIFT)*(FINEDEGREE);
 
-	gl_viewludsin = FixedToFloat(FINECOSINE(gl_aimingangle>>ANGLETOFINESHIFT));
-	gl_viewludcos = FixedToFloat(-FINESINE(gl_aimingangle>>ANGLETOFINESHIFT));
+	// only needed for sprite billboarding
+	if (cv_glspritebillboarding.value && !cv_glshearing.value)
+	{
+		gl_viewludsin = FixedToFloat(FINECOSINE(gl_aimingangle>>ANGLETOFINESHIFT));
+		gl_viewludcos = FixedToFloat(-FINESINE(gl_aimingangle>>ANGLETOFINESHIFT));
+	}
 
 	atransform.fovangle = fpov; // Tails
 	HWR_RollTransform(&atransform, viewroll);
