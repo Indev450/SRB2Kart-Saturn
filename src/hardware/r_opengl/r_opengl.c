@@ -2004,7 +2004,7 @@ void GL_UpdateTexture(GLMipmap_t *pTexInfo)
 				{
 					if (chromakeyed && (*pImgData == HWR_PATCHES_CHROMAKEY_COLORINDEX))
 					{
-						tex[idx].s = (byteColor_t){0, 0, 0, 0};
+						memset(&tex[idx].s, 0, sizeof(byteColor_t));
 						pTexInfo->flags |= TF_TRANSPARENT; // there is a hole in it
 					}
 					else
@@ -2016,10 +2016,9 @@ void GL_UpdateTexture(GLMipmap_t *pTexInfo)
 
 					if (texinfoformat != GL_TEXFMT_AP_88)
 						continue;
-					if (chromakeyed)
-						continue;
 
-					tex[idx].s.alpha = *pImgData;
+					if (!chromakeyed)
+						tex[idx].s.alpha = *pImgData;
 					pImgData++;
 				}
 			}
@@ -2054,9 +2053,9 @@ void GL_UpdateTexture(GLMipmap_t *pTexInfo)
 			{
 				for (i = 0; i < w; i++, idx++)
 				{
-					tex[idx].s.red   = *pImgData;
-					tex[idx].s.green = *pImgData;
-					tex[idx].s.blue  = *pImgData;
+					tex[idx].s.red =
+					tex[idx].s.green =
+					tex[idx].s.blue = *pImgData;
 					pImgData++;
 					tex[idx].s.alpha = *pImgData;
 					pImgData++;
@@ -3187,7 +3186,8 @@ void GL_SetTransform(FTransform *stransform)
 	{
 		float dy = stransform->viewaiming * 2;
 
-		if (stransform->fliptype == TRANSFORM_FLIP || stransform->fliptype == TRANSFORM_MIRRORFLIP)
+		if (stransform->fliptype == TRANSFORM_FLIP
+			|| stransform->fliptype == TRANSFORM_MIRRORFLIP)
 			dy *= -1.0f;
 
 		pglTranslatef(0.0f, -dy/BASEVIDHEIGHT, 0.0f);
