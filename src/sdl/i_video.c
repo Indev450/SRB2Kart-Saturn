@@ -156,9 +156,9 @@ static       SDL_bool    usesdl2soft = SDL_FALSE;
 static       SDL_bool    borderlesswindow = SDL_FALSE;
 
 // SDL2 vars
-SDL_Window   *window;
-SDL_Renderer *renderer;
-static SDL_Texture  *texture;
+SDL_Window   *window = NULL;
+SDL_Renderer *renderer = NULL;
+static SDL_Texture  *texture = NULL;
 static SDL_bool      havefocus = SDL_TRUE;
 static const char *fallback_resolution_name = "Fallback";
 
@@ -412,6 +412,10 @@ static INT32 GetTypedChar(SDL_Keysym keysym)
 				break;
 		}
 
+		// Special case for console key
+		if (scancode == SDL_SCANCODE_GRAVE)
+			return '`';
+
 		if (SDL_PeepEvents(&next_event, 1, SDL_PEEKEVENT, SDL_FIRSTEVENT, SDL_LASTEVENT) == 1 && next_event.type == SDL_TEXTINPUT)
 		{
 			if (next_event.text.text[1] == '\0') // limit to ASCII
@@ -519,6 +523,7 @@ static void Impl_HandleWindowEvent(SDL_WindowEvent evt)
 #ifdef USE_FBO_OGL
 		I_DownSample();
 #endif
+		windowmoved = SDL_FALSE;
 	}
 
 	if (mousefocus && kbfocus)
@@ -984,10 +989,11 @@ static void Impl_HandleControllerAddedEvent(SDL_Event evt)
 
 	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
 	{
-		if (!strcmp(cv_usejoystick[i].string, "0") || !cv_usejoystick[i].value)
+		if (fastcmp(cv_usejoystick[i].string, "0") || !cv_usejoystick[i].value)
 			cv_usejoystick[i].value = 0;
 		else if (atoi(cv_usejoystick[i].string) <= I_NumJoys() // don't mess if we intentionally set higher than NumJoys
 			&& cv_usejoystick[i].value) // update the cvar ONLY if a device exists
+
 		CV_SetValue(&cv_usejoystick[i], cv_usejoystick[i].value);
 	}
 
@@ -1055,7 +1061,7 @@ static void Impl_HandleControllerRemovedEvent(void)
 
 	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
 	{
-		if (!strcmp(cv_usejoystick[i].string, "0"))
+		if (fastcmp(cv_usejoystick[i].string, "0"))
 		{
 			cv_usejoystick[i].value = 0;
 		}
@@ -1186,9 +1192,11 @@ void I_OsPolling(void)
 	I_GetEvent();
 
 	mod = SDL_GetModState();
+
 	/* Handle here so that our state is always synched with the system. */
 	shiftdown = ctrldown = altdown = 0;
 	capslock = false;
+
 	if (mod & KMOD_LSHIFT) shiftdown |= 1;
 	if (mod & KMOD_RSHIFT) shiftdown |= 2;
 	if (mod & KMOD_LCTRL)   ctrldown |= 1;
@@ -1222,7 +1230,7 @@ static void VID_Command_Mode_f (void)
 {
 	INT32 modenum;
 
-	if (COM_Argc()!= 2)
+	if (COM_Argc() != 2)
 	{
 		CONS_Printf("vid_mode <modenum> : set video mode, current video mode %i\n", vid.modenum);
 		return;
@@ -1367,8 +1375,8 @@ static void SDLSetMode(INT32 width, INT32 height, SDL_bool fullscreen)
 #endif
 		OglSdlSurface(vid.width, vid.height);
 	}
+	else
 #endif
-
 	if (rendermode == render_soft)
 	{
 		SDL_RenderClear(renderer);
@@ -1401,14 +1409,12 @@ void I_UpdateNoBlit(void)
 		if (rendermode == render_opengl)
 		{
 			OglSdlFinishUpdate(cv_vidwait.value);
+			return;
 		}
-		else
+
 #endif
-		if (rendermode == render_soft)
-		{
-			SDL_RenderCopy(renderer, texture, NULL, NULL);
-			SDL_RenderPresent(renderer);
-		}
+		SDL_RenderCopy(renderer, texture, NULL, NULL);
+		SDL_RenderPresent(renderer);
 	}
 
 	exposevideo = SDL_FALSE;
@@ -1433,7 +1439,8 @@ void I_FinishUpdate(void)
 
 		const boolean isserverplayer = consoleplayer == serverplayer;
 
-		if (cv_showping.value && ((netgame && !isserverplayer) || (simulated_lag != 0 && isserverplayer && Playing())))
+		if (cv_showping.value && ((netgame && !isserverplayer) ||
+		   (simulated_lag != 0 && isserverplayer && Playing())))
 			SCR_DisplayLocalPing();
 	}
 
@@ -1442,7 +1449,15 @@ void I_FinishUpdate(void)
 		ST_AskToJoinEnvelope();
 #endif
 
-	if (rendermode == render_soft && vid.screens[0])
+#ifdef HWRENDER
+	if (rendermode == render_opengl)
+	{
+		OglSdlFinishUpdate(cv_vidwait.value);
+		return;
+	}
+#endif
+
+	if (vid.screens[0])
 	{
 		void *pixels;
 		int pitch;
@@ -1464,12 +1479,6 @@ void I_FinishUpdate(void)
 		SDL_RenderCopy(renderer, texture, &src_rect, NULL);
 		SDL_RenderPresent(renderer);
 	}
-#ifdef HWRENDER
-	else if (rendermode == render_opengl)
-	{
-		OglSdlFinishUpdate(cv_vidwait.value);
-	}
-#endif
 
 	exposevideo = SDL_FALSE;
 }
@@ -1492,7 +1501,8 @@ void I_ReadScreen(UINT8 * restrict scr, INT32 scale)
 {
 	if (rendermode != render_soft)
 		I_Error("I_ReadScreen: called while in non-software mode");
-	else if (scale == 1)
+
+	if (scale == 1)
 		VID_BlitLinearScreen(vid.screens[0], scr, vid.width, vid.height, vid.width, vid.width);
 	else
 	{
@@ -1667,8 +1677,9 @@ static SDL_bool Impl_CreateContext(void)
 		}
 
 		SDL_GL_MakeCurrent(window, sdlglcontext);
+
+		return SDL_TRUE;
 	}
-	else
 #endif
 	if (rendermode == render_soft)
 	{
@@ -1700,15 +1711,19 @@ static SDL_bool Impl_CreateContext(void)
 
 		if (!renderer)
 			renderer = SDL_CreateRenderer(window, -1, flags);
+
 		if (renderer == NULL)
 		{
 			CONS_Printf(M_GetText("Couldn't create rendering context: %s\n"), SDL_GetError());
 			return SDL_FALSE;
 		}
+
 		SDL_RenderSetLogicalSize(renderer, BASEVIDWIDTH, BASEVIDHEIGHT);
+
+		return SDL_TRUE;
 	}
 
-	return SDL_TRUE;
+	return SDL_FALSE;
 }
 
 static SDL_bool Impl_CreateWindow(SDL_bool fullscreen)
@@ -1807,6 +1822,7 @@ void I_StartupGraphics(void)
 #endif
 	{
 		const char *vd = SDL_GetCurrentVideoDriver();
+
 		//CONS_Printf(M_GetText("Starting up with video driver: %s\n"), vd);
 		if (vd && (strncasecmp(vd, "fbcon", 6) == 0))
 			framebuffer = SDL_TRUE;
@@ -1853,11 +1869,11 @@ void I_StartupGraphics(void)
 
 				if (rendermode == render_none)
 				{
-					if (strcasecmp(word, "software") == 0)
+					if (fasticmp(word, "software"))
 					{
 						rendermode = render_soft;
 					}
-					else if (strcasecmp(word, "opengl") == 0)
+					else if (fasticmp(word, "opengl"))
 					{
 						rendermode = render_opengl;
 					}
@@ -1870,7 +1886,7 @@ void I_StartupGraphics(void)
 
 				if (!msaa_set)
 				{
-					if (strcasecmp(word, "msaa") == 0)
+					if (fasticmp(word, "msaa"))
 					{
 						const char *nextword = strtok(NULL, " \n");
 
@@ -1887,7 +1903,7 @@ void I_StartupGraphics(void)
 
 				if (!a2c_set)
 				{
-					if (strcasecmp(word, "a2c") == 0)
+					if (fasticmp(word, "a2c"))
 					{
 						a2c = true;
 						CONS_Printf("Using a2c because it was specified to be used earlier\n");
@@ -2037,7 +2053,7 @@ static void Impl_SetVsync(void)
 #endif
 #ifdef HWRENDER
 	if (!renderer && rendermode == render_opengl &&
-	sdlglcontext != NULL && SDL_GL_GetCurrentContext() == sdlglcontext)
+		 sdlglcontext != NULL && SDL_GL_GetCurrentContext() == sdlglcontext)
 	{
 		SDL_GL_SetSwapInterval(cv_vidwait.value ? 1 : 0);
 	}

@@ -30,6 +30,8 @@
 
 #include "core/memory.h"
 
+#include "cxxutil.hpp"
+
 #define HEIGHTBITS              12
 #define HEIGHTUNIT              (1<<HEIGHTBITS)
 
@@ -45,10 +47,10 @@ static INT32 toptexture, bottomtexture, midtexture;
 static bool topremap, bottomremap, midremap;
 static INT32 numthicksides, numbackffloors;
 
-angle_t rw_normalangle;
+angle_t rw_normalangle = 0;
 // angle to line origin
-angle_t rw_angle1;
-fixed_t rw_distance;
+angle_t rw_angle1 = 0;
+fixed_t rw_distance = 0;
 
 //
 // regular wall
@@ -1718,7 +1720,7 @@ static void R_AllocClippingTables(size_t range)
 	{
 		// Check if it's in range of the openings
 #define CHECK(which) \
-		if (which + drawseg->x1 >= oldopenings && which + drawseg->x1 <= oldlast) \
+		if (which != NULL && which + drawseg->x1 >= oldopenings && which + drawseg->x1 <= oldlast) \
 			which = (which - oldopenings) + openings
 		CHECK(drawseg->sprtopclip);
 		CHECK(drawseg->sprbottomclip);
@@ -1752,7 +1754,7 @@ static void R_AllocTextureColumnTables(size_t range)
 	{
 		// Check if it's in range of the tables
 #define CHECK(which) \
-		if (which + drawseg->x1 >= oldtable && which + drawseg->x1 <= oldlast) \
+		if (which != NULL && which + drawseg->x1 >= oldtable && which + drawseg->x1 <= oldlast) \
 			which = (which - oldtable) + texturecolumntable
 		CHECK(drawseg->maskedtexturecol);
 		CHECK(drawseg->thicksidecol);
@@ -1890,8 +1892,8 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 
 		det = a1*b2 - a2*b1;
 
-		ds_p->leftpos.x = segleft.x = DoubleToFixed((b2*c1 - b1*c2)/det);
-		ds_p->leftpos.y = segleft.y = DoubleToFixed((a1*c2 - a2*c1)/det);
+		ds_p->leftpos.x = segleft.x = srb2::floattofixed<double>((b2*c1 - b1*c2)/det);
+		ds_p->leftpos.y = segleft.y = srb2::floattofixed<double>((a1*c2 - a2*c1)/det);
 
 		// right
 		temp = xtoviewangle[stop]+viewangle;
@@ -1902,8 +1904,8 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 
 		det = a1*b2 - a2*b1;
 
-		ds_p->rightpos.x = segright.x = DoubleToFixed((b2*c1 - b1*c2)/det);
-		ds_p->rightpos.y = segright.y = DoubleToFixed((a1*c2 - a2*c1)/det);
+		ds_p->rightpos.x = segright.x = srb2::floattofixed<double>((b2*c1 - b1*c2)/det);
+		ds_p->rightpos.y = segright.y = srb2::floattofixed<double>((a1*c2 - a2*c1)/det);
 	}
 
 #define SLOPEPARAMS(slope, end1, end2, normalheight) \
@@ -3001,14 +3003,14 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 
 		if (((ds_p->silhouette & SIL_TOP) || maskedtexture) && !ds_p->sprtopclip)
 		{
-			M_Memcpy(lastopening, ceilingclip + start, 2*(rw_stopx - start));
+			memcpy(lastopening, ceilingclip + start, 2*(rw_stopx - start));
 			ds_p->sprtopclip = lastopening - start;
 			lastopening += rw_stopx - start;
 		}
 
 		if (((ds_p->silhouette & SIL_BOTTOM) || maskedtexture) && !ds_p->sprbottomclip)
 		{
-			M_Memcpy(lastopening, floorclip + start, 2*(rw_stopx - start));
+			memcpy(lastopening, floorclip + start, 2*(rw_stopx - start));
 			ds_p->sprbottomclip = lastopening - start;
 			lastopening += rw_stopx - start;
 		}

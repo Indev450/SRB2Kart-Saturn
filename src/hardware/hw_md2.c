@@ -72,10 +72,9 @@
 #include <errno.h>
 #endif
 
-md2_t md2_models[NUMSPRITES];
-md2_t md2_playermodels[MAXSKINS];
-md2_t md2_localplayermodels[MAXLOCALSKINS];
-
+md2_t md2_models[NUMSPRITES] = {};
+md2_t md2_playermodels[MAXSKINS] = {};
+md2_t md2_localplayermodels[MAXLOCALSKINS] = {};
 
 /*
  * free model
@@ -417,7 +416,7 @@ static void md2_loadTexture(md2_t *model)
 			size = w*h;
 			while (size--)
 			{
-				V_CubeApply(&image->s.red, &image->s.green, &image->s.blue);
+				V_CubeApply(image);
 				image++;
 			}
 		}
@@ -549,7 +548,7 @@ void HWR_InitMD2(void)
 	{
 		for (i = 0; i < NUMSPRITES; i++)
 		{
-			if (stricmp(name, sprnames[i]) == 0)
+			if (fasticmp(name, sprnames[i]))
 			{
 				md2_models[i].scale = scale;
 				md2_models[i].offset = offset;
@@ -561,7 +560,7 @@ void HWR_InitMD2(void)
 
 		for (s = 0; s < MAXSKINS; s++)
 		{
-			if (stricmp(name, skins[s].name) == 0)
+			if (fasticmp(name, skins[s].name))
 			{
 				md2_playermodels[s].skin = s;
 				md2_playermodels[s].scale = scale;
@@ -607,11 +606,12 @@ void HWR_AddPlayerMD2(int skin, boolean local) // For MD2's that were added afte
 		}
 	}
 
-	md2s = ( (local) ? md2_localplayermodels : md2_playermodels );
+	md2s = (local ? md2_localplayermodels : md2_playermodels);
+
 	// Check for any MD2s that match the names of player skins!
 	while (fscanf(f, "%19s %31s %f %f", name, filename, &scale, &offset) == 4)
 	{
-		if (stricmp(name, K_GetSkinArray(local)[skin].name) == 0)
+		if (fasticmp(name, K_GetSkinArray(local)[skin].name))
 		{
 			md2s[skin].skin = skin;
 			md2s[skin].scale = scale;
@@ -650,6 +650,7 @@ void HWR_AddSpriteMD2(size_t spritenum) // For MD2s that were added after startu
 	if (!f)
 	{
 		f = fopen(va("%s"PATHSEP"%s", srb2path, "mdls.dat"), "rt");
+
 		if (!f)
 		{
 			CONS_Printf("%s %s\n", M_GetText("Error while loading mdls.dat:"), strerror(errno));
@@ -661,7 +662,7 @@ void HWR_AddSpriteMD2(size_t spritenum) // For MD2s that were added after startu
 	// Check for any MD2s that match the names of sprite names!
 	while (fscanf(f, "%19s %31s %f %f", name, filename, &scale, &offset) == 4)
 	{
-		if (stricmp(name, sprnames[spritenum]) == 0)
+		if (fasticmp(name, sprnames[spritenum]))
 		{
 			md2_models[spritenum].scale = scale;
 			md2_models[spritenum].offset = offset;
@@ -1056,7 +1057,7 @@ static void HWR_GetBlendedTexture(patch_t *patch, patch_t *blendgpatch, INT32 sk
 			{
 				if (memcmp(glMipmap->colormap->data, colormap, 256 * sizeof(UINT8)))
 				{
-					M_Memcpy(glMipmap->colormap->data, colormap, 256 * sizeof(UINT8));
+					memcpy(glMipmap->colormap->data, colormap, 256 * sizeof(UINT8));
 					HWR_CreateBlendedTexture(patch, blendgpatch, glMipmap, skinnum, color);
 					GL_UpdateTexture(glMipmap);
 				}
@@ -1083,7 +1084,7 @@ static void HWR_GetBlendedTexture(patch_t *patch, patch_t *blendgpatch, INT32 sk
 
 	newMipmap->colormap = Z_Calloc(sizeof(*newMipmap->colormap), PU_HWRPATCHCOLMIPMAP, NULL);
 	newMipmap->colormap->source = colormap;
-	M_Memcpy(newMipmap->colormap->data, colormap, 256 * sizeof(UINT8));
+	memcpy(newMipmap->colormap->data, colormap, 256 * sizeof(UINT8));
 
 	HWR_CreateBlendedTexture(patch, blendgpatch, newMipmap, skinnum, color);
 

@@ -75,9 +75,10 @@ extern consvar_t cv_skipintromusic;
 //extern consvar_t cv_ignoremusicchanges;
 extern boolean keepmapmusic;
 extern boolean skipintromus;
+
 #define MUSICSTARTTIME (starttime + (TICRATE/2))
 
-extern consvar_t precachesound;
+extern consvar_t cv_cachesound;
 
 typedef enum
 {
@@ -148,11 +149,18 @@ void S_StopSound(void *origin);
 // Music Status
 //
 
+enum
+{
+	SOUNDCACHE_OFF,
+	SOUNDCACHE_KEEP,
+	SOUNDCACHE_PRECACHE
+};
+
 boolean S_MusicDisabled(void);
 boolean S_MusicPlaying(void);
 boolean S_MusicPaused(void);
 boolean S_MusicNotInFocus(void);
-boolean S_PrecacheSound(void);
+int S_CacheSound(void);
 musictype_t S_MusicType(void);
 const char *S_MusicName(void);
 boolean S_MusicInfo(char *mname, UINT16 *mflags, boolean *looping);

@@ -46,9 +46,9 @@ typedef struct
 	UINT8 image_descriptor; //18
 } ATTRPACK TGAHeader; // sizeof is 18
 
-static UINT8 softwaretranstogl[11]    = {  0, 25, 51, 76,102,127,153,178,204,229,255};
-static UINT8 softwaretranstogl_hi[11] = {  0, 51,102,153,204,255,255,255,255,255,255};
-static UINT8 softwaretranstogl_lo[11] = {  0, 12, 24, 36, 48, 60, 71, 83, 95,111,127};
+static const UINT8 softwaretranstogl[11]    = {  0, 25, 51, 76,102,127,153,178,204,229,255};
+static const UINT8 softwaretranstogl_hi[11] = {  0, 51,102,153,204,255,255,255,255,255,255};
+static const UINT8 softwaretranstogl_lo[11] = {  0, 12, 24, 36, 48, 60, 71, 83, 95,111,127};
 
 static const float FLOATBASEVIDWIDTH  = (float)BASEVIDWIDTH;
 static const float FLOATBASEVIDHEIGHT = (float)BASEVIDHEIGHT;
@@ -87,15 +87,15 @@ void HWR_DrawStretchyFixedPatch(patch_t *gpatch, fixed_t x, fixed_t y, fixed_t p
 
 	switch (option & V_SCALEPATCHMASK)
 	{
-	case V_NOSCALEPATCH:
-		dup = 1.0f;
-		break;
-	case V_SMALLSCALEPATCH:
-		dup = (float)vid.smalldup;
-		break;
-	case V_MEDSCALEPATCH:
-		dup = (float)vid.meddup;
-		break;
+		case V_NOSCALEPATCH:
+			dup = 1.0f;
+			break;
+		case V_SMALLSCALEPATCH:
+			dup = (float)vid.smalldup;
+			break;
+		case V_MEDSCALEPATCH:
+			dup = (float)vid.meddup;
+			break;
 	}
 
 	fscalew = fscaleh = FIXED_TO_FLOAT(pscale);
@@ -269,15 +269,15 @@ void HWR_DrawCroppedPatch(patch_t *gpatch, fixed_t x, fixed_t y, fixed_t pscale,
 
 	switch (option & V_SCALEPATCHMASK)
 	{
-	case V_NOSCALEPATCH:
-		dup = 1.0f;
-		break;
-	case V_SMALLSCALEPATCH:
-		dup = (float)vid.smalldup;
-		break;
-	case V_MEDSCALEPATCH:
-		dup = (float)vid.meddup;
-		break;
+		case V_NOSCALEPATCH:
+			dup = 1.0f;
+			break;
+		case V_SMALLSCALEPATCH:
+			dup = (float)vid.smalldup;
+			break;
+		case V_MEDSCALEPATCH:
+			dup = (float)vid.meddup;
+			break;
 	}
 
 	fscale = FIXED_TO_FLOAT(pscale);
@@ -506,7 +506,7 @@ void HWR_FadeScreenMenuBack(UINT16 color, UINT8 strength)
 
 	if (color & 0xFF00) // Do COLORMAP fade.
 	{
-		if (HWR_ShouldUsePaletteRendering() && cv_glscreentextures.value)
+		if (cv_glscreentextures.value && HWR_ShouldUsePaletteRendering())
 		{
 			const hwdscreentexture_t scr_tex = HWD_SCREENTEXTURE_GENERIC2;
 
@@ -518,12 +518,10 @@ void HWR_FadeScreenMenuBack(UINT16 color, UINT8 strength)
 			GL_UnSetShader();
 			return;
 		}
-		else
-		{
-			Surf.PolyColor.rgba = UINT2RGBA(0x01010160);
-			Surf.PolyColor.s.alpha = (strength*8);
-			poly_flags |= PF_Translucent;
-		}
+
+		Surf.PolyColor.rgba = UINT2RGBA(0x01010160);
+		Surf.PolyColor.s.alpha = (strength*8);
+		poly_flags |= PF_Translucent;
 	}
 	else // Do TRANSMAP** fade.
 	{
@@ -890,11 +888,13 @@ void HWR_DrawFill(INT32 x, INT32 y, INT32 w, INT32 h, INT32 color)
 
 	if (fx >= vid.width || fy >= vid.height)
 		return;
+
 	if (fx < 0)
 	{
 		fw += fx;
 		fx = 0;
 	}
+
 	if (fy < 0)
 	{
 		fh += fy;
@@ -906,6 +906,7 @@ void HWR_DrawFill(INT32 x, INT32 y, INT32 w, INT32 h, INT32 color)
 
 	if (fx + fw > vid.width)
 		fw = fvw - fx;
+
 	if (fy + fh > vid.height)
 		fh = fvh - fy;
 

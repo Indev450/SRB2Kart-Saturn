@@ -23,8 +23,8 @@
 //
 // Angles precalculated in R_InitSprites.
 //
-fixed_t rollcosang[ROTANGLES];
-fixed_t rollsinang[ROTANGLES];
+fixed_t rollcosang[ROTANGLES] = {};
+fixed_t rollsinang[ROTANGLES] = {};
 
 INT32 R_GetRollAngle(angle_t rollangle)
 {
@@ -241,7 +241,7 @@ void RotatedPatch_DoRotation(rotsprite_t *rotsprite, patch_t *patch, INT32 angle
 
 		while (dy--)
 		{
-			M_Memcpy(dest, src, width * sizeof(UINT16));
+			memcpy(dest, src, width * sizeof(UINT16));
 			dest += width;
 			src += newwidth;
 		}
