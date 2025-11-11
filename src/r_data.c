@@ -83,7 +83,7 @@ typedef struct
 // a patch or sprite is composed of zero or more columns.
 //
 
-size_t numspritelumps, max_spritelumps;
+size_t numspritelumps = 0, max_spritelumps = 0;
 
 // textures
 INT32 numtextures = 0; // total number of textures found,
@@ -110,7 +110,7 @@ UINT8 invertmap[256];
 #endif
 
 // for debugging/info purposes
-size_t flatmemory, spritememory, texturememory; // gotta play by 2.2 rules to get this to work
+static size_t flatmemory = 0, spritememory = 0, texturememory = 0; // gotta play by 2.2 rules to get this to work
 
 // Blends two pixels together, using the equation
 // that matches the specified alpha style.
@@ -269,7 +269,7 @@ static inline void R_DrawColumnInCache(column_t *patch, UINT8 *cache, texpatch_t
 			count = cacheheight - position;
 
 		if (count > 0)
-			M_Memcpy(cache + position, source, count);
+			memcpy(cache + position, source, count);
 
 		patch = (column_t *)((UINT8 *)patch + patch->length + 4);
 	}
@@ -412,7 +412,7 @@ UINT8 *R_GenerateTexture(size_t texnum)
 			texture->holes = true;
 			blocksize = lumplength;
 			block = Z_Calloc(blocksize, PU_LEVEL, &texturecache[texnum]); // will change tag at end of this function
-			M_Memcpy(block, realpatch, blocksize);
+			memcpy(block, realpatch, blocksize);
 			texturememory += blocksize;
 
 			// use the patch's column lookup
@@ -621,7 +621,7 @@ Rloadtextures (INT32 i, INT32 w)
 		texture = textures[i] = Z_Calloc(sizeof(texture_t) + sizeof(texpatch_t), PU_STATIC, NULL);
 
 		// Set texture properties.
-		M_Memcpy(texture->name, W_CheckNameForNumPwad(wadnum, lumpnum), sizeof(texture->name));
+		memcpy(texture->name, W_CheckNameForNumPwad(wadnum, lumpnum), sizeof(texture->name));
 		texture->hash = quickncasehash(texture->name, 8);
 
 		texture->width = SHORT(patchlump.width);
@@ -854,7 +854,7 @@ static texpatch_t *R_ParsePatch(boolean actuallyLoadPatch)
 			Z_Free(patchName);
 		}
 		patchName = (char *)Z_Malloc((texturesTokenLength+1)*sizeof(char),PU_STATIC,NULL);
-		M_Memcpy(patchName,texturesToken,texturesTokenLength*sizeof(char));
+		memcpy(patchName,texturesToken,texturesTokenLength*sizeof(char));
 		patchName[texturesTokenLength] = '\0';
 	}
 
@@ -867,7 +867,7 @@ static texpatch_t *R_ParsePatch(boolean actuallyLoadPatch)
 		I_Error("Error parsing TEXTURES lump: Unexpected end of file where comma after \"%s\"'s patch name should be",patchName);
 	}
 
-	if (strcmp(texturesToken,",")!=0)
+	if (!fastcmp(texturesToken,","))
 	{
 		I_Error("Error parsing TEXTURES lump: Expected \",\" after %s's patch name, got \"%s\"",patchName,texturesToken);
 	}
@@ -907,7 +907,7 @@ static texpatch_t *R_ParsePatch(boolean actuallyLoadPatch)
 		I_Error("Error parsing TEXTURES lump: Unexpected end of file where comma after patch \"%s\"'s x coordinate should be",patchName);
 	}
 
-	if (strcmp(texturesToken,",")!=0)
+	if (!fastcmp(texturesToken,","))
 	{
 		I_Error("Error parsing TEXTURES lump: Expected \",\" after patch \"%s\"'s x coordinate, got \"%s\"",patchName,texturesToken);
 	}
@@ -976,18 +976,20 @@ static texture_t *R_ParseTexture(boolean actuallyLoadTexture)
 	{
 		I_Error("Error parsing TEXTURES lump: Unexpected end of file where texture name should be");
 	}
+
 	texturesTokenLength = strlen(texturesToken);
-	if (texturesTokenLength>8)
+	if (texturesTokenLength > 8)
 	{
 		I_Error("Error parsing TEXTURES lump: Texture name \"%s\" exceeds 8 characters",texturesToken);
 	}
 	else
 	{
 		memset(&newTextureName, 0, 9);
-		M_Memcpy(newTextureName, texturesToken, texturesTokenLength);
+		memcpy(newTextureName, texturesToken, texturesTokenLength);
 		// ^^ we've confirmed that the token is <= 8 characters so it will never overflow a 9 byte char buffer
 		strupr(newTextureName); // Just do this now so we don't have to worry about it
 	}
+
 	Z_Free(texturesToken);
 
 	// Comma 1
@@ -996,10 +998,11 @@ static texture_t *R_ParseTexture(boolean actuallyLoadTexture)
 	{
 		I_Error("Error parsing TEXTURES lump: Unexpected end of file where comma after texture \"%s\"'s name should be",newTextureName);
 	}
-	else if (strcmp(texturesToken,",")!=0)
+	else if (!fastcmp(texturesToken, ","))
 	{
 		I_Error("Error parsing TEXTURES lump: Expected \",\" after texture \"%s\"'s name, got \"%s\"",newTextureName,texturesToken);
 	}
+
 	Z_Free(texturesToken);
 
 	// Width
@@ -1030,10 +1033,12 @@ static texture_t *R_ParseTexture(boolean actuallyLoadTexture)
 	{
 		I_Error("Error parsing TEXTURES lump: Unexpected end of file where comma after texture \"%s\"'s width should be",newTextureName);
 	}
-	if (strcmp(texturesToken,",")!=0)
+
+	if (!fastcmp(texturesToken, ","))
 	{
 		I_Error("Error parsing TEXTURES lump: Expected \",\" after texture \"%s\"'s width, got \"%s\"",newTextureName,texturesToken);
 	}
+
 	Z_Free(texturesToken);
 
 	// Height
@@ -1066,27 +1071,30 @@ static texture_t *R_ParseTexture(boolean actuallyLoadTexture)
 		I_Error("Error parsing TEXTURES lump: Unexpected end of file where open curly brace for texture \"%s\" should be",newTextureName);
 	}
 
-	if (strcmp(texturesToken,"{")==0)
+	if (fastcmp(texturesToken, "{"))
 	{
 		if (actuallyLoadTexture)
 		{
 			// Allocate memory for a zero-patch texture. Obviously, we'll be adding patches momentarily.
 			resultTexture = (texture_t *)Z_Calloc(sizeof(texture_t), PU_STATIC, NULL);
-			M_Memcpy(resultTexture->name, newTextureName, 8);
+			memcpy(resultTexture->name, newTextureName, 8);
 			resultTexture->hash = quickncasehash(newTextureName, 8);
 			resultTexture->width = newTextureWidth;
 			resultTexture->height = newTextureHeight;
 			resultTexture->type = TEXTURETYPE_COMPOSITE;
 		}
+
 		Z_Free(texturesToken);
+
 		texturesToken = M_GetToken(NULL);
 		if (texturesToken == NULL)
 		{
 			I_Error("Error parsing TEXTURES lump: Unexpected end of file where patch definition for texture \"%s\" should be",newTextureName);
 		}
-		while (strcmp(texturesToken,"}")!=0)
+
+		while (!fastcmp(texturesToken, "}"))
 		{
-			if (stricmp(texturesToken, "PATCH")==0)
+			if (fasticmp(texturesToken, "PATCH"))
 			{
 				Z_Free(texturesToken);
 				if (resultTexture)
@@ -1096,7 +1104,7 @@ static texture_t *R_ParseTexture(boolean actuallyLoadTexture)
 					// Make room for the new patch
 					resultTexture = Z_Realloc(resultTexture, sizeof(texture_t) + (resultTexture->patchcount+1)*sizeof(texpatch_t), PU_STATIC, NULL);
 					// Populate the uninitialized values in the new patch entry of our array
-					M_Memcpy(&resultTexture->patches[resultTexture->patchcount], newPatch, sizeof(texpatch_t));
+					memcpy(&resultTexture->patches[resultTexture->patchcount], newPatch, sizeof(texpatch_t));
 					// Account for the new number of patches in the texture
 					resultTexture->patchcount++;
 					// Then free up the memory assigned to R_ParsePatch, as it's unneeded now
@@ -1118,6 +1126,7 @@ static texture_t *R_ParseTexture(boolean actuallyLoadTexture)
 				I_Error("Error parsing TEXTURES lump: Unexpected end of file where patch declaration or right curly brace for texture \"%s\" should be",newTextureName);
 			}
 		}
+
 		if (resultTexture && resultTexture->patchcount == 0)
 		{
 			I_Error("Error parsing TEXTURES lump: Texture \"%s\" must have at least one patch",newTextureName);
@@ -1127,10 +1136,13 @@ static texture_t *R_ParseTexture(boolean actuallyLoadTexture)
 	{
 		I_Error("Error parsing TEXTURES lump: Expected \"{\" for texture \"%s\", got \"%s\"",newTextureName,texturesToken);
 	}
+
 	Z_Free(texturesToken);
 
-	if (actuallyLoadTexture) return resultTexture;
-	else return NULL;
+	if (actuallyLoadTexture)
+		return resultTexture;
+
+	return NULL;
 }
 
 // Parses the TEXTURES lump... but just to count the number of textures.
@@ -1162,7 +1174,7 @@ int R_CountTexturesInTEXTURESLump(UINT16 wadNum, UINT16 lumpNum)
 	texturesToken = M_GetToken(texturesText);
 	while (texturesToken != NULL)
 	{
-		if (stricmp(texturesToken, "WALLTEXTURE")==0)
+		if (fasticmp(texturesToken, "WALLTEXTURE"))
 		{
 			numTexturesInLump++;
 			Z_Free(texturesToken);
@@ -1172,8 +1184,10 @@ int R_CountTexturesInTEXTURESLump(UINT16 wadNum, UINT16 lumpNum)
 		{
 			I_Error("Error parsing TEXTURES lump: Expected \"WALLTEXTURE\", got \"%s\"",texturesToken);
 		}
+
 		texturesToken = M_GetToken(NULL);
 	}
+
 	Z_Free(texturesToken);
 	Z_Free((void *)texturesText);
 
@@ -1211,7 +1225,7 @@ void R_ParseTEXTURESLump(UINT16 wadNum, UINT16 lumpNum, INT32 *texindex)
 	texturesToken = M_GetToken(texturesText);
 	while (texturesToken != NULL)
 	{
-		if (stricmp(texturesToken, "WALLTEXTURE")==0)
+		if (fasticmp(texturesToken, "WALLTEXTURE"))
 		{
 			Z_Free(texturesToken);
 			// Get the new texture
@@ -1227,8 +1241,10 @@ void R_ParseTEXTURESLump(UINT16 wadNum, UINT16 lumpNum, INT32 *texindex)
 		{
 			I_Error("Error parsing TEXTURES lump: Expected \"WALLTEXTURE\", got \"%s\"",texturesToken);
 		}
+
 		texturesToken = M_GetToken(NULL);
 	}
+
 	Z_Free(texturesToken);
 	Z_Free((void *)texturesText);
 }
@@ -1334,8 +1350,9 @@ lumpnum_t R_GetFlatNumForName(const char *name)
 
 	if (lump == LUMPERROR)
 	{
-		if (strcmp(name, SKYFLATNAME))
+		if (!fastcmp(name, SKYFLATNAME))
 			CONS_Debug(DBG_SETUP, "R_GetFlatNumForName: Could not find flat %.8s\n", name);
+
 		lump = W_CheckNumForName("REDFLR");
 	}
 

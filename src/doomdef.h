@@ -69,6 +69,8 @@ extern "C" {
 #include <sys/stat.h>
 #include <ctype.h>
 
+#include "fastcmp.h"
+
 #ifdef _WIN32
 #include <io.h>
 #endif
@@ -450,11 +452,6 @@ extern char savegamename[256];
 // m_misc.h
 //TODO: delet this
 #define M_GetText(x) (x)
-
-FUNCINLINE static ATTRINLINE void *M_Memcpy(void *dest, const void *src, size_t n)
-{
-	return memcpy(dest, src, n);
-}
 
 char *va(const char *format, ...) FUNCPRINTF;
 char *M_GetToken(const char *inputString);

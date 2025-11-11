@@ -44,7 +44,7 @@
 // Not sure if this is necessary, but it was in w_wad.c, so I'm putting it here too -Shadow Hog
 #include <errno.h>
 
-mobj_t *skyboxmo[2];
+mobj_t *skyboxmo[2] = {};
 
 // Amount (dx, dy) vector linedef is shifted right to get scroll amount
 #define SCROLL_SHIFT 5
@@ -93,7 +93,7 @@ static void P_AddSpikeThinker(sector_t *sec, INT32 referrer);
 
 
 //SoM: 3/7/2000: New sturcture without limits.
-anim_t *lastanim;
+anim_t *lastanim = NULL;
 anim_t *anims = NULL; /// \todo free leak
 static size_t maxanims;
 
@@ -252,10 +252,10 @@ void P_InitPicAnims(void)
 				// Populate the new array
 				for (currentPos = animatedLump; *currentPos != UINT8_MAX; i++, currentPos+=23)
 				{
-					M_Memcpy(&(animdefs[i].istexture), currentPos, 1); // istexture, 1 byte
-					M_Memcpy(animdefs[i].endname, (currentPos + 1), 9); // endname, 9 bytes
-					M_Memcpy(animdefs[i].startname, (currentPos + 10), 9); // startname, 9 bytes
-					M_Memcpy(&(animdefs[i].speed), (currentPos + 19), 4); // speed, 4 bytes
+					memcpy(&(animdefs[i].istexture), currentPos, 1); // istexture, 1 byte
+					memcpy(animdefs[i].endname, (currentPos + 1), 9); // endname, 9 bytes
+					memcpy(animdefs[i].startname, (currentPos + 10), 9); // startname, 9 bytes
+					memcpy(&(animdefs[i].speed), (currentPos + 19), 4); // speed, 4 bytes
 				}
 
 				Z_Free(animatedLump);
@@ -324,6 +324,7 @@ void P_InitPicAnims(void)
 			lastanim->speed = LONG(animdefs[i].speed);
 		lastanim++;
 	}
+
 	lastanim->istexture = -1;
 	R_ClearTextureNumCache(false);
 
@@ -331,6 +332,7 @@ void P_InitPicAnims(void)
 	// We'll only be using anims from now on.
 	if (animdefs != harddefs)
 		Z_Free(animdefs);
+
 	animdefs = NULL;
 }
 
@@ -361,20 +363,21 @@ void P_ParseANIMDEFSLump(INT32 wadNum, UINT16 lumpnum)
 
 	// Now, let's start parsing this thing
 	p = animdefsText;
+
 	animdefsToken = M_GetToken(p);
 	while (animdefsToken != NULL)
 	{
-		if (stricmp(animdefsToken, "TEXTURE") == 0)
+		if (fasticmp(animdefsToken, "TEXTURE"))
 		{
 			Z_Free(animdefsToken);
 			P_ParseAnimationDefintion(1);
 		}
-		else if (stricmp(animdefsToken, "FLAT") == 0)
+		else if (fasticmp(animdefsToken, "FLAT"))
 		{
 			Z_Free(animdefsToken);
 			P_ParseAnimationDefintion(0);
 		}
-		else if (stricmp(animdefsToken, "OSCILLATE") == 0)
+		else if (fasticmp(animdefsToken, "OSCILLATE"))
 		{
 			// This probably came off the tail of an earlier definition. It's technically legal syntax, but we don't support it.
 			I_Error("Error parsing ANIMDEFS lump: Animation definitions utilizing \"OSCILLATE\" (the animation plays in reverse when it reaches the end) are not supported by SRB2");
@@ -383,11 +386,17 @@ void P_ParseANIMDEFSLump(INT32 wadNum, UINT16 lumpnum)
 		{
 			I_Error("Error parsing ANIMDEFS lump: Expected \"TEXTURE\" or \"FLAT\", got \"%s\"",animdefsToken);
 		}
+
 		// parse next line
-		while (*p != '\0' && *p != '\n') ++p;
-		if (*p == '\n') ++p;
+		while (*p != '\0' && *p != '\n')
+			++p;
+
+		if (*p == '\n')
+			++p;
+
 		animdefsToken = M_GetToken(p);
 	}
+
 	Z_Free(animdefsToken);
 	Z_Free((void *)animdefsText);
 }
@@ -406,7 +415,8 @@ void P_ParseAnimationDefintion(SINT8 istexture)
 	{
 		I_Error("Error parsing ANIMDEFS lump: Unexpected end of file where start texture/flat name should be");
 	}
-	if (stricmp(animdefsToken, "OPTIONAL") == 0)
+
+	if (fasticmp(animdefsToken, "OPTIONAL"))
 	{
 		// This is meaningful to ZDoom - it tells the program NOT to bomb out
 		// if the textures can't be found - but it's useless in SRB2, so we'll
@@ -418,7 +428,7 @@ void P_ParseAnimationDefintion(SINT8 istexture)
 		{
 			I_Error("Error parsing ANIMDEFS lump: Unexpected end of file where start texture/flat name should be");
 		}
-		else if (stricmp(animdefsToken, "RANGE") == 0)
+		else if (fasticmp(animdefsToken, "RANGE"))
 		{
 			// Oh. Um. Apparently "OPTIONAL" is a texture name. Naughty.
 			// I should probably handle this more gracefully, but right now
@@ -427,15 +437,17 @@ void P_ParseAnimationDefintion(SINT8 istexture)
 			I_Error("Error parsing ANIMDEFS lump: \"OPTIONAL\" is a keyword; you cannot use it as the startname of an animation");
 		}
 	}
+
 	animdefsTokenLength = strlen(animdefsToken);
-	if (animdefsTokenLength>8)
+	if (animdefsTokenLength > 8)
 	{
 		I_Error("Error parsing ANIMDEFS lump: lump name \"%s\" exceeds 8 characters", animdefsToken);
 	}
 
 	// Search for existing animdef
 	for (i = 0; i < maxanims; i++)
-		if (stricmp(animdefsToken, animdefs[i].startname) == 0)
+	{
+		if (fasticmp(animdefsToken, animdefs[i].startname))
 		{
 			//CONS_Alert(CONS_NOTICE, "Duplicate animation: %s\n", animdefsToken);
 
@@ -444,6 +456,7 @@ void P_ParseAnimationDefintion(SINT8 istexture)
 			Z_Free(animdefsToken);
 			return;
 		}
+	}
 
 	// Not found
 	if (i == maxanims)
@@ -467,21 +480,25 @@ void P_ParseAnimationDefintion(SINT8 istexture)
 	{
 		I_Error("Error parsing ANIMDEFS lump: Unexpected end of file where \"RANGE\" after \"%s\"'s startname should be", animdefs[i].startname);
 	}
-	if (stricmp(animdefsToken, "ALLOWDECALS") == 0)
+
+	if (fasticmp(animdefsToken, "ALLOWDECALS"))
 	{
 		// Another ZDoom keyword, ho-hum. Skip it, move on to the next token.
 		Z_Free(animdefsToken);
 		animdefsToken = M_GetToken(NULL);
 	}
-	if (stricmp(animdefsToken, "PIC") == 0)
+
+	if (fasticmp(animdefsToken, "PIC"))
 	{
 		// This is technically legitimate ANIMDEFS syntax, but SRB2 doesn't support it.
 		I_Error("Error parsing ANIMDEFS lump: Animation definitions utilizing \"PIC\" (specific frames instead of a consecutive range) are not supported by SRB2");
 	}
-	if (stricmp(animdefsToken, "RANGE") != 0)
+
+	if (!fasticmp(animdefsToken, "RANGE"))
 	{
 		I_Error("Error parsing ANIMDEFS lump: Expected \"RANGE\" after \"%s\"'s startname, got \"%s\"", animdefs[i].startname, animdefsToken);
 	}
+
 	Z_Free(animdefsToken);
 
 	// Endname
@@ -490,11 +507,13 @@ void P_ParseAnimationDefintion(SINT8 istexture)
 	{
 		I_Error("Error parsing ANIMDEFS lump: Unexpected end of file where \"%s\"'s end texture/flat name should be", animdefs[i].startname);
 	}
+
 	animdefsTokenLength = strlen(animdefsToken);
 	if (animdefsTokenLength>8)
 	{
 		I_Error("Error parsing ANIMDEFS lump: lump name \"%s\" exceeds 8 characters", animdefsToken);
 	}
+
 	strncpy(animdefs[i].endname, animdefsToken, 9);
 	Z_Free(animdefsToken);
 
@@ -504,15 +523,18 @@ void P_ParseAnimationDefintion(SINT8 istexture)
 	{
 		I_Error("Error parsing ANIMDEFS lump: Unexpected end of file where \"%s\"'s \"TICS\" should be", animdefs[i].startname);
 	}
-	if (stricmp(animdefsToken, "RAND") == 0)
+
+	if (fasticmp(animdefsToken, "RAND"))
 	{
 		// This is technically legitimate ANIMDEFS syntax, but SRB2 doesn't support it.
 		I_Error("Error parsing ANIMDEFS lump: Animation definitions utilizing \"RAND\" (random duration per frame) are not supported by SRB2");
 	}
-	if (stricmp(animdefsToken, "TICS") != 0)
+
+	if (!fasticmp(animdefsToken, "TICS"))
 	{
 		I_Error("Error parsing ANIMDEFS lump: Expected \"TICS\" in animation definition for \"%s\", got \"%s\"", animdefs[i].startname, animdefsToken);
 	}
+
 	Z_Free(animdefsToken);
 
 	// Speed
@@ -521,6 +543,7 @@ void P_ParseAnimationDefintion(SINT8 istexture)
 	{
 		I_Error("Error parsing ANIMDEFS lump: Unexpected end of file where \"%s\"'s animation speed should be", animdefs[i].startname);
 	}
+
 	endPos = NULL;
 #ifndef AVOID_ERRNO
 	errno = 0;
@@ -535,6 +558,7 @@ void P_ParseAnimationDefintion(SINT8 istexture)
 	{
 		I_Error("Error parsing ANIMDEFS lump: Expected a positive integer for \"%s\"'s animation speed, got \"%s\"", animdefs[i].startname, animdefsToken);
 	}
+
 	animdefs[i].speed = animSpeed;
 	Z_Free(animdefsToken);
 }

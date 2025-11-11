@@ -170,8 +170,8 @@ boolean OglSdlSurface(INT32 w, INT32 h)
 			}
 		}
 
-		if (strcmp((const char*)gl_renderer, "GDI Generic") == 0 &&
-			strcmp((const char*)gl_version, "1.1.0") == 0)
+		if (fastcmp((const char*)gl_renderer, "GDI Generic") &&
+			fastcmp((const char*)gl_version, "1.1.0"))
 		{
 			// Oh no... Windows gave us the GDI Generic rasterizer, so something is wrong...
 			// The game will crash later on when unsupported OpenGL commands are encountered.
@@ -196,6 +196,9 @@ boolean OglSdlSurface(INT32 w, INT32 h)
 			pglGetIntegerv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &maximumAnisotropy);
 		else
 			maximumAnisotropy = 1;
+
+		if (GL_isExtAvailable("GL_ARB_texture_non_power_of_two", gl_extensions))
+			supportNPO2tex = true;
 
 		glanisotropicmode_cons_t[1].value = maximumAnisotropy;
 

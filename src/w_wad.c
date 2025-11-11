@@ -375,11 +375,11 @@ static restype_t ResourceFileDetect(const char* filename)
 {
 	size_t len = strlen(filename) - 4;
 
-	if (!stricmp(&filename[len], ".pk3"))
+	if (fasticmp(&filename[len], ".pk3"))
 		return RET_PK3;
-	if (!stricmp(&filename[len], ".soc"))
+	if (fasticmp(&filename[len], ".soc"))
 		return RET_SOC;
-	if (!stricmp(&filename[len], ".lua"))
+	if (fasticmp(&filename[len], ".lua"))
 		return RET_LUA;
 
 	return RET_WAD;
@@ -906,7 +906,7 @@ UINT16 W_InitFile(const char *filename, boolean local, boolean startup)
 	wadfile->endfolders = M_AATreeAlloc(AATREE_STRING);
 
 	// already generated, just copy it over
-	M_Memcpy(&wadfile->md5sum, &md5sum, 16);
+	memcpy(&wadfile->md5sum, &md5sum, 16);
 
 	//
 	// set up caching
@@ -971,24 +971,25 @@ UINT16 W_InitFile(const char *filename, boolean local, boolean startup)
   * \return 1 if all files were loaded, 0 if at least one was missing or
   *           invalid.
   */
-INT32 W_InitMultipleFiles(char **filenames, boolean addons)
+INT32 W_InitMultipleFiles(char **filenames, size_t count, boolean addons)
 {
 	INT32 rc = 1;
 	INT32 overallrc = 1;
-
+	size_t i;
 	(void)addons;
 
-	// will be realloced as lumps are added
-	for (; *filenames; filenames++)
+	for (i = 0; i < count; i++)
 	{
+		const char *filename = filenames[i];
+
 		// Previously, W_VerifyNMUSlumps was called to mark game modified
 		// for addons... but W_InitFile already does exactly that!
 
 		//CONS_Debug(DBG_SETUP, "Loading %s\n", *filenames);
-		rc = W_InitFile(*filenames, false, true);
+		rc = W_InitFile(filename, false, true);
 
 		if (rc == INT16_MAX)
-			CONS_Printf(M_GetText("Errors occurred while loading %s; not added.\n"), *filenames);
+			CONS_Printf(M_GetText("Errors occurred while loading %s; not added.\n"), filename);
 
 		overallrc &= (rc != INT16_MAX) ? 1 : 0;
 	}
@@ -1129,7 +1130,7 @@ UINT16 W_CheckNumForLongNamePwad(const char *name, UINT16 wad, UINT16 startlump)
 		{
 			if (lump_p->longnamelength == namelen
 				&& lump_p->hash.longname == hash
-				&& !stricmp(lump_p->longname, name))
+				&& fasticmp(lump_p->longname, name))
 				return i;
 		}
 	}
@@ -1229,7 +1230,7 @@ static lumpnum_t CheckLumpInCache(const char *name, boolean longname)
 		for (INT32 i = lumpnumcacheindex + LUMPNUMCACHESIZE; i > lumpnumcacheindex; i--)
 		{
 			if (lumpnumcache[i & (LUMPNUMCACHESIZE - 1)].hash == hash
-				&& stricmp(lumpnumcache[i & (LUMPNUMCACHESIZE - 1)].lumpname, name) == 0)
+				&& fasticmp(lumpnumcache[i & (LUMPNUMCACHESIZE - 1)].lumpname, name))
 			{
 				lumpnumcacheindex = i & (LUMPNUMCACHESIZE - 1);
 				return lumpnumcache[lumpnumcacheindex].lumpnum;
@@ -1636,7 +1637,7 @@ size_t W_ReadLumpHeaderPwad(UINT16 wad, UINT16 lump, void *dest, size_t size, si
 
 			if (!decData) // Did we get no data at all?
 				return 0;
-			M_Memcpy(dest, decData + offset, size);
+			memcpy(dest, decData + offset, size);
 			Z_Free(rawData);
 			Z_Free(decData);
 #ifdef NO_PNG_LUMPS

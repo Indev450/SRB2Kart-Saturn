@@ -61,9 +61,6 @@ extern boolean minilighticon;     // mkwii-style minimap headlight
 //
 
 // autoload stuff
-extern boolean autoloading;
-extern boolean autoloaded;
-extern boolean postautoloaded;
 void D_AddPostloadFiles(void);
 
 // the infinite loop of D_SRB2Loop() called from win_main for windows version

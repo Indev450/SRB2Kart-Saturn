@@ -35,7 +35,7 @@
 #include "lua_script.h"
 #include "p_slopes.h"
 
-savedata_t savedata;
+savedata_t savedata = {};
 
 // Block UINT32s to attempt to ensure that the correct data is
 // being sent and received
@@ -1203,7 +1203,7 @@ static void SaveMobjThinker(savebuffer_t *save, const thinker_t *th, const UINT8
 	if (diff & MD_MORE)
 		WRITEUINT16(save->p, diff2);
 
-	// save pointer, at load time we will search this pointer to reinitilize pointers
+	// keep here for vanilla compat
 	WRITEUINT32(save->p, (size_t)mobj);
 
 	WRITEFIXED(save->p, mobj->z); // Force this so 3dfloor problems don't arise.
@@ -1982,7 +1982,6 @@ static void CalculateDoomednumToMobjtype(void)
 
 static void LoadMobjThinker(savebuffer_t *save, actionf_p1 thinker)
 {
-	thinker_t *next;
 	mobj_t *mobj;
 	UINT32 diff;
 	UINT16 diff2;
@@ -1995,7 +1994,8 @@ static void LoadMobjThinker(savebuffer_t *save, actionf_p1 thinker)
 	else
 		diff2 = 0;
 
-	next = (void *)(size_t)READUINT32(save->p);
+	// here for vanilla compat
+	save->p += sizeof(UINT32);
 
 	z = READFIXED(save->p); // Force this so 3dfloor problems don't arise.
 	floorz = READFIXED(save->p);
@@ -2233,8 +2233,6 @@ static void LoadMobjThinker(savebuffer_t *save, actionf_p1 thinker)
 
 	if (diff2 & MD2_WAYPOINTCAP)
 		P_SetTarget(&waypointcap, mobj);
-
-	mobj->info = (mobjinfo_t *)next; // temporarily, set when leave this function
 
 	R_AddMobjInterpolator(mobj);
 }
@@ -3200,25 +3198,6 @@ FUNCINLINE static ATTRINLINE void P_UnArchivePolyObjects(savebuffer_t *save)
 	for (i = 0; i < numSavedPolys; ++i)
 		P_UnArchivePolyObj(save, &PolyObjects[i]);
 }
-//
-// P_FinishMobjs
-//
-FUNCINLINE static ATTRINLINE void P_FinishMobjs(void)
-{
-	thinker_t *currentthinker;
-	mobj_t *mobj;
-
-	// put info field there real value
-	for (currentthinker = thinkercap.next; currentthinker != &thinkercap;
-		currentthinker = currentthinker->next)
-	{
-		if (currentthinker->function != (actionf_p1)P_MobjThinker)
-			continue;
-
-		mobj = (mobj_t *)currentthinker;
-		mobj->info = &mobjinfo[mobj->type];
-	}
-}
 
 FUNCINLINE static ATTRINLINE mobj_t *RelinkMobj(mobj_t **ptr)
 {
@@ -3391,7 +3370,7 @@ FUNCINLINE static ATTRINLINE void P_UnArchiveSPGame(savebuffer_t *save, INT16 ma
 
 	READSTRINGN(save->p, testname, sizeof(testname));
 
-	if (strcmp(testname, timeattackfolder))
+	if (!fastcmp(testname, timeattackfolder))
 	{
 		if (modifiedgame)
 			I_Error("Save game not for this modification.");
@@ -3793,7 +3772,7 @@ boolean P_LoadGame(savebuffer_t *save, INT16 mapoverride)
 
 boolean P_LoadNetGame(savebuffer_t *save, boolean reloading)
 {
-	CV_LoadNetVars(&save->p);
+	save->p += CV_LoadNetVars(save->p);
 
 	if (!P_NetUnArchiveMisc(save, reloading))
 		return false;
@@ -3807,7 +3786,6 @@ boolean P_LoadNetGame(savebuffer_t *save, boolean reloading)
 		P_NetUnArchiveThinkers(save);
 		P_NetUnArchiveSpecials(save);
 		P_RelinkPointers();
-		P_FinishMobjs();
 	}
 
 	LUA_UnArchive(save, true);

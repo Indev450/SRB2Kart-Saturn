@@ -41,40 +41,40 @@
 
 /**	\brief view info
 */
-INT32 viewwidth, viewheight, viewwindowx, viewwindowy;
+INT32 viewwidth = 0, viewheight = 0, viewwindowx = 0, viewwindowy = 0;
 
 // =========================================================================
 //                      COLUMN DRAWING CODE STUFF
 // =========================================================================
 
-drawcolumndata_t g_dc;
+drawcolumndata_t g_dc = {};
 
 // -----------------------
 // translucency stuff here
 // -----------------------
 #define NUMTRANSTABLES 9 // how many translucency tables are used
 
-UINT8 *transtables; // translucency tables
-UINT8 *blendtables[NUMBLENDMAPS];
+UINT8 *transtables = NULL; // translucency tables
+UINT8 *blendtables[NUMBLENDMAPS] = {};
 
 // --------------------------------------------
 // c drawer routines
 // --------------------------------------------
 
-coldrawfunc_t *colfunc;
-coldrawfunc_t *colfuncs[COLDRAWFUNC_MAX];
-int colfunctype;
+coldrawfunc_t *colfunc = NULL;
+coldrawfunc_t *colfuncs[COLDRAWFUNC_MAX] = {};
+int colfunctype = 0;
 
 // =========================================================================
 //                      SPAN DRAWING CODE STUFF
 // =========================================================================
 
-drawspandata_t g_ds;
+drawspandata_t g_ds = {};
 
 // Vectors for Software's tilted slope drawers
-floatv3_t *ds_su, *ds_sv, *ds_sz;
+floatv3_t *ds_su = NULL, *ds_sv = NULL, *ds_sz = NULL;
 
-float focallengthf;
+float focallengthf = 0.0f;
 
 // For, uh, tilted lighting, duh.
 //static INT32 *tiltlighting;
@@ -83,8 +83,8 @@ float focallengthf;
 // c drawer routines
 // --------------------------------------------
 
-spandrawfunc_t *spanfunc;
-spandrawfunc_t *spanfuncs[SPANDRAWFUNC_MAX];
+spandrawfunc_t *spanfunc = NULL;
+spandrawfunc_t *spanfuncs[SPANDRAWFUNC_MAX] = {};
 
 // ==========================================================================
 //                        OLD DOOM FUZZY EFFECT
@@ -105,14 +105,15 @@ spandrawfunc_t *spanfuncs[SPANDRAWFUNC_MAX];
 #define DEFAULT_STARTTRANSCOLOR 160
 #define NUM_PALETTE_ENTRIES 256
 
-static UINT8 **translationtablecache[TT_CACHE_SIZE] = {NULL};
-static UINT8 **localtranslationtablecache[MAXLOCALSKINS] = {NULL};
+static UINT8 **translationtablecache[TT_CACHE_SIZE] = {};
+static UINT8 **localtranslationtablecache[MAXLOCALSKINS] = {};
 
-CV_PossibleValue_t Color_cons_t[MAXSKINCOLORS+1];
+CV_PossibleValue_t Color_cons_t[MAXSKINCOLORS+1] = {};
 
 struct GenerateBlendTables_State
 {
 	RGBA_t *LocalPalette;
+	RGBA_t *gammaCorrectedPalette;
 };
 
 static void R_GenerateBlendTables_Core(struct GenerateBlendTables_State *state);
@@ -126,6 +127,7 @@ static void R_GenerateBlendTables_Thread(void *userdata)
 	R_GenerateBlendTables_Core(state);
 
 	free(state->LocalPalette);
+	free(state->gammaCorrectedPalette);
 	free(state);
 }
 #endif
@@ -154,26 +156,33 @@ void R_InitTranslucencyTables(void)
 }
 
 static colorlookup_t transtab_lut;
+static colorlookup_t transtab_lut_corrected;
 
 static void BlendTab_Translucent(UINT8 *table, int style, UINT8 blendamt)
 {
 	INT16 bg, fg;
+	RGBA_t backrgba, frontrgba, result;
 
 	if (table == NULL)
 		I_Error("BlendTab_Translucent: input table was NULL!");
 
 	for (bg = 0; bg < 0x100; bg++)
 	{
+		backrgba = pGammaCorrectedPalette[bg];
+
 		for (fg = 0; fg < 0x100; fg++)
 		{
-			RGBA_t backrgba = V_GetColor(bg);
-			RGBA_t frontrgba = V_GetColor(fg);
-			RGBA_t result;
+			frontrgba = pGammaCorrectedPalette[fg];
 
+#if 0 // perfect implementation
 			result.rgba = ASTBlendPixel(backrgba, frontrgba, style, 0xFF);
 			result.rgba = ASTBlendPixel(result, frontrgba, AST_TRANSLUCENT, blendamt);
-
 			table[((bg * 0x100) + fg)] = GetColorLUT(&transtab_lut, result.s.red, result.s.green, result.s.blue);
+#else // performance scrabbler
+			result.rgba = ASTBlendPixel(backrgba, frontrgba, style, 0xFF);
+			result.rgba = ASTBlendPixel(result, frontrgba, AST_TRANSLUCENT, blendamt);
+			table[((bg * 0x100) + fg)] = GetColorLUT(&transtab_lut_corrected, result.s.red, result.s.green, result.s.blue); // pGammaCorrectedPalette
+#endif
 		}
 	}
 }
@@ -224,7 +233,7 @@ static void BlendTab_Modulative(UINT8 *table)
 			RGBA_t frontrgba = V_GetColor(fg);
 			RGBA_t result;
 			result.rgba = ASTBlendPixel(backrgba, frontrgba, AST_MODULATE, 0);
-			table[((bg * 0x100) + fg)] = GetColorLUT(&transtab_lut, result.s.red, result.s.green, result.s.blue);
+			table[((bg * 0x100) + fg)] = GetColorLUT(&transtab_lut_corrected, result.s.red, result.s.green, result.s.blue);
 		}
 	}
 }
@@ -278,11 +287,12 @@ void R_GenerateBlendTables(void)
 	size_t palsize = 256 * sizeof(RGBA_t);
 
 	state->LocalPalette = static_cast<RGBA_t *>(memcpy(malloc(palsize), pLocalPalette, palsize));
+	state->gammaCorrectedPalette = static_cast<RGBA_t *>(memcpy(malloc(palsize), pGammaCorrectedPalette, palsize));
 
 	I_spawn_thread("blend-tables",
 			R_GenerateBlendTables_Thread, state);
 #else
-	struct GenerateBlendTables_State state = {pLocalPalette};
+	struct GenerateBlendTables_State state = {pLocalPalette, pGammaCorrectedPalette};
 	R_GenerateBlendTables_Core(&state);
 #endif
 }
@@ -290,6 +300,7 @@ void R_GenerateBlendTables(void)
 static void R_GenerateBlendTables_Core(struct GenerateBlendTables_State *state)
 {
 	InitColorLUT(&transtab_lut, state->LocalPalette, false);
+	InitColorLUT(&transtab_lut_corrected, state->gammaCorrectedPalette, false);
 
 	// Additive
 	BlendTab_GenerateMaps(blendtab_add, AST_ADD, BlendTab_Translucent);
@@ -655,7 +666,7 @@ void R_VideoErase(size_t ofs, INT32 count)
 	//  is not optimal, e.g. byte by byte on
 	//  a 32bit CPU, as GNU GCC/Linux libc did
 	//  at one point.
-	M_Memcpy(vid.screens[0] + ofs, vid.screens[1] + ofs, count);
+	memcpy(vid.screens[0] + ofs, vid.screens[1] + ofs, count);
 }
 
 // ==========================================================================

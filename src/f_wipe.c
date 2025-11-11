@@ -257,7 +257,7 @@ static void F_DoWipe(fademask_t *fademask)
 				// shortcut - memcpy source to work
 				while (draw_linestogo--)
 				{
-					M_Memcpy(w_base+relativepos, s_base+relativepos, draw_rowend-draw_rowstart);
+					memcpy(w_base+relativepos, s_base+relativepos, draw_rowend-draw_rowstart);
 					relativepos += vid.width;
 				}
 			}
@@ -266,7 +266,7 @@ static void F_DoWipe(fademask_t *fademask)
 				// shortcut - memcpy target to work
 				while (draw_linestogo--)
 				{
-					M_Memcpy(w_base+relativepos, e_base+relativepos, draw_rowend-draw_rowstart);
+					memcpy(w_base+relativepos, e_base+relativepos, draw_rowend-draw_rowstart);
 					relativepos += vid.width;
 				}
 			}

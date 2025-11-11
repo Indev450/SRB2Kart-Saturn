@@ -28,8 +28,8 @@
 
 boolean LUA_CallAction(enum actionnum actionnum, void *thing);
 
-INT32 var1;
-INT32 var2;
+INT32 var1 = 0;
+INT32 var2 = 0;
 
 //
 // P_NewChaseDir related LUT.
@@ -945,9 +945,9 @@ void A_PointyThink(void *thing)
 		v[3] = FRACUNIT;
 
 		res = VectorMatrixMultiply(v, *RotateXMatrix(FixedAngle(actor->lastlook+i)));
-		M_Memcpy(&v, res, sizeof (v));
+		memcpy(&v, res, sizeof (v));
 		res = VectorMatrixMultiply(v, *RotateZMatrix(actor->angle+ANGLE_180));
-		M_Memcpy(&v, res, sizeof (v));
+		memcpy(&v, res, sizeof (v));
 
 		P_UnsetThingPosition(ball);
 		ball->x = actor->x + v[0];
@@ -4929,9 +4929,9 @@ void A_MaceRotate(void *thing)
 
 		// Calculate the angle matrixes for the link.
 		res = VectorMatrixMultiply(v, *RotateXMatrix(FixedAngle(actor->threshold)));
-		M_Memcpy(&v, res, sizeof(v));
+		memcpy(&v, res, sizeof(v));
 		res = VectorMatrixMultiply(v, *RotateZMatrix(actor->target->health << ANGLETOFINESHIFT));
-		M_Memcpy(&v, res, sizeof(v));
+		memcpy(&v, res, sizeof(v));
 	}
 	// Rotating Chain.
 	else
@@ -4950,9 +4950,9 @@ void A_MaceRotate(void *thing)
 
 		// Calculate the angle matrixes for the link.
 		res = VectorMatrixMultiply(v, *RotateXMatrix(actor->target->threshold << ANGLETOFINESHIFT));
-		M_Memcpy(&v, res, sizeof(v));
+		memcpy(&v, res, sizeof(v));
 		res = VectorMatrixMultiply(v, *RotateZMatrix(actor->target->health << ANGLETOFINESHIFT));
-		M_Memcpy(&v, res, sizeof(v));
+		memcpy(&v, res, sizeof(v));
 	}
 
 	// Add on the appropriate distances to the actor's co-ordinates.

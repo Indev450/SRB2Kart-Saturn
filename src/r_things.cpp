@@ -95,15 +95,15 @@ static INT32 drawsegs_xrange_count = 0;
 // There was a lot of stuff grabbed wrong, so I changed it...
 //
 
-spriteinfo_t spriteinfo[NUMSPRITES];
+spriteinfo_t spriteinfo[NUMSPRITES] = {};
 
 //
 // INITIALIZATION FUNCTIONS
 //
 
 // variables used to look up and range check thing_t sprites patches
-spritedef_t *sprites;
-size_t numsprites;
+spritedef_t *sprites = NULL;
+size_t numsprites = 0;
 
 static spriteframe_t sprtemp[64];
 static size_t maxframe;
@@ -112,7 +112,7 @@ static const char *spritename;
 //
 // GAME FUNCTIONS
 //
-UINT32 visspritecount, numvisiblesprites;
+UINT32 visspritecount = 0, numvisiblesprites = 0;
 
 static UINT32 clippedvissprites;
 static vissprite_t *visspritechunks[MAXVISSPRITES >> VISSPRITECHUNKBITS] = {NULL};
@@ -267,7 +267,7 @@ boolean R_AddSingleSpriteDef(const char *sprname, spritedef_t *spritedef, UINT16
 	if (spritedef->numframes) // (then spriteframes is not null)
 	{
 		// copy the already defined sprite frames
-		M_Memcpy(sprtemp, spritedef->spriteframes,
+		memcpy(sprtemp, spritedef->spriteframes,
 		 spritedef->numframes * sizeof (spriteframe_t));
 		maxframe = spritedef->numframes - 1;
 	}
@@ -403,7 +403,7 @@ boolean R_AddSingleSpriteDef(const char *sprname, spritedef_t *spritedef, UINT16
 		spritedef->spriteframes = static_cast<spriteframe_t*>(Z_Malloc(maxframe * sizeof (*spritedef->spriteframes), PU_STATIC, NULL));
 
 	spritedef->numframes = maxframe;
-	M_Memcpy(spritedef->spriteframes, sprtemp, maxframe*sizeof (spriteframe_t));
+	memcpy(spritedef->spriteframes, sprtemp, maxframe*sizeof (spriteframe_t));
 
 	return true;
 }
@@ -1019,7 +1019,7 @@ static void R_SplitSprite(vissprite_t *sprite)
 		INT16 *cliptop = newsprite->cliptop;
 		INT16 *clipbot = newsprite->clipbot;
 
-		M_Memcpy(newsprite, sprite, sizeof (vissprite_t));
+		memcpy(newsprite, sprite, sizeof (vissprite_t));
 
 		newsprite->cliptop = cliptop;
 		newsprite->clipbot = clipbot;

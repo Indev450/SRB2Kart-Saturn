@@ -167,7 +167,7 @@ UINT16 W_InitFile(const char *filename, boolean local, boolean startup);
 
 // W_InitMultipleFiles returns 1 if all is okay, 0 otherwise,
 // so that it stops with a message if a file was not found, but not if all is okay.
-INT32 W_InitMultipleFiles(char **filenames, boolean addons);
+INT32 W_InitMultipleFiles(char **filenames, size_t count, boolean addons);
 
 // Used for autoload. Uses P_AddWadFileLocal instead of W_InitFiles.
 INT32 W_AddAutoloadedLocalFiles(char **filenames);
