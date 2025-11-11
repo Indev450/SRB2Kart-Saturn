@@ -110,14 +110,14 @@ static fileused_t transferFiles[UINT8_MAX + 1];
 // Write time of file: utime
 
 // Receiver structure
-INT32 fileneedednum; // Number of files needed to join the server
-fileneeded_t fileneeded[MAX_WADFILES]; // List of needed files
+INT32 fileneedednum = 0; // Number of files needed to join the server
+fileneeded_t fileneeded[MAX_WADFILES] = {}; // List of needed files
 #ifdef HAVE_THREADS
 static I_mutex downloadmutex;
 #endif
 char downloaddir[512] = "DOWNLOAD";
 
-file_download_t filedownload;
+file_download_t filedownload = {};
 
 #ifdef HAVE_CURL
 static CURL *http_handle;
@@ -131,7 +131,7 @@ static UINT32 curl_origfilesize;
 static UINT32 curl_origtotalfilesize;
 static char *curl_realname = NULL;
 fileneeded_t *curl_curfile = NULL;
-HTTP_login *curl_logins;
+HTTP_login *curl_logins = NULL;
 #endif
 
 /** Fills a serverinfo packet with information about wad files loaded.

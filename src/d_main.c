@@ -143,8 +143,8 @@ static char addonsdir[MAX_WADPATH];
 // Events can be discarded if no responder claims them
 // referenced from i_system.c for I_GetKey()
 
-event_t events[MAXEVENTS];
-INT32 eventhead, eventtail;
+event_t events[MAXEVENTS] = {};
+INT32 eventhead = 0, eventtail = 0;
 
 boolean dedicated = false;
 
@@ -162,17 +162,17 @@ void D_PostEvent(const event_t *ev)
 
 // modifier keys
 // Now handled in I_OsPolling
-UINT8 shiftdown = 0; // 0x1 left, 0x2 right
-UINT8 ctrldown = 0; // 0x1 left, 0x2 right
-UINT8 altdown = 0; // 0x1 left, 0x2 right
-boolean capslock = 0;	// gee i wonder what this does.
+UINT8 shiftdown = 0;   // 0x1 left, 0x2 right
+UINT8 ctrldown = 0;   // 0x1 left, 0x2 right
+UINT8 altdown = 0;    // 0x1 left, 0x2 right
+boolean capslock = 0; // gee i wonder what this does.
 
-static UINT16 curcolor[MAXSPLITSCREENPLAYERS] = {0};
+static UINT16 curcolor[MAXSPLITSCREENPLAYERS] = {};
 
 static void D_DeviceLEDTick(void)
 {
 	UINT8 i;
-	static UINT16 color[MAXSPLITSCREENPLAYERS] = {0};
+	static UINT16 color[MAXSPLITSCREENPLAYERS] = {};
 
 	if (numcontrollers == 0)
 	{
@@ -340,8 +340,7 @@ static void D_Renderview(void)
 			}
 			else if (rendermode == render_soft)
 #endif
-
-			R_RenderPlayerView(&players[displayplayers[i]]);
+				R_RenderPlayerView(&players[displayplayers[i]]);
 		}
 
 		if (rendermode == render_soft)
@@ -731,7 +730,7 @@ static boolean D_Display(void)
 // D_SRB2Loop
 // =========================================================================
 
-tic_t rendergametic;
+tic_t rendergametic = 0;
 
 void D_SRB2Loop(void)
 {

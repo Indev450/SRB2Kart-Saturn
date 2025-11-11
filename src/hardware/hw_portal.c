@@ -30,7 +30,7 @@
 
 SINT8 gl_portal_state = GLPORTAL_OFF;
 
-gl_portallist_t *currentportallist;
+gl_portallist_t *currentportallist = NULL;
 
 // clip the area outside the portal destination window
 void HWR_PortalClipping(gl_portal_t *portal)
@@ -168,8 +168,10 @@ void HWR_RenderPortal(gl_portal_t* portal, gl_portal_t* rootportal, const float 
 
 	// go to portal frame lmao
 	HWR_PortalFrame(portal);
+
 	// call HWR_RenderViewpoint
 	HWR_RenderPortalViewpoint(portal, player, stencil_level + 1, true);
+
 	// return to current frame
 	if (rootportal)
 		HWR_PortalFrame(rootportal);

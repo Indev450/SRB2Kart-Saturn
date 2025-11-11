@@ -41,40 +41,40 @@
 
 /**	\brief view info
 */
-INT32 viewwidth, viewheight, viewwindowx, viewwindowy;
+INT32 viewwidth = 0, viewheight = 0, viewwindowx = 0, viewwindowy = 0;
 
 // =========================================================================
 //                      COLUMN DRAWING CODE STUFF
 // =========================================================================
 
-drawcolumndata_t g_dc;
+drawcolumndata_t g_dc = {};
 
 // -----------------------
 // translucency stuff here
 // -----------------------
 #define NUMTRANSTABLES 9 // how many translucency tables are used
 
-UINT8 *transtables; // translucency tables
-UINT8 *blendtables[NUMBLENDMAPS];
+UINT8 *transtables = NULL; // translucency tables
+UINT8 *blendtables[NUMBLENDMAPS] = {};
 
 // --------------------------------------------
 // c drawer routines
 // --------------------------------------------
 
-coldrawfunc_t *colfunc;
-coldrawfunc_t *colfuncs[COLDRAWFUNC_MAX];
-int colfunctype;
+coldrawfunc_t *colfunc = NULL;
+coldrawfunc_t *colfuncs[COLDRAWFUNC_MAX] = {};
+int colfunctype = 0;
 
 // =========================================================================
 //                      SPAN DRAWING CODE STUFF
 // =========================================================================
 
-drawspandata_t g_ds;
+drawspandata_t g_ds = {};
 
 // Vectors for Software's tilted slope drawers
-floatv3_t *ds_su, *ds_sv, *ds_sz;
+floatv3_t *ds_su = NULL, *ds_sv = NULL, *ds_sz = NULL;
 
-float focallengthf;
+float focallengthf = 0.0f;
 
 // For, uh, tilted lighting, duh.
 //static INT32 *tiltlighting;
@@ -83,8 +83,8 @@ float focallengthf;
 // c drawer routines
 // --------------------------------------------
 
-spandrawfunc_t *spanfunc;
-spandrawfunc_t *spanfuncs[SPANDRAWFUNC_MAX];
+spandrawfunc_t *spanfunc = NULL;
+spandrawfunc_t *spanfuncs[SPANDRAWFUNC_MAX] = {};
 
 // ==========================================================================
 //                        OLD DOOM FUZZY EFFECT
@@ -105,10 +105,10 @@ spandrawfunc_t *spanfuncs[SPANDRAWFUNC_MAX];
 #define DEFAULT_STARTTRANSCOLOR 160
 #define NUM_PALETTE_ENTRIES 256
 
-static UINT8 **translationtablecache[TT_CACHE_SIZE] = {NULL};
-static UINT8 **localtranslationtablecache[MAXLOCALSKINS] = {NULL};
+static UINT8 **translationtablecache[TT_CACHE_SIZE] = {};
+static UINT8 **localtranslationtablecache[MAXLOCALSKINS] = {};
 
-CV_PossibleValue_t Color_cons_t[MAXSKINCOLORS+1];
+CV_PossibleValue_t Color_cons_t[MAXSKINCOLORS+1] = {};
 
 struct GenerateBlendTables_State
 {

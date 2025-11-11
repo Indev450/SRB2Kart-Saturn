@@ -95,9 +95,9 @@ static INT32 sendackpacket = 0, getackpacket = 0;
 INT32 ticruned = 0, ticmiss = 0;
 
 // globals
-INT32 getbps, sendbps;
-float lostpercent, duppercent, gamelostpercent;
-INT32 packetheaderlength;
+INT32 getbps = 0, sendbps = 0;
+float lostpercent = 0, duppercent = 0, gamelostpercent = 0;
+INT32 packetheaderlength = 0;
 
 boolean Net_GetNetStat(void)
 {

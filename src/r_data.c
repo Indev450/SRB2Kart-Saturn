@@ -83,7 +83,7 @@ typedef struct
 // a patch or sprite is composed of zero or more columns.
 //
 
-size_t numspritelumps, max_spritelumps;
+size_t numspritelumps = 0, max_spritelumps = 0;
 
 // textures
 INT32 numtextures = 0; // total number of textures found,
@@ -110,7 +110,7 @@ UINT8 invertmap[256];
 #endif
 
 // for debugging/info purposes
-size_t flatmemory, spritememory, texturememory; // gotta play by 2.2 rules to get this to work
+static size_t flatmemory = 0, spritememory = 0, texturememory = 0; // gotta play by 2.2 rules to get this to work
 
 // Blends two pixels together, using the equation
 // that matches the specified alpha style.

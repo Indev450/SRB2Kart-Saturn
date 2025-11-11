@@ -23,8 +23,8 @@
 //
 // Angles precalculated in R_InitSprites.
 //
-fixed_t rollcosang[ROTANGLES];
-fixed_t rollsinang[ROTANGLES];
+fixed_t rollcosang[ROTANGLES] = {};
+fixed_t rollsinang[ROTANGLES] = {};
 
 INT32 R_GetRollAngle(angle_t rollangle)
 {

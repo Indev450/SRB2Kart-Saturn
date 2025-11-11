@@ -100,7 +100,7 @@ Please check it out if you're trying to maintain this.
 toast 18/04/17
 */
 
-float Cubepal[2][2][2][3];
+float Cubepal[2][2][2][3] = {};
 boolean Cubeapply = false;
 
 // returns whether to apply cube, selectively avoiding expensive operations
