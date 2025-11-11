@@ -2734,6 +2734,8 @@ boolean P_SetupLevel(boolean fromnetsave, boolean reloadinggamestate)
 	lumpnum_t encoreLump = LUMPERROR;
 	UINT8 levelfadecol;
 
+	Reset_Zsubsecs();
+
 	// HACK: this doesent reset if you change the map from within a replay and may cause crashes or the replayhut to be non functional
 	if (!demo.playback && demo.inreplayhut)
 	{
