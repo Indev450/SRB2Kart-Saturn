@@ -49,54 +49,54 @@
 // increment every time a check is made
 size_t validcount = 1;
 
-INT32 centerx, centery;
+INT32 centerx = 0, centery = 0;
 
-fixed_t centerxfrac, centeryfrac;
-fixed_t projection;
-fixed_t projectiony; // aspect ratio
-fixed_t fovtan; // field of view
+fixed_t centerxfrac = 0, centeryfrac = 0;
+fixed_t projection = 0;
+fixed_t projectiony = 0; // aspect ratio
+fixed_t fovtan = 0; // field of view
 
 // just for profiling purposes
-size_t framecount;
+size_t framecount = 0;
 
-size_t loopcount;
+size_t loopcount = 0;
 
-fixed_t viewx, viewy, viewz;
-angle_t viewangle, aimingangle, viewroll;
-UINT8 viewssnum;
-fixed_t viewcos, viewsin;
-boolean skyVisible;
-boolean skyVisiblePerPlayer[MAXSPLITSCREENPLAYERS]; // saved values of skyVisible for each splitscreen player
-sector_t *viewsector;
-player_t *viewplayer;
+fixed_t viewx = 0, viewy = 0, viewz = 0;
+angle_t viewangle = 0, aimingangle = 0, viewroll = 0;
+UINT8 viewssnum = 0;
+fixed_t viewcos = 0, viewsin = 0;
+boolean skyVisible = 0;
+boolean skyVisiblePerPlayer[MAXSPLITSCREENPLAYERS] = {}; // saved values of skyVisible for each splitscreen player
+sector_t *viewsector = NULL;
+player_t *viewplayer = NULL;
 
-fixed_t renderdeltatics;
-boolean renderisnewtic;
+fixed_t renderdeltatics = 0;
+boolean renderisnewtic = true;
 
 //
 // precalculated math tables
 //
-angle_t clipangle;
-angle_t doubleclipangle;
+angle_t clipangle = 0;
+angle_t doubleclipangle = 0;
 
 // The viewangletox[viewangle + FINEANGLES/4] lookup
 // maps the visible view angles to screen X coordinates,
 // flattening the arc to a flat projection plane.
 // There will be many angles mapped to the same X.
-INT32 viewangletox[FINEANGLES/2];
+INT32 viewangletox[FINEANGLES/2] = {};
 
 // The xtoviewangleangle[] table maps a screen pixel
 // to the lowest viewangle that maps back to x ranges
 // from clipangle to -clipangle.
-angle_t *xtoviewangle;
+angle_t *xtoviewangle = NULL;
 
-lighttable_t *scalelight[LIGHTLEVELS][MAXLIGHTSCALE];
-lighttable_t *scalelightfixed[MAXLIGHTSCALE];
-lighttable_t *zlight[LIGHTLEVELS][MAXLIGHTZ];
+lighttable_t *scalelight[LIGHTLEVELS][MAXLIGHTSCALE] = {};
+lighttable_t *scalelightfixed[MAXLIGHTSCALE] = {};
+lighttable_t *zlight[LIGHTLEVELS][MAXLIGHTZ] = {};
 
 // Hack to support extra boom colormaps.
-size_t num_extra_colormaps;
-extracolormap_t extra_colormaps[MAXCOLORMAPS];
+size_t num_extra_colormaps = 0;
+extracolormap_t extra_colormaps[MAXCOLORMAPS] = {};
 
 // Performance stats
 precise_t ps_prevframetime = 0;
@@ -187,7 +187,7 @@ consvar_t cv_shadowoffs      = {"offsetshadows", "Off", CV_SAVE, CV_OnOff, NULL,
 consvar_t cv_skybox          = {"skybox", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_ffloorclip      = {"r_ffloorclip", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_spriteclip      = {"r_spriteclip", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_softcyancut     = {"softwarecyancut", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_softcyancut     = {"softwarecyancut", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_translucency    = {"translucency", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_drawdist        = {"drawdist", "Infinite", CV_SAVE, drawdist_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_drawdist_precip = {"drawdist_precip", "1024", CV_SAVE|CV_CALL|CV_NOINIT, drawdist_precip_cons_t, Precipstuff_OnChange, 0, NULL, NULL, 0, 0, NULL};
@@ -253,6 +253,7 @@ void SplitScreen_OnChange(void)
 			if (playeringame[i] && i != consoleplayer)
 			{
 				UINT8 j;
+
 				for (j = 1; j < MAXSPLITSCREENPLAYERS; j++)
 				{
 					if (displayplayers[j] == consoleplayer)
@@ -268,6 +269,7 @@ void SplitScreen_OnChange(void)
 		}
 	}
 }
+
 static void Fov_OnChange(void)
 {
 	R_SetViewSize();
@@ -943,9 +945,10 @@ void R_ExecuteSetViewSize(void)
 	memset(scalelight, 0xFF, sizeof(scalelight));
 
 	// Calculate the light levels to use for each level/scale combination.
-	for (i = 0; i< LIGHTLEVELS; i++)
+	for (i = 0; i < LIGHTLEVELS; i++)
 	{
 		startmapl = ((LIGHTLEVELS - 1 - i)*2)*NUMCOLORMAPS/LIGHTLEVELS;
+
 		for (j = 0; j < MAXLIGHTSCALE; j++)
 		{
 			level = startmapl - j*vid.width/(viewwidth)/DISTMAP;
@@ -959,6 +962,8 @@ void R_ExecuteSetViewSize(void)
 			scalelight[i][j] = colormaps + level*256;
 		}
 	}
+
+	R_SetupFreelook();
 
 	am_recalc = true;
 }
@@ -1003,7 +1008,7 @@ static void R_InitViewMapping(void)
 static void R_SetupViewBuffers(void)
 {
 	R_CalcFov(cv_fov.value);
-	R_InitViewBuffer(viewwidth, viewheight);
+	R_InitViewBuffer();
 	R_InitViewMapping();
 }
 

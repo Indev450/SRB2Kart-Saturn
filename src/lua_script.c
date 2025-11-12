@@ -41,7 +41,7 @@ lua_State *gL = NULL;
 // Mathlib global state
 static lua_State *mL = NULL;
 
-int hook_defrosting;
+int hook_defrosting = 0;
 
 // List of internal libraries to load from SRB2
 static lua_CFunction liblist[] = {
@@ -288,6 +288,10 @@ void LUA_LoadLump(UINT16 wad, UINT16 lump)
 		lumpinfo_t *lump_p = &wadfiles[wad]->lumpinfo[lump];
 		len += 1 + strlen(lump_p->fullname); // length of file name, '|', and lump name
 		name = malloc(len+1);
+
+		if (!name)
+			I_Error("LUA_LoadLump: Out of memory!\n");
+
 		sprintf(name, "%s|%s", wadfiles[wad]->filename, lump_p->fullname);
 		name[len] = '\0';
 	}
@@ -488,25 +492,37 @@ void LUA_InvalidateMathlibCache(const char *name)
 // Pushes it to the stack and stores it in the registry.
 void LUA_PushUserdata(lua_State *L, void *data, const char *meta)
 {
+	if (LUA_RawPushUserdata(L, data) == LPUSHED_NEW)
+	{
+		luaL_getmetatable(L, meta);
+		lua_setmetatable(L, -2);
+	}
+}
+
+// Same as LUA_PushUserdata but don't set a metatable yet.
+lpushed_t LUA_RawPushUserdata(lua_State *L, void *data)
+{
+	lpushed_t status = LPUSHED_NIL;
+
 	void **userdata;
 
 	if (!data) { // push a NULL
 		lua_pushnil(L);
-		return;
+		return status;
 	}
 
 	lua_getfield(L, LUA_REGISTRYINDEX, LREG_VALID);
 	I_Assert(lua_istable(L, -1));
+
 	lua_pushlightuserdata(L, data);
 	lua_rawget(L, -2);
+
 	if (lua_isnil(L, -1)) { // no userdata? deary me, we'll have to make one.
 		lua_pop(L, 1); // pop the nil
 
 		// create the userdata
 		userdata = lua_newuserdata(L, sizeof(void *));
 		*userdata = data;
-		luaL_getmetatable(L, meta);
-		lua_setmetatable(L, -2);
 
 		// Set it in the registry so we can find it again
 		lua_pushlightuserdata(L, data); // k (store the userdata via the data's pointer)
@@ -514,8 +530,15 @@ void LUA_PushUserdata(lua_State *L, void *data, const char *meta)
 		lua_rawset(L, -4);
 
 		// stack is left with the userdata on top, as if getting it had originally succeeded.
+
+		status = LPUSHED_NEW;
 	}
+	else
+		status = LPUSHED_EXISTING;
+
 	lua_remove(L, -2); // remove LREG_VALID
+
+	return status;
 }
 
 // When userdata is freed, use this function to remove it from Lua.

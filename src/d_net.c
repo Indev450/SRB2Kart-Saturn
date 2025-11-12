@@ -95,9 +95,9 @@ static INT32 sendackpacket = 0, getackpacket = 0;
 INT32 ticruned = 0, ticmiss = 0;
 
 // globals
-INT32 getbps, sendbps;
-float lostpercent, duppercent, gamelostpercent;
-INT32 packetheaderlength;
+INT32 getbps = 0, sendbps = 0;
+float lostpercent = 0, duppercent = 0, gamelostpercent = 0;
+INT32 packetheaderlength = 0;
 
 boolean Net_GetNetStat(void)
 {
@@ -243,7 +243,7 @@ static boolean GetFreeAcknum(UINT8 *freeack)
 			ackpak[i].length = doomcom->datalength;
 			ackpak[i].senttime = I_GetTime();
 			ackpak[i].resentnum = 0;
-			M_Memcpy(ackpak[i].pak.raw, netbuffer, ackpak[i].length);
+			memcpy(ackpak[i].pak.raw, netbuffer, ackpak[i].length);
 
 			*freeack = ackpak[i].acknum;
 
@@ -412,7 +412,7 @@ void Net_SendAcks(INT32 node)
 {
 	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
 	netbuffer->packettype = PT_NOTHING;
-	M_Memcpy(netbuffer->u.textcmd, nodes[node].acktosend, MAXACKTOSEND);
+	memcpy(netbuffer->u.textcmd, nodes[node].acktosend, MAXACKTOSEND);
 	HSendPacket(node, false, 0, MAXACKTOSEND);
 }
 
@@ -494,7 +494,7 @@ void Net_AckTicker(void)
 			}
 			DEBFILE(va("Resend ack %d, %u<%d at %u\n", ackpak[i].acknum, ackpak[i].senttime,
 				NODETIMEOUT, I_GetTime()));
-			M_Memcpy(netbuffer, ackpak[i].pak.raw, ackpak[i].length);
+			memcpy(netbuffer, ackpak[i].pak.raw, ackpak[i].length);
 			ackpak[i].senttime = I_GetTime();
 			ackpak[i].resentnum++;
 			ackpak[i].nextacknum = node->nextacknum;
@@ -1021,7 +1021,7 @@ boolean HSendPacket(INT32 node, boolean reliable, UINT8 acknum, size_t packetlen
 			return false;
 		}
 		netbuffer->ack = netbuffer->ackreturn = 0; // don't hold over values from last packet sent/received
-		M_Memcpy(&reboundstore[rebound_head], netbuffer,
+		memcpy(&reboundstore[rebound_head], netbuffer,
 			doomcom->datalength);
 		reboundsize[rebound_head] = doomcom->datalength;
 		rebound_head = (rebound_head+1) % MAXREBOUND;
@@ -1107,7 +1107,7 @@ boolean HGetPacket(void)
 	// Get a packet from self
 	if (rebound_tail != rebound_head)
 	{
-		M_Memcpy(netbuffer, &reboundstore[rebound_tail], reboundsize[rebound_tail]);
+		memcpy(netbuffer, &reboundstore[rebound_tail], reboundsize[rebound_tail]);
 		doomcom->datalength = reboundsize[rebound_tail];
 		if (netbuffer->packettype == PT_NODETIMEOUT)
 			doomcom->remotenode = netbuffer->u.textcmd[0];
@@ -1127,9 +1127,7 @@ boolean HGetPacket(void)
 
 	while (true)
 	{
-		I_NetGet();
-
-		if (doomcom->remotenode == -1) // No packet received
+		if (!I_NetGet()) // No packets received
 			return false;
 
 		getbytes += packetheaderlength + doomcom->datalength; // For stat
@@ -1165,6 +1163,7 @@ boolean HGetPacket(void)
 			GotAcks();
 			continue;
 		}
+
 		doomcom->datalength -= BASEPACKETSIZE;
 		break;
 	}

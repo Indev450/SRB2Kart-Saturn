@@ -44,16 +44,16 @@ consvar_t cv_addons_search_case = {"addons_search_case", "No", CV_SAVE, CV_YesNo
 static CV_PossibleValue_t addons_search_type_cons_t[] = {{0, "Start"}, {1, "Anywhere"}, {0, NULL}};
 consvar_t cv_addons_search_type = {"addons_search_type", "Anywhere", CV_SAVE, addons_search_type_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
-char menupath[1024];
-size_t menupathindex[menudepth];
+char menupath[MAXFILEPATH] = {};
+size_t menupathindex[menudepth] = {};
 size_t menudepthleft = menudepth;
 
 char menusearchbuf[MAXSTRINGLENGTH+1];
 textinput_t menusearch;
 
-char **dirmenu, **coredirmenu; // core only local for this file
-size_t sizedirmenu, sizecoredirmenu; // ditto
-size_t dir_on[menudepth];
+char **dirmenu = NULL, **coredirmenu = NULL; // core only local for this file
+size_t sizedirmenu = 0, sizecoredirmenu = 0; // ditto
+size_t dir_on[menudepth] = {};
 UINT8 refreshdirmenu = 0;
 char *refreshdirname = NULL;
 
@@ -111,7 +111,7 @@ filestatus_t filesearch(char *filename, const char *startpath, const UINT8 *want
 	int found = 0;
 	char *searchname;
 	int depthleft = maxsearchdepth;
-	char searchpath[1024];
+	char searchpath[MAXFILEPATH];
 	size_t *searchpathindex;
 
 	dirhandle = (DIR**)malloc(maxsearchdepth * sizeof(DIR*));
@@ -198,7 +198,7 @@ filestatus_t filesearch(char *filename, const char *startpath, const UINT8 *want
 
 				for (; *path != NULL; path++)
 				{
-					if (strcasecmp(*path, dent->d_name) == 0)
+					if (fasticmp(*path, dent->d_name))
 					{
 						skipfolder = true;
 						break;
@@ -212,7 +212,7 @@ filestatus_t filesearch(char *filename, const char *startpath, const UINT8 *want
 				}
 			}
 
-			if (strcasecmp(".git", dent->d_name) // sanity if you're weird like me
+			if (!fasticmp(".git", dent->d_name) // sanity if you're weird like me
 				&& (dirhandle[depthleft-1] = opendir(searchpath)) != NULL)
 			{
 				// Got read permissions!
@@ -227,7 +227,7 @@ filestatus_t filesearch(char *filename, const char *startpath, const UINT8 *want
 
 		// I am a file!
 
-		if (strcasecmp(searchname, dent->d_name))
+		if (!fasticmp(searchname, dent->d_name))
 			continue; // Not what we're looking for!
 
 		switch (checkfilemd5(searchpath, wantedmd5sum))
@@ -353,7 +353,7 @@ void searchfilemenu(char *tempname)
 		{
 			for (i = first; i < sizedirmenu; i++)
 			{
-				if (!strcmp(dirmenu[i]+DIR_STRING, tempname))
+				if (fastcmp(dirmenu[i]+DIR_STRING, tempname))
 				{
 					dir_on[menudepthleft] = i;
 					break;
@@ -400,7 +400,7 @@ void searchfilemenu(char *tempname)
 	{
 		if (filemenucmp(coredirmenu[i]+DIR_STRING, localmenusearch))
 		{
-			if (tempname && !strcmp(coredirmenu[i]+DIR_STRING, tempname))
+			if (tempname && fastcmp(coredirmenu[i]+DIR_STRING, tempname))
 			{
 				dir_on[menudepthleft] = sizedirmenu;
 				Z_Free(tempname);
@@ -478,14 +478,14 @@ boolean preparefilemenu(boolean samedepth, boolean replayhut)
 
 				if (replayhut)
 				{
-					if (strcasecmp(".lmp", dent->d_name+len-5))
+					if (!fasticmp(".lmp", dent->d_name+len-5))
 						continue; // Not a replay
 				}
 				else if (!cv_addons_showall.value)
 				{
 					UINT8 ext;
 					for (ext = 0; ext < NUM_EXT_TABLE; ext++)
-						if (!strcasecmp(exttable[ext]+1, dent->d_name+len-(exttable[ext][0])))
+						if (fasticmp(exttable[ext]+1, dent->d_name+len-(exttable[ext][0])))
 							break; // extension comparison
 
 					if (ext == NUM_EXT_TABLE)
@@ -559,7 +559,7 @@ boolean preparefilemenu(boolean samedepth, boolean replayhut)
 
 				if (replayhut)
 				{
-					if (strcasecmp(".lmp", dent->d_name+len-5))
+					if (!fasticmp(".lmp", dent->d_name+len-5))
 						continue; // Not a replay
 
 					ext = EXT_TXT; // This isn't used anywhere but better safe than sorry for messing with this...
@@ -567,7 +567,7 @@ boolean preparefilemenu(boolean samedepth, boolean replayhut)
 				else
 				{
 					for (; ext < NUM_EXT_TABLE; ext++)
-						if (!strcasecmp(exttable[ext]+1, dent->d_name+len-(exttable[ext][0])))
+						if (fasticmp(exttable[ext]+1, dent->d_name+len-(exttable[ext][0])))
 							break; // extension comparison
 
 					if (ext == NUM_EXT_TABLE && !cv_addons_showall.value)
@@ -587,7 +587,7 @@ boolean preparefilemenu(boolean samedepth, boolean replayhut)
 								nameonly(filenamebuf[i]);
 							}
 
-							if (strcmp(dent->d_name, filenamebuf[i]))
+							if (!fastcmp(dent->d_name, filenamebuf[i]))
 								continue;
 
 							if (cv_addons_md5.value && !checkfilemd5(menupath, wadfiles[i]->md5sum))
@@ -598,11 +598,11 @@ boolean preparefilemenu(boolean samedepth, boolean replayhut)
 					}
 					else if (ext == EXT_TXT)
 					{
-						if (!strncmp(dent->d_name, "log-", 4) || !strcmp(dent->d_name, "errorlog.txt"))
+						if (!strncmp(dent->d_name, "log-", 4) || fastcmp(dent->d_name, "errorlog.txt"))
 							ext |= EXT_LOADED;
 					}
 
-					if (!strcmp(dent->d_name, configfile))
+					if (fastcmp(dent->d_name, configfile))
 						ext |= EXT_LOADED;
 				}
 

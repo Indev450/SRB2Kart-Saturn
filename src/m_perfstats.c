@@ -916,7 +916,7 @@ static void draw_think_frame_stats(int hook_length, ps_hookinfo_t *hook)
 		int len = (int)strlen(str);
 		char* str_ptr;
 
-		if (strcmp(".lua", str + len - 4) == 0)
+		if (fastcmp(".lua", str + len - 4))
 		{
 			str[len-4] = '\0'; // remove .lua at end
 		}

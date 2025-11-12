@@ -107,7 +107,7 @@ static void NET_Get(void)
 		{
 			size_t i;
 			newnode++;
-			M_Memcpy(&clientaddress[newnode], &mypacket.address, sizeof (IPaddress));
+			memcpy(&clientaddress[newnode], &mypacket.address, sizeof (IPaddress));
 			DEBFILE(va("New node detected: node:%d address:%s\n", newnode,
 					NET_GetNodeAddress(newnode)));
 			doomcom->remotenode = newnode; // good packet from a game player
@@ -257,7 +257,7 @@ static SINT8 NET_NetMakeNodewPort(const char *hostname, const char *port)
 		return newnode;
 	}
 	newnode++;
-	M_Memcpy(&clientaddress[newnode],&hostnameIP,sizeof (IPaddress));
+	memcpy(&clientaddress[newnode],&hostnameIP,sizeof (IPaddress));
 	return (SINT8)newnode;
 }
 
@@ -303,7 +303,7 @@ static boolean NET_Ban(INT32 node)
 	if (numbans == MAXBANS)
 		return false;
 
-	M_Memcpy(&banned[numbans], &clientaddress[node], sizeof (IPaddress));
+	memcpy(&banned[numbans], &clientaddress[node], sizeof (IPaddress));
 	banned[numbans].port = 0;
 	numbans++;
 	return true;

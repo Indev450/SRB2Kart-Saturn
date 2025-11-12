@@ -25,7 +25,7 @@
 
 // Eeeeh not sure is this right way, but it works < sry :c < sry again it had to go :c
 
-#if defined (HWRENDER) && !defined (NOROPENGL)
+#if defined (HWRENDER)
 
 #include "../../r_fps.h" // For R_GetTimeFrac, used for the leveltime shader uniform
 
@@ -101,7 +101,7 @@ static LTListItem *LightTablesHead = NULL;
 static RGBA_t screenPalette[256] = {0}; // the palette for the postprocessing step in palette rendering
 static GLuint screenPaletteTex = 0; // 1D texture containing the screen palette
 static GLuint paletteLookupTex = 0; // 3D texture containing RGB -> palette index lookup table
-RGBA_t  myPaletteData[256]; // the palette for converting textures to RGBA
+RGBA_t  myPaletteData[256] = {0}; // the palette for converting textures to RGBA
 
 static GLint gltexformat = GL_RGB5_A1;
 GLint   screen_width     = 0;               // used by Draw2DLine()
@@ -110,6 +110,7 @@ GLint   screen_texsizew  = 512; // Power-of-two screen texture render resolution
 GLint   screen_texsizeh  = 512; // Power-of-two screen texture render resolution
 GLbyte  screen_depth     = 0;
 GLint maximumAnisotropy  = 0;
+boolean supportNPO2tex   = false;
 static GLboolean MipMap  = GL_FALSE;
 static GLint min_filter  = GL_LINEAR;
 static GLint mag_filter  = GL_LINEAR;
@@ -127,7 +128,7 @@ int majorGL = 0, minorGL = 0;
 
 //Hurdler: 04/10/2000: added for the kick ass coronas as Boris wanted;-)
 static GLfloat modelMatrix[16];
-GLfloat projMatrix[16];
+GLfloat projMatrix[16] = {0};
 static GLint   viewport[4];
 
 #ifdef USE_FBO_OGL
@@ -215,7 +216,7 @@ static const GLfloat byte2float[256] = {
 // -----------------+
 
 #ifdef DEBUG_TO_FILE
-FILE *gllogstream;
+FILE *gllogstream = NULL;
 #endif
 
 FUNCPRINTF void GL_DBG_Printf(const char *format, ...)
@@ -1137,13 +1138,14 @@ static void GL_Perspective(GLfloat fovy, GLfloat aspect)
 		{ 0.0f, 0.0f, 0.0f, 0.0f},
 	};
 
-	const GLfloat focallength = (GLfloat)(1.0f / (GLfloat)tan(fovy * (GLfloat)M_PIl / 360.0f));
 	const GLfloat deltaZ = FAR_CLIPPING_PLANE - NEAR_CLIPPING_PLANE;
 
 	if ((fabsf((float)deltaZ) < 1.0E-36f) || fpclassify(aspect) == FP_ZERO)
 	{
 		return;
 	}
+
+	const GLfloat focallength = (GLfloat)(1.0f / (GLfloat)tan(fovy * (GLfloat)M_PIl / 360.0f));
 
 	m[0][0] = focallength / aspect;
 	m[1][1] = focallength;
@@ -1176,12 +1178,20 @@ void GL_SetModelView(GLint w, GLint h)
 
 	screen_texsizew = screen_texsizeh = 512;
 
-	// look for power of two that is large enough for the screen
-	while (screen_texsizew < w)
-		screen_texsizew <<= 1;
+	if (supportNPO2tex)
+	{
+		screen_texsizew = screen_width;
+		screen_texsizeh = screen_height;
+	}
+	else
+	{
+		// look for power of two that is large enough for the screen
+		while (screen_texsizew < w)
+			screen_texsizew <<= 1;
 
-	while (screen_texsizeh < h)
-		screen_texsizeh <<= 1;
+		while (screen_texsizeh < h)
+			screen_texsizeh <<= 1;
+	}
 
 	pglGetIntegerv(GL_MAX_TEXTURE_SIZE, &maxtexsize); // Get the maximum supported texture size
 	if ((screen_texsizew > maxtexsize || screen_texsizeh > maxtexsize) && maxtexsize > 0)
@@ -1489,14 +1499,14 @@ void GL_ReadScreenTexture(int tex, UINT8 *restrict dest, INT32 scale)
 // -----------------+
 void GL_SetPalette(RGBA_t *palette)
 {
-	INT32 i;
+	const size_t palsize = (sizeof(RGBA_t) * 256);
 
-	for (i = 0; i < 256; i++)
+	// on a palette change, you have to reload all of the textures
+	if (memcmp(myPaletteData, palette, palsize))
 	{
-		myPaletteData[i].s = palette[i].s;
+		memcpy(myPaletteData, palette, palsize);
+		GL_Flush();
 	}
-
-	GL_Flush();
 }
 
 // -----------------+
@@ -1814,47 +1824,72 @@ static void GL_AllocTextureBuffer(GLMipmap_t *pTexInfo)
 	}
 }
 
-#define PADDING_CHECK(offset, alphaCheck) { from = to + (offset); if ((alphaCheck)) from = NULL; else goto foundFrom; }
-
-static void PadRGBABitmap(RGBA_t *tex, UINT16 w, UINT16 h)
+static void PadRGBABitmap(RGBA_t *tex, UINT16 w, UINT16 h, UINT32 flags)
 {
-	INT32 i;
-	boolean notLeft, notRight, notTop, notBottom;
-	RGBA_t *to = tex - 1, *from;
+	INT32 i, c1, c2, idxAdd;
+	UINT16 c1size, c2size;
+	RGBA_t *current, *prev, *next, *first;
+	boolean ignorePrev, wrap;
 
-	for (i = 0; i < w * h; i++)
+	for (i = 0; i < 2; i++)
 	{
-		to++;
-		if (to->rgba != 0)
-			continue;
-		from = NULL;
+		c1size = i ? h : w;
+		c2size = i ? w : h;
+		idxAdd = i ? 1 : w;
+		wrap = i ? flags & TF_WRAPX : flags & TF_WRAPY;
 
-		notLeft = i % w != 0;
-		notRight = i % w != w - 1;
-		notTop = i / w != 0;
-		notBottom = i / w != h - 1;
-
-		if (notRight) PADDING_CHECK(1, from->s.alpha == 0) // Check +X
-		if (notBottom) PADDING_CHECK(w, from->s.alpha == 0) // Check +Y
-		if (notLeft) PADDING_CHECK(-1, from->s.alpha == 0) // Check -X
-		if (notTop) PADDING_CHECK(-w, from->s.alpha == 0) // Check -Y
-		if (notRight && notBottom) PADDING_CHECK(1 + w, from->s.alpha == 0) // Check +X+Y
-		if (notLeft && notBottom) PADDING_CHECK(-1 + w, from->s.alpha == 0) // Check -X+Y
-		if (notLeft && notTop) PADDING_CHECK(-1 - w, from->s.alpha == 0) // Check -X-Y
-		if (notRight && notTop) PADDING_CHECK(1 - w, from->s.alpha == 0) // Check +X-Y
-
-foundFrom:
-		if (from != NULL)
+		for (c1 = 0; c1 < c1size; c1++)
 		{
-			*to = *from;
-			to->s.alpha = 0;
+			if (i)
+			{
+				first = current = tex + (c1 * w);
+				prev = wrap ? tex + (w - 1 + c1 * w) : current;
+				next = tex + (1 + c1 * w);
+			}
+			else
+			{
+				first = current = tex + c1;
+				prev = wrap ? tex + (c1 + (h - 1) * w) : current;
+				next = tex + (c1 + w);
+			}
+
+			ignorePrev = false;
+
+			for (c2 = 0; c2 < c2size; c2++)
+			{
+				if (c2 == c2size - 1)
+					next = wrap ? first : current;
+
+				if (current->rgba)
+				{
+					ignorePrev = false;
+				}
+				else if (prev->rgba && !ignorePrev)
+				{
+					*current = *prev;
+					current->s.alpha = 0;
+					ignorePrev = true;
+				}
+				else if (next->rgba)
+				{
+					*current = *next;
+					current->s.alpha = 0;
+					ignorePrev = false;
+				}
+				else
+				{
+					ignorePrev = false;
+				}
+
+				prev = current;
+				current = next;
+				next += idxAdd;
+			}
 		}
 	}
 }
 
-#undef PADDING_CHECK
-
-static void GenerateMipmaps(INT32 w, INT32 h, RGBA_t *tex, INT32 maxLOD)
+static void GenerateMipmaps(INT32 w, INT32 h, RGBA_t *tex, INT32 maxLOD, UINT32 flags)
 {
 	if (tex == NULL)
 	{
@@ -1916,7 +1951,7 @@ static void GenerateMipmaps(INT32 w, INT32 h, RGBA_t *tex, INT32 maxLOD)
 		h /= 2;
 
 		if (padTexture)
-			PadRGBABitmap(tex, w, h);
+			PadRGBABitmap(tex, w, h, flags);
 
 		pglTexSubImage2D(GL_TEXTURE_2D, m + 1, 0, 0, w, h, GL_RGBA, GL_UNSIGNED_BYTE, tex);
 	}
@@ -1970,7 +2005,7 @@ void GL_UpdateTexture(GLMipmap_t *pTexInfo)
 				{
 					if (chromakeyed && (*pImgData == HWR_PATCHES_CHROMAKEY_COLORINDEX))
 					{
-						tex[idx].s = (byteColor_t){0, 0, 0, 0};
+						memset(&tex[idx].s, 0, sizeof(byteColor_t));
 						pTexInfo->flags |= TF_TRANSPARENT; // there is a hole in it
 					}
 					else
@@ -1982,16 +2017,15 @@ void GL_UpdateTexture(GLMipmap_t *pTexInfo)
 
 					if (texinfoformat != GL_TEXFMT_AP_88)
 						continue;
-					if (chromakeyed)
-						continue;
 
-					tex[idx].s.alpha = *pImgData;
+					if (!chromakeyed)
+						tex[idx].s.alpha = *pImgData;
 					pImgData++;
 				}
 			}
 
 			if (applyPadding)
-				PadRGBABitmap(tex, w, h);
+				PadRGBABitmap(tex, w, h, pTexInfo->flags);
 
 			break;
 		case GL_TEXFMT_RGBA:
@@ -2007,7 +2041,7 @@ void GL_UpdateTexture(GLMipmap_t *pTexInfo)
 				ptex = tex;
 
 				if (applyPadding)
-					PadRGBABitmap(tex, w, h);
+					PadRGBABitmap(tex, w, h, pTexInfo->flags);
 			}
 
 			break;
@@ -2020,9 +2054,9 @@ void GL_UpdateTexture(GLMipmap_t *pTexInfo)
 			{
 				for (i = 0; i < w; i++, idx++)
 				{
-					tex[idx].s.red   = *pImgData;
-					tex[idx].s.green = *pImgData;
-					tex[idx].s.blue  = *pImgData;
+					tex[idx].s.red =
+					tex[idx].s.green =
+					tex[idx].s.blue = *pImgData;
 					pImgData++;
 					tex[idx].s.alpha = *pImgData;
 					pImgData++;
@@ -2052,21 +2086,10 @@ void GL_UpdateTexture(GLMipmap_t *pTexInfo)
 	pglBindTexture(GL_TEXTURE_2D, num);
 	tex_downloaded = num;
 
-	const int transparent = (pTexInfo->flags & TF_TRANSPARENT);
+	pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, mag_filter);
+	pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, min_filter);
 
-	// disable texture filtering on any texture that has holes so there's no dumb borders or blending issues
-	if (transparent)
-	{
-		pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-		pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	}
-	else
-	{
-		pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, mag_filter);
-		pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, min_filter);
-	}
-
-	if (MipMap && !transparent) // No mipmaps on transparent stuff
+	if (MipMap)
 	{
 		pglTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, GL_TRUE);
 
@@ -2077,8 +2100,16 @@ void GL_UpdateTexture(GLMipmap_t *pTexInfo)
 
 		// Control the mipmap level of detail
 		pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_LOD, 0);
-		pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LOD, 5);
-		GenerateMipmaps(w, h, tex, 5);
+
+		if (pTexInfo->flags & TF_TRANSPARENT)
+		{
+			pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LOD, 0); // No mipmaps on transparent stuff
+		}
+		else
+		{
+			pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LOD, 4);
+			GenerateMipmaps(w, h, tex, 4, pTexInfo->flags);
+		}
 	}
 	else
 	{
@@ -2459,12 +2490,10 @@ void GL_DrawIndexedTriangles(FSurfaceInfo *pSurf, FOutVector *pOutVerts, FUINT i
 	// the DrawPolygon variant of this has some code about polyflags and wrapping here but havent noticed any problems from omitting it?
 }
 
-static const boolean gl_ext_arb_vertex_buffer_object = true;
-
-#define NULL_VBO_VERTEX ((gl_skyvertex_t*)NULL)
-#define sky_vbo_x (gl_ext_arb_vertex_buffer_object ? &NULL_VBO_VERTEX->x : &sky->data[0].x)
-#define sky_vbo_u (gl_ext_arb_vertex_buffer_object ? &NULL_VBO_VERTEX->u : &sky->data[0].u)
-#define sky_vbo_r (gl_ext_arb_vertex_buffer_object ? &NULL_VBO_VERTEX->r : &sky->data[0].r)
+//#define NULL_VBO_VERTEX ((gl_skyvertex_t*)NULL)
+#define sky_vbo_x ((void*)offsetof(gl_skyvertex_t, x))
+#define sky_vbo_u ((void*)offsetof(gl_skyvertex_t, u))
+#define sky_vbo_r ((void*)offsetof(gl_skyvertex_t, r))
 
 void GL_RenderSkyDome(gl_sky_t *sky)
 {
@@ -2476,30 +2505,23 @@ void GL_RenderSkyDome(gl_sky_t *sky)
 	if (sky->rebuild)
 	{
 		// delete VBO when already exists
-		if (gl_ext_arb_vertex_buffer_object)
-		{
-			if (sky->vbo)
-				pglDeleteBuffers(1, &sky->vbo);
-		}
+		if (sky->vbo)
+			pglDeleteBuffers(1, &sky->vbo);
 
-		if (gl_ext_arb_vertex_buffer_object)
-		{
-			// generate a new VBO and get the associated ID
-			pglGenBuffers(1, &sky->vbo);
+		// generate a new VBO and get the associated ID
+		pglGenBuffers(1, &sky->vbo);
 
-			// bind VBO in order to use
-			pglBindBuffer(GL_ARRAY_BUFFER, sky->vbo);
+		// bind VBO in order to use
+		pglBindBuffer(GL_ARRAY_BUFFER, sky->vbo);
 
-			// upload data to VBO
-			pglBufferData(GL_ARRAY_BUFFER, sky->vertex_count * sizeof(sky->data[0]), sky->data, GL_STATIC_DRAW);
-		}
+		// upload data to VBO
+		pglBufferData(GL_ARRAY_BUFFER, sky->vertex_count * sizeof(sky->data[0]), sky->data, GL_STATIC_DRAW);
 
 		sky->rebuild = false;
 	}
 
 	// bind VBO in order to use
-	if (gl_ext_arb_vertex_buffer_object)
-		pglBindBuffer(GL_ARRAY_BUFFER, sky->vbo);
+	pglBindBuffer(GL_ARRAY_BUFFER, sky->vbo);
 
 	// activate and specify pointers to arrays
 	pglVertexPointer(3, GL_FLOAT, sizeof(sky->data[0]), sky_vbo_x);
@@ -2543,8 +2565,7 @@ void GL_RenderSkyDome(gl_sky_t *sky)
 	pglColor4ubv(white);
 
 	// bind with 0, so, switch back to normal pointer operation
-	if (gl_ext_arb_vertex_buffer_object)
-		pglBindBuffer(GL_ARRAY_BUFFER, 0);
+	pglBindBuffer(GL_ARRAY_BUFFER, 0);
 
 	// deactivate color array
 	pglDisableClientState(GL_COLOR_ARRAY);
@@ -3166,7 +3187,8 @@ void GL_SetTransform(FTransform *stransform)
 	{
 		float dy = stransform->viewaiming * 2;
 
-		if (stransform->fliptype == TRANSFORM_FLIP || stransform->fliptype == TRANSFORM_MIRRORFLIP)
+		if (stransform->fliptype == TRANSFORM_FLIP
+			|| stransform->fliptype == TRANSFORM_MIRRORFLIP)
 			dy *= -1.0f;
 
 		pglTranslatef(0.0f, -dy/BASEVIDHEIGHT, 0.0f);
@@ -3692,7 +3714,6 @@ void GL_DrawScreenFinalTexture(int tex, INT32 width, INT32 height, boolean usesh
 	float xfix, yfix;
 	float origaspect, newaspect;
 	float xoff = 1, yoff = 1; // xoffset and yoffset for the polygon to have black bars around the screen
-	FRGBAFloat clearColour;
 
 	static float off[12];
 	static float fix[8];
@@ -3743,8 +3764,7 @@ void GL_DrawScreenFinalTexture(int tex, INT32 width, INT32 height, boolean usesh
 
 	pglViewport(0, 0, width, height);
 
-	clearColour.red = clearColour.green = clearColour.blue = 0;
-	clearColour.alpha = 1;
+	FRGBAFloat clearColour = {0, 0, 0, 1};
 	GL_ClearBuffer(true, false, false, &clearColour);
 	GL_SetBlend(PF_NoDepthTest);
 

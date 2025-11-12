@@ -61,13 +61,13 @@ tic_t directortoggletimer = 0;
 // STATUS BAR DATA
 //
 
-patch_t *facerankprefix[MAXSKINS]; // ranking
-patch_t *facewantprefix[MAXSKINS]; // wanted
-patch_t *facemmapprefix[MAXSKINS]; // minimap
+patch_t *facerankprefix[MAXSKINS] = {}; // ranking
+patch_t *facewantprefix[MAXSKINS] = {}; // wanted
+patch_t *facemmapprefix[MAXSKINS] = {}; // minimap
 
-patch_t *localfacerankprefix[MAXLOCALSKINS]; // ranking
-patch_t *localfacewantprefix[MAXLOCALSKINS]; // wanted
-patch_t *localfacemmapprefix[MAXLOCALSKINS]; // minimap
+patch_t *localfacerankprefix[MAXLOCALSKINS] = {}; // ranking
+patch_t *localfacewantprefix[MAXLOCALSKINS] = {}; // wanted
+patch_t *localfacemmapprefix[MAXLOCALSKINS] = {}; // minimap
 
 /*char *facerankprefix_name[MAXSKINS]; // ranking
 char *facewantprefix_name[MAXSKINS]; // wanted
@@ -91,8 +91,8 @@ static patch_t *envelope;
 #endif
 
 // current player for overlay drawing
-player_t *stplyr;
-UINT8 stplyrnum;
+player_t *stplyr = NULL;
+UINT8 stplyrnum = 0;
 
 // SRB2kart
 
@@ -342,7 +342,7 @@ void ST_changeDemoView(void)
 //                         STATUS BAR OVERLAY
 // =========================================================================
 
-boolean st_overlay;
+boolean st_overlay = true;
 
 // =========================================================================
 //                          INTERNAL DRAWING
@@ -790,7 +790,7 @@ void ST_Drawer(void)
 			LUA_HUD_DrawList(luahuddrawlist_game[i]);
 
 		// draw Midnight Channel's overlay ontop
-		if (mapheaderinfo[gamemap-1]->typeoflevel & TOL_TV)	// Very specific Midnight Channel stuff.
+		if (mapheaderinfo[gamemap-1]->typeoflevel & TOL_TV) // Very specific Midnight Channel stuff.
 			ST_MayonakaStatic();
 	}
 
@@ -798,7 +798,7 @@ void ST_Drawer(void)
 	if (timeinmap < 15)
 	{
 		if (timeinmap <= 5)
-			V_DrawFill(0,0,BASEVIDWIDTH,BASEVIDHEIGHT,120); // Pure white on first few frames, to hide SRB2's awful level load artifacts
+			V_DrawFill(0, 0, BASEVIDWIDTH, BASEVIDHEIGHT, 120); // Pure white on first few frames, to hide SRB2's awful level load artifacts
 		else
 			V_DrawFadeScreen(120, 15-timeinmap); // Then gradually fade out from there
 	}

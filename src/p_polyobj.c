@@ -90,14 +90,14 @@
 //
 
 // The Polyobjects
-polyobj_t *PolyObjects;
-INT32 numPolyObjects;
+polyobj_t *PolyObjects = NULL;
+INT32 numPolyObjects = 0;
 
 // Polyobject Blockmap -- initialized in P_LoadBlockMap
-polymaplink_t **polyblocklinks;
+polymaplink_t **polyblocklinks = NULL;
 
-static size_t *KnownPolySides;
-static size_t KnownPolySidesCount;
+static size_t *KnownPolySides = NULL;
+static size_t KnownPolySidesCount = 0;
 
 //
 // Static Data

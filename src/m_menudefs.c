@@ -645,10 +645,20 @@ static menuitem_t OP_ControlsMenu[] =
 	{IT_CALL | IT_STRING, NULL, "Player 3 Controls...", &M_Setup3PControlsMenu, 30},
 	{IT_CALL | IT_STRING, NULL, "Player 4 Controls...", &M_Setup4PControlsMenu, 40},
 
-	{IT_SUBMENU | IT_STRING, NULL, "Mouse Options...", &OP_MouseOptionsDef,     60},
+	{IT_SUBMENU | IT_STRING, NULL, "Mouse Options...",  &OP_MouseOptionsDef,    55},
 
-	{IT_STRING | IT_CVAR, NULL, "Controls per key",    &cv_controlperkey,       80},
-	{IT_STRING | IT_CVAR, NULL, "Digital turn easing", &cv_turnsmooth,          90},
+	{IT_STRING | IT_CVAR, NULL, "Controls per key",     &cv_controlperkey,      75},
+
+	{IT_STRING | IT_CVAR, NULL, "Digital turn easing (P1)",  &cv_turnsmooth[0],         85},
+	{IT_STRING | IT_CVAR, NULL, "Digital turn easing (P2)",  &cv_turnsmooth[1],         95},
+	{IT_STRING | IT_CVAR, NULL, "Digital turn easing (P3)",  &cv_turnsmooth[2],         105},
+	{IT_STRING | IT_CVAR, NULL, "Digital turn easing (P4)",  &cv_turnsmooth[3],         115},
+
+	// i hate our menus sincerly
+	{IT_STRING | IT_CVAR, NULL, "Lite Steer (P1)",      &cv_litesteer[0],       135},
+	{IT_STRING | IT_CVAR, NULL, "Lite Steer (P2)",      &cv_litesteer[1],       145},
+	{IT_STRING | IT_CVAR, NULL, "Lite Steer (P3)",      &cv_litesteer[2],       155},
+	{IT_STRING | IT_CVAR, NULL, "Lite Steer (P4)",      &cv_litesteer[3],       165},
 };
 
 static const char* OP_ControlsTooltips[] =
@@ -659,7 +669,15 @@ static const char* OP_ControlsTooltips[] =
 	"Setup player 4 controls.",
 	"Options for mouse control.",
 	"Allowed amount of controls per key.",
-	"Turn smoothing for non-analog turning.",
+	"Turn smoothing for non-analog turning (Player 1).",
+	"Turn smoothing for non-analog turning (Player 2).",
+	"Turn smoothing for non-analog turning (Player 3).",
+	"Turn smoothing for non-analog turning (Player 4).",
+
+	"Hold DOWN on d-pad/keyboard for shallow turns (Player 1).",
+	"Hold DOWN on d-pad/keyboard for shallow turns (Player 2).",
+	"Hold DOWN on d-pad/keyboard for shallow turns (Player 3).",
+	"Hold DOWN on d-pad/keyboard for shallow turns (Player 4).",
 };
 
 static menuitem_t OP_AllControlsMenu[] =
@@ -800,26 +818,31 @@ static menuitem_t OP_VideoOptionsMenu[] =
 #if defined (__unix__) || defined (UNIXCOMMON) || defined (HAVE_SDL)
 	{IT_STRING|IT_CVAR,		NULL,	"Fullscreen",				  &cv_fullscreen,		  20},
 #endif
+#ifdef BACKWARDSCOMPATCORRECTION
 	{IT_STRING | IT_CVAR | IT_CV_SLIDER,
-							NULL,	"Brightness",				  &cv_globalgamma,		  30},
-
-	{IT_STRING | IT_CVAR | IT_CV_SLIDER,
-	                        NULL, 	"Saturation",      			  &cv_globalsaturation ,  40},
-
-	{IT_SUBMENU|IT_STRING, NULL, 	"Advanced Color Settings...", &OP_ColorOptionsDef,    50},
-
-	{IT_STRING | IT_CVAR,	NULL,	"Draw Distance",			  &cv_drawdist,			  65},
-	{IT_STRING | IT_CVAR,	NULL,	"Weather Draw Distance",	  &cv_drawdist_precip,	  75},
-
-	{IT_STRING | IT_CVAR,	NULL,	"Show FPS",					  &cv_ticrate,			  95},
-	{IT_STRING | IT_CVAR,	NULL,	"Vertical Sync",			  &cv_vidwait,			 105},
-	{IT_STRING | IT_CVAR,   NULL,   "FPS Cap",              	  &cv_fpscap,            115},
-	{IT_STRING | IT_CVAR,   NULL,   "Drift spark pulse size",	  &cv_driftsparkpulse,   125},
-	{IT_STRING | IT_CVAR, 	NULL, 	"VHS effect", 				  &cv_vhseffect, 		 135},
-#ifdef HWRENDER
-	{IT_SUBMENU|IT_STRING,	NULL,	"OpenGL Options...",		  &OP_OpenGLOptionsDef,	 145},
+							NULL,	"Gamma",				  	  &cv_globalgamma,		  30},
 #endif
-	{IT_SUBMENU|IT_STRING,  NULL,   "Advanced Video Options...",  &OP_ExpOptionsDef,     155},
+
+	{IT_STRING | IT_CVAR | IT_CV_SLIDER,
+							NULL,	"Brightness",				  &cv_globalbrightness,	  40},
+
+	{IT_STRING | IT_CVAR | IT_CV_SLIDER,
+	                        NULL, 	"Saturation",      			  &cv_globalsaturation ,  50},
+
+	{IT_SUBMENU|IT_STRING, NULL, 	"Advanced Color Settings...", &OP_ColorOptionsDef,    60},
+
+	{IT_STRING | IT_CVAR,	NULL,	"Draw Distance",			  &cv_drawdist,			  75},
+	{IT_STRING | IT_CVAR,	NULL,	"Weather Draw Distance",	  &cv_drawdist_precip,	  85},
+
+	{IT_STRING | IT_CVAR,	NULL,	"Show FPS",					  &cv_ticrate,			 105},
+	{IT_STRING | IT_CVAR,	NULL,	"Vertical Sync",			  &cv_vidwait,			 115},
+	{IT_STRING | IT_CVAR,   NULL,   "FPS Cap",              	  &cv_fpscap,            125},
+	{IT_STRING | IT_CVAR,   NULL,   "Drift spark pulse size",	  &cv_driftsparkpulse,   135},
+	{IT_STRING | IT_CVAR, 	NULL, 	"VHS effect", 				  &cv_vhseffect, 		 145},
+#ifdef HWRENDER
+	{IT_SUBMENU|IT_STRING,	NULL,	"OpenGL Options...",		  &OP_OpenGLOptionsDef,	 155},
+#endif
+	{IT_SUBMENU|IT_STRING,  NULL,   "Advanced Video Options...",  &OP_ExpOptionsDef,     165},
 };
 
 static const char* OP_VideoTooltips[] =
@@ -828,11 +851,12 @@ static const char* OP_VideoTooltips[] =
 #if defined (__unix__) || defined (UNIXCOMMON) || defined (HAVE_SDL)
 	"Enable fullscreen.",
 #endif
-	"Gamma (brightness) of the game.",
-	"Saturation of the game.",
+	"Increase the gamma of the displayed image.",
+	"Increase or decrease the brightness of the displayed image.",
+	"Reduce the saturation of the displayed image.",
 	"Advanced color settings of the game.",
-	"How far away objects are drawn.",
-	"How far away weather is drawn.",
+	"How far objects can be drawn.",
+	"Affects how far weather visuals can be drawn.",
 	"Show current game framerate and select the style.",
 	"Sync game framerate to refresh rate of monitor.",
 	"Set manual framerate cap.",
@@ -851,7 +875,10 @@ enum
 #if defined (__unix__) || defined (UNIXCOMMON) || defined (HAVE_SDL)
 	op_video_fullscreen,
 #endif
+#ifdef BACKWARDSCOMPATCORRECTION
 	op_video_gamma,
+#endif
+	op_video_bright,
 	op_video_sat,
 	op_video_color,
 	op_video_dd,
@@ -880,37 +907,37 @@ static menuitem_t OP_ColorOptionsMenu[] =
 	{IT_DISABLED, NULL, NULL, NULL, 35},
 	{IT_STRING | IT_CVAR | IT_CV_SLIDER, NULL, "Hue",          &cv_rhue,         15},
 	{IT_STRING | IT_CVAR | IT_CV_SLIDER, NULL, "Saturation",   &cv_rsaturation,  20},
-	{IT_STRING | IT_CVAR | IT_CV_SLIDER, NULL, "Brightness",   &cv_rgamma,       25},
+	{IT_STRING | IT_CVAR | IT_CV_SLIDER, NULL, "Brightness",   &cv_rbrightness,       25},
 
 	{IT_HEADER, NULL, "Yellow", NULL, 34},
 	{IT_DISABLED, NULL, NULL, NULL, 73},
 	{IT_STRING | IT_CVAR | IT_CV_SLIDER, NULL, "Hue",          &cv_yhue,         40},
 	{IT_STRING | IT_CVAR | IT_CV_SLIDER, NULL, "Saturation",   &cv_ysaturation,  45},
-	{IT_STRING | IT_CVAR | IT_CV_SLIDER, NULL, "Brightness",   &cv_ygamma,       50},
+	{IT_STRING | IT_CVAR | IT_CV_SLIDER, NULL, "Brightness",   &cv_ybrightness,       50},
 
 	{IT_HEADER, NULL, "Green", NULL, 59},
 	{IT_DISABLED, NULL, NULL, NULL, 112},
 	{IT_STRING | IT_CVAR | IT_CV_SLIDER, NULL, "Hue",          &cv_ghue,         65},
 	{IT_STRING | IT_CVAR | IT_CV_SLIDER, NULL, "Saturation",   &cv_gsaturation,  70},
-	{IT_STRING | IT_CVAR | IT_CV_SLIDER, NULL, "Brightness",   &cv_ggamma,       75},
+	{IT_STRING | IT_CVAR | IT_CV_SLIDER, NULL, "Brightness",   &cv_gbrightness,       75},
 
 	{IT_HEADER, NULL, "Cyan", NULL, 84},
 	{IT_DISABLED, NULL, NULL, NULL, 255},
 	{IT_STRING | IT_CVAR | IT_CV_SLIDER, NULL, "Hue",          &cv_chue,         90},
 	{IT_STRING | IT_CVAR | IT_CV_SLIDER, NULL, "Saturation",   &cv_csaturation,  95},
-	{IT_STRING | IT_CVAR | IT_CV_SLIDER, NULL, "Brightness",   &cv_cgamma,      100},
+	{IT_STRING | IT_CVAR | IT_CV_SLIDER, NULL, "Brightness",   &cv_cbrightness,      100},
 
 	{IT_HEADER, NULL, "Blue", NULL, 109},
 	{IT_DISABLED, NULL, NULL, NULL, 152},
 	{IT_STRING | IT_CVAR | IT_CV_SLIDER, NULL, "Hue",          &cv_bhue,        115},
 	{IT_STRING | IT_CVAR | IT_CV_SLIDER, NULL, "Saturation",   &cv_bsaturation, 120},
-	{IT_STRING | IT_CVAR | IT_CV_SLIDER, NULL, "Brightness",   &cv_bgamma,      125},
+	{IT_STRING | IT_CVAR | IT_CV_SLIDER, NULL, "Brightness",   &cv_bbrightness,      125},
 
 	{IT_HEADER, NULL, "Magenta", NULL, 134},
 	{IT_DISABLED, NULL, NULL, NULL, 181},
 	{IT_STRING | IT_CVAR | IT_CV_SLIDER, NULL, "Hue",          &cv_mhue,        140},
 	{IT_STRING | IT_CVAR | IT_CV_SLIDER, NULL, "Saturation",   &cv_msaturation, 145},
-	{IT_STRING | IT_CVAR | IT_CV_SLIDER, NULL, "Brightness",   &cv_mgamma,      150},
+	{IT_STRING | IT_CVAR | IT_CV_SLIDER, NULL, "Brightness",   &cv_mbrightness,      150},
 };
 
 static menuitem_t OP_ExpOptionsMenu[] =
@@ -926,21 +953,23 @@ static menuitem_t OP_ExpOptionsMenu[] =
 
 	{IT_STRING | IT_CVAR,	NULL, "Skyboxes",						&cv_skybox,				 	 40},
 
-	{IT_STRING | IT_CVAR,	NULL, "FPS counter sampling",			&cv_accuratefps,			 50},
+	{IT_STRING | IT_CVAR,	NULL, "Precache Level Textures",		&cv_precachetextures,		 50},
 
-	{IT_STRING | IT_CVAR,	NULL, "Frameskip",						&cv_frameskip,			 	 60},
+	{IT_STRING | IT_CVAR,	NULL, "FPS counter sampling",			&cv_accuratefps,			 60},
 
-	{IT_STRING | IT_CVAR,	NULL, "Votescreen Scaling",				&cv_votebgscaling,			 70},
+	{IT_STRING | IT_CVAR,	NULL, "Frameskip",						&cv_frameskip,			 	 70},
+
+	{IT_STRING | IT_CVAR,	NULL, "Votescreen Scaling",				&cv_votebgscaling,			 80},
 
 #ifdef HWRENDER
-	{IT_STRING | IT_CVAR, 	NULL, "Screen Textures", 				&cv_glscreentextures, 		 80},
+	{IT_STRING | IT_CVAR, 	NULL, "Screen Textures", 				&cv_glscreentextures, 		 90},
 #ifdef USE_FBO_OGL
-	{IT_STRING | IT_CVAR, 	NULL, "FBO Downsampling support", 		&cv_glframebuffer, 			 85},
-	{IT_STRING | IT_CVAR, 	NULL, "Palette Depth", 					&cv_glpalettedepth, 		 95},
-	{IT_DISABLED, 			NULL, "", 								NULL,     			 		105}, // dummy text
+	{IT_STRING | IT_CVAR, 	NULL, "FBO Downsampling support", 		&cv_glframebuffer, 			 95},
+	{IT_STRING | IT_CVAR, 	NULL, "Palette Depth", 					&cv_glpalettedepth, 		105},
+	{IT_DISABLED, 			NULL, "", 								NULL,     			 		115}, // dummy text
 #else
-	{IT_STRING | IT_CVAR, 	NULL, "Palette Depth", 					&cv_glpalettedepth, 		 90},
-	{IT_DISABLED, 			NULL, "", 								NULL,     			 		100}, // dummy text
+	{IT_STRING | IT_CVAR, 	NULL, "Palette Depth", 					&cv_glpalettedepth, 		100},
+	{IT_DISABLED, 			NULL, "", 								NULL,     			 		110}, // dummy text
 #endif
 #endif
 };
@@ -950,16 +979,17 @@ static const char* OP_ExpTooltips[] =
 	NULL,
 	"How far Mobj interpolation should take effect.",
 	"When weather is on this will cut the object amount used in half.",
-	"Sets minimum sector brightness, useful for dark areas",
+	"Sets minimum sector brightness, useful for dark areas.",
 	//"Should the directional lightning be randomized each map?\nTakes effect on next map load.",
 	"Toggle being able to see the sky.",
-	"Change the FPS counter sampling method\nInaccurate updates slower and might miss frame drops and such\nAccurate updates faster and is more accurate, but might be less readable", // how to ingles??
-	"Skips rendering frames if game logic takes too long preventing issues during performance drops." // idk im shit as describing things
+	"Preload all level textures on level load.\nMassively reduces texture related stuttering during gameplay\nat the cost of longer level loading times.\nDisable this if you experience timeouts during level switches.",
+	"Change the FPS counter sampling method\nInaccurate updates slower\nand might miss sudden framerate changes and drops,\nproviding a more averaged result.\nAccurate updates faster, but might be less readable.", // how to ingles??
+	"Skips rendering frames if game logic takes too long\npreventing gameplay issues during performance drops.", // idk im shit as describing things
 	"Different methods of scaling the votescreen backgrounds.",
 #ifdef HWRENDER
 	"Should the game do Screen Textures? Provides a good boost to frames\nat the cost of some visual effects not working when disabled.",
 #ifdef USE_FBO_OGL
-	"Allows the game to downsample from a higher resolution than your display\nin OpenGL renderer mode. Requires a GPU with atleast OpenGL 3.0 support.",
+	"Allows the game to downsample from a higher resolution\nthan your display in OpenGL renderer mode.\nRequires a GPU with atleast OpenGL 2.1 support.",
 #endif
 	"Change the bit depth of the Lookup Palette in Palette rendering mode\n 16 bits is like software looks ingame\nwhile 24 bits is how software looks in screenshots.",
 #endif
@@ -973,6 +1003,7 @@ enum
 	op_exp_secbright,
 	//op_exp_dirlight,
 	op_exp_skybox,
+	op_exp_texcache,
 	op_exp_accuratefps,
 	op_exp_frameskip,
 	op_exp_votescrn,
@@ -1131,8 +1162,10 @@ static menuitem_t OP_SoundAdvancedMenu[] =
 	{IT_STRING | IT_CVAR, 	NULL, "Keep Map Music", 			&cv_keepmusic, 		 80},
 	{IT_STRING | IT_CVAR, 	NULL, "Skip Intro Music", 			&cv_skipintromusic,  85},
 
-	{IT_STRING | IT_CVAR, 	NULL, "Audio Buffer Size", 			&cv_audbuffersize,   90},
-	{IT_DISABLED, 			NULL, "", 							NULL,     			100},	// dummy text
+	{IT_STRING | IT_CVAR, 	NULL, "Cache Sound", 				&cv_cachesound,   90},
+
+	{IT_STRING | IT_CVAR, 	NULL, "Audio Buffer Size", 			&cv_audbuffersize,   95},
+	{IT_DISABLED, 			NULL, "", 							NULL,     			105},	// dummy text
 };
 
 static const char* OP_SoundAdvancedTooltips[] =
@@ -1153,7 +1186,10 @@ static const char* OP_SoundAdvancedTooltips[] =
 	"Should the Invulnerability music be on or off?",
 	"Should music be kept when restarting the map?",
 	"Should the Intro fanfare be skipped\nand map music be played on map start?",
+	"Controls Sound effects caching.\nKeep will retain previously played sound effects in cache." // man idk how to describe this in a non awful way lmao
+	"\nOn will preload all sound effects.\nEliminates sound-related lag and stutters but increases memory usage.",
 	"Size of the Audio Buffer\nreducing it will result in less sound latency\nbut may cause issues such as crackling or distorted Sound.",
+	NULL,
 };
 
 static menuitem_t OP_FocusOptionsMenu[] =
@@ -1357,15 +1393,15 @@ static menuitem_t OP_Player4CamOptionsMenu[] =
 static const char* OP_PlayerCamOptionsTooltips[] =
 {
 	NULL,
-	"Should the Camera flip on gravity flipped sections?.",
+	"Should the Camera flip on gravity flipped sections?",
 	"Camera distance relative to the Player.",
-	"Height of the Camera",
-	"Pitch Camera on Upwards or Downhill Slopes",
-	"Speed of the Camera",
-	"Should looking back inherit the Players Momentum?\nEither inherit Player Momentum or double of it\nmay make looking back while boosting or going in high speed less jarring",
+	"Height of the Camera.",
+	"Pitch Camera on Upwards or Downhill Slopes.",
+	"Speed of the Camera.",
+	"Should looking back inherit the Players Momentum?\nEither inherit Player Momentum or double of it\nmay make looking back while boosting or going in high speed less jarring.",
 	"Allows looking up/down by holding\naim forward/backward while standing still.",
-	"Speed of the Freecam/Spectator Camera",
-	"Toggle between Third or First Person camera",
+	"Speed of the Freecam/Spectator Camera.",
+	"Toggle between Third or First Person camera.",
 };
 
 // Ok it's still called chatoptions but we'll put ping display in here to be clean
@@ -1745,7 +1781,7 @@ static const char* OP_PlayerDistortTooltips[] =
 	"Distance object rotation should be visable.",
 	"Player rotation when sliptiding.",
 	"Rotation of a player's boost trails and drift sparks.",
-	"Should banans rotate when thrown?\nAnd should they stay rotated when on the ground?.",
+	"Should banans rotate when thrown?\nAnd should they stay rotated when on the ground?",
 	"Player squash and stretch.",
 	"Player landing sound effect.",
 	"Kart hopping while drifting. This is purely visual.",
@@ -2424,7 +2460,7 @@ menu_t OP_MainDef =
 	NULL
 };
 
-menu_t OP_ControlsDef     = DEFAULTMENUSTYLE("M_CONTRO", OP_ControlsMenu, &OP_MainDef, 60, 30, OP_ControlsTooltips);
+menu_t OP_ControlsDef     = DEFAULTMENUSTYLE("M_CONTRO", OP_ControlsMenu, &OP_MainDef, 40, 15, OP_ControlsTooltips);
 //WTF
 menu_t OP_MouseOptionsDef = DEFAULTMENUSTYLE("M_CONTRO", OP_MouseOptionsMenu, &OP_ControlsDef, 60, 30, OP_MouseTooltips);
 menu_t OP_AllControlsDef  = CONTROLMENUSTYLE(OP_AllControlsMenu, &OP_ControlsDef);

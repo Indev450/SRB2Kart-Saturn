@@ -145,19 +145,19 @@ I_mutex m_menu_mutex;
 
 M_waiting_mode_t m_waiting_mode = M_NOT_WAITING;
 
-const char *quitmsg[NUM_QUITMESSAGES];
+const char *quitmsg[NUM_QUITMESSAGES] = {};
 
 // Stuff for customizing the player select screen Tails 09-22-2003
-description_t description[MAXSKINS];
+description_t description[MAXSKINS] = {};
 
-INT32 mapwads[NUMMAPS];
+INT32 mapwads[NUMMAPS] = {};
 
 boolean browselocalskins = false;
 
 boolean menuactive = false;
 boolean fromlevelselect = false;
 
-char menu_text_input_buf[MAXSTRINGLENGTH];
+char menu_text_input_buf[MAXSTRINGLENGTH] = {};
 static textinput_t menuinput;
 
 static INT32 coolalphatimer = 9;
@@ -171,7 +171,6 @@ typedef enum
 } levellist_mode_t;
 
 levellist_mode_t levellistmode = LLM_CREATESERVER;
-UINT8 maplistoption = 0;
 
 static char joystickInfo[8][29];
 
@@ -180,10 +179,6 @@ static UINT32 oldserverlistpage;
 static float serverlistslidex;
 static INT32 serverlistsearched[MAXSERVERLIST] = {0};
 static UINT32 serverlistsearchedcount = 0;
-
-//static saveinfo_t savegameinfo[MAXSAVEGAMES]; // Extra info about the save games.
-
-INT16 startmap; // Mario, NiGHTS, or just a plain old normal game?
 
 static INT16 itemOn = 1; // menu item skull is on, Hack by Tails 09-18-2002
 static INT16 skullAnimCounter = 10; // skull animation counter
@@ -702,7 +697,13 @@ static void M_CheckStringItem(void)
 
 		// Just in case
 		memset(menu_text_input_buf, 0, sizeof menu_text_input_buf);
-		M_TextInputInit(&menuinput, menu_text_input_buf, sizeof menu_text_input_buf);
+
+		// special case: name input, cap it to prevent writing outside the textbox
+		// kinda ugly but itll work
+		if (cv == &cv_playername)
+			M_TextInputInit(&menuinput, menu_text_input_buf, MAXPLAYERNAME +1);
+		else
+			M_TextInputInit(&menuinput, menu_text_input_buf, sizeof menu_text_input_buf);
 
 		M_TextInputSetString(&menuinput, cv->string);
 	}
@@ -3107,7 +3108,7 @@ static void M_AddonsInternal(void)
 			break;
 	}
 
-	strlcpy(menupath, pathname, 1024);
+	strlcpy(menupath, pathname, MAXFILEPATH);
 	menupathindex[(menudepthleft = menudepth-1)] = strlen(menupath) + 1;
 
 	if (menupath[menupathindex[menudepthleft]-2] != PATHSEP[0])
@@ -3220,9 +3221,9 @@ static void M_DrawTemperature(INT32 x, fixed_t t)
 static char *M_AddonsHeaderPath(void)
 {
 	UINT32 len;
-	static char header[1024];
+	static char header[MAXFILEPATH];
 
-	strlcpy(header, va("%s folder%s", cv_addons_option.string, menupath+menupathindex[menudepth-1]-1), 1024);
+	strlcpy(header, va("%s folder%s", cv_addons_option.string, menupath+menupathindex[menudepth-1]-1), MAXFILEPATH);
 	len = strlen(header);
 	if (len > 34)
 	{
@@ -3713,10 +3714,10 @@ static void M_HandleAddons(INT32 choice)
 							break;
 						case EXT_TXT:
 						case EXT_CFG:
-							if ((strcmp(dirmenu[dir_on[menudepthleft]]+DIR_STRING, CONFIGFILENAME) == 0)
-								|| (strcmp(dirmenu[dir_on[menudepthleft]]+DIR_STRING, AUTOLOADCONFIGFILENAME) == 0)
-								|| (strcmp(dirmenu[dir_on[menudepthleft]]+DIR_STRING, "kartserv.cfg") == 0)
-								|| (strcmp(dirmenu[dir_on[menudepthleft]]+DIR_STRING, "kartexec.cfg") == 0))
+							if (fastcmp(dirmenu[dir_on[menudepthleft]]+DIR_STRING, CONFIGFILENAME)
+								|| fastcmp(dirmenu[dir_on[menudepthleft]]+DIR_STRING, AUTOLOADCONFIGFILENAME)
+								|| fastcmp(dirmenu[dir_on[menudepthleft]]+DIR_STRING, "kartserv.cfg")
+								|| fastcmp(dirmenu[dir_on[menudepthleft]]+DIR_STRING, "kartexec.cfg"))
 							{
 								M_StartMessage(va("%c%s\x80\nYou can't autoload this builds' base console scripts, silly!\n They're already autoloaded on startup! \n\n(Press a key)\n", ('\x80' + (highlightflags>>V_CHARCOLORSHIFT)), dirmenu[dir_on[menudepthleft]]+DIR_STRING),NULL,MM_NOTHING);
 								S_StartSound(NULL, sfx_s26d);
@@ -3824,7 +3825,7 @@ static void ReplayNamesLoadThread(void* userdata)
 
 	Lock_search_state();
 
-	if (strcmp(menupath, replaydirpath) == 0)
+	if (fastcmp(menupath, replaydirpath))
 	{
 		memcpy(demolist_all, demolist_all_local, sizeof(menudemo_t)*sizedirmenu);
 		replaynamesloaded = true;
@@ -3958,9 +3959,7 @@ static void PrepReplayList(boolean reset)
 
 	Lock_search_state();
 
-	if (demolist_all)
-		Z_Free(demolist_all);
-
+	Z_Free(demolist_all);
 	demolist_all = Z_Calloc(sizeof(menudemo_t) * sizedirmenu, PU_STATIC, NULL);
 
 	for (i = 0; i < sizedirmenu; i++)
@@ -3978,9 +3977,9 @@ static void PrepReplayList(boolean reset)
 		else
 		{
 			demolist_all[i].type = MD_NOTLOADED;
-			// FIXME - do something with buffer sizes. menupath is 1024 chars but filepath is only
-			// 256. I'm not really sure what to do here but don't want to leave warnings...
-			snprintf(demolist_all[i].filepath, 255, "%.254s%s", menupath, dirmenu[i] + DIR_STRING);
+			snprintf(demolist_all[i].filepath, sizeof(demolist_all[i].filepath),
+					 // 255 = UINT8 limit. dirmenu entries are restricted to this length (see DIR_LEN).
+					 "%s%.255s", menupath, dirmenu[i] + DIR_STRING);
 			sprintf(demolist_all[i].title, ".....");
 		}
 	}
@@ -4335,7 +4334,7 @@ static void DrawReplayHutReplayInfo(void)
 static void M_DrawReplayHut(void)
 {
 	INT32 x, y, cursory = 0;
-	INT16 i;
+	INT32 i;
 	INT16 replaylistitem = currentMenu->numitems-2;
 	boolean processed_one_this_frame = false;
 	const INT32 scaledviewheight = (vid.height/vid.dup);
@@ -4408,7 +4407,7 @@ static void M_DrawReplayHut(void)
 		V_DrawCenteredString(160, 100, V_ALLOWLOWERCASE, msg);
 	}
 
-	for (i = 0; i < (INT16)replayqueryfound; i++)
+	for (i = 0; i < (INT32)replayqueryfound; i++)
 	{
 		INT32 localy = y+i*10;
 		INT32 localx = x;
@@ -6952,9 +6951,9 @@ static void M_ConnectMenuModChecks(INT32 choice)
 	(void)choice;
 	// okay never mind we want to COMMUNICATE to the player pre-emptively instead of letting them try and then get confused when it doesn't work
 
-	if (modifiedgame || autoloaded)
+	if (modifiedgame)
 	{
-		M_StartMessage(M_GetText("You have addons loaded.\nYou won't be able to join netgames!\n\nTo play online, restart the game\nand don't load any addons.\nSRB2Kart will automatically add\neverything you need when you join.\n\n(Press a key)\n"),M_ConnectMenu,MM_EVENTHANDLER);
+		M_StartMessage("You have addons loaded.\nYou won't be able to join netgames!\n\nTo play online, restart the game\nand don't load any addons.\nSRB2Kart will automatically add\neverything you need when you join.\n\n(Press a key)\n", M_ConnectMenu, MM_EVENTHANDLER);
 		return;
 	}
 
@@ -7175,17 +7174,21 @@ static void M_DrawLevelSelectOnly(boolean leftfade, boolean rightfade)
 			namescroll = 0;
 		}
 
-		if (renderisnewtic) namescroll++;
+		if (renderisnewtic)
+			namescroll++;
 
 		char *addonname = wadfiles[mapwads[cv_nextmap.value-1]]->filename;
 		INT32 len;
 		INT32 charlimit = min((size_t)(21 + (dupadjust/5)), sizeof(namescrollbuf)-1);
+
 		nameonly(addonname);
 		len = strlen(addonname);
+
 		if (len > charlimit)
 			M_ScrollString(addonname, len, namescrollbuf, charlimit, namescroll);
 		else
-			strncpy(namescrollbuf, addonname, sizeof(namescrollbuf));
+			strncpy(namescrollbuf, addonname, sizeof(namescrollbuf) - 1);
+
 		V_DrawThinString(x+w+5, y+i-8, V_TRANSLUCENT|MENUCAPS, namescrollbuf); // variable reuse...
 	}
 
@@ -8275,12 +8278,12 @@ static void M_DrawSetupMultiPlayerMenu(void)
 
 	sprframe = &sprdef->spriteframes[frame];
 
-	//minenice's speen css, it's a piece of shit but hey
+	// minenice's speen css, it's a piece of shit but hey
 	speenframe = (I_GetTime()*cv_skinselectspin.value/TICRATE + 1)%8;
 
-	//this is a very shitty solution for checking if a sprite needs flipping
-	//but it works
-	if ((sprframe->lumppat[speenframe] == sprframe->lumppat[8-speenframe]) && (speenframe > 4))
+	// this is a very shitty solution for checking if a sprite needs flipping
+	// but it works
+	if ((speenframe > 4) && (sprframe->lumppat[speenframe] == sprframe->lumppat[8-speenframe]))
 		flags = V_FLIP; // This sprite is left/right flipped!
 
 	patch = (patch_t *)W_CachePatchNum(sprframe->lumppat[speenframe], PU_PATCH);
@@ -8800,7 +8803,7 @@ static boolean M_QuitMultiPlayerMenu(void)
 	size_t l;
 
 	// send name if changed
-	if (strcmp(setupm_name, setupm_cvname->string))
+	if (!fastcmp(setupm_name, setupm_cvname->string))
 	{
 		// remove trailing whitespaces
 		for (l= strlen(setupm_name)-1;
@@ -9461,7 +9464,7 @@ static void M_VideoModeMenu(INT32 choice)
 			// VESA mode, which is always a higher modenum
 			for (j = 0; j < vidm_nummodes; j++)
 			{
-				if (!strcmp(modedescs[j].desc, desc))
+				if (fastcmp(modedescs[j].desc, desc))
 				{
 					// mode(0): 320x200 is always standard VGA, not vesa
 					if (modedescs[j].modenum)
@@ -9635,7 +9638,7 @@ static void M_DrawLocalSkinMenu(void)
 
 	//this is a very shitty solution for checking if a sprite needs flipping
 	//but it works
-	if ((sprframe->lumppat[speenframe] == sprframe->lumppat[8-speenframe]) && (speenframe > 4))
+	if ((speenframe > 4) && (sprframe->lumppat[speenframe] == sprframe->lumppat[8-speenframe]))
 	{
 		flags = V_FLIP; // This sprite is left/right flipped!
 	}
@@ -10334,9 +10337,9 @@ static const char *M_GetDiscordName(discordRequest_t *r)
 		return "";
 
 	if (cv_discordstreamer.value)
-		return r->username;
+		return DRPC_HideUsername(r->username);
 
-	return va("%s#%s", r->username, r->discriminator);
+	return r->username;
 }
 
 // (this goes in k_hud.c when merged into v2)

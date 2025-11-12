@@ -43,13 +43,6 @@
 #define MINZ (FRACUNIT*16)
 #define BASEYCENTER (BASEVIDHEIGHT/2)
 
-typedef struct
-{
-	INT32 x1, x2;
-	INT32 column;
-	INT32 topclip, bottomclip;
-} maskdraw_t;
-
 //
 // Sprite rotation 0 is facing the viewer,
 //  rotation 1 is one angle turn CLOCKWISE around the axis.
@@ -60,8 +53,8 @@ typedef struct
 static lighttable_t **spritelights;
 
 // constant arrays used for psprite clipping and initializing clipping
-INT16 *negonearray;
-INT16 *screenheightarray;
+INT16 *negonearray = NULL;
+INT16 *screenheightarray = NULL;
 
 //
 // INITIALIZATION FUNCTIONS
@@ -102,15 +95,15 @@ static INT32 drawsegs_xrange_count = 0;
 // There was a lot of stuff grabbed wrong, so I changed it...
 //
 
-spriteinfo_t spriteinfo[NUMSPRITES];
+spriteinfo_t spriteinfo[NUMSPRITES] = {};
 
 //
 // INITIALIZATION FUNCTIONS
 //
 
 // variables used to look up and range check thing_t sprites patches
-spritedef_t *sprites;
-size_t numsprites;
+spritedef_t *sprites = NULL;
+size_t numsprites = 0;
 
 static spriteframe_t sprtemp[64];
 static size_t maxframe;
@@ -119,7 +112,7 @@ static const char *spritename;
 //
 // GAME FUNCTIONS
 //
-UINT32 visspritecount, numvisiblesprites;
+UINT32 visspritecount = 0, numvisiblesprites = 0;
 
 static UINT32 clippedvissprites;
 static vissprite_t *visspritechunks[MAXVISSPRITES >> VISSPRITECHUNKBITS] = {NULL};
@@ -274,7 +267,7 @@ boolean R_AddSingleSpriteDef(const char *sprname, spritedef_t *spritedef, UINT16
 	if (spritedef->numframes) // (then spriteframes is not null)
 	{
 		// copy the already defined sprite frames
-		M_Memcpy(sprtemp, spritedef->spriteframes,
+		memcpy(sprtemp, spritedef->spriteframes,
 		 spritedef->numframes * sizeof (spriteframe_t));
 		maxframe = spritedef->numframes - 1;
 	}
@@ -410,7 +403,7 @@ boolean R_AddSingleSpriteDef(const char *sprname, spritedef_t *spritedef, UINT16
 		spritedef->spriteframes = static_cast<spriteframe_t*>(Z_Malloc(maxframe * sizeof (*spritedef->spriteframes), PU_STATIC, NULL));
 
 	spritedef->numframes = maxframe;
-	M_Memcpy(spritedef->spriteframes, sprtemp, maxframe*sizeof (spriteframe_t));
+	memcpy(spritedef->spriteframes, sprtemp, maxframe*sizeof (spriteframe_t));
 
 	return true;
 }
@@ -539,8 +532,8 @@ void R_ClearSprites(void)
 	visspritecount = numvisiblesprites = clippedvissprites = 0;
 }
 
-static INT16 *vissprite_clipbot[MAXVISSPRITES >> VISSPRITECHUNKBITS];
-static INT16 *vissprite_cliptop[MAXVISSPRITES >> VISSPRITECHUNKBITS];
+static INT16 *vissprite_clipbot[MAXVISSPRITES >> VISSPRITECHUNKBITS] = {0};
+static INT16 *vissprite_cliptop[MAXVISSPRITES >> VISSPRITECHUNKBITS] = {0};
 
 static void R_AllocVisSpriteChunkMemory(UINT32 chunk)
 {
@@ -574,16 +567,16 @@ static vissprite_t overflowsprite;
 
 static vissprite_t *R_GetVisSprite(UINT32 num)
 {
-		UINT32 chunk = num >> VISSPRITECHUNKBITS;
+	UINT32 chunk = num >> VISSPRITECHUNKBITS;
 
-		// Allocate chunk if necessary
-		if (!visspritechunks[chunk])
-		{
-			Z_Malloc(sizeof(vissprite_t) * VISSPRITESPERCHUNK, PU_LEVEL, &visspritechunks[chunk]);
-			R_AllocVisSpriteChunkMemory(chunk);
-		}
+	// Allocate chunk if necessary
+	if (!visspritechunks[chunk])
+	{
+		Z_Malloc(sizeof(vissprite_t) * VISSPRITESPERCHUNK, PU_LEVEL, &visspritechunks[chunk]);
+		R_AllocVisSpriteChunkMemory(chunk);
+	}
 
-		return visspritechunks[chunk] + (num & VISSPRITEINDEXMASK);
+	return visspritechunks[chunk] + (num & VISSPRITEINDEXMASK);
 }
 
 static vissprite_t *R_NewVisSprite(void)
@@ -600,8 +593,8 @@ static vissprite_t *R_NewVisSprite(void)
 // Masked means: partly transparent, i.e. stored
 //  in posts/runs of opaque pixels.
 //
-INT16 *mfloorclip;
-INT16 *mceilingclip;
+INT16 *mfloorclip = NULL;
+INT16 *mceilingclip = NULL;
 
 fixed_t spryscale = 0, sprtopscreen = 0, sprbotscreen = 0;
 fixed_t windowtop = 0, windowbottom = 0;
@@ -729,7 +722,6 @@ static void R_DrawFlippedMaskedColumn(drawcolumndata_t* dc, column_t *column)
 
 	dc->texturemid = basetexturemid;
 }
-
 
 // Based off of R_GetLinedefTransTable
 transnum_t R_GetThingTransTable(fixed_t alpha, transnum_t transmap)
@@ -1027,7 +1019,7 @@ static void R_SplitSprite(vissprite_t *sprite)
 		INT16 *cliptop = newsprite->cliptop;
 		INT16 *clipbot = newsprite->clipbot;
 
-		M_Memcpy(newsprite, sprite, sizeof (vissprite_t));
+		memcpy(newsprite, sprite, sizeof (vissprite_t));
 
 		newsprite->cliptop = cliptop;
 		newsprite->clipbot = clipbot;
@@ -2801,11 +2793,6 @@ void R_ClipSprites(drawseg_t* dsstart, portal_t* portal)
 	drawseg_t* ds;
 	INT32 i;
 
-	if (visspritecount - clippedvissprites <= 0)
-	{
-		return;
-	}
-
 	// e6y
 	// Reducing of cache misses in the following R_DrawSprite()
 	// Makes sense for scenes with huge amount of drawsegs.
@@ -2813,6 +2800,11 @@ void R_ClipSprites(drawseg_t* dsstart, portal_t* portal)
 	for (i = 0; i < DS_RANGES_COUNT; i++)
 	{
 		drawsegs_xranges[i].count = 0;
+	}
+
+	if (visspritecount - clippedvissprites <= 0)
+	{
+		return;
 	}
 
 	if (drawsegs_xrange_size < maxdrawsegs)

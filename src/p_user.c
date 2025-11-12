@@ -3315,7 +3315,7 @@ static ticcmd_t *P_CameraCmd(camera_t *cam, UINT8 num)
 		cmd->sidemove = (SINT8)(cmd->sidemove + side);
 	}
 
-	lang += (cmd->angleturn<<16);
+	lang += (cmd->angleturn << 16);
 
 	cam->localangle = lang;
 	if (!cam->reset_aiming)
@@ -3821,7 +3821,13 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 
 	if (demo.playback)
 	{
-		focusangle = mo->angle;
+		// Hack-adjacent.
+		// Sometimes stale ticcmds send a weird angle at the start of the race.
+		// P_UpdatePlayerAngle knows to ignore cmd angle when you literally can't turn, so we do the same here.
+		if (cv_demoangturn.value && leveltime > starttime)
+			focusangle = player->cmd.angleturn << 16;
+		else
+			focusangle = mo->angle; // Just use something known sane.
 		focusaiming = 0;
 	}
 	else if (P_IsLocalPlayer(player))
@@ -4309,17 +4315,19 @@ static void P_CalcPostImg(player_t *player, camera_t *thiscam)
 {
 	sector_t *sector = NULL;
 	UINT8 postimgtype = 0;
-	//INT32 *param;
 	fixed_t pviewheight = 0;
+#ifdef MOTIONBLUR
+	INT32 *param;
 
-	/*for (i = 0; i <= splitscreen; i++)
+	for (i = 0; i <= splitscreen; i++)
 	{
 		if (player == &players[displayplayers[i]])
 		{
 			param = &postimgparam[i];
 			break;
 		}
-	}*/
+	}
+#endif
 
 	if (encoremode) // srb2kart
 		postimgtype |= POSTIMG_MIRROR;
@@ -4355,16 +4363,18 @@ static void P_CalcPostImg(player_t *player, camera_t *thiscam)
 	else if (P_CameraCheckHeatFirstperson(player, sector, pviewheight))
 		postimgtype |= POSTIMG_HEAT;
 
+#ifdef MOTIONBLUR
 	// Motion blur
 	// unused
-	/*if (player->speed > (35<<FRACBITS))
+	if (player->speed > (35<<FRACBITS))
 	{
 		postimgtype |= POSTIMG_MOTION;
 		*param = (player->speed - 32)/4;
 
 		if (*param > 5)
 			*param = 5;
-	}*/
+	}
+#endif
 
 	thiscam->postimg = postimgtype;
 }

@@ -28,6 +28,8 @@
 #include <vector>
 #include <algorithm>
 
+#include "cxxutil.hpp"
+
 // ==========================================================================
 // SPANS
 // ==========================================================================
@@ -208,15 +210,15 @@ static void R_CalcTiltedLighting(std::vector<INT32>& lightbuffer, INT32 x1, INT3
 
 	for (i = x1; i <= x2; i++)
 	{
-		fixed_t light = start >> FRACBITS;
+		const fixed_t light = start >> FRACBITS;
 		lightbuffer[i] = CLAMP(light, 0, MAXLIGHTSCALE - 1);
 		start += step;
 	}
 }
 
-static void R_GetTiltedLighting(std::vector<INT32>& tiltlighting, const drawspandata_t* ds, const float iz, const int width, const INT32 stride)
+static void R_GetTiltedLighting(std::vector<INT32>& tiltlighting, const drawspandata_t* ds, const float iz, const INT32 width, const INT32 stride)
 {
-	float planelightfloat = PLANELIGHTFLOAT;
+	const float planelightfloat = PLANELIGHTFLOAT;
 	const fixed_t lightstart = FloatToFixed(iz * planelightfloat);
 	const fixed_t lightend   = FloatToFixed((iz + ds->szp.x * width) * planelightfloat);
 
@@ -232,7 +234,7 @@ static void R_GetTiltedLighting(std::vector<INT32>& tiltlighting, const drawspan
 template<DrawSpanType Type>
 static void R_DrawTiltedSpanTemplate(drawspandata_t* ds)
 {
-	int width = ds->x2 - ds->x1;
+	INT32 width = ds->x2 - ds->x1;
 	float iz, uz, vz;
 	UINT32 u, v;
 	int i;
@@ -246,7 +248,6 @@ static void R_DrawTiltedSpanTemplate(drawspandata_t* ds)
 	UINT32 stepu, stepv;
 	UINT32 bit;
 
-	INT32 x1 = ds->x1;
 	const INT32 nflatxshift = ds->nflatxshift;
 	const INT32 nflatyshift = ds->nflatyshift;
 	const INT32 nflatmask = ds->nflatmask;
@@ -262,6 +263,11 @@ static void R_DrawTiltedSpanTemplate(drawspandata_t* ds)
 
 	const UINT8 * restrict source = ds->source;
 	const UINT8 * restrict colormap = ds->colormap;
+
+	const ptrdiff_t colormap_diff = (colormap - colormaps);
+
+	const INT32 * restrict tiltlight = tiltlighting.data();
+	lighttable_t * const * restrict planezlight = ds->planezlight;
 
 	if constexpr (Type & DS_RIPPLE)
 	{
@@ -300,7 +306,6 @@ static void R_DrawTiltedSpanTemplate(drawspandata_t* ds)
 	izstep = ds->szp.x * SPANSIZE;
 	uzstep = ds->sup.x * SPANSIZE;
 	vzstep = ds->svp.x * SPANSIZE;
-	//x1 = 0;
 	width++;
 
 	while (width >= SPANSIZE)
@@ -312,17 +317,17 @@ static void R_DrawTiltedSpanTemplate(drawspandata_t* ds)
 		endz = 1.f/iz;
 		endu = uz*endz;
 		endv = vz*endz;
-		stepu = (INT64)((endu - startu) * INVSPAN);
-		stepv = (INT64)((endv - startv) * INVSPAN);
-		u = (INT64)(startu);
-		v = (INT64)(startv);
+		stepu = srb2::floattoint<float, INT64>((endu - startu) * INVSPAN);
+		stepv = srb2::floattoint<float, INT64>((endv - startv) * INVSPAN);
+		u = srb2::floattoint<float, INT64>(startu);
+		v = srb2::floattoint<float, INT64>(startv);
 
-		x1 = ds->x1;
+		const INT32 x1 = ds->x1;
 
 		for (i = 0; i < SPANSIZE; i++)
 		{
 			bit = (((v + stepv * i) >> nflatyshift) & nflatmask) | ((u + stepu * i) >> nflatxshift);
-			colormap = ds->planezlight[tiltlighting[x1 + i]] + (ds->colormap - colormaps);
+			colormap = planezlight[tiltlight[x1 + i]] + colormap_diff;
 			if constexpr (Type & DS_RIPPLE)
 				dest[i] = R_DrawSpanPixel<Type>(ds, &dsrc[i], colormap, bit, source);
 			else
@@ -342,10 +347,10 @@ static void R_DrawTiltedSpanTemplate(drawspandata_t* ds)
 	{
 		if (width == 1)
 		{
-			u = (INT64)(startu);
-			v = (INT64)(startv);
+			u = srb2::floattoint<float, INT64>(startu);
+			v = srb2::floattoint<float, INT64>(startv);
 			bit = ((v >> nflatyshift) & nflatmask) | (u >> nflatxshift);
-			colormap = ds->planezlight[tiltlighting[ds->x1]] + (ds->colormap - colormaps);
+			colormap = planezlight[tiltlight[ds->x1]] + colormap_diff;
 			if constexpr (Type & DS_RIPPLE)
 				*dest = R_DrawSpanPixel<Type>(ds, dsrc, colormap, bit, source);
 			else
@@ -363,15 +368,15 @@ static void R_DrawTiltedSpanTemplate(drawspandata_t* ds)
 			endu = uz*endz;
 			endv = vz*endz;
 			left = 1.f/left;
-			stepu = (INT64)((endu - startu) * left);
-			stepv = (INT64)((endv - startv) * left);
-			u = (INT64)(startu);
-			v = (INT64)(startv);
+			stepu = srb2::floattoint<float, INT64>((endu - startu) * left);
+			stepv = srb2::floattoint<float, INT64>((endv - startv) * left);
+			u = srb2::floattoint<float, INT64>(startu);
+			v = srb2::floattoint<float, INT64>(startv);
 
 			for (; width != 0; width--)
 			{
 				bit = ((v >> ds->nflatyshift) & ds->nflatmask) | (u >> ds->nflatxshift);
-				colormap = ds->planezlight[tiltlighting[ds->x1]] + (ds->colormap - colormaps);
+				colormap = planezlight[tiltlight[ds->x1]] + colormap_diff;
 				if constexpr (Type & DS_RIPPLE)
 					*dest = R_DrawSpanPixel<Type>(ds, dsrc, colormap, bit, source);
 				else
@@ -410,7 +415,7 @@ DEFINE_SPAN_COMBO(R_DrawTranslucentWaterSpan, DS_TRANSMAP|DS_RIPPLE)
 */
 void R_DrawFogSpan(drawspandata_t* ds)
 {
-	INT32 count = ds->x2 - ds->x1 + 1;
+	intptr_t count = ds->x2 - ds->x1 + 1;
 
 	const UINT8 * restrict colormap = ds->colormap;
 	UINT8 * restrict dest = R_Address(ds->x1, ds->y);
@@ -435,20 +440,23 @@ void R_DrawFogSpan(drawspandata_t* ds)
 
 void R_DrawFogSpan_Tilted(drawspandata_t* ds)
 {
-	int width = ds->x2 - ds->x1;
-	float iz = ds->szp.z + ds->szp.y*(centery-ds->y) + ds->szp.x*(ds->x1-centerx);
-	UINT8 * restrict dest;
-	local_for_thread std::vector<INT32> tiltlighting;
-
-	dest = R_Address(ds->x1, ds->y);
+	INT32 width = ds->x2 - ds->x1;
 	const INT32 stride = vid.width;
+	const float iz = ds->szp.z + ds->szp.y*(centery-ds->y) + ds->szp.x*(ds->x1-centerx);
+	UINT8 * restrict dest = R_Address(ds->x1, ds->y);
+	const ptrdiff_t colormap_diff = (ds->colormap - colormaps);
+
+	local_for_thread std::vector<INT32> tiltlighting;
 
 	// Lighting is simple. It's just linear interpolation from start to end
 	R_GetTiltedLighting(tiltlighting, ds, iz, width, stride);
 
+	const INT32 * restrict tiltlight = tiltlighting.data();
+	lighttable_t * const * restrict planezlight = ds->planezlight;
+
 	do
 	{
-		UINT8 *colormap = ds->planezlight[tiltlighting[ds->x1++]] + (ds->colormap - colormaps);
+		UINT8 *colormap = planezlight[tiltlight[ds->x1++]] + colormap_diff;
 		*dest = colormap[*dest];
 		dest++;
 	}

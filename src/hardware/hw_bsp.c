@@ -80,14 +80,6 @@ static poly_t *HWR_AllocPoly(INT32 numpts)
 	return p;
 }
 
-static polyvertex_t *HWR_AllocVertex(void)
-{
-	polyvertex_t *p;
-	size_t size = sizeof(polyvertex_t);
-	p = Z_Malloc(size, PU_HWRPLANE, NULL);
-	return p;
-}
-
 /// \todo polygons should be freed in reverse order for efficiency,
 /// for now don't free because it doesn't free in reverse order
 static void HWR_FreePoly(poly_t *poly)
@@ -637,7 +629,7 @@ static void WalkBSPNode(INT32 bspnum, poly_t *poly, UINT16 *leafnode, fixed_t *b
 		WalkBSPNode(bsp->children[0], frontpoly, &bsp->children[0],bsp->bbox[0]);
 
 		// copy child bbox
-		M_Memcpy(bbox, bsp->bbox[0], 4*sizeof (fixed_t));
+		memcpy(bbox, bsp->bbox[0], 4*sizeof (fixed_t));
 	}
 	else
 		I_Error("WalkBSPNode: no front poly?");
@@ -855,100 +847,6 @@ static INT32 SolveTProblem(void)
 	return numsplitpoly;
 }
 
-#define NEARDIST (0.75f)
-#define MYMAX    (10000000000000.0f)
-
-/* Adjust true segs (from the segs lump) to be exactely the same as
- * plane polygone segs
- * This also convert fixed_t point of segs in float (in moste case
- * it share the same vertice
- */
-static void AdjustSegs(void)
-{
-	size_t i, count;
-	INT32 j;
-	seg_t *lseg;
-	poly_t *p;
-	INT32 v1found = 0, v2found = 0;
-	float nearv1, nearv2;
-
-	for (i = 0; i < numsubsectors; i++)
-	{
-		count = subsectors[i].numlines;
-		lseg = &segs[subsectors[i].firstline];
-		p = extrasubsectors[i].planepoly;
-
-		if (!p)
-			continue;
-
-		for (; count--; lseg++)
-		{
-			float distv1,distv2,tmp;
-			nearv1 = nearv2 = MYMAX;
-
-			// Don't touch polyobject segs. We'll compensate
-			// for this when we go about drawing them.
-			if (lseg->polyseg)
-				continue;
-
-			for (j = 0; j < p->numpts; j++)
-			{
-				distv1 = p->pts[j].x - FIXED_TO_FLOAT(lseg->v1->x);
-				tmp    = p->pts[j].y - FIXED_TO_FLOAT(lseg->v1->y);
-				distv1 = distv1*distv1+tmp*tmp;
-
-				if (distv1 <= nearv1)
-				{
-					v1found = j;
-					nearv1 = distv1;
-				}
-
-				// the same with v2
-				distv2 = p->pts[j].x - FIXED_TO_FLOAT(lseg->v2->x);
-				tmp    = p->pts[j].y - FIXED_TO_FLOAT(lseg->v2->y);
-				distv2 = distv2*distv2+tmp*tmp;
-
-				if (distv2 <= nearv2)
-				{
-					v2found = j;
-					nearv2 = distv2;
-				}
-			}
-
-			if (nearv1 <= NEARDIST*NEARDIST)
-				// share vertice with segs
-				lseg->pv1 = &(p->pts[v1found]);
-			else
-			{
-				// BP: here we can do better, using PointInSeg and compute
-				// the right point position also split a polygone side to
-				// solve a T-intersection, but too mush work
-
-				// convert fixed vertex to float vertex
-				polyvertex_t *pv = HWR_AllocVertex();
-				pv->x = FIXED_TO_FLOAT(lseg->v1->x);
-				pv->y = FIXED_TO_FLOAT(lseg->v1->y);
-				lseg->pv1 = pv;
-			}
-
-			if (nearv2 <= NEARDIST*NEARDIST)
-				lseg->pv2 = &(p->pts[v2found]);
-			else
-			{
-				polyvertex_t *pv = HWR_AllocVertex();
-				pv->x = FIXED_TO_FLOAT(lseg->v2->x);
-				pv->y = FIXED_TO_FLOAT(lseg->v2->y);
-				lseg->pv2 = pv;
-			}
-
-			lseg->pv1->x2 = FloatToFixed(lseg->pv1->x);
-			lseg->pv1->y2 = FloatToFixed(lseg->pv1->y);
-			lseg->pv2->x2 = FloatToFixed(lseg->pv2->x);
-			lseg->pv2->y2 = FloatToFixed(lseg->pv2->y);
-		}
-	}
-}
-
 
 // call this routine after the BSP of a Doom wad file is loaded,
 // and it will generate all the convex polys for the hardware renderer
@@ -1017,7 +915,6 @@ void HWR_CreatePlanePolygons(INT32 bspnum)
 #else
 	SolveTProblem();
 #endif
-	AdjustSegs();
 
 #ifdef DEBUG_HWBSP
 	//debug debug..

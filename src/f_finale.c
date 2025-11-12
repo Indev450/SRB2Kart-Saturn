@@ -208,7 +208,7 @@ static void F_SkyScroll(INT32 scrollspeed)
 INT32 intro_scenenum = 0;
 INT32 intro_curtime = 0;
 
-const char *introtext[NUMINTROSCENES];
+const char *introtext[NUMINTROSCENES] = {};
 
 static tic_t introscenetime[NUMINTROSCENES] =
 {
@@ -963,6 +963,7 @@ void F_StartTitleScreen(void)
 		finalecount = 0;
 	else
 		wipegamestate = GS_TITLESCREEN;
+
 	G_SetGamestate(GS_TITLESCREEN);
 	CON_ClearHUD();
 

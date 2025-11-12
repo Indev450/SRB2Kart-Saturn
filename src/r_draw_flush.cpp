@@ -151,23 +151,45 @@ static void R_FlushQuad(void)
 	INT32 count = t_dc->commonbot - t_dc->commontop + 1;
 	const UINT8 *restrict buf = t_dc->buf;
 
+	const UINT8 * restrict source = buf + (t_dc->commontop << 3);
+	UINT8 * restrict dest = R_Address(t_dc->startx, t_dc->commontop);
+
 	if constexpr (Type & ColumnFlushType::FLUSH_OPAQUE)
 	{
-		const INT64 *source = reinterpret_cast<const INT64 *>(buf + (t_dc->commontop << 3));
-		INT64 *dest = reinterpret_cast<INT64 *>(R_Address(t_dc->startx, t_dc->commontop));
-		const INT32 deststep = stride / 8;
-
-		while (--count >= 0)
+#if __SIZEOF_POINTER__ >= 8 // does not make much sense on 32bit targets
+		// 8 byte aligned copy -- make sure our dest ptr, source ptr AND stride are a multiple of 8!
+		if ((((uintptr_t)dest | (uintptr_t)source | stride) & 7) == 0)
 		{
-			*dest = *source++;
-			dest += deststep;
+			const INT64 *source64 = reinterpret_cast<const INT64 *>(source);
+			INT64 *dest64 = reinterpret_cast<INT64 *>(dest);
+			const INT32 deststep = stride / 8;
+
+			while (--count >= 0)
+			{
+				*dest64 = *source64++;
+				dest64 += deststep;
+			}
+		}
+		else
+#endif
+		{
+			while (--count >= 0)
+			{
+				dest[0] = source[0];
+				dest[1] = source[1];
+				dest[2] = source[2];
+				dest[3] = source[3];
+				dest[4] = source[4];
+				dest[5] = source[5];
+				dest[6] = source[6];
+				dest[7] = source[7];
+				source += 8;
+				dest   += stride;
+			}
 		}
 	}
 	else
 	{
-		const UINT8 * restrict source = buf + (t_dc->commontop << 3);
-		UINT8 * restrict dest = R_Address(t_dc->startx, t_dc->commontop);
-
 		while (--count >= 0)
 		{
 			dest[0] = R_DrawFlushPixel<Type>(t_dc, &dest[0], &source[0]);

@@ -49,6 +49,7 @@
 #                    Already enabled by default for 32-bit
 #                    Windows.
 # NOCURL=1 - Disable libcurl--HTTP capability.
+# NOHOLEPUNCH=1 - Disable holepunch capability.
 # NOLIBGME=1 - Disable game music emu, retro VGM support.
 # NOOPENMPT=1 - Disable module (tracker) music support.
 # NOMIXER=1 - Disable SDL Mixer (audio playback).
@@ -69,6 +70,7 @@
 # VALGRIND=1 - Enable Valgrind memory debugging support.
 # PROFILEMODE=1 - Enable performance profiling (gprof).
 # USEASAN=1 - Enable building with Address Sanitizer.
+# USEUBSAN=1 - Enable building with Undefined Behavior Sanitizer.
 # NOLIBBACKTRACE=1 - Disable using Libbacktrace for crashlog traces.
 #
 # General flags for building:
@@ -243,10 +245,14 @@ ifdef STATIC
 libs+=-static
 endif
 
+ifneq (,$(filter $(CC) $(CXX),gcc g++))
+ opts+=-mno-ms-bitfields
+endif
+
 # build with profiling information
 ifdef PROFILEMODE
 opts+=-pg
-LDFLAGS+=-pg
+libs+=-pg
 endif
 
 ifdef DEBUGMODE
@@ -256,29 +262,32 @@ debug_opts=-DNDEBUG
 opts+=-O3
 ifdef USELTO
 # compile with LTO
-ifdef MINGW
-opts+=-flto=auto -g
-LDFLAGS+=-flto=auto -g
-else
 opts+=-flto=auto
-LDFLAGS+=-flto=auto
-endif
+libs+=-flto=auto
 endif
 endif
 
 ifdef USEASAN
 # compile with asan
-ifdef MINGW
-opts+=-fsanitize=address -g
-libs+=-fsanitize=address -g
-else
 opts+=-fsanitize=address
 libs+=-fsanitize=address
 endif
+
+ifdef USEUBSAN
+# compile with asan
+opts+=-fsanitize=undefined
+libs+=-fsanitize=undefined
 endif
 
-ifeq ($(CC),clang)
- LDFLAGS+= -fuse-ld=lld
+ifneq (,$(filter $(CC) $(CXX),clang clang++))
+ libs+=-fuse-ld=lld
+endif
+
+ifdef MINGW
+# mingw needs this passed AFTER lto and the likes were passed
+# otherwise libbacktrace may break
+opts+=-g
+libs+=-g
 endif
 
 # debug_opts also get passed to windres

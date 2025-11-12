@@ -36,8 +36,8 @@
 // ------------------
 // global video state
 // ------------------
-viddef_t vid;
-INT32 setmodeneeded; // video mode change needed if > 0 (the mode number to set + 1)
+viddef_t vid = {};
+INT32 setmodeneeded = 0; // video mode change needed if > 0 (the mode number to set + 1)
 
 static CV_PossibleValue_t shittyscreen_cons_t[] = {{0, "Okay"}, {1, "Shitty"}, {2, "Extra Shitty"}, {0, NULL}};
 
@@ -101,13 +101,13 @@ static void SCR_SetDrawFuncs(enum columncontext_e _columncontext)
 
 	if (_columncontext == COLUMNCONTEXT_FLUSH)
 	{
-		colfuncs[BASEDRAWFUNC] = R_DrawColumnFlush;
-		colfuncs[COLDRAWFUNC_FUZZY] = R_DrawTranslucentColumnFlush;
-		colfuncs[COLDRAWFUNC_TRANS] = R_DrawTranslatedColumnFlush;
-		colfuncs[COLDRAWFUNC_SHADOWED] = R_DrawColumnShadowedFlush;
-		colfuncs[COLDRAWFUNC_TRANSTRANS] = R_DrawTranslatedTranslucentColumnFlush;
-		colfuncs[COLDRAWFUNC_TWOSMULTIPATCH] = R_Draw2sMultiPatchColumnFlush;
-		colfuncs[COLDRAWFUNC_TWOSMULTIPATCHTRANS] = R_Draw2sMultiPatchTranslucentColumnFlush;
+		colfuncs[BASEDRAWFUNC] = R_DrawColumn_Flush;
+		colfuncs[COLDRAWFUNC_FUZZY] = R_DrawTranslucentColumn_Flush;
+		colfuncs[COLDRAWFUNC_TRANS] = R_DrawTranslatedColumn_Flush;
+		colfuncs[COLDRAWFUNC_SHADOWED] = R_DrawColumnShadowed_Flush;
+		colfuncs[COLDRAWFUNC_TRANSTRANS] = R_DrawTranslatedTranslucentColumn_Flush;
+		colfuncs[COLDRAWFUNC_TWOSMULTIPATCH] = R_Draw2sMultiPatchColumn_Flush;
+		colfuncs[COLDRAWFUNC_TWOSMULTIPATCHTRANS] = R_Draw2sMultiPatchTranslucentColumn_Flush;
 	}
 	else
 	{
@@ -215,7 +215,10 @@ void SCR_Startup(void)
 	CV_RegisterVar(&cv_menucaps);
 	CV_RegisterVar(&cv_constextsize);
 
+#ifdef BACKWARDSCOMPATCORRECTION
 	CV_RegisterVar(&cv_globalgamma);
+#endif
+	CV_RegisterVar(&cv_globalbrightness);
 	CV_RegisterVar(&cv_globalsaturation);
 
 	CV_RegisterVar(&cv_rhue);
@@ -225,12 +228,12 @@ void SCR_Startup(void)
 	CV_RegisterVar(&cv_bhue);
 	CV_RegisterVar(&cv_mhue);
 
-	CV_RegisterVar(&cv_rgamma);
-	CV_RegisterVar(&cv_ygamma);
-	CV_RegisterVar(&cv_ggamma);
-	CV_RegisterVar(&cv_cgamma);
-	CV_RegisterVar(&cv_bgamma);
-	CV_RegisterVar(&cv_mgamma);
+	CV_RegisterVar(&cv_rbrightness);
+	CV_RegisterVar(&cv_ybrightness);
+	CV_RegisterVar(&cv_gbrightness);
+	CV_RegisterVar(&cv_cbrightness);
+	CV_RegisterVar(&cv_bbrightness);
+	CV_RegisterVar(&cv_mbrightness);
 
 	CV_RegisterVar(&cv_rsaturation);
 	CV_RegisterVar(&cv_ysaturation);

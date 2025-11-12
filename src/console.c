@@ -58,7 +58,7 @@ I_mutex con_mutex;
 static boolean con_started = false; // console has been initialised
        boolean con_startup = false; // true at game startup, screen need refreshing
 static boolean con_forcepic = true; // at startup toggle console translucency when first off
-       boolean con_recalc;          // set true when screen size has changed
+       boolean con_recalc = false;  // set true when screen size has changed
 
 static tic_t con_tick; // console ticker for anim or blinking prompt cursor
                         // con_scrollup should use time (currenttime - lasttime)..
@@ -66,8 +66,8 @@ static tic_t con_tick; // console ticker for anim or blinking prompt cursor
 static boolean consoletoggle; // true when console key pushed, ticker will handle
 static boolean consoleready;  // console prompt is ready
 
-       INT32 con_destlines; // vid lines used by console at final position
-static INT32 con_curlines;  // vid lines currently used by console
+       INT32 con_destlines = 0; // vid lines used by console at final position
+static INT32 con_curlines;      // vid lines currently used by console
 
 static UINT8  con_hudlines;             // number of console heads up message lines
 static UINT32 con_hudtime[MAXHUDLINES]; // remaining time of display for hud msg lines
@@ -83,7 +83,7 @@ static size_t con_totallines;      // lines of console text into the console buf
 static size_t con_width;           // columns of chars, depend on vid mode width
 
 static size_t con_scrollup;        // how many rows of text to scroll up (pgup/pgdn)
-UINT32 con_scalefactor;            // text size scale factor
+UINT32 con_scalefactor = 0;        // text size scale factor
 
 // hold 32 last lines of input for history
 #define CON_MAXPROMPTCHARS 256
@@ -521,7 +521,7 @@ static void CON_RecalcSize(void)
 	oldcon_width = con_width;
 	oldnumlines = con_totallines;
 	oldcon_cy = con_cy;
-	M_Memcpy(tmp_buffer, con_buffer, CON_BUFFERSIZE);
+	memcpy(tmp_buffer, con_buffer, CON_BUFFERSIZE);
 
 	if (conw < 1)
 		con_width = (BASEVIDWIDTH>>3) - 2;
@@ -547,7 +547,7 @@ static void CON_RecalcSize(void)
 		{
 			if (tmp_buffer[(i%oldnumlines)*oldcon_width])
 			{
-				M_Memcpy(string, &tmp_buffer[(i%oldnumlines)*oldcon_width], oldcon_width);
+				memcpy(string, &tmp_buffer[(i%oldnumlines)*oldcon_width], oldcon_width);
 				conw = oldcon_width - 1;
 				while (string[conw] == ' ' && conw)
 					conw--;
@@ -1010,7 +1010,7 @@ boolean CON_Responder(event_t *ev)
 		Lock_state();
 
 		// Only add command to history if it differs from previous one
-		if (strcmp(input.buffer, inputlines[(inputline-1) & 31]))
+		if (!fastcmp(input.buffer, inputlines[(inputline-1) & 31]))
 		{
 			inputline = (inputline+1) & 31;
 			M_TextInputInit(&input, inputlines[inputline], CON_MAXPROMPTCHARS);

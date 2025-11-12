@@ -44,7 +44,7 @@
 // Dynamic slopes
 #include "p_slopes.h"
 
-tic_t leveltime;
+tic_t leveltime = 0;
 
 //
 // THINKERS
@@ -55,8 +55,8 @@ tic_t leveltime;
 //
 
 // Both the head and tail of the thinker list.
-thinker_t thinkercap;
-thinker_t precipcap;
+thinker_t thinkercap = {};
+thinker_t precipcap = {};
 
 void Command_Numthinkers_f(void)
 {
