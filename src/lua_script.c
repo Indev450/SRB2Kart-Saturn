@@ -41,7 +41,7 @@ lua_State *gL = NULL;
 // Mathlib global state
 static lua_State *mL = NULL;
 
-int hook_defrosting;
+int hook_defrosting = 0;
 
 // List of internal libraries to load from SRB2
 static lua_CFunction liblist[] = {

@@ -282,9 +282,6 @@ extern CV_PossibleValue_t gametype_cons_t[];
 
 extern char dummystaffname[22];
 
-extern INT16 startmap;
-extern INT32 ultimate_selectable;
-
 #define MAXSAVEGAMES 31 //note: last save game is "no save"
 #define NOSAVESLOT MAXSAVEGAMES-1 //slot where Play Without Saving appears
 

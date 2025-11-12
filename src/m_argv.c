@@ -20,11 +20,11 @@
 
 /**	\brief number of arg
 */
-INT32 myargc;
+INT32 myargc = 0;
 
 /**	\brief string table
 */
-char **myargv;
+char **myargv = NULL;
 
 /** \brief did we alloc myargv ourselves?
 */

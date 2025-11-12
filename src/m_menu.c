@@ -145,19 +145,19 @@ I_mutex m_menu_mutex;
 
 M_waiting_mode_t m_waiting_mode = M_NOT_WAITING;
 
-const char *quitmsg[NUM_QUITMESSAGES];
+const char *quitmsg[NUM_QUITMESSAGES] = {};
 
 // Stuff for customizing the player select screen Tails 09-22-2003
-description_t description[MAXSKINS];
+description_t description[MAXSKINS] = {};
 
-INT32 mapwads[NUMMAPS];
+INT32 mapwads[NUMMAPS] = {};
 
 boolean browselocalskins = false;
 
 boolean menuactive = false;
 boolean fromlevelselect = false;
 
-char menu_text_input_buf[MAXSTRINGLENGTH];
+char menu_text_input_buf[MAXSTRINGLENGTH] = {};
 static textinput_t menuinput;
 
 static INT32 coolalphatimer = 9;
@@ -171,7 +171,6 @@ typedef enum
 } levellist_mode_t;
 
 levellist_mode_t levellistmode = LLM_CREATESERVER;
-UINT8 maplistoption = 0;
 
 static char joystickInfo[8][29];
 
@@ -180,10 +179,6 @@ static UINT32 oldserverlistpage;
 static float serverlistslidex;
 static INT32 serverlistsearched[MAXSERVERLIST] = {0};
 static UINT32 serverlistsearchedcount = 0;
-
-//static saveinfo_t savegameinfo[MAXSAVEGAMES]; // Extra info about the save games.
-
-INT16 startmap; // Mario, NiGHTS, or just a plain old normal game?
 
 static INT16 itemOn = 1; // menu item skull is on, Hack by Tails 09-18-2002
 static INT16 skullAnimCounter = 10; // skull animation counter

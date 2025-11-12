@@ -25,10 +25,10 @@
 
 // Map triggers for linedef executors
 // 32 triggers, one bit each
-UINT32 unlocktriggers;
+UINT32 unlocktriggers = 0;
 
 // The meat of this system lies in condition sets
-conditionset_t conditionSets[MAXCONDITIONSETS];
+conditionset_t conditionSets[MAXCONDITIONSETS] = {};
 
 // Default Emblem locations
 emblem_t emblemlocations[MAXEMBLEMS] =

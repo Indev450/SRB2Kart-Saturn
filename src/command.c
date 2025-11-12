@@ -277,7 +277,7 @@ static xcommand_t *com_commands = NULL; // current commands
 
 #define MAX_ARGS 80
 static size_t com_argc;
-char *com_argv[MAX_ARGS];
+char *com_argv[MAX_ARGS] = {};
 static const char *com_null_string = "";
 static char *com_args = NULL; // current command args or NULL
 

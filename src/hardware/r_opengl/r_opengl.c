@@ -25,7 +25,7 @@
 
 // Eeeeh not sure is this right way, but it works < sry :c < sry again it had to go :c
 
-#if defined (HWRENDER) && !defined (NOROPENGL)
+#if defined (HWRENDER)
 
 #include "../../r_fps.h" // For R_GetTimeFrac, used for the leveltime shader uniform
 
@@ -101,7 +101,7 @@ static LTListItem *LightTablesHead = NULL;
 static RGBA_t screenPalette[256] = {0}; // the palette for the postprocessing step in palette rendering
 static GLuint screenPaletteTex = 0; // 1D texture containing the screen palette
 static GLuint paletteLookupTex = 0; // 3D texture containing RGB -> palette index lookup table
-RGBA_t  myPaletteData[256]; // the palette for converting textures to RGBA
+RGBA_t  myPaletteData[256] = {0}; // the palette for converting textures to RGBA
 
 static GLint gltexformat = GL_RGB5_A1;
 GLint   screen_width     = 0;               // used by Draw2DLine()
@@ -128,7 +128,7 @@ int majorGL = 0, minorGL = 0;
 
 //Hurdler: 04/10/2000: added for the kick ass coronas as Boris wanted;-)
 static GLfloat modelMatrix[16];
-GLfloat projMatrix[16];
+GLfloat projMatrix[16] = {0};
 static GLint   viewport[4];
 
 #ifdef USE_FBO_OGL
@@ -216,7 +216,7 @@ static const GLfloat byte2float[256] = {
 // -----------------+
 
 #ifdef DEBUG_TO_FILE
-FILE *gllogstream;
+FILE *gllogstream = NULL;
 #endif
 
 FUNCPRINTF void GL_DBG_Printf(const char *format, ...)
@@ -1138,13 +1138,14 @@ static void GL_Perspective(GLfloat fovy, GLfloat aspect)
 		{ 0.0f, 0.0f, 0.0f, 0.0f},
 	};
 
-	const GLfloat focallength = (GLfloat)(1.0f / (GLfloat)tan(fovy * (GLfloat)M_PIl / 360.0f));
 	const GLfloat deltaZ = FAR_CLIPPING_PLANE - NEAR_CLIPPING_PLANE;
 
 	if ((fabsf((float)deltaZ) < 1.0E-36f) || fpclassify(aspect) == FP_ZERO)
 	{
 		return;
 	}
+
+	const GLfloat focallength = (GLfloat)(1.0f / (GLfloat)tan(fovy * (GLfloat)M_PIl / 360.0f));
 
 	m[0][0] = focallength / aspect;
 	m[1][1] = focallength;
