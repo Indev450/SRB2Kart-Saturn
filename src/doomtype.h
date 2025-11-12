@@ -293,7 +293,7 @@ typedef struct
 	UINT8 green;
 	UINT8 blue;
 	UINT8 alpha;
-} byteColor_t;
+} ATTRPACK byteColor_t;
 
 union FColorRGBA
 {
