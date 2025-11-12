@@ -68,32 +68,32 @@
 //-------------------------------------------
 //              heads up font
 //-------------------------------------------
-patch_t *hu_font[HU_FONTSIZE];
-patch_t *kart_font[KART_FONTSIZE];	// SRB2kart
-patch_t *tny_font[HU_FONTSIZE];
-patch_t *tallnum[10]; // 0-9
+patch_t *hu_font[HU_FONTSIZE] = {};
+patch_t *kart_font[KART_FONTSIZE] = {};	// SRB2kart
+patch_t *tny_font[HU_FONTSIZE] = {};
+patch_t *tallnum[10] = {}; // 0-9
 
 // Level title and credits fonts
-patch_t *lt_font[LT_FONTSIZE];
-patch_t *cred_font[CRED_FONTSIZE];
+patch_t *lt_font[LT_FONTSIZE] = {};
+patch_t *cred_font[CRED_FONTSIZE] = {};
 
 // ping font
 // Note: I'd like to adress that at this point we might *REALLY* want to work towards a common drawString function that can take any font we want because this is really turning into a MESS. :V -Lat'
-patch_t *pingnum[10];
-patch_t *pinggfx[5];	// small ping graphic
-patch_t *pingmeasure[2]; // ping measurement graphic
+patch_t *pingnum[10] = {};
+patch_t *pinggfx[5] = {};	// small ping graphic
+patch_t *pingmeasure[2] = {}; // ping measurement graphic
 
-patch_t *ranknum[10]; // rank numbers
+patch_t *ranknum[10] = {}; // rank numbers
 
-patch_t *framecounter;
-patch_t *frameslash;	// framerate stuff. Used in screen.c
+patch_t *framecounter = NULL;
+patch_t *frameslash = NULL;	// framerate stuff. Used in screen.c
 
-static player_t *plr;
-boolean chat_on; // entering a chat message?
+static player_t *plr = NULL;
+boolean chat_on = false; // entering a chat message?
 static char w_chat_buf[HU_MAXMSGLEN + 1];
 static textinput_t w_chat;
 static boolean headsupactive = false;
-boolean hu_showscores; // draw rankings
+boolean hu_showscores = false; // draw rankings
 static char hu_tick;
 static tic_t hu_emoteanim = 0;
 #define MAXEMOTESUGGESTIONS 8
@@ -101,14 +101,14 @@ static emote_t *emote_suggestions[MAXEMOTESUGGESTIONS] = {0};
 
 static huddrawlist_h luahuddrawlist_scores;
 
-patch_t *rflagico;
-patch_t *bflagico;
-patch_t *rmatcico;
-patch_t *bmatcico;
-patch_t *tallminus;
+patch_t *rflagico = NULL;
+patch_t *bflagico = NULL;
+patch_t *rmatcico = NULL;
+patch_t *bmatcico = NULL;
+patch_t *tallminus = NULL;
 
 // song credits
-static patch_t *songcreditbg;
+static patch_t *songcreditbg = NULL;
 
 // -------
 // protos.
@@ -122,7 +122,7 @@ consvar_t cv_showspecstuff = {"showspecstuff", "No", CV_SAVE, CV_YesNo, NULL, 0,
 //                 KEYBOARD LAYOUTS FOR ENTERING TEXT
 //======================================================================
 
-char *shiftxform;
+char *shiftxform = NULL;
 
 char english_shiftxform[] =
 {

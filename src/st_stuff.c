@@ -61,13 +61,13 @@ tic_t directortoggletimer = 0;
 // STATUS BAR DATA
 //
 
-patch_t *facerankprefix[MAXSKINS]; // ranking
-patch_t *facewantprefix[MAXSKINS]; // wanted
-patch_t *facemmapprefix[MAXSKINS]; // minimap
+patch_t *facerankprefix[MAXSKINS] = {}; // ranking
+patch_t *facewantprefix[MAXSKINS] = {}; // wanted
+patch_t *facemmapprefix[MAXSKINS] = {}; // minimap
 
-patch_t *localfacerankprefix[MAXLOCALSKINS]; // ranking
-patch_t *localfacewantprefix[MAXLOCALSKINS]; // wanted
-patch_t *localfacemmapprefix[MAXLOCALSKINS]; // minimap
+patch_t *localfacerankprefix[MAXLOCALSKINS] = {}; // ranking
+patch_t *localfacewantprefix[MAXLOCALSKINS] = {}; // wanted
+patch_t *localfacemmapprefix[MAXLOCALSKINS] = {}; // minimap
 
 /*char *facerankprefix_name[MAXSKINS]; // ranking
 char *facewantprefix_name[MAXSKINS]; // wanted
@@ -91,8 +91,8 @@ static patch_t *envelope;
 #endif
 
 // current player for overlay drawing
-player_t *stplyr;
-UINT8 stplyrnum;
+player_t *stplyr = NULL;
+UINT8 stplyrnum = 0;
 
 // SRB2kart
 
@@ -342,7 +342,7 @@ void ST_changeDemoView(void)
 //                         STATUS BAR OVERLAY
 // =========================================================================
 
-boolean st_overlay;
+boolean st_overlay = true;
 
 // =========================================================================
 //                          INTERNAL DRAWING

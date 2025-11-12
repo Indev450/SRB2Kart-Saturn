@@ -24,9 +24,6 @@
 //                              CEILINGS
 // ==========================================================================
 
-// the list of ceilings moving currently, including crushers
-INT32 ceilmovesound = sfx_None;
-
 /** Moves a moving ceiling.
   *
   * \param ceiling Thinker for the ceiling to be moved.

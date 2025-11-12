@@ -53,7 +53,7 @@ extern int SDL_main(int argc, char *argv[]);
 
 #ifdef LOGMESSAGES
 FILE *logstream = NULL;
-char  logfilename[1024];
+char  logfilename[1024] = {};
 #endif
 
 #ifndef DOXYGEN

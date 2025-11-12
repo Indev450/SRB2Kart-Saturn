@@ -38,7 +38,6 @@ static void P_UpdateSlopeLightOffset(pslope_t *slope)
 	fixed_t light = FRACUNIT;
 	fixed_t extralight = 0;
 
-
 	if (slope->normal.z == 0)
 	{
 		slope->lightOffset = 0;
@@ -296,7 +295,7 @@ static fixed_t P_GetExtent(sector_t *sector, line_t *line)
 
 	// Find furthest vertex from the reference line. It, along with the two ends
 	// of the line, will define the plane.
-	for(i = 0; i < sector->linecount; i++)
+	for (i = 0; i < sector->linecount; i++)
 	{
 		line_t *li = sector->lines[i];
 		vertex_t tempv;

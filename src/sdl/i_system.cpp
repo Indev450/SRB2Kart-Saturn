@@ -233,7 +233,7 @@ typedef struct
 	char buffer[256];
 } feild_t;
 
-feild_t tty_con;
+feild_t tty_con = {};
 
 // lock to prevent clearing partial lines, since not everything
 // printed ends on a newline.

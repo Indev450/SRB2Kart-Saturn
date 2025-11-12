@@ -89,10 +89,10 @@ consvar_t cv_masterserver_nagattempts = {"masterserver_nagattempts", "5", CV_SAV
 
 
 #if defined (MASTERSERVER) && defined (HAVE_THREADS)
-int           ms_QueryId;
+int           ms_QueryId = 0;
 I_mutex       ms_QueryId_mutex;
 
-msg_server_t *ms_ServerList;
+msg_server_t *ms_ServerList = NULL;
 I_mutex       ms_ServerList_mutex;
 #endif
 
