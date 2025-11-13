@@ -5854,12 +5854,14 @@ static void PT_FileFragmentFromPlayer(SINT8 node)
 		Got_Filetxpak();
 }
 
+#ifdef SATURNPAK
 static void PT_ReceivedGamestate(SINT8 node)
 {
 	sendingsavegame[node] = false;
 	resendingsavegame[node] = 0;
 	savegameresendcooldown[node] = I_GetTime() + cv_resynchcooldown.value * TICRATE; // I_GetTime() + 5 * TICRATE;
 }
+#endif
 
 /** Handles a packet received from a node that is in game
   *
