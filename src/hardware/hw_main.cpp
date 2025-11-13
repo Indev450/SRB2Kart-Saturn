@@ -5962,31 +5962,33 @@ static void HWR_DoPostProcessor(player_t *player)
 		float disStart = (leveltime-1) + FixedToFloat(R_GetTimeFrac(RTF_LEVEL));
 
 		UINT8 x, y;
-		INT32 WAVELENGTH;
-		INT32 AMPLITUDE;
-		INT32 FREQUENCY;
+		float WAVELENGTH;
+		float AMPLITUDE;
+		float FREQUENCY;
 
 		// Modifies the wave.
 		if (thiscam->postimg & POSTIMG_WATER)
 		{
-			WAVELENGTH = 5;
-			AMPLITUDE = 40;
-			FREQUENCY = 8;
+			WAVELENGTH = 5.0f;
+			AMPLITUDE = 40.0f;
+			FREQUENCY = 8.0f;
 		}
 		else
 		{
-			WAVELENGTH = 10;
-			AMPLITUDE = 60;
-			FREQUENCY = 4;
+			WAVELENGTH = 10.0f;
+			AMPLITUDE = 60.0f;
+			FREQUENCY = 4.0f;
 		}
+
+		//static constexpr float scale = ((float)SCREENVERTS - 1.0f) / 9.0f; // well this evals to just 1.0f and what is x / 1? kek
 
 		for (x = 0; x < SCREENVERTS; x++)
 		{
 			for (y = 0; y < SCREENVERTS; y++)
 			{
 				// Change X position based on its Y position.
-				v[x][y][0] = (x/((float)(SCREENVERTS-1.0f)/9.0f))-4.5f + (float)sin((disStart+(y*WAVELENGTH))/FREQUENCY)/AMPLITUDE;
-				v[x][y][1] = (y/((float)(SCREENVERTS-1.0f)/9.0f))-4.5f;
+				v[x][y][0] = x-4.5f + sinf(((disStart+((float)y * WAVELENGTH)) / FREQUENCY)) / AMPLITUDE; // (x / scale)
+				v[x][y][1] = y-4.5f; // (y / scale)
 			}
 		}
 

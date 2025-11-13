@@ -1233,7 +1233,7 @@ static void I_SetupMumble(void)
 void I_UpdateMumble(const mobj_t *mobj, const listener_t listener)
 {
 #ifdef HAVE_MUMBLE
-	double angle;
+	float angle;
 	fixed_t anglef;
 
 	if (!mumble)
@@ -1247,7 +1247,9 @@ void I_UpdateMumble(const mobj_t *mobj, const listener_t listener)
 	}
 	mumble->uiTick++;
 
-	if (!netgame || gamestate != GS_LEVEL) { // Zero out, but never delink.
+	// Zero out, but never delink.
+	if (!netgame || gamestate != GS_LEVEL)
+	{
 		mumble->fAvatarPosition[0] = mumble->fAvatarPosition[1] = mumble->fAvatarPosition[2] = 0.0f;
 		mumble->fAvatarFront[0] = 1.0f;
 		mumble->fAvatarFront[1] = mumble->fAvatarFront[2] = 0.0f;
@@ -1266,30 +1268,32 @@ void I_UpdateMumble(const mobj_t *mobj, const listener_t listener)
 
 	if (mobj)
 	{
-		mumble->fAvatarPosition[0] = FIXED_TO_FLOAT(mobj->x) / MUMBLEUNIT;
-		mumble->fAvatarPosition[1] = FIXED_TO_FLOAT(mobj->z) / MUMBLEUNIT;
-		mumble->fAvatarPosition[2] = FIXED_TO_FLOAT(mobj->y) / MUMBLEUNIT;
+		mumble->fAvatarPosition[0] = FixedToFloat(mobj->x) / MUMBLEUNIT;
+		mumble->fAvatarPosition[1] = FixedToFloat(mobj->z) / MUMBLEUNIT;
+		mumble->fAvatarPosition[2] = FixedToFloat(mobj->y) / MUMBLEUNIT;
 
 		anglef = AngleFixed(mobj->angle);
-		angle = FIXED_TO_FLOAT(anglef)*DEG2RAD;
-		mumble->fAvatarFront[0] = (float)cos(angle);
+		angle = (float)(FixedToFloat(anglef) * DEG2RAD);
+		mumble->fAvatarFront[0] = cosf(angle);
 		mumble->fAvatarFront[1] = 0.0f;
-		mumble->fAvatarFront[2] = (float)sin(angle);
-	} else {
+		mumble->fAvatarFront[2] = sinf(angle);
+	}
+	else
+	{
 		mumble->fAvatarPosition[0] = mumble->fAvatarPosition[1] = mumble->fAvatarPosition[2] = 0.0f;
 		mumble->fAvatarFront[0] = 1.0f;
 		mumble->fAvatarFront[1] = mumble->fAvatarFront[2] = 0.0f;
 	}
 
-	mumble->fCameraPosition[0] = FIXED_TO_FLOAT(listener.x) / MUMBLEUNIT;
-	mumble->fCameraPosition[1] = FIXED_TO_FLOAT(listener.z) / MUMBLEUNIT;
-	mumble->fCameraPosition[2] = FIXED_TO_FLOAT(listener.y) / MUMBLEUNIT;
+	mumble->fCameraPosition[0] = FixedToFloat(listener.x) / MUMBLEUNIT;
+	mumble->fCameraPosition[1] = FixedToFloat(listener.z) / MUMBLEUNIT;
+	mumble->fCameraPosition[2] = FixedToFloat(listener.y) / MUMBLEUNIT;
 
 	anglef = AngleFixed(listener.angle);
-	angle = FIXED_TO_FLOAT(anglef)*DEG2RAD;
-	mumble->fCameraFront[0] = (float)cos(angle);
+	angle = (float)(FixedToFloat(anglef) * DEG2RAD);
+	mumble->fCameraFront[0] = cosf(angle);
 	mumble->fCameraFront[1] = 0.0f;
-	mumble->fCameraFront[2] = (float)sin(angle);
+	mumble->fCameraFront[2] = sinf(angle);
 #else
 	(void)mobj;
 	(void)listener;

@@ -1553,11 +1553,11 @@ void GL_Draw2DLine(F2DCoord * v1, F2DCoord * v2, RGBA_t Color)
 
 	// This is the preferred, 'modern' way of rendering lines -- creating a polygon.
 	if (fabsf(v2->x - v1->x) > FLT_EPSILON)
-		angle = (float)atan((v2->y-v1->y)/(v2->x-v1->x));
+		angle = atanf((v2->y-v1->y)/(v2->x-v1->x));
 	else
 		angle = (float)N_PI_DEMI;
-	dx = (float)sin(angle) / (float)screen_width;
-	dy = (float)cos(angle) / (float)screen_height;
+	dx = sinf(angle) / (float)screen_width;
+	dy = cosf(angle) / (float)screen_height;
 
 	p[0] = v1->x - dx;  p[1] = -(v1->y + dy); p[2] = 1;
 	p[3] = v2->x - dx;  p[4] = -(v2->y + dy); p[5] = 1;
@@ -3118,8 +3118,8 @@ void GL_DrawModelEx(model_t *model, INT32 frameIndex, float duration, float tics
 void GL_SetTransform(FTransform *stransform)
 {
 	static boolean special_splitscreen;
-	GLdouble used_fov;
 	boolean shearing = false;
+	float used_fov;
 
 	pglLoadIdentity();
 
@@ -3178,11 +3178,11 @@ void GL_SetTransform(FTransform *stransform)
 
 	if (special_splitscreen)
 	{
-		used_fov = (float)(atan(tan(used_fov * M_PIl / 360) * 0.8) * 360 / M_PIl);
-		GL_Perspective((GLfloat)used_fov, 2*ASPECT_RATIO);
+		used_fov = (atanf(tanf(used_fov * (float)M_PI / 360.0f) * 0.8f) * 360.0f / (float)M_PI);
+		GL_Perspective(used_fov, 2*ASPECT_RATIO);
 	}
 	else
-		GL_Perspective((GLfloat)used_fov, ASPECT_RATIO);
+		GL_Perspective(used_fov, ASPECT_RATIO);
 
 	pglGetFloatv(GL_PROJECTION_MATRIX, projMatrix); // added for new coronas' code (without depth buffer)
 	pglMatrixMode(GL_MODELVIEW);
