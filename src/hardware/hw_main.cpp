@@ -5088,42 +5088,46 @@ static void HWR_ProjectPrecipitationSprite(precipmobj_t *thing)
 
 static gl_sky_t gl_sky;
 
-#define DEG2RADGL(a) ((a * M_PIl) / 180.0f)
-
 static void HWR_SkyDomeVertex(gl_sky_t *sky, gl_skyvertex_t *vbo, int r, int c, signed char yflip, float delta, boolean foglayer)
 {
+	static constexpr float radians = (float)(M_PIl / 180.0f);
 	static constexpr float scale = 10000.0f;
-	static constexpr float maxSideAngle = DEG2RADGL(60.0f);
+	static constexpr float maxSideAngle = 60.0f * radians;
 
-	float topAngle = DEG2RADGL(c / (float)sky->columns * 360.0f);
+	float topAngle = ((float)c / (float)sky->columns * 360.0f) * radians;
 	float sideAngle = (maxSideAngle * (float)(sky->rows - r) / (float)sky->rows);
-	float height = (float)(sin(sideAngle));
-	float realRadius = (scale * (float)cos(sideAngle));
-	float x = (realRadius * (float)cos(topAngle));
+	float height = sinf(sideAngle);
+	float realRadius = (scale * cosf(sideAngle));
+	float x = (realRadius * cosf(topAngle));
 	float y = (!yflip) ? scale * height : -scale * height;
-	float z = (realRadius * (float)sin(topAngle));
-	float timesRepeat = (4 * (256.0f / sky->width));
-
-	if (std::fpclassify(timesRepeat) == FP_ZERO)
-		timesRepeat = 1.0f;
+	float z = (realRadius * sinf(topAngle));
+	float timesRepeat;
 
 	if (!foglayer)
 	{
+		timesRepeat = (4.0f * (256.0f / (float)sky->width));
+
+		if (std::fpclassify(timesRepeat) == FP_ZERO)
+			timesRepeat = 1.0f;
+
 		vbo->r = 255;
 		vbo->g = 255;
 		vbo->b = 255;
 		vbo->a = (r == 0 ? 0 : 255);
 
 		// And the texture coordinates.
-		vbo->u = (-timesRepeat * c / (float)sky->columns);
-		if (!yflip)	// Flipped Y is for the lower hemisphere.
-			vbo->v = (r / (float)sky->rows) + 0.5f;
+		vbo->u = (-timesRepeat * (float)c / (float)sky->columns);
+
+		if (!yflip) // Flipped Y is for the lower hemisphere.
+			vbo->v = ((float)r / (float)sky->rows) + 0.5f;
 		else
-			vbo->v = 1.0f + ((sky->rows - r) / (float)sky->rows) + 0.5f;
+			vbo->v = 1.0f + ((float)(sky->rows - r) / (float)sky->rows) + 0.5f;
 	}
 
 	if (r != 4)
+	{
 		y += 300.0f;
+	}
 
 	// And finally the vertex.
 	vbo->x = x;
