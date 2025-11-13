@@ -6014,20 +6014,27 @@ void HWR_DoWipe(UINT8 wipenum, UINT8 scrnnum)
 	}
 
 	if (wipenum > 99 || scrnnum > 99) // not a valid wipe number
+	{
+		V_DrawFill(0, 0, BASEVIDWIDTH, BASEVIDHEIGHT, 31); // just draw a black screen instead of flashing and crap
 		return; // shouldn't end up here really, the loop should've stopped running beforehand
+	}
 
 	// puts the numbers into the lumpname
 	sprintf(&lumpname[4], "%.2hu%.2hu", (UINT16)wipenum, (UINT16)scrnnum);
 	lumpnum = W_CheckNumForName(lumpname);
 
 	if (lumpnum == LUMPERROR) // again, shouldn't be here really
+	{
+		V_DrawFill(0, 0, BASEVIDWIDTH, BASEVIDHEIGHT, 31); // just draw a black screen instead of flashing and crap
 		return;
+	}
 
 	lsize = W_LumpLength(lumpnum);
 
 	if (!(lsize == 256000 || lsize == 64000 || lsize == 16000 || lsize == 4000))
 	{
 		CONS_Alert(CONS_WARNING, "Fade mask lump %s of incorrect size, ignored\n", lumpname);
+		V_DrawFill(0, 0, BASEVIDWIDTH, BASEVIDHEIGHT, 31); // just draw a black screen instead of flashing and crap
 		return; // again, shouldn't get here if it is a bad size
 	}
 
