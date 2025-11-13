@@ -18,6 +18,7 @@ set(SRB2_CORE_SOURCES
 	f_wipe.c
 	filesrch.c
 	g_game.c
+	g_demo.c
 	g_input.c
 	hu_stuff.c
 	i_tcp.c
@@ -30,6 +31,7 @@ set(SRB2_CORE_SOURCES
 	m_cheat.c
 	m_cond.c
 	m_fixed.c
+	m_emotes.cpp
 	m_menu.c
 	m_textinput.c
 	m_misc.c
@@ -49,7 +51,7 @@ set(SRB2_CORE_SOURCES
 	v_video.c
 	w_wad.c
 	y_inter.c
-	z_zone.c
+	z_zone.cpp
 )
 
 set(SRB2_CORE_HEADERS
@@ -58,6 +60,7 @@ set(SRB2_CORE_HEADERS
 	byteptr.h
 	command.h
 	console.h
+	cxxutil.hpp
 	d_clisrv.h
 	d_event.h
 	d_main.h
@@ -78,6 +81,7 @@ set(SRB2_CORE_HEADERS
 	fastcmp.h
 	filesrch.h
 	g_game.h
+	g_demo.h
 	g_input.h
 	g_state.h
 	hu_stuff.h
@@ -99,6 +103,7 @@ set(SRB2_CORE_HEADERS
 	m_cond.h
 	m_dllist.h
 	m_fixed.h
+	m_emotes.h
 	m_menu.h
 	m_textinput.h
 	m_misc.h
@@ -123,18 +128,22 @@ set(SRB2_CORE_HEADERS
 )
 
 set(SRB2_CORE_RENDER_SOURCES
-	r_bsp.c
+	r_bsp.cpp
 	r_data.c
-	r_draw.c
-	r_fps.c
-	r_main.c
-	r_patch.c
-	r_patchrotation.c
-	r_plane.c
-	r_segs.c
+	r_draw.cpp
+	r_draw_column.cpp
+	r_draw_flush.cpp
+	r_draw_span.cpp
+	r_fps.cpp
+	r_main.cpp
+	r_patch.cpp
+	r_patchrotation.cpp
+	r_plane.cpp
+	r_segs.cpp
+	r_skins.c
 	r_sky.c
 	r_splats.c
-	r_things.c
+	r_things.cpp
 	r_portal.c
 
 	r_bsp.h
@@ -148,6 +157,7 @@ set(SRB2_CORE_RENDER_SOURCES
 	r_patchrotation.h
 	r_plane.h
 	r_segs.h
+	r_skins.h
 	r_sky.h
 	r_splats.h
 	r_state.h
@@ -162,7 +172,7 @@ set(SRB2_CORE_GAME_SOURCES
 	p_inter.c
 	p_lights.c
 	p_map.c
-	p_maputl.c
+	p_maputl.cpp
 	p_mobj.c
 	p_polyobj.c
 	p_saveg.c
@@ -175,6 +185,7 @@ set(SRB2_CORE_GAME_SOURCES
 	p_user.c
 	k_director.c
 	k_kart.c
+	k_hud.c
 	k_stats.c
 	i_time.c
 
@@ -190,6 +201,7 @@ set(SRB2_CORE_GAME_SOURCES
 	p_tick.h
 	k_director.h
 	k_kart.h
+	k_hud.h
 	k_stats.h
 )
 
@@ -478,7 +490,7 @@ if(${SRB2_CONFIG_HWRENDER})
 		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_cache.c
 		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_clip.c
 		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_draw.c
-		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_main.c
+		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_main.cpp
 		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_portal.c
 		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_md2.c
 		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_md2load.c
