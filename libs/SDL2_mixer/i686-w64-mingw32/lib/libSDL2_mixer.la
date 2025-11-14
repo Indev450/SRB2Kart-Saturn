@@ -17,15 +17,15 @@ old_library='libSDL2_mixer.a'
 inherited_linker_flags=''
 
 # Libraries that this one depends upon.
-dependency_libs=' -L/opt/local/i686-w64-mingw32/lib -lmingw32 /opt/local/i686-w64-mingw32/lib/libSDL2.la -ldinput8 -ldxguid -ldxerr8 -luser32 -lgdi32 -limm32 -lole32 -loleaut32 -lshell32 -lsetupapi -lversion -luuid -lwinmm'
+dependency_libs=' -L/tmp/tardir/SDL2_mixer-2.8.1/VisualC/external/optional/x86 -L/home/runner/work/SDL_mixer/SDL_mixer/deps/mingw-deps/i686-w64-mingw32/lib -lmingw32 /home/runner/work/SDL_mixer/SDL_mixer/deps/mingw-deps/i686-w64-mingw32/lib/libSDL2.la -ldinput8 -ldxguid -ldxerr8 -luser32 -lgdi32 -limm32 -lole32 -loleaut32 -lshell32 -lsetupapi -lversion -luuid -lwinmm'
 
 # Names of additional weak libraries provided by this library
 weak_library_names=''
 
 # Version information for libSDL2_mixer.
-current=2
-age=2
-revision=2
+current=800
+age=800
+revision=1
 
 # Is this an already installed library?
 installed=yes
@@ -38,4 +38,4 @@ dlopen=''
 dlpreopen=''
 
 # Directory that this library needs to be installed in:
-libdir='/Users/valve/release/SDL_mixer/SDL2_mixer-2.0.4/i686-w64-mingw32/lib'
+libdir='/tmp/tardir/SDL2_mixer-2.8.1/build-mingw/install-i686-w64-mingw32/lib'
