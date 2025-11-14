@@ -141,7 +141,6 @@ static boolean InitCube(void)
 
 #define diffcons(cv) (!fastcmp(cv.string, cv.defaultvalue))
 #define diffconsbrightness(cv) (cv.value != 0)
-
 #define diffconssat(cv) (cv.value != 10)
 
 	doingbrightness = diffcons(cv_globalbrightness);

@@ -675,6 +675,7 @@ void D_SRB2Loop(void)
 	tic_t entertic = 0, oldentertics = 0, realtics = 0, rendertimeout = INFTICS;
 	double deltatics = 0.0;
 	double deltasecs = 0.0;
+	UINT64 precision;
 
 	boolean interp = false;
 	boolean doDisplay = false;
@@ -710,18 +711,23 @@ void D_SRB2Loop(void)
 		V_DrawFixedPatch(0, 0, FRACUNIT/2, 0, W_CachePatchNum(W_GetNumForName("KARTKREW"), PU_PATCH_LOWPRIORITY), NULL);
 	I_FinishUpdate(); // page flip or blit buffer
 
+	precision = I_GetPrecisePrecision();
+
 	for (;;)
 	{
 		// capbudget is the minimum precise_t duration of a single loop iteration
 		precise_t capbudget;
-		precise_t enterprecise = I_GetPreciseTime();
+		precise_t elapsed;
+		precise_t enterprecise, finishprecise;
+
+		enterprecise = I_GetPreciseTime();
 
 		memset(&g_dc, 0, sizeof(g_dc));
 		Z_Frame_Reset();
 
 		// Casting the return value of a function is bad practice (apparently)
-		double budget = ((R_GetFramerateCap() == 0) ? 0.0 : round((1.0 / R_GetFramerateCap()) * I_GetPrecisePrecision()));
-		capbudget = (precise_t)budget;
+		const UINT32 framecap = R_GetFramerateCap();
+		capbudget = (framecap == 0) ? 0 : (precise_t)((double)precision / (double)framecap + 0.5); // + 0.5 instead of round
 
 		boolean ranwipe = false;
 
@@ -799,7 +805,7 @@ void D_SRB2Loop(void)
 
 		if (interp)
 		{
-			renderdeltatics = FloatToFixed(deltatics);
+			renderdeltatics = DoubleToFixed(deltatics);
 
 			// I looked at the possibility of putting in a float drawer for
 			// perfstats and it's very complicated, so we'll just do this instead...
@@ -848,12 +854,13 @@ void D_SRB2Loop(void)
 		}
 #endif
 		// Fully completed frame made.
-		precise_t finishprecise = I_GetPreciseTime();
+		finishprecise = I_GetPreciseTime();
 
 		// Use the time before sleep for frameskip calculations:
 		// post-sleep time is literally being intentionally wasted
-		deltasecs = (double)((INT64)(finishprecise - enterprecise)) / I_GetPrecisePrecision();
-		deltatics = deltasecs * NEWTICRATE;
+		elapsed = finishprecise - enterprecise;
+		deltasecs = (double)elapsed / (double)precision;
+		deltatics = deltasecs * (double)NEWTICRATE;
 
 		// If time spent this game loop exceeds a single tic,
 		// it's probably because of rendering.
@@ -881,12 +888,10 @@ void D_SRB2Loop(void)
 
 		if (!singletics)
 		{
-			INT64 elapsed = (INT64)(finishprecise - enterprecise);
-
 			// in the case of "match refresh rate" + vsync, don't sleep at all
 			const boolean vsync_with_match_refresh = cv_vidwait.value && cv_fpscap.value == 0;
 
-			if ((elapsed > 0) && ((INT64)capbudget > elapsed) && !vsync_with_match_refresh)
+			if ((elapsed > 0) && (capbudget > elapsed) && !vsync_with_match_refresh)
 			{
 				I_SleepDuration(capbudget - elapsed);
 			}
@@ -894,8 +899,9 @@ void D_SRB2Loop(void)
 
 		// Capture the time once more to get the real delta time.
 		finishprecise = I_GetPreciseTime();
-		deltasecs = (double)((INT64)(finishprecise - enterprecise)) / I_GetPrecisePrecision();
-		deltatics = deltasecs * NEWTICRATE;
+		elapsed = finishprecise - enterprecise;
+		deltasecs = (double)elapsed / (double)precision;
+		deltatics = deltasecs * (double)NEWTICRATE;
 	}
 }
 
