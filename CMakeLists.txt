@@ -86,6 +86,12 @@ set(SRB2_CONFIG_ASSET_DIRECTORY "" CACHE PATH "Path to directory that contains a
 option(SRB2_CONFIG_LTO "Enable link time optimizations, improves performance at the cost of longer link times." ON)
 option(SRB2_CONFIG_TIDY "Enable clang tiny, checks compiled code for issues at the cost of longer compile times." OFF)
 
+# man i suck at explaining lmao
+option(SRB2_CONFIG_SATURNPAK "Enable Saturn specific special packet. Required for using the newer resynch system" ON)
+option(SRB2_CONFIG_SATURNJOIN "Enable Saturn specific allowjoin toggle." ON)
+option(SRB2_CONFIG_SCREENFBO "Enable hardware render (OpenGL) FBO downsampling support" ON)
+option(SRB2_CONFIG_LIBBACKTRACE "Enable using libbacktrace for crashlogs" ON)
+
 #if(SRB2_CONFIG_ENABLE_TESTS)
 	# https://github.com/catchorg/Catch2
 #	CPMAddPackage(
@@ -137,9 +143,10 @@ if("${SRB2_CONFIG_SYSTEM_LIBRARIES}")
 	find_package(SDL2 REQUIRED)
 	find_package(SDL2_mixer REQUIRED)
 	find_package(CURL REQUIRED)
-	find_package(OPENMPT REQUIRED)
+	find_package(OPENMPT OPTIONAL)
 	find_package(GME REQUIRED)
-	find_package(DiscordRPC REQUIRED)
+	find_package(DiscordRPC OPTIONAL)
+	find_package(libbacktrace OPTIONAL)
 endif()
 
 if(${PROJECT_SOURCE_DIR} MATCHES ${PROJECT_BINARY_DIR})

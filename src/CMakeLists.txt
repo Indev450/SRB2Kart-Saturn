@@ -37,6 +37,8 @@ endif()
 target_sourcefile(c)
 target_sources(SRB2SDL2 PRIVATE comptime.c config.h.in)
 
+target_sources(SRB2SDL2 PRIVATE md5.c md5.h)
+
 ### Configuration
 set(SRB2_CONFIG_DEV_BUILD OFF CACHE BOOL
 	"Compile a development build of SRB2Kart.")
@@ -91,6 +93,7 @@ add_subdirectory(core)
 # OS macros
 if (UNIX)
 	target_compile_definitions(SRB2SDL2 PRIVATE -DUNIXCOMMON)
+	target_link_libraries(SRB2SDL2 PRIVATE -rdynamic) # Use -rdynamic so a backtrace log shows function names
 endif()
 
 if(CMAKE_COMPILER_IS_GNUCC)
@@ -108,6 +111,7 @@ if("${CMAKE_SYSTEM_NAME}" MATCHES "Darwin")
 	target_compile_definitions(SRB2SDL2 PRIVATE -DMACOSX)
 endif()
 
+# add toggle for this
 target_link_libraries(SRB2SDL2 PRIVATE openmpt)
 target_compile_definitions(SRB2SDL2 PRIVATE -DHAVE_OPENMPT)
 
@@ -119,6 +123,11 @@ if(SRB2_CONFIG_ENABLE_DISCORDRPC)
 	target_link_libraries(SRB2SDL2 PRIVATE DiscordRPC::DiscordRPC)
 	target_compile_definitions(SRB2SDL2 PRIVATE -DHAVE_DISCORDRPC)
 	target_sources(SRB2SDL2 PRIVATE discord.c)
+endif()
+
+if(${SRB2_CONFIG_LIBBACKTRACE})
+	target_link_libraries(SRB2SDL2 PRIVATE libbacktrace)
+	target_compile_definitions(SRB2SDL2 PRIVATE -DHAVE_LIBBACKTRACE)
 endif()
 
 set(SRB2_HAVE_THREADS ON)
@@ -226,8 +235,10 @@ target_compile_options(SRB2SDL2 PRIVATE -fwrapv)
 
 if (${CMAKE_BUILD_TYPE} MATCHES Debug)
 	target_compile_options(SRB2SDL2 PRIVATE -O0)
+	target_compile_options(SRB2SDL2 PRIVATE -g)
 else()
 	target_compile_options(SRB2SDL2 PRIVATE -O3)
+	target_compile_options(SRB2SDL2 PRIVATE -g1) #should be enough for libbacktrace
 endif()
 
 # Compiler warnings configuration
@@ -361,7 +372,7 @@ target_link_options(SRB2SDL2 PRIVATE
 if(${SRB2_CONFIG_DEV_BUILD})
 	target_compile_definitions(SRB2SDL2 PRIVATE -DDEVELOP)
 endif()
-#target_compile_definitions(SRB2SDL2 PRIVATE -DCMAKECONFIG) #TODO: fix this
+target_compile_definitions(SRB2SDL2 PRIVATE -DCMAKECONFIG)
 
 # Misc. build options from Makefiles
 if(SRB2_CONFIG_DEBUGMODE)
@@ -383,6 +394,18 @@ endif()
 
 if(SRB2_CONFIG_LTO AND NOT SRB2_CONFIG_DEBUGMODE)
 	set_property(TARGET SRB2SDL2 PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
+endif()
+
+if(${SRB2_CONFIG_SCREENFBO} AND NOT ${SRB2_CONFIG_STATIC_OPENGL})
+	target_compile_definitions(SRB2SDL2 PRIVATE -DUSE_FBO_OGL)
+endif()
+
+if(${SRB2_CONFIG_SATURNPAK})
+	target_compile_definitions(SRB2SDL2 PRIVATE -DDOSATURNPAK)
+endif()
+
+if(${SRB2_CONFIG_SATURNJOIN})
+	target_compile_definitions(SRB2SDL2 PRIVATE -DDOSATURNJOIN)
 endif()
 
 # strip debug symbols into separate file when using gcc or clang.
