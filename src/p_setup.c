@@ -2653,7 +2653,8 @@ static void P_SetupPlayer(void)
 	spbplace = -1;
 
 	startedInFreePlay = true;
-	for (UINT8 nump = 0, i = 0; i < MAXPLAYERS; i++)
+	UINT8 nump = 0;
+	for (i = 0; i < MAXPLAYERS; i++)
 	{
 		if (!playeringame[i] || players[i].spectator)
 		{
