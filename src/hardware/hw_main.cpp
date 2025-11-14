@@ -431,13 +431,13 @@ void HWR_Lighting(FSurfaceInfo *Surface, INT32 light_level, extracolormap_t *col
 		blue  = (float)poly_color.s.blue;
 
 		// 48 is just an arbritrary value that looked relatively okay.
-		tint_alpha = (float)(sqrt(tint_color.s.alpha) * 48) / 255.0f;
+		tint_alpha = (sqrtf((float)tint_color.s.alpha) * 48.0f) / 255.0f;
 
 		// 8 is roughly the brightness of the "close" color in Software, and 16 the brightness of the "far" color.
 		// 8 is too bright for dark levels, and 16 is too dark for bright levels.
 		// 12 is the compromise value. It doesn't look especially good anywhere, but it's the most balanced.
 		// (Also, as far as I can tell, fade_color's alpha is actually not used in Software, so we only use light level.)
-		fade_alpha = (float)(sqrt(255-light_level) * 12) / 255.0f;
+		fade_alpha = (sqrtf((float)(255-light_level)) * 12.0f) / 255.0f;
 
 		// Clamp the alpha values
 		tint_alpha = CLAMP(tint_alpha, 0.0f, 1.0f);
@@ -558,7 +558,8 @@ static void HWR_RenderPlane(subsector_t *subsector, extrasubsector_t *xsub, bool
 	size_t len;
 
 	float tempxsow, tempytow;
-	float scrollx = 0.0f, scrolly = 0.0f, anglef = 0.0f;
+	float scrollx = 0.0f, scrolly = 0.0f;
+	float anglef  = 0.0f, cosangf = 0.0f, sinangf = 0.0f;
 	angle_t angle = 0;
 
 	static FOutVector *planeVerts = NULL;
@@ -572,7 +573,7 @@ static void HWR_RenderPlane(subsector_t *subsector, extrasubsector_t *xsub, bool
 
 	nrPlaneVerts = planepoly->numpts;
 
-	if (nrPlaneVerts < 3)   //not even a triangle ?
+	if (nrPlaneVerts < 3) // not even a triangle ?
 		return;
 
 	const sector_t *sec = FOFsector ? FOFsector : gl_frontsector;
@@ -655,8 +656,10 @@ static void HWR_RenderPlane(subsector_t *subsector, extrasubsector_t *xsub, bool
 		tempxsow = flatxref;
 		tempytow = flatyref;
 		anglef   = ANG2RAD(InvAngle(angle));
-		flatxref = (tempxsow * cosf(anglef)) - (tempytow * sinf(anglef));
-		flatyref = (tempxsow * sinf(anglef)) + (tempytow * cosf(anglef));
+		cosangf = cosf(anglef);
+		sinangf = sinf(anglef);
+		flatxref = (tempxsow * cosangf) - (tempytow * sinangf);
+		flatyref = (tempxsow * sinangf) + (tempytow * cosangf);
 	}
 
 #define SETUP3DVERT(vert, vx, vy) {\
@@ -669,8 +672,8 @@ static void HWR_RenderPlane(subsector_t *subsector, extrasubsector_t *xsub, bool
 		{\
 			tempxsow = vert->s;\
 			tempytow = vert->t;\
-			vert->s = (tempxsow * cosf(anglef)) - (tempytow * sinf(anglef));\
-			vert->t = (tempxsow * sinf(anglef)) + (tempytow * cosf(anglef));\
+			vert->s = (tempxsow * cosangf) - (tempytow * sinangf);\
+			vert->t = (tempxsow * sinangf) + (tempytow * cosangf);\
 		}\
 \
 		vert->x = (vx);\
@@ -1163,11 +1166,11 @@ static void HWR_SplitWall(sector_t *sector, FOutVector *wallVerts, INT32 texnum,
 // Additionally, to remove the need to draw the sky twice, drawing a plane at the far clip boundary to the stencil buffer after other
 // rendering will also allow stencil sky rendering to fill in any untouched pixels too.
 
-FOutVector* skyWallVertexArray = NULL;
-int skyWallVertexArraySize = 0;
-int skyWallVertexArrayAllocSize = 65536;// what a mouthful
+static FOutVector* skyWallVertexArray = NULL;
+static int skyWallVertexArraySize = 0;
+static int skyWallVertexArrayAllocSize = 65536;// what a mouthful
 
-boolean gl_collect_skywalls = false;
+static boolean gl_collect_skywalls = false;
 
 static void HWR_SkyWallList_Clear(void)
 {
@@ -1196,7 +1199,7 @@ static void HWR_SkyWallList_Add(FOutVector *wallVerts)
 static void HWR_DrawSkyWallList(void)
 {
 	int i;
-	FSurfaceInfo surf;
+	FSurfaceInfo surf = {};
 
 	surf.PolyColor.rgba = 0xFFFFFFFF;
 
@@ -1281,8 +1284,8 @@ static inline boolean HWR_BlendMidtextureSurface(FSurfaceInfo *pSurf)
 			pSurf->PolyColor.s.alpha = 0x00; // This shouldn't draw anything regardless of blendmode
 			return false;
 		}
-		else
-			blendmode = HWR_TranstableToAlpha(gl_curline->polyseg->translucency, pSurf);
+
+		blendmode = HWR_TranstableToAlpha(gl_curline->polyseg->translucency, pSurf);
 	}
 
 	if (blendmode != PF_Masked && pSurf->PolyColor.s.alpha == 0x00)
@@ -1375,6 +1378,9 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 	const INT32 gl_midtexture = R_GetTextureNum(gl_sidedef->midtexture);
 	GLMapTexture_t *glTex = NULL;
 
+	static constexpr float FLOATMAX = INT32_MAX / (float)FRACUNIT;
+	static constexpr float FLOATMIN = INT32_MIN / (float)FRACUNIT;
+
 	// two sided line
 	if (gl_backsector)
 	{
@@ -1389,7 +1395,7 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 		if (!gl_curline->polyseg) // Don't do it for polyobjects
 		{
 			// Sky Ceilings
-			wallVerts[3].y = wallVerts[2].y = FixedToFloat(INT32_MAX);
+			wallVerts[3].y = wallVerts[2].y = FLOATMAX;
 
 			auto draw_sky_walls = [&](int vert1, int vert2, fixed_t world, fixed_t worldslope)
 			{
@@ -1424,7 +1430,7 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 			}
 
 			// Sky Floors
-			wallVerts[0].y = wallVerts[1].y = FixedToFloat(INT32_MIN);
+			wallVerts[0].y = wallVerts[1].y = FLOATMIN;
 
 			if (gl_frontsector->floorpic == skyflatnum)
 			{
@@ -1764,7 +1770,7 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 		{
 			glTex = HWR_GetTexture(gl_midtexture, noencore);
 
-			fixed_t     texturevpeg;
+			fixed_t texturevpeg;
 
 			// PEGGING
 			if ((gl_linedef->flags & (ML_DONTPEGBOTTOM|ML_EFFECT2)) == (ML_DONTPEGBOTTOM|ML_EFFECT2))
@@ -1832,7 +1838,7 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 		{
 			if (gl_frontsector->ceilingpic == skyflatnum) // It's a single-sided line with sky for its sector
 			{
-				wallVerts[2].y = wallVerts[3].y = FixedToFloat(INT32_MAX); // draw to top of map space
+				wallVerts[2].y = wallVerts[3].y = FLOATMAX; // draw to top of map space
 				wallVerts[0].y = FixedToFloat(worldtop);
 				wallVerts[1].y = FixedToFloat(worldtopslope);
 
@@ -1842,7 +1848,7 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 			{
 				wallVerts[3].y = FixedToFloat(worldbottom);
 				wallVerts[2].y = FixedToFloat(worldbottomslope);
-				wallVerts[0].y = wallVerts[1].y = FixedToFloat(INT32_MIN); // draw to bottom of map space
+				wallVerts[0].y = wallVerts[1].y = FLOATMIN; // draw to bottom of map space
 
 				HWR_DrawSkyWall(wallVerts, &Surf);
 			}
@@ -1899,7 +1905,7 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 
 				if (rover->master->flags & ML_TFERLINE)
 				{
-					size_t linenum = std::min((size_t)(gl_curline->linedef-gl_backsector->lines[0]), rover->master->frontsector->linecount);
+					size_t linenum = std::min<size_t>(gl_curline->linedef-gl_backsector->lines[0], rover->master->frontsector->linecount);
 					newline = rover->master->frontsector->lines[0] + linenum;
 					texnum = R_GetTextureNum(sides[newline->sidenum[0]].midtexture);
 				}
@@ -2045,7 +2051,9 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 						break;
 					}
 
-				if (bothsides) continue;
+				if (bothsides)
+					continue;
+
 				const ffloortype_e roverflags = rover->flags;
 
 				if (!(roverflags & FF_EXISTS) || !(roverflags & FF_RENDERSIDES) || !(roverflags & FF_ALLSIDES))
@@ -2061,7 +2069,7 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 
 				if (rover->master->flags & ML_TFERLINE)
 				{
-					size_t linenum = std::min((size_t)(gl_curline->linedef-gl_backsector->lines[0]), rover->master->frontsector->linecount);
+					size_t linenum = std::min<size_t>(gl_curline->linedef-gl_backsector->lines[0], rover->master->frontsector->linecount);
 					newline = rover->master->frontsector->lines[0] + linenum;
 					texnum = R_GetTextureNum(sides[newline->sidenum[0]].midtexture);
 				}
@@ -2179,12 +2187,13 @@ boolean checkforemptylines = true;
 
 static boolean CheckClip(sector_t * afrontsector, sector_t * abacksector)
 {
-	fixed_t frontf1,frontf2, frontc1, frontc2; // front floor/ceiling ends
+	fixed_t frontf1, frontf2, frontc1, frontc2; // front floor/ceiling ends
 	fixed_t backf1, backf2, backc1, backc2; // back floor ceiling ends
 
 	// GZDoom method of sloped line clipping
 
-	if (afrontsector->f_slope || afrontsector->c_slope || abacksector->f_slope || abacksector->c_slope)
+	if (afrontsector->f_slope || afrontsector->c_slope
+	 || abacksector->f_slope || abacksector->c_slope)
 	{
 		fixed_t v1x, v1y, v2x, v2y; // the seg's vertexes as fixed_t
 
@@ -2208,8 +2217,8 @@ static boolean CheckClip(sector_t * afrontsector, sector_t * abacksector)
 	{
 		frontf1 = frontf2 = afrontsector->floorheight;
 		frontc1 = frontc2 = afrontsector->ceilingheight;
-		backf1 = backf2 = abacksector->floorheight;
-		backc1 = backc2 = abacksector->ceilingheight;
+		backf1  = backf2  = abacksector->floorheight;
+		backc1  = backc2  = abacksector->ceilingheight;
 	}
 
 	// using this check with portals causes weird culling issues on ante-station
@@ -2333,7 +2342,7 @@ static inline void DoAddLine(seg_t* line, angle_t angle1, angle_t angle2)
 
 		if constexpr (Type == AddLineType::kPortal)
 		{
-			if (gl_portal_state != GLPORTAL_SEARCH && !dontdraw)// no need to do this during the portal check
+			if (gl_portal_state != GLPORTAL_SEARCH && !dontdraw) // no need to do this during the portal check
 				HWR_ProcessSeg(); // Doesn't need arguments because they're defined globally :D
 		}
 		else if constexpr (Type == AddLineType::kNormal)
@@ -2573,7 +2582,7 @@ static void HWR_RenderPolyObjectPlane(polyobj_t *polysector, boolean isceiling, 
 
 	nrPlaneVerts = polysector->numVertices;
 
-	if (nrPlaneVerts < 3)   //not even a triangle ?
+	if (nrPlaneVerts < 3) // not even a triangle ?
 		return;
 
 	if (nrPlaneVerts > INT16_MAX) // FIXME: exceeds plVerts size
@@ -2731,7 +2740,7 @@ static void HWR_AddPolyObjectPlanes(void)
 	// Polyobject Planes need their own function for drawing because they don't have extrasubsectors by themselves
 	// It should be okay because polyobjects should always be convex anyway
 
-	for (i  = 0; i < numpolys; i++)
+	for (i = 0; i < numpolys; i++)
 	{
 		polyobjsector = po_ptrs[i]->lines[0]->backsector; // the in-level polyobject sector
 
@@ -4435,7 +4444,8 @@ static void HWR_DrawSprites(void)
 			HWR_DrawPrecipitationSprite(spr);
 			continue;
 		}
-		else if (spr->mobj)
+
+		if (spr->mobj)
 		{
 			if constexpr (Type == DrawSpritesType::kModels)
 			{
@@ -4488,7 +4498,7 @@ template <AddSpritesType Type>
 static void HWR_AddSprites(sector_t *sec)
 {
 	mobj_t *thing;
-	INT32 limit_dist;
+	INT32 limit_dist = 0;
 
 	// BSP is traversed by subsector.
 	// A sector might have been split into several
@@ -4551,13 +4561,13 @@ static void HWR_AddPrecipitationSprites(void)
 		return;
 	}
 
-	drawdist = ((fixed_t)(cv_drawdist_precip.value) * mapobjectscale);
-
 	// No to infinite precipitation draw distance.
 	if (cv_drawdist_precip.value == 0)
 	{
 		return;
 	}
+
+	drawdist = ((fixed_t)(cv_drawdist_precip.value) * mapobjectscale);
 
 	if (current_bsp_culling_distance)
 		drawdist = std::min((fixed_t)current_bsp_culling_distance, drawdist);
@@ -5279,7 +5289,7 @@ static inline void HWR_ClearView(void)
 				 viewwindowy,
 				(viewwindowx + viewwidth),
 				(viewwindowy + viewheight),
-						ZCLIP_PLANE, FAR_ZCLIP_DEFAULT);
+				 ZCLIP_PLANE, FAR_ZCLIP_DEFAULT);
 	GL_ClearBuffer(false, true, true, NULL);
 }
 
@@ -5525,7 +5535,6 @@ void HWR_RenderViewpoint(gl_portal_t *rootportal, player_t *player, int stencil_
 		HWR_DrawSprites<DrawSpritesType::kSprites>();
 	PS_STOP_TIMING(ps_hw_spritedrawtime);
 
-
 	ps_numdrawnodes.value.i    = 0;
 	ps_hw_nodesorttime.value.p = 0;
 	ps_hw_nodedrawtime.value.p = 0;
@@ -5562,14 +5571,16 @@ static void HWR_RenderFrame(player_t *player, boolean skybox)
 
 	current_bsp_culling_distance = 0;
 
-	if (!skybox && cv_glrenderdistance.value)
+	const INT32 renderdist = cv_glrenderdistance.value;
+
+	if (!skybox && renderdist)
 	{
 		GL_GClipRect(viewwindowx,
 					 viewwindowy,
 					(viewwindowx + viewwidth),
 					(viewwindowy + viewheight),
-					ZCLIP_PLANE, clipping_distances[cv_glrenderdistance.value - 1]);
-		current_bsp_culling_distance = bsp_culling_distances[cv_glrenderdistance.value - 1];
+					ZCLIP_PLANE, clipping_distances[renderdist - 1]);
+		current_bsp_culling_distance = bsp_culling_distances[renderdist- 1];
 	}
 
 	portalclipline = NULL;
