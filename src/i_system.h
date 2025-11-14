@@ -221,10 +221,6 @@ INT32 I_mkdir(const char *dirname, INT32 unixright);
 */
 const char *I_LocateWad(void);
 
-/**	\brief Joystick events
-*/
-void I_GetJoystickEvents(UINT8 index);
-
 char *I_GetEnv(const char *name);
 
 INT32 I_PutEnv(char *variable);
