@@ -5193,7 +5193,7 @@ void P_PlayerAfterThink(player_t *player)
 			player->mo->tracer->target->health += cmd->sidemove;
 			player->mo->angle += cmd->sidemove << ANGLETOFINESHIFT; // 2048 --> ANGLE_MAX
 
-			for (UINT8 i = 0; i <= splitscreen; i++)
+			for (i = 0; i <= splitscreen; i++)
 			{
 				if (player == P_GetLocalPlayerForNum(i))
 				{

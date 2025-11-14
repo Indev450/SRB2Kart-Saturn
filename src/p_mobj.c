@@ -10871,7 +10871,7 @@ void P_SpawnPlayer(INT32 playernum)
 	{
 		if (!p->spectator)
 		{
-			for (UINT8 i = 0; i <= splitscreen; i++)
+			for (i = 0; i <= splitscreen; i++)
 			{
 				if (playernum == P_GetLocalPlayerNumForNum(i))
 				{
@@ -10889,17 +10889,12 @@ void P_AfterPlayerSpawn(INT32 playernum)
 	mobj_t *mobj = p->mo;
 	UINT8 i;
 
-	if (playernum == consoleplayer)
-		localangle[0] = mobj->angle;
-	else if (splitscreen)
+	for (i = 0; i <= splitscreen; i++)
 	{
-		for (i = 1; i <= splitscreen; i++)
+		if (playernum == P_GetLocalPlayerNumForNum(i))
 		{
-			if (playernum == displayplayers[i])
-			{
-				localangle[i] = mobj->angle;
-				break;
-			}
+			localangle[i] = mobj->angle;
+			break;
 		}
 	}
 
