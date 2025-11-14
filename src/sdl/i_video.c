@@ -1814,7 +1814,11 @@ static SDL_bool Impl_CreateContext(void)
 			I_Error("Failed to create a GL context: %s\n", SDL_GetError());
 		}
 
-		SDL_GL_MakeCurrent(window, sdlglcontext);
+		if (SDL_GL_MakeCurrent(window, sdlglcontext) < 0)
+		{
+			SDL_DestroyWindow(window);
+			I_Error("Failed to set up GL context: %s\n", SDL_GetError());
+		}
 
 		// be sure to fill the resolution list the moment we have a window
 		I_FillScreenResolutionsList(false);
@@ -1855,8 +1859,7 @@ static SDL_bool Impl_CreateContext(void)
 
 		if (renderer == NULL)
 		{
-			CONS_Printf(M_GetText("Couldn't create rendering context: %s\n"), SDL_GetError());
-			return SDL_FALSE;
+			I_Error("Couldn't create rendering context: %s\n", SDL_GetError());
 		}
 
 		SDL_RenderSetLogicalSize(renderer, BASEVIDWIDTH, BASEVIDHEIGHT);
@@ -1912,8 +1915,7 @@ static SDL_bool Impl_CreateWindow(SDL_bool fullscreen)
 
 	if (window == NULL)
 	{
-		CONS_Printf(M_GetText("Couldn't create window: %s\n"), SDL_GetError());
-		return SDL_FALSE;
+		I_Error("Couldn't create window: %s\n", SDL_GetError());
 	}
 
 	return Impl_CreateContext();
