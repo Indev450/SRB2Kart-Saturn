@@ -150,6 +150,9 @@ subsector_t *R_IsPointInSubsector(fixed_t x, fixed_t y);
 #define R_PointToDist(x, y) R_PointToDist2(viewx, viewy, x, y)
 #define R_PointToDist2(px2, py2, px1, py1) FixedHypot((px1) - (px2), (py1) - (py2))
 
+line_t *R_GetFFloorLine(const line_t *line, const ffloor_t *pfloor, const sector_t *sector);
+side_t *R_GetFFloorSide(const line_t *line, const ffloor_t *pfloor, const sector_t *sector);
+
 boolean R_DoCulling(line_t *cullheight, line_t *viewcullheight, fixed_t vz, fixed_t bottomh, fixed_t toph);
 void R_GetRenderBlockMapDimensions(fixed_t drawdist, INT32 *xl, INT32 *xh, INT32 *yl, INT32 *yh);
 

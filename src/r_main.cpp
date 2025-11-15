@@ -442,6 +442,28 @@ fixed_t R_ScaleFromGlobalAngle(angle_t visangle)
 	return 64*FRACUNIT;
 }
 
+line_t *R_GetFFloorLine(const line_t *line, const ffloor_t *pfloor, const sector_t *sector)
+{
+	if (pfloor->master->flags & ML_TFERLINE)
+	{
+		size_t linenum = std::min<size_t>((size_t)(line - sector->lines[0]), pfloor->master->frontsector->linecount);
+		return pfloor->master->frontsector->lines[0] + linenum;
+	}
+	else
+		return pfloor->master;
+}
+
+side_t *R_GetFFloorSide(const line_t *line, const ffloor_t *pfloor, const sector_t *sector)
+{
+	if (pfloor->master->flags & ML_TFERLINE)
+	{
+		line_t *newline = R_GetFFloorLine(line, pfloor, sector);
+		return &sides[newline->sidenum[0]];
+	}
+	else
+		return &sides[pfloor->master->sidenum[0]];
+}
+
 //
 // R_DoCulling
 // Checks viewz and top/bottom heights of an item against culling planes
