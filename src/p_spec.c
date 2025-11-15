@@ -4798,7 +4798,6 @@ static ffloor_t *P_AddFakeFloor(sector_t *sec, sector_t *sec2, line_t *master, f
 	ffloor->master = master;
 	ffloor->norender = INFTICS;
 
-
 	// Scan the thinkers to check for special conditions applying to this FOF.
 	// If we have thinkers sorted by sector, just check the relevant ones;
 	// otherwise, check them all. Apologies for the ugly loop...
