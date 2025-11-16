@@ -20,18 +20,14 @@
 #ifndef _R_OPENGL_H_
 #define _R_OPENGL_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #ifdef HAVE_SDL
 #define _MATH_DEFINES_DEFINED
 
-#ifdef _MSC_VER
-#pragma warning(disable : 4214 4244)
-#endif
-
 #include "SDL_opengl.h" //Alam_GBC: Simple, yes?
-
-#ifdef _MSC_VER
-#pragma warning(default : 4214 4244)
-#endif
 
 #else
 #include <GL/gl.h>
@@ -67,6 +63,8 @@ extern FILE             *gllogstream;
 // ==========================================================================
 
 FUNCPRINTF void GL_DBG_Printf(const char *format, ...);
+
+extern boolean supportstencil;
 
 void *GetGLFunc(const char *proc);
 boolean SetupGLfunc(void);
@@ -106,10 +104,7 @@ extern PFNglGetString pglGetString;
 void GL_Framebuffer_Unbind(void);
 void GL_Framebuffer_Enable(void);
 void GL_Framebuffer_Disable(void);
-
-extern GLuint FramebufferObject, FramebufferTexture, RenderbufferObject;
-extern GLboolean FrameBufferEnabled, RenderToFramebuffer;
-extern boolean supportFBO;
+extern int supportFBO;
 #endif
 
 // ==========================================================================
@@ -129,6 +124,7 @@ extern GLint			screen_width;
 extern GLint			screen_height;
 extern GLbyte			screen_depth;
 extern GLint			maximumAnisotropy;
+extern boolean			supportNPO2tex;
 extern boolean 			supportMipMap;
 
 /**	\brief OpenGL flags for video driver
@@ -142,5 +138,9 @@ typedef enum
 	GLF_NOZBUFREAD = 0x01,
 	GLF_NOTEXENV   = 0x02,
 } oglflags_t;
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif

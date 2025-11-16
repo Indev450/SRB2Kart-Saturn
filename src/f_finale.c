@@ -34,6 +34,8 @@
 #include "y_inter.h"
 #include "m_cond.h"
 
+#include "r_fps.h" // R_GetTimeFrac
+
 // Stage of animation:
 // 0 = text, 1 = art screen
 static INT32 finalecount;
@@ -167,11 +169,11 @@ static void F_SkyScroll(INT32 scrollspeed)
 	pat = W_CachePatchName("TITLEBG1", PU_PATCH_LOWPRIORITY);
 	pat2 = W_CachePatchName("TITLEBG2", PU_PATCH_LOWPRIORITY);
 
-	w = (vid.width / vid.dupx)<<FRACBITS;
+	w = (vid.scaledwidth << FRACBITS);
 
 	// The scroll offset MUST be clamped before shifting by FRACBITS, or else it'll overflow in about 3 minutes
-	animtimer = ((((finalecount * scrollspeed) % (pat->width*16))<<FRACBITS) + (R_GetMenuUncap() * scrollspeed))/16;
-	anim2 = (pat2->width<<FRACBITS) - ((((finalecount * scrollspeed) % (pat2->width*16))<<FRACBITS) + (R_GetMenuUncap() * scrollspeed))/16;
+	animtimer = ((((finalecount * scrollspeed) % (pat->width*16))<<FRACBITS) + (R_GetTimeFrac(RTF_MENU) * scrollspeed))/16;
+	anim2 = (pat2->width<<FRACBITS) - ((((finalecount * scrollspeed) % (pat2->width*16))<<FRACBITS) + (R_GetTimeFrac(RTF_MENU) * scrollspeed))/16;
 
 	// SRB2Kart: F_DrawPatchCol is over-engineered; recoded to be less shitty and error-prone
 	if (rendermode != render_none)
@@ -206,7 +208,7 @@ static void F_SkyScroll(INT32 scrollspeed)
 INT32 intro_scenenum = 0;
 INT32 intro_curtime = 0;
 
-const char *introtext[NUMINTROSCENES];
+const char *introtext[NUMINTROSCENES] = {};
 
 static tic_t introscenetime[NUMINTROSCENES] =
 {
@@ -531,8 +533,8 @@ static const char *credits[] = {
 	"\"Xyzzy\"",
 	"\"Chearii\"",
 	" ",
-	"\"Sunflower\" aka \"AnimeSonic\"",
-	"\"Yuz\" aka \"Yuzler\"",
+	"\"Sunflower\"",
+	"\"Yuz\"",
 	"\"Democrab\"",
 	"\"EXpand\"",
 	"\"Nexit\"",
@@ -545,6 +547,7 @@ static const char *credits[] = {
 	"\"Achii\"",
 	"\"Anonimus\"",
 	"\"scizor300\"",
+	"\"Lugent\"",
 	"",
 	"\1Special Thanks",
 	"SEGA",
@@ -674,7 +677,7 @@ void F_CreditDrawer(void)
 			y += 12<<FRACBITS;
 			break;
 		}
-		if (((y>>FRACBITS) * vid.dupy) > vid.height)
+		if (((y>>FRACBITS) * vid.dup) > vid.height)
 			break;
 	}
 
@@ -682,8 +685,8 @@ void F_CreditDrawer(void)
 	if (finalecount)
 	{
 		const char *goodbyefornow = "See you in ""\x82""Dr. Robotnik's Ring Racers""\x80""!";
-		fixed_t lpad = ((vid.width/vid.dupx) - BASEVIDWIDTH)<<FRACBITS;
-		fixed_t w = V_StringWidth(goodbyefornow, V_ALLOWLOWERCASE)<<FRACBITS;
+		fixed_t lpad = (vid.scaledwidth - BASEVIDWIDTH) << FRACBITS;
+		fixed_t w = V_StringWidth(goodbyefornow, V_ALLOWLOWERCASE) << FRACBITS;
 		fixed_t x = FixedMul(((BASEVIDWIDTH<<FRACBITS)+w+lpad), ((finalecount-1)<<FRACBITS)/(5*TICRATE)) - w - (lpad/2);
 		V_DrawString(x>>FRACBITS, y>>FRACBITS, V_ALLOWLOWERCASE, goodbyefornow); // for some reason DrawStringAtFixed can't tolerate colour codes
 	}
@@ -704,7 +707,8 @@ void F_CreditTicker(void)
 			case 1: y += 30<<FRACBITS; break;
 			default: y += 12<<FRACBITS; break;
 		}
-		if (FixedMul(y,vid.dupy) > vid.height)
+
+		if (FixedMul(y, vid.dup) > vid.height)
 			break;
 	}
 
@@ -947,7 +951,7 @@ void F_GameEndTicker(void)
 	if (timetonext > 0)
 		timetonext--;
 	else
-		D_StartTitle();
+		G_EndGame();
 }
 
 // ==============
@@ -959,6 +963,7 @@ void F_StartTitleScreen(void)
 		finalecount = 0;
 	else
 		wipegamestate = GS_TITLESCREEN;
+
 	G_SetGamestate(GS_TITLESCREEN);
 	CON_ClearHUD();
 
@@ -1002,7 +1007,7 @@ void F_TitleScreenDrawer(void)
 		if (finalecount >= 20)
 			V_DrawSmallScaledPatch(84, 87, 0, ttkart);
 		else if (finalecount >= 10)
-			V_DrawSciencePatch((84<<FRACBITS) - 18*(((20 - finalecount)<<FRACBITS) - R_GetMenuUncap()), 87<<FRACBITS, 0, ttkart, FRACUNIT/2);
+			V_DrawSciencePatch((84<<FRACBITS) - 18*(((20 - finalecount)<<FRACBITS) - R_GetTimeFrac(RTF_MENU)), 87<<FRACBITS, 0, ttkart, FRACUNIT/2);
 	}
 	else if (finalecount < 52)
 	{
@@ -1018,8 +1023,8 @@ void F_TitleScreenDrawer(void)
 
 		F_SkyScroll(titlescrollspeed);
 
-		V_DrawSciencePatch(0, -40*FixedDiv(((finalecount % 70)<<FRACBITS) + R_GetMenuUncap(), 70<<FRACBITS), V_SNAPTOTOP|V_SNAPTOLEFT, ttcheckers, FRACUNIT);
-		V_DrawSciencePatch(280<<FRACBITS, -(40<<FRACBITS) + 40*FixedDiv(((finalecount % 70)<<FRACBITS) + R_GetMenuUncap(), 70<<FRACBITS), V_SNAPTOTOP|V_SNAPTORIGHT, ttcheckers, FRACUNIT);
+		V_DrawSciencePatch(0, -40*FixedDiv(((finalecount % 70)<<FRACBITS) + R_GetTimeFrac(RTF_MENU), 70<<FRACBITS), V_SNAPTOTOP|V_SNAPTOLEFT, ttcheckers, FRACUNIT);
+		V_DrawSciencePatch(280<<FRACBITS, -(40<<FRACBITS) + 40*FixedDiv(((finalecount % 70)<<FRACBITS) + R_GetTimeFrac(RTF_MENU), 70<<FRACBITS), V_SNAPTOTOP|V_SNAPTORIGHT, ttcheckers, FRACUNIT);
 
 		if (transval)
 			V_DrawFadeScreen(120, 10 - transval);
@@ -1145,13 +1150,6 @@ void F_TitleScreenTicker(boolean run)
 
 		// Setup demo name
 		snprintf(dname, 9, "%sS%02u", mapname, numstaff);
-
-		/*if ((l = W_CheckNumForName(dname)) == LUMPERROR) -- we KNOW it exists now
-		{
-			CONS_Alert(CONS_ERROR, M_GetText("Demo lump \"%s\" doesn't exist\n"), dname);
-			F_StartIntro();
-			return;
-		}*/
 
 loadreplay:
 		demo.title = demo.fromtitle = true;

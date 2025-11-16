@@ -1,3 +1,14 @@
+// SONIC ROBO BLAST 2 KART SATURN
+//-----------------------------------------------------------------------------
+// Copyright (C) 2025 by Indev.
+//
+// This program is free software distributed under the
+// terms of the GNU General Public License, version 2.
+// See the 'LICENSE' file for more details.
+//-----------------------------------------------------------------------------
+/// \file  m_textinput.c
+/// \brief User text input implementation
+
 #include "m_textinput.h"
 #include "m_menu.h" // MAXSTRINGLENGTH
 #include "v_video.h"
@@ -130,6 +141,82 @@ static void M_TextInputPaste(textinput_t *input)
 		M_TextInputAddString(input, paste);
 }
 
+static void M_TextInputLeft(textinput_t *input, boolean emotes)
+{
+	// Just do it simple way if possible
+	if (!emotes || input->cursor < 2 || input->buffer[input->cursor-1] != ':')
+	{
+		if (input->cursor != 0)
+			--input->cursor;
+		return;
+	}
+
+	// Otherwise we need to check if we have to skip emote
+	size_t start = input->cursor-2;
+
+	while (input->buffer[start] != ':')
+	{
+		// We reached start of string and didn't find ':' symbol, thats definitely not an emote
+		// so just do it simple way
+		if (start == 0)
+		{
+			M_TextInputLeft(input, false);
+			return;
+		}
+
+		--start;
+	}
+
+	int emotelen = 0;
+	if (M_VerifyEmote(input->buffer+start, &emotelen))
+		input->cursor -= emotelen; // also skip the :
+	else
+		M_TextInputLeft(input, false); // Not a valid emote, do the simple thing
+}
+
+static void M_TextInputRight(textinput_t *input, boolean emotes)
+{
+	// Just do it simple way if possible
+	if (!emotes || input->cursor == input->length || input->buffer[input->cursor] != ':')
+	{
+		if (input->cursor < input->length)
+			++input->cursor;
+		return;
+	}
+
+	int emotelen = 0;
+	if (M_VerifyEmote(input->buffer+input->cursor, &emotelen))
+		input->cursor += emotelen; // Also skip the :
+	else
+		M_TextInputRight(input, false); // Not a valid emote, do the simple thing
+}
+
+// Check if we're inside a valid emote
+static boolean M_TextInputCheckEmote(textinput_t *input)
+{
+	int start = input->cursor;
+
+	// Definitely not an emote
+	if (start == 0)
+		return false;
+
+	// Might be closing :, need to skip it just in case
+	if (input->buffer[start] == ':')
+		--start;
+
+	while (input->buffer[start] != ':')
+	{
+		// No ':' found, definitely not inside emote
+		if (start == 0)
+			return false;
+
+		--start;
+	}
+
+	// Found what may be emote start, now we can check
+	return M_VerifyEmote(input->buffer+start, NULL) != NULL;
+}
+
 void M_TextInputInit(textinput_t *input, char *buffer, size_t buffer_size)
 {
 	input->buffer = buffer;
@@ -152,11 +239,11 @@ void M_TextInputClear(textinput_t *input)
 void M_TextInputSetString(textinput_t *input, const char *c)
 {
 	memset(input->buffer, 0, input->buffer_size);
-	strcpy(input->buffer, c);
-	input->cursor = input->select = input->length = strlen(c);
+	strncpy(input->buffer, c, input->buffer_size);
+	input->cursor = input->select = input->length = strlen(input->buffer);
 }
 
-boolean M_TextInputHandle(textinput_t *input, INT32 key)
+static boolean M_TextInputHandleBase(textinput_t *input, INT32 key, boolean emotes)
 {
 	if (key == KEY_LSHIFT || key == KEY_RSHIFT
 	 || key == KEY_LCTRL || key == KEY_RCTRL
@@ -241,16 +328,14 @@ boolean M_TextInputHandle(textinput_t *input, INT32 key)
 
 	if (key == KEY_LEFTARROW)
 	{
-		if (input->cursor != 0)
-			--input->cursor;
+		M_TextInputLeft(input, emotes);
 		if (!shiftdown)
 			input->select = input->cursor;
 		return true;
 	}
 	else if (key == KEY_RIGHTARROW)
 	{
-		if (input->cursor < input->length)
-			++input->cursor;
+		M_TextInputRight(input, emotes);
 		if (!shiftdown)
 			input->select = input->cursor;
 		return true;
@@ -318,6 +403,96 @@ boolean M_TextInputHandle(textinput_t *input, INT32 key)
 	M_TextInputAddChar(input, key);
 
 	return true;
+}
+
+// Just an alias, more or less
+boolean M_TextInputHandle(textinput_t *input, INT32 key)
+{
+	return M_TextInputHandleBase(input, key, false);
+}
+
+boolean M_TextInputHandleEmotes(textinput_t *input, INT32 key, emote_t *suggestions[], int maxsuggestions)
+{
+	boolean ret = M_TextInputHandleBase(input, key, true);
+
+	// After this handled key we ended up inside an emote, lets fix that
+	if (M_TextInputCheckEmote(input))
+		M_TextInputToWordEnd(input, !shiftdown);
+
+	// Always clear the first entry
+	suggestions[0] = NULL;
+
+	// For autocomplete
+	int emotestart = 0;
+
+	// Try find suggestions for emote names
+	for (int i = input->cursor-1; i >= 0 && input->cursor-i <= MAXEMOTENAME; --i)
+	{
+		// Space can't be part of emote name
+		if (isspace(input->buffer[i]))
+			break;
+
+		// Found a :, try suggest emotes
+		if (input->buffer[i] == ':')
+		{
+			emotestart = i+1;
+			// ...But only if we typed at least something
+			if ((int)input->cursor-(i-1) < 3)
+				break;
+
+			for (int skip = 0; skip < maxsuggestions; ++skip)
+			{
+				suggestions[skip] = M_FindEmote(input->buffer+i+1, input->cursor-i-1, skip);
+
+				// No more suggestions
+				if (!suggestions[skip])
+					break;
+			}
+
+			// In any case, we found what we wanted, can exit the loop now
+			break;
+		}
+	}
+
+	// If we suggest emotes, try autocomplete
+	if (key == '\t' && suggestions[0])
+	{
+		int pos = (input->cursor-emotestart);
+		boolean autocomplete = true;
+
+		while (autocomplete)
+		{
+			// Check if current character matches for all suggestions
+			char c = suggestions[0]->name[pos];
+
+			// End of string reached
+			if (!c)
+				break;
+
+			for (int i = 1; i < maxsuggestions && suggestions[i]; ++i)
+			{
+				if (suggestions[i]->name[pos] != c)
+				{
+					autocomplete = false;
+					break;
+				}
+			}
+
+			++pos;
+
+			if (autocomplete)
+				M_TextInputAddChar(input, c);
+		}
+
+		// This was the only suggestion, finish autocomplete with a ':' and clear suggestions
+		if (maxsuggestions == 1 || !suggestions[1])
+		{
+			M_TextInputAddChar(input, ':');
+			suggestions[0] = NULL;
+		}
+	}
+
+	return ret;
 }
 
 void M_DrawTextInputScroll(INT32 x, INT32 y, textinput_t *input, INT32 flags, INT32 MAXINPUTWIDTH)

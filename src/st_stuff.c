@@ -34,6 +34,7 @@
 #include "i_time.h"
 
 #include "k_kart.h" // SRB2kart
+#include "k_hud.h"
 
 //random index
 #include "m_random.h"
@@ -60,13 +61,13 @@ tic_t directortoggletimer = 0;
 // STATUS BAR DATA
 //
 
-patch_t *facerankprefix[MAXSKINS]; // ranking
-patch_t *facewantprefix[MAXSKINS]; // wanted
-patch_t *facemmapprefix[MAXSKINS]; // minimap
+patch_t *facerankprefix[MAXSKINS] = {}; // ranking
+patch_t *facewantprefix[MAXSKINS] = {}; // wanted
+patch_t *facemmapprefix[MAXSKINS] = {}; // minimap
 
-patch_t *localfacerankprefix[MAXLOCALSKINS]; // ranking
-patch_t *localfacewantprefix[MAXLOCALSKINS]; // wanted
-patch_t *localfacemmapprefix[MAXLOCALSKINS]; // minimap
+patch_t *localfacerankprefix[MAXLOCALSKINS] = {}; // ranking
+patch_t *localfacewantprefix[MAXLOCALSKINS] = {}; // wanted
+patch_t *localfacemmapprefix[MAXLOCALSKINS] = {}; // minimap
 
 /*char *facerankprefix_name[MAXSKINS]; // ranking
 char *facewantprefix_name[MAXSKINS]; // wanted
@@ -90,8 +91,8 @@ static patch_t *envelope;
 #endif
 
 // current player for overlay drawing
-player_t *stplyr;
-UINT8 stplyrnum;
+player_t *stplyr = NULL;
+UINT8 stplyrnum = 0;
 
 // SRB2kart
 
@@ -167,46 +168,48 @@ boolean ST_SameTeam(player_t *a, player_t *b)
 
 static boolean st_stopped = true;
 
-void ST_Ticker(void)
-{
-	if (st_stopped)
-		return;
-}
-
 // 0 is default, any others are special palettes.
 INT32 st_palette = 0;
 
-void ST_doPaletteStuff(void)
+void ST_ResetPaletteStuff(void)
 {
-	INT32 palette;
+	st_palette = 0;
+	V_SetPalette(0);
+}
 
-	if (stplyr && stplyr->flashcount)
-		palette = stplyr->flashpal;
-	else
-		palette = 0;
+static void ST_doPaletteStuff(void)
+{
+	INT32 palette = 0;
 
 #ifdef HWRENDER
 	if (rendermode == render_opengl && !HWR_PalRenderFlashpal())
-		palette = 0; // Don't set the palette to a flashpal in OpenGL's truecolor mode
+		return;
 #endif
 
-	palette = min(max(palette, 0), 13);
+	if (stplyr && stplyr->flashcount)
+		palette = CLAMP(stplyr->flashpal, 0, 13);
 
 	if (palette != st_palette)
 	{
 		st_palette = palette;
 
-#ifdef HWRENDER
-		if (rendermode == render_soft || (rendermode == render_opengl && HWR_PalRenderFlashpal()))
-#else
-		if (rendermode != render_none)
-#endif
+		if (!splitscreen)
 		{
-			//V_SetPaletteLump(GetPalette()); // Reset the palette -- is this needed?
-			if (!splitscreen)
-				V_SetPalette(palette);
+			V_SetPalette(palette);
 		}
 	}
+}
+
+void ST_Ticker(void)
+{
+	if (st_stopped)
+		return;
+
+	// Do red-/gold-shifts from damage/items
+	//25/08/99: Hurdler: palette changes is done for all players,
+	//                   not only player1! That's why this part
+	//                   of code is moved somewhere else.
+	ST_doPaletteStuff();
 }
 
 void ST_UnloadGraphics(void)
@@ -216,10 +219,6 @@ void ST_UnloadGraphics(void)
 
 void ST_LoadGraphics(void)
 {
-	// SRB2 border patch
-	//st_borderpatchnum = W_GetNumForName("GFZFLR01");
-	//scr_borderpatch = W_CacheLumpNum(st_borderpatchnum, PU_HUDGFX);
-
 	// the original Doom uses 'STF' as base name for all face graphics
 	// Graue 04-08-2004: face/name graphics are now indexed by skins
 	//                   but load them in R_AddSkins, that gets called
@@ -306,9 +305,7 @@ static inline void ST_Stop(void)
 
 void ST_Start(void)
 {
-	if (!st_stopped)
-		ST_Stop();
-
+	ST_Stop();
 	ST_InitData();
 
 	if (!dedicated)
@@ -345,7 +342,7 @@ void ST_changeDemoView(void)
 //                         STATUS BAR OVERLAY
 // =========================================================================
 
-boolean st_overlay;
+boolean st_overlay = true;
 
 // =========================================================================
 //                          INTERNAL DRAWING
@@ -366,7 +363,7 @@ static void ST_drawDebugInfo(void)
 {
 	INT32 height = 192;
 
-	if (!stplyr->mo)
+	if (!cv_debug || !stplyr->mo)
 		return;
 
 	if (cv_debug & DBG_BASIC)
@@ -436,9 +433,20 @@ static void ST_drawLevelTitle(void)
 	subttl = mapheaderinfo[gamemap-1]->subttl;
 	zonttl = mapheaderinfo[gamemap-1]->zonttl; // SRB2kart
 	actnum = mapheaderinfo[gamemap-1]->actnum;
-	dupcalc = (vid.width/vid.dupx);
-	gtc = G_GetGametypeColor(gametype);
+	dupcalc = vid.scaledwidth;
 	bary = (splitscreen) ? BASEVIDHEIGHT/2 : 163;
+
+	if (K_UseColorHud())
+	{
+		if (gametype == GT_RACE)
+			gtc = colortranslations[K_GetHudColor()][7]; // idk if this should also apply to other gametypes?
+		else if (modeattacking || gamestate == GS_TIMEATTACK)
+			gtc = colortranslations[K_GetHudColor()][4];
+		else
+			gtc = G_GetGametypeColor(gametype);
+	}
+	else
+		gtc = G_GetGametypeColor(gametype);
 
 	lvlw = V_LevelNameWidth(lvlttl);
 
@@ -465,7 +473,7 @@ static void ST_drawLevelTitle(void)
 
 		// uh... "fill in the bits" of sub, or something... no idea what I came up with
 		// VERY janky, but doesn't require m_easing
-		INT32 frac = (FixedMul(R_GetHudUncap(), FixedDiv(dupcalc, BASEVIDWIDTH)) >> (count + 4))/13; // these two magic numbers seem to do the trick
+		INT32 frac = (FixedMul(R_GetTimeFrac(RTF_LEVEL), FixedDiv(dupcalc, BASEVIDWIDTH)) >> (count + 4))/13; // these two magic numbers seem to do the trick
 
 		sub = dupcalc;
 		while (count-- > 0)
@@ -588,23 +596,27 @@ static void ST_overlayDrawer(void)
 				}
 				else if (splitscreen)
 				{
-					V_DrawCenteredThinString((vid.width/vid.dupx)/4, BASEVIDHEIGHT/2 - 12, V_HUDTRANSHALF|V_ALLOWLOWERCASE|K_calcSplitFlags(V_SNAPTOBOTTOM|V_SNAPTOLEFT), player_names[stplyr-players]);
+					V_DrawCenteredThinString(vid.scaledwidth/4, BASEVIDHEIGHT/2 - 12, V_HUDTRANSHALF|V_ALLOWLOWERCASE|K_calcSplitFlags(V_SNAPTOBOTTOM|V_SNAPTOLEFT), player_names[stplyr-players]);
 				}
 			}
 		}
 	}
 
-	if ((!(netgame || multiplayer) || !hu_showscores) && !forceshowhud)
+	// dont draw those if we force the hud to show in the saturn options
+	if (!forceshowhud)
 	{
-		if (renderisnewtic)
+		if (!(netgame || multiplayer) || !hu_showscores)
 		{
-			LUA_HUDHOOK(game, luahuddrawlist_game[stplyrnum]);
+			if (renderisnewtic)
+			{
+				LUA_HUDHOOK(game, luahuddrawlist_game[stplyrnum]);
+			}
 		}
-	}
 
-	// draw level title Tails
-	if (!(hu_showscores && (netgame || multiplayer) && !mapreset) && LUA_HudEnabled(hud_stagetitle) && !forceshowhud)
-		ST_drawLevelTitle();
+		// draw level title Tails
+		if (stplyrnum == 0 && !(hu_showscores && (netgame || multiplayer) && !mapreset) && LUA_HudEnabled(hud_stagetitle))
+			ST_drawLevelTitle();
+	}
 
 	if (!hu_showscores && netgame && !mapreset)
 	{
@@ -758,15 +770,6 @@ void ST_Drawer(void)
 	if (vid.recalc)
 		st_palette = -1;
 
-	// Do red-/gold-shifts from damage/items
-#ifdef HWRENDER
-	//25/08/99: Hurdler: palette changes is done for all players,
-	//                   not only player1! That's why this part
-	//                   of code is moved somewhere else.
-	if (rendermode == render_soft || (rendermode == render_opengl && HWR_PalRenderFlashpal()))
-#endif
-	if (rendermode != render_none) ST_doPaletteStuff();
-
 	if (st_overlay)
 	{
 		if (renderisnewtic)
@@ -787,7 +790,7 @@ void ST_Drawer(void)
 			LUA_HUD_DrawList(luahuddrawlist_game[i]);
 
 		// draw Midnight Channel's overlay ontop
-		if (mapheaderinfo[gamemap-1]->typeoflevel & TOL_TV)	// Very specific Midnight Channel stuff.
+		if (mapheaderinfo[gamemap-1]->typeoflevel & TOL_TV) // Very specific Midnight Channel stuff.
 			ST_MayonakaStatic();
 	}
 
@@ -795,9 +798,10 @@ void ST_Drawer(void)
 	if (timeinmap < 15)
 	{
 		if (timeinmap <= 5)
-			V_DrawFill(0,0,BASEVIDWIDTH,BASEVIDHEIGHT,120); // Pure white on first few frames, to hide SRB2's awful level load artifacts
+			V_DrawFill(0, 0, BASEVIDWIDTH, BASEVIDHEIGHT, 120); // Pure white on first few frames, to hide SRB2's awful level load artifacts
 		else
 			V_DrawFadeScreen(120, 15-timeinmap); // Then gradually fade out from there
 	}
+
 	ST_drawDebugInfo();
 }

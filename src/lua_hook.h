@@ -10,6 +10,9 @@
 /// \file  lua_hook.h
 /// \brief hooks for Lua scripting
 
+#ifndef __LUA_HOOK__
+#define __LUA_HOOK__
+
 #include "r_defs.h"
 #include "d_player.h"
 #include "s_sound.h"
@@ -55,6 +58,7 @@
 	X (PlayerQuit),\
 	X (PlayerThink),/* P_PlayerThink */\
 	X (MusicChange),\
+	X (MusicCredit),\
 	X (ShouldSpin),/*SRB2KART*/\
 	X (ShouldExplode),/*SRB2KART*/\
 	X (ShouldSquish),/*SRB2KART*/\
@@ -65,6 +69,7 @@
 	X (IntermissionThinker),/* Y_Ticker */\
 	X (VoteThinker),/*SRB2KART*/\
 	X (ServerJoin),/* SRB2KART - Saturn 32p*/\
+	X (SetupVote),/*SRB2KART - Saturn*/
 
 #define STRING_HOOK_LIST(X) \
 	X (BotAI),/* B_BuildTailsTiccmd by skin name */\
@@ -104,6 +109,7 @@ ENUM (STRING_HOOK);
 
 extern boolean hook_cmd_running;	// This is used by PlayerCmd and lua_playerlib to prevent anything from being wirtten to player while we run PlayerCmd.
 extern int hook_defrosting;
+extern bool hook_important;
 
 void LUA_HookVoid(int hook);
 void LUA_HookHUD(int hook, huddrawlist_h drawlist);
@@ -130,6 +136,7 @@ int  LUA_HookPlayerCanDamage(player_t *, mobj_t *);
 void LUA_HookPlayerQuit(player_t *, int);
 int  LUA_HookPlayerCmd(player_t *, ticcmd_t *);
 int  LUA_HookMusicChange(const char *oldname, struct MusicChange *);
+int  LUA_HookMusicCredit(musicdef_t *musicdef);
 
 int LUA_HookShouldSpin(player_t *player, mobj_t *inflictor, mobj_t *source); // SRB2KART: Should player be spun out?
 int LUA_HookShouldExplode(player_t *player, mobj_t *inflictor, mobj_t *source); // SRB2KART: Should player be exploded?
@@ -138,3 +145,10 @@ int LUA_HookShouldSquish(player_t *player, mobj_t *inflictor, mobj_t *source); /
 boolean LUA_HookPlayerSpin(player_t *player, mobj_t *inflictor, mobj_t *source); // SRB2KART: Hook for K_SpinPlayer. Allows Lua to execute code and/or overwrite its behavior.
 boolean LUA_HookPlayerExplode(player_t *player, mobj_t *inflictor, mobj_t *source); // SRB2KART: Hook for K_ExplodePlayer. Allows Lua to execute code and/or overwrite its behavior.
 boolean LUA_HookPlayerSquish(player_t *player, mobj_t *inflictor, mobj_t *source); // SRB2KART: Hook for K_SquishPlayer. Allows Lua to execute code and/or overwrite its behavior.
+
+// SRB2KART - Saturn: Allows changing vote level picks
+// (note: function format in lua doesn't include maxresults, so its function(result, gametype, secondgametype, prevmap)
+// to get maxresults use #result)
+void LUA_HookSetupVote(INT16 result[], INT16 maxresults, UINT8 gt, UINT8 secondgt);
+
+#endif //__LUA_HOOK__

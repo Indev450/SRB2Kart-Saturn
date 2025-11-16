@@ -20,12 +20,8 @@
 #define RPC_NO_WINDOWS_H
 #include <windows.h>
 
-#ifdef BUGTRAP
-
-BOOL InitBugTrap(void);
-void ShutdownBugTrap(void);
-BOOL IsBugTrapLoaded(void);
-
+#ifdef HAVE_DRMINGW
+BOOL InitDrMingw(void);
 #endif
 
 // called in the exception filter of the __try block, writes all useful debugging information

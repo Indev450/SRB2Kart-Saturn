@@ -20,11 +20,11 @@
 
 /**	\brief number of arg
 */
-INT32 myargc;
+INT32 myargc = 0;
 
 /**	\brief string table
 */
-char **myargv;
+char **myargv = NULL;
 
 /** \brief did we alloc myargv ourselves?
 */
@@ -49,7 +49,7 @@ INT32 M_CheckParm(const char *check)
 
 	for (i = 1; i < myargc; i++)
 	{
-		if (!strcasecmp(check, myargv[i]))
+		if (fasticmp(check, myargv[i]))
 		{
 			found = i;
 			return i;
@@ -69,16 +69,18 @@ INT32 M_CheckProtoParam(const char *check)
 
 	for (i = 1; i < myargc; i++)
 	{
-                if (strncmp(myargv[i], "srb2kart://", 11) == 0)
+		if (strncmp(myargv[i], "srb2kart://", 11) == 0)
 		{
-                	if (strncmp(myargv[i]+11, check, strlen(check))==0)
+			if (strncmp(myargv[i]+11, check, strlen(check)) == 0)
 			{
 				found = i;
 				return i;
 			}
 		}
 	}
+
 	found = 0;
+
 	return 0;
 }
 
@@ -93,7 +95,7 @@ const char *M_GetProtoParam(void)
 
 	for (i = 1; i < myargc; i++)
 	{
-                if (strncmp(myargv[i], "srb2kart://", 11) == 0)
+		if (strncmp(myargv[i], "srb2kart://", 11) == 0)
 		{
 			string = strchr(myargv[i], '/');
 			string = strchr(string+1, '/');

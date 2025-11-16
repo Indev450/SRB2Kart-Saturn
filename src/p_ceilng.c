@@ -11,6 +11,7 @@
 /// \file  p_ceilng.c
 /// \brief Ceiling aninmation (lowering, crushing, raising)
 
+#include "d_think.h"
 #include "doomdef.h"
 #include "p_local.h"
 #include "r_fps.h"
@@ -22,9 +23,6 @@
 // ==========================================================================
 //                              CEILINGS
 // ==========================================================================
-
-// the list of ceilings moving currently, including crushers
-INT32 ceilmovesound = sfx_None;
 
 /** Moves a moving ceiling.
   *
@@ -396,6 +394,7 @@ void T_CrushCeiling(ceiling_t *ceiling)
 INT32 EV_DoCeiling(line_t *line, ceiling_e type)
 {
 	INT32 rtn = 0, firstone = 1;
+
 	INT32 secnum = -1;
 	sector_t *sec;
 	ceiling_t *ceiling;
@@ -409,10 +408,12 @@ INT32 EV_DoCeiling(line_t *line, ceiling_e type)
 
 		// new door thinker
 		rtn = 1;
-		ceiling = Z_Calloc(sizeof (*ceiling), PU_LEVSPEC, NULL);
+		ceiling = Z_LevelPoolCalloc(sizeof(*ceiling));
+		ceiling->thinker.alloctype = TAT_LEVELPOOL;
+		ceiling->thinker.size = sizeof(*ceiling);
 		P_AddThinker(&ceiling->thinker);
 		sec->ceilingdata = ceiling;
-		ceiling->thinker.function.acp1 = (actionf_p1)T_MoveCeiling;
+		ceiling->thinker.function = (actionf_p1)T_MoveCeiling;
 		ceiling->sector = sec;
 		ceiling->crush = false;
 		ceiling->sourceline = (INT32)(line-lines);
@@ -619,6 +620,7 @@ INT32 EV_DoCeiling(line_t *line, ceiling_e type)
 INT32 EV_DoCrush(line_t *line, ceiling_e type)
 {
 	INT32 rtn = 0;
+
 	INT32 secnum = -1;
 	sector_t *sec;
 	ceiling_t *ceiling;
@@ -632,10 +634,12 @@ INT32 EV_DoCrush(line_t *line, ceiling_e type)
 
 		// new door thinker
 		rtn = 1;
-		ceiling = Z_Calloc(sizeof (*ceiling), PU_LEVSPEC, NULL);
+		ceiling = Z_LevelPoolCalloc(sizeof(*ceiling));
+		ceiling->thinker.alloctype = TAT_LEVELPOOL;
+		ceiling->thinker.size = sizeof(*ceiling);
 		P_AddThinker(&ceiling->thinker);
 		sec->ceilingdata = ceiling;
-		ceiling->thinker.function.acp1 = (actionf_p1)T_CrushCeiling;
+		ceiling->thinker.function = (actionf_p1)T_CrushCeiling;
 		ceiling->sector = sec;
 		ceiling->crush = true;
 		ceiling->sourceline = (INT32)(line-lines);

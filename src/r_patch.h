@@ -14,6 +14,10 @@
 #ifndef __R_PATCH__
 #define __R_PATCH__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "r_defs.h"
 
 // Structs
@@ -36,6 +40,8 @@ typedef struct
 	boolean available;
 } spriteinfo_t;
 
+#define PNG_HEADER_SIZE (8)
+
 // Patch functions
 patch_t *Patch_Create(softwarepatch_t *source, size_t srcsize, void *dest);
 void Patch_Free(patch_t *patch);
@@ -57,6 +63,12 @@ void R_LoadSpriteInfoLumps(UINT16 wadnum, UINT16 numlumps);
 void R_ParseSPRTINFOLump(UINT16 wadNum, UINT16 lumpNum);
 
 void *R_MaskedFlatToPatch(UINT16 *raw, INT16 width, INT16 height, INT16 leftoffset, INT16 topoffset, size_t *destsize);
+void *R_PixelsToPatch(UINT8 *raw, INT16 width, INT16 height, INT16 leftoffset, INT16 topoffset, size_t *destsize);
 UINT16 R_GetPatchPixel(patch_t *patch, INT32 x, INT32 y, boolean flip);
+void R_PatchToPixels(patch_t *patch, UINT8 *dst); // Important: dst must have enough space for patch->width*patch->height pixels!
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif // __R_PATCH__

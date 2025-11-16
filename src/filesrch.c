@@ -30,286 +30,7 @@
 #include "z_zone.h"
 #include "m_menu.h" // Addons_option_Onchange
 
-#if defined (_WIN32) && defined (_MSC_VER)
-
-#include <errno.h>
-#include <io.h>
-#include <tchar.h>
-
-#define SUFFIX	"*"
-#define	S_ISDIR(m)	(((m) & S_IFMT) == S_IFDIR)
-
-#ifndef INVALID_FILE_ATTRIBUTES
-#define INVALID_FILE_ATTRIBUTES	((DWORD)-1)
-#endif
-
-struct dirent
-{
-	long		d_ino;		/* Always zero. */
-	unsigned short	d_reclen;	/* Always zero. */
-	unsigned short	d_namlen;	/* Length of name in d_name. */
-	char		d_name[FILENAME_MAX]; /* File name. */
-};
-
-/*
- * This is an internal data structure. Good programmers will not use it
- * except as an argument to one of the functions below.
- * dd_stat field is now int (was short in older versions).
- */
-typedef struct
-{
-	/* disk transfer area for this dir */
-	struct _finddata_t	dd_dta;
-
-	/* dirent struct to return from dir (NOTE: this makes this thread
-	 * safe as long as only one thread uses a particular DIR struct at
-	 * a time) */
-	struct dirent		dd_dir;
-
-	/* _findnext handle */
-#if _MSC_VER > 1200
-	intptr_t    dd_handle;
-#else
-	long        dd_handle;
-#endif
-
-	/*
-	 * Status of search:
-	 *   0 = not started yet (next entry to read is first entry)
-	 *  -1 = off the end
-	 *   positive = 0 based index of next entry
-	 */
-	int			dd_stat;
-
-	/* given path for dir with search pattern (struct is extended) */
-	CHAR			dd_name[1];
-} DIR;
-
-/*
- * opendir
- *
- * Returns a pointer to a DIR structure appropriately filled in to begin
- * searching a directory.
- */
-
-DIR *
-opendir (const CHAR *szPath)
-{
-  DIR *nd;
-  DWORD rc;
-  CHAR szFullPath[MAX_PATH];
-
-  errno = 0;
-
-  if (!szPath)
-    {
-      errno = EFAULT;
-      return (DIR *) 0;
-    }
-
-  if (szPath[0] == '\0')
-    {
-      errno = ENOTDIR;
-      return (DIR *) 0;
-    }
-
-  /* Attempt to determine if the given path really is a directory. */
-  rc = GetFileAttributesA(szPath);
-  if (rc == INVALID_FILE_ATTRIBUTES)
-    {
-      /* call GetLastError for more error info */
-      errno = ENOENT;
-      return (DIR *) 0;
-    }
-  if (!(rc & FILE_ATTRIBUTE_DIRECTORY))
-    {
-      /* Error, entry exists but not a directory. */
-      errno = ENOTDIR;
-      return (DIR *) 0;
-    }
-
-  /* Make an absolute pathname.  */
-  _fullpath (szFullPath, szPath, MAX_PATH);
-
-  /* Allocate enough space to store DIR structure and the complete
-   * directory path given. */
-  nd = (DIR *) malloc (sizeof (DIR) + (strlen(szFullPath) + strlen (SLASH) +
-			strlen(PATHSEP) + 1) * sizeof (CHAR));
-
-  if (!nd)
-    {
-      /* Error, out of memory. */
-      errno = ENOMEM;
-      return (DIR *) 0;
-    }
-
-  /* Create the search expression. */
-  strcpy (nd->dd_name, szFullPath);
-
-  /* Add on a slash if the path does not end with one. */
-  if (nd->dd_name[0] != '\0' &&
-	  nd->dd_name[strlen (nd->dd_name) - 1] != PATHSEP[0])
-    {
-      strcat (nd->dd_name, PATHSEP);
-    }
-
-  /* Add on the search pattern */
-  strcat (nd->dd_name, SUFFIX);
-
-  /* Initialize handle to -1 so that a premature closedir doesn't try
-   * to call _findclose on it. */
-  nd->dd_handle = -1;
-
-  /* Initialize the status. */
-  nd->dd_stat = 0;
-
-  /* Initialize the dirent structure. ino and reclen are invalid under
-   * Win32, and name simply points at the appropriate part of the
-   * findfirst_t structure. */
-  nd->dd_dir.d_ino = 0;
-  nd->dd_dir.d_reclen = 0;
-  nd->dd_dir.d_namlen = 0;
-  ZeroMemory(nd->dd_dir.d_name, FILENAME_MAX);
-
-  return nd;
-}
-
-/*
- * readdir
- *
- * Return a pointer to a dirent structure filled with the information on the
- * next entry in the directory.
- */
-struct dirent *
-readdir (DIR * dirp)
-{
-  errno = 0;
-
-  /* Check for valid DIR struct. */
-  if (!dirp)
-    {
-      errno = EFAULT;
-      return (struct dirent *) 0;
-    }
-
-  if (dirp->dd_stat < 0)
-    {
-      /* We have already returned all files in the directory
-       * (or the structure has an invalid dd_stat). */
-      return (struct dirent *) 0;
-    }
-  else if (dirp->dd_stat == 0)
-    {
-      /* We haven't started the search yet. */
-      /* Start the search */
-      dirp->dd_handle = _findfirst (dirp->dd_name, &(dirp->dd_dta));
-
-	  if (dirp->dd_handle == -1)
-	{
-	  /* Whoops! Seems there are no files in that
-	   * directory. */
-	  dirp->dd_stat = -1;
-	}
-      else
-	{
-	  dirp->dd_stat = 1;
-	}
-    }
-  else
-    {
-      /* Get the next search entry. */
-      if (_findnext (dirp->dd_handle, &(dirp->dd_dta)))
-	{
-	  /* We are off the end or otherwise error.
-	     _findnext sets errno to ENOENT if no more file
-	     Undo this. */
-	  DWORD winerr = GetLastError();
-	  if (winerr == ERROR_NO_MORE_FILES)
-	    errno = 0;
-	  _findclose (dirp->dd_handle);
-	  dirp->dd_handle = -1;
-	  dirp->dd_stat = -1;
-	}
-      else
-	{
-	  /* Update the status to indicate the correct
-	   * number. */
-	  dirp->dd_stat++;
-	}
-    }
-
-  if (dirp->dd_stat > 0)
-    {
-      /* Successfully got an entry. Everything about the file is
-       * already appropriately filled in except the length of the
-       * file name. */
-      dirp->dd_dir.d_namlen = (unsigned short)strlen (dirp->dd_dta.name);
-      strcpy (dirp->dd_dir.d_name, dirp->dd_dta.name);
-      return &dirp->dd_dir;
-    }
-
-  return (struct dirent *) 0;
-}
-
-/*
- * rewinddir
- *
- * Makes the next readdir start from the beginning.
- */
-int
-rewinddir (DIR * dirp)
-{
-  errno = 0;
-
-  /* Check for valid DIR struct. */
-  if (!dirp)
-    {
-      errno = EFAULT;
-      return -1;
-    }
-
-  dirp->dd_stat = 0;
-
-  return 0;
-}
-
-/*
- * closedir
- *
- * Frees up resources allocated by opendir.
- */
-int
-closedir (DIR * dirp)
-{
-  int rc;
-
-  errno = 0;
-  rc = 0;
-
-  if (!dirp)
-    {
-      errno = EFAULT;
-      return -1;
-    }
-
-  if (dirp->dd_handle != -1)
-    {
-      rc = _findclose (dirp->dd_handle);
-    }
-
-  /* Delete the dir structure. */
-  free (dirp);
-
-  return rc;
-}
-#endif
-
-static CV_PossibleValue_t addons_cons_t[] = {{0, "Default"},
-#if 1
-												{1, "HOME"}, {2, "SRB2"},
-#endif
-													{3, "CUSTOM"}, {0, NULL}};
-
+static CV_PossibleValue_t addons_cons_t[] = {{0, "Default"}, {1, "HOME"}, {2, "SRB2"},  {3, "CUSTOM"}, {0, NULL}};
 consvar_t cv_addons_option = {"addons_option", "Default", CV_SAVE|CV_CALL, addons_cons_t, Addons_option_Onchange, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_addons_folder = {"addons_folder", "", CV_SAVE, NULL, NULL, 0, NULL, NULL, 0, 0, NULL};
 
@@ -323,16 +44,16 @@ consvar_t cv_addons_search_case = {"addons_search_case", "No", CV_SAVE, CV_YesNo
 static CV_PossibleValue_t addons_search_type_cons_t[] = {{0, "Start"}, {1, "Anywhere"}, {0, NULL}};
 consvar_t cv_addons_search_type = {"addons_search_type", "Anywhere", CV_SAVE, addons_search_type_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
-char menupath[1024];
-size_t menupathindex[menudepth];
+char menupath[MAXFILEPATH] = {};
+size_t menupathindex[menudepth] = {};
 size_t menudepthleft = menudepth;
 
 char menusearchbuf[MAXSTRINGLENGTH+1];
 textinput_t menusearch;
 
-char **dirmenu, **coredirmenu; // core only local for this file
-size_t sizedirmenu, sizecoredirmenu; // ditto
-size_t dir_on[menudepth];
+char **dirmenu = NULL, **coredirmenu = NULL; // core only local for this file
+size_t sizedirmenu = 0, sizecoredirmenu = 0; // ditto
+size_t dir_on[menudepth] = {};
 UINT8 refreshdirmenu = 0;
 char *refreshdirname = NULL;
 
@@ -341,6 +62,7 @@ char *refreshdirname = NULL;
 // direrror is set if there was an error.
 INT32 pathisdirectory(const char *path)
 {
+#ifndef _WIN32
 	struct stat fsstat;
 
 	if (stat(path, &fsstat) < 0)
@@ -348,38 +70,66 @@ INT32 pathisdirectory(const char *path)
 		return -1;
 	}
 	else if (S_ISDIR(fsstat.st_mode))
+	{
 		return 1;
+	}
+
+#else
+	DWORD fileattr = GetFileAttributes(path);
+	if (fileattr == INVALID_FILE_ATTRIBUTES)
+	{
+		return -1;
+	}
+	else if (fileattr & FILE_ATTRIBUTE_DIRECTORY)
+	{
+		return 1;
+	}
+#endif
 
 	return 0;
 }
+
+// skip those folders, they will not have any addons
+static const char *exclude_paths[] = {
+	"logs",
+	"luafiles",
+	"replay",
+	"mdls",
+	"gifs",
+	"screenshots",
+	NULL
+};
 
 filestatus_t filesearch(char *filename, const char *startpath, const UINT8 *wantedmd5sum, boolean completepath, int maxsearchdepth)
 {
 	filestatus_t retval = FS_NOTFOUND;
 	DIR **dirhandle;
 	struct dirent *dent;
+#ifndef _WIN32
 	struct stat fsstat;
+#endif
 	int found = 0;
-	char *searchname = strdup(filename);
+	char *searchname;
 	int depthleft = maxsearchdepth;
-	char searchpath[1024];
+	char searchpath[MAXFILEPATH];
 	size_t *searchpathindex;
 
-	dirhandle = (DIR**) malloc(maxsearchdepth * sizeof (DIR*));
-	searchpathindex = (size_t *) malloc(maxsearchdepth * sizeof (size_t));
+	dirhandle = (DIR**)malloc(maxsearchdepth * sizeof(DIR*));
+	searchpathindex = (size_t *)malloc(maxsearchdepth * sizeof(size_t));
 
-	strcpy(searchpath,startpath);
+	strcpy(searchpath, startpath);
 	searchpathindex[--depthleft] = strlen(searchpath) + 1;
 
 	dirhandle[depthleft] = opendir(searchpath);
 
 	if (dirhandle[depthleft] == NULL)
 	{
-		free(searchname);
 		free(dirhandle);
 		free(searchpathindex);
 		return FS_NOTFOUND;
 	}
+
+	searchname = strdup(filename);
 
 	if (searchpath[searchpathindex[depthleft]-2] != PATHSEP[0])
 	{
@@ -410,63 +160,91 @@ filestatus_t filesearch(char *filename, const char *startpath, const UINT8 *want
 		}
 
 		// okay, now we actually want searchpath to incorporate d_name
-		strcpy(&searchpath[searchpathindex[depthleft]],dent->d_name);
+		strcpy(&searchpath[searchpathindex[depthleft]], dent->d_name);
 
-#if defined(__linux__) || defined(__FreeBSD__)
-		if (dent->d_type == DT_UNKNOWN && lstat(searchpath,&fsstat) == 0)
-		{
-			if (S_ISDIR(fsstat.st_mode))
+#if defined(__linux__) || defined(__FreeBSD__) || defined(__OpenBSD__)
+		if (dent->d_type == DT_UNKNOWN || dent->d_type == DT_LNK)
+			if (stat(searchpath, &fsstat) == 0 && S_ISDIR(fsstat.st_mode))
 				dent->d_type = DT_DIR;
-            else if (S_ISLNK(fsstat.st_mode))
-				dent->d_type = DT_LNK;
-		}
-
-		// Symlinks aren't always directory symlinks. Dunno if this would resolve recursive
-		// symlinks, but i think stat already does that
-		if (dent->d_type == DT_LNK && stat(searchpath,&fsstat) == 0 && !S_ISDIR(fsstat.st_mode))
-		{
-			dent->d_type = DT_UNKNOWN;
-		}
 
 		// Linux and FreeBSD has a special field for file type on dirent, so use that to speed up lookups.
-		// FIXME: should we also follow symlinks?
-		if ((dent->d_type == DT_DIR && depthleft) || (dent->d_type == DT_LNK && depthleft))
+		if (dent->d_type == DT_DIR)
+#elif defined (_WIN32)
+		// if we wanna follow symlinks we can check with FILE_ATTRIBUTE_REPARSE_POINT
+		DWORD fileattr = GetFileAttributes(searchpath);
+		if (fileattr == INVALID_FILE_ATTRIBUTES)
+			continue; // was the file (re)moved? can't stat it
+
+		if (fileattr & FILE_ATTRIBUTE_DIRECTORY)
 #else
 		if (stat(searchpath,&fsstat) < 0) // do we want to follow symlinks? if not: change it to lstat
-			; // was the file (re)moved? can't stat it
-		else if (S_ISDIR(fsstat.st_mode) && depthleft)
+			continue; // was the file (re)moved? can't stat it
+
+		if (S_ISDIR(fsstat.st_mode))
 #endif
 		{
-			searchpathindex[--depthleft] = strlen(searchpath) + 1;
-			dirhandle[depthleft] = opendir(searchpath);
-			if (!dirhandle[depthleft])
+			// I am a folder!
+
+			if (!depthleft)
+				continue; // No additional folder delving permitted...
+
+			const char **path = exclude_paths;
+
+			if (depthleft == maxsearchdepth-1)
 			{
-					// can't open it... maybe no read-permissions
-					// go back to previous dir
-					depthleft++;
+				// When we're at the root of the search, we exclude certain folders.
+
+				boolean skipfolder = false;
+
+				for (; *path != NULL; path++)
+				{
+					if (fasticmp(*path, dent->d_name))
+					{
+						skipfolder = true;
+						break;
+					}
+				}
+
+				// This folder is excluded
+				if (skipfolder)
+				{
+					continue;
+				}
 			}
 
-			searchpath[searchpathindex[depthleft]-1] = PATHSEP[0];
-			searchpath[searchpathindex[depthleft]] = 0;
-		}
-		else if (!strcasecmp(searchname, dent->d_name))
-		{
-			switch (checkfilemd5(searchpath, wantedmd5sum))
+			if (!fasticmp(".git", dent->d_name) // sanity if you're weird like me
+				&& (dirhandle[depthleft-1] = opendir(searchpath)) != NULL)
 			{
-				case FS_FOUND:
-					if (completepath)
-						strcpy(filename,searchpath);
-					else
-						strcpy(filename,dent->d_name);
-					retval = FS_FOUND;
-					found = 1;
-					break;
-				case FS_MD5SUMBAD:
-					retval = FS_MD5SUMBAD;
-					break;
-				default: // prevent some compiler warnings
-					break;
+				// Got read permissions!
+				searchpathindex[--depthleft] = strlen(searchpath) + 1;
+
+				searchpath[searchpathindex[depthleft]-1] = PATHSEP[0];
+				searchpath[searchpathindex[depthleft]] = 0;
 			}
+
+			continue;
+		}
+
+		// I am a file!
+
+		if (!fasticmp(searchname, dent->d_name))
+			continue; // Not what we're looking for!
+
+		switch (checkfilemd5(searchpath, wantedmd5sum))
+		{
+			case FS_FOUND:
+				if (completepath)
+					strcpy(filename, searchpath);
+				else
+					strcpy(filename, dent->d_name);
+				retval = FS_FOUND;
+				found = 1;
+				break;
+			case FS_MD5SUMBAD:
+				retval = FS_MD5SUMBAD;
+				break;
+			default: // prevent some compiler warnings
+				break;
 		}
 	}
 
@@ -575,7 +353,7 @@ void searchfilemenu(char *tempname)
 		{
 			for (i = first; i < sizedirmenu; i++)
 			{
-				if (!strcmp(dirmenu[i]+DIR_STRING, tempname))
+				if (fastcmp(dirmenu[i]+DIR_STRING, tempname))
 				{
 					dir_on[menudepthleft] = i;
 					break;
@@ -622,7 +400,7 @@ void searchfilemenu(char *tempname)
 	{
 		if (filemenucmp(coredirmenu[i]+DIR_STRING, localmenusearch))
 		{
-			if (tempname && !strcmp(coredirmenu[i]+DIR_STRING, tempname))
+			if (tempname && fastcmp(coredirmenu[i]+DIR_STRING, tempname))
 			{
 				dir_on[menudepthleft] = sizedirmenu;
 				Z_Free(tempname);
@@ -643,7 +421,6 @@ boolean preparefilemenu(boolean samedepth, boolean replayhut)
 {
 	DIR *dirhandle;
 	struct dirent *dent;
-	struct stat fsstat;
 	size_t pos = 0, folderpos = 0, numfolders = 0;
 	char *tempname = NULL;
 
@@ -665,10 +442,13 @@ boolean preparefilemenu(boolean samedepth, boolean replayhut)
 		Z_Free(dirmenu);
 	dirmenu = NULL;
 
-	for (; sizecoredirmenu > 0; sizecoredirmenu--) // clear out existing items
+	if (coredirmenu != NULL)
 	{
-		Z_Free(coredirmenu[sizecoredirmenu-1]);
-		coredirmenu[sizecoredirmenu-1] = NULL;
+		for (; sizecoredirmenu > 0; sizecoredirmenu--) // clear out existing items
+		{
+			Z_Free(coredirmenu[sizecoredirmenu-1]);
+			coredirmenu[sizecoredirmenu-1] = NULL;
+		}
 	}
 
 	while (true)
@@ -679,30 +459,37 @@ boolean preparefilemenu(boolean samedepth, boolean replayhut)
 		if (!dent)
 			break;
 		else if (dent->d_name[0]=='.' &&
-				(dent->d_name[1]=='\0' ||
-					(dent->d_name[1]=='.' &&
-						dent->d_name[2]=='\0')))
+					(dent->d_name[1]=='\0' ||
+						(dent->d_name[1]=='.' &&
+							dent->d_name[2]=='\0')))
 			continue; // we don't want to scan uptree
 
 		strcpy(&menupath[menupathindex[menudepthleft]],dent->d_name);
 
-		if (stat(menupath,&fsstat) < 0) // do we want to follow symlinks? if not: change it to lstat
+		INT32 isdir = pathisdirectory(menupath);
+
+		if (isdir == -1)
 			; // was the file (re)moved? can't stat it
 		else // is a file or directory
 		{
-			if (!S_ISDIR(fsstat.st_mode)) // file
+			if (isdir == 0) // file
 			{
 				size_t len = strlen(dent->d_name)+1;
+
 				if (replayhut)
 				{
-					if (strcasecmp(".lmp", dent->d_name+len-5)) continue; // Not a replay
+					if (!fasticmp(".lmp", dent->d_name+len-5))
+						continue; // Not a replay
 				}
 				else if (!cv_addons_showall.value)
 				{
 					UINT8 ext;
 					for (ext = 0; ext < NUM_EXT_TABLE; ext++)
-						if (!strcasecmp(exttable[ext]+1, dent->d_name+len-(exttable[ext][0]))) break; // extension comparison
-					if (ext == NUM_EXT_TABLE) continue; // not an addfile-able (or exec-able) file
+						if (fasticmp(exttable[ext]+1, dent->d_name+len-(exttable[ext][0])))
+							break; // extension comparison
+
+					if (ext == NUM_EXT_TABLE)
+						continue; // not an addfile-able (or exec-able) file
 				}
 			}
 			else // directory
@@ -747,14 +534,16 @@ boolean preparefilemenu(boolean samedepth, boolean replayhut)
 		if (!dent)
 			break;
 		else if (dent->d_name[0]=='.' &&
-				(dent->d_name[1]=='\0' ||
-					(dent->d_name[1]=='.' &&
-						dent->d_name[2]=='\0')))
+					(dent->d_name[1]=='\0' ||
+						(dent->d_name[1]=='.' &&
+							dent->d_name[2]=='\0')))
 			continue; // we don't want to scan uptree
 
 		strcpy(&menupath[menupathindex[menudepthleft]],dent->d_name);
 
-		if (stat(menupath,&fsstat) < 0) // do we want to follow symlinks? if not: change it to lstat
+		INT32 isdir = pathisdirectory(menupath);
+
+		if (isdir == -1)
 			; // was the file (re)moved? can't stat it
 		else // is a file or directory
 		{
@@ -763,20 +552,27 @@ boolean preparefilemenu(boolean samedepth, boolean replayhut)
 			UINT8 ext = EXT_FOLDER;
 			UINT8 folder;
 
-			if (!S_ISDIR(fsstat.st_mode)) // file
+			if (isdir == 0) // file
 			{
-				if (!((numfolders+pos) < sizecoredirmenu)) continue; // crash prevention
+				if (!((numfolders+pos) < sizecoredirmenu))
+					continue; // crash prevention
 
 				if (replayhut)
 				{
-					if (strcasecmp(".lmp", dent->d_name+len-5)) continue; // Not a replay
+					if (!fasticmp(".lmp", dent->d_name+len-5))
+						continue; // Not a replay
+
 					ext = EXT_TXT; // This isn't used anywhere but better safe than sorry for messing with this...
 				}
 				else
 				{
 					for (; ext < NUM_EXT_TABLE; ext++)
-						if (!strcasecmp(exttable[ext]+1, dent->d_name+len-(exttable[ext][0]))) break; // extension comparison
-					if (ext == NUM_EXT_TABLE && !cv_addons_showall.value) continue; // not an addfile-able (or exec-able) file
+						if (fasticmp(exttable[ext]+1, dent->d_name+len-(exttable[ext][0])))
+							break; // extension comparison
+
+					if (ext == NUM_EXT_TABLE && !cv_addons_showall.value)
+						continue; // not an addfile-able (or exec-able) file
+
 					ext += EXT_START; // moving to be appropriate position
 
 					if (ext >= EXT_LOADSTART)
@@ -791,8 +587,9 @@ boolean preparefilemenu(boolean samedepth, boolean replayhut)
 								nameonly(filenamebuf[i]);
 							}
 
-							if (strcmp(dent->d_name, filenamebuf[i]))
+							if (!fastcmp(dent->d_name, filenamebuf[i]))
 								continue;
+
 							if (cv_addons_md5.value && !checkfilemd5(menupath, wadfiles[i]->md5sum))
 								continue;
 
@@ -801,11 +598,11 @@ boolean preparefilemenu(boolean samedepth, boolean replayhut)
 					}
 					else if (ext == EXT_TXT)
 					{
-						if (!strncmp(dent->d_name, "log-", 4) || !strcmp(dent->d_name, "errorlog.txt"))
+						if (!strncmp(dent->d_name, "log-", 4) || fastcmp(dent->d_name, "errorlog.txt"))
 							ext |= EXT_LOADED;
 					}
 
-					if (!strcmp(dent->d_name, configfile))
+					if (fastcmp(dent->d_name, configfile))
 						ext |= EXT_LOADED;
 				}
 
@@ -819,9 +616,11 @@ boolean preparefilemenu(boolean samedepth, boolean replayhut)
 
 			if (!(temp = Z_Malloc((len+DIR_STRING+folder) * sizeof (char), PU_STATIC, NULL)))
 				I_Error("preparefilemenu(): could not create file entry.");
+
 			temp[DIR_TYPE] = ext;
 			temp[DIR_LEN] = (UINT8)(len);
 			strlcpy(temp+DIR_STRING, dent->d_name, len);
+
 			if (folder)
 			{
 				strcpy(temp+len, PATHSEP);

@@ -16,6 +16,7 @@
 #include "p_slopes.h" // P_GetZAt
 #include "z_zone.h"
 #include "r_main.h"
+#include "r_skins.h"
 #include "r_things.h"
 #include "m_random.h"
 #include "s_sound.h"
@@ -24,6 +25,7 @@
 #include "hu_stuff.h"	// HU_AddChatText
 #include "console.h"
 #include "k_kart.h" // SRB2Kart
+#include "k_hud.h" // SRB2Kart
 #include "d_netcmd.h" // IsPlayerAdmin
 #include "d_main.h"
 
@@ -43,27 +45,33 @@ boolean luaL_checkboolean(lua_State *L, int narg) {
 // String concatination
 static int lib_concat(lua_State *L)
 {
-  int n = lua_gettop(L);  /* number of arguments */
-  int i;
-  char *r = NULL;
-  size_t rl = 0,sl;
-  lua_getglobal(L, "tostring");
-  for (i=1; i<=n; i++) {
-    const char *s;
-    lua_pushvalue(L, -1);  /* function to be called */
-    lua_pushvalue(L, i);   /* value to print */
-    lua_call(L, 1, 1);
-    s = lua_tolstring(L, -1, &sl);  /* get result */
-    if (s == NULL)
-      return luaL_error(L, LUA_QL("tostring") " must return a string to "
-													 LUA_QL("__add"));
+	int n = lua_gettop(L);  /* number of arguments */
+	int i;
+	char *r = NULL;
+	size_t rl = 0, sl;
+	lua_getglobal(L, "tostring");
+	for (i=1; i<=n; i++) {
+		const char *s;
+		lua_pushvalue(L, -1);  /* function to be called */
+		lua_pushvalue(L, i);   /* value to print */
+		lua_call(L, 1, 1);
+		s = lua_tolstring(L, -1, &sl);  /* get result */
+
+		if (sl == 0) {
+			lua_pop(L, 1);  /* pop result */
+			continue;
+		}
+
+		if (s == NULL)
+			return luaL_error(L, LUA_QL("tostring") " must return a string to "
+															LUA_QL("__add"));
 		r = Z_Realloc(r, rl+sl, PU_STATIC, NULL);
-		M_Memcpy(r+rl, s, sl);
+		memcpy(r+rl, s, sl);
 		rl += sl;
-    lua_pop(L, 1);  /* pop result */
-  }
-  lua_pushlstring(L, r, rl);
-  Z_Free(r);
+		lua_pop(L, 1);  /* pop result */
+	}
+	lua_pushlstring(L, r, rl);
+	Z_Free(r);
 	return 1;
 }
 
@@ -71,23 +79,24 @@ static int lib_concat(lua_State *L)
 // Copied from base Lua code
 static int lib_print(lua_State *L)
 {
-  int n = lua_gettop(L);  /* number of arguments */
-  int i;
-  //HUDSAFE
-  lua_getglobal(L, "tostring");
-  for (i=1; i<=n; i++) {
-    const char *s;
-    lua_pushvalue(L, -1);  /* function to be called */
-    lua_pushvalue(L, i);   /* value to print */
-    lua_call(L, 1, 1);
-    s = lua_tostring(L, -1);  /* get result */
-    if (s == NULL)
-      return luaL_error(L, LUA_QL("tostring") " must return a string to "
-													 LUA_QL("print"));
-    if (i>1) CONS_Printf("\n");
-    CONS_Printf("%s", s);
-    lua_pop(L, 1);  /* pop result */
-  }
+	int n = lua_gettop(L);  /* number of arguments */
+	int i;
+	//HUDSAFE
+	lua_getglobal(L, "tostring");
+	for (i=1; i<=n; i++) {
+		const char *s;
+		lua_pushvalue(L, -1);  /* function to be called */
+		lua_pushvalue(L, i);   /* value to print */
+		lua_call(L, 1, 1);
+		s = lua_tostring(L, -1);  /* get result */
+
+		if (s == NULL)
+			return luaL_error(L, LUA_QL("tostring") " must return a string to "
+															LUA_QL("print"));
+		if (i>1) CONS_Printf("\n");
+		CONS_Printf("%s", s);
+		lua_pop(L, 1);  /* pop result */
+	}
 	CONS_Printf("\n");
 	return 0;
 }
@@ -97,10 +106,11 @@ static int lib_chatprint(lua_State *L)
 {
 	const char *str = luaL_checkstring(L, 1);	// retrieve string
 	boolean sound = lua_optboolean(L, 2);	// retrieve sound boolean
-	int len = strlen(str);
 
 	if (str == NULL)	// error if we don't have a string!
 		return luaL_error(L, LUA_QL("tostring") " must return a string to " LUA_QL("chatprint"));
+
+	int len = strlen(str);
 
 	if (len > 255)	// string is too long!!!
 		return luaL_error(L, "String exceeds the 255 characters limit of the chat buffer.");
@@ -115,7 +125,6 @@ static int lib_chatprintf(lua_State *L)
 	int n = lua_gettop(L);  /* number of arguments */
 	const char *str = luaL_checkstring(L, 2);	// retrieve string
 	boolean sound = lua_optboolean(L, 3);	// sound?
-	int len = strlen(str);
 	player_t *plr;
 
 	if (n < 2)
@@ -124,11 +133,14 @@ static int lib_chatprintf(lua_State *L)
 	plr = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));	// retrieve player
 	if (!plr)
 		return LUA_ErrInvalid(L, "player_t");
+
 	if (plr != &players[consoleplayer])
 		return 0;
 
 	if (str == NULL)	// error if we don't have a string!
 		return luaL_error(L, LUA_QL("tostring") " must return a string to " LUA_QL("chatprintf"));
+
+	int len = strlen(str);
 
 	if (len > 255)	// string is too long!!!
 		return luaL_error(L, "String exceeds the 255 characters limit of the chat buffer.");
@@ -234,7 +246,7 @@ static int lib_pRandomChance(lua_State *L)
 // P_MAPUTIL
 ///////////////
 
-static int lib_pAproxDistance(lua_State *L)
+FUNCINLINE static ATTRINLINE int lib_pAproxDistance(lua_State *L)
 {
 	fixed_t dx = luaL_checkfixed(L, 1);
 	fixed_t dy = luaL_checkfixed(L, 2);
@@ -372,7 +384,9 @@ static int lib_pSpawnMobj(lua_State *L)
 	NOHUD
 	if (type >= NUMMOBJTYPES)
 		return luaL_error(L, "mobj type %d out of range (0 - %d)", type, NUMMOBJTYPES-1);
-	LUA_PushUserdata(L, P_SpawnMobj(x, y, z, type), META_MOBJ);
+	mobj_t *th = P_SpawnMobj(x, y, z, type);
+	th->islocal = !hook_important;
+	LUA_PushUserdata(L, th, META_MOBJ);
 	return 1;
 }
 
@@ -398,7 +412,9 @@ static int lib_pSpawnMissile(lua_State *L)
 		return LUA_ErrInvalid(L, "mobj_t");
 	if (type >= NUMMOBJTYPES)
 		return luaL_error(L, "mobj type %d out of range (0 - %d)", type, NUMMOBJTYPES-1);
-	LUA_PushUserdata(L, P_SpawnMissile(source, dest, type), META_MOBJ);
+	mobj_t *th = P_SpawnMissile(source, dest, type);
+	th->islocal = !hook_important;
+	LUA_PushUserdata(L, th, META_MOBJ);
 	return 1;
 }
 
@@ -415,7 +431,9 @@ static int lib_pSpawnXYZMissile(lua_State *L)
 		return LUA_ErrInvalid(L, "mobj_t");
 	if (type >= NUMMOBJTYPES)
 		return luaL_error(L, "mobj type %d out of range (0 - %d)", type, NUMMOBJTYPES-1);
-	LUA_PushUserdata(L, P_SpawnXYZMissile(source, dest, type, x, y, z), META_MOBJ);
+	mobj_t *th = P_SpawnXYZMissile(source, dest, type, x, y, z);
+	th->islocal = !hook_important;
+	LUA_PushUserdata(L, th, META_MOBJ);
 	return 1;
 }
 
@@ -434,7 +452,9 @@ static int lib_pSpawnPointMissile(lua_State *L)
 		return LUA_ErrInvalid(L, "mobj_t");
 	if (type >= NUMMOBJTYPES)
 		return luaL_error(L, "mobj type %d out of range (0 - %d)", type, NUMMOBJTYPES-1);
-	LUA_PushUserdata(L, P_SpawnPointMissile(source, xa, ya, za, type, x, y, z), META_MOBJ);
+	mobj_t *th = P_SpawnPointMissile(source, xa, ya, za, type, x, y, z);
+	th->islocal = !hook_important;
+	LUA_PushUserdata(L, th, META_MOBJ);
 	return 1;
 }
 
@@ -451,7 +471,9 @@ static int lib_pSpawnAlteredDirectionMissile(lua_State *L)
 		return LUA_ErrInvalid(L, "mobj_t");
 	if (type >= NUMMOBJTYPES)
 		return luaL_error(L, "mobj type %d out of range (0 - %d)", type, NUMMOBJTYPES-1);
-	LUA_PushUserdata(L, P_SpawnAlteredDirectionMissile(source, type, x, y, z, shiftingAngle), META_MOBJ);
+	mobj_t *th = P_SpawnAlteredDirectionMissile(source, type, x, y, z, shiftingAngle);
+	th->islocal = !hook_important;
+	LUA_PushUserdata(L, th, META_MOBJ);
 	return 1;
 }
 
@@ -480,7 +502,9 @@ static int lib_pSPMAngle(lua_State *L)
 		return LUA_ErrInvalid(L, "mobj_t");
 	if (type >= NUMMOBJTYPES)
 		return luaL_error(L, "mobj type %d out of range (0 - %d)", type, NUMMOBJTYPES-1);
-	LUA_PushUserdata(L, P_SPMAngle(source, type, angle, allowaim, flags2), META_MOBJ);
+	mobj_t *th = P_SPMAngle(source, type, angle, allowaim, flags2);
+	th->islocal = !hook_important;
+	LUA_PushUserdata(L, th, META_MOBJ);
 	return 1;
 }
 
@@ -494,7 +518,9 @@ static int lib_pSpawnPlayerMissile(lua_State *L)
 		return LUA_ErrInvalid(L, "mobj_t");
 	if (type >= NUMMOBJTYPES)
 		return luaL_error(L, "mobj type %d out of range (0 - %d)", type, NUMMOBJTYPES-1);
-	LUA_PushUserdata(L, P_SpawnPlayerMissile(source, type, flags2), META_MOBJ);
+	mobj_t *th = P_SpawnPlayerMissile(source, type, flags2);
+	th->islocal = !hook_important;
+	LUA_PushUserdata(L, th, META_MOBJ);
 	return 1;
 }
 
@@ -1108,19 +1134,10 @@ static int lib_pCheckSight(lua_State *L)
 	//HUDSAFE?
 	if (!t1 || !t2)
 		return LUA_ErrInvalid(L, "mobj_t");
-	lua_pushboolean(L, P_CheckSight(t1, t2));
-	return 1;
-}
-
-// DONT USE THIS FOR ANYTHING GAMEPLAY, THIS WILL DESYNCH!
-static int lib_pCheckSightFast(lua_State *L)
-{
-	mobj_t *t1 = *((mobj_t **)luaL_checkudata(L, 1, META_MOBJ));
-	mobj_t *t2 = *((mobj_t **)luaL_checkudata(L, 2, META_MOBJ));
-	//HUDSAFE?
-	if (!t1 || !t2)
-		return LUA_ErrInvalid(L, "mobj_t");
-	lua_pushboolean(L, P_CheckSightFast(t1, t2));
+	if (hud_running)
+		lua_pushboolean(L, P_CheckSightFast(t1, t2));
+	else
+		lua_pushboolean(L, P_CheckSight(t1, t2));
 	return 1;
 }
 
@@ -1641,7 +1658,7 @@ static int lib_evCrumbleChain(lua_State *L)
 // P_SLOPES
 ////////////
 
-static int lib_pGetZAt(lua_State *L)
+FUNCINLINE static ATTRINLINE int lib_pGetZAt(lua_State *L)
 {
 	pslope_t *slope = *((pslope_t **)luaL_checkudata(L, 1, META_SLOPE));
 	fixed_t x = luaL_checkfixed(L, 2);
@@ -1657,7 +1674,7 @@ static int lib_pGetZAt(lua_State *L)
 // R_DEFS
 ////////////
 
-static int lib_rPointToAngle(lua_State *L)
+FUNCINLINE static ATTRINLINE int lib_rPointToAngle(lua_State *L)
 {
 	fixed_t x = luaL_checkfixed(L, 1);
 	fixed_t y = luaL_checkfixed(L, 2);
@@ -1666,7 +1683,7 @@ static int lib_rPointToAngle(lua_State *L)
 	return 1;
 }
 
-static int lib_rPointToAngle2(lua_State *L)
+FUNCINLINE static ATTRINLINE int lib_rPointToAngle2(lua_State *L)
 {
 	fixed_t px2 = luaL_checkfixed(L, 1);
 	fixed_t py2 = luaL_checkfixed(L, 2);
@@ -1677,7 +1694,7 @@ static int lib_rPointToAngle2(lua_State *L)
 	return 1;
 }
 
-static int lib_rPointToDist(lua_State *L)
+FUNCINLINE static ATTRINLINE int lib_rPointToDist(lua_State *L)
 {
 	fixed_t x = luaL_checkfixed(L, 1);
 	fixed_t y = luaL_checkfixed(L, 2);
@@ -1686,7 +1703,7 @@ static int lib_rPointToDist(lua_State *L)
 	return 1;
 }
 
-static int lib_rPointToDist2(lua_State *L)
+FUNCINLINE static ATTRINLINE int lib_rPointToDist2(lua_State *L)
 {
 	fixed_t px2 = luaL_checkfixed(L, 1);
 	fixed_t py2 = luaL_checkfixed(L, 2);
@@ -1697,12 +1714,15 @@ static int lib_rPointToDist2(lua_State *L)
 	return 1;
 }
 
-static int lib_rPointInSubsector(lua_State *L)
+FUNCINLINE static ATTRINLINE int lib_rPointInSubsector(lua_State *L)
 {
 	fixed_t x = luaL_checkfixed(L, 1);
 	fixed_t y = luaL_checkfixed(L, 2);
 	//HUDSAFE
-	LUA_PushUserdata(L, R_PointInSubsector(x, y), META_SUBSECTOR);
+	if (hud_running)
+		LUA_PushUserdata(L, R_PointInSubsectorFast(x, y), META_SUBSECTOR);
+	else
+		LUA_PushUserdata(L, R_PointInSubsector(x, y), META_SUBSECTOR);
 	return 1;
 }
 
@@ -1902,7 +1922,6 @@ static int lib_sChangeMusic(lua_State *L)
 			music_compat_name[0] = 0; // becomes empty string
 		music_compat_name[6] = 0;
 		music_name = (const char *)&music_compat_name;
-		music_flags = 0;
 	}
 	else
 	{
@@ -2089,7 +2108,6 @@ static int lib_sMusicExists(lua_State *L)
 	}
 	else
 	{
-		music_num = 0;
 		music_name = luaL_checkstring(L, 1);
 	}
 #else
@@ -3178,7 +3196,6 @@ static luaL_Reg lib[] = {
 	{"P_SlideMove",lib_pSlideMove},
 	{"P_BounceMove",lib_pBounceMove},
 	{"P_CheckSight", lib_pCheckSight},
-	{"P_CheckSightFast", lib_pCheckSightFast},
 	{"P_CheckHoopPosition",lib_pCheckHoopPosition},
 	{"P_RadiusAttack",lib_pRadiusAttack},
 	{"P_FloorzAtPos",lib_pFloorzAtPos},

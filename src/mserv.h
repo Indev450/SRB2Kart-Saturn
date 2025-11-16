@@ -16,10 +16,6 @@
 
 #include "i_threads.h"
 
-#if defined(_MSC_VER)
-#pragma pack(1)
-#endif
-
 typedef union
 {
 	char buffer[16]; // information such as password
@@ -30,7 +26,11 @@ typedef union
 typedef struct
 {
 	msg_header_t header;
+#ifndef HAVE_IPV6
 	char ip[16];
+#else
+	char ip[sizeof "ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff"];
+#endif
 	char port[8];
 	char contact[32];
 	char version[8]; // format is: x.yy.z (like 1.30.2 or 1.31)
@@ -46,13 +46,9 @@ typedef struct
 	INT32 hostonly;
 } ATTRPACK msg_ban_t;
 
-#if defined(_MSC_VER)
-#pragma pack()
-#endif
-
 // ================================ GLOBALS ===============================
 #ifdef MASTERSERVER
-extern consvar_t cv_masterserver; 
+extern consvar_t cv_masterserver;
 #endif
 extern consvar_t cv_servername;
 extern consvar_t cv_server_contact;
@@ -92,6 +88,8 @@ char *GetMODVersion(int id);
 #endif
 
 char *GetMasterServerRules(void);
+
+void Update_MS(void);
 #endif
 
 void AddMServCommands(void);

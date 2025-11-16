@@ -14,6 +14,10 @@
 #ifndef __I_NET__
 #define __I_NET__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #ifdef __GNUG__
 #pragma interface
 #endif
@@ -34,10 +38,6 @@
 #define NO_BAN_TIME (time_t)(-1)
 
 extern INT16 hardware_MAXPACKETLENGTH;
-
-#if defined(_MSC_VER)
-#pragma pack(1)
-#endif
 
 typedef struct
 {
@@ -78,6 +78,8 @@ typedef struct
 	char data[MAXPACKETLENGTH];
 } ATTRPACK doomcom_t;
 
+#define DOOMCOM_DATA(d) (doomdata_t *)&(d)->data
+
 #ifdef HOLEPUNCH
 typedef struct
 {
@@ -85,17 +87,11 @@ typedef struct
 	INT32 addr;
 	INT16 port;
 } ATTRPACK holepunch_t;
-#endif
 
-#if defined(_MSC_VER)
-#pragma pack()
+#define HOLEPUNCH_DATA(d) (holepunch_t *)&(d)->data
 #endif
 
 extern doomcom_t *doomcom;
-
-#ifdef HOLEPUNCH
-extern holepunch_t *holepunchpacket;
-#endif
 
 /**	\brief return packet in doomcom struct
 */
@@ -179,5 +175,9 @@ extern bannednode_t *bannednode;
 
 /// \brief Called by D_SRB2Main to be defined by extern network driver
 boolean I_InitNetwork(void);
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif

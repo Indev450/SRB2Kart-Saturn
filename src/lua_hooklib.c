@@ -14,10 +14,12 @@
 #include "doomstat.h"
 #include "p_mobj.h"
 #include "g_game.h"
+#include "r_skins.h"
 #include "r_things.h"
 #include "b_bot.h"
 #include "z_zone.h"
 #include "m_perfstats.h"
+#include "w_wad.h"
 
 #include "lua_script.h"
 #include "lua_libs.h"
@@ -39,13 +41,19 @@ LIST (stringHookNames, STRING_HOOK_LIST);
 #undef LIST
 
 typedef struct {
+	int id;
+	bool important;
+} hookinfo_t;
+
+typedef struct {
 	int numHooks;
-	int *ids;
+	hookinfo_t *ids;
 } hook_t;
 
 typedef struct {
 	int numGeneric;
 	int ref;
+	bool important;
 } stringhook_t;
 
 static hook_t hookIds[HOOK(MAX)];
@@ -54,6 +62,8 @@ static hook_t mobjHookIds[NUMMOBJTYPES][MOBJ_HOOK(MAX)];
 
 // Lua tables are used to lookup string hook ids.
 static stringhook_t stringHooks[STRING_HOOK(MAX)];
+
+bool hook_important = true;
 
 // This will be indexed by hook id, the value of which fetches the registry.
 static int * hookRefs;
@@ -82,7 +92,7 @@ FUNCINLINE static ATTRINLINE unsigned hook_in_list
 
 	for (type = 0; list[type] != NULL; ++type)
 	{
-		if (strcmp(name, list[type]) == 0)
+		if (fastcmp(name, list[type]))
 			break;
 	}
 
@@ -108,7 +118,11 @@ static void get_table(lua_State *L)
 
 FUNCINLINE static ATTRINLINE void add_hook_to_table(lua_State *L, int n)
 {
+	lua_newtable(L);
 	lua_pushnumber(L, nextid);
+	lua_rawseti(L, -2, 1);
+	lua_pushboolean(L, wadfiles[numwadfiles-1]->important);
+	lua_rawseti(L, -2, 2);
 	lua_rawseti(L, -2, n);
 }
 
@@ -179,7 +193,8 @@ FUNCINLINE static ATTRINLINE void add_hook(hook_t *map)
 {
 	Z_Realloc(map->ids, (map->numHooks + 1) * sizeof *map->ids,
 			PU_STATIC, &map->ids);
-	map->ids[map->numHooks++] = nextid;
+	map->ids[map->numHooks].important = wadfiles[numwadfiles-1]->important;
+	map->ids[map->numHooks++].id = nextid;
 }
 
 FUNCINLINE static ATTRINLINE void add_mobj_hook(lua_State *L, int hook_type)
@@ -239,7 +254,7 @@ static int lib_addHook(lua_State *L)
 	{
 		add_hook(&hookIds[type]);
 	}
-	/*else if (strcmp(name, "HUD") == 0) // ehh this is cool and all, but i dont want modders potentially breaking vanilla clients lol
+	/*else if (fastcmp(name, "HUD")) // ehh this is cool and all, but i dont want modders potentially breaking vanilla clients lol
 	{
 		add_hud_hook(L, 3);
 	}*/
@@ -286,6 +301,7 @@ struct Hook_State {
 	const char * string;/* used to fetch table, ran first if set */
 	int          top;/* index of last argument passed to hook */
 	int          id;/* id to fetch ref */
+	boolean      important;/* is this hook from local addon */
 	int          values;/* num arguments passed to hook */
 	int          results;/* num values returned by hook */
 	Hook_Callback results_handler;/* callback when hook successfully returns */
@@ -392,6 +408,16 @@ FUNCINLINE static ATTRINLINE boolean prepare_string_hook
 		return false;
 }
 
+FUNCINLINE static ATTRINLINE boolean prepare_hud_hook
+(
+		Hook_State * hook,
+		int hook_type
+){
+	return init_hook_type(hook, 0,
+			hook_type, 0, NULL,
+			hudHookIds[hook_type].numHooks);
+}
+
 FUNCINLINE static ATTRINLINE void init_hook_call
 (
 		Hook_State * hook,
@@ -405,22 +431,29 @@ FUNCINLINE static ATTRINLINE void init_hook_call
 	hook->results_handler = results_handler;
 }
 
-FUNCINLINE static ATTRINLINE void get_hook(Hook_State *hook, const int *ids, int n)
+FUNCINLINE static ATTRINLINE void get_hook(Hook_State *hook, const hookinfo_t *ids, int n)
 {
-	hook->id = ids[n];
+	hook->id = ids[n].id;
+	hook->important = ids[n].important;
 	lua_getref(gL, hookRefs[hook->id]);
 }
 
 FUNCINLINE static ATTRINLINE void get_hook_from_table(Hook_State *hook, int n)
 {
 	lua_rawgeti(gL, -1, n);
+	lua_rawgeti(gL, -1, 1);
 	hook->id = lua_tonumber(gL, -1);
 	lua_pop(gL, 1);
+	lua_rawgeti(gL, -2, 2);
+	hook->important = lua_toboolean(gL, -1);
+	lua_pop(gL, 2);
 	lua_getref(gL, hookRefs[hook->id]);
 }
 
 static int call_single_hook_no_copy(Hook_State *hook)
 {
+	hook_important = hook->important;
+
 	if (lua_pcall(gL, hook->values, hook->results, EINDEX) == 0)
 	{
 		if (hook->results > 0)
@@ -662,20 +695,16 @@ int LUA_HookTiccmd(player_t *player, ticcmd_t *cmd, int hook_type)
 
 void LUA_HookHUD(int hook_type, huddrawlist_h list)
 {
-	const hook_t * map = &hudHookIds[hook_type];
 	Hook_State hook;
-	if (map->numHooks > 0)
+	if (prepare_hud_hook(&hook, hook_type))
 	{
-		start_hook_stack();
-		begin_hook_values(&hook);
-
 		LUA_SetHudHook(hook_type, list);
 
 		hud_running = true; // local hook
 		hud_interpcounter = 0;
 		hud_interpolate = hud_interpstring = hud_interplatch = false;
 		init_hook_call(&hook, 1, res_hud);
-		call_mapped(&hook, map);
+		call_mapped(&hook, &hudHookIds[hook_type]);
 		lua_settop(gL, 0); // destroy le stack!! >:3
 		hud_running = false;
 
@@ -811,14 +840,14 @@ typedef struct {
 
 FUNCINLINE static ATTRINLINE boolean checkbotkey(const char *field)
 {
-	return lua_toboolean(gL, -1) && strcmp(lua_tostring(gL, -2), field) == 0;
+	return lua_toboolean(gL, -1) && fastcmp(lua_tostring(gL, -2), field);
 }
 
 static void res_botai(Hook_State *hook)
 {
 	BotAI_State *botai = hook->userdata;
 
-	int k[8];
+	int k[8] = { 0 };
 
 	int fields = 0;
 
@@ -1065,6 +1094,18 @@ int LUA_HookMusicChange(const char *oldname, struct MusicChange *param)
 	return hook.status;
 }
 
+int LUA_HookMusicCredit(musicdef_t *musicdef)
+{
+	Hook_State hook;
+	if (prepare_hook(&hook, 0, HOOK(MusicCredit)))
+	{
+		LUA_PushUserdata(gL, musicdef, META_MUSICDEF);
+		call_hooks(&hook, 1, res_true);
+	}
+
+	return hook.status;
+}
+
 static int kartdamage_hook
 (
 		player_t *player,
@@ -1118,4 +1159,44 @@ boolean LUA_HookPlayerSquish(player_t *player, mobj_t *inflictor, mobj_t *source
 boolean LUA_HookPlayerExplode(player_t *player, mobj_t *inflictor, mobj_t *source)
 {
 	return kartdamage_hook(player, inflictor, source, HOOK(PlayerExplode), res_true);
+}
+
+void LUA_HookSetupVote(INT16 result[], INT16 maxresults, UINT8 gt, UINT8 secondgt)
+{
+	Hook_State hook;
+	if (prepare_hook(&hook, 0, HOOK(SetupVote)))
+	{
+		// { 0, 0, 0, 0, }
+		lua_newtable(gL);
+		for (int i = 1; i <= maxresults; ++i)
+		{
+			lua_pushinteger(gL, 0);
+			lua_rawseti(gL, -2, i);
+		}
+
+		// call_hooks does lua_settop(gL, 0) so we need to store our table somewhere
+		lua_pushvalue(gL, -1);
+		lua_setfield(gL, LUA_REGISTRYINDEX, "SetupVoteResults");
+
+		lua_pushinteger(gL, gt);
+		lua_pushinteger(gL, secondgt);
+		lua_pushinteger(gL, prevmap+1); // prevmap is gamemap-1 so we offset it back
+
+		call_hooks(&hook, 0, res_none);
+
+		lua_getfield(gL, LUA_REGISTRYINDEX, "SetupVoteResults");
+		for (int i = 1; i <= maxresults; ++i)
+		{
+			lua_rawgeti(gL, -1, i);
+			result[i-1] = lua_tointeger(gL, -1);
+			lua_pop(gL, 1);
+
+			if (result[i-1] && (result[i-1] < 0 || !mapheaderinfo[result[i-1]-1]))
+			{
+				CONS_Alert(CONS_WARNING, "Unknown map #%d for vote\n", result[i-1]);
+				result[i-1] = 0;
+			}
+		}
+		lua_pop(gL, 1);
+	}
 }

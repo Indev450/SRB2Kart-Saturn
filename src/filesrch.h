@@ -4,6 +4,10 @@
 #ifndef __FILESRCH_H__
 #define __FILESRCH_H__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "doomdef.h"
 #include "d_netfil.h"
 #include "m_menu.h" // MAXSTRINGLENGTH
@@ -26,12 +30,12 @@ extern consvar_t cv_addons_option, cv_addons_folder, cv_addons_md5, cv_addons_sh
 
 */
 
-filestatus_t filesearch(char *filename, const char *startpath, const UINT8 *wantedmd5sum,
-	boolean completepath, int maxsearchdepth);
+filestatus_t filesearch(char *filename, const char *startpath, const UINT8 *wantedmd5sum, boolean completepath, int maxsearchdepth);
 
 #define menudepth 20
 
-extern char menupath[1024];
+#define MAXFILEPATH 1024
+extern char menupath[MAXFILEPATH];
 extern size_t menupathindex[menudepth];
 extern size_t menudepthleft;
 
@@ -95,5 +99,9 @@ INT32 pathisdirectory(const char *path);
 void closefilemenu(boolean validsize);
 void searchfilemenu(char *tempname);
 boolean preparefilemenu(boolean samedepth, boolean replayhut);
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif // __FILESRCH_H__

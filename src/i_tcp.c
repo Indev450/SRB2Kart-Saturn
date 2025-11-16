@@ -28,50 +28,37 @@
 #endif
 
 #ifdef _WIN32
-#define USE_WINSOCK
-#if defined (_WIN64) || defined (HAVE_IPV6)
-#define USE_WINSOCK2
-#else //_WIN64/HAVE_IPV6
-#define USE_WINSOCK1
-#endif
+	#define USE_WINSOCK
 #endif //WIN32 OS
 
-#ifdef USE_WINSOCK2
-#include <ws2tcpip.h>
+#ifdef USE_WINSOCK
+	#include <ws2tcpip.h>
+	#define addrinfo_t ADDRINFOA
+#else
+	#define addrinfo_t struct addrinfo
 #endif
 
 #include "doomdef.h"
 
-#if defined (NOMD5) && !defined (NONET)
-//#define NONET
-#endif
+#ifndef USE_WINSOCK
+	#include <arpa/inet.h>
+	#ifdef __APPLE_CC__
+		#ifndef _BSD_SOCKLEN_T_
+			#define _BSD_SOCKLEN_T_
+		#endif //_BSD_SOCKLEN_T_
+	#endif //__APPLE_CC__
+	#include <sys/socket.h>
+	#include <netinet/in.h>
+	#include <netdb.h>
+	#include <sys/ioctl.h>
+#endif //normal BSD API
 
-#ifdef NONET
-#undef HAVE_MINIUPNPC
-#else
+#include <errno.h>
 #include <time.h>
-#ifdef USE_WINSOCK1
-	#include <winsock.h>
-#else
-	#ifndef USE_WINSOCK
-		#include <arpa/inet.h>
-		#ifdef __APPLE_CC__
-			#ifndef _BSD_SOCKLEN_T_
-				#define _BSD_SOCKLEN_T_
-			#endif //_BSD_SOCKLEN_T_
-		#endif //__APPLE_CC__
-		#include <sys/socket.h>
-		#include <netinet/in.h>
-		#include <netdb.h>
-		#include <sys/ioctl.h>
-	#endif //normal BSD API
 
-	#include <errno.h>
-
-	#if defined (__unix__) || defined (__APPLE__) || defined (UNIXCOMMON)
-		#include <sys/time.h>
-	#endif // UNIXCOMMON
-#endif // !NONET
+#if defined (__unix__) || defined (__APPLE__) || defined (UNIXCOMMON)
+	#include <sys/time.h>
+#endif // UNIXCOMMON
 
 #ifdef USE_WINSOCK
 	// some undefined under win32
@@ -139,8 +126,6 @@ typedef union
 static UINT8 UPNP_support = TRUE;
 #endif
 
-#endif // !NONET
-
 #include "i_system.h"
 #include "i_time.h"
 #include "i_net.h"
@@ -161,28 +146,21 @@ static UINT8 UPNP_support = TRUE;
 	#define close closesocket
 #endif
 
-#include "i_addrinfo.h"
 #define DEFAULTPORT "5029"
 
-#if defined (USE_WINSOCK) && !defined (NONET)
-typedef SOCKET SOCKET_TYPE;
-#define ERRSOCKET (SOCKET_ERROR)
+#ifdef USE_WINSOCK
+	typedef SOCKET SOCKET_TYPE;
+	#define ERRSOCKET (SOCKET_ERROR)
 #else
-#if defined (__unix__) || defined (__APPLE__) || defined (__HAIKU__)
-typedef int SOCKET_TYPE;
-#else
-typedef unsigned long SOCKET_TYPE;
-#endif
-#define ERRSOCKET (-1)
+	#if defined (__unix__) || defined (__APPLE__) || defined (__HAIKU__)
+		typedef int SOCKET_TYPE;
+	#else
+		typedef unsigned long SOCKET_TYPE;
+	#endif
+	#define ERRSOCKET (-1)
 #endif
 
 #define IPV6_MULTICAST_ADDRESS "ff15::57e1:1a12"
-
-#ifdef USE_WINSOCK1
-typedef int socklen_t;
-#endif
-
-#ifndef NONET
 
 typedef struct
 {
@@ -206,7 +184,6 @@ static banned_t *banned;
 #ifdef HOLEPUNCH
 static const INT32 hole_punch_magic = MSBF_LONG (0x52eb11);
 #endif
-#endif
 
 static size_t numbans = 0;
 static size_t banned_size = 0;
@@ -216,8 +193,6 @@ static boolean init_tcp_driver = false;
 
 static const char *serverport_name = DEFAULTPORT;
 static const char *clientport_name;/* any port */
-
-#ifndef NONET
 
 #ifdef USE_WINSOCK
 // stupid microsoft makes things complicated
@@ -246,9 +221,8 @@ static char *get_WSAErrorStr(int e)
 #define strerror get_WSAErrorStr
 #endif
 
-#ifdef USE_WINSOCK2
+#ifdef USE_WINSOCK
 #define inet_ntop inet_ntopA
-#define HAVE_NTOP
 static const char* inet_ntopA(short af, const void *cp, char *buf, socklen_t len)
 {
 	DWORD Dlen = len, AFlen = 0;
@@ -292,8 +266,6 @@ static const char* inet_ntopA(short af, const void *cp, char *buf, socklen_t len
 		return NULL;
 	return buf;
 }
-#elif !defined (USE_WINSOCK1)
-#define HAVE_NTOP
 #endif
 
 #ifdef HAVE_MINIUPNPC // based on old XChat patch
@@ -371,12 +343,17 @@ static inline void I_UPnP_rem(const char *port, const char * servicetype)
 
 static const char *SOCK_AddrToStr(mysockaddr_t *sk)
 {
-	static char s[64]; // 255.255.255.255:65535 or IPv6:65535
-#ifdef HAVE_NTOP
+	static char s[64]; // 255.255.255.255:65535 or
+	// [ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff]:65535
+#ifdef HAVE_IPV6
+	int v6 = (sk->any.sa_family == AF_INET6);
+#else
+	int v6 = 0;
+#endif
 	void *addr;
 	int e = 0; // save error code so it can't be modified later code and avoid calling WSAGetLastError() more then once
 
-	if(sk->any.sa_family == AF_INET)
+	if (sk->any.sa_family == AF_INET)
 		addr = &sk->ip4.sin_addr;
 #ifdef HAVE_IPV6
 	else if(sk->any.sa_family == AF_INET6)
@@ -385,110 +362,109 @@ static const char *SOCK_AddrToStr(mysockaddr_t *sk)
 	else
 		addr = NULL;
 
-	if(addr == NULL)
+	if (addr == NULL)
+	{
 		sprintf(s, "No address");
-	else if(inet_ntop(sk->any.sa_family, addr, s, sizeof (s)) == NULL)
+	}
+	else if (inet_ntop(sk->any.sa_family, addr, &s[v6], sizeof (s) - v6) == NULL)
 	{
 		e = errno;
 		sprintf(s, "Unknown family type, error #%u: %s", e, strerror(e));
 	}
 #ifdef HAVE_IPV6
-	else if(sk->any.sa_family == AF_INET6 && sk->ip6.sin6_port != 0)
-		strcat(s, va(":%d", ntohs(sk->ip6.sin6_port)));
-#endif
-	else if(sk->any.sa_family == AF_INET  && sk->ip4.sin_port  != 0)
-		strcat(s, va(":%d", ntohs(sk->ip4.sin_port)));
-#else
-	if (sk->any.sa_family == AF_INET)
+	else if(sk->any.sa_family == AF_INET6)
 	{
-		strcpy(s, inet_ntoa(sk->ip4.sin_addr));
-		if (sk->ip4.sin_port != 0) strcat(s, va(":%d", ntohs(sk->ip4.sin_port)));
+		s[0] = '[';
+		strcat(s, "]");
+
+		if (sk->ip6.sin6_port != 0)
+			strcat(s, va(":%d", ntohs(sk->ip6.sin6_port)));
 	}
-	else
-		sprintf(s, "Unknown type");
 #endif
+	else if (sk->any.sa_family == AF_INET  && sk->ip4.sin_port != 0)
+		strcat(s, va(":%d", ntohs(sk->ip4.sin_port)));
+
 	return s;
 }
-#endif
 
 static const char *SOCK_GetNodeAddress(INT32 node)
 {
 	if (node == 0)
 		return "self";
-#ifdef NONET
-	return NULL;
-#else
+
 	if (!nodeconnected[node])
 		return NULL;
+
 	return SOCK_AddrToStr(&clientaddress[node]);
-#endif
 }
 
 static const char *SOCK_GetBanAddress(size_t ban)
 {
 	if (ban >= numbans)
 		return NULL;
-#ifdef NONET
-	return NULL;
-#else
+
 	return SOCK_AddrToStr(&banned[ban].address);
-#endif
 }
 
 static const char *SOCK_GetBanMask(size_t ban)
 {
-#ifdef NONET
-	(void)ban;
-#else
 	static char s[16]; //255.255.255.255 netmask? no, just CDIR for only
+
 	if (ban >= numbans)
 		return NULL;
+
 	if (sprintf(s,"%d",banned[ban].mask) > 0)
 		return s;
-#endif
+
 	return NULL;
 }
 
 static const char *SOCK_GetBanUsername(size_t ban)
 {
-#ifdef NONET
-	(void)ban;
-	return NULL;
-#else
 	if (ban >= numbans)
 		return NULL;
+
 	return banned[ban].username;
-#endif
 }
 
 static const char *SOCK_GetBanReason(size_t ban)
 {
-#ifdef NONET
-	(void)ban;
-	return NULL;
-#else
 	if (ban >= numbans)
 		return NULL;
+
 	return banned[ban].reason;
-#endif
 }
 
 static time_t SOCK_GetUnbanTime(size_t ban)
 {
-#ifdef NONET
-	(void)ban;
-	return NO_BAN_TIME;
-#else
 	if (ban >= numbans)
 		return NO_BAN_TIME;
+
 	return banned[ban].timestamp;
-#endif
 }
 
-#ifndef NONET
+#ifdef HAVE_IPV6
+static boolean SOCK_cmpipv6(mysockaddr_t *a, mysockaddr_t *b, UINT8 mask)
+{
+	UINT8 bitmask;
+	I_Assert(mask <= 128);
+	if (mask == 0)
+		mask = 128;
+	if (memcmp(&a->ip6.sin6_addr.s6_addr, &b->ip6.sin6_addr.s6_addr, mask / 8) != 0)
+		return false;
+	if (mask % 8 == 0)
+		return true;
+	bitmask = 255 << (mask % 8);
+	return (a->ip6.sin6_addr.s6_addr[mask / 8] & bitmask) == (b->ip6.sin6_addr.s6_addr[mask / 8] & bitmask);
+}
+#endif
+
 static boolean SOCK_cmpaddr(mysockaddr_t *a, mysockaddr_t *b, UINT8 mask)
 {
 	UINT32 bitmask = INADDR_NONE;
+
+	if (a->any.sa_family != b->any.sa_family)
+		return false;
 
 	if (mask && mask < 32)
 		bitmask = htonl((UINT32)(-1) << (32 - mask));
@@ -498,7 +474,7 @@ static boolean SOCK_cmpaddr(mysockaddr_t *a, mysockaddr_t *b, UINT8 mask)
 			&& (b->ip4.sin_port == 0 || (a->ip4.sin_port == b->ip4.sin_port));
 #ifdef HAVE_IPV6
 	else if (b->any.sa_family == AF_INET6)
-		return memcmp(&a->ip6.sin6_addr, &b->ip6.sin6_addr, sizeof(b->ip6.sin6_addr))
+		return SOCK_cmpipv6(a, b, mask)
 			&& (b->ip6.sin6_port == 0 || (a->ip6.sin6_port == b->ip6.sin6_port));
 #endif
 	else
@@ -589,9 +565,7 @@ void Command_Numnodes(void)
 				connected, ingame);
 }
 #endif
-#endif
 
-#ifndef NONET
 #ifdef HOLEPUNCH
 /* not one of the reserved "local" addresses */
 static boolean
@@ -620,6 +594,7 @@ is_external_address (UINT32 p)
 
 static boolean hole_punch(ssize_t c)
 {
+	holepunch_t *holepunchpacket = HOLEPUNCH_DATA(doomcom);
 
 	/* See ../doc/Holepunch-Protocol.txt */
 	if (cv_rendezvousserver.string[0] &&
@@ -659,7 +634,8 @@ static boolean SOCK_Get(void)
 		fromlen = (socklen_t)sizeof(fromaddress);
 		c = recvfrom(mysockets[n], (char *)&doomcom->data, MAXPACKETLENGTH, 0,
 			(void *)&fromaddress, &fromlen);
-		if (c > 0)
+
+		if (c != ERRSOCKET)
 		{
 #ifdef USE_STUN
 			if (STUN_got_response(doomcom->data, c))
@@ -675,25 +651,26 @@ static boolean SOCK_Get(void)
 #endif
 
 			// find remote node number
-			for (j = 1; j <= MAXNETNODES; j++) //include LAN
+			for (j = 1; j <= MAXNETNODES; j++) // include LAN
 			{
 				if (SOCK_cmpaddr(&fromaddress, &clientaddress[j], 0))
 				{
 					doomcom->remotenode = (INT16)j; // good packet from a game player
 					doomcom->datalength = (INT16)c;
 					nodesocket[j] = mysockets[n];
-					return false;
+					return true;
 				}
 			}
 			// not found
 
 			// find a free slot
 			j = getfreenode();
+
 			if (j > 0)
 			{
 				const time_t curTime = time(NULL);
 
-				M_Memcpy(&clientaddress[j], &fromaddress, fromlen);
+				memcpy(&clientaddress[j], &fromaddress, fromlen);
 				nodesocket[j] = mysockets[n];
 				DEBFILE(va("New node detected: node:%d address:%s\n", j,
 						SOCK_GetNodeAddress(j)));
@@ -746,9 +723,7 @@ static boolean SOCK_Get(void)
 	doomcom->remotenode = -1; // no packet
 	return false;
 }
-#endif
 
-#ifndef NONET
 static inline ssize_t SOCK_SendToAddr(SOCKET_TYPE socket, mysockaddr_t *sockaddr)
 {
 	socklen_t d4 = (socklen_t)sizeof(struct sockaddr_in);
@@ -777,7 +752,7 @@ static void SOCK_Send(void)
 	int e = 0; // save error code so it can't be modified later code and avoid calling WSAGetLastError() more then once
 	size_t i, j;
 
-	if (!nodeconnected[doomcom->remotenode])
+	if (doomcom->remotenode < 0 || !nodeconnected[doomcom->remotenode])
 		return;
 
 	if (doomcom->remotenode == BROADCASTADDR)
@@ -832,9 +807,7 @@ static void SOCK_Send(void)
 	}
 }
 #undef ALLOWEDERROR
-#endif //NONET
 
-#ifndef NONET
 static void SOCK_FreeNodenum(INT32 numnode)
 {
 	// can't disconnect from self :)
@@ -849,13 +822,10 @@ static void SOCK_FreeNodenum(INT32 numnode)
 	// put invalid address
 	memset(&clientaddress[numnode], 0, sizeof (clientaddress[numnode]));
 }
-#endif
 
 //
 // UDPsocket
 //
-#ifndef NONET
-
 // allocate a socket
 static SOCKET_TYPE UDP_Bind(int family, struct sockaddr *addr, socklen_t addrlen)
 {
@@ -868,22 +838,18 @@ static SOCKET_TYPE UDP_Bind(int family, struct sockaddr *addr, socklen_t addrlen
 	unsigned long trueval = true;
 #endif
 	mysockaddr_t straddr;
-	struct sockaddr_in sin;
-	socklen_t len = sizeof(sin);
+	socklen_t len = sizeof(straddr);
 
 	if (s == (SOCKET_TYPE)ERRSOCKET)
 		return (SOCKET_TYPE)ERRSOCKET;
+
 #ifdef USE_WINSOCK
 	{ // Alam_GBC: disable the new UDP connection reset behavior for Win2k and up
-#ifdef USE_WINSOCK2
 		DWORD dwBytesReturned = 0;
 		BOOL bfalse = FALSE;
 		rc = WSAIoctl(s, SIO_UDP_CONNRESET, &bfalse, sizeof(bfalse),
 		         NULL, 0, &dwBytesReturned, NULL, NULL);
-#else
-		unsigned long falseval = false;
-		rc = ioctl(s, SIO_UDP_CONNRESET, &falseval);
-#endif
+
 		if (rc == -1)
 		{
 			e = errno;
@@ -892,14 +858,12 @@ static SOCKET_TYPE UDP_Bind(int family, struct sockaddr *addr, socklen_t addrlen
 	}
 #endif
 
-	straddr.any = *addr;
+	memcpy(&straddr, addr, addrlen);
 	I_OutputMsg("Binding to %s\n", SOCK_AddrToStr(&straddr));
 
 	if (family == AF_INET)
 	{
-		mysockaddr_t tmpaddr;
-		tmpaddr.any = *addr ;
-		if (tmpaddr.ip4.sin_addr.s_addr == htonl(INADDR_ANY))
+		if (straddr.ip4.sin_addr.s_addr == htonl(INADDR_ANY))
 		{
 			opt = true;
 			opts = (socklen_t)sizeof(opt);
@@ -924,7 +888,7 @@ static SOCKET_TYPE UDP_Bind(int family, struct sockaddr *addr, socklen_t addrlen
 #ifdef HAVE_IPV6
 	else if (family == AF_INET6)
 	{
-		if (memcmp(addr, &in6addr_any, sizeof(in6addr_any)) == 0) //IN6_ARE_ADDR_EQUAL
+		if (memcmp(&straddr.ip6.sin6_addr, &in6addr_any, sizeof(in6addr_any)) == 0) //IN6_ARE_ADDR_EQUAL
 		{
 			opt = true;
 			opts = (socklen_t)sizeof(opt);
@@ -939,7 +903,7 @@ static SOCKET_TYPE UDP_Bind(int family, struct sockaddr *addr, socklen_t addrlen
 		// make it IPv6 ony
 		opt = true;
 		opts = (socklen_t)sizeof(opt);
-		rc = setsockopt(s, SOL_SOCKET, IPV6_V6ONLY, (char *)&opt, opts);
+		rc = setsockopt(s, IPPROTO_IPV6, IPV6_V6ONLY, (char *)&opt, opts);
 		if (rc <= -1)
 		{
 			e = errno;
@@ -969,7 +933,7 @@ static SOCKET_TYPE UDP_Bind(int family, struct sockaddr *addr, socklen_t addrlen
 
 			inet_pton(AF_INET6, IPV6_MULTICAST_ADDRESS, &maddr.ipv6mr_multiaddr);
 			maddr.ipv6mr_interface = 0;
-			rc = setsockopt(s, SOL_SOCKET, IPV6_JOIN_GROUP, (const char *)&maddr, sizeof(maddr));
+			rc = setsockopt(s, IPPROTO_IPV6, IPV6_JOIN_GROUP, (const char *)&maddr, sizeof(maddr));
 			if (rc <= -1)
 			{
 				e = errno;
@@ -1006,7 +970,7 @@ static SOCKET_TYPE UDP_Bind(int family, struct sockaddr *addr, socklen_t addrlen
 		e = errno;
 		I_OutputMsg("getting SO_RCVBUF failed: #%u, %s\n", e, strerror(e));
 	}
-	CONS_Printf(M_GetText("Network system buffer: %dKb\n"), opt>>10);
+	CONS_Printf(M_GetText("Network receive buffer: %dKb\n"), opt>>10);
 
 	if (opt < 64<<10) // 64k
 	{
@@ -1027,12 +991,47 @@ static SOCKET_TYPE UDP_Bind(int family, struct sockaddr *addr, socklen_t addrlen
 		}
 
 		if (opt < 64<<10)
-			CONS_Alert(CONS_WARNING, M_GetText("Can't set buffer length to 64k, file transfer will be bad\n"));
+			CONS_Alert(CONS_WARNING, M_GetText("Can't set receive buffer length to 64k, file transfer will be bad\n"));
 		else
-			CONS_Printf(M_GetText("Network system buffer set to: %dKb\n"), opt>>10);
+			CONS_Printf(M_GetText("Network receive buffer set to: %dKb\n"), opt>>10);
 	}
 
-	rc = getsockname(s, (struct sockaddr *)&sin, &len);
+	opt = 0;
+	opts = (socklen_t)sizeof(opt);
+	rc = getsockopt(s, SOL_SOCKET, SO_SNDBUF, (char *)&opt, &opts);
+	if (rc <= -1)
+	{
+		e = errno;
+		I_OutputMsg("getting SO_SNDBUF failed: #%u, %s\n", e, strerror(e));
+	}
+	CONS_Printf(M_GetText("Network send buffer: %dKb\n"), opt>>10);
+
+	if (opt < 64<<10) // 64k
+	{
+		opt = 64<<10;
+		opts = (socklen_t)sizeof(opt);
+		rc = setsockopt(s, SOL_SOCKET, SO_SNDBUF, (char *)&opt, opts);
+		if (rc <= -1)
+		{
+			e = errno;
+			I_OutputMsg("setting SO_SNDBUF to %dKb failed: #%u, %s\n", opt>>10, e, strerror(e));
+		}
+
+		opt = 0;
+		rc = getsockopt(s, SOL_SOCKET, SO_SNDBUF, (char *)&opt, &opts);
+		if (rc <= -1)
+		{
+			e = errno;
+			I_OutputMsg("getting SO_SNDBUF failed: #%u, %s\n", e, strerror(e));
+		}
+
+		if (opt < 64<<10)
+			CONS_Alert(CONS_WARNING, M_GetText("Can't set send buffer length to 64k, file transfer will be bad\n"));
+		else
+			CONS_Printf(M_GetText("Network send system buffer set to: %dKb\n"), opt>>10);
+	}
+
+	rc = getsockname(s, &straddr.any, &len);
 	if (rc != 0)
 	{
 		e = errno;
@@ -1040,7 +1039,14 @@ static SOCKET_TYPE UDP_Bind(int family, struct sockaddr *addr, socklen_t addrlen
 		I_OutputMsg("getsockname failed: #%u, %s\n", e, strerror(e));
 	}
 	else
-		current_port = (UINT16)ntohs(sin.sin_port);
+	{
+		if (family == AF_INET)
+			current_port = (UINT16)ntohs(straddr.ip4.sin_port);
+#ifdef HAVE_IPV6
+		else if (family == AF_INET6)
+			current_port = (UINT16)ntohs(straddr.ip6.sin6_port);
+#endif
+	}
 
 	return s;
 }
@@ -1048,7 +1054,7 @@ static SOCKET_TYPE UDP_Bind(int family, struct sockaddr *addr, socklen_t addrlen
 static boolean UDP_Socket(void)
 {
 	size_t s;
-	struct my_addrinfo *ai, *runp, hints;
+	addrinfo_t *ai, *runp, hints;
 	int gaie;
 #ifdef HAVE_IPV6
 	const INT32 b_ipv6 = M_CheckParm("-ipv6");
@@ -1077,7 +1083,7 @@ static boolean UDP_Socket(void)
 	{
 		while (M_IsNextParm())
 		{
-			gaie = I_getaddrinfo(M_GetNextParm(), serv, &hints, &ai);
+			gaie = getaddrinfo(M_GetNextParm(), serv, &hints, &ai);
 			if (gaie == 0)
 			{
 				runp = ai;
@@ -1091,13 +1097,13 @@ static boolean UDP_Socket(void)
 					}
 					runp = runp->ai_next;
 				}
-				I_freeaddrinfo(ai);
+				freeaddrinfo(ai);
 			}
 		}
 	}
 	else
 	{
-		gaie = I_getaddrinfo("0.0.0.0", serv, &hints, &ai);
+		gaie = getaddrinfo("0.0.0.0", serv, &hints, &ai);
 		if (gaie == 0)
 		{
 			runp = ai;
@@ -1118,9 +1124,10 @@ static boolean UDP_Socket(void)
 				}
 				runp = runp->ai_next;
 			}
-			I_freeaddrinfo(ai);
+			freeaddrinfo(ai);
 		}
 	}
+
 #ifdef HAVE_IPV6
 	if (b_ipv6)
 	{
@@ -1129,7 +1136,7 @@ static boolean UDP_Socket(void)
 		{
 			while (M_IsNextParm())
 			{
-				gaie = I_getaddrinfo(M_GetNextParm(), serv, &hints, &ai);
+				gaie = getaddrinfo(M_GetNextParm(), serv, &hints, &ai);
 				if (gaie == 0)
 				{
 					runp = ai;
@@ -1143,13 +1150,13 @@ static boolean UDP_Socket(void)
 						}
 						runp = runp->ai_next;
 					}
-					I_freeaddrinfo(ai);
+					freeaddrinfo(ai);
 				}
 			}
 		}
 		else
 		{
-			gaie = I_getaddrinfo("::", serv, &hints, &ai);
+			gaie = getaddrinfo("::", serv, &hints, &ai);
 			if (gaie == 0)
 			{
 				runp = ai;
@@ -1163,7 +1170,7 @@ static boolean UDP_Socket(void)
 					}
 					runp = runp->ai_next;
 				}
-				I_freeaddrinfo(ai);
+				freeaddrinfo(ai);
 			}
 		}
 	}
@@ -1209,20 +1216,15 @@ static boolean UDP_Socket(void)
 
 	return true;
 }
-#endif
 
 boolean I_InitTcpDriver(void)
 {
 	boolean tcp_was_up = init_tcp_driver;
-#ifndef NONET
+
 	if (!init_tcp_driver)
 	{
 #ifdef USE_WINSOCK
-#ifdef USE_WINSOCK2
 		const WORD VerNeed = MAKEWORD(2,2);
-#else
-		const WORD VerNeed = MAKEWORD(1,1);
-#endif
 		WSADATA WSAData;
 		const int WSAresult = WSAStartup(VerNeed, &WSAData);
 		if (WSAresult != 0)
@@ -1249,27 +1251,20 @@ boolean I_InitTcpDriver(void)
 			if (WSAresult != WSAVERNOTSUPPORTED)
 				CONS_Debug(DBG_NETPLAY, "WinSock(TCP/IP) error: %s\n",WSError);
 		}
-#ifdef USE_WINSOCK2
-		if(LOBYTE(WSAData.wVersion) != 2 ||
+
+		if (LOBYTE(WSAData.wVersion) != 2 ||
 			HIBYTE(WSAData.wVersion) != 2)
 		{
 			WSACleanup();
 			CONS_Debug(DBG_NETPLAY, "No WinSock(TCP/IP) 2.2 driver detected\n");
 		}
-#else
-		if (LOBYTE(WSAData.wVersion) != 1 ||
-			HIBYTE(WSAData.wVersion) != 1)
-		{
-			WSACleanup();
-			CONS_Debug(DBG_NETPLAY, "No WinSock(TCP/IP) 1.1 driver detected\n");
-		}
-#endif
+
 		CONS_Debug(DBG_NETPLAY, "WinSock description: %s\n",WSAData.szDescription);
 		CONS_Debug(DBG_NETPLAY, "WinSock System Status: %s\n",WSAData.szSystemStatus);
 #endif
 		init_tcp_driver = true;
 	}
-#endif
+
 	if (!tcp_was_up && init_tcp_driver)
 	{
 		I_AddExitFunc(I_ShutdownTcpDriver);
@@ -1283,7 +1278,6 @@ boolean I_InitTcpDriver(void)
 	return init_tcp_driver;
 }
 
-#ifndef NONET
 static void SOCK_CloseSocket(void)
 {
 	size_t i;
@@ -1297,45 +1291,38 @@ static void SOCK_CloseSocket(void)
 
 	mysocketses = 0;
 }
-#endif
 
 void I_ShutdownTcpDriver(void)
 {
-#ifndef NONET
 	SOCK_CloseSocket();
 
 	CONS_Printf("I_ShutdownTcpDriver: ");
 #ifdef USE_WINSOCK
-	WS_addrinfocleanup();
 	WSACleanup();
 #endif
 	CONS_Printf("shut down\n");
 	init_tcp_driver = false;
-#endif
 }
 
-#ifndef NONET
-static boolean SOCK_GetAddr(struct sockaddr_in *sin, const char *address, const char *port, boolean test)
+static boolean SOCK_GetAddr(mysockaddr_t *sin, const char *address, const char *port, boolean test)
 {
-	struct my_addrinfo *ai = NULL, *runp, hints;
+	addrinfo_t *ai, *runp, hints;
 	int gaie;
+	size_t i;
 
 	if (!port || !port[0])
 		port = DEFAULTPORT;
 
-	memset (&hints, 0x00, sizeof (hints));
-	hints.ai_flags = 0;
+	memset(&hints, 0x00, sizeof (hints));
+	hints.ai_flags = AI_ADDRCONFIG;
 	hints.ai_family = AF_UNSPEC;
 	hints.ai_socktype = SOCK_DGRAM;
 	hints.ai_protocol = IPPROTO_UDP;
 
-	gaie = I_getaddrinfo(address, port, &hints, &ai);
+	gaie = getaddrinfo(address, port, &hints, &ai);
 
 	if (gaie != 0)
-	{
-		I_freeaddrinfo(ai);
 		return false;
-	}
 
 	runp = ai;
 
@@ -1343,17 +1330,26 @@ static boolean SOCK_GetAddr(struct sockaddr_in *sin, const char *address, const 
 	{
 		while (runp != NULL)
 		{
-			if (sendto(mysockets[0], NULL, 0, 0, runp->ai_addr, runp->ai_addrlen) == 0)
-				break;
+			// test ip address of server
+			for (i = 0; i < mysocketses; ++i)
+			{
+				if (runp->ai_addr->sa_family == myfamily[i])
+				{
+					break;
+				}
+			}
 
-			runp = runp->ai_next;
+			if (i >= mysocketses)
+				runp = runp->ai_next;
+			else
+				break;
 		}
 	}
 
 	if (runp != NULL)
 		memcpy(sin, runp->ai_addr, runp->ai_addrlen);
 
-	I_freeaddrinfo(ai);
+	freeaddrinfo(ai);
 
 	return (runp != NULL);
 }
@@ -1366,7 +1362,7 @@ static SINT8 SOCK_NetMakeNodewPort(const char *address, const char *port)
 
 	if (newnode != -1)
 	{
-		if (!SOCK_GetAddr(&clientaddress[newnode].ip4, address, port, true))
+		if (!SOCK_GetAddr(&clientaddress[newnode], address, port, true))
 		{
 			nodeconnected[newnode] = false;
 			return -1;
@@ -1390,9 +1386,11 @@ static void rendezvous(int size)
 
 	tic_t tic = I_GetTime();
 
+	holepunch_t *holepunchpacket = HOLEPUNCH_DATA(doomcom);
+
 	if (tic != refreshtic)
 	{
-		if (SOCK_GetAddr(&rzv.ip4, host, (port ? port : "7777"), false))
+		if (SOCK_GetAddr(&rzv, host, (port ? port : "7777"), false))
 		{
 			refreshtic = tic;
 		}
@@ -1415,6 +1413,7 @@ static void rendezvous(int size)
 static void SOCK_RequestHolePunch(INT32 node)
 {
 	mysockaddr_t * addr = &clientaddress[node];
+	holepunch_t *holepunchpacket = HOLEPUNCH_DATA(doomcom);
 
 	holepunchpacket->addr = addr->ip4.sin_addr.s_addr;
 	holepunchpacket->port = addr->ip4.sin_port;
@@ -1430,11 +1429,9 @@ static void SOCK_RegisterHolePunch(void)
 	rendezvous(4);
 }
 #endif
-#endif
 
 static boolean SOCK_OpenSocket(void)
 {
-#ifndef NONET
 	size_t i;
 
 	memset(clientaddress, 0, sizeof (clientaddress));
@@ -1457,9 +1454,6 @@ static boolean SOCK_OpenSocket(void)
 	// build the socket but close it first
 	SOCK_CloseSocket();
 	return UDP_Socket();
-#else
-	return false;
-#endif
 }
 
 static void AddBannedIndex(void)
@@ -1475,13 +1469,7 @@ static void AddBannedIndex(void)
 			banned_size *= 2;
 		}
 
-		banned = Z_ReallocAlign(
-			(void*) banned,
-			sizeof(banned_t) * banned_size,
-			PU_STATIC,
-			NULL,
-			sizeof(banned_t) * 8
-		);
+		banned = Z_Realloc((void*) banned, sizeof(banned_t) * banned_size, PU_STATIC, NULL);
 	}
 
 	numbans++;
@@ -1494,15 +1482,10 @@ static boolean SOCK_Ban(INT32 node)
 	if (node > MAXNETNODES)
 		return false;
 
-#ifdef NONET
-	(void)ban;
-	return false;
-#else
-
 	ban = numbans;
 	AddBannedIndex();
 
-	M_Memcpy(&banned[ban].address, &clientaddress[node], sizeof (mysockaddr_t));
+	memcpy(&banned[ban].address, &clientaddress[node], sizeof (mysockaddr_t));
 
 	if (banned[ban].address.any.sa_family == AF_INET)
 	{
@@ -1518,15 +1501,10 @@ static boolean SOCK_Ban(INT32 node)
 #endif
 
 	return true;
-#endif
 }
 
 static boolean SOCK_SetBanUsername(const char *username)
 {
-#ifdef NONET
-	(void)username;
-	return false;
-#else
 	if (username == NULL || strlen(username) == 0)
 	{
 		username = "Direct IP ban";
@@ -1539,16 +1517,12 @@ static boolean SOCK_SetBanUsername(const char *username)
 	}
 
 	banned[numbans - 1].username = Z_StrDup(username);
+
 	return true;
-#endif
 }
 
 static boolean SOCK_SetBanReason(const char *reason)
 {
-#ifdef NONET
-	(void)reason;
-	return false;
-#else
 	if (reason == NULL || strlen(reason) == 0)
 	{
 		reason = "No reason given";
@@ -1561,29 +1535,19 @@ static boolean SOCK_SetBanReason(const char *reason)
 	}
 
 	banned[numbans - 1].reason = Z_StrDup(reason);
+
 	return true;
-#endif
 }
 
 static boolean SOCK_SetUnbanTime(time_t timestamp)
 {
-#ifdef NONET
-	(void)reason;
-	return false;
-#else
 	banned[numbans - 1].timestamp = timestamp;
 	return true;
-#endif
 }
 
 static boolean SOCK_SetBanAddress(const char *address, const char *mask)
 {
-#ifdef NONET
-	(void)address;
-	(void)mask;
-	return false;
-#else
-	struct my_addrinfo *ai, *runp, hints;
+	addrinfo_t *ai, *runp, hints;
 	int gaie;
 
 	if (!address)
@@ -1595,7 +1559,7 @@ static boolean SOCK_SetBanAddress(const char *address, const char *mask)
 	hints.ai_socktype = SOCK_DGRAM;
 	hints.ai_protocol = IPPROTO_UDP;
 
-	gaie = I_getaddrinfo(address, "0", &hints, &ai);
+	gaie = getaddrinfo(address, "0", &hints, &ai);
 	if (gaie != 0)
 		return false;
 
@@ -1640,10 +1604,9 @@ static boolean SOCK_SetBanAddress(const char *address, const char *mask)
 		runp = runp->ai_next;
 	}
 
-	I_freeaddrinfo(ai);
+	freeaddrinfo(ai);
 
 	return true;
-#endif
 }
 
 static void SOCK_ClearBans(void)
@@ -1690,8 +1653,6 @@ boolean I_InitTcpNetwork(void)
 		// FIXME: for dedicated server, numnodes needs to be set to 0 upon start
 		if (dedicated)
 			doomcom->numnodes = 0;
-/*		else if (M_IsNextParm())
-			doomcom->numnodes = (INT16)atoi(M_GetNextParm());*/
 		else
 			doomcom->numnodes = 1;
 
@@ -1742,7 +1703,7 @@ boolean I_InitTcpNetwork(void)
 
 		// server address only in ip
 		if (serverhostname[0])
-		{			
+		{
 			CONS_Printf("SERVERNAME: %s\n", serverhostname);
 			COM_BufAddText("connect \"");
 			COM_BufAddText(serverhostname);
@@ -1776,5 +1737,3 @@ boolean I_InitTcpNetwork(void)
 
 	return ret;
 }
-
-#include "i_addrinfo.c"

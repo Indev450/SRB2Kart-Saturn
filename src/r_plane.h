@@ -14,6 +14,10 @@
 #ifndef __R_PLANE__
 #define __R_PLANE__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "screen.h" // needs MAXVIDWIDTH/MAXVIDHEIGHT
 #include "r_data.h"
 #include "p_polyobj.h"
@@ -43,9 +47,8 @@ typedef struct visplane_s
 	// colormaps per sector
 	extracolormap_t *extra_colormap;
 
-	// leave pads for [minx-1]/[maxx+1]
-	UINT16 padtopstart, top[MAXVIDWIDTH], padtopend;
-	UINT16 padbottomstart, bottom[MAXVIDWIDTH], padbottomend;
+	UINT16 *top, *top_memory;
+	UINT16 *bottom, *bottom_memory;
 	INT32 high, low; // R_PlaneBounds should set these.
 
 	fixed_t xoffs, yoffs; // Scrolling flats.
@@ -55,34 +58,29 @@ typedef struct visplane_s
 	pslope_t *slope;
 
 	boolean noencore;
+	boolean cyan;
 } visplane_t;
+
+extern visplane_t *visplanes[MAXVISPLANES];
 
 extern visplane_t *floorplane;
 extern visplane_t *ceilingplane;
 
 // Visplane related.
-extern INT16 *lastopening, *openings;
-extern size_t maxopenings;
 
-extern INT16 floorclip[MAXVIDWIDTH], ceilingclip[MAXVIDWIDTH];
-extern fixed_t frontscale[MAXVIDWIDTH], yslopetab[MAXVIDHEIGHT*16];
-extern fixed_t cachedheight[MAXVIDHEIGHT];
-extern fixed_t cacheddistance[MAXVIDHEIGHT];
-extern fixed_t cachedxstep[MAXVIDHEIGHT];
-extern fixed_t cachedystep[MAXVIDHEIGHT];
+extern INT16 *floorclip, *ceilingclip;
+extern fixed_t *frontscale, *yslopetab;
 extern fixed_t basexscale, baseyscale;
 
 extern fixed_t *yslope;
-extern lighttable_t **planezlight;
 
-void R_InitPlanes(void);
+void R_AllocPlaneMemory(void);
 void R_ClearPlanes(void);
 void R_ClearFFloorClips (void);
 
-void R_MapPlane(INT32 y, INT32 x1, INT32 x2);
-void R_MakeSpans(INT32 x, INT32 t1, INT32 b1, INT32 t2, INT32 b2);
+void R_DrawSkyPlanes(void);
 void R_DrawPlanes(void);
-void R_CalculateSlopeVectors(pslope_t *slope, fixed_t planeviewx, fixed_t planeviewy, fixed_t planeviewz, fixed_t planexscale, fixed_t planeyscale, fixed_t planexoffset, fixed_t planeyoffset, angle_t planeviewangle, angle_t planeangle, float fudge);
+
 visplane_t *R_FindPlane(fixed_t height, INT32 picnum, INT32 lightlevel, fixed_t xoff, fixed_t yoff, angle_t plangle,
 	extracolormap_t *planecolormap, ffloor_t *ffloor
 	, polyobj_t *polyobj
@@ -93,9 +91,6 @@ visplane_t *R_CheckPlane(visplane_t *pl, INT32 start, INT32 stop);
 void R_ExpandPlane(visplane_t *pl, INT32 start, INT32 stop);
 void R_PlaneBounds(visplane_t *plane);
 
-// Draws a single visplane.
-void R_DrawSinglePlane(visplane_t *pl);
-
 typedef struct planemgr_s
 {
 	visplane_t *plane;
@@ -104,8 +99,8 @@ typedef struct planemgr_s
 	fixed_t b_pos; // B for Back sector
 	fixed_t f_frac, f_step;
 	fixed_t b_frac, b_step;
-	INT16 f_clip[MAXVIDWIDTH];
-	INT16 c_clip[MAXVIDWIDTH];
+	INT16 *f_clip;
+	INT16 *c_clip;
 
 	// For slope rendering; the height at the other end
 	fixed_t f_pos_slope;
@@ -117,6 +112,11 @@ typedef struct planemgr_s
 	polyobj_t *polyobj;
 } visffloor_t;
 
-extern visffloor_t ffloor[MAXFFLOORS];
+extern visffloor_t visffloor[MAXFFLOORS];
 extern INT32 numffloors;
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
+
 #endif

@@ -74,11 +74,13 @@ fireflicker_t *P_SpawnAdjustableFireFlicker(sector_t *minsector, sector_t *maxse
 	fireflicker_t *flick;
 
 	P_RemoveLighting(maxsector); // out with the old, in with the new
-	flick = Z_Calloc(sizeof (*flick), PU_LEVSPEC, NULL);
+	flick = Z_LevelPoolCalloc(sizeof(*flick));
+	flick->thinker.alloctype = TAT_LEVELPOOL;
+	flick->thinker.size = sizeof(*flick);
 
 	P_AddThinker(&flick->thinker);
 
-	flick->thinker.function.acp1 = (actionf_p1)T_FireFlicker;
+	flick->thinker.function = (actionf_p1)T_FireFlicker;
 	flick->sector = maxsector;
 	flick->maxlight = maxsector->lightlevel;
 	flick->minlight = minsector->lightlevel;
@@ -140,7 +142,7 @@ void P_SpawnLightningFlash(sector_t *sector)
 
 	if (sector->lightingdata)
 	{
-		if (((lightflash_t *)sector->lightingdata)->thinker.function.acp1
+		if (((lightflash_t *)sector->lightingdata)->thinker.function
 			== (actionf_p1)T_LightningFlash)
 		{
 			// lightning was already flashing in this sector
@@ -153,11 +155,13 @@ void P_SpawnLightningFlash(sector_t *sector)
 
 	sector->lightingdata = NULL;
 
-	flash = Z_Calloc(sizeof (*flash), PU_LEVSPEC, NULL);
+	flash = Z_LevelPoolCalloc(sizeof(*flash));
+	flash->thinker.alloctype = TAT_LEVELPOOL;
+	flash->thinker.size = sizeof(*flash);
 
 	P_AddThinker(&flash->thinker);
 
-	flash->thinker.function.acp1 = (actionf_p1)T_LightningFlash;
+	flash->thinker.function = (actionf_p1)T_LightningFlash;
 	flash->sector = sector;
 	flash->maxlight = 255;
 	flash->minlight = minlight;
@@ -212,14 +216,16 @@ strobe_t *P_SpawnAdjustableStrobeFlash(sector_t *minsector, sector_t *maxsector,
 	strobe_t *flash;
 
 	P_RemoveLighting(maxsector); // out with the old, in with the new
-	flash = Z_Calloc(sizeof (*flash), PU_LEVSPEC, NULL);
+	flash = Z_LevelPoolCalloc(sizeof(*flash));
+	flash->thinker.alloctype = TAT_LEVELPOOL;
+	flash->thinker.size = sizeof(*flash);
 
 	P_AddThinker(&flash->thinker);
 
 	flash->sector = maxsector;
 	flash->darktime = darktime;
 	flash->brighttime = brighttime;
-	flash->thinker.function.acp1 = (actionf_p1)T_StrobeFlash;
+	flash->thinker.function = (actionf_p1)T_StrobeFlash;
 	flash->maxlight = maxsector->lightlevel;
 	flash->minlight = minsector->lightlevel;
 
@@ -287,7 +293,9 @@ glow_t *P_SpawnAdjustableGlowingLight(sector_t *minsector, sector_t *maxsector, 
 	glow_t *g;
 
 	P_RemoveLighting(maxsector); // out with the old, in with the new
-	g = Z_Calloc(sizeof (*g), PU_LEVSPEC, NULL);
+	g = Z_LevelPoolCalloc(sizeof(*g));
+	g->thinker.alloctype = TAT_LEVELPOOL;
+	g->thinker.size = sizeof(*g);
 
 	P_AddThinker(&g->thinker);
 
@@ -301,7 +309,7 @@ glow_t *P_SpawnAdjustableGlowingLight(sector_t *minsector, sector_t *maxsector, 
 		g->minlight = g->maxlight;
 		g->maxlight = oops;
 	}
-	g->thinker.function.acp1 = (actionf_p1)T_Glow;
+	g->thinker.function = (actionf_p1)T_Glow;
 	g->direction = 1;
 	g->speed = length/4;
 	if (g->speed > (g->maxlight - g->minlight)/2) // don't make it ridiculous speed
@@ -346,8 +354,10 @@ void P_FadeLight(INT16 tag, INT32 destvalue, INT32 speed)
 		sector = &sectors[i];
 
 		P_RemoveLighting(sector); // remove the old lighting effect first
-		ll = Z_Calloc(sizeof (*ll), PU_LEVSPEC, NULL);
-		ll->thinker.function.acp1 = (actionf_p1)T_LightFade;
+		ll = Z_LevelPoolCalloc(sizeof(*ll));
+		ll->thinker.alloctype = TAT_LEVELPOOL;
+		ll->thinker.size = sizeof(*ll);
+		ll->thinker.function = (actionf_p1)T_LightFade;
 		sector->lightingdata = ll; // set it to the lightlevel_t
 
 		P_AddThinker(&ll->thinker); // add thinker

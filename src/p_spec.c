@@ -15,6 +15,7 @@
 ///        utility functions, etc.
 ///        Line Tag handling. Line and Sector triggers.
 
+#include "d_think.h"
 #include "doomdef.h"
 #include "g_game.h"
 #include "p_local.h"
@@ -43,17 +44,13 @@
 // Not sure if this is necessary, but it was in w_wad.c, so I'm putting it here too -Shadow Hog
 #include <errno.h>
 
-mobj_t *skyboxmo[2];
+mobj_t *skyboxmo[2] = {};
 
 // Amount (dx, dy) vector linedef is shifted right to get scroll amount
 #define SCROLL_SHIFT 5
 
 // This must be updated whenever we up the max flat size - quicker to assume rather than figuring out the sqrt of the specific flat's filesize.
 #define MAXFLATSIZE (2048<<FRACBITS)
-
-#if defined(_MSC_VER)
-#pragma pack(1)
-#endif
 
 /** Animated texture definition.
   * Used for ::harddefs and for loading an ANIMATED lump from a wad.
@@ -71,10 +68,6 @@ typedef struct
 	char startname[9]; ///< Name of the first frame, null-terminated.
 	INT32 speed ; ///< Number of tics for which each frame is shown.
 } ATTRPACK animdef_t;
-
-#if defined(_MSC_VER)
-#pragma pack()
-#endif
 
 typedef struct
 {
@@ -100,7 +93,7 @@ static void P_AddSpikeThinker(sector_t *sec, INT32 referrer);
 
 
 //SoM: 3/7/2000: New sturcture without limits.
-anim_t *lastanim;
+anim_t *lastanim = NULL;
 anim_t *anims = NULL; /// \todo free leak
 static size_t maxanims;
 
@@ -259,10 +252,10 @@ void P_InitPicAnims(void)
 				// Populate the new array
 				for (currentPos = animatedLump; *currentPos != UINT8_MAX; i++, currentPos+=23)
 				{
-					M_Memcpy(&(animdefs[i].istexture), currentPos, 1); // istexture, 1 byte
-					M_Memcpy(animdefs[i].endname, (currentPos + 1), 9); // endname, 9 bytes
-					M_Memcpy(animdefs[i].startname, (currentPos + 10), 9); // startname, 9 bytes
-					M_Memcpy(&(animdefs[i].speed), (currentPos + 19), 4); // speed, 4 bytes
+					memcpy(&(animdefs[i].istexture), currentPos, 1); // istexture, 1 byte
+					memcpy(animdefs[i].endname, (currentPos + 1), 9); // endname, 9 bytes
+					memcpy(animdefs[i].startname, (currentPos + 10), 9); // startname, 9 bytes
+					memcpy(&(animdefs[i].speed), (currentPos + 19), 4); // speed, 4 bytes
 				}
 
 				Z_Free(animatedLump);
@@ -331,6 +324,7 @@ void P_InitPicAnims(void)
 			lastanim->speed = LONG(animdefs[i].speed);
 		lastanim++;
 	}
+
 	lastanim->istexture = -1;
 	R_ClearTextureNumCache(false);
 
@@ -338,6 +332,7 @@ void P_InitPicAnims(void)
 	// We'll only be using anims from now on.
 	if (animdefs != harddefs)
 		Z_Free(animdefs);
+
 	animdefs = NULL;
 }
 
@@ -368,20 +363,21 @@ void P_ParseANIMDEFSLump(INT32 wadNum, UINT16 lumpnum)
 
 	// Now, let's start parsing this thing
 	p = animdefsText;
+
 	animdefsToken = M_GetToken(p);
 	while (animdefsToken != NULL)
 	{
-		if (stricmp(animdefsToken, "TEXTURE") == 0)
+		if (fasticmp(animdefsToken, "TEXTURE"))
 		{
 			Z_Free(animdefsToken);
 			P_ParseAnimationDefintion(1);
 		}
-		else if (stricmp(animdefsToken, "FLAT") == 0)
+		else if (fasticmp(animdefsToken, "FLAT"))
 		{
 			Z_Free(animdefsToken);
 			P_ParseAnimationDefintion(0);
 		}
-		else if (stricmp(animdefsToken, "OSCILLATE") == 0)
+		else if (fasticmp(animdefsToken, "OSCILLATE"))
 		{
 			// This probably came off the tail of an earlier definition. It's technically legal syntax, but we don't support it.
 			I_Error("Error parsing ANIMDEFS lump: Animation definitions utilizing \"OSCILLATE\" (the animation plays in reverse when it reaches the end) are not supported by SRB2");
@@ -390,11 +386,17 @@ void P_ParseANIMDEFSLump(INT32 wadNum, UINT16 lumpnum)
 		{
 			I_Error("Error parsing ANIMDEFS lump: Expected \"TEXTURE\" or \"FLAT\", got \"%s\"",animdefsToken);
 		}
+
 		// parse next line
-		while (*p != '\0' && *p != '\n') ++p;
-		if (*p == '\n') ++p;
+		while (*p != '\0' && *p != '\n')
+			++p;
+
+		if (*p == '\n')
+			++p;
+
 		animdefsToken = M_GetToken(p);
 	}
+
 	Z_Free(animdefsToken);
 	Z_Free((void *)animdefsText);
 }
@@ -413,7 +415,8 @@ void P_ParseAnimationDefintion(SINT8 istexture)
 	{
 		I_Error("Error parsing ANIMDEFS lump: Unexpected end of file where start texture/flat name should be");
 	}
-	if (stricmp(animdefsToken, "OPTIONAL") == 0)
+
+	if (fasticmp(animdefsToken, "OPTIONAL"))
 	{
 		// This is meaningful to ZDoom - it tells the program NOT to bomb out
 		// if the textures can't be found - but it's useless in SRB2, so we'll
@@ -425,7 +428,7 @@ void P_ParseAnimationDefintion(SINT8 istexture)
 		{
 			I_Error("Error parsing ANIMDEFS lump: Unexpected end of file where start texture/flat name should be");
 		}
-		else if (stricmp(animdefsToken, "RANGE") == 0)
+		else if (fasticmp(animdefsToken, "RANGE"))
 		{
 			// Oh. Um. Apparently "OPTIONAL" is a texture name. Naughty.
 			// I should probably handle this more gracefully, but right now
@@ -434,15 +437,17 @@ void P_ParseAnimationDefintion(SINT8 istexture)
 			I_Error("Error parsing ANIMDEFS lump: \"OPTIONAL\" is a keyword; you cannot use it as the startname of an animation");
 		}
 	}
+
 	animdefsTokenLength = strlen(animdefsToken);
-	if (animdefsTokenLength>8)
+	if (animdefsTokenLength > 8)
 	{
 		I_Error("Error parsing ANIMDEFS lump: lump name \"%s\" exceeds 8 characters", animdefsToken);
 	}
 
 	// Search for existing animdef
 	for (i = 0; i < maxanims; i++)
-		if (stricmp(animdefsToken, animdefs[i].startname) == 0)
+	{
+		if (fasticmp(animdefsToken, animdefs[i].startname))
 		{
 			//CONS_Alert(CONS_NOTICE, "Duplicate animation: %s\n", animdefsToken);
 
@@ -451,6 +456,7 @@ void P_ParseAnimationDefintion(SINT8 istexture)
 			Z_Free(animdefsToken);
 			return;
 		}
+	}
 
 	// Not found
 	if (i == maxanims)
@@ -474,21 +480,25 @@ void P_ParseAnimationDefintion(SINT8 istexture)
 	{
 		I_Error("Error parsing ANIMDEFS lump: Unexpected end of file where \"RANGE\" after \"%s\"'s startname should be", animdefs[i].startname);
 	}
-	if (stricmp(animdefsToken, "ALLOWDECALS") == 0)
+
+	if (fasticmp(animdefsToken, "ALLOWDECALS"))
 	{
 		// Another ZDoom keyword, ho-hum. Skip it, move on to the next token.
 		Z_Free(animdefsToken);
 		animdefsToken = M_GetToken(NULL);
 	}
-	if (stricmp(animdefsToken, "PIC") == 0)
+
+	if (fasticmp(animdefsToken, "PIC"))
 	{
 		// This is technically legitimate ANIMDEFS syntax, but SRB2 doesn't support it.
 		I_Error("Error parsing ANIMDEFS lump: Animation definitions utilizing \"PIC\" (specific frames instead of a consecutive range) are not supported by SRB2");
 	}
-	if (stricmp(animdefsToken, "RANGE") != 0)
+
+	if (!fasticmp(animdefsToken, "RANGE"))
 	{
 		I_Error("Error parsing ANIMDEFS lump: Expected \"RANGE\" after \"%s\"'s startname, got \"%s\"", animdefs[i].startname, animdefsToken);
 	}
+
 	Z_Free(animdefsToken);
 
 	// Endname
@@ -497,11 +507,13 @@ void P_ParseAnimationDefintion(SINT8 istexture)
 	{
 		I_Error("Error parsing ANIMDEFS lump: Unexpected end of file where \"%s\"'s end texture/flat name should be", animdefs[i].startname);
 	}
+
 	animdefsTokenLength = strlen(animdefsToken);
 	if (animdefsTokenLength>8)
 	{
 		I_Error("Error parsing ANIMDEFS lump: lump name \"%s\" exceeds 8 characters", animdefsToken);
 	}
+
 	strncpy(animdefs[i].endname, animdefsToken, 9);
 	Z_Free(animdefsToken);
 
@@ -511,15 +523,18 @@ void P_ParseAnimationDefintion(SINT8 istexture)
 	{
 		I_Error("Error parsing ANIMDEFS lump: Unexpected end of file where \"%s\"'s \"TICS\" should be", animdefs[i].startname);
 	}
-	if (stricmp(animdefsToken, "RAND") == 0)
+
+	if (fasticmp(animdefsToken, "RAND"))
 	{
 		// This is technically legitimate ANIMDEFS syntax, but SRB2 doesn't support it.
 		I_Error("Error parsing ANIMDEFS lump: Animation definitions utilizing \"RAND\" (random duration per frame) are not supported by SRB2");
 	}
-	if (stricmp(animdefsToken, "TICS") != 0)
+
+	if (!fasticmp(animdefsToken, "TICS"))
 	{
 		I_Error("Error parsing ANIMDEFS lump: Expected \"TICS\" in animation definition for \"%s\", got \"%s\"", animdefs[i].startname, animdefsToken);
 	}
+
 	Z_Free(animdefsToken);
 
 	// Speed
@@ -528,6 +543,7 @@ void P_ParseAnimationDefintion(SINT8 istexture)
 	{
 		I_Error("Error parsing ANIMDEFS lump: Unexpected end of file where \"%s\"'s animation speed should be", animdefs[i].startname);
 	}
+
 	endPos = NULL;
 #ifndef AVOID_ERRNO
 	errno = 0;
@@ -542,6 +558,7 @@ void P_ParseAnimationDefintion(SINT8 istexture)
 	{
 		I_Error("Error parsing ANIMDEFS lump: Expected a positive integer for \"%s\"'s animation speed, got \"%s\"", animdefs[i].startname, animdefsToken);
 	}
+
 	animdefs[i].speed = animSpeed;
 	Z_Free(animdefsToken);
 }
@@ -974,7 +991,7 @@ static boolean PolyDoor(line_t *line)
 		case 480: // Polyobj_DoorSlide
 			pdd.doorType = POLY_DOOR_SLIDE;
 			pdd.speed    = sides[line->sidenum[0]].textureoffset / 8;
-			pdd.angle    = R_PointToAngle2(line->v1->x, line->v1->y, line->v2->x, line->v2->y); // angle of motion
+			pdd.angle    = line->angle; // angle of motion
 			pdd.distance = sides[line->sidenum[0]].rowoffset;
 
 			if (line->sidenum[1] != 0xffff)
@@ -1010,7 +1027,7 @@ static boolean PolyMove(line_t *line)
 
 	pmd.polyObjNum = line->tag;
 	pmd.speed      = sides[line->sidenum[0]].textureoffset / 8;
-	pmd.angle      = R_PointToAngle2(line->v1->x, line->v1->y, line->v2->x, line->v2->y);
+	pmd.angle      = line->angle;
 	pmd.distance   = sides[line->sidenum[0]].rowoffset;
 
 	pmd.overRide = (line->special == 483); // Polyobj_OR_Move
@@ -1232,7 +1249,7 @@ void P_ChangeSectorTag(UINT32 sector, INT16 newtag)
   * \sa P_FindSectorFromTag, P_ChangeSectorTag
   * \author Lee Killough
   */
-static inline void P_InitTagLists(void)
+void P_InitTagLists(void)
 {
 	register size_t i;
 
@@ -1241,8 +1258,6 @@ static inline void P_InitTagLists(void)
 		size_t j = (unsigned)sectors[i].tag % numsectors;
 		sectors[i].nexttag = sectors[j].firsttag;
 		sectors[j].firsttag = (INT32)i;
-		sectors[i].spawn_nexttag = sectors[i].nexttag;
-		sectors[j].spawn_firsttag = sectors[j].firsttag;
 	}
 
 	for (i = numlines - 1; i != (size_t)-1; i--)
@@ -1300,9 +1315,11 @@ static void P_AddExecutorDelay(line_t *line, mobj_t *mobj, sector_t *sector)
 	if (!line->backsector)
 		I_Error("P_AddExecutorDelay: Line has no backsector!\n");
 
-	e = Z_Calloc(sizeof (*e), PU_LEVSPEC, NULL);
+	e = Z_LevelPoolCalloc(sizeof (*e));
+	e->thinker.alloctype = TAT_LEVELPOOL;
+	e->thinker.size = sizeof (*e);
 
-	e->thinker.function.acp1 = (actionf_p1)T_ExecutorDelay;
+	e->thinker.function = (actionf_p1)T_ExecutorDelay;
 	e->line = line;
 	e->sector = sector;
 	e->timer = (line->backsector->ceilingheight>>FRACBITS)+(line->backsector->floorheight>>FRACBITS);
@@ -1693,11 +1710,9 @@ void P_LinedefExecute(INT16 tag, mobj_t *actor, sector_t *caller)
 		 || lines[masterline].special == 306 // Character ability - Each time
 		 || lines[masterline].special == 310 // CTF Red team - Each time
 		 || lines[masterline].special == 312 // CTF Blue team - Each time
-		 || lines[masterline].special == 322) // Trigger on X calls - Each Time
-			continue;
-
-		if (lines[masterline].special < 300
-			|| lines[masterline].special > 399)
+		 || lines[masterline].special == 322 // Trigger on X calls - Each Time
+		 || lines[masterline].special < 300
+		 || lines[masterline].special > 399)
 			continue;
 
 		if (!P_RunTriggerLinedef(&lines[masterline], actor, caller))
@@ -1715,7 +1730,6 @@ static boolean is_rain_type (INT32 weathernum)
 		case PRECIP_STORM_NOSTRIKES:
 		case PRECIP_BLANK:
 			return true;
-
 		default:
 			return false;
 	}
@@ -1801,7 +1815,7 @@ void P_SwitchWeather(INT32 weathernum)
 			precipmobj->tics = st->tics;
 			precipmobj->sprite = st->sprite;
 			precipmobj->frame = st->frame;
-			precipmobj->momz = (cv_mobjscaleprecip.value ? FixedMul(mobjinfo[type].speed, mapobjectscale) : mobjinfo[type].speed);
+			precipmobj->momz = FixedMul(mobjinfo[type].speed, mapobjectscale);
 
 			precipmobj->precipflags &= ~(PCF_INVISIBLE|PCF_SPLASH); // P_PrecipThinker will add this again if it needs to
 		}
@@ -2022,7 +2036,7 @@ static void P_ProcessLineSpecial(line_t *line, mobj_t *mo, sector_t *callsec)
 								camera[i].y += y;
 								camera[i].z += z;
 								camera[i].reset = true;
-								camera[i].subsector = R_PointInSubsector(camera[i].x, camera[i].y);
+								camera[i].subsector = R_PointInSubsectorFast(camera[i].x, camera[i].y);
 								R_RelativeTeleportViewInterpolation(i, x, y, z, 0);
 								break;
 							}
@@ -2101,8 +2115,7 @@ static void P_ProcessLineSpecial(line_t *line, mobj_t *mo, sector_t *callsec)
 				// Change the music and apply position/fade operations
 				else
 				{
-					strncpy(mapmusic.name, sides[line->sidenum[0]].text, 7);
-					mapmusic.name[6] = 0;
+					strlcpy(mapmusic.name, sides[line->sidenum[0]].text, sizeof(mapmusic.name));
 
 					mapmusic.flags = tracknum & MUSIC_TRACKMASK;
 					if (!(line->flags & ML_BLOCKMONSTERS))
@@ -2602,7 +2615,7 @@ static void P_ProcessLineSpecial(line_t *line, mobj_t *mo, sector_t *callsec)
 
 				for (th = thinkercap.next; th != &thinkercap; th = th->next)
 				{
-					if (th->function.acp1 != (actionf_p1)T_Scroll)
+					if (th->function != (actionf_p1)T_Scroll)
 						continue;
 
 					scroller = (scroll_t *)th;
@@ -2680,6 +2693,7 @@ static void P_ProcessLineSpecial(line_t *line, mobj_t *mo, sector_t *callsec)
 				size_t linenum;
 				side_t *set = &sides[line->sidenum[0]], *this;
 				boolean always = !(line->flags & ML_NOCLIMB); // If noclimb: Only change mid texture if mid texture already exists on tagged lines, etc.
+
 				for (linenum = 0; linenum < numlines; linenum++)
 				{
 					if (lines[linenum].special == 439)
@@ -2690,25 +2704,29 @@ static void P_ProcessLineSpecial(line_t *line, mobj_t *mo, sector_t *callsec)
 
 					// Front side
 					this = &sides[lines[linenum].sidenum[0]];
-					if (always || this->toptexture) this->toptexture = set->toptexture;
-					if (always || this->midtexture) this->midtexture = set->midtexture;
-					if (always || this->bottomtexture) this->bottomtexture = set->bottomtexture;
+					if (always || this->toptexture)
+						this->toptexture = set->toptexture;
+					if (always || this->midtexture)
+						this->midtexture = set->midtexture;
+					if (always || this->bottomtexture)
+						this->bottomtexture = set->bottomtexture;
 
 					if (lines[linenum].sidenum[1] == 0xffff)
 						continue; // One-sided stops here.
 
 					// Back side
 					this = &sides[lines[linenum].sidenum[1]];
-					if (always || this->toptexture) this->toptexture = set->toptexture;
-					if (always || this->midtexture) this->midtexture = set->midtexture;
-					if (always || this->bottomtexture) this->bottomtexture = set->bottomtexture;
+					if (always || this->toptexture)
+						this->toptexture = set->toptexture;
+					if (always || this->midtexture)
+						this->midtexture = set->midtexture;
+					if (always || this->bottomtexture)
+						this->bottomtexture = set->bottomtexture;
 				}
 			}
 			break;
 
-		case 440: // Play race countdown and start Metal Sonic
-			if (!metalrecording && !metalplayback)
-				G_DoPlayMetal();
+		case 440: // Play race countdown and start Metal Sonic // srb2kart: unused
 			break;
 
 		case 441: // Trigger unlockable
@@ -2937,7 +2955,7 @@ void P_SetupSignExit(player_t *player)
 	// spin all signposts in the level then.
 	for (think = thinkercap.next; think != &thinkercap; think = think->next)
 	{
-		if (think->function.acp1 != (actionf_p1)P_MobjThinker)
+		if (think->function != (actionf_p1)P_MobjThinker)
 			continue; // not a mobj thinker
 
 		thing = (mobj_t *)think;
@@ -2986,7 +3004,7 @@ boolean P_IsFlagAtBase(mobjtype_t flag)
 
 	for (think = thinkercap.next; think != &thinkercap; think = think->next)
 	{
-		if (think->function.acp1 != (actionf_p1)P_MobjThinker)
+		if (think->function != (actionf_p1)P_MobjThinker)
 			continue; // not a mobj thinker
 
 		mo = (mobj_t *)think;
@@ -3419,7 +3437,7 @@ void P_ProcessSpecialSector(player_t *player, sector_t *sector, sector_t *rovers
 			// The chimps are my friends.. heeheeheheehehee..... - LouisJM
 			for (th = thinkercap.next; th != &thinkercap; th = th->next)
 			{
-				if (th->function.acp1 != (actionf_p1)P_MobjThinker)
+				if (th->function != (actionf_p1)P_MobjThinker)
 					continue;
 
 				mo2 = (mobj_t *)th;
@@ -3523,7 +3541,7 @@ DoneSection2:
 				angle_t lineangle;
 				fixed_t linespeed;
 
-				lineangle = R_PointToAngle2(lines[i].v1->x, lines[i].v1->y, lines[i].v2->x, lines[i].v2->y);
+				lineangle = lines[i].angle;
 				linespeed = P_AproxDistance(lines[i].v2->x-lines[i].v1->x, lines[i].v2->y-lines[i].v1->y);
 
 				player->mo->angle = lineangle;
@@ -3537,9 +3555,7 @@ DoneSection2:
 				{
 					for (UINT8 j = 0; j <= splitscreen; ++j)
 					{
-						INT32 id = (j == 0 ? consoleplayer : displayplayers[j]);
-
-						if (player == &players[id])
+						if (player == P_GetLocalPlayerForNum(j))
 						{
 							localangle[j] = player->mo->angle;
 							break;
@@ -3760,7 +3776,7 @@ DoneSection2:
 				// to find the first waypoint
 				for (th = thinkercap.next; th != &thinkercap; th = th->next)
 				{
-					if (th->function.acp1 != (actionf_p1)P_MobjThinker)
+					if (th->function != (actionf_p1)P_MobjThinker)
 						continue;
 
 					mo2 = (mobj_t *)th;
@@ -3833,7 +3849,7 @@ DoneSection2:
 				// to find the last waypoint
 				for (th = thinkercap.next; th != &thinkercap; th = th->next)
 				{
-					if (th->function.acp1 != (actionf_p1)P_MobjThinker)
+					if (th->function != (actionf_p1)P_MobjThinker)
 						continue;
 
 					mo2 = (mobj_t *)th;
@@ -3889,6 +3905,7 @@ DoneSection2:
 					{
 						if (!playeringame[i] || players[i].spectator)
 							continue;
+
 						nump++;
 					}
 
@@ -3912,7 +3929,7 @@ DoneSection2:
 
 					player->kartstuff[k_lapanimation] = 80;
 
-					if (player->pflags & PF_NIGHTSMODE)
+					if (UNLIKELY(player->pflags & PF_NIGHTSMODE))
 						player->drillmeter += 48*20;
 
 					if (netgame && player->laps >= (UINT8)cv_numlaps.value)
@@ -4044,7 +4061,7 @@ DoneSection2:
 				// to find the first waypoint
 				for (th = thinkercap.next; th != &thinkercap; th = th->next)
 				{
-					if (th->function.acp1 != (actionf_p1)P_MobjThinker)
+					if (th->function != (actionf_p1)P_MobjThinker)
 						continue;
 
 					mo2 = (mobj_t *)th;
@@ -4082,7 +4099,7 @@ DoneSection2:
 				// Find waypoint before this one (waypointlow)
 				for (th = thinkercap.next; th != &thinkercap; th = th->next)
 				{
-					if (th->function.acp1 != (actionf_p1)P_MobjThinker)
+					if (th->function != (actionf_p1)P_MobjThinker)
 						continue;
 
 					mo2 = (mobj_t *)th;
@@ -4109,7 +4126,7 @@ DoneSection2:
 				// Find waypoint after this one (waypointhigh)
 				for (th = thinkercap.next; th != &thinkercap; th = th->next)
 				{
-					if (th->function.acp1 != (actionf_p1)P_MobjThinker)
+					if (th->function != (actionf_p1)P_MobjThinker)
 						continue;
 
 					mo2 = (mobj_t *)th;
@@ -4766,6 +4783,11 @@ static ffloor_t *P_AddFakeFloor(sector_t *sec, sector_t *sec2, line_t *master, f
 	ffloor->t_slope = &sec2->c_slope;
 	ffloor->b_slope = &sec2->f_slope;
 
+	// mark the target sector as having slopes, if the FOF has any of its own
+	// (this fixes FOF slopes glitching initially at level load in software mode)
+	if (sec2->hasslope)
+		sec->hasslope = true;
+
 	if ((flags & FF_SOLID) && (master->flags & ML_EFFECT1)) // Block player only
 		flags &= ~FF_BLOCKOTHERS;
 
@@ -4775,7 +4797,6 @@ static ffloor_t *P_AddFakeFloor(sector_t *sec, sector_t *sec2, line_t *master, f
 	ffloor->spawnflags = ffloor->flags = flags;
 	ffloor->master = master;
 	ffloor->norender = INFTICS;
-
 
 	// Scan the thinkers to check for special conditions applying to this FOF.
 	// If we have thinkers sorted by sector, just check the relevant ones;
@@ -4799,7 +4820,7 @@ static ffloor_t *P_AddFakeFloor(sector_t *sec, sector_t *sec2, line_t *master, f
 			break;
 
 		// Should this FOF have spikeness?
-		if (th->function.acp1 == (actionf_p1)T_SpikeSector)
+		if (th->function == (actionf_p1)T_SpikeSector)
 		{
 			lst = (levelspecthink_t *)th;
 
@@ -4807,7 +4828,7 @@ static ffloor_t *P_AddFakeFloor(sector_t *sec, sector_t *sec2, line_t *master, f
 				P_AddSpikeThinker(sec, (INT32)sec2num);
 		}
 		// Should this FOF have friction?
-		else if(th->function.acp1 == (actionf_p1)T_Friction)
+		else if(th->function == (actionf_p1)T_Friction)
 		{
 			f = (friction_t *)th;
 
@@ -4815,7 +4836,7 @@ static ffloor_t *P_AddFakeFloor(sector_t *sec, sector_t *sec2, line_t *master, f
 				Add_Friction(f->friction, f->movefactor, (INT32)(sec-sectors), f->affectee);
 		}
 		// Should this FOF have wind/current/pusher?
-		else if(th->function.acp1 == (actionf_p1)T_Pusher)
+		else if(th->function == (actionf_p1)T_Pusher)
 		{
 			p = (pusher_t *)th;
 
@@ -4903,10 +4924,13 @@ static void P_AddSpikeThinker(sector_t *sec, INT32 referrer)
 	levelspecthink_t *spikes;
 
 	// create and initialize new thinker
-	spikes = Z_Calloc(sizeof (*spikes), PU_LEVSPEC, NULL);
+	spikes = Z_LevelPoolCalloc(sizeof (*spikes));
+	spikes->thinker.alloctype = TAT_LEVELPOOL;
+	spikes->thinker.size = sizeof (*spikes);
+
 	P_AddThinker(&spikes->thinker);
 
-	spikes->thinker.function.acp1 = (actionf_p1)T_SpikeSector;
+	spikes->thinker.function = (actionf_p1)T_SpikeSector;
 
 	spikes->sector = sec;
 	spikes->vars[0] = referrer;
@@ -4925,10 +4949,12 @@ static void P_AddFloatThinker(sector_t *sec, INT32 tag, line_t *sourceline)
 	levelspecthink_t *floater;
 
 	// create and initialize new thinker
-	floater = Z_Calloc(sizeof (*floater), PU_LEVSPEC, NULL);
+	floater = Z_LevelPoolCalloc(sizeof (*floater));
+	floater->thinker.alloctype = TAT_LEVELPOOL;
+	floater->thinker.size = sizeof (*floater);
 	P_AddThinker(&floater->thinker);
 
-	floater->thinker.function.acp1 = (actionf_p1)T_FloatSector;
+	floater->thinker.function = (actionf_p1)T_FloatSector;
 
 	floater->sector = sec;
 	floater->vars[0] = tag;
@@ -4954,10 +4980,12 @@ static void P_AddBlockThinker(sector_t *sec, line_t *sourceline)
 	levelspecthink_t *block;
 
 	// create and initialize new elevator thinker
-	block = Z_Calloc(sizeof (*block), PU_LEVSPEC, NULL);
+	block = Z_LevelPoolCalloc(sizeof (*block));
+	block->thinker.alloctype = TAT_LEVELPOOL;
+	block->thinker.size = sizeof (*block);
 	P_AddThinker(&block->thinker);
 
-	block->thinker.function.acp1 = (actionf_p1)T_MarioBlockChecker;
+	block->thinker.function = (actionf_p1)T_MarioBlockChecker;
 	block->sourceline = sourceline;
 
 	block->sector = sec;
@@ -4983,10 +5011,12 @@ static void P_AddRaiseThinker(sector_t *sec, line_t *sourceline)
 {
 	levelspecthink_t *raise;
 
-	raise = Z_Calloc(sizeof (*raise), PU_LEVSPEC, NULL);
+	raise = Z_LevelPoolCalloc(sizeof (*raise));
+	raise->thinker.alloctype = TAT_LEVELPOOL;
+	raise->thinker.size = sizeof (*raise);
 	P_AddThinker(&raise->thinker);
 
-	raise->thinker.function.acp1 = (actionf_p1)T_RaiseSector;
+	raise->thinker.function = (actionf_p1)T_RaiseSector;
 
 	if (sourceline->flags & ML_BLOCKMONSTERS)
 		raise->vars[0] = 1;
@@ -5026,10 +5056,12 @@ static void P_AddOldAirbob(sector_t *sec, line_t *sourceline, boolean noadjust)
 {
 	levelspecthink_t *airbob;
 
-	airbob = Z_Calloc(sizeof (*airbob), PU_LEVSPEC, NULL);
+	airbob = Z_LevelPoolCalloc(sizeof (*airbob));
+	airbob->thinker.alloctype = TAT_LEVELPOOL;
+	airbob->thinker.size = sizeof (*airbob);
 	P_AddThinker(&airbob->thinker);
 
-	airbob->thinker.function.acp1 = (actionf_p1)T_RaiseSector;
+	airbob->thinker.function = (actionf_p1)T_RaiseSector;
 
 	// set up the fields
 	airbob->sector = sec;
@@ -5091,10 +5123,12 @@ static inline void P_AddThwompThinker(sector_t *sec, sector_t *actionsector, lin
 		return;
 
 	// create and initialize new elevator thinker
-	thwomp = Z_Calloc(sizeof (*thwomp), PU_LEVSPEC, NULL);
+	thwomp = Z_LevelPoolCalloc(sizeof (*thwomp));
+	thwomp->thinker.alloctype = TAT_LEVELPOOL;
+	thwomp->thinker.size = sizeof (*thwomp);
 	P_AddThinker(&thwomp->thinker);
 
-	thwomp->thinker.function.acp1 = (actionf_p1)T_ThwompSector;
+	thwomp->thinker.function = (actionf_p1)T_ThwompSector;
 
 	// set up the fields according to the type of elevator action
 	thwomp->sector = sec;
@@ -5132,10 +5166,12 @@ static inline void P_AddNoEnemiesThinker(sector_t *sec, line_t *sourceline)
 	levelspecthink_t *nobaddies;
 
 	// create and initialize new thinker
-	nobaddies = Z_Calloc(sizeof (*nobaddies), PU_LEVSPEC, NULL);
+	nobaddies = Z_LevelPoolCalloc(sizeof (*nobaddies));
+	nobaddies->thinker.alloctype = TAT_LEVELPOOL;
+	nobaddies->thinker.size = sizeof (*nobaddies);
 	P_AddThinker(&nobaddies->thinker);
 
-	nobaddies->thinker.function.acp1 = (actionf_p1)T_NoEnemiesSector;
+	nobaddies->thinker.function = (actionf_p1)T_NoEnemiesSector;
 
 	nobaddies->sector = sec;
 	nobaddies->sourceline = sourceline;
@@ -5154,10 +5190,12 @@ static inline void P_AddEachTimeThinker(sector_t *sec, line_t *sourceline)
 	levelspecthink_t *eachtime;
 
 	// create and initialize new thinker
-	eachtime = Z_Calloc(sizeof (*eachtime), PU_LEVSPEC, NULL);
+	eachtime = Z_LevelPoolCalloc(sizeof (*eachtime));
+	eachtime->thinker.alloctype = TAT_LEVELPOOL;
+	eachtime->thinker.size = sizeof (*eachtime);
 	P_AddThinker(&eachtime->thinker);
 
-	eachtime->thinker.function.acp1 = (actionf_p1)T_EachTimeThinker;
+	eachtime->thinker.function = (actionf_p1)T_EachTimeThinker;
 
 	eachtime->sector = sec;
 	eachtime->sourceline = sourceline;
@@ -5176,10 +5214,12 @@ static inline void P_AddCameraScanner(sector_t *sourcesec, sector_t *actionsecto
 	elevator_t *elevator; // Why not? LOL
 
 	// create and initialize new elevator thinker
-	elevator = Z_Calloc(sizeof (*elevator), PU_LEVSPEC, NULL);
+	elevator = Z_LevelPoolCalloc(sizeof (*elevator));
+	elevator->thinker.alloctype = TAT_LEVELPOOL;
+	elevator->thinker.size = sizeof (*elevator);
 	P_AddThinker(&elevator->thinker);
 
-	elevator->thinker.function.acp1 = (actionf_p1)T_CameraScanner;
+	elevator->thinker.function = (actionf_p1)T_CameraScanner;
 	elevator->type = elevateBounce;
 
 	// set up the fields according to the type of elevator action
@@ -5258,17 +5298,18 @@ void T_LaserFlash(laserthink_t *flash)
   */
 static inline void EV_AddLaserThinker(sector_t *sec, sector_t *sec2, line_t *line, thinkerlist_t *secthinkers)
 {
-	laserthink_t *flash;
 	ffloor_t *ffloor = P_AddFakeFloor(sec, sec2, line, laserflags, secthinkers);
 
 	if (!ffloor)
 		return;
 
-	flash = Z_Calloc(sizeof (*flash), PU_LEVSPEC, NULL);
+	laserthink_t *flash = Z_LevelPoolCalloc(sizeof (*flash));
+	flash->thinker.alloctype = TAT_LEVELPOOL;
+	flash->thinker.size = sizeof (*flash);
 
 	P_AddThinker(&flash->thinker);
 
-	flash->thinker.function.acp1 = (actionf_p1)T_LaserFlash;
+	flash->thinker.function = (actionf_p1)T_LaserFlash;
 	flash->ffloor = ffloor;
 	flash->sector = sec; // For finding mobjs
 	flash->sec = sec2;
@@ -5368,7 +5409,6 @@ void P_SpawnSpecials(INT32 fromnetsave, boolean reloadinggamestate)
 	// set current weather
 	curWeather = mapheaderinfo[gamemap-1]->weather;
 
-	P_InitTagLists();   // Create xref tables for tags
 	P_SearchForDisableLinedefs(); // Disable linedefs are now allowed to disable *any* line
 
 	P_SpawnScrollers(); // Add generalized scrollers
@@ -5382,11 +5422,11 @@ void P_SpawnSpecials(INT32 fromnetsave, boolean reloadinggamestate)
 	// Firstly, find out how many there are in each sector
 	for (th = thinkercap.next; th != &thinkercap; th = th->next)
 	{
-		if (th->function.acp1 == (actionf_p1)T_SpikeSector)
+		if (th->function == (actionf_p1)T_SpikeSector)
 			secthinkers[((levelspecthink_t *)th)->sector - sectors].count++;
-		else if (th->function.acp1 == (actionf_p1)T_Friction)
+		else if (th->function == (actionf_p1)T_Friction)
 			secthinkers[((friction_t *)th)->affectee].count++;
-		else if (th->function.acp1 == (actionf_p1)T_Pusher)
+		else if (th->function == (actionf_p1)T_Pusher)
 			secthinkers[((pusher_t *)th)->affectee].count++;
 	}
 
@@ -5404,11 +5444,11 @@ void P_SpawnSpecials(INT32 fromnetsave, boolean reloadinggamestate)
 	{
 		size_t secnum = (size_t)-1;
 
-		if (th->function.acp1 == (actionf_p1)T_SpikeSector)
+		if (th->function == (actionf_p1)T_SpikeSector)
 			secnum = ((levelspecthink_t *)th)->sector - sectors;
-		else if (th->function.acp1 == (actionf_p1)T_Friction)
+		else if (th->function == (actionf_p1)T_Friction)
 			secnum = ((friction_t *)th)->affectee;
-		else if (th->function.acp1 == (actionf_p1)T_Pusher)
+		else if (th->function == (actionf_p1)T_Pusher)
 			secnum = ((pusher_t *)th)->affectee;
 
 		if (secnum != (size_t)-1)
@@ -5465,7 +5505,7 @@ void P_SpawnSpecials(INT32 fromnetsave, boolean reloadinggamestate)
 			case 5: // Change camera info
 				sec = sides[*lines[i].sidenum].sector - sectors;
 				for (s = -1; (s = P_FindSectorFromLineTag(lines + i, s)) >= 0 ;)
-					P_AddCameraScanner(&sectors[sec], &sectors[s], R_PointToAngle2(lines[i].v2->x, lines[i].v2->y, lines[i].v1->x, lines[i].v1->y));
+					P_AddCameraScanner(&sectors[sec], &sectors[s], lines[i].angle);
 				break;
 
 #ifdef PARANOIA
@@ -5476,7 +5516,7 @@ void P_SpawnSpecials(INT32 fromnetsave, boolean reloadinggamestate)
 			case 7: // Flat alignment - redone by toast
 				if ((lines[i].flags & (ML_NOSONIC|ML_NOTAILS)) != (ML_NOSONIC|ML_NOTAILS)) // If you can do something...
 				{
-					angle_t flatangle = InvAngle(R_PointToAngle2(lines[i].v1->x, lines[i].v1->y, lines[i].v2->x, lines[i].v2->y));
+					angle_t flatangle = InvAngle(lines[i].angle);
 					fixed_t xoffs;
 					fixed_t yoffs;
 
@@ -5495,22 +5535,16 @@ void P_SpawnSpecials(INT32 fromnetsave, boolean reloadinggamestate)
 					{
 						if (!(lines[i].flags & ML_NOSONIC)) // Modify floor flat alignment unless NOSONIC flag is set
 						{
-							sectors[s].spawn_flrpic_angle = sectors[s].floorpic_angle = flatangle;
+							sectors[s].floorpic_angle = flatangle;
 							sectors[s].floor_xoffs += xoffs;
 							sectors[s].floor_yoffs += yoffs;
-							// saved for netgames
-							sectors[s].spawn_flr_xoffs = sectors[s].floor_xoffs;
-							sectors[s].spawn_flr_yoffs = sectors[s].floor_yoffs;
 						}
 
 						if (!(lines[i].flags & ML_NOTAILS)) // Modify ceiling flat alignment unless NOTAILS flag is set
 						{
-							sectors[s].spawn_ceilpic_angle = sectors[s].ceilingpic_angle = flatangle;
+							sectors[s].ceilingpic_angle = flatangle;
 							sectors[s].ceiling_xoffs += xoffs;
 							sectors[s].ceiling_yoffs += yoffs;
-							// saved for netgames
-							sectors[s].spawn_ceil_xoffs = sectors[s].ceiling_xoffs;
-							sectors[s].spawn_ceil_yoffs = sectors[s].ceiling_yoffs;
 						}
 					}
 				}
@@ -6277,7 +6311,7 @@ void P_SpawnSpecials(INT32 fromnetsave, boolean reloadinggamestate)
 
 			case 606: // HACK! Copy colormaps. Just plain colormaps.
 				for (s = -1; (s = P_FindSectorFromLineTag(lines + i, s)) >= 0 ;)
-					sectors[s].midmap = lines[i].frontsector->midmap;
+					sectors[s].extra_colormap = lines[i].frontsector->extra_colormap;
 				break;
 
 			case 720:
@@ -6465,7 +6499,6 @@ void T_Scroll(scroll_t *s)
 
 		case sc_carry:
 			sec = sectors + s->affectee;
-			height = sec->floorheight;
 
 			// sec is the control sector, find the real sector(s) to use
 			for (i = 0; i < sec->linecount; i++)
@@ -6542,7 +6575,6 @@ void T_Scroll(scroll_t *s)
 
 		case sc_carry_ceiling: // carry on ceiling (FOF scrolling)
 			sec = sectors + s->affectee;
-			height = sec->ceilingheight;
 
 			// sec is the control sector, find the real sector(s) to use
 			for (i = 0; i < sec->linecount; i++)
@@ -6631,8 +6663,11 @@ void T_Scroll(scroll_t *s)
   */
 static void Add_Scroller(INT32 type, fixed_t dx, fixed_t dy, INT32 control, INT32 affectee, INT32 accel, INT32 exclusive)
 {
-	scroll_t *s = Z_Calloc(sizeof *s, PU_LEVSPEC, NULL);
-	s->thinker.function.acp1 = (actionf_p1)T_Scroll;
+	scroll_t *s = Z_LevelPoolCalloc(sizeof (*s));
+	s->thinker.alloctype = TAT_LEVELPOOL;
+	s->thinker.size = sizeof (*s);
+	s->thinker.function = (actionf_p1)T_Scroll;
+
 	s->type = type;
 	s->dx = dx;
 	s->dy = dy;
@@ -6800,9 +6835,11 @@ static void P_SpawnScrollers(void)
   */
 static void Add_MasterDisappearer(tic_t appeartime, tic_t disappeartime, tic_t offset, INT32 line, INT32 sourceline)
 {
-	disappear_t *d = Z_Malloc(sizeof *d, PU_LEVSPEC, NULL);
+	disappear_t *d = Z_LevelPoolCalloc(sizeof (*d));
+	d->thinker.alloctype = TAT_LEVELPOOL;
+	d->thinker.size = sizeof (*d);
 
-	d->thinker.function.acp1 = (actionf_p1)T_Disappear;
+	d->thinker.function = (actionf_p1)T_Disappear;
 	d->appeartime = appeartime;
 	d->disappeartime = disappeartime;
 	d->offset = offset;
@@ -6885,9 +6922,11 @@ void T_Disappear(disappear_t *d)
   */
 static void Add_Friction(INT32 friction, INT32 movefactor, INT32 affectee, INT32 referrer)
 {
-	friction_t *f = Z_Calloc(sizeof *f, PU_LEVSPEC, NULL);
+	friction_t *f = Z_LevelPoolCalloc(sizeof (*f));
+	f->thinker.alloctype = TAT_LEVELPOOL;
+	f->thinker.size = sizeof (*f);
 
-	f->thinker.function.acp1 = (actionf_p1)T_Friction;
+	f->thinker.function = (actionf_p1)T_Friction;
 	f->friction = friction;
 	f->movefactor = movefactor;
 	f->affectee = affectee;
@@ -7040,9 +7079,11 @@ static void P_SpawnFriction(void)
   */
 static void Add_Pusher(pushertype_e type, fixed_t x_mag, fixed_t y_mag, mobj_t *source, INT32 affectee, INT32 referrer, INT32 exclusive, INT32 slider)
 {
-	pusher_t *p = Z_Calloc(sizeof *p, PU_LEVSPEC, NULL);
+	pusher_t *p = Z_LevelPoolCalloc(sizeof (*p));
+	p->thinker.alloctype = TAT_LEVELPOOL;
+	p->thinker.size = sizeof (*p);
 
-	p->thinker.function.acp1 = (actionf_p1)T_Pusher;
+	p->thinker.function = (actionf_p1)T_Pusher;
 	p->source = source;
 	p->type = type;
 	p->x_mag = x_mag>>FRACBITS;
@@ -7102,7 +7143,7 @@ static inline boolean PIT_PushThing(mobj_t *thing)
 		return false;
 
 	// Allow this to affect pushable objects at some point?
-	if (thing->player && (!(thing->flags & (MF_NOGRAVITY | MF_NOCLIP)) || thing->player->pflags & PF_NIGHTSMODE))
+	if (thing->player && (!(thing->flags & (MF_NOGRAVITY | MF_NOCLIP)) || UNLIKELY(thing->player->pflags & PF_NIGHTSMODE)))
 	{
 		INT32 dist;
 		INT32 speed;
@@ -7133,7 +7174,7 @@ static inline boolean PIT_PushThing(mobj_t *thing)
 		// Written with bits and pieces of P_HomingAttack
 		if ((speed > 0) && (P_CheckSight(thing, tmpusher->source)))
 		{
-			if (!(thing->player->pflags & PF_NIGHTSMODE))
+			if (LIKELY(!(thing->player->pflags & PF_NIGHTSMODE)))
 			{
 				// only push wrt Z if health & 1 (mapthing has ambush flag)
 				if (tmpusher->source->health & 1)
@@ -7476,8 +7517,7 @@ void T_Pusher(pusher_t *p)
 				{
 					for (UINT8 i = 0; i <= splitscreen; ++i)
 					{
-						INT32 id = (i == 0 ? consoleplayer : displayplayers[i]);
-						if (thing->player == &players[id])
+						if (thing->player == P_GetLocalPlayerForNum(i))
 						{
 							if (thing->angle - localangle[i] > ANGLE_180)
 								localangle[i] -= (localangle[i] - thing->angle) / 8;

@@ -559,7 +559,7 @@ static int sector_set(lua_State *L)
 	return 0;
 }
 
-static int sector_num(lua_State *L)
+FUNCINLINE static ATTRINLINE int sector_num(lua_State *L)
 {
 	sector_t *sector = *((sector_t **)luaL_checkudata(L, 1, META_SECTOR));
 	lua_pushinteger(L, sector-sectors);
@@ -598,7 +598,7 @@ static int subsector_get(lua_State *L)
 	return 0;
 }
 
-static int subsector_num(lua_State *L)
+FUNCINLINE static ATTRINLINE int subsector_num(lua_State *L)
 {
 	subsector_t *subsector = *((subsector_t **)luaL_checkudata(L, 1, META_SUBSECTOR));
 	lua_pushinteger(L, subsector-subsectors);
@@ -698,7 +698,7 @@ static int line_get(lua_State *L)
 	return 0;
 }
 
-static int line_num(lua_State *L)
+FUNCINLINE static ATTRINLINE int line_num(lua_State *L)
 {
 	line_t *line = *((line_t **)luaL_checkudata(L, 1, META_LINE));
 	lua_pushinteger(L, line-lines);
@@ -827,7 +827,7 @@ static int side_set(lua_State *L)
 	return 0;
 }
 
-static int side_num(lua_State *L)
+FUNCINLINE static ATTRINLINE int side_num(lua_State *L)
 {
 	side_t *side = *((side_t **)luaL_checkudata(L, 1, META_SIDE));
 	lua_pushinteger(L, side-sides);
@@ -866,7 +866,7 @@ static int vertex_get(lua_State *L)
 	return 0;
 }
 
-static int vertex_num(lua_State *L)
+FUNCINLINE static ATTRINLINE int vertex_num(lua_State *L)
 {
 	vertex_t *vertex = *((vertex_t **)luaL_checkudata(L, 1, META_VERTEX));
 	lua_pushinteger(L, vertex-vertexes);
@@ -913,7 +913,7 @@ static int lib_getSector(lua_State *L)
 	return 0;
 }
 
-static int lib_numsectors(lua_State *L)
+FUNCINLINE static ATTRINLINE int lib_numsectors(lua_State *L)
 {
 	lua_pushinteger(L, numsectors);
 	return 1;
@@ -959,7 +959,7 @@ static int lib_getSubsector(lua_State *L)
 	return 0;
 }
 
-static int lib_numsubsectors(lua_State *L)
+FUNCINLINE static ATTRINLINE int lib_numsubsectors(lua_State *L)
 {
 	lua_pushinteger(L, numsubsectors);
 	return 1;
@@ -1005,7 +1005,7 @@ static int lib_getLine(lua_State *L)
 	return 0;
 }
 
-static int lib_numlines(lua_State *L)
+FUNCINLINE static ATTRINLINE int lib_numlines(lua_State *L)
 {
 	lua_pushinteger(L, numlines);
 	return 1;
@@ -1051,7 +1051,7 @@ static int lib_getSide(lua_State *L)
 	return 0;
 }
 
-static int lib_numsides(lua_State *L)
+FUNCINLINE static ATTRINLINE int lib_numsides(lua_State *L)
 {
 	lua_pushinteger(L, numsides);
 	return 1;
@@ -1097,7 +1097,7 @@ static int lib_getVertex(lua_State *L)
 	return 0;
 }
 
-static int lib_numvertexes(lua_State *L)
+FUNCINLINE static ATTRINLINE int lib_numvertexes(lua_State *L)
 {
 	lua_pushinteger(L, numvertexes);
 	return 1;
@@ -1467,7 +1467,7 @@ static int lib_getMapheaderinfo(lua_State *L)
 	return 0;
 }
 
-static int lib_nummapheaders(lua_State *L)
+FUNCINLINE static ATTRINLINE int lib_nummapheaders(lua_State *L)
 {
 	lua_pushinteger(L, NUMMAPS);
 	return 1;

@@ -11,19 +11,11 @@
 /// \file  m_fixed.c
 /// \brief Fixed point implementation
 
-#if 0 //#ifndef NO_M
-#include <math.h>
-#define HAVE_SQRT
- #if 0 //#ifndef _WIN32 // MSVCRT does not have *f() functions
- #define HAVE_SQRTF
- #endif
-#endif
-
 #include "doomdef.h"
 #include "m_fixed.h"
 #include "tables.h" // ANGLETOFINESHIFT
 
-fixed_t FixedSqrt(fixed_t x)
+FUNCMATH fixed_t FixedSqrt(fixed_t x)
 {
 #ifdef HAVE_SQRT
 	const float fx = FIXED_TO_FLOAT(x);
@@ -61,7 +53,7 @@ fixed_t FixedSqrt(fixed_t x)
 #endif
 }
 
-fixed_t FixedHypot(fixed_t x, fixed_t y)
+FUNCMATH fixed_t FixedHypot(fixed_t x, fixed_t y)
 {
 	// Moved the code from R_PointToDist2 to here,
 	// since R_PointToDist2 did the same thing,
@@ -109,7 +101,7 @@ vector2_t *FV2_UnLoad(vector2_t *vec, fixed_t *x, fixed_t *y)
 
 vector2_t *FV2_Copy(vector2_t *a_o, const vector2_t *a_i)
 {
-	return M_Memcpy(a_o, a_i, sizeof(vector2_t));
+	return memcpy(a_o, a_i, sizeof(vector2_t));
 }
 
 vector2_t *FV2_AddEx(const vector2_t *a_i, const vector2_t *a_c, vector2_t *a_o)
@@ -258,7 +250,7 @@ vector3_t *FV3_UnLoad(vector3_t *vec, fixed_t *x, fixed_t *y, fixed_t *z)
 
 vector3_t *FV3_Copy(vector3_t *a_o, const vector3_t *a_i)
 {
-	return M_Memcpy(a_o, a_i, sizeof(vector3_t));
+	return memcpy(a_o, a_i, sizeof(vector3_t));
 }
 
 vector3_t *FV3_AddEx(const vector3_t *a_i, const vector3_t *a_c, vector3_t *a_o)
@@ -526,12 +518,12 @@ fixed_t FV3_Normal(const vector3_t *a_triangle, vector3_t *a_normal)
 fixed_t FV3_Strength(const vector3_t *a_1, const vector3_t *dir)
 {
 	vector3_t normal;
-	fixed_t dist = FV3_NormalizeEx(a_1, &normal);
+	FV3_NormalizeEx(a_1, &normal);
 	fixed_t dot = FV3_Dot(&normal, dir);
 
 	FV3_ClosestPointOnVector(dir, a_1, &normal);
 
-	dist = FV3_Magnitude(&normal);
+	fixed_t dist = FV3_Magnitude(&normal);
 
 	if (dot < 0) // Not facing same direction, so negate result.
 		dist = -dist;
@@ -821,7 +813,7 @@ void FM_MultMatrix(matrix_t *dest, const matrix_t *multme)
 			R(i, j) = FixedMul(D(i, 0), M(0, j)) + FixedMul(D(i, 1), M(1, j)) + FixedMul(D(i, 2), M(2, j)) + FixedMul(D(i, 3), M(3, j));
 	}
 
-	M_Memcpy(dest, &result, sizeof(matrix_t));
+	memcpy(dest, &result, sizeof(matrix_t));
 
 #undef R
 #undef D

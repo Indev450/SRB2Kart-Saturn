@@ -71,7 +71,6 @@ extern boolean majormods;
 extern UINT16 mainwads;
 extern boolean savemoddata; // This mod saves time/emblem data.
 extern boolean imcontinuing; // Temporary flag while continuing
-extern boolean metalrecording;
 
 #define ATTACKING_NONE   0
 #define ATTACKING_RECORD 1
@@ -102,13 +101,8 @@ extern boolean forceresetplayers, deferencoremode;
 // Internal parameters for sound rendering.
 // ========================================
 
-#ifdef NO_MIDI
-#define midi_disabled true
-#else
-extern boolean midi_disabled;
-#endif
 extern boolean sound_disabled;
-extern boolean digital_disabled;
+extern boolean music_disabled;
 
 // =========================
 // Status flags for refresh.
@@ -122,10 +116,13 @@ extern UINT8 window_notinfocus; // are we in focus? (backend independant -- hand
 extern boolean nodrawers;
 extern boolean noblit;
 extern boolean lastdraw;
+
+#ifdef MOTIONBLUR
 extern INT32 postimgparam[MAXSPLITSCREENPLAYERS];
+#endif
 
 extern INT32 viewwindowx, viewwindowy;
-extern INT32 viewwidth, scaledviewwidth;
+extern INT32 viewwidth;
 
 extern boolean gamedataloaded;
 
@@ -446,19 +443,19 @@ extern UINT16 spacetimetics;
 extern UINT16 extralifetics;
 
 // SRB2kart
-extern tic_t introtime;
-extern tic_t starttime;
-extern tic_t raceexittime;
-extern tic_t battleexittime;
-extern INT32 hyudorotime;
-extern INT32 stealtime;
-extern INT32 sneakertime;
-extern INT32 itemtime;
-extern INT32 comebacktime;
-extern INT32 bumptime;
-extern INT32 wipeoutslowtime;
-extern INT32 wantedreduce;
-extern INT32 wantedfrequency;
+extern const tic_t introtime;
+extern const tic_t starttime;
+extern const tic_t raceexittime;
+extern const tic_t battleexittime;
+extern const INT32 hyudorotime;
+extern const INT32 stealtime;
+extern const INT32 sneakertime;
+extern const INT32 itemtime;
+extern const INT32 comebacktime;
+extern const INT32 bumptime;
+extern const INT32 wipeoutslowtime;
+extern const INT32 wantedreduce;
+extern const INT32 wantedfrequency;
 
 extern UINT8 introtoplay;
 extern UINT8 creditscutscene;
@@ -574,8 +571,7 @@ extern consvar_t cv_forceskin; // force clients to use the server's skin
 extern consvar_t cv_downloading; // allow clients to downloading WADs.
 extern consvar_t cv_nettimeout; // SRB2Kart: Advanced server options menu
 extern consvar_t cv_jointimeout;
-extern consvar_t cv_maxping;
-extern ticcmd_t netcmds[TICQUEUE][MAXPLAYERS];
+extern ticcmd_t netcmds[BACKUPTICS][MAXPLAYERS];
 extern INT32 serverplayer;
 extern INT32 adminplayers[MAXPLAYERS];
 

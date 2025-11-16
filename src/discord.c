@@ -49,6 +49,27 @@ discordRequest_t *discordRequestList = NULL;
 
 static char self_ip[IP_SIZE+1];
 
+/*--------------------------------------------------
+ *	const char *DRPC_HideUsername(const char *input)
+ *
+ *		See header file for description.
+ * --------------------------------------------------*/
+const char *DRPC_HideUsername(const char *input)
+{
+	static char buffer[5];
+	int i;
+
+	buffer[0] = input[0];
+
+	for (i = 1; i < 4; ++i)
+	{
+		buffer[i] = '.';
+	}
+
+	buffer[4] = '\0';
+	return buffer;
+}
+
 boolean drpc_init = false;
 
 /*--------------------------------------------------
@@ -105,7 +126,7 @@ static void DRPC_HandleReady(const DiscordUser *user)
 	}
 	else
 	{
-		CONS_Printf("Discord: connected to %s#%s (%s)\n", user->username, user->discriminator, user->userId);
+		CONS_Printf("Discord: connected to %s (%s)\n", user->username, user->userId);
 	}
 }
 
@@ -241,8 +262,10 @@ static void DRPC_HandleJoinRequest(const DiscordUser *requestUser)
 	newRequest->username = Z_Calloc(344, PU_STATIC, NULL);
 	snprintf(newRequest->username, 344, "%s", requestUser->username);
 
+#if 0
 	newRequest->discriminator = Z_Calloc(8, PU_STATIC, NULL);
 	snprintf(newRequest->discriminator, 8, "%s", requestUser->discriminator);
+#endif
 
 	newRequest->userID = Z_Calloc(32, PU_STATIC, NULL);
 	snprintf(newRequest->userID, 32, "%s", requestUser->userId);
@@ -254,7 +277,7 @@ static void DRPC_HandleJoinRequest(const DiscordUser *requestUser)
 		while (append != NULL)
 		{
 			// CHECK FOR DUPES!! Ignore any that already exist from the same user.
-			if (!strcmp(newRequest->userID, append->userID))
+			if (fastcmp(newRequest->userID, append->userID))
 			{
 				Discord_Respond(newRequest->userID, DISCORD_REPLY_IGNORE);
 				DRPC_RemoveRequest(newRequest);
@@ -308,6 +331,9 @@ void DRPC_RemoveRequest(discordRequest_t *removeRequest)
 	}
 
 	Z_Free(removeRequest->username);
+#if 0
+	Z_Free(removeRequest->discriminator);
+#endif
 	Z_Free(removeRequest->userID);
 	Z_Free(removeRequest);
 }
@@ -393,7 +419,7 @@ static const char *DRPC_GetServerIP(void)
 	// If you're connected
 	if (I_GetNodeAddress && (address = I_GetNodeAddress(servernode)) != NULL)
 	{
-		if (strcmp(address, "self"))
+		if (!fastcmp(address, "self"))
 		{
 			// We're not the server, so we could successfully get the IP!
 			// No need to do anything else :)
@@ -658,7 +684,7 @@ void DRPC_UpdatePresence(void)
 		// Character image
 		while (supportedSkins[checkSkin] != NULL)
 		{
-			if (!strcmp(skins[players[consoleplayer].skin].name, supportedSkins[checkSkin]))
+			if (fastcmp(skins[players[consoleplayer].skin].name, supportedSkins[checkSkin]))
 			{
 				snprintf(charimg, 21, "char%s", supportedSkins[checkSkin]);
 				discordPresence.smallImageKey = charimg;

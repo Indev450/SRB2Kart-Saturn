@@ -14,6 +14,10 @@
 #ifndef __P_LOCAL__
 #define __P_LOCAL__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "command.h"
 #include "d_player.h"
 #include "d_think.h"
@@ -67,7 +71,6 @@
 // both the head and tail of the thinker list
 extern thinker_t thinkercap;
 extern thinker_t precipcap;
-extern mobj_t *mobjcache;
 
 void P_InitThinkers(void);
 void P_AddThinker(thinker_t *thinker);
@@ -128,6 +131,9 @@ typedef struct camera_s
 	// SRB2Kart: camera pans while drifting
 	fixed_t pan;
 
+	// SRB2Kart: camera pitches on slopes
+	angle_t pitch;
+
 	// postproccess effects
 	UINT8 postimg;
 } camera_t;
@@ -144,9 +150,11 @@ enum
 
 extern camera_t camera[MAXSPLITSCREENPLAYERS];
 extern consvar_t cv_cam_dist[MAXSPLITSCREENPLAYERS];
-extern consvar_t cv_cam_still[MAXSPLITSCREENPLAYERS];
 extern consvar_t cv_cam_height[MAXSPLITSCREENPLAYERS];
+extern consvar_t cv_cam_pitch[MAXSPLITSCREENPLAYERS];
 extern consvar_t cv_cam_speed[MAXSPLITSCREENPLAYERS];
+extern consvar_t cv_cam_lookbackmom[MAXSPLITSCREENPLAYERS];
+extern consvar_t cv_cam_still[MAXSPLITSCREENPLAYERS];
 extern consvar_t cv_cam_rotate[MAXSPLITSCREENPLAYERS];
 extern consvar_t cv_cam_timeover[MAXSPLITSCREENPLAYERS];
 
@@ -160,8 +168,6 @@ extern consvar_t cv_actionmovie;
 
 extern consvar_t cv_screenquake;
 
-extern consvar_t cv_lookbackmom[MAXSPLITSCREENPLAYERS];
-
 extern consvar_t cv_verticallook[MAXSPLITSCREENPLAYERS];
 
 extern fixed_t t_cam_rotate[MAXSPLITSCREENPLAYERS];
@@ -169,18 +175,25 @@ extern fixed_t t_cam_rotate[MAXSPLITSCREENPLAYERS];
 fixed_t P_GetPlayerHeight(player_t *player);
 fixed_t P_GetPlayerSpinHeight(player_t *player);
 void P_AddPlayerScore(player_t *player, UINT32 amount);
+
+void P_SetupCamera(camera_t *cam);
 void P_ResetCamera(player_t *player, camera_t *thiscam);
 boolean P_TryCameraMove(fixed_t x, fixed_t y, camera_t *thiscam);
+#ifndef NOCLIPCAM
 void P_SlideCameraMove(camera_t *thiscam);
-//void P_DemoCameraMovement(camera_t *cam, UINT8 num);
+#endif
 boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcalled);
 void P_ResetLocalCamAiming(player_t *player);
 void P_ToggleDemoCamera(UINT8 viewnum);
 void P_CalcChasePostImg(player_t *player, camera_t *thiscam);
+
 boolean P_PlayerInPain(player_t *player);
 void P_DoPlayerPain(player_t *player, mobj_t *source, mobj_t *inflictor);
 void P_ResetPlayer(player_t *player);
+player_t *P_GetLocalPlayerForNum(UINT8 pnum);
+INT32 P_GetLocalPlayerNumForNum(UINT8 pnum);
 boolean P_IsLocalPlayer(const player_t *player);
+boolean P_IsLocalPlayerNum(UINT8 pnum);
 boolean P_IsDisplayPlayer(const player_t *player);
 
 boolean P_SpectatorJoinGame(player_t *player);
@@ -252,10 +265,11 @@ void P_PlayVictorySound(mobj_t *source);
 extern mapthing_t *itemrespawnque[ITEMQUESIZE];
 extern tic_t itemrespawntime[ITEMQUESIZE];
 extern size_t iquehead, iquetail;
-extern consvar_t cv_gravity/*, cv_viewheight*/;
+extern consvar_t cv_gravity;
 
 void P_RespawnSpecials(void);
 
+mobj_t *P_AllocateMobj(void);
 mobj_t *P_SpawnMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type);
 
 mobj_t *P_SpawnShadowMobj(mobj_t * caster);
@@ -279,7 +293,7 @@ void P_SceneryThinker(mobj_t *mobj);
 // To test it in Lua, check mobj.valid
 FUNCINLINE static ATTRINLINE boolean P_MobjWasRemoved(const mobj_t *mobj)
 {
-	return (!mobj || mobj->thinker.function.acp1 != (actionf_p1)P_MobjThinker);
+	return (!mobj || mobj->thinker.function != (actionf_p1)P_MobjThinker);
 }
 
 fixed_t P_MobjFloorZ(mobj_t *mobj, sector_t *sector, sector_t *boundsec, fixed_t x, fixed_t y, line_t *line, boolean lowest, boolean perfect);
@@ -379,7 +393,6 @@ void P_SetThingPosition(mobj_t *thing);
 void P_SetUnderlayPosition(mobj_t *thing);
 
 boolean P_CheckPosition(mobj_t *thing, fixed_t x, fixed_t y);
-boolean P_CheckCameraPosition(fixed_t x, fixed_t y, camera_t *thiscam);
 boolean P_TryMove(mobj_t *thing, fixed_t x, fixed_t y, boolean allowdropoff);
 boolean P_Move(mobj_t *actor, fixed_t speed);
 boolean P_SetOrigin(mobj_t *thing, fixed_t x, fixed_t y, fixed_t z);
@@ -399,7 +412,6 @@ boolean P_CheckSector(sector_t *sector, boolean crunch);
 void P_DelSeclist(msecnode_t *node);
 
 void P_CreateSecNodeList(mobj_t *thing, fixed_t x, fixed_t y);
-void P_Initsecnode(void);
 
 void P_RadiusAttack(mobj_t *spot, mobj_t *source, fixed_t damagedist);
 
@@ -462,8 +474,6 @@ void P_DoNightsScore(player_t *player);
 //
 #include "p_spec.h"
 
-extern INT32 ceilmovesound;
-
 // Factor to scale scrolling effect into mobj-carrying properties = 3/32.
 // (This is so scrolling floors and objects on them can move at same speed.)
 #define CARRYFACTOR (FRACUNIT-ORIG_FRICTION)
@@ -478,5 +488,9 @@ boolean P_CheckMissileSpawn(mobj_t *th);
 void P_Thrust(mobj_t *mo, angle_t angle, fixed_t move);
 void P_ExplodeMissile(mobj_t *mo);
 void P_CheckGravity(mobj_t *mo, boolean affect);
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif // __P_LOCAL__

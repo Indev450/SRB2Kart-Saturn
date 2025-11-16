@@ -15,6 +15,7 @@
 #define __R_DEFS__
 
 // Some more or less basic data types we depend on.
+#include "hardware/hw_defs.h"
 #include "m_fixed.h"
 
 // We rely on the thinker data struct to handle sound origins in sectors.
@@ -24,6 +25,9 @@
 #include "p_mobj.h"
 
 #include "screen.h" // MAXVIDWIDTH, MAXVIDHEIGHT
+
+#define MAP_ICON_WIDTH 160
+#define MAP_ICON_HEIGHT 100
 
 //
 // ClipWallSegment
@@ -68,6 +72,37 @@ typedef struct
 #endif
 } extracolormap_t;
 
+typedef struct
+{
+	lighttable_t* colormap;
+
+	INT32 x;
+	INT32 yl;
+	INT32 yh;
+	fixed_t iscale;
+	fixed_t texturemid;
+
+	UINT8* source; // first pixel in a column
+	UINT8* lightmap; // lighting only
+
+	// translucency stuff here
+	UINT8* transmap;
+
+	// translation stuff here
+	UINT8* translation;
+
+	struct r_lightlist_s* lightlist;
+
+	INT32 numlights;
+	INT32 maxlights;
+
+	//Fix TUTIFRUTI
+	INT32 texheight;
+	INT32 sourcelength;
+} drawcolumndata_t;
+
+extern drawcolumndata_t g_dc;
+
 //
 // INTERNAL MAP TYPES used by play and refresh
 //
@@ -78,6 +113,11 @@ typedef struct
 {
 	fixed_t x, y, z;
 } vertex_t;
+
+typedef struct
+{
+	float x, y/*, z*/;
+} floatvertex_t;
 
 // Forward of linedefs, for sectors.
 struct line_s;
@@ -327,8 +367,6 @@ typedef struct sector_s
 
 	INT32 crumblestate; // used for crumbling and bobbing
 
-	INT32 bottommap, midmap, topmap; // dynamic colormaps
-
 	// list of mobjs that are at least partially in the sector
 	// thinglist is a subset of touching_thinglist
 	struct msecnode_s *touching_thinglist;
@@ -364,17 +402,6 @@ typedef struct sector_s
 
 	// Eternity engine slope
 	boolean hasslope; // The sector, or one of its visible FOFs, contains a slope
-
-	// these are saved for netgames, so do not let Lua touch these!
-	INT32 spawn_nexttag, spawn_firsttag; // the actual nexttag/firsttag values may differ if the sector's tag was changed
-
-	// offsets sector spawned with (via linedef type 7)
-	fixed_t spawn_flr_xoffs, spawn_flr_yoffs;
-	fixed_t spawn_ceil_xoffs, spawn_ceil_yoffs;
-
-	// flag angles sector spawned with (via linedef type 7)
-	angle_t spawn_flrpic_angle;
-	angle_t spawn_ceilpic_angle;
 } sector_t;
 
 //
@@ -389,6 +416,7 @@ typedef enum
 } slopetype_t;
 
 #define HORIZONSPECIAL 41
+#define PORTALSPECIAL  40
 
 typedef struct line_s
 {
@@ -397,6 +425,7 @@ typedef struct line_s
 	vertex_t *v2;
 
 	fixed_t dx, dy; // Precalculated v2 - v1 for side checking.
+	angle_t angle; // Precalculated angle between dx and dy
 
 	// Animation related.
 	INT16 flags;
@@ -419,7 +448,7 @@ typedef struct line_s
 	sector_t *backsector;
 
 	size_t validcount; // if == validcount, already checked
-#if 1//#ifdef WALLSPLATS
+#ifdef WALLSPLATS
 	void *splats; // wallsplat_t list
 #endif
 	INT32 firsttag, nexttag; // improves searches for tags.
@@ -466,7 +495,7 @@ typedef struct subsector_s
 	INT16 numlines;
 	UINT32 firstline;
 	struct polyobj_s *polyList; // haleyjd 02/19/06: list of polyobjects
-#if 1//#ifdef FLOORSPLATS
+#ifdef FLOORSPLATS
 	void *splats; // floorsplat_t list
 #endif
 	size_t validcount;
@@ -519,19 +548,14 @@ typedef struct seg_s
 	sector_t *frontsector;
 	sector_t *backsector;
 
-	fixed_t length;	// precalculated seg length
+	fixed_t length; // precalculated seg length
+
 #ifdef HWRENDER
-	// new pointers so that AdjustSegs doesn't mess with v1/v2
-	void *pv1; // polyvertex_t
-	void *pv2; // polyvertex_t
-	float flength; // length of the seg, used by hardware renderer
+	floatvertex_t fv1;
+	floatvertex_t fv2;
 #endif
 
-	// Why slow things down by calculating lightlists for every thick side?
-	size_t numlights;
-	r_lightlist_t *rlights;
 	polyobj_t *polyseg;
-	boolean dontrenderme;
 
 	// Fake contrast calculated on level load
 	SINT8 lightOffset;
@@ -556,20 +580,12 @@ typedef struct
 	UINT16 children[2];
 } node_t;
 
-#if defined(_MSC_VER)
-#pragma pack(1)
-#endif
-
 // posts are runs of non masked source pixels
 typedef struct
 {
 	UINT8 topdelta; // -1 is the last post in a column
 	UINT8 length;   // length data bytes follows
 } ATTRPACK post_t;
-
-#if defined(_MSC_VER)
-#pragma pack()
-#endif
 
 // column_t is a list of 0 or more post_t, (UINT8)-1 terminated
 typedef post_t column_t;
@@ -603,30 +619,21 @@ typedef struct drawseg_s
 	// Pointers to lists for sprite clipping, all three adjusted so [x1] is first value.
 	INT16 *sprtopclip;
 	INT16 *sprbottomclip;
-	INT16 *maskedtexturecol;
+	fixed_t *maskedtexturecol;
 
 	struct visplane_s *ffloorplanes[MAXFFLOORS];
 	INT32 numffloorplanes;
 	struct ffloor_s *thicksides[MAXFFLOORS];
-	INT16 *thicksidecol;
+	fixed_t *thicksidecol;
 	INT32 numthicksides;
-	fixed_t frontscale[MAXVIDWIDTH];
+	fixed_t *frontscale;
 
 	UINT8 portalpass; // if > 0 and <= portalrender, do not affect sprite clipping
 
-	fixed_t maskedtextureheight[MAXVIDWIDTH]; // For handling sloped midtextures
+	fixed_t *maskedtextureheight; // For handling sloped midtextures
 
 	vertex_t leftpos, rightpos; // Used for rendering FOF walls with slopes
 } drawseg_t;
-
-typedef enum
-{
-	PALETTE         = 0,  // 1 byte is the index in the doom palette (as usual)
-	INTENSITY       = 1,  // 1 byte intensity
-	INTENSITY_ALPHA = 2,  // 2 byte: alpha then intensity
-	RGB24           = 3,  // 24 bit rgb
-	RGBA32          = 4,  // 32 bit rgba
-} pic_mode_t;
 
 // rotsprite
 #ifdef ROTSPRITE
@@ -658,10 +665,6 @@ typedef struct
 #endif
 } patch_t;
 
-#if defined(_MSC_VER)
-#pragma pack(1)
-#endif
-
 typedef struct
 {
 	INT16 width;          // bounding box size
@@ -671,30 +674,6 @@ typedef struct
 	INT32 columnofs[];     // only [width] used
 	// the [0] is &columnofs[width]
 } ATTRPACK softwarepatch_t;
-
-#ifdef _MSC_VER
-#pragma warning(disable :  4200)
-#endif
-
-// a pic is an unmasked block of pixels, stored in horizontal way
-typedef struct
-{
-	INT16 width;
-	UINT8 zero;       // set to 0 allow autodetection of pic_t
-	                 // mode instead of patch or raw
-	UINT8 mode;       // see pic_mode_t above
-	INT16 height;
-	INT16 reserved1; // set to 0
-	UINT8 data[0];
-} ATTRPACK pic_t;
-
-#ifdef _MSC_VER
-#pragma warning(default : 4200)
-#endif
-
-#if defined(_MSC_VER)
-#pragma pack()
-#endif
 
 // Possible alpha types for a patch.
 enum patchalphastyle {AST_COPY, AST_TRANSLUCENT, AST_ADD, AST_SUBTRACT, AST_REVERSESUBTRACT, AST_MODULATE, AST_OVERLAY};

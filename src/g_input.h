@@ -37,7 +37,7 @@ typedef enum
 	KEY_JOY1 = KEY_MOUSE1 + MOUSEBUTTONS,
 	KEY_HAT1 = KEY_JOY1 + JOYBUTTONS,
 
-	KEY_DBLMOUSE1 =KEY_HAT1 + JOYHATS*4, // double clicks
+	KEY_DBLMOUSE1 = KEY_HAT1 + JOYHATS*4, // double clicks
 	KEY_DBLJOY1 = KEY_DBLMOUSE1 + MOUSEBUTTONS,
 	KEY_DBLHAT1 = KEY_DBLJOY1 + JOYBUTTONS,
 
@@ -110,7 +110,8 @@ typedef enum
 
 // mouse values are used once
 extern consvar_t cv_mousesens, cv_mouseysens;
-extern consvar_t cv_controlperkey, cv_turnsmooth;
+extern consvar_t cv_controlperkey;
+extern consvar_t cv_turnsmooth[MAXSPLITSCREENPLAYERS];
 extern consvar_t cv_rumble[MAXSPLITSCREENPLAYERS];
 extern consvar_t cv_gamepadled[MAXSPLITSCREENPLAYERS];
 

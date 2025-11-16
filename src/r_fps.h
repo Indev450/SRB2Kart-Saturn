@@ -15,19 +15,44 @@
 #ifndef __R_FPS_H__
 #define __R_FPS_H__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "m_fixed.h"
 #include "p_local.h"
 #include "r_state.h"
+#include "r_things.h"
 #include "m_perfstats.h"
 
 extern consvar_t cv_fpscap, cv_fpscapbg;
-extern consvar_t cv_precipinterp;
 
 extern ps_metric_t ps_interp_frac;
 extern ps_metric_t ps_interp_lag;
 
-UINT32 R_GetFramerateCap(void);
+typedef enum
+{
+	RTF_LEVEL,
+	RTF_INTER,
+	RTF_CAMERA,
+	RTF_MENU,
+} timefrac_e;
+
 boolean R_UsingFrameInterpolation(void);
+
+UINT32 R_GetFramerateCap(void);
+fixed_t R_GetTimeFrac(timefrac_e level);
+void R_SetTimeFrac(fixed_t frac);
+
+static inline fixed_t R_GetMobjTimeFrac(mobj_t *mo)
+{
+    return R_CheckMobjInterpDist(mo) ? R_GetTimeFrac(RTF_LEVEL) : FRACUNIT;
+}
+
+static inline fixed_t R_GetPrecipMobjTimeFrac(precipmobj_t *mo)
+{
+    return R_CheckPrecipMobjInterpDist(mo) ? R_GetTimeFrac(RTF_LEVEL) : FRACUNIT;
+}
 
 enum viewcontext_e
 {
@@ -115,6 +140,7 @@ typedef struct levelinterpolator_s {
 			fixed_t *bakvertices;
 			size_t vertices_size;
 			fixed_t oldcx, oldcy, bakcx, bakcy;
+			angle_t oldangle, bakangle;
 		} polyobj;
 		struct {
 			pslope_t *slope;
@@ -125,6 +151,7 @@ typedef struct levelinterpolator_s {
 	};
 } levelinterpolator_t;
 
+void R_SetupFreelook(void);
 // Interpolates the current view variables (r_state.h) against the selected view context in R_SetViewContext
 void R_InterpolateView(fixed_t frac, boolean forceinvalid);
 // Special function just for software
@@ -174,5 +201,9 @@ void R_RemoveMobjInterpolator(mobj_t *mobj);
 void R_UpdateMobjInterpolators(void);
 void R_ResetMobjInterpolationState(mobj_t *mobj);
 void R_ResetPrecipitationMobjInterpolationState(precipmobj_t *mobj);
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif

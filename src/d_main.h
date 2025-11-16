@@ -14,6 +14,10 @@
 #ifndef __D_MAIN__
 #define __D_MAIN__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "d_event.h"
 #include "w_wad.h"   // for MAX_WADFILES
 
@@ -57,14 +61,7 @@ extern boolean minilighticon;     // mkwii-style minimap headlight
 //
 
 // autoload stuff
-extern boolean autoloading;
-extern boolean autoloaded;
-extern boolean postautoloaded;
-
 void D_AddPostloadFiles(void);
-
-extern char *autoloadwadfilespost[MAX_WADFILES];
-extern char *autoloadwadfiles[MAX_WADFILES];
 
 // the infinite loop of D_SRB2Loop() called from win_main for windows version
 void D_SRB2Loop(void) FUNCNORETURN;
@@ -83,9 +80,16 @@ void D_ProcessEvents(void);
 
 const char *D_Home(void);
 
+void D_ResetDeviceLED(void);
+
 //
 // BASE LEVEL
 //
+void D_ClearState(void);
 void D_StartTitle(void);
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif //__D_MAIN__

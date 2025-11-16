@@ -10,6 +10,12 @@
 /// \file  lua_libs.h
 /// \brief libraries for Lua scripting
 
+#ifndef __LUA_LIBS__
+#define __LUA_LIBS__
+
+#include "doomtype.h"
+#include "blua/lua.h"
+
 extern lua_State *gL;
 
 #define LREG_VALID "VALID_USERDATA"
@@ -20,6 +26,7 @@ extern lua_State *gL;
 #define META_STATE "STATE_T*"
 #define META_MOBJINFO "MOBJINFO_T*"
 #define META_SFXINFO "SFXINFO_T*"
+#define META_MUSICDEF "MUSICDEF_T*"
 
 #define META_MOBJ "MOBJ_T*"
 #define META_MAPTHING "MAPTHING_T*"
@@ -69,3 +76,5 @@ int LUA_ThinkerLib(lua_State *L);
 int LUA_MapLib(lua_State *L);
 int LUA_BlockmapLib(lua_State *L);
 int LUA_HudLib(lua_State *L);
+
+#endif //__LUA_LIBS__

@@ -24,6 +24,7 @@
 #include "p_slopes.h" // for P_SlopeById
 #include "s_sound.h"
 #include "m_menu.h"
+#include "m_argv.h"
 #ifdef LUA_ALLOW_BYTECODE
 #include "d_netfil.h" // for LUA_DumpFile
 #endif
@@ -40,7 +41,7 @@ lua_State *gL = NULL;
 // Mathlib global state
 static lua_State *mL = NULL;
 
-int hook_defrosting;
+int hook_defrosting = 0;
 
 // List of internal libraries to load from SRB2
 static lua_CFunction liblist[] = {
@@ -252,7 +253,11 @@ static inline void LUA_LoadFile(MYFILE *f, char *name)
 
 	lua_pushcfunction(gL, LUA_GetErrorMessage);
 	if (luaL_loadbuffer(gL, f->data, f->size, va("@%s",name)) || lua_pcall(gL, 0, 0, lua_gettop(gL) - 1)) {
-		CONS_Alert(CONS_WARNING,"%s\n",lua_tostring(gL,-1));
+		if (M_CheckParm("-strict") || M_CheckParm("-strict-lua"))
+			I_Error("Lua error: %s", lua_tostring(gL, -1));
+		else
+			CONS_Alert(CONS_WARNING,"%s\n",lua_tostring(gL,-1));
+
 		lua_pop(gL,1);
 	}
 	lua_gc(gL, LUA_GCCOLLECT, 0);
@@ -283,6 +288,10 @@ void LUA_LoadLump(UINT16 wad, UINT16 lump)
 		lumpinfo_t *lump_p = &wadfiles[wad]->lumpinfo[lump];
 		len += 1 + strlen(lump_p->fullname); // length of file name, '|', and lump name
 		name = malloc(len+1);
+
+		if (!name)
+			I_Error("LUA_LoadLump: Out of memory!\n");
+
 		sprintf(name, "%s|%s", wadfiles[wad]->filename, lump_p->fullname);
 		name[len] = '\0';
 	}
@@ -366,7 +375,18 @@ void LUA_DumpFile(const char *filename)
 }
 #endif
 
-fixed_t LUA_EvalMath(const char *word)
+static void createMathLibState(void)
+{
+	mL = lua_newstate(LUA_Alloc, NULL);
+	lua_atpanic(mL, LUA_Panic);
+
+	// open only enum lib
+	lua_pushcfunction(mL, LUA_EnumLib);
+	lua_pushboolean(mL, true);
+	lua_call(mL, 1, 0);
+}
+
+fixed_t LUA_EvalMathEx(const char *word, const char **error)
 {
 	char buf[1024], *b;
 	const char *p;
@@ -375,15 +395,7 @@ fixed_t LUA_EvalMath(const char *word)
 	// make a new state so SOC can't interefere with scripts
 	// allocate state
 	if (mL == NULL)
-	{
-		mL = lua_newstate(LUA_Alloc, NULL);
-		lua_atpanic(mL, LUA_Panic);
-
-		// open only enum lib
-		lua_pushcfunction(mL, LUA_EnumLib);
-		lua_pushboolean(mL, true);
-		lua_call(mL, 1, 0);
-	}
+		createMathLibState();
 
 	// change ^ into ^^ for Lua.
 	strcpy(buf, "return ");
@@ -394,6 +406,9 @@ fixed_t LUA_EvalMath(const char *word)
 		if (*p == '^')
 			*b++ = '^';
 	}
+	// length of word is zero!?
+	if (p == word)
+		return 0;
 	*b = '\0';
 
 	// eval string.
@@ -409,10 +424,55 @@ fixed_t LUA_EvalMath(const char *word)
 
 			p += 3; // "1: "
 		}
-		CONS_Alert(CONS_WARNING, "%s\n", p);
+		if (error) *error = p;
 	}
 	else
 		res = lua_tointeger(mL, -1);
+
+	return res;
+}
+
+fixed_t LUA_EvalMath(const char *word)
+{
+	const char *error = NULL;
+	fixed_t res = LUA_EvalMathEx(word, &error);
+
+	if (error)
+		CONS_Alert(CONS_WARNING, "%s\n", error);
+
+	return res;
+}
+
+// A hack to prevent lua from crashing game if constant doesn't exist
+static int lua_get_constant(lua_State *L)
+{
+	lua_pushvalue(mL, LUA_GLOBALSINDEX);
+	lua_pushvalue(L, 1);
+	lua_gettable(L, -2);
+
+	return 1;
+}
+
+fixed_t LUA_GetConstant(const char *word)
+{
+	if (mL == NULL)
+		createMathLibState();
+
+	fixed_t res = 0;
+
+	lua_pushcfunction(mL, lua_get_constant);
+	lua_pushstring(mL, word);
+
+	if (lua_pcall(mL, 1, 1, 0) == 0)
+	{
+		if (lua_isnumber(mL, -1))
+			res = lua_tointeger(mL, -1);
+	}
+	else
+	{
+		// Pop error message
+		lua_pop(mL, 1);
+	}
 
 	return res;
 }
@@ -432,25 +492,37 @@ void LUA_InvalidateMathlibCache(const char *name)
 // Pushes it to the stack and stores it in the registry.
 void LUA_PushUserdata(lua_State *L, void *data, const char *meta)
 {
+	if (LUA_RawPushUserdata(L, data) == LPUSHED_NEW)
+	{
+		luaL_getmetatable(L, meta);
+		lua_setmetatable(L, -2);
+	}
+}
+
+// Same as LUA_PushUserdata but don't set a metatable yet.
+lpushed_t LUA_RawPushUserdata(lua_State *L, void *data)
+{
+	lpushed_t status = LPUSHED_NIL;
+
 	void **userdata;
 
 	if (!data) { // push a NULL
 		lua_pushnil(L);
-		return;
+		return status;
 	}
 
 	lua_getfield(L, LUA_REGISTRYINDEX, LREG_VALID);
 	I_Assert(lua_istable(L, -1));
+
 	lua_pushlightuserdata(L, data);
 	lua_rawget(L, -2);
+
 	if (lua_isnil(L, -1)) { // no userdata? deary me, we'll have to make one.
 		lua_pop(L, 1); // pop the nil
 
 		// create the userdata
 		userdata = lua_newuserdata(L, sizeof(void *));
 		*userdata = data;
-		luaL_getmetatable(L, meta);
-		lua_setmetatable(L, -2);
 
 		// Set it in the registry so we can find it again
 		lua_pushlightuserdata(L, data); // k (store the userdata via the data's pointer)
@@ -458,8 +530,15 @@ void LUA_PushUserdata(lua_State *L, void *data, const char *meta)
 		lua_rawset(L, -4);
 
 		// stack is left with the userdata on top, as if getting it had originally succeeded.
+
+		status = LPUSHED_NEW;
 	}
+	else
+		status = LPUSHED_EXISTING;
+
 	lua_remove(L, -2); // remove LREG_VALID
+
+	return status;
 }
 
 // When userdata is freed, use this function to remove it from Lua.
@@ -741,8 +820,12 @@ static UINT8 ArchiveValue(UINT8 **p, int TABLESINDEX, int myindex)
 		{
 			mobj_t *mobj = *((mobj_t **)lua_touserdata(gL, myindex));
 			if (!mobj)
+			{
 				WRITEUINT8(*p, ARCH_NULL);
-			else {
+				return 3;
+			}
+			else
+			{
 				WRITEUINT8(*p, ARCH_MOBJ);
 				WRITEUINT32(*p, mobj->mobjnum);
 			}
@@ -752,8 +835,12 @@ static UINT8 ArchiveValue(UINT8 **p, int TABLESINDEX, int myindex)
 		{
 			player_t *player = *((player_t **)lua_touserdata(gL, myindex));
 			if (!player)
+			{
 				WRITEUINT8(*p, ARCH_NULL);
-			else {
+				return 3;
+			}
+			else
+			{
 				WRITEUINT8(*p, ARCH_PLAYER);
 				WRITEUINT8(*p, player - players);
 			}
@@ -763,8 +850,12 @@ static UINT8 ArchiveValue(UINT8 **p, int TABLESINDEX, int myindex)
 		{
 			mapthing_t *mapthing = *((mapthing_t **)lua_touserdata(gL, myindex));
 			if (!mapthing)
+			{
 				WRITEUINT8(*p, ARCH_NULL);
-			else {
+				return 3;
+			}
+			else
+			{
 				WRITEUINT8(*p, ARCH_MAPTHING);
 				WRITEUINT16(*p, mapthing - mapthings);
 			}
@@ -774,8 +865,12 @@ static UINT8 ArchiveValue(UINT8 **p, int TABLESINDEX, int myindex)
 		{
 			vertex_t *vertex = *((vertex_t **)lua_touserdata(gL, myindex));
 			if (!vertex)
+			{
 				WRITEUINT8(*p, ARCH_NULL);
-			else {
+				return 3;
+			}
+			else
+			{
 				WRITEUINT8(*p, ARCH_VERTEX);
 				WRITEUINT16(*p, vertex - vertexes);
 			}
@@ -785,8 +880,12 @@ static UINT8 ArchiveValue(UINT8 **p, int TABLESINDEX, int myindex)
 		{
 			line_t *line = *((line_t **)lua_touserdata(gL, myindex));
 			if (!line)
+			{
 				WRITEUINT8(*p, ARCH_NULL);
-			else {
+				return 3;
+			}
+			else
+			{
 				WRITEUINT8(*p, ARCH_LINE);
 				WRITEUINT16(*p, line - lines);
 			}
@@ -796,8 +895,12 @@ static UINT8 ArchiveValue(UINT8 **p, int TABLESINDEX, int myindex)
 		{
 			side_t *side = *((side_t **)lua_touserdata(gL, myindex));
 			if (!side)
+			{
 				WRITEUINT8(*p, ARCH_NULL);
-			else {
+				return 3;
+			}
+			else
+			{
 				WRITEUINT8(*p, ARCH_SIDE);
 				WRITEUINT16(*p, side - sides);
 			}
@@ -807,8 +910,12 @@ static UINT8 ArchiveValue(UINT8 **p, int TABLESINDEX, int myindex)
 		{
 			subsector_t *subsector = *((subsector_t **)lua_touserdata(gL, myindex));
 			if (!subsector)
+			{
 				WRITEUINT8(*p, ARCH_NULL);
-			else {
+				return 3;
+			}
+			else
+			{
 				WRITEUINT8(*p, ARCH_SUBSECTOR);
 				WRITEUINT16(*p, subsector - subsectors);
 			}
@@ -818,8 +925,12 @@ static UINT8 ArchiveValue(UINT8 **p, int TABLESINDEX, int myindex)
 		{
 			sector_t *sector = *((sector_t **)lua_touserdata(gL, myindex));
 			if (!sector)
+			{
 				WRITEUINT8(*p, ARCH_NULL);
-			else {
+				return 3;
+			}
+			else
+			{
 				WRITEUINT8(*p, ARCH_SECTOR);
 				WRITEUINT16(*p, sector - sectors);
 			}
@@ -829,8 +940,12 @@ static UINT8 ArchiveValue(UINT8 **p, int TABLESINDEX, int myindex)
 		{
 			pslope_t *slope = *((pslope_t **)lua_touserdata(gL, myindex));
 			if (!slope)
+			{
 				WRITEUINT8(*p, ARCH_NULL);
-			else {
+				return 3;
+			}
+			else
+			{
 				WRITEUINT8(*p, ARCH_SLOPE);
 				WRITEUINT16(*p, slope->id);
 			}
@@ -840,8 +955,12 @@ static UINT8 ArchiveValue(UINT8 **p, int TABLESINDEX, int myindex)
 		{
 			mapheader_t *header = *((mapheader_t **)lua_touserdata(gL, myindex));
 			if (!header)
+			{
 				WRITEUINT8(*p, ARCH_NULL);
-			else {
+				return 3;
+			}
+			else
+			{
 				WRITEUINT8(*p, ARCH_MAPHEADER);
 				WRITEUINT16(*p, header - *mapheaderinfo);
 			}
@@ -947,19 +1066,23 @@ static void ArchiveTables(UINT8 **p)
 			e = ArchiveValue(p, TABLESINDEX, -2); // key should be either a number or a string, ArchiveValue can handle this.
 			if (e == 2) // invalid key type (function, thread, lightuserdata, or anything we don't recognise)
 			{
-				lua_pushvalue(gL, -2);
-				CONS_Alert(CONS_ERROR, "Index '%s' (%s) of table %d could not be archived!\n", lua_tostring(gL, -1), luaL_typename(gL, -1), i);
-				lua_pop(gL, 1);
+				CONS_Alert(CONS_ERROR, "Index '%s' (%s) of table %d could not be archived!\n", lua_tostring(gL, -2), luaL_typename(gL, -2), i);
 			}
+			else if (e == 3) // nil key due to invalid userdata. NOT an error.
+			{
+				lua_pop(gL, 1);
+				continue;
+			}
+
 			// Write value
 			e = ArchiveValue(p, TABLESINDEX, -1);
 			if (e == 1)
+			{
 				n++; // the table contained a new table we'll have to archive. :(
+			}
 			else if (e == 2) // invalid value type
 			{
-				lua_pushvalue(gL, -2);
-				CONS_Alert(CONS_ERROR, "Type of value for table %d entry '%s' (%s) could not be archived!\n", i, lua_tostring(gL, -1), luaL_typename(gL, -1));
-				lua_pop(gL, 1);
+				CONS_Alert(CONS_ERROR, "Type of value for table %d entry '%s' (%s) could not be archived!\n", i, lua_tostring(gL, -2), luaL_typename(gL, -1));
 			}
 
 			lua_pop(gL, 1);
@@ -1023,8 +1146,8 @@ static UINT8 UnArchiveValue(UINT8 **p, int TABLESINDEX, boolean network)
 	case ARCH_MOBJ:
 		if (network == false) // for replays :chaosleep:
 		{
-			*p += sizeof(UINT32);	// Skip this data, we can't read a mobj here, it'd point to garbage and crash the game.
-			return 3;	// Don't set the field
+			*p += sizeof(UINT32); // Skip this data, we can't read a mobj here, it'd point to garbage and crash the game.
+			return 3; // Don't set the field
 		}
 
 		LUA_PushUserdata(gL, P_FindNewPosition(READUINT32(*p)), META_MOBJ);
@@ -1099,9 +1222,9 @@ static void UnArchiveExtVars(UINT8 **p, void *pointer, boolean network)
 			CONS_Alert(CONS_ERROR, "Unexpected end marker when reading ExtVars (field '%s')\n", field);
 			break;
 		}
-		else if (ret == 3)	// This will return 3 if we shouldn't set this field.
+		else if (ret == 3) // This will return 3 if we shouldn't set this field.
 		{
-			CONS_Alert(CONS_WARNING,"Cannot read mobj_t stored in player variable \'%s\'. Desyncs may occur.\n", field);
+			//CONS_Alert(CONS_WARNING,"Cannot read mobj_t stored in player variable \'%s\'. Desyncs may occur.\n", field);
 			continue;
 		}
 
@@ -1155,7 +1278,7 @@ static void UnArchiveTables(UINT8 **p, boolean network)
 			ret = UnArchiveValue(p, TABLESINDEX, network);
 			if (ret == 3)
 			{
-				CONS_Alert(CONS_WARNING,"Couldn't read mobj_t\n");
+				//CONS_Alert(CONS_WARNING,"Couldn't read mobj_t\n");
 				lua_pushnil(gL);
 			}
 			else if (ret == 1) // read key
@@ -1170,7 +1293,7 @@ static void UnArchiveTables(UINT8 **p, boolean network)
 			}
 			else if (ret == 3)
 			{
-				CONS_Alert(CONS_WARNING,"Couldn't read mobj_t\n");
+				//CONS_Alert(CONS_WARNING,"Couldn't read mobj_t\n");
 				lua_pushnil(gL);
 			}
 			else if (ret == 2) // read value
@@ -1189,7 +1312,7 @@ static void UnArchiveTables(UINT8 **p, boolean network)
 	}
 }
 
-void LUA_Step(void)
+/*void LUA_Step(void)
 {
 	if (!gL)
 		return;
@@ -1200,7 +1323,7 @@ void LUA_Step(void)
 		lua_settop(gL, 0);
 		lua_gc(gL, LUA_GCSTEP, 1);
 	}
-}
+}*/
 
 void LUA_Archive(savebuffer_t *save, boolean network)
 {
@@ -1212,7 +1335,7 @@ void LUA_Archive(savebuffer_t *save, boolean network)
 
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
-		if (!playeringame[i] && i > 0)	// NEVER skip player 0, this is for dedi servs.
+		if (!playeringame[i] && i > 0) // NEVER skip player 0, this is for dedi servs.
 			continue;
 		// all players in game will be archived, even if they just add a 0.
 		ArchiveExtVars(&save->p, &players[i], "player");
@@ -1224,7 +1347,7 @@ void LUA_Archive(savebuffer_t *save, boolean network)
 		{
 			for (th = thinkercap.next; th != &thinkercap; th = th->next)
 			{
-				if (th->function.acp1 != (actionf_p1)P_MobjThinker)
+				if (th->function != (actionf_p1)P_MobjThinker)
 					continue;
 
 				// archive function will determine when to skip mobjs,
@@ -1264,15 +1387,18 @@ void LUA_UnArchive(savebuffer_t *save, boolean network)
 	{
 		do {
 			mobjnum = READUINT32(save->p); // read a mobjnum
+
 			for (th = thinkercap.next; th != &thinkercap; th = th->next)
 			{
-				if (th->function.acp1 != (actionf_p1)P_MobjThinker)
+				if (th->function != (actionf_p1)P_MobjThinker)
 					continue;
 
-				if (((mobj_t *)th)->mobjnum == mobjnum) // find matching mobj
-					UnArchiveExtVars(&save->p, th, network); // apply variables
+				if (((mobj_t *)th)->mobjnum != mobjnum) // find matching mobj
+					continue;
+				UnArchiveExtVars(&save->p, th, network); // apply variables
 			}
-		} while(mobjnum != UINT32_MAX); // repeat until end of mobjs marker.
+
+		} while (mobjnum != UINT32_MAX); // repeat until end of mobjs marker.
 
 		LUA_HookNetArchive(NetUnArchive, save); // call the NetArchive hook in unarchive mode
 	}

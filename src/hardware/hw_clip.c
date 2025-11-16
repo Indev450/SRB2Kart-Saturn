@@ -80,14 +80,13 @@
 
 
 typedef struct clipnode_s
-	{
-		struct clipnode_s *prev, *next;
-		angle_t start, end;
-	} clipnode_t;
+{
+	struct clipnode_s *prev, *next;
+	angle_t start, end;
+} clipnode_t;
 
-clipnode_t *freelist;
-clipnode_t *clipnodes;
-clipnode_t *cliphead;
+static clipnode_t *freelist;
+static clipnode_t *cliphead;
 
 static clipnode_t * gld_clipnode_GetNew(void);
 static clipnode_t * gld_clipnode_NewRange(angle_t start, angle_t end);
@@ -121,7 +120,7 @@ static clipnode_t * gld_clipnode_NewRange(angle_t start, angle_t end)
 
 boolean gld_clipper_SafeCheckRange(angle_t startAngle, angle_t endAngle)
 {
-	if(startAngle > endAngle)
+	if (startAngle > endAngle)
 	{
 		return (gld_clipper_IsRangeVisible(startAngle, ANGLE_MAX) || gld_clipper_IsRangeVisible(0, endAngle));
 	}
@@ -331,8 +330,8 @@ angle_t gld_FrustumAngle(angle_t tiltangle)
 
 	// ok, this is a gross hack that barely works...
 	// but at least it doesn't overestimate too much...
-	clipfov = atan(1 / projMatrix[0]) * 360.0f / M_PIl;
-	floatangle = 2.0f + (45.0f + (tilt / 1.9f)) * clipfov / 90.0f;
+	clipfov = atan(1 / (GLdouble)projMatrix[0]) * 360.0 / M_PIl;
+	floatangle = 2.0 + (45.0 + ((double)tilt / 1.9)) * clipfov / 90.0;
 	if (floatangle >= 180.0)
 		return 0xffffffff;
 	a1 = (angle_t)xs_CRoundToInt(ANG1 * floatangle);

@@ -383,10 +383,6 @@ typedef struct player_s
 	fixed_t viewz;
 	// Base height above floor for viewz.
 	fixed_t viewheight;
-	// Bob/squat speed.
-	//fixed_t deltaviewheight;
-	// bounded/scaled total momentum.
-	//fixed_t bob;
 
 	angle_t viewrollangle;
 	angle_t tilt;
@@ -568,6 +564,8 @@ typedef struct player_s
 	squishdance_t squishdance;
 
 	fixed_t fovadd; // adjust FOV for hw rendering
+
+	SINT8 driftlevel; // just for controller rumble for now
 } player_t;
 
 #endif

@@ -14,11 +14,18 @@
 #ifndef __I_VIDEO__
 #define __I_VIDEO__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "doomtype.h"
 
 #ifdef __GNUG__
 #pragma interface
 #endif
+
+boolean I_UseNativeKeyboard(void);
+void I_SetTextInput(boolean enable);
 
 typedef enum
 {
@@ -35,11 +42,6 @@ typedef enum
 /**	\brief currect render mode
 */
 extern rendermode_t rendermode;
-
-
-/**	\brief use highcolor modes if true
-*/
-extern boolean highcolor;
 
 /**	\brief setup video mode
 */
@@ -92,8 +94,8 @@ INT32 VID_SetMode(INT32 modenum);
 	\return	name of video mode
 */
 const char *VID_GetModeName(INT32 modenum);
-void VID_PrepareModeList(void); /// note hack for SDL
 
+void VID_PrepareModeList(void);
 
 /**	\brief can video system do fullscreen
 */
@@ -125,7 +127,7 @@ void I_WaitVBL(INT32 count);
 
 	\return	void
 */
-void I_ReadScreen(UINT8 *scr);
+void I_ReadScreen(UINT8 * restrict scr, INT32 scale);
 
 /**	\brief Start disk icon
 */
@@ -137,11 +139,11 @@ void I_EndRead(void);
 
 UINT32 I_GetRefreshRate(void);
 
-boolean I_UseNativeKeyboard(void);
-
 boolean I_CheckNativeRes(void);
 
 void I_SetBorderlessWindow(void);
+
+void I_HandleControllerHatRepeat(void);
 
 #ifdef USE_FBO_OGL
 
@@ -149,6 +151,10 @@ void RefreshOGLSDLSurface(void);
 void I_DownSample(void);
 boolean UseScreenFBO(void);
 extern boolean downsample;
+#endif
+
+#ifdef __cplusplus
+} // extern "C"
 #endif
 
 #endif

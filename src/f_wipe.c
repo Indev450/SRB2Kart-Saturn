@@ -98,7 +98,8 @@ static fixed_t paldiv;
   * \param	lump	Lump name to get data from
   * \return	fademask_t for lump
   */
-static fademask_t *F_GetFadeMask(UINT8 masknum, UINT8 scrnnum) {
+static fademask_t *F_GetFadeMask(UINT8 masknum, UINT8 scrnnum)
+{
 	static char lumpname[9] = "FADEmmss";
 	static fademask_t fm = {NULL,0,0,0,0,0};
 	lumpnum_t lumpnum;
@@ -148,6 +149,7 @@ static fademask_t *F_GetFadeMask(UINT8 masknum, UINT8 scrnnum) {
 		case 0: // end marker (not bad!, but still need clearing)
 			goto freemask;
 	}
+
 	if (lsize != fm.size)
 		fm.mask = Z_Realloc(fm.mask, lsize, PU_STATIC, NULL);
 	fm.size = lsize;
@@ -257,7 +259,7 @@ static void F_DoWipe(fademask_t *fademask)
 				// shortcut - memcpy source to work
 				while (draw_linestogo--)
 				{
-					M_Memcpy(w_base+relativepos, s_base+relativepos, draw_rowend-draw_rowstart);
+					memcpy(w_base+relativepos, s_base+relativepos, draw_rowend-draw_rowstart);
 					relativepos += vid.width;
 				}
 			}
@@ -266,7 +268,7 @@ static void F_DoWipe(fademask_t *fademask)
 				// shortcut - memcpy target to work
 				while (draw_linestogo--)
 				{
-					M_Memcpy(w_base+relativepos, e_base+relativepos, draw_rowend-draw_rowstart);
+					memcpy(w_base+relativepos, e_base+relativepos, draw_rowend-draw_rowstart);
 					relativepos += vid.width;
 				}
 			}
@@ -313,8 +315,8 @@ void F_WipeStartScreen(void)
 		return;
 	}
 #endif
-	wipe_scr_start = screens[3];
-	I_ReadScreen(wipe_scr_start);
+	wipe_scr_start = vid.screens[3];
+	I_ReadScreen(wipe_scr_start, 1);
 #endif
 }
 
@@ -330,8 +332,8 @@ void F_WipeEndScreen(void)
 		return;
 	}
 #endif
-	wipe_scr_end = screens[4];
-	I_ReadScreen(wipe_scr_end);
+	wipe_scr_end = vid.screens[4];
+	I_ReadScreen(wipe_scr_end, 1);
 	V_DrawBlock(0, 0, 0, vid.width, vid.height, wipe_scr_start);
 #endif
 }
@@ -353,7 +355,7 @@ void F_RunWipe(UINT8 wipetype, boolean drawMenu)
 
 	// Init the wipe
 	WipeInAction = true;
-	wipe_scr = screens[0];
+	wipe_scr = vid.screens[0];
 
 	// lastwipetic should either be 0 or the tic we last wiped
 	// on for fade-to-black
@@ -361,6 +363,7 @@ void F_RunWipe(UINT8 wipetype, boolean drawMenu)
 	{
 		// get fademask first so we can tell if it exists or not
 		fmask = F_GetFadeMask(wipetype, wipeframe++);
+
 		if (!fmask)
 			break;
 
@@ -377,7 +380,7 @@ void F_RunWipe(UINT8 wipetype, boolean drawMenu)
 			HWR_DoWipe(wipetype, wipeframe-1); // send in the wipe type and wipeframe because we need to cache the graphic
 		else
 #endif
-		if (rendermode != render_none) //this allows F_RunWipe to be called in dedicated servers
+		if (rendermode != render_none) // this allows F_RunWipe to be called in dedicated servers
 			F_DoWipe(fmask);
 
 		I_OsPolling();
@@ -401,6 +404,7 @@ void F_RunWipe(UINT8 wipetype, boolean drawMenu)
 
 		NetKeepAlive(); // Update the network so we don't cause timeouts
 	}
+
 	WipeInAction = false;
 #endif
 }

@@ -57,10 +57,6 @@ enum
 
 // Do not use bit five or after, as they are used for object z-offsets.
 
-#if defined(_MSC_VER)
-#pragma pack(1)
-#endif
-
 // A single Vertex.
 typedef struct
 {
@@ -187,10 +183,6 @@ typedef struct
 	// If NF_SUBSECTOR it's a subsector, else it's a node of another subtree.
 	UINT16 children[2];
 } ATTRPACK mapnode_t;
-
-#if defined(_MSC_VER)
-#pragma pack()
-#endif
 
 // Thing definition, position, orientation and type,
 // plus visibility flags and attributes.

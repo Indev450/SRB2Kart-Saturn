@@ -32,11 +32,13 @@ extern consvar_t stereoreverse;
 extern consvar_t cv_soundvolume, cv_digmusicvolume;//, cv_midimusicvolume;
 extern consvar_t cv_numChannels;
 
+extern consvar_t cv_samesoundlimit;
+
 extern consvar_t cv_audbuffersize;
 //extern consvar_t cv_resetmusic;
 extern consvar_t cv_gamedigimusic;
 #ifndef NO_MIDI
-extern consvar_t cv_gamemidimusic, cv_midimusicvolume;
+extern consvar_t cv_midimusicvolume;
 #endif
 extern consvar_t cv_gamesounds;
 extern consvar_t cv_playmusicifunfocused;
@@ -66,16 +68,16 @@ extern consvar_t cv_resetspecialmusic;
 
 extern consvar_t cv_resume;
 extern consvar_t cv_fading;
-extern consvar_t cv_birdmusic;
 
 extern consvar_t cv_keepmusic;
 extern consvar_t cv_skipintromusic;
 //extern consvar_t cv_ignoremusicchanges;
 extern boolean keepmapmusic;
 extern boolean skipintromus;
+
 #define MUSICSTARTTIME (starttime + (TICRATE/2))
 
-extern consvar_t precachesound;
+extern consvar_t cv_cachesound;
 
 typedef enum
 {
@@ -146,19 +148,22 @@ void S_StopSound(void *origin);
 // Music Status
 //
 
-boolean S_DigMusicDisabled(void);
-boolean S_MIDIMusicDisabled(void);
+enum
+{
+	SOUNDCACHE_OFF,
+	SOUNDCACHE_KEEP,
+	SOUNDCACHE_PRECACHE
+};
+
 boolean S_MusicDisabled(void);
 boolean S_MusicPlaying(void);
 boolean S_MusicPaused(void);
 boolean S_MusicNotInFocus(void);
-boolean S_PrecacheSound(void);
+int S_CacheSound(void);
 musictype_t S_MusicType(void);
 const char *S_MusicName(void);
 boolean S_MusicInfo(char *mname, UINT16 *mflags, boolean *looping);
 boolean S_MusicExists(const char *mname, boolean checkMIDI, boolean checkDigi);
-#define S_DigExists(a) S_MusicExists(a, false, true)
-#define S_MIDIExists(a) S_MusicExists(a, true, false)
 
 //
 // Music Effects
@@ -182,13 +187,8 @@ typedef struct musicdef_s
 	char alttitle[256];
 	char authors[256];
 	boolean use_info;
-	struct musicdef_s *next;
+	size_t num;
 } musicdef_t;
-
-extern musicdef_t *musicdefstart;
-extern musicdef_t **soundtestdefs;
-extern INT32 numsoundtestdefs;
-extern UINT8 soundtestpage;
 
 extern struct cursongcredit
 {
@@ -198,16 +198,17 @@ extern struct cursongcredit
 	UINT8 trans;
 } cursongcredit;
 
+extern INT32 nummusicdefs;
 
 void S_LoadMusicDefs(UINT16 wadnum);
 void S_InitMusicDefs(void);
 void S_LoadMTDefs(UINT16 wadnum);
 void S_InitMTDefs(void);
+musicdef_t *S_GetMusicCredit(INT32 i);
 musicdef_t *S_FindMusicCredit(const char *musname);
 void S_ShowSpecifiedMusicCredit(const char *musname);
 void S_ShowMusicCredit(void);
-
-boolean S_PrepareSoundTest(void);
+void S_ResetMusicCredit(void);
 
 //
 // Music Seeking
@@ -283,10 +284,7 @@ void S_UpdateSounds(void);
 FUNCMATH fixed_t S_CalculateSoundDistance(fixed_t px1, fixed_t py1, fixed_t pz1, fixed_t px2, fixed_t py2, fixed_t pz2);
 
 void S_SetSfxVolume(INT32 volume);
-void S_SetMusicVolume(INT32 digvolume, INT32 seqvolume);
-#define S_SetDigMusicVolume(a) S_SetMusicVolume(a,-1)
-#define S_SetMIDIMusicVolume(a) S_SetMusicVolume(-1,a)
-#define S_InitMusicVolume() S_SetMusicVolume(-1,-1)
+void S_SetMusicVolume(INT32 volume);
 
 INT32 S_OriginPlaying(void *origin);
 INT32 S_IdPlaying(sfxenum_t id);

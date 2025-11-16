@@ -13,6 +13,10 @@
 #ifndef __COMMAND_H__
 #define __COMMAND_H__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdio.h>
 #include "doomdef.h"
 
@@ -178,7 +182,7 @@ void CV_SaveVariables(FILE *f);
 
 // load/save gamesate (load and save option and for network join in game)
 void CV_SaveNetVars(UINT8 **p, boolean isdemorecording);
-void CV_LoadNetVars(UINT8 **p);
+size_t CV_LoadNetVars(const UINT8 *p);
 
 // reset cheat netvars after cheats is deactivated
 void CV_ResetCheatNetVars(void);
@@ -188,5 +192,9 @@ UINT8 CV_CheatsEnabled(void);
 
 // Returns cvar by name. Exposed here for Lua.
 consvar_t *CV_FindVar(const char *name);
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif // __COMMAND_H__

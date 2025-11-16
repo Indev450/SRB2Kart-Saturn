@@ -24,6 +24,7 @@
 // fixed_t tantoangle[2049]    - ArcTan LUT,
 //  Maps tan(angle) to angle fast. Gotta search.
 
+#include "doomdef.h"
 #include "tables.h"
 
 unsigned SlopeDiv(unsigned num, unsigned den)
@@ -66,9 +67,9 @@ fixed_t AngleFixed(angle_t af)
 	return rf;
 }
 
-static FUNCMATH angle_t AngleAdj(const fixed_t fa, const fixed_t wf,
-                                 angle_t ra)
+static FUNCMATH angle_t AngleAdj(const fixed_t fa, const fixed_t wf, angle_t ra)
 {
+	I_Assert(wf > 0);
 	const angle_t adj = 0x77;
 	const boolean fan = fa < 0;
 	const fixed_t sl = FixedDiv(fa, wf*2);

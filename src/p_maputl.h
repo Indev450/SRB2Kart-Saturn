@@ -13,6 +13,10 @@
 #ifndef __P_MAPUTL__
 #define __P_MAPUTL__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "doomtype.h"
 #include "r_defs.h"
 #include "m_fixed.h"
@@ -41,14 +45,26 @@ typedef boolean (*traverser_t)(intercept_t *in);
 boolean P_PathTraverse(fixed_t px1, fixed_t py1, fixed_t px2, fixed_t py2,
 	INT32 pflags, traverser_t ptrav);
 
+//
+// P_PointOnLineSide
+// Returns 0 or 1
+//
+FUNCINLINE static ATTRINLINE PUREFUNC INT32 P_PointOnLineSide(fixed_t x, fixed_t y, const line_t *line)
+{
+	return
+	!line->dx ? x <= line->v1->x ? line->dy > 0 : line->dy < 0 :
+	!line->dy ? y <= line->v1->y ? line->dx < 0 : line->dx > 0 :
+	FixedMul(y-line->v1->y, line->dx>>FRACBITS) >=
+	FixedMul(line->dy>>FRACBITS, x-line->v1->x);
+}
+
 #define P_AproxDistance(dx, dy) FixedHypot(dx, dy)
 void P_ClosestPointOnLine(fixed_t x, fixed_t y, line_t *line, vertex_t *result);
 void P_ClosestPointOnLine3D(fixed_t x, fixed_t y, fixed_t z, line_t *line, vertex_t *result);
-INT32 P_PointOnLineSide(fixed_t x, fixed_t y, const line_t *line);
 void P_MakeDivline(line_t *li, divline_t *dl);
 void P_CameraLineOpening(line_t *plinedef);
-fixed_t P_InterceptVector(divline_t *v2, divline_t *v1);
-INT32 P_BoxOnLineSide(fixed_t *tmbox, const line_t *ld);
+PUREFUNC fixed_t P_InterceptVector(divline_t *v2, divline_t *v1);
+PUREFUNC INT32 P_BoxOnLineSide(fixed_t *tmbox, const line_t *ld);
 void P_UnsetPrecipThingPosition(precipmobj_t *thing);
 void P_SetPrecipitationThingPosition(precipmobj_t *thing);
 void P_CreatePrecipSecNodeList(precipmobj_t *thing, fixed_t x,fixed_t y);
@@ -74,4 +90,9 @@ extern fixed_t tmbbox[4]; // p_map.c
 // bbox defined by the radius
 //boolean P_RadiusLinesCheck(fixed_t radius, fixed_t x, fixed_t y,
 //	boolean (*func)(line_t *));
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
+
 #endif // __P_MAPUTL__

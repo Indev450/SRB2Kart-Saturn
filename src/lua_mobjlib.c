@@ -15,6 +15,7 @@
 #include "doomdef.h"
 #include "fastcmp.h"
 #include "r_things.h"
+#include "r_skins.h"
 #include "r_main.h"
 #include "p_local.h"
 #include "g_game.h"
@@ -149,7 +150,8 @@ static const udata_field_t mobj_fields[] = {
     FIELD(mobj_t, cvmem,               udatalib_getter_int32,      udatalib_setter_int32),
     FIELD(mobj_t, standingslope,       udatalib_getter_slope,      mobj_standingslope_noset),
     FIELD(mobj_t, colorized,           udatalib_getter_boolean,    udatalib_setter_boolean),
-	FIELD(mobj_t, mirrored,           udatalib_getter_boolean,    udatalib_setter_boolean),
+	FIELD(mobj_t, mirrored,            udatalib_getter_boolean,    udatalib_setter_boolean),
+	FIELD(mobj_t, islocal,             udatalib_getter_boolean,    udatalib_setter_boolean),
     { NULL, 0, NULL, NULL },
 };
 #undef FIELD
@@ -249,14 +251,15 @@ int mobj_angle_setter(lua_State *L)
     mobj_t *mo = GETMO();
 
     mo->angle = luaL_checkangle(L, 2);
-    if (mo->player == &players[consoleplayer])
-        localangle[0] = mo->angle;
-    else if (mo->player == &players[displayplayers[1]])
-        localangle[1] = mo->angle;
-    else if (mo->player == &players[displayplayers[2]])
-        localangle[2] = mo->angle;
-    else if (mo->player == &players[displayplayers[3]])
-        localangle[3] = mo->angle;
+    for (UINT8 i = 0; i <= splitscreen; i++)
+    {
+        if (mo->player == P_GetLocalPlayerForNum(i))
+        {
+            localangle[i] = mo->angle;
+            break;
+        }
+    }
+
     return 0;
 }
 
@@ -452,12 +455,12 @@ int mobj_localskin_setter(lua_State *L)
 		strlcpy(skin, luaL_optstring(L, 2, "none"), sizeof skin);
 		strlwr(skin); // all skin names are lowercase
 
-		if (stricmp(skin, "none"))
+		if (!fasticmp(skin, "none"))
 		{
 			// Try localskins
 			for (i = 0; i < numlocalskins; i++)
 			{
-				if (stricmp(localskins[i].name, skin) == 0)
+				if (fasticmp(localskins[i].name, skin))
 				{
 					mo->localskin = &localskins[i];
 					mo->skinlocal = true;
@@ -468,7 +471,7 @@ int mobj_localskin_setter(lua_State *L)
 			// Try other skins
 			for (i = 0; i < numskins; i++)
 			{
-				if (stricmp(skins[i].name, skin) == 0)
+				if (fasticmp(skins[i].name, skin))
 				{
 					mo->localskin = &skins[i];
 					mo->skinlocal = false;
@@ -977,7 +980,7 @@ static int lib_getMapthing(lua_State *L)
 	return 0;
 }
 
-static int lib_nummapthings(lua_State *L)
+FUNCINLINE static ATTRINLINE int lib_nummapthings(lua_State *L)
 {
 	lua_pushinteger(L, nummapthings);
 	return 1;

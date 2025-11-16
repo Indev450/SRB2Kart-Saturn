@@ -265,6 +265,11 @@ static void AM_findMinMaxBoundaries(void)
 	max_w = minimapinfo.map_w << MAPBITS;
 	max_h = minimapinfo.map_h << MAPBITS;
 
+	if (max_w == 0)
+		max_w = 1;
+	if (max_h == 0)
+		max_h = 1;
+
 	a = FixedDiv(f_w<<FRACBITS, max_w);
 	b = FixedDiv(f_h<<FRACBITS, max_h);
 
@@ -324,6 +329,7 @@ static void AM_initVariables(void)
 		m_x = (plr->mo->x >> FRACTOMAPBITS) - m_w/2;
 		m_y = (plr->mo->y >> FRACTOMAPBITS) - m_h/2;
 	}
+
 	AM_changeWindowLoc();
 
 	// for saving & restoring
@@ -341,7 +347,7 @@ static void AM_FrameBufferInit(void)
 	f_x = f_y = 0;
 	f_w = vid.width;
 	f_h = vid.height;
-	am_buf = screens[0];
+	am_buf = vid.screens[0];
 }
 
 //
@@ -353,7 +359,9 @@ static void AM_LevelInit(void)
 	AM_findMinMaxBoundaries();
 	scale_mtof = FixedDiv(min_scale_mtof*10, 7*FRACUNIT);
 	if (scale_mtof > max_scale_mtof)
-		scale_mtof = min_scale_mtof;
+		scale_mtof = max_scale_mtof;
+	if (scale_mtof == 0)
+		scale_mtof = 1;
 	scale_ftom = FixedDiv(FRACUNIT, scale_mtof);
 }
 

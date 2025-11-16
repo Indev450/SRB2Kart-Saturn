@@ -14,6 +14,10 @@
 #ifndef __R_DATA__
 #define __R_DATA__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "r_defs.h"
 #include "r_state.h"
 
@@ -33,6 +37,14 @@ typedef struct
 	UINT16 wad, lump;
 } texpatch_t;
 
+// texture type
+enum
+{
+	TEXTURETYPE_UNKNOWN,
+	TEXTURETYPE_SINGLEPATCH,
+	TEXTURETYPE_COMPOSITE,
+};
+
 // A maptexturedef_t describes a rectangular texture,
 //  which is composed of one or more mappatch_t structures
 //  that arrange graphic patches.
@@ -40,9 +52,10 @@ typedef struct
 {
 	// Keep name for switch changing, etc.
 	char name[8];
+	UINT8 type; // TEXTURETYPE_
+	UINT32 hash;
 	INT16 width, height;
 	boolean holes;
-
 	// All the patches[patchcount] are drawn back to front into the cached texture.
 	INT16 patchcount;
 	texpatch_t patches[0];
@@ -50,23 +63,21 @@ typedef struct
 
 // all loaded and prepared textures from the start of the game
 extern texture_t **textures;
-
-// texture width is a power of 2, so it can easily repeat along sidedefs using a simple mask
-extern INT32 *texturewidthmask;
+extern UINT8 **texturecache; // graphics data for each generated full-size texture
 
 extern fixed_t *textureheight; // needed for texture pegging
 
 UINT32 ASTBlendPixel(RGBA_t background, RGBA_t foreground, int style, UINT8 alpha);
 UINT32 ASTBlendTexturePixel(RGBA_t background, RGBA_t foreground, int style, UINT8 alpha);
 
-extern INT16 color8to16[256]; // remap color index to highcolor
-extern INT16 *hicolormaps; // remap high colors to high colors..
-
 extern CV_PossibleValue_t Color_cons_t[];
 
 // Load TEXTURE1/TEXTURE2/PNAMES definitions, create lookup tables
 void R_LoadTextures(void);
+void R_LoadTexturesPwad(UINT16 wadnum);
 void R_FlushTextureCache(void);
+
+UINT8 *R_GenerateTexture(size_t texnum);
 
 INT32 R_GetTextureNum(INT32 texnum);
 void R_CheckTextureCache(INT32 tex);
@@ -79,8 +90,6 @@ UINT8 *R_GetFlat(lumpnum_t flatnum);
 // I/O, setting up the stuff.
 void R_InitData(void);
 void R_PrecacheLevel(void);
-
-extern size_t flatmemory, spritememory, texturememory;
 
 // Retrieval.
 // Floor/ceiling opaque texture tiles,
@@ -107,5 +116,9 @@ UINT8 NearestPaletteColor(UINT8 r, UINT8 g, UINT8 b, RGBA_t *palette);
 #define NearestColor(r, g, b) NearestPaletteColor(r, g, b, NULL)
 
 extern INT32 numtextures;
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif

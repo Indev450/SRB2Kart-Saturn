@@ -24,6 +24,8 @@
 
 #include "lauxlib.h"
 
+#include "../doomdef.h"
+
 
 #define FREELIST_REF	0	/* free list of references */
 
@@ -40,7 +42,7 @@ LUALIB_API int luaL_argerror (lua_State *L, int narg, const char *extramsg) {
   if (!lua_getstack(L, 0, &ar))  /* no stack frame? */
     return luaL_error(L, "bad argument #%d (%s)", narg, extramsg);
   lua_getinfo(L, "n", &ar);
-  if (strcmp(ar.namewhat, "method") == 0) {
+  if (fastcmp(ar.namewhat, "method")) {
     narg--;  /* do not count `self' */
     if (narg == 0)  /* error is in the self argument itself? */
       return luaL_error(L, "calling " LUA_QS " on bad self (%s)",
@@ -97,7 +99,7 @@ LUALIB_API int luaL_checkoption (lua_State *L, int narg, const char *def,
                              luaL_checkstring(L, narg);
   int i;
   for (i=0; lst[i]; i++)
-    if (strcmp(lst[i], name) == 0)
+    if (fastcmp(lst[i], name))
       return i;
   return luaL_argerror(L, narg,
                        lua_pushfstring(L, "invalid option " LUA_QS, name));
@@ -133,26 +135,26 @@ LUALIB_API void *luaL_checkudata (lua_State *L, int ud, const char *tname) {
 
 
 LUALIB_API void luaL_checkstack (lua_State *L, int space, const char *mes) {
-  if (!lua_checkstack(L, space))
+  if (l_unlikely(!lua_checkstack(L, space)))
     luaL_error(L, "stack overflow (%s)", mes);
 }
 
 
 LUALIB_API void luaL_checktype (lua_State *L, int narg, int t) {
-  if (lua_type(L, narg) != t)
+  if (l_unlikely(lua_type(L, narg) != t))
     tag_error(L, narg, t);
 }
 
 
 LUALIB_API void luaL_checkany (lua_State *L, int narg) {
-  if (lua_type(L, narg) == LUA_TNONE)
+  if (l_unlikely(lua_type(L, narg) == LUA_TNONE))
     luaL_argerror(L, narg, "value expected");
 }
 
 
 LUALIB_API const char *luaL_checklstring (lua_State *L, int narg, size_t *len) {
   const char *s = lua_tolstring(L, narg, len);
-  if (!s) tag_error(L, narg, LUA_TSTRING);
+  if (l_unlikely(!s)) tag_error(L, narg, LUA_TSTRING);
   return s;
 }
 
@@ -170,7 +172,7 @@ LUALIB_API const char *luaL_optlstring (lua_State *L, int narg,
 
 LUALIB_API lua_Number luaL_checknumber (lua_State *L, int narg) {
   lua_Number d = lua_tonumber(L, narg);
-  if (d == 0 && !lua_isnumber(L, narg))  /* avoid extra test when d is not 0 */
+  if (l_unlikely(d == 0 && !lua_isnumber(L, narg)))  /* avoid extra test when d is not 0 */
     tag_error(L, narg, LUA_TNUMBER);
   return d;
 }

@@ -14,6 +14,10 @@
 #ifndef __Z_ZONE__
 #define __Z_ZONE__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdio.h>
 #include "doomdef.h"
 #include "doomtype.h"
@@ -47,7 +51,7 @@ enum
 
 	PU_PATCH                 = 14, // static entire execution time
 	PU_PATCH_LOWPRIORITY     = 15, // lower priority patch, static until level exited
-	PU_PATCH_ROTATED         = 16, // rotated patch, static until level exited or WAD added
+	PU_PATCH_ROTATED         = 16, // rotated patch, static entire execution time
 	PU_PATCH_DATA            = 17, // patch data, lifetime depends on the patch that owns it
 	PU_SPRITE                = 18, // sprite patch, static until WAD added
 	PU_HUDGFX                = 19, // HUD patch, static until WAD added
@@ -88,24 +92,19 @@ void Z_Init(void);
 // Z_Free and alloc with alignment
 #ifdef ZDEBUG
 #define Z_Free(p)                 Z_Free2(p, __FILE__, __LINE__)
-#define Z_MallocAlign(s,t,u,a)    Z_Malloc2(s, t, u, a, __FILE__, __LINE__)
-#define Z_CallocAlign(s,t,u,a)    Z_Calloc2(s, t, u, a, __FILE__, __LINE__)
-#define Z_ReallocAlign(p,s,t,u,a) Z_Realloc2(p,s, t, u, a, __FILE__, __LINE__)
+#define Z_Malloc(s,t,u)    Z_Malloc2(s, t, u, __FILE__, __LINE__)
+#define Z_Calloc(s,t,u)    Z_Calloc2(s, t, u, __FILE__, __LINE__)
+#define Z_Realloc(p,s,t,u) Z_Realloc2(p,s, t, u, __FILE__, __LINE__)
 void Z_Free2(void *ptr, const char *file, INT32 line);
-void *Z_Malloc2(size_t size, INT32 tag, void *user, INT32 alignbits, const char *file, INT32 line) FUNCALLOC(1);
-void *Z_Calloc2(size_t size, INT32 tag, void *user, INT32 alignbits, const char *file, INT32 line) FUNCALLOC(1);
-void *Z_Realloc2(void *ptr, size_t size, INT32 tag, void *user, INT32 alignbits, const char *file, INT32 line) FUNCALLOC(2);
+void *Z_Malloc2(size_t size, INT32 tag, void *user, const char *file, INT32 line) FUNCALLOC(1);
+void *Z_Calloc2(size_t size, INT32 tag, void *user, const char *file, INT32 line) FUNCALLOC(1);
+void *Z_Realloc2(void *ptr, size_t size, INT32 tag, void *user, const char *file, INT32 line) FUNCALLOC(2);
 #else
 void Z_Free(void *ptr);
-void *Z_MallocAlign(size_t size, INT32 tag, void *user, INT32 alignbits) FUNCALLOC(1);
-void *Z_CallocAlign(size_t size, INT32 tag, void *user, INT32 alignbits) FUNCALLOC(1);
-void *Z_ReallocAlign(void *ptr, size_t size, INT32 tag, void *user, INT32 alignbits) FUNCALLOC(2);
+void *Z_Malloc(size_t size, INT32 tag, void *user) FUNCALLOC(1);
+void *Z_Calloc(size_t size, INT32 tag, void *user) FUNCALLOC(1);
+void *Z_Realloc(void *ptr, size_t size, INT32 tag, void *user) FUNCALLOC(2);
 #endif
-
-// Alloc with standard alignment
-#define Z_Malloc(s,t,u)    Z_MallocAlign(s, t, u, sizeof(void *))
-#define Z_Calloc(s,t,u)    Z_CallocAlign(s, t, u, sizeof(void *))
-#define Z_Realloc(p,s,t,u) Z_ReallocAlign(p, s, t, u, sizeof(void *))
 
 // Free all memory by tag
 // these don't give line numbers for ZDEBUG currently though
@@ -164,5 +163,33 @@ size_t Z_TagsUsage(INT32 lowtag, INT32 hightag);
 // Miscellaneous functions
 //
 char *Z_StrDup(const char *in);
+
+//
+// Specialty allocation functions
+//
+void *Z_LevelPoolMalloc(size_t size);
+void *Z_LevelPoolCalloc(size_t size);
+void Z_LevelPoolFree(void *p, size_t size);
+
+// for use with CLEANUP macro
+FUNCINLINE static ATTRINLINE void Z_Pfree(void *p)
+{
+	Z_Free(*(void **)p);
+}
+
+// for use with CLEANUP macro
+// not sure where to put this
+FUNCINLINE static ATTRINLINE void pfree(void *p)
+{
+	if (*(void **)p)
+	{
+		free(*(void **)p);
+		*(void **)p = NULL;
+	}
+}
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif

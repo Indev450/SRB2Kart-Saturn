@@ -14,6 +14,10 @@
 #ifndef __I_SYSTEM__
 #define __I_SYSTEM__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "d_ticcmd.h"
 #include "d_event.h"
 
@@ -57,10 +61,6 @@ precise_t I_GetPreciseTime(void);
   */
 UINT64 I_GetPrecisePrecision(void);
 
-/** \brief  Get the current time in rendering tics, including fractions.
-*/
-double I_GetFrameTime(void);
-
 /**	\brief	Sleeps for the given duration in milliseconds. Depending on the
             operating system's scheduler, the calling thread may give up its
 			time slice for a longer duration. The implementation should give a
@@ -87,30 +87,9 @@ void I_GetEvent(void);
 */
 void I_OsPolling(void);
 
-// Either returns a null ticcmd,
-// or calls a loadable driver to build it.
-// This ticcmd will then be modified by the gameloop
-// for normal input.
-
-/**	\brief Input for the first player
-*/
-ticcmd_t *I_BaseTiccmd(void);
-
-/**	\brief Input for the second player
-*/
-ticcmd_t *I_BaseTiccmd2(void);
-
-/**	\brief Input for the third player
-*/
-ticcmd_t *I_BaseTiccmd3(void);
-
-/**	\brief Input for the fourth player
-*/
-ticcmd_t *I_BaseTiccmd4(void);
-
 /**	\brief Called by M_Responder when quit is selected, return exit code 0
 */
-void I_Quit(void) FUNCNORETURN;
+FUNCNORETURN void ATTRNORETURN I_Quit(void);
 
 
 /**	\brief to set up the first joystick scale
@@ -238,10 +217,6 @@ INT32 I_mkdir(const char *dirname, INT32 unixright);
 */
 const char *I_LocateWad(void);
 
-/**	\brief Joystick events
-*/
-void I_GetJoystickEvents(UINT8 index);
-
 char *I_GetEnv(const char *name);
 
 INT32 I_PutEnv(char *variable);
@@ -255,5 +230,13 @@ INT32 I_ClipboardCopy(const char *data, size_t size);
 const char *I_ClipboardPaste(void);
 
 void I_RegisterSysCommands(void);
+
+/** \brief Returns the system name.
+ */
+const char *I_GetSysName(void);
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif

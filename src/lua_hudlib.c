@@ -24,6 +24,7 @@
 #include "w_wad.h"
 #include "z_zone.h"
 #include "k_kart.h"
+#include "k_hud.h" // SRB2kart
 
 #include "lua_script.h"
 #include "lua_libs.h"
@@ -238,7 +239,7 @@ static int lib_getHudInfo(lua_State *L)
 	return 1;
 }
 
-static int lib_hudinfolen(lua_State *L)
+FUNCINLINE static ATTRINLINE int lib_hudinfolen(lua_State *L)
 {
 	lua_pushinteger(L, NUMHUDITEMS);
 	return 1;
@@ -280,14 +281,14 @@ static int hudinfo_set(lua_State *L)
 	return 0;
 }
 
-static int hudinfo_num(lua_State *L)
+FUNCINLINE static ATTRINLINE int hudinfo_num(lua_State *L)
 {
 	hudinfo_t *info = *((hudinfo_t **)luaL_checkudata(L, 1, META_HUDINFO));
 	lua_pushinteger(L, info-hudinfo);
 	return 1;
 }
 
-static int colormap_get(lua_State *L)
+FUNCINLINE static ATTRINLINE int colormap_get(lua_State *L)
 {
 	return luaL_error(L, "colormap is not a struct.");
 }
@@ -326,7 +327,7 @@ static int patch_get(lua_State *L)
 	return 1;
 }
 
-static int patch_set(lua_State *L)
+FUNCINLINE static ATTRINLINE int patch_set(lua_State *L)
 {
 	return luaL_error(L, LUA_QL("patch_t") " struct cannot be edited by Lua.");
 }
@@ -394,14 +395,14 @@ static int camera_get(lua_State *L)
 // lib_draw
 //
 
-static int libd_patchExists(lua_State *L)
+FUNCINLINE static ATTRINLINE int libd_patchExists(lua_State *L)
 {
 	HUDONLY
 	lua_pushboolean(L, W_LumpExists(luaL_checkstring(L, 1)));
 	return 1;
 }
 
-static int libd_cachePatch(lua_State *L)
+FUNCINLINE static ATTRINLINE int libd_cachePatch(lua_State *L)
 {
 	HUDONLY
 	LUA_PushUserdata(L, W_CachePatchName(luaL_checkstring(L, 1), PU_PATCH), META_PATCH);
@@ -714,7 +715,7 @@ static int libd_drawOnMinimap(lua_State *L)
 
 	// and NOW we can FINALLY DRAW OUR GOD DAMN PATCH :V
 	lua_getfield(L, LUA_REGISTRYINDEX, "HUD_DRAW_LIST");
-	list = (huddrawlist_h) lua_touserdata(L, -1);
+	list = (huddrawlist_h)lua_touserdata(L, -1);
 	lua_pop(L, 1);
 
 	if (LUA_HUD_IsDrawListValid(list))
@@ -1065,14 +1066,14 @@ static int libd_getColorHudPatch(lua_State *L)
 	return 2;
 }
 
-static int libd_getHudColor(lua_State *L)
+FUNCINLINE static ATTRINLINE int libd_getHudColor(lua_State *L)
 {
 	HUDONLY
 	lua_pushinteger(L, K_GetHudColor());
 	return 1;
 }
 
-static int libd_useColorHud(lua_State *L)
+FUNCINLINE static ATTRINLINE int libd_useColorHud(lua_State *L)
 {
 	HUDONLY
 	lua_pushboolean(L, K_UseColorHud());
@@ -1080,37 +1081,28 @@ static int libd_useColorHud(lua_State *L)
 }
 
 
-static int libd_width(lua_State *L)
+FUNCINLINE static ATTRINLINE int libd_width(lua_State *L)
 {
 	HUDONLY
 	lua_pushinteger(L, vid.width); // push screen width
 	return 1;
 }
 
-static int libd_height(lua_State *L)
+FUNCINLINE static ATTRINLINE int libd_height(lua_State *L)
 {
 	HUDONLY
 	lua_pushinteger(L, vid.height); // push screen height
 	return 1;
 }
 
-static int libd_dupx(lua_State *L)
+FUNCINLINE static ATTRINLINE int libd_dup(lua_State *L)
 {
 	HUDONLY
-	lua_pushinteger(L, vid.dupx); // push integral scale (patch scale)
-	lua_pushfixed(L, vid.fdupx); // push fixed point scale (position scale)
+	lua_pushinteger(L, vid.dup); // push integral scale (patch scale)
+	lua_pushfixed(L, vid.fdup);  // push fixed point scale (position scale)
 	return 2;
 }
-
-static int libd_dupy(lua_State *L)
-{
-	HUDONLY
-	lua_pushinteger(L, vid.dupy); // push integral scale (patch scale)
-	lua_pushfixed(L, vid.fdupy); // push fixed point scale (position scale)
-	return 2;
-}
-
-static int libd_renderer(lua_State *L)
+FUNCINLINE static ATTRINLINE int libd_renderer(lua_State *L)
 {
 	HUDONLY
 	switch (rendermode) {
@@ -1123,7 +1115,7 @@ static int libd_renderer(lua_State *L)
 
 // 30/10/18 Lat': Get cv_translucenthud's value for HUD rendering as a normal V_xxTRANS int
 // Could as well be thrown in global vars for ease of access but I guess it makes sense for it to be a HUD fn
-static int libd_getlocaltransflag(lua_State *L)
+FUNCINLINE static ATTRINLINE int libd_getlocaltransflag(lua_State *L)
 {
 	HUDONLY
 	lua_pushinteger(L, (10-cv_translucenthud.value)*V_10TRANS);	// A bit weird that it's called "translucenthud" yet 10 is fully opaque :V
@@ -1207,8 +1199,8 @@ static luaL_Reg lib_draw[] = {
 	{"getColormap", libd_getColormap},
 	{"width", libd_width},
 	{"height", libd_height},
-	{"dupx", libd_dupx},
-	{"dupy", libd_dupy},
+	{"dupx", libd_dup},
+	{"dupy", libd_dup},
 	{"renderer", libd_renderer},
 	{"localTransFlag", libd_getlocaltransflag},
 	{"drawOnMinimap", libd_drawOnMinimap},
@@ -1228,7 +1220,7 @@ static int lib_draw_ref;
 //
 
 // enable vanilla HUD element
-static int lib_hudenable(lua_State *L)
+FUNCINLINE static ATTRINLINE int lib_hudenable(lua_State *L)
 {
 	enum hud option = luaL_checkoption(L, 1, NULL, hud_disable_options);
 	hud_enabled[option/8] |= 1<<(option%8);
@@ -1236,7 +1228,7 @@ static int lib_hudenable(lua_State *L)
 }
 
 // disable vanilla HUD element
-static int lib_huddisable(lua_State *L)
+FUNCINLINE static ATTRINLINE int lib_huddisable(lua_State *L)
 {
 	enum hud option = luaL_checkoption(L, 1, NULL, hud_disable_options);
 	hud_enabled[option/8] &= ~(1<<(option%8));
@@ -1244,7 +1236,7 @@ static int lib_huddisable(lua_State *L)
 }
 
 // 30/10/18: Lat': How come this wasn't here before?
-static int lib_hudenabled(lua_State *L)
+FUNCINLINE static ATTRINLINE int lib_hudenabled(lua_State *L)
 {
 	enum hud option = luaL_checkoption(L, 1, NULL, hud_disable_options);
 	if (hud_enabled[option/8] & (1<<(option%8)))
@@ -1260,15 +1252,10 @@ extern int lib_hudadd(lua_State *L);
 
 static int lib_hudsetvotebackground(lua_State *L)
 {
+	memset(VoteScreen.luaPrefix, 0, sizeof(VoteScreen.luaPrefix));
+
 	if (lua_isnoneornil(L, 1))
 	{
-		if (luaVoteScreen)
-		{
-			free(luaVoteScreen);
-		}
-
-		luaVoteScreen = NULL;
-
 		return 0;
 	}
 
@@ -1279,15 +1266,12 @@ static int lib_hudsetvotebackground(lua_State *L)
 		return luaL_argerror(L, 1, "prefix should 4 characters wide");
 	}
 
-	if (!luaVoteScreen)
-	{
-		luaVoteScreen = (char*)malloc(5);
-		luaVoteScreen[4] = 0;
-	}
+	strncpy(VoteScreen.luaPrefix, prefix, 4);
+	strupr(VoteScreen.luaPrefix);
 
-	strncpy(luaVoteScreen, prefix, 4);
-
-	strupr(luaVoteScreen);
+	// Update background if we're already on vote screen
+	if (gamestate == GS_VOTING)
+		Y_VoteScreenCheck();
 
 	return 0;
 }

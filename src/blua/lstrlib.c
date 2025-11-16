@@ -113,7 +113,7 @@ static int str_byte (lua_State *L) {
   if ((size_t)pose > l) pose = l;
   if (posi > pose) return 0;  /* empty interval; return no values */
   n = (int)(pose -  posi + 1);
-  if (posi + n <= pose)  /* overflow? */
+  if (l_unlikely(posi + n <= pose))  /* overflow? */
     luaL_error(L, "string slice too long");
   luaL_checkstack(L, n, "string slice too long");
   for (i=0; i<n; i++)
@@ -187,7 +187,7 @@ typedef struct MatchState {
 
 static int check_capture (MatchState *ms, int l) {
   l -= '1';
-  if (l < 0 || l >= ms->level || ms->capture[l].len == CAP_UNFINISHED)
+  if (l_unlikely(l < 0 || l >= ms->level || ms->capture[l].len == CAP_UNFINISHED))
     return luaL_error(ms->L, "invalid capture index");
   return l;
 }
@@ -204,14 +204,14 @@ static int capture_to_close (MatchState *ms) {
 static const char *classend (MatchState *ms, const char *p) {
   switch (*p++) {
     case L_ESC: {
-      if (*p == '\0')
+      if (l_unlikely(*p == '\0'))
         luaL_error(ms->L, "malformed pattern (ends with " LUA_QL("%%") ")");
       return p+1;
     }
     case '[': {
       if (*p == '^') p++;
       do {  /* look for a `]' */
-        if (*p == '\0')
+        if (l_unlikely(*p == '\0'))
           luaL_error(ms->L, "malformed pattern (missing " LUA_QL("]") ")");
         if (*(p++) == L_ESC && *p != '\0')
           p++;  /* skip escapes (e.g. `%]') */
@@ -282,7 +282,7 @@ static const char *match (MatchState *ms, const char *s, const char *p);
 
 static const char *matchbalance (MatchState *ms, const char *s,
                                    const char *p) {
-  if (*p == 0 || *(p+1) == 0)
+  if (l_unlikely(*p == 0 || *(p+1) == 0))
     luaL_error(ms->L, "unbalanced pattern");
   if (*s != *p) return NULL;
   else {
@@ -332,7 +332,8 @@ static const char *start_capture (MatchState *ms, const char *s,
                                     const char *p, int what) {
   const char *res;
   int level = ms->level;
-  if (level >= LUA_MAXCAPTURES) luaL_error(ms->L, "too many captures");
+  if (l_unlikely(level >= LUA_MAXCAPTURES))
+    luaL_error(ms->L, "too many captures");
   ms->capture[level].init = s;
   ms->capture[level].len = what;
   ms->level = level+1;
@@ -386,7 +387,7 @@ static const char *match (MatchState *ms, const char *s, const char *p) {
         case 'f': {  /* frontier? */
           const char *ep; char previous;
           p += 2;
-          if (*p != '[')
+          if (l_unlikely(*p != '['))
             luaL_error(ms->L, "missing " LUA_QL("[") " after "
                                LUA_QL("%%f") " in pattern");
           ep = classend(ms, p);  /* points to what is next */
@@ -468,14 +469,15 @@ static const char *lmemfind (const char *s1, size_t l1,
 static void push_onecapture (MatchState *ms, int i, const char *s,
                                                     const char *e) {
   if (i >= ms->level) {
-    if (i == 0)  /* ms->level == 0, too */
+    if (l_likely(i == 0))  /* ms->level == 0, too */
       lua_pushlstring(ms->L, s, e - s);  /* add whole match */
     else
       luaL_error(ms->L, "invalid capture index");
   }
   else {
     ptrdiff_t l = ms->capture[i].len;
-    if (l == CAP_UNFINISHED) luaL_error(ms->L, "unfinished capture");
+    if (l_unlikely(l == CAP_UNFINISHED))
+      luaL_error(ms->L, "unfinished capture");
     if (l == CAP_POSITION)
       lua_pushinteger(ms->L, ms->capture[i].init - ms->src_init + 1);
     else
@@ -637,7 +639,7 @@ static void add_value (MatchState *ms, luaL_Buffer *b, const char *s,
     lua_pop(L, 1);
     lua_pushlstring(L, s, e - s);  /* keep original text */
   }
-  else if (!lua_isstring(L, -1))
+  else if (l_unlikely(!lua_isstring(L, -1)))
     luaL_error(L, "invalid replacement value (a %s)", luaL_typename(L, -1));
   luaL_addvalue(b);  /* add result to accumulator */
 }
@@ -727,7 +729,7 @@ static void addquoted (lua_State *L, luaL_Buffer *b, int arg) {
 static const char *scanformat (lua_State *L, const char *strfrmt, char *form) {
   const char *p = strfrmt;
   while (*p != '\0' && strchr(FLAGS, *p) != NULL) p++;  /* skip flags */
-  if ((size_t)(p - strfrmt) >= sizeof(FLAGS))
+  if (l_unlikely((size_t)(p - strfrmt) >= sizeof(FLAGS)))
     luaL_error(L, "invalid format (repeated flags)");
   if (isdigit(uchar(*p))) p++;  /* skip width */
   if (isdigit(uchar(*p))) p++;  /* (2 digits at most) */
@@ -736,7 +738,7 @@ static const char *scanformat (lua_State *L, const char *strfrmt, char *form) {
     if (isdigit(uchar(*p))) p++;  /* skip precision */
     if (isdigit(uchar(*p))) p++;  /* (2 digits at most) */
   }
-  if (isdigit(uchar(*p)))
+  if (l_unlikely(isdigit(uchar(*p))))
     luaL_error(L, "invalid format (width or precision too long)");
   *(form++) = '%';
   strncpy(form, strfrmt, p - strfrmt + 1);

@@ -473,7 +473,7 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 			if (player->spectator)
 				return;
 
-			if (special->tracer && !P_MobjWasRemoved(special->tracer) && toucher == special->tracer)
+			if (!P_MobjWasRemoved(special->tracer) && toucher == special->tracer)
 			{
 				mobj_t *spbexplode;
 
@@ -487,7 +487,7 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 
 				spbexplode = P_SpawnMobj(toucher->x, toucher->y, toucher->z, MT_SPBEXPLOSION);
 				spbexplode->extravalue1 = 1; // Tell K_ExplodePlayer to use extra knockback
-				if (special->target && !P_MobjWasRemoved(special->target))
+				if (!P_MobjWasRemoved(special->target))
 					P_SetTarget(&spbexplode->target, special->target);
 
 				P_RemoveMobj(special);
@@ -496,7 +496,7 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 				K_SpinPlayer(player, special->target, 0, special, false);
 			return;
 		case MT_SMK_MOLE:
-			if (special->target && !P_MobjWasRemoved(special->target))
+			if (!P_MobjWasRemoved(special->target))
 				return;
 
 			if (special->health <= 0 || toucher->health <= 0)
@@ -558,7 +558,9 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 				{
 					special->momx = toucher->momx;
 					special->momy = toucher->momy;
-					special->momz = flip * max(P_AproxDistance(toucher->momx, toucher->momy) / 4, FixedMul(special->info->speed, special->scale));
+					const fixed_t dist = P_AproxDistance(toucher->momx, toucher->momy) / 4;
+					const fixed_t scale = FixedMul(special->info->speed, special->scale);
+					special->momz = flip * max(dist, scale);
 					if (flip * toucher->momz > 0)
 						special->momz += toucher->momz / 8;
 					if ((statenum_t)(special->state-states) != special->info->seestate)
@@ -587,7 +589,7 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 			special->momx = special->momy = special->momz = 0;
 			P_GivePlayerRings(player, 1);
 
-			if ((maptol & TOL_NIGHTS) && special->type != MT_FLINGRING)
+			if (UNLIKELY((maptol & TOL_NIGHTS) && special->type != MT_FLINGRING))
 				P_DoNightsScore(player);
 			break;
 
@@ -599,7 +601,7 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 			special->momx = special->momy = 0;
 			P_GivePlayerRings(player, 1);
 
-			if ((maptol & TOL_NIGHTS) && special->type != MT_FLINGCOIN)
+			if (UNLIKELY((maptol & TOL_NIGHTS) && special->type != MT_FLINGCOIN))
 				P_DoNightsScore(player);
 			break;
 		case MT_BLUEBALL:
@@ -615,7 +617,7 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 			else
 				special->scalespeed = 4*FRACUNIT/5;
 
-			if (maptol & TOL_NIGHTS)
+			if (UNLIKELY(maptol & TOL_NIGHTS))
 				P_DoNightsScore(player);
 			break;
 		case MT_AUTOPICKUP:
@@ -800,10 +802,6 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 						if (!P_PlayerTouchingSectorSpecial(player, 4, 2 + flagteam))
 						{
 							CONS_Printf(M_GetText("%s returned the %c%s%c to base.\n"), plname, flagcolor, flagtext, 0x80);
-
-							// The fuse code plays this sound effect
-							//if (players[consoleplayer].ctfteam == player->ctfteam)
-							//	S_StartSound(NULL, sfx_hoop1);
 						}
 					}
 				}
@@ -832,6 +830,7 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 			if (player->bumpertime < TICRATE/4)
 			{
 				S_StartSound(toucher, special->info->seesound);
+
 				if (player->pflags & PF_NIGHTSMODE)
 				{
 					player->bumpertime = TICRATE/2;
@@ -870,14 +869,14 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 
 					toucher->angle = special->angle;
 
-					if (player == &players[consoleplayer])
-						localangle[0] = toucher->angle;
-					else if (player == &players[displayplayers[1]])
-						localangle[1] = toucher->angle;
-					else if (player == &players[displayplayers[2]])
-						localangle[2] = toucher->angle;
-					else if (player == &players[displayplayers[3]])
-						localangle[3] = toucher->angle;
+					for (i = 0; i <= splitscreen; i++)
+					{
+						if (player == P_GetLocalPlayerForNum(i))
+						{
+							localangle[i] = toucher->angle;
+							break;
+						}
+					}
 
 					P_ResetPlayer(player);
 
@@ -891,16 +890,19 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 			break;
 		case MT_HOOPCOLLIDE:
 			// This produces a kind of 'domino effect' with the hoop's pieces.
-			for (; !P_MobjWasRemoved(special->hprev); special = special->hprev); // Move to the first sprite in the hoop
+			for (; special->hprev != NULL; special = special->hprev); // Move to the first sprite in the hoop
 
 			i = 0;
-			for (; !P_MobjWasRemoved(special->hnext) && special->type == MT_HOOP; special = special->hnext)
+			for (; special->hnext != NULL && special->type == MT_HOOP; special = special->hnext)
 			{
-				special->fuse = 11;
-				special->movedir = i;
-				special->extravalue1 = special->target->extravalue1;
-				special->extravalue2 = special->target->extravalue2;
-				special->target->threshold = 4242;
+				if (!P_MobjWasRemoved(special->target))
+				{
+					special->fuse = 11;
+					special->movedir = i;
+					special->extravalue1 = special->target->extravalue1;
+					special->extravalue2 = special->target->extravalue2;
+					special->target->threshold = 4242;
+				}
 				i++;
 			}
 			// Make the collision detectors disappear.
@@ -961,7 +963,7 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 				// scan the remaining thinkers to find koopa
 				for (th = thinkercap.next; th != &thinkercap; th = th->next)
 				{
-					if (th->function.acp1 != (actionf_p1)P_MobjThinker)
+					if (th->function != (actionf_p1)P_MobjThinker)
 						continue;
 
 					mo2 = (mobj_t *)th;
@@ -1226,9 +1228,9 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 			return; // SRB2kart - don't need bubbles mucking with the player
 			if ((player->powers[pw_shield] & SH_NOSTACK) == SH_ELEMENTAL)
 				return;
-			if (maptol & TOL_NIGHTS)
+			if (UNLIKELY(maptol & TOL_NIGHTS))
 				return;
-			if (mariomode)
+			if (UNLIKELY(mariomode))
 				return;
 			else if (toucher->eflags & MFE_VERTICALFLIP)
 			{
@@ -1576,9 +1578,6 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source)
 	// Let EVERYONE know what happened to a player! 01-29-2002 Tails
 	if (target->player && !target->player->spectator)
 	{
-		if (metalrecording) // Ack! Metal Sonic shouldn't die! Cut the tape, end recording!
-			G_StopMetalRecording();
-
 		target->flags2 &= ~MF2_DONTDRAW;
 	}
 
@@ -1606,7 +1605,7 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source)
 
 		target->player->playerstate = PST_DEAD;
 
-		if (cv_birdmusic.value && cv_fading.value && P_IsLocalPlayer(target->player))
+		if (cv_fading.value && P_IsLocalPlayer(target->player))
 		{
 			if (netgame || multiplayer)
 				ms = cv_respawntime.value * 1000;
@@ -1623,25 +1622,20 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source)
 				S_FadeOutStopMusic(cv_respawnfademusicout.value);
 		}
 
-		if (target->player == &players[consoleplayer])
+		for (UINT8 i = 0; i <= splitscreen; i++)
 		{
-			// don't die in auto map,
-			// switch view prior to dying
-			if (automapactive)
-				AM_Stop();
+			if (target->player == P_GetLocalPlayerForNum(i))
+			{
+				// don't die in auto map,
+				// switch view prior to dying
+				if (i == 0 && automapactive)
+					AM_Stop();
 
-			//added : 22-02-98: recenter view for next life...
-			localaiming[0] = 0;
+				// added : 22-02-98: recenter view for next life...
+				localaiming[i] = 0;
+				break;
+			}
 		}
-		if (target->player == &players[displayplayers[1]])
-		{
-			// added : 22-02-98: recenter view for next life...
-			localaiming[1] = 0;
-		}
-		if (target->player == &players[displayplayers[2]])
-			localaiming[2] = 0;
-		if (target->player == &players[displayplayers[3]])
-			localaiming[3] = 0;
 
 		if (G_BattleGametype())
 			K_CheckBumpers();
@@ -1765,7 +1759,7 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source)
 		case MT_SMK_ICEBLOCK:
 			{
 				mobj_t *cur = target->hnext;
-				while (cur && !P_MobjWasRemoved(cur))
+				while (!P_MobjWasRemoved(cur))
 				{
 					P_SetMobjState(cur, S_SMK_ICEBLOCK2);
 					cur = cur->hnext;
@@ -1816,7 +1810,7 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source)
 		// this can happen if the boss was hurt earlier than expected
 		for (th = thinkercap.next; th != &thinkercap; th = th->next)
 		{
-			if (th->function.acp1 != (actionf_p1)P_MobjThinker)
+			if (th->function != (actionf_p1)P_MobjThinker)
 				continue;
 
 			mo = (mobj_t *)th;
@@ -1838,14 +1832,14 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source)
 	// kill tracer
 	if (target->type == MT_FROGGER)
 	{
-		if (target->tracer && !P_MobjWasRemoved(target->tracer))
+		if (!P_MobjWasRemoved(target->tracer))
 			P_KillMobj(target->tracer, inflictor, source);
 	}
 
 	if (target->type == MT_FROGGER || target->type == MT_ROBRA_HEAD || target->type == MT_BLUEROBRA_HEAD) // clean hnext list
 	{
 		mobj_t *cur = target->hnext;
-		while (cur && !P_MobjWasRemoved(cur))
+		while (!P_MobjWasRemoved(cur))
 		{
 			P_KillMobj(cur, inflictor, source);
 			cur = cur->hnext;
@@ -2049,12 +2043,17 @@ static inline boolean P_TagDamage(mobj_t *target, mobj_t *inflictor, mobj_t *sou
 
 	// Don't allow players on the same team to hurt one another,
 	// unless cv_friendlyfire is on.
-	if (!cv_friendlyfire.value && (player->pflags & PF_TAGIT) == (source->player->pflags & PF_TAGIT))
+	if (!cv_friendlyfire.value
+		&& (player->pflags & PF_TAGIT) == (source->player->pflags & PF_TAGIT))
 	{
-		if (!(inflictor->flags & MF_FIRE))
-			P_GivePlayerRings(player, 1);
-		if (inflictor->flags2 & MF2_BOUNCERING)
-			inflictor->fuse = 0; // bounce ring disappears at -1 not 0
+		if (inflictor)
+		{
+			if (!(inflictor->flags & MF_FIRE))
+				P_GivePlayerRings(player, 1);
+			if (inflictor->flags2 & MF2_BOUNCERING)
+				inflictor->fuse = 0; // bounce ring disappears at -1 not 0
+		}
+
 		return false;
 	}
 
@@ -2103,12 +2102,16 @@ static inline boolean P_PlayerHitsPlayer(mobj_t *target, mobj_t *inflictor, mobj
 	{
 		// Don't allow players on the same team to hurt one another,
 		// unless cv_friendlyfire is on.
-		if (!cv_friendlyfire.value && target->player->ctfteam == source->player->ctfteam)
+		if (!cv_friendlyfire.value
+			&& target->player->ctfteam == source->player->ctfteam)
 		{
-			if (!(inflictor->flags & MF_FIRE))
-				P_GivePlayerRings(target->player, 1);
-			if (inflictor->flags2 & MF2_BOUNCERING)
-				inflictor->fuse = 0; // bounce ring disappears at -1 not 0
+			if (inflictor)
+			{
+				if (!(inflictor->flags & MF_FIRE))
+					P_GivePlayerRings(target->player, 1);
+				if (inflictor->flags2 & MF2_BOUNCERING)
+					inflictor->fuse = 0; // bounce ring disappears at -1 not 0
+			}
 
 			return false;
 		}
@@ -2260,18 +2263,15 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 	}
 
 	// Everything above here can't be forced.
-	if (!metalrecording)
-	{
-		UINT8 shouldForce = LUA_HookShouldDamage(target, inflictor, source, damage);
+	UINT8 shouldForce = LUA_HookShouldDamage(target, inflictor, source, damage);
 
-		if (P_MobjWasRemoved(target))
-			return (shouldForce == 1); // mobj was removed
+	if (P_MobjWasRemoved(target))
+		return (shouldForce == 1); // mobj was removed
 
-		if (shouldForce == 1)
-			force = true;
-		else if (shouldForce == 2)
-			return false;
-	}
+	if (shouldForce == 1)
+		force = true;
+	else if (shouldForce == 2)
+		return false;
 
 	if (!force)
 	{
@@ -2352,11 +2352,11 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 			if (player->exiting)
 				return false;
 
-			if (!(target->player->pflags & (PF_NIGHTSMODE|PF_NIGHTSFALL)) && (maptol & TOL_NIGHTS))
+			if (UNLIKELY(!(target->player->pflags & (PF_NIGHTSMODE|PF_NIGHTSFALL)) && (maptol & TOL_NIGHTS)))
 				return false;
 		}
 
-		if (player->pflags & PF_NIGHTSMODE) // NiGHTS damage handling
+		if (UNLIKELY(player->pflags & PF_NIGHTSMODE)) // NiGHTS damage handling
 		{
 			if (!force)
 			{
@@ -2601,7 +2601,7 @@ void P_PlayerRingBurst(player_t *player, INT32 num_rings)
 			ns = FixedMul(((i*FRACUNIT)/16)+2*FRACUNIT, mo->scale);
 			mo->momx = FixedMul(FINECOSINE(fa),ns);
 
-			if (!(twodlevel || (player->mo->flags2 & MF2_TWOD)))
+			if (LIKELY(!(twodlevel || (player->mo->flags2 & MF2_TWOD))))
 				mo->momy = FixedMul(FINESINE(fa),ns);
 
 			P_SetObjectMomZ(mo, 8*FRACUNIT, false);
@@ -2625,7 +2625,7 @@ void P_PlayerRingBurst(player_t *player, INT32 num_rings)
 			ns = FixedMul(momxy, mo->scale);
 			mo->momx = FixedMul(FINECOSINE(fa),ns);
 
-			if (!(twodlevel || (player->mo->flags2 & MF2_TWOD)))
+			if (LIKELY(!(twodlevel || (player->mo->flags2 & MF2_TWOD))))
 				mo->momy = FixedMul(FINESINE(fa),ns);
 
 			ns = momz;
@@ -2732,7 +2732,7 @@ void P_PlayerWeaponPanelBurst(player_t *player)
 		ns = FixedMul(3*FRACUNIT, mo->scale);
 		mo->momx = FixedMul(FINECOSINE(fa),ns);
 
-		if (!(twodlevel || (player->mo->flags2 & MF2_TWOD)))
+		if (LIKELY(!(twodlevel || (player->mo->flags2 & MF2_TWOD))))
 			mo->momy = FixedMul(FINESINE(fa),ns);
 
 		P_SetObjectMomZ(mo, 4*FRACUNIT, false);
@@ -2816,7 +2816,7 @@ void P_PlayerWeaponAmmoBurst(player_t *player)
 		ns = FixedMul(2*FRACUNIT, mo->scale);
 		mo->momx = FixedMul(FINECOSINE(fa), ns);
 
-		if (!(twodlevel || (player->mo->flags2 & MF2_TWOD)))
+		if (LIKELY(!(twodlevel || (player->mo->flags2 & MF2_TWOD))))
 			mo->momy = FixedMul(FINESINE(fa),ns);
 
 		P_SetObjectMomZ(mo, 3*FRACUNIT, false);
@@ -2932,7 +2932,7 @@ void P_PlayerEmeraldBurst(player_t *player, boolean toss)
 
 			momx = FixedMul(FINECOSINE(fa), ns);
 
-			if (!(twodlevel || (player->mo->flags2 & MF2_TWOD)))
+			if (LIKELY(!(twodlevel || (player->mo->flags2 & MF2_TWOD))))
 				momy = FixedMul(FINESINE(fa),ns);
 			else
 				momy = 0;
@@ -2989,7 +2989,7 @@ void P_PlayerFlagBurst(player_t *player, boolean toss)
 	{
 		angle_t fa = P_RandomByte()*FINEANGLES/256;
 		flag->momx = FixedMul(FINECOSINE(fa), FixedMul(6*FRACUNIT, player->mo->scale));
-		if (!(twodlevel || (player->mo->flags2 & MF2_TWOD)))
+		if (LIKELY(!(twodlevel || (player->mo->flags2 & MF2_TWOD))))
 			flag->momy = FixedMul(FINESINE(fa), FixedMul(6*FRACUNIT, player->mo->scale));
 	}
 

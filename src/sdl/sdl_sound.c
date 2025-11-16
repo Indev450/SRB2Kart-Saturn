@@ -16,20 +16,13 @@
 /// \file
 /// \brief SDL interface for sound
 
-#include <math.h>
 #include "../doomdef.h"
 
-#ifdef _MSC_VER
-#pragma warning(disable : 4214 4244)
-#endif
+#if defined(HAVE_SDL) && SOUND == SOUND_SDL
 
-#if defined(HAVE_SDL) && SOUND==SOUND_SDL
+#include <math.h>
 
 #include "SDL.h"
-
-#ifdef _MSC_VER
-#pragma warning(default : 4214 4244)
-#endif
 
 #ifdef HAVE_MIXER
 #include <SDL_mixer.h>
@@ -189,7 +182,7 @@ static void Snd_LockAudio(void) //Alam: Lock audio data and uninstall audio call
 {
 	if (Snd_Mutex) SDL_LockMutex(Snd_Mutex);
 	else if (sound_disabled) return;
-	else if (midi_disabled && digital_disabled) SDL_LockAudio();
+	else if (music_disabled) SDL_LockAudio();
 #ifdef HAVE_MIXER
 	else if (musicStarted) Mix_SetPostMix(NULL, NULL);
 #endif
@@ -199,7 +192,7 @@ static void Snd_UnlockAudio(void) //Alam: Unlock audio data and reinstall audio 
 {
 	if (Snd_Mutex) SDL_UnlockMutex(Snd_Mutex);
 	else if (sound_disabled) return;
-	else if (midi_disabled && digital_disabled) SDL_UnlockAudio();
+	else if (music_disabled) SDL_UnlockAudio();
 #ifdef HAVE_MIXER
 	else if (musicStarted) Mix_SetPostMix(audio.callback, audio.userdata);
 #endif
@@ -220,11 +213,6 @@ static inline Uint16 Snd_LowerRate(Uint16 sr)
 	return sr*2; // just keep it just above the output sample rate
 }
 
-#ifdef _MSC_VER
-#pragma warning(disable :  4200)
-#pragma pack(1)
-#endif
-
 typedef struct
 {
 	Uint16 header;     // 3?
@@ -233,11 +221,6 @@ typedef struct
 	Uint16 dummy;      // 0
 	Uint8  data[0];    // data;
 } ATTRPACK dssfx_t;
-
-#ifdef _MSC_VER
-#pragma pack()
-#pragma warning(default : 4200)
-#endif
 
 //
 // This function loads the sound data from the WAD lump,
@@ -261,7 +244,7 @@ static void *getsfx(lumpnum_t sfxlump, size_t *len)
 
 		sfxcvt.len = (INT32)size-8; //Alam: Chop off the header
 		sfxcvt.buf = malloc(sfxcvt.len * sfxcvt.len_mult); //Alam: make room
-		if (sfxcvt.buf) M_Memcpy(sfxcvt.buf, &(sfx->data), sfxcvt.len); //Alam: copy the sfx sample
+		if (sfxcvt.buf) memcpy(sfxcvt.buf, &(sfx->data), sfxcvt.len); //Alam: copy the sfx sample
 
 		if (sfxcvt.buf && SDL_ConvertAudio(&sfxcvt) == 0) //Alam: let convert it!
 		{
@@ -272,9 +255,9 @@ static void *getsfx(lumpnum_t sfxlump, size_t *len)
 				paddedsfx = (dssfx_t *) Z_Malloc(size, PU_SOUND, NULL);
 
 				// Now copy and pad.
-				M_Memcpy(paddedsfx->data, sfxcvt.buf, sfxcvt.len_cvt);
+				memcpy(paddedsfx->data, sfxcvt.buf, sfxcvt.len_cvt);
 				free(sfxcvt.buf);
-				M_Memcpy(paddedsfx,sfx,8);
+				memcpy(paddedsfx,sfx,8);
 				paddedsfx->samplerate = SHORT(csr); // new freq
 		}
 		else //Alam: the convert failed, not needed or I couldn't malloc the buf
@@ -283,7 +266,7 @@ static void *getsfx(lumpnum_t sfxlump, size_t *len)
 			*len = size - 8;
 
 			// Allocate from zone memory then copy and pad
-			paddedsfx = (dssfx_t *)M_Memcpy(Z_Malloc(size, PU_SOUND, NULL), sfx, size);
+			paddedsfx = (dssfx_t *)memcpy(Z_Malloc(size, PU_SOUND, NULL), sfx, size);
 		}
 	}
 	else
@@ -293,7 +276,7 @@ static void *getsfx(lumpnum_t sfxlump, size_t *len)
 		*len = size - 8;
 
 		// Allocate from zone memory then copy and pad
-		paddedsfx = (dssfx_t *)M_Memcpy(Z_Malloc(size, PU_SOUND, NULL), sfx, size);
+		paddedsfx = (dssfx_t *)memcpy(Z_Malloc(size, PU_SOUND, NULL), sfx, size);
 	}
 
 	// Remove the cached lump.
@@ -1061,7 +1044,7 @@ void I_ShutdownSound(void)
 
 	CONS_Printf("I_ShutdownSound: ");
 
-	if (midi_disabled && digital_disabled)
+	if (music_disabled)
 		SDL_CloseAudio();
 	CONS_Printf("%s", M_GetText("shut down\n"));
 	sound_started = false;
@@ -1078,11 +1061,7 @@ void I_UpdateSound(void)
 void I_StartupSound(void)
 {
 #ifndef HAVE_MIXER
-#ifndef NO_MIDI
-	midi_disabled = 
-#endif
-	digital_disabled = true;
-#endif
+	music_disabled = true;
 
 	memset(channels, 0, sizeof (channels)); //Alam: Clean it
 
@@ -1094,9 +1073,10 @@ void I_StartupSound(void)
 	// Configure sound device
 	CONS_Printf("I_StartupSound:\n");
 
-#ifdef _WIN32
+#if defined(_WIN32) && !SDL_VERSION_ATLEAST(2,26,5)
 	// Force DirectSound instead of WASAPI
 	// SDL 2.0.6+ defaults to the latter and it screws up our sound effects
+	// SDL 2.26.5 brought imrovements to resampling so this just screws up other stuff now
 	SDL_setenv("SDL_AUDIODRIVER", "directsound", 1);
 #endif
 
@@ -1422,4 +1402,5 @@ static boolean I_StartGMESong(const char *musicname, boolean looping)
 }
 #endif
 
+#endif
 #endif //HAVE_SDL

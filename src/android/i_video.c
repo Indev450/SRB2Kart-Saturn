@@ -10,11 +10,7 @@
 
 rendermode_t rendermode = render_soft;
 
-boolean highcolor = false;
-
 boolean allow_fullscreen = false;
-
-
 
 consvar_t cv_vidwait = {"vid_wait", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
@@ -46,8 +42,6 @@ INT32 VID_SetMode(INT32 modenum)
   vid.modenum = 0;
   vid.width = 320;
   vid.height = 240;
-  vid.bpp = 1;
-  vid.buffer = android_surface;
   return 0;
 }
 
@@ -70,7 +64,7 @@ void I_WaitVBL(INT32 count)
   (void)count;
 }
 
-void I_ReadScreen(UINT8 *scr)
+void I_ReadScreen(UINT8 * restrict scr, INT32 scale)
 {
   (void)scr;
 }

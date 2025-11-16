@@ -14,7 +14,7 @@
 
 
 #define luaD_checkstack(L,n)	\
-  if ((char *)L->stack_last - (char *)L->top <= (n)*(int)sizeof(TValue)) \
+  if (l_unlikely((char *)L->stack_last - (char *)L->top <= (n)*(int)sizeof(TValue))) \
     luaD_growstack(L, n); \
   else condhardstacktests(luaD_reallocstack(L, L->stacksize - EXTRA_STACK - 1));
 
@@ -47,12 +47,6 @@ LUAI_FUNC int luaD_poscall (lua_State *L, StkId firstResult);
 LUAI_FUNC void luaD_reallocCI (lua_State *L, int newsize);
 LUAI_FUNC void luaD_reallocstack (lua_State *L, int newsize);
 LUAI_FUNC void luaD_growstack (lua_State *L, int n);
-
-#ifdef _MSC_VER
- #ifndef  ATTRNORETURN
-  #define ATTRNORETURN __declspec(noreturn)
- #endif
-#endif
 
 #ifndef ATTRNORETURN
 #define ATTRNORETURN

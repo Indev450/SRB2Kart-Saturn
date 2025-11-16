@@ -19,7 +19,7 @@
 #ifndef _HWR_DEFS_
 #define _HWR_DEFS_
 #include "../doomtype.h"
-#include "../r_defs.h"
+#include "../m_fixed.h"
 
 #define ZCLIP_PLANE 4.0f // Used for the actual game drawing
 #define NZCLIP_PLANE 0.9f // Seems to be only used for the HUD and screen textures
@@ -95,14 +95,9 @@ typedef struct
 // a vertex of a Doom 'plane' polygon
 typedef struct
 {
-	float x;
-	float y;
-	float z;
+	float x, y, z;
+	fixed_t x2, y2, z2;
 } polyvertex_t;
-
-#ifdef _MSC_VER
-#pragma warning(disable :  4200)
-#endif
 
 // a convex 'plane' polygon, clockwise order
 typedef struct
@@ -110,10 +105,6 @@ typedef struct
 	INT32 numpts;
 	polyvertex_t pts[0];
 } poly_t;
-
-#ifdef _MSC_VER
-#pragma warning(default :  4200)
-#endif
 
 // holds extra info for 3D render, for each subsector in subsectors[]
 typedef struct
@@ -126,7 +117,7 @@ typedef struct
 
 typedef struct
 {
-	FLOAT       x,y,z;           // position
+	FLOAT       x, y, z;           // position
 	FLOAT       anglex, angley, anglez;   // aimingangle / viewangle
 	FLOAT       scalex, scaley, scalez;
 	FLOAT       fovangle;
@@ -317,6 +308,8 @@ enum hwdsetspecialstate
 
 	HWD_SET_TEXTUREFILTERMODE,
 	HWD_SET_TEXTUREANISOTROPICMODE,
+
+	HWD_SET_WIREFRAME,
 
 	HWD_SET_MSAA,
 

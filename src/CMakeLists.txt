@@ -228,6 +228,14 @@ set(SRB2_CONFIG_STATIC_OPENGL OFF CACHE BOOL
 	"Use statically linked OpenGL. NOT RECOMMENDED.")
 set(SRB2_CONFIG_USE_FBO_OGL ON CACHE BOOL
 	"Enable OpenGL FBO Downsampling support.")
+set(SRB2_CONFIG_DEDICATED OFF CACHE BOOL
+	"Build a dedicated server.")
+
+if(${SRB2_CONFIG_DEDICATED})
+	set(SRB2_CONFIG_HAVE_GME NO)
+	set(SRB2_CONFIG_HAVE_OPENMPT NO)
+	set(SRB2_CONFIG_HWRENDER NO)
+endif()
 
 ### use internal libraries?
 if(${CMAKE_SYSTEM} MATCHES "Windows") ###set on Windows only
@@ -434,12 +442,7 @@ if(${SRB2_CONFIG_HAVE_PNG} AND ${SRB2_CONFIG_HAVE_ZLIB})
 			set(SRB2_HAVE_PNG ON)
 			add_definitions(-DHAVE_PNG)
 			add_definitions(-D_LARGEFILE64_SOURCE)
-			set(SRB2_PNG_SOURCES apng.c)
-			set(SRB2_PNG_HEADERS apng.h)
-			prepend_sources(SRB2_PNG_SOURCES)
-			prepend_sources(SRB2_PNG_HEADERS)
-			source_group("Main" FILES ${SRB2_CORE_SOURCES} ${SRB2_CORE_HEADERS}
-				${SRB2_PNG_SOURCES} ${SRB2_PNG_HEADERS})
+			source_group("Main" FILES ${SRB2_CORE_SOURCES} ${SRB2_CORE_HEADERS})
 		else()
 			message(WARNING "You have specified that PNG is available but it was not found. SRB2Kart may not compile correctly.")
 		endif()
@@ -554,7 +557,11 @@ add_definitions(-DCMAKECONFIG)
 #	${SRB2_BLUA_HEADERS}
 #)
 
-add_subdirectory(sdl)
+if(${SRB2_CONFIG_DEDICATED})
+	add_subdirectory(dedicated)
+else()
+	add_subdirectory(sdl)
+endif()
 
 if(NOT ${SRB2_SDL2_AVAILABLE} AND NOT ${SRB2_WIN32_AVAILABLE})
 	message(FATAL_ERROR "There are no targets available to build an SRB2Kart executable. :(")

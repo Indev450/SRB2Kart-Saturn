@@ -732,7 +732,7 @@ static mapthing_t *OP_CreateNewMapThing(player_t *player, UINT16 type, boolean c
 
 		for (th = thinkercap.next; th != &thinkercap; th = th->next)
 		{
-			if (th->function.acp1 != (actionf_p1)P_MobjThinker)
+			if (th->function != (actionf_p1)P_MobjThinker)
 				continue;
 
 			mo = (mobj_t *)th;
@@ -830,18 +830,18 @@ void OP_NightsObjectplace(player_t *player)
 		mt->options = (UINT16)((player->mo->z - fheight)>>FRACBITS);
 		mt->angle = (INT16)(mt->angle+(INT16)((FixedInt(FixedDiv(temp*FRACUNIT, 360*(FRACUNIT/256))))<<8));
 
-		P_SpawnHoopsAndRings(mt);
+		P_SpawnHoops(mt);
 	}
 
 	// This places a ring!
-	if (cmd->buttons & BT_BACKWARD)
+	/*if (cmd->buttons & BT_BACKWARD)
 	{
 		player->pflags |= PF_ATTACKDOWN;
 		if (!OP_HeightOkay(player, false))
 			return;
 
 		mt = OP_CreateNewMapThing(player, (UINT16)mobjinfo[MT_RING].doomednum, false);
-		P_SpawnHoopsAndRings(mt);
+		//P_SpawnHoopsAndRings(mt);
 	}
 
 	// This places a wing item!
@@ -852,8 +852,8 @@ void OP_NightsObjectplace(player_t *player)
 			return;
 
 		mt = OP_CreateNewMapThing(player, (UINT16)mobjinfo[MT_NIGHTSWING].doomednum, false);
-		P_SpawnHoopsAndRings(mt);
-	}
+		//P_SpawnHoopsAndRings(mt);
+	}*/
 
 	// This places a custom object as defined in the console cv_mapthingnum.
 	if (cmd->buttons & BT_BRAKE)
@@ -891,7 +891,7 @@ void OP_NightsObjectplace(player_t *player)
 		|| mt->type == 1705 || mt->type == 1713 // NiGHTS Hoops
 		|| mt->type == 1800) // Mario Coin
 		{
-			P_SpawnHoopsAndRings(mt);
+			P_SpawnHoops(mt);
 		}
 		else
 			P_SpawnMapThing(mt);
@@ -1022,7 +1022,8 @@ void OP_ObjectplaceMovement(player_t *player)
 		|| mt->type == 1705 || mt->type == 1713 // NiGHTS Hoops
 		|| mt->type == 1800) // Mario Coin
 		{
-			P_SpawnHoopsAndRings(mt);
+			// NiGHTS hoops only
+			P_SpawnHoops(mt);
 		}
 		else
 			P_SpawnMapThing(mt);

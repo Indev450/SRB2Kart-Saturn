@@ -114,7 +114,6 @@ void UnloadModel(model_t *model)
 	if (model->materials)
 		Z_Free(model->materials);
 
-	DeleteVBOs(model);
 	Z_Free(model);
 }
 
@@ -127,7 +126,7 @@ tag_t *GetTagByName(model_t *model, char *name, int frame)
 		int i;
 		for (i = 0; i < model->numTags; i++)
 		{
-			if (!stricmp(iterator[i].name, name))
+			if (fasticmp(iterator[i].name, name))
 				return &iterator[i];
 		}
 	}
@@ -164,22 +163,22 @@ model_t *LoadModel(const char *filename, int ztag)
 		return NULL;
 	}
 
-	if (!strcmp(extension, ".md3"))
+	if (fastcmp(extension, ".md3"))
 	{
 		if (!(model = MD3_LoadModel(filename, ztag, false)))
 			return NULL;
 	}
-	else if (!strcmp(extension, ".md3s")) // MD3 that will be converted in memory to use full floats
+	else if (fastcmp(extension, ".md3s")) // MD3 that will be converted in memory to use full floats
 	{
 		if (!(model = MD3_LoadModel(filename, ztag, true)))
 			return NULL;
 	}
-	else if (!strcmp(extension, ".md2"))
+	else if (fastcmp(extension, ".md2"))
 	{
 		if (!(model = MD2_LoadModel(filename, ztag, false)))
 			return NULL;
 	}
-	else if (!strcmp(extension, ".md2s"))
+	else if (fastcmp(extension, ".md2s"))
 	{
 		if (!(model = MD2_LoadModel(filename, ztag, true)))
 			return NULL;
@@ -194,7 +193,6 @@ model_t *LoadModel(const char *filename, int ztag)
 	strcpy(model->mdlFilename, filename);
 
 	Optimize(model);
-	GeneratePolygonNormals(model, ztag);
 
 	// Default material properties
 	for (i = 0 ; i < model->numMaterials; i++)
@@ -244,14 +242,7 @@ void GenerateVertexNormals(model_t *model)
 			float *vertPtr = frame->vertices;
 			float *oldNormals;
 
-			M_Memcpy(newNormals, frame->normals, sizeof(float)*3*mesh->numTriangles*3);
-
-/*			if (!systemSucks)
-			{
-				memTag = Z_GetTag(frame->tangents);
-				float *newTangents = (float*)Z_Malloc(sizeof(float)*3*mesh->numTriangles*3, memTag);
-				M_Memcpy(newTangents, frame->tangents, sizeof(float)*3*mesh->numTriangles*3);
-			}*/
+			memcpy(newNormals, frame->normals, sizeof(float)*3*mesh->numTriangles*3);
 
 			for (k = 0; k < mesh->numVertices; k++)
 			{
@@ -288,32 +279,15 @@ void GenerateVertexNormals(model_t *model)
 
 				if (vCount > 1)
 				{
-//					Vector::Normalize(&normal);
 					newNormals[3 * k + 0] = (float)normal.x;
 					newNormals[3 * k + 1] = (float)normal.y;
 					newNormals[3 * k + 2] = (float)normal.z;
-
-/*					if (!systemSucks)
-					{
-						Vector::vector_t tangent;
-						Vector::Tangent(&normal, &tangent);
-						newTangents[3 * k + 0] = tangent.x;
-						newTangents[3 * k + 1] = tangent.y;
-						newTangents[3 * k + 2] = tangent.z;
-					}*/
 				}
 			}
 
 			oldNormals = frame->normals;
 			frame->normals = newNormals;
 			Z_Free(oldNormals);
-
-/*			if (!systemSucks)
-			{
-				float *oldTangents = frame->tangents;
-				frame->tangents = newTangents;
-				Z_Free(oldTangents);
-			}*/
 		}
 	}
 }
@@ -404,15 +378,11 @@ void Optimize(model_t *model)
 		newMesh->numTriangles = numTriangles;
 		newMesh->numVertices = numTriangles * 3;
 		newMesh->uvs = (float*)Z_Malloc(sizeof(float)*2*numTriangles*3, memTag, 0);
-//		if (node->material->lightmap)
-//			newMesh->lightuvs = (float*)Z_Malloc(sizeof(float)*2*numTriangles*3, memTag, 0);
 		newMesh->frames = (mdlframe_t*)Z_Calloc(sizeof(mdlframe_t), memTag, 0);
 		curFrame = &newMesh->frames[0];
 
 		curFrame->material = curMat;
 		curFrame->normals = (float*)Z_Malloc(sizeof(float)*3*numTriangles*3, memTag, 0);
-//		if (!systemSucks)
-//			curFrame->tangents = (float*)Z_Malloc(sizeof(float)*3*numTriangles*3, memTag, 0);
 		curFrame->vertices = (float*)Z_Malloc(sizeof(float)*3*numTriangles*3, memTag, 0);
 		curFrame->colors = (char*)Z_Malloc(sizeof(char)*4*numTriangles*3, memTag, 0);
 
@@ -432,38 +402,23 @@ void Optimize(model_t *model)
 				char *destByte;
 				char *srcByte;
 
-				M_Memcpy(&newMesh->uvs[uvCount],
+				memcpy(&newMesh->uvs[uvCount],
 					curMesh->uvs,
 					sizeof(float)*2*curMesh->numTriangles*3);
 
-/*				if (node->material->lightmap)
-				{
-					M_Memcpy(&newMesh->lightuvs[uvCount],
-						curMesh->lightuvs,
-						sizeof(float)*2*curMesh->numTriangles*3);
-				}*/
 				uvCount += 2*curMesh->numTriangles*3;
 
 				dest = (float*)newMesh->frames[0].vertices;
 				src = (float*)curMesh->frames[0].vertices;
-				M_Memcpy(&dest[vertCount],
+				memcpy(&dest[vertCount],
 					src,
 					sizeof(float)*3*curMesh->numTriangles*3);
 
 				dest = (float*)newMesh->frames[0].normals;
 				src = (float*)curMesh->frames[0].normals;
-				M_Memcpy(&dest[vertCount],
+				memcpy(&dest[vertCount],
 					src,
 					sizeof(float)*3*curMesh->numTriangles*3);
-
-/*				if (!systemSucks)
-				{
-					dest = (float*)newMesh->frames[0].tangents;
-					src = (float*)curMesh->frames[0].tangents;
-					M_Memcpy(&dest[vertCount],
-						src,
-						sizeof(float)*3*curMesh->numTriangles*3);
-				}*/
 
 				vertCount += 3 * curMesh->numTriangles * 3;
 
@@ -472,7 +427,7 @@ void Optimize(model_t *model)
 
 				if (srcByte)
 				{
-					M_Memcpy(&destByte[colorCount],
+					memcpy(&destByte[colorCount],
 						srcByte,
 						sizeof(char)*4*curMesh->numTriangles*3);
 				}
@@ -493,104 +448,4 @@ void Optimize(model_t *model)
 	CONS_Printf("Model::Optimize(): Model reduced from %d to %d meshes.\n", model->numMeshes, numMeshes);
 	model->meshes = newMeshes;
 	model->numMeshes = numMeshes;
-}
-
-void GeneratePolygonNormals(model_t *model, int ztag)
-{
-	int i;
-	for (i = 0; i < model->numMeshes; i++)
-	{
-		int j;
-		mesh_t *mesh = &model->meshes[i];
-
-		if (!mesh->frames)
-			continue;
-
-		for (j = 0; j < mesh->numFrames; j++)
-		{
-			int k;
-			mdlframe_t *frame = &mesh->frames[j];
-			const float *vertices = frame->vertices;
-			vector_t *polyNormals;
-
-			frame->polyNormals = (vector_t*)Z_Malloc(sizeof(vector_t) * mesh->numTriangles, ztag, 0);
-
-			polyNormals = frame->polyNormals;
-
-			for (k = 0; k < mesh->numTriangles; k++)
-			{
-				/// TODO: normalize vectors
-				(void)vertices;
-				(void)polyNormals;
-//				Vector::Normal(vertices, polyNormals);
-				vertices += 3 * 3;
-				polyNormals++;
-			}
-		}
-	}
-}
-
-//
-// Reload
-//
-// Reload VBOs
-//
-#if 0
-static void Reload(void)
-{
-/*	model_t *node;
-	for (node = modelHead; node; node = node->next)
-	{
-		int i;
-		for (i = 0; i < node->numMeshes; i++)
-		{
-			mesh_t *mesh = &node->meshes[i];
-
-			if (mesh->frames)
-			{
-				int j;
-				for (j = 0; j < mesh->numFrames; j++)
-					CreateVBO(mesh, &mesh->frames[j]);
-			}
-			else if (mesh->tinyframes)
-			{
-				int j;
-				for (j = 0; j < mesh->numFrames; j++)
-					CreateVBO(mesh, &mesh->tinyframes[j]);
-			}
-		}
-	}*/
-}
-#endif
-
-void DeleteVBOs(model_t *model)
-{
-	(void)model;
-/*	for (int i = 0; i < model->numMeshes; i++)
-	{
-		mesh_t *mesh = &model->meshes[i];
-
-		if (mesh->frames)
-		{
-			for (int j = 0; j < mesh->numFrames; j++)
-			{
-				mdlframe_t *frame = &mesh->frames[j];
-				if (!frame->vboID)
-					continue;
-				bglDeleteBuffers(1, &frame->vboID);
-				frame->vboID = 0;
-			}
-		}
-		else if (mesh->tinyframes)
-		{
-			for (int j = 0; j < mesh->numFrames; j++)
-			{
-				tinyframe_t *frame = &mesh->tinyframes[j];
-				if (!frame->vboID)
-					continue;
-				bglDeleteBuffers(1, &frame->vboID);
-				frame->vboID = 0;
-			}
-		}
-	}*/
 }

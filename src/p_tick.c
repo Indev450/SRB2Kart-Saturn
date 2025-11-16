@@ -15,7 +15,9 @@
 #include "dehacked.h" // MOBJTYPE_LIST
 #endif
 
+#include "d_think.h"
 #include "doomstat.h"
+#include "dehacked.h"
 #include "g_game.h"
 #include "g_input.h"
 #include "p_local.h"
@@ -42,7 +44,7 @@
 // Dynamic slopes
 #include "p_slopes.h"
 
-tic_t leveltime;
+tic_t leveltime = 0;
 
 //
 // THINKERS
@@ -53,8 +55,8 @@ tic_t leveltime;
 //
 
 // Both the head and tail of the thinker list.
-thinker_t thinkercap;
-thinker_t precipcap;
+thinker_t thinkercap = {};
+thinker_t precipcap = {};
 
 void Command_Numthinkers_f(void)
 {
@@ -115,7 +117,7 @@ void Command_Numthinkers_f(void)
 
 	for (think = listtype->next; think != listtype; think = think->next)
 	{
-		if (think->function.acp1 != action)
+		if (think->function != action)
 			continue;
 
 		count++;
@@ -152,7 +154,7 @@ void Command_CountMobjs_f(void)
 
 			for (th = thinkercap.next; th != &thinkercap; th = th->next)
 			{
-				if (th->function.acp1 != (actionf_p1)P_MobjThinker)
+				if (th->function != (actionf_p1)P_MobjThinker)
 					continue;
 
 				if (((mobj_t *)th)->type == i)
@@ -172,7 +174,7 @@ void Command_CountMobjs_f(void)
 
 		for (th = thinkercap.next; th != &thinkercap; th = th->next)
 		{
-			if (th->function.acp1 != (actionf_p1)P_MobjThinker)
+			if (th->function != (actionf_p1)P_MobjThinker)
 				continue;
 
 			if (((mobj_t *)th)->type == i)
@@ -190,7 +192,7 @@ void Command_CountMobjs_f(void)
 void P_InitThinkers(void)
 {
 	thinkercap.prev = thinkercap.next = &thinkercap;
-	precipcap.prev = precipcap.next = &precipcap;
+	precipcap.prev  = precipcap.next  = &precipcap;
 	waypointcap = NULL;
 }
 
@@ -206,8 +208,6 @@ void P_AddThinker(thinker_t *thinker)
 	thinkercap.prev = thinker;
 
 	thinker->references = 0;    // killough 11/98: init reference counter to 0
-
-	thinker->cachable = (thinker->function.acp1 == (actionf_p1)P_MobjThinker);
 #ifdef PARANOIA
 	thinker->debug_mobjtype = MT_NULL;
 #endif
@@ -225,8 +225,6 @@ void P_AddPrecipThinker(thinker_t *thinker)
 	precipcap.prev = thinker;
 
 	thinker->references = 0;    // killough 11/98: init reference counter to 0
-
-	thinker->cachable = false;
 #ifdef PARANOIA
 	thinker->debug_mobjtype = MT_NULL;
 #endif
@@ -235,7 +233,7 @@ void P_AddPrecipThinker(thinker_t *thinker)
 #ifdef PARANOIA
 static const char *MobjTypeName(const mobj_t *mobj)
 {
-	actionf_p1 p1 = mobj->thinker.function.acp1;
+	actionf_p1 p1 = mobj->thinker.function;
 
 	if (p1 == (actionf_p1)P_MobjThinker)
 	{
@@ -254,7 +252,7 @@ static const char *MobjTypeName(const mobj_t *mobj)
 
 static const char *MobjThinkerName(const mobj_t *mobj)
 {
-	actionf_p1 p1 = mobj->thinker.function.acp1;
+	actionf_p1 p1 = mobj->thinker.function;
 
 	if (p1 == (actionf_p1)P_MobjThinker)
 	{
@@ -344,11 +342,9 @@ void P_UnlinkThinker(thinker_t *thinker)
 
 	(next->prev = thinker->prev)->next = next;
 
-	if (thinker->cachable == true)
+	if (thinker->alloctype == TAT_LEVELPOOL)
 	{
-		// put cachable thinkers in the mobj cache, so we can avoid allocations
-		((mobj_t *)thinker)->hnext = mobjcache;
-		mobjcache = (mobj_t *)thinker;
+		Z_LevelPoolFree(thinker, thinker->size);
 	}
 	else
 	{
@@ -371,7 +367,7 @@ void P_UnlinkThinker(thinker_t *thinker)
 void P_RemoveThinker(thinker_t *thinker)
 {
 	LUA_InvalidateUserdata(thinker);
-	thinker->function.acp1 = (actionf_p1)P_RemoveThinkerDelayed;
+	thinker->function = (actionf_p1)P_RemoveThinkerDelayed;
 }
 
 /*
@@ -455,12 +451,15 @@ static inline void P_RunThinkers(void)
 	for (currentthinker = thinkercap.next; currentthinker != &thinkercap; currentthinker = currentthinker->next)
 	{
 #ifdef PARANOIA
-		I_Assert(currentthinker->function.acp1 != NULL);
+		I_Assert(currentthinker->function != NULL);
 #endif
-		currentthinker->function.acp1(currentthinker);
+		currentthinker->function(currentthinker);
 	}
 }
 
+// Controller rumble!
+// this keeps track of a bunch of things
+// and makes your controller rumble accordingly
 static void P_DeviceRumbleTick(void)
 {
 	UINT8 i;
@@ -472,17 +471,7 @@ static void P_DeviceRumbleTick(void)
 
 	for (i = 0; i <= splitscreen; i++)
 	{
-		UINT16 low = 0;
-		UINT16 high = 0;
-
 		if (!cv_usejoystick[i].value || !cv_rumble[i].value)
-		{
-			continue;
-		}
-
-		player_t *player = ((i == 0) ? &players[consoleplayer] : &players[displayplayers[i]]);
-
-		if (player->spectator || !player->mo)
 		{
 			continue;
 		}
@@ -492,7 +481,21 @@ static void P_DeviceRumbleTick(void)
 			continue;
 		}
 
-		if (player->exiting)
+		UINT16 low = 0, high = 0;
+		UINT16 lenght = 57; // in ms
+
+		const player_t *player = P_GetLocalPlayerForNum(i);
+
+		// allow lua to do some crap for spectators
+		if (player->spectator || !player->mo)
+		{
+			continue;
+		}
+
+		// reset the rumble if you exit or are ded lel
+		if (player->exiting ||
+			player->playerstate == PST_DEAD ||
+			player->kartstuff[k_respawn] > 1)
 		{
 			G_PlayerDeviceRumble(i, low, high, 0);
 			continue;
@@ -501,15 +504,17 @@ static void P_DeviceRumbleTick(void)
 		if (player->kartstuff[k_spinouttimer])
 		{
 			//low = high = FRACUNIT / 6;
-			low = high = FixedMul((FRACUNIT / 4), (FixedDiv(player->kartstuff[k_spinouttimer], (3*TICRATE / 2))));
+			low = high = FixedMul((FRACUNIT / 4), (FixedDiv(player->kartstuff[k_spinouttimer], (3*TICRATE / 2)))); // try do some some kinda fadeout
 		}
 		else if (player->kartstuff[k_sneakertimer] > (sneakertime-(TICRATE/2)))
 		{
 			low = high = FRACUNIT / 8;
 		}
 		else if ((player->kartstuff[k_offroad])
-			&& P_IsObjectOnGround(player->mo) && player->speed != 0)
+			&& player->speed != 0
+			&& P_IsObjectOnGround(player->mo))
 		{
+			// weaken this depending on if you got hyu or invinc
 			if (player->kartstuff[k_hyudorotimer])
 			{
 				high = FRACUNIT / 128;
@@ -524,7 +529,8 @@ static void P_DeviceRumbleTick(void)
 			}
 		}
 		else if ((player->kartstuff[k_bananadrag] > TICRATE)
-			&& P_IsObjectOnGround(player->mo) && player->speed != 0)
+			&& player->speed != 0
+			&& P_IsObjectOnGround(player->mo))
 		{
 			if (leveltime & 1) // this is actually funny lel
 				high = FRACUNIT / 64;
@@ -535,13 +541,26 @@ static void P_DeviceRumbleTick(void)
 			high = CLAMP((high + FRACUNIT / 256), 0, UINT16_MAX);
 		}
 
+		// pulse when gettin new driftlevel
+		// let this come last
+		if (player->kartstuff[k_driftcharge]
+			&& player->driftlevel)
+		{
+			high = CLAMP((high + FRACUNIT / 256), 0, UINT16_MAX);
+
+			if (player->driftlevel == 2)
+				lenght = 114;
+			else if (player->driftlevel == 3)
+				lenght = 174;
+		}
+
 		// hack alert! i just dont want this thing constantly resetting the rumble lol
 		if (low == 0 && high == 0)
 		{
 			continue;
 		}
 
-		G_PlayerDeviceRumble(i, low, high, 57);
+		G_PlayerDeviceRumble(i, low, high, lenght);
 	}
 }
 
@@ -556,7 +575,11 @@ void P_RunChaseCameras(void)
 			player_t *p = &players[displayplayers[i]];
 			camera_t *cam = &camera[i];
 
-			if (cv_verticallook[i].value && leveltime > starttime && p->mo && p->kartstuff[k_respawn] == 0 && p->kartstuff[k_throwdir] != 0)
+			if (cv_verticallook[i].value &&
+				leveltime > starttime
+				&& p->mo
+				&& p->kartstuff[k_respawn] == 0
+				&& p->kartstuff[k_throwdir] != 0)
 			{
 				if (p->speed < 6 * p->mo->scale && abs(cam->dpad_y_held) < 2*TICRATE)
 					cam->dpad_y_held += p->kartstuff[k_throwdir];
@@ -597,32 +620,6 @@ static void P_RunQuakes(void)
 	quake.roll = ir;
 
 	--quake.time;
-}
-
-static inline void P_ResetSpriteStuff(void)
-{
-	thinker_t *th;
-
-	if (rendermode == render_none)
-		return;
-
-	for (th = thinkercap.next; th != &thinkercap; th = th->next)
-	{
-		mobj_t *mo;
-
-		if (th->function.acp1 != (actionf_p1)P_MobjThinker) // not a mobj
-			continue;
-
-		mo = (mobj_t *)th;
-
-		if (!mo || (mo->sprite == SPR_NULL) || (mo->flags2 & MF2_DONTDRAW) || (mo->type == MT_SHADOW))
-			continue;
-
-		mo->spritexscale  = mo->realxscale;
-		mo->spriteyscale  = mo->realyscale;
-		mo->spritexoffset = mo->realxoffset;
-		mo->spriteyoffset = mo->realyoffset;
-	}
 }
 
 //
@@ -692,9 +689,9 @@ void P_Ticker(boolean run)
 				if (playeringame[i])
 					G_WriteDemoTiccmd(&players[i].cmd, i);
 		}
+
 		if (demo.playback)
 		{
-
 #ifdef DEMO_COMPAT_100
 			if (demo.version == 0x0001)
 			{
@@ -726,16 +723,18 @@ void P_Ticker(boolean run)
 		ps_lua_mobjhooks.value.i = 0;
 		ps_checkposition_calls.value.i = 0;
 
-		P_ResetSpriteStuff();
-
 		PS_START_TIMING(ps_lua_prethinkframe_time);
 		LUA_HookPreThinkFrame();
 		PS_STOP_TIMING(ps_lua_prethinkframe_time);
 
 		PS_START_TIMING(ps_playerthink_time);
 		for (i = 0; i < MAXPLAYERS; i++)
-			if (playeringame[i] && players[i].mo && !P_MobjWasRemoved(players[i].mo))
-				P_PlayerThink(&players[i]);
+		{
+			if (!playeringame[i] || P_MobjWasRemoved(players[i].mo))
+				continue;
+
+			P_PlayerThink(&players[i]);
+		}
 		PS_STOP_TIMING(ps_playerthink_time);
 	}
 
@@ -754,8 +753,12 @@ void P_Ticker(boolean run)
 
 		// Run any "after all the other thinkers" stuff
 		for (i = 0; i < MAXPLAYERS; i++)
-			if (playeringame[i] && players[i].mo && !P_MobjWasRemoved(players[i].mo))
-				P_PlayerAfterThink(&players[i]);
+		{
+			if (!playeringame[i] || P_MobjWasRemoved(players[i].mo))
+				continue;
+
+			P_PlayerAfterThink(&players[i]);
+		}
 
 		// Apply rumble to local players
 		if (!demo.playback)
@@ -826,19 +829,14 @@ void P_Ticker(boolean run)
 
 		P_RunQuakes();
 
-		if (metalplayback)
-			G_ReadMetalTic(metalplayback);
-		if (metalrecording)
-			G_WriteMetalTic(players[consoleplayer].mo);
-
 		if (demo.recording)
 		{
-			INT32 axis = JoyAxis(AXISLOOKBACK, 1);
-
 			G_WriteAllGhostTics();
 
 			if (cv_recordmultiplayerdemos.value)
 			{
+				const INT32 axis = JoyAxis(AXISLOOKBACK, 1);
+
 				if (demo.savemode == DSM_NOTSAVING || demo.savemode == DSM_WILLAUTOSAVE)
 					if (demo.savebutton && demo.savebutton + 3*TICRATE < leveltime && (InputDown(gc_lookback, 1) || (cv_usejoystick[0].value && axis > 0)))
 						demo.savemode = DSM_TITLEENTRY;
@@ -954,10 +952,7 @@ void P_PreTicker(INT32 frames)
 		// Run any "after all the other thinkers" stuff
 		for (i = 0; i < MAXPLAYERS; i++)
 		{
-			if (!playeringame[i])
-				continue;
-
-			if (!players[i].mo || P_MobjWasRemoved(players[i].mo))
+			if (!playeringame[i] || P_MobjWasRemoved(players[i].mo))
 				continue;
 
 			P_PlayerAfterThink(&players[i]);

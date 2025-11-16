@@ -47,10 +47,8 @@
 #include "../v_video.h"
 
 #ifdef HAVE_PNG
-#ifndef _MSC_VER
 #ifndef _LARGEFILE64_SOURCE
 #define _LARGEFILE64_SOURCE
-#endif
 #endif
 
 #ifndef _LFS64_LARGEFILE
@@ -74,10 +72,9 @@
 #include <errno.h>
 #endif
 
-md2_t md2_models[NUMSPRITES];
-md2_t md2_playermodels[MAXSKINS];
-md2_t md2_localplayermodels[MAXLOCALSKINS];
-
+md2_t md2_models[NUMSPRITES] = {};
+md2_t md2_playermodels[MAXSKINS] = {};
+md2_t md2_localplayermodels[MAXLOCALSKINS] = {};
 
 /*
  * free model
@@ -419,7 +416,7 @@ static void md2_loadTexture(md2_t *model)
 			size = w*h;
 			while (size--)
 			{
-				V_CubeApply(&image->s.red, &image->s.green, &image->s.blue);
+				V_CubeApply(image);
 				image++;
 			}
 		}
@@ -551,7 +548,7 @@ void HWR_InitMD2(void)
 	{
 		for (i = 0; i < NUMSPRITES; i++)
 		{
-			if (stricmp(name, sprnames[i]) == 0)
+			if (fasticmp(name, sprnames[i]))
 			{
 				md2_models[i].scale = scale;
 				md2_models[i].offset = offset;
@@ -563,7 +560,7 @@ void HWR_InitMD2(void)
 
 		for (s = 0; s < MAXSKINS; s++)
 		{
-			if (stricmp(name, skins[s].name) == 0)
+			if (fasticmp(name, skins[s].name))
 			{
 				md2_playermodels[s].skin = s;
 				md2_playermodels[s].scale = scale;
@@ -609,11 +606,12 @@ void HWR_AddPlayerMD2(int skin, boolean local) // For MD2's that were added afte
 		}
 	}
 
-	md2s = ( (local) ? md2_localplayermodels : md2_playermodels );
+	md2s = (local ? md2_localplayermodels : md2_playermodels);
+
 	// Check for any MD2s that match the names of player skins!
 	while (fscanf(f, "%19s %31s %f %f", name, filename, &scale, &offset) == 4)
 	{
-		if (stricmp(name, K_GetSkinArray(local)[skin].name) == 0)
+		if (fasticmp(name, K_GetSkinArray(local)[skin].name))
 		{
 			md2s[skin].skin = skin;
 			md2s[skin].scale = scale;
@@ -652,6 +650,7 @@ void HWR_AddSpriteMD2(size_t spritenum) // For MD2s that were added after startu
 	if (!f)
 	{
 		f = fopen(va("%s"PATHSEP"%s", srb2path, "mdls.dat"), "rt");
+
 		if (!f)
 		{
 			CONS_Printf("%s %s\n", M_GetText("Error while loading mdls.dat:"), strerror(errno));
@@ -663,7 +662,7 @@ void HWR_AddSpriteMD2(size_t spritenum) // For MD2s that were added after startu
 	// Check for any MD2s that match the names of sprite names!
 	while (fscanf(f, "%19s %31s %f %f", name, filename, &scale, &offset) == 4)
 	{
-		if (stricmp(name, sprnames[spritenum]) == 0)
+		if (fasticmp(name, sprnames[spritenum]))
 		{
 			md2_models[spritenum].scale = scale;
 			md2_models[spritenum].offset = offset;
@@ -695,6 +694,7 @@ static void HWR_CreateBlendedTexture(patch_t *gpatch, patch_t *blendgpatch, GLMi
 	UINT16 w = gpatch->width, h = gpatch->height;
 	UINT32 size = w*h;
 	RGBA_t *image, *blendimage, *cur, blendcolor;
+	RGBA_t *palette = HWR_GetTexturePalette();
 	UINT8 translation[17]; // First the color index
 	UINT8 cutoff[17]; // Brightness cutoff before using the next color
 	UINT8 translen = 0;
@@ -702,7 +702,6 @@ static void HWR_CreateBlendedTexture(patch_t *gpatch, patch_t *blendgpatch, GLMi
 	UINT8 colorbrightnesses[17];
 	UINT8 color_match_lookup[256]; // optimization attempt
 
-	blendcolor = V_GetColor(0); // initialize
 	memset(translation, 0, sizeof(translation));
 	memset(cutoff, 0, sizeof(cutoff));
 
@@ -781,7 +780,7 @@ static void HWR_CreateBlendedTexture(patch_t *gpatch, patch_t *blendgpatch, GLMi
 
 		for (i = 0; i < translen; i++) // moved from inside the loop to here
 		{
-			RGBA_t tempc = V_GetColor(translation[i]);
+			RGBA_t tempc = palette[translation[i]];
 			SETBRIGHTNESS(colorbrightnesses[i], tempc.s.red, tempc.s.green, tempc.s.blue); // store brightnesses for comparison
 		}
 		// generate lookup table for color brightness matching
@@ -903,25 +902,7 @@ static void HWR_CreateBlendedTexture(patch_t *gpatch, patch_t *blendgpatch, GLMi
 						continue;
 					}
 
-					firsti = 0;
-					mul = 0;
-					mulmax = 1;
-
-					/*for (i = 0; i < translen; i++)
-					{
-						if (brightness > colorbrightnesses[i]) // don't allow greater matches (because calculating a makeshift gradient for this is already a huge mess as is)
-							continue;
-
-						compare = abs((INT16)(colorbrightnesses[i]) - (INT16)(brightness));
-
-						if (compare < brightdif)
-						{
-							brightdif = (UINT16)compare;
-							firsti = i; // best matching color that's equal brightness or darker
-						}
-					}*/
 					firsti = color_match_lookup[brightness];
-
 					secondi = firsti+1; // next color in line
 
 					m = (INT16)brightness - (INT16)colorbrightnesses[secondi];
@@ -958,11 +939,11 @@ static void HWR_CreateBlendedTexture(patch_t *gpatch, patch_t *blendgpatch, GLMi
 					mul = cutoff[firsti] - brightness;
 				}
 
-				blendcolor = V_GetColor(translation[firsti]);
+				blendcolor = palette[translation[firsti]];
 
 				if (mul > 0) // If it's 0, then we only need the first color.
 				{
-					nextcolor = V_GetColor(translation[secondi]);
+					nextcolor = palette[translation[secondi]];
 
 					// Find difference between points
 					r = (INT32)(nextcolor.s.red - blendcolor.s.red);
@@ -986,7 +967,7 @@ static void HWR_CreateBlendedTexture(patch_t *gpatch, patch_t *blendgpatch, GLMi
 				UINT32 tempcolor;
 				UINT16 colorbright;
 
-				SETBRIGHTNESS(colorbright,blendcolor.s.red,blendcolor.s.green,blendcolor.s.blue);
+				SETBRIGHTNESS(colorbright, blendcolor.s.red, blendcolor.s.green, blendcolor.s.blue);
 				if (colorbright == 0)
 					colorbright = 1; // no dividing by 0 please
 
@@ -1076,7 +1057,7 @@ static void HWR_GetBlendedTexture(patch_t *patch, patch_t *blendgpatch, INT32 sk
 			{
 				if (memcmp(glMipmap->colormap->data, colormap, 256 * sizeof(UINT8)))
 				{
-					M_Memcpy(glMipmap->colormap->data, colormap, 256 * sizeof(UINT8));
+					memcpy(glMipmap->colormap->data, colormap, 256 * sizeof(UINT8));
 					HWR_CreateBlendedTexture(patch, blendgpatch, glMipmap, skinnum, color);
 					GL_UpdateTexture(glMipmap);
 				}
@@ -1103,7 +1084,7 @@ static void HWR_GetBlendedTexture(patch_t *patch, patch_t *blendgpatch, INT32 sk
 
 	newMipmap->colormap = Z_Calloc(sizeof(*newMipmap->colormap), PU_HWRPATCHCOLMIPMAP, NULL);
 	newMipmap->colormap->source = colormap;
-	M_Memcpy(newMipmap->colormap->data, colormap, 256 * sizeof(UINT8));
+	memcpy(newMipmap->colormap->data, colormap, 256 * sizeof(UINT8));
 
 	HWR_CreateBlendedTexture(patch, blendgpatch, newMipmap, skinnum, color);
 
@@ -1127,10 +1108,7 @@ void HWR_DrawMD2(gl_vissprite_t *spr)
 	FTransform p;
 	FSurfaceInfo Surf;
 
-	if (!cv_glmdls.value)
-		return;
-
-	if (spr->precip)
+	if (!cv_glmdls.value || spr->precip)
 		return;
 
 	memset(&p, 0x00, sizeof(FTransform));
@@ -1150,7 +1128,7 @@ void HWR_DrawMD2(gl_vissprite_t *spr)
 			light = R_GetPlaneLight(sector, spr->mobj->z + spr->mobj->height, false); // Always use the light at the top instead of whatever I was doing before
 
 			if (!(spr->mobj->frame & FF_FULLBRIGHT))
-				lightlevel = *sector->lightlist[light].lightlevel > 255 ? 255 : *sector->lightlist[light].lightlevel;
+				lightlevel = *sector->lightlist[light].lightlevel;
 
 			if (sector->lightlist[light].extra_colormap)
 				colormap = sector->lightlist[light].extra_colormap;
@@ -1158,7 +1136,7 @@ void HWR_DrawMD2(gl_vissprite_t *spr)
 		else
 		{
 			if (!(spr->mobj->frame & FF_FULLBRIGHT))
-				lightlevel = sector->lightlevel > 255 ? 255 : sector->lightlevel;
+				lightlevel = sector->lightlevel;
 
 			if (sector->extra_colormap)
 				colormap = sector->extra_colormap;
@@ -1175,6 +1153,8 @@ void HWR_DrawMD2(gl_vissprite_t *spr)
 
 	// Look at HWR_ProjectSprite for more
 	{
+		md2_t *md2s;
+		int skinnum;
 		patch_t *gpatch, *blendgpatch;
 		GLPatch_t *hwrPatch = NULL, *hwrBlendPatch = NULL;
 		INT32 durs = spr->mobj->state->tics;
@@ -1187,16 +1167,7 @@ void HWR_DrawMD2(gl_vissprite_t *spr)
 		spriteinfo_t *sprinfo;
 		interpmobjstate_t interp;
 
-		if (R_UsingFrameInterpolation() && !paused && (!cv_maxinterpdist.value || R_QuickCamDist(spr->mobj->x, spr->mobj->y) < cv_maxinterpdist.value))
-		{
-			R_InterpolateMobjState(spr->mobj, rendertimefrac, &interp);
-		}
-		else
-		{
-			R_InterpolateMobjState(spr->mobj, FRACUNIT, &interp);
-		}
-		md2_t *md2s;
-		int skinnum;
+		R_InterpolateMobjState(spr->mobj, R_GetMobjTimeFrac(spr->mobj), &interp);
 
 		// Apparently people don't like jump frames like that, so back it goes
 		//if (tics > durs)
@@ -1374,7 +1345,7 @@ void HWR_DrawMD2(gl_vissprite_t *spr)
 
 #ifdef USE_MODEL_NEXTFRAME
 		// Interpolate the model interpolation. (lol)
-		tics -= FixedToFloat(rendertimefrac);
+		tics -= FixedToFloat(R_GetTimeFrac(RTF_LEVEL));
 
 		if (cv_glmdls.value == 1 && tics <= durs)
 		{

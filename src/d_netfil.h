@@ -13,6 +13,10 @@
 #ifndef __D_NETFIL__
 #define __D_NETFIL__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "d_clisrv.h"
 #include "w_wad.h"
 
@@ -55,19 +59,15 @@ extern char downloaddir[512];
 
 typedef struct
 {
-#ifdef CLIENT_LOADINGSCREEN
 	INT32 current;
 	INT32 completednum;
 	UINT32 completedsize;
 	INT32 totalnum;
 	UINT32 totalsize;
-#endif
-
 #ifdef HAVE_CURL
 	INT32 remaining;
 	boolean http_failed;
 	boolean http_running;
-
 	char http_source[MAX_MIRROR_LENGTH+1];
 #endif
 } file_download_t;
@@ -75,7 +75,6 @@ typedef struct
 extern file_download_t filedownload;
 
 #ifdef HAVE_CURL
-
 typedef struct HTTP_login HTTP_login;
 
 extern struct HTTP_login
@@ -123,6 +122,10 @@ void CURLAbortFile(void);
 void CURLGetFile(void);
 HTTP_login * CURLGetLogin (const char *url, HTTP_login ***return_prev_next);
 size_t curlwrite_data(void *ptr, size_t size, size_t nmemb, FILE *stream);
+#endif
+
+#ifdef __cplusplus
+} // extern "C"
 #endif
 
 #endif // __D_NETFIL__

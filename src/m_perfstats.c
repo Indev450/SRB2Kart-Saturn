@@ -324,9 +324,17 @@ static boolean PS_IsRowVisible(perfstatrow_t *row)
 		(row->flags & PS_HIDE_ZERO && value_is_zero));
 }
 
+typedef union
+{
+	char *c;
+	UINT32 *i;
+	precise_t *p;
+} history_read_pos_t;
+
 static INT32 PS_GetMetricAverage(ps_metric_t *metric, boolean time_metric)
 {
-	char* history_read_pos = metric->history; // char* used for pointer arithmetic
+	history_read_pos_t history_read_pos;
+	history_read_pos.c = metric->history; // char* used for pointer arithmetic
 	INT64 sum = 0;
 	int i;
 	int value_size = time_metric ? sizeof(precise_t) : sizeof(INT32);
@@ -334,10 +342,10 @@ static INT32 PS_GetMetricAverage(ps_metric_t *metric, boolean time_metric)
 	for (i = 0; i < cv_ps_samplesize.value; i++)
 	{
 		if (time_metric)
-			sum += (*((precise_t*)history_read_pos)) / (I_GetPrecisePrecision() / 1000000);
+			sum += *history_read_pos.p / (I_GetPrecisePrecision() / 1000000);
 		else
-			sum += *((INT32*)history_read_pos);
-		history_read_pos += value_size;
+			sum += *history_read_pos.i;
+		history_read_pos.c += value_size;
 	}
 
 	return sum / cv_ps_samplesize.value;
@@ -345,7 +353,8 @@ static INT32 PS_GetMetricAverage(ps_metric_t *metric, boolean time_metric)
 
 static INT32 PS_GetMetricMinOrMax(ps_metric_t *metric, boolean time_metric, boolean get_max)
 {
-	char* history_read_pos = metric->history; // char* used for pointer arithmetic
+	history_read_pos_t history_read_pos;
+	history_read_pos.c = metric->history; // char* used for pointer arithmetic
 	INT32 found_value = get_max ? INT32_MIN : INT32_MAX;
 	int i;
 	int value_size = time_metric ? sizeof(precise_t) : sizeof(INT32);
@@ -355,9 +364,9 @@ static INT32 PS_GetMetricMinOrMax(ps_metric_t *metric, boolean time_metric, bool
 		INT32 value;
 
 		if (time_metric)
-			value = (*((precise_t*)history_read_pos)) / (I_GetPrecisePrecision() / 1000000);
+			value = *history_read_pos.p / (I_GetPrecisePrecision() / 1000000);
 		else
-			value = *((INT32*)history_read_pos);
+			value = *history_read_pos.i;
 
 		if ((get_max && value > found_value) ||
 			(!get_max && value < found_value))
@@ -365,7 +374,7 @@ static INT32 PS_GetMetricMinOrMax(ps_metric_t *metric, boolean time_metric, bool
 			found_value = value;
 		}
 
-		history_read_pos += value_size;
+		history_read_pos.c += value_size;
 	}
 
 	return found_value;
@@ -374,7 +383,8 @@ static INT32 PS_GetMetricMinOrMax(ps_metric_t *metric, boolean time_metric, bool
 // Calculates the standard deviation for metric.
 static INT32 PS_GetMetricSD(ps_metric_t *metric, boolean time_metric)
 {
-	char* history_read_pos = metric->history; // char* used for pointer arithmetic
+	history_read_pos_t history_read_pos;
+	history_read_pos.c = metric->history; // char* used for pointer arithmetic
 	INT64 sum = 0;
 	int i;
 	int value_size = time_metric ? sizeof(precise_t) : sizeof(INT32);
@@ -385,17 +395,17 @@ static INT32 PS_GetMetricSD(ps_metric_t *metric, boolean time_metric)
 		INT64 value;
 
 		if (time_metric)
-			value = (*((precise_t*)history_read_pos)) / (I_GetPrecisePrecision() / 1000000);
+			value = *history_read_pos.p / (I_GetPrecisePrecision() / 1000000);
 		else
-			value = *((INT32*)history_read_pos);
+			value = *history_read_pos.i;
 
 		value -= avg;
 		sum += value * value;
 
-		history_read_pos += value_size;
+		history_read_pos.c += value_size;
 	}
 
-	return round(sqrt(sum / cv_ps_samplesize.value));
+	return round(sqrt((double)sum / (double)cv_ps_samplesize.value));
 }
 
 // Returns the value to show on screen for metric.
@@ -590,9 +600,9 @@ static void PS_CountThinkers(void)
 	{
 		ps_thinkercount.value.i++;
 
-		if (thinker->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
+		if (thinker->function == (actionf_p1)P_RemoveThinkerDelayed)
 			ps_removecount.value.i++;
-		else if (thinker->function.acp1 == (actionf_p1)P_MobjThinker)
+		else if (thinker->function == (actionf_p1)P_MobjThinker)
 		{
 			mobj_t *mobj = (mobj_t*)thinker;
 			ps_mobjcount.value.i++;
@@ -609,7 +619,7 @@ static void PS_CountThinkers(void)
 
 	for (thinker = precipcap.next; thinker != &precipcap; thinker = thinker->next)
 	{
-		if (thinker->function.acp1 != (actionf_p1)P_NullPrecipThinker)
+		if (thinker->function != (actionf_p1)P_NullPrecipThinker)
 			continue; // not a precipmobj thinker
 
 		ps_precipcount.value.i++;
@@ -620,7 +630,7 @@ static void PS_CountThinkers(void)
 		for (thinker = thlist[i].next; thinker != &thlist[i]; thinker = thinker->next)
 		{
 			ps_thinkercount.value.i++;
-			if (thinker->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
+			if (thinker->function == (actionf_p1)P_RemoveThinkerDelayed)
 				ps_removecount.value.i++;
 			else if (i == THINK_POLYOBJ)
 				ps_polythcount.value.i++;
@@ -628,7 +638,7 @@ static void PS_CountThinkers(void)
 				ps_mainthcount.value.i++;
 			else if (i == THINK_MOBJ)
 			{
-				if (thinker->function.acp1 == (actionf_p1)P_MobjThinker)
+				if (thinker->function == (actionf_p1)P_MobjThinker)
 				{
 					mobj_t *mobj = (mobj_t*)thinker;
 					ps_mobjcount.value.i++;
@@ -739,7 +749,7 @@ static void PS_DrawDescriptorHeader(void)
 		int samples_left = max(ps_frame_samples_left, ps_tick_samples_left);
 		int x, y;
 
-		if (cv_perfstats.value >= 3)		
+		if (cv_perfstats.value >= 3)
 		{
 			x = 2;
 			y = 0;
@@ -892,7 +902,7 @@ static void draw_think_frame_stats(int hook_length, ps_hookinfo_t *hook)
 
 	PS_DrawDescriptorHeader();
 
-	for (i = 0; i < hook_length; i++)	
+	for (i = 0; i < hook_length; i++)
 	{
 #define NEXT_ROW() y += HEIGHT;
 
@@ -906,10 +916,9 @@ static void draw_think_frame_stats(int hook_length, ps_hookinfo_t *hook)
 		int len = (int)strlen(str);
 		char* str_ptr;
 
-		if (strcmp(".lua", str + len - 4) == 0)
+		if (fastcmp(".lua", str + len - 4))
 		{
 			str[len-4] = '\0'; // remove .lua at end
-			len -= 4;
 		}
 
 		// Print wad name first.
@@ -1010,7 +1019,7 @@ void M_DrawPerfStats(void)
 		// tics when frame skips happen
 		PS_DrawGameLogicStats();
 	}
-	else if (cv_perfstats.value >= 3) // lua thinkframe	
+	else if (cv_perfstats.value >= 3) // lua thinkframe
 	{
 		if (!PS_IsLevelActive())
 			return;

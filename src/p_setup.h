@@ -14,6 +14,10 @@
 #ifndef __P_SETUP__
 #define __P_SETUP__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "doomdata.h"
 #include "doomstat.h"
 #include "r_defs.h"
@@ -31,7 +35,6 @@ extern mapthing_t *deathmatchstarts[MAX_DM_STARTS];
 extern INT32 numdmstarts, numcoopstarts, numredctfstarts, numbluectfstarts;
 
 extern boolean levelloading;
-extern UINT8 levelfadecol;
 
 extern lumpnum_t lastloadedmaplumpnum; // for comparative savegame
 extern virtres_t *curmapvirt;
@@ -48,6 +51,7 @@ typedef struct
 	INT32 animseq; // start pos. in the anim sequence
 	INT32 numpics;
 	INT32 speed;
+	boolean cyan;
 } levelflat_t;
 
 extern size_t numlevelflats;
@@ -58,20 +62,21 @@ INT32 P_CheckLevelFlat(const char *flatname);
 
 extern size_t nummapthings;
 extern mapthing_t *mapthings;
+extern sector_t *spawnsectors;
+extern line_t *spawnlines;
+extern side_t *spawnsides;
 
 void P_SetupLevelSky(INT32 skynum, boolean global);
+void P_FreeLevelState(void);
 boolean P_SetupLevel(boolean fromnetsave, boolean reloadinggamestate);
 
 #ifdef HWRENDER
-void HWR_LoadLevel(boolean reloadinggamestate);
+void HWR_LoadLevel(void);
 #endif
 
 boolean P_AddWadFile(const char *wadfilename, boolean local);
 
-extern boolean wideracereplaced;
-extern boolean racereplaced;
-extern boolean widebattlereplaced;
-extern boolean battlereplaced;
+boolean P_CheckMapReplacements(char *name, boolean checkreplaced);
 
 // WARNING: The following functions should be grouped as follows:
 // any amount of PartialAdds followed by MultiSetups until returned true,
@@ -115,5 +120,9 @@ void P_AddGradesForMare(INT16 i, UINT8 mare, char *gtext);
 UINT8 P_GetGrade(UINT32 pscore, INT16 map, UINT8 mare);
 UINT8 P_HasGrades(INT16 map, UINT8 mare);
 UINT32 P_GetScoreForGrade(INT16 map, UINT8 mare, UINT8 grade);
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif

@@ -10,6 +10,13 @@
 /// \file  lua_script.h
 /// \brief Lua scripting basics
 
+#ifndef LUA_SCRIPT_H
+#define LUA_SCRIPT_H
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "m_fixed.h"
 #include "doomtype.h"
 #include "d_player.h"
@@ -45,22 +52,32 @@ void LUA_LoadLump(UINT16 wad, UINT16 lump);
 #ifdef LUA_ALLOW_BYTECODE
 void LUA_DumpFile(const char *filename);
 #endif
+fixed_t LUA_EvalMathEx(const char *word, const char **error);
 fixed_t LUA_EvalMath(const char *word);
+fixed_t LUA_GetConstant(const char *word);
 
 // Need better name for this ;-;
 void LUA_InvalidateMathlibCache(const char *name);
 
+typedef enum {
+	LPUSHED_NIL,
+	LPUSHED_NEW,
+	LPUSHED_EXISTING,
+} lpushed_t;
+
 void LUA_PushUserdata(lua_State *L, void *data, const char *meta);
+lpushed_t LUA_RawPushUserdata(lua_State *L, void *data);
+
 void LUA_InvalidateUserdata(void *data);
 void LUA_InvalidateLevel(void);
 void LUA_InvalidateMapthings(void);
 void LUA_InvalidatePlayer(player_t *player);
-void LUA_Step(void);
+//void LUA_Step(void);
 void LUA_Archive(savebuffer_t *save, boolean network);
 void LUA_UnArchive(savebuffer_t *save, boolean network);
 
-void Got_Luacmd(UINT8 **cp, INT32 playernum); // lua_consolelib.c
-void LUA_CVarChanged(const char *name); // lua_consolelib.c
+void Got_Luacmd(const UINT8 **cp, INT32 playernum); // lua_consolelib.c
+void LUA_CVarChanged(void *cvar); // lua_consolelib.c
 int Lua_optoption(lua_State *L, int narg, int def, int list_ref);
 int Lua_CreateFieldTable(lua_State *L, const char *const lst[]);
 void LUA_HookNetArchive(lua_CFunction archFunc, savebuffer_t *save);
@@ -75,7 +92,7 @@ void COM_Lua_f(void);
 #define LUA_Deprecated(L,this_func,use_instead)\
 {\
 	static UINT8 seen = 0;\
-	if (!seen) {\
+	if (UNLIKELY(!seen)) {\
 		seen = 1;\
 		CONS_Alert(CONS_WARNING,"\"%s\" is deprecated and will be removed.\nUse \"%s\" instead.\n", this_func, use_instead);\
 	}\
@@ -84,7 +101,7 @@ void COM_Lua_f(void);
 #define LUA_LogDeprecated(L,this_func,use_instead)\
 {\
 	static UINT8 seen = 0;\
-	if (!seen) {\
+	if (UNLIKELY(!seen)) {\
 		seen = 1;\
 		CON_LogMessage(va("\"%s\" is deprecated and will be removed.\nUse \"%s\" instead.\n", this_func, use_instead));\
 	}\
@@ -95,8 +112,14 @@ void COM_Lua_f(void);
 #define LUA_UsageWarning(L, warningmsg)\
 {\
 	static UINT8 seen = 0;\
-	if (!seen) {\
+	if (UNLIKELY(!seen)) {\
 		seen = 1;\
 		CONS_Alert(CONS_WARNING,"%s\n", warningmsg);\
 	}\
 }
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
+
+#endif/*LUA_SCRIPT_H*/

@@ -96,7 +96,7 @@ ATTRINLINE static fixed_t FUNCINLINE __internal_prng__(void)
 	randomseed ^= randomseed >> 13;
 	randomseed ^= randomseed >> 11;
 	randomseed ^= randomseed << 21;
-	return ( (randomseed*36548569) >> 4) & (FRACUNIT-1);
+	return ((randomseed*36548569) >> 4) & (FRACUNIT-1);
 }
 
 /** Provides a random fixed point number. Distribution is uniform.

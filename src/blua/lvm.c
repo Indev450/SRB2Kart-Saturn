@@ -119,7 +119,7 @@ void luaV_gettable (lua_State *L, TValue *t, TValue *key, StkId val) {
       }
       /* else will try the tag method */
     }
-    else if (ttisnil(tm = luaT_gettmbyobj(L, t, TM_INDEX)))
+    else if (l_unlikely(ttisnil(tm = luaT_gettmbyobj(L, t, TM_INDEX))))
       luaG_typeerror(L, t, "index");
     if (ttisfunction(tm)) {
       callTMres(L, val, tm, t, key);
@@ -147,7 +147,7 @@ void luaV_settable (lua_State *L, TValue *t, TValue *key, StkId val) {
       }
       /* else will try the tag method */
     }
-    else if (ttisnil(tm = luaT_gettmbyobj(L, t, TM_NEWINDEX)))
+    else if (l_unlikely(ttisnil(tm = luaT_gettmbyobj(L, t, TM_NEWINDEX))))
       luaG_typeerror(L, t, "index");
     if (ttisfunction(tm)) {
       callTM(L, tm, t, key, val);
@@ -293,7 +293,8 @@ void luaV_concat (lua_State *L, int total, int last) {
       /* collect total length */
       for (n = 1; n < total && tostring(L, top-n-1); n++) {
         size_t l = tsvalue(top-n-1)->len;
-        if (l >= MAX_SIZET - tl) luaG_runerror(L, "string length overflow");
+        if (l_unlikely(l >= MAX_SIZET - tl))
+          luaG_runerror(L, "string length overflow");
         tl += l;
       }
       buffer = luaZ_openspace(L, &G(L)->buff, tl);
@@ -322,8 +323,8 @@ static void Arith (lua_State *L, StkId ra, TValue *rb,
       case TM_ADD: setnvalue(ra, luai_numadd(nb, nc)); break;
       case TM_SUB: setnvalue(ra, luai_numsub(nb, nc)); break;
       case TM_MUL: setnvalue(ra, luai_nummul(nb, nc)); break;
-      case TM_DIV: if (nc == 0) { luaG_runerror(L, "divide by zero error"); } else setnvalue(ra, luai_numdiv(nb, nc)); break;
-      case TM_MOD: if (nc == 0) { luaG_runerror(L, "modulo by zero error"); } else setnvalue(ra, luai_nummod(nb, nc)); break;
+      case TM_DIV: if (l_unlikely(nc == 0)) { luaG_runerror(L, "divide by zero error"); } else setnvalue(ra, luai_numdiv(nb, nc)); break;
+      case TM_MOD: if (l_unlikely(nc == 0)) { luaG_runerror(L, "modulo by zero error"); } else setnvalue(ra, luai_nummod(nb, nc)); break;
       case TM_POW: setnvalue(ra, luai_numpow(nb, nc)); break;
       case TM_UNM: setnvalue(ra, luai_numunm(nb)); break;
       case TM_AND: setnvalue(ra, luai_numand(nb, nc)); break;
@@ -491,7 +492,7 @@ void luaV_execute (lua_State *L, int nexeccalls) {
         TValue *rc = RKC(i);
         if (ttisnumber(rb) && ttisnumber(rc)) {
           lua_Number nb = nvalue(rb), nc = nvalue(rc);
-          if (nc == 0) {
+          if (l_unlikely(nc == 0)) {
             luaG_runerror(L, "divide by zero error");
           }
           else
@@ -506,7 +507,7 @@ void luaV_execute (lua_State *L, int nexeccalls) {
         TValue *rc = RKC(i);
         if (ttisnumber(rb) && ttisnumber(rc)) {
           lua_Number nb = nvalue(rb), nc = nvalue(rc);
-          if (nc == 0) {
+          if (l_unlikely(nc == 0)) {
             luaG_runerror(L, "modulo by zero error");
           }
           else
@@ -580,7 +581,7 @@ void luaV_execute (lua_State *L, int nexeccalls) {
           }
           default: {  /* try metamethod */
             Protect(
-              if (!call_binTM(L, rb, luaO_nilobject, ra, TM_LEN))
+              if (l_unlikely(!call_binTM(L, rb, luaO_nilobject, ra, TM_LEN)))
                 luaG_typeerror(L, rb, "get length of");
             )
           }
@@ -724,11 +725,11 @@ void luaV_execute (lua_State *L, int nexeccalls) {
         const TValue *plimit = ra+1;
         const TValue *pstep = ra+2;
         L->savedpc = pc;  /* next steps may throw errors */
-        if (!tonumber(init, ra))
+        if (l_unlikely(!tonumber(init, ra)))
           luaG_runerror(L, LUA_QL("for") " initial value must be a number");
-        else if (!tonumber(plimit, ra+1))
+        else if (l_unlikely(!tonumber(plimit, ra+1)))
           luaG_runerror(L, LUA_QL("for") " limit must be a number");
-        else if (!tonumber(pstep, ra+2))
+        else if (l_unlikely(!tonumber(pstep, ra+2)))
           luaG_runerror(L, LUA_QL("for") " step must be a number");
         if (ra && pstep)
           setnvalue(ra, luai_numsub(nvalue(ra), nvalue(pstep)));

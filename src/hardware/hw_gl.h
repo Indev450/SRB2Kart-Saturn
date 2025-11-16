@@ -13,6 +13,10 @@
 #ifndef __HWR_GL_H__
 #define __HWR_GL_H__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "../screen.h"
 
 #include "hw_data.h"
@@ -50,7 +54,7 @@ INT32 GL_GetTextureUsed(void);
 
 void GL_CreateModelVBOs(model_t *model);
 
-void GL_ReadScreenTexture(int tex, UINT16 *dst_data);
+void GL_ReadScreenTexture(int tex, UINT8 *dst_data, INT32 scale);
 void GL_GClipRect(INT32 minx, INT32 miny, INT32 maxx, INT32 maxy, float nearclip, float farclip);
 
 void GL_MakeScreenTexture(int tex);
@@ -75,5 +79,9 @@ void GL_SetPaletteLookup(UINT8 *lut);
 UINT32 GL_CreateLightTable(RGBA_t *hw_lighttable);
 void GL_ClearLightTables(void);
 void GL_SetScreenPalette(RGBA_t *palette);
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif // __HWR_GL_H__

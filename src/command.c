@@ -142,7 +142,7 @@ void COM_BufInsertText(const char *ptext)
 	templen = com_text.cursize;
 	if (templen)
 	{
-		temp = M_Memcpy(ZZ_Alloc(templen), com_text.data, templen);
+		temp = memcpy(ZZ_Alloc(templen), com_text.data, templen);
 		VS_Clear(&com_text);
 	}
 
@@ -199,7 +199,7 @@ void COM_BufExecute(void)
 				break;
 		}
 
-		M_Memcpy(line, ptext, i);
+		memcpy(line, ptext, i);
 		line[i] = 0;
 
 		// flush the command text from the command buffer, _BEFORE_
@@ -277,11 +277,11 @@ static xcommand_t *com_commands = NULL; // current commands
 
 #define MAX_ARGS 80
 static size_t com_argc;
-char *com_argv[MAX_ARGS];
+char *com_argv[MAX_ARGS] = {};
 static const char *com_null_string = "";
 static char *com_args = NULL; // current command args or NULL
 
-static void Got_NetVar(UINT8 **p, INT32 playernum);
+static void Got_NetVar(const UINT8 **p, INT32 playernum);
 
 /** Initializes command buffer and adds basic commands.
   */
@@ -359,7 +359,7 @@ size_t COM_CheckParm(const char *check)
 	size_t i;
 
 	for (i = 1; i < com_argc; i++)
-		if (!strcasecmp(check, com_argv[i]))
+		if (fasticmp(check, com_argv[i]))
 			return i;
 	return 0;
 }
@@ -456,7 +456,7 @@ void COM_AddCommand(const char *name, com_func_t func)
 	// fail if the command already exists
 	for (cmd = com_commands; cmd; cmd = cmd->next)
 	{
-		if (!stricmp(name, cmd->name)) //case insensitive now that we have lower and uppercase!
+		if (fasticmp(name, cmd->name)) //case insensitive now that we have lower and uppercase!
 		{
 			// don't I_Error for Lua commands
 			// Lua commands can replace game commands, and they have priority.
@@ -492,7 +492,7 @@ int COM_AddLuaCommand(const char *name)
 	// command already exists
 	for (cmd = com_commands; cmd; cmd = cmd->next)
 	{
-		if (!stricmp(name, cmd->name)) //case insensitive now that we have lower and uppercase!
+		if (fasticmp(name, cmd->name)) //case insensitive now that we have lower and uppercase!
 		{
 			// replace the built in command.
 			cmd->function = COM_Lua_f;
@@ -519,7 +519,7 @@ static boolean COM_Exists(const char *com_name)
 	xcommand_t *cmd;
 
 	for (cmd = com_commands; cmd; cmd = cmd->next)
-		if (!stricmp(com_name, cmd->name))
+		if (fasticmp(com_name, cmd->name))
 			return true;
 
 	return false;
@@ -571,7 +571,7 @@ static void COM_ExecuteString(char *ptext)
 	// check functions
 	for (cmd = com_commands; cmd; cmd = cmd->next)
 	{
-		if (!stricmp(com_argv[0], cmd->name)) //case insensitive now that we have lower and uppercase!
+		if (fasticmp(com_argv[0], cmd->name)) //case insensitive now that we have lower and uppercase!
 		{
 			cmd->function();
 			return;
@@ -581,7 +581,7 @@ static void COM_ExecuteString(char *ptext)
 	// check aliases
 	for (a = com_alias; a; a = a->next)
 	{
-		if (!stricmp(com_argv[0], a->name))
+		if (fasticmp(com_argv[0], a->name))
 		{
 			if (recursion > MAX_ALIAS_RECURSION)
 				CONS_Alert(CONS_WARNING, M_GetText("Alias recursion cycle detected!\n"));
@@ -700,6 +700,7 @@ static void COM_Echo_f(void)
 
 	for (i = 1; i < COM_Argc(); i++)
 		CONS_Printf("%s ", COM_Argv(i));
+
 	CONS_Printf("\n");
 }
 
@@ -708,15 +709,13 @@ static void COM_Echo_f(void)
 static void COM_CEcho_f(void)
 {
 	size_t i;
-	char cechotext[1024] = "";
+	char cechotext[1024] = {0};
 
 	for (i = 1; i < COM_Argc(); i++)
 	{
-		strncat(cechotext, COM_Argv(i), sizeof(cechotext)-1);
-		strncat(cechotext, " ", sizeof(cechotext)-1);
+		strlcat(cechotext, COM_Argv(i), sizeof(cechotext)-1);
+		strlcat(cechotext, " ", sizeof(cechotext)-1);
 	}
-
-	cechotext[sizeof(cechotext) - 1] = '\0';
 
 	HU_DoCEcho(cechotext);
 }
@@ -837,8 +836,8 @@ static void COM_Help_f(void)
 			if (cvar->PossibleValue)
 			{
 				{
-					if (!stricmp(cvar->PossibleValue[0].strvalue, "MIN") && !stricmp(cvar->PossibleValue[1].strvalue, "MAX"))
-					{	
+					if (fasticmp(cvar->PossibleValue[0].strvalue, "MIN") && fasticmp(cvar->PossibleValue[1].strvalue, "MAX"))
+					{
 						if (floatmode)
 						{
 							float fu = FIXED_TO_FLOAT(cvar->PossibleValue[0].value);
@@ -880,7 +879,7 @@ static void COM_Help_f(void)
 		{
 			for (cmd = com_commands; cmd; cmd = cmd->next)
 			{
-				if (strcmp(cmd->name, help))
+				if (!fastcmp(cmd->name, help))
 					continue;
 
 				CONS_Printf("\x82""Command %s:\n", cmd->name);
@@ -940,6 +939,8 @@ static void COM_Find_f(void)
 	}
 
 	help = COM_Argv(1);
+	if (!help)
+		return;
 	helplen = strlen(help);
 	CONS_Printf("\x82""Variables:\n");
 	matchesany = false;
@@ -1044,7 +1045,7 @@ static void COM_Add_f(void)
 
 	if (( cvar->flags & CV_FLOAT ))
 	{
-		float n =FIXED_TO_FLOAT (cvar->value) + atof(COM_Argv(2));
+		float n = FIXED_TO_FLOAT(cvar->value) + (float)atof(COM_Argv(2));
 		CV_Set(cvar, va("%ld%s", (long)n, M_Ftrim(n)));
 	}
 	else
@@ -1128,7 +1129,7 @@ void *VS_GetSpace(vsbuf_t *buf, size_t length)
   */
 void VS_Write(vsbuf_t *buf, const void *data, size_t length)
 {
-	M_Memcpy(VS_GetSpace(buf, length), data, length);
+	memcpy(VS_GetSpace(buf, length), data, length);
 }
 
 /** Prints text in a variable buffer. Like VS_Write() plus a
@@ -1145,9 +1146,9 @@ void VS_Print(vsbuf_t *buf, const char *data)
 	len = strlen(data) + 1;
 
 	if (buf->data[buf->cursize-1])
-		M_Memcpy((UINT8 *)VS_GetSpace(buf, len), data, len); // no trailing 0
+		memcpy((UINT8 *)VS_GetSpace(buf, len), data, len); // no trailing 0
 	else
-		M_Memcpy((UINT8 *)VS_GetSpace(buf, len-1) - 1, data, len); // write over trailing 0
+		memcpy((UINT8 *)VS_GetSpace(buf, len-1) - 1, data, len); // write over trailing 0
 }
 
 // =========================================================================
@@ -1175,7 +1176,7 @@ consvar_t *CV_FindVar(const char *name)
 	consvar_t *cvar;
 
 	for (cvar = consvar_vars; cvar; cvar = cvar->next)
-		if (!stricmp(name,cvar->name))
+		if (fasticmp(name,cvar->name))
 			return cvar;
 
 	return NULL;
@@ -1365,7 +1366,7 @@ static void Setvalue(consvar_t *var, const char *valstr, boolean stealth)
 				v = INT32_MIN; // Invalid integer trigger
 		}
 
-		if (var->PossibleValue[0].strvalue && !stricmp(var->PossibleValue[0].strvalue, "MIN")) // bounded cvar
+		if (var->PossibleValue[0].strvalue && fasticmp(var->PossibleValue[0].strvalue, "MIN")) // bounded cvar
 		{
 #define MINVAL 0
 #define MAXVAL 1
@@ -1378,21 +1379,21 @@ static void Setvalue(consvar_t *var, const char *valstr, boolean stealth)
 
 			// search for other
 			for (i = MAXVAL+1; var->PossibleValue[i].strvalue; i++)
-				if (v == var->PossibleValue[i].value || !stricmp(var->PossibleValue[i].strvalue, valstr))
+				if (v == var->PossibleValue[i].value || fasticmp(var->PossibleValue[i].strvalue, valstr))
 				{
 					var->value = var->PossibleValue[i].value;
 					var->string = var->PossibleValue[i].strvalue;
 					goto finish;
 				}
 
-			if ((v != INT32_MIN && v < var->PossibleValue[MINVAL].value) || !stricmp(valstr, "MIN"))
+			if ((v != INT32_MIN && v < var->PossibleValue[MINVAL].value) || fasticmp(valstr, "MIN"))
 			{
 				v = var->PossibleValue[MINVAL].value;
 				valstr = var->PossibleValue[MINVAL].strvalue;
 				override = true;
 				overrideval = v;
 			}
-			else if ((v != INT32_MIN && v > var->PossibleValue[MAXVAL].value) || !stricmp(valstr, "MAX"))
+			else if ((v != INT32_MIN && v > var->PossibleValue[MAXVAL].value) || fasticmp(valstr, "MAX"))
 			{
 				v = var->PossibleValue[MAXVAL].value;
 				valstr = var->PossibleValue[MAXVAL].strvalue;
@@ -1410,7 +1411,7 @@ static void Setvalue(consvar_t *var, const char *valstr, boolean stealth)
 
 			// check first strings
 			for (i = 0; var->PossibleValue[i].strvalue; i++)
-				if (!stricmp(var->PossibleValue[i].strvalue, valstr))
+				if (fasticmp(var->PossibleValue[i].strvalue, valstr))
 					goto found;
 			if (v != INT32_MIN)
 			{
@@ -1423,9 +1424,9 @@ static void Setvalue(consvar_t *var, const char *valstr, boolean stealth)
 			if (var->PossibleValue == CV_OnOff || var->PossibleValue == CV_YesNo)
 			{
 				overrideval = -1;
-				if (!stricmp(valstr, "on") || !stricmp(valstr, "yes"))
+				if (fasticmp(valstr, "on") || fasticmp(valstr, "yes"))
 					overrideval = 1;
-				else if (!stricmp(valstr, "off") || !stricmp(valstr, "no"))
+				else if (fasticmp(valstr, "off") || fasticmp(valstr, "no"))
 					overrideval = 0;
 
 				if (overrideval != -1)
@@ -1473,7 +1474,7 @@ finish:
 	var->flags |= CV_MODIFIED;
 
 	// raise 'on change' code
-	LUA_CVarChanged(var->name); // let consolelib know what cvar this is.
+	LUA_CVarChanged(var); // let consolelib know what cvar this is.
 
 	if (var->flags & CV_CALL && !stealth)
 		var->func();
@@ -1499,11 +1500,11 @@ badinput:
 
 static boolean serverloading = false;
 
-static void Got_NetVar(UINT8 **p, INT32 playernum)
+static void Got_NetVar(const UINT8 **p, INT32 playernum)
 {
 	consvar_t *cvar;
 	UINT16 netid;
-	char *svalue;
+	const char *svalue;
 	UINT8 stealth = false;
 
 	if (playernum != serverplayer && !IsPlayerAdmin(playernum) && !serverloading)
@@ -1517,9 +1518,10 @@ static void Got_NetVar(UINT8 **p, INT32 playernum)
 		}
 		return;
 	}
+
 	netid = READUINT16(*p);
 	cvar = CV_FindNetVar(netid);
-	svalue = (char *)*p;
+	svalue = (const char *)*p;
 	SKIPSTRING(*p);
 	stealth = READUINT8(*p);
 
@@ -1575,8 +1577,9 @@ void CV_SaveNetVars(UINT8 **p, boolean isdemorecording)
 	WRITEUINT16(count_p, count);
 }
 
-void CV_LoadNetVars(UINT8 **p)
+size_t CV_LoadNetVars(const UINT8 *bufstart)
 {
+	const UINT8 *p = bufstart;
 	consvar_t *cvar;
 	UINT16 count;
 
@@ -1587,11 +1590,13 @@ void CV_LoadNetVars(UINT8 **p)
 		if (cvar->flags & CV_NETVAR)
 			Setvalue(cvar, cvar->defaultvalue, true);
 
-	count = READUINT16(*p);
+	count = READUINT16(p);
 	while (count--)
-		Got_NetVar(p, 0);
+		Got_NetVar(&p, 0);
 
 	serverloading = false;
+
+	return p - bufstart;
 }
 
 static void CV_SetCVar(consvar_t *var, const char *value, boolean stealth);
@@ -1609,7 +1614,7 @@ void CV_ResetCheatNetVars(void)
 // Returns true if the variable's current value is its default value
 boolean CV_IsSetToDefault(consvar_t *v)
 {
-	return (!(strcmp(v->defaultvalue, v->string)));
+	return (fastcmp(v->defaultvalue, v->string));
 }
 
 // If any cheats CVars are not at their default settings, return true.
@@ -1621,7 +1626,7 @@ UINT8 CV_CheatsEnabled(void)
 	consvar_t *cvar;
 
 	for (cvar = consvar_vars; cvar; cvar = cvar->next)
-		if ((cvar->flags & CV_CHEAT) && strcmp(cvar->defaultvalue, cvar->string))
+		if ((cvar->flags & CV_CHEAT) && !fastcmp(cvar->defaultvalue, cvar->string))
 			return 1;
 	return 0;
 }
@@ -1642,7 +1647,7 @@ static void CV_SetCVar(consvar_t *var, const char *value, boolean stealth)
 	if (!var->string)
 		I_Error("CV_Set: %s no string set!\n", var->name);
 #endif
-	if (!var || !var->string || !value || !stricmp(var->string, value))
+	if (!var || !var->string || !value || fasticmp(var->string, value))
 		return; // no changes
 
 	if (var->flags & CV_NETVAR)
@@ -1652,21 +1657,21 @@ static void CV_SetCVar(consvar_t *var, const char *value, boolean stealth)
 		UINT8 *p = buf;
 		if (!(server || (IsPlayerAdmin(consoleplayer))))
 		{
-			CONS_Printf(M_GetText("Only the server or admin can change: %s %s\n"), var->name, var->string);
+			CONS_Alert(CONS_NOTICE, "Only the server or admin can change: %s %s\n", var->name, var->string);
 			return;
 		}
 
 		if (var == &cv_kartencore && !M_SecretUnlocked(SECRET_ENCORE))
 		{
-			CONS_Printf(M_GetText("You haven't unlocked Encore Mode yet!\n"));
+			CONS_Alert(CONS_NOTICE, "You haven't unlocked Encore Mode yet!\n");
 			return;
 		}
 
 		if (var == &cv_kartspeed && !M_SecretUnlocked(SECRET_HARDSPEED))
 		{
-			if (!stricmp(value, "Hard") || atoi(value) == 2)
+			if (fasticmp(value, "Hard") || atoi(value) == 2)
 			{
-				CONS_Printf(M_GetText("You haven't unlocked this yet!\n"));
+				CONS_Alert(CONS_NOTICE, "You haven't unlocked this yet!\n");
 				return;
 			}
 		}
@@ -1683,14 +1688,13 @@ static void CV_SetCVar(consvar_t *var, const char *value, boolean stealth)
 		else
 			Setvalue(var, value, stealth);
 	}
+	else if ((var->flags & CV_NOTINNET) && netgame)
+	{
+		CONS_Alert(CONS_NOTICE, "This variable can't be changed while in netgame: %s %s\n", var->name, var->string);
+		return;
+	}
 	else
-		if ((var->flags & CV_NOTINNET) && netgame)
-		{
-			CONS_Printf(M_GetText("This variable can't be changed while in netgame: %s %s\n"), var->name, var->string);
-			return;
-		}
-		else
-			Setvalue(var, value, stealth);
+		Setvalue(var, value, stealth);
 }
 
 /** Sets a value to a variable without calling its callback function.
@@ -1773,7 +1777,7 @@ void CV_AddValue(consvar_t *var, INT32 increment)
 				newvalue = var->value - 1;
 				do
 				{
-					if(increment > 0) // Going up!
+					if (increment > 0) // Going up!
 					{
 						if (++newvalue == NUMMAPS)
 							newvalue = -1;
@@ -1787,7 +1791,7 @@ void CV_AddValue(consvar_t *var, INT32 increment)
 					if (newvalue == oldvalue)
 						break; // don't loop forever if there's none of a certain gametype
 
-					if(!mapheaderinfo[newvalue])
+					if (newvalue >= 0 && !mapheaderinfo[newvalue])
 						continue; // Don't allocate the header.  That just makes memory usage skyrocket.
 
 				} while (!M_CanShowLevelInList(newvalue, gt));
@@ -1799,7 +1803,7 @@ void CV_AddValue(consvar_t *var, INT32 increment)
 		}
 #define MINVAL 0
 #define MAXVAL 1
-		else if (var->PossibleValue[MINVAL].strvalue && !strcmp(var->PossibleValue[MINVAL].strvalue, "MIN"))
+		else if (var->PossibleValue[MINVAL].strvalue && fastcmp(var->PossibleValue[MINVAL].strvalue, "MIN"))
 		{ // SRB2Kart
 #ifdef PARANOIA
 			if (!var->PossibleValue[MAXVAL].strvalue)
@@ -1916,13 +1920,14 @@ void CV_AddValue(consvar_t *var, INT32 increment)
 				max = (M_SecretUnlocked(SECRET_HARDSPEED) ? 3 : 2);
 			}
 #ifdef PARANOIA
-			if (currentindice == -1)
-				I_Error("CV_AddValue: current value %d not found in possible value\n",
-					var->value);
+			if (currentindice == -1 || max == 0)
+				I_Error("CV_AddValue: current value %d not found in possible value\n", var->value);
 #endif
-
-			newindice = (currentindice + increment + max) % max;
-			CV_Set(var, var->PossibleValue[newindice].strvalue);
+			if (max > 0)
+			{
+				newindice = (currentindice + increment + max) % max;
+				CV_Set(var, var->PossibleValue[newindice].strvalue);
+			}
 		}
 	}
 	else
@@ -1970,12 +1975,12 @@ static boolean CV_FilterJoyAxisVars(consvar_t *v, const char *valstr)
 	{
 		if (joyaxis_default[i])
 		{
-			if (!stricmp(v->name, "joyaxis_fire"))
+			if (fasticmp(v->name, "joyaxis_fire"))
 			{
 				if (joyaxis_count[i] > 7) return false;
 				else if (joyaxis_count[i] == 7) return true;
 
-				if (!stricmp(valstr, "None")) joyaxis_count[i]++;
+				if (fasticmp(valstr, "None")) joyaxis_count[i]++;
 				else joyaxis_default[i] = false;
 			}
 			// reset all axis settings to defaults
@@ -2007,37 +2012,37 @@ static boolean CV_FilterJoyAxisVars(consvar_t *v, const char *valstr)
 // Block the Xbox DInput default axes and reset to the current defaults
 static boolean CV_FilterJoyAxisVars2(consvar_t *v, const char *valstr)
 {
-	if (!stricmp(v->name, "joyaxis_turn") && !stricmp(valstr, "X-Axis"))
+	if (fasticmp(v->name, "joyaxis_turn") && fasticmp(valstr, "X-Axis"))
 		return false;
-	if (!stricmp(v->name, "joyaxis2_turn") && !stricmp(valstr, "X-Axis"))
+	if (fasticmp(v->name, "joyaxis2_turn") && fasticmp(valstr, "X-Axis"))
 		return false;
-	if (!stricmp(v->name, "joyaxis3_turn") && !stricmp(valstr, "X-Axis"))
+	if (fasticmp(v->name, "joyaxis3_turn") && fasticmp(valstr, "X-Axis"))
 		return false;
-	if (!stricmp(v->name, "joyaxis4_turn") && !stricmp(valstr, "X-Axis"))
+	if (fasticmp(v->name, "joyaxis4_turn") && fasticmp(valstr, "X-Axis"))
 		return false;
-	if (!stricmp(v->name, "joyaxis_aim") && !stricmp(valstr, "Y-Axis"))
+	if (fasticmp(v->name, "joyaxis_aim") && fasticmp(valstr, "Y-Axis"))
 		return false;
-	if (!stricmp(v->name, "joyaxis2_aim") && !stricmp(valstr, "Y-Axis"))
+	if (fasticmp(v->name, "joyaxis2_aim") && fasticmp(valstr, "Y-Axis"))
 		return false;
-	if (!stricmp(v->name, "joyaxis3_aim") && !stricmp(valstr, "Y-Axis"))
+	if (fasticmp(v->name, "joyaxis3_aim") && fasticmp(valstr, "Y-Axis"))
 		return false;
-	if (!stricmp(v->name, "joyaxis4_aim") && !stricmp(valstr, "Y-Axis"))
+	if (fasticmp(v->name, "joyaxis4_aim") && fasticmp(valstr, "Y-Axis"))
 		return false;
-	if (!stricmp(v->name, "joyaxis_fire") && !stricmp(valstr, "None"))
+	if (fasticmp(v->name, "joyaxis_fire") && fasticmp(valstr, "None"))
 		return false;
-	if (!stricmp(v->name, "joyaxis2_fire") && !stricmp(valstr, "None"))
+	if (fasticmp(v->name, "joyaxis2_fire") && fasticmp(valstr, "None"))
 		return false;
-	if (!stricmp(v->name, "joyaxis3_fire") && !stricmp(valstr, "None"))
+	if (fasticmp(v->name, "joyaxis3_fire") && fasticmp(valstr, "None"))
 		return false;
-	if (!stricmp(v->name, "joyaxis4_fire") && !stricmp(valstr, "None"))
+	if (fasticmp(v->name, "joyaxis4_fire") && fasticmp(valstr, "None"))
 		return false;
-	if (!stricmp(v->name, "joyaxis_drift") && !stricmp(valstr, "None"))
+	if (fasticmp(v->name, "joyaxis_drift") && fasticmp(valstr, "None"))
 		return false;
-	if (!stricmp(v->name, "joyaxis2_drift") && !stricmp(valstr, "None"))
+	if (fasticmp(v->name, "joyaxis2_drift") && fasticmp(valstr, "None"))
 		return false;
-	if (!stricmp(v->name, "joyaxis3_drift") && !stricmp(valstr, "None"))
+	if (fasticmp(v->name, "joyaxis3_drift") && fasticmp(valstr, "None"))
 		return false;
-	if (!stricmp(v->name, "joyaxis4_drift") && !stricmp(valstr, "None"))
+	if (fasticmp(v->name, "joyaxis4_drift") && fasticmp(valstr, "None"))
 		return false;
 
 	return true;
@@ -2054,8 +2059,8 @@ static boolean CV_FilterVarByVersion(consvar_t *v, const char *valstr)
 
 	if (GETMAJOREXECVERSION(cv_execversion.value) < 8) // 8 = 1.4
 	{
-		if (!stricmp(v->name, "masterserver") // Replaces a hack in MasterServer_OnChange for the original SRB2 MS.
-			|| !stricmp(v->name, "gamma")) // Too easy to accidentially change in prior versions.
+		if (fasticmp(v->name, "masterserver") // Replaces a hack in MasterServer_OnChange for the original SRB2 MS.
+			|| fasticmp(v->name, "gamma")) // Too easy to accidentially change in prior versions.
 			return false;
 	}
 
@@ -2138,7 +2143,7 @@ void CV_SaveVariables(FILE *f)
 			char stringtowrite[MAXTEXTCMD+1];
 
 			// Silly hack for Min/Max vars
-			if (!strcmp(cvar->string, "MAX") || !strcmp(cvar->string, "MIN"))
+			if (fastcmp(cvar->string, "MAX") || fastcmp(cvar->string, "MIN"))
 			{
 				if (cvar->flags & CV_FLOAT)
 					sprintf(stringtowrite, "%f", FixedToFloat(cvar->value));

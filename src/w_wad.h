@@ -14,9 +14,15 @@
 #ifndef __W_WAD__
 #define __W_WAD__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #ifdef HWRENDER
 #include "hardware/hw_data.h"
 #endif
+
+#include "m_aatree.h"
 
 #ifdef __GNUG__
 #pragma interface
@@ -26,19 +32,12 @@
 
 // a raw entry of the wad directory
 // NOTE: This sits here and not in w_wad.c because p_setup.c makes use of it to load map WADs inside PK3s.
-#if defined(_MSC_VER)
-#pragma pack(1)
-#endif
 typedef struct
 {
 	UINT32 filepos; // file offset of the resource
 	UINT32 size; // size of the resource
 	char name[8]; // name of the resource
 } ATTRPACK filelump_t;
-#if defined(_MSC_VER)
-#pragma pack()
-#endif
-
 
 // ==============================================================
 //               WAD FILE STRUCTURE DEFINITIONS
@@ -71,8 +70,19 @@ typedef struct
 	char name[9];           // filelump_t name[] e.g. "LongEntr"
 	char *longname;         //                   e.g. "LongEntryName"
 	char *fullname;         //                   e.g. "Folder/Subfolder/LongEntryName.extension"
+
+	size_t namelength;      // length of name
+	size_t longnamelength;  // length of longname
+	size_t fullnamelength;  // length of fullname
+
 	size_t size; // real (uncompressed) size
 	compmethod compression; // lump compression method
+
+	struct {
+		UINT32 name;        // hash of name
+		UINT32 longname;    // hash of longname
+		UINT32 fullname;    // hash of fullname
+	} hash;
 } lumpinfo_t;
 
 // =========================================================================
@@ -127,13 +137,14 @@ typedef struct wadfile_s
 #ifdef ROTSPRITE
 	lumpcache_t *rotcache; // Cache rotsprites for rotating patches.
 #endif
+	aatree_t *startfolders;
+	aatree_t *endfolders;
 	UINT16 numlumps; // this wad's number of resources
 	FILE *handle;
 	UINT32 filesize; // for network
 	UINT8 md5sum[16];
 	boolean important;
 	boolean majormod;
-	boolean localfile; // only for skins
 } wadfile_t;
 
 #define WADFILENUM(lumpnum) (UINT16)((lumpnum)>>16) // wad flumpnum>>16) // wad file number in upper word
@@ -152,16 +163,18 @@ FILE *W_OpenWadFile(const char **filename, boolean useerrors);
 //
 // if local is true, it wouldn't check if file adds complex things, therefore
 // allowing to still join server without the "you have wrong addons loaded" error
-UINT16 W_InitFile(const char *filename, boolean local);
+UINT16 W_InitFile(const char *filename, boolean local, boolean startup);
 
 // W_InitMultipleFiles returns 1 if all is okay, 0 otherwise,
 // so that it stops with a message if a file was not found, but not if all is okay.
-INT32 W_InitMultipleFiles(char **filenames, boolean addons);
+INT32 W_InitMultipleFiles(char **filenames, size_t count, boolean addons);
 
 // Used for autoload. Uses P_AddWadFileLocal instead of W_InitFiles.
 INT32 W_AddAutoloadedLocalFiles(char **filenames);
 
 #define W_FileHasFolders(wadfile) ((wadfile)->type == RET_PK3)
+
+UINT32 W_HashLumpName(const char *name);
 
 const char *W_CheckNameForNumPwad(UINT16 wad, UINT16 lump);
 const char *W_CheckNameForNum(lumpnum_t lumpnum);
@@ -176,7 +189,6 @@ UINT16 W_CheckNumForFullNamePK3(const char *name, UINT16 wad, UINT16 startlump);
 UINT16 W_CheckNumForFolderStartPK3(const char *name, UINT16 wad, UINT16 startlump);
 UINT16 W_CheckNumForFolderEndPK3(const char *name, UINT16 wad, UINT16 startlump);
 
-lumpnum_t W_CheckNumForMap(const char *name);
 lumpnum_t W_CheckNumForName(const char *name);
 lumpnum_t W_CheckNumForLongName(const char *name);
 lumpnum_t W_GetNumForName(const char *name); // like W_CheckNumForName but I_Error on LUMPERROR
@@ -229,8 +241,12 @@ void W_UnlockCachedPatch(void *patch);
 
 void W_VerifyFileMD5(UINT16 wadfilenum, const char *matchmd5);
 
-int W_VerifyNMUSlumps(const char *filename);
+int W_VerifyNMUSlumps(const char *filename, FILE *handle, boolean exit_on_error);
 
 int W_CheckPostLoadList(const char *filename);
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif // __W_WAD__

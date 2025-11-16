@@ -21,6 +21,7 @@
 #include "i_system.h"
 #include "g_game.h"
 #include "hu_stuff.h"
+#include "m_emotes.h"
 #include "g_input.h"
 #include "m_menu.h"
 #include "r_local.h"
@@ -67,22 +68,22 @@
 // protos
 // ------
 
-static void Got_NameAndColor(UINT8 **cp, INT32 playernum);
-static void Got_WeaponPref(UINT8 **cp, INT32 playernum);
-static void Got_Mapcmd(UINT8 **cp, INT32 playernum);
-static void Got_ExitLevelcmd(UINT8 **cp, INT32 playernum);
-static void Got_SetupVotecmd(UINT8 **cp, INT32 playernum);
-static void Got_ModifyVotecmd(UINT8 **cp, INT32 playernum);
-static void Got_PickVotecmd(UINT8 **cp, INT32 playernum);
-static void Got_RequestAddfilecmd(UINT8 **cp, INT32 playernum);
-static void Got_Addfilecmd(UINT8 **cp, INT32 playernum);
-static void Got_Pause(UINT8 **cp, INT32 playernum);
-static void Got_Respawn(UINT8 **cp, INT32 playernum);
-static void Got_RandomSeed(UINT8 **cp, INT32 playernum);
-static void Got_RunSOCcmd(UINT8 **cp, INT32 playernum);
-static void Got_Teamchange(UINT8 **cp, INT32 playernum);
-static void Got_Clearscores(UINT8 **cp, INT32 playernum);
-static void Got_DiscordInfo(UINT8 **cp, INT32 playernum);
+static void Got_NameAndColor(const UINT8 **cp, INT32 playernum);
+static void Got_WeaponPref(const UINT8 **cp, INT32 playernum);
+static void Got_Mapcmd(const UINT8 **cp, INT32 playernum);
+static void Got_ExitLevelcmd(const UINT8 **cp, INT32 playernum);
+static void Got_SetupVotecmd(const UINT8 **cp, INT32 playernum);
+static void Got_ModifyVotecmd(const UINT8 **cp, INT32 playernum);
+static void Got_PickVotecmd(const UINT8 **cp, INT32 playernum);
+static void Got_RequestAddfilecmd(const UINT8 **cp, INT32 playernum);
+static void Got_Addfilecmd(const UINT8 **cp, INT32 playernum);
+static void Got_Pause(const UINT8 **cp, INT32 playernum);
+static void Got_Respawn(const UINT8 **cp, INT32 playernum);
+static void Got_RandomSeed(const UINT8 **cp, INT32 playernum);
+static void Got_RunSOCcmd(const UINT8 **cp, INT32 playernum);
+static void Got_Teamchange(const UINT8 **cp, INT32 playernum);
+static void Got_Clearscores(const UINT8 **cp, INT32 playernum);
+static void Got_DiscordInfo(const UINT8 **cp, INT32 playernum);
 
 static void PointLimit_OnChange(void);
 static void TimeLimit_OnChange(void);
@@ -177,13 +178,13 @@ static void Command_Clearscores_f(void);
 // Remote Administration
 static void Command_Changepassword_f(void);
 static void Command_Login_f(void);
-static void Got_Login(UINT8 **cp, INT32 playernum);
-static void Got_Verification(UINT8 **cp, INT32 playernum);
-static void Got_Removal(UINT8 **cp, INT32 playernum);
+static void Got_Login(const UINT8 **cp, INT32 playernum);
+static void Got_Verification(const UINT8 **cp, INT32 playernum);
+static void Got_Removal(const UINT8 **cp, INT32 playernum);
 static void Command_Verify_f(void);
 static void Command_RemoveAdmin_f(void);
 static void Command_MotD_f(void);
-static void Got_MotD_f(UINT8 **cp, INT32 playernum);
+static void Got_MotD_f(const UINT8 **cp, INT32 playernum);
 
 static void Command_ShowScores_f(void);
 static void Command_ShowTime_f(void);
@@ -203,11 +204,6 @@ static void Command_Archivetest_f(void);
 // =========================================================================
 //                           CLIENT VARIABLES
 // =========================================================================
-
-void SendWeaponPref(void);
-void SendWeaponPref2(void);
-void SendWeaponPref3(void);
-void SendWeaponPref4(void);
 
 static CV_PossibleValue_t usemouse_cons_t[] = {{0, "Off"}, {1, "On"}, {2, "Force"}, {0, NULL}};
 
@@ -281,7 +277,8 @@ consvar_t cv_skipmapcheck = {"skipmapcheck", "Off", CV_SAVE, CV_OnOff, NULL, 0, 
 INT32 cv_debug;
 
 static void UseMouse_OnChange(void);
-consvar_t cv_usemouse = {"use_mouse", "Off", CV_SAVE|CV_CALL,usemouse_cons_t, UseMouse_OnChange, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_usemouse = {"use_mouse", "Off", CV_SAVE|CV_CALL, usemouse_cons_t, UseMouse_OnChange, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_mousevisible = {"mousevisible", "Off", CV_SAVE|CV_CALL, CV_OnOff, UseMouse_OnChange, 0, NULL, NULL, 0, 0, NULL};
 
 static void UseMouse_OnChange(void)
 {
@@ -295,6 +292,10 @@ consvar_t cv_mouseturn = {"mouseturn", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, 
 // Lagless camera! Yay!
 consvar_t cv_laglesscam = {"lagless_camera", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
+// makes the camera use the saved angleturn in replays instead of the players angle
+// more accurate to how the recording player seen things in game, but may be jittery if they encountered net issues
+consvar_t cv_demoangturn = {"useangleturninreplays", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+
 consvar_t cv_verticallook[MAXSPLITSCREENPLAYERS] = {
 	{"verticallook",  "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL},
 	{"verticallook2", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL},
@@ -302,14 +303,12 @@ consvar_t cv_verticallook[MAXSPLITSCREENPLAYERS] = {
 	{"verticallook4", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL}
 };
 
-#if defined(HAVE_SDL) || defined(_WINDOWS) //joystick 1 and 2
 consvar_t cv_usejoystick[MAXSPLITSCREENPLAYERS] = {
 	{"use_joystick",  "1", CV_SAVE|CV_CALL, NULL, I_InitJoystick1, 0, NULL, NULL, 0, 0, NULL},
 	{"use_joystick2", "2", CV_SAVE|CV_CALL, NULL, I_InitJoystick2, 0, NULL, NULL, 0, 0, NULL},
 	{"use_joystick3", "3", CV_SAVE|CV_CALL, NULL, I_InitJoystick3, 0, NULL, NULL, 0, 0, NULL},
 	{"use_joystick4", "4", CV_SAVE|CV_CALL, NULL, I_InitJoystick4, 0, NULL, NULL, 0, 0, NULL}
 };
-#endif
 
 #if defined (HAVE_SDL)
 consvar_t cv_joyscale[MAXSPLITSCREENPLAYERS] = {
@@ -726,10 +725,8 @@ void D_RegisterServerCommands(void)
 	CV_RegisterVar(&cv_killingdead);
 
 	// d_clisrv
-#ifndef NONET
 #ifdef SATURNJOIN
 	CV_RegisterVar(&cv_allownewsaturnplayer); // need to register it before cv_maxplayers && cv_allownewplayer
-#endif
 #endif
 	CV_RegisterVar(&cv_maxplayers);
 	CV_RegisterVar(&cv_resynchattempts);
@@ -742,18 +739,15 @@ void D_RegisterServerCommands(void)
 	CV_RegisterVar(&cv_downloadspeed);
     CV_RegisterVar(&cv_connectawaittime);
 	CV_RegisterVar(&cv_httpsource);
-#ifndef NONET
 	CV_RegisterVar(&cv_allownewplayer);
 
 	CV_RegisterVar(&cv_joinrefusemessage);
+
 	CV_RegisterVar(&cv_chatlogsize);
-#ifdef VANILLAJOINNEXTROUND
-	CV_RegisterVar(&cv_joinnextround);
-#endif
+
 	CV_RegisterVar(&cv_showjoinaddress);
 	CV_RegisterVar(&cv_shownodeip);
 	CV_RegisterVar(&cv_blamecfail);
-#endif
 
 	COM_AddCommand("ping", Command_Ping_f);
 	CV_RegisterVar(&cv_nettimeout);
@@ -765,6 +759,9 @@ void D_RegisterServerCommands(void)
 	CV_RegisterVar(&cv_pingtimeout);
 	CV_RegisterVar(&cv_showping);
 	CV_RegisterVar(&cv_pingmeasurement);
+
+	CV_RegisterVar(&cv_usefakeseed);
+	CV_RegisterVar(&cv_fakeseedname);
 
 #ifdef SEENAMES
 	CV_RegisterVar(&cv_allowseenames);
@@ -855,15 +852,10 @@ void D_RegisterClientCommands(void)
 	CV_RegisterVar(&cv_zlib_memory);
 	CV_RegisterVar(&cv_zlib_strategy);
 	CV_RegisterVar(&cv_zlib_window_bits);
-	// APNG variables
-	CV_RegisterVar(&cv_zlib_levela);
-	CV_RegisterVar(&cv_zlib_memorya);
-	CV_RegisterVar(&cv_zlib_strategya);
-	CV_RegisterVar(&cv_zlib_window_bitsa);
-	CV_RegisterVar(&cv_apng_delay);
 	// GIF variables
 	CV_RegisterVar(&cv_gif_optimize);
 	CV_RegisterVar(&cv_gif_downscale);
+	CV_RegisterVar(&cv_gif_dynamicdelay);
 
 #ifdef WALLSPLATS
 	CV_RegisterVar(&cv_splats);
@@ -902,6 +894,7 @@ void D_RegisterClientCommands(void)
 	CV_RegisterVar(&cv_netticbuffer);
 	CV_RegisterVar(&cv_mindelay);
 	CV_RegisterVar(&cv_gentlemens);
+	CV_RegisterVar(&cv_serverinfoscreen);
 
 #ifdef NETGAME_DEVMODE
 	CV_RegisterVar(&cv_fishcake);
@@ -917,6 +910,8 @@ void D_RegisterClientCommands(void)
 	CV_RegisterVar(&cv_cechotoggle);
 
 	CV_RegisterVar(&cv_keyboardlayout);
+
+	CV_RegisterVar(&cv_emotes);
 
 	// time attack ghost options are also saved to config
 	CV_RegisterVar(&cv_ghost_besttime);
@@ -940,6 +935,7 @@ void D_RegisterClientCommands(void)
 	CV_RegisterVar(&cv_consolechat);
 	CV_RegisterVar(&cv_chatnotifications);
 	CV_RegisterVar(&cv_chatbacktint);
+	CV_RegisterVar(&cv_chatcentertext);
 	CV_RegisterVar(&cv_songcredits);
 	CV_RegisterVar(&cv_showfreeplay);
 	CV_RegisterVar(&cv_skinselectspin);
@@ -975,10 +971,11 @@ void D_RegisterClientCommands(void)
 
 	// g_input.c
 	CV_RegisterVar(&cv_controlperkey);
-	CV_RegisterVar(&cv_turnsmooth);
 
 	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
 	{
+		CV_RegisterVar(&cv_turnsmooth[i]);
+
 		CV_RegisterVar(&cv_turnaxis[i]);
 		CV_RegisterVar(&cv_moveaxis[i]);
 		CV_RegisterVar(&cv_camturnaxis[i]);
@@ -995,6 +992,8 @@ void D_RegisterClientCommands(void)
 		CV_RegisterVar(&cv_xdeadzone[i]);
 		CV_RegisterVar(&cv_ydeadzone[i]);
 
+		CV_RegisterVar(&cv_litesteer[i]);
+
 		CV_RegisterVar(&cv_usejoystick[i]);
 		CV_RegisterVar(&cv_joyscale[i]);
 		CV_RegisterVar(&cv_rumble[i]);
@@ -1005,6 +1004,7 @@ void D_RegisterClientCommands(void)
 	CV_RegisterVar(&cv_invertmouse);
 	CV_RegisterVar(&cv_mousesens);
 	CV_RegisterVar(&cv_mouseysens);
+	CV_RegisterVar(&cv_mousevisible);
 
 	// s_sound.c
 	CV_RegisterVar(&cv_soundvolume);
@@ -1026,10 +1026,14 @@ void D_RegisterClientCommands(void)
 	// screen.c
 	CV_RegisterVar(&cv_fullscreen);
 	CV_RegisterVar(&cv_renderview);
+	CV_RegisterVar(&cv_frameskip);
 	CV_RegisterVar(&cv_vhseffect);
 	CV_RegisterVar(&cv_shittyscreen);
 	CV_RegisterVar(&cv_scr_width);
 	CV_RegisterVar(&cv_scr_height);
+
+	CV_RegisterVar(&cv_parallelsoftware);
+	CV_RegisterVar(&cv_paralleldrawmasked);
 
 	CV_RegisterVar(&cv_soundtest);
 
@@ -1046,13 +1050,16 @@ void D_RegisterClientCommands(void)
 	CV_RegisterVar(&cv_betainterscreen);
 
 	CV_RegisterVar(&cv_laglesscam);
+	CV_RegisterVar(&cv_demoangturn);
 
 	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
 	{
 		CV_RegisterVar(&cv_verticallook[i]);
 	}
 
+	CV_RegisterVar(&cv_resyncdemo);
 	CV_RegisterVar(&cv_demodateformat);
+
 	CV_RegisterVar(&cv_showspecstuff);
 
 	// ingame object placing
@@ -1215,7 +1222,7 @@ static boolean EnsurePlayerNameIsGood(char *name, INT32 playernum)
 	for (ix = 0; ix < MAXPLAYERS; ix++)
 	{
 		if (ix != playernum && playeringame[ix]
-			&& strcasecmp(name, player_names[ix]) == 0)
+			&& fasticmp(name, player_names[ix]))
 		{
 			// We shouldn't kick people out just because
 			// they joined the game with the same name
@@ -1332,7 +1339,7 @@ static void CleanupPlayerName(INT32 playernum, const char *newname)
 		for (i = 0; i < MAXPLAYERS; i++)
 		{
 			if (i != playernum && playeringame[i]
-				&& strcasecmp(tmpname, player_names[i]) == 0)
+				&& fasticmp(tmpname, player_names[i]))
 			{
 				break;
 			}
@@ -1382,7 +1389,7 @@ static void SetPlayerName(INT32 playernum, char *newname)
 {
 	if (EnsurePlayerNameIsGood(newname, playernum))
 	{
-		if (strcasecmp(newname, player_names[playernum]) != 0)
+		if (!fasticmp(newname, player_names[playernum]))
 		{
 			if (netgame)
 				HU_AddChatText(va("\x82*%s renamed to %s", player_names[playernum], newname), false);
@@ -1504,9 +1511,9 @@ static void SendNameAndColor(void)
 			CV_StealthSet(&cv_playercolor, cv_playercolor.defaultvalue);
 	}
 
-	if (!strcmp(cv_playername.string, player_names[consoleplayer])
+	if (fastcmp(cv_playername.string, player_names[consoleplayer])
 		&& cv_playercolor.value == players[consoleplayer].skincolor
-		&& !strcmp(cv_skin.string, skins[players[consoleplayer].skin].name))
+		&& fastcmp(cv_skin.string, skins[players[consoleplayer].skin].name))
 		return;
 
 	// We'll handle it later if we're not playing.
@@ -1526,12 +1533,7 @@ static void SendNameAndColor(void)
 		if (players[consoleplayer].mo)
 			players[consoleplayer].mo->color = players[consoleplayer].skincolor;
 
-		if (metalrecording)
-		{ // Metal Sonic is Sonic, obviously.
-			SetPlayerSkinByNum(consoleplayer, 0);
-			CV_StealthSet(&cv_skin, skins[0].name);
-		}
-		else if ((foundskin = R_SkinAvailable(cv_skin.string)) != -1)
+		if ((foundskin = R_SkinAvailable(cv_skin.string)) != -1)
 		{
 			cv_skin.value = foundskin;
 			SetPlayerSkin(consoleplayer, cv_skin.string);
@@ -1914,7 +1916,7 @@ static void SendNameAndColor4(void)
 	SendNetXCmdForPlayer(3, XD_NAMEANDCOLOR, buf, p - buf);
 }
 
-static void Got_NameAndColor(UINT8 **cp, INT32 playernum)
+static void Got_NameAndColor(const UINT8 **cp, INT32 playernum)
 {
 	player_t *p = &players[playernum];
 	char name[MAXPLAYERNAME+1];
@@ -1946,7 +1948,7 @@ static void Got_NameAndColor(UINT8 **cp, INT32 playernum)
 	// set name
 	if (player_name_changes[playernum] < MAXNAMECHANGES)
 	{
-		if (strcasecmp(player_names[playernum], name) != 0)
+		if (!fasticmp(player_names[playernum], name))
 			SetPlayerName(playernum, name);
 	}
 
@@ -2000,11 +2002,6 @@ static void Got_NameAndColor(UINT8 **cp, INT32 playernum)
 	}
 	else
 		SetPlayerSkinByNum(playernum, skin);
-
-#ifdef HAVE_DISCORDRPC
-	if (playernum == consoleplayer)
-		DRPC_UpdatePresence();
-#endif
 }
 
 void SendWeaponPref(void)
@@ -2047,15 +2044,17 @@ void SendWeaponPref4(void)
 	SendNetXCmdForPlayer(3, XD_WEAPONPREF, buf, 1);
 }
 
-static void Got_WeaponPref(UINT8 **cp,INT32 playernum)
+static void Got_WeaponPref(const UINT8 **cp, INT32 playernum)
 {
+	player_t *player = &players[playernum];
+
 	UINT8 prefs = READUINT8(*cp);
 
-	players[playernum].pflags &= ~(PF_FLIPCAM|PF_ANALOGMODE);
+	player->pflags &= ~(PF_FLIPCAM|PF_ANALOGMODE);
 	if (prefs & 1)
-		players[playernum].pflags |= PF_FLIPCAM;
+		player->pflags |= PF_FLIPCAM;
 	if (prefs & 2)
-		players[playernum].pflags |= PF_ANALOGMODE;
+		player->pflags |= PF_ANALOGMODE;
 }
 
 void D_SendPlayerConfig(void)
@@ -2084,7 +2083,7 @@ static void Command_ResetCamera_f(void)
 }
 
 /* Consider replacing nametonum with this */
-static INT32 LookupPlayer(const char *s)
+INT32 D_LookupPlayer(const char *s)
 {
 	INT32 playernum;
 
@@ -2100,8 +2099,7 @@ static INT32 LookupPlayer(const char *s)
 	for (playernum = 0; playernum < MAXPLAYERS; ++playernum)
 	{
 		/* Match name case-insensitively: fully, or partially the start. */
-		if (playeringame[playernum])
-			if (strnicmp(player_names[playernum], s, strlen(s)) == 0)
+		if (playeringame[playernum] && (strnicmp(player_names[playernum], s, strlen(s)) == 0))
 		{
 			return playernum;
 		}
@@ -2112,14 +2110,18 @@ static INT32 LookupPlayer(const char *s)
 static INT32 FindPlayerByPlace(INT32 place)
 {
 	INT32 playernum;
+
 	for (playernum = 0; playernum < MAXPLAYERS; ++playernum)
-		if (playeringame[playernum])
 	{
+		if (!playeringame[playernum])
+			continue;
+
 		if (players[playernum].kartstuff[k_position] == place)
 		{
 			return playernum;
 		}
 	}
+
 	return -1;
 }
 
@@ -2212,7 +2214,7 @@ static void Command_View_f(void)
 		}
 		else
 		{
-			if (( playernum = LookupPlayer(COM_Argv(1)) ) == -1)
+			if (( playernum = D_LookupPlayer(COM_Argv(1)) ) == -1)
 			{
 				CONS_Alert(CONS_WARNING, "There is no player by that name!\n");
 				return;
@@ -2318,8 +2320,6 @@ static void Command_Playdemo_f(void)
 	// disconnect from server here?
 	if (demo.playback)
 		G_StopDemo();
-	if (metalplayback)
-		G_StopMetalDemo();
 
 	// open the demo file
 	strcpy(name, COM_Argv(1));
@@ -2327,8 +2327,8 @@ static void Command_Playdemo_f(void)
 
 	CONS_Printf(M_GetText("Playing back demo '%s'.\n"), name);
 
-	demo.loadfiles = strcmp(COM_Argv(2), "-addfiles") == 0;
-	demo.ignorefiles = strcmp(COM_Argv(2), "-force") == 0;
+	demo.loadfiles = fastcmp(COM_Argv(2), "-addfiles");
+	demo.ignorefiles = fastcmp(COM_Argv(2), "-force");
 
 	// Internal if no extension, external if one exists
 	// If external, convert the file name to a path in SRB2's home directory
@@ -2366,8 +2366,6 @@ static void Command_Timedemo_f(void)
 	// disconnect from server here?
 	if (demo.playback)
 		G_StopDemo();
-	if (metalplayback)
-		G_StopMetalDemo();
 
 	// open the demo file
 	strcpy (name, COM_Argv(1));
@@ -2499,7 +2497,18 @@ void D_SetupVote(void)
 	INT32 i;
 	UINT8 gt = (cv_kartgametypepreference.value == -1) ? gametype : cv_kartgametypepreference.value;
 	UINT8 secondgt = G_SometimesGetDifferentGametype(gt);
-	INT16 votebuffer[4] = {-1,-1,-1,0};
+	INT16 votebuffer[4] = {-1,-1,-1, 0};
+	INT16 luamaps[4] = {0, 0, 0, 0};
+
+	LUA_HookSetupVote(luamaps, sizeof(luamaps)/sizeof(luamaps[0]), gt, secondgt);
+
+	// Correct secondgt if needed
+	if (luamaps[2])
+	{
+		UINT8 typeoflevel = mapheaderinfo[luamaps[2]-1]->typeoflevel;
+		if ((typeoflevel & G_TOLFlag(secondgt&(~0x80))) == 0)
+			secondgt = ((typeoflevel & TOL_RACE) ? GT_RACE : GT_MATCH)|(secondgt&0x80);
+	}
 
 	if (cv_kartencore.value && gt == GT_RACE)
 		WRITEUINT8(p, (gt|0x80));
@@ -2508,10 +2517,13 @@ void D_SetupVote(void)
 	WRITEUINT8(p, secondgt);
 	secondgt &= ~0x80;
 
+
 	for (i = 0; i < 4; i++)
 	{
 		UINT16 m;
-		if (i == 2) // sometimes a different gametype
+		if (luamaps[i])
+			m = luamaps[i]-1;
+		else if (i == 2) // sometimes a different gametype
 			m = G_RandMap(G_TOLFlag(secondgt), prevmap, false, 0, true, votebuffer);
 		else if (i >= 3) // unknown-random and force-unknown MAP HELL
 			m = G_RandMap(G_TOLFlag(gt), prevmap, false, (i-2), (i < 4), votebuffer);
@@ -2597,14 +2609,18 @@ ConcatCommandArgv (int start, int end)
 		size += strlen(COM_Argv(i)) + 1;
 	}
 
-	final = ZZ_Alloc(size);
-	p = final;
+	p = final = ZZ_Alloc(size);
+
+	if (!p)
+		I_Error("ConcatCommandArgv: Out of memory!\n");
 
 	--end;/* handle the final argument separately */
+
 	for (i = start; i < end; ++i)
 	{
 		p += sprintf(p, "%s ", COM_Argv(i));
 	}
+
 	/* at this point "end" is actually the last argument's position */
 	strcpy(p, COM_Argv(end));
 
@@ -2837,7 +2853,7 @@ static void Command_Map_f(void)
   *                  ::serverplayer or ::adminplayer.
   * \sa D_MapChange
   */
-static void Got_Mapcmd(UINT8 **cp, INT32 playernum)
+static void Got_Mapcmd(const UINT8 **cp, INT32 playernum)
 {
 	char mapname[MAX_WADPATH+1];
 	UINT8 flags;
@@ -2913,8 +2929,6 @@ static void Got_Mapcmd(UINT8 **cp, INT32 playernum)
 	if (demo.timing)
 		G_DoneLevelLoad();
 
-	if (metalrecording)
-		G_BeginMetal();
 	if (demo.recording) // Okay, level loaded, character spawned and skinned,
 		G_BeginRecording(); // I AM NOW READY TO RECORD.
 	demo.deferstart = true;
@@ -2958,7 +2972,7 @@ static void Command_Pause(void)
 		CONS_Printf(M_GetText("Only the server or a remote admin can use this.\n"));
 }
 
-static void Got_Pause(UINT8 **cp, INT32 playernum)
+static void Got_Pause(const UINT8 **cp, INT32 playernum)
 {
 	UINT8 dedicatedpause = false;
 	const char *playername;
@@ -3070,7 +3084,7 @@ static void Command_Respawn(void)
 	SendNetXCmd(XD_RESPAWN, &buf, 4);
 }
 
-static void Got_Respawn(UINT8 **cp, INT32 playernum)
+static void Got_Respawn(const UINT8 **cp, INT32 playernum)
 {
 	INT32 respawnplayer = READINT32(*cp);
 
@@ -3105,7 +3119,7 @@ static void Got_Respawn(UINT8 **cp, INT32 playernum)
   * \param playernum Player responsible for the message. Must be ::serverplayer.
   * \author Graue <graue@oceanbase.org>
   */
-static void Got_RandomSeed(UINT8 **cp, INT32 playernum)
+static void Got_RandomSeed(const UINT8 **cp, INT32 playernum)
 {
 	UINT32 seed;
 
@@ -3140,7 +3154,7 @@ static void Command_Clearscores_f(void)
   * \sa XD_CLEARSCORES, Command_Clearscores_f
   * \author SSNTails <http://www.ssntails.org>
   */
-static void Got_Clearscores(UINT8 **cp, INT32 playernum)
+static void Got_Clearscores(const UINT8 **cp, INT32 playernum)
 {
 	INT32 i;
 
@@ -3185,20 +3199,20 @@ static void Command_Teamchange_f(void)
 
 	if (G_GametypeHasTeams())
 	{
-		if (!strcasecmp(COM_Argv(1), "red") || !strcasecmp(COM_Argv(1), "1"))
+		if (fasticmp(COM_Argv(1), "red") || fasticmp(COM_Argv(1), "1"))
 			NetPacket.packet.newteam = 1;
-		else if (!strcasecmp(COM_Argv(1), "blue") || !strcasecmp(COM_Argv(1), "2"))
+		else if (fasticmp(COM_Argv(1), "blue") || fasticmp(COM_Argv(1), "2"))
 			NetPacket.packet.newteam = 2;
-		else if (!strcasecmp(COM_Argv(1), "spectator") || !strcasecmp(COM_Argv(1), "0"))
+		else if (fasticmp(COM_Argv(1), "spectator") || fasticmp(COM_Argv(1), "0"))
 			NetPacket.packet.newteam = 0;
 		else
 			error = true;
 	}
 	else if (G_GametypeHasSpectators())
 	{
-		if (!strcasecmp(COM_Argv(1), "spectator") || !strcasecmp(COM_Argv(1), "0"))
+		if (fasticmp(COM_Argv(1), "spectator") || fasticmp(COM_Argv(1), "0"))
 			NetPacket.packet.newteam = 0;
-		else if (!strcasecmp(COM_Argv(1), "playing") || !strcasecmp(COM_Argv(1), "1"))
+		else if (fasticmp(COM_Argv(1), "playing") || fasticmp(COM_Argv(1), "1"))
 			NetPacket.packet.newteam = 3;
 		else
 			error = true;
@@ -3275,20 +3289,20 @@ static void Command_Teamchange2_f(void)
 
 	if (G_GametypeHasTeams())
 	{
-		if (!strcasecmp(COM_Argv(1), "red") || !strcasecmp(COM_Argv(1), "1"))
+		if (fasticmp(COM_Argv(1), "red") || fasticmp(COM_Argv(1), "1"))
 			NetPacket.packet.newteam = 1;
-		else if (!strcasecmp(COM_Argv(1), "blue") || !strcasecmp(COM_Argv(1), "2"))
+		else if (fasticmp(COM_Argv(1), "blue") || fasticmp(COM_Argv(1), "2"))
 			NetPacket.packet.newteam = 2;
-		else if (!strcasecmp(COM_Argv(1), "spectator") || !strcasecmp(COM_Argv(1), "0"))
+		else if (fasticmp(COM_Argv(1), "spectator") || fasticmp(COM_Argv(1), "0"))
 			NetPacket.packet.newteam = 0;
 		else
 			error = true;
 	}
 	else if (G_GametypeHasSpectators())
 	{
-		if (!strcasecmp(COM_Argv(1), "spectator") || !strcasecmp(COM_Argv(1), "0"))
+		if (fasticmp(COM_Argv(1), "spectator") || fasticmp(COM_Argv(1), "0"))
 			NetPacket.packet.newteam = 0;
-		else if (!strcasecmp(COM_Argv(1), "playing") || !strcasecmp(COM_Argv(1), "1"))
+		else if (fasticmp(COM_Argv(1), "playing") || fasticmp(COM_Argv(1), "1"))
 			NetPacket.packet.newteam = 3;
 		else
 			error = true;
@@ -3366,20 +3380,20 @@ static void Command_Teamchange3_f(void)
 
 	if (G_GametypeHasTeams())
 	{
-		if (!strcasecmp(COM_Argv(1), "red") || !strcasecmp(COM_Argv(1), "1"))
+		if (fasticmp(COM_Argv(1), "red") || fasticmp(COM_Argv(1), "1"))
 			NetPacket.packet.newteam = 1;
-		else if (!strcasecmp(COM_Argv(1), "blue") || !strcasecmp(COM_Argv(1), "2"))
+		else if (fasticmp(COM_Argv(1), "blue") || fasticmp(COM_Argv(1), "2"))
 			NetPacket.packet.newteam = 2;
-		else if (!strcasecmp(COM_Argv(1), "spectator") || !strcasecmp(COM_Argv(1), "0"))
+		else if (fasticmp(COM_Argv(1), "spectator") || fasticmp(COM_Argv(1), "0"))
 			NetPacket.packet.newteam = 0;
 		else
 			error = true;
 	}
 	else if (G_GametypeHasSpectators())
 	{
-		if (!strcasecmp(COM_Argv(1), "spectator") || !strcasecmp(COM_Argv(1), "0"))
+		if (fasticmp(COM_Argv(1), "spectator") || fasticmp(COM_Argv(1), "0"))
 			NetPacket.packet.newteam = 0;
-		else if (!strcasecmp(COM_Argv(1), "playing") || !strcasecmp(COM_Argv(1), "1"))
+		else if (fasticmp(COM_Argv(1), "playing") || fasticmp(COM_Argv(1), "1"))
 			NetPacket.packet.newteam = 3;
 		else
 			error = true;
@@ -3457,20 +3471,20 @@ static void Command_Teamchange4_f(void)
 
 	if (G_GametypeHasTeams())
 	{
-		if (!strcasecmp(COM_Argv(1), "red") || !strcasecmp(COM_Argv(1), "1"))
+		if (fasticmp(COM_Argv(1), "red") || fasticmp(COM_Argv(1), "1"))
 			NetPacket.packet.newteam = 1;
-		else if (!strcasecmp(COM_Argv(1), "blue") || !strcasecmp(COM_Argv(1), "2"))
+		else if (fasticmp(COM_Argv(1), "blue") || fasticmp(COM_Argv(1), "2"))
 			NetPacket.packet.newteam = 2;
-		else if (!strcasecmp(COM_Argv(1), "spectator") || !strcasecmp(COM_Argv(1), "0"))
+		else if (fasticmp(COM_Argv(1), "spectator") || fasticmp(COM_Argv(1), "0"))
 			NetPacket.packet.newteam = 0;
 		else
 			error = true;
 	}
 	else if (G_GametypeHasSpectators())
 	{
-		if (!strcasecmp(COM_Argv(1), "spectator") || !strcasecmp(COM_Argv(1), "0"))
+		if (fasticmp(COM_Argv(1), "spectator") || fasticmp(COM_Argv(1), "0"))
 			NetPacket.packet.newteam = 0;
-		else if (!strcasecmp(COM_Argv(1), "playing") || !strcasecmp(COM_Argv(1), "1"))
+		else if (fasticmp(COM_Argv(1), "playing") || fasticmp(COM_Argv(1), "1"))
 			NetPacket.packet.newteam = 3;
 		else
 			error = true;
@@ -3556,33 +3570,33 @@ static void Command_ServerTeamChange_f(void)
 
 	if (G_TagGametype())
 	{
-		if (!strcasecmp(COM_Argv(2), "it") || !strcasecmp(COM_Argv(2), "1"))
+		if (fasticmp(COM_Argv(2), "it") || fasticmp(COM_Argv(2), "1"))
 			NetPacket.packet.newteam = 1;
-		else if (!strcasecmp(COM_Argv(2), "notit") || !strcasecmp(COM_Argv(2), "2"))
+		else if (fasticmp(COM_Argv(2), "notit") || fasticmp(COM_Argv(2), "2"))
 			NetPacket.packet.newteam = 2;
-		else if (!strcasecmp(COM_Argv(2), "playing") || !strcasecmp(COM_Argv(2), "3"))
+		else if (fasticmp(COM_Argv(2), "playing") || fasticmp(COM_Argv(2), "3"))
 			NetPacket.packet.newteam = 3;
-		else if (!strcasecmp(COM_Argv(2), "spectator") || !strcasecmp(COM_Argv(2), "0"))
+		else if (fasticmp(COM_Argv(2), "spectator") || fasticmp(COM_Argv(2), "0"))
 			NetPacket.packet.newteam = 0;
 		else
 			error = true;
 	}
 	else if (G_GametypeHasTeams())
 	{
-		if (!strcasecmp(COM_Argv(2), "red") || !strcasecmp(COM_Argv(2), "1"))
+		if (fasticmp(COM_Argv(2), "red") || fasticmp(COM_Argv(2), "1"))
 			NetPacket.packet.newteam = 1;
-		else if (!strcasecmp(COM_Argv(2), "blue") || !strcasecmp(COM_Argv(2), "2"))
+		else if (fasticmp(COM_Argv(2), "blue") || fasticmp(COM_Argv(2), "2"))
 			NetPacket.packet.newteam = 2;
-		else if (!strcasecmp(COM_Argv(2), "spectator") || !strcasecmp(COM_Argv(2), "0"))
+		else if (fasticmp(COM_Argv(2), "spectator") || fasticmp(COM_Argv(2), "0"))
 			NetPacket.packet.newteam = 0;
 		else
 			error = true;
 	}
 	else if (G_GametypeHasSpectators())
 	{
-		if (!strcasecmp(COM_Argv(2), "spectator") || !strcasecmp(COM_Argv(2), "0"))
+		if (fasticmp(COM_Argv(2), "spectator") || fasticmp(COM_Argv(2), "0"))
 			NetPacket.packet.newteam = 0;
-		else if (!strcasecmp(COM_Argv(2), "playing") || !strcasecmp(COM_Argv(2), "1"))
+		else if (fasticmp(COM_Argv(2), "playing") || fasticmp(COM_Argv(2), "1"))
 			NetPacket.packet.newteam = 3;
 		else
 			error = true;
@@ -3657,7 +3671,7 @@ static void Command_ServerTeamChange_f(void)
 }
 
 //todo: This and the other teamchange functions are getting too long and messy. Needs cleaning.
-static void Got_Teamchange(UINT8 **cp, INT32 playernum)
+static void Got_Teamchange(const UINT8 **cp, INT32 playernum)
 {
 	changeteam_union NetPacket;
 	boolean error = false, wasspectator = false;
@@ -4014,7 +4028,7 @@ static void Command_Login_f(void)
 #endif
 }
 
-static void Got_Login(UINT8 **cp, INT32 playernum)
+static void Got_Login(const UINT8 **cp, INT32 playernum)
 {
 #ifdef NOMD5
 	// If we have no MD5 support then completely disable XD_LOGIN responses for security.
@@ -4124,7 +4138,7 @@ static void Command_Verify_f(void)
 		SendNetXCmd(XD_VERIFIED, buf, 1);
 }
 
-static void Got_Verification(UINT8 **cp, INT32 playernum)
+static void Got_Verification(const UINT8 **cp, INT32 playernum)
 {
 	INT16 num = READUINT8(*cp);
 
@@ -4176,7 +4190,7 @@ static void Command_RemoveAdmin_f(void)
 		SendNetXCmd(XD_DEMOTED, buf, 1);
 }
 
-static void Got_Removal(UINT8 **cp, INT32 playernum)
+static void Got_Removal(const UINT8 **cp, INT32 playernum)
 {
 	INT16 num = READUINT8(*cp);
 
@@ -4217,23 +4231,32 @@ static void Command_MotD_f(void)
 
 	mymotd = Z_Malloc(sizeof(motd), PU_STATIC, NULL);
 
-	strlcpy(mymotd, COM_Argv(1), sizeof motd);
+	if (!mymotd)
+		return;
+		//I_Error("Command_MotD_f: Out of memory!\n"); // idk if this aint a bit too much lel
+
+	strlcpy(mymotd, COM_Argv(1), sizeof(motd));
+
 	for (i = 2; i < j; i++)
 	{
-		strlcat(mymotd, " ", sizeof motd);
-		strlcat(mymotd, COM_Argv(i), sizeof motd);
+		strlcat(mymotd, " ", sizeof(motd));
+		strlcat(mymotd, COM_Argv(i), sizeof(motd));
 	}
 
 	// Disallow non-printing characters and semicolons.
 	for (i = 0; mymotd[i] != '\0'; i++)
+	{
 		if (!isprint(mymotd[i]) || mymotd[i] == ';')
 		{
 			Z_Free(mymotd);
 			return;
 		}
+	}
 
 	if ((netgame || multiplayer) && client)
+	{
 		SendNetXCmd(XD_SETMOTD, mymotd, i); // send the actual size of the motd string, not the full buffer's size
+	}
 	else
 	{
 		strcpy(motd, mymotd);
@@ -4243,7 +4266,7 @@ static void Command_MotD_f(void)
 	Z_Free(mymotd);
 }
 
-static void Got_MotD_f(UINT8 **cp, INT32 playernum)
+static void Got_MotD_f(const UINT8 **cp, INT32 playernum)
 {
 	char *mymotd = Z_Malloc(sizeof(motd), PU_STATIC, NULL);
 	INT32 i;
@@ -4310,7 +4333,7 @@ static void Command_RunSOC(void)
 	SendNetXCmd(XD_RUNSOC, buf, length);
 }
 
-static void Got_RunSOCcmd(UINT8 **cp, INT32 playernum)
+static void Got_RunSOCcmd(const UINT8 **cp, INT32 playernum)
 {
 	char filename[256];
 	filestatus_t ncs = FS_NOTCHECKED;
@@ -4377,6 +4400,14 @@ static void Command_Addfilelocal(void)
 	P_AddWadFile(fn, true);
 }
 
+static void CloseFileHandle(FILE **fhandle)
+{
+	if (*fhandle)
+	{
+		fclose(*fhandle);
+		*fhandle = NULL;
+	}
+}
 
 /** Adds a pwad at runtime.
   * Searches for sounds, maps, music, new images.
@@ -4387,7 +4418,9 @@ static void Command_Addfile(void)
 	char buf[256];
 	char *buf_p = buf;
 	INT32 i;
-	int musiconly; // W_VerifyNMUSlumps isn't boolean
+	int musiconly = -1; // W_VerifyNMUSlumps isn't boolean
+
+	CLEANUP(CloseFileHandle) FILE *fhandle = NULL;
 
 	if (COM_Argc() != 2)
 	{
@@ -4402,7 +4435,13 @@ static void Command_Addfile(void)
 		if (!isprint(fn[i]) || fn[i] == ';')
 			return;
 
-	musiconly = W_VerifyNMUSlumps(fn);
+	if ((fhandle = W_OpenWadFile(&fn, true)) != NULL)
+	{
+		musiconly = W_VerifyNMUSlumps(fn, fhandle, false);
+	}
+
+	if (fhandle == NULL || musiconly == -1)
+		return; // file not found
 
 	if (!musiconly)
 	{
@@ -4416,7 +4455,7 @@ static void Command_Addfile(void)
 	}
 
 	// Add file on your client directly if it is trivial, or you aren't in a netgame.
-	if (!(netgame || multiplayer) || musiconly)
+	if (!netgame || musiconly)
 	{
 		P_AddWadFile(fn, false);
 		return;
@@ -4428,26 +4467,19 @@ static void Command_Addfile(void)
 			break;
 	++p;
 
-	WRITESTRINGN(buf_p,p,240);
-
 	// calculate and check md5
 	{
 		UINT8 md5sum[16];
 #ifdef NOMD5
-		memset(md5sum,0,16);
+		memset(md5sum, 0, 16);
 #else
-		FILE *fhandle;
 
-		if ((fhandle = W_OpenWadFile(&fn, true)) != NULL)
 		{
 			tic_t t = I_GetTime();
 			CONS_Debug(DBG_SETUP, "Making MD5 for %s\n",fn);
 			md5_stream(fhandle, md5sum);
 			CONS_Debug(DBG_SETUP, "MD5 calc for %s took %f second\n", fn, (float)(I_GetTime() - t)/TICRATE);
-			fclose(fhandle);
 		}
-		else // file not found
-			return;
 
 		for (i = 0; i < numwadfiles; i++)
 		{
@@ -4458,6 +4490,8 @@ static void Command_Addfile(void)
 			}
 		}
 #endif
+		// Finally okay to write this important data
+		WRITESTRINGN(buf_p, p, 240);
 		WRITEMEM(buf_p, md5sum, 16);
 	}
 
@@ -4577,7 +4611,7 @@ static void Command_GLocalSkin (void)
 	}
 }
 
-static void Got_RequestAddfilecmd(UINT8 **cp, INT32 playernum)
+static void Got_RequestAddfilecmd(const UINT8 **cp, INT32 playernum)
 {
 	char filename[241];
 	filestatus_t ncs = FS_NOTCHECKED;
@@ -4636,7 +4670,7 @@ static void Got_RequestAddfilecmd(UINT8 **cp, INT32 playernum)
 	COM_BufAddText(va("addfile %s\n", filename));
 }
 
-static void Got_Addfilecmd(UINT8 **cp, INT32 playernum)
+static void Got_Addfilecmd(const UINT8 **cp, INT32 playernum)
 {
 	char filename[241];
 	filestatus_t ncs = FS_NOTCHECKED;
@@ -4655,7 +4689,7 @@ static void Got_Addfilecmd(UINT8 **cp, INT32 playernum)
 		return;
 	}
 
-	ncs = findfile(filename,md5sum,true);
+	ncs = findfile(filename, md5sum, true);
 
 	if (ncs != FS_FOUND || !P_AddWadFile(filename, false))
 	{
@@ -4868,18 +4902,7 @@ static void Command_Version_f(void)
 #endif
 
 	// OS
-	// Would be nice to use SDL_GetPlatform for this
-#if defined (_WIN32) || defined (_WIN64)
-	CONS_Printf("Windows ");
-#elif defined(__linux__)
-	CONS_Printf("Linux ");
-#elif defined(MACOSX)
-	CONS_Printf("macOS ");
-#elif defined(UNIXCOMMON)
-	CONS_Printf("Unix (Common) ");
-#else
-	CONS_Printf("Other OS ");
-#endif
+	CONS_Printf("%s ", I_GetSysName());
 
 	// Bitness
 	if (sizeof(void*) == 4)
@@ -5191,14 +5214,14 @@ static void Ringslinger_OnChange(void)
 static void Gravity_OnChange(void)
 {
 	if (!M_SecretUnlocked(SECRET_PANDORA) && !netgame && !cv_debug
-		&& strcmp(cv_gravity.string, cv_gravity.defaultvalue))
+		&& !fastcmp(cv_gravity.string, cv_gravity.defaultvalue))
 	{
 		CONS_Printf(M_GetText("You haven't earned this yet.\n"));
 		CV_StealthSet(&cv_gravity, cv_gravity.defaultvalue);
 		return;
 	}
 #ifndef NETGAME_GRAVITY
-	if(netgame)
+	if (netgame)
 	{
 		CV_StealthSet(&cv_gravity, cv_gravity.defaultvalue);
 		return;
@@ -5267,7 +5290,7 @@ retryscramble:
 	memset(&scrambleplayers, 0, sizeof(scrambleplayers));
 	memset(&scrambleteams, 0, sizeof(scrambleplayers));
 	scrambletotal = scramblecount = 0;
-	blue = red = maxcomposition = newteam = playercount = 0;
+	blue = red = newteam = playercount = 0;
 	repick = true;
 
 	// Put each player's node in the array.
@@ -5447,7 +5470,7 @@ static void Command_ExitLevel_f(void)
 		SendNetXCmd(XD_EXITLEVEL, NULL, 0);
 }
 
-static void Got_ExitLevelcmd(UINT8 **cp, INT32 playernum)
+static void Got_ExitLevelcmd(const UINT8 **cp, INT32 playernum)
 {
 	(void)cp;
 
@@ -5468,7 +5491,7 @@ static void Got_ExitLevelcmd(UINT8 **cp, INT32 playernum)
 	G_ExitLevel();
 }
 
-static void Got_SetupVotecmd(UINT8 **cp, INT32 playernum)
+static void Got_SetupVotecmd(const UINT8 **cp, INT32 playernum)
 {
 	INT32 i;
 	UINT8 gt, secondgt;
@@ -5520,7 +5543,7 @@ static void Got_SetupVotecmd(UINT8 **cp, INT32 playernum)
 	Y_StartVote();
 }
 
-static void Got_ModifyVotecmd(UINT8 **cp, INT32 playernum)
+static void Got_ModifyVotecmd(const UINT8 **cp, INT32 playernum)
 {
 	SINT8 voted = READSINT8(*cp);
 	UINT8 p = READUINT8(*cp);
@@ -5529,7 +5552,7 @@ static void Got_ModifyVotecmd(UINT8 **cp, INT32 playernum)
 	votes[p] = voted;
 }
 
-static void Got_PickVotecmd(UINT8 **cp, INT32 playernum)
+static void Got_PickVotecmd(const UINT8 **cp, INT32 playernum)
 {
 	SINT8 pick = READSINT8(*cp);
 	SINT8 level = READSINT8(*cp);
@@ -5588,7 +5611,9 @@ void Command_ExitGame_f(void)
 		closefilemenu(true);
 
 	if (!modeattacking)
+	{
 		D_StartTitle();
+	}
 }
 
 void Command_Retry_f(void)
@@ -5676,7 +5701,7 @@ static void Command_Archivetest_f(void)
 	// assign mobjnum
 	i = 1;
 	for (th = thinkercap.next; th != &thinkercap; th = th->next)
-		if (th->function.acp1 == (actionf_p1)P_MobjThinker)
+		if (th->function == (actionf_p1)P_MobjThinker)
 			((mobj_t *)th)->mobjnum = i++;
 
 	// allocate buffer
@@ -6167,7 +6192,7 @@ static void KartEliminateLast_OnChange(void)
 		P_CheckRacers();
 }
 
-void Got_DiscordInfo(UINT8 **p, INT32 playernum)
+void Got_DiscordInfo(const UINT8 **p, INT32 playernum)
 {
 	if (playernum != serverplayer /*&& !IsPlayerAdmin(playernum)*/)
 	{

@@ -19,17 +19,17 @@
 #ifndef __sdlmain__
 #define __sdlmain__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 extern SDL_bool consolevent;
 extern SDL_bool framebuffer;
 
 #include "../m_fixed.h"
 
 // SDL2 stub macro
-#ifdef _MSC_VER
-#define SDL2STUB() CONS_Printf("SDL2: stubbed: %s:%d\n", __FUNCTION__, __LINE__)
-#else
 #define SDL2STUB() CONS_Printf("SDL2: stubbed: %s:%d\n", __func__, __LINE__)
-#endif
 
 // So m_menu knows whether to store cv_usejoystick value or string
 #define JOYSTICK_HOTPLUG
@@ -42,6 +42,8 @@ typedef struct SDLJoyInfo_s
 {
 	/// Controller handle
 	SDL_GameController *dev;
+	/// Controller index
+	INT32 id;
 	/// number of old joystick
 	int oldjoy;
 	/// number of axies
@@ -79,9 +81,11 @@ void I_UpdateJoystickDeviceIndices(UINT8 excludePlayer);
 
 void I_GetConsoleEvents(void);
 
-void SDLforceUngrabMouse(void);
-
 // Needed for some WIN32 functions
 extern SDL_Window *window;
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif

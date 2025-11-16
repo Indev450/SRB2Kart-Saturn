@@ -73,7 +73,7 @@ void P_Thrust(mobj_t *mo, angle_t angle, fixed_t move)
 
 	mo->momx += FixedMul(move, FINECOSINE(angle));
 
-	if (!(twodlevel || (mo->flags2 & MF2_TWOD)))
+	if (LIKELY(!(twodlevel || (mo->flags2 & MF2_TWOD))))
 		mo->momy += FixedMul(move, FINESINE(angle));
 }
 
@@ -90,7 +90,7 @@ void P_InstaThrust(mobj_t *mo, angle_t angle, fixed_t move)
 
 	mo->momx = FixedMul(move, FINECOSINE(angle));
 
-	if (!(twodlevel || (mo->flags2 & MF2_TWOD)))
+	if (LIKELY(!(twodlevel || (mo->flags2 & MF2_TWOD))))
 		mo->momy = FixedMul(move,FINESINE(angle));
 }
 
@@ -340,23 +340,23 @@ void P_DoPlayerPain(player_t *player, mobj_t *source, mobj_t *inflictor)
 	angle_t ang;
 	fixed_t fallbackspeed;
 
-	if (inflictor && (inflictor->type != MT_PLAYER && inflictor->type != MT_ORBINAUT && inflictor->type != MT_ORBINAUT_SHIELD
-		&& inflictor->type != MT_JAWZ && inflictor->type != MT_JAWZ_DUD && inflictor->type != MT_JAWZ_SHIELD
-		&& inflictor->type != MT_SMK_THWOMP))
-	{
-		if (player->mo->eflags & MFE_VERTICALFLIP)
-			player->mo->z--;
-		else
-			player->mo->z++;
-
-		if (player->mo->eflags & MFE_UNDERWATER)
-			P_SetObjectMomZ(player->mo, FixedDiv(10511*FRACUNIT,2600*FRACUNIT), false);
-		else
-			P_SetObjectMomZ(player->mo, FixedDiv(69*FRACUNIT,10*FRACUNIT), false);
-	}
-
 	if (inflictor)
 	{
+		if (inflictor->type != MT_PLAYER && inflictor->type != MT_ORBINAUT && inflictor->type != MT_ORBINAUT_SHIELD
+			&& inflictor->type != MT_JAWZ && inflictor->type != MT_JAWZ_DUD && inflictor->type != MT_JAWZ_SHIELD
+			&& inflictor->type != MT_SMK_THWOMP)
+		{
+			if (player->mo->eflags & MFE_VERTICALFLIP)
+				player->mo->z--;
+			else
+				player->mo->z++;
+
+			if (player->mo->eflags & MFE_UNDERWATER)
+				P_SetObjectMomZ(player->mo, FixedDiv(10511*FRACUNIT,2600*FRACUNIT), false);
+			else
+				P_SetObjectMomZ(player->mo, FixedDiv(69*FRACUNIT,10*FRACUNIT), false);
+		}
+
 		ang = R_PointToAngle2(inflictor->x, inflictor->y, player->mo->x, player->mo->y); // SRB2kart
 
 		// explosion and rail rings send you farther back, making it more difficult
@@ -498,9 +498,9 @@ void P_PlayLivesJingle(player_t *player)
 	if (player && !P_IsLocalPlayer(player))
 		return;
 
-	if (use1upSound)
+	if (UNLIKELY(use1upSound))
 		S_StartSound(NULL, sfx_oneup);
-	else if (mariomode)
+	else if (UNLIKELY(mariomode))
 		S_StartSound(NULL, sfx_marioa);
 	else
 	{
@@ -528,7 +528,7 @@ void P_PlayRinglossSound(mobj_t *source, mobj_t *damager)
 			S_StartSound(NULL, sfx);
 		}
 		else
-			S_StartSound(source, (mariomode) ? sfx_mario8 : sfx_khurt1 + key);
+			S_StartSound(source, UNLIKELY(mariomode) ? sfx_mario8 : sfx_khurt1 + key);
 	}
 	else
 		S_StartSound(source, sfx_slip);
@@ -552,9 +552,13 @@ static UINT8 getPlayerPos(player_t *player)
 	{
 		UINT8 pos = 1;
 
-		for (int i = 0; i < MAXPLAYERS; ++i) {
-			if (!playeringame[i] || players[i].spectator) continue;
-			if (players[i].marescore > player->marescore) ++pos;
+		for (UINT8 i = 0; i < MAXPLAYERS; ++i)
+		{
+			if (!playeringame[i] || players[i].spectator)
+				continue;
+
+			if (players[i].marescore > player->marescore)
+				++pos;
 		}
 
 		return pos;
@@ -696,6 +700,7 @@ void P_RestoreMusic(player_t *player)
 	if (P_EndingMusic(player))
 		return;
 
+	// Event - Level Start
 	if (leveltime < MUSICSTARTTIME)
 		S_StartMapMusic();
 	else // see also where time overs are handled - search for "lives = 2" in this file
@@ -791,7 +796,7 @@ boolean P_IsObjectInGoop(mobj_t *mo)
 //
 boolean P_IsObjectOnGround(mobj_t *mo)
 {
-	if (P_IsObjectInGoop(mo))
+	if (UNLIKELY(P_IsObjectInGoop(mo)))
 	{
 		// but I don't want you to ever 'stand' while submerged in goo.
 		// You're in constant vertical momentum, even if you get stuck on something.
@@ -969,6 +974,28 @@ fixed_t P_GetPlayerSpinHeight(player_t *player)
 }
 
 //
+// P_GetLocalPlayerForNum
+//
+// Returns the player
+// on the local machine for given number.
+//
+player_t *P_GetLocalPlayerForNum(UINT8 pnum)
+{
+	return (&players[P_GetLocalPlayerNumForNum(pnum)]);
+}
+
+//
+// P_GetLocalPlayerNumForNum
+//
+// Returns the player number
+// on the local machine for given number.
+//
+INT32 P_GetLocalPlayerNumForNum(UINT8 pnum)
+{
+	return (pnum == 0 ? consoleplayer : displayplayers[pnum]);
+}
+
+//
 // P_IsLocalPlayer
 //
 // Returns true if player is
@@ -978,15 +1005,29 @@ boolean P_IsLocalPlayer(const player_t *player)
 {
 	UINT8 i;
 
-	if (player == &players[consoleplayer])
-		return true;
-	else if (splitscreen)
+	for (i = 0; i <= splitscreen; i++)
 	{
-		for (i = 1; i <= splitscreen; i++) // Skip P1
-		{
-			if (player == &players[displayplayers[i]])
-				return true;
-		}
+		if (player == P_GetLocalPlayerForNum(i))
+			return true;
+	}
+
+	return false;
+}
+
+//
+// P_IsLocalPlayer
+//
+// Returns true if playernum is
+// on the local machine.
+//
+boolean P_IsLocalPlayerNum(UINT8 pnum)
+{
+	UINT8 i;
+
+	for (i = 0; i <= splitscreen; i++)
+	{
+		if (pnum == P_GetLocalPlayerNumForNum(i))
+			return true;
 	}
 
 	return false;
@@ -1064,7 +1105,7 @@ void P_SpawnShieldOrb(player_t *player)
 	// blaze through the thinkers to see if an orb already exists!
 	for (th = thinkercap.next; th != &thinkercap; th = th->next)
 	{
-		if (th->function.acp1 != (actionf_p1)P_MobjThinker)
+		if (th->function != (actionf_p1)P_MobjThinker)
 			continue;
 
 		shieldobj = (mobj_t *)th;
@@ -1283,12 +1324,13 @@ boolean P_InQuicksand(mobj_t *mo) // Returns true if you are in quicksand
 {
 	sector_t *sector = mo->subsector->sector;
 	fixed_t topheight, bottomheight;
-
-	fixed_t flipoffset = ((mo->eflags & MFE_VERTICALFLIP) ? (mo->height/2) : 0);
+	fixed_t flipoffset;
 
 	if (sector->ffloors)
 	{
 		ffloor_t *rover;
+
+		flipoffset = ((mo->eflags & MFE_VERTICALFLIP) ? (mo->height/2) : 0);
 
 		for (rover = sector->ffloors; rover; rover = rover->next)
 		{
@@ -1358,7 +1400,7 @@ static void P_CheckBustableBlocks(player_t *player)
 					if (!(rover->flags & FF_SHATTER) && !(rover->flags & FF_SPINBUST)
 						&& !((player->pflags & PF_SPINNING) && !(player->pflags & PF_JUMPED))
 						&& (!player->powers[pw_super])
-						&& !(player->pflags & PF_DRILLING) && !metalrecording)
+						&& !(player->pflags & PF_DRILLING))
 						continue;
 
 					topheight = P_GetFOFTopZ(player->mo, node->m_sector, rover, player->mo->x, player->mo->y, NULL);
@@ -1406,9 +1448,6 @@ static void P_CheckBustableBlocks(player_t *player)
 						player->mo->momx >>= 1;
 						player->mo->momy >>= 1;
 					}
-
-					//if (metalrecording)
-					//	G_RecordBustup(rover);
 
 					EV_CrumbleChain(node->m_sector, rover);
 
@@ -1636,7 +1675,7 @@ static void P_CheckInvincibilityTimer(player_t *player)
 	if (!player->powers[pw_invulnerability] && !player->kartstuff[k_invincibilitytimer])
 		return;
 
-	player->mo->color = (UINT8)(1 + (leveltime % (MAXSKINCOLORS-1)));
+	player->mo->color = K_RainbowColor();
 
 	// Resume normal music stuff.
 	if (player->powers[pw_invulnerability] == 1 || player->kartstuff[k_invincibilitytimer] == 1)
@@ -1678,6 +1717,7 @@ static void P_DoBubbleBreath(player_t *player)
 		bubble = P_SpawnMobj(player->mo->x, player->mo->y, zh, MT_SMALLBUBBLE);
 	else if (P_RandomChance(3*FRACUNIT/256))
 		bubble = P_SpawnMobj(player->mo->x, player->mo->y, zh, MT_MEDIUMBUBBLE);
+
 	if (bubble)
 	{
 		bubble->threshold = 42;
@@ -1685,8 +1725,8 @@ static void P_DoBubbleBreath(player_t *player)
 		P_SetScale(bubble, bubble->destscale);
 	}
 
-	if (player->pflags & PF_NIGHTSMODE) // NiGHTS Super doesn't spawn flight bubbles
-		return;
+	//if (player->pflags & PF_NIGHTSMODE) // NiGHTS Super doesn't spawn flight bubbles
+		//return;
 }
 
 //
@@ -1780,7 +1820,7 @@ void P_Telekinesis(player_t *player, fixed_t thrust, fixed_t range)
 
 	for (th = thinkercap.next; th != &thinkercap; th = th->next)
 	{
-		if (th->function.acp1 != (actionf_p1)P_MobjThinker)
+		if (th->function != (actionf_p1)P_MobjThinker)
 			continue;
 
 		mo2 = (mobj_t *)th;
@@ -2155,7 +2195,7 @@ static void P_MovePlayer(player_t *player)
 	}
 	// note: don't unset stasis here
 
-	if (!player->spectator && G_TagGametype())
+	if (UNLIKELY(!player->spectator && G_TagGametype()))
 	{
 		// If we have stasis already here, it's because it's forced on us
 		// by a linedef executor or what have you
@@ -2215,7 +2255,7 @@ static void P_MovePlayer(player_t *player)
 			player->lturn_max[leveltime%MAXPREDICTTICS] = player->rturn_max[leveltime%MAXPREDICTTICS] = 0;
 		}
 
-		if (leveltime >= starttime)
+		if (LIKELY(leveltime >= starttime))
 		{
 			// KART: Don't directly apply angleturn! It may have been either A) forged by a malicious client, or B) not be a smooth turn due to a player dropping frames.
 			// Instead, turn the player only up to the amount they're supposed to turn accounting for latency. Allow exactly 1 extra turn unit to try to keep old replays synced.
@@ -2254,7 +2294,7 @@ static void P_MovePlayer(player_t *player)
 		P_3dMovement(player);
 	}
 
-	if (maptol & TOL_2D)
+	if (UNLIKELY(maptol & TOL_2D)) // psure this doesent even work at all
 		runspd = FixedMul(runspd, 2*FRACUNIT/3);
 
 	/////////////////////////
@@ -2315,10 +2355,10 @@ static void P_MovePlayer(player_t *player)
 
 	// Drifting sound
 	// Start looping the sound now.
-	if (leveltime % 50 == 0 && onground && player->kartstuff[k_drift] != 0)
+	if (onground && leveltime % 50 == 0 && player->kartstuff[k_drift] != 0)
 		S_StartSound(player->mo, sfx_drift);
 	// Leveltime being 50 might take a while at times. We'll start it up once, isntantly.
-	else if (!S_SoundPlaying(player->mo, sfx_drift) && onground && player->kartstuff[k_drift] != 0)
+	else if (onground && !S_SoundPlaying(player->mo, sfx_drift) && player->kartstuff[k_drift] != 0)
 		S_StartSound(player->mo, sfx_drift);
 	// Ok, we'll stop now.
 	else if (player->kartstuff[k_drift] == 0 || !onground)
@@ -2343,7 +2383,7 @@ static void P_MovePlayer(player_t *player)
 		P_SetPlayerMobjState(player->mo, S_KART_STND1); // SRB2kart - was S_PLAY_STND
 	}
 
-	if (player->gotflag) // If you can't glide, then why the heck would you be gliding?
+	if (UNLIKELY(player->gotflag)) // If you can't glide, then why the heck would you be gliding?
 	{
 		player->pflags &= ~PF_GLIDING;
 		player->glidetime = 0;
@@ -2506,7 +2546,7 @@ static void P_DoZoomTube(player_t *player)
 		// Find next waypoint
 		for (th = thinkercap.next; th != &thinkercap; th = th->next)
 		{
-			if (th->function.acp1 != (actionf_p1)P_MobjThinker) // Not a mobj thinker
+			if (th->function != (actionf_p1)P_MobjThinker) // Not a mobj thinker
 				continue;
 
 			mo2 = (mobj_t *)th;
@@ -2558,14 +2598,14 @@ static void P_DoZoomTube(player_t *player)
 	{
 		player->mo->angle = R_PointToAngle2(player->mo->x, player->mo->y, player->mo->tracer->x, player->mo->tracer->y);
 
-		if (player == &players[consoleplayer])
-			localangle[0] = player->mo->angle;
-		else if (player == &players[displayplayers[1]])
-			localangle[1] = player->mo->angle;
-		else if (player == &players[displayplayers[2]])
-			localangle[2] = player->mo->angle;
-		else if (player == &players[displayplayers[3]])
-			localangle[3] = player->mo->angle;
+		for (UINT8 i = 0; i <= splitscreen; i++)
+		{
+			if (player == P_GetLocalPlayerForNum(i))
+			{
+				localangle[i] = player->mo->angle;
+				break;
+			}
+		}
 	}
 }
 
@@ -2596,7 +2636,7 @@ void P_NukeEnemies(mobj_t *inflictor, mobj_t *source, fixed_t radius)
 
 	for (think = thinkercap.next; think != &thinkercap; think = think->next)
 	{
-		if (think->function.acp1 != (actionf_p1)P_MobjThinker)
+		if (think->function != (actionf_p1)P_MobjThinker)
 			continue; // not a mobj thinker
 
 		mo = (mobj_t *)think;
@@ -2673,7 +2713,7 @@ boolean P_LookForEnemies(player_t *player)
 
 	for (think = thinkercap.next; think != &thinkercap; think = think->next)
 	{
-		if (think->function.acp1 != (actionf_p1)P_MobjThinker)
+		if (think->function != (actionf_p1)P_MobjThinker)
 			continue; // not a mobj thinker
 
 		mo = (mobj_t *)think;
@@ -2704,8 +2744,8 @@ boolean P_LookForEnemies(player_t *player)
 			player->mo->z-mo->z) > FixedMul(RING_DIST, player->mo->scale))
 			continue; // out of range
 
-		if ((twodlevel || player->mo->flags2 & MF2_TWOD)
-		&& abs(player->mo->y-mo->y) > player->mo->radius)
+		if (UNLIKELY((twodlevel || player->mo->flags2 & MF2_TWOD)
+		&& abs(player->mo->y-mo->y) > player->mo->radius))
 			continue; // not in your 2d plane
 
 		if (mo->type == MT_PLAYER) // Don't chase after other players!
@@ -2751,14 +2791,14 @@ void P_HomingAttack(mobj_t *source, mobj_t *enemy) // Home in on your target
 
 	if (source->player)
 	{
-		if (source->player == &players[consoleplayer])
-			localangle[0] = source->angle;
-		else if (source->player == &players[displayplayers[1]])
-			localangle[1] = source->angle;
-		else if (source->player == &players[displayplayers[2]])
-			localangle[2] = source->angle;
-		else if (source->player == &players[displayplayers[3]])
-			localangle[3] = source->angle;
+		for (UINT8 i = 0; i <= splitscreen; i++)
+		{
+			if (source->player == P_GetLocalPlayerForNum(i))
+			{
+				localangle[i] = source->angle;
+				break;
+			}
+		}
 	}
 
 	// change slope
@@ -2797,7 +2837,7 @@ void P_FindEmerald(void)
 	// to find all emeralds
 	for (th = thinkercap.next; th != &thinkercap; th = th->next)
 	{
-		if (th->function.acp1 != (actionf_p1)P_MobjThinker)
+		if (th->function != (actionf_p1)P_MobjThinker)
 			continue;
 
 		mo2 = (mobj_t *)th;
@@ -2986,21 +3026,28 @@ static void CV_PlayerCam4_OnChange(void)
 }
 
 consvar_t cv_cam_dist[MAXSPLITSCREENPLAYERS] = {
-	{"cam_dist", "160", CV_FLOAT|CV_SAVE|CV_CALL|CV_NOINIT, NULL, CV_PlayerCam1_OnChange, 0, NULL, NULL, 0, 0, NULL},
+	{"cam_dist",  "160", CV_FLOAT|CV_SAVE|CV_CALL|CV_NOINIT, NULL, CV_PlayerCam1_OnChange, 0, NULL, NULL, 0, 0, NULL},
 	{"cam2_dist", "160", CV_FLOAT|CV_SAVE|CV_CALL|CV_NOINIT, NULL, CV_PlayerCam2_OnChange, 0, NULL, NULL, 0, 0, NULL},
 	{"cam3_dist", "160", CV_FLOAT|CV_SAVE|CV_CALL|CV_NOINIT, NULL, CV_PlayerCam3_OnChange, 0, NULL, NULL, 0, 0, NULL},
 	{"cam4_dist", "160", CV_FLOAT|CV_SAVE|CV_CALL|CV_NOINIT, NULL, CV_PlayerCam4_OnChange, 0, NULL, NULL, 0, 0, NULL}
 };
 
 consvar_t cv_cam_height[MAXSPLITSCREENPLAYERS] = {
-	{"cam_height", "50", CV_FLOAT|CV_SAVE|CV_CALL|CV_NOINIT, NULL, CV_PlayerCam1_OnChange, 0, NULL, NULL, 0, 0, NULL},
+	{"cam_height",  "50", CV_FLOAT|CV_SAVE|CV_CALL|CV_NOINIT, NULL, CV_PlayerCam1_OnChange, 0, NULL, NULL, 0, 0, NULL},
 	{"cam2_height", "50", CV_FLOAT|CV_SAVE|CV_CALL|CV_NOINIT, NULL, CV_PlayerCam2_OnChange, 0, NULL, NULL, 0, 0, NULL},
 	{"cam3_height", "50", CV_FLOAT|CV_SAVE|CV_CALL|CV_NOINIT, NULL, CV_PlayerCam3_OnChange, 0, NULL, NULL, 0, 0, NULL},
 	{"cam4_height", "50", CV_FLOAT|CV_SAVE|CV_CALL|CV_NOINIT, NULL, CV_PlayerCam4_OnChange, 0, NULL, NULL, 0, 0, NULL},
 };
 
+consvar_t cv_cam_pitch[MAXSPLITSCREENPLAYERS] = {
+	{"cam_pitch",  "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"cam2_pitch", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"cam3_pitch", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"cam4_pitch", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL}
+};
+
 consvar_t cv_cam_still[MAXSPLITSCREENPLAYERS] = {
-	{"cam_still", "Off", 0, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"cam_still",  "Off", 0, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL},
 	{"cam2_still", "Off", 0, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL},
 	{"cam3_still", "Off", 0, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL},
 	{"cam4_still", "Off", 0, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL}
@@ -3008,7 +3055,7 @@ consvar_t cv_cam_still[MAXSPLITSCREENPLAYERS] = {
 
 static CV_PossibleValue_t cam_speed_cons_t[] = {{0, "MIN"}, {1*FRACUNIT, "MAX"}, {0, NULL}};
 consvar_t cv_cam_speed[MAXSPLITSCREENPLAYERS] = {
-	{"cam_speed", "0.4", CV_FLOAT|CV_SAVE, cam_speed_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"cam_speed",  "0.4", CV_FLOAT|CV_SAVE, cam_speed_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
 	{"cam2_speed", "0.4", CV_FLOAT|CV_SAVE, cam_speed_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
 	{"cam3_speed", "0.4", CV_FLOAT|CV_SAVE, cam_speed_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
 	{"cam4_speed", "0.4", CV_FLOAT|CV_SAVE, cam_speed_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL}
@@ -3017,14 +3064,14 @@ consvar_t cv_cam_speed[MAXSPLITSCREENPLAYERS] = {
 
 static CV_PossibleValue_t cam_rotate_cons_t[] = {{-720, "MIN"}, {720, "MAX"}, {0, NULL}};
 consvar_t cv_cam_rotate[MAXSPLITSCREENPLAYERS] = {
-	{"cam_rotate", "0", CV_CALL|CV_NOINIT, cam_rotate_cons_t, CV_CamRotate_OnChange, 0, NULL, NULL, 0, 0, NULL},
+	{"cam_rotate",  "0", CV_CALL|CV_NOINIT, cam_rotate_cons_t, CV_CamRotate_OnChange, 0, NULL, NULL, 0, 0, NULL},
 	{"cam2_rotate", "0", CV_CALL|CV_NOINIT, cam_rotate_cons_t, CV_CamRotate2_OnChange, 0, NULL, NULL, 0, 0, NULL},
 	{"cam3_rotate", "0", CV_CALL|CV_NOINIT, cam_rotate_cons_t, CV_CamRotate3_OnChange, 0, NULL, NULL, 0, 0, NULL},
 	{"cam4_rotate", "0", CV_CALL|CV_NOINIT, cam_rotate_cons_t, CV_CamRotate4_OnChange, 0, NULL, NULL, 0, 0, NULL}
 };
 
 consvar_t cv_cam_timeover[MAXSPLITSCREENPLAYERS] = {
-	{"cam_timeover", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"cam_timeover",  "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL},
 	{"cam2_timeover", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL},
 	{"cam3_timeover", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL},
 	{"cam4_timeover", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL}
@@ -3032,7 +3079,7 @@ consvar_t cv_cam_timeover[MAXSPLITSCREENPLAYERS] = {
 
 static CV_PossibleValue_t freecam_speed_cons_t[] = {{0, "MIN"}, {10, "MAX"}, {0, NULL}};
 consvar_t cv_freecam_speed[MAXSPLITSCREENPLAYERS] = {
-	{"freecam_speed", "1", CV_SAVE, freecam_speed_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"freecam_speed",  "1", CV_SAVE, freecam_speed_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
 	{"freecam2_speed", "1", CV_SAVE, freecam_speed_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
 	{"freecam3_speed", "1", CV_SAVE, freecam_speed_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
 	{"freecam4_speed", "1", CV_SAVE, freecam_speed_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL}
@@ -3046,13 +3093,13 @@ consvar_t cv_actionmovie = {"actionmovie", "Off", CV_SAVE, CV_OnOff, NULL, 0, NU
 
 consvar_t cv_screenquake = {"quakescreenshake", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
-static CV_PossibleValue_t lookbackmom_cons_t[] = {{0, "Off"}, {1, "On"}, {2, "Double"}, {0, NULL}};
+static CV_PossibleValue_t cam_lookbackmom_cons_t[] = {{0, "Off"}, {1, "On"}, {2, "Double"}, {0, NULL}};
 
-consvar_t cv_lookbackmom[MAXSPLITSCREENPLAYERS] = {
-	{"cameralookbackmom", "Off", CV_SAVE, lookbackmom_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
-	{"cameralookbackmom2", "Off", CV_SAVE, lookbackmom_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
-	{"cameralookbackmom3", "Off", CV_SAVE, lookbackmom_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
-	{"cameralookbackmom4", "Off", CV_SAVE, lookbackmom_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL}
+consvar_t cv_cam_lookbackmom[MAXSPLITSCREENPLAYERS] = {
+	{"cameralookbackmom",  "Off", CV_SAVE, cam_lookbackmom_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"cameralookbackmom2", "Off", CV_SAVE, cam_lookbackmom_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"cameralookbackmom3", "Off", CV_SAVE, cam_lookbackmom_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"cameralookbackmom4", "Off", CV_SAVE, cam_lookbackmom_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL}
 };
 
 fixed_t t_cam_rotate[MAXSPLITSCREENPLAYERS] = {-42, -42, -42, -42};
@@ -3115,23 +3162,6 @@ static ticcmd_t *P_CameraCmd(camera_t *cam, UINT8 num)
 
 	lang = cam->localangle;
 	laim = cam->localaiming;
-
-	switch (forplayer)
-	{
-		case 2:
-			G_CopyTiccmd(cmd, I_BaseTiccmd2(), 1);
-			break;
-		case 3:
-			G_CopyTiccmd(cmd, I_BaseTiccmd3(), 1);
-			break;
-		case 4:
-			G_CopyTiccmd(cmd, I_BaseTiccmd4(), 1);
-			break;
-		case 1:
-		default:
-			G_CopyTiccmd(cmd, I_BaseTiccmd(), 1); // empty, or external driver
-			break;
-	}
 
 	cmd->angleturn = (INT16)(lang >> 16);
 	cmd->aiming = G_ClipAimingPitch(&laim);
@@ -3286,7 +3316,7 @@ static ticcmd_t *P_CameraCmd(camera_t *cam, UINT8 num)
 		cmd->sidemove = (SINT8)(cmd->sidemove + side);
 	}
 
-	lang += (cmd->angleturn<<16);
+	lang += (cmd->angleturn << 16);
 
 	cam->localangle = lang;
 	if (!cam->reset_aiming)
@@ -3404,17 +3434,44 @@ static void P_DemoCameraMovement(camera_t *cam, UINT8 num)
 	}
 
 	// update subsector to avoid crashes;
-	cam->subsector = R_PointInSubsector(cam->x, cam->y);
+	cam->subsector = R_PointInSubsectorFast(cam->x, cam->y);
+}
+
+void P_SetupCamera(camera_t *cam)
+{
+	mapthing_t *thing;
+
+	switch (gametype)
+	{
+		case GT_MATCH:
+		case GT_TAG:
+			thing = deathmatchstarts[0];
+			break;
+		default:
+			thing = playerstarts[0];
+			break;
+	}
+
+	if (!thing)
+		return; // we can't do jack shit
+
+	cam->x = thing->x << FRACBITS;
+	cam->y = thing->y << FRACBITS;
+	cam->angle = FixedAngle(thing->angle*FRACUNIT);
+
+	cam->subsector = R_PointInSubsectorFast(cam->x, cam->y); // make sure camera has a subsector set -- Monster Iestyn (12/11/18)
+	cam->z = P_GetSectorFloorZAt(cam->subsector->sector, cam->x, cam->y) + (32<<FRACBITS);
+
+	cam->chase = false; // tell camera to reset its position next tic
 }
 
 void P_ResetCamera(player_t *player, camera_t *thiscam)
 {
 	tic_t tries = 0;
-	fixed_t x, y, z;
 	UINT8 i;
 
 	if (thiscam->freecam)
-		return;	// do not reset the camera there.
+		return; // do not reset the camera there.
 
 	if (!player->mo)
 		return;
@@ -3423,17 +3480,15 @@ void P_ResetCamera(player_t *player, camera_t *thiscam)
 		return;
 
 	thiscam->chase = true;
-	x = player->mo->x - P_ReturnThrustX(player->mo, thiscam->angle, player->mo->radius);
-	y = player->mo->y - P_ReturnThrustY(player->mo, thiscam->angle, player->mo->radius);
-	if (player->mo->eflags & MFE_VERTICALFLIP)
-		z = player->mo->z + player->mo->height - (32<<FRACBITS) - 16*FRACUNIT;
-	else
-		z = player->mo->z + (32<<FRACBITS);
 
 	// set bits for the camera
-	thiscam->x = x;
-	thiscam->y = y;
-	thiscam->z = z;
+	thiscam->x = player->mo->x - P_ReturnThrustX(player->mo, thiscam->angle, player->mo->radius);
+	thiscam->y = player->mo->y - P_ReturnThrustY(player->mo, thiscam->angle, player->mo->radius);
+	if (player->mo->eflags & MFE_VERTICALFLIP)
+		thiscam->z = player->mo->z + player->mo->height - (32<<FRACBITS) - 16*FRACUNIT;
+	else
+		thiscam->z = player->mo->z + (32<<FRACBITS);
+
 	thiscam->reset = true;
 
 	for (i = 0; i <= splitscreen; i++)
@@ -3448,14 +3503,14 @@ void P_ResetCamera(player_t *player, camera_t *thiscam)
 
 	thiscam->relativex = 0;
 
-	thiscam->subsector = R_PointInSubsector(thiscam->x,thiscam->y);
+	thiscam->subsector = R_PointInSubsectorFast(thiscam->x, thiscam->y);
 
 	thiscam->radius = 20*FRACUNIT;
 	thiscam->height = 16*FRACUNIT;
 
 	thiscam->reset_aiming = true;
 
-	while (!P_MoveChaseCamera(player,thiscam,true) && ++tries < 2*TICRATE);
+	while (!P_MoveChaseCamera(player, thiscam, true) && ++tries < 2*TICRATE);
 }
 
 #ifndef NOCLIPCAM // Disable all z-clipping for noclip cam
@@ -3510,7 +3565,7 @@ static boolean P_CheckNoclipCameraPosition(player_t *player, camera_t *thiscam, 
 			for (rover = newsubsec->sector->ffloors; rover; rover = rover->next)
 			{
 				fixed_t topheight, bottomheight;
-				if (!(rover->flags & FF_BLOCKOTHERS) || !(rover->flags & FF_EXISTS) || !(rover->flags & FF_RENDERALL) || GETSECSPECIAL(rover->master->frontsector->special, 4) == 12)
+				if (!(rover->flags & FF_BLOCKOTHERS) || !(rover->flags & FF_EXISTS) || !(rover->flags & FF_RENDERALL) || UNLIKELY(GETSECSPECIAL(rover->master->frontsector->special, 4) == 12))
 					continue;
 
 				topheight = P_CameraGetFOFTopZ(thiscam, newsubsec->sector, rover, midx, midy, NULL);
@@ -3575,7 +3630,7 @@ static boolean P_CheckNoclipCameraPosition(player_t *player, camera_t *thiscam, 
 							// We're inside it! Yess...
 							polysec = po->lines[0]->backsector;
 
-							if (GETSECSPECIAL(polysec->special, 4) == 12)
+							if (UNLIKELY(GETSECSPECIAL(polysec->special, 4) == 12))
 							{ // Camera noclip polyobj.
 								plink = (polymaplink_t *)(plink->link.next);
 								continue;
@@ -3631,7 +3686,7 @@ static boolean P_CheckNoclipCameraPosition(player_t *player, camera_t *thiscam, 
 			for (rover = newsubsec->sector->ffloors; rover; rover = rover->next)
 			{
 				fixed_t topheight, bottomheight;
-				if ((rover->flags & FF_BLOCKOTHERS) && (rover->flags & FF_RENDERALL) && (rover->flags & FF_EXISTS) && GETSECSPECIAL(rover->master->frontsector->special, 4) == 12)
+				if (UNLIKELY((rover->flags & FF_BLOCKOTHERS) && (rover->flags & FF_RENDERALL) && (rover->flags & FF_EXISTS) && GETSECSPECIAL(rover->master->frontsector->special, 4) == 12))
 				{
 					topheight = P_CameraGetFOFTopZ(thiscam, newsubsec->sector, rover, midx, midy, NULL);
 					bottomheight = P_CameraGetFOFBottomZ(thiscam, newsubsec->sector, rover, midx, midy, NULL);
@@ -3664,28 +3719,19 @@ static boolean P_CheckNoclipCameraPosition(player_t *player, camera_t *thiscam, 
 }
 #endif
 
+// Freecam toggle button is a "shortcut" to reset
+// the camera to "spawn" position when spectator
 static void P_MoveCameraToSpawn(UINT8 playernum)
 {
 	camera_t *thiscam = &camera[playernum];
-	player_t *player = playernum == 0 ? &players[consoleplayer] : &players[displayplayers[playernum]];
 
-	if (!thiscam || !player->mo)
+	if (!thiscam)
 		return;
 
-	thiscam->x = player->mo->x - P_ReturnThrustX(player->mo, thiscam->angle, player->mo->radius);
-	thiscam->y = player->mo->y - P_ReturnThrustY(player->mo, thiscam->angle, player->mo->radius);
-	if (player->mo->eflags & MFE_VERTICALFLIP)
-		thiscam->z = player->mo->z + player->mo->height - (32<<FRACBITS) - 16*FRACUNIT;
-	else
-		thiscam->z = player->mo->z + (32<<FRACBITS);
+	P_SetupCamera(thiscam);
 
-	thiscam->reset = true;
-
-	thiscam->angle = player->mo->angle;
 	thiscam->aiming = 0;
-
-	thiscam->subsector = R_PointInSubsector(thiscam->x,thiscam->y);
-
+	thiscam->reset = true;
 	thiscam->reset_aiming = true;
 
 	R_ResetViewInterpolation(playernum);
@@ -3696,8 +3742,8 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 	static boolean lookbackactive[MAXSPLITSCREENPLAYERS];
 	static UINT8 lookbackdelay[MAXSPLITSCREENPLAYERS];
 	UINT8 num = 0;
-	angle_t angle = 0, focusangle = 0, focusaiming = 0;
-	fixed_t x, y, z, dist, viewpointx, viewpointy, camspeed, camdist, camheight, pviewheight;
+	angle_t angle = 0, focusangle = 0, focusaiming = 0, pitch = 0;
+	fixed_t x, y, z, dist, distxy, distz, viewpointx, viewpointy, camspeed, camdist, camheight, pviewheight;
 	fixed_t pan, xpan, ypan;
 	INT32 camrotate;
 	boolean camstill, lookback, lookbackdown;
@@ -3741,8 +3787,6 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 
 	mo = player->mo;
 
-	const boolean vflip = (mo->eflags & MFE_VERTICALFLIP);
-
 	if (cv_cam_timeover[num].value && (player->pflags & PF_TIMEOVER))
 		timeover = (player->kartstuff[k_timeovercam] > 2*TICRATE ? 2 : 1); // 1 for momentum keep, 2 for turnaround
 	else
@@ -3753,14 +3797,14 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 		if (player->spectator) // force cam off for spectators
 			return true;
 
-		if (!cv_chasecam[num].value && thiscam == &camera[num])
+		if (!cv_chasecam[num].value)
 			return true;
 	}
 
 	if (!thiscam->chase && !resetcalled)
 	{
 		focusangle = ((P_IsLocalPlayer(player)) ? localangle[num] : mo->angle);
-		camrotate = ((thiscam == &camera[num]) ? cv_cam_rotate[num].value : 0);
+		camrotate = cv_cam_rotate[num].value;
 
 		if (leveltime < introtime) // Whoooshy camera!
 		{
@@ -3778,7 +3822,13 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 
 	if (demo.playback)
 	{
-		focusangle = mo->angle;
+		// Hack-adjacent.
+		// Sometimes stale ticcmds send a weird angle at the start of the race.
+		// P_UpdatePlayerAngle knows to ignore cmd angle when you literally can't turn, so we do the same here.
+		if (cv_demoangturn.value && leveltime > starttime)
+			focusangle = player->cmd.angleturn << 16;
+		else
+			focusangle = mo->angle; // Just use something known sane.
 		focusaiming = 0;
 	}
 	else if (P_IsLocalPlayer(player))
@@ -3799,6 +3849,8 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 
 	if (P_CameraThinker(player, thiscam, resetcalled))
 		return true;
+
+	const boolean vflip = (mo->eflags & MFE_VERTICALFLIP);
 
 	camspeed = cv_cam_speed[num].value;
 	camstill = cv_cam_still[num].value;
@@ -3880,7 +3932,7 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 	}
 
 	if (!resetcalled && (leveltime > starttime && timeover != 2)
-		&& (thiscam == &camera[num] && t_cam_rotate[num] != -42))
+		&& (t_cam_rotate[num] != -42))
 	{
 		angle = FixedAngle(camrotate*FRACUNIT);
 		thiscam->angle = angle;
@@ -3896,8 +3948,41 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 	if (player->kartstuff[k_boostcam])
 		dist -= FixedMul(11*dist/16, player->kartstuff[k_boostcam]);
 
-	x = mo->x - FixedMul(FINECOSINE((angle>>ANGLETOFINESHIFT) & FINEMASK), dist);
-	y = mo->y - FixedMul(FINESINE((angle>>ANGLETOFINESHIFT) & FINEMASK), dist);
+	if (cv_cam_pitch[num].value)
+	{
+		if (mo->standingslope)
+		{
+			pitch = (angle_t)FixedMul(P_ReturnThrustX(mo, thiscam->angle - mo->standingslope->xydirection, FRACUNIT), (fixed_t)mo->standingslope->zangle);
+
+			if (vflip)
+			{
+				if (pitch >= ANGLE_180)
+					pitch = 0;
+			}
+			else
+			{
+				if (pitch < ANGLE_180)
+					pitch = 0;
+			}
+		}
+		pitch = thiscam->pitch + (angle_t)FixedMul(pitch - thiscam->pitch, camspeed/4);
+
+#ifdef HWRENDER
+		if (rendermode == render_opengl)
+			distxy = FixedMul(dist, FINECOSINE((pitch>>ANGLETOFINESHIFT) & FINEMASK));
+		else
+#endif
+			distxy = dist;
+		distz = -FixedMul(dist, FINESINE((pitch>>ANGLETOFINESHIFT) & FINEMASK));
+	}
+	else
+	{
+		distxy = dist;
+		distz = 0;
+	}
+
+	x = mo->x - FixedMul(FINECOSINE((angle>>ANGLETOFINESHIFT) & FINEMASK), distxy);
+	y = mo->y - FixedMul(FINESINE((angle>>ANGLETOFINESHIFT) & FINEMASK), distxy);
 
 	// SRB2Kart: set camera panning
 	if (camstill || resetcalled || player->playerstate == PST_DEAD)
@@ -3909,7 +3994,8 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 		if (player->kartstuff[k_drift] != 0)
 		{
 			fixed_t panmax = (dist/5);
-			pan = FixedDiv(FixedMul(min((fixed_t)player->kartstuff[k_driftcharge], K_GetKartDriftSparkValue(player)), panmax), K_GetKartDriftSparkValue(player));
+			const INT32 sparkval = K_GetKartDriftSparkValue(player);
+			pan = FixedDiv(FixedMul(min((fixed_t)player->kartstuff[k_driftcharge], sparkval), panmax), sparkval);
 			if (pan > panmax)
 				pan = panmax;
 			if (player->kartstuff[k_drift] < 0)
@@ -3929,10 +4015,26 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 
 	pviewheight = FixedMul(32<<FRACBITS, mo->scale);
 
-	if (vflip)
-		z = mo->z + mo->height - pviewheight - camheight;
+	if (cv_cam_pitch[num].value)
+	{
+		if (vflip)
+		{
+			distz = min(-camheight, distz);
+			z = mo->z + mo->height - pviewheight + distz;
+		}
+		else
+		{
+			distz = max(camheight, distz);
+			z = mo->z + pviewheight + distz;
+		}
+	}
 	else
-		z = mo->z + pviewheight + camheight;
+	{
+		if (vflip)
+			z = mo->z + mo->height - pviewheight - camheight;
+		else
+			z = mo->z + pviewheight + camheight;
+	}
 
 #ifndef NOCLIPCAM // Disable all z-clipping for noclip cam
 	if (P_CheckNoclipCameraPosition(player, thiscam, x, y, z, resetcalled))
@@ -3974,16 +4076,17 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 		// when looking back, camera's momentum
 		// should inherit the momentum of the player
 		// if value is 2, add extra
-		if (cv_lookbackmom[num].value && lookback && lookbackdelay[num])
+		if (cv_cam_lookbackmom[num].value && lookback && lookbackdelay[num])
 		{
-			thiscam->momx += cv_lookbackmom[num].value*mo->momx;
-			thiscam->momy += cv_lookbackmom[num].value*mo->momy;
+			thiscam->momx += cv_cam_lookbackmom[num].value*mo->momx;
+			thiscam->momy += cv_cam_lookbackmom[num].value*mo->momy;
 		}
 
 		thiscam->momz = FixedMul(z - thiscam->z, camspeed/2);
 	}
 
 	thiscam->pan = pan;
+	thiscam->pitch = pitch;
 
 	// compute aming to look the viewed point
 	f1 = viewpointx-thiscam->x;
@@ -3991,9 +4094,17 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 	dist = FixedHypot(f1, f2);
 
 	if (vflip)
+	{
 		angle = R_PointToAngle2(0, thiscam->z + thiscam->height, dist, mo->z + mo->height - P_GetPlayerHeight(player));
+		if (thiscam->pitch < ANGLE_180 && thiscam->pitch > angle)
+			angle += (thiscam->pitch - angle)/2;
+	}
 	else
+	{
 		angle = R_PointToAngle2(0, thiscam->z, dist, mo->z + P_GetPlayerHeight(player));
+		if (thiscam->pitch >= ANGLE_180 && thiscam->pitch < angle)
+			angle -= (angle - thiscam->pitch)/2;
+	}
 
 	if (player->playerstate != PST_DEAD && !((player->pflags & PF_NIGHTSMODE) && player->exiting))
 		angle += (focusaiming < ANGLE_180 ? focusaiming/2 : InvAngle(InvAngle(focusaiming)/2)); // overcomplicated version of '((signed)focusaiming)/2;'
@@ -4049,19 +4160,12 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 
 void P_ResetLocalCamAiming(player_t *player)
 {
-	UINT8 i;
-
-	if (player == &players[consoleplayer])
-		localaiming[0] = 0;
-	else if (splitscreen)
+	for (UINT8 i = 0; i <= splitscreen; i++)
 	{
-		for (i = 1; i <= splitscreen; i++) // Skip P1
+		if (player == P_GetLocalPlayerForNum(i))
 		{
-			if (player == &players[displayplayers[i]])
-			{
-				localaiming[i] = 0;
-				break;
-			}
+			localaiming[i] = 0;
+			break;
 		}
 	}
 }
@@ -4077,7 +4181,7 @@ boolean P_SpectatorJoinGame(player_t *player)
 	// Team changing in Team Match and CTF
 	// Pressing fire assigns you to a team that needs players if allowed.
 	// Partial code reproduction from p_tick.c autobalance code.
-	else if (G_GametypeHasTeams())
+	else if (UNLIKELY(G_GametypeHasTeams()))
 	{
 		INT32 changeto = 0;
 		INT32 z, numplayersred = 0, numplayersblue = 0;
@@ -4212,17 +4316,19 @@ static void P_CalcPostImg(player_t *player, camera_t *thiscam)
 {
 	sector_t *sector = NULL;
 	UINT8 postimgtype = 0;
-	//INT32 *param;
 	fixed_t pviewheight = 0;
+#ifdef MOTIONBLUR
+	INT32 *param;
 
-	/*for (i = 0; i <= splitscreen; i++)
+	for (i = 0; i <= splitscreen; i++)
 	{
 		if (player == &players[displayplayers[i]])
 		{
 			param = &postimgparam[i];
 			break;
 		}
-	}*/
+	}
+#endif
 
 	if (encoremode) // srb2kart
 		postimgtype |= POSTIMG_MIRROR;
@@ -4245,7 +4351,7 @@ static void P_CalcPostImg(player_t *player, camera_t *thiscam)
 	else
 		pviewheight = player->mo->z + player->viewheight;
 
-	if (player->awayviewtics && player->awayviewmobj && !P_MobjWasRemoved(player->awayviewmobj))
+	if (player->awayviewtics && !P_MobjWasRemoved(player->awayviewmobj))
 	{
 		sector = player->awayviewmobj->subsector->sector;
 		pviewheight = player->awayviewmobj->z + 20*FRACUNIT;
@@ -4258,16 +4364,18 @@ static void P_CalcPostImg(player_t *player, camera_t *thiscam)
 	else if (P_CameraCheckHeatFirstperson(player, sector, pviewheight))
 		postimgtype |= POSTIMG_HEAT;
 
+#ifdef MOTIONBLUR
 	// Motion blur
 	// unused
-	/*if (player->speed > (35<<FRACBITS))
+	if (player->speed > (35<<FRACBITS))
 	{
 		postimgtype |= POSTIMG_MOTION;
 		*param = (player->speed - 32)/4;
 
 		if (*param > 5)
 			*param = 5;
-	}*/
+	}
+#endif
 
 	thiscam->postimg = postimgtype;
 }
@@ -4319,10 +4427,10 @@ static INT32 Quaketilt(player_t *player)
 	if (abs(delta) > ANGLE_90)
 		delta = (INT32)(( moma + ANGLE_180 ) - player->mo->angle );
 
-	const boolean sliptiding = player->kartstuff[k_drift] ? 0 : player->kartstuff[k_aizdriftstrat];
-
 	if (P_IsObjectOnGround(player->mo))
 	{
+		const boolean sliptiding = player->kartstuff[k_drift] ? 0 : player->kartstuff[k_aizdriftstrat];
+
 		if (sliptiding)
 		{
 			tilt = ANGLE_45;
@@ -4408,7 +4516,7 @@ static void P_DoFunnyDance(player_t *player)
 {
 	fixed_t bpm; // 140bpm ish
 
-	if (player->spectator || !player->mo || player->kartstuff[k_respawn] || player->mo->salty_jump) // this looks jank as hell during hop
+	if (player->spectator || !player->mo || player->kartstuff[k_respawn] || player->mo->salty.jump) // this looks jank as hell during hop
 		return;
 
 	player->squishdance.bounce = 0;
@@ -4449,6 +4557,8 @@ void P_PlayerThink(player_t *player)
 		I_Error("p_playerthink: players[%s].mo == NULL", sizeu1(playeri));
 #endif
 
+	player->driftlevel = 0; // idk where to put this
+
 	// todo: Figure out what is actually causing these problems in the first place...
 	if ((player->health <= 0 || player->mo->health <= 0) && player->playerstate == PST_LIVE) //you should be DEAD!
 	{
@@ -4475,8 +4585,8 @@ void P_PlayerThink(player_t *player)
 	{
 		seenplayer = NULL;
 
-		if (cv_seenames.value && cv_allowseenames.value &&
-			!(G_TagGametype() && (player->pflags & PF_TAGIT)))
+		if (UNLIKELY(cv_seenames.value && cv_allowseenames.value &&
+			!(G_TagGametype() && (player->pflags & PF_TAGIT))))
 		{
 			mobj_t *mo = P_SpawnNameFinder(player->mo, MT_NAMECHECK);
 
@@ -4765,8 +4875,8 @@ void P_PlayerThink(player_t *player)
 	}
 
 	// Even if not NiGHTS, pull in nearby objects when walking around as John Q. Elliot.
-	if (!objectplacing && !((netgame || multiplayer) && player->spectator)
-	&& maptol & TOL_NIGHTS && (!(player->pflags & PF_NIGHTSMODE) || player->powers[pw_nights_helper]))
+	if (UNLIKELY(!objectplacing && !((netgame || multiplayer) && player->spectator)
+	&& maptol & TOL_NIGHTS && (!(player->pflags & PF_NIGHTSMODE) || player->powers[pw_nights_helper])))
 	{
 		thinker_t *th;
 		mobj_t *mo2;
@@ -4776,7 +4886,7 @@ void P_PlayerThink(player_t *player)
 
 		for (th = thinkercap.next; th != &thinkercap; th = th->next)
 		{
-			if (th->function.acp1 != (actionf_p1)P_MobjThinker)
+			if (th->function != (actionf_p1)P_MobjThinker)
 				continue;
 
 			mo2 = (mobj_t *)th;
@@ -4831,7 +4941,7 @@ void P_PlayerThink(player_t *player)
 	player->pflags &= ~PF_FULLSTASIS;
 
 	if (player->onconveyor == 1)
-			player->cmomy = player->cmomx = 0;
+		player->cmomy = player->cmomx = 0;
 
 	P_DoBubbleBreath(player); // Spawn Sonic's bubbles
 	P_CheckInvincibilityTimer(player); // Spawn Invincibility Sparkles
@@ -4868,7 +4978,7 @@ void P_PlayerThink(player_t *player)
 #endif
 
 	// check for use
-	if (!(player->pflags & PF_NIGHTSMODE))
+	if (LIKELY(!(player->pflags & PF_NIGHTSMODE)))
 	{
 		if (cmd->buttons & BT_BRAKE)
 			player->pflags |= PF_USEDOWN;
@@ -5040,6 +5150,11 @@ void P_PlayerAfterThink(player_t *player)
 		P_PlayerInSpecialSector(player);
 #endif
 
+	if (player->playerstate == PST_DEAD)
+	{
+		return;
+	}
+
 	for (i = 0; i <= splitscreen; i++)
 	{
 		if (player == &players[displayplayers[i]])
@@ -5049,12 +5164,7 @@ void P_PlayerAfterThink(player_t *player)
 		}
 	}
 
-	if (player->playerstate == PST_DEAD)
-	{
-		return;
-	}
-
-	if (player->pflags & PF_NIGHTSMODE)
+	if (UNLIKELY(player->pflags & PF_NIGHTSMODE))
 	{
 		player->powers[pw_gravityboots] = 0;
 	}
@@ -5084,14 +5194,14 @@ void P_PlayerAfterThink(player_t *player)
 			player->mo->tracer->target->health += cmd->sidemove;
 			player->mo->angle += cmd->sidemove << ANGLETOFINESHIFT; // 2048 --> ANGLE_MAX
 
-			if (player == &players[consoleplayer])
-				localangle[0] = player->mo->angle; // Adjust the local control angle.
-			else if (player == &players[displayplayers[1]])
-				localangle[1] = player->mo->angle;
-			else if (player == &players[displayplayers[2]])
-				localangle[2] = player->mo->angle;
-			else if (player == &players[displayplayers[3]])
-				localangle[3] = player->mo->angle;
+			for (i = 0; i <= splitscreen; i++)
+			{
+				if (player == P_GetLocalPlayerForNum(i))
+				{
+					localangle[i] = player->mo->angle; // Adjust the local control angle.
+					break;
+				}
+			}
 		}
 	}
 

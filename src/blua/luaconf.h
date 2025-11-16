@@ -11,13 +11,17 @@
 #include <limits.h>
 #include <stddef.h>
 
-#ifdef _MSC_VER
-#define INT32 __int32
-#else
 #include <stdint.h>
 #define INT32 int32_t
-#endif
 
+#ifndef __cplusplus
+#ifndef min // Double-Check with WATTCP-32's cdefs.h
+#define min(x, y) (((x) < (y)) ? (x) : (y))
+#endif
+#ifndef max // Double-Check with WATTCP-32's cdefs.h
+#define max(x, y) (((x) > (y)) ? (x) : (y))
+#endif
+#endif
 
 /*
 ** ==================================================================
@@ -534,8 +538,11 @@
 #endif
 #define lua_number2str(s,n)	sprintf((s), LUA_NUMBER_FMT, (n))
 #define LUAI_MAXNUMBER2STR	12 /* 10 digits, sign, and \0 */
-#define lua_str2number(s,p)	strtol((s), (p), 10)
-
+#define lua_str2number(s,p) ({ \
+		long nmr = strtol((s), (p), 10); \
+		nmr = max(INT32_MIN, min((nmr), INT32_MAX)); \
+		nmr; \
+	})
 
 /*
 @@ The luai_num* macros define the primitive operations over numbers.
@@ -559,9 +566,6 @@
 #define luai_numshl(a,b)	((unsigned)(a)<<(unsigned)(b))
 #define luai_numshr(a,b)	((unsigned)(a)>>(unsigned)(b))
 #define	luai_numnot(a)		(~((unsigned)(a)))
-#ifdef _MSC_VER
-#pragma warning(disable : 4244)
-#endif
 #endif
 
 
@@ -578,23 +582,10 @@
 #if defined(LUA_NUMBER_DOUBLE) && !defined(LUA_ANSI) && !defined(__SSE2__) && \
     (defined(__i386) || defined (_M_IX86) || defined(__i386__))
 
-/* On a Microsoft compiler, use assembler */
-#if defined(_MSC_VER)
-
-#define lua_number2int(i,d)   __asm fld d   __asm fistp i
-#define lua_number2integer(i,n)		lua_number2int(i, n)
-
-/* the next trick should work on any Pentium, but sometimes clashes
-   with a DirectX idiosyncrasy */
-#else
-
 union luai_Cast { double l_d; long l_l; };
 #define lua_number2int(i,d) \
   { volatile union luai_Cast u; u.l_d = (d) + 6755399441055744.0; (i) = u.l_l; }
 #define lua_number2integer(i,n)		lua_number2int(i, n)
-
-#endif
-
 
 /* this option always works, but may be slow */
 #else
@@ -772,6 +763,23 @@ union luai_Cast { double l_d; long l_l; };
 
 
 /* =================================================================== */
+
+/*
+ * * macros to improve jump prediction, used mostly for error handling
+ ** and debug facilities.
+ */
+#if !defined(l_likely)
+
+#include <stdio.h>
+#if defined(__GNUC__)
+#define l_likely(x)	(__builtin_expect(((x) != 0), 1))
+#define l_unlikely(x)	(__builtin_expect(((x) != 0), 0))
+#else
+#define l_likely(x)	(x)
+#define l_unlikely(x)	(x)
+#endif
+
+#endif
 
 /*
 ** Local configuration. You can use this space to add your redefinitions

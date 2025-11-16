@@ -13,6 +13,10 @@
 #ifndef __D_CLISRV__
 #define __D_CLISRV__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "d_ticcmd.h"
 #include "d_net.h"
 #include "d_netcmd.h"
@@ -38,8 +42,8 @@ applications may follow different packet versions.
 #define VANILLA_GT_MATCH 3
 
 // Networking and tick handling related.
-#define BACKUPTICS 32
-#define TICQUEUE 512 // more than enough for most timeouts....
+#define BACKUPTICS 512 // more than enough for most timeouts....
+#define CLIENTBACKUPTICS 32
 #define MAXTEXTCMD 256
 
 // No. of tics your controls can be delayed by.
@@ -116,6 +120,8 @@ typedef enum
 	PT_ISSATURN, 			// Saturn specific identifier packet
 #endif
 
+	PT_MAPICON,       // Send map image icon (gamespy).
+	PT_NEEDMAPICON,   // Request missed map icon (gamespy).
 	NUMPACKETTYPE
 } packettype_t;
 
@@ -125,10 +131,6 @@ void Command_Droprate(void);
 #endif
 #ifdef _DEBUG
 void Command_Numnodes(void);
-#endif
-
-#if defined(_MSC_VER)
-#pragma pack(1)
 #endif
 
 // Client to server packet
@@ -169,10 +171,6 @@ typedef struct
 	INT16 consistancy;
 	ticcmd_t cmd, cmd2, cmd3, cmd4;
 } ATTRPACK client4cmd_pak;
-
-#ifdef _MSC_VER
-#pragma warning(disable :  4200)
-#endif
 
 // Server to client packet
 // this packet is too large
@@ -366,10 +364,6 @@ typedef struct {
 	UINT8 data[0]; // Size is variable using hardware_MAXPACKETLENGTH
 } ATTRPACK filetx_pak;
 
-#ifdef _MSC_VER
-#pragma warning(default : 4200)
-#endif
-
 #define MAXAPPLICATION 16
 
 typedef struct
@@ -509,12 +503,9 @@ typedef struct
 		INT32 filesneedednum;               //           4 bytes
 		filesneededconfig_pak filesneededcfg; //       ??? bytes
 		UINT32 pingtable[MAXPLAYERS+1];     //          68 bytes
+		UINT8 mapicondata[0];
 	} u; // This is needed to pack diff packet types data together
 } ATTRPACK doomdata_t;
-
-#if defined(_MSC_VER)
-#pragma pack()
-#endif
 
 #define MAXSERVERLIST (MAXNETNODES-1)
 typedef struct
@@ -529,7 +520,6 @@ extern UINT32 serverlistultimatecount;
 extern INT32 mapchangepending;
 
 // Points inside doomcom
-extern doomdata_t *netbuffer;
 extern consvar_t cv_stunserver;
 extern consvar_t cv_httpsource;
 extern consvar_t cv_kicktime;
@@ -561,7 +551,6 @@ typedef enum
 	KR_TIMEOUT, //Connection Timeout
 	KR_BAN, //Banned by server
 	KR_LEAVE, //Quit the game
-
 } kickreason_t;
 
 /* the max number of name changes in some time period */
@@ -577,6 +566,9 @@ extern boolean acceptnewnode;
 extern SINT8 servernode;
 extern char connectedservername[MAXSERVERNAME+1];
 
+extern plrinfo playerinfo[MAXPLAYERS];
+extern SINT8 joinnode;
+
 void Command_Ping_f(void);
 extern tic_t connectiontimeout;
 extern tic_t jointimeout;
@@ -590,10 +582,9 @@ extern tic_t simulated_lag;
 extern tic_t lowest_lag;
 extern consvar_t cv_mindelay, cv_gentlemens;
 
+extern consvar_t cv_usefakeseed, cv_fakeseedname;
+
 extern consvar_t
-#ifdef VANILLAJOINNEXTROUND
-	cv_joinnextround,
-#endif
 	cv_netticbuffer, cv_allownewplayer,
 #ifdef SATURNJOIN
 	cv_allownewsaturnplayer,
@@ -608,12 +599,14 @@ extern consvar_t cv_connectawaittime;
 
 extern consvar_t cv_discordinvites;
 
+extern consvar_t cv_serverinfoscreen;
+
 // Used in d_net, the only dependence
 //tic_t ExpandTics(INT32 low, tic_t basetic);
 void D_ClientServerInit(void);
 
 // Initialise the other field
-void RegisterNetXCmd(netxcmd_t id, void (*cmd_f)(UINT8 **p, INT32 playernum));
+void RegisterNetXCmd(netxcmd_t id, void (*cmd_f)(const UINT8 **p, INT32 playernum));
 void SendNetXCmdForPlayer(UINT8 playerid, netxcmd_t id, const void *param, size_t nparam);
 #define SendNetXCmd(id, param, nparam) SendNetXCmdForPlayer(0, id, param, nparam) // Shortcut for P1
 void SendKick(UINT8 playernum, UINT8 msg);
@@ -648,26 +641,20 @@ void D_QuitNetGame(void);
 //? How many ticks to run?
 boolean TryRunTics(tic_t realtic);
 
-// extra data for lmps
-// these functions scare me. they contain magic.
-/*boolean AddLmpExtradata(UINT8 **demo_p, INT32 playernum);
-void ReadLmpExtraData(UINT8 **demo_pointer, INT32 playernum);*/
-
-#ifndef NONET
 // translate a playername in a player number return -1 if not found and
 // print a error message in the console
 SINT8 nametonum(const char *name);
-#endif
 
 extern char motd[254], server_context[8];
 extern UINT8 playernode[MAXPLAYERS];
+
+extern boolean player_muted[MAXPLAYERS];
 
 INT32 D_NumPlayers(void);
 
 void D_ResetTiccmds(void);
 
 tic_t GetLag(INT32 node);
-//UINT8 GetFreeXCmdSize(UINT8 playerid);
 
 extern UINT8 hu_resynching;
 #ifdef SATURNPAK
@@ -675,7 +662,8 @@ extern UINT8 hu_redownloadinggamestate;
 #endif
 extern boolean hu_stopped; // kart, true when the game is stopped for players due to a disconnecting or connecting player
 
-typedef struct rewind_s {
+typedef struct rewind_s
+{
 	UINT8 savebuffer[(768*1024)];
 	tic_t leveltime;
 	size_t demopos;
@@ -689,4 +677,9 @@ typedef struct rewind_s {
 void CL_ClearRewinds(void);
 rewind_t *CL_SaveRewindPoint(size_t demopos);
 rewind_t *CL_RewindToTime(tic_t time);
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
+
 #endif

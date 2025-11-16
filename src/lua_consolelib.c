@@ -28,12 +28,28 @@
 
 #define NOHUD if (hud_running) return luaL_error(L, "HUD rendering code should not call this function!");
 
-static const char *cvname = NULL;
+static consvar_t *this_cvar;
 
-void Got_Luacmd(UINT8 **cp, INT32 playernum)
+static void clear_lua_stack(void)
+{
+	if (gL) // check if Lua is actually turned on first, you dummmy -- Monster Iestyn 04/07/18
+		lua_settop(gL, 0); // clear stack
+}
+
+void Got_Luacmd(const UINT8 **cp, INT32 playernum)
 {
 	UINT8 i, argc, flags;
+	const char *argv[256];
 	char buf[256];
+
+	argc = READUINT8(*cp);
+	argv[0] = (const char*)*cp;
+	SKIPSTRINGN(*cp, 255);
+	for (i = 1; i < argc; i++)
+	{
+		argv[i] = (const char*)*cp;
+		SKIPSTRINGN(*cp, 255);
+	}
 
 	// don't use I_Assert here, goto the deny code below
 	// to clean up and kick people who try nefarious exploits
@@ -47,8 +63,7 @@ void Got_Luacmd(UINT8 **cp, INT32 playernum)
 	lua_getfield(gL, LUA_REGISTRYINDEX, "COM_Command"); // push COM_Command
 	if (!lua_istable(gL, -1)) goto deny;
 
-	argc = READUINT8(*cp);
-	READSTRINGN(*cp, buf, 255);
+	strlcpy(buf, argv[0], 255);
 	strlwr(buf); // must lowercase buffer
 	lua_getfield(gL, -1, buf); // push command info table
 	if (!lua_istable(gL, -1)) goto deny;
@@ -74,10 +89,17 @@ void Got_Luacmd(UINT8 **cp, INT32 playernum)
 
 	lua_remove(gL, -2); // pop command info table
 
+	if (!lua_checkstack(gL, argc)) // player + command arguments
+	{
+		clear_lua_stack();
+		CONS_Alert(CONS_WARNING, "lua command stack overflow from %s (%d, need %d more)\n", player_names[playernum], lua_gettop(gL), argc);
+		return;
+	}
+
 	LUA_PushUserdata(gL, &players[playernum], META_PLAYER);
 	for (i = 1; i < argc; i++)
 	{
-		READSTRINGN(*cp, buf, 255);
+		strlcpy(buf, argv[i], 255);
 		lua_pushstring(gL, buf);
 	}
 	LUA_Call(gL, (int)argc, 0, 1); // argc is 1-based, so this will cover the player we passed too.
@@ -88,8 +110,7 @@ void Got_Luacmd(UINT8 **cp, INT32 playernum)
 
 deny:
 	//must be hacked/buggy client
-	if (gL) // check if Lua is actually turned on first, you dummmy -- Monster Iestyn 04/07/18
-		lua_settop(gL, 0); // clear stack
+	clear_lua_stack();
 
 	CONS_Alert(CONS_WARNING, M_GetText("Illegal lua command received from %s\n"), player_names[playernum]);
 	if (server)
@@ -133,9 +154,10 @@ void COM_Lua_f(void)
 	{
 		if (!splitscreen)
 		{
-			lua_pop(gL, 1); // pop command info table
+			lua_pop(gL, 2); // pop command info table and LUA_GetErrorMessage
 			return; // can't execute splitscreen command without player 2!
 		}
+
 		playernum = displayplayers[1];
 	}
 
@@ -176,6 +198,13 @@ void COM_Lua_f(void)
 	lua_rawgeti(gL, -1, 1); // push function from command info table
 	I_Assert(lua_isfunction(gL, -1));
 	lua_remove(gL, -2); // pop command info table
+
+	if (!lua_checkstack(gL, COM_Argc() + 1))
+	{
+		CONS_Alert(CONS_WARNING, "lua command stack overflow (%d, need %s more)\n", lua_gettop(gL), sizeu1(COM_Argc() + 1));
+		lua_pop(gL, 2); // pop function and LUA_GetErrorMessage
+		return;
+	}
 
 	LUA_PushUserdata(gL, &players[playernum], META_PLAYER);
 	for (i = 1; i < COM_Argc(); i++)
@@ -283,16 +312,13 @@ static int lib_comBufInsertText(lua_State *L)
 	return 0;
 }
 
-void LUA_CVarChanged(const char *name)
+void LUA_CVarChanged(void *cvar)
 {
-	cvname = name;
+	this_cvar = cvar;
 }
 
 static void Lua_OnChange(void)
 {
-	I_Assert(gL != NULL);
-	I_Assert(cvname != NULL);
-
 	/// \todo Network this! XD_LUAVAR
 
     // Why?..
@@ -304,13 +330,10 @@ static void Lua_OnChange(void)
 	// From CV_OnChange registry field, get the function for this cvar by name.
 	lua_getfield(gL, LUA_REGISTRYINDEX, "CV_OnChange");
 	I_Assert(lua_istable(gL, -1));
-	lua_getfield(gL, -1, cvname); // get function
+	lua_pushlightuserdata(gL, this_cvar);
+	lua_rawget(gL, -2); // get function
 
-	// From the CV_Vars registry field, get the cvar's userdata by name.
-	lua_getfield(gL, LUA_REGISTRYINDEX, "CV_Vars");
-	I_Assert(lua_istable(gL, -1));
-	lua_getfield(gL, -1, cvname); // get consvar_t* userdata.
-	lua_remove(gL, -2); // pop the CV_Vars table.
+	LUA_RawPushUserdata(gL, this_cvar);
 
 	LUA_Call(gL, 1, 0, error_handler_i); // call function(cvar)
 	lua_pop(gL, 2); // pop CV_OnChange table and error handler
@@ -328,9 +351,8 @@ static int lib_cvRegisterVar(lua_State *L)
 	luaL_checktype(L, 1, LUA_TTABLE);
 	lua_settop(L, 1); // Clear out all other possible arguments, leaving only the first one.
 	NOHUD
-	cvar = lua_newuserdata(L, sizeof(consvar_t));
-	luaL_getmetatable(L, META_CVAR);
-	lua_setmetatable(L, -2);
+	cvar = ZZ_Calloc(sizeof(consvar_t));
+	LUA_PushUserdata(L, cvar, META_CVAR);
 
 #define FIELDERROR(f, e) luaL_error(L, "bad value for " LUA_QL(f) " in table passed to " LUA_QL("CV_RegisterVar") " (%s)", e);
 #define TYPEERROR(f, t) FIELDERROR(f, va("%s expected, got %s", lua_typename(L, t), luaL_typename(L, -1)))
@@ -383,7 +405,7 @@ static int lib_cvRegisterVar(lua_State *L)
 
 				lua_getfield(L, LUA_REGISTRYINDEX, "CV_PossibleValue");
 				I_Assert(lua_istable(L, 5));
-				lua_pushvalue(L, 2); // cvar userdata
+				lua_pushlightuserdata(L, cvar);
 				cvpv = lua_newuserdata(L, sizeof(CV_PossibleValue_t) * (count+1));
 				lua_rawset(L, 5);
 				lua_pop(L, 1); // pop CV_PossibleValue registry table
@@ -411,13 +433,14 @@ static int lib_cvRegisterVar(lua_State *L)
 				TYPEERROR("func", LUA_TFUNCTION)
 			lua_getfield(L, LUA_REGISTRYINDEX, "CV_OnChange");
 			I_Assert(lua_istable(L, 5));
+			lua_pushlightuserdata(L, cvar);
 			lua_pushvalue(L, 4);
-			lua_setfield(L, 5, cvar->name);
+			lua_rawset(L, 5);
 			lua_pop(L, 1);
 			cvar->func = Lua_OnChange;
 		}
 		else if (((i == 5 && !(cvar->flags & CV_CALL))
-				|| (cvar->flags & CV_CALL && i == 6)) 
+				|| (cvar->flags & CV_CALL && i == 6))
 				|| (k && fasticmp(k, "category")))
 		{
 			category = lua_isnoneornil(L, 4) ? NULL : lua_tostring(L, 4);
@@ -433,18 +456,12 @@ static int lib_cvRegisterVar(lua_State *L)
 #undef FIELDERROR
 #undef TYPEERROR
 
-	// stack: cvar table, cvar userdata
-	lua_getfield(L, LUA_REGISTRYINDEX, "CV_Vars");
-	I_Assert(lua_istable(L, 3));
-
-	lua_getfield(L, 3, cvar->name);
-	if (lua_type(L, -1) != LUA_TNIL)
-		return luaL_error(L, M_GetText("Variable %s is already defined\n"), cvar->name);
-	lua_pop(L, 1);
-
-	lua_pushvalue(L, 2);
-	lua_setfield(L, 3, cvar->name);
-	lua_pop(L, 1);
+	if (!cvar->name)
+		return luaL_error(L, M_GetText("Variable has no name!\n"));
+	if ((cvar->flags & CV_NOINIT) && !(cvar->flags & CV_CALL))
+		return luaL_error(L, M_GetText("Variable %s has CV_NOINIT without CV_CALL\n"), cvar->name);
+	if ((cvar->flags & CV_CALL) && !cvar->func)
+		return luaL_error(L, M_GetText("Variable %s has CV_CALL without a function\n"), cvar->name);
 
 	// actually time to register it to the console now! Finally!
 	cvar->flags |= CV_MODIFIED;
@@ -452,7 +469,7 @@ static int lib_cvRegisterVar(lua_State *L)
 	if (cvar->flags & CV_MODIFIED)
 		return luaL_error(L, "failed to register cvar (probable conflict with internal variable/command names)");
 
-	if (!(((cvar->flags & CV_HIDEN)) || (cvar->flags & CV_NOSHOWHELP)) && (cvar->PossibleValue || !(cvar->value == 0 && stricmp(cvar->string, "0"))))
+	if (!(((cvar->flags & CV_HIDEN)) || (cvar->flags & CV_NOSHOWHELP)) && (cvar->PossibleValue || !(cvar->value == 0 && !fasticmp(cvar->string, "0"))))
 	{
 		if (!category)
 		{
@@ -476,22 +493,9 @@ static int lib_cvRegisterVar(lua_State *L)
 
 static int lib_cvFindVar(lua_State *L)
 {
-	consvar_t *cv;
-	if (( cv = CV_FindVar(luaL_checkstring(L,1)) ))
-	{
-		lua_settop(L,1);/* We only want one argument in the stack. */
-		lua_pushlightuserdata(L, cv);/* Now the second value on stack. */
-		luaL_getmetatable(L, META_CVAR);
-		/*
-		The metatable is the last value on the stack, so this
-		applies it to the second value, which is the cvar.
-		*/
-		lua_setmetatable(L,2);
-		lua_pushvalue(L,2);
-		return 1;
-	}
-	else
-		return 0;
+	const char *name = luaL_checkstring(L, 1);
+	LUA_PushUserdata(L, CV_FindVar(name), META_CVAR);
+	return 1;
 }
 
 static int CVarSetFunction
@@ -500,7 +504,7 @@ static int CVarSetFunction
 		void (*Set)(consvar_t *, const char *),
 		void (*SetValue)(consvar_t *, INT32)
 ){
-	consvar_t *cvar = (consvar_t *)luaL_checkudata(L, 1, META_CVAR);
+	consvar_t *cvar = *(consvar_t **)luaL_checkudata(L, 1, META_CVAR);
 
 	switch (lua_type(L, 2))
 	{
@@ -529,7 +533,8 @@ static int lib_cvStealthSet(lua_State *L)
 
 static int lib_cvAddValue(lua_State *L)
 {
-	consvar_t *cvar = (consvar_t *)luaL_checkudata(L, 1, META_CVAR);
+	consvar_t *cvar = *(consvar_t **)luaL_checkudata(L, 1, META_CVAR);
+
 	CV_AddValue(cvar, (INT32)luaL_checknumber(L, 2));
 	return 0;
 }
@@ -544,6 +549,7 @@ static int lib_consPrintf(lua_State *L)
 	if (n < 2)
 		return luaL_error(L, "CONS_Printf requires at least two arguments: player and text.");
 	//HUDSAFE
+
 	plr = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
 	if (!plr)
 		return LUA_ErrInvalid(L, "player_t");
@@ -604,7 +610,7 @@ static int cvar_fields_ref = LUA_NOREF;
 
 static int cvar_get(lua_State *L)
 {
-	consvar_t *cvar = (consvar_t *)luaL_checkudata(L, 1, META_CVAR);
+	consvar_t *cvar = *(consvar_t **)luaL_checkudata(L, 1, META_CVAR);
 	enum cvar_e field = Lua_optoption(L, 2, -1, cvar_fields_ref);
 
 	switch (field)
