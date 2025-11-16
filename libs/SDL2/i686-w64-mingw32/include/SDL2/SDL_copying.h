@@ -18,3 +18,10 @@
      misrepresented as being the original software.
   3. This notice may not be removed or altered from any source distribution.
 */
+<<<<<<< HEAD:libs/SDL2/i686-w64-mingw32/include/SDL2/SDL_copying.h
+=======
+
+/* DEPRECATED */
+
+#include "SDL_stdinc.h"
+>>>>>>> origin/Saturn-Next:libs/SDL2/include/SDL_types.h

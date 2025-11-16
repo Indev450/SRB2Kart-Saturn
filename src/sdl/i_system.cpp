@@ -801,6 +801,7 @@ void I_UpdateJoystickDeviceIndex(UINT8 player)
 			{
 				if (compareJoystick == player)
 					continue;
+
 				if (value == JoyInfo[compareJoystick].oldjoy || value == cv_usejoystick[compareJoystick].value)
 					break;
 			}

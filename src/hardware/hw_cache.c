@@ -700,6 +700,7 @@ static void HWR_PrecacheLevelTextures(void)
 			for (f = 0; f < 3; f++)
 			{
 				const INT32 texnum = sidetex[f];
+
 				if (texnum < 0 || texnum >= numtextures || texturepresent[texnum])
 					continue;
 #ifdef GLENCORE

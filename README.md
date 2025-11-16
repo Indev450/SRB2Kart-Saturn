@@ -24,6 +24,7 @@ See [SRB2 Wiki/Source code compiling](http://wiki.srb2.org/wiki/Source_code_comp
 Visual C++ (MSVC) is unsupported
 
 Currently only the Makefile build system with GCC or Clang compiler is supported.
+CMake is NOT supported at the moment, but will be availible again soon.
 
 Visual C++ (MSVC) is unsupported.
 

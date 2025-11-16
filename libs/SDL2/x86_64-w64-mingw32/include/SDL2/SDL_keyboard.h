@@ -49,7 +49,11 @@ typedef struct SDL_Keysym
 {
     SDL_Scancode scancode;      /**< SDL physical key code - see SDL_Scancode for details */
     SDL_Keycode sym;            /**< SDL virtual key code - see SDL_Keycode for details */
+<<<<<<< HEAD
     Uint16 mod;                 /**< current key modifiers */
+=======
+    Uint16 mod;                 /**< current key modifiers - see SDL_Keymod for details */
+>>>>>>> origin/Saturn-Next
     Uint32 unused;
 } SDL_Keysym;
 

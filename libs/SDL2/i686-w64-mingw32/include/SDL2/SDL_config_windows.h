@@ -19,69 +19,44 @@
   3. This notice may not be removed or altered from any source distribution.
 */
 
-#ifndef SDL_config_windows_h_
-#define SDL_config_windows_h_
+#ifndef SDL_config_h_
 #define SDL_config_h_
 
 #include "SDL_platform.h"
 
-/* winsdkver.h defines _WIN32_MAXVER for SDK version detection. It is present since at least the Windows 7 SDK,
- * but out of caution we'll only use it if the compiler supports __has_include() to confirm its presence.
- * If your compiler doesn't support __has_include() but you have winsdkver.h, define HAVE_WINSDKVER_H.  */
-#if !defined(HAVE_WINSDKVER_H) && defined(__has_include)
-#if __has_include(<winsdkver.h>)
-#define HAVE_WINSDKVER_H 1
-#endif
-#endif
+/* WIKI CATEGORY: - */
 
-#ifdef HAVE_WINSDKVER_H
-#include <winsdkver.h>
-#endif
-
-/* sdkddkver.h defines more specific SDK version numbers. This is needed because older versions of the
- * Windows 10 SDK have broken declarations for the C API for DirectX 12. */
-#if !defined(HAVE_SDKDDKVER_H) && defined(__has_include)
-#if __has_include(<sdkddkver.h>)
-#define HAVE_SDKDDKVER_H 1
-#endif
-#endif
-
-#ifdef HAVE_SDKDDKVER_H
-#include <sdkddkver.h>
-#endif
-
-/* This is a set of defines to configure the SDL features */
-
-#if !defined(HAVE_STDINT_H) && !defined(_STDINT_H_)
-/* Most everything except Visual Studio 2008 and earlier has stdint.h now */
-#if defined(_MSC_VER) && (_MSC_VER < 1600)
-typedef signed __int8 int8_t;
-typedef unsigned __int8 uint8_t;
-typedef signed __int16 int16_t;
-typedef unsigned __int16 uint16_t;
-typedef signed __int32 int32_t;
-typedef unsigned __int32 uint32_t;
-typedef signed __int64 int64_t;
-typedef unsigned __int64 uint64_t;
-#ifndef _UINTPTR_T_DEFINED
-#ifdef  _WIN64
-typedef unsigned __int64 uintptr_t;
+/* Add any platform that doesn't build using the configure system. */
+#if defined(__WIN32__)
+#include "SDL_config_windows.h"
+#elif defined(__WINRT__)
+#include "SDL_config_winrt.h"
+#elif defined(__WINGDK__)
+#include "SDL_config_wingdk.h"
+#elif defined(__XBOXONE__) || defined(__XBOXSERIES__)
+#include "SDL_config_xbox.h"
+#elif defined(__MACOSX__)
+#include "SDL_config_macosx.h"
+#elif defined(__IPHONEOS__)
+#include "SDL_config_iphoneos.h"
+#elif defined(__ANDROID__)
+#include "SDL_config_android.h"
+#elif defined(__OS2__)
+#include "SDL_config_os2.h"
+#elif defined(__EMSCRIPTEN__)
+#include "SDL_config_emscripten.h"
+#elif defined(__NGAGE__)
+#include "SDL_config_ngage.h"
 #else
-typedef unsigned int uintptr_t;
-#endif
-#define _UINTPTR_T_DEFINED
-#endif
-#else
-#define HAVE_STDINT_H 1
-#endif /* Visual Studio 2008 */
-#endif /* !_STDINT_H_ && !HAVE_STDINT_H */
+/* This is a minimal configuration just to get SDL running on new platforms. */
+#include "SDL_config_minimal.h"
+#endif /* platform config */
 
-#ifdef _WIN64
-# define SIZEOF_VOIDP 8
-#else
-# define SIZEOF_VOIDP 4
+#ifdef USING_GENERATED_CONFIG_H
+#error Wrong SDL_config.h, check your include path?
 #endif
 
+<<<<<<<< HEAD:libs/SDL2/i686-w64-mingw32/include/SDL2/SDL_config_windows.h
 #ifdef __clang__
 # define HAVE_GCC_ATOMICS 1
 #endif
@@ -331,3 +306,6 @@ typedef unsigned int uintptr_t;
 #endif /* SDL_config_windows_h_ */
 
 /* vi: set ts=4 sw=4 expandtab: */
+========
+#endif /* SDL_config_h_ */
+>>>>>>>> origin/Saturn-Next:libs/SDL2/include/SDL_config.h
