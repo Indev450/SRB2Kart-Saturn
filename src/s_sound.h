@@ -70,7 +70,6 @@ extern consvar_t cv_resetspecialmusic;
 
 extern consvar_t cv_resume;
 extern consvar_t cv_fading;
-extern consvar_t cv_birdmusic;
 
 extern consvar_t cv_keepmusic;
 extern consvar_t cv_skipintromusic;

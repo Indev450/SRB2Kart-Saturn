@@ -625,7 +625,7 @@ static void Countstutter(int len)
 {
 	UINT32 bytes;
 
-	if (!cv_birdmusic.value || gamestate != GS_LEVEL)
+	if (gamestate != GS_LEVEL)
 		return;
 
 	if (hu_stopped)
