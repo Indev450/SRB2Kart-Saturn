@@ -117,7 +117,7 @@ extern char  logfilename[1024];
 #define VERSIONSTRING "Saturn v9"
 #define VERSIONSTRINGW L"Saturn v9"
 
-#define SATURN_TESTING // comment out for saturn release builds!
+//#define SATURN_TESTING // comment out for saturn release builds!
 
 // Hey! If you change this, add 1 to the MODVERSION below! Otherwise we can't force updates!
 // And change CMakeLists.txt (not src/, but in root), for CMake users!
