@@ -215,26 +215,33 @@ static INT32 S_getChannel(const void *origin, sfxinfo_t *sfxinfo)
 		if (!channels[cnum].sfxinfo)
 			break;
 
+		const boolean samesoundplaying = channels[cnum].sfxinfo == sfxinfo;
+
 		// Now checks if same sound is being played, rather
 		// than just one sound per mobj
-		else if (sfxinfo == channels[cnum].sfxinfo && (sfxinfo->pitch & SF_NOMULTIPLESOUND))
+		if (samesoundplaying && (sfxinfo->pitch & SF_NOMULTIPLESOUND))
 		{
 			return -1;
 		}
-		else if (sfxinfo == channels[cnum].sfxinfo && sfxinfo->singularity == true)
+
+		if (samesoundplaying && sfxinfo->singularity == true)
 		{
 			S_StopChannel(cnum);
 			break;
 		}
-		else if (origin && channels[cnum].origin == origin && channels[cnum].sfxinfo == sfxinfo)
+
+		const boolean sameorigin = origin && channels[cnum].origin == origin;
+
+		if (sameorigin && samesoundplaying)
 		{
 			if (sfxinfo->pitch & SF_NOINTERRUPT)
 				return -1;
-			else
-				S_StopChannel(cnum);
+
+			S_StopChannel(cnum);
 			break;
 		}
-		else if (origin && channels[cnum].origin == origin
+
+		if (sameorigin
 			&& channels[cnum].sfxinfo->name != sfxinfo->name
 			&& (channels[cnum].sfxinfo->pitch & SF_TOTALLYSINGLE) && (sfxinfo->pitch & SF_TOTALLYSINGLE))
 		{
@@ -1276,8 +1283,7 @@ static musicdef_t *S_AddMusicCredit(void)
 
 struct cursongcredit cursongcredit = {0}; // Currently displayed song credit info
 
-static boolean
-ReadMusicDefFields (UINT16 wadnum, int line, char *stoken, musicdef_t **defp)
+static boolean ReadMusicDefFields(UINT16 wadnum, int line, char *stoken, musicdef_t **defp)
 {
 	musicdef_t *def;
 
@@ -1488,7 +1494,7 @@ void S_InitMusicDefs(void)
 //
 musicdef_t *S_FindMusicCredit(const char *musname)
 {
-	UINT32 hash = quickncasehash (musname, 6);
+	UINT32 hash = quickncasehash(musname, 6);
 	musicdef_t *def;
 
 	for (INT32 i = 0; i < nummusicdefs; ++i)
@@ -1647,7 +1653,8 @@ static lumpnum_t S_GetMusicLumpNum(const char *mname)
 {
 	if (S_MusicExists(mname, false, true)) // check non midis first
 		return W_GetNumForName(va("o_%s", mname));
-	else if (S_MusicExists(mname, true, false))
+
+	if (S_MusicExists(mname, true, false))
 	{
 #ifdef NO_MIDI
 		CONS_Alert(CONS_ERROR, "A MIDI music lump %.6s was found,\nbut SRB2Kart does not support MIDI output.\nWe apologise for the inconvenience.\n", mname);
@@ -1687,8 +1694,8 @@ static boolean S_LoadMusic(const char *mname)
 		music.data = mdata;
 		return true;
 	}
-	else
-		return false;
+
+	return false;
 }
 
 static void S_UnloadMusic(void)
@@ -1928,8 +1935,8 @@ boolean S_FadeMusicFromVolume(UINT8 target_volume, INT16 source_volume, UINT32 m
 {
 	if (source_volume < 0)
 		return I_FadeSong(target_volume, ms, NULL);
-	else
-		return I_FadeSongFromVolume(target_volume, source_volume, ms, NULL);
+
+	return I_FadeSongFromVolume(target_volume, source_volume, ms, NULL);
 }
 
 boolean S_FadeOutStopMusic(UINT32 ms)
@@ -2081,6 +2088,7 @@ void S_InitMapMusic(void)
 		{
 			S_ChangeMusicEx(mapmusic.name, mapmusic.flags, true, keepmusic.resume, 0, 500);
 		}
+
 		return;
 	}
 
@@ -2094,7 +2102,7 @@ void S_InitMapMusic(void)
 		return;
 
 	if (leveltime < MUSICSTARTTIME) // SRB2Kart
-		S_ChangeMusicInternal((encoremode ? "estart" : "kstart"), false); //S_StopMusic();
+		S_ChangeMusicInternal((encoremode ? "estart" : "kstart"), false); // S_StopMusic();
 }
 
 void S_StartMapMusic(void)
@@ -2362,7 +2370,7 @@ static void AmigaType_OnChange(void)
 		openmpt_module_ctl_set_text(openmpt_mhandle, "render.resampler.emulate_amiga_type", cv_amigatype.string);
 
 	if (sound_started)
-        S_RestartMusic(); //need to restart the music system or else it wont work
+        S_RestartMusic(); // need to restart the music system or else it wont work
 }
 #endif
 #endif

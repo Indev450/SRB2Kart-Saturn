@@ -182,7 +182,8 @@ void I_StartupSound(void)
 		CONS_Debug(DBG_DETAILED, "SDL Audio already started\n");
 		return;
 	}
-	else if (SDL_InitSubSystem(SDL_INIT_AUDIO) < 0)
+
+	if (SDL_InitSubSystem(SDL_INIT_AUDIO) < 0)
 	{
 		CONS_Alert(CONS_ERROR, "Error initializing SDL Audio: %s\n", SDL_GetError());
 		// call to start audio failed -- we do not have it
@@ -607,8 +608,8 @@ static UINT32 get_adjusted_position(UINT32 position)
 		UINT32 looppoint = I_GetSongLoopPoint();
 		return position >= length ? (position % (length-looppoint)) : position;
 	}
-	else
-		return position;
+
+	return position;
 }
 
 static void do_fading_callback(void)
@@ -694,11 +695,13 @@ static UINT32 music_fade(UINT32 interval, void *param)
 		do_fading_callback();
 		return 0;
 	}
-	else if (songpaused) // don't decrement timer
+
+	if (songpaused) // don't decrement timer
 	{
 		return interval;
 	}
-	else if ((fading_timer -= 10) <= 0)
+
+	if ((fading_timer -= 10) <= 0)
 	{
 		internal_volume = fading_target;
 		Mix_VolumeMusic(get_real_volume(music_volume));
@@ -706,20 +709,18 @@ static UINT32 music_fade(UINT32 interval, void *param)
 		do_fading_callback();
 		return 0;
 	}
-	else
-	{
-		UINT8 delta = abs(fading_target - fading_source);
-		fixed_t factor = FixedDiv(fading_duration - fading_timer, fading_duration);
 
-		if (fading_target < fading_source)
-			internal_volume = max(min(internal_volume, fading_source - FixedMul(delta, factor)), fading_target);
-		else if (fading_target > fading_source)
-			internal_volume = min(max(internal_volume, fading_source + FixedMul(delta, factor)), fading_target);
+	UINT8 delta = abs(fading_target - fading_source);
+	fixed_t factor = FixedMul(delta, FixedDiv(fading_duration - fading_timer, fading_duration));
 
-		Mix_VolumeMusic(get_real_volume(music_volume));
+	if (fading_target < fading_source)
+		internal_volume = max(min(internal_volume, fading_source - factor), fading_target);
+	else if (fading_target > fading_source)
+		internal_volume = min(max(internal_volume, fading_source + factor), fading_target);
 
-		return interval;
-	}
+	Mix_VolumeMusic(get_real_volume(music_volume));
+
+	return interval;
 }
 
 #ifdef HAVE_LIBGME
@@ -793,7 +794,6 @@ musictype_t I_SongType(void)
 #ifdef HAVE_LIBGME
 	if (gme)
 		return MU_GME;
-	else
 #endif
 #ifdef HAVE_OPENMPT
 	if (openmpt_mhandle)
@@ -823,10 +823,10 @@ boolean I_SongPlaying(void)
 {
 	return (
 #ifdef HAVE_LIBGME
-		(I_SongType() == MU_GME && gme) ||
+		(gme && I_SongType() == MU_GME) ||
 #endif
 #ifdef HAVE_OPENMPT
-		(I_SongType() == MU_MOD_EX && openmpt_mhandle) ||
+		(openmpt_mhandle && I_SongType() == MU_MOD_EX) ||
 #endif
 		music != NULL
 	);
@@ -845,7 +845,6 @@ boolean I_SetSongSpeed(float speed)
 {
 	if (speed > 250.0f)
 		speed = 250.0f; //limit speed up to 250x
-
 #ifdef HAVE_LIBGME
 	if (gme)
 	{
@@ -854,7 +853,6 @@ boolean I_SetSongSpeed(float speed)
 		SDL_UnlockAudio();
 		return true;
 	}
-	else
 #endif
 #ifdef HAVE_OPENMPT
 	if (openmpt_mhandle)
@@ -918,30 +916,26 @@ UINT32 I_GetSongLength(void)
 
 		return max(length, 0);
 	}
-	else
 #endif
 #ifdef HAVE_OPENMPT
 	if (openmpt_mhandle)
 	{
 		return (UINT32)(openmpt_module_get_duration_seconds(openmpt_mhandle) * 1000.);
 	}
-	else
 #endif
 	if (!music || I_SongType() == MU_MOD || I_SongType() == MU_MID)
 	{
 		return 0;
 	}
-	else
-	{
-		// VERY IMPORTANT to set your LENGTHMS= in your song files, folks!
-		// SDL mixer can't read music length itself.
-		length = (UINT32)(song_length*1000);
 
-		if (!length)
-			CONS_Debug(DBG_DETAILED, "Getting music length: music is missing LENGTHMS= tag. Needed for seeking.\n");
+	// VERY IMPORTANT to set your LENGTHMS= in your song files, folks!
+	// SDL mixer can't read music length itself.
+	length = (UINT32)(song_length*1000);
 
-		return length;
-	}
+	if (!length)
+		CONS_Debug(DBG_DETAILED, "Getting music length: music is missing LENGTHMS= tag. Needed for seeking.\n");
+
+	return length;
 }
 
 boolean I_SetSongLoopPoint(UINT32 looppoint)
@@ -981,18 +975,16 @@ UINT32 I_GetSongLoopPoint(void)
 			looppoint = info->intro_length > 0 ? info->intro_length : 0;
 
 		gme_free_info(info);
+
 		return max(looppoint, 0);
 	}
-	else
 #endif
 	if (!music || I_SongType() == MU_MOD || I_SongType() == MU_MID)
 	{
 		return 0;
 	}
-	else
-	{
-		return (UINT32)(loop_point * 1000);
-	}
+
+	return (UINT32)(loop_point * 1000);
 }
 
 boolean I_SetSongPosition(UINT32 position)
@@ -1022,7 +1014,6 @@ boolean I_SetSongPosition(UINT32 position)
 		// else
 		// 	return true;
 	}
-	else
 #endif
 #ifdef HAVE_OPENMPT
 	if (openmpt_mhandle)
@@ -1032,40 +1023,38 @@ boolean I_SetSongPosition(UINT32 position)
 		openmpt_module_set_position_seconds(openmpt_mhandle, (double)(get_adjusted_position(position)/1000.0L)); // returns new position
 		return true;
 	}
-	else
 #endif
 	if (!music || I_SongType() == MU_MID)
 	{
 		return false;
 	}
-	else if (I_SongType() == MU_MOD)
+
+	if (I_SongType() == MU_MOD)
 	{
 		return Mix_SetMusicPosition(position); // Goes by channels
 	}
+
+	// Because SDL mixer can't identify song length, if you have
+	// a position input greater than the real length, then
+	// music_bytes becomes inaccurate.
+
+	length = I_GetSongLength(); // get it in MS
+
+	if (length)
+		position = get_adjusted_position(position);
+
+	Mix_RewindMusic(); // needed for mp3
+
+	if (Mix_SetMusicPosition((float)(position/1000.0L)) == 0)
+		music_bytes = (UINT32)(position/1000.0L*44100.0L*4); //assume 44.1khz, 4-byte length (see I_GetSongPosition)
 	else
-	{
-		// Because SDL mixer can't identify song length, if you have
-		// a position input greater than the real length, then
-		// music_bytes becomes inaccurate.
+		// NOTE: This block fires on incorrect song format,
+		// NOT if position input is greater than song length.
+		music_bytes = 0;
 
-		length = I_GetSongLength(); // get it in MS
+	music_stutter_bytes = 0;
 
-		if (length)
-			position = get_adjusted_position(position);
-
-		Mix_RewindMusic(); // needed for mp3
-
-		if (Mix_SetMusicPosition((float)(position/1000.0L)) == 0)
-			music_bytes = (UINT32)(position/1000.0L*44100.0L*4); //assume 44.1khz, 4-byte length (see I_GetSongPosition)
-		else
-			// NOTE: This block fires on incorrect song format,
-			// NOT if position input is greater than song length.
-			music_bytes = 0;
-
-		music_stutter_bytes = 0;
-
-		return true;
-	}
+	return true;
 }
 
 UINT32 I_GetSongPosition(void)
@@ -1098,7 +1087,6 @@ UINT32 I_GetSongPosition(void)
 
 		return max(position, 0);
 	}
-	else
 #endif
 #ifdef HAVE_OPENMPT
 	if (openmpt_mhandle)
@@ -1106,19 +1094,16 @@ UINT32 I_GetSongPosition(void)
 		// So return unadjusted. See note in SetMusicPosition: we adjust for that.
 		return (UINT32)(openmpt_module_get_position_seconds(openmpt_mhandle)*1000.);
 		//return get_adjusted_position((UINT32)(openmpt_module_get_position_seconds(openmpt_mhandle)*1000.));
-	else
 #endif
 	if (!music || I_SongType() == MU_MID)
 	{
 		return 0;
 	}
-	else
-	{
-		return (UINT32)(music_bytes/44100.0L*1000.0L/4); //assume 44.1khz
-		// 4 = byte length for 16-bit samples (AUDIO_S16SYS), stereo (2-channel)
-		// This is hardcoded in I_StartupSound. Other formats for factor:
-		// 8M: 1 | 8S: 2 | 16M: 2 | 16S: 4
-	}
+
+	return (UINT32)(music_bytes/44100.0L*1000.0L/4); //assume 44.1khz
+	// 4 = byte length for 16-bit samples (AUDIO_S16SYS), stereo (2-channel)
+	// This is hardcoded in I_StartupSound. Other formats for factor:
+	// 8M: 1 | 8S: 2 | 16M: 2 | 16S: 4
 }
 
 void I_UpdateSongLagThreshold(void)
@@ -1236,8 +1221,8 @@ boolean I_LoadSong(char *data, size_t len)
 			CONS_Alert(CONS_ERROR, "openmpt_module_create_from_memory2: %s\n", mod_err_str);
 			return false;
 		}
-		else
-			return true; // All good and we're ready for music playback!
+
+		return true; // All good and we're ready for music playback!
 	}
 #endif
 
@@ -1332,31 +1317,20 @@ boolean I_PlaySong(boolean looping)
 
 		return true;
 	}
-	else
 #endif
 #ifdef HAVE_OPENMPT
 	if (openmpt_mhandle)
 	{
 		openmpt_module_select_subsong(openmpt_mhandle, 0);
-
+		openmpt_module_set_render_param(openmpt_mhandle, OPENMPT_MODULE_RENDER_STEREOSEPARATION_PERCENT, cv_stereosep.value); //have a feeling some might like it
 #if OPENMPT_API_VERSION_MAJOR < 1 && OPENMPT_API_VERSION_MINOR > 4
 		openmpt_module_ctl_set_text(openmpt_mhandle, "dither", "1");
+		openmpt_module_ctl_set_boolean(openmpt_mhandle, "render.resampler.emulate_amiga", cv_amigafilter.value);
+		openmpt_module_ctl_set_text(openmpt_mhandle, "render.resampler.emulate_amiga_type", cv_amigatype.string);
 #else
 		openmpt_module_ctl_set(openmpt_mhandle, "dither", "1");
-#endif
-
-		openmpt_module_set_render_param(openmpt_mhandle, OPENMPT_MODULE_RENDER_STEREOSEPARATION_PERCENT, cv_stereosep.value); //have a feeling some might like it
-
-#if OPENMPT_API_VERSION_MAJOR < 1 && OPENMPT_API_VERSION_MINOR > 4
-		openmpt_module_ctl_set_boolean(openmpt_mhandle, "render.resampler.emulate_amiga", cv_amigafilter.value);
-#else
 		openmpt_module_ctl_set(openmpt_mhandle, "render.resampler.emulate_amiga", cv_amigafilter.value ? "1" : "0");
 #endif
-
-#if OPENMPT_API_VERSION_MAJOR < 1 && OPENMPT_API_VERSION_MINOR > 4
-		openmpt_module_ctl_set_text(openmpt_mhandle, "render.resampler.emulate_amiga_type", cv_amigatype.string);
-#endif
-
 		openmpt_module_set_render_param(openmpt_mhandle, OPENMPT_MODULE_RENDER_INTERPOLATIONFILTER_LENGTH, cv_modfilter.value);
 		if (looping)
 			openmpt_module_set_repeat_count(openmpt_mhandle, -1); // Always repeat
@@ -1364,7 +1338,6 @@ boolean I_PlaySong(boolean looping)
 		Mix_HookMusic(mix_openmpt, openmpt_mhandle);
 		return true;
 	}
-	else
 #endif
 	if (!music)
 		return false;
@@ -1505,7 +1478,6 @@ boolean I_SetSongTrack(INT32 track)
 
 		return false;
 	}
-	else
 #endif
 #ifdef HAVE_OPENMPT
 	if (openmpt_mhandle)
