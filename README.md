@@ -23,6 +23,7 @@ We also have a Flatpak available on [Flathub](https://flathub.org/en/apps/org.sr
 See [SRB2 Wiki/Source code compiling](http://wiki.srb2.org/wiki/Source_code_compiling). The compiling process for SRB2Kart is largely identical to SRB2.
 
 Currently only the Makefile build system with GCC or Clang compiler is supported.
+CMake is NOT supported at the moment, but will be availible again soon.
 
 Visual C++ (MSVC) is unsupported.
 
