@@ -1742,12 +1742,12 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 			// Left side
 			wallVerts[3].t = texturevpeg * glTex->scaleY;
 			wallVerts[0].t = (h - l + texturevpeg) * glTex->scaleY;
-			wallVerts[0].s = wallVerts[3].s = (cliplow + gl_sidedef->textureoffset) * glTex->scaleX;
+			wallVerts[0].s = wallVerts[3].s = cliplow * glTex->scaleX;
 
 			// Right side
 			wallVerts[2].t = texturevpegslope * glTex->scaleY;
 			wallVerts[1].t = (hS - lS + texturevpegslope) * glTex->scaleY;
-			wallVerts[2].s = wallVerts[1].s = (cliphigh + gl_sidedef->textureoffset) * glTex->scaleX;
+			wallVerts[2].s = wallVerts[1].s = cliphigh * glTex->scaleX;
 
 			// set top/bottom coords
 			// Take the texture peg into account, rather than changing the offsets past
