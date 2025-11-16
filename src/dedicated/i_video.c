@@ -155,7 +155,10 @@ boolean I_UseNativeKeyboard(void)
 	return false;
 }
 
+void I_HandleControllerHatRepeat(void)
+{
+}
+
 void I_SetBorderlessWindow(void)
 {
-
 }
