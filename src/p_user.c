@@ -700,6 +700,7 @@ void P_RestoreMusic(player_t *player)
 	if (P_EndingMusic(player))
 		return;
 
+	// Event - Level Start
 	if (leveltime < MUSICSTARTTIME)
 		S_StartMapMusic();
 	else // see also where time overs are handled - search for "lives = 2" in this file

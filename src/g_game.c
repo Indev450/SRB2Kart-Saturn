@@ -2288,7 +2288,7 @@ void G_PlayerReborn(INT32 player)
 	}
 
 	/* I'm putting this here because lol */
-	fade = (cv_birdmusic.value && cv_fading.value && P_IsLocalPlayer(p));
+	fade = (cv_fading.value && P_IsLocalPlayer(p));
 
 	if (fade)
 	{

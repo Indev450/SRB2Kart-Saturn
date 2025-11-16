@@ -114,7 +114,6 @@ consvar_t cv_respawnfademusicback = {"respawnfademusicback", "500", CV_SAVE, CV_
 consvar_t cv_resetspecialmusic = {"resetspecialmusic", "No", CV_SAVE, CV_YesNo, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_resume = {"resume", "No", CV_SAVE, CV_YesNo, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_fading = {"fading", "Off", CV_SAVE|CV_CALL, CV_OnOff, Bird_menu_Onchange, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_birdmusic = {"birdmusicstuff", "No", CV_SAVE|CV_CALL, CV_YesNo, Bird_menu_Onchange, 0, NULL, NULL, 0, 0, NULL};
 
 consvar_t cv_keepmusic = {"keepmusic", "No", CV_SAVE, CV_YesNo, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_skipintromusic = {"skipintromusic", "No", CV_SAVE, CV_YesNo, NULL, 0, NULL, NULL, 0, 0, NULL};
@@ -310,7 +309,6 @@ void S_RegisterSoundStuff(void)
 
 	CV_RegisterVar(&cv_resume);
 	CV_RegisterVar(&cv_fading);
-	CV_RegisterVar(&cv_birdmusic);
 	// bird music stuff end
 
 	CV_RegisterVar(&cv_keepmusic);
@@ -1854,7 +1852,7 @@ void S_StopMusic(void)
 		|| demo.title) // SRB2Kart: Demos don't interrupt title screen music
 		return;
 
-	mapmusic.resume = (cv_birdmusic.value && fasticmp(music.name, mapmusic.name)) ? I_GetSongPosition() : 0;
+	mapmusic.resume = (cv_resume.value && fasticmp(music.name, mapmusic.name)) ? I_GetSongPosition() : 0;
 
 	S_SetKeepMusResume();
 
@@ -1906,7 +1904,7 @@ void S_SetMusicVolume(INT32 volume)
 
 void S_SetRestoreMusicFadeInCvar(consvar_t *cv)
 {
-	music_refade_cv = cv_birdmusic.value ? cv : 0;
+	music_refade_cv = cv;
 }
 
 int S_GetRestoreMusicFadeIn(void)
