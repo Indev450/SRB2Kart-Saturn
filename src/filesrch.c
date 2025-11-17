@@ -92,7 +92,6 @@ INT32 pathisdirectory(const char *path)
 // skip those folders, they will not have any addons
 static const char *exclude_paths[] = {
 	"logs",
-	"luafiles",
 	"replay",
 	"mdls",
 	"gifs",
