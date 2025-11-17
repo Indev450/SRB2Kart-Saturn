@@ -19,25 +19,18 @@
 // This should actually be in the makefile,
 // but I can't stand that gibberish. D:
 #define SOUND_DUMMY   0
-#define SOUND_SDL     1
-#define SOUND_MIXER   2
+#define SOUND_MIXER   1
 
 #ifndef SOUND
 #ifdef HAVE_SDL
-
 // Use Mixer interface?
 #ifdef HAVE_MIXER
     #define SOUND SOUND_MIXER
+#else
+	#define SOUND SOUND_DUMMY
 #endif
-
-// Use generic SDL interface.
-#ifndef SOUND
-#define SOUND SOUND_SDL
-#endif
-
-#else // No SDL.
-// No more interfaces. :(
-#define SOUND SOUND_DUMMY
+#else
+	#define SOUND SOUND_DUMMY
 #endif
 #endif
 

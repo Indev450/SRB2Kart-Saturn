@@ -41,11 +41,6 @@ typedef enum {
 */
 extern UINT8 sound_started;
 
-/**	\brief info of samplerate
-*/
-#if defined(HAVE_SDL) && SOUND==SOUND_SDL
-extern consvar_t cv_samplerate;
-#endif
 
 /**	\brief	The I_GetSfx function
 
