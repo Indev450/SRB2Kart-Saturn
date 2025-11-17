@@ -805,16 +805,16 @@ const char *packettypename[NUMPACKETTYPE] =
 	"TELLFILESNEEDED",
 	"MOREFILESNEEDED",
 
-	"PING"
+	"PING",
 #ifdef SATURNPAK
-	,
-
 	"WILLRESENDGAMESTATE",
 	"CANRECEIVEGAMESTATE",
 	"RECEIVEDGAMESTATE",
 
-	"ISSATURN" // special packet to identify saturn clients
+	"ISSATURN", // special packet to identify saturn clients
 #endif
+	"MAPICON",            // Send map image icon (gamespy).
+	"NEEDMAPICON"   // Request missed map icon (gamespy).
 };
 
 const char *Net_GetPacketName(UINT8 packettype)

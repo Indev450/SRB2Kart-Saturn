@@ -1926,6 +1926,10 @@ void D_SRB2Main(void)
 	CONS_Printf("R_Init(): Init SRB2 refresh daemon.\n");
 	R_Init();
 
+#if SOUND==SOUND_DUMMY
+	sound_disabled = true;
+	music_disabled = true;
+#else
 	// setting up sound
 	if (dedicated || M_CheckParm("-noaudio")) // combines -nosound and -nomusic
 	{
@@ -1947,6 +1951,7 @@ void D_SRB2Main(void)
 		I_InitMusic();
 		S_InitSfxChannels(cv_soundvolume.value);
 	}
+#endif
 
 	S_InitMusicDefs();
 
