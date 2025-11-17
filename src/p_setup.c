@@ -2861,6 +2861,10 @@ boolean P_SetupLevel(boolean fromnetsave, boolean reloadinggamestate)
 
 	P_ResetDynamicSlopes();
 
+	// Pre-calculate this lookup, because it was wasting
+	// a shit ton of time loading mobj thinkers.
+	CalculateDoomednumToMobjtype();
+
 	P_SpawnMapThings();
 
 	P_SpawnEmblems(!fromnetsave);
