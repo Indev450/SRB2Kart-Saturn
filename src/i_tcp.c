@@ -635,7 +635,7 @@ static boolean SOCK_Get(void)
 		c = recvfrom(mysockets[n], (char *)&doomcom->data, MAXPACKETLENGTH, 0,
 			(void *)&fromaddress, &fromlen);
 
-		if (c != ERRSOCKET)
+		if (c > 0)
 		{
 #ifdef USE_STUN
 			if (STUN_got_response(doomcom->data, c))
@@ -649,7 +649,6 @@ static boolean SOCK_Get(void)
 				break;
 			}
 #endif
-
 			// find remote node number
 			for (j = 1; j <= MAXNETNODES; j++) // include LAN
 			{
