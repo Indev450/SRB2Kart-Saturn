@@ -57,10 +57,6 @@ static void AmigaType_OnChange(void);
 #endif
 #endif
 
-#if defined(HAVE_SDL) && SOUND==SOUND_SDL
-consvar_t cv_samplerate = {"samplerate", "44100", 0, CV_Unsigned, NULL, 22050, NULL, NULL, 0, 0, NULL}; //Alam: For easy hacking?
-#endif
-
 static CV_PossibleValue_t audbuffersize_cons_t[] = {{128, "128"}, {256, "256"}, {512, "512"}, {1024, "1024"}, {2048, "2048"}, {4096, "4096"}, {0, NULL}};
 consvar_t cv_audbuffersize = {"audiobuffersize", "2048", CV_SAVE|CV_CALL, audbuffersize_cons_t, BufferSize_OnChange, 0, NULL, NULL, 0, 0, NULL};
 
@@ -282,10 +278,7 @@ void S_RegisterSoundStuff(void)
 
 	CV_RegisterVar(&stereoreverse);
 	CV_RegisterVar(&cv_cachesound);
-#if defined(HAVE_SDL) && SOUND==SOUND_SDL
-	CV_RegisterVar(&cv_samplerate);
-#endif
-	//CV_RegisterVar(&cv_resetmusic);
+
 	CV_RegisterVar(&cv_gamesounds);
 	CV_RegisterVar(&cv_gamedigimusic);
 
