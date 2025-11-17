@@ -190,10 +190,9 @@ filestatus_t filesearch(char *filename, const char *startpath, const UINT8 *want
 
 			const char **path = exclude_paths;
 
-			if (wantedmd5sum != NULL && depthleft == maxsearchdepth-1)
+			if (depthleft == maxsearchdepth-1)
 			{
 				// When we're at the root of the search, we exclude certain folders.
-				// (unless we're not checking for addons)
 
 				boolean skipfolder = false;
 
