@@ -107,8 +107,8 @@ extern char  logfilename[1024];
 #else
 #define VERSION    1 // Game version
 #define SUBVERSION 6 // more precise version number
-#define VERSIONSTRING "Saturn v9.1"
-#define VERSIONSTRINGW L"Saturn v9.1"
+#define VERSIONSTRING "Saturn v9.x - Testing"
+#define VERSIONSTRINGW L"Saturn v9.x - Testing "
 
 #define SATURN_TESTING // comment out for saturn release builds!
 
