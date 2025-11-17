@@ -277,7 +277,6 @@ static void M_SetupMultiHandler(INT32 choice);
 
 // Options
 // Split into multiple parts due to size
-static void M_VideoModeMenu(INT32 choice);
 static void M_Setup1PControlsMenu(void);
 static void M_Setup2PControlsMenu(void);
 static void M_Setup3PControlsMenu(void);
@@ -9415,7 +9414,7 @@ static void M_ResetControls(INT32 choice)
 
 static modedesc_t modedescs[MAXMODEDESCS];
 
-static void M_VideoModeMenu(INT32 choice)
+void M_VideoModeMenu(INT32 choice)
 {
 	INT32 i, j, vdup, nummodes, width, height;
 	const char *desc;
@@ -9475,6 +9474,9 @@ static void M_VideoModeMenu(INT32 choice)
 				// Show multiples of 320x200 as green.
 				if (SCR_IsAspectCorrect(width, height))
 					modedescs[vidm_nummodes].goodratio = 1;
+
+				if (I_CheckAboveDesktopRes(width, height))
+					modedescs[vidm_nummodes].goodratio = 2;
 
 				vidm_nummodes++;
 			}
@@ -9667,7 +9669,11 @@ static void M_DrawVideoMode(void)
 			V_DrawString(row, col, highlightflags|MENUCAPS, modedescs[i].desc);
 		// Show multiples of 320x200 as green.
 		else
-			V_DrawString(row, col, ((modedescs[i].goodratio) ? recommendedflags : 0)|MENUCAPS, modedescs[i].desc);
+		{
+			const UINT8 goodratio = modedescs[i].goodratio;
+			const INT32 goodflag = ((goodratio == 1) ? recommendedflags : (goodratio == 2) ? warningflags : 0);
+			V_DrawString(row, col, goodflag|MENUCAPS, modedescs[i].desc);
+		}
 
 		col += 8;
 		if ((i % vidm_column_size) == (vidm_column_size-1))
@@ -9707,9 +9713,26 @@ static void M_DrawVideoMode(void)
 		V_DrawCenteredString(BASEVIDWIDTH/2, OP_VideoModeDef.y + 138,
 			recommendedflags|MENUCAPS, "Marked modes are recommended.");
 		V_DrawCenteredString(BASEVIDWIDTH/2, OP_VideoModeDef.y + 146,
-			highlightflags|MENUCAPS, "Other modes may have visual errors.");
-		V_DrawCenteredString(BASEVIDWIDTH/2, OP_VideoModeDef.y + 158,
-			highlightflags|MENUCAPS, "Larger modes may have performance issues.");
+							 warningflags|MENUCAPS, "Marked modes are above Desktop resolution");
+
+		if (rendermode == render_opengl)
+		{
+#ifdef USE_FBO_OGL
+			if (!cv_glframebuffer.value)
+#endif
+				V_DrawCenteredString(BASEVIDWIDTH/2, OP_VideoModeDef.y + 154,
+									warningflags|MENUCAPS, "and will have visual errors in OpenGL mode.");
+
+			V_DrawCenteredString(BASEVIDWIDTH/2, OP_VideoModeDef.y + 166,
+				highlightflags|MENUCAPS, "Other modes may have visual errors.");
+		}
+		else
+		{
+			V_DrawCenteredString(BASEVIDWIDTH/2, OP_VideoModeDef.y + 154,
+				highlightflags|MENUCAPS, "Other modes may have visual errors.");
+			V_DrawCenteredString(BASEVIDWIDTH/2, OP_VideoModeDef.y + 166,
+				highlightflags|MENUCAPS, "Larger modes may have performance issues.");
+		}
 	}
 
 	// Draw the cursor for the VidMode menu

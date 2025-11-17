@@ -84,15 +84,20 @@
 #endif
 
 // maximum number of windowed modes (see windowedModes[][])
-#define MAXWINMODES (22)
+#define MAXWINMODES (128)
 
-/**	\brief
-*/
-static INT32 numVidModes = -1;
+static void I_FillScreenResolutionsList(boolean force);
 
-/**	\brief
-*/
-static char vidModeName[33][32]; // allow 33 different modes
+typedef struct
+{
+	const char *name;
+	INT32 w;
+	INT32 h;
+} video_mode_t;
+
+static video_mode_t windowedModes[MAXWINMODES];
+static const char *fallback_resolution_name = "Fallback";
+static int vid_nummodes = 0;
 
 rendermode_t rendermode = render_none;
 
@@ -139,9 +144,6 @@ static SDL_bool disable_mouse = SDL_FALSE;
 #define MOUSE_MENU false //(!disable_mouse && cv_usemouse.value && menuactive && !USE_FULLSCREEN)
 #define MOUSEBUTTONS_MAX MOUSEBUTTONS
 
-// first entry in the modelist which is not bigger than MAXVIDWIDTHxMAXVIDHEIGHT
-static      INT32          firstEntry = 0;
-
 // Total mouse motion X/Y offsets
 static      INT32        mousemovex = 0, mousemovey = 0;
 
@@ -160,38 +162,6 @@ SDL_Window   *window = NULL;
 SDL_Renderer *renderer = NULL;
 static SDL_Texture  *texture = NULL;
 static SDL_bool      havefocus = SDL_TRUE;
-static const char *fallback_resolution_name = "Fallback";
-
-// windowed video modes from which to choose from.
-static INT32 windowedModes[MAXWINMODES][2] =
-{
-	{2560,1440}, // 1.66
-	{1920,1200}, // 1.60,6.00
-	{1920,1080}, // 1.66
-	{1680,1050}, // 1.60,5.25
-	{1600,1200}, // 1.33
-	{1600, 900}, // 1.66
-	{1366, 768}, // 1.66
-	{1440, 900}, // 1.60,4.50
-	{1280,1024}, // 1.33?
-	{1280, 960}, // 1.33,4.00
-	{1280, 800}, // 1.60,4.00
-	{1280, 720}, // 1.66
-	{1152, 864}, // 1.33,3.60
-	{1024, 768}, // 1.33,3.20
-	{ 960, 600}, // 1.33,3.20
-	{ 800, 600}, // 1.33,2.50
-	{ 735, 415}, // 1.33,2.50
-	{ 640, 480}, // 1.33,2.00
-	{ 640, 400}, // 1.60,2.00
-	{ 500, 300}, // 1.33
-	{ 320, 240}, // 1.33,1.00
-	{ 320, 200}, // 1.60,1.00
-};
-
-#define CUSTOMMODENUM 9999
-static INT32 custom_width = 0;
-static INT32 custom_height = 0;
 
 static SDL_bool Impl_CreateWindow(SDL_bool fullscreen);
 static void Impl_SetWindowIcon(void);
@@ -517,11 +487,20 @@ static void Impl_HandleWindowEvent(SDL_WindowEvent evt)
 		return;
 	}
 
-	if (windowmoved && rendermode == render_opengl)
+	if (windowmoved)
 	{
 		I_CheckDesktopRes();
+
+		// if we say moved our game window to a different screen
+		// refetch our resolutions
+		I_FillScreenResolutionsList(false);
+#ifdef HWRENDER
 #ifdef USE_FBO_OGL
-		I_DownSample();
+		if (rendermode == render_opengl)
+		{
+			I_DownSample();
+		}
+#endif
 #endif
 		windowmoved = SDL_FALSE;
 	}
@@ -538,7 +517,8 @@ static void Impl_HandleWindowEvent(SDL_WindowEvent evt)
 
 		if (!firsttimeonmouse)
 		{
-			if (cv_usemouse.value) I_StartupMouse();
+			if (cv_usemouse.value)
+				I_StartupMouse();
 		}
 	}
 	else if (!mousefocus && !kbfocus)
@@ -1220,9 +1200,9 @@ static void VID_Command_ModeList_f(void)
 	"Under opengl, fullscreen only supports native desktop resolution.\n"
 	"Under software, the mode is stretched up to desktop resolution.\n");
 
-	for (i = 0; i < MAXWINMODES; i++)
+	for (i = 0; i < vid_nummodes; i++)
 	{
-		CONS_Printf("%2d: %dx%d\n", i, windowedModes[i][0], windowedModes[i][1]);
+		CONS_Printf("%2d: %dx%d\n", i, windowedModes[i].w, windowedModes[i].h);
 	}
 }
 
@@ -1274,6 +1254,11 @@ static void I_CheckDesktopRes(void)
 boolean I_CheckNativeRes(void)
 {
 	return (vid.width == desktopwidth && vid.height == desktopheight);
+}
+
+boolean I_CheckAboveDesktopRes(INT32 width, INT32 height)
+{
+	return (width > desktopwidth || height > desktopheight);
 }
 
 #ifdef USE_FBO_OGL
@@ -1533,13 +1518,167 @@ void I_SetPalette(RGBA_t *palette)
 	}
 }
 
+// make sure the canonical resolutions are always available
+static const struct {
+	const int w, h;
+} canonicals[] = {
+	{1920, 1200}, // 16:10
+	{1280,  800}, // 16:10
+	{ 960,  600}, // 16:10
+	{ 640,  400}, // 16:10
+	{ 320,  200}, // Vanilla Doom
+};
+static const int num_canonicals = sizeof(canonicals)/sizeof(*canonicals);
+
+// [FG] sort resolutions by width first and height second
+static int cmp_resolutions (const void *a, const void *b)
+{
+	const char *const *sa = (const char *const *) a;
+	const char *const *sb = (const char *const *) b;
+
+	int wa, wb, ha, hb;
+
+	if (sscanf(*sa, "%dx%d", &wa, &ha) != 2) wa = ha = 0;
+	if (sscanf(*sb, "%dx%d", &wb, &hb) != 2) wb = hb = 0;
+
+	return (wa == wb) ? hb - ha : wb - wa;
+}
+
+static void I_AppendResolution(SDL_DisplayMode *mode, int *list_size)
+{
+	int i;
+	char mode_name[256];
+
+	snprintf(mode_name, sizeof(mode_name), "%dx%d", mode->w, mode->h);
+
+	for (i = 0; i < *list_size; i++)
+		if (!strcmp(mode_name, windowedModes[i].name))
+			return;
+
+	windowedModes[*list_size].name = strdup(mode_name);
+	windowedModes[*list_size].w = mode->w;
+	windowedModes[*list_size].h = mode->h;
+
+	(*list_size)++;
+}
+
+//
+// I_FillScreenResolutionsList
+// Get all the supported screen resolutions
+// and fill the list with them
+//
+static void I_FillScreenResolutionsList(boolean force)
+{
+	int currentDisplayIndex = -1;
+	static int oldDisplayIndex = -1;
+	SDL_DisplayMode mode;
+	int i, list_size;
+	int count = 0;
+	char desired_resolution[256];
+
+	currentDisplayIndex = SDL_GetWindowDisplayIndex(window);
+
+	// No valid index
+	if (currentDisplayIndex < 0)
+	{
+		return;
+	}
+
+	// didnt change screen, no need to redo the list
+	if (!force && currentDisplayIndex == oldDisplayIndex)
+	{
+		return;
+	}
+
+	oldDisplayIndex = currentDisplayIndex;
+
+	// Don't call SDL_ListModes if SDL has not been initialized
+	count = SDL_GetNumDisplayModes(currentDisplayIndex);
+
+	list_size = 0;
+
+	// on success, SDL_GetNumDisplayModes() always returns at least 1
+	if (count > 0)
+	{
+		// -2 for the desired resolution and for NULL
+		count = min(count, MAXWINMODES - 2 - num_canonicals);
+
+		for (i = count - 1 + num_canonicals; i >= 0; i--)
+		{
+			// make sure the canonical resolutions are always available
+			if (i > count - 1)
+			{
+				// no hard-coded resolutions for mode-changing fullscreen
+				//if (exclusive_fullscreen)
+					//continue;
+
+				mode.w = canonicals[i - count].w;
+				mode.h = canonicals[i - count].h;
+			}
+			else
+			{
+				SDL_GetDisplayMode(currentDisplayIndex, i, &mode);
+			}
+
+			I_AppendResolution(&mode, &list_size);
+		}
+
+		windowedModes[list_size].name = NULL;
+	}
+
+	INT32 custom_w = cv_scr_width.value;
+	INT32 custom_h = cv_scr_height.value;
+
+	// make sure those are valid
+	if ((custom_w >= BASEVIDWIDTH && custom_h >= BASEVIDHEIGHT) &&
+		(custom_w <= MAXVIDWIDTH && custom_h <= MAXVIDHEIGHT))
+	{
+		boolean needcustom = true;
+
+		for (i = 0; i < list_size; i++)
+		{
+			if (windowedModes[i].w == custom_w && windowedModes[i].h == custom_h)
+			{
+				needcustom = false;
+				break;
+			}
+		}
+
+		// did not find mode from list, make custom resolution if the values somewhat make sense
+		if (needcustom)
+		{
+			if (list_size < MAXWINMODES)
+			{
+				snprintf(desired_resolution, sizeof(desired_resolution), "%dx%d", custom_w, custom_h);
+
+				// [FG] if the desired resolution not in the list, append it
+				windowedModes[list_size].name = strdup(desired_resolution);
+				windowedModes[list_size].w = custom_w;
+				windowedModes[list_size].h = custom_h;
+				list_size++;
+			}
+			else
+				CONS_Alert(CONS_ERROR, "Could not set custom resolution!\n");
+		}
+	}
+
+	// [FG] sort the list
+	SDL_qsort(windowedModes, list_size, sizeof(*windowedModes), cmp_resolutions);
+
+	windowedModes[list_size].name = NULL;
+	vid_nummodes = list_size;
+
+	// be sure to update the video menu
+	if (menuactive &&
+		currentMenu == &OP_VideoModeDef)
+		M_VideoModeMenu(0);
+}
+
 // return number of fullscreen + X11 modes
 INT32 VID_NumModes(void)
 {
-	if (USE_FULLSCREEN && numVidModes != -1)
-		return numVidModes - firstEntry;
-	else
-		return MAXWINMODES;
+	//return MAXWINMODES;
+	return vid_nummodes;
 }
 
 const char *VID_GetModeName(INT32 modeNum)
@@ -1549,40 +1688,36 @@ const char *VID_GetModeName(INT32 modeNum)
 		return fallback_resolution_name;
 	}
 
-	if (modeNum > MAXWINMODES)
+	if (modeNum > vid_nummodes)
 		return NULL;
 
-	sprintf(&vidModeName[modeNum][0], "%dx%d",
-		windowedModes[modeNum][0],
-		windowedModes[modeNum][1]);
-
-	return &vidModeName[modeNum][0];
+	return windowedModes[modeNum].name;
 }
 
 INT32 VID_GetModeForSize(INT32 w, INT32 h)
 {
 	int i;
 
-	for (i = 0; i < MAXWINMODES; i++)
+	for (i = 0; i < vid_nummodes; i++)
 	{
-		if (windowedModes[i][0] == w && windowedModes[i][1] == h)
+		if (windowedModes[i].w == w && windowedModes[i].h == h)
 		{
 			return i;
 		}
 	}
 
-	// did not find mode from list, make custom resolution if the values somewhat make sense
-	// opengl mode does not mind about max resolution defined in screen.h
-	// if not using opengl, check against the maximum as well
-	if ((w >= BASEVIDWIDTH && h >= BASEVIDHEIGHT) &&
-		(rendermode == render_opengl || (w <= MAXVIDWIDTH && h <= MAXVIDHEIGHT)))
-	{
-		custom_width = w;
-		custom_height = h;
-		return CUSTOMMODENUM;
-	}
-
 	return -1;
+}
+
+void VID_RefreshModeList(void)
+{
+	INT32 custom_w = cv_scr_width.value;
+	INT32 custom_h = cv_scr_height.value;
+
+	// make sure those are valid
+	if ((custom_w >= BASEVIDWIDTH && custom_h >= BASEVIDHEIGHT) &&
+		(custom_w <= MAXVIDWIDTH && custom_h <= MAXVIDHEIGHT))
+		I_FillScreenResolutionsList(true);
 }
 
 void VID_PrepareModeList(void)
@@ -1616,17 +1751,10 @@ INT32 VID_SetMode(INT32 modeNum)
 {
 	vid.recalc = true;
 
-	if (modeNum >= 0 && modeNum < MAXWINMODES)
+	if (modeNum >= 0 && modeNum < vid_nummodes)
 	{
-		vid.width = windowedModes[modeNum][0];
-		vid.height = windowedModes[modeNum][1];
-		vid.modenum = modeNum;
-	}
-	else if (modeNum == CUSTOMMODENUM && custom_width && custom_height)
-	{
-		// at this point these values are assumed to be okay
-		vid.width = custom_width;
-		vid.height = custom_height;
+		vid.width = windowedModes[modeNum].w;
+		vid.height = windowedModes[modeNum].h;
 		vid.modenum = modeNum;
 	}
 	else
@@ -1659,7 +1787,6 @@ INT32 VID_SetMode(INT32 modeNum)
 	return SDL_TRUE;
 }
 
-
 static SDL_bool Impl_CreateContext(void)
 {
 	// Renderer-specific stuff
@@ -1681,6 +1808,9 @@ static SDL_bool Impl_CreateContext(void)
 			SDL_DestroyWindow(window);
 			I_Error("Failed to set up GL context: %s\n", SDL_GetError());
 		}
+
+		// be sure to fill the resolution list the moment we have a window
+		I_FillScreenResolutionsList(false);
 
 		return SDL_TRUE;
 	}
@@ -1722,6 +1852,9 @@ static SDL_bool Impl_CreateContext(void)
 		}
 
 		SDL_RenderSetLogicalSize(renderer, BASEVIDWIDTH, BASEVIDHEIGHT);
+
+		// be sure to fill the resolution list the moment we have a window
+		I_FillScreenResolutionsList(false);
 
 		return SDL_TRUE;
 	}
@@ -1960,8 +2093,6 @@ void I_StartupGraphics(void)
 	usesdl2soft = M_CheckParm("-softblit");
 	borderlesswindow = M_CheckParm("-borderless");
 
-	VID_Command_ModeList_f();
-
 #ifdef HWRENDER
 	if (rendermode == render_opengl)
 	{
@@ -1978,12 +2109,21 @@ void I_StartupGraphics(void)
 	// Fury: we do window initialization after GL setup to allow
 	// SDL_GL_LoadLibrary to work well on Windows
 
+	// make sure the default mode exists
+	windowedModes[0].name = "320x200";
+	windowedModes[0].w = 320;
+	windowedModes[0].h = 200;
+	vid_nummodes = 1;
+
 	// Create window
 	VID_SetMode(VID_GetModeForSize(BASEVIDWIDTH, BASEVIDHEIGHT));
 
 	vid.width = BASEVIDWIDTH; // Default size for startup
 	vid.height = BASEVIDHEIGHT; // BitsPerPixel is the SDL interface's
 	vid.recalc = true; // Set up the console stufff
+
+	// be sure to print AFTER window creation
+	VID_Command_ModeList_f();
 
 #ifdef HAVE_TTF
 	I_ShutdownTTF();
