@@ -9644,7 +9644,7 @@ static void M_DrawVideoMode(void)
 		else
 		{
 			const UINT8 goodratio = modedescs[i].goodratio;
-			const INT32 goodflag = ((goodratio == 1) ? recommendedflags : (goodratio == 2) ? warningflags : 0);
+			const INT32 goodflag = ((goodratio == 2) ? warningflags : (goodratio == 1) ? recommendedflags : 0);
 			V_DrawString(row, col, goodflag|MENUCAPS, modedescs[i].desc);
 		}
 
