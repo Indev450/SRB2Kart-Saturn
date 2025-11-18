@@ -14,13 +14,7 @@
 /// \note  no includes because this is included as part of r_draw.cpp
 
 #ifdef HAVE_THREADS
-#ifdef _WIN32
-#include <windows.h>
-#define local_for_thread static __thread
-#else
-#include <threads.h>
-#define local_for_thread thread_local static
-#endif
+#define local_for_thread static thread_local
 #else
 #define local_for_thread static
 #endif
