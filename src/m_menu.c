@@ -9416,7 +9416,7 @@ static modedesc_t modedescs[MAXMODEDESCS];
 
 void M_VideoModeMenu(INT32 choice)
 {
-	INT32 i, j, vdup, nummodes, width, height;
+	INT32 i, nummodes, width, height;
 	const char *desc;
 
 	(void)choice;
@@ -9430,57 +9430,30 @@ void M_VideoModeMenu(INT32 choice)
 	nummodes = VID_NumModes();
 
 	// DOS does not skip mode 0, because mode 0 is ALWAYS present
-	i = 0;
-	for (; i < nummodes && vidm_nummodes < MAXMODEDESCS; i++)
+	for (i = 0; i < nummodes && vidm_nummodes < MAXMODEDESCS; i++)
 	{
 		desc = VID_GetModeName(i);
-		if (desc)
-		{
-			vdup = 0;
 
-			// when a resolution exists both under VGA and VESA, keep the
-			// VESA mode, which is always a higher modenum
-			for (j = 0; j < vidm_nummodes; j++)
-			{
-				if (fastcmp(modedescs[j].desc, desc))
-				{
-					// mode(0): 320x200 is always standard VGA, not vesa
-					if (modedescs[j].modenum)
-					{
-						modedescs[j].modenum = i;
-						vdup = 1;
+		if (!desc)
+			continue;
 
-						if (i == vid.modenum)
-							vidm_selected = j;
-					}
-					else
-						vdup = 1;
+		modedescs[vidm_nummodes].modenum = i;
+		modedescs[vidm_nummodes].desc = desc;
 
-					break;
-				}
-			}
+		if (i == vid.modenum)
+			vidm_selected = vidm_nummodes;
 
-			if (!vdup)
-			{
-				modedescs[vidm_nummodes].modenum = i;
-				modedescs[vidm_nummodes].desc = desc;
+		// Pull out the width and height
+		sscanf(desc, "%u%*c%u", &width, &height);
 
-				if (i == vid.modenum)
-					vidm_selected = vidm_nummodes;
+		// Show resolutions above desktop res as red.
+		if (I_CheckAboveDesktopRes(width, height))
+			modedescs[vidm_nummodes].goodratio = 2;
+		// Show multiples of 320x200 as green.
+		else if (SCR_IsAspectCorrect(width, height))
+			modedescs[vidm_nummodes].goodratio = 1;
 
-				// Pull out the width and height
-				sscanf(desc, "%u%*c%u", &width, &height);
-
-				// Show multiples of 320x200 as green.
-				if (SCR_IsAspectCorrect(width, height))
-					modedescs[vidm_nummodes].goodratio = 1;
-
-				if (I_CheckAboveDesktopRes(width, height))
-					modedescs[vidm_nummodes].goodratio = 2;
-
-				vidm_nummodes++;
-			}
-		}
+		vidm_nummodes++;
 	}
 
 	vidm_column_size = (vidm_nummodes+2) / 3;
@@ -9697,7 +9670,6 @@ static void M_DrawVideoMode(void)
 			va("Wait %d second%s", testtime, (testtime > 1) ? "s" : ""));
 		M_CentreText(OP_VideoModeDef.y + 158,
 			"or press ESC to return");
-
 	}
 	else
 	{
