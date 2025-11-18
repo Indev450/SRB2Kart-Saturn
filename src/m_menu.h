@@ -221,6 +221,9 @@ extern menu_t *currentMenu;
 
 extern menu_t MainDef;
 extern menu_t SP_LoadDef;
+
+#define MAXCOLUMNMODES   12     //max modes displayed in one column
+#define MAXMODEDESCS     (MAXCOLUMNMODES*3)
 extern menu_t OP_VideoModeDef;
 void M_VideoModeMenu(INT32 choice);
 

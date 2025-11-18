@@ -9409,9 +9409,6 @@ static void M_ResetControls(INT32 choice)
 // ===============
 
 //added : 30-01-98:
-#define MAXCOLUMNMODES   12     //max modes displayed in one column
-#define MAXMODEDESCS     (MAXCOLUMNMODES*3)
-
 static modedesc_t modedescs[MAXMODEDESCS];
 
 void M_VideoModeMenu(INT32 choice)
