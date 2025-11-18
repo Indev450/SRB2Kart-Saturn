@@ -1580,6 +1580,29 @@ static boolean IsModeCanonical(int w, int h)
 	return false;
 }
 
+// check if our desired resolution already is in the videomode list
+static int IsCustomResolutionInList(int list_size)
+{
+	INT32 custom_w = cv_scr_width.value;
+	INT32 custom_h = cv_scr_height.value;
+
+	// invalid resolution
+	// dont even attempt to add it
+	if (custom_w < BASEVIDWIDTH || custom_w > MAXVIDWIDTH
+	 || custom_h < BASEVIDHEIGHT || custom_h > MAXVIDHEIGHT)
+		return -1;
+
+	for (int i = 0; i < list_size; i++)
+	{
+		if (windowedModes[i].w == custom_w && windowedModes[i].h == custom_h)
+		{
+			return 1;
+		}
+	}
+
+	return 0;
+}
+
 //
 // I_FillScreenResolutionsList
 // Get all the supported screen resolutions
@@ -1640,43 +1663,28 @@ static void I_FillScreenResolutionsList(boolean force)
 		windowedModes[list_size].name[0] = '\0';
 	}
 
-	INT32 custom_w = cv_scr_width.value;
-	INT32 custom_h = cv_scr_height.value;
+	const int customresinlist = IsCustomResolutionInList(list_size);
 
-	// make sure those are valid
-	if ((custom_w >= BASEVIDWIDTH && custom_h >= BASEVIDHEIGHT) &&
-		(custom_w <= MAXVIDWIDTH && custom_h <= MAXVIDHEIGHT))
+	if (customresinlist == 0)
 	{
-		boolean needcustom = true;
-
-		for (i = 0; i < list_size; i++)
-		{
-			if (windowedModes[i].w == custom_w && windowedModes[i].h == custom_h)
-			{
-				needcustom = false;
-				break;
-			}
-		}
-
 		// did not find mode from list, make custom resolution if the values somewhat make sense
-		if (needcustom)
+		if (list_size < MAXWINMODES)
 		{
-			if (list_size < MAXWINMODES)
-			{
-				snprintf(custom_resolution, sizeof(custom_resolution), "%dx%d", custom_w, custom_h);
+			snprintf(custom_resolution, sizeof(custom_resolution), "%dx%d", cv_scr_width.value, cv_scr_height.value);
 
-				// [FG] if the desired resolution not in the list, append it
-				snprintf(windowedModes[list_size].name,
-						 sizeof(windowedModes[list_size].name),
-						 "%dx%d", custom_w, custom_h);
-				windowedModes[list_size].w = custom_w;
-				windowedModes[list_size].h = custom_h;
-				list_size++;
-			}
-			else
-				CONS_Alert(CONS_ERROR, "Could not set custom resolution!\n");
+			// [FG] if the desired resolution not in the list, append it
+			snprintf(windowedModes[list_size].name,
+						sizeof(windowedModes[list_size].name),
+						"%dx%d", cv_scr_width.value, cv_scr_height.value);
+			windowedModes[list_size].w = cv_scr_width.value;
+			windowedModes[list_size].h = cv_scr_height.value;
+			list_size++;
 		}
+		else
+			CONS_Alert(CONS_ERROR, "Could not set custom resolution!\n");
 	}
+	else if (customresinlist == -1)
+		CONS_Alert(CONS_ERROR, "Could not set custom resolution!\n");
 
 	// [FG] sort the list
 	SDL_qsort(windowedModes, list_size, sizeof(*windowedModes), cmp_resolutions);
@@ -1717,7 +1725,6 @@ static void I_FillScreenResolutionsList(boolean force)
 // return number of fullscreen + X11 modes
 INT32 VID_NumModes(void)
 {
-	//return MAXWINMODES;
 	return vid_nummodes;
 }
 
@@ -1751,12 +1758,8 @@ INT32 VID_GetModeForSize(INT32 w, INT32 h)
 
 void VID_RefreshModeList(void)
 {
-	INT32 custom_w = cv_scr_width.value;
-	INT32 custom_h = cv_scr_height.value;
-
-	// make sure those are valid
-	if ((custom_w >= BASEVIDWIDTH && custom_h >= BASEVIDHEIGHT) &&
-		(custom_w <= MAXVIDWIDTH && custom_h <= MAXVIDHEIGHT))
+	// check if we even need to rebuild the list
+	if (IsCustomResolutionInList(vid_nummodes) == 0)
 		I_FillScreenResolutionsList(true);
 }
 
