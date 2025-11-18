@@ -10242,27 +10242,22 @@ void M_QuitResponse(INT32 ch)
 
 	if (ch != 'y' && ch != KEY_ENTER)
 		return;
-
 	if (!(netgame || cv_debug))
 	{
 		mrand = M_RandomKey(sizeof(quitsounds)/sizeof(INT32));
-
-		if (quitsounds[mrand])
-			S_StartSound(NULL, quitsounds[mrand]);
+		if (quitsounds[mrand]) S_StartSound(NULL, quitsounds[mrand]);
 
 		//added : 12-02-98: do that instead of I_WaitVbl which does not work
-		ptime = I_GetGlobalTime() + NEWTICRATE*2; // Shortened the quit time, used to be 2 seconds Tails 03-26-2001
-
-		while (ptime > I_GetGlobalTime())
+		ptime = I_GetTime() + NEWTICRATE*2; // Shortened the quit time, used to be 2 seconds Tails 03-26-2001
+		while (ptime > I_GetTime())
 		{
 			V_DrawFill(0, 0, BASEVIDWIDTH, BASEVIDHEIGHT, 31);
 			V_DrawSmallScaledPatch(0, 0, 0, (patch_t *)W_CachePatchName("GAMEQUIT", PU_PATCH)); // Demo 3 Quit Screen Tails 06-16-2001
 			I_FinishUpdate(); // Update the screen with the image Tails 06-19-2001
 			I_Sleep(cv_sleep.value);
-			I_UpdateTime();
+			I_UpdateTime(cv_timescale.value);
 		}
 	}
-
 	I_Quit();
 }
 

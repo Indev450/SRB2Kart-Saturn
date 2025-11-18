@@ -1584,6 +1584,29 @@ void P_XYMovement(mobj_t *mo)
 				return;
 			}
 
+			// draw damage on wall
+			//SPLAT TEST ----------------------------------------------------------
+#ifdef WALLSPLATS
+			if (blockingline && mo->type != MT_REDRING && mo->type != MT_FIREBALL
+			&& !(mo->flags2 & (MF2_AUTOMATIC|MF2_RAILRING|MF2_BOUNCERING|MF2_EXPLOSION|MF2_SCATTER)))
+				// set by last P_TryMove() that failed
+			{
+				divline_t divl;
+				divline_t misl;
+				fixed_t frac;
+
+				P_MakeDivline(blockingline, &divl);
+				misl.x = mo->x;
+				misl.y = mo->y;
+				misl.dx = mo->momx;
+				misl.dy = mo->momy;
+				frac = P_InterceptVector(&divl, &misl);
+				R_AddWallSplat(blockingline, P_PointOnLineSide(mo->x,mo->y,blockingline),
+					"A_DMG3", mo->z, frac, SPLATDRAWMODE_SHADE);
+			}
+#endif
+			// --------------------------------------------------------- SPLAT TEST
+
 			P_ExplodeMissile(mo);
 			return;
 		}
@@ -8817,6 +8840,10 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 				break;
 			}
 		case MT_CANNONBALL:
+#ifdef FLOORSPLATS
+			R_AddFloorSplat(mobj->tracer->subsector, mobj->tracer, "TARGET", mobj->tracer->x,
+				mobj->tracer->y, mobj->tracer->floorz, SPLATDRAWMODE_SHADE);
+#endif
 			break;
 		case MT_SPINFIRE:
 		case MT_SNEAKERTRAIL:

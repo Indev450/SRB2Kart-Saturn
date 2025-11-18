@@ -313,12 +313,11 @@ void F_IntroTicker(void)
 			// Stay on black for a bit. =)
 			{
 				tic_t quittime;
-				quittime = I_GetGlobalTime() + NEWTICRATE*2; // Shortened the quit time, used to be 2 seconds
-
-				while (quittime > I_GetGlobalTime())
+				quittime = I_GetTime() + NEWTICRATE*2; // Shortened the quit time, used to be 2 seconds
+				while (quittime > I_GetTime())
 				{
 					I_Sleep(cv_sleep.value);
-					I_UpdateTime();
+					I_UpdateTime(cv_timescale.value);
 				}
 			}
 

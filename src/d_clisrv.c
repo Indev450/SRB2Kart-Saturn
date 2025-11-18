@@ -2799,7 +2799,7 @@ static boolean CL_ServerConnectionTicker(const char *tmpsave, tic_t *oldtic, tic
 	Net_AckTicker();
 
 	// Call it only once by tic
-	if (*oldtic != I_GetGlobalTime())
+	if (*oldtic != I_GetTime())
 	{
 		INT32 key;
 
@@ -2840,8 +2840,7 @@ static boolean CL_ServerConnectionTicker(const char *tmpsave, tic_t *oldtic, tic
 
 			return false;
 		}
-
-		*oldtic = I_GetGlobalTime();
+		*oldtic = I_GetTime();
 
 		if (client && cl_mode != CL_CONNECTED && cl_mode != CL_ABORTED)
 		{
@@ -2863,7 +2862,7 @@ static boolean CL_ServerConnectionTicker(const char *tmpsave, tic_t *oldtic, tic
 	else
 	{
 		I_Sleep(cv_sleep.value);
-		I_UpdateTime();
+		I_UpdateTime(cv_timescale.value);
 	}
 
 	return true;
@@ -6582,8 +6581,8 @@ static void Local_Maketic(INT32 realtics)
 
 	I_OsPolling();     // I_Getevent
 	D_ProcessEvents(); // menu responder, cons responder,
-					   // game responder calls HU_Responder, AM_Responder, F_Responder,
-					   // and G_MapEventsToControls
+	                   // game responder calls HU_Responder, AM_Responder, F_Responder,
+	                   // and G_MapEventsToControls
 	if (!dedicated)
 		rendergametic = gametic;
 

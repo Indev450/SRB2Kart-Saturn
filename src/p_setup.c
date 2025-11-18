@@ -2534,10 +2534,10 @@ static boolean P_RunSpecialWipe(boolean reloadinggamestate)
 		while (nowtime < endtime)
 		{
 			// wait loop
-			while (!((nowtime = I_GetGlobalTime()) - lastwipetic))
+			while (!((nowtime = I_GetTime()) - lastwipetic))
 			{
 				I_Sleep(cv_sleep.value);
-				I_UpdateTime();
+				I_UpdateTime(cv_timescale.value);
 			}
 
 			lastwipetic = nowtime;

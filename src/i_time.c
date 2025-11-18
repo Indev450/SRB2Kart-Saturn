@@ -17,65 +17,22 @@
 
 #include "command.h"
 #include "doomtype.h"
+#include "d_netcmd.h"
 #include "m_fixed.h"
 #include "i_system.h"
+
+timestate_t g_time;
 
 static CV_PossibleValue_t timescale_cons_t[] = {{FRACUNIT/20, "MIN"}, {20*FRACUNIT, "MAX"}, {0, NULL}};
 consvar_t cv_timescale = {"timescale", "1.0", CV_NETVAR|CV_CHEAT|CV_FLOAT, timescale_cons_t, NULL, FRACUNIT, NULL, NULL, 0, 0, NULL};
 
-static precise_t baseprecise;
-static precise_t oldenterprecise;
+static precise_t enterprecise, oldenterprecise;
+static fixed_t entertic, oldentertics;
+static double tictimer;
 
-static tic_t g_time;
-
-static fixed_t I_GetTimeScale(void)
-{
-	return cv_timescale.value;
-}
-
-// get the current time that has passed since gamestart
 tic_t I_GetTime(void)
 {
-	const double ticratescaled = (double)TICRATE * FixedToDouble(I_GetTimeScale());
-
-	// stoopid gcc
-	const precise_t elapsed = I_GetPreciseTime() - baseprecise;
-	const UINT64 precision = I_GetPrecisePrecision();
-
-	// explictily do this in double precision
-	const double totaltime = (double)elapsed / (double)precision;
-	const double timeinticks = totaltime * ticratescaled;
-
-	return (tic_t)(timeinticks);
-}
-
-tic_t I_GetGlobalTime(void)
-{
-	return g_time;
-}
-
-fixed_t I_GetTimeFrac(void)
-{
-	const double ticratescaled = (double)TICRATE * FixedToDouble(I_GetTimeScale());
-
-	// stoopid gcc
-	const precise_t elapsed = I_GetPreciseTime() - baseprecise;
-	const UINT64 precision = I_GetPrecisePrecision();
-
-	// explictily do this in double precision
-	const double totaltime = (double)elapsed / (double)precision;
-	const double timeinticks = totaltime * ticratescaled;
-
-	double integral;
-	const double fractional = modf(timeinticks, &integral);
-
-	fixed_t outfrac = DoubleToFixed(fractional);
-	outfrac = CLAMP(outfrac, 0, FRACUNIT);
-
-	if (outfrac > FRACUNIT)
-		outfrac = FRACUNIT;
-
-	return outfrac;
+	return g_time.time;
 }
 
 void I_InitializeTime(void)
@@ -86,32 +43,45 @@ void I_InitializeTime(void)
 	// timing information for I_GetPreciseTime and sleeping
 	I_StartupTimer();
 
-	g_time = 0;
+	g_time.time = 0;
+	g_time.timefrac = 0;
 
-	baseprecise = I_GetPreciseTime();
-	oldenterprecise = baseprecise;
+	enterprecise = I_GetPreciseTime();
+	oldenterprecise = enterprecise;
+	entertic = 0;
+	oldentertics = 0;
+	tictimer = 0.0;
 }
 
-
-// Used to track the time between two calls
-// uhhh pretty much just for wipes and things like that
-// probably would be better to not use a time global
-// but i dont think it really matters too much in those cases
-void I_UpdateTime(void)
+void I_UpdateTime(fixed_t timescale)
 {
-	static tic_t oldentertics = 0;
+	double ticratescaled;
+	double elapsedseconds;
+	tic_t realtics;
 
 	// get real tics
-	const double ticratescaled = (double)TICRATE * FixedToDouble(I_GetTimeScale());
+	ticratescaled = (double)((float)TICRATE * FixedToFloat(timescale));
 
-	const precise_t elapsed = I_GetPreciseTime() - baseprecise;
+	enterprecise = I_GetPreciseTime();
+	const precise_t elapsed = enterprecise - oldenterprecise;
 	const UINT64 precision = I_GetPrecisePrecision();
-	const double totaltime = (double)elapsed / (double)precision;
-	const tic_t entertic = (tic_t)(totaltime * ticratescaled);
-
-	const tic_t realtics = entertic - oldentertics;
+	// explictily do this in double precision
+	elapsedseconds = (double)elapsed / (double)precision;
+	tictimer += elapsedseconds;
+	while (tictimer > 1.0/ticratescaled)
+	{
+		entertic += 1;
+		tictimer -= 1.0/ticratescaled;
+	}
+	realtics = entertic - oldentertics;
 	oldentertics = entertic;
+	oldenterprecise = enterprecise;
 
 	// Update global time state
-	g_time += realtics;
+	g_time.time += realtics;
+	{
+		double fractional, integral;
+		fractional = modf(tictimer * ticratescaled, &integral);
+		g_time.timefrac = DoubleToFixed(fractional);
+	}
 }

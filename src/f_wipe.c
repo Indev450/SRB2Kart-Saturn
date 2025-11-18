@@ -368,10 +368,10 @@ void F_RunWipe(UINT8 wipetype, boolean drawMenu)
 			break;
 
 		// wait loop
-		while (!((nowtime = I_GetGlobalTime()) - lastwipetic))
+		while (!((nowtime = I_GetTime()) - lastwipetic))
 		{
 			I_Sleep(cv_sleep.value);
-			I_UpdateTime();
+			I_UpdateTime(cv_timescale.value);
 		}
 		lastwipetic = nowtime;
 

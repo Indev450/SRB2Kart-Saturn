@@ -772,6 +772,8 @@ void D_SRB2Loop(void)
 		server = true;
 
 	// Pushing of + parameters is now done back in D_SRB2Main, not here.
+
+	I_UpdateTime(cv_timescale.value);
 	oldentertics = I_GetTime();
 
 	// end of loading screen: CONS_Printf() will no more call FinishUpdate()
@@ -815,6 +817,8 @@ void D_SRB2Loop(void)
 		capbudget = (framecap == 0) ? 0 : (precise_t)((double)precision / (double)framecap + 0.5); // + 0.5 instead of round
 
 		boolean ranwipe = false;
+
+		I_UpdateTime(cv_timescale.value);
 
 		if (lastwipetic)
 		{
@@ -892,10 +896,12 @@ void D_SRB2Loop(void)
 
 			// I looked at the possibility of putting in a float drawer for
 			// perfstats and it's very complicated, so we'll just do this instead...
-			ps_interp_frac.value.p = (precise_t)((FIXED_TO_FLOAT(I_GetTimeFrac())) * 1000.0f);
+			ps_interp_frac.value.p = (precise_t)((FIXED_TO_FLOAT(g_time.timefrac)) * 1000.0f);
 			ps_interp_lag.value.p = (precise_t)((deltasecs) * 1000.0);
 
-			R_SetTimeFrac(hu_stopped ? FRACUNIT : I_GetTimeFrac());
+			const boolean lagging = ((deltatics >= 1.0) || hu_stopped);
+
+			R_SetTimeFrac(lagging ? FRACUNIT : g_time.timefrac);
 		}
 		else
 		{
@@ -1311,7 +1317,9 @@ static void IdentifyVersion(void)
 		if (tempsrb2path[0])
 			srb2waddir = tempsrb2path;
 		else
+		{
 			srb2waddir = ".";
+		}
 	}
 
 #if (1) // reduce the amount of findfile by only using full cwd in this func

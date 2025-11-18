@@ -22,21 +22,23 @@
 extern "C" {
 #endif
 
+typedef struct timestate_s {
+	tic_t time;
+	fixed_t timefrac;
+} timestate_t;
+
+extern timestate_t g_time;
 extern consvar_t cv_timescale;
 
 /**	\brief  Called by D_SRB2Loop, returns current time in game tics.
 */
 tic_t I_GetTime(void);
 
-tic_t I_GetGlobalTime(void);
-
-fixed_t I_GetTimeFrac(void);
-
 /**	\brief  Initializes timing system.
 */
 void I_InitializeTime(void);
 
-void I_UpdateTime(void);
+void I_UpdateTime(fixed_t timescale);
 
 /** \brief  Block for at minimum the duration specified. This function makes a
             best effort not to oversleep, and will spinloop if sleeping would

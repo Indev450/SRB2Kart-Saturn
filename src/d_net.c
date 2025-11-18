@@ -595,12 +595,12 @@ void Net_WaitAllAckReceived(UINT32 timeout)
 
 	HGetPacket();
 
-	while (timeout > I_GetGlobalTime() && !Net_AllAcksReceived())
+	while (timeout > I_GetTime() && !Net_AllAcksReceived())
 	{
-		while (tictac == I_GetGlobalTime())
+		while (tictac == I_GetTime())
 		{
 			I_Sleep(cv_sleep.value);
-			I_UpdateTime();
+			I_UpdateTime(cv_timescale.value);
 		}
 
 		tictac = I_GetTime();
@@ -805,16 +805,16 @@ const char *packettypename[NUMPACKETTYPE] =
 	"TELLFILESNEEDED",
 	"MOREFILESNEEDED",
 
-	"PING"
+	"PING",
 #ifdef SATURNPAK
-	,
-
 	"WILLRESENDGAMESTATE",
 	"CANRECEIVEGAMESTATE",
 	"RECEIVEDGAMESTATE",
 
-	"ISSATURN" // special packet to identify saturn clients
+	"ISSATURN", // special packet to identify saturn clients
 #endif
+	"MAPICON",            // Send map image icon (gamespy).
+	"NEEDMAPICON"   // Request missed map icon (gamespy).
 };
 
 const char *Net_GetPacketName(UINT8 packettype)
