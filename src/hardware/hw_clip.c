@@ -177,7 +177,7 @@ static void gld_clipper_RemoveRange(clipnode_t *range)
 
 void gld_clipper_SafeAddClipRange(angle_t startangle, angle_t endangle)
 {
-	if(startangle > endangle)
+	if (startangle > endangle)
 	{
 		// The range has to added in two parts.
 		gld_clipper_AddClipRange(startangle, ANGLE_MAX);
@@ -319,7 +319,7 @@ angle_t gld_FrustumAngle(angle_t tiltangle)
 	double floatangle;
 	angle_t a1;
 
-	float tilt = (float)fabs(((double)(int)tiltangle) / ANG1);
+	float tilt = fabsf(((float)(int)tiltangle) / (float)ANG1);
 
 	if (tilt > 90.0f)
 		tilt = 90.0f;
@@ -330,7 +330,7 @@ angle_t gld_FrustumAngle(angle_t tiltangle)
 
 	// ok, this is a gross hack that barely works...
 	// but at least it doesn't overestimate too much...
-	clipfov = atan(1 / (GLdouble)projMatrix[0]) * 360.0 / M_PIl;
+	clipfov = atan(1 / (GLdouble)projMatrix[0]) * 360.0 / M_PI;
 	floatangle = 2.0 + (45.0 + ((double)tilt / 1.9)) * clipfov / 90.0;
 	if (floatangle >= 180.0)
 		return 0xffffffff;

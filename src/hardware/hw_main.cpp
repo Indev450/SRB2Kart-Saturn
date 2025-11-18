@@ -260,7 +260,8 @@ static void CV_screentextures_OnChange(void)
 static void CV_glframebuffer_OnChange(void)
 {
 	ONLY_IF_GL_LOADED
-	if ((cv_glframebuffer.value != 0 && cv_glscreentextures.value != 2) || (!supportFBO && cv_glframebuffer.value != 0)) // screen FBO needs screen textures
+	if ((cv_glframebuffer.value != 0 && cv_glscreentextures.value != 2)
+	|| (!supportFBO && cv_glframebuffer.value != 0)) // screen FBO needs screen textures
 		CV_SetValue(&cv_glframebuffer, 0);
 
 	I_DownSample();
@@ -5113,7 +5114,7 @@ static gl_sky_t gl_sky;
 
 static void HWR_SkyDomeVertex(gl_sky_t *sky, gl_skyvertex_t *vbo, int r, int c, signed char yflip, float delta, boolean foglayer)
 {
-	static constexpr float radians = (float)(M_PIl / 180.0f);
+	static constexpr float radians = (M_PIf / 180.0f);
 	static constexpr float scale = 10000.0f;
 	static constexpr float maxSideAngle = 60.0f * radians;
 

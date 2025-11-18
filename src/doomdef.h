@@ -477,7 +477,7 @@ extern INT32 cv_debug;
 // Misc stuff for later...
 // =======================
 
-#define ANG2RAD(angle) ((float)((angle)*M_PI)/ANGLE_180)
+#define ANG2RAD(angle) ((float)((angle)*M_PIf) / (float)ANGLE_180)
 
 // Modifier key variables, accessible anywhere
 extern UINT8 shiftdown, ctrldown, altdown;
@@ -524,6 +524,10 @@ UINT32 quickncasehash (const char *p, size_t n)
 
 #ifndef M_PIl
 #define M_PIl 3.1415926535897932384626433832795029L
+#endif
+
+#ifndef M_PIf
+#define M_PIf 3.14159265f
 #endif
 
 // Floating point comparison epsilons from float.h
