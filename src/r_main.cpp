@@ -49,54 +49,54 @@
 // increment every time a check is made
 size_t validcount = 1;
 
-INT32 centerx, centery;
+INT32 centerx = 0, centery = 0;
 
-fixed_t centerxfrac, centeryfrac;
-fixed_t projection;
-fixed_t projectiony; // aspect ratio
-fixed_t fovtan; // field of view
+fixed_t centerxfrac = 0, centeryfrac = 0;
+fixed_t projection = 0;
+fixed_t projectiony = 0; // aspect ratio
+fixed_t fovtan = 0; // field of view
 
 // just for profiling purposes
-size_t framecount;
+size_t framecount = 0;
 
-size_t loopcount;
+size_t loopcount = 0;
 
-fixed_t viewx, viewy, viewz;
-angle_t viewangle, aimingangle, viewroll;
+fixed_t viewx = 0, viewy = 0, viewz = 0;
+angle_t viewangle = 0, aimingangle = 0, viewroll = 0;
 UINT8 viewssnum = 0;
-fixed_t viewcos, viewsin;
-boolean skyVisible;
-boolean skyVisiblePerPlayer[MAXSPLITSCREENPLAYERS]; // saved values of skyVisible for each splitscreen player
-sector_t *viewsector;
-player_t *viewplayer;
+fixed_t viewcos = 0, viewsin = 0;
+boolean skyVisible = 0;
+boolean skyVisiblePerPlayer[MAXSPLITSCREENPLAYERS] = {}; // saved values of skyVisible for each splitscreen player
+sector_t *viewsector = NULL;
+player_t *viewplayer = NULL;
 
-fixed_t renderdeltatics;
-boolean renderisnewtic;
+fixed_t renderdeltatics = 0;
+boolean renderisnewtic = true;
 
 //
 // precalculated math tables
 //
-angle_t clipangle;
-angle_t doubleclipangle;
+angle_t clipangle = 0;
+angle_t doubleclipangle = 0;
 
 // The viewangletox[viewangle + FINEANGLES/4] lookup
 // maps the visible view angles to screen X coordinates,
 // flattening the arc to a flat projection plane.
 // There will be many angles mapped to the same X.
-INT32 viewangletox[FINEANGLES/2];
+INT32 viewangletox[FINEANGLES/2] = {};
 
 // The xtoviewangleangle[] table maps a screen pixel
 // to the lowest viewangle that maps back to x ranges
 // from clipangle to -clipangle.
 angle_t *xtoviewangle = NULL;
 
-lighttable_t *scalelight[LIGHTLEVELS][MAXLIGHTSCALE];
-lighttable_t *scalelightfixed[MAXLIGHTSCALE];
-lighttable_t *zlight[LIGHTLEVELS][MAXLIGHTZ];
+lighttable_t *scalelight[LIGHTLEVELS][MAXLIGHTSCALE] = {};
+lighttable_t *scalelightfixed[MAXLIGHTSCALE] = {};
+lighttable_t *zlight[LIGHTLEVELS][MAXLIGHTZ] = {};
 
 // Hack to support extra boom colormaps.
-size_t num_extra_colormaps;
-extracolormap_t extra_colormaps[MAXCOLORMAPS];
+size_t num_extra_colormaps = 0;
+extracolormap_t extra_colormaps[MAXCOLORMAPS] = {};
 
 // Performance stats
 precise_t ps_prevframetime = 0;
@@ -440,6 +440,28 @@ fixed_t R_ScaleFromGlobalAngle(angle_t visangle)
 		return num;
 	}
 	return 64*FRACUNIT;
+}
+
+line_t *R_GetFFloorLine(const line_t *line, const ffloor_t *pfloor, const sector_t *sector)
+{
+	if (pfloor->master->flags & ML_TFERLINE)
+	{
+		size_t linenum = std::min<size_t>((size_t)(line - sector->lines[0]), pfloor->master->frontsector->linecount);
+		return pfloor->master->frontsector->lines[0] + linenum;
+	}
+	else
+		return pfloor->master;
+}
+
+side_t *R_GetFFloorSide(const line_t *line, const ffloor_t *pfloor, const sector_t *sector)
+{
+	if (pfloor->master->flags & ML_TFERLINE)
+	{
+		line_t *newline = R_GetFFloorLine(line, pfloor, sector);
+		return &sides[newline->sidenum[0]];
+	}
+	else
+		return &sides[pfloor->master->sidenum[0]];
 }
 
 //

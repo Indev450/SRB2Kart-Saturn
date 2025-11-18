@@ -25,7 +25,7 @@
 
 // Eeeeh not sure is this right way, but it works < sry :c < sry again it had to go :c
 
-#if defined (HWRENDER) && !defined (NOROPENGL)
+#if defined (HWRENDER)
 
 #include "../../r_fps.h" // For R_GetTimeFrac, used for the leveltime shader uniform
 
@@ -101,7 +101,7 @@ static LTListItem *LightTablesHead = NULL;
 static RGBA_t screenPalette[256] = {0}; // the palette for the postprocessing step in palette rendering
 static GLuint screenPaletteTex = 0; // 1D texture containing the screen palette
 static GLuint paletteLookupTex = 0; // 3D texture containing RGB -> palette index lookup table
-RGBA_t  myPaletteData[256]; // the palette for converting textures to RGBA
+RGBA_t  myPaletteData[256] = {0}; // the palette for converting textures to RGBA
 
 static GLint gltexformat = GL_RGB5_A1;
 GLint   screen_width     = 0;               // used by Draw2DLine()
@@ -128,7 +128,7 @@ int majorGL = 0, minorGL = 0;
 
 //Hurdler: 04/10/2000: added for the kick ass coronas as Boris wanted;-)
 static GLfloat modelMatrix[16];
-GLfloat projMatrix[16];
+GLfloat projMatrix[16] = {0};
 static GLint   viewport[4];
 
 #ifdef USE_FBO_OGL
@@ -216,7 +216,7 @@ static const GLfloat byte2float[256] = {
 // -----------------+
 
 #ifdef DEBUG_TO_FILE
-FILE *gllogstream;
+FILE *gllogstream = NULL;
 #endif
 
 FUNCPRINTF void GL_DBG_Printf(const char *format, ...)
@@ -1138,13 +1138,14 @@ static void GL_Perspective(GLfloat fovy, GLfloat aspect)
 		{ 0.0f, 0.0f, 0.0f, 0.0f},
 	};
 
-	const GLfloat focallength = (GLfloat)(1.0f / (GLfloat)tan(fovy * (GLfloat)M_PIl / 360.0f));
 	const GLfloat deltaZ = FAR_CLIPPING_PLANE - NEAR_CLIPPING_PLANE;
 
 	if ((fabsf((float)deltaZ) < 1.0E-36f) || fpclassify(aspect) == FP_ZERO)
 	{
 		return;
 	}
+
+	const GLfloat focallength = (GLfloat)(1.0f / (GLfloat)tan(fovy * (GLfloat)M_PIl / 360.0f));
 
 	m[0][0] = focallength / aspect;
 	m[1][1] = focallength;
@@ -1498,14 +1499,14 @@ void GL_ReadScreenTexture(int tex, UINT8 *restrict dest, INT32 scale)
 // -----------------+
 void GL_SetPalette(RGBA_t *palette)
 {
-	INT32 i;
+	const size_t palsize = (sizeof(RGBA_t) * 256);
 
-	for (i = 0; i < 256; i++)
+	// on a palette change, you have to reload all of the textures
+	if (memcmp(myPaletteData, palette, palsize))
 	{
-		myPaletteData[i].s = palette[i].s;
+		memcpy(myPaletteData, palette, palsize);
+		GL_Flush();
 	}
-
-	GL_Flush();
 }
 
 // -----------------+
@@ -1582,11 +1583,11 @@ void GL_Draw2DLine(F2DCoord * v1, F2DCoord * v2, RGBA_t Color)
 
 	// This is the preferred, 'modern' way of rendering lines -- creating a polygon.
 	if (fabsf(v2->x - v1->x) > FLT_EPSILON)
-		angle = (float)atan((v2->y-v1->y)/(v2->x-v1->x));
+		angle = atanf((v2->y-v1->y)/(v2->x-v1->x));
 	else
 		angle = (float)N_PI_DEMI;
-	dx = (float)sin(angle) / (float)screen_width;
-	dy = (float)cos(angle) / (float)screen_height;
+	dx = sinf(angle) / (float)screen_width;
+	dy = cosf(angle) / (float)screen_height;
 
 	p[0] = v1->x - dx;  p[1] = -(v1->y + dy); p[2] = 1;
 	p[3] = v2->x - dx;  p[4] = -(v2->y + dy); p[5] = 1;
@@ -2004,7 +2005,7 @@ void GL_UpdateTexture(GLMipmap_t *pTexInfo)
 				{
 					if (chromakeyed && (*pImgData == HWR_PATCHES_CHROMAKEY_COLORINDEX))
 					{
-						tex[idx].s = (byteColor_t){0, 0, 0, 0};
+						memset(&tex[idx].s, 0, sizeof(byteColor_t));
 						pTexInfo->flags |= TF_TRANSPARENT; // there is a hole in it
 					}
 					else
@@ -2016,10 +2017,9 @@ void GL_UpdateTexture(GLMipmap_t *pTexInfo)
 
 					if (texinfoformat != GL_TEXFMT_AP_88)
 						continue;
-					if (chromakeyed)
-						continue;
 
-					tex[idx].s.alpha = *pImgData;
+					if (!chromakeyed)
+						tex[idx].s.alpha = *pImgData;
 					pImgData++;
 				}
 			}
@@ -2054,9 +2054,9 @@ void GL_UpdateTexture(GLMipmap_t *pTexInfo)
 			{
 				for (i = 0; i < w; i++, idx++)
 				{
-					tex[idx].s.red   = *pImgData;
-					tex[idx].s.green = *pImgData;
-					tex[idx].s.blue  = *pImgData;
+					tex[idx].s.red =
+					tex[idx].s.green =
+					tex[idx].s.blue = *pImgData;
 					pImgData++;
 					tex[idx].s.alpha = *pImgData;
 					pImgData++;
@@ -3136,8 +3136,8 @@ void GL_DrawModelEx(model_t *model, INT32 frameIndex, float duration, float tics
 void GL_SetTransform(FTransform *stransform)
 {
 	static boolean special_splitscreen;
-	GLdouble used_fov;
 	boolean shearing = false;
+	float used_fov;
 
 	pglLoadIdentity();
 
@@ -3187,7 +3187,8 @@ void GL_SetTransform(FTransform *stransform)
 	{
 		float dy = stransform->viewaiming * 2;
 
-		if (stransform->fliptype == TRANSFORM_FLIP || stransform->fliptype == TRANSFORM_MIRRORFLIP)
+		if (stransform->fliptype == TRANSFORM_FLIP
+			|| stransform->fliptype == TRANSFORM_MIRRORFLIP)
 			dy *= -1.0f;
 
 		pglTranslatef(0.0f, -dy/BASEVIDHEIGHT, 0.0f);
@@ -3195,11 +3196,11 @@ void GL_SetTransform(FTransform *stransform)
 
 	if (special_splitscreen)
 	{
-		used_fov = (float)(atan(tan(used_fov * M_PIl / 360) * 0.8) * 360 / M_PIl);
-		GL_Perspective((GLfloat)used_fov, 2*ASPECT_RATIO);
+		used_fov = (atanf(tanf(used_fov * (float)M_PI / 360.0f) * 0.8f) * 360.0f / (float)M_PI);
+		GL_Perspective(used_fov, 2*ASPECT_RATIO);
 	}
 	else
-		GL_Perspective((GLfloat)used_fov, ASPECT_RATIO);
+		GL_Perspective(used_fov, ASPECT_RATIO);
 
 	pglGetFloatv(GL_PROJECTION_MATRIX, projMatrix); // added for new coronas' code (without depth buffer)
 	pglMatrixMode(GL_MODELVIEW);

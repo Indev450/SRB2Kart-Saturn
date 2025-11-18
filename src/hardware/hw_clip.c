@@ -80,14 +80,13 @@
 
 
 typedef struct clipnode_s
-	{
-		struct clipnode_s *prev, *next;
-		angle_t start, end;
-	} clipnode_t;
+{
+	struct clipnode_s *prev, *next;
+	angle_t start, end;
+} clipnode_t;
 
-clipnode_t *freelist;
-clipnode_t *clipnodes;
-clipnode_t *cliphead;
+static clipnode_t *freelist;
+static clipnode_t *cliphead;
 
 static clipnode_t * gld_clipnode_GetNew(void);
 static clipnode_t * gld_clipnode_NewRange(angle_t start, angle_t end);

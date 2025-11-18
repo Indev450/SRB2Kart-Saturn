@@ -59,15 +59,15 @@
 #include "discord.h"
 #endif
 
-gameaction_t gameaction;
+gameaction_t gameaction = 0;
 gamestate_t gamestate = GS_NULL;
 UINT8 ultimatemode = false;
 
-boolean botingame;
-UINT8 botskin;
-UINT8 botcolor;
+boolean botingame = false;
+UINT8 botskin = 0;
+UINT8 botcolor = 0;
 
-JoyType_t Joystick[MAXSPLITSCREENPLAYERS];
+JoyType_t Joystick[MAXSPLITSCREENPLAYERS] = {};
 
 // 1024 bytes is plenty for a savegame
 #define SAVEGAMESIZE (1024)
@@ -83,10 +83,10 @@ static void G_DoContinued(void);
 static void G_DoWorldDone(void);
 static void G_DoStartVote(void);
 
-music_t mapmusic;
+music_t mapmusic = {};
 
 INT16 gamemap = 1;
-INT16 maptol;
+INT16 maptol = 0;
 UINT8 globalweather = 0;
 INT32 curWeather = PRECIP_NONE;
 INT32 cursaveslot = -1; // Auto-save 1p savegame slot
@@ -97,29 +97,29 @@ UINT16 mainwads = 0;
 boolean modifiedgame = false; // Set if homebrew PWAD stuff has been added.
 boolean majormods = false; // Set if Lua/Gameplay SOC/replacement map has been added.
 boolean savemoddata = false;
-UINT8 paused;
+UINT8 paused = 0;
 UINT8 modeattacking = ATTACKING_NONE;
 boolean imcontinuing = false;
 boolean runemeraldmanager = false;
 
-boolean netgame; // only true if packets are broadcast
-boolean multiplayer;
-boolean playeringame[MAXPLAYERS];
-boolean addedtogame;
-player_t players[MAXPLAYERS];
+boolean netgame = false; // only true if packets are broadcast
+boolean multiplayer = false;
+boolean playeringame[MAXPLAYERS] = {};
+boolean addedtogame = false;
+player_t players[MAXPLAYERS] = {};
 
-INT32 consoleplayer; // player taking events and displaying
-INT32 displayplayers[MAXSPLITSCREENPLAYERS] = {0}; // view being displayed
+INT32 consoleplayer = 0; // player taking events and displaying
+INT32 displayplayers[MAXSPLITSCREENPLAYERS] = {}; // view being displayed
 
-tic_t gametic;
-tic_t levelstarttic; // gametic at level start
-UINT32 totalrings; // for intermission
-INT16 lastmap; // last level you were at (returning from special stages)
-tic_t timeinmap; // Ticker for time spent in level (used for levelcard display)
+tic_t gametic = 0;
+tic_t levelstarttic = 0; // gametic at level start
+UINT32 totalrings = 0; // for intermission
+INT16 lastmap = 0; // last level you were at (returning from special stages)
+tic_t timeinmap = 0; // Ticker for time spent in level (used for levelcard display)
 
-INT16 spstage_start;
-INT16 sstage_start;
-INT16 sstage_end;
+INT16 spstage_start = 0;
+INT16 sstage_start = 0;
+INT16 sstage_end = 0;
 
 boolean looptitle = true;
 boolean useNightsSS = false;
@@ -134,42 +134,42 @@ boolean countdowntimeup = false;
 
 cutscene_t *cutscenes[128];
 
-INT16 nextmapoverride;
-boolean skipstats;
+INT16 nextmapoverride = 0;
+boolean skipstats = false;
 
 // Pointers to each CTF flag
-mobj_t *redflag;
-mobj_t *blueflag;
+mobj_t *redflag = NULL;
+mobj_t *blueflag = NULL;
 // Pointers to CTF spawn location
-mapthing_t *rflagpoint;
-mapthing_t *bflagpoint;
+mapthing_t *rflagpoint = NULL;
+mapthing_t *bflagpoint = NULL;
 
 struct quake quake;
 
 // Map Header Information
-mapheader_t* mapheaderinfo[NUMMAPS] = {NULL};
+mapheader_t* mapheaderinfo[NUMMAPS] = {};
 
 static boolean exitgame = false;
 static boolean retrying = false;
 
-UINT8 stagefailed; // Used for GEMS BONUS? Also to see if you beat the stage.
+UINT8 stagefailed = 0; // Used for GEMS BONUS? Also to see if you beat the stage.
 
-UINT16 emeralds;
-UINT32 token; // Number of tokens collected in a level
-UINT32 tokenlist; // List of tokens collected
-INT32 tokenbits; // Used for setting token bits
+UINT16 emeralds = 0;
+UINT32 token = 0; // Number of tokens collected in a level
+UINT32 tokenlist = 0; // List of tokens collected
+INT32 tokenbits = 0; // Used for setting token bits
 
 // Old Special Stage
-INT32 sstimer; // Time allotted in the special stage
+INT32 sstimer = 0; // Time allotted in the special stage
 
 boolean gamedataloaded = false;
 
 // Time attack data for levels
 // These are dynamically allocated for space reasons now
-recorddata_t *mainrecords[NUMMAPS]   = {NULL};
-UINT8 mapvisited[NUMMAPS];
+recorddata_t *mainrecords[NUMMAPS] = {};
+UINT8 mapvisited[NUMMAPS] = {};
 
-UINT32 bluescore, redscore; // CTF and Team Match team scores
+UINT32 bluescore = 0, redscore = 0; // CTF and Team Match team scores
 
 // ring count... for PERFECT!
 INT32 nummaprings = 0;
@@ -179,12 +179,12 @@ INT32 nummapboxes = 0;
 INT32 numgotboxes = 0;
 
 // Elminates unnecessary searching.
-boolean CheckForBustableBlocks;
-boolean CheckForBouncySector;
-boolean CheckForQuicksand;
-boolean CheckForMarioBlocks;
-boolean CheckForFloatBob;
-boolean CheckForReverseGravity;
+boolean CheckForBustableBlocks = false;
+boolean CheckForBouncySector = false;
+boolean CheckForQuicksand = false;
+boolean CheckForMarioBlocks = false;
+boolean CheckForFloatBob = false;
+boolean CheckForReverseGravity = false;
 
 // Powerup durations
 UINT16 invulntics = 20*TICRATE;
@@ -215,67 +215,66 @@ INT32 gameovertics = 15*TICRATE;
 UINT8 use1upSound = 0;
 UINT8 maxXtraLife = 2; // Max extra lives from rings
 
-UINT8 introtoplay;
-UINT8 creditscutscene;
+UINT8 introtoplay = 0;
+UINT8 creditscutscene = 0;
 
 // Emerald locations
-mobj_t *hunt1;
-mobj_t *hunt2;
-mobj_t *hunt3;
+mobj_t *hunt1 = NULL;
+mobj_t *hunt2 = NULL;
+mobj_t *hunt3 = NULL;
 
-tic_t racecountdown, exitcountdown; // for racing
+tic_t racecountdown = 0, exitcountdown = 0; // for racing
 
-fixed_t gravity;
-fixed_t mapobjectscale;
+fixed_t gravity = 0;
+fixed_t mapobjectscale = FRACUNIT;
 
 struct maplighting maplighting;
 
-INT16 autobalance; //for CTF team balance
-INT16 teamscramble; //for CTF team scramble
-INT16 scrambleplayers[MAXPLAYERS]; //for CTF team scramble
-INT16 scrambleteams[MAXPLAYERS]; //for CTF team scramble
-INT16 scrambletotal; //for CTF team scramble
-INT16 scramblecount; //for CTF team scramble
+INT16 autobalance = 0; //for CTF team balance
+INT16 teamscramble = 0; //for CTF team scramble
+INT16 scrambleplayers[MAXPLAYERS] = {}; //for CTF team scramble
+INT16 scrambleteams[MAXPLAYERS] = {}; //for CTF team scramble
+INT16 scrambletotal = 0; //for CTF team scramble
+INT16 scramblecount = 0; //for CTF team scramble
 
-INT32 cheats; //for multiplayer cheat commands
+INT32 cheats = 0; //for multiplayer cheat commands
 
 // SRB2Kart
 // Cvars that we don't want changed mid-game
-UINT8 gamespeed; // Game's current speed (or difficulty, or cc, or etc); 0 for easy, 1 for normal, 2 for hard
+UINT8 gamespeed = 0; // Game's current speed (or difficulty, or cc, or etc); 0 for easy, 1 for normal, 2 for hard
 boolean encoremode = false; // Encore Mode currently enabled?
-boolean prevencoremode;
-boolean franticitems; // Frantic items currently enabled?
-boolean comeback; // Battle Mode's karma comeback is on/off
+boolean prevencoremode = 0;
+boolean franticitems = 0; // Frantic items currently enabled?
+boolean comeback = 0; // Battle Mode's karma comeback is on/off
 
 // Voting system
-INT16 votelevels[4][2]; // Levels that were rolled by the host
-SINT8 votes[MAXPLAYERS]; // Each player's vote
-SINT8 pickedvote; // What vote the host rolls
+INT16 votelevels[4][2] = {}; // Levels that were rolled by the host
+SINT8 votes[MAXPLAYERS] = {}; // Each player's vote
+SINT8 pickedvote = 0; // What vote the host rolls
 
 // Server-sided, synched variables
-SINT8 battlewanted[4]; // WANTED players in battle, worth x2 points
-tic_t wantedcalcdelay; // Time before it recalculates WANTED
-tic_t indirectitemcooldown; // Cooldown before any more Shrink, SPB, or any other item that works indirectly is awarded
-tic_t hyubgone; // Cooldown before hyudoro is allowed to be rerolled
-tic_t mapreset; // Map reset delay when enough players have joined an empty game
-UINT8 nospectategrief; // How many players need to be in-game to eliminate last; for preventing spectate griefing
-boolean thwompsactive; // Thwomps activate on lap 2
-SINT8 spbplace; // SPB exists, give the person behind better items
-boolean startedInFreePlay; // Map was started in free play
+SINT8 battlewanted[4] = {}; // WANTED players in battle, worth x2 points
+tic_t wantedcalcdelay = 0; // Time before it recalculates WANTED
+tic_t indirectitemcooldown = 0; // Cooldown before any more Shrink, SPB, or any other item that works indirectly is awarded
+tic_t hyubgone = 0; // Cooldown before hyudoro is allowed to be rerolled
+tic_t mapreset = 0; // Map reset delay when enough players have joined an empty game
+UINT8 nospectategrief = 0; // How many players need to be in-game to eliminate last; for preventing spectate griefing
+boolean thwompsactive = 0; // Thwomps activate on lap 2
+SINT8 spbplace = 0; // SPB exists, give the person behind better items
+boolean startedInFreePlay = false; // Map was started in free play
 
 // Client-sided, unsynched variables (NEVER use in anything that needs to be synced with other players)
-boolean legitimateexit; // Did this client actually finish the match?
-boolean comebackshowninfo; // Have you already seen the "ATTACK OR PROTECT" message?
-static INT16 randmapbuffer[NUMMAPS+1]; // Buffer for maps RandMap is allowed to roll
+boolean legitimateexit = 0; // Did this client actually finish the match?
+boolean comebackshowninfo = 0; // Have you already seen the "ATTACK OR PROTECT" message?
+static INT16 randmapbuffer[NUMMAPS+1] = {}; // Buffer for maps RandMap is allowed to roll
 
-tic_t hidetime;
+tic_t hidetime = 0;
 
 // Grading
-UINT32 timesBeaten;
-UINT32 timesBeatenWithEmeralds;
-//UINT32 timesBeatenUltimate;
+UINT32 timesBeaten = 0;
+UINT32 timesBeatenWithEmeralds = 0;
 
-INT16 prevmap, nextmap;
+INT16 prevmap = 0, nextmap = 0;
 
 // Analog Control
 void SendWeaponPref(void);
@@ -470,7 +469,7 @@ consvar_t cv_cechotoggle = {"show_cecho", "On", CV_SAVE, cechotoggle_t, NULL, 0,
 #endif
 
 #ifdef SEENAMES
-player_t *seenplayer; // player we're aiming at right now
+player_t *seenplayer = NULL; // player we're aiming at right now
 #endif
 
 char player_names[MAXPLAYERS][MAXPLAYERNAME+1] =
@@ -493,7 +492,7 @@ char player_names[MAXPLAYERS][MAXPLAYERNAME+1] =
 	"Player 16"
 }; // SRB2kart - removed Players 17 through 32
 
-INT32 player_name_changes[MAXPLAYERS];
+INT32 player_name_changes[MAXPLAYERS] = {};
 
 INT16 rw_maximums[NUM_WEAPONS] =
 {
@@ -797,9 +796,9 @@ boolean InputDown(INT32 gc, UINT8 p)
 	}
 }
 
-INT32 localaiming[MAXSPLITSCREENPLAYERS] = {0};
-angle_t localangle[MAXSPLITSCREENPLAYERS] = {0};
-boolean camspin[MAXSPLITSCREENPLAYERS] = {0};
+INT32 localaiming[MAXSPLITSCREENPLAYERS] = {};
+angle_t localangle[MAXSPLITSCREENPLAYERS] = {};
+boolean camspin[MAXSPLITSCREENPLAYERS] = {};
 
 static fixed_t forwardmove[2] = {25<<FRACBITS>>16, 50<<FRACBITS>>16};
 static fixed_t sidemove[2] = {2<<FRACBITS>>16, 4<<FRACBITS>>16};
@@ -2289,7 +2288,7 @@ void G_PlayerReborn(INT32 player)
 	}
 
 	/* I'm putting this here because lol */
-	fade = (cv_birdmusic.value && cv_fading.value && P_IsLocalPlayer(p));
+	fade = (cv_fading.value && P_IsLocalPlayer(p));
 
 	if (fade)
 	{

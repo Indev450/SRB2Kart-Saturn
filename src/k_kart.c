@@ -6479,7 +6479,7 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 						}
 						player->kartstuff[k_invincibilitytimer] = itemtime+(2*TICRATE); // 10 seconds
 
-						if (P_IsLocalPlayer(player) && cv_supermusic.value == 1 && cv_birdmusic.value)
+						if (cv_supermusic.value == 1 && P_IsLocalPlayer(player))
 							S_ChangeMusicSpecial("kinvnc");
 
 						P_RestoreMusic(player);
@@ -6683,7 +6683,7 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 							if (cv_kartdebugshrink.value && !modeattacking && !player->bot)
 								player->mo->destscale = (6*player->mo->destscale)/8;
 							player->kartstuff[k_growshrinktimer] = itemtime+(4*TICRATE); // 12 seconds
-							if (P_IsLocalPlayer(player) && cv_growmusic.value == 1 && cv_birdmusic.value )
+							if (cv_growmusic.value == 1 && P_IsLocalPlayer(player))
 								S_ChangeMusicSpecial("kgrow");
 							P_RestoreMusic(player);
 							S_StartSound(player->mo, sfx_kc5a);

@@ -13,3 +13,8 @@ https://www.libsdl.org/download-2.0.php
 
 * i686-w64-mingw32
 * x86_64-w64-mingw32
+
+# SRB2Kart Saturn note:
+Due to a good amount of issues with newer SDL releases, we decided to ship our own Version of the library.
+This version is just the 2.28.5 release with a fix backported for non US keyboard layouts that prevented the right ALT GR key from working properly.
+It can be found under: https://github.com/alufolie91/SDL/tree/backportaltgrfix

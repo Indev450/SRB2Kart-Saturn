@@ -35,7 +35,7 @@
 #include "lua_script.h"
 #include "p_slopes.h"
 
-savedata_t savedata;
+savedata_t savedata = {};
 
 // Block UINT32s to attempt to ensure that the correct data is
 // being sent and received

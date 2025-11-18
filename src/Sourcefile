@@ -48,13 +48,13 @@ v_video.c
 w_wad.c
 y_inter.c
 z_zone.cpp
-r_bsp.c
+r_bsp.cpp
 r_data.c
-r_draw.c
+r_draw.cpp
 r_fps.cpp
 r_main.cpp
 r_patch.cpp
-r_patchrotation.c
+r_patchrotation.cpp
 r_plane.cpp
 r_segs.cpp
 r_skins.c

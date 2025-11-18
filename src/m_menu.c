@@ -145,19 +145,19 @@ I_mutex m_menu_mutex;
 
 M_waiting_mode_t m_waiting_mode = M_NOT_WAITING;
 
-const char *quitmsg[NUM_QUITMESSAGES];
+const char *quitmsg[NUM_QUITMESSAGES] = {};
 
 // Stuff for customizing the player select screen Tails 09-22-2003
-description_t description[MAXSKINS];
+description_t description[MAXSKINS] = {};
 
-INT32 mapwads[NUMMAPS];
+INT32 mapwads[NUMMAPS] = {};
 
 boolean browselocalskins = false;
 
 boolean menuactive = false;
 boolean fromlevelselect = false;
 
-char menu_text_input_buf[MAXSTRINGLENGTH];
+char menu_text_input_buf[MAXSTRINGLENGTH] = {};
 static textinput_t menuinput;
 
 static INT32 coolalphatimer = 9;
@@ -171,7 +171,6 @@ typedef enum
 } levellist_mode_t;
 
 levellist_mode_t levellistmode = LLM_CREATESERVER;
-UINT8 maplistoption = 0;
 
 static char joystickInfo[8][29];
 
@@ -180,10 +179,6 @@ static UINT32 oldserverlistpage;
 static float serverlistslidex;
 static INT32 serverlistsearched[MAXSERVERLIST] = {0};
 static UINT32 serverlistsearchedcount = 0;
-
-//static saveinfo_t savegameinfo[MAXSAVEGAMES]; // Extra info about the save games.
-
-INT16 startmap; // Mario, NiGHTS, or just a plain old normal game?
 
 static INT16 itemOn = 1; // menu item skull is on, Hack by Tails 09-18-2002
 static INT16 skullAnimCounter = 10; // skull animation counter
@@ -758,8 +753,6 @@ static void Command_Manual_f(void)
 	itemOn = 0;
 }
 
-boolean dpadscrollstate[4] = {false, false, false, false};
-
 //
 // M_Responder
 //
@@ -806,19 +799,15 @@ boolean M_Responder(event_t *ev)
 				break;
 			case KEY_HAT1:
 				ch = KEY_UPARROW;
-				dpadscrollstate[DPAD_UP] = true;
 				break;
 			case KEY_HAT1 + 1:
 				ch = KEY_DOWNARROW;
-				dpadscrollstate[DPAD_DOWN] = true;
 				break;
 			case KEY_HAT1 + 2:
 				ch = KEY_LEFTARROW;
-				dpadscrollstate[DPAD_LEFT] = true;
 				break;
 			case KEY_HAT1 + 3:
 				ch = KEY_RIGHTARROW;
-				dpadscrollstate[DPAD_RIGHT] = true;
 				break;
 		}
 
@@ -832,24 +821,6 @@ boolean M_Responder(event_t *ev)
 					COM_ImmedExecute("add kartencore 1");
 				}
 			}
-		}
-	}
-	else if (ev->type == ev_keyup)
-	{
-		switch (ev->data1) // if you let go of those set those to false
-		{
-			case KEY_HAT1:
-				dpadscrollstate[DPAD_UP] = false;
-				break;
-			case KEY_HAT1 + 1:
-				dpadscrollstate[DPAD_DOWN] = false;
-				break;
-			case KEY_HAT1 + 2:
-				dpadscrollstate[DPAD_LEFT] = false;
-				break;
-			case KEY_HAT1 + 3:
-				dpadscrollstate[DPAD_RIGHT] = false;
-				break;
 		}
 	}
 	else if (menuactive)
@@ -1729,6 +1700,9 @@ void M_Ticker(void)
 
 	if (dedicated)
 		return;
+
+	if (menuactive)
+		I_HandleControllerHatRepeat();
 
 	if (--skullAnimCounter <= 0)
 		skullAnimCounter = 8;

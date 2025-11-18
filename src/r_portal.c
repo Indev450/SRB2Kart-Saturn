@@ -21,16 +21,16 @@
 #include "r_things.h"
 #include "r_sky.h"
 
-UINT8 portalrender;			/**< When rendering a portal, it establishes the depth of the current BSP traversal. */
+UINT8 portalrender = 0; /**< When rendering a portal, it establishes the depth of the current BSP traversal. */
 
 // Linked list for portals.
-portal_t *portal_base, *portal_cap;
+portal_t *portal_base = NULL, *portal_cap = NULL;
 
-line_t *portalclipline;
-sector_t *portalcullsector;
-INT32 portalclipstart, portalclipend;
+line_t *portalclipline = NULL;
+sector_t *portalcullsector = NULL;
+INT32 portalclipstart = 0, portalclipend = 0;
 
-portal_t *g_portal; // is curline a portal seg?
+portal_t *g_portal = NULL; // is curline a portal seg?
 
 void Portal_InitList (void)
 {

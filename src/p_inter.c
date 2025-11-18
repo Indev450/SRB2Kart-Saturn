@@ -869,7 +869,7 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 
 					toucher->angle = special->angle;
 
-					for (UINT8 i = 0; i <= splitscreen; i++)
+					for (i = 0; i <= splitscreen; i++)
 					{
 						if (player == P_GetLocalPlayerForNum(i))
 						{
@@ -1605,7 +1605,7 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source)
 
 		target->player->playerstate = PST_DEAD;
 
-		if (cv_birdmusic.value && cv_fading.value && P_IsLocalPlayer(target->player))
+		if (cv_fading.value && P_IsLocalPlayer(target->player))
 		{
 			if (netgame || multiplayer)
 				ms = cv_respawntime.value * 1000;

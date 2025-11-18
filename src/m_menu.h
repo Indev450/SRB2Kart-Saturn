@@ -38,16 +38,6 @@ extern boolean forceshowhud;
 // Does all the real work of the menu interaction.
 boolean M_Responder(event_t *ev);
 
-// for scrolling through menus with controllers
-extern boolean dpadscrollstate[4];
-enum
-{
-	DPAD_UP,
-	DPAD_DOWN,
-	DPAD_LEFT,
-	DPAD_RIGHT
-};
-
 // Called by main loop, runs for demo playback. If this returns true, nullify any further user input.
 boolean M_DemoResponder(event_t *ev);
 
@@ -283,9 +273,6 @@ extern consvar_t cv_showmusicfilename;
 extern CV_PossibleValue_t gametype_cons_t[];
 
 extern char dummystaffname[22];
-
-extern INT16 startmap;
-extern INT32 ultimate_selectable;
 
 #define MAXSAVEGAMES 31 //note: last save game is "no save"
 #define NOSAVESLOT MAXSAVEGAMES-1 //slot where Play Without Saving appears

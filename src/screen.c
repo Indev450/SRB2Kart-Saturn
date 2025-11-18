@@ -36,8 +36,8 @@
 // ------------------
 // global video state
 // ------------------
-viddef_t vid;
-INT32 setmodeneeded; // video mode change needed if > 0 (the mode number to set + 1)
+viddef_t vid = {};
+INT32 setmodeneeded = 0; // video mode change needed if > 0 (the mode number to set + 1)
 
 static CV_PossibleValue_t shittyscreen_cons_t[] = {{0, "Okay"}, {1, "Shitty"}, {2, "Extra Shitty"}, {0, NULL}};
 

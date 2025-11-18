@@ -107,7 +107,7 @@ static const char pat_end[] = {0x50, 0x4b, 0x05, 0x06, 0x00};
 //                                                                    GLOBALS
 //===========================================================================
 UINT16 numwadfiles = 0; // number of active wadfiles
-wadfile_t *wadfiles[MAX_WADFILES]; // 0 to numwadfiles-1 are valid
+wadfile_t *wadfiles[MAX_WADFILES] = {}; // 0 to numwadfiles-1 are valid
 
 // W_Shutdown
 // Closes all of the WAD files before quitting

@@ -26,11 +26,11 @@
 
 #include "qs22j.h"
 
-seg_t *curline;
-side_t *sidedef;
-line_t *linedef;
-sector_t *frontsector;
-sector_t *backsector;
+seg_t  *curline = NULL;
+side_t *sidedef = NULL;
+line_t *linedef = NULL;
+sector_t *frontsector = NULL;
+sector_t *backsector = NULL;
 
 // very ugly realloc() of drawsegs at run-time, I upped it to 512
 // instead of 256.. and someone managed to send me a level with
@@ -40,29 +40,38 @@ drawseg_t *drawsegs = NULL;
 drawseg_t *ds_p = NULL;
 
 // indicates doors closed wrt automap bugfix:
-INT32 doorclosed;
+INT32 doorclosed = 0;
 
 // A wall was drawn covering the whole screen, which means we
 // can block off the BSP across that seg.
-boolean g_walloffscreen;
+boolean g_walloffscreen = false;
 
 boolean R_NoEncore(sector_t *sector, boolean ceiling)
 {
-	boolean invertencore = (GETSECSPECIAL(sector->special, 2) == 12 || GETSECSPECIAL(sector->special, 2) == 15); // keeping this incase its used
+	const INT32 invspecial = GETSECSPECIAL(sector->special, 2);
+	boolean invertencore = (invspecial == 12 || invspecial == 15); // keeping this incase its used
+
 #if 0 // perfect implementation
-	INT32 val = GETSECSPECIAL(sector->special, 3);
-	if (val != 1 && val != 3 // spring panel
+	const INT32 sprnspecial = GETSECSPECIAL(sector->special, 3);
+	if (sprnspecial != 1 && sprnspecial != 3 // spring panel
 #else // optimised, see #define GETSECSPECIAL(i,j) ((i >> ((j-1)*4))&15)
 	if ((!(sector->special & (1<<8)) || (sector->special & ((4|8)<<8))) // spring panel
 #endif
 		&& GETSECSPECIAL(sector->special, 4) != 6) // sneaker panel
-			return invertencore;
+	{
+		return invertencore;
+	}
 
 	if (invertencore)
+	{
 		return false;
+	}
 
 	if (ceiling)
+	{
 		return ((boolean)(sector->flags & SF_FLIPSPECIAL_CEILING));
+	}
+
 	return ((boolean)(sector->flags & SF_FLIPSPECIAL_FLOOR));
 }
 

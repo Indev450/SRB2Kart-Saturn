@@ -28,8 +28,8 @@
 
 boolean LUA_CallAction(enum actionnum actionnum, void *thing);
 
-INT32 var1;
-INT32 var2;
+INT32 var1 = 0;
+INT32 var2 = 0;
 
 //
 // P_NewChaseDir related LUT.

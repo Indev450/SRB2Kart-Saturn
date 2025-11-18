@@ -153,9 +153,9 @@ static      UINT32       localPalette[256];
 Uint16      realwidth = BASEVIDWIDTH;
 Uint16      realheight = BASEVIDHEIGHT;
 #define HalfWarpMouse(x,y) if (wrapmouseok) SDL_WarpMouseInWindow(window, (Uint16)(x/2),(Uint16)(y/2))
-static       SDL_bool    exposevideo = SDL_FALSE;
-static       SDL_bool    usesdl2soft = SDL_FALSE;
-static       SDL_bool    borderlesswindow = SDL_FALSE;
+static      SDL_bool    exposevideo = SDL_FALSE;
+static      SDL_bool    usesdl2soft = SDL_FALSE;
+static      SDL_bool    borderlesswindow = SDL_FALSE;
 
 // SDL2 vars
 SDL_Window   *window = NULL;
@@ -538,7 +538,7 @@ static void Impl_HandleWindowEvent(SDL_WindowEvent evt)
 
 static void Impl_HandleKeyboardEvent(SDL_KeyboardEvent evt, Uint32 type)
 {
-	event_t event;
+	event_t event = {0};
 
 	switch (type)
 	{
@@ -566,7 +566,9 @@ static void Impl_HandleKeyboardEvent(SDL_KeyboardEvent evt, Uint32 type)
 	}
 
 	if (event.data1)
+	{
 		D_PostEvent(&event);
+	}
 }
 
 static void Impl_HandleMouseMotionEvent(SDL_MouseMotionEvent evt)
@@ -618,7 +620,7 @@ static void Impl_HandleMouseMotionEvent(SDL_MouseMotionEvent evt)
 
 static void Impl_HandleMouseButtonEvent(SDL_MouseButtonEvent evt, Uint32 type)
 {
-	event_t event;
+	event_t event = {0};
 
 	// Ignore the event if the mouse is not actually focused on the window.
 	// This can happen if you used the mouse to restore keyboard focus;
@@ -631,8 +633,6 @@ static void Impl_HandleMouseButtonEvent(SDL_MouseButtonEvent evt, Uint32 type)
 	/// \todo inputEvent.button.which
 	if (USE_MOUSEINPUT)
 	{
-		SDL_memset(&event, 0, sizeof(event_t));
-
 		switch (type)
 		{
 			case SDL_MOUSEBUTTONUP:
@@ -673,27 +673,28 @@ static void Impl_HandleMouseButtonEvent(SDL_MouseButtonEvent evt, Uint32 type)
 
 static void Impl_HandleMouseWheelEvent(SDL_MouseWheelEvent evt)
 {
-	event_t event;
+	event_t event = {0};
 
 	if (USE_MOUSEINPUT)
 	{
-		SDL_memset(&event, 0, sizeof(event_t));
-
 		if (evt.y > 0)
 		{
 			event.data1 = KEY_MOUSEWHEELUP;
 			event.type = ev_keydown;
 		}
+
 		if (evt.y < 0)
 		{
 			event.data1 = KEY_MOUSEWHEELDOWN;
 			event.type = ev_keydown;
 		}
+
 		if (evt.y == 0)
 		{
 			event.data1 = 0;
 			event.type = ev_keyup;
 		}
+
 		if (event.type == ev_keyup || event.type == ev_keydown)
 		{
 			D_PostEvent(&event);
@@ -701,39 +702,77 @@ static void Impl_HandleMouseWheelEvent(SDL_MouseWheelEvent evt)
 	}
 }
 
+static UINT8 hatrepeattimer[MAXSPLITSCREENPLAYERS];
+#define HATREPEATDELAY 19
+
+void I_HandleControllerHatRepeat(void)
+{
+	// why bother if theres no controllers?
+	if (numcontrollers == 0)
+		return;
+
+	event_t event = {ev_keydown, 0, 0, 0};
+
+	static const SDL_GameControllerButton hatbutt[4] =
+	{
+		SDL_CONTROLLER_BUTTON_DPAD_UP,
+		SDL_CONTROLLER_BUTTON_DPAD_DOWN,
+		SDL_CONTROLLER_BUTTON_DPAD_LEFT,
+		SDL_CONTROLLER_BUTTON_DPAD_RIGHT
+	};
+
+	for (int i = 0; i < MAXSPLITSCREENPLAYERS; i++)
+	{
+		if (!cv_usejoystick[i].value)
+			continue;
+
+		SDL_GameController *controller = JoyInfo[i].dev;
+
+		if (!controller)
+			continue;
+
+		for (UINT8 h = 0; h < JOYHATS; h++)
+		{
+			if (SDL_GameControllerGetButton(controller, hatbutt[h]))
+			{
+				if (hatrepeattimer[i] < HATREPEATDELAY)
+				{
+					hatrepeattimer[i]++;
+				}
+				else if (hatrepeattimer[i] == HATREPEATDELAY)
+				{
+					event.data1 = KEY_HAT1 + (i * JOYHATS) + h;
+					D_PostEvent(&event);
+				}
+
+				return;
+			}
+		}
+
+		hatrepeattimer[i] = 0;
+	}
+}
+
 static void Impl_HandleControllerAxisEvent(SDL_ControllerAxisEvent evt)
 {
 	event_t event;
-	SDL_JoystickID joyid[4];
 	INT32 value;
 	UINT8 i;
 
 	// Determine the Joystick IDs for each current open joystick
 	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
 	{
-		joyid[i] = SDL_JoystickInstanceID(SDL_GameControllerGetJoystick(JoyInfo[i].dev));
+		if (evt.which == JoyInfo[i].id)
+		{
+			event.type = ev_joystick + i;
+			break;
+		}
 	}
+
+	if (i == MAXSPLITSCREENPLAYERS)
+		return;
 
 	event.data1 = event.data2 = event.data3 = INT32_MAX;
-
-	if (evt.which == joyid[0])
-	{
-		event.type = ev_joystick;
-	}
-	else if (evt.which == joyid[1])
-	{
-		event.type = ev_joystick2;
-	}
-	else if (evt.which == joyid[2])
-	{
-		event.type = ev_joystick3;
-	}
-	else if (evt.which == joyid[3])
-	{
-		event.type = ev_joystick4;
-	}
-	else
-		return;
 
 	//axis
 	if (evt.axis > JOYAXISSET*2)
@@ -770,47 +809,89 @@ static void Impl_HandleControllerAxisEvent(SDL_ControllerAxisEvent evt)
 		default:
 			return;
 	}
+
 	D_PostEvent(&event);
 }
 
-static void Impl_HandleControllerButtonEvent(SDL_ControllerButtonEvent evt, Uint32 type)
+static void Impl_HandleControllerHatEvent(SDL_ControllerButtonEvent evt, Uint32 type)
 {
-	event_t event;
-	SDL_JoystickID joyid[4];
+	event_t event = {0};
 	UINT8 i;
+	static const int hat_buttons_base[] = {KEY_HAT1, KEY_2HAT1, KEY_3HAT1, KEY_4HAT1};
 
 	// Determine the Joystick IDs for each current open joystick
 	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
 	{
-		joyid[i] = SDL_JoystickInstanceID(SDL_GameControllerGetJoystick(JoyInfo[i].dev));
+		if (evt.which == JoyInfo[i].id)
+		{
+			event.data1 = hat_buttons_base[i];
+			break;
+		}
 	}
 
-	if (   evt.button == SDL_CONTROLLER_BUTTON_DPAD_UP
-		|| evt.button == SDL_CONTROLLER_BUTTON_DPAD_DOWN
-		|| evt.button == SDL_CONTROLLER_BUTTON_DPAD_LEFT
-		|| evt.button == SDL_CONTROLLER_BUTTON_DPAD_RIGHT)
+	if (i == MAXSPLITSCREENPLAYERS)
+		return;
+
+	switch (type)
 	{
-		// dpad buttons are mapped as the hat instead
+		case SDL_CONTROLLERBUTTONUP:
+			event.type = ev_keyup;
+			break;
+		case SDL_CONTROLLERBUTTONDOWN:
+			event.type = ev_keydown;
+			break;
+		default:
+			return;
+	}
+
+	switch (evt.button)
+	{
+		case SDL_CONTROLLER_BUTTON_DPAD_UP:
+			break;
+		case SDL_CONTROLLER_BUTTON_DPAD_DOWN:
+			event.data1 += 1;
+			break;
+		case SDL_CONTROLLER_BUTTON_DPAD_LEFT:
+			event.data1 += 2;
+			break;
+		case SDL_CONTROLLER_BUTTON_DPAD_RIGHT:
+			event.data1 += 3;
+			break;
+		default:
+			return;
+	}
+
+	if (event.type != ev_console)
+	{
+		D_PostEvent(&event);
+	}
+}
+
+static void Impl_HandleControllerButtonEvent(SDL_ControllerButtonEvent evt, Uint32 type)
+{
+	event_t event = {0};
+	UINT8 i;
+	static const int buttons_base[] = {KEY_JOY1, KEY_2JOY1, KEY_3JOY1, KEY_4JOY1};
+
+	// dpad special case handling
+	if (evt.button >= SDL_CONTROLLER_BUTTON_DPAD_UP &&
+		evt.button <= SDL_CONTROLLER_BUTTON_DPAD_RIGHT)
+	{
+		Impl_HandleControllerHatEvent(evt, type);
 		return;
 	}
 
-	if (evt.which == joyid[0])
+	// Determine the Joystick IDs for each current open joystick
+	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
 	{
-		event.data1 = KEY_JOY1;
+		if (evt.which == JoyInfo[i].id)
+		{
+			event.data1 = buttons_base[i];
+			break;
+		}
 	}
-	else if (evt.which == joyid[1])
-	{
-		event.data1 = KEY_2JOY1;
-	}
-	else if (evt.which == joyid[2])
-	{
-		event.data1 = KEY_3JOY1;
-	}
-	else if (evt.which == joyid[3])
-	{
-		event.data1 = KEY_4JOY1;
-	}
-	else
+
+	if (i == MAXSPLITSCREENPLAYERS)
 		return;
 
 	switch (type)
@@ -833,7 +914,9 @@ static void Impl_HandleControllerButtonEvent(SDL_ControllerButtonEvent evt, Uint
 		return;
 
 	if (event.type != ev_console)
+	{
 		D_PostEvent(&event);
+	}
 }
 
 static void Impl_HandleControllerAddedEvent(SDL_Event evt)
@@ -1077,7 +1160,6 @@ void I_StartupMouse(void)
 void I_OsPolling(void)
 {
 	SDL_Keymod mod;
-	INT32 i;
 
 	if (consolevent)
 		I_GetConsoleEvents();
@@ -1085,9 +1167,6 @@ void I_OsPolling(void)
 	if (SDL_WasInit(SDL_INIT_JOYSTICK|SDL_INIT_GAMECONTROLLER) == (SDL_INIT_JOYSTICK|SDL_INIT_GAMECONTROLLER))
 	{
 		SDL_GameControllerUpdate();
-
-		for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
-			I_GetJoystickEvents(i);
 	}
 
 	I_GetEvent();
@@ -1724,7 +1803,11 @@ static SDL_bool Impl_CreateContext(void)
 			I_Error("Failed to create a GL context: %s\n", SDL_GetError());
 		}
 
-		SDL_GL_MakeCurrent(window, sdlglcontext);
+		if (SDL_GL_MakeCurrent(window, sdlglcontext) < 0)
+		{
+			SDL_DestroyWindow(window);
+			I_Error("Failed to set up GL context: %s\n", SDL_GetError());
+		}
 
 		// be sure to fill the resolution list the moment we have a window
 		I_FillScreenResolutionsList(false);
@@ -1765,8 +1848,7 @@ static SDL_bool Impl_CreateContext(void)
 
 		if (renderer == NULL)
 		{
-			CONS_Printf(M_GetText("Couldn't create rendering context: %s\n"), SDL_GetError());
-			return SDL_FALSE;
+			I_Error("Couldn't create rendering context: %s\n", SDL_GetError());
 		}
 
 		SDL_RenderSetLogicalSize(renderer, BASEVIDWIDTH, BASEVIDHEIGHT);
@@ -1822,8 +1904,7 @@ static SDL_bool Impl_CreateWindow(SDL_bool fullscreen)
 
 	if (window == NULL)
 	{
-		CONS_Printf(M_GetText("Couldn't create window: %s\n"), SDL_GetError());
-		return SDL_FALSE;
+		I_Error("Couldn't create window: %s\n", SDL_GetError());
 	}
 
 	return Impl_CreateContext();

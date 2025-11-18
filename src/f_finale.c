@@ -208,7 +208,7 @@ static void F_SkyScroll(INT32 scrollspeed)
 INT32 intro_scenenum = 0;
 INT32 intro_curtime = 0;
 
-const char *introtext[NUMINTROSCENES];
+const char *introtext[NUMINTROSCENES] = {};
 
 static tic_t introscenetime[NUMINTROSCENES] =
 {

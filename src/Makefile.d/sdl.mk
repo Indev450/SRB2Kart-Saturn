@@ -30,7 +30,7 @@ sources+=sdl/ogl_sdl.c
 endif
 
 ifdef NOMIXER
-sources+=sdl/sdl_sound.c
+sources+=sdl/dummy_sound.c
 else
 opts+=-DHAVE_MIXER
 sources+=sdl/mixer_sound.c

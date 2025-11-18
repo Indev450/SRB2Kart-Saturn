@@ -44,16 +44,16 @@ consvar_t cv_addons_search_case = {"addons_search_case", "No", CV_SAVE, CV_YesNo
 static CV_PossibleValue_t addons_search_type_cons_t[] = {{0, "Start"}, {1, "Anywhere"}, {0, NULL}};
 consvar_t cv_addons_search_type = {"addons_search_type", "Anywhere", CV_SAVE, addons_search_type_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
-char menupath[MAXFILEPATH];
-size_t menupathindex[menudepth];
+char menupath[MAXFILEPATH] = {};
+size_t menupathindex[menudepth] = {};
 size_t menudepthleft = menudepth;
 
 char menusearchbuf[MAXSTRINGLENGTH+1];
 textinput_t menusearch;
 
-char **dirmenu, **coredirmenu; // core only local for this file
-size_t sizedirmenu, sizecoredirmenu; // ditto
-size_t dir_on[menudepth];
+char **dirmenu = NULL, **coredirmenu = NULL; // core only local for this file
+size_t sizedirmenu = 0, sizecoredirmenu = 0; // ditto
+size_t dir_on[menudepth] = {};
 UINT8 refreshdirmenu = 0;
 char *refreshdirname = NULL;
 
@@ -92,7 +92,6 @@ INT32 pathisdirectory(const char *path)
 // skip those folders, they will not have any addons
 static const char *exclude_paths[] = {
 	"logs",
-	"luafiles",
 	"replay",
 	"mdls",
 	"gifs",

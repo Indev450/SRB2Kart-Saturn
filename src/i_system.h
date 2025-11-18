@@ -61,10 +61,6 @@ precise_t I_GetPreciseTime(void);
   */
 UINT64 I_GetPrecisePrecision(void);
 
-/** \brief  Get the current time in rendering tics, including fractions.
-*/
-double I_GetFrameTime(void);
-
 /**	\brief	Sleeps for the given duration in milliseconds. Depending on the
             operating system's scheduler, the calling thread may give up its
 			time slice for a longer duration. The implementation should give a
@@ -220,10 +216,6 @@ INT32 I_mkdir(const char *dirname, INT32 unixright);
 		\return path to main WAD
 */
 const char *I_LocateWad(void);
-
-/**	\brief Joystick events
-*/
-void I_GetJoystickEvents(UINT8 index);
 
 char *I_GetEnv(const char *name);
 

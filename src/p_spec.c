@@ -44,7 +44,7 @@
 // Not sure if this is necessary, but it was in w_wad.c, so I'm putting it here too -Shadow Hog
 #include <errno.h>
 
-mobj_t *skyboxmo[2];
+mobj_t *skyboxmo[2] = {};
 
 // Amount (dx, dy) vector linedef is shifted right to get scroll amount
 #define SCROLL_SHIFT 5
@@ -93,7 +93,7 @@ static void P_AddSpikeThinker(sector_t *sec, INT32 referrer);
 
 
 //SoM: 3/7/2000: New sturcture without limits.
-anim_t *lastanim;
+anim_t *lastanim = NULL;
 anim_t *anims = NULL; /// \todo free leak
 static size_t maxanims;
 
@@ -4797,7 +4797,6 @@ static ffloor_t *P_AddFakeFloor(sector_t *sec, sector_t *sec2, line_t *master, f
 	ffloor->spawnflags = ffloor->flags = flags;
 	ffloor->master = master;
 	ffloor->norender = INFTICS;
-
 
 	// Scan the thinkers to check for special conditions applying to this FOF.
 	// If we have thinkers sorted by sector, just check the relevant ones;
