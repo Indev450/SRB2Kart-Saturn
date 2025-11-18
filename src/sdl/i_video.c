@@ -1557,6 +1557,18 @@ static void I_AppendResolution(SDL_DisplayMode *mode, int *list_size)
 	(*list_size)++;
 }
 
+// small helper to check if a video mode is canonical
+static boolean IsModeCanonical(int w, int h)
+{
+	for (int i = 0; i < num_canonicals; i++)
+	{
+		if (canonicals[i].w == w && canonicals[i].h == h)
+			return true;
+	}
+
+	return false;
+}
+
 //
 // I_FillScreenResolutionsList
 // Get all the supported screen resolutions
@@ -1603,10 +1615,6 @@ static void I_FillScreenResolutionsList(boolean force)
 			// make sure the canonical resolutions are always available
 			if (i > count - 1)
 			{
-				// no hard-coded resolutions for mode-changing fullscreen
-				//if (exclusive_fullscreen)
-					//continue;
-
 				mode.w = canonicals[i - count].w;
 				mode.h = canonicals[i - count].h;
 			}
@@ -1661,6 +1669,30 @@ static void I_FillScreenResolutionsList(boolean force)
 
 	// [FG] sort the list
 	SDL_qsort(windowedModes, list_size, sizeof(*windowedModes), cmp_resolutions);
+
+	// if we have more video modes than we can list
+	// try to shrink the list, lowest resolutions first
+	// whilst keeping the canonicals
+	if (list_size > MAXMODEDESCS)
+	{
+		// list is sorted from largest to smallest, so start at the end
+		for (i = list_size - 1; i >= 0 && list_size > MAXMODEDESCS; i--)
+		{
+			if (IsModeCanonical(windowedModes[i].w, windowedModes[i].h))
+				continue;
+
+			// Should we like, instead prioritize checking for non aspect correct resolutions to remove?
+
+			// we gotta shift everything
+			// due to canonicals we cant just shrink the list
+			for (int k = i; k < list_size - 1; k++)
+			{
+				windowedModes[k] = windowedModes[k + 1];
+			}
+
+			list_size--;
+		}
+	}
 
 	windowedModes[list_size].name[0] = '\0';
 	vid_nummodes = list_size;
