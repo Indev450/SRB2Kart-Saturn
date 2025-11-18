@@ -151,7 +151,6 @@ static      UINT32       localPalette[256];
 Uint16      realwidth = BASEVIDWIDTH;
 Uint16      realheight = BASEVIDHEIGHT;
 #define HalfWarpMouse(x,y) if (wrapmouseok) SDL_WarpMouseInWindow(window, (Uint16)(x/2),(Uint16)(y/2))
-static      SDL_bool    exposevideo = SDL_FALSE;
 static      SDL_bool    usesdl2soft = SDL_FALSE;
 static      SDL_bool    borderlesswindow = SDL_FALSE;
 
@@ -1396,31 +1395,6 @@ static void SDLSetMode(INT32 width, INT32 height, SDL_bool fullscreen)
 }
 
 //
-// I_UpdateNoBlit
-//
-void I_UpdateNoBlit(void)
-{
-	if (rendermode == render_none)
-		return;
-
-	if (exposevideo)
-	{
-#ifdef HWRENDER
-		if (rendermode == render_opengl)
-		{
-			OglSdlFinishUpdate(cv_vidwait.value);
-			return;
-		}
-
-#endif
-		SDL_RenderCopy(renderer, texture, NULL, NULL);
-		SDL_RenderPresent(renderer);
-	}
-
-	exposevideo = SDL_FALSE;
-}
-
-//
 // I_FinishUpdate
 //
 static SDL_Rect src_rect = { 0, 0, 0, 0 };
@@ -1479,8 +1453,6 @@ void I_FinishUpdate(void)
 		SDL_RenderCopy(renderer, texture, &src_rect, NULL);
 		SDL_RenderPresent(renderer);
 	}
-
-	exposevideo = SDL_FALSE;
 }
 
 //

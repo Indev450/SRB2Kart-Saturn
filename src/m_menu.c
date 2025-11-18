@@ -7528,7 +7528,6 @@ static void M_ConnectIP(INT32 choice)
 	M_DrawTextBox(56, BASEVIDHEIGHT/2-12, 24, 2);
 	V_DrawCenteredString(BASEVIDWIDTH/2, BASEVIDHEIGHT/2, 0, "Connecting to server...");
 	I_OsPolling();
-	I_UpdateNoBlit();
 	if (rendermode == render_soft)
 		I_FinishUpdate(); // page flip or blit buffer
 }

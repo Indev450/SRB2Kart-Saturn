@@ -101,10 +101,6 @@ void VID_PrepareModeList(void);
 */
 extern boolean allow_fullscreen;
 
-/**	\brief Update video system without updating frame
-*/
-void I_UpdateNoBlit(void);
-
 /**	\brief Update video system with updating frame
 */
 void I_FinishUpdate(void);

@@ -407,10 +407,6 @@ static boolean D_Display(void)
 			R_ExecuteSetViewSize();
 			forcerefresh = true; // force background redraw
 		}
-
-		// draw buffered stuff to screen
-		// Used only by linux GGI version
-		I_UpdateNoBlit();
 	}
 
 	// save the current screen if about to wipe
