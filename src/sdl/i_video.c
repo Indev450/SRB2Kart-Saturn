@@ -90,14 +90,14 @@ static void I_FillScreenResolutionsList(boolean force);
 
 typedef struct
 {
-	const char *name;
+	char name[10];
 	INT32 w;
 	INT32 h;
 } video_mode_t;
 
-static video_mode_t windowedModes[MAXWINMODES];
+static video_mode_t windowedModes[MAXWINMODES] = {{"320x200", 320, 200}}; // make sure the default mode exists
 static const char *fallback_resolution_name = "Fallback";
-static int vid_nummodes = 0;
+static int vid_nummodes = 1;
 
 rendermode_t rendermode = render_none;
 
@@ -1531,35 +1531,65 @@ static const struct {
 static const int num_canonicals = sizeof(canonicals)/sizeof(*canonicals);
 
 // [FG] sort resolutions by width first and height second
-static int cmp_resolutions (const void *a, const void *b)
+static int cmp_resolutions(const void *a, const void *b)
 {
-	const char *const *sa = (const char *const *) a;
-	const char *const *sb = (const char *const *) b;
+	const video_mode_t *ma = (const video_mode_t *) a;
+	const video_mode_t *mb = (const video_mode_t *) b;
 
-	int wa, wb, ha, hb;
-
-	if (sscanf(*sa, "%dx%d", &wa, &ha) != 2) wa = ha = 0;
-	if (sscanf(*sb, "%dx%d", &wb, &hb) != 2) wb = hb = 0;
-
-	return (wa == wb) ? hb - ha : wb - wa;
+	return (ma->w == mb->w) ? mb->h - ma->h : mb->w - ma->w;
 }
 
 static void I_AppendResolution(SDL_DisplayMode *mode, int *list_size)
 {
 	int i;
-	char mode_name[256];
-
-	snprintf(mode_name, sizeof(mode_name), "%dx%d", mode->w, mode->h);
 
 	for (i = 0; i < *list_size; i++)
-		if (!strcmp(mode_name, windowedModes[i].name))
+		if (windowedModes[i].w == mode->w
+		 && windowedModes[i].h == mode->h)
 			return;
 
-	windowedModes[*list_size].name = strdup(mode_name);
+	snprintf(windowedModes[*list_size].name,
+			 sizeof(windowedModes[*list_size].name),
+			 "%dx%d", mode->w, mode->h);
 	windowedModes[*list_size].w = mode->w;
 	windowedModes[*list_size].h = mode->h;
 
 	(*list_size)++;
+}
+
+// small helper to check if a video mode is canonical
+static boolean IsModeCanonical(int w, int h)
+{
+	for (int i = 0; i < num_canonicals; i++)
+	{
+		if (canonicals[i].w == w && canonicals[i].h == h)
+			return true;
+	}
+
+	return false;
+}
+
+// check if our desired resolution already is in the videomode list
+static int IsCustomResolutionInList(int list_size)
+{
+	INT32 custom_w = cv_scr_width.value;
+	INT32 custom_h = cv_scr_height.value;
+
+	// invalid resolution
+	// dont even attempt to add it
+	if (custom_w < BASEVIDWIDTH || custom_w > MAXVIDWIDTH
+	 || custom_h < BASEVIDHEIGHT || custom_h > MAXVIDHEIGHT)
+		return -1;
+
+	for (int i = 0; i < list_size; i++)
+	{
+		if (windowedModes[i].w == custom_w && windowedModes[i].h == custom_h)
+		{
+			return 1;
+		}
+	}
+
+	return 0;
 }
 
 //
@@ -1572,9 +1602,9 @@ static void I_FillScreenResolutionsList(boolean force)
 	int currentDisplayIndex = -1;
 	static int oldDisplayIndex = -1;
 	SDL_DisplayMode mode;
-	int i, list_size;
+	int i = 0, list_size = 0;
 	int count = 0;
-	char desired_resolution[256];
+	char custom_resolution[10];
 
 	currentDisplayIndex = SDL_GetWindowDisplayIndex(window);
 
@@ -1608,10 +1638,6 @@ static void I_FillScreenResolutionsList(boolean force)
 			// make sure the canonical resolutions are always available
 			if (i > count - 1)
 			{
-				// no hard-coded resolutions for mode-changing fullscreen
-				//if (exclusive_fullscreen)
-					//continue;
-
 				mode.w = canonicals[i - count].w;
 				mode.h = canonicals[i - count].h;
 			}
@@ -1623,49 +1649,60 @@ static void I_FillScreenResolutionsList(boolean force)
 			I_AppendResolution(&mode, &list_size);
 		}
 
-		windowedModes[list_size].name = NULL;
+		windowedModes[list_size].name[0] = '\0';
 	}
 
-	INT32 custom_w = cv_scr_width.value;
-	INT32 custom_h = cv_scr_height.value;
+	const int customresinlist = IsCustomResolutionInList(list_size);
 
-	// make sure those are valid
-	if ((custom_w >= BASEVIDWIDTH && custom_h >= BASEVIDHEIGHT) &&
-		(custom_w <= MAXVIDWIDTH && custom_h <= MAXVIDHEIGHT))
+	if (customresinlist == 0)
 	{
-		boolean needcustom = true;
-
-		for (i = 0; i < list_size; i++)
-		{
-			if (windowedModes[i].w == custom_w && windowedModes[i].h == custom_h)
-			{
-				needcustom = false;
-				break;
-			}
-		}
-
 		// did not find mode from list, make custom resolution if the values somewhat make sense
-		if (needcustom)
+		if (list_size < MAXWINMODES)
 		{
-			if (list_size < MAXWINMODES)
-			{
-				snprintf(desired_resolution, sizeof(desired_resolution), "%dx%d", custom_w, custom_h);
+			snprintf(custom_resolution, sizeof(custom_resolution), "%dx%d", cv_scr_width.value, cv_scr_height.value);
 
-				// [FG] if the desired resolution not in the list, append it
-				windowedModes[list_size].name = strdup(desired_resolution);
-				windowedModes[list_size].w = custom_w;
-				windowedModes[list_size].h = custom_h;
-				list_size++;
-			}
-			else
-				CONS_Alert(CONS_ERROR, "Could not set custom resolution!\n");
+			// [FG] if the desired resolution not in the list, append it
+			snprintf(windowedModes[list_size].name,
+						sizeof(windowedModes[list_size].name),
+						"%dx%d", cv_scr_width.value, cv_scr_height.value);
+			windowedModes[list_size].w = cv_scr_width.value;
+			windowedModes[list_size].h = cv_scr_height.value;
+			list_size++;
 		}
+		else
+			CONS_Alert(CONS_ERROR, "Could not set custom resolution!\n");
 	}
+	else if (customresinlist == -1)
+		CONS_Alert(CONS_ERROR, "Could not set custom resolution!\n");
 
 	// [FG] sort the list
 	SDL_qsort(windowedModes, list_size, sizeof(*windowedModes), cmp_resolutions);
 
-	windowedModes[list_size].name = NULL;
+	// if we have more video modes than we can list
+	// try to shrink the list, lowest resolutions first
+	// whilst keeping the canonicals
+	if (list_size > MAXMODEDESCS)
+	{
+		// list is sorted from largest to smallest, so start at the end
+		for (i = list_size - 1; i >= 0 && list_size > MAXMODEDESCS; i--)
+		{
+			if (IsModeCanonical(windowedModes[i].w, windowedModes[i].h))
+				continue;
+
+			// Should we like, instead prioritize checking for non aspect correct resolutions to remove?
+
+			// we gotta shift everything
+			// due to canonicals we cant just shrink the list
+			for (int k = i; k < list_size - 1; k++)
+			{
+				windowedModes[k] = windowedModes[k + 1];
+			}
+
+			list_size--;
+		}
+	}
+
+	windowedModes[list_size].name[0] = '\0';
 	vid_nummodes = list_size;
 
 	// be sure to update the video menu
@@ -1677,7 +1714,6 @@ static void I_FillScreenResolutionsList(boolean force)
 // return number of fullscreen + X11 modes
 INT32 VID_NumModes(void)
 {
-	//return MAXWINMODES;
 	return vid_nummodes;
 }
 
@@ -1711,12 +1747,8 @@ INT32 VID_GetModeForSize(INT32 w, INT32 h)
 
 void VID_RefreshModeList(void)
 {
-	INT32 custom_w = cv_scr_width.value;
-	INT32 custom_h = cv_scr_height.value;
-
-	// make sure those are valid
-	if ((custom_w >= BASEVIDWIDTH && custom_h >= BASEVIDHEIGHT) &&
-		(custom_w <= MAXVIDWIDTH && custom_h <= MAXVIDHEIGHT))
+	// check if we even need to rebuild the list
+	if (IsCustomResolutionInList(vid_nummodes) == 0)
 		I_FillScreenResolutionsList(true);
 }
 
@@ -2108,12 +2140,6 @@ void I_StartupGraphics(void)
 
 	// Fury: we do window initialization after GL setup to allow
 	// SDL_GL_LoadLibrary to work well on Windows
-
-	// make sure the default mode exists
-	windowedModes[0].name = "320x200";
-	windowedModes[0].w = 320;
-	windowedModes[0].h = 200;
-	vid_nummodes = 1;
 
 	// Create window
 	VID_SetMode(VID_GetModeForSize(BASEVIDWIDTH, BASEVIDHEIGHT));
