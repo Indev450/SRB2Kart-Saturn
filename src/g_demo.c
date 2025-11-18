@@ -2536,7 +2536,7 @@ void G_DoPlayDemo(char *defdemoname)
 	UINT8 i, p;
 	lumpnum_t l;
 	char skin[17], color[17], *n;
-	CLEANUP(Z_Pfree) char *pdemoname;
+	CLEANUP(Z_Pfree) char *pdemoname = NULL;
 	UINT8 version, subversion;
 	UINT32 randseed;
 	char msg[1024];
