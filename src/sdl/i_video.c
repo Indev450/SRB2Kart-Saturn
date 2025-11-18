@@ -90,14 +90,14 @@ static void I_FillScreenResolutionsList(boolean force);
 
 typedef struct
 {
-	const char *name;
+	char name[10];
 	INT32 w;
 	INT32 h;
 } video_mode_t;
 
-static video_mode_t windowedModes[MAXWINMODES];
+static video_mode_t windowedModes[MAXWINMODES] = {{"320x200", 320, 200}}; // make sure the default mode exists
 static const char *fallback_resolution_name = "Fallback";
-static int vid_nummodes = 0;
+static int vid_nummodes = 1;
 
 rendermode_t rendermode = render_none;
 
@@ -1542,15 +1542,15 @@ static int cmp_resolutions(const void *a, const void *b)
 static void I_AppendResolution(SDL_DisplayMode *mode, int *list_size)
 {
 	int i;
-	char mode_name[256];
-
-	snprintf(mode_name, sizeof(mode_name), "%dx%d", mode->w, mode->h);
 
 	for (i = 0; i < *list_size; i++)
-		if (!strcmp(mode_name, windowedModes[i].name))
+		if (windowedModes[i].w == mode->w
+		 && windowedModes[i].h == mode->h)
 			return;
 
-	windowedModes[*list_size].name = strdup(mode_name);
+	snprintf(windowedModes[*list_size].name,
+			 sizeof(windowedModes[*list_size].name),
+			 "%dx%d", mode->w, mode->h);
 	windowedModes[*list_size].w = mode->w;
 	windowedModes[*list_size].h = mode->h;
 
@@ -1567,9 +1567,9 @@ static void I_FillScreenResolutionsList(boolean force)
 	int currentDisplayIndex = -1;
 	static int oldDisplayIndex = -1;
 	SDL_DisplayMode mode;
-	int i, list_size;
+	int i = 0, list_size = 0;
 	int count = 0;
-	char desired_resolution[256];
+	char custom_resolution[10];
 
 	currentDisplayIndex = SDL_GetWindowDisplayIndex(window);
 
@@ -1618,7 +1618,7 @@ static void I_FillScreenResolutionsList(boolean force)
 			I_AppendResolution(&mode, &list_size);
 		}
 
-		windowedModes[list_size].name = NULL;
+		windowedModes[list_size].name[0] = '\0';
 	}
 
 	INT32 custom_w = cv_scr_width.value;
@@ -1644,10 +1644,12 @@ static void I_FillScreenResolutionsList(boolean force)
 		{
 			if (list_size < MAXWINMODES)
 			{
-				snprintf(desired_resolution, sizeof(desired_resolution), "%dx%d", custom_w, custom_h);
+				snprintf(custom_resolution, sizeof(custom_resolution), "%dx%d", custom_w, custom_h);
 
 				// [FG] if the desired resolution not in the list, append it
-				windowedModes[list_size].name = strdup(desired_resolution);
+				snprintf(windowedModes[list_size].name,
+						 sizeof(windowedModes[list_size].name),
+						 "%dx%d", custom_w, custom_h);
 				windowedModes[list_size].w = custom_w;
 				windowedModes[list_size].h = custom_h;
 				list_size++;
@@ -1660,7 +1662,7 @@ static void I_FillScreenResolutionsList(boolean force)
 	// [FG] sort the list
 	SDL_qsort(windowedModes, list_size, sizeof(*windowedModes), cmp_resolutions);
 
-	windowedModes[list_size].name = NULL;
+	windowedModes[list_size].name[0] = '\0';
 	vid_nummodes = list_size;
 
 	// be sure to update the video menu
@@ -2103,12 +2105,6 @@ void I_StartupGraphics(void)
 
 	// Fury: we do window initialization after GL setup to allow
 	// SDL_GL_LoadLibrary to work well on Windows
-
-	// make sure the default mode exists
-	windowedModes[0].name = "320x200";
-	windowedModes[0].w = 320;
-	windowedModes[0].h = 200;
-	vid_nummodes = 1;
 
 	// Create window
 	VID_SetMode(VID_GetModeForSize(BASEVIDWIDTH, BASEVIDHEIGHT));
