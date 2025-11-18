@@ -50,9 +50,8 @@ const char *VID_GetModeName(INT32 modenum)
   return "A320x240";
 }
 
-void I_UpdateNoBlit(void){}
-
-void I_FinishUpdate(void) {
+void I_FinishUpdate(void)
+{
   LOGD("FRAME!");
   (*jni_env)->CallVoidMethod(jni_env, androidVideo, videoFrameCB);
 }
