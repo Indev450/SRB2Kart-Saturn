@@ -23,8 +23,6 @@ if("${CMAKE_SYSTEM_NAME}" MATCHES Darwin)
 	set(MACOSX_BUNDLE_ICON_FILE Srb2mac.icns)
 	set_source_files_properties(macosx/Srb2mac.icns PROPERTIES MACOSX_PACKAGE_LOCATION "Resources")
 	target_sources(SRB2SDL2 PRIVATE
-		macosx/mac_alert.c
-		macosx/mac_alert.h
 		macosx/mac_resources.c
 		macosx/mac_resources.h
 		macosx/Srb2mac.icns

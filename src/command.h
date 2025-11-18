@@ -13,12 +13,12 @@
 #ifndef __COMMAND_H__
 #define __COMMAND_H__
 
+#include <stdio.h>
+#include "doomdef.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-#include <stdio.h>
-#include "doomdef.h"
 
 //===================================
 // Command buffer & command execution

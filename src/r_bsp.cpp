@@ -14,6 +14,8 @@
 #include "doomdef.h"
 #include "g_game.h"
 
+#include <algorithm>
+
 #include "r_fps.h"
 #include "r_local.h"
 #include "r_state.h"

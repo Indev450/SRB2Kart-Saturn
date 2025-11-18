@@ -130,8 +130,11 @@ if(${SRB2_CONFIG_LIBBACKTRACE})
 	target_compile_definitions(SRB2SDL2 PRIVATE -DHAVE_LIBBACKTRACE)
 endif()
 
-set(SRB2_HAVE_THREADS ON)
-target_compile_definitions(SRB2SDL2 PRIVATE -DHAVE_THREADS)
+# FIXME macOS does not support C11 threads.h
+if(NOT "${CMAKE_SYSTEM_NAME}" MATCHES "Darwin")
+	set(SRB2_HAVE_THREADS ON)
+	target_compile_definitions(SRB2SDL2 PRIVATE -DHAVE_THREADS)
+endif()
 
 if(${SRB2_CONFIG_HAVE_ZLIB})
 	if(${SRB2_CONFIG_USE_INTERNAL_LIBRARIES})
