@@ -1110,12 +1110,12 @@ static void GL_Perspective(GLfloat fovy, GLfloat aspect)
 
 	const GLfloat deltaZ = FAR_CLIPPING_PLANE - NEAR_CLIPPING_PLANE;
 
-	if ((fabsf((float)deltaZ) < 1.0E-36f) || fpclassify(aspect) == FP_ZERO)
+	if ((fabsf(deltaZ) < 1.0E-36f) || fpclassify(aspect) == FP_ZERO)
 	{
 		return;
 	}
 
-	const GLfloat focallength = (GLfloat)(1.0f / (GLfloat)tan(fovy * (GLfloat)M_PIl / 360.0f));
+	const GLfloat focallength = (1.0f / tanf(fovy * M_PIf / 360.0f));
 
 	m[0][0] = focallength / aspect;
 	m[1][1] = focallength;
@@ -1556,6 +1556,7 @@ void GL_Draw2DLine(F2DCoord * v1, F2DCoord * v2, RGBA_t Color)
 		angle = atanf((v2->y-v1->y)/(v2->x-v1->x));
 	else
 		angle = (float)N_PI_DEMI;
+
 	dx = sinf(angle) / (float)screen_width;
 	dy = cosf(angle) / (float)screen_height;
 
@@ -3178,11 +3179,13 @@ void GL_SetTransform(FTransform *stransform)
 
 	if (special_splitscreen)
 	{
-		used_fov = (atanf(tanf(used_fov * (float)M_PI / 360.0f) * 0.8f) * 360.0f / (float)M_PI);
+		used_fov = (atanf(tanf(used_fov * M_PIf / 360.0f) * 0.8f) * 360.0f / M_PIf);
 		GL_Perspective(used_fov, 2*ASPECT_RATIO);
 	}
 	else
+	{
 		GL_Perspective(used_fov, ASPECT_RATIO);
+	}
 
 	pglGetFloatv(GL_PROJECTION_MATRIX, projMatrix); // added for new coronas' code (without depth buffer)
 	pglMatrixMode(GL_MODELVIEW);
