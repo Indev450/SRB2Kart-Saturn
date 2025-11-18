@@ -5435,10 +5435,14 @@ void HWR_RenderViewpoint(gl_portal_t *rootportal, player_t *player, int stencil_
 			currentportallist = &portallist;
 			HWR_SetPortalState(GLPORTAL_SEARCH);
 
-			HWR_ClearClipper();
+			HWR_SetTransform(fpov);
 
+			HWR_ClearSprites();
+			HWR_ClearClipper();
 			if (rootportal)
+			{
 				HWR_PortalClipping(rootportal);
+			}
 
 			validcount++;
 
@@ -5456,13 +5460,13 @@ void HWR_RenderViewpoint(gl_portal_t *rootportal, player_t *player, int stencil_
 		}
 	}
 
-	// draw normal things in current frame in current incremented stencil buffer area
-	HWR_SetStencilState(HWR_STENCIL_NORMAL, stencil_level);
-
 	HWR_SetTransform(fpov);
 
 	HWR_ClearSprites();
 	HWR_ClearClipper();
+
+	// draw normal things in current frame in current incremented stencil buffer area
+	HWR_SetStencilState(HWR_STENCIL_NORMAL, stencil_level);
 
 	if constexpr (Type == RenderViewpointType::kPortal)
 	{
