@@ -1542,17 +1542,12 @@ static const struct {
 static const int num_canonicals = sizeof(canonicals)/sizeof(*canonicals);
 
 // [FG] sort resolutions by width first and height second
-static int cmp_resolutions (const void *a, const void *b)
+static int cmp_resolutions(const void *a, const void *b)
 {
-	const char *const *sa = (const char *const *) a;
-	const char *const *sb = (const char *const *) b;
+	const video_mode_t *ma = (const video_mode_t *) a;
+	const video_mode_t *mb = (const video_mode_t *) b;
 
-	int wa, wb, ha, hb;
-
-	if (sscanf(*sa, "%dx%d", &wa, &ha) != 2) wa = ha = 0;
-	if (sscanf(*sb, "%dx%d", &wb, &hb) != 2) wb = hb = 0;
-
-	return (wa == wb) ? hb - ha : wb - wa;
+	return (ma->w == mb->w) ? mb->h - ma->h : mb->w - ma->w;
 }
 
 static void I_AppendResolution(SDL_DisplayMode *mode, int *list_size)
