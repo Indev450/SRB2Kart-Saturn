@@ -283,7 +283,7 @@ static void I_ShutdownConsole(void)
 	{
 		I_OutputMsg("Shutdown tty console\n");
 		consolevent = SDL_FALSE;
-		tcsetattr (STDIN_FILENO, TCSADRAIN, &tty_tc);
+		tcsetattr(STDIN_FILENO, TCSADRAIN, &tty_tc);
 	}
 }
 
@@ -303,7 +303,8 @@ static void I_StartupConsole(void)
 	if (framebuffer)
 		consolevent = SDL_FALSE;
 
-	if (!consolevent) return;
+	if (!consolevent)
+		return;
 
 	if (isatty(STDIN_FILENO)!=1)
 	{
@@ -311,6 +312,7 @@ static void I_StartupConsole(void)
 		consolevent = SDL_FALSE;
 		return;
 	}
+
 	memset(&tty_con, 0x00, sizeof(tty_con));
 	tcgetattr (0, &tty_tc);
 	tty_erase = tty_tc.c_cc[VERASE];
@@ -372,6 +374,7 @@ void I_GetConsoleEvents(void)
 				tty_con.buffer[tty_con.cursor] = '\0';
 				tty_Back();
 			}
+
 			ev.data1 = KEY_BACKSPACE;
 		}
 		else if (key < ' ') // check if this is a control char
@@ -387,7 +390,8 @@ void I_GetConsoleEvents(void)
 				// shut down, most unix programs behave this way
 				I_Quit();
 			}
-			else continue;
+			else
+				continue;
 		}
 		else if (tty_con.cursor < sizeof(tty_con.buffer))
 		{
@@ -397,7 +401,9 @@ void I_GetConsoleEvents(void)
 			// print the current line (this is differential)
 			write(STDOUT_FILENO, &key, 1);
 		}
-		if (ev.data1) D_PostEvent(&ev);
+
+		if (ev.data1)
+			D_PostEvent(&ev);
 		//tty_FlushIn();
 	}
 }

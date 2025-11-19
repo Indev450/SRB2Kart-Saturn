@@ -21,28 +21,28 @@
 
 // The texture for the next polygon given to HWR_ProcessPolygon.
 // Set with HWR_SetCurrentTexture.
-GLMipmap_t *current_texture = NULL;
+static GLMipmap_t *current_texture = NULL;
 
-boolean currently_batching = false;
+static boolean currently_batching = false;
 
-FOutVector* finalVertexArray  = NULL;// contains subset of sorted vertices and texture coordinates to be sent to gpu
-UINT32* finalVertexIndexArray = NULL;// contains indexes for glDrawElements, taking into account fan->triangles conversion
+static FOutVector* finalVertexArray  = NULL;// contains subset of sorted vertices and texture coordinates to be sent to gpu
+static UINT32* finalVertexIndexArray = NULL;// contains indexes for glDrawElements, taking into account fan->triangles conversion
 //     NOTE have this alloced as 3x finalVertexArray size
-int finalVertexArrayAllocSize = 65536;
+static int finalVertexArrayAllocSize = 65536;
 
 //GLubyte* colorArray = NULL;// contains color data to be sent to gpu, if needed
 //int colorArrayAllocSize = 65536;
 // not gonna use this for now, just sort by color and change state when it changes
 // later maybe when using vertex attributes if it's needed
 
-PolygonArrayEntry* polygonArray        = NULL ;// contains the polygon data from DrawPolygon, waiting to be processed
-PolygonArrayEntry **polygonArraySorted = NULL; // contains sorted pointers to polygonArray
-int polygonArraySize      = 0;
-int polygonArrayAllocSize = 65536;
+static PolygonArrayEntry* polygonArray        = NULL ;// contains the polygon data from DrawPolygon, waiting to be processed
+static PolygonArrayEntry **polygonArraySorted = NULL; // contains sorted pointers to polygonArray
+static int polygonArraySize      = 0;
+static int polygonArrayAllocSize = 65536;
 
-FOutVector* unsortedVertexArray  = NULL; // contains unsorted vertices and texture coordinates from DrawPolygon
-int unsortedVertexArraySize      = 0;
-int unsortedVertexArrayAllocSize = 65536;
+static FOutVector* unsortedVertexArray  = NULL; // contains unsorted vertices and texture coordinates from DrawPolygon
+static int unsortedVertexArraySize      = 0;
+static int unsortedVertexArrayAllocSize = 65536;
 
 // Enables batching mode. HWR_ProcessPolygon will collect polygons instead of passing them directly to the rendering backend.
 // Call HWR_RenderBatches to render all the collected geometry.
@@ -260,7 +260,7 @@ void HWR_RenderBatches(void)
 	nextSurfaceInfo.LightInfo.light_level = 0;
 	nextSurfaceInfo.LightInfo.directional = false;
 
-	currently_batching = false;// no longer collecting batches
+	currently_batching = false; // no longer collecting batches
 
 	if (!polygonArraySize)
 	{

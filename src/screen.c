@@ -343,8 +343,6 @@ boolean SCR_IsAspectCorrect(INT32 width, INT32 height)
 	return (width % BASEVIDWIDTH == 0 && height % BASEVIDHEIGHT == 0 && width / BASEVIDWIDTH == height / BASEVIDHEIGHT);
 }
 
-double averageFPS = 0.0f;
-
 #define USE_FPS_SAMPLES
 
 #ifdef USE_FPS_SAMPLES
@@ -352,16 +350,16 @@ double averageFPS = 0.0f;
 #define NUM_FPS_SAMPLES (32) // Number of samples to store
 
 static double total_frame_time = 0.0;
-static int frame_index;
-
 static double fps_samples[NUM_FPS_SAMPLES];
 #endif
 
-static boolean fps_init = false;
-static precise_t fps_enter = 0;
+static double averageFPS = 0.0f;
 
 void SCR_CalculateFPS(void)
 {
+	static boolean fps_init = false;
+	static int frame_index = 0;
+	static precise_t fps_enter = 0;
 	precise_t fps_finish = 0;
 
 	double frameElapsed = 0.0;

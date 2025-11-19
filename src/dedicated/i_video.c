@@ -66,13 +66,6 @@ void I_OsPolling(void)
 }
 
 //
-// I_UpdateNoBlit
-//
-void I_UpdateNoBlit(void)
-{
-}
-
-//
 // I_FinishUpdate
 //
 void I_FinishUpdate(void)

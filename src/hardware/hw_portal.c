@@ -38,7 +38,7 @@ void HWR_PortalClipping(gl_portal_t *portal)
 	gld_clipper_SafeAddClipRange(portal->angle1, portal->angle2);
 }
 
-static gl_portal_t* HWR_Portal_Add (seg_t *seg)
+static gl_portal_t* HWR_Portal_Add(seg_t *seg)
 {
 	gl_portal_t *portal = Z_Malloc(sizeof(gl_portal_t), PU_STATIC, NULL);
 
@@ -120,8 +120,8 @@ void HWR_PortalFrame(gl_portal_t* portal)
 	viewz = portal->viewz;
 
 	viewangle = portal->viewangle;
-	//viewsin = FINESINE(viewangle>>ANGLETOFINESHIFT);
-	//viewcos = FINECOSINE(viewangle>>ANGLETOFINESHIFT);
+	viewsin = FINESINE(viewangle>>ANGLETOFINESHIFT);
+	viewcos = FINECOSINE(viewangle>>ANGLETOFINESHIFT);
 
 	if (portal->clipline != -1)
 	{
