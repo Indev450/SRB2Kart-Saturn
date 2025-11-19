@@ -488,8 +488,7 @@ void *R_PixelsToPatch(UINT8 *raw, INT16 width, INT16 height, INT16 leftoffset, I
 	// so, a 512x512 flat should maximally need 393,760 (384.53 KiB) bytes.
 	// quite a bit smaller than 64 megabytes, and much less annoying to the windows debug allocator!
 
-	imgbuf.assign(maxoutsize, 0);
-
+	imgbuf.resize(maxoutsize);
 	imgptr = imgbuf.data();
 
 	// Write image size and offset
@@ -620,8 +619,7 @@ void *R_MaskedFlatToPatch(UINT16 *raw, INT16 width, INT16 height, INT16 leftoffs
 	// so, a 512x512 flat should maximally need 393,760 (384.53 KiB) bytes.
 	// quite a bit smaller than 64 megabytes, and much less annoying to the windows debug allocator!
 
-	imgbuf.assign(maxoutsize, 0);
-
+	imgbuf.resize(maxoutsize);
 	imgptr = imgbuf.data();
 
 	// Write image size and offset
