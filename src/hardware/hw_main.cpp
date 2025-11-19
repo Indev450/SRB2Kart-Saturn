@@ -14,6 +14,7 @@
 #ifdef HWRENDER
 
 #include <algorithm>
+#include <vector>
 
 #include "../doomstat.h"
 #include "../doomdef.h"
@@ -4174,6 +4175,7 @@ static int CompareVisSprites(const void *p1, const void *p2)
 static void HWR_SortVisSprites(void)
 {
 	UINT32 i;
+
 	for (i = 0; i < gl_visspritecount; i++)
 	{
 		gl_vsprorder[i] = HWR_GetVisSprite(i);
@@ -4242,38 +4244,29 @@ typedef struct
 
 // initial size of drawnode array
 #define DRAWNODES_INIT_SIZE 64
-gl_drawnode_t *drawnodes = NULL;
-INT32 numdrawnodes = 0;
-INT32 alloceddrawnodes = 0;
+// no reason to waste all the allocations since every map will have atleast one translucent thing
+static std::vector<gl_drawnode_t> drawnodes;
 
 static void *HWR_CreateDrawNode(gl_drawnode_type_t type)
 {
-	gl_drawnode_t *drawnode;
+	// if we didnt alloc anything yet, reserve atleast 64 nodes
+	// dont declare with it as we want our size to be 0!
+	drawnodes.reserve(DRAWNODES_INIT_SIZE);
 
-	if (!drawnodes)
-	{
-		alloceddrawnodes = DRAWNODES_INIT_SIZE;
-		drawnodes = static_cast<gl_drawnode_t*>(Z_Malloc(alloceddrawnodes * sizeof(gl_drawnode_t), PU_LEVEL, &drawnodes));
-	}
-	else if (numdrawnodes >= alloceddrawnodes)
-	{
-		alloceddrawnodes *= 2;
-		Z_Realloc(drawnodes, alloceddrawnodes * sizeof(gl_drawnode_t), PU_LEVEL, &drawnodes);
-	}
-
-	drawnode = &drawnodes[numdrawnodes++];
-	drawnode->type = type;
+	drawnodes.emplace_back();
+	drawnodes.back().type = type;
 
 	// not sure if returning different pointers to a union is necessary
 	switch (type)
 	{
 		case DRAWNODE_PLANE:
-			return &drawnode->u.plane;
+			return &drawnodes.back().u.plane;
 		case DRAWNODE_POLYOBJECT_PLANE:
-			return &drawnode->u.polyplane;
+			return &drawnodes.back().u.polyplane;
 		case DRAWNODE_WALL:
-			return &drawnode->u.wall;
+			return &drawnodes.back().u.wall;
 	}
+
 	return NULL;
 }
 
@@ -4337,11 +4330,15 @@ static int CompareDrawNodePlanes(const void *p1, const void *p2)
 // Sorts and renders the list of drawnodes for the scene being rendered.
 static void HWR_RenderDrawNodes(void)
 {
-	INT32 i = 0, run_start = 0;
+	size_t i = 0, run_start = 0;
+	static std::vector<INT32> sortindex;
+
+	sortindex.reserve(DRAWNODES_INIT_SIZE);
 
 	// Array for storing the rendering order.
 	// A list of indices into the drawnodes array.
-	INT32 *sortindex;
+
+	const size_t numdrawnodes = drawnodes.size();
 
 	if (!numdrawnodes)
 		return;
@@ -4350,7 +4347,7 @@ static void HWR_RenderDrawNodes(void)
 
 	PS_START_TIMING(ps_hw_nodesorttime);
 
-	sortindex = static_cast<INT32*>(Z_Malloc(sizeof(INT32) * numdrawnodes, PU_STATIC, NULL));
+	sortindex.resize(numdrawnodes);
 
 	// Reversed order
 	for (i = 0; i < numdrawnodes; i++)
@@ -4366,7 +4363,7 @@ static void HWR_RenderDrawNodes(void)
 		if (drawnodes[sortindex[run_start]].type == DRAWNODE_PLANE)
 		{
 			// found it, now look for run end
-			INT32 run_end; // (inclusive)
+			size_t run_end; // (inclusive)
 
 			for (i = run_start+1; i < numdrawnodes; i++)
 			{
@@ -4379,7 +4376,7 @@ static void HWR_RenderDrawNodes(void)
 			if (run_end > run_start) // if there are multiple consecutive planes, not just one
 			{
 				// consecutive run of planes found, now sort it
-				qs22j(sortindex + run_start, run_end - run_start + 1, sizeof(INT32), CompareDrawNodePlanes);
+				qs22j(sortindex.data() + run_start, run_end - run_start + 1, sizeof(INT32), CompareDrawNodePlanes);
 			}
 
 			run_start = run_end + 1; // continue looking for runs coming right after this one
@@ -4451,9 +4448,7 @@ static void HWR_RenderDrawNodes(void)
 
 	PS_STOP_TIMING(ps_hw_nodedrawtime);
 
-	numdrawnodes = 0;
-
-	Z_Free(sortindex);
+	drawnodes.clear(); // clear so our size is 0 again!
 }
 
 
