@@ -215,11 +215,7 @@ static void R_GetTiltedLighting(std::vector<INT32>& tiltlighting, const drawspan
 	const float planelightfloat = PLANELIGHTFLOAT;
 	const fixed_t lightstart = FloatToFixed(iz * planelightfloat);
 	const fixed_t lightend   = FloatToFixed((iz + ds->szp.x * width) * planelightfloat);
-
-	if (tiltlighting.size() != (size_t)viewwidth)
-	{
-		tiltlighting.resize(viewwidth);
-	}
+	tiltlighting.resize((size_t)viewwidth);
 
 	R_CalcTiltedLighting(tiltlighting, ds->x1, ds->x2, lightstart, lightend);
 	//CONS_Printf("tilted lighting %f to %f (foc %f)\n", FixedToFloat(lightstart), FixedToFloat(lightend), focallengthf);
