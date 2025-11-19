@@ -3056,7 +3056,13 @@ static int lib_gSetPlayerGamepadIndicatorColor(lua_State *L)
 {
 	INT32 player = -1;
 	player_t *plr = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));    // retrieve player
-	UINT16 color = (UINT16)luaL_checkinteger(L, 2); // skincolor
+	UINT8 color = (UINT8)luaL_checkinteger(L, 2); // skincolor
+
+	if (!plr)
+		return LUA_ErrInvalid(L, "player_t");
+
+	if (color >= MAXTRANSLATIONS)
+		return luaL_error(L, "color %d out of range (0 - %d).", color, MAXTRANSLATIONS-1);
 
 	for (int i = 0; i < MAXSPLITSCREENPLAYERS; ++i)
 	{
@@ -3083,6 +3089,9 @@ static int lib_gPlayerDeviceRumble(lua_State *L)
 	UINT16 low_strength = (UINT16)luaL_checkinteger(L, 2); // low frequency rumble motor strenght
 	UINT16 high_strength = (UINT16)luaL_checkinteger(L, 3); // high frequency rumble motor strenght
 	UINT32 duration = (UINT32)luaL_optinteger(L, 4, 84); // duration of rumble in ms
+
+	if (!plr)
+		return LUA_ErrInvalid(L, "player_t");
 
 	for (int i = 0; i < MAXSPLITSCREENPLAYERS; ++i)
 	{

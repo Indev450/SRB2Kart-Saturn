@@ -166,12 +166,12 @@ UINT8 ctrldown = 0;   // 0x1 left, 0x2 right
 UINT8 altdown = 0;    // 0x1 left, 0x2 right
 boolean capslock = 0; // gee i wonder what this does.
 
-static UINT16 curcolor[MAXSPLITSCREENPLAYERS] = {};
+static UINT8 curcolor[MAXSPLITSCREENPLAYERS] = {};
 
 static void D_DeviceLEDTick(void)
 {
 	UINT8 i;
-	static UINT16 color[MAXSPLITSCREENPLAYERS] = {};
+	static UINT8 newcolor = UINT8_MAX;
 
 	if (numcontrollers == 0)
 	{
@@ -183,13 +183,13 @@ static void D_DeviceLEDTick(void)
 		if (!cv_usejoystick[i].value || !cv_gamepadled[i].value)
 			continue;
 
-		color[i] = G_GetSkinColor(i);
+		newcolor = G_GetSkinColorForGamepad(i);
 
-		if (curcolor[i] == color[i]) // dont update if same colour
+		if (curcolor[i] == newcolor) // dont update if same colour
 			continue;
 
-		G_SetPlayerGamepadIndicatorColor(i, color[i]);
-		curcolor[i] = color[i];
+		G_SetPlayerGamepadIndicatorColor(i, newcolor);
+		curcolor[i] = newcolor;
 	}
 }
 
