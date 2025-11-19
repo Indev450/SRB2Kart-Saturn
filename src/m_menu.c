@@ -640,7 +640,7 @@ static boolean M_ChangeStringCvar(INT32 choice)
 
 	if (M_TextInputHandle(&menuinput, choice))
 	{
-		S_StartSound(NULL,sfx_menu1); // Tails
+		S_StartSound(NULL, sfx_menu1); // Tails
 		CV_Set(cv, menuinput.buffer);
 
 		return true;
@@ -3544,7 +3544,7 @@ static void M_HandleAddons(INT32 choice)
 
 	if (M_TextInputHandle(&menusearch, choice))
 	{
-		S_StartSound(NULL,sfx_menu1);
+		S_StartSound(NULL, sfx_menu1);
 
 		char *tempname = NULL;
 		if (dirmenu && dirmenu[dir_on[menudepthleft]])
@@ -4011,7 +4011,7 @@ static boolean M_HandleReplayHutQuery(INT32 choice)
 
 	if (M_TextInputHandle(&replayqueryinput, choice))
 	{
-		S_StartSound(NULL,sfx_menu1);
+		S_StartSound(NULL, sfx_menu1);
 
 		// Restart search only if we actually modified input and not just moved in it
 		if (memcmp(tmp, replayqueryinput_buffer, MAXREPLAYQUERY+1))
@@ -7448,7 +7448,7 @@ static void M_SetupMultiHandler(INT32 choice)
 			{
 				if (--setupm_pselect < 1)
 					setupm_pselect = cv_splitplayers.value;
-				S_StartSound(NULL,sfx_menu1); // Tails
+				S_StartSound(NULL, sfx_menu1); // Tails
 			}
 			break;
 
@@ -7457,23 +7457,23 @@ static void M_SetupMultiHandler(INT32 choice)
 			{
 				if (++setupm_pselect > cv_splitplayers.value)
 					setupm_pselect = 1;
-				S_StartSound(NULL,sfx_menu1); // Tails
+				S_StartSound(NULL, sfx_menu1); // Tails
 			}
 			break;
 
 		case KEY_DOWNARROW:
 			M_NextOpt();
-			S_StartSound(NULL,sfx_menu1); // Tails
+			S_StartSound(NULL, sfx_menu1); // Tails
 			break;
 
 		case KEY_UPARROW:
 			M_PrevOpt();
-			S_StartSound(NULL,sfx_menu1); // Tails
+			S_StartSound(NULL, sfx_menu1); // Tails
 			break;
 
 		case KEY_ENTER:
 		{
-			S_StartSound(NULL,sfx_menu1); // Tails
+			S_StartSound(NULL, sfx_menu1); // Tails
 			currentMenu->lastOn = itemOn;
 			switch (setupm_pselect)
 			{
@@ -7555,16 +7555,16 @@ static void M_HandleConnectIP(INT32 choice)
 	{
 		case KEY_DOWNARROW:
 			M_NextOpt();
-			S_StartSound(NULL,sfx_menu1); // Tails
+			S_StartSound(NULL, sfx_menu1); // Tails
 			break;
 
 		case KEY_UPARROW:
 			M_PrevOpt();
-			S_StartSound(NULL,sfx_menu1); // Tails
+			S_StartSound(NULL, sfx_menu1); // Tails
 			break;
 
 		case KEY_ENTER:
-			S_StartSound(NULL,sfx_menu1); // Tails
+			S_StartSound(NULL, sfx_menu1); // Tails
 			currentMenu->lastOn = itemOn;
 			M_ConnectIP(1);
 			break;
@@ -7578,7 +7578,7 @@ static void M_HandleConnectIP(INT32 choice)
 		case KEY_BACKSPACE:
 		case KEY_DEL:
 			if (M_TextInputHandle(&setupm_input_ip, choice))
-				S_StartSound(NULL,sfx_menu1); // Tails
+				S_StartSound(NULL, sfx_menu1); // Tails
 			break;
 
 		default:
@@ -7588,7 +7588,7 @@ static void M_HandleConnectIP(INT32 choice)
 				|| (choice >= 199 && choice <= 211 && choice != 202 && choice != 206))*/ //numpad too!
 			{
 				if (M_TextInputHandle(&setupm_input_ip, choice))
-					S_StartSound(NULL,sfx_menu1); // Tails
+					S_StartSound(NULL, sfx_menu1); // Tails
 			}
 			break;
 	}
@@ -8314,7 +8314,7 @@ static void M_HandleSetupMultiPlayer(INT32 choice)
 				}
 				else
 					M_NextOpt();
-				S_StartSound(NULL,sfx_menu1); // Tails
+				S_StartSound(NULL, sfx_menu1); // Tails
 				break;
 			}
 			else if (gridselect) //grid skin select menu
@@ -8354,7 +8354,7 @@ static void M_HandleSetupMultiPlayer(INT32 choice)
 				break;
 			}
 			M_NextOpt();
-			S_StartSound(NULL,sfx_menu1); // Tails
+			S_StartSound(NULL, sfx_menu1); // Tails
 			break;
 
 		case KEY_UPARROW:
@@ -8370,7 +8370,7 @@ static void M_HandleSetupMultiPlayer(INT32 choice)
 				}
 				else
 					M_PrevOpt();
-				S_StartSound(NULL,sfx_menu1); // Tails
+				S_StartSound(NULL, sfx_menu1); // Tails
 				break;
 			}
 			else if (gridselect)
@@ -8407,18 +8407,18 @@ static void M_HandleSetupMultiPlayer(INT32 choice)
 				}
 				else
 					M_PrevOpt();
-				S_StartSound(NULL,sfx_menu1); // Tails
+				S_StartSound(NULL, sfx_menu1); // Tails
 				break;
 			}
 			M_PrevOpt();
-			S_StartSound(NULL,sfx_menu1); // Tails
+			S_StartSound(NULL, sfx_menu1); // Tails
 			break;
 
 		case KEY_LEFTARROW:
 			if (itemOn == 0)
 			{
 				M_TextInputHandle(&setupm_input, choice);
-				S_StartSound(NULL,sfx_menu1); // Tails
+				S_StartSound(NULL, sfx_menu1); // Tails
 			}
 			else if (cv_skinselectmenu.value == SKINMENUTYPE_2D && itemOn == 1)
 			{
@@ -8432,7 +8432,7 @@ static void M_HandleSetupMultiPlayer(INT32 choice)
 				}
 				else       //player skin
 				{
-					S_StartSound(NULL,sfx_menu1); // Tails
+					S_StartSound(NULL, sfx_menu1); // Tails
 
 					if (setupm_skinxpos > 0)
 						setupm_skinxpos--;
@@ -8465,14 +8465,14 @@ static void M_HandleSetupMultiPlayer(INT32 choice)
 			}
 			if (itemOn == 1)       //player skin
 			{
-				S_StartSound(NULL,sfx_menu1); // Tails
+				S_StartSound(NULL, sfx_menu1); // Tails
 				setupm_fakeskin--;
 			}
 			else if (itemOn == 2) // player color
 			{
-				S_StartSound(NULL,sfx_menu1); // Tails
+				S_StartSound(NULL, sfx_menu1); // Tails
 				setupm_fakecolor--;
-				G_SetPlayerGamepadIndicatorColor(setupm_playernum, setupm_fakecolor);
+				G_SetPlayerGamepadIndicatorColor(setupm_playernum, (UINT8)setupm_fakecolor);
 			}
 			break;
 
@@ -8480,7 +8480,7 @@ static void M_HandleSetupMultiPlayer(INT32 choice)
 			if (itemOn == 0)
 			{
 				M_TextInputHandle(&setupm_input, choice);
-				S_StartSound(NULL,sfx_menu1); // Tails
+				S_StartSound(NULL, sfx_menu1); // Tails
 			}
 			else if (cv_skinselectmenu.value == SKINMENUTYPE_2D && itemOn == 1)
 			{
@@ -8490,11 +8490,11 @@ static void M_HandleSetupMultiPlayer(INT32 choice)
 						setupm_skinselect++;
 					else
 						setupm_skinselect = 0;
-					S_StartSound(NULL,sfx_menu1);
+					S_StartSound(NULL, sfx_menu1);
 				}
 				else       //player skin
 				{
-					S_StartSound(NULL,sfx_menu1); // Tails
+					S_StartSound(NULL, sfx_menu1); // Tails
 					if (setupm_skinxpos < MAXSTAT - 1)
 						setupm_skinxpos++;
 					else
@@ -8529,14 +8529,14 @@ static void M_HandleSetupMultiPlayer(INT32 choice)
 			}
 			if (itemOn == 1)       //player skin
 			{
-				S_StartSound(NULL,sfx_menu1); // Tails
+				S_StartSound(NULL, sfx_menu1); // Tails
 				setupm_fakeskin++;
 			}
 			else if (itemOn == 2) // player color
 			{
-				S_StartSound(NULL,sfx_menu1); // Tails
+				S_StartSound(NULL, sfx_menu1); // Tails
 				setupm_fakecolor++;
-				G_SetPlayerGamepadIndicatorColor(setupm_playernum, setupm_fakecolor);
+				G_SetPlayerGamepadIndicatorColor(setupm_playernum, (UINT8)setupm_fakecolor);
 			}
 			break;
 
@@ -8555,7 +8555,7 @@ static void M_HandleSetupMultiPlayer(INT32 choice)
 			if (itemOn == 0)
 			{
 				M_TextInputHandle(&setupm_input, choice);
-				S_StartSound(NULL,sfx_menu1); // Tails
+				S_StartSound(NULL, sfx_menu1); // Tails
 			}
 			else if (gridselect && itemOn == 1)
 			{
@@ -8571,9 +8571,9 @@ static void M_HandleSetupMultiPlayer(INT32 choice)
 				UINT8 col = skins[setupm_fakeskin].prefcolor;
 				if (setupm_fakecolor != col)
 				{
-					S_StartSound(NULL,sfx_menu1); // Tails
+					S_StartSound(NULL, sfx_menu1); // Tails
 					setupm_fakecolor = col;
-					G_SetPlayerGamepadIndicatorColor(setupm_playernum, setupm_fakecolor);
+					G_SetPlayerGamepadIndicatorColor(setupm_playernum, (UINT8)setupm_fakecolor);
 				}
 			}
 			break;
@@ -8584,7 +8584,7 @@ static void M_HandleSetupMultiPlayer(INT32 choice)
 			if (itemOn == 0)
 			{
 				M_TextInputHandle(&setupm_input, choice);
-				S_StartSound(NULL,sfx_menu1); // Tails
+				S_StartSound(NULL, sfx_menu1); // Tails
 			}
 			break;
 
@@ -8607,7 +8607,7 @@ static void M_HandleSetupMultiPlayer(INT32 choice)
 				{
 					setupm_skinlockedselect = true;
 					setupm_skinselect = 0;
-					S_StartSound(NULL,sfx_menu1);
+					S_StartSound(NULL, sfx_menu1);
 				}
 			}
 			else if (gridselect && itemOn == 1 && setupm_skinselect < numskins)
@@ -8621,7 +8621,7 @@ static void M_HandleSetupMultiPlayer(INT32 choice)
 			if (itemOn == 0)
 			{
 				if (M_TextInputHandle(&setupm_input, choice))
-					S_StartSound(NULL,sfx_menu1); // Tails
+					S_StartSound(NULL, sfx_menu1); // Tails
 			}
 			break;
 		}

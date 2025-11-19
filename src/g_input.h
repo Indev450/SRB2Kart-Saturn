@@ -131,13 +131,13 @@ extern INT32 gamecontrol[MAXSPLITSCREENPLAYERS][num_gamecontrols][2];
 #define PLAYER3INPUTDOWN(gc) (gamekeydown[gamecontrol[2][gc][0]] || gamekeydown[gamecontrol[2][gc][1]])
 #define PLAYER4INPUTDOWN(gc) (gamekeydown[gamecontrol[3][gc][0]] || gamekeydown[gamecontrol[3][gc][1]])
 
-// peace to my little coder fingers!
-// check a gamecontrol being active or not
-
-UINT16 G_GetSkinColor(INT32 playernum);
-void G_SetPlayerGamepadIndicatorColor(INT32 playernum, UINT16 color);
+UINT8 G_GetSkinColorForGamepad(INT32 playernum);
+void G_SetPlayerGamepadIndicatorColor(INT32 playernum, UINT8 color);
 void G_ResetAllDeviceRumbles(void);
 void G_PlayerDeviceRumble(INT32 playernum, UINT16 low_strength, UINT16 high_strength, UINT32 duration);
+
+// peace to my little coder fingers!
+// check a gamecontrol being active or not
 
 // remaps the input event to a game control.
 void G_MapEventsToControls(event_t *ev);
