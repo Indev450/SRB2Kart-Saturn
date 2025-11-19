@@ -5967,12 +5967,14 @@ static void HWR_DoPostProcessor(player_t *player)
 	// Could this even be considered postprocessor?
 	if (!HWR_PalRenderFlashpal() && player->flashcount)
 	{
-		FOutVector      v[4];
-		FSurfaceInfo Surf;
+		static FOutVector v[4] = {
+			{-4.0f,  4.0f, 4.0f, 0.0f, 0.0f},
+			{ 4.0f,  4.0f, 4.0f, 0.0f, 0.0f}, // 4.0 because of the same reason as with the sky, just after the screen is cleared so near clipping plane is 3.99
+			{ 4.0f, -4.0f, 4.0f, 0.0f, 0.0f},
+			{-4.0f, -4.0f, 4.0f, 0.0f, 0.0f}
+		};
 
-		v[0].x = v[2].y = v[3].x = v[3].y = -4.0f;
-		v[0].y = v[1].x = v[1].y = v[2].x = 4.0f;
-		v[0].z = v[1].z = v[2].z = v[3].z = 4.0f; // 4.0 because of the same reason as with the sky, just after the screen is cleared so near clipping plane is 3.99
+		FSurfaceInfo Surf;
 
 		// This won't change if the flash palettes are changed unfortunately, but it works for its purpose
 		if (player->flashpal == PAL_NUKE)
