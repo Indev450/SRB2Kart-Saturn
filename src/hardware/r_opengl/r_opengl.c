@@ -993,11 +993,9 @@ boolean GL_CompileShader(int slot)
 	{
 		return true;
 	}
-	else
-	{
-		gl_shaders[slot].program = 0;
-		return false;
-	}
+
+	gl_shaders[slot].program = 0;
+	return false;
 }
 
 //
@@ -1039,6 +1037,7 @@ void GL_SetShader(int slot)
 		GL_UnSetShader();
 		return;
 	}
+
 	if (gl_allowshaders)
 	{
 		gl_shader_t *next_shader = &gl_shaders[slot]; // the gl_shader_t we are going to switch to
@@ -1100,7 +1099,7 @@ static void GL_SetNoTexture(void)
 // -----------------+
 static void GL_Perspective(GLfloat fovy, GLfloat aspect)
 {
-	GLfloat m[4][4] =
+	static GLfloat m[4][4] =
 	{
 		{ 1.0f, 0.0f, 0.0f, 0.0f},
 		{ 0.0f, 1.0f, 0.0f, 0.0f},
@@ -1130,7 +1129,7 @@ static void GL_Perspective(GLfloat fovy, GLfloat aspect)
 // -----------------+
 void GL_SetModelView(GLint w, GLint h)
 {
-	GLint maxtexsize = 0;
+	static GLint maxtexsize = 0;
 	//GL_DBG_Printf("SetModelView(): %dx%d\n", (int)w, (int)h);
 
 	// The screen textures need to be flushed if the width or height change so that they be remade for the correct size
@@ -1163,7 +1162,9 @@ void GL_SetModelView(GLint w, GLint h)
 			screen_texsizeh <<= 1;
 	}
 
-	pglGetIntegerv(GL_MAX_TEXTURE_SIZE, &maxtexsize); // Get the maximum supported texture size
+	if (!maxtexsize)
+		pglGetIntegerv(GL_MAX_TEXTURE_SIZE, &maxtexsize); // Get the maximum supported texture size
+
 	if ((screen_texsizew > maxtexsize || screen_texsizeh > maxtexsize) && maxtexsize > 0)
 	{
 		// The desired screen texture resolution is too big for the player's GPU!
@@ -1309,7 +1310,8 @@ void GL_DeleteTexture(GLMipmap_t *pTexInfo)
 
 	if (!pTexInfo)
 		return;
-	else if (pTexInfo->downloaded)
+
+	if (pTexInfo->downloaded)
 		pglDeleteTextures(1, (GLuint *)&pTexInfo->downloaded);
 
 	while (head)
@@ -1517,6 +1519,7 @@ void GL_ClearBuffer(FBOOLEAN ColorMask, FBOOLEAN DepthMask, FBOOLEAN StencilMask
 
 		ClearMask |= GL_COLOR_BUFFER_BIT;
 	}
+
 	if (DepthMask)
 	{
 		pglClearDepth(1.0f);     //Hurdler: all that are permanen states
@@ -1528,7 +1531,7 @@ void GL_ClearBuffer(FBOOLEAN ColorMask, FBOOLEAN DepthMask, FBOOLEAN StencilMask
 	GL_SetBlend(DepthMask ? PF_Occlude | CurrentPolyFlags : CurrentPolyFlags&~PF_Occlude);
 
 	if (StencilMask)
-		ClearMask |= GL_STENCIL_BUFFER_BIT;// looks like sometimes stencil buffer needs clearing? had a problem with random black screens
+		ClearMask |= GL_STENCIL_BUFFER_BIT; // looks like sometimes stencil buffer needs clearing? had a problem with random black screens
 
 	pglClear(ClearMask);
 	pglEnableClientState(GL_VERTEX_ARRAY); // We always use this one
@@ -1573,18 +1576,21 @@ void GL_Draw2DLine(F2DCoord * v1, F2DCoord * v2, RGBA_t Color)
 	pglEnableClientState(GL_TEXTURE_COORD_ARRAY);
 	pglEnable(GL_TEXTURE_2D);
 }
+
+static inline void Clamp2D(GLenum pname)
+{
+#ifdef GL_CLAMP_TO_EDGE
+	pglTexParameteri(GL_TEXTURE_2D, pname, GL_CLAMP_TO_EDGE);
+#else
+	pglTexParameteri(GL_TEXTURE_2D, pname, GL_CLAMP); // fallback clamp
+#endif
+}
+
 // -----------------+
 // SetBlend         : Set render mode
 // -----------------+
 // PF_Masked - we could use an ALPHA_TEST of GL_EQUAL, and alpha ref of 0,
 //             is it faster when pixels are discarded ?
-static void Clamp2D(GLenum pname)
-{
-	pglTexParameteri(GL_TEXTURE_2D, pname, GL_CLAMP); // fallback clamp
-#ifdef GL_CLAMP_TO_EDGE
-	pglTexParameteri(GL_TEXTURE_2D, pname, GL_CLAMP_TO_EDGE);
-#endif
-}
 
 static void GL_SetBlendEquation(GLenum mode)
 {
@@ -2114,7 +2120,8 @@ void GL_SetTexture(GLMipmap_t *pTexInfo)
 		GL_SetNoTexture();
 		return;
 	}
-	else if (pTexInfo->downloaded)
+
+	if (pTexInfo->downloaded)
 	{
 		if (pTexInfo->downloaded != tex_downloaded)
 		{
@@ -2402,38 +2409,38 @@ static void GL_PreparePolygon(FSurfaceInfo *pSurf, FBITFIELD PolyFlags)
 
 	if (pSurf)
 	{
-		// If modulated, mix the surface colour to the texture
-		if (CurrentPolyFlags & PF_Modulated)
-			pglColor4ubv((GLubyte*)&pSurf->PolyColor.s);
-
 		// If the surface is either modulated or colormapped, or both
 		if (CurrentPolyFlags & (PF_Modulated | PF_ColorMapped))
 		{
+			// If modulated, mix the surface colour to the texture
+			if (CurrentPolyFlags & PF_Modulated)
+				pglColor4ubv((GLubyte*)&pSurf->PolyColor.s);
+
 			poly.red   = byte2float(pSurf->PolyColor.s.red);
 			poly.green = byte2float(pSurf->PolyColor.s.green);
 			poly.blue  = byte2float(pSurf->PolyColor.s.blue);
 			poly.alpha = byte2float(pSurf->PolyColor.s.alpha);
-		}
 
-		// Only if the surface is colormapped
-		if (CurrentPolyFlags & PF_ColorMapped)
-		{
-			tint.red   = byte2float(pSurf->TintColor.s.red);
-			tint.green = byte2float(pSurf->TintColor.s.green);
-			tint.blue  = byte2float(pSurf->TintColor.s.blue);
-			tint.alpha = byte2float(pSurf->TintColor.s.alpha);
-
-			fade.red   = byte2float(pSurf->FadeColor.s.red);
-			fade.green = byte2float(pSurf->FadeColor.s.green);
-			fade.blue  = byte2float(pSurf->FadeColor.s.blue);
-			fade.alpha = byte2float(pSurf->FadeColor.s.alpha);
-
-			if (pSurf->LightTableId && pSurf->LightTableId != lt_downloaded)
+			// Only if the surface is colormapped
+			if (CurrentPolyFlags & PF_ColorMapped)
 			{
-				pglActiveTexture(GL_TEXTURE2);
-				pglBindTexture(GL_TEXTURE_2D, pSurf->LightTableId);
-				pglActiveTexture(GL_TEXTURE0);
-				lt_downloaded = pSurf->LightTableId;
+				tint.red   = byte2float(pSurf->TintColor.s.red);
+				tint.green = byte2float(pSurf->TintColor.s.green);
+				tint.blue  = byte2float(pSurf->TintColor.s.blue);
+				tint.alpha = byte2float(pSurf->TintColor.s.alpha);
+
+				fade.red   = byte2float(pSurf->FadeColor.s.red);
+				fade.green = byte2float(pSurf->FadeColor.s.green);
+				fade.blue  = byte2float(pSurf->FadeColor.s.blue);
+				fade.alpha = byte2float(pSurf->FadeColor.s.alpha);
+
+				if (pSurf->LightTableId && pSurf->LightTableId != lt_downloaded)
+				{
+					pglActiveTexture(GL_TEXTURE2);
+					pglBindTexture(GL_TEXTURE_2D, pSurf->LightTableId);
+					pglActiveTexture(GL_TEXTURE0);
+					lt_downloaded = pSurf->LightTableId;
+				}
 			}
 		}
 	}
@@ -3452,7 +3459,7 @@ void GL_FlushScreenTextures(void)
 
 void GL_DrawScreenTexture(int tex, FSurfaceInfo *surf, FBITFIELD polyflags)
 {
-	float fix[8];
+	static float fix[8];
 	float xfix, yfix;
 
 	if (gl_enable_screen_textures != 2)
@@ -3461,14 +3468,8 @@ void GL_DrawScreenTexture(int tex, FSurfaceInfo *surf, FBITFIELD polyflags)
 	xfix = 1/((float)screen_texsizew/(float)screen_width);
 	yfix = 1/((float)screen_texsizeh/(float)screen_height);
 
-	fix[0] = 0.0f;
-	fix[1] = 0.0f;
-	fix[2] = 0.0f;
-	fix[3] = yfix;
-	fix[4] = xfix;
-	fix[5] = yfix;
-	fix[6] = xfix;
-	fix[7] = 0.0f;
+	fix[3] = fix[5] = yfix;
+	fix[4] = fix[6] = xfix;
 
 	pglClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
 
@@ -3702,7 +3703,13 @@ void GL_DrawScreenFinalTexture(int tex, INT32 width, INT32 height, boolean usesh
 	float origaspect, newaspect;
 	float xoff = 1, yoff = 1; // xoffset and yoffset for the polygon to have black bars around the screen
 
-	static float off[12];
+	static float off[12] =
+	{
+		1.0f, 1.0f, 1.0f, 1.0f,
+		1.0f, 1.0f, 1.0f, 1.0f,
+		1.0f, 1.0f, 1.0f, 1.0f
+	};
+
 	static float fix[8];
 
 	if (gl_enable_screen_textures != 2)
@@ -3726,28 +3733,14 @@ void GL_DrawScreenFinalTexture(int tex, INT32 width, INT32 height, boolean usesh
 	}
 
 	// float off[12];
-	off[0] = -xoff;
-	off[1] = -yoff;
-	off[2] = 1.0f;
-	off[3] = -xoff;
-	off[4] = yoff;
-	off[5] = 1.0f;
-	off[6] = xoff;
-	off[7] = yoff;
-	off[8] = 1.0f;
-	off[9] = xoff;
-	off[10] = -yoff;
-	off[11] = 1.0f;
+	off[0] = off[3]  = -xoff;
+	off[1] = off[10] = -yoff;
+	off[4] = off[7]  = yoff;
+	off[6] = off[9]  = xoff;
 
 	// float fix[8];
-	fix[0] = 0.0f;
-	fix[1] = 0.0f;
-	fix[2] = 0.0f;
-	fix[3] = yfix;
-	fix[4] = xfix;
-	fix[5] = yfix;
-	fix[6] = xfix;
-	fix[7] = 0.0f;
+	fix[3] = fix[5] = yfix;
+	fix[4] = fix[6] = xfix;
 
 	pglViewport(0, 0, width, height);
 
