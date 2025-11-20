@@ -875,11 +875,13 @@ static const char *gamecontrolname[num_gamecontrols] =
 
 #include "k_kart.h"
 
-UINT16 G_GetSkinColor(INT32 playernum)
+UINT8 G_GetSkinColorForGamepad(INT32 playernum)
 {
+	I_Assert(playernum >= 0 && playernum < MAXSPLITSCREENPLAYERS);
+
 	if (gamestate == GS_LEVEL)
 	{
-		player_t *player = &players[displayplayers[playernum]];
+		const player_t *player = &players[displayplayers[playernum]];
 
 		if (player)
 		{
@@ -897,13 +899,13 @@ UINT16 G_GetSkinColor(INT32 playernum)
 	switch (playernum)
 	{
 		case 0:
-			return cv_playercolor.value;
+			return (UINT8)cv_playercolor.value;
 		case 1:
-			return cv_playercolor2.value;
+			return (UINT8)cv_playercolor2.value;
 		case 2:
-			return cv_playercolor3.value;
+			return (UINT8)cv_playercolor3.value;
 		case 3:
-			return cv_playercolor4.value;
+			return (UINT8)cv_playercolor4.value;
 		default:
 			return 0;
 	}
@@ -911,19 +913,23 @@ UINT16 G_GetSkinColor(INT32 playernum)
 	return 0;
 }
 
-void G_SetPlayerGamepadIndicatorColor(INT32 playernum, UINT16 color)
+// Sets the Indicator LED on supported gamepads to a desired skincolor
+// pass SKINCOLOR_NONE/0 to set the players skin color
+void G_SetPlayerGamepadIndicatorColor(INT32 playernum, UINT8 color)
 {
-	UINT16 skincolor;
+	UINT8 skincolor;
 	byteColor_t byte_color;
 
 	I_Assert(playernum >= 0 && playernum < MAXSPLITSCREENPLAYERS);
 
-	if (cv_gamepadled[playernum].value == 0)
+	if (cv_gamepadled[playernum].value == 0
+	 || color >= MAXTRANSLATIONS)
 	{
 		return;
 	}
 
-	skincolor = color ? color : G_GetSkinColor(playernum);
+	// so we can override this
+	skincolor = color ? color : G_GetSkinColorForGamepad(playernum);
 	byte_color = V_GetColor(colortranslations[skincolor][8]).s;
 
 	I_SetGamepadIndicatorColor(playernum, byte_color.red, byte_color.green, byte_color.blue);
@@ -936,7 +942,9 @@ static void G_ResetPlayerGamepadIndicatorColor(INT32 playernum)
 		I_SetGamepadIndicatorColor(playernum, 0, 0, 255);
 	}
 	else
+	{
 		G_SetPlayerGamepadIndicatorColor(playernum, 0);
+	}
 }
 
 static void G_ResetPlayerDeviceRumble(INT32 playernum)

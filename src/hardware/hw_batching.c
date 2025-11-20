@@ -168,14 +168,15 @@ static int comparePolygons(const void *p1, const void *p2)
 	const PolygonArrayEntry *poly1 = *(PolygonArrayEntry *const *)p1;
 	const PolygonArrayEntry *poly2 = *(PolygonArrayEntry *const *)p2;
 
-	const int shader1 = (poly1->polyFlags & PF_NoTexture || poly1->horizonSpecial) ? -1 : poly1->shader;
-	const int shader2 = (poly2->polyFlags & PF_NoTexture || poly2->horizonSpecial) ? -1 : poly2->shader;
+	// special case with signedness to prevent overflowing
+	// FIXME: check for prediction slowdowns!
+	const bool sky1 = poly1->hash & 0x80000000;
+	const bool sky2 = poly2->hash & 0x80000000;
 
-	// skywalls and horizon lines must retain their order for horizon lines to work
-	if (shader1 == -1 && shader2 == -1)
-		return poly1 - poly2;
+	if (sky1 != sky2)
+		return sky1 < sky2 ? 1 : -1;
 
-	diff = shader1 - shader2;
+	diff = poly1->shader - poly2->shader;
 	if (diff != 0) return diff;
 
 	UINT32 downloaded1 = poly1->texture ? poly1->texture->downloaded : 0; // there should be a opengl texture name here, usable for comparisons
@@ -210,15 +211,16 @@ static int comparePolygonsNoShaders(const void *p1, const void *p2)
 	const PolygonArrayEntry *poly1 = *(PolygonArrayEntry *const *)p1;
 	const PolygonArrayEntry *poly2 = *(PolygonArrayEntry *const *)p2;
 
-	const GLMipmap_t *texture1 = (poly1->polyFlags & PF_NoTexture || poly1->horizonSpecial) ? NULL : poly1->texture;
-	const GLMipmap_t *texture2 = (poly2->polyFlags & PF_NoTexture || poly2->horizonSpecial) ? NULL : poly2->texture;
+	// special case with signedness to prevent overflowing
+	// FIXME: check for prediction slowdowns!
+	const bool sky1 = poly1->hash & 0x80000000;
+	const bool sky2 = poly2->hash & 0x80000000;
 
-	// skywalls and horizon lines must retain their order for horizon lines to work
-	if (!texture1 && !texture2)
-		return poly1 - poly2;
+	if (sky1 != sky2)
+		return sky1 < sky2 ? 1 : -1;
 
-	UINT32 downloaded1 = texture1 ? texture1->downloaded : 0; // there should be a opengl texture name here, usable for comparisons
-	UINT32 downloaded2 = texture2 ? texture2->downloaded : 0;
+	UINT32 downloaded1 = poly1->texture ? poly1->texture->downloaded : 0; // there should be a opengl texture name here, usable for comparisons
+	UINT32 downloaded2 = poly2->texture ? poly2->texture->downloaded : 0;
 	diff64 = downloaded1 - downloaded2;
 	if (diff64 != 0) return diff64;
 
@@ -247,6 +249,8 @@ void HWR_RenderBatches(void)
 	FBITFIELD    nextPolyFlags = 0;
 	FSurfaceInfo currentSurfaceInfo;
 	FSurfaceInfo nextSurfaceInfo;
+
+	const boolean useshader = HWR_UseShader();
 
 	int i;
 
@@ -284,7 +288,7 @@ void HWR_RenderBatches(void)
 
 	// sort polygons
 	PS_START_TIMING(ps_hw_batchsorttime);
-	qs22j(polygonArraySorted, polygonArraySize, sizeof(PolygonArrayEntry *), (HWR_UseShader() ? comparePolygons : comparePolygonsNoShaders));
+	qs22j(polygonArraySorted, polygonArraySize, sizeof(PolygonArrayEntry *), (useshader ? comparePolygons : comparePolygonsNoShaders));
 	PS_STOP_TIMING(ps_hw_batchsorttime);
 
 	// sort order
@@ -305,7 +309,7 @@ void HWR_RenderBatches(void)
 
 	// set state for first batch
 
-	if (HWR_UseShader())
+	if (useshader)
 	{
 		GL_SetShader(currentShader);
 	}
@@ -387,7 +391,7 @@ void HWR_RenderBatches(void)
 				if (nextPolyFlags & PF_NoTexture)
 					nextTexture = 0;
 
-				if (currentShader != nextShader && HWR_UseShader())
+				if (useshader && currentShader != nextShader)
 				{
 					changeState = true;
 					changeShader = true;
@@ -405,7 +409,7 @@ void HWR_RenderBatches(void)
 					changePolyFlags = true;
 				}
 
-				if (HWR_UseShader())
+				if (useshader)
 				{
 					if (currentSurfaceInfo.PolyColor.rgba != nextSurfaceInfo.PolyColor.rgba ||
 						currentSurfaceInfo.TintColor.rgba != nextSurfaceInfo.TintColor.rgba ||

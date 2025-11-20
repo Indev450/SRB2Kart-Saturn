@@ -986,7 +986,7 @@ static void Impl_HandleControllerAddedEvent(SDL_Event evt)
 	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
 	{
 		I_InitJoystick(i);
-		G_SetPlayerGamepadIndicatorColor(i, G_GetSkinColor(i)); // gotta update the controller led again on reconnect
+		G_SetPlayerGamepadIndicatorColor(i, 0); // gotta update the controller led again on reconnect
 	}
 
 	////////////////////////////////////////////////////////////
