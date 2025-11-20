@@ -133,16 +133,32 @@ typedef LPVOID (WINAPI *p_MapViewOfFile) (HANDLE, DWORD, DWORD, DWORD, SIZE_T);
 
 #include <time.h>
 
-// Locations for searching the srb2.srb
+/// Locations to directly check for srb2.srb in
+const char *wadDefaultPaths[] = {
 #if defined (__unix__) || defined(__APPLE__) || defined (UNIXCOMMON)
-#define DEFAULTWADLOCATION1 "/usr/local/share/games/SRB2Kart"
-#define DEFAULTWADLOCATION2 "/usr/local/games/SRB2Kart"
-#define DEFAULTWADLOCATION3 "/usr/share/games/SRB2Kart"
-#define DEFAULTWADLOCATION4 "/usr/games/SRB2Kart"
-#define DEFAULTSEARCHPATH1 "/usr/local/games"
-#define DEFAULTSEARCHPATH2 "/usr/games"
-#define DEFAULTSEARCHPATH3 "/usr/local"
+	"/usr/local/share/games/SRB2Kart",
+	"/usr/local/games/SRB2Kart",
+	"/usr/share/games/SRB2Kart",
+	"/usr/games/SRB2Kart",
+#elif defined (_WIN32)
+	"c:\\games\\srb2kart",
+	"\\games\\srb2kart",
 #endif
+	NULL
+};
+
+// Folders to recurse through looking for srb2.srb
+const char *wadSearchPaths[] = {
+#if defined (__unix__) || defined(__APPLE__) || defined (UNIXCOMMON)
+	"/usr/local/games",
+	"/usr/games",
+	"/usr/local",
+#elif defined (_WIN32)
+	"c:\\games",
+	"\\games",
+#endif
+	NULL
+};
 
 /**	\brief WAD file to look for
 */
@@ -1865,15 +1881,22 @@ static const char *searchWad(const char *searchDir)
 		return tempsw;
 	}
 
-	strcpy(tempsw, WADKEYWORD2);
-	fstemp = filesearch(tempsw, searchDir, NULL, true, 20);
-	if (fstemp == FS_FOUND)
-	{
-		pathonly(tempsw);
-		return tempsw;
-	}
 	return NULL;
 }
+
+#define CHECKWADPATH(ret) \
+do { \
+	I_OutputMsg(",%s", ret); \
+	if (isWadPathOk(ret)) \
+		return ret; \
+} while (0)
+
+#define SEARCHWAD(str) \
+do { \
+	WadPath = searchWad(str); \
+	if (WadPath) \
+		return WadPath; \
+} while (0)
 
 /**	\brief go through all possible paths and look for srb2.srb
 
@@ -1883,6 +1906,7 @@ static const char *locateWad(void)
 {
 	const char *envstr;
 	const char *WadPath;
+	int i;
 
 	I_OutputMsg("SRB2WADDIR");
 	// does SRB2WADDIR exist?
@@ -1890,125 +1914,44 @@ static const char *locateWad(void)
 		return envstr;
 
 #ifndef NOCWD
-	I_OutputMsg(",.");
 	// examine current dir
 	strcpy(returnWadPath, ".");
+	I_OutputMsg(",%s", returnWadPath);
 	if (isWadPathOk(returnWadPath))
 		return NULL;
 #endif
 
-
+#ifndef NOHOME
 #ifdef DEFAULTDIR
 	I_OutputMsg(",HOME/" DEFAULTDIR);
 	// examine user jart directory
 	if ((envstr = I_GetEnv("HOME")) != NULL)
 	{
 		sprintf(returnWadPath, "%s" PATHSEP DEFAULTDIR, envstr);
-		if (isWadPathOk(returnWadPath))
-			return returnWadPath;
-	}
-#endif
-
-
-#ifdef CMAKECONFIG
-#ifndef NDEBUG
-	I_OutputMsg(","CMAKE_ASSETS_DIR);
-	strcpy(returnWadPath, CMAKE_ASSETS_DIR);
-	if (isWadPathOk(returnWadPath))
-	{
-		return returnWadPath;
+		CHECKWADPATH(returnWadPath);
 	}
 #endif
 #endif
 
 #ifdef __APPLE__
 	OSX_GetResourcesPath(returnWadPath);
-	I_OutputMsg(",%s", returnWadPath);
-	if (isWadPathOk(returnWadPath))
-	{
-		return returnWadPath;
-	}
+	CHECKWADPATH(returnWadPath);
 #endif
 
 	// examine default dirs
-#ifdef DEFAULTWADLOCATION1
-	I_OutputMsg(","DEFAULTWADLOCATION1);
-	strcpy(returnWadPath, DEFAULTWADLOCATION1);
-	if (isWadPathOk(returnWadPath))
-		return returnWadPath;
-#endif
-#ifdef DEFAULTWADLOCATION2
-	I_OutputMsg(","DEFAULTWADLOCATION2);
-	strcpy(returnWadPath, DEFAULTWADLOCATION2);
-	if (isWadPathOk(returnWadPath))
-		return returnWadPath;
-#endif
-#ifdef DEFAULTWADLOCATION3
-	I_OutputMsg(","DEFAULTWADLOCATION3);
-	strcpy(returnWadPath, DEFAULTWADLOCATION3);
-	if (isWadPathOk(returnWadPath))
-		return returnWadPath;
-#endif
-#ifdef DEFAULTWADLOCATION4
-	I_OutputMsg(","DEFAULTWADLOCATION4);
-	strcpy(returnWadPath, DEFAULTWADLOCATION4);
-	if (isWadPathOk(returnWadPath))
-		return returnWadPath;
-#endif
-#ifdef DEFAULTWADLOCATION5
-	I_OutputMsg(","DEFAULTWADLOCATION5);
-	strcpy(returnWadPath, DEFAULTWADLOCATION5);
-	if (isWadPathOk(returnWadPath))
-		return returnWadPath;
-#endif
-#ifdef DEFAULTWADLOCATION6
-	I_OutputMsg(","DEFAULTWADLOCATION6);
-	strcpy(returnWadPath, DEFAULTWADLOCATION6);
-	if (isWadPathOk(returnWadPath))
-		return returnWadPath;
-#endif
-#ifdef DEFAULTWADLOCATION7
-	I_OutputMsg(","DEFAULTWADLOCATION7);
-	strcpy(returnWadPath, DEFAULTWADLOCATION7);
-	if (isWadPathOk(returnWadPath))
-		return returnWadPath;
-#endif
-#ifndef NOHOME
-	// find in $HOME
-	I_OutputMsg(",HOME/" DEFAULTDIR);
-	if ((envstr = I_GetEnv("HOME")) != NULL)
+	for (i = 0; wadDefaultPaths[i]; i++)
 	{
-		char *tmp = malloc(strlen(envstr) + sizeof(PATHSEP) + sizeof(DEFAULTDIR));
-		strcpy(tmp, envstr);
-		strcat(tmp, PATHSEP);
-		strcat(tmp, DEFAULTDIR);
-		WadPath = searchWad(tmp);
-		free(tmp);
-		if (WadPath)
-			return WadPath;
+		strcpy(returnWadPath, wadDefaultPaths[i]);
+		CHECKWADPATH(returnWadPath);
 	}
-#endif
-#ifdef DEFAULTSEARCHPATH1
-	// find in /usr/local
-	I_OutputMsg(", in:"DEFAULTSEARCHPATH1);
-	WadPath = searchWad(DEFAULTSEARCHPATH1);
-	if (WadPath)
-		return WadPath;
-#endif
-#ifdef DEFAULTSEARCHPATH2
-	// find in /usr/games
-	I_OutputMsg(", in:"DEFAULTSEARCHPATH2);
-	WadPath = searchWad(DEFAULTSEARCHPATH2);
-	if (WadPath)
-		return WadPath;
-#endif
-#ifdef DEFAULTSEARCHPATH3
-	// find in ???
-	I_OutputMsg(", in:"DEFAULTSEARCHPATH3);
-	WadPath = searchWad(DEFAULTSEARCHPATH3);
-	if (WadPath)
-		return WadPath;
-#endif
+
+	// search paths
+	for (i = 0; wadSearchPaths[i]; i++)
+	{
+		I_OutputMsg(", in:%s", wadSearchPaths[i]);
+		SEARCHWAD(wadSearchPaths[i]);
+	}
+
 	// if nothing was found
 	return NULL;
 }

@@ -1302,8 +1302,10 @@ static void IdentifyVersion(void)
 	const char *srb2waddir = NULL;
 
 #if defined (__unix__) || defined (UNIXCOMMON) || defined (HAVE_SDL)
+	CLEANUP(pfree) const char *allocwaddir = NULL;
 	// change to the directory where 'srb2.srb' is found
-	srb2waddir = I_LocateWad();
+	allocwaddir = I_LocateWad();
+	srb2waddir = allocwaddir;
 #endif
 
 	char tempsrb2path[256] = ".";

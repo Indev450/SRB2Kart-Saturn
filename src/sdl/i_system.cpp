@@ -145,7 +145,7 @@ typedef LPVOID (WINAPI *p_MapViewOfFile) (HANDLE, DWORD, DWORD, DWORD, SIZE_T);
 #include <errno.h>
 #endif
 
-// Locations to directly check for srb2.pk3 in
+// Locations to directly check for srb2.srb in
 const char *wadDefaultPaths[] = {
 #if defined (__unix__) || defined(__APPLE__) || defined (UNIXCOMMON)
 	"/usr/local/share/games/SRB2Kart",
@@ -159,7 +159,7 @@ const char *wadDefaultPaths[] = {
 	NULL
 };
 
-// Folders to recurse through looking for srb2.pk3
+// Folders to recurse through looking for srb2.srb
 const char *wadSearchPaths[] = {
 #if defined (__unix__) || defined(__APPLE__) || defined (UNIXCOMMON)
 	"/usr/local/games",
@@ -2384,7 +2384,7 @@ static void pathonly(char *s)
 */
 static const char *searchWad(const char *searchDir)
 {
-	static char tempsw[MAX_WADPATH] = "";
+	static char tempsw[255] = "";
 	filestatus_t fstemp;
 
 	strcpy(tempsw, WADKEYWORD1);
@@ -2435,6 +2435,18 @@ static const char *locateWad(void)
 		return NULL;
 #endif
 
+#ifndef NOHOME
+#ifdef DEFAULTDIR
+	I_OutputMsg(",HOME/" DEFAULTDIR);
+	// examine user jart directory
+	if ((envstr = I_GetEnv("HOME")) != NULL)
+	{
+		sprintf(returnWadPath, "%s" PATHSEP DEFAULTDIR, envstr);
+		CHECKWADPATH(returnWadPath);
+	}
+#endif
+#endif
+
 #ifdef __APPLE__
 	OSX_GetResourcesPath(returnWadPath);
 	CHECKWADPATH(returnWadPath);
@@ -2446,20 +2458,6 @@ static const char *locateWad(void)
 		strcpy(returnWadPath, wadDefaultPaths[i]);
 		CHECKWADPATH(returnWadPath);
 	}
-
-#ifndef NOHOME
-	// find in $HOME
-	I_OutputMsg(",HOME/" DEFAULTDIR);
-	if ((envstr = I_GetEnv("HOME")) != NULL)
-	{
-		char *tmp = static_cast<char*>(malloc(strlen(envstr) + sizeof(PATHSEP) + sizeof(DEFAULTDIR)));
-		strcpy(tmp, envstr);
-		strcat(tmp, PATHSEP);
-		strcat(tmp, DEFAULTDIR);
-		CHECKWADPATH(tmp);
-		free(tmp);
-	}
-#endif
 
 	// search paths
 	for (i = 0; wadSearchPaths[i]; i++)
