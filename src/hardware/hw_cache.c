@@ -98,7 +98,8 @@ static void HWR_DrawColumnInCache(const column_t *patchcol, UINT8 *block, GLMipm
 			position = 0;
 		}
 
-		position = max(((position * scale_y) + (FRACUNIT/2)) >> FRACBITS, 0);
+		position = ((position * scale_y) + (FRACUNIT/2)) >> FRACBITS;
+		position = max(position, 0);
 
 		if (position + count >= pblockheight)
 			count = pblockheight - position;
@@ -461,6 +462,7 @@ static void HWR_FreeTextureData(patch_t *patch)
 		GL_DeleteTexture(glPatch->mipmap);
 
 	Z_Free(glPatch->mipmap->data);
+	glPatch->mipmap->data = NULL;
 }
 
 void HWR_FreeTexture(patch_t *patch)
@@ -478,6 +480,7 @@ void HWR_FreeTexture(patch_t *patch)
 		{
 			HWR_FreeTextureData(patch);
 			Z_Free(glPatch->mipmap);
+			glPatch->mipmap = NULL;
 		}
 
 		Z_Free(patch->hardware);
