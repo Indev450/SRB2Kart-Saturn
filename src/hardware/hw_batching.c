@@ -126,8 +126,9 @@ void HWR_ProcessPolygon(FSurfaceInfo *pSurf, FOutVector *pOutVerts, FUINT iNumPt
 		if (!(PolyFlags & PF_NoTexture) && !horizonSpecial)
 		{
 			// use FNV-1a to hash polygons for later sorting.
-			INT32 hash = 0x811c9dc5;
-#define DIGEST(h, x) h ^= (x); h *= 0x01000193
+			UINT32 hash = 0x811c9dc5;
+			UINT32 prime = 0x1000193;
+#define DIGEST(h, x) h ^= ((UINT32)(x)); h *= prime
 			if (current_texture)
 			{
 				DIGEST(hash, current_texture->downloaded);
@@ -148,7 +149,7 @@ void HWR_ProcessPolygon(FSurfaceInfo *pSurf, FOutVector *pOutVerts, FUINT iNumPt
 			}
 #undef DIGEST
 			// remove the sign bit to ensure that skybox and horizon line comes first.
-			polygonArray[polygonArraySize-1].hash = (hash & INT32_MAX);
+			polygonArray[polygonArraySize-1].hash = (INT32)(hash & INT32_MAX);
 		}
 
 		memcpy(&unsortedVertexArray[unsortedVertexArraySize], pOutVerts, iNumPts * sizeof(FOutVector));
@@ -250,8 +251,6 @@ void HWR_RenderBatches(void)
 	FSurfaceInfo currentSurfaceInfo;
 	FSurfaceInfo nextSurfaceInfo;
 
-	const boolean useshader = HWR_UseShader();
-
 	int i;
 
 	if (!currently_batching)
@@ -273,6 +272,8 @@ void HWR_RenderBatches(void)
 			= ps_hw_numcolors.value.i = 0;
 		return;// nothing to draw
 	}
+
+	const boolean useshader = HWR_UseShader();
 
 	// init stats vars
 	ps_hw_numpolys.value.i = polygonArraySize;
