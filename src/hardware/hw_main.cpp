@@ -1380,8 +1380,8 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 	const INT32 gl_midtexture = R_GetTextureNum(gl_sidedef->midtexture);
 	GLMapTexture_t *glTex = NULL;
 
-	static constexpr float FLOATMAX = INT32_MAX / (float)FRACUNIT;
-	static constexpr float FLOATMIN = INT32_MIN / (float)FRACUNIT;
+	static constexpr float FLOATMAX = (float)INT32_MAX / (float)FRACUNIT;
+	static constexpr float FLOATMIN = (float)INT32_MIN / (float)FRACUNIT;
 
 	// two sided line
 	if (gl_backsector)
