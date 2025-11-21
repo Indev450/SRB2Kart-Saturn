@@ -2472,7 +2472,7 @@ static const char *locateWad(void)
 
 const char *I_LocateWad(void)
 {
-	const char *waddir;
+	const char *waddir = NULL;
 
 	I_OutputMsg("Looking for WADs in: ");
 	waddir = locateWad();
@@ -2490,6 +2490,7 @@ const char *I_LocateWad(void)
 			I_OutputMsg("Couldn't change working directory\n");
 #endif
 	}
+
 	return waddir;
 }
 

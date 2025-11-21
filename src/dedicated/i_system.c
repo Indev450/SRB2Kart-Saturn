@@ -1958,7 +1958,7 @@ static const char *locateWad(void)
 
 const char *I_LocateWad(void)
 {
-	const char *waddir;
+	const char *waddir = NULL;
 
 	I_OutputMsg("Looking for WADs in: ");
 	waddir = locateWad();
@@ -1968,12 +1968,15 @@ const char *I_LocateWad(void)
 	{
 		// change to the directory where we found srb2.srb
 #if defined (_WIN32)
+		waddir = _fullpath(NULL, waddir, MAX_PATH);
 		SetCurrentDirectoryA(waddir);
 #else
+		waddir = realpath(waddir, NULL);
 		if (waddir == NULL || chdir(waddir) == -1)
 			I_OutputMsg("Couldn't change working directory\n");
 #endif
 	}
+
 	return waddir;
 }
 
