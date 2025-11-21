@@ -251,6 +251,8 @@ void HWR_RenderBatches(void)
 	FSurfaceInfo currentSurfaceInfo;
 	FSurfaceInfo nextSurfaceInfo;
 
+	const boolean useshader = HWR_UseShader();
+
 	int i;
 
 	if (!currently_batching)
