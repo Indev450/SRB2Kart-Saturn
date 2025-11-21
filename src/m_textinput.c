@@ -487,6 +487,7 @@ boolean M_TextInputHandleEmotes(textinput_t *input, INT32 key, emote_t *suggesti
 		// This was the only suggestion, finish autocomplete with a ':' and clear suggestions
 		if (maxsuggestions == 1 || !suggestions[1])
 		{
+			memcpy(&input->buffer[emotestart], suggestions[0]->name, strlen(suggestions[0]->name));
 			M_TextInputAddChar(input, ':');
 			suggestions[0] = NULL;
 		}
