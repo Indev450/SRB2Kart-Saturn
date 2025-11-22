@@ -200,7 +200,7 @@ emote_t *M_FindEmote(const char *name, int len, int skip)
 
 	for (auto &pair: emotes)
 	{
-		if (pair.first.rfind(query, 0, std::min(len, MAXEMOTENAME)) != 0)
+		if (pair.first.rfind(query) == std::string::npos)
 			continue;
 
 		if (skip > 0)

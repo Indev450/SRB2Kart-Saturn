@@ -1353,7 +1353,7 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 	// x offset the texture
 	const fixed_t texturehpeg = gl_sidedef->textureoffset + gl_curline->offset;
 	const float cliplow  = (float)texturehpeg;
-	const float cliphigh = (float)(texturehpeg + gl_curline->length);
+	const float cliphigh = ((float)texturehpeg + (float)gl_curline->length);
 
 	FUINT lightnum = gl_frontsector->lightlevel;
 	extracolormap_t *colormap = gl_frontsector->extra_colormap;
@@ -1367,8 +1367,8 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 	const INT32 gl_midtexture = R_GetTextureNum(gl_sidedef->midtexture);
 	GLMapTexture_t *glTex = NULL;
 
-	static constexpr float FLOATMAX = INT32_MAX / (float)FRACUNIT;
-	static constexpr float FLOATMIN = INT32_MIN / (float)FRACUNIT;
+	static constexpr float FLOATMAX = (float)INT32_MAX / (float)FRACUNIT;
+	static constexpr float FLOATMIN = (float)INT32_MIN / (float)FRACUNIT;
 
 	// two sided line
 	if (gl_backsector)

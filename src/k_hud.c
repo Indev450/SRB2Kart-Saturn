@@ -2860,7 +2860,7 @@ static boolean K_GetScreenCoords(vector2_t *vec, player_t *player, mobj_t *targe
 
 	// X coordinate
 	// get difference between camangle and angle towards target
-	x = (INT32)viewangle - (INT32)R_PointToAngle(targx, targy);
+	x = (fixed_t)(viewangle - R_PointToAngle(targx, targy));
 
 	distfact = FINECOSINE((x>>ANGLETOFINESHIFT) & FINEMASK);
     if (!distfact) distfact = 1;

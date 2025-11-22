@@ -454,10 +454,13 @@ boolean M_TextInputHandleEmotes(textinput_t *input, INT32 key, emote_t *suggesti
 		}
 	}
 
+	const boolean single_suggestion = suggestions[0] && (maxsuggestions == 1 || !suggestions[1]);
+
 	// If we suggest emotes, try autocomplete
-	if (key == '\t' && suggestions[0])
+	if ((key == '\t' && suggestions[0]) || (key == KEY_ENTER && single_suggestion))
 	{
-		int pos = (input->cursor-emotestart);
+		int pos = 0;
+		const int insertpos = (input->cursor-emotestart); // Only insert after that index (including it)
 		boolean autocomplete = true;
 
 		while (autocomplete)
@@ -480,15 +483,21 @@ boolean M_TextInputHandleEmotes(textinput_t *input, INT32 key, emote_t *suggesti
 
 			++pos;
 
-			if (autocomplete)
+			if (autocomplete && pos > insertpos)
 				M_TextInputAddChar(input, c);
 		}
 
 		// This was the only suggestion, finish autocomplete with a ':' and clear suggestions
-		if (maxsuggestions == 1 || !suggestions[1])
+		if (single_suggestion)
 		{
+			memcpy(&input->buffer[emotestart], suggestions[0]->name, strlen(suggestions[0]->name));
 			M_TextInputAddChar(input, ':');
 			suggestions[0] = NULL;
+		}
+		else if (pos > emotestart)
+		{
+			// Otherwise make sure beginning of emote matches
+			memcpy(&input->buffer[emotestart], suggestions[0]->name, pos-emotestart);
 		}
 	}
 
