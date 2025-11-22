@@ -14,13 +14,13 @@
 #ifndef __R_MAIN__
 #define __R_MAIN__
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include "d_player.h"
 #include "r_data.h"
 #include "m_perfstats.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 //
 // POV related.

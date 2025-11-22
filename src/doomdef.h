@@ -47,6 +47,13 @@
 #define ASMCALL
 #endif
 
+#define _USE_MATH_DEFINES // fixes M_PI errors in r_plane.c for Visual Studio
+#ifdef __cplusplus
+#include <cmath>
+#else
+#include <math.h>
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -57,13 +64,6 @@ extern "C" {
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
-#define _USE_MATH_DEFINES // fixes M_PI errors in r_plane.c for Visual Studio
-#ifdef __cplusplus
-#include <cmath>
-#else
-#include <math.h>
-#endif
 
 #include <sys/types.h>
 #include <sys/stat.h>

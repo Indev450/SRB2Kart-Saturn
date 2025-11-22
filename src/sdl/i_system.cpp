@@ -201,10 +201,6 @@ static char returnWadPath[256];
 
 #include "../s_sound.h"
 
-#ifdef MAC_ALERT
-#include "macosx/mac_alert.h"
-#endif
-
 #include "../d_main.h"
 
 #if !defined(NOMUMBLE) && defined(HAVE_MUMBLE)

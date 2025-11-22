@@ -16,6 +16,10 @@
 
 #include "doomdef.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #ifdef __GNUG__
 #pragma interface
 #endif
@@ -43,4 +47,9 @@ mobj_t *P_SetTarget2(mobj_t **mo, mobj_t *target
 #else
 #define P_SetTarget P_SetTarget2
 #endif
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
+
 #endif
