@@ -113,6 +113,7 @@ extern consvar_t cv_mousesens, cv_mouseysens;
 extern consvar_t cv_controlperkey;
 extern consvar_t cv_turnsmooth[MAXSPLITSCREENPLAYERS];
 extern consvar_t cv_rumble[MAXSPLITSCREENPLAYERS];
+extern consvar_t cv_rumblestrength[MAXSPLITSCREENPLAYERS];
 extern consvar_t cv_gamepadled[MAXSPLITSCREENPLAYERS];
 
 extern INT32 mousex, mousey;
@@ -133,8 +134,12 @@ extern INT32 gamecontrol[MAXSPLITSCREENPLAYERS][num_gamecontrols][2];
 
 UINT8 G_GetSkinColorForGamepad(INT32 playernum);
 void G_SetPlayerGamepadIndicatorColor(INT32 playernum, UINT8 color);
+void G_DeviceLEDTick(void);
+void G_ResetDeviceLED(void);
+
 void G_ResetAllDeviceRumbles(void);
 void G_PlayerDeviceRumble(INT32 playernum, UINT16 low_strength, UINT16 high_strength, UINT32 duration);
+void G_DeviceRumbleTick(void);
 
 // peace to my little coder fingers!
 // check a gamecontrol being active or not

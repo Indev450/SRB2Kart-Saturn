@@ -15,6 +15,7 @@
 #include "d_main.h"
 #include "byteptr.h"
 #include "g_game.h"
+#include "g_input.h"
 
 #include "p_local.h"
 #include "p_setup.h"
@@ -2983,7 +2984,7 @@ boolean P_SetupLevel(boolean fromnetsave, boolean reloadinggamestate)
 
 	G_AddMapToBuffer(gamemap-1);
 
-	D_ResetDeviceLED();
+	G_ResetDeviceLED();
 
 	return true;
 }

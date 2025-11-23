@@ -411,21 +411,13 @@ boolean M_TextInputHandle(textinput_t *input, INT32 key)
 	return M_TextInputHandleBase(input, key, false);
 }
 
-boolean M_TextInputHandleEmotes(textinput_t *input, INT32 key, emote_t *suggestions[], int maxsuggestions)
+static int M_TextInputEmoteStart(textinput_t *input)
 {
-	boolean ret = M_TextInputHandleBase(input, key, true);
+	if (input->cursor == 0)
+		return -1;
 
-	// After this handled key we ended up inside an emote, lets fix that
-	if (M_TextInputCheckEmote(input))
-		M_TextInputToWordEnd(input, !shiftdown);
+	int emotestart = -1;
 
-	// Always clear the first entry
-	suggestions[0] = NULL;
-
-	// For autocomplete
-	int emotestart = 0;
-
-	// Try find suggestions for emote names
 	for (int i = input->cursor-1; i >= 0 && input->cursor-i <= MAXEMOTENAME; --i)
 	{
 		// Space can't be part of emote name
@@ -436,69 +428,88 @@ boolean M_TextInputHandleEmotes(textinput_t *input, INT32 key, emote_t *suggesti
 		if (input->buffer[i] == ':')
 		{
 			emotestart = i+1;
-			// ...But only if we typed at least something
-			if ((int)input->cursor-(i-1) < 3)
-				break;
-
-			for (int skip = 0; skip < maxsuggestions; ++skip)
-			{
-				suggestions[skip] = M_FindEmote(input->buffer+i+1, input->cursor-i-1, skip);
-
-				// No more suggestions
-				if (!suggestions[skip])
-					break;
-			}
-
-			// In any case, we found what we wanted, can exit the loop now
 			break;
 		}
 	}
 
-	const boolean single_suggestion = suggestions[0] && (maxsuggestions == 1 || !suggestions[1]);
+	return emotestart;
+}
 
-	// If we suggest emotes, try autocomplete
-	if ((key == '\t' && suggestions[0]) || (key == KEY_ENTER && single_suggestion))
+static void M_TextInputCompleteEmote(textinput_t *input, emote_autocomplete_t *autocomplete)
+{
+	if (input->cursor == 0)
+		return;
+
+	// If we're in "autocomplete" state, delete ':' for latest autocompleted emote
+	if (autocomplete->complete[0])
 	{
-		int pos = 0;
-		const int insertpos = (input->cursor-emotestart); // Only insert after that index (including it)
-		boolean autocomplete = true;
-
-		while (autocomplete)
+		if (input->buffer[input->cursor-1] == ':')
 		{
-			// Check if current character matches for all suggestions
-			char c = suggestions[0]->name[pos];
-
-			// End of string reached
-			if (!c)
-				break;
-
-			for (int i = 1; i < maxsuggestions && suggestions[i]; ++i)
-			{
-				if (suggestions[i]->name[pos] != c)
-				{
-					autocomplete = false;
-					break;
-				}
-			}
-
-			++pos;
-
-			if (autocomplete && pos > insertpos)
-				M_TextInputAddChar(input, c);
+			M_TextInputDelChar(input);
 		}
 
-		// This was the only suggestion, finish autocomplete with a ':' and clear suggestions
-		if (single_suggestion)
+		autocomplete->skip++;
+	}
+	else
+	{
+		// Try to find emote to autocomplete
+
+		int emotestart = autocomplete->emotestart;
+
+		// No emote - no autocomplete
+		if (emotestart == -1 || (size_t)emotestart == input->cursor)
+			return;
+
+		strlcpy(autocomplete->complete, &input->buffer[emotestart], input->cursor-emotestart+1);
+	}
+
+	emote_t *completed = M_FindEmote(autocomplete->complete, strlen(autocomplete->complete), autocomplete->skip);
+
+	// We hit end of list of suggested emotes
+	if (completed == NULL)
+	{
+		autocomplete->skip = 0;
+		completed = M_FindEmote(autocomplete->complete, strlen(autocomplete->complete), autocomplete->skip);
+
+		// NULL again, list was empty to begin with
+		if (completed == NULL)
 		{
-			memcpy(&input->buffer[emotestart], suggestions[0]->name, strlen(suggestions[0]->name));
-			M_TextInputAddChar(input, ':');
-			suggestions[0] = NULL;
+			// Clear autocompletion state
+			autocomplete->complete[0] = 0;
+			return;
 		}
-		else if (pos > emotestart)
-		{
-			// Otherwise make sure beginning of emote matches
-			memcpy(&input->buffer[emotestart], suggestions[0]->name, pos-emotestart);
-		}
+	}
+
+	// Erase previously typed emote. Not really efficent but too lazy to count chars and do M_TextInputDel()
+	while (input->buffer[input->cursor-1] != ':')
+	{
+		M_TextInputDelChar(input);
+	}
+
+	M_TextInputAddString(input, completed->name);
+	M_TextInputAddChar(input, ':');
+}
+
+boolean M_TextInputHandleEmotes(textinput_t *input, INT32 key, emote_autocomplete_t *autocomplete)
+{
+	boolean ret = M_TextInputHandleBase(input, key, true);
+
+	// After this handled key we ended up inside an emote, lets fix that
+	if (M_TextInputCheckEmote(input))
+		M_TextInputToWordEnd(input, !shiftdown);
+
+	// Always update it
+	autocomplete->emotestart = M_TextInputEmoteStart(input);
+
+	if (key == '\t' || (autocomplete->complete[0] == 0 && key == KEY_ENTER))
+	{
+		M_TextInputCompleteEmote(input, autocomplete);
+	}
+	else
+	{
+		// Reset state just in case
+		autocomplete->complete[0] = 0;
+		autocomplete->skip = 0;
 	}
 
 	return ret;

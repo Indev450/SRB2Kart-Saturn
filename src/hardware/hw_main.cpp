@@ -1251,6 +1251,8 @@ static inline boolean HWR_BlendMidtextureSurface(FSurfaceInfo *pSurf)
 			case 256:
 				if (gl_linedef->blendmode)
 					blendmode = HWR_SurfaceBlend(gl_linedef->blendmode, R_GetLinedefTransTable(gl_linedef->alpha), pSurf);
+				else
+					blendmode = PF_Translucent;
 				break;
 			default:
 				if (gl_linedef->blendmode)
@@ -1262,6 +1264,8 @@ static inline boolean HWR_BlendMidtextureSurface(FSurfaceInfo *pSurf)
 				}
 				else if (gl_linedef->alpha >= 0 && gl_linedef->alpha < FRACUNIT)
 					blendmode = HWR_TranstableToAlpha(R_GetLinedefTransTable(gl_linedef->alpha), pSurf);
+				else
+					blendmode = PF_Masked;
 				break;
 		}
 	}

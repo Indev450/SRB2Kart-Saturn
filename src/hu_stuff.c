@@ -96,8 +96,7 @@ static boolean headsupactive = false;
 boolean hu_showscores = false; // draw rankings
 static char hu_tick;
 static tic_t hu_emoteanim = 0;
-#define MAXEMOTESUGGESTIONS 8
-static emote_t *emote_suggestions[MAXEMOTESUGGESTIONS] = {0};
+emote_autocomplete_t emote_autocomplete = {0};
 
 static huddrawlist_h luahuddrawlist_scores;
 
@@ -1334,6 +1333,7 @@ boolean HU_Responder(event_t *ev)
 			chat_on = true;
 			w_chat_buf[0] = 0;
 			M_TextInputInit(&w_chat, w_chat_buf, sizeof w_chat_buf);
+			memset(&emote_autocomplete, 0, sizeof(emote_autocomplete));
 			teamtalk = false;
 			chat_scrollmedown = true;
 			typelines = 1;
@@ -1346,6 +1346,7 @@ boolean HU_Responder(event_t *ev)
 			chat_on = true;
 			w_chat_buf[0] = 0;
 			M_TextInputInit(&w_chat, w_chat_buf, sizeof w_chat_buf);
+			memset(&emote_autocomplete, 0, sizeof(emote_autocomplete));
 			teamtalk = G_GametypeHasTeams();	// Don't teamtalk if we don't have teams.
 			chat_scrollmedown = true;
 			typelines = 1;
@@ -1371,7 +1372,7 @@ boolean HU_Responder(event_t *ev)
 		&& ev->data1 != gamecontrol[0][gc_talkkey][1]))
 			return false;
 
-		M_TextInputHandleEmotes(&w_chat, c, emote_suggestions, MAXEMOTESUGGESTIONS);
+		M_TextInputHandleEmotes(&w_chat, c, &emote_autocomplete);
 
 		if (c == KEY_ENTER)
 		{
@@ -1901,16 +1902,36 @@ static void HU_DrawChat(void)
 		}
 	}
 
-	if (emote_suggestions[0])
+	if (emote_autocomplete.emotestart != -1 && (emote_autocomplete.complete[0] || (w_chat.cursor - emote_autocomplete.emotestart) > 0))
 	{
+		emote_t *suggest;
+		int skip = 0;
+
+		const char *complete;
+		int complete_len;
+
+		if (emote_autocomplete.complete[0])
+		{
+			complete = emote_autocomplete.complete;
+			complete_len = strlen(complete);
+		}
+		else
+		{
+			complete = &w_chat_buf[emote_autocomplete.emotestart];
+			complete_len = w_chat.cursor - emote_autocomplete.emotestart;
+		}
+
 		// A bit of copy-paste from /pm code :p
 		INT32 suggesty = chaty - charheight - 1;
 		size_t longest_suggestion_length = 0;
 
-		for (i = 0; i < MAXEMOTESUGGESTIONS && emote_suggestions[i]; ++i)
+		while ((suggest = M_FindEmote(complete, complete_len, skip)) != NULL)
 		{
-			longest_suggestion_length = max(longest_suggestion_length, strlen(emote_suggestions[i]->name));
+			longest_suggestion_length = max(longest_suggestion_length, strlen(suggest->name));
+			++skip;
 		}
+
+		skip = 0;
 
 #ifdef NETSPLITSCREEN
 		if (splitscreen)
@@ -1923,11 +1944,19 @@ static void HU_DrawChat(void)
 #endif
 			suggesty -= (cv_kartspeedometer.value ? 16 : 0);
 
-		for (i = 0; i < MAXEMOTESUGGESTIONS && emote_suggestions[i]; ++i)
+		while ((suggest = M_FindEmote(complete, complete_len, skip)) != NULL)
 		{
-			V_DrawFillConsoleMap(chatx + boxw + 2, suggesty - (7*i), (longest_suggestion_length+2)*4 + EMOTEWIDTH, 6, 239|V_SNAPTOBOTTOM|V_SNAPTOLEFT);
-			V_DrawSmallString(chatx + boxw + 4 + EMOTEWIDTH, suggesty - (7*i), V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_ALLOWLOWERCASE, va(":%s:", emote_suggestions[i]->name));
-			HU_DrawEmote(chatx + boxw + 2, suggesty - i*7, emote_suggestions[i], V_SNAPTOBOTTOM|V_SNAPTOLEFT);
+			V_DrawFillConsoleMap(chatx + boxw + 2, suggesty - (7*skip), (longest_suggestion_length+2)*4 + EMOTEWIDTH, 6, V_SNAPTOBOTTOM|V_SNAPTOLEFT);
+
+			// Highlight currently suggested emote
+			int hlflag = 0;
+			if (skip == emote_autocomplete.skip && emote_autocomplete.complete[0])
+				hlflag = V_YELLOWMAP;
+
+			V_DrawSmallString(chatx + boxw + 4 + EMOTEWIDTH, suggesty - (7*skip), hlflag|V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_ALLOWLOWERCASE, va(":%s:", suggest->name));
+			HU_DrawEmote(chatx + boxw + 2, suggesty - skip*7, suggest, V_SNAPTOBOTTOM|V_SNAPTOLEFT);
+
+			++skip;
 		}
 	}
 
