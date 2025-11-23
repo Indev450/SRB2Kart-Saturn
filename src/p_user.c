@@ -1195,6 +1195,9 @@ mobj_t *P_SpawnGhostMobj(mobj_t *mobj)
 	ghost->spritexoffset = mobj->spritexoffset;
 	ghost->spriteyoffset = mobj->spriteyoffset;
 
+	if (mobj->player && K_PlayerEffectsShouldBlend(mobj->player))
+		ghost->blendmode = AST_ADD;
+
 	ghost->pitch = mobj->pitch;
 	ghost->roll = mobj->roll;
 	ghost->sloperoll = mobj->sloperoll;
