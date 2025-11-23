@@ -2719,6 +2719,9 @@ void P_FreeLevelState(void)
 	// clear the splats from previous level
 	R_ClearLevelSplats();
 #endif
+
+	R_InitMobjInterpolators();
+	R_InitializeLevelInterpolators();
 }
 
 /** Loads a level from a lump or external wad.
@@ -2830,10 +2833,7 @@ boolean P_SetupLevel(boolean fromnetsave, boolean reloadinggamestate)
 
 	P_FreeLevelState();
 
-	R_InitializeLevelInterpolators();
-
 	P_InitThinkers();
-	R_InitMobjInterpolators();
 	P_InitCachedActions();
 
 	// internal game map
