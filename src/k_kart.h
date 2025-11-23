@@ -42,7 +42,6 @@ void K_FlipFromObject(mobj_t *mo, mobj_t *master);
 void K_MatchGenericExtraFlags(mobj_t *mo, mobj_t *master);
 void K_RespawnChecker(player_t *player);
 void K_KartMoveAnimation(player_t *player);
-void K_KartPlayerHUDUpdate(player_t *player);
 boolean K_PlayerEffectsShouldBlend(player_t *player);
 void K_KartPlayerThink(player_t *player, ticcmd_t *cmd);
 void K_KartPlayerAfterThink(player_t *player);
