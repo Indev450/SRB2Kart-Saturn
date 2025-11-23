@@ -133,8 +133,12 @@ extern INT32 gamecontrol[MAXSPLITSCREENPLAYERS][num_gamecontrols][2];
 
 UINT8 G_GetSkinColorForGamepad(INT32 playernum);
 void G_SetPlayerGamepadIndicatorColor(INT32 playernum, UINT8 color);
+void G_DeviceLEDTick(void);
+void G_ResetDeviceLED(void);
+
 void G_ResetAllDeviceRumbles(void);
 void G_PlayerDeviceRumble(INT32 playernum, UINT16 low_strength, UINT16 high_strength, UINT32 duration);
+void G_DeviceRumbleTick(void);
 
 // peace to my little coder fingers!
 // check a gamecontrol being active or not

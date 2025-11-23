@@ -192,38 +192,6 @@ UINT8 ctrldown = 0;   // 0x1 left, 0x2 right
 UINT8 altdown = 0;    // 0x1 left, 0x2 right
 boolean capslock = 0; // gee i wonder what this does.
 
-static UINT8 curcolor[MAXSPLITSCREENPLAYERS] = {};
-
-static void D_DeviceLEDTick(void)
-{
-	UINT8 i;
-	static UINT8 newcolor = UINT8_MAX;
-
-	if (numcontrollers == 0)
-	{
-		return;
-	}
-
-	for (i = 0; i <= splitscreen; i++)
-	{
-		if (!cv_usejoystick[i].value || !cv_gamepadled[i].value)
-			continue;
-
-		newcolor = G_GetSkinColorForGamepad(i);
-
-		if (curcolor[i] == newcolor) // dont update if same colour
-			continue;
-
-		G_SetPlayerGamepadIndicatorColor(i, newcolor);
-		curcolor[i] = newcolor;
-	}
-}
-
-void D_ResetDeviceLED(void)
-{
-	memset(curcolor, 0, sizeof(curcolor));
-}
-
 //
 // D_ProcessEvents
 // Send all the events of the given timestamp down the responder chain
@@ -882,7 +850,7 @@ void D_SRB2Loop(void)
 
 			if (!dedicated)
 			{
-				D_DeviceLEDTick();
+				G_DeviceLEDTick();
 			}
 		}
 
@@ -1061,7 +1029,7 @@ void D_ClearState(void)
 	M_ClearMenus(true);
 
 	// map palettes affect this
-	D_ResetDeviceLED();
+	G_ResetDeviceLED();
 }
 
 //
