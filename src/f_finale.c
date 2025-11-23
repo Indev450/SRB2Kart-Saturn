@@ -257,26 +257,21 @@ void F_StartIntro(void)
 //
 void F_IntroDrawer(void)
 {
-	boolean highres = false;
 	INT32 cx = 8, cy = 128;
 	patch_t *background = NULL;
 	INT32 bgxoffs = 0;
+
+	V_DrawFill(0, 0, BASEVIDWIDTH, BASEVIDHEIGHT, 120);
 
 	// DRAW A FULL PIC INSTEAD OF FLAT!
 	if (intro_scenenum == 0)
 	{
 		background = W_CachePatchName("KARTKREW", PU_PATCH_LOWPRIORITY);
-		highres = true;
-	}
 
-	V_DrawFill(0, 0, BASEVIDWIDTH, BASEVIDHEIGHT, 120);
-
-	if (background)
-	{
-		if (highres)
+		if (background)
+		{
 			V_DrawSmallScaledPatch(bgxoffs, 0, 0, background);
-		else
-			V_DrawScaledPatch(bgxoffs, 0, 0, background);
+		}
 	}
 
 	W_UnlockCachedPatch(background);
