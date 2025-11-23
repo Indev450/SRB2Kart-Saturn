@@ -997,6 +997,7 @@ void D_RegisterClientCommands(void)
 		CV_RegisterVar(&cv_usejoystick[i]);
 		CV_RegisterVar(&cv_joyscale[i]);
 		CV_RegisterVar(&cv_rumble[i]);
+		CV_RegisterVar(&cv_rumblestrength[i]);
 		CV_RegisterVar(&cv_gamepadled[i]);
 	}
 

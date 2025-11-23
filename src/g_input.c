@@ -58,10 +58,19 @@ static void led_off_handle3(void);
 static void led_off_handle4(void);
 
 consvar_t cv_rumble[MAXSPLITSCREENPLAYERS] = {
-	{"rumble", "Off", CV_SAVE|CV_CALL|CV_NOINIT, CV_OnOff, rumble_off_handle, 0, NULL, NULL, 0, 0, NULL},
+	{"rumble",  "Off", CV_SAVE|CV_CALL|CV_NOINIT, CV_OnOff, rumble_off_handle, 0, NULL, NULL, 0, 0, NULL},
 	{"rumble2", "Off", CV_SAVE|CV_CALL|CV_NOINIT, CV_OnOff, rumble_off_handle2, 0, NULL, NULL, 0, 0, NULL},
 	{"rumble3", "Off", CV_SAVE|CV_CALL|CV_NOINIT, CV_OnOff, rumble_off_handle3, 0, NULL, NULL, 0, 0, NULL},
 	{"rumble4", "Off", CV_SAVE|CV_CALL|CV_NOINIT, CV_OnOff, rumble_off_handle4, 0, NULL, NULL, 0, 0, NULL}
+};
+
+static CV_PossibleValue_t rumblestrength_cons_t[] = {{FRACUNIT/4, "MIN"}, {FRACUNIT*4, "MAX"}, {0, NULL}};
+
+consvar_t cv_rumblestrength[MAXSPLITSCREENPLAYERS] = {
+	{"rumblestrength",  "1.0", CV_SAVE|CV_FLOAT, rumblestrength_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"rumblestrength2", "1.0", CV_SAVE|CV_FLOAT, rumblestrength_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"rumblestrength3", "1.0", CV_SAVE|CV_FLOAT, rumblestrength_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"rumblestrength4", "1.0", CV_SAVE|CV_FLOAT, rumblestrength_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL}
 };
 
 static CV_PossibleValue_t gamepadled_cons_t[] = {{0, "Off"}, {1, "Skincolor"}, {2, "Mobjcolor"}, {0, NULL}};
@@ -1004,6 +1013,12 @@ void G_PlayerDeviceRumble(INT32 playernum, UINT16 low_strength, UINT16 high_stre
 		return;
 	}
 
+	// doesent need to be super precise
+	// but ensure this is within range (0-65535)
+	// placed here so it applies to lua aswell
+	low_strength = (UINT16)min(FixedMul(low_strength, cv_rumblestrength[playernum].value), UINT16_MAX);
+	high_strength = (UINT16)min(FixedMul(high_strength, cv_rumblestrength[playernum].value), UINT16_MAX);
+
 	I_GamepadRumble(playernum, low_strength, high_strength, duration);
 }
 
@@ -1016,8 +1031,6 @@ enum
 	RUMBLE_WEAK       = FRACUNIT / 128, // 512
 	RUMBLE_VERYWEAK   = FRACUNIT / 256, // 256
 };
-// TODO: multiplier to make them user changable
-// due to some controllers being more/less sensitive than others
 
 // Controller rumble!
 // this keeps track of a bunch of things
