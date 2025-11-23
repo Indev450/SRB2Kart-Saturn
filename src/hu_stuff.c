@@ -388,7 +388,7 @@ void HU_LoadGraphics(void)
 
 	// fps stuff
 	framecounter = W_CachePatchName("FRAMER", PU_HUDGFX);
-	frameslash  = W_CachePatchName("FRAMESL", PU_HUDGFX);;
+	frameslash  = W_CachePatchName("FRAMESL", PU_HUDGFX);
 }
 
 // Initialise Heads up
