@@ -47,6 +47,7 @@
 // SRB2kart
 #include "m_cond.h" // M_UpdateUnlockablesAndExtraEmblems
 #include "k_kart.h"
+#include "k_hud.h"
 #include "console.h" // CON_LogMessage
 #include "m_menu.h"
 
