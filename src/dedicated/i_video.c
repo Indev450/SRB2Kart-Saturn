@@ -115,6 +115,10 @@ INT32 VID_GetModeForSize(INT32 w, INT32 h)
 	return -1;
 }
 
+void VID_RefreshModeList(void)
+{
+}
+
 void VID_PrepareModeList(void)
 {
 }

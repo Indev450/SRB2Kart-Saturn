@@ -1240,7 +1240,7 @@ static void I_CheckDesktopRes(void)
 		return;
 	}
 
-	if (SDL_GetDesktopDisplayMode(currentDisplayIndex, &curmode) != 0)
+	if (SDL_GetCurrentDisplayMode(currentDisplayIndex, &curmode) != 0)
 	{
 		return;
 	}
