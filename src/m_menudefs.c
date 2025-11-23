@@ -735,26 +735,27 @@ static menuitem_t OP_AllControlsMenu[] =
 
 #define OP_JOYMENU(pnum) \
 	{IT_HEADER, NULL, "Gameplay Controls", NULL, 7},                                        \
-	{IT_STRING | IT_CVAR,  NULL, "Aim Forward/Back"       , &cv_aimaxis[pnum]       ,  15}, \
-	{IT_STRING | IT_CVAR,  NULL, "Turn Left/Right"        , &cv_turnaxis[pnum]      ,  20}, \
-	{IT_STRING | IT_CVAR,  NULL, "Accelerate"             , &cv_moveaxis[pnum]      ,  25}, \
-	{IT_STRING | IT_CVAR,  NULL, "Brake"                  , &cv_brakeaxis[pnum]     ,  30}, \
-	{IT_STRING | IT_CVAR,  NULL, "Drift"                  , &cv_driftaxis[pnum]     ,  35}, \
-	{IT_STRING | IT_CVAR,  NULL, "Use Item"               , &cv_fireaxis[pnum]      ,  40}, \
-	{IT_STRING | IT_CVAR,  NULL, "Look Backward"          , &cv_lookbackaxis[pnum]  ,  45}, \
-	{IT_STRING | IT_CVAR,  NULL, "Custom Button 1"        , &cv_custom1axis[pnum]   ,  50}, \
-	{IT_STRING | IT_CVAR,  NULL, "Custom Button 2"        , &cv_custom2axis[pnum]   ,  55}, \
-	{IT_STRING | IT_CVAR,  NULL, "Custom Button 3"        , &cv_custom3axis[pnum]   ,  60}, \
+	{IT_STRING | IT_CVAR,  NULL, "Aim Forward/Back"           , &cv_aimaxis[pnum]       ,  15}, \
+	{IT_STRING | IT_CVAR,  NULL, "Turn Left/Right"            , &cv_turnaxis[pnum]      ,  20}, \
+	{IT_STRING | IT_CVAR,  NULL, "Accelerate"                 , &cv_moveaxis[pnum]      ,  25}, \
+	{IT_STRING | IT_CVAR,  NULL, "Brake"                      , &cv_brakeaxis[pnum]     ,  30}, \
+	{IT_STRING | IT_CVAR,  NULL, "Drift"                      , &cv_driftaxis[pnum]     ,  35}, \
+	{IT_STRING | IT_CVAR,  NULL, "Use Item"                   , &cv_fireaxis[pnum]      ,  40}, \
+	{IT_STRING | IT_CVAR,  NULL, "Look Backward"              , &cv_lookbackaxis[pnum]  ,  45}, \
+	{IT_STRING | IT_CVAR,  NULL, "Custom Button 1"            , &cv_custom1axis[pnum]   ,  50}, \
+	{IT_STRING | IT_CVAR,  NULL, "Custom Button 2"            , &cv_custom2axis[pnum]   ,  55}, \
+	{IT_STRING | IT_CVAR,  NULL, "Custom Button 3"            , &cv_custom3axis[pnum]   ,  60}, \
 	{IT_HEADER, NULL, "Camera Controls", NULL, 67}, \
-	{IT_STRING | IT_CVAR,  NULL, "Look Up/Down"           , &cv_lookaxis[pnum]      ,  75}, \
-	{IT_STRING | IT_CVAR,  NULL, "Turn Left/Right"        , &cv_camturnaxis[pnum]   ,  80}, \
-	{IT_STRING | IT_CVAR,  NULL, "Strafe Left/Right"      , &cv_camstrafeaxis[pnum] ,  85}, \
+	{IT_STRING | IT_CVAR,  NULL, "Look Up/Down"               , &cv_lookaxis[pnum]      ,  75}, \
+	{IT_STRING | IT_CVAR,  NULL, "Turn Left/Right"            , &cv_camturnaxis[pnum]   ,  80}, \
+	{IT_STRING | IT_CVAR,  NULL, "Strafe Left/Right"          , &cv_camstrafeaxis[pnum] ,  85}, \
 	{IT_HEADER, NULL, "Deadzones", NULL, 92}, \
-	{IT_STRING | IT_CVAR,  NULL, "X deadzone"             , &cv_xdeadzone[pnum]     , 100}, \
-	{IT_STRING | IT_CVAR,  NULL, "Y deadzone"             , &cv_ydeadzone[pnum]     , 105}, \
+	{IT_STRING | IT_CVAR,  NULL, "X deadzone"                 , &cv_xdeadzone[pnum]     , 100}, \
+	{IT_STRING | IT_CVAR,  NULL, "Y deadzone"                 , &cv_ydeadzone[pnum]     , 105}, \
 	{IT_HEADER, NULL, "Miscellaneous", NULL, 112},                                          \
-	{IT_STRING | IT_CVAR,  NULL, "Controller Rumble"      , &cv_rumble[pnum]        , 120}, \
-	{IT_STRING | IT_CVAR,  NULL, "Set LED to Player color", &cv_gamepadled[pnum]    , 125},
+	{IT_STRING | IT_CVAR,  NULL, "Controller Rumble"          , &cv_rumble[pnum]        , 120}, \
+	{IT_STRING | IT_CVAR,  NULL, "Controller Rumble Strength" , &cv_rumblestrength[pnum]        , 125}, \
+	{IT_STRING | IT_CVAR,  NULL, "Set LED to Player color"    , &cv_gamepadled[pnum]    , 130},
 
 static menuitem_t OP_Joystick1Menu[] =
 {
