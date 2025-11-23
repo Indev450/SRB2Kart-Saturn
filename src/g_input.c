@@ -1007,6 +1007,18 @@ void G_PlayerDeviceRumble(INT32 playernum, UINT16 low_strength, UINT16 high_stre
 	I_GamepadRumble(playernum, low_strength, high_strength, duration);
 }
 
+// rumble strengths
+enum
+{
+	RUMBLE_VERYSTRONG = FRACUNIT / 4,   // 16384
+	RUMBLE_STRONG     = FRACUNIT / 8,   // 8192
+	RUMBLE_MODERATE   = FRACUNIT / 64,  // 1024
+	RUMBLE_WEAK       = FRACUNIT / 128, // 512
+	RUMBLE_VERYWEAK   = FRACUNIT / 256, // 256
+};
+// TODO: multiplier to make them user changable
+// due to some controllers being more/less sensitive than others
+
 // Controller rumble!
 // this keeps track of a bunch of things
 // and makes your controller rumble accordingly
@@ -1035,7 +1047,7 @@ void G_DeviceRumbleTick(void)
 		// the higher, the stronger it is
 		UINT16 low = 0, high = 0;
 		// for how long the action should rumble, in ms
-		UINT16 lenght = 57;
+		UINT16 lenght = 57; // 57ms is a short pulse, matches super well with this updating once per tic
 
 		const player_t *player = P_GetLocalPlayerForNum(i);
 
@@ -1057,11 +1069,11 @@ void G_DeviceRumbleTick(void)
 		if (player->kartstuff[k_spinouttimer])
 		{
 			//low = high = FRACUNIT / 6;
-			low = high = FixedMul((FRACUNIT / 4), (FixedDiv(player->kartstuff[k_spinouttimer], (3*TICRATE / 2)))); // try do some some kinda fadeout
+			low = high = FixedMul((RUMBLE_VERYSTRONG), (FixedDiv(player->kartstuff[k_spinouttimer], (3*TICRATE / 2)))); // try do some some kinda fadeout, 3*TICRATE / 2 is the "default" spinout time
 		}
 		else if (player->kartstuff[k_sneakertimer] > (sneakertime-(TICRATE/2)))
 		{
-			low = high = FRACUNIT / 8;
+			low = high = RUMBLE_STRONG;
 		}
 		else if ((player->kartstuff[k_offroad])
 			&& player->speed != 0
@@ -1070,15 +1082,15 @@ void G_DeviceRumbleTick(void)
 			// weaken this depending on if you got hyu or invinc
 			if (player->kartstuff[k_hyudorotimer])
 			{
-				high = FRACUNIT / 128;
+				high = RUMBLE_WEAK;
 			}
 			else if (player->kartstuff[k_invincibilitytimer])
 			{
-				high = FRACUNIT / 64;
+				high = RUMBLE_MODERATE;
 			}
 			else
 			{
-				low = high = FRACUNIT / 64;
+				low = high = RUMBLE_MODERATE;
 			}
 		}
 		else if ((player->kartstuff[k_bananadrag] > TICRATE)
@@ -1086,12 +1098,12 @@ void G_DeviceRumbleTick(void)
 			&& P_IsObjectOnGround(player->mo))
 		{
 			if (leveltime & 1) // this is actually funny lel
-				high = FRACUNIT / 64;
+				high = RUMBLE_MODERATE;
 		}
 
 		if (player->kartstuff[k_brakedrift])
 		{
-			high = CLAMP((high + FRACUNIT / 256), 0, UINT16_MAX);
+			high = CLAMP((high + RUMBLE_VERYWEAK), 0, UINT16_MAX);
 		}
 
 		// pulse when gettin new driftlevel
@@ -1099,7 +1111,7 @@ void G_DeviceRumbleTick(void)
 		if (player->kartstuff[k_driftcharge]
 			&& player->driftlevel)
 		{
-			high = CLAMP((high + FRACUNIT / 256), 0, UINT16_MAX);
+			high = CLAMP((high + RUMBLE_VERYWEAK), 0, UINT16_MAX);
 
 			if (player->driftlevel == 2)
 				lenght = 114;
