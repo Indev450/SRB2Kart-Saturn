@@ -3577,7 +3577,7 @@ static void P_CalculatePrecipFloor(precipmobj_t *mobj)
 			if (!(rover->flags & FF_BLOCKOTHERS) && !(rover->flags & FF_SWIMMABLE))
 				continue;
 
-			topheight = P_GetFFloorTopZAt(rover, mobj->x, mobj->y);;
+			topheight = P_GetFFloorTopZAt(rover, mobj->x, mobj->y);
 
 			if (topheight > mobj->floorz)
 				mobj->floorz = topheight;

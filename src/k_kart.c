@@ -98,8 +98,6 @@ static void saltyhop_onchange(void)
 	}
 }
 
-static boolean K_SpeedLinesShouldBlend(player_t *player);
-
 // SOME IMPORTANT VARIABLES DEFINED IN DOOMDEF.H:
 // gamespeed is cc (0 for easy, 1 for normal, 2 for hard)
 // franticitems is Frantic Mode items, bool
@@ -3606,7 +3604,7 @@ void K_SpawnSparkleTrail(mobj_t *mo)
 
 		sparkle->color = mo->color;
 
-		if (cv_playerblendeffects.value && mo->player && K_SpeedLinesShouldBlend(mo->player))
+		if (mo->player && K_PlayerEffectsShouldBlend(mo->player))
 			sparkle->blendmode = AST_ADD;
 	}
 
@@ -4506,7 +4504,7 @@ void K_DropItems(player_t *player)
 	{
 		mobj_t *drop = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z + player->mo->height/2, MT_FLOATINGITEM);
 		P_SetScale(drop, drop->scale>>4);
-		drop->destscale = (3*drop->destscale)/2;;
+		drop->destscale = (3*drop->destscale)/2;
 
 		drop->angle = player->mo->angle + ANGLE_90;
 		P_Thrust(drop,
@@ -5370,12 +5368,13 @@ void K_KartPlayerHUDUpdate(player_t *player)
 		player->kartstuff[k_cardanimation] = 0;
 }
 
-static boolean K_SpeedLinesShouldBlend(player_t *player)
+boolean K_PlayerEffectsShouldBlend(player_t *player)
 {
 	if (!cv_playerblendeffects.value || !player->mo)
 		return false;
 
-	if (player->kartstuff[k_sneakertimer])
+	if (player->kartstuff[k_sneakertimer] ||
+		player->kartstuff[k_invincibilitytimer])
 		return true;
 
 	// this is how the percentage speedometer calcs, i suck at maths so this was the easiest thing to do lmao
@@ -5460,7 +5459,7 @@ FUNCINLINE static ATTRINLINE void K_SpawnNormalSpeedLines(player_t *player, bool
 			fast->colorized = true;
 		}
 
-		if (colorSpeed && K_SpeedLinesShouldBlend(player))
+		if (colorSpeed && K_PlayerEffectsShouldBlend(player))
 			fast->blendmode = AST_ADD;
 	}
 }

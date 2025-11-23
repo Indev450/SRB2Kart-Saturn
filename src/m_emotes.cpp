@@ -23,7 +23,7 @@ extern "C" {
 #include "v_video.h"
 }
 
-consvar_t cv_emotes = {"emotes", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};;
+consvar_t cv_emotes = {"emotes", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 static std::map<std::string, emote_t> emotes;
 
