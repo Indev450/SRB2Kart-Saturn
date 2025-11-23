@@ -52,6 +52,8 @@ extern CV_PossibleValue_t inputdisplay_cons_t[NUMINPUTDISPLAYSTUFF];
 #define NUMMINIMAPDOTSTUFF 5
 extern CV_PossibleValue_t minimapdot_cons_t[NUMMINIMAPDOTSTUFF];
 
+void K_KartPlayerHUDUpdate(player_t *player);
+
 const char *K_GetItemPatch(UINT8 item, boolean tiny);
 INT32 K_calcSplitFlags(INT32 snapflags);
 void K_LoadKartHUDGraphics(void);
