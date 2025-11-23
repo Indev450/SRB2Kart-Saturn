@@ -166,8 +166,8 @@ static void F_SkyScroll(INT32 scrollspeed)
 	patch_t *pat, *pat2;
 	INT32 anim2 = 0;
 
-	pat = W_CachePatchName("TITLEBG1", PU_PATCH_LOWPRIORITY);
-	pat2 = W_CachePatchName("TITLEBG2", PU_PATCH_LOWPRIORITY);
+	pat = W_CachePatchName("TITLEBG1", PU_PATCH);
+	pat2 = W_CachePatchName("TITLEBG2", PU_PATCH);
 
 	w = (vid.scaledwidth << FRACBITS);
 
@@ -266,7 +266,7 @@ void F_IntroDrawer(void)
 	// DRAW A FULL PIC INSTEAD OF FLAT!
 	if (intro_scenenum == 0)
 	{
-		background = W_CachePatchName("KARTKREW", PU_PATCH_LOWPRIORITY);
+		background = W_CachePatchName("KARTKREW", PU_PATCH);
 
 		if (background)
 		{
@@ -647,7 +647,7 @@ void F_CreditDrawer(void)
 			sc = FRACUNIT; // quick hack so I don't have to add another field to credits_pics
 		}
 
-		V_DrawFixedPatch(credits_pics[i].x<<FRACBITS, (credits_pics[i].y<<FRACBITS) - 4*(animtimer<<FRACBITS)/5, sc, 0, W_CachePatchName(credits_pics[i].patch, PU_PATCH), colormap);
+		V_DrawFixedPatch(credits_pics[i].x<<FRACBITS, (credits_pics[i].y<<FRACBITS) - 4*(animtimer<<FRACBITS)/5, sc, 0, W_CachePatchName(credits_pics[i].patch, PU_PATCH_LOWPRIORITY), colormap);
 	}
 
 	// Dim the background
@@ -656,22 +656,23 @@ void F_CreditDrawer(void)
 	// Draw credits text on top
 	for (i = 0; credits[i]; i++)
 	{
-		switch(credits[i][0])
+		switch (credits[i][0])
 		{
-		case 0:
-			y += 80<<FRACBITS;
-			break;
-		case 1:
-			if (y>>FRACBITS > -20)
-				V_DrawCreditString((160 - (V_CreditStringWidth(&credits[i][1])>>1))<<FRACBITS, y, 0, &credits[i][1]);
-			y += 30<<FRACBITS;
-			break;
-		default:
-			if (y>>FRACBITS > -10)
-				V_DrawStringAtFixed(32<<FRACBITS, y, V_ALLOWLOWERCASE, credits[i]);
-			y += 12<<FRACBITS;
-			break;
+			case 0:
+				y += 80<<FRACBITS;
+				break;
+			case 1:
+				if (y>>FRACBITS > -20)
+					V_DrawCreditString((160 - (V_CreditStringWidth(&credits[i][1])>>1))<<FRACBITS, y, 0, &credits[i][1]);
+				y += 30<<FRACBITS;
+				break;
+			default:
+				if (y>>FRACBITS > -10)
+					V_DrawStringAtFixed(32<<FRACBITS, y, V_ALLOWLOWERCASE, credits[i]);
+				y += 12<<FRACBITS;
+				break;
 		}
+
 		if (((y>>FRACBITS) * vid.dup) > vid.height)
 			break;
 	}
@@ -974,10 +975,10 @@ void F_StartTitleScreen(void)
 	demoDelayLeft = demoDelayTime;
 	demoIdleLeft = demoIdleTime;
 
-	ttbanner = W_CachePatchName("TTKBANNR", PU_PATCH_LOWPRIORITY);
-	ttkart = W_CachePatchName("TTKART", PU_PATCH_LOWPRIORITY);
-	ttcheckers = W_CachePatchName("TTCHECK", PU_PATCH_LOWPRIORITY);
-	ttkflash = W_CachePatchName("TTKFLASH", PU_PATCH_LOWPRIORITY);
+	ttbanner = W_CachePatchName("TTKBANNR", PU_PATCH);
+	ttkart = W_CachePatchName("TTKART", PU_PATCH);
+	ttcheckers = W_CachePatchName("TTCHECK", PU_PATCH);
+	ttkflash = W_CachePatchName("TTKFLASH", PU_PATCH);
 }
 
 // (no longer) De-Demo'd Title Screen

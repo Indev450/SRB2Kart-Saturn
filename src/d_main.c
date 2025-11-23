@@ -759,7 +759,7 @@ void D_SRB2Loop(void)
 	COM_ImmedExecute("cls;version");
 
 	if (rendermode == render_soft)
-		V_DrawFixedPatch(0, 0, FRACUNIT/2, 0, W_CachePatchNum(W_GetNumForName("KARTKREW"), PU_PATCH_LOWPRIORITY), NULL);
+		V_DrawFixedPatch(0, 0, FRACUNIT/2, 0, W_CachePatchNum(W_GetNumForName("KARTKREW"), PU_PATCH), NULL);
 	I_FinishUpdate(); // page flip or blit buffer
 
 	precision = I_GetPrecisePrecision();
