@@ -98,8 +98,6 @@ static void saltyhop_onchange(void)
 	}
 }
 
-static boolean K_SpeedLinesShouldBlend(player_t *player);
-
 // SOME IMPORTANT VARIABLES DEFINED IN DOOMDEF.H:
 // gamespeed is cc (0 for easy, 1 for normal, 2 for hard)
 // franticitems is Frantic Mode items, bool
@@ -3606,7 +3604,7 @@ void K_SpawnSparkleTrail(mobj_t *mo)
 
 		sparkle->color = mo->color;
 
-		if (cv_playerblendeffects.value && mo->player && K_SpeedLinesShouldBlend(mo->player))
+		if (mo->player && K_PlayerEffectsShouldBlend(mo->player))
 			sparkle->blendmode = AST_ADD;
 	}
 
@@ -5370,7 +5368,7 @@ void K_KartPlayerHUDUpdate(player_t *player)
 		player->kartstuff[k_cardanimation] = 0;
 }
 
-static boolean K_SpeedLinesShouldBlend(player_t *player)
+boolean K_PlayerEffectsShouldBlend(player_t *player)
 {
 	if (!cv_playerblendeffects.value || !player->mo)
 		return false;
@@ -5460,7 +5458,7 @@ FUNCINLINE static ATTRINLINE void K_SpawnNormalSpeedLines(player_t *player, bool
 			fast->colorized = true;
 		}
 
-		if (colorSpeed && K_SpeedLinesShouldBlend(player))
+		if (colorSpeed && K_PlayerEffectsShouldBlend(player))
 			fast->blendmode = AST_ADD;
 	}
 }
