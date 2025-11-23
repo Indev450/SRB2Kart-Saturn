@@ -947,6 +947,39 @@ static void G_ResetPlayerGamepadIndicatorColor(INT32 playernum)
 	}
 }
 
+static UINT8 curcolor[MAXSPLITSCREENPLAYERS] = {};
+
+void G_DeviceLEDTick(void)
+{
+	UINT8 i;
+	static UINT8 newcolor = UINT8_MAX;
+
+	if (numcontrollers == 0)
+	{
+		return;
+	}
+
+	for (i = 0; i <= splitscreen; i++)
+	{
+		if (!cv_usejoystick[i].value || !cv_gamepadled[i].value)
+			continue;
+
+		newcolor = G_GetSkinColorForGamepad(i);
+
+		if (curcolor[i] == newcolor) // dont update if same colour
+			continue;
+
+		G_SetPlayerGamepadIndicatorColor(i, newcolor);
+		curcolor[i] = newcolor;
+	}
+}
+
+// ensures next call to G_DeviceLEDTick will refresh the gamepad led
+void G_ResetDeviceLED(void)
+{
+	memset(curcolor, 0, sizeof(curcolor));
+}
+
 static void G_ResetPlayerDeviceRumble(INT32 playernum)
 {
 	I_GamepadRumble(playernum, 0, 0, 0);
@@ -972,6 +1005,116 @@ void G_PlayerDeviceRumble(INT32 playernum, UINT16 low_strength, UINT16 high_stre
 	}
 
 	I_GamepadRumble(playernum, low_strength, high_strength, duration);
+}
+
+// Controller rumble!
+// this keeps track of a bunch of things
+// and makes your controller rumble accordingly
+void G_DeviceRumbleTick(void)
+{
+	UINT8 i;
+
+	if (dedicated || numcontrollers == 0 || gamestate != GS_LEVEL)
+	{
+		return;
+	}
+
+	for (i = 0; i <= splitscreen; i++)
+	{
+		if (!cv_usejoystick[i].value || !cv_rumble[i].value)
+		{
+			continue;
+		}
+
+		if (camera[i].freecam)
+		{
+			continue;
+		}
+
+		// SDL rumble strength goes from a range or 0-65535 respectively
+		// the higher, the stronger it is
+		UINT16 low = 0, high = 0;
+		// for how long the action should rumble, in ms
+		UINT16 lenght = 57;
+
+		const player_t *player = P_GetLocalPlayerForNum(i);
+
+		// allow lua to do some crap for spectators
+		if (player->spectator || !player->mo)
+		{
+			continue;
+		}
+
+		// reset the rumble if you exit or are ded lel
+		if (player->exiting ||
+			player->playerstate == PST_DEAD ||
+			player->kartstuff[k_respawn] > 1)
+		{
+			G_PlayerDeviceRumble(i, low, high, 0);
+			continue;
+		}
+
+		if (player->kartstuff[k_spinouttimer])
+		{
+			//low = high = FRACUNIT / 6;
+			low = high = FixedMul((FRACUNIT / 4), (FixedDiv(player->kartstuff[k_spinouttimer], (3*TICRATE / 2)))); // try do some some kinda fadeout
+		}
+		else if (player->kartstuff[k_sneakertimer] > (sneakertime-(TICRATE/2)))
+		{
+			low = high = FRACUNIT / 8;
+		}
+		else if ((player->kartstuff[k_offroad])
+			&& player->speed != 0
+			&& P_IsObjectOnGround(player->mo))
+		{
+			// weaken this depending on if you got hyu or invinc
+			if (player->kartstuff[k_hyudorotimer])
+			{
+				high = FRACUNIT / 128;
+			}
+			else if (player->kartstuff[k_invincibilitytimer])
+			{
+				high = FRACUNIT / 64;
+			}
+			else
+			{
+				low = high = FRACUNIT / 64;
+			}
+		}
+		else if ((player->kartstuff[k_bananadrag] > TICRATE)
+			&& player->speed != 0
+			&& P_IsObjectOnGround(player->mo))
+		{
+			if (leveltime & 1) // this is actually funny lel
+				high = FRACUNIT / 64;
+		}
+
+		if (player->kartstuff[k_brakedrift])
+		{
+			high = CLAMP((high + FRACUNIT / 256), 0, UINT16_MAX);
+		}
+
+		// pulse when gettin new driftlevel
+		// let this come last
+		if (player->kartstuff[k_driftcharge]
+			&& player->driftlevel)
+		{
+			high = CLAMP((high + FRACUNIT / 256), 0, UINT16_MAX);
+
+			if (player->driftlevel == 2)
+				lenght = 114;
+			else if (player->driftlevel == 3)
+				lenght = 174;
+		}
+
+		// hack alert! i just dont want this thing constantly resetting the rumble lol
+		if (low == 0 && high == 0)
+		{
+			continue;
+		}
+
+		G_PlayerDeviceRumble(i, low, high, lenght);
+	}
 }
 
 //
