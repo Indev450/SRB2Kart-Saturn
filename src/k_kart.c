@@ -5373,7 +5373,8 @@ boolean K_PlayerEffectsShouldBlend(player_t *player)
 	if (!cv_playerblendeffects.value || !player->mo)
 		return false;
 
-	if (player->kartstuff[k_sneakertimer])
+	if (player->kartstuff[k_sneakertimer] ||
+		player->kartstuff[k_invincibilitytimer])
 		return true;
 
 	// this is how the percentage speedometer calcs, i suck at maths so this was the easiest thing to do lmao
