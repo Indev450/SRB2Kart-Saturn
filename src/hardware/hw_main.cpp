@@ -4383,6 +4383,9 @@ static void HWR_RenderDrawNodes(void)
 	// Okay! Let's draw it all! Woo!
 	GL_SetTransform(&atransform);
 
+	if (LIKELY(cv_glbatching.value))
+		HWR_StartBatching();
+
 	for (i = 0; i < numdrawnodes; i++)
 	{
 		gl_drawnode_t *drawnode = &drawnodes[sortindex[i]];
@@ -4433,6 +4436,9 @@ static void HWR_RenderDrawNodes(void)
 				break;
 		}
 	}
+
+	if (LIKELY(cv_glbatching.value))
+		HWR_RenderBatches(false);
 
 	PS_STOP_TIMING(ps_hw_nodedrawtime);
 
@@ -5390,6 +5396,7 @@ void HWR_SetTransform(float fpov)
 void HWR_ClearClipper(void)
 {
 	const angle_t a1 = gld_FrustumAngle(gl_aimingangle);
+
 	gld_clipper_Clear();
 	gld_clipper_SafeAddClipRange(viewangle + a1, viewangle - a1);
 #ifdef HAVE_SPHEREFRUSTRUM
@@ -5472,7 +5479,7 @@ void HWR_RenderViewpoint(gl_portal_t *rootportal, player_t *player, int stencil_
 	{
 		if (allow_portals && rootportal)
 		{
-			HWR_PortalFrame(rootportal);// for portalclipsector, it could have gone null from search
+			HWR_PortalFrame(rootportal); // for portalclipsector, it could have gone null from search
 			HWR_PortalClipping(rootportal);
 		}
 	}
@@ -5522,7 +5529,7 @@ void HWR_RenderViewpoint(gl_portal_t *rootportal, player_t *player, int stencil_
 	PS_STOP_TIMING(ps_bsptime);
 
 	if (LIKELY(cv_glbatching.value))
-		HWR_RenderBatches();
+		HWR_RenderBatches(true);
 
 	if constexpr (Type == RenderViewpointType::kPortal)
 	{
@@ -5546,10 +5553,14 @@ void HWR_RenderViewpoint(gl_portal_t *rootportal, player_t *player, int stencil_
 	HWR_SortVisSprites();
 	PS_STOP_TIMING(ps_hw_spritesorttime);
 	PS_START_TIMING(ps_hw_spritedrawtime);
+	if (LIKELY(cv_glbatching.value))
+		HWR_StartBatching();
 	if (UNLIKELY(cv_glmdls.value))
 		HWR_DrawSprites<DrawSpritesType::kModels>();
 	else
 		HWR_DrawSprites<DrawSpritesType::kSprites>();
+	if (LIKELY(cv_glbatching.value))
+		HWR_RenderBatches(false);
 	PS_STOP_TIMING(ps_hw_spritedrawtime);
 
 	ps_numdrawnodes.value.i    = 0;
