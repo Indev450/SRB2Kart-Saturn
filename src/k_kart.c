@@ -3423,7 +3423,7 @@ boolean K_CheckSlopeRollDist(mobj_t *mobj)
 		return true;
 
 	const fixed_t rolldist = (cv_sloperolldist.value * mapobjectscale);
-	const fixed_t m_dist = (R_QuickCamDist(mobj->x, mobj->y) << FRACBITS);
+	const fixed_t m_dist = R_QuickCamDist(mobj->x, mobj->y);
 
 	return (m_dist <= rolldist);
 }
