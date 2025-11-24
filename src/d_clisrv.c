@@ -1456,12 +1456,14 @@ static inline void CL_DrawConnectionStatus(void)
 			V_DrawFill(BASEVIDWIDTH/2-128, BASEVIDHEIGHT-58, dldlength, 8, 160);
 
 			memset(tempname, 0, sizeof(tempname));
+
 			// offset filename to just the name only part
 			filename += strlen(filename) - nameonlylength(filename);
+			const size_t filenamelength = strlen(filename);
 
-			if (strlen(filename) > sizeof(tempname)-1) // too long to display fully
+			if (filenamelength > sizeof(tempname)-1) // too long to display fully
 			{
-				size_t endhalfpos = strlen(filename)-10;
+				size_t endhalfpos = filenamelength-10;
 				// display as first 14 chars + ... + last 10 chars
 				// which should add up to 27 if our math(s) is correct
 				snprintf(tempname, sizeof(tempname), "%.14s...%.10s", filename, filename+endhalfpos);

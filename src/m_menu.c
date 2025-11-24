@@ -2628,8 +2628,9 @@ static void M_DrawCenteredMenu(void)
 static inline size_t M_StringHeight(const char *string)
 {
 	size_t h = 8, i;
+	const size_t strlength = strlen(string);
 
-	for (i = 0; i < strlen(string); i++)
+	for (i = 0; i < strlength; i++)
 		if (string[i] == '\n')
 			h += 8;
 

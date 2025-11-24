@@ -238,10 +238,13 @@ void COM_ImmedExecute(const char *ptext)
 	char line[1024] = "";
 	INT32 quotes;
 
-	while (i < strlen(ptext))
+	const size_t txtlength = strlen(ptext);
+
+	while (i < txtlength)
 	{
 		quotes = 0;
-		for (j = 0; i < strlen(ptext); i++,j++)
+
+		for (j = 0; i < txtlength; i++,j++)
 		{
 			if (ptext[i] == '\"' && !quotes && i > 0 && ptext[i-1] != ' ') // Malformed command
 				return;
