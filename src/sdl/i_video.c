@@ -1558,6 +1558,10 @@ static int IsCustomResolutionInList(int list_size)
 	INT32 custom_w = cv_scr_width.value;
 	INT32 custom_h = cv_scr_height.value;
 
+	// startup
+	if (!custom_w || !custom_h)
+		return -2;
+
 	// invalid resolution
 	// dont even attempt to add it
 	if (custom_w < BASEVIDWIDTH || custom_w > MAXVIDWIDTH
