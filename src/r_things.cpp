@@ -2916,7 +2916,7 @@ boolean R_ThingWithinDist(mobj_t *thing, INT32 limit_dist)
 {
 	if (limit_dist)
 	{
-		if ((R_QuickCamDist(thing->x, thing->y) << FRACBITS)/mapobjectscale > limit_dist)
+		if (R_QuickCamDist(thing->x, thing->y)/mapobjectscale > limit_dist)
 		{
 			return false;
 		}
@@ -2960,7 +2960,7 @@ static boolean R_CheckInterpDist(T *thing)
 	if (!R_UsingFrameInterpolation())
 		return false;
 
-	const INT32 dist = R_QuickCamDist(thing->x, thing->y);
+	const INT32 dist = R_QuickCamDist(thing->x, thing->y) >> FRACBITS;
 
 	return (dist < cv_maxinterpdist.value);
 }

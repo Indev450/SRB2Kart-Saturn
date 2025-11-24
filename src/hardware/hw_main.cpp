@@ -382,7 +382,7 @@ void HWR_ObjectLightLevelPost(gl_vissprite_t *spr, const sector_t *sector, INT32
 			extralight = FixedMul(extralight, std::min(std::max(0, *lightlevel), 255) * FRACUNIT / 255);
 
 			// simple OGL approximation
-			fixed_t tr = R_QuickCamDist(spr->mobj->x, spr->mobj->y) << FRACBITS;
+			fixed_t tr = R_QuickCamDist(spr->mobj->x, spr->mobj->y);
 			fixed_t xscale = FixedDiv((vid.width / 2) << FRACBITS, tr);
 
 			// Less change in contrast at further distances, to counteract DOOM diminished light
@@ -2537,18 +2537,18 @@ static boolean HWR_CheckBBox(const fixed_t *bspcoord)
 		if (viewx < bspcoord[BOXLEFT]) // 1,4,6
 		{
 			if (viewy > bspcoord[BOXTOP]) // 1
-				mindist = R_QuickCamDist(bspcoord[BOXLEFT], bspcoord[BOXTOP]) << FRACBITS;
+				mindist = R_QuickCamDist(bspcoord[BOXLEFT], bspcoord[BOXTOP]);
 			else if (viewy < bspcoord[BOXBOTTOM]) // 6
-				mindist = R_QuickCamDist(bspcoord[BOXLEFT], bspcoord[BOXBOTTOM]) << FRACBITS;
+				mindist = R_QuickCamDist(bspcoord[BOXLEFT], bspcoord[BOXBOTTOM]);
 			else // 4
 				mindist = bspcoord[BOXLEFT] - viewx;
 		}
 		else if (viewx > bspcoord[BOXRIGHT]) // 3,5,8
 		{
 			if (viewy > bspcoord[BOXTOP]) // 3
-				mindist = R_QuickCamDist(bspcoord[BOXRIGHT], bspcoord[BOXTOP]) << FRACBITS;
+				mindist = R_QuickCamDist(bspcoord[BOXRIGHT], bspcoord[BOXTOP]);
 			else if (viewy < bspcoord[BOXBOTTOM]) // 8
-				mindist = R_QuickCamDist(bspcoord[BOXRIGHT], bspcoord[BOXBOTTOM]) << FRACBITS;
+				mindist = R_QuickCamDist(bspcoord[BOXRIGHT], bspcoord[BOXBOTTOM]);
 			else // 5
 				mindist = viewx - bspcoord[BOXRIGHT];
 		}
