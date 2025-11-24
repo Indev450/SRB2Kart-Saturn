@@ -2350,7 +2350,7 @@ static void M_DrawGenericMenu(void)
 
 static void M_DrawGenericBackgroundMenu(void)
 {
-	V_DrawPatchFill((patch_t *)W_CachePatchName("SRB2BACK", PU_PATCH));
+	V_DrawPatchFill(srb2back);
 	M_DrawGenericMenu();
 }
 
@@ -2923,7 +2923,7 @@ static void M_DrawMessageMenu(void)
 
 	// hack: draw RA background in RA menus
 	if (gamestate == GS_TIMEATTACK)
-		V_DrawPatchFill((patch_t *)W_CachePatchName("SRB2BACK", PU_PATCH));
+		V_DrawPatchFill(srb2back);
 
 	M_DrawTextBox(currentMenu->x, y - 8, (max+7)>>3, mlines);
 
@@ -4320,7 +4320,7 @@ static void M_DrawReplayHut(void)
 
 	static UINT16 replayhutmenuy = 0;
 
-	V_DrawPatchFill((patch_t *)W_CachePatchName("SRB2BACK", PU_PATCH));
+	V_DrawPatchFill(srb2back);
 
 	if (cv_vhseffect.value)
 		V_DrawVhsEffect(false);
@@ -5959,7 +5959,7 @@ void M_DrawTimeAttackMenu(void)
 
 	//S_ChangeMusicInternal("racent", true); // Eww, but needed for when user hits escape during demo playback
 
-	V_DrawPatchFill((patch_t *)W_CachePatchName("SRB2BACK", PU_PATCH));
+	V_DrawPatchFill(srb2back);
 
 	M_DrawMenuTitle();
 	if (currentMenu == &SP_TimeAttackDef)

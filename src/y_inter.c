@@ -61,8 +61,6 @@ typedef struct
 static y_data_t data;
 
 // graphics
-static patch_t *bgtile = NULL;      // SPECTILE/SRB2BACK
-
 static INT32 timer;
 
 static INT32 intertic;
@@ -446,7 +444,7 @@ void Y_IntermissionDrawer(void)
 	|| (rendermode == render_opengl && cv_glscreentextures.value != 2) // use the neato kart bg for intermission on disabled screen textures
 #endif
 	)
-		V_DrawPatchFill(bgtile); // use the neato kart bg for intermission on disabled screen textures
+		V_DrawPatchFill(srb2back); // use the neato kart bg for intermission on disabled screen textures
 	else
 	{
 		if (rendermode == render_soft)
@@ -787,9 +785,6 @@ void Y_StartIntermission(void)
 		default:
 			break;
 	}
-
-	if (rendermode != render_none)
-		bgtile = W_CachePatchName("SRB2BACK", PU_PATCH_LOWPRIORITY);
 
 	LUA_HUD_DestroyDrawList(luahuddrawlist_intermission);
 	luahuddrawlist_intermission = LUA_HUD_CreateDrawList();
