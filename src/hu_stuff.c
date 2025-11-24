@@ -88,6 +88,8 @@ patch_t *ranknum[10] = {}; // rank numbers
 patch_t *framecounter = NULL;
 patch_t *frameslash = NULL;	// framerate stuff. Used in screen.c
 
+patch_t *srb2back = NULL;
+
 static player_t *plr = NULL;
 boolean chat_on = false; // entering a chat message?
 static char w_chat_buf[HU_MAXMSGLEN + 1];
@@ -98,7 +100,7 @@ static char hu_tick;
 static tic_t hu_emoteanim = 0;
 emote_autocomplete_t emote_autocomplete = {0};
 
-static huddrawlist_h luahuddrawlist_scores;
+static huddrawlist_h luahuddrawlist_scores = NULL;
 
 patch_t *rflagico = NULL;
 patch_t *bflagico = NULL;
@@ -290,6 +292,7 @@ void HU_LoadGraphics(void)
 		return;
 
 	j = HU_FONTSTART;
+
 	for (i = 0; i < HU_FONTSIZE; i++, j++)
 	{
 		// cache the heads-up font for entire game execution
@@ -360,21 +363,21 @@ void HU_LoadGraphics(void)
 			cred_font[i] = (patch_t *)W_CachePatchName(buffer, PU_HUDGFX);
 	}
 
-	//cache numbers too!
+	// cache numbers too!
 	for (i = 0; i < 10; i++)
 	{
 		sprintf(buffer, "STTNUM%d", i);
 		tallnum[i] = (patch_t *)W_CachePatchName(buffer, PU_HUDGFX);
 		sprintf(buffer, "PINGN%d", i);
-		pingnum[i] = (patch_t *) W_CachePatchName(buffer, PU_HUDGFX);
+		pingnum[i] = (patch_t *)W_CachePatchName(buffer, PU_HUDGFX);
 		sprintf(buffer, "OPPRNK0%d", i);
-		ranknum[i] = (patch_t *) W_CachePatchName(buffer, PU_HUDGFX);
+		ranknum[i] = (patch_t *)W_CachePatchName(buffer, PU_HUDGFX);
 	}
 
 	// minus for negative tallnums
 	tallminus = (patch_t *)W_CachePatchName("STTMINUS", PU_HUDGFX);
 
-	songcreditbg = W_CachePatchName("K_SONGCR", PU_HUDGFX);
+	songcreditbg = (patch_t *)W_CachePatchName("K_SONGCR", PU_HUDGFX);
 
 	// cache ping gfx:
 	for (i = 0; i < 5; i++)
@@ -383,12 +386,15 @@ void HU_LoadGraphics(void)
 		pinggfx[i] = (patch_t *)W_CachePatchName(buffer, PU_HUDGFX);
 	}
 
-	pingmeasure[0] = W_CachePatchName("PINGD", PU_HUDGFX);
-	pingmeasure[1] = W_CachePatchName("PINGMS", PU_HUDGFX);
+	pingmeasure[0] = (patch_t *)W_CachePatchName("PINGD", PU_HUDGFX);
+	pingmeasure[1] = (patch_t *)W_CachePatchName("PINGMS", PU_HUDGFX);
 
 	// fps stuff
-	framecounter = W_CachePatchName("FRAMER", PU_HUDGFX);
-	frameslash  = W_CachePatchName("FRAMESL", PU_HUDGFX);
+	framecounter = (patch_t *)W_CachePatchName("FRAMER", PU_HUDGFX);
+	frameslash  = (patch_t *)W_CachePatchName("FRAMESL", PU_HUDGFX);
+
+	// idk where else to put this lul
+	srb2back = (patch_t *)W_CachePatchName("SRB2BACK", PU_HUDGFX);
 }
 
 // Initialise Heads up
@@ -405,8 +411,10 @@ void HU_Init(void)
 	// set shift translation table
 	shiftxform = english_shiftxform;
 
-	luahuddrawlist_scores = LUA_HUD_CreateDrawList();
+	if (dedicated || rendermode == render_none)
+		return;
 
+	luahuddrawlist_scores = LUA_HUD_CreateDrawList();
 	HU_LoadGraphics();
 }
 

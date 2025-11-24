@@ -61,8 +61,6 @@ typedef struct
 static y_data_t data;
 
 // graphics
-static patch_t *bgtile = NULL;      // SPECTILE/SRB2BACK
-
 static INT32 timer;
 
 static INT32 intertic;
@@ -446,7 +444,7 @@ void Y_IntermissionDrawer(void)
 	|| (rendermode == render_opengl && cv_glscreentextures.value != 2) // use the neato kart bg for intermission on disabled screen textures
 #endif
 	)
-		V_DrawPatchFill(bgtile); // use the neato kart bg for intermission on disabled screen textures
+		V_DrawPatchFill(srb2back); // use the neato kart bg for intermission on disabled screen textures
 	else
 	{
 		if (rendermode == render_soft)
@@ -753,7 +751,7 @@ void Y_StartIntermission(void)
 	}
 
 	// This should always exist, but just in case...
-	if(!mapheaderinfo[prevmap])
+	if (!mapheaderinfo[prevmap])
 		P_AllocMapHeader(prevmap);
 
 	switch (intertype)
@@ -782,16 +780,16 @@ void Y_StartIntermission(void)
 			Y_CalculateMatchData(0, Y_CompareRace);
 			break;
 		}
-
 		case int_none:
 		default:
 			break;
 	}
 
-	bgtile = W_CachePatchName("SRB2BACK", PU_PATCH_LOWPRIORITY);
-
-	LUA_HUD_DestroyDrawList(luahuddrawlist_intermission);
-	luahuddrawlist_intermission = LUA_HUD_CreateDrawList();
+	if (rendermode != render_none)
+	{
+		LUA_HUD_DestroyDrawList(luahuddrawlist_intermission);
+		luahuddrawlist_intermission = LUA_HUD_CreateDrawList();
+	}
 }
 
 // ======
@@ -1537,7 +1535,7 @@ void Y_StartVote(void)
 			levelinfo[i].gts = NULL;
 
 		// set up the pic
-		if (!dedicated)
+		if (rendermode != render_none)
 		{
 			lumpnum = W_CheckNumForName(va("%sP", G_BuildMapName(votelevels[i][0]+1)));
 			if (lumpnum != LUMPERROR)
