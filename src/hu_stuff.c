@@ -588,12 +588,12 @@ static void DoSayCommand(SINT8 target, size_t usedargs, UINT8 flags)
 	}
 
 	// Only servers/admins can CSAY.
-	if(!server && !(IsPlayerAdmin(consoleplayer)))
+	if (!server && !(IsPlayerAdmin(consoleplayer)))
 		flags &= ~HU_CSAY;
 
 	// We handle HU_SERVER_SAY, not the caller.
 	flags &= ~HU_SERVER_SAY;
-	if(dedicated && !(flags & HU_CSAY))
+	if (dedicated && !(flags & HU_CSAY))
 		flags |= HU_SERVER_SAY;
 
 	buf[0] = target;
@@ -607,17 +607,20 @@ static void DoSayCommand(SINT8 target, size_t usedargs, UINT8 flags)
 		strlcat(msg, COM_Argv(ix + usedargs), msgspace);
 	}
 
-	if (strlen(msg) > 4 && strnicmp(msg, "/pm", 3) == 0) // used /pm
+	const size_t msglength = strlen(msg);
+
+	if (msglength > 4 && strnicmp(msg, "/pm", 3) == 0) // used /pm
 	{
 		// what we're gonna do now is check if the node exists
 		// with that logic, characters 4 and 5 are our numbers:
 		const char *newmsg;
 		INT32 spc = 1; // used if nodenum[1] is a space.
-		char *nodenum = (char*) malloc(3);
+		CLEANUP(pfree) char *nodenum = (char*) malloc(3);
 		memcpy(nodenum, msg+3, 2);
 		nodenum[2] = '\0';
+
 		// check for undesirable characters in our "number"
-		if 	(((nodenum[0] < '0') || (nodenum[0] > '9')) || ((nodenum[1] < '0') || (nodenum[1] > '9')))
+		if (((nodenum[0] < '0') || (nodenum[0] > '9')) || ((nodenum[1] < '0') || (nodenum[1] > '9')))
 		{
 			// check if nodenum[1] is a space
 			if (nodenum[1] == ' ')
@@ -626,23 +629,21 @@ static void DoSayCommand(SINT8 target, size_t usedargs, UINT8 flags)
 			else
 			{
 				HU_AddChatText("\x82NOTICE: \x80Invalid command format. Correct format is \'/pm<node> \'.", false);
-				free(nodenum);
 				return;
 			}
 		}
+
 		// I'm very bad at C, I swear I am, additional checks eww!
 		if (spc != 0)
 		{
 			if (msg[5] != ' ')
 			{
 				HU_AddChatText("\x82NOTICE: \x80Invalid command format. Correct format is \'/pm<node> \'.", false);
-				free(nodenum);
 				return;
 			}
 		}
 
 		target = atoi((const char*) nodenum); // turn that into a number
-		free(nodenum);
 		//CONS_Printf("%d\n", target);
 
 		// check for target player, if it doesn't exist then we can't send the message!
@@ -653,12 +654,13 @@ static void DoSayCommand(SINT8 target, size_t usedargs, UINT8 flags)
 			HU_AddChatText(va("\x82NOTICE: \x80Player %d does not exist.", target), false); // same
 			return;
 		}
+
 		buf[0] = target;
 		newmsg = msg+5+spc;
 		strlcpy(msg, newmsg, HU_MAXMSGLEN + 1);
 	}
 
-	SendNetXCmd(XD_SAY, buf, strlen(msg) + 1 + msg-buf);
+	SendNetXCmd(XD_SAY, buf, msglength + 1 + msg-buf);
 }
 
 /** Send a message to everyone.
@@ -909,10 +911,12 @@ static void Got_Saycmd(const UINT8 **p, INT32 playernum)
 		return;
 	}
 
+	const size_t msglength = strlen(msg);
+
 	//check for invalid characters (0x80 or above)
 	{
 		size_t i;
-		const size_t j = strlen(msg);
+		const size_t j = msglength;
 		for (i = 0; i < j; i++)
 		{
 			if (msg[i] & 0x80)
@@ -959,7 +963,7 @@ static void Got_Saycmd(const UINT8 **p, INT32 playernum)
 	}
 
 	// Handle "/me" actions, but only in messages to everyone.
-	if (target == 0 && strlen(msg) > 4 && strnicmp(msg, "/me ", 4) == 0)
+	if (target == 0 && msglength > 4 && strnicmp(msg, "/me ", 4) == 0)
 	{
 		msg += 4;
 		action = true;
@@ -1141,10 +1145,12 @@ static boolean HU_clearChatSpaces(void)
 	size_t i = 0; // Used to just check our message
 	char c; // current character we're iterating.
 	boolean nothingbutspaces = true;
+	const size_t chatlength = strlen(w_chat_buf);
 
-	for (; i < strlen(w_chat_buf); i++) // iterate through message and eradicate all spaces that don't belong.
+	for (; i < chatlength; i++) // iterate through message and eradicate all spaces that don't belong.
 	{
 		c = w_chat_buf[i];
+
 		if (!c)
 			break; // if there's nothing, it's safe to assume our message has ended, so let's not waste any more time here.
 
@@ -1153,6 +1159,7 @@ static boolean HU_clearChatSpaces(void)
 			nothingbutspaces = false;
 		}
 	}
+
 	return nothingbutspaces;
 }
 
@@ -1199,11 +1206,11 @@ static void HU_SendChatMessage(void)
 		return;
 	}
 
-	size_t len = strlen(msg);
+	const size_t msglength = strlen(msg);
 
-	if (len >= 5 && strnicmp(msg, "/mute", 5) == 0) // Used /mute
+	if (msglength >= 5 && strnicmp(msg, "/mute", 5) == 0) // Used /mute
 	{
-		if (len > 6)
+		if (msglength > 6)
 			DoMute(msg+6);
 		else
 			HU_AddChatText("\x82NOTICE: \x80Usage: /mute <name|node>", false);
@@ -1211,7 +1218,7 @@ static void HU_SendChatMessage(void)
 		return;
 	}
 
-	if (len > 4 && strnicmp(msg, "/pm", 3) == 0) // used /pm
+	if (msglength > 4 && strnicmp(msg, "/pm", 3) == 0) // used /pm
 	{
 		INT32 spc = 1; // used if nodenum[1] is a space.
 		const char *newmsg;
@@ -1985,7 +1992,7 @@ static void HU_DrawChat(void)
 			longest_name_length = max(longest_name_length, strlen(player_names[i]));
 		}
 
-		for(i = 0; i < MAXPLAYERS; i++)
+		for (i = 0; i < MAXPLAYERS; i++)
 		{
 			if (!playeringame[i])
 				continue;
