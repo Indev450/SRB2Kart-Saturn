@@ -3025,7 +3025,8 @@ tryagain:
 
 void G_AddMapToBuffer(INT16 map)
 {
-	INT16 bufx, refreshnum = max(0, TOLMaps(G_TOLFlag(gametype))-3);
+	const INT32 tolmaps = TOLMaps(G_TOLFlag(gametype));
+	INT16 bufx, refreshnum = max(0, tolmaps-3);
 
 	// Add the map to the buffer.
 	for (bufx = NUMMAPS-1; bufx > 0; bufx--)
@@ -3438,7 +3439,7 @@ void G_LoadGameData(void)
 	INT32 i, j;
 	UINT8 modded = false;
 	UINT8 rtemp;
-	savebuffer_t save;
+	savebuffer_t save = {0};
 
 	//For records
 	tic_t rectime;
@@ -3571,7 +3572,7 @@ void G_SaveGameData(boolean force)
 	size_t length;
 	INT32 i, j;
 	UINT8 btemp;
-	savebuffer_t save;
+	savebuffer_t save = {0};
 	(void)force;
 	char backupfile[MAX_WADPATH+4];
 
@@ -3742,7 +3743,7 @@ void G_LoadGame(UINT32 slot, INT16 mapoverride)
 	size_t length;
 	char vcheck[VERSIONSIZE];
 	char savename[255];
-	savebuffer_t save;
+	savebuffer_t save = {0};
 
 	// memset savedata to all 0, fixes calling perfectly valid saves corrupt because of bots
 	memset(&savedata, 0, sizeof(savedata));
@@ -3828,7 +3829,7 @@ void G_SaveGame(UINT32 savegameslot)
 	boolean saved;
 	char savename[256] = "";
 	const char *backup;
-	savebuffer_t save;
+	savebuffer_t save = {0};
 
 	sprintf(savename, savegamename, savegameslot);
 	backup = va("%s",savename);

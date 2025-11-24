@@ -121,7 +121,7 @@ UINT32 realpingtable[MAXPLAYERS] = {}; //the base table of ping where an average
 UINT32 playerpingtable[MAXPLAYERS] = {}; //table of player latency values.
 
 #define GENTLEMANSMOOTHING (TICRATE)
-static tic_t reference_lag;
+static tic_t reference_lag = 0;
 static UINT8 spike_time;
 tic_t lowest_lag = 0;
 tic_t simulated_lag = 0;
@@ -505,10 +505,12 @@ static void ExtraDataTicker(void)
 	}
 
 	// If you are a client, you can safely forget the net commands for this tic
-	// If you are the server, you need to remember them until every client has been aknowledged,
-	// because if you need to resend a PT_SERVERTICS packet, you need to put the commands in it
+	// If you are the server, you need to remember them until every client has been acknowledged,
+	// because if you need to resend a PT_SERVERTICS packet, you will need to put the commands in it
 	if (client)
+	{
 		D_FreeTextcmd(gametic);
+	}
 }
 
 static void D_Clearticcmd(tic_t tic)
@@ -1367,10 +1369,19 @@ static inline void CL_DrawConnectionStatus(void)
 				V_DrawThinString(12 + 80, 58, V_ALLOWLOWERCASE|V_YELLOWMAP, "Vanilla");
 			}
 
-			if (serverlist[joinnode].info.cheatsenabled)
+			const UINT8 serverkartspeed = (serverlist[joinnode].info.kartvars & SV_SPEEDMASK);
+
+			if (serverkartspeed == 2)
+				V_DrawRightAlignedThinString(BASEVIDWIDTH - 12, 58, V_ALLOWLOWERCASE|V_REDMAP, "Hard Speed");
+			else if (serverkartspeed == 1)
+				V_DrawRightAlignedThinString(BASEVIDWIDTH - 12, 58, V_ALLOWLOWERCASE|V_BLUEMAP, "Normal Speed");
+			else
+				V_DrawRightAlignedThinString(BASEVIDWIDTH - 12, 58, V_ALLOWLOWERCASE|V_GREENMAP, "Easy Speed");
+
+			/*if (serverlist[joinnode].info.cheatsenabled)
 			{
 				V_DrawRightAlignedThinString(BASEVIDWIDTH - 12, 58, V_ALLOWLOWERCASE|V_GREENMAP, "Cheats");
-			}
+			}*/
 
 			V_DrawFill(8, 72, BASEVIDWIDTH - 16, 112, 239);
 
@@ -1390,10 +1401,16 @@ static inline void CL_DrawConnectionStatus(void)
 					if (playerinfo[i].node < 255)
 					{
 						strncpy(player_name, playerinfo[i].name, MAXPLAYERNAME);
-						V_DrawThinString(x + 10, y, V_ALLOWLOWERCASE|V_6WIDTHSPACE, player_name);
+
+						// if we get a skin color
+						// try to colourize the player name
+						if (playerinfo[i].data > 0 && playerinfo[i].data < MAXSKINCOLORS)
+							V_DrawThinString(x + 10, y, V_ALLOWLOWERCASE|V_6WIDTHSPACE, va("%s%s ", HU_SkinColorToConsoleColor(playerinfo[i].data), player_name));
+						else
+							V_DrawThinString(x + 10, y, V_ALLOWLOWERCASE|V_6WIDTHSPACE, player_name);
 
 						if (playerinfo[i].team == 0) { statuscolor = 184; } // playing
-						if (playerinfo[i].data & 0x20) { statuscolor = 86; } // tag IT
+						//if (playerinfo[i].data & 0x20) { statuscolor = 86; } // tag IT
 						if (playerinfo[i].team == 1) { statuscolor = 128; } // ctf red team
 						if (playerinfo[i].team == 2) { statuscolor = 232; } // ctf blue team
 						if (playerinfo[i].team == 255) { statuscolor = 16; } // spectator or non-team
@@ -1736,16 +1753,19 @@ static void SV_SendPlayerInfo(INT32 node)
 
 		// Extra data
 		// Kart has extra skincolors, so we can't use this
-		netbuffer->u.playerinfo[i].data = 0; //netbuffer->u.playerinfo[i].data = players[i].skincolor;
+		//netbuffer->u.playerinfo[i].data = 0; //netbuffer->u.playerinfo[i].data = players[i].skincolor;
 
-		if (players[i].pflags & PF_TAGIT)
-			netbuffer->u.playerinfo[i].data |= 0x20;
+		// well why not, we only got like 100 of these?
+		netbuffer->u.playerinfo[i].data = players[i].skincolor;
 
-		if (players[i].gotflag)
-			netbuffer->u.playerinfo[i].data |= 0x40;
+		//if (players[i].pflags & PF_TAGIT)
+			//netbuffer->u.playerinfo[i].data |= 0x20;
 
-		if (players[i].powers[pw_super])
-			netbuffer->u.playerinfo[i].data |= 0x80;
+		//if (players[i].gotflag)
+			//netbuffer->u.playerinfo[i].data |= 0x40;
+
+		//if (players[i].powers[pw_super])
+			//netbuffer->u.playerinfo[i].data |= 0x80;
 	}
 
 	HSendPacket(node, false, 0, sizeof(plrinfo) * MSCOMPAT_MAXPLAYERS);
@@ -1928,7 +1948,7 @@ static boolean SV_ResendingSavegameToAnyone(void)
 static void SV_SendSaveGame(INT32 node, boolean resending)
 {
 	size_t length, compressedlen;
-	savebuffer_t save;
+	savebuffer_t save = {0};
 	UINT8 *compressedsave;
 	UINT8 *buffertosend;
 
@@ -1998,7 +2018,7 @@ static consvar_t cv_dumpconsistency = {"dumpconsistency", "Off", CV_NETVAR, CV_O
 static void SV_SavedGame(void)
 {
 	size_t length;
-	savebuffer_t save;
+	savebuffer_t save = {0};
 	char tmpsave[264];
 
 	if (!cv_dumpconsistency.value)
@@ -2038,7 +2058,7 @@ static void SV_SavedGame(void)
 
 static void CL_LoadReceivedSavegame(boolean reloading)
 {
-	savebuffer_t save;
+	savebuffer_t save = {0};
 	size_t length, decompressedlen;
 	char tmpsave[264];
 
@@ -7221,7 +7241,7 @@ void CL_ClearRewinds(void)
 
 rewind_t *CL_SaveRewindPoint(size_t demopos)
 {
-	savebuffer_t save;
+	savebuffer_t save = {0};
 	rewind_t *rewind;
 
 	if (rewindhead && rewindhead->leveltime + REWIND_POINT_INTERVAL > leveltime)
@@ -7244,7 +7264,7 @@ rewind_t *CL_SaveRewindPoint(size_t demopos)
 
 rewind_t *CL_RewindToTime(tic_t time)
 {
-	savebuffer_t save;
+	savebuffer_t save = {0};
 	rewind_t *rewind;
 
 	while (rewindhead && rewindhead->leveltime > time)

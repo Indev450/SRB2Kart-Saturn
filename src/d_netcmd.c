@@ -5690,7 +5690,7 @@ static void Command_Togglemodified_f(void)
 
 static void Command_Archivetest_f(void)
 {
-	savebuffer_t save;
+	savebuffer_t save = {0};
 	UINT32 i, wrote;
 	thinker_t *th;
 	if (gamestate != GS_LEVEL)
