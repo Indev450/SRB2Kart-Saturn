@@ -433,10 +433,7 @@ fixed_t R_ScaleFromGlobalAngle(angle_t visangle)
 	if (den > num>>16)
 	{
 		num = FixedDiv(num, den);
-		if (num > 64*FRACUNIT)
-			return 64*FRACUNIT;
-		if (num < 256)
-			return 256;
+		num = CLAMP(num, 256, 64*FRACUNIT);
 		return num;
 	}
 	return 64*FRACUNIT;
@@ -449,8 +446,8 @@ line_t *R_GetFFloorLine(const line_t *line, const ffloor_t *pfloor, const sector
 		size_t linenum = std::min<size_t>((size_t)(line - sector->lines[0]), pfloor->master->frontsector->linecount);
 		return pfloor->master->frontsector->lines[0] + linenum;
 	}
-	else
-		return pfloor->master;
+
+	return pfloor->master;
 }
 
 side_t *R_GetFFloorSide(const line_t *line, const ffloor_t *pfloor, const sector_t *sector)
@@ -460,8 +457,8 @@ side_t *R_GetFFloorSide(const line_t *line, const ffloor_t *pfloor, const sector
 		line_t *newline = R_GetFFloorLine(line, pfloor, sector);
 		return &sides[newline->sidenum[0]];
 	}
-	else
-		return &sides[pfloor->master->sidenum[0]];
+
+	return &sides[pfloor->master->sidenum[0]];
 }
 
 //
@@ -1095,7 +1092,7 @@ subsector_t *R_IsPointInSubsector(fixed_t x, fixed_t y)
 // R_SetupFrame
 //
 
-mobj_t *viewmobj;
+mobj_t *viewmobj = NULL;
 
 static void R_SetupCommonFrame(player_t * player, sector_t * sector)
 {
@@ -1258,13 +1255,7 @@ void R_SetupFrame(UINT8 pnum, boolean skybox)
 
 	R_SetViewContext(static_cast<viewcontext_e>(VIEWCONTEXT_PLAYER1 + pnum));
 
-	if (thiscam->reset)
-	{
-		R_ResetViewInterpolation(pnum);
-		thiscam->reset = false;
-	}
-
-	if (player->spectator || thiscam->freecam)
+	if (player->spectator || (thiscam && thiscam->freecam))
 	{
 		// Free flying spectator uses demo freecam. This
 		// requires chasecam to be enabled.
@@ -1274,13 +1265,22 @@ void R_SetupFrame(UINT8 pnum, boolean skybox)
 	if (player->playerstate == PST_DEAD || player->exiting)
 		chasecam = true; // force chasecam on
 
-	if (chasecam && (thiscam && !thiscam->chase))
+	if (thiscam)
 	{
-		P_ResetCamera(player, thiscam);
-		thiscam->chase = true;
+		if (thiscam->reset)
+		{
+			R_ResetViewInterpolation(pnum);
+			thiscam->reset = false;
+		}
+
+		if (chasecam && !thiscam->chase)
+		{
+			P_ResetCamera(player, thiscam);
+			thiscam->chase = true;
+		}
+		else if (!chasecam)
+			thiscam->chase = false;
 	}
-	else if (thiscam && !chasecam)
-		thiscam->chase = false;
 
 	newview->sky = !skybox;
 

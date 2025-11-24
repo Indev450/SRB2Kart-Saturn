@@ -120,8 +120,8 @@ void HWR_PortalFrame(gl_portal_t* portal)
 	viewz = portal->viewz;
 
 	viewangle = portal->viewangle;
-	viewsin = FINESINE(viewangle>>ANGLETOFINESHIFT);
-	viewcos = FINECOSINE(viewangle>>ANGLETOFINESHIFT);
+	//viewsin = FINESINE(viewangle>>ANGLETOFINESHIFT);
+	//viewcos = FINECOSINE(viewangle>>ANGLETOFINESHIFT);
 
 	if (portal->clipline != -1)
 	{

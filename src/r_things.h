@@ -67,6 +67,7 @@ FUNCINLINE static ATTRINLINE INT32 R_ThingLightLevel(mobj_t* thing)
 {
 	return (INT32)thing->lightlevel;
 }
+
 fixed_t R_GetSpriteDirectionalLighting(angle_t angle);
 
 fixed_t R_GetShadowZ(mobj_t *thing, pslope_t **shadowslope);

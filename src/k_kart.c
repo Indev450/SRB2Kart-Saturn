@@ -6168,6 +6168,7 @@ static void K_KartDrift(player_t *player, boolean onground)
 	else
 		player->kartstuff[k_brakedrift] = 0;
 }
+
 //
 // K_KartUpdatePosition
 //
@@ -6226,7 +6227,7 @@ void K_KartUpdatePosition(player_t *player)
 
 						if ((isprevcheckpointp || isnextcheckpointp) && (!mo->movecount || mo->movecount == player->laps+1))
 						{
-							pmo = P_AproxDistance(P_AproxDistance(	mo->x - player->mo->x,
+							pmo = P_AproxDistance(P_AproxDistance(  mo->x - player->mo->x,
 																	mo->y - player->mo->y),
 																	mo->z - player->mo->z) / FRACUNIT;
 

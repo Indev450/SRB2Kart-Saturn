@@ -2087,13 +2087,17 @@ static void P_ProcessLineSpecial(line_t *line, mobj_t *mo, sector_t *callsec)
 				// Seek offset from current song position
 				if (line->flags & ML_EFFECT1)
 				{
+					const UINT32 muslength = S_GetMusicLength();
+					const UINT32 muspos = S_GetMusicPosition();
+					const UINT32 muslooppoint = S_GetMusicLoopPoint();
+
 					// adjust for loop point if subtracting
-					if (position < 0 && S_GetMusicLength() &&
-						S_GetMusicPosition() > S_GetMusicLoopPoint() &&
-						S_GetMusicPosition() + position < S_GetMusicLoopPoint())
-						position = max(S_GetMusicLength() - (S_GetMusicLoopPoint() - (S_GetMusicPosition() + position)), 0);
+					if (position < 0 && muslength &&
+						muspos > muslooppoint &&
+						muspos + position < muslooppoint)
+						position = max(muslength - (muslooppoint - (muspos + position)), 0);
 					else
-						position = max(S_GetMusicPosition() + position, 0);
+						position = max(muspos + position, 0);
 				}
 
 				// Fade current music to target volume (if music won't be changed)
@@ -2160,11 +2164,13 @@ static void P_ProcessLineSpecial(line_t *line, mobj_t *mo, sector_t *callsec)
 
 				if (sfxnum == sfx_None)
 					return; // Do nothing!
+
 				if (sfxnum < sfx_None || sfxnum >= NUMSFX)
 				{
 					CONS_Debug(DBG_GAMELOGIC, "Line type 414 Executor: sfx number %d is invalid!\n", sfxnum);
 					return;
 				}
+
 				if (line->tag != 0) // Do special stuff only if a non-zero linedef tag is set
 				{
 					if (line->flags & ML_EFFECT5) // Repeat Midtexture

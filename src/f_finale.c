@@ -319,6 +319,7 @@ void F_IntroTicker(void)
 			D_StartTitle();
 			return;
 		}
+
 		if (finalecount == 8)
 			S_StartSound(NULL, sfx_vroom);
 		else if (finalecount == 47)
@@ -697,7 +698,7 @@ void F_CreditTicker(void)
 	// Draw credits text on top
 	for (i = 0; credits[i]; i++)
 	{
-		switch(credits[i][0])
+		switch (credits[i][0])
 		{
 			case 0: y += 80<<FRACBITS; break;
 			case 1: y += 30<<FRACBITS; break;
