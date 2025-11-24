@@ -121,7 +121,7 @@ UINT32 realpingtable[MAXPLAYERS] = {}; //the base table of ping where an average
 UINT32 playerpingtable[MAXPLAYERS] = {}; //table of player latency values.
 
 #define GENTLEMANSMOOTHING (TICRATE)
-static tic_t reference_lag;
+static tic_t reference_lag = 0;
 static UINT8 spike_time;
 tic_t lowest_lag = 0;
 tic_t simulated_lag = 0;
@@ -505,10 +505,12 @@ static void ExtraDataTicker(void)
 	}
 
 	// If you are a client, you can safely forget the net commands for this tic
-	// If you are the server, you need to remember them until every client has been aknowledged,
-	// because if you need to resend a PT_SERVERTICS packet, you need to put the commands in it
+	// If you are the server, you need to remember them until every client has been acknowledged,
+	// because if you need to resend a PT_SERVERTICS packet, you will need to put the commands in it
 	if (client)
+	{
 		D_FreeTextcmd(gametic);
+	}
 }
 
 static void D_Clearticcmd(tic_t tic)
@@ -1928,7 +1930,7 @@ static boolean SV_ResendingSavegameToAnyone(void)
 static void SV_SendSaveGame(INT32 node, boolean resending)
 {
 	size_t length, compressedlen;
-	savebuffer_t save;
+	savebuffer_t save = {0};
 	UINT8 *compressedsave;
 	UINT8 *buffertosend;
 
@@ -1998,7 +2000,7 @@ static consvar_t cv_dumpconsistency = {"dumpconsistency", "Off", CV_NETVAR, CV_O
 static void SV_SavedGame(void)
 {
 	size_t length;
-	savebuffer_t save;
+	savebuffer_t save = {0};
 	char tmpsave[264];
 
 	if (!cv_dumpconsistency.value)
@@ -2038,7 +2040,7 @@ static void SV_SavedGame(void)
 
 static void CL_LoadReceivedSavegame(boolean reloading)
 {
-	savebuffer_t save;
+	savebuffer_t save = {0};
 	size_t length, decompressedlen;
 	char tmpsave[264];
 
@@ -7221,7 +7223,7 @@ void CL_ClearRewinds(void)
 
 rewind_t *CL_SaveRewindPoint(size_t demopos)
 {
-	savebuffer_t save;
+	savebuffer_t save = {0};
 	rewind_t *rewind;
 
 	if (rewindhead && rewindhead->leveltime + REWIND_POINT_INTERVAL > leveltime)
@@ -7244,7 +7246,7 @@ rewind_t *CL_SaveRewindPoint(size_t demopos)
 
 rewind_t *CL_RewindToTime(tic_t time)
 {
-	savebuffer_t save;
+	savebuffer_t save = {0};
 	rewind_t *rewind;
 
 	while (rewindhead && rewindhead->leveltime > time)
