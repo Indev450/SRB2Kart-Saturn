@@ -100,7 +100,7 @@ static char hu_tick;
 static tic_t hu_emoteanim = 0;
 emote_autocomplete_t emote_autocomplete = {0};
 
-static huddrawlist_h luahuddrawlist_scores;
+static huddrawlist_h luahuddrawlist_scores = NULL;
 
 patch_t *rflagico = NULL;
 patch_t *bflagico = NULL;
@@ -411,8 +411,10 @@ void HU_Init(void)
 	// set shift translation table
 	shiftxform = english_shiftxform;
 
-	luahuddrawlist_scores = LUA_HUD_CreateDrawList();
+	if (dedicated || rendermode == render_none)
+		return;
 
+	luahuddrawlist_scores = LUA_HUD_CreateDrawList();
 	HU_LoadGraphics();
 }
 

@@ -780,14 +780,16 @@ void Y_StartIntermission(void)
 			Y_CalculateMatchData(0, Y_CompareRace);
 			break;
 		}
-
 		case int_none:
 		default:
 			break;
 	}
 
-	LUA_HUD_DestroyDrawList(luahuddrawlist_intermission);
-	luahuddrawlist_intermission = LUA_HUD_CreateDrawList();
+	if (rendermode != render_none)
+	{
+		LUA_HUD_DestroyDrawList(luahuddrawlist_intermission);
+		luahuddrawlist_intermission = LUA_HUD_CreateDrawList();
+	}
 }
 
 // ======
