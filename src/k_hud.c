@@ -4430,8 +4430,10 @@ static void K_drawLapStartAnim(void)
 	UINT8 *colormap = R_GetTranslationColormap(TC_DEFAULT, K_GetHudColor(), GTC_CACHE);
 	INT32 vflags = V_SNAPTOTOP|V_HUDTRANS;
 
-	fixed_t slideout = max(0, 32*(((progress - 76)*FRACUNIT) + R_GetTimeFrac(RTF_LEVEL)));
-	fixed_t slidein = max(0, 32*(((stplyr->kartstuff[k_lapanimation] - 76)*FRACUNIT) - R_GetTimeFrac(RTF_LEVEL)));
+	fixed_t slideout = 32*(((progress - 76)*FRACUNIT) + R_GetTimeFrac(RTF_LEVEL));
+	slideout = max(0, slideout);
+	fixed_t slidein = 32*(((stplyr->kartstuff[k_lapanimation] - 76)*FRACUNIT) - R_GetTimeFrac(RTF_LEVEL));
+	slidein = max(0, slidein);
 
 	// First, draw the emblem and hand
 	INT32 emblemx = (BASEVIDWIDTH << (FRACBITS - 1)) + slidein;

@@ -3025,7 +3025,8 @@ tryagain:
 
 void G_AddMapToBuffer(INT16 map)
 {
-	INT16 bufx, refreshnum = max(0, TOLMaps(G_TOLFlag(gametype))-3);
+	const INT32 tolmaps = TOLMaps(G_TOLFlag(gametype));
+	INT16 bufx, refreshnum = max(0, tolmaps-3);
 
 	// Add the map to the buffer.
 	for (bufx = NUMMAPS-1; bufx > 0; bufx--)

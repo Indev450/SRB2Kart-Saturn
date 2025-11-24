@@ -214,12 +214,11 @@ UINT8 P_GetNextEmerald(void)
 		if (!(emeralds & EMERALD6)) return 5;
 		return 6;
 	}
-	else // Depends on stage
-	{
-		if (gamemap < sstage_start || gamemap > sstage_end)
-			return 0;
-		return (UINT8)(gamemap - sstage_start);
-	}
+
+	// Depends on stage
+	if (gamemap < sstage_start || gamemap > sstage_end)
+		return 0;
+	return (UINT8)(gamemap - sstage_start);
 }
 
 //
@@ -435,8 +434,8 @@ void P_GivePlayerRings(player_t *player, INT32 num_rings)
 	if (!player->mo)
 		return;
 
-	player->mo->health += num_rings;
-	player->health += num_rings;
+	//player->mo->health += num_rings;
+	//player->health += num_rings;
 	player->totalring += num_rings;
 
 	//{ SRB2kart - rings don't really do anything, but we don't want the player spilling them later.
@@ -582,7 +581,8 @@ static boolean isPlayerLosing(player_t *player)
 			if (players[i].marescore > player->marescore)
 				++pos;
 
-			maxpos = max(getPlayerPos(&players[i]), maxpos);
+			const UINT8 playerpos = getPlayerPos(&players[i]);
+			maxpos = max(playerpos, maxpos);
 		}
 
 		if (maxpos == 1)

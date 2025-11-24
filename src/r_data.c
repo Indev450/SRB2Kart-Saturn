@@ -307,10 +307,10 @@ static boolean R_CheckTextureLumpLength(texture_t *texture, size_t patch)
 		CONS_Alert(
 			CONS_ERROR,
 			 "%.8s: texture lump data is too small. Expected %s bytes, got %s. (%s)\n",
-				   texture->name,
-			 sizeu1(offsetof(softwarepatch_t, columnofs)),
-				   sizeu2(lumplength),
-				   wadfiles[wadnum]->lumpinfo[lumpnum].fullname
+					texture->name,
+					sizeu1(offsetof(softwarepatch_t, columnofs)),
+					sizeu2(lumplength),
+					wadfiles[wadnum]->lumpinfo[lumpnum].fullname
 		);
 
 		return false;
@@ -853,6 +853,7 @@ static texpatch_t *R_ParsePatch(boolean actuallyLoadPatch)
 		{
 			Z_Free(patchName);
 		}
+
 		patchName = (char *)Z_Malloc((texturesTokenLength+1)*sizeof(char),PU_STATIC,NULL);
 		memcpy(patchName,texturesToken,texturesTokenLength*sizeof(char));
 		patchName[texturesTokenLength] = '\0';
@@ -1249,60 +1250,6 @@ void R_ParseTEXTURESLump(UINT16 wadNum, UINT16 lumpNum, INT32 *texindex)
 	Z_Free((void *)texturesText);
 }
 
-/*
-static inline lumpnum_t R_CheckNumForNameList(const char *name, lumplist_t *list, size_t listsize) // SRB2kart - unused.
-{
-	size_t i;
-	UINT16 lump;
-
-	for (i = listsize - 1; i < INT16_MAX; i--)
-	{
-		lump = W_CheckNumForNamePwad(name, list[i].wadfile, list[i].firstlump);
-		if (lump == INT16_MAX || lump > (list[i].firstlump + list[i].numlumps))
-			continue;
-		else
-			return (list[i].wadfile<<16)+lump;
-	}
-	return LUMPERROR;
-}
-*/
-
-/*static lumplist_t *colormaplumps = NULL; ///\todo free leak
-static size_t numcolormaplumps = 0;
-
-static void R_InitExtraColormaps(void)
-{
-	lumpnum_t startnum, endnum;
-	UINT16 cfile, clump;
-	static size_t maxcolormaplumps = 16;
-
-	for (cfile = clump = 0; cfile < numwadfiles; cfile++, clump = 0)
-	{
-		startnum = W_CheckNumForNamePwad("C_START", cfile, clump);
-		if (startnum == INT16_MAX)
-			continue;
-
-		endnum = W_CheckNumForNamePwad("C_END", cfile, clump);
-
-		if (endnum == INT16_MAX)
-			I_Error("R_InitExtraColormaps: C_START without C_END\n");
-
-		// This shouldn't be possible when you use the Pwad function, silly
-		//if (WADFILENUM(startnum) != WADFILENUM(endnum))
-			//I_Error("R_InitExtraColormaps: C_START and C_END in different wad files!\n");
-
-		if (numcolormaplumps >= maxcolormaplumps)
-			maxcolormaplumps *= 2;
-		colormaplumps = Z_Realloc(colormaplumps,
-			sizeof (*colormaplumps) * maxcolormaplumps, PU_STATIC, NULL);
-		colormaplumps[numcolormaplumps].wadfile = cfile;
-		colormaplumps[numcolormaplumps].firstlump = startnum+1;
-		colormaplumps[numcolormaplumps].numlumps = endnum - (startnum + 1);
-		numcolormaplumps++;
-	}
-	CONS_Printf(M_GetText("Number of Extra Colormaps: %s\n"), sizeu1(numcolormaplumps));
-}*/
-
 // Search for flat name.
 lumpnum_t R_GetFlatNumForName(const char *name)
 {
@@ -1430,7 +1377,7 @@ void R_ReInitColormaps(UINT16 num, lumpnum_t newencoremap)
 		encoremap = Z_Malloc(256 + 10, PU_LEVEL, NULL);
 		W_ReadLump(newencoremap, encoremap);
 		colormap_p = colormap_p2 = colormaps;
-		colormap_p += (256 * 32);
+		colormap_p += COLORMAP_REMAPOFFSET;
 
 		for (p = 0; p < 32; p++)
 		{
@@ -1439,6 +1386,7 @@ void R_ReInitColormaps(UINT16 num, lumpnum_t newencoremap)
 				*colormap_p = colormap_p2[encoremap[i]];
 				colormap_p++;
 			}
+
 			colormap_p2 += 256;
 		}
 	}
@@ -1465,42 +1413,8 @@ void R_ClearColormaps(void)
 	for (i = 0; i < MAXCOLORMAPS; i++)
 		foundcolormaps[i] = LUMPERROR;
 
-	memset(extra_colormaps, 0, sizeof (extra_colormaps));
+	memset(extra_colormaps, 0, sizeof(extra_colormaps));
 }
-
-/*INT32 R_ColormapNumForName(char *name)
-{
-	lumpnum_t lump, i;
-
-	if (num_extra_colormaps == MAXCOLORMAPS)
-		I_Error("R_ColormapNumForName: Too many colormaps! the limit is %d\n", MAXCOLORMAPS);
-
-	lump = R_CheckNumForNameList(name, colormaplumps, numcolormaplumps);
-	if (lump == LUMPERROR)
-		I_Error("R_ColormapNumForName: Cannot find colormap lump %.8s\n", name);
-
-	for (i = 0; i < num_extra_colormaps; i++)
-		if (lump == foundcolormaps[i])
-			return i;
-
-	foundcolormaps[num_extra_colormaps] = lump;
-
-	// aligned on 8 bit for asm code
-	extra_colormaps[num_extra_colormaps].colormap = Z_Malloc(W_LumpLength(lump), PU_LEVEL, NULL);
-	W_ReadLump(lump, extra_colormaps[num_extra_colormaps].colormap);
-
-	// We set all params of the colormap to normal because there
-	// is no real way to tell how GL should handle a colormap lump anyway..
-	extra_colormaps[num_extra_colormaps].maskcolor = 0xffff;
-	extra_colormaps[num_extra_colormaps].fadecolor = 0x0;
-	extra_colormaps[num_extra_colormaps].maskamt = 0x0;
-	extra_colormaps[num_extra_colormaps].fadestart = 0;
-	extra_colormaps[num_extra_colormaps].fadeend = 31;
-	extra_colormaps[num_extra_colormaps].fog = 0;
-
-	num_extra_colormaps++;
-	return (INT32)num_extra_colormaps - 1;
-}*/
 
 //
 // R_CreateColormap

@@ -6086,6 +6086,7 @@ static void K_KartDrift(player_t *player, boolean onground)
 	else
 		player->kartstuff[k_brakedrift] = 0;
 }
+
 //
 // K_KartUpdatePosition
 //
