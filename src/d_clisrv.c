@@ -1369,10 +1369,19 @@ static inline void CL_DrawConnectionStatus(void)
 				V_DrawThinString(12 + 80, 58, V_ALLOWLOWERCASE|V_YELLOWMAP, "Vanilla");
 			}
 
-			if (serverlist[joinnode].info.cheatsenabled)
+			const UINT8 serverkartspeed = (serverlist[joinnode].info.kartvars & SV_SPEEDMASK);
+
+			if (serverkartspeed == 2)
+				V_DrawRightAlignedThinString(BASEVIDWIDTH - 12, 58, V_ALLOWLOWERCASE|V_REDMAP, "Hard Speed");
+			else if (serverkartspeed == 1)
+				V_DrawRightAlignedThinString(BASEVIDWIDTH - 12, 58, V_ALLOWLOWERCASE|V_BLUEMAP, "Normal Speed");
+			else
+				V_DrawRightAlignedThinString(BASEVIDWIDTH - 12, 58, V_ALLOWLOWERCASE|V_GREENMAP, "Easy Speed");
+
+			/*if (serverlist[joinnode].info.cheatsenabled)
 			{
 				V_DrawRightAlignedThinString(BASEVIDWIDTH - 12, 58, V_ALLOWLOWERCASE|V_GREENMAP, "Cheats");
-			}
+			}*/
 
 			V_DrawFill(8, 72, BASEVIDWIDTH - 16, 112, 239);
 
