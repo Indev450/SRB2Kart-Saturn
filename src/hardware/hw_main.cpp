@@ -1248,6 +1248,9 @@ static inline boolean HWR_BlendMidtextureSurface(FSurfaceInfo *pSurf)
 
 	if (LIKELY(!gl_curline->polyseg))
 	{
+		// check if linedef alpha is within range
+		const boolean linealpha = (gl_linedef->alpha >= 0 && gl_linedef->alpha < FRACUNIT);
+
 		// set alpha for transparent walls
 		switch (gl_linedef->special)
 		{
@@ -1262,7 +1265,7 @@ static inline boolean HWR_BlendMidtextureSurface(FSurfaceInfo *pSurf)
 			case 221:
 			case 253:
 			case 256:
-				if (gl_linedef->blendmode)
+				if (gl_linedef->blendmode && linealpha)
 					blendmode = HWR_SurfaceBlend(gl_linedef->blendmode, R_GetLinedefTransTable(gl_linedef->alpha), pSurf);
 				else
 					blendmode = PF_Translucent;
@@ -1270,12 +1273,12 @@ static inline boolean HWR_BlendMidtextureSurface(FSurfaceInfo *pSurf)
 			default:
 				if (gl_linedef->blendmode)
 				{
-					if (gl_linedef->alpha >= 0 && gl_linedef->alpha < FRACUNIT)
+					if (linealpha)
 						blendmode = HWR_SurfaceBlend(gl_linedef->blendmode, R_GetLinedefTransTable(gl_linedef->alpha), pSurf);
 					else
 						blendmode = HWR_GetBlendModeFlag(gl_linedef->blendmode);
 				}
-				else if (gl_linedef->alpha >= 0 && gl_linedef->alpha < FRACUNIT)
+				else if (linealpha)
 					blendmode = HWR_TranstableToAlpha(R_GetLinedefTransTable(gl_linedef->alpha), pSurf);
 				else
 					blendmode = PF_Masked;
