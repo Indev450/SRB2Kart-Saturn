@@ -753,7 +753,7 @@ void Y_StartIntermission(void)
 	}
 
 	// This should always exist, but just in case...
-	if(!mapheaderinfo[prevmap])
+	if (!mapheaderinfo[prevmap])
 		P_AllocMapHeader(prevmap);
 
 	switch (intertype)
@@ -788,7 +788,8 @@ void Y_StartIntermission(void)
 			break;
 	}
 
-	bgtile = W_CachePatchName("SRB2BACK", PU_PATCH_LOWPRIORITY);
+	if (rendermode != render_none)
+		bgtile = W_CachePatchName("SRB2BACK", PU_PATCH_LOWPRIORITY);
 
 	LUA_HUD_DestroyDrawList(luahuddrawlist_intermission);
 	luahuddrawlist_intermission = LUA_HUD_CreateDrawList();
@@ -1537,7 +1538,7 @@ void Y_StartVote(void)
 			levelinfo[i].gts = NULL;
 
 		// set up the pic
-		if (!dedicated)
+		if (rendermode != render_none)
 		{
 			lumpnum = W_CheckNumForName(va("%sP", G_BuildMapName(votelevels[i][0]+1)));
 			if (lumpnum != LUMPERROR)
