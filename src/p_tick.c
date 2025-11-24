@@ -836,10 +836,6 @@ void P_PreTicker(INT32 frames)
 			}
 		}
 
-		// Dynamic slopeness
-		if (midgamejoin)
-			P_RunDynamicSlopes();
-
 		P_RunThinkers();
 
 		// Run any "after all the other thinkers" stuff
