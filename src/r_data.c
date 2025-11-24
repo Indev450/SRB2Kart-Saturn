@@ -717,38 +717,25 @@ static INT32 R_CountTextures(UINT16 wadnum)
 	return count;
 }
 
-static void
-recallocuser
-(		void * user,
-		size_t old,
-		size_t new)
-{
-	char *p = Z_Realloc(*(void**)user,
-			new, PU_STATIC, user);
-
-	if (new > old)
-		memset(&p[old], 0, (new - old));
-}
-
 static void R_AllocateTextures(INT32 add)
 {
 	const INT32 newtextures = (numtextures + add);
 	const size_t newsize = newtextures * sizeof (void*);
-	const size_t oldsize = numtextures * sizeof (void*);
+	//const size_t oldsize = numtextures * sizeof (void*);
 
 	INT32 i;
 
 	// Allocate memory and initialize to 0 for all the textures we are initialising.
-	recallocuser(&textures, oldsize, newsize);
+	Z_Realloc(textures, newsize, PU_STATIC, &textures);
 
 	// Allocate texture column offset table.
-	recallocuser(&texturecolumnofs, oldsize, newsize);
+	Z_Realloc(texturecolumnofs, newsize, PU_STATIC, &texturecolumnofs);
 	// Allocate texture referencing cache.
-	recallocuser(&texturecache, oldsize, newsize);
+	Z_Realloc(texturecache, newsize, PU_STATIC, &texturecache);
 	// Allocate texture width table.
-	recallocuser(&texturewidth, oldsize, newsize);
+	Z_Realloc(texturewidth, newsize, PU_STATIC, &texturewidth);
 	// Allocate texture height table.
-	recallocuser(&textureheight, oldsize, newsize);
+	Z_Realloc(textureheight, newsize, PU_STATIC, &textureheight);
 	// Create translation table for global animation.
 	Z_Realloc(texturetranslation, (newtextures + 1) * sizeof(*texturetranslation), PU_STATIC, &texturetranslation);
 
