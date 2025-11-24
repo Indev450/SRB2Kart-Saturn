@@ -1401,10 +1401,16 @@ static inline void CL_DrawConnectionStatus(void)
 					if (playerinfo[i].node < 255)
 					{
 						strncpy(player_name, playerinfo[i].name, MAXPLAYERNAME);
-						V_DrawThinString(x + 10, y, V_ALLOWLOWERCASE|V_6WIDTHSPACE, player_name);
+
+						// if we get a skin color
+						// try to colourize the player name
+						if (playerinfo[i].data > 0 && playerinfo[i].data < MAXSKINCOLORS)
+							V_DrawThinString(x + 10, y, V_ALLOWLOWERCASE|V_6WIDTHSPACE, va("%s%s ", HU_SkinColorToConsoleColor(playerinfo[i].data), player_name));
+						else
+							V_DrawThinString(x + 10, y, V_ALLOWLOWERCASE|V_6WIDTHSPACE, player_name);
 
 						if (playerinfo[i].team == 0) { statuscolor = 184; } // playing
-						if (playerinfo[i].data & 0x20) { statuscolor = 86; } // tag IT
+						//if (playerinfo[i].data & 0x20) { statuscolor = 86; } // tag IT
 						if (playerinfo[i].team == 1) { statuscolor = 128; } // ctf red team
 						if (playerinfo[i].team == 2) { statuscolor = 232; } // ctf blue team
 						if (playerinfo[i].team == 255) { statuscolor = 16; } // spectator or non-team
@@ -1748,16 +1754,19 @@ static void SV_SendPlayerInfo(INT32 node)
 
 		// Extra data
 		// Kart has extra skincolors, so we can't use this
-		netbuffer->u.playerinfo[i].data = 0; //netbuffer->u.playerinfo[i].data = players[i].skincolor;
+		//netbuffer->u.playerinfo[i].data = 0; //netbuffer->u.playerinfo[i].data = players[i].skincolor;
 
-		if (players[i].pflags & PF_TAGIT)
-			netbuffer->u.playerinfo[i].data |= 0x20;
+		// well why not, we only got like 100 of these?
+		netbuffer->u.playerinfo[i].data = players[i].skincolor;
 
-		if (players[i].gotflag)
-			netbuffer->u.playerinfo[i].data |= 0x40;
+		//if (players[i].pflags & PF_TAGIT)
+			//netbuffer->u.playerinfo[i].data |= 0x20;
 
-		if (players[i].powers[pw_super])
-			netbuffer->u.playerinfo[i].data |= 0x80;
+		//if (players[i].gotflag)
+			//netbuffer->u.playerinfo[i].data |= 0x40;
+
+		//if (players[i].powers[pw_super])
+			//netbuffer->u.playerinfo[i].data |= 0x80;
 	}
 
 	HSendPacket(node, false, 0, sizeof(plrinfo) * MSCOMPAT_MAXPLAYERS);
