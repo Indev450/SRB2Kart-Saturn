@@ -1079,12 +1079,14 @@ void CloseNetFile(void)
 
 	// Receiving a file?
 	for (i = 0; i < MAX_WADFILES; i++)
+	{
 		if (fileneeded[i].status == FS_DOWNLOADING && fileneeded[i].file)
 		{
 			fclose(fileneeded[i].file);
 			// File is not complete delete it
 			remove(fileneeded[i].filename);
 		}
+	}
 
 	// Remove PT_FILEFRAGMENT from acknowledge list
 	Net_AbortPacketType(PT_FILEFRAGMENT);
@@ -1098,17 +1100,16 @@ void nameonly(char *s)
 	void *ns;
 
 	for (j = strlen(s); j != (size_t)-1; j--)
+	{
 		if ((s[j] == '\\') || (s[j] == ':') || (s[j] == '/'))
 		{
 			ns = &(s[j+1]);
 			len = strlen(ns);
-#if 0
-				memcpy(s, ns, len+1);
-#else
-				memmove(s, ns, len+1);
-#endif
+			memmove(s, ns, len+1);
+
 			return;
 		}
+	}
 }
 
 // Returns the length in characters of the last element of a path.
