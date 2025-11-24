@@ -46,6 +46,7 @@
 #include "i_time.h"
 #include "i_threads.h"
 #include "i_video.h"
+#include "hu_stuff.h"
 #include "m_argv.h"
 #include "m_menu.h"
 #include "m_misc.h"
@@ -353,13 +354,12 @@ static void D_Renderview(void)
 	if (splitscreen == 2)
 	{
 		// V_DrawPatchFill, but for the fourth screen only
-		patch_t *pat = W_CachePatchName("SRB2BACK", PU_PATCH);
-		INT32 x, y, pw = SHORT(pat->width) * vid.dup, ph = SHORT(pat->height) * vid.dup;
+		INT32 x, y, pw = SHORT(srb2back->width) * vid.dup, ph = SHORT(srb2back->height) * vid.dup;
 
 		for (x = vid.width>>1; x < vid.width; x += pw)
 		{
 			for (y = vid.height>>1; y < vid.height; y += ph)
-				V_DrawScaledPatch(x, y, V_NOSCALESTART, pat);
+				V_DrawScaledPatch(x, y, V_NOSCALESTART, srb2back);
 		}
 	}
 
