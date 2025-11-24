@@ -622,7 +622,6 @@ void F_StartCredits(void)
 	timetonext = 2*TICRATE;
 }
 
-
 void F_CreditDrawer(void)
 {
 	UINT16 i;

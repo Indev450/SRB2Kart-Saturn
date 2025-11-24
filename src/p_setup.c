@@ -2709,8 +2709,12 @@ void P_FreeLevelState(void)
 
 	G_FreeGhosts(); // ghosts are allocated with PU_LEVEL
 
-	Patch_FreeTag(PU_PATCH_LOWPRIORITY);
-	//Patch_FreeTag(PU_PATCH_ROTATED); // we keep those ty!
+	if (rendermode != render_none)
+	{
+		Patch_FreeTag(PU_PATCH_LOWPRIORITY);
+		//Patch_FreeTag(PU_PATCH_ROTATED); // we keep those ty!
+	}
+
 	Z_FreeTags(PU_LEVEL, PU_PURGELEVEL - 1);
 
 	Y_VoteClear();
