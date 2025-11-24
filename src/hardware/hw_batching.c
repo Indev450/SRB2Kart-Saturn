@@ -171,13 +171,14 @@ static int comparePolygons(const void *p1, const void *p2)
 
 	// special case with signedness to prevent overflowing
 	// FIXME: check for prediction slowdowns!
-	const bool sky1 = poly1->hash & 0x80000000;
-	const bool sky2 = poly2->hash & 0x80000000;
+	const int shader1 = poly1->hash & 0x80000000 ? -1 : poly1->shader;
+	const int shader2 = poly2->hash & 0x80000000 ? -1 : poly2->shader;
 
-	if (sky1 != sky2)
-		return sky1 < sky2 ? 1 : -1;
+	// skywalls and horizon lines must retain their order for horizon lines to work
+	if (shader1 == -1 && shader2 == -1)
+		return poly1 - poly2;
 
-	diff = poly1->shader - poly2->shader;
+	diff = shader1 - shader2;
 	if (diff != 0) return diff;
 
 	UINT32 downloaded1 = poly1->texture ? poly1->texture->downloaded : 0; // there should be a opengl texture name here, usable for comparisons
@@ -212,16 +213,16 @@ static int comparePolygonsNoShaders(const void *p1, const void *p2)
 	const PolygonArrayEntry *poly1 = *(PolygonArrayEntry *const *)p1;
 	const PolygonArrayEntry *poly2 = *(PolygonArrayEntry *const *)p2;
 
-	// special case with signedness to prevent overflowing
-	// FIXME: check for prediction slowdowns!
-	const bool sky1 = poly1->hash & 0x80000000;
-	const bool sky2 = poly2->hash & 0x80000000;
+	const GLMipmap_t *texture1 = poly1->hash & 0x80000000 ? NULL : poly1->texture;
+	const GLMipmap_t *texture2 = poly1->hash & 0x80000000 ? NULL : poly2->texture;
 
-	if (sky1 != sky2)
-		return sky1 < sky2 ? 1 : -1;
+	// skywalls and horizon lines must retain their order for horizon lines to work
+	if (!texture1 && !texture2)
+		return poly1 - poly2;
 
-	UINT32 downloaded1 = poly1->texture ? poly1->texture->downloaded : 0; // there should be a opengl texture name here, usable for comparisons
-	UINT32 downloaded2 = poly2->texture ? poly2->texture->downloaded : 0;
+	UINT32 downloaded1 = texture1 ? texture1->downloaded : 0; // there should be a opengl texture name here, usable for comparisons
+	UINT32 downloaded2 = texture2 ? texture2->downloaded : 0;
+
 	diff64 = downloaded1 - downloaded2;
 	if (diff64 != 0) return diff64;
 
