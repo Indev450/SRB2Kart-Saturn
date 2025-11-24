@@ -1022,7 +1022,7 @@ void P_WriteThings(lumpnum_t lumpnum)
 	size_t i, length;
 	mapthing_t *mt;
 	UINT8 *data;
-	savebuffer_t save;
+	savebuffer_t save = {0};
 	INT16 temp;
 
 	data = W_CacheLumpNum(lumpnum, PU_LEVEL);

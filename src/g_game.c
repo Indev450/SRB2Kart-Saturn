@@ -3450,7 +3450,7 @@ void G_LoadGameData(void)
 	INT32 i, j;
 	UINT8 modded = false;
 	UINT8 rtemp;
-	savebuffer_t save;
+	savebuffer_t save = {0};
 
 	//For records
 	tic_t rectime;
@@ -3583,7 +3583,7 @@ void G_SaveGameData(boolean force)
 	size_t length;
 	INT32 i, j;
 	UINT8 btemp;
-	savebuffer_t save;
+	savebuffer_t save = {0};
 	(void)force;
 	char backupfile[MAX_WADPATH+4];
 
@@ -3754,7 +3754,7 @@ void G_LoadGame(UINT32 slot, INT16 mapoverride)
 	size_t length;
 	char vcheck[VERSIONSIZE];
 	char savename[255];
-	savebuffer_t save;
+	savebuffer_t save = {0};
 
 	// memset savedata to all 0, fixes calling perfectly valid saves corrupt because of bots
 	memset(&savedata, 0, sizeof(savedata));
@@ -3840,7 +3840,7 @@ void G_SaveGame(UINT32 savegameslot)
 	boolean saved;
 	char savename[256] = "";
 	const char *backup;
-	savebuffer_t save;
+	savebuffer_t save = {0};
 
 	sprintf(savename, savegamename, savegameslot);
 	backup = va("%s",savename);
