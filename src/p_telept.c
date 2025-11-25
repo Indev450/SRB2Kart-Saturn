@@ -106,6 +106,7 @@ void P_MixUp(mobj_t *thing, fixed_t x, fixed_t y, fixed_t z, angle_t angle,
 		P_FlashPal(thing->player, PAL_MIXUP, 10);
 	}
 
+	thing->old_angle += (angle-thing->angle);
 	thing->angle = angle;
 
 	thing->momx = thing->momy = thing->momz = 0;
