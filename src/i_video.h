@@ -109,13 +109,6 @@ void I_FinishUpdate(void);
 */
 void I_UpdateNoVsync(void);
 
-/**	\brief	Wait for vertical retrace or pause a bit.
-
-	\param	count	max wait
-
-	\return	void
-*/
-void I_WaitVBL(INT32 count);
 
 /**	\brief	The I_ReadScreen function
 
@@ -125,13 +118,6 @@ void I_WaitVBL(INT32 count);
 */
 void I_ReadScreen(UINT8 * restrict scr, INT32 scale);
 
-/**	\brief Start disk icon
-*/
-void I_BeginRead(void);
-
-/**	\brief Stop disk icon
-*/
-void I_EndRead(void);
 
 UINT32 I_GetRefreshRate(void);
 
