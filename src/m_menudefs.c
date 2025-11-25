@@ -1874,7 +1874,7 @@ static const char* OP_SaturnHudTooltips[] =
 	"Disable the animation of the Positionnumber\nwhen overtaking someone.",
 	"Flash current Lap Time when doing a Lap on the Timer.",
 	"Use extra graphics for multiple sneakers, bananas and jawz.",
-	"Change when the item amount is to be displayed\nMultiple will always display the number.\nwhen you have multiple of the same Item.\nAlways will always display the number regardless of Item amount.",
+	"Change when the item amount is to be displayed.\nMultiple will always display the number.\nWhen you have multiple of the same Item.\nAlways will always display the number regardless of Item amount.",
 	"Enables an animation while the roulette is active.",
 	"Show the big 'LAP' text on a lap change.",
 	"Show the big Cecho Messages.",
