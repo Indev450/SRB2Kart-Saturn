@@ -1337,8 +1337,8 @@ static void R_PortalFrame(portal_t *portal)
 	viewz = portal->viewz;
 
 	viewangle = portal->viewangle;
-	//viewsin = FINESINE(viewangle>>ANGLETOFINESHIFT);
-	//viewcos = FINECOSINE(viewangle>>ANGLETOFINESHIFT);
+	viewsin = FINESINE(viewangle>>ANGLETOFINESHIFT);
+	viewcos = FINECOSINE(viewangle>>ANGLETOFINESHIFT);
 
 	portalclipstart = portal->start;
 	portalclipend = portal->end;
