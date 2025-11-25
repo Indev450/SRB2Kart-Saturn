@@ -2297,6 +2297,7 @@ menu_t MISC_DiscordRequestsDef = {
 	&MPauseDef,
 	MISC_DiscordRequestsMenu,
 	M_DrawDiscordRequests,
+	NULL,
 	0, 0,
 	0,
 	NULL,
