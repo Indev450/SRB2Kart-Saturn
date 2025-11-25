@@ -1162,6 +1162,9 @@ mobj_t *P_SpawnGhostMobj(mobj_t *mobj)
 
 	ghost = P_SpawnMobj(mobj->x, mobj->y, mobj->z, MT_GHOST);
 
+	// not sure if this is safe to do...........
+	//P_SetTarget(&ghost->target, mobj);
+
 	P_SetScale(ghost, mobj->scale);
 	ghost->scalespeed = mobj->scalespeed;
 	ghost->destscale = mobj->scale;
@@ -1175,10 +1178,7 @@ mobj_t *P_SpawnGhostMobj(mobj_t *mobj)
 	ghost->color = mobj->color;
 	ghost->colorized = mobj->colorized; // Kart: they should also be colorized if their origin is
 
-	if (mobj->player)
-		ghost->angle = mobj->player->frameangle;
-	else
-		ghost->angle = mobj->angle;
+	ghost->angle = (mobj->player ? mobj->player->frameangle : mobj->angle);
 
 	ghost->sprite = mobj->sprite;
 	ghost->frame = mobj->frame;
@@ -1190,6 +1190,9 @@ mobj_t *P_SpawnGhostMobj(mobj_t *mobj)
 	ghost->skin = mobj->skin;
 	ghost->localskin = mobj->localskin;
 	ghost->skinlocal = mobj->skinlocal;
+
+	// same deal...
+	//ghost->standingslope = mobj->standingslope;
 
 	ghost->spritexscale = mobj->spritexscale;
 	ghost->spriteyscale = mobj->spriteyscale;
