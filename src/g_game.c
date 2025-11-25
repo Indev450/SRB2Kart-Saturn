@@ -276,12 +276,6 @@ UINT32 timesBeatenWithEmeralds = 0;
 
 INT16 prevmap = 0, nextmap = 0;
 
-// Analog Control
-void SendWeaponPref(void);
-void SendWeaponPref2(void);
-void SendWeaponPref3(void);
-void SendWeaponPref4(void);
-
 // don't mind me putting these here, I was lazy to figure out where else I could put those without blowing up the compiler.
 
 // chat timer thingy
@@ -4012,6 +4006,12 @@ void G_InitNew(UINT8 pencoremode, const char *mapname, boolean resetplayer, bool
 
 	automapactive = false;
 	imcontinuing = false;
+
+	// HACK: this doesent reset if you change the map from within a replay and may cause crashes or the replayhut to be non functional
+	if (!demo.playback && demo.inreplayhut)
+	{
+		M_ResetDemoList();
+	}
 
 	if (!skipprecutscene && mapheaderinfo[gamemap-1]->precutscenenum && !modeattacking) // Start a custom cutscene.
 		F_StartCustomCutscene(mapheaderinfo[gamemap-1]->precutscenenum-1, true, resetplayer);

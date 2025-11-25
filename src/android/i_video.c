@@ -58,16 +58,7 @@ void I_FinishUpdate(void)
 
 void I_UpdateNoVsync(void) {}
 
-void I_WaitVBL(INT32 count)
-{
-  (void)count;
-}
-
 void I_ReadScreen(UINT8 * restrict scr, INT32 scale)
 {
   (void)scr;
 }
-
-void I_BeginRead(void){}
-
-void I_EndRead(void){}

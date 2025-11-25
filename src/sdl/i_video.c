@@ -2169,11 +2169,23 @@ void I_ShutdownGraphics(void)
 	I_OutputMsg("shut down\n");
 
 #ifdef HWRENDER
+	if (vid.glstate == VID_GL_LIBRARY_LOADED)
+		HWR_Shutdown();
+
 	if (sdlglcontext)
-	{
 		SDL_GL_DeleteContext(sdlglcontext);
-	}
+	sdlglcontext = NULL;
 #endif
+
+	if (texture)
+		SDL_DestroyTexture(texture);
+	texture = NULL;
+	if (renderer)
+		SDL_DestroyRenderer(renderer);
+	renderer = NULL;
+	if (window)
+		SDL_DestroyWindow(window);
+	window = NULL;
 
 	SDL_QuitSubSystem(SDL_INIT_VIDEO);
 	framebuffer = SDL_FALSE;

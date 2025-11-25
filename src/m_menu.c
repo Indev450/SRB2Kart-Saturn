@@ -298,13 +298,13 @@ static void M_AddonsInternal();
 static void M_Addons(INT32 choice);
 static void M_LocalSkins(INT32 choice);
 static void M_AddonsOptions(INT32 choice);
+#define addonmenusize 9 // number of items actually displayed in the addons menu view, formerly (2*numaddonsshown + 1)
+#define numaddonsshown 4 // number of items to each side of the currently selected item, unless at top/bottom ends of directory
 
 static void M_CustomCvarMenu(INT32 choice);
 static patch_t *addonsp[NUM_EXT+5];
 
 static void M_DeleteProtocol(void);
-
-#define numaddonsshown 4
 
 // Replay hut
 static void M_HandleReplayHutList(INT32 choice);
@@ -367,6 +367,7 @@ static void M_HandleSetupMultiPlayer(INT32 choice);
 static void M_HandleVideoMode(INT32 choice);
 static void M_ResetCvars(void);
 static void M_HandleMonitorToggles(INT32 choice);
+static void M_AddonsRefresh(void);
 
 // Consvar onchange functions
 static void Nextmap_OnChange(void);
@@ -1701,6 +1702,9 @@ void M_Ticker(void)
 	if (dedicated)
 		return;
 
+	if (currentMenu->tickroutine)
+		currentMenu->tickroutine();
+
 	if (menuactive)
 		I_HandleControllerHatRepeat();
 
@@ -2799,6 +2803,7 @@ menu_t MessageDef =
 	NULL,               // previous menu       (TO HACK)
 	MessageMenu,        // menuitem_t ->
 	M_DrawMessageMenu,  // drawing routine ->
+	NULL,               // ticker routine
 	0, 0,               // x, y                (TO HACK)
 	0,                  // lastOn, flags       (TO HACK)
 	NULL,
@@ -2990,6 +2995,7 @@ static void M_StopMessage(INT32 choice)
 static void M_DrawImageDef(void)
 {
 	patch_t *patch = (patch_t *)W_CachePatchName(currentMenu->menuitems[itemOn].text, PU_PATCH);
+
 	if (patch->width <= BASEVIDWIDTH)
 		V_DrawScaledPatch(0,0,0,patch);
 	else
@@ -3233,8 +3239,8 @@ static void M_AddonsClearName(INT32 choice)
 	M_StopMessage(choice);
 }
 
-// returns whether to do message draw
-static boolean M_AddonsRefresh(void)
+// Handles messages for addon errors.
+static void M_AddonsRefresh(void)
 {
 	if ((refreshdirmenu & REFRESHDIR_NORMAL) && !preparefilemenu(true, false))
 	{
@@ -3243,7 +3249,7 @@ static boolean M_AddonsRefresh(void)
 		{
 			CLEARNAME;
 		}
-		return true;
+		return;
 	}
 
 	if (!majormods && prevmajormods)
@@ -3292,14 +3298,14 @@ static boolean M_AddonsRefresh(void)
 		if (message)
 		{
 			M_StartMessage(message, M_AddonsClearName, MM_EVENTHANDLER);
-			return true;
+			return;
 		}
 
 		S_StartSound(NULL, sfx_s221);
 		CLEARNAME;
 	}
 
-	return false;
+	return;
 }
 
 static tic_t addons_scrolltic = 0; // maybe not the best place but e
@@ -3307,18 +3313,12 @@ static tic_t addons_scrolltic = 0; // maybe not the best place but e
 static void M_DrawAddons(void)
 {
 	INT32 x, y;
-	ssize_t i, m;
+	size_t i, m;
+	size_t t, b; // top and bottom item #s to draw in directory
 	const UINT8 *flashcol = NULL;
 	UINT8 hilicol;
 
 	if (renderisnewtic) addons_scrolltic++;
-
-	// hack - need to refresh at end of frame to handle addfile...
-	if (refreshdirmenu & M_AddonsRefresh())
-	{
-		M_DrawMessageMenu();
-		return;
-	}
 
 	if (Playing())
 	{
@@ -3349,57 +3349,73 @@ static void M_DrawAddons(void)
 
 	hilicol = V_GetStringColormap(highlightflags)[120];
 
+#define boxwidth (MAXSTRINGLENGTH*8+6)
+
+	// draw the file path and the top white + black lines of the box
 	V_DrawString(x-21, (y - 16) + (lsheadingheight - 12), highlightflags|V_ALLOWLOWERCASE, M_AddonsHeaderPath());
-	V_DrawFill(x-21, (y - 16) + (lsheadingheight - 3), MAXSTRINGLENGTH*8+6, 1, hilicol);
-	V_DrawFill(x-21, (y - 16) + (lsheadingheight - 2), MAXSTRINGLENGTH*8+6, 1, 30);
+	V_DrawFill(x-21, (y - 16) + (lsheadingheight - 3), boxwidth, 1, hilicol);
+	V_DrawFill(x-21, (y - 16) + (lsheadingheight - 2), boxwidth, 1, 30);
 
 	m = (BASEVIDHEIGHT - currentMenu->y + 2) - (y - 1);
-	V_DrawFill(x - 21, y - 1, MAXSTRINGLENGTH*8+6, m, 239);
+	V_DrawFill(x-21, y - 1, boxwidth, m, 239);
 
-	// scrollbar!
-	if (sizedirmenu <= (2*numaddonsshown + 1))
-		i = 0;
+	// The directory is too small for a scrollbar, so just draw a tall white line
+	if (sizedirmenu <= addonmenusize)
+	{
+		t = 0; // first item
+		b = sizedirmenu - 1; // last item
+		i = 0; // "scrollbar" at "top" position
+	}
 	else
 	{
-		ssize_t q = m;
-		m = ((2*numaddonsshown + 1) * m)/sizedirmenu;
+		size_t q = m;
+		m = (addonmenusize * m)/sizedirmenu; // height of scroll bar
+
 		if (dir_on[menudepthleft] <= numaddonsshown) // all the way up
-			i = 0;
-		else if (sizedirmenu <= (dir_on[menudepthleft] + numaddonsshown + 1)) // all the way down
-			i = q-m;
-		else
-			i = ((dir_on[menudepthleft] - numaddonsshown) * (q-m))/(sizedirmenu - (2*numaddonsshown + 1));
+		{
+			t = 0; // first item
+			b = addonmenusize - 1; //9th item
+			i = 0; // scrollbar at top position
+		}
+		else if (dir_on[menudepthleft] >= sizedirmenu - (numaddonsshown + 1)) // all the way down
+		{
+			t = sizedirmenu - addonmenusize; // # 9th last
+			b = sizedirmenu - 1; // last item
+			i = q-m; // scrollbar at bottom position
+		}
+		else // somewhere in the middle
+		{
+			t = dir_on[menudepthleft] - numaddonsshown; // 4 items above
+			b = dir_on[menudepthleft] + numaddonsshown; // 4 items below
+			i = (t * (q-m))/(sizedirmenu - addonmenusize); // calculate position of scrollbar
+		}
 	}
 
-	V_DrawFill(x + MAXSTRINGLENGTH*8+5 - 21, (y - 1) + i, 1, m, hilicol);
+	// draw the scrollbar!
+	V_DrawFill((x-21) + boxwidth-1, (y - 1) + i, 1, m, hilicol);
 
-	// get bottom...
-	m = dir_on[menudepthleft] + numaddonsshown + 1;
-	if (m > (ssize_t)sizedirmenu)
-		m = sizedirmenu;
+#undef boxwidth
 
-	// then compute top and adjust bottom if needed!
-	if (m < (2*numaddonsshown + 1))
-	{
-		m = min(sizedirmenu, 2*numaddonsshown + 1);
-		i = 0;
-	}
-	else
-		i = m - (2*numaddonsshown + 1);
-
-	if (i != 0)
+	// draw up arrow that bobs up and down
+	if (t != 0)
 		V_DrawString(19, y+4 - (skullAnimCounter/5), highlightflags, "\x1A");
 
+	// make the selection box flash yellow
 	if (skullAnimCounter < 4)
 		flashcol = V_GetStringColormap(highlightflags);
 
-	for (; i < m; i++)
+	// draw icons and item names
+	for (i = t; i <= b; i++)
 	{
 		UINT32 flags = V_ALLOWLOWERCASE;
-#define MAXADDONNAME 31
-		char scrollbuf[MAXADDONNAME+1] = {0};
 
-		if (y > BASEVIDHEIGHT) break;
+#define charsonside 14
+#define MAXADDONNAME (charsonside*2 + 3)
+	char scrollbuf[MAXADDONNAME+1] = {0};
+
+		if (y > BASEVIDHEIGHT)
+			break;
+
 		if (dirmenu[i])
 #define type (UINT8)(dirmenu[i][DIR_TYPE])
 		{
@@ -3412,13 +3428,15 @@ static void M_DrawAddons(void)
 			else
 				V_DrawSmallScaledPatch(x-(16+4), y, 0, addonsp[(type & ~EXT_LOADED)]);
 
-			if ((size_t)i == dir_on[menudepthleft])
+			// draw selection box for the item currently selected
+			if (i == dir_on[menudepthleft])
 			{
 				V_DrawFixedPatch((x-(16+4))<<FRACBITS, (y)<<FRACBITS, FRACUNIT/2, 0, addonsp[NUM_EXT+1], flashcol);
 				flags = V_ALLOWLOWERCASE|highlightflags;
 			}
 
-#define charsonside 14
+			// draw name of the item, use ... if too long
+
 			if (dirmenu[i][DIR_LEN] > MAXADDONNAME)
 			{
 				if ((size_t)i == dir_on[menudepthleft])
@@ -3431,18 +3449,19 @@ static void M_DrawAddons(void)
 				V_DrawString(x, y+4, flags, scrollbuf);
 			}
 #undef charsonside
+#undef MAXADDONNAME
 			else
 				V_DrawString(x, y+4, flags, dirmenu[i]+DIR_STRING);
-
-#undef MAXADDONNAME
 		}
 #undef type
 		y += 16;
 	}
 
-	if (m != (ssize_t)sizedirmenu)
+	// draw down arrow that bobs down and up
+	if (b != sizedirmenu)
 		V_DrawString(19, y-12 + (skullAnimCounter/5), highlightflags, "\x1B");
 
+	// draw search box
 	y = BASEVIDHEIGHT - currentMenu->y + 1;
 
 	M_DrawTextBox(x - (21 + 5), y, MAXSTRINGLENGTH, 1);
@@ -3452,14 +3471,20 @@ static void M_DrawAddons(void)
 	else
 		V_DrawString(x - 18, y + 8, V_ALLOWLOWERCASE|V_TRANSLUCENT, "Type to search...");
 
+	// draw search icon
 	x -= (21 + 5 + 16);
 	V_DrawSmallScaledPatch(x, y + 4, (menusearch.length ? 0 : V_TRANSLUCENT), addonsp[NUM_EXT+3]);
 
+	// draw save icon
 	x = BASEVIDWIDTH - x - 16;
 	V_DrawSmallScaledPatch(x, y + 4, ((!majormods) ? 0 : V_TRANSLUCENT), addonsp[NUM_EXT+4]);
 
 	if (modifiedgame)
 		V_DrawSmallScaledPatch(x, y + 4, 0, addonsp[NUM_EXT+2]);
+
+	// no space on alot of resolutions
+	//m = numwadfiles-(mainwads+2+1);
+	//V_DrawCenteredString(BASEVIDWIDTH/2, y+24, (majormods ? highlightflags : V_TRANSLUCENT), va("%d ADD-ON%s LOADED", (int)m, (m == 1) ? "" : "S")); //+2 for music, sounds, +1 for main.kart
 
 	V_DrawThinString(0, BASEVIDHEIGHT-10, V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_TRANSLUCENT|V_ALLOWLOWERCASE, ("END Key - Add addon to autoload"));
 }
@@ -3745,10 +3770,10 @@ static void M_HandleAddons(INT32 choice)
 }
 
 // ---- REPLAY HUT -----
-menudemo_t *demolist; // Replays that that have been checked to match with query
+menudemo_t *demolist = NULL; // Replays that that have been checked to match with query
 
 // Locked behind Lock_search_state
-menudemo_t *demolist_all; // All replays
+menudemo_t *demolist_all = NULL; // All replays
 boolean replaynamesloaded = false;
 
 #ifdef HAVE_THREADS
@@ -5080,7 +5105,7 @@ void M_PopupMasterServerRules(void)
 UINT16 ccvaralphakey = 4;
 INT16 ccvarlaststheader = 0;
 
-INT32 CVARSETUP;
+INT32 CVARSETUP = 0;
 
 void M_SlotCvarIntoModMenu(consvar_t* cvar, const char* category, const char* name)
 {
@@ -5125,7 +5150,7 @@ void M_SlotCvarIntoModMenu(consvar_t* cvar, const char* category, const char* na
 // SKY ROOM
 // ========
 
-UINT8 skyRoomMenuTranslations[MAXUNLOCKABLES];
+UINT8 skyRoomMenuTranslations[MAXUNLOCKABLES] = {};
 
 static char *M_GetConditionString(condition_t cond)
 {
@@ -6479,12 +6504,20 @@ static void M_SearchServerList(void)
 	char servername[MAXSERVERNAME+1] = {0};
 	serverlistsearchedcount = 0;
 
+#ifdef HAVE_THREADS
+	I_lock_mutex(&ms_ServerList_mutex);
+#endif
+
 	for (UINT32 i = 0; i < serverlistcount; ++i)
 	{
 		StripColors(servername, serverlist[i].info.servername, MAXSERVERNAME);
 		if (menuinput.length == 0 || strcasestr(servername, menuinput.buffer) != NULL)
 			serverlistsearched[serverlistsearchedcount++] = i;
 	}
+
+#ifdef HAVE_THREADS
+	I_unlock_mutex(ms_ServerList_mutex);
+#endif
 
 	if (menuinput.length > 0)
 		serverlistpage = 0;

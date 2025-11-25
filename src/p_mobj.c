@@ -5933,7 +5933,6 @@ static void P_RemoveShadow(mobj_t *thing)
 	}
 }
 
-void A_BossDeath(void *thing);
 // AI for the Koopa boss.
 static void P_KoopaThinker(mobj_t *koopa)
 {
@@ -10064,9 +10063,9 @@ static precipmobj_t *P_SpawnPrecipMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype
 //
 // P_RemoveMobj
 //
-mapthing_t *itemrespawnque[ITEMQUESIZE];
-tic_t itemrespawntime[ITEMQUESIZE];
-size_t iquehead, iquetail;
+mapthing_t *itemrespawnque[ITEMQUESIZE] = {};
+tic_t itemrespawntime[ITEMQUESIZE] = {};
+size_t iquehead = 0, iquetail = 0;
 
 #ifdef PARANOIA
 #define SCRAMBLE_REMOVED // Force debug build to crash when Removed mobj is accessed
@@ -10963,8 +10962,8 @@ void P_MovePlayerToStarpost(INT32 playernum)
 }
 
 #define MAXHUNTEMERALDS 64
-mapthing_t *huntemeralds[MAXHUNTEMERALDS];
-INT32 numhuntemeralds;
+mapthing_t *huntemeralds[MAXHUNTEMERALDS] = {};
+INT32 numhuntemeralds = 0;
 
 //
 // P_SpawnMapThing

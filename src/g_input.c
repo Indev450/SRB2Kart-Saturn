@@ -960,8 +960,7 @@ static UINT8 curcolor[MAXSPLITSCREENPLAYERS] = {};
 
 void G_DeviceLEDTick(void)
 {
-	UINT8 i;
-	static UINT8 newcolor = UINT8_MAX;
+	UINT8 i, newcolor;
 
 	if (numcontrollers == 0)
 	{

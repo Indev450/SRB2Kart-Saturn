@@ -597,8 +597,8 @@ FUNCINLINE static ATTRINLINE void P_LoadSubsectors(void *data)
 //
 #define MAXLEVELFLATS 256
 
-size_t numlevelflats;
-levelflat_t *levelflats;
+size_t numlevelflats = 0;
+levelflat_t *levelflats = NULL;
 
 //SoM: Other files want this info.
 size_t P_PrecacheLevelFlats(void)
@@ -2030,8 +2030,8 @@ void P_SetupLevelSky(INT32 skynum, boolean global)
 	R_SetupSkyDraw();
 }
 
-static const char *maplumpname;
-lumpnum_t lastloadedmaplumpnum; // for comparative savegame
+static const char *maplumpname = NULL;
+lumpnum_t lastloadedmaplumpnum = LUMPERROR; // for comparative savegame
 
 //
 // P_LevelInitStuff
@@ -2415,7 +2415,7 @@ static void P_InitCamera(void)
 	displayplayers[0] = consoleplayer; // Start with your OWN view, please!
 }
 
-struct minimapinfo minimapinfo;
+struct minimapinfo minimapinfo = {};
 static void P_InitMinimapInfo(void)
 {
 	lumpnum_t lumpnum;
@@ -2743,11 +2743,6 @@ boolean P_SetupLevel(boolean fromnetsave, boolean reloadinggamestate)
 	lumpnum_t encoreLump = LUMPERROR;
 	UINT8 levelfadecol;
 
-	// HACK: this doesent reset if you change the map from within a replay and may cause crashes or the replayhut to be non functional
-	if (!demo.playback && demo.inreplayhut)
-	{
-		M_ResetDemoList();
-	}
 
 	midgamejoin = fromnetsave; // makes dynslopes run in P_Ticker to avoid synch issues and other stuff
 

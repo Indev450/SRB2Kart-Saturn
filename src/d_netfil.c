@@ -64,7 +64,6 @@
 static boolean SV_SendFile(INT32 node, const char *filename, UINT8 fileid);
 
 #ifdef HAVE_CURL
-size_t curlwrite_data(void *ptr, size_t size, size_t nmemb, FILE *stream);
 #if (LIBCURL_VERSION_MAJOR <= 7) && (LIBCURL_VERSION_MINOR < 35)
 static int curlprogress_callback(void *clientp, double dltotal, double dlnow, double ultotal, double ulnow);
 #else
