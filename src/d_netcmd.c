@@ -2663,8 +2663,8 @@ static void Command_Map_f(void)
 
 	INT32 newmapnum;
 
-	char   *    mapname;
-	char   *realmapname = NULL;
+	CLEANUP(Z_Pfree) char   *    mapname = NULL;
+	CLEANUP(Z_Pfree) char   *realmapname = NULL;
 
 	INT32   newgametype   = gametype;
 	boolean newencoremode = cv_kartencore.value;
@@ -2733,7 +2733,6 @@ static void Command_Map_f(void)
 	if (newmapnum == 0)
 	{
 		CONS_Alert(CONS_ERROR, M_GetText("Could not find any map described as '%s'.\n"), mapname);
-		Z_Free(mapname);
 		return;
 	}
 
@@ -2765,8 +2764,6 @@ static void Command_Map_f(void)
 							" 0 and %d inclusive. ...Or just use the name. :v\n",
 							d,
 							NUMGAMETYPES-1);
-					Z_Free(realmapname);
-					Z_Free(mapname);
 					return;
 				}
 			}
@@ -2775,8 +2772,6 @@ static void Command_Map_f(void)
 				CONS_Alert(CONS_ERROR,
 						"'%s' is not a gametype.\n",
 						gametypename);
-				Z_Free(realmapname);
-				Z_Free(mapname);
 				return;
 			}
 		}
@@ -2794,8 +2789,6 @@ static void Command_Map_f(void)
 		if (!mapheaderinfo[newmapnum-1])
 		{
 			CONS_Alert(CONS_WARNING, M_GetText("Invalid mapheaderinfo for Course %s (%s)\n"), realmapname, G_BuildMapName(newmapnum));
-			Z_Free(realmapname);
-			Z_Free(mapname);
 			return;
 		}
 
@@ -2803,8 +2796,6 @@ static void Command_Map_f(void)
 		{
 			CONS_Alert(CONS_WARNING, M_GetText("Course %s (%s) doesn't support %s mode!\n(Use -force to override)\n"), realmapname, G_BuildMapName(newmapnum),
 				(multiplayer ? gametype_cons_t[newgametype].strvalue : "Single Player"));
-			Z_Free(realmapname);
-			Z_Free(mapname);
 			return;
 		}
 	}
@@ -2816,8 +2807,6 @@ static void Command_Map_f(void)
 	if (!dedicated && M_MapLocked(newmapnum))
 	{
 		CONS_Alert(CONS_NOTICE, M_GetText("You need to unlock this level before you can warp to it!\n"));
-		Z_Free(realmapname);
-		Z_Free(mapname);
 		return;
 	}
 
@@ -2843,8 +2832,6 @@ static void Command_Map_f(void)
 	fromlevelselect = false;
 
 	D_MapChange(newmapnum, newgametype, newencoremode, newresetplayers, 0, false, false);
-
-	Z_Free(realmapname);
 }
 
 /** Receives a map command and changes the map.
@@ -4509,7 +4496,7 @@ static void Command_Addskins(void)
 	CONS_Printf("addskins has been deprecated\nuse addfilelocal instead!\n");
 }
 
-static void Command_GLocalSkin (void)
+static void Command_GLocalSkin(void)
 {
 	size_t first_option;
 	size_t option_display;
@@ -4520,7 +4507,7 @@ static void Command_GLocalSkin (void)
 	option_display 	= COM_CheckPartialParm("-d");
 	option_all		= COM_CheckPartialParm("-a");
 
-	char* fuck; // local skin name
+	CLEANUP(Z_Pfree) char* fuck = NULL; // local skin name
 
 	if (!(first_option = COM_FirstOption()))
 		first_option = COM_Argc();
@@ -4561,7 +4548,6 @@ static void Command_GLocalSkin (void)
 
 		CONS_Printf("Successfully applied localskin to displayed player.\n");
 
-		Z_Free(fuck);
 		return;
 	}
 	else if (option_all) // -all
@@ -4576,7 +4562,6 @@ static void Command_GLocalSkin (void)
 		}
 		CONS_Printf("Successfully applied localskin to all players.\n");
 
-		Z_Free(fuck);
 		return;
 	}
 	else // -player or no other arguments
@@ -4593,7 +4578,6 @@ static void Command_GLocalSkin (void)
 			}
 			CONS_Printf("Successfully applied localskin to specified player.\n");
 
-			Z_Free(fuck);
 			return;
 		}
 		else
@@ -4601,13 +4585,11 @@ static void Command_GLocalSkin (void)
 			SetLocalPlayerSkin(consoleplayer, fuck, &cv_localskin);
 			CONS_Printf("Successfully applied localskin.\n");
 
-			Z_Free(fuck);
 			return;
 		}
 
 		CONS_Printf("Could not apply localskin.\n");
 
-		Z_Free(fuck);
 		return;
 	}
 }
