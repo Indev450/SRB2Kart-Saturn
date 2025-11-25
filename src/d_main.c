@@ -70,7 +70,7 @@
 #include "fastcmp.h"
 #include "r_fps.h" // Frame interpolation/uncapped
 #include "keys.h"
-#include "filesrch.h" // refreshdirmenu, pathisdirectory
+#include "filesrch.h" // pathisdirectory
 #include "d_protocol.h"
 #include "m_perfstats.h"
 #include "k_kart.h"
@@ -724,8 +724,6 @@ void D_SRB2Loop(void)
 		doDisplay = false;
 
 		renderisnewtic = (realtics > 0 || singletics);
-
-		refreshdirmenu = 0; // not sure where to put this, here as good as any?
 
 		if (renderisnewtic)
 		{
