@@ -274,7 +274,7 @@ consvar_t cv_showlocalskinmenus = {"showlocalskinmenus", "Yes", CV_SAVE, CV_YesN
 
 consvar_t cv_skipmapcheck = {"skipmapcheck", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
-INT32 cv_debug;
+INT32 cv_debug = 0;
 
 static void UseMouse_OnChange(void);
 consvar_t cv_usemouse = {"use_mouse", "Off", CV_SAVE|CV_CALL, usemouse_cons_t, UseMouse_OnChange, 0, NULL, NULL, 0, 0, NULL};
@@ -531,7 +531,7 @@ boolean forceresetplayers = false;
 boolean deferencoremode = false;
 UINT8 splitscreen = 0;
 boolean circuitmap = true; // SRB2kart
-INT32 adminplayers[MAXPLAYERS];
+INT32 adminplayers[MAXPLAYERS] = {};
 
 /// \warning Keep this up-to-date if you add/remove/rename net text commands
 const char *netxcmdnames[MAXNETXCMD - 1] =
@@ -2589,8 +2589,7 @@ void D_PickVote(void)
 	SendNetXCmd(XD_PICKVOTE, &buf, 2);
 }
 
-static char *
-ConcatCommandArgv (int start, int end)
+static char *ConcatCommandArgv(int start, int end)
 {
 	char *final;
 

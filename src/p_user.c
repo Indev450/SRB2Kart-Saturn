@@ -1863,7 +1863,6 @@ boolean P_AnalogMove(player_t *player)
 	return player->pflags & PF_ANALOGMODE;
 }
 
-
 //#define OLD_MOVEMENT_CODE 1
 static void P_3dMovement(player_t *player)
 {
@@ -2931,7 +2930,7 @@ notrealplayer:
 // P_MoveCamera: make sure the camera is not outside the world and looks at the player avatar
 //
 
-camera_t camera[MAXSPLITSCREENPLAYERS]; // Four cameras, three for splitscreen
+camera_t camera[MAXSPLITSCREENPLAYERS] = {}; // Four cameras, three for splitscreen
 
 static void CV_CamRotate_OnChange(void)
 {
