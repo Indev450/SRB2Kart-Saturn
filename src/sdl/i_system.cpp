@@ -1899,20 +1899,6 @@ death:
 	exit(0);
 }
 
-void I_WaitVBL(INT32 count)
-{
-	count = 1;
-	SDL_Delay(count);
-}
-
-void I_BeginRead(void)
-{
-}
-
-void I_EndRead(void)
-{
-}
-
 //
 // I_Error
 //
