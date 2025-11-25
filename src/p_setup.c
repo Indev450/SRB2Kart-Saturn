@@ -2745,12 +2745,6 @@ boolean P_SetupLevel(boolean fromnetsave, boolean reloadinggamestate)
 
 	Reset_Zsubsecs();
 
-	// HACK: this doesent reset if you change the map from within a replay and may cause crashes or the replayhut to be non functional
-	if (!demo.playback && demo.inreplayhut)
-	{
-		M_ResetDemoList();
-	}
-
 	midgamejoin = fromnetsave; // makes dynslopes run in P_Ticker to avoid synch issues and other stuff
 
 	levelloading = true;
