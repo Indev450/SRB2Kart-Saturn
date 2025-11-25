@@ -3408,6 +3408,10 @@ static void M_DrawAddons(void)
 	{
 		UINT32 flags = V_ALLOWLOWERCASE;
 
+#define charsonside 14
+#define MAXADDONNAME (charsonside*2 + 3)
+	char scrollbuf[MAXADDONNAME+1] = {0};
+
 		if (y > BASEVIDHEIGHT)
 			break;
 
@@ -3431,10 +3435,20 @@ static void M_DrawAddons(void)
 			}
 
 			// draw name of the item, use ... if too long
-#define charsonside 14
-			if (dirmenu[i][DIR_LEN] > (charsonside*2 + 3))
-				V_DrawString(x, y+4, flags, va("%.*s...%s", charsonside, dirmenu[i]+DIR_STRING, dirmenu[i]+DIR_STRING+dirmenu[i][DIR_LEN]-(charsonside+1)));
+
+			if (dirmenu[i][DIR_LEN] > MAXADDONNAME)
+			{
+				if ((size_t)i == dir_on[menudepthleft])
+				{
+					M_ScrollString(dirmenu[i]+DIR_STRING, dirmenu[i][DIR_LEN]-1, scrollbuf, MAXADDONNAME, addons_scrolltic);
+				}
+				else
+					strncpy(scrollbuf, va("%.*s...%s", charsonside, dirmenu[i]+DIR_STRING, dirmenu[i]+DIR_STRING+dirmenu[i][DIR_LEN]-(charsonside+1)), MAXADDONNAME);
+
+				V_DrawString(x, y+4, flags, scrollbuf);
+			}
 #undef charsonside
+#undef MAXADDONNAME
 			else
 				V_DrawString(x, y+4, flags, dirmenu[i]+DIR_STRING);
 		}
