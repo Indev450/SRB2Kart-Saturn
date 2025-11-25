@@ -3559,14 +3559,7 @@ DoneSection2:
 
 				if (!demo.playback || P_AnalogMove(player))
 				{
-					for (UINT8 j = 0; j <= splitscreen; ++j)
-					{
-						if (player == P_GetLocalPlayerForNum(j))
-						{
-							localangle[j] = player->mo->angle;
-							break;
-						}
-					}
+					P_ForceLocalAngle(player, player->mo->angle);
 				}
 
 				if (!(lines[i].flags & ML_EFFECT4))
@@ -7517,22 +7510,16 @@ void T_Pusher(pusher_t *p)
 					thing->player->pflags |= PF_JUMPED;
 
 				thing->player->pflags |= PF_SLIDING;
-				thing->angle = R_PointToAngle2 (0, 0, xspeed<<(FRACBITS-PUSH_FACTOR), yspeed<<(FRACBITS-PUSH_FACTOR));
+				thing->angle = R_PointToAngle2(0, 0, xspeed<<(FRACBITS-PUSH_FACTOR), yspeed<<(FRACBITS-PUSH_FACTOR));
 
 				if (!demo.playback || P_AnalogMove(thing->player))
 				{
-					for (UINT8 i = 0; i <= splitscreen; ++i)
-					{
-						if (thing->player == P_GetLocalPlayerForNum(i))
-						{
-							if (thing->angle - localangle[i] > ANGLE_180)
-								localangle[i] -= (localangle[i] - thing->angle) / 8;
-							else
-								localangle[i] += (thing->angle - localangle[i]) / 8;
+					angle_t angle = P_GetLocalAngle(thing->player);
 
-							break;
-						}
-					}
+					if (thing->angle - angle > ANGLE_180)
+						P_ForceLocalAngle(thing->player, angle - (angle - thing->angle) / 8);
+					else
+						P_ForceLocalAngle(thing->player, angle + (thing->angle - angle) / 8);
 				}
 			}
 

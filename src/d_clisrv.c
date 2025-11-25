@@ -2152,7 +2152,7 @@ static void CL_ReloadReceivedSavegame(void)
 	// we dont have P_ForceLocalAngle so were setting it manually here
 	for (i = 0; i <= splitscreen; i++)
 	{
-		localangle[i] = (angle_t)(players[displayplayers[i]].cmd.angleturn << 16);
+		P_ForceLocalAngle(&players[displayplayers[i]], (angle_t)(players[displayplayers[i]].cmd.angleturn << 16));
 	}
 
 	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
@@ -4524,6 +4524,8 @@ static void Got_AddPlayer(const UINT8 **p, INT32 playernum)
 				displayplayers[i] = newplayernum;
 			DEBFILE("spawning me\n");
 		}
+
+		P_ForceLocalAngle(&players[newplayernum], (angle_t)(players[newplayernum].cmd.angleturn << 16));
 
 		D_SendPlayerConfig();
 		addedtogame = true;

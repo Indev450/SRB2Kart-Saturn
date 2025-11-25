@@ -10783,14 +10783,7 @@ void P_AfterPlayerSpawn(INT32 playernum)
 	mobj->old_z = mobj->z;
 	mobj->old_angle = mobj->angle;
 
-	for (i = 0; i <= splitscreen; i++)
-	{
-		if (playernum == P_GetLocalPlayerNumForNum(i))
-		{
-			localangle[i] = mobj->angle;
-			break;
-		}
-	}
+	P_ForceLocalAngle(p, mobj->angle);
 
 	p->viewheight = 32<<FRACBITS;
 
