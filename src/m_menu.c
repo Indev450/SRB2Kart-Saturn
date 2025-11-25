@@ -2995,6 +2995,7 @@ static void M_StopMessage(INT32 choice)
 static void M_DrawImageDef(void)
 {
 	patch_t *patch = (patch_t *)W_CachePatchName(currentMenu->menuitems[itemOn].text, PU_PATCH);
+
 	if (patch->width <= BASEVIDWIDTH)
 		V_DrawScaledPatch(0,0,0,patch);
 	else
@@ -3769,10 +3770,10 @@ static void M_HandleAddons(INT32 choice)
 }
 
 // ---- REPLAY HUT -----
-menudemo_t *demolist; // Replays that that have been checked to match with query
+menudemo_t *demolist = NULL; // Replays that that have been checked to match with query
 
 // Locked behind Lock_search_state
-menudemo_t *demolist_all; // All replays
+menudemo_t *demolist_all = NULL; // All replays
 boolean replaynamesloaded = false;
 
 #ifdef HAVE_THREADS
@@ -5104,7 +5105,7 @@ void M_PopupMasterServerRules(void)
 UINT16 ccvaralphakey = 4;
 INT16 ccvarlaststheader = 0;
 
-INT32 CVARSETUP;
+INT32 CVARSETUP = 0;
 
 void M_SlotCvarIntoModMenu(consvar_t* cvar, const char* category, const char* name)
 {
@@ -5149,7 +5150,7 @@ void M_SlotCvarIntoModMenu(consvar_t* cvar, const char* category, const char* na
 // SKY ROOM
 // ========
 
-UINT8 skyRoomMenuTranslations[MAXUNLOCKABLES];
+UINT8 skyRoomMenuTranslations[MAXUNLOCKABLES] = {};
 
 static char *M_GetConditionString(condition_t cond)
 {
