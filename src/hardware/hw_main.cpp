@@ -5903,6 +5903,7 @@ void HWR_Shutdown(void)
 	HWR_FreeExtraSubsectors();
 	HWR_FreeMapTextures();
 	GL_FlushScreenTextures();
+	HWR_ClearAllTextures();
 #ifdef USE_FBO_OGL
 	GL_Framebuffer_Disable();
 #endif
