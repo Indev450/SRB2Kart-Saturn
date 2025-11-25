@@ -6479,12 +6479,20 @@ static void M_SearchServerList(void)
 	char servername[MAXSERVERNAME+1] = {0};
 	serverlistsearchedcount = 0;
 
+#ifdef HAVE_THREADS
+	I_lock_mutex(&ms_ServerList_mutex);
+#endif
+
 	for (UINT32 i = 0; i < serverlistcount; ++i)
 	{
 		StripColors(servername, serverlist[i].info.servername, MAXSERVERNAME);
 		if (menuinput.length == 0 || strcasestr(servername, menuinput.buffer) != NULL)
 			serverlistsearched[serverlistsearchedcount++] = i;
 	}
+
+#ifdef HAVE_THREADS
+	I_unlock_mutex(ms_ServerList_mutex);
+#endif
 
 	if (menuinput.length > 0)
 		serverlistpage = 0;
