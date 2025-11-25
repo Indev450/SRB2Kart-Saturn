@@ -220,21 +220,20 @@ static void Portal_ClipVisplane (const visplane_t* plane, portal_t* portal)
 	for (i = 0; i < end - start; i++)
 	{
 		// Invalid column.
-		if (plane->top[i + start] == 65535)
+		if (plane->top[i + start] == UINT16_MAX)
 		{
 			portal->ceilingclip[i] = -1;
 			portal->floorclip[i] = -1;
 			continue;
 		}
+
 		portal->ceilingclip[i] = plane->top[i + start] - 1;
 		portal->floorclip[i] = plane->bottom[i + start] + 1;
 		portal->frontscale[i] = INT32_MAX;
 	}
 }
 
-extern INT32 viewwidth;
-
-static boolean TrimVisplaneBounds (const visplane_t* plane, INT16* start, INT16* end)
+static boolean TrimVisplaneBounds(const visplane_t* plane, INT16* start, INT16* end)
 {
 	*start = plane->minx;
 	*end = plane->maxx + 1;
@@ -255,13 +254,13 @@ static boolean TrimVisplaneBounds (const visplane_t* plane, INT16* start, INT16*
 	 * valid area.
 	 */
 
-	while (plane->bottom[*start] == 0 && plane->top[*start] == 65535 && *start < *end)
+	while (plane->bottom[*start] == 0 && plane->top[*start] == UINT16_MAX && *start < *end)
 	{
 		(*start)++;
 	}
 
 
-	while (plane->bottom[*end - 1] == 0 && plane->top[*start] == 65535 && *end > *start)
+	while (plane->bottom[*end - 1] == 0 && plane->top[*start] == UINT16_MAX && *end > *start)
 	{
 		(*end)--;
 	}

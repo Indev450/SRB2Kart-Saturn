@@ -69,7 +69,6 @@ extern boolean supportstencil;
 void *GetGLFunc(const char *proc);
 boolean SetupGLfunc(void);
 void SetupGLFunc4(void);
-void GL_Flush(void);
 INT32 GL_isExtAvailable(const char *extension, const GLubyte *start);
 void GL_SetModelView(GLint w, GLint h);
 void GL_SetStates(void);

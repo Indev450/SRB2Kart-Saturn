@@ -5933,7 +5933,6 @@ static void P_RemoveShadow(mobj_t *thing)
 	}
 }
 
-void A_BossDeath(void *thing);
 // AI for the Koopa boss.
 static void P_KoopaThinker(mobj_t *koopa)
 {

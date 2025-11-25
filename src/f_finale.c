@@ -215,9 +215,6 @@ static tic_t introscenetime[NUMINTROSCENES] =
 	 4*TICRATE,	// KART KR(eW
 };
 
-// custom intros
-void F_StartCustomCutscene(INT32 cutscenenum, boolean precutscene, boolean resetplayer);
-
 void F_StartIntro(void)
 {
 	if (gamestate)
@@ -1415,6 +1412,7 @@ void F_EndCutScene(void)
 	}
 }
 
+// custom intros
 void F_StartCustomCutscene(INT32 cutscenenum, boolean precutscene, boolean resetplayer)
 {
 	if (!cutscenes[cutscenenum])

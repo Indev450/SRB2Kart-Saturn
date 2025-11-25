@@ -24,7 +24,6 @@ extern "C" {
 UINT8 K_GetHudColor(void);
 boolean K_UseColorHud(void);
 boolean K_UseHighResPortraits(void);
-patch_t *K_GetFacePrefix(player_t *player, INT32 skinnum);
 
 void K_RegisterKartHudStuff(void);
 
@@ -35,7 +34,6 @@ extern consvar_t cv_colorizedhud,
 extern consvar_t cv_darkitembox;
 extern consvar_t cv_biglaps;
 extern consvar_t cv_highresportrait;
-extern consvar_t cv_stat_xoffset, cv_stat_yoffset;
 extern consvar_t cv_showstats;
 extern consvar_t cv_fancyroulette;
 extern consvar_t cv_showlaptimes;

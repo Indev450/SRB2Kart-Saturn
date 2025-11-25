@@ -67,8 +67,6 @@ extern SDLJoyInfo_t JoyInfo[4]; //MAXSPLITSCREENPLAYERS
 #define SDL_JDEADZONE 153
 #undef SDL_JDEADZONE
 
-void I_GetConsoleEvents(void);
-
 // So we can call this from i_video event loop
 void I_ShutdownJoystick(UINT8 index);
 
