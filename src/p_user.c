@@ -996,6 +996,19 @@ INT32 P_GetLocalPlayerNumForNum(UINT8 pnum)
 	return (pnum == 0 ? consoleplayer : displayplayers[pnum]);
 }
 
+INT32 P_GetLocalPlayerNumForPlayer(const player_t *player)
+{
+	for (UINT8 i = 0; i <= splitscreen; i++)
+	{
+		if (player == P_GetLocalPlayerForNum(i))
+		{
+			return i;
+		}
+	}
+
+	return -1;
+}
+
 //
 // P_IsLocalPlayer
 //
@@ -2603,15 +2616,7 @@ static void P_DoZoomTube(player_t *player)
 	if (player->mo->tracer)
 	{
 		player->mo->angle = R_PointToAngle2(player->mo->x, player->mo->y, player->mo->tracer->x, player->mo->tracer->y);
-
-		for (UINT8 i = 0; i <= splitscreen; i++)
-		{
-			if (player == P_GetLocalPlayerForNum(i))
-			{
-				localangle[i] = player->mo->angle;
-				break;
-			}
-		}
+		P_ForceLocalAngle(player, player->mo->angle);
 	}
 }
 
@@ -2797,14 +2802,7 @@ void P_HomingAttack(mobj_t *source, mobj_t *enemy) // Home in on your target
 
 	if (source->player)
 	{
-		for (UINT8 i = 0; i <= splitscreen; i++)
-		{
-			if (source->player == P_GetLocalPlayerForNum(i))
-			{
-				localangle[i] = source->angle;
-				break;
-			}
-		}
+		P_ForceLocalAngle(source->player, source->angle);
 	}
 
 	// change slope
@@ -5200,14 +5198,8 @@ void P_PlayerAfterThink(player_t *player)
 			player->mo->tracer->target->health += cmd->sidemove;
 			player->mo->angle += cmd->sidemove << ANGLETOFINESHIFT; // 2048 --> ANGLE_MAX
 
-			for (i = 0; i <= splitscreen; i++)
-			{
-				if (player == P_GetLocalPlayerForNum(i))
-				{
-					localangle[i] = player->mo->angle; // Adjust the local control angle.
-					break;
-				}
-			}
+			// Adjust the local control angle.
+			P_ForceLocalAngle(player, player->mo->angle);
 		}
 	}
 
@@ -5246,3 +5238,34 @@ void P_PlayerAfterThink(player_t *player)
 
 	K_KartPlayerAfterThink(player);
 }
+
+angle_t P_GetLocalAngle(player_t *player)
+{
+	// this function is from vanilla srb2. can you tell?
+	// (hint: they have separate variables for all of this shit instead of arrays)
+	UINT8 i;
+
+	for (i = 0; i <= splitscreen; i++)
+	{
+		if (player == &players[displayplayers[i]])
+			return localangle[i];
+	}
+
+	return 0;
+}
+
+void P_ForceLocalAngle(player_t *player, angle_t angle)
+{
+	UINT8 i;
+
+	angle = angle & ~UINT16_MAX;
+
+	for (i = 0; i <= splitscreen; i++)
+	{
+		if (player == &players[displayplayers[i]])
+		{
+			localangle[i] = angle;
+		}
+	}
+}
+

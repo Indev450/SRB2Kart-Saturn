@@ -1383,13 +1383,10 @@ static void Polyobj_rotateThings(polyobj_t *po, vector2_t origin, angle_t delta,
 					{
 						mo->angle += delta;
 
-						for (UINT8 i = 0; i <= splitscreen; i++)
+						if (mo->player)
 						{
-							if (mo->player == P_GetLocalPlayerForNum(i))
-							{
-								localangle[i] += delta;
-								break;
-							}
+							angle_t localangle = P_GetLocalAngle(mo->player);
+							P_ForceLocalAngle(mo->player, localangle + delta);
 						}
 					}
 				}

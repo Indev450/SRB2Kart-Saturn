@@ -869,14 +869,7 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 
 					toucher->angle = special->angle;
 
-					for (i = 0; i <= splitscreen; i++)
-					{
-						if (player == P_GetLocalPlayerForNum(i))
-						{
-							localangle[i] = toucher->angle;
-							break;
-						}
-					}
+					P_ForceLocalAngle(player, toucher->angle);
 
 					P_ResetPlayer(player);
 
