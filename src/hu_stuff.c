@@ -1380,9 +1380,9 @@ boolean HU_Responder(event_t *ev)
 		&& ev->data1 != gamecontrol[0][gc_talkkey][1]))
 			return false;
 
-		M_TextInputHandleEmotes(&w_chat, c, &emote_autocomplete);
-
-		if (c == KEY_ENTER)
+		if (M_TextInputHandleEmotes(&w_chat, c, &emote_autocomplete))
+			; // Do nothing
+		else if (c == KEY_ENTER)
 		{
 			chat_on = false;
 			chat_scrollmedown = true; // you hit enter, so you might wanna autoscroll to see what you just sent. :)
@@ -1911,7 +1911,7 @@ static void HU_DrawChat(void)
 		}
 	}
 
-	if (emote_autocomplete.emotestart != -1 && (emote_autocomplete.complete[0] || (w_chat.cursor - emote_autocomplete.emotestart) > 0))
+	if (emote_autocomplete.emotestart != -1 && (emote_autocomplete.complete[0] || (w_chat.cursor - emote_autocomplete.emotestart) > 1))
 	{
 		emote_t *suggest;
 		int skip = 0;

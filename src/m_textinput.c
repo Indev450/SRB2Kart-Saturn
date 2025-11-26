@@ -435,10 +435,10 @@ static int M_TextInputEmoteStart(textinput_t *input)
 	return emotestart;
 }
 
-static void M_TextInputCompleteEmote(textinput_t *input, emote_autocomplete_t *autocomplete)
+static boolean M_TextInputCompleteEmote(textinput_t *input, emote_autocomplete_t *autocomplete)
 {
 	if (input->cursor == 0)
-		return;
+		return false;
 
 	// If we're in "autocomplete" state, delete ':' for latest autocompleted emote
 	if (autocomplete->complete[0])
@@ -457,8 +457,8 @@ static void M_TextInputCompleteEmote(textinput_t *input, emote_autocomplete_t *a
 		int emotestart = autocomplete->emotestart;
 
 		// No emote - no autocomplete
-		if (emotestart == -1 || (size_t)emotestart == input->cursor)
-			return;
+		if (emotestart == -1 || input->cursor - emotestart < 2)
+			return false;
 
 		strlcpy(autocomplete->complete, &input->buffer[emotestart], input->cursor-emotestart+1);
 	}
@@ -476,7 +476,7 @@ static void M_TextInputCompleteEmote(textinput_t *input, emote_autocomplete_t *a
 		{
 			// Clear autocompletion state
 			autocomplete->complete[0] = 0;
-			return;
+			return false;
 		}
 	}
 
@@ -488,6 +488,8 @@ static void M_TextInputCompleteEmote(textinput_t *input, emote_autocomplete_t *a
 
 	M_TextInputAddString(input, completed->name);
 	M_TextInputAddChar(input, ':');
+
+	return true;
 }
 
 boolean M_TextInputHandleEmotes(textinput_t *input, INT32 key, emote_autocomplete_t *autocomplete)
@@ -503,7 +505,8 @@ boolean M_TextInputHandleEmotes(textinput_t *input, INT32 key, emote_autocomplet
 
 	if (key == '\t' || (autocomplete->complete[0] == 0 && key == KEY_ENTER))
 	{
-		M_TextInputCompleteEmote(input, autocomplete);
+		if (M_TextInputCompleteEmote(input, autocomplete) && key == KEY_ENTER) // Don't send message if we've autocompleted an emote
+			ret = true;
 	}
 	else
 	{
