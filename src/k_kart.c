@@ -3978,15 +3978,19 @@ void K_PuntMine(mobj_t *thismine, mobj_t *punter)
 		mine->floorz = thismine->floorz;
 		mine->ceilingz = thismine->ceilingz;
 
-		//Since we aren't using P_KillMobj, we need to clean up the hnext reference
-		{
-			P_SetTarget(&thismine->target->hnext, NULL); //target is the player who owns the mine
-			thismine->target->player->kartstuff[k_bananadrag] = 0;
-			thismine->target->player->kartstuff[k_itemheld] = 0;
+		// Copy interp data
+		mine->old_angle = thismine->old_angle;
+		mine->old_x = thismine->old_x;
+		mine->old_y = thismine->old_y;
+		mine->old_z = thismine->old_z;
 
-			if (--thismine->target->player->kartstuff[k_itemamount] <= 0)
-				thismine->target->player->kartstuff[k_itemtype] = KITEM_NONE;
-		}
+		// Since we aren't using P_KillMobj, we need to clean up the hnext reference
+		P_SetTarget(&thismine->target->hnext, NULL); // target is the player who owns the mine
+		thismine->target->player->kartstuff[k_bananadrag] = 0;
+		thismine->target->player->kartstuff[k_itemheld] = 0;
+
+		if (--thismine->target->player->kartstuff[k_itemamount] <= 0)
+			thismine->target->player->kartstuff[k_itemtype] = KITEM_NONE;
 
 		P_RemoveMobj(thismine);
 
@@ -4421,6 +4425,12 @@ void K_DropHnextList(player_t *player)
 		dropwork->flags |= MF_NOCLIPTHING;
 		dropwork->floorz = work->floorz;
 		dropwork->ceilingz = work->ceilingz;
+
+		// Copy interp data
+		dropwork->old_angle = work->old_angle;
+		dropwork->old_x = work->old_x;
+		dropwork->old_y = work->old_y;
+		dropwork->old_z = work->old_z;
 
 		if (ponground)
 		{

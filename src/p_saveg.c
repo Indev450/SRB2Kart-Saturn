@@ -339,7 +339,7 @@ static void P_NetUnArchivePlayers(savebuffer_t *save, boolean reloading)
 		for (j = 0; j < NUMKARTSTUFF; j++)
 			player->kartstuff[j] = READINT32(save->p);
 
-		player->frameangle = READANGLE(save->p);
+		player->frameangle = player->old_frameangle = READANGLE(save->p);
 
 		player->playerstate = READUINT8(save->p);
 		player->pflags = READUINT32(save->p);
@@ -2037,15 +2037,15 @@ static void LoadMobjThinker(savebuffer_t *save, actionf_p1 thinker)
 
 	if (diff & MD_POS)
 	{
-		mobj->x = READFIXED(save->p);
-		mobj->y = READFIXED(save->p);
-		mobj->angle = READANGLE(save->p);
+		mobj->x = mobj->old_x = READFIXED(save->p);
+		mobj->y = mobj->old_y = READFIXED(save->p);
+		mobj->angle = mobj->old_angle = READANGLE(save->p);
 	}
 	else
 	{
-		mobj->x = mobj->spawnpoint->x << FRACBITS;
-		mobj->y = mobj->spawnpoint->y << FRACBITS;
-		mobj->angle = FixedAngle(mobj->spawnpoint->angle*FRACUNIT);
+		mobj->x = mobj->old_x = mobj->spawnpoint->x << FRACBITS;
+		mobj->y = mobj->old_y = mobj->spawnpoint->y << FRACBITS;
+		mobj->angle = mobj->old_angle = FixedAngle(mobj->spawnpoint->angle*FRACUNIT);
 	}
 
 	if (diff & MD_MOM)
@@ -2107,16 +2107,6 @@ static void LoadMobjThinker(savebuffer_t *save, actionf_p1 thinker)
 		i = READUINT8(save->p);
 		mobj->player = &players[i];
 		mobj->player->mo = mobj;
-
-		// added for angle prediction
-		if (consoleplayer == i)
-			localangle[0] = mobj->angle;
-		else if (displayplayers[1] == i)
-			localangle[1] = mobj->angle;
-		else if (displayplayers[2] == i)
-			localangle[2] = mobj->angle;
-		else if (displayplayers[3] == i)
-			localangle[3] = mobj->angle;
 	}
 	if (diff & MD_MOVEDIR)
 		mobj->movedir = READANGLE(save->p);

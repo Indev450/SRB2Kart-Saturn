@@ -10681,8 +10681,9 @@ void P_SpawnPlayer(INT32 playernum)
 	mobj = P_SpawnMobj(0, 0, 0, MT_PLAYER);
 	I_Assert(mobj != NULL);
 	(mobj->player = p)->mo = mobj;
+	//P_SetTarget(&p->mo, mobj);
 
-	mobj->angle = 0;
+	mobj->angle = mobj->old_angle = 0;
 
 	// set color translations for player sprites
 	mobj->color = p->skincolor;
@@ -10789,14 +10790,13 @@ void P_AfterPlayerSpawn(INT32 playernum)
 	mobj_t *mobj = p->mo;
 	UINT8 i;
 
-	for (i = 0; i <= splitscreen; i++)
-	{
-		if (playernum == P_GetLocalPlayerNumForNum(i))
-		{
-			localangle[i] = mobj->angle;
-			break;
-		}
-	}
+	// Update interpolation
+	mobj->old_x = mobj->x;
+	mobj->old_y = mobj->y;
+	mobj->old_z = mobj->z;
+	mobj->old_angle = mobj->angle;
+
+	P_ForceLocalAngle(p, mobj->angle);
 
 	p->viewheight = 32<<FRACBITS;
 
