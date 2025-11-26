@@ -295,8 +295,6 @@ void HWR_RenderBatches(boolean sort)
 		qs22j(polygonArraySorted, polygonArraySize, sizeof(PolygonArrayEntry *), (useshader ? comparePolygons : comparePolygonsNoShaders));
 		PS_STOP_TIMING(ps_hw_batchsorttime);
 	}
-	else
-		ps_hw_batchsorttime.value.p = 0;
 
 	// sort order
 	// 1. shader
