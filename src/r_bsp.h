@@ -34,7 +34,7 @@ extern portal_t *g_portal; // is curline a portal seg?
 
 // drawsegs are allocated on the fly... see r_segs.c
 
-extern INT32 checkcoord[12][4];
+extern const INT32 checkcoord[12][4];
 
 extern drawseg_t *curdrawsegs;
 extern drawseg_t *drawsegs;
