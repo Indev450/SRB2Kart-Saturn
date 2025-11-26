@@ -4440,10 +4440,10 @@ static void HWR_RenderDrawNodes(void)
 		}
 	}
 
+	PS_STOP_TIMING(ps_hw_nodedrawtime);
+
 	if (LIKELY(cv_glbatching.value))
 		HWR_RenderBatches(false);
-
-	PS_STOP_TIMING(ps_hw_nodedrawtime);
 
 	drawnodes.clear(); // clear so our size is 0 again!
 }
@@ -5562,9 +5562,9 @@ void HWR_RenderViewpoint(gl_portal_t *rootportal, player_t *player, int stencil_
 		HWR_DrawSprites<DrawSpritesType::kModels>();
 	else
 		HWR_DrawSprites<DrawSpritesType::kSprites>();
+	PS_STOP_TIMING(ps_hw_spritedrawtime);
 	if (LIKELY(cv_glbatching.value))
 		HWR_RenderBatches(false);
-	PS_STOP_TIMING(ps_hw_spritedrawtime);
 
 	ps_numdrawnodes.value.i    = 0;
 	ps_hw_nodesorttime.value.p = 0;
