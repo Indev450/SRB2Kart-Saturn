@@ -35,26 +35,6 @@ extern "C" {
 
 #define FEETADJUST (4<<FRACBITS) // R_AddSingleSpriteDef
 
-FUNCINLINE static ATTRINLINE fixed_t R_QuickDist(fixed_t x1, fixed_t y1, fixed_t x, fixed_t y)
-{
-	const fixed_t absx = abs(x - x1);
-	const fixed_t absy = abs(y - y1);
-#ifdef __cplusplus
-	return std::max<fixed_t>(absx, absy);
-#else
-	return max(absx, absy);
-#endif
-}
-
-// Takes 2 fixed-point coordinates, returns "distance" between them and camera,
-// as an fixed-point integer.
-// It is very rough, tho it is used only for optimizing out unnecessary
-// interpolation, so it is kinda ok on big distances.
-FUNCINLINE static ATTRINLINE fixed_t R_QuickCamDist(fixed_t x, fixed_t y)
-{
-	return R_QuickDist(viewx, viewy, x, y);
-}
-
 // Constant arrays used for psprite clipping
 //  and initializing clipping.
 extern INT16 *negonearray;
