@@ -500,7 +500,7 @@ clipsolid:
 // 0 | 0 | 1 | 2
 // 1 | 4 | 5 | 6
 // 2 | 8 | 9 | A
-INT32 checkcoord[12][4] =
+const INT32 checkcoord[12][4] =
 {
 	{3, 0, 2, 1},
 	{3, 0, 2, 0},
