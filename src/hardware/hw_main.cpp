@@ -3170,12 +3170,15 @@ doaddline:
 	// hurdler: false: we only add the sprites, the walls are drawn first
 	if (line)
 	{
-		// draw sprites first, coz they are clipped to the solidsegs of
-		// subsectors more 'in front'
-		if (cv_drawdist.value || current_bsp_culling_distance)
-			HWR_AddSprites<AddSpritesType::kLimitDist>(gl_frontsector);
-		else
-			HWR_AddSprites<AddSpritesType::kNoLimitDist>(gl_frontsector);
+		if (sub->sector->validcount != validcount)
+		{
+			// draw sprites first, coz they are clipped to the solidsegs of
+			// subsectors more 'in front'
+			if (cv_drawdist.value || current_bsp_culling_distance)
+				HWR_AddSprites<AddSpritesType::kLimitDist>(gl_frontsector);
+			else
+				HWR_AddSprites<AddSpritesType::kNoLimitDist>(gl_frontsector);
+		}
 
 		//Hurdler: at this point validcount must be the same, but is not because
 		//         gl_frontsector doesn't point anymore to sub->sector due to
