@@ -1612,6 +1612,20 @@ static void R_ProjectSprite(mobj_t *thing)
 			return;
 	}
 
+	if (!papersprite)
+	{
+		// killough 4/9/98: clip things which are out of view due to height
+		// e6y: fix of hanging decoration disappearing in Batman Doom MAP02
+		// centeryfrac -> viewheightfrac
+		// [kb] add +1 so sprites are shown even with the extended freelook
+		// lug: attempt to account for freelook properly
+		if (interp.z > viewz + FixedMul(FixedDiv(centeryfrac, projectiony), tz) ||
+			gzt < viewz + FixedMul(FixedDiv(centeryfrac - (viewheight << FRACBITS), projectiony), tz))
+		{
+			return;
+		}
+	}
+
 	// killough 3/27/98: exclude things totally separated
 	// from the viewer, by either water or fake ceilings
 	// killough 4/11/98: improve sprite clipping for underwater/fake ceilings
@@ -1959,6 +1973,17 @@ static void R_ProjectPrecipitationSprite(precipmobj_t *thing)
 	{
 		if (R_DoCulling(thing->subsector->sector->cullheight, viewsector->cullheight, viewz, gz, gzt))
 			return;
+	}
+
+	// killough 4/9/98: clip things which are out of view due to height
+	// e6y: fix of hanging decoration disappearing in Batman Doom MAP02
+	// centeryfrac -> viewheightfrac
+	// [kb] add +1 so sprites are shown even with the extended freelook
+	// lug: attempt to account for freelook properly
+	if (interp.z > viewz + FixedMul(FixedDiv(centeryfrac, projectiony), tz) ||
+		gzt < viewz + FixedMul(FixedDiv(centeryfrac - (viewheight << FRACBITS), projectiony), tz))
+	{
+		return;
 	}
 
 	// aspect ratio stuff :
