@@ -4942,8 +4942,11 @@ static void HWR_ProjectSprite(mobj_t *thing)
 		// [kb] add +1 so sprites are shown even with the extended freelook
 		// lug: attempt to account for freelook properly
 		const fixed_t fixedtz = FloatToFixed(tz);
-		if (interp.z > viewz + FixedMul(centeryfrac, fixedtz) || // view center accounted for aspect (i hope)
-			FloatToFixed(gzt) < viewz + FixedMul((centeryfrac - (viewheight << FRACBITS)), fixedtz)) // view center accounted for aspect but the bottom (OwO)
+		if (interp.z > viewz + FixedMul(FixedDiv(centeryfrac, projectiony), fixedtz) || // view center accounted for aspect (i hope)
+			FloatToFixed(gzt) < viewz + FixedMul(FixedDiv(centeryfrac - (viewheight << FRACBITS), projectiony), fixedtz)) // view center accounted for aspect but the bottom (OwO)
+		{
+			return;
+		}
 		{
 			return;
 		}
