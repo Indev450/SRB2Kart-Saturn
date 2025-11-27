@@ -856,8 +856,10 @@ boolean K_IsPlayerLosing(player_t *player)
 boolean K_IsPlayerWanted(player_t *player)
 {
 	UINT8 i;
-	if (!(G_BattleGametype()))
+
+	if (!G_BattleGametype())
 		return false;
+
 	for (i = 0; i < 4; i++)
 	{
 		if (battlewanted[i] == -1)
@@ -865,6 +867,7 @@ boolean K_IsPlayerWanted(player_t *player)
 		if (player == &players[battlewanted[i]])
 			return true;
 	}
+
 	return false;
 }
 
@@ -1289,7 +1292,9 @@ static void K_KartItemRoulette(player_t *player, ticcmd_t *cmd)
 	{
 		if (!playeringame[i] || players[i].spectator)
 			continue;
+
 		pingame++;
+
 		if (players[i].exiting)
 			dontforcespb = true;
 		if (players[i].kartstuff[k_bumper] > bestbumper)
@@ -1303,13 +1308,11 @@ static void K_KartItemRoulette(player_t *player, ticcmd_t *cmd)
 	// This makes the roulette produce the random noises.
 	if ((player->kartstuff[k_itemroulette] % 3) == 1 && P_IsDisplayPlayer(player))
 	{
-#define PLAYROULETTESND S_StartSound(NULL, sfx_itrol1 + ((player->kartstuff[k_itemroulette] / 3) % 8))
 		for (i = 0; i <= splitscreen; i++)
 		{
 			if (player == &players[displayplayers[i]] && players[displayplayers[i]].kartstuff[k_itemroulette])
-				PLAYROULETTESND;
+				S_StartSound(NULL, sfx_itrol1 + ((player->kartstuff[k_itemroulette] / 3) % 8));
 		}
-#undef PLAYROULETTESND
 	}
 
 	roulettestop = TICRATE + (3*(pingame - player->kartstuff[k_position]));
@@ -1407,8 +1410,9 @@ static fixed_t K_GetMobjWeight(mobj_t *mobj, mobj_t *against)
 			else
 			{
 				weight = (mobj->player->kartweight)<<FRACBITS;
-				if (mobj->player->speed > K_GetKartSpeed(mobj->player, false))
-					weight += (mobj->player->speed - K_GetKartSpeed(mobj->player, false))/8;
+				const fixed_t kartspeed = K_GetKartSpeed(mobj->player, false);
+				if (mobj->player->speed > kartspeed)
+					weight += (mobj->player->speed - kartspeed)/8;
 			}
 			break;
 		case MT_FALLINGROCK:
@@ -1530,9 +1534,9 @@ void K_KartBouncing(mobj_t *mobj1, mobj_t *mobj2, boolean bounce, boolean solid)
 	}
 
 	// if the speed difference is less than this let's assume they're going proportionately faster from each other
-	if (P_AproxDistance(momdifx, momdify) < (25*mapobjectscale))
+	const fixed_t momdiflength = P_AproxDistance(momdifx, momdify);
+	if (momdiflength < (25*mapobjectscale))
 	{
-		fixed_t momdiflength = P_AproxDistance(momdifx, momdify);
 		fixed_t normalisedx = FixedDiv(momdifx, momdiflength);
 		fixed_t normalisedy = FixedDiv(momdify, momdiflength);
 		momdifx = FixedMul((25*mapobjectscale), normalisedx);
@@ -1696,7 +1700,7 @@ static void K_UpdateOffroad(player_t *player)
 	// If you are in offroad, a timer starts.
 	if (offroadstrength)
 	{
-		if (/*K_CheckOffroadCollide(player->mo) &&*/ player->kartstuff[k_offroad] == 0)	// With the way offroad is detected now that first check is no longer necessary. -Lat'
+		if (/*K_CheckOffroadCollide(player->mo) &&*/ player->kartstuff[k_offroad] == 0) // With the way offroad is detected now that first check is no longer necessary. -Lat'
 			player->kartstuff[k_offroad] = (TICRATE/2);
 
 		if (player->kartstuff[k_offroad] > 0)
@@ -2440,7 +2444,7 @@ void K_SpinPlayer(player_t *player, mobj_t *source, INT32 type, mobj_t *inflicto
 		|| player->kartstuff[k_invincibilitytimer] > 0 || player->kartstuff[k_growshrinktimer] > 0 || player->kartstuff[k_hyudorotimer] > 0
 		|| (G_BattleGametype() && ((player->kartstuff[k_bumper] <= 0 && player->kartstuff[k_comebacktimer]) || player->kartstuff[k_comebackmode] == 1)))
 	{
-		if (!force)	// if shoulddamage force, we go THROUGH that.
+		if (!force) // if shoulddamage force, we go THROUGH that.
 		{
 			K_DoInstashield(player);
 			return;
@@ -2485,6 +2489,7 @@ void K_SpinPlayer(player_t *player, mobj_t *source, INT32 type, mobj_t *inflicto
 				P_SetScale(karmahitbox, player->mo->scale);
 				CONS_Printf(M_GetText("%s lost all of their bumpers!\n"), player_names[player-players]);
 			}
+
 			player->kartstuff[k_bumper]--;
 			if (K_IsPlayerWanted(player))
 				K_CalculateBattleWanted();
@@ -2619,6 +2624,7 @@ void K_SquishPlayer(player_t *player, mobj_t *source, mobj_t *inflictor)
 				P_SetScale(karmahitbox, player->mo->scale);
 				CONS_Printf(M_GetText("%s lost all of their bumpers!\n"), player_names[player-players]);
 			}
+
 			player->kartstuff[k_bumper]--;
 			if (K_IsPlayerWanted(player))
 				K_CalculateBattleWanted();
@@ -2738,6 +2744,7 @@ void K_ExplodePlayer(player_t *player, mobj_t *source, mobj_t *inflictor) // A b
 				P_SetScale(karmahitbox, player->mo->scale);
 				CONS_Printf(M_GetText("%s lost all of their bumpers!\n"), player_names[player-players]);
 			}
+
 			player->kartstuff[k_bumper]--;
 			if (K_IsPlayerWanted(player))
 				K_CalculateBattleWanted();
@@ -2898,9 +2905,9 @@ void K_SpawnKartExplosion(fixed_t x, fixed_t y, fixed_t z, fixed_t radius, INT32
 	for (i = 0; i < number; i++)
 	{
 		fa = (i*degrees);
-		v[0] = FixedMul(FINECOSINE(fa),radius);
+		v[0] = FixedMul(FINECOSINE(fa), radius);
 		v[1] = 0;
-		v[2] = FixedMul(FINESINE(fa),radius);
+		v[2] = FixedMul(FINESINE(fa), radius);
 		v[3] = FRACUNIT;
 
 		res = VectorMatrixMultiply(v, *RotateXMatrix(rotangle));
@@ -6591,7 +6598,7 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 
 	K_KartUpdatePosition(player);
 
-	if (LIKELY(!player->exiting))
+	if (!player->exiting)
 	{
 		if (player->kartstuff[k_oldposition] < player->kartstuff[k_position]) // But first, if you lost a place,
 		{
