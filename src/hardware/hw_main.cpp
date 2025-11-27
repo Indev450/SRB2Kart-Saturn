@@ -2533,7 +2533,7 @@ static boolean HWR_CheckBBox(const fixed_t *bspcoord)
 		// one if statement will split the space in two for one coordinate
 		// for example:
 		// x < BOXLEFT   || BOXLEFT ||   !(x < BOXLEFT)   <-- (same as x >= BOXLEFT)
-		fixed_t mindist;// = min(min(mindist1, mindist2), min(mindist3, mindist4));
+		fixed_t mindist = 0;// = min(min(mindist1, mindist2), min(mindist3, mindist4));
 
 		// new thing
 		// calculate distance to axis aligned bounding box.
@@ -3026,7 +3026,7 @@ static void HWR_Subsector(size_t num)
 					// Hack to make things continue to work around slopes.
 					locCeilingHeight == cullCeilingHeight ? locCeilingHeight : gl_frontsector->ceilingheight,
 					// We now return you to your regularly scheduled rendering.
-					PF_Occlude, ceilinglightlevel, levelflats[gl_frontsector->ceilingpic].lumpnum,NULL, 255, ceilingcolormap);
+					PF_Occlude, ceilinglightlevel, levelflats[gl_frontsector->ceilingpic].lumpnum, NULL, 255, ceilingcolormap);
 			}
 		}
 	}
@@ -3058,8 +3058,8 @@ static void HWR_Subsector(size_t num)
 			centerHeight = P_GetFFloorBottomZAt(rover, gl_frontsector->soundorg.x, gl_frontsector->soundorg.y);
 
 			if (centerHeight <= locCeilingHeight && centerHeight >= locFloorHeight &&
-			    ((viewz < bottomCullHeight && !(rover->flags & FF_INVERTPLANES)) ||
-			     (viewz > bottomCullHeight && (rover->flags & FF_BOTHPLANES || rover->flags & FF_INVERTPLANES))))
+				((viewz < bottomCullHeight && !(rover->flags & FF_INVERTPLANES)) ||
+				 (viewz > bottomCullHeight && (rover->flags & FF_BOTHPLANES || rover->flags & FF_INVERTPLANES))))
 			{
 				if (rover->flags & FF_FOG)
 				{
@@ -3103,9 +3103,9 @@ static void HWR_Subsector(size_t num)
 			centerHeight = P_GetFFloorTopZAt(rover, gl_frontsector->soundorg.x, gl_frontsector->soundorg.y);
 
 			if (centerHeight >= locFloorHeight &&
-			    centerHeight <= locCeilingHeight &&
-			    ((viewz > topCullHeight && !(rover->flags & FF_INVERTPLANES)) ||
-			     (viewz < topCullHeight && (rover->flags & FF_BOTHPLANES || rover->flags & FF_INVERTPLANES))))
+				centerHeight <= locCeilingHeight &&
+				((viewz > topCullHeight && !(rover->flags & FF_INVERTPLANES)) ||
+				 (viewz < topCullHeight && (rover->flags & FF_BOTHPLANES || rover->flags & FF_INVERTPLANES))))
 			{
 				if (rover->flags & FF_FOG)
 				{
@@ -5205,7 +5205,6 @@ void HWR_ClearSkyDome(void)
 	sky->rows = sky->columns = 0;
 	sky->loopcount = 0;
 
-	sky->detail = 0;
 	sky->texture = -1;
 	sky->width = sky->height = 0;
 
@@ -5224,8 +5223,7 @@ void HWR_BuildSkyDome(void)
 	gl_skyvertex_t *vertex_p;
 	const texture_t *texture = textures[texturetranslation[skytexture]];
 
-	sky->detail = 16;
-	col_count *= sky->detail;
+	col_count *= 16;
 
 	if ((sky->columns != col_count) || (sky->rows != row_count))
 		HWR_ClearSkyDome();

@@ -65,7 +65,7 @@ extern SINT8 gl_portal_state;
 // new thing
 extern gl_portallist_t *currentportallist;
 
-static inline void HWR_SetPortalState (SINT8 state)
+static inline void HWR_SetPortalState(SINT8 state)
 {
 	gl_portal_state = state;
 }
