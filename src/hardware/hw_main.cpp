@@ -4925,16 +4925,17 @@ static void HWR_ProjectSprite(mobj_t *thing)
 	if (heightsec != -1 && phs != -1) // only clip things which are in special sectors
 	{
 		fixed_t secheight;
+		const fixed_t fgzt = FloatToFixed(gzt);
 
 		secheight = P_GetSectorFloorZAt(&sectors[heightsec], viewx, viewy);
 		if (viewz < P_GetSectorFloorZAt(&sectors[phs], interp.x, interp.y) ?
 			interp.z >= secheight :
-			gzt < secheight)
+			fgzt < secheight)
 			return;
 
 		secheight = P_GetSectorCeilingZAt(&sectors[heightsec], viewx, viewy);
 		if (viewz > P_GetSectorCeilingZAt(&sectors[phs], interp.x, interp.y) ?
-			gzt < secheight && viewz >= secheight :
+			fgzt < secheight && viewz >= secheight :
 			interp.z >= secheight)
 			return;
 	}
