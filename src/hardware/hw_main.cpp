@@ -84,6 +84,13 @@ float gl_viewsin = 0.0f, gl_viewcos = 0.0f;
 static float gl_viewludsin, gl_viewludcos;
 static angle_t gl_aimingangle;
 
+static float yaw = 0.0f;
+static float inv_yaw = 0.0f;
+static float cos_inv_yaw = 0.0f;
+static float sin_inv_yaw = 0.0f;
+
+static constexpr float deg2radians = (M_PIf / 180.0f);
+
 seg_t    *gl_curline = NULL;
 side_t   *gl_sidedef = NULL;
 line_t   *gl_linedef = NULL;
@@ -2348,12 +2355,22 @@ static inline void DoAddLine(seg_t* line, angle_t angle1, angle_t angle2)
 	static sector_t tempsec;
 
 	auto do_addline = [&](bool dontdraw) {
+		// Single sided line?
 		if (!line->backsector)
 		{
 			gld_clipper_SafeAddClipRange(angle2, angle1);
 		}
 		else
 		{
+			if (line->frontsector == line->backsector)
+			{
+				if (R_GetTextureNum(line->sidedef->midtexture) == 0)
+				{
+					//e6y: nothing to do here!
+					return;
+				}
+			}
+
 			gl_backsector = R_FakeFlat(gl_backsector, &tempsec, NULL, NULL, true);
 
 			if (CheckClip(gl_frontsector, gl_backsector))
@@ -2520,7 +2537,7 @@ static boolean HWR_CheckBBox(const fixed_t *bspcoord)
 		// one if statement will split the space in two for one coordinate
 		// for example:
 		// x < BOXLEFT   || BOXLEFT ||   !(x < BOXLEFT)   <-- (same as x >= BOXLEFT)
-		fixed_t mindist;// = min(min(mindist1, mindist2), min(mindist3, mindist4));
+		fixed_t mindist = 0;// = min(min(mindist1, mindist2), min(mindist3, mindist4));
 
 		// new thing
 		// calculate distance to axis aligned bounding box.
@@ -2965,7 +2982,7 @@ static void HWR_Subsector(size_t num)
 		if (anyMoved == true)
 		{
 			gl_frontsector->numlights = sub->sector->numlights = 0;
-			R_Prep3DFloors(gl_frontsector);
+			R_Prep3DFloors(gl_frontsector, locCeilingHeight);
 			sub->sector->lightlist = gl_frontsector->lightlist;
 			sub->sector->numlights = gl_frontsector->numlights;
 			sub->sector->moved = gl_frontsector->moved = false;
@@ -3013,7 +3030,7 @@ static void HWR_Subsector(size_t num)
 					// Hack to make things continue to work around slopes.
 					locCeilingHeight == cullCeilingHeight ? locCeilingHeight : gl_frontsector->ceilingheight,
 					// We now return you to your regularly scheduled rendering.
-					PF_Occlude, ceilinglightlevel, levelflats[gl_frontsector->ceilingpic].lumpnum,NULL, 255, ceilingcolormap);
+					PF_Occlude, ceilinglightlevel, levelflats[gl_frontsector->ceilingpic].lumpnum, NULL, 255, ceilingcolormap);
 			}
 		}
 	}
@@ -3045,8 +3062,8 @@ static void HWR_Subsector(size_t num)
 			centerHeight = P_GetFFloorBottomZAt(rover, gl_frontsector->soundorg.x, gl_frontsector->soundorg.y);
 
 			if (centerHeight <= locCeilingHeight && centerHeight >= locFloorHeight &&
-			    ((viewz < bottomCullHeight && !(rover->flags & FF_INVERTPLANES)) ||
-			     (viewz > bottomCullHeight && (rover->flags & FF_BOTHPLANES || rover->flags & FF_INVERTPLANES))))
+				((viewz < bottomCullHeight && !(rover->flags & FF_INVERTPLANES)) ||
+				 (viewz > bottomCullHeight && (rover->flags & FF_BOTHPLANES || rover->flags & FF_INVERTPLANES))))
 			{
 				if (rover->flags & FF_FOG)
 				{
@@ -3090,9 +3107,9 @@ static void HWR_Subsector(size_t num)
 			centerHeight = P_GetFFloorTopZAt(rover, gl_frontsector->soundorg.x, gl_frontsector->soundorg.y);
 
 			if (centerHeight >= locFloorHeight &&
-			    centerHeight <= locCeilingHeight &&
-			    ((viewz > topCullHeight && !(rover->flags & FF_INVERTPLANES)) ||
-			     (viewz < topCullHeight && (rover->flags & FF_BOTHPLANES || rover->flags & FF_INVERTPLANES))))
+				centerHeight <= locCeilingHeight &&
+				((viewz > topCullHeight && !(rover->flags & FF_INVERTPLANES)) ||
+				 (viewz < topCullHeight && (rover->flags & FF_BOTHPLANES || rover->flags & FF_INVERTPLANES))))
 			{
 				if (rover->flags & FF_FOG)
 				{
@@ -3171,12 +3188,15 @@ doaddline:
 	// hurdler: false: we only add the sprites, the walls are drawn first
 	if (line)
 	{
-		// draw sprites first, coz they are clipped to the solidsegs of
-		// subsectors more 'in front'
-		if (cv_drawdist.value || current_bsp_culling_distance)
-			HWR_AddSprites<AddSpritesType::kLimitDist>(gl_frontsector);
-		else
-			HWR_AddSprites<AddSpritesType::kNoLimitDist>(gl_frontsector);
+		if (sub->sector->validcount != validcount)
+		{
+			// draw sprites first, coz they are clipped to the solidsegs of
+			// subsectors more 'in front'
+			if (cv_drawdist.value || current_bsp_culling_distance)
+				HWR_AddSprites<AddSpritesType::kLimitDist>(gl_frontsector);
+			else
+				HWR_AddSprites<AddSpritesType::kNoLimitDist>(gl_frontsector);
+		}
 
 		//Hurdler: at this point validcount must be the same, but is not because
 		//         gl_frontsector doesn't point anymore to sub->sector due to
@@ -4633,6 +4653,7 @@ static void HWR_ProjectSprite(mobj_t *thing)
 	float tr_x, tr_y;
 	float tz;
 	float x1, x2;
+	float y1, y2;
 	float z1, z2;
 	float rightsin, rightcos;
 	float this_scale;
@@ -4855,17 +4876,6 @@ static void HWR_ProjectSprite(mobj_t *thing)
 	spr_offset += interp.spritexoffset;
 	spr_topoffset += interp.spriteyoffset;
 
-	if (papersprite)
-	{
-		rightsin = FixedToFloat(FINESINE(interp.angle >> ANGLETOFINESHIFT));
-		rightcos = FixedToFloat(FINECOSINE(interp.angle >> ANGLETOFINESHIFT));
-	}
-	else
-	{
-		rightsin = FixedToFloat(FINESINE((viewangle + ANGLE_90)>>ANGLETOFINESHIFT));
-		rightcos = FixedToFloat(FINECOSINE((viewangle + ANGLE_90)>>ANGLETOFINESHIFT));
-	}
-
 	spritexscale *= this_scale;
 	spriteyscale *= this_scale;
 
@@ -4882,19 +4892,17 @@ static void HWR_ProjectSprite(mobj_t *thing)
 		x2 = (FixedToFloat(spr_width - spr_offset) * spritexscale);
 	}
 
-	z1 = tr_y + x1 * rightsin;
-	z2 = tr_y - x2 * rightsin;
-	x1 = tr_x + x1 * rightcos;
-	x2 = tr_x - x2 * rightcos;
+	y1 = (FixedToFloat(spr_topoffset) * spriteyscale);
+	y2 = (FixedToFloat(spr_height - spr_topoffset) * spriteyscale);
 
 	if (vflip)
 	{
-		gz = FixedToFloat(interp.z + thing->height) - (FixedToFloat(spr_topoffset) * spriteyscale);
+		gz = FixedToFloat(interp.z + thing->height) - y1;
 		gzt = gz + (FixedToFloat(spr_height) * spriteyscale);
 	}
 	else
 	{
-		gzt = FixedToFloat(interp.z) + (FixedToFloat(spr_topoffset) * spriteyscale);
+		gzt = FixedToFloat(interp.z) + y1;
 		gz = gzt - (FixedToFloat(spr_height) * spriteyscale);
 	}
 
@@ -4902,6 +4910,32 @@ static void HWR_ProjectSprite(mobj_t *thing)
 	{
 		if (HWR_DoCulling(thing->subsector->sector->cullheight, viewsector->cullheight, gl_viewz, gz, gzt))
 			return;
+	}
+
+	// rest in piece sweet prince
+	/*if (cv_glshearing.value && !papersprite)
+	{
+		// killough 4/9/98: clip things which are out of view due to height
+		// e6y: fix of hanging decoration disappearing in Batman Doom MAP02
+		// centeryfrac -> viewheightfrac
+		// [kb] add +1 so sprites are shown even with the extended freelook
+		// lug: attempt to account for freelook properly
+		const fixed_t fixedtz = FloatToFixed(tz);
+		if (interp.z > viewz + FixedMul(centeryfrac, fixedtz) || // view center accounted for aspect (i hope)
+			FloatToFixed(gzt) < viewz + FixedMul((centeryfrac - (viewheight << FRACBITS)), fixedtz)) // view center accounted for aspect but the bottom (OwO)
+		{
+			return;
+		}
+	}*/
+
+	if (!gld_SphereInFrustum(
+							(FixedToFloat(interp.x)) + cos_inv_yaw * (x1 + x2) / 2.0f,
+							FixedToFloat(interp.z) + (y1 + y2) / 2.0f,
+							FixedToFloat(interp.y) - sin_inv_yaw * (x1 + x2) / 2.0f,
+							//1.5 == sqrt(2) + small delta for MF_FOREGROUND
+							std::max<float>(FixedToFloat(spr_width), FixedToFloat(spr_height)) / 2.0f * 1.5f))
+	{
+		return;
 	}
 
 	heightsec = thing->subsector->sector->heightsec;
@@ -4912,15 +4946,39 @@ static void HWR_ProjectSprite(mobj_t *thing)
 
 	if (heightsec != -1 && phs != -1) // only clip things which are in special sectors
 	{
-		if (gl_viewz < FixedToFloat(sectors[phs].floorheight) ?
-			FixedToFloat(interp.z) >= FixedToFloat(sectors[heightsec].floorheight) :
-			gzt < FixedToFloat(sectors[heightsec].floorheight))
+		fixed_t secheight;
+		const fixed_t fgzt = FloatToFixed(gzt);
+
+		secheight = P_GetSectorFloorZAt(&sectors[heightsec], viewx, viewy);
+		if (viewz < P_GetSectorFloorZAt(&sectors[phs], interp.x, interp.y) ?
+			interp.z >= secheight :
+			fgzt < secheight)
 			return;
-		if (gl_viewz > FixedToFloat(sectors[phs].ceilingheight) ?
-			gzt < FixedToFloat(sectors[heightsec].ceilingheight) && gl_viewz >= FixedToFloat(sectors[heightsec].ceilingheight) :
-			FixedToFloat(interp.z) >= FixedToFloat(sectors[heightsec].ceilingheight))
+
+		secheight = P_GetSectorCeilingZAt(&sectors[heightsec], viewx, viewy);
+		if (viewz > P_GetSectorCeilingZAt(&sectors[phs], interp.x, interp.y) ?
+			fgzt < secheight && viewz >= secheight :
+			interp.z >= secheight)
 			return;
 	}
+
+	if (papersprite)
+	{
+		rightsin = FixedToFloat(FINESINE(interp.angle >> ANGLETOFINESHIFT));
+		rightcos = FixedToFloat(FINECOSINE(interp.angle >> ANGLETOFINESHIFT));
+	}
+	else
+	{
+		rightsin = FixedToFloat(FINESINE((viewangle + ANGLE_90)>>ANGLETOFINESHIFT));
+		rightcos = FixedToFloat(FINECOSINE((viewangle + ANGLE_90)>>ANGLETOFINESHIFT));
+	}
+
+	z1 = tr_y + x1 * rightsin;
+	z2 = tr_y - x2 * rightsin;
+	x1 = tr_x + x1 * rightcos;
+	x2 = tr_x - x2 * rightcos;
+	//y1 = tr_y + y1 * rightcos;
+	//y2 = tr_y - y2 * rightcos;
 
 	// store information in a vissprite
 	vis = HWR_NewVisSprite();
@@ -4997,12 +5055,16 @@ static void HWR_ProjectPrecipitationSprite(precipmobj_t *thing)
 	float tr_x, tr_y;
 	float tz;
 	float x1, x2;
+	float y1, y2;
 	float z1, z2;
+	float gz, gzt;
 	float rightsin, rightcos;
 	float this_scale;
 	spritedef_t *sprdef;
 	spriteframe_t *sprframe;
 	size_t lumpoff;
+	fixed_t spr_width, spr_height;
+	fixed_t spr_offset, spr_topoffset;
 	unsigned rot = 0;
 	UINT8 flip;
 
@@ -5063,22 +5125,46 @@ static void HWR_ProjectPrecipitationSprite(precipmobj_t *thing)
 	lumpoff = sprframe->lumpid[0];
 	flip = sprframe->flip; // Will only be 0x00 or 0xFF
 
-	rightsin = FixedToFloat(FINESINE((viewangle + ANGLE_90)>>ANGLETOFINESHIFT));
-	rightcos = FixedToFloat(FINECOSINE((viewangle + ANGLE_90)>>ANGLETOFINESHIFT));
+	spr_width = spritecachedinfo[lumpoff].width;
+	spr_height = spritecachedinfo[lumpoff].height;
+	spr_offset = spritecachedinfo[lumpoff].offset;
+	spr_topoffset = spritecachedinfo[lumpoff].topoffset;
 
 	if (flip)
 	{
-		x1 = FixedToFloat(spritecachedinfo[lumpoff].width - spritecachedinfo[lumpoff].offset);
-		x2 = FixedToFloat(spritecachedinfo[lumpoff].offset);
+		x1 = FixedToFloat(spr_width - spr_offset);
+		x2 = FixedToFloat(spr_offset);
 	}
 	else
 	{
-		x1 = FixedToFloat(spritecachedinfo[lumpoff].offset);
-		x2 = FixedToFloat(spritecachedinfo[lumpoff].width - spritecachedinfo[lumpoff].offset);
+		x1 = FixedToFloat(spr_offset);
+		x2 = FixedToFloat(spr_offset);
 	}
+
+	y1 = (FixedToFloat(spr_topoffset));
+	y2 = (FixedToFloat(spr_height - spr_topoffset));
 
 	x1 *= this_scale;
 	x2 *= this_scale;
+	y1 *= this_scale;
+	y2 *= this_scale;
+
+	if (!gld_SphereInFrustum(
+							(FixedToFloat(interp.x)) + cos_inv_yaw * (x1 + x2) / 2.0f,
+							FixedToFloat(interp.z) + (y1 + y2) / 2.0f,
+							FixedToFloat(interp.y) - sin_inv_yaw * (x1 + x2) / 2.0f,
+							//1.5 == sqrt(2) + small delta for MF_FOREGROUND
+							std::max<float>(FixedToFloat(spr_width), FixedToFloat(spr_height)) / 2.0f * 1.5f))
+	{
+		return;
+	}
+
+	// set top/bottom coords
+	gzt = FixedToFloat(interp.z) + y1;
+	gz = gzt - (FixedToFloat(spr_height) * this_scale);
+
+	rightsin = FixedToFloat(FINESINE((viewangle + ANGLE_90)>>ANGLETOFINESHIFT));
+	rightcos = FixedToFloat(FINECOSINE((viewangle + ANGLE_90)>>ANGLETOFINESHIFT));
 
 	z1 = tr_y + x1 * rightsin;
 	z2 = tr_y - x2 * rightsin;
@@ -5107,8 +5193,8 @@ static void HWR_ProjectPrecipitationSprite(precipmobj_t *thing)
 #endif
 
 	// set top/bottom coords
-	vis->gzt = FixedToFloat(interp.z) + (FixedToFloat(spritecachedinfo[lumpoff].topoffset) * this_scale);
-	vis->gz = vis->gzt - (FixedToFloat(spritecachedinfo[lumpoff].height) * this_scale);
+	vis->gzt = gzt;
+	vis->gz = gz;
 
 	vis->precip = thing;
 }
@@ -5122,11 +5208,10 @@ static gl_sky_t gl_sky;
 
 static void HWR_SkyDomeVertex(gl_sky_t *sky, gl_skyvertex_t *vbo, int r, int c, signed char yflip, float delta, boolean foglayer)
 {
-	static constexpr float radians = (M_PIf / 180.0f);
 	static constexpr float scale = 10000.0f;
-	static constexpr float maxSideAngle = 60.0f * radians;
+	static constexpr float maxSideAngle = 60.0f * deg2radians;
 
-	float topAngle = ((float)c / (float)sky->columns * 360.0f) * radians;
+	float topAngle = ((float)c / (float)sky->columns * 360.0f) * deg2radians;
 	float sideAngle = (maxSideAngle * (float)(sky->rows - r) / (float)sky->rows);
 	float height = sinf(sideAngle);
 	float realRadius = (scale * cosf(sideAngle));
@@ -5184,7 +5269,6 @@ void HWR_ClearSkyDome(void)
 	sky->rows = sky->columns = 0;
 	sky->loopcount = 0;
 
-	sky->detail = 0;
 	sky->texture = -1;
 	sky->width = sky->height = 0;
 
@@ -5203,8 +5287,7 @@ void HWR_BuildSkyDome(void)
 	gl_skyvertex_t *vertex_p;
 	const texture_t *texture = textures[texturetranslation[skytexture]];
 
-	sky->detail = 16;
-	col_count *= sky->detail;
+	col_count *= 16;
 
 	if ((sky->columns != col_count) || (sky->rows != row_count))
 		HWR_ClearSkyDome();
@@ -5367,6 +5450,12 @@ void HWR_SetTransform(float fpov)
 	HWR_SetTransformAiming(&atransform);
 	atransform.angley = (float)(viewangle>>ANGLETOFINESHIFT)*(FINEDEGREE);
 
+	yaw = 270.0f - atransform.angley;
+	inv_yaw = 180.0f - yaw;
+	const float inv_yaw_radians = inv_yaw * deg2radians;
+	cos_inv_yaw = cosf(inv_yaw_radians);
+	sin_inv_yaw = sinf(inv_yaw_radians);
+
 	// only needed for sprite billboarding
 	if (cv_glspritebillboarding.value && !cv_glshearing.value)
 	{
@@ -5474,7 +5563,6 @@ void HWR_RenderViewpoint(gl_portal_t *rootportal, player_t *player, int stencil_
 	HWR_SetStencilState(HWR_STENCIL_NORMAL, stencil_level);
 
 	HWR_SetTransform(fpov);
-
 	HWR_ClearSprites();
 	HWR_ClearClipper();
 

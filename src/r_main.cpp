@@ -1094,7 +1094,7 @@ subsector_t *R_IsPointInSubsector(fixed_t x, fixed_t y)
 
 mobj_t *viewmobj = NULL;
 
-static void R_SetupCommonFrame(player_t * player, sector_t * sector)
+static void R_SetupCommonFrame(player_t * player)
 {
 	newview->player = player;
 
@@ -1103,11 +1103,6 @@ static void R_SetupCommonFrame(player_t * player, sector_t * sector)
 	newview->z += quake.z;
 
 	newview->roll = R_ViewRollAngle(player);
-
-	if (sector != NULL)
-		newview->sector = sector;
-	else
-		newview->sector = R_PointInSubsectorFast(newview->x, newview->y)->sector;
 
 	R_InterpolateView(R_GetTimeFrac(RTF_CAMERA), false);
 }
@@ -1207,7 +1202,6 @@ void R_SkyboxFrame(UINT8 pnum)
 {
 	player_t *player = &players[displayplayers[pnum]];
 	camera_t *thiscam = &camera[pnum];
-	sector_t *viewsec = NULL;
 	mapheader_t *mh = mapheaderinfo[gamemap-1];
 
 	R_SetViewContext(static_cast<viewcontext_e>(VIEWCONTEXT_SKY1 + pnum));
@@ -1233,9 +1227,6 @@ void R_SkyboxFrame(UINT8 pnum)
 		newview->x = viewmobj->x;
 		newview->y = viewmobj->y;
 		newview->z = (viewmobj->spawnpoint) ? (((fixed_t)viewmobj->spawnpoint->angle) << FRACBITS) : 0;
-
-		if (viewmobj->subsector)
-			viewsec = viewmobj->subsector->sector;
 	}
 
 	if (mh)
@@ -1243,7 +1234,7 @@ void R_SkyboxFrame(UINT8 pnum)
 		R_SetupSkyScale(player, thiscam, mh);
 	}
 
-	R_SetupCommonFrame(player, viewsec);
+	R_SetupCommonFrame(player);
 }
 
 void R_SetupFrame(UINT8 pnum, boolean skybox)
@@ -1251,7 +1242,6 @@ void R_SetupFrame(UINT8 pnum, boolean skybox)
 	player_t *player = &players[displayplayers[pnum]];
 	camera_t *thiscam = &camera[pnum];
 	boolean chasecam = (cv_chasecam[pnum].value);
-	sector_t *viewsec = NULL;
 
 	R_SetViewContext(static_cast<viewcontext_e>(VIEWCONTEXT_PLAYER1 + pnum));
 
@@ -1295,10 +1285,7 @@ void R_SetupFrame(UINT8 pnum, boolean skybox)
 		newview->y = viewmobj->y;
 		newview->z = viewmobj->z + 20*FRACUNIT;
 
-		if (viewmobj->subsector)
-			viewsec = viewmobj->subsector->sector;
-
-		R_SetupCommonFrame(player, viewsec);
+		R_SetupCommonFrame(player);
 	}
 	else if (thiscam && chasecam) // use outside cam view
 	{
@@ -1309,10 +1296,7 @@ void R_SetupFrame(UINT8 pnum, boolean skybox)
 		newview->y = thiscam->y;
 		newview->z = thiscam->z + (thiscam->height>>1);
 
-		if (thiscam->subsector)
-			viewsec = thiscam->subsector->sector;
-
-		R_SetupCommonFrame(player, viewsec);
+		R_SetupCommonFrame(player);
 	}
 	else if (player->mo) // use the player's eyes view
 	{
@@ -1323,10 +1307,7 @@ void R_SetupFrame(UINT8 pnum, boolean skybox)
 		newview->y = viewmobj->y;
 		newview->z = player->viewz;
 
-		if (viewmobj->subsector)
-			viewsec = viewmobj->subsector->sector;
-
-		R_SetupCommonFrame(player, viewsec);
+		R_SetupCommonFrame(player);
 	}
 }
 

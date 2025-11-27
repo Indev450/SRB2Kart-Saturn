@@ -75,15 +75,11 @@ typedef struct {
 	fixed_t y;
 	fixed_t z;
 	boolean sky;
-	sector_t *sector;
 	player_t *player;
 
 	angle_t angle;
 	angle_t aim;
 	angle_t roll;
-	fixed_t cos;
-	fixed_t sin;
-	mobj_t *mobj;
 } viewvars_t;
 
 extern viewvars_t *newview;

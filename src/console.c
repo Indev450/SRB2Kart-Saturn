@@ -33,6 +33,8 @@
 #include "d_main.h"
 #include "m_menu.h"
 #include "m_textinput.h"
+#include "m_emotes.h"
+#include "i_time.h"
 #include "filesrch.h"
 
 #ifdef HWRENDER
@@ -1453,7 +1455,18 @@ static void CON_DrawHudlines(void)
 			}
 			if (c >= con_width)
 				break;
-			if (*p < HU_FONTSTART)
+
+			int emotelen;
+			emote_t *emote;
+
+			if ((emote = M_VerifyEmote((const char *)p, &emotelen)))
+			{
+				M_DrawScaledEmote(x<<FRACBITS, (y+2*con_scalefactor)<<FRACBITS, charwidth*FRACUNIT/EMOTEWIDTH, emote, V_NOSCALESTART|V_NOSCALEPATCH);
+				p += emotelen-1;
+				c += emotelen-1;
+				continue;
+			}
+			else if (*p < HU_FONTSTART)
 				;//charwidth = 4 * con_scalefactor;
 			else
 			{
@@ -1527,8 +1540,20 @@ static void CON_DrawConsole(void)
 				p++;
 				c++;
 			}
+
 			if (c >= con_width)
 				break;
+
+			int emotelen;
+			emote_t *emote;
+
+			if ((emote = M_VerifyEmote((const char *)p, &emotelen)))
+			{
+				M_DrawScaledEmote(x<<FRACBITS, (y+2*con_scalefactor)<<FRACBITS, charwidth*FRACUNIT/EMOTEWIDTH, emote, V_NOSCALESTART|V_NOSCALEPATCH);
+				p += emotelen-1;
+				c += emotelen-1;
+				continue;
+			}
 			V_DrawCharacter(x, y, (INT32)(*p) | charflags | cv_constextsize.value | V_NOSCALESTART, !cv_allcaps.value);
 		}
 	}

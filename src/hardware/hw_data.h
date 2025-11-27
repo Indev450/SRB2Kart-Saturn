@@ -65,7 +65,7 @@ typedef struct GLMipmap_s GLMipmap_t;
 struct GLMapTexture_s
 {
 	GLMipmap_t		mipmap;
-	float			scaleX; //used for scaling textures on walls
+	float			scaleX; // used for scaling textures on walls
 	float			scaleY;
 };
 typedef struct GLMapTexture_s GLMapTexture_t;
@@ -74,7 +74,7 @@ typedef struct GLMapTexture_s GLMapTexture_t;
 struct GLPatch_s
 {
 	GLMipmap_t			*mipmap;
-	float				max_s,max_t;
+	float				max_s, max_t;
 };
 typedef struct GLPatch_s GLPatch_t;
 

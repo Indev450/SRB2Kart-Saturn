@@ -2164,7 +2164,9 @@ static void P_KillPlayer(player_t *player, mobj_t *source)
 				P_SetScale(karmahitbox, player->mo->scale);
 				CONS_Printf(M_GetText("%s lost all of their bumpers!\n"), player_names[player-players]);
 			}
+
 			player->kartstuff[k_bumper]--;
+
 			if (K_IsPlayerWanted(player))
 				K_CalculateBattleWanted();
 		}

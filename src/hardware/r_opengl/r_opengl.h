@@ -38,8 +38,6 @@ extern "C" {
 #endif
 #endif
 
-#define  _CREATE_DLL_  // necessary for Unix AND Windows
-
 #include "../../doomdef.h"
 #include "../hw_gl.h"
 #include "../../z_zone.h"
@@ -126,17 +124,8 @@ extern GLint			maximumAnisotropy;
 extern boolean			supportNPO2tex;
 extern boolean 			supportMipMap;
 
-/**	\brief OpenGL flags for video driver
-*/
-extern INT32            oglflags;
-
+extern GLfloat modelMatrix[16];
 extern GLfloat projMatrix[16];
-
-typedef enum
-{
-	GLF_NOZBUFREAD = 0x01,
-	GLF_NOTEXENV   = 0x02,
-} oglflags_t;
 
 #ifdef __cplusplus
 } // extern "C"

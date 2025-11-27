@@ -3898,6 +3898,7 @@ static void Got_Teamchange(const UINT8 **cp, INT32 playernum)
 		if (G_BattleGametype()) // SRB2kart
 		{
 			players[playernum].marescore = 0;
+
 			if (K_IsPlayerWanted(&players[playernum]))
 				K_CalculateBattleWanted();
 		}
