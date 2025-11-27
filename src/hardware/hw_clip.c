@@ -348,33 +348,28 @@ angle_t gld_FrustumAngle(angle_t tiltangle)
 // gld_FrustumSetup
 //
 
-static GLdouble viewMatrix[16];
-static GLdouble projMatrix[16];
 float frustum[6][4];
 
 #define CALCMATRIX(a, b, c, d, e, f, g, h)\
-(float)(viewMatrix[a] * projMatrix[b] + \
-viewMatrix[c] * projMatrix[d] + \
-viewMatrix[e] * projMatrix[f] + \
-viewMatrix[g] * projMatrix[h])
+	(modelMatrix[a] * projMatrix[b] + \
+	modelMatrix[c] * projMatrix[d] + \
+	modelMatrix[e] * projMatrix[f] + \
+	modelMatrix[g] * projMatrix[h])
 
 #define NORMALIZE_PLANE(i)\
-t = (float)sqrt(\
-frustum[i][0] * frustum[i][0] + \
-frustum[i][1] * frustum[i][1] + \
-frustum[i][2] * frustum[i][2]); \
-frustum[i][0] /= t; \
-frustum[i][1] /= t; \
-frustum[i][2] /= t; \
-frustum[i][3] /= t
+	t = sqrtf(\
+		frustum[i][0] * frustum[i][0] + \
+		frustum[i][1] * frustum[i][1] + \
+		frustum[i][2] * frustum[i][2]); \
+		frustum[i][0] /= t; \
+		frustum[i][1] /= t; \
+		frustum[i][2] /= t; \
+		frustum[i][3] /= t
 
 void gld_FrustumSetup(void)
 {
 	float t;
 	float clip[16];
-
-	pglGetFloatv(GL_PROJECTION_MATRIX, projMatrix);
-	pglGetFloatv(GL_MODELVIEW_MATRIX, viewMatrix);
 
 	clip[0]  = CALCMATRIX(0, 0, 1, 4, 2, 8, 3, 12);
 	clip[1]  = CALCMATRIX(0, 1, 1, 5, 2, 9, 3, 13);

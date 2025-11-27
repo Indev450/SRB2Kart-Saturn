@@ -83,6 +83,13 @@ float gl_viewsin = 0.0f, gl_viewcos = 0.0f;
 static float gl_viewludsin, gl_viewludcos;
 static angle_t gl_aimingangle;
 
+static float yaw = 0.0f;
+static float inv_yaw = 0.0f;
+static float cos_inv_yaw = 0.0f;
+static float sin_inv_yaw = 0.0f;
+
+static constexpr float deg2radians = (M_PIf / 180.0f);
+
 seg_t    *gl_curline = NULL;
 side_t   *gl_sidedef = NULL;
 line_t   *gl_linedef = NULL;
@@ -4645,6 +4652,7 @@ static void HWR_ProjectSprite(mobj_t *thing)
 	float tr_x, tr_y;
 	float tz;
 	float x1, x2;
+	float y1, y2;
 	float z1, z2;
 	float rightsin, rightcos;
 	float this_scale;
@@ -4867,17 +4875,6 @@ static void HWR_ProjectSprite(mobj_t *thing)
 	spr_offset += interp.spritexoffset;
 	spr_topoffset += interp.spriteyoffset;
 
-	if (papersprite)
-	{
-		rightsin = FixedToFloat(FINESINE(interp.angle >> ANGLETOFINESHIFT));
-		rightcos = FixedToFloat(FINECOSINE(interp.angle >> ANGLETOFINESHIFT));
-	}
-	else
-	{
-		rightsin = FixedToFloat(FINESINE((viewangle + ANGLE_90)>>ANGLETOFINESHIFT));
-		rightcos = FixedToFloat(FINECOSINE((viewangle + ANGLE_90)>>ANGLETOFINESHIFT));
-	}
-
 	spritexscale *= this_scale;
 	spriteyscale *= this_scale;
 
@@ -4894,19 +4891,17 @@ static void HWR_ProjectSprite(mobj_t *thing)
 		x2 = (FixedToFloat(spr_width - spr_offset) * spritexscale);
 	}
 
-	z1 = tr_y + x1 * rightsin;
-	z2 = tr_y - x2 * rightsin;
-	x1 = tr_x + x1 * rightcos;
-	x2 = tr_x - x2 * rightcos;
+	y1 = (FixedToFloat(spr_topoffset) * spriteyscale);
+	y2 = (FixedToFloat(spr_height - spr_topoffset) * spriteyscale);
 
 	if (vflip)
 	{
-		gz = FixedToFloat(interp.z + thing->height) - (FixedToFloat(spr_topoffset) * spriteyscale);
+		gz = FixedToFloat(interp.z + thing->height) - y1;
 		gzt = gz + (FixedToFloat(spr_height) * spriteyscale);
 	}
 	else
 	{
-		gzt = FixedToFloat(interp.z) + (FixedToFloat(spr_topoffset) * spriteyscale);
+		gzt = FixedToFloat(interp.z) + y1;
 		gz = gzt - (FixedToFloat(spr_height) * spriteyscale);
 	}
 
@@ -4914,6 +4909,32 @@ static void HWR_ProjectSprite(mobj_t *thing)
 	{
 		if (HWR_DoCulling(thing->subsector->sector->cullheight, viewsector->cullheight, gl_viewz, gz, gzt))
 			return;
+	}
+
+	// rest in piece sweet prince
+	/*if (cv_glshearing.value && !papersprite)
+	{
+		// killough 4/9/98: clip things which are out of view due to height
+		// e6y: fix of hanging decoration disappearing in Batman Doom MAP02
+		// centeryfrac -> viewheightfrac
+		// [kb] add +1 so sprites are shown even with the extended freelook
+		// lug: attempt to account for freelook properly
+		const fixed_t fixedtz = FloatToFixed(tz);
+		if (interp.z > viewz + FixedMul(centeryfrac, fixedtz) || // view center accounted for aspect (i hope)
+			FloatToFixed(gzt) < viewz + FixedMul((centeryfrac - (viewheight << FRACBITS)), fixedtz)) // view center accounted for aspect but the bottom (OwO)
+		{
+			return;
+		}
+	}*/
+
+	if (!gld_SphereInFrustum(
+							(FixedToFloat(interp.x)) + cos_inv_yaw * (x1 + x2) / 2.0f,
+							FixedToFloat(interp.z) + (y1 + y2) / 2.0f,
+							FixedToFloat(interp.y) - sin_inv_yaw * (x1 + x2) / 2.0f,
+							//1.5 == sqrt(2) + small delta for MF_FOREGROUND
+							std::max<float>(FixedToFloat(spr_width), FixedToFloat(spr_height)) / 2.0f * 1.5f))
+	{
+		return;
 	}
 
 	heightsec = thing->subsector->sector->heightsec;
@@ -4939,6 +4960,24 @@ static void HWR_ProjectSprite(mobj_t *thing)
 			interp.z >= secheight)
 			return;
 	}
+
+	if (papersprite)
+	{
+		rightsin = FixedToFloat(FINESINE(interp.angle >> ANGLETOFINESHIFT));
+		rightcos = FixedToFloat(FINECOSINE(interp.angle >> ANGLETOFINESHIFT));
+	}
+	else
+	{
+		rightsin = FixedToFloat(FINESINE((viewangle + ANGLE_90)>>ANGLETOFINESHIFT));
+		rightcos = FixedToFloat(FINECOSINE((viewangle + ANGLE_90)>>ANGLETOFINESHIFT));
+	}
+
+	z1 = tr_y + x1 * rightsin;
+	z2 = tr_y - x2 * rightsin;
+	x1 = tr_x + x1 * rightcos;
+	x2 = tr_x - x2 * rightcos;
+	//y1 = tr_y + y1 * rightcos;
+	//y2 = tr_y - y2 * rightcos;
 
 	// store information in a vissprite
 	vis = HWR_NewVisSprite();
@@ -5015,12 +5054,16 @@ static void HWR_ProjectPrecipitationSprite(precipmobj_t *thing)
 	float tr_x, tr_y;
 	float tz;
 	float x1, x2;
+	float y1, y2;
 	float z1, z2;
+	float gz, gzt;
 	float rightsin, rightcos;
 	float this_scale;
 	spritedef_t *sprdef;
 	spriteframe_t *sprframe;
 	size_t lumpoff;
+	fixed_t spr_width, spr_height;
+	fixed_t spr_offset, spr_topoffset;
 	unsigned rot = 0;
 	UINT8 flip;
 
@@ -5081,22 +5124,46 @@ static void HWR_ProjectPrecipitationSprite(precipmobj_t *thing)
 	lumpoff = sprframe->lumpid[0];
 	flip = sprframe->flip; // Will only be 0x00 or 0xFF
 
-	rightsin = FixedToFloat(FINESINE((viewangle + ANGLE_90)>>ANGLETOFINESHIFT));
-	rightcos = FixedToFloat(FINECOSINE((viewangle + ANGLE_90)>>ANGLETOFINESHIFT));
+	spr_width = spritecachedinfo[lumpoff].width;
+	spr_height = spritecachedinfo[lumpoff].height;
+	spr_offset = spritecachedinfo[lumpoff].offset;
+	spr_topoffset = spritecachedinfo[lumpoff].topoffset;
 
 	if (flip)
 	{
-		x1 = FixedToFloat(spritecachedinfo[lumpoff].width - spritecachedinfo[lumpoff].offset);
-		x2 = FixedToFloat(spritecachedinfo[lumpoff].offset);
+		x1 = FixedToFloat(spr_width - spr_offset);
+		x2 = FixedToFloat(spr_offset);
 	}
 	else
 	{
-		x1 = FixedToFloat(spritecachedinfo[lumpoff].offset);
-		x2 = FixedToFloat(spritecachedinfo[lumpoff].width - spritecachedinfo[lumpoff].offset);
+		x1 = FixedToFloat(spr_offset);
+		x2 = FixedToFloat(spr_offset);
 	}
+
+	y1 = (FixedToFloat(spr_topoffset));
+	y2 = (FixedToFloat(spr_height - spr_topoffset));
 
 	x1 *= this_scale;
 	x2 *= this_scale;
+	y1 *= this_scale;
+	y2 *= this_scale;
+
+	if (!gld_SphereInFrustum(
+							(FixedToFloat(interp.x)) + cos_inv_yaw * (x1 + x2) / 2.0f,
+							FixedToFloat(interp.z) + (y1 + y2) / 2.0f,
+							FixedToFloat(interp.y) - sin_inv_yaw * (x1 + x2) / 2.0f,
+							//1.5 == sqrt(2) + small delta for MF_FOREGROUND
+							std::max<float>(FixedToFloat(spr_width), FixedToFloat(spr_height)) / 2.0f * 1.5f))
+	{
+		return;
+	}
+
+	// set top/bottom coords
+	gzt = FixedToFloat(interp.z) + y1;
+	gz = gzt - (FixedToFloat(spr_height) * this_scale);
+
+	rightsin = FixedToFloat(FINESINE((viewangle + ANGLE_90)>>ANGLETOFINESHIFT));
+	rightcos = FixedToFloat(FINECOSINE((viewangle + ANGLE_90)>>ANGLETOFINESHIFT));
 
 	z1 = tr_y + x1 * rightsin;
 	z2 = tr_y - x2 * rightsin;
@@ -5125,8 +5192,8 @@ static void HWR_ProjectPrecipitationSprite(precipmobj_t *thing)
 #endif
 
 	// set top/bottom coords
-	vis->gzt = FixedToFloat(interp.z) + (FixedToFloat(spritecachedinfo[lumpoff].topoffset) * this_scale);
-	vis->gz = vis->gzt - (FixedToFloat(spritecachedinfo[lumpoff].height) * this_scale);
+	vis->gzt = gzt;
+	vis->gz = gz;
 
 	vis->precip = thing;
 }
@@ -5140,11 +5207,10 @@ static gl_sky_t gl_sky;
 
 static void HWR_SkyDomeVertex(gl_sky_t *sky, gl_skyvertex_t *vbo, int r, int c, signed char yflip, float delta, boolean foglayer)
 {
-	static constexpr float radians = (M_PIf / 180.0f);
 	static constexpr float scale = 10000.0f;
-	static constexpr float maxSideAngle = 60.0f * radians;
+	static constexpr float maxSideAngle = 60.0f * deg2radians;
 
-	float topAngle = ((float)c / (float)sky->columns * 360.0f) * radians;
+	float topAngle = ((float)c / (float)sky->columns * 360.0f) * deg2radians;
 	float sideAngle = (maxSideAngle * (float)(sky->rows - r) / (float)sky->rows);
 	float height = sinf(sideAngle);
 	float realRadius = (scale * cosf(sideAngle));
@@ -5383,6 +5449,12 @@ void HWR_SetTransform(float fpov)
 	HWR_SetTransformAiming(&atransform);
 	atransform.angley = (float)(viewangle>>ANGLETOFINESHIFT)*(FINEDEGREE);
 
+	yaw = 270.0f - atransform.angley;
+	inv_yaw = 180.0f - yaw;
+	const float inv_yaw_radians = inv_yaw * deg2radians;
+	cos_inv_yaw = cosf(inv_yaw_radians);
+	sin_inv_yaw = sinf(inv_yaw_radians);
+
 	// only needed for sprite billboarding
 	if (cv_glspritebillboarding.value && !cv_glshearing.value)
 	{
@@ -5489,7 +5561,6 @@ void HWR_RenderViewpoint(gl_portal_t *rootportal, player_t *player, int stencil_
 	HWR_SetStencilState(HWR_STENCIL_NORMAL, stencil_level);
 
 	HWR_SetTransform(fpov);
-
 	HWR_ClearSprites();
 	HWR_ClearClipper();
 
