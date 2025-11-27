@@ -125,6 +125,7 @@ FUNCINLINE static ATTRINLINE PUREFUNC INT32 R_PointOnSegSide(fixed_t x, fixed_t 
 
 angle_t R_PointToAngle(fixed_t x, fixed_t y);
 angle_t R_PointToAngle64(INT64 x, INT64 y);
+angle_t R_PointToPseudoAngle(fixed_t x, fixed_t y);
 angle_t R_PointToAngle2(fixed_t px2, fixed_t py2, fixed_t px1, fixed_t py1);
 angle_t R_PlayerSliptideAngle(player_t *player);
 
