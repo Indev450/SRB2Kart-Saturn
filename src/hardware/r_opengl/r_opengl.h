@@ -125,6 +125,7 @@ extern GLint			maximumAnisotropy;
 extern boolean			supportNPO2tex;
 extern boolean 			supportMipMap;
 
+extern GLfloat modelMatrix[16];
 extern GLfloat projMatrix[16];
 
 #ifdef __cplusplus
