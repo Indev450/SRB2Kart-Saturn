@@ -49,10 +49,9 @@ emote_t *M_FindEmote(const char *name, int len, int skips);
 // needs to be skipped to get past emote name
 emote_t *M_VerifyEmote(const char *name, int *emotelen);
 
-// Draw the emote, anim should be some kind of timer ticking every game tic
-// for animated emotes
-#define M_DrawEmote(x, y, emote, anim, flags) M_DrawScaledEmote((x)<<FRACBITS, (y)<<FRACBITS, FRACUNIT, emote, anim, flags)
-void M_DrawScaledEmote(fixed_t x, fixed_t y, fixed_t scale, emote_t *emote, tic_t anim, INT32 flags);
+// Draw the emote, animation for animated emotes is done via I_GetTime
+#define M_DrawEmote(x, y, emote, flags) M_DrawScaledEmote((x)<<FRACBITS, (y)<<FRACBITS, FRACUNIT, emote, flags)
+void M_DrawScaledEmote(fixed_t x, fixed_t y, fixed_t scale, emote_t *emote, INT32 flags);
 
 #ifdef __cplusplus
 } // extern "C"

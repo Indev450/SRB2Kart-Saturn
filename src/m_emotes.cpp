@@ -15,6 +15,7 @@
 #include <cstring>
 
 #include "m_emotes.h"
+#include "i_time.h" // I_GetTime
 
 extern "C" {
 #include "w_wad.h"
@@ -248,12 +249,12 @@ emote_t *M_VerifyEmote(const char *name, int *emotelen)
 	return match;
 }
 
-void M_DrawScaledEmote(fixed_t x, fixed_t y, fixed_t scale, emote_t *emote, tic_t anim, INT32 flags)
+void M_DrawScaledEmote(fixed_t x, fixed_t y, fixed_t scale, emote_t *emote, INT32 flags)
 {
 	if (emote->numframes == 0)
 		return;
 
-	const char *lumpname = emote->frames[(anim/emote->timeperframe) % emote->numframes];
+	const char *lumpname = emote->frames[(I_GetTime()/emote->timeperframe) % emote->numframes];
 	patch_t *emotepatch = (patch_t*)W_CachePatchName(lumpname, PU_CACHE);
 
 	const int CHARHEIGHT = 6;
