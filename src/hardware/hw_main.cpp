@@ -2347,12 +2347,22 @@ static inline void DoAddLine(seg_t* line, angle_t angle1, angle_t angle2)
 	static sector_t tempsec;
 
 	auto do_addline = [&](bool dontdraw) {
+		// Single sided line?
 		if (!line->backsector)
 		{
 			gld_clipper_SafeAddClipRange(angle2, angle1);
 		}
 		else
 		{
+			if (line->frontsector == line->backsector)
+			{
+				if (R_GetTextureNum(line->sidedef->midtexture) == 0)
+				{
+					//e6y: nothing to do here!
+					return;
+				}
+			}
+
 			gl_backsector = R_FakeFlat(gl_backsector, &tempsec, NULL, NULL, true);
 
 			if (CheckClip(gl_frontsector, gl_backsector))
