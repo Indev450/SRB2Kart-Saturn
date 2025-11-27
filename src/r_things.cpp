@@ -1620,6 +1620,33 @@ static void R_ProjectSprite(mobj_t *thing)
 			return;
 	}
 
+	// killough 3/27/98: exclude things totally separated
+	// from the viewer, by either water or fake ceilings
+	// killough 4/11/98: improve sprite clipping for underwater/fake ceilings
+
+	heightsec = thing->subsector->sector->heightsec;
+	if (viewplayer && viewplayer->mo && viewplayer->mo->subsector)
+		phs = viewplayer->mo->subsector->sector->heightsec;
+	else
+		phs = -1;
+
+	if (heightsec != -1 && phs != -1) // only clip things which are in special sectors
+	{
+		fixed_t secheight;
+
+		secheight = P_GetSectorFloorZAt(&sectors[heightsec], viewx, viewy);
+		if (viewz < P_GetSectorFloorZAt(&sectors[phs], interp.x, interp.y) ?
+			interp.z >= secheight :
+			gzt < secheight)
+			return;
+
+		secheight = P_GetSectorCeilingZAt(&sectors[heightsec], viewx, viewy);
+		if (viewz > P_GetSectorCeilingZAt(&sectors[phs], interp.x, interp.y) ?
+			gzt < secheight && viewz >= secheight :
+			interp.z >= secheight)
+			return;
+	}
+
 	if (thing->frame & FF_ABSOLUTELIGHTLEVEL)
 	{
 		const UINT8 n = R_ThingLightLevel(thing);
@@ -1695,29 +1722,6 @@ static void R_ProjectSprite(mobj_t *thing)
 			lights_array = scalelight[LIGHTLEVELS-1];
 		else
 			lights_array = scalelight[lightnum];
-	}
-
-	heightsec = thing->subsector->sector->heightsec;
-	if (viewplayer && viewplayer->mo && viewplayer->mo->subsector)
-		phs = viewplayer->mo->subsector->sector->heightsec;
-	else
-		phs = -1;
-
-	if (heightsec != -1 && phs != -1) // only clip things which are in special sectors
-	{
-		fixed_t secheight;
-
-		secheight = P_GetSectorFloorZAt(&sectors[heightsec], viewx, viewy);
-		if (viewz < P_GetSectorFloorZAt(&sectors[phs], interp.x, interp.y) ?
-			interp.z >= secheight :
-			gzt < secheight)
-			return;
-
-		secheight = P_GetSectorCeilingZAt(&sectors[heightsec], viewx, viewy);
-		if (viewz > P_GetSectorCeilingZAt(&sectors[phs], interp.x, interp.y) ?
-			gzt < secheight && viewz >= secheight :
-			interp.z >= secheight)
-			return;
 	}
 
 	// store information in a vissprite
