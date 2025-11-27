@@ -1124,6 +1124,7 @@ void R_Prep3DFloors(sector_t *sector, fixed_t secceilz)
 				bestslope = *rover->t_slope;
 				continue;
 			}
+
 			if (rover->flags & FF_DOUBLESHADOW)
 			{
 				heighttest = P_GetFFloorBottomZAt(rover, sector->soundorg.x, sector->soundorg.y);

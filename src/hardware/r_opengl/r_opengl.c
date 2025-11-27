@@ -1734,14 +1734,6 @@ void GL_SetBlend(FBITFIELD PolyFlags)
 
 		if (Xor & PF_Modulated)
 		{
-#if defined (__unix__) || defined (UNIXCOMMON)
-			if (oglflags & GLF_NOTEXENV)
-			{
-				if (!(PolyFlags & PF_Modulated))
-					pglColor4ubv(white);
-			}
-			else
-#endif
 			if (PolyFlags & PF_Modulated)
 			{   // mix texture colour with Surface->PolyColor
 				pglTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);

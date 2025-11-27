@@ -1978,13 +1978,11 @@ static void P_ProcessLineSpecial(line_t *line, mobj_t *mo, sector_t *callsec)
 					{
 						P_RemoveThinker(&((elevator_t *)sectors[secnum].floordata)->thinker);
 						sectors[secnum].floordata = sectors[secnum].ceilingdata = NULL;
-						sectors[secnum].floorspeed = sectors[secnum].ceilspeed = 0;
 					}
 					else // floormove
 					{
 						P_RemoveThinker(&((floormove_t *)sectors[secnum].floordata)->thinker);
 						sectors[secnum].floordata = NULL;
-						sectors[secnum].floorspeed = 0;
 					}
 				}
 
@@ -1992,7 +1990,6 @@ static void P_ProcessLineSpecial(line_t *line, mobj_t *mo, sector_t *callsec)
 				{
 					P_RemoveThinker(&((ceiling_t *)sectors[secnum].ceilingdata)->thinker);
 					sectors[secnum].ceilingdata = NULL;
-					sectors[secnum].ceilspeed = 0;
 				}
 			}
 			break;
