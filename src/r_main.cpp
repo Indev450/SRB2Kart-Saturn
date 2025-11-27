@@ -366,45 +366,6 @@ angle_t R_PointToAngle2(fixed_t pviewx, fixed_t pviewy, fixed_t x, fixed_t y)
 		0;
 }
 
-//-----------------------------------------------------------------------------
-//
-// ! Returns the pseudoangle between the line p1 to (infinity, p1.y) and the
-// line from p1 to p2. The pseudoangle has the property that the ordering of
-// points by true angle anround p1 and ordering of points by pseudoangle are the
-// same.
-//
-// For clipping exact angles are not needed. Only the ordering matters.
-// This is about as fast as the fixed point R_PointToAngle2 but without
-// the precision issues associated with that function.
-//
-//-----------------------------------------------------------------------------
-
-#define EPSILON 1e-2
-
-angle_t R_PointToPseudoAngle(fixed_t x, fixed_t y)
-{
-	// Note: float won't work here as it's less precise than the BAM values being passed as parameters
-	double vecx = (double)x - (double)viewx;
-	double vecy = (double)y - (double)viewy;
-
-	if (fabs(vecx) < EPSILON && fabs(vecy) < EPSILON)
-	{
-		return 0;
-	}
-	else
-	{
-		double result = vecy / (fabs(vecx) + fabs(vecy));
-
-		if (vecx < 0)
-		{
-			result = 2.0 - result;
-		}
-
-		return (angle_t)xs_CRoundToInt(result * (1 << 30));
-	}
-}
-#undef EPSILON
-
 angle_t R_PlayerSliptideAngle(player_t *player)
 {
 	mobj_t *mo;

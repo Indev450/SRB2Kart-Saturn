@@ -2473,8 +2473,8 @@ static void HWR_AddLine(seg_t *line)
 	v2y = gl_curline->v2->y;
 
 	// OPTIMIZE: quickly reject orthogonal back sides.
-	angle1 = R_PointToPseudoAngle(v1x, v1y);
-	angle2 = R_PointToPseudoAngle(v2x, v2y);
+	angle1 = R_PointToAngle64(v1x, v1y);
+	angle2 = R_PointToAngle64(v2x, v2y);
 
 	 // PrBoom: Back side, i.e. backface culling - read: endAngle >= startAngle!
 	if (angle2 - angle1 < ANGLE_180)
@@ -2586,8 +2586,8 @@ static boolean HWR_CheckBBox(const fixed_t *bspcoord)
 			return false;
 	}
 
-	angle1 = R_PointToPseudoAngle(px1, py1);
-	angle2 = R_PointToPseudoAngle(px2, py2);
+	angle1 = R_PointToAngle64(px1, py1);
+	angle2 = R_PointToAngle64(px2, py2);
 
 	return gld_clipper_SafeCheckRange(angle2, angle1);
 }
@@ -5511,7 +5511,7 @@ void HWR_ClearClipper(void)
 	const angle_t a1 = gld_FrustumAngle(gl_aimingangle);
 
 	gld_clipper_Clear();
-	gld_clipper_SafeAddClipRangeRealAngles(viewangle + a1, viewangle - a1);
+	gld_clipper_SafeAddClipRange(viewangle + a1, viewangle - a1);
 #ifdef HAVE_SPHEREFRUSTRUM
 	gld_FrustumSetup();
 #endif
