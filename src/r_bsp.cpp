@@ -812,7 +812,7 @@ static void R_Subsector(size_t num)
 		if (anyMoved == true)
 		{
 			frontsector->numlights = sub->sector->numlights = 0;
-			R_Prep3DFloors(frontsector);
+			R_Prep3DFloors(frontsector, ceilingcenterz);
 			sub->sector->lightlist = frontsector->lightlist;
 			sub->sector->numlights = frontsector->numlights;
 			sub->sector->moved = frontsector->moved = false;
@@ -1062,7 +1062,7 @@ static void R_Subsector(size_t num)
 //
 // This function creates the lightlists that the given sector uses to light
 // floors/ceilings/walls according to the 3D floors.
-void R_Prep3DFloors(sector_t *sector)
+void R_Prep3DFloors(sector_t *sector, fixed_t secceilz)
 {
 	ffloor_t *rover;
 	ffloor_t *best;
@@ -1088,13 +1088,13 @@ void R_Prep3DFloors(sector_t *sector)
 	if (count != sector->numlights)
 	{
 		Z_Free(sector->lightlist);
-		sector->lightlist = static_cast<lightlist_t*>(Z_Calloc(sizeof (*sector->lightlist) * count, PU_LEVEL, NULL));
+		sector->lightlist = static_cast<lightlist_t*>(Z_Malloc(sizeof(*sector->lightlist) * count, PU_LEVEL, NULL));
 		sector->numlights = count;
 	}
-	else
-		memset(sector->lightlist, 0, sizeof (lightlist_t) * count);
 
-	heighttest = P_GetSectorCeilingZAt(sector, sector->soundorg.x, sector->soundorg.y);
+	memset(sector->lightlist, 0, sizeof(lightlist_t) * count);
+
+	heighttest = secceilz; // sector ceiling z
 
 	sector->lightlist[0].height = heighttest + 1;
 	sector->lightlist[0].slope = sector->c_slope;
