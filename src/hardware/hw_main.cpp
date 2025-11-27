@@ -2964,7 +2964,7 @@ static void HWR_Subsector(size_t num)
 		if (anyMoved == true)
 		{
 			gl_frontsector->numlights = sub->sector->numlights = 0;
-			R_Prep3DFloors(gl_frontsector);
+			R_Prep3DFloors(gl_frontsector, locCeilingHeight);
 			sub->sector->lightlist = gl_frontsector->lightlist;
 			sub->sector->numlights = gl_frontsector->numlights;
 			sub->sector->moved = gl_frontsector->moved = false;
