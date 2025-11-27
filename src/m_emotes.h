@@ -17,6 +17,7 @@ extern "C" {
 #endif
 
 #include "doomdef.h"
+#include "m_fixed.h"
 #include "command.h"
 
 extern consvar_t cv_emotes;
@@ -50,7 +51,8 @@ emote_t *M_VerifyEmote(const char *name, int *emotelen);
 
 // Draw the emote, anim should be some kind of timer ticking every game tic
 // for animated emotes
-void M_DrawEmote(INT32 x, INT32 y, emote_t *emote, tic_t anim, INT32 flags);
+#define M_DrawEmote(x, y, emote, anim, flags) M_DrawScaledEmote((x)<<FRACBITS, (y)<<FRACBITS, FRACUNIT, emote, anim, flags)
+void M_DrawScaledEmote(fixed_t x, fixed_t y, fixed_t scale, emote_t *emote, tic_t anim, INT32 flags);
 
 #ifdef __cplusplus
 } // extern "C"

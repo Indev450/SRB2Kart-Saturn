@@ -248,7 +248,7 @@ emote_t *M_VerifyEmote(const char *name, int *emotelen)
 	return match;
 }
 
-void M_DrawEmote(INT32 x, INT32 y, emote_t *emote, tic_t anim, INT32 flags)
+void M_DrawScaledEmote(fixed_t x, fixed_t y, fixed_t scale, emote_t *emote, tic_t anim, INT32 flags)
 {
 	if (emote->numframes == 0)
 		return;
@@ -258,13 +258,8 @@ void M_DrawEmote(INT32 x, INT32 y, emote_t *emote, tic_t anim, INT32 flags)
 
 	const int CHARHEIGHT = 6;
 
-	fixed_t scale = FRACUNIT;
-
-	x *= FRACUNIT;
-	y *= FRACUNIT;
-
 	if (emotepatch->width > EMOTEWIDTH)
-		scale = (FRACUNIT/emotepatch->width)*EMOTEWIDTH;
+		scale = FixedMul(scale, (FRACUNIT/emotepatch->width)*EMOTEWIDTH);
 	else if (emotepatch->width < EMOTEWIDTH)
 		x += (EMOTEWIDTH-emotepatch->width)*FRACUNIT/2;
 
