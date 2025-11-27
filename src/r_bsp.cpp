@@ -322,9 +322,6 @@ static void R_AddLine(seg_t *line)
 
 	g_portal = NULL;
 
-	if (line->polyseg && !(line->polyseg->flags & POF_RENDERSIDES))
-		return;
-
 	// big room fix
 	angle1 = R_PointToAngle64(line->v1->x, line->v1->y);
 	angle2 = R_PointToAngle64(line->v2->x, line->v2->y);
@@ -722,6 +719,8 @@ static void R_AddPolyObjects(subsector_t *sub)
 		po = (polyobj_t *)(po->link.next);
 	}
 
+	g_portal = NULL;
+
 	// for render stats
 	ps_numpolyobjects.value.i += numpolys;
 
@@ -732,8 +731,16 @@ static void R_AddPolyObjects(subsector_t *sub)
 	for (i = 0; i < numpolys; ++i)
 	{
 		qs22j(po_ptrs[i]->segs, po_ptrs[i]->segCount, sizeof(seg_t *), R_PolysegCompare);
+
 		for (j = 0; j < po_ptrs[i]->segCount; ++j)
-			R_AddLine(po_ptrs[i]->segs[j]);
+		{
+			seg_t *seg = po_ptrs[i]->segs[j];
+
+			if (!(seg->polyseg->flags & POF_RENDERSIDES))
+				continue;
+
+			R_AddLine(seg);
+		}
 	}
 }
 
