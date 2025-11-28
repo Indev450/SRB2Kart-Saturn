@@ -681,7 +681,7 @@ static void HWR_PrecacheLevelTextures(void)
 	size_t i, j, f;
 	INT32 h;
 
-	texturepresent = calloc(numtextures, sizeof (*texturepresent));
+	texturepresent = calloc(gl_numtextures, sizeof(*texturepresent));
 	if (texturepresent == NULL)
 		I_Error("%s: Out of memory looking up textures", "HWR_PrecacheLevel");
 
@@ -712,7 +712,10 @@ static void HWR_PrecacheLevelTextures(void)
 			{
 				const INT32 texnum = sidetex[f];
 
-				if (texnum < 0 || texnum >= numtextures || texturepresent[texnum])
+				if (texnum < 0 || texnum >= (signed)gl_numtextures)
+					continue;
+
+				if (texturepresent[texnum])
 					continue;
 #ifdef GLENCORE
 				texturepresent[texnum] = 1|noencoremap;
@@ -740,14 +743,16 @@ static void HWR_PrecacheLevelTextures(void)
 
 		for (h = 1; h < anim->numpics; h++)
 		{
+			const INT32 animtexnum = anim->basepic+h;
+
 			if (texpresent & 1)
 			{
-				HWR_GetTexture(anim->basepic+h, false);
+				HWR_GetTexture(animtexnum, false);
 			}
 #ifdef GLENCORE
 			if (texpresent & 2)
 			{
-				HWR_GetTexture(anim->basepic+h, true);
+				HWR_GetTexture(animtexnum, true);
 			}
 #endif
 		}
