@@ -1365,7 +1365,8 @@ void GL_Flush(void)
 	TexCacheTail = TexCacheHead = NULL; //Hurdler: well, TexCacheHead is already NULL
 	tex_downloaded = 0;
 
-	free(textureBuffer);
+	if (textureBuffer)
+		free(textureBuffer);
 	textureBuffer = NULL;
 	textureBufferSize = 0;
 }
@@ -3320,8 +3321,8 @@ void GL_Framebuffer_Disable(void)
 	// delet our fbo
 	if (framebufferobject.fboobj)
 		pglDeleteFramebuffers(1, &framebufferobject.fboobj);
-
 	framebufferobject.fboobj = 0;
+
 	GL_Framebuffer_DeleteAttachments();
 }
 #endif
