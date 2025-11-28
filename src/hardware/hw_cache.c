@@ -580,6 +580,9 @@ void HWR_InitMapTextures(void)
 
 static void FreeMapTexture(GLMapTexture_t *tex)
 {
+	if (!tex)
+		return;
+
 	GL_DeleteTexture(&tex->mipmap);
 	Z_Free(tex->mipmap.data);
 	tex->mipmap.data = NULL;
@@ -588,6 +591,12 @@ static void FreeMapTexture(GLMapTexture_t *tex)
 void HWR_FreeMapTextures(void)
 {
 	size_t i;
+
+	if (!gl_textures)
+	{
+		gl_numtextures = 0;
+		return;
+	}
 
 	for (i = 0; i < gl_numtextures; i++)
 	{
@@ -599,8 +608,7 @@ void HWR_FreeMapTextures(void)
 
 	// now the heap don't have any 'user' pointing to our
 	// texturecache info, we can free it
-	if (gl_textures)
-		free(gl_textures);
+	free(gl_textures);
 	gl_textures = NULL;
 	gl_numtextures = 0;
 }
