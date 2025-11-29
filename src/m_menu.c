@@ -194,6 +194,11 @@ static INT32 vidm_selected = 0;
 static INT32 vidm_nummodes;
 static INT32 vidm_column_size;
 
+#define SETUPM_IP_MAXSIZE ((28-1)*8)
+static char setupm_ip[64];
+static textinput_t setupm_input_ip;
+static UINT8 setupm_pselect = 1;
+
 //
 // PROTOTYPES
 //
@@ -370,7 +375,6 @@ static void M_HandleMonitorToggles(INT32 choice);
 static void M_AddonsRefresh(void);
 
 // Consvar onchange functions
-static void Nextmap_OnChange(void);
 static void Newgametype_OnChange(void);
 static void Dummymenuplayer_OnChange(void);
 static void Dummystaff_OnChange(void);
@@ -578,6 +582,196 @@ static void M_CustomCvarMenu(INT32 choice)
 		M_SetupNextMenu(&OP_CustomCvarMenuDef);
 	else
 		M_StartMessage(M_GetText("No custom options were found\n"), NULL, MM_NOTHING);
+}
+
+// ==========================================================================
+// CVAR ONCHANGE EVENTS GO HERE
+// ==========================================================================
+// (there's only a couple anyway)
+
+// Nextmap.  Used for Time Attack.
+void Nextmap_OnChange(void)
+{
+	char *leveltitle;
+	UINT8 active;
+
+	// Update the string in the consvar.
+	Z_Free(cv_nextmap.zstring);
+	leveltitle = G_BuildMapTitle(cv_nextmap.value);
+	cv_nextmap.string = cv_nextmap.zstring = leveltitle ? leveltitle : Z_StrDup(G_BuildMapName(cv_nextmap.value));
+
+	if (currentMenu == &SP_TimeAttackDef)
+	{
+		// see also p_setup.c's P_LoadRecordGhosts
+		const size_t glen = strlen(srb2home)+1+strlen("replay")+1+strlen(timeattackfolder)+1+strlen("MAPXX")+1;
+		char *gpath = malloc(glen);
+		INT32 i;
+
+		if (!gpath)
+			return;
+
+		sprintf(gpath,"%s"PATHSEP"replay"PATHSEP"%s"PATHSEP"%s", srb2home, timeattackfolder, G_BuildMapName(cv_nextmap.value));
+
+		CV_StealthSetValue(&cv_dummystaff, 0);
+
+		active = false;
+		SP_TimeAttackMenu[taguest].status = IT_DISABLED;
+		SP_TimeAttackMenu[tareplay].status = IT_DISABLED;
+
+		// Check if file exists, if not, disable REPLAY option
+		for (i = 0; i < 4; i++)
+		{
+			SP_ReplayMenu[i].status = IT_DISABLED;
+			SP_GuestReplayMenu[i].status = IT_DISABLED;
+		}
+		SP_ReplayMenu[4].status = IT_DISABLED;
+
+		SP_GhostMenu[3].status = IT_DISABLED;
+		SP_GhostMenu[4].status = IT_DISABLED;
+
+		if (FIL_FileExists(va("%s-%s-time-best.lmp", gpath, cv_chooseskin.string))) {
+			SP_ReplayMenu[0].status = IT_WHITESTRING|IT_CALL;
+			SP_GuestReplayMenu[0].status = IT_WHITESTRING|IT_CALL;
+			active |= 3;
+		}
+		if (FIL_FileExists(va("%s-%s-lap-best.lmp", gpath, cv_chooseskin.string))) {
+			SP_ReplayMenu[1].status = IT_WHITESTRING|IT_CALL;
+			SP_GuestReplayMenu[1].status = IT_WHITESTRING|IT_CALL;
+			active |= 3;
+		}
+		if (FIL_FileExists(va("%s-%s-last.lmp", gpath, cv_chooseskin.string))) {
+			SP_ReplayMenu[2].status = IT_WHITESTRING|IT_CALL;
+			SP_GuestReplayMenu[2].status = IT_WHITESTRING|IT_CALL;
+			active |= 3;
+		}
+
+		if (FIL_FileExists(va("%s-guest.lmp", gpath)))
+		{
+			SP_ReplayMenu[3].status = IT_WHITESTRING|IT_CALL;
+			SP_GuestReplayMenu[3].status = IT_WHITESTRING|IT_CALL;
+			SP_GhostMenu[3].status = IT_STRING|IT_CVAR;
+			active |= 3;
+		}
+
+		CV_SetValue(&cv_dummystaff, 1);
+		if (cv_dummystaff.value)
+		{
+			SP_ReplayMenu[4].status = IT_WHITESTRING|IT_KEYHANDLER;
+			SP_GhostMenu[4].status = IT_STRING|IT_CVAR;
+			CV_StealthSetValue(&cv_dummystaff, 1);
+			active |= 1;
+		}
+
+		if (active) {
+			if (active & 1)
+				SP_TimeAttackMenu[tareplay].status = IT_WHITESTRING|IT_SUBMENU;
+			if (active & 2)
+				SP_TimeAttackMenu[taguest].status = IT_WHITESTRING|IT_SUBMENU;
+		}
+		else if (itemOn == tareplay) // Reset lastOn so replay isn't still selected when not available.
+		{
+			currentMenu->lastOn = itemOn;
+			itemOn = tastart;
+		}
+
+		if (mapheaderinfo[cv_nextmap.value-1] && mapheaderinfo[cv_nextmap.value-1]->forcecharacter[0] != '\0')
+			CV_Set(&cv_chooseskin, mapheaderinfo[cv_nextmap.value-1]->forcecharacter);
+
+		free(gpath);
+	}
+}
+
+static void Dummymenuplayer_OnChange(void)
+{
+	if (cv_dummymenuplayer.value < 1)
+		CV_StealthSetValue(&cv_dummymenuplayer, splitscreen+1);
+	else if (cv_dummymenuplayer.value > splitscreen+1)
+		CV_StealthSetValue(&cv_dummymenuplayer, 1);
+}
+
+char dummystaffname[22];
+
+static void Dummystaff_OnChange(void)
+{
+	lumpnum_t l;
+
+	dummystaffname[0] = '\0';
+
+	if ((l = W_CheckNumForName(va("%sS01",G_BuildMapName(cv_nextmap.value)))) == LUMPERROR)
+	{
+		CV_StealthSetValue(&cv_dummystaff, 0);
+		return;
+	}
+	else
+	{
+		char *temp = dummystaffname;
+		UINT8 numstaff = 1;
+		while (numstaff < 99 && (l = W_CheckNumForName(va("%sS%02u",G_BuildMapName(cv_nextmap.value),numstaff+1))) != LUMPERROR)
+			numstaff++;
+
+		if (cv_dummystaff.value < 1)
+			CV_StealthSetValue(&cv_dummystaff, numstaff);
+		else if (cv_dummystaff.value > numstaff)
+			CV_StealthSetValue(&cv_dummystaff, 1);
+
+		if ((l = W_CheckNumForName(va("%sS%02u",G_BuildMapName(cv_nextmap.value), cv_dummystaff.value))) == LUMPERROR)
+			return; // shouldn't happen but might as well check...
+
+		G_UpdateStaffGhostName(l);
+
+		while (*temp)
+			temp++;
+
+		sprintf(temp, " - %d", cv_dummystaff.value);
+	}
+}
+
+// Newgametype.  Used for gametype changes.
+static void Newgametype_OnChange(void)
+{
+	if (cv_nextmap.value && menuactive)
+	{
+		if (!mapheaderinfo[cv_nextmap.value-1])
+			P_AllocMapHeader((INT16)(cv_nextmap.value-1));
+
+		if ((cv_newgametype.value == GT_RACE && !(mapheaderinfo[cv_nextmap.value-1]->typeoflevel & TOL_RACE)) || // SRB2kart
+			((cv_newgametype.value == GT_MATCH || cv_newgametype.value == GT_TEAMMATCH) && !(mapheaderinfo[cv_nextmap.value-1]->typeoflevel & TOL_MATCH)))
+		{
+			INT32 value = 0;
+
+			switch (cv_newgametype.value)
+			{
+				case GT_COOP:
+					value = TOL_RACE; // SRB2kart
+					break;
+				case GT_COMPETITION:
+					value = TOL_COMPETITION;
+					break;
+				case GT_RACE:
+					value = TOL_RACE;
+					break;
+				case GT_MATCH:
+				case GT_TEAMMATCH:
+					value = TOL_MATCH;
+					break;
+				case GT_TAG:
+				case GT_HIDEANDSEEK:
+					value = TOL_TAG;
+					break;
+				case GT_CTF:
+					value = TOL_CTF;
+					break;
+			}
+
+			CV_SetValue(&cv_nextmap, M_FindFirstMap(value));
+		}
+	}
+}
+
+static void Splitplayers_OnChange(void)
+{
+	if (cv_splitplayers.value < setupm_pselect)
+		setupm_pselect = 1;
 }
 
 // current menudef
@@ -6271,8 +6465,7 @@ static void M_EraseGuest(INT32 choice)
 		remove(rguest);
 
 	M_SetupNextMenu(&SP_TimeAttackDef);
-	CV_AddValue(&cv_nextmap, -1);
-	CV_AddValue(&cv_nextmap, 1);
+	Nextmap_OnChange();
 	M_StartMessage(M_GetText("Guest replay data erased.\n"),NULL,MM_NOTHING);
 }
 
@@ -6293,8 +6486,7 @@ static void M_OverwriteGuest(const char *which)
 	Z_Free(rguest);
 
 	M_SetupNextMenu(&SP_TimeAttackDef);
-	CV_AddValue(&cv_nextmap, -1);
-	CV_AddValue(&cv_nextmap, 1);
+	Nextmap_OnChange();
 	M_StartMessage(M_GetText("Guest replay data saved.\n"),NULL,MM_NOTHING);
 }
 
@@ -6364,8 +6556,7 @@ static void M_ModeAttackEndGame(INT32 choice)
 	modeattacking = ATTACKING_NONE;
 	S_ChangeMusicInternal("racent", true);
 	// Update replay availability.
-	CV_AddValue(&cv_nextmap, 1);
-	CV_AddValue(&cv_nextmap, -1);
+	Nextmap_OnChange();
 }
 
 // ========
@@ -7357,10 +7548,6 @@ static void M_StartServerMenu(INT32 choice)
 // CONNECT VIA IP
 // ==============
 
-#define SETUPM_IP_MAXSIZE ((28-1)*8)
-static char setupm_ip[64];
-static textinput_t setupm_input_ip;
-
 void M_Multiplayer(INT32 choice)
 {
 	(void)choice;
@@ -7368,8 +7555,6 @@ void M_Multiplayer(INT32 choice)
 	M_TextInputInit(&setupm_input_ip, setupm_ip, sizeof(setupm_ip));
 	M_SetupNextMenu(&MP_MainDef);
 }
-
-static UINT8 setupm_pselect = 1;
 
 // Draw the funky Connect IP menu. Tails 11-19-2002
 // So much work for such a little thing!
@@ -7463,12 +7648,6 @@ Update the maxplayers label...
 #undef spacingwidth
 #undef iconwidth
 	}
-}
-
-static void Splitplayers_OnChange(void)
-{
-	if (cv_splitplayers.value < setupm_pselect)
-		setupm_pselect = 1;
 }
 
 static void M_SetupMultiHandler(INT32 choice)
@@ -8817,15 +8996,15 @@ static boolean M_QuitMultiPlayerMenu(void)
 	if (!fastcmp(setupm_name, setupm_cvname->string))
 	{
 		// remove trailing whitespaces
-		for (l= strlen(setupm_name)-1;
+		for (l = strlen(setupm_name)-1;
 		    (signed)l >= 0 && setupm_name[l] ==' '; l--)
 			setupm_name[l] =0;
-		COM_BufAddText (va("%s \"%s\"\n",setupm_cvname->name,setupm_name));
+		COM_BufAddText(va("%s \"%s\"\n",setupm_cvname->name,setupm_name));
 	}
 
 	// you know what? always putting these in the buffer won't hurt anything.
-	COM_BufAddText (va("%s \"%s\"\n",setupm_cvskin->name,skins[setupm_fakeskin].name));
-	COM_BufAddText (va("%s %d\n",setupm_cvcolor->name,setupm_fakecolor));
+	COM_BufAddText(va("%s \"%s\"\n",setupm_cvskin->name,skins[setupm_fakeskin].name));
+	COM_BufAddText(va("%s %d\n",setupm_cvcolor->name,setupm_fakecolor));
 
 	return true;
 }
@@ -9066,7 +9245,6 @@ static void M_AssignJoystick(INT32 choice)
 			break;
 	}
 #else
-
 	switch (setupcontrolplayer)
 	{
 		case 4:
@@ -10272,6 +10450,7 @@ void M_QuitResponse(INT32 ch)
 
 	if (ch != 'y' && ch != KEY_ENTER)
 		return;
+
 	if (!(netgame || cv_debug))
 	{
 		mrand = M_RandomKey(sizeof(quitsounds)/sizeof(INT32));
@@ -10288,6 +10467,7 @@ void M_QuitResponse(INT32 ch)
 			I_UpdateTime(cv_timescale.value);
 		}
 	}
+
 	I_Quit();
 }
 
