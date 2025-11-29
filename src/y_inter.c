@@ -701,8 +701,7 @@ static void Y_UpdateRecordReplays(void)
 	G_SaveGameData(false);
 
 	// Update timeattack menu's replay availability.
-	CV_AddValue(&cv_nextmap, 1);
-	CV_AddValue(&cv_nextmap, -1);
+	Nextmap_OnChange();
 }
 
 //
