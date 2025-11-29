@@ -9126,7 +9126,7 @@ static void M_DrawJoystick(void)
 void M_SetupJoystickMenu(INT32 choice)
 {
 	INT32 i = 0;
-	const char *joyNA = "Unavailable";;
+	const char *joyNA = "Unavailable";
 	(void)choice;
 
 	strcpy(joystickInfo[i], "None");
