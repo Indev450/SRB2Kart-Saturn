@@ -741,6 +741,9 @@ INT32 P_AddLevelFlatRuntime(const char *flatname)
 #endif
 
 		numlevelflats++;
+
+		// if this flat is new, setup our animflats again
+		P_SetupLevelFlatAnims();
 	}
 
 	// level flat id
