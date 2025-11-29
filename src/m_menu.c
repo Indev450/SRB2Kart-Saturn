@@ -9091,24 +9091,20 @@ static void M_DrawJoystick(void)
 		//M_DrawSaveLoadBorder(OP_JoystickSetDef.x, OP_JoystickSetDef.y+LINEHEIGHT*i);
 
 #ifdef JOYSTICK_HOTPLUG
-		if (atoi(cv_usejoystick[3].string) > I_NumJoys())
-			compareval4 = atoi(cv_usejoystick[3].string);
-		else
+		compareval4 = atoi(cv_usejoystick[3].string);
+		if (compareval4 <= numcontrollers)
 			compareval4 = cv_usejoystick[3].value;
 
-		if (atoi(cv_usejoystick[2].string) > I_NumJoys())
-			compareval3 = atoi(cv_usejoystick[2].string);
-		else
+		compareval3 = atoi(cv_usejoystick[2].string);
+		if (compareval3 <= numcontrollers)
 			compareval3 = cv_usejoystick[2].value;
 
-		if (atoi(cv_usejoystick[1].string) > I_NumJoys())
-			compareval2 = atoi(cv_usejoystick[1].string);
-		else
+		compareval2 = atoi(cv_usejoystick[1].string);
+		if (compareval2 <= numcontrollers)
 			compareval2 = cv_usejoystick[1].value;
 
-		if (atoi(cv_usejoystick[0].string) > I_NumJoys())
-			compareval = atoi(cv_usejoystick[0].string);
-		else
+		compareval = atoi(cv_usejoystick[0].string);
+		if (compareval <= numcontrollers)
 			compareval = cv_usejoystick[0].value;
 #else
 		compareval4 = cv_usejoystick[3].value;
@@ -9131,15 +9127,16 @@ void M_SetupJoystickMenu(INT32 choice)
 {
 	INT32 i = 0;
 	const char *joyNA = "Unavailable";
-	INT32 n = I_NumJoys();
 	(void)choice;
 
 	strcpy(joystickInfo[i], "None");
 
 	for (i = 1; i < 8; i++)
 	{
-		if (i <= n && (I_GetJoyName(i)) != NULL)
-			strncpy(joystickInfo[i], I_GetJoyName(i), 28);
+		const char *joyname = I_GetJoyName(i);
+
+		if (i <= numcontrollers && joyname != NULL)
+			strncpy(joystickInfo[i], joyname, 28);
 		else
 			strcpy(joystickInfo[i], joyNA);
 
@@ -9198,28 +9195,28 @@ static void M_Setup4PJoystickMenu(INT32 choice)
 static void M_DoAssignJoystick(UINT8 pnum, INT32 choice)
 {
 	INT32 oldchoice, oldstringchoice;
-	const INT32 numjoys = I_NumJoys();
+	const int joynum = atoi(cv_usejoystick[pnum].string);
 
-	oldchoice = oldstringchoice = atoi(cv_usejoystick[pnum].string) > numjoys ? atoi(cv_usejoystick[pnum].string) : cv_usejoystick[pnum].value;
+	oldchoice = oldstringchoice = joynum > numcontrollers ? joynum : cv_usejoystick[pnum].value;
 	CV_SetValue(&cv_usejoystick[pnum], choice);
 
 	// Just in case last-minute changes were made to cv_usejoystick.value,
 	// update the string too
 	// But don't do this if we're intentionally setting higher than numjoys
-	if (choice <= numjoys)
+	if (choice <= numcontrollers)
 	{
 		CV_SetValue(&cv_usejoystick[pnum], cv_usejoystick[pnum].value);
 
-		if (oldchoice > numjoys)  /* reset this so the comparison is valid*/
+		if (oldchoice > numcontrollers)  /* reset this so the comparison is valid*/
 			oldchoice = cv_usejoystick[pnum].value;
 
 		if (oldchoice != choice)
 		{
-			if (choice && oldstringchoice > numjoys) // if we did not select "None", we likely selected a used device
-				CV_SetValue(&cv_usejoystick[pnum], (oldstringchoice > numjoys ? oldstringchoice : oldchoice));
+			if (choice && oldstringchoice > numcontrollers) // if we did not select "None", we likely selected a used device
+				CV_SetValue(&cv_usejoystick[pnum], (oldstringchoice > numcontrollers ? oldstringchoice : oldchoice));
 
 			if (oldstringchoice ==
-				(atoi(cv_usejoystick[pnum].string) > numjoys ? atoi(cv_usejoystick[pnum].string) : cv_usejoystick[pnum].value))
+				(joynum > numcontrollers ? joynum : cv_usejoystick[pnum].value))
 				M_StartMessage("This joystick is used by another\n"
 				"player. Reset the joystick\n"
 				"for that player first.\n\n"
