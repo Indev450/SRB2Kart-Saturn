@@ -46,8 +46,8 @@
 #include "SDL_image.h"
 #else
 // SDLCALL terms removed from original SDL_image declarations
-int IMG_isXPM(SDL_RWops *src);
-SDL_Surface *IMG_LoadXPM_RW(SDL_RWops *src);
+int IMG_isXPM(SDL_IOStream *src);
+SDL_Surface *IMG_LoadXPM_RW(SDL_IOStream *src);
 SDL_Surface *IMG_ReadXPMFromArray(const char **xpm);
 #define IMG_SetError    SDL_SetError
 #define IMG_GetError    SDL_GetError
@@ -56,7 +56,7 @@ SDL_Surface *IMG_ReadXPMFromArray(const char **xpm);
 #ifdef LOAD_XPM
 
 /* See if an image is contained in a data source */
-int IMG_isXPM(SDL_RWops *src)
+int IMG_isXPM(SDL_IOStream *src)
 {
     Sint64 start;
     int is_XPM;
@@ -64,14 +64,14 @@ int IMG_isXPM(SDL_RWops *src)
 
     if ( !src )
         return 0;
-    start = SDL_RWtell(src);
+    start = SDL_TellIO(src);
     is_XPM = 0;
-    if ( SDL_RWread(src, magic, sizeof(magic), 1) ) {
+    if ( SDL_ReadIO(src, magic, sizeof(magic)) ) {
         if ( SDL_memcmp(magic, "/* XPM */", sizeof(magic)) == 0 ) {
             is_XPM = 1;
         }
     }
-    SDL_RWseek(src, start, RW_SEEK_SET);
+    SDL_SeekIO(src, start, SDL_IO_SEEK_SET);
     return(is_XPM);
 }
 
@@ -933,7 +933,7 @@ static const char *error;
  * If len > 0, it's assumed to be at least len chars (for efficiency).
  * Return NULL and set error upon EOF or parse error.
  */
-static const char *get_next_line(const char ***lines, SDL_RWops *src, int len)
+static const char *get_next_line(const char ***lines, SDL_IOStream *src, int len)
 {
     char *linebufnew;
 
@@ -943,7 +943,7 @@ static const char *get_next_line(const char ***lines, SDL_RWops *src, int len)
         char c;
         int n;
         do {
-            if (SDL_RWread(src, &c, 1, 1) <= 0) {
+            if (SDL_ReadIO(src, &c, 1) <= 0) {
                 error = "Premature end of data";
                 return NULL;
             }
@@ -960,7 +960,7 @@ static const char *get_next_line(const char ***lines, SDL_RWops *src, int len)
                 }
                 linebuf = linebufnew;
             }
-            if (SDL_RWread(src, linebuf, len - 1, 1) <= 0) {
+            if (SDL_ReadIO(src, linebuf, len - 1) <= 0) {
                 error = "Premature end of data";
                 return NULL;
             }
@@ -980,7 +980,7 @@ static const char *get_next_line(const char ***lines, SDL_RWops *src, int len)
                     }
                     linebuf = linebufnew;
                 }
-                if (SDL_RWread(src, linebuf + n, 1, 1) <= 0) {
+                if (SDL_ReadIO(src, linebuf + n, 1) <= 0) {
                     error = "Premature end of data";
                     return NULL;
                 }
@@ -1005,7 +1005,7 @@ do {                            \
 } while (0)
 
 /* read XPM from either array or RWops */
-static SDL_Surface *load_xpm(const char **xpm, SDL_RWops *src)
+static SDL_Surface *load_xpm(const char **xpm, SDL_IOStream *src)
 {
     Sint64 start = 0;
     SDL_Surface *image = NULL;
@@ -1027,7 +1027,7 @@ static SDL_Surface *load_xpm(const char **xpm, SDL_RWops *src)
     buflen = 0;
 
     if (src)
-        start = SDL_RWtell(src);
+        start = SDL_TellIO(src);
 
     if (xpm)
         xpmlines = &xpm;
@@ -1065,14 +1065,15 @@ static SDL_Surface *load_xpm(const char **xpm, SDL_RWops *src)
     /* Create the new surface */
     if (ncolors <= 256) {
         indexed = 1;
-        image = SDL_CreateRGBSurface(SDL_SWSURFACE, w, h, 8,
-                         0, 0, 0, 0);
-        im_colors = image->format->palette->colors;
-        image->format->palette->ncolors = ncolors;
+        image = SDL_CreateSurface(w, h,
+                                  SDL_PIXELFORMAT_INDEX8);
+        SDL_Palette *palette = SDL_CreateSurfacePalette(image);
+        im_colors = palette->colors;
+        palette->ncolors = ncolors;
     } else {
         indexed = 0;
-        image = SDL_CreateRGBSurface(SDL_SWSURFACE, w, h, 32,
-                         0xff0000, 0x00ff00, 0x0000ff, 0);
+        image = SDL_CreateSurface(w, h,
+			SDL_GetPixelFormatForMasks(32, 0xff0000, 0x00ff00, 0x0000ff, 0));
     }
     if (!image) {
         /* Hmm, some SDL error (out of memory?) */
@@ -1128,7 +1129,7 @@ static SDL_Surface *load_xpm(const char **xpm, SDL_RWops *src)
             add_colorhash(colors, nextkey, cpp, pixel);
             nextkey += cpp;
             if (rgb == 0xffffffff)
-                SDL_SetColorKey(image, SDL_TRUE, pixel);
+                SDL_SetSurfaceColorKey(image, true, pixel);
             break;
         }
     }
@@ -1164,9 +1165,9 @@ static SDL_Surface *load_xpm(const char **xpm, SDL_RWops *src)
 done:
     if (error) {
         if ( src )
-            SDL_RWseek(src, start, RW_SEEK_SET);
+            SDL_SeekIO(src, start, SDL_IO_SEEK_SET);
         if ( image ) {
-            SDL_FreeSurface(image);
+            SDL_DestroySurface(image);
             image = NULL;
         }
         IMG_SetError("%s", error);
@@ -1180,7 +1181,7 @@ done:
 }
 
 /* Load a XPM type image from an RWops datasource */
-SDL_Surface *IMG_LoadXPM_RW(SDL_RWops *src)
+SDL_Surface *IMG_LoadXPM_RW(SDL_IOStream *src)
 {
     if ( !src ) {
         /* The error message has been set in SDL_RWFromFile */
@@ -1203,14 +1204,14 @@ SDL_Surface *IMG_ReadXPMFromArray(const char **xpm)
 #else  /* not LOAD_XPM */
 
 /* See if an image is contained in a data source */
-int IMG_isXPM(SDL_RWops *src)
+int IMG_isXPM(SDL_IOStream *src)
 {
     return(0);
 }
 
 
 /* Load a XPM type image from an SDL datasource */
-SDL_Surface *IMG_LoadXPM_RW(SDL_RWops *src)
+SDL_Surface *IMG_LoadXPM_RW(SDL_IOStream *src)
 {
     return(NULL);
 }

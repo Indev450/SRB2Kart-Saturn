@@ -27,10 +27,10 @@
 
 #ifdef HAVE_SDL
 
-#include "SDL.h"
+#include <SDL3/SDL.h>
 
 #ifndef NOLOADSO
-#include "SDL_loadso.h"
+#include <SDL3/SDL_loadso.h>
 #endif
 
 #define  _CREATE_DLL_  // necessary for Unix AND Windows
