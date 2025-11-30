@@ -346,7 +346,7 @@ static INT32 Impl_SDL_Keysym_To_Keycode(SDL_KeyboardEvent evt)
 	return Impl_SDL_Scancode_To_Keycode(evt);
 }
 
-static boolean native_input_active = false;
+static bool native_input_active = false;
 
 // used to supress the games shift/alt handling
 boolean I_UseNativeKeyboard(void)
@@ -582,7 +582,7 @@ static void Impl_HandleMouseMotionEvent(SDL_MouseMotionEvent evt)
 	if (!USE_MOUSEINPUT)
 		return;
 
-	const boolean windowinfocus = (SDL_GetMouseFocus() == window && SDL_GetKeyboardFocus() == window);
+	const bool windowinfocus = (SDL_GetMouseFocus() == window && SDL_GetKeyboardFocus() == window);
 
 	if (!windowinfocus)
 	{
@@ -1233,7 +1233,7 @@ static void VID_Command_Mode_f (void)
 // Get the desktop resolution from the current display the gamewindow resides on
 static void I_CheckDesktopRes(void)
 {
-	int currentDisplayIndex = -1;
+	SDL_DisplayID currentDisplayIndex = 0;
 	const SDL_DisplayMode *curmode;
 
 	desktopwidth = 0;
@@ -1279,7 +1279,7 @@ void RefreshOGLSDLSurface(void)
 
 void I_DownSample(void)
 {
-	boolean needrefresh = false;
+	bool needrefresh = false;
 
 	if (!cv_glframebuffer.value || !supportFBO || (cv_glscreentextures.value == 0)) // no sense to do this crap if we cant benefit from it
 	{
@@ -1325,8 +1325,8 @@ static void SDLSetMode(INT32 width, INT32 height, bool fullscreen)
 	static bool wasfullscreen = false;
 	int sw_texture_format = SDL_PIXELFORMAT_ABGR8888;
 
-	realwidth = vid.width;
-	realheight = vid.height;
+	realwidth = (Uint16)vid.width;
+	realheight = (Uint16)vid.height;
 
 	if (window)
 	{
@@ -1385,8 +1385,8 @@ static void SDLSetMode(INT32 width, INT32 height, bool fullscreen)
 		SDL_SetRenderLogicalPresentation(renderer, width, height, SDL_LOGICAL_PRESENTATION_LETTERBOX);
 
 		// Set up Texture
-		realwidth = width;
-		realheight = height;
+		realwidth = (Uint16)width;
+		realheight = (Uint16)height;
 
 		if (texture != NULL)
 		{
@@ -1405,7 +1405,7 @@ static SDL_FRect src_rect = { 0, 0, 0, 0 };
 void I_FinishUpdate(void)
 {
 	if (rendermode == render_none)
-		return; //Alam: No software or OpenGl surface
+		return; // Alam: No software or OpenGl surface
 
 	SCR_CalculateFPS();
 
@@ -1414,7 +1414,7 @@ void I_FinishUpdate(void)
 		if (cv_ticrate.value)
 			SCR_DisplayTicRate();
 
-		const boolean isserverplayer = consoleplayer == serverplayer;
+		const bool isserverplayer = consoleplayer == serverplayer;
 
 		if (cv_showping.value && ((netgame && !isserverplayer) ||
 		   (simulated_lag != 0 && isserverplayer && Playing())))
@@ -1593,8 +1593,8 @@ static int IsCustomResolutionInList(int list_size)
 //
 static void I_FillScreenResolutionsList(boolean force)
 {
-	SDL_DisplayID currentDisplayIndex = -1;
-	static SDL_DisplayID oldDisplayIndex = -1;
+	SDL_DisplayID currentDisplayIndex = 0;
+	static SDL_DisplayID oldDisplayIndex = 0;
 	SDL_DisplayMode mode;
 	SDL_DisplayMode **displaymodes = NULL;
 	int i = 0, list_size = 0;
@@ -1763,7 +1763,7 @@ void VID_PrepareModeList(void)
 static UINT32 refresh_rate;
 static UINT32 VID_GetRefreshRate(void)
 {
-	int index = SDL_GetDisplayForWindow(window);
+	SDL_DisplayID index = 0;
 	const SDL_DisplayMode *displaymode = NULL;
 
 	if (SDL_WasInit(SDL_INIT_VIDEO) == 0)
@@ -1772,6 +1772,7 @@ static UINT32 VID_GetRefreshRate(void)
 		return 0;
 	}
 
+	index = SDL_GetDisplayForWindow(window);
 	displaymode = SDL_GetDesktopDisplayMode(index);
 
 	if (!displaymode)
@@ -1856,6 +1857,7 @@ static bool Impl_CreateContext(void)
 		if (!renderer)
 		{
 			SDL_PropertiesID props = SDL_CreateProperties();
+
 			if (props == 0)
 			{
 				I_Error("Couldn't create rendering properties: %s", SDL_GetError());
@@ -1950,7 +1952,7 @@ static void Impl_SetWindowIcon(void)
 
 static FILE * OpenRendererFile(const char * mode)
 {
-	char * path = va(pandf,srb2home,"renderer.txt");
+	char * path = va(pandf, srb2home, "renderer.txt");
 	return fopen(path, mode);
 }
 
