@@ -3986,7 +3986,12 @@ DoneSection2:
 
 					player->tossdelay = 3;
 				}
-
+#if 0
+			// Event - Final Lap
+			// Still works for GME, but disabled for consistency
+			if (G_RaceGametype() && player->laps >= (UINT8)(cv_numlaps.value - 1))
+				S_SpeedMusic(1.2f);
+#endif
 				if (player->laps >= (unsigned)cv_numlaps.value)
 				{
 					if (P_IsLocalPlayer(player))
