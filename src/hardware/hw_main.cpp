@@ -4669,7 +4669,7 @@ static void HWR_ProjectSprite(mobj_t *thing)
 	float y1, y2;
 	float z1, z2;
 	float rightsin, rightcos;
-	float this_scale;
+	float thing_scale;
 	float spritexscale, spriteyscale;
 	float gz, gzt;
 	spritedef_t *sprdef;
@@ -4737,10 +4737,6 @@ static void HWR_ProjectSprite(mobj_t *thing)
 	const boolean mirrored = thing->mirrored;
 	const boolean vflip    = (thing->eflags & MFE_VERTICALFLIP);
 	const boolean hflip    = (!(thing->frame & FF_HORIZONTALFLIP) != !mirrored);
-
-	this_scale   = FixedToFloat(interp.scale);
-	spritexscale = FixedToFloat(interp.spritexscale);
-	spriteyscale = FixedToFloat(interp.spriteyscale);
 
 	// decide which patch to use for sprite relative to player
 #ifdef RANGECHECK
@@ -4842,9 +4838,6 @@ static void HWR_ProjectSprite(mobj_t *thing)
 			flip ^= (1<<rot);
 	}
 
-	if (sprskin && (sprskin->flags & SF_HIRES))
-		this_scale *= FixedToFloat(sprskin->highresscale);
-
 	spr_width = spritecachedinfo[lumpoff].width;
 	spr_height = spritecachedinfo[lumpoff].height;
 	spr_offset = spritecachedinfo[lumpoff].offset;
@@ -4897,8 +4890,13 @@ static void HWR_ProjectSprite(mobj_t *thing)
 	spr_offset += interp.spritexoffset;
 	spr_topoffset += interp.spriteyoffset;
 
-	spritexscale *= this_scale;
-	spriteyscale *= this_scale;
+	thing_scale = FixedToFloat(interp.scale);
+
+	if (sprskin && (sprskin->flags & SF_HIRES))
+		thing_scale *= FixedToFloat(sprskin->highresscale);
+
+	spritexscale = FixedToFloat(interp.spritexscale) * thing_scale;
+	spriteyscale = FixedToFloat(interp.spriteyscale) * thing_scale;
 
 	flip = !flip != !hflip;
 
@@ -4933,31 +4931,14 @@ static void HWR_ProjectSprite(mobj_t *thing)
 			return;
 	}
 
-	// rest in piece sweet prince
-	/*if (cv_glshearing.value && !papersprite)
-	{
-		// killough 4/9/98: clip things which are out of view due to height
-		// e6y: fix of hanging decoration disappearing in Batman Doom MAP02
-		// centeryfrac -> viewheightfrac
-		// [kb] add +1 so sprites are shown even with the extended freelook
-		// lug: attempt to account for freelook properly
-		const fixed_t fixedtz = FloatToFixed(tz);
-		if (interp.z > viewz + FixedMul(FixedDiv(centeryfrac, projectiony), fixedtz) || // view center accounted for aspect (i hope)
-			FloatToFixed(gzt) < viewz + FixedMul(FixedDiv(centeryfrac - (viewheight << FRACBITS), projectiony), fixedtz)) // view center accounted for aspect but the bottom (OwO)
-		{
-			return;
-		}
-		{
-			return;
-		}
-	}*/
-
+	// if the sprite is out of our view, dont need to draw it X)
 	if (!gld_SphereInFrustum(
 							(FixedToFloat(interp.x)) + cos_inv_yaw * (x1 + x2) / 2.0f,
 							FixedToFloat(interp.z) + (y1 + y2) / 2.0f,
 							FixedToFloat(interp.y) - sin_inv_yaw * (x1 + x2) / 2.0f,
 							//1.5 == sqrt(2) + small delta for MF_FOREGROUND
-							std::max<float>(FixedToFloat(spr_width), FixedToFloat(spr_height)) / 2.0f * 1.5f))
+							std::max<float>(FixedToFloat(spr_width)  * spritexscale,
+											FixedToFloat(spr_height) * spriteyscale) / 2.0f * 1.5f))
 	{
 		return;
 	}
@@ -4971,17 +4952,16 @@ static void HWR_ProjectSprite(mobj_t *thing)
 	if (heightsec != -1 && phs != -1) // only clip things which are in special sectors
 	{
 		fixed_t secheight;
-		const fixed_t fgzt = FloatToFixed(gzt);
 
 		secheight = P_GetSectorFloorZAt(&sectors[heightsec], viewx, viewy);
 		if (viewz < P_GetSectorFloorZAt(&sectors[phs], interp.x, interp.y) ?
 			interp.z >= secheight :
-			fgzt < secheight)
+			FloatToFixed(gzt) < secheight)
 			return;
 
 		secheight = P_GetSectorCeilingZAt(&sectors[heightsec], viewx, viewy);
 		if (viewz > P_GetSectorCeilingZAt(&sectors[phs], interp.x, interp.y) ?
-			fgzt < secheight && viewz >= secheight :
+			FloatToFixed(gzt) < secheight && viewz >= secheight :
 			interp.z >= secheight)
 			return;
 	}
@@ -5016,7 +4996,7 @@ static void HWR_ProjectSprite(mobj_t *thing)
 	vis->dispoffset = thing->info->dispoffset; // Monster Iestyn: 23/11/15: HARDWARE SUPPORT AT LAST
 	vis->flip = flip;
 
-	vis->scale = this_scale;
+	vis->scale = thing_scale;
 	vis->spritexscale = spritexscale;
 	vis->spriteyscale = spriteyscale;
 	vis->spritexoffset = FixedToFloat(spr_offset);
@@ -5024,10 +5004,10 @@ static void HWR_ProjectSprite(mobj_t *thing)
 
 #ifdef ROTSPRITE
 	if (rotsprite != NULL)
-		vis->gpatch = (patch_t *)rotsprite;
+		vis->gpatch = static_cast<patch_t *>(rotsprite);
 	else
 #endif
-		vis->gpatch = (patch_t *)W_CachePatchNum(sprframe->lumppat[rot], PU_SPRITE);
+		vis->gpatch = static_cast<patch_t *>(W_CachePatchNum(sprframe->lumppat[rot], PU_SPRITE));
 
 	vis->mobj = thing;
 
@@ -5083,7 +5063,7 @@ static void HWR_ProjectPrecipitationSprite(precipmobj_t *thing)
 	float z1, z2;
 	float gz, gzt;
 	float rightsin, rightcos;
-	float this_scale;
+	float thing_scale;
 	spritedef_t *sprdef;
 	spriteframe_t *sprframe;
 	size_t lumpoff;
@@ -5119,7 +5099,7 @@ static void HWR_ProjectPrecipitationSprite(precipmobj_t *thing)
 		return;
 
 	// decide which patch to use for sprite relative to player
-	if ((unsigned)thing->sprite >= numsprites)
+	if (static_cast<unsigned>(thing->sprite) >= numsprites)
 	{
 #ifdef RANGECHECK
 		I_Error("HWR_ProjectPrecipitationSprite: invalid sprite number %i ",
@@ -5131,7 +5111,7 @@ static void HWR_ProjectPrecipitationSprite(precipmobj_t *thing)
 
 	sprdef = &sprites[thing->sprite];
 
-	if ((size_t)(thing->frame&FF_FRAMEMASK) >= sprdef->numframes)
+	if (static_cast<size_t>((thing->frame&FF_FRAMEMASK)) >= sprdef->numframes)
 	{
 #ifdef RANGECHECK
 		I_Error("HWR_ProjectPrecipitationSprite: invalid sprite frame %i : %i for %s",
@@ -5141,7 +5121,7 @@ static void HWR_ProjectPrecipitationSprite(precipmobj_t *thing)
 #endif
 	}
 
-	this_scale = FixedToFloat(interp.scale);
+	thing_scale = FixedToFloat(interp.scale);
 
 	sprframe = &sprdef->spriteframes[thing->frame & FF_FRAMEMASK];
 
@@ -5161,31 +5141,31 @@ static void HWR_ProjectPrecipitationSprite(precipmobj_t *thing)
 	}
 	else
 	{
-		x1 = FixedToFloat(spr_offset);
-		x2 = FixedToFloat(spr_offset);
+		x1 = x2 = FixedToFloat(spr_offset);
 	}
 
 	y1 = (FixedToFloat(spr_topoffset));
 	y2 = (FixedToFloat(spr_height - spr_topoffset));
 
-	x1 *= this_scale;
-	x2 *= this_scale;
-	y1 *= this_scale;
-	y2 *= this_scale;
+	x1 *= thing_scale;
+	x2 *= thing_scale;
+	y1 *= thing_scale;
+	y2 *= thing_scale;
 
 	if (!gld_SphereInFrustum(
 							(FixedToFloat(interp.x)) + cos_inv_yaw * (x1 + x2) / 2.0f,
 							FixedToFloat(interp.z) + (y1 + y2) / 2.0f,
 							FixedToFloat(interp.y) - sin_inv_yaw * (x1 + x2) / 2.0f,
 							//1.5 == sqrt(2) + small delta for MF_FOREGROUND
-							std::max<float>(FixedToFloat(spr_width), FixedToFloat(spr_height)) / 2.0f * 1.5f))
+							std::max<float>(FixedToFloat(spr_width)  * thing_scale,
+											FixedToFloat(spr_height) * thing_scale) / 2.0f * 1.5f))
 	{
 		return;
 	}
 
 	// set top/bottom coords
 	gzt = FixedToFloat(interp.z) + y1;
-	gz = gzt - (FixedToFloat(spr_height) * this_scale);
+	gz = gzt - (FixedToFloat(spr_height) * thing_scale);
 
 	rightsin = FixedToFloat(FINESINE((viewangle + ANGLE_90)>>ANGLETOFINESHIFT));
 	rightcos = FixedToFloat(FINECOSINE((viewangle + ANGLE_90)>>ANGLETOFINESHIFT));
@@ -5205,7 +5185,7 @@ static void HWR_ProjectPrecipitationSprite(precipmobj_t *thing)
 	vis->z2 = z2;
 	vis->tz = tz;
 	vis->dispoffset = 0; // Monster Iestyn: 23/11/15: HARDWARE SUPPORT AT LAST
-	vis->gpatch = (patch_t *)W_CachePatchNum(sprframe->lumppat[rot], PU_SPRITE);
+	vis->gpatch = static_cast<patch_t *>(W_CachePatchNum(sprframe->lumppat[rot], PU_SPRITE));
 	vis->flip = flip;
 	vis->mobj = NULL;
 
