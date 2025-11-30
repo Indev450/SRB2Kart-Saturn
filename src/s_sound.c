@@ -2272,15 +2272,16 @@ static void GameSounds_OnChange(void)
 	if (M_CheckParm("-nosound") || M_CheckParm("-noaudio"))
 		return;
 
-	sound_disabled = !cv_gamesounds.value;
-	if (sound_disabled)
+	if (sound_disabled && cv_gamesounds.value)
 	{
+		sound_disabled = false;
 		I_StartupSound(); // will return early if initialised
 		S_InitSfxChannels(cv_soundvolume.value);
 		S_StartSound(NULL, sfx_strpst);
 	}
-	else
+	else if (!sound_disabled && !cv_gamesounds.value)
 	{
+		sound_disabled = true;
 		S_StopSounds();
 	}
 }
@@ -2305,9 +2306,9 @@ void GameMusic_OnChange(void)
 	if (M_CheckParm("-nomusic") || M_CheckParm("-noaudio"))
 		return;
 
-	music_disabled = !cv_gamedigimusic.value;
-	if (music_disabled)
+	if (music_disabled && cv_gamedigimusic.value)
 	{
+		music_disabled = false;
 		I_StartupSound(); // will return early if initialised
 		I_InitMusic();
 
@@ -2318,8 +2319,9 @@ void GameMusic_OnChange(void)
 		else
 			S_ChangeMusicInternal("titles", looptitle);
 	}
-	else
+	else if (!music_disabled && !cv_gamedigimusic.value)
 	{
+		music_disabled = true;
 		S_StopMusic();
 	}
 }
