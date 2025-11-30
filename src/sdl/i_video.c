@@ -459,7 +459,7 @@ static void Impl_HandleWindowEvent(SDL_WindowEvent evt)
 	static bool kbfocus = true;
 	static bool windowmoved = false;
 
-	const unsigned int oldfocus = FOCUSUNION;
+	const int oldfocus = FOCUSUNION;
 
 	switch (evt.type)
 	{
