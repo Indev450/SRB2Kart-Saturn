@@ -588,14 +588,10 @@ static void HWR_RenderPlane(subsector_t *subsector, extrasubsector_t *xsub, bool
 	const sector_t *sec = FOFsector ? FOFsector : gl_frontsector;
 
 	// Get the slope pointer to simplify future code
-	if (sec->f_slope && !isceiling)
+	if (!isceiling && sec->f_slope)
 		slope = sec->f_slope;
-	else if (sec->c_slope && isceiling)
+	else if (isceiling && sec->c_slope)
 		slope = sec->c_slope;
-
-	// Set fixedheight to the slope's height from our viewpoint, if we have a slope
-	if (slope)
-		fixedheight = P_GetSlopeZAt(slope, viewx, viewy);
 
 	height = FixedToFloat(fixedheight);
 
@@ -673,8 +669,8 @@ static void HWR_RenderPlane(subsector_t *subsector, extrasubsector_t *xsub, bool
 
 #define SETUP3DVERT(vert, vx, vy) {\
 		/* Hurdler: add scrolling texture on floor/ceiling */\
-		vert->s = (float)(((vx) / fflatsize) - flatxref + scrollx);\
-		vert->t = (float)(flatyref - ((vy) / fflatsize) + scrolly);\
+		vert->s = (((vx) / fflatsize) - flatxref + scrollx);\
+		vert->t = (flatyref - ((vy) / fflatsize) + scrolly);\
 \
 		/* Need to rotate before translate */\
 		if (angle) /* Only needs to be done if there's an altered angle */\
@@ -685,17 +681,18 @@ static void HWR_RenderPlane(subsector_t *subsector, extrasubsector_t *xsub, bool
 			vert->t = (tempxsow * sinangf) + (tempytow * cosangf);\
 		}\
 \
+		if (slope)\
+		{\
+			fixedheight = P_GetSlopeZAt(slope, FloatToFixed((vx)), FloatToFixed((vy)));\
+			height = FixedToFloat(fixedheight);\
+		}\
+\
 		vert->x = (vx);\
 		vert->y = height;\
 		vert->z = (vy);\
 \
-		if (slope)\
-		{\
-			fixedheight = P_GetSlopeZAt(slope, FloatToFixed((vx)), FloatToFixed((vy)));\
-			vert->y = FixedToFloat(fixedheight);\
-		}\
 }
-	for (i = 0, v3d = planeVerts; i < (INT32)nrPlaneVerts; i++,v3d++,pv++)
+	for (i = 0, v3d = planeVerts; i < (INT32)nrPlaneVerts; i++,v3d++, pv++)
 		SETUP3DVERT(v3d, pv->x, pv->y);
 
 	if (slope)
@@ -2965,11 +2962,12 @@ static void HWR_Subsector(size_t num)
 
 	cullFloorHeight   = P_GetSectorFloorZAt  (gl_frontsector, viewx, viewy);
 	cullCeilingHeight = P_GetSectorCeilingZAt(gl_frontsector, viewx, viewy);
-	locFloorHeight    = P_GetSectorFloorZAt  (gl_frontsector, gl_frontsector->soundorg.x, gl_frontsector->soundorg.y);
-	locCeilingHeight  = P_GetSectorCeilingZAt(gl_frontsector, gl_frontsector->soundorg.x, gl_frontsector->soundorg.y);
 
 	if (gl_frontsector->ffloors)
 	{
+		locFloorHeight    = P_GetSectorFloorZAt  (gl_frontsector, gl_frontsector->soundorg.x, gl_frontsector->soundorg.y);
+		locCeilingHeight  = P_GetSectorCeilingZAt(gl_frontsector, gl_frontsector->soundorg.x, gl_frontsector->soundorg.y);
+
 		boolean anyMoved = gl_frontsector->moved;
 
 		if (anyMoved == false)
@@ -3024,8 +3022,7 @@ static void HWR_Subsector(size_t num)
 			{
 				HWR_GetFlat(levelflats[gl_frontsector->floorpic].lumpnum, R_NoEncore(gl_frontsector, false));
 				HWR_RenderPlane(sub, &extrasubsectors[num], false,
-					// Hack to make things continue to work around slopes.
-					locFloorHeight == cullFloorHeight ? locFloorHeight : gl_frontsector->floorheight,
+					gl_frontsector->floorheight,
 					// We now return you to your regularly scheduled rendering.
 					PF_Occlude, floorlightlevel, levelflats[gl_frontsector->floorpic].lumpnum, NULL, 255, floorcolormap);
 			}
@@ -3040,8 +3037,7 @@ static void HWR_Subsector(size_t num)
 			{
 				HWR_GetFlat(levelflats[gl_frontsector->ceilingpic].lumpnum, R_NoEncore(gl_frontsector, true));
 				HWR_RenderPlane(sub, &extrasubsectors[num], true,
-					// Hack to make things continue to work around slopes.
-					locCeilingHeight == cullCeilingHeight ? locCeilingHeight : gl_frontsector->ceilingheight,
+					gl_frontsector->ceilingheight,
 					// We now return you to your regularly scheduled rendering.
 					PF_Occlude, ceilinglightlevel, levelflats[gl_frontsector->ceilingpic].lumpnum, NULL, 255, ceilingcolormap);
 			}
