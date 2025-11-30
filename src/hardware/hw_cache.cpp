@@ -623,7 +623,7 @@ static void HWR_PrecacheLevelFlats(void)
 	size_t i, j;
 	INT32 k;
 
-	auto LoadFlat = [&](lumpnum_t lump, boolean noencoremap)
+	auto load_flat = [&](lumpnum_t lump, boolean noencoremap)
 	{
 		// flat already loaded?
 		if (flatpresent.count(lump) == 0)
@@ -651,14 +651,14 @@ static void HWR_PrecacheLevelFlats(void)
 				const levelflat_t *levelflat = &levelflats[pic];
 				lump = levelflat->lumpnum;
 
-				LoadFlat(lump, R_NoEncore(sec, ceiling));
+				load_flat(lump, R_NoEncore(sec, ceiling));
 
 				if (levelflat->speed) // is it an animated flat ?
 				{
 					// start from 0, occasionally basenumlump != flat->lumpnum
 					for (k = 0; k < levelflat->numpics; k++)
 					{
-						LoadFlat(levelflat->baselumpnum + k, R_NoEncore(sec, ceiling));
+						load_flat(levelflat->baselumpnum + k, R_NoEncore(sec, ceiling));
 					}
 				}
 			}
@@ -674,14 +674,14 @@ static void HWR_PrecacheLevelFlats(void)
 			const levelflat_t *levelflat = &levelflats[i];
 			lump = levelflat->lumpnum;
 
-			LoadFlat(lump, false);
+			load_flat(lump, false);
 
 			if (levelflat->speed) // is it an animated flat ?
 			{
 				// start from 0, occasionally basenumlump != flat->lumpnum
 				for (k = 0; k < levelflat->numpics; k++)
 				{
-					LoadFlat(levelflat->baselumpnum + k, false);
+					load_flat(levelflat->baselumpnum + k, false);
 				}
 			}
 		}
@@ -882,6 +882,7 @@ void HWR_LoadMapTextures(size_t pnumtextures)
 GLMapTexture_t *HWR_GetTexture(INT32 tex, boolean noencore)
 {
 	GLMapTexture_t *gltex;
+	GLMipmap_t *glMipmap;
 
 	if (tex < 0 || tex >= (signed)gl_numtextures)
 	{
@@ -900,19 +901,22 @@ GLMapTexture_t *HWR_GetTexture(INT32 tex, boolean noencore)
 	gltex = &gl_textures[tex];
 #endif
 
+	glMipmap = &gltex->mipmap;
+
 	// Generate texture if missing from the cache
-	if (!gltex->mipmap.downloaded)
+	if (!glMipmap->downloaded)
 	{
 		if (!gltex->mipmap.data)
 			HWR_GenerateTexture(tex, gltex, noencore);
 
 		// If hardware does not have the texture, then call GL_SetTexture to upload it
-		GL_SetTexture(&gltex->mipmap);
+		GL_SetTexture(glMipmap);
 	}
-	HWR_SetCurrentTexture(&gltex->mipmap);
+
+	HWR_SetCurrentTexture(glMipmap);
 
 	// The system-memory data can be purged now.
-	Z_ChangeTag(gltex->mipmap.data, PU_HWRCACHE_UNLOCKED);
+	Z_ChangeTag(glMipmap->data, PU_HWRCACHE_UNLOCKED);
 
 	return gltex;
 }
@@ -1052,8 +1056,8 @@ static void HWR_LoadPatchMipmap(patch_t *patch, GLMipmap_t *glMipmap)
 // ----------------------+
 static void HWR_UpdatePatchMipmap(patch_t *patch, GLMipmap_t *glMipmap)
 {
-	GLPatch_t *grPatch = static_cast<GLPatch_t *>(patch->hardware);
-	HWR_MakePatch(patch, grPatch, glMipmap, true);
+	GLPatch_t *glPatch = static_cast<GLPatch_t *>(patch->hardware);
+	HWR_MakePatch(patch, glPatch, glMipmap, true);
 
 	// If hardware does not have the texture, then call GL_SetTexture to upload it
 	// If it does have the texture, then call GL_UpdateTexture to update it
@@ -1061,6 +1065,7 @@ static void HWR_UpdatePatchMipmap(patch_t *patch, GLMipmap_t *glMipmap)
 		GL_SetTexture(glMipmap);
 	else
 		GL_UpdateTexture(glMipmap);
+
 	HWR_SetCurrentTexture(glMipmap);
 
 	// The system-memory data can be purged now.
