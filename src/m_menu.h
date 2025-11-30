@@ -314,6 +314,8 @@ void M_ResetDemoList(void);
 void M_ReplayHut(INT32 choice);
 void M_SetPlaybackMenuPointer(void);
 
+void Nextmap_OnChange(void);
+
 void M_RefreshPauseMenu(void);
 
 INT32 HU_GetHighlightColor(void);

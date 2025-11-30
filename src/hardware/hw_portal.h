@@ -75,7 +75,7 @@ void HWR_PortalClipping(gl_portal_t *portal);
 
 void HWR_Portal_Add2Lines(const INT32 line1, const INT32 line2, seg_t *seg);
 void HWR_PortalFrame(gl_portal_t* portal);
-void HWR_RenderPortal(gl_portal_t* portal, gl_portal_t* rootportal, const float fpov, player_t *player, int stencil_level);
+void HWR_RenderPortal(gl_portal_t* portal, gl_portal_t* rootportal, const float fpov, int stencil_level);
 void HWR_FreePortalList(gl_portallist_t portallist);
 
 boolean HWR_PortalCheckPointSide(fixed_t x, fixed_t y);

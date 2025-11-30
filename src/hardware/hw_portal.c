@@ -157,7 +157,7 @@ static void HWR_RenderPortalSeg(gl_portal_t* portal, SINT8 state)
 }
 
 // Renders a single portal from the current viewpoint.
-void HWR_RenderPortal(gl_portal_t* portal, gl_portal_t* rootportal, const float fpov, player_t *player, int stencil_level)
+void HWR_RenderPortal(gl_portal_t* portal, gl_portal_t* rootportal, const float fpov, int stencil_level)
 {
 	// draw portal seg to stencil buffer with increment
 	HWR_SetTransform(fpov);
@@ -170,7 +170,7 @@ void HWR_RenderPortal(gl_portal_t* portal, gl_portal_t* rootportal, const float 
 	HWR_PortalFrame(portal);
 
 	// call HWR_RenderViewpoint
-	HWR_RenderPortalViewpoint(portal, player, stencil_level + 1, true);
+	HWR_RenderPortalViewpoint(portal, stencil_level + 1, true);
 
 	// return to current frame
 	if (rootportal)

@@ -10,6 +10,7 @@
 /// \brief Chat emotes handling
 
 #include <map>
+#include <list>
 #include <string>
 #include <sstream>
 #include <cstring>
@@ -22,7 +23,10 @@ extern "C" {
 #include "z_zone.h"
 #include "hu_stuff.h"
 #include "v_video.h"
+#include "command.h"
 }
+
+static void Command_ListEmotes_f(void);
 
 consvar_t cv_emotes = {"emotes", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
@@ -140,7 +144,7 @@ void M_LoadEmotes(UINT16 wadnum)
 
 					if (framelumpname.size() > 8)
 					{
-						CONS_Alert(CONS_WARNING, "EMOTES: Frame %d name is too long. (file %s, line %d)", numframes, wadfiles[wadnum]->filename, linenum);
+						CONS_Alert(CONS_WARNING, "EMOTES: Frame %d name is too long. (file %s, line %d)\n", numframes, wadfiles[wadnum]->filename, linenum);
 						framelumpname.resize(8);
 					}
 
@@ -155,7 +159,7 @@ void M_LoadEmotes(UINT16 wadnum)
 
 				if (numframes == 0)
 				{
-					CONS_Alert(CONS_WARNING, "EMOTES: Expected list of frames. (file %s, line %d)", wadfiles[wadnum]->filename, linenum);
+					CONS_Alert(CONS_WARNING, "EMOTES: Expected list of frames. (file %s, line %d)\n", wadfiles[wadnum]->filename, linenum);
 				}
 
 				emote->numframes = numframes;
@@ -167,12 +171,12 @@ void M_LoadEmotes(UINT16 wadnum)
 				if (emote->timeperframe <= 0)
 				{
 					emote->timeperframe = 1;
-					CONS_Alert(CONS_WARNING, "EMOTES: Bad value for 'timeperframe'. (file %s, line %d)", wadfiles[wadnum]->filename, linenum);
+					CONS_Alert(CONS_WARNING, "EMOTES: Bad value for 'timeperframe'. (file %s, line %d)\n", wadfiles[wadnum]->filename, linenum);
 				}
 			}
 			else
 			{
-				CONS_Alert(CONS_WARNING, "EMOTES: Unrecognized field '%s'. (file %s, line %d)", field.c_str(), wadfiles[wadnum]->filename, linenum);
+				CONS_Alert(CONS_WARNING, "EMOTES: Unrecognized field '%s'. (file %s, line %d)\n", field.c_str(), wadfiles[wadnum]->filename, linenum);
 			}
 		}
 		else
@@ -189,6 +193,8 @@ void M_InitEmotes(void)
 	UINT16 i;
 	for (i = 0; i < numwadfiles; i++)
 		M_LoadEmotes(i);
+
+	COM_AddCommand("listemotes", Command_ListEmotes_f);
 }
 
 emote_t *M_FindEmote(const char *name, int len, int skip)
@@ -267,4 +273,38 @@ void M_DrawScaledEmote(fixed_t x, fixed_t y, fixed_t scale, emote_t *emote, INT3
 	y -= (scale*emotepatch->height-CHARHEIGHT*FRACUNIT)/2;
 
 	V_DrawFixedPatch(x, y, scale, flags, emotepatch, NULL);
+}
+
+static void Command_ListEmotes_f(void)
+{
+	const int EMOTES_PER_PAGE = 24;
+	const int NUMPAGES = std::max<int>(emotes.size()/EMOTES_PER_PAGE, 1);
+	int page = 1;
+
+	if (COM_Argc() > 1)
+		page = std::atoi(COM_Argv(1));
+
+	if (page <= 0 || page > NUMPAGES)
+	{
+		if (NUMPAGES > 1)
+			CONS_Printf("Enter page number between 1 and %d\n", NUMPAGES);
+		else
+			CONS_Printf("Bad page number, try using this command without arguments\n");
+		return;
+	}
+
+	int i = 0;
+	for (auto &pair: emotes)
+	{
+		++i;
+
+		if (i <= (page-1)*EMOTES_PER_PAGE)
+			continue;
+		if (i > page*EMOTES_PER_PAGE)
+			break;
+
+		CONS_Printf("%s - :%s:\n", pair.first.c_str(), pair.first.c_str());
+	}
+
+	CONS_Printf("Page %d/%d\n", page, NUMPAGES);
 }

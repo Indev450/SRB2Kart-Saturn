@@ -166,6 +166,7 @@ static void gld_clipper_RemoveRange(clipnode_t *range)
 		{
 			range->prev->next = range->next;
 		}
+
 		if (range->next)
 		{
 			range->next->prev = range->prev;
@@ -348,7 +349,7 @@ angle_t gld_FrustumAngle(angle_t tiltangle)
 // gld_FrustumSetup
 //
 
-float frustum[6][4];
+static float frustum[6][4];
 
 #define CALCMATRIX(a, b, c, d, e, f, g, h)\
 	(modelMatrix[a] * projMatrix[b] + \
@@ -361,15 +362,19 @@ float frustum[6][4];
 		frustum[i][0] * frustum[i][0] + \
 		frustum[i][1] * frustum[i][1] + \
 		frustum[i][2] * frustum[i][2]); \
-		frustum[i][0] /= t; \
-		frustum[i][1] /= t; \
-		frustum[i][2] /= t; \
-		frustum[i][3] /= t
+	frustum[i][0] /= t; \
+	frustum[i][1] /= t; \
+	frustum[i][2] /= t; \
+	frustum[i][3] /= t
 
 void gld_FrustumSetup(void)
 {
 	float t;
 	float clip[16];
+
+	// HWR_SetTransform will take care of this!
+	//pglGetFloatv(GL_PROJECTION_MATRIX, projMatrix);
+	//pglGetFloatv(GL_MODELVIEW_MATRIX, modelMatrix);
 
 	clip[0]  = CALCMATRIX(0, 0, 1, 4, 2, 8, 3, 12);
 	clip[1]  = CALCMATRIX(0, 1, 1, 5, 2, 9, 3, 13);

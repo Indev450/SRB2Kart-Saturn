@@ -146,7 +146,7 @@ static void HWR_ProjectPrecipitationSprite(precipmobj_t *thing);
 static void HWR_SetTransformAiming(FTransform *trans);
 static void HWR_RollTransform(FTransform *tr, angle_t roll);
 
-static void HWR_DoPostProcessor(player_t *player);
+static void HWR_DoPostProcessor(void);
 
 static void HWR_SetShaderState(void);
 static void HWR_TogglePaletteRendering(void);
@@ -4656,7 +4656,7 @@ static void HWR_ProjectSprite(mobj_t *thing)
 	float y1, y2;
 	float z1, z2;
 	float rightsin, rightcos;
-	float this_scale;
+	float thing_scale;
 	float spritexscale, spriteyscale;
 	float gz, gzt;
 	spritedef_t *sprdef;
@@ -4724,10 +4724,6 @@ static void HWR_ProjectSprite(mobj_t *thing)
 	const boolean mirrored = thing->mirrored;
 	const boolean vflip    = (thing->eflags & MFE_VERTICALFLIP);
 	const boolean hflip    = (!(thing->frame & FF_HORIZONTALFLIP) != !mirrored);
-
-	this_scale   = FixedToFloat(interp.scale);
-	spritexscale = FixedToFloat(interp.spritexscale);
-	spriteyscale = FixedToFloat(interp.spriteyscale);
 
 	// decide which patch to use for sprite relative to player
 #ifdef RANGECHECK
@@ -4829,9 +4825,6 @@ static void HWR_ProjectSprite(mobj_t *thing)
 			flip ^= (1<<rot);
 	}
 
-	if (sprskin && (sprskin->flags & SF_HIRES))
-		this_scale *= FixedToFloat(sprskin->highresscale);
-
 	spr_width = spritecachedinfo[lumpoff].width;
 	spr_height = spritecachedinfo[lumpoff].height;
 	spr_offset = spritecachedinfo[lumpoff].offset;
@@ -4876,8 +4869,13 @@ static void HWR_ProjectSprite(mobj_t *thing)
 	spr_offset += interp.spritexoffset;
 	spr_topoffset += interp.spriteyoffset;
 
-	spritexscale *= this_scale;
-	spriteyscale *= this_scale;
+	thing_scale = FixedToFloat(interp.scale);
+
+	if (sprskin && (sprskin->flags & SF_HIRES))
+		thing_scale *= FixedToFloat(sprskin->highresscale);
+
+	spritexscale = FixedToFloat(interp.spritexscale) * thing_scale;
+	spriteyscale = FixedToFloat(interp.spriteyscale) * thing_scale;
 
 	flip = !flip != !hflip;
 
@@ -4912,28 +4910,14 @@ static void HWR_ProjectSprite(mobj_t *thing)
 			return;
 	}
 
-	// rest in piece sweet prince
-	/*if (cv_glshearing.value && !papersprite)
-	{
-		// killough 4/9/98: clip things which are out of view due to height
-		// e6y: fix of hanging decoration disappearing in Batman Doom MAP02
-		// centeryfrac -> viewheightfrac
-		// [kb] add +1 so sprites are shown even with the extended freelook
-		// lug: attempt to account for freelook properly
-		const fixed_t fixedtz = FloatToFixed(tz);
-		if (interp.z > viewz + FixedMul(centeryfrac, fixedtz) || // view center accounted for aspect (i hope)
-			FloatToFixed(gzt) < viewz + FixedMul((centeryfrac - (viewheight << FRACBITS)), fixedtz)) // view center accounted for aspect but the bottom (OwO)
-		{
-			return;
-		}
-	}*/
-
+	// if the sprite is out of our view, dont need to draw it X)
 	if (!gld_SphereInFrustum(
 							(FixedToFloat(interp.x)) + cos_inv_yaw * (x1 + x2) / 2.0f,
 							FixedToFloat(interp.z) + (y1 + y2) / 2.0f,
 							FixedToFloat(interp.y) - sin_inv_yaw * (x1 + x2) / 2.0f,
 							//1.5 == sqrt(2) + small delta for MF_FOREGROUND
-							std::max<float>(FixedToFloat(spr_width), FixedToFloat(spr_height)) / 2.0f * 1.5f))
+							std::max<float>(FixedToFloat(spr_width)  * spritexscale,
+											FixedToFloat(spr_height) * spriteyscale) / 2.0f * 1.5f))
 	{
 		return;
 	}
@@ -4947,17 +4931,16 @@ static void HWR_ProjectSprite(mobj_t *thing)
 	if (heightsec != -1 && phs != -1) // only clip things which are in special sectors
 	{
 		fixed_t secheight;
-		const fixed_t fgzt = FloatToFixed(gzt);
 
 		secheight = P_GetSectorFloorZAt(&sectors[heightsec], viewx, viewy);
 		if (viewz < P_GetSectorFloorZAt(&sectors[phs], interp.x, interp.y) ?
 			interp.z >= secheight :
-			fgzt < secheight)
+			FloatToFixed(gzt) < secheight)
 			return;
 
 		secheight = P_GetSectorCeilingZAt(&sectors[heightsec], viewx, viewy);
 		if (viewz > P_GetSectorCeilingZAt(&sectors[phs], interp.x, interp.y) ?
-			fgzt < secheight && viewz >= secheight :
+			FloatToFixed(gzt) < secheight && viewz >= secheight :
 			interp.z >= secheight)
 			return;
 	}
@@ -4992,7 +4975,7 @@ static void HWR_ProjectSprite(mobj_t *thing)
 	vis->dispoffset = thing->info->dispoffset; // Monster Iestyn: 23/11/15: HARDWARE SUPPORT AT LAST
 	vis->flip = flip;
 
-	vis->scale = this_scale;
+	vis->scale = thing_scale;
 	vis->spritexscale = spritexscale;
 	vis->spriteyscale = spriteyscale;
 	vis->spritexoffset = FixedToFloat(spr_offset);
@@ -5000,10 +4983,10 @@ static void HWR_ProjectSprite(mobj_t *thing)
 
 #ifdef ROTSPRITE
 	if (rotsprite != NULL)
-		vis->gpatch = (patch_t *)rotsprite;
+		vis->gpatch = static_cast<patch_t *>(rotsprite);
 	else
 #endif
-		vis->gpatch = (patch_t *)W_CachePatchNum(sprframe->lumppat[rot], PU_SPRITE);
+		vis->gpatch = static_cast<patch_t *>(W_CachePatchNum(sprframe->lumppat[rot], PU_SPRITE));
 
 	vis->mobj = thing;
 
@@ -5059,7 +5042,7 @@ static void HWR_ProjectPrecipitationSprite(precipmobj_t *thing)
 	float z1, z2;
 	float gz, gzt;
 	float rightsin, rightcos;
-	float this_scale;
+	float thing_scale;
 	spritedef_t *sprdef;
 	spriteframe_t *sprframe;
 	size_t lumpoff;
@@ -5095,7 +5078,7 @@ static void HWR_ProjectPrecipitationSprite(precipmobj_t *thing)
 		return;
 
 	// decide which patch to use for sprite relative to player
-	if ((unsigned)thing->sprite >= numsprites)
+	if (static_cast<unsigned>(thing->sprite) >= numsprites)
 	{
 #ifdef RANGECHECK
 		I_Error("HWR_ProjectPrecipitationSprite: invalid sprite number %i ",
@@ -5107,7 +5090,7 @@ static void HWR_ProjectPrecipitationSprite(precipmobj_t *thing)
 
 	sprdef = &sprites[thing->sprite];
 
-	if ((size_t)(thing->frame&FF_FRAMEMASK) >= sprdef->numframes)
+	if (static_cast<size_t>((thing->frame&FF_FRAMEMASK)) >= sprdef->numframes)
 	{
 #ifdef RANGECHECK
 		I_Error("HWR_ProjectPrecipitationSprite: invalid sprite frame %i : %i for %s",
@@ -5117,7 +5100,7 @@ static void HWR_ProjectPrecipitationSprite(precipmobj_t *thing)
 #endif
 	}
 
-	this_scale = FixedToFloat(interp.scale);
+	thing_scale = FixedToFloat(interp.scale);
 
 	sprframe = &sprdef->spriteframes[thing->frame & FF_FRAMEMASK];
 
@@ -5137,31 +5120,31 @@ static void HWR_ProjectPrecipitationSprite(precipmobj_t *thing)
 	}
 	else
 	{
-		x1 = FixedToFloat(spr_offset);
-		x2 = FixedToFloat(spr_offset);
+		x1 = x2 = FixedToFloat(spr_offset);
 	}
 
 	y1 = (FixedToFloat(spr_topoffset));
 	y2 = (FixedToFloat(spr_height - spr_topoffset));
 
-	x1 *= this_scale;
-	x2 *= this_scale;
-	y1 *= this_scale;
-	y2 *= this_scale;
+	x1 *= thing_scale;
+	x2 *= thing_scale;
+	y1 *= thing_scale;
+	y2 *= thing_scale;
 
 	if (!gld_SphereInFrustum(
 							(FixedToFloat(interp.x)) + cos_inv_yaw * (x1 + x2) / 2.0f,
 							FixedToFloat(interp.z) + (y1 + y2) / 2.0f,
 							FixedToFloat(interp.y) - sin_inv_yaw * (x1 + x2) / 2.0f,
 							//1.5 == sqrt(2) + small delta for MF_FOREGROUND
-							std::max<float>(FixedToFloat(spr_width), FixedToFloat(spr_height)) / 2.0f * 1.5f))
+							std::max<float>(FixedToFloat(spr_width)  * thing_scale,
+											FixedToFloat(spr_height) * thing_scale) / 2.0f * 1.5f))
 	{
 		return;
 	}
 
 	// set top/bottom coords
 	gzt = FixedToFloat(interp.z) + y1;
-	gz = gzt - (FixedToFloat(spr_height) * this_scale);
+	gz = gzt - (FixedToFloat(spr_height) * thing_scale);
 
 	rightsin = FixedToFloat(FINESINE((viewangle + ANGLE_90)>>ANGLETOFINESHIFT));
 	rightcos = FixedToFloat(FINECOSINE((viewangle + ANGLE_90)>>ANGLETOFINESHIFT));
@@ -5181,7 +5164,7 @@ static void HWR_ProjectPrecipitationSprite(precipmobj_t *thing)
 	vis->z2 = z2;
 	vis->tz = tz;
 	vis->dispoffset = 0; // Monster Iestyn: 23/11/15: HARDWARE SUPPORT AT LAST
-	vis->gpatch = (patch_t *)W_CachePatchNum(sprframe->lumppat[rot], PU_SPRITE);
+	vis->gpatch = static_cast<patch_t *>(W_CachePatchNum(sprframe->lumppat[rot], PU_SPRITE));
 	vis->flip = flip;
 	vis->mobj = NULL;
 
@@ -5347,8 +5330,6 @@ void HWR_BuildSkyDome(void)
 	}
 }
 
-static boolean drewsky = false;
-
 // precompute to save a bit of division
 static constexpr float FINEDEGREE = (360.0f/(float)FINEANGLES);
 
@@ -5356,7 +5337,7 @@ static void HWR_DrawSkyBackground(void)
 {
 	FTransform dometransform;
 
-	if (drewsky || HWR_IsWireframeMode())
+	if (HWR_IsWireframeMode())
 		return;
 
 	GL_SetBlend(PF_Translucent|PF_NoDepthTest|PF_Modulated);
@@ -5514,15 +5495,22 @@ namespace
 	};
 
 template <RenderViewpointType Type>
-void HWR_RenderViewpoint(gl_portal_t *rootportal, player_t *player, int stencil_level, boolean allow_portals)
+static void HWR_RenderViewpoint(gl_portal_t *rootportal, int stencil_level, boolean allow_portals)
 {
 	gl_portallist_t portallist;
 
-	const float fpov = FixedToFloat(R_GetPlayerFov(player));
-	const boolean skybox = (skyboxmo[0] && cv_skybox.value);
+	player_t *viewplayer = &players[displayplayers[viewssnum]];
+	const float fpov = FixedToFloat(R_GetPlayerFov(viewplayer));
+
+	auto reset_viewstate = [&](const float fpov)
+	{
+		HWR_SetTransform(fpov);
+		HWR_ClearSprites();
+		HWR_ClearClipper();
+	};
 
 	portallist.base = portallist.cap = NULL;
-	HWR_SetPortalState(GLPORTAL_OFF); // there may be portals and they need to be drawn as regural walls
+	HWR_SetPortalState(GLPORTAL_OFF); // there may be portals and they need to be drawn as regular walls
 
 	if constexpr (Type == RenderViewpointType::kPortal)
 	{
@@ -5534,10 +5522,8 @@ void HWR_RenderViewpoint(gl_portal_t *rootportal, player_t *player, int stencil_
 			currentportallist = &portallist;
 			HWR_SetPortalState(GLPORTAL_SEARCH);
 
-			HWR_SetTransform(fpov);
+			reset_viewstate(fpov);
 
-			HWR_ClearSprites();
-			HWR_ClearClipper();
 			if (rootportal)
 			{
 				HWR_PortalClipping(rootportal);
@@ -5552,7 +5538,7 @@ void HWR_RenderViewpoint(gl_portal_t *rootportal, player_t *player, int stencil_
 			// note: if necessary, could sort the portals here?
 			for (portal = portallist.base; portal; portal = portal->next)
 			{
-				HWR_RenderPortal(portal, rootportal, fpov, player, stencil_level);
+				HWR_RenderPortal(portal, rootportal, fpov, stencil_level);
 			}
 
 			HWR_SetPortalState(GLPORTAL_INSIDE); // when portal walls are encountered in following bsp traversal, nothing should be drawn
@@ -5562,9 +5548,7 @@ void HWR_RenderViewpoint(gl_portal_t *rootportal, player_t *player, int stencil_
 	// draw normal things in current frame in current incremented stencil buffer area
 	HWR_SetStencilState(HWR_STENCIL_NORMAL, stencil_level);
 
-	HWR_SetTransform(fpov);
-	HWR_ClearSprites();
-	HWR_ClearClipper();
+	reset_viewstate(fpov);
 
 	if constexpr (Type == RenderViewpointType::kPortal)
 	{
@@ -5578,6 +5562,7 @@ void HWR_RenderViewpoint(gl_portal_t *rootportal, player_t *player, int stencil_
 	if (HWR_IsWireframeMode())
 		GL_SetSpecialState(HWD_SET_WIREFRAME, 1);
 
+	// FIXME: perfstats does not account for portal rendering!
 	ps_numbspcalls.value.i    = 0;
 	ps_numpolyobjects.value.i = 0;
 	PS_START_TIMING(ps_bsptime);
@@ -5589,8 +5574,7 @@ void HWR_RenderViewpoint(gl_portal_t *rootportal, player_t *player, int stencil_
 
 	if constexpr (Type == RenderViewpointType::kPortal)
 	{
-		if (allow_portals && !rootportal && portallist.base && !skybox) // if portals have been drawn in the main view, then render skywalls differently
-			gl_collect_skywalls = true;
+		gl_collect_skywalls = (allow_portals && !rootportal && portallist.base && (!skyboxmo[0] || !cv_skybox.value)); // if portals have been drawn in the main view, then render skywalls differently
 
 		// HAYA: Save the old portal state, and turn portals off while normally rendering the BSP tree.
 		// This fixes specific effects not working, such as horizon lines.
@@ -5622,6 +5606,9 @@ void HWR_RenderViewpoint(gl_portal_t *rootportal, player_t *player, int stencil_
 	if (LIKELY(cv_glbatching.value))
 		HWR_RenderBatches(true);
 
+	// Check for new console commands.
+	NetUpdate();
+
 	if constexpr (Type == RenderViewpointType::kPortal)
 	{
 		if (skyWallVertexArraySize) // if there are skywalls to draw using the alternate method
@@ -5630,13 +5617,13 @@ void HWR_RenderViewpoint(gl_portal_t *rootportal, player_t *player, int stencil_
 			HWR_DrawSkyWallList();
 			HWR_SkyWallList_Clear();
 			HWR_SetStencilState(HWR_STENCIL_NORMAL, 1);
-			drewsky = false;
 			HWR_DrawSkyBackground();
 			HWR_SetStencilState(HWR_STENCIL_NORMAL, 0);
-			GL_ClearBuffer(false, false, true, NULL);// clear skywall markings from the stencil buffer
-			HWR_SetTransform(fpov);// restore transform
+			GL_ClearBuffer(false, false, true, NULL); // clear skywall markings from the stencil buffer
+			HWR_SetTransform(fpov); // restore transform
 		}
 	}
+
 	gl_collect_skywalls = false;
 
 	ps_numsprites.value.i = gl_visspritecount;
@@ -5657,6 +5644,7 @@ void HWR_RenderViewpoint(gl_portal_t *rootportal, player_t *player, int stencil_
 	ps_numdrawnodes.value.i    = 0;
 	ps_hw_nodesorttime.value.p = 0;
 	ps_hw_nodedrawtime.value.p = 0;
+
 	HWR_RenderDrawNodes();
 
 	if (HWR_IsWireframeMode())
@@ -5667,26 +5655,22 @@ void HWR_RenderViewpoint(gl_portal_t *rootportal, player_t *player, int stencil_
 };
 
 extern "C" {
-	void HWR_RenderPortalViewpoint(gl_portal_t *rootportal, player_t *player, int stencil_level, boolean allow_portals) {
-		HWR_RenderViewpoint<RenderViewpointType::kPortal>(rootportal, player, stencil_level, allow_portals);
+	void HWR_RenderPortalViewpoint(gl_portal_t *rootportal, int stencil_level, boolean allow_portals) {
+		HWR_RenderViewpoint<RenderViewpointType::kPortal>(rootportal, stencil_level, allow_portals);
 	}
 }
 
 // ==========================================================================
 // Render the current frame.
 // ==========================================================================
-static void HWR_RenderFrame(player_t *player, boolean skybox)
+static void HWR_RenderFrame(boolean skybox, boolean drawsky)
 {
-	// check for new console commands.
-	NetUpdate();
-
 	// Clear view, set viewport (glViewport), set perspective...
 	HWR_ClearView();
 
 	// Draw the sky background.
-	HWR_DrawSkyBackground();
-	if (skybox)
-		drewsky = true;
+	if (drawsky)
+		HWR_DrawSkyBackground();
 
 	current_bsp_culling_distance = 0;
 
@@ -5702,26 +5686,17 @@ static void HWR_RenderFrame(player_t *player, boolean skybox)
 		current_bsp_culling_distance = bsp_culling_distances[renderdist- 1];
 	}
 
-	portalclipline = NULL;
-	if (UNLIKELY(HWR_UsePortals()))
-		HWR_RenderViewpoint<RenderViewpointType::kPortal>(NULL, player, 0, !skybox);
-	else
-		HWR_RenderViewpoint<RenderViewpointType::kNormal>(NULL, player, 0, !skybox);
-
-	// Unset transform and shader
-	GL_SetTransform(NULL);
-	GL_UnSetShader();
-
-	// Run post processor effects
-	if (!skybox)
-		HWR_DoPostProcessor(player);
-
 	// Check for new console commands.
 	NetUpdate();
 
-	// added by Hurdler for correct splitscreen
-	// moved here by hurdler so it works with the new near clipping plane
-	GL_GClipRect(0, 0, vid.width, vid.height, NZCLIP_PLANE, FAR_ZCLIP_DEFAULT);
+	portalclipline = NULL;
+	if (UNLIKELY(HWR_UsePortals()))
+		HWR_RenderViewpoint<RenderViewpointType::kPortal>(NULL, 0, !skybox);
+	else
+		HWR_RenderViewpoint<RenderViewpointType::kNormal>(NULL, 0, !skybox);
+
+	// Check for new console commands.
+	NetUpdate();
 }
 
 // ==========================================================================
@@ -5771,22 +5746,31 @@ void HWR_RenderPlayerView(void)
 	if (viewssnum > 3)
 		return;
 
-	player_t * player = &players[displayplayers[viewssnum]];
 	const boolean skybox = (skyboxmo[0] && cv_skybox.value); // True if there's a skybox object and skyboxes are on
 
 	// Render the skybox if there is one.
 	PS_START_TIMING(ps_skyboxtime);
-	drewsky = false;
 	if (skybox)
 	{
 		R_SkyboxFrame(viewssnum);
-		HWR_RenderFrame(player, true);
+		HWR_RenderFrame(true, true);
 	}
 	PS_STOP_TIMING(ps_skyboxtime);
 
 	R_SetupFrame(viewssnum, false); // This can stay false because it is only used to set viewsky in r_main.c, which isn't used here
 	framecount++; // for timedemo
-	HWR_RenderFrame(player, false);
+	HWR_RenderFrame(false, !skybox);
+
+	// Unset transform and shader
+	GL_SetTransform(NULL);
+	GL_UnSetShader();
+
+	// Run post processor effects
+	HWR_DoPostProcessor();
+
+	// added by Hurdler for correct splitscreen
+	// moved here by hurdler so it works with the new near clipping plane
+	GL_GClipRect(0, 0, vid.width, vid.height, NZCLIP_PLANE, FAR_ZCLIP_DEFAULT);
 }
 
 void HWR_LoadLevel(void)
@@ -6040,35 +6024,40 @@ static void HWR_RenderWall(FOutVector *wallVerts, FSurfaceInfo *pSurf, FBITFIELD
 #endif
 }
 
-static void HWR_DoPostProcessor(player_t *player)
+static void HWR_DoPostProcessor(void)
 {
-	GL_UnSetShader();
-
 	// Armageddon Blast Flash!
 	// Could this even be considered postprocessor?
-	if (!HWR_PalRenderFlashpal() && player->flashcount)
+	if (!HWR_PalRenderFlashpal())
 	{
-		FOutVector      v[4];
-		FSurfaceInfo Surf;
+		const player_t *player = &players[displayplayers[viewssnum]];
 
-		v[0].x = v[2].y = v[3].x = v[3].y = -4.0f;
-		v[0].y = v[1].x = v[1].y = v[2].x = 4.0f;
-		v[0].z = v[1].z = v[2].z = v[3].z = 4.0f; // 4.0 because of the same reason as with the sky, just after the screen is cleared so near clipping plane is 3.99
-
-		// This won't change if the flash palettes are changed unfortunately, but it works for its purpose
-		if (player->flashpal == PAL_NUKE)
+		if (player->flashcount)
 		{
-			Surf.PolyColor.s.red = 0xff;
-			Surf.PolyColor.s.green = Surf.PolyColor.s.blue = 0x7F; // The nuke palette is kind of pink-ish
+			static FOutVector v[4] = {
+				{-4.0f,  4.0f, 4.0f, 0.0f, 0.0f},
+				{ 4.0f,  4.0f, 4.0f, 0.0f, 0.0f}, // 4.0 because of the same reason as with the sky, just after the screen is cleared so near clipping plane is 3.99
+				{ 4.0f, -4.0f, 4.0f, 0.0f, 0.0f},
+				{-4.0f, -4.0f, 4.0f, 0.0f, 0.0f}
+			};
+
+			FSurfaceInfo Surf;
+
+			// This won't change if the flash palettes are changed unfortunately, but it works for its purpose
+			if (player->flashpal == PAL_NUKE)
+			{
+				Surf.PolyColor.s.red = 0xff;
+				Surf.PolyColor.s.green = Surf.PolyColor.s.blue = 0x7F; // The nuke palette is kind of pink-ish
+			}
+			else
+				Surf.PolyColor.s.red = Surf.PolyColor.s.green = Surf.PolyColor.s.blue = 0xff;
+
+			Surf.PolyColor.s.alpha = 0xc0; // match software mode
+
+			V_CubeApply(&Surf.PolyColor);
+
+			GL_DrawPolygon(&Surf, v, 4, PF_Modulated|PF_Translucent|PF_NoTexture|PF_NoDepthTest);
 		}
-		else
-			Surf.PolyColor.s.red = Surf.PolyColor.s.green = Surf.PolyColor.s.blue = 0xff;
-
-		Surf.PolyColor.s.alpha = 0xc0; // match software mode
-
-		V_CubeApply(&Surf.PolyColor);
-
-		GL_DrawPolygon(&Surf, v, 4, PF_Modulated|PF_Translucent|PF_NoTexture|PF_NoDepthTest);
 	}
 
 	if (cv_glscreentextures.value != 2) // screen textures are needed for the rest of the effects

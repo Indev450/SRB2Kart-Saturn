@@ -994,11 +994,11 @@ static void Impl_HandleControllerAddedEvent(SDL_Event evt)
 	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
 		CONS_Debug(DBG_GAMELOGIC, "Joystick%d device index: %d\n", i+1, JoyInfo[i].oldjoy);
 
+	numcontrollers = I_NumJoys();
+
 	// update the menu
 	if (currentMenu == &OP_JoystickSetDef)
 		M_SetupJoystickMenu(0);
-
-	numcontrollers = I_NumJoys();
 
 	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
 	{
@@ -1056,11 +1056,11 @@ static void Impl_HandleControllerRemovedEvent(void)
 	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
 		CONS_Debug(DBG_GAMELOGIC, "Joystick%d device index: %d\n", i+1, JoyInfo[i].oldjoy);
 
+	numcontrollers = I_NumJoys();
+
 	// update the menu
 	if (currentMenu == &OP_JoystickSetDef)
 		M_SetupJoystickMenu(0);
-
-	numcontrollers = I_NumJoys();
 }
 
 void I_GetEvent(void)
