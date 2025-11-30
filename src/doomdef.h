@@ -20,6 +20,7 @@
 // but I can't stand that gibberish. D:
 #define SOUND_DUMMY   0
 #define SOUND_MIXER   1
+#define SOUND_SDL     2
 
 #ifndef SOUND
 #ifdef HAVE_SDL
@@ -27,7 +28,7 @@
 #ifdef HAVE_MIXER
     #define SOUND SOUND_MIXER
 #else
-	#define SOUND SOUND_DUMMY
+	#define SOUND SOUND_SDL
 #endif
 #else
 	#define SOUND SOUND_DUMMY

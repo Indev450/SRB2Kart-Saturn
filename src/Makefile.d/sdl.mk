@@ -32,7 +32,10 @@ endif
 NOMIXER=1
 
 ifdef NOMIXER
-sources+=sdl/dummy_sound.c
+#sources+=sdl/dummy_sound.c
+sources+=sdl/sdl_sound.c
+SNDFILE_PKGCONFIG?=sndfile
+$(eval $(call Use_pkg_config,SNDFILE))
 else
 opts+=-DHAVE_MIXER
 sources+=sdl/mixer_sound.c
@@ -47,19 +50,8 @@ opts+=-DHAVE_THREADS
 sources+=sdl/i_threads.c
 endif
 
-ifdef SDL_PKGCONFIG
-$(eval $(call Use_pkg_config,SDL3))
-else
-#FIXME: this is def not correct
-SDL_CFLAGS  := -I/usr/local/include/SDL3
-SDL_LDFLAGS := -L/usr/local/lib -lSDL3
-#SDL_CONFIG?=$(call Prefix,sdl2-config)
-#SDL_CFLAGS?=$(shell $(SDL_CONFIG) --cflags)
-#SDL_LDFLAGS?=$(shell $(SDL_CONFIG) \
-		$(if $(STATIC),--static-libs,--libs))
-
-$(eval $(call Propogate_flags,SDL))
-endif
+SDL_PKGCONFIG?=sdl3
+$(eval $(call Use_pkg_config,SDL))
 
 ifdef MINGW
 ifndef NOSDLMAIN

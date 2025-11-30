@@ -1348,7 +1348,7 @@ static void IdentifyVersion(void)
 	if (AddIWAD("extra3.kart", srb2waddir))
 		found_extra3_kart = true;
 
-#if !defined (HAVE_SDL) || defined (HAVE_MIXER)
+#if defined (HAVE_SDL)
 #define MUSICTEST(str) \
 	musicpath = va(pandf, srb2waddir, str);\
 	handle = W_OpenWadFile(&musicpath, false); \
