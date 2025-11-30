@@ -593,8 +593,6 @@ static boolean D_Display(void)
 	//
 	if (wipe)
 	{
-		// note: moved up here because NetUpdate does input changes
-		// and input during wipe tends to mess things up
 		wipedefindex += WIPEFINALSHIFT;
 
 		if (rendermode != render_none)
@@ -604,8 +602,6 @@ static boolean D_Display(void)
 			ranwipe = true;
 		}
 	}
-
-	NetUpdate(); // send out any new accumulation
 
 	// It's safe to end the game now.
 	if (G_GetExitGameFlag())

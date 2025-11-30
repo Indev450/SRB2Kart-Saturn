@@ -5623,9 +5623,6 @@ static void HWR_RenderViewpoint(gl_portal_t *rootportal, int stencil_level, bool
 	if (LIKELY(cv_glbatching.value))
 		HWR_RenderBatches(true);
 
-	// Check for new console commands.
-	NetUpdate();
-
 	if constexpr (Type == RenderViewpointType::kPortal)
 	{
 		if (skyWallVertexArraySize) // if there are skywalls to draw using the alternate method
@@ -5703,17 +5700,11 @@ static void HWR_RenderFrame(boolean skybox, boolean drawsky)
 		current_bsp_culling_distance = bsp_culling_distances[renderdist- 1];
 	}
 
-	// Check for new console commands.
-	NetUpdate();
-
 	portalclipline = NULL;
 	if (UNLIKELY(HWR_UsePortals()))
 		HWR_RenderViewpoint<RenderViewpointType::kPortal>(NULL, 0, !skybox);
 	else
 		HWR_RenderViewpoint<RenderViewpointType::kNormal>(NULL, 0, !skybox);
-
-	// Check for new console commands.
-	NetUpdate();
 }
 
 // ==========================================================================

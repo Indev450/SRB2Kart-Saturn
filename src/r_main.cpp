@@ -1372,12 +1372,6 @@ static void R_RenderViewpoint(maskcount_t* mask, boolean drawprecip)
 	Mask_Post(mask);
 }
 
-//                     FAB NOTE FOR WIN32 PORT !! I'm not finished already,
-// but I suspect network may have problems with the video buffer being locked
-// for all duration of rendering, and being released only once at the end..
-// I mean, there is a win16lock() or something that lasts all the rendering,
-// so maybe we should release screen lock before each netupdate below..?
-
 static fixed_t viewfov[MAXSPLITSCREENPLAYERS];
 
 void R_RenderPlayerView(player_t *player)
@@ -1443,12 +1437,10 @@ void R_RenderPlayerView(player_t *player)
 		portalclipend = viewwidth;
 		R_ClearClipSegs();
 	}
+
 	R_ClearDrawSegs();
 	R_ClearSegTables();
 	R_ClearSprites();
-
-	// check for new console commands.
-	NetUpdate();
 
 	R_SetColumnContext(COLUMNCONTEXT_FLUSH);
 	ps_numbspcalls.value.i = ps_numpolyobjects.value.i = ps_numdrawnodes.value.i = 0;
@@ -1514,9 +1506,6 @@ void R_RenderPlayerView(player_t *player)
 	R_DrawMasked(masks, nummasks);
 	PS_STOP_TIMING(ps_sw_maskedtime);
 	free(masks);
-
-	// Check for new console commands.
-	NetUpdate();
 
 	// save value to skyVisiblePerPlayer
 	// this is so that P1 can't affect whether P2 can see a skybox or not, or vice versa
