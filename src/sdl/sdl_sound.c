@@ -544,6 +544,8 @@ static sample_t *CreateSample(float *data, size_t len)
 	return sample;
 }
 
+// TODO: make this toggable, maybe someone prefers linear interpolation...
+/*
 static sample_t *ConvertDOOMSample(const void *stream)
 {
 	UINT16 ver, freq;
@@ -575,6 +577,141 @@ static sample_t *ConvertDOOMSample(const void *stream)
 		return NULL;
 	}
 	return CreateSample(data, len);
+}
+*/
+
+static sample_t *ds2chunk(const void *stream)
+{
+	UINT16 ver, freq;
+	UINT32 samples, i, newsamples;
+	CLEANUP(Z_Pfree)UINT8 *sound = NULL;
+
+	const SINT8 *s;
+	INT16 *d;
+	INT16 o;
+	fixed_t step, frac;
+
+	// lump header
+	ver = READUINT16(stream); // sound version format?
+	if (ver != 3) // It should be 3 if it's a doomsound...
+		return NULL; // onos! it's not a doomsound!
+
+	freq = READUINT16(stream);
+	samples = READUINT32(stream);
+
+	if (freq == 0)
+		return NULL; // division by zero
+
+	switch (freq)
+	{
+		case 44100:
+			if (samples >= UINT32_MAX>>2)
+				return NULL; // would wrap, can't store.
+
+			newsamples = samples;
+			break;
+		case 22050:
+			if (samples >= UINT32_MAX>>3)
+				return NULL; // would wrap, can't store.
+
+			newsamples = samples<<1;
+			break;
+		case 11025:
+			if (samples >= UINT32_MAX>>4)
+				return NULL; // would wrap, can't store.
+
+			newsamples = samples<<2;
+			break;
+		default:
+			frac = (virtual_spec.freq << FRACBITS) / (UINT32)freq;
+
+			if (!(frac & 0xFFFF)) // other solid multiples (change if FRACBITS != 16)
+				newsamples = samples * (frac >> FRACBITS);
+			else // strange and unusual fractional frequency steps, plus anything higher than 44100hz.
+				newsamples = FixedMul(FixedDiv(samples, freq), virtual_spec.freq) + 1; // add 1 to counter truncation.
+
+			if (newsamples >= UINT32_MAX>>2)
+				return NULL; // would and/or did wrap, can't store.
+
+			break;
+	}
+
+	sound = Z_Malloc(newsamples<<2, PU_SOUND, NULL); // samples * frequency shift * bytes per sample * channels
+
+	s = (const SINT8 *)stream;
+	d = (INT16 *)sound;
+
+	i = 0;
+
+	i = 0;
+
+	switch(freq)
+	{
+		case 44100: // already at the same rate? well that makes it simple.
+			while(i++ < samples)
+			{
+				o = ((INT16)(*s++)+0x80)<<8; // changed signedness and shift up to 16 bits
+				*d++ = o; // left channel
+				*d++ = o; // right channel
+			}
+			break;
+		case 22050: // unwrap 2x
+			while(i++ < samples)
+			{
+				o = ((INT16)(*s++)+0x80)<<8; // changed signedness and shift up to 16 bits
+				*d++ = o; // left channel
+				*d++ = o; // right channel
+				*d++ = o; // left channel
+				*d++ = o; // right channel
+			}
+			break;
+		case 11025: // unwrap 4x
+			while(i++ < samples)
+			{
+				o = ((INT16)(*s++)+0x80)<<8; // changed signedness and shift up to 16 bits
+				*d++ = o; // left channel
+				*d++ = o; // right channel
+				*d++ = o; // left channel
+				*d++ = o; // right channel
+				*d++ = o; // left channel
+				*d++ = o; // right channel
+				*d++ = o; // left channel
+				*d++ = o; // right channel
+			}
+			break;
+		default: // convert arbitrary hz to 44100.
+			step = 0;
+			frac = ((UINT32)freq << FRACBITS) / virtual_spec.freq + 1; //Add 1 to counter truncation.
+
+			while (i < samples)
+			{
+				o = (INT16)(*s+0x80)<<8; // changed signedness and shift up to 16 bits
+				while (step < FRACUNIT) // this is as fast as I can make it.
+				{
+					*d++ = o; // left channel
+					*d++ = o; // right channel
+					step += frac;
+				}
+				do {
+					i++; s++;
+					step -= FRACUNIT;
+				} while (step >= FRACUNIT);
+			}
+			break;
+	}
+
+	size_t num_samples = ((UINT8*)d - sound) / 2;
+	float *fdata = malloc(num_samples * sizeof(float));
+
+	d = (INT16 *)sound;
+
+	for (i = 0; i < num_samples; i++)
+	{
+		// convert and normalise to -1.0 - 1.0
+		fdata[i] = d[i] / 32768.0f;
+	}
+
+	return CreateSample(fdata, num_samples * sizeof(float));
 }
 
 static sf_count_t SF_GetFilelen(void *userdata)
@@ -643,7 +780,8 @@ void *I_GetSfx(sfxinfo_t *sfx)
 	lump = W_CacheLumpNum(sfx->lumpnum, PU_SOUND);
 
 	// convert from standard DoomSample format.
-	chunk = ConvertDOOMSample(lump);
+	//chunk = ConvertDOOMSample(lump);
+	chunk = ds2chunk(lump);
 	if (chunk)
 	{
 		Z_Free(lump);
@@ -1354,6 +1492,7 @@ boolean I_LoadSong(char *data, size_t len)
 		stream.next_out = inflatedData;
 
 		zErr = inflateInit2(&stream, 32 + MAX_WBITS);
+
 		if (zErr == Z_OK) // We're good to go
 		{
 			zErr = inflate(&stream, Z_FINISH);
@@ -1378,6 +1517,7 @@ boolean I_LoadSong(char *data, size_t len)
 		}
 		else // Hold up, zlib's got a problem
 			CONS_Alert(CONS_ERROR, "Encountered %s when running inflateInit: %s\n", get_zlib_error(zErr), stream.msg);
+
 		Z_Free(inflatedData); // GME didn't open jack, but don't let that stop us from freeing this up
 		SDL_UnlockAudioStream(audio_stream);
 		return false;
