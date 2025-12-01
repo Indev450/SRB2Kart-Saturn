@@ -644,7 +644,7 @@ void F_CreditDrawer(void)
 			sc = FRACUNIT; // quick hack so I don't have to add another field to credits_pics
 		}
 
-		V_DrawFixedPatch(credits_pics[i].x<<FRACBITS, (credits_pics[i].y<<FRACBITS) - 4*(animtimer<<FRACBITS)/5, sc, 0, W_CachePatchName(credits_pics[i].patch, PU_PATCH_LOWPRIORITY), colormap);
+		V_DrawFixedPatch(credits_pics[i].x<<FRACBITS, (credits_pics[i].y<<FRACBITS) - 4*(animtimer<<FRACBITS)/5, sc, 0, W_CachePatchName(credits_pics[i].patch, PU_PATCH), colormap);
 	}
 
 	// Dim the background
