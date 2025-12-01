@@ -567,6 +567,7 @@ static void R_InitTextureMapping(void)
 			else if (t > viewwidth+1)
 				t = viewwidth+1;
 		}
+
 		viewangletox[i] = t;
 	}
 
@@ -1109,7 +1110,8 @@ static void R_SetupCommonFrame(player_t * player)
 
 static void R_SetupAimingFrame(player_t *player, camera_t *thiscam)
 {
-	if (player->awayviewtics && player->awayviewmobj)
+	if (player->awayviewtics && player->awayviewmobj
+	 && thiscam && !thiscam->freecam) // dont force this if we wanna freecam!
 	{
 		newview->aim = player->awayviewaiming;
 		newview->angle = player->awayviewmobj->angle;
@@ -1276,9 +1278,10 @@ void R_SetupFrame(UINT8 pnum, boolean skybox)
 
 	R_SetupAimingFrame(player, thiscam);
 
-	if (player->awayviewtics && player->awayviewmobj) // cut-away view stuff
+	if (player->awayviewtics && player->awayviewmobj // cut-away view stuff
+	 && thiscam && !thiscam->freecam) // dont force this when we wanna freecam!
 	{
-		viewmobj = player->awayviewmobj; // should be a MT_ALTVIEWMAN
+		viewmobj = player->awayviewmobj; // should be a MT_ALTVIEWMAN      whos altview man?
 		I_Assert(viewmobj != NULL);
 
 		newview->x = viewmobj->x;
@@ -1337,7 +1340,7 @@ static void R_PortalFrame(portal_t *portal)
 	}
 }
 
-static void Mask_Pre (maskcount_t* m)
+static void Mask_Pre(maskcount_t* m)
 {
 	m->drawsegs[0] = ds_p - drawsegs;
 	m->vissprites[0] = visspritecount;
@@ -1347,7 +1350,7 @@ static void Mask_Pre (maskcount_t* m)
 	m->viewsector = viewsector;
 }
 
-static void Mask_Post (maskcount_t* m)
+static void Mask_Post(maskcount_t* m)
 {
 	m->drawsegs[1] = ds_p - drawsegs;
 	m->vissprites[1] = visspritecount;
@@ -1429,6 +1432,7 @@ void R_RenderPlayerView(player_t *player)
 
 	// Clear buffers.
 	R_ClearPlanes();
+
 	if (viewmorph.use)
 	{
 		portalclipstart = viewmorph.x1;
