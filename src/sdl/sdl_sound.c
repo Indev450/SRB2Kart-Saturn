@@ -272,7 +272,7 @@ static void StreamCallback(void *userdata, SDL_AudioStream *stream, int addition
 	if (sample_buffer.f == NULL)
 		return;
 
-	float pos;
+	float pos = 0.0f;
 	if (fading_from != fading_to)
 		pos = I_GetSongPosition();
 
