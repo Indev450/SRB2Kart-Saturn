@@ -246,10 +246,12 @@ void G_ReadDemoExtraData(void)
 	{
 		extradata = READUINT8(demobuf.p);
 
+		player_t *player = &players[p];
+
 		if (extradata & DXD_RESPAWN)
 		{
-			if (players[p].mo)
-				P_DamageMobj(players[p].mo, NULL, NULL, DMG_INSTAKILL); // Is this how this should work..?
+			if (player->mo)
+				P_DamageMobj(player->mo, NULL, NULL, DMG_INSTAKILL); // Is this how this should work..?
 		}
 
 		if (extradata & DXD_SKIN)
@@ -264,11 +266,11 @@ void G_ReadDemoExtraData(void)
 			kartspeed = READUINT8(demobuf.p);
 			kartweight = READUINT8(demobuf.p);
 
-			if (!fasticmp(skins[players[p].skin].name, name))
+			if (!fasticmp(skins[player->skin].name, name))
 				FindClosestSkinForStats(p, kartspeed, kartweight);
 
-			players[p].kartspeed = kartspeed;
-			players[p].kartweight = kartweight;
+			player->kartspeed = kartspeed;
+			player->kartweight = kartweight;
 		}
 
 		if (extradata & DXD_COLOR)
@@ -279,9 +281,9 @@ void G_ReadDemoExtraData(void)
 			for (i = 0; i < MAXSKINCOLORS; i++)
 				if (fasticmp(KartColor_Names[i], name)) // SRB2kart
 				{
-					players[p].skincolor = i;
-					if (players[p].mo)
-						players[p].mo->color = i;
+					player->skincolor = i;
+					if (player->mo)
+						player->mo->color = i;
 					break;
 				}
 		}
@@ -300,17 +302,17 @@ void G_ReadDemoExtraData(void)
 			switch (extradata)
 			{
 				case DXD_PST_PLAYING:
-					players[p].pflags |= PF_WANTSTOJOIN; // fuck you
+					player->pflags |= PF_WANTSTOJOIN; // fuck you
 					break;
 				case DXD_PST_SPECTATING:
-					players[p].pflags &= ~PF_WANTSTOJOIN; // double-fuck you
+					player->pflags &= ~PF_WANTSTOJOIN; // double-fuck you
 
 					if (!playeringame[p])
 					{
 						CL_ClearPlayer(p);
 						playeringame[p] = true;
 						G_AddPlayer(p);
-						players[p].spectator = true;
+						player->spectator = true;
 
 						// There's likely an off-by-one error in timing recording or playback of joins. This hacks around it so I don't have to find out where that is. \o/
 						if (oldcmd[p].forwardmove)
@@ -318,11 +320,11 @@ void G_ReadDemoExtraData(void)
 					}
 					else
 					{
-						players[p].spectator = true;
-						if (players[p].mo)
-							P_DamageMobj(players[p].mo, NULL, NULL, DMG_INSTAKILL);
+						player->spectator = true;
+						if (player->mo)
+							P_DamageMobj(player->mo, NULL, NULL, DMG_INSTAKILL);
 						else
-							players[p].playerstate = PST_REBORN;
+							player->playerstate = PST_REBORN;
 					}
 					break;
 				case DXD_PST_LEFT:
@@ -330,7 +332,7 @@ void G_ReadDemoExtraData(void)
 					break;
 			}
 
-			G_ResetViews();
+			G_ResetViews(false); // dont reset our freecam pls thx!
 
 			// maybe these are necessary?
 			if (G_BattleGametype())
@@ -1132,7 +1134,29 @@ void G_GhostTicker(void)
 	for (g = ghosts, p = NULL; g; g = g->next)
 	{
 		// Skip normal demo data.
-		UINT8 ziptic = READUINT8(g->p);
+		UINT8 ziptic;
+
+		if (g->done)
+		{
+			continue;
+		}
+
+		ziptic = READUINT8(g->p);
+
+fadeghost:
+		// Demo ends after ghost data.
+		if (ziptic == DEMOMARKER)
+		{
+			g->mo->momx = g->mo->momy = g->mo->momz = 0;
+
+			g->done = true;
+			if (p)
+			{
+				p->next = g->next;
+			}
+
+			continue;
+		}
 
 #ifdef DEMO_COMPAT_100
 		if (g->version != 0x0001)
@@ -1140,8 +1164,14 @@ void G_GhostTicker(void)
 #endif
 		while (ziptic != DW_END) // Get rid of extradata stuff
 		{
-			if (ziptic == 0) // Only support player 0 info for now
+			if (ziptic < MAXPLAYERS)
 			{
+#ifdef DEVELOP
+				UINT8 playerid = ziptic;
+#endif
+				// We want to skip *any* player extradata because some demos have extradata for bogus players,
+				// but if there is tic data later for those players *then* we'll consider it invalid.
+
 				ziptic = READUINT8(g->p);
 
 				if (ziptic & DXD_SKIN)
@@ -1153,13 +1183,26 @@ void G_GhostTicker(void)
 				if (ziptic & DXD_NAME)
 					g->p += 16; // yea
 
-				if (ziptic & DXD_PLAYSTATE && READUINT8(g->p) != DXD_PST_PLAYING)
-					I_Error("Ghost is not a record attack ghost"); //@TODO lmao don't blow up like this
+				if (ziptic & DXD_PLAYSTATE)
+				{
+					UINT8 playstate = READUINT8(g->p);
+					if (playstate != DXD_PST_PLAYING)
+					{
+#ifdef DEVELOP
+						CONS_Alert(CONS_WARNING, "Ghost demo has non-playing playstate for player %d\n", playerid + 1);
+#endif
+						;
+					}
+				}
 			}
 			else if (ziptic == DW_RNG)
+			{
 				g->p += 4; // RNG seed
+			}
 			else
-				I_Error("Ghost is not a record attack ghost"); //@TODO lmao don't blow up like this
+			{
+				I_Error("Ghost is not a record attack ghost DXD (ziptic = %u)", ziptic); //@TODO lmao don't blow up like this
+			}
 
 			ziptic = READUINT8(g->p);
 		}
@@ -1182,7 +1225,7 @@ void G_GhostTicker(void)
 		if (ziptic & ZT_DRIFT)
 			g->p += 2;
 		if (ziptic & ZT_LATENCY)
-			g->p += 1;
+			g->p++;
 
 		// Grab ghost data.
 		ziptic = READUINT8(g->p);
@@ -1191,10 +1234,12 @@ void G_GhostTicker(void)
 		if (g->version != 0x0001)
 		{
 #endif
+		if (ziptic == DEMOMARKER) // Had to end early for some reason
+			goto fadeghost;
 		if (ziptic == 0xFF)
 			goto skippedghosttic; // Didn't write ghost info this frame
-		else if (ziptic != 0)
-			I_Error("Ghost is not a record attack ghost"); //@TODO lmao don't blow up like this
+		if (ziptic != 0)
+			I_Error("Ghost is not a record attack ghost ZIPTIC"); //@TODO lmao don't blow up like this
 		ziptic = READUINT8(g->p);
 #ifdef DEMO_COMPAT_100
 		}
@@ -1365,7 +1410,7 @@ void G_GhostTicker(void)
 		{
 #endif
 		if (READUINT8(g->p) != 0xFF) // Make sure there isn't other ghost data here.
-			I_Error("Ghost is not a record attack ghost"); //@TODO lmao don't blow up like this
+			I_Error("Ghost is not a record attack ghost GHOSTEND"); //@TODO lmao don't blow up like this
 #ifdef DEMO_COMPAT_100
 		}
 #endif
@@ -1383,20 +1428,6 @@ skippedghosttic:
 				break;
 			default:
 				break;
-		}
-
-		// Demo ends after ghost data.
-		if (*g->p == DEMOMARKER)
-		{
-			g->mo->momx = g->mo->momy = g->mo->momz = 0;
-
-			if (p)
-				p->next = g->next;
-			else
-				ghosts = g->next;
-
-			Z_Free(g);
-			continue;
 		}
 
 		p = g;
@@ -1593,7 +1624,7 @@ void G_ConfirmRewind(tic_t rewindtime)
 	displayplayers[2] = olddp3;
 	displayplayers[3] = olddp4;
 	R_ExecuteSetViewSize();
-	G_ResetViews();
+	G_ResetViews(true);
 
 	for (i = splitscreen; i >= 0; i--)
 		P_ResetCamera(&players[displayplayers[i]], &camera[i]);
@@ -3531,7 +3562,6 @@ void G_FreeGhosts(void)
 	}
 	ghosts = NULL;
 }
-
 
 boolean G_CheckDemoStatus(void)
 {

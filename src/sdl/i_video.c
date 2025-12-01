@@ -2167,16 +2167,11 @@ void I_ShutdownGraphics(void)
 
 	graphics_started = false;
 	I_OutputMsg("shut down\n");
-
 #ifdef HWRENDER
-	if (vid.glstate == VID_GL_LIBRARY_LOADED)
-		HWR_Shutdown();
-
 	if (sdlglcontext)
 		SDL_GL_DeleteContext(sdlglcontext);
 	sdlglcontext = NULL;
 #endif
-
 	if (texture)
 		SDL_DestroyTexture(texture);
 	texture = NULL;

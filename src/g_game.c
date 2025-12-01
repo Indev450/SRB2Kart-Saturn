@@ -1750,14 +1750,15 @@ void G_ResetView(UINT8 viewnum, INT32 playernum, boolean onlyactive)
 // Increment a viewpoint by offset from the current player. A negative value
 // decrements.
 //
-void G_AdjustView(UINT8 viewnum, INT32 offset, boolean onlyactive)
+static void G_ActuallyAdjustView(UINT8 viewnum, INT32 offset, boolean onlyactive, boolean resetfreecam)
 {
 	INT32 *displayplayerp, oldview;
 	displayplayerp = &displayplayers[viewnum-1];
 	oldview = (*displayplayerp);
 
 	// turn off the freecam
-	camera[viewnum-1].freecam = false;
+	if (resetfreecam)
+		camera[viewnum-1].freecam = false;
 
 	G_ResetView(viewnum, ( (*displayplayerp) + offset ), onlyactive);
 
@@ -1766,12 +1767,18 @@ void G_AdjustView(UINT8 viewnum, INT32 offset, boolean onlyactive)
 		(*displayplayerp) = oldview;
 }
 
+// im a lazy ass :chonkbuncle:
+void G_AdjustView(UINT8 viewnum, INT32 offset, boolean onlyactive)
+{
+	G_ActuallyAdjustView(viewnum, offset, onlyactive, true);
+}
+
 //
 // G_ResetViews
 // Ensures all viewpoints are valid
 // Also demotes splitscreen down to one player.
 //
-void G_ResetViews(void)
+void G_ResetViews(boolean resetfreecam)
 {
 	UINT8 splits;
 	UINT8 viewd;
@@ -1795,7 +1802,7 @@ void G_ResetViews(void)
 	*/
 	for (viewd = 1; viewd <= splits; ++viewd)
 	{
-		G_AdjustView(viewd, 0, false);
+		G_ActuallyAdjustView(viewd, 0, false, resetfreecam);
 	}
 }
 
