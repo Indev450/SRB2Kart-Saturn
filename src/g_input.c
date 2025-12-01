@@ -125,17 +125,18 @@ static void led_off_handle4(void)
 	G_ResetPlayerGamepadIndicatorColor(3);
 }
 
-INT32 mousex, mousey;
-INT32 mlooky; // like mousey but with a custom sensitivity for mlook
+INT32 mousex = 0, mousey = 0;
+INT32 mlooky = 0; // like mousey but with a custom sensitivity for mlook
 
 // joystick values are repeated
-INT32 joyxmove[MAXSPLITSCREENPLAYERS][JOYAXISSET], joyymove[MAXSPLITSCREENPLAYERS][JOYAXISSET];
+INT32 joyxmove[MAXSPLITSCREENPLAYERS][JOYAXISSET] = {};
+INT32 joyymove[MAXSPLITSCREENPLAYERS][JOYAXISSET] = {};
 
 // current state of the keys: true if pushed
-UINT8 gamekeydown[NUMINPUTS];
+UINT8 gamekeydown[NUMINPUTS] = {};
 
 // two key codes (or virtual key) per game control
-INT32 gamecontrol[MAXSPLITSCREENPLAYERS][num_gamecontrols][2];
+INT32 gamecontrol[MAXSPLITSCREENPLAYERS][num_gamecontrols][2] = {};
 
 typedef struct
 {
