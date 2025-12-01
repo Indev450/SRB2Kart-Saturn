@@ -246,10 +246,12 @@ void G_ReadDemoExtraData(void)
 	{
 		extradata = READUINT8(demobuf.p);
 
+		player_t *player = &players[p];
+
 		if (extradata & DXD_RESPAWN)
 		{
-			if (players[p].mo)
-				P_DamageMobj(players[p].mo, NULL, NULL, DMG_INSTAKILL); // Is this how this should work..?
+			if (player->mo)
+				P_DamageMobj(player->mo, NULL, NULL, DMG_INSTAKILL); // Is this how this should work..?
 		}
 
 		if (extradata & DXD_SKIN)
@@ -264,11 +266,11 @@ void G_ReadDemoExtraData(void)
 			kartspeed = READUINT8(demobuf.p);
 			kartweight = READUINT8(demobuf.p);
 
-			if (!fasticmp(skins[players[p].skin].name, name))
+			if (!fasticmp(skins[player->skin].name, name))
 				FindClosestSkinForStats(p, kartspeed, kartweight);
 
-			players[p].kartspeed = kartspeed;
-			players[p].kartweight = kartweight;
+			player->kartspeed = kartspeed;
+			player->kartweight = kartweight;
 		}
 
 		if (extradata & DXD_COLOR)
@@ -279,9 +281,9 @@ void G_ReadDemoExtraData(void)
 			for (i = 0; i < MAXSKINCOLORS; i++)
 				if (fasticmp(KartColor_Names[i], name)) // SRB2kart
 				{
-					players[p].skincolor = i;
-					if (players[p].mo)
-						players[p].mo->color = i;
+					player->skincolor = i;
+					if (player->mo)
+						player->mo->color = i;
 					break;
 				}
 		}
@@ -300,17 +302,17 @@ void G_ReadDemoExtraData(void)
 			switch (extradata)
 			{
 				case DXD_PST_PLAYING:
-					players[p].pflags |= PF_WANTSTOJOIN; // fuck you
+					player->pflags |= PF_WANTSTOJOIN; // fuck you
 					break;
 				case DXD_PST_SPECTATING:
-					players[p].pflags &= ~PF_WANTSTOJOIN; // double-fuck you
+					player->pflags &= ~PF_WANTSTOJOIN; // double-fuck you
 
 					if (!playeringame[p])
 					{
 						CL_ClearPlayer(p);
 						playeringame[p] = true;
 						G_AddPlayer(p);
-						players[p].spectator = true;
+						player->spectator = true;
 
 						// There's likely an off-by-one error in timing recording or playback of joins. This hacks around it so I don't have to find out where that is. \o/
 						if (oldcmd[p].forwardmove)
@@ -318,11 +320,11 @@ void G_ReadDemoExtraData(void)
 					}
 					else
 					{
-						players[p].spectator = true;
-						if (players[p].mo)
-							P_DamageMobj(players[p].mo, NULL, NULL, DMG_INSTAKILL);
+						player->spectator = true;
+						if (player->mo)
+							P_DamageMobj(player->mo, NULL, NULL, DMG_INSTAKILL);
 						else
-							players[p].playerstate = PST_REBORN;
+							player->playerstate = PST_REBORN;
 					}
 					break;
 				case DXD_PST_LEFT:
@@ -330,7 +332,7 @@ void G_ReadDemoExtraData(void)
 					break;
 			}
 
-			G_ResetViews();
+			G_ResetViews(false); // dont reset our freecam pls thx!
 
 			// maybe these are necessary?
 			if (G_BattleGametype())
@@ -1593,7 +1595,7 @@ void G_ConfirmRewind(tic_t rewindtime)
 	displayplayers[2] = olddp3;
 	displayplayers[3] = olddp4;
 	R_ExecuteSetViewSize();
-	G_ResetViews();
+	G_ResetViews(true);
 
 	for (i = splitscreen; i >= 0; i--)
 		P_ResetCamera(&players[displayplayers[i]], &camera[i]);
