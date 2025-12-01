@@ -29,6 +29,8 @@ ifndef NOHW
 sources+=sdl/ogl_sdl.c
 endif
 
+NOMIXER=1
+
 ifdef NOMIXER
 sources+=sdl/dummy_sound.c
 else
@@ -46,12 +48,16 @@ sources+=sdl/i_threads.c
 endif
 
 ifdef SDL_PKGCONFIG
-$(eval $(call Use_pkg_config,SDL))
+$(eval $(call Use_pkg_config,SDL3))
 else
-SDL_CONFIG?=$(call Prefix,sdl2-config)
-SDL_CFLAGS?=$(shell $(SDL_CONFIG) --cflags)
-SDL_LDFLAGS?=$(shell $(SDL_CONFIG) \
+#FIXME: this is def not correct
+SDL_CFLAGS  := -I/usr/local/include/SDL3
+SDL_LDFLAGS := -L/usr/local/lib -lSDL3
+#SDL_CONFIG?=$(call Prefix,sdl2-config)
+#SDL_CFLAGS?=$(shell $(SDL_CONFIG) --cflags)
+#SDL_LDFLAGS?=$(shell $(SDL_CONFIG) \
 		$(if $(STATIC),--static-libs,--libs))
+
 $(eval $(call Propogate_flags,SDL))
 endif
 

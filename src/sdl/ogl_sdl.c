@@ -20,7 +20,7 @@
 #ifdef HAVE_SDL
 #define _MATH_DEFINES_DEFINED
 
-#include "SDL.h"
+#include <SDL3/SDL.h>
 
 #include "sdlmain.h"
 
@@ -96,7 +96,7 @@ boolean VID_LoadOGLAPI(void)
 	if (M_CheckParm("-OGLlib") && M_IsNextParm())
 		OGLLibname = M_GetNextParm();
 
-	if (SDL_GL_LoadLibrary(OGLLibname) != 0)
+	if (!SDL_GL_LoadLibrary(OGLLibname))
 	{
 		CONS_Alert(CONS_ERROR, "Could not load OpenGL Library: %s\n", SDL_GetError());
 		if (!M_CheckParm("-OGLlib"))
