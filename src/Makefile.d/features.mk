@@ -8,6 +8,7 @@ passthru_opts+=\
 	HAVE_MINIUPNPC\
 	HAVE_DISCORDRPC DEVELOP\
 	NOHOLEPUNCH\
+	NOOPENMPT\
 
 # build with debugging information
 ifdef DEBUGMODE
@@ -91,7 +92,6 @@ endif
 
 default_packages:=\
 	LIBGME/libgme/LIBGME\
-	OPENMPT/libopenmpt/LIBOPENMPT\
 	ZLIB/zlib\
 
 $(foreach p,$(default_packages),\
