@@ -44,7 +44,7 @@ write netcode into the sound code, OKAY?
 #include <fluidsynth.h>
 #endif
 
-#define S_CURVE(x, s, e) sinf(M_PI / 2.0f * (((x) - (s)) / ((e) - (s))))
+#define S_CURVE(x, s, e) sinf(M_PIf / 2.0f * (((x) - (s)) / ((e) - (s))))
 
 /// ------------------------
 /// Audio Declarations
