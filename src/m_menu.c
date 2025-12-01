@@ -1938,8 +1938,6 @@ void M_Ticker(void)
 	}
 	I_unlock_mutex(ms_ServerList_mutex);
 #endif
-
-	CL_TimeoutServerList();
 }
 
 //
@@ -6817,12 +6815,22 @@ static void M_Connect(INT32 choice)
 	COM_BufAddText(va("connect node %d\n", serverlist[serverlistsearched[choice-FIRSTSERVERLINE + serverlistpage * SERVERS_PER_PAGE]].node));
 }
 
+static void M_ResetServerList(void)
+{
+	serverlistpage = 0;
+	oldserverlistpage = 0;
+
+	serverlistslidex = 0.0f;
+	memset(serverlistsearched, 0, sizeof(serverlistsearched));
+	serverlistsearchedcount = 0;
+}
+
 static void M_Refresh(INT32 choice)
 {
 	(void)choice;
 
 	// first page of servers
-	serverlistpage = 0;
+	M_ResetServerList();
 
 	CL_UpdateServerList();
 
@@ -6853,14 +6861,7 @@ static void M_DrawServerCountAndHorizontalBar(void)
 			break;
 
 		default:
-			if (serverlistultimatecount > serverlistcount)
-			{
-				text = va("%d/%d servers found%.*s",
-						serverlistcount,
-						serverlistultimatecount,
-						I_GetTime() / NEWTICRATE % 4, "...");
-			}
-			else if (serverlistcount > 0)
+			if (serverlistcount > 0)
 			{
 				text = va("%d servers found", serverlistcount);
 			}
@@ -7044,7 +7045,7 @@ static int ServerListEntryComparator_modified(const void *entry1, const void *en
 
 void M_SortServerList(void)
 {
-	switch(cv_serversort.value)
+	switch (cv_serversort.value)
 	{
 	case 0:		// Ping.
 		qs22j(serverlist, serverlistcount, sizeof(serverelem_t), ServerListEntryComparator_time);
@@ -7119,7 +7120,7 @@ static void M_ConnectMenu(INT32 choice)
 	// we don't request a restart unless the filelist differs
 
 	// first page of servers
-	serverlistpage = 0;
+	M_ResetServerList();
 
 	CL_UpdateServerList();
 
