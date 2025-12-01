@@ -262,7 +262,7 @@ boolean G_CanView(INT32 playernum, UINT8 viewnum, boolean onlyactive);
 INT32 G_FindView(INT32 startview, UINT8 viewnum, boolean onlyactive, boolean reverse);
 INT32 G_CountPlayersPotentiallyViewable(boolean active);
 
-void G_ResetViews(void);
+void G_ResetViews(boolean resetfreecam);
 void G_ResetView(UINT8 viewnum, INT32 playernum, boolean onlyactive);
 void G_AdjustView(UINT8 viewnum, INT32 offset, boolean onlyactive);
 
