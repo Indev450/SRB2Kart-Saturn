@@ -4830,6 +4830,16 @@ static boolean M_QuitReplayHut(void)
 	return true;
 }
 
+// same as M_QuitReplayHut, but calls M_StopMessage
+void M_ReturnToTitleFromError(void)
+{
+	M_StopMessage(0);
+	// D_StartTitle does its own wipe, since GS_TIMEATTACK is now a complete gamestate.
+	menuactive = false;
+	D_StartTitle();
+	M_ResetDemoList();
+}
+
 static void M_HutStartReplay(INT32 choice)
 {
 	(void)choice;

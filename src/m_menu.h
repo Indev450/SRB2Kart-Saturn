@@ -307,6 +307,7 @@ void M_UpdateOGLMenu(void);
 
 void M_ResetDemoList(void);
 void M_ReplayHut(INT32 choice);
+void M_ReturnToTitleFromError(void);
 void M_SetPlaybackMenuPointer(void);
 
 void Nextmap_OnChange(void);
