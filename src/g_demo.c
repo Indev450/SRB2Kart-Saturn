@@ -1125,7 +1125,29 @@ void G_GhostTicker(void)
 	for (g = ghosts, p = NULL; g; g = g->next)
 	{
 		// Skip normal demo data.
-		UINT8 ziptic = READUINT8(g->p);
+		UINT8 ziptic;
+
+		if (g->done)
+		{
+			continue;
+		}
+
+		ziptic = READUINT8(g->p);
+
+fadeghost:
+		// Demo ends after ghost data.
+		if (ziptic == DEMOMARKER)
+		{
+			g->mo->momx = g->mo->momy = g->mo->momz = 0;
+
+			g->done = true;
+			if (p)
+			{
+				p->next = g->next;
+			}
+
+			continue;
+		}
 
 #ifdef DEMO_COMPAT_100
 		if (g->version != 0x0001)
@@ -1133,8 +1155,14 @@ void G_GhostTicker(void)
 #endif
 		while (ziptic != DW_END) // Get rid of extradata stuff
 		{
-			if (ziptic == 0) // Only support player 0 info for now
+			if (ziptic < MAXPLAYERS)
 			{
+#ifdef DEVELOP
+				UINT8 playerid = ziptic;
+#endif
+				// We want to skip *any* player extradata because some demos have extradata for bogus players,
+				// but if there is tic data later for those players *then* we'll consider it invalid.
+
 				ziptic = READUINT8(g->p);
 
 				if (ziptic & DXD_SKIN)
@@ -1146,13 +1174,26 @@ void G_GhostTicker(void)
 				if (ziptic & DXD_NAME)
 					g->p += 16; // yea
 
-				if (ziptic & DXD_PLAYSTATE && READUINT8(g->p) != DXD_PST_PLAYING)
-					I_Error("Ghost is not a record attack ghost"); //@TODO lmao don't blow up like this
+				if (ziptic & DXD_PLAYSTATE)
+				{
+					UINT8 playstate = READUINT8(g->p);
+					if (playstate != DXD_PST_PLAYING)
+					{
+#ifdef DEVELOP
+						CONS_Alert(CONS_WARNING, "Ghost demo has non-playing playstate for player %d\n", playerid + 1);
+#endif
+						;
+					}
+				}
 			}
 			else if (ziptic == DW_RNG)
+			{
 				g->p += 4; // RNG seed
+			}
 			else
-				I_Error("Ghost is not a record attack ghost"); //@TODO lmao don't blow up like this
+			{
+				I_Error("Ghost is not a record attack ghost DXD (ziptic = %u)", ziptic); //@TODO lmao don't blow up like this
+			}
 
 			ziptic = READUINT8(g->p);
 		}
@@ -1175,7 +1216,7 @@ void G_GhostTicker(void)
 		if (ziptic & ZT_DRIFT)
 			g->p += 2;
 		if (ziptic & ZT_LATENCY)
-			g->p += 1;
+			g->p++;
 
 		// Grab ghost data.
 		ziptic = READUINT8(g->p);
@@ -1184,10 +1225,12 @@ void G_GhostTicker(void)
 		if (g->version != 0x0001)
 		{
 #endif
+		if (ziptic == DEMOMARKER) // Had to end early for some reason
+			goto fadeghost;
 		if (ziptic == 0xFF)
 			goto skippedghosttic; // Didn't write ghost info this frame
-		else if (ziptic != 0)
-			I_Error("Ghost is not a record attack ghost"); //@TODO lmao don't blow up like this
+		if (ziptic != 0)
+			I_Error("Ghost is not a record attack ghost ZIPTIC"); //@TODO lmao don't blow up like this
 		ziptic = READUINT8(g->p);
 #ifdef DEMO_COMPAT_100
 		}
@@ -1358,7 +1401,7 @@ void G_GhostTicker(void)
 		{
 #endif
 		if (READUINT8(g->p) != 0xFF) // Make sure there isn't other ghost data here.
-			I_Error("Ghost is not a record attack ghost"); //@TODO lmao don't blow up like this
+			I_Error("Ghost is not a record attack ghost GHOSTEND"); //@TODO lmao don't blow up like this
 #ifdef DEMO_COMPAT_100
 		}
 #endif
@@ -1376,20 +1419,6 @@ skippedghosttic:
 				break;
 			default:
 				break;
-		}
-
-		// Demo ends after ghost data.
-		if (*g->p == DEMOMARKER)
-		{
-			g->mo->momx = g->mo->momy = g->mo->momz = 0;
-
-			if (p)
-				p->next = g->next;
-			else
-				ghosts = g->next;
-
-			Z_Free(g);
-			continue;
 		}
 
 		p = g;
@@ -3524,7 +3553,6 @@ void G_FreeGhosts(void)
 	}
 	ghosts = NULL;
 }
-
 
 boolean G_CheckDemoStatus(void)
 {
