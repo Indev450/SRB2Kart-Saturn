@@ -885,7 +885,6 @@ void D_ClearState(void)
 	CURLAbortFile();
 	SV_StopServer();
 	SV_ResetServer();
-	serverlistultimatecount = 0;
 
 	for (i = 0; i < MAXPLAYERS; i++)
 		CL_ClearPlayer(i);
