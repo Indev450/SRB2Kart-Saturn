@@ -115,17 +115,20 @@ static int result;
 #ifdef HAVE_FLUIDSYNTH
 static fluid_settings_t *synth_settings;
 static fluid_synth_t *synth;
-static int synth_bpm;
 static fluid_player_t *synth_player;
+static bool synth_wait;
+static int total_ticks;
 
 static void MidiSoundfontPath_Onchange(void)
 {
 	if (synth == NULL)
 		return;
 
+	SDL_LockAudioStream(audio_stream);
 	fluid_synth_sfunload(synth, 1, 0);
 	if (fluid_synth_sfload(synth, cv_midisoundfontpath.string, 1) == FLUID_FAILED)
 		CONS_Alert(CONS_ERROR, "Unable to load soundfont '%s'\n", cv_midisoundfontpath.string);
+	SDL_UnlockAudioStream(audio_stream);
 }
 
 consvar_t cv_midisoundfontpath = CVAR_INIT ("midisoundfont", "sf2/GeneralUser-GS.sf2", "Which MIDI soundfont to use", CV_CALL|CV_NOINIT|CV_SAVE, NULL, MidiSoundfontPath_Onchange);
@@ -203,6 +206,14 @@ static float *AdjustPitch(float *in, int size, int channels, float pitch)
 	}
 
 	return out;
+}
+
+static int HandleMIDIEvent(void *data, fluid_midi_event_t *event)
+{
+	SDL_LockAudioStream(audio_stream);
+	synth_wait = false;
+	SDL_UnlockAudioStream(audio_stream);
+	return fluid_synth_handle_midi_event(data, event);
 }
 
 static void MusicCallback(void *userdata, SDL_AudioStream *stream, int additional_amount, int total_amount)
@@ -318,6 +329,7 @@ static void StreamCallback(void *userdata, SDL_AudioStream *stream, int addition
 	else if (synth_player != NULL && !song_paused)
 	{
 		fluid_synth_write_float(synth, additional_amount / 2, sample_buffer.f, 0, 2, sample_buffer.f, 1, 2);
+
 		for (int i = 0; i < additional_amount; i++)
 			sample_buffer.f[i] *= music_volume;
 	}
@@ -1086,6 +1098,8 @@ void I_InitMusic(void)
 
 void I_ShutdownMusic(void)
 {
+	I_UnloadSong();
+
 #ifdef HAVE_FLUIDSYNTH
 	SDL_LockAudioStream(audio_stream);
 	delete_fluid_synth(synth);
@@ -1094,8 +1108,6 @@ void I_ShutdownMusic(void)
 	synth_settings = NULL;
 	SDL_UnlockAudioStream(audio_stream);
 #endif
-
-	I_UnloadSong();
 }
 
 /// ------------------------
@@ -1134,6 +1146,19 @@ boolean I_SongPaused(void)
 /// ------------------------
 /// Music Effects
 /// ------------------------
+
+static void SyncMIDI(void)
+{
+	synth_wait = true;
+	for (;;)
+	{
+		// keep unlocking the stream in a loop, so fluidsynth gets a chance to handle the event.
+		SDL_UnlockAudioStream(audio_stream);
+		SDL_LockAudioStream(audio_stream);
+		if (!synth_wait)
+			return;
+	}
+}
 
 boolean I_SetSongSpeed(float speed)
 {
@@ -1226,9 +1251,10 @@ UINT32 I_GetSongLength(void)
 #ifdef HAVE_FLUIDSYNTH
 	if (synth_player)
 	{
+		SDL_LockAudioStream(audio_stream);
 		int bpm = fluid_player_get_bpm(synth_player);
-		int ticks = fluid_player_get_total_ticks(synth_player);
-		return ticks * 1000 / bpm;
+		SDL_UnlockAudioStream(audio_stream);
+		return total_ticks * 60 / bpm;
 	}
 #endif
 	if (music_stream)
@@ -1320,8 +1346,14 @@ boolean I_SetSongPosition(UINT32 position)
 #ifdef HAVE_FLUIDSYNTH
 	if (synth_player)
 	{
-		// TODO
-		return true;
+		SDL_LockAudioStream(audio_stream);
+		int bpm = fluid_player_get_bpm(synth_player);
+		position %= total_ticks * 60 / bpm;
+		bool status = fluid_player_seek(synth_player, position * bpm / 60) == FLUID_OK;
+		if (status == FLUID_OK)
+			SyncMIDI();
+		SDL_UnlockAudioStream(audio_stream);
+		return status;
 	}
 #endif
 
@@ -1365,14 +1397,23 @@ UINT32 I_GetSongPosition(void)
 		gme_free_info(info);
 		return max(position, 0);
 	}
-	else
 #endif
 #ifdef HAVE_OPENMPT
 	if (openmpt_mhandle)
 		// This will be incorrect if we adjust for length because we can't get loop points.
 		// So return unadjusted. See note in SetMusicPosition: we adjust for that.
 		return (UINT32)(openmpt_module_get_position_seconds(openmpt_mhandle)*1000.);
-	else
+#endif
+#ifdef HAVE_FLUIDSYNTH
+	if (synth_player)
+	{
+		SDL_LockAudioStream(audio_stream);
+		int bpm = fluid_player_get_bpm(synth_player);
+		int ticks = fluid_player_get_current_tick(synth_player);
+		ticks %= total_ticks;
+		SDL_UnlockAudioStream(audio_stream);
+		return ticks * 60 / bpm;
+	}
 #endif
 
 	if (!music_stream)
@@ -1530,6 +1571,7 @@ boolean I_LoadSong(char *data, size_t len)
 	{
 #ifdef HAVE_FLUIDSYNTH
 		synth_player = new_fluid_player(synth);
+		fluid_player_set_playback_callback(synth_player, HandleMIDIEvent, synth);
 		if (fluid_player_add_mem(synth_player, data, len) == FLUID_FAILED)
 		{
 			CONS_Alert(CONS_ERROR, "Cannot play MIDI file: MIDI is invalid or corrupted\n");
@@ -1537,8 +1579,10 @@ boolean I_LoadSong(char *data, size_t len)
 			return false;
 		}
 
-		// save this for music speed
-		synth_bpm = fluid_player_get_bpm(synth_player);
+		fluid_player_play(synth_player);
+		SyncMIDI();
+		total_ticks = fluid_player_get_total_ticks(synth_player);
+
 		SDL_UnlockAudioStream(audio_stream);
 		return true;
 #else
@@ -1722,7 +1766,6 @@ void I_PauseSong(void)
 	if (synth_player)
 	{
 		SDL_LockAudioStream(audio_stream);
-		fluid_player_stop(synth_player);
 		fluid_synth_all_sounds_off(synth, -1);
 		SDL_UnlockAudioStream(audio_stream);
 	}
@@ -1732,14 +1775,6 @@ void I_PauseSong(void)
 void I_ResumeSong(void)
 {
 	song_paused = false;
-#ifdef HAVE_FLUIDSYNTH
-	if (synth_player)
-	{
-		SDL_LockAudioStream(audio_stream);
-		fluid_player_play(synth_player);
-		SDL_UnlockAudioStream(audio_stream);
-	}
-#endif
 }
 
 void I_SetMusicVolume(UINT8 volume)
