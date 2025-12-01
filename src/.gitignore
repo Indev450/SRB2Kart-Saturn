@@ -1,4 +1,5 @@
 /cscope.out
 *.json
 *.idx
+*.gdb_history
 config.h
