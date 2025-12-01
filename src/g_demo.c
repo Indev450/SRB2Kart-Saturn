@@ -2603,7 +2603,7 @@ void G_DoPlayDemo(char *defdemoname)
 				snprintf(msg, 1024, M_GetText("Failed to read file '%s'.\n"), defdemoname);
 				CONS_Alert(CONS_ERROR, "%s", msg);
 				gameaction = ga_nothing;
-				M_StartMessage(msg, NULL, MM_NOTHING);
+				M_StartMessage(msg, M_ReturnToTitleFromError, MM_EVENTHANDLER);
 				return;
 			}
 
@@ -2615,7 +2615,7 @@ void G_DoPlayDemo(char *defdemoname)
 			snprintf(msg, 1024, M_GetText("Failed to read lump '%s'.\n"), defdemoname);
 			CONS_Alert(CONS_ERROR, "%s", msg);
 			gameaction = ga_nothing;
-			M_StartMessage(msg, NULL, MM_NOTHING);
+			M_StartMessage(msg, M_ReturnToTitleFromError, MM_EVENTHANDLER);
 			return;
 		}
 		else // it's an internal demo
@@ -2635,7 +2635,7 @@ void G_DoPlayDemo(char *defdemoname)
 	{
 		snprintf(msg, 1024, M_GetText("%s is not a SRB2Kart replay file.\n"), pdemoname);
 		CONS_Alert(CONS_ERROR, "%s", msg);
-		M_StartMessage(msg, NULL, MM_NOTHING);
+		M_StartMessage(msg, M_ReturnToTitleFromError, MM_EVENTHANDLER);
 		G_ResetDemoPlayback();
 		return;
 	}
@@ -2661,7 +2661,7 @@ void G_DoPlayDemo(char *defdemoname)
 		default:
 			snprintf(msg, 1024, M_GetText("%s is an incompatible replay format and cannot be played.\n"), pdemoname);
 			CONS_Alert(CONS_ERROR, "%s", msg);
-			M_StartMessage(msg, NULL, MM_NOTHING);
+			M_StartMessage(msg, M_ReturnToTitleFromError, MM_EVENTHANDLER);
 			G_ResetDemoPlayback();
 			return;
 	}
@@ -2672,7 +2672,7 @@ void G_DoPlayDemo(char *defdemoname)
 	{
 		snprintf(msg, 1024, M_GetText("%s is the wrong type of recording and cannot be played.\n"), pdemoname);
 		CONS_Alert(CONS_ERROR, "%s", msg);
-		M_StartMessage(msg, NULL, MM_NOTHING);
+		M_StartMessage(msg, M_ReturnToTitleFromError, MM_EVENTHANDLER);
 		G_ResetDemoPlayback();
 		return;
 	}
@@ -2689,7 +2689,7 @@ void G_DoPlayDemo(char *defdemoname)
 		{
 			snprintf(msg, 1024, M_GetText("%s is an alpha multiplayer replay and cannot be played.\n"), pdemoname);
 			CONS_Alert(CONS_ERROR, "%s", msg);
-			M_StartMessage(msg, NULL, MM_NOTHING);
+			M_StartMessage(msg, M_ReturnToTitleFromError, MM_EVENTHANDLER);
 			G_ResetDemoPlayback();
 			return;
 		}
@@ -2747,7 +2747,7 @@ void G_DoPlayDemo(char *defdemoname)
 			CONS_Alert(CONS_ERROR, "%s", msg);
 
 			if (!CON_Ready()) // In the console they'll just see the notice there! No point pulling them out.
-				M_StartMessage(msg, NULL, MM_NOTHING);
+				M_StartMessage(msg, M_ReturnToTitleFromError, MM_EVENTHANDLER);
 
 			G_ResetDemoPlayback();
 			return;
@@ -2812,7 +2812,7 @@ void G_DoPlayDemo(char *defdemoname)
 		{
 			snprintf(msg, 1024, M_GetText("%s features a character that is not currently loaded.\n"), pdemoname);
 			CONS_Alert(CONS_ERROR, "%s", msg);
-			M_StartMessage(msg, NULL, MM_NOTHING);
+			M_StartMessage(msg, M_ReturnToTitleFromError, MM_EVENTHANDLER);
 			G_ResetDemoPlayback();
 			return;
 		}
@@ -2822,7 +2822,7 @@ void G_DoPlayDemo(char *defdemoname)
 		{
 			snprintf(msg, 1024, M_GetText("%s features a course that is not currently loaded.\n"), pdemoname);
 			CONS_Alert(CONS_ERROR, "%s", msg);
-			M_StartMessage(msg, NULL, MM_NOTHING);
+			M_StartMessage(msg, M_ReturnToTitleFromError, MM_EVENTHANDLER);
 			G_ResetDemoPlayback();
 			return;
 		}
@@ -2845,7 +2845,7 @@ void G_DoPlayDemo(char *defdemoname)
 		{
 			snprintf(msg, 1024, M_GetText("%s contains no data to be played.\n"), pdemoname);
 			CONS_Alert(CONS_ERROR, "%s", msg);
-			M_StartMessage(msg, NULL, MM_NOTHING);
+			M_StartMessage(msg, M_ReturnToTitleFromError, MM_EVENTHANDLER);
 			G_ResetDemoPlayback();
 			return;
 		}
@@ -2883,7 +2883,7 @@ void G_DoPlayDemo(char *defdemoname)
 	{
 		snprintf(msg, 1024, M_GetText("%s contains no data to be played.\n"), pdemoname);
 		CONS_Alert(CONS_ERROR, "%s", msg);
-		M_StartMessage(msg, NULL, MM_NOTHING);
+		M_StartMessage(msg, M_ReturnToTitleFromError, MM_EVENTHANDLER);
 		G_ResetDemoPlayback();
 		return;
 	}
@@ -2932,7 +2932,7 @@ void G_DoPlayDemo(char *defdemoname)
 			{
 				snprintf(msg, 1024, M_GetText("%s is a Record Attack replay with spectators, and is thus invalid.\n"), pdemoname);
 				CONS_Alert(CONS_ERROR, "%s", msg);
-				M_StartMessage(msg, NULL, MM_NOTHING);
+				M_StartMessage(msg, M_ReturnToTitleFromError, MM_EVENTHANDLER);
 				G_ResetDemoPlayback();
 				return;
 			}
@@ -2944,7 +2944,7 @@ void G_DoPlayDemo(char *defdemoname)
 		{
 			snprintf(msg, 1024, M_GetText("%s is a Record Attack replay with multiple players, and is thus invalid.\n"), pdemoname);
 			CONS_Alert(CONS_ERROR, "%s", msg);
-			M_StartMessage(msg, NULL, MM_NOTHING);
+			M_StartMessage(msg, M_ReturnToTitleFromError, MM_EVENTHANDLER);
 			G_ResetDemoPlayback();
 			return;
 		}
