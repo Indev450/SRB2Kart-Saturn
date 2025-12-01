@@ -4298,6 +4298,9 @@ static void M_HandleReplayHutList(INT32 choice)
 		if (!replaynamesloaded)
 			return;
 
+		if (replayqueryfound == 0)
+			return;
+
 		switch (dirmenu[dir_on[menudepthleft]][DIR_TYPE])
 		{
 			case EXT_FOLDER:
