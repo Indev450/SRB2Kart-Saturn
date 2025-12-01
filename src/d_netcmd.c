@@ -2647,7 +2647,6 @@ static void Command_Map_f(void)
 		return;
 	}
 
-	M_ClearMenus(true);
 
 	last_map_cmd = I_GetTime();
 
@@ -2829,6 +2828,8 @@ static void Command_Map_f(void)
 	}
 
 	fromlevelselect = false;
+
+	M_ClearMenus(true);
 
 	D_MapChange(newmapnum, newgametype, newencoremode, newresetplayers, 0, false, false);
 }
