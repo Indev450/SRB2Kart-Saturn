@@ -1731,7 +1731,7 @@ static void HU_drawChatLog(INT32 offset)
 			{
 				if ((y+dy+2 >= chat_topy) && (y+dy < (chat_bottomy)))
 				{
-					M_DrawEmote(x+dx+2, y+dy, emote, V_SNAPTOBOTTOM|V_SNAPTOLEFT);
+					M_DrawEmote(x+dx+2, y+dy+1, emote, V_SNAPTOBOTTOM|V_SNAPTOLEFT);
 					dx += EMOTEWIDTH - charwidth;
 				}
 				j += emotelen;
