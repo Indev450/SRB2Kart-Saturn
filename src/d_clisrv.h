@@ -516,7 +516,6 @@ typedef struct
 
 extern serverelem_t serverlist[MAXSERVERLIST];
 extern UINT32 serverlistcount;
-extern UINT32 serverlistultimatecount;
 extern INT32 mapchangepending;
 
 // Points inside doomcom
@@ -627,7 +626,6 @@ void CL_ClearPlayer(INT32 playernum);
 void CL_RemovePlayer(INT32 playernum, INT32 reason);
 void CL_QueryServerList(msg_server_t *list);
 void CL_UpdateServerList(void);
-void CL_TimeoutServerList(void);
 
 void CL_AbortConnection(void);
 

@@ -2191,12 +2191,8 @@ static void SendAskInfo(INT32 node)
 	HSendPacket(node, false, 0, sizeof (askinfo_pak));
 }
 
-serverelem_t serverlist[MAXSERVERLIST];
+serverelem_t serverlist[MAXSERVERLIST] = {};
 UINT32 serverlistcount = 0;
-UINT32 serverlistultimatecount = 0;
-
-static boolean resendserverlistnode[MAXNETNODES];
-static tic_t serverlistepoch;
 
 static void SL_ClearServerList(INT32 connectedserver)
 {
@@ -2209,8 +2205,7 @@ static void SL_ClearServerList(INT32 connectedserver)
 			serverlist[i].node = 0;
 		}
 	serverlistcount = 0;
-
-	memset(resendserverlistnode, 0, sizeof resendserverlistnode);
+	//memset(serverlist, 0, sizeof(serverlist));
 }
 
 static UINT32 SL_SearchServer(INT32 node)
@@ -2226,8 +2221,6 @@ static UINT32 SL_SearchServer(INT32 node)
 static void SL_InsertServer(serverinfo_pak* info, SINT8 node)
 {
 	UINT32 i;
-
-	resendserverlistnode[node] = false;
 
 	// search if not already on it
 	i = SL_SearchServer(node);
@@ -2262,7 +2255,7 @@ static void SL_InsertServer(serverinfo_pak* info, SINT8 node)
 	M_SortServerList();
 }
 
-void CL_UpdateServerList (void)
+void CL_UpdateServerList(void)
 {
 	SL_ClearServerList(0);
 
@@ -2280,13 +2273,11 @@ void CL_UpdateServerList (void)
 		SendAskInfo(BROADCASTADDR);
 }
 
-void CL_QueryServerList (msg_server_t *server_list)
+void CL_QueryServerList(msg_server_t *server_list)
 {
 	INT32 i;
 
 	CL_UpdateServerList();
-
-	serverlistepoch = I_GetTime();
 
 	for (i = 0; server_list[i].header.buffer[0]; i++)
 	{
@@ -2300,42 +2291,20 @@ void CL_QueryServerList (msg_server_t *server_list)
 			if (node == -1)
 				continue; // no more node free, or resolution failure
 			SendAskInfo(node);
-			resendserverlistnode[node] = true;
-			// Leave this node open. It'll be closed if the
-			// request times out (CL_TimeoutServerList).
-		}
-	}
 
-	serverlistultimatecount = i;
-}
-
-#define SERVERLISTRESENDRATE NEWTICRATE
-
-void CL_TimeoutServerList(void)
-{
-	if (netgame && serverlistultimatecount > serverlistcount)
-	{
-		const tic_t timediff = I_GetTime() - serverlistepoch;
-		const tic_t timetoresend = timediff % SERVERLISTRESENDRATE;
-		const boolean timedout = timediff > connectiontimeout;
-
-		if (timedout || (timediff > 0 && timetoresend == 0))
-		{
-			INT32 node;
-
-			for (node = 1; node < MAXNETNODES; ++node)
-			{
-				if (resendserverlistnode[node])
-				{
-					if (timedout)
-						Net_CloseConnection(node|FORCECLOSE);
-					else
-						SendAskInfo(node);
-				}
-			}
-
-			if (timedout)
-				serverlistultimatecount = serverlistcount;
+			// Force close the connection so that servers can't eat
+			// up nodes forever if we never get a reply back from them
+			// (usually when they've not forwarded their ports).
+			//
+			// Don't worry, we'll get in contact with the working
+			// servers again when they send SERVERINFO to us later!
+			//
+			// (Note: as a side effect this probably means every
+			// server in the list will probably be using the same node (e.g. node 1),
+			// not that it matters which nodes they use when
+			// the connections are closed afterwards anyway)
+			// -- Monster Iestyn 12/11/18
+			Net_CloseConnection(node|FORCECLOSE);
 		}
 	}
 }
