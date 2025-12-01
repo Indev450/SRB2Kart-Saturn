@@ -2916,7 +2916,7 @@ static void HWR_Subsector(size_t num)
 	static sector_t tempsec; //SoM: 4/7/2000
 	INT32 floorlightlevel;
 	INT32 ceilinglightlevel;
-	INT32 locFloorHeight, locCeilingHeight;
+	INT32 locFloorHeight = 0, locCeilingHeight = 0;
 	INT32 cullFloorHeight, cullCeilingHeight;
 	INT32 light = 0;
 	extracolormap_t *floorcolormap;
