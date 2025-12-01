@@ -125,6 +125,8 @@ if(SRB2_CONFIG_ENABLE_DISCORDRPC)
 	target_sources(SRB2SDL2 PRIVATE discord.c)
 endif()
 
+target_sources(SRB2SDL2 PRIVATE stun.c)
+
 if(${SRB2_CONFIG_LIBBACKTRACE})
 	target_link_libraries(SRB2SDL2 PRIVATE libbacktrace)
 	target_compile_definitions(SRB2SDL2 PRIVATE -DHAVE_LIBBACKTRACE)
