@@ -1751,7 +1751,7 @@ void G_ResetView(UINT8 viewnum, INT32 playernum, boolean onlyactive)
 // Increment a viewpoint by offset from the current player. A negative value
 // decrements.
 //
-static void G_ActuallyAdjustView(UINT8 viewnum, INT32 offset, boolean onlyactive, boolean resetfreecam)
+void G_AdjustViewEx(UINT8 viewnum, INT32 offset, boolean onlyactive, boolean resetfreecam)
 {
 	INT32 *displayplayerp, oldview;
 	displayplayerp = &displayplayers[viewnum-1];
@@ -1766,12 +1766,6 @@ static void G_ActuallyAdjustView(UINT8 viewnum, INT32 offset, boolean onlyactive
 	// If no other view could be found, go back to what we had.
 	if ((*displayplayerp) == -1)
 		(*displayplayerp) = oldview;
-}
-
-// im a lazy ass :chonkbuncle:
-void G_AdjustView(UINT8 viewnum, INT32 offset, boolean onlyactive)
-{
-	G_ActuallyAdjustView(viewnum, offset, onlyactive, true);
 }
 
 //
@@ -1803,7 +1797,7 @@ void G_ResetViews(boolean resetfreecam)
 	*/
 	for (viewd = 1; viewd <= splits; ++viewd)
 	{
-		G_ActuallyAdjustView(viewd, 0, false, resetfreecam);
+		G_AdjustViewEx(viewd, 0, false, resetfreecam);
 	}
 }
 
@@ -1892,7 +1886,6 @@ void G_Ticker(boolean run)
 	switch (gamestate)
 	{
 		case GS_LEVEL:
-
 			for (; ra_timeskip < starttime - TICRATE*4; ra_timeskip++)	// this looks weird but this is done to not break compability with older demos for now.
 			{
 				if (demo.title)

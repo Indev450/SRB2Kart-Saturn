@@ -264,7 +264,8 @@ INT32 G_CountPlayersPotentiallyViewable(boolean active);
 
 void G_ResetViews(boolean resetfreecam);
 void G_ResetView(UINT8 viewnum, INT32 playernum, boolean onlyactive);
-void G_AdjustView(UINT8 viewnum, INT32 offset, boolean onlyactive);
+void G_AdjustViewEx(UINT8 viewnum, INT32 offset, boolean onlyactive, boolean resetfreecam);
+#define G_AdjustView(v,o,oa) G_AdjustViewEx(v,o,oa, true)
 
 void G_AddPlayer(INT32 playernum);
 
