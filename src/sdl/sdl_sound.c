@@ -1064,7 +1064,7 @@ void I_UpdateSoundParams(INT32 handle, UINT8 vol, UINT8 sep/*, UINT8 pitch*/)
 
 void I_SetSfxVolume(UINT8 volume)
 {
-	sfx_volume = (float)volume / 16;
+	sfx_volume = powf(2.0f, (float)volume / 16) - 1.0f;
 }
 
 /// ------------------------
@@ -1779,7 +1779,7 @@ void I_ResumeSong(void)
 
 void I_SetMusicVolume(UINT8 volume)
 {
-	music_volume = (float)volume / 32;
+	music_volume = powf(2.0f, (float)volume / 16) - 1.0f;
 }
 
 boolean I_SetSongTrack(INT32 track)
@@ -1838,7 +1838,7 @@ boolean I_SetSongTrack(INT32 track)
 void I_SetInternalMusicVolume(UINT8 volume)
 {
 	I_StopFadingSong();
-	fading_target = volume / 100.0f;
+	fading_target = powf(2.0f, volume / 100.0f) - 1.0f;
 }
 
 void I_StopFadingSong(void)
@@ -1853,15 +1853,15 @@ boolean I_FadeSongFromVolume(UINT8 target_volume, UINT8 source_volume, UINT32 ms
 	if (ms == 0 || target_volume == source_volume)
 	{
 		I_StopFadingSong();
-		fading_target = target_volume / 100.0f;
+		fading_target = powf(2.0f, target_volume / 100.0f) - 1.0f;
 		if (callback)
 			(*callback)();
 		return true;
 	}
 
 	SDL_LockAudioStream(audio_stream);
-	fading_source = source_volume / 100.0f;
-	fading_target = target_volume / 100.0f;
+	fading_source = powf(2.0f, source_volume / 100.0f) - 1.0f;
+	fading_target = powf(2.0f, target_volume / 100.0f) - 1.0f;
 	fading_from = I_GetSongPosition();
 	fading_to = fading_from + ms;
 	fading_callback = callback;
