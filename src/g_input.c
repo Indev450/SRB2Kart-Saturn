@@ -34,7 +34,7 @@ static CV_PossibleValue_t onecontrolperkey_cons_t[] = {{1, "One"}, {2, "Several"
 static CV_PossibleValue_t turnsmooth_cons_t[] = {{2, "Slow"}, {1, "Fast"}, {0, "Off"}, {0, NULL}};
 
 // mouse values are used once
-consvar_t cv_mousesens = {"mousesens", "20", CV_SAVE, mousesens_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_mousexsens = {"mousexsens", "20", CV_SAVE, mousesens_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_mouseysens = {"mouseysens", "20", CV_SAVE, mousesens_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_controlperkey = {"controlperkey", "One", CV_SAVE, onecontrolperkey_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
@@ -126,7 +126,6 @@ static void led_off_handle4(void)
 }
 
 INT32 mousex = 0, mousey = 0;
-INT32 mlooky = 0; // like mousey but with a custom sensitivity for mlook
 
 // joystick values are repeated
 INT32 joyxmove[MAXSPLITSCREENPLAYERS][JOYAXISSET] = {};
@@ -193,9 +192,8 @@ void G_MapEventsToControls(event_t *ev)
 		case ev_mouse: // buttons are virtual keys
 			if (menuactive || CON_Ready() || chat_on)
 				break;
-			mousex = (INT32)(ev->data2*((cv_mousesens.value*cv_mousesens.value)/110.0f + 0.1f));
-			mousey = (INT32)(ev->data3*((cv_mousesens.value*cv_mousesens.value)/110.0f + 0.1f));
-			mlooky = (INT32)(ev->data3*((cv_mouseysens.value*cv_mousesens.value)/110.0f + 0.1f));
+			mousex = (INT32)(ev->data2*((cv_mousexsens.value*cv_mousexsens.value)/110.0f + 0.1f));
+			mousey = (INT32)(ev->data3*((cv_mouseysens.value*cv_mouseysens.value)/110.0f + 0.1f));
 			break;
 
 		case ev_joystick: // buttons are virtual keys

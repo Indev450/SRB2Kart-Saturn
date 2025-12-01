@@ -1003,7 +1003,7 @@ void D_RegisterClientCommands(void)
 
 	CV_RegisterVar(&cv_usemouse);
 	CV_RegisterVar(&cv_invertmouse);
-	CV_RegisterVar(&cv_mousesens);
+	CV_RegisterVar(&cv_mousexsens);
 	CV_RegisterVar(&cv_mouseysens);
 	CV_RegisterVar(&cv_mousevisible);
 

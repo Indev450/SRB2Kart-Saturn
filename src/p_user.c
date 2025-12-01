@@ -3263,7 +3263,7 @@ static ticcmd_t *P_CameraCmd(camera_t *cam, UINT8 num)
 
 	axis = JoyAxis(AXISLOOK, forplayer);
 
-	laim += (mlooky<<19)*player_invert;
+	laim += (mousey<<19)*player_invert;
 
 	if (InputDown(gc_lookup, forplayer) || (usejoystick && axis < 0))
 	{
@@ -3302,7 +3302,7 @@ static ticcmd_t *P_CameraCmd(camera_t *cam, UINT8 num)
 		cmd->aiming = G_ClipAimingPitch(&laim);
 	}
 
-	mousex = mousey = mlooky = 0;
+	mousex = mousey = 0;
 
 	if (forward > MAXPLMOVE)
 		forward = MAXPLMOVE;
