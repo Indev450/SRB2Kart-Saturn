@@ -1550,6 +1550,7 @@ void I_UnloadSong(void)
 
 boolean I_PlaySong(boolean looping)
 {
+	SDL_LockAudioStream(audio_stream);
 #ifdef HAVE_LIBGME
 	if (gme)
 	{
@@ -1593,10 +1594,14 @@ boolean I_PlaySong(boolean looping)
 	else
 #endif
 	if (music_stream == NULL)
+	{
+		SDL_UnlockAudioStream(audio_stream);
 		return false;
+	}
 
 	loop_song = looping;
 	song_paused = false;
+	SDL_UnlockAudioStream(audio_stream);
 	return true;
 }
 
