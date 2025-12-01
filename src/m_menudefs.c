@@ -800,7 +800,7 @@ static menuitem_t OP_MouseOptionsMenu[] =
 
 	{IT_STRING | IT_CVAR,                NULL, "Mouse Turning",  &cv_mouseturn,    20},
 	{IT_STRING | IT_CVAR,                NULL, "Invert Mouse",   &cv_invertmouse,  30},
-	{IT_STRING | IT_CVAR | IT_CV_SLIDER, NULL, "Mouse X Speed",  &cv_mousesens,    40},
+	{IT_STRING | IT_CVAR | IT_CV_SLIDER, NULL, "Mouse X Speed",  &cv_mousexsens,    40},
 	{IT_STRING | IT_CVAR | IT_CV_SLIDER, NULL, "Mouse Y Speed",  &cv_mouseysens,   50},
 };
 
