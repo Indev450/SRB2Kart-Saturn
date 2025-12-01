@@ -211,7 +211,7 @@ void G_MapEventsToControls(event_t *ev)
 
 		case ev_joystick3:
 			i = ev->data1;
-			if (i >= JOYAXISSET)
+			if (i >= JOYAXISSET || menuactive)
 				break;
 			if (ev->data2 != INT32_MAX) joyxmove[2][i] = ev->data2;
 			if (ev->data3 != INT32_MAX) joyymove[2][i] = ev->data3;
@@ -219,7 +219,7 @@ void G_MapEventsToControls(event_t *ev)
 
 		case ev_joystick4:
 			i = ev->data1;
-			if (i >= JOYAXISSET)
+			if (i >= JOYAXISSET || menuactive)
 				break;
 			if (ev->data2 != INT32_MAX) joyxmove[3][i] = ev->data2;
 			if (ev->data3 != INT32_MAX) joyymove[3][i] = ev->data3;
