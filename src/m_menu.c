@@ -9497,14 +9497,6 @@ static void M_ChangecontrolResponse(event_t *ev)
 			// replace mouse and joy clicks by double clicks
 			if (ch >= KEY_MOUSE1 && ch <= KEY_MOUSE1+MOUSEBUTTONS)
 				setupcontrols[control][found] = ch-KEY_MOUSE1+KEY_DBLMOUSE1;
-			else if (ch >= KEY_JOY1 && ch <= KEY_JOY1+JOYBUTTONS)
-				setupcontrols[control][found] = ch-KEY_JOY1+KEY_DBLJOY1;
-			else if (ch >= KEY_2JOY1 && ch <= KEY_2JOY1+JOYBUTTONS)
-				setupcontrols[control][found] = ch-KEY_2JOY1+KEY_DBL2JOY1;
-			else if (ch >= KEY_3JOY1 && ch <= KEY_3JOY1+JOYBUTTONS)
-				setupcontrols[control][found] = ch-KEY_3JOY1+KEY_DBL3JOY1;
-			else if (ch >= KEY_4JOY1 && ch <= KEY_4JOY1+JOYBUTTONS)
-				setupcontrols[control][found] = ch-KEY_4JOY1+KEY_DBL4JOY1;
 		}
 		else
 		{
