@@ -4447,18 +4447,21 @@ static inline void SV_AddNode(INT32 node)
 // Xcmd XD_ADDPLAYER
 static void Got_AddPlayer(const UINT8 **p, INT32 playernum)
 {
+	UINT8 i;
 	INT16 node, newplayernum;
 	UINT8 splitscreenplayer = 0;
-	UINT8 i;
+	player_t *newplayer;
 
 	if (playernum != serverplayer && !IsPlayerAdmin(playernum))
 	{
 		// protect against hacked/buggy client
 		CONS_Alert(CONS_WARNING, M_GetText("Illegal add player command received from %s\n"), player_names[playernum]);
+
 		if (server)
 		{
 			SendKick(playernum, KICK_MSG_CON_FAIL);
 		}
+
 		return;
 	}
 
@@ -4467,13 +4470,18 @@ static void Got_AddPlayer(const UINT8 **p, INT32 playernum)
 	splitscreenplayer = newplayernum/MAXPLAYERS;
 	newplayernum %= MAXPLAYERS;
 
+	CONS_Debug(DBG_NETPLAY, "addplayer: %d %d\n", node, newplayernum);
+
 	// Clear player before joining, lest some things get set incorrectly
 	CL_ClearPlayer(newplayernum);
 
 	playeringame[newplayernum] = true;
 	G_AddPlayer(newplayernum);
+
 	if (newplayernum+1 > doomcom->numslots)
 		doomcom->numslots = (INT16)(newplayernum+1);
+
+	newplayer = &players[newplayernum];
 
 	// the server is creating my player
 	if (node == mynode)
@@ -4485,7 +4493,7 @@ static void Got_AddPlayer(const UINT8 **p, INT32 playernum)
 			displayplayers[splitscreenplayer] = newplayernum;
 			DEBFILE(va("spawning one of my sister number %d\n", splitscreenplayer));
 			if (splitscreenplayer == 1 && botingame)
-				players[newplayernum].bot = 1;
+				newplayer->bot = 1; // do we really want this löl
 		}
 		else
 		{
@@ -4495,13 +4503,13 @@ static void Got_AddPlayer(const UINT8 **p, INT32 playernum)
 			DEBFILE("spawning me\n");
 		}
 
-		P_ForceLocalAngle(&players[newplayernum], (angle_t)(players[newplayernum].cmd.angleturn << TICCMD_REDUCE));
+		P_ForceLocalAngle(newplayer, (angle_t)(newplayer->cmd.angleturn << TICCMD_REDUCE));
 
 		D_SendPlayerConfig(splitscreenplayer);
 		addedtogame = true;
 	}
 
-	players[newplayernum].splitscreenindex = splitscreenplayer;
+	newplayer->splitscreenindex = splitscreenplayer;
 
 	if (netgame)
 	{
@@ -4572,24 +4580,27 @@ static boolean SV_AddWaitingPlayers(SINT8 node)
 	UINT8 newplayernum = 0;
 	boolean newplayer = false;
 
-	// What is the reason for this? Why can't newplayernum always be 0?
-	// Sal: Because the dedicated player is stupidly forced into players[0].....
-	if (dedicated)
-		newplayernum = 1;
-
 	// splitscreen can allow 2+ players in one node
 	for (; nodewaiting[node] > 0; nodewaiting[node]--)
 	{
 		newplayer = true;
 
 		// search for a free playernum
-		// we can't use playeringame since it is not updated here
-		for (; newplayernum < MAXPLAYERS; newplayernum++)
+		// we can't solely use playeringame since it is not updated here
+		for (newplayernum = dedicated ? 1 : 0; newplayernum < MAXPLAYERS; newplayernum++)
 		{
+			if (playeringame[newplayernum])
+				continue;
+
 			for (n = 0; n < MAXNETNODES; n++)
-				if (nodetoplayer[n] == newplayernum || nodetoplayer2[n] == newplayernum
-					|| nodetoplayer3[n] == newplayernum || nodetoplayer4[n] == newplayernum)
+			{
+				if (nodetoplayer[n] == newplayernum ||
+					nodetoplayer2[n] == newplayernum ||
+					nodetoplayer3[n] == newplayernum ||
+					nodetoplayer4[n] == newplayernum)
 					break;
+			}
+
 			if (n == MAXNETNODES)
 				break;
 		}
@@ -4598,10 +4609,9 @@ static boolean SV_AddWaitingPlayers(SINT8 node)
 		// before accepting the join
 		I_Assert(newplayernum < MAXPLAYERS);
 
-		playernode[newplayernum] = (UINT8)node;
-
 		buf[0] = (UINT8)node;
 		buf[1] = newplayernum;
+
 		if (playerpernode[node] < 1)
 		{
 			nodetoplayer[node] = newplayernum;
@@ -4616,11 +4626,21 @@ static boolean SV_AddWaitingPlayers(SINT8 node)
 			nodetoplayer3[node] = newplayernum;
 			buf[1] += MAXPLAYERS*2;
 		}
-		else
+		else if (playerpernode[node] < 4)
 		{
 			nodetoplayer4[node] = newplayernum;
 			buf[1] += MAXPLAYERS*3;
 		}
+		else
+		{
+			// I don't know if it's safe to assert here,
+			// but I do know this should not be allowed
+			// to be reached.
+			return newplayer;
+		}
+
+		playernode[newplayernum] = (UINT8)node;
+
 		playerpernode[node]++;
 
 		SendNetXCmd(XD_ADDPLAYER, &buf, 2);
