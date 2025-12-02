@@ -1287,22 +1287,32 @@ extern int lib_hudadd(lua_State *L);
 
 static int lib_hudsetvotebackground(lua_State *L)
 {
+	// Reset to default
 	memset(VoteScreen.luaPrefix, 0, sizeof(VoteScreen.luaPrefix));
+	VoteScreen.timePerAnimFrame = 2;
 
-	if (lua_isnoneornil(L, 1))
+	if (!lua_isnoneornil(L, 1))
 	{
-		return 0;
+		const char *prefix = luaL_checkstring(L, 1);
+
+		if (strlen(prefix) != 4)
+		{
+			return luaL_argerror(L, 1, "prefix should 4 characters wide");
+		}
+
+		strncpy(VoteScreen.luaPrefix, prefix, 4);
+		strupr(VoteScreen.luaPrefix);
 	}
 
-	const char *prefix = luaL_checkstring(L, 1);
-
-	if (strlen(prefix) != 4)
+	if (!lua_isnoneornil(L, 2))
 	{
-		return luaL_argerror(L, 1, "prefix should 4 characters wide");
-	}
+		INT32 time_per_frame = luaL_checkinteger(L, 2);
 
-	strncpy(VoteScreen.luaPrefix, prefix, 4);
-	strupr(VoteScreen.luaPrefix);
+		if (time_per_frame <= 0)
+			return luaL_argerror(L, 2, "time per frame should be 1 or more");
+
+		VoteScreen.timePerAnimFrame = time_per_frame;
+	}
 
 	// Update background if we're already on vote screen
 	if (gamestate == GS_VOTING)

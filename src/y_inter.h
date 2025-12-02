@@ -79,6 +79,7 @@ typedef struct
 	char luaPrefix[5];              // prefix for lua votescreens
 
 	INT32 currentAnimFrame;         // current animated background frame
+	INT32 timePerAnimFrame;         // time for 1 frame in ticks, 2 by default
 
 	INT32 foundLuaVoteFrames;       // normal lua patch frames
 	INT32 foundLuaVoteWideFrames;   // widescreen lua patch frames
