@@ -3966,6 +3966,7 @@ menudemo_t *demolist = NULL; // Replays that that have been checked to match wit
 
 // Locked behind Lock_search_state
 menudemo_t *demolist_all = NULL; // All replays
+size_t demolist_all_size = 0;
 boolean replaynamesloaded = false;
 
 #ifdef HAVE_THREADS
@@ -3998,14 +3999,14 @@ static void ReplayNamesLoadThread(void* userdata)
 {
 	Lock_search_state();
 
-	size_t demolist_all_size = sizedirmenu;
-	menudemo_t *demolist_all_local = (menudemo_t*)malloc(sizeof(menudemo_t)*sizedirmenu);
-	memcpy(demolist_all_local, demolist_all, sizeof(menudemo_t)*sizedirmenu);
+	size_t demolist_all_size_local = demolist_all_size;
+	menudemo_t *demolist_all_local = (menudemo_t*)malloc(sizeof(menudemo_t)*demolist_all_size_local);
+	memcpy(demolist_all_local, demolist_all, sizeof(menudemo_t)*demolist_all_size_local);
 	char *replaydirpath = (char*)userdata;
 
 	Unlock_search_state();
 
-	for (size_t i = 0; i < demolist_all_size; ++i)
+	for (size_t i = 0; i < demolist_all_size_local; ++i)
 	{
 		if (demolist_all_local[i].type != MD_SUBDIR)
 		{
@@ -4021,9 +4022,9 @@ static void ReplayNamesLoadThread(void* userdata)
 
 	Lock_search_state();
 
-	if (fastcmp(menupath, replaydirpath))
+	if (fastcmp(menupath, replaydirpath) && demolist_all)
 	{
-		memcpy(demolist_all, demolist_all_local, sizeof(menudemo_t)*sizedirmenu);
+		memcpy(demolist_all, demolist_all_local, sizeof(menudemo_t)*demolist_all_size);
 		replaynamesloaded = true;
 	}
 
@@ -4157,6 +4158,7 @@ static void PrepReplayList(boolean reset)
 
 	Z_Free(demolist_all);
 	demolist_all = Z_Calloc(sizeof(menudemo_t) * sizedirmenu, PU_STATIC, NULL);
+	demolist_all_size = sizedirmenu;
 
 	for (i = 0; i < sizedirmenu; i++)
 	{
