@@ -124,6 +124,7 @@ LUALIB_API int luaL_resourcetryagain (lua_State *L) {
 #endif
 
   if (errno == EMFILE || errno == ENFILE || errno == ENOMEM) {
+    CONS_Alert(CONS_WARNING, "%s, force calling lua garbage collector\n", strerror(errno));
     lua_gc(L, LUA_GCCOLLECT, 0);  /* try to release resources with a full GC */
     return 1;  /* signal to try again the creation */
   }
