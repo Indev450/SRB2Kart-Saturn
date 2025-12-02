@@ -589,11 +589,17 @@ static void CON_ChangeHeight(void)
 
 // Handles Console moves in/out of screen (per frame)
 //
-static void CON_MoveConsole(void)
+void CON_MoveConsole(void)
 {
 	static fixed_t fracmovement = 0;
 
 	Lock_state();
+
+	if (con_curlines == con_destlines)
+	{
+		Unlock_state();
+		return;
+	}
 
 	// instant
 	if (!cons_speed.value)
@@ -1587,8 +1593,7 @@ void CON_Drawer(void)
 	}
 
 	// console movement
-	if (con_curlines != con_destlines)
-		CON_MoveConsole();
+	CON_MoveConsole();
 
 	if (con_curlines > 0)
 		CON_DrawConsole();
