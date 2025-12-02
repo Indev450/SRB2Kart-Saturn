@@ -135,7 +135,7 @@ static void MidiChorus_OnChange(void)
 {
 	if (synth_settings != NULL)
 	{
-		fluid_settings_setnum(synth_settings, "synth.chorus.active", cv_midichorus.value > 0);
+		fluid_settings_setint(synth_settings, "synth.chorus.active", cv_midichorus.value > 0);
 		fluid_settings_setnum(synth_settings, "synth.chorus.level", FixedToFloat(cv_midichorus.value));
 	}
 }
@@ -144,14 +144,16 @@ static void MidiReverb_OnChange(void)
 {
 	if (synth_settings != NULL)
 	{
-		fluid_settings_setnum(synth_settings, "synth.reverb.active", cv_midireverb.value > 0);
+		fluid_settings_setint(synth_settings, "synth.reverb.active", cv_midireverb.value > 0);
 		fluid_settings_setnum(synth_settings, "synth.reverb.level", FixedToFloat(cv_midireverb.value));
 	}
 }
 
 consvar_t cv_midisoundfontpath = CVAR_INIT ("midisoundfont", "sf2/GeneralUser-GS.sf2", "Which MIDI soundfont to use", CV_CALL|CV_NOINIT|CV_SAVE, NULL, MidiSoundfontPath_Onchange);
-consvar_t cv_midichorus = CVAR_INIT ("midichorus", "1", "Controls the chorus level of MIDI playback; setting this too high might cause some instruments to be overexposed", CV_CALL|CV_SAVE|CV_FLOAT, CV_Unsigned, MidiChorus_OnChange);
-consvar_t cv_midireverb = CVAR_INIT ("midireverb", "1", "Controls the reverb level of MIDI playback; setting this too high might cause notes to be drawn out", CV_CALL|CV_SAVE|CV_FLOAT, CV_Unsigned, MidiReverb_OnChange);
+static CV_PossibleValue_t chorus_const_t[] = {{0, "MIN"}, {2 << FRACBITS, "MAX"}, {0, NULL}};
+consvar_t cv_midichorus = CVAR_INIT ("midichorus", "1", "Controls the chorus of MIDI playback; setting this too high might cause some instruments to be overexposed", CV_CALL|CV_SAVE|CV_FLOAT, chorus_const_t, MidiChorus_OnChange);
+static CV_PossibleValue_t reverb_const_t[] = {{0, "MIN"}, {FRACUNIT, "MAX"}, {0, NULL}};
+consvar_t cv_midireverb = CVAR_INIT ("midireverb", "0.8", "Controls the reverb of MIDI playback; setting this too high might cause notes to be drawn out", CV_CALL|CV_SAVE|CV_FLOAT, reverb_const_t, MidiReverb_OnChange);
 #endif
 
 //FIXME: this is not how it should be lol
@@ -1091,18 +1093,38 @@ void I_SetSfxVolume(UINT8 volume)
 /// Music System
 /// ------------------------
 
+static void LogFluidMessage(int level, const char *message, void *data)
+{
+	(void)data;
+	switch (level)
+	{
+		case FLUID_WARN:
+			CONS_Alert(CONS_WARNING, "%s\n", message);
+			break;
+		case FLUID_ERR:
+		case FLUID_PANIC:
+			CONS_Alert(CONS_ERROR, "%s\n", message);
+			break;
+	}
+}
+
 void I_InitMusic(void)
 {
 #ifdef HAVE_FLUIDSYNTH
 	if (synth == NULL)
 	{
+		fluid_set_log_function(FLUID_DBG, NULL, NULL);
+		fluid_set_log_function(FLUID_INFO, NULL, NULL);
+		fluid_set_log_function(FLUID_WARN, LogFluidMessage, NULL);
+		fluid_set_log_function(FLUID_ERR, LogFluidMessage, NULL);
+		fluid_set_log_function(FLUID_PANIC, LogFluidMessage, NULL);
 		synth_settings = new_fluid_settings();
 		fluid_settings_setnum(synth_settings, "synth.gain", 1.0f);
 		fluid_settings_setnum(synth_settings, "synth.sample-rate", virtual_spec.freq);
-		fluid_settings_setnum(synth_settings, "synth.chorus.active", cv_midichorus.value > 0);
-		fluid_settings_setnum(synth_settings, "synth.chorus.level", cv_midichorus.value);
-		fluid_settings_setnum(synth_settings, "synth.reverb.active", cv_midireverb.value > 0);
-		fluid_settings_setnum(synth_settings, "synth.reverb.level", cv_midireverb.value);
+		fluid_settings_setint(synth_settings, "synth.chorus.active", cv_midichorus.value > 0);
+		fluid_settings_setnum(synth_settings, "synth.chorus.level", FixedToFloat(cv_midichorus.value));
+		fluid_settings_setint(synth_settings, "synth.reverb.active", cv_midireverb.value > 0);
+		fluid_settings_setnum(synth_settings, "synth.reverb.level", FixedToFloat(cv_midireverb.value));
 		synth = new_fluid_synth(synth_settings);
 		if (synth == NULL)
 		{
