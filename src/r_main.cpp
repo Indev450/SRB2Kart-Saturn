@@ -1111,7 +1111,7 @@ static void R_SetupCommonFrame(player_t * player)
 static void R_SetupAimingFrame(player_t *player, camera_t *thiscam)
 {
 	if (player->awayviewtics && player->awayviewmobj
-	 && thiscam && !thiscam->freecam) // dont force this if we wanna freecam!
+	 && !(thiscam && thiscam->freecam)) // dont force this if we wanna freecam!
 	{
 		newview->aim = player->awayviewaiming;
 		newview->angle = player->awayviewmobj->angle;
@@ -1279,7 +1279,7 @@ void R_SetupFrame(UINT8 pnum, boolean skybox)
 	R_SetupAimingFrame(player, thiscam);
 
 	if (player->awayviewtics && player->awayviewmobj // cut-away view stuff
-	 && thiscam && !thiscam->freecam) // dont force this when we wanna freecam!
+	 && !(thiscam && thiscam->freecam)) // dont force this when we wanna freecam!
 	{
 		viewmobj = player->awayviewmobj; // should be a MT_ALTVIEWMAN      whos altview man?
 		I_Assert(viewmobj != NULL);
