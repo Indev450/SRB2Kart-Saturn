@@ -4806,6 +4806,9 @@ static void M_DrawReplayStartMenu(void)
 
 void M_ResetDemoList(void)
 {
+	Lock_search_state();
+	replaynamesloaded = false;
+
 	Z_Free(demolist_all);
 	demolist_all = NULL;
 
@@ -4813,6 +4816,8 @@ void M_ResetDemoList(void)
 	demolist = NULL;
 
 	demo.inreplayhut = false;
+
+	Unlock_search_state();
 }
 
 static boolean M_QuitReplayHut(void)
