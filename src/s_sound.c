@@ -273,6 +273,12 @@ void S_RegisterSoundStuff(void)
 	CV_RegisterVar(&cv_gamesounds);
 	CV_RegisterVar(&cv_gamedigimusic);
 
+#ifdef HAVE_FLUIDSYNTH
+	CV_RegisterVar(&cv_midisoundfontpath);
+	CV_RegisterVar(&cv_midichorus);
+	CV_RegisterVar(&cv_midireverb);
+#endif
+
 	CV_RegisterVar(&cv_samesoundlimit);
 
 	// bird music stuff

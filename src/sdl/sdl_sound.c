@@ -131,7 +131,27 @@ static void MidiSoundfontPath_Onchange(void)
 	SDL_UnlockAudioStream(audio_stream);
 }
 
+static void MidiChorus_OnChange(void)
+{
+	if (synth_settings != NULL)
+	{
+		fluid_settings_setnum(synth_settings, "synth.chorus.active", cv_midichorus.value > 0);
+		fluid_settings_setnum(synth_settings, "synth.chorus.level", FixedToFloat(cv_midichorus.value));
+	}
+}
+
+static void MidiReverb_OnChange(void)
+{
+	if (synth_settings != NULL)
+	{
+		fluid_settings_setnum(synth_settings, "synth.reverb.active", cv_midireverb.value > 0);
+		fluid_settings_setnum(synth_settings, "synth.reverb.level", FixedToFloat(cv_midireverb.value));
+	}
+}
+
 consvar_t cv_midisoundfontpath = CVAR_INIT ("midisoundfont", "sf2/GeneralUser-GS.sf2", "Which MIDI soundfont to use", CV_CALL|CV_NOINIT|CV_SAVE, NULL, MidiSoundfontPath_Onchange);
+consvar_t cv_midichorus = CVAR_INIT ("midichorus", "1", "Controls the chorus level of MIDI playback; setting this too high might cause some instruments to be overexposed", CV_CALL|CV_SAVE|CV_FLOAT, CV_Unsigned, MidiChorus_OnChange);
+consvar_t cv_midireverb = CVAR_INIT ("midireverb", "1", "Controls the reverb level of MIDI playback; setting this too high might cause notes to be drawn out", CV_CALL|CV_SAVE|CV_FLOAT, CV_Unsigned, MidiReverb_OnChange);
 #endif
 
 //FIXME: this is not how it should be lol
@@ -1079,8 +1099,10 @@ void I_InitMusic(void)
 		synth_settings = new_fluid_settings();
 		fluid_settings_setnum(synth_settings, "synth.gain", 1.0f);
 		fluid_settings_setnum(synth_settings, "synth.sample-rate", virtual_spec.freq);
-		fluid_settings_setnum(synth_settings, "synth.chorus.level", 0.0f);
-		fluid_settings_setnum(synth_settings, "synth.reverb.level", 0.0f);
+		fluid_settings_setnum(synth_settings, "synth.chorus.active", cv_midichorus.value > 0);
+		fluid_settings_setnum(synth_settings, "synth.chorus.level", cv_midichorus.value);
+		fluid_settings_setnum(synth_settings, "synth.reverb.active", cv_midireverb.value > 0);
+		fluid_settings_setnum(synth_settings, "synth.reverb.level", cv_midireverb.value);
 		synth = new_fluid_synth(synth_settings);
 		if (synth == NULL)
 		{
