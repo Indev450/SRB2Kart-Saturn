@@ -70,9 +70,6 @@ UINT8 botcolor = 0;
 
 JoyType_t Joystick[MAXSPLITSCREENPLAYERS] = {};
 
-// 1024 bytes is plenty for a savegame
-#define SAVEGAMESIZE (1024)
-
 // SRB2kart
 char gamedatafilename[64] = "kartdata.dat";
 char timeattackfolder[64] = "kart";
@@ -3849,7 +3846,7 @@ void G_SaveGame(UINT32 savegameslot)
 		char name[VERSIONSIZE];
 		size_t length;
 
-		save.p = save.buffer = (UINT8 *)Z_Malloc(SAVEGAMESIZE, PU_STATIC, NULL);
+		save.p = save.buffer = (UINT8 *)Z_Malloc(1024, PU_STATIC, NULL); // 1024 bytes is plenty for a savegame
 		if (!save.p)
 		{
 			CONS_Alert(CONS_ERROR, M_GetText("No more free memory for saving game data\n"));
