@@ -4804,7 +4804,6 @@ static void PT_ClientJoin(SINT8 node)
 		}
 	}
 
-
 #ifdef SATURNJOIN
 	const boolean issaturn = (((doomcom->datalength) == sizeof(clientconfig_pak)) && netbuffer->u.clientcfg.issaturn == ISSATURN); // Check the packet lenght to skip potential garbo data!
 #endif
@@ -5425,19 +5424,17 @@ static void HandlePacketFromAwayNode(SINT8 node)
 		case PT_NEEDMAPICON:
 			PT_NeedMapIcon(node);
 			break;
-		case PT_CLIENTJOIN:
-			PT_ClientJoin(node);
-			break;
 		case PT_SERVERSHUTDOWN:
 			PT_ServerShutdown(node);
 			break;
-
+		case PT_CLIENTJOIN:
+			PT_ClientJoin(node);
+			break;
 		case PT_SERVERTICS:
 			// Do not remove my own server (we have just get a out of order packet)
 			if (node == servernode)
 				break;
 			/* FALLTHRU */
-
 		default:
 			DEBFILE(va("unknown packet received (%d) from unknown host\n", netbuffer->packettype));
 			Net_CloseConnection(node);
@@ -5994,6 +5991,14 @@ static void HandlePacketFromPlayer(SINT8 node)
 		case PT_CLIENTQUIT:
 			PT_ClientQuit(netconsole, node);
 			break;
+#ifdef SATURNPAK
+		case PT_CANRECEIVEGAMESTATE:
+			PT_CanReceiveGamestate(node);
+			break;
+		case PT_RECEIVEDGAMESTATE:
+			PT_ReceivedGamestate(node);
+			break;
+#endif
 		case PT_SERVERINFO:
 			PT_ServerInfo(node);
 			break;
@@ -6007,18 +6012,11 @@ static void HandlePacketFromPlayer(SINT8 node)
 		case PT_PING:
 			PT_Ping(node);
 			break;
-		case PT_SERVERCFG:
-			break;
+
 		case PT_FILEFRAGMENT:
 			PT_FileFragmentFromPlayer(node);
 			break;
 #ifdef SATURNPAK
-		case PT_CANRECEIVEGAMESTATE:
-			PT_CanReceiveGamestate(node);
-			break;
-		case PT_RECEIVEDGAMESTATE:
-			PT_ReceivedGamestate(node);
-			break;
 		case PT_WILLRESENDGAMESTATE:
 			PT_WillResendGamestate();
 			break;
@@ -6027,11 +6025,13 @@ static void HandlePacketFromPlayer(SINT8 node)
 			is_client_saturn[node] = true;
 			break;
 #endif
-		case PT_CLIENTJOIN:
-			PT_ClientJoin(node);
-			break;
 		case PT_SERVERSHUTDOWN:
 			PT_ServerShutdown(node);
+			break;
+		case PT_SERVERCFG:
+			break;
+		case PT_CLIENTJOIN:
+			PT_ClientJoin(node);
 			break;
 		case PT_RESYNCHING:
 			PT_Resynching(node);
