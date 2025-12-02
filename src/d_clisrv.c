@@ -4520,7 +4520,7 @@ static void Got_AddPlayer(const UINT8 **p, INT32 playernum)
 
 		P_ForceLocalAngle(&players[newplayernum], (angle_t)(players[newplayernum].cmd.angleturn << TICCMD_REDUCE));
 
-		D_SendPlayerConfig();
+		D_SendPlayerConfig(splitscreenplayer);
 		addedtogame = true;
 	}
 
