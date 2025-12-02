@@ -4746,17 +4746,6 @@ void SV_StartSinglePlayerServer(void)
 		multiplayer = true;
 }
 
-static void SV_SendRefuse(INT32 node, const char *reason)
-{
-	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
-
-	strcpy(netbuffer->u.serverrefuse.reason, reason);
-
-	netbuffer->packettype = PT_SERVERREFUSE;
-	HSendPacket(node, false, 0, strlen(netbuffer->u.serverrefuse.reason) + 1);
-	Net_CloseConnection(node);
-}
-
 // used at txtcmds received to check packetsize bound
 static size_t TotalTextCmdPerTic(tic_t tic)
 {
@@ -4773,18 +4762,24 @@ static size_t TotalTextCmdPerTic(tic_t tic)
 	return total;
 }
 
-/** Called when a PT_CLIENTJOIN packet is received
-  *
-  * \param node The packet sender
-  *
-  */
-static void PT_ClientJoin(SINT8 node)
+static void SV_SendRefuse(INT32 node, const char *reason)
 {
-	// Ignore duplicate packets
-	if (client || nodeingame[node] || levelloading)
-		return;
-
 	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
+
+	strcpy(netbuffer->u.serverrefuse.reason, reason);
+
+	netbuffer->packettype = PT_SERVERREFUSE;
+	HSendPacket(node, false, 0, strlen(netbuffer->u.serverrefuse.reason) + 1);
+	Net_CloseConnection(node);
+}
+
+static const char *GetRefuseMessage(SINT8 node)
+{
+	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
+	clientconfig_pak *cc = &netbuffer->u.clientcfg;
+
+	if (!node) /* server connecting to itself */
+		return NULL;
 
 	// Sal: Dedicated mode is INCREDIBLY hacked together.
 	// If a server filled out, then it'd overwrite the host and turn everyone into weird husks.....
@@ -4805,7 +4800,7 @@ static void PT_ClientJoin(SINT8 node)
 	}
 
 #ifdef SATURNJOIN
-	const boolean issaturn = (((doomcom->datalength) == sizeof(clientconfig_pak)) && netbuffer->u.clientcfg.issaturn == ISSATURN); // Check the packet lenght to skip potential garbo data!
+	const boolean issaturn = (((doomcom->datalength) == sizeof(clientconfig_pak)) && (cc->issaturn == ISSATURN)); // Check the packet length to skip garbo data!
 #endif
 
 	if (bannednode && bannednode[node].banid != SIZE_MAX)
@@ -4818,47 +4813,44 @@ static void PT_ClientJoin(SINT8 node)
 
 		if (bannednode[node].timeleft != NO_BAN_TIME)
 		{
-			 // these are fudged a little to allow it to sink in for impatient rejoiners
+			// these are fudged a little to allow it to sink in for impatient rejoiners
 			int minutes = (bannednode[node].timeleft + 30) / 60;
 			int hours = (minutes + 1) / 60;
 			int days = (hours + 1) / 24;
 
 			if (days)
 			{
-				SV_SendRefuse(node, va("K|%s\n(Time remaining: %d day%s)", reason, days, days > 1 ? "s" : ""));
+				return va("K|%s\n(Time remaining: %d day%s)", reason, days, days > 1 ? "s" : "");
 			}
 			else if (hours)
 			{
-				SV_SendRefuse(node, va("K|%s\n(Time remaining: %d hour%s)", reason, hours, hours > 1 ? "s" : ""));
+				return va("K|%s\n(Time remaining: %d hour%s)", reason, hours, hours > 1 ? "s" : "");
 			}
 			else if (minutes)
 			{
-				SV_SendRefuse(node, va("K|%s\n(Time remaining: %d minute%s)", reason, minutes, minutes > 1 ? "s" : ""));
+				return va("K|%s\n(Time remaining: %d minute%s)", reason, minutes, minutes > 1 ? "s" : "");
 			}
 			else
 			{
-				SV_SendRefuse(node, va("K|%s\n(Time remaining: <1 minute)", reason));
+				return va("K|%s\n(Time remaining: <1 minute)", reason);
 			}
 		}
 		else
 		{
-			SV_SendRefuse(node, va("B|%s", reason));
+			return va("B|%s", reason);
 		}
 	}
-	else if (netbuffer->u.clientcfg._255 != 255 ||
-			netbuffer->u.clientcfg.packetversion != PACKETVERSION)
+	else if (cc->_255 != 255 || cc->packetversion != PACKETVERSION)
 	{
-		SV_SendRefuse(node, "Incompatible packet formats.");
+		return "Incompatible packet formats.";
 	}
-	else if (strncmp(netbuffer->u.clientcfg.application, SRB2APPLICATION,
-				sizeof netbuffer->u.clientcfg.application))
+	else if (strncmp(cc->application, SRB2APPLICATION, sizeof(cc->application)))
 	{
-		SV_SendRefuse(node, "Different SRB2Kart modifications\nare not compatible.");
+		return "Different SRB2Kart modifications\nare not compatible.";
 	}
-	else if (netbuffer->u.clientcfg.version != VERSION
-		|| netbuffer->u.clientcfg.subversion != SUBVERSION)
+	else if (cc->version != VERSION || cc->subversion != SUBVERSION)
 	{
-		SV_SendRefuse(node, va("Different SRB2Kart versions cannot\nplay a netgame!\n(server version %d.%d)", VERSION, SUBVERSION));
+		return va("Different SRB2Kart versions cannot\nplay a netgame!\n(server version %d.%d)", VERSION, SUBVERSION);
 	}
 #ifdef SATURNJOIN
 	else if (((!cv_allownewplayer.value && !issaturn) || (!cv_allownewsaturnplayer.value && issaturn)) && node)
@@ -4866,65 +4858,89 @@ static void PT_ClientJoin(SINT8 node)
 	else if (!cv_allownewplayer.value && node)
 #endif
 	{
-		SV_SendRefuse(node, cv_joinrefusemessage.string);
+		return cv_joinrefusemessage.string;
 	}
 	else if (connectedplayers >= maxplayers)
 	{
-		SV_SendRefuse(node, va("Maximum players reached: %d", maxplayers));
+		return va("Maximum players reached: %d", maxplayers);
 	}
-	else if (netgame && netbuffer->u.clientcfg.localplayers > 4) // Hacked client?
+	else if (cc->localplayers != 1)
 	{
-		SV_SendRefuse(node, "Too many players from\nthis node.");
+		return "Wrong player count.";
 	}
-	else if (netgame && connectedplayers + netbuffer->u.clientcfg.localplayers > maxplayers)
+	else if (netgame && !cc->localplayers) // Stealth join?
 	{
-		SV_SendRefuse(node, va("Number of local players\nwould exceed maximum: %d", maxplayers));
+		return "No players from\nthis node.";
 	}
-	else if (netgame && !netbuffer->u.clientcfg.localplayers) // Stealth join?
+	else if (netgame && cc->localplayers > 4) // Hacked client?
 	{
-		SV_SendRefuse(node, "No players from\nthis node.");
+		return "Too many players from\nthis node.";
 	}
-	else
+	else if (netgame && connectedplayers + cc->localplayers > maxplayers)
 	{
-		// client authorised to join
-		nodewaiting[node] = (UINT8)(netbuffer->u.clientcfg.localplayers - playerpernode[node]);
+		return va("Number of local players\nwould exceed maximum: %d", maxplayers);
+	}
 
-		gamestate_t backupstate = gamestate;
+	return NULL;
+}
 
-		SV_AddNode(node);
+/** Called when a PT_CLIENTJOIN packet is received
+  *
+  * \param node The packet sender
+  *
+  */
+static void PT_ClientJoin(SINT8 node)
+{
+	// Ignore duplicate packets
+	if (client || nodeingame[node] || levelloading)
+		return;
 
-		/// \note Wait what???
-		///       What if the gamestate takes more than one second to get downloaded?
-		///       Or if a lagspike happens?
-		// you get a free second before desynch checks. use it wisely.
-		SV_InitResynchVars(node);
+	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
 
-		if (!SV_SendServerConfig(node))
-		{
-			G_SetGamestate(backupstate);
-			/// \note Shouldn't SV_SendRefuse be called before ResetNode?
-			SV_SendRefuse(node, "Server couldn't send info, please try again");
-			ResetNode(node); // Yeah, lets try it!
-			/// \todo fix this !!!
-			return; // restart the while
-		}
+	const char *refuse = GetRefuseMessage(node);
 
-		SV_SendServerInfo(node, 0); // Dunno if 0 time is good idea
-		//if (gamestate != GS_LEVEL) // GS_INTERMISSION, etc?
-		//	SV_SendPlayerConfigs(node); // send bare minimum player info
+	if (refuse)
+	{
+		SV_SendRefuse(node, refuse);
+		return;
+	}
+
+	// client authorised to join
+	nodewaiting[node] = (UINT8)(netbuffer->u.clientcfg.localplayers - playerpernode[node]);
+
+	gamestate_t backupstate = gamestate;
+
+	SV_AddNode(node);
+
+	/// \note Wait what???
+	///       What if the gamestate takes more than one second to get downloaded?
+	///       Or if a lagspike happens?
+	// you get a free second before desynch checks. use it wisely.
+	SV_InitResynchVars(node);
+
+	if (!SV_SendServerConfig(node))
+	{
 		G_SetGamestate(backupstate);
-		DEBFILE("new node joined\n");
+		/// \note Shouldn't SV_SendRefuse be called before ResetNode?
+		SV_SendRefuse(node, "Server couldn't send info, please try again");
+		ResetNode(node); // Yeah, lets try it!
+		/// \todo fix this !!!
+		return; // restart the while
+	}
 
-		if (nodewaiting[node])
+	SV_SendServerInfo(node, 0); // Dunno if 0 time is good idea
+	G_SetGamestate(backupstate);
+	DEBFILE("new node joined\n");
+
+	if (nodewaiting[node])
+	{
+		if (node)
 		{
-			if (node)
-			{
-				SV_SendSaveGame(node, false); // send a complete game state
-				DEBFILE("send savegame\n");
-			}
-
-			SV_AddWaitingPlayers(node);
+			SV_SendSaveGame(node, false); // send a complete game state
+			DEBFILE("send savegame\n");
 		}
+
+		SV_AddWaitingPlayers(node);
 	}
 }
 
