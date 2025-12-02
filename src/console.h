@@ -52,6 +52,7 @@ void CON_ClearHUD(void); // clear heads up messages
 
 void CON_Ticker(void);
 void CON_Drawer(void);
+void CON_MoveConsole(void);
 void CONS_Error(const char *msg); // print out error msg, and wait a key
 
 // force console to move out
