@@ -687,8 +687,7 @@ void T_ContinuousFalling(levelspecthink_t *faller)
 // P_SectorCheckWater
 //
 // Like P_MobjCheckWater, but takes a sector instead of a mobj.
-static fixed_t P_SectorCheckWater(sector_t *analyzesector,
-	sector_t *elevatorsec)
+static fixed_t P_SectorCheckWater(sector_t *analyzesector, sector_t *elevatorsec)
 {
 	fixed_t watertop;
 
