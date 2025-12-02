@@ -109,7 +109,7 @@ typedef enum
 } gamecontrols_e;
 
 // mouse values are used once
-extern consvar_t cv_mousesens, cv_mouseysens;
+extern consvar_t cv_mousexsens, cv_mouseysens;
 extern consvar_t cv_controlperkey;
 extern consvar_t cv_turnsmooth[MAXSPLITSCREENPLAYERS];
 extern consvar_t cv_rumble[MAXSPLITSCREENPLAYERS];
@@ -117,7 +117,6 @@ extern consvar_t cv_rumblestrength[MAXSPLITSCREENPLAYERS];
 extern consvar_t cv_gamepadled[MAXSPLITSCREENPLAYERS];
 
 extern INT32 mousex, mousey;
-extern INT32 mlooky; //mousey with mlookSensitivity
 
 extern INT32 joyxmove[MAXSPLITSCREENPLAYERS][JOYAXISSET], joyymove[MAXSPLITSCREENPLAYERS][JOYAXISSET];
 

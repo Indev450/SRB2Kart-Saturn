@@ -4809,6 +4809,9 @@ static void M_DrawReplayStartMenu(void)
 
 void M_ResetDemoList(void)
 {
+	Lock_search_state();
+	replaynamesloaded = false;
+
 	Z_Free(demolist_all);
 	demolist_all = NULL;
 
@@ -4816,6 +4819,8 @@ void M_ResetDemoList(void)
 	demolist = NULL;
 
 	demo.inreplayhut = false;
+
+	Unlock_search_state();
 }
 
 static boolean M_QuitReplayHut(void)
@@ -9497,14 +9502,6 @@ static void M_ChangecontrolResponse(event_t *ev)
 			// replace mouse and joy clicks by double clicks
 			if (ch >= KEY_MOUSE1 && ch <= KEY_MOUSE1+MOUSEBUTTONS)
 				setupcontrols[control][found] = ch-KEY_MOUSE1+KEY_DBLMOUSE1;
-			else if (ch >= KEY_JOY1 && ch <= KEY_JOY1+JOYBUTTONS)
-				setupcontrols[control][found] = ch-KEY_JOY1+KEY_DBLJOY1;
-			else if (ch >= KEY_2JOY1 && ch <= KEY_2JOY1+JOYBUTTONS)
-				setupcontrols[control][found] = ch-KEY_2JOY1+KEY_DBL2JOY1;
-			else if (ch >= KEY_3JOY1 && ch <= KEY_3JOY1+JOYBUTTONS)
-				setupcontrols[control][found] = ch-KEY_3JOY1+KEY_DBL3JOY1;
-			else if (ch >= KEY_4JOY1 && ch <= KEY_4JOY1+JOYBUTTONS)
-				setupcontrols[control][found] = ch-KEY_4JOY1+KEY_DBL4JOY1;
 		}
 		else
 		{

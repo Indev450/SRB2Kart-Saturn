@@ -800,7 +800,7 @@ static menuitem_t OP_MouseOptionsMenu[] =
 
 	{IT_STRING | IT_CVAR,                NULL, "Mouse Turning",  &cv_mouseturn,    20},
 	{IT_STRING | IT_CVAR,                NULL, "Invert Mouse",   &cv_invertmouse,  30},
-	{IT_STRING | IT_CVAR | IT_CV_SLIDER, NULL, "Mouse X Speed",  &cv_mousesens,    40},
+	{IT_STRING | IT_CVAR | IT_CV_SLIDER, NULL, "Mouse X Speed",  &cv_mousexsens,    40},
 	{IT_STRING | IT_CVAR | IT_CV_SLIDER, NULL, "Mouse Y Speed",  &cv_mouseysens,   50},
 };
 
@@ -1970,47 +1970,46 @@ static menuitem_t OP_HudOffsetMenu[] =
 // absolutely crazy how many people put work into this at this point <3
 static menuitem_t OP_SaturnCreditsMenu[] =
 {
+	// in no particular order besides me and indev <3
 	{IT_HEADER, NULL, "Thanks to all contributers <3", 									NULL,       0},
 
-	{IT_STRING2+IT_SPACE, NULL, 	"Alug",      										NULL, 	   10},
-	{IT_STRING2+IT_SPACE, NULL, 	"Indev",        									NULL,      20},
-	{IT_STRING2+IT_SPACE, NULL, 	"Haya",       										NULL,      30},
-	{IT_STRING2+IT_SPACE, NULL, 	"Nepdisk", 		 									NULL, 	   40},
-	{IT_STRING2+IT_SPACE, NULL, 	"GenericHeroGuy", 		 							NULL, 	   50},
-	{IT_STRING2+IT_SPACE, NULL, 	"xyzzy",     										NULL, 	   60},
-	{IT_STRING2+IT_SPACE, NULL, 	"Chearii", 		 									NULL, 	   70},
-	{IT_STRING2+IT_SPACE, NULL, 	"riomccloud", 		 								NULL, 	   80},
-	{IT_STRING2+IT_SPACE, NULL, 	"chromaticpipe", 		 							NULL, 	   90},
-	{IT_STRING2+IT_SPACE, NULL, 	"PAS", 		 										NULL, 	  100},
-	{IT_STRING2+IT_SPACE, NULL, 	"$HOME", 		 									NULL, 	  110},
-	{IT_STRING2+IT_SPACE, NULL, 	"Achii", 		 									NULL, 	  120},
-	{IT_STRING2+IT_SPACE, NULL, 	"Anonimus", 		 								NULL, 	  130},
-	{IT_STRING2+IT_SPACE, NULL, 	"scizor300", 		 								NULL, 	  140},
-	{IT_STRING2+IT_SPACE, NULL, 	"Lugent", 		 									NULL, 	  150},
+	{IT_STRING2+IT_SPACE, NULL, 	"Alug    Indev",      								NULL, 	   10},
+	{IT_STRING2+IT_SPACE, NULL, 	"Haya    Nepdisk",       							NULL,      20},
+	{IT_STRING2+IT_SPACE, NULL, 	"GenericHeroGuy    xyzzy", 		 					NULL, 	   30},
+	{IT_STRING2+IT_SPACE, NULL, 	"Chearii    riomccloud", 		 					NULL, 	   40},
+	{IT_STRING2+IT_SPACE, NULL, 	"chromaticpipe    PAS", 		 					NULL, 	   50},
+	{IT_STRING2+IT_SPACE, NULL, 	"$HOME    yama", 		 							NULL, 	   60},
+	{IT_STRING2+IT_SPACE, NULL, 	"Achii    scizor300", 		 						NULL, 	   70},
+	{IT_STRING2+IT_SPACE, NULL, 	"Superjustinbros    Lugent", 		 				NULL, 	   80},
 
-	{IT_HEADER, 		  NULL, 	"", 												NULL,     124},
+	{IT_HEADER, 		  NULL, 	"", 												NULL,      74},
 
-	{IT_STRING2+IT_SPACE, NULL, 	"Sunflower	Yuz", 		 							NULL, 	  180},
-	{IT_STRING2+IT_SPACE, NULL, 	"Democrab	EXpand", 		  						NULL, 	  190},
-	{IT_STRING2+IT_SPACE, NULL, 	"Nexit	Spee", 		  								NULL, 	  200},
-	{IT_STRING2+IT_SPACE, NULL, 	"jin", 		 										NULL, 	  210},
+	{IT_STRING2+IT_SPACE, NULL, 	"Sunflower    Yuz", 		 						NULL, 	  110},
+	{IT_STRING2+IT_SPACE, NULL, 	"Democrab    EXpand", 		  						NULL, 	  120},
+	{IT_STRING2+IT_SPACE, NULL, 	"Nexit    Spee", 		  							NULL, 	  130},
+	{IT_STRING2+IT_SPACE, NULL, 	"jin    Mompi", 		 							NULL, 	  140},
+	{IT_STRING2+IT_SPACE, NULL, 	"Phoenix", 		 									NULL, 	  150},
 
-	{IT_HEADER, 		  NULL, 	"Special Thanks <3", 								NULL,     168},
+	{IT_HEADER, 		  NULL, 	"Special Thanks <3", 								NULL,     130},
 
-	{IT_STRING2+IT_SPACE, NULL,		"All of Sunflower's Garden",	      				NULL,     178},
-	{IT_STRING2+IT_SPACE, NULL, 	"The Moe Mansion and Birdhouse Team",       		NULL,     188},
-	{IT_STRING2+IT_SPACE, NULL, 	"Galactice for Galaxy",       						NULL,     198},
+	{IT_STRING2+IT_SPACE, NULL,		"All of Sunflower's Garden",	      				NULL,     140},
+	{IT_STRING2+IT_SPACE, NULL, 	"Blankart",       									NULL,     150},
+	{IT_STRING2+IT_SPACE, NULL, 	"SRB2 Legacy",       								NULL,     160},
+	{IT_STRING2+IT_SPACE, NULL, 	"SRB2 Classic",       								NULL,     170},
+	{IT_STRING2+IT_SPACE, NULL, 	"The Moe Mansion and Birdhouse Team",       		NULL,     180},
+	{IT_STRING2+IT_SPACE, NULL, 	"Galactice for Galaxy",       						NULL,     190},
 
-	{IT_STRING+IT_SPACE, NULL, "", 														NULL,     198},	// dummy text I
-	{IT_STRING, NULL, "", 																NULL,     258},	// dummy text II
+	{IT_STRING+IT_SPACE, NULL, "", 														NULL,     228}, // dummy text I
+	{IT_STRING, NULL, "", 																NULL,     278}, // dummy text II
 };
 
-// sry we dont have space for this anymore :c
-/*static const char* OP_CreditTooltips[] =
+// sry we dont have space for this anymore :c < now we have again, for now..... TODO: finally stop being a lazy ass and make a cool credits screen
+static const char* OP_CreditTooltips[] =
 {
-	NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,
+	// this sucks lol note to self: we need as many NULLs as we have entries in OP_SaturnCreditsMenu - 1
+	NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,
 	"Thanks everyone! <3"
-};*/
+};
 
 
 static menuitem_t OP_BirdMenu[] =
@@ -2617,7 +2616,7 @@ menu_t OP_EraseDataDef         = DEFAULTMENUSTYLE("M_DATA", OP_EraseDataMenu, &O
 menu_t OP_AccessibilityDef     = DEFAULTSCROLLSTYLE(NULL, OP_AccessibilityMenu, &OP_MainDef, 30, 30, OP_AccessibilityTooltips);
 
 menu_t OP_SaturnDef        = DEFAULTSCROLLSTYLE(NULL, OP_SaturnMenu, &OP_MainDef, 30, 30, OP_SaturnTooltips);
-menu_t OP_SaturnCreditsDef = DEFAULTMENUSTYLE(NULL, OP_SaturnCreditsMenu, &OP_SaturnDef, 30, 0, NULL); // OP_CreditTooltips no space :c
+menu_t OP_SaturnCreditsDef = DEFAULTMENUSTYLE(NULL, OP_SaturnCreditsMenu, &OP_SaturnDef, 30, 2, OP_CreditTooltips); // OP_CreditTooltips no space :c
 
 menu_t OP_SaturnHudDef     = DEFAULTSCROLLSTYLE(NULL, OP_SaturnHudMenu, &OP_SaturnDef, 30, 30, OP_SaturnHudTooltips);
 menu_t OP_PlayerDistortDef = DEFAULTSCROLLSTYLE("M_VIDEO", OP_PlayerDistortMenu, &OP_SaturnDef, 30, 30, OP_PlayerDistortTooltips);

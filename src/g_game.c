@@ -662,7 +662,7 @@ INT16 G_ClipAimingPitch(INT32 *aiming)
 	else if (*aiming < -limitangle)
 		*aiming = -limitangle;
 
-	return (INT16)((*aiming)>>16);
+	return (INT16)((*aiming) >> TICCMD_REDUCE);
 }
 
 INT16 G_SoftwareClipAimingPitch(INT32 *aiming)
@@ -675,7 +675,7 @@ INT16 G_SoftwareClipAimingPitch(INT32 *aiming)
 	else if (*aiming < -limitangle)
 		*aiming = -limitangle;
 
-	return (INT16)((*aiming)>>16);
+	return (INT16)((*aiming) >> TICCMD_REDUCE);
 }
 
 INT32 JoyAxis(axis_input_e axissel, UINT8 player)
@@ -959,7 +959,7 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 	// Kart, don't build a ticcmd if someone is resynching or the server is stopped too so we don't fly off course in bad conditions
 	if (paused || P_AutoPause() || (gamestate == GS_LEVEL && player->playerstate == PST_REBORN) || hu_resynching)
 	{
-		cmd->angleturn = (INT16)(lang >> 16);
+		cmd->angleturn = (INT16)(lang >> TICCMD_REDUCE);
 		cmd->aiming = G_ClipAimingPitch(&laim);
 		return;
 	}
@@ -967,7 +967,7 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 	// dumbass thing so we can use a few buttons but dont accidentally drive away
 	if (player->spectator || freecam)
 	{
-		cmd->angleturn = (INT16)(lang >> 16);
+		cmd->angleturn = (INT16)(lang >> TICCMD_REDUCE);
 		G_BuildLocalTiccmd(cmd, ssplayer, freecam);
 
 		// let lua override everything
@@ -1127,7 +1127,7 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 
 	cmd->aiming = G_ClipAimingPitch(&laim);
 
-	mousex = mousey = mlooky = 0;
+	mousex = mousey = 0;
 
 	if (forward > MAXPLMOVE)
 		forward = MAXPLMOVE;
@@ -1166,10 +1166,10 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 		|| (leveltime > starttime && (cmd->buttons & BT_ACCELERATE && cmd->buttons & BT_BRAKE)) // Rubber-burn turn
 		|| (player->kartstuff[k_respawn]) // Respawning
 		|| (player->spectator || objectplacing))) // Not a physical player
-		lang += (cmd->angleturn<<16);
+		lang += (cmd->angleturn << TICCMD_REDUCE);
 
-	cmd->angleturn = (INT16)(lang >> 16);
-	cmd->latency = modeattacking ? 0 : (leveltime & 0xFF); // Send leveltime when this tic was generated to the server for control lag calculations
+	cmd->angleturn = (INT16)(lang >> TICCMD_REDUCE);
+	cmd->latency = modeattacking ? 0 : (leveltime & TICCMD_LATENCYMASK); // Send leveltime when this tic was generated to the server for control lag calculations
 
 	if (!hu_stopped)
 	{
@@ -1877,7 +1877,7 @@ void G_Ticker(boolean run)
 			G_CopyTiccmd(cmd, &netcmds[buf][i], 1);
 
 			// Use the leveltime sent in the player's ticcmd to determine control lag
-			cmd->latency = modeattacking ? 0 : min(((leveltime & 0xFF) - cmd->latency) & 0xFF, MAXPREDICTTICS-1); //@TODO add a cvar to allow setting this max
+			cmd->latency = modeattacking ? 0 : min(((leveltime & TICCMD_LATENCYMASK) - cmd->latency) & TICCMD_LATENCYMASK, MAXPREDICTTICS-1); //@TODO add a cvar to allow setting this max
 		}
 	}
 

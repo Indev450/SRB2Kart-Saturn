@@ -975,17 +975,6 @@ fixed_t P_GetPlayerSpinHeight(player_t *player)
 }
 
 //
-// P_GetLocalPlayerForNum
-//
-// Returns the player
-// on the local machine for given number.
-//
-player_t *P_GetLocalPlayerForNum(UINT8 pnum)
-{
-	return (&players[P_GetLocalPlayerNumForNum(pnum)]);
-}
-
-//
 // P_GetLocalPlayerNumForNum
 //
 // Returns the player number
@@ -994,6 +983,17 @@ player_t *P_GetLocalPlayerForNum(UINT8 pnum)
 INT32 P_GetLocalPlayerNumForNum(UINT8 pnum)
 {
 	return (pnum == 0 ? consoleplayer : displayplayers[pnum]);
+}
+
+//
+// P_GetLocalPlayerForNum
+//
+// Returns the player
+// on the local machine for given number.
+//
+player_t *P_GetLocalPlayerForNum(UINT8 pnum)
+{
+	return (&players[P_GetLocalPlayerNumForNum(pnum)]);
 }
 
 INT32 P_GetLocalPlayerNumForPlayer(const player_t *player)
@@ -1912,7 +1912,7 @@ static void P_3dMovement(player_t *player)
 
 	if (analogmove)
 	{
-		movepushangle = (cmd->angleturn<<16 /* not FRACBITS */);
+		movepushangle = (cmd->angleturn << TICCMD_REDUCE);
 	}
 	else
 	{
@@ -2072,7 +2072,7 @@ static void P_SpectatorMovement(player_t *player)
 {
 	ticcmd_t *cmd = &player->cmd;
 
-	player->mo->angle = (angle_t)(cmd->angleturn<<16 /* not FRACBITS */);
+	player->mo->angle = (angle_t)(cmd->angleturn << TICCMD_REDUCE);
 
 	ticruned++;
 	if (!(cmd->angleturn & TICCMD_RECEIVED))
@@ -2278,7 +2278,7 @@ static void P_MovePlayer(player_t *player)
 		{
 			// KART: Don't directly apply angleturn! It may have been either A) forged by a malicious client, or B) not be a smooth turn due to a player dropping frames.
 			// Instead, turn the player only up to the amount they're supposed to turn accounting for latency. Allow exactly 1 extra turn unit to try to keep old replays synced.
-			angle_diff = cmd->angleturn - (player->mo->angle>>16);
+			angle_diff = cmd->angleturn - (player->mo->angle >> TICCMD_REDUCE);
 			max_left_turn = player->lturn_max[(leveltime + MAXPREDICTTICS - cmd->latency) % MAXPREDICTTICS];
 			max_right_turn = player->rturn_max[(leveltime + MAXPREDICTTICS - cmd->latency) % MAXPREDICTTICS];
 
@@ -2291,18 +2291,18 @@ static void P_MovePlayer(player_t *player)
 			else
 			{
 				// Try to keep normal turning as accurate to 1.0.1 as possible to reduce replay desyncs.
-				player->mo->angle = cmd->angleturn<<16;
+				player->mo->angle = cmd->angleturn << TICCMD_REDUCE;
 				add_delta = false;
 			}
 			//CONS_Printf("applied turn: %d\n", angle_diff);
 
 			if (add_delta) {
-				player->mo->angle += angle_diff<<16;
+				player->mo->angle += angle_diff << TICCMD_REDUCE;
 				player->mo->angle &= ~0xFFFF; // Try to keep the turning somewhat similar to how it was before?
 				//CONS_Printf("leftover turn (%s): %5d or %4d%%\n",
 				//				player_names[player-players],
-				//				(INT16) (cmd->angleturn - (player->mo->angle>>16)),
-				//				(INT16) (cmd->angleturn - (player->mo->angle>>16)) * 100 / (angle_diff ? angle_diff : 1));
+				//				(INT16) (cmd->angleturn - (player->mo->angle >> TICCMD_REDUCE)),
+				//				(INT16) (cmd->angleturn - (player->mo->angle >> TICCMD_REDUCE)) * 100 / (angle_diff ? angle_diff : 1));
 			}
 		}
 
@@ -3167,7 +3167,7 @@ static ticcmd_t *P_CameraCmd(camera_t *cam, UINT8 num)
 	lang = cam->localangle;
 	laim = cam->localaiming;
 
-	cmd->angleturn = (INT16)(lang >> 16);
+	cmd->angleturn = (INT16)(lang >> TICCMD_REDUCE);
 	cmd->aiming = G_ClipAimingPitch(&laim);
 
 	const boolean analogjoystickmove = cv_usejoystick[num].value && !Joystick[num].bGamepadStyle;
@@ -3263,7 +3263,7 @@ static ticcmd_t *P_CameraCmd(camera_t *cam, UINT8 num)
 
 	axis = JoyAxis(AXISLOOK, forplayer);
 
-	laim += (mlooky<<19)*player_invert;
+	laim += (mousey<<19)*player_invert;
 
 	if (InputDown(gc_lookup, forplayer) || (usejoystick && axis < 0))
 	{
@@ -3302,7 +3302,7 @@ static ticcmd_t *P_CameraCmd(camera_t *cam, UINT8 num)
 		cmd->aiming = G_ClipAimingPitch(&laim);
 	}
 
-	mousex = mousey = mlooky = 0;
+	mousex = mousey = 0;
 
 	if (forward > MAXPLMOVE)
 		forward = MAXPLMOVE;
@@ -3320,7 +3320,7 @@ static ticcmd_t *P_CameraCmd(camera_t *cam, UINT8 num)
 		cmd->sidemove = (SINT8)(cmd->sidemove + side);
 	}
 
-	lang += (cmd->angleturn << 16);
+	lang += (cmd->angleturn << TICCMD_REDUCE);
 
 	cam->localangle = lang;
 	if (!cam->reset_aiming)
@@ -3350,7 +3350,7 @@ static void P_DemoCameraMovement(camera_t *cam, UINT8 num)
 		cam->aiming = cmd->aiming << FRACBITS;
 	}
 
-	cam->angle = cmd->angleturn << 16;
+	cam->angle = cmd->angleturn << TICCMD_REDUCE;
 
 	// camera movement:
 	if (!cam->button_a_held)
@@ -3830,7 +3830,7 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 		// Sometimes stale ticcmds send a weird angle at the start of the race.
 		// P_UpdatePlayerAngle knows to ignore cmd angle when you literally can't turn, so we do the same here.
 		if (cv_demoangturn.value && leveltime > starttime)
-			focusangle = player->cmd.angleturn << 16;
+			focusangle = player->cmd.angleturn << TICCMD_REDUCE;
 		else
 			focusangle = mo->angle; // Just use something known sane.
 		focusaiming = 0;

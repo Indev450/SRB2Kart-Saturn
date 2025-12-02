@@ -2071,6 +2071,7 @@ static void CL_LoadReceivedSavegame(boolean reloading)
 	length = FIL_ReadFile(tmpsave, &save.buffer);
 
 	CONS_Printf(M_GetText("Loading savegame length %s\n"), sizeu1(length));
+
 	if (!length)
 	{
 		I_Error("Can't read savegame sent");
@@ -2154,7 +2155,7 @@ static void CL_ReloadReceivedSavegame(void)
 	// we dont have P_ForceLocalAngle so were setting it manually here
 	for (i = 0; i <= splitscreen; i++)
 	{
-		P_ForceLocalAngle(&players[displayplayers[i]], (angle_t)(players[displayplayers[i]].cmd.angleturn << 16));
+		P_ForceLocalAngle(&players[displayplayers[i]], (angle_t)(players[displayplayers[i]].cmd.angleturn << TICCMD_REDUCE));
 	}
 
 	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
@@ -4496,7 +4497,7 @@ static void Got_AddPlayer(const UINT8 **p, INT32 playernum)
 			DEBFILE("spawning me\n");
 		}
 
-		P_ForceLocalAngle(&players[newplayernum], (angle_t)(players[newplayernum].cmd.angleturn << 16));
+		P_ForceLocalAngle(&players[newplayernum], (angle_t)(players[newplayernum].cmd.angleturn << TICCMD_REDUCE));
 
 		D_SendPlayerConfig();
 		addedtogame = true;
@@ -6443,6 +6444,7 @@ static void SV_SendTics(void)
 				continue;
 			DEBFILE(va("Sent %d anyway\n", realfirsttic));
 		}
+
 		realfirsttic = max(realfirsttic, firstticstosend);
 
 		// compute the length of the packet and cut it if too large
@@ -6588,7 +6590,8 @@ void SV_SpawnPlayer(INT32 playernum, INT32 x, INT32 y, angle_t angle)
 			// -- Monster Iestyn 16/01/18
 			break;
 		}
-		netcmds[tic%BACKUPTICS][playernum].angleturn = (INT16)((angle>>16) | TICCMD_RECEIVED);
+
+		netcmds[tic%BACKUPTICS][playernum].angleturn = (INT16)((angle >> TICCMD_REDUCE) | TICCMD_RECEIVED);
 
 		if (!tic) // failsafe for gametic == 0 -- Monster Iestyn 16/01/18
 			break;
