@@ -5994,6 +5994,9 @@ static void HandlePacketFromPlayer(SINT8 node)
 		case PT_CLIENTQUIT:
 			PT_ClientQuit(netconsole, node);
 			break;
+		case PT_SERVERINFO:
+			PT_ServerInfo(node);
+			break;
 		case PT_RESYNCHGET:
 			SV_AcknowledgeResynchAck(node, netbuffer->u.resynchgot);
 			break;
@@ -6024,6 +6027,12 @@ static void HandlePacketFromPlayer(SINT8 node)
 			is_client_saturn[node] = true;
 			break;
 #endif
+		case PT_CLIENTJOIN:
+			PT_ClientJoin(node);
+			break;
+		case PT_SERVERSHUTDOWN:
+			PT_ServerShutdown(node);
+			break;
 		case PT_RESYNCHING:
 			PT_Resynching(node);
 			break;
