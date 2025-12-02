@@ -21,10 +21,7 @@ extern "C" {
 
 #include "command.h"
 
-void SendWeaponPref(void);
-void SendWeaponPref2(void);
-void SendWeaponPref3(void);
-void SendWeaponPref4(void);
+void SendWeaponPref(UINT8 splitplayer);
 
 // console vars
 extern consvar_t cv_playername;
@@ -295,7 +292,7 @@ typedef union {
 // add game commands, needs cleanup
 void D_RegisterServerCommands(void);
 void D_RegisterClientCommands(void);
-void D_SendPlayerConfig(void);
+void D_SendPlayerConfig(UINT8 splitplayer);
 void Command_ExitGame_f(void);
 void Command_Retry_f(void);
 void D_GameTypeChanged(INT32 lastgametype); // not a real _OnChange function anymore
