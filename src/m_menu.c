@@ -798,6 +798,11 @@ static void Splitplayers_OnChange(void)
 		setupm_pselect = 1;
 }
 
+void ShowLocalskinMenu_Onchange(void)
+{
+	OP_MainMenu[localskin].status = (!cv_showlocalskinmenus.value) ? (IT_DISABLED) : (IT_CALL|IT_STRING);
+}
+
 // current menudef
 menu_t *currentMenu = &MainDef;
 
