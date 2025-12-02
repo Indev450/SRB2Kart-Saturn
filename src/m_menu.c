@@ -197,7 +197,30 @@ static INT32 vidm_column_size;
 #define SETUPM_IP_MAXSIZE ((28-1)*8)
 static char setupm_ip[64];
 static textinput_t setupm_input_ip;
-static UINT8 setupm_pselect = 1;
+
+
+static fixed_t    multi_tics;
+static state_t   *multi_state;
+
+// this is set before entering the MultiPlayer setup menu,
+// for either player 1 or 2
+static char        setupm_name[MAXPLAYERNAME+1];
+static textinput_t setupm_input;
+static player_t   *setupm_player;
+static consvar_t  *setupm_cvskin;
+static consvar_t  *setupm_cvcolor;
+static consvar_t  *setupm_cvname;
+static UINT8       setupm_skinxpos;
+static INT32       setupm_fakeskin;
+static INT32       setupm_fakecolor;
+static UINT8 	   setupm_pselect = 1;
+
+//variables used for other skin select menus
+static UINT8 setupm_skinypos;
+static INT32 setupm_skinselect;
+static boolean setupm_skinlockedselect;
+
+static UINT8 setupm_playernum; //brap
 
 //
 // PROTOTYPES
@@ -774,6 +797,11 @@ static void Splitplayers_OnChange(void)
 		setupm_pselect = 1;
 }
 
+void ShowLocalskinMenu_Onchange(void)
+{
+	OP_MainMenu[localskin].status = (!cv_showlocalskinmenus.value) ? (IT_DISABLED) : (IT_CALL|IT_STRING);
+}
+
 // current menudef
 menu_t *currentMenu = &MainDef;
 
@@ -894,7 +922,7 @@ static void M_CheckStringItem(void)
 
 		// special case: name input, cap it to prevent writing outside the textbox
 		// kinda ugly but itll work
-		if (cv == &cv_playername)
+		if (cv == setupm_cvname)
 			M_TextInputInit(&menuinput, menu_text_input_buf, MAXPLAYERNAME +1);
 		else
 			M_TextInputInit(&menuinput, menu_text_input_buf, sizeof menu_text_input_buf);
@@ -3966,6 +3994,7 @@ menudemo_t *demolist = NULL; // Replays that that have been checked to match wit
 
 // Locked behind Lock_search_state
 menudemo_t *demolist_all = NULL; // All replays
+size_t demolist_all_size = 0;
 boolean replaynamesloaded = false;
 
 #ifdef HAVE_THREADS
@@ -3998,14 +4027,14 @@ static void ReplayNamesLoadThread(void* userdata)
 {
 	Lock_search_state();
 
-	size_t demolist_all_size = sizedirmenu;
-	menudemo_t *demolist_all_local = (menudemo_t*)malloc(sizeof(menudemo_t)*sizedirmenu);
-	memcpy(demolist_all_local, demolist_all, sizeof(menudemo_t)*sizedirmenu);
+	size_t demolist_all_size_local = demolist_all_size;
+	menudemo_t *demolist_all_local = (menudemo_t*)malloc(sizeof(menudemo_t)*demolist_all_size_local);
+	memcpy(demolist_all_local, demolist_all, sizeof(menudemo_t)*demolist_all_size_local);
 	char *replaydirpath = (char*)userdata;
 
 	Unlock_search_state();
 
-	for (size_t i = 0; i < demolist_all_size; ++i)
+	for (size_t i = 0; i < demolist_all_size_local; ++i)
 	{
 		if (demolist_all_local[i].type != MD_SUBDIR)
 		{
@@ -4021,9 +4050,9 @@ static void ReplayNamesLoadThread(void* userdata)
 
 	Lock_search_state();
 
-	if (fastcmp(menupath, replaydirpath))
+	if (fastcmp(menupath, replaydirpath) && demolist_all)
 	{
-		memcpy(demolist_all, demolist_all_local, sizeof(menudemo_t)*sizedirmenu);
+		memcpy(demolist_all, demolist_all_local, sizeof(menudemo_t)*demolist_all_size);
 		replaynamesloaded = true;
 	}
 
@@ -4157,6 +4186,7 @@ static void PrepReplayList(boolean reset)
 
 	Z_Free(demolist_all);
 	demolist_all = Z_Calloc(sizeof(menudemo_t) * sizedirmenu, PU_STATIC, NULL);
+	demolist_all_size = sizedirmenu;
 
 	for (i = 0; i < sizedirmenu; i++)
 	{
@@ -7839,28 +7869,6 @@ static void M_HandleConnectIP(INT32 choice)
 // ========================
 // Tails 03-02-2002
 
-static fixed_t    multi_tics;
-static state_t   *multi_state;
-
-// this is set before entering the MultiPlayer setup menu,
-// for either player 1 or 2
-static char        setupm_name[MAXPLAYERNAME+1];
-static textinput_t setupm_input;
-static player_t   *setupm_player;
-static consvar_t  *setupm_cvskin;
-static consvar_t  *setupm_cvcolor;
-static consvar_t  *setupm_cvname;
-static UINT8       setupm_skinxpos;
-static INT32       setupm_fakeskin;
-static INT32       setupm_fakecolor;
-
-//variables used for other skin select menus
-static UINT8 setupm_skinypos;
-static INT32 setupm_skinselect;
-static boolean setupm_skinlockedselect;
-
-static UINT8 setupm_playernum; //brap
-
 #define SELECTEDSTATSCOUNT skinstatscount[setupm_skinxpos][setupm_skinypos]
 #define LASTSELECTEDSTAT skinstats[setupm_skinxpos][setupm_skinypos][skinstatscount[setupm_skinxpos][setupm_skinypos]]
 
@@ -8918,9 +8926,6 @@ static void M_DoSetupMultiPlayer(UINT8 pnum)
 	multi_state = cv_skinselectspin.value == SKINSELECTSPIN_PAIN ? &states[S_KART_PAIN] : &states[mobjinfo[MT_PLAYER].seestate];
 	multi_tics = multi_state->tics*FRACUNIT;
 
-	M_TextInputInit(&setupm_input, setupm_name, sizeof(setupm_name));
-	M_TextInputSetString(&setupm_input, cv_playername.string);
-
 	switch (pnum)
 	{
 		case 1:
@@ -8948,6 +8953,9 @@ static void M_DoSetupMultiPlayer(UINT8 pnum)
 			setupm_cvname  = &cv_playername;
 			break;
 	}
+
+	M_TextInputInit(&setupm_input, setupm_name, sizeof(setupm_name));
+	M_TextInputSetString(&setupm_input, setupm_cvname->string);
 
 	setupm_skinxpos = 4;
 	setupm_skinypos = 0;

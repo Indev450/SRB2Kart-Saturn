@@ -714,8 +714,13 @@ void G_DeviceLEDTick(void)
 
 		newcolor = G_GetSkinColorForGamepad(i);
 
+		// compiler be absolutely tripping
+		// delet this if this gets fixed within gcc
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Warray-bounds"
 		if (curcolor[i] == newcolor) // dont update if same colour
 			continue;
+#pragma GCC diagnostic pop
 
 		G_SetPlayerGamepadIndicatorColor(i, newcolor);
 		curcolor[i] = newcolor;

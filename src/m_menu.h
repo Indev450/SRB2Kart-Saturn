@@ -306,6 +306,8 @@ void SaturnHud_menu_Onchange(void);
 
 void GameFocus_menu_Onchange (void);
 
+void ShowLocalskinMenu_Onchange(void);
+
 #ifdef HWRENDER
 void M_UpdateOGLMenu(void);
 #endif
