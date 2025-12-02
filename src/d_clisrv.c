@@ -4781,7 +4781,7 @@ static size_t TotalTextCmdPerTic(tic_t tic)
 static void PT_ClientJoin(SINT8 node)
 {
 	// Ignore duplicate packets
-	if (client || nodeingame[node]|| levelloading)
+	if (client || nodeingame[node] || levelloading)
 		return;
 
 	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
@@ -4917,8 +4917,11 @@ static void PT_ClientJoin(SINT8 node)
 
 		if (nodewaiting[node])
 		{
-			SV_SendSaveGame(node, false); // send a complete game state
-			DEBFILE("send savegame\n");
+			if (node)
+			{
+				SV_SendSaveGame(node, false); // send a complete game state
+				DEBFILE("send savegame\n");
+			}
 
 			SV_AddWaitingPlayers(node);
 		}
