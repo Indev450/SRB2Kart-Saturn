@@ -169,6 +169,8 @@ static CV_PossibleValue_t menuhighlight_cons_t[] =
 };
 consvar_t cons_menuhighlight = {"menuhighlight", "Gametype Default", CV_SAVE, menuhighlight_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
+consvar_t cons_consoleprintinmenu = {"consoleprintinmenu", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+
 static void CON_Print(char *msg);
 
 //
@@ -426,6 +428,7 @@ void CON_Init(void)
 		CV_RegisterVar(&cons_backpic);
 		CV_RegisterVar(&cons_backcolor);
 		CV_RegisterVar(&cons_menuhighlight);
+		CV_RegisterVar(&cons_consoleprintinmenu);
 		COM_AddCommand("bind", CONS_Bind_f);
 	}
 	else
@@ -1590,7 +1593,7 @@ void CON_Drawer(void)
 	if (con_curlines > 0)
 		CON_DrawConsole();
 	else if (gamestate == GS_LEVEL || gamestate == GS_INTERMISSION || gamestate == GS_CUTSCENE || gamestate == GS_CREDITS
-		|| gamestate == GS_VOTING || gamestate == GS_EVALUATION || gamestate == GS_WAITINGPLAYERS)
+		|| gamestate == GS_VOTING || gamestate == GS_EVALUATION || gamestate == GS_WAITINGPLAYERS || (cons_consoleprintinmenu.value && gamestate == GS_TITLESCREEN))
 		CON_DrawHudlines();
 
 	Unlock_state();

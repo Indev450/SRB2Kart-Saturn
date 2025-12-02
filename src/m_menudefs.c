@@ -1325,13 +1325,14 @@ static menuitem_t OP_HUDOptionsMenu[] =
 	{IT_STRING | IT_CVAR, NULL,		"Menu Highlights",			&cons_menuhighlight,	 95},
 	// highlight info - (GOOD HIGHLIGHT, WARNING HIGHLIGHT) - 110 (see M_DrawHUDOptions)
 
-	{IT_STRING | IT_CVAR, NULL,		"Console Text Size",		&cv_constextsize,		120},
+	{IT_STRING | IT_CVAR, NULL,		"Console Text Size",		  &cv_constextsize,		120},
+	{IT_STRING | IT_CVAR, NULL,		"Show Console Prints in Menu",&cons_consoleprintinmenu,		130},
 
-	{IT_STRING | IT_CVAR, NULL,		"Show Track Addon Name",	&cv_showtrackaddon,   	135},
+	{IT_STRING | IT_CVAR, NULL,		"Show Track Addon Name",	&cv_showtrackaddon,   	145},
 
-	{IT_STRING | IT_CVAR, NULL,		"Show All Maps",			&cv_showallmaps,		145},
+	{IT_STRING | IT_CVAR, NULL,		"Show All Maps",			&cv_showallmaps,		155},
 
-	{IT_STRING | IT_CVAR, NULL,		"2D character select",		&cv_skinselectmenu,		155},
+	{IT_STRING | IT_CVAR, NULL,		"2D character select",		&cv_skinselectmenu,		165},
 };
 
 static menuitem_t OP_CamOptionsMenu[] =
