@@ -626,8 +626,20 @@ static void codenot (FuncState *fs, expdesc *e) {
   removevalues(fs, e->t);
 }
 
+/*
+** Check whether expression 'e' is a literal string
+*/
+static int isKstr (FuncState *fs, expdesc *e) {
+  return (e->k == VK && ttisstring(&fs->f->k[e->u.s.info]));
+}
 
+/*
+** Create expression 't[k]'. 't' must have its final result already in a
+** register or upvalue. Upvalues can only be indexed by literal strings.
+*/
 void luaK_indexed (FuncState *fs, expdesc *t, expdesc *k) {
+  if (t->k == VUPVAL && !isKstr(fs, k))  /* upvalue indexed by non string? */
+    luaK_exp2anyreg(fs, t);  /* put it in a register */
   t->u.s.aux = luaK_exp2RK(fs, k);
   t->k = VINDEXED;
 }
