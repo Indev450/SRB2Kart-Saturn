@@ -2511,8 +2511,10 @@ static boolean HWR_CheckBBox(const fixed_t *bspcoord)
 
 	// Find the corners of the box
 	// that define the edges from current viewpoint.
-	const INT32 boxpos = (viewx <= bspcoord[BOXLEFT] ? 0 : viewx < bspcoord[BOXRIGHT] ? 1 : 2) +
-	(viewy >= bspcoord[BOXTOP] ? 0 : viewy > bspcoord[BOXBOTTOM] ? 4 : 8);
+	const INT32 boxpos = (viewx <= bspcoord[BOXLEFT]   ? 0 :
+						  viewx <  bspcoord[BOXRIGHT]  ? 1 : 2) +
+						 (viewy >= bspcoord[BOXTOP]    ? 0 :
+						  viewy >  bspcoord[BOXBOTTOM] ? 4 : 8);
 
 	if (boxpos == 5)
 		return true;
