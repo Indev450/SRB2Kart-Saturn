@@ -105,31 +105,32 @@ static void callTM (lua_State *L, const TValue *f, const TValue *p1,
 }
 
 
-void luaV_gettable (lua_State *L, TValue *t, TValue *key, StkId val) {
-  int loop;
+/*
+** Complete a table access: if 't' is a table, 'tm' has its metamethod;
+** otherwise, 'tm' is NULL.
+*/
+void luaV_finishget (lua_State *L, TValue *t, TValue *key, StkId val,
+                     TValue *tm) {
+  int loop;  /* counter to avoid infinite loops */
+  lua_assert(tm != NULL || !ttistable(t));
   for (loop = 0; loop < MAXTAGLOOP; loop++) {
-    TValue *tm;
-    if (ttistable(t)) {  /* `t' is a table? */
-      Table *h = hvalue(t);
-      const TValue *res = luaH_get(h, key); /* do a primitive get */
-      if (!ttisnil(res) ||  /* result is no nil? */
-          (tm = fasttm(L, h->metatable, TM_INDEX)) == NULL) { /* or no TM? */
-        setobj2s(L, val, res);
-        return;
-      }
-      /* else will try the tag method */
+    if (tm == NULL) {  /* no metamethod (from a table)? */
+      if (l_unlikely(ttisnil(tm = luaT_gettmbyobj(L, t, TM_INDEX))))
+        luaG_typeerror(L, t, "index");  /* no metamethod */
     }
-    else if (l_unlikely(ttisnil(tm = luaT_gettmbyobj(L, t, TM_INDEX))))
-      luaG_typeerror(L, t, "index");
-    if (ttisfunction(tm)) {
-      callTMres(L, val, tm, t, key);
+    if (ttisfunction(tm)) {  /* metamethod is a function */
+      callTMres(L, val, tm, t, key);  /* call it */
       return;
     }
-    t = tm;  /* else repeat with `tm' */
+    t = tm;  /* else repeat access over 'tm' */
+    if (luaV_fastget(L,t,key,tm,luaH_get)) {  /* try fast track */
+      setobj2s(L, val, tm);  /* done */
+      return;
+    }
+    /* else repeat */
   }
-  luaG_runerror(L, "loop in gettable");
+  luaG_runerror(L, "gettable chain too long; possible loop");
 }
-
 
 void luaV_settable (lua_State *L, TValue *t, TValue *key, StkId val) {
   int loop;
