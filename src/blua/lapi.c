@@ -641,6 +641,25 @@ LUA_API void lua_getfenv (lua_State *L, int idx) {
 */
 
 
+static void auxsetstr (lua_State *L, const TValue *t, const char *k) {
+  TValue key;
+  const TValue *aux;
+  TString *str = luaS_new(L, k);
+  api_checknelems(L, 1);
+  api_checkvalidindex(L, t);
+  if (luaV_fastset(L, t, str, aux, luaH_setstr, L->top)) {
+    setobj2t(L, cast(TValue *, aux), L->top - 1);
+    L->top--;  /* pop value */
+  }
+  else {
+    setsvalue2s(L, &key, str);
+    luaV_finishset(L, t, &key, L->top - 1, aux);
+    L->top--;  /* pop value */
+  }
+  lua_unlock(L);
+}
+
+
 LUA_API void lua_settable (lua_State *L, int idx) {
   StkId t;
   lua_lock(L);
@@ -654,16 +673,8 @@ LUA_API void lua_settable (lua_State *L, int idx) {
 
 
 LUA_API void lua_setfield (lua_State *L, int idx, const char *k) {
-  StkId t;
-  TValue key;
   lua_lock(L);
-  api_checknelems(L, 1);
-  t = index2adr(L, idx);
-  api_checkvalidindex(L, t);
-  setsvalue(L, &key, luaS_new(L, k));
-  luaV_settable(L, t, &key, L->top - 1);
-  L->top--;  /* pop value */
-  lua_unlock(L);
+  auxsetstr(L, index2adr(L, idx), k);
 }
 
 
