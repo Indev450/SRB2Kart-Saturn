@@ -214,7 +214,7 @@ static int comparePolygonsNoShaders(const void *p1, const void *p2)
 	const PolygonArrayEntry *poly2 = *(PolygonArrayEntry *const *)p2;
 
 	const GLMipmap_t *texture1 = poly1->hash & 0x80000000 ? NULL : poly1->texture;
-	const GLMipmap_t *texture2 = poly1->hash & 0x80000000 ? NULL : poly2->texture;
+	const GLMipmap_t *texture2 = poly2->hash & 0x80000000 ? NULL : poly2->texture;
 
 	// skywalls and horizon lines must retain their order for horizon lines to work
 	if (!texture1 && !texture2)
