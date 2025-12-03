@@ -152,6 +152,8 @@ void luaV_finishget (lua_State *L, const TValue *t, TValue *key, StkId val,
 ** entry.  (The value at 'slot' must be nil, otherwise 'luaV_fastset'
 ** would have done the job.)
 */
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wcast-qual"
 void luaV_finishset (lua_State *L, const TValue *t, TValue *key,
                      StkId val, const TValue *slot) {
   int loop;  /* counter to avoid infinite loops */
@@ -187,6 +189,7 @@ void luaV_finishset (lua_State *L, const TValue *t, TValue *key,
   }
   luaG_runerror(L, "settable chain too long; possible loop");
 }
+#pragma GCC diagnostic pop
 
 
 static int call_binTM (lua_State *L, const TValue *p1, const TValue *p2,
@@ -406,6 +409,9 @@ static void Arith (lua_State *L, StkId ra, TValue *rb,
           Protect(Arith(L, ra, rb, rc, tm)); \
       }
 
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wcast-qual"
 
 /*
 ** copy of 'luaV_gettable', but protecting call to potential metamethod
@@ -877,3 +883,5 @@ void luaV_execute (lua_State *L, int nexeccalls) {
     }
   }
 }
+
+#pragma GCC diagnostic pop

@@ -640,7 +640,8 @@ LUA_API void lua_getfenv (lua_State *L, int idx) {
 ** set functions (stack -> Lua)
 */
 
-
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wcast-qual"
 static void auxsetstr (lua_State *L, const TValue *t, const char *k) {
   TValue key;
   const TValue *slot;
@@ -670,6 +671,8 @@ LUA_API void lua_settable (lua_State *L, int idx) {
   L->top -= 2;  /* pop index and value */
   lua_unlock(L);
 }
+
+#pragma GCC diagnostic pop
 
 
 LUA_API void lua_setfield (lua_State *L, int idx, const char *k) {
