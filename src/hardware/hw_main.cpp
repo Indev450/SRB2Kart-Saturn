@@ -660,9 +660,13 @@ static void HWR_RenderPlane(subsector_t *subsector, extrasubsector_t *xsub, bool
 
 	if (angle) // Only needs to be done if there's an altered angle
 	{
+		// This needs to be done so that it scrolls in a different direction after rotation like software
 		tempxsow = flatxref;
 		tempytow = flatyref;
 		anglef   = ANG2RAD(InvAngle(angle));
+
+		// This needs to be done so everything aligns after rotation
+		// It would be done so that rotation is done, THEN the translation, but I couldn't get it to rotate AND scroll like software does
 		cosangf = cosf(anglef);
 		sinangf = sinf(anglef);
 		flatxref = (tempxsow * cosangf) - (tempytow * sinangf);
@@ -806,6 +810,7 @@ static void HWR_RenderPlane(subsector_t *subsector, extrasubsector_t *xsub, bool
 			}
 		}
 	}
+#undef SETUP3DVERT
 }
 
 #ifdef WALLSPLATS
@@ -2616,6 +2621,7 @@ static void HWR_RenderPolyObjectPlane(polyobj_t *polysector, boolean isceiling, 
 	INT32           flatflag;
 	size_t          len;
 	float           scrollx = 0.0f, scrolly = 0.0f;
+	float           anglef  = 0.0f, cosangf = 0.0f, sinangf = 0.0f;
 	angle_t         angle = 0;
 	FSurfaceInfo    Surf;
 	fixed_t         tempxsow, tempytow;
@@ -2637,12 +2643,14 @@ static void HWR_RenderPolyObjectPlane(polyobj_t *polysector, boolean isceiling, 
 		return;
 	}
 
+	const sector_t *sec = FOFsector ? FOFsector : gl_frontsector;
+
 	// Allocate plane-vertex buffer if we need to
 	if (!planeVerts || nrPlaneVerts > numAllocedPlaneVerts)
 	{
 		numAllocedPlaneVerts = (UINT16)nrPlaneVerts;
 		Z_Free(planeVerts);
-		Z_Malloc(numAllocedPlaneVerts * sizeof (FOutVector), PU_LEVEL, &planeVerts);
+		Z_Malloc(numAllocedPlaneVerts * sizeof(FOutVector), PU_LEVEL, &planeVerts);
 	}
 
 	height = FixedToFloat(fixedheight);
@@ -2688,69 +2696,48 @@ static void HWR_RenderPolyObjectPlane(polyobj_t *polysector, boolean isceiling, 
 	flatxref = static_cast<float>(static_cast<fixed_t>(flatxref) & (~flatflag)) / fflatsize;
 	flatyref = static_cast<float>(static_cast<fixed_t>(flatyref) & (~flatflag)) / fflatsize;
 
-	// transform
-	v3d = planeVerts;
-
-	if (FOFsector != NULL)
+	if (!isceiling) // it's a floor
 	{
-		if (!isceiling) // it's a floor
-		{
-			scrollx = FixedToFloat(FOFsector->floor_xoffs)/fflatsize;
-			scrolly = FixedToFloat(FOFsector->floor_yoffs)/fflatsize;
-			angle = FOFsector->floorpic_angle>>ANGLETOFINESHIFT;
-		}
-		else // it's a ceiling
-		{
-			scrollx = FixedToFloat(FOFsector->ceiling_xoffs)/fflatsize;
-			scrolly = FixedToFloat(FOFsector->ceiling_yoffs)/fflatsize;
-			angle = FOFsector->ceilingpic_angle>>ANGLETOFINESHIFT;
-		}
+		scrollx = FixedToFloat(sec->floor_xoffs)/fflatsize;
+		scrolly = FixedToFloat(sec->floor_yoffs)/fflatsize;
+		angle = sec->floorpic_angle;
 	}
-	else if (gl_frontsector)
+	else // it's a ceiling
 	{
-		if (!isceiling) // it's a floor
-		{
-			scrollx = FixedToFloat(gl_frontsector->floor_xoffs)/fflatsize;
-			scrolly = FixedToFloat(gl_frontsector->floor_yoffs)/fflatsize;
-			angle = gl_frontsector->floorpic_angle>>ANGLETOFINESHIFT;
-		}
-		else // it's a ceiling
-		{
-			scrollx = FixedToFloat(gl_frontsector->ceiling_xoffs)/fflatsize;
-			scrolly = FixedToFloat(gl_frontsector->ceiling_yoffs)/fflatsize;
-			angle = gl_frontsector->ceilingpic_angle>>ANGLETOFINESHIFT;
-		}
+		scrollx = FixedToFloat(sec->ceiling_xoffs)/fflatsize;
+		scrolly = FixedToFloat(sec->ceiling_yoffs)/fflatsize;
+		angle = sec->ceilingpic_angle;
 	}
 
 	if (angle) // Only needs to be done if there's an altered angle
 	{
 		// This needs to be done so that it scrolls in a different direction after rotation like software
-		tempxsow = FloatToFixed(scrollx);
-		tempytow = FloatToFixed(scrolly);
-		scrollx = (FixedToFloat(FixedMul(tempxsow, FINECOSINE(angle)) - FixedMul(tempytow, FINESINE(angle))));
-		scrolly = (FixedToFloat(FixedMul(tempxsow, FINESINE(angle)) + FixedMul(tempytow, FINECOSINE(angle))));
+		tempxsow = flatxref;
+		tempytow = flatyref;
+		anglef   = ANG2RAD(InvAngle(angle));
 
 		// This needs to be done so everything aligns after rotation
 		// It would be done so that rotation is done, THEN the translation, but I couldn't get it to rotate AND scroll like software does
-		tempxsow = FloatToFixed(flatxref);
-		tempytow = FloatToFixed(flatyref);
-		flatxref = (FixedToFloat(FixedMul(tempxsow, FINECOSINE(angle)) - FixedMul(tempytow, FINESINE(angle))));
-		flatyref = (FixedToFloat(FixedMul(tempxsow, FINESINE(angle)) + FixedMul(tempytow, FINECOSINE(angle))));
+		cosangf = cosf(anglef);
+		sinangf = sinf(anglef);
+		flatxref = (tempxsow * cosangf) - (tempytow * sinangf);
+		flatyref = (tempxsow * sinangf) + (tempytow * cosangf);
 	}
 
-	for (i = 0; i < (INT32)nrPlaneVerts; i++,v3d++)
+	for (i = 0, v3d = planeVerts; i < (INT32)nrPlaneVerts; i++, v3d++)
 	{
-		// Hurdler: add scrolling texture on floor/ceiling
-		v3d->s = (float)((FixedToFloat(polysector->origVerts[i].x) / fflatsize) - flatxref + scrollx); // Go from the polysector's original vertex locations
-		v3d->t = (float)(flatyref - (FixedToFloat(polysector->origVerts[i].y) / fflatsize) + scrolly); // Means the flat is offset based on the original vertex locations
+		// Go from the polysector's original vertex locations
+		// Means the flat is offset based on the original vertex locations
+		v3d->s = ((FixedToFloat(polysector->origVerts[i].x) / fflatsize) - flatxref + scrollx);
+		v3d->t = (flatyref - (FixedToFloat(polysector->origVerts[i].y) / fflatsize) + scrolly);
 
 		// Need to rotate before translate
 		if (angle) // Only needs to be done if there's an altered angle
 		{
-			tempxsow = FloatToFixed(v3d->s);
-			tempytow = FloatToFixed(v3d->t);
-			v3d->s = (FixedToFloat(FixedMul(tempxsow, FINECOSINE(angle)) - FixedMul(tempytow, FINESINE(angle))));
-			v3d->t = (FixedToFloat(-FixedMul(tempxsow, FINESINE(angle)) - FixedMul(tempytow, FINECOSINE(angle))));
+			tempxsow = v3d->s;
+			tempytow = v3d->t;
+			v3d->s = (tempxsow * cosangf) - (tempytow * sinangf);
+			v3d->t = (tempxsow * sinangf) + (tempytow * cosangf);
 		}
 
 		v3d->x = FixedToFloat(polysector->vertices[i]->x);
