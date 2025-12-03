@@ -519,6 +519,23 @@ LUA_API int lua_pushthread (lua_State *L) {
 ** get functions (Lua -> stack)
 */
 
+static void auxgetstr (lua_State *L, TValue *t, const char *k) {
+  TValue *aux;
+  TValue key;
+  TString *str = luaS_new(L, k);
+  api_checkvalidindex(L, t);
+  if (luaV_fastget(L, t, str, aux, luaH_getstr)) {
+    setobj2s(L, L->top, aux);
+    api_incr_top(L);
+  }
+  else {
+    setsvalue(L, &key, str);
+    luaV_finishget(L, t, L->top, L->top, aux);
+    api_incr_top(L);
+  }
+  lua_unlock(L);
+}
+
 
 LUA_API void lua_gettable (lua_State *L, int idx) {
   StkId t;
@@ -531,15 +548,8 @@ LUA_API void lua_gettable (lua_State *L, int idx) {
 
 
 LUA_API void lua_getfield (lua_State *L, int idx, const char *k) {
-  StkId t;
-  TValue key;
   lua_lock(L);
-  t = index2adr(L, idx);
-  api_checkvalidindex(L, t);
-  setsvalue(L, &key, luaS_new(L, k));
-  luaV_gettable(L, t, &key, L->top);
-  api_incr_top(L);
-  lua_unlock(L);
+  auxgetstr(L, index2adr(L, idx), k);
 }
 
 
