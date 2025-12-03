@@ -2722,6 +2722,12 @@ static void M_DrawPauseMenu(void)
 	}
 #endif
 
+	musicdef_t *def;
+	if (cv_pausesongcredits.value && (def = S_FindMusicCredit(S_MusicName())) != NULL)
+	{
+		V_DrawThinString(2, 2, V_SNAPTOTOP|V_SNAPTOLEFT|V_ALLOWLOWERCASE, va("\x1F"" %s", def->source));
+	}
+
 	M_DrawGenericMenu();
 }
 
