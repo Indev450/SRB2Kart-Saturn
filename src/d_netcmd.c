@@ -937,6 +937,7 @@ void D_RegisterClientCommands(void)
 	CV_RegisterVar(&cv_chatbacktint);
 	CV_RegisterVar(&cv_chatcentertext);
 	CV_RegisterVar(&cv_songcredits);
+	CV_RegisterVar(&cv_pausesongcredits);
 	CV_RegisterVar(&cv_showfreeplay);
 	CV_RegisterVar(&cv_skinselectspin);
 	CV_RegisterVar(&cv_showallmaps);

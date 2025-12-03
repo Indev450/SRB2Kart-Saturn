@@ -309,6 +309,8 @@ consvar_t cv_pauseifunfocused = {"pauseifunfocused", "Yes", CV_SAVE, CV_YesNo, N
 static CV_PossibleValue_t songcredits_cons_t[] = {{0, "Off"}, {1, "Default"}, {2, "Box"}, {0, NULL}};
 consvar_t cv_songcredits = {"songcredits", "Default", CV_SAVE, songcredits_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
+consvar_t cv_pausesongcredits = {"pausesongcredits", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+
 // Show "FREE PLAY" when you're alone. :(
 consvar_t cv_showfreeplay = { "showfreeplay", "Yes", CV_SAVE, CV_YesNo, NULL, 0, NULL, NULL, 0, 0, NULL};
 
