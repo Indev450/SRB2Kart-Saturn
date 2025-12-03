@@ -391,6 +391,21 @@ static void Arith (lua_State *L, StkId ra, TValue *rb,
       }
 
 
+/*
+** copy of 'luaV_gettable', but protecting call to potential metamethod
+** (which can reallocate the stack)
+*/
+#define gettableProtected(L,t,k,v)  { const TValue *aux; \
+  if (luaV_fastget(L,t,k,aux,luaH_get)) { setobj2s(L, v, aux); } \
+  else Protect(luaV_finishget(L,t,k,v,aux)); }
+
+
+/* same for 'luaV_settable' */
+#define settableProtected(L,t,k,v) { const TValue *slot; \
+  if (!luaV_fastset(L,t,k,slot,luaH_set,v)) \
+    Protect(luaV_finishset(L,t,k,v,slot)); }
+
+
 
 void luaV_execute (lua_State *L, int nexeccalls) {
   LClosure *cl;
@@ -400,9 +415,9 @@ void luaV_execute (lua_State *L, int nexeccalls) {
  reentry:  /* entry point */
   lua_assert(isLua(L->ci));
   pc = L->savedpc;
-  cl = &clvalue(L->ci->func)->l;
-  base = L->base;
-  k = cl->p->k;
+  cl = &clvalue(L->ci->func)->l;  /* local reference to function's closure */
+  k = cl->p->k;  /* local reference to function's constant table */
+  base = L->base;  /* local copy of function's base */
   /* main loop of interpreter */
   for (;;) {
     const Instruction i = *pc++;
@@ -456,7 +471,9 @@ void luaV_execute (lua_State *L, int nexeccalls) {
         continue;
       }
       case OP_GETTABLE: {
-        Protect(luaV_gettable(L, RB(i), RKC(i), ra));
+        StkId rb = RB(i);
+        TValue *rc = RKC(i);
+        gettableProtected(L, rb, rc, ra);
         continue;
       }
       case OP_SETGLOBAL: {
@@ -473,7 +490,9 @@ void luaV_execute (lua_State *L, int nexeccalls) {
         continue;
       }
       case OP_SETTABLE: {
-        Protect(luaV_settable(L, ra, RKB(i), RKC(i)));
+        TValue *rb = RKB(i);
+        TValue *rc = RKC(i);
+        settableProtected(L, ra, rb, rc);
         continue;
       }
       case OP_NEWTABLE: {
@@ -485,8 +504,9 @@ void luaV_execute (lua_State *L, int nexeccalls) {
       }
       case OP_SELF: {
         StkId rb = RB(i);
-        setobjs2s(L, ra+1, rb);
-        Protect(luaV_gettable(L, rb, RKC(i), ra));
+        TValue *rc = RKC(i);
+        setobjs2s(L, ra + 1, rb);
+        gettableProtected(L, rb, rc, ra);
         continue;
       }
       case OP_ADD: {
