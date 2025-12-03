@@ -80,6 +80,8 @@ typedef struct
 
 #define DOOMCOM_DATA(d) (doomdata_t *)&(d)->data
 
+extern doomcom_t *doomcom;
+
 #ifdef HOLEPUNCH
 typedef struct
 {
@@ -90,8 +92,6 @@ typedef struct
 
 #define HOLEPUNCH_DATA(d) (holepunch_t *)&(d)->data
 #endif
-
-extern doomcom_t *doomcom;
 
 /**	\brief return packet in doomcom struct
 */
