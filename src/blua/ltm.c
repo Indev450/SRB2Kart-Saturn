@@ -61,7 +61,7 @@ TValue *luaT_gettm (Table *events, TMS event, TString *ename) {
 }
 
 
-TValue *luaT_gettmbyobj (lua_State *L, TValue *o, TMS event) {
+TValue *luaT_gettmbyobj (lua_State *L, const TValue *o, TMS event) {
   Table *mt;
   switch (ttype(o)) {
     case LUA_TTABLE:
