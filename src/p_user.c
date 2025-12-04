@@ -1229,19 +1229,19 @@ mobj_t *P_SpawnGhostMobj(mobj_t *mobj)
 		mobj->flags &= ~MF_DONTENCOREMAP;
 
 	// Copy interpolation data :)
-	ghost->old_x = mobj->old_x2;
-	ghost->old_y = mobj->old_y2;
-	ghost->old_z = mobj->old_z2;
-	ghost->old_angle = (mobj->player ? mobj->player->old_frameangle2 : mobj->old_angle2);
-	ghost->old_pitch = mobj->old_pitch2;
-	ghost->old_roll = mobj->old_roll2;
-	ghost->old_sloperoll = mobj->old_sloperoll2;
-	ghost->old_slopepitch = mobj->old_slopepitch2;
-	ghost->old_scale = mobj->old_scale2;
-	ghost->old_spritexscale = mobj->old_spritexscale2;
-	ghost->old_spriteyscale = mobj->old_spriteyscale2;
-	ghost->old_spritexoffset = mobj->old_spritexoffset2;
-	ghost->old_spriteyoffset = mobj->old_spriteyoffset2;
+	ghost->old_x = mobj->old_x;
+	ghost->old_y = mobj->old_y;
+	ghost->old_z = mobj->old_z;
+	ghost->old_angle = (mobj->player ? mobj->player->old_frameangle : mobj->old_angle);
+	ghost->old_pitch = mobj->old_pitch;
+	ghost->old_roll = mobj->old_roll;
+	ghost->old_sloperoll = mobj->old_sloperoll;
+	ghost->old_slopepitch = mobj->old_slopepitch;
+	ghost->old_scale = mobj->old_scale;
+	ghost->old_spritexscale = mobj->old_spritexscale;
+	ghost->old_spriteyscale = mobj->old_spriteyscale;
+	ghost->old_spritexoffset = mobj->old_spritexoffset;
+	ghost->old_spriteyoffset = mobj->old_spriteyoffset;
 
 	return ghost;
 }
@@ -4959,6 +4959,10 @@ void P_PlayerThink(player_t *player)
 	{
 		UINT8 i;
 		mobj_t *gmobj = P_SpawnGhostMobj(player->mo);
+		// Hack to preserve the look from vanilla, which uses position from second prev tic
+		gmobj->old_x -= player->mo->momx;
+		gmobj->old_y -= player->mo->momy;
+		gmobj->old_z -= player->mo->momz;
 
 		gmobj->fuse = 2;
 		if (leveltime & 1)
