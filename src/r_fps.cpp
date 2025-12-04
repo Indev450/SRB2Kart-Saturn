@@ -763,23 +763,6 @@ void R_ResetMobjInterpolationState(mobj_t *mobj)
 	if (rendermode == render_none)
 		return;
 
-	mobj->old_x2 = mobj->old_x;
-	mobj->old_y2 = mobj->old_y;
-	mobj->old_z2 = mobj->old_z;
-	mobj->old_angle2 = mobj->old_angle;
-	mobj->old_scale2 = mobj->old_scale;
-
-	// rotation humor
-	mobj->old_pitch2 = mobj->old_pitch;
-	mobj->old_roll2 = mobj->old_roll;
-	mobj->old_slopepitch2 = mobj->old_slopepitch;
-	mobj->old_sloperoll2 = mobj->old_sloperoll;
-
-	mobj->old_spritexscale2 = mobj->old_spritexscale;
-	mobj->old_spriteyscale2 = mobj->old_spriteyscale;
-	mobj->old_spritexoffset2 = mobj->old_spritexoffset;
-	mobj->old_spriteyoffset2 = mobj->old_spriteyoffset;
-
 	mobj->old_x = mobj->x;
 	mobj->old_y = mobj->y;
 	mobj->old_z = mobj->z;
