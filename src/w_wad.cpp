@@ -87,18 +87,32 @@ typedef struct
 } lumpchecklist_t;
 
 // Must be a power of two
-#define LUMPNUMCACHESIZE 64
+#define LUMPNUMCACHESIZE 2048 // should be reasonable ig
 #define LUMPNUMCACHENAME 32
 
-typedef struct lumpnum_cache_s
-{
-	char lumpname[LUMPNUMCACHENAME];
-	lumpnum_t lumpnum;
-	UINT32 hash;
-} lumpnum_cache_t;
+#include <unordered_map>
+#include <string>
+#include <cstring>
 
-static lumpnum_cache_t lumpnumcache[LUMPNUMCACHESIZE];
-static UINT16 lumpnumcacheindex = 0;
+struct LumpnumNameHash
+{
+	std::size_t operator()(const std::string& str) const
+	{
+		// hopefully this is fast enough but should be
+		return static_cast<std::size_t>(quickncasehash(str.c_str(), str.length()));
+	}
+};
+
+struct LumpnumStringEquals
+{
+	bool operator()(const std::string& str1, const std::string& str2) const
+	{
+		// fasticmp should be plenty fast and ignores case
+		return fasticmp(str1.c_str(), str2.c_str());
+	}
+};
+
+static std::unordered_map<std::string, lumpnum_t, LumpnumNameHash, LumpnumStringEquals> lumpnumcache(LUMPNUMCACHESIZE);
 
 static const char pat_central[] = {0x50, 0x4b, 0x01, 0x02, 0x00};
 static const char pat_end[] = {0x50, 0x4b, 0x05, 0x06, 0x00};
@@ -360,7 +374,7 @@ static inline INT32 W_MakeFileMD5(const char *filename, void *resblock)
 // Invalidates the cache of lump numbers. Call this whenever a wad is added.
 static void W_InvalidateLumpnumCache(void)
 {
-	memset(lumpnumcache, 0, sizeof(lumpnumcache));
+	lumpnumcache.clear();
 }
 
 UINT32 W_HashLumpName(const char *name)
@@ -1222,61 +1236,18 @@ UINT16 W_CheckNumForFullNamePK3(const char *name, UINT16 wad, UINT16 startlump)
 	return INT16_MAX;
 }
 
-static lumpnum_t CheckLumpInCache(const char *name, boolean longname)
+static lumpnum_t CheckLumpInCache(const char *name)
 {
-	if (longname)
-	{
-		UINT32 hash = quickncasehash(name, 32);
-
-		// Loop backwards so that we check most recent entries first
-		for (INT32 i = lumpnumcacheindex + LUMPNUMCACHESIZE; i > lumpnumcacheindex; i--)
-		{
-			if (lumpnumcache[i & (LUMPNUMCACHESIZE - 1)].hash == hash
-				&& fasticmp(lumpnumcache[i & (LUMPNUMCACHESIZE - 1)].lumpname, name))
-			{
-				lumpnumcacheindex = i & (LUMPNUMCACHESIZE - 1);
-				return lumpnumcache[lumpnumcacheindex].lumpnum;
-			}
-		}
-	}
-	else
-	{
-		UINT32 hash = quickncasehash(name, 8);
-
-		// Loop backwards so that we check most recent entries first
-		for (INT32 i = lumpnumcacheindex + LUMPNUMCACHESIZE; i > lumpnumcacheindex; i--)
-		{
-			if (lumpnumcache[i & (LUMPNUMCACHESIZE - 1)].hash == hash
-				&& lumpnumcache[i & (LUMPNUMCACHESIZE - 1)].lumpname[8] == '\0'
-				&& strnicmp(lumpnumcache[i & (LUMPNUMCACHESIZE - 1)].lumpname, name, 8) == 0)
-			{
-				lumpnumcacheindex = i & (LUMPNUMCACHESIZE - 1);
-				return lumpnumcache[lumpnumcacheindex].lumpnum;
-			}
-		}
-	}
+	auto it = lumpnumcache.find(name);
+	if (it != lumpnumcache.end())
+		return it->second;
 
 	return LUMPERROR;
 }
 
-static void AddLumpToCache(lumpnum_t lumpnum, const char *name, boolean longname)
+static void AddLumpToCache(lumpnum_t lumpnum, const char *name)
 {
-	if (longname && strlen(name) >= LUMPNUMCACHENAME)
-		return;
-
-	lumpnumcacheindex = (lumpnumcacheindex + 1) & (LUMPNUMCACHESIZE - 1);
-	memset(lumpnumcache[lumpnumcacheindex].lumpname, '\0', LUMPNUMCACHENAME);
-	if (longname)
-	{
-		strlcpy(lumpnumcache[lumpnumcacheindex].lumpname, name, LUMPNUMCACHENAME);
-		lumpnumcache[lumpnumcacheindex].hash = quickncasehash(name, LUMPNUMCACHENAME);
-	}
-	else
-	{
-		strncpy(lumpnumcache[lumpnumcacheindex].lumpname, name, 8);
-		lumpnumcache[lumpnumcacheindex].hash = quickncasehash(name, 8);
-	}
-	lumpnumcache[lumpnumcacheindex].lumpnum = lumpnum;
+	lumpnumcache.insert({name, lumpnum});
 }
 
 //
@@ -1292,7 +1263,7 @@ lumpnum_t W_CheckNumForName(const char *name)
 		return LUMPERROR;
 
 	// Check the lumpnumcache first.
-	lumpnum_t cachenum = CheckLumpInCache(name, false);
+	lumpnum_t cachenum = CheckLumpInCache(name);
 	if (cachenum != LUMPERROR)
 		return cachenum;
 
@@ -1313,7 +1284,7 @@ lumpnum_t W_CheckNumForName(const char *name)
 	{
 		// Update the cache.
 		lumpnum_t lumpnum = (i << 16) | check;
-		AddLumpToCache(lumpnum, name, false);
+		AddLumpToCache(lumpnum, name);
 
 		return lumpnum;
 	}
@@ -1334,7 +1305,7 @@ lumpnum_t W_CheckNumForLongName(const char *name)
 		return LUMPERROR;
 
 	// Check the lumpnumcache first.
-	lumpnum_t cachenum = CheckLumpInCache(name, true);
+	lumpnum_t cachenum = CheckLumpInCache(name);
 	if (cachenum != LUMPERROR)
 		return cachenum;
 
@@ -1355,7 +1326,7 @@ lumpnum_t W_CheckNumForLongName(const char *name)
 	{
 		// Update the cache.
 		lumpnum_t lumpnum = (i << 16) | check;
-		AddLumpToCache(lumpnum, name, true);
+		AddLumpToCache(lumpnum, name);
 
 		return lumpnum;
 	}
