@@ -1238,9 +1238,10 @@ mobj_t *P_SpawnGhostMobj(mobj_t *mobj)
 		mobj->flags &= ~MF_DONTENCOREMAP;
 
 	// Copy interpolation data :)
-	ghost->old_x = mobj->old_x;
-	ghost->old_y = mobj->old_y;
-	ghost->old_z = mobj->old_z;
+	// old_x - mobj->momx - hack to preserve vanilla look
+	ghost->old_x = mobj->old_x - mobj->momx;
+	ghost->old_y = mobj->old_y - mobj->momy;
+	ghost->old_z = mobj->old_z - mobj->momz;
 	ghost->old_angle = (mobj->player ? mobj->player->old_frameangle : mobj->old_angle);
 	ghost->old_pitch = mobj->old_pitch;
 	ghost->old_roll = mobj->old_roll;
@@ -4968,10 +4969,6 @@ void P_PlayerThink(player_t *player)
 	{
 		UINT8 i;
 		mobj_t *gmobj = P_SpawnGhostMobj(player->mo);
-		// Hack to preserve the look from vanilla, which uses position from second prev tic
-		gmobj->old_x -= player->mo->momx;
-		gmobj->old_y -= player->mo->momy;
-		gmobj->old_z -= player->mo->momz;
 
 		gmobj->fuse = 2;
 		if (leveltime & 1)
