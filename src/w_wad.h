@@ -233,7 +233,7 @@ void *W_CacheSoftwarePatchNumPwad(UINT16 wad, UINT16 lump, INT32 tag);
 void *W_CacheSoftwarePatchNum(lumpnum_t lumpnum, INT32 tag);
 
 #ifdef ROTSPRITE
-void *W_GetCachedRotPatchPwad(UINT16 wadnum, UINT16 lumpnum); // Get patch-based rotsprites from the cache.
+void *W_GetCachedRotPatchPwad(UINT16 wad, UINT16 lump); // Get patch-based rotsprites from the cache.
 void *W_CachePatchNameRotated(const char *name, INT32 rotationangle, INT32 tag);
 #endif
 
