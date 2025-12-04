@@ -2225,6 +2225,11 @@ static void GL_Shader_SetUniforms(FSurfaceInfo *Surface, GLRGBAFloat *poly, GLRG
 
 		UNIFORM_2(shader->uniforms[gluniform_scr_resolution], vid.width, vid.height, pglUniform2f);
 
+#ifdef USE_FBO_OGL
+		// supersampling crap
+		UNIFORM_2(shader->uniforms[gluniform_inv_supersamplefactor], InvSupersampleFactorX, InvSupersampleFactorY, pglUniform2f);
+#endif
+
 		#undef UNIFORM_1
 		#undef UNIFORM_2
 		#undef UNIFORM_3
