@@ -722,6 +722,10 @@ void R_AddMobjInterpolator(mobj_t *mobj)
 
 	interpolated_mobjs.push_back(mobj);
 
+	// Maybe not the best place for it, but for first tic this old_z is 0,
+	// so when R_ResetMobjInterpolationState is called old_z2 will be set to 0
+	mobj->old_z = mobj->z;
+
 	R_ResetMobjInterpolationState(mobj);
 	mobj->resetinterp = true;
 }
@@ -762,6 +766,8 @@ void R_ResetMobjInterpolationState(mobj_t *mobj)
 {
 	if (rendermode == render_none)
 		return;
+
+	mobj->old_z2 = mobj->old_z;
 
 	mobj->old_x = mobj->x;
 	mobj->old_y = mobj->y;
