@@ -54,6 +54,12 @@ extern consvar_t cv_amigatype;
 #endif
 #endif
 
+#ifdef HAVE_FLUIDSYNTH
+extern consvar_t cv_midisoundfontpath;
+extern consvar_t cv_midichorus;
+extern consvar_t cv_midireverb;
+#endif
+
 //bird music stuff
 extern consvar_t cv_invincmusicfade;
 extern consvar_t cv_growmusicfade;
