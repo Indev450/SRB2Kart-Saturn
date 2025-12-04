@@ -5261,6 +5261,24 @@ player_t *K_FindJawzTarget(mobj_t *actor, player_t *source)
 	return wtarg;
 }
 
+static INT32 K_GetEngineClass(const player_t *player)
+{
+	INT32 speed, weight;
+
+	speed = (player->kartspeed - 1) / 3;
+	weight = (player->kartweight - 1) / 3;
+
+#define LOCKSTAT(stat) \
+	if (stat < 0) { stat = 0; } \
+	if (stat > 2) { stat = 2; }
+	LOCKSTAT(speed);
+	LOCKSTAT(weight);
+#undef LOCKSTAT
+
+	return (speed + (3*weight));
+}
+
+
 // Engine Sounds.
 static void K_UpdateEngineSounds(player_t *player, ticcmd_t *cmd)
 {
@@ -5271,7 +5289,7 @@ static void K_UpdateEngineSounds(player_t *player, ticcmd_t *cmd)
 
 	static const UINT8 dampenval = 48; // 255 * 48 = close enough to FRACUNIT/6
 
-	INT32 class, s, w; // engine class number
+	INT32 class; // engine class number
 
 	UINT8 volume = 255;
 	fixed_t volumedampen = FRACUNIT;
@@ -5307,7 +5325,7 @@ static void K_UpdateEngineSounds(player_t *player, ticcmd_t *cmd)
 		targetsnd = (((6 * cmd->forwardmove) / 25) + ((player->speed / mapobjectscale) / 5)) / 2;
 	}
 
-	if (targetsnd < 0) { targetsnd = 0; }
+	if (targetsnd < 0)  { targetsnd = 0; }
 	if (targetsnd > 12) { targetsnd = 12; }
 
 	if (player->kartstuff[k_enginesnd] < targetsnd) { player->kartstuff[k_enginesnd]++; }
@@ -5384,17 +5402,7 @@ static void K_UpdateEngineSounds(player_t *player, ticcmd_t *cmd)
 		return;
 	}
 
-	s = (player->kartspeed - 1) / 3;
-	w = (player->kartweight - 1) / 3;
-
-#define LOCKSTAT(stat) \
-	if (stat < 0) { stat = 0; } \
-	if (stat > 2) { stat = 2; }
-	LOCKSTAT(s);
-	LOCKSTAT(w);
-#undef LOCKSTAT
-
-	class = s + (3*w);
+	class = K_GetEngineClass(player);
 
 	S_StartSoundAtVolume(player->mo, (sfx_krta00 + player->kartstuff[k_enginesnd]) + (class * numsnds), volume);
 }
@@ -5813,7 +5821,7 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 	K_UpdateInvincibilitySounds(player); // Also thanks, VAda!
 
 	// Plays the music during and after the starting countdown.
-	if (P_IsLocalPlayer(player))
+	if ((leveltime <= MUSICSTARTTIME) && P_IsLocalPlayer(player))
 		S_StartMapMusic();
 }
 
@@ -5993,45 +6001,33 @@ static void K_KartDrift(player_t *player, boolean onground)
 	// Holding the Jump button will enable drifting.
 
 	// Drift Release (Moved here so you can't "chain" drifts)
-	if ((player->kartstuff[k_drift] != -5 && player->kartstuff[k_drift] != 5)
-		// || (player->kartstuff[k_drift] >= 1 && player->kartstuff[k_turndir] != 1) || (player->kartstuff[k_drift] <= -1 && player->kartstuff[k_turndir] != -1))
-		&& player->kartstuff[k_driftcharge] < dsone
-		&& onground)
+	if (onground && player->kartstuff[k_drift] != -5 && player->kartstuff[k_drift] != 5)
 	{
-		player->kartstuff[k_driftcharge] = 0;
-	}
-	else if ((player->kartstuff[k_drift] != -5 && player->kartstuff[k_drift] != 5)
-		// || (player->kartstuff[k_drift] >= 1 && player->kartstuff[k_turndir] != 1) || (player->kartstuff[k_drift] <= -1 && player->kartstuff[k_turndir] != -1))
-		&& (player->kartstuff[k_driftcharge] >= dsone && player->kartstuff[k_driftcharge] < dstwo)
-		&& onground)
-	{
-		if (player->kartstuff[k_driftboost] < 20)
-			player->kartstuff[k_driftboost] = 20;
-		S_StartSound(player->mo, sfx_s23c);
-		//K_SpawnDashDustRelease(player);
-		player->kartstuff[k_driftcharge] = 0;
-	}
-	else if ((player->kartstuff[k_drift] != -5 && player->kartstuff[k_drift] != 5)
-		// || (player->kartstuff[k_drift] >= 1 && player->kartstuff[k_turndir] != 1) || (player->kartstuff[k_drift] <= -1 && player->kartstuff[k_turndir] != -1))
-		&& player->kartstuff[k_driftcharge] < dsthree
-		&& onground)
-	{
-		if (player->kartstuff[k_driftboost] < 50)
-			player->kartstuff[k_driftboost] = 50;
-		S_StartSound(player->mo, sfx_s23c);
-		//K_SpawnDashDustRelease(player);
-		player->kartstuff[k_driftcharge] = 0;
-	}
-	else if ((player->kartstuff[k_drift] != -5 && player->kartstuff[k_drift] != 5)
-		// || (player->kartstuff[k_drift] >= 1 && player->kartstuff[k_turndir] != 1) || (player->kartstuff[k_drift] <= -1 && player->kartstuff[k_turndir] != -1))
-		&& player->kartstuff[k_driftcharge] >= dsthree
-		&& onground)
-	{
-		if (player->kartstuff[k_driftboost] < 125)
-			player->kartstuff[k_driftboost] = 125;
-		S_StartSound(player->mo, sfx_s23c);
-		//K_SpawnDashDustRelease(player);
-		player->kartstuff[k_driftcharge] = 0;
+		if (player->kartstuff[k_driftcharge] < dsone)
+		{
+			player->kartstuff[k_driftcharge] = 0;
+		}
+		else if (player->kartstuff[k_driftcharge] >= dsone && player->kartstuff[k_driftcharge] < dstwo)
+		{
+			if (player->kartstuff[k_driftboost] < 20)
+				player->kartstuff[k_driftboost] = 20;
+			S_StartSound(player->mo, sfx_s23c);
+			player->kartstuff[k_driftcharge] = 0;
+		}
+		else if (player->kartstuff[k_driftcharge] < dsthree)
+		{
+			if (player->kartstuff[k_driftboost] < 50)
+				player->kartstuff[k_driftboost] = 50;
+			S_StartSound(player->mo, sfx_s23c);
+			player->kartstuff[k_driftcharge] = 0;
+		}
+		else if (player->kartstuff[k_driftcharge] >= dsthree)
+		{
+			if (player->kartstuff[k_driftboost] < 125)
+				player->kartstuff[k_driftboost] = 125;
+			S_StartSound(player->mo, sfx_s23c);
+			player->kartstuff[k_driftcharge] = 0;
+		}
 	}
 
 	// Drifting: left or right?
@@ -6109,8 +6105,8 @@ static void K_KartDrift(player_t *player, boolean onground)
 
 			// Sound whenever you get a different tier of sparks
 			if (driftblue
-				|| driftred
-				|| driftrainbow)
+			 || driftred
+			 || driftrainbow)
 			{
 				//S_StartSound(player->mo, sfx_s3ka2);
 				if (P_IsLocalPlayer(player)) // UGHGHGH...
