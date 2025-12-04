@@ -57,9 +57,6 @@ extern consvar_t cv_amigatype;
 boolean S_MapMusPlaying(void);
 
 //bird music stuff
-extern consvar_t cv_music_resync_threshold;
-extern consvar_t cv_music_resync_powerups_only;
-
 extern consvar_t cv_invincmusicfade;
 extern consvar_t cv_growmusicfade;
 

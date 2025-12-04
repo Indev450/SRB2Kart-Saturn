@@ -158,8 +158,6 @@ UINT32 I_GetSongLoopPoint(void);
 boolean I_SetSongPosition(UINT32 position);
 UINT32 I_GetSongPosition(void);
 
-void I_UpdateSongLagThreshold (void);
-
 /// ------------------------
 //  MUSIC PLAYBACK
 /// ------------------------
