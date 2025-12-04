@@ -1232,7 +1232,7 @@ mobj_t *P_SpawnGhostMobj(mobj_t *mobj)
 	// old_x - mobj->momx - hack to preserve vanilla look
 	ghost->old_x = mobj->old_x - mobj->momx;
 	ghost->old_y = mobj->old_y - mobj->momy;
-	ghost->old_z = mobj->old_z - mobj->momz;
+	ghost->old_z = mobj->old_z2; // Slopes.....
 	ghost->old_angle = (mobj->player ? mobj->player->old_frameangle : mobj->old_angle);
 	ghost->old_pitch = mobj->old_pitch;
 	ghost->old_roll = mobj->old_roll;

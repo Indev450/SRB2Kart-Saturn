@@ -294,6 +294,7 @@ typedef struct mobj_s
 	// Info for drawing: position.
 	fixed_t x, y, z;
 	fixed_t old_x, old_y, old_z; // position interpolation
+	fixed_t old_z2; // ok guess we need that...
 
 	// More list: links in sector (if needed)
 	struct mobj_s *bnext;
