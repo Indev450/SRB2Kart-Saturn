@@ -45,7 +45,7 @@ st_stuff.c
 string.c
 tables.c
 v_video.c
-w_wad.c
+w_wad.cpp
 y_inter.c
 z_zone.cpp
 r_bsp.cpp

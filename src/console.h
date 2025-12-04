@@ -13,6 +13,10 @@
 #ifndef __CONSOLE__
 #define __CONSOLE__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "d_event.h"
 #include "command.h"
 #include "i_threads.h"
@@ -62,5 +66,9 @@ void CON_ToggleOff(void);
 boolean CON_Ready(void);
 
 void CON_LogMessage(const char *msg);
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif
