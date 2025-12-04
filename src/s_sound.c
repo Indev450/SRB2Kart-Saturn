@@ -94,14 +94,6 @@ consvar_t cv_playsoundifunfocused = {"playsoundsifunfocused", "No", CV_SAVE, CV_
 consvar_t cv_pausemusic = {"playmusicifpaused",  "No", CV_SAVE, CV_YesNo, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 //bird music stuff
-static CV_PossibleValue_t music_resync_threshold_cons_t[] = {
-	{0,    "MIN"},
-	{1000, "MAX"},
-	{0}
-};
-consvar_t cv_music_resync_threshold = {"music_resync_threshold", "0", CV_SAVE|CV_CALL, music_resync_threshold_cons_t, I_UpdateSongLagThreshold, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_music_resync_powerups_only = {"music_resync_powerups_only", "No", CV_SAVE|CV_CALL, CV_YesNo, I_UpdateSongLagThreshold, 0, NULL, NULL, 0, 0, NULL};
-
 consvar_t cv_invincmusicfade = {"invincmusicfade", "300", CV_SAVE, CV_Unsigned, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_growmusicfade = {"growmusicfade", "500", CV_SAVE, CV_Unsigned, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_respawnfademusicout = {"respawnfademusicout", "1000", CV_SAVE, CV_Unsigned, NULL, 0, NULL, NULL, 0, 0, NULL};
@@ -287,9 +279,6 @@ void S_RegisterSoundStuff(void)
 	CV_RegisterVar(&cv_playmusicifunfocused);
 	CV_RegisterVar(&cv_playsoundifunfocused);
 	CV_RegisterVar(&cv_pausemusic);
-
-	CV_RegisterVar(&cv_music_resync_threshold);
-	CV_RegisterVar(&cv_music_resync_powerups_only);
 
 	CV_RegisterVar(&cv_invincmusicfade);
 	CV_RegisterVar(&cv_growmusicfade);
@@ -1712,8 +1701,6 @@ static boolean S_PlayMusic(boolean looping, UINT32 fadeinms)
 {
 	if (S_MusicDisabled())
 		return false;
-
-	I_UpdateSongLagThreshold();
 
 	if ((!fadeinms && !I_PlaySong(looping)) ||
 		(fadeinms && !I_FadeInPlaySong(fadeinms, looping)))

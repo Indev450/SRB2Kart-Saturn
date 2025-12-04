@@ -2180,9 +2180,6 @@ static menuitem_t OP_AdvancedBirdMenu[] =
 	{IT_STRING | IT_CVAR, NULL, "Fade Back from Grow",           &cv_growmusicfade,          20},
 	{IT_STRING | IT_CVAR, NULL, "Fade Out Before Respawning",    &cv_respawnfademusicout,    30},
 	{IT_STRING | IT_CVAR, NULL, "Fade Back In While Respawning", &cv_respawnfademusicback,   40},
-
-	{IT_STRING | IT_CVAR, NULL, "Resync Threshold",          &cv_music_resync_threshold,     60},
-	{IT_STRING | IT_CVAR, NULL, "Resync Special Music Only", &cv_music_resync_powerups_only, 70},
 };
 
 static const char* OP_AdvancedBirdTooltips[] =
@@ -2192,8 +2189,6 @@ static const char* OP_AdvancedBirdTooltips[] =
 	"Fade in music after Grow.",
 	"Fade out music before respawning.",
 	"Fade in music while respawning.",
-	"Threshold for syncing music.",
-	"Only sync special music.",
 };
 
 enum
@@ -2203,8 +2198,6 @@ enum
 	fadegrow,
 	respawnfadeout,
 	respawnfadein,
-	syncthreshold,
-	syncspecialonly,
 };
 
 menuitem_t OP_CustomCvarMenu[MAXMENUCCVARS];
