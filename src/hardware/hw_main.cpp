@@ -5635,15 +5635,18 @@ static void HWR_RenderViewpoint(gl_portal_t *rootportal, int stencil_level, bool
 	PS_START_TIMING(ps_hw_spritesorttime);
 	HWR_SortVisSprites();
 	PS_STOP_TIMING(ps_hw_spritesorttime);
-	PS_START_TIMING(ps_hw_spritedrawtime);
-	if (LIKELY(cv_glbatching.value))
+
+	if (LIKELY(cv_glbatching.value && !cv_glmdls.value))
 		HWR_StartBatching();
+
+	PS_START_TIMING(ps_hw_spritedrawtime);
 	if (UNLIKELY(cv_glmdls.value))
 		HWR_DrawSprites<DrawSpritesType::kModels>();
 	else
 		HWR_DrawSprites<DrawSpritesType::kSprites>();
 	PS_STOP_TIMING(ps_hw_spritedrawtime);
-	if (LIKELY(cv_glbatching.value))
+
+	if (LIKELY(cv_glbatching.value && !cv_glmdls.value))
 		HWR_RenderBatches(false);
 
 	ps_numdrawnodes.value.i    = 0;
