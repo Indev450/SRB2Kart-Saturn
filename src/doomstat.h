@@ -542,7 +542,7 @@ extern mapthing_t *redctfstarts[MAXPLAYERS]; // CTF
 #else
 #define DEBUGFILE
 #ifdef DEBUGFILE
-#define DEBFILE(msg) { if (debugfile) { fputs(msg, debugfile); fflush(debugfile); } }
+#define DEBFILE(msg) { if (UNLIKELY(debugfile)) { fputs(msg, debugfile); fflush(debugfile); } }
 #else
 #define DEBFILE(msg) {}
 #endif
