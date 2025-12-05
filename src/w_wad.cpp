@@ -1412,13 +1412,38 @@ lumpnum_t W_CheckNumForNameInBlock(const char *name, const char *blockstart, con
 UINT8 W_LumpExists(const char *name)
 {
 	INT32 i, j;
+	UINT32 hash;
+	size_t namelen;
+
+	lumpnum_t cachenum = CheckLumpInCache(name);
+	if (cachenum != LUMPERROR)
+	{
+		// ok ok, we did find a lump in our lumpcache BUTT
+		// the lumpcache map is case insensitive
+		// extract the lumpinfo out of the lumpnum
+		// so we can do one more extra case ~sensitive~ name compare
+		// otherwise we gotta fall through to our manual lump search below
+		// lumpnum == (wadnum << 16) | lumpinfo id
+		UINT16 wadnum = (cachenum >> 16) & 0xFFFF;
+		UINT16 lumpid = cachenum & 0xFFFF;
+		lumpinfo_t *lump_p = &wadfiles[wadnum]->lumpinfo[lumpid];
+		if (fastcmp(lump_p->name, name))
+			return true;
+	}
+
+	namelen = strlen(name);
+	hash = W_HashLumpName(name);
 
 	for (i = numwadfiles - 1; i >= 0; i--)
 	{
 		lumpinfo_t *lump_p = wadfiles[i]->lumpinfo;
 		for (j = 0; j < wadfiles[i]->numlumps; ++j, ++lump_p)
-			if (fastcmp(lump_p->name, name))
+		{
+			if (lump_p->namelength == namelen
+			 && lump_p->hash.name == hash
+			 && fastcmp(lump_p->name, name))
 				return true;
+		}
 	}
 
 	return false;
