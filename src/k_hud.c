@@ -568,7 +568,7 @@ static patch_t *kp_racefinish[6];
 static patch_t *kp_positionnum[NUMPOSNUMS][NUMPOSFRAMES];
 static patch_t *kp_winnernum[NUMPOSFRAMES];
 
-static patch_t *kp_facenum[MAXPLAYERS+1];
+patch_t *kp_facenum[MAXPLAYERS+1];
 static patch_t *kp_facehighlight[8];
 
 static patch_t *kp_rankbumper;
