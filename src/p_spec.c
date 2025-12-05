@@ -254,7 +254,9 @@ void P_InitPicAnims(void)
 				{
 					memcpy(&(animdefs[i].istexture), currentPos, 1); // istexture, 1 byte
 					memcpy(animdefs[i].endname, (currentPos + 1), 9); // endname, 9 bytes
+					animdefs[i].endname[8] = '\0';
 					memcpy(animdefs[i].startname, (currentPos + 10), 9); // startname, 9 bytes
+					animdefs[i].startname[8] = '\0';
 					memcpy(&(animdefs[i].speed), (currentPos + 19), 4); // speed, 4 bytes
 				}
 

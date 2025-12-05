@@ -680,11 +680,11 @@ INT32 P_AddLevelFlat(const char *flatname, levelflat_t *levelflat)
 	if (i == numlevelflats)
 	{
 		// store the name
-		strlcpy(levelflat->name, flatname, sizeof (levelflat->name));
+		strlcpy(levelflat->name, flatname, sizeof(levelflat->name));
 		strupr(levelflat->name);
 
 		// store the flat lump number
-		levelflat->lumpnum = R_GetFlatNumForName(flatname);
+		levelflat->lumpnum = R_GetFlatNumForName(levelflat->name);
 		levelflat->baselumpnum = LUMPERROR;
 
 		P_CheckCyanFlat(levelflat);
@@ -727,11 +727,11 @@ INT32 P_AddLevelFlatRuntime(const char *flatname)
 		levelflat = levelflats+i;
 
 		// store the name
-		strlcpy(levelflat->name, flatname, sizeof (levelflat->name));
+		strlcpy(levelflat->name, flatname, sizeof(levelflat->name));
 		strupr(levelflat->name);
 
 		// store the flat lump number
-		levelflat->lumpnum = R_GetFlatNumForName(flatname);
+		levelflat->lumpnum = R_GetFlatNumForName(levelflat->name);
 		levelflat->baselumpnum = LUMPERROR;
 
 		P_CheckCyanFlat(levelflat);
