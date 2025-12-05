@@ -81,7 +81,7 @@ typedef struct
 	struct {
 		UINT32 name;        // hash of name
 		UINT32 longname;    // hash of longname
-		UINT32 fullname;    // hash of fullname
+		//UINT32 fullname;    // hash of fullname
 	} hash;
 } lumpinfo_t;
 
