@@ -1034,18 +1034,6 @@ boolean M_Responder(event_t *ev)
 				ch = KEY_RIGHTARROW;
 				break;
 		}
-
-		if (menuactive)
-		{
-			if (currentMenu == &MISC_ChangeLevelDef || currentMenu == &MP_OfflineServerDef || currentMenu == &MP_ServerDef)
-			{
-				if (ch == gamecontrol[0][gc_fire][0]
-					|| ch == gamecontrol[0][gc_fire][1])
-				{
-					COM_ImmedExecute("add kartencore 1");
-				}
-			}
-		}
 	}
 	else if (menuactive)
 	{
@@ -1236,6 +1224,19 @@ boolean M_Responder(event_t *ev)
 
 	if ((ch == gamecontrol[0][gc_brake][0] || ch == gamecontrol[0][gc_brake][1]) && ch >= KEY_MOUSE1) // do this here, otherwise brake opens the menu mid-game
 		ch = KEY_ESCAPE;
+
+	if (currentMenu == &MISC_ChangeLevelDef ||
+		currentMenu == &MP_OfflineServerDef ||
+		currentMenu == &MP_ServerDef)
+		{
+			if (ch == gamecontrol[0][gc_fire][0]
+			 || ch == gamecontrol[0][gc_fire][1])
+			{
+				if (M_SecretUnlocked(SECRET_ENCORE))
+					COM_ImmedExecute("add kartencore 1");
+				return true;
+			}
+		}
 
 	routine = currentMenu->menuitems[itemOn].itemaction;
 
@@ -7382,7 +7383,8 @@ static void M_DrawLevelSelectOnly(boolean leftfade, boolean rightfade)
 	patch_t *PictureOfLevel;
 	INT32 x, y, w, i, oldval, trans, dupadjust = (vid.scaledwidth - BASEVIDWIDTH)>>1;
 
-	if (levellistmode != LLM_RECORDATTACK) // so it doesent show in record attack menu
+	// so it doesent show in record attack menu
+	if (levellistmode != LLM_RECORDATTACK && M_SecretUnlocked(SECRET_ENCORE)) // gotta have it unlocked first ofc
 	{
 		char encoretoggle[32] = {0};
 		const char *item1 = gamecontrol[0][gc_fire][0] != 0 ? G_KeynumToString(gamecontrol[0][gc_fire][0]) : NULL;
