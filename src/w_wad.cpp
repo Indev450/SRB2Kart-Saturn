@@ -424,7 +424,7 @@ static lumpinfo_t* ResGetLumpsStandalone(FILE* handle, UINT16* numlumps, const c
 	strcpy(lumpinfo->fullname, lumpname);
 	lumpinfo->fullname[lumpinfo->namelength] = '\0';
 	lumpinfo->fullnamelength = lumpinfo->namelength;
-	lumpinfo->hash.fullname = lumpinfo->hash.name;
+	//lumpinfo->hash.fullname = lumpinfo->hash.name;
 
 	*numlumps = 1;
 	return lumpinfo;
@@ -535,7 +535,7 @@ static lumpinfo_t* ResGetLumpsWad(FILE* handle, UINT16* nlmp, const char* filena
 		strncpy(lump_p->fullname, fileinfo->name, 8);
 		lump_p->fullname[8] = '\0';
 		lump_p->fullnamelength = lump_p->namelength;
-		lump_p->hash.fullname = lump_p->hash.name;
+		//lump_p->hash.fullname = lump_p->hash.name;
 	}
 
 	*nlmp = numlumps;
@@ -732,7 +732,7 @@ static lumpinfo_t* ResGetLumpsZip(FILE* handle, UINT16* nlmp)
 		lump_p->fullname = static_cast<char *>(Z_Calloc(SHORT(zentry->namelen) + 1, PU_STATIC, NULL));
 		strncpy(lump_p->fullname, fullname, SHORT(zentry->namelen));
 		lump_p->fullnamelength = zentry->namelen;
-		lump_p->hash.fullname = W_HashLumpName(lump_p->fullname);
+		//lump_p->hash.fullname = W_HashLumpName(lump_p->fullname);
 
 		switch(SHORT(zentry->compression))
 		{
