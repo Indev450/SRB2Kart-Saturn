@@ -144,6 +144,7 @@ static void Command_Addfile(void);
 static void Command_Addskins(void);
 static void Command_GLocalSkin(void);
 static void Command_ListWADS_f(void);
+static void Command_LocateLump_f(void);
 static void Command_ListDoomednums_f(void);
 static void Command_ListUnusedSprites_f(void);
 static void Command_RunSOC(void);
@@ -638,6 +639,7 @@ void D_RegisterServerCommands(void)
 	COM_AddCommand("addfile", Command_Addfile);
 	COM_AddCommand("addskins", Command_Addskins);
 	COM_AddCommand("listwad", Command_ListWADS_f);
+	COM_AddCommand("locatelump", Command_LocateLump_f);
 	COM_AddCommand("listmapthings", Command_ListDoomednums_f);
 	COM_AddCommand("listunusedsprites", Command_ListUnusedSprites_f);
 
@@ -4719,6 +4721,31 @@ static void Command_ListWADS_f(void)
 			CONS_Printf("\x82 * %.2d\x80: %s\n", i, tempname);
 		else
 			CONS_Printf("   %.2d: %s\n", i, tempname);
+	}
+}
+
+static void Command_LocateLump_f(void)
+{
+	if (COM_Argc() == 1)
+	{
+		CONS_Printf("Usage: locatelump <lump1>[ <lump2>[ ...]]\n");
+		return;
+	}
+
+	for (INT32 i = 1; i < COM_Argc(); ++i)
+	{
+		const char *name = COM_Argv(i);
+
+		lumpnum_t num = W_CheckNumForName(name);
+
+		const char *wadname = "(not found)";
+
+		if (num != LUMPERROR)
+		{
+			wadname = wadfiles[WADFILENUM(num)]->filename;
+		}
+
+		CONS_Printf("%s - %s\n", name, wadname);
 	}
 }
 
