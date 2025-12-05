@@ -4186,10 +4186,12 @@ void P_ResetLocalCamAiming(player_t *player)
 
 boolean P_SpectatorJoinGame(player_t *player)
 {
+	const boolean islocalplayer = P_IsLocalPlayer(player);
+
 	// Team changing isn't allowed.
 	if (!cv_allowteamchange.value)
 	{
-		if (P_IsLocalPlayer(player))
+		if (islocalplayer)
 			CONS_Printf(M_GetText("Server does not allow team change.\n"));
 	}
 	// Team changing in Team Match and CTF
@@ -4237,8 +4239,19 @@ boolean P_SpectatorJoinGame(player_t *player)
 		P_ResetLocalCamAiming(player);
 
 		//Reset away view
-		if (P_IsLocalPlayer(player) && displayplayers[0] != consoleplayer)
+		if (islocalplayer && displayplayers[0] != consoleplayer)
 			displayplayers[0] = consoleplayer;
+
+		if (!demo.playback && islocalplayer)
+		{
+			if (!player->spectator)
+			{
+				const INT32 playernum = P_GetLocalPlayerNumForPlayer(player);
+
+				if (playernum != -1)
+					camera[playernum].freecam = false;
+			}
+		}
 
 		if (changeto == 1)
 			CONS_Printf(M_GetText("%s switched to the %c%s%c.\n"), player_names[player-players], '\x85', M_GetText("Red team"), '\x80');
@@ -4264,8 +4277,19 @@ boolean P_SpectatorJoinGame(player_t *player)
 		P_ResetLocalCamAiming(player);
 
 		//Reset away view
-		if (P_IsLocalPlayer(player) && displayplayers[0] != consoleplayer)
+		if (islocalplayer && displayplayers[0] != consoleplayer)
 			displayplayers[0] = consoleplayer;
+
+		if (!demo.playback && islocalplayer)
+		{
+			if (!player->spectator)
+			{
+				const INT32 playernum = P_GetLocalPlayerNumForPlayer(player);
+
+				if (playernum != -1)
+					camera[playernum].freecam = false;
+			}
+		}
 
 		HU_AddChatText(va(M_GetText("\x82*%s entered the game."), player_names[player-players]), false);
 		return true; // no more player->mo, cannot continue.
