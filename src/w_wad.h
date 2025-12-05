@@ -137,8 +137,8 @@ typedef struct wadfile_s
 #ifdef ROTSPRITE
 	lumpcache_t *rotcache; // Cache rotsprites for rotating patches.
 #endif
-	aatree_t *startfolders;
-	aatree_t *endfolders;
+	struct FolderCache *startfolders;
+	struct FolderCache *endfolders;
 	UINT16 numlumps; // this wad's number of resources
 	FILE *handle;
 	UINT32 filesize; // for network
