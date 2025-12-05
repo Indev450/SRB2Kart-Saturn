@@ -6243,11 +6243,27 @@ void M_DrawTimeAttackMenu(void)
 
 	SHOWMODDEDGAME
 
+	const INT32 skinnum = max(cv_chooseskin.value-1, 0); // dont think its needed but better safe than sorry!
+	const skin_t *skin = &skins[skinnum];
+
 	// Character face!
-	if (W_CheckNumForName(skins[cv_chooseskin.value-1].facewant) != LUMPERROR)
+	if (W_CheckNumForName(skin->facewant) != LUMPERROR)
 	{
-		UINT8 *colormap = R_GetTranslationColormap(cv_chooseskin.value-1, cv_playercolor.value, GTC_MENUCACHE);
-		V_DrawMappedPatch(BASEVIDWIDTH-x - facewantprefix[cv_chooseskin.value-1]->width, y, 0, facewantprefix[cv_chooseskin.value-1], colormap);
+		const INT32 charx = (BASEVIDWIDTH-x - facewantprefix[skinnum]->width);
+
+		UINT8 *colormap = NULL;
+
+		colormap = R_GetTranslationColormap(skinnum, cv_playercolor.value, GTC_MENUCACHE);
+		V_DrawMappedPatch(charx, y, 0, facewantprefix[skinnum], colormap);
+
+		// draw stats
+		// speed
+		colormap = R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_BLUEBERRY, GTC_CACHE);
+		V_DrawFixedPatch((charx-6) << FRACBITS, (y-5) << FRACBITS, 3*FRACUNIT/2, 0, kp_facenum[min(9, max(1, skin->kartspeed))], colormap);
+		// weight
+		colormap = R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_BURGUNDY, GTC_CACHE);
+		V_DrawFixedPatch((charx+25) << FRACBITS, (y+25) << FRACBITS, 3*FRACUNIT/2, 0, kp_facenum[min(9, max(1, skin->kartweight))], colormap);
+		// idk if kp_facenum are the best numbers for this case? but works with some scaling lul
 	}
 
 	for (i = 0; i < currentMenu->numitems; ++i)
@@ -6277,7 +6293,7 @@ void M_DrawTimeAttackMenu(void)
 			}
 			else
 			{
-				const char *str = ((cv == &cv_chooseskin) ? skins[cv_chooseskin.value-1].realname : cv->string);
+				const char *str = ((cv == &cv_chooseskin) ? skin->realname : cv->string);
 				INT32 soffset = 40, strw = V_StringWidth(str, 0);
 
 				// hack to keep the menu from overlapping the level icon
@@ -6322,10 +6338,12 @@ void M_DrawTimeAttackMenu(void)
 	{
 		tic_t lap = 0, time = 0;
 
-		if (mainrecords[cv_nextmap.value-1])
+		const recorddata_t *currecord = mainrecords[cv_nextmap.value-1];
+
+		if (currecord)
 		{
-			lap = mainrecords[cv_nextmap.value-1]->lap;
-			time = mainrecords[cv_nextmap.value-1]->time;
+			lap = currecord->lap;
+			time = currecord->time;
 		}
 
 		V_DrawFill((BASEVIDWIDTH - vid.scaledwidth)>>1, 78, vid.scaledwidth, 36, 239);
@@ -6347,6 +6365,7 @@ void M_DrawTimeAttackMenu(void)
 			y = currentMenu->y+SP_TimeAttackMenu[i].alphaKey;
 			V_DrawString(x, y, V_TRANSLUCENT|MENUCAPS, SP_TimeAttackMenu[i].text);
 			ncv = (consvar_t *)SP_TimeAttackMenu[i].itemaction;
+
 			if (SP_TimeAttackMenu[i].status & IT_CV_STRING)
 			{
 				M_DrawTextBox(x + 32, y - 8, MAXPLAYERNAME, 1);
@@ -6354,7 +6373,7 @@ void M_DrawTimeAttackMenu(void)
 			}
 			else
 			{
-				const char *str = ((ncv == &cv_chooseskin) ? skins[cv_chooseskin.value-1].realname : ncv->string);
+				const char *str = ((ncv == &cv_chooseskin) ? skin->realname : ncv->string);
 				INT32 soffset = 40, strw = V_StringWidth(str, 0);
 
 				// hack to keep the menu from overlapping the level icon
