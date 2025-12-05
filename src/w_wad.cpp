@@ -1167,21 +1167,22 @@ UINT16 W_CheckNumForMarkerStartPwad(const char *name, UINT16 wad, UINT16 startlu
 // Look for the first lump from a folder.
 UINT16 W_CheckNumForFolderStartPK3(const char *name, UINT16 wad, UINT16 startlump)
 {
-	size_t name_length;
 	UINT16 i;
+	size_t namelen;
 	lumpinfo_t *lump_p = wadfiles[wad]->lumpinfo + startlump;
-	name_length = strlen(name);
+
 
 	void *val = M_AATreeGetString(wadfiles[wad]->startfolders, name);
 	if (val != NULL)
 		return static_cast<UINT16>(reinterpret_cast<uintptr_t>(val));
+	namelen = strlen(name);
 
 	for (i = startlump; i < wadfiles[wad]->numlumps; i++, lump_p++)
 	{
-		if (strnicmp(name, lump_p->fullname, name_length) == 0)
+		if (strnicmp(name, lump_p->fullname, namelen) == 0)
 		{
 			/* SLADE is special and puts a single directory entry. Skip that. */
-			if (strlen(lump_p->fullname) == name_length)
+			if (lump_p->fullnamelength == namelen)
 				i++;
 
 			M_AATreeSetString(wadfiles[wad]->startfolders, name, reinterpret_cast<void*>(static_cast<uintptr_t>(i)));
@@ -1199,16 +1200,18 @@ UINT16 W_CheckNumForFolderStartPK3(const char *name, UINT16 wad, UINT16 startlum
 UINT16 W_CheckNumForFolderEndPK3(const char *name, UINT16 wad, UINT16 startlump)
 {
 	UINT16 i;
+	size_t namelen;
 	lumpinfo_t *lump_p = wadfiles[wad]->lumpinfo + startlump;
-	size_t name_length = strlen(name);
 
 	void *val = M_AATreeGetString(wadfiles[wad]->endfolders, name);
 	if (val != NULL)
 		return static_cast<UINT16>(reinterpret_cast<uintptr_t>(val));
 
+	namelen = strlen(name);
+
 	for (i = startlump; i < wadfiles[wad]->numlumps; i++, lump_p++)
 	{
-		if (strnicmp(name, lump_p->fullname, name_length))
+		if (strnicmp(name, lump_p->fullname, namelen))
 			break;
 	}
 
@@ -1221,12 +1224,14 @@ UINT16 W_CheckNumForFolderEndPK3(const char *name, UINT16 wad, UINT16 startlump)
 UINT16 W_CheckNumForFullNamePK3(const char *name, UINT16 wad, UINT16 startlump)
 {
 	UINT16 i;
+	size_t namelen;
 	lumpinfo_t *lump_p = wadfiles[wad]->lumpinfo + startlump;
-	size_t name_length = strlen(name);
+
+	namelen = strlen(name);
 
 	for (i = startlump; i < wadfiles[wad]->numlumps; i++, lump_p++)
 	{
-		if (!strnicmp(name, lump_p->fullname, name_length))
+		if (!strnicmp(name, lump_p->fullname, namelen))
 		{
 			return i;
 		}
