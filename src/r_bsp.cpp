@@ -515,7 +515,7 @@ const INT32 checkcoord[12][4] =
 static boolean R_CheckBBox(const fixed_t *bspcoord)
 {
 	angle_t angle1, angle2;
-	INT32 sx1, sx2, boxpos;
+	INT32 sx1, sx2;
 	const INT32* check;
 
 	// Find the corners of the box

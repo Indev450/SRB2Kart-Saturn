@@ -13,9 +13,11 @@ Mainly for use in visual-only addons like secondcolor.
 
 **Not netsafe**. Returns player's current sliptide roll angle, taking sliptideroll cvar value into account.
 
-## hud.setVoteBackground(name)
+## hud.setVoteBackground(name[, time\_per\_frame])
 
 Changes vote background texture prefix (game looks for PREFIX + "W" or "C" (depends on resolution) + FRAME\_NUMBER).
+
+If time\_per\_frame is set, each frame will last this amount of tics, default value is 2
 
 ## hud.add(fn, "vote") and hud.add(fn, "intermission")
 
@@ -119,6 +121,11 @@ v.draw(x, 150, ...)
 v.interpLatch(false)
 ```
 When using a custom string drawer, enable this mode to avoid interpolation artifacting when the string changes.
+
+## cameras[] global array
+
+Local player cameras that can be accessed outside of hud hooks.
+`#cameras` will return amount of available cameras. (0 on dedicated server, 1 with 1 player, 4 with 4p splitscreen, etc)
 
 ## mobj.spritexscale, mobj.spriteyscale, mobj.spritexoffset, mobj.spriteyoffset, mobj.rollangle, mobj.sloperoll, mobj.rollmodel fields
 
