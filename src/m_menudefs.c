@@ -600,7 +600,7 @@ static menuitem_t OP_MainMenu[] =
 	{IT_SUBMENU|IT_STRING,		NULL, "Game Focus Options...",	&OP_FocusOptionsDef,		 33},
 
 	{IT_SUBMENU|IT_STRING,		NULL, "HUD Options...",			&OP_HUDOptionsDef,			 46},
-	{IT_SUBMENU|IT_STRING,		NULL, "Camera Options...",		&OP_CamOptionsDef,			 56},
+	{IT_CALL|IT_STRING,		    NULL, "Camera Options...",		M_CameraMenu,			     56},
 	{IT_SUBMENU|IT_STRING,		NULL, "Gameplay Options...",	&OP_GameOptionsDef,			 66},
 	{IT_SUBMENU|IT_STRING,		NULL, "Server Options...",		&OP_ServerOptionsDef,		 76},
 
@@ -610,7 +610,7 @@ static menuitem_t OP_MainMenu[] =
 	{IT_CALL|IT_STRING,			NULL, "Tricks & Secrets (F1)",	M_Manual,					109},
 	{IT_CALL|IT_STRING,			NULL, "Play Credits",			M_Credits,					119},
 
-	{IT_SUBMENU|IT_STRING,		NULL, "Accessibility Options...",&OP_AccessibilityDef,		132},
+	{IT_SUBMENU|IT_STRING,		NULL, "Accessibility Options...", &OP_AccessibilityDef,		132},
 	{IT_SUBMENU|IT_STRING,		NULL, "Saturn Options...",		&OP_SaturnDef,				142},
 
 	{IT_SUBMENU|IT_STRING,		NULL, "Bird...",				&OP_BirdDef,				152},
@@ -1658,7 +1658,7 @@ static menuitem_t OP_AccessibilityMenu[] =
 
 	{IT_STRING|IT_CVAR,                NULL,   "Quake Screenshakes",             &cv_screenquake,        60},
 
-	{IT_SUBMENU|IT_STRING,             NULL,   "Camera Options...",              &OP_CamOptionsDef,      65},
+	{IT_CALL|IT_STRING,                NULL,   "Camera Options...",              M_CameraMenu,      65},
 
 	{IT_HEADER, NULL, "Audio", NULL, 75},
 
