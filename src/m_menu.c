@@ -256,6 +256,7 @@ static char *M_GetConditionString(condition_t cond);
 // Misc. Main Menu
 static void M_Options(INT32 choice);
 static void M_Multiplayer(INT32 choice);
+static void M_CameraMenu(INT32 choice);
 static void M_LocalSkinMenu(INT32 choice);
 static void M_LocalSkinChange(INT32 choice);
 static void M_Manual(INT32 choice);
@@ -648,22 +649,28 @@ void Nextmap_OnChange(void)
 			SP_ReplayMenu[i].status = IT_DISABLED;
 			SP_GuestReplayMenu[i].status = IT_DISABLED;
 		}
+
 		SP_ReplayMenu[4].status = IT_DISABLED;
 
 		SP_GhostMenu[3].status = IT_DISABLED;
 		SP_GhostMenu[4].status = IT_DISABLED;
 
-		if (FIL_FileExists(va("%s-%s-time-best.lmp", gpath, cv_chooseskin.string))) {
+		if (FIL_FileExists(va("%s-%s-time-best.lmp", gpath, cv_chooseskin.string)))
+		{
 			SP_ReplayMenu[0].status = IT_WHITESTRING|IT_CALL;
 			SP_GuestReplayMenu[0].status = IT_WHITESTRING|IT_CALL;
 			active |= 3;
 		}
-		if (FIL_FileExists(va("%s-%s-lap-best.lmp", gpath, cv_chooseskin.string))) {
+
+		if (FIL_FileExists(va("%s-%s-lap-best.lmp", gpath, cv_chooseskin.string)))
+		{
 			SP_ReplayMenu[1].status = IT_WHITESTRING|IT_CALL;
 			SP_GuestReplayMenu[1].status = IT_WHITESTRING|IT_CALL;
 			active |= 3;
 		}
-		if (FIL_FileExists(va("%s-%s-last.lmp", gpath, cv_chooseskin.string))) {
+
+		if (FIL_FileExists(va("%s-%s-last.lmp", gpath, cv_chooseskin.string)))
+		{
 			SP_ReplayMenu[2].status = IT_WHITESTRING|IT_CALL;
 			SP_GuestReplayMenu[2].status = IT_WHITESTRING|IT_CALL;
 			active |= 3;
@@ -686,7 +693,8 @@ void Nextmap_OnChange(void)
 			active |= 1;
 		}
 
-		if (active) {
+		if (active)
+		{
 			if (active & 1)
 				SP_TimeAttackMenu[tareplay].status = IT_WHITESTRING|IT_SUBMENU;
 			if (active & 2)
@@ -9782,6 +9790,13 @@ static void M_DrawHUDOptions(void)
 	x -= w3;
 	V_DrawString(x, y, recommendedflags, str3);
 	V_DrawRightAlignedString(x, y, highlightflags, "(");
+}
+
+static void M_CameraMenu(INT32 choice)
+{
+	(void)choice;
+	OP_CamOptionsDef.prevMenu = currentMenu;
+	M_SetupNextMenu(&OP_CamOptionsDef);
 }
 
 static void M_LocalSkinMenu(INT32 choice)
