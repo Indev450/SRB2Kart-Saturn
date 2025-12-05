@@ -114,6 +114,11 @@ struct LumpnumStringEquals
 
 static std::unordered_map<std::string, lumpnum_t, LumpnumNameHash, LumpnumStringEquals> lumpnumcache(LUMPNUMCACHESIZE);
 
+// gotta wrap this in a struct due to external C linkage
+struct FolderCache {
+    std::unordered_map<std::string, UINT16, LumpnumNameHash, LumpnumStringEquals> map;
+};
+
 static const char pat_central[] = {0x50, 0x4b, 0x01, 0x02, 0x00};
 static const char pat_end[] = {0x50, 0x4b, 0x05, 0x06, 0x00};
 
@@ -143,8 +148,8 @@ void W_Shutdown(void)
 			Z_Free(wad->lumpinfo[wad->numlumps].fullname);
 		}
 
-		M_AATreeFree(wad->startfolders);
-		M_AATreeFree(wad->endfolders);
+		delete wad->startfolders;
+		delete wad->endfolders;
 
 		Z_Free(wad->lumpinfo);
 		Z_Free(wad);
@@ -916,8 +921,8 @@ UINT16 W_InitFile(const char *filename, boolean local, boolean startup)
 	fseek(handle, 0, SEEK_END);
 	wadfile->filesize = static_cast<unsigned>(ftell(handle));
 	wadfile->type = type;
-	wadfile->startfolders = M_AATreeAlloc(AATREE_STRING);
-	wadfile->endfolders = M_AATreeAlloc(AATREE_STRING);
+	wadfile->startfolders = new FolderCache();
+	wadfile->endfolders = new FolderCache();
 
 	// already generated, just copy it over
 	memcpy(&wadfile->md5sum, &md5sum, 16);
@@ -1171,10 +1176,10 @@ UINT16 W_CheckNumForFolderStartPK3(const char *name, UINT16 wad, UINT16 startlum
 	size_t namelen;
 	lumpinfo_t *lump_p = wadfiles[wad]->lumpinfo + startlump;
 
+	auto it = wadfiles[wad]->startfolders->map.find(name);
+	if (it != wadfiles[wad]->startfolders->map.end())
+		return it->second;
 
-	void *val = M_AATreeGetString(wadfiles[wad]->startfolders, name);
-	if (val != NULL)
-		return static_cast<UINT16>(reinterpret_cast<uintptr_t>(val));
 	namelen = strlen(name);
 
 	for (i = startlump; i < wadfiles[wad]->numlumps; i++, lump_p++)
@@ -1185,12 +1190,12 @@ UINT16 W_CheckNumForFolderStartPK3(const char *name, UINT16 wad, UINT16 startlum
 			if (lump_p->fullnamelength == namelen)
 				i++;
 
-			M_AATreeSetString(wadfiles[wad]->startfolders, name, reinterpret_cast<void*>(static_cast<uintptr_t>(i)));
+			wadfiles[wad]->startfolders->map[name] = i;
 			return i;
 		}
 	}
 
-	M_AATreeSetString(wadfiles[wad]->startfolders, name, reinterpret_cast<void *>(INT16_MAX));
+	wadfiles[wad]->startfolders->map[name] = INT16_MAX;
 	return INT16_MAX;
 }
 
@@ -1203,9 +1208,9 @@ UINT16 W_CheckNumForFolderEndPK3(const char *name, UINT16 wad, UINT16 startlump)
 	size_t namelen;
 	lumpinfo_t *lump_p = wadfiles[wad]->lumpinfo + startlump;
 
-	void *val = M_AATreeGetString(wadfiles[wad]->endfolders, name);
-	if (val != NULL)
-		return static_cast<UINT16>(reinterpret_cast<uintptr_t>(val));
+	auto it = wadfiles[wad]->endfolders->map.find(name);
+	if (it != wadfiles[wad]->endfolders->map.end())
+		return it->second;
 
 	namelen = strlen(name);
 
@@ -1215,7 +1220,7 @@ UINT16 W_CheckNumForFolderEndPK3(const char *name, UINT16 wad, UINT16 startlump)
 			break;
 	}
 
-	M_AATreeSetString(wadfiles[wad]->endfolders, name, reinterpret_cast<void*>(static_cast<uintptr_t>(i)));
+	wadfiles[wad]->endfolders->map[name] = i;
 	return i;
 }
 
