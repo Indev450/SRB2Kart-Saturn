@@ -972,6 +972,14 @@ Public License instead of this License.  But first, please read
           Copyright (C) 1995-2018 Free Software Foundation, Inc.
           https://www.gnu.org/software/gettext/
 
+        - FluidSynth
+          Copyright (C) 2000-2025 Peter Hanappe and others.
+          https://www.fluidsynth.org/
+
+        - libsndfile
+          Copyright (C) 1999-2016 Erik de Castro Lopo
+          https://libsndfile.github.io/libsndfile/
+
         - mpg123
           Copyright (c) 1995-2013 by Michael Hipp and others,
           free software under the terms of the LGPL v2.1
@@ -1699,12 +1707,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
                         zlib License
         applies to:
         - Simple DirectMedia Layer
-          Copyright (C) 1997-2018 Sam Lantinga <slouken@libsdl.org>
-          https://www.libsdl.org/hg.php
-
-        - SDL_mixer:  An audio mixer library based on the SDL library
-          Copyright (C) 1997-2018 Sam Lantinga <slouken@libsdl.org>
-          https://www.libsdl.org/projects/SDL_mixer/
+          Copyright (C) 1997-2025 Sam Lantinga <slouken@libsdl.org>
+          https://libsdl.org/
 
         - zlib
           Copyright (C) 1995-2017 Jean-loup Gailly and Mark Adler
