@@ -4390,7 +4390,7 @@ static void Command_LocateLump_f(void)
 		return;
 	}
 
-	for (INT32 i = 1; i < COM_Argc(); ++i)
+	for (size_t i = 1; i < COM_Argc(); ++i)
 	{
 		const char *name = COM_Argv(i);
 
