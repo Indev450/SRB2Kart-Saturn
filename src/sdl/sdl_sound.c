@@ -1001,7 +1001,6 @@ INT32 I_StartSound(sfxenum_t id, UINT8 vol, UINT8 sep, /*UINT8 pitch, UINT8 prio
 {
 	//(void)channel; // ignore this - we do mixing ourselves so we don't need it
 	//(void)priority; // priority and channel management is handled by SRB2...
-	//(void)pitch; // TODO (we can do this now with SDL3)
 	if (S_sfx[id].data == NULL)
 		return -1;
 
@@ -1074,7 +1073,6 @@ boolean I_SoundIsPlaying(INT32 handle)
 
 void I_UpdateSoundParams(INT32 handle, UINT8 vol, UINT8 sep/*, UINT8 pitch*/)
 {
-	//(void)pitch; // TODO
 	if (handle == -1)
 		return;
 
