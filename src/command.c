@@ -57,7 +57,6 @@ static void CV_EnforceExecVersion(void);
 static boolean CV_FilterVarByVersion(consvar_t *v, const char *valstr);
 
 static boolean CV_Command(void);
-consvar_t *CV_FindVar(const char *name);
 static const char *CV_StringValue(const char *var_name);
 static consvar_t *consvar_vars; // list of registered console variables
 

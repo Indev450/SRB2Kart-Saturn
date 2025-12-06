@@ -33,6 +33,8 @@
 #include "d_main.h"
 #include "m_menu.h"
 #include "m_textinput.h"
+#include "m_emotes.h"
+#include "i_time.h"
 #include "filesrch.h"
 
 #ifdef HWRENDER
@@ -166,6 +168,8 @@ static CV_PossibleValue_t menuhighlight_cons_t[] =
 	{0, NULL}
 };
 consvar_t cons_menuhighlight = {"menuhighlight", "Gametype Default", CV_SAVE, menuhighlight_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+
+consvar_t cons_consoleprintinmenu = {"consoleprintinmenu", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 static void CON_Print(char *msg);
 
@@ -424,6 +428,7 @@ void CON_Init(void)
 		CV_RegisterVar(&cons_backpic);
 		CV_RegisterVar(&cons_backcolor);
 		CV_RegisterVar(&cons_menuhighlight);
+		CV_RegisterVar(&cons_consoleprintinmenu);
 		COM_AddCommand("bind", CONS_Bind_f);
 	}
 	else
@@ -584,11 +589,17 @@ static void CON_ChangeHeight(void)
 
 // Handles Console moves in/out of screen (per frame)
 //
-static void CON_MoveConsole(void)
+void CON_MoveConsole(void)
 {
 	static fixed_t fracmovement = 0;
 
 	Lock_state();
+
+	if (con_curlines == con_destlines)
+	{
+		Unlock_state();
+		return;
+	}
 
 	// instant
 	if (!cons_speed.value)
@@ -1453,7 +1464,18 @@ static void CON_DrawHudlines(void)
 			}
 			if (c >= con_width)
 				break;
-			if (*p < HU_FONTSTART)
+
+			int emotelen;
+			emote_t *emote;
+
+			if ((emote = M_VerifyEmote((const char *)p, &emotelen)))
+			{
+				M_DrawScaledEmote(x<<FRACBITS, (y+2*con_scalefactor)<<FRACBITS, charwidth*FRACUNIT/EMOTEWIDTH, emote, V_NOSCALESTART|V_NOSCALEPATCH);
+				p += emotelen-1;
+				c += emotelen-1;
+				continue;
+			}
+			else if (*p < HU_FONTSTART)
 				;//charwidth = 4 * con_scalefactor;
 			else
 			{
@@ -1485,7 +1507,7 @@ static void CON_DrawConsole(void)
 	// draw console background
 	if (cons_backpic.value || con_forcepic)
 	{
-		patch_t *con_backpic = W_CachePatchName("KARTKREW", PU_PATCH_LOWPRIORITY);
+		patch_t *con_backpic = W_CachePatchName("KARTKREW", PU_PATCH);
 
 		// Jimita: CON_DrawBackpic just called V_DrawScaledPatch
 		V_DrawFixedPatch(0, 0, FRACUNIT/2, 0, con_backpic, NULL);
@@ -1527,8 +1549,20 @@ static void CON_DrawConsole(void)
 				p++;
 				c++;
 			}
+
 			if (c >= con_width)
 				break;
+
+			int emotelen;
+			emote_t *emote;
+
+			if ((emote = M_VerifyEmote((const char *)p, &emotelen)))
+			{
+				M_DrawScaledEmote(x<<FRACBITS, (y+2*con_scalefactor)<<FRACBITS, charwidth*FRACUNIT/EMOTEWIDTH, emote, V_NOSCALESTART|V_NOSCALEPATCH);
+				p += emotelen-1;
+				c += emotelen-1;
+				continue;
+			}
 			V_DrawCharacter(x, y, (INT32)(*p) | charflags | cv_constextsize.value | V_NOSCALESTART, !cv_allcaps.value);
 		}
 	}
@@ -1559,13 +1593,12 @@ void CON_Drawer(void)
 	}
 
 	// console movement
-	if (con_curlines != con_destlines)
-		CON_MoveConsole();
+	CON_MoveConsole();
 
 	if (con_curlines > 0)
 		CON_DrawConsole();
 	else if (gamestate == GS_LEVEL || gamestate == GS_INTERMISSION || gamestate == GS_CUTSCENE || gamestate == GS_CREDITS
-		|| gamestate == GS_VOTING || gamestate == GS_EVALUATION || gamestate == GS_WAITINGPLAYERS)
+		|| gamestate == GS_VOTING || gamestate == GS_EVALUATION || gamestate == GS_WAITINGPLAYERS || (cons_consoleprintinmenu.value && gamestate == GS_TITLESCREEN))
 		CON_DrawHudlines();
 
 	Unlock_state();

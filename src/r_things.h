@@ -35,19 +35,6 @@ extern "C" {
 
 #define FEETADJUST (4<<FRACBITS) // R_AddSingleSpriteDef
 
-// Takes 2 fixed-point coordinates, returns "distance" between them and camera,
-// as an non-fixed-point integer.
-// It is very rough, tho it is used only for optimizing out unnecessary
-// interpolation, so it is kinda ok on big distances.
-
-#ifdef __cplusplus
-#define R_QuickCamDist(x, y) std::max(std::abs(((x)>>FRACBITS) - (viewx>>FRACBITS)), std::abs(((y)>>FRACBITS) - (viewy>>FRACBITS)))
-#define R_QuickDist(x1, y1, x, y) std::max(std::abs(((x)>>FRACBITS) - (x1>>FRACBITS)), std::abs(((y)>>FRACBITS) - (y1>>FRACBITS)))
-#else
-#define R_QuickCamDist(x, y) max(abs(((x)>>FRACBITS) - (viewx>>FRACBITS)), abs(((y)>>FRACBITS) - (viewy>>FRACBITS)))
-#define R_QuickDist(x1, y1, x, y) max(abs(((x)>>FRACBITS) - (x1>>FRACBITS)), abs(((y)>>FRACBITS) - (y1>>FRACBITS)))
-#endif
-
 // Constant arrays used for psprite clipping
 //  and initializing clipping.
 extern INT16 *negonearray;
@@ -67,6 +54,7 @@ FUNCINLINE static ATTRINLINE INT32 R_ThingLightLevel(mobj_t* thing)
 {
 	return (INT32)thing->lightlevel;
 }
+
 fixed_t R_GetSpriteDirectionalLighting(angle_t angle);
 
 fixed_t R_GetShadowZ(mobj_t *thing, pslope_t **shadowslope);

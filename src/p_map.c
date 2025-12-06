@@ -223,14 +223,7 @@ boolean P_DoSpring(mobj_t *spring, mobj_t *object)
 
 			if (!demo.playback || P_AnalogMove(object->player))
 			{
-				for (UINT8 j = 0; j <= splitscreen; ++j)
-				{
-					if (object->player == P_GetLocalPlayerForNum(j))
-					{
-						localangle[j] = spring->angle;
-						break;
-					}
-				}
+				P_ForceLocalAngle(object->player, spring->angle);
 			}
 		}
 

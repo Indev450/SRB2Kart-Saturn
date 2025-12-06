@@ -151,7 +151,6 @@ static      UINT32       localPalette[256];
 Uint16      realwidth = BASEVIDWIDTH;
 Uint16      realheight = BASEVIDHEIGHT;
 #define HalfWarpMouse(x,y) if (wrapmouseok) SDL_WarpMouseInWindow(window, (Uint16)(x/2),(Uint16)(y/2))
-static      SDL_bool    exposevideo = SDL_FALSE;
 static      SDL_bool    usesdl2soft = SDL_FALSE;
 static      SDL_bool    borderlesswindow = SDL_FALSE;
 
@@ -1007,7 +1006,7 @@ static void Impl_HandleControllerAddedEvent(SDL_Event evt)
 	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
 	{
 		I_InitJoystick(i);
-		G_SetPlayerGamepadIndicatorColor(i, G_GetSkinColor(i)); // gotta update the controller led again on reconnect
+		G_SetPlayerGamepadIndicatorColor(i, 0); // gotta update the controller led again on reconnect
 	}
 
 	////////////////////////////////////////////////////////////
@@ -1015,11 +1014,11 @@ static void Impl_HandleControllerAddedEvent(SDL_Event evt)
 	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
 		CONS_Debug(DBG_GAMELOGIC, "Joystick%d device index: %d\n", i+1, JoyInfo[i].oldjoy);
 
+	numcontrollers = I_NumJoys();
+
 	// update the menu
 	if (currentMenu == &OP_JoystickSetDef)
 		M_SetupJoystickMenu(0);
-
-	numcontrollers = I_NumJoys();
 
 	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
 	{
@@ -1077,11 +1076,11 @@ static void Impl_HandleControllerRemovedEvent(void)
 	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
 		CONS_Debug(DBG_GAMELOGIC, "Joystick%d device index: %d\n", i+1, JoyInfo[i].oldjoy);
 
+	numcontrollers = I_NumJoys();
+
 	// update the menu
 	if (currentMenu == &OP_JoystickSetDef)
 		M_SetupJoystickMenu(0);
-
-	numcontrollers = I_NumJoys();
 }
 
 void I_GetEvent(void)
@@ -1396,31 +1395,6 @@ static void SDLSetMode(INT32 width, INT32 height, SDL_bool fullscreen)
 }
 
 //
-// I_UpdateNoBlit
-//
-void I_UpdateNoBlit(void)
-{
-	if (rendermode == render_none)
-		return;
-
-	if (exposevideo)
-	{
-#ifdef HWRENDER
-		if (rendermode == render_opengl)
-		{
-			OglSdlFinishUpdate(cv_vidwait.value);
-			return;
-		}
-
-#endif
-		SDL_RenderCopy(renderer, texture, NULL, NULL);
-		SDL_RenderPresent(renderer);
-	}
-
-	exposevideo = SDL_FALSE;
-}
-
-//
 // I_FinishUpdate
 //
 static SDL_Rect src_rect = { 0, 0, 0, 0 };
@@ -1479,8 +1453,6 @@ void I_FinishUpdate(void)
 		SDL_RenderCopy(renderer, texture, &src_rect, NULL);
 		SDL_RenderPresent(renderer);
 	}
-
-	exposevideo = SDL_FALSE;
 }
 
 //
@@ -2025,13 +1997,20 @@ void I_ShutdownGraphics(void)
 
 	graphics_started = false;
 	I_OutputMsg("shut down\n");
-
 #ifdef HWRENDER
 	if (sdlglcontext)
-	{
 		SDL_GL_DeleteContext(sdlglcontext);
-	}
+	sdlglcontext = NULL;
 #endif
+	if (texture)
+		SDL_DestroyTexture(texture);
+	texture = NULL;
+	if (renderer)
+		SDL_DestroyRenderer(renderer);
+	renderer = NULL;
+	if (window)
+		SDL_DestroyWindow(window);
+	window = NULL;
 
 	SDL_QuitSubSystem(SDL_INIT_VIDEO);
 	framebuffer = SDL_FALSE;

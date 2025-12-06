@@ -568,7 +568,7 @@ static patch_t *kp_racefinish[6];
 static patch_t *kp_positionnum[NUMPOSNUMS][NUMPOSFRAMES];
 static patch_t *kp_winnernum[NUMPOSFRAMES];
 
-static patch_t *kp_facenum[MAXPLAYERS+1];
+patch_t *kp_facenum[MAXPLAYERS+1];
 static patch_t *kp_facehighlight[8];
 
 static patch_t *kp_rankbumper;
@@ -1074,6 +1074,49 @@ static void K_initKartHUD(void)
 	// K_GetScreenCoords needs the right view* variables
 	R_SetViewContext(stplyrnum);
 	R_InterpolateView(R_GetTimeFrac(RTF_CAMERA), !cv_uncappedhud.value);
+}
+
+void K_KartPlayerHUDUpdate(player_t *player)
+{
+	if (player->kartstuff[k_lapanimation])
+		player->kartstuff[k_lapanimation]--;
+
+	if (player->kartstuff[k_yougotem])
+		player->kartstuff[k_yougotem]--;
+
+	if (G_BattleGametype() && (player->exiting || player->kartstuff[k_comebacktimer]))
+	{
+		if (player->exiting)
+		{
+			if (player->exiting < 6*TICRATE)
+				player->kartstuff[k_cardanimation] += ((164-player->kartstuff[k_cardanimation])/8)+1;
+			else if (player->exiting == 6*TICRATE)
+				player->kartstuff[k_cardanimation] = 0;
+			else if (player->kartstuff[k_cardanimation] < 2*TICRATE)
+				player->kartstuff[k_cardanimation]++;
+		}
+		else
+		{
+			if (player->kartstuff[k_comebacktimer] < 6*TICRATE)
+				player->kartstuff[k_cardanimation] -= ((164-player->kartstuff[k_cardanimation])/8)+1;
+			else if (player->kartstuff[k_comebacktimer] < 9*TICRATE)
+				player->kartstuff[k_cardanimation] += ((164-player->kartstuff[k_cardanimation])/8)+1;
+		}
+
+		if (player->kartstuff[k_cardanimation] > 164)
+			player->kartstuff[k_cardanimation] = 164;
+		if (player->kartstuff[k_cardanimation] < 0)
+			player->kartstuff[k_cardanimation] = 0;
+	}
+	else if (G_RaceGametype() && player->exiting)
+	{
+		if (player->kartstuff[k_cardanimation] < 2*TICRATE)
+			player->kartstuff[k_cardanimation]++;
+	}
+	else
+	{
+		player->kartstuff[k_cardanimation] = 0;
+	}
 }
 
 UINT8 K_GetHudColor(void)
@@ -2860,7 +2903,7 @@ static boolean K_GetScreenCoords(vector2_t *vec, player_t *player, mobj_t *targe
 
 	// X coordinate
 	// get difference between camangle and angle towards target
-	x = (INT32)viewangle - (INT32)R_PointToAngle(targx, targy);
+	x = (fixed_t)(viewangle - R_PointToAngle(targx, targy));
 
 	distfact = FINECOSINE((x>>ANGLETOFINESHIFT) & FINEMASK);
     if (!distfact) distfact = 1;
@@ -4387,8 +4430,10 @@ static void K_drawLapStartAnim(void)
 	UINT8 *colormap = R_GetTranslationColormap(TC_DEFAULT, K_GetHudColor(), GTC_CACHE);
 	INT32 vflags = V_SNAPTOTOP|V_HUDTRANS;
 
-	fixed_t slideout = max(0, 32*(((progress - 76)*FRACUNIT) + R_GetTimeFrac(RTF_LEVEL)));
-	fixed_t slidein = max(0, 32*(((stplyr->kartstuff[k_lapanimation] - 76)*FRACUNIT) - R_GetTimeFrac(RTF_LEVEL)));
+	fixed_t slideout = 32*(((progress - 76)*FRACUNIT) + R_GetTimeFrac(RTF_LEVEL));
+	slideout = max(0, slideout);
+	fixed_t slidein = 32*(((stplyr->kartstuff[k_lapanimation] - 76)*FRACUNIT) - R_GetTimeFrac(RTF_LEVEL));
+	slidein = max(0, slidein);
 
 	// First, draw the emblem and hand
 	INT32 emblemx = (BASEVIDWIDTH << (FRACBITS - 1)) + slidein;

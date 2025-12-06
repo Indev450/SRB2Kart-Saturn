@@ -457,113 +457,6 @@ static inline void P_RunThinkers(void)
 	}
 }
 
-// Controller rumble!
-// this keeps track of a bunch of things
-// and makes your controller rumble accordingly
-static void P_DeviceRumbleTick(void)
-{
-	UINT8 i;
-
-	if (dedicated || numcontrollers == 0 || gamestate != GS_LEVEL)
-	{
-		return;
-	}
-
-	for (i = 0; i <= splitscreen; i++)
-	{
-		if (!cv_usejoystick[i].value || !cv_rumble[i].value)
-		{
-			continue;
-		}
-
-		if (camera[i].freecam)
-		{
-			continue;
-		}
-
-		UINT16 low = 0, high = 0;
-		UINT16 lenght = 57; // in ms
-
-		const player_t *player = P_GetLocalPlayerForNum(i);
-
-		// allow lua to do some crap for spectators
-		if (player->spectator || !player->mo)
-		{
-			continue;
-		}
-
-		// reset the rumble if you exit or are ded lel
-		if (player->exiting ||
-			player->playerstate == PST_DEAD ||
-			player->kartstuff[k_respawn] > 1)
-		{
-			G_PlayerDeviceRumble(i, low, high, 0);
-			continue;
-		}
-
-		if (player->kartstuff[k_spinouttimer])
-		{
-			//low = high = FRACUNIT / 6;
-			low = high = FixedMul((FRACUNIT / 4), (FixedDiv(player->kartstuff[k_spinouttimer], (3*TICRATE / 2)))); // try do some some kinda fadeout
-		}
-		else if (player->kartstuff[k_sneakertimer] > (sneakertime-(TICRATE/2)))
-		{
-			low = high = FRACUNIT / 8;
-		}
-		else if ((player->kartstuff[k_offroad])
-			&& player->speed != 0
-			&& P_IsObjectOnGround(player->mo))
-		{
-			// weaken this depending on if you got hyu or invinc
-			if (player->kartstuff[k_hyudorotimer])
-			{
-				high = FRACUNIT / 128;
-			}
-			else if (player->kartstuff[k_invincibilitytimer])
-			{
-				high = FRACUNIT / 64;
-			}
-			else
-			{
-				low = high = FRACUNIT / 64;
-			}
-		}
-		else if ((player->kartstuff[k_bananadrag] > TICRATE)
-			&& player->speed != 0
-			&& P_IsObjectOnGround(player->mo))
-		{
-			if (leveltime & 1) // this is actually funny lel
-				high = FRACUNIT / 64;
-		}
-
-		if (player->kartstuff[k_brakedrift])
-		{
-			high = CLAMP((high + FRACUNIT / 256), 0, UINT16_MAX);
-		}
-
-		// pulse when gettin new driftlevel
-		// let this come last
-		if (player->kartstuff[k_driftcharge]
-			&& player->driftlevel)
-		{
-			high = CLAMP((high + FRACUNIT / 256), 0, UINT16_MAX);
-
-			if (player->driftlevel == 2)
-				lenght = 114;
-			else if (player->driftlevel == 3)
-				lenght = 174;
-		}
-
-		// hack alert! i just dont want this thing constantly resetting the rumble lol
-		if (low == 0 && high == 0)
-		{
-			continue;
-		}
-
-		G_PlayerDeviceRumble(i, low, high, lenght);
-	}
-}
-
 void P_RunChaseCameras(void)
 {
 	UINT8 i;
@@ -763,7 +656,7 @@ void P_Ticker(boolean run)
 		// Apply rumble to local players
 		if (!demo.playback)
 		{
-			P_DeviceRumbleTick();
+			G_DeviceRumbleTick();
 		}
 
 		PS_START_TIMING(ps_lua_thinkframe_time);
@@ -942,10 +835,6 @@ void P_PreTicker(INT32 frames)
 				memcpy(&players[i].cmd, &temptic, sizeof(ticcmd_t));
 			}
 		}
-
-		// Dynamic slopeness
-		if (midgamejoin)
-			P_RunDynamicSlopes();
 
 		P_RunThinkers();
 

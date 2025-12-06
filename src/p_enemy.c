@@ -8176,13 +8176,16 @@ void A_SPBChase(void *thing)
 				// Smoothly rotate horz angle
 				angle_t input = hang - actor->angle;
 				boolean invert = (input > ANGLE_180);
+				fixed_t fixedinput;
 				if (invert)
 					input = InvAngle(input);
+				fixedinput = AngleFixed(input);
 
 				// Slow down when turning; it looks better and makes U-turns not unfair
-				xyspeed = FixedMul(actor->cvmem, max(0, (((180<<FRACBITS) - AngleFixed(input)) / 90) - FRACUNIT));
+				xyspeed = (((180<<FRACBITS) - fixedinput) / 90) - FRACUNIT;
+				xyspeed = FixedMul(actor->cvmem, max(0, xyspeed));
 
-				input = FixedAngle(AngleFixed(input)/4);
+				input = FixedAngle(fixedinput/4);
 				if (invert)
 					input = InvAngle(input);
 
@@ -8193,11 +8196,13 @@ void A_SPBChase(void *thing)
 				invert = (input > ANGLE_180);
 				if (invert)
 					input = InvAngle(input);
+				fixedinput = AngleFixed(input);
 
 				// Slow down when turning; might as well do it for momz, since we do it above too
-				zspeed = FixedMul(actor->cvmem, max(0, (((180<<FRACBITS) - AngleFixed(input)) / 90) - FRACUNIT));
+				zspeed = (((180<<FRACBITS) - fixedinput) / 90) - FRACUNIT;
+				zspeed = FixedMul(actor->cvmem, max(0, zspeed));
 
-				input = FixedAngle(AngleFixed(input)/4);
+				input = FixedAngle(fixedinput/4);
 				if (invert)
 					input = InvAngle(input);
 
@@ -8301,13 +8306,17 @@ void A_SPBChase(void *thing)
 			// Smoothly rotate horz angle
 			angle_t input = hang - actor->angle;
 			boolean invert = (input > ANGLE_180);
+			fixed_t fixedinput;
+
 			if (invert)
 				input = InvAngle(input);
+			fixedinput = AngleFixed(input);
 
 			// Slow down when turning; it looks better and makes U-turns not unfair
-			xyspeed = FixedMul(wspeed, max(0, (((180<<FRACBITS) - AngleFixed(input)) / 90) - FRACUNIT));
+			xyspeed = (((180<<FRACBITS) - fixedinput) / 90) - FRACUNIT;
+			xyspeed = FixedMul(wspeed, max(0, xyspeed));
 
-			input = FixedAngle(AngleFixed(input)/4);
+			input = FixedAngle(fixedinput/4);
 			if (invert)
 				input = InvAngle(input);
 
@@ -8318,11 +8327,13 @@ void A_SPBChase(void *thing)
 			invert = (input > ANGLE_180);
 			if (invert)
 				input = InvAngle(input);
+			fixedinput = AngleFixed(input);
 
 			// Slow down when turning; might as well do it for momz, since we do it above too
-			zspeed = FixedMul(wspeed, max(0, (((180<<FRACBITS) - AngleFixed(input)) / 90) - FRACUNIT));
+			zspeed = max(0, (((180<<FRACBITS) - fixedinput) / 90) - FRACUNIT);
+			zspeed = FixedMul(wspeed, zspeed);
 
-			input = FixedAngle(AngleFixed(input)/4);
+			input = FixedAngle(fixedinput/4);
 			if (invert)
 				input = InvAngle(input);
 

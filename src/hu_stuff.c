@@ -88,6 +88,8 @@ patch_t *ranknum[10] = {}; // rank numbers
 patch_t *framecounter = NULL;
 patch_t *frameslash = NULL;	// framerate stuff. Used in screen.c
 
+patch_t *srb2back = NULL;
+
 static player_t *plr = NULL;
 boolean chat_on = false; // entering a chat message?
 static char w_chat_buf[HU_MAXMSGLEN + 1];
@@ -96,10 +98,9 @@ static boolean headsupactive = false;
 boolean hu_showscores = false; // draw rankings
 static char hu_tick;
 static tic_t hu_emoteanim = 0;
-#define MAXEMOTESUGGESTIONS 8
-static emote_t *emote_suggestions[MAXEMOTESUGGESTIONS] = {0};
+emote_autocomplete_t emote_autocomplete = {0};
 
-static huddrawlist_h luahuddrawlist_scores;
+static huddrawlist_h luahuddrawlist_scores = NULL;
 
 patch_t *rflagico = NULL;
 patch_t *bflagico = NULL;
@@ -291,6 +292,7 @@ void HU_LoadGraphics(void)
 		return;
 
 	j = HU_FONTSTART;
+
 	for (i = 0; i < HU_FONTSIZE; i++, j++)
 	{
 		// cache the heads-up font for entire game execution
@@ -361,21 +363,21 @@ void HU_LoadGraphics(void)
 			cred_font[i] = (patch_t *)W_CachePatchName(buffer, PU_HUDGFX);
 	}
 
-	//cache numbers too!
+	// cache numbers too!
 	for (i = 0; i < 10; i++)
 	{
 		sprintf(buffer, "STTNUM%d", i);
 		tallnum[i] = (patch_t *)W_CachePatchName(buffer, PU_HUDGFX);
 		sprintf(buffer, "PINGN%d", i);
-		pingnum[i] = (patch_t *) W_CachePatchName(buffer, PU_HUDGFX);
+		pingnum[i] = (patch_t *)W_CachePatchName(buffer, PU_HUDGFX);
 		sprintf(buffer, "OPPRNK0%d", i);
-		ranknum[i] = (patch_t *) W_CachePatchName(buffer, PU_HUDGFX);
+		ranknum[i] = (patch_t *)W_CachePatchName(buffer, PU_HUDGFX);
 	}
 
 	// minus for negative tallnums
 	tallminus = (patch_t *)W_CachePatchName("STTMINUS", PU_HUDGFX);
 
-	songcreditbg = W_CachePatchName("K_SONGCR", PU_HUDGFX);
+	songcreditbg = (patch_t *)W_CachePatchName("K_SONGCR", PU_HUDGFX);
 
 	// cache ping gfx:
 	for (i = 0; i < 5; i++)
@@ -384,12 +386,15 @@ void HU_LoadGraphics(void)
 		pinggfx[i] = (patch_t *)W_CachePatchName(buffer, PU_HUDGFX);
 	}
 
-	pingmeasure[0] = W_CachePatchName("PINGD", PU_HUDGFX);
-	pingmeasure[1] = W_CachePatchName("PINGMS", PU_HUDGFX);
+	pingmeasure[0] = (patch_t *)W_CachePatchName("PINGD", PU_HUDGFX);
+	pingmeasure[1] = (patch_t *)W_CachePatchName("PINGMS", PU_HUDGFX);
 
 	// fps stuff
-	framecounter = W_CachePatchName("FRAMER", PU_HUDGFX);
-	frameslash  = W_CachePatchName("FRAMESL", PU_HUDGFX);;
+	framecounter = (patch_t *)W_CachePatchName("FRAMER", PU_HUDGFX);
+	frameslash  = (patch_t *)W_CachePatchName("FRAMESL", PU_HUDGFX);
+
+	// idk where else to put this lul
+	srb2back = (patch_t *)W_CachePatchName("SRB2BACK", PU_HUDGFX);
 }
 
 // Initialise Heads up
@@ -406,8 +411,10 @@ void HU_Init(void)
 	// set shift translation table
 	shiftxform = english_shiftxform;
 
-	luahuddrawlist_scores = LUA_HUD_CreateDrawList();
+	if (dedicated || rendermode == render_none)
+		return;
 
+	luahuddrawlist_scores = LUA_HUD_CreateDrawList();
 	HU_LoadGraphics();
 }
 
@@ -1334,6 +1341,7 @@ boolean HU_Responder(event_t *ev)
 			chat_on = true;
 			w_chat_buf[0] = 0;
 			M_TextInputInit(&w_chat, w_chat_buf, sizeof w_chat_buf);
+			memset(&emote_autocomplete, 0, sizeof(emote_autocomplete));
 			teamtalk = false;
 			chat_scrollmedown = true;
 			typelines = 1;
@@ -1346,6 +1354,7 @@ boolean HU_Responder(event_t *ev)
 			chat_on = true;
 			w_chat_buf[0] = 0;
 			M_TextInputInit(&w_chat, w_chat_buf, sizeof w_chat_buf);
+			memset(&emote_autocomplete, 0, sizeof(emote_autocomplete));
 			teamtalk = G_GametypeHasTeams();	// Don't teamtalk if we don't have teams.
 			chat_scrollmedown = true;
 			typelines = 1;
@@ -1371,9 +1380,9 @@ boolean HU_Responder(event_t *ev)
 		&& ev->data1 != gamecontrol[0][gc_talkkey][1]))
 			return false;
 
-		M_TextInputHandleEmotes(&w_chat, c, emote_suggestions, MAXEMOTESUGGESTIONS);
-
-		if (c == KEY_ENTER)
+		if (M_TextInputHandleEmotes(&w_chat, c, &emote_autocomplete))
+			; // Do nothing
+		else if (c == KEY_ENTER)
 		{
 			chat_on = false;
 			chat_scrollmedown = true; // you hit enter, so you might wanna autoscroll to see what you just sent. :)
@@ -1409,8 +1418,6 @@ boolean HU_Responder(event_t *ev)
 //======================================================================
 //                         HEADS UP DRAWING
 //======================================================================
-
-#define HU_DrawEmote(x, y, emote, flags) M_DrawEmote((x), (y), (emote), hu_emoteanim, (flags))
 
 // Precompile a wordwrapped string to any given width.
 // This is a muuuch better method than V_WORDWRAP.
@@ -1614,7 +1621,7 @@ static void HU_drawMiniChat(void)
 				if (cv_chatbacktint.value) // on request of wolfy
 					V_DrawFillConsoleMap(x + dx + 2, y+dy, EMOTEWIDTH, charheight, 239|V_SNAPTOBOTTOM|V_SNAPTOLEFT);
 
-				HU_DrawEmote(x+dx+2, y+dy, emote, V_SNAPTOBOTTOM|V_SNAPTOLEFT|transflag);
+				M_DrawEmote(x+dx+2, y+dy, emote, V_SNAPTOBOTTOM|V_SNAPTOLEFT|transflag);
 				dx += EMOTEWIDTH - charwidth;
 
 				j += emotelen;
@@ -1724,7 +1731,7 @@ static void HU_drawChatLog(INT32 offset)
 			{
 				if ((y+dy+2 >= chat_topy) && (y+dy < (chat_bottomy)))
 				{
-					HU_DrawEmote(x+dx+2, y+dy, emote, V_SNAPTOBOTTOM|V_SNAPTOLEFT);
+					M_DrawEmote(x+dx+2, y+dy+1, emote, V_SNAPTOBOTTOM|V_SNAPTOLEFT);
 					dx += EMOTEWIDTH - charwidth;
 				}
 				j += emotelen;
@@ -1864,7 +1871,7 @@ static void HU_DrawChat(void)
 
 		if ((emote = M_VerifyEmote(w_chat_buf+i, &emotelen)))
 		{
-			HU_DrawEmote(chatx + c + 2, y-1, emote, V_SNAPTOBOTTOM|V_SNAPTOLEFT|t);
+			M_DrawEmote(chatx + c + 2, y-1, emote, V_SNAPTOBOTTOM|V_SNAPTOLEFT|t);
 			c += EMOTEWIDTH - charwidth;
 			i += emotelen-1;
 			drawwidth = EMOTEWIDTH;
@@ -1901,16 +1908,36 @@ static void HU_DrawChat(void)
 		}
 	}
 
-	if (emote_suggestions[0])
+	if (emote_autocomplete.emotestart != -1 && (emote_autocomplete.complete[0] || (w_chat.cursor - emote_autocomplete.emotestart) > 1))
 	{
+		emote_t *suggest;
+		int skip = 0;
+
+		const char *complete;
+		int complete_len;
+
+		if (emote_autocomplete.complete[0])
+		{
+			complete = emote_autocomplete.complete;
+			complete_len = strlen(complete);
+		}
+		else
+		{
+			complete = &w_chat_buf[emote_autocomplete.emotestart];
+			complete_len = w_chat.cursor - emote_autocomplete.emotestart;
+		}
+
 		// A bit of copy-paste from /pm code :p
 		INT32 suggesty = chaty - charheight - 1;
 		size_t longest_suggestion_length = 0;
 
-		for (i = 0; i < MAXEMOTESUGGESTIONS && emote_suggestions[i]; ++i)
+		while ((suggest = M_FindEmote(complete, complete_len, skip)) != NULL)
 		{
-			longest_suggestion_length = max(longest_suggestion_length, strlen(emote_suggestions[i]->name));
+			longest_suggestion_length = max(longest_suggestion_length, strlen(suggest->name));
+			++skip;
 		}
+
+		skip = 0;
 
 #ifdef NETSPLITSCREEN
 		if (splitscreen)
@@ -1923,11 +1950,19 @@ static void HU_DrawChat(void)
 #endif
 			suggesty -= (cv_kartspeedometer.value ? 16 : 0);
 
-		for (i = 0; i < MAXEMOTESUGGESTIONS && emote_suggestions[i]; ++i)
+		while ((suggest = M_FindEmote(complete, complete_len, skip)) != NULL)
 		{
-			V_DrawFillConsoleMap(chatx + boxw + 2, suggesty - (7*i), (longest_suggestion_length+2)*4 + EMOTEWIDTH, 6, 239|V_SNAPTOBOTTOM|V_SNAPTOLEFT);
-			V_DrawSmallString(chatx + boxw + 4 + EMOTEWIDTH, suggesty - (7*i), V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_ALLOWLOWERCASE, va(":%s:", emote_suggestions[i]->name));
-			HU_DrawEmote(chatx + boxw + 2, suggesty - i*7, emote_suggestions[i], V_SNAPTOBOTTOM|V_SNAPTOLEFT);
+			V_DrawFillConsoleMap(chatx + boxw + 2, suggesty - (7*skip), (longest_suggestion_length+2)*4 + EMOTEWIDTH, 6, V_SNAPTOBOTTOM|V_SNAPTOLEFT);
+
+			// Highlight currently suggested emote
+			int hlflag = 0;
+			if (skip == emote_autocomplete.skip && emote_autocomplete.complete[0])
+				hlflag = V_YELLOWMAP;
+
+			V_DrawSmallString(chatx + boxw + 4 + EMOTEWIDTH, suggesty - (7*skip), hlflag|V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_ALLOWLOWERCASE, va(":%s:", suggest->name));
+			M_DrawEmote(chatx + boxw + 2, suggesty - skip*7, suggest, V_SNAPTOBOTTOM|V_SNAPTOLEFT);
+
+			++skip;
 		}
 	}
 
@@ -2062,15 +2097,15 @@ static void HU_DrawChat_Old(void)
 	i = 0;
 	while (w_chat_buf[i])
 	{
-		if (w_chat.cursor == (i+1) && hu_tick < 4)
-		{
-			INT32 cursorx = (HU_INPUTX+c+charwidth < vid.width) ? (HU_INPUTX + c + charwidth) : (HU_INPUTX); // we may have to go down.
-			INT32 cursory = (cursorx != HU_INPUTX) ? (y) : (y+charheight);
-			V_DrawCharacter(cursorx, cursory+2*con_scalefactor, '_' |cv_constextsize.value | V_NOSCALESTART|t, !cv_allcaps.value);
-		}
+		int emotelen;
+		emote_t *emote;
 
-		//Hurdler: isn't it better like that?
-		if (w_chat_buf[i] >= HU_FONTSTART)
+		if ((emote = M_VerifyEmote(w_chat_buf+i, &emotelen)))
+		{
+			M_DrawScaledEmote((HU_INPUTX + c)<<FRACBITS, (y+con_scalefactor*2)<<FRACBITS, charwidth*FRACUNIT/EMOTEWIDTH, emote, V_NOSCALESTART | V_NOSCALEPATCH | t);
+			i += emotelen-1;
+		}
+		else if (w_chat_buf[i] >= HU_FONTSTART) //Hurdler: isn't it better like that?
 		{
 			//charwidth = hu_font[w_chat[i]-HU_FONTSTART]->width * con_scalefactor;
 			V_DrawCharacter(HU_INPUTX + c, y, w_chat_buf[i] | cv_constextsize.value | V_NOSCALESTART | t, !cv_allcaps.value);
@@ -2081,6 +2116,13 @@ static void HU_DrawChat_Old(void)
 			V_DrawFill(HU_INPUTX + c, y, charwidth, charheight, 103|V_TRANSLUCENT|cv_constextsize.value|V_NOSCALESTART|t);
 
 		++i;
+
+		if (w_chat.cursor == i && hu_tick < 4)
+		{
+			INT32 cursorx = (HU_INPUTX+c+charwidth < vid.width) ? (HU_INPUTX + c + charwidth) : (HU_INPUTX); // we may have to go down.
+			INT32 cursory = (cursorx != HU_INPUTX) ? (y) : (y+charheight);
+			V_DrawCharacter(cursorx, cursory+2*con_scalefactor, '_' |cv_constextsize.value | V_NOSCALESTART|t, !cv_allcaps.value);
+		}
 
 		c += charwidth;
 		if (c >= vid.width)

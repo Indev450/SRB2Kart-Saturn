@@ -127,7 +127,7 @@ GLuint gl_num_extensions;
 int majorGL = 0, minorGL = 0;
 
 //Hurdler: 04/10/2000: added for the kick ass coronas as Boris wanted;-)
-static GLfloat modelMatrix[16];
+GLfloat modelMatrix[16] = {0};
 GLfloat projMatrix[16] = {0};
 static GLint   viewport[4];
 
@@ -173,41 +173,7 @@ boolean supportstencil = false;
 //			can know when the textures aren't there, as textures are always considered resident in their virtual memory
 static GLuint screenTextures[NUMSCREENTEXTURES] = {0};
 
-// shortcut for ((float)1/i)
-static const GLfloat byte2float[256] = {
-	0.000000f, 0.003922f, 0.007843f, 0.011765f, 0.015686f, 0.019608f, 0.023529f, 0.027451f,
-	0.031373f, 0.035294f, 0.039216f, 0.043137f, 0.047059f, 0.050980f, 0.054902f, 0.058824f,
-	0.062745f, 0.066667f, 0.070588f, 0.074510f, 0.078431f, 0.082353f, 0.086275f, 0.090196f,
-	0.094118f, 0.098039f, 0.101961f, 0.105882f, 0.109804f, 0.113725f, 0.117647f, 0.121569f,
-	0.125490f, 0.129412f, 0.133333f, 0.137255f, 0.141176f, 0.145098f, 0.149020f, 0.152941f,
-	0.156863f, 0.160784f, 0.164706f, 0.168627f, 0.172549f, 0.176471f, 0.180392f, 0.184314f,
-	0.188235f, 0.192157f, 0.196078f, 0.200000f, 0.203922f, 0.207843f, 0.211765f, 0.215686f,
-	0.219608f, 0.223529f, 0.227451f, 0.231373f, 0.235294f, 0.239216f, 0.243137f, 0.247059f,
-	0.250980f, 0.254902f, 0.258824f, 0.262745f, 0.266667f, 0.270588f, 0.274510f, 0.278431f,
-	0.282353f, 0.286275f, 0.290196f, 0.294118f, 0.298039f, 0.301961f, 0.305882f, 0.309804f,
-	0.313726f, 0.317647f, 0.321569f, 0.325490f, 0.329412f, 0.333333f, 0.337255f, 0.341176f,
-	0.345098f, 0.349020f, 0.352941f, 0.356863f, 0.360784f, 0.364706f, 0.368627f, 0.372549f,
-	0.376471f, 0.380392f, 0.384314f, 0.388235f, 0.392157f, 0.396078f, 0.400000f, 0.403922f,
-	0.407843f, 0.411765f, 0.415686f, 0.419608f, 0.423529f, 0.427451f, 0.431373f, 0.435294f,
-	0.439216f, 0.443137f, 0.447059f, 0.450980f, 0.454902f, 0.458824f, 0.462745f, 0.466667f,
-	0.470588f, 0.474510f, 0.478431f, 0.482353f, 0.486275f, 0.490196f, 0.494118f, 0.498039f,
-	0.501961f, 0.505882f, 0.509804f, 0.513726f, 0.517647f, 0.521569f, 0.525490f, 0.529412f,
-	0.533333f, 0.537255f, 0.541177f, 0.545098f, 0.549020f, 0.552941f, 0.556863f, 0.560784f,
-	0.564706f, 0.568627f, 0.572549f, 0.576471f, 0.580392f, 0.584314f, 0.588235f, 0.592157f,
-	0.596078f, 0.600000f, 0.603922f, 0.607843f, 0.611765f, 0.615686f, 0.619608f, 0.623529f,
-	0.627451f, 0.631373f, 0.635294f, 0.639216f, 0.643137f, 0.647059f, 0.650980f, 0.654902f,
-	0.658824f, 0.662745f, 0.666667f, 0.670588f, 0.674510f, 0.678431f, 0.682353f, 0.686275f,
-	0.690196f, 0.694118f, 0.698039f, 0.701961f, 0.705882f, 0.709804f, 0.713726f, 0.717647f,
-	0.721569f, 0.725490f, 0.729412f, 0.733333f, 0.737255f, 0.741177f, 0.745098f, 0.749020f,
-	0.752941f, 0.756863f, 0.760784f, 0.764706f, 0.768627f, 0.772549f, 0.776471f, 0.780392f,
-	0.784314f, 0.788235f, 0.792157f, 0.796078f, 0.800000f, 0.803922f, 0.807843f, 0.811765f,
-	0.815686f, 0.819608f, 0.823529f, 0.827451f, 0.831373f, 0.835294f, 0.839216f, 0.843137f,
-	0.847059f, 0.850980f, 0.854902f, 0.858824f, 0.862745f, 0.866667f, 0.870588f, 0.874510f,
-	0.878431f, 0.882353f, 0.886275f, 0.890196f, 0.894118f, 0.898039f, 0.901961f, 0.905882f,
-	0.909804f, 0.913726f, 0.917647f, 0.921569f, 0.925490f, 0.929412f, 0.933333f, 0.937255f,
-	0.941177f, 0.945098f, 0.949020f, 0.952941f, 0.956863f, 0.960784f, 0.964706f, 0.968628f,
-	0.972549f, 0.976471f, 0.980392f, 0.984314f, 0.988235f, 0.992157f, 0.996078f, 1.000000f
-};
+#define byte2float(byte) (GLfloat)(byte / 255.0f)
 
 // -----------------+
 // GL_DBG_Printf    : Output debug messages to debug log if DEBUG_TO_FILE is defined,
@@ -1023,11 +989,9 @@ boolean GL_CompileShader(int slot)
 	{
 		return true;
 	}
-	else
-	{
-		gl_shaders[slot].program = 0;
-		return false;
-	}
+
+	gl_shaders[slot].program = 0;
+	return false;
 }
 
 //
@@ -1069,6 +1033,7 @@ void GL_SetShader(int slot)
 		GL_UnSetShader();
 		return;
 	}
+
 	if (gl_allowshaders)
 	{
 		gl_shader_t *next_shader = &gl_shaders[slot]; // the gl_shader_t we are going to switch to
@@ -1130,7 +1095,7 @@ static void GL_SetNoTexture(void)
 // -----------------+
 static void GL_Perspective(GLfloat fovy, GLfloat aspect)
 {
-	GLfloat m[4][4] =
+	static GLfloat m[4][4] =
 	{
 		{ 1.0f, 0.0f, 0.0f, 0.0f},
 		{ 0.0f, 1.0f, 0.0f, 0.0f},
@@ -1145,7 +1110,7 @@ static void GL_Perspective(GLfloat fovy, GLfloat aspect)
 		return;
 	}
 
-	const GLfloat focallength = (GLfloat)(1.0f / (GLfloat)tan(fovy * (GLfloat)M_PIl / 360.0f));
+	const GLfloat focallength = (1.0f / tanf(fovy * M_PIf / 360.0f));
 
 	m[0][0] = focallength / aspect;
 	m[1][1] = focallength;
@@ -1160,7 +1125,7 @@ static void GL_Perspective(GLfloat fovy, GLfloat aspect)
 // -----------------+
 void GL_SetModelView(GLint w, GLint h)
 {
-	GLint maxtexsize = 0;
+	static GLint maxtexsize = 0;
 	//GL_DBG_Printf("SetModelView(): %dx%d\n", (int)w, (int)h);
 
 	// The screen textures need to be flushed if the width or height change so that they be remade for the correct size
@@ -1193,7 +1158,9 @@ void GL_SetModelView(GLint w, GLint h)
 			screen_texsizeh <<= 1;
 	}
 
-	pglGetIntegerv(GL_MAX_TEXTURE_SIZE, &maxtexsize); // Get the maximum supported texture size
+	if (!maxtexsize)
+		pglGetIntegerv(GL_MAX_TEXTURE_SIZE, &maxtexsize); // Get the maximum supported texture size
+
 	if ((screen_texsizew > maxtexsize || screen_texsizeh > maxtexsize) && maxtexsize > 0)
 	{
 		// The desired screen texture resolution is too big for the player's GPU!
@@ -1339,7 +1306,8 @@ void GL_DeleteTexture(GLMipmap_t *pTexInfo)
 
 	if (!pTexInfo)
 		return;
-	else if (pTexInfo->downloaded)
+
+	if (pTexInfo->downloaded)
 		pglDeleteTextures(1, (GLuint *)&pTexInfo->downloaded);
 
 	while (head)
@@ -1393,7 +1361,8 @@ void GL_Flush(void)
 	TexCacheTail = TexCacheHead = NULL; //Hurdler: well, TexCacheHead is already NULL
 	tex_downloaded = 0;
 
-	free(textureBuffer);
+	if (textureBuffer)
+		free(textureBuffer);
 	textureBuffer = NULL;
 	textureBufferSize = 0;
 }
@@ -1547,6 +1516,7 @@ void GL_ClearBuffer(FBOOLEAN ColorMask, FBOOLEAN DepthMask, FBOOLEAN StencilMask
 
 		ClearMask |= GL_COLOR_BUFFER_BIT;
 	}
+
 	if (DepthMask)
 	{
 		pglClearDepth(1.0f);     //Hurdler: all that are permanen states
@@ -1558,7 +1528,7 @@ void GL_ClearBuffer(FBOOLEAN ColorMask, FBOOLEAN DepthMask, FBOOLEAN StencilMask
 	GL_SetBlend(DepthMask ? PF_Occlude | CurrentPolyFlags : CurrentPolyFlags&~PF_Occlude);
 
 	if (StencilMask)
-		ClearMask |= GL_STENCIL_BUFFER_BIT;// looks like sometimes stencil buffer needs clearing? had a problem with random black screens
+		ClearMask |= GL_STENCIL_BUFFER_BIT; // looks like sometimes stencil buffer needs clearing? had a problem with random black screens
 
 	pglClear(ClearMask);
 	pglEnableClientState(GL_VERTEX_ARRAY); // We always use this one
@@ -1602,18 +1572,21 @@ void GL_Draw2DLine(F2DCoord * v1, F2DCoord * v2, RGBA_t Color)
 	pglEnableClientState(GL_TEXTURE_COORD_ARRAY);
 	pglEnable(GL_TEXTURE_2D);
 }
+
+static inline void Clamp2D(GLenum pname)
+{
+#ifdef GL_CLAMP_TO_EDGE
+	pglTexParameteri(GL_TEXTURE_2D, pname, GL_CLAMP_TO_EDGE);
+#else
+	pglTexParameteri(GL_TEXTURE_2D, pname, GL_CLAMP); // fallback clamp
+#endif
+}
+
 // -----------------+
 // SetBlend         : Set render mode
 // -----------------+
 // PF_Masked - we could use an ALPHA_TEST of GL_EQUAL, and alpha ref of 0,
 //             is it faster when pixels are discarded ?
-static void Clamp2D(GLenum pname)
-{
-	pglTexParameteri(GL_TEXTURE_2D, pname, GL_CLAMP); // fallback clamp
-#ifdef GL_CLAMP_TO_EDGE
-	pglTexParameteri(GL_TEXTURE_2D, pname, GL_CLAMP_TO_EDGE);
-#endif
-}
 
 static void GL_SetBlendEquation(GLenum mode)
 {
@@ -1762,14 +1735,6 @@ void GL_SetBlend(FBITFIELD PolyFlags)
 
 		if (Xor & PF_Modulated)
 		{
-#if defined (__unix__) || defined (UNIXCOMMON)
-			if (oglflags & GLF_NOTEXENV)
-			{
-				if (!(PolyFlags & PF_Modulated))
-					pglColor4ubv(white);
-			}
-			else
-#endif
 			if (PolyFlags & PF_Modulated)
 			{   // mix texture colour with Surface->PolyColor
 				pglTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
@@ -2143,7 +2108,8 @@ void GL_SetTexture(GLMipmap_t *pTexInfo)
 		GL_SetNoTexture();
 		return;
 	}
-	else if (pTexInfo->downloaded)
+
+	if (pTexInfo->downloaded)
 	{
 		if (pTexInfo->downloaded != tex_downloaded)
 		{
@@ -2243,16 +2209,10 @@ static void GL_Shader_SetUniforms(FSurfaceInfo *Surface, GLRGBAFloat *poly, GLRG
 			UNIFORM_1(shader->uniforms[gluniform_light_contrast], shader_light_contrast, pglUniform1f);
 			UNIFORM_1(shader->uniforms[gluniform_light_backlight], shader_light_backlight, pglUniform1f);
 		}
-		else
-		{
-			UNIFORM_3(shader->uniforms[gluniform_light_dir], 0, 0, 0, pglUniform3f);
-			UNIFORM_1(shader->uniforms[gluniform_light_contrast], 0, pglUniform1f);
-			UNIFORM_1(shader->uniforms[gluniform_light_backlight], 0, pglUniform1f);
-		}
 
 		UNIFORM_1(shader->uniforms[gluniform_leveltime], shader_leveltime, pglUniform1f);
 
-		UNIFORM_2(shader->uniforms[gluniform_scr_resolution], vid.width, vid.height, pglUniform2f);
+		UNIFORM_2(shader->uniforms[gluniform_scr_resolution], (GLfloat)vid.width, (GLfloat)vid.height, pglUniform2f);
 
 		#undef UNIFORM_1
 		#undef UNIFORM_2
@@ -2419,38 +2379,38 @@ static void GL_PreparePolygon(FSurfaceInfo *pSurf, FBITFIELD PolyFlags)
 
 	if (pSurf)
 	{
-		// If modulated, mix the surface colour to the texture
-		if (CurrentPolyFlags & PF_Modulated)
-			pglColor4ubv((GLubyte*)&pSurf->PolyColor.s);
-
 		// If the surface is either modulated or colormapped, or both
 		if (CurrentPolyFlags & (PF_Modulated | PF_ColorMapped))
 		{
-			poly.red   = byte2float[pSurf->PolyColor.s.red];
-			poly.green = byte2float[pSurf->PolyColor.s.green];
-			poly.blue  = byte2float[pSurf->PolyColor.s.blue];
-			poly.alpha = byte2float[pSurf->PolyColor.s.alpha];
-		}
+			// If modulated, mix the surface colour to the texture
+			if (CurrentPolyFlags & PF_Modulated)
+				pglColor4ubv((GLubyte*)&pSurf->PolyColor.s);
 
-		// Only if the surface is colormapped
-		if (CurrentPolyFlags & PF_ColorMapped)
-		{
-			tint.red   = byte2float[pSurf->TintColor.s.red];
-			tint.green = byte2float[pSurf->TintColor.s.green];
-			tint.blue  = byte2float[pSurf->TintColor.s.blue];
-			tint.alpha = byte2float[pSurf->TintColor.s.alpha];
+			poly.red   = byte2float(pSurf->PolyColor.s.red);
+			poly.green = byte2float(pSurf->PolyColor.s.green);
+			poly.blue  = byte2float(pSurf->PolyColor.s.blue);
+			poly.alpha = byte2float(pSurf->PolyColor.s.alpha);
 
-			fade.red   = byte2float[pSurf->FadeColor.s.red];
-			fade.green = byte2float[pSurf->FadeColor.s.green];
-			fade.blue  = byte2float[pSurf->FadeColor.s.blue];
-			fade.alpha = byte2float[pSurf->FadeColor.s.alpha];
-
-			if (pSurf->LightTableId && pSurf->LightTableId != lt_downloaded)
+			// Only if the surface is colormapped
+			if (CurrentPolyFlags & PF_ColorMapped)
 			{
-				pglActiveTexture(GL_TEXTURE2);
-				pglBindTexture(GL_TEXTURE_2D, pSurf->LightTableId);
-				pglActiveTexture(GL_TEXTURE0);
-				lt_downloaded = pSurf->LightTableId;
+				tint.red   = byte2float(pSurf->TintColor.s.red);
+				tint.green = byte2float(pSurf->TintColor.s.green);
+				tint.blue  = byte2float(pSurf->TintColor.s.blue);
+				tint.alpha = byte2float(pSurf->TintColor.s.alpha);
+
+				fade.red   = byte2float(pSurf->FadeColor.s.red);
+				fade.green = byte2float(pSurf->FadeColor.s.green);
+				fade.blue  = byte2float(pSurf->FadeColor.s.blue);
+				fade.alpha = byte2float(pSurf->FadeColor.s.alpha);
+
+				if (pSurf->LightTableId && pSurf->LightTableId != lt_downloaded)
+				{
+					pglActiveTexture(GL_TEXTURE2);
+					pglBindTexture(GL_TEXTURE_2D, pSurf->LightTableId);
+					pglActiveTexture(GL_TEXTURE0);
+					lt_downloaded = pSurf->LightTableId;
+				}
 			}
 		}
 	}
@@ -2962,24 +2922,24 @@ void GL_DrawModelEx(model_t *model, INT32 frameIndex, float duration, float tics
 			pol = 0.0f;
 	}
 
-	poly.red    = byte2float[Surface->PolyColor.s.red];
-	poly.green  = byte2float[Surface->PolyColor.s.green];
-	poly.blue   = byte2float[Surface->PolyColor.s.blue];
-	poly.alpha  = byte2float[Surface->PolyColor.s.alpha];
+	poly.red    = byte2float(Surface->PolyColor.s.red);
+	poly.green  = byte2float(Surface->PolyColor.s.green);
+	poly.blue   = byte2float(Surface->PolyColor.s.blue);
+	poly.alpha  = byte2float(Surface->PolyColor.s.alpha);
 
 	pglColor4ubv((GLubyte*)&Surface->PolyColor.s);
 
 	GL_SetBlend(((poly.alpha < 1) ? Surface->PolyFlags : (PF_Masked|PF_Occlude))|PF_Modulated);
 
-	tint.red    = byte2float[Surface->TintColor.s.red];
-	tint.green  = byte2float[Surface->TintColor.s.green];
-	tint.blue   = byte2float[Surface->TintColor.s.blue];
-	tint.alpha  = byte2float[Surface->TintColor.s.alpha];
+	tint.red    = byte2float(Surface->TintColor.s.red);
+	tint.green  = byte2float(Surface->TintColor.s.green);
+	tint.blue   = byte2float(Surface->TintColor.s.blue);
+	tint.alpha  = byte2float(Surface->TintColor.s.alpha);
 
-	fade.red   = byte2float[Surface->FadeColor.s.red];
-	fade.green = byte2float[Surface->FadeColor.s.green];
-	fade.blue  = byte2float[Surface->FadeColor.s.blue];
-	fade.alpha = byte2float[Surface->FadeColor.s.alpha];
+	fade.red   = byte2float(Surface->FadeColor.s.red);
+	fade.green = byte2float(Surface->FadeColor.s.green);
+	fade.blue  = byte2float(Surface->FadeColor.s.blue);
+	fade.alpha = byte2float(Surface->FadeColor.s.alpha);
 
 	if (Surface->LightTableId && Surface->LightTableId != lt_downloaded)
 	{
@@ -3196,11 +3156,13 @@ void GL_SetTransform(FTransform *stransform)
 
 	if (special_splitscreen)
 	{
-		used_fov = (atanf(tanf(used_fov * (float)M_PI / 360.0f) * 0.8f) * 360.0f / (float)M_PI);
+		used_fov = (atanf(tanf(used_fov * M_PIf / 360.0f) * 0.8f) * 360.0f / M_PIf);
 		GL_Perspective(used_fov, 2*ASPECT_RATIO);
 	}
 	else
+	{
 		GL_Perspective(used_fov, ASPECT_RATIO);
+	}
 
 	pglGetFloatv(GL_PROJECTION_MATRIX, projMatrix); // added for new coronas' code (without depth buffer)
 	pglMatrixMode(GL_MODELVIEW);
@@ -3334,8 +3296,8 @@ void GL_Framebuffer_Disable(void)
 	// delet our fbo
 	if (framebufferobject.fboobj)
 		pglDeleteFramebuffers(1, &framebufferobject.fboobj);
-
 	framebufferobject.fboobj = 0;
+
 	GL_Framebuffer_DeleteAttachments();
 }
 #endif
@@ -3465,7 +3427,7 @@ void GL_FlushScreenTextures(void)
 
 void GL_DrawScreenTexture(int tex, FSurfaceInfo *surf, FBITFIELD polyflags)
 {
-	float fix[8];
+	static float fix[8];
 	float xfix, yfix;
 
 	if (gl_enable_screen_textures != 2)
@@ -3474,14 +3436,8 @@ void GL_DrawScreenTexture(int tex, FSurfaceInfo *surf, FBITFIELD polyflags)
 	xfix = 1/((float)screen_texsizew/(float)screen_width);
 	yfix = 1/((float)screen_texsizeh/(float)screen_height);
 
-	fix[0] = 0.0f;
-	fix[1] = 0.0f;
-	fix[2] = 0.0f;
-	fix[3] = yfix;
-	fix[4] = xfix;
-	fix[5] = yfix;
-	fix[6] = xfix;
-	fix[7] = 0.0f;
+	fix[3] = fix[5] = yfix;
+	fix[4] = fix[6] = xfix;
 
 	pglClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
 
@@ -3715,7 +3671,13 @@ void GL_DrawScreenFinalTexture(int tex, INT32 width, INT32 height, boolean usesh
 	float origaspect, newaspect;
 	float xoff = 1, yoff = 1; // xoffset and yoffset for the polygon to have black bars around the screen
 
-	static float off[12];
+	static float off[12] =
+	{
+		1.0f, 1.0f, 1.0f, 1.0f,
+		1.0f, 1.0f, 1.0f, 1.0f,
+		1.0f, 1.0f, 1.0f, 1.0f
+	};
+
 	static float fix[8];
 
 	if (gl_enable_screen_textures != 2)
@@ -3739,28 +3701,14 @@ void GL_DrawScreenFinalTexture(int tex, INT32 width, INT32 height, boolean usesh
 	}
 
 	// float off[12];
-	off[0] = -xoff;
-	off[1] = -yoff;
-	off[2] = 1.0f;
-	off[3] = -xoff;
-	off[4] = yoff;
-	off[5] = 1.0f;
-	off[6] = xoff;
-	off[7] = yoff;
-	off[8] = 1.0f;
-	off[9] = xoff;
-	off[10] = -yoff;
-	off[11] = 1.0f;
+	off[0] = off[3]  = -xoff;
+	off[1] = off[10] = -yoff;
+	off[4] = off[7]  = yoff;
+	off[6] = off[9]  = xoff;
 
 	// float fix[8];
-	fix[0] = 0.0f;
-	fix[1] = 0.0f;
-	fix[2] = 0.0f;
-	fix[3] = yfix;
-	fix[4] = xfix;
-	fix[5] = yfix;
-	fix[6] = xfix;
-	fix[7] = 0.0f;
+	fix[3] = fix[5] = yfix;
+	fix[4] = fix[6] = xfix;
 
 	pglViewport(0, 0, width, height);
 

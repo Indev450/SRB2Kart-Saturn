@@ -149,6 +149,7 @@ typedef struct demoghost {
 	UINT8 checksum[16];
 	UINT8 *buffer, *p, color;
 	UINT16 version;
+	boolean done;
 	mobj_t oldmo, *mo;
 	struct demoghost *next;
 } demoghost;

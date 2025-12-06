@@ -166,8 +166,8 @@ static void F_SkyScroll(INT32 scrollspeed)
 	patch_t *pat, *pat2;
 	INT32 anim2 = 0;
 
-	pat = W_CachePatchName("TITLEBG1", PU_PATCH_LOWPRIORITY);
-	pat2 = W_CachePatchName("TITLEBG2", PU_PATCH_LOWPRIORITY);
+	pat = W_CachePatchName("TITLEBG1", PU_PATCH);
+	pat2 = W_CachePatchName("TITLEBG2", PU_PATCH);
 
 	w = (vid.scaledwidth << FRACBITS);
 
@@ -215,9 +215,6 @@ static tic_t introscenetime[NUMINTROSCENES] =
 	 4*TICRATE,	// KART KR(eW
 };
 
-// custom intros
-void F_StartCustomCutscene(INT32 cutscenenum, boolean precutscene, boolean resetplayer);
-
 void F_StartIntro(void)
 {
 	if (gamestate)
@@ -257,26 +254,21 @@ void F_StartIntro(void)
 //
 void F_IntroDrawer(void)
 {
-	boolean highres = false;
 	INT32 cx = 8, cy = 128;
 	patch_t *background = NULL;
 	INT32 bgxoffs = 0;
 
+	V_DrawFill(0, 0, BASEVIDWIDTH, BASEVIDHEIGHT, 120);
+
 	// DRAW A FULL PIC INSTEAD OF FLAT!
 	if (intro_scenenum == 0)
 	{
-		background = W_CachePatchName("KARTKREW", PU_PATCH_LOWPRIORITY);
-		highres = true;
-	}
+		background = W_CachePatchName("KARTKREW", PU_PATCH);
 
-	V_DrawFill(0, 0, BASEVIDWIDTH, BASEVIDHEIGHT, 120);
-
-	if (background)
-	{
-		if (highres)
+		if (background)
+		{
 			V_DrawSmallScaledPatch(bgxoffs, 0, 0, background);
-		else
-			V_DrawScaledPatch(bgxoffs, 0, 0, background);
+		}
 	}
 
 	W_UnlockCachedPatch(background);
@@ -324,6 +316,7 @@ void F_IntroTicker(void)
 			D_StartTitle();
 			return;
 		}
+
 		if (finalecount == 8)
 			S_StartSound(NULL, sfx_vroom);
 		else if (finalecount == 47)
@@ -626,7 +619,6 @@ void F_StartCredits(void)
 	timetonext = 2*TICRATE;
 }
 
-
 void F_CreditDrawer(void)
 {
 	UINT16 i;
@@ -661,22 +653,23 @@ void F_CreditDrawer(void)
 	// Draw credits text on top
 	for (i = 0; credits[i]; i++)
 	{
-		switch(credits[i][0])
+		switch (credits[i][0])
 		{
-		case 0:
-			y += 80<<FRACBITS;
-			break;
-		case 1:
-			if (y>>FRACBITS > -20)
-				V_DrawCreditString((160 - (V_CreditStringWidth(&credits[i][1])>>1))<<FRACBITS, y, 0, &credits[i][1]);
-			y += 30<<FRACBITS;
-			break;
-		default:
-			if (y>>FRACBITS > -10)
-				V_DrawStringAtFixed(32<<FRACBITS, y, V_ALLOWLOWERCASE, credits[i]);
-			y += 12<<FRACBITS;
-			break;
+			case 0:
+				y += 80<<FRACBITS;
+				break;
+			case 1:
+				if (y>>FRACBITS > -20)
+					V_DrawCreditString((160 - (V_CreditStringWidth(&credits[i][1])>>1))<<FRACBITS, y, 0, &credits[i][1]);
+				y += 30<<FRACBITS;
+				break;
+			default:
+				if (y>>FRACBITS > -10)
+					V_DrawStringAtFixed(32<<FRACBITS, y, V_ALLOWLOWERCASE, credits[i]);
+				y += 12<<FRACBITS;
+				break;
 		}
+
 		if (((y>>FRACBITS) * vid.dup) > vid.height)
 			break;
 	}
@@ -701,7 +694,7 @@ void F_CreditTicker(void)
 	// Draw credits text on top
 	for (i = 0; credits[i]; i++)
 	{
-		switch(credits[i][0])
+		switch (credits[i][0])
 		{
 			case 0: y += 80<<FRACBITS; break;
 			case 1: y += 30<<FRACBITS; break;
@@ -979,10 +972,10 @@ void F_StartTitleScreen(void)
 	demoDelayLeft = demoDelayTime;
 	demoIdleLeft = demoIdleTime;
 
-	ttbanner = W_CachePatchName("TTKBANNR", PU_PATCH_LOWPRIORITY);
-	ttkart = W_CachePatchName("TTKART", PU_PATCH_LOWPRIORITY);
-	ttcheckers = W_CachePatchName("TTCHECK", PU_PATCH_LOWPRIORITY);
-	ttkflash = W_CachePatchName("TTKFLASH", PU_PATCH_LOWPRIORITY);
+	ttbanner = W_CachePatchName("TTKBANNR", PU_PATCH);
+	ttkart = W_CachePatchName("TTKART", PU_PATCH);
+	ttcheckers = W_CachePatchName("TTCHECK", PU_PATCH);
+	ttkflash = W_CachePatchName("TTKFLASH", PU_PATCH);
 }
 
 // (no longer) De-Demo'd Title Screen
@@ -1419,6 +1412,7 @@ void F_EndCutScene(void)
 	}
 }
 
+// custom intros
 void F_StartCustomCutscene(INT32 cutscenenum, boolean precutscene, boolean resetplayer)
 {
 	if (!cutscenes[cutscenenum])

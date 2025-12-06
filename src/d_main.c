@@ -46,6 +46,7 @@
 #include "i_time.h"
 #include "i_threads.h"
 #include "i_video.h"
+#include "hu_stuff.h"
 #include "m_argv.h"
 #include "m_menu.h"
 #include "m_misc.h"
@@ -69,7 +70,7 @@
 #include "fastcmp.h"
 #include "r_fps.h" // Frame interpolation/uncapped
 #include "keys.h"
-#include "filesrch.h" // refreshdirmenu, pathisdirectory
+#include "filesrch.h" // pathisdirectory
 #include "d_protocol.h"
 #include "m_perfstats.h"
 #include "k_kart.h"
@@ -165,38 +166,6 @@ UINT8 shiftdown = 0;   // 0x1 left, 0x2 right
 UINT8 ctrldown = 0;   // 0x1 left, 0x2 right
 UINT8 altdown = 0;    // 0x1 left, 0x2 right
 boolean capslock = 0; // gee i wonder what this does.
-
-static UINT16 curcolor[MAXSPLITSCREENPLAYERS] = {};
-
-static void D_DeviceLEDTick(void)
-{
-	UINT8 i;
-	static UINT16 color[MAXSPLITSCREENPLAYERS] = {};
-
-	if (numcontrollers == 0)
-	{
-		return;
-	}
-
-	for (i = 0; i <= splitscreen; i++)
-	{
-		if (!cv_usejoystick[i].value || !cv_gamepadled[i].value)
-			continue;
-
-		color[i] = G_GetSkinColor(i);
-
-		if (curcolor[i] == color[i]) // dont update if same colour
-			continue;
-
-		G_SetPlayerGamepadIndicatorColor(i, color[i]);
-		curcolor[i] = color[i];
-	}
-}
-
-void D_ResetDeviceLED(void)
-{
-	memset(curcolor, 0, sizeof(curcolor));
-}
 
 //
 // D_ProcessEvents
@@ -359,13 +328,12 @@ static void D_Renderview(void)
 	if (splitscreen == 2)
 	{
 		// V_DrawPatchFill, but for the fourth screen only
-		patch_t *pat = W_CachePatchName("SRB2BACK", PU_PATCH);
-		INT32 x, y, pw = SHORT(pat->width) * vid.dup, ph = SHORT(pat->height) * vid.dup;
+		INT32 x, y, pw = SHORT(srb2back->width) * vid.dup, ph = SHORT(srb2back->height) * vid.dup;
 
 		for (x = vid.width>>1; x < vid.width; x += pw)
 		{
 			for (y = vid.height>>1; y < vid.height; y += ph)
-				V_DrawScaledPatch(x, y, V_NOSCALESTART, pat);
+				V_DrawScaledPatch(x, y, V_NOSCALESTART, srb2back);
 		}
 	}
 
@@ -407,10 +375,6 @@ static boolean D_Display(void)
 			R_ExecuteSetViewSize();
 			forcerefresh = true; // force background redraw
 		}
-
-		// draw buffered stuff to screen
-		// Used only by linux GGI version
-		I_UpdateNoBlit();
 	}
 
 	// save the current screen if about to wipe
@@ -708,7 +672,7 @@ void D_SRB2Loop(void)
 	COM_ImmedExecute("cls;version");
 
 	if (rendermode == render_soft)
-		V_DrawFixedPatch(0, 0, FRACUNIT/2, 0, W_CachePatchNum(W_GetNumForName("KARTKREW"), PU_PATCH_LOWPRIORITY), NULL);
+		V_DrawFixedPatch(0, 0, FRACUNIT/2, 0, W_CachePatchNum(W_GetNumForName("KARTKREW"), PU_PATCH), NULL);
 	I_FinishUpdate(); // page flip or blit buffer
 
 	precision = I_GetPrecisePrecision();
@@ -761,8 +725,6 @@ void D_SRB2Loop(void)
 
 		renderisnewtic = (realtics > 0 || singletics);
 
-		refreshdirmenu = 0; // not sure where to put this, here as good as any?
-
 		if (renderisnewtic)
 		{
 			// don't skip more than 10 frames at a time
@@ -799,7 +761,7 @@ void D_SRB2Loop(void)
 
 			if (!dedicated)
 			{
-				D_DeviceLEDTick();
+				G_DeviceLEDTick();
 			}
 		}
 
@@ -830,9 +792,9 @@ void D_SRB2Loop(void)
 			}
 			else if (!dedicated)
 			{
-				// always update console and hud
-				// otherwise it may take minutes to open it
-				CON_Drawer();
+				// always update console movement
+				// otherwise it will takes literal ages to open
+				CON_MoveConsole();
 			}
 		}
 
@@ -923,7 +885,6 @@ void D_ClearState(void)
 	CURLAbortFile();
 	SV_StopServer();
 	SV_ResetServer();
-	serverlistultimatecount = 0;
 
 	for (i = 0; i < MAXPLAYERS; i++)
 		CL_ClearPlayer(i);
@@ -977,7 +938,7 @@ void D_ClearState(void)
 	M_ClearMenus(true);
 
 	// map palettes affect this
-	D_ResetDeviceLED();
+	G_ResetDeviceLED();
 }
 
 //
@@ -1218,8 +1179,10 @@ static void IdentifyVersion(void)
 	const char *srb2waddir = NULL;
 
 #if defined (__unix__) || defined (UNIXCOMMON) || defined (HAVE_SDL)
+	CLEANUP(pfree) const char *allocwaddir = NULL; // here so we dont potentially free stack memory
 	// change to the directory where 'srb2.srb' is found
-	srb2waddir = I_LocateWad();
+	allocwaddir = I_LocateWad();
+	srb2waddir = allocwaddir;
 #endif
 
 	char tempsrb2path[256] = ".";

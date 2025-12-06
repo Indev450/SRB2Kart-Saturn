@@ -90,6 +90,7 @@ extern patch_t *pinggfx[5];
 extern patch_t *ranknum[10];
 extern patch_t *framecounter;
 extern patch_t *frameslash;
+extern patch_t *srb2back;
 extern patch_t *lt_font[LT_FONTSIZE];
 extern patch_t *cred_font[CRED_FONTSIZE];
 extern patch_t *rflagico;

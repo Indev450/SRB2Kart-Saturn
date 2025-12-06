@@ -139,7 +139,7 @@ typedef LPVOID (WINAPI *p_MapViewOfFile) (HANDLE, DWORD, DWORD, DWORD, SIZE_T);
 #include <errno.h>
 #endif
 
-// Locations to directly check for srb2.pk3 in
+// Locations to directly check for srb2.srb in
 const char *wadDefaultPaths[] = {
 #if defined (__unix__) || defined(__APPLE__) || defined (UNIXCOMMON)
 	"/usr/local/share/games/SRB2Kart",
@@ -153,7 +153,7 @@ const char *wadDefaultPaths[] = {
 	NULL
 };
 
-// Folders to recurse through looking for srb2.pk3
+// Folders to recurse through looking for srb2.srb
 const char *wadSearchPaths[] = {
 #if defined (__unix__) || defined(__APPLE__) || defined (UNIXCOMMON)
 	"/usr/local/games",
@@ -283,7 +283,7 @@ static void I_ShutdownConsole(void)
 	{
 		I_OutputMsg("Shutdown tty console\n");
 		consolevent = SDL_FALSE;
-		tcsetattr (STDIN_FILENO, TCSADRAIN, &tty_tc);
+		tcsetattr(STDIN_FILENO, TCSADRAIN, &tty_tc);
 	}
 }
 
@@ -303,7 +303,8 @@ static void I_StartupConsole(void)
 	if (framebuffer)
 		consolevent = SDL_FALSE;
 
-	if (!consolevent) return;
+	if (!consolevent)
+		return;
 
 	if (isatty(STDIN_FILENO)!=1)
 	{
@@ -311,6 +312,7 @@ static void I_StartupConsole(void)
 		consolevent = SDL_FALSE;
 		return;
 	}
+
 	memset(&tty_con, 0x00, sizeof(tty_con));
 	tcgetattr (0, &tty_tc);
 	tty_erase = tty_tc.c_cc[VERASE];
@@ -372,6 +374,7 @@ void I_GetConsoleEvents(void)
 				tty_con.buffer[tty_con.cursor] = '\0';
 				tty_Back();
 			}
+
 			ev.data1 = KEY_BACKSPACE;
 		}
 		else if (key < ' ') // check if this is a control char
@@ -387,7 +390,8 @@ void I_GetConsoleEvents(void)
 				// shut down, most unix programs behave this way
 				I_Quit();
 			}
-			else continue;
+			else
+				continue;
 		}
 		else if (tty_con.cursor < sizeof(tty_con.buffer))
 		{
@@ -397,7 +401,9 @@ void I_GetConsoleEvents(void)
 			// print the current line (this is differential)
 			write(STDOUT_FILENO, &key, 1);
 		}
-		if (ev.data1) D_PostEvent(&ev);
+
+		if (ev.data1)
+			D_PostEvent(&ev);
 		//tty_FlushIn();
 	}
 }
@@ -1887,20 +1893,6 @@ death:
 	exit(0);
 }
 
-void I_WaitVBL(INT32 count)
-{
-	count = 1;
-	SDL_Delay(count);
-}
-
-void I_BeginRead(void)
-{
-}
-
-void I_EndRead(void)
-{
-}
-
 //
 // I_Error
 //
@@ -2340,7 +2332,7 @@ static void pathonly(char *s)
 */
 static const char *searchWad(const char *searchDir)
 {
-	static char tempsw[MAX_WADPATH] = "";
+	static char tempsw[255] = "";
 	filestatus_t fstemp;
 
 	strcpy(tempsw, WADKEYWORD1);
@@ -2391,6 +2383,18 @@ static const char *locateWad(void)
 		return NULL;
 #endif
 
+#ifndef NOHOME
+#ifdef DEFAULTDIR
+	I_OutputMsg(",HOME/" DEFAULTDIR);
+	// examine user jart directory
+	if ((envstr = I_GetEnv("HOME")) != NULL)
+	{
+		sprintf(returnWadPath, "%s" PATHSEP DEFAULTDIR, envstr);
+		CHECKWADPATH(returnWadPath);
+	}
+#endif
+#endif
+
 #ifdef __APPLE__
 	OSX_GetResourcesPath(returnWadPath);
 	CHECKWADPATH(returnWadPath);
@@ -2402,20 +2406,6 @@ static const char *locateWad(void)
 		strcpy(returnWadPath, wadDefaultPaths[i]);
 		CHECKWADPATH(returnWadPath);
 	}
-
-#ifndef NOHOME
-	// find in $HOME
-	I_OutputMsg(",HOME/" DEFAULTDIR);
-	if ((envstr = I_GetEnv("HOME")) != NULL)
-	{
-		char *tmp = static_cast<char*>(malloc(strlen(envstr) + sizeof(PATHSEP) + sizeof(DEFAULTDIR)));
-		strcpy(tmp, envstr);
-		strcat(tmp, PATHSEP);
-		strcat(tmp, DEFAULTDIR);
-		CHECKWADPATH(tmp);
-		free(tmp);
-	}
-#endif
 
 	// search paths
 	for (i = 0; wadSearchPaths[i]; i++)
@@ -2430,7 +2420,7 @@ static const char *locateWad(void)
 
 const char *I_LocateWad(void)
 {
-	const char *waddir;
+	const char *waddir = NULL;
 
 	I_OutputMsg("Looking for WADs in: ");
 	waddir = locateWad();
@@ -2448,6 +2438,7 @@ const char *I_LocateWad(void)
 			I_OutputMsg("Couldn't change working directory\n");
 #endif
 	}
+
 	return waddir;
 }
 

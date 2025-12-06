@@ -15,6 +15,7 @@
 #include "d_main.h"
 #include "byteptr.h"
 #include "g_game.h"
+#include "g_input.h"
 
 #include "p_local.h"
 #include "p_setup.h"
@@ -596,8 +597,8 @@ FUNCINLINE static ATTRINLINE void P_LoadSubsectors(void *data)
 //
 #define MAXLEVELFLATS 256
 
-size_t numlevelflats;
-levelflat_t *levelflats;
+size_t numlevelflats = 0;
+levelflat_t *levelflats = NULL;
 
 //SoM: Other files want this info.
 size_t P_PrecacheLevelFlats(void)
@@ -679,11 +680,11 @@ INT32 P_AddLevelFlat(const char *flatname, levelflat_t *levelflat)
 	if (i == numlevelflats)
 	{
 		// store the name
-		strlcpy(levelflat->name, flatname, sizeof (levelflat->name));
+		strlcpy(levelflat->name, flatname, sizeof(levelflat->name));
 		strupr(levelflat->name);
 
 		// store the flat lump number
-		levelflat->lumpnum = R_GetFlatNumForName(flatname);
+		levelflat->lumpnum = R_GetFlatNumForName(levelflat->name);
 		levelflat->baselumpnum = LUMPERROR;
 
 		P_CheckCyanFlat(levelflat);
@@ -726,11 +727,11 @@ INT32 P_AddLevelFlatRuntime(const char *flatname)
 		levelflat = levelflats+i;
 
 		// store the name
-		strlcpy(levelflat->name, flatname, sizeof (levelflat->name));
+		strlcpy(levelflat->name, flatname, sizeof(levelflat->name));
 		strupr(levelflat->name);
 
 		// store the flat lump number
-		levelflat->lumpnum = R_GetFlatNumForName(flatname);
+		levelflat->lumpnum = R_GetFlatNumForName(levelflat->name);
 		levelflat->baselumpnum = LUMPERROR;
 
 		P_CheckCyanFlat(levelflat);
@@ -1021,7 +1022,7 @@ void P_WriteThings(lumpnum_t lumpnum)
 	size_t i, length;
 	mapthing_t *mt;
 	UINT8 *data;
-	savebuffer_t save;
+	savebuffer_t save = {0};
 	INT16 temp;
 
 	data = W_CacheLumpNum(lumpnum, PU_LEVEL);
@@ -2029,8 +2030,8 @@ void P_SetupLevelSky(INT32 skynum, boolean global)
 	R_SetupSkyDraw();
 }
 
-static const char *maplumpname;
-lumpnum_t lastloadedmaplumpnum; // for comparative savegame
+static const char *maplumpname = NULL;
+lumpnum_t lastloadedmaplumpnum = LUMPERROR; // for comparative savegame
 
 //
 // P_LevelInitStuff
@@ -2414,7 +2415,7 @@ static void P_InitCamera(void)
 	displayplayers[0] = consoleplayer; // Start with your OWN view, please!
 }
 
-struct minimapinfo minimapinfo;
+struct minimapinfo minimapinfo = {};
 static void P_InitMinimapInfo(void)
 {
 	lumpnum_t lumpnum;
@@ -2708,8 +2709,12 @@ void P_FreeLevelState(void)
 
 	G_FreeGhosts(); // ghosts are allocated with PU_LEVEL
 
-	Patch_FreeTag(PU_PATCH_LOWPRIORITY);
-	//Patch_FreeTag(PU_PATCH_ROTATED); // we keep those ty!
+	if (rendermode != render_none)
+	{
+		Patch_FreeTag(PU_PATCH_LOWPRIORITY);
+		//Patch_FreeTag(PU_PATCH_ROTATED); // we keep those ty!
+	}
+
 	Z_FreeTags(PU_LEVEL, PU_PURGELEVEL - 1);
 
 	Y_VoteClear();
@@ -2718,6 +2723,9 @@ void P_FreeLevelState(void)
 	// clear the splats from previous level
 	R_ClearLevelSplats();
 #endif
+
+	R_InitMobjInterpolators();
+	R_InitializeLevelInterpolators();
 }
 
 /** Loads a level from a lump or external wad.
@@ -2735,13 +2743,8 @@ boolean P_SetupLevel(boolean fromnetsave, boolean reloadinggamestate)
 	lumpnum_t encoreLump = LUMPERROR;
 	UINT8 levelfadecol;
 
-	// HACK: this doesent reset if you change the map from within a replay and may cause crashes or the replayhut to be non functional
-	if (!demo.playback && demo.inreplayhut)
-	{
-		M_ResetDemoList();
-	}
 
-	midgamejoin = fromnetsave; // makes dynslopes run in P_Ticker/P_PreTicker to avoid synch issues and other stuff
+	midgamejoin = fromnetsave; // makes dynslopes run in P_Ticker to avoid synch issues and other stuff
 
 	levelloading = true;
 
@@ -2827,10 +2830,7 @@ boolean P_SetupLevel(boolean fromnetsave, boolean reloadinggamestate)
 
 	P_FreeLevelState();
 
-	R_InitializeLevelInterpolators();
-
 	P_InitThinkers();
-	R_InitMobjInterpolators();
 	P_InitCachedActions();
 
 	// internal game map
@@ -2979,7 +2979,7 @@ boolean P_SetupLevel(boolean fromnetsave, boolean reloadinggamestate)
 
 	G_AddMapToBuffer(gamemap-1);
 
-	D_ResetDeviceLED();
+	G_ResetDeviceLED();
 
 	return true;
 }
