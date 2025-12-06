@@ -94,8 +94,8 @@ static SF_INFO music_info;
 static SNDFILE *music_file;
 static SDL_AudioStream *music_stream;
 static sndlump_t music_lump;
-static float loop_point;
-static float song_length;
+static INT32 loop_point;
+static INT32 song_length;
 static bool song_paused;
 static bool loop_song;
 static float music_speed;
@@ -259,7 +259,7 @@ static void MusicCallback(void *userdata, SDL_AudioStream *stream, int additiona
 	{
 		if (loop_song)
 		{
-			sf_seek(music_file, loop_point * music_info.samplerate, SEEK_SET);
+			sf_seek(music_file, loop_point * music_info.samplerate / 1000, SEEK_SET);
 			sf_read_float(music_file, &needed[count], amount - count);
 		}
 		else
@@ -370,12 +370,12 @@ static void StreamCallback(void *userdata, SDL_AudioStream *stream, int addition
 		if (new_pos < pos)
 		{
 			// we looped, compensate
-			float len = I_GetSongLength();
-			if (len > 0.0f)
+			INT32 len = song_length;
+			if (len > 0)
 			{
-				pos -= len - loop_point * 1000.0f;
-				fading_from -= len - loop_point * 1000.0f;
-				fading_to -= len - loop_point * 1000.0f;
+				pos -= len - loop_point;
+				fading_from -= len - loop_point;
+				fading_to -= len - loop_point;
 			}
 		}
 
@@ -1326,7 +1326,7 @@ UINT32 I_GetSongLength(void)
 	}
 #endif
 	if (music_stream)
-		return song_length / 1000.0f;
+		return song_length;
 
 	return 0;
 }
@@ -1341,7 +1341,7 @@ boolean I_SetSongLoopPoint(UINT32 looppoint)
 		looppoint %= length;
 
 	SDL_LockAudioStream(audio_stream);
-	loop_point = max(((float)looppoint / 1000.0f), 0.0f);
+	loop_point = max(looppoint, 0);
 	SDL_UnlockAudioStream(audio_stream);
 	return true;
 }
@@ -1368,7 +1368,8 @@ UINT32 I_GetSongLoopPoint(void)
 	}
 #endif
 	if (music_stream)
-		return loop_point * 1000.0f;
+		return loop_point;
+
 	return 0;
 }
 
@@ -1428,8 +1429,8 @@ boolean I_SetSongPosition(UINT32 position)
 	if (music_stream)
 	{
 		SDL_LockAudioStream(audio_stream);
-		position %= (int)(song_length * music_info.samplerate * music_info.channels);
-		bool status = sf_seek(music_file, position, SEEK_SET) != -1;
+		position %= song_length;
+		bool status = sf_seek(music_file, position * music_info.samplerate / 1000, SEEK_SET) != -1;
 		SDL_UnlockAudioStream(audio_stream);
 		return status;
 	}
@@ -1503,8 +1504,8 @@ static const size_t loopms_key_len = sizeof(loopms_key)-1;
 
 static void ResetMusic(void)
 {
-	loop_point = 0.0f;
-	song_length = 0.0f;
+	loop_point = 0;
+	song_length = 0;
 	song_paused = false;
 	fading_target = 1.0f;
 	fading_source = fading_from = fading_to = 0.0f;
@@ -1696,32 +1697,33 @@ boolean I_LoadSong(char *data, size_t len)
 	SDL_SetAudioStreamGetCallback(music_stream, MusicCallback, NULL);
 
 	// Find the OGG loop point.
-	loop_point = 0.0f;
-	song_length = (float)music_info.frames / music_info.samplerate;
+	loop_point = 0;
+	song_length = music_info.frames * 1000 / music_info.samplerate;
 
 	while ((UINT32)(p - data) < len)
 	{
-		if (fpclassify(loop_point) == FP_ZERO && strncmp(p, loop_prefix, loop_prefix_len) == 0)
+		if (loop_point == 0 && strncmp(p, loop_prefix, loop_prefix_len) == 0)
 		{
 			p += loop_prefix_len; // skip LOOP
 			if (strncmp(p, looppoint_key, looppoint_key_len) == 0) // is it LOOPPOINT=?
 			{
 				p += looppoint_key_len; // skip POINT=
-				loop_point = (float)((44.1f+atoi(p)) / 44100.0f); // LOOPPOINT works by sample count.
+				loop_point = (44.1f+atoi(p)) / 44.1f; // LOOPPOINT works by sample count.
 				// because SDL_Mixer is USELESS and can't even tell us
 				// something simple like the frequency of the streaming music,
 				// we are unfortunately forced to assume that ALL MUSIC is 44100hz.
 				// This means a lot of tracks that are only 22050hz for a reasonable downloadable file size will loop VERY badly.
+				// ^ the above is no longer true, but we're keeping it for backwards compatibility
 			}
 			else if (strncmp(p, loopms_key, loopms_key_len) == 0) // is it LOOPMS=?
 			{
 				p += loopms_key_len; // skip MS=
-				loop_point = (float)(atof(p) / 1000.0); // LOOPMS works by real time, as miliseconds.
+				loop_point = atoi(p); // LOOPMS works by real time, as miliseconds.
 				// Everything that uses LOOPMS will work perfectly with SDL_Mixer.
 			}
 		}
 
-		if (fpclassify(loop_point) != FP_ZERO) // Got what we needed
+		if (loop_point != 0) // Got what we needed
 			break;
 		else // continue searching
 			p++;
