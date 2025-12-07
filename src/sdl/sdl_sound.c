@@ -464,25 +464,18 @@ void I_StartupSound(void)
 		return;
 	}
 
-	// supposedly you would be able to get this with SDL_GetAudioDeviceFormat before opening the audio device
-	// but that doesent work for some strange reason
-	// assume 16bit, stereo device and force 44.1khz since it sounds the best to me
-	actual_spec.format = SDL_AUDIO_S16;
-	actual_spec.channels = 2;
-	actual_spec.freq = 44100;
-
-	audio_device = SDL_OpenAudioDevice(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &actual_spec);
+	audio_device = SDL_OpenAudioDevice(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, NULL);
 	if (audio_device == 0)
 	{
 		CONS_Alert(CONS_ERROR, "Error opening audio device: %s\n", SDL_GetError());
 		return;
 	}
 
-	/*if (!SDL_GetAudioDeviceFormat(audio_device, &actual_spec, NULL))
-	 {  *
-	 CONS_Alert(CONS_ERROR, "Error retrieving audio format: %s\n", SDL_GetError());
-	 return;
-	}*/
+	if (!SDL_GetAudioDeviceFormat(audio_device, &actual_spec, NULL))
+	{
+		CONS_Alert(CONS_ERROR, "Error retrieving audio format: %s\n", SDL_GetError());
+		return;
+	}
 
 	audio_stream = SDL_OpenAudioDeviceStream(audio_device, &actual_spec, StreamCallback, NULL);
 	if (audio_stream == NULL)
