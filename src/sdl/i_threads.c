@@ -12,7 +12,7 @@
 #include "../doomdef.h"
 #include "../i_threads.h"
 
-#include <SDL3/SDL.h>
+#include <SDL.h>
 
 typedef void * (*Create_fn)(void);
 
@@ -45,7 +45,7 @@ static I_mutex        i_thread_pool_mutex;
 static I_mutex        i_mutex_pool_mutex;
 static I_mutex        i_cond_pool_mutex;
 
-static SDL_AtomicInt   i_threads_running = {1};
+static SDL_atomic_t   i_threads_running = {1};
 
 static Link
 Insert_link (
@@ -103,13 +103,13 @@ Identity (
 ){
 	void * id;
 
-	id = SDL_GetAtomicPointer(anchor);
+	id = SDL_AtomicGetPtr(anchor);
 
 	if (! id)
 	{
 		I_lock_mutex(&pool_mutex);
 		{
-			id = SDL_GetAtomicPointer(anchor);
+			id = SDL_AtomicGetPtr(anchor);
 
 			if (! id)
 			{
@@ -120,7 +120,7 @@ Identity (
 
 				Insert_link(pool_anchor, New_link(id));
 
-				SDL_SetAtomicPointer(anchor, id);
+				SDL_AtomicSetPtr(anchor, id);
 			}
 		}
 		I_unlock_mutex(pool_mutex);
@@ -139,11 +139,11 @@ Worker (
 
 	(*th->entry)(th->userdata);
 
-	if (SDL_GetAtomicInt(&i_threads_running))
+	if (SDL_AtomicGet(&i_threads_running))
 	{
 		I_lock_mutex(&i_thread_pool_mutex);
 		{
-			if (SDL_GetAtomicInt(&i_threads_running))
+			if (SDL_AtomicGet(&i_threads_running))
 			{
 				SDL_DetachThread(th->thread);
 				Free_link(&i_thread_pool, link);
@@ -176,7 +176,7 @@ I_spawn_thread (
 	{
 		link = Insert_link(&i_thread_pool, New_link(th));
 
-		if (SDL_GetAtomicInt(&i_threads_running))
+		if (SDL_AtomicGet(&i_threads_running))
 		{
 			th->thread = SDL_CreateThread(
 					(SDL_ThreadFunction)Worker,
@@ -194,7 +194,7 @@ I_spawn_thread (
 int
 I_thread_is_stopped (void)
 {
-	return ( ! SDL_GetAtomicInt(&i_threads_running) );
+	return ( ! SDL_AtomicGet(&i_threads_running) );
 }
 
 void
@@ -220,13 +220,13 @@ I_stop_threads (void)
 	Link        next;
 
 	Thread      th;
-	SDL_Mutex * mutex;
-	SDL_Condition  * cond;
+	SDL_mutex * mutex;
+	SDL_cond  * cond;
 
 	if (i_threads_running.value)
 	{
 		/* rely on the good will of thread-san */
-		SDL_SetAtomicInt(&i_threads_running, 0);
+		SDL_AtomicSet(&i_threads_running, 0);
 
 		I_lock_mutex(&i_thread_pool_mutex);
 		{
@@ -267,7 +267,7 @@ I_stop_threads (void)
 			next = link->next;
 			cond = link->data;
 
-			SDL_DestroyCondition(cond);
+			SDL_DestroyCond(cond);
 
 			free(link);
 		}
@@ -282,7 +282,7 @@ void
 I_lock_mutex (
 		I_mutex * anchor
 ){
-	SDL_Mutex * mutex;
+	SDL_mutex * mutex;
 
 	mutex = Identity(
 			&i_mutex_pool,
@@ -291,14 +291,16 @@ I_lock_mutex (
 			(Create_fn)SDL_CreateMutex
 	);
 
-	SDL_LockMutex(mutex);
+	if (SDL_LockMutex(mutex) == -1)
+		abort();
 }
 
 void
 I_unlock_mutex (
 		I_mutex id
 ){
-	SDL_UnlockMutex(id);
+	if (SDL_UnlockMutex(id) == -1)
+		abort();
 }
 
 void
@@ -306,46 +308,49 @@ I_hold_cond (
 		I_cond  * cond_anchor,
 		I_mutex   mutex_id
 ){
-	SDL_Condition * cond;
+	SDL_cond * cond;
 
 	cond = Identity(
 			&i_cond_pool,
 			i_cond_pool_mutex,
 			cond_anchor,
-			(Create_fn)SDL_CreateCondition
+			(Create_fn)SDL_CreateCond
 	);
 
-	SDL_WaitCondition(cond, mutex_id);
+	if (SDL_CondWait(cond, mutex_id) == -1)
+		abort();
 }
 
 void
 I_wake_one_cond (
 		I_cond * anchor
 ){
-	SDL_Condition * cond;
+	SDL_cond * cond;
 
 	cond = Identity(
 			&i_cond_pool,
 			i_cond_pool_mutex,
 			anchor,
-			(Create_fn)SDL_CreateCondition
+			(Create_fn)SDL_CreateCond
 	);
 
-	SDL_SignalCondition(cond);
+	if (SDL_CondSignal(cond) == -1)
+		abort();
 }
 
 void
 I_wake_all_cond (
 		I_cond * anchor
 ){
-	SDL_Condition * cond;
+	SDL_cond * cond;
 
 	cond = Identity(
 			&i_cond_pool,
 			i_cond_pool_mutex,
 			anchor,
-			(Create_fn)SDL_CreateCondition
+			(Create_fn)SDL_CreateCond
 	);
 
-	SDL_BroadcastCondition(cond);
+	if (SDL_CondBroadcast(cond) == -1)
+		abort();
 }

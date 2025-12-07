@@ -16,7 +16,7 @@
 /// \file
 /// \brief SDL_ttf interface code. Necessary for platforms with no framebuffer console systems.
 
-#if defined (HAVE_SDL) && defined (HAVE_TTF)
+#if defined(HAVE_SDL) && defined(HAVE_TTF)
 #include "SDL.h"
 #include "SDL_ttf.h"
 #include "../doomdef.h"
@@ -236,14 +236,14 @@ void I_StartupTTF(UINT32 fontpointsize, Uint32 initflags, Uint32 vidmodeflags)
 
 	// what's the point of trying to display an error?
 	// SDL_ttf is not started, can't display anything to screen (presumably)...
-	if (!SDL_InitSubSystem(initflags))
+	if (SDL_InitSubSystem(initflags) < 0)
 		I_Error("Couldn't initialize SDL: %s\n", SDL_GetError());
 
 	TTFSurface = SDL_SetVideoMode(res.width, res.height, bitsperpixel, vidmodeflags);
 	if (!TTFSurface)
 		I_Error("Couldn't set SDL Video resolution: %s\n", SDL_GetError());
 
-	if (!TTF_Init())
+	if (TTF_Init() < 0)
 		I_Error("Couldn't start SDL_ttf: %s\n", TTF_GetError());
 
 	// look for default font in many directories

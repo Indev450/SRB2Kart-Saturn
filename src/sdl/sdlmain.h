@@ -23,15 +23,13 @@
 extern "C" {
 #endif
 
-extern bool consolevent;
-extern bool framebuffer;
+extern SDL_bool consolevent;
+extern SDL_bool framebuffer;
 
 #include "../m_fixed.h"
 
 // SDL2 stub macro
 #define SDL2STUB() CONS_Printf("SDL2: stubbed: %s:%d\n", __func__, __LINE__)
-
-#include <SDL3/SDL_gamepad.h>
 
 // So m_menu knows whether to store cv_usejoystick value or string
 #define JOYSTICK_HOTPLUG
@@ -43,9 +41,9 @@ extern bool framebuffer;
 typedef struct SDLJoyInfo_s
 {
 	/// Controller handle
-	SDL_Gamepad *dev;
+	SDL_GameController *dev;
 	/// Controller index
-	SDL_JoystickID id;
+	INT32 id;
 	/// number of old joystick
 	int oldjoy;
 	/// number of axies
@@ -73,7 +71,7 @@ extern SDLJoyInfo_t JoyInfo[4]; //MAXSPLITSCREENPLAYERS
 void I_ShutdownJoystick(UINT8 index);
 
 // Cheat to get the device index for a game controller handle
-INT32 I_GetJoystickDeviceIndex(SDL_Gamepad *dev);
+INT32 I_GetJoystickDeviceIndex(SDL_GameController *dev);
 
 // Quick thing to make SDL_JOYDEVICEADDED events less of an abomination
 void I_UpdateJoystickDeviceIndex(UINT8 player);

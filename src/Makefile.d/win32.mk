@@ -79,14 +79,14 @@ $(eval $(call _set,LIBOPENMPT))
 lib:=../libs/SDL2_mixer/$(mingw)
 
 ifdef SDL
-mixer_opts:=-I$(lib)/include/SDL3
+mixer_opts:=-I$(lib)/include/SDL2
 mixer_libs:=-L$(lib)/lib
 
 lib:=../libs/SDL2/$(mingw)
-SDL_opts:=-I$(lib)/include/SDL3\
+SDL_opts:=-I$(lib)/include/SDL2\
 	$(mixer_opts) -Dmain=SDL_main
 SDL_libs:=-L$(lib)/lib $(mixer_libs)\
-	-lmingw32 -lSDL3main -lSDL3 -mwindows
+	-lmingw32 -lSDL2main -lSDL2 -mwindows
 $(eval $(call _set,SDL))
 endif
 

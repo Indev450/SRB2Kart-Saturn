@@ -88,8 +88,8 @@
 #include "z_zone.h"
 #include "mserv.h"
 
-#if defined (HAVE_SDL)
-#include <SDL3/SDL.h>
+#if defined(HAVE_SDL)
+#include "SDL.h"
 #if SDL_VERSION_ATLEAST(2,0,0)
 #include "sdl/sdlmain.h" // JOYSTICK_HOTPLUG
 #endif

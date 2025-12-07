@@ -36,7 +36,7 @@
 #ifdef HAVE_SDL
 
 #ifdef HAVE_TTF
-#include <SDL3/SDL.h>
+#include "SDL.h"
 #include "i_ttf.h"
 #endif
 
