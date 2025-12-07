@@ -528,8 +528,6 @@ void I_StartupSound(void)
 
 	virtual_spec.format = SDL_AUDIO_F32LE;
 	virtual_spec.channels = actual_spec.channels;
-	if (virtual_spec.channels > 2)
-		virtual_spec.channels = 2; // TODO: add support for surround
 	virtual_spec.freq = actual_spec.freq;
 
 	music_volume = sfx_volume = 0;
