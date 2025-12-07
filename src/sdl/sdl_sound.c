@@ -827,10 +827,7 @@ INT32 I_StartSound(sfxenum_t id, UINT8 vol, UINT8 sep, /*UINT8 pitch, UINT8 prio
 			// we can't use zone allocation here since it's not thread-safe
 			sound_t *sound = malloc(sizeof(sound_t));
 			if (sound == NULL)
-			{
-				SDL_UnlockAudioStream(audio_stream);
 				return -1;
-			}
 
 			sound->sample = S_sfx[id].data;
 			sound->pos = 0;
@@ -884,10 +881,7 @@ void I_UpdateSoundParams(INT32 handle, UINT8 vol, UINT8 sep/*, UINT8 pitch*/)
 
 	SDL_LockAudioStream(audio_stream);
 	if (sounds[handle] == NULL)
-	{
-		SDL_UnlockAudioStream(audio_stream);
 		return;
-	}
 
 	sounds[handle]->volume[0] = (float)vol / 255;
 	sounds[handle]->volume[1] = (float)vol / 255;
@@ -1649,7 +1643,6 @@ boolean I_SetSongTrack(INT32 track)
 			if (gme_e != NULL)
 			{
 				CONS_Alert(CONS_ERROR, "GME error: %s\n", gme_e);
-				SDL_UnlockAudioStream(audio_stream);
 				return false;
 			}
 			current_track = track;
