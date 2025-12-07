@@ -29,12 +29,6 @@ ifndef NOHW
 sources+=sdl/ogl_sdl.c
 endif
 
-ifndef NOOPENMPT
-LIBOPENMPT_PKGCONFIG?=libopenmpt
-$(eval $(call Use_pkg_config,LIBOPENMPT))
-opts+=-DHAVE_OPENMPT
-endif
-
 NOMIXER=1
 
 ifdef NOMIXER
