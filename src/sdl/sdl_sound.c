@@ -230,7 +230,6 @@ static float *AdjustPitch(float *in, int size, int channels, float pitch)
 	return out;
 }
 
-#ifdef HAVE_FLUIDSYNTH
 static int HandleMIDIEvent(void *data, fluid_midi_event_t *event)
 {
 	SDL_LockAudioStream(audio_stream);
@@ -238,7 +237,6 @@ static int HandleMIDIEvent(void *data, fluid_midi_event_t *event)
 	SDL_UnlockAudioStream(audio_stream);
 	return fluid_synth_handle_midi_event(data, event);
 }
-#endif
 
 static void MusicCallback(void *userdata, SDL_AudioStream *stream, int additional_amount, int total_amount)
 {
@@ -1093,7 +1091,6 @@ void I_SetSfxVolume(UINT8 volume)
 /// Music System
 /// ------------------------
 
-#ifdef HAVE_FLUIDSYNTH
 static void LogFluidMessage(int level, const char *message, void *data)
 {
 	(void)data;
@@ -1108,7 +1105,6 @@ static void LogFluidMessage(int level, const char *message, void *data)
 			break;
 	}
 }
-#endif
 
 void I_InitMusic(void)
 {
@@ -1193,7 +1189,6 @@ boolean I_SongPaused(void)
 /// Music Effects
 /// ------------------------
 
-#ifdef HAVE_FLUIDSYNTH
 static void SyncMIDI(void)
 {
 	synth_wait = true;
@@ -1206,7 +1201,6 @@ static void SyncMIDI(void)
 			return;
 	}
 }
-#endif
 
 boolean I_SetSongSpeed(float speed)
 {
