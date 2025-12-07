@@ -75,6 +75,11 @@ typedef struct sndlump_s
 
 UINT8 sound_started = false;
 
+/*static UINT32 stutter_threshold;
+static UINT32 music_end_bytes;
+static UINT32 music_bytes;
+static UINT32 music_stutter_bytes;*/
+
 static SDL_AudioDeviceID audio_device;
 static SDL_AudioStream *audio_stream;
 static SDL_AudioSpec virtual_spec; // audio spec used internally in the engine
@@ -1096,6 +1101,42 @@ void I_ShutdownMusic(void)
 	I_UnloadSong();
 }
 
+#if 0
+static void Countstutter(int len)
+{
+	UINT32 bytes;
+
+	music_bytes += len;
+
+	if (gamestate != GS_LEVEL)
+		return;
+
+	if (hu_stopped)
+	{
+		music_stutter_bytes += len;
+	}
+	else if (stutter_threshold)
+	{
+		if (music_stutter_bytes >= stutter_threshold)
+		{
+			/*
+			This would be after looping. If we're too near to the start of the
+			file, subtracting the delta will just underflow.
+			*/
+			if (music_stutter_bytes > music_bytes)
+			{
+				/* We already know where the end is because we looped. */
+				bytes = ( music_end_bytes - ( music_stutter_bytes - music_bytes ));
+			}
+			else
+				bytes = ( music_bytes - music_stutter_bytes );
+
+			I_SetSongPosition((int)((float)bytes/4/44100.0f*1000));
+		}
+	}
+}
+#endif
+
 /// ------------------------
 /// Music Properties
 /// ------------------------
@@ -1399,6 +1440,11 @@ static void ResetMusic(void)
 	fading_source = fading_from = fading_to = 0.0f;
 	fading_callback = NULL;
 	music_speed = 1.0f;
+}
+
+void I_UpdateSongLagThreshold(void)
+{
+	//stutter_threshold = cv_music_resync_powerups_only.value ? 0 : (cv_music_resync_threshold.value/1000.0*(4*44100));
 }
 
 boolean I_LoadSong(char *data, size_t len)
