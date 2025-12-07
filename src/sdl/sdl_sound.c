@@ -1197,11 +1197,7 @@ boolean I_SetSongSpeed(float speed)
 	if (synth_player)
 	{
 		SDL_LockAudioStream(audio_stream);
-#if FLUIDSYNTH_VERSION_MINOR < 2
-		fluid_player_set_bpm(synth_player, speed);
-#else
 		fluid_player_set_tempo(synth_player, FLUID_PLAYER_TEMPO_INTERNAL, speed);
-#endif
 		SDL_UnlockAudioStream(audio_stream);
 		return true;
 	}
