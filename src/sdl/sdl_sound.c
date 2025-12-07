@@ -254,9 +254,6 @@ static void MusicCallback(void *userdata, SDL_AudioStream *stream, int additiona
 	free(needed);
 }
 
-// gme and openmpt are both quite quiet...
-#define seq_volume (music_volume * 1.5f)
-
 static void StreamCallback(void *userdata, SDL_AudioStream *stream, int additional_amount, int total_amount)
 {
 	(void)userdata;
@@ -293,7 +290,7 @@ static void StreamCallback(void *userdata, SDL_AudioStream *stream, int addition
 		{
 			gme_play(gme, additional_amount, buf);
 			for (int i = 0; i < additional_amount; i++)
-				sample_buffer.f[i] = buf[i] * seq_volume / 32767.0f;
+				sample_buffer.f[i] = buf[i] * music_volume / 32767.0f;
 			free(buf);
 		}
 		else
@@ -313,7 +310,7 @@ static void StreamCallback(void *userdata, SDL_AudioStream *stream, int addition
 
 		size_t i = 0;
 		while (i < total * 2)
-			sample_buffer.f[i++] *= seq_volume;
+			sample_buffer.f[i++] *= music_volume;
 		memset(&sample_buffer.f[i], 0, (additional_amount - i) * 4);
 		while (i < (size_t)additional_amount)
 			sample_buffer.f[i++] = 0.0f;
