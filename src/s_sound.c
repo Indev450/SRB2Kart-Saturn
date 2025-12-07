@@ -1651,7 +1651,7 @@ UINT32 S_GetMusicPosition(void)
 static lumpnum_t S_GetMusicLumpNum(const char *mname)
 {
 	if (S_MusicExists(mname, false, true)) // check non midis first
-		return W_GetNumForName(va("O_%s", mname));
+		return W_GetNumForName(va("o_%s", mname));
 
 	if (S_MusicExists(mname, true, false))
 	{
@@ -1659,7 +1659,7 @@ static lumpnum_t S_GetMusicLumpNum(const char *mname)
 		CONS_Alert(CONS_ERROR, "A MIDI music lump %.6s was found,\nbut SRB2Kart does not support MIDI output.\nWe apologise for the inconvenience.\n", mname);
 		return LUMPERROR;
 #else
-		return W_GetNumForName(va("D_%s", mname));
+		return W_GetNumForName(va("d_%s", mname));
 #endif
 	}
 
@@ -2286,15 +2286,16 @@ static void GameSounds_OnChange(void)
 	if (M_CheckParm("-nosound") || M_CheckParm("-noaudio"))
 		return;
 
-	sound_disabled = !cv_gamesounds.value;
-	if (sound_disabled)
+	if (sound_disabled && cv_gamesounds.value)
 	{
+		sound_disabled = false;
 		I_StartupSound(); // will return early if initialised
 		S_InitSfxChannels(cv_soundvolume.value);
 		S_StartSound(NULL, sfx_strpst);
 	}
-	else
+	else if (!sound_disabled && !cv_gamesounds.value)
 	{
+		sound_disabled = true;
 		S_StopSounds();
 	}
 }
@@ -2319,9 +2320,9 @@ void GameMusic_OnChange(void)
 	if (M_CheckParm("-nomusic") || M_CheckParm("-noaudio"))
 		return;
 
-	music_disabled = !cv_gamedigimusic.value;
-	if (music_disabled)
+	if (music_disabled && cv_gamedigimusic.value)
 	{
+		music_disabled = false;
 		I_StartupSound(); // will return early if initialised
 		I_InitMusic();
 
@@ -2332,8 +2333,9 @@ void GameMusic_OnChange(void)
 		else
 			S_ChangeMusicInternal("titles", looptitle);
 	}
-	else
+	else if (!music_disabled && !cv_gamedigimusic.value)
 	{
+		music_disabled = true;
 		S_StopMusic();
 	}
 }

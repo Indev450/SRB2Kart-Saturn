@@ -5,4 +5,3 @@ i_video.c
 dosstr.c
 endtxt.c
 hwsym_sdl.c
-sdl_sound.c
