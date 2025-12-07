@@ -1857,17 +1857,20 @@ INT32 I_StartupSystem(void)
 	return 0;
 }
 
+boolean is_quitting = false;
+
 //
 // I_Quit
 //
 FUNCNORETURN void ATTRNORETURN I_Quit(void)
 {
-	static SDL_bool quiting = SDL_FALSE;
-
 	/* prevent recursive I_Quit() */
-	if (quiting) goto death;
+	if (is_quitting)
+		abort();
+
+	is_quitting = true;
 	SDL_ShowCursor(SDL_TRUE);
-	quiting = SDL_FALSE;
+
 	I_ShutdownConsole();
 	M_SaveConfig(NULL); //save game config, cvars..
 	D_SaveBan(); // save the ban list
@@ -1894,7 +1897,7 @@ FUNCNORETURN void ATTRNORETURN I_Quit(void)
 	}
 	if (myargmalloc)
 		free(myargv); // Deallocate allocated memory
-death:
+
 	W_Shutdown();
 	exit(0);
 }
