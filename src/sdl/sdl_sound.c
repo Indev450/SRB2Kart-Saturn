@@ -445,8 +445,7 @@ void I_StartupSound(void)
 	SDL_setenv_unsafe("SDL_AUDIODRIVER", "directsound", 1);
 #endif
 
-	if (cv_audbuffersize.string != NULL)
-		SDL_setenv_unsafe("SDL_AUDIO_DEVICE_SAMPLE_FRAMES", cv_audbuffersize.string, 1);
+	SDL_setenv_unsafe("SDL_AUDIO_RESAMPLING_MODE", "3", 1);
 
 	// EE inits audio first so we're following along.
 	if (SDL_WasInit(SDL_INIT_AUDIO) == SDL_INIT_AUDIO)
@@ -809,7 +808,6 @@ void I_FreeSfx(sfxinfo_t *sfx)
 		free(sample->data);
 		free(sample);
 	}
-
 	sfx->data = NULL;
 	sfx->lumpnum = LUMPERROR;
 }
