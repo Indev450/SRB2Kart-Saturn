@@ -1153,13 +1153,6 @@ static menuitem_t OP_SoundAdvancedMenu[] =
 	{IT_STRING | IT_CVAR, 	NULL, "Stereo Seperation", 			&cv_stereosep, 		 35},
 #endif
 
-#ifdef HAVE_FLUIDSYNTH
-	{IT_HEADER, NULL, "MIDI Settings", NULL, NULL, OPENMPT_MENUOFFSET},
-	{IT_STRING | IT_CVAR | IT_CV_STRING, NULL, "Sound Font File", NULL, &cv_midisoundfontpath, OPENMPT_MENUOFFSET+12},
-	{IT_STRING | IT_CVAR | IT_CV_SLIDER, NULL, "Chorus", NULL, &cv_midichorus, OPENMPT_MENUOFFSET+40},
-	{IT_STRING | IT_CVAR | IT_CV_SLIDER, NULL, "Reverb", NULL, &cv_midireverb, OPENMPT_MENUOFFSET+50},
-#endif
-
 	{IT_HEADER, 			NULL, "Misc", 						NULL, 				 45},
 
 	{IT_STRING | IT_CVAR, 	NULL, "Same Sound Limit", 			&cv_samesoundlimit,  55},
@@ -1187,11 +1180,6 @@ static const char* OP_SoundAdvancedTooltips[] =
 	"Which Amiga should be used for .mod playback?",
 #endif
 	"How far should the four channels in .mod be panned?",
-#endif
-#ifdef HAVE_FLUIDSYNTH
-	"Which MIDI soundfont to use",
-	"Controls the chorus of MIDI playback\n setting this too high might cause some instruments to be overexposed",
-	"Controls the reverb of MIDI playback\n setting this too high might cause notes to be drawn out",
 #endif
 	NULL,
 	"How many times is the same sound allowed to play at once?\nIf 0 theres no limit.",
