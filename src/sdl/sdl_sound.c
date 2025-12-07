@@ -739,8 +739,7 @@ static sample_t *ds2chunk(const void *stream)
 	for (i = 0; i < num_samples; i++)
 	{
 		// convert and normalise to -1.0 - 1.0
-		fdata[i] = d[i] / 32767.0f;
-		fdata[i] = CLAMP(fdata[i], -1.0f, 1.0f);
+		fdata[i] = d[i] / 32768.0f;
 	}
 
 	return CreateSample(fdata, num_samples * sizeof(float));
@@ -1018,10 +1017,10 @@ INT32 I_StartSound(sfxenum_t id, UINT8 vol, UINT8 sep, /*UINT8 pitch, UINT8 prio
 			sound->pos = 0;
 			//sound->pitch = pitch / 128.0f;
 			sound->pitch = 1.0f;
-			sound->volume[0] = (float)vol / 255.0f;
-			sound->volume[1] = (float)vol / 255.0f;
+			sound->volume[0] = (float)vol / 255;
+			sound->volume[1] = (float)vol / 255;
 			if (sep >= 128)
-				sound->volume[0] *= 1.0f - ((float)sep-128.0f) / 128.0f;
+				sound->volume[0] *= 1.0f - ((float)sep-128) / 128.0f;
 			else
 				sound->volume[1] *= (float)sep / 128.0f;
 			sounds[i] = sound;
@@ -1071,12 +1070,12 @@ void I_UpdateSoundParams(INT32 handle, UINT8 vol, UINT8 sep/*, UINT8 pitch*/)
 		return;
 	}
 
-	sounds[index]->volume[0] = (float)vol / 255.0f;
-	sounds[index]->volume[1] = (float)vol / 255.0f;
+	sounds[handle]->volume[0] = (float)vol / 255;
+	sounds[handle]->volume[1] = (float)vol / 255;
 	if (virtual_spec.channels > 1)
 	{
 		if (sep >= 128)
-			sounds[handle]->volume[0] *= 1.0f - ((float)sep-128.0f) / 128.0f;
+			sounds[handle]->volume[0] *= 1.0f - ((float)sep-128) / 128.0f;
 		else
 			sounds[handle]->volume[1] *= (float)sep / 128.0f;
 	}
@@ -1087,7 +1086,7 @@ void I_UpdateSoundParams(INT32 handle, UINT8 vol, UINT8 sep/*, UINT8 pitch*/)
 
 void I_SetSfxVolume(UINT8 volume)
 {
-	sfx_volume = powf(2.0f, (float)volume / 16.0f) - 1.0f;
+	sfx_volume = powf(2.0f, (float)volume / 16) - 1.0f;
 }
 
 /// ------------------------
@@ -1326,7 +1325,7 @@ boolean I_SetSongLoopPoint(UINT32 looppoint)
 		looppoint %= length;
 
 	SDL_LockAudioStream(audio_stream);
-	loop_point = max(((float)looppoint / 1000.0f), 0.0f);
+	loop_point = max((float)(looppoint / 1000.0f), 0);
 	SDL_UnlockAudioStream(audio_stream);
 	return true;
 }
@@ -1353,7 +1352,7 @@ UINT32 I_GetSongLoopPoint(void)
 	}
 #endif
 	if (music_stream)
-		return loop_point * 1000.0f;
+		return loop_point * 1000;
 	return 0;
 }
 
@@ -1455,7 +1454,7 @@ UINT32 I_GetSongPosition(void)
 	if (openmpt_mhandle)
 		// This will be incorrect if we adjust for length because we can't get loop points.
 		// So return unadjusted. See note in SetMusicPosition: we adjust for that.
-		return (UINT32)(openmpt_module_get_position_seconds(openmpt_mhandle)*1000.0);
+		return (UINT32)(openmpt_module_get_position_seconds(openmpt_mhandle)*1000.);
 #endif
 #ifdef HAVE_FLUIDSYNTH
 	if (synth_player)
@@ -1832,7 +1831,7 @@ void I_ResumeSong(void)
 
 void I_SetMusicVolume(UINT8 volume)
 {
-	music_volume = powf(2.0f, (float)volume / 16.0f) - 1.0f;
+	music_volume = powf(2.0f, (float)volume / 16) - 1.0f;
 }
 
 boolean I_SetSongTrack(INT32 track)
