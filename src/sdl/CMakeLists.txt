@@ -51,14 +51,11 @@ if("${CMAKE_SYSTEM_NAME}" MATCHES Darwin)
 	)
 endif()
 
-#if(NOT "${SRB2_CONFIG_SYSTEM_LIBRARIES}" AND NOT "${SRB2_CONFIG_SHARED_INTERNAL_LIBRARIES}")
-#	target_link_libraries(SRB2SDL2 PRIVATE SDL2::SDL2-static SDL2_mixer::SDL2_mixer-static)
-#else()
-#	target_link_libraries(SRB2SDL2 PRIVATE SDL2::SDL2 SDL2_mixer::SDL2_mixer)
-#endif()
-
-target_sources(SRB2SDL2 PRIVATE sdl_sound.c)
-target_link_libraries(SRB2SDL2 PRIVATE SDL3::SDL3 sndfile)
+if(NOT "${SRB2_CONFIG_SYSTEM_LIBRARIES}" AND NOT "${SRB2_CONFIG_SHARED_INTERNAL_LIBRARIES}")
+	target_link_libraries(SRB2SDL2 PRIVATE SDL2::SDL2-static SDL2_mixer::SDL2_mixer-static)
+else()
+	target_link_libraries(SRB2SDL2 PRIVATE SDL2::SDL2 SDL2_mixer::SDL2_mixer)
+endif()
 
 if("${CMAKE_SYSTEM_NAME}" MATCHES Linux)
 	target_link_libraries(SRB2SDL2 PRIVATE m rt)
@@ -73,8 +70,7 @@ if("${CMAKE_SYSTEM_NAME}" MATCHES Windows)
 	)
 endif()
 
-#target_compile_definitions(SRB2SDL2 PRIVATE -DHAVE_MIXER -DSOUND=SOUND_MIXER)
-target_compile_definitions(SRB2SDL2 PRIVATE -DSOUND=SOUND_SDL)
+target_compile_definitions(SRB2SDL2 PRIVATE -DHAVE_MIXER -DSOUND=SOUND_MIXER)
 target_compile_definitions(SRB2SDL2 PRIVATE -DHAVE_SDL)
 
 #### Installation ####

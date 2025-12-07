@@ -3,7 +3,7 @@ hw_draw.c
 hw_main.cpp
 hw_clip.c
 hw_md2.c
-hw_cache.cpp
+hw_cache.c
 hw_md2load.c
 hw_md3load.c
 hw_model.c
