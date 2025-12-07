@@ -62,7 +62,6 @@ typedef struct sound_s
 	size_t pos;
 	float volume[2];
 	float pitch;
-	UINT32 channelId;
 } sound_t;
 
 typedef struct sndlump_s
@@ -997,7 +996,7 @@ void I_FreeSfx(sfxinfo_t *sfx)
 
 INT32 I_StartSound(sfxenum_t id, UINT8 vol, UINT8 sep, /*UINT8 pitch, UINT8 priority,*/ INT32 channel)
 {
-	//(void)channel; // ignore this - we do mixing ourselves so we don't need it
+	(void)channel; // ignore this - we do mixing ourselves so we don't need it
 	//(void)priority; // priority and channel management is handled by SRB2...
 	if (S_sfx[id].data == NULL)
 		return -1;
@@ -1021,16 +1020,13 @@ INT32 I_StartSound(sfxenum_t id, UINT8 vol, UINT8 sep, /*UINT8 pitch, UINT8 prio
 			sound->pitch = 1.0f;
 			sound->volume[0] = (float)vol / 255.0f;
 			sound->volume[1] = (float)vol / 255.0f;
-
-			sound->channelId = channel;
-
 			if (sep >= 128)
 				sound->volume[0] *= 1.0f - ((float)sep-128.0f) / 128.0f;
 			else
 				sound->volume[1] *= (float)sep / 128.0f;
 			sounds[i] = sound;
 			SDL_UnlockAudioStream(audio_stream);
-			return (sound->channelId << 8) | i;
+			return i;
 		}
 	}
 
@@ -1043,14 +1039,11 @@ void I_StopSound(INT32 handle)
 	if (handle == -1)
 		return;
 
-	size_t index = handle & 0xFF;
-	UINT32 soundid = handle >> 8;
-
 	SDL_LockAudioStream(audio_stream);
-	if (sounds[index] != NULL && sounds[index]->channelId == soundid)
+	if (sounds[handle] != NULL)
 	{
-		free(sounds[index]);
-		sounds[index] = NULL;
+		free(sounds[handle]);
+		sounds[handle] = NULL;
 	}
 	SDL_UnlockAudioStream(audio_stream);
 }
@@ -1060,11 +1053,8 @@ boolean I_SoundIsPlaying(INT32 handle)
 	if (handle == -1)
 		return false;
 
-	size_t index = handle & 0xFF;
-	UINT32 soundid = handle >> 8;
-
 	SDL_LockAudioStream(audio_stream);
-	bool playing = (sounds[index] != NULL && sounds[index]->channelId == soundid);
+	bool playing = sounds[handle] != NULL;
 	SDL_UnlockAudioStream(audio_stream);
 	return playing;
 }
@@ -1074,11 +1064,8 @@ void I_UpdateSoundParams(INT32 handle, UINT8 vol, UINT8 sep/*, UINT8 pitch*/)
 	if (handle == -1)
 		return;
 
-	size_t index = handle & 0xFF;
-	UINT32 soundid = handle >> 8;
-
 	SDL_LockAudioStream(audio_stream);
-	if (sounds[index] == NULL || sounds[index]->channelId != soundid)
+	if (sounds[handle] == NULL)
 	{
 		SDL_UnlockAudioStream(audio_stream);
 		return;
@@ -1089,12 +1076,12 @@ void I_UpdateSoundParams(INT32 handle, UINT8 vol, UINT8 sep/*, UINT8 pitch*/)
 	if (virtual_spec.channels > 1)
 	{
 		if (sep >= 128)
-			sounds[index]->volume[0] *= 1.0f - ((float)sep-128.0f) / 128.0f;
+			sounds[handle]->volume[0] *= 1.0f - ((float)sep-128.0f) / 128.0f;
 		else
-			sounds[index]->volume[1] *= (float)sep / 128.0f;
+			sounds[handle]->volume[1] *= (float)sep / 128.0f;
 	}
-	//sounds[index]->pitch = pitch / 128.0f;
-	sounds[index]->pitch = 1.0f;
+	//sounds[handle]->pitch = pitch / 128.0f;
+	sounds[handle]->pitch = 1.0f;
 	SDL_UnlockAudioStream(audio_stream);
 }
 
