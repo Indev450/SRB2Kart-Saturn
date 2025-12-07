@@ -835,7 +835,7 @@ INT32 I_StartSound(sfxenum_t id, UINT8 vol, UINT8 sep, /*UINT8 pitch, UINT8 prio
 			sound->sample = S_sfx[id].data;
 			sound->pos = 0;
 			//sound->pitch = pitch / 128.0f;
-			sound->pitch = 1.0f;
+			sound->pitch = 1;
 			sound->volume[0] = (float)vol / 255;
 			sound->volume[1] = (float)vol / 255;
 			if (sep >= 128)
@@ -899,7 +899,7 @@ void I_UpdateSoundParams(INT32 handle, UINT8 vol, UINT8 sep/*, UINT8 pitch*/)
 			sounds[handle]->volume[1] *= (float)sep / 128.0f;
 	}
 	//sounds[handle]->pitch = pitch / 128.0f;
-	sounds[handle]->pitch = 1.0f;
+	sounds[handle]->pitch = 1;
 	SDL_UnlockAudioStream(audio_stream);
 }
 
