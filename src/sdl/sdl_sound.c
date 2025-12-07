@@ -1782,7 +1782,7 @@ boolean I_PlaySong(boolean looping)
 #ifdef HAVE_FLUIDSYNTH
 	if (synth_player)
 	{
-		fluid_player_set_loop(synth_player, looping ? -1 : 0);
+		fluid_player_set_loop(synth_player, looping ? -1 : 1);
 		fluid_player_play(synth_player);
 	}
 	else
