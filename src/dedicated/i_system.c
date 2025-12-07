@@ -1081,11 +1081,19 @@ FUNCNORETURN static ATTRNORETURN void signal_handler(INT32 num)
 }
 #endif
 
-FUNCNORETURN static ATTRNORETURN void quit_handler(int num)
+static volatile sig_atomic_t interrupted = 0;
+
+boolean I_Interrupted(void)
+{
+	return interrupted;
+}
+
+static void quit_handler(int num)
 {
 	signal(num, SIG_DFL); //default signal action
 	raise(num);
-	I_Quit();
+	//I_Quit();
+	interrupted = true;
 }
 
 #ifdef HAVE_LIBBACKTRACE

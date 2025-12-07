@@ -1680,7 +1680,7 @@ static volatile sig_atomic_t interrupted = 0;
 
 boolean I_Interrupted(void)
 {
-  return interrupted;
+	return interrupted;
 }
 
 static void quit_handler(int num)
