@@ -2795,7 +2795,7 @@ void G_DoPlayDemo(char *defdemoname)
 	demobuf.p += 4; // Extrainfo location
 
 	// ...*map* not loaded?
-	if (!gamemap || (gamemap > NUMMAPS) || !mapheaderinfo[gamemap-1])
+	if (!gamemap || (gamemap > NUMMAPS) || (W_CheckNumForName(G_BuildMapName(gamemap)) == LUMPERROR))
 	{
 		snprintf(msg, 1024, M_GetText("%s features a course that is not currently loaded.\n"), pdemoname);
 		CONS_Alert(CONS_ERROR, "%s", msg);
@@ -2837,7 +2837,7 @@ void G_DoPlayDemo(char *defdemoname)
 		}
 
 		// ...*map* not loaded?
-		if (!(mapheaderinfo[gamemap-1]->menuflags & LF2_EXISTSHACK))
+		if (!gamemap || (gamemap > NUMMAPS) || !mapheaderinfo[gamemap-1] || !(mapheaderinfo[gamemap-1]->menuflags & LF2_EXISTSHACK))
 		{
 			snprintf(msg, 1024, M_GetText("%s features a course that is not currently loaded.\n"), pdemoname);
 			CONS_Alert(CONS_ERROR, "%s", msg);
