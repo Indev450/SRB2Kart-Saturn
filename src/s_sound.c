@@ -362,7 +362,6 @@ boolean S_SoundDisabled(void)
 
 int S_CacheSound(void)
 {
-#if SOUND == SOUND_MIXER
 	if (sound_disabled)
 		return SOUNDCACHE_OFF;
 
@@ -370,9 +369,6 @@ int S_CacheSound(void)
 		return SOUNDCACHE_PRECACHE;
 
 	return cv_cachesound.value;
-#else
-	return SOUNDCACHE_OFF;
-#endif
 }
 
 // Stop all sounds, load level info, THEN start sounds.
