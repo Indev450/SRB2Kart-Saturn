@@ -68,11 +68,11 @@ typedef struct
 	unsigned long position; // filelump_t filepos
 	unsigned long disksize; // filelump_t size
 	char name[9];           // filelump_t name[] e.g. "LongEntr"
-	char *longname;         //                   e.g. "LongEntryName"
+	//char *longname;         //                   e.g. "LongEntryName"
 	char *fullname;         //                   e.g. "Folder/Subfolder/LongEntryName.extension"
 
 	size_t namelength;      // length of name
-	size_t longnamelength;  // length of longname
+	//size_t longnamelength;  // length of longname
 	size_t fullnamelength;  // length of fullname
 
 	size_t size; // real (uncompressed) size
@@ -80,7 +80,7 @@ typedef struct
 
 	struct {
 		UINT32 name;        // hash of name
-		UINT32 longname;    // hash of longname
+		//UINT32 longname;    // hash of longname
 		//UINT32 fullname;    // hash of fullname
 	} hash;
 } lumpinfo_t;
@@ -180,7 +180,7 @@ const char *W_CheckNameForNumPwad(UINT16 wad, UINT16 lump);
 const char *W_CheckNameForNum(lumpnum_t lumpnum);
 
 UINT16 W_CheckNumForNamePwad(const char *name, UINT16 wad, UINT16 startlump); // checks only in one pwad
-UINT16 W_CheckNumForLongNamePwad(const char *name, UINT16 wad, UINT16 startlump);
+//UINT16 W_CheckNumForLongNamePwad(const char *name, UINT16 wad, UINT16 startlump);
 
 /* Find the first lump after F_START for instance. */
 UINT16 W_CheckNumForMarkerStartPwad(const char *name, UINT16 wad, UINT16 startlump);
@@ -190,9 +190,9 @@ UINT16 W_CheckNumForFolderStartPK3(const char *name, UINT16 wad, UINT16 startlum
 UINT16 W_CheckNumForFolderEndPK3(const char *name, UINT16 wad, UINT16 startlump);
 
 lumpnum_t W_CheckNumForName(const char *name);
-lumpnum_t W_CheckNumForLongName(const char *name);
+//lumpnum_t W_CheckNumForLongName(const char *name);
 lumpnum_t W_GetNumForName(const char *name); // like W_CheckNumForName but I_Error on LUMPERROR
-lumpnum_t W_GetNumForLongName(const char *name);
+//lumpnum_t W_GetNumForLongName(const char *name);
 lumpnum_t W_CheckNumForNameInBlock(const char *name, const char *blockstart, const char *blockend);
 UINT8 W_LumpExists(const char *name); // Lua uses this.
 UINT8 W_CheckMultipleLumps(const char* lump, ...); // variadic version of above lmao
