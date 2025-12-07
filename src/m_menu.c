@@ -528,6 +528,7 @@ static INT32 M_ShiftChar(INT32 ch)
 // Pretty and consistent ^u^
 // See also G_GetGametypeColor.
 //
+
 static INT32 highlightflags, recommendedflags, warningflags;
 
 inline static void M_GetGametypeColor(void)
