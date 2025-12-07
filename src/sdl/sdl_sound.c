@@ -75,10 +75,10 @@ typedef struct sndlump_s
 
 UINT8 sound_started = false;
 
-/*static UINT32 stutter_threshold;
+static UINT32 stutter_threshold;
 static UINT32 music_end_bytes;
 static UINT32 music_bytes;
-static UINT32 music_stutter_bytes;*/
+static UINT32 music_stutter_bytes;
 
 static SDL_AudioDeviceID audio_device;
 static SDL_AudioStream *audio_stream;
@@ -135,10 +135,6 @@ static void MidiSoundfontPath_Onchange(void)
 
 consvar_t cv_midisoundfontpath = CVAR_INIT ("midisoundfont", "sf2/GeneralUser-GS.sf2", "Which MIDI soundfont to use", CV_CALL|CV_NOINIT|CV_SAVE, NULL, MidiSoundfontPath_Onchange);
 #endif
-
-//FIXME: this is not how it should be lol
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wfloat-equal"
 
 /// ------------------------
 /// Audio System
@@ -215,8 +211,7 @@ static void MusicCallback(void *userdata, SDL_AudioStream *stream, int additiona
 	(void)userdata;
 	(void)total_amount;
 
-	int amount = additional_amount / 4.0f * music_speed;
-
+	int amount = additional_amount / 4 * music_speed;
 	if (music_info.channels == 2 && (amount & 1))
 		amount++;
 	float *needed = malloc(amount * 4);
@@ -285,7 +280,6 @@ static void StreamCallback(void *userdata, SDL_AudioStream *stream, int addition
 	else if (gme != NULL && !gme_track_ended(gme) && !song_paused)
 	{
 		INT16 *buf = malloc(additional_amount * 2);
-
 		if (buf != NULL)
 		{
 			gme_play(gme, additional_amount, buf);
@@ -533,9 +527,9 @@ static sample_t *CreateSample(float *data, size_t len)
 	return sample;
 }
 
-static sample_t *ConvertDOOMSample(const void *stream)
+static sample_t *ConvertDOOMSample(void *stream)
 {
-	UINT16 ver, freq;
+	UINT16 ver,freq;
 	UINT32 samples;
 
 	// lump header
@@ -543,11 +537,6 @@ static sample_t *ConvertDOOMSample(const void *stream)
 	if (ver != 3) // It should be 3 if it's a doomsound...
 		return NULL; // onos! it's not a doomsound!
 	freq = READUINT16(stream);
-
-	// dont divide by 0!
-	if (freq == 0)
-		return NULL;
-
 	samples = READUINT32(stream);
 
 	SDL_AudioSpec srcspec = {
@@ -558,7 +547,7 @@ static sample_t *ConvertDOOMSample(const void *stream)
 
 	float *data;
 	int len;
-	if (!SDL_ConvertAudioSamples(&srcspec, (const void *)(((const char *)stream)+16), samples-32, &virtual_spec, (void *)&data, &len))
+	if (!SDL_ConvertAudioSamples(&srcspec, (void *)(((char *)stream)+16), samples-32, &virtual_spec, (void *)&data, &len))
 	{
 		CONS_Alert(CONS_ERROR, "Failed to convert audio: %s\n", SDL_GetError());
 		return NULL;
@@ -652,7 +641,6 @@ void *I_GetSfx(sfxinfo_t *sfx)
 		int zErr; // Somewhere to handle any error messages zlib tosses out
 
 		memset(&stream, 0x00, sizeof (z_stream)); // Init zlib stream
-
 		// Begin the inflation process
 		inflatedLen = *(UINT32 *)lump + (sfx->length-4); // Last 4 bytes are the decompressed size, typically
 		inflatedData = (UINT8 *)malloc(inflatedLen); // Make room for the decompressed data
@@ -665,8 +653,7 @@ void *I_GetSfx(sfxinfo_t *sfx)
 		if (zErr == Z_OK) // We're good to go
 		{
 			zErr = inflate(&stream, Z_FINISH);
-			if (zErr == Z_STREAM_END)
-			{
+			if (zErr == Z_STREAM_END) {
 				// Run GME on new data
 				if (!gme_open_data(inflatedData, inflatedLen, &emu, virtual_spec.freq))
 				{
@@ -945,12 +932,10 @@ void I_ShutdownMusic(void)
 	I_UnloadSong();
 }
 
-#if 0
+//FIXME: implement this crap
 static void Countstutter(int len)
 {
 	UINT32 bytes;
-
-	music_bytes += len;
 
 	if (gamestate != GS_LEVEL)
 		return;
@@ -979,7 +964,22 @@ static void Countstutter(int len)
 		}
 	}
 }
-#endif
+
+static void count_music_bytes(int chan, void *stream, int len, void *udata)
+{
+	(void)chan;
+	(void)stream;
+	(void)udata;
+
+	const musictype_t mustype = I_SongType();
+
+	if (I_SongType() == MU_NONE || mustype == MU_GME || mustype == MU_MOD || mustype == MU_MID)
+		return;
+
+	music_bytes += len;
+
+	Countstutter(len);
+}
 
 /// ------------------------
 /// Music Properties
@@ -1288,7 +1288,7 @@ static void ResetMusic(void)
 
 void I_UpdateSongLagThreshold(void)
 {
-	//stutter_threshold = cv_music_resync_powerups_only.value ? 0 : (cv_music_resync_threshold.value/1000.0*(4*44100));
+	stutter_threshold = cv_music_resync_powerups_only.value ? 0 : (cv_music_resync_threshold.value/1000.0*(4*44100));
 }
 
 boolean I_LoadSong(char *data, size_t len)
@@ -1731,7 +1731,5 @@ boolean I_FadeInPlaySong(UINT32 ms, boolean looping)
 	else
 		return false;
 }
-
-#pragma GCC diagnostic pop
 #endif
 
