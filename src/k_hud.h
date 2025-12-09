@@ -41,6 +41,9 @@ extern consvar_t cv_battlespeedo;
 extern consvar_t cv_multiitemicon;
 extern consvar_t cv_huditemamount;
 
+// for use in timeattack menu
+extern patch_t *kp_facenum[MAXPLAYERS+1];
+
 #define NUMSPEEDOSTUFF 8
 extern CV_PossibleValue_t speedo_cons_t[NUMSPEEDOSTUFF];
 #define NUMDGAUGESTUFF 6

@@ -515,13 +515,15 @@ const INT32 checkcoord[12][4] =
 static boolean R_CheckBBox(const fixed_t *bspcoord)
 {
 	angle_t angle1, angle2;
-	INT32 sx1, sx2, boxpos;
+	INT32 sx1, sx2;
 	const INT32* check;
 
 	// Find the corners of the box
 	// that define the edges from current viewpoint.
-	boxpos = (viewx <= bspcoord[BOXLEFT] ? 0 : viewx < bspcoord[BOXRIGHT ] ? 1 : 2) +
-	(viewy >= bspcoord[BOXTOP ] ? 0 : viewy > bspcoord[BOXBOTTOM] ? 4 : 8);
+	const INT32 boxpos = (viewx <= bspcoord[BOXLEFT]   ? 0 :
+						  viewx <  bspcoord[BOXRIGHT]  ? 1 : 2) +
+						 (viewy >= bspcoord[BOXTOP]    ? 0 :
+						  viewy >  bspcoord[BOXBOTTOM] ? 4 : 8);
 
 	if (boxpos == 5)
 		return true;
