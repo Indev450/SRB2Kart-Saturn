@@ -958,7 +958,7 @@ void Got_Filetxpak(void)
 		|| fastcmp(filename, "music.kart")
 		|| fastcmp(filename, "patch.kart")
 		))
-		I_Error("Tried to download \"%s\"", filename);
+		I_Error("Tried to download base-game file: \"%s\"", filename);
 
 	if (filenum >= fileneedednum)
 	{
@@ -1017,21 +1017,21 @@ void Got_Filetxpak(void)
 
 		switch(file->status)
 		{
-		case FS_NOTFOUND:
-			s = "FS_NOTFOUND";
-			break;
-		case FS_FOUND:
-			s = "FS_FOUND";
-			break;
-		case FS_OPEN:
-			s = "FS_OPEN";
-			break;
-		case FS_MD5SUMBAD:
-			s = "FS_MD5SUMBAD";
-			break;
-		default:
-			s = "unknown";
-			break;
+			case FS_NOTFOUND:
+				s = "FS_NOTFOUND";
+				break;
+			case FS_FOUND:
+				s = "FS_FOUND";
+				break;
+			case FS_OPEN:
+				s = "FS_OPEN";
+				break;
+			case FS_MD5SUMBAD:
+				s = "FS_MD5SUMBAD";
+				break;
+			default:
+				s = "unknown";
+				break;
 		}
 
 		I_Error("Received a file not requested (file id: %d, file status: %s)\n", filenum, s);
