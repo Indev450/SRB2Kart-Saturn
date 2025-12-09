@@ -496,8 +496,10 @@ static void cleanupnodes(void)
 
 	// Why can't I start at zero?
 	for (j = 1; j < MAXNETNODES; j++)
+	{
 		if (!(nodeingame[j] || SV_SendingFile(j)))
 			nodeconnected[j] = false;
+	}
 }
 
 static SINT8 getfreenode(void)
@@ -507,11 +509,13 @@ static SINT8 getfreenode(void)
 	cleanupnodes();
 
 	for (j = 0; j < MAXNETNODES; j++)
+	{
 		if (!nodeconnected[j])
 		{
 			nodeconnected[j] = true;
 			return j;
 		}
+	}
 
 	/** \warning No free node? Just in case a node might not have been freed properly,
 	  *          look if there are connected nodes that aren't in game, and forget them.
@@ -812,7 +816,7 @@ static void SOCK_Send(void)
 static void SOCK_FreeNodenum(INT32 numnode)
 {
 	// can't disconnect from self :)
-	if (!numnode || numnode > MAXNETNODES)
+	if (numnode <= 0 || numnode > MAXNETNODES)
 		return;
 
 	DEBFILE(va("Free node %d (%s)\n", numnode, SOCK_GetNodeAddress(numnode)));
@@ -1432,14 +1436,12 @@ static void SOCK_RegisterHolePunch(void)
 
 static boolean SOCK_OpenSocket(void)
 {
-	size_t i;
+	memset(clientaddress, 0, sizeof(clientaddress));
 
-	memset(clientaddress, 0, sizeof (clientaddress));
-
+	memset(nodeconnected, false, sizeof(nodeconnected));
 	nodeconnected[0] = true; // always connected to self
-	for (i = 1; i < MAXNETNODES; i++)
-		nodeconnected[i] = false;
 	nodeconnected[BROADCASTADDR] = true;
+
 	I_NetSend = SOCK_Send;
 	I_NetGet = SOCK_Get;
 	I_NetCloseSocket = SOCK_CloseSocket;
@@ -1479,7 +1481,7 @@ static boolean SOCK_Ban(INT32 node)
 {
 	INT32 ban;
 
-	if (node > MAXNETNODES)
+	if (node < 0 || node > MAXNETNODES)
 		return false;
 
 	ban = numbans;
