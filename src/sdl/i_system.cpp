@@ -1670,21 +1670,19 @@ FUNCNORETURN static ATTRNORETURN void signal_handler(INT32 num)
 }
 #endif
 
-FUNCNORETURN static ATTRNORETURN void quit_handler(int num)
-{
-#ifdef HAVE_THREADS
-	if (g_main_thread_id != std::this_thread::get_id())
-	{
-		// Do not attempt any sort of recovery if this signal triggers off the main thread
-		signal(num, SIG_DFL);
-		raise(num);
-		exit(-2);
-	}
-#endif
+static volatile sig_atomic_t interrupted = 0;
 
+boolean I_Interrupted(void)
+{
+	return interrupted;
+}
+
+static void quit_handler(int num)
+{
 	signal(num, SIG_DFL); //default signal action
 	raise(num);
-	I_Quit();
+	//I_Quit();
+	interrupted = true;
 }
 
 static void I_RegisterSignals(void)
@@ -1851,17 +1849,20 @@ INT32 I_StartupSystem(void)
 	return 0;
 }
 
+boolean is_quitting = false;
+
 //
 // I_Quit
 //
 FUNCNORETURN void ATTRNORETURN I_Quit(void)
 {
-	static SDL_bool quiting = SDL_FALSE;
-
 	/* prevent recursive I_Quit() */
-	if (quiting) goto death;
+	if (is_quitting)
+		abort();
+
+	is_quitting = true;
 	SDL_ShowCursor(SDL_TRUE);
-	quiting = SDL_FALSE;
+
 	I_ShutdownConsole();
 	M_SaveConfig(NULL); //save game config, cvars..
 	D_SaveBan(); // save the ban list
@@ -1888,7 +1889,7 @@ FUNCNORETURN void ATTRNORETURN I_Quit(void)
 	}
 	if (myargmalloc)
 		free(myargv); // Deallocate allocated memory
-death:
+
 	W_Shutdown();
 	exit(0);
 }

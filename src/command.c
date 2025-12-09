@@ -655,7 +655,7 @@ static void COM_Alias_f(void)
 		CONS_Printf(M_GetText("All aliases that start with \x87'%s'\x80 are:\n"), begin);
 
 		int count = 0;
-		for (cmdalias_t *head = com_alias; head->next != NULL; head = head->next)
+		for (cmdalias_t *head = com_alias; head != NULL; head = head->next)
 		{
 			if (strncmp(begin, head->name, szBegin) == 0)
 			{
@@ -676,7 +676,7 @@ static void COM_Alias_f(void)
 		/* Display alias subtext, show all aliases. */
 		CONS_Printf(M_GetText("alias <name> <command>: create a shortcut command that executes other command(s)\n"));
 
-		for (cmdalias_t *head = com_alias; head->next != NULL; head = head->next)
+		for (cmdalias_t *head = com_alias; head != NULL; head = head->next)
 		{
 			CONS_Printf(alias_format, head->name, head->value);
 		}

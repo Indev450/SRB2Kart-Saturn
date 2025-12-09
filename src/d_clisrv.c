@@ -1777,6 +1777,9 @@ static void SV_SendPlayerInfo(INT32 node)
 
 static void SV_SendMapIcon(INT32 node)
 {
+	if (node == 0)
+		return;
+
 	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
 
 	const char *map = va("%sP", G_BuildMapName(gamemap));
