@@ -600,7 +600,7 @@ static menuitem_t OP_MainMenu[] =
 	{IT_SUBMENU|IT_STRING,		NULL, "Game Focus Options...",	&OP_FocusOptionsDef,		 33},
 
 	{IT_SUBMENU|IT_STRING,		NULL, "HUD Options...",			&OP_HUDOptionsDef,			 46},
-	{IT_SUBMENU|IT_STRING,		NULL, "Camera Options...",		&OP_CamOptionsDef,			 56},
+	{IT_CALL|IT_STRING,		    NULL, "Camera Options...",		M_CameraMenu,			     56},
 	{IT_SUBMENU|IT_STRING,		NULL, "Gameplay Options...",	&OP_GameOptionsDef,			 66},
 	{IT_SUBMENU|IT_STRING,		NULL, "Server Options...",		&OP_ServerOptionsDef,		 76},
 
@@ -610,7 +610,7 @@ static menuitem_t OP_MainMenu[] =
 	{IT_CALL|IT_STRING,			NULL, "Tricks & Secrets (F1)",	M_Manual,					109},
 	{IT_CALL|IT_STRING,			NULL, "Play Credits",			M_Credits,					119},
 
-	{IT_SUBMENU|IT_STRING,		NULL, "Accessibility Options...",&OP_AccessibilityDef,		132},
+	{IT_SUBMENU|IT_STRING,		NULL, "Accessibility Options...", &OP_AccessibilityDef,		132},
 	{IT_SUBMENU|IT_STRING,		NULL, "Saturn Options...",		&OP_SaturnDef,				142},
 
 	{IT_SUBMENU|IT_STRING,		NULL, "Bird...",				&OP_BirdDef,				152},
@@ -1646,7 +1646,7 @@ static menuitem_t OP_AccessibilityMenu[] =
 
 	{IT_STRING|IT_CVAR,                NULL,   "Quake Screenshakes",             &cv_screenquake,        60},
 
-	{IT_SUBMENU|IT_STRING,             NULL,   "Camera Options...",              &OP_CamOptionsDef,      65},
+	{IT_CALL|IT_STRING,                NULL,   "Camera Options...",              M_CameraMenu,      65},
 
 	{IT_HEADER, NULL, "Audio", NULL, 75},
 
@@ -1849,15 +1849,16 @@ static menuitem_t OP_SaturnHudMenu[] =
 	{IT_STRING|IT_CVAR,    NULL, "Player Angle Visual",         &cv_showminimapangle, 150},
 
 	{IT_STRING|IT_CVAR,    NULL, "Music Credits",               &cv_songcredits,      160},
+	{IT_STRING|IT_CVAR,    NULL, "Music Credits on Pause",      &cv_pausesongcredits, 165},
 
-	{IT_STRING|IT_CVAR,    NULL, "Beta Intermissionscreen",     &cv_betainterscreen,  170},
+	{IT_STRING|IT_CVAR,    NULL, "Beta Intermissionscreen",     &cv_betainterscreen,  175},
 
-	{IT_STRING|IT_CVAR,    NULL, "Show Director Prompt",        &cv_showdirectorhud,  180},
+	{IT_STRING|IT_CVAR,    NULL, "Show Director Prompt",        &cv_showdirectorhud,  185},
 
-	{IT_STRING|IT_SUBMENU, NULL, "Nametags...",                 &OP_NametagDef,       190},
-	{IT_STRING|IT_SUBMENU, NULL, "Driftgauge...",               &OP_DriftGaugeDef,    195},
+	{IT_STRING|IT_SUBMENU, NULL, "Nametags...",                 &OP_NametagDef,       195},
+	{IT_STRING|IT_SUBMENU, NULL, "Driftgauge...",               &OP_DriftGaugeDef,    200},
 
-	{IT_SUBMENU|IT_STRING, NULL, "Hud Offsets...",              &OP_HudOffsetDef,     205},
+	{IT_SUBMENU|IT_STRING, NULL, "Hud Offsets...",              &OP_HudOffsetDef,     210},
 };
 
 static const char* OP_SaturnHudTooltips[] =
@@ -1884,6 +1885,7 @@ static const char* OP_SaturnHudTooltips[] =
 	"Erratically rotate player icons during spinouts.",
 	"Visualize the player facing angle.",
 	"Show the Music Credits and which style.",
+	"Show the Music Credits while in pause menu.",
 	"Make the Intermission screen look like in beta versions of Kart!\nEither with background or just the rest.",
 	"Show the Director Toggle prompt when spectating.",
 	"Nametag Options.",
