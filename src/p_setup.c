@@ -815,8 +815,6 @@ static void P_LoadSectors(UINT8 *data)
 		ss->tag = SHORT(ms->tag);
 
 		ss->flags |= SF_FLIPSPECIAL_FLOOR;
-
-		ss->soundorg.thinker.function = (actionf_p1)P_MobjThinker;
 	}
 
 	// set the sky flat num
