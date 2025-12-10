@@ -1033,6 +1033,12 @@ skippixel:
 
 static void HWR_GetBlendedTexture(patch_t *patch, patch_t *blendgpatch, INT32 skinnum, const UINT8 *colormap, skincolors_t color)
 {
+	(void)patch;
+	(void)blendgpatch;
+	(void)skinnum;
+	(void)colormap;
+	(void)color;
+	/*
 	// mostly copied from HWR_GetMappedPatch, hence the similarities and comment
 	GLPatch_t *glPatch = patch->hardware;
 	GLMipmap_t *glMipmap, *newMipmap;
@@ -1090,6 +1096,7 @@ static void HWR_GetBlendedTexture(patch_t *patch, patch_t *blendgpatch, INT32 sk
 
 	GL_SetTexture(newMipmap);
 	Z_ChangeTag(newMipmap->data, PU_HWRMODELTEXTURE_UNLOCKED);
+	*/
 }
 
 // -----------------+
