@@ -182,6 +182,9 @@ consvar_t cv_flipcam[MAXSPLITSCREENPLAYERS] = {
 	{"flipcam4", "No", CV_SAVE|CV_CALL|CV_NOINIT, CV_YesNo, FlipCam4_OnChange, 0, NULL, NULL, 0, 0, NULL}
 };
 
+static CV_PossibleValue_t flipcammode_cons_t[] = {{0, "Displayplayer"}, {1, "Local"}, {0, NULL}};
+consvar_t cv_flipcammode = {"flipcammode",  "Displayplayer", CV_SAVE, flipcammode_cons_t, NULL,  0, NULL, NULL, 0, 0, NULL};
+
 consvar_t cv_shadow          = {"shadow", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_shadowoffs      = {"offsetshadows", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_skybox          = {"skybox", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
@@ -1545,6 +1548,8 @@ void R_RegisterEngineStuff(void)
 	{
 		CV_RegisterVar(&cv_flipcam[i]);
 	}
+
+	CV_RegisterVar(&cv_flipcammode);
 
 	// Enough for dedicated server
 	if (dedicated)
