@@ -1652,6 +1652,13 @@ static menuitem_t OP_AccessibilityMenu[] =
 
 	{IT_STRING|IT_CVAR,                NULL,   "Reverse L/R Channels",           &stereoreverse,         85},
 	{IT_STRING|IT_CVAR,                NULL,   "Same Sound Limit",               &cv_samesoundlimit,     90},
+
+	{IT_HEADER, NULL, "Controls", NULL, 100},
+
+	{IT_STRING|IT_CVAR,                NULL,   "Automatic Acceleration (P1)",    &cv_autoaccel[0],       110},
+	{IT_STRING|IT_CVAR,                NULL,   "Automatic Acceleration (P2)",    &cv_autoaccel[1],       115},
+	{IT_STRING|IT_CVAR,                NULL,   "Automatic Acceleration (P3)",    &cv_autoaccel[2],       120},
+	{IT_STRING|IT_CVAR,                NULL,   "Automatic Acceleration (P4)",    &cv_autoaccel[3],       125},
 };
 
 static const char* OP_AccessibilityTooltips[] =
@@ -1673,6 +1680,11 @@ static const char* OP_AccessibilityTooltips[] =
 	NULL,
 	"Reverse left and right channels of audio.",
 	"Change how often the same Sound is allowed to play at once.",
+	NULL,
+	"Automatically hold acceleration button (Player 1).",
+	"Automatically hold acceleration button (Player 2).",
+	"Automatically hold acceleration button (Player 3).",
+	"Automatically hold acceleration button (Player 4).",
 };
 
 static menuitem_t OP_SaturnMenu[] =
