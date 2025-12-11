@@ -800,6 +800,10 @@ static fixed_t forwardmove[2] = {25<<FRACBITS>>16, 50<<FRACBITS>>16};
 static fixed_t sidemove[2] = {2<<FRACBITS>>16, 4<<FRACBITS>>16};
 static fixed_t angleturn[3] = {KART_FULLTURN/2, KART_FULLTURN, KART_FULLTURN/4}; // + slow turn
 
+//
+// G_HandleLocalDriftturn
+// Hack for Lua menus that check directional inputs with driftturn
+//
 static void G_HandleLocalDriftturn(ticcmd_t *cmd, UINT8 ssplayer)
 {
 	INT32 axis = 0;
@@ -862,9 +866,8 @@ static void G_HandleLocalDriftturn(ticcmd_t *cmd, UINT8 ssplayer)
 //
 static void G_BuildLocalTiccmd(ticcmd_t *cmd, UINT8 ssplayer, boolean freecam)
 {
-	boolean moveinput = false;
 	INT32 axis = 0;
-	const boolean usejoystick = (cv_usejoystick[(ssplayer-1)].value);
+	const boolean usejoystick = cv_usejoystick[(ssplayer-1)].value;
 
 	// check for inputs and return button commands
 	// for stuff like joining with item button, saltyhop, honking, etc.
@@ -899,15 +902,11 @@ static void G_BuildLocalTiccmd(ticcmd_t *cmd, UINT8 ssplayer, boolean freecam)
 
 #undef CHECKINPUT
 
-	moveinput = (InputDown(gc_turnleft, ssplayer) || InputDown(gc_turnright, ssplayer)
-	|| InputDown(gc_aimforward, ssplayer) || InputDown(gc_aimbackward, ssplayer) ||
-	(usejoystick && JoyAxis(AXISAIM, ssplayer) != 0) || (usejoystick && JoyAxis(AXISTURN, ssplayer) != 0));
-
 	axis = JoyAxis(AXISLOOKBACK, ssplayer);
 	camspin[ssplayer-1] = (InputDown(gc_lookback, ssplayer) || (usejoystick && axis > 0));
 
 	// Reset to our spec player if we watch someone else.
-	if ((moveinput || cmd->buttons)
+	if ((cmd->driftturn || cmd->buttons)
 		&& displayplayers[0] != consoleplayer && ssplayer == 1)
 	{
 		if (cv_director.value)
