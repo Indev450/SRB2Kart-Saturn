@@ -648,17 +648,6 @@ static menuitem_t OP_ControlsMenu[] =
 	{IT_SUBMENU | IT_STRING, NULL, "Mouse Options...",  &OP_MouseOptionsDef,    55},
 
 	{IT_STRING | IT_CVAR, NULL, "Controls per key",     &cv_controlperkey,      75},
-
-	{IT_STRING | IT_CVAR, NULL, "Digital turn easing (P1)",  &cv_turnsmooth[0],         85},
-	{IT_STRING | IT_CVAR, NULL, "Digital turn easing (P2)",  &cv_turnsmooth[1],         95},
-	{IT_STRING | IT_CVAR, NULL, "Digital turn easing (P3)",  &cv_turnsmooth[2],         105},
-	{IT_STRING | IT_CVAR, NULL, "Digital turn easing (P4)",  &cv_turnsmooth[3],         115},
-
-	// i hate our menus sincerly
-	{IT_STRING | IT_CVAR, NULL, "Lite Steer (P1)",      &cv_litesteer[0],       135},
-	{IT_STRING | IT_CVAR, NULL, "Lite Steer (P2)",      &cv_litesteer[1],       145},
-	{IT_STRING | IT_CVAR, NULL, "Lite Steer (P3)",      &cv_litesteer[2],       155},
-	{IT_STRING | IT_CVAR, NULL, "Lite Steer (P4)",      &cv_litesteer[3],       165},
 };
 
 static const char* OP_ControlsTooltips[] =
@@ -669,21 +658,19 @@ static const char* OP_ControlsTooltips[] =
 	"Setup player 4 controls.",
 	"Options for mouse control.",
 	"Allowed amount of controls per key.",
-	"Turn smoothing for non-analog turning (Player 1).",
-	"Turn smoothing for non-analog turning (Player 2).",
-	"Turn smoothing for non-analog turning (Player 3).",
-	"Turn smoothing for non-analog turning (Player 4).",
-
-	"Hold DOWN on d-pad/keyboard for shallow turns (Player 1).",
-	"Hold DOWN on d-pad/keyboard for shallow turns (Player 2).",
-	"Hold DOWN on d-pad/keyboard for shallow turns (Player 3).",
-	"Hold DOWN on d-pad/keyboard for shallow turns (Player 4).",
 };
 
 static menuitem_t OP_AllControlsMenu[] =
 {
 	{IT_SUBMENU|IT_STRING, NULL, "Gamepad Options...", &OP_Joystick1Def, 0},
 	{IT_CALL|IT_STRING, NULL, "Reset to defaults", M_ResetControls, 8},
+
+	{IT_HEADER, NULL, "Control Options", NULL, 0},
+	{IT_SPACE, NULL, NULL, NULL, 0},
+
+	// Cvars are set in M_SetupControlsMenu
+	{IT_STRING|IT_CVAR, NULL, "Lite Steer", &cv_litesteer[0], 18},
+	{IT_STRING|IT_CVAR, NULL, "Digital turn easing",  &cv_turnsmooth[0],         26},
 
 	//{IT_SPACE, NULL, NULL, NULL, 0},
 	{IT_HEADER, NULL, "Gameplay Controls", NULL, 0},
@@ -731,6 +718,17 @@ static menuitem_t OP_AllControlsMenu[] =
 	{IT_CONTROL, NULL, "Custom Action 1",       M_ChangeControl, gc_custom1    },
 	{IT_CONTROL, NULL, "Custom Action 2",       M_ChangeControl, gc_custom2    },
 	{IT_CONTROL, NULL, "Custom Action 3",       M_ChangeControl, gc_custom3    },
+};
+
+// Has to be same length as OP_AllControlsMenu, but otherwise its mostly empty
+static const char* OP_AllControlsTooltips[sizeof(OP_AllControlsMenu)/sizeof(OP_AllControlsMenu[0])] = {
+	NULL,
+	NULL,
+	NULL,
+	NULL,
+	"Hold DOWN on d-pad/keyboard for shallow turns.",
+	"Turn smoothing for non-analog turning.",
+	// The rest is null, for now
 };
 
 #define OP_JOYMENU(pnum) \
@@ -2492,7 +2490,7 @@ menu_t OP_MainDef =
 menu_t OP_ControlsDef     = DEFAULTMENUSTYLE("M_CONTRO", OP_ControlsMenu, &OP_MainDef, 40, 15, OP_ControlsTooltips);
 //WTF
 menu_t OP_MouseOptionsDef = DEFAULTMENUSTYLE("M_CONTRO", OP_MouseOptionsMenu, &OP_ControlsDef, 60, 30, OP_MouseTooltips);
-menu_t OP_AllControlsDef  = CONTROLMENUSTYLE(OP_AllControlsMenu, &OP_ControlsDef);
+menu_t OP_AllControlsDef  = CONTROLMENUSTYLE(OP_AllControlsMenu, &OP_ControlsDef, OP_AllControlsTooltips);
 menu_t OP_Joystick1Def    = DEFAULTSCROLLSTYLE("M_CONTRO", OP_Joystick1Menu, &OP_AllControlsDef, 30, 36, NULL);
 menu_t OP_Joystick2Def    = DEFAULTSCROLLSTYLE("M_CONTRO", OP_Joystick2Menu, &OP_AllControlsDef, 30, 36, NULL);
 menu_t OP_Joystick3Def    = DEFAULTSCROLLSTYLE("M_CONTRO", OP_Joystick3Menu, &OP_AllControlsDef, 30, 36, NULL);
