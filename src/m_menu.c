@@ -9358,8 +9358,8 @@ static void M_SetupControlsMenu(UINT8 pnum)
 			break;
 	}
 
-	OP_AllControlsMenu[2].itemaction = &cv_litesteer[pnum];
-	OP_AllControlsMenu[3].itemaction = &cv_turnsmooth[pnum];
+	OP_AllControlsMenu[4].itemaction = &cv_litesteer[pnum];
+	OP_AllControlsMenu[5].itemaction = &cv_turnsmooth[pnum];
 
 	if (pnum > 0)
 	{
