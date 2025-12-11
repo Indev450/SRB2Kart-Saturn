@@ -3503,6 +3503,9 @@ void CL_Reset(void)
 
 	memset(player_muted, 0, sizeof(player_muted));
 
+	for (INT32 i = 0; i < MAXPLAYERS; ++i)
+		playerinfo[i].node = 255;
+
 	// D_StartTitle should get done now, but the calling function will handle it
 }
 
@@ -4290,6 +4293,9 @@ void D_ClientServerInit(void)
 	CV_RegisterVar(&cv_dumpconsistency);
 #endif
 	D_LoadBan(false);
+
+	for (INT32 i = 0; i < MAXPLAYERS; ++i)
+		playerinfo[i].node = 255;
 
 	gametic = 0;
 	localgametic = 0;
