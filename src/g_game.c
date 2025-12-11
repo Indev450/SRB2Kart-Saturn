@@ -452,6 +452,14 @@ consvar_t cv_litesteer[MAXSPLITSCREENPLAYERS] = {
 	{"litesteer4", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL}
 };
 
+//static CV_PossibleValue_t autoaccelcons_t[] = {{0, "Off"}, {1, "Manual"}, {2, "Automatic"}, {0, NULL}};
+consvar_t cv_autoaccel[MAXSPLITSCREENPLAYERS] = {
+	{"autoaccel",  "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"autoaccel2", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"autoaccel3", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"autoaccel4", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL}
+};
+
 static CV_PossibleValue_t driftsparkpulse_t[] = {{0, "MIN"}, {FRACUNIT*3, "MAX"}, {0, NULL}};
 consvar_t cv_driftsparkpulse = {"driftsparkpulse", "1.4", CV_FLOAT | CV_SAVE, driftsparkpulse_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
@@ -917,6 +925,63 @@ static void G_BuildLocalTiccmd(ticcmd_t *cmd, UINT8 ssplayer, boolean freecam)
 }
 
 //
+// G_HandleAutoAcceleration
+//
+static void G_HandleAutoAcceleration(ticcmd_t *cmd, player_t *player, UINT8 forplayer)
+{
+	if (!cv_autoaccel[forplayer].value)
+		return;
+
+	if (gamestate != GS_LEVEL)
+		return;
+
+	// dont accel before and during countdown
+	if (leveltime <= starttime)
+		return;
+
+	// dont do this in menus or when console is onscreen
+	if (menuactive || CON_Ready())
+		return;
+
+	// gotta have a player that aint respawning
+	if (!player->mo || player->kartstuff[k_respawn])
+		return;
+
+	// dont need for "finished" players
+	if (player->exiting || (player->pflags & PF_TIMEOVER))
+		return;
+
+	// dont do during spinout
+	if (player->kartstuff[k_spinouttimer])
+		return;
+
+	// spectators and freecam dont need special handling, see G_BuildTiccmd
+
+	if (cmd->buttons & BT_BRAKE)
+	{
+		if (cmd->buttons & BT_DRIFT ||
+			player->kartstuff[k_sneakertimer] ||
+			player->kartstuff[k_squishedtimer])
+		{
+			cmd->forwardmove = (SINT8)forwardmove[0];
+			cmd->buttons |= BT_ACCELERATE;
+		}
+		else
+		{
+			// allows us to drive backwards if we need to
+			if (cmd->forwardmove > 0)
+				cmd->forwardmove = 0;
+			cmd->buttons &= ~BT_ACCELERATE;
+		}
+	}
+	else
+	{
+		cmd->forwardmove = (SINT8)forwardmove[1];
+		cmd->buttons |= BT_ACCELERATE;
+	}
+}
+
+//
 // G_BuildTiccmd
 // Builds a ticcmd from all of the available inputs
 // or reads it from the demo buffer.
@@ -1063,7 +1128,7 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 		if (InputDown(gc_accelerate, ssplayer) || (gamepadjoystickmove && axis > 0) || player->kartstuff[k_sneakertimer])
 		{
 			cmd->buttons |= BT_ACCELERATE;
-			forward = forwardmove[1];	// 50
+			forward = forwardmove[1]; // 50
 		}
 		else if (analogjoystickmove && axis > 0)
 		{
@@ -1143,6 +1208,8 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 		cmd->forwardmove = (SINT8)(cmd->forwardmove + forward);
 		cmd->sidemove = (SINT8)(cmd->sidemove + side);
 	}
+
+	G_HandleAutoAcceleration(cmd, player, forplayer);
 
 	//{ SRB2kart - Drift support
 	// Not grouped with the rest of turn stuff because it needs to know what buttons you're pressing for rubber-burn turn

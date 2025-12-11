@@ -997,6 +997,8 @@ void D_RegisterClientCommands(void)
 
 		CV_RegisterVar(&cv_litesteer[i]);
 
+		CV_RegisterVar(&cv_autoaccel[i]);
+
 		CV_RegisterVar(&cv_usejoystick[i]);
 		CV_RegisterVar(&cv_joyscale[i]);
 		CV_RegisterVar(&cv_rumble[i]);
