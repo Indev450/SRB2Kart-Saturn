@@ -3,7 +3,7 @@
 
 // returns false if s != c
 // returns true if s == c
-FUNCINLINE static ATTRINLINE PUREFUNC boolean fasticmp(const char *s, const char *c)
+FUNCINLINE static ATTRINLINE boolean fasticmp(const char *s, const char *c)
 {
 	for (; *s && toupper(*s) == toupper(*c); s++, c++) ;
 	return (*s == *c); // make sure both strings ended
