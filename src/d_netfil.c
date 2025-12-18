@@ -1163,8 +1163,12 @@ filestatus_t findfile(char *filename, const UINT8 *wantedmd5sum, boolean complet
 	filestatus_t homecheck; // store result of last file search
 	boolean badmd5 = false; // store whether md5 was bad from either of the first two searches (if nothing was found in the third)
 
-	// skip for startup, our mainwads wont be in there
-	if (loaded_config)
+	// see IdentifyVersion
+	// Iwads skip findfile due to passing fullpath to W_OpenWadFile
+#if 0
+	// skip for Iwads, as they wont be in there
+	if (!startupiwadcount)
+#endif
 	{
 		if (cv_addons_option.value == 3 && *cv_addons_folder.string != '\0')
 		{
