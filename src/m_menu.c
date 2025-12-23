@@ -4174,14 +4174,8 @@ static int ReplayListSortComparator(const void *entry1, const void *entry2)
 	memcpy(filepath1, demo1->filepath, sizeof(filepath1));
 	memcpy(filepath2, demo2->filepath, sizeof(filepath2));
 
-	// nameonly will make filepath's empty for directories since they may end with PATHSEP
-	// this is a lazy solution but if we don't do nameonly, dirs still will be sorted in correct only,
-	// just not very efficently
-	if (demo1->type != MD_SUBDIR)
-	{
-		nameonly(filepath1);
-		nameonly(filepath2);
-	}
+	nameonly(filepath1);
+	nameonly(filepath2);
 
 	// Comparing in opposite order to move new replays to the top
 	return strncmp(filepath2, filepath1, sizeof(filepath1));
@@ -4217,9 +4211,6 @@ static void PrepReplayList(boolean reset)
 		{
 			demolist_all[i].type = MD_SUBDIR;
 			strncpy(demolist_all[i].title, dirmenu[i] + DIR_STRING, 64);
-			snprintf(demolist_all[i].filepath, sizeof(demolist_all[i].filepath),
-					 // 255 = UINT8 limit. dirmenu entries are restricted to this length (see DIR_LEN).
-					 "%s%.255s", menupath, dirmenu[i] + DIR_STRING);
 		}
 		else
 		{
