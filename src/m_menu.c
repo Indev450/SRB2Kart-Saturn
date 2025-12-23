@@ -4170,8 +4170,6 @@ static int ReplayListSortComparator(const void *entry1, const void *entry2)
 		return -1;
 	else if (demo2->type == MD_SUBDIR && demo1->type != MD_SUBDIR)
 		return 1;
-	else if (demo1->type == MD_SUBDIR && demo2->type == MD_SUBDIR)
-		return 0;
 
 	memcpy(filepath1, demo1->filepath, sizeof(filepath1));
 	memcpy(filepath2, demo2->filepath, sizeof(filepath2));
