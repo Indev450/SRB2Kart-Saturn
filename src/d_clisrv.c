@@ -159,7 +159,6 @@ boolean nodeingame[MAXNETNODES]  = {}; // set false as nodes leave game
 
 tic_t servermaxping = 20; // server's max delay, in frames. Defaults to 20
 static tic_t nettics[MAXNETNODES]; // what tic the client have received
-static tic_t supposedtics[MAXNETNODES]; // nettics prevision for smaller packet
 static UINT8 nodewaiting[MAXNETNODES];
 static tic_t firstticstosend; // min of the nettics
 static tic_t tictoclear = 0; // optimize d_clearticcmd
@@ -186,7 +185,6 @@ boolean hu_stopped = false;
 
 // Client specific
 static ticcmd_t localcmds[MAXSPLITSCREENPLAYERS][MAXGENTLEMENDELAY];
-static boolean cl_packetmissed;
 // here it is for the secondary local player (splitscreen)
 static UINT8 mynode; // my address pointofview server
 
@@ -4319,7 +4317,6 @@ static void ResetNode(INT32 node)
 	playerpernode[node] = 0;
 
 	nettics[node] = gametic;
-	supposedtics[node] = gametic;
 
 	sendingsavegame[node] = false;
 
@@ -4374,7 +4371,7 @@ void SV_ResetServer(void)
 	ClearAdminPlayers();
 
 	mynode = 0;
-	cl_packetmissed = false;
+
 #ifdef SATURNPAK
 	cl_redownloadinggamestate = false;
 #endif
@@ -4476,7 +4473,7 @@ void D_QuitNetGame(void)
 static inline void SV_AddNode(INT32 node)
 {
 	nettics[node] = gametic;
-	supposedtics[node] = gametic;
+
 	// little hack because the server connects to itself and puts
 	// nodeingame when connected not here
 	if (node)
@@ -5558,14 +5555,6 @@ static void PT_ClientCmd(INT32 netconsole, SINT8 node)
 	realstart = ExpandTics(netbuffer->u.clientpak.client_tic, nettics[node]);
 	realend = ExpandTics(netbuffer->u.clientpak.resendfrom, nettics[node]);
 
-	if (netbuffer->packettype == PT_CLIENTMIS || netbuffer->packettype == PT_CLIENT2MIS
-		|| netbuffer->packettype == PT_CLIENT3MIS || netbuffer->packettype == PT_CLIENT4MIS
-		|| netbuffer->packettype == PT_NODEKEEPALIVEMIS
-		|| supposedtics[node] < realend)
-	{
-		supposedtics[node] = realend;
-	}
-
 	// Discard out of order packet
 	if (nettics[node] > realend)
 	{
@@ -5917,7 +5906,6 @@ static void PT_ServerTics(SINT8 node)
 
 	if (realend > gametic + CLIENTBACKUPTICS)
 		realend = gametic + CLIENTBACKUPTICS;
-	cl_packetmissed = realstart > neededtic;
 
 	UINT8 *pak = (UINT8 *)&packet->cmds;
 	UINT8 *txtpak = (UINT8 *)&packet->cmds[packet->numslots * packet->numtics];
@@ -6050,11 +6038,12 @@ static void HandlePacketFromPlayer(SINT8 node)
 		case PT_CLIENT2CMD:
 		case PT_CLIENT3CMD:
 		case PT_CLIENT4CMD:
+		case PT_NODEKEEPALIVE:
+		// "mis" tics kept for vanilla compat
 		case PT_CLIENTMIS:
 		case PT_CLIENT2MIS:
 		case PT_CLIENT3MIS:
 		case PT_CLIENT4MIS:
-		case PT_NODEKEEPALIVE:
 		case PT_NODEKEEPALIVEMIS:
 			PT_ClientCmd(netconsole, node);
 			break;
@@ -6346,17 +6335,10 @@ static void SV_SendServerKeepAlive(void)
 static void CL_SendClientCmd(void)
 {
 	size_t packetsize = 0;
-	boolean mis = false;
 
 	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
 
 	netbuffer->packettype = PT_CLIENTCMD;
-
-	if (cl_packetmissed)
-	{
-		netbuffer->packettype = PT_CLIENTMIS;
-		mis = true;
-	}
 
 	netbuffer->u.clientpak.resendfrom = (UINT8)(neededtic & UINT8_MAX);
 	netbuffer->u.clientpak.client_tic = (UINT8)(gametic & UINT8_MAX);
@@ -6364,7 +6346,7 @@ static void CL_SendClientCmd(void)
 	if (gamestate == GS_WAITINGPLAYERS)
 	{
 		// Send PT_NODEKEEPALIVE packet
-		netbuffer->packettype = (mis ? PT_NODEKEEPALIVEMIS : PT_NODEKEEPALIVE);
+		netbuffer->packettype = PT_NODEKEEPALIVE;
 		packetsize = sizeof (clientcmd_pak) - sizeof (ticcmd_t) - sizeof (INT16);
 		HSendPacket(servernode, false, 0, packetsize);
 	}
@@ -6427,19 +6409,19 @@ static void CL_SendClientCmd(void)
 
 		if (splitscreen || botingame) // Send a special packet with 2 cmd for splitscreen
 		{
-			netbuffer->packettype = (mis ? PT_CLIENT2MIS : PT_CLIENT2CMD);
+			netbuffer->packettype = PT_CLIENT2CMD;
 			packetsize = sizeof (client2cmd_pak);
 			G_MoveTiccmd(&netbuffer->u.client2pak.cmd2, &localcmds[1][lagDelay], 1);
 
 			if (splitscreen > 1)
 			{
-				netbuffer->packettype = (mis ? PT_CLIENT3MIS : PT_CLIENT3CMD);
+				netbuffer->packettype = PT_CLIENT3CMD;
 				packetsize = sizeof (client3cmd_pak);
 				G_MoveTiccmd(&netbuffer->u.client3pak.cmd3, &localcmds[2][lagDelay], 1);
 
 				if (splitscreen > 2)
 				{
-					netbuffer->packettype = (mis ? PT_CLIENT4MIS : PT_CLIENT4CMD);
+					netbuffer->packettype = PT_CLIENT4CMD;
 					packetsize = sizeof (client4cmd_pak);
 					G_MoveTiccmd(&netbuffer->u.client4pak.cmd4, &localcmds[3][lagDelay], 1);
 				}
@@ -6494,14 +6476,13 @@ static void SV_SendTics(void)
 
 	// send to all client but not to me
 	// for each node create a packet with x tics and send it
-	// x is computed using supposedtics[n], max packet size and maketic
+	// x is computed using nettics[n], max packet size and maketic
 	for (n = 1; n < MAXNETNODES; n++)
 	{
 		if (!nodeingame[n])
 			continue;
 
-		// assert supposedtics[n]>=nettics[n]
-		realfirsttic = supposedtics[n];
+		realfirsttic = nettics[n];
 		lasttictosend = min(maketic, nettics[n] + CLIENTBACKUPTICS);
 
 		if (realfirsttic >= lasttictosend)
@@ -6510,8 +6491,8 @@ static void SV_SendTics(void)
 			// to resent packet that are supposed lost (this is necessary since lost
 			// packet detection work when we have received packet with firsttic > neededtic
 			// (getpacket servertics case)
-			DEBFILE(va("Nothing to send node %u mak=%u sup=%u net=%u \n",
-					   n, lasttictosend, supposedtics[n], nettics[n]));
+			DEBFILE(va("Nothing to send node %u mak=%u net=%u \n",
+					   n, lasttictosend, nettics[n]));
 			realfirsttic = nettics[n];
 			if (realfirsttic >= lasttictosend || (I_GetTime() + n)&3)
 				// all tic are ok
@@ -6591,17 +6572,10 @@ static void SV_SendTics(void)
 
 		packsize = bufpos - (UINT8 *)&(netbuffer->u);
 		HSendPacket(n, false, 0, packsize);
-
-		// when tic are too large, only one tic is sent so don't go backward!
-		if (lasttictosend-doomcom->extratics > realfirsttic)
-			supposedtics[n] = lasttictosend-doomcom->extratics;
-		else
-			supposedtics[n] = lasttictosend;
-
-		supposedtics[n] = max(supposedtics[n], nettics[n]);
 	}
+
 	// node 0 is me!
-	supposedtics[0] = maketic;
+	nettics[0] = maketic;
 }
 
 //
