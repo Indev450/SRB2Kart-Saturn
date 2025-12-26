@@ -2868,8 +2868,9 @@ static void M_DrawCenteredMenu(void)
 static inline size_t M_StringHeight(const char *string)
 {
 	size_t h = 8, i;
+	const size_t strlength = strlen(string);
 
-	for (i = 0; i < strlen(string); i++)
+	for (i = 0; i < strlength; i++)
 		if (string[i] == '\n')
 			h += 8;
 
@@ -9358,29 +9359,32 @@ static void M_SetupControlsMenu(UINT8 pnum)
 			break;
 	}
 
+	OP_AllControlsMenu[4].itemaction = &cv_litesteer[pnum];
+	OP_AllControlsMenu[5].itemaction = &cv_turnsmooth[pnum];
+
 	if (pnum > 0)
 	{
 		// Hide P1-only controls
-		OP_AllControlsMenu[15].status = IT_GRAYEDOUT2; // Chat
-		OP_AllControlsMenu[16].status = IT_GRAYEDOUT2; // Rankings
-		OP_AllControlsMenu[17].status = IT_GRAYEDOUT2; // Pause
-		OP_AllControlsMenu[18].status = IT_GRAYEDOUT2; // Screenshot
-		OP_AllControlsMenu[19].status = IT_GRAYEDOUT2; // GIF
-		OP_AllControlsMenu[20].status = IT_GRAYEDOUT2; // System Menu
-		OP_AllControlsMenu[21].status = IT_GRAYEDOUT2; // Console
-		OP_AllControlsMenu[37].status = IT_GRAYEDOUT2; // Director
+		OP_AllControlsMenu[19].status = IT_GRAYEDOUT2; // Chat
+		OP_AllControlsMenu[10].status = IT_GRAYEDOUT2; // Rankings
+		OP_AllControlsMenu[21].status = IT_GRAYEDOUT2; // Pause
+		OP_AllControlsMenu[22].status = IT_GRAYEDOUT2; // Screenshot
+		OP_AllControlsMenu[23].status = IT_GRAYEDOUT2; // GIF
+		OP_AllControlsMenu[24].status = IT_GRAYEDOUT2; // System Menu
+		OP_AllControlsMenu[25].status = IT_GRAYEDOUT2; // Console
+		OP_AllControlsMenu[41].status = IT_GRAYEDOUT2; // Director
 	}
 	else
 	{
 		// Unhide P1-only controls
-		OP_AllControlsMenu[15].status = IT_CONTROL; // Chat
-		OP_AllControlsMenu[16].status = IT_CONTROL; // Rankings
-		OP_AllControlsMenu[17].status = IT_CONTROL; // Pause
-		OP_AllControlsMenu[18].status = IT_CONTROL; // Screenshot
-		OP_AllControlsMenu[19].status = IT_CONTROL; // GIF
-		OP_AllControlsMenu[20].status = IT_CONTROL; // System Menu
-		OP_AllControlsMenu[21].status = IT_CONTROL; // Console
-		OP_AllControlsMenu[37].status = IT_CONTROL; // Director
+		OP_AllControlsMenu[19].status = IT_CONTROL; // Chat
+		OP_AllControlsMenu[10].status = IT_CONTROL; // Rankings
+		OP_AllControlsMenu[21].status = IT_CONTROL; // Pause
+		OP_AllControlsMenu[22].status = IT_CONTROL; // Screenshot
+		OP_AllControlsMenu[23].status = IT_CONTROL; // GIF
+		OP_AllControlsMenu[24].status = IT_CONTROL; // System Menu
+		OP_AllControlsMenu[25].status = IT_CONTROL; // Console
+		OP_AllControlsMenu[41].status = IT_CONTROL; // Director
 	}
 
 	M_SetupNextMenu(&OP_AllControlsDef);
@@ -9494,12 +9498,36 @@ static void M_DrawControl(void)
 		else if ((currentMenu->menuitems[i].status == IT_HEADER) && (i != max-1))
 			V_DrawString(19, y+6, highlightflags|V_ALLOWLOWERCASE, currentMenu->menuitems[i].text);
 		else if (currentMenu->menuitems[i].status & IT_STRING)
+		{
 			V_DrawString(x, y, ((i == itemOn) ? highlightflags|V_ALLOWLOWERCASE : V_ALLOWLOWERCASE), currentMenu->menuitems[i].text);
+
+			if (currentMenu->menuitems[i].status & IT_CVAR)
+			{
+				consvar_t *cv = (consvar_t *)currentMenu->menuitems[i].itemaction;
+
+				// IT_HEADER matches IT_CVAR, for some reason...
+				if (cv)
+				{
+					INT32 w = V_StringWidth(cv->string, 0);
+					V_DrawString(BASEVIDWIDTH - x - w, y,
+						((cv->flags & CV_CHEAT) && !CV_IsSetToDefault(cv) ? warningflags : highlightflags)|MENUCAPS, cv->string);
+					if (i == itemOn)
+					{
+						V_DrawCharacter(BASEVIDWIDTH - x - 10 - w - (skullAnimCounter/5), y,
+								'\x1C' | highlightflags, false); // left arrow
+						V_DrawCharacter(BASEVIDWIDTH - x + 2 + (skullAnimCounter/5), y,
+								'\x1D' | highlightflags, false); // right arrow
+					}
+				}
+			}
+		}
 
 		y += SMALLLINEHEIGHT;
 	}
 
 	V_DrawScaledPatch(currentMenu->x - 20, cursory, 0, (patch_t *)W_CachePatchName("M_CURSOR", PU_PATCH));
+
+	M_DoToolTips(currentMenu);
 }
 
 #undef controlheight

@@ -1965,21 +1965,6 @@ FUNCINLINE static ATTRINLINE player_t *LoadPlayer(UINT32 player)
 // Loads a mobj_t from a save game
 //
 
-static mobjtype_t g_doomednum_to_mobjtype[UINT16_MAX];
-
-static void CalculateDoomednumToMobjtype(void)
-{
-	memset(g_doomednum_to_mobjtype, MT_NULL, sizeof(g_doomednum_to_mobjtype));
-
-	for (size_t i = MT_NULL+1; i < NUMMOBJTYPES; i++)
-	{
-		if (mobjinfo[i].doomednum > 0 && mobjinfo[i].doomednum <= UINT16_MAX)
-		{
-			g_doomednum_to_mobjtype[ mobjinfo[i].doomednum ] = i;
-		}
-	}
-}
-
 static void LoadMobjThinker(savebuffer_t *save, actionf_p1 thinker)
 {
 	mobj_t *mobj;
@@ -2878,10 +2863,6 @@ static void P_NetUnArchiveThinkers(savebuffer_t *save)
 
 	if (READUINT32(save->p) != ARCHIVEBLOCK_THINKERS)
 		I_Error("Bad $$$.sav at archive block Thinkers");
-
-	// Pre-calculate this lookup, because it was wasting
-	// a shit ton of time loading mobj thinkers.
-	CalculateDoomednumToMobjtype();
 
 	// remove all the current thinkers
 	for (currentthinker = thinkercap.next; currentthinker != &thinkercap; currentthinker = next)

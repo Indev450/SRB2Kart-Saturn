@@ -812,8 +812,6 @@ static void P_LoadSectors(UINT8 *data)
 		ss->tag = SHORT(ms->tag);
 
 		ss->flags |= SF_FLIPSPECIAL_FLOOR;
-
-		ss->soundorg.thinker.function = (actionf_p1)P_MobjThinker;
 	}
 
 	// set the sky flat num
@@ -2862,6 +2860,10 @@ boolean P_SetupLevel(boolean fromnetsave, boolean reloadinggamestate)
 	P_LoadMapFromFile();
 
 	P_ResetDynamicSlopes();
+
+	// Pre-calculate this lookup, because it was wasting
+	// a shit ton of time loading mobj thinkers.
+	CalculateDoomednumToMobjtype();
 
 	P_SpawnMapThings();
 

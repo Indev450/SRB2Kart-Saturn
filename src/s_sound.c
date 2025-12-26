@@ -772,14 +772,9 @@ void S_UpdateSounds(void)
 				volume = c->volume; // 8 bits internal volume precision
 				sep = NORM_SEP;
 
-				if (P_MobjWasRemoved(c->origin))
-				{
-					// origin was removed, stop the music
-					S_StopChannel(cnum);
-				}
 				// check non-local sounds for distance clipping
 				//  or modify their params
-				else
+				if (c->origin)
 				{
 					boolean itsUs = false;
 

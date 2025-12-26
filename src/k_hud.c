@@ -4468,7 +4468,9 @@ static void K_drawLapStartAnim(void)
 		V_DrawFixedPatch(leftx, y, FRACUNIT, vflags, kp_lapanim_lap[min(progress/2, 6)], NULL);
 
 		char *lapnum = va("%02d", stplyr->laps + 1);
-		for (int i = 0; i < (int)strlen(lapnum); i++)
+		const size_t laplength = strlen(lapnum);
+
+		for (int i = 0; i < (int)laplength; i++)
 		{
 			int digit = lapnum[i] - '0';
 			int frame = min(2, progress/2 - 8 - (i*2));
