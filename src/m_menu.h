@@ -38,16 +38,6 @@ extern boolean forceshowhud;
 // Does all the real work of the menu interaction.
 boolean M_Responder(event_t *ev);
 
-// for scrolling through menus with controllers
-extern boolean dpadscrollstate[4];
-enum
-{
-	DPAD_UP,
-	DPAD_DOWN,
-	DPAD_LEFT,
-	DPAD_RIGHT
-};
-
 // Called by main loop, runs for demo playback. If this returns true, nullify any further user input.
 boolean M_DemoResponder(event_t *ev);
 
@@ -214,6 +204,7 @@ typedef struct menu_s
 	struct menu_s *prevMenu;              // previous menu
 	menuitem_t    *menuitems;             // menu items
 	void         (*drawroutine)(void);    // draw routine
+	void         (*tickroutine)(void);    // ticker routine
 	INT16          x, y;                  // x, y of menu
 	INT16          lastOn;                // last item user was on in menu
 	boolean      (*quitroutine)(void);    // called before quit a menu return true if we can
@@ -310,13 +301,18 @@ void SaturnHud_menu_Onchange(void);
 
 void GameFocus_menu_Onchange (void);
 
+void ShowLocalskinMenu_Onchange(void);
+
 #ifdef HWRENDER
 void M_UpdateOGLMenu(void);
 #endif
 
 void M_ResetDemoList(void);
 void M_ReplayHut(INT32 choice);
+void M_ReturnToTitleFromError(void);
 void M_SetPlaybackMenuPointer(void);
+
+void Nextmap_OnChange(void);
 
 void M_RefreshPauseMenu(void);
 
@@ -338,6 +334,7 @@ void M_SlotCvarIntoModMenu(consvar_t* cvar, const char* category, const char* na
 	prev,\
 	source,\
 	M_DrawGenericMenu,\
+	NULL,\
 	x, y,\
 	0,\
 	NULL,\
@@ -351,6 +348,7 @@ void M_SlotCvarIntoModMenu(consvar_t* cvar, const char* category, const char* na
 	prev,\
 	source,\
 	M_DrawGenericScrollMenu,\
+	NULL,\
 	x, y,\
 	0,\
 	NULL,\
@@ -365,6 +363,7 @@ void M_SlotCvarIntoModMenu(consvar_t* cvar, const char* category, const char* na
 	NULL,\
 	source,\
 	M_DrawPauseMenu,\
+	NULL,\
 	x, y,\
 	0,\
 	NULL,\
@@ -378,6 +377,7 @@ void M_SlotCvarIntoModMenu(consvar_t* cvar, const char* category, const char* na
 	prev,\
 	source,\
 	M_DrawCenteredMenu,\
+	NULL,\
 	BASEVIDWIDTH/2, y,\
 	0,\
 	NULL,\
@@ -391,23 +391,25 @@ void M_SlotCvarIntoModMenu(consvar_t* cvar, const char* category, const char* na
 	prev,\
 	source,\
 	M_DrawServerMenu,\
+	NULL,\
 	24,40,\
 	0,\
 	NULL,\
 	NULL\
 }
 
-#define CONTROLMENUSTYLE(source, prev)\
+#define CONTROLMENUSTYLE(source, prev, tooltip)\
 {\
 	"M_CONTRO",\
 	sizeof (source)/sizeof (menuitem_t),\
 	prev,\
 	source,\
 	M_DrawControl,\
+	NULL,\
 	26, 40,\
 	0,\
 	NULL,\
-	NULL\
+	tooltip\
 }
 
 #define IMAGEDEF(source)\
@@ -417,6 +419,7 @@ void M_SlotCvarIntoModMenu(consvar_t* cvar, const char* category, const char* na
 	NULL,\
 	source,\
 	M_DrawImageDef,\
+	NULL,\
 	0, 0,\
 	0,\
 	NULL,\

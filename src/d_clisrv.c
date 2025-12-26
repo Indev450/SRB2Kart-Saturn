@@ -53,6 +53,8 @@
 #include "m_perfstats.h"
 #include "d_main.h"
 #include "r_fps.h"
+#include "filesrch.h" // refreshdirmenu
+
 
 // cl loading screen
 #include "v_video.h"
@@ -121,7 +123,7 @@ UINT32 realpingtable[MAXPLAYERS] = {}; //the base table of ping where an average
 UINT32 playerpingtable[MAXPLAYERS] = {}; //table of player latency values.
 
 #define GENTLEMANSMOOTHING (TICRATE)
-static tic_t reference_lag;
+static tic_t reference_lag = 0;
 static UINT8 spike_time;
 tic_t lowest_lag = 0;
 tic_t simulated_lag = 0;
@@ -142,6 +144,11 @@ static void Lagless_OnChange(void)
 static CV_PossibleValue_t mindelay_cons_t[] = {{0, "MIN"}, {30, "MAX"}, {0, NULL}};
 consvar_t cv_mindelay = {"mindelay", "0", CV_SAVE, mindelay_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_gentlemens = {"gentlemensdelay", "Off", CV_SAVE|CV_CALL|CV_NOINIT, CV_OnOff, Lagless_OnChange, 0, NULL, NULL, 0, 0, NULL}; // this should be a netvar Zzz...
+
+// allows a fake player to appear on the ms and serverlist when your dedi server is empty
+static void FakeSeed_OnChange(void);
+consvar_t cv_usefakeseed = {"fakeseed", "Off", CV_SAVE|CV_CALL|CV_NOINIT, CV_OnOff, FakeSeed_OnChange, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_fakeseedname = {"fakeseedname", "Player 1", CV_SAVE|CV_CALL|CV_NOINIT, NULL, FakeSeed_OnChange, 0, NULL, NULL, 0, 0, NULL};
 
 SINT8 nodetoplayer[MAXNETNODES]  = {};
 SINT8 nodetoplayer2[MAXNETNODES] = {}; // say the numplayer for this node if any (splitscreen)
@@ -239,6 +246,13 @@ consvar_t cv_playbackspeed = {"playbackspeed", "1", 0, playbackspeed_cons_t, NUL
 consvar_t cv_httpsource = {"http_source", "", CV_SAVE, NULL, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 consvar_t cv_kicktime = {"kicktime", "10", CV_SAVE, CV_Unsigned, NULL, 0, NULL, NULL, 0, 0, NULL};
+
+static void FakeSeed_OnChange(void)
+{
+#ifdef MASTERSERVER
+	Update_MS();
+#endif
+}
 
 static boolean UseLocalDelay(void)
 {
@@ -493,10 +507,12 @@ static void ExtraDataTicker(void)
 	}
 
 	// If you are a client, you can safely forget the net commands for this tic
-	// If you are the server, you need to remember them until every client has been aknowledged,
-	// because if you need to resend a PT_SERVERTICS packet, you need to put the commands in it
+	// If you are the server, you need to remember them until every client has been acknowledged,
+	// because if you need to resend a PT_SERVERTICS packet, you will need to put the commands in it
 	if (client)
+	{
 		D_FreeTextcmd(gametic);
+	}
 }
 
 static void D_Clearticcmd(tic_t tic)
@@ -1355,10 +1371,19 @@ static inline void CL_DrawConnectionStatus(void)
 				V_DrawThinString(12 + 80, 58, V_ALLOWLOWERCASE|V_YELLOWMAP, "Vanilla");
 			}
 
-			if (serverlist[joinnode].info.cheatsenabled)
+			const UINT8 serverkartspeed = (serverlist[joinnode].info.kartvars & SV_SPEEDMASK);
+
+			if (serverkartspeed == 2)
+				V_DrawRightAlignedThinString(BASEVIDWIDTH - 12, 58, V_ALLOWLOWERCASE|V_REDMAP, "Hard Speed");
+			else if (serverkartspeed == 1)
+				V_DrawRightAlignedThinString(BASEVIDWIDTH - 12, 58, V_ALLOWLOWERCASE|V_BLUEMAP, "Normal Speed");
+			else
+				V_DrawRightAlignedThinString(BASEVIDWIDTH - 12, 58, V_ALLOWLOWERCASE|V_GREENMAP, "Easy Speed");
+
+			/*if (serverlist[joinnode].info.cheatsenabled)
 			{
 				V_DrawRightAlignedThinString(BASEVIDWIDTH - 12, 58, V_ALLOWLOWERCASE|V_GREENMAP, "Cheats");
-			}
+			}*/
 
 			V_DrawFill(8, 72, BASEVIDWIDTH - 16, 112, 239);
 
@@ -1378,10 +1403,16 @@ static inline void CL_DrawConnectionStatus(void)
 					if (playerinfo[i].node < 255)
 					{
 						strncpy(player_name, playerinfo[i].name, MAXPLAYERNAME);
-						V_DrawThinString(x + 10, y, V_ALLOWLOWERCASE|V_6WIDTHSPACE, player_name);
+
+						// if we get a skin color
+						// try to colourize the player name
+						if (playerinfo[i].data > 0 && playerinfo[i].data < MAXSKINCOLORS)
+							V_DrawThinString(x + 10, y, V_ALLOWLOWERCASE|V_6WIDTHSPACE, va("%s%s ", HU_SkinColorToConsoleColor(playerinfo[i].data), player_name));
+						else
+							V_DrawThinString(x + 10, y, V_ALLOWLOWERCASE|V_6WIDTHSPACE, player_name);
 
 						if (playerinfo[i].team == 0) { statuscolor = 184; } // playing
-						if (playerinfo[i].data & 0x20) { statuscolor = 86; } // tag IT
+						//if (playerinfo[i].data & 0x20) { statuscolor = 86; } // tag IT
 						if (playerinfo[i].team == 1) { statuscolor = 128; } // ctf red team
 						if (playerinfo[i].team == 2) { statuscolor = 232; } // ctf blue team
 						if (playerinfo[i].team == 255) { statuscolor = 16; } // spectator or non-team
@@ -1426,12 +1457,14 @@ static inline void CL_DrawConnectionStatus(void)
 			V_DrawFill(BASEVIDWIDTH/2-128, BASEVIDHEIGHT-58, dldlength, 8, 160);
 
 			memset(tempname, 0, sizeof(tempname));
+
 			// offset filename to just the name only part
 			filename += strlen(filename) - nameonlylength(filename);
+			const size_t filenamelength = strlen(filename);
 
-			if (strlen(filename) > sizeof(tempname)-1) // too long to display fully
+			if (filenamelength > sizeof(tempname)-1) // too long to display fully
 			{
-				size_t endhalfpos = strlen(filename)-10;
+				size_t endhalfpos = filenamelength-10;
 				// display as first 14 chars + ... + last 10 chars
 				// which should add up to 27 if our math(s) is correct
 				snprintf(tempname, sizeof(tempname), "%.14s...%.10s", filename, filename+endhalfpos);
@@ -1544,6 +1577,12 @@ static boolean CL_SendJoin(void)
 	return HSendPacket(servernode, false, 0, sizeof(clientconfig_pak));
 }
 
+static boolean UseFakeSeed(void)
+{
+	// due to complexity this will disable the moment a real player joins
+	return (dedicated && cv_usefakeseed.value && D_NumPlayers() == 0);
+}
+
 static void SV_SendServerInfo(INT32 node, tic_t servertime)
 {
 	UINT8 *p;
@@ -1566,7 +1605,12 @@ static void SV_SendServerInfo(INT32 node, tic_t servertime)
 	netbuffer->u.serverinfo.time = (tic_t)LONG(servertime);
 	netbuffer->u.serverinfo.leveltime = (tic_t)LONG(leveltime);
 
-	netbuffer->u.serverinfo.numberofplayer = (UINT8)D_NumPlayers();
+	// force 1 player
+	if (UseFakeSeed())
+		netbuffer->u.serverinfo.numberofplayer = (UINT8)1;
+	else
+		netbuffer->u.serverinfo.numberofplayer = (UINT8)D_NumPlayers();
+
 	netbuffer->u.serverinfo.maxplayer = (UINT8)(min((dedicated ? MAXPLAYERS-1 : MAXPLAYERS), cv_maxplayers.value));
 
 	// SRB2Kart: Vanilla's gametype constants for MS support
@@ -1645,6 +1689,37 @@ static void SV_SendPlayerInfo(INT32 node)
 
 	netbuffer->packettype = PT_PLAYERINFO;
 
+	// send a fake player to trick ms and serverbrowser
+	if (UseFakeSeed())
+	{
+		//printf("sending fake player lmao\n");
+		netbuffer->u.playerinfo[0].node = 0;
+
+		// fallback to smth, make sure this is always set
+		if (!cv_fakeseedname.string[0])
+			CV_Set(&cv_fakeseedname, "Player 1");
+		strlcpy(netbuffer->u.playerinfo[0].name, cv_fakeseedname.string, MAXPLAYERNAME+1);
+
+		memset(netbuffer->u.playerinfo[0].address, 0, 4);
+
+		// make it appear as spectator
+		netbuffer->u.playerinfo[0].team = 255;
+
+		// doesent really matter what we put here lel
+		netbuffer->u.playerinfo[0].score = LONG(42069);
+		netbuffer->u.playerinfo[0].timeinserver = SHORT(42069);
+		netbuffer->u.playerinfo[0].skin = (UINT8)1; // no clue wtf skin 1 is, tails maybe?
+
+		netbuffer->u.playerinfo[0].data = 0;
+
+		// mark every other slot as empty
+		for (i = 1; i < MSCOMPAT_MAXPLAYERS; i++)
+			netbuffer->u.playerinfo[i].node = 255;
+
+		HSendPacket(node, false, 0, sizeof(plrinfo) * MSCOMPAT_MAXPLAYERS);
+		return;
+	}
+
 	for (i = 0; i < MSCOMPAT_MAXPLAYERS; i++)
 	{
 		if ((i >= MAXPLAYERS) || !playeringame[i])
@@ -1682,16 +1757,19 @@ static void SV_SendPlayerInfo(INT32 node)
 
 		// Extra data
 		// Kart has extra skincolors, so we can't use this
-		netbuffer->u.playerinfo[i].data = 0; //netbuffer->u.playerinfo[i].data = players[i].skincolor;
+		//netbuffer->u.playerinfo[i].data = 0; //netbuffer->u.playerinfo[i].data = players[i].skincolor;
 
-		if (players[i].pflags & PF_TAGIT)
-			netbuffer->u.playerinfo[i].data |= 0x20;
+		// well why not, we only got like 100 of these?
+		netbuffer->u.playerinfo[i].data = players[i].skincolor;
 
-		if (players[i].gotflag)
-			netbuffer->u.playerinfo[i].data |= 0x40;
+		//if (players[i].pflags & PF_TAGIT)
+			//netbuffer->u.playerinfo[i].data |= 0x20;
 
-		if (players[i].powers[pw_super])
-			netbuffer->u.playerinfo[i].data |= 0x80;
+		//if (players[i].gotflag)
+			//netbuffer->u.playerinfo[i].data |= 0x40;
+
+		//if (players[i].powers[pw_super])
+			//netbuffer->u.playerinfo[i].data |= 0x80;
 	}
 
 	HSendPacket(node, false, 0, sizeof(plrinfo) * MSCOMPAT_MAXPLAYERS);
@@ -1699,6 +1777,9 @@ static void SV_SendPlayerInfo(INT32 node)
 
 static void SV_SendMapIcon(INT32 node)
 {
+	if (node == 0)
+		return;
+
 	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
 
 	const char *map = va("%sP", G_BuildMapName(gamemap));
@@ -1874,7 +1955,7 @@ static boolean SV_ResendingSavegameToAnyone(void)
 static void SV_SendSaveGame(INT32 node, boolean resending)
 {
 	size_t length, compressedlen;
-	savebuffer_t save;
+	savebuffer_t save = {0};
 	UINT8 *compressedsave;
 	UINT8 *buffertosend;
 
@@ -1944,7 +2025,7 @@ static consvar_t cv_dumpconsistency = {"dumpconsistency", "Off", CV_NETVAR, CV_O
 static void SV_SavedGame(void)
 {
 	size_t length;
-	savebuffer_t save;
+	savebuffer_t save = {0};
 	char tmpsave[264];
 
 	if (!cv_dumpconsistency.value)
@@ -1984,7 +2065,7 @@ static void SV_SavedGame(void)
 
 static void CL_LoadReceivedSavegame(boolean reloading)
 {
-	savebuffer_t save;
+	savebuffer_t save = {0};
 	size_t length, decompressedlen;
 	char tmpsave[264];
 
@@ -1993,6 +2074,7 @@ static void CL_LoadReceivedSavegame(boolean reloading)
 	length = FIL_ReadFile(tmpsave, &save.buffer);
 
 	CONS_Printf(M_GetText("Loading savegame length %s\n"), sizeu1(length));
+
 	if (!length)
 	{
 		I_Error("Can't read savegame sent");
@@ -2076,7 +2158,7 @@ static void CL_ReloadReceivedSavegame(void)
 	// we dont have P_ForceLocalAngle so were setting it manually here
 	for (i = 0; i <= splitscreen; i++)
 	{
-		localangle[i] = (angle_t)(players[displayplayers[i]].cmd.angleturn << 16);
+		P_ForceLocalAngle(&players[displayplayers[i]], (angle_t)(players[displayplayers[i]].cmd.angleturn << TICCMD_REDUCE));
 	}
 
 	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
@@ -2115,12 +2197,8 @@ static void SendAskInfo(INT32 node)
 	HSendPacket(node, false, 0, sizeof (askinfo_pak));
 }
 
-serverelem_t serverlist[MAXSERVERLIST];
+serverelem_t serverlist[MAXSERVERLIST] = {};
 UINT32 serverlistcount = 0;
-UINT32 serverlistultimatecount = 0;
-
-static boolean resendserverlistnode[MAXNETNODES];
-static tic_t serverlistepoch;
 
 static void SL_ClearServerList(INT32 connectedserver)
 {
@@ -2133,8 +2211,7 @@ static void SL_ClearServerList(INT32 connectedserver)
 			serverlist[i].node = 0;
 		}
 	serverlistcount = 0;
-
-	memset(resendserverlistnode, 0, sizeof resendserverlistnode);
+	//memset(serverlist, 0, sizeof(serverlist));
 }
 
 static UINT32 SL_SearchServer(INT32 node)
@@ -2150,8 +2227,6 @@ static UINT32 SL_SearchServer(INT32 node)
 static void SL_InsertServer(serverinfo_pak* info, SINT8 node)
 {
 	UINT32 i;
-
-	resendserverlistnode[node] = false;
 
 	// search if not already on it
 	i = SL_SearchServer(node);
@@ -2186,7 +2261,7 @@ static void SL_InsertServer(serverinfo_pak* info, SINT8 node)
 	M_SortServerList();
 }
 
-void CL_UpdateServerList (void)
+void CL_UpdateServerList(void)
 {
 	SL_ClearServerList(0);
 
@@ -2204,13 +2279,11 @@ void CL_UpdateServerList (void)
 		SendAskInfo(BROADCASTADDR);
 }
 
-void CL_QueryServerList (msg_server_t *server_list)
+void CL_QueryServerList(msg_server_t *server_list)
 {
 	INT32 i;
 
 	CL_UpdateServerList();
-
-	serverlistepoch = I_GetTime();
 
 	for (i = 0; server_list[i].header.buffer[0]; i++)
 	{
@@ -2224,42 +2297,20 @@ void CL_QueryServerList (msg_server_t *server_list)
 			if (node == -1)
 				continue; // no more node free, or resolution failure
 			SendAskInfo(node);
-			resendserverlistnode[node] = true;
-			// Leave this node open. It'll be closed if the
-			// request times out (CL_TimeoutServerList).
-		}
-	}
 
-	serverlistultimatecount = i;
-}
-
-#define SERVERLISTRESENDRATE NEWTICRATE
-
-void CL_TimeoutServerList(void)
-{
-	if (netgame && serverlistultimatecount > serverlistcount)
-	{
-		const tic_t timediff = I_GetTime() - serverlistepoch;
-		const tic_t timetoresend = timediff % SERVERLISTRESENDRATE;
-		const boolean timedout = timediff > connectiontimeout;
-
-		if (timedout || (timediff > 0 && timetoresend == 0))
-		{
-			INT32 node;
-
-			for (node = 1; node < MAXNETNODES; ++node)
-			{
-				if (resendserverlistnode[node])
-				{
-					if (timedout)
-						Net_CloseConnection(node|FORCECLOSE);
-					else
-						SendAskInfo(node);
-				}
-			}
-
-			if (timedout)
-				serverlistultimatecount = serverlistcount;
+			// Force close the connection so that servers can't eat
+			// up nodes forever if we never get a reply back from them
+			// (usually when they've not forwarded their ports).
+			//
+			// Don't worry, we'll get in contact with the working
+			// servers again when they send SERVERINFO to us later!
+			//
+			// (Note: as a side effect this probably means every
+			// server in the list will probably be using the same node (e.g. node 1),
+			// not that it matters which nodes they use when
+			// the connections are closed afterwards anyway)
+			// -- Monster Iestyn 12/11/18
+			Net_CloseConnection(node|FORCECLOSE);
 		}
 	}
 }
@@ -3426,6 +3477,9 @@ void CL_Reset(void)
 
 	memset(player_muted, 0, sizeof(player_muted));
 
+	for (INT32 i = 0; i < MAXPLAYERS; ++i)
+		playerinfo[i].node = 255;
+
 	// D_StartTitle should get done now, but the calling function will handle it
 }
 
@@ -4214,6 +4268,9 @@ void D_ClientServerInit(void)
 #endif
 	D_LoadBan(false);
 
+	for (INT32 i = 0; i < MAXPLAYERS; ++i)
+		playerinfo[i].node = 255;
+
 	gametic = 0;
 	localgametic = 0;
 
@@ -4448,6 +4505,8 @@ static void Got_AddPlayer(const UINT8 **p, INT32 playernum)
 				displayplayers[i] = newplayernum;
 			DEBFILE("spawning me\n");
 		}
+
+		P_ForceLocalAngle(&players[newplayernum], (angle_t)(players[newplayernum].cmd.angleturn << TICCMD_REDUCE));
 
 		D_SendPlayerConfig();
 		addedtogame = true;
@@ -6394,6 +6453,7 @@ static void SV_SendTics(void)
 				continue;
 			DEBFILE(va("Sent %d anyway\n", realfirsttic));
 		}
+
 		realfirsttic = max(realfirsttic, firstticstosend);
 
 		// compute the length of the packet and cut it if too large
@@ -6539,7 +6599,8 @@ void SV_SpawnPlayer(INT32 playernum, INT32 x, INT32 y, angle_t angle)
 			// -- Monster Iestyn 16/01/18
 			break;
 		}
-		netcmds[tic%BACKUPTICS][playernum].angleturn = (INT16)((angle>>16) | TICCMD_RECEIVED);
+
+		netcmds[tic%BACKUPTICS][playernum].angleturn = (INT16)((angle >> TICCMD_REDUCE) | TICCMD_RECEIVED);
 
 		if (!tic) // failsafe for gametic == 0 -- Monster Iestyn 16/01/18
 			break;
@@ -7121,6 +7182,7 @@ void NetUpdate(void)
 		I_lock_mutex(&m_menu_mutex);
 #endif
 		M_Ticker();
+		refreshdirmenu = 0;
 #ifdef HAVE_THREADS
 		I_unlock_mutex(m_menu_mutex);
 #endif
@@ -7167,7 +7229,7 @@ void CL_ClearRewinds(void)
 
 rewind_t *CL_SaveRewindPoint(size_t demopos)
 {
-	savebuffer_t save;
+	savebuffer_t save = {0};
 	rewind_t *rewind;
 
 	if (rewindhead && rewindhead->leveltime + REWIND_POINT_INTERVAL > leveltime)
@@ -7190,7 +7252,7 @@ rewind_t *CL_SaveRewindPoint(size_t demopos)
 
 rewind_t *CL_RewindToTime(tic_t time)
 {
-	savebuffer_t save;
+	savebuffer_t save = {0};
 	rewind_t *rewind;
 
 	while (rewindhead && rewindhead->leveltime > time)

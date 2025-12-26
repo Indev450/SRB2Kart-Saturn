@@ -63,7 +63,10 @@ void I_UpdateTime(fixed_t timescale)
 	ticratescaled = (double)((float)TICRATE * FixedToFloat(timescale));
 
 	enterprecise = I_GetPreciseTime();
-	elapsedseconds = (double)(enterprecise - oldenterprecise) / I_GetPrecisePrecision();
+	const precise_t elapsed = enterprecise - oldenterprecise;
+	const UINT64 precision = I_GetPrecisePrecision();
+	// explictily do this in double precision
+	elapsedseconds = (double)elapsed / (double)precision;
 	tictimer += elapsedseconds;
 	while (tictimer > 1.0/ticratescaled)
 	{

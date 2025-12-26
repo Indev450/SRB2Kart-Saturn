@@ -1,3 +1,4 @@
+string.c
 am_map.c
 b_bot.c
 command.c
@@ -42,8 +43,6 @@ s_sound.c
 screen.c
 sounds.c
 st_stuff.c
-string.c
-stun.c
 tables.c
 v_video.c
 w_wad.c

@@ -568,13 +568,12 @@ void Command_Numnodes(void)
 
 #ifdef HOLEPUNCH
 /* not one of the reserved "local" addresses */
-static boolean
-is_external_address (UINT32 p)
+static boolean is_external_address(UINT32 p)
 {
 	UINT8 a = (p & 255);
 	UINT8 b = ((p >> 8) & 255);
 
-	if (p == (UINT32)~0)/* 255.255.255.255 */
+	if (p == (UINT32)~0) /* 255.255.255.255 */
 		return 0;
 
 	switch (a)
@@ -584,7 +583,7 @@ is_external_address (UINT32 p)
 		case 127:
 			return false;
 		case 172:
-			return (b & ~15) != 16;/* 16 - 31 */
+			return (b & ~15) != 16; /* 16 - 31 */
 		case 192:
 			return b != 168;
 		default:
@@ -635,7 +634,7 @@ static boolean SOCK_Get(void)
 		c = recvfrom(mysockets[n], (char *)&doomcom->data, MAXPACKETLENGTH, 0,
 			(void *)&fromaddress, &fromlen);
 
-		if (c != ERRSOCKET)
+		if (c > 0)
 		{
 #ifdef USE_STUN
 			if (STUN_got_response(doomcom->data, c))
@@ -649,7 +648,6 @@ static boolean SOCK_Get(void)
 				break;
 			}
 #endif
-
 			// find remote node number
 			for (j = 1; j <= MAXNETNODES; j++) // include LAN
 			{
@@ -764,6 +762,7 @@ static void SOCK_Send(void)
 				if (myfamily[i] == broadcastaddress[j].any.sa_family)
 				{
 					c = SOCK_SendToAddr(mysockets[i], &broadcastaddress[j]);
+
 					if (c == ERRSOCKET)
 					{
 						e = errno;
@@ -781,6 +780,7 @@ static void SOCK_Send(void)
 			if (myfamily[i] == clientaddress[doomcom->remotenode].any.sa_family)
 			{
 				c = SOCK_SendToAddr(mysockets[i], &clientaddress[doomcom->remotenode]);
+
 				if (c == ERRSOCKET)
 				{
 					e = errno;
@@ -793,6 +793,7 @@ static void SOCK_Send(void)
 	else
 	{
 		c = SOCK_SendToAddr(nodesocket[doomcom->remotenode], &clientaddress[doomcom->remotenode]);
+
 		if (c == ERRSOCKET)
 		{
 			e = errno;
@@ -1060,7 +1061,6 @@ static boolean UDP_Socket(void)
 	const INT32 b_ipv6 = M_CheckParm("-ipv6");
 #endif
 	const char *serv;
-
 
 	for (s = 0; s < mysocketses; s++)
 		mysockets[s] = ERRSOCKET;

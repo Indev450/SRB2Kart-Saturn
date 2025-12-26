@@ -139,7 +139,7 @@ typedef LPVOID (WINAPI *p_MapViewOfFile) (HANDLE, DWORD, DWORD, DWORD, SIZE_T);
 #include <errno.h>
 #endif
 
-// Locations to directly check for srb2.pk3 in
+// Locations to directly check for srb2.srb in
 const char *wadDefaultPaths[] = {
 #if defined (__unix__) || defined(__APPLE__) || defined (UNIXCOMMON)
 	"/usr/local/share/games/SRB2Kart",
@@ -153,7 +153,7 @@ const char *wadDefaultPaths[] = {
 	NULL
 };
 
-// Folders to recurse through looking for srb2.pk3
+// Folders to recurse through looking for srb2.srb
 const char *wadSearchPaths[] = {
 #if defined (__unix__) || defined(__APPLE__) || defined (UNIXCOMMON)
 	"/usr/local/games",
@@ -279,7 +279,7 @@ static void I_ShutdownConsole(void)
 	{
 		I_OutputMsg("Shutdown tty console\n");
 		consolevent = SDL_FALSE;
-		tcsetattr (STDIN_FILENO, TCSADRAIN, &tty_tc);
+		tcsetattr(STDIN_FILENO, TCSADRAIN, &tty_tc);
 	}
 }
 
@@ -299,7 +299,8 @@ static void I_StartupConsole(void)
 	if (framebuffer)
 		consolevent = SDL_FALSE;
 
-	if (!consolevent) return;
+	if (!consolevent)
+		return;
 
 	if (isatty(STDIN_FILENO)!=1)
 	{
@@ -307,6 +308,7 @@ static void I_StartupConsole(void)
 		consolevent = SDL_FALSE;
 		return;
 	}
+
 	memset(&tty_con, 0x00, sizeof(tty_con));
 	tcgetattr (0, &tty_tc);
 	tty_erase = tty_tc.c_cc[VERASE];
@@ -368,6 +370,7 @@ void I_GetConsoleEvents(void)
 				tty_con.buffer[tty_con.cursor] = '\0';
 				tty_Back();
 			}
+
 			ev.data1 = KEY_BACKSPACE;
 		}
 		else if (key < ' ') // check if this is a control char
@@ -383,7 +386,8 @@ void I_GetConsoleEvents(void)
 				// shut down, most unix programs behave this way
 				I_Quit();
 			}
-			else continue;
+			else
+				continue;
 		}
 		else if (tty_con.cursor < sizeof(tty_con.buffer))
 		{
@@ -393,7 +397,9 @@ void I_GetConsoleEvents(void)
 			// print the current line (this is differential)
 			write(STDOUT_FILENO, &key, 1);
 		}
-		if (ev.data1) D_PostEvent(&ev);
+
+		if (ev.data1)
+			D_PostEvent(&ev);
 		//tty_FlushIn();
 	}
 }
@@ -715,15 +721,12 @@ static void JoyReset(SDLJoyInfo_t *JoySet)
 	{
 		SDL_GameControllerClose(JoySet->dev);
 	}
+
 	JoySet->dev = NULL;
 	JoySet->oldjoy = -1;
+	JoySet->id = -1;
 	JoySet->axises = JoySet->buttons = JoySet->hats = JoySet->balls = 0;
-	//JoySet->scale
 }
-
-/**	\brief joystick up and running
-*/
-static INT32 joystick_started[MAXSPLITSCREENPLAYERS] = {0, 0, 0, 0};
 
 /**	\brief SDL info about joystick
 */
@@ -779,22 +782,26 @@ void I_UpdateJoystickDeviceIndex(UINT8 player)
 	///////////////////////////////////////////////
 	if (JoyInfo[player].dev)
 	{
-		cv_usejoystick[player].value = I_GetJoystickDeviceIndex(JoyInfo[player].dev) + 1;
+		cv_usejoystick[player].value = JoyInfo[player].id + 1;
 	}
 	else
 	{
 		UINT8 joystickID, compareJoystick;
+
 		for (joystickID = 0; joystickID < MAXSPLITSCREENPLAYERS; joystickID++)
 		{
 			// is this cv_usejoystick used?
 			const INT32 value = atoi(cv_usejoystick[joystickID].string);
+
 			for (compareJoystick = 0; compareJoystick < MAXSPLITSCREENPLAYERS; compareJoystick++)
 			{
 				if (compareJoystick == player)
 					continue;
+
 				if (value == JoyInfo[compareJoystick].oldjoy || value == cv_usejoystick[compareJoystick].value)
 					break;
 			}
+
 			if (compareJoystick == MAXSPLITSCREENPLAYERS)
 			{
 				// We DID make it through the whole loop, so we can use this one!
@@ -802,6 +809,7 @@ void I_UpdateJoystickDeviceIndex(UINT8 player)
 				break;
 			}
 		}
+
 		if (joystickID == MAXSPLITSCREENPLAYERS)
 		{
 			// We DID NOT make it through the whole loop, so we can't assign this joystick to anything.
@@ -824,14 +832,6 @@ void I_UpdateJoystickDeviceIndices(UINT8 excludePlayer)
 	}
 }
 
-/**	\brief Joystick buttons states
-*/
-static UINT64 lastjoybuttons[MAXSPLITSCREENPLAYERS] = {0,0,0,0};
-
-/**	\brief Joystick hats state
-*/
-static UINT64 lastjoyhats[MAXSPLITSCREENPLAYERS] = {0,0,0,0};
-
 /**	\brief	Shuts down joystick
 	\return void
 */
@@ -843,72 +843,32 @@ void I_ShutdownJoystick(UINT8 index)
 	event.data2 = 0;
 	event.data3 = 0;
 
-	lastjoybuttons[index] = lastjoyhats[index] = 0;
-
 	// emulate the up of all joystick buttons
 	for (i = 0; i < JOYBUTTONS; i++)
 	{
-		event.data1=KEY_JOY1 + i;
+		event.data1 = KEY_JOY1 + i;
 		D_PostEvent(&event);
 	}
 
 	// emulate the up of all joystick hats
 	for (i = 0; i < JOYHATS*4; i++)
 	{
-		event.data1=KEY_HAT1+i;
+		event.data1 = KEY_HAT1+i;
 		D_PostEvent(&event);
 	}
 
 	// reset joystick position
 	event.type = ev_joystick;
+
 	for (i = 0; i < JOYAXISSET; i++)
 	{
 		event.data1 = i;
 		D_PostEvent(&event);
 	}
 
-	joystick_started[index] = 0;
 	JoyReset(&JoyInfo[index]);
 
 	// don't shut down the subsystem here, because hotplugging
-}
-
-void I_GetJoystickEvents(UINT8 index)
-{
-	static event_t event = {};
-	INT32 i = 0;
-	UINT64 joyhats = 0;
-
-	if (!joystick_started[index])
-		return;
-
-	if (!JoyInfo[index].dev) //I_ShutdownJoystick();
-		return;
-
-	joyhats |= SDL_GameControllerGetButton(JoyInfo[index].dev, SDL_CONTROLLER_BUTTON_DPAD_UP);
-	joyhats |= SDL_GameControllerGetButton(JoyInfo[index].dev, SDL_CONTROLLER_BUTTON_DPAD_DOWN) << 1;
-	joyhats |= SDL_GameControllerGetButton(JoyInfo[index].dev, SDL_CONTROLLER_BUTTON_DPAD_LEFT) << 2;
-	joyhats |= SDL_GameControllerGetButton(JoyInfo[index].dev, SDL_CONTROLLER_BUTTON_DPAD_RIGHT) << 3;
-
-	if (joyhats != lastjoyhats[index])
-	{
-		INT64 j = 1; // keep only bits that changed since last time
-		INT64 newhats = joyhats ^ lastjoyhats[index];
-		lastjoyhats[index] = joyhats;
-
-		for (i = 0; i < JOYHATS*4; i++, j <<= 1)
-		{
-			if (newhats & j) // hat changed state?
-			{
-				if (joyhats & j)
-					event.type = ev_keydown;
-				else
-					event.type = ev_keyup;
-				event.data1 = KEY_HAT1 + i;
-				D_PostEvent(&event);
-			}
-		}
-	}
 }
 
 /**	\brief	Open joystick handle
@@ -927,6 +887,7 @@ static int joy_open(int playerIndex, int joyIndex)
 		CONS_Printf(M_GetText("Joystick subsystem not started\n"));
 		return -1;
 	}
+
 	if (SDL_WasInit(SDL_INIT_GAMECONTROLLER) == 0)
 	{
 		CONS_Printf(M_GetText("Game Controller subsystem not started\n"));
@@ -961,12 +922,14 @@ static int joy_open(int playerIndex, int joyIndex)
 		if (JoyInfo[playerIndex].dev == newdev // same device, nothing to do
 			|| (newdev == NULL && SDL_GameControllerGetAttached(JoyInfo[playerIndex].dev))) // we failed, but already have a working device
 			return SDL_CONTROLLER_AXIS_MAX;
+
 		// Else, we're changing devices, so send neutral joy events
 		CONS_Debug(DBG_GAMELOGIC, "Joystick1 device is changing; resetting events...\n");
 		I_ShutdownJoystick(playerIndex);
 	}
 
 	JoyInfo[playerIndex].dev = newdev;
+	JoyInfo[playerIndex].id = I_GetJoystickDeviceIndex(JoyInfo[playerIndex].dev);
 
 	if (JoyInfo[playerIndex].dev == NULL)
 	{
@@ -1003,8 +966,9 @@ void I_InitJoystick(UINT8 index)
 	UINT8 i;
 	SDL_GameController *newcontroller = NULL;
 
-	//I_ShutdownJoystick();
-	//SDL_SetHintWithPriority("SDL_XINPUT_ENABLED", "0", SDL_HINT_OVERRIDE);
+	// not sure if this is the best place to put this
+	SDL_SetHint(SDL_HINT_AUTO_UPDATE_SENSORS, "0");
+
 	if (M_CheckParm("-nojoy"))
 		return;
 
@@ -1033,6 +997,11 @@ void I_InitJoystick(UINT8 index)
 		}
 	}
 
+	JoyInfo[index].dev = NULL;
+	JoyInfo[index].oldjoy = -1;
+	JoyInfo[index].id = -1;
+	JoyInfo[index].axises = JoyInfo[index].buttons = JoyInfo[index].hats = JoyInfo[index].balls = 0;
+
 	if (cv_usejoystick[index].value)
 		newcontroller = SDL_GameControllerOpen(cv_usejoystick[index].value-1);
 
@@ -1045,23 +1014,24 @@ void I_InitJoystick(UINT8 index)
 			break;
 	}
 
+	JoyInfo[index].id = I_GetJoystickDeviceIndex(JoyInfo[index].dev);
+
 	if (newcontroller && i < MAXSPLITSCREENPLAYERS) // don't override an active device
 	{
-		cv_usejoystick[index].value = I_GetJoystickDeviceIndex(JoyInfo[index].dev) + 1;
+		cv_usejoystick[index].value = JoyInfo[index].id + 1;
 	}
 	else if (newcontroller && joy_open(index, cv_usejoystick[index].value) != -1)
 	{
 		// SDL's device indexes are unstable, so cv_usejoystick may not match
 		// the actual device index. So let's cheat a bit and find the device's current index.
-		JoyInfo[index].oldjoy = I_GetJoystickDeviceIndex(JoyInfo[index].dev) + 1;
-		joystick_started[index] = 1;
+		JoyInfo[index].oldjoy = JoyInfo[index].id + 1;
 	}
 	else
 	{
 		if (JoyInfo[index].oldjoy)
 			I_ShutdownJoystick(index);
+
 		cv_usejoystick[index].value = 0;
-		joystick_started[index] = 0;
 	}
 
 	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
@@ -1126,8 +1096,10 @@ static void I_ShutdownInput(void)
 INT32 I_NumJoys(void)
 {
 	INT32 numjoy = 0;
+
 	if (SDL_WasInit(SDL_INIT_JOYSTICK) == SDL_INIT_JOYSTICK)
 		numjoy = SDL_NumJoysticks();
+
 	return numjoy;
 }
 
@@ -1138,15 +1110,18 @@ const char *I_GetJoyName(INT32 joyindex)
 	const char *tempname = NULL;
 	joyname[0] = 0;
 	joyindex--; //SDL's Joystick System starts at 0, not 1
+
 	if (SDL_WasInit(SDL_INIT_JOYSTICK) == SDL_INIT_JOYSTICK)
 	{
 		tempname = SDL_JoystickNameForIndex(joyindex);
+
 		if (tempname)
 		{
 			memcpy(joyname, tempname, 255);
 			joyname[255] = '\0';
 		}
 	}
+
 	return joyname;
 }
 
@@ -1339,55 +1314,7 @@ precise_t I_GetPreciseTime(void)
 
 UINT64 I_GetPrecisePrecision(void)
 {
-	return SDL_GetPerformanceFrequency();
-}
-
-static UINT32 frame_rate;
-
-static double frame_frequency;
-static UINT64 frame_epoch;
-static double elapsed_frames;
-
-static void I_InitFrameTime(const UINT64 now, const UINT32 cap)
-{
-	frame_rate = cap;
-	frame_epoch = now;
-
-	//elapsed_frames = 0.0;
-
-	if (frame_rate == 0)
-	{
-		// Shouldn't be used, but just in case...?
-		frame_frequency = 1.0;
-		return;
-	}
-
-	frame_frequency = timer_frequency / (double)frame_rate;
-}
-
-double I_GetFrameTime(void)
-{
-	const UINT64 now = SDL_GetPerformanceCounter();
-	const UINT32 cap = R_GetFramerateCap();
-
-	if (cap != frame_rate)
-	{
-		// Maybe do this in a OnChange function for cv_fpscap?
-		I_InitFrameTime(now, cap);
-	}
-
-	if (frame_rate == 0)
-	{
-		// Always advance a frame.
-		elapsed_frames += 1.0;
-	}
-	else
-	{
-		elapsed_frames += (now - frame_epoch) / frame_frequency;
-	}
-
-	frame_epoch = now; // moving epoch
-	return elapsed_frames;
+	return timer_frequency;
 }
 
 //
@@ -1396,9 +1323,6 @@ double I_GetFrameTime(void)
 void I_StartupTimer(void)
 {
 	timer_frequency = SDL_GetPerformanceFrequency();
-
-	I_InitFrameTime(0, R_GetFramerateCap());
-	elapsed_frames  = 0.0;
 }
 
 void I_Sleep(UINT32 ms)
@@ -1923,17 +1847,20 @@ INT32 I_StartupSystem(void)
 	return 0;
 }
 
+boolean is_quitting = false;
+
 //
 // I_Quit
 //
 FUNCNORETURN void ATTRNORETURN I_Quit(void)
 {
-	static SDL_bool quiting = SDL_FALSE;
-
 	/* prevent recursive I_Quit() */
-	if (quiting) goto death;
+	if (is_quitting)
+		abort();
+
+	is_quitting = true;
 	SDL_ShowCursor(SDL_TRUE);
-	quiting = SDL_FALSE;
+
 	I_ShutdownConsole();
 	M_SaveConfig(NULL); //save game config, cvars..
 	D_SaveBan(); // save the ban list
@@ -1960,23 +1887,9 @@ FUNCNORETURN void ATTRNORETURN I_Quit(void)
 	}
 	if (myargmalloc)
 		free(myargv); // Deallocate allocated memory
-death:
+
 	W_Shutdown();
 	exit(0);
-}
-
-void I_WaitVBL(INT32 count)
-{
-	count = 1;
-	SDL_Delay(count);
-}
-
-void I_BeginRead(void)
-{
-}
-
-void I_EndRead(void)
-{
 }
 
 //
@@ -2400,12 +2313,17 @@ static void pathonly(char *s)
 	size_t j;
 
 	for (j = strlen(s); j != (size_t)-1; j--)
+	{
 		if ((s[j] == '\\') || (s[j] == ':') || (s[j] == '/'))
 		{
-			if (s[j] == ':') s[j+1] = 0;
-			else s[j] = 0;
+			if (s[j] == ':')
+				s[j+1] = 0;
+			else
+				s[j] = 0;
+
 			return;
 		}
+	}
 }
 
 /**	\brief	search for srb2.srb in the given path
@@ -2418,7 +2336,7 @@ static void pathonly(char *s)
 */
 static const char *searchWad(const char *searchDir)
 {
-	static char tempsw[MAX_WADPATH] = "";
+	static char tempsw[255] = "";
 	filestatus_t fstemp;
 
 	strcpy(tempsw, WADKEYWORD1);
@@ -2469,6 +2387,18 @@ static const char *locateWad(void)
 		return NULL;
 #endif
 
+#ifndef NOHOME
+#ifdef DEFAULTDIR
+	I_OutputMsg(",HOME/" DEFAULTDIR);
+	// examine user jart directory
+	if ((envstr = I_GetEnv("HOME")) != NULL)
+	{
+		sprintf(returnWadPath, "%s" PATHSEP DEFAULTDIR, envstr);
+		CHECKWADPATH(returnWadPath);
+	}
+#endif
+#endif
+
 #ifdef __APPLE__
 	OSX_GetResourcesPath(returnWadPath);
 	CHECKWADPATH(returnWadPath);
@@ -2480,20 +2410,6 @@ static const char *locateWad(void)
 		strcpy(returnWadPath, wadDefaultPaths[i]);
 		CHECKWADPATH(returnWadPath);
 	}
-
-#ifndef NOHOME
-	// find in $HOME
-	I_OutputMsg(",HOME/" DEFAULTDIR);
-	if ((envstr = I_GetEnv("HOME")) != NULL)
-	{
-		char *tmp = static_cast<char*>(malloc(strlen(envstr) + sizeof(PATHSEP) + sizeof(DEFAULTDIR)));
-		strcpy(tmp, envstr);
-		strcat(tmp, PATHSEP);
-		strcat(tmp, DEFAULTDIR);
-		CHECKWADPATH(tmp);
-		free(tmp);
-	}
-#endif
 
 	// search paths
 	for (i = 0; wadSearchPaths[i]; i++)
@@ -2508,7 +2424,7 @@ static const char *locateWad(void)
 
 const char *I_LocateWad(void)
 {
-	const char *waddir;
+	const char *waddir = NULL;
 
 	I_OutputMsg("Looking for WADs in: ");
 	waddir = locateWad();
@@ -2526,6 +2442,7 @@ const char *I_LocateWad(void)
 			I_OutputMsg("Couldn't change working directory\n");
 #endif
 	}
+
 	return waddir;
 }
 

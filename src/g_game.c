@@ -276,12 +276,6 @@ UINT32 timesBeatenWithEmeralds = 0;
 
 INT16 prevmap = 0, nextmap = 0;
 
-// Analog Control
-void SendWeaponPref(void);
-void SendWeaponPref2(void);
-void SendWeaponPref3(void);
-void SendWeaponPref4(void);
-
 // don't mind me putting these here, I was lazy to figure out where else I could put those without blowing up the compiler.
 
 // chat timer thingy
@@ -317,6 +311,8 @@ consvar_t cv_pauseifunfocused = {"pauseifunfocused", "Yes", CV_SAVE, CV_YesNo, N
 // Display song credits
 static CV_PossibleValue_t songcredits_cons_t[] = {{0, "Off"}, {1, "Default"}, {2, "Box"}, {0, NULL}};
 consvar_t cv_songcredits = {"songcredits", "Default", CV_SAVE, songcredits_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+
+consvar_t cv_pausesongcredits = {"pausesongcredits", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 // Show "FREE PLAY" when you're alone. :(
 consvar_t cv_showfreeplay = { "showfreeplay", "Yes", CV_SAVE, CV_YesNo, NULL, 0, NULL, NULL, 0, 0, NULL};
@@ -456,6 +452,14 @@ consvar_t cv_litesteer[MAXSPLITSCREENPLAYERS] = {
 	{"litesteer2", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL},
 	{"litesteer3", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL},
 	{"litesteer4", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL}
+};
+
+//static CV_PossibleValue_t autoaccelcons_t[] = {{0, "Off"}, {1, "Manual"}, {2, "Automatic"}, {0, NULL}};
+consvar_t cv_autoaccel[MAXSPLITSCREENPLAYERS] = {
+	{"autoaccel",  "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"autoaccel2", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"autoaccel3", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"autoaccel4", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL}
 };
 
 static CV_PossibleValue_t driftsparkpulse_t[] = {{0, "MIN"}, {FRACUNIT*3, "MAX"}, {0, NULL}};
@@ -668,7 +672,7 @@ INT16 G_ClipAimingPitch(INT32 *aiming)
 	else if (*aiming < -limitangle)
 		*aiming = -limitangle;
 
-	return (INT16)((*aiming)>>16);
+	return (INT16)((*aiming) >> TICCMD_REDUCE);
 }
 
 INT16 G_SoftwareClipAimingPitch(INT32 *aiming)
@@ -681,7 +685,7 @@ INT16 G_SoftwareClipAimingPitch(INT32 *aiming)
 	else if (*aiming < -limitangle)
 		*aiming = -limitangle;
 
-	return (INT16)((*aiming)>>16);
+	return (INT16)((*aiming) >> TICCMD_REDUCE);
 }
 
 INT32 JoyAxis(axis_input_e axissel, UINT8 player)
@@ -804,6 +808,10 @@ static fixed_t forwardmove[2] = {25<<FRACBITS>>16, 50<<FRACBITS>>16};
 static fixed_t sidemove[2] = {2<<FRACBITS>>16, 4<<FRACBITS>>16};
 static fixed_t angleturn[3] = {KART_FULLTURN/2, KART_FULLTURN, KART_FULLTURN/4}; // + slow turn
 
+//
+// G_HandleLocalDriftturn
+// Hack for Lua menus that check directional inputs with driftturn
+//
 static void G_HandleLocalDriftturn(ticcmd_t *cmd, UINT8 ssplayer)
 {
 	INT32 axis = 0;
@@ -866,9 +874,8 @@ static void G_HandleLocalDriftturn(ticcmd_t *cmd, UINT8 ssplayer)
 //
 static void G_BuildLocalTiccmd(ticcmd_t *cmd, UINT8 ssplayer, boolean freecam)
 {
-	boolean moveinput = false;
 	INT32 axis = 0;
-	const boolean usejoystick = (cv_usejoystick[(ssplayer-1)].value);
+	const boolean usejoystick = cv_usejoystick[(ssplayer-1)].value;
 
 	// check for inputs and return button commands
 	// for stuff like joining with item button, saltyhop, honking, etc.
@@ -903,15 +910,11 @@ static void G_BuildLocalTiccmd(ticcmd_t *cmd, UINT8 ssplayer, boolean freecam)
 
 #undef CHECKINPUT
 
-	moveinput = (InputDown(gc_turnleft, ssplayer) || InputDown(gc_turnright, ssplayer)
-	|| InputDown(gc_aimforward, ssplayer) || InputDown(gc_aimbackward, ssplayer) ||
-	(usejoystick && JoyAxis(AXISAIM, ssplayer) != 0) || (usejoystick && JoyAxis(AXISTURN, ssplayer) != 0));
-
 	axis = JoyAxis(AXISLOOKBACK, ssplayer);
 	camspin[ssplayer-1] = (InputDown(gc_lookback, ssplayer) || (usejoystick && axis > 0));
 
 	// Reset to our spec player if we watch someone else.
-	if ((moveinput || cmd->buttons)
+	if ((cmd->driftturn || cmd->buttons)
 		&& displayplayers[0] != consoleplayer && ssplayer == 1)
 	{
 		if (cv_director.value)
@@ -920,6 +923,63 @@ static void G_BuildLocalTiccmd(ticcmd_t *cmd, UINT8 ssplayer, boolean freecam)
 		displayplayers[0] = consoleplayer;
 		R_ResetViewInterpolation(0);
 		camera[0].reset_aiming = true;
+	}
+}
+
+//
+// G_HandleAutoAcceleration
+//
+static void G_HandleAutoAcceleration(ticcmd_t *cmd, player_t *player, UINT8 forplayer)
+{
+	if (!cv_autoaccel[forplayer].value)
+		return;
+
+	if (gamestate != GS_LEVEL)
+		return;
+
+	// dont accel before and during countdown
+	if (leveltime <= starttime)
+		return;
+
+	// dont do this in menus or when console is onscreen
+	if (menuactive || CON_Ready())
+		return;
+
+	// gotta have a player that aint respawning
+	if (!player->mo || player->kartstuff[k_respawn])
+		return;
+
+	// dont need for "finished" players
+	if (player->exiting || (player->pflags & PF_TIMEOVER))
+		return;
+
+	// dont do during spinout
+	if (player->kartstuff[k_spinouttimer])
+		return;
+
+	// spectators and freecam dont need special handling, see G_BuildTiccmd
+
+	if (cmd->buttons & BT_BRAKE)
+	{
+		if (cmd->buttons & BT_DRIFT ||
+			player->kartstuff[k_sneakertimer] ||
+			player->kartstuff[k_squishedtimer])
+		{
+			cmd->forwardmove = (SINT8)forwardmove[0];
+			cmd->buttons |= BT_ACCELERATE;
+		}
+		else
+		{
+			// allows us to drive backwards if we need to
+			if (cmd->forwardmove > 0)
+				cmd->forwardmove = 0;
+			cmd->buttons &= ~BT_ACCELERATE;
+		}
+	}
+	else
+	{
+		cmd->forwardmove = (SINT8)forwardmove[1];
+		cmd->buttons |= BT_ACCELERATE;
 	}
 }
 
@@ -965,7 +1025,7 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 	// Kart, don't build a ticcmd if someone is resynching or the server is stopped too so we don't fly off course in bad conditions
 	if (paused || P_AutoPause() || (gamestate == GS_LEVEL && player->playerstate == PST_REBORN) || hu_resynching)
 	{
-		cmd->angleturn = (INT16)(lang >> 16);
+		cmd->angleturn = (INT16)(lang >> TICCMD_REDUCE);
 		cmd->aiming = G_ClipAimingPitch(&laim);
 		return;
 	}
@@ -973,7 +1033,7 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 	// dumbass thing so we can use a few buttons but dont accidentally drive away
 	if (player->spectator || freecam)
 	{
-		cmd->angleturn = (INT16)(lang >> 16);
+		cmd->angleturn = (INT16)(lang >> TICCMD_REDUCE);
 		G_BuildLocalTiccmd(cmd, ssplayer, freecam);
 
 		// let lua override everything
@@ -1070,7 +1130,7 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 		if (InputDown(gc_accelerate, ssplayer) || (gamepadjoystickmove && axis > 0) || player->kartstuff[k_sneakertimer])
 		{
 			cmd->buttons |= BT_ACCELERATE;
-			forward = forwardmove[1];	// 50
+			forward = forwardmove[1]; // 50
 		}
 		else if (analogjoystickmove && axis > 0)
 		{
@@ -1133,7 +1193,7 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 
 	cmd->aiming = G_ClipAimingPitch(&laim);
 
-	mousex = mousey = mlooky = 0;
+	mousex = mousey = 0;
 
 	if (forward > MAXPLMOVE)
 		forward = MAXPLMOVE;
@@ -1150,6 +1210,8 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 		cmd->forwardmove = (SINT8)(cmd->forwardmove + forward);
 		cmd->sidemove = (SINT8)(cmd->sidemove + side);
 	}
+
+	G_HandleAutoAcceleration(cmd, player, forplayer);
 
 	//{ SRB2kart - Drift support
 	// Not grouped with the rest of turn stuff because it needs to know what buttons you're pressing for rubber-burn turn
@@ -1172,10 +1234,10 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 		|| (leveltime > starttime && (cmd->buttons & BT_ACCELERATE && cmd->buttons & BT_BRAKE)) // Rubber-burn turn
 		|| (player->kartstuff[k_respawn]) // Respawning
 		|| (player->spectator || objectplacing))) // Not a physical player
-		lang += (cmd->angleturn<<16);
+		lang += (cmd->angleturn << TICCMD_REDUCE);
 
-	cmd->angleturn = (INT16)(lang >> 16);
-	cmd->latency = modeattacking ? 0 : (leveltime & 0xFF); // Send leveltime when this tic was generated to the server for control lag calculations
+	cmd->angleturn = (INT16)(lang >> TICCMD_REDUCE);
+	cmd->latency = modeattacking ? 0 : (leveltime & TICCMD_LATENCYMASK); // Send leveltime when this tic was generated to the server for control lag calculations
 
 	if (!hu_stopped)
 	{
@@ -1756,14 +1818,15 @@ void G_ResetView(UINT8 viewnum, INT32 playernum, boolean onlyactive)
 // Increment a viewpoint by offset from the current player. A negative value
 // decrements.
 //
-void G_AdjustView(UINT8 viewnum, INT32 offset, boolean onlyactive)
+void G_AdjustViewEx(UINT8 viewnum, INT32 offset, boolean onlyactive, boolean resetfreecam)
 {
 	INT32 *displayplayerp, oldview;
 	displayplayerp = &displayplayers[viewnum-1];
 	oldview = (*displayplayerp);
 
 	// turn off the freecam
-	camera[viewnum-1].freecam = false;
+	if (resetfreecam)
+		camera[viewnum-1].freecam = false;
 
 	G_ResetView(viewnum, ( (*displayplayerp) + offset ), onlyactive);
 
@@ -1777,7 +1840,7 @@ void G_AdjustView(UINT8 viewnum, INT32 offset, boolean onlyactive)
 // Ensures all viewpoints are valid
 // Also demotes splitscreen down to one player.
 //
-void G_ResetViews(void)
+void G_ResetViews(boolean resetfreecam)
 {
 	UINT8 splits;
 	UINT8 viewd;
@@ -1801,7 +1864,7 @@ void G_ResetViews(void)
 	*/
 	for (viewd = 1; viewd <= splits; ++viewd)
 	{
-		G_AdjustView(viewd, 0, false);
+		G_AdjustViewEx(viewd, 0, false, resetfreecam);
 	}
 }
 
@@ -1882,7 +1945,7 @@ void G_Ticker(boolean run)
 			G_CopyTiccmd(cmd, &netcmds[buf][i], 1);
 
 			// Use the leveltime sent in the player's ticcmd to determine control lag
-			cmd->latency = modeattacking ? 0 : min(((leveltime & 0xFF) - cmd->latency) & 0xFF, MAXPREDICTTICS-1); //@TODO add a cvar to allow setting this max
+			cmd->latency = modeattacking ? 0 : min(((leveltime & TICCMD_LATENCYMASK) - cmd->latency) & TICCMD_LATENCYMASK, MAXPREDICTTICS-1); //@TODO add a cvar to allow setting this max
 		}
 	}
 
@@ -1890,7 +1953,6 @@ void G_Ticker(boolean run)
 	switch (gamestate)
 	{
 		case GS_LEVEL:
-
 			for (; ra_timeskip < starttime - TICRATE*4; ra_timeskip++)	// this looks weird but this is done to not break compability with older demos for now.
 			{
 				if (demo.title)
@@ -2288,7 +2350,7 @@ void G_PlayerReborn(INT32 player)
 	}
 
 	/* I'm putting this here because lol */
-	fade = (cv_birdmusic.value && cv_fading.value && P_IsLocalPlayer(p));
+	fade = (cv_fading.value && P_IsLocalPlayer(p));
 
 	if (fade)
 	{
@@ -3025,7 +3087,8 @@ tryagain:
 
 void G_AddMapToBuffer(INT16 map)
 {
-	INT16 bufx, refreshnum = max(0, TOLMaps(G_TOLFlag(gametype))-3);
+	const INT32 tolmaps = TOLMaps(G_TOLFlag(gametype));
+	INT16 bufx, refreshnum = max(0, tolmaps-3);
 
 	// Add the map to the buffer.
 	for (bufx = NUMMAPS-1; bufx > 0; bufx--)
@@ -3438,7 +3501,7 @@ void G_LoadGameData(void)
 	INT32 i, j;
 	UINT8 modded = false;
 	UINT8 rtemp;
-	savebuffer_t save;
+	savebuffer_t save = {0};
 
 	//For records
 	tic_t rectime;
@@ -3571,7 +3634,7 @@ void G_SaveGameData(boolean force)
 	size_t length;
 	INT32 i, j;
 	UINT8 btemp;
-	savebuffer_t save;
+	savebuffer_t save = {0};
 	(void)force;
 	char backupfile[MAX_WADPATH+4];
 
@@ -3742,7 +3805,7 @@ void G_LoadGame(UINT32 slot, INT16 mapoverride)
 	size_t length;
 	char vcheck[VERSIONSIZE];
 	char savename[255];
-	savebuffer_t save;
+	savebuffer_t save = {0};
 
 	// memset savedata to all 0, fixes calling perfectly valid saves corrupt because of bots
 	memset(&savedata, 0, sizeof(savedata));
@@ -3828,7 +3891,7 @@ void G_SaveGame(UINT32 savegameslot)
 	boolean saved;
 	char savename[256] = "";
 	const char *backup;
-	savebuffer_t save;
+	savebuffer_t save = {0};
 
 	sprintf(savename, savegamename, savegameslot);
 	backup = va("%s",savename);
@@ -4011,6 +4074,12 @@ void G_InitNew(UINT8 pencoremode, const char *mapname, boolean resetplayer, bool
 
 	automapactive = false;
 	imcontinuing = false;
+
+	// HACK: this doesent reset if you change the map from within a replay and may cause crashes or the replayhut to be non functional
+	if (!demo.playback && demo.inreplayhut)
+	{
+		M_ResetDemoList();
+	}
 
 	if (!skipprecutscene && mapheaderinfo[gamemap-1]->precutscenenum && !modeattacking) // Start a custom cutscene.
 		F_StartCustomCutscene(mapheaderinfo[gamemap-1]->precutscenenum-1, true, resetplayer);

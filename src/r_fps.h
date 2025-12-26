@@ -75,15 +75,11 @@ typedef struct {
 	fixed_t y;
 	fixed_t z;
 	boolean sky;
-	sector_t *sector;
 	player_t *player;
 
 	angle_t angle;
 	angle_t aim;
 	angle_t roll;
-	fixed_t cos;
-	fixed_t sin;
-	mobj_t *mobj;
 } viewvars_t;
 
 extern viewvars_t *newview;
@@ -142,12 +138,12 @@ typedef struct levelinterpolator_s {
 			fixed_t oldcx, oldcy, bakcx, bakcy;
 			angle_t oldangle, bakangle;
 		} polyobj;
-		struct {
+		/*struct {
 			pslope_t *slope;
 			vector3_t oldo, bako;
 			vector2_t oldd, bakd;
 			fixed_t oldzdelta, bakzdelta;
-		} dynslope;
+		} dynslope;*/
 	};
 } levelinterpolator_t;
 

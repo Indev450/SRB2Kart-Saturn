@@ -42,6 +42,8 @@ typedef struct SDLJoyInfo_s
 {
 	/// Controller handle
 	SDL_GameController *dev;
+	/// Controller index
+	INT32 id;
 	/// number of old joystick
 	int oldjoy;
 	/// number of axies
@@ -64,8 +66,6 @@ extern SDLJoyInfo_t JoyInfo[4]; //MAXSPLITSCREENPLAYERS
 */
 #define SDL_JDEADZONE 153
 #undef SDL_JDEADZONE
-
-void I_GetConsoleEvents(void);
 
 // So we can call this from i_video event loop
 void I_ShutdownJoystick(UINT8 index);

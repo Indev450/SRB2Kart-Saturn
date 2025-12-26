@@ -492,6 +492,7 @@ void Net_AckTicker(void)
 				ackpak[i].acknum = 0;
 				continue;
 			}
+
 			DEBFILE(va("Resend ack %d, %u<%d at %u\n", ackpak[i].acknum, ackpak[i].senttime,
 				NODETIMEOUT, I_GetTime()));
 			memcpy(netbuffer, ackpak[i].pak.raw, ackpak[i].length);
@@ -805,16 +806,16 @@ const char *packettypename[NUMPACKETTYPE] =
 	"TELLFILESNEEDED",
 	"MOREFILESNEEDED",
 
-	"PING"
+	"PING",
 #ifdef SATURNPAK
-	,
-
 	"WILLRESENDGAMESTATE",
 	"CANRECEIVEGAMESTATE",
 	"RECEIVEDGAMESTATE",
 
-	"ISSATURN" // special packet to identify saturn clients
+	"ISSATURN", // special packet to identify saturn clients
 #endif
+	"MAPICON",            // Send map image icon (gamespy).
+	"NEEDMAPICON"   // Request missed map icon (gamespy).
 };
 
 const char *Net_GetPacketName(UINT8 packettype)
@@ -1224,7 +1225,7 @@ void D_SetDoomcom(void)
 	if (doomcom)
 		return;
 
-	doomcom = Z_Calloc(sizeof (doomcom_t), PU_STATIC, NULL);
+	doomcom = Z_Calloc(sizeof(doomcom_t), PU_STATIC, NULL);
 	doomcom->id = DOOMCOM_ID;
 	doomcom->numslots = doomcom->numnodes = 1;
 }
@@ -1266,6 +1267,7 @@ boolean D_CheckNetGame(void)
 		ret = true;
 	if (client && netgame)
 		netgame = false;
+
 	server = true; // WTF? server always true???
 		// no! The deault mode is server. Client is set elsewhere
 		// when the client executes connect command.
@@ -1301,6 +1303,7 @@ boolean D_CheckNetGame(void)
 
 	if (doomcom->id != DOOMCOM_ID)
 		I_Error("Doomcom buffer invalid!");
+
 	if (doomcom->numnodes > MAXNETNODES)
 		I_Error("Too many nodes (%d), max:%d", doomcom->numnodes, MAXNETNODES);
 
@@ -1309,14 +1312,17 @@ boolean D_CheckNetGame(void)
 	{
 		char filename[21];
 		INT32 k = doomcom->consoleplayer - 1;
+
 		if (M_IsNextParm())
 			k = atoi(M_GetNextParm()) - 1;
+
 		while (!debugfile && k < MAXPLAYERS)
 		{
 			k++;
 			sprintf(filename, "debug%d.txt", k);
 			debugfile = fopen(va("%s" PATHSEP "%s", srb2home, filename), "w");
 		}
+
 		if (debugfile)
 			CONS_Printf(M_GetText("debug output to: %s\n"), va("%s" PATHSEP "%s", srb2home, filename));
 		else

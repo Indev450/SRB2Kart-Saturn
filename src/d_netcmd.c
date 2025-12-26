@@ -144,6 +144,7 @@ static void Command_Addfile(void);
 static void Command_Addskins(void);
 static void Command_GLocalSkin(void);
 static void Command_ListWADS_f(void);
+static void Command_LocateLump_f(void);
 static void Command_ListDoomednums_f(void);
 static void Command_ListUnusedSprites_f(void);
 static void Command_RunSOC(void);
@@ -270,11 +271,11 @@ consvar_t cv_skin4 = {"skin4", DEFAULTSKIN4, CV_SAVE|CV_CALL|CV_NOINIT, NULL, Sk
 // haha I've beaten you now, ONLINE
 consvar_t cv_localskin = {"internal___localskin", "none", CV_HIDEN, NULL, NULL, 0, NULL, NULL, 0, 0, NULL};
 
-consvar_t cv_showlocalskinmenus = {"showlocalskinmenus", "Yes", CV_SAVE, CV_YesNo, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_showlocalskinmenus = {"showlocalskinmenus", "Yes", CV_SAVE|CV_CALL, CV_YesNo, ShowLocalskinMenu_Onchange, 0, NULL, NULL, 0, 0, NULL};
 
 consvar_t cv_skipmapcheck = {"skipmapcheck", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
-INT32 cv_debug;
+INT32 cv_debug = 0;
 
 static void UseMouse_OnChange(void);
 consvar_t cv_usemouse = {"use_mouse", "Off", CV_SAVE|CV_CALL, usemouse_cons_t, UseMouse_OnChange, 0, NULL, NULL, 0, 0, NULL};
@@ -531,7 +532,7 @@ boolean forceresetplayers = false;
 boolean deferencoremode = false;
 UINT8 splitscreen = 0;
 boolean circuitmap = true; // SRB2kart
-INT32 adminplayers[MAXPLAYERS];
+INT32 adminplayers[MAXPLAYERS] = {};
 
 /// \warning Keep this up-to-date if you add/remove/rename net text commands
 const char *netxcmdnames[MAXNETXCMD - 1] =
@@ -638,6 +639,7 @@ void D_RegisterServerCommands(void)
 	COM_AddCommand("addfile", Command_Addfile);
 	COM_AddCommand("addskins", Command_Addskins);
 	COM_AddCommand("listwad", Command_ListWADS_f);
+	COM_AddCommand("locatelump", Command_LocateLump_f);
 	COM_AddCommand("listmapthings", Command_ListDoomednums_f);
 	COM_AddCommand("listunusedsprites", Command_ListUnusedSprites_f);
 
@@ -759,6 +761,9 @@ void D_RegisterServerCommands(void)
 	CV_RegisterVar(&cv_pingtimeout);
 	CV_RegisterVar(&cv_showping);
 	CV_RegisterVar(&cv_pingmeasurement);
+
+	CV_RegisterVar(&cv_usefakeseed);
+	CV_RegisterVar(&cv_fakeseedname);
 
 #ifdef SEENAMES
 	CV_RegisterVar(&cv_allowseenames);
@@ -934,6 +939,7 @@ void D_RegisterClientCommands(void)
 	CV_RegisterVar(&cv_chatbacktint);
 	CV_RegisterVar(&cv_chatcentertext);
 	CV_RegisterVar(&cv_songcredits);
+	CV_RegisterVar(&cv_pausesongcredits);
 	CV_RegisterVar(&cv_showfreeplay);
 	CV_RegisterVar(&cv_skinselectspin);
 	CV_RegisterVar(&cv_showallmaps);
@@ -991,15 +997,18 @@ void D_RegisterClientCommands(void)
 
 		CV_RegisterVar(&cv_litesteer[i]);
 
+		CV_RegisterVar(&cv_autoaccel[i]);
+
 		CV_RegisterVar(&cv_usejoystick[i]);
 		CV_RegisterVar(&cv_joyscale[i]);
 		CV_RegisterVar(&cv_rumble[i]);
+		CV_RegisterVar(&cv_rumblestrength[i]);
 		CV_RegisterVar(&cv_gamepadled[i]);
 	}
 
 	CV_RegisterVar(&cv_usemouse);
 	CV_RegisterVar(&cv_invertmouse);
-	CV_RegisterVar(&cv_mousesens);
+	CV_RegisterVar(&cv_mousexsens);
 	CV_RegisterVar(&cv_mouseysens);
 	CV_RegisterVar(&cv_mousevisible);
 
@@ -2585,8 +2594,7 @@ void D_PickVote(void)
 	SendNetXCmd(XD_PICKVOTE, &buf, 2);
 }
 
-static char *
-ConcatCommandArgv (int start, int end)
+static char *ConcatCommandArgv(int start, int end)
 {
 	char *final;
 
@@ -2644,7 +2652,6 @@ static void Command_Map_f(void)
 		return;
 	}
 
-	M_ClearMenus(true);
 
 	last_map_cmd = I_GetTime();
 
@@ -2659,8 +2666,8 @@ static void Command_Map_f(void)
 
 	INT32 newmapnum;
 
-	char   *    mapname;
-	char   *realmapname = NULL;
+	CLEANUP(Z_Pfree) char   *    mapname = NULL;
+	CLEANUP(Z_Pfree) char   *realmapname = NULL;
 
 	INT32   newgametype   = gametype;
 	boolean newencoremode = cv_kartencore.value;
@@ -2729,7 +2736,6 @@ static void Command_Map_f(void)
 	if (newmapnum == 0)
 	{
 		CONS_Alert(CONS_ERROR, M_GetText("Could not find any map described as '%s'.\n"), mapname);
-		Z_Free(mapname);
 		return;
 	}
 
@@ -2761,8 +2767,6 @@ static void Command_Map_f(void)
 							" 0 and %d inclusive. ...Or just use the name. :v\n",
 							d,
 							NUMGAMETYPES-1);
-					Z_Free(realmapname);
-					Z_Free(mapname);
 					return;
 				}
 			}
@@ -2771,8 +2775,6 @@ static void Command_Map_f(void)
 				CONS_Alert(CONS_ERROR,
 						"'%s' is not a gametype.\n",
 						gametypename);
-				Z_Free(realmapname);
-				Z_Free(mapname);
 				return;
 			}
 		}
@@ -2790,8 +2792,6 @@ static void Command_Map_f(void)
 		if (!mapheaderinfo[newmapnum-1])
 		{
 			CONS_Alert(CONS_WARNING, M_GetText("Invalid mapheaderinfo for Course %s (%s)\n"), realmapname, G_BuildMapName(newmapnum));
-			Z_Free(realmapname);
-			Z_Free(mapname);
 			return;
 		}
 
@@ -2799,8 +2799,6 @@ static void Command_Map_f(void)
 		{
 			CONS_Alert(CONS_WARNING, M_GetText("Course %s (%s) doesn't support %s mode!\n(Use -force to override)\n"), realmapname, G_BuildMapName(newmapnum),
 				(multiplayer ? gametype_cons_t[newgametype].strvalue : "Single Player"));
-			Z_Free(realmapname);
-			Z_Free(mapname);
 			return;
 		}
 	}
@@ -2812,8 +2810,6 @@ static void Command_Map_f(void)
 	if (!dedicated && M_MapLocked(newmapnum))
 	{
 		CONS_Alert(CONS_NOTICE, M_GetText("You need to unlock this level before you can warp to it!\n"));
-		Z_Free(realmapname);
-		Z_Free(mapname);
 		return;
 	}
 
@@ -2838,9 +2834,9 @@ static void Command_Map_f(void)
 
 	fromlevelselect = false;
 
-	D_MapChange(newmapnum, newgametype, newencoremode, newresetplayers, 0, false, false);
+	M_ClearMenus(true);
 
-	Z_Free(realmapname);
+	D_MapChange(newmapnum, newgametype, newencoremode, newresetplayers, 0, false, false);
 }
 
 /** Receives a map command and changes the map.
@@ -3908,6 +3904,7 @@ static void Got_Teamchange(const UINT8 **cp, INT32 playernum)
 		if (G_BattleGametype()) // SRB2kart
 		{
 			players[playernum].marescore = 0;
+
 			if (K_IsPlayerWanted(&players[playernum]))
 				K_CalculateBattleWanted();
 		}
@@ -4505,7 +4502,7 @@ static void Command_Addskins(void)
 	CONS_Printf("addskins has been deprecated\nuse addfilelocal instead!\n");
 }
 
-static void Command_GLocalSkin (void)
+static void Command_GLocalSkin(void)
 {
 	size_t first_option;
 	size_t option_display;
@@ -4516,7 +4513,7 @@ static void Command_GLocalSkin (void)
 	option_display 	= COM_CheckPartialParm("-d");
 	option_all		= COM_CheckPartialParm("-a");
 
-	char* fuck; // local skin name
+	CLEANUP(Z_Pfree) char* fuck = NULL; // local skin name
 
 	if (!(first_option = COM_FirstOption()))
 		first_option = COM_Argc();
@@ -4557,7 +4554,6 @@ static void Command_GLocalSkin (void)
 
 		CONS_Printf("Successfully applied localskin to displayed player.\n");
 
-		Z_Free(fuck);
 		return;
 	}
 	else if (option_all) // -all
@@ -4572,7 +4568,6 @@ static void Command_GLocalSkin (void)
 		}
 		CONS_Printf("Successfully applied localskin to all players.\n");
 
-		Z_Free(fuck);
 		return;
 	}
 	else // -player or no other arguments
@@ -4589,7 +4584,6 @@ static void Command_GLocalSkin (void)
 			}
 			CONS_Printf("Successfully applied localskin to specified player.\n");
 
-			Z_Free(fuck);
 			return;
 		}
 		else
@@ -4597,13 +4591,11 @@ static void Command_GLocalSkin (void)
 			SetLocalPlayerSkin(consoleplayer, fuck, &cv_localskin);
 			CONS_Printf("Successfully applied localskin.\n");
 
-			Z_Free(fuck);
 			return;
 		}
 
 		CONS_Printf("Could not apply localskin.\n");
 
-		Z_Free(fuck);
 		return;
 	}
 }
@@ -4734,7 +4726,30 @@ static void Command_ListWADS_f(void)
 	}
 }
 
-#define MAXDOOMEDNUM 4095
+static void Command_LocateLump_f(void)
+{
+	if (COM_Argc() == 1)
+	{
+		CONS_Printf("Usage: locatelump <lump1>[ <lump2>[ ...]]\n");
+		return;
+	}
+
+	for (size_t i = 1; i < COM_Argc(); ++i)
+	{
+		const char *name = COM_Argv(i);
+
+		lumpnum_t num = W_CheckNumForName(name);
+
+		const char *wadname = "(not found)";
+
+		if (num != LUMPERROR)
+		{
+			wadname = wadfiles[WADFILENUM(num)]->filename;
+		}
+
+		CONS_Printf("%s - %s\n", name, wadname);
+	}
+}
 
 static void Command_ListDoomednums_f(void)
 {
@@ -5686,7 +5701,7 @@ static void Command_Togglemodified_f(void)
 
 static void Command_Archivetest_f(void)
 {
-	savebuffer_t save;
+	savebuffer_t save = {0};
 	UINT32 i, wrote;
 	thinker_t *th;
 	if (gamestate != GS_LEVEL)

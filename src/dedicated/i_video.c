@@ -66,13 +66,6 @@ void I_OsPolling(void)
 }
 
 //
-// I_UpdateNoBlit
-//
-void I_UpdateNoBlit(void)
-{
-}
-
-//
 // I_FinishUpdate
 //
 void I_FinishUpdate(void)
@@ -155,7 +148,10 @@ boolean I_UseNativeKeyboard(void)
 	return false;
 }
 
+void I_HandleControllerHatRepeat(void)
+{
+}
+
 void I_SetBorderlessWindow(void)
 {
-
 }

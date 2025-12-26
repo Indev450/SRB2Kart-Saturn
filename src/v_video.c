@@ -141,7 +141,6 @@ static boolean InitCube(void)
 
 #define diffcons(cv) (!fastcmp(cv.string, cv.defaultvalue))
 #define diffconsbrightness(cv) (cv.value != 0)
-
 #define diffconssat(cv) (cv.value != 10)
 
 	doingbrightness = diffcons(cv_globalbrightness);
@@ -547,7 +546,8 @@ void V_SetPalette(INT32 palettenum)
 		V_ReloadPalette();
 
 #ifdef HWRENDER
-	if (rendermode == render_soft || (rendermode == render_opengl && HWR_ShouldUsePaletteRendering())) // opengl without paletterendering hates subpalettes
+	if (rendermode == render_soft ||
+	   (rendermode == render_opengl && HWR_ShouldUsePaletteRendering())) // opengl without paletterendering hates subpalettes
 #endif
 	{
 		if (palettenum == 0)
@@ -2992,7 +2992,9 @@ INT32 V_CreditStringWidth(const char *string)
 	if (!string)
 		return 0;
 
-	for (i = 0; i < strlen(string); i++)
+	const size_t strlength = strlen(string);
+
+	for (i = 0; i < strlength; i++)
 	{
 		c = toupper(string[i]) - CRED_FONTSTART;
 		if (c < 0 || c >= CRED_FONTSIZE)
@@ -3070,7 +3072,9 @@ INT32 V_LevelNameWidth(const char *string)
 	INT32 c, w = 0;
 	size_t i;
 
-	for (i = 0; i < strlen(string); i++)
+	const size_t strlength = strlen(string);
+
+	for (i = 0; i < strlength; i++)
 	{
 		c = toupper(string[i]) - LT_FONTSTART;
 		if (c < 0 || c >= LT_FONTSIZE || !lt_font[c])
@@ -3089,7 +3093,9 @@ INT32 V_LevelNameHeight(const char *string)
 	INT32 c, w = 0;
 	size_t i;
 
-	for (i = 0; i < strlen(string); i++)
+	const size_t strlength = strlen(string);
+
+	for (i = 0; i < strlength; i++)
 	{
 		c = toupper(string[i]) - LT_FONTSTART;
 		if (c < 0 || c >= LT_FONTSIZE || !lt_font[c])

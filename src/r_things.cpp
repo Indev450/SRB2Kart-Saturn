@@ -1612,6 +1612,47 @@ static void R_ProjectSprite(mobj_t *thing)
 			return;
 	}
 
+	if (!papersprite)
+	{
+		// killough 4/9/98: clip things which are out of view due to height
+		// e6y: fix of hanging decoration disappearing in Batman Doom MAP02
+		// centeryfrac -> viewheightfrac
+		// [kb] add +1 so sprites are shown even with the extended freelook
+		// lug: attempt to account for freelook properly
+		if (interp.z > viewz + FixedMul(FixedDiv(centeryfrac, projectiony), tz) ||
+			gzt < viewz + FixedMul(FixedDiv(centeryfrac - (viewheight << FRACBITS), projectiony), tz))
+		{
+			return;
+		}
+	}
+
+	// killough 3/27/98: exclude things totally separated
+	// from the viewer, by either water or fake ceilings
+	// killough 4/11/98: improve sprite clipping for underwater/fake ceilings
+
+	heightsec = thing->subsector->sector->heightsec;
+	if (viewplayer && viewplayer->mo && viewplayer->mo->subsector)
+		phs = viewplayer->mo->subsector->sector->heightsec;
+	else
+		phs = -1;
+
+	if (heightsec != -1 && phs != -1) // only clip things which are in special sectors
+	{
+		fixed_t secheight;
+
+		secheight = P_GetSectorFloorZAt(&sectors[heightsec], viewx, viewy);
+		if (viewz < P_GetSectorFloorZAt(&sectors[phs], interp.x, interp.y) ?
+			interp.z >= secheight :
+			gzt < secheight)
+			return;
+
+		secheight = P_GetSectorCeilingZAt(&sectors[heightsec], viewx, viewy);
+		if (viewz > P_GetSectorCeilingZAt(&sectors[phs], interp.x, interp.y) ?
+			gzt < secheight && viewz >= secheight :
+			interp.z >= secheight)
+			return;
+	}
+
 	if (thing->frame & FF_ABSOLUTELIGHTLEVEL)
 	{
 		const UINT8 n = R_ThingLightLevel(thing);
@@ -1687,24 +1728,6 @@ static void R_ProjectSprite(mobj_t *thing)
 			lights_array = scalelight[LIGHTLEVELS-1];
 		else
 			lights_array = scalelight[lightnum];
-	}
-
-	heightsec = thing->subsector->sector->heightsec;
-	if (viewplayer && viewplayer->mo && viewplayer->mo->subsector)
-		phs = viewplayer->mo->subsector->sector->heightsec;
-	else
-		phs = -1;
-
-	if (heightsec != -1 && phs != -1) // only clip things which are in special sectors
-	{
-		if (viewz < sectors[phs].floorheight ?
-			interp.z >= sectors[heightsec].floorheight :
-			gzt < sectors[heightsec].floorheight)
-			return;
-		if (viewz > sectors[phs].ceilingheight ?
-			gzt < sectors[heightsec].ceilingheight && viewz >= sectors[heightsec].ceilingheight :
-			interp.z >= sectors[heightsec].ceilingheight)
-			return;
 	}
 
 	// store information in a vissprite
@@ -1950,6 +1973,17 @@ static void R_ProjectPrecipitationSprite(precipmobj_t *thing)
 	{
 		if (R_DoCulling(thing->subsector->sector->cullheight, viewsector->cullheight, viewz, gz, gzt))
 			return;
+	}
+
+	// killough 4/9/98: clip things which are out of view due to height
+	// e6y: fix of hanging decoration disappearing in Batman Doom MAP02
+	// centeryfrac -> viewheightfrac
+	// [kb] add +1 so sprites are shown even with the extended freelook
+	// lug: attempt to account for freelook properly
+	if (interp.z > viewz + FixedMul(FixedDiv(centeryfrac, projectiony), tz) ||
+		gzt < viewz + FixedMul(FixedDiv(centeryfrac - (viewheight << FRACBITS), projectiony), tz))
+	{
+		return;
 	}
 
 	// aspect ratio stuff :
@@ -2908,7 +2942,7 @@ boolean R_ThingWithinDist(mobj_t *thing, INT32 limit_dist)
 {
 	if (limit_dist)
 	{
-		if ((R_QuickCamDist(thing->x, thing->y) << FRACBITS)/mapobjectscale > limit_dist)
+		if (R_QuickCamDist(thing->x, thing->y)/mapobjectscale > limit_dist)
 		{
 			return false;
 		}
@@ -2952,7 +2986,7 @@ static boolean R_CheckInterpDist(T *thing)
 	if (!R_UsingFrameInterpolation())
 		return false;
 
-	const INT32 dist = R_QuickCamDist(thing->x, thing->y);
+	const INT32 dist = R_QuickCamDist(thing->x, thing->y) >> FRACBITS;
 
 	return (dist < cv_maxinterpdist.value);
 }

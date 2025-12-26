@@ -46,6 +46,7 @@
 #include "i_time.h"
 #include "i_threads.h"
 #include "i_video.h"
+#include "hu_stuff.h"
 #include "m_argv.h"
 #include "m_menu.h"
 #include "m_misc.h"
@@ -69,7 +70,7 @@
 #include "fastcmp.h"
 #include "r_fps.h" // Frame interpolation/uncapped
 #include "keys.h"
-#include "filesrch.h" // refreshdirmenu, pathisdirectory
+#include "filesrch.h" // pathisdirectory
 #include "d_protocol.h"
 #include "m_perfstats.h"
 #include "k_kart.h"
@@ -190,89 +191,6 @@ UINT8 shiftdown = 0;   // 0x1 left, 0x2 right
 UINT8 ctrldown = 0;   // 0x1 left, 0x2 right
 UINT8 altdown = 0;    // 0x1 left, 0x2 right
 boolean capslock = 0; // gee i wonder what this does.
-
-static void D_PadMenuScrollInput(UINT8 input)
-{
-	event_t dpadev;
-	memset(&dpadev, 0, sizeof(event_t));
-	dpadev.type = ev_keydown;
-
-	switch (input)
-	{
-		case DPAD_UP:
-			dpadev.data1 = KEY_UPARROW;
-			break;
-		case DPAD_DOWN:
-			dpadev.data1 = KEY_DOWNARROW;
-			break;
-		case DPAD_LEFT:
-			dpadev.data1 = KEY_LEFTARROW;
-			break;
-		case DPAD_RIGHT:
-			dpadev.data1 = KEY_RIGHTARROW;
-			break;
-	}
-
-	D_PostEvent(&dpadev); // put into eventlist
-}
-
-#define SCROLLDELAY 19
-
-// Check if any dpad button is held
-// and pass it to the eventlist
-static void D_GamePadMenuScrollTicker(void)
-{
-	UINT8 i;
-	static UINT8 menuInputDelayTimer = 0;
-
-	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
-	{
-		if (dpadscrollstate[i])
-		{
-			if (menuInputDelayTimer < SCROLLDELAY)
-				menuInputDelayTimer++;
-			else if (menuInputDelayTimer == SCROLLDELAY)
-				D_PadMenuScrollInput(i);
-
-			return;
-		}
-	}
-
-	menuInputDelayTimer = 0;
-}
-#undef SCROLLDELAY
-
-static UINT16 curcolor[MAXSPLITSCREENPLAYERS] = {};
-
-static void D_DeviceLEDTick(void)
-{
-	UINT8 i;
-	static UINT16 color[MAXSPLITSCREENPLAYERS] = {};
-
-	if (numcontrollers == 0)
-	{
-		return;
-	}
-
-	for (i = 0; i <= splitscreen; i++)
-	{
-		if (!cv_usejoystick[i].value || !cv_gamepadled[i].value)
-			continue;
-
-		color[i] = G_GetSkinColor(i);
-
-		if (curcolor[i] == color[i]) // dont update if same colour
-			continue;
-
-		G_SetPlayerGamepadIndicatorColor(i, color[i]);
-		curcolor[i] = color[i];
-	}
-}
-
-void D_ResetDeviceLED(void)
-{
-	memset(curcolor, 0, sizeof(curcolor));
-}
 
 //
 // D_ProcessEvents
@@ -435,13 +353,12 @@ static void D_Renderview(void)
 	if (splitscreen == 2)
 	{
 		// V_DrawPatchFill, but for the fourth screen only
-		patch_t *pat = W_CachePatchName("SRB2BACK", PU_PATCH);
-		INT32 x, y, pw = SHORT(pat->width) * vid.dup, ph = SHORT(pat->height) * vid.dup;
+		INT32 x, y, pw = SHORT(srb2back->width) * vid.dup, ph = SHORT(srb2back->height) * vid.dup;
 
 		for (x = vid.width>>1; x < vid.width; x += pw)
 		{
 			for (y = vid.height>>1; y < vid.height; y += ph)
-				V_DrawScaledPatch(x, y, V_NOSCALESTART, pat);
+				V_DrawScaledPatch(x, y, V_NOSCALESTART, srb2back);
 		}
 	}
 
@@ -483,10 +400,6 @@ static boolean D_Display(void)
 			R_ExecuteSetViewSize();
 			forcerefresh = true; // force background redraw
 		}
-
-		// draw buffered stuff to screen
-		// Used only by linux GGI version
-		I_UpdateNoBlit();
 	}
 
 	// save the current screen if about to wipe
@@ -751,6 +664,7 @@ void D_SRB2Loop(void)
 	tic_t entertic = 0, oldentertics = 0, realtics = 0, rendertimeout = INFTICS;
 	double deltatics = 0.0;
 	double deltasecs = 0.0;
+	UINT64 precision;
 
 	boolean interp = false;
 	boolean doDisplay = false;
@@ -783,21 +697,26 @@ void D_SRB2Loop(void)
 	COM_ImmedExecute("cls;version");
 
 	if (rendermode == render_soft)
-		V_DrawFixedPatch(0, 0, FRACUNIT/2, 0, W_CachePatchNum(W_GetNumForName("KARTKREW"), PU_PATCH_LOWPRIORITY), NULL);
+		V_DrawFixedPatch(0, 0, FRACUNIT/2, 0, W_CachePatchNum(W_GetNumForName("KARTKREW"), PU_PATCH), NULL);
 	I_FinishUpdate(); // page flip or blit buffer
+
+	precision = I_GetPrecisePrecision();
 
 	for (;;)
 	{
 		// capbudget is the minimum precise_t duration of a single loop iteration
 		precise_t capbudget;
-		precise_t enterprecise = I_GetPreciseTime();
+		precise_t elapsed;
+		precise_t enterprecise, finishprecise;
+
+		enterprecise = I_GetPreciseTime();
 
 		memset(&g_dc, 0, sizeof(g_dc));
 		Z_Frame_Reset();
 
 		// Casting the return value of a function is bad practice (apparently)
-		double budget = ((R_GetFramerateCap() == 0) ? 0.0 : round((1.0 / R_GetFramerateCap()) * I_GetPrecisePrecision()));
-		capbudget = (precise_t)budget;
+		const UINT32 framecap = R_GetFramerateCap();
+		capbudget = (framecap == 0) ? 0 : (precise_t)((double)precision / (double)framecap + 0.5); // + 0.5 instead of round
 
 		boolean ranwipe = false;
 
@@ -830,8 +749,6 @@ void D_SRB2Loop(void)
 		doDisplay = false;
 
 		renderisnewtic = (realtics > 0 || singletics);
-
-		refreshdirmenu = 0; // not sure where to put this, here as good as any?
 
 		if (renderisnewtic)
 		{
@@ -869,18 +786,13 @@ void D_SRB2Loop(void)
 
 			if (!dedicated)
 			{
-				if (menuactive)
-				{
-					D_GamePadMenuScrollTicker();
-				}
-
-				D_DeviceLEDTick();
+				G_DeviceLEDTick();
 			}
 		}
 
 		if (interp)
 		{
-			renderdeltatics = FloatToFixed(deltatics);
+			renderdeltatics = DoubleToFixed(deltatics);
 
 			// I looked at the possibility of putting in a float drawer for
 			// perfstats and it's very complicated, so we'll just do this instead...
@@ -905,9 +817,9 @@ void D_SRB2Loop(void)
 			}
 			else if (!dedicated)
 			{
-				// always update console and hud
-				// otherwise it may take minutes to open it
-				CON_Drawer();
+				// always update console movement
+				// otherwise it will takes literal ages to open
+				CON_MoveConsole();
 			}
 		}
 
@@ -929,12 +841,13 @@ void D_SRB2Loop(void)
 		}
 #endif
 		// Fully completed frame made.
-		precise_t finishprecise = I_GetPreciseTime();
+		finishprecise = I_GetPreciseTime();
 
 		// Use the time before sleep for frameskip calculations:
 		// post-sleep time is literally being intentionally wasted
-		deltasecs = (double)((INT64)(finishprecise - enterprecise)) / I_GetPrecisePrecision();
-		deltatics = deltasecs * NEWTICRATE;
+		elapsed = finishprecise - enterprecise;
+		deltasecs = (double)elapsed / (double)precision;
+		deltatics = deltasecs * (double)NEWTICRATE;
 
 		// If time spent this game loop exceeds a single tic,
 		// it's probably because of rendering.
@@ -962,12 +875,10 @@ void D_SRB2Loop(void)
 
 		if (!singletics)
 		{
-			INT64 elapsed = (INT64)(finishprecise - enterprecise);
-
 			// in the case of "match refresh rate" + vsync, don't sleep at all
 			const boolean vsync_with_match_refresh = cv_vidwait.value && cv_fpscap.value == 0;
 
-			if ((elapsed > 0) && ((INT64)capbudget > elapsed) && !vsync_with_match_refresh)
+			if ((elapsed > 0) && (capbudget > elapsed) && !vsync_with_match_refresh)
 			{
 				I_SleepDuration(capbudget - elapsed);
 			}
@@ -975,8 +886,9 @@ void D_SRB2Loop(void)
 
 		// Capture the time once more to get the real delta time.
 		finishprecise = I_GetPreciseTime();
-		deltasecs = (double)((INT64)(finishprecise - enterprecise)) / I_GetPrecisePrecision();
-		deltatics = deltasecs * NEWTICRATE;
+		elapsed = finishprecise - enterprecise;
+		deltasecs = (double)elapsed / (double)precision;
+		deltatics = deltasecs * (double)NEWTICRATE;
 	}
 }
 
@@ -998,7 +910,6 @@ void D_ClearState(void)
 	CURLAbortFile();
 	SV_StopServer();
 	SV_ResetServer();
-	serverlistultimatecount = 0;
 
 	for (i = 0; i < MAXPLAYERS; i++)
 		CL_ClearPlayer(i);
@@ -1052,7 +963,7 @@ void D_ClearState(void)
 	M_ClearMenus(true);
 
 	// map palettes affect this
-	D_ResetDeviceLED();
+	G_ResetDeviceLED();
 }
 
 //
@@ -1293,8 +1204,10 @@ static void IdentifyVersion(void)
 	const char *srb2waddir = NULL;
 
 #if defined (__unix__) || defined (UNIXCOMMON) || defined (HAVE_SDL)
+	CLEANUP(pfree) const char *allocwaddir = NULL; // here so we dont potentially free stack memory
 	// change to the directory where 'srb2.srb' is found
-	srb2waddir = I_LocateWad();
+	allocwaddir = I_LocateWad();
+	srb2waddir = allocwaddir;
 #endif
 
 	char tempsrb2path[256] = ".";
@@ -2001,6 +1914,10 @@ void D_SRB2Main(void)
 	CONS_Printf("R_Init(): Init SRB2 refresh daemon.\n");
 	R_Init();
 
+#if SOUND==SOUND_DUMMY
+	sound_disabled = true;
+	music_disabled = true;
+#else
 	// setting up sound
 	if (dedicated || M_CheckParm("-noaudio")) // combines -nosound and -nomusic
 	{
@@ -2022,6 +1939,7 @@ void D_SRB2Main(void)
 		I_InitMusic();
 		S_InitSfxChannels(cv_soundvolume.value);
 	}
+#endif
 
 	S_InitMusicDefs();
 

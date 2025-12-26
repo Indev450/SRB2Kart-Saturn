@@ -384,7 +384,9 @@ static int lib_pSpawnMobj(lua_State *L)
 	NOHUD
 	if (type >= NUMMOBJTYPES)
 		return luaL_error(L, "mobj type %d out of range (0 - %d)", type, NUMMOBJTYPES-1);
-	LUA_PushUserdata(L, P_SpawnMobj(x, y, z, type), META_MOBJ);
+	mobj_t *th = P_SpawnMobj(x, y, z, type);
+	if (!P_MobjWasRemoved(th)) th->islocal = !hook_important;
+	LUA_PushUserdata(L, th, META_MOBJ);
 	return 1;
 }
 
@@ -410,7 +412,9 @@ static int lib_pSpawnMissile(lua_State *L)
 		return LUA_ErrInvalid(L, "mobj_t");
 	if (type >= NUMMOBJTYPES)
 		return luaL_error(L, "mobj type %d out of range (0 - %d)", type, NUMMOBJTYPES-1);
-	LUA_PushUserdata(L, P_SpawnMissile(source, dest, type), META_MOBJ);
+	mobj_t *th = P_SpawnMissile(source, dest, type);
+	if (!P_MobjWasRemoved(th)) th->islocal = !hook_important;
+	LUA_PushUserdata(L, th, META_MOBJ);
 	return 1;
 }
 
@@ -427,7 +431,9 @@ static int lib_pSpawnXYZMissile(lua_State *L)
 		return LUA_ErrInvalid(L, "mobj_t");
 	if (type >= NUMMOBJTYPES)
 		return luaL_error(L, "mobj type %d out of range (0 - %d)", type, NUMMOBJTYPES-1);
-	LUA_PushUserdata(L, P_SpawnXYZMissile(source, dest, type, x, y, z), META_MOBJ);
+	mobj_t *th = P_SpawnXYZMissile(source, dest, type, x, y, z);
+	if (!P_MobjWasRemoved(th)) th->islocal = !hook_important;
+	LUA_PushUserdata(L, th, META_MOBJ);
 	return 1;
 }
 
@@ -446,7 +452,9 @@ static int lib_pSpawnPointMissile(lua_State *L)
 		return LUA_ErrInvalid(L, "mobj_t");
 	if (type >= NUMMOBJTYPES)
 		return luaL_error(L, "mobj type %d out of range (0 - %d)", type, NUMMOBJTYPES-1);
-	LUA_PushUserdata(L, P_SpawnPointMissile(source, xa, ya, za, type, x, y, z), META_MOBJ);
+	mobj_t *th = P_SpawnPointMissile(source, xa, ya, za, type, x, y, z);
+	if (!P_MobjWasRemoved(th)) th->islocal = !hook_important;
+	LUA_PushUserdata(L, th, META_MOBJ);
 	return 1;
 }
 
@@ -463,7 +471,9 @@ static int lib_pSpawnAlteredDirectionMissile(lua_State *L)
 		return LUA_ErrInvalid(L, "mobj_t");
 	if (type >= NUMMOBJTYPES)
 		return luaL_error(L, "mobj type %d out of range (0 - %d)", type, NUMMOBJTYPES-1);
-	LUA_PushUserdata(L, P_SpawnAlteredDirectionMissile(source, type, x, y, z, shiftingAngle), META_MOBJ);
+	mobj_t *th = P_SpawnAlteredDirectionMissile(source, type, x, y, z, shiftingAngle);
+	if (!P_MobjWasRemoved(th)) th->islocal = !hook_important;
+	LUA_PushUserdata(L, th, META_MOBJ);
 	return 1;
 }
 
@@ -492,7 +502,9 @@ static int lib_pSPMAngle(lua_State *L)
 		return LUA_ErrInvalid(L, "mobj_t");
 	if (type >= NUMMOBJTYPES)
 		return luaL_error(L, "mobj type %d out of range (0 - %d)", type, NUMMOBJTYPES-1);
-	LUA_PushUserdata(L, P_SPMAngle(source, type, angle, allowaim, flags2), META_MOBJ);
+	mobj_t *th = P_SPMAngle(source, type, angle, allowaim, flags2);
+	if (!P_MobjWasRemoved(th)) th->islocal = !hook_important;
+	LUA_PushUserdata(L, th, META_MOBJ);
 	return 1;
 }
 
@@ -506,7 +518,9 @@ static int lib_pSpawnPlayerMissile(lua_State *L)
 		return LUA_ErrInvalid(L, "mobj_t");
 	if (type >= NUMMOBJTYPES)
 		return luaL_error(L, "mobj type %d out of range (0 - %d)", type, NUMMOBJTYPES-1);
-	LUA_PushUserdata(L, P_SpawnPlayerMissile(source, type, flags2), META_MOBJ);
+	mobj_t *th = P_SpawnPlayerMissile(source, type, flags2);
+	if (!P_MobjWasRemoved(th)) th->islocal = !hook_important;
+	LUA_PushUserdata(L, th, META_MOBJ);
 	return 1;
 }
 
@@ -3042,7 +3056,13 @@ static int lib_gSetPlayerGamepadIndicatorColor(lua_State *L)
 {
 	INT32 player = -1;
 	player_t *plr = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));    // retrieve player
-	UINT16 color = (UINT16)luaL_checkinteger(L, 2); // skincolor
+	UINT8 color = (UINT8)luaL_checkinteger(L, 2); // skincolor
+
+	if (!plr)
+		return LUA_ErrInvalid(L, "player_t");
+
+	if (color >= MAXTRANSLATIONS)
+		return luaL_error(L, "color %d out of range (0 - %d).", color, MAXTRANSLATIONS-1);
 
 	for (int i = 0; i < MAXSPLITSCREENPLAYERS; ++i)
 	{
@@ -3069,6 +3089,9 @@ static int lib_gPlayerDeviceRumble(lua_State *L)
 	UINT16 low_strength = (UINT16)luaL_checkinteger(L, 2); // low frequency rumble motor strenght
 	UINT16 high_strength = (UINT16)luaL_checkinteger(L, 3); // high frequency rumble motor strenght
 	UINT32 duration = (UINT32)luaL_optinteger(L, 4, 84); // duration of rumble in ms
+
+	if (!plr)
+		return LUA_ErrInvalid(L, "player_t");
 
 	for (int i = 0; i < MAXSPLITSCREENPLAYERS; ++i)
 	{

@@ -80,8 +80,6 @@ void D_ProcessEvents(void);
 
 const char *D_Home(void);
 
-void D_ResetDeviceLED(void);
-
 //
 // BASE LEVEL
 //

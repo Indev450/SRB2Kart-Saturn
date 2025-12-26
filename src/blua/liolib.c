@@ -58,12 +58,6 @@ static int pushresult (lua_State *L, int i, const char *filename) {
 }
 
 
-static void fileerror (lua_State *L, int arg, const char *filename) {
-  lua_pushfstring(L, "%s: %s", filename, strerror(errno));
-  luaL_argerror(L, arg, lua_tostring(L, -1));
-}
-
-
 #define tofilep(L)	((FILE **)luaL_checkudata(L, 1, LUA_FILEHANDLE))
 
 
@@ -165,6 +159,24 @@ static int StartsWith(const char *a, const char *b) // this is wolfs being lazy 
    return 0;
 }
 
+/*
+** Equivalent to 'fopen', but if it fails due to a lack of resources
+** (see 'luaL_resourcetryagain'), do an "emergency" garbage collection to try
+** to close some files and then tries to open the file again.
+*/
+static FILE *trytoopen (lua_State *L, const char *path, const char *mode) {
+  FILE *f = fopen(path, mode);
+  if (f == NULL && luaL_resourcetryagain(L))  /* resource failure? */
+    f = fopen(path, mode);  /* try to open again */
+  return f;
+}
+
+static void opencheck (lua_State *L, const char *fname, const char *mode) {
+  FILE **p = newfile(L);
+  *p = trytoopen(L, fname, mode);
+  if (l_unlikely(*p == NULL))
+    luaL_error(L, "cannot open file '%s' (%s)", fname, strerror(errno));
+}
 
 static int io_open(lua_State *L)
 {
@@ -212,7 +224,7 @@ static int io_open(lua_State *L)
 	}
 
 	pf = newfile(L);
-	*pf = fopen(destFilename, mode);
+	*pf = trytoopen(L, destFilename, mode);
 	return (*pf == NULL) ? pushresult(L, 0, filename) : 1;
 }
 
@@ -220,6 +232,8 @@ static int io_open(lua_State *L)
 static int io_tmpfile (lua_State *L) {
   FILE **pf = newfile(L);
   *pf = tmpfile();
+  if (*pf == NULL && luaL_resourcetryagain(L))  /* resource failure? */
+    *pf = tmpfile();  /* try to open again */
   return (*pf == NULL) ? pushresult(L, 0, NULL) : 1;
 }
 
@@ -238,10 +252,7 @@ static int g_iofile (lua_State *L, int f, const char *mode) {
   if (!lua_isnoneornil(L, 1)) {
     const char *filename = lua_tostring(L, 1);
     if (filename) {
-      FILE **pf = newfile(L);
-      *pf = fopen(filename, mode);
-      if (l_unlikely(*pf == NULL))
-        fileerror(L, 1, filename);
+      opencheck(L, filename, mode);
     }
     else {
       tofile(L);  /* check that it's a valid file handle */
@@ -290,10 +301,7 @@ static int io_lines (lua_State *L) {
   }
   else {
     const char *filename = luaL_checkstring(L, 1);
-    FILE **pf = newfile(L);
-    *pf = fopen(filename, "r");
-    if (l_unlikely(*pf == NULL))
-      fileerror(L, 1, filename);
+    opencheck(L, filename, "r");
     aux_lines(L, lua_gettop(L), 1);
     return 1;
   }

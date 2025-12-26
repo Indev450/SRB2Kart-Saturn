@@ -36,6 +36,7 @@ extern INT32 con_destlines;
 extern UINT32 con_scalefactor; // console text scale factor
 
 extern consvar_t cons_backcolor, cons_menuhighlight;
+extern consvar_t cons_consoleprintinmenu;
 
 extern UINT8 *yellowmap, *purplemap, *greenmap, *bluemap, *graymap, *redmap, *orangemap,\
  *skymap, *goldmap, *lavendermap, *teamap, *steelmap, *pinkmap, *brownmap, *peachmap;
@@ -51,6 +52,7 @@ void CON_ClearHUD(void); // clear heads up messages
 
 void CON_Ticker(void);
 void CON_Drawer(void);
+void CON_MoveConsole(void);
 void CONS_Error(const char *msg); // print out error msg, and wait a key
 
 // force console to move out

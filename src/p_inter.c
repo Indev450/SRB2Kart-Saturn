@@ -869,14 +869,7 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 
 					toucher->angle = special->angle;
 
-					for (UINT8 i = 0; i <= splitscreen; i++)
-					{
-						if (player == P_GetLocalPlayerForNum(i))
-						{
-							localangle[i] = toucher->angle;
-							break;
-						}
-					}
+					P_ForceLocalAngle(player, toucher->angle);
 
 					P_ResetPlayer(player);
 
@@ -1605,7 +1598,7 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source)
 
 		target->player->playerstate = PST_DEAD;
 
-		if (cv_birdmusic.value && cv_fading.value && P_IsLocalPlayer(target->player))
+		if (cv_fading.value && P_IsLocalPlayer(target->player))
 		{
 			if (netgame || multiplayer)
 				ms = cv_respawntime.value * 1000;
@@ -2171,7 +2164,9 @@ static void P_KillPlayer(player_t *player, mobj_t *source)
 				P_SetScale(karmahitbox, player->mo->scale);
 				CONS_Printf(M_GetText("%s lost all of their bumpers!\n"), player_names[player-players]);
 			}
+
 			player->kartstuff[k_bumper]--;
+
 			if (K_IsPlayerWanted(player))
 				K_CalculateBattleWanted();
 		}

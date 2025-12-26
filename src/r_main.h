@@ -150,6 +150,29 @@ subsector_t *R_IsPointInSubsector(fixed_t x, fixed_t y);
 #define R_PointToDist(x, y) R_PointToDist2(viewx, viewy, x, y)
 #define R_PointToDist2(px2, py2, px1, py1) FixedHypot((px1) - (px2), (py1) - (py2))
 
+FUNCMATH FUNCINLINE static ATTRINLINE fixed_t R_QuickDist(fixed_t x1, fixed_t y1, fixed_t x, fixed_t y)
+{
+	const fixed_t absx = abs(x - x1);
+	const fixed_t absy = abs(y - y1);
+#ifdef __cplusplus
+	return std::max<fixed_t>(absx, absy);
+#else
+	return max(absx, absy);
+#endif
+}
+
+// Takes 2 fixed-point coordinates, returns "distance" between them and camera,
+// as an fixed-point integer.
+// It is very rough, tho it is used only for optimizing out unnecessary
+// interpolation, so it is kinda ok on big distances.
+FUNCINLINE static ATTRINLINE PUREFUNC fixed_t R_QuickCamDist(fixed_t x, fixed_t y)
+{
+	return R_QuickDist(viewx, viewy, x, y);
+}
+
+line_t *R_GetFFloorLine(const line_t *line, const ffloor_t *pfloor, const sector_t *sector);
+side_t *R_GetFFloorSide(const line_t *line, const ffloor_t *pfloor, const sector_t *sector);
+
 boolean R_DoCulling(line_t *cullheight, line_t *viewcullheight, fixed_t vz, fixed_t bottomh, fixed_t toph);
 void R_GetRenderBlockMapDimensions(fixed_t drawdist, INT32 *xl, INT32 *xh, INT32 *yl, INT32 *yh);
 
@@ -182,6 +205,7 @@ extern consvar_t cv_showhud, cv_translucenthud, cv_uncappedhud;
 extern consvar_t cv_homremoval;
 extern consvar_t cv_chasecam[MAXSPLITSCREENPLAYERS];
 extern consvar_t cv_flipcam[MAXSPLITSCREENPLAYERS];
+extern consvar_t cv_flipcammode;
 extern consvar_t cv_shadow, cv_shadowoffs;
 extern consvar_t cv_ffloorclip, cv_spriteclip;
 extern consvar_t cv_softcyancut;

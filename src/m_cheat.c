@@ -908,7 +908,7 @@ void OP_ObjectplaceMovement(player_t *player)
 	ticcmd_t *cmd = &player->cmd;
 
 	if (!player->climbing && (netgame || (player->pflags & PF_SPINNING)))
-		player->mo->angle = (cmd->angleturn<<16 /* not FRACBITS */);
+		player->mo->angle = (cmd->angleturn << TICCMD_REDUCE);
 
 	ticruned++;
 	if (!(cmd->angleturn & TICCMD_RECEIVED))

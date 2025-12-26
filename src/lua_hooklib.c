@@ -19,6 +19,7 @@
 #include "b_bot.h"
 #include "z_zone.h"
 #include "m_perfstats.h"
+#include "w_wad.h"
 
 #include "lua_script.h"
 #include "lua_libs.h"
@@ -40,13 +41,19 @@ LIST (stringHookNames, STRING_HOOK_LIST);
 #undef LIST
 
 typedef struct {
+	int id;
+	bool important;
+} hookinfo_t;
+
+typedef struct {
 	int numHooks;
-	int *ids;
+	hookinfo_t *ids;
 } hook_t;
 
 typedef struct {
 	int numGeneric;
 	int ref;
+	bool important;
 } stringhook_t;
 
 static hook_t hookIds[HOOK(MAX)];
@@ -55,6 +62,8 @@ static hook_t mobjHookIds[NUMMOBJTYPES][MOBJ_HOOK(MAX)];
 
 // Lua tables are used to lookup string hook ids.
 static stringhook_t stringHooks[STRING_HOOK(MAX)];
+
+bool hook_important = true;
 
 // This will be indexed by hook id, the value of which fetches the registry.
 static int * hookRefs;
@@ -109,7 +118,11 @@ static void get_table(lua_State *L)
 
 FUNCINLINE static ATTRINLINE void add_hook_to_table(lua_State *L, int n)
 {
+	lua_newtable(L);
 	lua_pushnumber(L, nextid);
+	lua_rawseti(L, -2, 1);
+	lua_pushboolean(L, wadfiles[numwadfiles-1]->important);
+	lua_rawseti(L, -2, 2);
 	lua_rawseti(L, -2, n);
 }
 
@@ -180,7 +193,8 @@ FUNCINLINE static ATTRINLINE void add_hook(hook_t *map)
 {
 	Z_Realloc(map->ids, (map->numHooks + 1) * sizeof *map->ids,
 			PU_STATIC, &map->ids);
-	map->ids[map->numHooks++] = nextid;
+	map->ids[map->numHooks].important = wadfiles[numwadfiles-1]->important;
+	map->ids[map->numHooks++].id = nextid;
 }
 
 FUNCINLINE static ATTRINLINE void add_mobj_hook(lua_State *L, int hook_type)
@@ -287,6 +301,7 @@ struct Hook_State {
 	const char * string;/* used to fetch table, ran first if set */
 	int          top;/* index of last argument passed to hook */
 	int          id;/* id to fetch ref */
+	boolean      important;/* is this hook from local addon */
 	int          values;/* num arguments passed to hook */
 	int          results;/* num values returned by hook */
 	Hook_Callback results_handler;/* callback when hook successfully returns */
@@ -416,22 +431,29 @@ FUNCINLINE static ATTRINLINE void init_hook_call
 	hook->results_handler = results_handler;
 }
 
-FUNCINLINE static ATTRINLINE void get_hook(Hook_State *hook, const int *ids, int n)
+FUNCINLINE static ATTRINLINE void get_hook(Hook_State *hook, const hookinfo_t *ids, int n)
 {
-	hook->id = ids[n];
+	hook->id = ids[n].id;
+	hook->important = ids[n].important;
 	lua_getref(gL, hookRefs[hook->id]);
 }
 
 FUNCINLINE static ATTRINLINE void get_hook_from_table(Hook_State *hook, int n)
 {
 	lua_rawgeti(gL, -1, n);
+	lua_rawgeti(gL, -1, 1);
 	hook->id = lua_tonumber(gL, -1);
 	lua_pop(gL, 1);
+	lua_rawgeti(gL, -2, 2);
+	hook->important = lua_toboolean(gL, -1);
+	lua_pop(gL, 2);
 	lua_getref(gL, hookRefs[hook->id]);
 }
 
 static int call_single_hook_no_copy(Hook_State *hook)
 {
+	hook_important = hook->important;
+
 	if (lua_pcall(gL, hook->values, hook->results, EINDEX) == 0)
 	{
 		if (hook->results > 0)
