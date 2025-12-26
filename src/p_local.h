@@ -272,7 +272,7 @@ extern consvar_t cv_gravity;
 
 void P_RespawnSpecials(void);
 
-extern mobjtype_t g_doomednum_to_mobjtype[UINT16_MAX];
+extern mobjtype_t g_doomednum_to_mobjtype[MAXDOOMEDNUM+1];
 void CalculateDoomednumToMobjtype(void);
 
 mobj_t *P_AllocateMobj(void);

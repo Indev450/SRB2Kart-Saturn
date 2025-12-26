@@ -10588,17 +10588,20 @@ void P_PrecipitationEffects(void)
 	}
 }
 
-mobjtype_t g_doomednum_to_mobjtype[UINT16_MAX] = {};
+mobjtype_t g_doomednum_to_mobjtype[MAXDOOMEDNUM+1] = {};
 
 void CalculateDoomednumToMobjtype(void)
 {
 	memset(g_doomednum_to_mobjtype, MT_NULL, sizeof(g_doomednum_to_mobjtype));
 
-	for (size_t i = MT_NULL+1; i < NUMMOBJTYPES; i++)
+	for (size_t i = 0; i < NUMMOBJTYPES; i++)
 	{
-		if (mobjinfo[i].doomednum > 0 && mobjinfo[i].doomednum <= UINT16_MAX)
+		const INT32 doomednum = mobjinfo[i].doomednum;
+
+		if (doomednum > 0 && doomednum <= MAXDOOMEDNUM)
 		{
-			g_doomednum_to_mobjtype[ mobjinfo[i].doomednum ] = i;
+			if (g_doomednum_to_mobjtype[doomednum] == MT_NULL)
+				g_doomednum_to_mobjtype[doomednum] = (mobjtype_t)i;
 		}
 	}
 }
@@ -10676,7 +10679,7 @@ void P_RespawnSpecials(void)
 
 	if (mthing)
 	{
-		mobjtype_t i;
+		mobjtype_t i = MT_NULL;
 		x = mthing->x << FRACBITS;
 		y = mthing->y << FRACBITS;
 		ss = R_PointInSubsector(x, y);
@@ -11093,7 +11096,7 @@ INT32 numhuntemeralds = 0;
 //
 void P_SpawnMapThing(mapthing_t *mthing)
 {
-	mobjtype_t i;
+	mobjtype_t i = MT_NULL;
 	mobj_t *mobj;
 	fixed_t x, y, z;
 	subsector_t *ss;
