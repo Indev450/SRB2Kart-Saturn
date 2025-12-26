@@ -241,21 +241,13 @@ boolean OglSdlSurface(INT32 w, INT32 h)
 
 	\return	void
 */
-void OglSdlFinishUpdate(boolean waitvbl)
+void OglSdlFinishUpdate(void)
 {
-	static boolean oldwaitvbl = false;
 	int sdlw, sdlh;
 
 #ifdef USE_FBO_OGL
 	const boolean usefbo = UseScreenFBO();
 #endif
-
-	if (oldwaitvbl != waitvbl)
-	{
-		SDL_GL_SetSwapInterval(waitvbl ? 1 : 0);
-	}
-
-	oldwaitvbl = waitvbl;
 
 	SDL_GetWindowSize(window, &sdlw, &sdlh);
 	HWR_MakeScreenFinalTexture();
