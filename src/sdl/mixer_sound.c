@@ -461,7 +461,7 @@ void *I_GetSfx(sfxinfo_t *sfx)
 					gme_track_info(emu, &info, 0);
 
 					len = (info->play_length * 441 / 10) << 2;
-					mem = Z_Malloc(len, PU_SOUND, 0);
+					mem = Z_Malloc(len, PU_SOUND, NULL);
 
 					gme_play(emu, len >> 1, mem);
 					gme_free_info(info);
@@ -499,7 +499,7 @@ void *I_GetSfx(sfxinfo_t *sfx)
 		gme_track_info(emu, &info, 0);
 
 		len = (info->play_length * 441 / 10) << 2;
-		mem = Z_Malloc(len, PU_SOUND, 0);
+		mem = Z_Malloc(len, PU_SOUND, NULL);
 
 		gme_play(emu, len >> 1, mem);
 		gme_free_info(info);

@@ -2005,6 +2005,8 @@ void *W_CachePatchNameRotated(const char *name, INT32 rotationangle, INT32 tag)
 		INT32 xpivot = 0, ypivot = 0;
 
 		ptr = (patch_t *)W_CachePatchNum(num, PU_PATCH);
+		if (ptr == NULL)
+			return W_CachePatchNum(W_GetNumForName("MISSING"), tag);
 
 		// >y pivot centered
 		// >x pivot not centered
