@@ -2012,7 +2012,7 @@ void *W_CachePatchNameRotated(const char *name, INT32 rotationangle, INT32 tag)
 	rspr = static_cast<rotsprite_t *>(W_GetCachedRotPatchPwad(WADFILENUM(num), LUMPNUM(num)));
 
 	if (rspr == NULL)
-		return W_CachePatchNum(num, tag);
+		return W_CachePatchNum(W_GetNumForName("MISSING"), tag);
 
 	if (rspr->patches[idx] == NULL)
 	{
@@ -2020,7 +2020,7 @@ void *W_CachePatchNameRotated(const char *name, INT32 rotationangle, INT32 tag)
 
 		ptr = static_cast<patch_t *>(W_CachePatchNum(num, PU_PATCH));
 		if (ptr == NULL)
-			return W_CachePatchNum(num, tag);
+			return W_CachePatchNum(W_GetNumForName("MISSING"), tag);
 
 		// >y pivot centered
 		// >x pivot not centered
