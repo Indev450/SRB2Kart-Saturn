@@ -5538,7 +5538,7 @@ static void HWR_RenderViewpoint(gl_portal_t *rootportal, int stencil_level, bool
 	player_t *viewplayer = &players[displayplayers[viewssnum]];
 	const float fpov = FixedToFloat(R_GetPlayerFov(viewplayer));
 
-	auto reset_viewstate = [&](const float fpov)
+	auto reset_viewstate = [&]()
 	{
 		HWR_SetTransform(fpov);
 		HWR_ClearSprites();
@@ -5558,7 +5558,7 @@ static void HWR_RenderViewpoint(gl_portal_t *rootportal, int stencil_level, bool
 			currentportallist = &portallist;
 			HWR_SetPortalState(GLPORTAL_SEARCH);
 
-			reset_viewstate(fpov);
+			reset_viewstate();
 
 			if (rootportal)
 			{
@@ -5584,7 +5584,7 @@ static void HWR_RenderViewpoint(gl_portal_t *rootportal, int stencil_level, bool
 	// draw normal things in current frame in current incremented stencil buffer area
 	HWR_SetStencilState(HWR_STENCIL_NORMAL, stencil_level);
 
-	reset_viewstate(fpov);
+	reset_viewstate();
 
 	if constexpr (Type == RenderViewpointType::kPortal)
 	{

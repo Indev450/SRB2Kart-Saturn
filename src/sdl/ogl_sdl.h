@@ -20,7 +20,7 @@
 
 boolean OglSdlSurface(INT32 w, INT32 h);
 
-void OglSdlFinishUpdate(boolean vidwait);
+void OglSdlFinishUpdate(void);
 boolean VID_LoadOGLAPI(void);
 
 extern SDL_Renderer *renderer;
