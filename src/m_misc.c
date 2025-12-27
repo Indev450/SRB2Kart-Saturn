@@ -1346,14 +1346,15 @@ void M_MinimapGenerate(void)
 	minigen = AM_MinimapGenerate(mul);
 
 	if (minigen == NULL || minigen->buf == NULL)
-		goto failure;
+	{
+		CONS_Alert(CONS_ERROR, M_GetText("Couldn't create %s\n"), filepath);
+		return;
+	}
 
 	M_CreateScreenShotPalette();
 	ret = M_SavePNG(filepath, minigen->buf, minigen->w, minigen->h, screenshot_palette);
 
-failure:
-	if (minigen->buf != NULL)
-		free(minigen->buf);
+	free(minigen->buf);
 
 	if (ret)
 	{

@@ -1997,6 +1997,9 @@ void *W_CachePatchNameRotated(const char *name, INT32 rotationangle, INT32 tag)
 
 	rspr = (rotsprite_t *)W_GetCachedRotPatchPwad(WADFILENUM(num),LUMPNUM(num));
 
+	if (rspr == NULL)
+		return W_CachePatchNum(W_GetNumForName("MISSING"), tag);
+
 	if (rspr->patches[idx] == NULL)
 	{
 		INT32 xpivot = 0, ypivot = 0;
@@ -2612,6 +2615,9 @@ virtres_t* vres_GetMap(lumpnum_t lumpnum)
 
 		// Remember that we're assuming that the WAD will have a specific set of lumps in a specific order.
 		UINT8 *wadData = (UINT8*)(W_CacheLumpNum(lumpnum, PU_LEVEL));
+		if (wadData == NULL)
+			I_Error("vres_GetMap: Invalid WadData!\n");
+
 		filelump_t *fileinfo = (filelump_t *)(wadData + LONG(((wadinfo_t *)wadData)->infotableofs));
 
 		i = LONG(((wadinfo_t *)wadData)->numlumps);
@@ -2628,6 +2634,8 @@ virtres_t* vres_GetMap(lumpnum_t lumpnum)
 		}
 
 		vlumps = (virtlump_t*)(Z_Malloc(sizeof(virtlump_t)*numlumps, PU_LEVEL, NULL));
+		if (vlumps == NULL)
+			I_Error("vres_GetMap: Out of memory!\n");
 
 		// Build the lumps, skipping over empty entries.
 		for (i = 0, realentry = 0; i < numlumps; realentry++)
@@ -2663,7 +2671,11 @@ virtres_t* vres_GetMap(lumpnum_t lumpnum)
 		lumpnum_t lumppos = lumpnum + 1;
 		for (i = LUMPNUM(lumppos); i < wadfiles[WADFILENUM(lumpnum)]->numlumps; i++, lumppos++, numlumps++)
 		{
-			if (memcmp(W_CheckNameForNum(lumppos), "MAP", 3) == 0 || W_LumpLength(lumppos) == 0)
+			const char *name = W_CheckNameForNum(lumppos);
+			if (name == NULL)
+				continue;
+
+			if (memcmp(name, "MAP", 3) == 0 || W_LumpLength(lumppos) == 0)
 			{
 				break;
 			}
@@ -2671,10 +2683,15 @@ virtres_t* vres_GetMap(lumpnum_t lumpnum)
 		numlumps++;
 
 		vlumps = (virtlump_t*)(Z_Malloc(sizeof(virtlump_t)*numlumps, PU_LEVEL, NULL));
+		if (vlumps == NULL)
+			I_Error("vres_GetMap: Out of memory!\n");
+
 		for (i = 0; i < numlumps; i++, lumpnum++)
 		{
 			// Check if it is map marker. It is not always first lump sadly, so we need to expect it anywhere
 			const char *name = W_CheckNameForNum(lumpnum);
+			if (name == NULL)
+				continue;
 
 			if (strlen(name) == 5 && memcmp(name, "MAP", 3) == 0)
 			{
