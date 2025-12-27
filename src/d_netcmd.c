@@ -4409,8 +4409,6 @@ static void Command_LocateLump_f(void)
 	}
 }
 
-#define MAXDOOMEDNUM 4095
-
 static void Command_ListDoomednums_f(void)
 {
 	INT16 i, j, k = 0, l = 0;
