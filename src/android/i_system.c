@@ -226,10 +226,6 @@ const char *I_LocateWad(void)
   return "/sdcard/srb2";
 }
 
-void I_GetJoystickEvents(void){}
-
-void I_GetJoystick2Events(void){}
-
 char *I_GetEnv(const char *name)
 {
   LOGW("I_GetEnv() called?!");

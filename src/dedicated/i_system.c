@@ -167,6 +167,8 @@ static char returnWadPath[256];
 #include "../i_video.h"
 #include "../i_sound.h"
 #include "../i_system.h"
+#include "../i_time.h"
+#include "../i_net.h"
 #include "../screen.h" //vid.WndParent
 #include "../d_net.h"
 #include "../g_game.h"
@@ -196,8 +198,6 @@ UINT8 keyboard_started = false;
 
 #ifdef HAVE_TERMIOS
 // TERMIOS console code from Quake3: thank you!
-boolean stdin_active = true;
-
 typedef struct
 {
 	size_t cursor;
@@ -699,11 +699,7 @@ void I_JoyScale4(void)
 
 
 */
-void I_ShutdownJoystick(void)
-{
-}
-
-void I_GetJoystickEvents(UINT8 index)
+void I_ShutdownJoystick(UINT8 index)
 {
 	(void)index;
 }
