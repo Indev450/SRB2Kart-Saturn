@@ -1346,14 +1346,15 @@ void M_MinimapGenerate(void)
 	minigen = AM_MinimapGenerate(mul);
 
 	if (minigen == NULL || minigen->buf == NULL)
-		goto failure;
+	{
+		CONS_Alert(CONS_ERROR, M_GetText("Couldn't create %s\n"), filepath);
+		return;
+	}
 
 	M_CreateScreenShotPalette();
 	ret = M_SavePNG(filepath, minigen->buf, minigen->w, minigen->h, screenshot_palette);
 
-failure:
-	if (minigen->buf != NULL)
-		free(minigen->buf);
+	free(minigen->buf);
 
 	if (ret)
 	{
@@ -1693,22 +1694,23 @@ char *M_GetToken(const char *inputString)
 }
 
 
-const char * M_Ftrim (double f)
+const char * M_Ftrim(double f)
 {
 	static char dig[9];/* "0." + 6 digits (6 is printf's default) */
 	int i;
+
 	/* I know I said it's the default, but just in case... */
 	sprintf(dig, "%.6f", fabs(modf(f, &f)));
+
 	/* trim trailing zeroes */
 	for (i = strlen(dig)-1; dig[i] == '0'; --i)
 		;
+
 	if (dig[i] == '.')/* :NOTHING: */
 		return "";
-	else
-	{
-		dig[i + 1] = '\0';
-		return &dig[1];/* skip the 0 */
-	}
+
+	dig[i + 1] = '\0';
+	return &dig[1];/* skip the 0 */
 }
 
 /** Count bits in a number.

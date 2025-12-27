@@ -1079,12 +1079,14 @@ void CloseNetFile(void)
 
 	// Receiving a file?
 	for (i = 0; i < MAX_WADFILES; i++)
+	{
 		if (fileneeded[i].status == FS_DOWNLOADING && fileneeded[i].file)
 		{
 			fclose(fileneeded[i].file);
 			// File is not complete delete it
 			remove(fileneeded[i].filename);
 		}
+	}
 
 	// Remove PT_FILEFRAGMENT from acknowledge list
 	Net_AbortPacketType(PT_FILEFRAGMENT);
@@ -1098,17 +1100,16 @@ void nameonly(char *s)
 	void *ns;
 
 	for (j = strlen(s); j != (size_t)-1; j--)
+	{
 		if ((s[j] == '\\') || (s[j] == ':') || (s[j] == '/'))
 		{
 			ns = &(s[j+1]);
 			len = strlen(ns);
-#if 0
-				memcpy(s, ns, len+1);
-#else
-				memmove(s, ns, len+1);
-#endif
+			memmove(s, ns, len+1);
+
 			return;
 		}
+	}
 }
 
 // Returns the length in characters of the last element of a path.
@@ -1162,8 +1163,12 @@ filestatus_t findfile(char *filename, const UINT8 *wantedmd5sum, boolean complet
 	filestatus_t homecheck; // store result of last file search
 	boolean badmd5 = false; // store whether md5 was bad from either of the first two searches (if nothing was found in the third)
 
-	// skip for startup, our mainwads wont be in there
-	if (loaded_config)
+	// see IdentifyVersion
+	// Iwads skip findfile due to passing fullpath to W_OpenWadFile
+#if 0
+	// skip for Iwads, as they wont be in there
+	if (!startupiwadcount)
+#endif
 	{
 		if (cv_addons_option.value == 3 && *cv_addons_folder.string != '\0')
 		{

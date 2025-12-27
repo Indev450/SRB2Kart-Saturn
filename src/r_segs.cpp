@@ -2229,12 +2229,12 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 			lowcutslope  = std::max(worldbottomslope, worldlowslope) + viewz;
 			highcutslope = std::min(worldtopslope, worldhighslope) + viewz;
 
-			auto check_fof_offscreen = [&](ffloor_t* rover, INT32 bottom, INT32 bottomslope, INT32 top, INT32 topslope)
+			auto check_fof_offscreen = [&](ffloor_t* rrover, INT32 bottom, INT32 bottomslope, INT32 top, INT32 topslope)
 			{
-				return ((P_GetFFloorTopZAt    (rover, segleft .x, segleft .y) <= bottom      + viewz
-					&&   P_GetFFloorTopZAt    (rover, segright.x, segright.y) <= bottomslope + viewz)
-					|| ( P_GetFFloorBottomZAt (rover, segleft .x, segleft .y) >= top         + viewz
-					&&   P_GetFFloorBottomZAt (rover, segright.x, segright.y) >= topslope    + viewz));
+				return ((P_GetFFloorTopZAt    (rrover, segleft .x, segleft .y) <= bottom      + viewz
+					&&   P_GetFFloorTopZAt    (rrover, segright.x, segright.y) <= bottomslope + viewz)
+					|| ( P_GetFFloorBottomZAt (rrover, segleft .x, segleft .y) >= top         + viewz
+					&&   P_GetFFloorBottomZAt (rrover, segright.x, segright.y) >= topslope    + viewz));
 			};
 
 			if (frontsector->ffloors && backsector->ffloors)

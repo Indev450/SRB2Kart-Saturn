@@ -1670,19 +1670,21 @@ FUNCNORETURN static ATTRNORETURN void signal_handler(INT32 num)
 }
 #endif
 
-static volatile sig_atomic_t interrupted = 0;
-
-boolean I_Interrupted(void)
+FUNCNORETURN static ATTRNORETURN void quit_handler(int num)
 {
-	return interrupted;
-}
+#ifdef HAVE_THREADS
+	if (g_main_thread_id != std::this_thread::get_id())
+	{
+		// Do not attempt any sort of recovery if this signal triggers off the main thread
+		signal(num, SIG_DFL);
+		raise(num);
+		exit(-2);
+	}
+#endif
 
-static void quit_handler(int num)
-{
 	signal(num, SIG_DFL); //default signal action
 	raise(num);
-	//I_Quit();
-	interrupted = true;
+	I_Quit();
 }
 
 static void I_RegisterSignals(void)
@@ -2315,12 +2317,17 @@ static void pathonly(char *s)
 	size_t j;
 
 	for (j = strlen(s); j != (size_t)-1; j--)
+	{
 		if ((s[j] == '\\') || (s[j] == ':') || (s[j] == '/'))
 		{
-			if (s[j] == ':') s[j+1] = 0;
-			else s[j] = 0;
+			if (s[j] == ':')
+				s[j+1] = 0;
+			else
+				s[j] = 0;
+
 			return;
 		}
+	}
 }
 
 /**	\brief	search for srb2.srb in the given path

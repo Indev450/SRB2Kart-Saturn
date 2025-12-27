@@ -20,7 +20,7 @@ $(foreach v,$(join $(wordlist 2,$(_n),- $(gcc_versions)),\
 CXXFLAGS+= -Wno-aggregate-return
 
 # -W -Wno-unused
-WFLAGS:=-Wall -Wno-trigraphs
+WFLAGS:=-Wall -Wno-trigraphs -Wshadow -Wnull-dereference
 ifndef GCC295
 #WFLAGS+=-Wno-packed
 endif
@@ -36,9 +36,6 @@ WFLAGS+=-Wfloat-equal
  WFLAGS+=-Wundef
 ifndef GCC295
  WFLAGS+=-Wendif-labels
-endif
-ifdef GCC41
- WFLAGS+=-Wshadow
 endif
 #WFLAGS+=-Wlarger-than-%len%
  WFLAGS+=-Wpointer-arith

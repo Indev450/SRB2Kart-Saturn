@@ -997,6 +997,8 @@ void D_RegisterClientCommands(void)
 
 		CV_RegisterVar(&cv_litesteer[i]);
 
+		CV_RegisterVar(&cv_autoaccel[i]);
+
 		CV_RegisterVar(&cv_usejoystick[i]);
 		CV_RegisterVar(&cv_joyscale[i]);
 		CV_RegisterVar(&cv_rumble[i]);
@@ -4748,8 +4750,6 @@ static void Command_LocateLump_f(void)
 		CONS_Printf("%s - %s\n", name, wadname);
 	}
 }
-
-#define MAXDOOMEDNUM 4095
 
 static void Command_ListDoomednums_f(void)
 {

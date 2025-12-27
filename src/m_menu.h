@@ -398,7 +398,7 @@ void M_SlotCvarIntoModMenu(consvar_t* cvar, const char* category, const char* na
 	NULL\
 }
 
-#define CONTROLMENUSTYLE(source, prev)\
+#define CONTROLMENUSTYLE(source, prev, tooltip)\
 {\
 	"M_CONTRO",\
 	sizeof (source)/sizeof (menuitem_t),\
@@ -409,7 +409,7 @@ void M_SlotCvarIntoModMenu(consvar_t* cvar, const char* category, const char* na
 	26, 40,\
 	0,\
 	NULL,\
-	NULL\
+	tooltip\
 }
 
 #define IMAGEDEF(source)\

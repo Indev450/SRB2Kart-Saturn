@@ -3237,7 +3237,22 @@ void P_DestroyRobots(void)
 // the below is chasecam only, if you're curious. check out P_CalcPostImg in p_user.c for first person
 void P_CalcChasePostImg(player_t *player, camera_t *thiscam)
 {
-	const boolean flipcam = (player->pflags & PF_FLIPCAM && !(player->pflags & PF_NIGHTSMODE) && player->mo->eflags & MFE_VERTICALFLIP);
+	boolean player_flipcam = false;
+
+	if (cv_flipcammode.value == 0)
+		player_flipcam = player->pflags & PF_FLIPCAM;
+	else
+	{
+		INT32 pnum = P_GetLocalPlayerNumForPlayer(player);
+
+		// Shouldn't happen but just in case
+		if (pnum == -1)
+			pnum = 0;
+
+		player_flipcam = cv_flipcam[pnum].value;
+	}
+
+	const boolean flipcam = (player_flipcam && !(player->pflags & PF_NIGHTSMODE) && player->mo->eflags & MFE_VERTICALFLIP);
 	UINT8 postimgtype = 0;
 
 	if (encoremode)
@@ -10448,6 +10463,24 @@ void P_PrecipitationEffects(void)
 	}
 }
 
+mobjtype_t g_doomednum_to_mobjtype[MAXDOOMEDNUM+1] = {};
+
+void CalculateDoomednumToMobjtype(void)
+{
+	memset(g_doomednum_to_mobjtype, MT_NULL, sizeof(g_doomednum_to_mobjtype));
+
+	for (size_t i = 0; i < NUMMOBJTYPES; i++)
+	{
+		const INT32 doomednum = mobjinfo[i].doomednum;
+
+		if (doomednum > 0 && doomednum <= MAXDOOMEDNUM)
+		{
+			if (g_doomednum_to_mobjtype[doomednum] == MT_NULL)
+				g_doomednum_to_mobjtype[doomednum] = (mobjtype_t)i;
+		}
+	}
+}
+
 //
 // P_RespawnSpecials
 //
@@ -10521,17 +10554,15 @@ void P_RespawnSpecials(void)
 
 	if (mthing)
 	{
-		mobjtype_t i;
+		mobjtype_t i = MT_NULL;
 		x = mthing->x << FRACBITS;
 		y = mthing->y << FRACBITS;
 		ss = R_PointInSubsector(x, y);
 
 		// find which type to spawn
-		for (i = 0; i < NUMMOBJTYPES; i++)
-			if (mthing->type == mobjinfo[i].doomednum)
-				break;
+		i = g_doomednum_to_mobjtype[mthing->type];
 
-		if (i == NUMMOBJTYPES) // prevent creation of objects with this type -- Monster Iestyn 17/12/17
+		if (i <= MT_NULL || i >= NUMMOBJTYPES) // prevent creation of objects with this type -- Monster Iestyn 17/12/17
 		{
 			// 3D Mode start Thing is unlikely to be added to the que,
 			// so don't bother checking for that specific type
@@ -10959,7 +10990,7 @@ INT32 numhuntemeralds = 0;
 //
 void P_SpawnMapThing(mapthing_t *mthing)
 {
-	mobjtype_t i;
+	mobjtype_t i = MT_NULL;
 	mobj_t *mobj;
 	fixed_t x, y, z;
 	subsector_t *ss;
@@ -10972,11 +11003,9 @@ void P_SpawnMapThing(mapthing_t *mthing)
 	if (objectplacing)
 	{
 		// find which type to spawn
-		for (i = 0; i < NUMMOBJTYPES; i++)
-			if (mthing->type == mobjinfo[i].doomednum)
-				break;
+		i = g_doomednum_to_mobjtype[mthing->type];
 
-		if (i == NUMMOBJTYPES)
+		if (i <= MT_NULL || i >= NUMMOBJTYPES)
 		{
 			if (mthing->type == 3328) // 3D Mode start Thing
 				return;
@@ -11044,13 +11073,9 @@ void P_SpawnMapThing(mapthing_t *mthing)
 	}
 
 	// find which type to spawn
-	for (i = 0; i < NUMMOBJTYPES; i++)
-	{
-		if (mthing->type == mobjinfo[i].doomednum)
-			break;
-	}
+	i = g_doomednum_to_mobjtype[mthing->type];
 
-	if (i == NUMMOBJTYPES)
+	if (i <= MT_NULL || i >= NUMMOBJTYPES)
 	{
 		if (mthing->type == 3328) // 3D Mode start Thing
 			return;
@@ -11743,32 +11768,32 @@ ML_NOCLIMB : Direction not controllable
 			if (mobj->flags & MF_MONITOR)
 			{
 				// flag for strong/weak random boxes
-				if (mthing->type == mobjinfo[MT_SUPERRINGBOX].doomednum || mthing->type == mobjinfo[MT_PRUP].doomednum ||
-					mthing->type == mobjinfo[MT_SNEAKERTV].doomednum || mthing->type == mobjinfo[MT_INV].doomednum ||
-					mthing->type == mobjinfo[MT_WHITETV].doomednum || mthing->type == mobjinfo[MT_GREENTV].doomednum ||
-					mthing->type == mobjinfo[MT_YELLOWTV].doomednum || mthing->type == mobjinfo[MT_BLUETV].doomednum ||
-					mthing->type == mobjinfo[MT_BLACKTV].doomednum || mthing->type == mobjinfo[MT_PITYTV].doomednum ||
-					mthing->type == mobjinfo[MT_RECYCLETV].doomednum || mthing->type == mobjinfo[MT_MIXUPBOX].doomednum)
+				if (i == MT_SUPERRINGBOX || i == MT_PRUP    ||
+					i == MT_SNEAKERTV    || i == MT_INV     ||
+					i == MT_WHITETV      || i == MT_GREENTV ||
+					i == MT_YELLOWTV     || i == MT_BLUETV  ||
+					i == MT_BLACKTV      || i == MT_PITYTV  ||
+					i == MT_RECYCLETV    || i == MT_MIXUPBOX)
 						mobj->flags2 |= MF2_AMBUSH;
 			}
-
-			else if (mthing->type != mobjinfo[MT_AXIS].doomednum &&
-				mthing->type != mobjinfo[MT_AXISTRANSFER].doomednum &&
-				mthing->type != mobjinfo[MT_AXISTRANSFERLINE].doomednum &&
-				mthing->type != mobjinfo[MT_NIGHTSBUMPER].doomednum &&
-				mthing->type != mobjinfo[MT_STARPOST].doomednum)
+			else if (
+				i != MT_AXIS &&
+				i != MT_AXISTRANSFER &&
+				i != MT_AXISTRANSFERLINE &&
+				i != MT_NIGHTSBUMPER &&
+				i != MT_STARPOST)
 				mobj->flags2 |= MF2_AMBUSH;
 		}
 
 		if (mthing->options & MTF_OBJECTSPECIAL)
 		{
 			// flag for strong/weak random boxes
-			if (mthing->type == mobjinfo[MT_SUPERRINGBOX].doomednum || mthing->type == mobjinfo[MT_PRUP].doomednum ||
-				mthing->type == mobjinfo[MT_SNEAKERTV].doomednum || mthing->type == mobjinfo[MT_INV].doomednum ||
-				mthing->type == mobjinfo[MT_WHITETV].doomednum || mthing->type == mobjinfo[MT_GREENTV].doomednum ||
-				mthing->type == mobjinfo[MT_YELLOWTV].doomednum || mthing->type == mobjinfo[MT_BLUETV].doomednum ||
-				mthing->type == mobjinfo[MT_BLACKTV].doomednum || mthing->type == mobjinfo[MT_PITYTV].doomednum ||
-				mthing->type == mobjinfo[MT_RECYCLETV].doomednum || mthing->type == mobjinfo[MT_MIXUPBOX].doomednum)
+			if (i == MT_SUPERRINGBOX || i == MT_PRUP    ||
+				i == MT_SNEAKERTV    || i == MT_INV     ||
+				i == MT_WHITETV      || i == MT_GREENTV ||
+				i == MT_YELLOWTV     || i == MT_BLUETV  ||
+				i == MT_BLACKTV      || i == MT_PITYTV  ||
+				i == MT_RECYCLETV    || i == MT_MIXUPBOX)
 					mobj->flags2 |= MF2_STRONGBOX;
 
 			// Requires you to be in bonus time to activate

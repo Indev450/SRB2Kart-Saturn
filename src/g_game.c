@@ -454,6 +454,14 @@ consvar_t cv_litesteer[MAXSPLITSCREENPLAYERS] = {
 	{"litesteer4", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL}
 };
 
+//static CV_PossibleValue_t autoaccelcons_t[] = {{0, "Off"}, {1, "Manual"}, {2, "Automatic"}, {0, NULL}};
+consvar_t cv_autoaccel[MAXSPLITSCREENPLAYERS] = {
+	{"autoaccel",  "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"autoaccel2", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"autoaccel3", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"autoaccel4", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL}
+};
+
 static CV_PossibleValue_t driftsparkpulse_t[] = {{0, "MIN"}, {FRACUNIT*3, "MAX"}, {0, NULL}};
 consvar_t cv_driftsparkpulse = {"driftsparkpulse", "1.4", CV_FLOAT | CV_SAVE, driftsparkpulse_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
@@ -800,6 +808,10 @@ static fixed_t forwardmove[2] = {25<<FRACBITS>>16, 50<<FRACBITS>>16};
 static fixed_t sidemove[2] = {2<<FRACBITS>>16, 4<<FRACBITS>>16};
 static fixed_t angleturn[3] = {KART_FULLTURN/2, KART_FULLTURN, KART_FULLTURN/4}; // + slow turn
 
+//
+// G_HandleLocalDriftturn
+// Hack for Lua menus that check directional inputs with driftturn
+//
 static void G_HandleLocalDriftturn(ticcmd_t *cmd, UINT8 ssplayer)
 {
 	INT32 axis = 0;
@@ -862,9 +874,8 @@ static void G_HandleLocalDriftturn(ticcmd_t *cmd, UINT8 ssplayer)
 //
 static void G_BuildLocalTiccmd(ticcmd_t *cmd, UINT8 ssplayer, boolean freecam)
 {
-	boolean moveinput = false;
 	INT32 axis = 0;
-	const boolean usejoystick = (cv_usejoystick[(ssplayer-1)].value);
+	const boolean usejoystick = cv_usejoystick[(ssplayer-1)].value;
 
 	// check for inputs and return button commands
 	// for stuff like joining with item button, saltyhop, honking, etc.
@@ -899,15 +910,11 @@ static void G_BuildLocalTiccmd(ticcmd_t *cmd, UINT8 ssplayer, boolean freecam)
 
 #undef CHECKINPUT
 
-	moveinput = (InputDown(gc_turnleft, ssplayer) || InputDown(gc_turnright, ssplayer)
-	|| InputDown(gc_aimforward, ssplayer) || InputDown(gc_aimbackward, ssplayer) ||
-	(usejoystick && JoyAxis(AXISAIM, ssplayer) != 0) || (usejoystick && JoyAxis(AXISTURN, ssplayer) != 0));
-
 	axis = JoyAxis(AXISLOOKBACK, ssplayer);
 	camspin[ssplayer-1] = (InputDown(gc_lookback, ssplayer) || (usejoystick && axis > 0));
 
 	// Reset to our spec player if we watch someone else.
-	if ((moveinput || cmd->buttons)
+	if ((cmd->driftturn || cmd->buttons)
 		&& displayplayers[0] != consoleplayer && ssplayer == 1)
 	{
 		if (cv_director.value)
@@ -916,6 +923,63 @@ static void G_BuildLocalTiccmd(ticcmd_t *cmd, UINT8 ssplayer, boolean freecam)
 		displayplayers[0] = consoleplayer;
 		R_ResetViewInterpolation(0);
 		camera[0].reset_aiming = true;
+	}
+}
+
+//
+// G_HandleAutoAcceleration
+//
+static void G_HandleAutoAcceleration(ticcmd_t *cmd, player_t *player, UINT8 forplayer)
+{
+	if (!cv_autoaccel[forplayer].value)
+		return;
+
+	if (gamestate != GS_LEVEL)
+		return;
+
+	// dont accel before and during countdown
+	if (leveltime <= starttime)
+		return;
+
+	// dont do this in menus or when console is onscreen
+	if (menuactive || CON_Ready())
+		return;
+
+	// gotta have a player that aint respawning
+	if (!player->mo || player->kartstuff[k_respawn])
+		return;
+
+	// dont need for "finished" players
+	if (player->exiting || (player->pflags & PF_TIMEOVER))
+		return;
+
+	// dont do during spinout
+	if (player->kartstuff[k_spinouttimer])
+		return;
+
+	// spectators and freecam dont need special handling, see G_BuildTiccmd
+
+	if (cmd->buttons & BT_BRAKE)
+	{
+		if (cmd->buttons & BT_DRIFT ||
+			player->kartstuff[k_sneakertimer] ||
+			player->kartstuff[k_squishedtimer])
+		{
+			cmd->forwardmove = (SINT8)forwardmove[0];
+			cmd->buttons |= BT_ACCELERATE;
+		}
+		else
+		{
+			// allows us to drive backwards if we need to
+			if (cmd->forwardmove > 0)
+				cmd->forwardmove = 0;
+			cmd->buttons &= ~BT_ACCELERATE;
+		}
+	}
+	else
+	{
+		cmd->forwardmove = (SINT8)forwardmove[1];
+		cmd->buttons |= BT_ACCELERATE;
 	}
 }
 
@@ -1066,7 +1130,7 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 		if (InputDown(gc_accelerate, ssplayer) || (gamepadjoystickmove && axis > 0) || player->kartstuff[k_sneakertimer])
 		{
 			cmd->buttons |= BT_ACCELERATE;
-			forward = forwardmove[1];	// 50
+			forward = forwardmove[1]; // 50
 		}
 		else if (analogjoystickmove && axis > 0)
 		{
@@ -1146,6 +1210,8 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 		cmd->forwardmove = (SINT8)(cmd->forwardmove + forward);
 		cmd->sidemove = (SINT8)(cmd->sidemove + side);
 	}
+
+	G_HandleAutoAcceleration(cmd, player, forplayer);
 
 	//{ SRB2kart - Drift support
 	// Not grouped with the rest of turn stuff because it needs to know what buttons you're pressing for rubber-burn turn

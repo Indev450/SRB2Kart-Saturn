@@ -1457,12 +1457,14 @@ static inline void CL_DrawConnectionStatus(void)
 			V_DrawFill(BASEVIDWIDTH/2-128, BASEVIDHEIGHT-58, dldlength, 8, 160);
 
 			memset(tempname, 0, sizeof(tempname));
+
 			// offset filename to just the name only part
 			filename += strlen(filename) - nameonlylength(filename);
+			const size_t filenamelength = strlen(filename);
 
-			if (strlen(filename) > sizeof(tempname)-1) // too long to display fully
+			if (filenamelength > sizeof(tempname)-1) // too long to display fully
 			{
-				size_t endhalfpos = strlen(filename)-10;
+				size_t endhalfpos = filenamelength-10;
 				// display as first 14 chars + ... + last 10 chars
 				// which should add up to 27 if our math(s) is correct
 				snprintf(tempname, sizeof(tempname), "%.14s...%.10s", filename, filename+endhalfpos);
@@ -3475,6 +3477,9 @@ void CL_Reset(void)
 
 	memset(player_muted, 0, sizeof(player_muted));
 
+	for (INT32 i = 0; i < MAXPLAYERS; ++i)
+		playerinfo[i].node = 255;
+
 	// D_StartTitle should get done now, but the calling function will handle it
 }
 
@@ -4262,6 +4267,9 @@ void D_ClientServerInit(void)
 	CV_RegisterVar(&cv_dumpconsistency);
 #endif
 	D_LoadBan(false);
+
+	for (INT32 i = 0; i < MAXPLAYERS; ++i)
+		playerinfo[i].node = 255;
 
 	gametic = 0;
 	localgametic = 0;
