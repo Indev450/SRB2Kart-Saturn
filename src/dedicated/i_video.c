@@ -129,6 +129,13 @@ INT32 VID_SetMode(INT32 modeNum)
 	return true;
 }
 
+boolean I_CheckAboveDesktopRes(INT32 width, INT32 height)
+{
+	(void)width;
+	(void)height;
+	return false;
+}
+
 void I_StartupGraphics(void)
 {
 }
