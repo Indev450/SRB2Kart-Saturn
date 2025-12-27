@@ -29,6 +29,10 @@ extern "C" {
 */
 #define MAX_QUIT_FUNCS     16
 
+void I_GetConsoleEvents(void);
+
+extern boolean consolevent;
+extern boolean framebuffer;
 
 /**	\brief Graphic system had started up
 */
