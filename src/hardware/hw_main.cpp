@@ -4447,9 +4447,6 @@ static void HWR_RenderDrawNodes(void)
 	// Okay! Let's draw it all! Woo!
 	GL_SetTransform(&atransform);
 
-	if (LIKELY(cv_glbatching.value))
-		HWR_StartBatching();
-
 	for (i = 0; i < numdrawnodes; i++)
 	{
 		gl_drawnode_t *drawnode = &drawnodes[sortindex[i]];
@@ -4502,9 +4499,6 @@ static void HWR_RenderDrawNodes(void)
 	}
 
 	PS_STOP_TIMING(ps_hw_nodedrawtime);
-
-	if (LIKELY(cv_glbatching.value))
-		HWR_RenderBatches(false);
 
 	drawnodes.clear(); // clear so our size is 0 again!
 }
@@ -5647,7 +5641,7 @@ static void HWR_RenderViewpoint(gl_portal_t *rootportal, int stencil_level, bool
 	PS_STOP_TIMING(ps_bsptime);
 
 	if (LIKELY(cv_glbatching.value))
-		HWR_RenderBatches(true);
+		HWR_RenderBatches();
 
 	// Check for new console commands.
 	NetUpdate();
@@ -5674,18 +5668,12 @@ static void HWR_RenderViewpoint(gl_portal_t *rootportal, int stencil_level, bool
 	HWR_SortVisSprites();
 	PS_STOP_TIMING(ps_hw_spritesorttime);
 
-	if (LIKELY(cv_glbatching.value && !cv_glmdls.value))
-		HWR_StartBatching();
-
 	PS_START_TIMING(ps_hw_spritedrawtime);
 	if (UNLIKELY(cv_glmdls.value))
 		HWR_DrawSprites<DrawSpritesType::kModels>();
 	else
 		HWR_DrawSprites<DrawSpritesType::kSprites>();
 	PS_STOP_TIMING(ps_hw_spritedrawtime);
-
-	if (LIKELY(cv_glbatching.value && !cv_glmdls.value))
-		HWR_RenderBatches(false);
 
 	ps_numdrawnodes.value.i    = 0;
 	ps_hw_nodesorttime.value.p = 0;
