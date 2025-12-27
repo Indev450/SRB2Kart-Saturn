@@ -213,14 +213,12 @@ static char returnWadPath[256];
 #include "../byteptr.h"
 #endif
 
-SDL_bool consolevent = SDL_FALSE;
-SDL_bool framebuffer = SDL_FALSE;
+boolean consolevent = false;
+boolean framebuffer = false;
 UINT8 keyboard_started = false;
 
 #ifdef HAVE_TERMIOS
 // TERMIOS console code from Quake3: thank you!
-SDL_bool stdin_active = SDL_TRUE;
-
 typedef struct
 {
 	size_t cursor;
@@ -282,7 +280,7 @@ static void I_ShutdownConsole(void)
 	if (consolevent)
 	{
 		I_OutputMsg("Shutdown tty console\n");
-		consolevent = SDL_FALSE;
+		consolevent = false;
 		tcsetattr(STDIN_FILENO, TCSADRAIN, &tty_tc);
 	}
 }
@@ -301,7 +299,7 @@ static void I_StartupConsole(void)
 	framebuffer = static_cast<SDL_bool>( M_CheckParm("-framebuffer"));
 
 	if (framebuffer)
-		consolevent = SDL_FALSE;
+		consolevent = false;
 
 	if (!consolevent)
 		return;
@@ -309,7 +307,7 @@ static void I_StartupConsole(void)
 	if (isatty(STDIN_FILENO)!=1)
 	{
 		I_OutputMsg("stdin is not a tty, tty console mode failed\n");
-		consolevent = SDL_FALSE;
+		consolevent = false;
 		return;
 	}
 
@@ -511,7 +509,7 @@ static void I_StartupConsole(void)
 	if (gotConsole)
 	{
 		SetConsoleTitleA("SRB2Kart Console");
-		consolevent = SDL_TRUE;
+		consolevent = true;
 	}
 
 	//Let get the real console HANDLE, because Mingw's Bash is bad!
@@ -544,7 +542,7 @@ static inline void I_StartupConsole(void)
 	framebuffer = M_CheckParm("-framebuffer");
 
 	if (framebuffer)
-		consolevent = SDL_FALSE;
+		consolevent = false;
 }
 static inline void I_ShutdownConsole(void){}
 #endif
@@ -765,7 +763,7 @@ void I_JoyScale4(void)
 }
 
 // Cheat to get the device index for a joystick handle
-INT32 I_GetJoystickDeviceIndex(SDL_GameController *dev)
+static INT32 I_GetJoystickDeviceIndex(SDL_GameController *dev)
 {
 	SDL_Joystick *joystick = NULL;
 
