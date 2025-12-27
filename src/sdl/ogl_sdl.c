@@ -72,7 +72,6 @@ boolean UseScreenFBO(void)
 /**	\brief SDL video display surface
 */
 INT32 oglflags = 0;
-SDL_GLContext sdlglcontext = NULL;
 
 void *GetGLFunc(const char *proc)
 {
@@ -221,7 +220,7 @@ boolean OglSdlSurface(INT32 w, INT32 h)
 
 	\return	void
 */
-void OglSdlFinishUpdate(void)
+void OglSdlFinishUpdate(SDL_Window *window)
 {
 	int sdlw, sdlh;
 

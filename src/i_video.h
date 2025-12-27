@@ -127,8 +127,6 @@ boolean I_CheckNativeRes(void);
 
 void I_SetBorderlessWindow(void);
 
-void I_HandleControllerHatRepeat(void);
-
 #ifdef USE_FBO_OGL
 
 void RefreshOGLSDLSurface(void);
@@ -136,6 +134,15 @@ void I_DownSample(void);
 boolean UseScreenFBO(void);
 extern boolean downsample;
 #endif
+
+// So we can call this from i_video event loop
+void I_ShutdownJoystick(UINT8 index);
+
+// Quick thing to make SDL_JOYDEVICEADDED events less of an abomination
+void I_UpdateJoystickDeviceIndex(UINT8 player);
+void I_UpdateJoystickDeviceIndices(UINT8 excludePlayer);
+
+void I_HandleControllerHatRepeat(void);
 
 #ifdef __cplusplus
 } // extern "C"

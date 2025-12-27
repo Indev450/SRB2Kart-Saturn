@@ -157,9 +157,12 @@ static      SDL_bool    usesdl2soft = SDL_FALSE;
 static      SDL_bool    borderlesswindow = SDL_FALSE;
 
 // SDL2 vars
-SDL_Window   *window = NULL;
-SDL_Renderer *renderer = NULL;
+static SDL_Window   *window = NULL;
+static SDL_Renderer *renderer = NULL;
 static SDL_Texture  *texture = NULL;
+#ifdef HWRENDER
+static SDL_GLContext sdlglcontext = NULL;
+#endif
 static SDL_bool      havefocus = SDL_TRUE;
 
 static SDL_bool Impl_CreateWindow(SDL_bool fullscreen);
@@ -1411,7 +1414,7 @@ void I_FinishUpdate(void)
 #ifdef HWRENDER
 	if (rendermode == render_opengl)
 	{
-		OglSdlFinishUpdate();
+		OglSdlFinishUpdate(window);
 		return;
 	}
 #endif
