@@ -619,7 +619,6 @@ static void HWR_PrecacheLevelFlats(void)
 	// lookup for flats that may´ve been already loaded
 	// too lazy to make a hashtable or smth so unordered set will do :carbuncle:
 	std::unordered_set<UINT32> flatpresent;
-	lumpnum_t lump;
 	size_t i, j;
 	INT32 k;
 
@@ -649,9 +648,8 @@ static void HWR_PrecacheLevelFlats(void)
 				const INT32 pic = ceiling ? sec->ceilingpic : sec->floorpic;
 
 				const levelflat_t *levelflat = &levelflats[pic];
-				lump = levelflat->lumpnum;
 
-				load_flat(lump, R_NoEncore(sec, ceiling));
+				load_flat(levelflat->lumpnum, R_NoEncore(sec, ceiling));
 
 				if (levelflat->speed) // is it an animated flat ?
 				{
@@ -672,9 +670,8 @@ static void HWR_PrecacheLevelFlats(void)
 		for (i = 0; i < numlevelflats; i++)
 		{
 			const levelflat_t *levelflat = &levelflats[i];
-			lump = levelflat->lumpnum;
 
-			load_flat(lump, false);
+			load_flat(levelflat->lumpnum, false);
 
 			if (levelflat->speed) // is it an animated flat ?
 			{
