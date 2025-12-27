@@ -166,6 +166,7 @@ static void gld_clipper_RemoveRange(clipnode_t *range)
 		{
 			range->prev->next = range->next;
 		}
+
 		if (range->next)
 		{
 			range->next->prev = range->prev;
@@ -177,7 +178,7 @@ static void gld_clipper_RemoveRange(clipnode_t *range)
 
 void gld_clipper_SafeAddClipRange(angle_t startangle, angle_t endangle)
 {
-	if(startangle > endangle)
+	if (startangle > endangle)
 	{
 		// The range has to added in two parts.
 		gld_clipper_AddClipRange(startangle, ANGLE_MAX);
@@ -319,7 +320,7 @@ angle_t gld_FrustumAngle(angle_t tiltangle)
 	double floatangle;
 	angle_t a1;
 
-	float tilt = (float)fabs(((double)(int)tiltangle) / ANG1);
+	float tilt = fabsf(((float)(int)tiltangle) / (float)ANG1);
 
 	if (tilt > 90.0f)
 		tilt = 90.0f;
@@ -330,7 +331,7 @@ angle_t gld_FrustumAngle(angle_t tiltangle)
 
 	// ok, this is a gross hack that barely works...
 	// but at least it doesn't overestimate too much...
-	clipfov = atan(1 / (GLdouble)projMatrix[0]) * 360.0 / M_PIl;
+	clipfov = atan(1 / (GLdouble)projMatrix[0]) * 360.0 / M_PI;
 	floatangle = 2.0 + (45.0 + ((double)tilt / 1.9)) * clipfov / 90.0;
 	if (floatangle >= 180.0)
 		return 0xffffffff;
@@ -348,33 +349,32 @@ angle_t gld_FrustumAngle(angle_t tiltangle)
 // gld_FrustumSetup
 //
 
-static GLdouble viewMatrix[16];
-static GLdouble projMatrix[16];
-float frustum[6][4];
+static float frustum[6][4];
 
 #define CALCMATRIX(a, b, c, d, e, f, g, h)\
-(float)(viewMatrix[a] * projMatrix[b] + \
-viewMatrix[c] * projMatrix[d] + \
-viewMatrix[e] * projMatrix[f] + \
-viewMatrix[g] * projMatrix[h])
+	(modelMatrix[a] * projMatrix[b] + \
+	modelMatrix[c] * projMatrix[d] + \
+	modelMatrix[e] * projMatrix[f] + \
+	modelMatrix[g] * projMatrix[h])
 
 #define NORMALIZE_PLANE(i)\
-t = (float)sqrt(\
-frustum[i][0] * frustum[i][0] + \
-frustum[i][1] * frustum[i][1] + \
-frustum[i][2] * frustum[i][2]); \
-frustum[i][0] /= t; \
-frustum[i][1] /= t; \
-frustum[i][2] /= t; \
-frustum[i][3] /= t
+	t = sqrtf(\
+		frustum[i][0] * frustum[i][0] + \
+		frustum[i][1] * frustum[i][1] + \
+		frustum[i][2] * frustum[i][2]); \
+	frustum[i][0] /= t; \
+	frustum[i][1] /= t; \
+	frustum[i][2] /= t; \
+	frustum[i][3] /= t
 
 void gld_FrustumSetup(void)
 {
 	float t;
 	float clip[16];
 
-	pglGetFloatv(GL_PROJECTION_MATRIX, projMatrix);
-	pglGetFloatv(GL_MODELVIEW_MATRIX, viewMatrix);
+	// HWR_SetTransform will take care of this!
+	//pglGetFloatv(GL_PROJECTION_MATRIX, projMatrix);
+	//pglGetFloatv(GL_MODELVIEW_MATRIX, modelMatrix);
 
 	clip[0]  = CALCMATRIX(0, 0, 1, 4, 2, 8, 3, 12);
 	clip[1]  = CALCMATRIX(0, 1, 1, 5, 2, 9, 3, 13);

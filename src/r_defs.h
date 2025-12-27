@@ -397,9 +397,6 @@ typedef struct sector_s
 	// Sprite culling feature
 	struct line_s *cullheight;
 
-	// Current speed of ceiling/floor. For Knuckles to hold onto stuff.
-	fixed_t floorspeed, ceilspeed;
-
 	// Eternity engine slope
 	boolean hasslope; // The sector, or one of its visible FOFs, contains a slope
 } sector_t;
@@ -549,12 +546,10 @@ typedef struct seg_s
 	sector_t *backsector;
 
 	fixed_t length; // precalculated seg length
-
 #ifdef HWRENDER
-	floatvertex_t fv1;
-	floatvertex_t fv2;
+	floatvertex_t fv1; // v1 in floats - precalculated
+	floatvertex_t fv2; // v2 in floats - precalculated
 #endif
-
 	polyobj_t *polyseg;
 
 	// Fake contrast calculated on level load

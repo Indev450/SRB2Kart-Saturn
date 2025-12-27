@@ -34,7 +34,7 @@ extern portal_t *g_portal; // is curline a portal seg?
 
 // drawsegs are allocated on the fly... see r_segs.c
 
-extern INT32 checkcoord[12][4];
+extern const INT32 checkcoord[12][4];
 
 extern drawseg_t *curdrawsegs;
 extern drawseg_t *drawsegs;
@@ -65,7 +65,7 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec, INT32 *floorlightlevel,
 boolean R_IsEmptyLine(seg_t *line, const sector_t *front, const sector_t *back);
 
 INT32 R_GetPlaneLight(sector_t *sector, fixed_t planeheight, boolean underside);
-void R_Prep3DFloors(sector_t *sector);
+void R_Prep3DFloors(sector_t *sector, fixed_t secceilz);
 
 #ifdef __cplusplus
 } // extern "C"

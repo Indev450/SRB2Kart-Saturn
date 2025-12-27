@@ -869,14 +869,7 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 
 					toucher->angle = special->angle;
 
-					for (i = 0; i <= splitscreen; i++)
-					{
-						if (player == P_GetLocalPlayerForNum(i))
-						{
-							localangle[i] = toucher->angle;
-							break;
-						}
-					}
+					P_ForceLocalAngle(player, toucher->angle);
 
 					P_ResetPlayer(player);
 
@@ -2171,7 +2164,9 @@ static void P_KillPlayer(player_t *player, mobj_t *source)
 				P_SetScale(karmahitbox, player->mo->scale);
 				CONS_Printf(M_GetText("%s lost all of their bumpers!\n"), player_names[player-players]);
 			}
+
 			player->kartstuff[k_bumper]--;
+
 			if (K_IsPlayerWanted(player))
 				K_CalculateBattleWanted();
 		}

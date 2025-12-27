@@ -1064,9 +1064,13 @@ static void ArchiveTables(UINT8 **p)
 		{
 			// Write key
 			e = ArchiveValue(p, TABLESINDEX, -2); // key should be either a number or a string, ArchiveValue can handle this.
-			if (e == 2) // invalid key type (function, thread, lightuserdata, or anything we don't recognise)
+			if (e == 1)
+				n++; // the table contained a new table we'll have to archive. :(
+			else if (e == 2) // invalid key type (function, thread, lightuserdata, or anything we don't recognise)
 			{
 				CONS_Alert(CONS_ERROR, "Index '%s' (%s) of table %d could not be archived!\n", lua_tostring(gL, -2), luaL_typename(gL, -2), i);
+				lua_pop(gL, 1);
+				continue;
 			}
 			else if (e == 3) // nil key due to invalid userdata. NOT an error.
 			{
@@ -1077,15 +1081,12 @@ static void ArchiveTables(UINT8 **p)
 			// Write value
 			e = ArchiveValue(p, TABLESINDEX, -1);
 			if (e == 1)
-			{
 				n++; // the table contained a new table we'll have to archive. :(
-			}
 			else if (e == 2) // invalid value type
-			{
 				CONS_Alert(CONS_ERROR, "Type of value for table %d entry '%s' (%s) could not be archived!\n", i, lua_tostring(gL, -2), luaL_typename(gL, -1));
-			}
 
 			lua_pop(gL, 1);
+
 		}
 		lua_pop(gL, 1);
 		WRITEUINT8(*p, ARCH_TEND);
@@ -1276,13 +1277,21 @@ static void UnArchiveTables(UINT8 **p, boolean network)
 			UINT8 ret;
 
 			ret = UnArchiveValue(p, TABLESINDEX, network);
-			if (ret == 3)
+			if (ret == 1) // End of table
+				break;
+			else if (ret == 2) // Key contains a new table
+				n++;
+			else if (ret == 3)
 			{
 				//CONS_Alert(CONS_WARNING,"Couldn't read mobj_t\n");
 				lua_pushnil(gL);
 			}
-			else if (ret == 1) // read key
-				break;
+
+			if (lua_isnil(gL, -1)) // If key is nil, skip this entry
+			{
+				lua_pop(gL, 1);
+				continue;
+			}
 
 			ret = UnArchiveValue(p, TABLESINDEX, network);
 			if (ret == 1)
@@ -1291,21 +1300,15 @@ static void UnArchiveTables(UINT8 **p, boolean network)
 				lua_pop(gL, 1); // Pop key
 				break;
 			}
+			else if (ret == 2) // read value
+				n++;
 			else if (ret == 3)
 			{
 				//CONS_Alert(CONS_WARNING,"Couldn't read mobj_t\n");
 				lua_pushnil(gL);
 			}
-			else if (ret == 2) // read value
-				n++;
 
-			if (lua_isnil(gL, -2)) // if key is nil (if a function etc was accidentally saved)
-			{
-				CONS_Alert(CONS_ERROR, "A nil key in table %d was found! (Invalid key type or corrupted save?)\n", i);
-				lua_pop(gL, 2); // pop key and value instead of setting them in the table, to prevent Lua panic errors
-			}
-			else
-				lua_rawset(gL, -3);
+			lua_rawset(gL, -3);
 		}
 
 		lua_pop(gL, 1);

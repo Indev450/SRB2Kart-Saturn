@@ -46,15 +46,20 @@ typedef enum
 // Mainly movements/button commands per game tick,
 // plus a checksum for internal state consistency.
 
+// ticcmd turning bits
+#define TICCMD_REDUCE 16
+
+// ticcmd latency mask
+#define TICCMD_LATENCYMASK 0xFF
+
 // bits in angleturn
-#define TICCMD_RECEIVED 1
-#define TICCMD_XY 2
+#define TICCMD_RECEIVED (0x01) /* Actual tic recieved from client */
 
 typedef struct
 {
 	SINT8 forwardmove; // -MAXPLMOVE to MAXPLMOVE (50)
 	SINT8 sidemove; // -MAXPLMOVE to MAXPLMOVE (50)
-	INT16 angleturn; // <<16 for angle delta - saved as 1 byte into demos
+	INT16 angleturn; // << TICCMD_REDUCE for angle delta - saved as 1 byte into demos
 	INT16 aiming; // vertical aiming, see G_BuildTicCmd
 	UINT16 buttons;
 	INT16 driftturn; // SRB2Kart: Used for getting drift turn speed

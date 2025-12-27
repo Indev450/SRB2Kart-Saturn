@@ -153,14 +153,16 @@ static      UINT32       localPalette[256];
 Uint16      realwidth = BASEVIDWIDTH;
 Uint16      realheight = BASEVIDHEIGHT;
 #define HalfWarpMouse(x,y) if (wrapmouseok) SDL_WarpMouseInWindow(window, (Uint16)(x/2),(Uint16)(y/2))
-static      SDL_bool    exposevideo = SDL_FALSE;
 static      SDL_bool    usesdl2soft = SDL_FALSE;
 static      SDL_bool    borderlesswindow = SDL_FALSE;
 
 // SDL2 vars
-SDL_Window   *window = NULL;
-SDL_Renderer *renderer = NULL;
+static SDL_Window   *window = NULL;
+static SDL_Renderer *renderer = NULL;
 static SDL_Texture  *texture = NULL;
+#ifdef HWRENDER
+static SDL_GLContext sdlglcontext = NULL;
+#endif
 static SDL_bool      havefocus = SDL_TRUE;
 
 static SDL_bool Impl_CreateWindow(SDL_bool fullscreen);
@@ -987,7 +989,7 @@ static void Impl_HandleControllerAddedEvent(SDL_Event evt)
 	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
 	{
 		I_InitJoystick(i);
-		G_SetPlayerGamepadIndicatorColor(i, G_GetSkinColor(i)); // gotta update the controller led again on reconnect
+		G_SetPlayerGamepadIndicatorColor(i, 0); // gotta update the controller led again on reconnect
 	}
 
 	////////////////////////////////////////////////////////////
@@ -995,11 +997,11 @@ static void Impl_HandleControllerAddedEvent(SDL_Event evt)
 	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
 		CONS_Debug(DBG_GAMELOGIC, "Joystick%d device index: %d\n", i+1, JoyInfo[i].oldjoy);
 
+	numcontrollers = I_NumJoys();
+
 	// update the menu
 	if (currentMenu == &OP_JoystickSetDef)
 		M_SetupJoystickMenu(0);
-
-	numcontrollers = I_NumJoys();
 
 	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
 	{
@@ -1057,11 +1059,11 @@ static void Impl_HandleControllerRemovedEvent(void)
 	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
 		CONS_Debug(DBG_GAMELOGIC, "Joystick%d device index: %d\n", i+1, JoyInfo[i].oldjoy);
 
+	numcontrollers = I_NumJoys();
+
 	// update the menu
 	if (currentMenu == &OP_JoystickSetDef)
 		M_SetupJoystickMenu(0);
-
-	numcontrollers = I_NumJoys();
 }
 
 void I_GetEvent(void)
@@ -1381,31 +1383,6 @@ static void SDLSetMode(INT32 width, INT32 height, SDL_bool fullscreen)
 }
 
 //
-// I_UpdateNoBlit
-//
-void I_UpdateNoBlit(void)
-{
-	if (rendermode == render_none)
-		return;
-
-	if (exposevideo)
-	{
-#ifdef HWRENDER
-		if (rendermode == render_opengl)
-		{
-			OglSdlFinishUpdate(cv_vidwait.value);
-			return;
-		}
-
-#endif
-		SDL_RenderCopy(renderer, texture, NULL, NULL);
-		SDL_RenderPresent(renderer);
-	}
-
-	exposevideo = SDL_FALSE;
-}
-
-//
 // I_FinishUpdate
 //
 static SDL_Rect src_rect = { 0, 0, 0, 0 };
@@ -1437,7 +1414,7 @@ void I_FinishUpdate(void)
 #ifdef HWRENDER
 	if (rendermode == render_opengl)
 	{
-		OglSdlFinishUpdate(cv_vidwait.value);
+		OglSdlFinishUpdate(window);
 		return;
 	}
 #endif
@@ -1464,8 +1441,6 @@ void I_FinishUpdate(void)
 		SDL_RenderCopy(renderer, texture, &src_rect, NULL);
 		SDL_RenderPresent(renderer);
 	}
-
-	exposevideo = SDL_FALSE;
 }
 
 //
@@ -2195,13 +2170,20 @@ void I_ShutdownGraphics(void)
 
 	graphics_started = false;
 	I_OutputMsg("shut down\n");
-
 #ifdef HWRENDER
 	if (sdlglcontext)
-	{
 		SDL_GL_DeleteContext(sdlglcontext);
-	}
+	sdlglcontext = NULL;
 #endif
+	if (texture)
+		SDL_DestroyTexture(texture);
+	texture = NULL;
+	if (renderer)
+		SDL_DestroyRenderer(renderer);
+	renderer = NULL;
+	if (window)
+		SDL_DestroyWindow(window);
+	window = NULL;
 
 	SDL_QuitSubSystem(SDL_INIT_VIDEO);
 	framebuffer = SDL_FALSE;
@@ -2219,16 +2201,16 @@ UINT32 I_GetRefreshRate(void)
 
 static void Impl_SetVsync(void)
 {
-#if SDL_VERSION_ATLEAST(2,0,18)
-	if (renderer)
-		SDL_RenderSetVSync(renderer, cv_vidwait.value);
-#endif
 #ifdef HWRENDER
-	if (!renderer && rendermode == render_opengl &&
-		 sdlglcontext != NULL && SDL_GL_GetCurrentContext() == sdlglcontext)
+	if (rendermode == render_opengl &&
+		sdlglcontext != NULL && SDL_GL_GetCurrentContext() == sdlglcontext)
 	{
 		SDL_GL_SetSwapInterval(cv_vidwait.value ? 1 : 0);
 	}
+#endif
+#if SDL_VERSION_ATLEAST(2,0,18)
+	if (renderer)
+		SDL_RenderSetVSync(renderer, cv_vidwait.value);
 #endif
 }
 

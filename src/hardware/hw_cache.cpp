@@ -15,6 +15,8 @@
 
 #ifdef HWRENDER
 
+#include <unordered_set>
+
 #include "hw_main.h"
 #include "hw_glob.h"
 #include "hw_gl.h"
@@ -36,7 +38,7 @@
 INT32 patchformat = GL_TEXFMT_AP_88; // use alpha for holes
 INT32 textureformat = GL_TEXFMT_P_8; // use chromakey for hole
 
-RGBA_t mapPalette[256] = {0}; // the palette for the currently loaded level or menu etc.
+RGBA_t mapPalette[256] = {}; // the palette for the currently loaded level or menu etc.
 
 static void HWR_FreeTextureColormaps(patch_t *patch);
 
@@ -98,7 +100,7 @@ static void HWR_DrawColumnInCache(const column_t *patchcol, UINT8 *block, GLMipm
 			position = 0;
 		}
 
-		position = max(((position * scale_y) + (FRACUNIT/2)) >> FRACBITS, 0);
+		position = std::max(((position * scale_y) + (FRACUNIT/2)) >> FRACBITS, 0);
 
 		if (position + count >= pblockheight)
 			count = pblockheight - position;
@@ -162,7 +164,7 @@ static void HWR_DrawPatchInCache(GLMipmap_t *mipmap,
 	fixed_t xfrac, xfracstep;
 	fixed_t yfracstep, scale_y;
 	const column_t *patchcol;
-	UINT8 *block = mipmap->data;
+	UINT8 *block = static_cast<UINT8 *>(mipmap->data);
 	INT32 bpp;
 	INT32 blockmodulo;
 	RGBA_t *palette;
@@ -212,7 +214,7 @@ static void HWR_DrawTexturePatchInCache(GLMipmap_t *mipmap,
 	fixed_t xfrac, xfracstep;
 	fixed_t yfracstep, scale_y;
 	const column_t *patchcol;
-	UINT8 *block = mipmap->data;
+	UINT8 *block = static_cast<UINT8 *>(mipmap->data);
 	INT32 bpp;
 	INT32 blockmodulo;
 	INT32 width, height;
@@ -287,8 +289,8 @@ static UINT8 *MakeBlock(GLMipmap_t *glMipmap)
 	UINT16 bu16 = ((0x00 <<8) | HWR_PATCHES_CHROMAKEY_COLORINDEX);
 	INT32 blocksize = (glMipmap->width * glMipmap->height);
 
-	bpp =  format2bpp(glMipmap->format);
-	block = Z_Malloc(blocksize*bpp, PU_HWRCACHE, &(glMipmap->data));
+	bpp = format2bpp(glMipmap->format);
+	block = static_cast<UINT8 *>(Z_Malloc(blocksize*bpp, PU_HWRCACHE, &(glMipmap->data)));
 
 	switch (bpp)
 	{
@@ -325,7 +327,7 @@ static void HWR_GenerateTexture(INT32 texnum, GLMapTexture_t *gltex, boolean noe
 	texture = textures[texnum];
 
 	gltex->mipmap.flags = TF_CHROMAKEYED | TF_WRAPXY;
-	gltex->mipmap.format = textureformat;
+	gltex->mipmap.format = static_cast<GLTextureFormat_t>(textureformat);
 
 	// hack the Legacy skies..
 	if (UNLIKELY(memcmp(texture->name, "SKY", 3) == 0 &&
@@ -344,7 +346,7 @@ static void HWR_GenerateTexture(INT32 texnum, GLMapTexture_t *gltex, boolean noe
 		colormap += COLORMAP_REMAPOFFSET;
 #endif
 
-	gltex->mipmap.colormap = Z_Calloc(sizeof(*gltex->mipmap.colormap), PU_HWRPATCHCOLMIPMAP, NULL);
+	gltex->mipmap.colormap = static_cast<GLColormap_t *>(Z_Calloc(sizeof(*gltex->mipmap.colormap), PU_HWRPATCHCOLMIPMAP, NULL));
 	gltex->mipmap.colormap->source = colormap;
 	memcpy(gltex->mipmap.colormap->data, colormap, 256 * sizeof(UINT8));
 
@@ -377,7 +379,7 @@ static void HWR_GenerateTexture(INT32 texnum, GLMapTexture_t *gltex, boolean noe
 	// Composite the columns together.
 	for (i = 0, patch = texture->patches; i < texture->patchcount; i++, patch++)
 	{
-		pdata = W_CacheLumpNumPwad(patch->wad, patch->lump, PU_LEVEL);
+		pdata = static_cast<UINT8 *>(W_CacheLumpNumPwad(patch->wad, patch->lump, PU_LEVEL));
 		realpatch = (softwarepatch_t *)pdata;
 
 		HWR_DrawTexturePatchInCache(&gltex->mipmap, blockwidth, blockheight, texture, patch, realpatch);
@@ -413,7 +415,7 @@ void HWR_MakePatch(const patch_t *patch, GLPatch_t *glPatch, GLMipmap_t *glMipma
 		glMipmap->flags = 0;
 
 		// setup the texture info
-		glMipmap->format = patchformat;
+		glMipmap->format = static_cast<GLTextureFormat_t>(patchformat);
 
 		glPatch->max_s = (float)patch->width / (float)glMipmap->width;
 		glPatch->max_t = (float)patch->height / (float)glMipmap->height;
@@ -455,12 +457,13 @@ static void HWR_FreeTextureData(patch_t *patch)
 	if (!patch || !patch->hardware)
 		return;
 
-	glPatch = patch->hardware;
+	glPatch = static_cast<GLPatch_t *>(patch->hardware);
 
 	if (vid.glstate == VID_GL_LIBRARY_LOADED)
 		GL_DeleteTexture(glPatch->mipmap);
 
 	Z_Free(glPatch->mipmap->data);
+	glPatch->mipmap->data = NULL;
 }
 
 void HWR_FreeTexture(patch_t *patch)
@@ -470,7 +473,7 @@ void HWR_FreeTexture(patch_t *patch)
 
 	if (patch->hardware)
 	{
-		GLPatch_t *glPatch = patch->hardware;
+		GLPatch_t *glPatch = static_cast<GLPatch_t *>(patch->hardware);
 
 		HWR_FreeTextureColormaps(patch);
 
@@ -478,6 +481,7 @@ void HWR_FreeTexture(patch_t *patch)
 		{
 			HWR_FreeTextureData(patch);
 			Z_Free(glPatch->mipmap);
+			glPatch->mipmap = NULL;
 		}
 
 		Z_Free(patch->hardware);
@@ -495,7 +499,7 @@ static void HWR_FreeTextureColormaps(patch_t *patch)
 	if (!patch)
 		return;
 
-	pat = patch->hardware;
+	pat = static_cast<GLPatch_t *>(patch->hardware);
 	if (!pat)
 		return;
 
@@ -577,6 +581,9 @@ void HWR_InitMapTextures(void)
 
 static void FreeMapTexture(GLMapTexture_t *tex)
 {
+	if (!tex)
+		return;
+
 	GL_DeleteTexture(&tex->mipmap);
 	Z_Free(tex->mipmap.data);
 	tex->mipmap.data = NULL;
@@ -585,6 +592,12 @@ static void FreeMapTexture(GLMapTexture_t *tex)
 void HWR_FreeMapTextures(void)
 {
 	size_t i;
+
+	if (!gl_textures)
+	{
+		gl_numtextures = 0;
+		return;
+	}
 
 	for (i = 0; i < gl_numtextures; i++)
 	{
@@ -596,17 +609,28 @@ void HWR_FreeMapTextures(void)
 
 	// now the heap don't have any 'user' pointing to our
 	// texturecache info, we can free it
-	if (gl_textures)
-		free(gl_textures);
+	free(gl_textures);
 	gl_textures = NULL;
 	gl_numtextures = 0;
 }
 
 static void HWR_PrecacheLevelFlats(void)
 {
-	lumpnum_t lump;
+	// lookup for flats that may´ve been already loaded
+	// too lazy to make a hashtable or smth so unordered set will do :carbuncle:
+	std::unordered_set<UINT32> flatpresent;
 	size_t i, j;
 	INT32 k;
+
+	auto load_flat = [&](lumpnum_t lump, boolean noencoremap)
+	{
+		// flat already loaded?
+		if (flatpresent.count(lump) == 0)
+		{
+			HWR_GetFlat(lump, noencoremap);
+			flatpresent.insert(lump);
+		}
+	};
 
 	// special case for encore
 #ifdef GLENCORE
@@ -625,15 +649,14 @@ static void HWR_PrecacheLevelFlats(void)
 
 				const levelflat_t *levelflat = &levelflats[pic];
 
-				lump = levelflat->lumpnum;
-				HWR_GetFlat(lump, R_NoEncore(sec, ceiling));
+				load_flat(levelflat->lumpnum, R_NoEncore(sec, ceiling));
 
-				if (levelflat->speed) // it is an animated flat
+				if (levelflat->speed) // is it an animated flat ?
 				{
-					for (k = 1; k < levelflat->numpics; k++)
+					// start from 0, occasionally basenumlump != flat->lumpnum
+					for (k = 0; k < levelflat->numpics; k++)
 					{
-						lump = levelflat->baselumpnum + k;
-						HWR_GetFlat(lump, R_NoEncore(sec, ceiling));
+						load_flat(levelflat->baselumpnum + k, R_NoEncore(sec, ceiling));
 					}
 				}
 			}
@@ -647,17 +670,16 @@ static void HWR_PrecacheLevelFlats(void)
 		for (i = 0; i < numlevelflats; i++)
 		{
 			const levelflat_t *levelflat = &levelflats[i];
-			lump = levelflat->lumpnum;
 
-			HWR_GetFlat(lump, false);
+			load_flat(levelflat->lumpnum, false);
 
-			if (!levelflat->speed) // is it an animated flat ?
-				continue;
-
-			for (k = 1; k < levelflat->numpics; k++)
+			if (levelflat->speed) // is it an animated flat ?
 			{
-				lump = levelflat->baselumpnum + k;
-				HWR_GetFlat(lump, false);
+				// start from 0, occasionally basenumlump != flat->lumpnum
+				for (k = 0; k < levelflat->numpics; k++)
+				{
+					load_flat(levelflat->baselumpnum + k, false);
+				}
 			}
 		}
 	}
@@ -670,7 +692,7 @@ static void HWR_PrecacheLevelTextures(void)
 	size_t i, j, f;
 	INT32 h;
 
-	texturepresent = calloc(numtextures, sizeof (*texturepresent));
+	texturepresent = static_cast<char *>(calloc(gl_numtextures, sizeof(*texturepresent)));
 	if (texturepresent == NULL)
 		I_Error("%s: Out of memory looking up textures", "HWR_PrecacheLevel");
 
@@ -701,7 +723,10 @@ static void HWR_PrecacheLevelTextures(void)
 			{
 				const INT32 texnum = sidetex[f];
 
-				if (texnum < 0 || texnum >= numtextures || texturepresent[texnum])
+				if (texnum < 0 || texnum >= (signed)gl_numtextures)
+					continue;
+
+				if (texturepresent[texnum])
 					continue;
 #ifdef GLENCORE
 				texturepresent[texnum] = 1|noencoremap;
@@ -729,14 +754,16 @@ static void HWR_PrecacheLevelTextures(void)
 
 		for (h = 1; h < anim->numpics; h++)
 		{
+			const INT32 animtexnum = anim->basepic+h;
+
 			if (texpresent & 1)
 			{
-				HWR_GetTexture(anim->basepic+h, false);
+				HWR_GetTexture(animtexnum, false);
 			}
 #ifdef GLENCORE
 			if (texpresent & 2)
 			{
-				HWR_GetTexture(anim->basepic+h, true);
+				HWR_GetTexture(animtexnum, true);
 			}
 #endif
 		}
@@ -840,7 +867,7 @@ void HWR_LoadMapTextures(size_t pnumtextures)
 	HWR_FreeMapTextures();
 
 	gl_numtextures = pnumtextures;
-	gl_textures = calloc(gl_numtextures, sizeof(*gl_textures)); // *2 - 1 for encore-remapped texture and another for noencore texture (unused when not in encore), see: GLMapTextureSet_t
+	gl_textures = static_cast<GLMapTextureSet_t *>(calloc(gl_numtextures, sizeof(*gl_textures))); // *2 - 1 for encore-remapped texture and another for noencore texture (unused when not in encore), see: GLMapTextureSet_t
 
 	if (gl_textures == NULL)
 		I_Error("HWR_LoadMapTextures: ran out of memory for OpenGL textures. Sad!");
@@ -852,6 +879,7 @@ void HWR_LoadMapTextures(size_t pnumtextures)
 GLMapTexture_t *HWR_GetTexture(INT32 tex, boolean noencore)
 {
 	GLMapTexture_t *gltex;
+	GLMipmap_t *glMipmap;
 
 	if (tex < 0 || tex >= (signed)gl_numtextures)
 	{
@@ -870,19 +898,22 @@ GLMapTexture_t *HWR_GetTexture(INT32 tex, boolean noencore)
 	gltex = &gl_textures[tex];
 #endif
 
+	glMipmap = &gltex->mipmap;
+
 	// Generate texture if missing from the cache
-	if (!gltex->mipmap.downloaded)
+	if (!glMipmap->downloaded)
 	{
 		if (!gltex->mipmap.data)
 			HWR_GenerateTexture(tex, gltex, noencore);
 
 		// If hardware does not have the texture, then call GL_SetTexture to upload it
-		GL_SetTexture(&gltex->mipmap);
+		GL_SetTexture(glMipmap);
 	}
-	HWR_SetCurrentTexture(&gltex->mipmap);
+
+	HWR_SetCurrentTexture(glMipmap);
 
 	// The system-memory data can be purged now.
-	Z_ChangeTag(gltex->mipmap.data, PU_HWRCACHE_UNLOCKED);
+	Z_ChangeTag(glMipmap->data, PU_HWRCACHE_UNLOCKED);
 
 	return gltex;
 }
@@ -933,7 +964,7 @@ static void HWR_CacheFlat(GLMipmap_t *glMipmap, lumpnum_t flatlumpnum)
 	W_ReadLump(flatlumpnum, Z_Malloc(size, PU_HWRCACHE, &glMipmap->data));
 
 #ifdef GLENCORE
-	flat = glMipmap->data;
+	flat = static_cast<UINT8 *>(glMipmap->data);
 	for (steppy = 0; steppy < size; steppy++)
 	{
 		if (flat[steppy] == HWR_PATCHES_CHROMAKEY_COLORINDEX)
@@ -977,7 +1008,7 @@ void HWR_GetFlat(lumpnum_t flatlumpnum, boolean noencoremap)
 		if (!noencoremap && encoremap)
 			colormap += COLORMAP_REMAPOFFSET;
 #endif
-		glMipmap->colormap = Z_Calloc(sizeof(*glMipmap->colormap), PU_HWRPATCHCOLMIPMAP, NULL);
+		glMipmap->colormap = static_cast<GLColormap_t *>(Z_Calloc(sizeof(*glMipmap->colormap), PU_HWRPATCHCOLMIPMAP, NULL));
 		glMipmap->colormap->source = colormap;
 		memcpy(glMipmap->colormap->data, colormap, 256 * sizeof(UINT8));
 	}
@@ -1001,7 +1032,7 @@ void HWR_GetFlat(lumpnum_t flatlumpnum, boolean noencoremap)
 // --------------------+
 static void HWR_LoadPatchMipmap(patch_t *patch, GLMipmap_t *glMipmap)
 {
-	GLPatch_t *glPatch = patch->hardware;
+	GLPatch_t *glPatch = static_cast<GLPatch_t *>(patch->hardware);
 
 	if (!glMipmap->downloaded)
 	{
@@ -1022,8 +1053,8 @@ static void HWR_LoadPatchMipmap(patch_t *patch, GLMipmap_t *glMipmap)
 // ----------------------+
 static void HWR_UpdatePatchMipmap(patch_t *patch, GLMipmap_t *glMipmap)
 {
-	GLPatch_t *grPatch = patch->hardware;
-	HWR_MakePatch(patch, grPatch, glMipmap, true);
+	GLPatch_t *glPatch = static_cast<GLPatch_t *>(patch->hardware);
+	HWR_MakePatch(patch, glPatch, glMipmap, true);
 
 	// If hardware does not have the texture, then call GL_SetTexture to upload it
 	// If it does have the texture, then call GL_UpdateTexture to update it
@@ -1031,6 +1062,7 @@ static void HWR_UpdatePatchMipmap(patch_t *patch, GLMipmap_t *glMipmap)
 		GL_SetTexture(glMipmap);
 	else
 		GL_UpdateTexture(glMipmap);
+
 	HWR_SetCurrentTexture(glMipmap);
 
 	// The system-memory data can be purged now.
@@ -1057,7 +1089,7 @@ void HWR_GetMappedPatch(patch_t *patch, const UINT8 *colormap)
 
 	if (!patch->hardware)
 		Patch_CreateGL(patch);
-	glPatch = patch->hardware;
+	glPatch = static_cast<GLPatch_t *>(patch->hardware);
 
 	// Blatant hack for encore colormapping aside...
 	if (colormap == colormaps || colormap == NULL || colormap == (const UINT8*)(COLORMAP_REMAPOFFSET))
@@ -1093,12 +1125,12 @@ void HWR_GetMappedPatch(patch_t *patch, const UINT8 *colormap)
 	//              (it have a liste of mipmap)
 	//    this malloc is cleared in HWR_FreeColormapCache
 	//    (...) unfortunately z_malloc fragment alot the memory :(so malloc is better
-	newMipmap = calloc(1, sizeof (*newMipmap));
+	newMipmap = static_cast<GLMipmap_t *>(calloc(1, sizeof (*newMipmap)));
 	if (newMipmap == NULL)
 		I_Error("%s: Out of memory", "HWR_GetMappedPatch");
 	glMipmap->nextcolormap = newMipmap;
 
-	newMipmap->colormap = Z_Calloc(sizeof(*newMipmap->colormap), PU_HWRPATCHCOLMIPMAP, NULL);
+	newMipmap->colormap = static_cast<GLColormap_t *>(Z_Calloc(sizeof(*newMipmap->colormap), PU_HWRPATCHCOLMIPMAP, NULL));
 	newMipmap->colormap->source = colormap;
 	memcpy(newMipmap->colormap->data, colormap, 256 * sizeof(UINT8));
 
@@ -1121,7 +1153,7 @@ patch_t *HWR_GetCachedGLPatchPwad(UINT16 wadnum, UINT16 lumpnum)
 	{
 		void *ptr = Z_Calloc(sizeof(patch_t), PU_PATCH, &lumpcache[lumpnum]);
 		Patch_Create(NULL, 0, ptr);
-		Patch_AllocateHardwarePatch(ptr);
+		Patch_AllocateHardwarePatch(static_cast<patch_t *>(ptr));
 	}
 
 	return (patch_t *)(lumpcache[lumpnum]);
@@ -1138,7 +1170,7 @@ static void HWR_DrawFadeMaskInCache(GLMipmap_t *mipmap, INT32 pblockwidth, INT32
 {
 	INT32 i,j;
 	fixed_t posx, posy, stepx, stepy;
-	UINT8 *block = mipmap->data; // places the data directly into here
+	UINT8 *block = static_cast<UINT8 *>(mipmap->data); // places the data directly into here
 	UINT8 *flat;
 	UINT8 *dest, *src, texel;
 	RGBA_t col;
@@ -1294,9 +1326,9 @@ void HWR_SetPalette(RGBA_t *palette)
 static void HWR_SetPaletteLookup(RGBA_t *palette)
 {
 	int r, g, b;
-	UINT8 *lut = Z_Malloc(
+	UINT8 *lut = static_cast<UINT8 *>(Z_Malloc(
 		HWR_PALETTE_LUT_SIZE*HWR_PALETTE_LUT_SIZE*HWR_PALETTE_LUT_SIZE*sizeof(UINT8),
-		PU_STATIC, NULL);
+		PU_STATIC, NULL));
 #define STEP_SIZE (256/HWR_PALETTE_LUT_SIZE)
 	for (b = 0; b < HWR_PALETTE_LUT_SIZE; b++)
 	{
@@ -1339,7 +1371,7 @@ void HWR_SetMapPalette(void)
 		if (palsize < 768) // 256 * 3
 			I_Error("HWR_SetMapPalette: A programmer assumed palette lumps are at least 768 bytes long, but apparently this was a wrong assumption!\n");
 
-		RGB_data = W_CacheLumpNum(lumpnum, PU_CACHE);
+		RGB_data = static_cast<UINT8 *>(W_CacheLumpNum(lumpnum, PU_CACHE));
 		// we got the RGB palette now, but we need it in RGBA format.
 		for (i = 0; i < 256; i++)
 		{
@@ -1374,7 +1406,7 @@ static UINT32 HWR_CreateLightTable(UINT8 *lighttable)
 {
 	UINT32 i, id;
 	RGBA_t *palette = HWR_GetTexturePalette();
-	RGBA_t *hw_lighttable = Z_Malloc(256 * 32 * sizeof(RGBA_t), PU_STATIC, NULL);
+	RGBA_t *hw_lighttable = static_cast<RGBA_t *>(Z_Malloc(256 * 32 * sizeof(RGBA_t), PU_STATIC, NULL));
 
 	// To make the palette index -> RGBA mapping easier for the shader,
 	// the hardware lighttable is composed of RGBA colors instead of palette indices.

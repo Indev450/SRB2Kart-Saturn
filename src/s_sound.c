@@ -97,7 +97,6 @@ consvar_t cv_pausemusic = {"playmusicifpaused",  "No", CV_SAVE, CV_YesNo, NULL, 
 static CV_PossibleValue_t music_resync_threshold_cons_t[] = {
 	{0,    "MIN"},
 	{1000, "MAX"},
-
 	{0}
 };
 consvar_t cv_music_resync_threshold = {"music_resync_threshold", "0", CV_SAVE|CV_CALL, music_resync_threshold_cons_t, I_UpdateSongLagThreshold, 0, NULL, NULL, 0, 0, NULL};
@@ -1492,6 +1491,9 @@ musicdef_t *S_FindMusicCredit(const char *musname)
 	{
 		def = S_GetMusicCredit(i);
 
+		if (!def)
+			continue;
+
 		if (hash != def->hash)
 			continue;
 
@@ -1951,11 +1953,11 @@ static const char *musicexception_list[] = {
 // check if the current music is smth we dont want to keep (vote music, etc)
 static boolean S_CheckMusicException(void)
 {
-	if (!fasticmp(music.name, mapmusic.name))
-		return true;
-
 	// dumb hack but dont keepmusic music that is supposed to reset
 	if (music.flags & MUSIC_RELOADRESET)
+		return true;
+
+	if (!fasticmp(music.name, mapmusic.name))
 		return true;
 
 	// in case somehow the mapmusic was replaced with smth we dont want to keep
@@ -2050,15 +2052,12 @@ static boolean S_SkipIntroMusic(void)
 	if (fasticmp(music.name, "titles"))
 		return false;
 
-	char *maptitle = G_BuildMapTitle(gamemap); // Zzz...
+	CLEANUP(Z_Pfree) char *maptitle = G_BuildMapTitle(gamemap); // Zzz...
 
 	if (maptitle && fasticmp(maptitle, "Wandering Falls")) // wandering balls changes its song when the race starts Zzz...
 	{
-		Z_Free(maptitle);
 		return false;
 	}
-
-	Z_Free(maptitle);
 
 	return true;
 }
