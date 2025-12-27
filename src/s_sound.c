@@ -1495,6 +1495,9 @@ musicdef_t *S_FindMusicCredit(const char *musname)
 	{
 		def = S_GetMusicCredit(i);
 
+		if (!def)
+			continue;
+
 		if (hash != def->hash)
 			continue;
 
