@@ -144,7 +144,7 @@ void W_Shutdown(void)
 		Z_Free(wad->filename);
 		while (wad->numlumps--)
 		{
-			Z_Free(wad->lumpinfo[wad->numlumps].longname);
+			//Z_Free(wad->lumpinfo[wad->numlumps].longname);
 			Z_Free(wad->lumpinfo[wad->numlumps].fullname);
 		}
 
@@ -418,11 +418,11 @@ static lumpinfo_t* ResGetLumpsStandalone(FILE* handle, UINT16* numlumps, const c
 	lumpinfo->hash.name = W_HashLumpName(lumpname);
 
 	// Allocate the lump's long name.
-	lumpinfo->longname = static_cast<char *>(Z_Malloc((lumpinfo->namelength + 1) * sizeof(char), PU_STATIC, NULL));
+	/*lumpinfo->longname = static_cast<char *>(Z_Malloc((lumpinfo->namelength + 1) * sizeof(char), PU_STATIC, NULL));
 	strcpy(lumpinfo->longname, lumpname);
 	lumpinfo->longname[lumpinfo->namelength] = '\0';
 	lumpinfo->longnamelength = lumpinfo->namelength;
-	lumpinfo->hash.longname = lumpinfo->hash.name;
+	lumpinfo->hash.longname = lumpinfo->hash.name;*/
 
 	// Allocate the lump's full name.
 	lumpinfo->fullname = static_cast<char *>(Z_Malloc((lumpinfo->namelength + 1) * sizeof(char), PU_STATIC, NULL));
@@ -529,11 +529,11 @@ static lumpinfo_t* ResGetLumpsWad(FILE* handle, UINT16* nlmp, const char* filena
 		lump_p->hash.name = W_HashLumpName(lump_p->name);
 
 		// Allocate the lump's long name.
-		lump_p->longname = static_cast<char *>(Z_Malloc(9 * sizeof(char), PU_STATIC, NULL));
+		/*lump_p->longname = static_cast<char *>(Z_Malloc(9 * sizeof(char), PU_STATIC, NULL));
 		strncpy(lump_p->longname, fileinfo->name, 8);
 		lump_p->longname[8] = '\0';
 		lump_p->longnamelength = lump_p->namelength;
-		lump_p->hash.longname = lump_p->hash.name;
+		lump_p->hash.longname = lump_p->hash.name;*/
 
 		// Allocate the lump's full name.
 		lump_p->fullname = static_cast<char *>(Z_Malloc(9 * sizeof(char), PU_STATIC, NULL));
@@ -729,10 +729,10 @@ static lumpinfo_t* ResGetLumpsZip(FILE* handle, UINT16* nlmp)
 		lump_p->namelength = strlen(lump_p->name);
 		lump_p->hash.name = W_HashLumpName(lump_p->name);
 
-		lump_p->longname = static_cast<char *>(Z_Calloc(dotpos - trimname + 1, PU_STATIC, NULL));
+		/*lump_p->longname = static_cast<char *>(Z_Calloc(dotpos - trimname + 1, PU_STATIC, NULL));
 		strlcpy(lump_p->longname, trimname, dotpos - trimname + 1);
 		lump_p->longnamelength = strlen(lump_p->longname);
-		lump_p->hash.longname = W_HashLumpName(lump_p->longname);
+		lump_p->hash.longname = W_HashLumpName(lump_p->longname);*/
 
 		lump_p->fullname = static_cast<char *>(Z_Calloc(SHORT(zentry->namelen) + 1, PU_STATIC, NULL));
 		strncpy(lump_p->fullname, fullname, SHORT(zentry->namelen));
@@ -1124,7 +1124,7 @@ UINT16 W_CheckNumForNamePwad(const char *name, UINT16 wad, UINT16 startlump)
 // Should be the only version, but that's not possible until we fix
 // all the instances of non null-terminated strings in the codebase...
 //
-UINT16 W_CheckNumForLongNamePwad(const char *name, UINT16 wad, UINT16 startlump)
+/*UINT16 W_CheckNumForLongNamePwad(const char *name, UINT16 wad, UINT16 startlump)
 {
 	UINT16 i;
 	UINT32 hash;
@@ -1156,7 +1156,7 @@ UINT16 W_CheckNumForLongNamePwad(const char *name, UINT16 wad, UINT16 startlump)
 
 	// not found.
 	return INT16_MAX;
-}
+}*/
 
 UINT16 W_CheckNumForMarkerStartPwad(const char *name, UINT16 wad, UINT16 startlump)
 {
@@ -1306,7 +1306,7 @@ lumpnum_t W_CheckNumForName(const char *name)
 // Should be the only version, but that's not possible until we fix
 // all the instances of non null-terminated strings in the codebase...
 //
-lumpnum_t W_CheckNumForLongName(const char *name)
+/*lumpnum_t W_CheckNumForLongName(const char *name)
 {
 	INT32 i;
 	lumpnum_t check = INT16_MAX;
@@ -1340,7 +1340,7 @@ lumpnum_t W_CheckNumForLongName(const char *name)
 
 		return lumpnum;
 	}
-}
+}*/
 
 //
 // W_GetNumForName
@@ -1365,7 +1365,7 @@ lumpnum_t W_GetNumForName(const char *name)
 // Should be the only version, but that's not possible until we fix
 // all the instances of non null-terminated strings in the codebase...
 //
-lumpnum_t W_GetNumForLongName(const char *name)
+/*lumpnum_t W_GetNumForLongName(const char *name)
 {
 	lumpnum_t i;
 
@@ -1375,7 +1375,7 @@ lumpnum_t W_GetNumForLongName(const char *name)
 		I_Error("W_GetNumForLongName: %s not found!\n", name);
 
 	return i;
-}
+}*/
 
 //
 // W_CheckNumForNameInBlock
@@ -2011,6 +2011,9 @@ void *W_CachePatchNameRotated(const char *name, INT32 rotationangle, INT32 tag)
 
 	rspr = static_cast<rotsprite_t *>(W_GetCachedRotPatchPwad(WADFILENUM(num), LUMPNUM(num)));
 
+	if (rspr == NULL)
+		return W_CachePatchNum(W_GetNumForName("MISSING"), tag);
+
 	if (rspr->patches[idx] == NULL)
 	{
 		INT32 xpivot = 0, ypivot = 0;
@@ -2626,6 +2629,9 @@ virtres_t* vres_GetMap(lumpnum_t lumpnum)
 
 		// Remember that we're assuming that the WAD will have a specific set of lumps in a specific order.
 		UINT8 *wadData = static_cast<UINT8 *>(W_CacheLumpNum(lumpnum, PU_LEVEL));
+		if (wadData == NULL)
+			I_Error("vres_GetMap: Invalid WadData!\n");
+
 		filelump_t *fileinfo = reinterpret_cast<filelump_t *>(wadData + LONG((reinterpret_cast<wadinfo_t *>(wadData))->infotableofs));
 
 		i = LONG((reinterpret_cast<wadinfo_t *>(wadData))->numlumps);
@@ -2642,6 +2648,8 @@ virtres_t* vres_GetMap(lumpnum_t lumpnum)
 		}
 
 		vlumps = static_cast<virtlump_t *>(Z_Malloc(sizeof(virtlump_t)*numlumps, PU_LEVEL, NULL));
+		if (vlumps == NULL)
+			I_Error("vres_GetMap: Out of memory!\n");
 
 		// Build the lumps, skipping over empty entries.
 		for (i = 0, realentry = 0; i < numlumps; realentry++)
@@ -2677,7 +2685,11 @@ virtres_t* vres_GetMap(lumpnum_t lumpnum)
 		lumpnum_t lumppos = lumpnum + 1;
 		for (i = LUMPNUM(lumppos); i < wadfiles[WADFILENUM(lumpnum)]->numlumps; i++, lumppos++, numlumps++)
 		{
-			if (memcmp(W_CheckNameForNum(lumppos), "MAP", 3) == 0 || W_LumpLength(lumppos) == 0)
+			const char *name = W_CheckNameForNum(lumppos);
+			if (name == NULL)
+				continue;
+
+			if (memcmp(name, "MAP", 3) == 0 || W_LumpLength(lumppos) == 0)
 			{
 				break;
 			}
@@ -2685,10 +2697,15 @@ virtres_t* vres_GetMap(lumpnum_t lumpnum)
 		numlumps++;
 
 		vlumps = static_cast<virtlump_t *>(Z_Malloc(sizeof(virtlump_t)*numlumps, PU_LEVEL, NULL));
+		if (vlumps == NULL)
+			I_Error("vres_GetMap: Out of memory!\n");
+
 		for (i = 0; i < numlumps; i++, lumpnum++)
 		{
 			// Check if it is map marker. It is not always first lump sadly, so we need to expect it anywhere
 			const char *name = W_CheckNameForNum(lumpnum);
+			if (name == NULL)
+				continue;
 
 			if (strlen(name) == 5 && memcmp(name, "MAP", 3) == 0)
 			{

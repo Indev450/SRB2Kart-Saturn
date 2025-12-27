@@ -1577,7 +1577,7 @@ static void R_ProjectSprite(mobj_t *thing)
 	else
 		blendmode = thing->blendmode;
 
-	if (thing->flags2 & MF2_SHADOW || thing->flags2 & MF2_SHADOW) // actually only the player should use this (temporary invisibility)
+	if (thing->flags2 & MF2_SHADOW) // actually only the player should use this (temporary invisibility)
 		trans = tr_trans80; // because now the translucency is set through FF_TRANSMASK
 	else if (thing->frame & FF_TRANSMASK)
 	{

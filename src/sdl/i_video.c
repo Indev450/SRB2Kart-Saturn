@@ -1411,7 +1411,7 @@ void I_FinishUpdate(void)
 #ifdef HWRENDER
 	if (rendermode == render_opengl)
 	{
-		OglSdlFinishUpdate(cv_vidwait.value);
+		OglSdlFinishUpdate();
 		return;
 	}
 #endif
@@ -2198,16 +2198,16 @@ UINT32 I_GetRefreshRate(void)
 
 static void Impl_SetVsync(void)
 {
-#if SDL_VERSION_ATLEAST(2,0,18)
-	if (renderer)
-		SDL_RenderSetVSync(renderer, cv_vidwait.value);
-#endif
 #ifdef HWRENDER
-	if (!renderer && rendermode == render_opengl &&
-		 sdlglcontext != NULL && SDL_GL_GetCurrentContext() == sdlglcontext)
+	if (rendermode == render_opengl &&
+		sdlglcontext != NULL && SDL_GL_GetCurrentContext() == sdlglcontext)
 	{
 		SDL_GL_SetSwapInterval(cv_vidwait.value ? 1 : 0);
 	}
+#endif
+#if SDL_VERSION_ATLEAST(2,0,18)
+	if (renderer)
+		SDL_RenderSetVSync(renderer, cv_vidwait.value);
 #endif
 }
 
