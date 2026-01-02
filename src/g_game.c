@@ -130,7 +130,7 @@ UINT8 skincolor_bluering = SKINCOLOR_STEEL;
 tic_t countdowntimer = 0;
 boolean countdowntimeup = false;
 
-cutscene_t *cutscenes[128];
+cutscene_t *cutscenes[128] = {};
 
 INT16 nextmapoverride = 0;
 boolean skipstats = false;
@@ -142,7 +142,7 @@ mobj_t *blueflag = NULL;
 mapthing_t *rflagpoint = NULL;
 mapthing_t *bflagpoint = NULL;
 
-struct quake quake;
+struct quake quake = {};
 
 // Map Header Information
 mapheader_t* mapheaderinfo[NUMMAPS] = {};
@@ -226,7 +226,7 @@ tic_t racecountdown = 0, exitcountdown = 0; // for racing
 fixed_t gravity = 0;
 fixed_t mapobjectscale = FRACUNIT;
 
-struct maplighting maplighting;
+struct maplighting maplighting = {};
 
 INT16 autobalance = 0; //for CTF team balance
 INT16 teamscramble = 0; //for CTF team scramble

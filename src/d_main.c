@@ -722,7 +722,7 @@ void D_SRB2Loop(void)
 	tic_t entertic = 0, oldentertics = 0, realtics = 0, rendertimeout = INFTICS;
 	double deltatics = 0.0;
 	double deltasecs = 0.0;
-	UINT64 precision;
+	UINT64 precision = 0;
 
 	boolean interp = false;
 	boolean doDisplay = false;
