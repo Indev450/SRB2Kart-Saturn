@@ -3149,17 +3149,18 @@ static mobj_t *K_SpawnKartMissile(mobj_t *source, mobjtype_t type, angle_t an, I
 	return NULL;
 }
 
-static UINT16 K_DriftSparkColor(player_t *player, INT32 charge)
+static UINT8 K_DriftSparkColor(player_t *player, INT32 charge)
 {
-	UINT16 color = SKINCOLOR_NONE;
+	UINT8 color = SKINCOLOR_NONE;
+	const INT32 sparkval = K_GetKartDriftSparkValue(player);
 
-	if (charge >= K_GetKartDriftSparkValue(player)*4)
+	if (charge >= sparkval*4)
 	{
 		color = K_RainbowColor();
 	}
-	else if (charge >= K_GetKartDriftSparkValue(player)*2)
+	else if (charge >= sparkval*2)
 	{
-		if (charge <= (K_GetKartDriftSparkValue(player)*2)+(24*3))
+		if (charge <= (sparkval*2)+(24*3))
 			color = SKINCOLOR_RASPBERRY; // transition
 		else
 			color = SKINCOLOR_KETCHUP;
