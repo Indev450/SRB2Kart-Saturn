@@ -658,7 +658,7 @@ void R_DrawMaskedColumn(drawcolumndata_t* dc, column_t *column)
 	dc->texturemid = basetexturemid;
 }
 
-INT32 lengthcol; // column->length : for flipped column function pointers and multi-patch on 2sided wall = texture->height
+INT32 lengthcol = 0; // column->length : for flipped column function pointers and multi-patch on 2sided wall = texture->height
 
 static void R_DrawFlippedMaskedColumn(drawcolumndata_t* dc, column_t *column)
 {
@@ -3086,7 +3086,7 @@ static void R_DrawMaskedList(drawnode_t* head)
 void R_DrawMasked(maskcount_t* masks, INT32 nummasks)
 {
 	INT32 i;
-	drawnode_t *heads;	/**< Drawnode lists; as many as number of views/portals. */
+	drawnode_t *heads = NULL;	/**< Drawnode lists; as many as number of views/portals. */
 
 	heads = static_cast<drawnode_t*>(calloc(nummasks, sizeof(drawnode_t)));
 
