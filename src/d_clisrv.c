@@ -210,14 +210,9 @@ tic_t firstconnectattempttime = 0;
 
 // engine
 
-// Must be a power of two
-#define TEXTCMD_HASH_SIZE 4
-
 typedef struct textcmdtic_s
 {
-	tic_t tic;
 	UINT8 *playercmds[MAXPLAYERS];
-	struct textcmdtic_s *next;
 } textcmdtic_t;
 
 typedef struct textcmdbuf_s textcmdbuf_t;
@@ -232,7 +227,7 @@ static textcmdbuf_t *textcmdbuf[MAXSPLITSCREENPLAYERS] = {NULL};
 
 static ticcmd_t playercmds[MAXPLAYERS];
 ticcmd_t netcmds[BACKUPTICS][MAXPLAYERS] = {};
-static textcmdtic_t *textcmds[TEXTCMD_HASH_SIZE] = {NULL};
+static textcmdtic_t *textcmds[BACKUPTICS] = {NULL};
 
 consvar_t cv_showjoinaddress = {"showjoinaddress", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
@@ -394,20 +389,10 @@ void SendNetXCmdForPlayer(UINT8 playerid, netxcmd_t id, const void *param, size_
 // Frees all textcmd memory for the specified tic
 static void D_FreeTextcmd(tic_t tic)
 {
-	textcmdtic_t **tctprev = &textcmds[tic & (TEXTCMD_HASH_SIZE - 1)];
-	textcmdtic_t *textcmdtic = *tctprev;
-
-	while (textcmdtic && textcmdtic->tic != tic)
-	{
-		tctprev = &textcmdtic->next;
-		textcmdtic = textcmdtic->next;
-	}
+	textcmdtic_t *textcmdtic = textcmds[tic%BACKUPTICS];
 
 	if (textcmdtic)
 	{
-		// Remove this tic from the list.
-		*tctprev = textcmdtic->next;
-
 		// Free all players.
 		for (INT32 i = 0; i < MAXPLAYERS; i++)
 		{
@@ -416,14 +401,14 @@ static void D_FreeTextcmd(tic_t tic)
 
 		// Free this tic's own memory.
 		Z_Free(textcmdtic);
+		textcmds[tic%BACKUPTICS] = NULL;
 	}
 }
 
 // Gets the buffer for the specified ticcmd, or NULL if there isn't one
 static UINT8* D_GetExistingTextcmd(tic_t tic, INT32 playernum)
 {
-	textcmdtic_t *textcmdtic = textcmds[tic & (TEXTCMD_HASH_SIZE - 1)];
-	while (textcmdtic && textcmdtic->tic != tic) textcmdtic = textcmdtic->next;
+	textcmdtic_t *textcmdtic = textcmds[tic%BACKUPTICS];
 
 	// Do we have an entry for the tic? If so, look for player.
 	if (textcmdtic)
@@ -439,22 +424,11 @@ static UINT8* D_GetExistingTextcmd(tic_t tic, INT32 playernum)
 // Gets the buffer for the specified ticcmd, creating one if necessary
 static UINT8* D_GetTextcmd(tic_t tic, INT32 playernum)
 {
-	textcmdtic_t *textcmdtic = textcmds[tic & (TEXTCMD_HASH_SIZE - 1)];
-	textcmdtic_t **tctprev = &textcmds[tic & (TEXTCMD_HASH_SIZE - 1)];
-
-	// Look for the tic.
-	while (textcmdtic && textcmdtic->tic != tic)
-	{
-		tctprev = &textcmdtic->next;
-		textcmdtic = textcmdtic->next;
-	}
+	textcmdtic_t *textcmdtic = textcmds[tic%BACKUPTICS];
 
 	// If we don't have an entry for the tic, make it.
 	if (!textcmdtic)
-	{
-		textcmdtic = *tctprev = (textcmdtic_t*)Z_Calloc(sizeof (textcmdtic_t), PU_STATIC, NULL);
-		textcmdtic->tic = tic;
-	}
+		textcmds[tic%BACKUPTICS] = textcmdtic = (textcmdtic_t*)Z_Calloc(sizeof(textcmdtic_t), PU_STATIC, NULL);
 
 	// If we don't have an entry for the player, make it.
 	if (!textcmdtic->playercmds[playernum])
@@ -538,9 +512,8 @@ void D_ResetTiccmds(void)
 	}
 
 	// Reset the net command list
-	for (i = 0; i < TEXTCMD_HASH_SIZE; i++)
-		while (textcmds[i])
-			D_Clearticcmd(textcmds[i]->tic);
+	for (i = 0; i < BACKUPTICS; i++)
+		D_Clearticcmd(i);
 }
 
 void SendKick(UINT8 playernum, UINT8 msg)
