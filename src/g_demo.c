@@ -76,7 +76,7 @@ static tic_t demostarttime; // for comparative timing purposes
 
 //@TODO put these all in a struct for namespacing purposes?
 static char demoname[128];
-savebuffer_t demobuf = {0};
+savebuffer_t demobuf = {};
 static UINT8 *demotime_p, *demoinfo_p;
 static UINT8 *demoend;
 static UINT8 demoflags;

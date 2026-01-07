@@ -5385,7 +5385,7 @@ void M_SlotCvarIntoModMenu(consvar_t* cvar, const char* category, const char* na
 	{
 		CONS_Printf("custom settings menu initiation\n");
 		for (CVARSETUP = 0; CVARSETUP < MAXMENUCCVARS; ++CVARSETUP)
-			OP_CustomCvarMenu[CVARSETUP] = (menuitem_t){IT_DISABLED, NULL, "", 0, INT16_MAX};
+			OP_CustomCvarMenu[CVARSETUP] = (menuitem_t){IT_DISABLED, NULL, "", NULL, INT16_MAX};
 	}
 
 	if (category && ((ccvarposition == 0 && category[0] != '\0') || !fasticmp(category, OP_CustomCvarMenu[ccvarlaststheader].text)))
@@ -7494,7 +7494,7 @@ static void M_DrawLevelSelectOnly(boolean leftfade, boolean rightfade)
 		if ((lumpnum = W_CheckNumForName(va("%sE", mapname))) != LUMPERROR)
 			mappingforencore = (patch_t *)W_CachePatchNum(lumpnum, PU_PATCH);*/
 
-		V_DrawFixedPatch((x+w)<<FRACBITS, (y)<<FRACBITS, FRACUNIT/2, V_FLIP, PictureOfLevel, 0);
+		V_DrawFixedPatch((x+w)<<FRACBITS, (y)<<FRACBITS, FRACUNIT/2, V_FLIP, PictureOfLevel, NULL);
 
 		{
 			static angle_t rubyfloattime = 0;
@@ -8159,7 +8159,7 @@ static void M_DrawSetupMultiPlayerMenu(void)
 			V_DrawFixedPatch(((statx+61+GRIDSTATOFFSET)<<FRACBITS) + (FRACUNIT>>1), (staty+67)<<FRACBITS, FRACUNIT>>1, 0, statlr, flashcol);
 			V_DrawFixedPatch((statx+40+GRIDSTATOFFSET)<<FRACBITS, (staty+80)<<FRACBITS, FRACUNIT>>1, 0, statud, flashcol);
 			// bg
-			V_DrawFixedPatch(((statx+48+GRIDSTATOFFSET)<<FRACBITS)+(FRACUNIT>>1), (staty+73)<<FRACBITS, FRACUNIT>>1, 0, statbg, 0);
+			V_DrawFixedPatch(((statx+48+GRIDSTATOFFSET)<<FRACBITS)+(FRACUNIT>>1), (staty+73)<<FRACBITS, FRACUNIT>>1, 0, statbg, NULL);
 
 			for (i = 0; i < numskins; i++) // draw the stat dots
 			{
@@ -8218,7 +8218,7 @@ static void M_DrawSetupMultiPlayerMenu(void)
 			V_DrawFixedPatch((statx+64)<<FRACBITS, staty<<FRACBITS, FRACUNIT, 0, statlr, flashcol);
 			V_DrawFixedPatch((statx+24)<<FRACBITS, (staty+22)<<FRACBITS, FRACUNIT, 0, statud, flashcol);
 			// bg
-			V_DrawFixedPatch((statx+34)<<FRACBITS, (staty+10)<<FRACBITS, FRACUNIT, 0, statbg, 0);
+			V_DrawFixedPatch((statx+34)<<FRACBITS, (staty+10)<<FRACBITS, FRACUNIT, 0, statbg, NULL);
 
 			for (i = 0; i < numskins; i++) // draw the stat dots
 			{

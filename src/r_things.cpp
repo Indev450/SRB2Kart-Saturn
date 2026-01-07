@@ -532,8 +532,8 @@ void R_ClearSprites(void)
 	visspritecount = numvisiblesprites = clippedvissprites = 0;
 }
 
-static INT16 *vissprite_clipbot[MAXVISSPRITES >> VISSPRITECHUNKBITS] = {0};
-static INT16 *vissprite_cliptop[MAXVISSPRITES >> VISSPRITECHUNKBITS] = {0};
+static INT16 *vissprite_clipbot[MAXVISSPRITES >> VISSPRITECHUNKBITS] = {};
+static INT16 *vissprite_cliptop[MAXVISSPRITES >> VISSPRITECHUNKBITS] = {};
 
 static void R_AllocVisSpriteChunkMemory(UINT32 chunk)
 {
