@@ -168,7 +168,7 @@ model_t *MD3_LoadModel(const char *fileName, int ztag, boolean useFloat)
 	if (!f)
 		return NULL;
 
-	retModel = (model_t*)Z_Calloc(sizeof(model_t), ztag, 0);
+	retModel = (model_t*)Z_Calloc(sizeof(model_t), ztag, NULL);
 
 	// find length of file
 	fseek(f, 0, SEEK_END);
@@ -201,7 +201,7 @@ model_t *MD3_LoadModel(const char *fileName, int ztag, boolean useFloat)
 	if (retModel->numMaterials <= 0) // Always at least one skin, duh
 		retModel->numMaterials = 1;
 
-	retModel->materials = (material_t*)Z_Calloc(sizeof(material_t)*retModel->numMaterials, ztag, 0);
+	retModel->materials = (material_t*)Z_Calloc(sizeof(material_t)*retModel->numMaterials, ztag, NULL);
 
 	for (t = 0; t < retModel->numMaterials; t++)
 	{
@@ -225,7 +225,7 @@ model_t *MD3_LoadModel(const char *fileName, int ztag, boolean useFloat)
 		retModel->materials[t].spheremap = false;
 	}
 
-	retModel->meshes = (mesh_t*)Z_Calloc(sizeof(mesh_t)*retModel->numMeshes, ztag, 0);
+	retModel->meshes = (mesh_t*)Z_Calloc(sizeof(mesh_t)*retModel->numMeshes, ztag, NULL);
 
 	matCount = 0;
 	for (i = 0, surfEnd = 0; i < mdh->numSurfaces; i++)
@@ -298,9 +298,9 @@ model_t *MD3_LoadModel(const char *fileName, int ztag, boolean useFloat)
 			unsigned short *indexptr;
 			md3Triangle *mdT;
 
-			retModel->meshes[i].tinyframes = (tinyframe_t*)Z_Calloc(sizeof(tinyframe_t)*mdS->numFrames, ztag, 0);
+			retModel->meshes[i].tinyframes = (tinyframe_t*)Z_Calloc(sizeof(tinyframe_t)*mdS->numFrames, ztag, NULL);
 			retModel->meshes[i].numVertices = mdS->numVerts;
-			retModel->meshes[i].uvs = (float*)Z_Malloc(sizeof(float)*2*mdS->numVerts, ztag, 0);
+			retModel->meshes[i].uvs = (float*)Z_Malloc(sizeof(float)*2*mdS->numVerts, ztag, NULL);
 			for (j = 0; j < mdS->numFrames; j++)
 			{
 				short *vertptr;
@@ -308,12 +308,12 @@ model_t *MD3_LoadModel(const char *fileName, int ztag, boolean useFloat)
 				// char *tanptr;
 				int k;
 				md3Vertex *mdV = (md3Vertex*)((char*)mdS + mdS->offsetXYZNormal + (mdS->numVerts*j*sizeof(md3Vertex)));
-				retModel->meshes[i].tinyframes[j].vertices = (short*)Z_Malloc(sizeof(short)*3*mdS->numVerts, ztag, 0);
-				retModel->meshes[i].tinyframes[j].normals = (char*)Z_Malloc(sizeof(char)*3*mdS->numVerts, ztag, 0);
+				retModel->meshes[i].tinyframes[j].vertices = (short*)Z_Malloc(sizeof(short)*3*mdS->numVerts, ztag, NULL);
+				retModel->meshes[i].tinyframes[j].normals = (char*)Z_Malloc(sizeof(char)*3*mdS->numVerts, ztag, NULL);
 
 //				if (retModel->materials[0].lightmap)
 //					retModel->meshes[i].tinyframes[j].tangents = (char*)malloc(sizeof(char));//(char*)Z_Malloc(sizeof(char)*3*mdS->numVerts, ztag);
-				retModel->meshes[i].indices = (unsigned short*)Z_Malloc(sizeof(unsigned short) * 3 * mdS->numTriangles, ztag, 0);
+				retModel->meshes[i].indices = (unsigned short*)Z_Malloc(sizeof(unsigned short) * 3 * mdS->numTriangles, ztag, NULL);
 				vertptr = retModel->meshes[i].tinyframes[j].vertices;
 				normptr = retModel->meshes[i].tinyframes[j].normals;
 
@@ -374,16 +374,16 @@ model_t *MD3_LoadModel(const char *fileName, int ztag, boolean useFloat)
 			int k;
 
 			retModel->meshes[i].numVertices = mdS->numTriangles * 3;//mdS->numVerts;
-			retModel->meshes[i].frames = (mdlframe_t*)Z_Calloc(sizeof(mdlframe_t)*mdS->numFrames, ztag, 0);
-			retModel->meshes[i].uvs = (float*)Z_Malloc(sizeof(float)*2*mdS->numTriangles*3, ztag, 0);
+			retModel->meshes[i].frames = (mdlframe_t*)Z_Calloc(sizeof(mdlframe_t)*mdS->numFrames, ztag, NULL);
+			retModel->meshes[i].uvs = (float*)Z_Malloc(sizeof(float)*2*mdS->numTriangles*3, ztag, NULL);
 
 			for (j = 0; j < mdS->numFrames; j++)
 			{
 				float *vertptr;
 				float *normptr;
 				md3Vertex *mdV = (md3Vertex*)((char*)mdS + mdS->offsetXYZNormal + (mdS->numVerts*j*sizeof(md3Vertex)));
-				retModel->meshes[i].frames[j].vertices = (float*)Z_Malloc(sizeof(float)*3*mdS->numTriangles*3, ztag, 0);
-				retModel->meshes[i].frames[j].normals = (float*)Z_Malloc(sizeof(float)*3*mdS->numTriangles*3, ztag, 0);
+				retModel->meshes[i].frames[j].vertices = (float*)Z_Malloc(sizeof(float)*3*mdS->numTriangles*3, ztag, NULL);
+				retModel->meshes[i].frames[j].normals = (float*)Z_Malloc(sizeof(float)*3*mdS->numTriangles*3, ztag, NULL);
 //				if (retModel->materials[i].lightmap)
 //					retModel->meshes[i].frames[j].tangents = (float*)malloc(sizeof(float));//(float*)Z_Malloc(sizeof(float)*3*mdS->numTriangles*3, ztag);
 				vertptr = retModel->meshes[i].frames[j].vertices;

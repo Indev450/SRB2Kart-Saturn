@@ -5977,7 +5977,7 @@ void A_Boss7Chase(void *thing)
 	if (actor->flags2 & MF2_FRET)
 	{
 		P_SetMobjState(actor, S_BLACKEGG_DESTROYPLAT1);
-		S_StartSound(0, sfx_s3k53);
+		S_StartSound(NULL, sfx_s3k53);
 		actor->flags2 &= ~MF2_FRET;
 		return;
 	}
@@ -6011,7 +6011,7 @@ void A_Boss7Chase(void *thing)
 		{
 			// Punch him!
 			P_SetMobjState(actor, actor->info->meleestate);
-			S_StartSound(0, sfx_begrnd); // warning sound
+			S_StartSound(NULL, sfx_begrnd); // warning sound
 			return;
 		}
 	}
@@ -6057,7 +6057,7 @@ void A_Boss7Chase(void *thing)
 			case 2: // Homing Missile
 				A_FaceTarget(actor);
 				P_SetMobjState(actor, actor->info->missilestate);
-				S_StartSound(0, sfx_beflap);
+				S_StartSound(NULL, sfx_beflap);
 				break;
 		}
 
@@ -10739,7 +10739,7 @@ void A_BrakChase(void *thing)
 	{
 		actor->reactiontime--;
 		if (actor->reactiontime == 0 && actor->type == MT_CYBRAKDEMON)
-			S_StartSound(0, sfx_bewar1 + P_RandomKey(4));
+			S_StartSound(NULL, sfx_bewar1 + P_RandomKey(4));
 	}
 
 	// modify target threshold

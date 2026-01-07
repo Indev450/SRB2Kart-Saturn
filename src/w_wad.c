@@ -697,12 +697,12 @@ static lumpinfo_t* ResGetLumpsZip(FILE* handle, UINT16* nlmp)
 		strlcpy(fullname, (char*)(zentry + 1), SHORT(zentry->namelen) + 1);
 
 		// Strip away file address and extension for the 8char name.
-		if ((trimname = strrchr(fullname, '/')) != 0)
+		if ((trimname = strrchr(fullname, '/')) != NULL)
 			trimname++;
 		else
 			trimname = fullname; // Care taken for root files.
 
-		if ((dotpos = strrchr(trimname, '.')) == 0)
+		if ((dotpos = strrchr(trimname, '.')) == NULL)
 			dotpos = fullname + strlen(fullname); // Watch for files without extension.
 
 		memset(lump_p->name, '\0', 9); // Making sure they're initialized to 0. Is it necessary?
@@ -1667,9 +1667,9 @@ size_t W_ReadLumpHeaderPwad(UINT16 wad, UINT16 lump, void *dest, size_t size, si
 			if (fread(rawData, 1, rawSize, handle) < rawSize)
 				I_Error("wad %d, lump %d: cannot read compressed data", wad, lump);
 
-			strm.zalloc = Z_NULL;
-			strm.zfree = Z_NULL;
-			strm.opaque = Z_NULL;
+			strm.zalloc = NULL;
+			strm.zfree  = NULL;
+			strm.opaque = NULL;
 
 			strm.total_in = strm.avail_in = rawSize;
 			strm.total_out = strm.avail_out = decSize;
@@ -2238,14 +2238,14 @@ static int W_VerifyPK3(FILE *fp, lumpchecklist_t *checklist, boolean status)
 			strlcpy(fullname, (char*)(zentry + 1), SHORT(zentry->namelen) + 1);
 
 			// Strip away file address and extension for the 8char name.
-			if ((trimname = strrchr(fullname, '/')) != 0)
+			if ((trimname = strrchr(fullname, '/')) != NULL)
 				trimname++;
 			else
 				trimname = fullname; // Care taken for root files.
 
 			if (*trimname) // Ignore directories, well kinda
 			{
-				if ((dotpos = strrchr(trimname, '.')) == 0)
+				if ((dotpos = strrchr(trimname, '.')) == NULL)
 					dotpos = fullname + strlen(fullname); // Watch for files without extension.
 
 				memset(lumpname, '\0', 9); // Making sure they're initialized to 0. Is it necessary?
@@ -2483,14 +2483,14 @@ static int W_CheckPK3Contains(FILE *fp, lumpchecklist_t *checklist)
 		strlcpy(fullname, (char*)(zentry + 1), SHORT(zentry->namelen) + 1);
 
 		// Strip away file address and extension for the 8char name.
-		if ((trimname = strrchr(fullname, '/')) != 0)
+		if ((trimname = strrchr(fullname, '/')) != NULL)
 			trimname++;
 		else
 			trimname = fullname; // Care taken for root files.
 
 		if (*trimname) // Ignore directories, well kinda
 		{
-			if ((dotpos = strrchr(trimname, '.')) == 0)
+			if ((dotpos = strrchr(trimname, '.')) == NULL)
 				dotpos = fullname + strlen(fullname); // Watch for files without extension.
 
 			memset(lumpname, '\0', 9); // Making sure they're initialized to 0. Is it necessary?
