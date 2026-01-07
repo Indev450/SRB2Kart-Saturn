@@ -1198,8 +1198,15 @@ void HWR_DrawMD2(gl_vissprite_t *spr)
 			Surf.PolyFlags = HWR_GetBlendModeFlag(blendmode);
 		}
 
-		if (cv_playerfade.value && spr->mobj->player)
-			Surf.PolyColor.s.alpha = FixedMul(R_DoPlayerFade(spr->mobj), Surf.PolyColor.s.alpha);
+		if (spr->mobj->player)
+		{
+			// make hyu´d players translucent with reducevfx, could be done better, but im lazy as crap
+			if (cv_reducevfx.value && spr->mobj->player->kartstuff[k_hyudorotimer] > 0)
+				Surf.PolyColor.s.alpha = FixedMul(FRACUNIT/2, Surf.PolyColor.s.alpha);
+
+			if (cv_playerfade.value)
+				Surf.PolyColor.s.alpha = FixedMul(R_DoPlayerFade(spr->mobj), Surf.PolyColor.s.alpha);
+		}
 
 		// dont forget to enabled the depth test because we can't do this like
 		// before: polygons models are not sorted
