@@ -15,6 +15,7 @@
 
 #include "doomdef.h"
 #include "d_main.h"
+#include "g_game.h"
 #include "r_local.h"
 #include "p_local.h"
 #include "v_video.h"
@@ -1754,6 +1755,9 @@ void V_DrawVhsEffect(boolean rewind)
 	UINT8 *tmapstart;
 #endif
 	SINT8 offs;
+
+	if (cv_reducevfx.value)
+		return;
 
 	barsize = vid.dup << 5;
 	barsize *= (((vid.height > 1440) && (cv_highreshudscale.value > 1)) ? 3 : 1);
@@ -3643,127 +3647,130 @@ void V_DoPostProcessor(INT32 view, INT32 param)
 	UINT8 *tmpscr = vid.screens[4];
 	UINT8 *srcscr = vid.screens[0];
 
-	if (thiscam->postimg & POSTIMG_WATER)
+	if (!cv_reducevfx.value)
 	{
-		INT32 y;
-		// Set disStart to a range from 0 to FINEANGLE, incrementing by 128 per tic
-		angle_t disStart = (((leveltime-1)*128) + (R_GetTimeFrac(RTF_LEVEL) / (FRACUNIT/128))) & FINEMASK;
-		INT32 newpix;
-		INT32 sine;
-		//UINT8 *transme = transtables + ((tr_trans50-1)<<FF_TRANSSHIFT);
-
-		for (y = yoffset; y < yoffset+viewheight; y++)
+		if (thiscam->postimg & POSTIMG_WATER)
 		{
-			sine = (FINESINE(disStart)*5)>>FRACBITS;
-			newpix = abs(sine);
+			INT32 y;
+			// Set disStart to a range from 0 to FINEANGLE, incrementing by 128 per tic
+			angle_t disStart = (((leveltime-1)*128) + (R_GetTimeFrac(RTF_LEVEL) / (FRACUNIT/128))) & FINEMASK;
+			INT32 newpix;
+			INT32 sine;
+			//UINT8 *transme = transtables + ((tr_trans50-1)<<FF_TRANSSHIFT);
 
-			if (sine < 0)
+			for (y = yoffset; y < yoffset+viewheight; y++)
 			{
-				memcpy(&tmpscr[(y*vid.width)+xoffset+newpix], &srcscr[(y*vid.width)+xoffset], viewwidth-newpix);
+				sine = (FINESINE(disStart)*5)>>FRACBITS;
+				newpix = abs(sine);
 
-				// Cleanup edge
-				while (newpix)
+				if (sine < 0)
 				{
-					tmpscr[(y*vid.width)+xoffset+newpix] = srcscr[(y*vid.width)+xoffset];
-					newpix--;
-				}
-			}
-			else
-			{
-				memcpy(&tmpscr[(y*vid.width)+xoffset+0], &srcscr[(y*vid.width)+xoffset+sine], viewwidth-newpix);
+					memcpy(&tmpscr[(y*vid.width)+xoffset+newpix], &srcscr[(y*vid.width)+xoffset], viewwidth-newpix);
 
-				// Cleanup edge
-				while (newpix)
+					// Cleanup edge
+					while (newpix)
+					{
+						tmpscr[(y*vid.width)+xoffset+newpix] = srcscr[(y*vid.width)+xoffset];
+						newpix--;
+					}
+				}
+				else
 				{
-					tmpscr[(y*vid.width)+xoffset+viewwidth-newpix] = srcscr[(y*vid.width)+xoffset+(viewwidth-1)];
-					newpix--;
+					memcpy(&tmpscr[(y*vid.width)+xoffset+0], &srcscr[(y*vid.width)+xoffset+sine], viewwidth-newpix);
+
+					// Cleanup edge
+					while (newpix)
+					{
+						tmpscr[(y*vid.width)+xoffset+viewwidth-newpix] = srcscr[(y*vid.width)+xoffset+(viewwidth-1)];
+						newpix--;
+					}
 				}
+
+				/*
+				Unoptimized version
+				for (x = 0; x < vid.width; x++)
+				{
+					newpix = (x + sine);
+
+					if (newpix < 0)
+						newpix = 0;
+					else if (newpix >= vid.width)
+						newpix = vid.width-1;
+
+					tmpscr[y*vid.width + x] = srcscr[y*vid.width+newpix]; // *(transme + (srcscr[y*vid.width+x]<<8) + srcscr[y*vid.width+newpix]);
+				}*/
+
+				disStart += 22;//the offset into the displacement map, increment each game loop
+				disStart &= FINEMASK; //clip it to FINEMASK
 			}
 
-			/*
-			 Unoptimized version
-			 for (x = 0; x < vid.width; x++)
-			 {
-			 	newpix = (x + sine);
-
-			 	if (newpix < 0)
-			 		newpix = 0;
-			 	else if (newpix >= vid.width)
-			 		newpix = vid.width-1;
-
-			 	tmpscr[y*vid.width + x] = srcscr[y*vid.width+newpix]; // *(transme + (srcscr[y*vid.width+x]<<8) + srcscr[y*vid.width+newpix]);
-			 }*/
-
-			disStart += 22;//the offset into the displacement map, increment each game loop
-			disStart &= FINEMASK; //clip it to FINEMASK
+			UINT8 *tmp = tmpscr;
+			tmpscr = srcscr;
+			srcscr = tmp;
 		}
-
-		UINT8 *tmp = tmpscr;
-		tmpscr = srcscr;
-		srcscr = tmp;
-	}
-	else if (thiscam->postimg & POSTIMG_HEAT) // Heat wave
-	{
-		INT32 y;
-
-		// Make sure table is built
-		if (heatshifter == NULL || lastheight != viewheight)
+		else if (thiscam->postimg & POSTIMG_HEAT) // Heat wave
 		{
-			if (heatshifter)
-				Z_Free(heatshifter);
+			INT32 y;
 
-			heatshifter = Z_Calloc(viewheight * sizeof(boolean), PU_STATIC, NULL);
-
-			for (y = 0; y < viewheight; y++)
+			// Make sure table is built
+			if (heatshifter == NULL || lastheight != viewheight)
 			{
-				if (M_RandomChance(FRACUNIT/8)) // 12.5%
-					heatshifter[y] = true;
+				if (heatshifter)
+					Z_Free(heatshifter);
+
+				heatshifter = Z_Calloc(viewheight * sizeof(boolean), PU_STATIC, NULL);
+
+				for (y = 0; y < viewheight; y++)
+				{
+					if (M_RandomChance(FRACUNIT/8)) // 12.5%
+						heatshifter[y] = true;
+				}
+
+				heatindex[0] = heatindex[1] = heatindex[2] = heatindex[3] = 0;
+				lastheight = viewheight;
 			}
 
-			heatindex[0] = heatindex[1] = heatindex[2] = heatindex[3] = 0;
-			lastheight = viewheight;
-		}
-
-		for (y = yoffset; y < yoffset+viewheight; y++)
-		{
-			if (heatshifter[heatindex[view]++])
+			for (y = yoffset; y < yoffset+viewheight; y++)
 			{
-				// Shift this row of pixels to the right by 2
-				tmpscr[(y*vid.width)+xoffset] = srcscr[(y*vid.width)+xoffset];
-				memcpy(&tmpscr[(y*vid.width)+xoffset], &srcscr[(y*vid.width)+xoffset+vid.dup], viewwidth-vid.dup);
+				if (heatshifter[heatindex[view]++])
+				{
+					// Shift this row of pixels to the right by 2
+					tmpscr[(y*vid.width)+xoffset] = srcscr[(y*vid.width)+xoffset];
+					memcpy(&tmpscr[(y*vid.width)+xoffset], &srcscr[(y*vid.width)+xoffset+vid.dup], viewwidth-vid.dup);
+				}
+				else
+					memcpy(&tmpscr[(y*vid.width)+xoffset], &srcscr[(y*vid.width)+xoffset], viewwidth);
+
+				heatindex[view] %= viewheight;
 			}
-			else
-				memcpy(&tmpscr[(y*vid.width)+xoffset], &srcscr[(y*vid.width)+xoffset], viewwidth);
 
-			heatindex[view] %= viewheight;
+			if (renderisnewtic) // This isn't interpolated... but how do you interpolate a one-pixel shift?
+			{
+				heatindex[view]++;
+				heatindex[view] %= vid.height;
+			}
+
+			UINT8 *tmp = tmpscr;
+			tmpscr = srcscr;
+			srcscr = tmp;
 		}
-
-		if (renderisnewtic) // This isn't interpolated... but how do you interpolate a one-pixel shift?
-		{
-			heatindex[view]++;
-			heatindex[view] %= vid.height;
-		}
-
-		UINT8 *tmp = tmpscr;
-		tmpscr = srcscr;
-		srcscr = tmp;
-	}
 
 #ifdef MOTIONBLUR
-	if (thiscam->postimg & POSTIMG_MOTION) // Motion Blur!
-	{
-		INT32 x, y;
-
-		// TODO: Add a postimg_param so that we can pick the translucency level...
-		UINT8 *transme = transtables + ((param-1)<<FF_TRANSSHIFT);
-
-		for (y = yoffset; y < yoffset+viewheight; y++)
+		if (thiscam->postimg & POSTIMG_MOTION) // Motion Blur!
 		{
-			for (x = xoffset; x < xoffset+viewwidth; x++)
-				tmpscr[y*vid.width + x] =     colormaps[*(transme     + (srcscr   [(y*vid.width)+x ] <<8) + (tmpscr[(y*vid.width)+x]))];
+			INT32 x, y;
+
+			// TODO: Add a postimg_param so that we can pick the translucency level...
+			UINT8 *transme = transtables + ((param-1)<<FF_TRANSSHIFT);
+
+			for (y = yoffset; y < yoffset+viewheight; y++)
+			{
+				for (x = xoffset; x < xoffset+viewwidth; x++)
+					tmpscr[y*vid.width + x] =     colormaps[*(transme     + (srcscr   [(y*vid.width)+x ] <<8) + (tmpscr[(y*vid.width)+x]))];
+			}
 		}
-	}
 #endif
+	}
 
 	if ((thiscam->postimg & POSTIMG_FLIP) && !(thiscam->postimg & POSTIMG_MIRROR)) // Flip the screen upside-down
 	{
