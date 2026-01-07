@@ -3646,6 +3646,8 @@ void K_SpawnSparkleTrail(mobj_t *mo)
 	I_Assert(mo != NULL);
 	I_Assert(!P_MobjWasRemoved(mo));
 
+	const boolean shouldblend = (mo->player && K_PlayerEffectsShouldBlend(mo->player));
+
 	for (i = 0; i < 3; i++)
 	{
 		fixed_t newx = mo->x + mo->momx + (P_RandomRange(-rad, rad)<<FRACBITS);
@@ -3663,7 +3665,7 @@ void K_SpawnSparkleTrail(mobj_t *mo)
 
 		sparkle->color = mo->color;
 
-		if (mo->player && K_PlayerEffectsShouldBlend(mo->player))
+		if (shouldblend)
 			sparkle->blendmode = AST_ADD;
 	}
 
