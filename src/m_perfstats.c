@@ -110,12 +110,12 @@ perfstatrow_t rendertime_rows[] = {
 
 	{"ui     ", "UI render:     ", &ps_uitime, PS_TIME},
 	{"finupdt", "I_FinishUpdate:", &ps_swaptime, PS_TIME},
-	{0}
+	{}
 };
 
 perfstatrow_t gamelogicbrief_row[] = {
 	{"logic  ", "Game logic:    ", &ps_tictime, PS_TIME},
-	{0}
+	{}
 };
 
 perfstatrow_t commoncounter_rows[] = {
@@ -123,20 +123,20 @@ perfstatrow_t commoncounter_rows[] = {
 	{"sprites", "Sprites:     ", &ps_numsprites, 0},
 	{"drwnode", "Drawnodes:   ", &ps_numdrawnodes, 0},
 	{"plyobjs", "Polyobjects: ", &ps_numpolyobjects, 0},
-	{0}
+	{}
 };
 
 perfstatrow_t interpolation_rows[] = {
 	{"intpfrc", "Interp frac: ", &ps_interp_frac, 0},
 	{"intplag", "Interp lag:  ", &ps_interp_lag, 0},
-	{0}
+	{}
 };
 
 #ifdef HWRENDER
 perfstatrow_t batchcount_rows[] = {
 	{"polygon", "Polygons:  ", &ps_hw_numpolys, 0},
 	{"vertex ", "Vertices:  ", &ps_hw_numverts, 0},
-	{0}
+	{}
 };
 
 perfstatrow_t batchcalls_rows[] = {
@@ -145,7 +145,7 @@ perfstatrow_t batchcalls_rows[] = {
 	{"texture", "Textures:  ", &ps_hw_numtextures, 0},
 	{"polyflg", "Polyflags: ", &ps_hw_numpolyflags, 0},
 	{"colors ", "Colors:    ", &ps_hw_numcolors, 0},
-	{0}
+	{}
 };
 #endif
 
@@ -164,7 +164,7 @@ perfstatrow_t gamelogic_rows[] = {
 	{" lthinkf", " LUAh_ThinkFrame:", &ps_lua_thinkframe_time, PS_TIME|PS_LEVEL},
 	{" lpostthinkf", " LUAh_PostThinkFrame:", &ps_lua_postthinkframe_time, PS_TIME|PS_LEVEL},
 	{" other  ", " Other:          ", &ps_otherlogictime, PS_TIME|PS_LEVEL},
-	{0}
+	{}
 };
 
 perfstatrow_t thinkercount_rows[] = {
@@ -176,13 +176,13 @@ perfstatrow_t thinkercount_rows[] = {
 	{" precip ", " Precipitation:  ", &ps_precipcount, PS_LEVEL},
 	{" other  ", " Other:          ", &ps_otherthcount, PS_LEVEL},
 	{" remove ", " Pending removal:", &ps_removecount, PS_LEVEL},
-	{0}
+	{}
 };
 
 perfstatrow_t misc_calls_rows[] = {
 	{"lmhook", "Lua mobj hooks: ", &ps_lua_mobjhooks, PS_LEVEL},
 	{"chkpos", "P_CheckPosition:", &ps_checkposition_calls, PS_LEVEL},
-	{0}
+	{}
 };
 
 // Sample collection status for averaging.

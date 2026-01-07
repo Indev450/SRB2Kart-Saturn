@@ -47,6 +47,8 @@ consvar_t cv_airsparks = {"airdriftsparks", "Off", CV_SAVE, CV_OnOff, NULL, 0, N
 
 consvar_t cv_playerblendeffects = {"playerblendeffects", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
+consvar_t cv_reducevfx = {"reducevfx", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+
 // funn-E streeetch
 static CV_PossibleValue_t stretchfactor_t[] = {{0, "MIN"}, {FRACUNIT, "MAX"}, {0, NULL}};
 consvar_t cv_gravstretch = {"gravstretch", "MIN", CV_SAVE|CV_FLOAT, stretchfactor_t, NULL, 0, NULL, NULL, 0, 0, NULL};
@@ -482,7 +484,8 @@ UINT8 colortranslations[MAXTRANSLATIONS][16] = {
 //
 UINT8 K_RainbowColor(void)
 {
-	return (UINT8)(1 + (leveltime % (MAXSKINCOLORS-1)));
+	const INT32 time = cv_reducevfx.value ? (leveltime >> 3) : leveltime;
+	return (UINT8)(1 + (time % (MAXSKINCOLORS-1)));
 }
 
 // Define for getting accurate color brightness readings according to how the human eye sees them.
@@ -763,6 +766,8 @@ void K_RegisterClientKartStuff(void)
 	CV_RegisterVar(&cv_airsparks);
 
 	CV_RegisterVar(&cv_playerblendeffects);
+
+	CV_RegisterVar(&cv_reducevfx);
 
 	CV_RegisterVar(&cv_saltyhop);
 	CV_RegisterVar(&cv_saltyhopsfx);
@@ -3595,6 +3600,8 @@ void K_SpawnSparkleTrail(mobj_t *mo)
 	I_Assert(mo != NULL);
 	I_Assert(!P_MobjWasRemoved(mo));
 
+	const boolean shouldblend = (mo->player && K_PlayerEffectsShouldBlend(mo->player));
+
 	for (i = 0; i < 3; i++)
 	{
 		fixed_t newx = mo->x + mo->momx + (P_RandomRange(-rad, rad)<<FRACBITS);
@@ -3612,7 +3619,7 @@ void K_SpawnSparkleTrail(mobj_t *mo)
 
 		sparkle->color = mo->color;
 
-		if (mo->player && K_PlayerEffectsShouldBlend(mo->player))
+		if (shouldblend)
 			sparkle->blendmode = AST_ADD;
 	}
 
@@ -6766,7 +6773,7 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 		{
 			if (splitscreen)
 			{
-				if (leveltime & 1)
+				if (!cv_reducevfx.value && leveltime & 1)
 					player->mo->flags2 |= MF2_DONTDRAW;
 				else
 					player->mo->flags2 &= ~MF2_DONTDRAW;
@@ -6792,7 +6799,7 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 				if (P_IsDisplayPlayer(player)
 					|| (!P_IsDisplayPlayer(player) && (player->kartstuff[k_hyudorotimer] < (1*TICRATE/2) || player->kartstuff[k_hyudorotimer] > hyudorotime-(1*TICRATE/2))))
 				{
-					if (leveltime & 1)
+					if (!cv_reducevfx.value && leveltime & 1)
 						player->mo->flags2 |= MF2_DONTDRAW;
 					else
 						player->mo->flags2 &= ~MF2_DONTDRAW;

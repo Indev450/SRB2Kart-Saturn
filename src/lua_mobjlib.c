@@ -475,7 +475,7 @@ int mobj_localskin_setter(lua_State *L)
 		}
 		else
 		{
-			mo->localskin = 0;
+			mo->localskin = NULL;
 			mo->skinlocal = false;
 		}
 	}

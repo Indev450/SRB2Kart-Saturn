@@ -532,8 +532,8 @@ void R_ClearSprites(void)
 	visspritecount = numvisiblesprites = clippedvissprites = 0;
 }
 
-static INT16 *vissprite_clipbot[MAXVISSPRITES >> VISSPRITECHUNKBITS] = {0};
-static INT16 *vissprite_cliptop[MAXVISSPRITES >> VISSPRITECHUNKBITS] = {0};
+static INT16 *vissprite_clipbot[MAXVISSPRITES >> VISSPRITECHUNKBITS] = {};
+static INT16 *vissprite_cliptop[MAXVISSPRITES >> VISSPRITECHUNKBITS] = {};
 
 static void R_AllocVisSpriteChunkMemory(UINT32 chunk)
 {
@@ -1588,8 +1588,15 @@ static void R_ProjectSprite(mobj_t *thing)
 	else
 		trans = 0;
 
-	if (cv_playerfade.value && thing->player)
-		trans = static_cast<INT32>(R_GetThingTransTable(R_DoPlayerFade(thing), static_cast<transnum_t>(trans)));
+	if (thing->player)
+	{
+		// make hyu´d players translucent with reducevfx, could be done better, but im lazy as crap
+		if (cv_reducevfx.value && thing->player->kartstuff[k_hyudorotimer] > 0)
+			trans = static_cast<INT32>(R_GetThingTransTable(FRACUNIT/2, static_cast<transnum_t>(trans)));
+
+		if (cv_playerfade.value)
+			trans = static_cast<INT32>(R_GetThingTransTable(R_DoPlayerFade(thing), static_cast<transnum_t>(trans)));
+	}
 
 	//SoM: 3/17/2000: Disregard sprites that are out of view..
 	if (vflip)

@@ -3786,8 +3786,15 @@ static void HWR_SplitSprite(gl_vissprite_t *spr, const boolean papersprite)
 		blend = HWR_GetBlendModeFlag(blendmode)|PF_Occlude;
 	}
 
-	if (cv_playerfade.value && sprmo->player)
-		Surf.PolyColor.s.alpha = FixedMul(R_DoPlayerFade(sprmo), Surf.PolyColor.s.alpha);
+	if (sprmo->player)
+	{
+		// make hyu´d players translucent with reducevfx, could be done better, but im lazy as crap
+		if (cv_reducevfx.value && sprmo->player->kartstuff[k_hyudorotimer] > 0)
+			Surf.PolyColor.s.alpha = FixedMul(FRACUNIT/2, Surf.PolyColor.s.alpha);
+
+		if (cv_playerfade.value)
+			Surf.PolyColor.s.alpha = FixedMul(R_DoPlayerFade(sprmo), Surf.PolyColor.s.alpha);
+	}
 
 	if (HWR_UseShader())
 	{
@@ -4076,8 +4083,15 @@ static void HWR_DrawSprite(gl_vissprite_t *spr)
 		blend = HWR_GetBlendModeFlag(blendmode)|PF_Occlude;
 	}
 
-	if (cv_playerfade.value && sprmo->player)
-		Surf.PolyColor.s.alpha = FixedMul(R_DoPlayerFade(sprmo), Surf.PolyColor.s.alpha);
+	if (sprmo->player)
+	{
+		// make hyu´d players translucent with reducevfx, could be done better, but im lazy as crap
+		if (cv_reducevfx.value && sprmo->player->kartstuff[k_hyudorotimer] > 0)
+			Surf.PolyColor.s.alpha = FixedMul(FRACUNIT/2, Surf.PolyColor.s.alpha);
+
+		if (cv_playerfade.value)
+			Surf.PolyColor.s.alpha = FixedMul(R_DoPlayerFade(sprmo), Surf.PolyColor.s.alpha);
+	}
 
 	if (HWR_UseShader())
 	{
@@ -6102,7 +6116,7 @@ static void HWR_DoPostProcessor(void)
 	const camera_t *thiscam = &camera[0];
 
 	// Not supported in splitscreen - someone want to add support?
-	const boolean screenwave = (!splitscreen && (thiscam->postimg & POSTIMG_WATER || thiscam->postimg & POSTIMG_HEAT));
+	const boolean screenwave = (!splitscreen && !cv_reducevfx.value && (thiscam->postimg & POSTIMG_WATER || thiscam->postimg & POSTIMG_HEAT));
 
 	// Capture the screen for intermission and screen waving
 	if ((lastdraw || screenwave) && gamestate != GS_INTERMISSION)
