@@ -745,7 +745,7 @@ typedef struct gl_shaderstate_s
 static gl_shaderstate_t gl_shaderstate;
 
 // Shader info
-static float shader_leveltime = 0;
+static float shader_leveltime = 0.0f;
 static float shader_light_x = 0.0f;
 static float shader_light_y = 0.0f;
 static float shader_light_z = 0.0f;

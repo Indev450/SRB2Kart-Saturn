@@ -658,7 +658,7 @@ void R_DrawMaskedColumn(drawcolumndata_t* dc, column_t *column)
 	dc->texturemid = basetexturemid;
 }
 
-INT32 lengthcol; // column->length : for flipped column function pointers and multi-patch on 2sided wall = texture->height
+INT32 lengthcol = 0; // column->length : for flipped column function pointers and multi-patch on 2sided wall = texture->height
 
 static void R_DrawFlippedMaskedColumn(drawcolumndata_t* dc, column_t *column)
 {
@@ -1588,8 +1588,15 @@ static void R_ProjectSprite(mobj_t *thing)
 	else
 		trans = 0;
 
-	if (cv_playerfade.value && thing->player)
-		trans = static_cast<INT32>(R_GetThingTransTable(R_DoPlayerFade(thing), static_cast<transnum_t>(trans)));
+	if (thing->player)
+	{
+		// make hyu´d players translucent with reducevfx, could be done better, but im lazy as crap
+		if (cv_reducevfx.value && thing->player->kartstuff[k_hyudorotimer] > 0)
+			trans = static_cast<INT32>(R_GetThingTransTable(FRACUNIT/2, static_cast<transnum_t>(trans)));
+
+		if (cv_playerfade.value)
+			trans = static_cast<INT32>(R_GetThingTransTable(R_DoPlayerFade(thing), static_cast<transnum_t>(trans)));
+	}
 
 	//SoM: 3/17/2000: Disregard sprites that are out of view..
 	if (vflip)
@@ -3086,7 +3093,7 @@ static void R_DrawMaskedList(drawnode_t* head)
 void R_DrawMasked(maskcount_t* masks, INT32 nummasks)
 {
 	INT32 i;
-	drawnode_t *heads;	/**< Drawnode lists; as many as number of views/portals. */
+	drawnode_t *heads = NULL;	/**< Drawnode lists; as many as number of views/portals. */
 
 	heads = static_cast<drawnode_t*>(calloc(nummasks, sizeof(drawnode_t)));
 

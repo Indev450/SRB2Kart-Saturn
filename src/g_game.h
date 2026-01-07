@@ -130,6 +130,7 @@ extern consvar_t cv_spinoutroll;
 extern consvar_t cv_squishdance, cv_squishdancespeed;
 
 extern consvar_t cv_playerblendeffects;
+extern consvar_t cv_reducevfx;
 
 extern consvar_t cv_cechotoggle;
 
