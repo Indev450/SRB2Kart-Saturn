@@ -1025,7 +1025,7 @@ void P_WriteThings(lumpnum_t lumpnum)
 	size_t i, length;
 	mapthing_t *mt;
 	UINT8 *data;
-	savebuffer_t save = {0};
+	savebuffer_t save = {};
 	INT16 temp;
 
 	data = W_CacheLumpNum(lumpnum, PU_LEVEL);
@@ -1169,7 +1169,7 @@ static void P_LoadLineDefs2(void)
 	for (; i--; ld++)
 	{
 		ld->frontsector = sides[ld->sidenum[0]].sector; //e6y: Can't be -1 here
-		ld->backsector  = ld->sidenum[1] != 0xffff ? sides[ld->sidenum[1]].sector : 0;
+		ld->backsector  = ld->sidenum[1] != 0xffff ? sides[ld->sidenum[1]].sector : NULL;
 
 		// Repeat count for midtexture
 		if ((ld->flags & ML_EFFECT5) && (ld->sidenum[1] != 0xffff))

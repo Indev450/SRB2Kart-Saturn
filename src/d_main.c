@@ -1953,7 +1953,8 @@ void D_SRB2Main(void)
 	if (M_CheckParm("-warp") && M_IsNextParm())
 	{
 		const char *word = M_GetNextParm();
-		pstartmap = G_FindMapByNameOrCode(word, 0);
+		pstartmap = G_FindMapByNameOrCode(word, NULL);
+
 		if (! pstartmap)
 			I_Error("Cannot find a map remotely named '%s'\n", word);
 		else

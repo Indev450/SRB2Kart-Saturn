@@ -98,10 +98,10 @@ static size_t textureBufferSize = 0;
 static LTListItem *LightTablesTail = NULL;
 static LTListItem *LightTablesHead = NULL;
 
-static RGBA_t screenPalette[256] = {0}; // the palette for the postprocessing step in palette rendering
+static RGBA_t screenPalette[256] = {}; // the palette for the postprocessing step in palette rendering
 static GLuint screenPaletteTex = 0; // 1D texture containing the screen palette
 static GLuint paletteLookupTex = 0; // 3D texture containing RGB -> palette index lookup table
-RGBA_t  myPaletteData[256] = {0}; // the palette for converting textures to RGBA
+RGBA_t myPaletteData[256] = {}; // the palette for converting textures to RGBA
 
 static GLint gltexformat = GL_RGB5_A1;
 GLint   screen_width     = 0;               // used by Draw2DLine()
@@ -127,9 +127,9 @@ GLuint gl_num_extensions;
 int majorGL = 0, minorGL = 0;
 
 //Hurdler: 04/10/2000: added for the kick ass coronas as Boris wanted;-)
-GLfloat modelMatrix[16] = {0};
-GLfloat projMatrix[16] = {0};
-static GLint   viewport[4];
+GLfloat modelMatrix[16] = {};
+GLfloat projMatrix[16] = {};
+static GLint viewport[4];
 
 #ifdef USE_FBO_OGL
 enum
@@ -172,7 +172,7 @@ boolean supportstencil = false;
 //			flush all of the stored textures, leaving them unavailable at times such as between levels
 //			These need to start at 0 and be set to their number, and be reset to 0 when deleted so that Intel GPUs
 //			can know when the textures aren't there, as textures are always considered resident in their virtual memory
-static GLuint screenTextures[NUMSCREENTEXTURES] = {0};
+static GLuint screenTextures[NUMSCREENTEXTURES] = {};
 
 #define byte2float(byte) (GLfloat)(byte / 255.0f)
 

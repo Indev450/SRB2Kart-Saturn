@@ -527,7 +527,7 @@ static int str_find_aux (lua_State *L, int find) {
         if (find) {
           lua_pushinteger(L, s1-s+1);  /* start */
           lua_pushinteger(L, res-s);   /* end */
-          return push_captures(&ms, NULL, 0) + 2;
+          return push_captures(&ms, NULL, NULL) + 2;
         }
         else
           return push_captures(&ms, s1, res);

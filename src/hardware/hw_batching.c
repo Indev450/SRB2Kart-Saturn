@@ -396,7 +396,7 @@ void HWR_RenderBatches(boolean sort)
 				nextSurfaceInfo = nextEntry->surf;
 
 				if (nextPolyFlags & PF_NoTexture)
-					nextTexture = 0;
+					nextTexture = NULL;
 
 				if (useshader && currentShader != nextShader)
 				{

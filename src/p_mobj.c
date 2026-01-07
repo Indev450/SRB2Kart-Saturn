@@ -3686,10 +3686,10 @@ static void P_CalculatePrecipFloor(precipmobj_t *mobj)
 // Just the identification of a precip thinker. The thinker
 // should never actually be called!
 //
-void P_NullPrecipThinker(precipmobj_t *mobj)
+FUNCNORETURN void P_NullPrecipThinker(precipmobj_t *mobj)
 {
 	(void)mobj;
-	I_Assert("P_NullPrecipThinker should not be called" == 0);
+	I_Error("P_NullPrecipThinker should not be called");
 }
 
 boolean P_PrecipThinker(precipmobj_t *mobj)
@@ -4092,7 +4092,7 @@ static void P_Boss3Thinker(mobj_t *mobj)
 			if ((UINT32)mobj->extravalue1 + TICRATE*2 < leveltime)
 			{
 				mobj->extravalue1 = (INT32)leveltime;
-				S_StartSound(0, sfx_buzz1);
+				S_StartSound(NULL, sfx_buzz1);
 			}
 
 			// If in the center, check to make sure
@@ -4711,7 +4711,7 @@ static void P_Boss7Thinker(mobj_t *mobj)
 		if (mobj->health > 0)
 			mobj->health--;
 
-		S_StartSound(0, (mobj->health) ? sfx_behurt : sfx_bedie2);
+		S_StartSound(NULL, (mobj->health) ? sfx_behurt : sfx_bedie2);
 
 		mobj->reactiontime /= 3;
 
@@ -4750,7 +4750,7 @@ static void P_Boss7Thinker(mobj_t *mobj)
 		INT32 i;
 		mobj->state->nextstate = mobj->info->painstate; // Reset
 
-		S_StartSound(0, sfx_bedeen);
+		S_StartSound(NULL, sfx_bedeen);
 
 		for (i = 0; i < MAXPLAYERS; i++)
 		{
@@ -4774,7 +4774,7 @@ static void P_Boss7Thinker(mobj_t *mobj)
 				mobj->state->nextstate = mobj->info->spawnstate;
 
 				// Laugh
-				S_StartSound(0, sfx_bewar1 + P_RandomKey(4));
+				S_StartSound(NULL, sfx_bewar1 + P_RandomKey(4));
 			}
 		}
 	}
@@ -4794,7 +4794,7 @@ static void P_Boss7Thinker(mobj_t *mobj)
 			var2 = 2*TICRATE + (80<<16);
 
 			A_LobShot(mobj);
-			S_StartSound(0, sfx_begoop);
+			S_StartSound(NULL, sfx_begoop);
 		}
 	}
 	else if (mobj->state == &states[S_BLACKEGG_SHOOT2])
@@ -4818,7 +4818,7 @@ static void P_Boss7Thinker(mobj_t *mobj)
 		S_StopSound(missile);
 
 		if (leveltime & 1)
-			S_StartSound(0, sfx_beshot);
+			S_StartSound(NULL, sfx_beshot);
 	}
 	else if (mobj->state == &states[S_BLACKEGG_JUMP1] && mobj->tics == 1)
 	{
@@ -4951,7 +4951,7 @@ static void P_Boss7Thinker(mobj_t *mobj)
 		fixed_t x,y,z;
 		mobj_t *mo2;
 
-		S_StartSound(0, sfx_befall);
+		S_StartSound(NULL, sfx_befall);
 
 		z = mobj->floorz;
 		for (j = 0; j < 2; j++)
@@ -4990,13 +4990,13 @@ static void P_Boss7Thinker(mobj_t *mobj)
 			P_DamageMobj(players[i].mo, mobj, mobj, 1);
 
 			// Laugh
-			S_StartSound(0, sfx_bewar1 + P_RandomKey(4));
+			S_StartSound(NULL, sfx_bewar1 + P_RandomKey(4));
 		}
 
 		P_SetMobjState(mobj, mobj->info->spawnstate);
 	}
 	else if (mobj->state == &states[mobj->info->deathstate] && mobj->tics == mobj->state->tics)
-		S_StartSound(0, sfx_bedie1 + (P_RandomFixed() & 1));
+		S_StartSound(NULL, sfx_bedie1 + (P_RandomFixed() & 1));
 }
 
 // Metal Sonic battle boss
@@ -10836,7 +10836,7 @@ void P_SpawnPlayer(INT32 playernum)
 	// the dead body mobj retains the skin through the 'spritedef' override).
 	mobj->skin = &skins[p->skin];
 
-	mobj->localskin = (p->localskin ? K_GetPlayerSkin(p) : 0);
+	mobj->localskin = (p->localskin ? K_GetPlayerSkin(p) : NULL);
 	mobj->skinlocal = p->skinlocal;
 
 	mobj->health = p->health;

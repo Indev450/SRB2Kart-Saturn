@@ -888,7 +888,7 @@ static void S_StopChannel(INT32 cnum)
 			if (cnum != i && c->sfxinfo == channels[i].sfxinfo)
 				break;
 
-		c->sfxinfo = 0;
+		c->sfxinfo = NULL;
 	}
 
 	c->origin = NULL;
@@ -1275,7 +1275,7 @@ static musicdef_t *S_AddMusicCredit(void)
 	return &musicdefs[chunk][i];
 }
 
-struct cursongcredit cursongcredit = {0}; // Currently displayed song credit info
+struct cursongcredit cursongcredit = {}; // Currently displayed song credit info
 
 static boolean ReadMusicDefFields(UINT16 wadnum, int line, char *stoken, musicdef_t **defp)
 {
@@ -1708,7 +1708,7 @@ static void S_UnloadMusic(void)
 	music.flags = 0;
 	music.looping = false;
 
-	music_refade_cv = 0;
+	music_refade_cv = NULL;
 }
 
 static boolean S_PlayMusic(boolean looping, UINT32 fadeinms)

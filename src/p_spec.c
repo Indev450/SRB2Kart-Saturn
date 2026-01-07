@@ -4579,8 +4579,8 @@ static inline void P_AddFFloorToList(sector_t *sec, ffloor_t *ffloor)
 	if (!sec->ffloors)
 	{
 		sec->ffloors = ffloor;
-		ffloor->next = 0;
-		ffloor->prev = 0;
+		ffloor->next = NULL;
+		ffloor->prev = NULL;
 		return;
 	}
 
@@ -4588,7 +4588,7 @@ static inline void P_AddFFloorToList(sector_t *sec, ffloor_t *ffloor)
 
 	rover->next = ffloor;
 	ffloor->prev = rover;
-	ffloor->next = 0;
+	ffloor->next = NULL;
 }
 
 /** Adds a 3Dfloor.

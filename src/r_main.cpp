@@ -1084,7 +1084,7 @@ subsector_t *R_IsPointInSubsector(fixed_t x, fixed_t y)
 	ret = &subsectors[nodenum & ~NF_SUBSECTOR];
 	for (i = 0; i < ret->numlines; i++)
 		if (P_PointOnLineSide(x, y, segs[ret->firstline + i].linedef) != segs[ret->firstline + i].side)
-			return 0;
+			return NULL;
 
 	return ret;
 }
