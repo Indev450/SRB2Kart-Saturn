@@ -80,7 +80,7 @@ static UINT8 cheatf_warp(void)
 	if (success)
 	{
 		G_SaveGameData(true); //G_SetGameModified(false);
-		S_StartSound(0, sfx_kc42);
+		S_StartSound(NULL, sfx_kc42);
 	}
 
 	// Refresh secrets menu existing.
@@ -117,13 +117,13 @@ static UINT8 cheatf_devmode(void)
 #endif
 
 static cheatseq_t cheat_warp = {
-	0, cheatf_warp,
+	NULL, cheatf_warp,
 	//{ SCRAMBLE('r'), SCRAMBLE('e'), SCRAMBLE('d'), SCRAMBLE('x'), SCRAMBLE('v'), SCRAMBLE('i'), 0xff }
 	{ SCRAMBLE('b'), SCRAMBLE('a'), SCRAMBLE('n'), SCRAMBLE('a'), SCRAMBLE('n'), SCRAMBLE('a'), 0xff }
 };
 
 static cheatseq_t cheat_warp_joy = {
-	0, cheatf_warp,
+	NULL, cheatf_warp,
 	/*{ SCRAMBLE(KEY_LEFTARROW), SCRAMBLE(KEY_LEFTARROW), SCRAMBLE(KEY_UPARROW),
 	  SCRAMBLE(KEY_RIGHTARROW), SCRAMBLE(KEY_RIGHTARROW), SCRAMBLE(KEY_UPARROW),
 	  SCRAMBLE(KEY_LEFTARROW), SCRAMBLE(KEY_UPARROW),
@@ -136,7 +136,7 @@ static cheatseq_t cheat_warp_joy = {
 
 #ifdef DEVELOP
 static cheatseq_t cheat_devmode = {
-	0, cheatf_devmode,
+	NULL, cheatf_devmode,
 	{ SCRAMBLE('d'), SCRAMBLE('e'), SCRAMBLE('v'), SCRAMBLE('m'), SCRAMBLE('o'), SCRAMBLE('d'), SCRAMBLE('e'), 0xff }
 };
 #endif

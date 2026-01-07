@@ -1318,7 +1318,7 @@ boolean F_ContinueResponder(event_t *event)
 	keypressed = true;
 	imcontinuing = true;
 	continuetime = TICRATE;
-	S_StartSound(0, sfx_itemup);
+	S_StartSound(NULL, sfx_itemup);
 	return true;
 }
 

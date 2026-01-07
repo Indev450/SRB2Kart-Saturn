@@ -189,7 +189,7 @@ HMS_connect (const char *format, ...)
 	seek = strlen(hms_api) + 1;/* + '/' */
 
 	va_start (ap, format);
-	url = malloc(seek + vsnprintf(0, 0, format, ap) + sizeof HMS_QUERY_VERSION - 1 + token_length + 1);
+	url = malloc(seek + vsnprintf(NULL, 0, format, ap) + sizeof HMS_QUERY_VERSION - 1 + token_length + 1);
 	va_end (ap);
 
 	sprintf(url, "%s/", hms_api);
@@ -471,8 +471,8 @@ HMS_fetch_servers (msg_server_t *list, int query_id)
 			*end = '\0';
 
 			address = strtok(p, " ");
-			port    = strtok(0, " ");
-			contact = strtok(0, "");
+			port    = strtok(NULL, " ");
+			contact = strtok(NULL, "");
 
 			if (address && port)
 			{
@@ -539,7 +539,7 @@ HMS_compare_mod_version (char *buffer, size_t buffer_size)
 	if (HMS_do(hms))
 	{
 		version      = strtok(hms->buffer, " ");
-		version_name = strtok(0, "\n");
+		version_name = strtok(NULL, "\n");
 
 		if (version && version_name)
 		{

@@ -302,7 +302,7 @@ void SetLocalPlayerSkin(INT32 playernum, const char *skinname, consvar_t *cvar)
 
 		if (player->mo)
 		{
-			player->mo->localskin = 0;
+			player->mo->localskin = NULL;
 			player->mo->skinlocal = false;
 		}
 	}

@@ -772,10 +772,10 @@ union luai_Cast { double l_d; long l_l; };
 
 #include <stdio.h>
 #if defined(__GNUC__)
-#define l_likely(x)	(__builtin_expect(((x) != 0), 1))
-#define l_unlikely(x)	(__builtin_expect(((x) != 0), 0))
+#define l_likely(x)		(__builtin_expect(!!(x), 1))
+#define l_unlikely(x)	(__builtin_expect(!!(x), 0))
 #else
-#define l_likely(x)	(x)
+#define l_likely(x)		(x)
 #define l_unlikely(x)	(x)
 #endif
 

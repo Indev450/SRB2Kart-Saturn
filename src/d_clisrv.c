@@ -332,7 +332,7 @@ void RegisterNetXCmd(netxcmd_t id, void (*cmd_f)(const UINT8 **p, INT32 playernu
 #ifdef PARANOIA
 	if (id >= MAXNETXCMD)
 		I_Error("Command id %d too big", id);
-	if (listnetxcmd[id] != 0)
+	if (listnetxcmd[id] != NULL)
 		I_Error("Command id %d already used", id);
 #endif
 	listnetxcmd[id] = cmd_f;
@@ -1234,7 +1234,7 @@ static inline void CL_DrawConnectionStatus(void)
 						va(" %4uK/%4uK",currentsize>>10,totalsize>>10));
 
 					V_DrawRightAlignedString(BASEVIDWIDTH/2+128, BASEVIDHEIGHT-24, V_20TRANS|V_MONOSPACE,
-						va("%3.1fK/s ", ((double)getbps)/1024));
+						va("%3.1fK/s ", ((double)getbps)/1024.0));
 				}
 				else
 					cltext = M_GetText("Waiting to download game state...");
@@ -1956,7 +1956,7 @@ static boolean SV_ResendingSavegameToAnyone(void)
 static void SV_SendSaveGame(INT32 node, boolean resending)
 {
 	size_t length, compressedlen;
-	savebuffer_t save = {0};
+	savebuffer_t save = {};
 	UINT8 *compressedsave;
 	UINT8 *buffertosend;
 
@@ -2026,7 +2026,7 @@ static consvar_t cv_dumpconsistency = {"dumpconsistency", "Off", CV_NETVAR, CV_O
 static void SV_SavedGame(void)
 {
 	size_t length;
-	savebuffer_t save = {0};
+	savebuffer_t save = {};
 	char tmpsave[264];
 
 	if (!cv_dumpconsistency.value)
@@ -2066,7 +2066,7 @@ static void SV_SavedGame(void)
 
 static void CL_LoadReceivedSavegame(boolean reloading)
 {
-	savebuffer_t save = {0};
+	savebuffer_t save = {};
 	size_t length, decompressedlen;
 	char tmpsave[264];
 
@@ -4933,8 +4933,6 @@ static void PT_ClientJoin(SINT8 node)
 	if (client || nodeingame[node] || levelloading)
 		return;
 
-	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
-
 	const char *refuse = GetRefuseMessage(node);
 
 	if (refuse)
@@ -4942,6 +4940,8 @@ static void PT_ClientJoin(SINT8 node)
 		SV_SendRefuse(node, refuse);
 		return;
 	}
+
+	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
 
 	// client authorised to join
 	nodewaiting[node] = (UINT8)(netbuffer->u.clientcfg.localplayers - playerpernode[node]);
@@ -7288,7 +7288,7 @@ void CL_ClearRewinds(void)
 
 rewind_t *CL_SaveRewindPoint(size_t demopos)
 {
-	savebuffer_t save = {0};
+	savebuffer_t save = {};
 	rewind_t *rewind;
 
 	if (rewindhead && rewindhead->leveltime + REWIND_POINT_INTERVAL > leveltime)
@@ -7311,7 +7311,7 @@ rewind_t *CL_SaveRewindPoint(size_t demopos)
 
 rewind_t *CL_RewindToTime(tic_t time)
 {
-	savebuffer_t save = {0};
+	savebuffer_t save = {};
 	rewind_t *rewind;
 
 	while (rewindhead && rewindhead->leveltime > time)
