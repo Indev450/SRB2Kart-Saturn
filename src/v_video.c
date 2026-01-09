@@ -3825,7 +3825,7 @@ void InitColorLUT(colorlookup_t *lut, RGBA_t *palette, boolean makecolors)
 		lut->init = true;
 		memcpy(lut->palette, palette, palsize);
 
-		for (i = 0; i < 0xFFFF; i++)
+		for (i = 0; i < 0x10000; i++)
 			lut->table[i] = 0xFFFF;
 
 		if (makecolors)
@@ -3838,7 +3838,9 @@ void InitColorLUT(colorlookup_t *lut, RGBA_t *palette, boolean makecolors)
 				{
 					for (b = 0; b < 0xFF; b++)
 					{
-						lut->table[i] = GetColorLUT(lut, r, g, b);
+						i = CLUTINDEX(r, g, b);
+						if (lut->table[i] == 0xFFFF)
+							lut->table[i] = NearestPaletteColor(r, g, b, palette);
 					}
 				}
 			}
