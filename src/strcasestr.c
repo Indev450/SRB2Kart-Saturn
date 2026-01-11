@@ -73,7 +73,7 @@ nongnu_strcasestr (const char *s, const char *q)
 	up = strchr(s, uc);
 	lp = strchr(s, lc);
 
-	if (up == NULL || lp == NULL)
+	if (up == NULL && lp == NULL)
 		return NULL;
 
 	if (!lp || ( up && up < lp ))
@@ -100,7 +100,7 @@ nongnu_strcasestr (const char *s, const char *q)
 		if (trycmp(ppa, cpa, q, qn) == 0)
 			return (*ppa);
 
-		if (up == NULL || lp == NULL)
+		if (up == NULL && lp == NULL)
 			break;
 
 		if (!(*ppa) || ( (*ppb) && (*ppb) < (*ppa) ))
