@@ -22,7 +22,7 @@ CXXFLAGS+= -Wno-aggregate-return
 # -W -Wno-unused
 WFLAGS:=-Wall -Wno-trigraphs -Wnull-dereference
 ifdef GCC152
-WFLAGS+-Wzero-as-null-pointer-constant
+WFLAGS+=-Wzero-as-null-pointer-constant
 endif
 ifndef GCC295
 #WFLAGS+=-Wno-packed
