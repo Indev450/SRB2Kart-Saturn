@@ -1508,7 +1508,7 @@ void HWR_Draw2DModel(md2_t *md2, INT32 x, INT32 y, INT32 skinnum, skincolors_t c
 	else
 		frame = 0;
 
-	gpatch = static_cast<patch_t *>(md2->glpatch);
+	gpatch = (patch_t *)(md2->glpatch);
 	if (gpatch)
 		hwrPatch = ((GLPatch_t *)gpatch->hardware);
 
@@ -1516,11 +1516,11 @@ void HWR_Draw2DModel(md2_t *md2, INT32 x, INT32 y, INT32 skinnum, skincolors_t c
 	    ((!hwrPatch->mipmap->format || !hwrPatch->mipmap->downloaded) && !md2->notexturefile))
 		md2_loadTexture(md2);
 
-	gpatch = static_cast<patch_t *>(md2->glpatch);
+	gpatch = (patch_t*)(md2->glpatch);
 	if (gpatch)
 		hwrPatch = ((GLPatch_t *)gpatch->hardware);
 
-	blendgpatch = static_cast<patch_t *>(md2->blendglpatch);
+	blendgpatch = (patch_t*)(md2->blendglpatch);
 	if (blendgpatch)
 		hwrBlendPatch = ((GLPatch_t *)blendgpatch->hardware);
 
@@ -1529,7 +1529,7 @@ void HWR_Draw2DModel(md2_t *md2, INT32 x, INT32 y, INT32 skinnum, skincolors_t c
 		((!hwrBlendPatch->mipmap->format || !hwrBlendPatch->mipmap->downloaded) && !md2->noblendfile)))
 		md2_loadBlendTexture(md2);
 
-	blendgpatch = static_cast<patch_t *>(md2->blendglpatch);
+	blendgpatch = (patch_t*)(md2->blendglpatch);
 	if (blendgpatch)
 		hwrBlendPatch = ((GLPatch_t *)blendgpatch->hardware);
 
