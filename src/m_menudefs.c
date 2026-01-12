@@ -1339,16 +1339,19 @@ static menuitem_t OP_CamOptionsMenu[] =
 
 	{IT_STRING | IT_CVAR | IT_CV_BIGFLOAT,	NULL,	"Field of View",&cv_fov,				  	 30},
 
-	{IT_STRING | IT_SUBMENU,	NULL, "Player 1 Camera options...",	&OP_Player1CamOptionsDef,	 50},
-	{IT_STRING | IT_SUBMENU,	NULL, "Player 2 Camera options...",	&OP_Player2CamOptionsDef,	 60},
-	{IT_STRING | IT_SUBMENU,	NULL, "Player 3 Camera options...",	&OP_Player3CamOptionsDef,	 70},
-	{IT_STRING | IT_SUBMENU,	NULL, "Player 4 Camera options...",	&OP_Player4CamOptionsDef,	 80},
+	{IT_STRING | IT_CVAR,                   NULL,   "Flipcam Mode", &cv_flipcammode,             40},
+
+	{IT_STRING | IT_SUBMENU,	NULL, "Player 1 Camera options...",	&OP_Player1CamOptionsDef,	 60},
+	{IT_STRING | IT_SUBMENU,	NULL, "Player 2 Camera options...",	&OP_Player2CamOptionsDef,	 70},
+	{IT_STRING | IT_SUBMENU,	NULL, "Player 3 Camera options...",	&OP_Player3CamOptionsDef,	 80},
+	{IT_STRING | IT_SUBMENU,	NULL, "Player 4 Camera options...",	&OP_Player4CamOptionsDef,	 90},
 };
 
 static const char* OP_CamOptionsTooltips[] =
 {
 	NULL,
 	"Player field of view.",
+	"Change flipcam mode.\nDisplayplayer - use currently viewed player option.\nLocal - use local flipcam toggle option.",
 	NULL,
 	NULL,
 	NULL,

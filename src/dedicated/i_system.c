@@ -1077,7 +1077,7 @@ FUNCNORETURN static ATTRNORETURN void signal_handler(INT32 num)
 }
 #endif
 
-static void quit_handler(int num)
+FUNCNORETURN static ATTRNORETURN void quit_handler(int num)
 {
 	signal(num, SIG_DFL); //default signal action
 	raise(num);
