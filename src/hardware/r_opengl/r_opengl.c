@@ -3116,7 +3116,7 @@ void GL_Draw2DModel(model_t *model, INT32 frameIndex, INT32 duration, INT32 tics
 	// thisll make sure our coords will be remapped to pixel coords
 	// try to scale it to the base width and height
 	// shit still be weird, and needs accounting for diff resolutions
-	pglOrtho(0.0f, (float)BASEVIDWIDTH, (float)BASEVIDHEIGHT, 0.0f, NZCLIP_PLANE, FAR_ZCLIP_DEFAULT);
+	pglOrtho(0.0f, (float)vid.width, (float)vid.height, 0.0f, NZCLIP_PLANE, FAR_ZCLIP_DEFAULT);
 
 	pglMatrixMode(GL_MODELVIEW);
 	pglLoadIdentity();
