@@ -1576,28 +1576,29 @@ void HWR_Draw2DModel(md2_t *md2, INT32 x, INT32 y, INT32 skinnum, skincolors_t c
 
 	memset(&p, 0x00, sizeof(FTransform));
 
-	p.x = x*vid.dup + (vid.width - BASEVIDWIDTH*vid.dup)/2;
-	p.y = -200.0f; // idk man, but this makes the model not cull, kinda?
-	p.z = y*vid.dup + (vid.height - BASEVIDHEIGHT*vid.dup)/2; // for whatever reason y and z are switched here
+	p.x = x*vid.dup + (float)(vid.width - BASEVIDWIDTH*vid.dup)/2.f;
+	p.y = -200.f; // push it back to prevent wonky culling, idk lul
+	p.z = y*vid.dup + (float)(vid.height - BASEVIDHEIGHT*vid.dup)/2.f;
 
 	p.angley = FixedToFloat(AngleFixed(angle));
-	p.anglex = 0.0f;
-	p.anglez = 0.0f;
+	p.anglex = 0.f;
+	p.anglez = 0.f;
 
 	p.roll = false;
-
 	p.fliptype = TRANSFORM_NONE;
+
+	const float fscale = FixedToFloat(scale*vid.dup);
 
 	GL_Draw2DModel(
 			md2->model,
 			frame,
-			0.0f,
-			0.0f,
+			0.f,
+			0.f,
 			-1,
 			&p,
-			FixedToFloat(scale*vid.dup),
-			FixedToFloat(scale*vid.dup),
-			true,
+			fscale,
+			fscale,
+			true, // flip it vertically lul
 			false,
 			&Surf
 		);

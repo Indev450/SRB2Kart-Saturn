@@ -3136,8 +3136,6 @@ void GL_Draw2DModel(model_t *model, INT32 frameIndex, INT32 duration, INT32 tics
 
 	// switch to ortho mode to make our lives easier
 	// thisll make sure our coords will be remapped to pixel coords
-	// try to scale it to the base width and height
-	// shit still be weird, and needs accounting for diff resolutions
 	pglOrtho(0.0f, (float)vid.width, (float)vid.height, 0.0f, NZCLIP_PLANE, FAR_ZCLIP_DEFAULT);
 
 	pglMatrixMode(GL_MODELVIEW);
@@ -3147,14 +3145,8 @@ void GL_Draw2DModel(model_t *model, INT32 frameIndex, INT32 duration, INT32 tics
 	pglDepthMask(GL_TRUE);
 	pglClear(GL_DEPTH_BUFFER_BIT);
 
-	// FIXME: theres some weird culling issues i cant wrap my head around
-	// so until then gotta disable depth testing until i can figure this out
-	//pglDisable(GL_DEPTH_TEST);
 	GL_DrawModelEx(model, frameIndex, duration, tics, nextFrameIndex,
 	               pos, hscale, vscale, flipped, hflipped, Surface);
-
-	//pglDepthMask(GL_TRUE);
-	//pglEnable(GL_DEPTH_TEST);
 
 	// restore the matrix´s
 	pglMatrixMode(GL_PROJECTION);
