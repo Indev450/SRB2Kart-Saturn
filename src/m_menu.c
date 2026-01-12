@@ -7947,6 +7947,7 @@ static void M_DrawSetupMultiPlayerMenu(void)
 	UINT8 i;
 	UINT8 s, w;
 	const UINT8 *flashcol = V_GetStringColormap(highlightflags);
+	INT32 skinnum = 0;
 	INT32 statx, staty;
 	UINT32 speenframe;
 	INT32 sltw, actw, hetw;
@@ -8522,12 +8523,12 @@ static void M_DrawSetupMultiPlayerMenu(void)
 			break;
 	}
 
-	const INT32 skinnum = R_SkinAvailable(skins[skintodisplay].name);
+	skinnum = R_SkinAvailable(skins[skintodisplay].name);
 
-	if (skinnum > 0 || skinnum < MAXSKINS)
-		sprdef = &skins[skinnum].spritedef;
-	else
-		sprdef = &skins[0].spritedef;
+	if (skinnum < 0 || skinnum >= MAXSKINS)
+		skinnum = 0;
+
+	sprdef = &skins[skinnum].spritedef;
 
 	if (!sprdef->numframes) // No frames ??
 		return; // Can't render!
@@ -8556,14 +8557,8 @@ static void M_DrawSetupMultiPlayerMenu(void)
 	if (setupm_fakecolor) // inverse should never happen
 	{
 		UINT8 *colormap = R_GetTranslationColormap(skintodisplay, setupm_fakecolor, GTC_MENUCACHE);
-
 #ifdef HWRENDER
-		md2_t *md2 = NULL;
-
-		if (skinnum > 0 || skinnum < MAXSKINS)
-			md2 = &md2_playermodels[skinnum];
-		else
-			md2 = &md2_playermodels[0];
+		md2_t *md2 = &md2_playermodels[skinnum];
 
 		// if we have 3d models enabled and a model exists
 		// try to show it instead of the sprite
