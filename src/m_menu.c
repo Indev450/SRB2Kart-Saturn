@@ -12,6 +12,8 @@
 /// \file  m_menu.c
 /// \brief XMOD's extremely revamped menu system.
 
+#include "screen.h"
+#include "tables.h"
 #ifdef __GNUC__
 #include <unistd.h>
 #endif
@@ -7946,6 +7948,7 @@ static void M_DrawSetupMultiPlayerMenu(void)
 	UINT8 i;
 	UINT8 s, w;
 	const UINT8 *flashcol = V_GetStringColormap(highlightflags);
+	INT32 skinnum = 0;
 	INT32 statx, staty;
 	UINT32 speenframe;
 	INT32 sltw, actw, hetw;
@@ -8521,12 +8524,12 @@ static void M_DrawSetupMultiPlayerMenu(void)
 			break;
 	}
 
-	const INT32 skinnum = R_SkinAvailable(skins[skintodisplay].name);
+	skinnum = R_SkinAvailable(skins[skintodisplay].name);
 
-	if (skinnum != -1)
-		sprdef = &skins[skinnum].spritedef;
-	else
-		sprdef = &skins[0].spritedef;
+	if (skinnum < 0 || skinnum >= MAXSKINS)
+		skinnum = 0;
+
+	sprdef = &skins[skinnum].spritedef;
 
 	if (!sprdef->numframes) // No frames ??
 		return; // Can't render!
@@ -8549,23 +8552,43 @@ static void M_DrawSetupMultiPlayerMenu(void)
 
 	// draw box around guy
 	V_DrawFill(mx + 36 - (charw/2), my+65, charw, 84, 239);
+#undef charw
 
 	// draw player sprite
 	if (setupm_fakecolor) // inverse should never happen
 	{
 		UINT8 *colormap = R_GetTranslationColormap(skintodisplay, setupm_fakecolor, GTC_MENUCACHE);
+#ifdef HWRENDER
+		md2_t *md2 = &md2_playermodels[skinnum];
 
-		if (skins[skintodisplay].flags & SF_HIRES)
+		// if we have 3d models enabled and a model exists
+		// try to show it instead of the sprite
+		if (rendermode == render_opengl && cv_glmdls.value
+		&& !md2->error && !md2->notfound)
 		{
-			V_DrawFixedPatch((mx+36)<<FRACBITS,
-						(my+131)<<FRACBITS,
-						skins[skintodisplay].highresscale,
-						flags, patch, colormap);
+			mx += 36;
+			my += 131;
+
+			const angle_t ROTATE_PER_TIC = (UINT64)ANGLE_45 * cv_skinselectspin.value / TICRATE;
+
+			angle_t angle = I_GetTime()*ROTATE_PER_TIC + FixedMul(cv_uncappedhud.value ? renderdeltatics : FRACUNIT, ROTATE_PER_TIC);
+
+			HWR_Draw2DModel(md2, mx, my, skinnum, (skincolors_t)setupm_fakecolor, colormap, 8*FRACUNIT/3, frame, angle);
 		}
 		else
-			V_DrawMappedPatch(mx+36, my+131, flags, patch, colormap);
+#endif
+		{
+			if (skins[skintodisplay].flags & SF_HIRES)
+			{
+				V_DrawFixedPatch((mx+36)<<FRACBITS,
+							(my+131)<<FRACBITS,
+							skins[skintodisplay].highresscale,
+							flags, patch, colormap);
+			}
+			else
+				V_DrawMappedPatch(mx+36, my+131, flags, patch, colormap);
+		}
 	}
-#undef charw
 }
 
 // Handle 1P/2P MP Setup
@@ -9897,12 +9920,12 @@ static void M_DrawLocalSkinMenu(void)
 	// skin 0 is default player sprite
 	skintodisplay = R_AnySkinAvailable(cv_fakelocalskin.string);
 
-	if (skintodisplay == -1)
+	if (skintodisplay < 0)
 	{
 		// ATTEMPT TO FIND REAL SKIN
 		skintodisplay = R_AnySkinAvailable(cv_skin.string);
 
-		if (skintodisplay == -1) // STILL NOTHIN? use sonic instead
+		if (skintodisplay < 0) // STILL NOTHIN? use sonic instead
 		{
 			skintodisplay = 0;
 		}
@@ -9935,6 +9958,7 @@ static void M_DrawLocalSkinMenu(void)
 
 	// draw box around guy
 	V_DrawFill(mx + 220 - (charw/2), my+54, charw, 84, 239);
+#undef charw
 
 	// draw player sprite
 	UINT8 *colormap = R_GetLocalTranslationColormap(&skins[displayskin.localnum], (displayskin.localskin ? &localskins[displayskin.localnum] : NULL), cv_playercolor.value, GTC_MENUCACHE, displayskin.localskin);
@@ -9949,13 +9973,34 @@ static void M_DrawLocalSkinMenu(void)
 	else
 		V_DrawString(mx+20, my+118, V_ALLOWLOWERCASE|highlightflags, displayskin.realname);
 
-	if (displayskin.flags & SF_HIRES)
+	// draw player sprite
+#ifdef HWRENDER
+	md2_t *md2 = (displayskin.localskin ? &md2_localplayermodels[skintodisplay] : &md2_playermodels[skintodisplay]);
+
+	// if we have 3d models enabled and a model exists
+	// try to show it instead of the sprite
+	if (rendermode == render_opengl && cv_glmdls.value
+	&& !md2->error && !md2->notfound)
 	{
-		V_DrawFixedPatch((mx+220)<<FRACBITS, (my+120)<<FRACBITS, displayskin.highresscale, flags, patch, colormap);
+		mx += 220;
+		my += 120;
+
+		const angle_t ROTATE_PER_TIC = (UINT64)ANGLE_45 * cv_skinselectspin.value / TICRATE;
+
+		angle_t angle = I_GetTime()*ROTATE_PER_TIC + FixedMul(cv_uncappedhud.value ? renderdeltatics : FRACUNIT, ROTATE_PER_TIC);
+
+		HWR_Draw2DModel(md2, mx, my, skintodisplay, (skincolors_t)cv_playercolor.value, colormap, 8*FRACUNIT/3, frame, angle);
 	}
 	else
-		V_DrawMappedPatch(mx+220, my+120, flags, patch, colormap);
-#undef charw
+#endif
+	{
+		if (displayskin.flags & SF_HIRES)
+		{
+			V_DrawFixedPatch((mx+220)<<FRACBITS, (my+120)<<FRACBITS, displayskin.highresscale, flags, patch, colormap);
+		}
+		else
+			V_DrawMappedPatch(mx+220, my+120, flags, patch, colormap);
+	}
 }
 
 // Draw the video modes list, a-la-Quake

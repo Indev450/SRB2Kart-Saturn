@@ -1475,4 +1475,116 @@ void HWR_DrawMD2(gl_vissprite_t *spr)
 	}
 }
 
+// mostly copy paste of HWR_DrawMD2
+// very ugly but our model code kinda sucks
+void HWR_Draw2DModel(md2_t *md2, INT32 x, INT32 y, INT32 skinnum, skincolors_t color, const UINT8 *colormap, fixed_t scale, INT32 frame, angle_t angle)
+{
+	patch_t *gpatch, *blendgpatch;
+	GLPatch_t *hwrPatch = NULL, *hwrBlendPatch = NULL;
+	FTransform p;
+	FSurfaceInfo Surf;
+
+	if (!md2->model)
+	{
+		char filename[64];
+		CONS_Debug(DBG_RENDER, "Loading model... (%s)\n", md2->filename);
+		sprintf(filename, "mdls/%s", md2->filename);
+		md2->model = md2_readModel(filename);
+
+		if (md2->model)
+		{
+			md2_printModelInfo(md2->model);
+			GL_CreateModelVBOs(md2->model);
+		}
+		else
+		{
+			md2->error = true;
+			return;
+		}
+	}
+
+	if (md2->model->meshes[0].numFrames > 0)
+		frame = frame % md2->model->meshes[0].numFrames;
+	else
+		frame = 0;
+
+	gpatch = static_cast<patch_t *>(md2->glpatch);
+	if (gpatch)
+		hwrPatch = ((GLPatch_t *)gpatch->hardware);
+
+	if (!gpatch || !hwrPatch ||
+	    ((!hwrPatch->mipmap->format || !hwrPatch->mipmap->downloaded) && !md2->notexturefile))
+		md2_loadTexture(md2);
+
+	gpatch = static_cast<patch_t *>(md2->glpatch);
+	if (gpatch)
+		hwrPatch = ((GLPatch_t *)gpatch->hardware);
+
+	blendgpatch = static_cast<patch_t *>(md2->blendglpatch);
+	if (blendgpatch)
+		hwrBlendPatch = ((GLPatch_t *)blendgpatch->hardware);
+
+	if ((gpatch && hwrPatch && hwrPatch->mipmap->format) &&
+		(!blendgpatch || !hwrBlendPatch ||
+		((!hwrBlendPatch->mipmap->format || !hwrBlendPatch->mipmap->downloaded) && !md2->noblendfile)))
+		md2_loadBlendTexture(md2);
+
+	blendgpatch = static_cast<patch_t *>(md2->blendglpatch);
+	if (blendgpatch)
+		hwrBlendPatch = ((GLPatch_t *)blendgpatch->hardware);
+
+	memset(&Surf, 0x00, sizeof(FSurfaceInfo));
+	Surf.PolyColor.rgba = 0xFFFFFFFF;
+	Surf.PolyFlags = PF_Occlude | PF_Modulated;
+
+	Surf.LightInfo.light_level = 255;
+	Surf.LightInfo.fade_start = 0;
+	Surf.LightInfo.fade_end = 31;
+
+	if (color != SKINCOLOR_NONE &&
+	    blendgpatch && hwrBlendPatch->mipmap->format &&
+	    gpatch->width == blendgpatch->width && gpatch->height == blendgpatch->height)
+	{
+		INT32 tcskinnum = TC_DEFAULT;
+
+		if (color)
+			tcskinnum = skinnum;
+
+		HWR_GetBlendedTexture(gpatch, blendgpatch, tcskinnum, colormap, color);
+	}
+	else if (hwrPatch && hwrPatch->mipmap->format)
+	{
+		GL_SetTexture(hwrPatch->mipmap);
+	}
+
+	memset(&p, 0x00, sizeof(FTransform));
+
+	p.x = x*vid.dup + (float)(vid.width - BASEVIDWIDTH*vid.dup)/2.f;
+	p.y = -200.f; // push it back to prevent wonky culling, idk lul
+	p.z = y*vid.dup + (float)(vid.height - BASEVIDHEIGHT*vid.dup)/2.f;
+
+	p.angley = FixedToFloat(AngleFixed(angle));
+	p.anglex = 0.f;
+	p.anglez = 0.f;
+
+	p.roll = false;
+	p.fliptype = TRANSFORM_NONE;
+
+	const float fscale = FixedToFloat(scale*vid.dup);
+
+	GL_Draw2DModel(
+			md2->model,
+			frame,
+			0.f,
+			0.f,
+			-1,
+			&p,
+			fscale,
+			fscale,
+			true, // flip it vertically lul
+			false,
+			&Surf
+		);
+}
+
 #endif //HWRENDER
