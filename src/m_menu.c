@@ -12,6 +12,8 @@
 /// \file  m_menu.c
 /// \brief XMOD's extremely revamped menu system.
 
+#include "screen.h"
+#include "tables.h"
 #ifdef __GNUC__
 #include <unistd.h>
 #endif
@@ -8522,7 +8524,7 @@ static void M_DrawSetupMultiPlayerMenu(void)
 
 	const INT32 skinnum = R_SkinAvailable(skins[skintodisplay].name);
 
-	if (skinnum != -1)
+	if (skinnum > 0 || skinnum < MAXSKINS)
 		sprdef = &skins[skinnum].spritedef;
 	else
 		sprdef = &skins[0].spritedef;
@@ -8548,23 +8550,56 @@ static void M_DrawSetupMultiPlayerMenu(void)
 
 	// draw box around guy
 	V_DrawFill(mx + 36 - (charw/2), my+65, charw, 84, 239);
+#undef charw
 
 	// draw player sprite
 	if (setupm_fakecolor) // inverse should never happen
 	{
 		UINT8 *colormap = R_GetTranslationColormap(skintodisplay, setupm_fakecolor, GTC_MENUCACHE);
 
-		if (skins[skintodisplay].flags & SF_HIRES)
+#ifdef HWRENDER
+		md2_t *md2 = NULL;
+
+		if (skinnum > 0 || skinnum < MAXSKINS)
+			md2 = &md2_playermodels[skinnum];
+		else
+			md2 = &md2_playermodels[0];
+
+		// if we have 3d models enabled and a model exists
+		// try to show it instead of the sprite
+		if (rendermode == render_opengl && cv_glmdls.value
+		&& !md2->error && !md2->notfound)
 		{
-			V_DrawFixedPatch((mx+36)<<FRACBITS,
-						(my+131)<<FRACBITS,
-						skins[skintodisplay].highresscale,
-						flags, patch, colormap);
+			mx += 36;
+			my += 131;
+
+			static angle_t angle = ANGLE_180;
+
+			// idk but those magic numbers work, gotta figure out smth proper
+			//x += vid.width/3;
+			//y += vid.height/2;
+			mx += BASEVIDWIDTH/8;
+			my -= BASEVIDHEIGHT/10;
+
+			// just for testing
+			angle += FRACUNIT * 3;
+
+			HWR_Draw2DModel(md2, mx, my, skinnum, (skincolors_t)setupm_fakecolor, colormap, 4*FRACUNIT/3, 0, angle);
 		}
 		else
-			V_DrawMappedPatch(mx+36, my+131, flags, patch, colormap);
+#endif
+		{
+			if (skins[skintodisplay].flags & SF_HIRES)
+			{
+				V_DrawFixedPatch((mx+36)<<FRACBITS,
+							(my+131)<<FRACBITS,
+							skins[skintodisplay].highresscale,
+							flags, patch, colormap);
+			}
+			else
+				V_DrawMappedPatch(mx+36, my+131, flags, patch, colormap);
+		}
 	}
-#undef charw
 }
 
 // Handle 1P/2P MP Setup

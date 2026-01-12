@@ -405,6 +405,14 @@ static PFNglEnableClientState pglEnableClientState;
 typedef void (APIENTRY * PFNglDisableClientState) (GLenum cap);
 static PFNglDisableClientState pglDisableClientState;
 
+typedef void (APIENTRY * PFNglOrtho) (GLdouble left,
+									  GLdouble right,
+									  GLdouble bottom,
+									  GLdouble top,
+									  GLdouble nearVal,
+									  GLdouble farVal);
+static PFNglOrtho pglOrtho;
+
 /* Lighting */
 typedef void (APIENTRY * PFNglShadeModel) (GLenum mode);
 static PFNglShadeModel pglShadeModel;
@@ -861,6 +869,8 @@ void SetupGLFunc4(void)
 	GetGLfunc(glUniform2fv);
 	GetGLfunc(glUniform3fv);
 	GetGLfunc(glGetUniformLocation);
+
+	GetGLfunc(glOrtho);
 
 #ifdef GLDEBUGMESSAGE
 	GetGLfunc(glDebugMessageCallback);
@@ -3110,6 +3120,48 @@ void GL_DrawModelEx(model_t *model, INT32 frameIndex, float duration, float tics
 	pglPopMatrix(); // should be the same as glLoadIdentity
 	pglDisable(GL_CULL_FACE);
 	pglDisable(GL_NORMALIZE);
+}
+
+void GL_Draw2DModel(model_t *model, INT32 frameIndex, INT32 duration, INT32 tics, INT32 nextFrameIndex,
+                      FTransform *pos, float hscale, float vscale, UINT8 flipped, UINT8 hflipped, FSurfaceInfo *Surface)
+{
+	// save our matrix´s
+	pglMatrixMode(GL_PROJECTION);
+	pglPushMatrix();
+	pglMatrixMode(GL_MODELVIEW);
+	pglPushMatrix();
+
+	pglMatrixMode(GL_PROJECTION);
+	pglLoadIdentity();
+
+	// switch to ortho mode to make our lives easier
+	// thisll make sure our coords will be remapped to pixel coords
+	// try to scale it to the base width and height
+	// shit still be weird, and needs accounting for diff resolutions
+	pglOrtho(0.0f, (float)BASEVIDWIDTH, (float)BASEVIDHEIGHT, 0.0f, ZCLIP_PLANE, FAR_ZCLIP_DEFAULT);
+
+	pglMatrixMode(GL_MODELVIEW);
+	pglLoadIdentity();
+
+	//pglDepthRange(0.0f, 1.0f);
+	pglClearDepth(1.0f);     //Hurdler: all that are permanen states
+	pglDepthRange(ZCLIP_PLANE, FAR_ZCLIP_DEFAULT); // idk man im confused here tbh
+	pglDepthFunc(GL_LEQUAL);
+	pglClear(GL_DEPTH_BUFFER_BIT);
+	//GL_ClearBuffer(false, true, false, NULL);
+
+	// FIXME: theres some weird culling issues i cant wrap my head around
+	// so until then gotta disable depth testing until i can figure this out
+	//pglDisable(GL_DEPTH_TEST);
+	GL_DrawModelEx(model, frameIndex, duration, tics, nextFrameIndex,
+	               pos, hscale, vscale, flipped, hflipped, Surface);
+	//pglEnable(GL_DEPTH_TEST);
+
+	// restore the matrix´s
+	pglMatrixMode(GL_PROJECTION);
+	pglPopMatrix();
+	pglMatrixMode(GL_MODELVIEW);
+	pglPopMatrix();
 }
 
 // -----------------+
