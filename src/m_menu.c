@@ -8574,18 +8574,11 @@ static void M_DrawSetupMultiPlayerMenu(void)
 			mx += 36;
 			my += 131;
 
-			static angle_t angle = ANGLE_180;
+			const angle_t ROTATE_PER_TIC = (UINT64)ANGLE_45 * cv_skinselectspin.value / TICRATE;
 
-			// idk but those magic numbers work, gotta figure out smth proper
-			//x += vid.width/3;
-			//y += vid.height/2;
-			mx += BASEVIDWIDTH/8;
-			my -= BASEVIDHEIGHT/10;
+			angle_t angle = I_GetTime()*ROTATE_PER_TIC + FixedMul(cv_uncappedhud.value ? renderdeltatics : FRACUNIT, ROTATE_PER_TIC);
 
-			// just for testing
-			angle += FRACUNIT * 3;
-
-			HWR_Draw2DModel(md2, mx, my, skinnum, (skincolors_t)setupm_fakecolor, colormap, 4*FRACUNIT/3, 0, angle);
+			HWR_Draw2DModel(md2, mx, my, skinnum, (skincolors_t)setupm_fakecolor, colormap, 8*FRACUNIT/3, frame, angle);
 		}
 		else
 #endif
