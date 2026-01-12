@@ -1576,8 +1576,8 @@ void HWR_Draw2DModel(md2_t *md2, INT32 x, INT32 y, INT32 skinnum, skincolors_t c
 
 	memset(&p, 0x00, sizeof(FTransform));
 
-	p.x = x + (vid.width/vid.dup - BASEVIDWIDTH)/4;
-	p.y = -400.0f; // idk man, but this makes the model not cull, kinda?
+	p.x = x + (vid.width/(float)vid.dup - BASEVIDWIDTH)/4;
+	p.y = -100.0f; // idk man, but this makes the model not cull, kinda?
 	p.z = y; // for whatever reason y and z are switched here
 
 	p.angley = FixedToFloat(AngleFixed(angle));

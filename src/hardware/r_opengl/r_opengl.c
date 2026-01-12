@@ -3138,23 +3138,22 @@ void GL_Draw2DModel(model_t *model, INT32 frameIndex, INT32 duration, INT32 tics
 	// thisll make sure our coords will be remapped to pixel coords
 	// try to scale it to the base width and height
 	// shit still be weird, and needs accounting for diff resolutions
-	pglOrtho(0.0f, (float)BASEVIDWIDTH, (float)BASEVIDHEIGHT, 0.0f, ZCLIP_PLANE, FAR_ZCLIP_DEFAULT);
+	pglOrtho(0.0f, (float)BASEVIDWIDTH, (float)BASEVIDHEIGHT, 0.0f, NZCLIP_PLANE, FAR_ZCLIP_DEFAULT);
 
 	pglMatrixMode(GL_MODELVIEW);
 	pglLoadIdentity();
 
-	//pglDepthRange(0.0f, 1.0f);
-	pglClearDepth(1.0f);     //Hurdler: all that are permanen states
-	pglDepthRange(0.f, FAR_ZCLIP_DEFAULT); // idk man im confused here tbh
-	pglDepthFunc(GL_LEQUAL);
+	pglEnable(GL_DEPTH_TEST);
+	pglDepthMask(GL_TRUE);
 	pglClear(GL_DEPTH_BUFFER_BIT);
-	//GL_ClearBuffer(false, true, false, NULL);
 
 	// FIXME: theres some weird culling issues i cant wrap my head around
 	// so until then gotta disable depth testing until i can figure this out
 	//pglDisable(GL_DEPTH_TEST);
 	GL_DrawModelEx(model, frameIndex, duration, tics, nextFrameIndex,
 	               pos, hscale, vscale, flipped, hflipped, Surface);
+
+	//pglDepthMask(GL_TRUE);
 	//pglEnable(GL_DEPTH_TEST);
 
 	// restore the matrix´s
