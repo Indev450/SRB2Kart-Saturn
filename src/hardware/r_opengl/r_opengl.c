@@ -3145,7 +3145,7 @@ void GL_Draw2DModel(model_t *model, INT32 frameIndex, INT32 duration, INT32 tics
 
 	//pglDepthRange(0.0f, 1.0f);
 	pglClearDepth(1.0f);     //Hurdler: all that are permanen states
-	pglDepthRange(ZCLIP_PLANE, FAR_ZCLIP_DEFAULT); // idk man im confused here tbh
+	pglDepthRange(0.f, FAR_ZCLIP_DEFAULT); // idk man im confused here tbh
 	pglDepthFunc(GL_LEQUAL);
 	pglClear(GL_DEPTH_BUFFER_BIT);
 	//GL_ClearBuffer(false, true, false, NULL);
