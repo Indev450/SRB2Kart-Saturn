@@ -1386,7 +1386,7 @@ void I_SleepDuration(precise_t duration)
 #endif
 }
 
-static void I_PrintSignal(INT32 signal_num, boolean core_dumped, char *signal_msg);
+static void I_PrintSignal(INT32 signal_num, boolean core_dumped, char *signal_msg, char *signal_ttl);
 
 #ifdef HAVE_LIBBACKTRACE
 #include <backtrace.h>
@@ -1482,6 +1482,7 @@ static void bt_error_cb(void *data, const char *msg, int errnum)
 static void write_backtrace(bt_crash_reason_t reason)
 {
 	char sig_msg[512];
+	char sig_name[128];
 	const char *filename = va("%s" PATHSEP CRASH_LOGFILE_NAME, srb2home);
 	FILE *out = fopen(filename, "a+");
 
@@ -1538,8 +1539,8 @@ static void write_backtrace(bt_crash_reason_t reason)
 	switch (reason.type)
 	{
 		case BTCRASH_SIGNAL:
-			I_PrintSignal(reason.value.signal, false, sig_msg);
-			fprintf(out, "%s", sig_msg);
+			I_PrintSignal(reason.value.signal, false, sig_msg, sig_name);
+			fprintf(out, "%s - %s", sig_name, sig_msg);
 		break;
 
 		case BTCRASH_ERRORMSG:
@@ -1575,42 +1576,49 @@ static std::thread::id g_main_thread_id;
 
 boolean g_in_exiting_signal_handler = false;
 
-static void I_PrintSignal(INT32 signal_num, boolean core_dumped, char *signal_msg)
+static void I_PrintSignal(INT32 signal_num, boolean core_dumped, char *signal_msg, char *signal_name)
 {
-	const char *sigmsg;
+	const char *sigmsg, *signame;
 
 	switch (signal_num)
 	{
 #ifdef SIGINT
 		case SIGINT:
-			sigmsg = ("SIGINT - SRB2Kart-Saturn was interrupted prematurely by the user.");
+			sigmsg = ("SRB2Kart-Saturn was interrupted prematurely by the user.");
+			signame = "SIGINT";
 			break;
 #endif
 		case SIGILL: // illegal instruction - invalid function image
-			sigmsg = ("SIGILL - SRB2Kart-Saturn has attempted to execute an illegal instruction and needs to close.");
+			sigmsg = ("SRB2Kart-Saturn has attempted to execute an illegal instruction and needs to close.");
+			signame = "SIGILL";
 			break;
 		case SIGFPE: // mathematical exception
-			sigmsg = ("SIGFPE - SRB2Kart-Saturn has encountered a mathematical exception and needs to close.");
+			sigmsg = ("SRB2Kart-Saturn has encountered a mathematical exception and needs to close.");
+			signame = "SIGFPE";
 			break;
 		case SIGSEGV: // segment violation
-			sigmsg = ("SIGSEGV - SRB2Kart-Saturn has attempted to access a memory location that it shouldn't and needs to close.");
+			sigmsg = ("SRB2Kart-Saturn has attempted to access a memory location that it shouldn't and needs to close.");
+			signame = "SIGSEGV";
 			break;
 #ifdef SIGTERM
 		case SIGTERM: // Software termination signal from kill
-			sigmsg = ("SIGTERM - SRB2Kart-Saturn was terminated by a kill signal.");
+			sigmsg = ("SRB2Kart-Saturn was terminated by a kill signal.");
+			signame = "SIGTERM";
 			break;
 #endif
 #ifdef SIGBREAK
 		case SIGBREAK: // Ctrl-Break sequence
 			sigmsg =("SIGBREAK - SRB2Kart-Saturn was terminated by a Ctrl-Break sequence.");
+			signame = "SIGBREAK";
 			break;
 #endif
 		case SIGABRT: // abnormal termination triggered by abort call
-			sigmsg = ("SIGABRT - SRB2Kart-Saturn was terminated by an abort signal.");
+			sigmsg = ("SRB2Kart-Saturn was terminated by an abort signal.");
+			signame = "SIGABRT";
 			break;
 		default:
-			sprintf(signal_msg, "Signal number %d", signal_num);
-			sigmsg = (core_dumped ? "Unknown signal" : signal_msg);
+			sigmsg = "SRB2Kart-Saturn was terminated by an unknown signal.";
+			signame = core_dumped ? "Unknown signal" : va("Signal number %d", signal_num);
 			break;
 	}
 
@@ -1625,18 +1633,58 @@ static void I_PrintSignal(INT32 signal_num, boolean core_dumped, char *signal_ms
 	{
 		sprintf(signal_msg, "%s", sigmsg);
 	}
+
+	sprintf(signal_name, "%s", signame);
+}
+
+static int I_OpenURL(const char *url)
+{
+#if SDL_VERSION_ATLEAST(2,0,14)
+	return SDL_OpenURL(va("%s", url));
+#else
+	return -1;
+#endif
 }
 
 static void I_ReportSignal(int num, int coredumped)
 {
 	char sigmsg[512];
+	char signame[128];
+	char sigttl[512] = "Process killed by signal: ";
+	const char *reportmsg = "\n\n\nTo help us figure out the cause, please report the issue to our github page with " CRASH_LOGFILE_NAME " attached.\n\nSorry for the inconvenience!";
 
-	I_PrintSignal(num, coredumped, sigmsg);
+	I_PrintSignal(num, coredumped, sigmsg, signame);
 
 	size_t len = strlen(sigmsg);
 	snprintf(sigmsg + len, sizeof(sigmsg) - len, "\n\nCrash report has been saved into %s", CRASH_LOGFILE_NAME);
-	I_OutputMsg("\nProcess killed by signal: %s\n\n", sigmsg);
-	SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Process killed by signal", sigmsg, NULL);
+
+	strcat(sigttl, signame);
+	I_OutputMsg("\n%s\n\n", sigttl);
+
+	if (M_CheckParm("-dedicated"))
+		return;
+
+	const SDL_MessageBoxButtonData buttons[] = {
+		{ SDL_MESSAGEBOX_BUTTON_RETURNKEY_DEFAULT, 0,		"OK" },
+		{ 										0, 1,		"Report Issue" },
+	};
+
+	const SDL_MessageBoxData messageboxdata = {
+		SDL_MESSAGEBOX_ERROR, 			/* .flags */
+		NULL, 							/* .window */
+		sigttl, 						/* .title */
+		va("%s %s", sigmsg, reportmsg), /* .message */
+		SDL_arraysize(buttons), 		/* .numbuttons */
+		buttons, 						/* .buttons */
+		NULL 							/* .colorScheme */
+	};
+
+	int buttonid;
+
+	SDL_ShowMessageBox(&messageboxdata, &buttonid);
+
+	if (buttonid == 1)
+		I_OpenURL("https://github.com/Indev450/SRB2Kart-Saturn/issues");
 }
 
 #ifndef NEWSIGNALHANDLER
