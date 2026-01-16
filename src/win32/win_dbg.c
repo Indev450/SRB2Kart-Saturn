@@ -187,13 +187,13 @@ static VOID ShowModuleInfo(HANDLE LogFile, HMODULE ModuleHandle)
 			// Open the code module file so that we can get its file date
 			// and size.
 			ModuleFile = CreateFileA(ModName, GENERIC_READ,
-				FILE_SHARE_READ, 0, OPEN_EXISTING,
-				FILE_ATTRIBUTE_NORMAL, 0);
+				FILE_SHARE_READ, NULL, OPEN_EXISTING,
+				FILE_ATTRIBUTE_NORMAL, NULL);
 			if (ModuleFile != INVALID_HANDLE_VALUE)
 			{
 				FILETIME LastWriteTime;
-				FileSize = GetFileSize(ModuleFile, 0);
-				if (GetFileTime(ModuleFile, 0, 0, &LastWriteTime))
+				FileSize = GetFileSize(ModuleFile, NULL);
+				if (GetFileTime(ModuleFile, NULL, NULL, &LastWriteTime))
 				{
 					wsprintfA(TimeBuffer, " - file date is ");
 					PrintTime(TimeBuffer + strlen(TimeBuffer), LastWriteTime);
@@ -227,7 +227,7 @@ static VOID RecordModuleList(HANDLE LogFile)
 	size_t PageSize;
 	size_t NumPages;
 	size_t pageNum = 0;
-	LPVOID LastAllocationBase = 0;
+	LPVOID LastAllocationBase = NULL;
 
 	FPrintf(LogFile, "\r\n"
 		"\tModule list: names, addresses, sizes, time stamps "
@@ -385,7 +385,7 @@ LONG WINAPI RecordExceptionInfo(PEXCEPTION_POINTERS data/*, LPCSTR Message, LPST
 	}
 
 	// Append to the error log.
-	SetFilePointer(fileHandle, 0, 0, FILE_END);
+	SetFilePointer(fileHandle, 0, NULL, FILE_END);
 
 	// Print out some blank lines to separate this error log from any previous ones.
 	FPrintf(fileHandle, "Email Sonic Team Junior so we can fix the bugs\r\n"); // Tails
