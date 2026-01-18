@@ -936,6 +936,11 @@ void G_SetPlayerGamepadIndicatorColor(INT32 playernum, UINT8 color)
 		return;
 	}
 
+	if (!I_GamepadHasLED(playernum))
+	{
+		return;
+	}
+
 	// so we can override this
 	skincolor = color ? color : G_GetSkinColorForGamepad(playernum);
 	byte_color = V_GetColor(colortranslations[skincolor][8]).s;
@@ -971,12 +976,22 @@ void G_DeviceLEDTick(void)
 	for (i = 0; i <= splitscreen; i++)
 	{
 		if (!cv_usejoystick[i].value || !cv_gamepadled[i].value)
+		{
 			continue;
+		}
+
+		// does not have a configurable led! :c
+		if (!I_GamepadHasLED(i))
+		{
+			continue;
+		}
 
 		newcolor = G_GetSkinColorForGamepad(i);
 
 		if (curcolor[i] == newcolor) // dont update if same colour
+		{
 			continue;
+		}
 
 		G_SetPlayerGamepadIndicatorColor(i, newcolor);
 		curcolor[i] = newcolor;
@@ -1048,6 +1063,12 @@ void G_DeviceRumbleTick(void)
 	for (i = 0; i <= splitscreen; i++)
 	{
 		if (!cv_usejoystick[i].value || !cv_rumble[i].value)
+		{
+			continue;
+		}
+
+		// does not support rumble! :c
+		if (!I_GamepadHasRumble(i))
 		{
 			continue;
 		}
