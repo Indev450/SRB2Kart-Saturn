@@ -945,6 +945,8 @@ void G_SetPlayerGamepadIndicatorColor(INT32 playernum, UINT8 color)
 
 static void G_ResetPlayerGamepadIndicatorColor(INT32 playernum)
 {
+	I_Assert(playernum >= 0 && playernum < MAXSPLITSCREENPLAYERS);
+
 	if (cv_gamepadled[playernum].value == 0)
 	{
 		I_SetGamepadIndicatorColor(playernum, 0, 0, 255);
@@ -973,13 +975,8 @@ void G_DeviceLEDTick(void)
 
 		newcolor = G_GetSkinColorForGamepad(i);
 
-		// compiler be absolutely tripping
-		// delet this if this gets fixed within gcc
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Warray-bounds"
 		if (curcolor[i] == newcolor) // dont update if same colour
 			continue;
-#pragma GCC diagnostic pop
 
 		G_SetPlayerGamepadIndicatorColor(i, newcolor);
 		curcolor[i] = newcolor;
@@ -994,6 +991,7 @@ void G_ResetDeviceLED(void)
 
 static void G_ResetPlayerDeviceRumble(INT32 playernum)
 {
+	I_Assert(playernum >= 0 && playernum < MAXSPLITSCREENPLAYERS);
 	I_GamepadRumble(playernum, 0, 0, 0);
 }
 
