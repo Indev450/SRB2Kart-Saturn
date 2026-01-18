@@ -733,12 +733,11 @@ static void JoyReset(SDLJoyInfo_t *JoySet)
 	JoySet->dev = NULL;
 	JoySet->oldjoy = -1;
 	JoySet->id = -1;
-	JoySet->axises = JoySet->buttons = JoySet->hats = JoySet->balls = 0;
 }
 
 /**	\brief SDL info about joystick
 */
-SDLJoyInfo_t JoyInfo[MAXSPLITSCREENPLAYERS];
+SDLJoyInfo_t JoyInfo[MAXSPLITSCREENPLAYERS] = {};
 INT32 numcontrollers = 0;
 
 //
@@ -746,26 +745,26 @@ INT32 numcontrollers = 0;
 //
 void I_JoyScale(void)
 {
-	Joystick[0].bGamepadStyle = cv_joyscale[0].value==0;
-	JoyInfo[0].scale = Joystick[0].bGamepadStyle?1:cv_joyscale[0].value;
+	Joystick[0].bGamepadStyle = cv_joyscale[0].value == 0;
+	JoyInfo[0].scale = Joystick[0].bGamepadStyle ? 1 : cv_joyscale[0].value;
 }
 
 void I_JoyScale2(void)
 {
-	Joystick[1].bGamepadStyle = cv_joyscale[1].value==0;
-	JoyInfo[1].scale = Joystick[1].bGamepadStyle?1:cv_joyscale[1].value;
+	Joystick[1].bGamepadStyle = cv_joyscale[1].value == 0;
+	JoyInfo[1].scale = Joystick[1].bGamepadStyle ? 1 : cv_joyscale[1].value;
 }
 
 void I_JoyScale3(void)
 {
-	Joystick[2].bGamepadStyle = cv_joyscale[2].value==0;
-	JoyInfo[2].scale = Joystick[2].bGamepadStyle?1:cv_joyscale[2].value;
+	Joystick[2].bGamepadStyle = cv_joyscale[2].value == 0;
+	JoyInfo[2].scale = Joystick[2].bGamepadStyle ? 1 : cv_joyscale[2].value;
 }
 
 void I_JoyScale4(void)
 {
-	Joystick[3].bGamepadStyle = cv_joyscale[3].value==0;
-	JoyInfo[3].scale = Joystick[3].bGamepadStyle?1:cv_joyscale[3].value;
+	Joystick[3].bGamepadStyle = cv_joyscale[3].value == 0;
+	JoyInfo[3].scale = Joystick[3].bGamepadStyle ? 1 : cv_joyscale[3].value;
 }
 
 // Cheat to get the device index for a joystick handle
@@ -937,33 +936,18 @@ static int joy_open(int playerIndex, int joyIndex)
 	}
 
 	JoyInfo[playerIndex].dev = newdev;
-	JoyInfo[playerIndex].id = I_GetJoystickDeviceIndex(JoyInfo[playerIndex].dev);
 
 	if (JoyInfo[playerIndex].dev == NULL)
 	{
 		CONS_Debug(DBG_GAMELOGIC, M_GetText("Joystick1: Couldn't open device - %s\n"), SDL_GetError());
 		return -1;
 	}
-	else
-	{
-		CONS_Debug(DBG_GAMELOGIC, M_GetText("Joystick1: %s\n"), SDL_GameControllerName(JoyInfo[playerIndex].dev));
-		JoyInfo[playerIndex].axises = SDL_CONTROLLER_AXIS_MAX;
 
-		if (JoyInfo[playerIndex].axises > JOYAXISSET*2)
-			JoyInfo[playerIndex].axises = JOYAXISSET*2;
+	CONS_Debug(DBG_GAMELOGIC, M_GetText("Joystick1: %s\n"), SDL_GameControllerName(JoyInfo[playerIndex].dev));
 
-		JoyInfo[playerIndex].buttons = SDL_CONTROLLER_BUTTON_MAX ; // dpad is 4 buttons
-		if (JoyInfo[playerIndex].buttons > JOYBUTTONS)
-			JoyInfo[playerIndex].buttons = JOYBUTTONS;
+	JoyInfo[playerIndex].id = I_GetJoystickDeviceIndex(JoyInfo[playerIndex].dev);
 
-		JoyInfo[playerIndex].hats = 4;
-		if (JoyInfo[playerIndex].hats > JOYHATS)
-			JoyInfo[playerIndex].hats = JOYHATS;
-
-		JoyInfo[playerIndex].balls = 0;
-
-		return JoyInfo[playerIndex].axises;
-	}
+	return SDL_CONTROLLER_AXIS_MAX;
 }
 
 //
@@ -1008,7 +992,6 @@ void I_InitJoystick(UINT8 index)
 	JoyInfo[index].dev = NULL;
 	JoyInfo[index].oldjoy = -1;
 	JoyInfo[index].id = -1;
-	JoyInfo[index].axises = JoyInfo[index].buttons = JoyInfo[index].hats = JoyInfo[index].balls = 0;
 
 	if (cv_usejoystick[index].value)
 		newcontroller = SDL_GameControllerOpen(cv_usejoystick[index].value-1);
