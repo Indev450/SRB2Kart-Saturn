@@ -1633,33 +1633,34 @@ static menuitem_t OP_AccessibilityMenu[] =
 	{IT_STRING|IT_CVAR|IT_CV_SLIDER,   NULL,   "Saturation",                     &cv_globalsaturation,   25},
 	{IT_SUBMENU|IT_STRING,             NULL,   "Video Color Settings...",        &OP_ColorOptionsDef,    30},
 
-	{IT_STRING|IT_CVAR,                NULL,   "Midnight Channel Flicker",       &cv_lessflicker,        35},
+	{IT_STRING|IT_CVAR,                NULL,   "Reduce Effects",                 &cv_reducevfx,          35},
+	{IT_STRING|IT_CVAR,                NULL,   "Midnight Channel Flicker",       &cv_lessflicker,        40}, // obsolete now? or still better be a seperate toggle?
 
-	{IT_STRING|IT_CVAR,                NULL,   "Minimum Sector Brightness",      &cv_secbright,          40},
+	{IT_STRING|IT_CVAR,                NULL,   "Minimum Sector Brightness",      &cv_secbright,          45},
 
 #ifdef HWRENDER
-	{IT_STRING|IT_CVAR,                NULL,   "Screen Textures",                &cv_glscreentextures,   45},
+	{IT_STRING|IT_CVAR,                NULL,   "Screen Textures",                &cv_glscreentextures,   50},
 #endif
 
-	{IT_STRING|IT_CVAR,                NULL,   "Water Surface Ripples",          &cv_ripplewater,        50},
+	{IT_STRING|IT_CVAR,                NULL,   "Water Surface Ripples",          &cv_ripplewater,        55},
 
-	{IT_STRING|IT_CVAR,                NULL,   "Fade Players near Camera",       &cv_playerfade,         55},
+	{IT_STRING|IT_CVAR,                NULL,   "Fade Players near Camera",       &cv_playerfade,         60},
 
-	{IT_STRING|IT_CVAR,                NULL,   "Quake Screenshakes",             &cv_screenquake,        60},
+	{IT_STRING|IT_CVAR,                NULL,   "Quake Screenshakes",             &cv_screenquake,        65},
 
-	{IT_CALL|IT_STRING,                NULL,   "Camera Options...",              M_CameraMenu,      65},
+	{IT_CALL|IT_STRING,                NULL,   "Camera Options...",              M_CameraMenu,           70},
 
-	{IT_HEADER, NULL, "Audio", NULL, 75},
+	{IT_HEADER, NULL, "Audio", NULL, 80},
 
-	{IT_STRING|IT_CVAR,                NULL,   "Reverse L/R Channels",           &stereoreverse,         85},
-	{IT_STRING|IT_CVAR,                NULL,   "Same Sound Limit",               &cv_samesoundlimit,     90},
+	{IT_STRING|IT_CVAR,                NULL,   "Reverse L/R Channels",           &stereoreverse,         90},
+	{IT_STRING|IT_CVAR,                NULL,   "Same Sound Limit",               &cv_samesoundlimit,     95},
 
-	{IT_HEADER, NULL, "Controls", NULL, 100},
+	{IT_HEADER, NULL, "Controls", NULL, 105},
 
-	{IT_STRING|IT_CVAR,                NULL,   "Automatic Acceleration (P1)",    &cv_autoaccel[0],       110},
-	{IT_STRING|IT_CVAR,                NULL,   "Automatic Acceleration (P2)",    &cv_autoaccel[1],       115},
-	{IT_STRING|IT_CVAR,                NULL,   "Automatic Acceleration (P3)",    &cv_autoaccel[2],       120},
-	{IT_STRING|IT_CVAR,                NULL,   "Automatic Acceleration (P4)",    &cv_autoaccel[3],       125},
+	{IT_STRING|IT_CVAR,                NULL,   "Automatic Acceleration (P1)",    &cv_autoaccel[0],       115},
+	{IT_STRING|IT_CVAR,                NULL,   "Automatic Acceleration (P2)",    &cv_autoaccel[1],       120},
+	{IT_STRING|IT_CVAR,                NULL,   "Automatic Acceleration (P3)",    &cv_autoaccel[2],       125},
+	{IT_STRING|IT_CVAR,                NULL,   "Automatic Acceleration (P4)",    &cv_autoaccel[3],       130},
 };
 
 static const char* OP_AccessibilityTooltips[] =
@@ -1669,10 +1670,11 @@ static const char* OP_AccessibilityTooltips[] =
 	"Gamma (brightness) of the game.",
 	"Saturation of the game.",
 	"Advanced color settings of the game.",
+	"Reduces or disables certain effects players might be sensitive to\nSuch as flashing, flickering, certain screen effects and more.",
 	"Disables the flicker effect on Midnight Channel.",
 	"Sets minimum sector brightness, useful for dark areas",
 #ifdef HWRENDER
-	"Should the game do Screen Textures? Provides a good boost to frames\nat the cost of some visual effects not working when disabled.",
+	"Disabling Screen Textures will disable the Underwater and Heat screen effects.",
 #endif
 	"Toggles the ripple effect on water surfaces",
 	"Fades other Players that are close to the camera in and out",

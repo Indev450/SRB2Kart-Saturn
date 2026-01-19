@@ -7901,7 +7901,7 @@ static void M_HandleConnectIP(INT32 choice)
 	if (exitmenu)
 	{
 		if (currentMenu->prevMenu)
-			M_SetupNextMenu (currentMenu->prevMenu);
+			M_SetupNextMenu(currentMenu->prevMenu);
 		else
 			M_ClearMenus(true);
 	}
@@ -8270,10 +8270,9 @@ static void M_DrawSetupMultiPlayerMenu(void)
 				INT32 curx = (((setupm_skinselect % SKINGRIDNEWWIDTH) * 18) + ((BASEVIDWIDTH / 2) - (18 * SKINGRIDNEWWIDTH/2)) + SKINXSHIFT) + 20;
 				INT32 cury = (((setupm_skinselect / SKINGRIDNEWWIDTH) - setupm_skinypos) * 18) + ((BASEVIDHEIGHT / 2) - (18 * (SKINGRIDNEWWIDTH/2))+ gridyoffset);
 
-					UINT8 cursorframe = (I_GetTime() / 4) % 7;
-
-					cursor = (patch_t *)W_CachePatchName(va("K_CHILI%d", cursorframe + 1), PU_PATCH);
-					V_DrawFixedPatch((curx << FRACBITS) - (FRACUNIT), (cury << FRACBITS) - (FRACUNIT), FRACUNIT+(FRACUNIT>>3), 0, cursor, NULL);
+				UINT8 cursorframe = (I_GetTime() / 4) % 7;
+				cursor = (patch_t *)W_CachePatchName(va("K_CHILI%d", cursorframe + 1), PU_PATCH);
+				V_DrawFixedPatch((curx << FRACBITS) - (FRACUNIT), (cury << FRACBITS) - (FRACUNIT), FRACUNIT+(FRACUNIT>>3), 0, cursor, NULL);
 			}
 
 			break;
@@ -8312,14 +8311,12 @@ static void M_DrawSetupMultiPlayerMenu(void)
 				if (setupm_skinselect < numskins)
 				{
 					UINT8 *cmap = R_GetTranslationColormap(setupm_skinselect, setupm_fakecolor, GTC_MENUCACHE);
-
 					cursor = facewantprefix[skinsorted[setupm_skinselect]];
 					V_DrawFixedPatch(((curx-8) << FRACBITS), ((cury-8) << FRACBITS), FRACUNIT, 0, cursor, cmap);
 				}
 				else
 				{
 					UINT8 cursorframe = (I_GetTime() / 4) % 7;
-
 					cursor = (patch_t *)W_CachePatchName(va("K_CHILI%d", cursorframe + 1), PU_PATCH);
 					V_DrawFixedPatch((curx << FRACBITS) - (FRACUNIT), (cury << FRACBITS) - (FRACUNIT), FRACUNIT+(FRACUNIT>>3), 0, cursor, NULL);
 				}
@@ -8383,7 +8380,6 @@ static void M_DrawSetupMultiPlayerMenu(void)
 				else
 				{
 					UINT8 cursorframe = (I_GetTime() / 4) % 7;
-
 					cursor = (patch_t *)W_CachePatchName(va("K_CHILI%d", cursorframe + 1), PU_PATCH);
 					V_DrawFixedPatch((curx << FRACBITS) - (FRACUNIT), (cury << FRACBITS) - (FRACUNIT), FRACUNIT+(FRACUNIT>>3), 0, cursor, NULL);
 				}
@@ -8508,7 +8504,7 @@ static void M_DrawSetupMultiPlayerMenu(void)
 	switch (cv_skinselectmenu.value)
 	{
 		case SKINMENUTYPE_2D:
-			skintodisplay = setupm_fakeskin;
+			skintodisplay = (UINT8)setupm_fakeskin;
 			if (setupm_skinlockedselect) // show the skin we are trying to select
 				skintodisplay = skinstats[setupm_skinxpos][setupm_skinypos][setupm_skinselect];
 			else if (skinstatscount[setupm_skinxpos][setupm_skinypos] && itemOn == 1)
@@ -8516,12 +8512,15 @@ static void M_DrawSetupMultiPlayerMenu(void)
 			break;
 		case SKINMENUTYPE_EXTENDED:
 		case SKINMENUTYPE_GRID:
-			skintodisplay = (itemOn == 1 && setupm_skinselect < numskins ? skinsorted[setupm_skinselect] : setupm_fakeskin);
+			skintodisplay = ((itemOn == 1 && (setupm_skinselect < numskins)) ? skinsorted[setupm_skinselect] : (UINT8)setupm_fakeskin);
 			break;
 		default:
-			skintodisplay = setupm_fakeskin;
+			skintodisplay = (UINT8)setupm_fakeskin;
 			break;
 	}
+
+	if (skintodisplay >= MAXSKINS)
+		skintodisplay = 0;
 
 	skinnum = R_SkinAvailable(skins[skintodisplay].name);
 
@@ -8537,18 +8536,6 @@ static void M_DrawSetupMultiPlayerMenu(void)
 	if (frame >= sprdef->numframes) // Walking animation missing
 		frame = 0; // Try to use standing frame
 
-	sprframe = &sprdef->spriteframes[frame];
-
-	// minenice's speen css, it's a piece of shit but hey
-	speenframe = (I_GetTime()*cv_skinselectspin.value/TICRATE + 1)%8;
-
-	// this is a very shitty solution for checking if a sprite needs flipping
-	// but it works
-	if ((speenframe > 4) && (sprframe->lumppat[speenframe] == sprframe->lumppat[8-speenframe]))
-		flags = V_FLIP; // This sprite is left/right flipped!
-
-	patch = (patch_t *)W_CachePatchNum(sprframe->lumppat[speenframe], PU_PATCH);
-
 	// draw box around guy
 	V_DrawFill(mx + 36 - (charw/2), my+65, charw, 84, 239);
 #undef charw
@@ -8559,33 +8546,47 @@ static void M_DrawSetupMultiPlayerMenu(void)
 		UINT8 *colormap = R_GetTranslationColormap(skintodisplay, setupm_fakecolor, GTC_MENUCACHE);
 #ifdef HWRENDER
 		md2_t *md2 = &md2_playermodels[skinnum];
-
+#endif
+		mx += 36;
+		my += 131;
+#ifdef HWRENDER
 		// if we have 3d models enabled and a model exists
 		// try to show it instead of the sprite
 		if (rendermode == render_opengl && cv_glmdls.value
 		&& !md2->error && !md2->notfound)
 		{
-			mx += 36;
-			my += 131;
-
 			const angle_t ROTATE_PER_TIC = (UINT64)ANGLE_45 * cv_skinselectspin.value / TICRATE;
-
 			angle_t angle = I_GetTime()*ROTATE_PER_TIC + FixedMul(cv_uncappedhud.value ? renderdeltatics : FRACUNIT, ROTATE_PER_TIC);
-
 			HWR_Draw2DModel(md2, mx, my, skinnum, (skincolors_t)setupm_fakecolor, colormap, 8*FRACUNIT/3, frame, angle);
 		}
 		else
 #endif
 		{
+			sprframe = &sprdef->spriteframes[frame];
+
+			// minenice's speen css, it's a piece of shit but hey
+			speenframe = (I_GetTime()*cv_skinselectspin.value/TICRATE + 1)%8;
+
+			// this is a very shitty solution for checking if a sprite needs flipping
+			// but it works
+			if ((speenframe > 4) && (sprframe->lumppat[speenframe] == sprframe->lumppat[8-speenframe]))
+			{
+				flags = V_FLIP; // This sprite is left/right flipped!
+			}
+
+			patch = (patch_t *)W_CachePatchNum(sprframe->lumppat[speenframe], PU_PATCH);
+
 			if (skins[skintodisplay].flags & SF_HIRES)
 			{
-				V_DrawFixedPatch((mx+36)<<FRACBITS,
-							(my+131)<<FRACBITS,
-							skins[skintodisplay].highresscale,
-							flags, patch, colormap);
+				V_DrawFixedPatch(mx<<FRACBITS,
+								 my<<FRACBITS,
+								 skins[skintodisplay].highresscale,
+								 flags, patch, colormap);
 			}
 			else
-				V_DrawMappedPatch(mx+36, my+131, flags, patch, colormap);
+			{
+				V_DrawMappedPatch(mx, my, flags, patch, colormap);
+			}
 		}
 	}
 }
@@ -9861,7 +9862,7 @@ static void M_DrawLocalSkinMenu(void)
 	spriteframe_t *sprframe;
 	patch_t *patch;
 	UINT8 frame;
-	INT16 skintodisplay;
+	INT32 skintodisplay = 0;
 	UINT32 speenframe;
 	skin_t displayskin;
 
@@ -9914,25 +9915,10 @@ static void M_DrawLocalSkinMenu(void)
 	if (frame >= sprdef->numframes) // Walking animation missing
 		frame = 0; // Try to use standing frame
 
-	sprframe = &sprdef->spriteframes[frame];
-
-	//minenice's speen css, it's a piece of shit but hey
-	//patch = (patch_t *)W_CachePatchNum(sprframe->lumppat[1], PU_PATCH);
-	speenframe = (I_GetTime()*cv_skinselectspin.value/TICRATE + 1)%8;
-
-	//this is a very shitty solution for checking if a sprite needs flipping
-	//but it works
-	if ((speenframe > 4) && (sprframe->lumppat[speenframe] == sprframe->lumppat[8-speenframe]))
-	{
-		flags = V_FLIP; // This sprite is left/right flipped!
-	}
-	patch = (patch_t *)W_CachePatchNum(sprframe->lumppat[speenframe], PU_PATCH);
-
 	// draw box around guy
 	V_DrawFill(mx + 220 - (charw/2), my+54, charw, 84, 239);
 #undef charw
 
-	// draw player sprite
 	UINT8 *colormap = R_GetLocalTranslationColormap(&skins[displayskin.localnum], (displayskin.localskin ? &localskins[displayskin.localnum] : NULL), cv_playercolor.value, GTC_MENUCACHE, displayskin.localskin);
 
 	V_DrawMappedPatch(mx, my+50, 0, (patch_t *)W_CachePatchName(displayskin.facewant, PU_PATCH), colormap);
@@ -9946,6 +9932,9 @@ static void M_DrawLocalSkinMenu(void)
 		V_DrawString(mx+20, my+118, V_ALLOWLOWERCASE|highlightflags, displayskin.realname);
 
 	// draw player sprite
+	mx += 220;
+	my += 120;
+
 #ifdef HWRENDER
 	md2_t *md2 = (displayskin.localskin ? &md2_localplayermodels[skintodisplay] : &md2_playermodels[skintodisplay]);
 
@@ -9954,24 +9943,35 @@ static void M_DrawLocalSkinMenu(void)
 	if (rendermode == render_opengl && cv_glmdls.value
 	&& !md2->error && !md2->notfound)
 	{
-		mx += 220;
-		my += 120;
-
 		const angle_t ROTATE_PER_TIC = (UINT64)ANGLE_45 * cv_skinselectspin.value / TICRATE;
-
 		angle_t angle = I_GetTime()*ROTATE_PER_TIC + FixedMul(cv_uncappedhud.value ? renderdeltatics : FRACUNIT, ROTATE_PER_TIC);
-
 		HWR_Draw2DModel(md2, mx, my, skintodisplay, (skincolors_t)cv_playercolor.value, colormap, 8*FRACUNIT/3, frame, angle);
 	}
 	else
 #endif
 	{
+		sprframe = &sprdef->spriteframes[frame];
+
+		// minenice's speen css, it's a piece of shit but hey
+		speenframe = (I_GetTime()*cv_skinselectspin.value/TICRATE + 1)%8;
+
+		// this is a very shitty solution for checking if a sprite needs flipping
+		// but it works
+		if ((speenframe > 4) && (sprframe->lumppat[speenframe] == sprframe->lumppat[8-speenframe]))
+		{
+			flags = V_FLIP; // This sprite is left/right flipped!
+		}
+
+		patch = (patch_t *)W_CachePatchNum(sprframe->lumppat[speenframe], PU_PATCH);
+
 		if (displayskin.flags & SF_HIRES)
 		{
-			V_DrawFixedPatch((mx+220)<<FRACBITS, (my+120)<<FRACBITS, displayskin.highresscale, flags, patch, colormap);
+			V_DrawFixedPatch(mx<<FRACBITS, my<<FRACBITS, displayskin.highresscale, flags, patch, colormap);
 		}
 		else
-			V_DrawMappedPatch(mx+220, my+120, flags, patch, colormap);
+		{
+			V_DrawMappedPatch(mx, my, flags, patch, colormap);
+		}
 	}
 }
 
