@@ -2,7 +2,7 @@ hw_bsp.c
 hw_draw.c
 hw_main.cpp
 hw_clip.c
-hw_md2.c
+hw_md2.cpp
 hw_cache.c
 hw_md2load.c
 hw_md3load.c
