@@ -16,6 +16,7 @@
 #ifdef HWRENDER
 
 #include <unordered_set>
+#include <unordered_map>
 
 #include "hw_main.h"
 #include "hw_glob.h"
@@ -34,6 +35,10 @@
 #include "../p_setup.h" // levelflats
 #include "../p_spec.h" // anim_t
 #include "../r_sky.h"
+
+struct ColorMipMap {
+	std::unordered_map<const UINT8*, GLMipmap_t*> map;
+};
 
 INT32 patchformat = GL_TEXFMT_AP_88; // use alpha for holes
 INT32 textureformat = GL_TEXFMT_P_8; // use chromakey for hole
@@ -448,7 +453,7 @@ typedef struct
 } GLMapTextureSet_t; // idk i suck at naming things
 
 static size_t gl_numtextures = 0; // Texture count
-static GLMapTextureSet_t *gl_textures; // For all textures
+static GLMapTextureSet_t *gl_textures = NULL; // For all textures
 
 static void HWR_FreeTextureData(patch_t *patch)
 {
@@ -504,34 +509,31 @@ static void HWR_FreeTextureColormaps(patch_t *patch)
 		return;
 
 	// The mipmap must be valid, obviously
-	while (pat->mipmap)
+	if (!pat->mipmap)
+		return;
+
+	if (pat->mipmap->nextcolormap)
 	{
-		// Confusing at first, but pat->mipmap->nextcolormap
-		// at the beginning of the loop is the first colormap
-		// from the linked list of colormaps.
-		GLMipmap_t *next = NULL;
+		for (auto& pair : pat->mipmap->nextcolormap->map)
+		{
+			GLMipmap_t *glMipmap = pair.second;
 
-		// No mipmap in this patch, break out of the loop.
-		if (!pat->mipmap)
-			break;
+			if (glMipmap)
+			{
+				// Free image data from memory.
+				Z_Free(glMipmap->data);
+				Z_Free(glMipmap->colormap);
+				glMipmap->data = NULL;
+				glMipmap->colormap = NULL;
+				GL_DeleteTexture(glMipmap);
 
-		// No colormap mipmaps either.
-		if (!pat->mipmap->nextcolormap)
-			break;
+				// Free the colormap mipmap from memory.
+				free(glMipmap);
+			}
+		}
 
-		// Set the first colormap to the one that comes after it.
-		next = pat->mipmap->nextcolormap;
-		pat->mipmap->nextcolormap = next->nextcolormap;
-
-		// Free image data from memory.
-		Z_Free(next->data);
-		Z_Free(next->colormap);
-		next->data = NULL;
-		next->colormap = NULL;
-		GL_DeleteTexture(next);
-
-		// Free the old colormap mipmap from memory.
-		free(next);
+		delete pat->mipmap->nextcolormap;
+		pat->mipmap->nextcolormap = NULL;
 	}
 }
 
@@ -1085,7 +1087,7 @@ void HWR_GetPatch(patch_t *patch)
 void HWR_GetMappedPatch(patch_t *patch, const UINT8 *colormap)
 {
 	GLPatch_t *glPatch;
-	GLMipmap_t *glMipmap, *newMipmap;
+	GLMipmap_t *newMipmap;
 
 	if (!patch->hardware)
 		Patch_CreateGL(patch);
@@ -1099,11 +1101,19 @@ void HWR_GetMappedPatch(patch_t *patch, const UINT8 *colormap)
 		return;
 	}
 
-	// search for the mipmap
-	// skip the first (no colormap translated)
-	for (glMipmap = glPatch->mipmap; glMipmap->nextcolormap;)
+	// gotta make our map if theres none
+	if (!glPatch->mipmap->nextcolormap)
 	{
-		glMipmap = glMipmap->nextcolormap;
+		glPatch->mipmap->nextcolormap = new ColorMipMap();
+	}
+
+	// search for the mipmap
+	auto& map = glPatch->mipmap->nextcolormap->map;
+	auto it = map.find(colormap);
+
+	if (it != map.end())
+	{
+		GLMipmap_t *glMipmap = it->second;
 
 		if (glMipmap->colormap && glMipmap->colormap->source == colormap)
 		{
@@ -1113,7 +1123,9 @@ void HWR_GetMappedPatch(patch_t *patch, const UINT8 *colormap)
 				HWR_UpdatePatchMipmap(patch, glMipmap);
 			}
 			else
+			{
 				HWR_LoadPatchMipmap(patch, glMipmap);
+			}
 
 			return;
 		}
@@ -1128,7 +1140,9 @@ void HWR_GetMappedPatch(patch_t *patch, const UINT8 *colormap)
 	newMipmap = static_cast<GLMipmap_t *>(calloc(1, sizeof (*newMipmap)));
 	if (newMipmap == NULL)
 		I_Error("%s: Out of memory", "HWR_GetMappedPatch");
-	glMipmap->nextcolormap = newMipmap;
+
+	// add to nextcolormap map
+	map[colormap] = newMipmap;
 
 	newMipmap->colormap = static_cast<GLColormap_t *>(Z_Calloc(sizeof(*newMipmap->colormap), PU_HWRPATCHCOLMIPMAP, NULL));
 	newMipmap->colormap->source = colormap;
