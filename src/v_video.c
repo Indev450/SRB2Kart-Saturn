@@ -1742,6 +1742,7 @@ void V_DrawHorizontallyScaledFullScreenPatch(patch_t *patch)
 void V_DrawVhsEffect(boolean rewind)
 {
 	fixed_t uby, dby;
+	// upbary is the bar going from top to bottom for some reason
 	static fixed_t upbary = 100*FRACUNIT, downbary = 150*FRACUNIT;
 
 	UINT8 barsize, updistort, downdistort;
@@ -1759,20 +1760,26 @@ void V_DrawVhsEffect(boolean rewind)
 	if (cv_reducevfx.value)
 		return;
 
-	barsize = vid.dup << 5;
-	updistort = vid.dup << (rewind ? 5 : 3);
+	const INT32 dup = min(vid.width / BASEVIDWIDTH, vid.height / BASEVIDHEIGHT);
+
+	barsize = dup << 5;
+	updistort = dup << (rewind ? 5 : 3);
 	downdistort = updistort >> 1;
 
 	if (rewind)
 		V_DrawVhsEffect(false); // experimentation
 
-	upbary -= renderdeltatics * (vid.dup * (rewind ? 3 : 1.8f));
-	downbary += renderdeltatics * (vid.dup * (rewind ? 2 : 1));
+	upbary -= renderdeltatics * (fixed_t)(dup * (rewind ? 3 : 1.8f));
+	downbary += renderdeltatics * (dup * (rewind ? 2 : 1));
 
 	if (upbary < -barsize*FRACUNIT)
 		upbary = vid.height << FRACBITS;
+	if (upbary > vid.height << FRACBITS)
+		upbary = -barsize*FRACUNIT;
 	if (downbary > vid.height << FRACBITS)
 		downbary = -barsize*FRACUNIT;
+	if (downbary < -barsize*FRACUNIT)
+		downbary = vid.height << FRACBITS;
 
 	uby = upbary >> FRACBITS;
 	dby = downbary >> FRACBITS;
