@@ -1034,6 +1034,9 @@ void D_ClearState(void)
 //
 void D_StartTitle(void)
 {
+	if (dedicated)
+		I_Error("D_StartTitle is called on dedicated server");
+
 	D_ClearState();
 	multiplayer = netgame = false; // title menu shouldnt be a netgame or multiplayer lmao
 	F_StartTitleScreen();
