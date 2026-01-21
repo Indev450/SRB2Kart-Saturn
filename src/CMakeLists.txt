@@ -51,7 +51,7 @@ set(SRB2_CORE_SOURCES
 	screen.c
 	sounds.c
 	st_stuff.c
-	#strcasestr.c
+	string.c
 	tables.c
 	v_video.c
 	w_wad.c
@@ -206,10 +206,6 @@ set(SRB2_CORE_GAME_SOURCES
 	k_kart.h
 	k_stats.h
 )
-
-if(NOT (CMAKE_CXX_COMPILER_ID MATCHES "Clang"))
-	set(SRB2_CORE_SOURCES ${SRB2_CORE_SOURCES} string.c)
-endif()
 
 prepend_sources(SRB2_CORE_SOURCES)
 prepend_sources(SRB2_CORE_HEADERS)
