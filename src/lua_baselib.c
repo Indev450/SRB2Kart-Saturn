@@ -1310,6 +1310,8 @@ static int lib_pPlayRinglossSound(lua_State *L)
 	}
 	if (!player || P_IsLocalPlayer(player))
 		P_PlayRinglossSound(source, damager);
+	else
+		(void)P_RandomKey(2);
 	return 0;
 }
 
