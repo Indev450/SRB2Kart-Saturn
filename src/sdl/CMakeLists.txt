@@ -165,6 +165,11 @@ if(${SDL2_FOUND})
 		${DISCORDRPC_LIBRARIES}
 	)
 
+	if(${SRB2_HAVE_LIBBACKTRACE})
+		target_link_libraries(SRB2SDL2 PRIVATE ${LIBBACKTRACE_LIBRARIES})
+	endif()
+
+
 	if(${CMAKE_SYSTEM} MATCHES Linux)
 		target_link_libraries(SRB2SDL2 PRIVATE
 			m

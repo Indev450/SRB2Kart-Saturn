@@ -77,6 +77,7 @@ endif()
 # OS macros
 if (UNIX)
 	add_definitions(-DUNIXCOMMON)
+	add_link_options(-rdynamic) # Use -rdynamic so a backtrace log shows function names
 endif()
 
 if(CMAKE_COMPILER_IS_GNUCC)

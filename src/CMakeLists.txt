@@ -240,10 +240,18 @@ set(SRB2_CONFIG_HWRENDER ON CACHE BOOL
 	"Enable hardware rendering through OpenGL.")
 set(SRB2_CONFIG_STATIC_OPENGL OFF CACHE BOOL
 	"Use statically linked OpenGL. NOT RECOMMENDED.")
-set(SRB2_CONFIG_USE_FBO_OGL ON CACHE BOOL
-	"Enable OpenGL FBO Downsampling support.")
+set(SRB2_CONFIG_SCREENFBO ON CACHE BOOL
+	"Enable hardware renderer (OpenGL) FBO downsampling support")
 set(SRB2_CONFIG_DEDICATED OFF CACHE BOOL
 	"Build a dedicated server.")
+
+set(SRB2_CONFIG_SATURNPAK ON CACHE BOOL
+	"Enable Saturn specific special packet. Required for using the newer resynch system")
+set(SRB2_CONFIG_SATURNJOIN ON CACHE BOOL
+	"Enable Saturn specific allowjoin toggle.")
+
+set(SRB2_CONFIG_LIBBACKTRACE ON CACHE BOOL
+	"Enable using libbacktrace for crashlogs")
 
 if(${SRB2_CONFIG_DEDICATED})
 	set(SRB2_CONFIG_HAVE_GME NO)
@@ -483,6 +491,27 @@ if(${SRB2_CONFIG_HAVE_CURL})
 	endif()
 endif()
 
+if(${SRB2_CONFIG_LIBBACKTRACE})
+	if(${SRB2_CONFIG_USE_INTERNAL_LIBRARIES})
+        if(${SRB2_SYSTEM_BITS} EQUAL 64)
+			set(LIBBACKTRACE_FOUND ON)
+			set(LIBBACKTRACE_INCLUDE_DIRS ${CMAKE_SOURCE_DIR}/libs/libbacktrace/include)
+			set(LIBBACKTRACE_LIBRARIES "-L${CMAKE_SOURCE_DIR}/libs/libbacktrace/lib/x86_64 -lbacktrace")
+		else() # 32-bit
+			message(WARNING "libbacktrace is unsupported on 32-bit builds.")
+		endif()
+	else()
+		find_package(libbacktrace)
+	endif()
+	if(${LIBBACKTRACE_FOUND})
+		set(SRB2_HAVE_LIBBACKTRACE ON)
+		add_definitions(-DHAVE_LIBBACKTRACE)
+		add_compile_options(-g)
+	else()
+		message(WARNING "You have specified that libbacktrace is available but it was not found.")
+	endif()
+endif()
+
 if(${SRB2_CONFIG_HWRENDER})
 	add_definitions(-DHWRENDER)
 	set(SRB2_HWRENDER_SOURCES
@@ -536,13 +565,18 @@ if(${SRB2_CONFIG_HWRENDER} AND ${SRB2_CONFIG_STATIC_OPENGL})
 	else()
 		message(WARNING "You have specified static opengl but opengl was not found. Not setting HWRENDER.")
 	endif()
-endif()
 
-if(${SRB2_CONFIG_HWRENDER})
-	if(${SRB2_CONFIG_USE_FBO_OGL})
-		set(SRB2_USE_FBO_OGL ON)
+	if(${SRB2_CONFIG_SCREENFBO})
 		add_definitions(-DUSE_FBO_OGL)
 	endif()
+endif()
+
+if(${SRB2_CONFIG_SATURNPAK})
+	add_definitions(-DDOSATURNPAK)
+endif()
+
+if(${SRB2_CONFIG_SATURNJOIN})
+	add_definitions(-DDOSATURNJOIN)
 endif()
 
 # Targets
@@ -551,14 +585,13 @@ endif()
 # We should really fix our code to not need this
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" OR "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
 	if (CMAKE_SYSTEM_PROCESSOR MATCHES "^(x86_64|x64|amd64|AMD64|em64t|EM64T)")
-		set(CMAKE_C_FLAGS ${CMAKE_C_FLAGS} -mno-ms-bitfields)
+		add_compile_options(-mno-ms-bitfields)
 	endif()
-	set(CMAKE_C_FLAGS ${CMAKE_C_FLAGS} -Wno-trigraphs)
+	add_compile_options(-Wno-trigraphs)
 endif()
 
-if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-	set(CMAKE_C_FLAGS ${CMAKE_C_FLAGS} -Wno-absolute-value)
-endif()
+# TODO: fix prng and P_CreateBlockmap overflow at some point
+add_compile_options(-fwrapv)
 
 add_definitions(-DCMAKECONFIG)
 
