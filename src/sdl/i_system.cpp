@@ -30,7 +30,10 @@
 #endif
 
 #include <signal.h>
+
+#if defined (__unix__) || defined(__APPLE__) || defined (UNIXCOMMON)
 #include <poll.h>
+#endif
 
 #ifdef _WIN32
 #define RPC_NO_WINDOWS_H
