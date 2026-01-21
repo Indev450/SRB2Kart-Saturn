@@ -14,10 +14,6 @@
 #ifndef __P_LOCAL__
 #define __P_LOCAL__
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include "command.h"
 #include "d_player.h"
 #include "d_think.h"
@@ -27,6 +23,10 @@ extern "C" {
 #include "r_defs.h"
 #include "p_maputl.h"
 #include "doomstat.h" // MAXSPLITSCREENPLAYERS
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #define FLOATSPEED (FRACUNIT*4)
 

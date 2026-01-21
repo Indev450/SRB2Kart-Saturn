@@ -2,6 +2,8 @@
 
 # Core sources
 set(SRB2_CORE_SOURCES
+	core/memory.cpp
+	core/thread_pool.cpp
 	am_map.c
 	b_bot.c
 	command.c
@@ -18,17 +20,21 @@ set(SRB2_CORE_SOURCES
 	f_wipe.c
 	filesrch.c
 	g_game.c
+	g_demo.c
 	g_input.c
 	hu_stuff.c
 	i_tcp.c
 	info.c
+	k_hud.c
 	lzf.c
 	m_aatree.c
 	m_anigif.c
 	m_argv.c
 	m_bbox.c
 	m_cheat.c
+	m_curl.c
 	m_cond.c
+	m_emotes.cpp
 	m_fixed.c
 	m_menu.c
 	m_textinput.c
@@ -40,19 +46,25 @@ set(SRB2_CORE_SOURCES
 	mserv.c
 	http-mserv.c
 	qs22j.c
+	r_skins.c
 	s_sound.c
 	screen.c
 	sounds.c
 	st_stuff.c
-	#string.c
+	#strcasestr.c
 	tables.c
 	v_video.c
 	w_wad.c
 	y_inter.c
-	z_zone.c
+	z_zone.cpp
 )
 
 set(SRB2_CORE_HEADERS
+	core/memory.h
+	core/thread_pool.h
+	m_curl.h
+	m_emotes.h
+	k_hud.h
 	am_map.h
 	b_bot.h
 	byteptr.h
@@ -78,6 +90,7 @@ set(SRB2_CORE_HEADERS
 	fastcmp.h
 	filesrch.h
 	g_game.h
+	g_demo.h
 	g_input.h
 	g_state.h
 	hu_stuff.h
@@ -109,6 +122,7 @@ set(SRB2_CORE_HEADERS
 	md5.h
 	mserv.h
 	qs22j.h
+	r_skins.h
 	s_sound.h
 	screen.h
 	sounds.h
@@ -123,18 +137,18 @@ set(SRB2_CORE_HEADERS
 )
 
 set(SRB2_CORE_RENDER_SOURCES
-	r_bsp.c
+	r_bsp.cpp
 	r_data.c
-	r_draw.c
-	r_fps.c
-	r_main.c
-	r_patch.c
-	r_patchrotation.c
-	r_plane.c
-	r_segs.c
+	r_draw.cpp
+	r_fps.cpp
+	r_main.cpp
+	r_patch.cpp
+	r_patchrotation.cpp
+	r_plane.cpp
+	r_segs.cpp
 	r_sky.c
 	r_splats.c
-	r_things.c
+	r_things.cpp
 	r_portal.c
 
 	r_bsp.h
@@ -162,7 +176,7 @@ set(SRB2_CORE_GAME_SOURCES
 	p_inter.c
 	p_lights.c
 	p_map.c
-	p_maputl.c
+	p_maputl.cpp
 	p_mobj.c
 	p_polyobj.c
 	p_saveg.c
@@ -475,10 +489,10 @@ if(${SRB2_CONFIG_HWRENDER})
 		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_batching.c
 		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_shaders.c
 		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_bsp.c
-		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_cache.c
+		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_cache.cpp
 		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_clip.c
 		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_draw.c
-		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_main.c
+		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_main.cpp
 		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_portal.c
 		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_md2.c
 		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_md2load.c
@@ -493,7 +507,6 @@ if(${SRB2_CONFIG_HWRENDER})
 		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_clip.h
 		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_data.h
 		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_defs.h
-		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_dll.h
 		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_gl.h
 		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_glob.h
 		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_main.h

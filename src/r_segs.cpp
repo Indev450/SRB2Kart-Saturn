@@ -15,6 +15,8 @@
 #include "r_local.h"
 #include "r_sky.h"
 
+#include <algorithm>
+
 #include "r_portal.h"
 #include "r_splats.h"
 #include "r_fps.h" // newview
