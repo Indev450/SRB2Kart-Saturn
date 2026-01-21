@@ -3,7 +3,13 @@ cmake_minimum_required(VERSION 3.5)
 # Version change is fine.
 project(SRB2
 	VERSION 1.6
-	LANGUAGES C)
+	LANGUAGES C CXX)
+
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+#set(CMAKE_CXX_EXTENSIONS OFF)    # optional but recommended: disables GNU extensions, forces pure ISO C++
+set(CMAKE_CXX_EXTENSIONS ON)
+set(CMAKE_C_EXTENSIONS ON)
 
 if(${PROJECT_SOURCE_DIR} MATCHES ${PROJECT_BINARY_DIR})
 	message(FATAL_ERROR "In-source builds will bring you a world of pain. Please make a separate directory to invoke CMake from.")
@@ -73,6 +79,7 @@ endif()
 # OS macros
 if (UNIX)
 	add_definitions(-DUNIXCOMMON)
+	add_link_options(-rdynamic) # Use -rdynamic so a backtrace log shows function names
 endif()
 
 if(CMAKE_COMPILER_IS_GNUCC)

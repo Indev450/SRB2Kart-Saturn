@@ -32,7 +32,7 @@ set(SRB2_SDL2_SOURCES
 	hwsym_sdl.c
 	i_main.c
 	i_net.c
-	i_system.c
+	i_system.cpp
 	i_ttf.c
 	i_video.c
 	i_threads.c
@@ -123,8 +123,6 @@ if(${SDL2_FOUND})
 		set(MACOSX_BUNDLE_ICON_FILE Srb2mac.icns)
 		set_source_files_properties(macosx/Srb2mac.icns PROPERTIES MACOSX_PACKAGE_LOCATION "Resources")
 		set(SRB2_SDL2_MAC_SOURCES
-			macosx/mac_alert.c
-			macosx/mac_alert.h
 			macosx/mac_resources.c
 			macosx/mac_resources.h
 			macosx/Srb2mac.icns
@@ -167,10 +165,16 @@ if(${SDL2_FOUND})
 		${DISCORDRPC_LIBRARIES}
 	)
 
+	if(${SRB2_HAVE_LIBBACKTRACE})
+		target_link_libraries(SRB2SDL2 PRIVATE ${LIBBACKTRACE_LIBRARIES})
+	endif()
+
+
 	if(${CMAKE_SYSTEM} MATCHES Linux)
 		target_link_libraries(SRB2SDL2 PRIVATE
 			m
 			rt
+			pthread
 		)
 	endif()
 

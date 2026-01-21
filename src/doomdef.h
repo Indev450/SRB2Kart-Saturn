@@ -40,22 +40,45 @@
 #define ASMCALL
 #endif
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include "doomtype.h"
 
+#ifdef __cplusplus               /* Only when compiled as C++ */
+    #include <algorithm>        /* std::min, std::max, std::sort, … */
+#endif
+
+#ifdef __cplusplus
+// Force libc++ to expose std::min/std::max even when <cmath> is included first (Apple clang quirk)
+#ifndef _LIBCPP_ENABLE_CXX17_REMOVED_FEATURES
+#define _LIBCPP_ENABLE_CXX17_REMOVED_FEATURES
+#endif
+#ifndef _LIBCPP_DISABLE_VISIBILITY_ANNOTATIONS
+#define _LIBCPP_DISABLE_VISIBILITY_ANNOTATIONS
+#endif
+
+// Optional: only try <version> if it actually exists (newer Xcode)
+#if __has_include(<version>)
+#include <version>
+#endif
+
+#define _USE_MATH_DEFINES
+#include <cmath>
+#include <cstdarg>
+#include <cstdio>
+#include <cstdlib>
+#include <cstddef>
+#include <cstring>
+#include <climits>
+
+extern "C" {
+#else
+#include <math.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <stddef.h>
 #include <string.h>
 
-#define _USE_MATH_DEFINES // fixes M_PI errors in r_plane.c for Visual Studio
-#ifdef __cplusplus
-#include <cmath>
-#else
-#include <math.h>
+#include <limits.h>
 #endif
 
 #include <sys/types.h>
