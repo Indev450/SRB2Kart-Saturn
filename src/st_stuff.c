@@ -720,7 +720,7 @@ void ST_DrawDemoTitleEntry(void)
 static void ST_MayonakaStatic(void)
 {
 	INT32 flag;
-	if (cv_lessflicker.value)
+	if (cv_lessflicker.value || cv_reducevfx.value)
 		flag = V_70TRANS;
 	else
 		flag = (leveltime%2) ? V_90TRANS : V_70TRANS;

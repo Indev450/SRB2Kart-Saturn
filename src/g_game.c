@@ -132,7 +132,7 @@ UINT8 skincolor_bluering = SKINCOLOR_STEEL;
 tic_t countdowntimer = 0;
 boolean countdowntimeup = false;
 
-cutscene_t *cutscenes[128];
+cutscene_t *cutscenes[128] = {};
 
 INT16 nextmapoverride = 0;
 boolean skipstats = false;
@@ -144,7 +144,7 @@ mobj_t *blueflag = NULL;
 mapthing_t *rflagpoint = NULL;
 mapthing_t *bflagpoint = NULL;
 
-struct quake quake;
+struct quake quake = {};
 
 // Map Header Information
 mapheader_t* mapheaderinfo[NUMMAPS] = {};
@@ -228,7 +228,7 @@ tic_t racecountdown = 0, exitcountdown = 0; // for racing
 fixed_t gravity = 0;
 fixed_t mapobjectscale = FRACUNIT;
 
-struct maplighting maplighting;
+struct maplighting maplighting = {};
 
 INT16 autobalance = 0; //for CTF team balance
 INT16 teamscramble = 0; //for CTF team scramble
@@ -3501,7 +3501,7 @@ void G_LoadGameData(void)
 	INT32 i, j;
 	UINT8 modded = false;
 	UINT8 rtemp;
-	savebuffer_t save = {0};
+	savebuffer_t save = {};
 
 	//For records
 	tic_t rectime;
@@ -3634,7 +3634,7 @@ void G_SaveGameData(boolean force)
 	size_t length;
 	INT32 i, j;
 	UINT8 btemp;
-	savebuffer_t save = {0};
+	savebuffer_t save = {};
 	(void)force;
 	char backupfile[MAX_WADPATH+4];
 
@@ -3805,7 +3805,7 @@ void G_LoadGame(UINT32 slot, INT16 mapoverride)
 	size_t length;
 	char vcheck[VERSIONSIZE];
 	char savename[255];
-	savebuffer_t save = {0};
+	savebuffer_t save = {};
 
 	// memset savedata to all 0, fixes calling perfectly valid saves corrupt because of bots
 	memset(&savedata, 0, sizeof(savedata));
@@ -3891,7 +3891,7 @@ void G_SaveGame(UINT32 savegameslot)
 	boolean saved;
 	char savename[256] = "";
 	const char *backup;
-	savebuffer_t save = {0};
+	savebuffer_t save = {};
 
 	sprintf(savename, savegamename, savegameslot);
 	backup = va("%s",savename);
@@ -4161,7 +4161,7 @@ static void measurekeywords(mapsearchfreq_t *fr,
 				PU_STATIC, NULL);
 	for (qp = strtok(va("%s", q), " ");
 			qp && fr->total < 255;
-			qp = strtok(0, " "))
+			qp = strtok(NULL, " "))
 	{
 		if (( sp = strcasestr(s, qp) ))
 		{
@@ -4242,7 +4242,7 @@ INT32 G_FindMap(const char *mapname, char **foundmapnamep,
 			{
 				newmapnum = mapnum;
 				newmapname = realmapname;
-				realmapname = 0;
+				realmapname = NULL;
 				Z_Free(apromapname);
 				if (!wanttable)
 					break;
@@ -4263,7 +4263,7 @@ INT32 G_FindMap(const char *mapname, char **foundmapnamep,
 				{
 					apromapnum = mapnum;
 					apromapname = realmapname;
-					realmapname = 0;
+					realmapname = NULL;
 				}
 			}
 			else/* ...match individual keywords */

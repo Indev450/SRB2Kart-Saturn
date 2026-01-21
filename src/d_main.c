@@ -639,7 +639,7 @@ void D_SRB2Loop(void)
 	tic_t entertic = 0, oldentertics = 0, realtics = 0, rendertimeout = INFTICS;
 	double deltatics = 0.0;
 	double deltasecs = 0.0;
-	UINT64 precision;
+	UINT64 precision = 0;
 
 	boolean interp = false;
 	boolean doDisplay = false;
@@ -946,6 +946,9 @@ void D_ClearState(void)
 //
 void D_StartTitle(void)
 {
+	if (dedicated)
+		I_Error("D_StartTitle is called on dedicated server");
+
 	D_ClearState();
 	multiplayer = netgame = false; // title menu shouldnt be a netgame or multiplayer lmao
 	F_StartTitleScreen();
@@ -1186,17 +1189,13 @@ static void IdentifyVersion(void)
 #endif
 
 	char tempsrb2path[256] = ".";
-	getcwd(tempsrb2path, 256);
+	if (getcwd(tempsrb2path, 256) == NULL)
+		strcpy(tempsrb2path, ".");
 
 	// get the current directory (possible problem on NT with "." as current dir)
 	if (!srb2waddir)
 	{
-		if (tempsrb2path[0])
-			srb2waddir = tempsrb2path;
-		else
-		{
-			srb2waddir = ".";
-		}
+		srb2waddir = tempsrb2path;
 	}
 
 #if (1) // reduce the amount of findfile by only using full cwd in this func
@@ -1869,7 +1868,8 @@ void D_SRB2Main(void)
 	if (M_CheckParm("-warp") && M_IsNextParm())
 	{
 		const char *word = M_GetNextParm();
-		pstartmap = G_FindMapByNameOrCode(word, 0);
+		pstartmap = G_FindMapByNameOrCode(word, NULL);
+
 		if (! pstartmap)
 			I_Error("Cannot find a map remotely named '%s'\n", word);
 		else

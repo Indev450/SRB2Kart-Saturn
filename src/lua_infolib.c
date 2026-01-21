@@ -25,7 +25,7 @@
 #include "lua_hook.h"	// cmd errors
 
 boolean LUA_CallAction(enum actionnum actionnum, mobj_t *actor);
-state_t *astate;
+state_t *astate = NULL;
 
 boolean actionsoverridden[NUMACTIONS] = {false};
 

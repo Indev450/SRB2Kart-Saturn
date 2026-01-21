@@ -131,6 +131,8 @@ static UINT32 curl_origtotalfilesize;
 static char *curl_realname = NULL;
 fileneeded_t *curl_curfile = NULL;
 HTTP_login *curl_logins = NULL;
+
+static void CURLGetFile(void);
 #endif
 
 /** Fills a serverinfo packet with information about wad files loaded.
@@ -1305,6 +1307,7 @@ void CURLPrepareFile(const char* url, int dfilenum)
 	if (!multi_handle)
 	{
 		cc = curl_global_init(CURL_GLOBAL_ALL);
+
 		if (cc < 0)
 		{
 			I_OutputMsg("libcurl: curl_global_init() returned %d\n", cc);
@@ -1313,6 +1316,7 @@ void CURLPrepareFile(const char* url, int dfilenum)
 		{
 			multi_handle = curl_multi_init();
 		}
+
 		if (!multi_handle)
 		{
 			I_OutputMsg("libcurl: curl_multi_init() failed\n");
@@ -1441,7 +1445,7 @@ void CURLAbortFile(void)
 #endif
 }
 
-void CURLGetFile(void)
+static void CURLGetFile(void)
 {
 #ifdef HAVE_THREADS
 	I_lock_mutex(&downloadmutex);
@@ -1483,7 +1487,8 @@ void CURLGetFile(void)
 				e = m->easy_handle;
 				easyres = m->data.result;
 
-				char *filename = Z_StrDup(curl_realname);
+				char *filename = malloc(strlen(curl_realname)+1);
+				strcpy(filename, curl_realname);
 				nameonly(filename);
 
 				if (easyres != CURLE_OK)
@@ -1521,7 +1526,7 @@ void CURLGetFile(void)
 					}
 				}
 
-				Z_Free(filename);
+				free(filename);
 				curl_curfile->file = NULL;
 				filedownload.remaining--;
 				mc = curl_multi_remove_handle(multi_handle, e);
