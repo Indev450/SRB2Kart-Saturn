@@ -45,20 +45,20 @@ int hook_defrosting = 0;
 
 // List of internal libraries to load from SRB2
 static lua_CFunction liblist[] = {
-	LUA_EnumLib, // global metatable for enums
-	LUA_SOCLib, // A_Action functions, freeslot
-	LUA_BaseLib, // string concatination by +, CONS_Printf, p_local.h stuff (P_InstaThrust, P_Move), etc.
-	LUA_MathLib, // fixed_t and angle_t math functions
-	LUA_HookLib, // hookAdd and hook-calling functions
-	LUA_ConsoleLib, // console command/variable functions and structs
-	LUA_InfoLib, // info.h stuff: mobjinfo_t, mobjinfo[], state_t, states[]
-	LUA_MobjLib, // mobj_t, mapthing_t
-	LUA_PlayerLib, // player_t
-	LUA_SkinLib, // skin_t, skins[]
-	LUA_ThinkerLib, // thinker_t
-	LUA_MapLib, // line_t, side_t, sector_t, subsector_t
-	LUA_BlockmapLib, // blockmap stuff
-	LUA_HudLib, // HUD stuff
+	LUA_EnumLib, 		// global metatable for enums
+	LUA_SOCLib, 		// A_Action functions, freeslot
+	LUA_BaseLib, 		// string concatination by +, CONS_Printf, p_local.h stuff (P_InstaThrust, P_Move), etc.
+	LUA_MathLib, 		// fixed_t and angle_t math functions
+	LUA_HookLib, 		// hookAdd and hook-calling functions
+	LUA_ConsoleLib, 	// console command/variable functions and structs
+	LUA_InfoLib, 		// info.h stuff: mobjinfo_t, mobjinfo[], state_t, states[]
+	LUA_MobjLib, 		// mobj_t, mapthing_t
+	LUA_PlayerLib, 		// player_t
+	LUA_SkinLib, 		// skin_t, skins[]
+	LUA_ThinkerLib, 	// thinker_t
+	LUA_MapLib, 		// line_t, side_t, sector_t, subsector_t
+	LUA_BlockmapLib, 	// blockmap stuff
+	LUA_HudLib, 		// HUD stuff
 	NULL
 };
 
@@ -66,12 +66,8 @@ static lua_CFunction liblist[] = {
 static void *LUA_Alloc(void *ud, void *ptr, size_t osize, size_t nsize)
 {
 	(void)ud;
-	if (nsize == 0) {
-		if (osize != 0)
-			Z_Free(ptr);
-		return NULL;
-	} else
-		return Z_Realloc(ptr, nsize, PU_LUA, NULL);
+	(void)osize;
+	return Z_Realloc(ptr, nsize, PU_LUA, NULL);
 }
 
 // Panic function Lua calls when there's an unprotected error.
@@ -213,7 +209,8 @@ void LUA_ClearState(void)
 	lua_setfield(L, LUA_REGISTRYINDEX, LREG_VALID);
 
 	// open srb2 libraries
-	for(i = 0; liblist[i]; i++) {
+	for (i = 0; liblist[i]; i++)
+	{
 		lua_pushcfunction(L, liblist[i]);
 		lua_call(L, 0, 0);
 	}
