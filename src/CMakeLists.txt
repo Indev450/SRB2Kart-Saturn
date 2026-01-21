@@ -54,7 +54,7 @@ set(SRB2_CORE_SOURCES
 	string.c
 	tables.c
 	v_video.c
-	w_wad.c
+	w_wad.cpp
 	y_inter.c
 	z_zone.cpp
 )
