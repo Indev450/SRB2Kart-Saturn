@@ -7,7 +7,9 @@ project(SRB2
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_EXTENSIONS OFF)    # optional but recommended: disables GNU extensions, forces pure ISO C++
+#set(CMAKE_CXX_EXTENSIONS OFF)    # optional but recommended: disables GNU extensions, forces pure ISO C++
+set(CMAKE_CXX_EXTENSIONS ON)
+set(CMAKE_C_EXTENSIONS ON)
 
 if(${PROJECT_SOURCE_DIR} MATCHES ${PROJECT_BINARY_DIR})
 	message(FATAL_ERROR "In-source builds will bring you a world of pain. Please make a separate directory to invoke CMake from.")
