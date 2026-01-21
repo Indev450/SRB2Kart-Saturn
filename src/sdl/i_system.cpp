@@ -885,13 +885,13 @@ static int joy_open(int playerIndex, int joyIndex)
 
 	if (SDL_WasInit(SDL_INIT_JOYSTICK) == 0)
 	{
-		CONS_Printf(M_GetText("Joystick subsystem not started\n"));
+		CONS_Printf("Joystick subsystem not started\n");
 		return -1;
 	}
 
 	if (SDL_WasInit(SDL_INIT_GAMECONTROLLER) == 0)
 	{
-		CONS_Printf(M_GetText("Game Controller subsystem not started\n"));
+		CONS_Printf("Game Controller subsystem not started\n");
 		return -1;
 	}
 
@@ -902,7 +902,7 @@ static int joy_open(int playerIndex, int joyIndex)
 
 	if (num_joy == 0)
 	{
-		CONS_Printf("%s", M_GetText("Found no joysticks on this system\n"));
+		CONS_Printf("%s", "Found no joysticks on this system\n");
 		return -1;
 	}
 
@@ -925,7 +925,7 @@ static int joy_open(int playerIndex, int joyIndex)
 			return SDL_CONTROLLER_AXIS_MAX;
 
 		// Else, we're changing devices, so send neutral joy events
-		CONS_Debug(DBG_GAMELOGIC, "Joystick1 device is changing; resetting events...\n");
+		CONS_Debug(DBG_GAMELOGIC, "Joystick %d device is changing; resetting events...\n", playerIndex+1);
 		I_ShutdownJoystick(playerIndex);
 	}
 
@@ -933,11 +933,11 @@ static int joy_open(int playerIndex, int joyIndex)
 
 	if (JoyInfo[playerIndex].dev == NULL)
 	{
-		CONS_Debug(DBG_GAMELOGIC, M_GetText("Joystick1: Couldn't open device - %s\n"), SDL_GetError());
+		CONS_Debug(DBG_GAMELOGIC, "Joystick %d: Couldn't open device - %s\n", playerIndex+1, SDL_GetError());
 		return -1;
 	}
 
-	CONS_Debug(DBG_GAMELOGIC, M_GetText("Joystick1: %s\n"), SDL_GameControllerName(JoyInfo[playerIndex].dev));
+	CONS_Debug(DBG_GAMELOGIC, "Joystick %d: %s\n", playerIndex+1, SDL_GameControllerName(JoyInfo[playerIndex].dev));
 
 	JoyInfo[playerIndex].id = I_GetJoystickDeviceIndex(JoyInfo[playerIndex].dev);
 
