@@ -565,10 +565,10 @@ if(${SRB2_CONFIG_HWRENDER} AND ${SRB2_CONFIG_STATIC_OPENGL})
 	else()
 		message(WARNING "You have specified static opengl but opengl was not found. Not setting HWRENDER.")
 	endif()
+endif()
 
-	if(${SRB2_CONFIG_SCREENFBO})
-		add_definitions(-DUSE_FBO_OGL)
-	endif()
+if(${SRB2_CONFIG_HWRENDER} AND ${SRB2_CONFIG_SCREENFBO})
+	add_definitions(-DUSE_FBO_OGL)
 endif()
 
 if(${SRB2_CONFIG_SATURNPAK})
