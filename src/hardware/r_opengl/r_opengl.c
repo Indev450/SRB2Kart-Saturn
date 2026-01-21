@@ -404,6 +404,14 @@ static PFNglEnableClientState pglEnableClientState;
 typedef void (APIENTRY * PFNglDisableClientState) (GLenum cap);
 static PFNglDisableClientState pglDisableClientState;
 
+typedef void (APIENTRY * PFNglOrtho) (GLdouble left,
+									  GLdouble right,
+									  GLdouble bottom,
+									  GLdouble top,
+									  GLdouble nearVal,
+									  GLdouble farVal);
+static PFNglOrtho pglOrtho;
+
 /* Lighting */
 typedef void (APIENTRY * PFNglShadeModel) (GLenum mode);
 static PFNglShadeModel pglShadeModel;
@@ -857,6 +865,8 @@ void SetupGLFunc4(void)
 	GetGLfunc(glUniform2fv);
 	GetGLfunc(glUniform3fv);
 	GetGLfunc(glGetUniformLocation);
+
+	GetGLfunc(glOrtho);
 
 #ifdef GLDEBUGMESSAGE
 	GetGLfunc(glDebugMessageCallback);
@@ -3088,6 +3098,39 @@ void GL_DrawModelEx(model_t *model, INT32 frameIndex, float duration, float tics
 	pglPopMatrix(); // should be the same as glLoadIdentity
 	pglDisable(GL_CULL_FACE);
 	pglDisable(GL_NORMALIZE);
+}
+
+void GL_Draw2DModel(model_t *model, INT32 frameIndex, INT32 duration, INT32 tics, INT32 nextFrameIndex,
+                      FTransform *pos, float hscale, float vscale, UINT8 flipped, UINT8 hflipped, FSurfaceInfo *Surface)
+{
+	// save our matrix´s
+	pglMatrixMode(GL_PROJECTION);
+	pglPushMatrix();
+	pglMatrixMode(GL_MODELVIEW);
+	pglPushMatrix();
+
+	pglMatrixMode(GL_PROJECTION);
+	pglLoadIdentity();
+
+	// switch to ortho mode to make our lives easier
+	// thisll make sure our coords will be remapped to pixel coords
+	pglOrtho(0.0f, (float)vid.width, (float)vid.height, 0.0f, NZCLIP_PLANE, FAR_ZCLIP_DEFAULT);
+
+	pglMatrixMode(GL_MODELVIEW);
+	pglLoadIdentity();
+
+	pglEnable(GL_DEPTH_TEST);
+	pglDepthMask(GL_TRUE);
+	pglClear(GL_DEPTH_BUFFER_BIT);
+
+	GL_DrawModelEx(model, frameIndex, duration, tics, nextFrameIndex,
+	               pos, hscale, vscale, flipped, hflipped, Surface);
+
+	// restore the matrix´s
+	pglMatrixMode(GL_PROJECTION);
+	pglPopMatrix();
+	pglMatrixMode(GL_MODELVIEW);
+	pglPopMatrix();
 }
 
 // -----------------+

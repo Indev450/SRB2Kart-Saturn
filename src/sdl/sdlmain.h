@@ -44,15 +44,15 @@ typedef struct SDLJoyInfo_s
 	/// number of old joystick
 	int oldjoy;
 	/// number of axies
-	int axises;
+	//int axises;
 	/// scale of axises
 	INT32 scale;
 	/// number of buttons
-	int buttons;
+	//int buttons;
 	/// number of hats
-	int hats;
+	//int hats;
 	/// number of balls
-	int balls;
+	//int balls;
 } SDLJoyInfo_t;
 
 /**	\brief SDL info about controller 1

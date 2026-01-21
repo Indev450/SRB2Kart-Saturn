@@ -484,7 +484,7 @@ UINT8 colortranslations[MAXTRANSLATIONS][16] = {
 //
 UINT8 K_RainbowColor(void)
 {
-	const INT32 time = cv_reducevfx.value ? (leveltime >> 3) : leveltime;
+	const tic_t time = cv_reducevfx.value ? (leveltime >> 3) : leveltime;
 	return (UINT8)(1 + (time % (MAXSKINCOLORS-1)));
 }
 
