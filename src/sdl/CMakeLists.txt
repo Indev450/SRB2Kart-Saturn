@@ -174,6 +174,7 @@ if(${SDL2_FOUND})
 		target_link_libraries(SRB2SDL2 PRIVATE
 			m
 			rt
+			pthread
 		)
 	endif()
 
