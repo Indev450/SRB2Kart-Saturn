@@ -23,6 +23,10 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
+#include <string.h>
+#include <ctype.h>
+#include <stddef.h>
+
 static inline int
 trycmp (char **pp, char *cp,
 		const char *q, size_t qn)

@@ -54,6 +54,9 @@
 #include "fastcmp.h"
 #include "m_perfstats.h"
 
+#include "r_data.h"
+#include "r_skins.h"
+
 #ifdef NETGAME_DEVMODE
 #define CV_RESTRICT CV_NETVAR
 #else

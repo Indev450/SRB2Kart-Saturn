@@ -30,6 +30,7 @@
 #endif
 
 #include <signal.h>
+#include <poll.h>
 
 #ifdef _WIN32
 #define RPC_NO_WINDOWS_H
@@ -200,10 +201,6 @@ static char returnWadPath[256];
 #include "../r_fps.h"
 
 #include "../s_sound.h"
-
-#ifdef MAC_ALERT
-#include "macosx/mac_alert.h"
-#endif
 
 #include "../d_main.h"
 
@@ -885,13 +882,13 @@ static int joy_open(int playerIndex, int joyIndex)
 
 	if (SDL_WasInit(SDL_INIT_JOYSTICK) == 0)
 	{
-		CONS_Printf(M_GetText("Joystick subsystem not started\n"));
+		CONS_Printf("Joystick subsystem not started\n");
 		return -1;
 	}
 
 	if (SDL_WasInit(SDL_INIT_GAMECONTROLLER) == 0)
 	{
-		CONS_Printf(M_GetText("Game Controller subsystem not started\n"));
+		CONS_Printf("Game Controller subsystem not started\n");
 		return -1;
 	}
 
@@ -902,7 +899,7 @@ static int joy_open(int playerIndex, int joyIndex)
 
 	if (num_joy == 0)
 	{
-		CONS_Printf("%s", M_GetText("Found no joysticks on this system\n"));
+		CONS_Printf("%s", "Found no joysticks on this system\n");
 		return -1;
 	}
 
@@ -925,7 +922,7 @@ static int joy_open(int playerIndex, int joyIndex)
 			return SDL_CONTROLLER_AXIS_MAX;
 
 		// Else, we're changing devices, so send neutral joy events
-		CONS_Debug(DBG_GAMELOGIC, "Joystick1 device is changing; resetting events...\n");
+		CONS_Debug(DBG_GAMELOGIC, "Joystick %d device is changing; resetting events...\n", playerIndex+1);
 		I_ShutdownJoystick(playerIndex);
 	}
 
@@ -933,11 +930,11 @@ static int joy_open(int playerIndex, int joyIndex)
 
 	if (JoyInfo[playerIndex].dev == NULL)
 	{
-		CONS_Debug(DBG_GAMELOGIC, M_GetText("Joystick1: Couldn't open device - %s\n"), SDL_GetError());
+		CONS_Debug(DBG_GAMELOGIC, "Joystick %d: Couldn't open device - %s\n", playerIndex+1, SDL_GetError());
 		return -1;
 	}
 
-	CONS_Debug(DBG_GAMELOGIC, M_GetText("Joystick1: %s\n"), SDL_GameControllerName(JoyInfo[playerIndex].dev));
+	CONS_Debug(DBG_GAMELOGIC, "Joystick %d: %s\n", playerIndex+1, SDL_GameControllerName(JoyInfo[playerIndex].dev));
 
 	JoyInfo[playerIndex].id = I_GetJoystickDeviceIndex(JoyInfo[playerIndex].dev);
 
@@ -1629,23 +1626,12 @@ static int I_OpenURL(const char *url)
 #endif
 }
 
-static void I_ReportSignal(int num, int coredumped)
+static void I_ShowErrorBox(const char *title, const char *msg)
 {
-	char sigmsg[512];
-	char signame[128];
-	char sigttl[512] = "Process killed by signal: ";
-	const char *reportmsg = "\n\n\nTo help us figure out the cause, please report the issue to our github page with " CRASH_LOGFILE_NAME " attached.\n\nSorry for the inconvenience!";
-
-	I_PrintSignal(num, coredumped, sigmsg, signame);
-
-	size_t len = strlen(sigmsg);
-	snprintf(sigmsg + len, sizeof(sigmsg) - len, "\n\nCrash report has been saved into %s", CRASH_LOGFILE_NAME);
-
-	strcat(sigttl, signame);
-	I_OutputMsg("\n%s\n\n", sigttl);
-
 	if (M_CheckParm("-dedicated"))
 		return;
+
+	const char *reportmsg = "\n\n\nTo help us figure out the cause, please report the issue to our github page with " CRASH_LOGFILE_NAME " attached.\n\nSorry for the inconvenience!";
 
 	const SDL_MessageBoxButtonData buttons[] = {
 		{ SDL_MESSAGEBOX_BUTTON_RETURNKEY_DEFAULT, 0,		"OK" },
@@ -1655,8 +1641,8 @@ static void I_ReportSignal(int num, int coredumped)
 	const SDL_MessageBoxData messageboxdata = {
 		SDL_MESSAGEBOX_ERROR, 			/* .flags */
 		NULL, 							/* .window */
-		sigttl, 						/* .title */
-		va("%s %s", sigmsg, reportmsg), /* .message */
+		title, 							/* .title */
+		va("%s %s", msg, reportmsg), 	/* .message */
 		SDL_arraysize(buttons), 		/* .numbuttons */
 		buttons, 						/* .buttons */
 		NULL 							/* .colorScheme */
@@ -1668,6 +1654,39 @@ static void I_ReportSignal(int num, int coredumped)
 
 	if (buttonid == 1)
 		I_OpenURL("https://github.com/Indev450/SRB2Kart-Saturn/issues");
+}
+
+static void I_ShowSimpleErrorBox(const char *title, char *msg)
+{
+	if (M_CheckParm("-dedicated"))
+		return;
+
+	// Implement message box with SDL_ShowSimpleMessageBox,
+	// which should fail gracefully if it can't put a message box up
+	// on the target system
+	SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, title, msg, NULL);
+	// Note that SDL_ShowSimpleMessageBox does *not* require SDL to be
+	// initialized at the time, so calling it after SDL_Quit() is
+	// perfectly okay! In addition, we do this on purpose so the
+	// fullscreen window is closed before displaying the error message
+	// in case the fullscreen window blocks it for some absurd reason.
+}
+
+static void I_ReportSignal(int num, int coredumped)
+{
+	char sigmsg[512];
+	char signame[128];
+	char sigttl[512] = "Process killed by signal: ";
+
+	I_PrintSignal(num, coredumped, sigmsg, signame);
+
+	size_t len = strlen(sigmsg);
+	snprintf(sigmsg + len, sizeof(sigmsg) - len, "\n\nCrash report has been saved into %s", CRASH_LOGFILE_NAME);
+
+	strcat(sigttl, signame);
+	I_OutputMsg("\n%s\n\n", sigttl);
+	//I_ShowSimpleErrorBox(sigttl, sigmsg);
+	I_ShowErrorBox(sigttl, sigmsg);
 }
 
 #ifndef NEWSIGNALHANDLER
@@ -1775,10 +1794,7 @@ FUNCNORETURN static ATTRNORETURN void newsignalhandler_Warn(const char *pr)
 	);
 
 	I_OutputMsg("%s\n", text);
-
-	SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR,
-		"Startup error",
-		text, NULL);
+	I_ShowSimpleErrorBox("Startup error", text);
 
 	I_ShutdownConsole();
 	exit(-1);
@@ -1940,6 +1956,7 @@ FUNCIERROR void ATTRNORETURN I_Error(const char *error, ...)
 {
 	va_list argptr;
 	char buffer[8192];
+	const char *sigttl = "";
 
 #ifdef HAVE_THREADS
 	if (std::this_thread::get_id() != g_main_thread_id)
@@ -1976,12 +1993,9 @@ FUNCIERROR void ATTRNORETURN I_Error(const char *error, ...)
 			va_start(argptr, error);
 			vsnprintf(buffer, 8192, error, argptr);
 			va_end(argptr);
-			// Implement message box with SDL_ShowSimpleMessageBox,
-			// which should fail gracefully if it can't put a message box up
-			// on the target system
-			SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR,
-				"SRB2Kart " VERSIONSTRING " Recursive Error",
-				buffer, NULL);
+
+			sigttl = "SRB2Kart " VERSIONSTRING " Recursive Error";
+			I_ShowSimpleErrorBox(sigttl, buffer);
 
 			W_Shutdown();
 			exit(-1); // recursive errors detected
@@ -2021,15 +2035,9 @@ FUNCIERROR void ATTRNORETURN I_Error(const char *error, ...)
 	I_ShutdownSystem();
 	SDL_Quit();
 
-	// Implement message box with SDL_ShowSimpleMessageBox,
-	// which should fail gracefully if it can't put a message box up
-	// on the target system
-	SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "SRB2Kart " VERSIONSTRING " Error", buffer, NULL);
-	// Note that SDL_ShowSimpleMessageBox does *not* require SDL to be
-	// initialized at the time, so calling it after SDL_Quit() is
-	// perfectly okay! In addition, we do this on purpose so the
-	// fullscreen window is closed before displaying the error message
-	// in case the fullscreen window blocks it for some absurd reason.
+	sigttl = "SRB2Kart " VERSIONSTRING " Error";
+	//I_ShowSimpleErrorBox(sigttl, buffer);
+	I_ShowErrorBox(sigttl, buffer);
 
 	W_Shutdown();
 
@@ -2455,7 +2463,7 @@ static const char *locateWad(void)
 	return NULL;
 }
 
-const char *I_LocateWad(void)
+extern "C" const char *I_LocateWad(void)
 {
 	const char *waddir = NULL;
 
