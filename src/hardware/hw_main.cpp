@@ -1795,9 +1795,9 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 		// Single sided line... Deal only with the middletexture (if one exists)
 		if (gl_midtexture && gl_linedef->special != HORIZONSPECIAL) // Ignore horizon line for OGL
 		{
-			glTex = HWR_GetTexture(gl_midtexture, noencore);
-
 			fixed_t texturevpeg;
+
+			glTex = HWR_GetTexture(gl_midtexture, noencore);
 
 			// PEGGING
 			if ((gl_linedef->flags & (ML_DONTPEGBOTTOM|ML_EFFECT2)) == (ML_DONTPEGBOTTOM|ML_EFFECT2))
@@ -1885,8 +1885,8 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 	//Hurdler: 3d-floors test
 	if (!gl_drawing_stencil && gl_backsector && gl_frontsector->tag != gl_backsector->tag && (gl_backsector->ffloors || gl_frontsector->ffloors))
 	{
-		ffloor_t * rover;
-		fixed_t    highcut = 0, lowcut = 0;
+		ffloor_t *rover;
+		fixed_t highcut = 0, lowcut = 0;
 		fixed_t lowcutslope = 0, highcutslope = 0;
 
 		// Used for height comparisons and etc across FOFs and slopes
