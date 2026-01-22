@@ -169,7 +169,6 @@ if(${SDL2_FOUND})
 		target_link_libraries(SRB2SDL2 PRIVATE ${LIBBACKTRACE_LIBRARIES})
 	endif()
 
-
 	if(${CMAKE_SYSTEM} MATCHES Linux)
 		target_link_libraries(SRB2SDL2 PRIVATE
 			m
@@ -229,6 +228,20 @@ if(${SDL2_FOUND})
 		-DHAVE_SDL
 		-DHAVE_THREADS
 	)
+
+	if(SRB2_CONFIG_LTO AND NOT SRB2_CONFIG_DEBUGMODE)
+		set_property(TARGET SRB2SDL2 PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
+	endif()
+
+	if(SRB2_CONFIG_ASAN)
+		target_compile_options(SRB2SDL2 PRIVATE -fsanitize=address)
+		target_link_options(SRB2SDL2 PRIVATE -fsanitize=address)
+	endif()
+
+	if(SRB2_CONFIG_UBSAN)
+		target_compile_options(SRB2SDL2 PRIVATE -fsanitize=undefined)
+		target_link_options(SRB2SDL2 PRIVATE -fsanitize=undefined)
+	endif()
 
 	## strip debug symbols into separate file when using gcc
 	# if(CMAKE_COMPILER_IS_GNUCC)
@@ -296,7 +309,7 @@ if(${SDL2_FOUND})
 			else()
 				find_library(SRB2_SDL2_DLL_${dllname} "${defaultname}")
 				list(APPEND win_extra_dll_list ${SRB2_SDL2_DLL_${dllname}})
-	endif()
+			endif()
 		endmacro()
 		getwinlib(SDL2 "SDL2.dll")
 		if(${SRB2_CONFIG_SDL2_USEMIXER})

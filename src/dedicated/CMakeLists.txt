@@ -119,6 +119,20 @@ target_compile_definitions(SRB2SDL2 PRIVATE
 	-DHAVE_THREADS
 )
 
+if(SRB2_CONFIG_LTO AND NOT SRB2_CONFIG_DEBUGMODE)
+	set_property(TARGET SRB2SDL2 PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
+endif()
+
+if(SRB2_CONFIG_ASAN)
+	target_compile_options(SRB2SDL2 PRIVATE -fsanitize=address)
+	target_link_options(SRB2SDL2 PRIVATE -fsanitize=address)
+endif()
+
+if(SRB2_CONFIG_UBSAN)
+	target_compile_options(SRB2SDL2 PRIVATE -fsanitize=undefined)
+	target_link_options(SRB2SDL2 PRIVATE -fsanitize=undefined)
+endif()
+
 ## strip debug symbols into separate file when using gcc
 # if(CMAKE_COMPILER_IS_GNUCC)
 # 	if(${CMAKE_BUILD_TYPE} MATCHES Debug)
