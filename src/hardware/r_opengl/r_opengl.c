@@ -3631,8 +3631,8 @@ void GL_RenderVhsEffect(fixed_t upbary, fixed_t downbary, UINT8 updistort, UINT8
 	}
 
 	// Upward bar
-	//GL_MakeScreenTexture(HWD_SCREENTEXTURE_VHS);
-	//pglBindTexture(GL_TEXTURE_2D, screenTextures[HWD_SCREENTEXTURE_VHS]);
+	GL_MakeScreenTexture(HWD_SCREENTEXTURE_VHS);
+	pglBindTexture(GL_TEXTURE_2D, screenTextures[HWD_SCREENTEXTURE_VHS]);
 
 	color[0] = color[1] = color[2] = 190;
 	color[3] = 250;
@@ -3661,8 +3661,8 @@ void GL_RenderVhsEffect(fixed_t upbary, fixed_t downbary, UINT8 updistort, UINT8
 	pglDrawArrays(GL_TRIANGLE_FAN, 0, 4);
 
 	// Downward bar
-	//GL_MakeScreenTexture(HWD_SCREENTEXTURE_VHS);
-	//pglBindTexture(GL_TEXTURE_2D, screenTextures[HWD_SCREENTEXTURE_VHS]);
+	GL_MakeScreenTexture(HWD_SCREENTEXTURE_VHS);
+	pglBindTexture(GL_TEXTURE_2D, screenTextures[HWD_SCREENTEXTURE_VHS]);
 
 	fix[0] = 0.0f;
 	fix[6] = xfix;
