@@ -3629,8 +3629,10 @@ void GL_RenderVhsEffect(fixed_t upbary, fixed_t downbary, UINT8 updistort, UINT8
 
 	uint32_t r = rand();
 
-	const float stride = 2.f/scrwh;
-	for (i = 0; i < 1; i += stride)
+	const float dup = min(scrwf / BASEVIDWIDTH, scrwh / BASEVIDHEIGHT);
+	const float ystep = 2.f/scrwh * dup/4.f;
+
+	for (i = 0; i < 1; i += ystep)
 	{
 		// avoid calling rand thousands of times
 		r ^= r >> 13;
