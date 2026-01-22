@@ -3605,8 +3605,7 @@ void GL_RenderVhsEffect(fixed_t upbary, fixed_t downbary, UINT8 updistort, UINT8
 
 	uint32_t r = rand();
 
-	const float dup = min(scrwf / BASEVIDWIDTH, scrwh / BASEVIDHEIGHT);
-	const float ystep = 2.f/scrwh * dup/4.f;
+	const float ystep = 2.f/scrwh * (float)vid.udup/4.f;
 
 	for (i = 0; i < 1; i += ystep)
 	{
