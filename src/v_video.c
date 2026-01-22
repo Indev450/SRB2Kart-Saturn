@@ -1760,17 +1760,15 @@ void V_DrawVhsEffect(boolean rewind)
 	if (cv_reducevfx.value)
 		return;
 
-	const INT32 dup = min(vid.width / BASEVIDWIDTH, vid.height / BASEVIDHEIGHT);
-
-	barsize = dup << 5;
-	updistort = dup << (rewind ? 5 : 3);
+	barsize = vid.udup << 5;
+	updistort = vid.udup << (rewind ? 5 : 3);
 	downdistort = updistort >> 1;
 
 	if (rewind)
 		V_DrawVhsEffect(false); // experimentation
 
-	upbary -= renderdeltatics * (fixed_t)(dup * (rewind ? 3 : 1.8f));
-	downbary += renderdeltatics * (dup * (rewind ? 2 : 1));
+	upbary -= renderdeltatics * (fixed_t)(vid.udup * (rewind ? 3 : 1.8f));
+	downbary += renderdeltatics * (vid.udup * (rewind ? 2 : 1));
 
 	if (upbary < -barsize*FRACUNIT)
 		upbary = vid.height << FRACBITS;
@@ -3929,6 +3927,8 @@ void V_Recalc(void)
 		vid.dup = vid.height / BASEVIDHEIGHT;
 		vid.fdup = (vid.height*FRACUNIT) / BASEVIDHEIGHT;
 	}
+
+	vid.udup = vid.dup;
 
 	if (loaded_config // this could use a better name, since it is more and indicator that early startup is done and its safe to do sketchy shit now :chaosleep:
 	&& (vid.width > 720) && (vid.height > 1280)) // ehhhh well this thing has so many issues, so ill lock it to higher resolutions instead

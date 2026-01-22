@@ -3591,22 +3591,30 @@ void GL_RenderVhsEffect(fixed_t upbary, fixed_t downbary, UINT8 updistort, UINT8
 		 1.0f, -1.0f, 1.0f
 	};
 
-	xfix = 1/((float)screen_texsizew/(float)screen_width);
-	yfix = 1/((float)screen_texsizeh/(float)screen_height);
-
 	const GLfloat scrwf = (float)screen_width;
 	const GLfloat scrwh = (float)screen_height;
 
+	xfix = 1/((float)screen_texsizew/scrwf);
+	yfix = 1/((float)screen_texsizeh/scrwh);
+
+	GL_SetBlend(PF_Modulated|PF_Translucent|PF_NoDepthTest);
+
 	// Slight fuzziness
 	GL_MakeScreenTexture(HWD_SCREENTEXTURE_VHS);
-	GL_SetBlend(PF_Modulated|PF_Translucent|PF_NoDepthTest);
 	pglBindTexture(GL_TEXTURE_2D, screenTextures[HWD_SCREENTEXTURE_VHS]);
 
-	const float stride = 2.f/scrwh;
+	uint32_t r = rand();
 
-	for (i = 0; i < 1; i += stride)
+	const float ystep = 2.f/scrwh * (float)vid.udup/4.f;
+
+	for (i = 0; i < 1; i += ystep)
 	{
-		fix[2] = (float)(rand() % 128) / -22000.f * xfix;
+		// avoid calling rand thousands of times
+		r ^= r >> 13;
+		r ^= r >> 11;
+		r ^= r << 21;
+
+		fix[2] = (float)(r & 127) / -22000.f * xfix;
 		fix[0] = fix[2];
 		fix[6] = fix[0] + xfix;
 		fix[4] = fix[2] + xfix;
@@ -3624,8 +3632,8 @@ void GL_RenderVhsEffect(fixed_t upbary, fixed_t downbary, UINT8 updistort, UINT8
 	}
 
 	// Upward bar
-	//GL_MakeScreenTexture(HWD_SCREENTEXTURE_VHS);
-	//pglBindTexture(GL_TEXTURE_2D, screenTextures[HWD_SCREENTEXTURE_VHS]);
+	GL_MakeScreenTexture(HWD_SCREENTEXTURE_VHS);
+	pglBindTexture(GL_TEXTURE_2D, screenTextures[HWD_SCREENTEXTURE_VHS]);
 
 	color[0] = color[1] = color[2] = 190;
 	color[3] = 250;
@@ -3648,13 +3656,14 @@ void GL_RenderVhsEffect(fixed_t upbary, fixed_t downbary, UINT8 updistort, UINT8
 
 	fix[1] = fix[7] += (fix[3] - fix[7])*2;
 	screenVerts[1] = screenVerts[10] += (screenVerts[4] - screenVerts[1])*2;
+
 	pglTexCoordPointer(2, GL_FLOAT, 0, fix);
 	pglVertexPointer(3, GL_FLOAT, 0, screenVerts);
 	pglDrawArrays(GL_TRIANGLE_FAN, 0, 4);
 
 	// Downward bar
-	//GL_MakeScreenTexture(HWD_SCREENTEXTURE_VHS);
-	//pglBindTexture(GL_TEXTURE_2D, screenTextures[HWD_SCREENTEXTURE_VHS]);
+	GL_MakeScreenTexture(HWD_SCREENTEXTURE_VHS);
+	pglBindTexture(GL_TEXTURE_2D, screenTextures[HWD_SCREENTEXTURE_VHS]);
 
 	fix[0] = 0.0f;
 	fix[6] = xfix;
@@ -3673,6 +3682,7 @@ void GL_RenderVhsEffect(fixed_t upbary, fixed_t downbary, UINT8 updistort, UINT8
 
 	fix[1] = fix[7] += (fix[3] - fix[7])*2;
 	screenVerts[1] = screenVerts[10] += (screenVerts[4] - screenVerts[1])*2;
+
 	pglTexCoordPointer(2, GL_FLOAT, 0, fix);
 	pglVertexPointer(3, GL_FLOAT, 0, screenVerts);
 	pglDrawArrays(GL_TRIANGLE_FAN, 0, 4);
@@ -3712,7 +3722,7 @@ void GL_DrawScreenFinalTexture(int tex, INT32 width, INT32 height, boolean usesh
 {
 	float xfix, yfix;
 	float origaspect, newaspect;
-	float xoff = 1, yoff = 1; // xoffset and yoffset for the polygon to have black bars around the screen
+	float xoff = 1.0f, yoff = 1.0f; // xoffset and yoffset for the polygon to have black bars around the screen
 
 	static float off[12] =
 	{
@@ -3735,19 +3745,19 @@ void GL_DrawScreenFinalTexture(int tex, INT32 width, INT32 height, boolean usesh
 	if (origaspect < newaspect)
 	{
 		xoff = origaspect / newaspect;
-		yoff = 1;
+		yoff = 1.0f;
 	}
 	else if (origaspect > newaspect)
 	{
-		xoff = 1;
+		xoff = 1.0f;
 		yoff = newaspect / origaspect;
 	}
 
 	// float off[12];
 	off[0] = off[3]  = -xoff;
 	off[1] = off[10] = -yoff;
-	off[4] = off[7]  = yoff;
-	off[6] = off[9]  = xoff;
+	off[4] = off[7]  =  yoff;
+	off[6] = off[9]  =  xoff;
 
 	// float fix[8];
 	fix[3] = fix[5] = yfix;

@@ -236,18 +236,23 @@ set(SRB2_CONFIG_HWRENDER ON CACHE BOOL
 	"Enable hardware rendering through OpenGL.")
 set(SRB2_CONFIG_STATIC_OPENGL OFF CACHE BOOL
 	"Use statically linked OpenGL. NOT RECOMMENDED.")
-set(SRB2_CONFIG_SCREENFBO ON CACHE BOOL
-	"Enable hardware renderer (OpenGL) FBO downsampling support")
 set(SRB2_CONFIG_DEDICATED OFF CACHE BOOL
 	"Build a dedicated server.")
+set(SRB2_CONFIG_LIBBACKTRACE ON CACHE BOOL
+	"Enable using libbacktrace for crashlogs.")
+set(SRB2_CONFIG_LTO ON CACHE BOOL
+	"Enable link time optimizations, improves performance at the cost of longer link times.")
+set(SRB2_CONFIG_ASAN OFF CACHE BOOL
+	"Compile with AddressSanitizer (libasan).")
+set(SRB2_CONFIG_UBSAN OFF CACHE BOOL
+	"Compile with UndefinedBehaviorSanitizer (libubsan).")
 
 set(SRB2_CONFIG_SATURNPAK ON CACHE BOOL
 	"Enable Saturn specific special packet. Required for using the newer resynch system")
 set(SRB2_CONFIG_SATURNJOIN ON CACHE BOOL
 	"Enable Saturn specific allowjoin toggle.")
-
-set(SRB2_CONFIG_LIBBACKTRACE ON CACHE BOOL
-	"Enable using libbacktrace for crashlogs")
+set(SRB2_CONFIG_SCREENFBO ON CACHE BOOL
+	"Enable hardware renderer (OpenGL) FBO downsampling support")
 
 if(${SRB2_CONFIG_DEDICATED})
 	set(SRB2_CONFIG_HAVE_GME NO)
@@ -502,7 +507,6 @@ if(${SRB2_CONFIG_LIBBACKTRACE})
 	if(${LIBBACKTRACE_FOUND})
 		set(SRB2_HAVE_LIBBACKTRACE ON)
 		add_definitions(-DHAVE_LIBBACKTRACE)
-		add_compile_options(-g)
 	else()
 		message(WARNING "You have specified that libbacktrace is available but it was not found.")
 	endif()
@@ -550,7 +554,6 @@ if(${SRB2_CONFIG_HWRENDER})
 	set(SRB2_R_OPENGL_HEADERS
 		${CMAKE_CURRENT_SOURCE_DIR}/hardware/r_opengl/r_opengl.h
 	)
-
 endif()
 
 if(${SRB2_CONFIG_HWRENDER} AND ${SRB2_CONFIG_STATIC_OPENGL})
@@ -588,6 +591,14 @@ endif()
 
 # TODO: fix prng and P_CreateBlockmap overflow at some point
 add_compile_options(-fwrapv)
+
+if (${CMAKE_BUILD_TYPE} MATCHES Debug)
+	add_compile_options(-O0)
+else()
+	add_compile_options(-O3)
+endif()
+
+add_compile_options(-g)
 
 add_definitions(-DCMAKECONFIG)
 

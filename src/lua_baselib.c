@@ -1293,6 +1293,7 @@ static int lib_pPlayRinglossSound(lua_State *L)
 	player_t *player = NULL;
 	mobj_t *damager = NULL;
 	NOHUD
+	LUA_UsageWarning(L, "P_PlayRinglossSound: using this function from lua might cause desynchs, consider using S_StartSound(origin, sfx_khurt1 + P_RandomKey(2)) as workaround");
 	if (!source)
 		return LUA_ErrInvalid(L, "mobj_t");
 	if (!lua_isnone(L, 2) && lua_isuserdata(L, 2))
