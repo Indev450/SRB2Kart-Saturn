@@ -5444,7 +5444,7 @@ static void HWR_SetTransformAiming(FTransform *trans)
 		fixed_t fixedaiming = AIMINGTODY(aimingangle);
 		trans->viewaiming = FixedToFloat(fixedaiming) * (static_cast<float>(vid.width) / static_cast<float>(vid.height)) / (static_cast<float>(BASEVIDWIDTH) / static_cast<float>(BASEVIDHEIGHT));
 		if (splitscreen == 1) // only for 2 player splitscreen
-			trans->viewaiming *= 2.125; // splitscreen adjusts fov with 0.8, so compensate (but only halfway, since splitscreen means only half the screen is used)
+			trans->viewaiming *= 2.125f; // splitscreen adjusts fov with 0.8, so compensate (but only halfway, since splitscreen means only half the screen is used)
 		trans->shearing = true;
 		gl_aimingangle = 0;
 	}

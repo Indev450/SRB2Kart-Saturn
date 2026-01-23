@@ -2313,7 +2313,6 @@ static void Command_Map_f(void)
 		return;
 	}
 
-
 	last_map_cmd = I_GetTime();
 
 	size_t first_option;

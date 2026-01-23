@@ -465,7 +465,7 @@ void V_CubeApply(RGBA_t *input)
 	if (!Cubeapply)
 		return;
 
-	linear = ((*input).s.red/255.0);
+	linear = ((*input).s.red/255.0f);
 #define dolerp(e1, e2) ((1 - linear)*e1 + linear*e2)
 	for (q = 0; q < 3; q++)
 	{
@@ -475,21 +475,21 @@ void V_CubeApply(RGBA_t *input)
 		working[3][q] = dolerp(Cubepal[0][1][1][q], Cubepal[1][1][1][q]);
 	}
 
-	linear = ((*input).s.green/255.0);
+	linear = ((*input).s.green/255.0f);
 	for (q = 0; q < 3; q++)
 	{
 		working[0][q] = dolerp(working[0][q], working[1][q]);
 		working[1][q] = dolerp(working[2][q], working[3][q]);
 	}
 
-	linear = ((*input).s.blue/255.0);
+	linear = ((*input).s.blue/255.0f);
 	for (q = 0; q < 3; q++)
 	{
 		working[0][q] = 255*dolerp(working[0][q], working[1][q]);
 		if (working[0][q] > 255.0f)
 			working[0][q] = 255.0f;
 		else if (working[0][q] < 0.0f)
-			working[0][q] = 0.0;
+			working[0][q] = 0.0f;
 	}
 #undef dolerp
 

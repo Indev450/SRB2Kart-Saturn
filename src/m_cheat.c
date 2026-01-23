@@ -301,7 +301,7 @@ void Command_CheatNoTarget_f(void)
 void Command_Scale_f(void)
 {
 	const double scaled = atof(COM_Argv(1));
-	fixed_t scale = FLOAT_TO_FIXED(scaled);
+	fixed_t scale = DoubleToFixed(scaled);
 
 	REQUIRE_DEVMODE;
 	REQUIRE_INLEVEL;
