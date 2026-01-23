@@ -31,6 +31,10 @@
 
 #include <signal.h>
 
+#if defined (__unix__) || defined(__APPLE__) || defined (UNIXCOMMON)
+#include <poll.h>
+#endif
+
 #ifdef _WIN32
 #define RPC_NO_WINDOWS_H
 #include <windows.h>
@@ -206,10 +210,6 @@ static char returnWadPath[256];
 #include "../r_fps.h"
 
 #include "../s_sound.h"
-
-#ifdef MAC_ALERT
-#include "macosx/mac_alert.h"
-#endif
 
 #include "../d_main.h"
 
@@ -2543,7 +2543,7 @@ static const char *locateWad(void)
 	return NULL;
 }
 
-const char *I_LocateWad(void)
+extern "C" const char *I_LocateWad(void)
 {
 	const char *waddir = NULL;
 

@@ -106,6 +106,31 @@
 #define ASSET_HASH_PATCH_KART    "00000000000000000000000000000000"
 #endif
 
+/* Manually defined asset hashes for non-CMake builds
+ * Last updated 2015 / 05 / 03 - SRB2 v2.1.15 - srb2.srb
+ * Last updated 2018 / 12 / 23 - SRB2 v2.1.22 - patch.dta
+ * Last updated 2019 / 01 / 18 - Kart v1.0.2 - Main assets
+ * Last updated 2020 / 08 / 30 - Kart v1.3 - patch.kart
+ * Last updated 2022 / 08 / 16 - Kart v1.4 - Main assets
+ * Last updated 2022 / 08 / 19 - Kart v1.5 - gfx.kart
+ * Last updated 2022 / 11 / 01 - Kart v1.6 - gfx.kart, maps.kart
+ */
+
+// Base SRB2 hashes
+#define ASSET_HASH_SRB2_SRB      "c1b9577687f8a795104aef4600720ea7"
+#ifdef USE_PATCH_DTA
+#define ASSET_HASH_PATCH_DTA     "b04fd9624bfd94dc96dcf4f400f7deb4"
+#endif
+
+// SRB2Kart-specific hashes
+#define ASSET_HASH_GFX_KART      "06f86ee16136eb8a7043b15001797034"
+#define ASSET_HASH_TEXTURES_KART "abb53d56aba47c3a8cb0f764da1c8b80"
+#define ASSET_HASH_CHARS_KART    "e2c428347dde52858a3dacd29fc5b964"
+#define ASSET_HASH_MAPS_KART     "d051e55141ba736582228c456953cd98"
+#ifdef USE_PATCH_KART
+#define ASSET_HASH_PATCH_KART    "00000000000000000000000000000000"
+#endif
+
 #ifdef CMAKECONFIG
 #include "config.h"
 #else

@@ -1,25 +1,137 @@
 add_executable(SRB2SDL2 MACOSX_BUNDLE WIN32)
 
-if(("${CMAKE_COMPILER_IS_GNUCC}" OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang") AND "${CMAKE_SYSTEM_NAME}" MATCHES "Windows")
-	target_link_options(SRB2SDL2 PRIVATE "-Wl,--disable-dynamicbase")
-	if("${SRB2_CONFIG_STATIC_STDLIB}")
-		# On MinGW with internal libraries, link the standard library statically
-		if(CMAKE_LINKER_TYPE STREQUAL "LLD")
-			target_link_options(SRB2SDL2 PRIVATE -Wl, -static-libgcc -static-libstdc++ -static -lpthread)
-		else()
-			target_link_options(SRB2SDL2 PRIVATE -Wl,--add-stdcall-alias -static-libgcc -static-libstdc++ -static -lpthread)
-		endif()
-		set(THREADS_PREFER_PTHREAD_FLAG TRUE)
-		find_package(Threads REQUIRED)
-		target_link_libraries(SRB2SDL2 PRIVATE Threads::Threads)
-	endif()
-	if(CMAKE_SIZEOF_VOID_P EQUAL 4)
-		target_link_options(SRB2SDL2 PRIVATE "-Wl,--large-address-aware")
-	endif()
-endif()
+# Core sources
+set(SRB2_CORE_SOURCES
+	core/memory.cpp
+	core/thread_pool.cpp
+	am_map.c
+	b_bot.c
+	command.c
+	comptime.c
+	console.c
+	d_clisrv.c
+	d_main.c
+	d_net.c
+	d_netcmd.c
+	d_netfil.c
+	d_protocol.c
+	dehacked.c
+	f_finale.c
+	f_wipe.c
+	filesrch.c
+	g_game.c
+	g_demo.c
+	g_input.c
+	hu_stuff.c
+	i_tcp.c
+	info.c
+	k_hud.c
+	lzf.c
+	m_aatree.c
+	m_anigif.c
+	m_argv.c
+	m_bbox.c
+	m_cheat.c
+	m_curl.c
+	m_cond.c
+	m_emotes.cpp
+	m_fixed.c
+	m_menu.c
+	m_textinput.c
+	m_misc.c
+	m_perfstats.c
+	m_queue.c
+	m_random.c
+	md5.c
+	mserv.c
+	http-mserv.c
+	qs22j.c
+	r_skins.c
+	s_sound.c
+	screen.c
+	sounds.c
+	st_stuff.c
+	string.c
+	tables.c
+	v_video.c
+	w_wad.c
+	y_inter.c
+	z_zone.cpp
+)
 
-set(SRB2_CONFIG_STD23 OFF CACHE BOOL
-	"Compiles the game under c23 and cxx23 instead c11 and cxx17.")
+set(SRB2_CORE_HEADERS
+	core/memory.h
+	core/thread_pool.h
+	m_curl.h
+	m_emotes.h
+	k_hud.h
+	am_map.h
+	b_bot.h
+	byteptr.h
+	command.h
+	console.h
+	d_clisrv.h
+	d_event.h
+	d_main.h
+	d_net.h
+	d_netcmd.h
+	d_netfil.h
+	d_player.h
+	d_protocol.h
+	d_think.h
+	d_ticcmd.h
+	dehacked.h
+	doomdata.h
+	doomdef.h
+	doomstat.h
+	doomtype.h
+	endian.h
+	f_finale.h
+	fastcmp.h
+	filesrch.h
+	g_game.h
+	g_demo.h
+	g_input.h
+	g_state.h
+	hu_stuff.h
+	i_joy.h
+	i_net.h
+	i_sound.h
+	i_system.h
+	i_tcp.h
+	i_time.h
+	i_video.h
+	info.h
+	keys.h
+	lzf.h
+	m_aatree.h
+	m_anigif.h
+	m_argv.h
+	m_bbox.h
+	m_cheat.h
+	m_cond.h
+	m_dllist.h
+	m_fixed.h
+	m_menu.h
+	m_textinput.h
+	m_misc.h
+	m_queue.h
+	m_perfstats.h
+	m_random.h
+	m_swap.h
+	md5.h
+	mserv.h
+	qs22j.h
+	r_skins.h
+	s_sound.h
+	screen.h
+	sounds.h
+	st_stuff.h
+	tables.h
+	v_video.h
+	w_wad.h
+	y_inter.h
+	z_zone.h
 
 if(SRB2_CONFIG_STD23)
 	message("-- Compiling game with C23 and CXX23.")
@@ -33,53 +145,100 @@ else()
 	set_property(TARGET SRB2SDL2 PROPERTY CXX_STANDARD 17)
 endif()
 
-# Core sources
-target_sourcefile(c)
-target_sources(SRB2SDL2 PRIVATE comptime.c config.h.in)
+set(SRB2_CORE_RENDER_SOURCES
+	r_bsp.cpp
+	r_data.c
+	r_draw.cpp
+	r_fps.cpp
+	r_main.cpp
+	r_patch.cpp
+	r_patchrotation.cpp
+	r_plane.cpp
+	r_segs.cpp
+	r_sky.c
+	r_splats.c
+	r_things.cpp
+	r_portal.c
 
 target_sources(SRB2SDL2 PRIVATE md5.c md5.h)
 
-### Configuration
-set(SRB2_CONFIG_DEV_BUILD OFF CACHE BOOL
-	"Compile a development build of SRB2Kart.")
+set(SRB2_CORE_GAME_SOURCES
+	p_ceilng.c
+	p_enemy.c
+	p_floor.c
+	p_inter.c
+	p_lights.c
+	p_map.c
+	p_maputl.cpp
+	p_mobj.c
+	p_polyobj.c
+	p_saveg.c
+	p_setup.c
+	p_sight.c
+	p_slopes.c
+	p_spec.c
+	p_telept.c
+	p_tick.c
+	p_user.c
+	k_director.c
+	k_kart.c
+	k_stats.c
+	i_time.c
 
 set(SRB2_CONFIG_SKIP_COMPTIME OFF CACHE BOOL
 	"Skip Comptime rebuild.")
 
-if(NOT SRB2_CONFIG_SKIP_COMPTIME)
-	# This updates the modification time for comptime.c at the
-	# end of building so when the build system is ran next time,
-	# that file gets flagged. comptime.c will always be rebuilt.
-	#
-	# This begs the question, why always rebuild comptime.c?
-	# Some things like the git commit must be checked each time
-	# the program is built. But the build system determines which
-	# files should be rebuilt before anything else. So
-	# comptime.c, which only needs to be rebuilt based on
-	# information known at build time, must be told to rebuild
-	# before that information can be ascertained.
-	add_custom_command(
-		TARGET SRB2SDL2
-		POST_BUILD
-		COMMAND ${CMAKE_COMMAND} -E touch_nocreate ${CMAKE_CURRENT_SOURCE_DIR}/comptime.c
-	)
-endif()
-
-set(GIT_EXECUTABLE "git" CACHE FILEPATH "Path to git binary")
-add_custom_target(_SRB2_reconf ALL
-	COMMAND ${CMAKE_COMMAND} -DGIT_EXECUTABLE=${GIT_EXECUTABLE} -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} -DBINARY_DIR=${CMAKE_CURRENT_BINARY_DIR}/.. -P ${CMAKE_CURRENT_SOURCE_DIR}/../cmake/Comptime.cmake
-	WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/.."
-)
-add_dependencies(SRB2SDL2 _SRB2_reconf)
+prepend_sources(SRB2_CORE_SOURCES)
+prepend_sources(SRB2_CORE_HEADERS)
+prepend_sources(SRB2_CORE_RENDER_SOURCES)
+prepend_sources(SRB2_CORE_GAME_SOURCES)
 
 if(SRB2_CONFIG_ASAN)
 	target_compile_options(SRB2SDL2 PRIVATE -fsanitize=address)
 	target_link_options(SRB2SDL2 PRIVATE -fsanitize=address)
 endif()
 
-if(SRB2_CONFIG_UBSAN)
-	target_compile_options(SRB2SDL2 PRIVATE -fsanitize=undefined)
-	target_link_options(SRB2SDL2 PRIVATE -fsanitize=undefined)
+### Configuration
+set(SRB2_CONFIG_HAVE_BLUA ON CACHE BOOL
+	"Enable Lua interpreter support")
+set(SRB2_CONFIG_HAVE_PNG ON CACHE BOOL
+	"Enable PNG support. Depends on zlib, so will be disabled if you don't enable that too.")
+set(SRB2_CONFIG_HAVE_ZLIB ON CACHE BOOL
+	"Enable zlib support.")
+set(SRB2_CONFIG_HAVE_GME ON CACHE BOOL
+	"Enable GME support.")
+set(SRB2_CONFIG_HAVE_OPENMPT ON CACHE BOOL
+	"Enable OpenMPT support.")
+set(SRB2_CONFIG_HAVE_DISCORDRPC OFF CACHE BOOL
+	"Enable Discord rich presence support.")
+set(SRB2_CONFIG_HAVE_CURL ON CACHE BOOL
+	"Enable curl support, used for downloading files via HTTP.")
+set(SRB2_CONFIG_HWRENDER ON CACHE BOOL
+	"Enable hardware rendering through OpenGL.")
+set(SRB2_CONFIG_STATIC_OPENGL OFF CACHE BOOL
+	"Use statically linked OpenGL. NOT RECOMMENDED.")
+set(SRB2_CONFIG_DEDICATED OFF CACHE BOOL
+	"Build a dedicated server.")
+set(SRB2_CONFIG_LIBBACKTRACE ON CACHE BOOL
+	"Enable using libbacktrace for crashlogs.")
+set(SRB2_CONFIG_LTO ON CACHE BOOL
+	"Enable link time optimizations, improves performance at the cost of longer link times.")
+set(SRB2_CONFIG_ASAN OFF CACHE BOOL
+	"Compile with AddressSanitizer (libasan).")
+set(SRB2_CONFIG_UBSAN OFF CACHE BOOL
+	"Compile with UndefinedBehaviorSanitizer (libubsan).")
+
+set(SRB2_CONFIG_SATURNPAK ON CACHE BOOL
+	"Enable Saturn specific special packet. Required for using the newer resynch system")
+set(SRB2_CONFIG_SATURNJOIN ON CACHE BOOL
+	"Enable Saturn specific allowjoin toggle.")
+set(SRB2_CONFIG_SCREENFBO ON CACHE BOOL
+	"Enable hardware renderer (OpenGL) FBO downsampling support")
+
+if(${SRB2_CONFIG_DEDICATED})
+	set(SRB2_CONFIG_HAVE_GME NO)
+	set(SRB2_CONFIG_HAVE_OPENMPT NO)
+	set(SRB2_CONFIG_HWRENDER NO)
 endif()
 
 if(SRB2_CONFIG_TIDY)
@@ -192,16 +351,62 @@ if("${SRB2_CONFIG_HWRENDER}")
 	endif()
 endif()
 
-# TODO: build this with the game
-if(${CMAKE_SYSTEM} MATCHES Windows AND ${CMAKE_C_COMPILER_ID} MATCHES "GNU" AND ${SRB2_SYSTEM_BITS} EQUAL 32)
-	target_link_libraries(SRB2SDL2 PRIVATE
-		"${CMAKE_CURRENT_SOURCE_DIR}/../libs/drmingw/lib/win32/libexchndl.a"
-		"${CMAKE_CURRENT_SOURCE_DIR}/../libs/drmingw/lib/win32/libmgwhelp.a"
+if(${SRB2_CONFIG_LIBBACKTRACE})
+	if(${SRB2_CONFIG_USE_INTERNAL_LIBRARIES})
+        if(${SRB2_SYSTEM_BITS} EQUAL 64)
+			set(LIBBACKTRACE_FOUND ON)
+			set(LIBBACKTRACE_INCLUDE_DIRS ${CMAKE_SOURCE_DIR}/libs/libbacktrace/include)
+			set(LIBBACKTRACE_LIBRARIES "-L${CMAKE_SOURCE_DIR}/libs/libbacktrace/lib/x86_64 -lbacktrace")
+		else() # 32-bit
+			message(WARNING "libbacktrace is unsupported on 32-bit builds.")
+		endif()
+	else()
+		find_package(libbacktrace)
+	endif()
+	if(${LIBBACKTRACE_FOUND})
+		set(SRB2_HAVE_LIBBACKTRACE ON)
+		add_definitions(-DHAVE_LIBBACKTRACE)
+	else()
+		message(WARNING "You have specified that libbacktrace is available but it was not found.")
+	endif()
+endif()
+
+if(${SRB2_CONFIG_HWRENDER})
+	add_definitions(-DHWRENDER)
+	set(SRB2_HWRENDER_SOURCES
+		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_batching.c
+		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_shaders.c
+		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_bsp.c
+		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_cache.cpp
+		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_clip.c
+		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_draw.c
+		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_main.cpp
+		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_portal.c
+		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_md2.c
+		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_md2load.c
+		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_md3load.c
+		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_model.c
+		${CMAKE_CURRENT_SOURCE_DIR}/hardware/u_list.c
 	)
 	target_include_directories(SRB2SDL2 PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../libs/drmingw/include")
 endif()
 
-# Targets
+	set (SRB2_HWRENDER_HEADERS
+		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_batching.h
+		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_shaders.h
+		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_clip.h
+		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_data.h
+		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_defs.h
+		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_gl.h
+		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_glob.h
+		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_main.h
+		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_portal.h
+		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_md2.h
+		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_md2load.h
+		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_md3load.h
+		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_model.h
+		${CMAKE_CURRENT_SOURCE_DIR}/hardware/u_list.h
+	)
 
 # If using CCACHE, then force it.
 # https://github.com/Cockatrice/Cockatrice/pull/3052/files
@@ -216,18 +421,9 @@ if ("${CMAKE_SYSTEM_NAME}" MATCHES "Darwin")
 			"${CMAKE_BINARY_DIR}/launch-c"
 			"${CMAKE_BINARY_DIR}/launch-cxx")
 
-		# Set Xcode project attributes to route compilation through our scripts
-		set(CMAKE_XCODE_ATTRIBUTE_CC         "${CMAKE_BINARY_DIR}/launch-c")
-		set(CMAKE_XCODE_ATTRIBUTE_CXX        "${CMAKE_BINARY_DIR}/launch-cxx")
-		set(CMAKE_XCODE_ATTRIBUTE_LD         "${CMAKE_BINARY_DIR}/launch-c")
-		set(CMAKE_XCODE_ATTRIBUTE_LDPLUSPLUS "${CMAKE_BINARY_DIR}/launch-cxx")
-	endif()
-endif()
-
-# Compatibility flag with later versions of GCC
-# We should really fix our code to not need this
-if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" OR "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-	target_compile_options(SRB2SDL2 PRIVATE -mno-ms-bitfields)
+	set(SRB2_R_OPENGL_HEADERS
+		${CMAKE_CURRENT_SOURCE_DIR}/hardware/r_opengl/r_opengl.h
+	)
 endif()
 
 # TODO: fix prng and P_CreateBlockmap overflow at some point
@@ -241,142 +437,37 @@ else()
 	target_compile_options(SRB2SDL2 PRIVATE -g1) #should be enough for libbacktrace
 endif()
 
-# Compiler warnings configuration
-target_compile_options(SRB2SDL2 PRIVATE
-	# Using generator expressions to handle per-language compile options
-
-	# C, GNU
-	# This is a direct translation from versions.mk
-	$<$<AND:$<COMPILE_LANGUAGE:C>,$<C_COMPILER_ID:GNU>>:
-		-Wall
-		-Wextra
-		-Wno-trigraphs
-		-W # Was controlled by RELAXWARNINGS
-		-Wfloat-equal
-		-Wundef
-		-Wpointer-arith
-		-Wbad-function-cast
-		-Wcast-qual
-		-Wcast-align # Was controlled by NOCASTALIGNWARN
-		-Wwrite-strings
-		-Wsign-compare
-		-Wno-comment
-		-Wno-alloc-size-larger-than # holy shit, be quiet up GCC
-		-Wmissing-prototypes
-		-Wmissing-declarations
-		-Wmissing-noreturn
-		-Wnested-externs
-		-Wformat-y2k
-		-Wformat-security
-
-		$<$<VERSION_LESS:$<C_COMPILER_VERSION>,2.9.5>:
-			-Wno-div-by-zero
-			-Wendif-labels
-			-Wdisabled-optimization
-		>
-
-		$<$<VERSION_GREATER_EQUAL:$<C_COMPILER_VERSION>,4.0.0>:
-			-Wold-style-definition
-			-Wmissing-field-initializers
-		>
-
-		$<$<VERSION_GREATER_EQUAL:$<C_COMPILER_VERSION>,4.1.0>:
-			-Wshadow
-		>
-
-		$<$<VERSION_GREATER_EQUAL:$<C_COMPILER_VERSION>,4.3.0>:
-			-funit-at-a-time
-			-Wlogical-op
-		>
-
-		$<$<VERSION_GREATER_EQUAL:$<C_COMPILER_VERSION>,4.5.0>:
-			-Wlogical-op
-			-Wno-error=array-bounds
-		>
-
-		$<$<VERSION_GREATER_EQUAL:$<C_COMPILER_VERSION>,4.6.0>:
-			-Wno-suggest-attribute=noreturn
-			-Wno-error=suggest-attribute=noreturn
-		>
-
-		$<$<VERSION_GREATER_EQUAL:$<C_COMPILER_VERSION>,5.4.0>:
-			-Wno-logical-op
-			-Wno-error=logical-op
-		>
-
-		$<$<VERSION_GREATER_EQUAL:$<C_COMPILER_VERSION>,6.1.0>:
-			-Wno-tautological-compare
-			-Wno-error=tautological-compare
-		>
-
-		$<$<VERSION_GREATER_EQUAL:$<C_COMPILER_VERSION>,7.1.0>:
-			-Wno-error=format-overflow=2
-			-Wimplicit-fallthrough=4
-		>
-
-		$<$<VERSION_GREATER_EQUAL:$<C_COMPILER_VERSION>,8.1.0>:
-			-Wno-error=format-overflow
-			-Wno-error=stringop-truncation
-			-Wno-error=stringop-overflow
-			-Wno-format-overflow
-			-Wno-stringop-truncation
-			-Wno-stringop-overflow
-			-Wno-error=multistatement-macros
-		>
-
-		$<$<VERSION_GREATER_EQUAL:$<C_COMPILER_VERSION>,9.1.0>:
-			-Wno-error=address-of-packed-member
-		>
-	>
-
-	# C, Clang and Apple Clang
-	$<$<AND:$<COMPILE_LANGUAGE:C>,$<OR:$<C_COMPILER_ID:AppleClang>,$<C_COMPILER_ID:Clang>>>:
-		-Wall
-		-Wextra
-		-Wno-absolute-value
-		-Wno-trigraphs
-		-Wno-error=non-literal-null-conversion
-		-Wno-error=constant-conversion
-		-Wno-unused-but-set-variable
-		-Wno-error=unused-but-set-variable
-	>
-
-	# C++, GNU, Clang and Apple Clang
-	$<$<AND:$<COMPILE_LANGUAGE:CXX>,$<OR:$<C_COMPILER_ID:GNU>,$<C_COMPILER_ID:AppleClang>,$<C_COMPILER_ID:Clang>>>:
-		-Wall
-		-Wno-unused-function
-		-Wno-unused-but-set-variable
-		-Wno-unused-private-field
-	>
-
-	# GNU
-	$<$<C_COMPILER_ID:GNU>:
-		-fmax-errors=5
-	>
-)
-if(SRB2_CONFIG_ERRORMODE)
-	target_compile_options(SRB2SDL2 PRIVATE
-		$<$<OR:$<C_COMPILER_ID:GNU>,$<C_COMPILER_ID:AppleClang>,$<C_COMPILER_ID:Clang>>:
-			-Werror
-		>
-	)
+if(${SRB2_CONFIG_HWRENDER} AND ${SRB2_CONFIG_SCREENFBO})
+	add_definitions(-DUSE_FBO_OGL)
 endif()
 
-# Link warnings configuration
-target_link_options(SRB2SDL2 PRIVATE
-	$<$<C_COMPILER_ID:GNU>:
-		# -Wl,--as-needed   - Was controlled by NOLDWARNING
-	>
-)
+if(${SRB2_CONFIG_SATURNPAK})
+	add_definitions(-DDOSATURNPAK)
+endif()
 
-if(${SRB2_CONFIG_DEV_BUILD})
-	target_compile_definitions(SRB2SDL2 PRIVATE -DDEVELOP)
+if(${SRB2_CONFIG_SATURNJOIN})
+	add_definitions(-DDOSATURNJOIN)
+endif()
+
+# Targets
+
+# Compatibility flag with later versions of GCC
+# We should really fix our code to not need this
+if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" OR "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+	if (CMAKE_SYSTEM_PROCESSOR MATCHES "^(x86_64|x64|amd64|AMD64|em64t|EM64T)")
+		add_compile_options(-mno-ms-bitfields)
+	endif()
+	add_compile_options(-Wno-trigraphs)
 endif()
 target_compile_definitions(SRB2SDL2 PRIVATE -DCMAKECONFIG)
 
-# Misc. build options from Makefiles
-if(SRB2_CONFIG_DEBUGMODE)
-	target_compile_definitions(SRB2SDL2 PRIVATE -D_DEBUG -DZDEBUG -DPARANOIA -DRANGECHECK -DPACKETDROP)
+# TODO: fix prng and P_CreateBlockmap overflow at some point
+add_compile_options(-fwrapv)
+
+if (${CMAKE_BUILD_TYPE} MATCHES Debug)
+	add_compile_options(-O0)
+else()
+	add_compile_options(-O3)
 endif()
 if(SRB2_CONFIG_MOBJCONSISTANCY)
 	target_compile_definitions(SRB2SDL2 PRIVATE -DMOBJCONSISTANCY)
@@ -392,9 +483,9 @@ if(SRB2_CONFIG_PROFILEMODE AND "${CMAKE_C_COMPILER_ID}" STREQUAL "GNU")
 	target_link_options(SRB2SDL2 PRIVATE -pg)
 endif()
 
-if(SRB2_CONFIG_LTO AND NOT SRB2_CONFIG_DEBUGMODE)
-	set_property(TARGET SRB2SDL2 PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
-endif()
+add_compile_options(-g)
+
+add_definitions(-DCMAKECONFIG)
 
 if(${SRB2_CONFIG_SCREENFBO} AND NOT ${SRB2_CONFIG_STATIC_OPENGL})
 	target_compile_definitions(SRB2SDL2 PRIVATE -DUSE_FBO_OGL)

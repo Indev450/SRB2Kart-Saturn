@@ -1,14 +1,8 @@
-cmake_minimum_required(VERSION 3.14 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.5)
 
-if("${CMAKE_CURRENT_BINARY_DIR}" STREQUAL "${CMAKE_CURRENT_SOURCE_DIR}")
-	message(FATAL_ERROR "In-source builds are blocked. Please build from a separate directory.")
+if(${PROJECT_SOURCE_DIR} MATCHES ${PROJECT_BINARY_DIR})
+	message(FATAL_ERROR "In-source builds will bring you a world of pain. Please make a separate directory to invoke CMake from.")
 endif()
-
-# Set up CMAKE path
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
-
-include(CMakeDependentOption)
-#include(cmake/CPM.cmake)
 
 # DO NOT CHANGE THIS SRB2 STRING! Some variable names depend on this string.
 # Version change is fine.
@@ -16,12 +10,39 @@ project(SRB2
 	VERSION 1.6
 	LANGUAGES C CXX)
 
-if(APPLE)
-	# DiscordRPC needs but does not properly specify ObjC
-    enable_language(OBJC)
-endif()
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+#set(CMAKE_CXX_EXTENSIONS OFF)    # optional but recommended: disables GNU extensions, forces pure ISO C++
+set(CMAKE_CXX_EXTENSIONS ON)
+set(CMAKE_C_EXTENSIONS ON)
 
 ##### PACKAGE CONFIGURATION #####
+
+set(SRB2_CPACK_GENERATOR "" CACHE STRING "Generator to use for making a package. E.g., ZIP, TGZ, DragNDrop (OSX only). Leave blank for default generator.")
+
+if("${SRB2_CPACK_GENERATOR}" STREQUAL "")
+	if("${CMAKE_SYSTEM_NAME}" MATCHES "Windows")
+		set(SRB2_CPACK_GENERATOR "ZIP")
+	elseif("${CMAKE_SYSTEM_NAME}" MATCHES "Linux")
+		set(SRB2_CPACK_GENERATOR "TGZ")
+	elseif("${CMAKE_SYSTEM_NAME}" MATCHES "Darwin")
+		set(SRB2_CPACK_GENERATOR "TGZ")
+	endif()
+endif()
+
+set(CPACK_GENERATOR ${SRB2_CPACK_GENERATOR})
+set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Sonic Robo Blast 2 Kart" CACHE STRING "Program name for display purposes")
+set(CPACK_PACKAGE_VENDOR "Kart Krew" CACHE STRING "Vendor name for display purposes")
+#set(CPACK_PACKAGE_DESCRIPTION_FILE )
+set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/LICENSE")
+set(CPACK_PACKAGE_VERSION_MAJOR ${SRB2_VERSION_MAJOR})
+set(CPACK_PACKAGE_VERSION_MINOR ${SRB2_VERSION_MINOR})
+set(CPACK_PACKAGE_VERSION_PATCH ${SRB2_VERSION_PATCH})
+set(CPACK_PACKAGE_INSTALL_DIRECTORY "CMake ${CMAKE_VERSION_MAJOR}.${CMAKE_VERSION_MINOR}")
+include(CPack)
+
+# Set up CMAKE path
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
 
 set(SRB2_CPACK_GENERATOR "" CACHE STRING "Generator to use for making a package. E.g., ZIP, TGZ, DragNDrop (OSX only). Leave blank for default generator.")
 
@@ -178,12 +199,32 @@ if(${SRB2_SYSTEM_BITS} EQUAL 0)
 	message(STATUS "Target bitness is unknown")
 endif()
 
+# OS macros
+if (UNIX)
+	add_definitions(-DUNIXCOMMON)
+	add_link_options(-rdynamic) # Use -rdynamic so a backtrace log shows function names
+endif()
+
+if(CMAKE_COMPILER_IS_GNUCC)
+	find_program(OBJCOPY objcopy)
+endif()
+
+if(${CMAKE_SYSTEM} MATCHES "Linux")
+	add_definitions(-DLINUX)
+	if(${SRB2_SYSTEM_BITS} EQUAL 64)
+		add_definitions(-DLINUX64)
+	endif()
+endif()
+
+if(${CMAKE_SYSTEM} MATCHES "Darwin")
+	add_definitions(-DMACOSX)
+endif()
+
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
 set(CMAKE_PDB_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
 
 # Set EXE names so the assets CMakeLists can refer to its target
-set(SRB2_SDL2_EXE_NAME "" CACHE STRING "Override executable binary output name")
-set(SRB2_SDL2_EXE_SUFFIX "" CACHE STRING "Optional executable suffix, separated by an underscore")
+set(SRB2_SDL2_EXE_NAME srb2kart CACHE STRING "Executable binary output name")
 
 include_directories(${CMAKE_CURRENT_BINARY_DIR}/src)
 
@@ -199,18 +240,3 @@ git_current_branch(SRB2_GIT_BRANCH "${CMAKE_SOURCE_DIR}")
 set(SRB2_COMP_BRANCH "${SRB2_GIT_BRANCH}")
 set(SRB2_COMP_REVISION "${SRB2_COMP_COMMIT}")
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/src/config.h.in ${CMAKE_CURRENT_BINARY_DIR}/src/config.h)
-
-if("${SRB2_SDL2_EXE_NAME}" STREQUAL "")
-	list(APPEND EXE_NAME_PARTS "srb2kart-saturn")
-
-	if(NOT "${SRB2_GIT_BRANCH}" STREQUAL "master")
-		list(APPEND EXE_NAME_PARTS ${SRB2_GIT_BRANCH})
-	endif()
-else()
-	list(APPEND EXE_NAME_PARTS ${SRB2_SDL2_EXE_NAME})
-endif()
-
-list(APPEND EXE_NAME_PARTS ${SRB2_SDL2_EXE_SUFFIX})
-
-list(JOIN EXE_NAME_PARTS "_" EXE_NAME)
-set_target_properties(SRB2SDL2 PROPERTIES OUTPUT_NAME ${EXE_NAME})
