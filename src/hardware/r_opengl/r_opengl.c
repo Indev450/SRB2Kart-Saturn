@@ -2968,10 +2968,10 @@ void GL_DrawModelEx(model_t *model, INT32 frameIndex, float duration, float tics
 	tint.blue   = byte2float(Surface->TintColor.s.blue);
 	tint.alpha  = byte2float(Surface->TintColor.s.alpha);
 
-	fade.red    = byte2float(Surface->FadeColor.s.red);
-	fade.green  = byte2float(Surface->FadeColor.s.green);
-	fade.blue   = byte2float(Surface->FadeColor.s.blue);
-	fade.alpha  = byte2float(Surface->FadeColor.s.alpha);
+	fade.red   = byte2float(Surface->FadeColor.s.red);
+	fade.green = byte2float(Surface->FadeColor.s.green);
+	fade.blue  = byte2float(Surface->FadeColor.s.blue);
+	fade.alpha = byte2float(Surface->FadeColor.s.alpha);
 
 	if (Surface->LightTableId && Surface->LightTableId != lt_downloaded)
 	{

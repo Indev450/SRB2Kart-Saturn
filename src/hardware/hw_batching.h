@@ -37,7 +37,7 @@ typedef struct
 void HWR_StartBatching(void);
 void HWR_SetCurrentTexture(GLMipmap_t *texture);
 void HWR_ProcessPolygon(FSurfaceInfo *pSurf, FOutVector *pOutVerts, FUINT iNumPts, FBITFIELD PolyFlags, int shader, boolean horizonSpecial);
-void HWR_RenderBatches(boolean sort);
+void HWR_RenderBatches(void);
 
 #ifdef __cplusplus
 } // extern "C"

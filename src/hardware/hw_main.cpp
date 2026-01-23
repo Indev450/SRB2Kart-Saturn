@@ -673,8 +673,8 @@ static void HWR_RenderPlane(subsector_t *subsector, extrasubsector_t *xsub, bool
 
 #define SETUP3DVERT(vert, vx, vy) {\
 		/* Hurdler: add scrolling texture on floor/ceiling */\
-		vert->s = (((vx) / fflatsize) - flatxref + scrollx);\
-		vert->t = (flatyref - ((vy) / fflatsize) + scrolly);\
+		vert->s = (float)(((vx) / fflatsize) - flatxref + scrollx);\
+		vert->t = (float)(flatyref - ((vy) / fflatsize) + scrolly);\
 \
 		/* Need to rotate before translate */\
 		if (angle) /* Only needs to be done if there's an altered angle */\
@@ -1810,7 +1810,7 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 			wallVerts[3].t = wallVerts[2].t = (static_cast<float>(texturevpeg) * glTex->scaleY);
 			wallVerts[0].t = wallVerts[1].t = static_cast<float>(texturevpeg + gl_frontsector->ceilingheight - gl_frontsector->floorheight) * glTex->scaleY;
 			wallVerts[0].s = wallVerts[3].s = cliplow * glTex->scaleX;
-			wallVerts[2].s = wallVerts[1].s = cliphigh* glTex->scaleX;
+			wallVerts[2].s = wallVerts[1].s = cliphigh * glTex->scaleX;
 
 			// Texture correction for slopes
 			if (gl_linedef->flags & ML_EFFECT2)
@@ -4470,9 +4470,6 @@ static void HWR_RenderDrawNodes(void)
 	// Okay! Let's draw it all! Woo!
 	GL_SetTransform(&atransform);
 
-	if (LIKELY(cv_glbatching.value))
-		HWR_StartBatching();
-
 	for (i = 0; i < numdrawnodes; i++)
 	{
 		gl_drawnode_t *drawnode = &drawnodes[sortindex[i]];
@@ -4525,9 +4522,6 @@ static void HWR_RenderDrawNodes(void)
 	}
 
 	PS_STOP_TIMING(ps_hw_nodedrawtime);
-
-	if (LIKELY(cv_glbatching.value))
-		HWR_RenderBatches(false);
 
 	drawnodes.clear(); // clear so our size is 0 again!
 }
@@ -5678,7 +5672,7 @@ static void HWR_RenderViewpoint(gl_portal_t *rootportal, int stencil_level, bool
 	PS_STOP_TIMING(ps_bsptime);
 
 	if (LIKELY(cv_glbatching.value))
-		HWR_RenderBatches(true);
+		HWR_RenderBatches();
 
 	// Check for new console commands.
 	NetUpdate();
@@ -5705,18 +5699,12 @@ static void HWR_RenderViewpoint(gl_portal_t *rootportal, int stencil_level, bool
 	HWR_SortVisSprites();
 	PS_STOP_TIMING(ps_hw_spritesorttime);
 
-	if (LIKELY(cv_glbatching.value && !cv_glmdls.value))
-		HWR_StartBatching();
-
 	PS_START_TIMING(ps_hw_spritedrawtime);
 	if (UNLIKELY(cv_glmdls.value))
 		HWR_DrawSprites<DrawSpritesType::kModels>();
 	else
 		HWR_DrawSprites<DrawSpritesType::kSprites>();
 	PS_STOP_TIMING(ps_hw_spritedrawtime);
-
-	if (LIKELY(cv_glbatching.value && !cv_glmdls.value))
-		HWR_RenderBatches(false);
 
 	ps_numdrawnodes.value.i    = 0;
 	ps_hw_nodesorttime.value.p = 0;

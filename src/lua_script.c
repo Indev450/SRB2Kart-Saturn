@@ -1312,6 +1312,19 @@ static void UnArchiveTables(UINT8 **p, boolean network)
 	}
 }
 
+/*void LUA_Step(void)
+{
+	if (!gL)
+		return;
+
+	if (lua_gettop(gL) != 0)
+	{
+		CONS_Alert(CONS_WARNING, "Eek, there is garbage on lua stack!\n");
+		lua_settop(gL, 0);
+		lua_gc(gL, LUA_GCSTEP, 1);
+	}
+}*/
+
 void LUA_Archive(savebuffer_t *save, boolean network)
 {
 	INT32 i;

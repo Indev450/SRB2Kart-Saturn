@@ -237,7 +237,7 @@ static int comparePolygonsNoShaders(const void *p1, const void *p2)
 
 // This function organizes the geometry collected by HWR_ProcessPolygon calls into batches and uses
 // the rendering backend to draw them.
-void HWR_RenderBatches(boolean sort)
+void HWR_RenderBatches(void)
 {
 	int finalVertexWritePos = 0; // position in finalVertexArray
 	int finalIndexWritePos  = 0; // position in finalVertexIndexArray
@@ -288,13 +288,10 @@ void HWR_RenderBatches(boolean sort)
 		polygonArraySorted[i] = &polygonArray[i];
 	}
 
-	if (sort)
-	{
-		// sort polygons
-		PS_START_TIMING(ps_hw_batchsorttime);
-		qs22j(polygonArraySorted, polygonArraySize, sizeof(PolygonArrayEntry *), (useshader ? comparePolygons : comparePolygonsNoShaders));
-		PS_STOP_TIMING(ps_hw_batchsorttime);
-	}
+	// sort polygons
+	PS_START_TIMING(ps_hw_batchsorttime);
+	qs22j(polygonArraySorted, polygonArraySize, sizeof(PolygonArrayEntry *), (useshader ? comparePolygons : comparePolygonsNoShaders));
+	PS_STOP_TIMING(ps_hw_batchsorttime);
 
 	// sort order
 	// 1. shader
@@ -303,9 +300,7 @@ void HWR_RenderBatches(boolean sort)
 	// 4. colors + light level
 	// not sure about what order of the last 2 should be, or if it even matters
 
-	// dont overwrite this on consecutive calls
-	if (!sort)
-		PS_START_TIMING(ps_hw_batchdrawtime);
+	PS_START_TIMING(ps_hw_batchdrawtime);
 
 	currentShader      = polygonArraySorted[0]->shader;
 	currentTexture     = polygonArraySorted[0]->texture;
@@ -500,8 +495,7 @@ void HWR_RenderBatches(boolean sort)
 	polygonArraySize = 0;
 	unsortedVertexArraySize = 0;
 
-	if (!sort)
-		PS_STOP_TIMING(ps_hw_batchdrawtime);
+	PS_STOP_TIMING(ps_hw_batchdrawtime);
 }
 
 #endif // HWRENDER

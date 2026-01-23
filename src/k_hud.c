@@ -2045,11 +2045,6 @@ static void K_DrawKartPositionNum(INT32 num)
 	boolean flipvdraw = false; // used only for 2p splitscreen so overtaking doesn't make 1P's position fly off the screen.
 	boolean overtake  = false;
 
-	if ((mapheaderinfo[gamemap - 1]->levelflags & LF_SUBTRACTNUM) == LF_SUBTRACTNUM)
-	{
-		addOrSub = B_ADD;
-	}
-
 	if ((cv_posanim.value && stplyr->kartstuff[k_positiondelay]) || stplyr->exiting)
 	{
 		if (cv_posanim.value == 2)

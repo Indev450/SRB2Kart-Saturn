@@ -1423,7 +1423,7 @@ UINT8 W_LumpExists(const char *name)
 		// extract the lumpinfo out of the lumpnum
 		// so we can do one more extra case ~sensitive~ name compare
 		// otherwise we gotta fall through to our manual lump search below
-		// lumpnum == (i << 16) | check
+		// lumpnum == (wadnum << 16) | lumpinfo id
 		UINT16 wadnum = (cachenum >> 16) & 0xFFFF;
 		UINT16 lumpid = cachenum & 0xFFFF;
 		lumpinfo_t *lump_p = &wadfiles[wadnum]->lumpinfo[lumpid];

@@ -4242,17 +4242,6 @@ boolean P_SpectatorJoinGame(player_t *player)
 		if (islocalplayer && displayplayers[0] != consoleplayer)
 			displayplayers[0] = consoleplayer;
 
-		if (!demo.playback && islocalplayer)
-		{
-			if (!player->spectator)
-			{
-				const INT32 playernum = P_GetLocalPlayerNumForPlayer(player);
-
-				if (playernum != -1)
-					camera[playernum].freecam = false;
-			}
-		}
-
 		if (changeto == 1)
 			CONS_Printf(M_GetText("%s switched to the %c%s%c.\n"), player_names[player-players], '\x85', M_GetText("Red team"), '\x80');
 		else if (changeto == 2)
@@ -4279,17 +4268,6 @@ boolean P_SpectatorJoinGame(player_t *player)
 		//Reset away view
 		if (islocalplayer && displayplayers[0] != consoleplayer)
 			displayplayers[0] = consoleplayer;
-
-		if (!demo.playback && islocalplayer)
-		{
-			if (!player->spectator)
-			{
-				const INT32 playernum = P_GetLocalPlayerNumForPlayer(player);
-
-				if (playernum != -1)
-					camera[playernum].freecam = false;
-			}
-		}
 
 		HU_AddChatText(va(M_GetText("\x82*%s entered the game."), player_names[player-players]), false);
 		return true; // no more player->mo, cannot continue.

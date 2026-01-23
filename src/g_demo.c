@@ -488,6 +488,15 @@ void G_ReadDemoTiccmd(ticcmd_t *cmd, INT32 playernum)
 
 	G_CopyTiccmd(cmd, &oldcmd[playernum], 1);
 
+	// what in the actual fuck is this???
+	// SRB2kart: Copy-pasted from ticcmd building, removes that crappy demo cam
+	if (((players[displayplayers[0]].mo && players[displayplayers[0]].speed > 0) // Moving
+		|| (leveltime > starttime && (cmd->buttons & BT_ACCELERATE && cmd->buttons & BT_BRAKE)) // Rubber-burn turn
+		|| (players[displayplayers[0]].kartstuff[k_respawn]) // Respawning
+		|| (players[displayplayers[0]].spectator || objectplacing)) // Not a physical player
+		&& !(players[displayplayers[0]].kartstuff[k_spinouttimer] && players[displayplayers[0]].kartstuff[k_sneakertimer])) // Spinning and boosting cancels out spinout
+		localangle[0] += (cmd->angleturn<<16);
+
 	if (!(demoflags & DF_GHOST) && *demobuf.p == DEMOMARKER)
 	{
 		// end of demo data stream
