@@ -489,8 +489,8 @@ void R_InitSprites(void)
 	for (angle = 1; angle < ROTANGLES; angle++)
 	{
 		fa = ANG2RAD(FixedAngle((ROTANGDIFF * angle)<<FRACBITS));
-		rollcosang[angle] = FLOAT_TO_FIXED(cos(-fa));
-		rollsinang[angle] = FLOAT_TO_FIXED(sin(-fa));
+		rollcosang[angle] = FLOAT_TO_FIXED(cosf(-fa));
+		rollsinang[angle] = FLOAT_TO_FIXED(sinf(-fa));
 	}
 #endif
 
