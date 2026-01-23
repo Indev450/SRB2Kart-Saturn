@@ -1,4 +1,4 @@
-add_executable(SRB2SDL2 MACOSX_BUNDLE WIN32)
+# SRB2 Core
 
 # Core sources
 set(SRB2_CORE_SOURCES
@@ -54,7 +54,7 @@ set(SRB2_CORE_SOURCES
 	string.c
 	tables.c
 	v_video.c
-	w_wad.c
+	w_wad.cpp
 	y_inter.c
 	z_zone.cpp
 )
@@ -133,17 +133,8 @@ set(SRB2_CORE_HEADERS
 	y_inter.h
 	z_zone.h
 
-if(SRB2_CONFIG_STD23)
-	message("-- Compiling game with C23 and CXX23.")
-	target_compile_features(SRB2SDL2 PRIVATE c_std_23 cxx_std_23)
-	set_property(TARGET SRB2SDL2 PROPERTY C_STANDARD 23)
-	set_property(TARGET SRB2SDL2 PROPERTY CXX_STANDARD 23)
-else()
-	message("-- Compiling game with C11 and CXX17.")
-	target_compile_features(SRB2SDL2 PRIVATE c_std_11 cxx_std_17)
-	set_property(TARGET SRB2SDL2 PROPERTY C_STANDARD 11)
-	set_property(TARGET SRB2SDL2 PROPERTY CXX_STANDARD 17)
-endif()
+	config.h.in
+)
 
 set(SRB2_CORE_RENDER_SOURCES
 	r_bsp.cpp
@@ -160,7 +151,23 @@ set(SRB2_CORE_RENDER_SOURCES
 	r_things.cpp
 	r_portal.c
 
-target_sources(SRB2SDL2 PRIVATE md5.c md5.h)
+	r_bsp.h
+	r_data.h
+	r_defs.h
+	r_draw.h
+	r_fps.h
+	r_local.h
+	r_main.h
+	r_patch.h
+	r_patchrotation.h
+	r_plane.h
+	r_segs.h
+	r_sky.h
+	r_splats.h
+	r_state.h
+	r_things.h
+	r_portal.h
+)
 
 set(SRB2_CORE_GAME_SOURCES
 	p_ceilng.c
@@ -185,18 +192,30 @@ set(SRB2_CORE_GAME_SOURCES
 	k_stats.c
 	i_time.c
 
-set(SRB2_CONFIG_SKIP_COMPTIME OFF CACHE BOOL
-	"Skip Comptime rebuild.")
+	p_local.h
+	p_maputl.h
+	p_mobj.h
+	p_polyobj.h
+	p_pspr.h
+	p_saveg.h
+	p_setup.h
+	p_slopes.h
+	p_spec.h
+	p_tick.h
+	k_director.h
+	k_kart.h
+	k_stats.h
+)
 
 prepend_sources(SRB2_CORE_SOURCES)
 prepend_sources(SRB2_CORE_HEADERS)
 prepend_sources(SRB2_CORE_RENDER_SOURCES)
 prepend_sources(SRB2_CORE_GAME_SOURCES)
 
-if(SRB2_CONFIG_ASAN)
-	target_compile_options(SRB2SDL2 PRIVATE -fsanitize=address)
-	target_link_options(SRB2SDL2 PRIVATE -fsanitize=address)
-endif()
+set(SRB2_CORE_HEADERS ${SRB2_CORE_HEADERS} ${CMAKE_CURRENT_BINARY_DIR}/config.h)
+source_group("Main" FILES ${SRB2_CORE_SOURCES} ${SRB2_CORE_HEADERS})
+source_group("Renderer" FILES ${SRB2_CORE_RENDER_SOURCES})
+source_group("Game" FILES ${SRB2_CORE_GAME_SOURCES})
 
 ### Configuration
 set(SRB2_CONFIG_HAVE_BLUA ON CACHE BOOL
@@ -241,62 +260,177 @@ if(${SRB2_CONFIG_DEDICATED})
 	set(SRB2_CONFIG_HWRENDER NO)
 endif()
 
-if(SRB2_CONFIG_TIDY)
-	set(CMAKE_CXX_CLANG_TIDY "clang-tidy;-checks=*")
+### use internal libraries?
+if(${CMAKE_SYSTEM} MATCHES "Windows") ###set on Windows only
+	set(SRB2_CONFIG_USE_INTERNAL_LIBRARIES OFF CACHE BOOL
+	"Use SRB2Kart's internal copies of required dependencies (SDL2, PNG, zlib, GME, OpenMPT).")
 endif()
 
-add_subdirectory(blua)
-add_subdirectory(sdl)
-add_subdirectory(core)
+if(${SRB2_CONFIG_HAVE_BLUA})
+	add_definitions(-DHAVE_BLUA)
+	set(SRB2_LUA_SOURCES
+		lua_baselib.c
+		lua_blockmaplib.c
+		lua_consolelib.c
+		lua_hooklib.c
+		lua_hudlib.c
+		lua_hudlib_drawlist.c
+		lua_infolib.c
+		lua_maplib.c
+		lua_mathlib.c
+		lua_mobjlib.c
+		lua_playerlib.c
+		lua_script.c
+		lua_skinlib.c
+		lua_thinkerlib.c
+		lua_udatalib.c
+		lua_glib.c
+	)
+	set(SRB2_LUA_HEADERS
+		lua_hook.h
+		lua_hud.h
+		lua_hudlib_drawlist.h
+		lua_libs.h
+		lua_script.h
+		lua_udatalib.h
+		lua_glib.h
+	)
 
-# OS macros
-if (UNIX)
-	target_compile_definitions(SRB2SDL2 PRIVATE -DUNIXCOMMON)
-	target_link_libraries(SRB2SDL2 PRIVATE -rdynamic) # Use -rdynamic so a backtrace log shows function names
+	prepend_sources(SRB2_LUA_SOURCES)
+	prepend_sources(SRB2_LUA_HEADERS)
+
+	source_group("LUA" FILES ${SRB2_LUA_SOURCES} ${SRB2_LUA_HEADERS})
+
+	set(SRB2_BLUA_SOURCES
+		blua/lapi.c
+		blua/lauxlib.c
+		blua/lbaselib.c
+		blua/ldblib.c
+		blua/lcode.c
+		blua/ldebug.c
+		blua/ldo.c
+		blua/ldump.c
+		blua/lfunc.c
+		blua/lgc.c
+		blua/linit.c
+		blua/liolib.c
+		blua/llex.c
+		blua/lmem.c
+		blua/lobject.c
+		blua/lopcodes.c
+		blua/lparser.c
+		blua/lstate.c
+		blua/lstring.c
+		blua/lstrlib.c
+		blua/ltable.c
+		blua/ltablib.c
+		blua/ltm.c
+		blua/lundump.c
+		blua/lvm.c
+		blua/lzio.c
+	)
+	set(SRB2_BLUA_HEADERS
+		blua/lapi.h
+		blua/lauxlib.h
+		blua/lcode.h
+		blua/ldebug.h
+		blua/ldo.h
+		blua/lfunc.h
+		blua/lgc.h
+		blua/llex.h
+		blua/llimits.h
+		blua/lmem.h
+		blua/lobject.h
+		blua/lopcodes.h
+		blua/lparser.h
+		blua/lstate.h
+		blua/lstring.h
+		blua/ltable.h
+		blua/ltm.h
+		blua/lua.h
+		blua/luaconf.h
+		blua/lualib.h
+		blua/lundump.h
+		blua/lvm.h
+		blua/lzio.h
+	)
+
+	prepend_sources(SRB2_BLUA_SOURCES)
+	prepend_sources(SRB2_BLUA_HEADERS)
+
+	source_group("LUA\\Interpreter" FILES ${SRB2_BLUA_SOURCES} ${SRB2_BLUA_HEADERS})
 endif()
 
-if(CMAKE_COMPILER_IS_GNUCC)
-	find_program(OBJCOPY objcopy)
-endif()
-
-if("${CMAKE_SYSTEM_NAME}" MATCHES "Linux")
-	target_compile_definitions(SRB2SDL2 PRIVATE -DLINUX)
-	if(${SRB2_SYSTEM_BITS} EQUAL 64)
-		target_compile_definitions(SRB2SDL2 PRIVATE -DLINUX64)
+if(${SRB2_CONFIG_HAVE_GME})
+	if(${SRB2_CONFIG_USE_INTERNAL_LIBRARIES})
+		set(GME_FOUND ON)
+		set(GME_INCLUDE_DIRS ${CMAKE_SOURCE_DIR}/libs/gme/include)
+		if(${SRB2_SYSTEM_BITS} EQUAL 64)
+			set(GME_LIBRARIES "-L${CMAKE_SOURCE_DIR}/libs/gme/win64 -lgme")
+		else() # 32-bit
+			set(GME_LIBRARIES "-L${CMAKE_SOURCE_DIR}/libs/gme/win32 -lgme")
+		endif()
+	else()
+		find_package(GME)
+	endif()
+	if(${GME_FOUND})
+		set(SRB2_HAVE_GME ON)
+		add_definitions(-DHAVE_LIBGME)
+	else()
+		message(WARNING "You have specified that GME is available but it was not found.")
 	endif()
 endif()
 
-if("${CMAKE_SYSTEM_NAME}" MATCHES "Darwin")
-	target_compile_definitions(SRB2SDL2 PRIVATE -DMACOSX)
+if(${SRB2_CONFIG_HAVE_DISCORDRPC})
+	if(${SRB2_CONFIG_USE_INTERNAL_LIBRARIES})
+		set(DISCORDRPC_FOUND ON)
+		if(${SRB2_SYSTEM_BITS} EQUAL 64)
+			set(DISCORDRPC_INCLUDE_DIRS ${CMAKE_SOURCE_DIR}/libs/discord-rpc/win64-dynamic/include)
+			set(DISCORDRPC_LIBRARIES "-L${CMAKE_SOURCE_DIR}/libs/discord-rpc/win64-dynamic/lib -ldiscord-rpc")
+		else() # 32-bit
+			set(DISCORDRPC_INCLUDE_DIRS ${CMAKE_SOURCE_DIR}/libs/discord-rpc/win32-dynamic/include)
+			set(DISCORDRPC_LIBRARIES "-L${CMAKE_SOURCE_DIR}/libs/discord-rpc/win32-dynamic/lib -ldiscord-rpc")
+		endif()
+	else()
+		find_package(DiscordRPC)
+	endif()
+	if(${DISCORDRPC_FOUND})
+		set(SRB2_HAVE_DISCORDRPC ON)
+		add_definitions(-DHAVE_DISCORDRPC)
+		add_definitions(-DUSE_STUN)
+		set(SRB2_DISCORDRPC_SOURCES discord.c stun.c)
+		set(SRB2_DISCORDRPC_HEADERS discord.h stun.h)
+		prepend_sources(SRB2_DISCORDRPC_SOURCES)
+		prepend_sources(SRB2_DISCORDRPC_HEADERS)
+		source_group("Discord Rich Presence" FILES ${SRB2_DISCORDRPC_SOURCES} ${SRB2_DISCORDRPC_HEADERS})
+	else()
+		message(WARNING "You have specified that Discord Rich Presence is available but it was not found.")
+	endif()
 endif()
 
-# add toggle for this
-target_link_libraries(SRB2SDL2 PRIVATE openmpt)
-target_compile_definitions(SRB2SDL2 PRIVATE -DHAVE_OPENMPT)
-
-target_link_libraries(SRB2SDL2 PRIVATE ZLIB::ZLIB PNG::PNG CURL::libcurl)
-target_compile_definitions(SRB2SDL2 PRIVATE -DHAVE_ZLIB -DHAVE_PNG -DHAVE_CURL -D_LARGEFILE64_SOURCE)
-
-target_compile_definitions(SRB2SDL2 PRIVATE -DUSE_STUN)
-if(SRB2_CONFIG_ENABLE_DISCORDRPC)
-	target_link_libraries(SRB2SDL2 PRIVATE DiscordRPC::DiscordRPC)
-	target_compile_definitions(SRB2SDL2 PRIVATE -DHAVE_DISCORDRPC)
-	target_sources(SRB2SDL2 PRIVATE discord.c)
+if(${SRB2_CONFIG_HAVE_OPENMPT})
+	if(${SRB2_CONFIG_USE_INTERNAL_LIBRARIES})
+		set(OPENMPT_FOUND ON)
+		set(OPENMPT_INCLUDE_DIRS ${CMAKE_SOURCE_DIR}/libs/libopenmpt/inc)
+        if(${SRB2_SYSTEM_BITS} EQUAL 64)
+			set(OPENMPT_LIBRARIES "-L${CMAKE_SOURCE_DIR}/libs/libopenmpt/lib/x86_64/mingw -lopenmpt")
+		else() # 32-bit
+			set(OPENMPT_LIBRARIES "-L${CMAKE_SOURCE_DIR}/libs/libopenmpt/lib/x86/mingw -lopenmpt")
+		endif()
+	else()
+		find_package(OPENMPT)
+	endif()
+	if(${OPENMPT_FOUND})
+		set(SRB2_HAVE_OPENMPT ON)
+		add_definitions(-DHAVE_OPENMPT)
+	else()
+		message(WARNING "You have specified that OpenMPT is available but it was not found.")
+	endif()
 endif()
-
-if(${SRB2_CONFIG_LIBBACKTRACE})
-	target_link_libraries(SRB2SDL2 PRIVATE libbacktrace)
-	target_compile_definitions(SRB2SDL2 PRIVATE -DHAVE_LIBBACKTRACE)
-endif()
-
-set(SRB2_HAVE_THREADS ON)
-target_compile_definitions(SRB2SDL2 PRIVATE -DHAVE_THREADS)
 
 if(${SRB2_CONFIG_HAVE_ZLIB})
 	if(${SRB2_CONFIG_USE_INTERNAL_LIBRARIES})
 		set(ZLIB_FOUND ON)
-		set(ZLIB_COMPAT ON)
-		set(WITH_GTEST OFF)
 		set(ZLIB_INCLUDE_DIRS ${CMAKE_SOURCE_DIR}/libs/zlib)
 		if(${SRB2_SYSTEM_BITS} EQUAL 64)
 			set(ZLIB_LIBRARIES "-L${CMAKE_SOURCE_DIR}/libs/zlib/win32 -lz64")
@@ -308,9 +442,9 @@ if(${SRB2_CONFIG_HAVE_ZLIB})
 	endif()
 	if(${ZLIB_FOUND})
 		set(SRB2_HAVE_ZLIB ON)
-		target_compile_definitions(SRB2SDL2 PRIVATE -DHAVE_ZLIB)
+		add_definitions(-DHAVE_ZLIB)
 	else()
-		message(WARNING "You have specified that ZLIB is available but it was not found. SRB2Kart-Saturn may not compile correctly.")
+		message(WARNING "You have specified that ZLIB is available but it was not found. SRB2Kart may not compile correctly.")
 	endif()
 endif()
 
@@ -329,25 +463,32 @@ if(${SRB2_CONFIG_HAVE_PNG} AND ${SRB2_CONFIG_HAVE_ZLIB})
 		endif()
 		if(${PNG_FOUND})
 			set(SRB2_HAVE_PNG ON)
-			target_compile_definitions(SRB2SDL2 PRIVATE -DHAVE_PNG)
-			target_compile_definitions(SRB2SDL2 PRIVATE -D_LARGEFILE64_SOURCE)
+			add_definitions(-DHAVE_PNG)
+			add_definitions(-D_LARGEFILE64_SOURCE)
+			source_group("Main" FILES ${SRB2_CORE_SOURCES} ${SRB2_CORE_HEADERS})
 		else()
-			message(WARNING "You have specified that PNG is available but it was not found. SRB2Kart-Saturn may not compile correctly.")
+			message(WARNING "You have specified that PNG is available but it was not found. SRB2Kart may not compile correctly.")
 		endif()
 	endif()
 endif()
 
-if("${SRB2_CONFIG_HWRENDER}")
-	target_compile_definitions(SRB2SDL2 PRIVATE -DHWRENDER)
-	add_subdirectory(hardware)
-
-	if("${SRB2_CONFIG_STATIC_OPENGL}")
-		find_package(OpenGL)
-		if(${OPENGL_FOUND})
-			target_compile_definitions(SRB2SDL2 PRIVATE -DSTATIC_OPENGL)
-		else()
-			message(WARNING "You have specified static opengl but opengl was not found. Not setting HWRENDER.")
+if(${SRB2_CONFIG_HAVE_CURL})
+	if(${SRB2_CONFIG_USE_INTERNAL_LIBRARIES})
+		set(CURL_FOUND ON)
+		set(CURL_INCLUDE_DIRS ${CMAKE_SOURCE_DIR}/libs/curl/include)
+		if(${SRB2_SYSTEM_BITS} EQUAL 64)
+			set(CURL_LIBRARIES "-L${CMAKE_SOURCE_DIR}/libs/curl/lib64 -lcurl")
+		else() # 32-bit
+			set(CURL_LIBRARIES "-L${CMAKE_SOURCE_DIR}/libs/curl/lib32 -lcurl")
 		endif()
+	else()
+		find_package(CURL)
+	endif()
+	if(${CURL_FOUND})
+		set(SRB2_HAVE_CURL ON)
+		add_definitions(-DHAVE_CURL)
+	else()
+		message(WARNING "You have specified that CURL is available but it was not found. SRB2Kart may not compile correctly.")
 	endif()
 endif()
 
@@ -388,8 +529,6 @@ if(${SRB2_CONFIG_HWRENDER})
 		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_model.c
 		${CMAKE_CURRENT_SOURCE_DIR}/hardware/u_list.c
 	)
-	target_include_directories(SRB2SDL2 PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../libs/drmingw/include")
-endif()
 
 	set (SRB2_HWRENDER_HEADERS
 		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_batching.h
@@ -408,33 +547,23 @@ endif()
 		${CMAKE_CURRENT_SOURCE_DIR}/hardware/u_list.h
 	)
 
-# If using CCACHE, then force it.
-# https://github.com/Cockatrice/Cockatrice/pull/3052/files
-if ("${CMAKE_SYSTEM_NAME}" MATCHES "Darwin")
-	get_property(RULE_LAUNCH_COMPILE GLOBAL PROPERTY RULE_LAUNCH_COMPILE)
-	if(RULE_LAUNCH_COMPILE)
-		MESSAGE(STATUS "Force enabling CCache usage under macOS")
-		# Set up wrapper scripts
-		configure_file(${CMAKE_CURRENT_SOURCE_DIR}/../cmake/launch-c.in   ${CMAKE_BINARY_DIR}/launch-c)
-		configure_file(${CMAKE_CURRENT_SOURCE_DIR}/../cmake/launch-cxx.in ${CMAKE_BINARY_DIR}/launch-cxx)
-		execute_process(COMMAND chmod a+rx
-			"${CMAKE_BINARY_DIR}/launch-c"
-			"${CMAKE_BINARY_DIR}/launch-cxx")
+	set(SRB2_R_OPENGL_SOURCES
+		${CMAKE_CURRENT_SOURCE_DIR}/hardware/r_opengl/r_opengl.c
+	)
 
 	set(SRB2_R_OPENGL_HEADERS
 		${CMAKE_CURRENT_SOURCE_DIR}/hardware/r_opengl/r_opengl.h
 	)
 endif()
 
-# TODO: fix prng and P_CreateBlockmap overflow at some point
-target_compile_options(SRB2SDL2 PRIVATE -fwrapv)
-
-if (${CMAKE_BUILD_TYPE} MATCHES Debug)
-	target_compile_options(SRB2SDL2 PRIVATE -O0)
-	target_compile_options(SRB2SDL2 PRIVATE -g)
-else()
-	target_compile_options(SRB2SDL2 PRIVATE -O3)
-	target_compile_options(SRB2SDL2 PRIVATE -g1) #should be enough for libbacktrace
+if(${SRB2_CONFIG_HWRENDER} AND ${SRB2_CONFIG_STATIC_OPENGL})
+	find_package(OpenGL)
+	if(${OPENGL_FOUND})
+		add_definitions(-DHWRENDER)
+		add_definitions(-DSTATIC_OPENGL)
+	else()
+		message(WARNING "You have specified static opengl but opengl was not found. Not setting HWRENDER.")
+	endif()
 endif()
 
 if(${SRB2_CONFIG_HWRENDER} AND ${SRB2_CONFIG_SCREENFBO})
@@ -459,7 +588,6 @@ if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" OR "${CMAKE_CXX_COMPILER_ID}" STRE
 	endif()
 	add_compile_options(-Wno-trigraphs)
 endif()
-target_compile_definitions(SRB2SDL2 PRIVATE -DCMAKECONFIG)
 
 # TODO: fix prng and P_CreateBlockmap overflow at some point
 add_compile_options(-fwrapv)
@@ -469,81 +597,28 @@ if (${CMAKE_BUILD_TYPE} MATCHES Debug)
 else()
 	add_compile_options(-O3)
 endif()
-if(SRB2_CONFIG_MOBJCONSISTANCY)
-	target_compile_definitions(SRB2SDL2 PRIVATE -DMOBJCONSISTANCY)
-endif()
-if(SRB2_CONFIG_PACKETDROP)
-	target_compile_definitions(SRB2SDL2 PRIVATE -DPACKETDROP)
-endif()
-if(SRB2_CONFIG_ZDEBUG)
-	target_compile_definitions(SRB2SDL2 PRIVATE -DZDEBUG)
-endif()
-if(SRB2_CONFIG_PROFILEMODE AND "${CMAKE_C_COMPILER_ID}" STREQUAL "GNU")
-	target_compile_options(SRB2SDL2 PRIVATE -pg)
-	target_link_options(SRB2SDL2 PRIVATE -pg)
-endif()
 
 add_compile_options(-g)
 
 add_definitions(-DCMAKECONFIG)
 
-if(${SRB2_CONFIG_SCREENFBO} AND NOT ${SRB2_CONFIG_STATIC_OPENGL})
-	target_compile_definitions(SRB2SDL2 PRIVATE -DUSE_FBO_OGL)
+#add_library(SRB2Core STATIC
+#	${SRB2_CORE_SOURCES}
+#	${SRB2_CORE_HEADERS}
+#	${SRB2_CORE_RENDER_SOURCES}
+#	${SRB2_CORE_GAME_SOURCES}
+#	${SRB2_LUA_SOURCES}
+#	${SRB2_LUA_HEADERS}
+#	${SRB2_BLUA_SOURCES}
+#	${SRB2_BLUA_HEADERS}
+#)
+
+if(${SRB2_CONFIG_DEDICATED})
+	add_subdirectory(dedicated)
+else()
+	add_subdirectory(sdl)
 endif()
 
-if(${SRB2_CONFIG_SATURNPAK})
-	target_compile_definitions(SRB2SDL2 PRIVATE -DDOSATURNPAK)
-endif()
-
-if(${SRB2_CONFIG_SATURNJOIN})
-	target_compile_definitions(SRB2SDL2 PRIVATE -DDOSATURNJOIN)
-endif()
-
-# strip debug symbols into separate file when using gcc or clang.
-# to be consistent with Makefile, don't generate for OS X.
-if((CMAKE_COMPILER_IS_GNUCC OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")  AND NOT ("${CMAKE_SYSTEM_NAME}" MATCHES Darwin))
-	if((${CMAKE_BUILD_TYPE} MATCHES Debug) OR (${CMAKE_BUILD_TYPE} MATCHES RelWithDebInfo))
-		if(${CMAKE_BUILD_TYPE} MATCHES Debug)
-			set(OBJCOPY_ONLY_KEEP_DEBUG "--only-keep-debug")
-		endif()
-		message(STATUS "Will make separate debug symbols in *.debug")
-		add_custom_command(TARGET SRB2SDL2 POST_BUILD
-			COMMAND ${CMAKE_OBJCOPY} ${OBJCOPY_ONLY_KEEP_DEBUG} $<TARGET_FILE:SRB2SDL2> $<TARGET_FILE:SRB2SDL2>.debug
-			# mold linker: .gnu_debuglink is present by default, so --add-gnu-debuglink would fail
-			COMMAND ${CMAKE_OBJCOPY} --strip-debug --remove-section=.gnu_debuglink $<TARGET_FILE:SRB2SDL2>
-			COMMAND ${CMAKE_OBJCOPY} --add-gnu-debuglink=$<TARGET_FILE:SRB2SDL2>.debug $<TARGET_FILE:SRB2SDL2>
-		)
-	endif()
-endif()
-
-# copy DLLs to bin/ directory if building internal shared on windows
-if("${CMAKE_SYSTEM_NAME}" STREQUAL Windows AND NOT "${SRB2_CONFIG_INTERNAL_LIBRARIES}" AND "${SRB2_CONFIG_SHARED_INTERNAL_LIBRARIES}")
-	set(ADDITIONAL_DLLS "")
-	if("${CMAKE_C_COMPILER_ID}" STREQUAL GNU OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-		# also copy implicitly linked system libraries
-		get_filename_component(MINGW_BIN_PATH ${CMAKE_CXX_COMPILER} PATH)
-		if("${CMAKE_C_COMPILER_ID}" STREQUAL GNU)
-			list(APPEND ADDITIONAL_DLLS
-				"libgcc_s_dw2-1.dll"
-				"libstdc++-6.dll"
-				"libwinpthread-1.dll"
-			)
-		else()
-			list(APPEND ADDITIONAL_DLLS
-				"libunwind.dll"
-				"libc++.dll"
-				"libwinpthread-1.dll"
-			)
-		endif()
-		list(TRANSFORM ADDITIONAL_DLLS PREPEND "${MINGW_BIN_PATH}/")
-	endif()
-	add_custom_command(TARGET SRB2SDL2 POST_BUILD
-		COMMAND ${CMAKE_COMMAND} -E copy_if_different
-			$<TARGET_RUNTIME_DLLS:SRB2SDL2>
-			${ADDITIONAL_DLLS}
-
-			$<TARGET_FILE_DIR:SRB2SDL2>
-		COMMAND_EXPAND_LISTS
-		COMMENT "Copying runtime DLLs"
-	)
+if(NOT ${SRB2_SDL2_AVAILABLE} AND NOT ${SRB2_WIN32_AVAILABLE})
+	message(FATAL_ERROR "There are no targets available to build an SRB2Kart executable. :(")
 endif()

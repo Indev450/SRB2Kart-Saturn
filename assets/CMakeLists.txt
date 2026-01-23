@@ -14,48 +14,51 @@ FUNCTION(PREPEND var prefix)
    SET(${var} "${listVar}" PARENT_SCOPE)
 ENDFUNCTION(PREPEND)
 
-if("${SRB2_CONFIG_ASSET_DIRECTORY}" STREQUAL "")
-	message(WARNING "SRB2_CONFIG_ASSET_DIRECTORY is not set, so installation will not contain data files.")
-	return()
-endif()
+set(SRB2_ASSET_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/installer"
+	CACHE STRING "Path to directory that contains all asset files for the installer.")
 
-get_filename_component(SRB2_ASSET_DIRECTORY_ABSOLUTE "${SRB2_CONFIG_ASSET_DIRECTORY}" ABSOLUTE)
-
-set(SRB2_ASSETS_DOCS
-	"README.txt"
-	"HISTORY.txt"
-	"README-SDL.txt"
-	"LICENSE.txt"
-	"LICENSE-3RD-PARTY.txt"
+set(SRB2_ASSET_HASHED
+"srb2.srb;\
+gfx.kart;\
+textures.kart;\
+chars.kart;\
+maps.kart"
+	CACHE STRING "Asset filenames to apply MD5 checks. No spaces between entries!"
 )
-list(TRANSFORM SRB2_ASSETS_DOCS PREPEND "/")
-list(TRANSFORM SRB2_ASSETS_DOCS PREPEND "${SRB2_ASSET_DIRECTORY_ABSOLUTE}")
 
-####################
-# POST-V2.2 NOTE: Do not forget to add patch.pk3 to the end of this list!
-####################
-
-set(SRB2_ASSETS_GAME
-	"srb2.srb"
-	"gfx.kart"
-	"textures.kart"
-	"chars.kart"
-	"maps.kart"
+set(SRB2_ASSET_DOCS
+"README.txt;\
+HISTORY.txt;\
+LICENSE.txt;\
+LICENSE-3RD-PARTY.txt"
+	CACHE STRING "Documentation filenames. In OS X, these are packaged separately from other assets. No spaces between entries!"
 )
-list(TRANSFORM SRB2_ASSETS_GAME PREPEND "/")
-list(TRANSFORM SRB2_ASSETS_GAME PREPEND "${SRB2_ASSET_DIRECTORY_ABSOLUTE}")
 
-set(SRB2_ASSETS ${SRB2_ASSET_DOCS} ${SRB2_ASSETS_GAME})
+PREPEND(SRB2_ASSET_DOCS ${SRB2_ASSET_DIRECTORY} ${SRB2_ASSET_DOCS})
+
+foreach(SRB2_ASSET ${SRB2_ASSET_HASHED})
+	file(MD5 ${SRB2_ASSET_DIRECTORY}/${SRB2_ASSET} "SRB2_ASSET_${SRB2_ASSET}_HASH")
+	set(SRB2_ASSET_${SRB2_ASSET}_HASH ${SRB2_ASSET_${SRB2_ASSET}_HASH} PARENT_SCOPE)
+endforeach()
 
 # Installation
 
 if(${CMAKE_SYSTEM} MATCHES Darwin)
 	get_target_property(outname SRB2SDL2 OUTPUT_NAME)
-	install(FILES ${SRB2_ASSETS} DESTINATION "${outname}.app/Contents/Resources")
-	install(DIRECTORY "${SRB2_ASSET_DIRECTORY_ABSOLUTE}/models" DESTINATION "${outname}.app/Contents/Resources")
-	install(FILES ${SRB2_ASSETS_DOCS} DESTINATION .)
+	install(DIRECTORY "${SRB2_ASSET_DIRECTORY}/"
+		DESTINATION "${outname}.app/Contents/Resources"
+	)
+	install(FILES ${SRB2_ASSET_DOCS}
+		DESTINATION .
+		OPTIONAL
+	)
 else()
-	install(FILES ${SRB2_ASSETS} DESTINATION .)
-	install(DIRECTORY "${SRB2_ASSET_DIRECTORY_ABSOLUTE}/models" DESTINATION .)
+	install(DIRECTORY "${SRB2_ASSET_DIRECTORY}/"
+		DESTINATION .
+	)
+	# Docs are assumed to be located in SRB2_ASSET_DIRECTORY, so don't install again
+	#install(FILES ${SRB2_ASSET_DOCS}
+	#	DESTINATION .
+	#	OPTIONAL
+	#)
 endif()
-

@@ -1,13 +1,32 @@
 # Declare SDL2 interface sources
 
-target_sources(SRB2SDL2 PRIVATE
-	mixer_sound.c
-	ogl_sdl.c
-	i_threads.c
-	i_net.c
-	i_system.cpp
-	i_main.c
-	i_video.c
+set(SRB2_CONFIG_SDL2_USEMIXER ON CACHE BOOL "Use SDL2_mixer or regular sdl sound")
+
+if(${SRB2_CONFIG_SDL2_USEMIXER})
+	if(${SRB2_CONFIG_USE_INTERNAL_LIBRARIES})
+		set(SDL2_MIXER_FOUND ON)
+		if(${SRB2_SYSTEM_BITS} EQUAL 64)
+			set(SDL2_MIXER_INCLUDE_DIRS ${CMAKE_SOURCE_DIR}/libs/SDL2_mixer/x86_64-w64-mingw32/include/SDL2)
+			set(SDL2_MIXER_LIBRARIES "-L${CMAKE_SOURCE_DIR}/libs/SDL2_mixer/x86_64-w64-mingw32/lib -lSDL2_mixer")
+		else() # 32-bit
+			set(SDL2_MIXER_INCLUDE_DIRS ${CMAKE_SOURCE_DIR}/libs/SDL2_mixer/i686-w64-mingw32/include/SDL2)
+			set(SDL2_MIXER_LIBRARIES "-L${CMAKE_SOURCE_DIR}/libs/SDL2_mixer/i686-w64-mingw32/lib -lSDL2_mixer")
+		endif()
+	else()
+		find_package(SDL2_mixer)
+	endif()
+	if(${SDL2_MIXER_FOUND})
+		set(SRB2_HAVE_MIXER ON)
+		set(SRB2_SDL2_SOUNDIMPL mixer_sound.c)
+	else()
+		message(WARNING "You specified that SDL2_mixer is available, but it was not found. Falling back to sdl sound.")
+		set(SRB2_SDL2_SOUNDIMPL sdl_sound.c)
+	endif()
+else()
+	set(SRB2_SDL2_SOUNDIMPL sdl_sound.c)
+endif()
+
+set(SRB2_SDL2_SOURCES
 	dosstr.c
 	endtxt.c
 	hwsym_sdl.c
@@ -23,23 +42,47 @@ target_sources(SRB2SDL2 PRIVATE
 	${SRB2_SDL2_SOUNDIMPL}
 )
 
-if("${CMAKE_SYSTEM_NAME}" MATCHES Windows)
-	target_sources(SRB2SDL2 PRIVATE
-		../win32/win_dbg.c
-		../win32/Srb2win.rc)
+set(SRB2_SDL2_HEADERS
+	endtxt.h
+	hwsym_sdl.h
+	i_ttf.h
+	ogl_sdl.h
+	sdlmain.h
+)
+
+source_group("Interface Code" FILES ${SRB2_SDL2_SOURCES} ${SRB2_SDL2_HEADERS})
+
+# Dependency
+if(${SRB2_CONFIG_USE_INTERNAL_LIBRARIES})
+	set(SDL2_FOUND ON)
+	if(${SRB2_SYSTEM_BITS} EQUAL 64)
+		set(SDL2_INCLUDE_DIRS ${CMAKE_SOURCE_DIR}/libs/SDL2/x86_64-w64-mingw32/include/SDL2)
+		set(SDL2_LIBRARIES "-L${CMAKE_SOURCE_DIR}/libs/SDL2/x86_64-w64-mingw32/lib -lSDL2")
+	else() # 32-bit
+		set(SDL2_INCLUDE_DIRS ${CMAKE_SOURCE_DIR}/libs/SDL2/i686-w64-mingw32/include/SDL2)
+		set(SDL2_LIBRARIES "-L${CMAKE_SOURCE_DIR}/libs/SDL2/i686-w64-mingw32/lib -lSDL2")
+	endif()
+else()
+	find_package(SDL2)
 endif()
 
-if("${CMAKE_SYSTEM_NAME}" MATCHES Darwin)
-	set(MACOSX_BUNDLE_ICON_FILE Srb2mac.icns)
-	set_source_files_properties(macosx/Srb2mac.icns PROPERTIES MACOSX_PACKAGE_LOCATION "Resources")
-	target_sources(SRB2SDL2 PRIVATE
-		macosx/mac_alert.c
-		macosx/mac_alert.h
-		macosx/mac_resources.c
-		macosx/mac_resources.h
-		macosx/Srb2mac.icns
+if(${SDL2_FOUND})
+	set(SRB2_SDL2_TOTAL_SOURCES
+		${SRB2_CORE_SOURCES}
+		${SRB2_CORE_HEADERS}
+		${SRB2_DISCORDRPC_SOURCES}
+		${SRB2_DISCORDRPC_HEADERS}
+		${SRB2_PNG_SOURCES}
+		${SRB2_PNG_HEADERS}
+		${SRB2_CORE_RENDER_SOURCES}
+		${SRB2_CORE_GAME_SOURCES}
+		${SRB2_LUA_SOURCES}
+		${SRB2_LUA_HEADERS}
+		${SRB2_BLUA_SOURCES}
+		${SRB2_BLUA_HEADERS}
+		${SRB2_SDL2_SOURCES}
+		${SRB2_SDL2_HEADERS}
 	)
-endif()
 
 	source_group("Main" FILES ${SRB2_CORE_SOURCES} ${SRB2_CORE_HEADERS}
 		${SRB2_PNG_SOURCES} ${SRB2_PNG_HEADERS})
@@ -110,7 +153,16 @@ endif()
 	endif()
 
 	target_link_libraries(SRB2SDL2 PRIVATE
-		${CORE_FOUNDATION_LIBRARY}
+		${SDL2_LIBRARIES}
+		${SDL2_MIXER_LIBRARIES}
+		${GME_LIBRARIES}
+		${OPENMPT_LIBRARIES}
+		${MIXERX_LIBRARIES}
+		${PNG_LIBRARIES}
+		${ZLIB_LIBRARIES}
+		${OPENGL_LIBRARIES}
+		${CURL_LIBRARIES}
+		${DISCORDRPC_LIBRARIES}
 	)
 
 	if(${SRB2_HAVE_LIBBACKTRACE})
@@ -134,37 +186,48 @@ endif()
 	endif()
 
 	#target_link_libraries(SRB2SDL2 PRIVATE SRB2Core)
-	set_target_properties(SRB2SDL2 PROPERTIES OUTPUT_NAME "${CPACK_PACKAGE_DESCRIPTION_SUMMARY}")
 
-	# Configure the app bundle icon and plist properties
-	target_sources(SRB2SDL2 PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/macosx/Srb2mac.icns")
-	set_target_properties(SRB2SDL2 PROPERTIES
-		MACOSX_BUNDLE_ICON_FILE "Srb2mac"
-		MACOSX_BUNDLE_BUNDLE_NAME "SRB2Kart-Saturn"
-		MACOSX_BUNDLE_BUNDLE_VERSION 1.6
+	if(${SRB2_USEASM})
+		if(${SRB2_CONFIG_YASM})
+			set(ASM_ASSEMBLER_TEMP ${CMAKE_ASM_YASM_COMPILER})
+			set(ASM_ASSEMBLER_OBJFORMAT ${CMAKE_ASM_YASM_OBJECT_FORMAT})
+			set_source_files_properties(${SRB2_NASM_SOURCES} LANGUAGE ASM_YASM)
+		else()
+			set(ASM_ASSEMBLER_TEMP ${CMAKE_ASM_NASM_COMPILER})
+			set(ASM_ASSEMBLER_OBJFORMAT ${CMAKE_ASM_NASM_OBJECT_FORMAT})
+			set_source_files_properties(${SRB2_NASM_SOURCES} LANGUAGE ASM_NASM)
+		endif()
+	endif()
 
-		RESOURCE "${CMAKE_CURRENT_SOURCE_DIR}/macosx/Srb2mac.icns"
+	if(${CMAKE_SYSTEM} MATCHES Windows)
+		target_link_libraries(SRB2SDL2 PRIVATE
+			ws2_32
+		)
+		target_compile_options(SRB2SDL2 PRIVATE
+			-U_WINDOWS
+		)
+	endif()
+
+	target_include_directories(SRB2SDL2 PRIVATE
+		${SDL2_INCLUDE_DIRS}
+		${SDL2_MIXER_INCLUDE_DIRS}
+		${GME_INCLUDE_DIRS}
+		${OPENMPT_INCLUDE_DIRS}
+		${PNG_INCLUDE_DIRS}
+		${ZLIB_INCLUDE_DIRS}
+		${OPENGL_INCLUDE_DIRS}
+		${CURL_INCLUDE_DIRS}
+		${DISCORDRPC_INCLUDE_DIRS}
 	)
-endif()
 
-if(NOT "${SRB2_CONFIG_SYSTEM_LIBRARIES}" AND NOT "${SRB2_CONFIG_SHARED_INTERNAL_LIBRARIES}")
-	target_link_libraries(SRB2SDL2 PRIVATE SDL2::SDL2-static SDL2_mixer::SDL2_mixer-static)
-else()
-	target_link_libraries(SRB2SDL2 PRIVATE SDL2::SDL2 SDL2_mixer::SDL2_mixer)
-endif()
+	if(${SRB2_HAVE_MIXER})
+		target_compile_definitions(SRB2SDL2 PRIVATE -DHAVE_MIXER -DSOUND=SOUND_MIXER)
+	endif()
 
-if("${CMAKE_SYSTEM_NAME}" MATCHES Linux)
-	target_link_libraries(SRB2SDL2 PRIVATE m rt)
-endif()
-
-if("${CMAKE_SYSTEM_NAME}" MATCHES Windows)
-	target_link_libraries(SRB2SDL2 PRIVATE
-		ws2_32
+	target_compile_definitions(SRB2SDL2 PRIVATE
+		-DHAVE_SDL
+		-DHAVE_THREADS
 	)
-	target_compile_options(SRB2SDL2 PRIVATE
-		-U_WINDOWS
-	)
-endif()
 
 	if(SRB2_CONFIG_LTO AND NOT SRB2_CONFIG_DEBUGMODE)
 		set_property(TARGET SRB2SDL2 PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
@@ -255,27 +318,50 @@ endif()
 			getwinlib(libvorbis_0 "libvorbis-0.dll")
 			getwinlib(libvorbisfile_3 "libvorbisfile-3.dll")
 		endif()
+		if(${SRB2_CONFIG_HAVE_GME})
+			getwinlib(libgme "libgme.dll")
+		endif()
+		if(${SRB2_CONFIG_HAVE_OPENMPT})
+			getwinlib(libopenmpt "libopenmpt.dll")
+		endif()
+
+		if(${SRB2_CONFIG_HAVE_DISCORDRPC})
+			getwinlib(discord-rpc "discord-rpc.dll")
+		endif()
+
+		install(PROGRAMS
+			${win_extra_dll_list}
+			DESTINATION .
+		)
+
+		# We also want to copy those DLLs to build directories on MSVC.
+		# So we'll add a post_build step.
+		copy_files_to_build_dir(SRB2SDL2 win_extra_dll_list)
 	endif()
-endif()
 
-# Mac bundle fixup
-# HACK: THIS IS IMPORTANT! See the escaped \${CMAKE_INSTALL_PREFIX}? This
-# makes it so that var is evaluated LATER during cpack, not right now!
-# This fixes the quirk where the bundled libraries don't land in the final package
-# https://cmake.org/pipermail/cmake/2011-March/043532.html
-#
-# HOWEVER: ${CPACK_PACKAGE_DESCRIPTION_SUMMARY} is NOT escaped, because that var
-# is only available to us at this step. Read the link: ${CMAKE_INSTALL_PREFIX} at
-# this current step points to the CMAKE build folder, NOT the folder that CPACK uses.
-# Therefore, it makes sense to escape that var, but not the other.
-if("${CMAKE_SYSTEM_NAME}" MATCHES Darwin)
-	install(CODE "
-		include(BundleUtilities)
-		fixup_bundle(\"\${CMAKE_INSTALL_PREFIX}/${CPACK_PACKAGE_DESCRIPTION_SUMMARY}.app\"
-			\"\"
-			/Library/Frameworks
-		)"
-	)
-endif()
 
-set(SRB2_SDL2_AVAILABLE YES PARENT_SCOPE)
+	# Mac bundle fixup
+	# HACK: THIS IS IMPORTANT! See the escaped \${CMAKE_INSTALL_PREFIX}? This
+	# makes it so that var is evaluated LATER during cpack, not right now!
+	# This fixes the quirk where the bundled libraries don't land in the final package
+	# https://cmake.org/pipermail/cmake/2011-March/043532.html
+	#
+	# HOWEVER: ${CPACK_PACKAGE_DESCRIPTION_SUMMARY} is NOT escaped, because that var
+	# is only available to us at this step. Read the link: ${CMAKE_INSTALL_PREFIX} at
+	# this current step points to the CMAKE build folder, NOT the folder that CPACK uses.
+	# Therefore, it makes sense to escape that var, but not the other.
+	if(${CMAKE_SYSTEM} MATCHES Darwin)
+		install(CODE "
+			include(BundleUtilities)
+			fixup_bundle(\"\${CMAKE_INSTALL_PREFIX}/${CPACK_PACKAGE_DESCRIPTION_SUMMARY}.app\"
+				\"\"
+				/Library/Frameworks
+			)"
+		)
+	endif()
+
+	set(SRB2_SDL2_AVAILABLE YES PARENT_SCOPE)
+else()
+	message(WARNING "SDL2 was not found, so the SDL2 target will not be available.")
+	set(SRB2_SDL2_AVAILABLE NO PARENT_SCOPE)
+endif()

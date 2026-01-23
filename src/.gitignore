@@ -2,4 +2,3 @@
 *.json
 *.idx
 *.gdb_history
-config.h
