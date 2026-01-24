@@ -784,7 +784,11 @@ static void Impl_HandleControllerAxisEvent(SDL_ControllerAxisEvent evt)
 	// Determine the Joystick IDs for each current open joystick
 	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
 	{
+#if (SDL_VERSION_ATLEAST(2,32,4))
 		if (evt.which == JoyInfo[i].id)
+#else
+		if (evt.which == SDL_JoystickInstanceID(SDL_GameControllerGetJoystick(JoyInfo[i].dev)))
+#endif
 		{
 			event.type = ev_joystick + i;
 			break;
@@ -844,7 +848,11 @@ static void Impl_HandleControllerHatEvent(SDL_ControllerButtonEvent evt, Uint32 
 	// Determine the Joystick IDs for each current open joystick
 	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
 	{
+#if (SDL_VERSION_ATLEAST(2,32,4))
 		if (evt.which == JoyInfo[i].id)
+#else
+		if (evt.which == SDL_JoystickInstanceID(SDL_GameControllerGetJoystick(JoyInfo[i].dev)))
+#endif
 		{
 			event.data1 = hat_buttons_base[i];
 			break;
@@ -906,7 +914,11 @@ static void Impl_HandleControllerButtonEvent(SDL_ControllerButtonEvent evt, Uint
 	// Determine the Joystick IDs for each current open joystick
 	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
 	{
+#if (SDL_VERSION_ATLEAST(2,32,4))
 		if (evt.which == JoyInfo[i].id)
+#else
+		if (evt.which == SDL_JoystickInstanceID(SDL_GameControllerGetJoystick(JoyInfo[i].dev)))
+#endif
 		{
 			event.data1 = buttons_base[i];
 			break;

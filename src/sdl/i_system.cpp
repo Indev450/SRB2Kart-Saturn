@@ -726,7 +726,9 @@ static void JoyReset(SDLJoyInfo_t *JoySet)
 
 	JoySet->dev = NULL;
 	JoySet->oldjoy = -1;
+#if (SDL_VERSION_ATLEAST(2,32,4))
 	JoySet->id = -1;
+#endif
 }
 
 /**	\brief SDL info about joystick
@@ -783,7 +785,11 @@ void I_UpdateJoystickDeviceIndex(UINT8 player)
 	///////////////////////////////////////////////
 	if (JoyInfo[player].dev)
 	{
+#if (SDL_VERSION_ATLEAST(2,32,4))
 		cv_usejoystick[player].value = JoyInfo[player].id + 1;
+#else
+		cv_usejoystick[player].value = I_GetJoystickDeviceIndex(JoyInfo[player].dev) + 1;
+#endif
 	}
 	else
 	{
@@ -939,7 +945,9 @@ static int joy_open(int playerIndex, int joyIndex)
 
 	CONS_Debug(DBG_GAMELOGIC, "Joystick %d: %s\n", playerIndex+1, SDL_GameControllerName(JoyInfo[playerIndex].dev));
 
+#if (SDL_VERSION_ATLEAST(2,32,4))
 	JoyInfo[playerIndex].id = I_GetJoystickDeviceIndex(JoyInfo[playerIndex].dev);
+#endif
 
 	return SDL_CONTROLLER_AXIS_MAX;
 }
@@ -985,7 +993,9 @@ void I_InitJoystick(UINT8 index)
 
 	JoyInfo[index].dev = NULL;
 	JoyInfo[index].oldjoy = -1;
+#if (SDL_VERSION_ATLEAST(2,32,4))
 	JoyInfo[index].id = -1;
+#endif
 
 	if (cv_usejoystick[index].value)
 		newcontroller = SDL_GameControllerOpen(cv_usejoystick[index].value-1);
@@ -999,17 +1009,27 @@ void I_InitJoystick(UINT8 index)
 			break;
 	}
 
+#if (SDL_VERSION_ATLEAST(2,32,4))
 	JoyInfo[index].id = I_GetJoystickDeviceIndex(JoyInfo[index].dev);
+#endif
 
 	if (newcontroller && i < MAXSPLITSCREENPLAYERS) // don't override an active device
 	{
+#if (SDL_VERSION_ATLEAST(2,32,4))
 		cv_usejoystick[index].value = JoyInfo[index].id + 1;
+#else
+		cv_usejoystick[index].value = I_GetJoystickDeviceIndex(JoyInfo[index].dev) + 1;
+#endif
 	}
 	else if (newcontroller && joy_open(index, cv_usejoystick[index].value) != -1)
 	{
+#if (SDL_VERSION_ATLEAST(2,32,4))
+		JoyInfo[index].oldjoy = JoyInfo[index].id + 1;
+#else
 		// SDL's device indexes are unstable, so cv_usejoystick may not match
 		// the actual device index. So let's cheat a bit and find the device's current index.
-		JoyInfo[index].oldjoy = JoyInfo[index].id + 1;
+		JoyInfo[index].oldjoy = I_GetJoystickDeviceIndex(JoyInfo[index].dev) + 1;
+#endif
 	}
 	else
 	{
