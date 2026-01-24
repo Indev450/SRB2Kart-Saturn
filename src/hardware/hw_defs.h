@@ -79,7 +79,7 @@ typedef struct FColorARGB FColorARGB;
 // Simple 2D coordinate
 typedef struct
 {
-	FLOAT x,y;
+	FLOAT x, y;
 } F2DCoord, v2d_t;
 
 // ======================
@@ -117,7 +117,7 @@ typedef struct
 
 typedef struct
 {
-	FLOAT       x,y,z;           // position
+	FLOAT       x, y, z;           // position
 	FLOAT       anglex, angley, anglez;   // aimingangle / viewangle
 	FLOAT       scalex, scaley, scalez;
 	FLOAT       fovangle;
@@ -142,8 +142,8 @@ enum
 // Transformed vector, as passed to HWR API
 typedef struct
 {
-	FLOAT       x,y,z;
-	FLOAT       s,t;
+	FLOAT       x, y, z;
+	FLOAT       s, t;
 } FOutVector;
 
 typedef struct vbo_vertex_s
@@ -173,7 +173,7 @@ typedef struct
 	int rows, columns;
 	int loopcount;
 
-	int detail, vertex_count;
+	int vertex_count;
 	int texture, width, height;
 	boolean rebuild; // VBO needs to be rebuilt
 

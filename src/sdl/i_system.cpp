@@ -31,6 +31,10 @@
 
 #include <signal.h>
 
+#if defined (__unix__) || defined(__APPLE__) || defined (UNIXCOMMON)
+#include <poll.h>
+#endif
+
 #ifdef _WIN32
 #define RPC_NO_WINDOWS_H
 #include <windows.h>
@@ -139,7 +143,7 @@ typedef LPVOID (WINAPI *p_MapViewOfFile) (HANDLE, DWORD, DWORD, DWORD, SIZE_T);
 #include <errno.h>
 #endif
 
-// Locations to directly check for srb2.pk3 in
+// Locations to directly check for srb2.srb in
 const char *wadDefaultPaths[] = {
 #if defined (__unix__) || defined(__APPLE__) || defined (UNIXCOMMON)
 	"/usr/local/share/games/SRB2Kart",
@@ -153,7 +157,7 @@ const char *wadDefaultPaths[] = {
 	NULL
 };
 
-// Folders to recurse through looking for srb2.pk3
+// Folders to recurse through looking for srb2.srb
 const char *wadSearchPaths[] = {
 #if defined (__unix__) || defined(__APPLE__) || defined (UNIXCOMMON)
 	"/usr/local/games",
@@ -201,10 +205,6 @@ static char returnWadPath[256];
 
 #include "../s_sound.h"
 
-#ifdef MAC_ALERT
-#include "macosx/mac_alert.h"
-#endif
-
 #include "../d_main.h"
 
 #if !defined(NOMUMBLE) && defined(HAVE_MUMBLE)
@@ -213,21 +213,19 @@ static char returnWadPath[256];
 #include "../byteptr.h"
 #endif
 
-SDL_bool consolevent = SDL_FALSE;
-SDL_bool framebuffer = SDL_FALSE;
+boolean consolevent = false;
+boolean framebuffer = false;
 UINT8 keyboard_started = false;
 
 #ifdef HAVE_TERMIOS
 // TERMIOS console code from Quake3: thank you!
-SDL_bool stdin_active = SDL_TRUE;
-
 typedef struct
 {
 	size_t cursor;
 	char buffer[256];
 } feild_t;
 
-feild_t tty_con;
+feild_t tty_con = {};
 
 // lock to prevent clearing partial lines, since not everything
 // printed ends on a newline.
@@ -282,8 +280,8 @@ static void I_ShutdownConsole(void)
 	if (consolevent)
 	{
 		I_OutputMsg("Shutdown tty console\n");
-		consolevent = SDL_FALSE;
-		tcsetattr (STDIN_FILENO, TCSADRAIN, &tty_tc);
+		consolevent = false;
+		tcsetattr(STDIN_FILENO, TCSADRAIN, &tty_tc);
 	}
 }
 
@@ -301,16 +299,18 @@ static void I_StartupConsole(void)
 	framebuffer = static_cast<SDL_bool>( M_CheckParm("-framebuffer"));
 
 	if (framebuffer)
-		consolevent = SDL_FALSE;
+		consolevent = false;
 
-	if (!consolevent) return;
+	if (!consolevent)
+		return;
 
 	if (isatty(STDIN_FILENO)!=1)
 	{
 		I_OutputMsg("stdin is not a tty, tty console mode failed\n");
-		consolevent = SDL_FALSE;
+		consolevent = false;
 		return;
 	}
+
 	memset(&tty_con, 0x00, sizeof(tty_con));
 	tcgetattr (0, &tty_tc);
 	tty_erase = tty_tc.c_cc[VERASE];
@@ -372,6 +372,7 @@ void I_GetConsoleEvents(void)
 				tty_con.buffer[tty_con.cursor] = '\0';
 				tty_Back();
 			}
+
 			ev.data1 = KEY_BACKSPACE;
 		}
 		else if (key < ' ') // check if this is a control char
@@ -387,7 +388,8 @@ void I_GetConsoleEvents(void)
 				// shut down, most unix programs behave this way
 				I_Quit();
 			}
-			else continue;
+			else
+				continue;
 		}
 		else if (tty_con.cursor < sizeof(tty_con.buffer))
 		{
@@ -397,7 +399,9 @@ void I_GetConsoleEvents(void)
 			// print the current line (this is differential)
 			write(STDOUT_FILENO, &key, 1);
 		}
-		if (ev.data1) D_PostEvent(&ev);
+
+		if (ev.data1)
+			D_PostEvent(&ev);
 		//tty_FlushIn();
 	}
 }
@@ -505,7 +509,7 @@ static void I_StartupConsole(void)
 	if (gotConsole)
 	{
 		SetConsoleTitleA("SRB2Kart Console");
-		consolevent = SDL_TRUE;
+		consolevent = true;
 	}
 
 	//Let get the real console HANDLE, because Mingw's Bash is bad!
@@ -538,7 +542,7 @@ static inline void I_StartupConsole(void)
 	framebuffer = M_CheckParm("-framebuffer");
 
 	if (framebuffer)
-		consolevent = SDL_FALSE;
+		consolevent = false;
 }
 static inline void I_ShutdownConsole(void){}
 #endif
@@ -723,12 +727,11 @@ static void JoyReset(SDLJoyInfo_t *JoySet)
 	JoySet->dev = NULL;
 	JoySet->oldjoy = -1;
 	JoySet->id = -1;
-	JoySet->axises = JoySet->buttons = JoySet->hats = JoySet->balls = 0;
 }
 
 /**	\brief SDL info about joystick
 */
-SDLJoyInfo_t JoyInfo[MAXSPLITSCREENPLAYERS];
+SDLJoyInfo_t JoyInfo[MAXSPLITSCREENPLAYERS] = {};
 INT32 numcontrollers = 0;
 
 //
@@ -736,30 +739,30 @@ INT32 numcontrollers = 0;
 //
 void I_JoyScale(void)
 {
-	Joystick[0].bGamepadStyle = cv_joyscale[0].value==0;
-	JoyInfo[0].scale = Joystick[0].bGamepadStyle?1:cv_joyscale[0].value;
+	Joystick[0].bGamepadStyle = cv_joyscale[0].value == 0;
+	JoyInfo[0].scale = Joystick[0].bGamepadStyle ? 1 : cv_joyscale[0].value;
 }
 
 void I_JoyScale2(void)
 {
-	Joystick[1].bGamepadStyle = cv_joyscale[1].value==0;
-	JoyInfo[1].scale = Joystick[1].bGamepadStyle?1:cv_joyscale[1].value;
+	Joystick[1].bGamepadStyle = cv_joyscale[1].value == 0;
+	JoyInfo[1].scale = Joystick[1].bGamepadStyle ? 1 : cv_joyscale[1].value;
 }
 
 void I_JoyScale3(void)
 {
-	Joystick[2].bGamepadStyle = cv_joyscale[2].value==0;
-	JoyInfo[2].scale = Joystick[2].bGamepadStyle?1:cv_joyscale[2].value;
+	Joystick[2].bGamepadStyle = cv_joyscale[2].value == 0;
+	JoyInfo[2].scale = Joystick[2].bGamepadStyle ? 1 : cv_joyscale[2].value;
 }
 
 void I_JoyScale4(void)
 {
-	Joystick[3].bGamepadStyle = cv_joyscale[3].value==0;
-	JoyInfo[3].scale = Joystick[3].bGamepadStyle?1:cv_joyscale[3].value;
+	Joystick[3].bGamepadStyle = cv_joyscale[3].value == 0;
+	JoyInfo[3].scale = Joystick[3].bGamepadStyle ? 1 : cv_joyscale[3].value;
 }
 
 // Cheat to get the device index for a joystick handle
-INT32 I_GetJoystickDeviceIndex(SDL_GameController *dev)
+static INT32 I_GetJoystickDeviceIndex(SDL_GameController *dev)
 {
 	SDL_Joystick *joystick = NULL;
 
@@ -882,13 +885,13 @@ static int joy_open(int playerIndex, int joyIndex)
 
 	if (SDL_WasInit(SDL_INIT_JOYSTICK) == 0)
 	{
-		CONS_Printf(M_GetText("Joystick subsystem not started\n"));
+		CONS_Printf("Joystick subsystem not started\n");
 		return -1;
 	}
 
 	if (SDL_WasInit(SDL_INIT_GAMECONTROLLER) == 0)
 	{
-		CONS_Printf(M_GetText("Game Controller subsystem not started\n"));
+		CONS_Printf("Game Controller subsystem not started\n");
 		return -1;
 	}
 
@@ -899,7 +902,7 @@ static int joy_open(int playerIndex, int joyIndex)
 
 	if (num_joy == 0)
 	{
-		CONS_Printf("%s", M_GetText("Found no joysticks on this system\n"));
+		CONS_Printf("%s", "Found no joysticks on this system\n");
 		return -1;
 	}
 
@@ -922,7 +925,7 @@ static int joy_open(int playerIndex, int joyIndex)
 			return SDL_CONTROLLER_AXIS_MAX;
 
 		// Else, we're changing devices, so send neutral joy events
-		CONS_Debug(DBG_GAMELOGIC, "Joystick1 device is changing; resetting events...\n");
+		CONS_Debug(DBG_GAMELOGIC, "Joystick %d device is changing; resetting events...\n", playerIndex+1);
 		I_ShutdownJoystick(playerIndex);
 	}
 
@@ -931,29 +934,15 @@ static int joy_open(int playerIndex, int joyIndex)
 
 	if (JoyInfo[playerIndex].dev == NULL)
 	{
-		CONS_Debug(DBG_GAMELOGIC, M_GetText("Joystick1: Couldn't open device - %s\n"), SDL_GetError());
+		CONS_Debug(DBG_GAMELOGIC, "Joystick %d: Couldn't open device - %s\n", playerIndex+1, SDL_GetError());
 		return -1;
 	}
-	else
-	{
-		CONS_Debug(DBG_GAMELOGIC, M_GetText("Joystick1: %s\n"), SDL_GameControllerName(JoyInfo[playerIndex].dev));
-		JoyInfo[playerIndex].axises = SDL_CONTROLLER_AXIS_MAX;
 
-		if (JoyInfo[playerIndex].axises > JOYAXISSET*2)
-			JoyInfo[playerIndex].axises = JOYAXISSET*2;
+	CONS_Debug(DBG_GAMELOGIC, "Joystick %d: %s\n", playerIndex+1, SDL_GameControllerName(JoyInfo[playerIndex].dev));
 
-		JoyInfo[playerIndex].buttons = SDL_CONTROLLER_BUTTON_MAX ; // dpad is 4 buttons
-		if (JoyInfo[playerIndex].buttons > JOYBUTTONS)
-			JoyInfo[playerIndex].buttons = JOYBUTTONS;
+	JoyInfo[playerIndex].id = I_GetJoystickDeviceIndex(JoyInfo[playerIndex].dev);
 
-		JoyInfo[playerIndex].hats = 4;
-		if (JoyInfo[playerIndex].hats > JOYHATS)
-			JoyInfo[playerIndex].hats = JOYHATS;
-
-		JoyInfo[playerIndex].balls = 0;
-
-		return JoyInfo[playerIndex].axises;
-	}
+	return SDL_CONTROLLER_AXIS_MAX;
 }
 
 //
@@ -998,7 +987,6 @@ void I_InitJoystick(UINT8 index)
 	JoyInfo[index].dev = NULL;
 	JoyInfo[index].oldjoy = -1;
 	JoyInfo[index].id = -1;
-	JoyInfo[index].axises = JoyInfo[index].buttons = JoyInfo[index].hats = JoyInfo[index].balls = 0;
 
 	if (cv_usejoystick[index].value)
 		newcontroller = SDL_GameControllerOpen(cv_usejoystick[index].value-1);
@@ -1229,7 +1217,7 @@ static void I_SetupMumble(void)
 void I_UpdateMumble(const mobj_t *mobj, const listener_t listener)
 {
 #ifdef HAVE_MUMBLE
-	double angle;
+	float angle;
 	fixed_t anglef;
 
 	if (!mumble)
@@ -1243,7 +1231,9 @@ void I_UpdateMumble(const mobj_t *mobj, const listener_t listener)
 	}
 	mumble->uiTick++;
 
-	if (!netgame || gamestate != GS_LEVEL) { // Zero out, but never delink.
+	// Zero out, but never delink.
+	if (!netgame || gamestate != GS_LEVEL)
+	{
 		mumble->fAvatarPosition[0] = mumble->fAvatarPosition[1] = mumble->fAvatarPosition[2] = 0.0f;
 		mumble->fAvatarFront[0] = 1.0f;
 		mumble->fAvatarFront[1] = mumble->fAvatarFront[2] = 0.0f;
@@ -1262,30 +1252,32 @@ void I_UpdateMumble(const mobj_t *mobj, const listener_t listener)
 
 	if (mobj)
 	{
-		mumble->fAvatarPosition[0] = FIXED_TO_FLOAT(mobj->x) / MUMBLEUNIT;
-		mumble->fAvatarPosition[1] = FIXED_TO_FLOAT(mobj->z) / MUMBLEUNIT;
-		mumble->fAvatarPosition[2] = FIXED_TO_FLOAT(mobj->y) / MUMBLEUNIT;
+		mumble->fAvatarPosition[0] = FixedToFloat(mobj->x) / MUMBLEUNIT;
+		mumble->fAvatarPosition[1] = FixedToFloat(mobj->z) / MUMBLEUNIT;
+		mumble->fAvatarPosition[2] = FixedToFloat(mobj->y) / MUMBLEUNIT;
 
 		anglef = AngleFixed(mobj->angle);
-		angle = FIXED_TO_FLOAT(anglef)*DEG2RAD;
-		mumble->fAvatarFront[0] = (float)cos(angle);
+		angle = (float)(FixedToFloat(anglef) * DEG2RAD);
+		mumble->fAvatarFront[0] = cosf(angle);
 		mumble->fAvatarFront[1] = 0.0f;
-		mumble->fAvatarFront[2] = (float)sin(angle);
-	} else {
+		mumble->fAvatarFront[2] = sinf(angle);
+	}
+	else
+	{
 		mumble->fAvatarPosition[0] = mumble->fAvatarPosition[1] = mumble->fAvatarPosition[2] = 0.0f;
 		mumble->fAvatarFront[0] = 1.0f;
 		mumble->fAvatarFront[1] = mumble->fAvatarFront[2] = 0.0f;
 	}
 
-	mumble->fCameraPosition[0] = FIXED_TO_FLOAT(listener.x) / MUMBLEUNIT;
-	mumble->fCameraPosition[1] = FIXED_TO_FLOAT(listener.z) / MUMBLEUNIT;
-	mumble->fCameraPosition[2] = FIXED_TO_FLOAT(listener.y) / MUMBLEUNIT;
+	mumble->fCameraPosition[0] = FixedToFloat(listener.x) / MUMBLEUNIT;
+	mumble->fCameraPosition[1] = FixedToFloat(listener.z) / MUMBLEUNIT;
+	mumble->fCameraPosition[2] = FixedToFloat(listener.y) / MUMBLEUNIT;
 
 	anglef = AngleFixed(listener.angle);
-	angle = FIXED_TO_FLOAT(anglef)*DEG2RAD;
-	mumble->fCameraFront[0] = (float)cos(angle);
+	angle = (float)(FixedToFloat(anglef) * DEG2RAD);
+	mumble->fCameraFront[0] = cosf(angle);
 	mumble->fCameraFront[1] = 0.0f;
-	mumble->fCameraFront[2] = (float)sin(angle);
+	mumble->fCameraFront[2] = sinf(angle);
 #else
 	(void)mobj;
 	(void)listener;
@@ -1378,7 +1370,7 @@ void I_SleepDuration(precise_t duration)
 #endif
 }
 
-static void I_PrintSignal(INT32 signal_num, boolean core_dumped, char *signal_msg);
+static void I_PrintSignal(INT32 signal_num, boolean core_dumped, char *signal_msg, char *signal_ttl);
 
 #ifdef HAVE_LIBBACKTRACE
 #include <backtrace.h>
@@ -1474,6 +1466,7 @@ static void bt_error_cb(void *data, const char *msg, int errnum)
 static void write_backtrace(bt_crash_reason_t reason)
 {
 	char sig_msg[512];
+	char sig_name[128];
 	const char *filename = va("%s" PATHSEP CRASH_LOGFILE_NAME, srb2home);
 	FILE *out = fopen(filename, "a+");
 
@@ -1530,8 +1523,8 @@ static void write_backtrace(bt_crash_reason_t reason)
 	switch (reason.type)
 	{
 		case BTCRASH_SIGNAL:
-			I_PrintSignal(reason.value.signal, false, sig_msg);
-			fprintf(out, "%s", sig_msg);
+			I_PrintSignal(reason.value.signal, false, sig_msg, sig_name);
+			fprintf(out, "%s - %s", sig_name, sig_msg);
 		break;
 
 		case BTCRASH_ERRORMSG:
@@ -1567,42 +1560,49 @@ static std::thread::id g_main_thread_id;
 
 boolean g_in_exiting_signal_handler = false;
 
-static void I_PrintSignal(INT32 signal_num, boolean core_dumped, char *signal_msg)
+static void I_PrintSignal(INT32 signal_num, boolean core_dumped, char *signal_msg, char *signal_name)
 {
-	const char *sigmsg;
+	const char *sigmsg, *signame;
 
 	switch (signal_num)
 	{
 #ifdef SIGINT
 		case SIGINT:
-			sigmsg = ("SIGINT - SRB2Kart-Saturn was interrupted prematurely by the user.");
+			sigmsg = ("SRB2Kart-Saturn was interrupted prematurely by the user.");
+			signame = "SIGINT";
 			break;
 #endif
 		case SIGILL: // illegal instruction - invalid function image
-			sigmsg = ("SIGILL - SRB2Kart-Saturn has attempted to execute an illegal instruction and needs to close.");
+			sigmsg = ("SRB2Kart-Saturn has attempted to execute an illegal instruction and needs to close.");
+			signame = "SIGILL";
 			break;
 		case SIGFPE: // mathematical exception
-			sigmsg = ("SIGFPE - SRB2Kart-Saturn has encountered a mathematical exception and needs to close.");
+			sigmsg = ("SRB2Kart-Saturn has encountered a mathematical exception and needs to close.");
+			signame = "SIGFPE";
 			break;
 		case SIGSEGV: // segment violation
-			sigmsg = ("SIGSEGV - SRB2Kart-Saturn has attempted to access a memory location that it shouldn't and needs to close.");
+			sigmsg = ("SRB2Kart-Saturn has attempted to access a memory location that it shouldn't and needs to close.");
+			signame = "SIGSEGV";
 			break;
 #ifdef SIGTERM
 		case SIGTERM: // Software termination signal from kill
-			sigmsg = ("SIGTERM - SRB2Kart-Saturn was terminated by a kill signal.");
+			sigmsg = ("SRB2Kart-Saturn was terminated by a kill signal.");
+			signame = "SIGTERM";
 			break;
 #endif
 #ifdef SIGBREAK
 		case SIGBREAK: // Ctrl-Break sequence
 			sigmsg =("SIGBREAK - SRB2Kart-Saturn was terminated by a Ctrl-Break sequence.");
+			signame = "SIGBREAK";
 			break;
 #endif
 		case SIGABRT: // abnormal termination triggered by abort call
-			sigmsg = ("SIGABRT - SRB2Kart-Saturn was terminated by an abort signal.");
+			sigmsg = ("SRB2Kart-Saturn was terminated by an abort signal.");
+			signame = "SIGABRT";
 			break;
 		default:
-			sprintf(signal_msg, "Signal number %d", signal_num);
-			sigmsg = (core_dumped ? "Unknown signal" : signal_msg);
+			sigmsg = "SRB2Kart-Saturn was terminated by an unknown signal.";
+			signame = core_dumped ? "Unknown signal" : va("Signal number %d", signal_num);
 			break;
 	}
 
@@ -1617,18 +1617,80 @@ static void I_PrintSignal(INT32 signal_num, boolean core_dumped, char *signal_ms
 	{
 		sprintf(signal_msg, "%s", sigmsg);
 	}
+
+	sprintf(signal_name, "%s", signame);
+}
+
+static int I_OpenURL(const char *url)
+{
+#if SDL_VERSION_ATLEAST(2,0,14)
+	return SDL_OpenURL(va("%s", url));
+#else
+	return -1;
+#endif
+}
+
+static void I_ShowErrorBox(const char *title, const char *msg)
+{
+	if (M_CheckParm("-dedicated"))
+		return;
+
+	const char *reportmsg = "\n\n\nTo help us figure out the cause, please report the issue to our github page with " CRASH_LOGFILE_NAME " attached.\n\nSorry for the inconvenience!";
+
+	const SDL_MessageBoxButtonData buttons[] = {
+		{ SDL_MESSAGEBOX_BUTTON_RETURNKEY_DEFAULT, 0,		"OK" },
+		{ 										0, 1,		"Report Issue" },
+	};
+
+	const SDL_MessageBoxData messageboxdata = {
+		SDL_MESSAGEBOX_ERROR, 			/* .flags */
+		NULL, 							/* .window */
+		title, 							/* .title */
+		va("%s %s", msg, reportmsg), 	/* .message */
+		SDL_arraysize(buttons), 		/* .numbuttons */
+		buttons, 						/* .buttons */
+		NULL 							/* .colorScheme */
+	};
+
+	int buttonid;
+
+	SDL_ShowMessageBox(&messageboxdata, &buttonid);
+
+	if (buttonid == 1)
+		I_OpenURL("https://github.com/Indev450/SRB2Kart-Saturn/issues");
+}
+
+static void I_ShowSimpleErrorBox(const char *title, char *msg)
+{
+	if (M_CheckParm("-dedicated"))
+		return;
+
+	// Implement message box with SDL_ShowSimpleMessageBox,
+	// which should fail gracefully if it can't put a message box up
+	// on the target system
+	SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, title, msg, NULL);
+	// Note that SDL_ShowSimpleMessageBox does *not* require SDL to be
+	// initialized at the time, so calling it after SDL_Quit() is
+	// perfectly okay! In addition, we do this on purpose so the
+	// fullscreen window is closed before displaying the error message
+	// in case the fullscreen window blocks it for some absurd reason.
 }
 
 static void I_ReportSignal(int num, int coredumped)
 {
 	char sigmsg[512];
+	char signame[128];
+	char sigttl[512] = "Process killed by signal: ";
 
-	I_PrintSignal(num, coredumped, sigmsg);
+	I_PrintSignal(num, coredumped, sigmsg, signame);
 
 	size_t len = strlen(sigmsg);
 	snprintf(sigmsg + len, sizeof(sigmsg) - len, "\n\nCrash report has been saved into %s", CRASH_LOGFILE_NAME);
-	I_OutputMsg("\nProcess killed by signal: %s\n\n", sigmsg);
-	SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Process killed by signal", sigmsg, NULL);
+
+	strcat(sigttl, signame);
+	I_OutputMsg("\n%s\n\n", sigttl);
+	//I_ShowSimpleErrorBox(sigttl, sigmsg);
+	I_ShowErrorBox(sigttl, sigmsg);
 }
 
 #ifndef NEWSIGNALHANDLER
@@ -1736,10 +1798,7 @@ FUNCNORETURN static ATTRNORETURN void newsignalhandler_Warn(const char *pr)
 	);
 
 	I_OutputMsg("%s\n", text);
-
-	SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR,
-		"Startup error",
-		text, NULL);
+	I_ShowSimpleErrorBox("Startup error", text);
 
 	I_ShutdownConsole();
 	exit(-1);
@@ -1841,17 +1900,20 @@ INT32 I_StartupSystem(void)
 	return 0;
 }
 
+boolean is_quitting = false;
+
 //
 // I_Quit
 //
 FUNCNORETURN void ATTRNORETURN I_Quit(void)
 {
-	static SDL_bool quiting = SDL_FALSE;
-
 	/* prevent recursive I_Quit() */
-	if (quiting) goto death;
+	if (is_quitting)
+		abort();
+
+	is_quitting = true;
 	SDL_ShowCursor(SDL_TRUE);
-	quiting = SDL_FALSE;
+
 	I_ShutdownConsole();
 	M_SaveConfig(NULL); //save game config, cvars..
 	D_SaveBan(); // save the ban list
@@ -1878,23 +1940,9 @@ FUNCNORETURN void ATTRNORETURN I_Quit(void)
 	}
 	if (myargmalloc)
 		free(myargv); // Deallocate allocated memory
-death:
+
 	W_Shutdown();
 	exit(0);
-}
-
-void I_WaitVBL(INT32 count)
-{
-	count = 1;
-	SDL_Delay(count);
-}
-
-void I_BeginRead(void)
-{
-}
-
-void I_EndRead(void)
-{
 }
 
 //
@@ -1912,6 +1960,7 @@ FUNCIERROR void ATTRNORETURN I_Error(const char *error, ...)
 {
 	va_list argptr;
 	char buffer[8192];
+	const char *sigttl = "";
 
 #ifdef HAVE_THREADS
 	if (std::this_thread::get_id() != g_main_thread_id)
@@ -1948,12 +1997,9 @@ FUNCIERROR void ATTRNORETURN I_Error(const char *error, ...)
 			va_start(argptr, error);
 			vsnprintf(buffer, 8192, error, argptr);
 			va_end(argptr);
-			// Implement message box with SDL_ShowSimpleMessageBox,
-			// which should fail gracefully if it can't put a message box up
-			// on the target system
-			SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR,
-				"SRB2Kart " VERSIONSTRING " Recursive Error",
-				buffer, NULL);
+
+			sigttl = "SRB2Kart " VERSIONSTRING " Recursive Error";
+			I_ShowSimpleErrorBox(sigttl, buffer);
 
 			W_Shutdown();
 			exit(-1); // recursive errors detected
@@ -1993,15 +2039,9 @@ FUNCIERROR void ATTRNORETURN I_Error(const char *error, ...)
 	I_ShutdownSystem();
 	SDL_Quit();
 
-	// Implement message box with SDL_ShowSimpleMessageBox,
-	// which should fail gracefully if it can't put a message box up
-	// on the target system
-	SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "SRB2Kart " VERSIONSTRING " Error", buffer, NULL);
-	// Note that SDL_ShowSimpleMessageBox does *not* require SDL to be
-	// initialized at the time, so calling it after SDL_Quit() is
-	// perfectly okay! In addition, we do this on purpose so the
-	// fullscreen window is closed before displaying the error message
-	// in case the fullscreen window blocks it for some absurd reason.
+	sigttl = "SRB2Kart " VERSIONSTRING " Error";
+	//I_ShowSimpleErrorBox(sigttl, buffer);
+	I_ShowErrorBox(sigttl, buffer);
 
 	W_Shutdown();
 
@@ -2318,12 +2358,17 @@ static void pathonly(char *s)
 	size_t j;
 
 	for (j = strlen(s); j != (size_t)-1; j--)
+	{
 		if ((s[j] == '\\') || (s[j] == ':') || (s[j] == '/'))
 		{
-			if (s[j] == ':') s[j+1] = 0;
-			else s[j] = 0;
+			if (s[j] == ':')
+				s[j+1] = 0;
+			else
+				s[j] = 0;
+
 			return;
 		}
+	}
 }
 
 /**	\brief	search for srb2.srb in the given path
@@ -2336,7 +2381,7 @@ static void pathonly(char *s)
 */
 static const char *searchWad(const char *searchDir)
 {
-	static char tempsw[MAX_WADPATH] = "";
+	static char tempsw[255] = "";
 	filestatus_t fstemp;
 
 	strcpy(tempsw, WADKEYWORD1);
@@ -2387,6 +2432,18 @@ static const char *locateWad(void)
 		return NULL;
 #endif
 
+#ifndef NOHOME
+#ifdef DEFAULTDIR
+	I_OutputMsg(",HOME/" DEFAULTDIR);
+	// examine user jart directory
+	if ((envstr = I_GetEnv("HOME")) != NULL)
+	{
+		sprintf(returnWadPath, "%s" PATHSEP DEFAULTDIR, envstr);
+		CHECKWADPATH(returnWadPath);
+	}
+#endif
+#endif
+
 #ifdef __APPLE__
 	OSX_GetResourcesPath(returnWadPath);
 	CHECKWADPATH(returnWadPath);
@@ -2399,20 +2456,6 @@ static const char *locateWad(void)
 		CHECKWADPATH(returnWadPath);
 	}
 
-#ifndef NOHOME
-	// find in $HOME
-	I_OutputMsg(",HOME/" DEFAULTDIR);
-	if ((envstr = I_GetEnv("HOME")) != NULL)
-	{
-		char *tmp = static_cast<char*>(malloc(strlen(envstr) + sizeof(PATHSEP) + sizeof(DEFAULTDIR)));
-		strcpy(tmp, envstr);
-		strcat(tmp, PATHSEP);
-		strcat(tmp, DEFAULTDIR);
-		CHECKWADPATH(tmp);
-		free(tmp);
-	}
-#endif
-
 	// search paths
 	for (i = 0; wadSearchPaths[i]; i++)
 	{
@@ -2424,9 +2467,9 @@ static const char *locateWad(void)
 	return NULL;
 }
 
-const char *I_LocateWad(void)
+extern "C" const char *I_LocateWad(void)
 {
-	const char *waddir;
+	const char *waddir = NULL;
 
 	I_OutputMsg("Looking for WADs in: ");
 	waddir = locateWad();
@@ -2444,6 +2487,7 @@ const char *I_LocateWad(void)
 			I_OutputMsg("Couldn't change working directory\n");
 #endif
 	}
+
 	return waddir;
 }
 

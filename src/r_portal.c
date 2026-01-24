@@ -21,16 +21,16 @@
 #include "r_things.h"
 #include "r_sky.h"
 
-UINT8 portalrender;			/**< When rendering a portal, it establishes the depth of the current BSP traversal. */
+UINT8 portalrender = 0; /**< When rendering a portal, it establishes the depth of the current BSP traversal. */
 
 // Linked list for portals.
-portal_t *portal_base, *portal_cap;
+portal_t *portal_base = NULL, *portal_cap = NULL;
 
-line_t *portalclipline;
-sector_t *portalcullsector;
-INT32 portalclipstart, portalclipend;
+line_t *portalclipline = NULL;
+sector_t *portalcullsector = NULL;
+INT32 portalclipstart = 0, portalclipend = 0;
 
-portal_t *g_portal; // is curline a portal seg?
+portal_t *g_portal = NULL; // is curline a portal seg?
 
 void Portal_InitList (void)
 {
@@ -220,21 +220,20 @@ static void Portal_ClipVisplane (const visplane_t* plane, portal_t* portal)
 	for (i = 0; i < end - start; i++)
 	{
 		// Invalid column.
-		if (plane->top[i + start] == 65535)
+		if (plane->top[i + start] == UINT16_MAX)
 		{
 			portal->ceilingclip[i] = -1;
 			portal->floorclip[i] = -1;
 			continue;
 		}
+
 		portal->ceilingclip[i] = plane->top[i + start] - 1;
 		portal->floorclip[i] = plane->bottom[i + start] + 1;
 		portal->frontscale[i] = INT32_MAX;
 	}
 }
 
-extern INT32 viewwidth;
-
-static boolean TrimVisplaneBounds (const visplane_t* plane, INT16* start, INT16* end)
+static boolean TrimVisplaneBounds(const visplane_t* plane, INT16* start, INT16* end)
 {
 	*start = plane->minx;
 	*end = plane->maxx + 1;
@@ -247,7 +246,6 @@ static boolean TrimVisplaneBounds (const visplane_t* plane, INT16* start, INT16*
 	if (!(*start < *end))
 		return true;
 
-
 	/** Trims a visplane's horizontal gap to match its render area.
 	 *
 	 * Visplanes' minx/maxx may sometimes exceed the area they're
@@ -255,13 +253,13 @@ static boolean TrimVisplaneBounds (const visplane_t* plane, INT16* start, INT16*
 	 * valid area.
 	 */
 
-	while (plane->bottom[*start] == 0 && plane->top[*start] == 65535 && *start < *end)
+	while (plane->bottom[*start] == 0 && plane->top[*start] == UINT16_MAX && *start < *end)
 	{
 		(*start)++;
 	}
 
 
-	while (plane->bottom[*end - 1] == 0 && plane->top[*start] == 65535 && *end > *start)
+	while (plane->bottom[*end - 1] == 0 && plane->top[*start] == UINT16_MAX && *end > *start)
 	{
 		(*end)--;
 	}

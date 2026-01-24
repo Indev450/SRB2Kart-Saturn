@@ -26,11 +26,11 @@
 
 #include "qs22j.h"
 
-seg_t *curline;
-side_t *sidedef;
-line_t *linedef;
-sector_t *frontsector;
-sector_t *backsector;
+seg_t  *curline = NULL;
+side_t *sidedef = NULL;
+line_t *linedef = NULL;
+sector_t *frontsector = NULL;
+sector_t *backsector = NULL;
 
 // very ugly realloc() of drawsegs at run-time, I upped it to 512
 // instead of 256.. and someone managed to send me a level with
@@ -40,29 +40,38 @@ drawseg_t *drawsegs = NULL;
 drawseg_t *ds_p = NULL;
 
 // indicates doors closed wrt automap bugfix:
-INT32 doorclosed;
+INT32 doorclosed = 0;
 
 // A wall was drawn covering the whole screen, which means we
 // can block off the BSP across that seg.
-boolean g_walloffscreen;
+boolean g_walloffscreen = false;
 
 boolean R_NoEncore(sector_t *sector, boolean ceiling)
 {
-	boolean invertencore = (GETSECSPECIAL(sector->special, 2) == 12 || GETSECSPECIAL(sector->special, 2) == 15); // keeping this incase its used
+	const INT32 invspecial = GETSECSPECIAL(sector->special, 2);
+	boolean invertencore = (invspecial == 12 || invspecial == 15); // keeping this incase its used
+
 #if 0 // perfect implementation
-	INT32 val = GETSECSPECIAL(sector->special, 3);
-	if (val != 1 && val != 3 // spring panel
+	const INT32 sprnspecial = GETSECSPECIAL(sector->special, 3);
+	if (sprnspecial != 1 && sprnspecial != 3 // spring panel
 #else // optimised, see #define GETSECSPECIAL(i,j) ((i >> ((j-1)*4))&15)
 	if ((!(sector->special & (1<<8)) || (sector->special & ((4|8)<<8))) // spring panel
 #endif
 		&& GETSECSPECIAL(sector->special, 4) != 6) // sneaker panel
-			return invertencore;
+	{
+		return invertencore;
+	}
 
 	if (invertencore)
+	{
 		return false;
+	}
 
 	if (ceiling)
+	{
 		return ((boolean)(sector->flags & SF_FLIPSPECIAL_CEILING));
+	}
+
 	return ((boolean)(sector->flags & SF_FLIPSPECIAL_FLOOR));
 }
 
@@ -313,9 +322,6 @@ static void R_AddLine(seg_t *line)
 
 	g_portal = NULL;
 
-	if (line->polyseg && !(line->polyseg->flags & POF_RENDERSIDES))
-		return;
-
 	// big room fix
 	angle1 = R_PointToAngle64(line->v1->x, line->v1->y);
 	angle2 = R_PointToAngle64(line->v2->x, line->v2->y);
@@ -491,7 +497,7 @@ clipsolid:
 // 0 | 0 | 1 | 2
 // 1 | 4 | 5 | 6
 // 2 | 8 | 9 | A
-INT32 checkcoord[12][4] =
+const INT32 checkcoord[12][4] =
 {
 	{3, 0, 2, 1},
 	{3, 0, 2, 0},
@@ -509,13 +515,15 @@ INT32 checkcoord[12][4] =
 static boolean R_CheckBBox(const fixed_t *bspcoord)
 {
 	angle_t angle1, angle2;
-	INT32 sx1, sx2, boxpos;
+	INT32 sx1, sx2;
 	const INT32* check;
 
 	// Find the corners of the box
 	// that define the edges from current viewpoint.
-	boxpos = (viewx <= bspcoord[BOXLEFT] ? 0 : viewx < bspcoord[BOXRIGHT ] ? 1 : 2) +
-	(viewy >= bspcoord[BOXTOP ] ? 0 : viewy > bspcoord[BOXBOTTOM] ? 4 : 8);
+	const INT32 boxpos = (viewx <= bspcoord[BOXLEFT]   ? 0 :
+						  viewx <  bspcoord[BOXRIGHT]  ? 1 : 2) +
+						 (viewy >= bspcoord[BOXTOP]    ? 0 :
+						  viewy >  bspcoord[BOXBOTTOM] ? 4 : 8);
 
 	if (boxpos == 5)
 		return true;
@@ -713,6 +721,8 @@ static void R_AddPolyObjects(subsector_t *sub)
 		po = (polyobj_t *)(po->link.next);
 	}
 
+	g_portal = NULL;
+
 	// for render stats
 	ps_numpolyobjects.value.i += numpolys;
 
@@ -723,8 +733,16 @@ static void R_AddPolyObjects(subsector_t *sub)
 	for (i = 0; i < numpolys; ++i)
 	{
 		qs22j(po_ptrs[i]->segs, po_ptrs[i]->segCount, sizeof(seg_t *), R_PolysegCompare);
+
 		for (j = 0; j < po_ptrs[i]->segCount; ++j)
-			R_AddLine(po_ptrs[i]->segs[j]);
+		{
+			seg_t *seg = po_ptrs[i]->segs[j];
+
+			if (!(seg->polyseg->flags & POF_RENDERSIDES))
+				continue;
+
+			R_AddLine(seg);
+		}
 	}
 }
 
@@ -796,7 +814,7 @@ static void R_Subsector(size_t num)
 		if (anyMoved == true)
 		{
 			frontsector->numlights = sub->sector->numlights = 0;
-			R_Prep3DFloors(frontsector);
+			R_Prep3DFloors(frontsector, ceilingcenterz);
 			sub->sector->lightlist = frontsector->lightlist;
 			sub->sector->numlights = frontsector->numlights;
 			sub->sector->moved = frontsector->moved = false;
@@ -1046,7 +1064,7 @@ static void R_Subsector(size_t num)
 //
 // This function creates the lightlists that the given sector uses to light
 // floors/ceilings/walls according to the 3D floors.
-void R_Prep3DFloors(sector_t *sector)
+void R_Prep3DFloors(sector_t *sector, fixed_t secceilz)
 {
 	ffloor_t *rover;
 	ffloor_t *best;
@@ -1072,13 +1090,13 @@ void R_Prep3DFloors(sector_t *sector)
 	if (count != sector->numlights)
 	{
 		Z_Free(sector->lightlist);
-		sector->lightlist = static_cast<lightlist_t*>(Z_Calloc(sizeof (*sector->lightlist) * count, PU_LEVEL, NULL));
+		sector->lightlist = static_cast<lightlist_t*>(Z_Malloc(sizeof(*sector->lightlist) * count, PU_LEVEL, NULL));
 		sector->numlights = count;
 	}
-	else
-		memset(sector->lightlist, 0, sizeof (lightlist_t) * count);
 
-	heighttest = P_GetSectorCeilingZAt(sector, sector->soundorg.x, sector->soundorg.y);
+	memset(sector->lightlist, 0, sizeof(lightlist_t) * count);
+
+	heighttest = secceilz; // sector ceiling z
 
 	sector->lightlist[0].height = heighttest + 1;
 	sector->lightlist[0].slope = sector->c_slope;
@@ -1108,6 +1126,7 @@ void R_Prep3DFloors(sector_t *sector)
 				bestslope = *rover->t_slope;
 				continue;
 			}
+
 			if (rover->flags & FF_DOUBLESHADOW)
 			{
 				heighttest = P_GetFFloorBottomZAt(rover, sector->soundorg.x, sector->soundorg.y);

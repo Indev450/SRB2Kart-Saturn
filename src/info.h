@@ -19,6 +19,8 @@
 #include "sounds.h"
 #include "m_fixed.h"
 
+#define MAXDOOMEDNUM 4095
+
 // dehacked.c now has lists for the more named enums! PLEASE keep them up to date!
 // For great modding!!
 

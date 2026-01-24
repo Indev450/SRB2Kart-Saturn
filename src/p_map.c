@@ -41,32 +41,32 @@
 
 #include "m_perfstats.h" // ps_checkposition_calls
 
-fixed_t tmbbox[4];
-mobj_t *tmthing;
+fixed_t tmbbox[4] = {};
+mobj_t *tmthing = NULL;
 static INT32 tmflags;
-fixed_t tmx;
-fixed_t tmy;
+fixed_t tmx = 0;
+fixed_t tmy = 0;
 
 // If "floatok" true, move would be ok
 // if within "tmfloorz - tmceilingz".
-boolean floatok;
+boolean floatok = false;
 
-fixed_t tmfloorz, tmceilingz;
-static fixed_t tmdropoffz, tmdrpoffceilz; // drop-off floor/ceiling heights
-mobj_t *tmfloorthing; // the thing corresponding to tmfloorz or NULL if tmfloorz is from a sector
-mobj_t *tmhitthing; // the solid thing you bumped into (for collisions)
-pslope_t *tmfloorslope, *tmceilingslope;
+fixed_t tmfloorz = 0, tmceilingz = 0;
+static fixed_t tmdropoffz = 0, tmdrpoffceilz = 0; // drop-off floor/ceiling heights
+mobj_t *tmfloorthing = NULL; // the thing corresponding to tmfloorz or NULL if tmfloorz is from a sector
+mobj_t *tmhitthing = NULL; // the solid thing you bumped into (for collisions)
+pslope_t *tmfloorslope = NULL, *tmceilingslope = NULL;
 
 // keep track of the line that lowers the ceiling,
 // so missiles don't explode against sky hack walls
-line_t *ceilingline;
+line_t *ceilingline = NULL;
 
 // set by PIT_CheckLine() for any line that stopped the PIT_CheckLine()
 // that is, for any line which is 'solid'
-line_t *blockingline;
+line_t *blockingline = NULL;
 
 msecnode_t *sector_list = NULL;
-camera_t *mapcampointer;
+camera_t *mapcampointer = NULL;
 
 //
 // TELEPORT MOVE
@@ -223,14 +223,7 @@ boolean P_DoSpring(mobj_t *spring, mobj_t *object)
 
 			if (!demo.playback || P_AnalogMove(object->player))
 			{
-				for (UINT8 j = 0; j <= splitscreen; ++j)
-				{
-					if (object->player == P_GetLocalPlayerForNum(j))
-					{
-						localangle[j] = spring->angle;
-						break;
-					}
-				}
+				P_ForceLocalAngle(object->player, spring->angle);
 			}
 		}
 

@@ -279,7 +279,6 @@ result_e T_MovePlane(sector_t *sector, fixed_t speed, fixed_t dest, boolean crus
 void T_MoveFloor(floormove_t *movefloor)
 {
 	result_e res = 0;
-	boolean dontupdate = false;
 
 	if (movefloor->delaytimer)
 	{
@@ -325,7 +324,6 @@ void T_MoveFloor(floormove_t *movefloor)
 					else
 						movefloor->floordestheight = lines[movefloor->texture].frontsector->floorheight;
 					movefloor->direction = (movefloor->floordestheight < movefloor->sector->floorheight) ? -1 : 1;
-					movefloor->sector->floorspeed = movefloor->speed * movefloor->direction;
 					movefloor->delaytimer = movefloor->delay;
 					movefloor->sector->moved = true;
 					return; // not break, why did this work? Graue 04-03-2004
@@ -341,7 +339,6 @@ void T_MoveFloor(floormove_t *movefloor)
 						movefloor->speed = movefloor->origspeed = FixedDiv(abs(lines[movefloor->texture].dx),4*FRACUNIT); // forward again, use dx
 					}
 					movefloor->direction = (movefloor->floordestheight < movefloor->sector->floorheight) ? -1 : 1;
-					movefloor->sector->floorspeed = movefloor->speed * movefloor->direction;
 					movefloor->delaytimer = movefloor->delay;
 					movefloor->sector->moved = true;
 					return; // not break, why did this work? Graue 04-03-2004
@@ -374,7 +371,6 @@ void T_MoveFloor(floormove_t *movefloor)
 					else
 						movefloor->floordestheight = lines[movefloor->texture].frontsector->floorheight;
 					movefloor->direction = (movefloor->floordestheight < movefloor->sector->floorheight) ? -1 : 1;
-					movefloor->sector->floorspeed = movefloor->speed * movefloor->direction;
 					movefloor->delaytimer = movefloor->delay;
 					movefloor->sector->moved = true;
 					return; // not break, why did this work? Graue 04-03-2004
@@ -390,14 +386,12 @@ void T_MoveFloor(floormove_t *movefloor)
 						movefloor->speed = movefloor->origspeed = FixedDiv(abs(lines[movefloor->texture].dx),4*FRACUNIT); // forward again, use dx
 					}
 					movefloor->direction = (movefloor->floordestheight < movefloor->sector->floorheight) ? -1 : 1;
-					movefloor->sector->floorspeed = movefloor->speed * movefloor->direction;
 					movefloor->delaytimer = movefloor->delay;
 					movefloor->sector->moved = true;
 					return; // not break, why did this work? Graue 04-03-2004
 				case crushFloorOnce:
 					movefloor->sector->floordata = NULL; // Clear up the thinker so others can use it
 					P_RemoveThinker(&movefloor->thinker);
-					movefloor->sector->floorspeed = 0;
 					movefloor->sector->moved = true;
 					return;
 				default:
@@ -406,14 +400,8 @@ void T_MoveFloor(floormove_t *movefloor)
 		}
 
 		movefloor->sector->floordata = NULL; // Clear up the thinker so others can use it
-		movefloor->sector->floorspeed = 0;
 		P_RemoveThinker(&movefloor->thinker);
-		dontupdate = true;
 	}
-	if (!dontupdate)
-		movefloor->sector->floorspeed = movefloor->speed*movefloor->direction;
-	else
-		movefloor->sector->floorspeed = 0;
 
 	movefloor->sector->moved = true;
 }
@@ -623,22 +611,13 @@ void T_MoveElevator(elevator_t *elevator)
 		{
 			elevator->sector->floordata = NULL;     //jff 2/22/98
 			elevator->sector->ceilingdata = NULL;   //jff 2/22/98
-			elevator->sector->ceilspeed = 0;
-			elevator->sector->floorspeed = 0;
 			P_RemoveThinker(&elevator->thinker);    // remove elevator from actives
 			dontupdate = true;
 		}
 	}
 
-	if (!dontupdate)
+	if (dontupdate)
 	{
-		elevator->sector->floorspeed = elevator->speed*elevator->direction;
-		elevator->sector->ceilspeed = 42;
-	}
-	else
-	{
-		elevator->sector->floorspeed = 0;
-		elevator->sector->ceilspeed = 0;
 		elevator->sector->floordata = NULL;
 		elevator->sector->ceilingdata = NULL;
 	}
@@ -695,8 +674,6 @@ void T_ContinuousFalling(levelspecthink_t *faller)
 		}
 	}
 
-	faller->sector->floorspeed = faller->speed*faller->direction;
-	faller->sector->ceilspeed = 42;
 	faller->sector->moved = true;
 #undef speed
 #undef direction
@@ -710,8 +687,7 @@ void T_ContinuousFalling(levelspecthink_t *faller)
 // P_SectorCheckWater
 //
 // Like P_MobjCheckWater, but takes a sector instead of a mobj.
-static fixed_t P_SectorCheckWater(sector_t *analyzesector,
-	sector_t *elevatorsec)
+static fixed_t P_SectorCheckWater(sector_t *analyzesector, sector_t *elevatorsec)
 {
 	fixed_t watertop;
 
@@ -767,9 +743,7 @@ void T_BounceCheese(levelspecthink_t *bouncer)
 	{
 		bouncer->sector->crumblestate = 1;
 		bouncer->sector->ceilingdata = NULL;
-		bouncer->sector->ceilspeed = 0;
 		bouncer->sector->floordata = NULL;
-		bouncer->sector->floorspeed = 0;
 		P_RemoveThinker(&bouncer->thinker); // remove bouncer from actives
 		return;
 	}
@@ -795,8 +769,6 @@ void T_BounceCheese(levelspecthink_t *bouncer)
 			T_MovePlane(bouncer->sector, 0, bouncer->sector->floorheight, 0, 0, -1); // update things on floor
 			bouncer->sector->ceilingdata = NULL;
 			bouncer->sector->floordata = NULL;
-			bouncer->sector->floorspeed = 0;
-			bouncer->sector->ceilspeed = 0;
 			bouncer->sector->moved = true;
 			P_RemoveThinker(&bouncer->thinker); // remove bouncer from actives
 			return;
@@ -810,8 +782,6 @@ void T_BounceCheese(levelspecthink_t *bouncer)
 			T_MovePlane(bouncer->sector, 0, bouncer->sector->floorheight, 0, 0, -1); // update things on floor
 			bouncer->sector->ceilingdata = NULL;
 			bouncer->sector->floordata = NULL;
-			bouncer->sector->floorspeed = 0;
-			bouncer->sector->ceilspeed = 0;
 			bouncer->sector->moved = true;
 			P_RemoveThinker(&bouncer->thinker); // remove bouncer from actives
 			return;
@@ -826,9 +796,6 @@ void T_BounceCheese(levelspecthink_t *bouncer)
 			70*FRACUNIT, 0, 1, -1); // move ceiling
 		T_MovePlane(bouncer->sector, bouncer->speed/2, bouncer->sector->floorheight - 70*FRACUNIT,
 			0, 0, -1); // move floor
-
-		bouncer->sector->floorspeed = -bouncer->speed/2;
-		bouncer->sector->ceilspeed = 42;
 
 		if (bouncer->sector->ceilingheight < bouncer->ceilingwasheight && bouncer->low == 0) // Down
 		{
@@ -878,9 +845,7 @@ void T_BounceCheese(levelspecthink_t *bouncer)
 			T_MovePlane(bouncer->sector, 0, bouncer->sector->ceilingheight, 0, 1, -1); // update things on ceiling
 			T_MovePlane(bouncer->sector, 0, bouncer->sector->floorheight, 0, 0, -1); // update things on floor
 			bouncer->sector->ceilingdata = NULL;
-			bouncer->sector->floordata = NULL;
-			bouncer->sector->floorspeed = 0;
-			bouncer->sector->ceilspeed = 0;
+			bouncer->sector->floordata = NULL;;
 			bouncer->sector->moved = true;
 			P_RemoveThinker(&bouncer->thinker);    // remove bouncer from actives
 		}
@@ -920,8 +885,6 @@ void T_StartCrumble(elevator_t *elevator)
 		|| (elevator->floordestheight == 0 && elevator->direction == 1))
 		&& elevator->type == elevateContinuous) // No return crumbler
 	{
-		elevator->sector->ceilspeed = 0;
-		elevator->sector->floorspeed = 0;
 		return;
 	}
 
@@ -934,9 +897,6 @@ void T_StartCrumble(elevator_t *elevator)
 				elevator->distance = -15*TICRATE; // Timer until platform returns to original position.
 			else
 			{
-				// Timer isn't up yet, so just keep waiting.
-				elevator->sector->ceilspeed = 0;
-				elevator->sector->floorspeed = 0;
 				return;
 			}
 		}
@@ -965,8 +925,6 @@ void T_StartCrumble(elevator_t *elevator)
 			else
 				elevator->direction = 1;
 
-			elevator->sector->ceilspeed = 0;
-			elevator->sector->floorspeed = 0;
 			return;
 		}
 
@@ -1050,9 +1008,6 @@ void T_StartCrumble(elevator_t *elevator)
 					0,                        // move ceiling
 					elevator->direction
 				);
-
-				elevator->sector->ceilspeed = 42;
-				elevator->sector->floorspeed = elevator->speed*elevator->direction;
 			}
 		}
 	}
@@ -1063,8 +1018,6 @@ void T_StartCrumble(elevator_t *elevator)
 		elevator->sector->floorheight = elevator->floorwasheight;
 		elevator->sector->floordata = NULL;
 		elevator->sector->ceilingdata = NULL;
-		elevator->sector->ceilspeed = 0;
-		elevator->sector->floorspeed = 0;
 		elevator->sector->moved = true;
 		P_RemoveThinker(&elevator->thinker);
 	}
@@ -1121,8 +1074,6 @@ void T_MarioBlock(levelspecthink_t *block)
 		P_RemoveThinker(&block->thinker);
 		block->sector->floordata = NULL;
 		block->sector->ceilingdata = NULL;
-		block->sector->floorspeed = 0;
-		block->sector->ceilspeed = 0;
 	}
 
 	for (i = -1; (i = P_FindSectorFromTag((INT16)block->vars[0], i)) >= 0 ;)
@@ -1365,8 +1316,6 @@ wegotit:
 		{
 			bridge->sector->floorheight = LOWCEILINGHEIGHT - (bridge->sector->ceilingheight - bridge->sector->floorheight);
 			bridge->sector->ceilingheight = LOWCEILINGHEIGHT;
-			bridge->sector->ceilspeed = 0;
-			bridge->sector->floorspeed = 0;
 			goto dorest;
 		}
 
@@ -1422,9 +1371,6 @@ wegotit:
 				DIRECTION         // direction
 			);
 
-		bridge->sector->ceilspeed = 42;
-		bridge->sector->floorspeed = CURSPEED*DIRECTION;
-
 	dorest:
 		// Adjust joined sector heights
 		{
@@ -1463,8 +1409,6 @@ wegotit:
 							{
 								bridge->sector->floorheight = ORIGCEILINGHEIGHT - (bridge->sector->ceilingheight - bridge->sector->floorheight);
 								bridge->sector->ceilingheight = ORIGCEILINGHEIGHT;
-								bridge->sector->ceilspeed = 0;
-								bridge->sector->floorspeed = 0;
 								continue;
 							}
 
@@ -1519,9 +1463,6 @@ wegotit:
 									0,                          // floor or ceiling (0 for floor)
 									DIRECTION         // direction
 								);
-
-							bridge->sector->ceilspeed = 42;
-							bridge->sector->floorspeed = CURSPEED*DIRECTION;
 						}
 					}
 				}
@@ -1558,8 +1499,6 @@ wegotit:
 							{
 								bridge->sector->floorheight = ORIGCEILINGHEIGHT - (bridge->sector->ceilingheight - bridge->sector->floorheight);
 								bridge->sector->ceilingheight = ORIGCEILINGHEIGHT;
-								bridge->sector->ceilspeed = 0;
-								bridge->sector->floorspeed = 0;
 								continue;
 							}
 
@@ -1614,9 +1553,6 @@ wegotit:
 									0,                          // floor or ceiling (0 for floor)
 									DIRECTION         // direction
 								);
-
-							bridge->sector->ceilspeed = 42;
-							bridge->sector->floorspeed = CURSPEED*DIRECTION;
 						}
 					}
 				}
@@ -1642,8 +1578,6 @@ wegotit:
 				{
 					bridge->sector->floorheight = ORIGCEILINGHEIGHT - (bridge->sector->ceilingheight - bridge->sector->floorheight);
 					bridge->sector->ceilingheight = ORIGCEILINGHEIGHT;
-					bridge->sector->ceilspeed = 0;
-					bridge->sector->floorspeed = 0;
 					continue;
 				}
 
@@ -1698,9 +1632,6 @@ wegotit:
 						0,                          // floor or ceiling (0 for floor)
 						DIRECTION         // direction
 					);
-
-				bridge->sector->ceilspeed = 42;
-				bridge->sector->floorspeed = CURSPEED*DIRECTION;
 			}
 		}
 		// Update precip
@@ -1875,9 +1806,6 @@ void T_ThwompSector(levelspecthink_t *thwomp)
 
 		if (res == pastdest)
 			thwomp->direction = 0; // stop moving
-
-		thwomp->sector->ceilspeed = 42;
-		thwomp->sector->floorspeed = thwomp->speed*thwomp->direction;
 	}
 	else if (thwomp->direction < 0) // Crashing down!
 	{
@@ -1932,16 +1860,10 @@ void T_ThwompSector(levelspecthink_t *thwomp)
 			thwomp->direction = 1; // start heading back up
 			thwomp->distance = TICRATE; // but only after a small delay
 		}
-
-		thwomp->sector->ceilspeed = 42;
-		thwomp->sector->floorspeed = thwomp->speed*thwomp->direction;
 	}
 	else // Not going anywhere, so look for players.
 	{
 		thwomp->direction = -1;
-
-		thwomp->sector->ceilspeed = 0;
-		thwomp->sector->floorspeed = 0;
 	}
 
 	actionsector->moved = true;
@@ -2355,8 +2277,6 @@ void T_RaiseSector(levelspecthink_t *raise)
 			{
 				raise->sector->floorheight = raise->vars[7] - (raise->sector->ceilingheight - raise->sector->floorheight);
 				raise->sector->ceilingheight = raise->vars[7];
-				raise->sector->ceilspeed = 0;
-				raise->sector->floorspeed = 0;
 				return;
 			}
 
@@ -2370,8 +2290,6 @@ void T_RaiseSector(levelspecthink_t *raise)
 			{
 				raise->sector->floorheight = raise->vars[5] - (raise->sector->ceilingheight - raise->sector->floorheight);
 				raise->sector->ceilingheight = raise->vars[5];
-				raise->sector->ceilspeed = 0;
-				raise->sector->floorspeed = 0;
 				return;
 			}
 
@@ -2390,8 +2308,6 @@ void T_RaiseSector(levelspecthink_t *raise)
 			{
 				raise->sector->floorheight = raise->vars[5] - (raise->sector->ceilingheight - raise->sector->floorheight);
 				raise->sector->ceilingheight = raise->vars[5];
-				raise->sector->ceilspeed = 0;
-				raise->sector->floorspeed = 0;
 				return;
 			}
 			raise->vars[8] = 1;
@@ -2404,8 +2320,6 @@ void T_RaiseSector(levelspecthink_t *raise)
 			{
 				raise->sector->floorheight = raise->vars[7] - (raise->sector->ceilingheight - raise->sector->floorheight);
 				raise->sector->ceilingheight = raise->vars[7];
-				raise->sector->ceilspeed = 0;
-				raise->sector->floorspeed = 0;
 				return;
 			}
 			raise->vars[8] = -1;
@@ -2459,9 +2373,6 @@ void T_RaiseSector(levelspecthink_t *raise)
 			0,                          // floor or ceiling (0 for floor)
 			raise->vars[8]         // direction
 		);
-
-	raise->sector->ceilspeed = 42;
-	raise->sector->floorspeed = raise->vars[3]*raise->vars[8];
 
 	for (i = -1; (i = P_FindSectorFromTag(raise->sourceline->tag, i)) >= 0 ;)
 		sectors[i].moved = true;

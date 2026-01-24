@@ -568,7 +568,7 @@ static patch_t *kp_racefinish[6];
 static patch_t *kp_positionnum[NUMPOSNUMS][NUMPOSFRAMES];
 static patch_t *kp_winnernum[NUMPOSFRAMES];
 
-static patch_t *kp_facenum[MAXPLAYERS+1];
+patch_t *kp_facenum[MAXPLAYERS+1] = {};
 static patch_t *kp_facehighlight[8];
 
 static patch_t *kp_rankbumper;
@@ -1065,7 +1065,7 @@ static void K_initKartHUD(void)
 	}
 
 	if (timeinmap > 113 || forceshowhud)
-		hudtrans = cv_translucenthud.value;
+		hudtrans = (UINT8)cv_translucenthud.value;
 	else if (timeinmap > 105)
 		hudtrans = ((((INT32)timeinmap) - 105)*cv_translucenthud.value)/(113-105);
 	else
@@ -1076,12 +1076,55 @@ static void K_initKartHUD(void)
 	R_InterpolateView(R_GetTimeFrac(RTF_CAMERA), !cv_uncappedhud.value);
 }
 
+void K_KartPlayerHUDUpdate(player_t *player)
+{
+	if (player->kartstuff[k_lapanimation])
+		player->kartstuff[k_lapanimation]--;
+
+	if (player->kartstuff[k_yougotem])
+		player->kartstuff[k_yougotem]--;
+
+	if (G_BattleGametype() && (player->exiting || player->kartstuff[k_comebacktimer]))
+	{
+		if (player->exiting)
+		{
+			if (player->exiting < 6*TICRATE)
+				player->kartstuff[k_cardanimation] += ((164-player->kartstuff[k_cardanimation])/8)+1;
+			else if (player->exiting == 6*TICRATE)
+				player->kartstuff[k_cardanimation] = 0;
+			else if (player->kartstuff[k_cardanimation] < 2*TICRATE)
+				player->kartstuff[k_cardanimation]++;
+		}
+		else
+		{
+			if (player->kartstuff[k_comebacktimer] < 6*TICRATE)
+				player->kartstuff[k_cardanimation] -= ((164-player->kartstuff[k_cardanimation])/8)+1;
+			else if (player->kartstuff[k_comebacktimer] < 9*TICRATE)
+				player->kartstuff[k_cardanimation] += ((164-player->kartstuff[k_cardanimation])/8)+1;
+		}
+
+		if (player->kartstuff[k_cardanimation] > 164)
+			player->kartstuff[k_cardanimation] = 164;
+		if (player->kartstuff[k_cardanimation] < 0)
+			player->kartstuff[k_cardanimation] = 0;
+	}
+	else if (G_RaceGametype() && player->exiting)
+	{
+		if (player->kartstuff[k_cardanimation] < 2*TICRATE)
+			player->kartstuff[k_cardanimation]++;
+	}
+	else
+	{
+		player->kartstuff[k_cardanimation] = 0;
+	}
+}
+
 UINT8 K_GetHudColor(void)
 {
 	if (cv_colorizedhud.value && cv_colorizedhudcolor.value)
-		return cv_colorizedhudcolor.value;
+		return (UINT8)cv_colorizedhudcolor.value;
 
-	return ((stplyr && gamestate == GS_LEVEL) ? stplyr->skincolor : cv_playercolor.value);
+	return ((stplyr && gamestate == GS_LEVEL) ? stplyr->skincolor : (UINT8)cv_playercolor.value);
 }
 
 boolean K_UseColorHud(void)
@@ -1483,7 +1526,7 @@ static void K_drawKartItem(void)
 	{
 		localcolor = K_GetHudColor();
 
-		switch((stplyr->kartstuff[k_itemroulette] % (14*3)) / 3)
+		switch ((stplyr->kartstuff[k_itemroulette] % (14*3)) / 3)
 		{
 			// Each case is handled in threes, to give three frames of in-game time to see the item on the roulette
 			case 0: // Sneaker
@@ -2152,7 +2195,7 @@ static boolean K_drawKartPositionFaces(void)
 		return true;
 
 	if (!LUA_HudEnabled(hud_minirankings))
-		return false;	// Don't proceed but still return true for free play above if HUD is disabled.
+		return false; // Don't proceed but still return true for free play above if HUD is disabled.
 
 	for (j = 0; j < numplayersingame; j++)
 	{
@@ -2860,7 +2903,7 @@ static boolean K_GetScreenCoords(vector2_t *vec, player_t *player, mobj_t *targe
 
 	// X coordinate
 	// get difference between camangle and angle towards target
-	x = (INT32)viewangle - (INT32)R_PointToAngle(targx, targy);
+	x = (fixed_t)(viewangle - R_PointToAngle(targx, targy));
 
 	distfact = FINECOSINE((x>>ANGLETOFINESHIFT) & FINEMASK);
     if (!distfact) distfact = 1;
@@ -4387,8 +4430,10 @@ static void K_drawLapStartAnim(void)
 	UINT8 *colormap = R_GetTranslationColormap(TC_DEFAULT, K_GetHudColor(), GTC_CACHE);
 	INT32 vflags = V_SNAPTOTOP|V_HUDTRANS;
 
-	fixed_t slideout = max(0, 32*(((progress - 76)*FRACUNIT) + R_GetTimeFrac(RTF_LEVEL)));
-	fixed_t slidein = max(0, 32*(((stplyr->kartstuff[k_lapanimation] - 76)*FRACUNIT) - R_GetTimeFrac(RTF_LEVEL)));
+	fixed_t slideout = 32*(((progress - 76)*FRACUNIT) + R_GetTimeFrac(RTF_LEVEL));
+	slideout = max(0, slideout);
+	fixed_t slidein = 32*(((stplyr->kartstuff[k_lapanimation] - 76)*FRACUNIT) - R_GetTimeFrac(RTF_LEVEL));
+	slidein = max(0, slidein);
 
 	// First, draw the emblem and hand
 	INT32 emblemx = (BASEVIDWIDTH << (FRACBITS - 1)) + slidein;
@@ -4423,7 +4468,9 @@ static void K_drawLapStartAnim(void)
 		V_DrawFixedPatch(leftx, y, FRACUNIT, vflags, kp_lapanim_lap[min(progress/2, 6)], NULL);
 
 		char *lapnum = va("%02d", stplyr->laps + 1);
-		for (int i = 0; i < (int)strlen(lapnum); i++)
+		const size_t laplength = strlen(lapnum);
+
+		for (int i = 0; i < (int)laplength; i++)
 		{
 			int digit = lapnum[i] - '0';
 			int frame = min(2, progress/2 - 8 - (i*2));

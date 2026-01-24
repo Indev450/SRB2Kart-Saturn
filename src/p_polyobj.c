@@ -90,14 +90,14 @@
 //
 
 // The Polyobjects
-polyobj_t *PolyObjects;
-INT32 numPolyObjects;
+polyobj_t *PolyObjects = NULL;
+INT32 numPolyObjects = 0;
 
 // Polyobject Blockmap -- initialized in P_LoadBlockMap
-polymaplink_t **polyblocklinks;
+polymaplink_t **polyblocklinks = NULL;
 
-static size_t *KnownPolySides;
-static size_t KnownPolySidesCount;
+static size_t *KnownPolySides = NULL;
+static size_t KnownPolySidesCount = 0;
 
 //
 // Static Data
@@ -1383,13 +1383,9 @@ static void Polyobj_rotateThings(polyobj_t *po, vector2_t origin, angle_t delta,
 					{
 						mo->angle += delta;
 
-						for (UINT8 i = 0; i <= splitscreen; i++)
+						if (mo->player)
 						{
-							if (mo->player == P_GetLocalPlayerForNum(i))
-							{
-								localangle[i] += delta;
-								break;
-							}
+							P_ForceLocalAngle(mo->player, P_GetLocalAngle(mo->player) + delta);
 						}
 					}
 				}

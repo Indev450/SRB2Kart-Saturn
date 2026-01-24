@@ -55,6 +55,8 @@
 #include "k_stats.h" // SRB2kart
 #include "r_fps.h" // frame interpolation/uncapped
 
+#include <errno.h>
+
 #ifdef HAVE_DISCORDRPC
 #include "discord.h"
 #endif
@@ -68,19 +70,19 @@ UINT8  numDemos      = 0; //3; -- i'm FED UP of losing my skincolour to a broken
 UINT32 demoDelayTime = 15*TICRATE;
 UINT32 demoIdleTime  = 3*TICRATE;
 
-boolean nodrawers; // for comparative timing purposes
-boolean noblit; // for comparative timing purposes
+boolean nodrawers = false; // for comparative timing purposes
+boolean noblit = false; // for comparative timing purposes
 static tic_t demostarttime; // for comparative timing purposes
 
 //@TODO put these all in a struct for namespacing purposes?
 static char demoname[128];
-savebuffer_t demobuf = {0};
+savebuffer_t demobuf = {};
 static UINT8 *demotime_p, *demoinfo_p;
 static UINT8 *demoend;
 static UINT8 demoflags;
 static boolean demosynced = true; // console warning message
 
-struct demovars_s demo;
+struct demovars_s demo = {};
 
 consvar_t cv_resyncdemo = {"resyncdemo", "On", 0, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
@@ -246,10 +248,12 @@ void G_ReadDemoExtraData(void)
 	{
 		extradata = READUINT8(demobuf.p);
 
+		player_t *player = &players[p];
+
 		if (extradata & DXD_RESPAWN)
 		{
-			if (players[p].mo)
-				P_DamageMobj(players[p].mo, NULL, NULL, DMG_INSTAKILL); // Is this how this should work..?
+			if (player->mo)
+				P_DamageMobj(player->mo, NULL, NULL, DMG_INSTAKILL); // Is this how this should work..?
 		}
 
 		if (extradata & DXD_SKIN)
@@ -264,11 +268,11 @@ void G_ReadDemoExtraData(void)
 			kartspeed = READUINT8(demobuf.p);
 			kartweight = READUINT8(demobuf.p);
 
-			if (!fasticmp(skins[players[p].skin].name, name))
+			if (!fasticmp(skins[player->skin].name, name))
 				FindClosestSkinForStats(p, kartspeed, kartweight);
 
-			players[p].kartspeed = kartspeed;
-			players[p].kartweight = kartweight;
+			player->kartspeed = kartspeed;
+			player->kartweight = kartweight;
 		}
 
 		if (extradata & DXD_COLOR)
@@ -279,9 +283,9 @@ void G_ReadDemoExtraData(void)
 			for (i = 0; i < MAXSKINCOLORS; i++)
 				if (fasticmp(KartColor_Names[i], name)) // SRB2kart
 				{
-					players[p].skincolor = i;
-					if (players[p].mo)
-						players[p].mo->color = i;
+					player->skincolor = i;
+					if (player->mo)
+						player->mo->color = i;
 					break;
 				}
 		}
@@ -300,17 +304,17 @@ void G_ReadDemoExtraData(void)
 			switch (extradata)
 			{
 				case DXD_PST_PLAYING:
-					players[p].pflags |= PF_WANTSTOJOIN; // fuck you
+					player->pflags |= PF_WANTSTOJOIN; // fuck you
 					break;
 				case DXD_PST_SPECTATING:
-					players[p].pflags &= ~PF_WANTSTOJOIN; // double-fuck you
+					player->pflags &= ~PF_WANTSTOJOIN; // double-fuck you
 
 					if (!playeringame[p])
 					{
 						CL_ClearPlayer(p);
 						playeringame[p] = true;
 						G_AddPlayer(p);
-						players[p].spectator = true;
+						player->spectator = true;
 
 						// There's likely an off-by-one error in timing recording or playback of joins. This hacks around it so I don't have to find out where that is. \o/
 						if (oldcmd[p].forwardmove)
@@ -318,11 +322,11 @@ void G_ReadDemoExtraData(void)
 					}
 					else
 					{
-						players[p].spectator = true;
-						if (players[p].mo)
-							P_DamageMobj(players[p].mo, NULL, NULL, DMG_INSTAKILL);
+						player->spectator = true;
+						if (player->mo)
+							P_DamageMobj(player->mo, NULL, NULL, DMG_INSTAKILL);
 						else
-							players[p].playerstate = PST_REBORN;
+							player->playerstate = PST_REBORN;
 					}
 					break;
 				case DXD_PST_LEFT:
@@ -330,7 +334,7 @@ void G_ReadDemoExtraData(void)
 					break;
 			}
 
-			G_ResetViews();
+			G_ResetViews(false); // dont reset our freecam pls thx!
 
 			// maybe these are necessary?
 			if (G_BattleGametype())
@@ -484,6 +488,7 @@ void G_ReadDemoTiccmd(ticcmd_t *cmd, INT32 playernum)
 
 	G_CopyTiccmd(cmd, &oldcmd[playernum], 1);
 
+	// what in the actual fuck is this???
 	// SRB2kart: Copy-pasted from ticcmd building, removes that crappy demo cam
 	if (((players[displayplayers[0]].mo && players[displayplayers[0]].speed > 0) // Moving
 		|| (leveltime > starttime && (cmd->buttons & BT_ACCELERATE && cmd->buttons & BT_BRAKE)) // Rubber-burn turn
@@ -1131,7 +1136,29 @@ void G_GhostTicker(void)
 	for (g = ghosts, p = NULL; g; g = g->next)
 	{
 		// Skip normal demo data.
-		UINT8 ziptic = READUINT8(g->p);
+		UINT8 ziptic;
+
+		if (g->done)
+		{
+			continue;
+		}
+
+		ziptic = READUINT8(g->p);
+
+fadeghost:
+		// Demo ends after ghost data.
+		if (ziptic == DEMOMARKER)
+		{
+			g->mo->momx = g->mo->momy = g->mo->momz = 0;
+
+			g->done = true;
+			if (p)
+			{
+				p->next = g->next;
+			}
+
+			continue;
+		}
 
 #ifdef DEMO_COMPAT_100
 		if (g->version != 0x0001)
@@ -1139,8 +1166,14 @@ void G_GhostTicker(void)
 #endif
 		while (ziptic != DW_END) // Get rid of extradata stuff
 		{
-			if (ziptic == 0) // Only support player 0 info for now
+			if (ziptic < MAXPLAYERS)
 			{
+#ifdef DEVELOP
+				UINT8 playerid = ziptic;
+#endif
+				// We want to skip *any* player extradata because some demos have extradata for bogus players,
+				// but if there is tic data later for those players *then* we'll consider it invalid.
+
 				ziptic = READUINT8(g->p);
 
 				if (ziptic & DXD_SKIN)
@@ -1152,13 +1185,26 @@ void G_GhostTicker(void)
 				if (ziptic & DXD_NAME)
 					g->p += 16; // yea
 
-				if (ziptic & DXD_PLAYSTATE && READUINT8(g->p) != DXD_PST_PLAYING)
-					I_Error("Ghost is not a record attack ghost"); //@TODO lmao don't blow up like this
+				if (ziptic & DXD_PLAYSTATE)
+				{
+					UINT8 playstate = READUINT8(g->p);
+					if (playstate != DXD_PST_PLAYING)
+					{
+#ifdef DEVELOP
+						CONS_Alert(CONS_WARNING, "Ghost demo has non-playing playstate for player %d\n", playerid + 1);
+#endif
+						;
+					}
+				}
 			}
 			else if (ziptic == DW_RNG)
+			{
 				g->p += 4; // RNG seed
+			}
 			else
-				I_Error("Ghost is not a record attack ghost"); //@TODO lmao don't blow up like this
+			{
+				I_Error("Ghost is not a record attack ghost DXD (ziptic = %u)", ziptic); //@TODO lmao don't blow up like this
+			}
 
 			ziptic = READUINT8(g->p);
 		}
@@ -1181,7 +1227,7 @@ void G_GhostTicker(void)
 		if (ziptic & ZT_DRIFT)
 			g->p += 2;
 		if (ziptic & ZT_LATENCY)
-			g->p += 1;
+			g->p++;
 
 		// Grab ghost data.
 		ziptic = READUINT8(g->p);
@@ -1190,10 +1236,12 @@ void G_GhostTicker(void)
 		if (g->version != 0x0001)
 		{
 #endif
+		if (ziptic == DEMOMARKER) // Had to end early for some reason
+			goto fadeghost;
 		if (ziptic == 0xFF)
 			goto skippedghosttic; // Didn't write ghost info this frame
-		else if (ziptic != 0)
-			I_Error("Ghost is not a record attack ghost"); //@TODO lmao don't blow up like this
+		if (ziptic != 0)
+			I_Error("Ghost is not a record attack ghost ZIPTIC"); //@TODO lmao don't blow up like this
 		ziptic = READUINT8(g->p);
 #ifdef DEMO_COMPAT_100
 		}
@@ -1364,7 +1412,7 @@ void G_GhostTicker(void)
 		{
 #endif
 		if (READUINT8(g->p) != 0xFF) // Make sure there isn't other ghost data here.
-			I_Error("Ghost is not a record attack ghost"); //@TODO lmao don't blow up like this
+			I_Error("Ghost is not a record attack ghost GHOSTEND"); //@TODO lmao don't blow up like this
 #ifdef DEMO_COMPAT_100
 		}
 #endif
@@ -1382,20 +1430,6 @@ skippedghosttic:
 				break;
 			default:
 				break;
-		}
-
-		// Demo ends after ghost data.
-		if (*g->p == DEMOMARKER)
-		{
-			g->mo->momx = g->mo->momy = g->mo->momz = 0;
-
-			if (p)
-				p->next = g->next;
-			else
-				ghosts = g->next;
-
-			Z_Free(g);
-			continue;
 		}
 
 		p = g;
@@ -1592,7 +1626,7 @@ void G_ConfirmRewind(tic_t rewindtime)
 	displayplayers[2] = olddp3;
 	displayplayers[3] = olddp4;
 	R_ExecuteSetViewSize();
-	G_ResetViews();
+	G_ResetViews(true);
 
 	for (i = splitscreen; i >= 0; i--)
 		P_ResetCamera(&players[displayplayers[i]], &camera[i]);
@@ -2369,49 +2403,69 @@ static long G_GetCreationTime(char *filepath)
 
 static char *G_GetDemoDate(menudemo_t *pdemo)
 {
-	char *datetime;
-	datetime = malloc(sizeof(pdemo->date)); // mallocma balls
-
-	// no mallocma balls... :c
-	if (!datetime)
-	{
-		return NULL;
-	}
-
+	char *endPos = NULL;
+	static char datetime[11];
 	time_t file_time = 0;
+	const char *format = NULL;
+	struct tm *tm_buf = NULL;
+	CLEANUP(pfree) char *filename = NULL;
 
 	// get le filepath
-	char *filename;
 	filename = strdup(pdemo->filepath);
 
-#if defined (_WIN32)
 	if (!filename)
 	{
-		// if we cant get a filename try just getting the file create time
+#if defined (_WIN32)
+		// if we cant get a filename try just getting the file creation time
 		file_time = G_GetCreationTime(pdemo->filepath);
 		goto skipfilenametime;
-	}
 #else
-	if (!filename)
-	{
-		free(datetime);
 		return NULL;
-	}
 #endif
+	}
 
 	// get the actual filename Zzz...
 	nameonly(filename);
 
-	// convert it to long Zzz....
-	file_time = strtol(filename, NULL, 10);
-	free(filename); // dont need this anymore a
+	// the first 10 characters of a replay name usually is a unix timestamp
+
+	// not long enough to contain a valid timestamp
+	if (strlen(filename) < 10)
+	{
+#if defined (_WIN32)
+		// try to get file creation time
+		file_time = G_GetCreationTime(pdemo->filepath);
+		goto skipfilenametime;
+#else
+		return NULL;
+#endif
+	}
+
+#ifndef AVOID_ERRNO
+	errno = 0;
+#endif
+	// get the timestamp as actual numbers lul
+	file_time = strtol(filename, &endPos, 10);
+
+	if (endPos == filename // Empty string
+#ifndef AVOID_ERRNO
+		|| errno == ERANGE // Number out-of-range
+#endif
+		|| file_time < 0) // Number is not positive
+	{
+#if defined (_WIN32)
+		// just try and get the creation time then
+		file_time = G_GetCreationTime(pdemo->filepath);
+#else
+		return NULL;
+#endif
+	}
 
 #if defined (_WIN32)
 skipfilenametime:
 #endif
 
 	// then throw it into localtime to get an actual human readable format lmao
-	struct tm *tm_buf = NULL;
 	tm_buf = localtime(&file_time);
 
 	// cant believe we ended up in 1970
@@ -2424,14 +2478,10 @@ skipfilenametime:
 		tm_buf = localtime(&file_time);
 
 		if (tm_buf == NULL || tm_buf->tm_year <= 110)
-		{
-			free(datetime);
 			return NULL;
-		}
 
 		goto gotcreationtime;
 #else
-		free(datetime);
 		return NULL;
 #endif
 	}
@@ -2440,17 +2490,27 @@ skipfilenametime:
 gotcreationtime:
 #endif
 
-	const char *format;
-
 	// US ppl are special (:
 	if (cv_demodateformat.value == 2)
 		format = "%m.%d.%Y";
 	else if (cv_demodateformat.value == 1)
 		format = "%d.%m.%Y";
 	else
-		format = strstr(setlocale(LC_TIME, NULL), "en_US") ? "%m.%d.%Y" : "%d.%m.%Y";
+	{
+		const char *locale = setlocale(LC_TIME, NULL);
 
-	strftime(datetime, sizeof(pdemo->date), format, tm_buf);
+		if (locale == NULL)
+			format = "%d.%m.%Y"; // fallback to non US format
+		else if (strstr(locale, "en_US"))
+			format = "%m.%d.%Y";
+		else
+			format = "%d.%m.%Y";
+	}
+
+	if (strftime(datetime, sizeof(datetime), format, tm_buf) == 0)
+	{
+		return NULL;
+	}
 
 	return datetime;
 }
@@ -2459,6 +2519,7 @@ void G_LoadDemoTitle(menudemo_t *pdemo)
 {
 	UINT8 infobuffer[96], *info_p;
 	UINT16 pdemoversion;
+	char *demodate = NULL;
 	size_t count;
 
 	FILE *handle = fopen(pdemo->filepath, "rb");
@@ -2497,13 +2558,13 @@ void G_LoadDemoTitle(menudemo_t *pdemo)
 			memcpy(pdemo->title, info_p, 64);
 
 			// demo date
-			char *demodate;
 			demodate = G_GetDemoDate(pdemo);
 
 			if (demodate)
-				strncpy(pdemo->date, demodate, sizeof(pdemo->date));
+			{
+				strlcpy(pdemo->date, demodate, sizeof(pdemo->date));
+			}
 
-			free(demodate);
 			break;
 #ifdef DEMO_COMPAT_100
 		case 0x0001:
@@ -2536,7 +2597,7 @@ void G_DoPlayDemo(char *defdemoname)
 	UINT8 i, p;
 	lumpnum_t l;
 	char skin[17], color[17], *n;
-	CLEANUP(Z_Pfree) char *pdemoname;
+	CLEANUP(Z_Pfree) char *pdemoname = NULL;
 	UINT8 version, subversion;
 	UINT32 randseed;
 	char msg[1024];
@@ -2580,7 +2641,7 @@ void G_DoPlayDemo(char *defdemoname)
 				snprintf(msg, 1024, M_GetText("Failed to read file '%s'.\n"), defdemoname);
 				CONS_Alert(CONS_ERROR, "%s", msg);
 				gameaction = ga_nothing;
-				M_StartMessage(msg, NULL, MM_NOTHING);
+				M_StartMessage(msg, M_ReturnToTitleFromError, MM_EVENTHANDLER);
 				return;
 			}
 
@@ -2592,7 +2653,7 @@ void G_DoPlayDemo(char *defdemoname)
 			snprintf(msg, 1024, M_GetText("Failed to read lump '%s'.\n"), defdemoname);
 			CONS_Alert(CONS_ERROR, "%s", msg);
 			gameaction = ga_nothing;
-			M_StartMessage(msg, NULL, MM_NOTHING);
+			M_StartMessage(msg, M_ReturnToTitleFromError, MM_EVENTHANDLER);
 			return;
 		}
 		else // it's an internal demo
@@ -2612,7 +2673,7 @@ void G_DoPlayDemo(char *defdemoname)
 	{
 		snprintf(msg, 1024, M_GetText("%s is not a SRB2Kart replay file.\n"), pdemoname);
 		CONS_Alert(CONS_ERROR, "%s", msg);
-		M_StartMessage(msg, NULL, MM_NOTHING);
+		M_StartMessage(msg, M_ReturnToTitleFromError, MM_EVENTHANDLER);
 		G_ResetDemoPlayback();
 		return;
 	}
@@ -2638,7 +2699,7 @@ void G_DoPlayDemo(char *defdemoname)
 		default:
 			snprintf(msg, 1024, M_GetText("%s is an incompatible replay format and cannot be played.\n"), pdemoname);
 			CONS_Alert(CONS_ERROR, "%s", msg);
-			M_StartMessage(msg, NULL, MM_NOTHING);
+			M_StartMessage(msg, M_ReturnToTitleFromError, MM_EVENTHANDLER);
 			G_ResetDemoPlayback();
 			return;
 	}
@@ -2649,7 +2710,7 @@ void G_DoPlayDemo(char *defdemoname)
 	{
 		snprintf(msg, 1024, M_GetText("%s is the wrong type of recording and cannot be played.\n"), pdemoname);
 		CONS_Alert(CONS_ERROR, "%s", msg);
-		M_StartMessage(msg, NULL, MM_NOTHING);
+		M_StartMessage(msg, M_ReturnToTitleFromError, MM_EVENTHANDLER);
 		G_ResetDemoPlayback();
 		return;
 	}
@@ -2666,7 +2727,7 @@ void G_DoPlayDemo(char *defdemoname)
 		{
 			snprintf(msg, 1024, M_GetText("%s is an alpha multiplayer replay and cannot be played.\n"), pdemoname);
 			CONS_Alert(CONS_ERROR, "%s", msg);
-			M_StartMessage(msg, NULL, MM_NOTHING);
+			M_StartMessage(msg, M_ReturnToTitleFromError, MM_EVENTHANDLER);
 			G_ResetDemoPlayback();
 			return;
 		}
@@ -2724,7 +2785,7 @@ void G_DoPlayDemo(char *defdemoname)
 			CONS_Alert(CONS_ERROR, "%s", msg);
 
 			if (!CON_Ready()) // In the console they'll just see the notice there! No point pulling them out.
-				M_StartMessage(msg, NULL, MM_NOTHING);
+				M_StartMessage(msg, M_ReturnToTitleFromError, MM_EVENTHANDLER);
 
 			G_ResetDemoPlayback();
 			return;
@@ -2762,6 +2823,16 @@ void G_DoPlayDemo(char *defdemoname)
 #endif
 	demobuf.p += 4; // Extrainfo location
 
+	// ...*map* not loaded?
+	if (!gamemap || (gamemap > NUMMAPS) || (W_CheckNumForName(G_BuildMapName(gamemap)) == LUMPERROR))
+	{
+		snprintf(msg, 1024, M_GetText("%s features a course that is not currently loaded.\n"), pdemoname);
+		CONS_Alert(CONS_ERROR, "%s", msg);
+		M_StartMessage(msg, M_ReturnToTitleFromError, MM_EVENTHANDLER);
+		G_ResetDemoPlayback();
+		return;
+	}
+
 #ifdef DEMO_COMPAT_100
 	if (demo.version == 0x0001)
 	{
@@ -2789,7 +2860,7 @@ void G_DoPlayDemo(char *defdemoname)
 		{
 			snprintf(msg, 1024, M_GetText("%s features a character that is not currently loaded.\n"), pdemoname);
 			CONS_Alert(CONS_ERROR, "%s", msg);
-			M_StartMessage(msg, NULL, MM_NOTHING);
+			M_StartMessage(msg, M_ReturnToTitleFromError, MM_EVENTHANDLER);
 			G_ResetDemoPlayback();
 			return;
 		}
@@ -2799,7 +2870,7 @@ void G_DoPlayDemo(char *defdemoname)
 		{
 			snprintf(msg, 1024, M_GetText("%s features a course that is not currently loaded.\n"), pdemoname);
 			CONS_Alert(CONS_ERROR, "%s", msg);
-			M_StartMessage(msg, NULL, MM_NOTHING);
+			M_StartMessage(msg, M_ReturnToTitleFromError, MM_EVENTHANDLER);
 			G_ResetDemoPlayback();
 			return;
 		}
@@ -2822,7 +2893,7 @@ void G_DoPlayDemo(char *defdemoname)
 		{
 			snprintf(msg, 1024, M_GetText("%s contains no data to be played.\n"), pdemoname);
 			CONS_Alert(CONS_ERROR, "%s", msg);
-			M_StartMessage(msg, NULL, MM_NOTHING);
+			M_StartMessage(msg, M_ReturnToTitleFromError, MM_EVENTHANDLER);
 			G_ResetDemoPlayback();
 			return;
 		}
@@ -2860,7 +2931,7 @@ void G_DoPlayDemo(char *defdemoname)
 	{
 		snprintf(msg, 1024, M_GetText("%s contains no data to be played.\n"), pdemoname);
 		CONS_Alert(CONS_ERROR, "%s", msg);
-		M_StartMessage(msg, NULL, MM_NOTHING);
+		M_StartMessage(msg, M_ReturnToTitleFromError, MM_EVENTHANDLER);
 		G_ResetDemoPlayback();
 		return;
 	}
@@ -2909,7 +2980,7 @@ void G_DoPlayDemo(char *defdemoname)
 			{
 				snprintf(msg, 1024, M_GetText("%s is a Record Attack replay with spectators, and is thus invalid.\n"), pdemoname);
 				CONS_Alert(CONS_ERROR, "%s", msg);
-				M_StartMessage(msg, NULL, MM_NOTHING);
+				M_StartMessage(msg, M_ReturnToTitleFromError, MM_EVENTHANDLER);
 				G_ResetDemoPlayback();
 				return;
 			}
@@ -2921,7 +2992,7 @@ void G_DoPlayDemo(char *defdemoname)
 		{
 			snprintf(msg, 1024, M_GetText("%s is a Record Attack replay with multiple players, and is thus invalid.\n"), pdemoname);
 			CONS_Alert(CONS_ERROR, "%s", msg);
-			M_StartMessage(msg, NULL, MM_NOTHING);
+			M_StartMessage(msg, M_ReturnToTitleFromError, MM_EVENTHANDLER);
 			G_ResetDemoPlayback();
 			return;
 		}
@@ -3530,7 +3601,6 @@ void G_FreeGhosts(void)
 	}
 	ghosts = NULL;
 }
-
 
 boolean G_CheckDemoStatus(void)
 {

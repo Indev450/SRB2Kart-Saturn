@@ -45,6 +45,9 @@ void HWR_InitMD2(void);
 void HWR_DrawMD2(gl_vissprite_t *spr);
 void HWR_AddPlayerMD2(INT32 skin, boolean local);
 void HWR_AddSpriteMD2(size_t spritenum);
+void HWR_Draw2DModel(md2_t *md2, INT32 x, INT32 y, INT32 skinnum,
+					 skincolors_t color, const UINT8 *colormap,
+					 fixed_t scale, INT32 frame, angle_t angle);
 
 #ifdef __cplusplus
 } // extern "C"

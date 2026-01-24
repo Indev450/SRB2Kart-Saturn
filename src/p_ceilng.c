@@ -24,9 +24,6 @@
 //                              CEILINGS
 // ==========================================================================
 
-// the list of ceilings moving currently, including crushers
-INT32 ceilmovesound = sfx_None;
-
 /** Moves a moving ceiling.
   *
   * \param ceiling Thinker for the ceiling to be moved.
@@ -36,7 +33,6 @@ INT32 ceilmovesound = sfx_None;
 void T_MoveCeiling(ceiling_t *ceiling)
 {
 	result_e res;
-	boolean dontupdate = false;
 
 	if (ceiling->delaytimer)
 	{
@@ -72,9 +68,7 @@ void T_MoveCeiling(ceiling_t *ceiling)
 					case instantMoveCeilingByFrontSector:
 						ceiling->sector->ceilingpic = ceiling->texture;
 						ceiling->sector->ceilingdata = NULL;
-						ceiling->sector->ceilspeed = 0;
 						P_RemoveThinker(&ceiling->thinker);
-						dontupdate = true;
 						break;
 					case moveCeilingByFrontSector:
 						if (ceiling->texture < -1) // chained linedef executing
@@ -86,9 +80,7 @@ void T_MoveCeiling(ceiling_t *ceiling)
 //					case raiseCeilingByLine:
 					case moveCeilingByFrontTexture:
 						ceiling->sector->ceilingdata = NULL;
-						ceiling->sector->ceilspeed = 0;
 						P_RemoveThinker(&ceiling->thinker);
-						dontupdate = true;
 						break;
 
 					case fastCrushAndRaise:
@@ -192,9 +184,7 @@ void T_MoveCeiling(ceiling_t *ceiling)
 					case instantMoveCeilingByFrontSector:
 						ceiling->sector->ceilingpic = ceiling->texture;
 						ceiling->sector->ceilingdata = NULL;
-						ceiling->sector->ceilspeed = 0;
 						P_RemoveThinker(&ceiling->thinker);
-						dontupdate = true;
 						break;
 
 					case moveCeilingByFrontSector:
@@ -212,9 +202,7 @@ void T_MoveCeiling(ceiling_t *ceiling)
 //					case lowerCeilingByLine:
 					case moveCeilingByFrontTexture:
 						ceiling->sector->ceilingdata = NULL;
-						ceiling->sector->ceilspeed = 0;
 						P_RemoveThinker(&ceiling->thinker);
-						dontupdate = true;
 						break;
 					case bounceCeiling:
 					{
@@ -293,10 +281,6 @@ void T_MoveCeiling(ceiling_t *ceiling)
 			}
 		break;
 	}
-	if (!dontupdate)
-		ceiling->sector->ceilspeed = ceiling->speed*ceiling->direction;
-	else
-		ceiling->sector->ceilspeed = 0;
 }
 
 /** Moves a ceiling crusher.
@@ -338,12 +322,9 @@ void T_CrushCeiling(ceiling_t *ceiling)
 					switch(ceiling->type)
 					{
 						case crushCeilOnce:
-							ceiling->sector->ceilspeed = 0;
 							ceiling->sector->ceilingdata = NULL;
 							break;
 						case crushBothOnce:
-							ceiling->sector->floorspeed = 0;
-							ceiling->sector->ceilspeed = 0;
 							ceiling->sector->ceilingdata = NULL;
 							break;
 						default:
@@ -380,11 +361,6 @@ void T_CrushCeiling(ceiling_t *ceiling)
 			}
 			break;
 	}
-
-	if (ceiling->type == crushBothOnce)
-		ceiling->sector->floorspeed = ceiling->speed*(-ceiling->direction);
-
-	ceiling->sector->ceilspeed = ceiling->speed*ceiling->direction;
 }
 
 /** Starts a ceiling mover.

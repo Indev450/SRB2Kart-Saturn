@@ -50,7 +50,7 @@ extern INT16 rw_maximums[NUM_WEAPONS];
 
 // used in game menu
 extern consvar_t cv_chatwidth, cv_chatnotifications, cv_chatheight, cv_chattime, cv_consolechat, cv_chatbacktint, cv_chatspamprotection, cv_chatcentertext/*, cv_compactscoreboard*/;
-extern consvar_t cv_songcredits;
+extern consvar_t cv_songcredits, cv_pausesongcredits;
 extern consvar_t cv_showfreeplay;
 extern consvar_t cv_growmusic, cv_supermusic;
 extern consvar_t cv_pauseifunfocused;
@@ -73,6 +73,8 @@ extern consvar_t cv_xdeadzone[MAXSPLITSCREENPLAYERS];
 extern consvar_t cv_ydeadzone[MAXSPLITSCREENPLAYERS];
 
 extern consvar_t cv_litesteer[MAXSPLITSCREENPLAYERS];
+
+extern consvar_t cv_autoaccel[MAXSPLITSCREENPLAYERS];
 
 extern consvar_t cv_ghost_besttime, cv_ghost_bestlap, cv_ghost_last, cv_ghost_guest, cv_ghost_staff;
 
@@ -128,6 +130,7 @@ extern consvar_t cv_spinoutroll;
 extern consvar_t cv_squishdance, cv_squishdancespeed;
 
 extern consvar_t cv_playerblendeffects;
+extern consvar_t cv_reducevfx;
 
 extern consvar_t cv_cechotoggle;
 
@@ -160,7 +163,7 @@ typedef enum
 const char *G_BuildMapName(INT32 map);
 void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer);
 
-// copy ticcmd_t to and fro the normal way
+// copy ticcmd_t to and from the normal way
 ticcmd_t *G_CopyTiccmd(ticcmd_t* dest, const ticcmd_t* src, const size_t n);
 // copy ticcmd_t to and fro network packets
 ticcmd_t *G_MoveTiccmd(ticcmd_t* dest, const ticcmd_t* src, const size_t n);
@@ -262,9 +265,10 @@ boolean G_CanView(INT32 playernum, UINT8 viewnum, boolean onlyactive);
 INT32 G_FindView(INT32 startview, UINT8 viewnum, boolean onlyactive, boolean reverse);
 INT32 G_CountPlayersPotentiallyViewable(boolean active);
 
-void G_ResetViews(void);
+void G_ResetViews(boolean resetfreecam);
 void G_ResetView(UINT8 viewnum, INT32 playernum, boolean onlyactive);
-void G_AdjustView(UINT8 viewnum, INT32 offset, boolean onlyactive);
+void G_AdjustViewEx(UINT8 viewnum, INT32 offset, boolean onlyactive, boolean resetfreecam);
+#define G_AdjustView(v,o,oa) G_AdjustViewEx(v,o,oa, true)
 
 void G_AddPlayer(INT32 playernum);
 

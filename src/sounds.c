@@ -972,7 +972,7 @@ sfxinfo_t S_sfx[NUMSFX] =
   // initialized to NULL
 };
 
-char freeslotnames[sfx_freeslot0 + NUMSFXFREESLOTS + NUMSKINSFXSLOTS][7];
+char freeslotnames[sfx_freeslot0 + NUMSFXFREESLOTS + NUMSKINSFXSLOTS][7] = {};
 
 // Prepare free sfx slots to add sfx at run time
 void S_InitRuntimeSounds (void)

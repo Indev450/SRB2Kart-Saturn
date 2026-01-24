@@ -20,7 +20,10 @@ $(foreach v,$(join $(wordlist 2,$(_n),- $(gcc_versions)),\
 CXXFLAGS+= -Wno-aggregate-return
 
 # -W -Wno-unused
-WFLAGS:=-Wall -Wno-trigraphs
+WFLAGS:=-Wall -Wno-trigraphs -Wnull-dereference
+ifdef GCC152
+WFLAGS+=-Wzero-as-null-pointer-constant
+endif
 ifndef GCC295
 #WFLAGS+=-Wno-packed
 endif

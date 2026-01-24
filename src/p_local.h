@@ -14,10 +14,6 @@
 #ifndef __P_LOCAL__
 #define __P_LOCAL__
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include "command.h"
 #include "d_player.h"
 #include "d_think.h"
@@ -27,6 +23,10 @@ extern "C" {
 #include "r_defs.h"
 #include "p_maputl.h"
 #include "doomstat.h" // MAXSPLITSCREENPLAYERS
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #define FLOATSPEED (FRACUNIT*4)
 
@@ -192,6 +192,7 @@ void P_DoPlayerPain(player_t *player, mobj_t *source, mobj_t *inflictor);
 void P_ResetPlayer(player_t *player);
 player_t *P_GetLocalPlayerForNum(UINT8 pnum);
 INT32 P_GetLocalPlayerNumForNum(UINT8 pnum);
+INT32 P_GetLocalPlayerNumForPlayer(const player_t *player);
 boolean P_IsLocalPlayer(const player_t *player);
 boolean P_IsLocalPlayerNum(UINT8 pnum);
 boolean P_IsDisplayPlayer(const player_t *player);
@@ -226,7 +227,9 @@ void P_PlayerThink(player_t *player);
 void P_PlayerAfterThink(player_t *player);
 void P_DoPlayerExit(player_t *player);
 void P_DoTimeOver(player_t *player);
-//void P_NightserizePlayer(player_t *player, INT32 ptime);
+
+angle_t P_GetLocalAngle(player_t *player);
+void P_ForceLocalAngle(player_t *player, angle_t angle);
 
 void P_InstaThrust(mobj_t *mo, angle_t angle, fixed_t move);
 fixed_t P_ReturnThrustX(mobj_t *mo, angle_t angle, fixed_t move);
@@ -268,6 +271,9 @@ extern size_t iquehead, iquetail;
 extern consvar_t cv_gravity;
 
 void P_RespawnSpecials(void);
+
+extern mobjtype_t g_doomednum_to_mobjtype[MAXDOOMEDNUM+1];
+void CalculateDoomednumToMobjtype(void);
 
 mobj_t *P_AllocateMobj(void);
 mobj_t *P_SpawnMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type);
@@ -473,8 +479,6 @@ void P_DoNightsScore(player_t *player);
 // P_SPEC
 //
 #include "p_spec.h"
-
-extern INT32 ceilmovesound;
 
 // Factor to scale scrolling effect into mobj-carrying properties = 3/32.
 // (This is so scrolling floors and objects on them can move at same speed.)

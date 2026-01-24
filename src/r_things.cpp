@@ -70,7 +70,7 @@ INT16 *screenheightarray = NULL;
 
 typedef struct drawseg_xrange_item_s
 {
-	INT16 x1, x2;
+	INT32 x1, x2;
 	drawseg_t *user;
 } drawseg_xrange_item_t;
 
@@ -95,15 +95,15 @@ static INT32 drawsegs_xrange_count = 0;
 // There was a lot of stuff grabbed wrong, so I changed it...
 //
 
-spriteinfo_t spriteinfo[NUMSPRITES];
+spriteinfo_t spriteinfo[NUMSPRITES] = {};
 
 //
 // INITIALIZATION FUNCTIONS
 //
 
 // variables used to look up and range check thing_t sprites patches
-spritedef_t *sprites;
-size_t numsprites;
+spritedef_t *sprites = NULL;
+size_t numsprites = 0;
 
 static spriteframe_t sprtemp[64];
 static size_t maxframe;
@@ -112,7 +112,7 @@ static const char *spritename;
 //
 // GAME FUNCTIONS
 //
-UINT32 visspritecount, numvisiblesprites;
+UINT32 visspritecount = 0, numvisiblesprites = 0;
 
 static UINT32 clippedvissprites;
 static vissprite_t *visspritechunks[MAXVISSPRITES >> VISSPRITECHUNKBITS] = {NULL};
@@ -489,8 +489,8 @@ void R_InitSprites(void)
 	for (angle = 1; angle < ROTANGLES; angle++)
 	{
 		fa = ANG2RAD(FixedAngle((ROTANGDIFF * angle)<<FRACBITS));
-		rollcosang[angle] = FLOAT_TO_FIXED(cos(-fa));
-		rollsinang[angle] = FLOAT_TO_FIXED(sin(-fa));
+		rollcosang[angle] = FLOAT_TO_FIXED(cosf(-fa));
+		rollsinang[angle] = FLOAT_TO_FIXED(sinf(-fa));
 	}
 #endif
 
@@ -532,8 +532,8 @@ void R_ClearSprites(void)
 	visspritecount = numvisiblesprites = clippedvissprites = 0;
 }
 
-static INT16 *vissprite_clipbot[MAXVISSPRITES >> VISSPRITECHUNKBITS] = {0};
-static INT16 *vissprite_cliptop[MAXVISSPRITES >> VISSPRITECHUNKBITS] = {0};
+static INT16 *vissprite_clipbot[MAXVISSPRITES >> VISSPRITECHUNKBITS] = {};
+static INT16 *vissprite_cliptop[MAXVISSPRITES >> VISSPRITECHUNKBITS] = {};
 
 static void R_AllocVisSpriteChunkMemory(UINT32 chunk)
 {
@@ -658,7 +658,7 @@ void R_DrawMaskedColumn(drawcolumndata_t* dc, column_t *column)
 	dc->texturemid = basetexturemid;
 }
 
-INT32 lengthcol; // column->length : for flipped column function pointers and multi-patch on 2sided wall = texture->height
+INT32 lengthcol = 0; // column->length : for flipped column function pointers and multi-patch on 2sided wall = texture->height
 
 static void R_DrawFlippedMaskedColumn(drawcolumndata_t* dc, column_t *column)
 {
@@ -1577,7 +1577,7 @@ static void R_ProjectSprite(mobj_t *thing)
 	else
 		blendmode = thing->blendmode;
 
-	if (thing->flags2 & MF2_SHADOW || thing->flags2 & MF2_SHADOW) // actually only the player should use this (temporary invisibility)
+	if (thing->flags2 & MF2_SHADOW) // actually only the player should use this (temporary invisibility)
 		trans = tr_trans80; // because now the translucency is set through FF_TRANSMASK
 	else if (thing->frame & FF_TRANSMASK)
 	{
@@ -1588,8 +1588,15 @@ static void R_ProjectSprite(mobj_t *thing)
 	else
 		trans = 0;
 
-	if (cv_playerfade.value && thing->player)
-		trans = static_cast<INT32>(R_GetThingTransTable(R_DoPlayerFade(thing), static_cast<transnum_t>(trans)));
+	if (thing->player)
+	{
+		// make hyu´d players translucent with reducevfx, could be done better, but im lazy as crap
+		if (cv_reducevfx.value && thing->player->kartstuff[k_hyudorotimer] > 0)
+			trans = static_cast<INT32>(R_GetThingTransTable(FRACUNIT/2, static_cast<transnum_t>(trans)));
+
+		if (cv_playerfade.value)
+			trans = static_cast<INT32>(R_GetThingTransTable(R_DoPlayerFade(thing), static_cast<transnum_t>(trans)));
+	}
 
 	//SoM: 3/17/2000: Disregard sprites that are out of view..
 	if (vflip)
@@ -1609,6 +1616,47 @@ static void R_ProjectSprite(mobj_t *thing)
 	if (thing->subsector->sector->cullheight)
 	{
 		if (R_DoCulling(thing->subsector->sector->cullheight, viewsector->cullheight, viewz, gz, gzt))
+			return;
+	}
+
+	if (!papersprite)
+	{
+		// killough 4/9/98: clip things which are out of view due to height
+		// e6y: fix of hanging decoration disappearing in Batman Doom MAP02
+		// centeryfrac -> viewheightfrac
+		// [kb] add +1 so sprites are shown even with the extended freelook
+		// lug: attempt to account for freelook properly
+		if (interp.z > viewz + FixedMul(FixedDiv(centeryfrac, projectiony), tz) ||
+			gzt < viewz + FixedMul(FixedDiv(centeryfrac - (viewheight << FRACBITS), projectiony), tz))
+		{
+			return;
+		}
+	}
+
+	// killough 3/27/98: exclude things totally separated
+	// from the viewer, by either water or fake ceilings
+	// killough 4/11/98: improve sprite clipping for underwater/fake ceilings
+
+	heightsec = thing->subsector->sector->heightsec;
+	if (viewplayer && viewplayer->mo && viewplayer->mo->subsector)
+		phs = viewplayer->mo->subsector->sector->heightsec;
+	else
+		phs = -1;
+
+	if (heightsec != -1 && phs != -1) // only clip things which are in special sectors
+	{
+		fixed_t secheight;
+
+		secheight = P_GetSectorFloorZAt(&sectors[heightsec], viewx, viewy);
+		if (viewz < P_GetSectorFloorZAt(&sectors[phs], interp.x, interp.y) ?
+			interp.z >= secheight :
+			gzt < secheight)
+			return;
+
+		secheight = P_GetSectorCeilingZAt(&sectors[heightsec], viewx, viewy);
+		if (viewz > P_GetSectorCeilingZAt(&sectors[phs], interp.x, interp.y) ?
+			gzt < secheight && viewz >= secheight :
+			interp.z >= secheight)
 			return;
 	}
 
@@ -1687,24 +1735,6 @@ static void R_ProjectSprite(mobj_t *thing)
 			lights_array = scalelight[LIGHTLEVELS-1];
 		else
 			lights_array = scalelight[lightnum];
-	}
-
-	heightsec = thing->subsector->sector->heightsec;
-	if (viewplayer && viewplayer->mo && viewplayer->mo->subsector)
-		phs = viewplayer->mo->subsector->sector->heightsec;
-	else
-		phs = -1;
-
-	if (heightsec != -1 && phs != -1) // only clip things which are in special sectors
-	{
-		if (viewz < sectors[phs].floorheight ?
-			interp.z >= sectors[heightsec].floorheight :
-			gzt < sectors[heightsec].floorheight)
-			return;
-		if (viewz > sectors[phs].ceilingheight ?
-			gzt < sectors[heightsec].ceilingheight && viewz >= sectors[heightsec].ceilingheight :
-			interp.z >= sectors[heightsec].ceilingheight)
-			return;
 	}
 
 	// store information in a vissprite
@@ -1950,6 +1980,17 @@ static void R_ProjectPrecipitationSprite(precipmobj_t *thing)
 	{
 		if (R_DoCulling(thing->subsector->sector->cullheight, viewsector->cullheight, viewz, gz, gzt))
 			return;
+	}
+
+	// killough 4/9/98: clip things which are out of view due to height
+	// e6y: fix of hanging decoration disappearing in Batman Doom MAP02
+	// centeryfrac -> viewheightfrac
+	// [kb] add +1 so sprites are shown even with the extended freelook
+	// lug: attempt to account for freelook properly
+	if (interp.z > viewz + FixedMul(FixedDiv(centeryfrac, projectiony), tz) ||
+		gzt < viewz + FixedMul(FixedDiv(centeryfrac - (viewheight << FRACBITS), projectiony), tz))
+	{
+		return;
 	}
 
 	// aspect ratio stuff :
@@ -2908,7 +2949,7 @@ boolean R_ThingWithinDist(mobj_t *thing, INT32 limit_dist)
 {
 	if (limit_dist)
 	{
-		if ((R_QuickCamDist(thing->x, thing->y) << FRACBITS)/mapobjectscale > limit_dist)
+		if (R_QuickCamDist(thing->x, thing->y)/mapobjectscale > limit_dist)
 		{
 			return false;
 		}
@@ -2952,7 +2993,7 @@ static boolean R_CheckInterpDist(T *thing)
 	if (!R_UsingFrameInterpolation())
 		return false;
 
-	const INT32 dist = R_QuickCamDist(thing->x, thing->y);
+	const INT32 dist = R_QuickCamDist(thing->x, thing->y) >> FRACBITS;
 
 	return (dist < cv_maxinterpdist.value);
 }
@@ -3052,7 +3093,7 @@ static void R_DrawMaskedList(drawnode_t* head)
 void R_DrawMasked(maskcount_t* masks, INT32 nummasks)
 {
 	INT32 i;
-	drawnode_t *heads;	/**< Drawnode lists; as many as number of views/portals. */
+	drawnode_t *heads = NULL;	/**< Drawnode lists; as many as number of views/portals. */
 
 	heads = static_cast<drawnode_t*>(calloc(nummasks, sizeof(drawnode_t)));
 

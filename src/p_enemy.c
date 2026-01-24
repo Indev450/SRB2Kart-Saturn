@@ -28,8 +28,8 @@
 
 boolean LUA_CallAction(enum actionnum actionnum, void *thing);
 
-INT32 var1;
-INT32 var2;
+INT32 var1 = 0;
+INT32 var2 = 0;
 
 //
 // P_NewChaseDir related LUT.
@@ -5977,7 +5977,7 @@ void A_Boss7Chase(void *thing)
 	if (actor->flags2 & MF2_FRET)
 	{
 		P_SetMobjState(actor, S_BLACKEGG_DESTROYPLAT1);
-		S_StartSound(0, sfx_s3k53);
+		S_StartSound(NULL, sfx_s3k53);
 		actor->flags2 &= ~MF2_FRET;
 		return;
 	}
@@ -6011,7 +6011,7 @@ void A_Boss7Chase(void *thing)
 		{
 			// Punch him!
 			P_SetMobjState(actor, actor->info->meleestate);
-			S_StartSound(0, sfx_begrnd); // warning sound
+			S_StartSound(NULL, sfx_begrnd); // warning sound
 			return;
 		}
 	}
@@ -6057,7 +6057,7 @@ void A_Boss7Chase(void *thing)
 			case 2: // Homing Missile
 				A_FaceTarget(actor);
 				P_SetMobjState(actor, actor->info->missilestate);
-				S_StartSound(0, sfx_beflap);
+				S_StartSound(NULL, sfx_beflap);
 				break;
 		}
 
@@ -8176,13 +8176,16 @@ void A_SPBChase(void *thing)
 				// Smoothly rotate horz angle
 				angle_t input = hang - actor->angle;
 				boolean invert = (input > ANGLE_180);
+				fixed_t fixedinput;
 				if (invert)
 					input = InvAngle(input);
+				fixedinput = AngleFixed(input);
 
 				// Slow down when turning; it looks better and makes U-turns not unfair
-				xyspeed = FixedMul(actor->cvmem, max(0, (((180<<FRACBITS) - AngleFixed(input)) / 90) - FRACUNIT));
+				xyspeed = (((180<<FRACBITS) - fixedinput) / 90) - FRACUNIT;
+				xyspeed = FixedMul(actor->cvmem, max(0, xyspeed));
 
-				input = FixedAngle(AngleFixed(input)/4);
+				input = FixedAngle(fixedinput/4);
 				if (invert)
 					input = InvAngle(input);
 
@@ -8193,11 +8196,13 @@ void A_SPBChase(void *thing)
 				invert = (input > ANGLE_180);
 				if (invert)
 					input = InvAngle(input);
+				fixedinput = AngleFixed(input);
 
 				// Slow down when turning; might as well do it for momz, since we do it above too
-				zspeed = FixedMul(actor->cvmem, max(0, (((180<<FRACBITS) - AngleFixed(input)) / 90) - FRACUNIT));
+				zspeed = (((180<<FRACBITS) - fixedinput) / 90) - FRACUNIT;
+				zspeed = FixedMul(actor->cvmem, max(0, zspeed));
 
-				input = FixedAngle(AngleFixed(input)/4);
+				input = FixedAngle(fixedinput/4);
 				if (invert)
 					input = InvAngle(input);
 
@@ -8301,13 +8306,17 @@ void A_SPBChase(void *thing)
 			// Smoothly rotate horz angle
 			angle_t input = hang - actor->angle;
 			boolean invert = (input > ANGLE_180);
+			fixed_t fixedinput;
+
 			if (invert)
 				input = InvAngle(input);
+			fixedinput = AngleFixed(input);
 
 			// Slow down when turning; it looks better and makes U-turns not unfair
-			xyspeed = FixedMul(wspeed, max(0, (((180<<FRACBITS) - AngleFixed(input)) / 90) - FRACUNIT));
+			xyspeed = (((180<<FRACBITS) - fixedinput) / 90) - FRACUNIT;
+			xyspeed = FixedMul(wspeed, max(0, xyspeed));
 
-			input = FixedAngle(AngleFixed(input)/4);
+			input = FixedAngle(fixedinput/4);
 			if (invert)
 				input = InvAngle(input);
 
@@ -8318,11 +8327,13 @@ void A_SPBChase(void *thing)
 			invert = (input > ANGLE_180);
 			if (invert)
 				input = InvAngle(input);
+			fixedinput = AngleFixed(input);
 
 			// Slow down when turning; might as well do it for momz, since we do it above too
-			zspeed = FixedMul(wspeed, max(0, (((180<<FRACBITS) - AngleFixed(input)) / 90) - FRACUNIT));
+			zspeed = max(0, (((180<<FRACBITS) - fixedinput) / 90) - FRACUNIT);
+			zspeed = FixedMul(wspeed, zspeed);
 
-			input = FixedAngle(AngleFixed(input)/4);
+			input = FixedAngle(fixedinput/4);
 			if (invert)
 				input = InvAngle(input);
 
@@ -10728,7 +10739,7 @@ void A_BrakChase(void *thing)
 	{
 		actor->reactiontime--;
 		if (actor->reactiontime == 0 && actor->type == MT_CYBRAKDEMON)
-			S_StartSound(0, sfx_bewar1 + P_RandomKey(4));
+			S_StartSound(NULL, sfx_bewar1 + P_RandomKey(4));
 	}
 
 	// modify target threshold

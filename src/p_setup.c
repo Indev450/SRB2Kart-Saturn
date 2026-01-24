@@ -15,6 +15,7 @@
 #include "d_main.h"
 #include "byteptr.h"
 #include "g_game.h"
+#include "g_input.h"
 
 #include "p_local.h"
 #include "p_setup.h"
@@ -92,7 +93,7 @@
 // Map MD5, calculated on level load.
 // Sent to clients in PT_SERVERINFO.
 //
-unsigned char mapmd5[16];
+unsigned char mapmd5[16] = {};
 
 // true when level was loaded from netsave
 boolean midgamejoin = false;
@@ -102,22 +103,22 @@ boolean midgamejoin = false;
 // Store VERTEXES, LINEDEFS, SIDEDEFS, etc.
 //
 
-size_t numvertexes, numsegs, numsectors, numsubsectors, numnodes, numlines, numsides, nummapthings;
-vertex_t *vertexes;
-seg_t *segs;
-sector_t *sectors;
-subsector_t *subsectors;
-node_t *nodes;
-line_t *lines;
-side_t *sides;
-mapthing_t *mapthings;
-sector_t *spawnsectors;
-line_t *spawnlines;
-side_t *spawnsides;
-INT32 numstarposts;
-boolean levelloading;
+size_t numvertexes = 0, numsegs = 0, numsectors = 0, numsubsectors = 0, numnodes = 0, numlines = 0, numsides = 0, nummapthings = 0;
+vertex_t *vertexes = NULL;
+seg_t *segs = NULL;
+sector_t *sectors = NULL;
+subsector_t *subsectors = NULL;
+node_t *nodes = NULL;
+line_t *lines = NULL;
+side_t *sides = NULL;
+mapthing_t *mapthings = NULL;
+sector_t *spawnsectors = NULL;
+line_t *spawnlines = NULL;
+side_t *spawnsides = NULL;
+INT32 numstarposts = 0;
+boolean levelloading = false;
 
-virtres_t *curmapvirt;
+virtres_t *curmapvirt = NULL;
 
 // BLOCKMAP
 // Created from axis aligned bounding box
@@ -127,32 +128,32 @@ virtres_t *curmapvirt;
 // by spatial subdivision in 2D.
 //
 // Blockmap size.
-INT32 bmapwidth, bmapheight; // size in mapblocks
+INT32 bmapwidth = 0, bmapheight = 0; // size in mapblocks
 
-INT32 *blockmap; // INT32 for large maps
+INT32 *blockmap = NULL; // INT32 for large maps
 // offsets in blockmap are from here
-INT32 *blockmaplump; // Big blockmap
+INT32 *blockmaplump = NULL; // Big blockmap
 
 // origin of block map
-fixed_t bmaporgx, bmaporgy;
+fixed_t bmaporgx = 0, bmaporgy = 0;
 // for thing chains
-mobj_t **blocklinks;
-precipmobj_t **precipblocklinks;
+mobj_t **blocklinks = NULL;
+precipmobj_t **precipblocklinks = NULL;
 
 // REJECT
 // For fast sight rejection.
 // Speeds up enemy AI by skipping detailed LineOf Sight calculation.
 // Without special effect, this could be used as a PVS lookup as well.
 //
-UINT8 *rejectmatrix;
+UINT8 *rejectmatrix = NULL;
 
 // Maintain single and multi player starting spots.
-INT32 numdmstarts, numcoopstarts, numredctfstarts, numbluectfstarts;
+INT32 numdmstarts = 0, numcoopstarts = 0, numredctfstarts = 0, numbluectfstarts = 0;
 
-mapthing_t *deathmatchstarts[MAX_DM_STARTS];
-mapthing_t *playerstarts[MAXPLAYERS];
-mapthing_t *bluectfstarts[MAXPLAYERS];
-mapthing_t *redctfstarts[MAXPLAYERS];
+mapthing_t *deathmatchstarts[MAX_DM_STARTS] = {};
+mapthing_t *playerstarts[MAXPLAYERS] = {};
+mapthing_t *bluectfstarts[MAXPLAYERS] = {};
+mapthing_t *redctfstarts[MAXPLAYERS] = {};
 
 // Global state for PartialAddWadFile/MultiSetupWadFiles
 // Might be replacable with parameters, but non-trivial when the functions are called on separate tics
@@ -596,8 +597,8 @@ FUNCINLINE static ATTRINLINE void P_LoadSubsectors(void *data)
 //
 #define MAXLEVELFLATS 256
 
-size_t numlevelflats;
-levelflat_t *levelflats;
+size_t numlevelflats = 0;
+levelflat_t *levelflats = NULL;
 
 //SoM: Other files want this info.
 size_t P_PrecacheLevelFlats(void)
@@ -679,11 +680,11 @@ INT32 P_AddLevelFlat(const char *flatname, levelflat_t *levelflat)
 	if (i == numlevelflats)
 	{
 		// store the name
-		strlcpy(levelflat->name, flatname, sizeof (levelflat->name));
+		strlcpy(levelflat->name, flatname, sizeof(levelflat->name));
 		strupr(levelflat->name);
 
 		// store the flat lump number
-		levelflat->lumpnum = R_GetFlatNumForName(flatname);
+		levelflat->lumpnum = R_GetFlatNumForName(levelflat->name);
 		levelflat->baselumpnum = LUMPERROR;
 
 		P_CheckCyanFlat(levelflat);
@@ -726,11 +727,11 @@ INT32 P_AddLevelFlatRuntime(const char *flatname)
 		levelflat = levelflats+i;
 
 		// store the name
-		strlcpy(levelflat->name, flatname, sizeof (levelflat->name));
+		strlcpy(levelflat->name, flatname, sizeof(levelflat->name));
 		strupr(levelflat->name);
 
 		// store the flat lump number
-		levelflat->lumpnum = R_GetFlatNumForName(flatname);
+		levelflat->lumpnum = R_GetFlatNumForName(levelflat->name);
 		levelflat->baselumpnum = LUMPERROR;
 
 		P_CheckCyanFlat(levelflat);
@@ -1021,7 +1022,7 @@ void P_WriteThings(lumpnum_t lumpnum)
 	size_t i, length;
 	mapthing_t *mt;
 	UINT8 *data;
-	savebuffer_t save;
+	savebuffer_t save = {};
 	INT16 temp;
 
 	data = W_CacheLumpNum(lumpnum, PU_LEVEL);
@@ -1165,7 +1166,7 @@ static void P_LoadLineDefs2(void)
 	for (; i--; ld++)
 	{
 		ld->frontsector = sides[ld->sidenum[0]].sector; //e6y: Can't be -1 here
-		ld->backsector  = ld->sidenum[1] != 0xffff ? sides[ld->sidenum[1]].sector : 0;
+		ld->backsector  = ld->sidenum[1] != 0xffff ? sides[ld->sidenum[1]].sector : NULL;
 
 		// Repeat count for midtexture
 		if ((ld->flags & ML_EFFECT5) && (ld->sidenum[1] != 0xffff))
@@ -2029,8 +2030,8 @@ void P_SetupLevelSky(INT32 skynum, boolean global)
 	R_SetupSkyDraw();
 }
 
-static const char *maplumpname;
-lumpnum_t lastloadedmaplumpnum; // for comparative savegame
+static const char *maplumpname = NULL;
+lumpnum_t lastloadedmaplumpnum = LUMPERROR; // for comparative savegame
 
 //
 // P_LevelInitStuff
@@ -2414,7 +2415,7 @@ static void P_InitCamera(void)
 	displayplayers[0] = consoleplayer; // Start with your OWN view, please!
 }
 
-struct minimapinfo minimapinfo;
+struct minimapinfo minimapinfo = {};
 static void P_InitMinimapInfo(void)
 {
 	lumpnum_t lumpnum;
@@ -2653,7 +2654,8 @@ static void P_SetupPlayer(void)
 	spbplace = -1;
 
 	startedInFreePlay = true;
-	for (UINT8 nump = 0, i = 0; i < MAXPLAYERS; i++)
+	UINT8 nump = 0;
+	for (i = 0; i < MAXPLAYERS; i++)
 	{
 		if (!playeringame[i] || players[i].spectator)
 		{
@@ -2707,8 +2709,12 @@ void P_FreeLevelState(void)
 
 	G_FreeGhosts(); // ghosts are allocated with PU_LEVEL
 
-	Patch_FreeTag(PU_PATCH_LOWPRIORITY);
-	//Patch_FreeTag(PU_PATCH_ROTATED); // we keep those ty!
+	if (rendermode != render_none)
+	{
+		Patch_FreeTag(PU_PATCH_LOWPRIORITY);
+		//Patch_FreeTag(PU_PATCH_ROTATED); // we keep those ty!
+	}
+
 	Z_FreeTags(PU_LEVEL, PU_PURGELEVEL - 1);
 
 	Y_VoteClear();
@@ -2717,6 +2723,9 @@ void P_FreeLevelState(void)
 	// clear the splats from previous level
 	R_ClearLevelSplats();
 #endif
+
+	R_InitMobjInterpolators();
+	R_InitializeLevelInterpolators();
 }
 
 /** Loads a level from a lump or external wad.
@@ -2734,13 +2743,8 @@ boolean P_SetupLevel(boolean fromnetsave, boolean reloadinggamestate)
 	lumpnum_t encoreLump = LUMPERROR;
 	UINT8 levelfadecol;
 
-	// HACK: this doesent reset if you change the map from within a replay and may cause crashes or the replayhut to be non functional
-	if (!demo.playback && demo.inreplayhut)
-	{
-		M_ResetDemoList();
-	}
 
-	midgamejoin = fromnetsave; // makes dynslopes run in P_Ticker/P_PreTicker to avoid synch issues and other stuff
+	midgamejoin = fromnetsave; // makes dynslopes run in P_Ticker to avoid synch issues and other stuff
 
 	levelloading = true;
 
@@ -2826,10 +2830,7 @@ boolean P_SetupLevel(boolean fromnetsave, boolean reloadinggamestate)
 
 	P_FreeLevelState();
 
-	R_InitializeLevelInterpolators();
-
 	P_InitThinkers();
-	R_InitMobjInterpolators();
 	P_InitCachedActions();
 
 	// internal game map
@@ -2859,6 +2860,10 @@ boolean P_SetupLevel(boolean fromnetsave, boolean reloadinggamestate)
 	P_LoadMapFromFile();
 
 	P_ResetDynamicSlopes();
+
+	// Pre-calculate this lookup, because it was wasting
+	// a shit ton of time loading mobj thinkers.
+	CalculateDoomednumToMobjtype();
 
 	P_SpawnMapThings();
 
@@ -2978,7 +2983,7 @@ boolean P_SetupLevel(boolean fromnetsave, boolean reloadinggamestate)
 
 	G_AddMapToBuffer(gamemap-1);
 
-	D_ResetDeviceLED();
+	G_ResetDeviceLED();
 
 	return true;
 }

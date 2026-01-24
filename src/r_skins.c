@@ -33,7 +33,7 @@
 
 #include "qs22j.h"
 
-CV_PossibleValue_t Forceskin_cons_t[MAXSKINS+2]; // huehuehuehuehue
+CV_PossibleValue_t Forceskin_cons_t[MAXSKINS+2] = {}; // huehuehuehuehue
 
 #include "discord.h"
 
@@ -55,15 +55,15 @@ UINT8 skinstatscount[9][9] = {
 	{0, 0, 0, 0, 0, 0, 0, 0, 0}
 };
 
-UINT8 skinsorted[MAXSKINS];
-skin_t localskins[MAXLOCALSKINS];
-skin_t allskins[MAXSKINS+MAXLOCALSKINS];
+UINT8 skinsorted[MAXSKINS] = {};
+skin_t localskins[MAXLOCALSKINS] = {};
+skin_t allskins[MAXSKINS+MAXLOCALSKINS] = {};
 
 // FIXTHIS: don't work because it must be inistilised before the config load
 //#define SKINVALUES
 #ifdef SKINVALUES
-CV_PossibleValue_t skin_cons_t[MAXSKINS+1];
-CV_PossibleValue_t localskin_cons_t[MAXLOCALSKINS+1];
+CV_PossibleValue_t skin_cons_t[MAXSKINS+1] = {};
+CV_PossibleValue_t localskin_cons_t[MAXLOCALSKINS+1] = {};
 #endif
 
 static void Sk_SetDefaultValue(skin_t *skin, boolean local)
@@ -302,7 +302,7 @@ void SetLocalPlayerSkin(INT32 playernum, const char *skinname, consvar_t *cvar)
 
 		if (player->mo)
 		{
-			player->mo->localskin = 0;
+			player->mo->localskin = NULL;
 			player->mo->skinlocal = false;
 		}
 	}

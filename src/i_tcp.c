@@ -496,8 +496,10 @@ static void cleanupnodes(void)
 
 	// Why can't I start at zero?
 	for (j = 1; j < MAXNETNODES; j++)
+	{
 		if (!(nodeingame[j] || SV_SendingFile(j)))
 			nodeconnected[j] = false;
+	}
 }
 
 static SINT8 getfreenode(void)
@@ -507,11 +509,13 @@ static SINT8 getfreenode(void)
 	cleanupnodes();
 
 	for (j = 0; j < MAXNETNODES; j++)
+	{
 		if (!nodeconnected[j])
 		{
 			nodeconnected[j] = true;
 			return j;
 		}
+	}
 
 	/** \warning No free node? Just in case a node might not have been freed properly,
 	  *          look if there are connected nodes that aren't in game, and forget them.
@@ -568,13 +572,12 @@ void Command_Numnodes(void)
 
 #ifdef HOLEPUNCH
 /* not one of the reserved "local" addresses */
-static boolean
-is_external_address (UINT32 p)
+static boolean is_external_address(UINT32 p)
 {
 	UINT8 a = (p & 255);
 	UINT8 b = ((p >> 8) & 255);
 
-	if (p == (UINT32)~0)/* 255.255.255.255 */
+	if (p == (UINT32)~0) /* 255.255.255.255 */
 		return 0;
 
 	switch (a)
@@ -584,7 +587,7 @@ is_external_address (UINT32 p)
 		case 127:
 			return false;
 		case 172:
-			return (b & ~15) != 16;/* 16 - 31 */
+			return (b & ~15) != 16; /* 16 - 31 */
 		case 192:
 			return b != 168;
 		default:
@@ -635,7 +638,7 @@ static boolean SOCK_Get(void)
 		c = recvfrom(mysockets[n], (char *)&doomcom->data, MAXPACKETLENGTH, 0,
 			(void *)&fromaddress, &fromlen);
 
-		if (c != ERRSOCKET)
+		if (c > 0)
 		{
 #ifdef USE_STUN
 			if (STUN_got_response(doomcom->data, c))
@@ -649,7 +652,6 @@ static boolean SOCK_Get(void)
 				break;
 			}
 #endif
-
 			// find remote node number
 			for (j = 1; j <= MAXNETNODES; j++) // include LAN
 			{
@@ -764,6 +766,7 @@ static void SOCK_Send(void)
 				if (myfamily[i] == broadcastaddress[j].any.sa_family)
 				{
 					c = SOCK_SendToAddr(mysockets[i], &broadcastaddress[j]);
+
 					if (c == ERRSOCKET)
 					{
 						e = errno;
@@ -781,6 +784,7 @@ static void SOCK_Send(void)
 			if (myfamily[i] == clientaddress[doomcom->remotenode].any.sa_family)
 			{
 				c = SOCK_SendToAddr(mysockets[i], &clientaddress[doomcom->remotenode]);
+
 				if (c == ERRSOCKET)
 				{
 					e = errno;
@@ -793,6 +797,7 @@ static void SOCK_Send(void)
 	else
 	{
 		c = SOCK_SendToAddr(nodesocket[doomcom->remotenode], &clientaddress[doomcom->remotenode]);
+
 		if (c == ERRSOCKET)
 		{
 			e = errno;
@@ -811,7 +816,7 @@ static void SOCK_Send(void)
 static void SOCK_FreeNodenum(INT32 numnode)
 {
 	// can't disconnect from self :)
-	if (!numnode || numnode > MAXNETNODES)
+	if (numnode <= 0 || numnode > MAXNETNODES)
 		return;
 
 	DEBFILE(va("Free node %d (%s)\n", numnode, SOCK_GetNodeAddress(numnode)));
@@ -1060,7 +1065,6 @@ static boolean UDP_Socket(void)
 	const INT32 b_ipv6 = M_CheckParm("-ipv6");
 #endif
 	const char *serv;
-
 
 	for (s = 0; s < mysocketses; s++)
 		mysockets[s] = ERRSOCKET;
@@ -1432,14 +1436,12 @@ static void SOCK_RegisterHolePunch(void)
 
 static boolean SOCK_OpenSocket(void)
 {
-	size_t i;
+	memset(clientaddress, 0, sizeof(clientaddress));
 
-	memset(clientaddress, 0, sizeof (clientaddress));
-
+	memset(nodeconnected, false, sizeof(nodeconnected));
 	nodeconnected[0] = true; // always connected to self
-	for (i = 1; i < MAXNETNODES; i++)
-		nodeconnected[i] = false;
 	nodeconnected[BROADCASTADDR] = true;
+
 	I_NetSend = SOCK_Send;
 	I_NetGet = SOCK_Get;
 	I_NetCloseSocket = SOCK_CloseSocket;
@@ -1479,7 +1481,7 @@ static boolean SOCK_Ban(INT32 node)
 {
 	INT32 ban;
 
-	if (node > MAXNETNODES)
+	if (node < 0 || node > MAXNETNODES)
 		return false;
 
 	ban = numbans;

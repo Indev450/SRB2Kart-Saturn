@@ -25,7 +25,7 @@
 
 // Eeeeh not sure is this right way, but it works < sry :c < sry again it had to go :c
 
-#if defined (HWRENDER) && !defined (NOROPENGL)
+#if defined (HWRENDER)
 
 #include "../../r_fps.h" // For R_GetTimeFrac, used for the leveltime shader uniform
 
@@ -98,10 +98,10 @@ static size_t textureBufferSize = 0;
 static LTListItem *LightTablesTail = NULL;
 static LTListItem *LightTablesHead = NULL;
 
-static RGBA_t screenPalette[256] = {0}; // the palette for the postprocessing step in palette rendering
+static RGBA_t screenPalette[256] = {}; // the palette for the postprocessing step in palette rendering
 static GLuint screenPaletteTex = 0; // 1D texture containing the screen palette
 static GLuint paletteLookupTex = 0; // 3D texture containing RGB -> palette index lookup table
-RGBA_t  myPaletteData[256]; // the palette for converting textures to RGBA
+RGBA_t myPaletteData[256] = {}; // the palette for converting textures to RGBA
 
 static GLint gltexformat = GL_RGB5_A1;
 GLint   screen_width     = 0;               // used by Draw2DLine()
@@ -127,9 +127,9 @@ GLuint gl_num_extensions;
 int majorGL = 0, minorGL = 0;
 
 //Hurdler: 04/10/2000: added for the kick ass coronas as Boris wanted;-)
-static GLfloat modelMatrix[16];
-GLfloat projMatrix[16];
-static GLint   viewport[4];
+GLfloat modelMatrix[16] = {};
+GLfloat projMatrix[16] = {};
+static GLint viewport[4];
 
 #ifdef USE_FBO_OGL
 enum
@@ -171,43 +171,9 @@ boolean supportstencil = false;
 //			flush all of the stored textures, leaving them unavailable at times such as between levels
 //			These need to start at 0 and be set to their number, and be reset to 0 when deleted so that Intel GPUs
 //			can know when the textures aren't there, as textures are always considered resident in their virtual memory
-static GLuint screenTextures[NUMSCREENTEXTURES] = {0};
+static GLuint screenTextures[NUMSCREENTEXTURES] = {};
 
-// shortcut for ((float)1/i)
-static const GLfloat byte2float[256] = {
-	0.000000f, 0.003922f, 0.007843f, 0.011765f, 0.015686f, 0.019608f, 0.023529f, 0.027451f,
-	0.031373f, 0.035294f, 0.039216f, 0.043137f, 0.047059f, 0.050980f, 0.054902f, 0.058824f,
-	0.062745f, 0.066667f, 0.070588f, 0.074510f, 0.078431f, 0.082353f, 0.086275f, 0.090196f,
-	0.094118f, 0.098039f, 0.101961f, 0.105882f, 0.109804f, 0.113725f, 0.117647f, 0.121569f,
-	0.125490f, 0.129412f, 0.133333f, 0.137255f, 0.141176f, 0.145098f, 0.149020f, 0.152941f,
-	0.156863f, 0.160784f, 0.164706f, 0.168627f, 0.172549f, 0.176471f, 0.180392f, 0.184314f,
-	0.188235f, 0.192157f, 0.196078f, 0.200000f, 0.203922f, 0.207843f, 0.211765f, 0.215686f,
-	0.219608f, 0.223529f, 0.227451f, 0.231373f, 0.235294f, 0.239216f, 0.243137f, 0.247059f,
-	0.250980f, 0.254902f, 0.258824f, 0.262745f, 0.266667f, 0.270588f, 0.274510f, 0.278431f,
-	0.282353f, 0.286275f, 0.290196f, 0.294118f, 0.298039f, 0.301961f, 0.305882f, 0.309804f,
-	0.313726f, 0.317647f, 0.321569f, 0.325490f, 0.329412f, 0.333333f, 0.337255f, 0.341176f,
-	0.345098f, 0.349020f, 0.352941f, 0.356863f, 0.360784f, 0.364706f, 0.368627f, 0.372549f,
-	0.376471f, 0.380392f, 0.384314f, 0.388235f, 0.392157f, 0.396078f, 0.400000f, 0.403922f,
-	0.407843f, 0.411765f, 0.415686f, 0.419608f, 0.423529f, 0.427451f, 0.431373f, 0.435294f,
-	0.439216f, 0.443137f, 0.447059f, 0.450980f, 0.454902f, 0.458824f, 0.462745f, 0.466667f,
-	0.470588f, 0.474510f, 0.478431f, 0.482353f, 0.486275f, 0.490196f, 0.494118f, 0.498039f,
-	0.501961f, 0.505882f, 0.509804f, 0.513726f, 0.517647f, 0.521569f, 0.525490f, 0.529412f,
-	0.533333f, 0.537255f, 0.541177f, 0.545098f, 0.549020f, 0.552941f, 0.556863f, 0.560784f,
-	0.564706f, 0.568627f, 0.572549f, 0.576471f, 0.580392f, 0.584314f, 0.588235f, 0.592157f,
-	0.596078f, 0.600000f, 0.603922f, 0.607843f, 0.611765f, 0.615686f, 0.619608f, 0.623529f,
-	0.627451f, 0.631373f, 0.635294f, 0.639216f, 0.643137f, 0.647059f, 0.650980f, 0.654902f,
-	0.658824f, 0.662745f, 0.666667f, 0.670588f, 0.674510f, 0.678431f, 0.682353f, 0.686275f,
-	0.690196f, 0.694118f, 0.698039f, 0.701961f, 0.705882f, 0.709804f, 0.713726f, 0.717647f,
-	0.721569f, 0.725490f, 0.729412f, 0.733333f, 0.737255f, 0.741177f, 0.745098f, 0.749020f,
-	0.752941f, 0.756863f, 0.760784f, 0.764706f, 0.768627f, 0.772549f, 0.776471f, 0.780392f,
-	0.784314f, 0.788235f, 0.792157f, 0.796078f, 0.800000f, 0.803922f, 0.807843f, 0.811765f,
-	0.815686f, 0.819608f, 0.823529f, 0.827451f, 0.831373f, 0.835294f, 0.839216f, 0.843137f,
-	0.847059f, 0.850980f, 0.854902f, 0.858824f, 0.862745f, 0.866667f, 0.870588f, 0.874510f,
-	0.878431f, 0.882353f, 0.886275f, 0.890196f, 0.894118f, 0.898039f, 0.901961f, 0.905882f,
-	0.909804f, 0.913726f, 0.917647f, 0.921569f, 0.925490f, 0.929412f, 0.933333f, 0.937255f,
-	0.941177f, 0.945098f, 0.949020f, 0.952941f, 0.956863f, 0.960784f, 0.964706f, 0.968628f,
-	0.972549f, 0.976471f, 0.980392f, 0.984314f, 0.988235f, 0.992157f, 0.996078f, 1.000000f
-};
+#define byte2float(byte) (GLfloat)(byte / 255.0f)
 
 // -----------------+
 // GL_DBG_Printf    : Output debug messages to debug log if DEBUG_TO_FILE is defined,
@@ -216,7 +182,7 @@ static const GLfloat byte2float[256] = {
 // -----------------+
 
 #ifdef DEBUG_TO_FILE
-FILE *gllogstream;
+FILE *gllogstream = NULL;
 #endif
 
 FUNCPRINTF void GL_DBG_Printf(const char *format, ...)
@@ -437,6 +403,14 @@ typedef void (APIENTRY * PFNglEnableClientState) (GLenum cap);
 static PFNglEnableClientState pglEnableClientState;
 typedef void (APIENTRY * PFNglDisableClientState) (GLenum cap);
 static PFNglDisableClientState pglDisableClientState;
+
+typedef void (APIENTRY * PFNglOrtho) (GLdouble left,
+									  GLdouble right,
+									  GLdouble bottom,
+									  GLdouble top,
+									  GLdouble nearVal,
+									  GLdouble farVal);
+static PFNglOrtho pglOrtho;
 
 /* Lighting */
 typedef void (APIENTRY * PFNglShadeModel) (GLenum mode);
@@ -779,7 +753,7 @@ typedef struct gl_shaderstate_s
 static gl_shaderstate_t gl_shaderstate;
 
 // Shader info
-static float shader_leveltime = 0;
+static float shader_leveltime = 0.0f;
 static float shader_light_x = 0.0f;
 static float shader_light_y = 0.0f;
 static float shader_light_z = 0.0f;
@@ -891,6 +865,8 @@ void SetupGLFunc4(void)
 	GetGLfunc(glUniform2fv);
 	GetGLfunc(glUniform3fv);
 	GetGLfunc(glGetUniformLocation);
+
+	GetGLfunc(glOrtho);
 
 #ifdef GLDEBUGMESSAGE
 	GetGLfunc(glDebugMessageCallback);
@@ -1023,11 +999,9 @@ boolean GL_CompileShader(int slot)
 	{
 		return true;
 	}
-	else
-	{
-		gl_shaders[slot].program = 0;
-		return false;
-	}
+
+	gl_shaders[slot].program = 0;
+	return false;
 }
 
 //
@@ -1069,6 +1043,7 @@ void GL_SetShader(int slot)
 		GL_UnSetShader();
 		return;
 	}
+
 	if (gl_allowshaders)
 	{
 		gl_shader_t *next_shader = &gl_shaders[slot]; // the gl_shader_t we are going to switch to
@@ -1130,7 +1105,7 @@ static void GL_SetNoTexture(void)
 // -----------------+
 static void GL_Perspective(GLfloat fovy, GLfloat aspect)
 {
-	GLfloat m[4][4] =
+	static GLfloat m[4][4] =
 	{
 		{ 1.0f, 0.0f, 0.0f, 0.0f},
 		{ 0.0f, 1.0f, 0.0f, 0.0f},
@@ -1138,13 +1113,14 @@ static void GL_Perspective(GLfloat fovy, GLfloat aspect)
 		{ 0.0f, 0.0f, 0.0f, 0.0f},
 	};
 
-	const GLfloat focallength = (GLfloat)(1.0f / (GLfloat)tan(fovy * (GLfloat)M_PIl / 360.0f));
 	const GLfloat deltaZ = FAR_CLIPPING_PLANE - NEAR_CLIPPING_PLANE;
 
 	if ((fabsf((float)deltaZ) < 1.0E-36f) || fpclassify(aspect) == FP_ZERO)
 	{
 		return;
 	}
+
+	const GLfloat focallength = (1.0f / tanf(fovy * M_PIf / 360.0f));
 
 	m[0][0] = focallength / aspect;
 	m[1][1] = focallength;
@@ -1159,7 +1135,7 @@ static void GL_Perspective(GLfloat fovy, GLfloat aspect)
 // -----------------+
 void GL_SetModelView(GLint w, GLint h)
 {
-	GLint maxtexsize = 0;
+	static GLint maxtexsize = 0;
 	//GL_DBG_Printf("SetModelView(): %dx%d\n", (int)w, (int)h);
 
 	// The screen textures need to be flushed if the width or height change so that they be remade for the correct size
@@ -1192,7 +1168,9 @@ void GL_SetModelView(GLint w, GLint h)
 			screen_texsizeh <<= 1;
 	}
 
-	pglGetIntegerv(GL_MAX_TEXTURE_SIZE, &maxtexsize); // Get the maximum supported texture size
+	if (!maxtexsize)
+		pglGetIntegerv(GL_MAX_TEXTURE_SIZE, &maxtexsize); // Get the maximum supported texture size
+
 	if ((screen_texsizew > maxtexsize || screen_texsizeh > maxtexsize) && maxtexsize > 0)
 	{
 		// The desired screen texture resolution is too big for the player's GPU!
@@ -1338,7 +1316,8 @@ void GL_DeleteTexture(GLMipmap_t *pTexInfo)
 
 	if (!pTexInfo)
 		return;
-	else if (pTexInfo->downloaded)
+
+	if (pTexInfo->downloaded)
 		pglDeleteTextures(1, (GLuint *)&pTexInfo->downloaded);
 
 	while (head)
@@ -1392,7 +1371,8 @@ void GL_Flush(void)
 	TexCacheTail = TexCacheHead = NULL; //Hurdler: well, TexCacheHead is already NULL
 	tex_downloaded = 0;
 
-	free(textureBuffer);
+	if (textureBuffer)
+		free(textureBuffer);
 	textureBuffer = NULL;
 	textureBufferSize = 0;
 }
@@ -1498,14 +1478,14 @@ void GL_ReadScreenTexture(int tex, UINT8 *restrict dest, INT32 scale)
 // -----------------+
 void GL_SetPalette(RGBA_t *palette)
 {
-	INT32 i;
+	const size_t palsize = (sizeof(RGBA_t) * 256);
 
-	for (i = 0; i < 256; i++)
+	// on a palette change, you have to reload all of the textures
+	if (memcmp(myPaletteData, palette, palsize))
 	{
-		myPaletteData[i].s = palette[i].s;
+		memcpy(myPaletteData, palette, palsize);
+		GL_Flush();
 	}
-
-	GL_Flush();
 }
 
 // -----------------+
@@ -1546,6 +1526,7 @@ void GL_ClearBuffer(FBOOLEAN ColorMask, FBOOLEAN DepthMask, FBOOLEAN StencilMask
 
 		ClearMask |= GL_COLOR_BUFFER_BIT;
 	}
+
 	if (DepthMask)
 	{
 		pglClearDepth(1.0f);     //Hurdler: all that are permanen states
@@ -1557,7 +1538,7 @@ void GL_ClearBuffer(FBOOLEAN ColorMask, FBOOLEAN DepthMask, FBOOLEAN StencilMask
 	GL_SetBlend(DepthMask ? PF_Occlude | CurrentPolyFlags : CurrentPolyFlags&~PF_Occlude);
 
 	if (StencilMask)
-		ClearMask |= GL_STENCIL_BUFFER_BIT;// looks like sometimes stencil buffer needs clearing? had a problem with random black screens
+		ClearMask |= GL_STENCIL_BUFFER_BIT; // looks like sometimes stencil buffer needs clearing? had a problem with random black screens
 
 	pglClear(ClearMask);
 	pglEnableClientState(GL_VERTEX_ARRAY); // We always use this one
@@ -1582,11 +1563,11 @@ void GL_Draw2DLine(F2DCoord * v1, F2DCoord * v2, RGBA_t Color)
 
 	// This is the preferred, 'modern' way of rendering lines -- creating a polygon.
 	if (fabsf(v2->x - v1->x) > FLT_EPSILON)
-		angle = (float)atan((v2->y-v1->y)/(v2->x-v1->x));
+		angle = atanf((v2->y-v1->y)/(v2->x-v1->x));
 	else
 		angle = (float)N_PI_DEMI;
-	dx = (float)sin(angle) / (float)screen_width;
-	dy = (float)cos(angle) / (float)screen_height;
+	dx = sinf(angle) / (float)screen_width;
+	dy = cosf(angle) / (float)screen_height;
 
 	p[0] = v1->x - dx;  p[1] = -(v1->y + dy); p[2] = 1;
 	p[3] = v2->x - dx;  p[4] = -(v2->y + dy); p[5] = 1;
@@ -1601,18 +1582,21 @@ void GL_Draw2DLine(F2DCoord * v1, F2DCoord * v2, RGBA_t Color)
 	pglEnableClientState(GL_TEXTURE_COORD_ARRAY);
 	pglEnable(GL_TEXTURE_2D);
 }
+
+static inline void Clamp2D(GLenum pname)
+{
+#ifdef GL_CLAMP_TO_EDGE
+	pglTexParameteri(GL_TEXTURE_2D, pname, GL_CLAMP_TO_EDGE);
+#else
+	pglTexParameteri(GL_TEXTURE_2D, pname, GL_CLAMP); // fallback clamp
+#endif
+}
+
 // -----------------+
 // SetBlend         : Set render mode
 // -----------------+
 // PF_Masked - we could use an ALPHA_TEST of GL_EQUAL, and alpha ref of 0,
 //             is it faster when pixels are discarded ?
-static void Clamp2D(GLenum pname)
-{
-	pglTexParameteri(GL_TEXTURE_2D, pname, GL_CLAMP); // fallback clamp
-#ifdef GL_CLAMP_TO_EDGE
-	pglTexParameteri(GL_TEXTURE_2D, pname, GL_CLAMP_TO_EDGE);
-#endif
-}
 
 static void GL_SetBlendEquation(GLenum mode)
 {
@@ -1761,14 +1745,6 @@ void GL_SetBlend(FBITFIELD PolyFlags)
 
 		if (Xor & PF_Modulated)
 		{
-#if defined (__unix__) || defined (UNIXCOMMON)
-			if (oglflags & GLF_NOTEXENV)
-			{
-				if (!(PolyFlags & PF_Modulated))
-					pglColor4ubv(white);
-			}
-			else
-#endif
 			if (PolyFlags & PF_Modulated)
 			{   // mix texture colour with Surface->PolyColor
 				pglTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
@@ -2004,7 +1980,7 @@ void GL_UpdateTexture(GLMipmap_t *pTexInfo)
 				{
 					if (chromakeyed && (*pImgData == HWR_PATCHES_CHROMAKEY_COLORINDEX))
 					{
-						tex[idx].s = (byteColor_t){0, 0, 0, 0};
+						memset(&tex[idx].s, 0, sizeof(byteColor_t));
 						pTexInfo->flags |= TF_TRANSPARENT; // there is a hole in it
 					}
 					else
@@ -2016,10 +1992,9 @@ void GL_UpdateTexture(GLMipmap_t *pTexInfo)
 
 					if (texinfoformat != GL_TEXFMT_AP_88)
 						continue;
-					if (chromakeyed)
-						continue;
 
-					tex[idx].s.alpha = *pImgData;
+					if (!chromakeyed)
+						tex[idx].s.alpha = *pImgData;
 					pImgData++;
 				}
 			}
@@ -2054,9 +2029,9 @@ void GL_UpdateTexture(GLMipmap_t *pTexInfo)
 			{
 				for (i = 0; i < w; i++, idx++)
 				{
-					tex[idx].s.red   = *pImgData;
-					tex[idx].s.green = *pImgData;
-					tex[idx].s.blue  = *pImgData;
+					tex[idx].s.red =
+					tex[idx].s.green =
+					tex[idx].s.blue = *pImgData;
 					pImgData++;
 					tex[idx].s.alpha = *pImgData;
 					pImgData++;
@@ -2143,7 +2118,8 @@ void GL_SetTexture(GLMipmap_t *pTexInfo)
 		GL_SetNoTexture();
 		return;
 	}
-	else if (pTexInfo->downloaded)
+
+	if (pTexInfo->downloaded)
 	{
 		if (pTexInfo->downloaded != tex_downloaded)
 		{
@@ -2243,16 +2219,10 @@ static void GL_Shader_SetUniforms(FSurfaceInfo *Surface, GLRGBAFloat *poly, GLRG
 			UNIFORM_1(shader->uniforms[gluniform_light_contrast], shader_light_contrast, pglUniform1f);
 			UNIFORM_1(shader->uniforms[gluniform_light_backlight], shader_light_backlight, pglUniform1f);
 		}
-		else
-		{
-			UNIFORM_3(shader->uniforms[gluniform_light_dir], 0, 0, 0, pglUniform3f);
-			UNIFORM_1(shader->uniforms[gluniform_light_contrast], 0, pglUniform1f);
-			UNIFORM_1(shader->uniforms[gluniform_light_backlight], 0, pglUniform1f);
-		}
 
 		UNIFORM_1(shader->uniforms[gluniform_leveltime], shader_leveltime, pglUniform1f);
 
-		UNIFORM_2(shader->uniforms[gluniform_scr_resolution], vid.width, vid.height, pglUniform2f);
+		UNIFORM_2(shader->uniforms[gluniform_scr_resolution], (GLfloat)vid.width, (GLfloat)vid.height, pglUniform2f);
 
 		#undef UNIFORM_1
 		#undef UNIFORM_2
@@ -2419,38 +2389,38 @@ static void GL_PreparePolygon(FSurfaceInfo *pSurf, FBITFIELD PolyFlags)
 
 	if (pSurf)
 	{
-		// If modulated, mix the surface colour to the texture
-		if (CurrentPolyFlags & PF_Modulated)
-			pglColor4ubv((GLubyte*)&pSurf->PolyColor.s);
-
 		// If the surface is either modulated or colormapped, or both
 		if (CurrentPolyFlags & (PF_Modulated | PF_ColorMapped))
 		{
-			poly.red   = byte2float[pSurf->PolyColor.s.red];
-			poly.green = byte2float[pSurf->PolyColor.s.green];
-			poly.blue  = byte2float[pSurf->PolyColor.s.blue];
-			poly.alpha = byte2float[pSurf->PolyColor.s.alpha];
-		}
+			// If modulated, mix the surface colour to the texture
+			if (CurrentPolyFlags & PF_Modulated)
+				pglColor4ubv((GLubyte*)&pSurf->PolyColor.s);
 
-		// Only if the surface is colormapped
-		if (CurrentPolyFlags & PF_ColorMapped)
-		{
-			tint.red   = byte2float[pSurf->TintColor.s.red];
-			tint.green = byte2float[pSurf->TintColor.s.green];
-			tint.blue  = byte2float[pSurf->TintColor.s.blue];
-			tint.alpha = byte2float[pSurf->TintColor.s.alpha];
+			poly.red   = byte2float(pSurf->PolyColor.s.red);
+			poly.green = byte2float(pSurf->PolyColor.s.green);
+			poly.blue  = byte2float(pSurf->PolyColor.s.blue);
+			poly.alpha = byte2float(pSurf->PolyColor.s.alpha);
 
-			fade.red   = byte2float[pSurf->FadeColor.s.red];
-			fade.green = byte2float[pSurf->FadeColor.s.green];
-			fade.blue  = byte2float[pSurf->FadeColor.s.blue];
-			fade.alpha = byte2float[pSurf->FadeColor.s.alpha];
-
-			if (pSurf->LightTableId && pSurf->LightTableId != lt_downloaded)
+			// Only if the surface is colormapped
+			if (CurrentPolyFlags & PF_ColorMapped)
 			{
-				pglActiveTexture(GL_TEXTURE2);
-				pglBindTexture(GL_TEXTURE_2D, pSurf->LightTableId);
-				pglActiveTexture(GL_TEXTURE0);
-				lt_downloaded = pSurf->LightTableId;
+				tint.red   = byte2float(pSurf->TintColor.s.red);
+				tint.green = byte2float(pSurf->TintColor.s.green);
+				tint.blue  = byte2float(pSurf->TintColor.s.blue);
+				tint.alpha = byte2float(pSurf->TintColor.s.alpha);
+
+				fade.red   = byte2float(pSurf->FadeColor.s.red);
+				fade.green = byte2float(pSurf->FadeColor.s.green);
+				fade.blue  = byte2float(pSurf->FadeColor.s.blue);
+				fade.alpha = byte2float(pSurf->FadeColor.s.alpha);
+
+				if (pSurf->LightTableId && pSurf->LightTableId != lt_downloaded)
+				{
+					pglActiveTexture(GL_TEXTURE2);
+					pglBindTexture(GL_TEXTURE_2D, pSurf->LightTableId);
+					pglActiveTexture(GL_TEXTURE0);
+					lt_downloaded = pSurf->LightTableId;
+				}
 			}
 		}
 	}
@@ -2962,24 +2932,24 @@ void GL_DrawModelEx(model_t *model, INT32 frameIndex, float duration, float tics
 			pol = 0.0f;
 	}
 
-	poly.red    = byte2float[Surface->PolyColor.s.red];
-	poly.green  = byte2float[Surface->PolyColor.s.green];
-	poly.blue   = byte2float[Surface->PolyColor.s.blue];
-	poly.alpha  = byte2float[Surface->PolyColor.s.alpha];
+	poly.red    = byte2float(Surface->PolyColor.s.red);
+	poly.green  = byte2float(Surface->PolyColor.s.green);
+	poly.blue   = byte2float(Surface->PolyColor.s.blue);
+	poly.alpha  = byte2float(Surface->PolyColor.s.alpha);
 
 	pglColor4ubv((GLubyte*)&Surface->PolyColor.s);
 
 	GL_SetBlend(((poly.alpha < 1) ? Surface->PolyFlags : (PF_Masked|PF_Occlude))|PF_Modulated);
 
-	tint.red    = byte2float[Surface->TintColor.s.red];
-	tint.green  = byte2float[Surface->TintColor.s.green];
-	tint.blue   = byte2float[Surface->TintColor.s.blue];
-	tint.alpha  = byte2float[Surface->TintColor.s.alpha];
+	tint.red    = byte2float(Surface->TintColor.s.red);
+	tint.green  = byte2float(Surface->TintColor.s.green);
+	tint.blue   = byte2float(Surface->TintColor.s.blue);
+	tint.alpha  = byte2float(Surface->TintColor.s.alpha);
 
-	fade.red   = byte2float[Surface->FadeColor.s.red];
-	fade.green = byte2float[Surface->FadeColor.s.green];
-	fade.blue  = byte2float[Surface->FadeColor.s.blue];
-	fade.alpha = byte2float[Surface->FadeColor.s.alpha];
+	fade.red   = byte2float(Surface->FadeColor.s.red);
+	fade.green = byte2float(Surface->FadeColor.s.green);
+	fade.blue  = byte2float(Surface->FadeColor.s.blue);
+	fade.alpha = byte2float(Surface->FadeColor.s.alpha);
 
 	if (Surface->LightTableId && Surface->LightTableId != lt_downloaded)
 	{
@@ -3130,14 +3100,47 @@ void GL_DrawModelEx(model_t *model, INT32 frameIndex, float duration, float tics
 	pglDisable(GL_NORMALIZE);
 }
 
+void GL_Draw2DModel(model_t *model, INT32 frameIndex, INT32 duration, INT32 tics, INT32 nextFrameIndex,
+                      FTransform *pos, float hscale, float vscale, UINT8 flipped, UINT8 hflipped, FSurfaceInfo *Surface)
+{
+	// save our matrix´s
+	pglMatrixMode(GL_PROJECTION);
+	pglPushMatrix();
+	pglMatrixMode(GL_MODELVIEW);
+	pglPushMatrix();
+
+	pglMatrixMode(GL_PROJECTION);
+	pglLoadIdentity();
+
+	// switch to ortho mode to make our lives easier
+	// thisll make sure our coords will be remapped to pixel coords
+	pglOrtho(0.0f, (float)vid.width, (float)vid.height, 0.0f, NZCLIP_PLANE, FAR_ZCLIP_DEFAULT);
+
+	pglMatrixMode(GL_MODELVIEW);
+	pglLoadIdentity();
+
+	pglEnable(GL_DEPTH_TEST);
+	pglDepthMask(GL_TRUE);
+	pglClear(GL_DEPTH_BUFFER_BIT);
+
+	GL_DrawModelEx(model, frameIndex, duration, tics, nextFrameIndex,
+	               pos, hscale, vscale, flipped, hflipped, Surface);
+
+	// restore the matrix´s
+	pglMatrixMode(GL_PROJECTION);
+	pglPopMatrix();
+	pglMatrixMode(GL_MODELVIEW);
+	pglPopMatrix();
+}
+
 // -----------------+
 // SetTransform     :
 // -----------------+
 void GL_SetTransform(FTransform *stransform)
 {
 	static boolean special_splitscreen;
-	GLdouble used_fov;
 	boolean shearing = false;
+	float used_fov;
 
 	pglLoadIdentity();
 
@@ -3187,7 +3190,8 @@ void GL_SetTransform(FTransform *stransform)
 	{
 		float dy = stransform->viewaiming * 2;
 
-		if (stransform->fliptype == TRANSFORM_FLIP || stransform->fliptype == TRANSFORM_MIRRORFLIP)
+		if (stransform->fliptype == TRANSFORM_FLIP
+			|| stransform->fliptype == TRANSFORM_MIRRORFLIP)
 			dy *= -1.0f;
 
 		pglTranslatef(0.0f, -dy/BASEVIDHEIGHT, 0.0f);
@@ -3195,11 +3199,13 @@ void GL_SetTransform(FTransform *stransform)
 
 	if (special_splitscreen)
 	{
-		used_fov = (float)(atan(tan(used_fov * M_PIl / 360) * 0.8) * 360 / M_PIl);
-		GL_Perspective((GLfloat)used_fov, 2*ASPECT_RATIO);
+		used_fov = (atanf(tanf(used_fov * M_PIf / 360.0f) * 0.8f) * 360.0f / M_PIf);
+		GL_Perspective(used_fov, 2*ASPECT_RATIO);
 	}
 	else
-		GL_Perspective((GLfloat)used_fov, ASPECT_RATIO);
+	{
+		GL_Perspective(used_fov, ASPECT_RATIO);
+	}
 
 	pglGetFloatv(GL_PROJECTION_MATRIX, projMatrix); // added for new coronas' code (without depth buffer)
 	pglMatrixMode(GL_MODELVIEW);
@@ -3333,8 +3339,8 @@ void GL_Framebuffer_Disable(void)
 	// delet our fbo
 	if (framebufferobject.fboobj)
 		pglDeleteFramebuffers(1, &framebufferobject.fboobj);
-
 	framebufferobject.fboobj = 0;
+
 	GL_Framebuffer_DeleteAttachments();
 }
 #endif
@@ -3464,7 +3470,7 @@ void GL_FlushScreenTextures(void)
 
 void GL_DrawScreenTexture(int tex, FSurfaceInfo *surf, FBITFIELD polyflags)
 {
-	float fix[8];
+	static float fix[8];
 	float xfix, yfix;
 
 	if (gl_enable_screen_textures != 2)
@@ -3473,14 +3479,8 @@ void GL_DrawScreenTexture(int tex, FSurfaceInfo *surf, FBITFIELD polyflags)
 	xfix = 1/((float)screen_texsizew/(float)screen_width);
 	yfix = 1/((float)screen_texsizeh/(float)screen_height);
 
-	fix[0] = 0.0f;
-	fix[1] = 0.0f;
-	fix[2] = 0.0f;
-	fix[3] = yfix;
-	fix[4] = xfix;
-	fix[5] = yfix;
-	fix[6] = xfix;
-	fix[7] = 0.0f;
+	fix[3] = fix[5] = yfix;
+	fix[4] = fix[6] = xfix;
 
 	pglClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
 
@@ -3591,22 +3591,30 @@ void GL_RenderVhsEffect(fixed_t upbary, fixed_t downbary, UINT8 updistort, UINT8
 		 1.0f, -1.0f, 1.0f
 	};
 
-	xfix = 1/((float)screen_texsizew/(float)screen_width);
-	yfix = 1/((float)screen_texsizeh/(float)screen_height);
-
 	const GLfloat scrwf = (float)screen_width;
 	const GLfloat scrwh = (float)screen_height;
 
+	xfix = 1/((float)screen_texsizew/scrwf);
+	yfix = 1/((float)screen_texsizeh/scrwh);
+
+	GL_SetBlend(PF_Modulated|PF_Translucent|PF_NoDepthTest);
+
 	// Slight fuzziness
 	GL_MakeScreenTexture(HWD_SCREENTEXTURE_VHS);
-	GL_SetBlend(PF_Modulated|PF_Translucent|PF_NoDepthTest);
 	pglBindTexture(GL_TEXTURE_2D, screenTextures[HWD_SCREENTEXTURE_VHS]);
 
-	const float stride = 2.f/scrwh;
+	uint32_t r = rand();
 
-	for (i = 0; i < 1; i += stride)
+	const float ystep = 2.f/scrwh * (float)vid.udup/4.f;
+
+	for (i = 0; i < 1; i += ystep)
 	{
-		fix[2] = (float)(rand() % 128) / -22000.f * xfix;
+		// avoid calling rand thousands of times
+		r ^= r >> 13;
+		r ^= r >> 11;
+		r ^= r << 21;
+
+		fix[2] = (float)(r & 127) / -22000.f * xfix;
 		fix[0] = fix[2];
 		fix[6] = fix[0] + xfix;
 		fix[4] = fix[2] + xfix;
@@ -3624,8 +3632,8 @@ void GL_RenderVhsEffect(fixed_t upbary, fixed_t downbary, UINT8 updistort, UINT8
 	}
 
 	// Upward bar
-	//GL_MakeScreenTexture(HWD_SCREENTEXTURE_VHS);
-	//pglBindTexture(GL_TEXTURE_2D, screenTextures[HWD_SCREENTEXTURE_VHS]);
+	GL_MakeScreenTexture(HWD_SCREENTEXTURE_VHS);
+	pglBindTexture(GL_TEXTURE_2D, screenTextures[HWD_SCREENTEXTURE_VHS]);
 
 	color[0] = color[1] = color[2] = 190;
 	color[3] = 250;
@@ -3648,13 +3656,14 @@ void GL_RenderVhsEffect(fixed_t upbary, fixed_t downbary, UINT8 updistort, UINT8
 
 	fix[1] = fix[7] += (fix[3] - fix[7])*2;
 	screenVerts[1] = screenVerts[10] += (screenVerts[4] - screenVerts[1])*2;
+
 	pglTexCoordPointer(2, GL_FLOAT, 0, fix);
 	pglVertexPointer(3, GL_FLOAT, 0, screenVerts);
 	pglDrawArrays(GL_TRIANGLE_FAN, 0, 4);
 
 	// Downward bar
-	//GL_MakeScreenTexture(HWD_SCREENTEXTURE_VHS);
-	//pglBindTexture(GL_TEXTURE_2D, screenTextures[HWD_SCREENTEXTURE_VHS]);
+	GL_MakeScreenTexture(HWD_SCREENTEXTURE_VHS);
+	pglBindTexture(GL_TEXTURE_2D, screenTextures[HWD_SCREENTEXTURE_VHS]);
 
 	fix[0] = 0.0f;
 	fix[6] = xfix;
@@ -3673,6 +3682,7 @@ void GL_RenderVhsEffect(fixed_t upbary, fixed_t downbary, UINT8 updistort, UINT8
 
 	fix[1] = fix[7] += (fix[3] - fix[7])*2;
 	screenVerts[1] = screenVerts[10] += (screenVerts[4] - screenVerts[1])*2;
+
 	pglTexCoordPointer(2, GL_FLOAT, 0, fix);
 	pglVertexPointer(3, GL_FLOAT, 0, screenVerts);
 	pglDrawArrays(GL_TRIANGLE_FAN, 0, 4);
@@ -3712,9 +3722,15 @@ void GL_DrawScreenFinalTexture(int tex, INT32 width, INT32 height, boolean usesh
 {
 	float xfix, yfix;
 	float origaspect, newaspect;
-	float xoff = 1, yoff = 1; // xoffset and yoffset for the polygon to have black bars around the screen
+	float xoff = 1.0f, yoff = 1.0f; // xoffset and yoffset for the polygon to have black bars around the screen
 
-	static float off[12];
+	static float off[12] =
+	{
+		1.0f, 1.0f, 1.0f, 1.0f,
+		1.0f, 1.0f, 1.0f, 1.0f,
+		1.0f, 1.0f, 1.0f, 1.0f
+	};
+
 	static float fix[8];
 
 	if (gl_enable_screen_textures != 2)
@@ -3729,37 +3745,23 @@ void GL_DrawScreenFinalTexture(int tex, INT32 width, INT32 height, boolean usesh
 	if (origaspect < newaspect)
 	{
 		xoff = origaspect / newaspect;
-		yoff = 1;
+		yoff = 1.0f;
 	}
 	else if (origaspect > newaspect)
 	{
-		xoff = 1;
+		xoff = 1.0f;
 		yoff = newaspect / origaspect;
 	}
 
 	// float off[12];
-	off[0] = -xoff;
-	off[1] = -yoff;
-	off[2] = 1.0f;
-	off[3] = -xoff;
-	off[4] = yoff;
-	off[5] = 1.0f;
-	off[6] = xoff;
-	off[7] = yoff;
-	off[8] = 1.0f;
-	off[9] = xoff;
-	off[10] = -yoff;
-	off[11] = 1.0f;
+	off[0] = off[3]  = -xoff;
+	off[1] = off[10] = -yoff;
+	off[4] = off[7]  =  yoff;
+	off[6] = off[9]  =  xoff;
 
 	// float fix[8];
-	fix[0] = 0.0f;
-	fix[1] = 0.0f;
-	fix[2] = 0.0f;
-	fix[3] = yfix;
-	fix[4] = xfix;
-	fix[5] = yfix;
-	fix[6] = xfix;
-	fix[7] = 0.0f;
+	fix[3] = fix[5] = yfix;
+	fix[4] = fix[6] = xfix;
 
 	pglViewport(0, 0, width, height);
 

@@ -21,28 +21,28 @@
 
 // The texture for the next polygon given to HWR_ProcessPolygon.
 // Set with HWR_SetCurrentTexture.
-GLMipmap_t *current_texture = NULL;
+static GLMipmap_t *current_texture = NULL;
 
-boolean currently_batching = false;
+static boolean currently_batching = false;
 
-FOutVector* finalVertexArray  = NULL;// contains subset of sorted vertices and texture coordinates to be sent to gpu
-UINT32* finalVertexIndexArray = NULL;// contains indexes for glDrawElements, taking into account fan->triangles conversion
+static FOutVector* finalVertexArray  = NULL;// contains subset of sorted vertices and texture coordinates to be sent to gpu
+static UINT32* finalVertexIndexArray = NULL;// contains indexes for glDrawElements, taking into account fan->triangles conversion
 //     NOTE have this alloced as 3x finalVertexArray size
-int finalVertexArrayAllocSize = 65536;
+static int finalVertexArrayAllocSize = 65536;
 
 //GLubyte* colorArray = NULL;// contains color data to be sent to gpu, if needed
 //int colorArrayAllocSize = 65536;
 // not gonna use this for now, just sort by color and change state when it changes
 // later maybe when using vertex attributes if it's needed
 
-PolygonArrayEntry* polygonArray        = NULL ;// contains the polygon data from DrawPolygon, waiting to be processed
-PolygonArrayEntry **polygonArraySorted = NULL; // contains sorted pointers to polygonArray
-int polygonArraySize      = 0;
-int polygonArrayAllocSize = 65536;
+static PolygonArrayEntry* polygonArray        = NULL ;// contains the polygon data from DrawPolygon, waiting to be processed
+static PolygonArrayEntry **polygonArraySorted = NULL; // contains sorted pointers to polygonArray
+static int polygonArraySize      = 0;
+static int polygonArrayAllocSize = 65536;
 
-FOutVector* unsortedVertexArray  = NULL; // contains unsorted vertices and texture coordinates from DrawPolygon
-int unsortedVertexArraySize      = 0;
-int unsortedVertexArrayAllocSize = 65536;
+static FOutVector* unsortedVertexArray  = NULL; // contains unsorted vertices and texture coordinates from DrawPolygon
+static int unsortedVertexArraySize      = 0;
+static int unsortedVertexArrayAllocSize = 65536;
 
 // Enables batching mode. HWR_ProcessPolygon will collect polygons instead of passing them directly to the rendering backend.
 // Call HWR_RenderBatches to render all the collected geometry.
@@ -126,8 +126,9 @@ void HWR_ProcessPolygon(FSurfaceInfo *pSurf, FOutVector *pOutVerts, FUINT iNumPt
 		if (!(PolyFlags & PF_NoTexture) && !horizonSpecial)
 		{
 			// use FNV-1a to hash polygons for later sorting.
-			INT32 hash = 0x811c9dc5;
-#define DIGEST(h, x) h ^= (x); h *= 0x01000193
+			UINT32 hash = 0x811c9dc5;
+			UINT32 prime = 0x1000193;
+#define DIGEST(h, x) h ^= ((UINT32)(x)); h *= prime
 			if (current_texture)
 			{
 				DIGEST(hash, current_texture->downloaded);
@@ -148,7 +149,7 @@ void HWR_ProcessPolygon(FSurfaceInfo *pSurf, FOutVector *pOutVerts, FUINT iNumPt
 			}
 #undef DIGEST
 			// remove the sign bit to ensure that skybox and horizon line comes first.
-			polygonArray[polygonArraySize-1].hash = (hash & INT32_MAX);
+			polygonArray[polygonArraySize-1].hash = (INT32)(hash & INT32_MAX);
 		}
 
 		memcpy(&unsortedVertexArray[unsortedVertexArraySize], pOutVerts, iNumPts * sizeof(FOutVector));
@@ -168,8 +169,10 @@ static int comparePolygons(const void *p1, const void *p2)
 	const PolygonArrayEntry *poly1 = *(PolygonArrayEntry *const *)p1;
 	const PolygonArrayEntry *poly2 = *(PolygonArrayEntry *const *)p2;
 
-	const int shader1 = (poly1->polyFlags & PF_NoTexture || poly1->horizonSpecial) ? -1 : poly1->shader;
-	const int shader2 = (poly2->polyFlags & PF_NoTexture || poly2->horizonSpecial) ? -1 : poly2->shader;
+	// special case with signedness to prevent overflowing
+	// FIXME: check for prediction slowdowns!
+	const int shader1 = poly1->hash & 0x80000000 ? -1 : poly1->shader;
+	const int shader2 = poly2->hash & 0x80000000 ? -1 : poly2->shader;
 
 	// skywalls and horizon lines must retain their order for horizon lines to work
 	if (shader1 == -1 && shader2 == -1)
@@ -210,8 +213,8 @@ static int comparePolygonsNoShaders(const void *p1, const void *p2)
 	const PolygonArrayEntry *poly1 = *(PolygonArrayEntry *const *)p1;
 	const PolygonArrayEntry *poly2 = *(PolygonArrayEntry *const *)p2;
 
-	const GLMipmap_t *texture1 = (poly1->polyFlags & PF_NoTexture || poly1->horizonSpecial) ? NULL : poly1->texture;
-	const GLMipmap_t *texture2 = (poly2->polyFlags & PF_NoTexture || poly2->horizonSpecial) ? NULL : poly2->texture;
+	const GLMipmap_t *texture1 = poly1->hash & 0x80000000 ? NULL : poly1->texture;
+	const GLMipmap_t *texture2 = poly2->hash & 0x80000000 ? NULL : poly2->texture;
 
 	// skywalls and horizon lines must retain their order for horizon lines to work
 	if (!texture1 && !texture2)
@@ -219,6 +222,7 @@ static int comparePolygonsNoShaders(const void *p1, const void *p2)
 
 	UINT32 downloaded1 = texture1 ? texture1->downloaded : 0; // there should be a opengl texture name here, usable for comparisons
 	UINT32 downloaded2 = texture2 ? texture2->downloaded : 0;
+
 	diff64 = downloaded1 - downloaded2;
 	if (diff64 != 0) return diff64;
 
@@ -260,7 +264,7 @@ void HWR_RenderBatches(void)
 	nextSurfaceInfo.LightInfo.light_level = 0;
 	nextSurfaceInfo.LightInfo.directional = false;
 
-	currently_batching = false;// no longer collecting batches
+	currently_batching = false; // no longer collecting batches
 
 	if (!polygonArraySize)
 	{
@@ -269,6 +273,8 @@ void HWR_RenderBatches(void)
 			= ps_hw_numcolors.value.i = 0;
 		return;// nothing to draw
 	}
+
+	const boolean useshader = HWR_UseShader();
 
 	// init stats vars
 	ps_hw_numpolys.value.i = polygonArraySize;
@@ -284,7 +290,7 @@ void HWR_RenderBatches(void)
 
 	// sort polygons
 	PS_START_TIMING(ps_hw_batchsorttime);
-	qs22j(polygonArraySorted, polygonArraySize, sizeof(PolygonArrayEntry *), (HWR_UseShader() ? comparePolygons : comparePolygonsNoShaders));
+	qs22j(polygonArraySorted, polygonArraySize, sizeof(PolygonArrayEntry *), (useshader ? comparePolygons : comparePolygonsNoShaders));
 	PS_STOP_TIMING(ps_hw_batchsorttime);
 
 	// sort order
@@ -305,7 +311,7 @@ void HWR_RenderBatches(void)
 
 	// set state for first batch
 
-	if (HWR_UseShader())
+	if (useshader)
 	{
 		GL_SetShader(currentShader);
 	}
@@ -385,9 +391,9 @@ void HWR_RenderBatches(void)
 				nextSurfaceInfo = nextEntry->surf;
 
 				if (nextPolyFlags & PF_NoTexture)
-					nextTexture = 0;
+					nextTexture = NULL;
 
-				if (currentShader != nextShader && HWR_UseShader())
+				if (useshader && currentShader != nextShader)
 				{
 					changeState = true;
 					changeShader = true;
@@ -405,7 +411,7 @@ void HWR_RenderBatches(void)
 					changePolyFlags = true;
 				}
 
-				if (HWR_UseShader())
+				if (useshader)
 				{
 					if (currentSurfaceInfo.PolyColor.rgba != nextSurfaceInfo.PolyColor.rgba ||
 						currentSurfaceInfo.TintColor.rgba != nextSurfaceInfo.TintColor.rgba ||

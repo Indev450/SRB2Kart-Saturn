@@ -384,7 +384,6 @@ void F_RunWipe(UINT8 wipetype, boolean drawMenu)
 			F_DoWipe(fmask);
 
 		I_OsPolling();
-		I_UpdateNoBlit();
 
 		if (rendermode != render_none && drawMenu)
 		{

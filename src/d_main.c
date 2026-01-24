@@ -46,6 +46,7 @@
 #include "i_time.h"
 #include "i_threads.h"
 #include "i_video.h"
+#include "hu_stuff.h"
 #include "m_argv.h"
 #include "m_menu.h"
 #include "m_misc.h"
@@ -69,7 +70,7 @@
 #include "fastcmp.h"
 #include "r_fps.h" // Frame interpolation/uncapped
 #include "keys.h"
-#include "filesrch.h" // refreshdirmenu, pathisdirectory
+#include "filesrch.h" // pathisdirectory
 #include "d_protocol.h"
 #include "m_perfstats.h"
 #include "k_kart.h"
@@ -78,6 +79,31 @@
 #include "core/memory.h"
 
 #include "lua_script.h"
+
+/* Manually defined asset hashes for non-CMake builds
+ * Last updated 2015 / 05 / 03 - SRB2 v2.1.15 - srb2.srb
+ * Last updated 2018 / 12 / 23 - SRB2 v2.1.22 - patch.dta
+ * Last updated 2019 / 01 / 18 - Kart v1.0.2 - Main assets
+ * Last updated 2020 / 08 / 30 - Kart v1.3 - patch.kart
+ * Last updated 2022 / 08 / 16 - Kart v1.4 - Main assets
+ * Last updated 2022 / 08 / 19 - Kart v1.5 - gfx.kart
+ * Last updated 2022 / 11 / 01 - Kart v1.6 - gfx.kart, maps.kart
+ */
+
+// Base SRB2 hashes
+#define ASSET_HASH_SRB2_SRB      "c1b9577687f8a795104aef4600720ea7"
+#ifdef USE_PATCH_DTA
+#define ASSET_HASH_PATCH_DTA     "b04fd9624bfd94dc96dcf4f400f7deb4"
+#endif
+
+// SRB2Kart-specific hashes
+#define ASSET_HASH_GFX_KART      "06f86ee16136eb8a7043b15001797034"
+#define ASSET_HASH_TEXTURES_KART "abb53d56aba47c3a8cb0f764da1c8b80"
+#define ASSET_HASH_CHARS_KART    "e2c428347dde52858a3dacd29fc5b964"
+#define ASSET_HASH_MAPS_KART     "d051e55141ba736582228c456953cd98"
+#ifdef USE_PATCH_KART
+#define ASSET_HASH_PATCH_KART    "00000000000000000000000000000000"
+#endif
 
 #ifdef CMAKECONFIG
 #include "config.h"
@@ -142,8 +168,8 @@ static char addonsdir[MAX_WADPATH];
 // Events can be discarded if no responder claims them
 // referenced from i_system.c for I_GetKey()
 
-event_t events[MAXEVENTS];
-INT32 eventhead, eventtail;
+event_t events[MAXEVENTS] = {};
+INT32 eventhead = 0, eventtail = 0;
 
 boolean dedicated = false;
 
@@ -161,42 +187,10 @@ void D_PostEvent(const event_t *ev)
 
 // modifier keys
 // Now handled in I_OsPolling
-UINT8 shiftdown = 0; // 0x1 left, 0x2 right
-UINT8 ctrldown = 0; // 0x1 left, 0x2 right
-UINT8 altdown = 0; // 0x1 left, 0x2 right
-boolean capslock = 0;	// gee i wonder what this does.
-
-static UINT16 curcolor[MAXSPLITSCREENPLAYERS] = {0};
-
-static void D_DeviceLEDTick(void)
-{
-	UINT8 i;
-	static UINT16 color[MAXSPLITSCREENPLAYERS] = {0};
-
-	if (numcontrollers == 0)
-	{
-		return;
-	}
-
-	for (i = 0; i <= splitscreen; i++)
-	{
-		if (!cv_usejoystick[i].value || !cv_gamepadled[i].value)
-			continue;
-
-		color[i] = G_GetSkinColor(i);
-
-		if (curcolor[i] == color[i]) // dont update if same colour
-			continue;
-
-		G_SetPlayerGamepadIndicatorColor(i, color[i]);
-		curcolor[i] = color[i];
-	}
-}
-
-void D_ResetDeviceLED(void)
-{
-	memset(curcolor, 0, sizeof(curcolor));
-}
+UINT8 shiftdown = 0;   // 0x1 left, 0x2 right
+UINT8 ctrldown = 0;   // 0x1 left, 0x2 right
+UINT8 altdown = 0;    // 0x1 left, 0x2 right
+boolean capslock = 0; // gee i wonder what this does.
 
 //
 // D_ProcessEvents
@@ -339,8 +333,7 @@ static void D_Renderview(void)
 			}
 			else if (rendermode == render_soft)
 #endif
-
-			R_RenderPlayerView(&players[displayplayers[i]]);
+				R_RenderPlayerView(&players[displayplayers[i]]);
 		}
 
 		if (rendermode == render_soft)
@@ -360,13 +353,12 @@ static void D_Renderview(void)
 	if (splitscreen == 2)
 	{
 		// V_DrawPatchFill, but for the fourth screen only
-		patch_t *pat = W_CachePatchName("SRB2BACK", PU_PATCH);
-		INT32 x, y, pw = SHORT(pat->width) * vid.dup, ph = SHORT(pat->height) * vid.dup;
+		INT32 x, y, pw = SHORT(srb2back->width) * vid.dup, ph = SHORT(srb2back->height) * vid.dup;
 
 		for (x = vid.width>>1; x < vid.width; x += pw)
 		{
 			for (y = vid.height>>1; y < vid.height; y += ph)
-				V_DrawScaledPatch(x, y, V_NOSCALESTART, pat);
+				V_DrawScaledPatch(x, y, V_NOSCALESTART, srb2back);
 		}
 	}
 
@@ -408,10 +400,6 @@ static boolean D_Display(void)
 			R_ExecuteSetViewSize();
 			forcerefresh = true; // force background redraw
 		}
-
-		// draw buffered stuff to screen
-		// Used only by linux GGI version
-		I_UpdateNoBlit();
 	}
 
 	// save the current screen if about to wipe
@@ -669,14 +657,14 @@ static boolean D_Display(void)
 // D_SRB2Loop
 // =========================================================================
 
-tic_t rendergametic;
+tic_t rendergametic = 0;
 
 void D_SRB2Loop(void)
 {
 	tic_t entertic = 0, oldentertics = 0, realtics = 0, rendertimeout = INFTICS;
 	double deltatics = 0.0;
 	double deltasecs = 0.0;
-	UINT64 precision;
+	UINT64 precision = 0;
 
 	boolean interp = false;
 	boolean doDisplay = false;
@@ -707,7 +695,7 @@ void D_SRB2Loop(void)
 	COM_ImmedExecute("cls;version");
 
 	if (rendermode == render_soft)
-		V_DrawFixedPatch(0, 0, FRACUNIT/2, 0, W_CachePatchNum(W_GetNumForName("KARTKREW"), PU_PATCH_LOWPRIORITY), NULL);
+		V_DrawFixedPatch(0, 0, FRACUNIT/2, 0, W_CachePatchNum(W_GetNumForName("KARTKREW"), PU_PATCH), NULL);
 	I_FinishUpdate(); // page flip or blit buffer
 
 	precision = I_GetPrecisePrecision();
@@ -758,8 +746,6 @@ void D_SRB2Loop(void)
 
 		renderisnewtic = (realtics > 0 || singletics);
 
-		refreshdirmenu = 0; // not sure where to put this, here as good as any?
-
 		if (renderisnewtic)
 		{
 			// don't skip more than 10 frames at a time
@@ -796,7 +782,7 @@ void D_SRB2Loop(void)
 
 			if (!dedicated)
 			{
-				D_DeviceLEDTick();
+				G_DeviceLEDTick();
 			}
 		}
 
@@ -825,9 +811,9 @@ void D_SRB2Loop(void)
 			}
 			else if (!dedicated)
 			{
-				// always update console and hud
-				// otherwise it may take minutes to open it
-				CON_Drawer();
+				// always update console movement
+				// otherwise it will takes literal ages to open
+				CON_MoveConsole();
 			}
 		}
 
@@ -915,10 +901,11 @@ void D_ClearState(void)
 
 	// okay, stop now
 	// (otherwise the game still thinks we're playing!)
+#ifdef HAVE_CURL
 	CURLAbortFile();
+#endif
 	SV_StopServer();
 	SV_ResetServer();
-	serverlistultimatecount = 0;
 
 	for (i = 0; i < MAXPLAYERS; i++)
 		CL_ClearPlayer(i);
@@ -972,7 +959,7 @@ void D_ClearState(void)
 	M_ClearMenus(true);
 
 	// map palettes affect this
-	D_ResetDeviceLED();
+	G_ResetDeviceLED();
 }
 
 //
@@ -980,6 +967,9 @@ void D_ClearState(void)
 //
 void D_StartTitle(void)
 {
+	if (dedicated)
+		I_Error("D_StartTitle is called on dedicated server");
+
 	D_ClearState();
 	multiplayer = netgame = false; // title menu shouldnt be a netgame or multiplayer lmao
 	F_StartTitleScreen();
@@ -1213,22 +1203,20 @@ static void IdentifyVersion(void)
 	const char *srb2waddir = NULL;
 
 #if defined (__unix__) || defined (UNIXCOMMON) || defined (HAVE_SDL)
+	CLEANUP(pfree) const char *allocwaddir = NULL; // here so we dont potentially free stack memory
 	// change to the directory where 'srb2.srb' is found
-	srb2waddir = I_LocateWad();
+	allocwaddir = I_LocateWad();
+	srb2waddir = allocwaddir;
 #endif
 
 	char tempsrb2path[256] = ".";
-	getcwd(tempsrb2path, 256);
+	if (getcwd(tempsrb2path, 256) == NULL)
+		strcpy(tempsrb2path, ".");
 
 	// get the current directory (possible problem on NT with "." as current dir)
 	if (!srb2waddir)
 	{
-		if (tempsrb2path[0])
-			srb2waddir = tempsrb2path;
-		else
-		{
-			srb2waddir = ".";
-		}
+		srb2waddir = tempsrb2path;
 	}
 
 #if (1) // reduce the amount of findfile by only using full cwd in this func
@@ -1901,7 +1889,8 @@ void D_SRB2Main(void)
 	if (M_CheckParm("-warp") && M_IsNextParm())
 	{
 		const char *word = M_GetNextParm();
-		pstartmap = G_FindMapByNameOrCode(word, 0);
+		pstartmap = G_FindMapByNameOrCode(word, NULL);
+
 		if (! pstartmap)
 			I_Error("Cannot find a map remotely named '%s'\n", word);
 		else
@@ -1921,6 +1910,10 @@ void D_SRB2Main(void)
 	CONS_Printf("R_Init(): Init SRB2 refresh daemon.\n");
 	R_Init();
 
+#if SOUND==SOUND_DUMMY
+	sound_disabled = true;
+	music_disabled = true;
+#else
 	// setting up sound
 	if (dedicated || M_CheckParm("-noaudio")) // combines -nosound and -nomusic
 	{
@@ -1942,6 +1935,7 @@ void D_SRB2Main(void)
 		I_InitMusic();
 		S_InitSfxChannels(cv_soundvolume.value);
 	}
+#endif
 
 	S_InitMusicDefs();
 

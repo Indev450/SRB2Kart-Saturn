@@ -230,8 +230,8 @@ PUREFUNC fixed_t P_InterceptVector(divline_t *v2, divline_t *v1)
 // Sets opentop and openbottom to the window through a two sided line.
 // OPTIMIZE: keep this precalculated
 //
-fixed_t opentop, openbottom, openrange, lowfloor, highceiling;
-pslope_t *opentopslope, *openbottomslope;
+fixed_t opentop = 0, openbottom = 0, openrange = 0, lowfloor = 0, highceiling = 0;
+pslope_t *opentopslope = NULL, *openbottomslope = NULL;
 
 // P_CameraLineOpening
 // P_LineOpening, but for camera
@@ -985,7 +985,7 @@ boolean P_BlockThingsIterator(INT32 x, INT32 y, boolean (*func)(mobj_t *))
 static intercept_t *intercepts = NULL;
 static intercept_t *intercept_p = NULL;
 
-divline_t trace;
+divline_t trace = {};
 static boolean earlyout;
 
 //SoM: 4/6/2000: Remove limit on intercepts.

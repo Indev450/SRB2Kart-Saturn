@@ -63,6 +63,7 @@ typedef struct viddef_s
 
 	INT32 dup;         // scale 1, 2, 3 value for menus & overlays
 	INT32 fdup;        // same as dup, but exact value when aspect ratio isn't 320/200
+	INT32 udup;        // same as dup but does not account for highreshudscale
 	UINT8 smalldup;    // factor for a little bit of scaling
 	UINT8 meddup;      // factor for moderate, but not full, scaling
 

@@ -516,7 +516,6 @@ typedef struct
 
 extern serverelem_t serverlist[MAXSERVERLIST];
 extern UINT32 serverlistcount;
-extern UINT32 serverlistultimatecount;
 extern INT32 mapchangepending;
 
 // Points inside doomcom
@@ -582,6 +581,8 @@ extern tic_t simulated_lag;
 extern tic_t lowest_lag;
 extern consvar_t cv_mindelay, cv_gentlemens;
 
+extern consvar_t cv_usefakeseed, cv_fakeseedname;
+
 extern consvar_t
 	cv_netticbuffer, cv_allownewplayer,
 #ifdef SATURNJOIN
@@ -625,7 +626,6 @@ void CL_ClearPlayer(INT32 playernum);
 void CL_RemovePlayer(INT32 playernum, INT32 reason);
 void CL_QueryServerList(msg_server_t *list);
 void CL_UpdateServerList(void);
-void CL_TimeoutServerList(void);
 
 void CL_AbortConnection(void);
 
@@ -660,9 +660,11 @@ extern UINT8 hu_redownloadinggamestate;
 #endif
 extern boolean hu_stopped; // kart, true when the game is stopped for players due to a disconnecting or connecting player
 
+#define SAVEGAMESIZE (768*1024)
+
 typedef struct rewind_s
 {
-	UINT8 savebuffer[(768*1024)];
+	UINT8 savebuffer[SAVEGAMESIZE];
 	tic_t leveltime;
 	size_t demopos;
 

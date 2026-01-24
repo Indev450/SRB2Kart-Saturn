@@ -66,13 +66,6 @@ void I_OsPolling(void)
 }
 
 //
-// I_UpdateNoBlit
-//
-void I_UpdateNoBlit(void)
-{
-}
-
-//
 // I_FinishUpdate
 //
 void I_FinishUpdate(void)
@@ -122,6 +115,10 @@ INT32 VID_GetModeForSize(INT32 w, INT32 h)
 	return -1;
 }
 
+void VID_RefreshModeList(void)
+{
+}
+
 void VID_PrepareModeList(void)
 {
 }
@@ -130,6 +127,13 @@ INT32 VID_SetMode(INT32 modeNum)
 {
 	(void)modeNum;
 	return true;
+}
+
+boolean I_CheckAboveDesktopRes(INT32 width, INT32 height)
+{
+	(void)width;
+	(void)height;
+	return false;
 }
 
 void I_StartupGraphics(void)
@@ -155,7 +159,10 @@ boolean I_UseNativeKeyboard(void)
 	return false;
 }
 
+void I_HandleControllerHatRepeat(void)
+{
+}
+
 void I_SetBorderlessWindow(void)
 {
-
 }

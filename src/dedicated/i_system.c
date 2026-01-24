@@ -127,16 +127,32 @@ typedef LPVOID (WINAPI *p_MapViewOfFile) (HANDLE, DWORD, DWORD, DWORD, SIZE_T);
 
 #include <time.h>
 
-// Locations for searching the srb2.srb
+/// Locations to directly check for srb2.srb in
+const char *wadDefaultPaths[] = {
 #if defined (__unix__) || defined(__APPLE__) || defined (UNIXCOMMON)
-#define DEFAULTWADLOCATION1 "/usr/local/share/games/SRB2Kart"
-#define DEFAULTWADLOCATION2 "/usr/local/games/SRB2Kart"
-#define DEFAULTWADLOCATION3 "/usr/share/games/SRB2Kart"
-#define DEFAULTWADLOCATION4 "/usr/games/SRB2Kart"
-#define DEFAULTSEARCHPATH1 "/usr/local/games"
-#define DEFAULTSEARCHPATH2 "/usr/games"
-#define DEFAULTSEARCHPATH3 "/usr/local"
+	"/usr/local/share/games/SRB2Kart",
+	"/usr/local/games/SRB2Kart",
+	"/usr/share/games/SRB2Kart",
+	"/usr/games/SRB2Kart",
+#elif defined (_WIN32)
+	"c:\\games\\srb2kart",
+	"\\games\\srb2kart",
 #endif
+	NULL
+};
+
+// Folders to recurse through looking for srb2.srb
+const char *wadSearchPaths[] = {
+#if defined (__unix__) || defined(__APPLE__) || defined (UNIXCOMMON)
+	"/usr/local/games",
+	"/usr/games",
+	"/usr/local",
+#elif defined (_WIN32)
+	"c:\\games",
+	"\\games",
+#endif
+	NULL
+};
 
 /**	\brief WAD file to look for
 */
@@ -151,6 +167,8 @@ static char returnWadPath[256];
 #include "../i_video.h"
 #include "../i_sound.h"
 #include "../i_system.h"
+#include "../i_time.h"
+#include "../i_net.h"
 #include "../screen.h" //vid.WndParent
 #include "../d_net.h"
 #include "../g_game.h"
@@ -161,10 +179,6 @@ static char returnWadPath[256];
 #include "../i_joy.h"
 
 #include "../m_argv.h"
-
-#ifdef MAC_ALERT
-#include "macosx/mac_alert.h"
-#endif
 
 #include "../d_main.h"
 
@@ -180,8 +194,6 @@ UINT8 keyboard_started = false;
 
 #ifdef HAVE_TERMIOS
 // TERMIOS console code from Quake3: thank you!
-boolean stdin_active = true;
-
 typedef struct
 {
 	size_t cursor;
@@ -683,11 +695,7 @@ void I_JoyScale4(void)
 
 
 */
-void I_ShutdownJoystick(void)
-{
-}
-
-void I_GetJoystickEvents(UINT8 index)
+void I_ShutdownJoystick(UINT8 index)
 {
 	(void)index;
 }
@@ -808,20 +816,23 @@ static void I_SetupMumble(void)
 void I_UpdateMumble(const mobj_t *mobj, const listener_t listener)
 {
 #ifdef HAVE_MUMBLE
-	double angle;
+	float angle;
 	fixed_t anglef;
 
 	if (!mumble)
 		return;
 
-	if (mumble->uiVersion != 2) {
-		wcsncpy(mumble->name, L"SRB2Kart "VERSIONSTRINGW, 256);
+	if (mumble->uiVersion != 2)
+	{
+		wcsncpy(mumble->name, L"SRB2Kart " VERSIONSTRINGW, 256);
 		wcsncpy(mumble->description, L"Sonic Robo Blast 2 Kart with integrated Mumble Link support.", 2048);
 		mumble->uiVersion = 2;
 	}
 	mumble->uiTick++;
 
-	if (!netgame || gamestate != GS_LEVEL) { // Zero out, but never delink.
+	// Zero out, but never delink.
+	if (!netgame || gamestate != GS_LEVEL)
+	{
 		mumble->fAvatarPosition[0] = mumble->fAvatarPosition[1] = mumble->fAvatarPosition[2] = 0.0f;
 		mumble->fAvatarFront[0] = 1.0f;
 		mumble->fAvatarFront[1] = mumble->fAvatarFront[2] = 0.0f;
@@ -838,31 +849,34 @@ void I_UpdateMumble(const mobj_t *mobj, const listener_t listener)
 		mumble->context_len = (UINT32)(p - mumble->context);
 	}
 
-	if (mobj) {
-		mumble->fAvatarPosition[0] = FIXED_TO_FLOAT(mobj->x) / MUMBLEUNIT;
-		mumble->fAvatarPosition[1] = FIXED_TO_FLOAT(mobj->z) / MUMBLEUNIT;
-		mumble->fAvatarPosition[2] = FIXED_TO_FLOAT(mobj->y) / MUMBLEUNIT;
+	if (mobj)
+	{
+		mumble->fAvatarPosition[0] = FixedToFloat(mobj->x) / MUMBLEUNIT;
+		mumble->fAvatarPosition[1] = FixedToFloat(mobj->z) / MUMBLEUNIT;
+		mumble->fAvatarPosition[2] = FixedToFloat(mobj->y) / MUMBLEUNIT;
 
 		anglef = AngleFixed(mobj->angle);
-		angle = FIXED_TO_FLOAT(anglef)*DEG2RAD;
-		mumble->fAvatarFront[0] = (float)cos(angle);
+		angle = (float)(FixedToFloat(anglef) * DEG2RAD);
+		mumble->fAvatarFront[0] = cosf(angle);
 		mumble->fAvatarFront[1] = 0.0f;
-		mumble->fAvatarFront[2] = (float)sin(angle);
-	} else {
+		mumble->fAvatarFront[2] = sinf(angle);
+	}
+	else
+	{
 		mumble->fAvatarPosition[0] = mumble->fAvatarPosition[1] = mumble->fAvatarPosition[2] = 0.0f;
 		mumble->fAvatarFront[0] = 1.0f;
 		mumble->fAvatarFront[1] = mumble->fAvatarFront[2] = 0.0f;
 	}
 
-	mumble->fCameraPosition[0] = FIXED_TO_FLOAT(listener.x) / MUMBLEUNIT;
-	mumble->fCameraPosition[1] = FIXED_TO_FLOAT(listener.z) / MUMBLEUNIT;
-	mumble->fCameraPosition[2] = FIXED_TO_FLOAT(listener.y) / MUMBLEUNIT;
+	mumble->fCameraPosition[0] = FixedToFloat(listener.x) / MUMBLEUNIT;
+	mumble->fCameraPosition[1] = FixedToFloat(listener.z) / MUMBLEUNIT;
+	mumble->fCameraPosition[2] = FixedToFloat(listener.y) / MUMBLEUNIT;
 
 	anglef = AngleFixed(listener.angle);
-	angle = FIXED_TO_FLOAT(anglef)*DEG2RAD;
-	mumble->fCameraFront[0] = (float)cos(angle);
+	angle = (float)(FixedToFloat(anglef) * DEG2RAD);
+	mumble->fCameraFront[0] = cosf(angle);
 	mumble->fCameraFront[1] = 0.0f;
-	mumble->fCameraFront[2] = (float)sin(angle);
+	mumble->fCameraFront[2] = sinf(angle);
 #else
 	(void)mobj;
 	(void)listener;
@@ -1417,20 +1431,6 @@ death:
 	exit(0);
 }
 
-void I_WaitVBL(INT32 count)
-{
-	count = 1;
-	I_Sleep(count);
-}
-
-void I_BeginRead(void)
-{
-}
-
-void I_EndRead(void)
-{
-}
-
 //
 // I_Error
 //
@@ -1821,15 +1821,22 @@ static const char *searchWad(const char *searchDir)
 		return tempsw;
 	}
 
-	strcpy(tempsw, WADKEYWORD2);
-	fstemp = filesearch(tempsw, searchDir, NULL, true, 20);
-	if (fstemp == FS_FOUND)
-	{
-		pathonly(tempsw);
-		return tempsw;
-	}
 	return NULL;
 }
+
+#define CHECKWADPATH(ret) \
+do { \
+	I_OutputMsg(",%s", ret); \
+	if (isWadPathOk(ret)) \
+		return ret; \
+} while (0)
+
+#define SEARCHWAD(str) \
+do { \
+	WadPath = searchWad(str); \
+	if (WadPath) \
+		return WadPath; \
+} while (0)
 
 /**	\brief go through all possible paths and look for srb2.srb
 
@@ -1839,6 +1846,7 @@ static const char *locateWad(void)
 {
 	const char *envstr;
 	const char *WadPath;
+	int i;
 
 	I_OutputMsg("SRB2WADDIR");
 	// does SRB2WADDIR exist?
@@ -1846,132 +1854,51 @@ static const char *locateWad(void)
 		return envstr;
 
 #ifndef NOCWD
-	I_OutputMsg(",.");
 	// examine current dir
 	strcpy(returnWadPath, ".");
+	I_OutputMsg(",%s", returnWadPath);
 	if (isWadPathOk(returnWadPath))
 		return NULL;
 #endif
 
-
+#ifndef NOHOME
 #ifdef DEFAULTDIR
 	I_OutputMsg(",HOME/" DEFAULTDIR);
 	// examine user jart directory
 	if ((envstr = I_GetEnv("HOME")) != NULL)
 	{
 		sprintf(returnWadPath, "%s" PATHSEP DEFAULTDIR, envstr);
-		if (isWadPathOk(returnWadPath))
-			return returnWadPath;
-	}
-#endif
-
-
-#ifdef CMAKECONFIG
-#ifndef NDEBUG
-	I_OutputMsg(","CMAKE_ASSETS_DIR);
-	strcpy(returnWadPath, CMAKE_ASSETS_DIR);
-	if (isWadPathOk(returnWadPath))
-	{
-		return returnWadPath;
+		CHECKWADPATH(returnWadPath);
 	}
 #endif
 #endif
 
 #ifdef __APPLE__
 	OSX_GetResourcesPath(returnWadPath);
-	I_OutputMsg(",%s", returnWadPath);
-	if (isWadPathOk(returnWadPath))
-	{
-		return returnWadPath;
-	}
+	CHECKWADPATH(returnWadPath);
 #endif
 
 	// examine default dirs
-#ifdef DEFAULTWADLOCATION1
-	I_OutputMsg(","DEFAULTWADLOCATION1);
-	strcpy(returnWadPath, DEFAULTWADLOCATION1);
-	if (isWadPathOk(returnWadPath))
-		return returnWadPath;
-#endif
-#ifdef DEFAULTWADLOCATION2
-	I_OutputMsg(","DEFAULTWADLOCATION2);
-	strcpy(returnWadPath, DEFAULTWADLOCATION2);
-	if (isWadPathOk(returnWadPath))
-		return returnWadPath;
-#endif
-#ifdef DEFAULTWADLOCATION3
-	I_OutputMsg(","DEFAULTWADLOCATION3);
-	strcpy(returnWadPath, DEFAULTWADLOCATION3);
-	if (isWadPathOk(returnWadPath))
-		return returnWadPath;
-#endif
-#ifdef DEFAULTWADLOCATION4
-	I_OutputMsg(","DEFAULTWADLOCATION4);
-	strcpy(returnWadPath, DEFAULTWADLOCATION4);
-	if (isWadPathOk(returnWadPath))
-		return returnWadPath;
-#endif
-#ifdef DEFAULTWADLOCATION5
-	I_OutputMsg(","DEFAULTWADLOCATION5);
-	strcpy(returnWadPath, DEFAULTWADLOCATION5);
-	if (isWadPathOk(returnWadPath))
-		return returnWadPath;
-#endif
-#ifdef DEFAULTWADLOCATION6
-	I_OutputMsg(","DEFAULTWADLOCATION6);
-	strcpy(returnWadPath, DEFAULTWADLOCATION6);
-	if (isWadPathOk(returnWadPath))
-		return returnWadPath;
-#endif
-#ifdef DEFAULTWADLOCATION7
-	I_OutputMsg(","DEFAULTWADLOCATION7);
-	strcpy(returnWadPath, DEFAULTWADLOCATION7);
-	if (isWadPathOk(returnWadPath))
-		return returnWadPath;
-#endif
-#ifndef NOHOME
-	// find in $HOME
-	I_OutputMsg(",HOME/" DEFAULTDIR);
-	if ((envstr = I_GetEnv("HOME")) != NULL)
+	for (i = 0; wadDefaultPaths[i]; i++)
 	{
-		char *tmp = malloc(strlen(envstr) + sizeof(PATHSEP) + sizeof(DEFAULTDIR));
-		strcpy(tmp, envstr);
-		strcat(tmp, PATHSEP);
-		strcat(tmp, DEFAULTDIR);
-		WadPath = searchWad(tmp);
-		free(tmp);
-		if (WadPath)
-			return WadPath;
+		strcpy(returnWadPath, wadDefaultPaths[i]);
+		CHECKWADPATH(returnWadPath);
 	}
-#endif
-#ifdef DEFAULTSEARCHPATH1
-	// find in /usr/local
-	I_OutputMsg(", in:"DEFAULTSEARCHPATH1);
-	WadPath = searchWad(DEFAULTSEARCHPATH1);
-	if (WadPath)
-		return WadPath;
-#endif
-#ifdef DEFAULTSEARCHPATH2
-	// find in /usr/games
-	I_OutputMsg(", in:"DEFAULTSEARCHPATH2);
-	WadPath = searchWad(DEFAULTSEARCHPATH2);
-	if (WadPath)
-		return WadPath;
-#endif
-#ifdef DEFAULTSEARCHPATH3
-	// find in ???
-	I_OutputMsg(", in:"DEFAULTSEARCHPATH3);
-	WadPath = searchWad(DEFAULTSEARCHPATH3);
-	if (WadPath)
-		return WadPath;
-#endif
+
+	// search paths
+	for (i = 0; wadSearchPaths[i]; i++)
+	{
+		I_OutputMsg(", in:%s", wadSearchPaths[i]);
+		SEARCHWAD(wadSearchPaths[i]);
+	}
+
 	// if nothing was found
 	return NULL;
 }
 
 const char *I_LocateWad(void)
 {
-	const char *waddir;
+	const char *waddir = NULL;
 
 	I_OutputMsg("Looking for WADs in: ");
 	waddir = locateWad();
@@ -1981,12 +1908,15 @@ const char *I_LocateWad(void)
 	{
 		// change to the directory where we found srb2.srb
 #if defined (_WIN32)
+		waddir = _fullpath(NULL, waddir, MAX_PATH);
 		SetCurrentDirectoryA(waddir);
 #else
+		waddir = realpath(waddir, NULL);
 		if (waddir == NULL || chdir(waddir) == -1)
 			I_OutputMsg("Couldn't change working directory\n");
 #endif
 	}
+
 	return waddir;
 }
 

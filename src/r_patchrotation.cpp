@@ -23,8 +23,8 @@
 //
 // Angles precalculated in R_InitSprites.
 //
-fixed_t rollcosang[ROTANGLES];
-fixed_t rollsinang[ROTANGLES];
+fixed_t rollcosang[ROTANGLES] = {};
+fixed_t rollsinang[ROTANGLES] = {};
 
 INT32 R_GetRollAngle(angle_t rollangle)
 {
@@ -128,7 +128,7 @@ void RotatedPatch_DoRotation(rotsprite_t *rotsprite, patch_t *patch, INT32 angle
 	UINT32 i;
 	patch_t *rotated;
 
-	static std::vector<UINT16> rawdst(1024 * 1024), rawconv(1024 * 1024); // 1 MB should be enough for most cases
+	static std::vector<UINT16> rawdst(512 * 1024), rawconv(512 * 1024); // 1 MB should be enough for most cases
 
 	UINT16 *rawout;
 	size_t size;
@@ -185,10 +185,7 @@ void RotatedPatch_DoRotation(rotsprite_t *rotsprite, patch_t *patch, INT32 angle
 	if (!size)
 		size = (width * height);
 
-	while (rawdst.size() < size)
-	{
-		rawdst.resize(rawdst.size() * 2);
-	}
+	rawdst.resize(size);
 
 	for (i = 0; i < size; i++)
 		rawdst[i] = 0xFF00;

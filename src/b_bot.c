@@ -47,7 +47,7 @@ static inline void B_BuildTailsTiccmd(mobj_t *sonic, mobj_t *tails, ticcmd_t *cm
 		if (sonic->player->pflags & (PF_MACESPIN|PF_ITEMHANG))
 		{
 			cmd->forwardmove = sonic->player->cmd.forwardmove;
-			cmd->angleturn = abs((signed)(tails->angle - sonic->angle))>>16;
+			cmd->angleturn = abs((signed)(tails->angle - sonic->angle)) >> TICCMD_REDUCE;
 			if (sonic->angle < tails->angle)
 				cmd->angleturn = -cmd->angleturn;
 		} else if (dist > FixedMul(512*FRACUNIT, tails->scale))
@@ -139,13 +139,13 @@ void B_KeysToTiccmd(mobj_t *mo, ticcmd_t *cmd, boolean forward, boolean backward
 			// Don't mess with bot inputs during these unhandled movement conditions.
 			// The normal AI doesn't use abilities, so custom AI should be sending us exactly what it wants anyway.
 			if (forward)
-				cmd->forwardmove += MAXPLMOVE<<FRACBITS>>16;
+				cmd->forwardmove += MAXPLMOVE << FRACBITS >> TICCMD_REDUCE;
 			if (backward)
-				cmd->forwardmove -= MAXPLMOVE<<FRACBITS>>16;
+				cmd->forwardmove -= MAXPLMOVE<<FRACBITS >> TICCMD_REDUCE;
 			if (left || strafeleft)
-				cmd->sidemove -= MAXPLMOVE<<FRACBITS>>16;
+				cmd->sidemove -= MAXPLMOVE << FRACBITS >> TICCMD_REDUCE;
 			if (right || straferight)
-				cmd->sidemove += MAXPLMOVE<<FRACBITS>>16;
+				cmd->sidemove += MAXPLMOVE << FRACBITS >> TICCMD_REDUCE;
 		} else {
 			// In standard 2D mode, interpret "forward" as "the way you're facing" and everything else as "the way you're not facing"
 			if (left || right)
@@ -163,23 +163,23 @@ void B_KeysToTiccmd(mobj_t *mo, ticcmd_t *cmd, boolean forward, boolean backward
 					right = true;
 			}
 			if (left || strafeleft)
-				cmd->sidemove -= MAXPLMOVE<<FRACBITS>>16;
+				cmd->sidemove -= MAXPLMOVE << FRACBITS >> TICCMD_REDUCE;
 			if (right || straferight)
-				cmd->sidemove += MAXPLMOVE<<FRACBITS>>16;
+				cmd->sidemove += MAXPLMOVE << FRACBITS >> TICCMD_REDUCE;
 		}
 	} else {
 		if (forward)
-			cmd->forwardmove += MAXPLMOVE<<FRACBITS>>16;
+			cmd->forwardmove += MAXPLMOVE << FRACBITS >> TICCMD_REDUCE;
 		if (backward)
-			cmd->forwardmove -= MAXPLMOVE<<FRACBITS>>16;
+			cmd->forwardmove -= MAXPLMOVE << FRACBITS >> TICCMD_REDUCE;
 		if (left)
 			cmd->angleturn += 1280;
 		if (right)
 			cmd->angleturn -= 1280;
 		if (strafeleft)
-			cmd->sidemove -= MAXPLMOVE<<FRACBITS>>16;
+			cmd->sidemove -= MAXPLMOVE << FRACBITS >> TICCMD_REDUCE;
 		if (straferight)
-			cmd->sidemove += MAXPLMOVE<<FRACBITS>>16;
+			cmd->sidemove += MAXPLMOVE << FRACBITS >> TICCMD_REDUCE;
 	}
 	if (jump)
 		cmd->buttons |= BT_DRIFT;

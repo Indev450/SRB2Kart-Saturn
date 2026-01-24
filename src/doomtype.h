@@ -68,10 +68,12 @@ extern "C" {
 	#define strnicmp(x,y,n) strncasecmp(x,y,n)
 #endif
 
-#ifndef __cplusplus
-char *strcasestr(const char *in, const char *what);
-#define stristr strcasestr
+char *nongnu_strcasestr(const char *in, const char *what);
+#ifndef _GNU_SOURCE
+#define strcasestr nongnu_strcasestr
 #endif
+
+#define stristr strcasestr
 
 #if defined (macintosh) //|| defined (__APPLE__) //skip all boolean/Boolean crap
 	#define true 1
@@ -293,7 +295,7 @@ typedef struct
 	UINT8 green;
 	UINT8 blue;
 	UINT8 alpha;
-} byteColor_t;
+} ATTRPACK byteColor_t;
 
 union FColorRGBA
 {

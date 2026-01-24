@@ -65,14 +65,7 @@ void P_MixUp(mobj_t *thing, fixed_t x, fixed_t y, fixed_t z, angle_t angle,
 			thing->reactiontime = TICRATE/2; // don't move for about half a second
 
 		// absolute angle position
-		for (i = 0; i <= splitscreen; i++)
-		{
-			if (thing == P_GetLocalPlayerForNum(i)->mo)
-			{
-				localangle[i] = angle;
-				break;
-			}
-		}
+		P_ForceLocalAngle(thing->player, angle);
 
 		// move chasecam at new player location
 		for (i = 0; i <= splitscreen; i++)
@@ -106,6 +99,7 @@ void P_MixUp(mobj_t *thing, fixed_t x, fixed_t y, fixed_t z, angle_t angle,
 		P_FlashPal(thing->player, PAL_MIXUP, 10);
 	}
 
+	thing->old_angle += (angle-thing->angle);
 	thing->angle = angle;
 
 	thing->momx = thing->momy = thing->momz = 0;
@@ -150,18 +144,18 @@ boolean P_Teleport(mobj_t *thing, fixed_t x, fixed_t y, fixed_t z, angle_t angle
 			thing->reactiontime = TICRATE/2; // don't move for about half a second
 
 		// absolute angle position
+		P_ForceLocalAngle(thing->player, angle);
+
 		// move chasecam at new player location
 		for (i = 0; i <= splitscreen; i++)
 		{
 			if (thing->player != &players[displayplayers[i]])
 				continue;
 
-			localangle[i] = angle;
 			if (camera[i].chase)
 				P_ResetCamera(thing->player, &camera[i]);
 
 			R_ResetViewInterpolation(i + 1);
-			break;
 		}
 
 		// don't run in place after a teleport

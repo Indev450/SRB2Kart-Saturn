@@ -47,6 +47,7 @@
 // SRB2kart
 #include "m_cond.h" // M_UpdateUnlockablesAndExtraEmblems
 #include "k_kart.h"
+#include "k_hud.h"
 #include "console.h" // CON_LogMessage
 #include "m_menu.h"
 
@@ -76,7 +77,6 @@ void P_Thrust(mobj_t *mo, angle_t angle, fixed_t move)
 	if (LIKELY(!(twodlevel || (mo->flags2 & MF2_TWOD))))
 		mo->momy += FixedMul(move, FINESINE(angle));
 }
-
 
 //
 // P_InstaThrust
@@ -213,12 +213,11 @@ UINT8 P_GetNextEmerald(void)
 		if (!(emeralds & EMERALD6)) return 5;
 		return 6;
 	}
-	else // Depends on stage
-	{
-		if (gamemap < sstage_start || gamemap > sstage_end)
-			return 0;
-		return (UINT8)(gamemap - sstage_start);
-	}
+
+	// Depends on stage
+	if (gamemap < sstage_start || gamemap > sstage_end)
+		return 0;
+	return (UINT8)(gamemap - sstage_start);
 }
 
 //
@@ -239,10 +238,11 @@ void P_GiveEmerald(boolean spawnObj)
 	if (spawnObj)
 	{
 		for (i = 0; i < MAXPLAYERS; i++)
+		{
 			if (playeringame[i])
 				P_SetMobjState(P_SpawnMobj(players[i].mo->x, players[i].mo->y, players[i].mo->z + players[i].mo->info->height, MT_GOTEMERALD),
 				mobjinfo[MT_GOTEMERALD].spawnstate + em);
-
+		}
 	}
 }
 
@@ -352,9 +352,9 @@ void P_DoPlayerPain(player_t *player, mobj_t *source, mobj_t *inflictor)
 				player->mo->z++;
 
 			if (player->mo->eflags & MFE_UNDERWATER)
-				P_SetObjectMomZ(player->mo, FixedDiv(10511*FRACUNIT,2600*FRACUNIT), false);
+				P_SetObjectMomZ(player->mo, FixedDiv(10511*FRACUNIT, 2600*FRACUNIT), false);
 			else
-				P_SetObjectMomZ(player->mo, FixedDiv(69*FRACUNIT,10*FRACUNIT), false);
+				P_SetObjectMomZ(player->mo, FixedDiv(69*FRACUNIT, 10*FRACUNIT), false);
 		}
 
 		ang = R_PointToAngle2(inflictor->x, inflictor->y, player->mo->x, player->mo->y); // SRB2kart
@@ -434,8 +434,8 @@ void P_GivePlayerRings(player_t *player, INT32 num_rings)
 	if (!player->mo)
 		return;
 
-	player->mo->health += num_rings;
-	player->health += num_rings;
+	//player->mo->health += num_rings;
+	//player->health += num_rings;
 	player->totalring += num_rings;
 
 	//{ SRB2kart - rings don't really do anything, but we don't want the player spilling them later.
@@ -581,7 +581,8 @@ static boolean isPlayerLosing(player_t *player)
 			if (players[i].marescore > player->marescore)
 				++pos;
 
-			maxpos = max(getPlayerPos(&players[i]), maxpos);
+			const UINT8 playerpos = getPlayerPos(&players[i]);
+			maxpos = max(playerpos, maxpos);
 		}
 
 		if (maxpos == 1)
@@ -618,11 +619,11 @@ boolean P_EndingMusic(player_t *player)
 	// Check for if this is valid or not
 	if (splitscreen)
 	{
-		if (!((players[displayplayers[0]].exiting || (players[displayplayers[0]].pflags & PF_TIMEOVER))
-			|| (players[displayplayers[1]].exiting || (players[displayplayers[1]].pflags & PF_TIMEOVER))
-			|| ((splitscreen < 2) && (players[displayplayers[2]].exiting || (players[displayplayers[2]].pflags & PF_TIMEOVER)))
-			|| ((splitscreen < 3) && (players[displayplayers[3]].exiting || (players[displayplayers[3]].pflags & PF_TIMEOVER)))))
-			return false;
+		for (UINT8 i = 0; i <= splitscreen; i++)
+		{
+			if (!(players[displayplayers[i]].exiting || (players[displayplayers[i]].pflags & PF_TIMEOVER)))
+				return false;
+		}
 
 		bestlocalplayer = &players[displayplayers[0]];
 		bestlocalpos = ((players[displayplayers[0]].pflags & PF_TIMEOVER) ? MAXPLAYERS+1 : getPlayerPos(&players[displayplayers[0]]));
@@ -700,72 +701,76 @@ void P_RestoreMusic(player_t *player)
 	if (P_EndingMusic(player))
 		return;
 
+	// Event - Level Start
 	if (leveltime < MUSICSTARTTIME)
-		S_StartMapMusic();
-	else // see also where time overs are handled - search for "lives = 2" in this file
 	{
-		INT32 wantedmus = 0; // 0 is level music, 1 is invincibility, 2 is grow
+		S_StartMapMusic();
+		return;
+	}
 
-		if (splitscreen)
-		{
-			INT32 bestlocaltimer = 1;
+	// see also where time overs are handled - search for "lives = 2" in this file
+	INT32 wantedmus = 0; // 0 is level music, 1 is invincibility, 2 is grow
+
+	if (splitscreen)
+	{
+		INT32 bestlocaltimer = 1;
 
 #define setbests(p) \
-	if (players[p].playerstate == PST_LIVE) \
-	{ \
-		if (players[p].kartstuff[k_growshrinktimer] > bestlocaltimer) \
-		{ wantedmus = 2; bestlocaltimer = players[p].kartstuff[k_growshrinktimer]; } \
-		else if (players[p].kartstuff[k_invincibilitytimer] > bestlocaltimer) \
-		{ wantedmus = 1; bestlocaltimer = players[p].kartstuff[k_invincibilitytimer]; } \
-	}
-			setbests(displayplayers[0]);
-			setbests(displayplayers[1]);
-			if (splitscreen > 1)
-				setbests(displayplayers[2]);
-			if (splitscreen > 2)
-				setbests(displayplayers[3]);
+		if (players[p].playerstate == PST_LIVE) \
+		{ \
+			if (players[p].kartstuff[k_growshrinktimer] > bestlocaltimer) \
+			{ wantedmus = 2; bestlocaltimer = players[p].kartstuff[k_growshrinktimer]; } \
+			else if (players[p].kartstuff[k_invincibilitytimer] > bestlocaltimer) \
+			{ wantedmus = 1; bestlocaltimer = players[p].kartstuff[k_invincibilitytimer]; } \
+		}
+
+		setbests(displayplayers[0]);
+		setbests(displayplayers[1]);
+		if (splitscreen > 1)
+			setbests(displayplayers[2]);
+		if (splitscreen > 2)
+			setbests(displayplayers[3]);
 #undef setbests
-		}
-		else
+	}
+	else
+	{
+		if (player->playerstate == PST_LIVE)
 		{
-			if (player->playerstate == PST_LIVE)
-			{
-				if (player->kartstuff[k_growshrinktimer] > 1)
-					wantedmus = 2;
-				else if (player->kartstuff[k_invincibilitytimer] > 1)
-					wantedmus = 1;
-			}
+			if (player->kartstuff[k_growshrinktimer] > 1)
+				wantedmus = 2;
+			else if (player->kartstuff[k_invincibilitytimer] > 1)
+				wantedmus = 1;
 		}
+	}
 
-		// Item - Grow
-		if (wantedmus == 2 && cv_growmusic.value == 1)
-		{
-			S_ChangeMusicInternal("kgrow", true);
-			S_SetRestoreMusicFadeInCvar(&cv_growmusicfade);
-		}
-		// Item - Invincibility
-		else if (wantedmus == 1 && cv_supermusic.value == 1)
-		{
-			S_ChangeMusicInternal("kinvnc", true);
-			S_SetRestoreMusicFadeInCvar(&cv_invincmusicfade);
-		}
-		else
-		{
+	// Item - Grow
+	if (wantedmus == 2 && cv_growmusic.value == 1)
+	{
+		S_ChangeMusicInternal("kgrow", true);
+		S_SetRestoreMusicFadeInCvar(&cv_growmusicfade);
+	}
+	// Item - Invincibility
+	else if (wantedmus == 1 && cv_supermusic.value == 1)
+	{
+		S_ChangeMusicInternal("kinvnc", true);
+		S_SetRestoreMusicFadeInCvar(&cv_invincmusicfade);
+	}
+	else
+	{
 #if 0
-			// Event - Final Lap
-			// Still works for GME, but disabled for consistency
-			if (G_RaceGametype() && player->laps >= (UINT8)(cv_numlaps.value - 1))
-				S_SpeedMusic(1.2f);
+		// Event - Final Lap
+		// Still works for GME, but disabled for consistency
+		if (G_RaceGametype() && player->laps >= (UINT8)(cv_numlaps.value - 1))
+			S_SpeedMusic(1.2f);
 #endif
-			if (mapmusic.resume && cv_resume.value) // mapmusresume will be 0 anyways when birdmusic stuff is disabled
-				position = mapmusic.resume;
-			else
-				position = mapmusic.position;
+		if (mapmusic.resume && cv_resume.value) // mapmusresume will be 0 anyways when birdmusic stuff is disabled
+			position = mapmusic.resume;
+		else
+			position = mapmusic.position;
 
-			S_ChangeMusicEx(mapmusic.name, mapmusic.flags, true, position, 0, S_GetRestoreMusicFadeIn());
-			S_ClearRestoreMusicFadeInCvar();
-			mapmusic.resume = 0;
-		}
+		S_ChangeMusicEx(mapmusic.name, mapmusic.flags, true, position, 0, S_GetRestoreMusicFadeIn());
+		S_ClearRestoreMusicFadeInCvar();
+		mapmusic.resume = 0;
 	}
 }
 
@@ -969,7 +974,18 @@ fixed_t P_GetPlayerHeight(player_t *player)
 //
 fixed_t P_GetPlayerSpinHeight(player_t *player)
 {
-	return FixedMul(FixedMul(player->mo->info->height, player->mo->scale),2*FRACUNIT/3);
+	return FixedMul(FixedMul(player->mo->info->height, player->mo->scale), 2*FRACUNIT/3);
+}
+
+//
+// P_GetLocalPlayerNumForNum
+//
+// Returns the player number
+// on the local machine for given number.
+//
+INT32 P_GetLocalPlayerNumForNum(UINT8 pnum)
+{
+	return (pnum == 0 ? consoleplayer : displayplayers[pnum]);
 }
 
 //
@@ -983,15 +999,17 @@ player_t *P_GetLocalPlayerForNum(UINT8 pnum)
 	return (&players[P_GetLocalPlayerNumForNum(pnum)]);
 }
 
-//
-// P_GetLocalPlayerNumForNum
-//
-// Returns the player number
-// on the local machine for given number.
-//
-INT32 P_GetLocalPlayerNumForNum(UINT8 pnum)
+INT32 P_GetLocalPlayerNumForPlayer(const player_t *player)
 {
-	return (pnum == 0 ? consoleplayer : displayplayers[pnum]);
+	for (UINT8 i = 0; i <= splitscreen; i++)
+	{
+		if (player == P_GetLocalPlayerForNum(i))
+		{
+			return i;
+		}
+	}
+
+	return -1;
 }
 
 //
@@ -1007,7 +1025,9 @@ boolean P_IsLocalPlayer(const player_t *player)
 	for (i = 0; i <= splitscreen; i++)
 	{
 		if (player == P_GetLocalPlayerForNum(i))
+		{
 			return true;
+		}
 	}
 
 	return false;
@@ -1026,7 +1046,9 @@ boolean P_IsLocalPlayerNum(UINT8 pnum)
 	for (i = 0; i <= splitscreen; i++)
 	{
 		if (pnum == P_GetLocalPlayerNumForNum(i))
+		{
 			return true;
+		}
 	}
 
 	return false;
@@ -1054,7 +1076,9 @@ boolean P_IsDisplayPlayer(const player_t *player)
 		}
 
 		if (player == &players[displayplayers[i]])
+		{
 			return true;
+		}
 	}
 
 	return false;
@@ -1160,6 +1184,9 @@ mobj_t *P_SpawnGhostMobj(mobj_t *mobj)
 
 	ghost = P_SpawnMobj(mobj->x, mobj->y, mobj->z, MT_GHOST);
 
+	// not sure if this is safe to do...........
+	//P_SetTarget(&ghost->target, mobj);
+
 	P_SetScale(ghost, mobj->scale);
 	ghost->scalespeed = mobj->scalespeed;
 	ghost->destscale = mobj->scale;
@@ -1173,10 +1200,7 @@ mobj_t *P_SpawnGhostMobj(mobj_t *mobj)
 	ghost->color = mobj->color;
 	ghost->colorized = mobj->colorized; // Kart: they should also be colorized if their origin is
 
-	if (mobj->player)
-		ghost->angle = mobj->player->frameangle;
-	else
-		ghost->angle = mobj->angle;
+	ghost->angle = (mobj->player ? mobj->player->frameangle : mobj->angle);
 
 	ghost->sprite = mobj->sprite;
 	ghost->frame = mobj->frame;
@@ -1189,10 +1213,16 @@ mobj_t *P_SpawnGhostMobj(mobj_t *mobj)
 	ghost->localskin = mobj->localskin;
 	ghost->skinlocal = mobj->skinlocal;
 
+	// same deal...
+	//ghost->standingslope = mobj->standingslope;
+
 	ghost->spritexscale = mobj->spritexscale;
 	ghost->spriteyscale = mobj->spriteyscale;
 	ghost->spritexoffset = mobj->spritexoffset;
 	ghost->spriteyoffset = mobj->spriteyoffset;
+
+	if (mobj->player && K_PlayerEffectsShouldBlend(mobj->player))
+		ghost->blendmode = AST_ADD;
 
 	ghost->pitch = mobj->pitch;
 	ghost->roll = mobj->roll;
@@ -1208,19 +1238,20 @@ mobj_t *P_SpawnGhostMobj(mobj_t *mobj)
 		mobj->flags &= ~MF_DONTENCOREMAP;
 
 	// Copy interpolation data :)
-	ghost->old_x = mobj->old_x2;
-	ghost->old_y = mobj->old_y2;
-	ghost->old_z = mobj->old_z2;
-	ghost->old_angle = (mobj->player ? mobj->player->old_frameangle2 : mobj->old_angle2);
-	ghost->old_pitch = mobj->old_pitch2;
-	ghost->old_roll = mobj->old_roll2;
-	ghost->old_sloperoll = mobj->old_sloperoll2;
-	ghost->old_slopepitch = mobj->old_slopepitch2;
-	ghost->old_scale = mobj->old_scale2;
-	ghost->old_spritexscale = mobj->old_spritexscale2;
-	ghost->old_spriteyscale = mobj->old_spriteyscale2;
-	ghost->old_spritexoffset = mobj->old_spritexoffset2;
-	ghost->old_spriteyoffset = mobj->old_spriteyoffset2;
+	// old_x - mobj->momx - hack to preserve vanilla look
+	ghost->old_x = mobj->old_x - mobj->momx;
+	ghost->old_y = mobj->old_y - mobj->momy;
+	ghost->old_z = mobj->old_z2; // Slopes.....
+	ghost->old_angle = (mobj->player ? mobj->player->old_frameangle : mobj->old_angle);
+	ghost->old_pitch = mobj->old_pitch;
+	ghost->old_roll = mobj->old_roll;
+	ghost->old_sloperoll = mobj->old_sloperoll;
+	ghost->old_slopepitch = mobj->old_slopepitch;
+	ghost->old_scale = mobj->old_scale;
+	ghost->old_spritexscale = mobj->old_spritexscale;
+	ghost->old_spriteyscale = mobj->old_spriteyscale;
+	ghost->old_spritexoffset = mobj->old_spritexoffset;
+	ghost->old_spriteyoffset = mobj->old_spriteyoffset;
 
 	return ghost;
 }
@@ -1234,7 +1265,9 @@ void P_DoPlayerExit(player_t *player)
 	if (player->exiting || mapreset)
 		return;
 
-	if (P_IsLocalPlayer(player) && (!player->spectator && !demo.playback))
+	const boolean islocalplayer = P_IsLocalPlayer(player);
+
+	if (islocalplayer && (!player->spectator && !demo.playback))
 		legitimateexit = true;
 
 	if (player->griefstrikes > 0)
@@ -1249,7 +1282,7 @@ void P_DoPlayerExit(player_t *player)
 		{
 			const int soundid = K_IsPlayerLosing(player) ? sfx_klose: sfx_kwin; // fix godjjsa win sounds
 
-			if (P_IsLocalPlayer(player))
+			if (islocalplayer)
 			{
 				sfxenum_t sfx_id = K_GetMobjSkin(player->mo)->soundsid[S_sfx[soundid].skinsound];
 				S_StartSound(NULL, sfx_id);
@@ -1303,11 +1336,12 @@ boolean P_InSpaceSector(mobj_t *mo) // Returns true if you are in space
 			if (GETSECSPECIAL(rover->master->frontsector->special, 1) != SPACESPECIAL)
 				continue;
 
-			topheight    = P_GetFFloorTopZAt(rover, mo->x, mo->y);
-			bottomheight = P_GetFFloorBottomZAt(rover, mo->x, mo->y);
+			topheight = P_GetFFloorTopZAt(rover, mo->x, mo->y);
 
 			if (mo->z + (mo->height/2) > topheight)
 				continue;
+
+			bottomheight = P_GetFFloorBottomZAt(rover, mo->x, mo->y);
 
 			if (mo->z + (mo->height/2) < bottomheight)
 				continue;
@@ -1339,11 +1373,12 @@ boolean P_InQuicksand(mobj_t *mo) // Returns true if you are in quicksand
 			if (!(rover->flags & FF_QUICKSAND))
 				continue;
 
-			topheight    = P_GetFFloorTopZAt(rover, mo->x, mo->y);
-			bottomheight = P_GetFFloorBottomZAt(rover, mo->x, mo->y);
+			topheight = P_GetFFloorTopZAt(rover, mo->x, mo->y);
 
 			if (mo->z + flipoffset > topheight)
 				continue;
+
+			bottomheight = P_GetFFloorBottomZAt(rover, mo->x, mo->y);
 
 			if (mo->z + (mo->height/2) + flipoffset < bottomheight)
 				continue;
@@ -1526,13 +1561,12 @@ static void P_CheckBouncySectors(player_t *player)
 					if (top)
 					{
 						fixed_t newmom;
-
 						pslope_t *slope;
-						if (abs(oldz - topheight) < abs(oldz + player->mo->height - bottomheight)) { // Hit top
+
+						if (abs(oldz - topheight) < abs(oldz + player->mo->height - bottomheight)) // Hit top
 							slope = *rover->t_slope;
-						} else { // Hit bottom
+						else // Hit bottom
 							slope = *rover->b_slope;
-						}
 
 						momentum.x = player->mo->momx;
 						momentum.y = player->mo->momy;
@@ -1623,7 +1657,8 @@ static void P_CheckQuicksand(player_t *player)
 
 	for (rover = player->mo->subsector->sector->ffloors; rover; rover = rover->next)
 	{
-		if (!(rover->flags & FF_EXISTS)) continue;
+		if (!(rover->flags & FF_EXISTS))
+			continue;
 
 		if (!(rover->flags & FF_QUICKSAND))
 			continue;
@@ -1681,10 +1716,8 @@ static void P_CheckInvincibilityTimer(player_t *player)
 	{
 		if (!player->powers[pw_super])
 		{
-			{
-				player->mo->color = player->skincolor;
-				G_GhostAddColor((INT32) (player - players), GHC_NORMAL);
-			}
+			player->mo->color = player->skincolor;
+			G_GhostAddColor((INT32)(player - players), GHC_NORMAL);
 
 			// If you had a shield, restore its visual significance
 			P_SpawnShieldOrb(player);
@@ -1709,7 +1742,7 @@ static void P_DoBubbleBreath(player_t *player)
 	else
 		zh = player->mo->z + FixedDiv(player->mo->height,5*(FRACUNIT/4));
 
-	if (!(player->mo->eflags & MFE_UNDERWATER) || ((player->powers[pw_shield] & SH_NOSTACK) == SH_ELEMENTAL && !(player->pflags & PF_NIGHTSMODE)) || player->spectator)
+	if (!(player->mo->eflags & MFE_UNDERWATER) || player->spectator || ((player->powers[pw_shield] & SH_NOSTACK) == SH_ELEMENTAL && !(player->pflags & PF_NIGHTSMODE)))
 		return;
 
 	if (P_RandomChance(FRACUNIT/16))
@@ -1723,9 +1756,6 @@ static void P_DoBubbleBreath(player_t *player)
 		bubble->destscale = player->mo->scale;
 		P_SetScale(bubble, bubble->destscale);
 	}
-
-	//if (player->pflags & PF_NIGHTSMODE) // NiGHTS Super doesn't spawn flight bubbles
-		//return;
 }
 
 //
@@ -1838,10 +1868,10 @@ void P_Telekinesis(player_t *player, fixed_t thrust, fixed_t range)
 		if (!P_CheckSight(player->mo, mo2))
 			continue; // if your psychic powers can't "see" it don't bother
 
-		an = R_PointToAngle2(player->mo->x, player->mo->y, mo2->x, mo2->y);
-
 		if (mo2->health > 0)
 		{
+			an = R_PointToAngle2(player->mo->x, player->mo->y, mo2->x, mo2->y);
+
 			P_Thrust(mo2, an, thrust);
 
 			if (mo2->type == MT_GOLDBUZZ || mo2->type == MT_REDBUZZ)
@@ -1857,7 +1887,6 @@ boolean P_AnalogMove(player_t *player)
 {
 	return player->pflags & PF_ANALOGMODE;
 }
-
 
 //#define OLD_MOVEMENT_CODE 1
 static void P_3dMovement(player_t *player)
@@ -1892,7 +1921,7 @@ static void P_3dMovement(player_t *player)
 
 	if (analogmove)
 	{
-		movepushangle = (cmd->angleturn<<16 /* not FRACBITS */);
+		movepushangle = (cmd->angleturn << TICCMD_REDUCE);
 	}
 	else
 	{
@@ -1992,12 +2021,17 @@ static void P_3dMovement(player_t *player)
 		// The rest is unaffected.
 		angle_t thrustangle = R_PointToAngle2(0, 0, totalthrust.x, totalthrust.y)-player->mo->standingslope->xydirection;
 
-		if (player->mo->standingslope->zdelta < 0) { // Direction goes down, so thrustangle needs to face toward
-			if (thrustangle < ANGLE_90 || thrustangle > ANGLE_270) {
+		if (player->mo->standingslope->zdelta < 0) // Direction goes down, so thrustangle needs to face toward
+		{
+			if (thrustangle < ANGLE_90 || thrustangle > ANGLE_270)
+			{
 				P_QuantizeMomentumToSlope(&totalthrust, player->mo->standingslope);
 			}
-		} else { // Direction goes up, so thrustangle needs to face away
-			if (thrustangle > ANGLE_90 && thrustangle < ANGLE_270) {
+		}
+		else // Direction goes up, so thrustangle needs to face away
+		{
+			if (thrustangle > ANGLE_90 && thrustangle < ANGLE_270)
+			{
 				P_QuantizeMomentumToSlope(&totalthrust, player->mo->standingslope);
 			}
 		}
@@ -2052,7 +2086,7 @@ static void P_SpectatorMovement(player_t *player)
 {
 	ticcmd_t *cmd = &player->cmd;
 
-	player->mo->angle = (angle_t)(cmd->angleturn<<16 /* not FRACBITS */);
+	player->mo->angle = (angle_t)(cmd->angleturn << TICCMD_REDUCE);
 
 	ticruned++;
 	if (!(cmd->angleturn & TICCMD_RECEIVED))
@@ -2080,10 +2114,6 @@ static void P_SpectatorMovement(player_t *player)
 		// Quake-style flying spectators :D
 		player->mo->momz += FixedMul(cmd->forwardmove*mapobjectscale, AIMINGTOSLOPE(player->aiming));
 	}
-	/*if (cmd->sidemove != 0) -- was disabled in practice anyways, since sidemove was suppressed
-	{
-		P_Thrust(player->mo, player->mo->angle-ANGLE_90, cmd->sidemove*mapobjectscale);
-	}*/
 }
 
 void P_BlackOw(player_t *player)
@@ -2258,7 +2288,7 @@ static void P_MovePlayer(player_t *player)
 		{
 			// KART: Don't directly apply angleturn! It may have been either A) forged by a malicious client, or B) not be a smooth turn due to a player dropping frames.
 			// Instead, turn the player only up to the amount they're supposed to turn accounting for latency. Allow exactly 1 extra turn unit to try to keep old replays synced.
-			angle_diff = cmd->angleturn - (player->mo->angle>>16);
+			angle_diff = cmd->angleturn - (player->mo->angle >> TICCMD_REDUCE);
 			max_left_turn = player->lturn_max[(leveltime + MAXPREDICTTICS - cmd->latency) % MAXPREDICTTICS];
 			max_right_turn = player->rturn_max[(leveltime + MAXPREDICTTICS - cmd->latency) % MAXPREDICTTICS];
 
@@ -2271,18 +2301,18 @@ static void P_MovePlayer(player_t *player)
 			else
 			{
 				// Try to keep normal turning as accurate to 1.0.1 as possible to reduce replay desyncs.
-				player->mo->angle = cmd->angleturn<<16;
+				player->mo->angle = cmd->angleturn << TICCMD_REDUCE;
 				add_delta = false;
 			}
 			//CONS_Printf("applied turn: %d\n", angle_diff);
 
 			if (add_delta) {
-				player->mo->angle += angle_diff<<16;
+				player->mo->angle += angle_diff << TICCMD_REDUCE;
 				player->mo->angle &= ~0xFFFF; // Try to keep the turning somewhat similar to how it was before?
 				//CONS_Printf("leftover turn (%s): %5d or %4d%%\n",
 				//				player_names[player-players],
-				//				(INT16) (cmd->angleturn - (player->mo->angle>>16)),
-				//				(INT16) (cmd->angleturn - (player->mo->angle>>16)) * 100 / (angle_diff ? angle_diff : 1));
+				//				(INT16) (cmd->angleturn - (player->mo->angle >> TICCMD_REDUCE)),
+				//				(INT16) (cmd->angleturn - (player->mo->angle >> TICCMD_REDUCE)) * 100 / (angle_diff ? angle_diff : 1));
 			}
 		}
 
@@ -2596,15 +2626,7 @@ static void P_DoZoomTube(player_t *player)
 	if (player->mo->tracer)
 	{
 		player->mo->angle = R_PointToAngle2(player->mo->x, player->mo->y, player->mo->tracer->x, player->mo->tracer->y);
-
-		for (UINT8 i = 0; i <= splitscreen; i++)
-		{
-			if (player == P_GetLocalPlayerForNum(i))
-			{
-				localangle[i] = player->mo->angle;
-				break;
-			}
-		}
+		P_ForceLocalAngle(player, player->mo->angle);
 	}
 }
 
@@ -2720,6 +2742,9 @@ boolean P_LookForEnemies(player_t *player)
 		if (!(mo->flags & (MF_ENEMY|MF_BOSS|MF_MONITOR|MF_SPRING)))
 			continue; // not a valid enemy
 
+		if (mo->type == MT_PLAYER) // Don't chase after other players!
+			continue;
+
 		if (mo->health <= 0) // dead
 			continue;
 
@@ -2746,9 +2771,6 @@ boolean P_LookForEnemies(player_t *player)
 		if (UNLIKELY((twodlevel || player->mo->flags2 & MF2_TWOD)
 		&& abs(player->mo->y-mo->y) > player->mo->radius))
 			continue; // not in your 2d plane
-
-		if (mo->type == MT_PLAYER) // Don't chase after other players!
-			continue;
 
 		if (closestmo && P_AproxDistance(P_AproxDistance(player->mo->x-mo->x, player->mo->y-mo->y),
 			player->mo->z-mo->z) > P_AproxDistance(P_AproxDistance(player->mo->x-closestmo->x,
@@ -2790,14 +2812,7 @@ void P_HomingAttack(mobj_t *source, mobj_t *enemy) // Home in on your target
 
 	if (source->player)
 	{
-		for (UINT8 i = 0; i <= splitscreen; i++)
-		{
-			if (source->player == P_GetLocalPlayerForNum(i))
-			{
-				localangle[i] = source->angle;
-				break;
-			}
-		}
+		P_ForceLocalAngle(source->player, source->angle);
 	}
 
 	// change slope
@@ -2926,7 +2941,7 @@ notrealplayer:
 // P_MoveCamera: make sure the camera is not outside the world and looks at the player avatar
 //
 
-camera_t camera[MAXSPLITSCREENPLAYERS]; // Four cameras, three for splitscreen
+camera_t camera[MAXSPLITSCREENPLAYERS] = {}; // Four cameras, three for splitscreen
 
 static void CV_CamRotate_OnChange(void)
 {
@@ -3162,7 +3177,7 @@ static ticcmd_t *P_CameraCmd(camera_t *cam, UINT8 num)
 	lang = cam->localangle;
 	laim = cam->localaiming;
 
-	cmd->angleturn = (INT16)(lang >> 16);
+	cmd->angleturn = (INT16)(lang >> TICCMD_REDUCE);
 	cmd->aiming = G_ClipAimingPitch(&laim);
 
 	const boolean analogjoystickmove = cv_usejoystick[num].value && !Joystick[num].bGamepadStyle;
@@ -3258,7 +3273,7 @@ static ticcmd_t *P_CameraCmd(camera_t *cam, UINT8 num)
 
 	axis = JoyAxis(AXISLOOK, forplayer);
 
-	laim += (mlooky<<19)*player_invert;
+	laim += (mousey<<19)*player_invert;
 
 	if (InputDown(gc_lookup, forplayer) || (usejoystick && axis < 0))
 	{
@@ -3297,7 +3312,7 @@ static ticcmd_t *P_CameraCmd(camera_t *cam, UINT8 num)
 		cmd->aiming = G_ClipAimingPitch(&laim);
 	}
 
-	mousex = mousey = mlooky = 0;
+	mousex = mousey = 0;
 
 	if (forward > MAXPLMOVE)
 		forward = MAXPLMOVE;
@@ -3315,7 +3330,7 @@ static ticcmd_t *P_CameraCmd(camera_t *cam, UINT8 num)
 		cmd->sidemove = (SINT8)(cmd->sidemove + side);
 	}
 
-	lang += (cmd->angleturn << 16);
+	lang += (cmd->angleturn << TICCMD_REDUCE);
 
 	cam->localangle = lang;
 	if (!cam->reset_aiming)
@@ -3345,7 +3360,7 @@ static void P_DemoCameraMovement(camera_t *cam, UINT8 num)
 		cam->aiming = cmd->aiming << FRACBITS;
 	}
 
-	cam->angle = cmd->angleturn << 16;
+	cam->angle = cmd->angleturn << TICCMD_REDUCE;
 
 	// camera movement:
 	if (!cam->button_a_held)
@@ -3825,7 +3840,7 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 		// Sometimes stale ticcmds send a weird angle at the start of the race.
 		// P_UpdatePlayerAngle knows to ignore cmd angle when you literally can't turn, so we do the same here.
 		if (cv_demoangturn.value && leveltime > starttime)
-			focusangle = player->cmd.angleturn << 16;
+			focusangle = player->cmd.angleturn << TICCMD_REDUCE;
 		else
 			focusangle = mo->angle; // Just use something known sane.
 		focusaiming = 0;
@@ -5193,14 +5208,8 @@ void P_PlayerAfterThink(player_t *player)
 			player->mo->tracer->target->health += cmd->sidemove;
 			player->mo->angle += cmd->sidemove << ANGLETOFINESHIFT; // 2048 --> ANGLE_MAX
 
-			for (UINT8 i = 0; i <= splitscreen; i++)
-			{
-				if (player == P_GetLocalPlayerForNum(i))
-				{
-					localangle[i] = player->mo->angle; // Adjust the local control angle.
-					break;
-				}
-			}
+			// Adjust the local control angle.
+			P_ForceLocalAngle(player, player->mo->angle);
 		}
 	}
 
@@ -5239,3 +5248,34 @@ void P_PlayerAfterThink(player_t *player)
 
 	K_KartPlayerAfterThink(player);
 }
+
+angle_t P_GetLocalAngle(player_t *player)
+{
+	// this function is from vanilla srb2. can you tell?
+	// (hint: they have separate variables for all of this shit instead of arrays)
+	UINT8 i;
+
+	for (i = 0; i <= splitscreen; i++)
+	{
+		if (player == &players[displayplayers[i]])
+			return localangle[i];
+	}
+
+	return 0;
+}
+
+void P_ForceLocalAngle(player_t *player, angle_t angle)
+{
+	UINT8 i;
+
+	angle = angle & ~UINT16_MAX;
+
+	for (i = 0; i <= splitscreen; i++)
+	{
+		if (player == &players[displayplayers[i]])
+		{
+			localangle[i] = angle;
+		}
+	}
+}
+

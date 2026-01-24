@@ -204,6 +204,7 @@ typedef struct menu_s
 	struct menu_s *prevMenu;              // previous menu
 	menuitem_t    *menuitems;             // menu items
 	void         (*drawroutine)(void);    // draw routine
+	void         (*tickroutine)(void);    // ticker routine
 	INT16          x, y;                  // x, y of menu
 	INT16          lastOn;                // last item user was on in menu
 	boolean      (*quitroutine)(void);    // called before quit a menu return true if we can
@@ -221,6 +222,11 @@ extern menu_t *currentMenu;
 
 extern menu_t MainDef;
 extern menu_t SP_LoadDef;
+
+#define MAXCOLUMNMODES   12     //max modes displayed in one column
+#define MAXMODEDESCS     (MAXCOLUMNMODES*3)
+extern menu_t OP_VideoModeDef;
+void M_VideoModeMenu(INT32 choice);
 
 // Call upon joystick hotplug
 void M_SetupJoystickMenu(INT32 choice);
@@ -272,9 +278,6 @@ extern CV_PossibleValue_t gametype_cons_t[];
 
 extern char dummystaffname[22];
 
-extern INT16 startmap;
-extern INT32 ultimate_selectable;
-
 #define MAXSAVEGAMES 31 //note: last save game is "no save"
 #define NOSAVESLOT MAXSAVEGAMES-1 //slot where Play Without Saving appears
 
@@ -303,13 +306,18 @@ void SaturnHud_menu_Onchange(void);
 
 void GameFocus_menu_Onchange (void);
 
+void ShowLocalskinMenu_Onchange(void);
+
 #ifdef HWRENDER
 void M_UpdateOGLMenu(void);
 #endif
 
 void M_ResetDemoList(void);
 void M_ReplayHut(INT32 choice);
+void M_ReturnToTitleFromError(void);
 void M_SetPlaybackMenuPointer(void);
+
+void Nextmap_OnChange(void);
 
 void M_RefreshPauseMenu(void);
 
@@ -331,6 +339,7 @@ void M_SlotCvarIntoModMenu(consvar_t* cvar, const char* category, const char* na
 	prev,\
 	source,\
 	M_DrawGenericMenu,\
+	NULL,\
 	x, y,\
 	0,\
 	NULL,\
@@ -344,6 +353,7 @@ void M_SlotCvarIntoModMenu(consvar_t* cvar, const char* category, const char* na
 	prev,\
 	source,\
 	M_DrawGenericScrollMenu,\
+	NULL,\
 	x, y,\
 	0,\
 	NULL,\
@@ -358,6 +368,7 @@ void M_SlotCvarIntoModMenu(consvar_t* cvar, const char* category, const char* na
 	NULL,\
 	source,\
 	M_DrawPauseMenu,\
+	NULL,\
 	x, y,\
 	0,\
 	NULL,\
@@ -371,6 +382,7 @@ void M_SlotCvarIntoModMenu(consvar_t* cvar, const char* category, const char* na
 	prev,\
 	source,\
 	M_DrawCenteredMenu,\
+	NULL,\
 	BASEVIDWIDTH/2, y,\
 	0,\
 	NULL,\
@@ -384,23 +396,25 @@ void M_SlotCvarIntoModMenu(consvar_t* cvar, const char* category, const char* na
 	prev,\
 	source,\
 	M_DrawServerMenu,\
+	NULL,\
 	24,40,\
 	0,\
 	NULL,\
 	NULL\
 }
 
-#define CONTROLMENUSTYLE(source, prev)\
+#define CONTROLMENUSTYLE(source, prev, tooltip)\
 {\
 	"M_CONTRO",\
 	sizeof (source)/sizeof (menuitem_t),\
 	prev,\
 	source,\
 	M_DrawControl,\
+	NULL,\
 	26, 40,\
 	0,\
 	NULL,\
-	NULL\
+	tooltip\
 }
 
 #define IMAGEDEF(source)\
@@ -410,6 +424,7 @@ void M_SlotCvarIntoModMenu(consvar_t* cvar, const char* category, const char* na
 	NULL,\
 	source,\
 	M_DrawImageDef,\
+	NULL,\
 	0, 0,\
 	0,\
 	NULL,\

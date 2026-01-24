@@ -44,7 +44,7 @@
 // Not sure if this is necessary, but it was in w_wad.c, so I'm putting it here too -Shadow Hog
 #include <errno.h>
 
-mobj_t *skyboxmo[2];
+mobj_t *skyboxmo[2] = {};
 
 // Amount (dx, dy) vector linedef is shifted right to get scroll amount
 #define SCROLL_SHIFT 5
@@ -53,7 +53,7 @@ mobj_t *skyboxmo[2];
 #define MAXFLATSIZE (2048<<FRACBITS)
 
 /** Animated texture definition.
-  * Used for ::harddefs and for loading an ANIMATED lump from a wad.
+  * Used for loading an ANIMATED lump from a wad.
   *
   * Animations are defined by the first and last frame (i.e., flat or texture).
   * The animation sequence uses all flats between the start and end entry, in
@@ -93,107 +93,9 @@ static void P_AddSpikeThinker(sector_t *sec, INT32 referrer);
 
 
 //SoM: 3/7/2000: New sturcture without limits.
-anim_t *lastanim;
+anim_t *lastanim = NULL;
 anim_t *anims = NULL; /// \todo free leak
 static size_t maxanims;
-
-//
-// P_InitPicAnims
-//
-/** Hardcoded animation sequences.
-  * Used if no ANIMATED lump is found in a loaded wad.
-  */
-static animdef_t harddefs[] =
-{
-	// flat animations.
-	{false,     "LITEY3",       "LITEY1",       4},
-	{false,     "FWATER16",     "FWATER1",      4},
-	{false,     "BWATER16",     "BWATER01",     4},
-	{false,     "LWATER16",     "LWATER1",      4},
-	{false,     "WATER7",       "WATER0",       4},
-	{false,     "LAVA4",        "LAVA1",        8},
-	{false,     "DLAVA4",       "DLAVA1",       8},
-	{false,     "RLAVA8",       "RLAVA1",       8},
-	{false,     "LITER3",       "LITER1",       8},
-	{false,     "SURF08",       "SURF01",       4},
-
-	{false,     "CHEMG16",      "CHEMG01",      4}, // THZ Chemical gunk
-	{false,     "GOOP16",       "GOOP01",       4}, // Green chemical gunk
-	{false,     "OIL16",        "OIL01",        4}, // Oil
-	{false,     "THZBOXF4",     "THZBOXF1",     2}, // Moved up with the flats
-	{false,     "ALTBOXF4",     "ALTBOXF1",     2},
-
-	{false,     "LITEB3",       "LITEB1",       4},
-	{false,     "LITEN3",       "LITEN1",       4},
-	{false,     "ACZRFL1H",     "ACZRFL1A",     4},
-	{false,     "ACZRFL2H",     "ACZRFL2A",     4},
-	{false,     "EGRIDF3",      "EGRIDF1",      4},
-	{false,     "ERZFAN4",      "ERZFAN1",      1},
-	{false,     "ERZFANR4",     "ERZFANR1",     1},
-	{false,     "DISCO4",       "DISCO1",      15},
-
-	// animated textures
-	{true,      "GFALL4",       "GFALL1",       2}, // Short waterfall
-	{true,      "CFALL4",       "CFALL1",       2}, // Long waterfall
-	{true,      "TFALL4",       "TFALL1",       2}, // THZ Chemical fall
-	{true,      "AFALL4",       "AFALL1",       2}, // Green Chemical fall
-	{true,      "QFALL4",       "QFALL1",       2}, // Quicksand fall
-	{true,      "Q2FALL4",      "Q2FALL1",      2},
-	{true,      "Q3FALL4",      "Q3FALL1",      2},
-	{true,      "Q4FALL4",      "Q4FALL1",      2},
-	{true,      "Q5FALL4",      "Q5FALL1",      2},
-	{true,      "Q6FALL4",      "Q6FALL1",      2},
-	{true,      "Q7FALL4",      "Q7FALL1",      2},
-	{true,      "LFALL4",       "LFALL1",       2},
-	{true,      "MFALL4",       "MFALL1",       2},
-	{true,      "OFALL4",       "OFALL1",       2},
-	{true,      "DLAVA4",       "DLAVA1",       8},
-	{true,      "ERZLASA2",     "ERZLASA1",     1},
-	{true,      "ERZLASB4",     "ERZLASB1",     1},
-	{true,      "ERZLASC4",     "ERZLASC1",     1},
-	{true,      "THZBOX04",     "THZBOX01",     2},
-	{true,      "ALTBOX04",     "ALTBOX01",     2},
-	{true,      "SFALL4",       "SFALL1",       4}, // Lava fall
-	{true,      "RVZFALL8",     "RVZFALL1",     4},
-	{true,      "BFALL4",       "BFALL1",       2}, // HPZ waterfall
-	{true,      "GREYW3",       "GREYW1",       4},
-	{true,      "BLUEW3",       "BLUEW1",       4},
-	{true,      "COMP6",        "COMP4",        4},
-	{true,      "RED3",         "RED1",         4},
-	{true,      "YEL3",         "YEL1",         4},
-	{true,      "ACWRFL1D",     "ACWRFL1A",     1},
-	{true,      "ACWRFL2D",     "ACWRFL2A",     1},
-	{true,      "ACWRFL3D",     "ACWRFL3A",     1},
-	{true,      "ACWRFL4D",     "ACWRFL4A",     1},
-	{true,      "ACWRP1D",      "ACWRP1A",      1},
-	{true,      "ACWRP2D",      "ACWRP2A",      1},
-	{true,      "ACZRP1D",      "ACZRP1A",      1},
-	{true,      "ACZRP2D",      "ACZRP2A",      1},
-	{true,      "OILFALL4",     "OILFALL1",     2},
-	{true,      "SOLFALL4",     "SOLFALL1",     2},
-	{true,      "DOWN1C",       "DOWN1A",       4},
-	{true,      "DOWN2C",       "DOWN2A",       4},
-	{true,      "DOWN3D",       "DOWN3A",       4},
-	{true,      "DOWN4C",       "DOWN4A",       4},
-	{true,      "DOWN5C",       "DOWN5A",       4},
-	{true,      "UP1C",         "UP1A",         4},
-	{true,      "UP2C",         "UP2A",         4},
-	{true,      "UP3D",         "UP3A",         4},
-	{true,      "UP4C",         "UP4A",         4},
-	{true,      "UP5C",         "UP5A",         4},
-	{true,      "EGRID3",       "EGRID1",       4},
-	{true,      "ERFANW4",      "ERFANW1",      1},
-	{true,      "ERFANX4",      "ERFANX1",      1},
-	{true,      "DISCOD4",      "DISCOD1",     15},
-	{true,      "DANCE4",       "DANCE1",       8},
-	{true,      "SKY135",       "SKY132",       2},
-	{true,      "APPLMS4",      "APPLMS1",      2},
-	{true,      "APBOXW3",      "APBOXW1",      2},
-	{true,      "ERZLAZC4",     "ERZLAZC1",     4},
-
-	// End of line
-	{   -1,             "",            "",    0},
-};
 
 // Animating line specials
 
@@ -208,7 +110,7 @@ void P_ParseAnimationDefintion(SINT8 istexture);
 
 /** Sets up texture and flat animations.
   *
-  * Converts an ::animdef_t array loaded from ::harddefs or a lump into
+  * Converts an ::animdef_t array loaded from a lump into
   * ::anim_t format.
   *
   * Issues an error if any animation cycles are invalid.
@@ -254,7 +156,9 @@ void P_InitPicAnims(void)
 				{
 					memcpy(&(animdefs[i].istexture), currentPos, 1); // istexture, 1 byte
 					memcpy(animdefs[i].endname, (currentPos + 1), 9); // endname, 9 bytes
+					animdefs[i].endname[8] = '\0';
 					memcpy(animdefs[i].startname, (currentPos + 10), 9); // startname, 9 bytes
+					animdefs[i].startname[8] = '\0';
 					memcpy(&(animdefs[i].speed), (currentPos + 19), 4); // speed, 4 bytes
 				}
 
@@ -274,11 +178,6 @@ void P_InitPicAnims(void)
 		strncpy(animdefs[maxanims].endname, "", 9);
 		strncpy(animdefs[maxanims].startname, "", 9);
 		animdefs[maxanims].speed = 0;
-	}
-	else
-	{
-		animdefs = harddefs;
-		for (maxanims = 0; animdefs[maxanims].istexture != -1; maxanims++);
 	}
 
 	if (anims)
@@ -318,10 +217,7 @@ void P_InitPicAnims(void)
 				animdefs[i].startname, animdefs[i].endname);
 		}
 
-		if (animdefs == harddefs)
-			lastanim->speed = animdefs[i].speed;
-		else
-			lastanim->speed = LONG(animdefs[i].speed);
+		lastanim->speed = LONG(animdefs[i].speed);
 		lastanim++;
 	}
 
@@ -330,8 +226,7 @@ void P_InitPicAnims(void)
 
 	// Clear animdefs now that we're done with it.
 	// We'll only be using anims from now on.
-	if (animdefs != harddefs)
-		Z_Free(animdefs);
+	Z_Free(animdefs);
 
 	animdefs = NULL;
 }
@@ -1978,13 +1873,11 @@ static void P_ProcessLineSpecial(line_t *line, mobj_t *mo, sector_t *callsec)
 					{
 						P_RemoveThinker(&((elevator_t *)sectors[secnum].floordata)->thinker);
 						sectors[secnum].floordata = sectors[secnum].ceilingdata = NULL;
-						sectors[secnum].floorspeed = sectors[secnum].ceilspeed = 0;
 					}
 					else // floormove
 					{
 						P_RemoveThinker(&((floormove_t *)sectors[secnum].floordata)->thinker);
 						sectors[secnum].floordata = NULL;
-						sectors[secnum].floorspeed = 0;
 					}
 				}
 
@@ -1992,7 +1885,6 @@ static void P_ProcessLineSpecial(line_t *line, mobj_t *mo, sector_t *callsec)
 				{
 					P_RemoveThinker(&((ceiling_t *)sectors[secnum].ceilingdata)->thinker);
 					sectors[secnum].ceilingdata = NULL;
-					sectors[secnum].ceilspeed = 0;
 				}
 			}
 			break;
@@ -2087,13 +1979,17 @@ static void P_ProcessLineSpecial(line_t *line, mobj_t *mo, sector_t *callsec)
 				// Seek offset from current song position
 				if (line->flags & ML_EFFECT1)
 				{
+					const UINT32 muslength = S_GetMusicLength();
+					const UINT32 muspos = S_GetMusicPosition();
+					const UINT32 muslooppoint = S_GetMusicLoopPoint();
+
 					// adjust for loop point if subtracting
-					if (position < 0 && S_GetMusicLength() &&
-						S_GetMusicPosition() > S_GetMusicLoopPoint() &&
-						S_GetMusicPosition() + position < S_GetMusicLoopPoint())
-						position = max(S_GetMusicLength() - (S_GetMusicLoopPoint() - (S_GetMusicPosition() + position)), 0);
+					if (position < 0 && muslength &&
+						muspos > muslooppoint &&
+						muspos + position < muslooppoint)
+						position = max(muslength - (muslooppoint - (muspos + position)), 0);
 					else
-						position = max(S_GetMusicPosition() + position, 0);
+						position = max(muspos + position, 0);
 				}
 
 				// Fade current music to target volume (if music won't be changed)
@@ -2160,11 +2056,13 @@ static void P_ProcessLineSpecial(line_t *line, mobj_t *mo, sector_t *callsec)
 
 				if (sfxnum == sfx_None)
 					return; // Do nothing!
+
 				if (sfxnum < sfx_None || sfxnum >= NUMSFX)
 				{
 					CONS_Debug(DBG_GAMELOGIC, "Line type 414 Executor: sfx number %d is invalid!\n", sfxnum);
 					return;
 				}
+
 				if (line->tag != 0) // Do special stuff only if a non-zero linedef tag is set
 				{
 					if (line->flags & ML_EFFECT5) // Repeat Midtexture
@@ -3553,14 +3451,7 @@ DoneSection2:
 
 				if (!demo.playback || P_AnalogMove(player))
 				{
-					for (UINT8 j = 0; j <= splitscreen; ++j)
-					{
-						if (player == P_GetLocalPlayerForNum(j))
-						{
-							localangle[j] = player->mo->angle;
-							break;
-						}
-					}
+					P_ForceLocalAngle(player, player->mo->angle);
 				}
 
 				if (!(lines[i].flags & ML_EFFECT4))
@@ -4688,8 +4579,8 @@ static inline void P_AddFFloorToList(sector_t *sec, ffloor_t *ffloor)
 	if (!sec->ffloors)
 	{
 		sec->ffloors = ffloor;
-		ffloor->next = 0;
-		ffloor->prev = 0;
+		ffloor->next = NULL;
+		ffloor->prev = NULL;
 		return;
 	}
 
@@ -4697,7 +4588,7 @@ static inline void P_AddFFloorToList(sector_t *sec, ffloor_t *ffloor)
 
 	rover->next = ffloor;
 	ffloor->prev = rover;
-	ffloor->next = 0;
+	ffloor->next = NULL;
 }
 
 /** Adds a 3Dfloor.
@@ -4797,7 +4688,6 @@ static ffloor_t *P_AddFakeFloor(sector_t *sec, sector_t *sec2, line_t *master, f
 	ffloor->spawnflags = ffloor->flags = flags;
 	ffloor->master = master;
 	ffloor->norender = INFTICS;
-
 
 	// Scan the thinkers to check for special conditions applying to this FOF.
 	// If we have thinkers sorted by sector, just check the relevant ones;
@@ -7512,22 +7402,16 @@ void T_Pusher(pusher_t *p)
 					thing->player->pflags |= PF_JUMPED;
 
 				thing->player->pflags |= PF_SLIDING;
-				thing->angle = R_PointToAngle2 (0, 0, xspeed<<(FRACBITS-PUSH_FACTOR), yspeed<<(FRACBITS-PUSH_FACTOR));
+				thing->angle = R_PointToAngle2(0, 0, xspeed<<(FRACBITS-PUSH_FACTOR), yspeed<<(FRACBITS-PUSH_FACTOR));
 
 				if (!demo.playback || P_AnalogMove(thing->player))
 				{
-					for (UINT8 i = 0; i <= splitscreen; ++i)
-					{
-						if (thing->player == P_GetLocalPlayerForNum(i))
-						{
-							if (thing->angle - localangle[i] > ANGLE_180)
-								localangle[i] -= (localangle[i] - thing->angle) / 8;
-							else
-								localangle[i] += (thing->angle - localangle[i]) / 8;
+					angle_t angle = P_GetLocalAngle(thing->player);
 
-							break;
-						}
-					}
+					if (thing->angle - angle > ANGLE_180)
+						P_ForceLocalAngle(thing->player, angle - (angle - thing->angle) / 8);
+					else
+						P_ForceLocalAngle(thing->player, angle + (thing->angle - angle) / 8);
 				}
 			}
 

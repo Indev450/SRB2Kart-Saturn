@@ -57,7 +57,6 @@ static void CV_EnforceExecVersion(void);
 static boolean CV_FilterVarByVersion(consvar_t *v, const char *valstr);
 
 static boolean CV_Command(void);
-consvar_t *CV_FindVar(const char *name);
 static const char *CV_StringValue(const char *var_name);
 static consvar_t *consvar_vars; // list of registered console variables
 
@@ -238,10 +237,13 @@ void COM_ImmedExecute(const char *ptext)
 	char line[1024] = "";
 	INT32 quotes;
 
-	while (i < strlen(ptext))
+	const size_t txtlength = strlen(ptext);
+
+	while (i < txtlength)
 	{
 		quotes = 0;
-		for (j = 0; i < strlen(ptext); i++,j++)
+
+		for (j = 0; i < txtlength; i++,j++)
 		{
 			if (ptext[i] == '\"' && !quotes && i > 0 && ptext[i-1] != ' ') // Malformed command
 				return;
@@ -277,7 +279,7 @@ static xcommand_t *com_commands = NULL; // current commands
 
 #define MAX_ARGS 80
 static size_t com_argc;
-char *com_argv[MAX_ARGS];
+char *com_argv[MAX_ARGS] = {};
 static const char *com_null_string = "";
 static char *com_args = NULL; // current command args or NULL
 
@@ -653,7 +655,7 @@ static void COM_Alias_f(void)
 		CONS_Printf(M_GetText("All aliases that start with \x87'%s'\x80 are:\n"), begin);
 
 		int count = 0;
-		for (cmdalias_t *head = com_alias; head->next != NULL; head = head->next)
+		for (cmdalias_t *head = com_alias; head != NULL; head = head->next)
 		{
 			if (strncmp(begin, head->name, szBegin) == 0)
 			{
@@ -674,7 +676,7 @@ static void COM_Alias_f(void)
 		/* Display alias subtext, show all aliases. */
 		CONS_Printf(M_GetText("alias <name> <command>: create a shortcut command that executes other command(s)\n"));
 
-		for (cmdalias_t *head = com_alias; head->next != NULL; head = head->next)
+		for (cmdalias_t *head = com_alias; head != NULL; head = head->next)
 		{
 			CONS_Printf(alias_format, head->name, head->value);
 		}

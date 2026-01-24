@@ -23,6 +23,7 @@
 
 typedef enum GLTextureFormat_e
 {
+	GL_TEXFMT_NULL					= 0x00,
 	GL_TEXFMT_P_8					= 0x01, /* 8-bit palette */
 	GL_TEXFMT_AP_88					= 0x02, /* 8-bit alpha, 8-bit palette */
 
@@ -54,7 +55,7 @@ struct GLMipmap_s
 	UINT16					width, height;
 	UINT32					downloaded; // The GPU has this texture.
 
-	struct	GLMipmap_s		*nextcolormap;
+	struct ColorMipMap		*nextcolormap;
 	struct GLColormap_s		*colormap;
 };
 typedef struct GLMipmap_s GLMipmap_t;
@@ -65,7 +66,7 @@ typedef struct GLMipmap_s GLMipmap_t;
 struct GLMapTexture_s
 {
 	GLMipmap_t		mipmap;
-	float			scaleX; //used for scaling textures on walls
+	float			scaleX; // used for scaling textures on walls
 	float			scaleY;
 };
 typedef struct GLMapTexture_s GLMapTexture_t;
@@ -74,7 +75,7 @@ typedef struct GLMapTexture_s GLMapTexture_t;
 struct GLPatch_s
 {
 	GLMipmap_t			*mipmap;
-	float				max_s,max_t;
+	float				max_s, max_t;
 };
 typedef struct GLPatch_s GLPatch_t;
 

@@ -15,6 +15,8 @@
 #include "r_local.h"
 #include "r_sky.h"
 
+#include <algorithm>
+
 #include "r_portal.h"
 #include "r_splats.h"
 #include "r_fps.h" // newview
@@ -47,10 +49,10 @@ static INT32 toptexture, bottomtexture, midtexture;
 static bool topremap, bottomremap, midremap;
 static INT32 numthicksides, numbackffloors;
 
-angle_t rw_normalangle;
+angle_t rw_normalangle = 0;
 // angle to line origin
-angle_t rw_angle1;
-fixed_t rw_distance;
+angle_t rw_angle1 = 0;
+fixed_t rw_distance = 0;
 
 //
 // regular wall
@@ -617,6 +619,11 @@ static boolean R_IsFFloorTranslucent(visffloor_t *pfloor)
 	return false;
 }
 
+static fixed_t R_GetSlopeTextureSlide(pslope_t *slope, angle_t lineangle)
+{
+	return FixedMul(slope->zdelta, FINECOSINE((lineangle-slope->xydirection)>>ANGLETOFINESHIFT));
+}
+
 //
 // R_RenderThickSideRange
 // Renders all the thick sides in the given range.
@@ -633,23 +640,21 @@ void R_RenderThickSideRange(drawseg_t *drawseg, INT32 x1, INT32 x2, ffloor_t *pf
 	lightlist_t     *light;
 	r_lightlist_t   *rlight;
 	INT32           range;
-	line_t          *newline = NULL;
 	// Render FOF sides kinda like normal sides, with the frac and step and everything
 	// NOTE: INT64 instead of fixed_t because overflow concerns
 	INT64         top_frac, top_step, bottom_frac, bottom_step;
-	// skew FOF walls with slopes?
-	boolean	      slopeskew = false;
 	fixed_t       ffloortextureslide = 0;
-	INT32         oldx = -1;
+	fixed_t       oldtexturecolumn = -1;
 	fixed_t       left_top, left_bottom; // needed here for slope skewing
 	pslope_t      *skewslope = NULL;
+	boolean do_texture_skew;
+	boolean dont_peg_bottom;
 	boolean fog = false;
 	boolean fuzzy = false;
 
 	drawcolumndata_t *dc = &g_dc;
 
 	void (*colfunc_2s) (drawcolumndata_t* dc, column_t *);
-
 
 	// Calculate light table.
 	// Use different light tables
@@ -659,16 +664,23 @@ void R_RenderThickSideRange(drawseg_t *drawseg, INT32 x1, INT32 x2, ffloor_t *pf
 	curline = drawseg->curline;
 	backsector = pfloor->target;
 	frontsector = curline->frontsector == pfloor->target ? curline->backsector : curline->frontsector;
-	texnum = R_GetTextureNum(sides[pfloor->master->sidenum[0]].midtexture);
+	sidedef = R_GetFFloorSide(curline->linedef, pfloor, pfloor->target);
 
 	R_SetColumnFunc(BASEDRAWFUNC);
 
 	if (pfloor->master->flags & ML_TFERLINE)
 	{
-		size_t linenum = std::min((size_t)(curline->linedef-backsector->lines[0]), pfloor->master->frontsector->linecount);
-		newline = pfloor->master->frontsector->lines[0] + linenum;
-		texnum = R_GetTextureNum(sides[newline->sidenum[0]].midtexture);
+		line_t *newline = R_GetFFloorLine(curline->linedef, pfloor, pfloor->target);
+		do_texture_skew = newline->flags & ML_DONTPEGTOP;
+		dont_peg_bottom = newline->flags & ML_DONTPEGBOTTOM;
 	}
+	else
+	{
+		do_texture_skew = pfloor->master->flags & ML_DONTPEGTOP;
+		dont_peg_bottom = curline->linedef->flags & ML_DONTPEGBOTTOM;
+	}
+
+	texnum = R_GetTextureNum(sidedef->midtexture);
 
 	if (pfloor->flags & FF_TRANSLUCENT)
 	{
@@ -828,54 +840,35 @@ void R_RenderThickSideRange(drawseg_t *drawseg, INT32 x1, INT32 x2, ffloor_t *pf
 	mceilingclip = drawseg->sprtopclip;
 	dc->texheight = textureheight[texnum]>>FRACBITS;
 
-	// calculate both left endrawseg
+	// calculate both left ends
 	left_top    = P_GetFFloorTopZAt   (pfloor, drawseg->leftpos.x, drawseg->leftpos.y) - viewz;
 	left_bottom = P_GetFFloorBottomZAt(pfloor, drawseg->leftpos.x, drawseg->leftpos.y) - viewz;
 
-	skewslope = *pfloor->t_slope; // skew using top slope by default
-
-	if (newline)
+	if (do_texture_skew)
 	{
-		if (newline->flags & ML_DONTPEGTOP)
-			slopeskew = true;
-	}
-	else if (pfloor->master->flags & ML_DONTPEGTOP)
-		slopeskew = true;
-
-	if (slopeskew)
+		skewslope = *pfloor->t_slope; // skew using top slope by default
 		dc->texturemid = left_top;
+	}
 	else
 		dc->texturemid = *pfloor->topheight - viewz;
 
-	if (newline)
+	offsetvalue = sidedef->rowoffset;
+
+	if (dont_peg_bottom)
 	{
-		offsetvalue = sides[newline->sidenum[0]].rowoffset;
-		if (newline->flags & ML_DONTPEGBOTTOM)
+		if (do_texture_skew)
 		{
 			skewslope = *pfloor->b_slope; // skew using bottom slope
-			if (slopeskew)
-				dc->texturemid = left_bottom;
-			else
-			offsetvalue -= *pfloor->topheight - *pfloor->bottomheight;
+			dc->texturemid = left_bottom;
 		}
-	}
-	else
-	{
-		offsetvalue = sides[pfloor->master->sidenum[0]].rowoffset;
-		if (curline->linedef->flags & ML_DONTPEGBOTTOM)
-		{
-			skewslope = *pfloor->b_slope; // skew using bottom slope
-			if (slopeskew)
-				dc->texturemid = left_bottom;
-			else
+		else
 			offsetvalue -= *pfloor->topheight - *pfloor->bottomheight;
-		}
 	}
 
-	if (slopeskew && skewslope)
+	if (skewslope)
 	{
 		angle_t lineangle = R_PointToAngle2(curline->v1->x, curline->v1->y, curline->v2->x, curline->v2->y);
-		ffloortextureslide = FixedMul(skewslope->zdelta, FINECOSINE((lineangle-skewslope->xydirection)>>ANGLETOFINESHIFT));
+		ffloortextureslide = R_GetSlopeTextureSlide(skewslope, lineangle);
 	}
 
 	dc->texturemid += offsetvalue;
@@ -921,9 +914,9 @@ void R_RenderThickSideRange(drawseg_t *drawseg, INT32 x1, INT32 x2, ffloor_t *pf
 		// skew FOF walls
 		if (ffloortextureslide)
 		{
-			if (oldx != -1)
-				dc->texturemid += FixedMul(ffloortextureslide, (maskedtexturecol[oldx]-maskedtexturecol[dc->x]));
-			oldx = dc->x;
+			if (oldtexturecolumn != -1)
+				dc->texturemid += FixedMul(ffloortextureslide, (oldtexturecolumn-maskedtexturecol[dc->x]));
+			oldtexturecolumn = drawseg->thicksidecol[dc->x];
 		}
 
 		// Calculate bounds
@@ -2238,12 +2231,12 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 			lowcutslope  = std::max(worldbottomslope, worldlowslope) + viewz;
 			highcutslope = std::min(worldtopslope, worldhighslope) + viewz;
 
-			auto check_fof_offscreen = [&](ffloor_t* rover, INT32 bottom, INT32 bottomslope, INT32 top, INT32 topslope)
+			auto check_fof_offscreen = [&](ffloor_t* rrover, INT32 bottom, INT32 bottomslope, INT32 top, INT32 topslope)
 			{
-				return ((P_GetFFloorTopZAt    (rover, segleft .x, segleft .y) <= bottom      + viewz
-					&&   P_GetFFloorTopZAt    (rover, segright.x, segright.y) <= bottomslope + viewz)
-					|| ( P_GetFFloorBottomZAt (rover, segleft .x, segleft .y) >= top         + viewz
-					&&   P_GetFFloorBottomZAt (rover, segright.x, segright.y) >= topslope    + viewz));
+				return ((P_GetFFloorTopZAt    (rrover, segleft .x, segleft .y) <= bottom      + viewz
+					&&   P_GetFFloorTopZAt    (rrover, segright.x, segright.y) <= bottomslope + viewz)
+					|| ( P_GetFFloorBottomZAt (rrover, segleft .x, segleft .y) >= top         + viewz
+					&&   P_GetFFloorBottomZAt (rrover, segright.x, segright.y) >= topslope    + viewz));
 			};
 
 			if (frontsector->ffloors && backsector->ffloors)

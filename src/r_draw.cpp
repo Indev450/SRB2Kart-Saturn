@@ -41,40 +41,40 @@
 
 /**	\brief view info
 */
-INT32 viewwidth, viewheight, viewwindowx, viewwindowy;
+INT32 viewwidth = 0, viewheight = 0, viewwindowx = 0, viewwindowy = 0;
 
 // =========================================================================
 //                      COLUMN DRAWING CODE STUFF
 // =========================================================================
 
-drawcolumndata_t g_dc;
+drawcolumndata_t g_dc = {};
 
 // -----------------------
 // translucency stuff here
 // -----------------------
 #define NUMTRANSTABLES 9 // how many translucency tables are used
 
-UINT8 *transtables; // translucency tables
-UINT8 *blendtables[NUMBLENDMAPS];
+UINT8 *transtables = NULL; // translucency tables
+UINT8 *blendtables[NUMBLENDMAPS] = {};
 
 // --------------------------------------------
 // c drawer routines
 // --------------------------------------------
 
-coldrawfunc_t *colfunc;
-coldrawfunc_t *colfuncs[COLDRAWFUNC_MAX];
-int colfunctype;
+coldrawfunc_t *colfunc = NULL;
+coldrawfunc_t *colfuncs[COLDRAWFUNC_MAX] = {};
+int colfunctype = 0;
 
 // =========================================================================
 //                      SPAN DRAWING CODE STUFF
 // =========================================================================
 
-drawspandata_t g_ds;
+drawspandata_t g_ds = {};
 
 // Vectors for Software's tilted slope drawers
-floatv3_t *ds_su, *ds_sv, *ds_sz;
+floatv3_t *ds_su = NULL, *ds_sv = NULL, *ds_sz = NULL;
 
-float focallengthf;
+float focallengthf = 0.0f;
 
 // For, uh, tilted lighting, duh.
 //static INT32 *tiltlighting;
@@ -83,8 +83,8 @@ float focallengthf;
 // c drawer routines
 // --------------------------------------------
 
-spandrawfunc_t *spanfunc;
-spandrawfunc_t *spanfuncs[SPANDRAWFUNC_MAX];
+spandrawfunc_t *spanfunc = NULL;
+spandrawfunc_t *spanfuncs[SPANDRAWFUNC_MAX] = {};
 
 // ==========================================================================
 //                        OLD DOOM FUZZY EFFECT
@@ -105,10 +105,10 @@ spandrawfunc_t *spanfuncs[SPANDRAWFUNC_MAX];
 #define DEFAULT_STARTTRANSCOLOR 160
 #define NUM_PALETTE_ENTRIES 256
 
-static UINT8 **translationtablecache[TT_CACHE_SIZE] = {NULL};
-static UINT8 **localtranslationtablecache[MAXLOCALSKINS] = {NULL};
+static UINT8 **translationtablecache[TT_CACHE_SIZE] = {};
+static UINT8 **localtranslationtablecache[MAXLOCALSKINS] = {};
 
-CV_PossibleValue_t Color_cons_t[MAXSKINCOLORS+1];
+CV_PossibleValue_t Color_cons_t[MAXSKINCOLORS+1] = {};
 
 struct GenerateBlendTables_State
 {
@@ -355,13 +355,14 @@ UINT8 *R_GetBlendTable(int style, INT32 alphalevel)
 	// Return a normal translucency table
 	if (--alphalevel >= 0)
 		return transtables + (ClipTransLevel(alphalevel) << FF_TRANSSHIFT);
-	else
-		return NULL;
+
+	return NULL;
 }
 
 boolean R_BlendLevelVisible(INT32 blendmode, INT32 alphalevel)
 {
-	if (blendmode <= AST_COPY || blendmode == AST_SUBTRACT || blendmode == AST_MODULATE || blendmode >= AST_OVERLAY)
+	if (blendmode <= AST_COPY || blendmode == AST_SUBTRACT ||
+		blendmode == AST_MODULATE || blendmode >= AST_OVERLAY)
 		return true;
 
 	return (alphalevel < BlendTab_Count[BlendTab_FromStyle[blendmode]]);
@@ -412,7 +413,8 @@ static UINT8* RGetTranslationColormap(INT32 skinnum, skincolors_t color, UINT8 f
 		// Get colormap
 		ret = tt[skintableindex][color];
 	}
-	else ret = NULL;
+	else
+		ret = NULL;
 
 	// Generate the colormap if necessary
 	if (!ret)
@@ -435,36 +437,46 @@ UINT8* R_GetTranslationColormap(INT32 skinnum, skincolors_t color, UINT8 flags)
 
 UINT8* R_GetLocalTranslationColormap(skin_t *skin, skin_t *localskin, skincolors_t color, UINT8 flags, boolean local)
 {
-	if (localskin)
-		return RGetTranslationColormap(localskin - K_GetSkinArray(local), color, flags, local);
-	else
-		return RGetTranslationColormap((skin - skins), color, flags, false);
+	const INT32 skinnum = localskin ? (localskin - K_GetSkinArray(local)) : (skin - skins);
+	return RGetTranslationColormap(skinnum, color, flags, (localskin && local));
 }
 
 patch_t* R_GetSkinFaceRank(player_t* ply)
 {
-	if (ply->skinlocal && ply->localskin)
-		return localfacerankprefix[ply->localskin - 1];
-	else if (ply->localskin)
+	if (ply->localskin)
+	{
+		if (ply->skinlocal)
+			return localfacerankprefix[ply->localskin - 1];
+
 		return facerankprefix[ply->localskin - 1];
+	}
+
 	return facerankprefix[ply->skin];
 }
 
 patch_t* R_GetSkinFaceWant(player_t* ply)
 {
-	if (ply->skinlocal && ply->localskin)
-		return localfacewantprefix[ply->localskin - 1];
-	else if (ply->localskin)
+	if (ply->localskin)
+	{
+		if (ply->skinlocal)
+			return localfacewantprefix[ply->localskin - 1];
+
 		return facewantprefix[ply->localskin - 1];
+	}
+
 	return facewantprefix[ply->skin];
 }
 
 patch_t* R_GetSkinFaceMini(player_t* ply)
 {
-	if (ply->skinlocal && ply->localskin)
-		return localfacemmapprefix[ply->localskin - 1];
-	else if (ply->localskin)
+	if (ply->localskin)
+	{
+		if (ply->skinlocal)
+			return localfacemmapprefix[ply->localskin - 1];
+
 		return facemmapprefix[ply->localskin - 1];
+	}
+
 	return facemmapprefix[ply->skin];
 }
 

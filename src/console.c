@@ -33,6 +33,8 @@
 #include "d_main.h"
 #include "m_menu.h"
 #include "m_textinput.h"
+#include "m_emotes.h"
+#include "i_time.h"
 #include "filesrch.h"
 
 #ifdef HWRENDER
@@ -58,7 +60,7 @@ I_mutex con_mutex;
 static boolean con_started = false; // console has been initialised
        boolean con_startup = false; // true at game startup, screen need refreshing
 static boolean con_forcepic = true; // at startup toggle console translucency when first off
-       boolean con_recalc;          // set true when screen size has changed
+       boolean con_recalc = false;  // set true when screen size has changed
 
 static tic_t con_tick; // console ticker for anim or blinking prompt cursor
                         // con_scrollup should use time (currenttime - lasttime)..
@@ -66,8 +68,8 @@ static tic_t con_tick; // console ticker for anim or blinking prompt cursor
 static boolean consoletoggle; // true when console key pushed, ticker will handle
 static boolean consoleready;  // console prompt is ready
 
-       INT32 con_destlines; // vid lines used by console at final position
-static INT32 con_curlines;  // vid lines currently used by console
+       INT32 con_destlines = 0; // vid lines used by console at final position
+static INT32 con_curlines;      // vid lines currently used by console
 
 static UINT8  con_hudlines;             // number of console heads up message lines
 static UINT32 con_hudtime[MAXHUDLINES]; // remaining time of display for hud msg lines
@@ -83,7 +85,7 @@ static size_t con_totallines;      // lines of console text into the console buf
 static size_t con_width;           // columns of chars, depend on vid mode width
 
 static size_t con_scrollup;        // how many rows of text to scroll up (pgup/pgdn)
-UINT32 con_scalefactor;            // text size scale factor
+UINT32 con_scalefactor = 0;        // text size scale factor
 
 // hold 32 last lines of input for history
 #define CON_MAXPROMPTCHARS 256
@@ -166,6 +168,8 @@ static CV_PossibleValue_t menuhighlight_cons_t[] =
 	{0, NULL}
 };
 consvar_t cons_menuhighlight = {"menuhighlight", "Gametype Default", CV_SAVE, menuhighlight_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+
+consvar_t cons_consoleprintinmenu = {"consoleprintinmenu", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 static void CON_Print(char *msg);
 
@@ -424,6 +428,7 @@ void CON_Init(void)
 		CV_RegisterVar(&cons_backpic);
 		CV_RegisterVar(&cons_backcolor);
 		CV_RegisterVar(&cons_menuhighlight);
+		CV_RegisterVar(&cons_consoleprintinmenu);
 		COM_AddCommand("bind", CONS_Bind_f);
 	}
 	else
@@ -584,11 +589,17 @@ static void CON_ChangeHeight(void)
 
 // Handles Console moves in/out of screen (per frame)
 //
-static void CON_MoveConsole(void)
+void CON_MoveConsole(void)
 {
 	static fixed_t fracmovement = 0;
 
 	Lock_state();
+
+	if (con_curlines == con_destlines)
+	{
+		Unlock_state();
+		return;
+	}
 
 	// instant
 	if (!cons_speed.value)
@@ -1453,7 +1464,18 @@ static void CON_DrawHudlines(void)
 			}
 			if (c >= con_width)
 				break;
-			if (*p < HU_FONTSTART)
+
+			int emotelen;
+			emote_t *emote;
+
+			if ((emote = M_VerifyEmote((const char *)p, &emotelen)))
+			{
+				M_DrawScaledEmote(x<<FRACBITS, (y+2*con_scalefactor)<<FRACBITS, charwidth*FRACUNIT/EMOTEWIDTH, emote, V_NOSCALESTART|V_NOSCALEPATCH);
+				p += emotelen-1;
+				c += emotelen-1;
+				continue;
+			}
+			else if (*p < HU_FONTSTART)
 				;//charwidth = 4 * con_scalefactor;
 			else
 			{
@@ -1485,7 +1507,7 @@ static void CON_DrawConsole(void)
 	// draw console background
 	if (cons_backpic.value || con_forcepic)
 	{
-		patch_t *con_backpic = W_CachePatchName("KARTKREW", PU_PATCH_LOWPRIORITY);
+		patch_t *con_backpic = W_CachePatchName("KARTKREW", PU_PATCH);
 
 		// Jimita: CON_DrawBackpic just called V_DrawScaledPatch
 		V_DrawFixedPatch(0, 0, FRACUNIT/2, 0, con_backpic, NULL);
@@ -1527,8 +1549,20 @@ static void CON_DrawConsole(void)
 				p++;
 				c++;
 			}
+
 			if (c >= con_width)
 				break;
+
+			int emotelen;
+			emote_t *emote;
+
+			if ((emote = M_VerifyEmote((const char *)p, &emotelen)))
+			{
+				M_DrawScaledEmote(x<<FRACBITS, (y+2*con_scalefactor)<<FRACBITS, charwidth*FRACUNIT/EMOTEWIDTH, emote, V_NOSCALESTART|V_NOSCALEPATCH);
+				p += emotelen-1;
+				c += emotelen-1;
+				continue;
+			}
 			V_DrawCharacter(x, y, (INT32)(*p) | charflags | cv_constextsize.value | V_NOSCALESTART, !cv_allcaps.value);
 		}
 	}
@@ -1559,13 +1593,12 @@ void CON_Drawer(void)
 	}
 
 	// console movement
-	if (con_curlines != con_destlines)
-		CON_MoveConsole();
+	CON_MoveConsole();
 
 	if (con_curlines > 0)
 		CON_DrawConsole();
 	else if (gamestate == GS_LEVEL || gamestate == GS_INTERMISSION || gamestate == GS_CUTSCENE || gamestate == GS_CREDITS
-		|| gamestate == GS_VOTING || gamestate == GS_EVALUATION || gamestate == GS_WAITINGPLAYERS)
+		|| gamestate == GS_VOTING || gamestate == GS_EVALUATION || gamestate == GS_WAITINGPLAYERS || (cons_consoleprintinmenu.value && gamestate == GS_TITLESCREEN))
 		CON_DrawHudlines();
 
 	Unlock_state();

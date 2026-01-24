@@ -38,7 +38,6 @@ static void P_UpdateSlopeLightOffset(pslope_t *slope)
 	fixed_t light = FRACUNIT;
 	fixed_t extralight = 0;
 
-
 	if (slope->normal.z == 0)
 	{
 		slope->lightOffset = 0;
@@ -296,7 +295,7 @@ static fixed_t P_GetExtent(sector_t *sector, line_t *line)
 
 	// Find furthest vertex from the reference line. It, along with the two ends
 	// of the line, will define the plane.
-	for(i = 0; i < sector->linecount; i++)
+	for (i = 0; i < sector->linecount; i++)
 	{
 		line_t *li = sector->lines[i];
 		vertex_t tempv;
@@ -339,19 +338,12 @@ void P_SpawnSlope_Line(int linenum)
 	vector3_t origin, point;
 	vector2_t direction;
 	fixed_t nx, ny, dz, extent;
-
-	boolean frontfloor = (special == 700 || special == 702 || special == 703);
-	boolean backfloor  = (special == 710 || special == 712 || special == 713);
-	boolean frontceil  = (special == 701 || special == 702 || special == 713);
-	boolean backceil   = (special == 711 || special == 712 || special == 703);
-
 	UINT8 flags = 0; // Slope flags
-	if (line->flags & ML_NOSONIC)
-		flags |= SL_NOPHYSICS;
-	if (!(line->flags & ML_NOTAILS))
-		flags |= SL_NODYNAMIC;
-	if (line->flags & ML_NOKNUX)
-		flags |= SL_ANCHORVERTEX;
+
+	const boolean frontfloor = (special == 700 || special == 702 || special == 703);
+	const boolean backfloor  = (special == 710 || special == 712 || special == 713);
+	const boolean frontceil  = (special == 701 || special == 702 || special == 713);
+	const boolean backceil   = (special == 711 || special == 712 || special == 703);
 
 	if (!frontfloor && !backfloor && !frontceil && !backceil)
 	{
@@ -364,6 +356,13 @@ void P_SpawnSlope_Line(int linenum)
 		CONS_Debug(DBG_SETUP, "P_SpawnSlope_Line used on a line without two sides. (line number %i)\n", linenum);
 		return;
 	}
+
+	if (line->flags & ML_NOSONIC)
+		flags |= SL_NOPHYSICS;
+	if (!(line->flags & ML_NOTAILS))
+		flags |= SL_NODYNAMIC;
+	if (line->flags & ML_NOKNUX)
+		flags |= SL_ANCHORVERTEX;
 
 	fixed_t len = R_PointToDist2(0, 0, line->dx, line->dy);
 	nx = FixedDiv(line->dy, len);
@@ -810,7 +809,7 @@ void P_ResetDynamicSlopes(void)
 
 					if (lines[i].flags & ML_NOKNUX)
 						*slopetoset = P_NewVertexSlope(lines[i].tag, sides[lines[i].sidenum[which]].textureoffset >> FRACBITS,
-																			sides[lines[i].sidenum[which]].rowoffset >> FRACBITS, flags);
+																	 sides[lines[i].sidenum[which]].rowoffset >> FRACBITS, flags);
 					else
 						*slopetoset = P_NewVertexSlope(lines[i].tag, lines[i].tag, lines[i].tag, flags);
 
