@@ -1670,7 +1670,7 @@ static void R_ProjectSprite(mobj_t *thing)
 
 	if (thing->frame & FF_ABSOLUTELIGHTLEVEL)
 	{
-		const UINT8 n = R_ThingLightLevel(thing);
+		const UINT8 n = static_cast<UINT8>(R_ThingLightLevel(thing));
 		// n = uint8 aka 0 - 255, so the shift will always be 0 - LIGHTLEVELS - 1
 		lights_array = scalelight[n >> LIGHTSEGSHIFT];
 	}
