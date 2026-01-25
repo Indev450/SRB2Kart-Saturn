@@ -3681,7 +3681,7 @@ static void HWR_SplitSprite(gl_vissprite_t *spr, const boolean papersprite)
 	//Hurdler: 25/04/2000: now support colormap in hardware mode
 	HWR_GetMappedPatch(gpatch, spr->colormap);
 
-	hwrpatch = ((GLPatch_t *)gpatch->hardware);
+	hwrpatch = static_cast<GLPatch_t *>(gpatch->hardware);
 
 	// Draw shadow BEFORE sprite
 	if (UNLIKELY(cv_shadow.value // Shadows enabled
@@ -3783,10 +3783,10 @@ static void HWR_SplitSprite(gl_vissprite_t *spr, const boolean papersprite)
 	{
 		// make hyu´d players translucent with reducevfx, could be done better, but im lazy as crap
 		if (cv_reducevfx.value && sprmo->player->kartstuff[k_hyudorotimer] > 0)
-			Surf.PolyColor.s.alpha = FixedMul(FRACUNIT/2, Surf.PolyColor.s.alpha);
+			Surf.PolyColor.s.alpha = static_cast<UINT8>(FixedMul(FRACUNIT/2, static_cast<fixed_t>(Surf.PolyColor.s.alpha)));
 
 		if (cv_playerfade.value)
-			Surf.PolyColor.s.alpha = FixedMul(R_DoPlayerFade(sprmo), Surf.PolyColor.s.alpha);
+			Surf.PolyColor.s.alpha = static_cast<UINT8>(FixedMul(R_DoPlayerFade(sprmo), static_cast<fixed_t>(Surf.PolyColor.s.alpha)));
 	}
 
 	if (HWR_UseShader())
@@ -3969,7 +3969,7 @@ static void HWR_DrawSprite(gl_vissprite_t *spr)
 	//Hurdler: 25/04/2000: now support colormap in hardware mode
 	HWR_GetMappedPatch(gpatch, spr->colormap);
 
-	hwrpatch = ((GLPatch_t *)gpatch->hardware);
+	hwrpatch = static_cast<GLPatch_t *>(gpatch->hardware);
 
 	// create the sprite billboard
 	//
@@ -4080,10 +4080,10 @@ static void HWR_DrawSprite(gl_vissprite_t *spr)
 	{
 		// make hyu´d players translucent with reducevfx, could be done better, but im lazy as crap
 		if (cv_reducevfx.value && sprmo->player->kartstuff[k_hyudorotimer] > 0)
-			Surf.PolyColor.s.alpha = FixedMul(FRACUNIT/2, Surf.PolyColor.s.alpha);
+			Surf.PolyColor.s.alpha = static_cast<UINT8>(FixedMul(FRACUNIT/2, static_cast<fixed_t>(Surf.PolyColor.s.alpha)));
 
 		if (cv_playerfade.value)
-			Surf.PolyColor.s.alpha = FixedMul(R_DoPlayerFade(sprmo), Surf.PolyColor.s.alpha);
+			Surf.PolyColor.s.alpha = static_cast<UINT8>(FixedMul(R_DoPlayerFade(sprmo), static_cast<fixed_t>(Surf.PolyColor.s.alpha)));
 	}
 
 	if (HWR_UseShader())
@@ -4119,7 +4119,7 @@ static void HWR_DrawPrecipitationSprite(gl_vissprite_t *spr)
 	//Hurdler: 25/04/2000: now support colormap in hardware mode
 	HWR_GetMappedPatch(gpatch, spr->colormap);
 
-	hwrpatch = ((GLPatch_t *)gpatch->hardware);
+	hwrpatch = static_cast<GLPatch_t *>(gpatch->hardware);
 
 	// create the sprite billboard
 	//
@@ -4509,7 +4509,6 @@ static void HWR_RenderDrawNodes(void)
 
 	drawnodes.clear(); // clear so our size is 0 again!
 }
-
 
 // --------------------------------------------------------------------------
 //  Draw all vissprites
