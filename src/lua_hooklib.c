@@ -199,7 +199,7 @@ FUNCINLINE static ATTRINLINE void add_hook(hook_t *map)
 
 FUNCINLINE static ATTRINLINE void add_mobj_hook(lua_State *L, int hook_type)
 {
-	mobjtype_t   mobj_type = luaL_optnumber(L, 3, MT_NULL);
+	mobjtype_t mobj_type = luaL_optnumber(L, 3, MT_NULL);
 
 	luaL_argcheck(L, mobj_type < NUMMOBJTYPES, 3, "invalid mobjtype_t");
 
@@ -296,8 +296,7 @@ struct Hook_State {
 	INT32        status;/* return status to calling function */
 	void       * userdata;
 	int          hook_type;
-	mobjtype_t   mobj_type;/* >0 if mobj hook */
-	boolean      force_mobj;// allows mobj_type equal 0
+	mobjtype_t   mobj_type;/* <NUMMOBJTYPES if mobj hook */
 	const char * string;/* used to fetch table, ran first if set */
 	int          top;/* index of last argument passed to hook */
 	int          id;/* id to fetch ref */
@@ -364,10 +363,8 @@ FUNCINLINE static ATTRINLINE boolean prepare_hook
 		int default_status,
 		int hook_type
 ){
-	hook->force_mobj = false;
-
 	return init_hook_type(hook, default_status,
-			hook_type, 0, NULL,
+			hook_type, NUMMOBJTYPES, NULL,
 			hookIds[hook_type].numHooks);
 }
 
@@ -381,8 +378,6 @@ FUNCINLINE static ATTRINLINE boolean prepare_mobj_hook
 	const mobjtype_t mobj_type =
 		primary_mobj ? primary_mobj->type : NUMMOBJTYPES;
 
-	hook->force_mobj = true;
-
 	return init_hook_type(hook, default_status,
 			hook_type, mobj_type, NULL,
 			mobj_hook_available(hook_type, mobj_type));
@@ -395,10 +390,8 @@ FUNCINLINE static ATTRINLINE boolean prepare_string_hook
 		int          hook_type,
 		const char * string
 ){
-	hook->force_mobj = false;
-
 	if (init_hook_type(hook, default_status,
-				hook_type, 0, string,
+				hook_type, NUMMOBJTYPES, string,
 				stringHooks[hook_type].ref))
 	{
 		lua_pushstring(gL, string);
@@ -414,7 +407,7 @@ FUNCINLINE static ATTRINLINE boolean prepare_hud_hook
 		int hook_type
 ){
 	return init_hook_type(hook, 0,
-			hook_type, 0, NULL,
+			hook_type, NUMMOBJTYPES, NULL,
 			hudHookIds[hook_type].numHooks);
 }
 
@@ -554,14 +547,11 @@ static int call_hooks
 	{
 		calls += call_string_hooks(hook);
 	}
-	else if (hook->force_mobj)
+	else if (hook->mobj_type < NUMMOBJTYPES)
 	{
 		/* call generic mobj hooks first */
 		calls += call_mobj_type_hooks(hook, MT_NULL);
-
-		if (hook->mobj_type < NUMMOBJTYPES)
-			calls += call_mobj_type_hooks(hook, hook->mobj_type);
-
+		calls += call_mobj_type_hooks(hook, hook->mobj_type);
 		ps_lua_mobjhooks.value.i += calls;
 	}
 	else
