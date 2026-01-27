@@ -94,6 +94,7 @@
 # NOSDLMAIN=1 - ?
 # SDLMAIN=1 - ?
 # USELTO=1 - Enable building with LTO.
+# USEJEMALLOC=1 Enable building with jemalloc Allocator to replace GLibc malloc, might improve performance
 #
 # Library configuration flags:
 # Everything here is an override.
@@ -277,6 +278,10 @@ ifdef USEUBSAN
 # compile with asan
 opts+=-fsanitize=undefined
 libs+=-fsanitize=undefined
+endif
+
+ifdef USEJEMALLOC
+libs+=-ljemalloc
 endif
 
 ifneq (,$(filter $(CC) $(CXX),clang clang++))
