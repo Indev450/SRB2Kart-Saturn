@@ -186,8 +186,8 @@ static INT16 itemOn = 1; // menu item skull is on, Hack by Tails 09-18-2002
 static INT16 skullAnimCounter = 10; // skull animation counter
 static boolean interpTimerHackAllow = 0;
 
-static  UINT8 setupcontrolplayer;
-static  INT32   (*setupcontrols)[2];  // pointer to the gamecontrols of the player being edited
+static UINT8 setupcontrolplayer;
+static INT32 (*setupcontrols)[2];  // pointer to the gamecontrols of the player being edited
 
 // shhh... what am I doing... nooooo!
 static INT32 vidm_testingmode = 0;
@@ -201,8 +201,8 @@ static char setupm_ip[64];
 static textinput_t setupm_input_ip;
 
 
-static fixed_t    multi_tics;
-static state_t   *multi_state;
+static fixed_t  multi_tics;
+static state_t *multi_state;
 
 // this is set before entering the MultiPlayer setup menu,
 // for either player 1 or 2
@@ -1023,9 +1023,9 @@ boolean M_Responder(event_t *ev)
 				//case KEY_JOY1 + 2:
 				ch = KEY_ENTER;
 				break;
-				/*case KEY_JOY1 + 3: // Brake can function as 'n' for message boxes now.
-					ch = 'n';
-					break;*/
+			/*case KEY_JOY1 + 3: // Brake can function as 'n' for message boxes now.
+				ch = 'n';
+				break;*/
 			case KEY_MOUSE1 + 1:
 				//case KEY_JOY1 + 1:
 				ch = KEY_BACKSPACE;
@@ -1249,6 +1249,20 @@ boolean M_Responder(event_t *ev)
 
 	routine = currentMenu->menuitems[itemOn].itemaction;
 
+	// really hacky but the whole menu system sucks so
+	// allows to just load addons and gamestate instead of joining
+	if (currentMenu == &MP_ConnectDef &&
+		(routine && routine == M_Connect) &&
+		(ch == gamecontrol[0][gc_lookback][0] ||
+		 ch == gamecontrol[0][gc_lookback][1]))
+	{
+		addonsonly = true;
+		noFurtherInput = true;
+		currentMenu->lastOn = itemOn;
+		routine(itemOn);
+		return true;
+	}
+
 	// Handle menuitems which need a specific key handling
 	if (routine && (currentMenu->menuitems[itemOn].status & IT_TYPE) == IT_KEYHANDLER)
 	{
@@ -1304,12 +1318,21 @@ boolean M_Responder(event_t *ev)
 	{
 		playback_last_menu_interaction_leveltime = leveltime;
 		// Flip left/right with up/down for the playback menu, since it's a horizontal icon row.
+
 		switch (ch)
 		{
-			case KEY_LEFTARROW: ch = KEY_UPARROW; break;
-			case KEY_UPARROW: ch = KEY_RIGHTARROW; break;
-			case KEY_RIGHTARROW: ch = KEY_DOWNARROW; break;
-			case KEY_DOWNARROW: ch = KEY_LEFTARROW; break;
+			case KEY_LEFTARROW:
+				ch = KEY_UPARROW;
+				break;
+			case KEY_UPARROW:
+				ch = KEY_RIGHTARROW;
+				break;
+			case KEY_RIGHTARROW:
+				ch = KEY_DOWNARROW;
+				break;
+			case KEY_DOWNARROW:
+				ch = KEY_LEFTARROW;
+				break;
 
 			// arbitrary keyboard shortcuts because fuck you
 
@@ -1360,7 +1383,8 @@ boolean M_Responder(event_t *ev)
 					G_AdjustView(4, 1, true);
 				break;
 
-			default: break;
+			default:
+				break;
 		}
 	}
 
@@ -1485,6 +1509,7 @@ boolean M_Responder(event_t *ev)
 			}
 
 			return false;
+			break;
 
 		default:
 			CON_Responder(ev);
@@ -7056,6 +7081,21 @@ static void M_DrawConnectMenu(void)
 	else
 	{
 		M_DrawServerLines(currentMenu->x, serverlistpage);
+	}
+
+	// copy pasted this abomination from encore toggle
+	if (itemOn > mp_connect_search)
+	{
+		char addontoggle[32] = {0};
+		const char *item1 = gamecontrol[0][gc_lookback][0] != 0 ? G_KeynumToString(gamecontrol[0][gc_lookback][0]) : NULL;
+		const char *item2 = gamecontrol[0][gc_lookback][1] != 0 ? G_KeynumToString(gamecontrol[0][gc_lookback][1]) : NULL;
+
+		if (item1 != NULL && item2 != NULL)
+			snprintf(addontoggle, 32, "%s/%s - Load Addons Only", item1, item2);
+		else
+			snprintf(addontoggle, 32, "%s - Load Addons Only", item1 != NULL ? item1 : item2 != NULL ? item2 : "Lookback");
+
+		V_DrawThinString(1, BASEVIDHEIGHT-8-1, V_SNAPTOLEFT|V_SNAPTOBOTTOM|V_TRANSLUCENT|V_ALLOWLOWERCASE, addontoggle);
 	}
 
 	INT32 input_y = currentMenu->menuitems[mp_connect_search].alphaKey;
