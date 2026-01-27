@@ -1257,7 +1257,7 @@ boolean M_Responder(event_t *ev)
 		(ch == gamecontrol[0][gc_lookback][0] ||
 		 ch == gamecontrol[0][gc_lookback][1]))
 	{
-		addonsonly = true;
+		cl_addonsonly = true;
 		noFurtherInput = true;
 		currentMenu->lastOn = itemOn;
 		routine(itemOn);
