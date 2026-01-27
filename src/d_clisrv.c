@@ -102,7 +102,7 @@ static patch_t *map_icon;
 
 // if true, signals the game to only load addons AND gamestate
 // instead of fully joining a server
-boolean addonsonly = false;
+boolean cl_addonsonly = false;
 
 plrinfo playerinfo[MAXPLAYERS] = {};
 SINT8 joinnode = 0; // used for CL_VIEWSERVER
@@ -2558,7 +2558,7 @@ static boolean CL_ServerConnectionSearchTicker(tic_t *asksent)
 				return true;
 			}
 
-			cl_mode = (cv_serverinfoscreen.value && !addonsonly) ? CL_VIEWSERVER : CL_CHECKFILES;
+			cl_mode = (cv_serverinfoscreen.value && !cl_addonsonly) ? CL_VIEWSERVER : CL_CHECKFILES;
 		}
 		else
 		{
@@ -2614,7 +2614,7 @@ static boolean CL_ServerConnectionTicker(const char *tmpsave, tic_t *oldtic, tic
 
 		case CL_ASKFULLFILELIST:
 			if (cl_lastcheckedfilecount == UINT16_MAX) // All files retrieved
-				cl_mode = (cv_serverinfoscreen.value && !addonsonly) ? CL_VIEWSERVER : CL_CHECKFILES;
+				cl_mode = (cv_serverinfoscreen.value && !cl_addonsonly) ? CL_VIEWSERVER : CL_CHECKFILES;
 			else if (fileneedednum != cl_lastcheckedfilecount || I_GetTime() >= *asksent)
 			{
 				if (CL_AskFileList(fileneedednum))
@@ -2748,7 +2748,7 @@ static boolean CL_ServerConnectionTicker(const char *tmpsave, tic_t *oldtic, tic
 				// Gamestate is now handled within CL_LoadReceivedSavegame()
 				CL_LoadReceivedSavegame(false);
 
-				if (addonsonly)
+				if (cl_addonsonly)
 				{
 					// close connection after savegame load
 					// we want the actual server state
@@ -2794,18 +2794,19 @@ static boolean CL_ServerConnectionTicker(const char *tmpsave, tic_t *oldtic, tic
 		{
 			if (key == KEY_ENTER || key == KEY_JOY1)
 			{
-				addonsonly = false;
+				cl_addonsonly = false;
 				cl_mode = CL_CHECKFILES;
 				FreeMapIcon();
 			}
 			else if (key == KEY_ESCAPE || key == KEY_JOY1+1)
 			{
 				cl_mode = CL_ABORTED;
+				cl_addonsonly = false;
 				FreeMapIcon();
 			}
 			else if (key == KEY_SPACE || key == KEY_JOY1+2)
 			{
-				addonsonly = true;
+				cl_addonsonly = true;
 				cl_mode = CL_CHECKFILES;
 				FreeMapIcon();
 			}
@@ -2816,7 +2817,7 @@ static boolean CL_ServerConnectionTicker(const char *tmpsave, tic_t *oldtic, tic
 		{
 			CONS_Printf(M_GetText("Network game synchronization aborted.\n"));
 			CL_AbortConnection();
-			addonsonly = false;
+			cl_addonsonly = false;
 
 			return false;
 		}
@@ -3317,7 +3318,7 @@ static void Command_connect(void)
 
 	// idk how that shit works
 	//if (*COM_Argv(3) && fasticmp(COM_Argv(3), "-addonsonly"))
-		//addonsonly = true;
+		//cl_addonsonly = true;
 
 	CV_Set(&cv_lastserver, I_GetNodeAddress(servernode));
 
