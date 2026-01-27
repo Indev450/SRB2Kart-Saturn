@@ -102,7 +102,7 @@ static patch_t *map_icon;
 
 // if true, signals the game to only load addons AND gamestate
 // instead of fully joining a server
-boolean cl_addonsonly = false;
+static boolean cl_addonsonly = false;
 
 plrinfo playerinfo[MAXPLAYERS] = {};
 SINT8 joinnode = 0; // used for CL_VIEWSERVER
@@ -2558,7 +2558,7 @@ static boolean CL_ServerConnectionSearchTicker(tic_t *asksent)
 				return true;
 			}
 
-			cl_mode = (cv_serverinfoscreen.value && !cl_addonsonly) ? CL_VIEWSERVER : CL_CHECKFILES;
+			cl_mode = cv_serverinfoscreen.value ? CL_VIEWSERVER : CL_CHECKFILES;
 		}
 		else
 		{
@@ -2614,7 +2614,7 @@ static boolean CL_ServerConnectionTicker(const char *tmpsave, tic_t *oldtic, tic
 
 		case CL_ASKFULLFILELIST:
 			if (cl_lastcheckedfilecount == UINT16_MAX) // All files retrieved
-				cl_mode = (cv_serverinfoscreen.value && !cl_addonsonly) ? CL_VIEWSERVER : CL_CHECKFILES;
+				cl_mode = cv_serverinfoscreen.value ? CL_VIEWSERVER : CL_CHECKFILES;
 			else if (fileneedednum != cl_lastcheckedfilecount || I_GetTime() >= *asksent)
 			{
 				if (CL_AskFileList(fileneedednum))
@@ -3315,10 +3315,6 @@ static void Command_connect(void)
 		else
 			CONS_Alert(CONS_ERROR, M_GetText("There is no network driver\n"));
 	}
-
-	// idk how that shit works
-	//if (*COM_Argv(3) && fasticmp(COM_Argv(3), "-addonsonly"))
-		//cl_addonsonly = true;
 
 	CV_Set(&cv_lastserver, I_GetNodeAddress(servernode));
 
