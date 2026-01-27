@@ -552,8 +552,6 @@ typedef enum
 	KR_LEAVE, //Quit the game
 } kickreason_t;
 
-extern boolean cl_addonsonly;
-
 /* the max number of name changes in some time period */
 #define MAXNAMECHANGES (5)
 #define NAMECHANGERATE (60*TICRATE)

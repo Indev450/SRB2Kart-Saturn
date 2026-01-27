@@ -1250,20 +1250,6 @@ boolean M_Responder(event_t *ev)
 
 	routine = currentMenu->menuitems[itemOn].itemaction;
 
-	// really hacky but the whole menu system sucks so
-	// allows to just load addons and gamestate instead of joining
-	if (currentMenu == &MP_ConnectDef &&
-		(routine && routine == M_Connect) &&
-		(ch == gamecontrol[0][gc_lookback][0] ||
-		 ch == gamecontrol[0][gc_lookback][1]))
-	{
-		cl_addonsonly = true;
-		noFurtherInput = true;
-		currentMenu->lastOn = itemOn;
-		routine(itemOn);
-		return true;
-	}
-
 	// Handle menuitems which need a specific key handling
 	if (routine && (currentMenu->menuitems[itemOn].status & IT_TYPE) == IT_KEYHANDLER)
 	{
@@ -7082,21 +7068,6 @@ static void M_DrawConnectMenu(void)
 	else
 	{
 		M_DrawServerLines(currentMenu->x, serverlistpage);
-	}
-
-	// copy pasted this abomination from encore toggle
-	if (itemOn > mp_connect_search)
-	{
-		char addontoggle[32] = {0};
-		const char *item1 = gamecontrol[0][gc_lookback][0] != 0 ? G_KeynumToString(gamecontrol[0][gc_lookback][0]) : NULL;
-		const char *item2 = gamecontrol[0][gc_lookback][1] != 0 ? G_KeynumToString(gamecontrol[0][gc_lookback][1]) : NULL;
-
-		if (item1 != NULL && item2 != NULL)
-			snprintf(addontoggle, 32, "%s/%s - Load Addons Only", item1, item2);
-		else
-			snprintf(addontoggle, 32, "%s - Load Addons Only", item1 != NULL ? item1 : item2 != NULL ? item2 : "Lookback");
-
-		V_DrawThinString(1, BASEVIDHEIGHT-8-1, V_SNAPTOLEFT|V_SNAPTOBOTTOM|V_TRANSLUCENT|V_ALLOWLOWERCASE, addontoggle);
 	}
 
 	INT32 input_y = currentMenu->menuitems[mp_connect_search].alphaKey;
