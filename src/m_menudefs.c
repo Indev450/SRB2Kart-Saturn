@@ -1205,6 +1205,10 @@ static menuitem_t OP_FocusOptionsMenu[] =
 	{IT_STRING|IT_CVAR,	NULL, "Show \"FOCUS LOST\"",						&cv_showfocuslost,		   100},
 
 	{IT_STRING|IT_CVAR,	NULL, "Visible Mouse",								&cv_mousevisible,	       120},
+
+	{IT_STRING|IT_CVAR,	NULL, "Gamepad LED Color While Unfocused ",			&cv_gamepadledifunfocused, 	140},
+	{IT_STRING|IT_CVAR,	NULL, "Gamepad Rumble While Unfocused",				&cv_rumbleifunfocused, 	    150},
+
 };
 
 static const char* OP_FocusOptionsTooltips[] =
@@ -1216,6 +1220,8 @@ static const char* OP_FocusOptionsTooltips[] =
 	"Set manual framerate cap while the game is unfocused.",
 	"Should the FOCUS LOST window appear\n while the game is unfocused?",
 	"Displays the mouse cursor while the game is in focus.",
+	"Should gamepad LED indicator change color when unfocused?",
+	"Should gamepad rumble apply when unfocused?",
 };
 
 static menuitem_t OP_DataOptionsMenu[] =
