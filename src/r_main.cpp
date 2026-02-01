@@ -519,10 +519,10 @@ void R_GetRenderBlockMapDimensions(fixed_t drawdist, INT32 *xl, INT32 *xh, INT32
 	const fixed_t vyright = viewy + FixedMul(drawdist, FSIN(right));
 
 	// Try to narrow the search to within only the field of view
-	*xl = (unsigned)(std::min(viewx, std::min(vxleft, vxright)) - bmaporgx)>>MAPBLOCKSHIFT;
-	*xh = (unsigned)(std::max(viewx, std::max(vxleft, vxright)) - bmaporgx)>>MAPBLOCKSHIFT;
-	*yl = (unsigned)(std::min(viewy, std::min(vyleft, vyright)) - bmaporgy)>>MAPBLOCKSHIFT;
-	*yh = (unsigned)(std::max(viewy, std::max(vyleft, vyright)) - bmaporgy)>>MAPBLOCKSHIFT;
+	*xl = (unsigned)(FixedClamp((INT64)std::min(viewx, std::min(vxleft, vxright)) - bmaporgx))>>MAPBLOCKSHIFT;
+	*xh = (unsigned)(FixedClamp((INT64)std::max(viewx, std::max(vxleft, vxright)) - bmaporgx))>>MAPBLOCKSHIFT;
+	*yl = (unsigned)(FixedClamp((INT64)std::min(viewy, std::min(vyleft, vyright)) - bmaporgy))>>MAPBLOCKSHIFT;
+	*yh = (unsigned)(FixedClamp((INT64)std::max(viewy, std::max(vyleft, vyright)) - bmaporgy))>>MAPBLOCKSHIFT;
 
 	if (*xh >= bmapwidth)
 		*xh = bmapwidth - 1;
