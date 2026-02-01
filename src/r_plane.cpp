@@ -136,7 +136,7 @@ void R_AllocPlaneMemory(void)
 	}
 
 	yslopetab = static_cast<fixed_t*>(Z_Realloc(yslopetab, sizeof(*yslopetab) * (viewheight * 16), PU_STATIC, NULL));
-	spanstart = static_cast<fixed_t*>(Z_Realloc(spanstart, sizeof(*spanstart) * viewheight, PU_STATIC, NULL));
+	spanstart = static_cast<INT32*>(Z_Realloc(spanstart, sizeof(*spanstart) * viewheight, PU_STATIC, NULL));
 }
 
 //

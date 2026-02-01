@@ -579,7 +579,7 @@ md2found:
 	fclose(f);
 }
 
-void HWR_AddPlayerMD2(int skin, boolean local) // For MD2's that were added after startup
+void HWR_AddPlayerMD2(INT32 skin, boolean local) // For MD2's that were added after startup
 {
 	FILE *f;
 	char name[20], filename[32];
