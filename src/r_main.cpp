@@ -1018,8 +1018,8 @@ static void R_InitViewMapping(void)
 
 		for (INT32 i = 0; i < j; i++)
 		{
-			fixed_t dy = (i - viewheight*8)<<FRACBITS;
-			dy = FixedMul(abs(dy), fovtan);
+			fixed_t dy = abs(i - viewheight*8) << FRACBITS;
+			dy = FixedMul(dy, fovtan);
 			yslopetab[i] = FixedDiv(centerx*FRACUNIT, dy);
 		}
 	}
