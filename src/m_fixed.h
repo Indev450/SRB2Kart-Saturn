@@ -20,6 +20,7 @@ extern "C" {
 #endif
 
 #include "doomtype.h"
+
 #ifdef __GNUC__
 #include <stdlib.h>
 #endif
@@ -70,6 +71,14 @@ FUNCMATH FUNCINLINE static ATTRINLINE fixed_t DoubleToFixed(double f)
 // for backwards compat
 #define FIXED_TO_FLOAT(x) FixedToFloat(x) // (((float)(x)) / ((float)FRACUNIT))
 #define FLOAT_TO_FIXED(f) FloatToFixed(f) // (fixed_t)((f) * ((float)FRACUNIT))
+
+FUNCMATH FUNCINLINE static ATTRINLINE fixed_t FixedClamp(INT64 val)
+{
+// stoopid includes
+#define FCLAMP(x, y, z) ((x) < (y) ? (y) : ((x) > (z) ? (z) : (x)))
+	return (fixed_t)(FCLAMP(val, (INT64)INT32_MIN, (INT64)INT32_MAX));
+#undef FCLAMP
+}
 
 /**	\brief	The FixedMul function
 
