@@ -320,9 +320,7 @@ void P_AddGradesForMare(INT16 i, UINT8 mare, char *gtext)
   */
 void P_DeleteGrades(INT16 i)
 {
-	if (mapheaderinfo[i]->grades)
-		Z_Free(mapheaderinfo[i]->grades);
-
+	Z_Free(mapheaderinfo[i]->grades);
 	mapheaderinfo[i]->grades = NULL;
 	mapheaderinfo[i]->numGradedMares = 0;
 }

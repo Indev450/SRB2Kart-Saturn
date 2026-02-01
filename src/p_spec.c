@@ -6222,8 +6222,7 @@ void P_SpawnSpecials(INT32 fromnetsave, boolean reloadinggamestate)
 
 	// Allocate each list
 	for (i = 0; i < numsectors; i++)
-		if(secthinkers[i].thinkers)
-			Z_Free(secthinkers[i].thinkers);
+		Z_Free(secthinkers[i].thinkers);
 
 	Z_Free(secthinkers);
 

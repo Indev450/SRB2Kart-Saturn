@@ -392,7 +392,7 @@ boolean R_AddSingleSpriteDef(const char *sprname, spritedef_t *spritedef, UINT16
 
 	// allocate space for the frames present and copy sprtemp to it
 	if (spritedef->numframes &&             // has been allocated
-		spritedef->numframes < maxframe)   // more frames are defined ?
+		spritedef->numframes < maxframe)    // more frames are defined ?
 	{
 
 		Z_Free(spritedef->spriteframes);

@@ -405,10 +405,8 @@ static void Patch_FreeData(patch_t *patch)
 	}*/
 #endif
 
-	if (patch->columnofs)
-		Z_Free(patch->columnofs);
-	if (patch->columns)
-		Z_Free(patch->columns);
+	Z_Free(patch->columnofs);
+	Z_Free(patch->columns);
 }
 
 void Patch_Free(patch_t *patch)

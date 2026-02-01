@@ -521,11 +521,8 @@ void G_ClearRecords(void)
 	INT16 i;
 	for (i = 0; i < NUMMAPS; ++i)
 	{
-		if (mainrecords[i])
-		{
-			Z_Free(mainrecords[i]);
-			mainrecords[i] = NULL;
-		}
+		Z_Free(mainrecords[i]);
+		mainrecords[i] = NULL;
 	}
 }
 

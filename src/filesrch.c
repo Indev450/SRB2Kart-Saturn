@@ -317,8 +317,7 @@ void closefilemenu(boolean validsize)
 		coredirmenu = NULL;
 	}
 
-	if (refreshdirname)
-		Z_Free(refreshdirname);
+	Z_Free(refreshdirname);
 	refreshdirname = NULL;
 }
 
@@ -346,8 +345,7 @@ void searchfilemenu(char *tempname)
 
 	if (!menusearch.length)
 	{
-		if (dirmenu)
-			Z_Free(dirmenu);
+		Z_Free(dirmenu);
 		dirmenu = coredirmenu;
 		sizedirmenu = sizecoredirmenu;
 
@@ -389,8 +387,8 @@ void searchfilemenu(char *tempname)
 				I_Error("searchfilemenu(): could not create \"No results...\".");
 		sizedirmenu = 1;
 		dir_on[menudepthleft] = 0;
-		if (tempname)
-			Z_Free(tempname);
+		Z_Free(tempname);
+
 		return;
 	}
 
@@ -505,8 +503,8 @@ boolean preparefilemenu(boolean samedepth, boolean replayhut)
 	{
 		closedir(dirhandle);
 		closefilemenu(false);
-		if (tempname)
-			Z_Free(tempname);
+		Z_Free(tempname);
+
 		return false;
 	}
 

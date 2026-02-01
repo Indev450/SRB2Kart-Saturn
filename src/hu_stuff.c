@@ -1072,8 +1072,7 @@ static void Got_Saycmd(const UINT8 **p, INT32 playernum)
 
 		HU_AddChatText(va(fmt2, prefix, cstart, dispname, textcolor, msg), cv_chatnotifications.value); // add to chat
 
-		if (tempchar)
-			Z_Free(tempchar);
+		Z_Free(tempchar);
 	}
 #ifdef _DEBUG
 	// I just want to point out while I'm here that because the data is still
@@ -1565,8 +1564,7 @@ static void HU_drawMiniChat(void)
 		dy = 0;
 		dx = 0;
 		msglines += linescount+1;
-		if (msg)
-			Z_Free(msg);
+		Z_Free(msg);
 	}
 
 	y = chaty - charheight*(msglines+1);
@@ -1651,8 +1649,7 @@ static void HU_drawMiniChat(void)
 		}
 		dy += charheight;
 		dx = 0;
-		if (msg)
-			Z_Free(msg);
+		Z_Free(msg);
 	}
 
 	// decrement addy and make that shit smooth:
@@ -1760,8 +1757,7 @@ static void HU_drawChatLog(INT32 offset)
 		}
 		dy += charheight;
 		dx = 0;
-		if (msg)
-			Z_Free(msg);
+		Z_Free(msg);
 	}
 
 	if (((chat_scroll >= chat_maxscroll) || (chat_scrollmedown)) && !(justscrolleddown || justscrolledup || chat_scrolltime)) // was already at the bottom of the page before new maxscroll calculation and was NOT scrolling.

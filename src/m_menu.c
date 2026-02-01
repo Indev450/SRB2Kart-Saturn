@@ -6570,17 +6570,22 @@ static void M_EraseGuest(INT32 choice)
 
 static void M_OverwriteGuest(const char *which)
 {
-	char *rguest = Z_StrDup(va("%s"PATHSEP"replay"PATHSEP"%s"PATHSEP"%s-guest.lmp", srb2home, timeattackfolder, G_BuildMapName(cv_nextmap.value)));
+	char *rguest;
 	UINT8 *buf;
 	size_t len;
 	len = FIL_ReadFile(va("%s"PATHSEP"replay"PATHSEP"%s"PATHSEP"%s-%s-%s.lmp", srb2home, timeattackfolder, G_BuildMapName(cv_nextmap.value), cv_chooseskin.string, which), &buf);
-	if (!len) {
+
+	if (!len)
 		return;
-	}
-	if (FIL_FileExists(rguest)) {
+
+	rguest = Z_StrDup(va("%s"PATHSEP"replay"PATHSEP"%s"PATHSEP"%s-guest.lmp", srb2home, timeattackfolder, G_BuildMapName(cv_nextmap.value)));
+
+	if (FIL_FileExists(rguest))
+	{
 		M_StopMessage(0);
 		remove(rguest);
 	}
+
 	FIL_WriteFile(rguest, buf, len);
 	Z_Free(rguest);
 
