@@ -3716,9 +3716,7 @@ void V_DoPostProcessor(INT32 view, INT32 param)
 			// Make sure table is built
 			if (heatshifter == NULL || lastheight != viewheight)
 			{
-				if (heatshifter)
-					Z_Free(heatshifter);
-
+				Z_Free(heatshifter);
 				heatshifter = Z_Calloc(viewheight * sizeof(boolean), PU_STATIC, NULL);
 
 				for (y = 0; y < viewheight; y++)

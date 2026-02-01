@@ -122,7 +122,9 @@ void W_Shutdown(void)
 
 		if (wad->handle)
 			fclose(wad->handle);
+
 		Z_Free(wad->filename);
+
 		while (wad->numlumps--)
 		{
 			Z_Free(wad->lumpinfo[wad->numlumps].longname);
@@ -2730,10 +2732,7 @@ void vres_Free(virtres_t* vres)
 
 	while (vres->numlumps--)
 	{
-		if (vres->vlumps[vres->numlumps].data)
-		{
-			Z_Free(vres->vlumps[vres->numlumps].data);
-		}
+		Z_Free(vres->vlumps[vres->numlumps].data);
 	}
 
 	Z_Free(vres->vlumps);
