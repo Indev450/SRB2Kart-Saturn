@@ -224,13 +224,13 @@ void D_ProcessEvents(void)
 
 		// Menu input
 #ifdef HAVE_THREADS
-		I_lock_mutex(&m_menu_mutex);
+		I_LockMutex(&m_menu_mutex);
 #endif
 		{
 			eaten = M_Responder(ev);
 		}
 #ifdef HAVE_THREADS
-		I_unlock_mutex(m_menu_mutex);
+		I_UnlockMutex(m_menu_mutex);
 #endif
 
 		if (eaten)
@@ -245,13 +245,13 @@ void D_ProcessEvents(void)
 
 		// console input
 #ifdef HAVE_THREADS
-		I_lock_mutex(&con_mutex);
+		I_LockMutex(&con_mutex);
 #endif
 		{
 			eaten = CON_Responder(ev);
 		}
 #ifdef HAVE_THREADS
-		I_unlock_mutex(con_mutex);
+		I_UnlockMutex(con_mutex);
 #endif
 
 		if (eaten)
@@ -578,11 +578,11 @@ static boolean D_Display(void)
 	vid.recalc = false;
 
 #ifdef HAVE_THREADS
-	I_lock_mutex(&m_menu_mutex);
+	I_LockMutex(&m_menu_mutex);
 #endif
 	M_Drawer(); // menu is drawn even on top of everything...
 #ifdef HAVE_THREADS
-	I_unlock_mutex(m_menu_mutex);
+	I_UnlockMutex(m_menu_mutex);
 #endif
 	// focus lost moved to M_Drawer
 

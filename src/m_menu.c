@@ -142,7 +142,7 @@ typedef enum
 } text_enum;
 
 #ifdef HAVE_THREADS
-I_mutex m_menu_mutex;
+I_Mutex m_menu_mutex;
 #endif
 
 M_waiting_mode_t m_waiting_mode = M_NOT_WAITING;
@@ -1977,7 +1977,7 @@ void M_Ticker(void)
 	}
 
 #if defined (MASTERSERVER) && defined (HAVE_THREADS)
-	I_lock_mutex(&ms_ServerList_mutex);
+	I_LockMutex(&ms_ServerList_mutex);
 	{
 		if (ms_ServerList)
 		{
@@ -1986,7 +1986,7 @@ void M_Ticker(void)
 			ms_ServerList = NULL;
 		}
 	}
-	I_unlock_mutex(ms_ServerList_mutex);
+	I_UnlockMutex(ms_ServerList_mutex);
 #endif
 }
 
@@ -4024,14 +4024,14 @@ size_t demolist_all_size = 0;
 boolean replaynamesloaded = false;
 
 #ifdef HAVE_THREADS
-I_mutex replayquerymutex;
+I_Mutex replayquerymutex;
 
 // g_in_exiting_signal_handler is an evil hack
 // to avoid infinite SIGABRT recursion in the signal handler
 // due to poisoned locks or mach-o kernel not supporting locks in signals
 // or something like that. idk
-#  define Lock_search_state()    if (!g_in_exiting_signal_handler) { I_lock_mutex(&replayquerymutex); }
-#  define Unlock_search_state()  if (!g_in_exiting_signal_handler) { I_unlock_mutex(replayquerymutex); }
+#  define Lock_search_state()    if (!g_in_exiting_signal_handler) { I_LockMutex(&replayquerymutex); }
+#  define Unlock_search_state()  if (!g_in_exiting_signal_handler) { I_UnlockMutex(replayquerymutex); }
 #else/*HAVE_THREADS*/
 #  define Lock_search_state()
 #  define Unlock_search_state()
@@ -4098,7 +4098,10 @@ static void LoadReplayNames(void)
 	Unlock_search_state();
 
 #ifdef HAVE_THREADS
-	I_spawn_thread("replay-names-load", ReplayNamesLoadThread, replaydirpath);
+	if (!I_SpawnThread("replay-names-load", ReplayNamesLoadThread, replaydirpath))
+	{
+		free(replaydirpath);
+	}
 #else
 	ReplayNamesLoadThread(replaydirpath);
 #endif
@@ -6694,11 +6697,11 @@ static void M_EndGame(INT32 choice)
 void M_SetWaitingMode(int mode)
 {
 #ifdef HAVE_THREADS
-	I_lock_mutex(&m_menu_mutex);
+	I_LockMutex(&m_menu_mutex);
 #endif
 	m_waiting_mode = mode;
 #ifdef HAVE_THREADS
-	I_unlock_mutex(m_menu_mutex);
+	I_UnlockMutex(m_menu_mutex);
 #endif
 }
 
@@ -6707,11 +6710,11 @@ int M_GetWaitingMode(void)
 	int mode;
 
 #ifdef HAVE_THREADS
-	I_lock_mutex(&m_menu_mutex);
+	I_LockMutex(&m_menu_mutex);
 #endif
 	mode = m_waiting_mode;
 #ifdef HAVE_THREADS
-	I_unlock_mutex(m_menu_mutex);
+	I_UnlockMutex(m_menu_mutex);
 #endif
 
 	return mode;
@@ -6723,20 +6726,23 @@ static void Spawn_masterserver_thread(const char *name, void (*thread)(int*))
 {
 	int *id = malloc(sizeof *id);
 
-	I_lock_mutex(&ms_QueryId_mutex);
+	I_LockMutex(&ms_QueryId_mutex);
 	*id = ms_QueryId;
-	I_unlock_mutex(ms_QueryId_mutex);
+	I_UnlockMutex(ms_QueryId_mutex);
 
-	I_spawn_thread(name, (I_thread_fn)thread, id);
+	if (!I_SpawnThread(name, (I_ThreadFn)thread, id))
+	{
+		free(id);
+	}
 }
 
 static int Same_instance(int id)
 {
 	int okay;
 
-	I_lock_mutex(&ms_QueryId_mutex);
+	I_LockMutex(&ms_QueryId_mutex);
 	okay = ( id == ms_QueryId );
-	I_unlock_mutex(ms_QueryId_mutex);
+	I_UnlockMutex(ms_QueryId_mutex);
 
 	return okay;
 }
@@ -6765,9 +6771,9 @@ static void Fetch_servers_thread(int *id)
 			M_SetWaitingMode(M_NOT_WAITING);
 
 #ifdef HAVE_THREADS
-			I_lock_mutex(&ms_ServerList_mutex);
+			I_LockMutex(&ms_ServerList_mutex);
 			ms_ServerList = server_list;
-			I_unlock_mutex(ms_ServerList_mutex);
+			I_UnlockMutex(ms_ServerList_mutex);
 #else
 			CL_QueryServerList(server_list);
 			free(server_list);
@@ -6800,7 +6806,7 @@ static void M_SearchServerList(void)
 	serverlistsearchedcount = 0;
 
 #ifdef HAVE_THREADS
-	I_lock_mutex(&ms_ServerList_mutex);
+	I_LockMutex(&ms_ServerList_mutex);
 #endif
 
 	for (UINT32 i = 0; i < serverlistcount; ++i)
@@ -6811,7 +6817,7 @@ static void M_SearchServerList(void)
 	}
 
 #ifdef HAVE_THREADS
-	I_unlock_mutex(ms_ServerList_mutex);
+	I_UnlockMutex(ms_ServerList_mutex);
 #endif
 
 	if (menuinput.length > 0)
@@ -7177,11 +7183,11 @@ static void M_CheckMODVersion(int id)
 	{
 		sprintf(updatestring, UPDATE_ALERT_STRING, VERSIONSTRING, updatecheck);
 #ifdef HAVE_THREADS
-		I_lock_mutex(&m_menu_mutex);
+		I_LockMutex(&m_menu_mutex);
 #endif
 		M_StartMessage(updatestring, NULL, MM_NOTHING);
 #ifdef HAVE_THREADS
-		I_unlock_mutex(m_menu_mutex);
+		I_UnlockMutex(m_menu_mutex);
 #endif
 	}
 }
@@ -7227,13 +7233,13 @@ static void M_ConnectMenu(INT32 choice)
 	itemOn = 0;
 
 #if defined (MASTERSERVER) && defined (HAVE_THREADS)
-	I_lock_mutex(&ms_QueryId_mutex);
+	I_LockMutex(&ms_QueryId_mutex);
 	{
 		ms_QueryId++;
 	}
-	I_unlock_mutex(ms_QueryId_mutex);
+	I_UnlockMutex(ms_QueryId_mutex);
 
-	I_lock_mutex(&ms_ServerList_mutex);
+	I_LockMutex(&ms_ServerList_mutex);
 	{
 		if (ms_ServerList)
 		{
@@ -7241,7 +7247,7 @@ static void M_ConnectMenu(INT32 choice)
 			ms_ServerList = NULL;
 		}
 	}
-	I_unlock_mutex(ms_ServerList_mutex);
+	I_UnlockMutex(ms_ServerList_mutex);
 
 #ifdef UPDATE_ALERT
 	Spawn_masterserver_thread("check-new-version", Check_new_version_thread);

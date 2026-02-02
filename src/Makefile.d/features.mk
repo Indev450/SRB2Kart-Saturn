@@ -27,6 +27,11 @@ endif
 sources+=$(call List,hardware/Sourcefile)
 endif
 
+ifndef NOTHREADS
+opts+=-DHAVE_THREADS
+sources+=i_threads.c
+endif
+
 ifndef NOMD5
 sources+=md5.c
 endif

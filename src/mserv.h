@@ -69,10 +69,10 @@ extern consvar_t cv_rendezvousserver;
 
 #ifdef HAVE_THREADS
 extern int           ms_QueryId;
-extern I_mutex       ms_QueryId_mutex;
+extern I_Mutex       ms_QueryId_mutex;
 
 extern msg_server_t *ms_ServerList;
-extern I_mutex       ms_ServerList_mutex;
+extern I_Mutex       ms_ServerList_mutex;
 #endif
 #ifdef MASTERSERVER
 void RegisterServer(void);

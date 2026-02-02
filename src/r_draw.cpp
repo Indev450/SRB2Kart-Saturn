@@ -289,8 +289,14 @@ void R_GenerateBlendTables(void)
 	state->LocalPalette = static_cast<RGBA_t *>(memcpy(malloc(palsize), pLocalPalette, palsize));
 	state->gammaCorrectedPalette = static_cast<RGBA_t *>(memcpy(malloc(palsize), pGammaCorrectedPalette, palsize));
 
-	I_spawn_thread("blend-tables",
-			R_GenerateBlendTables_Thread, state);
+	if (!I_SpawnThread("blend-tables",
+			R_GenerateBlendTables_Thread, state))
+	{
+		free(state->gammaCorrectedPalette);
+		free(state->LocalPalette);
+		free(state);
+		I_Error("R_GenerateBlendTables: Failed to generate BlendTables\n"); // should we just retry on main thread instead?
+	}
 #else
 	struct GenerateBlendTables_State state = {pLocalPalette, pGammaCorrectedPalette};
 	R_GenerateBlendTables_Core(&state);

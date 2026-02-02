@@ -223,6 +223,8 @@ typedef int32_t boolean;
 
 	#define FUNCNOINLINE __attribute__((noinline))
 
+	#define FUNCWARNRV __attribute__((warn_unused_result))
+
 	#if (__GNUC__ > 4) || (__GNUC__ == 4 && __GNUC_MINOR__ >= 4) // >= GCC 4.4
 		#ifdef __i386__ // i386 only
 			#define FUNCTARGET(X)  __attribute__ ((__target__ (X)))
@@ -267,6 +269,9 @@ typedef int32_t boolean;
 #endif
 #ifndef FUNCTARGET
 #define FUNCTARGET(x)
+#endif
+#ifndef FUNCWARNRV
+#define FUNCWARNRV
 #endif
 #ifndef ATTRPACK
 #define ATTRPACK
