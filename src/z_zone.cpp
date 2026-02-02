@@ -75,6 +75,8 @@ typedef struct memblock_s
 #define MEMORY(x) (void *)((uintptr_t)(x) + sizeof(memblock_t) + ALIGNPAD)
 #define MEMBLOCK(x) (memblock_t *)((uintptr_t)(x) - ALIGNPAD - sizeof(memblock_t))
 
+static thread_handle_t main_thread;
+
 // both the head and tail of the zone memory block list
 static memblock_t head;
 
@@ -108,6 +110,7 @@ static void Command_Memdump_f(void);
 void Z_Init(void)
 {
 	size_t total, memfree;
+	main_thread = I_GetCurrentThread();
 
 	memset(&head, 0x00, sizeof(head));
 
@@ -142,6 +145,8 @@ void Z_Free(void *ptr)
 #endif
 {
 	memblock_t *block;
+
+	I_Assert(I_GetCurrentThread() == main_thread);
 
 	if (ptr == NULL)
 		return;
@@ -237,6 +242,8 @@ void *Z_Malloc(size_t size, INT32 tag, void *user)
 	memblock_t *block;
 	void *ptr;
 
+	I_Assert(I_GetCurrentThread() == main_thread);
+
 #ifdef ZDEBUG2
 	CONS_Debug(DBG_MEMORY, "Z_Malloc %s:%d\n", file, line);
 #endif
@@ -300,6 +307,8 @@ void *Z_Calloc2(size_t size, INT32 tag, void *user, const char *file, INT32 line
 void *Z_Calloc(size_t size, INT32 tag, void *user)
 #endif
 {
+	I_Assert(I_GetCurrentThread() == main_thread);
+
 #ifdef VALGRIND_MEMPOOL_ALLOC
 	Z_calloc = true;
 #endif
@@ -334,6 +343,8 @@ void *Z_Realloc(void *ptr, size_t size, INT32 tag, void *user)
 	void *rez;
 	memblock_t *block;
 	size_t copysize;
+
+	I_Assert(I_GetCurrentThread() == main_thread);
 
 #ifdef ZDEBUG2
 	CONS_Debug(DBG_MEMORY, "Z_Realloc %s:%d\n", file, line);
@@ -414,6 +425,8 @@ void Z_FreeTags(INT32 lowtag, INT32 hightag)
 {
 	memblock_t *block, *next;
 
+	I_Assert(I_GetCurrentThread() == main_thread);
+
 #ifdef ZDEBUG
 	Z_CheckHeap2(file, line);
 #else
@@ -446,6 +459,8 @@ void Z_FreeTags(INT32 lowtag, INT32 hightag)
 void Z_IterateTags(INT32 lowtag, INT32 hightag, boolean (*iterfunc)(void *))
 {
 	memblock_t *block, *next;
+
+	I_Assert(I_GetCurrentThread() == main_thread);
 
 	if (!iterfunc)
 		I_Error("Z_IterateTags: no iterator function was given");
