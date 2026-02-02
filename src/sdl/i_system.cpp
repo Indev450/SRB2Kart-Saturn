@@ -951,6 +951,8 @@ static int joy_open(int playerIndex, int joyIndex)
 
 #if (SDL_VERSION_ATLEAST(2,0,14))
 	JoyInfo[playerIndex].hasled = SDL_GameControllerHasLED(JoyInfo[playerIndex].dev);
+#endif
+#if (SDL_VERSION_ATLEAST(2,0,18))
 	JoyInfo[playerIndex].hasrumble = SDL_GameControllerHasRumble(JoyInfo[playerIndex].dev);
 #endif
 
@@ -1137,7 +1139,7 @@ boolean I_GamepadHasLED(INT32 playernum)
 
 boolean I_GamepadHasRumble(INT32 playernum)
 {
-#if !(SDL_VERSION_ATLEAST(2,0,14))
+#if !(SDL_VERSION_ATLEAST(2,0,18))
 	(void)playernum;
 	return false;
 #else
