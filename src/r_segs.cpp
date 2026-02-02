@@ -342,7 +342,7 @@ static void R_RenderMaskedSegLoop(drawcolumndata_t* dc, drawseg_t *drawseg, INT3
 					for (i = 0; i < dc->numlights; i++)
 					{
 						rlight = &dc->lightlist[i];
-						rlight->height += rlight->heightstep;
+						rlight->height = FixedClamp((INT64)rlight->height + rlight->heightstep);
 					}
 				}
 
@@ -425,7 +425,7 @@ static void R_RenderMaskedSegLoop(drawcolumndata_t* dc, drawseg_t *drawseg, INT3
 						for (i++; i < dc->numlights; i++)
 						{
 							rlight = &dc->lightlist[i];
-							rlight->height += rlight->heightstep;
+							rlight->height = FixedClamp((INT64)rlight->height + rlight->heightstep);
 						}
 
 						continue;
@@ -1063,7 +1063,7 @@ void R_RenderThickSideRange(drawseg_t *drawseg, INT32 x1, INT32 x2, ffloor_t *pf
 					for (i++; i < dc->numlights; i++)
 					{
 						rlight = &dc->lightlist[i];
-						rlight->height += rlight->heightstep;
+						rlight->height = FixedClamp((INT64)rlight->height + rlight->heightstep);
 
 						if (rlight->flags & FF_CUTLEVEL)
 							rlight->botheight += rlight->botheightstep;
@@ -1450,8 +1450,8 @@ static void R_RenderSegLoop(drawcolumndata_t* dc)
 			if (toptexture)
 			{
 				// top wall
-				mid = pixhigh>>HEIGHTBITS;
-				pixhigh += pixhighstep;
+				mid = pixhigh >> HEIGHTBITS;
+				pixhigh = FixedClamp((INT64)pixhigh + pixhighstep);
 
 				if (mid >= floorclip[rw_x])
 					mid = floorclip[rw_x]-1;
@@ -1480,8 +1480,8 @@ static void R_RenderSegLoop(drawcolumndata_t* dc)
 			if (bottomtexture)
 			{
 				// bottom wall
-				mid = (pixlow+HEIGHTUNIT-1)>>HEIGHTBITS;
-				pixlow += pixlowstep;
+				mid = FixedClamp((INT64)pixlow+HEIGHTUNIT-1)>>HEIGHTBITS;
+				pixlow = FixedClamp((INT64)pixlow + pixlowstep);
 
 				// no space above wall?
 				if (mid <= ceilingclip[rw_x])
@@ -2541,8 +2541,8 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 
 		auto set_topstep_normal = [&]
 		{
-			topstep = -FixedMul (rw_scalestep, worldtop);
-			topfrac = (centeryfrac>>4) - FixedMul (worldtop, rw_scale);
+			topstep = -FixedMul(rw_scalestep, worldtop);
+			topfrac = FixedClamp((INT64)(centeryfrac>>4) - FixedMul(worldtop, rw_scale));
 		};
 
 		// untextured seg
@@ -2563,14 +2563,14 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 			// this is an attempt to fix issues with textureless single sided lines drawing nothing where they should just draw sky instead
 			if (tophigh && !backsector && frontsector->ceilingpic == skyflatnum)
 			{
-				topstep = -FixedMul (rw_scalestep, worldbottom);
-				topfrac = (centeryfrac>>4) - FixedMul (worldbottom, rw_scale);
+				topstep = -FixedMul(rw_scalestep, worldbottom);
+				topfrac = FixedClamp((INT64)(centeryfrac>>4) - FixedMul(worldbottom, rw_scale));
 
 				// account for slopes to try and get rid of sharp edges from the black void
 				if (frontsector->f_slope || (backsector && backsector->f_slope))
 				{
-					topstep = -FixedMul (rw_scalestep, worldbottomslope);
-					topfrac = (centeryfrac>>4) - FixedMul (worldbottomslope, rw_scale);
+					topstep = -FixedMul(rw_scalestep, worldbottomslope);
+					topfrac = FixedClamp((INT64)(centeryfrac>>4) - FixedMul(worldbottomslope, rw_scale));
 				}
 			}
 			else
@@ -2579,18 +2579,18 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 		else
 			set_topstep_normal();
 
-		bottomstep = -FixedMul (rw_scalestep, worldbottom);
-		bottomfrac = (centeryfrac>>4) - FixedMul (worldbottom, rw_scale);
+		bottomstep = -FixedMul(rw_scalestep, worldbottom);
+		bottomfrac = FixedClamp((INT64)(centeryfrac>>4) - FixedMul(worldbottom, rw_scale));
 
 		if (frontsector->c_slope)
 		{
-			fixed_t topfracend = (centeryfrac>>4) - FixedMul (worldtopslope, ds_p->scale2);
+			fixed_t topfracend = FixedClamp((INT64)(centeryfrac>>4) - FixedMul(worldtopslope, ds_p->scale2));
 			topstep = (topfracend-topfrac)/(range);
 		}
 
 		if (frontsector->f_slope)
 		{
-			fixed_t bottomfracend = (centeryfrac>>4) - FixedMul (worldbottomslope, ds_p->scale2);
+			fixed_t bottomfracend = FixedClamp((INT64)(centeryfrac>>4) - FixedMul(worldbottomslope, ds_p->scale2));
 			bottomstep = (bottomfracend-bottomfrac)/(range);
 		}
 	}
@@ -2632,9 +2632,9 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 					continue;
 			}
 
-			rlight->height = (centeryfrac>>4) - FixedMul(leftheight, rw_scale);
-			rlight->heightstep = (centeryfrac>>4) - FixedMul(rightheight, ds_p->scale2);
-			rlight->heightstep = (FixedClamp((INT64)rlight->heightstep - rlight->height))/(range);
+			rlight->height = FixedClamp((INT64)(centeryfrac>>4) - FixedMul(leftheight, rw_scale));
+			rlight->heightstep = FixedClamp((INT64)(centeryfrac>>4) - FixedMul(rightheight, ds_p->scale2));
+			rlight->heightstep = FixedClamp((INT64)rlight->heightstep - rlight->height)/(range);
 			rlight->flags = static_cast<ffloortype_e>(light->flags);
 
 			if (light->caster && light->caster->flags & FF_CUTSOLIDS)
@@ -2696,9 +2696,9 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 
 		if (toptexture)
 		{
-			fixed_t topfracend = (centeryfrac>>4) - FixedMul(worldhighslope, ds_p->scale2);
+			fixed_t topfracend = FixedClamp((INT64)(centeryfrac>>4) - FixedMul(worldhighslope, ds_p->scale2));
 
-			pixhigh = (centeryfrac>>4) - FixedMul (worldhigh, rw_scale);
+			pixhigh = FixedClamp((INT64)(centeryfrac>>4) - FixedMul(worldhigh, rw_scale));
 			pixhighstep = (topfracend-pixhigh)/(range);
 
 			// If the lowest part of a ceiling stretching down covers the entire screen
@@ -2708,9 +2708,9 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 
 		if (bottomtexture)
 		{
-			fixed_t bottomfracend = (centeryfrac>>4) - FixedMul (worldlowslope, ds_p->scale2);
+			fixed_t bottomfracend = FixedClamp((INT64)(centeryfrac>>4) - FixedMul(worldlowslope, ds_p->scale2));
 
-			pixlow = (centeryfrac>>4) - FixedMul (worldlow, rw_scale);
+			pixlow = FixedClamp((INT64)(centeryfrac>>4) - FixedMul(worldlow, rw_scale));
 			pixlowstep = (bottomfracend-pixlow)/(range);
 
 			// If the highest part of a floor stretching up covers the entire screen
@@ -2731,8 +2731,8 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 				visffloor[i].b_pos_slope = roverright;
 				visffloor[i].b_pos >>= 4;
 				visffloor[i].b_pos_slope >>= 4;
-				visffloor[i].b_frac = (centeryfrac >> 4) - FixedMul(visffloor[i].b_pos, rw_scale);
-				visffloor[i].b_step = (centeryfrac >> 4) - FixedMul(visffloor[i].b_pos_slope, ds_p->scale2);
+				visffloor[i].b_frac = FixedClamp((INT64)(centeryfrac>>4) - FixedMul(visffloor[i].b_pos, rw_scale));
+				visffloor[i].b_step = FixedClamp((INT64)(centeryfrac>>4) - FixedMul(visffloor[i].b_pos_slope, ds_p->scale2));
 				visffloor[i].b_step = (visffloor[i].b_step-visffloor[i].b_frac)/(range);
 			};
 
@@ -2838,7 +2838,7 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 					visffloor[i].b_pos = height;
 					visffloor[i].b_pos = (visffloor[i].b_pos - viewz) >> 4;
 					visffloor[i].b_step = FixedMul(-rw_scalestep, visffloor[i].b_pos);
-					visffloor[i].b_frac = (centeryfrac >> 4) - FixedMul(visffloor[i].b_pos, rw_scale);
+					visffloor[i].b_frac = FixedClamp((INT64)(centeryfrac>>4) - FixedMul(visffloor[i].b_pos, rw_scale));
 				};
 
 				while (i < numffloors && visffloor[i].polyobj != curline->polyseg)
