@@ -540,7 +540,7 @@ static boolean M_BackupConfig(const char *filename)
 void M_SaveConfig(const char *filename)
 {
 	FILE *f;
-	char *filepath;
+	CLEANUP(Z_Pfree) char *filepath = NULL;
 
 	// make sure not to write back the config until it's been correctly loaded
 	if (!loaded_config)
@@ -558,7 +558,7 @@ void M_SaveConfig(const char *filename)
 		// append srb2home to beginning of filename
 		// but check if srb2home isn't already there, first
 		if (!strstr(filename, srb2home))
-			filepath = va(pandf,srb2home, filename);
+			filepath = Z_StrDup(va(pandf, srb2home, filename));
 		else
 			filepath = Z_StrDup(filename);
 

@@ -1483,6 +1483,7 @@ static char *CHAT_WordWrap(INT32 x, INT32 w, INT32 option, const char *string)
 			x = 0;
 		}
 	}
+
 	return newstring;
 }
 
@@ -1521,7 +1522,7 @@ static void HU_drawMiniChat(void)
 		emote_t *emote = NULL;
 		int emotelen = 0;
 
-		while(msg[j]) // iterate through msg
+		while (msg[j]) // iterate through msg
 		{
 			if (msg[j] < HU_FONTSTART) // don't draw
 			{
@@ -1553,14 +1554,17 @@ static void HU_drawMiniChat(void)
 			{
 				j++;
 			}
+
 			prev_linereturn = false;
 			dx += charwidth;
+
 			if (dx >= boxw)
 			{
 				dx = 0;
 				linescount += 1;
 			}
 		}
+
 		dy = 0;
 		dx = 0;
 		msglines += linescount+1;
@@ -1596,7 +1600,7 @@ static void HU_drawMiniChat(void)
 		emote_t *emote = NULL;
 		int emotelen = 0;
 
-		while(msg[j]) // iterate through msg
+		while (msg[j]) // iterate through msg
 		{
 			if (msg[j] < HU_FONTSTART) // don't draw
 			{
@@ -1641,12 +1645,14 @@ static void HU_drawMiniChat(void)
 
 			dx += charwidth;
 			prev_linereturn = false;
+
 			if (dx >= boxw)
 			{
 				dx = 0;
 				dy += charheight;
 			}
 		}
+
 		dy += charheight;
 		dx = 0;
 		Z_Free(msg);
@@ -1701,7 +1707,7 @@ static void HU_drawChatLog(INT32 offset)
 
 	V_DrawFillConsoleMap(chatx, chat_topy, boxw, boxh*charheight +2, 239|V_SNAPTOBOTTOM|V_SNAPTOLEFT); // log box
 
-	for (i=0; i<chat_nummsg_log; i++) // iterate through our chatlog
+	for (i = 0; i < chat_nummsg_log; i++) // iterate through our chatlog
 	{
 		INT32 clrflag = 0;
 		INT32 j = 0;
@@ -1710,7 +1716,7 @@ static void HU_drawChatLog(INT32 offset)
 		emote_t *emote = NULL;
 		int emotelen = 0;
 
-		while(msg[j]) // iterate through msg
+		while (msg[j]) // iterate through msg
 		{
 			if (msg[j] < HU_FONTSTART) // don't draw
 			{
@@ -1755,6 +1761,7 @@ static void HU_drawChatLog(INT32 offset)
 				dy += charheight;
 			}
 		}
+
 		dy += charheight;
 		dx = 0;
 		Z_Free(msg);
