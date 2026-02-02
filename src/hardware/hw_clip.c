@@ -335,7 +335,7 @@ angle_t gld_FrustumAngle(angle_t tiltangle)
 	floatangle = 2.0 + (45.0 + ((double)tilt / 1.9)) * clipfov / 90.0;
 	if (floatangle >= 180.0)
 		return 0xffffffff;
-	a1 = (angle_t)xs_CRoundToInt(ANG1 * floatangle);
+	a1 = (angle_t)lrint(ANG1 * floatangle);
 	return a1;
 }
 
