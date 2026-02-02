@@ -5369,7 +5369,7 @@ void M_PopupMasterServerRules(void)
 		{
 			firstDismissedRulesThisBoot = false;
 			M_StartMessage(va("%s\n(press any key)", rules), NULL, MM_NOTHING);
-			Z_Free(rules);
+			free(rules);
 		}
 	}
 #endif
@@ -7608,7 +7608,6 @@ static void M_DrawLevelSelectOnly(boolean leftfade, boolean rightfade)
 
 static void M_DrawServerMenu(void)
 {
-
 	M_DrawLevelSelectOnly(false, false);
 #ifdef MASTERSERVER
 	if (currentMenu == &MP_ServerDef && cv_advertise.value) // Remind players where they're hosting.
