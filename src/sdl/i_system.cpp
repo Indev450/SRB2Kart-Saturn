@@ -1896,8 +1896,8 @@ INT32 I_StartupSystem(void)
 		I_Fork();
 #endif
 #ifdef HAVE_THREADS
-	I_start_threads();
-	I_AddExitFunc(I_stop_threads);
+	I_StartThreads();
+	I_AddExitFunc(I_StopThreads);
 	I_ThreadPoolInit();
 	I_AddExitFunc(I_ThreadPoolShutdown);
 #endif

@@ -215,7 +215,7 @@ void M_SetupNextMenu(menu_t *menudef);
 void M_ClearMenus(boolean callexitmenufunc);
 
 #ifdef HAVE_THREADS
-extern I_mutex m_menu_mutex;
+extern I_Mutex m_menu_mutex;
 #endif
 
 extern menu_t *currentMenu;

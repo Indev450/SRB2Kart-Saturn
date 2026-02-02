@@ -44,14 +44,14 @@
 #define MAXHUDLINES 20
 
 #ifdef HAVE_THREADS
-I_mutex con_mutex;
+I_Mutex con_mutex;
 
 // g_in_exiting_signal_handler is an evil hack
 // to avoid infinite SIGABRT recursion in the signal handler
 // due to poisoned locks or mach-o kernel not supporting locks in signals
 // or something like that. idk
-#  define Lock_state()    if (!g_in_exiting_signal_handler) { I_lock_mutex(&con_mutex); }
-#  define Unlock_state()  if (!g_in_exiting_signal_handler) { I_unlock_mutex(con_mutex); }
+#  define Lock_state()    if (!g_in_exiting_signal_handler) { I_LockMutex(&con_mutex); }
+#  define Unlock_state()  if (!g_in_exiting_signal_handler) { I_UnlockMutex(con_mutex); }
 #else/*HAVE_THREADS*/
 #  define Lock_state()
 #  define Unlock_state()

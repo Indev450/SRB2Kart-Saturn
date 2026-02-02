@@ -191,6 +191,7 @@ set(SRB2_CORE_GAME_SOURCES
 	k_kart.c
 	k_stats.c
 	i_time.c
+	i_threads.c
 
 	p_local.h
 	p_maputl.h

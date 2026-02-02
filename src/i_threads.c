@@ -1,4 +1,4 @@
-// SONIC ROBO BLAST 2
+// SONIC ROBO BLAST 2 KART
 //-----------------------------------------------------------------------------
 // Copyright (C) 2020-2023 by James R.
 //
@@ -9,12 +9,14 @@
 /// \file  i_threads.c
 /// \brief Multithreading abstraction
 
-#if defined (__unix__) || (!defined(__APPLE__) && defined (UNIXCOMMON))
+#ifdef HAVE_THREADS
+#if defined (__unix__) || defined(UNIXCOMMON)
 
 #include <pthread.h>
 
-#include "../i_threads.h"
-#include "../doomdef.h"
+#include "i_threads.h"
+#include "doomdef.h"
+#include "doomtype.h"
 
 typedef struct thread_s thread_t;
 
@@ -22,7 +24,7 @@ struct thread_s
 {
 	thread_t *next;
 	void *userdata;
-	I_thread_fn func;
+	I_ThreadFn func;
 	pthread_t thread;
 };
 
@@ -41,12 +43,8 @@ static void *HandleThread(void *data)
 	return NULL;
 }
 
-void
-I_spawn_thread (
-	const char  * name,
-	I_thread_fn   entry,
-	void        * userdata
-)
+FUNCWARNRV
+int I_SpawnThread(const char *name, I_ThreadFn entry, void *userdata)
 {
 	thread_t *thread;
 	(void)name;
@@ -66,17 +64,20 @@ I_spawn_thread (
 	if (thread == NULL)
 	{
 		thread = malloc(sizeof(thread_t));
+		if (thread == NULL)
+			return false;
 		thread->next = thread_list;
 		thread_list = thread;
 	}
 
 	thread->func = entry;
 	thread->userdata = userdata;
-	pthread_create(&thread->thread, NULL, HandleThread, thread);
+	int err = pthread_create(&thread->thread, NULL, HandleThread, thread);
 	pthread_mutex_unlock(&thread_lock);
+	return err == 0;
 }
 
-int I_thread_is_stopped(void)
+int I_ThreadIsStopped(void)
 {
 	thread_t *thread;
 	pthread_mutex_lock(&thread_lock);
@@ -94,11 +95,11 @@ int I_thread_is_stopped(void)
 	return true;
 }
 
-void I_start_threads(void)
+void I_StartThreads(void)
 {
 }
 
-void I_stop_threads(void)
+void I_StopThreads(void)
 {
 	thread_t *thread = thread_list;
 	while (thread != NULL)
@@ -109,7 +110,7 @@ void I_stop_threads(void)
 	}
 }
 
-void I_lock_mutex(I_mutex *anchor)
+void I_LockMutex(I_Mutex *anchor)
 {
 	pthread_mutex_lock(&thread_lock);
 	if (*anchor == NULL)
@@ -127,25 +128,25 @@ void I_lock_mutex(I_mutex *anchor)
 	pthread_mutex_lock(*anchor);
 }
 
-void I_unlock_mutex(I_mutex id)
+void I_UnlockMutex(I_Mutex id)
 {
 	pthread_mutex_unlock(id);
 }
 
-void I_hold_cond(I_cond *cond_anchor, I_mutex mutex_id)
+void I_HoldCond(I_Cond *condAnchor, I_Mutex mutexId)
 {
-	I_Assert(mutex_id != NULL);
+	I_Assert(mutexId != NULL);
 	pthread_mutex_lock(&thread_lock);
-	if (*cond_anchor == NULL)
+	if (*condAnchor == NULL)
 	{
-		*cond_anchor = malloc(sizeof(pthread_cond_t));
-		pthread_cond_init(*cond_anchor, NULL);
+		*condAnchor = malloc(sizeof(pthread_cond_t));
+		pthread_cond_init(*condAnchor, NULL);
 	}
 	pthread_mutex_unlock(&thread_lock);
-	pthread_cond_wait(*cond_anchor, mutex_id);
+	pthread_cond_wait(*condAnchor, mutexId);
 }
 
-void I_wake_one_cond(I_cond *anchor)
+void I_WakeOneCond(I_Cond *anchor)
 {
 	pthread_mutex_lock(&thread_lock);
 	if (*anchor == NULL)
@@ -157,7 +158,7 @@ void I_wake_one_cond(I_cond *anchor)
 	pthread_cond_signal(*anchor);
 }
 
-void I_wake_all_cond(I_cond *anchor)
+void I_WakeAllCond(I_Cond *anchor)
 {
 	pthread_mutex_lock(&thread_lock);
 	if (*anchor == NULL)
@@ -168,12 +169,17 @@ void I_wake_all_cond(I_cond *anchor)
 	pthread_mutex_unlock(&thread_lock);
 	pthread_cond_broadcast(*anchor);
 }
+
+thread_handle_t I_GetCurrentThread(void)
+{
+	return pthread_self();
+}
 #elif defined (_WIN32)
 #include <windows.h>
 
-#include "../i_threads.h"
-#include "../doomdef.h"
-#include "../doomtype.h"
+#include "i_threads.h"
+#include "doomdef.h"
+#include "doomtype.h"
 
 typedef struct thread_s thread_t;
 
@@ -181,9 +187,9 @@ struct thread_s
 {
 	thread_t *next;
 	void *userdata;
-	I_thread_fn func;
+	I_ThreadFn func;
 	HANDLE thread;
-	DWORD thread_id;
+	DWORD threadId;
 };
 
 // we use a linked list to avoid moving memory blocks when allocating new threads.
@@ -201,7 +207,8 @@ static DWORD __stdcall HandleThread(void *data)
 	return 0;
 }
 
-void I_spawn_thread(const char *name, I_thread_fn entry, void *userdata)
+FUNCWARNRV
+int I_SpawnThread(const char *name, I_ThreadFn entry, void *userdata)
 {
 	thread_t *thread;
 	(void)name;
@@ -219,17 +226,20 @@ void I_spawn_thread(const char *name, I_thread_fn entry, void *userdata)
 	if (thread == NULL)
 	{
 		thread = malloc(sizeof(thread_t));
+		if (thread == NULL)
+			return false;
 		thread->next = thread_list;
 		thread_list = thread;
 	}
 
 	thread->func = entry;
 	thread->userdata = userdata;
-	thread->thread = CreateThread(NULL, 0, HandleThread, thread, 0, &thread->thread_id);
+	thread->thread = CreateThread(NULL, 0, HandleThread, thread, 0, &thread->threadId);
 	LeaveCriticalSection(&thread_lock);
+	return thread->thread != NULL;
 }
 
-int I_thread_is_stopped(void)
+int I_ThreadIsStopped(void)
 {
 	thread_t *thread;
 	EnterCriticalSection(&thread_lock);
@@ -247,12 +257,12 @@ int I_thread_is_stopped(void)
 	return true;
 }
 
-void I_start_threads(void)
+void I_StartThreads(void)
 {
 	InitializeCriticalSection(&thread_lock);
 }
 
-void I_stop_threads(void)
+void I_StopThreads(void)
 {
 	thread_t *thread = thread_list;
 	while (thread != NULL)
@@ -264,7 +274,7 @@ void I_stop_threads(void)
 	DeleteCriticalSection(&thread_lock);
 }
 
-void I_lock_mutex(I_mutex *anchor)
+void I_LockMutex(I_Mutex *anchor)
 {
 	EnterCriticalSection(&thread_lock);
 	if (*anchor == NULL)
@@ -276,25 +286,25 @@ void I_lock_mutex(I_mutex *anchor)
 	EnterCriticalSection(*anchor);
 }
 
-void I_unlock_mutex(I_mutex id)
+void I_UnlockMutex(I_Mutex id)
 {
 	LeaveCriticalSection(id);
 }
 
-void I_hold_cond(I_cond *cond_anchor, I_mutex mutex_id)
+void I_HoldCond(I_Cond *condAnchor, I_Mutex mutexId)
 {
-	I_Assert(mutex_id != NULL);
+	I_Assert(mutexId != NULL);
 	EnterCriticalSection(&thread_lock);
-	if (*cond_anchor == NULL)
+	if (*condAnchor == NULL)
 	{
-		*cond_anchor = malloc(sizeof(CONDITION_VARIABLE));
-		InitializeConditionVariable(*cond_anchor);
+		*condAnchor = malloc(sizeof(CONDITION_VARIABLE));
+		InitializeConditionVariable(*condAnchor);
 	}
 	LeaveCriticalSection(&thread_lock);
-	SleepConditionVariableCS(*cond_anchor, mutex_id, INFINITE);
+	SleepConditionVariableCS(*condAnchor, mutexId, INFINITE);
 }
 
-void I_wake_one_cond(I_cond *anchor)
+void I_WakeOneCond(I_Cond *anchor)
 {
 	EnterCriticalSection(&thread_lock);
 	if (*anchor == NULL)
@@ -306,7 +316,7 @@ void I_wake_one_cond(I_cond *anchor)
 	WakeConditionVariable(*anchor);
 }
 
-void I_wake_all_cond(I_cond *anchor)
+void I_WakeAllCond(I_Cond *anchor)
 {
 	EnterCriticalSection(&thread_lock);
 	if (*anchor == NULL)
@@ -317,48 +327,66 @@ void I_wake_all_cond(I_cond *anchor)
 	LeaveCriticalSection(&thread_lock);
 	WakeAllConditionVariable(*anchor);
 }
+
+void *I_GetCurrentThread(void)
+{
+	return GetCurrentThread();
+}
 #else
-void I_spawn_thread(const char *name, I_thread_fn entry, void *userdata)
+#include "i_threads.h"
+
+FUNCWARNRV
+int I_SpawnThread(const char *name, I_ThreadFn entry, void *userdata)
 {
 	(void)name;
 	entry(userdata);
+	return true;
 }
 
-int I_thread_is_stopped(void)
+int I_ThreadIsStopped(void)
+{
+	return true;
+}
+
+void I_StartThreads(void)
 {
 }
 
-void I_start_threads(void)
+void I_StopThreads(void)
 {
 }
 
-void I_stop_threads(void)
-{
-}
-
-void I_lock_mutex(I_mutex *anchor)
+void I_LockMutex(I_Mutex *anchor)
 {
 	(void)anchor;
 }
 
-void I_unlock_mutex(I_mutex id)
+void I_UnlockMutex(I_Mutex id)
 {
 	(void)id;
 }
 
-void I_hold_cond(I_cond *cond_anchor, I_mutex mutex_id)
+void I_HoldCond(I_Cond *condAnchor, I_Mutex mutexId)
 {
-	(void)cond_anchor;
-	(void)mutex_id;
+	(void)condAnchor;
+	(void)mutexId;
 }
 
-void I_wake_one_cond(I_cond *anchor)
+void I_WakeOneCond(I_Cond *anchor)
 {
 	(void)anchor;
 }
 
-void I_wake_all_cond(I_cond *anchor)
+void I_WakeAllCond(I_Cond *anchor)
 {
 	(void)anchor;
+}
+
+void *I_GetCurrentThread(void)
+{
+	return NULL;
 }
 #endif
+
+
+#endif // HAVE_THREADS

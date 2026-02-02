@@ -62,7 +62,7 @@ static int hms_started;
 
 static char *hms_api;
 #ifdef HAVE_THREADS
-static I_mutex hms_api_mutex;
+static I_Mutex hms_api_mutex;
 #endif
 
 static char *hms_server_token;
@@ -90,9 +90,9 @@ Printf_url (const char *url)
 	boolean startup;
 
 #ifdef HAVE_THREADS
-	I_lock_mutex(&con_mutex);
+	I_LockMutex(&con_mutex);
 	startup = con_startup;
-	I_unlock_mutex(con_mutex);
+	I_UnlockMutex(con_mutex);
 #else
 	startup = con_startup;
 #endif
@@ -183,7 +183,7 @@ HMS_connect (const char *format, ...)
 	}
 
 #ifdef HAVE_THREADS
-	I_lock_mutex(&hms_api_mutex);
+	I_LockMutex(&hms_api_mutex);
 #endif
 
 	seek = strlen(hms_api) + 1;/* + '/' */
@@ -195,7 +195,7 @@ HMS_connect (const char *format, ...)
 	sprintf(url, "%s/", hms_api);
 
 #ifdef HAVE_THREADS
-	I_unlock_mutex(hms_api_mutex);
+	I_UnlockMutex(hms_api_mutex);
 #endif
 
 	va_start (ap, format);
@@ -477,12 +477,12 @@ HMS_fetch_servers (msg_server_t *list, int query_id)
 			if (address && port)
 			{
 #ifdef HAVE_THREADS
-				I_lock_mutex(&ms_QueryId_mutex);
+				I_LockMutex(&ms_QueryId_mutex);
 				{
 					if (query_id != ms_QueryId)
 						doing_shit = 0;
 				}
-				I_unlock_mutex(ms_QueryId_mutex);
+				I_UnlockMutex(ms_QueryId_mutex);
 
 				if (! doing_shit)
 					break;
@@ -611,14 +611,14 @@ void
 HMS_set_api (char *api)
 {
 #ifdef HAVE_THREADS
-	I_lock_mutex(&hms_api_mutex);
+	I_LockMutex(&hms_api_mutex);
 #endif
 	{
 		free(hms_api);
 		hms_api = Strip_trailing_slashes(api);
 	}
 #ifdef HAVE_THREADS
-	I_unlock_mutex(hms_api_mutex);
+	I_UnlockMutex(hms_api_mutex);
 #endif
 }
 

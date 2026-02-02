@@ -35,7 +35,6 @@ set(SRB2_SDL2_SOURCES
 	i_system.cpp
 	i_ttf.c
 	i_video.c
-	i_threads.c
 	#IMG_xpm.c
 	ogl_sdl.c
 

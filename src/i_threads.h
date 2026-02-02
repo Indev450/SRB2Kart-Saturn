@@ -1,6 +1,6 @@
 // SONIC ROBO BLAST 2 KART
 //-----------------------------------------------------------------------------
-// Copyright (C) 2020 by James R.
+// Copyright (C) 2020-2023 by James R.
 //
 // This program is free software distributed under the
 // terms of the GNU General Public License, version 2.
@@ -14,34 +14,46 @@
 #ifndef I_THREADS_H
 #define I_THREADS_H
 
+#include "doomtype.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-typedef void (*I_thread_fn)(void *userdata);
+typedef void (*I_ThreadFn)(void *userdata);
 
-typedef void * I_mutex;
-typedef void * I_cond;
+typedef void * I_Mutex;
+typedef void * I_Cond;
 
-void      I_start_threads (void);
-void      I_stop_threads  (void);
+#ifdef __linux__
+typedef long unsigned int thread_handle_t;
+#else
+typedef void *thread_handle_t;
+#endif
 
-void      I_spawn_thread (const char *name, I_thread_fn, void *userdata);
+void      I_StartThreads (void);
+void      I_StopThreads  (void);
+
+FUNCWARNRV
+int       I_SpawnThread (const char *name, I_ThreadFn, void *userdata);
 
 /* check in your thread whether to return early */
-int       I_thread_is_stopped (void);
+int       I_ThreadIsStopped (void);
 
-void      I_lock_mutex      (I_mutex *);
-void      I_unlock_mutex    (I_mutex);
+void      I_LockMutex      (I_Mutex *);
+void      I_UnlockMutex    (I_Mutex);
 
-void      I_hold_cond       (I_cond *, I_mutex);
+void      I_HoldCond       (I_Cond *, I_Mutex);
 
-void      I_wake_one_cond   (I_cond *);
-void      I_wake_all_cond   (I_cond *);
+void      I_WakeOneCond   (I_Cond *);
+void      I_WakeAllCond   (I_Cond *);
+
+thread_handle_t I_GetCurrentThread(void);
 
 #ifdef __cplusplus
 } // extern "C"
 #endif
 
 #endif/*I_THREADS_H*/
+
 #endif/*HAVE_THREADS*/

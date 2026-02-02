@@ -22,7 +22,7 @@ void CON_Init(void);
 boolean CON_Responder(event_t *ev);
 
 #ifdef HAVE_THREADS
-extern I_mutex con_mutex;
+extern I_Mutex con_mutex;
 #endif
 
 // set true when screen size has changed, to adapt console

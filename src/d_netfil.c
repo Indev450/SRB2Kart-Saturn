@@ -112,7 +112,7 @@ static fileused_t transferFiles[UINT8_MAX + 1];
 INT32 fileneedednum = 0; // Number of files needed to join the server
 fileneeded_t fileneeded[MAX_WADFILES] = {}; // List of needed files
 #ifdef HAVE_THREADS
-static I_mutex downloadmutex;
+static I_Mutex downloadmutex;
 #endif
 char downloaddir[512] = "DOWNLOAD";
 
@@ -1427,7 +1427,7 @@ void CURLPrepareFile(const char* url, int dfilenum)
 		filedownload.http_running = true;
 
 #ifdef HAVE_THREADS
-		I_spawn_thread("http-download", (I_thread_fn)CURLGetFile, NULL);
+		(void)!I_SpawnThread("http-download", (I_ThreadFn)CURLGetFile, NULL);
 #endif
 	}
 	else
@@ -1440,15 +1440,15 @@ void CURLAbortFile(void)
 
 #ifdef HAVE_THREADS
 	// lock and unlock to wait for the download thread to exit
-	I_lock_mutex(&downloadmutex);
-	I_unlock_mutex(downloadmutex);
+	I_LockMutex(&downloadmutex);
+	I_UnlockMutex(downloadmutex);
 #endif
 }
 
 static void CURLGetFile(void)
 {
 #ifdef HAVE_THREADS
-	I_lock_mutex(&downloadmutex);
+	I_LockMutex(&downloadmutex);
 #endif
 	CURLMcode mc; /* return code used by curl_multi_wait() */
 	CURLcode easyres; /* Return from easy interface */
@@ -1549,7 +1549,7 @@ static void CURLGetFile(void)
 
 	filedownload.http_running = false;
 #ifdef HAVE_THREADS
-	I_unlock_mutex(downloadmutex);
+	I_UnlockMutex(downloadmutex);
 #endif
 }
 

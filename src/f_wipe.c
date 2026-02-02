@@ -388,11 +388,11 @@ void F_RunWipe(UINT8 wipetype, boolean drawMenu)
 		if (rendermode != render_none && drawMenu)
 		{
 #ifdef HAVE_THREADS
-			I_lock_mutex(&m_menu_mutex);
+			I_LockMutex(&m_menu_mutex);
 #endif
 			M_Drawer(); // menu is drawn even on top of wipes
 #ifdef HAVE_THREADS
-			I_unlock_mutex(m_menu_mutex);
+			I_UnlockMutex(m_menu_mutex);
 #endif
 		}
 

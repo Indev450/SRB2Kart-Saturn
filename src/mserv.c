@@ -41,11 +41,11 @@ static time_t  MSLastPing;
 static char *MSRules;
 
 #ifdef HAVE_THREADS
-static I_mutex MSMutex;
-static I_cond  MSCond;
+static I_Mutex MSMutex;
+static I_Cond  MSCond;
 
-#  define Lock_state()   I_lock_mutex  (&MSMutex)
-#  define Unlock_state() I_unlock_mutex (MSMutex)
+#  define Lock_state()   I_LockMutex  (&MSMutex)
+#  define Unlock_state() I_UnlockMutex (MSMutex)
 #else/*HAVE_THREADS*/
 #  define Lock_state()
 #  define Unlock_state()
@@ -90,10 +90,10 @@ consvar_t cv_masterserver_nagattempts = {"masterserver_nagattempts", "5", CV_SAV
 
 #if defined (MASTERSERVER) && defined (HAVE_THREADS)
 int           ms_QueryId = 0;
-I_mutex       ms_QueryId_mutex;
+I_Mutex       ms_QueryId_mutex;
 
 msg_server_t *ms_ServerList = NULL;
-I_mutex       ms_ServerList_mutex;
+I_Mutex       ms_ServerList_mutex;
 #endif
 
 UINT16 current_port = 0;
@@ -129,11 +129,11 @@ void AddMServCommands(void)
 static void WarnGUI (void)
 {
 #ifdef HAVE_THREADS
-	I_lock_mutex(&m_menu_mutex);
+	I_LockMutex(&m_menu_mutex);
 #endif
 	M_PopupMasterServerConnectError();
 #ifdef HAVE_THREADS
-	I_unlock_mutex(m_menu_mutex);
+	I_UnlockMutex(m_menu_mutex);
 #endif
 }
 
@@ -168,12 +168,12 @@ char *GetMODVersion(int id)
 	c = HMS_compare_mod_version(buffer, 16);
 
 #ifdef HAVE_THREADS
-	I_lock_mutex(&ms_QueryId_mutex);
+	I_LockMutex(&ms_QueryId_mutex);
 	{
 		if (id != ms_QueryId)
 			c = -1;
 	}
-	I_unlock_mutex(ms_QueryId_mutex);
+	I_UnlockMutex(ms_QueryId_mutex);
 #endif
 
 	if (c > 0)
@@ -341,7 +341,7 @@ Finish_unlist (void)
 		Unlock_state();
 
 #ifdef HAVE_THREADS
-		I_wake_all_cond(&MSCond);
+		I_WakeAllCond(&MSCond);
 #endif
 	}
 }
@@ -377,7 +377,7 @@ New_server_id (void)
 	Lock_state();
 	{
 		*id = ++MSId;
-		I_wake_all_cond(&MSCond);
+		I_WakeAllCond(&MSCond);
 	}
 	Unlock_state();
 	return id;
@@ -392,7 +392,7 @@ Register_server_thread (int *id)
 	{
 		/* wait for previous unlist to finish */
 		while (*id == MSId && MSRegistered)
-			I_hold_cond(&MSCond, MSMutex);
+			I_HoldCond(&MSCond, MSMutex);
 
 		same = ( *id == MSId );/* it could have been a while */
 	}
@@ -444,7 +444,7 @@ Change_masterserver_thread (char *api)
 	Lock_state();
 	{
 		while (MSRegistered)
-			I_hold_cond(&MSCond, MSMutex);
+			I_HoldCond(&MSCond, MSMutex);
 	}
 	Unlock_state();
 
@@ -464,9 +464,9 @@ void RegisterServer(void)
 {
 #ifdef MASTERSERVER
 #ifdef HAVE_THREADS
-	I_spawn_thread(
+	(void)!I_SpawnThread(
 			"register-server",
-			(I_thread_fn)Register_server_thread,
+			(I_ThreadFn)Register_server_thread,
 			New_server_id()
 	);
 #else
@@ -478,9 +478,9 @@ void RegisterServer(void)
 static void UpdateServer(void)
 {
 #ifdef HAVE_THREADS
-	I_spawn_thread(
+	(void)!I_SpawnThread(
 			"update-server",
-			(I_thread_fn)Update_server_thread,
+			(I_ThreadFn)Update_server_thread,
 			Server_id()
 	);
 #else
@@ -492,9 +492,9 @@ void UnregisterServer(void)
 {
 #ifdef MASTERSERVER
 #ifdef HAVE_THREADS
-	I_spawn_thread(
+	(void)!I_SpawnThread(
 			"unlist-server",
-			(I_thread_fn)Unlist_server_thread,
+			(I_ThreadFn)Unlist_server_thread,
 			Server_id()
 	);
 #else
@@ -557,14 +557,18 @@ void MasterClient_Ticker(void)
 static void
 Set_api (const char *api)
 {
+	char *dapi = strdup(api);
 #ifdef HAVE_THREADS
-	I_spawn_thread(
-			"change-masterserver",
-			(I_thread_fn)Change_masterserver_thread,
-			strdup(api)
-	);
+	if (!I_SpawnThread(
+		"change-masterserver",
+		(I_ThreadFn)Change_masterserver_thread,
+					   dapi
+	))
+	{
+		free(dapi);
+	}
 #else
-	Finish_masterserver_change(strdup(api));
+	Finish_masterserver_change(dapi);
 #endif
 }
 
@@ -572,9 +576,9 @@ void
 Get_rules (void)
 {
 #ifdef HAVE_THREADS
-	I_spawn_thread(
-		"get-masterserver-rules",
-		(I_thread_fn)Get_masterserver_rules_thread,
+	(void)!I_SpawnThread(
+			"get-masterserver-rules",
+			(I_ThreadFn)Get_masterserver_rules_thread,
 				   NULL
 	);
 #else
