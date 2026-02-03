@@ -4732,7 +4732,7 @@ static void M_DrawReplayHut(void)
 	if (y > scaledviewheight-80)
 	{
 		V_DrawFill(BASEVIDWIDTH-4, 75, 4, scaledviewheight-80, V_SNAPTOTOP|V_SNAPTORIGHT|239);
-		V_DrawFill(BASEVIDWIDTH-3, 76 + (scaledviewheight-80) * replayhutmenuy / y, 2, (((scaledviewheight-80) * (scaledviewheight-80))-1) / y - 1, V_SNAPTOTOP|V_SNAPTORIGHT|229);
+		V_DrawFill(BASEVIDWIDTH-3, 76 + (scaledviewheight-80) * replayhutmenuy / y, 2, max((((scaledviewheight-80) * (scaledviewheight-80))-1) / y - 1, 1), V_SNAPTOTOP|V_SNAPTORIGHT|229);
 	}
 
 	// Draw the cursor

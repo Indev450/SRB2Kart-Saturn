@@ -81,6 +81,9 @@ consvar_t cv_gamepadled[MAXSPLITSCREENPLAYERS] = {
 	{"gamepadled4", "Skincolor", CV_SAVE|CV_CALL|CV_NOINIT, gamepadled_cons_t, led_off_handle4, 0, NULL, NULL, 0, 0, NULL}
 };
 
+consvar_t cv_gamepadledifunfocused = {"gamepadledunfocused",  "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_rumbleifunfocused = {"rumbleifunfocused",  "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+
 static void rumble_off_handle(void)
 {
 	if (!cv_rumble[0].value)
@@ -930,7 +933,7 @@ void G_SetPlayerGamepadIndicatorColor(INT32 playernum, UINT8 color)
 
 	I_Assert(playernum >= 0 && playernum < MAXSPLITSCREENPLAYERS);
 
-	if (cv_gamepadled[playernum].value == 0
+	if (cv_gamepadled[playernum].value == 0 || (window_notinfocus && cv_gamepadledifunfocused.value == 0)
 	 || color >= MAXTRANSLATIONS)
 	{
 		return;
@@ -1024,7 +1027,7 @@ void G_PlayerDeviceRumble(INT32 playernum, UINT16 low_strength, UINT16 high_stre
 {
 	I_Assert(playernum >= 0 && playernum < MAXSPLITSCREENPLAYERS);
 
-	if (cv_rumble[playernum].value == 0)
+	if (cv_rumble[playernum].value == 0 || (window_notinfocus && cv_rumbleifunfocused.value == 0))
 	{
 		return;
 	}
