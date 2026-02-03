@@ -1841,18 +1841,15 @@ static void I_Fork(void)
 			I_RegisterChildSignals();
 			break;
 		default:
+#ifdef LOGMESSAGES
 			if (logstream)
 				fclose(logstream);/* the child has this */
-
+#endif
 			c = wait(&status);
-
 #ifdef LOGMESSAGES
 			/* By the way, exit closes files. */
 			logstream = fopen(logfilename, "at");
-#else
-			logstream = 0;
 #endif
-
 			if (c == -1)
 			{
 				kill(child, SIGKILL);

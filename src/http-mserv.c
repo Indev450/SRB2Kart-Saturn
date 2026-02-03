@@ -225,9 +225,10 @@ HMS_connect (const char *format, ...)
 	{
 		cc = curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
 		if (cc != CURLE_OK) I_OutputMsg("libcurl: %s\n", buffer->errbuf);
-
+#ifdef LOGMESSAGES
 		cc = curl_easy_setopt(curl, CURLOPT_STDERR, logstream);
 		if (cc != CURLE_OK) I_OutputMsg("libcurl: %s\n", buffer->errbuf);
+#endif
 	}
 
 	if (M_CheckParm("-bindaddr") && M_IsNextParm())
