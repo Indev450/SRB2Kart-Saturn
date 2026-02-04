@@ -715,6 +715,67 @@ static boolean D_Display(void)
 		time = 0;
 }*/
 
+static UINT64 precision = 0;
+static precise_t sleeptime = 0;
+
+static void D_LimitFps(void)
+{
+	static precise_t curtime = 0, lasttime = 0;
+	static precise_t start;
+	precise_t elapsed = 0;
+
+	sleeptime = 0;
+
+	// timedemo runs uncapped!
+	if (singletics)
+		return;
+
+	// in the case of "match refresh rate" + vsync, don't sleep at all
+	if (cv_vidwait.value && cv_fpscap.value == 0)
+		return;
+
+	const UINT32 framecap = R_GetFramerateCap();
+
+	// uncapped obviously does not need to be... capped...
+	if (framecap == 0)
+		return;
+
+	start = I_GetPreciseTime();
+
+	// frametarget in precise_t ticks (ex. 60fps = ~16,666,666)
+	const precise_t frametarget = precision / framecap;
+
+	do
+	{
+		// check the current time against the "time of the old frame""
+		curtime = I_GetPreciseTime();
+		elapsed = curtime - lasttime;
+
+		if (elapsed >= frametarget)
+		{
+			lasttime = curtime;
+
+			// time we spent :chaosleep:ing or doing absolutely nothing
+			// for frameskip calculations
+			sleeptime = curtime - start;
+			return;
+		}
+
+		// if we have more than 1ms to wait
+		// sleep for a bit to not trash the cpu lul
+		precise_t remaining = frametarget - elapsed;
+
+		if (remaining > (precise_t)(precision / 1000))
+		{
+			// sleep for 90% of the time we gotta wait for the next frame
+			// since we dont wanna oversleep :chaosleep:
+			I_SleepDuration(9 * remaining / 10);
+		}
+	}
+	while (elapsed < frametarget);
+	// the rest we just be waitin until we meet our frametime target
+}
+
 // =========================================================================
 // D_SRB2Loop
 // =========================================================================
@@ -726,7 +787,6 @@ void D_SRB2Loop(void)
 	tic_t entertic = 0, oldentertics = 0, realtics = 0, rendertimeout = INFTICS;
 	double deltatics = 0.0;
 	double deltasecs = 0.0;
-	UINT64 precision = 0;
 
 	boolean interp = false;
 	boolean doDisplay = false;
@@ -766,21 +826,15 @@ void D_SRB2Loop(void)
 
 	for (;;)
 	{
-		// capbudget is the minimum precise_t duration of a single loop iteration
-		precise_t capbudget;
 		precise_t elapsed;
 		precise_t enterprecise, finishprecise;
 
 		enterprecise = I_GetPreciseTime();
 
+		boolean ranwipe = false;
+
 		memset(&g_dc, 0, sizeof(g_dc));
 		Z_Frame_Reset();
-
-		// Casting the return value of a function is bad practice (apparently)
-		const UINT32 framecap = R_GetFramerateCap();
-		capbudget = (framecap == 0) ? 0 : (precise_t)((double)precision / (double)framecap + 0.5); // + 0.5 instead of round
-
-		boolean ranwipe = false;
 
 		I_UpdateTime(cv_timescale.value);
 
@@ -871,6 +925,10 @@ void D_SRB2Loop(void)
 			R_SetTimeFrac(FRACUNIT);
 		}
 
+		// be sure to limit our fps *before* drawing
+		// so we can properly "pace" our frames
+		D_LimitFps();
+
 		if (interp || doDisplay)
 		{
 			if (!frameskip)
@@ -906,9 +964,9 @@ void D_SRB2Loop(void)
 		// Fully completed frame made.
 		finishprecise = I_GetPreciseTime();
 
-		// Use the time before sleep for frameskip calculations:
+		// Use the time without sleep for frameskip calculations:
 		// post-sleep time is literally being intentionally wasted
-		elapsed = finishprecise - enterprecise;
+		elapsed = (finishprecise - enterprecise) - sleeptime;
 		deltasecs = (double)elapsed / (double)precision;
 		deltatics = deltasecs * (double)NEWTICRATE;
 
@@ -936,19 +994,6 @@ void D_SRB2Loop(void)
 			frameskip = 0;
 		}
 
-		if (!singletics)
-		{
-			// in the case of "match refresh rate" + vsync, don't sleep at all
-			const boolean vsync_with_match_refresh = cv_vidwait.value && cv_fpscap.value == 0;
-
-			if ((elapsed > 0) && (capbudget > elapsed) && !vsync_with_match_refresh)
-			{
-				I_SleepDuration(capbudget - elapsed);
-			}
-		}
-
-		// Capture the time once more to get the real delta time.
-		finishprecise = I_GetPreciseTime();
 		elapsed = finishprecise - enterprecise;
 		deltasecs = (double)elapsed / (double)precision;
 		deltatics = deltasecs * (double)NEWTICRATE;
