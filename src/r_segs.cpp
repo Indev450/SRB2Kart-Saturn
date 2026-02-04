@@ -1222,6 +1222,15 @@ static void R_RenderSegLoop(drawcolumndata_t* dc)
 		if (yl < top)
 			yl = top;
 
+		// insanely shitty hack to fix flickering on some maps
+		// for god knows why, on secret slide the renderer assumes some double sided linedefs have insanely tall walls
+		// since such tall walls are effectively nonsense in any case
+		// just skip them
+		if (yl > FRACUNIT*3)
+		{
+			continue;
+		}
+
 		if (markceiling)
 		{
 			bottom = yl > floorclip[rw_x] ? floorclip[rw_x] : yl;
