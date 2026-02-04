@@ -745,12 +745,14 @@ static void D_LimitFps(void)
 	// frametarget in precise_t ticks (ex. 60fps = ~16,666,666)
 	const precise_t frametarget = precision / framecap;
 
-	do
+	while (1)
 	{
 		// check the current time against the "time of the old frame""
 		curtime = I_GetPreciseTime();
 		elapsed = curtime - lasttime;
 
+		// done waiting!
+		// continue as normal
 		if (elapsed >= frametarget)
 		{
 			lasttime = curtime;
@@ -772,7 +774,6 @@ static void D_LimitFps(void)
 			I_SleepDuration(9 * remaining / 10);
 		}
 	}
-	while (elapsed < frametarget);
 	// the rest we just be waitin until we meet our frametime target
 }
 
