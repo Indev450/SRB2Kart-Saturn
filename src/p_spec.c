@@ -1702,7 +1702,7 @@ void P_SwitchWeather(INT32 weathernum)
 
 			precipmobj->type = type; // proper set the type
 			precipmobj->info = &mobjinfo[type];
-			precipmobj->flags = mobjinfo[type].flags;
+			//precipmobj->flags = mobjinfo[type].flags;
 
 			st = &states[mobjinfo[type].spawnstate+z];
 
