@@ -335,7 +335,7 @@ static boolean P_SetPrecipMobjState(precipmobj_t *mobj, statenum_t state)
 	mobj->tics = st->tics;
 	mobj->sprite = st->sprite;
 	mobj->frame = st->frame;
-	mobj->anim_duration = (UINT16)st->var2; // only used if FF_ANIMATE is set
+	//mobj->anim_duration = (UINT16)st->var2; // only used if FF_ANIMATE is set
 
 	return true;
 }
@@ -3715,7 +3715,7 @@ boolean P_PrecipThinker(precipmobj_t *mobj)
 	mobj->lastThink = leveltime;
 
 	R_ResetPrecipitationMobjInterpolationState(mobj);
-	P_CycleStateAnimation((mobj_t *)mobj);
+	//P_CycleStateAnimation((mobj_t *)mobj); // if we ever want animated precip, readd a specific function which does not need casting
 
 	if (mobj->state == &states[S_RAINRETURN])
 	{
@@ -10174,7 +10174,7 @@ static precipmobj_t *P_SpawnPrecipMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype
 
 	mobj->x = x;
 	mobj->y = y;
-	mobj->flags = info->flags;
+	//mobj->flags = info->flags;
 
 	// do not set the state with P_SetMobjState,
 	// because action routines can not be called yet
@@ -10184,7 +10184,7 @@ static precipmobj_t *P_SpawnPrecipMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype
 	mobj->tics = st->tics;
 	mobj->sprite = st->sprite;
 	mobj->frame = st->frame; // FF_FRAMEMASK for frame, and other bits..
-	mobj->anim_duration = (UINT16)st->var2; // only used if FF_ANIMATE is set
+	//mobj->anim_duration = (UINT16)st->var2; // only used if FF_ANIMATE is set
 
 	// set subsector and/or block links
 	P_SetPrecipitationThingPosition(mobj);

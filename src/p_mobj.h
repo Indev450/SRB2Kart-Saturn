@@ -454,11 +454,9 @@ typedef struct precipmobj_s
 	// More drawing info: to determine current sprite.
 	spritenum_t sprite; // used to find patch_t and flip value
 	UINT32 frame; // frame number, plus bits see p_pspr.h
-	UINT16 anim_duration; // for FF_ANIMATE states
+	//UINT16 anim_duration; // for FF_ANIMATE states
 
 	INT16 lightlevel; // Add to sector lightlevel, -255 - 255
-
-	struct mprecipsecnode_s *touching_sectorlist; // a linked list of sectors where this object appears
 
 	struct subsector_s *subsector; // Subsector the mobj resides in.
 
@@ -468,11 +466,10 @@ typedef struct precipmobj_s
 
 	// Momentums, used to update position.
 	fixed_t momx, momy, momz;
-	fixed_t precipflags; // fixed_t so it uses the same spot as "pmomz" even as we use precipflags_t for it
+	precipflag_t precipflags;
 
 	state_t *state;
 	INT32 tics; // state tic counter
-	UINT32 flags; // flags from mobjinfo tables
 	tic_t lastThink;
 } precipmobj_t;
 
