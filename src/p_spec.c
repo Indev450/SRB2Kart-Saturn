@@ -4532,9 +4532,12 @@ void P_UpdateSpecials(void)
 	{
 		for (i = 0; i < anim->numpics; i++)
 		{
-			pic = anim->basepic + ((leveltime/anim->speed + i) % anim->numpics);
 			if (anim->istexture)
+			{
+				pic = anim->basepic + ((leveltime/anim->speed + i) % anim->numpics);
 				texturetranslation[anim->basepic+i] = pic;
+			}
+
 		}
 	}
 
