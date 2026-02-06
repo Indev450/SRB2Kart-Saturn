@@ -228,8 +228,8 @@ static void R_MapPlane(drawspandata_t *ds, spandrawfunc_t *localspanfunc, INT32 
 	// to step from those to the proper texture coordinate to start drawing at.
 	// That way, the texture coordinate is always calculated by its position
 	// on the screen and not by its position relative to the edge of the visplane.
-	ds->xfrac = FixedClamp((INT64)ds->xoffs + (INT64)FixedMul(planecos, distance) + ((INT64)x1 - (INT64)centerx) * (INT64)ds->xstep);
-	ds->yfrac = FixedClamp((INT64)ds->yoffs - (INT64)FixedMul(planesin, distance) + ((INT64)x1 - (INT64)centerx) * (INT64)ds->ystep);
+	ds->xfrac = ds->xoffs + FixedMul(planecos, distance) + (x1 - centerx) * ds->xstep;
+	ds->yfrac = ds->yoffs - FixedMul(planesin, distance) + (x1 - centerx) * ds->ystep;
 
 	if (ds->planeripple.active)
 	{
@@ -1012,7 +1012,7 @@ void R_DrawSinglePlane(drawspandata_t* ds, visplane_t *pl, boolean allow_paralle
 	levelflat_t *levelflat;
 	void (*mapfunc)(drawspandata_t*, void(*)(drawspandata_t*), INT32, INT32, INT32, boolean) = R_MapPlane;
 
-	if (!(pl->minx <= pl->maxx))
+	if (pl->minx > pl->maxx)
 		return;
 
 	// sky flat

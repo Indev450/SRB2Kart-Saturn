@@ -11,7 +11,6 @@
 /// \file  r_things.c
 /// \brief Refresh of things, i.e. objects represented by sprites
 
-#include "m_fixed.h"
 #include "r_main.h" // stplyr
 #include "r_fps.h"
 #include "r_things.h"
@@ -617,11 +616,10 @@ void R_DrawMaskedColumn(drawcolumndata_t* dc, column_t *column)
 		if (topdelta <= prevdelta)
 			topdelta += prevdelta;
 		prevdelta = topdelta;
+		topscreen = sprtopscreen + spryscale*topdelta;
+		bottomscreen = topscreen + spryscale*column->length;
 
-		topscreen    = FixedClamp((INT64)sprtopscreen + (INT64)spryscale * (INT64)topdelta);
-		bottomscreen = FixedClamp((INT64)topscreen + (INT64)spryscale * (INT64)column->length);
-
-		dc->yl = FixedClamp((INT64)topscreen + (FRACUNIT-1))>>FRACBITS;
+		dc->yl = (topscreen+FRACUNIT-1)>>FRACBITS;
 		dc->yh = (bottomscreen-1)>>FRACBITS;
 
 		if (windowtop != INT32_MAX && windowbottom != INT32_MAX)
@@ -887,7 +885,7 @@ static void R_DrawVisSprite(vissprite_t *vis)
 		for (dc.x = vis->x1; dc.x <= vis->x2; dc.x++, spryscale += scalestep)
 		{
 			angle_t angle = ((vis->centerangle + xtoviewangle[dc.x]) >> ANGLETOFINESHIFT) & 0xFFF;
-			texturecolumn = FixedClamp((INT64)vis->paperoffset - FixedMul(FINETANGENT(angle), vis->paperdistance)) / horzscale;
+			texturecolumn = (vis->paperoffset - FixedMul(FINETANGENT(angle), vis->paperdistance)) / horzscale;
 
 			if (texturecolumn < 0 || texturecolumn >= pwidth)
 				continue;

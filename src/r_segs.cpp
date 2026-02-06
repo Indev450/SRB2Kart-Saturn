@@ -226,11 +226,10 @@ static void R_RenderMaskedSegLoop(drawcolumndata_t* dc, drawseg_t *drawseg, INT3
 			leftheight  -= viewz;
 			rightheight -= viewz;
 
-			rlight->height      = FixedClamp((INT64)centeryfrac - FixedMul(leftheight, drawseg->scale1));
-			rlight->heightstep  = FixedClamp((INT64)centeryfrac - FixedMul(rightheight, drawseg->scale2));
-			rlight->heightstep  = (FixedClamp((INT64)rlight->heightstep - rlight->height))/(range);
-			rlight->startheight = rlight->height; // keep starting value here to reset for each repeat
-
+			rlight->height         = (centeryfrac) - FixedMul(leftheight, drawseg->scale1);
+			rlight->heightstep     = (centeryfrac) - FixedMul(rightheight, drawseg->scale2);
+			rlight->heightstep     = (rlight->heightstep-rlight->height)/(range);
+			rlight->startheight    = rlight->height; // keep starting value here to reset for each repeat
 			rlight->lightlevel     = *light->lightlevel;
 			rlight->extra_colormap = light->extra_colormap;
 			rlight->flags = static_cast<ffloortype_e>(light->flags);
@@ -356,9 +355,9 @@ static void R_RenderMaskedSegLoop(drawcolumndata_t* dc, drawseg_t *drawseg, INT3
 				lighttable_t **xwalllights;
 
 				sprbotscreen = INT32_MAX;
-				sprtopscreen = windowtop = FixedClamp((INT64)centeryfrac - FixedMul(dc->texturemid, spryscale));
+				sprtopscreen = windowtop = (centeryfrac - FixedMul(dc->texturemid, spryscale));
 
-				realbot = windowbottom = FixedClamp((INT64)FixedMul(textureheight[texnum], spryscale) + sprtopscreen);
+				realbot = windowbottom = FixedMul(textureheight[texnum], spryscale) + sprtopscreen;
 				dc->iscale = 0xffffffffu / (unsigned)spryscale;
 
 				// draw the texture
@@ -408,8 +407,7 @@ static void R_RenderMaskedSegLoop(drawcolumndata_t* dc, drawseg_t *drawseg, INT3
 					set_light_vars(i);
 
 					height = rlight->height;
-
-					rlight->height = FixedClamp((INT64)rlight->height + rlight->heightstep);
+					rlight->height += rlight->heightstep;
 
 					if (height <= windowtop)
 					{
@@ -457,7 +455,7 @@ static void R_RenderMaskedSegLoop(drawcolumndata_t* dc, drawseg_t *drawseg, INT3
 			if (frontsector->extra_colormap)
 				dc->colormap = frontsector->extra_colormap->colormap + (dc->colormap - colormaps);
 
-			sprtopscreen = FixedClamp((INT64)centeryfrac - FixedMul(dc->texturemid, spryscale));
+			sprtopscreen = centeryfrac - FixedMul(dc->texturemid, spryscale);
 			dc->iscale = 0xffffffffu / (unsigned)spryscale;
 
 			// draw the texture
@@ -772,7 +770,7 @@ void R_RenderThickSideRange(drawseg_t *drawseg, INT32 x1, INT32 x2, ffloor_t *pf
 			overflow_test = (INT64)centeryfrac - (((INT64)rightheight*drawseg->scale2)>>FRACBITS);
 			rlight->heightstep = overflow_clamp(overflow_test);
 
-			rlight->heightstep = (FixedClamp((INT64)rlight->heightstep - rlight->height))/(range);
+			rlight->heightstep = (rlight->heightstep-rlight->height)/(range);
 			rlight->flags = static_cast<ffloortype_e>(light->flags);
 
 			if (light->flags & FF_CUTLEVEL)
@@ -789,7 +787,7 @@ void R_RenderThickSideRange(drawseg_t *drawseg, INT32 x1, INT32 x2, ffloor_t *pf
 				overflow_test = (INT64)centeryfrac - (((INT64)rightheight*drawseg->scale2)>>FRACBITS);
 				rlight->botheightstep = overflow_clamp(overflow_test);
 
-				rlight->botheightstep = (FixedClamp((INT64)rlight->botheightstep - rlight->botheight))/(range);
+				rlight->botheightstep = (rlight->botheightstep-rlight->botheight)/(range);
 			}
 
 			rlight->lightlevel = *light->lightlevel;
@@ -937,11 +935,9 @@ void R_RenderThickSideRange(drawseg_t *drawseg, INT32 x1, INT32 x2, ffloor_t *pf
 				for (i = 0; i < dc->numlights; i++)
 				{
 					rlight = &dc->lightlist[i];
-
-					rlight->height = FixedClamp((INT64)rlight->height + rlight->heightstep);
-
+					rlight->height += rlight->heightstep;
 					if (rlight->flags & FF_CUTLEVEL)
-						rlight->botheight = FixedClamp((INT64)rlight->botheight + rlight->botheightstep);
+						rlight->botheight += rlight->botheightstep;
 				}
 			}
 
@@ -1049,12 +1045,12 @@ void R_RenderThickSideRange(drawseg_t *drawseg, INT32 x1, INT32 x2, ffloor_t *pf
 					solid = 0;
 
 				height = rlight->height;
-				rlight->height = FixedClamp((INT64)rlight->height + rlight->heightstep);
+				rlight->height += rlight->heightstep;
 
 				if (solid)
 				{
-					bheight = FixedClamp((INT64)rlight->botheight - (FRACUNIT >> 1));
-					rlight->botheight = FixedClamp((INT64)rlight->botheight + rlight->botheightstep);
+					bheight = rlight->botheight - (FRACUNIT >> 1);
+					rlight->botheight += rlight->botheightstep;
 				}
 
 				if (height <= windowtop)
@@ -1216,7 +1212,7 @@ static void R_RenderSegLoop(drawcolumndata_t* dc)
 	for (; rw_x < rw_stopx; rw_x++)
 	{
 		// mark floor / ceiling areas
-		yl = (FixedClamp((INT64)topfrac + HEIGHTUNIT-1))>>HEIGHTBITS;
+		yl = (topfrac+HEIGHTUNIT-1)>>HEIGHTBITS;
 		yh = bottomfrac>>HEIGHTBITS;
 
 		// Mark ceiling
@@ -1376,17 +1372,15 @@ static void R_RenderSegLoop(drawcolumndata_t* dc)
 		//SoM: Calculate offsets for Thick fake floors.
 		// calculate texture offset
 		angle = (rw_centerangle + xtoviewangle[rw_x])>>ANGLETOFINESHIFT;
-
 		// Mask 4095 to guarantee this index is within bounds
-		texturecolumn = FixedClamp((INT64)rw_offset - FixedMul(FINETANGENT(angle & 4095), rw_distance));
+		texturecolumn = rw_offset-FixedMul(FINETANGENT(angle & 4095), rw_distance);
 
 		if (oldtexturecolumn != -1)
 		{
-			const fixed_t coloff = FixedClamp((INT64)oldtexturecolumn - texturecolumn);
-			rw_bottomtexturemid += FixedMul(rw_bottomtextureslide,  coloff);
-			rw_midtexturemid    += FixedMul(rw_midtextureslide,     coloff);
-			rw_toptexturemid    += FixedMul(rw_toptextureslide,     coloff);
-			rw_midtextureback   += FixedMul(rw_midtexturebackslide, coloff);
+			rw_bottomtexturemid += FixedMul(rw_bottomtextureslide,  oldtexturecolumn-texturecolumn);
+			rw_midtexturemid    += FixedMul(rw_midtextureslide,     oldtexturecolumn-texturecolumn);
+			rw_toptexturemid    += FixedMul(rw_toptextureslide,     oldtexturecolumn-texturecolumn);
+			rw_midtextureback   += FixedMul(rw_midtexturebackslide, oldtexturecolumn-texturecolumn);
 		}
 		oldtexturecolumn = texturecolumn;
 
@@ -1560,10 +1554,10 @@ static void R_RenderSegLoop(drawcolumndata_t* dc)
 		{
 			for (i = 0; i < dc->numlights; i++)
 			{
-				dc->lightlist[i].height = FixedClamp((INT64)dc->lightlist[i].height + dc->lightlist[i].heightstep);
+				dc->lightlist[i].height += dc->lightlist[i].heightstep;
 
 				if (dc->lightlist[i].flags & FF_CUTSOLIDS)
-					dc->lightlist[i].botheight = FixedClamp((INT64)dc->lightlist[i].botheight + dc->lightlist[i].botheightstep);;
+					dc->lightlist[i].botheight += dc->lightlist[i].botheightstep;
 			}
 		}
 
@@ -1584,10 +1578,9 @@ static void R_RenderSegLoop(drawcolumndata_t* dc)
 			visffloor[i].b_frac += visffloor[i].b_step;
 		}
 
-		rw_scale = FixedClamp((INT64)rw_scale + rw_scalestep);
-
-		topfrac    = FixedClamp((INT64)topfrac + topstep);
-		bottomfrac = FixedClamp((INT64)bottomfrac + bottomstep);
+		rw_scale += rw_scalestep;
+		topfrac += topstep;
+		bottomfrac += bottomstep;
 	}
 }
 
@@ -2221,8 +2214,8 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 			}
 		}
 
-		rw_toptexturemid = FixedClamp((INT64)rw_toptexturemid + sidedef->rowoffset);
-		rw_bottomtexturemid = FixedClamp((INT64)rw_bottomtexturemid + sidedef->rowoffset);
+		rw_toptexturemid += sidedef->rowoffset;
+		rw_bottomtexturemid += sidedef->rowoffset;
 
 		R_AllocTextureColumnTables(rw_stopx - start);
 
@@ -2507,9 +2500,8 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 			rw_offset = -rw_offset;
 
 		/// don't use texture offset for splats
-		rw_offset2 = FixedClamp((INT64)rw_offset + curline->offset);
-		rw_offset = FixedClamp((INT64)rw_offset + (INT64)sidedef->textureoffset + curline->offset);
-
+		rw_offset2 = rw_offset + curline->offset;
+		rw_offset += sidedef->textureoffset + curline->offset;
 		rw_centerangle = ANGLE_90 + viewangle - rw_normalangle;
 
 		// calculate light table
@@ -2662,7 +2654,7 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 
 			rlight->height = (centeryfrac>>4) - FixedMul(leftheight, rw_scale);
 			rlight->heightstep = (centeryfrac>>4) - FixedMul(rightheight, ds_p->scale2);
-			rlight->heightstep = (FixedClamp((INT64)rlight->heightstep - rlight->height))/(range);
+			rlight->heightstep = (rlight->heightstep-rlight->height)/(range);
 			rlight->flags = static_cast<ffloortype_e>(light->flags);
 
 			if (light->caster && light->caster->flags & FF_CUTSOLIDS)

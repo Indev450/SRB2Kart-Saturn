@@ -152,8 +152,8 @@ subsector_t *R_IsPointInSubsector(fixed_t x, fixed_t y);
 
 FUNCMATH FUNCINLINE static ATTRINLINE fixed_t R_QuickDist(fixed_t x1, fixed_t y1, fixed_t x, fixed_t y)
 {
-	const fixed_t absx = FixedClamp(labs((INT64)x - (INT64)x1));
-	const fixed_t absy = FixedClamp(labs((INT64)y - (INT64)y1));
+	const fixed_t absx = abs(x - x1);
+	const fixed_t absy = abs(y - y1);
 #ifdef __cplusplus
 	return std::max<fixed_t>(absx, absy);
 #else
