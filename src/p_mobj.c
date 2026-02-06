@@ -7117,7 +7117,7 @@ static boolean P_MobjDeadThink(mobj_t *mobj)
 				fixed_t ns;
 				mobj_t *mo2;
 
-				i = P_RandomByte();
+				i = P_RandomByte(); // grrrrrr
 				z = mobj->subsector->sector->floorheight + ((P_RandomByte()&63)*FRACUNIT);
 
 				for (j = 0; j < 2; j++)

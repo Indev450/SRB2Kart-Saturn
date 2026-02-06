@@ -556,7 +556,7 @@ static void GIF_framewrite(void)
 		}
 		else if (gif_dynamicdelay ==(UINT8) 1)
 		{
-			float delayf = ceil(100.0f/NEWTICRATE);
+			float delayf = ceilf(100.0f/NEWTICRATE);
 
 			delay = (UINT16)((I_GetPreciseTime() - gif_prevframetime)) / (I_GetPrecisePrecision() / 1000000) /10/1000;
 

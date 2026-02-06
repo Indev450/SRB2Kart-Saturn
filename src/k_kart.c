@@ -1526,7 +1526,6 @@ void K_KartBouncing(mobj_t *mobj1, mobj_t *mobj2, boolean bounce, boolean solid)
 		fixed_t nx = FixedDiv(distx, dist);
 		fixed_t ny = FixedDiv(disty, dist);
 
-		dist = dist ? dist : 1;
 		distx = FixedMul(mobj1->radius+mobj2->radius, nx);
 		disty = FixedMul(mobj1->radius+mobj2->radius, ny);
 

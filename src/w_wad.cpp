@@ -474,7 +474,7 @@ static lumpinfo_t* ResGetLumpsWad(FILE* handle, UINT16* nlmp, const char* filena
 	header.infotableofs = LONG(header.infotableofs);
 
 	// read wad file directory
-	i = header.numlumps * sizeof (*fileinfo);
+	i = header.numlumps * sizeof(*fileinfo);
 	fileinfov = fileinfo = static_cast<filelump_t *>(malloc(i));
 
 	if (fseek(handle, header.infotableofs, SEEK_SET) == -1

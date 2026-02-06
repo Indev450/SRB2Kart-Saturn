@@ -1148,8 +1148,8 @@ void I_GetEvent(void)
 		SDL_GetWindowSize(window, &wwidth, &wheight);
 		event.type = ev_mouse;
 		event.data1 = 0;
-		event.data2 = (INT32)lround(mousemovex * ((float)wwidth / (float)realwidth));
-		event.data3 = (INT32)lround(mousemovey * ((float)wheight / (float)realheight));
+		event.data2 = (INT32)lroundf(mousemovex * ((float)wwidth / (float)realwidth));
+		event.data3 = (INT32)lroundf(mousemovey * ((float)wheight / (float)realheight));
 		D_PostEvent(&event);
 	}
 
