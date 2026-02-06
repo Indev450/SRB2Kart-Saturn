@@ -1415,8 +1415,6 @@ static void K_drawKartStats(void)
 				break;
 		}
 	}
-	else
-		spdoffset = 0;
 
 	if (G_BattleGametype() && ((speedostyle != SPEEDO_DIAL) || splitscreen))
 		spdoffset += ((stplyr->kartstuff[k_bumper] ? -5 : -8));

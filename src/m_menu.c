@@ -5522,7 +5522,6 @@ static void M_DrawChecklist(void)
 
 		if (conditionSets[unlockables[i].conditionset - 1].numconditions)
 		{
-			c = 0;
 			lastid = -1;
 
 			for (c = 0; c < conditionSets[unlockables[i].conditionset - 1].numconditions; c++)
@@ -5681,9 +5680,6 @@ static void M_MusicTest(INT32 choice)
 static void M_DrawMusicTest(void)
 {
 	INT32 x, y, i;
-
-	x = 90<<FRACBITS;
-	y = (BASEVIDHEIGHT-32)<<FRACBITS;
 
 	y = (BASEVIDWIDTH-vid.scaledwidth)/2;
 
@@ -8000,13 +7996,8 @@ static void M_DrawSetupMultiPlayerMenu(void)
 #define GETSELECTEDSPEED (itemOn == 1 && setupm_skinselect < numskins ? skins[skinsorted[setupm_skinselect]].kartspeed : skins[setupm_fakeskin].kartspeed)
 #define GETSELECTEDWEIGHT (itemOn == 1 && setupm_skinselect < numskins ? skins[skinsorted[setupm_skinselect]].kartweight : skins[setupm_fakeskin].kartweight)
 
-			statoffset = 0;
 			tw = V_StringWidth("Character", 0);//V_StringWidth(GETSELECTEDSKINNAME, 0);
 			st = V_StringWidth(GETSELECTEDSKINNAME, 0);
-
-			INT32 selectedskin = (itemOn == 1 && setupm_skinselect < numskins ? skinsorted[setupm_skinselect] : setupm_fakeskin);
-			speed = skins[selectedskin].kartspeed;
-			weight = skins[selectedskin].kartweight;
 
 			V_DrawString((mx+(tw/2)) - (st/2), my + 37,
 				((MP_PlayerSetupMenu[2].status & IT_TYPE) == IT_SPACE ? V_TRANSLUCENT : 0) | highlightflags | V_ALLOWLOWERCASE,
