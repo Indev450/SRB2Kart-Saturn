@@ -228,7 +228,7 @@ static void R_RenderMaskedSegLoop(drawcolumndata_t* dc, drawseg_t *drawseg, INT3
 
 			rlight->height      = FixedClamp((INT64)centeryfrac - FixedMul(leftheight, drawseg->scale1));
 			rlight->heightstep  = FixedClamp((INT64)centeryfrac - FixedMul(rightheight, drawseg->scale2));
-			rlight->heightstep  = FixedClamp((INT64)rlight->heightstep - rlight->height)/(range);
+			rlight->heightstep  = (FixedClamp((INT64)rlight->heightstep - rlight->height))/(range);
 			rlight->startheight = rlight->height; // keep starting value here to reset for each repeat
 
 			rlight->lightlevel     = *light->lightlevel;
@@ -712,6 +712,17 @@ void R_RenderThickSideRange(drawseg_t *drawseg, INT32 x1, INT32 x2, ffloor_t *pf
 	rw_scalestep = drawseg->scalestep;
 	spryscale = drawseg->scale1 + (x1 - drawseg->x1)*rw_scalestep;
 
+#define CLAMPMAX INT32_MAX
+#define CLAMPMIN (-INT32_MAX) // This is not INT32_MIN on purpose! INT32_MIN makes the drawers freak out.
+	auto overflow_clamp = [&](INT64 overflow_test)
+	{
+		return (overflow_test > (INT64)CLAMPMAX) ? CLAMPMAX :
+		(overflow_test > (INT64)CLAMPMIN) ? (fixed_t)overflow_test :
+		CLAMPMIN;
+	};
+#undef CLAMPMAX
+#undef CLAMPMIN
+
 	dc->numlights = 0;
 	if (frontsector->numlights)
 	{
@@ -727,6 +738,7 @@ void R_RenderThickSideRange(drawseg_t *drawseg, INT32 x1, INT32 x2, ffloor_t *pf
 		{
 			fixed_t leftheight, rightheight;
 			fixed_t pfloorleft, pfloorright;
+			INT64 overflow_test;
 			light = &frontsector->lightlist[i];
 			rlight = &dc->lightlist[p];
 
@@ -750,14 +762,17 @@ void R_RenderThickSideRange(drawseg_t *drawseg, INT32 x1, INT32 x2, ffloor_t *pf
 					continue;
 			}
 
-			leftheight  -= viewz;
+			leftheight -= viewz;
 			rightheight -= viewz;
 
 			// Monster Iestyn (25/03/18): do not skip these lights if they fail overflow test, just clamp them instead so they behave.
-			rlight->height     = FixedClamp((INT64)centeryfrac - (((INT64)leftheight * drawseg->scale1)>>FRACBITS));
-			rlight->heightstep = FixedClamp((INT64)centeryfrac - (((INT64)rightheight * drawseg->scale2)>>FRACBITS));
-			rlight->heightstep = FixedClamp((INT64)rlight->heightstep - rlight->height)/(range);
+			overflow_test = (INT64)centeryfrac - (((INT64)leftheight*drawseg->scale1)>>FRACBITS);
+			rlight->height = overflow_clamp(overflow_test);
 
+			overflow_test = (INT64)centeryfrac - (((INT64)rightheight*drawseg->scale2)>>FRACBITS);
+			rlight->heightstep = overflow_clamp(overflow_test);
+
+			rlight->heightstep = (FixedClamp((INT64)rlight->heightstep - rlight->height))/(range);
 			rlight->flags = static_cast<ffloortype_e>(light->flags);
 
 			if (light->flags & FF_CUTLEVEL)
@@ -768,9 +783,13 @@ void R_RenderThickSideRange(drawseg_t *drawseg, INT32 x1, INT32 x2, ffloor_t *pf
 				rightheight -= viewz;
 
 				// Monster Iestyn (25/03/18): do not skip these lights if they fail overflow test, just clamp them instead so they behave.
-				rlight->botheight     = FixedClamp((INT64)centeryfrac - (((INT64)leftheight*drawseg->scale1)>>FRACBITS));
-				rlight->botheightstep = FixedClamp(((INT64)centeryfrac - (((INT64)rightheight*drawseg->scale2)>>FRACBITS)));
-				rlight->botheightstep = FixedClamp((INT64)rlight->botheightstep - rlight->botheight)/(range);
+				overflow_test = (INT64)centeryfrac - (((INT64)leftheight*drawseg->scale1)>>FRACBITS);
+				rlight->botheight = overflow_clamp(overflow_test);
+
+				overflow_test = (INT64)centeryfrac - (((INT64)rightheight*drawseg->scale2)>>FRACBITS);
+				rlight->botheightstep = overflow_clamp(overflow_test);
+
+				rlight->botheightstep = (FixedClamp((INT64)rlight->botheightstep - rlight->botheight))/(range);
 			}
 
 			rlight->lightlevel = *light->lightlevel;
@@ -879,10 +898,10 @@ void R_RenderThickSideRange(drawseg_t *drawseg, INT32 x1, INT32 x2, ffloor_t *pf
 		right_bottom = P_GetFFloorBottomZAt(pfloor, drawseg->rightpos.x, drawseg->rightpos.y) - viewz;
 
 		// using INT64 to avoid 32bit overflow
-		top_frac    = FixedClamp((INT64)centeryfrac - (((INT64)left_top     * drawseg->scale1) >> FRACBITS));
-		top_step    = FixedClamp((INT64)centeryfrac - (((INT64)right_top    * drawseg->scale2) >> FRACBITS));
-		bottom_frac = FixedClamp((INT64)centeryfrac - (((INT64)left_bottom  * drawseg->scale1) >> FRACBITS));
-		bottom_step = FixedClamp((INT64)centeryfrac - (((INT64)right_bottom * drawseg->scale2) >> FRACBITS));
+		top_frac =    (INT64)centeryfrac - (((INT64)left_top     * drawseg->scale1) >> FRACBITS);
+		bottom_frac = (INT64)centeryfrac - (((INT64)left_bottom  * drawseg->scale1) >> FRACBITS);
+		top_step =    (INT64)centeryfrac - (((INT64)right_top    * drawseg->scale2) >> FRACBITS);
+		bottom_step = (INT64)centeryfrac - (((INT64)right_bottom * drawseg->scale2) >> FRACBITS);
 
 		top_step = (top_step-top_frac)/(range);
 		bottom_step = (bottom_step-bottom_frac)/(range);
@@ -904,8 +923,8 @@ void R_RenderThickSideRange(drawseg_t *drawseg, INT32 x1, INT32 x2, ffloor_t *pf
 
 		// Calculate bounds
 		// clamp the values if necessary to avoid overflows and rendering glitches caused by them
-		sprtopscreen = windowtop = top_frac;
-		sprbotscreen = windowbottom = bottom_frac;
+		sprtopscreen = windowtop = overflow_clamp(top_frac);
+		sprbotscreen = windowbottom = overflow_clamp(bottom_frac);
 
 		top_frac += top_step;
 		bottom_frac += bottom_step;
@@ -1197,7 +1216,7 @@ static void R_RenderSegLoop(drawcolumndata_t* dc)
 	for (; rw_x < rw_stopx; rw_x++)
 	{
 		// mark floor / ceiling areas
-		yl = FixedClamp((INT64)topfrac + HEIGHTUNIT-1)>>HEIGHTBITS;
+		yl = (FixedClamp((INT64)topfrac + HEIGHTUNIT-1))>>HEIGHTBITS;
 		yh = bottomfrac>>HEIGHTBITS;
 
 		// Mark ceiling
@@ -1377,7 +1396,7 @@ static void R_RenderSegLoop(drawcolumndata_t* dc)
 			// calculate lighting
 			pindex = FixedMul(rw_scale, LIGHTRESOLUTIONFIX)>>LIGHTSCALESHIFT;
 
-			if (pindex >= MAXLIGHTSCALE)
+			if (pindex >=  MAXLIGHTSCALE)
 				pindex = MAXLIGHTSCALE-1;
 
 			dc->colormap = walllights[pindex];
@@ -1582,7 +1601,7 @@ static void R_MarkSegBounds(void)
 	for (; rw_x < rw_stopx; rw_x++)
 	{
 		// mark floor / ceiling areas
-		yl = FixedClamp((INT64)topfrac + HEIGHTUNIT-1)>>HEIGHTBITS;
+		yl = (topfrac+HEIGHTUNIT-1)>>HEIGHTBITS;
 		yh = bottomfrac>>HEIGHTBITS;
 
 		// Mark ceiling
@@ -1819,7 +1838,7 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 
 	// big room fix
 	if (longboi)
-		rw_distance = FixedClamp(R_CalcSegDist(curline, viewx, viewy));
+		rw_distance = (fixed_t)R_CalcSegDist(curline,viewx,viewy);
 
 	ds_p->x1 = rw_x = start;
 	ds_p->x2 = stop;
