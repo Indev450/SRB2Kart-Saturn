@@ -1378,8 +1378,7 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 
 	FSurfaceInfo Surf;
 
-	if (gl_frontsector)
-		Surf.PolyColor.s.alpha = 255;
+	Surf.PolyColor.s.alpha = 255;
 
 	const INT32 gl_midtexture = R_GetTextureNum(gl_sidedef->midtexture);
 	GLMapTexture_t *glTex = NULL;

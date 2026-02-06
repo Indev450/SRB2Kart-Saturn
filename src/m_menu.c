@@ -2936,7 +2936,7 @@ static void M_PrepareLevelSelect(void)
 boolean M_CanShowLevelInList(INT32 mapnum, INT32 gt)
 {
 	// invalid mapnum
-	if (mapnum < -1)
+	if (mapnum < -1 || mapnum >= NUMMAPS)
 		return false;
 
 	// Random map!
