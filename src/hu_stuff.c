@@ -497,7 +497,9 @@ static void HU_removeChatText_Log(void)
 	{
 		chat_log[i] = chat_log[i+1];
 	}
+
 	chat_nummsg_log--; // lost 1 msg.
+	chat_log[chat_nummsg_log] = NULL;
 }
 
 static void Chatlogsize_OnChange(void)
@@ -516,6 +518,7 @@ static void Chatlogsize_OnChange(void)
 	if (new_chat_log == NULL)
 	{
         free(chat_log);
+		chat_log = NULL;
 		return;
 	}
 	chat_log = new_chat_log;

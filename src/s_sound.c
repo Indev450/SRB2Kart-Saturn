@@ -473,12 +473,11 @@ void S_StartSoundAtVolume(const void *origin_p, sfxenum_t sfx_id, INT32 volume)
 		return;
 
 	memset(listener, 0, sizeof(listener));
+	memset(listenmobj, 0, sizeof(listenmobj));
 
 	for (i = 0; i <= splitscreen; i++)
 	{
 		player_t *player = &players[displayplayers[i]];
-
-		listenmobj[i] = NULL;
 
 		if (player->awayviewtics)
 		{

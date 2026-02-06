@@ -1793,7 +1793,7 @@ void CV_AddValue(consvar_t *var, INT32 increment)
 					if (newvalue == oldvalue)
 						break; // don't loop forever if there's none of a certain gametype
 
-					if (newvalue >= 0 && !mapheaderinfo[newvalue])
+					if (newvalue >= 0 && newvalue < NUMMAPS && !mapheaderinfo[newvalue])
 						continue; // Don't allocate the header.  That just makes memory usage skyrocket.
 
 				} while (!M_CanShowLevelInList(newvalue, gt));
