@@ -622,7 +622,7 @@ Rloadtextures (INT32 i, INT32 w)
 
 		// Set texture properties.
 		memcpy(texture->name, W_CheckNameForNumPwad(wadnum, lumpnum), sizeof(texture->name));
-		texture->hash = quickncasehash(texture->name, 8);
+		texture->hash = FNV1a_QuickCaseHash(texture->name, 8);
 
 		texture->width = SHORT(patchlump.width);
 		texture->height = SHORT(patchlump.height);
@@ -1066,7 +1066,7 @@ static texture_t *R_ParseTexture(boolean actuallyLoadTexture)
 			// Allocate memory for a zero-patch texture. Obviously, we'll be adding patches momentarily.
 			resultTexture = (texture_t *)Z_Calloc(sizeof(texture_t), PU_STATIC, NULL);
 			memcpy(resultTexture->name, newTextureName, 8);
-			resultTexture->hash = quickncasehash(newTextureName, 8);
+			resultTexture->hash = FNV1a_QuickCaseHash(newTextureName, 8);
 			resultTexture->width = newTextureWidth;
 			resultTexture->height = newTextureHeight;
 			resultTexture->type = TEXTURETYPE_COMPOSITE;
@@ -1756,7 +1756,7 @@ INT32 R_CheckTextureNumForName(const char *name)
 	if (name[0] == '-')
 		return 0;
 
-	hash = quickncasehash(name, 8);
+	hash = FNV1a_QuickCaseHash(name, 8);
 
 	for (i = 0; i < tidcachelen; i++)
 		if (tidcache[i].hash == hash && !strncasecmp(tidcache[i].name, name, 8))

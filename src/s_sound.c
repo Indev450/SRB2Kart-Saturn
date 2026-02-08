@@ -1302,7 +1302,7 @@ static boolean ReadMusicDefFields(UINT16 wadnum, int line, char *stoken, musicde
 
 				STRBUFCPY(def->name, value);
 				strlwr(def->name);
-				def->hash = quickncasehash (def->name, 6);
+				def->hash = FNV1a_QuickCaseHash(def->name, 6);
 			}
 
 			(*defp) = def;
@@ -1484,7 +1484,7 @@ void S_InitMusicDefs(void)
 //
 musicdef_t *S_FindMusicCredit(const char *musname)
 {
-	UINT32 hash = quickncasehash(musname, 6);
+	UINT32 hash = FNV1a_QuickCaseHash(musname, 6);
 	musicdef_t *def;
 
 	for (INT32 i = 0; i < nummusicdefs; ++i)

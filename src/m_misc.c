@@ -1956,6 +1956,22 @@ UINT32 FNV1a_Hash(const char *message, size_t size)
 	return hash;
 }
 
+// Behaves like the old quickncasehash
+// Stops either if it encounters null terminator
+// or reaches size
+UINT32 FNV1a_QuickCaseHash(const char *message, size_t size)
+{
+	UINT32 hash = FNV1A_OFFSET_BASIS;
+
+	for (size_t i = 0; i < size && message[i]; i++)
+	{
+		hash ^= tolower(message[i]);
+		hash *= FNV1A_PRIME;
+	}
+
+	return hash;
+}
+
 UINT32 FNV1a_HashString(const char *message)
 {
 	UINT32 hash = FNV1A_OFFSET_BASIS;

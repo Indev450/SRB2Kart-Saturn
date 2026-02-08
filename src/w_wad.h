@@ -174,8 +174,6 @@ INT32 W_AddAutoloadedLocalFiles(char **filenames);
 
 #define W_FileHasFolders(wadfile) ((wadfile)->type == RET_PK3)
 
-UINT32 W_HashLumpName(const char *name);
-
 const char *W_CheckNameForNumPwad(UINT16 wad, UINT16 lump);
 const char *W_CheckNameForNum(lumpnum_t lumpnum);
 
