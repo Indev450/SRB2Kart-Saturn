@@ -46,7 +46,13 @@ static CV_PossibleValue_t fpscap_cons_t[] = {
 	{0, NULL}
 };
 
-consvar_t cv_fpscap   = {"fpscap", "Match refresh rate", CV_SAVE, fpscap_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+boolean resetfpscap = true;
+static void fpscap_onchange(void)
+{
+	resetfpscap = true;
+}
+
+consvar_t cv_fpscap   = {"fpscap", "Match refresh rate", CV_SAVE|CV_CALL, fpscap_cons_t, fpscap_onchange, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_fpscapbg = {"fpscapbackground", "Match refresh rate", CV_SAVE, fpscap_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 ps_metric_t ps_interp_frac = {};

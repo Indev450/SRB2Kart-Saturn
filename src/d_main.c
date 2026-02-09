@@ -370,6 +370,8 @@ static void D_Renderview(void)
 // added comment : there is a wipe eatch change of the gamestate
 gamestate_t wipegamestate = GS_LEVEL;
 
+static void D_LimitFps(void);
+
 static boolean D_Display(void)
 {
 	boolean ranwipe = false;
@@ -453,7 +455,10 @@ static boolean D_Display(void)
 	}
 
 	if (dedicated) // bail out after wipe logic
+	{
+		D_LimitFps();
 		return false;
+	}
 
 	// do buffered drawing
 	switch (gamestate)
@@ -646,6 +651,10 @@ static boolean D_Display(void)
 
 	    CON_Drawer(); // Ha, i LIED!
 
+		// be sure to limit our fps *before* drawing
+		// so we can properly "pace" our frames
+		D_LimitFps();
+
 		PS_START_TIMING(ps_swaptime);
 		I_FinishUpdate(); // page flip or blit buffer
 		PS_STOP_TIMING(ps_swaptime);
@@ -717,10 +726,11 @@ static boolean D_Display(void)
 
 static UINT64 precision = 0;
 static precise_t sleeptime = 0;
+static precise_t lasttime = 0;
 
 static void D_LimitFps(void)
 {
-	static precise_t curtime = 0, lasttime = 0;
+	static precise_t curtime = 0;
 	static precise_t start;
 	precise_t elapsed = 0;
 
@@ -789,8 +799,6 @@ void D_SRB2Loop(void)
 	double deltatics = 0.0;
 	double deltasecs = 0.0;
 
-	boolean interp = false;
-	boolean doDisplay = false;
 	int frameskip = 0;
 
 	if (dedicated)
@@ -862,9 +870,6 @@ void D_SRB2Loop(void)
 				debugload--;
 #endif
 
-		interp = !dedicated && R_UsingFrameInterpolation();
-		doDisplay = false;
-
 		renderisnewtic = (realtics > 0 || singletics);
 
 		if (renderisnewtic)
@@ -877,12 +882,19 @@ void D_SRB2Loop(void)
 			// process tics (but maybe not if realtic == 0)
 			TryRunTics(realtics);
 
+			if (resetfpscap)
+			{
+				// hack to resync rendering and ticking
+				// after fpscap change
+				lasttime = 0;
+				frameskip = 0;
+				resetfpscap = false;
+			}
+
 			if (lastdraw || singletics || (gametic > rendergametic))
 			{
 				rendergametic = gametic;
 				rendertimeout = entertic + TICRATE/17;
-
-				doDisplay = true;
 			}
 			else if (rendertimeout < entertic) // in case the server hang or netsplit
 			{
@@ -897,8 +909,6 @@ void D_SRB2Loop(void)
 					}
 					R_UpdateViewInterpolation();
 				}
-
-				doDisplay = true;
 			}
 
 			if (!dedicated)
@@ -907,7 +917,7 @@ void D_SRB2Loop(void)
 			}
 		}
 
-		if (interp)
+		if (!dedicated && R_UsingFrameInterpolation())
 		{
 			renderdeltatics = DoubleToFixed(deltatics);
 
@@ -926,22 +936,15 @@ void D_SRB2Loop(void)
 			R_SetTimeFrac(FRACUNIT);
 		}
 
-		// be sure to limit our fps *before* drawing
-		// so we can properly "pace" our frames
-		D_LimitFps();
-
-		if (interp || doDisplay)
+		if (!frameskip)
 		{
-			if (!frameskip)
-			{
-				ranwipe = D_Display();
-			}
-			else if (!dedicated)
-			{
-				// always update console movement
-				// otherwise it will takes literal ages to open
-				CON_MoveConsole();
-			}
+			ranwipe = D_Display();
+		}
+		else if (!dedicated)
+		{
+			// always update console movement
+			// otherwise it will takes literal ages to open
+			CON_MoveConsole();
 		}
 
 		// Only take screenshots after drawing.
