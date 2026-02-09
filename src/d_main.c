@@ -910,11 +910,6 @@ void D_SRB2Loop(void)
 					R_UpdateViewInterpolation();
 				}
 			}
-
-			if (!dedicated)
-			{
-				G_DeviceLEDTick();
-			}
 		}
 
 		if (!dedicated && R_UsingFrameInterpolation())
@@ -952,7 +947,12 @@ void D_SRB2Loop(void)
 			M_SaveFrame();
 		if (takescreenshot)
 			M_DoScreenShot();
-
+#ifndef DEDICATED
+		if (!dedicated && renderisnewtic)
+		{
+			G_DeviceLEDTick();
+		}
+#endif
 		// consoleplayer -> displayplayers (hear sounds from viewpoint)
 		if (renderisnewtic)
 			S_UpdateSounds(); // move positional sounds
