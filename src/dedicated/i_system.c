@@ -741,6 +741,18 @@ const char *I_GetJoyName(INT32 joyindex)
 	return NULL;
 }
 
+boolean I_GamepadHasLED(INT32 playernum)
+{
+	(void)playernum;
+	return false;
+}
+
+boolean I_GamepadHasRumble(INT32 playernum)
+{
+	(void)playernum;
+	return false;
+}
+
 void I_GamepadRumble(INT32 playernum, UINT16 low_strength, UINT16 high_strength, UINT32 duration)
 {
 	(void)playernum;
