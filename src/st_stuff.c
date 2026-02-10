@@ -52,8 +52,6 @@
 
 #include "r_fps.h"
 
-UINT16 objectsdrawn = 0;
-
 // dumb fade thing for director toggle
 tic_t directortoggletimer = 0;
 
