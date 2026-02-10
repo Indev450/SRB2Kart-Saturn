@@ -1822,7 +1822,6 @@ void P_DoJumpShield(player_t *player)
 
 	player->pflags &= ~PF_JUMPED;
 	//P_DoJump(player, false);
-	player->pflags &= ~PF_JUMPED;
 	player->secondjump = 0;
 	player->jumping = 0;
 	player->pflags |= PF_THOKKED;
@@ -4454,7 +4453,7 @@ static INT32 Quaketilt(player_t *player)
 
 	lowb = FixedMul(lowb, player->mo->scale);
 	moma = FixedMul(FixedDiv(delta, ANGLE_90), tilt);
-	speed = abs( player->mo->momx + player->mo->momy );
+	speed = abs(player->mo->momx + player->mo->momy);
 
 	if (speed < lowb)
 	{

@@ -1855,9 +1855,6 @@ static void R_ProjectSprite(mobj_t *thing)
 
 	if (thing->subsector->sector->numlights)
 		R_SplitSprite(vis);
-
-	// Debug
-	++objectsdrawn;
 }
 
 static void R_ProjectPrecipitationSprite(precipmobj_t *thing)
