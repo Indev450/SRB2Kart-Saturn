@@ -1701,6 +1701,14 @@ void P_XYMovement(mobj_t *mo)
 	if (mo->flags & MF_NOCLIPHEIGHT)
 		return; // no frictions for objects that can pass through floors
 
+	//{ SRB2kart stuff
+	if (mo->type == MT_ORBINAUT || mo->type == MT_JAWZ_DUD || mo->type == MT_JAWZ || mo->type == MT_BALLHOG) //(mo->type == MT_JAWZ && !mo->tracer))
+		return;
+
+	if (mo->player && (mo->player->kartstuff[k_spinouttimer] && !mo->player->kartstuff[k_wipeoutslow]) && mo->player->speed <= K_GetKartSpeed(mo->player, false)/2)
+		return;
+	//}
+
 	if (mo->flags & MF_MISSILE || mo->flags2 & MF2_SKULLFLY || mo->type == MT_SHELL || mo->type == MT_VULTURE)
 		return; // no friction for missiles ever
 
@@ -1713,14 +1721,6 @@ void P_XYMovement(mobj_t *mo)
 	if ((mo->type == MT_BIGTUMBLEWEED || mo->type == MT_LITTLETUMBLEWEED)
 			&& (mo->standingslope && abs(mo->standingslope->zdelta) > FRACUNIT>>8)) // Special exception for tumbleweeds on slopes
 		return;
-
-	//{ SRB2kart stuff
-	if (mo->type == MT_ORBINAUT || mo->type == MT_JAWZ_DUD || mo->type == MT_JAWZ || mo->type == MT_BALLHOG) //(mo->type == MT_JAWZ && !mo->tracer))
-		return;
-
-	if (mo->player && (mo->player->kartstuff[k_spinouttimer] && !mo->player->kartstuff[k_wipeoutslow]) && mo->player->speed <= K_GetKartSpeed(mo->player, false)/2)
-		return;
-	//}
 
 	if (((!(mo->eflags & MFE_VERTICALFLIP) && mo->z > mo->floorz) || (mo->eflags & MFE_VERTICALFLIP && mo->z+mo->height < mo->ceilingz))
 		&& !(player && player->pflags & PF_SLIDING))
