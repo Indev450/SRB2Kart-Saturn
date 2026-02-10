@@ -1992,20 +1992,23 @@ static void P_3dMovement(player_t *player)
 		K_MomentumToFacing(player);
 	}
 
+	const fixed_t kartspd = K_GetKartSpeed(player, true);
+
 	// Sideways movement
 	if (cmd->sidemove != 0 && !((player->exiting || mapreset) || player->kartstuff[k_spinouttimer]))
 	{
 		if (cmd->sidemove > 0)
-			movepushside = (cmd->sidemove * FRACUNIT/128) + FixedDiv(player->speed, K_GetKartSpeed(player, true));
+			movepushside = (cmd->sidemove * FRACUNIT/128) + FixedDiv(player->speed, kartspd);
 		else
-			movepushside = (cmd->sidemove * FRACUNIT/128) - FixedDiv(player->speed, K_GetKartSpeed(player, true));
+			movepushside = (cmd->sidemove * FRACUNIT/128) - FixedDiv(player->speed, kartspd);
 
 		totalthrust.x += P_ReturnThrustX(player->mo, movepushsideangle, movepushside);
 		totalthrust.y += P_ReturnThrustY(player->mo, movepushsideangle, movepushside);
 	}
 
 	if ((totalthrust.x || totalthrust.y)
-		&& player->mo->standingslope && (!(player->mo->standingslope->flags & SL_NOPHYSICS)) && abs(player->mo->standingslope->zdelta) > FRACUNIT/2) {
+		&& player->mo->standingslope && (!(player->mo->standingslope->flags & SL_NOPHYSICS)) && abs(player->mo->standingslope->zdelta) > FRACUNIT/2)
+	{
 		// Factor thrust to slope, but only for the part pushing up it!
 		// The rest is unaffected.
 		angle_t thrustangle = R_PointToAngle2(0, 0, totalthrust.x, totalthrust.y)-player->mo->standingslope->xydirection;
@@ -2041,11 +2044,11 @@ static void P_3dMovement(player_t *player)
 	// -Shadow Hog
 	newMagnitude = R_PointToDist2(player->mo->momx - player->cmomx, player->mo->momy - player->cmomy, 0, 0);
 
-	if (newMagnitude > K_GetKartSpeed(player, true)) //topspeed)
+	if (newMagnitude > kartspd) //topspeed)
 	{
 		fixed_t tempmomx, tempmomy;
 
-		if (oldMagnitude > K_GetKartSpeed(player, true) && onground) // SRB2Kart: onground check for air speed cap
+		if (oldMagnitude > kartspd && onground) // SRB2Kart: onground check for air speed cap
 		{
 			if (newMagnitude > oldMagnitude)
 			{
@@ -2058,8 +2061,8 @@ static void P_3dMovement(player_t *player)
 		}
 		else
 		{
-			tempmomx = FixedMul(FixedDiv(player->mo->momx - player->cmomx, newMagnitude), K_GetKartSpeed(player, true)); //topspeed)
-			tempmomy = FixedMul(FixedDiv(player->mo->momy - player->cmomy, newMagnitude), K_GetKartSpeed(player, true)); //topspeed)
+			tempmomx = FixedMul(FixedDiv(player->mo->momx - player->cmomx, newMagnitude), kartspd); //topspeed)
+			tempmomy = FixedMul(FixedDiv(player->mo->momy - player->cmomy, newMagnitude), kartspd); //topspeed)
 			player->mo->momx = tempmomx + player->cmomx;
 			player->mo->momy = tempmomy + player->cmomy;
 		}
@@ -2474,9 +2477,10 @@ static void P_MovePlayer(player_t *player)
 		const fixed_t runnyspeed = 20*FRACUNIT;
 
 		speed = R_PointToDist2(player->rmomx, player->rmomy, 0, 0);
+		const fixed_t kartspd = K_GetKartSpeed(player, false);
 
-		if (speed > K_GetKartSpeed(player, false)-(5<<FRACBITS))
-			speed = K_GetKartSpeed(player, false)-(5<<FRACBITS);
+		if (speed > kartspd-(5<<FRACBITS))
+			speed = kartspd-(5<<FRACBITS);
 
 		if (speed >= runnyspeed)
 			player->fovadd = speed-runnyspeed;
@@ -4586,7 +4590,7 @@ void P_PlayerThink(player_t *player)
 	}
 
 #ifdef SEENAMES
-	if (netgame && player == &players[displayplayers[0]] && !(leveltime % (TICRATE/5)) && !splitscreen)
+	if (netgame && !splitscreen && player == &players[displayplayers[0]] && !(leveltime % (TICRATE/5)))
 	{
 		seenplayer = NULL;
 
