@@ -28,7 +28,7 @@
 
 
 
-/* limit for table tag-method chains (to avoid loops) */
+/* limit for table tag-method chains (to avoid infinite loops) */
 #define MAXTAGLOOP	100
 
 

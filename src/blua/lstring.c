@@ -51,7 +51,7 @@ static TString *newlstr (lua_State *L, const char *str, size_t l,
                                        unsigned int h) {
   TString *ts;
   stringtable *tb;
-  if (l+1 > (MAX_SIZET - sizeof(TString))/sizeof(char))
+  if (l_unlikely(l+1 > (MAX_SIZET - sizeof(TString))/sizeof(char)))
     luaM_toobig(L);
   ts = cast(TString *, luaM_malloc(L, (l+1)*sizeof(char)+sizeof(TString)));
   ts->tsv.len = l;
@@ -83,7 +83,7 @@ TString *luaS_newlstr (lua_State *L, const char *str, size_t l) {
        o != NULL;
        o = o->gch.next) {
     TString *ts = rawgco2ts(o);
-    if (l_unlikely(ts->tsv.len == l && (memcmp(str, getstr(ts), l) == 0))) {
+    if (ts->tsv.len == l && (memcmp(str, getstr(ts), l) == 0)) {
       /* string may be dead */
       if (isdead(G(L), o)) changewhite(o);
       return ts;

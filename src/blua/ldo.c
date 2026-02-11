@@ -164,7 +164,7 @@ void luaD_reallocCI (lua_State *L, int newsize) {
 
 
 void luaD_growstack (lua_State *L, int n) {
-  if (l_likely(n <= L->stacksize))  /* double size is enough? */
+  if (n <= L->stacksize)  /* double size is enough? */
     luaD_reallocstack(L, 2*L->stacksize);
   else
     luaD_reallocstack(L, L->stacksize + n);
@@ -318,7 +318,7 @@ int luaD_precall (lua_State *L, StkId func, int nresults) {
     ci->top = L->top + LUA_MINSTACK;
     lua_assert(ci->top <= L->stack_last);
     ci->nresults = nresults;
-    if (L->hookmask & LUA_MASKCALL)
+    if (l_unlikely(L->hookmask & LUA_MASKCALL))
       luaD_callhook(L, LUA_HOOKCALL, -1);
     lua_unlock(L);
     n = (*curr_func(L)->c.f)(L);  /* do the actual call */
