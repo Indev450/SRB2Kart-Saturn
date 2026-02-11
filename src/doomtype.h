@@ -68,7 +68,7 @@ extern "C" {
 	#define strnicmp(x,y,n) strncasecmp(x,y,n)
 #endif
 
-char *nongnu_strcasestr(const char *in, const char *what);
+const char *nongnu_strcasestr(const char *in, const char *what);
 #ifndef _GNU_SOURCE
 #define strcasestr nongnu_strcasestr
 #endif

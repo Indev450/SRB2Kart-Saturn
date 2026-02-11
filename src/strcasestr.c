@@ -28,10 +28,10 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <stddef.h>
 
 static inline int
-trycmp (char **pp, char *cp,
+trycmp (const char **pp, const char *cp,
 		const char *q, size_t qn)
 {
-	char *p;
+	const char *p;
 	p = (*pp);
 	if (strncasecmp(p, q, qn) == 0)
 		return 0;
@@ -40,10 +40,10 @@ trycmp (char **pp, char *cp,
 }
 
 static inline void
-swapp (char ***ppap, char ***ppbp, char **cpap, char **cpbp)
+swapp (const char ***ppap, const char ***ppbp, const char **cpap, const char **cpbp)
 {
-	char **pp;
-	char  *p;
+	const char **pp;
+	const char  *p;
 
 	pp    = *ppap;
 	*ppap = *ppbp;
@@ -54,28 +54,27 @@ swapp (char ***ppap, char ***ppbp, char **cpap, char **cpbp)
 	*cpbp =   p;
 }
 
-char *
-nongnu_strcasestr (const char *s, const char *q)
+const char *nongnu_strcasestr(const char *in, const char *what)
 {
 	size_t  qn;
 
 	char    uc;
 	char    lc;
 
-	char   *up;
-	char   *lp;
+	const char   *up;
+	const char   *lp;
 
-	char **ppa;
-	char **ppb;
+	const char **ppa;
+	const char **ppb;
 
-	char  *cpa;
-	char  *cpb;
+	const char  *cpa;
+	const char  *cpb;
 
-	uc = toupper(*q);
-	lc = tolower(*q);
+	uc = toupper(*what);
+	lc = tolower(*what);
 
-	up = strchr(s, uc);
-	lp = strchr(s, lc);
+	up = strchr(in, uc);
+	lp = strchr(in, lc);
 
 	if (up == NULL && lp == NULL)
 		return NULL;
@@ -97,11 +96,11 @@ nongnu_strcasestr (const char *s, const char *q)
 		cpb = &uc;
 	}
 
-	qn = strlen(q);
+	qn = strlen(what);
 
 	for (;;)
 	{
-		if (trycmp(ppa, cpa, q, qn) == 0)
+		if (trycmp(ppa, cpa, what, qn) == 0)
 			return (*ppa);
 
 		if (up == NULL && lp == NULL)

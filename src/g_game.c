@@ -4161,7 +4161,7 @@ static void measurekeywords(mapsearchfreq_t *fr,
 		const char *s, const char *q, boolean wanttable)
 {
 	char *qp;
-	char *sp;
+	const char *sp;
 	if (wanttable)
 		(*dimp) = Z_Realloc((*dimp), 255 * sizeof (struct searchdim),
 				PU_STATIC, NULL);
@@ -4206,9 +4206,9 @@ INT32 G_FindMap(const char *mapname, char **foundmapnamep,
 
 	size_t      mapnamelen;
 	char   *realmapname = NULL;
-	char   *newmapname = NULL;
+	char   *newmapname  = NULL;
 	char   *apromapname = NULL;
-	char   *aprop = NULL;
+	const char   *aprop = NULL;
 
 	mapsearchfreq_t *freq;
 	boolean wanttable;
