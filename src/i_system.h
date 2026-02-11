@@ -29,6 +29,11 @@ extern "C" {
 */
 #define MAX_QUIT_FUNCS     16
 
+void I_GetConsoleEvents(void);
+
+extern boolean consolevent;
+extern boolean framebuffer;
+
 /**	\brief Graphic system had started up
 */
 extern UINT8 graphics_started;
@@ -189,8 +194,6 @@ INT32 I_StartupSystem(void);
 /**	\brief Shutdown systems
 */
 void I_ShutdownSystem(void);
-
-boolean I_Interrupted(void);
 
 /**	\brief	The I_GetDiskFreeSpace function
 

@@ -1,6 +1,6 @@
 include(LibFindMacros)
 
-libfind_pkg_check_modules(OPENMPT_PKGCONF OPENMPT)
+libfind_pkg_check_modules(OPENMPT_PKGCONF LIBOPENMPT)
 
 find_path(OPENMPT_INCLUDE_DIR
 	NAMES libopenmpt.h
@@ -8,6 +8,7 @@ find_path(OPENMPT_INCLUDE_DIR
 		${OPENMPT_PKGCONF_INCLUDE_DIRS}
 		"/usr/include/libopenmpt"
 		"/usr/local/include/libopenmpt"
+	PATH_SUFFIXES libopenmpt
 )
 
 find_library(OPENMPT_LIBRARY

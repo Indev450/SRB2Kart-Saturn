@@ -332,7 +332,7 @@ void RegisterNetXCmd(netxcmd_t id, void (*cmd_f)(const UINT8 **p, INT32 playernu
 #ifdef PARANOIA
 	if (id >= MAXNETXCMD)
 		I_Error("Command id %d too big", id);
-	if (listnetxcmd[id] != 0)
+	if (listnetxcmd[id] != NULL)
 		I_Error("Command id %d already used", id);
 #endif
 	listnetxcmd[id] = cmd_f;
@@ -365,7 +365,7 @@ void SendNetXCmdForPlayer(UINT8 playerid, netxcmd_t id, const void *param, size_
 		CONS_Alert(CONS_NOTICE, M_GetText("NetXCmd buffer full, delaying netcmd %d... (size: %d, needed: %s)\n"), id, localtextcmd[playerid][0], sizeu1(nparam));
 		if (buf == NULL)
 		{
-			textcmdbuf[playerid] = Z_Malloc(sizeof(textcmdbuf_t), PU_STATIC, NULL);
+			textcmdbuf[playerid] = (textcmdbuf_t*)Z_Malloc(sizeof(textcmdbuf_t), PU_STATIC, NULL);
 			textcmdbuf[playerid]->cmd[0] = 0;
 			textcmdbuf[playerid]->next = NULL;
 			WriteNetXCmd(textcmdbuf[playerid]->cmd, id, param, nparam);
@@ -377,7 +377,7 @@ void SendNetXCmdForPlayer(UINT8 playerid, netxcmd_t id, const void *param, size_
 
 		if (buf->cmd[0]+2+nparam > MAXTEXTCMD)
 		{
-			buf->next = Z_Malloc(sizeof(textcmdbuf_t), PU_STATIC, NULL);
+			buf->next = (textcmdbuf_t*)Z_Malloc(sizeof(textcmdbuf_t), PU_STATIC, NULL);
 			buf->next->cmd[0] = 0;
 			buf->next->next = NULL;
 			WriteNetXCmd(buf->next->cmd, id, param, nparam);
@@ -454,13 +454,13 @@ static UINT8* D_GetTextcmd(tic_t tic, INT32 playernum)
 	// If we don't have an entry for the tic, make it.
 	if (!textcmdtic)
 	{
-		textcmdtic = *tctprev = Z_Calloc(sizeof (textcmdtic_t), PU_STATIC, NULL);
+		textcmdtic = *tctprev = (textcmdtic_t*)Z_Calloc(sizeof (textcmdtic_t), PU_STATIC, NULL);
 		textcmdtic->tic = tic;
 	}
 
 	// If we don't have an entry for the player, make it.
 	if (!textcmdtic->playercmds[playernum])
-		textcmdtic->playercmds[playernum] = Z_Calloc(MAXTEXTCMD, PU_STATIC, NULL);
+		textcmdtic->playercmds[playernum] = (UINT8*)Z_Calloc(MAXTEXTCMD, PU_STATIC, NULL);
 
 	return textcmdtic->playercmds[playernum];
 }
@@ -1141,7 +1141,7 @@ typedef enum
 static void GetPackets(void);
 
 static cl_mode_t cl_mode = CL_SEARCHING;
-static UINT16 cl_lastcheckedfilecount = 0;	// used for full file list
+static UINT16 cl_lastcheckedfilecount = 0; // used for full file list
 
 // Player name send/load
 
@@ -1182,7 +1182,7 @@ static void CV_LoadPlayerNames(UINT8 **p)
 //
 // Keep the local client informed of our status.
 //
-static inline void CL_DrawConnectionStatus(void)
+static void CL_DrawConnectionStatus(void)
 {
 	INT32 ccstime = I_GetTime();
 
@@ -1217,24 +1217,26 @@ static inline void CL_DrawConnectionStatus(void)
 			case CL_DOWNLOADSAVEGAME:
 				if (filedownload.current != -1)
 				{
-					UINT32 currentsize = fileneeded[filedownload.current].currentsize;
-					UINT32 totalsize = fileneeded[filedownload.current].totalsize;
-					INT32 dldlength;
+					INT32 dldlength = 0;
+					fileneeded_t *file = &fileneeded[filedownload.current];
+					UINT32 currentsize = file->currentsize;
+					UINT32 totalsize   = file->totalsize;
 
 					cltext = M_GetText("Downloading game state...");
 					Net_GetNetStat();
 
-					dldlength = (INT32)((currentsize/(double)totalsize) * 256);
+					if (totalsize != 0)
+						dldlength = (INT32)((currentsize/(double)totalsize) * 256);
 					if (dldlength > 256)
 						dldlength = 256;
 					V_DrawFill(BASEVIDWIDTH/2-128, BASEVIDHEIGHT-24, 256, 8, 111);
 					V_DrawFill(BASEVIDWIDTH/2-128, BASEVIDHEIGHT-24, dldlength, 8, 96);
 
 					V_DrawString(BASEVIDWIDTH/2-128, BASEVIDHEIGHT-24, V_20TRANS|V_MONOSPACE,
-						va(" %4uK/%4uK",currentsize>>10,totalsize>>10));
+						va(" %4uK/%4uK", currentsize>>10, totalsize>>10));
 
 					V_DrawRightAlignedString(BASEVIDWIDTH/2+128, BASEVIDHEIGHT-24, V_20TRANS|V_MONOSPACE,
-						va("%3.1fK/s ", ((double)getbps)/1024));
+						va("%3.1fK/s ", ((double)getbps)/1024.0));
 				}
 				else
 					cltext = M_GetText("Waiting to download game state...");
@@ -1270,29 +1272,30 @@ static inline void CL_DrawConnectionStatus(void)
 	{
 		if (cl_mode == CL_CHECKFILES)
 		{
-			INT32 totalfileslength;
+			INT32 totalfileslength = 0;
 			INT32 checkednum = 0;
 			INT32 i;
 
 			V_DrawCenteredString(BASEVIDWIDTH/2, BASEVIDHEIGHT-24-24, V_YELLOWMAP|MENUCAPS, "Press ESC to abort");
 
-			//ima just count files here
+			// ima just count files here
 			for (i = 0; i < fileneedednum; i++)
 				if (fileneeded[i].status != FS_NOTCHECKED)
 					checkednum++;
 
 			// Loading progress
 			V_DrawCenteredString(BASEVIDWIDTH/2, BASEVIDHEIGHT-24-32, V_YELLOWMAP|MENUCAPS, "Checking server addons...");
-			totalfileslength = (INT32)((checkednum/(double)(fileneedednum)) * 256);
+			if (fileneedednum != 0)
+				totalfileslength = (INT32)((checkednum/(double)fileneedednum) * 256);
 			M_DrawTextBox(BASEVIDWIDTH/2-128-8, BASEVIDHEIGHT-24-8, 32, 1);
 			V_DrawFill(BASEVIDWIDTH/2-128, BASEVIDHEIGHT-24, 256, 8, 175);
 			V_DrawFill(BASEVIDWIDTH/2-128, BASEVIDHEIGHT-24, totalfileslength, 8, 160);
 			V_DrawCenteredString(BASEVIDWIDTH/2, BASEVIDHEIGHT-24, V_20TRANS|V_MONOSPACE|MENUCAPS,
-				va(" %2u/%2u Files",checkednum,fileneedednum));
+				va(" %2u/%2u Files", checkednum, fileneedednum));
 		}
 		else if (cl_mode == CL_LOADFILES)
 		{
-			INT32 totalfileslength;
+			INT32 totalfileslength = 0;
 			INT32 loadcompletednum = 0;
 			INT32 i;
 
@@ -1305,12 +1308,13 @@ static inline void CL_DrawConnectionStatus(void)
 
 			// Loading progress
 			V_DrawCenteredString(BASEVIDWIDTH/2, BASEVIDHEIGHT-24-32, V_YELLOWMAP|MENUCAPS, "Loading server addons...");
-			totalfileslength = (INT32)((loadcompletednum/(double)(fileneedednum)) * 256);
+			if (fileneedednum != 0)
+				totalfileslength = (INT32)((loadcompletednum/(double)fileneedednum) * 256);
 			M_DrawTextBox(BASEVIDWIDTH/2-128-8, BASEVIDHEIGHT-24-8, 32, 1);
 			V_DrawFill(BASEVIDWIDTH/2-128, BASEVIDHEIGHT-24, 256, 8, 175);
 			V_DrawFill(BASEVIDWIDTH/2-128, BASEVIDHEIGHT-24, totalfileslength, 8, 160);
 			V_DrawCenteredString(BASEVIDWIDTH/2, BASEVIDHEIGHT-24, V_20TRANS|V_MONOSPACE|MENUCAPS,
-				va(" %2u/%2u Files",loadcompletednum,fileneedednum));
+				va(" %2u/%2u Files", loadcompletednum, fileneedednum));
 		}
 		else if (cl_mode == CL_VIEWSERVER)
 		{
@@ -1438,31 +1442,36 @@ static inline void CL_DrawConnectionStatus(void)
 		}
 		else if (filedownload.current != -1)
 		{
-			INT32 dldlength;
-			INT32 totalfileslength;
-			UINT32 totaldldsize;
+			INT32 dldlength = 0;
+			INT32 totalfileslength = 0;
+			UINT32 totaldldsize = 0;
 			static char tempname[28];
 			fileneeded_t *file = &fileneeded[filedownload.current];
 			char *filename = file->filename;
+			UINT32 currentsize = file->currentsize;
+			UINT32 totalsize   = file->totalsize;
 
 			// Draw the bottom box.
 			M_DrawTextBox(BASEVIDWIDTH/2-128-8, BASEVIDHEIGHT-58-8, 32, 1);
 			V_DrawCenteredString(BASEVIDWIDTH/2, BASEVIDHEIGHT-58-14, V_YELLOWMAP|MENUCAPS, "Press ESC to abort");
 
 			Net_GetNetStat();
-			dldlength = (INT32)((file->currentsize/(double)file->totalsize) * 256);
+			if (totalsize != 0)
+				dldlength = (INT32)((currentsize/(double)totalsize) * 256);
 			if (dldlength > 256)
 				dldlength = 256;
 			V_DrawFill(BASEVIDWIDTH/2-128, BASEVIDHEIGHT-58, 256, 8, 175);
 			V_DrawFill(BASEVIDWIDTH/2-128, BASEVIDHEIGHT-58, dldlength, 8, 160);
 
 			memset(tempname, 0, sizeof(tempname));
+
 			// offset filename to just the name only part
 			filename += strlen(filename) - nameonlylength(filename);
+			const size_t filenamelength = strlen(filename);
 
-			if (strlen(filename) > sizeof(tempname)-1) // too long to display fully
+			if (filenamelength > sizeof(tempname)-1) // too long to display fully
 			{
-				size_t endhalfpos = strlen(filename)-10;
+				size_t endhalfpos = filenamelength-10;
 				// display as first 14 chars + ... + last 10 chars
 				// which should add up to 27 if our math(s) is correct
 				snprintf(tempname, sizeof(tempname), "%.14s...%.10s", filename, filename+endhalfpos);
@@ -1481,29 +1490,30 @@ static inline void CL_DrawConnectionStatus(void)
 			V_DrawCenteredString(BASEVIDWIDTH/2, BASEVIDHEIGHT-58-22, V_YELLOWMAP|MENUCAPS,
 				va(M_GetText("\"%s\""), tempname));
 			V_DrawString(BASEVIDWIDTH/2-128, BASEVIDHEIGHT-58, V_20TRANS|V_MONOSPACE|MENUCAPS,
-				va(" %4uK/%4uK",file->currentsize>>10,file->totalsize>>10));
+				va(" %4uK/%4uK", currentsize>>10, totalsize>>10));
 			V_DrawRightAlignedString(BASEVIDWIDTH/2+128, BASEVIDHEIGHT-58, V_20TRANS|V_MONOSPACE|MENUCAPS,
-				va("%3.1fK/s ", ((double)getbps)/1024));
+				va("%3.1fK/s ", ((double)getbps)/1024.0));
 
 			// Download progress
 
-			if (file->currentsize != file->totalsize)
-				totaldldsize = filedownload.completedsize+file->currentsize; //Add in single file progress download if applicable
+			if (currentsize != totalsize)
+				totaldldsize = filedownload.completedsize+currentsize; // Add in single file progress download if applicable
 			else
 				totaldldsize = filedownload.completedsize;
 
 			V_DrawCenteredString(BASEVIDWIDTH/2, BASEVIDHEIGHT-24-14, V_YELLOWMAP|MENUCAPS, "Overall Download Progress");
-			totalfileslength = (INT32)((totaldldsize/(double)filedownload.totalsize) * 256);
+			if (filedownload.totalsize != 0)
+				totalfileslength = (INT32)((totaldldsize/(double)filedownload.totalsize) * 256);
 			M_DrawTextBox(BASEVIDWIDTH/2-128-8, BASEVIDHEIGHT-24-8, 32, 1);
 			V_DrawFill(BASEVIDWIDTH/2-128, BASEVIDHEIGHT-24, 256, 8, 175);
 			V_DrawFill(BASEVIDWIDTH/2-128, BASEVIDHEIGHT-24, totalfileslength, 8, 160);
 
-			if (filedownload.totalsize>>20 >= 10) //display in MB if over 10MB
+			if (filedownload.totalsize>>20 >= 10) // display in MB if over 10MB
 				V_DrawString(BASEVIDWIDTH/2-128, BASEVIDHEIGHT-24, V_20TRANS|V_MONOSPACE|MENUCAPS,
-					va(" %4uM/%4uM",totaldldsize>>20,filedownload.totalsize>>20));
+					va(" %4uM/%4uM", totaldldsize>>20, filedownload.totalsize>>20));
 			else
 				V_DrawString(BASEVIDWIDTH/2-128, BASEVIDHEIGHT-24, V_20TRANS|V_MONOSPACE|MENUCAPS,
-					va(" %4uK/%4uK",totaldldsize>>10,filedownload.totalsize>>10));
+					va(" %4uK/%4uK", totaldldsize>>10, filedownload.totalsize>>10));
 
 			V_DrawRightAlignedString(BASEVIDWIDTH/2+128, BASEVIDHEIGHT-24, V_20TRANS|V_MONOSPACE|MENUCAPS,
 					va("%2u/%2u Files ", filedownload.completednum, filedownload.totalnum));
@@ -1953,7 +1963,7 @@ static boolean SV_ResendingSavegameToAnyone(void)
 static void SV_SendSaveGame(INT32 node, boolean resending)
 {
 	size_t length, compressedlen;
-	savebuffer_t save = {0};
+	savebuffer_t save = {};
 	UINT8 *compressedsave;
 	UINT8 *buffertosend;
 
@@ -2023,7 +2033,7 @@ static consvar_t cv_dumpconsistency = {"dumpconsistency", "Off", CV_NETVAR, CV_O
 static void SV_SavedGame(void)
 {
 	size_t length;
-	savebuffer_t save = {0};
+	savebuffer_t save = {};
 	char tmpsave[264];
 
 	if (!cv_dumpconsistency.value)
@@ -2063,7 +2073,7 @@ static void SV_SavedGame(void)
 
 static void CL_LoadReceivedSavegame(boolean reloading)
 {
-	savebuffer_t save = {0};
+	savebuffer_t save = {};
 	size_t length, decompressedlen;
 	char tmpsave[264];
 
@@ -3475,6 +3485,9 @@ void CL_Reset(void)
 
 	memset(player_muted, 0, sizeof(player_muted));
 
+	for (INT32 i = 0; i < MAXPLAYERS; ++i)
+		playerinfo[i].node = 255;
+
 	// D_StartTitle should get done now, but the calling function will handle it
 }
 
@@ -4262,6 +4275,9 @@ void D_ClientServerInit(void)
 	CV_RegisterVar(&cv_dumpconsistency);
 #endif
 	D_LoadBan(false);
+
+	for (INT32 i = 0; i < MAXPLAYERS; ++i)
+		playerinfo[i].node = 255;
 
 	gametic = 0;
 	localgametic = 0;
@@ -7221,7 +7237,7 @@ void CL_ClearRewinds(void)
 
 rewind_t *CL_SaveRewindPoint(size_t demopos)
 {
-	savebuffer_t save = {0};
+	savebuffer_t save = {};
 	rewind_t *rewind;
 
 	if (rewindhead && rewindhead->leveltime + REWIND_POINT_INTERVAL > leveltime)
@@ -7244,7 +7260,7 @@ rewind_t *CL_SaveRewindPoint(size_t demopos)
 
 rewind_t *CL_RewindToTime(tic_t time)
 {
-	savebuffer_t save = {0};
+	savebuffer_t save = {};
 	rewind_t *rewind;
 
 	while (rewindhead && rewindhead->leveltime > time)

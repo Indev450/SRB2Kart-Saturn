@@ -23,8 +23,7 @@
 extern "C" {
 #endif
 
-extern SDL_bool consolevent;
-extern SDL_bool framebuffer;
+#include "SDL_version.h"
 
 #include "../m_fixed.h"
 
@@ -42,20 +41,22 @@ typedef struct SDLJoyInfo_s
 {
 	/// Controller handle
 	SDL_GameController *dev;
+#if (SDL_VERSION_ATLEAST(2,32,4))
 	/// Controller index
 	INT32 id;
+#endif
 	/// number of old joystick
 	int oldjoy;
 	/// number of axies
-	int axises;
+	//int axises;
 	/// scale of axises
 	INT32 scale;
 	/// number of buttons
-	int buttons;
+	//int buttons;
 	/// number of hats
-	int hats;
+	//int hats;
 	/// number of balls
-	int balls;
+	//int balls;
 } SDLJoyInfo_t;
 
 /**	\brief SDL info about controller 1
@@ -66,21 +67,6 @@ extern SDLJoyInfo_t JoyInfo[4]; //MAXSPLITSCREENPLAYERS
 */
 #define SDL_JDEADZONE 153
 #undef SDL_JDEADZONE
-
-// So we can call this from i_video event loop
-void I_ShutdownJoystick(UINT8 index);
-
-// Cheat to get the device index for a game controller handle
-INT32 I_GetJoystickDeviceIndex(SDL_GameController *dev);
-
-// Quick thing to make SDL_JOYDEVICEADDED events less of an abomination
-void I_UpdateJoystickDeviceIndex(UINT8 player);
-void I_UpdateJoystickDeviceIndices(UINT8 excludePlayer);
-
-void I_GetConsoleEvents(void);
-
-// Needed for some WIN32 functions
-extern SDL_Window *window;
 
 #ifdef __cplusplus
 } // extern "C"

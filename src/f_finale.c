@@ -1172,9 +1172,7 @@ void F_StartWaitingPlayers(void)
 	randskin = M_RandomKey(numskins);
 	boolean waithires = skins[randskin].flags && SF_HIRES;
 
-	if (waitcolormap)
-		Z_Free(waitcolormap);
-
+	Z_Free(waitcolormap);
 	waitcolormap = R_GetTranslationColormap(randskin, skins[randskin].prefcolor, 0);
 
 	if (waithires)
@@ -1318,7 +1316,7 @@ boolean F_ContinueResponder(event_t *event)
 	keypressed = true;
 	imcontinuing = true;
 	continuetime = TICRATE;
-	S_StartSound(0, sfx_itemup);
+	S_StartSound(NULL, sfx_itemup);
 	return true;
 }
 

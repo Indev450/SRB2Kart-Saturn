@@ -1702,7 +1702,7 @@ void P_SwitchWeather(INT32 weathernum)
 
 			precipmobj->type = type; // proper set the type
 			precipmobj->info = &mobjinfo[type];
-			precipmobj->flags = mobjinfo[type].flags;
+			//precipmobj->flags = mobjinfo[type].flags;
 
 			st = &states[mobjinfo[type].spawnstate+z];
 
@@ -3161,11 +3161,6 @@ void P_ProcessSpecialSector(player_t *player, sector_t *sector, sector_t *rovers
 	INT32 section1, section2, section3, section4;
 	INT32 special;
 
-	section1 = GETSECSPECIAL(sector->special, 1);
-	section2 = GETSECSPECIAL(sector->special, 2);
-	section3 = GETSECSPECIAL(sector->special, 3);
-	section4 = GETSECSPECIAL(sector->special, 4);
-
 	// Ignore spectators
 	if (player->spectator)
 		return;
@@ -3175,6 +3170,11 @@ void P_ProcessSpecialSector(player_t *player, sector_t *sector, sector_t *rovers
 	// TODO: modify this to accommodate for it.
 	if (player->playerstate == PST_DEAD)
 		return;
+
+	section1 = GETSECSPECIAL(sector->special, 1);
+	section2 = GETSECSPECIAL(sector->special, 2);
+	section3 = GETSECSPECIAL(sector->special, 3);
+	section4 = GETSECSPECIAL(sector->special, 4);
 
 	// Conveyor stuff
 	if (section3 == 2 || section3 == 4)
@@ -4381,8 +4381,6 @@ static void P_PlayerOnSpecial3DFloor(player_t *player, sector_t *sector)
 	}
 }
 
-#define VDOORSPEED (FRACUNIT*2)
-
 //
 // P_RunSpecialSectorCheck
 //
@@ -4512,9 +4510,7 @@ void P_UpdateSpecials(void)
 {
 	anim_t *anim;
 	INT32 i;
-	INT32 pic;
 	size_t j;
-
 	levelflat_t *foundflats; // for flat animation
 
 	// LEVEL TIMER
@@ -4532,9 +4528,11 @@ void P_UpdateSpecials(void)
 	{
 		for (i = 0; i < anim->numpics; i++)
 		{
-			pic = anim->basepic + ((leveltime/anim->speed + i) % anim->numpics);
 			if (anim->istexture)
-				texturetranslation[anim->basepic+i] = pic;
+			{
+				texturetranslation[anim->basepic+i] = anim->basepic +
+					((leveltime/anim->speed + i) % anim->numpics);
+			}
 		}
 	}
 
@@ -4579,8 +4577,8 @@ static inline void P_AddFFloorToList(sector_t *sec, ffloor_t *ffloor)
 	if (!sec->ffloors)
 	{
 		sec->ffloors = ffloor;
-		ffloor->next = 0;
-		ffloor->prev = 0;
+		ffloor->next = NULL;
+		ffloor->prev = NULL;
 		return;
 	}
 
@@ -4588,7 +4586,7 @@ static inline void P_AddFFloorToList(sector_t *sec, ffloor_t *ffloor)
 
 	rover->next = ffloor;
 	ffloor->prev = rover;
-	ffloor->next = 0;
+	ffloor->next = NULL;
 }
 
 /** Adds a 3Dfloor.
@@ -4629,8 +4627,8 @@ static ffloor_t *P_AddFakeFloor(sector_t *sec, sector_t *sec2, line_t *master, f
 
 	if (sec2->numattached == 0)
 	{
-		sec2->attached = Z_Malloc(sizeof (*sec2->attached) * sec2->maxattached, PU_STATIC, NULL);
-		sec2->attachedsolid = Z_Malloc(sizeof (*sec2->attachedsolid) * sec2->maxattached, PU_STATIC, NULL);
+		sec2->attached = Z_Malloc(sizeof(*sec2->attached) * sec2->maxattached, PU_STATIC, NULL);
+		sec2->attachedsolid = Z_Malloc(sizeof(*sec2->attachedsolid) * sec2->maxattached, PU_STATIC, NULL);
 		sec2->attached[0] = sec - sectors;
 		sec2->numattached = 1;
 		sec2->attachedsolid[0] = (flags & FF_SOLID);
@@ -4644,8 +4642,8 @@ static ffloor_t *P_AddFakeFloor(sector_t *sec, sector_t *sec2, line_t *master, f
 		if (sec2->numattached >= sec2->maxattached)
 		{
 			sec2->maxattached *= 2;
-			sec2->attached = Z_Realloc(sec2->attached, sizeof (*sec2->attached) * sec2->maxattached, PU_STATIC, NULL);
-			sec2->attachedsolid = Z_Realloc(sec2->attachedsolid, sizeof (*sec2->attachedsolid) * sec2->maxattached, PU_STATIC, NULL);
+			sec2->attached = Z_Realloc(sec2->attached, sizeof(*sec2->attached) * sec2->maxattached, PU_STATIC, NULL);
+			sec2->attachedsolid = Z_Realloc(sec2->attachedsolid, sizeof(*sec2->attachedsolid) * sec2->maxattached, PU_STATIC, NULL);
 		}
 		sec2->attached[sec2->numattached] = sec - sectors;
 		sec2->attachedsolid[sec2->numattached] = (flags & FF_SOLID);
@@ -4653,7 +4651,7 @@ static ffloor_t *P_AddFakeFloor(sector_t *sec, sector_t *sec2, line_t *master, f
 	}
 
 	// Add the floor
-	ffloor = Z_Calloc(sizeof (*ffloor), PU_LEVEL, NULL);
+	ffloor = Z_Calloc(sizeof(*ffloor), PU_LEVEL, NULL);
 	ffloor->secnum = sec2 - sectors;
 	ffloor->target = sec;
 	ffloor->bottomheight = &sec2->floorheight;
@@ -5468,7 +5466,6 @@ void P_SpawnSpecials(INT32 fromnetsave, boolean reloadinggamestate)
 				break;
 
 			case 10: // Vertical culling plane for sprites and FOFs
-				sec = sides[*lines[i].sidenum].sector - sectors;
 				for (s = -1; (s = P_FindSectorFromLineTag(lines + i, s)) >= 0 ;)
 					sectors[s].cullheight = &lines[i]; // This allows it to change in realtime!
 				break;
@@ -5989,7 +5986,7 @@ void P_SpawnSpecials(INT32 fromnetsave, boolean reloadinggamestate)
 					if (!virt)
 						virt = vres_GetMap(lastloadedmaplumpnum);
 
-					data = (UINT8*) vres_Find(virt, "SIDEDEFS")->data;
+					data = (UINT8*)vres_Find(virt, "SIDEDEFS")->data;
 
 					for (b = 0; b < (INT16)numsides; b++)
 					{
@@ -6221,8 +6218,7 @@ void P_SpawnSpecials(INT32 fromnetsave, boolean reloadinggamestate)
 
 	// Allocate each list
 	for (i = 0; i < numsectors; i++)
-		if(secthinkers[i].thinkers)
-			Z_Free(secthinkers[i].thinkers);
+		Z_Free(secthinkers[i].thinkers);
 
 	Z_Free(secthinkers);
 

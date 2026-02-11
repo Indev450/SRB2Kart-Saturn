@@ -52,8 +52,6 @@
 
 #include "r_fps.h"
 
-UINT16 objectsdrawn = 0;
-
 // dumb fade thing for director toggle
 tic_t directortoggletimer = 0;
 
@@ -720,7 +718,7 @@ void ST_DrawDemoTitleEntry(void)
 static void ST_MayonakaStatic(void)
 {
 	INT32 flag;
-	if (cv_lessflicker.value)
+	if (cv_lessflicker.value || cv_reducevfx.value)
 		flag = V_70TRANS;
 	else
 		flag = (leveltime%2) ? V_90TRANS : V_70TRANS;

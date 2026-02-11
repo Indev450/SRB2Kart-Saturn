@@ -74,6 +74,8 @@ extern consvar_t cv_ydeadzone[MAXSPLITSCREENPLAYERS];
 
 extern consvar_t cv_litesteer[MAXSPLITSCREENPLAYERS];
 
+extern consvar_t cv_autoaccel[MAXSPLITSCREENPLAYERS];
+
 extern consvar_t cv_ghost_besttime, cv_ghost_bestlap, cv_ghost_last, cv_ghost_guest, cv_ghost_staff;
 
 // Hud offsets
@@ -128,6 +130,7 @@ extern consvar_t cv_spinoutroll;
 extern consvar_t cv_squishdance, cv_squishdancespeed;
 
 extern consvar_t cv_playerblendeffects;
+extern consvar_t cv_reducevfx;
 
 extern consvar_t cv_cechotoggle;
 

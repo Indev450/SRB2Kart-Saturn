@@ -14,6 +14,7 @@
 #ifdef HWRENDER
 
 #include <algorithm>
+#include <vector>
 
 #include "../doomstat.h"
 #include "../doomdef.h"
@@ -100,7 +101,8 @@ sector_t *gl_backsector = NULL;
 static constexpr float clipping_distances[] = {1024.0f, 2048.0f, 4096.0f, 6144.0f, 8192.0f, 12288.0f, 16384.0f};
 // values for bsp culling
 // slightly higher than the far clipping plane to compensate for impreciseness
-static constexpr INT32 bsp_culling_distances[] = {(1024+512)*FRACUNIT, (2048+512)*FRACUNIT, (4096+512)*FRACUNIT,
+static constexpr INT32 bsp_culling_distances[] = {
+	(1024+512)*FRACUNIT, (2048+512)*FRACUNIT, (4096+512)*FRACUNIT,
 	(6144+512)*FRACUNIT, (8192+512)*FRACUNIT, (12288+512)*FRACUNIT, (16384+512)*FRACUNIT};
 
 // Performance stats
@@ -586,14 +588,10 @@ static void HWR_RenderPlane(subsector_t *subsector, extrasubsector_t *xsub, bool
 	const sector_t *sec = FOFsector ? FOFsector : gl_frontsector;
 
 	// Get the slope pointer to simplify future code
-	if (sec->f_slope && !isceiling)
+	if (!isceiling && sec->f_slope)
 		slope = sec->f_slope;
-	else if (sec->c_slope && isceiling)
+	else if (isceiling && sec->c_slope)
 		slope = sec->c_slope;
-
-	// Set fixedheight to the slope's height from our viewpoint, if we have a slope
-	if (slope)
-		fixedheight = P_GetSlopeZAt(slope, viewx, viewy);
 
 	height = FixedToFloat(fixedheight);
 
@@ -687,17 +685,18 @@ static void HWR_RenderPlane(subsector_t *subsector, extrasubsector_t *xsub, bool
 			vert->t = (tempxsow * sinangf) + (tempytow * cosangf);\
 		}\
 \
+		if (slope)\
+		{\
+			fixedheight = P_GetSlopeZAt(slope, FloatToFixed((vx)), FloatToFixed((vy)));\
+			height = FixedToFloat(fixedheight);\
+		}\
+\
 		vert->x = (vx);\
 		vert->y = height;\
 		vert->z = (vy);\
 \
-		if (slope)\
-		{\
-			fixedheight = P_GetSlopeZAt(slope, FloatToFixed((vx)), FloatToFixed((vy)));\
-			vert->y = FixedToFloat(fixedheight);\
-		}\
 }
-	for (i = 0, v3d = planeVerts; i < (INT32)nrPlaneVerts; i++,v3d++,pv++)
+	for (i = 0, v3d = planeVerts; i < (INT32)nrPlaneVerts; i++,v3d++, pv++)
 		SETUP3DVERT(v3d, pv->x, pv->y);
 
 	if (slope)
@@ -1379,8 +1378,7 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 
 	FSurfaceInfo Surf;
 
-	if (gl_frontsector)
-		Surf.PolyColor.s.alpha = 255;
+	Surf.PolyColor.s.alpha = 255;
 
 	const INT32 gl_midtexture = R_GetTextureNum(gl_sidedef->midtexture);
 	GLMapTexture_t *glTex = NULL;
@@ -1784,9 +1782,9 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 		// Single sided line... Deal only with the middletexture (if one exists)
 		if (gl_midtexture && gl_linedef->special != HORIZONSPECIAL) // Ignore horizon line for OGL
 		{
-			glTex = HWR_GetTexture(gl_midtexture, noencore);
-
 			fixed_t texturevpeg;
+
+			glTex = HWR_GetTexture(gl_midtexture, noencore);
 
 			// PEGGING
 			if ((gl_linedef->flags & (ML_DONTPEGBOTTOM|ML_EFFECT2)) == (ML_DONTPEGBOTTOM|ML_EFFECT2))
@@ -1874,12 +1872,13 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 	//Hurdler: 3d-floors test
 	if (!gl_drawing_stencil && gl_backsector && gl_frontsector->tag != gl_backsector->tag && (gl_backsector->ffloors || gl_frontsector->ffloors))
 	{
-		ffloor_t * rover;
-		fixed_t    highcut = 0, lowcut = 0;
+		ffloor_t *rover;
+		fixed_t highcut = 0, lowcut = 0;
 		fixed_t lowcutslope = 0, highcutslope = 0;
 
 		// Used for height comparisons and etc across FOFs and slopes
 		fixed_t high1, highslope1, low1, lowslope1;
+		fixed_t high2, highslope2, low2, lowslope2;
 
 		INT32 texnum;
 
@@ -1892,19 +1891,6 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 		{
 			for (rover = gl_backsector->ffloors; rover; rover = rover->next)
 			{
-				boolean bothsides = false;
-				// Skip if it exists on both sectors.
-				ffloor_t * r2;
-				for (r2 = gl_frontsector->ffloors; r2; r2 = r2->next)
-					if (rover->master == r2->master)
-					{
-						bothsides = true;
-						break;
-					}
-
-				if (bothsides)
-					continue;
-
 				const ffloortype_e roverflags = rover->flags;
 
 				if (!(roverflags & FF_EXISTS) || !(roverflags & FF_RENDERSIDES) || (roverflags & FF_INVERTSIDES))
@@ -1914,6 +1900,45 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 				SLOPEPARAMS(*rover->b_slope, low1,  lowslope1,  *rover->bottomheight)
 
 				if ((high1 < lowcut || highslope1 < lowcutslope) || (low1 > highcut || lowslope1 > highcutslope))
+					continue;
+
+				ffloor_t * r2;
+				for (r2 = gl_frontsector->ffloors; r2; r2 = r2->next)
+				{
+					if (r2->master == rover->master) // Skip if same control line.
+						break;
+
+					const ffloortype_e r2flags = r2->flags;
+
+					if (!(r2flags & FF_EXISTS) || !(r2flags & FF_RENDERSIDES))
+						continue;
+
+					if (rover->flags & FF_EXTRA)
+					{
+						if (!(r2flags & FF_CUTEXTRA))
+							continue;
+
+						if (r2flags & FF_EXTRA && (r2flags & (FF_TRANSLUCENT|FF_FOG)) != (rover->flags & (FF_TRANSLUCENT|FF_FOG)))
+							continue;
+					}
+					else
+					{
+						if (!(r2flags & FF_CUTSOLIDS))
+							continue;
+					}
+
+					SLOPEPARAMS(*r2->t_slope, high2, highslope2, *r2->topheight)
+					SLOPEPARAMS(*r2->b_slope, low2,  lowslope2,  *r2->bottomheight)
+
+					if ((high2 < lowcut || highslope2 < lowcutslope) || (low2 > highcut || lowslope2 > highcutslope))
+						continue;
+					if ((high1 > high2 || highslope1 > highslope2) || (low1 < low2 || lowslope1 < lowslope2))
+						continue;
+
+					break;
+				}
+
+				if (r2)
 					continue;
 
 				side_t *side = R_GetFFloorSide(gl_curline->linedef, rover, gl_backsector);
@@ -2052,19 +2077,6 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 		{
 			for (rover = gl_frontsector->ffloors; rover; rover = rover->next)
 			{
-				boolean bothsides = false;
-				// Skip if it exists on both sectors.
-				ffloor_t * r2;
-				for (r2 = gl_backsector->ffloors; r2; r2 = r2->next)
-					if (rover->master == r2->master)
-					{
-						bothsides = true;
-						break;
-					}
-
-				if (bothsides)
-					continue;
-
 				const ffloortype_e roverflags = rover->flags;
 
 				if (!(roverflags & FF_EXISTS) || !(roverflags & FF_RENDERSIDES) || !(roverflags & FF_ALLSIDES))
@@ -2074,6 +2086,44 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 				SLOPEPARAMS(*rover->b_slope, low1,  lowslope1,  *rover->bottomheight)
 
 				if ((high1 < lowcut || highslope1 < lowcutslope) || (low1 > highcut || lowslope1 > highcutslope))
+					continue;
+
+				ffloor_t * r2;
+				for (r2 = gl_backsector->ffloors; r2; r2 = r2->next)
+				{
+					if (r2->master == rover->master) // Skip if same control line.
+						break;
+
+					const ffloortype_e r2flags = r2->flags;
+
+					if (!(r2flags & FF_EXISTS) || !(r2flags & FF_RENDERSIDES))
+						continue;
+
+					if (rover->flags & FF_EXTRA)
+					{
+						if (!(r2flags & FF_CUTEXTRA))
+							continue;
+
+						if (r2flags & FF_EXTRA && (r2flags & (FF_TRANSLUCENT|FF_FOG)) != (rover->flags & (FF_TRANSLUCENT|FF_FOG)))
+							continue;
+					}
+					else
+					{
+						if (!(r2flags & FF_CUTSOLIDS))
+							continue;
+					}
+
+					SLOPEPARAMS(*r2->t_slope, high2, highslope2, *r2->topheight)
+					SLOPEPARAMS(*r2->b_slope, low2,  lowslope2,  *r2->bottomheight)
+
+					if ((high2 < lowcut || highslope2 < lowcutslope) || (low2 > highcut || lowslope2 > highcutslope))
+						continue;
+					if ((high1 > high2 || highslope1 > highslope2) || (low1 < low2 || lowslope1 < lowslope2))
+						continue;
+
+					break;
+				}
+				if (r2)
 					continue;
 
 				side_t *side = R_GetFFloorSide(gl_curline->linedef, rover, gl_backsector);
@@ -2894,7 +2944,7 @@ static void HWR_Subsector(size_t num)
 	static sector_t tempsec; //SoM: 4/7/2000
 	INT32 floorlightlevel;
 	INT32 ceilinglightlevel;
-	INT32 locFloorHeight, locCeilingHeight;
+	INT32 locFloorHeight = 0, locCeilingHeight = 0;
 	INT32 cullFloorHeight, cullCeilingHeight;
 	INT32 light = 0;
 	extracolormap_t *floorcolormap;
@@ -2940,11 +2990,12 @@ static void HWR_Subsector(size_t num)
 
 	cullFloorHeight   = P_GetSectorFloorZAt  (gl_frontsector, viewx, viewy);
 	cullCeilingHeight = P_GetSectorCeilingZAt(gl_frontsector, viewx, viewy);
-	locFloorHeight    = P_GetSectorFloorZAt  (gl_frontsector, gl_frontsector->soundorg.x, gl_frontsector->soundorg.y);
-	locCeilingHeight  = P_GetSectorCeilingZAt(gl_frontsector, gl_frontsector->soundorg.x, gl_frontsector->soundorg.y);
 
 	if (gl_frontsector->ffloors)
 	{
+		locFloorHeight    = P_GetSectorFloorZAt  (gl_frontsector, gl_frontsector->soundorg.x, gl_frontsector->soundorg.y);
+		locCeilingHeight  = P_GetSectorCeilingZAt(gl_frontsector, gl_frontsector->soundorg.x, gl_frontsector->soundorg.y);
+
 		boolean anyMoved = gl_frontsector->moved;
 
 		if (anyMoved == false)
@@ -2999,8 +3050,7 @@ static void HWR_Subsector(size_t num)
 			{
 				HWR_GetFlat(levelflats[gl_frontsector->floorpic].lumpnum, R_NoEncore(gl_frontsector, false));
 				HWR_RenderPlane(sub, &extrasubsectors[num], false,
-					// Hack to make things continue to work around slopes.
-					locFloorHeight == cullFloorHeight ? locFloorHeight : gl_frontsector->floorheight,
+					gl_frontsector->floorheight,
 					// We now return you to your regularly scheduled rendering.
 					PF_Occlude, floorlightlevel, levelflats[gl_frontsector->floorpic].lumpnum, NULL, 255, floorcolormap);
 			}
@@ -3015,8 +3065,7 @@ static void HWR_Subsector(size_t num)
 			{
 				HWR_GetFlat(levelflats[gl_frontsector->ceilingpic].lumpnum, R_NoEncore(gl_frontsector, true));
 				HWR_RenderPlane(sub, &extrasubsectors[num], true,
-					// Hack to make things continue to work around slopes.
-					locCeilingHeight == cullCeilingHeight ? locCeilingHeight : gl_frontsector->ceilingheight,
+					gl_frontsector->ceilingheight,
 					// We now return you to your regularly scheduled rendering.
 					PF_Occlude, ceilinglightlevel, levelflats[gl_frontsector->ceilingpic].lumpnum, NULL, 255, ceilingcolormap);
 			}
@@ -3733,8 +3782,15 @@ static void HWR_SplitSprite(gl_vissprite_t *spr, const boolean papersprite)
 		blend = HWR_GetBlendModeFlag(blendmode)|PF_Occlude;
 	}
 
-	if (cv_playerfade.value && sprmo->player)
-		Surf.PolyColor.s.alpha = FixedMul(R_DoPlayerFade(sprmo), Surf.PolyColor.s.alpha);
+	if (sprmo->player)
+	{
+		// make hyu´d players translucent with reducevfx, could be done better, but im lazy as crap
+		if (cv_reducevfx.value && sprmo->player->kartstuff[k_hyudorotimer] > 0)
+			Surf.PolyColor.s.alpha = FixedMul(FRACUNIT/2, Surf.PolyColor.s.alpha);
+
+		if (cv_playerfade.value)
+			Surf.PolyColor.s.alpha = FixedMul(R_DoPlayerFade(sprmo), Surf.PolyColor.s.alpha);
+	}
 
 	if (HWR_UseShader())
 	{
@@ -4023,8 +4079,15 @@ static void HWR_DrawSprite(gl_vissprite_t *spr)
 		blend = HWR_GetBlendModeFlag(blendmode)|PF_Occlude;
 	}
 
-	if (cv_playerfade.value && sprmo->player)
-		Surf.PolyColor.s.alpha = FixedMul(R_DoPlayerFade(sprmo), Surf.PolyColor.s.alpha);
+	if (sprmo->player)
+	{
+		// make hyu´d players translucent with reducevfx, could be done better, but im lazy as crap
+		if (cv_reducevfx.value && sprmo->player->kartstuff[k_hyudorotimer] > 0)
+			Surf.PolyColor.s.alpha = FixedMul(FRACUNIT/2, Surf.PolyColor.s.alpha);
+
+		if (cv_playerfade.value)
+			Surf.PolyColor.s.alpha = FixedMul(R_DoPlayerFade(sprmo), Surf.PolyColor.s.alpha);
+	}
 
 	if (HWR_UseShader())
 	{
@@ -4174,6 +4237,7 @@ static int CompareVisSprites(const void *p1, const void *p2)
 static void HWR_SortVisSprites(void)
 {
 	UINT32 i;
+
 	for (i = 0; i < gl_visspritecount; i++)
 	{
 		gl_vsprorder[i] = HWR_GetVisSprite(i);
@@ -4242,38 +4306,29 @@ typedef struct
 
 // initial size of drawnode array
 #define DRAWNODES_INIT_SIZE 64
-gl_drawnode_t *drawnodes = NULL;
-INT32 numdrawnodes = 0;
-INT32 alloceddrawnodes = 0;
+// no reason to waste all the allocations since every map will have atleast one translucent thing
+static std::vector<gl_drawnode_t> drawnodes;
 
 static void *HWR_CreateDrawNode(gl_drawnode_type_t type)
 {
-	gl_drawnode_t *drawnode;
+	// if we didnt alloc anything yet, reserve atleast 64 nodes
+	// dont declare with it as we want our size to be 0!
+	drawnodes.reserve(DRAWNODES_INIT_SIZE);
 
-	if (!drawnodes)
-	{
-		alloceddrawnodes = DRAWNODES_INIT_SIZE;
-		drawnodes = static_cast<gl_drawnode_t*>(Z_Malloc(alloceddrawnodes * sizeof(gl_drawnode_t), PU_LEVEL, &drawnodes));
-	}
-	else if (numdrawnodes >= alloceddrawnodes)
-	{
-		alloceddrawnodes *= 2;
-		Z_Realloc(drawnodes, alloceddrawnodes * sizeof(gl_drawnode_t), PU_LEVEL, &drawnodes);
-	}
-
-	drawnode = &drawnodes[numdrawnodes++];
-	drawnode->type = type;
+	drawnodes.emplace_back();
+	drawnodes.back().type = type;
 
 	// not sure if returning different pointers to a union is necessary
 	switch (type)
 	{
 		case DRAWNODE_PLANE:
-			return &drawnode->u.plane;
+			return &drawnodes.back().u.plane;
 		case DRAWNODE_POLYOBJECT_PLANE:
-			return &drawnode->u.polyplane;
+			return &drawnodes.back().u.polyplane;
 		case DRAWNODE_WALL:
-			return &drawnode->u.wall;
+			return &drawnodes.back().u.wall;
 	}
+
 	return NULL;
 }
 
@@ -4337,11 +4392,15 @@ static int CompareDrawNodePlanes(const void *p1, const void *p2)
 // Sorts and renders the list of drawnodes for the scene being rendered.
 static void HWR_RenderDrawNodes(void)
 {
-	INT32 i = 0, run_start = 0;
+	size_t i = 0, run_start = 0;
+	static std::vector<INT32> sortindex;
+
+	sortindex.reserve(DRAWNODES_INIT_SIZE);
 
 	// Array for storing the rendering order.
 	// A list of indices into the drawnodes array.
-	INT32 *sortindex;
+
+	const size_t numdrawnodes = drawnodes.size();
 
 	if (!numdrawnodes)
 		return;
@@ -4350,7 +4409,7 @@ static void HWR_RenderDrawNodes(void)
 
 	PS_START_TIMING(ps_hw_nodesorttime);
 
-	sortindex = static_cast<INT32*>(Z_Malloc(sizeof(INT32) * numdrawnodes, PU_STATIC, NULL));
+	sortindex.resize(numdrawnodes);
 
 	// Reversed order
 	for (i = 0; i < numdrawnodes; i++)
@@ -4366,7 +4425,7 @@ static void HWR_RenderDrawNodes(void)
 		if (drawnodes[sortindex[run_start]].type == DRAWNODE_PLANE)
 		{
 			// found it, now look for run end
-			INT32 run_end; // (inclusive)
+			size_t run_end; // (inclusive)
 
 			for (i = run_start+1; i < numdrawnodes; i++)
 			{
@@ -4379,7 +4438,7 @@ static void HWR_RenderDrawNodes(void)
 			if (run_end > run_start) // if there are multiple consecutive planes, not just one
 			{
 				// consecutive run of planes found, now sort it
-				qs22j(sortindex + run_start, run_end - run_start + 1, sizeof(INT32), CompareDrawNodePlanes);
+				qs22j(sortindex.data() + run_start, run_end - run_start + 1, sizeof(INT32), CompareDrawNodePlanes);
 			}
 
 			run_start = run_end + 1; // continue looking for runs coming right after this one
@@ -4451,9 +4510,7 @@ static void HWR_RenderDrawNodes(void)
 
 	PS_STOP_TIMING(ps_hw_nodedrawtime);
 
-	numdrawnodes = 0;
-
-	Z_Free(sortindex);
+	drawnodes.clear(); // clear so our size is 0 again!
 }
 
 
@@ -5386,7 +5443,7 @@ static void HWR_SetTransformAiming(FTransform *trans)
 		fixed_t fixedaiming = AIMINGTODY(aimingangle);
 		trans->viewaiming = FixedToFloat(fixedaiming) * (static_cast<float>(vid.width) / static_cast<float>(vid.height)) / (static_cast<float>(BASEVIDWIDTH) / static_cast<float>(BASEVIDHEIGHT));
 		if (splitscreen == 1) // only for 2 player splitscreen
-			trans->viewaiming *= 2.125; // splitscreen adjusts fov with 0.8, so compensate (but only halfway, since splitscreen means only half the screen is used)
+			trans->viewaiming *= 2.125f; // splitscreen adjusts fov with 0.8, so compensate (but only halfway, since splitscreen means only half the screen is used)
 		trans->shearing = true;
 		gl_aimingangle = 0;
 	}
@@ -5491,7 +5548,7 @@ static void HWR_RenderViewpoint(gl_portal_t *rootportal, int stencil_level, bool
 	player_t *viewplayer = &players[displayplayers[viewssnum]];
 	const float fpov = FixedToFloat(R_GetPlayerFov(viewplayer));
 
-	auto reset_viewstate = [&](const float fpov)
+	auto reset_viewstate = [&]()
 	{
 		HWR_SetTransform(fpov);
 		HWR_ClearSprites();
@@ -5511,7 +5568,7 @@ static void HWR_RenderViewpoint(gl_portal_t *rootportal, int stencil_level, bool
 			currentportallist = &portallist;
 			HWR_SetPortalState(GLPORTAL_SEARCH);
 
-			reset_viewstate(fpov);
+			reset_viewstate();
 
 			if (rootportal)
 			{
@@ -5537,7 +5594,7 @@ static void HWR_RenderViewpoint(gl_portal_t *rootportal, int stencil_level, bool
 	// draw normal things in current frame in current incremented stencil buffer area
 	HWR_SetStencilState(HWR_STENCIL_NORMAL, stencil_level);
 
-	reset_viewstate(fpov);
+	reset_viewstate();
 
 	if constexpr (Type == RenderViewpointType::kPortal)
 	{
@@ -6053,7 +6110,7 @@ static void HWR_DoPostProcessor(void)
 	const camera_t *thiscam = &camera[0];
 
 	// Not supported in splitscreen - someone want to add support?
-	const boolean screenwave = (!splitscreen && (thiscam->postimg & POSTIMG_WATER || thiscam->postimg & POSTIMG_HEAT));
+	const boolean screenwave = (!splitscreen && !cv_reducevfx.value && (thiscam->postimg & POSTIMG_WATER || thiscam->postimg & POSTIMG_HEAT));
 
 	// Capture the screen for intermission and screen waving
 	if ((lastdraw || screenwave) && gamestate != GS_INTERMISSION)

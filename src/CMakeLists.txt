@@ -2,6 +2,8 @@
 
 # Core sources
 set(SRB2_CORE_SOURCES
+	core/memory.cpp
+	core/thread_pool.cpp
 	am_map.c
 	b_bot.c
 	command.c
@@ -18,17 +20,21 @@ set(SRB2_CORE_SOURCES
 	f_wipe.c
 	filesrch.c
 	g_game.c
+	g_demo.c
 	g_input.c
 	hu_stuff.c
 	i_tcp.c
 	info.c
+	k_hud.c
 	lzf.c
 	m_aatree.c
 	m_anigif.c
 	m_argv.c
 	m_bbox.c
 	m_cheat.c
+	m_curl.c
 	m_cond.c
+	m_emotes.cpp
 	m_fixed.c
 	m_menu.c
 	m_textinput.c
@@ -40,19 +46,25 @@ set(SRB2_CORE_SOURCES
 	mserv.c
 	http-mserv.c
 	qs22j.c
+	r_skins.c
 	s_sound.c
 	screen.c
 	sounds.c
 	st_stuff.c
-	#string.c
+	string.c
 	tables.c
 	v_video.c
 	w_wad.c
 	y_inter.c
-	z_zone.c
+	z_zone.cpp
 )
 
 set(SRB2_CORE_HEADERS
+	core/memory.h
+	core/thread_pool.h
+	m_curl.h
+	m_emotes.h
+	k_hud.h
 	am_map.h
 	b_bot.h
 	byteptr.h
@@ -78,6 +90,7 @@ set(SRB2_CORE_HEADERS
 	fastcmp.h
 	filesrch.h
 	g_game.h
+	g_demo.h
 	g_input.h
 	g_state.h
 	hu_stuff.h
@@ -109,6 +122,7 @@ set(SRB2_CORE_HEADERS
 	md5.h
 	mserv.h
 	qs22j.h
+	r_skins.h
 	s_sound.h
 	screen.h
 	sounds.h
@@ -123,18 +137,18 @@ set(SRB2_CORE_HEADERS
 )
 
 set(SRB2_CORE_RENDER_SOURCES
-	r_bsp.c
+	r_bsp.cpp
 	r_data.c
-	r_draw.c
-	r_fps.c
-	r_main.c
-	r_patch.c
-	r_patchrotation.c
-	r_plane.c
-	r_segs.c
+	r_draw.cpp
+	r_fps.cpp
+	r_main.cpp
+	r_patch.cpp
+	r_patchrotation.cpp
+	r_plane.cpp
+	r_segs.cpp
 	r_sky.c
 	r_splats.c
-	r_things.c
+	r_things.cpp
 	r_portal.c
 
 	r_bsp.h
@@ -162,7 +176,7 @@ set(SRB2_CORE_GAME_SOURCES
 	p_inter.c
 	p_lights.c
 	p_map.c
-	p_maputl.c
+	p_maputl.cpp
 	p_mobj.c
 	p_polyobj.c
 	p_saveg.c
@@ -193,10 +207,6 @@ set(SRB2_CORE_GAME_SOURCES
 	k_stats.h
 )
 
-if(NOT (CMAKE_CXX_COMPILER_ID MATCHES "Clang"))
-	set(SRB2_CORE_SOURCES ${SRB2_CORE_SOURCES} string.c)
-endif()
-
 prepend_sources(SRB2_CORE_SOURCES)
 prepend_sources(SRB2_CORE_HEADERS)
 prepend_sources(SRB2_CORE_RENDER_SOURCES)
@@ -226,10 +236,23 @@ set(SRB2_CONFIG_HWRENDER ON CACHE BOOL
 	"Enable hardware rendering through OpenGL.")
 set(SRB2_CONFIG_STATIC_OPENGL OFF CACHE BOOL
 	"Use statically linked OpenGL. NOT RECOMMENDED.")
-set(SRB2_CONFIG_USE_FBO_OGL ON CACHE BOOL
-	"Enable OpenGL FBO Downsampling support.")
 set(SRB2_CONFIG_DEDICATED OFF CACHE BOOL
 	"Build a dedicated server.")
+set(SRB2_CONFIG_LIBBACKTRACE ON CACHE BOOL
+	"Enable using libbacktrace for crashlogs.")
+set(SRB2_CONFIG_LTO ON CACHE BOOL
+	"Enable link time optimizations, improves performance at the cost of longer link times.")
+set(SRB2_CONFIG_ASAN OFF CACHE BOOL
+	"Compile with AddressSanitizer (libasan).")
+set(SRB2_CONFIG_UBSAN OFF CACHE BOOL
+	"Compile with UndefinedBehaviorSanitizer (libubsan).")
+
+set(SRB2_CONFIG_SATURNPAK ON CACHE BOOL
+	"Enable Saturn specific special packet. Required for using the newer resynch system")
+set(SRB2_CONFIG_SATURNJOIN ON CACHE BOOL
+	"Enable Saturn specific allowjoin toggle.")
+set(SRB2_CONFIG_SCREENFBO ON CACHE BOOL
+	"Enable hardware renderer (OpenGL) FBO downsampling support")
 
 if(${SRB2_CONFIG_DEDICATED})
 	set(SRB2_CONFIG_HAVE_GME NO)
@@ -469,16 +492,36 @@ if(${SRB2_CONFIG_HAVE_CURL})
 	endif()
 endif()
 
+if(${SRB2_CONFIG_LIBBACKTRACE})
+	if(${SRB2_CONFIG_USE_INTERNAL_LIBRARIES})
+        if(${SRB2_SYSTEM_BITS} EQUAL 64)
+			set(LIBBACKTRACE_FOUND ON)
+			set(LIBBACKTRACE_INCLUDE_DIRS ${CMAKE_SOURCE_DIR}/libs/libbacktrace/include)
+			set(LIBBACKTRACE_LIBRARIES "-L${CMAKE_SOURCE_DIR}/libs/libbacktrace/lib/x86_64 -lbacktrace")
+		else() # 32-bit
+			message(WARNING "libbacktrace is unsupported on 32-bit builds.")
+		endif()
+	else()
+		find_package(libbacktrace)
+	endif()
+	if(${LIBBACKTRACE_FOUND})
+		set(SRB2_HAVE_LIBBACKTRACE ON)
+		add_definitions(-DHAVE_LIBBACKTRACE)
+	else()
+		message(WARNING "You have specified that libbacktrace is available but it was not found.")
+	endif()
+endif()
+
 if(${SRB2_CONFIG_HWRENDER})
 	add_definitions(-DHWRENDER)
 	set(SRB2_HWRENDER_SOURCES
 		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_batching.c
 		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_shaders.c
 		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_bsp.c
-		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_cache.c
+		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_cache.cpp
 		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_clip.c
 		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_draw.c
-		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_main.c
+		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_main.cpp
 		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_portal.c
 		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_md2.c
 		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_md2load.c
@@ -493,7 +536,6 @@ if(${SRB2_CONFIG_HWRENDER})
 		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_clip.h
 		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_data.h
 		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_defs.h
-		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_dll.h
 		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_gl.h
 		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_glob.h
 		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_main.h
@@ -512,7 +554,6 @@ if(${SRB2_CONFIG_HWRENDER})
 	set(SRB2_R_OPENGL_HEADERS
 		${CMAKE_CURRENT_SOURCE_DIR}/hardware/r_opengl/r_opengl.h
 	)
-
 endif()
 
 if(${SRB2_CONFIG_HWRENDER} AND ${SRB2_CONFIG_STATIC_OPENGL})
@@ -525,24 +566,39 @@ if(${SRB2_CONFIG_HWRENDER} AND ${SRB2_CONFIG_STATIC_OPENGL})
 	endif()
 endif()
 
-if(${SRB2_CONFIG_HWRENDER})
-	if(${SRB2_CONFIG_USE_FBO_OGL})
-		set(SRB2_USE_FBO_OGL ON)
-		add_definitions(-DUSE_FBO_OGL)
-	endif()
+if(${SRB2_CONFIG_HWRENDER} AND ${SRB2_CONFIG_SCREENFBO})
+	add_definitions(-DUSE_FBO_OGL)
+endif()
+
+if(${SRB2_CONFIG_SATURNPAK})
+	add_definitions(-DDOSATURNPAK)
+endif()
+
+if(${SRB2_CONFIG_SATURNJOIN})
+	add_definitions(-DDOSATURNJOIN)
 endif()
 
 # Targets
 
 # Compatibility flag with later versions of GCC
 # We should really fix our code to not need this
-if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
-	set(CMAKE_C_FLAGS ${CMAKE_C_FLAGS} -mno-ms-bitfields)
+if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" OR "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+	if (CMAKE_SYSTEM_PROCESSOR MATCHES "^(x86_64|x64|amd64|AMD64|em64t|EM64T)")
+		add_compile_options(-mno-ms-bitfields)
+	endif()
+	add_compile_options(-Wno-trigraphs)
 endif()
 
-if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-	set(CMAKE_C_FLAGS ${CMAKE_C_FLAGS} -Wno-absolute-value)
+# TODO: fix prng and P_CreateBlockmap overflow at some point
+add_compile_options(-fwrapv)
+
+if (${CMAKE_BUILD_TYPE} MATCHES Debug)
+	add_compile_options(-O0)
+else()
+	add_compile_options(-O3)
 endif()
+
+add_compile_options(-g)
 
 add_definitions(-DCMAKECONFIG)
 

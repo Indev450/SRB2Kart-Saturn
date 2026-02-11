@@ -12,6 +12,8 @@
 /// \file  m_menu.c
 /// \brief XMOD's extremely revamped menu system.
 
+#include "screen.h"
+#include "tables.h"
 #ifdef __GNUC__
 #include <unistd.h>
 #endif
@@ -2868,8 +2870,9 @@ static void M_DrawCenteredMenu(void)
 static inline size_t M_StringHeight(const char *string)
 {
 	size_t h = 8, i;
+	const size_t strlength = strlen(string);
 
-	for (i = 0; i < strlen(string); i++)
+	for (i = 0; i < strlength; i++)
 		if (string[i] == '\n')
 			h += 8;
 
@@ -2933,7 +2936,7 @@ static void M_PrepareLevelSelect(void)
 boolean M_CanShowLevelInList(INT32 mapnum, INT32 gt)
 {
 	// invalid mapnum
-	if (mapnum < -1)
+	if (mapnum < -1 || mapnum >= NUMMAPS)
 		return false;
 
 	// Random map!
@@ -4716,7 +4719,7 @@ static void M_DrawReplayHut(void)
 	if (y > scaledviewheight-80)
 	{
 		V_DrawFill(BASEVIDWIDTH-4, 75, 4, scaledviewheight-80, V_SNAPTOTOP|V_SNAPTORIGHT|239);
-		V_DrawFill(BASEVIDWIDTH-3, 76 + (scaledviewheight-80) * replayhutmenuy / y, 2, (((scaledviewheight-80) * (scaledviewheight-80))-1) / y - 1, V_SNAPTOTOP|V_SNAPTORIGHT|229);
+		V_DrawFill(BASEVIDWIDTH-3, 76 + (scaledviewheight-80) * replayhutmenuy / y, 2, max((((scaledviewheight-80) * (scaledviewheight-80))-1) / y - 1, 1), V_SNAPTOTOP|V_SNAPTORIGHT|229);
 	}
 
 	// Draw the cursor
@@ -5353,7 +5356,7 @@ void M_PopupMasterServerRules(void)
 		{
 			firstDismissedRulesThisBoot = false;
 			M_StartMessage(va("%s\n(press any key)", rules), NULL, MM_NOTHING);
-			Z_Free(rules);
+			free(rules);
 		}
 	}
 #endif
@@ -5384,7 +5387,7 @@ void M_SlotCvarIntoModMenu(consvar_t* cvar, const char* category, const char* na
 	{
 		CONS_Printf("custom settings menu initiation\n");
 		for (CVARSETUP = 0; CVARSETUP < MAXMENUCCVARS; ++CVARSETUP)
-			OP_CustomCvarMenu[CVARSETUP] = (menuitem_t){IT_DISABLED, NULL, "", 0, INT16_MAX};
+			OP_CustomCvarMenu[CVARSETUP] = (menuitem_t){IT_DISABLED, NULL, "", NULL, INT16_MAX};
 	}
 
 	if (category && ((ccvarposition == 0 && category[0] != '\0') || !fasticmp(category, OP_CustomCvarMenu[ccvarlaststheader].text)))
@@ -5519,7 +5522,6 @@ static void M_DrawChecklist(void)
 
 		if (conditionSets[unlockables[i].conditionset - 1].numconditions)
 		{
-			c = 0;
 			lastid = -1;
 
 			for (c = 0; c < conditionSets[unlockables[i].conditionset - 1].numconditions; c++)
@@ -5678,9 +5680,6 @@ static void M_MusicTest(INT32 choice)
 static void M_DrawMusicTest(void)
 {
 	INT32 x, y, i;
-
-	x = 90<<FRACBITS;
-	y = (BASEVIDHEIGHT-32)<<FRACBITS;
 
 	y = (BASEVIDWIDTH-vid.scaledwidth)/2;
 
@@ -6557,17 +6556,22 @@ static void M_EraseGuest(INT32 choice)
 
 static void M_OverwriteGuest(const char *which)
 {
-	char *rguest = Z_StrDup(va("%s"PATHSEP"replay"PATHSEP"%s"PATHSEP"%s-guest.lmp", srb2home, timeattackfolder, G_BuildMapName(cv_nextmap.value)));
+	char *rguest;
 	UINT8 *buf;
 	size_t len;
 	len = FIL_ReadFile(va("%s"PATHSEP"replay"PATHSEP"%s"PATHSEP"%s-%s-%s.lmp", srb2home, timeattackfolder, G_BuildMapName(cv_nextmap.value), cv_chooseskin.string, which), &buf);
-	if (!len) {
+
+	if (!len)
 		return;
-	}
-	if (FIL_FileExists(rguest)) {
+
+	rguest = Z_StrDup(va("%s"PATHSEP"replay"PATHSEP"%s"PATHSEP"%s-guest.lmp", srb2home, timeattackfolder, G_BuildMapName(cv_nextmap.value)));
+
+	if (FIL_FileExists(rguest))
+	{
 		M_StopMessage(0);
 		remove(rguest);
 	}
+
 	FIL_WriteFile(rguest, buf, len);
 	Z_Free(rguest);
 
@@ -7493,7 +7497,7 @@ static void M_DrawLevelSelectOnly(boolean leftfade, boolean rightfade)
 		if ((lumpnum = W_CheckNumForName(va("%sE", mapname))) != LUMPERROR)
 			mappingforencore = (patch_t *)W_CachePatchNum(lumpnum, PU_PATCH);*/
 
-		V_DrawFixedPatch((x+w)<<FRACBITS, (y)<<FRACBITS, FRACUNIT/2, V_FLIP, PictureOfLevel, 0);
+		V_DrawFixedPatch((x+w)<<FRACBITS, (y)<<FRACBITS, FRACUNIT/2, V_FLIP, PictureOfLevel, NULL);
 
 		{
 			static angle_t rubyfloattime = 0;
@@ -7584,7 +7588,6 @@ static void M_DrawLevelSelectOnly(boolean leftfade, boolean rightfade)
 
 static void M_DrawServerMenu(void)
 {
-
 	M_DrawLevelSelectOnly(false, false);
 #ifdef MASTERSERVER
 	if (currentMenu == &MP_ServerDef && cv_advertise.value) // Remind players where they're hosting.
@@ -7899,7 +7902,7 @@ static void M_HandleConnectIP(INT32 choice)
 	if (exitmenu)
 	{
 		if (currentMenu->prevMenu)
-			M_SetupNextMenu (currentMenu->prevMenu);
+			M_SetupNextMenu(currentMenu->prevMenu);
 		else
 			M_ClearMenus(true);
 	}
@@ -7945,6 +7948,7 @@ static void M_DrawSetupMultiPlayerMenu(void)
 	UINT8 i;
 	UINT8 s, w;
 	const UINT8 *flashcol = V_GetStringColormap(highlightflags);
+	INT32 skinnum = 0;
 	INT32 statx, staty;
 	UINT32 speenframe;
 	INT32 sltw, actw, hetw;
@@ -7992,13 +7996,8 @@ static void M_DrawSetupMultiPlayerMenu(void)
 #define GETSELECTEDSPEED (itemOn == 1 && setupm_skinselect < numskins ? skins[skinsorted[setupm_skinselect]].kartspeed : skins[setupm_fakeskin].kartspeed)
 #define GETSELECTEDWEIGHT (itemOn == 1 && setupm_skinselect < numskins ? skins[skinsorted[setupm_skinselect]].kartweight : skins[setupm_fakeskin].kartweight)
 
-			statoffset = 0;
 			tw = V_StringWidth("Character", 0);//V_StringWidth(GETSELECTEDSKINNAME, 0);
 			st = V_StringWidth(GETSELECTEDSKINNAME, 0);
-
-			INT32 selectedskin = (itemOn == 1 && setupm_skinselect < numskins ? skinsorted[setupm_skinselect] : setupm_fakeskin);
-			speed = skins[selectedskin].kartspeed;
-			weight = skins[selectedskin].kartweight;
 
 			V_DrawString((mx+(tw/2)) - (st/2), my + 37,
 				((MP_PlayerSetupMenu[2].status & IT_TYPE) == IT_SPACE ? V_TRANSLUCENT : 0) | highlightflags | V_ALLOWLOWERCASE,
@@ -8158,7 +8157,7 @@ static void M_DrawSetupMultiPlayerMenu(void)
 			V_DrawFixedPatch(((statx+61+GRIDSTATOFFSET)<<FRACBITS) + (FRACUNIT>>1), (staty+67)<<FRACBITS, FRACUNIT>>1, 0, statlr, flashcol);
 			V_DrawFixedPatch((statx+40+GRIDSTATOFFSET)<<FRACBITS, (staty+80)<<FRACBITS, FRACUNIT>>1, 0, statud, flashcol);
 			// bg
-			V_DrawFixedPatch(((statx+48+GRIDSTATOFFSET)<<FRACBITS)+(FRACUNIT>>1), (staty+73)<<FRACBITS, FRACUNIT>>1, 0, statbg, 0);
+			V_DrawFixedPatch(((statx+48+GRIDSTATOFFSET)<<FRACBITS)+(FRACUNIT>>1), (staty+73)<<FRACBITS, FRACUNIT>>1, 0, statbg, NULL);
 
 			for (i = 0; i < numskins; i++) // draw the stat dots
 			{
@@ -8217,7 +8216,7 @@ static void M_DrawSetupMultiPlayerMenu(void)
 			V_DrawFixedPatch((statx+64)<<FRACBITS, staty<<FRACBITS, FRACUNIT, 0, statlr, flashcol);
 			V_DrawFixedPatch((statx+24)<<FRACBITS, (staty+22)<<FRACBITS, FRACUNIT, 0, statud, flashcol);
 			// bg
-			V_DrawFixedPatch((statx+34)<<FRACBITS, (staty+10)<<FRACBITS, FRACUNIT, 0, statbg, 0);
+			V_DrawFixedPatch((statx+34)<<FRACBITS, (staty+10)<<FRACBITS, FRACUNIT, 0, statbg, NULL);
 
 			for (i = 0; i < numskins; i++) // draw the stat dots
 			{
@@ -8267,10 +8266,9 @@ static void M_DrawSetupMultiPlayerMenu(void)
 				INT32 curx = (((setupm_skinselect % SKINGRIDNEWWIDTH) * 18) + ((BASEVIDWIDTH / 2) - (18 * SKINGRIDNEWWIDTH/2)) + SKINXSHIFT) + 20;
 				INT32 cury = (((setupm_skinselect / SKINGRIDNEWWIDTH) - setupm_skinypos) * 18) + ((BASEVIDHEIGHT / 2) - (18 * (SKINGRIDNEWWIDTH/2))+ gridyoffset);
 
-					UINT8 cursorframe = (I_GetTime() / 4) % 7;
-
-					cursor = (patch_t *)W_CachePatchName(va("K_CHILI%d", cursorframe + 1), PU_PATCH);
-					V_DrawFixedPatch((curx << FRACBITS) - (FRACUNIT), (cury << FRACBITS) - (FRACUNIT), FRACUNIT+(FRACUNIT>>3), 0, cursor, NULL);
+				UINT8 cursorframe = (I_GetTime() / 4) % 7;
+				cursor = (patch_t *)W_CachePatchName(va("K_CHILI%d", cursorframe + 1), PU_PATCH);
+				V_DrawFixedPatch((curx << FRACBITS) - (FRACUNIT), (cury << FRACBITS) - (FRACUNIT), FRACUNIT+(FRACUNIT>>3), 0, cursor, NULL);
 			}
 
 			break;
@@ -8309,14 +8307,12 @@ static void M_DrawSetupMultiPlayerMenu(void)
 				if (setupm_skinselect < numskins)
 				{
 					UINT8 *cmap = R_GetTranslationColormap(setupm_skinselect, setupm_fakecolor, GTC_MENUCACHE);
-
 					cursor = facewantprefix[skinsorted[setupm_skinselect]];
 					V_DrawFixedPatch(((curx-8) << FRACBITS), ((cury-8) << FRACBITS), FRACUNIT, 0, cursor, cmap);
 				}
 				else
 				{
 					UINT8 cursorframe = (I_GetTime() / 4) % 7;
-
 					cursor = (patch_t *)W_CachePatchName(va("K_CHILI%d", cursorframe + 1), PU_PATCH);
 					V_DrawFixedPatch((curx << FRACBITS) - (FRACUNIT), (cury << FRACBITS) - (FRACUNIT), FRACUNIT+(FRACUNIT>>3), 0, cursor, NULL);
 				}
@@ -8380,7 +8376,6 @@ static void M_DrawSetupMultiPlayerMenu(void)
 				else
 				{
 					UINT8 cursorframe = (I_GetTime() / 4) % 7;
-
 					cursor = (patch_t *)W_CachePatchName(va("K_CHILI%d", cursorframe + 1), PU_PATCH);
 					V_DrawFixedPatch((curx << FRACBITS) - (FRACUNIT), (cury << FRACBITS) - (FRACUNIT), FRACUNIT+(FRACUNIT>>3), 0, cursor, NULL);
 				}
@@ -8505,7 +8500,7 @@ static void M_DrawSetupMultiPlayerMenu(void)
 	switch (cv_skinselectmenu.value)
 	{
 		case SKINMENUTYPE_2D:
-			skintodisplay = setupm_fakeskin;
+			skintodisplay = (UINT8)setupm_fakeskin;
 			if (setupm_skinlockedselect) // show the skin we are trying to select
 				skintodisplay = skinstats[setupm_skinxpos][setupm_skinypos][setupm_skinselect];
 			else if (skinstatscount[setupm_skinxpos][setupm_skinypos] && itemOn == 1)
@@ -8513,19 +8508,22 @@ static void M_DrawSetupMultiPlayerMenu(void)
 			break;
 		case SKINMENUTYPE_EXTENDED:
 		case SKINMENUTYPE_GRID:
-			skintodisplay = (itemOn == 1 && setupm_skinselect < numskins ? skinsorted[setupm_skinselect] : setupm_fakeskin);
+			skintodisplay = ((itemOn == 1 && (setupm_skinselect < numskins)) ? skinsorted[setupm_skinselect] : (UINT8)setupm_fakeskin);
 			break;
 		default:
-			skintodisplay = setupm_fakeskin;
+			skintodisplay = (UINT8)setupm_fakeskin;
 			break;
 	}
 
-	const INT32 skinnum = R_SkinAvailable(skins[skintodisplay].name);
+	if (skintodisplay >= MAXSKINS)
+		skintodisplay = 0;
 
-	if (skinnum != -1)
-		sprdef = &skins[skinnum].spritedef;
-	else
-		sprdef = &skins[0].spritedef;
+	skinnum = R_SkinAvailable(skins[skintodisplay].name);
+
+	if (skinnum < 0 || skinnum >= MAXSKINS)
+		skinnum = 0;
+
+	sprdef = &skins[skinnum].spritedef;
 
 	if (!sprdef->numframes) // No frames ??
 		return; // Can't render!
@@ -8534,37 +8532,59 @@ static void M_DrawSetupMultiPlayerMenu(void)
 	if (frame >= sprdef->numframes) // Walking animation missing
 		frame = 0; // Try to use standing frame
 
-	sprframe = &sprdef->spriteframes[frame];
-
-	// minenice's speen css, it's a piece of shit but hey
-	speenframe = (I_GetTime()*cv_skinselectspin.value/TICRATE + 1)%8;
-
-	// this is a very shitty solution for checking if a sprite needs flipping
-	// but it works
-	if ((speenframe > 4) && (sprframe->lumppat[speenframe] == sprframe->lumppat[8-speenframe]))
-		flags = V_FLIP; // This sprite is left/right flipped!
-
-	patch = (patch_t *)W_CachePatchNum(sprframe->lumppat[speenframe], PU_PATCH);
-
 	// draw box around guy
 	V_DrawFill(mx + 36 - (charw/2), my+65, charw, 84, 239);
+#undef charw
 
 	// draw player sprite
 	if (setupm_fakecolor) // inverse should never happen
 	{
 		UINT8 *colormap = R_GetTranslationColormap(skintodisplay, setupm_fakecolor, GTC_MENUCACHE);
-
-		if (skins[skintodisplay].flags & SF_HIRES)
+#ifdef HWRENDER
+		md2_t *md2 = &md2_playermodels[skinnum];
+#endif
+		mx += 36;
+		my += 131;
+#ifdef HWRENDER
+		// if we have 3d models enabled and a model exists
+		// try to show it instead of the sprite
+		if (rendermode == render_opengl && cv_glmdls.value
+		&& !md2->error && !md2->notfound)
 		{
-			V_DrawFixedPatch((mx+36)<<FRACBITS,
-						(my+131)<<FRACBITS,
-						skins[skintodisplay].highresscale,
-						flags, patch, colormap);
+			const angle_t ROTATE_PER_TIC = (UINT64)ANGLE_45 * cv_skinselectspin.value / TICRATE;
+			angle_t angle = I_GetTime()*ROTATE_PER_TIC + FixedMul(cv_uncappedhud.value ? renderdeltatics : FRACUNIT, ROTATE_PER_TIC);
+			HWR_Draw2DModel(md2, mx, my, skinnum, (skincolors_t)setupm_fakecolor, colormap, 8*FRACUNIT/3, frame, angle);
 		}
 		else
-			V_DrawMappedPatch(mx+36, my+131, flags, patch, colormap);
+#endif
+		{
+			sprframe = &sprdef->spriteframes[frame];
+
+			// minenice's speen css, it's a piece of shit but hey
+			speenframe = (I_GetTime()*cv_skinselectspin.value/TICRATE + 1)%8;
+
+			// this is a very shitty solution for checking if a sprite needs flipping
+			// but it works
+			if ((speenframe > 4) && (sprframe->lumppat[speenframe] == sprframe->lumppat[8-speenframe]))
+			{
+				flags = V_FLIP; // This sprite is left/right flipped!
+			}
+
+			patch = (patch_t *)W_CachePatchNum(sprframe->lumppat[speenframe], PU_PATCH);
+
+			if (skins[skintodisplay].flags & SF_HIRES)
+			{
+				V_DrawFixedPatch(mx<<FRACBITS,
+								 my<<FRACBITS,
+								 skins[skintodisplay].highresscale,
+								 flags, patch, colormap);
+			}
+			else
+			{
+				V_DrawMappedPatch(mx, my, flags, patch, colormap);
+			}
+		}
 	}
-#undef charw
 }
 
 // Handle 1P/2P MP Setup
@@ -9358,29 +9378,32 @@ static void M_SetupControlsMenu(UINT8 pnum)
 			break;
 	}
 
+	OP_AllControlsMenu[4].itemaction = &cv_litesteer[pnum];
+	OP_AllControlsMenu[5].itemaction = &cv_turnsmooth[pnum];
+
 	if (pnum > 0)
 	{
 		// Hide P1-only controls
-		OP_AllControlsMenu[15].status = IT_GRAYEDOUT2; // Chat
-		OP_AllControlsMenu[16].status = IT_GRAYEDOUT2; // Rankings
-		OP_AllControlsMenu[17].status = IT_GRAYEDOUT2; // Pause
-		OP_AllControlsMenu[18].status = IT_GRAYEDOUT2; // Screenshot
-		OP_AllControlsMenu[19].status = IT_GRAYEDOUT2; // GIF
-		OP_AllControlsMenu[20].status = IT_GRAYEDOUT2; // System Menu
-		OP_AllControlsMenu[21].status = IT_GRAYEDOUT2; // Console
-		OP_AllControlsMenu[37].status = IT_GRAYEDOUT2; // Director
+		OP_AllControlsMenu[19].status = IT_GRAYEDOUT2; // Chat
+		OP_AllControlsMenu[10].status = IT_GRAYEDOUT2; // Rankings
+		OP_AllControlsMenu[21].status = IT_GRAYEDOUT2; // Pause
+		OP_AllControlsMenu[22].status = IT_GRAYEDOUT2; // Screenshot
+		OP_AllControlsMenu[23].status = IT_GRAYEDOUT2; // GIF
+		OP_AllControlsMenu[24].status = IT_GRAYEDOUT2; // System Menu
+		OP_AllControlsMenu[25].status = IT_GRAYEDOUT2; // Console
+		OP_AllControlsMenu[41].status = IT_GRAYEDOUT2; // Director
 	}
 	else
 	{
 		// Unhide P1-only controls
-		OP_AllControlsMenu[15].status = IT_CONTROL; // Chat
-		OP_AllControlsMenu[16].status = IT_CONTROL; // Rankings
-		OP_AllControlsMenu[17].status = IT_CONTROL; // Pause
-		OP_AllControlsMenu[18].status = IT_CONTROL; // Screenshot
-		OP_AllControlsMenu[19].status = IT_CONTROL; // GIF
-		OP_AllControlsMenu[20].status = IT_CONTROL; // System Menu
-		OP_AllControlsMenu[21].status = IT_CONTROL; // Console
-		OP_AllControlsMenu[37].status = IT_CONTROL; // Director
+		OP_AllControlsMenu[19].status = IT_CONTROL; // Chat
+		OP_AllControlsMenu[10].status = IT_CONTROL; // Rankings
+		OP_AllControlsMenu[21].status = IT_CONTROL; // Pause
+		OP_AllControlsMenu[22].status = IT_CONTROL; // Screenshot
+		OP_AllControlsMenu[23].status = IT_CONTROL; // GIF
+		OP_AllControlsMenu[24].status = IT_CONTROL; // System Menu
+		OP_AllControlsMenu[25].status = IT_CONTROL; // Console
+		OP_AllControlsMenu[41].status = IT_CONTROL; // Director
 	}
 
 	M_SetupNextMenu(&OP_AllControlsDef);
@@ -9494,12 +9517,36 @@ static void M_DrawControl(void)
 		else if ((currentMenu->menuitems[i].status == IT_HEADER) && (i != max-1))
 			V_DrawString(19, y+6, highlightflags|V_ALLOWLOWERCASE, currentMenu->menuitems[i].text);
 		else if (currentMenu->menuitems[i].status & IT_STRING)
+		{
 			V_DrawString(x, y, ((i == itemOn) ? highlightflags|V_ALLOWLOWERCASE : V_ALLOWLOWERCASE), currentMenu->menuitems[i].text);
+
+			if (currentMenu->menuitems[i].status & IT_CVAR)
+			{
+				consvar_t *cv = (consvar_t *)currentMenu->menuitems[i].itemaction;
+
+				// IT_HEADER matches IT_CVAR, for some reason...
+				if (cv)
+				{
+					INT32 w = V_StringWidth(cv->string, 0);
+					V_DrawString(BASEVIDWIDTH - x - w, y,
+						((cv->flags & CV_CHEAT) && !CV_IsSetToDefault(cv) ? warningflags : highlightflags)|MENUCAPS, cv->string);
+					if (i == itemOn)
+					{
+						V_DrawCharacter(BASEVIDWIDTH - x - 10 - w - (skullAnimCounter/5), y,
+								'\x1C' | highlightflags, false); // left arrow
+						V_DrawCharacter(BASEVIDWIDTH - x + 2 + (skullAnimCounter/5), y,
+								'\x1D' | highlightflags, false); // right arrow
+					}
+				}
+			}
+		}
 
 		y += SMALLLINEHEIGHT;
 	}
 
 	V_DrawScaledPatch(currentMenu->x - 20, cursory, 0, (patch_t *)W_CachePatchName("M_CURSOR", PU_PATCH));
+
+	M_DoToolTips(currentMenu);
 }
 
 #undef controlheight
@@ -9838,7 +9885,7 @@ static void M_DrawLocalSkinMenu(void)
 	spriteframe_t *sprframe;
 	patch_t *patch;
 	UINT8 frame;
-	INT16 skintodisplay;
+	INT32 skintodisplay = 0;
 	UINT32 speenframe;
 	skin_t displayskin;
 
@@ -9869,12 +9916,12 @@ static void M_DrawLocalSkinMenu(void)
 	// skin 0 is default player sprite
 	skintodisplay = R_AnySkinAvailable(cv_fakelocalskin.string);
 
-	if (skintodisplay == -1)
+	if (skintodisplay < 0)
 	{
 		// ATTEMPT TO FIND REAL SKIN
 		skintodisplay = R_AnySkinAvailable(cv_skin.string);
 
-		if (skintodisplay == -1) // STILL NOTHIN? use sonic instead
+		if (skintodisplay < 0) // STILL NOTHIN? use sonic instead
 		{
 			skintodisplay = 0;
 		}
@@ -9891,24 +9938,10 @@ static void M_DrawLocalSkinMenu(void)
 	if (frame >= sprdef->numframes) // Walking animation missing
 		frame = 0; // Try to use standing frame
 
-	sprframe = &sprdef->spriteframes[frame];
-
-	//minenice's speen css, it's a piece of shit but hey
-	//patch = (patch_t *)W_CachePatchNum(sprframe->lumppat[1], PU_PATCH);
-	speenframe = (I_GetTime()*cv_skinselectspin.value/TICRATE + 1)%8;
-
-	//this is a very shitty solution for checking if a sprite needs flipping
-	//but it works
-	if ((speenframe > 4) && (sprframe->lumppat[speenframe] == sprframe->lumppat[8-speenframe]))
-	{
-		flags = V_FLIP; // This sprite is left/right flipped!
-	}
-	patch = (patch_t *)W_CachePatchNum(sprframe->lumppat[speenframe], PU_PATCH);
-
 	// draw box around guy
 	V_DrawFill(mx + 220 - (charw/2), my+54, charw, 84, 239);
+#undef charw
 
-	// draw player sprite
 	UINT8 *colormap = R_GetLocalTranslationColormap(&skins[displayskin.localnum], (displayskin.localskin ? &localskins[displayskin.localnum] : NULL), cv_playercolor.value, GTC_MENUCACHE, displayskin.localskin);
 
 	V_DrawMappedPatch(mx, my+50, 0, (patch_t *)W_CachePatchName(displayskin.facewant, PU_PATCH), colormap);
@@ -9921,13 +9954,48 @@ static void M_DrawLocalSkinMenu(void)
 	else
 		V_DrawString(mx+20, my+118, V_ALLOWLOWERCASE|highlightflags, displayskin.realname);
 
-	if (displayskin.flags & SF_HIRES)
+	// draw player sprite
+	mx += 220;
+	my += 120;
+
+#ifdef HWRENDER
+	md2_t *md2 = (displayskin.localskin ? &md2_localplayermodels[skintodisplay] : &md2_playermodels[skintodisplay]);
+
+	// if we have 3d models enabled and a model exists
+	// try to show it instead of the sprite
+	if (rendermode == render_opengl && cv_glmdls.value
+	&& !md2->error && !md2->notfound)
 	{
-		V_DrawFixedPatch((mx+220)<<FRACBITS, (my+120)<<FRACBITS, displayskin.highresscale, flags, patch, colormap);
+		const angle_t ROTATE_PER_TIC = (UINT64)ANGLE_45 * cv_skinselectspin.value / TICRATE;
+		angle_t angle = I_GetTime()*ROTATE_PER_TIC + FixedMul(cv_uncappedhud.value ? renderdeltatics : FRACUNIT, ROTATE_PER_TIC);
+		HWR_Draw2DModel(md2, mx, my, skintodisplay, (skincolors_t)cv_playercolor.value, colormap, 8*FRACUNIT/3, frame, angle);
 	}
 	else
-		V_DrawMappedPatch(mx+220, my+120, flags, patch, colormap);
-#undef charw
+#endif
+	{
+		sprframe = &sprdef->spriteframes[frame];
+
+		// minenice's speen css, it's a piece of shit but hey
+		speenframe = (I_GetTime()*cv_skinselectspin.value/TICRATE + 1)%8;
+
+		// this is a very shitty solution for checking if a sprite needs flipping
+		// but it works
+		if ((speenframe > 4) && (sprframe->lumppat[speenframe] == sprframe->lumppat[8-speenframe]))
+		{
+			flags = V_FLIP; // This sprite is left/right flipped!
+		}
+
+		patch = (patch_t *)W_CachePatchNum(sprframe->lumppat[speenframe], PU_PATCH);
+
+		if (displayskin.flags & SF_HIRES)
+		{
+			V_DrawFixedPatch(mx<<FRACBITS, my<<FRACBITS, displayskin.highresscale, flags, patch, colormap);
+		}
+		else
+		{
+			V_DrawMappedPatch(mx, my, flags, patch, colormap);
+		}
+	}
 }
 
 // Draw the video modes list, a-la-Quake

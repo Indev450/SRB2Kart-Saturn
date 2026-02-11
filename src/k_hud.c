@@ -568,7 +568,7 @@ static patch_t *kp_racefinish[6];
 static patch_t *kp_positionnum[NUMPOSNUMS][NUMPOSFRAMES];
 static patch_t *kp_winnernum[NUMPOSFRAMES];
 
-patch_t *kp_facenum[MAXPLAYERS+1];
+patch_t *kp_facenum[MAXPLAYERS+1] = {};
 static patch_t *kp_facehighlight[8];
 
 static patch_t *kp_rankbumper;
@@ -1065,7 +1065,7 @@ static void K_initKartHUD(void)
 	}
 
 	if (timeinmap > 113 || forceshowhud)
-		hudtrans = cv_translucenthud.value;
+		hudtrans = (UINT8)cv_translucenthud.value;
 	else if (timeinmap > 105)
 		hudtrans = ((((INT32)timeinmap) - 105)*cv_translucenthud.value)/(113-105);
 	else
@@ -1122,9 +1122,9 @@ void K_KartPlayerHUDUpdate(player_t *player)
 UINT8 K_GetHudColor(void)
 {
 	if (cv_colorizedhud.value && cv_colorizedhudcolor.value)
-		return cv_colorizedhudcolor.value;
+		return (UINT8)cv_colorizedhudcolor.value;
 
-	return ((stplyr && gamestate == GS_LEVEL) ? stplyr->skincolor : cv_playercolor.value);
+	return ((stplyr && gamestate == GS_LEVEL) ? stplyr->skincolor : (UINT8)cv_playercolor.value);
 }
 
 boolean K_UseColorHud(void)
@@ -1415,8 +1415,6 @@ static void K_drawKartStats(void)
 				break;
 		}
 	}
-	else
-		spdoffset = 0;
 
 	if (G_BattleGametype() && ((speedostyle != SPEEDO_DIAL) || splitscreen))
 		spdoffset += ((stplyr->kartstuff[k_bumper] ? -5 : -8));
@@ -1526,7 +1524,7 @@ static void K_drawKartItem(void)
 	{
 		localcolor = K_GetHudColor();
 
-		switch((stplyr->kartstuff[k_itemroulette] % (14*3)) / 3)
+		switch ((stplyr->kartstuff[k_itemroulette] % (14*3)) / 3)
 		{
 			// Each case is handled in threes, to give three frames of in-game time to see the item on the roulette
 			case 0: // Sneaker
@@ -2195,7 +2193,7 @@ static boolean K_drawKartPositionFaces(void)
 		return true;
 
 	if (!LUA_HudEnabled(hud_minirankings))
-		return false;	// Don't proceed but still return true for free play above if HUD is disabled.
+		return false; // Don't proceed but still return true for free play above if HUD is disabled.
 
 	for (j = 0; j < numplayersingame; j++)
 	{
@@ -4468,7 +4466,9 @@ static void K_drawLapStartAnim(void)
 		V_DrawFixedPatch(leftx, y, FRACUNIT, vflags, kp_lapanim_lap[min(progress/2, 6)], NULL);
 
 		char *lapnum = va("%02d", stplyr->laps + 1);
-		for (int i = 0; i < (int)strlen(lapnum); i++)
+		const size_t laplength = strlen(lapnum);
+
+		for (int i = 0; i < (int)laplength; i++)
 		{
 			int digit = lapnum[i] - '0';
 			int frame = min(2, progress/2 - 8 - (i*2));

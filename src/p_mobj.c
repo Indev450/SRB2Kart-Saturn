@@ -335,7 +335,7 @@ static boolean P_SetPrecipMobjState(precipmobj_t *mobj, statenum_t state)
 	mobj->tics = st->tics;
 	mobj->sprite = st->sprite;
 	mobj->frame = st->frame;
-	mobj->anim_duration = (UINT16)st->var2; // only used if FF_ANIMATE is set
+	//mobj->anim_duration = (UINT16)st->var2; // only used if FF_ANIMATE is set
 
 	return true;
 }
@@ -3237,7 +3237,22 @@ void P_DestroyRobots(void)
 // the below is chasecam only, if you're curious. check out P_CalcPostImg in p_user.c for first person
 void P_CalcChasePostImg(player_t *player, camera_t *thiscam)
 {
-	const boolean flipcam = (player->pflags & PF_FLIPCAM && !(player->pflags & PF_NIGHTSMODE) && player->mo->eflags & MFE_VERTICALFLIP);
+	boolean player_flipcam = false;
+
+	if (cv_flipcammode.value == 0)
+		player_flipcam = player->pflags & PF_FLIPCAM;
+	else
+	{
+		INT32 pnum = P_GetLocalPlayerNumForPlayer(player);
+
+		// Shouldn't happen but just in case
+		if (pnum == -1)
+			pnum = 0;
+
+		player_flipcam = cv_flipcam[pnum].value;
+	}
+
+	const boolean flipcam = (player_flipcam && !(player->pflags & PF_NIGHTSMODE) && player->mo->eflags & MFE_VERTICALFLIP);
 	UINT8 postimgtype = 0;
 
 	if (encoremode)
@@ -3591,10 +3606,10 @@ static void P_CalculatePrecipFloor(precipmobj_t *mobj)
 // Just the identification of a precip thinker. The thinker
 // should never actually be called!
 //
-void P_NullPrecipThinker(precipmobj_t *mobj)
+FUNCNORETURN void P_NullPrecipThinker(precipmobj_t *mobj)
 {
 	(void)mobj;
-	I_Assert("P_NullPrecipThinker should not be called" == 0);
+	I_Error("P_NullPrecipThinker should not be called");
 }
 
 boolean P_PrecipThinker(precipmobj_t *mobj)
@@ -3605,7 +3620,7 @@ boolean P_PrecipThinker(precipmobj_t *mobj)
 	mobj->lastThink = leveltime;
 
 	R_ResetPrecipitationMobjInterpolationState(mobj);
-	P_CycleStateAnimation((mobj_t *)mobj);
+	//P_CycleStateAnimation((mobj_t *)mobj); // if we ever want animated precip, readd a specific function which does not need casting
 
 	if (mobj->state == &states[S_RAINRETURN])
 	{
@@ -3997,7 +4012,7 @@ static void P_Boss3Thinker(mobj_t *mobj)
 			if ((UINT32)mobj->extravalue1 + TICRATE*2 < leveltime)
 			{
 				mobj->extravalue1 = (INT32)leveltime;
-				S_StartSound(0, sfx_buzz1);
+				S_StartSound(NULL, sfx_buzz1);
 			}
 
 			// If in the center, check to make sure
@@ -4616,7 +4631,7 @@ static void P_Boss7Thinker(mobj_t *mobj)
 		if (mobj->health > 0)
 			mobj->health--;
 
-		S_StartSound(0, (mobj->health) ? sfx_behurt : sfx_bedie2);
+		S_StartSound(NULL, (mobj->health) ? sfx_behurt : sfx_bedie2);
 
 		mobj->reactiontime /= 3;
 
@@ -4655,7 +4670,7 @@ static void P_Boss7Thinker(mobj_t *mobj)
 		INT32 i;
 		mobj->state->nextstate = mobj->info->painstate; // Reset
 
-		S_StartSound(0, sfx_bedeen);
+		S_StartSound(NULL, sfx_bedeen);
 
 		for (i = 0; i < MAXPLAYERS; i++)
 		{
@@ -4679,7 +4694,7 @@ static void P_Boss7Thinker(mobj_t *mobj)
 				mobj->state->nextstate = mobj->info->spawnstate;
 
 				// Laugh
-				S_StartSound(0, sfx_bewar1 + P_RandomKey(4));
+				S_StartSound(NULL, sfx_bewar1 + P_RandomKey(4));
 			}
 		}
 	}
@@ -4699,7 +4714,7 @@ static void P_Boss7Thinker(mobj_t *mobj)
 			var2 = 2*TICRATE + (80<<16);
 
 			A_LobShot(mobj);
-			S_StartSound(0, sfx_begoop);
+			S_StartSound(NULL, sfx_begoop);
 		}
 	}
 	else if (mobj->state == &states[S_BLACKEGG_SHOOT2])
@@ -4723,7 +4738,7 @@ static void P_Boss7Thinker(mobj_t *mobj)
 		S_StopSound(missile);
 
 		if (leveltime & 1)
-			S_StartSound(0, sfx_beshot);
+			S_StartSound(NULL, sfx_beshot);
 	}
 	else if (mobj->state == &states[S_BLACKEGG_JUMP1] && mobj->tics == 1)
 	{
@@ -4856,7 +4871,7 @@ static void P_Boss7Thinker(mobj_t *mobj)
 		fixed_t x,y,z;
 		mobj_t *mo2;
 
-		S_StartSound(0, sfx_befall);
+		S_StartSound(NULL, sfx_befall);
 
 		z = mobj->floorz;
 		for (j = 0; j < 2; j++)
@@ -4895,13 +4910,13 @@ static void P_Boss7Thinker(mobj_t *mobj)
 			P_DamageMobj(players[i].mo, mobj, mobj, 1);
 
 			// Laugh
-			S_StartSound(0, sfx_bewar1 + P_RandomKey(4));
+			S_StartSound(NULL, sfx_bewar1 + P_RandomKey(4));
 		}
 
 		P_SetMobjState(mobj, mobj->info->spawnstate);
 	}
 	else if (mobj->state == &states[mobj->info->deathstate] && mobj->tics == mobj->state->tics)
-		S_StartSound(0, sfx_bedie1 + (P_RandomFixed() & 1));
+		S_StartSound(NULL, sfx_bedie1 + (P_RandomFixed() & 1));
 }
 
 // Metal Sonic battle boss
@@ -6971,7 +6986,7 @@ static boolean P_MobjDeadThink(mobj_t *mobj)
 				fixed_t ns;
 				mobj_t *mo2;
 
-				i = P_RandomByte();
+				i = P_RandomByte(); // grrrrrr
 				z = mobj->subsector->sector->floorheight + ((P_RandomByte()&63)*FRACUNIT);
 
 				for (j = 0; j < 2; j++)
@@ -10019,7 +10034,7 @@ static precipmobj_t *P_SpawnPrecipMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype
 
 	mobj->x = x;
 	mobj->y = y;
-	mobj->flags = info->flags;
+	//mobj->flags = info->flags;
 
 	// do not set the state with P_SetMobjState,
 	// because action routines can not be called yet
@@ -10029,7 +10044,7 @@ static precipmobj_t *P_SpawnPrecipMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype
 	mobj->tics = st->tics;
 	mobj->sprite = st->sprite;
 	mobj->frame = st->frame; // FF_FRAMEMASK for frame, and other bits..
-	mobj->anim_duration = (UINT16)st->var2; // only used if FF_ANIMATE is set
+	//mobj->anim_duration = (UINT16)st->var2; // only used if FF_ANIMATE is set
 
 	// set subsector and/or block links
 	P_SetPrecipitationThingPosition(mobj);
@@ -10448,6 +10463,24 @@ void P_PrecipitationEffects(void)
 	}
 }
 
+mobjtype_t g_doomednum_to_mobjtype[MAXDOOMEDNUM+1] = {};
+
+void CalculateDoomednumToMobjtype(void)
+{
+	memset(g_doomednum_to_mobjtype, MT_NULL, sizeof(g_doomednum_to_mobjtype));
+
+	for (size_t i = 0; i < NUMMOBJTYPES; i++)
+	{
+		const INT32 doomednum = mobjinfo[i].doomednum;
+
+		if (doomednum > 0 && doomednum <= MAXDOOMEDNUM)
+		{
+			if (g_doomednum_to_mobjtype[doomednum] == MT_NULL)
+				g_doomednum_to_mobjtype[doomednum] = (mobjtype_t)i;
+		}
+	}
+}
+
 //
 // P_RespawnSpecials
 //
@@ -10521,17 +10554,15 @@ void P_RespawnSpecials(void)
 
 	if (mthing)
 	{
-		mobjtype_t i;
+		mobjtype_t i = MT_NULL;
 		x = mthing->x << FRACBITS;
 		y = mthing->y << FRACBITS;
 		ss = R_PointInSubsector(x, y);
 
 		// find which type to spawn
-		for (i = 0; i < NUMMOBJTYPES; i++)
-			if (mthing->type == mobjinfo[i].doomednum)
-				break;
+		i = g_doomednum_to_mobjtype[mthing->type];
 
-		if (i == NUMMOBJTYPES) // prevent creation of objects with this type -- Monster Iestyn 17/12/17
+		if (i <= MT_NULL || i >= NUMMOBJTYPES) // prevent creation of objects with this type -- Monster Iestyn 17/12/17
 		{
 			// 3D Mode start Thing is unlikely to be added to the que,
 			// so don't bother checking for that specific type
@@ -10680,7 +10711,7 @@ void P_SpawnPlayer(INT32 playernum)
 	// the dead body mobj retains the skin through the 'spritedef' override).
 	mobj->skin = &skins[p->skin];
 
-	mobj->localskin = (p->localskin ? K_GetPlayerSkin(p) : 0);
+	mobj->localskin = (p->localskin ? K_GetPlayerSkin(p) : NULL);
 	mobj->skinlocal = p->skinlocal;
 
 	mobj->health = p->health;
@@ -10959,7 +10990,7 @@ INT32 numhuntemeralds = 0;
 //
 void P_SpawnMapThing(mapthing_t *mthing)
 {
-	mobjtype_t i;
+	mobjtype_t i = MT_NULL;
 	mobj_t *mobj;
 	fixed_t x, y, z;
 	subsector_t *ss;
@@ -10972,11 +11003,9 @@ void P_SpawnMapThing(mapthing_t *mthing)
 	if (objectplacing)
 	{
 		// find which type to spawn
-		for (i = 0; i < NUMMOBJTYPES; i++)
-			if (mthing->type == mobjinfo[i].doomednum)
-				break;
+		i = g_doomednum_to_mobjtype[mthing->type];
 
-		if (i == NUMMOBJTYPES)
+		if (i <= MT_NULL || i >= NUMMOBJTYPES)
 		{
 			if (mthing->type == 3328) // 3D Mode start Thing
 				return;
@@ -11044,13 +11073,9 @@ void P_SpawnMapThing(mapthing_t *mthing)
 	}
 
 	// find which type to spawn
-	for (i = 0; i < NUMMOBJTYPES; i++)
-	{
-		if (mthing->type == mobjinfo[i].doomednum)
-			break;
-	}
+	i = g_doomednum_to_mobjtype[mthing->type];
 
-	if (i == NUMMOBJTYPES)
+	if (i <= MT_NULL || i >= NUMMOBJTYPES)
 	{
 		if (mthing->type == 3328) // 3D Mode start Thing
 			return;
@@ -11743,32 +11768,32 @@ ML_NOCLIMB : Direction not controllable
 			if (mobj->flags & MF_MONITOR)
 			{
 				// flag for strong/weak random boxes
-				if (mthing->type == mobjinfo[MT_SUPERRINGBOX].doomednum || mthing->type == mobjinfo[MT_PRUP].doomednum ||
-					mthing->type == mobjinfo[MT_SNEAKERTV].doomednum || mthing->type == mobjinfo[MT_INV].doomednum ||
-					mthing->type == mobjinfo[MT_WHITETV].doomednum || mthing->type == mobjinfo[MT_GREENTV].doomednum ||
-					mthing->type == mobjinfo[MT_YELLOWTV].doomednum || mthing->type == mobjinfo[MT_BLUETV].doomednum ||
-					mthing->type == mobjinfo[MT_BLACKTV].doomednum || mthing->type == mobjinfo[MT_PITYTV].doomednum ||
-					mthing->type == mobjinfo[MT_RECYCLETV].doomednum || mthing->type == mobjinfo[MT_MIXUPBOX].doomednum)
+				if (i == MT_SUPERRINGBOX || i == MT_PRUP    ||
+					i == MT_SNEAKERTV    || i == MT_INV     ||
+					i == MT_WHITETV      || i == MT_GREENTV ||
+					i == MT_YELLOWTV     || i == MT_BLUETV  ||
+					i == MT_BLACKTV      || i == MT_PITYTV  ||
+					i == MT_RECYCLETV    || i == MT_MIXUPBOX)
 						mobj->flags2 |= MF2_AMBUSH;
 			}
-
-			else if (mthing->type != mobjinfo[MT_AXIS].doomednum &&
-				mthing->type != mobjinfo[MT_AXISTRANSFER].doomednum &&
-				mthing->type != mobjinfo[MT_AXISTRANSFERLINE].doomednum &&
-				mthing->type != mobjinfo[MT_NIGHTSBUMPER].doomednum &&
-				mthing->type != mobjinfo[MT_STARPOST].doomednum)
+			else if (
+				i != MT_AXIS &&
+				i != MT_AXISTRANSFER &&
+				i != MT_AXISTRANSFERLINE &&
+				i != MT_NIGHTSBUMPER &&
+				i != MT_STARPOST)
 				mobj->flags2 |= MF2_AMBUSH;
 		}
 
 		if (mthing->options & MTF_OBJECTSPECIAL)
 		{
 			// flag for strong/weak random boxes
-			if (mthing->type == mobjinfo[MT_SUPERRINGBOX].doomednum || mthing->type == mobjinfo[MT_PRUP].doomednum ||
-				mthing->type == mobjinfo[MT_SNEAKERTV].doomednum || mthing->type == mobjinfo[MT_INV].doomednum ||
-				mthing->type == mobjinfo[MT_WHITETV].doomednum || mthing->type == mobjinfo[MT_GREENTV].doomednum ||
-				mthing->type == mobjinfo[MT_YELLOWTV].doomednum || mthing->type == mobjinfo[MT_BLUETV].doomednum ||
-				mthing->type == mobjinfo[MT_BLACKTV].doomednum || mthing->type == mobjinfo[MT_PITYTV].doomednum ||
-				mthing->type == mobjinfo[MT_RECYCLETV].doomednum || mthing->type == mobjinfo[MT_MIXUPBOX].doomednum)
+			if (i == MT_SUPERRINGBOX || i == MT_PRUP    ||
+				i == MT_SNEAKERTV    || i == MT_INV     ||
+				i == MT_WHITETV      || i == MT_GREENTV ||
+				i == MT_YELLOWTV     || i == MT_BLUETV  ||
+				i == MT_BLACKTV      || i == MT_PITYTV  ||
+				i == MT_RECYCLETV    || i == MT_MIXUPBOX)
 					mobj->flags2 |= MF2_STRONGBOX;
 
 			// Requires you to be in bonus time to activate
@@ -12329,8 +12354,9 @@ mobj_t *P_SPMAngle(mobj_t *source, mobjtype_t type, angle_t angle, UINT8 allowai
 //
 void P_FlashPal(player_t *pl, UINT16 type, UINT16 duration)
 {
-	if (!pl)
+	if (!pl || cv_reducevfx.value) // no palette flashing with reducevfx
 		return;
+
 	pl->flashcount = duration;
 	pl->flashpal = type;
 }

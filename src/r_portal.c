@@ -246,7 +246,6 @@ static boolean TrimVisplaneBounds(const visplane_t* plane, INT16* start, INT16* 
 	if (!(*start < *end))
 		return true;
 
-
 	/** Trims a visplane's horizontal gap to match its render area.
 	 *
 	 * Visplanes' minx/maxx may sometimes exceed the area they're

@@ -136,18 +136,9 @@ void LUA_HUD_DestroyDrawList(huddrawlist_h list)
 {
 	if (list == NULL) return;
 
-	if (list->items)
-	{
-		Z_Free(list->items);
-	}
-	if (list->olditems)
-	{
-		Z_Free(list->olditems);
-	}
-	if (list->strbuf)
-	{
-		Z_Free(list->strbuf);
-	}
+	Z_Free(list->items);
+	Z_Free(list->olditems);
+	Z_Free(list->strbuf);
 	Z_Free(list);
 }
 

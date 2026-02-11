@@ -12,13 +12,13 @@
 #ifndef __M_EMOTES__
 #define __M_EMOTES__
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include "doomdef.h"
 #include "m_fixed.h"
 #include "command.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 extern consvar_t cv_emotes;
 

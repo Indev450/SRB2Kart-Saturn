@@ -648,17 +648,6 @@ static menuitem_t OP_ControlsMenu[] =
 	{IT_SUBMENU | IT_STRING, NULL, "Mouse Options...",  &OP_MouseOptionsDef,    55},
 
 	{IT_STRING | IT_CVAR, NULL, "Controls per key",     &cv_controlperkey,      75},
-
-	{IT_STRING | IT_CVAR, NULL, "Digital turn easing (P1)",  &cv_turnsmooth[0],         85},
-	{IT_STRING | IT_CVAR, NULL, "Digital turn easing (P2)",  &cv_turnsmooth[1],         95},
-	{IT_STRING | IT_CVAR, NULL, "Digital turn easing (P3)",  &cv_turnsmooth[2],         105},
-	{IT_STRING | IT_CVAR, NULL, "Digital turn easing (P4)",  &cv_turnsmooth[3],         115},
-
-	// i hate our menus sincerly
-	{IT_STRING | IT_CVAR, NULL, "Lite Steer (P1)",      &cv_litesteer[0],       135},
-	{IT_STRING | IT_CVAR, NULL, "Lite Steer (P2)",      &cv_litesteer[1],       145},
-	{IT_STRING | IT_CVAR, NULL, "Lite Steer (P3)",      &cv_litesteer[2],       155},
-	{IT_STRING | IT_CVAR, NULL, "Lite Steer (P4)",      &cv_litesteer[3],       165},
 };
 
 static const char* OP_ControlsTooltips[] =
@@ -669,21 +658,19 @@ static const char* OP_ControlsTooltips[] =
 	"Setup player 4 controls.",
 	"Options for mouse control.",
 	"Allowed amount of controls per key.",
-	"Turn smoothing for non-analog turning (Player 1).",
-	"Turn smoothing for non-analog turning (Player 2).",
-	"Turn smoothing for non-analog turning (Player 3).",
-	"Turn smoothing for non-analog turning (Player 4).",
-
-	"Hold DOWN on d-pad/keyboard for shallow turns (Player 1).",
-	"Hold DOWN on d-pad/keyboard for shallow turns (Player 2).",
-	"Hold DOWN on d-pad/keyboard for shallow turns (Player 3).",
-	"Hold DOWN on d-pad/keyboard for shallow turns (Player 4).",
 };
 
 static menuitem_t OP_AllControlsMenu[] =
 {
 	{IT_SUBMENU|IT_STRING, NULL, "Gamepad Options...", &OP_Joystick1Def, 0},
 	{IT_CALL|IT_STRING, NULL, "Reset to defaults", M_ResetControls, 8},
+
+	{IT_HEADER, NULL, "Control Options", NULL, 0},
+	{IT_SPACE, NULL, NULL, NULL, 0},
+
+	// Cvars are set in M_SetupControlsMenu
+	{IT_STRING|IT_CVAR, NULL, "Lite Steer", &cv_litesteer[0], 18},
+	{IT_STRING|IT_CVAR, NULL, "Digital turn easing",  &cv_turnsmooth[0],         26},
 
 	//{IT_SPACE, NULL, NULL, NULL, 0},
 	{IT_HEADER, NULL, "Gameplay Controls", NULL, 0},
@@ -731,6 +718,17 @@ static menuitem_t OP_AllControlsMenu[] =
 	{IT_CONTROL, NULL, "Custom Action 1",       M_ChangeControl, gc_custom1    },
 	{IT_CONTROL, NULL, "Custom Action 2",       M_ChangeControl, gc_custom2    },
 	{IT_CONTROL, NULL, "Custom Action 3",       M_ChangeControl, gc_custom3    },
+};
+
+// Has to be same length as OP_AllControlsMenu, but otherwise its mostly empty
+static const char* OP_AllControlsTooltips[sizeof(OP_AllControlsMenu)/sizeof(OP_AllControlsMenu[0])] = {
+	NULL,
+	NULL,
+	NULL,
+	NULL,
+	"Hold DOWN on d-pad/keyboard for shallow turns.",
+	"Turn smoothing for non-analog turning.",
+	// The rest is null, for now
 };
 
 #define OP_JOYMENU(pnum) \
@@ -988,7 +986,7 @@ static const char* OP_ExpTooltips[] =
 	"Skips rendering frames if game logic takes too long\npreventing gameplay issues during performance drops.", // idk im shit as describing things
 	"Different methods of scaling the votescreen backgrounds.",
 #ifdef HWRENDER
-	"Should the game do Screen Textures? Provides a good boost to frames\nat the cost of some visual effects not working when disabled.",
+	"Disabling Screen Textures may result in a performance boost\nbut will break certain effects.\nScreen textures are required at resolutions lower than your desktop resolution!"
 #ifdef USE_FBO_OGL
 	"Allows the game to downsample from a higher resolution\nthan your display in OpenGL renderer mode.\nRequires a GPU with atleast OpenGL 2.1 support.",
 #endif
@@ -1207,6 +1205,10 @@ static menuitem_t OP_FocusOptionsMenu[] =
 	{IT_STRING|IT_CVAR,	NULL, "Show \"FOCUS LOST\"",						&cv_showfocuslost,		   100},
 
 	{IT_STRING|IT_CVAR,	NULL, "Visible Mouse",								&cv_mousevisible,	       120},
+
+	{IT_STRING|IT_CVAR,	NULL, "Gamepad LED Color While Unfocused ",			&cv_gamepadledifunfocused, 	140},
+	{IT_STRING|IT_CVAR,	NULL, "Gamepad Rumble While Unfocused",				&cv_rumbleifunfocused, 	    150},
+
 };
 
 static const char* OP_FocusOptionsTooltips[] =
@@ -1218,6 +1220,8 @@ static const char* OP_FocusOptionsTooltips[] =
 	"Set manual framerate cap while the game is unfocused.",
 	"Should the FOCUS LOST window appear\n while the game is unfocused?",
 	"Displays the mouse cursor while the game is in focus.",
+	"Should gamepad LED indicator change color when unfocused?",
+	"Should gamepad rumble apply when unfocused?",
 };
 
 static menuitem_t OP_DataOptionsMenu[] =
@@ -1341,16 +1345,19 @@ static menuitem_t OP_CamOptionsMenu[] =
 
 	{IT_STRING | IT_CVAR | IT_CV_BIGFLOAT,	NULL,	"Field of View",&cv_fov,				  	 30},
 
-	{IT_STRING | IT_SUBMENU,	NULL, "Player 1 Camera options...",	&OP_Player1CamOptionsDef,	 50},
-	{IT_STRING | IT_SUBMENU,	NULL, "Player 2 Camera options...",	&OP_Player2CamOptionsDef,	 60},
-	{IT_STRING | IT_SUBMENU,	NULL, "Player 3 Camera options...",	&OP_Player3CamOptionsDef,	 70},
-	{IT_STRING | IT_SUBMENU,	NULL, "Player 4 Camera options...",	&OP_Player4CamOptionsDef,	 80},
+	{IT_STRING | IT_CVAR,                   NULL,   "Flipcam Mode", &cv_flipcammode,             40},
+
+	{IT_STRING | IT_SUBMENU,	NULL, "Player 1 Camera options...",	&OP_Player1CamOptionsDef,	 60},
+	{IT_STRING | IT_SUBMENU,	NULL, "Player 2 Camera options...",	&OP_Player2CamOptionsDef,	 70},
+	{IT_STRING | IT_SUBMENU,	NULL, "Player 3 Camera options...",	&OP_Player3CamOptionsDef,	 80},
+	{IT_STRING | IT_SUBMENU,	NULL, "Player 4 Camera options...",	&OP_Player4CamOptionsDef,	 90},
 };
 
 static const char* OP_CamOptionsTooltips[] =
 {
 	NULL,
 	"Player field of view.",
+	"Change flipcam mode.\nDisplayplayer - use currently viewed player option.\nLocal - use local flipcam toggle option.",
 	NULL,
 	NULL,
 	NULL,
@@ -1632,13 +1639,10 @@ static menuitem_t OP_AccessibilityMenu[] =
 	{IT_STRING|IT_CVAR|IT_CV_SLIDER,   NULL,   "Saturation",                     &cv_globalsaturation,   25},
 	{IT_SUBMENU|IT_STRING,             NULL,   "Video Color Settings...",        &OP_ColorOptionsDef,    30},
 
-	{IT_STRING|IT_CVAR,                NULL,   "Midnight Channel Flicker",       &cv_lessflicker,        35},
+	{IT_STRING|IT_CVAR,                NULL,   "Reduce Effects",                 &cv_reducevfx,          35},
+	{IT_STRING|IT_CVAR,                NULL,   "Midnight Channel Flicker",       &cv_lessflicker,        40}, // obsolete now? or still better be a seperate toggle?
 
-	{IT_STRING|IT_CVAR,                NULL,   "Minimum Sector Brightness",      &cv_secbright,          40},
-
-#ifdef HWRENDER
-	{IT_STRING|IT_CVAR,                NULL,   "Screen Textures",                &cv_glscreentextures,   45},
-#endif
+	{IT_STRING|IT_CVAR,                NULL,   "Minimum Sector Brightness",      &cv_secbright,          45},
 
 	{IT_STRING|IT_CVAR,                NULL,   "Water Surface Ripples",          &cv_ripplewater,        50},
 
@@ -1646,12 +1650,19 @@ static menuitem_t OP_AccessibilityMenu[] =
 
 	{IT_STRING|IT_CVAR,                NULL,   "Quake Screenshakes",             &cv_screenquake,        60},
 
-	{IT_CALL|IT_STRING,                NULL,   "Camera Options...",              M_CameraMenu,      65},
+	{IT_CALL|IT_STRING,                NULL,   "Camera Options...",              M_CameraMenu,           65},
 
 	{IT_HEADER, NULL, "Audio", NULL, 75},
 
 	{IT_STRING|IT_CVAR,                NULL,   "Reverse L/R Channels",           &stereoreverse,         85},
 	{IT_STRING|IT_CVAR,                NULL,   "Same Sound Limit",               &cv_samesoundlimit,     90},
+
+	{IT_HEADER, NULL, "Controls", NULL, 100},
+
+	{IT_STRING|IT_CVAR,                NULL,   "Automatic Acceleration (P1)",    &cv_autoaccel[0],       110},
+	{IT_STRING|IT_CVAR,                NULL,   "Automatic Acceleration (P2)",    &cv_autoaccel[1],       115},
+	{IT_STRING|IT_CVAR,                NULL,   "Automatic Acceleration (P3)",    &cv_autoaccel[2],       120},
+	{IT_STRING|IT_CVAR,                NULL,   "Automatic Acceleration (P4)",    &cv_autoaccel[3],       125},
 };
 
 static const char* OP_AccessibilityTooltips[] =
@@ -1661,11 +1672,9 @@ static const char* OP_AccessibilityTooltips[] =
 	"Gamma (brightness) of the game.",
 	"Saturation of the game.",
 	"Advanced color settings of the game.",
+	"Reduces or disables certain effects players might be sensitive to\nSuch as flashing, flickering, certain screen effects and more.",
 	"Disables the flicker effect on Midnight Channel.",
 	"Sets minimum sector brightness, useful for dark areas",
-#ifdef HWRENDER
-	"Should the game do Screen Textures? Provides a good boost to frames\nat the cost of some visual effects not working when disabled.",
-#endif
 	"Toggles the ripple effect on water surfaces",
 	"Fades other Players that are close to the camera in and out",
 	"Toggles the screen shake effect during Earthquakes",
@@ -1673,6 +1682,11 @@ static const char* OP_AccessibilityTooltips[] =
 	NULL,
 	"Reverse left and right channels of audio.",
 	"Change how often the same Sound is allowed to play at once.",
+	NULL,
+	"Automatically hold acceleration button (Player 1).",
+	"Automatically hold acceleration button (Player 2).",
+	"Automatically hold acceleration button (Player 3).",
+	"Automatically hold acceleration button (Player 4).",
 };
 
 static menuitem_t OP_SaturnMenu[] =
@@ -2480,7 +2494,7 @@ menu_t OP_MainDef =
 menu_t OP_ControlsDef     = DEFAULTMENUSTYLE("M_CONTRO", OP_ControlsMenu, &OP_MainDef, 40, 15, OP_ControlsTooltips);
 //WTF
 menu_t OP_MouseOptionsDef = DEFAULTMENUSTYLE("M_CONTRO", OP_MouseOptionsMenu, &OP_ControlsDef, 60, 30, OP_MouseTooltips);
-menu_t OP_AllControlsDef  = CONTROLMENUSTYLE(OP_AllControlsMenu, &OP_ControlsDef);
+menu_t OP_AllControlsDef  = CONTROLMENUSTYLE(OP_AllControlsMenu, &OP_ControlsDef, OP_AllControlsTooltips);
 menu_t OP_Joystick1Def    = DEFAULTSCROLLSTYLE("M_CONTRO", OP_Joystick1Menu, &OP_AllControlsDef, 30, 36, NULL);
 menu_t OP_Joystick2Def    = DEFAULTSCROLLSTYLE("M_CONTRO", OP_Joystick2Menu, &OP_AllControlsDef, 30, 36, NULL);
 menu_t OP_Joystick3Def    = DEFAULTSCROLLSTYLE("M_CONTRO", OP_Joystick3Menu, &OP_AllControlsDef, 30, 36, NULL);

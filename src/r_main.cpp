@@ -182,6 +182,9 @@ consvar_t cv_flipcam[MAXSPLITSCREENPLAYERS] = {
 	{"flipcam4", "No", CV_SAVE|CV_CALL|CV_NOINIT, CV_YesNo, FlipCam4_OnChange, 0, NULL, NULL, 0, 0, NULL}
 };
 
+static CV_PossibleValue_t flipcammode_cons_t[] = {{0, "Displayplayer"}, {1, "Local"}, {0, NULL}};
+consvar_t cv_flipcammode = {"flipcammode",  "Displayplayer", CV_SAVE, flipcammode_cons_t, NULL,  0, NULL, NULL, 0, 0, NULL};
+
 consvar_t cv_shadow          = {"shadow", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_shadowoffs      = {"offsetshadows", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_skybox          = {"skybox", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
@@ -922,11 +925,11 @@ void R_ExecuteSetViewSize(void)
 	viewheight = vid.height;
 
 	if (splitscreen)
+	{
 		viewheight >>= 1;
 
-	if (splitscreen > 1)
-	{
-		viewwidth >>= 1;
+		if (splitscreen > 1)
+			viewwidth >>= 1;
 	}
 
 	centerx = viewwidth/2;
@@ -953,13 +956,9 @@ void R_ExecuteSetViewSize(void)
 		screenheightarray[i] = (INT16)viewheight;
 	}
 
-	if (ds_su)
-		Z_Free(ds_su);
-	if (ds_sv)
-		Z_Free(ds_sv);
-	if (ds_sz)
-		Z_Free(ds_sz);
-
+	Z_Free(ds_su);
+	Z_Free(ds_sv);
+	Z_Free(ds_sz);
 	ds_su = ds_sv = ds_sz = NULL;
 
 	memset(scalelight, 0xFF, sizeof(scalelight));
@@ -1015,8 +1014,8 @@ static void R_InitViewMapping(void)
 
 		for (INT32 i = 0; i < j; i++)
 		{
-			fixed_t dy = (i - viewheight*8)<<FRACBITS;
-			dy = FixedMul(abs(dy), fovtan);
+			fixed_t dy = abs(i - viewheight*8) << FRACBITS;
+			dy = FixedMul(dy, fovtan);
 			yslopetab[i] = FixedDiv(centerx*FRACUNIT, dy);
 		}
 	}
@@ -1084,7 +1083,7 @@ subsector_t *R_IsPointInSubsector(fixed_t x, fixed_t y)
 	ret = &subsectors[nodenum & ~NF_SUBSECTOR];
 	for (i = 0; i < ret->numlines; i++)
 		if (P_PointOnLineSide(x, y, segs[ret->firstline + i].linedef) != segs[ret->firstline + i].side)
-			return 0;
+			return NULL;
 
 	return ret;
 }
@@ -1545,6 +1544,8 @@ void R_RegisterEngineStuff(void)
 	{
 		CV_RegisterVar(&cv_flipcam[i]);
 	}
+
+	CV_RegisterVar(&cv_flipcammode);
 
 	// Enough for dedicated server
 	if (dedicated)

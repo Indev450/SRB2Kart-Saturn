@@ -14,10 +14,6 @@
 #ifndef __P_LOCAL__
 #define __P_LOCAL__
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include "command.h"
 #include "d_player.h"
 #include "d_think.h"
@@ -27,6 +23,10 @@ extern "C" {
 #include "r_defs.h"
 #include "p_maputl.h"
 #include "doomstat.h" // MAXSPLITSCREENPLAYERS
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #define FLOATSPEED (FRACUNIT*4)
 
@@ -271,6 +271,9 @@ extern size_t iquehead, iquetail;
 extern consvar_t cv_gravity;
 
 void P_RespawnSpecials(void);
+
+extern mobjtype_t g_doomednum_to_mobjtype[MAXDOOMEDNUM+1];
+void CalculateDoomednumToMobjtype(void);
 
 mobj_t *P_AllocateMobj(void);
 mobj_t *P_SpawnMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type);

@@ -497,7 +497,9 @@ static void HU_removeChatText_Log(void)
 	{
 		chat_log[i] = chat_log[i+1];
 	}
+
 	chat_nummsg_log--; // lost 1 msg.
+	chat_log[chat_nummsg_log] = NULL;
 }
 
 static void Chatlogsize_OnChange(void)
@@ -516,6 +518,7 @@ static void Chatlogsize_OnChange(void)
 	if (new_chat_log == NULL)
 	{
         free(chat_log);
+		chat_log = NULL;
 		return;
 	}
 	chat_log = new_chat_log;
@@ -596,12 +599,12 @@ static void DoSayCommand(SINT8 target, size_t usedargs, UINT8 flags)
 	}
 
 	// Only servers/admins can CSAY.
-	if(!server && !(IsPlayerAdmin(consoleplayer)))
+	if (!server && !(IsPlayerAdmin(consoleplayer)))
 		flags &= ~HU_CSAY;
 
 	// We handle HU_SERVER_SAY, not the caller.
 	flags &= ~HU_SERVER_SAY;
-	if(dedicated && !(flags & HU_CSAY))
+	if (dedicated && !(flags & HU_CSAY))
 		flags |= HU_SERVER_SAY;
 
 	buf[0] = target;
@@ -615,17 +618,20 @@ static void DoSayCommand(SINT8 target, size_t usedargs, UINT8 flags)
 		strlcat(msg, COM_Argv(ix + usedargs), msgspace);
 	}
 
-	if (strlen(msg) > 4 && strnicmp(msg, "/pm", 3) == 0) // used /pm
+	const size_t msglength = strlen(msg);
+
+	if (msglength > 4 && strnicmp(msg, "/pm", 3) == 0) // used /pm
 	{
 		// what we're gonna do now is check if the node exists
 		// with that logic, characters 4 and 5 are our numbers:
 		const char *newmsg;
 		INT32 spc = 1; // used if nodenum[1] is a space.
-		char *nodenum = (char*) malloc(3);
+		CLEANUP(pfree) char *nodenum = (char*) malloc(3);
 		memcpy(nodenum, msg+3, 2);
 		nodenum[2] = '\0';
+
 		// check for undesirable characters in our "number"
-		if 	(((nodenum[0] < '0') || (nodenum[0] > '9')) || ((nodenum[1] < '0') || (nodenum[1] > '9')))
+		if (((nodenum[0] < '0') || (nodenum[0] > '9')) || ((nodenum[1] < '0') || (nodenum[1] > '9')))
 		{
 			// check if nodenum[1] is a space
 			if (nodenum[1] == ' ')
@@ -634,23 +640,21 @@ static void DoSayCommand(SINT8 target, size_t usedargs, UINT8 flags)
 			else
 			{
 				HU_AddChatText("\x82NOTICE: \x80Invalid command format. Correct format is \'/pm<node> \'.", false);
-				free(nodenum);
 				return;
 			}
 		}
+
 		// I'm very bad at C, I swear I am, additional checks eww!
 		if (spc != 0)
 		{
 			if (msg[5] != ' ')
 			{
 				HU_AddChatText("\x82NOTICE: \x80Invalid command format. Correct format is \'/pm<node> \'.", false);
-				free(nodenum);
 				return;
 			}
 		}
 
 		target = atoi((const char*) nodenum); // turn that into a number
-		free(nodenum);
 		//CONS_Printf("%d\n", target);
 
 		// check for target player, if it doesn't exist then we can't send the message!
@@ -661,12 +665,13 @@ static void DoSayCommand(SINT8 target, size_t usedargs, UINT8 flags)
 			HU_AddChatText(va("\x82NOTICE: \x80Player %d does not exist.", target), false); // same
 			return;
 		}
+
 		buf[0] = target;
 		newmsg = msg+5+spc;
 		strlcpy(msg, newmsg, HU_MAXMSGLEN + 1);
 	}
 
-	SendNetXCmd(XD_SAY, buf, strlen(msg) + 1 + msg-buf);
+	SendNetXCmd(XD_SAY, buf, msglength + 1 + msg-buf);
 }
 
 /** Send a message to everyone.
@@ -917,10 +922,12 @@ static void Got_Saycmd(const UINT8 **p, INT32 playernum)
 		return;
 	}
 
+	const size_t msglength = strlen(msg);
+
 	//check for invalid characters (0x80 or above)
 	{
 		size_t i;
-		const size_t j = strlen(msg);
+		const size_t j = msglength;
 		for (i = 0; i < j; i++)
 		{
 			if (msg[i] & 0x80)
@@ -967,7 +974,7 @@ static void Got_Saycmd(const UINT8 **p, INT32 playernum)
 	}
 
 	// Handle "/me" actions, but only in messages to everyone.
-	if (target == 0 && strlen(msg) > 4 && strnicmp(msg, "/me ", 4) == 0)
+	if (target == 0 && msglength > 4 && strnicmp(msg, "/me ", 4) == 0)
 	{
 		msg += 4;
 		action = true;
@@ -1068,8 +1075,7 @@ static void Got_Saycmd(const UINT8 **p, INT32 playernum)
 
 		HU_AddChatText(va(fmt2, prefix, cstart, dispname, textcolor, msg), cv_chatnotifications.value); // add to chat
 
-		if (tempchar)
-			Z_Free(tempchar);
+		Z_Free(tempchar);
 	}
 #ifdef _DEBUG
 	// I just want to point out while I'm here that because the data is still
@@ -1149,10 +1155,12 @@ static boolean HU_clearChatSpaces(void)
 	size_t i = 0; // Used to just check our message
 	char c; // current character we're iterating.
 	boolean nothingbutspaces = true;
+	const size_t chatlength = strlen(w_chat_buf);
 
-	for (; i < strlen(w_chat_buf); i++) // iterate through message and eradicate all spaces that don't belong.
+	for (; i < chatlength; i++) // iterate through message and eradicate all spaces that don't belong.
 	{
 		c = w_chat_buf[i];
+
 		if (!c)
 			break; // if there's nothing, it's safe to assume our message has ended, so let's not waste any more time here.
 
@@ -1161,6 +1169,7 @@ static boolean HU_clearChatSpaces(void)
 			nothingbutspaces = false;
 		}
 	}
+
 	return nothingbutspaces;
 }
 
@@ -1207,11 +1216,11 @@ static void HU_SendChatMessage(void)
 		return;
 	}
 
-	size_t len = strlen(msg);
+	const size_t msglength = strlen(msg);
 
-	if (len >= 5 && strnicmp(msg, "/mute", 5) == 0) // Used /mute
+	if (msglength >= 5 && strnicmp(msg, "/mute", 5) == 0) // Used /mute
 	{
-		if (len > 6)
+		if (msglength > 6)
 			DoMute(msg+6);
 		else
 			HU_AddChatText("\x82NOTICE: \x80Usage: /mute <name|node>", false);
@@ -1219,7 +1228,7 @@ static void HU_SendChatMessage(void)
 		return;
 	}
 
-	if (len > 4 && strnicmp(msg, "/pm", 3) == 0) // used /pm
+	if (msglength > 4 && strnicmp(msg, "/pm", 3) == 0) // used /pm
 	{
 		INT32 spc = 1; // used if nodenum[1] is a space.
 		const char *newmsg;
@@ -1477,6 +1486,7 @@ static char *CHAT_WordWrap(INT32 x, INT32 w, INT32 option, const char *string)
 			x = 0;
 		}
 	}
+
 	return newstring;
 }
 
@@ -1515,7 +1525,7 @@ static void HU_drawMiniChat(void)
 		emote_t *emote = NULL;
 		int emotelen = 0;
 
-		while(msg[j]) // iterate through msg
+		while (msg[j]) // iterate through msg
 		{
 			if (msg[j] < HU_FONTSTART) // don't draw
 			{
@@ -1547,19 +1557,21 @@ static void HU_drawMiniChat(void)
 			{
 				j++;
 			}
+
 			prev_linereturn = false;
 			dx += charwidth;
+
 			if (dx >= boxw)
 			{
 				dx = 0;
 				linescount += 1;
 			}
 		}
+
 		dy = 0;
 		dx = 0;
 		msglines += linescount+1;
-		if (msg)
-			Z_Free(msg);
+		Z_Free(msg);
 	}
 
 	y = chaty - charheight*(msglines+1);
@@ -1591,7 +1603,7 @@ static void HU_drawMiniChat(void)
 		emote_t *emote = NULL;
 		int emotelen = 0;
 
-		while(msg[j]) // iterate through msg
+		while (msg[j]) // iterate through msg
 		{
 			if (msg[j] < HU_FONTSTART) // don't draw
 			{
@@ -1636,16 +1648,17 @@ static void HU_drawMiniChat(void)
 
 			dx += charwidth;
 			prev_linereturn = false;
+
 			if (dx >= boxw)
 			{
 				dx = 0;
 				dy += charheight;
 			}
 		}
+
 		dy += charheight;
 		dx = 0;
-		if (msg)
-			Z_Free(msg);
+		Z_Free(msg);
 	}
 
 	// decrement addy and make that shit smooth:
@@ -1697,7 +1710,7 @@ static void HU_drawChatLog(INT32 offset)
 
 	V_DrawFillConsoleMap(chatx, chat_topy, boxw, boxh*charheight +2, 239|V_SNAPTOBOTTOM|V_SNAPTOLEFT); // log box
 
-	for (i=0; i<chat_nummsg_log; i++) // iterate through our chatlog
+	for (i = 0; i < chat_nummsg_log; i++) // iterate through our chatlog
 	{
 		INT32 clrflag = 0;
 		INT32 j = 0;
@@ -1706,7 +1719,7 @@ static void HU_drawChatLog(INT32 offset)
 		emote_t *emote = NULL;
 		int emotelen = 0;
 
-		while(msg[j]) // iterate through msg
+		while (msg[j]) // iterate through msg
 		{
 			if (msg[j] < HU_FONTSTART) // don't draw
 			{
@@ -1751,10 +1764,10 @@ static void HU_drawChatLog(INT32 offset)
 				dy += charheight;
 			}
 		}
+
 		dy += charheight;
 		dx = 0;
-		if (msg)
-			Z_Free(msg);
+		Z_Free(msg);
 	}
 
 	if (((chat_scroll >= chat_maxscroll) || (chat_scrollmedown)) && !(justscrolleddown || justscrolledup || chat_scrolltime)) // was already at the bottom of the page before new maxscroll calculation and was NOT scrolling.
@@ -1991,7 +2004,7 @@ static void HU_DrawChat(void)
 			longest_name_length = max(longest_name_length, strlen(player_names[i]));
 		}
 
-		for(i = 0; i < MAXPLAYERS; i++)
+		for (i = 0; i < MAXPLAYERS; i++)
 		{
 			if (!playeringame[i])
 				continue;

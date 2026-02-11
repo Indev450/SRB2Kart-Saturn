@@ -15,6 +15,8 @@
 #include "r_local.h"
 #include "r_sky.h"
 
+#include <algorithm>
+
 #include "r_portal.h"
 #include "r_splats.h"
 #include "r_fps.h" // newview
@@ -2229,12 +2231,12 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 			lowcutslope  = std::max(worldbottomslope, worldlowslope) + viewz;
 			highcutslope = std::min(worldtopslope, worldhighslope) + viewz;
 
-			auto check_fof_offscreen = [&](ffloor_t* rover, INT32 bottom, INT32 bottomslope, INT32 top, INT32 topslope)
+			auto check_fof_offscreen = [&](ffloor_t* rrover, INT32 bottom, INT32 bottomslope, INT32 top, INT32 topslope)
 			{
-				return ((P_GetFFloorTopZAt    (rover, segleft .x, segleft .y) <= bottom      + viewz
-					&&   P_GetFFloorTopZAt    (rover, segright.x, segright.y) <= bottomslope + viewz)
-					|| ( P_GetFFloorBottomZAt (rover, segleft .x, segleft .y) >= top         + viewz
-					&&   P_GetFFloorBottomZAt (rover, segright.x, segright.y) >= topslope    + viewz));
+				return ((P_GetFFloorTopZAt    (rrover, segleft .x, segleft .y) <= bottom      + viewz
+					&&   P_GetFFloorTopZAt    (rrover, segright.x, segright.y) <= bottomslope + viewz)
+					|| ( P_GetFFloorBottomZAt (rrover, segleft .x, segleft .y) >= top         + viewz
+					&&   P_GetFFloorBottomZAt (rrover, segright.x, segright.y) >= topslope    + viewz));
 			};
 
 			if (frontsector->ffloors && backsector->ffloors)
@@ -2878,7 +2880,7 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 	if (markceiling)
 	{
 		if (ceilingplane) //SoM: 3/29/2000: Check for null ceiling planes
-			ceilingplane = R_CheckPlane (ceilingplane, rw_x, rw_stopx-1);
+			ceilingplane = R_CheckPlane(ceilingplane, rw_x, rw_stopx-1);
 		else
 			markceiling = false;
 
@@ -2892,7 +2894,7 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 	if (markfloor)
 	{
 		if (floorplane) //SoM: 3/29/2000: Check for null planes
-			floorplane = R_CheckPlane (floorplane, rw_x, rw_stopx-1);
+			floorplane = R_CheckPlane(floorplane, rw_x, rw_stopx-1);
 		else
 			markfloor = false;
 

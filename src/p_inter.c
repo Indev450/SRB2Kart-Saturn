@@ -2420,7 +2420,6 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 			{
 				player->kartstuff[k_sneakertimer] = 0;
 				K_SpinPlayer(player, source, 1, inflictor, false);
-				damage = player->mo->health - 1;
 				P_RingDamage(player, inflictor, source);
 				P_PlayerRingBurst(player, 5);
 

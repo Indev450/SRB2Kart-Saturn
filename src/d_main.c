@@ -80,6 +80,31 @@
 
 #include "lua_script.h"
 
+/* Manually defined asset hashes for non-CMake builds
+ * Last updated 2015 / 05 / 03 - SRB2 v2.1.15 - srb2.srb
+ * Last updated 2018 / 12 / 23 - SRB2 v2.1.22 - patch.dta
+ * Last updated 2019 / 01 / 18 - Kart v1.0.2 - Main assets
+ * Last updated 2020 / 08 / 30 - Kart v1.3 - patch.kart
+ * Last updated 2022 / 08 / 16 - Kart v1.4 - Main assets
+ * Last updated 2022 / 08 / 19 - Kart v1.5 - gfx.kart
+ * Last updated 2022 / 11 / 01 - Kart v1.6 - gfx.kart, maps.kart
+ */
+
+// Base SRB2 hashes
+#define ASSET_HASH_SRB2_SRB      "c1b9577687f8a795104aef4600720ea7"
+#ifdef USE_PATCH_DTA
+#define ASSET_HASH_PATCH_DTA     "b04fd9624bfd94dc96dcf4f400f7deb4"
+#endif
+
+// SRB2Kart-specific hashes
+#define ASSET_HASH_GFX_KART      "06f86ee16136eb8a7043b15001797034"
+#define ASSET_HASH_TEXTURES_KART "abb53d56aba47c3a8cb0f764da1c8b80"
+#define ASSET_HASH_CHARS_KART    "e2c428347dde52858a3dacd29fc5b964"
+#define ASSET_HASH_MAPS_KART     "d051e55141ba736582228c456953cd98"
+#ifdef USE_PATCH_KART
+#define ASSET_HASH_PATCH_KART    "00000000000000000000000000000000"
+#endif
+
 #ifdef CMAKECONFIG
 #include "config.h"
 #else
@@ -249,21 +274,17 @@ static void D_Renderview(void)
 
 	R_ApplyLevelInterpolators(R_GetTimeFrac(RTF_LEVEL));
 
-	if (rendermode == render_soft)
+	if (rendermode == render_soft && cv_homremoval.value)
 	{
-		// if this is display player 1
-		if (cv_homremoval.value)
+		if (cv_homremoval.value == 1)
 		{
-			if (cv_homremoval.value == 1)
-			{
-				// Clear the software screen buffer to remove HOM
-				memset(vid.screens[0], 31, vid.width * vid.height);
-			}
-			else if (cv_homremoval.value == 2)
-			{
-				//'development' HOM removal -- makes it blindingly obvious if HOM is spotted.
-				memset(vid.screens[0], 32+(timeinmap&15), vid.width * vid.height);
-			}
+			// Clear the software screen buffer to remove HOM
+			memset(vid.screens[0], 31, vid.width * vid.height);
+		}
+		else if (cv_homremoval.value == 2)
+		{
+			//'development' HOM removal -- makes it blindingly obvious if HOM is spotted.
+			memset(vid.screens[0], 32+(timeinmap&15), vid.width * vid.height);
 		}
 	}
 
@@ -297,7 +318,6 @@ static void D_Renderview(void)
 					break;
 				default: // Initialize for P1
 					viewwindowy = viewwindowx = 0;
-					objectsdrawn = 0;
 					break;
 			}
 
@@ -308,19 +328,17 @@ static void D_Renderview(void)
 			}
 			else if (rendermode == render_soft)
 #endif
+			{
 				R_RenderPlayerView(&players[displayplayers[i]]);
-		}
 
-		if (rendermode == render_soft)
-		{
-			if (i == 0)
-				R_ApplyViewMorph();
-
+				if (i == 0)
+					R_ApplyViewMorph();
 #ifdef MOTIONBLUR
-			V_DoPostProcessor(i, postimgparam[i]);
+				V_DoPostProcessor(i, postimgparam[i]);
 #else
-			V_DoPostProcessor(i, 0);
+				V_DoPostProcessor(i, 0);
 #endif
+			}
 		}
 	}
 
@@ -639,7 +657,7 @@ void D_SRB2Loop(void)
 	tic_t entertic = 0, oldentertics = 0, realtics = 0, rendertimeout = INFTICS;
 	double deltatics = 0.0;
 	double deltasecs = 0.0;
-	UINT64 precision;
+	UINT64 precision = 0;
 
 	boolean interp = false;
 	boolean doDisplay = false;
@@ -679,9 +697,6 @@ void D_SRB2Loop(void)
 
 	for (;;)
 	{
-		if (I_Interrupted())
-			I_Quit();
-
 		// capbudget is the minimum precise_t duration of a single loop iteration
 		precise_t capbudget;
 		precise_t elapsed;
@@ -761,11 +776,6 @@ void D_SRB2Loop(void)
 
 				doDisplay = true;
 			}
-
-			if (!dedicated)
-			{
-				G_DeviceLEDTick();
-			}
 		}
 
 		if (interp)
@@ -806,6 +816,13 @@ void D_SRB2Loop(void)
 			M_SaveFrame();
 		if (takescreenshot)
 			M_DoScreenShot();
+
+#ifndef DEDICATED
+		if (!dedicated && renderisnewtic)
+		{
+			G_DeviceLEDTick();
+		}
+#endif
 
 		// consoleplayer -> displayplayers (hear sounds from viewpoint)
 		S_UpdateSounds(); // move positional sounds
@@ -885,7 +902,9 @@ void D_ClearState(void)
 
 	// okay, stop now
 	// (otherwise the game still thinks we're playing!)
+#ifdef HAVE_CURL
 	CURLAbortFile();
+#endif
 	SV_StopServer();
 	SV_ResetServer();
 
@@ -949,6 +968,9 @@ void D_ClearState(void)
 //
 void D_StartTitle(void)
 {
+	if (dedicated)
+		I_Error("D_StartTitle is called on dedicated server");
+
 	D_ClearState();
 	multiplayer = netgame = false; // title menu shouldnt be a netgame or multiplayer lmao
 	F_StartTitleScreen();
@@ -1189,17 +1211,13 @@ static void IdentifyVersion(void)
 #endif
 
 	char tempsrb2path[256] = ".";
-	getcwd(tempsrb2path, 256);
+	if (getcwd(tempsrb2path, 256) == NULL)
+		strcpy(tempsrb2path, ".");
 
 	// get the current directory (possible problem on NT with "." as current dir)
 	if (!srb2waddir)
 	{
-		if (tempsrb2path[0])
-			srb2waddir = tempsrb2path;
-		else
-		{
-			srb2waddir = ".";
-		}
+		srb2waddir = tempsrb2path;
 	}
 
 #if (1) // reduce the amount of findfile by only using full cwd in this func
@@ -1620,12 +1638,6 @@ void D_SRB2Main(void)
 	strcpy(srb2, "SRB2Kart");
 	D_MakeTitleString(srb2);
 
-#if defined (__OS2__) && !defined (HAVE_SDL)
-	// set PM window title
-	snprintf(pmData->title, sizeof (pmData->title), "SRB2Kart" VERSIONSTRING ": %s", title);
-	pmData->title[sizeof (pmData->title) - 1] = '\0';
-#endif
-
 	if (devparm)
 		CONS_Printf(M_GetText("Development mode ON.\n"));
 
@@ -1872,7 +1884,8 @@ void D_SRB2Main(void)
 	if (M_CheckParm("-warp") && M_IsNextParm())
 	{
 		const char *word = M_GetNextParm();
-		pstartmap = G_FindMapByNameOrCode(word, 0);
+		pstartmap = G_FindMapByNameOrCode(word, NULL);
+
 		if (! pstartmap)
 			I_Error("Cannot find a map remotely named '%s'\n", word);
 		else

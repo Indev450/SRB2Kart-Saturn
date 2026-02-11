@@ -15,6 +15,7 @@
 
 #include "doomdef.h"
 #include "d_main.h"
+#include "g_game.h"
 #include "r_local.h"
 #include "p_local.h"
 #include "v_video.h"
@@ -464,7 +465,7 @@ void V_CubeApply(RGBA_t *input)
 	if (!Cubeapply)
 		return;
 
-	linear = ((*input).s.red/255.0);
+	linear = ((*input).s.red/255.0f);
 #define dolerp(e1, e2) ((1 - linear)*e1 + linear*e2)
 	for (q = 0; q < 3; q++)
 	{
@@ -474,21 +475,21 @@ void V_CubeApply(RGBA_t *input)
 		working[3][q] = dolerp(Cubepal[0][1][1][q], Cubepal[1][1][1][q]);
 	}
 
-	linear = ((*input).s.green/255.0);
+	linear = ((*input).s.green/255.0f);
 	for (q = 0; q < 3; q++)
 	{
 		working[0][q] = dolerp(working[0][q], working[1][q]);
 		working[1][q] = dolerp(working[2][q], working[3][q]);
 	}
 
-	linear = ((*input).s.blue/255.0);
+	linear = ((*input).s.blue/255.0f);
 	for (q = 0; q < 3; q++)
 	{
 		working[0][q] = 255*dolerp(working[0][q], working[1][q]);
 		if (working[0][q] > 255.0f)
 			working[0][q] = 255.0f;
 		else if (working[0][q] < 0.0f)
-			working[0][q] = 0.0;
+			working[0][q] = 0.0f;
 	}
 #undef dolerp
 
@@ -1741,6 +1742,7 @@ void V_DrawHorizontallyScaledFullScreenPatch(patch_t *patch)
 void V_DrawVhsEffect(boolean rewind)
 {
 	fixed_t uby, dby;
+	// upbary is the bar going from top to bottom for some reason
 	static fixed_t upbary = 100*FRACUNIT, downbary = 150*FRACUNIT;
 
 	UINT8 barsize, updistort, downdistort;
@@ -1755,20 +1757,27 @@ void V_DrawVhsEffect(boolean rewind)
 #endif
 	SINT8 offs;
 
-	barsize = vid.dup << 5;
-	updistort = vid.dup << (rewind ? 5 : 3);
+	if (cv_reducevfx.value)
+		return;
+
+	barsize = vid.udup << 5;
+	updistort = vid.udup << (rewind ? 5 : 3);
 	downdistort = updistort >> 1;
 
 	if (rewind)
 		V_DrawVhsEffect(false); // experimentation
 
-	upbary -= renderdeltatics * (vid.dup * (rewind ? 3 : 1.8f));
-	downbary += renderdeltatics * (vid.dup * (rewind ? 2 : 1));
+	upbary -= renderdeltatics * (fixed_t)(vid.udup * (rewind ? 3 : 1.8f));
+	downbary += renderdeltatics * (vid.udup * (rewind ? 2 : 1));
 
 	if (upbary < -barsize*FRACUNIT)
 		upbary = vid.height << FRACBITS;
+	if (upbary > vid.height << FRACBITS)
+		upbary = -barsize*FRACUNIT;
 	if (downbary > vid.height << FRACBITS)
 		downbary = -barsize*FRACUNIT;
+	if (downbary < -barsize*FRACUNIT)
+		downbary = vid.height << FRACBITS;
 
 	uby = upbary >> FRACBITS;
 	dby = downbary >> FRACBITS;
@@ -2992,7 +3001,9 @@ INT32 V_CreditStringWidth(const char *string)
 	if (!string)
 		return 0;
 
-	for (i = 0; i < strlen(string); i++)
+	const size_t strlength = strlen(string);
+
+	for (i = 0; i < strlength; i++)
 	{
 		c = toupper(string[i]) - CRED_FONTSTART;
 		if (c < 0 || c >= CRED_FONTSIZE)
@@ -3070,7 +3081,9 @@ INT32 V_LevelNameWidth(const char *string)
 	INT32 c, w = 0;
 	size_t i;
 
-	for (i = 0; i < strlen(string); i++)
+	const size_t strlength = strlen(string);
+
+	for (i = 0; i < strlength; i++)
 	{
 		c = toupper(string[i]) - LT_FONTSTART;
 		if (c < 0 || c >= LT_FONTSIZE || !lt_font[c])
@@ -3089,7 +3102,9 @@ INT32 V_LevelNameHeight(const char *string)
 	INT32 c, w = 0;
 	size_t i;
 
-	for (i = 0; i < strlen(string); i++)
+	const size_t strlength = strlen(string);
+
+	for (i = 0; i < strlength; i++)
 	{
 		c = toupper(string[i]) - LT_FONTSTART;
 		if (c < 0 || c >= LT_FONTSIZE || !lt_font[c])
@@ -3633,127 +3648,128 @@ void V_DoPostProcessor(INT32 view, INT32 param)
 	UINT8 *tmpscr = vid.screens[4];
 	UINT8 *srcscr = vid.screens[0];
 
-	if (thiscam->postimg & POSTIMG_WATER)
+	if (!cv_reducevfx.value)
 	{
-		INT32 y;
-		// Set disStart to a range from 0 to FINEANGLE, incrementing by 128 per tic
-		angle_t disStart = (((leveltime-1)*128) + (R_GetTimeFrac(RTF_LEVEL) / (FRACUNIT/128))) & FINEMASK;
-		INT32 newpix;
-		INT32 sine;
-		//UINT8 *transme = transtables + ((tr_trans50-1)<<FF_TRANSSHIFT);
-
-		for (y = yoffset; y < yoffset+viewheight; y++)
+		if (thiscam->postimg & POSTIMG_WATER)
 		{
-			sine = (FINESINE(disStart)*5)>>FRACBITS;
-			newpix = abs(sine);
+			INT32 y;
+			// Set disStart to a range from 0 to FINEANGLE, incrementing by 128 per tic
+			angle_t disStart = (((leveltime-1)*128) + (R_GetTimeFrac(RTF_LEVEL) / (FRACUNIT/128))) & FINEMASK;
+			INT32 newpix;
+			INT32 sine;
+			//UINT8 *transme = transtables + ((tr_trans50-1)<<FF_TRANSSHIFT);
 
-			if (sine < 0)
+			for (y = yoffset; y < yoffset+viewheight; y++)
 			{
-				memcpy(&tmpscr[(y*vid.width)+xoffset+newpix], &srcscr[(y*vid.width)+xoffset], viewwidth-newpix);
+				sine = (FINESINE(disStart)*5)>>FRACBITS;
+				newpix = abs(sine);
 
-				// Cleanup edge
-				while (newpix)
+				if (sine < 0)
 				{
-					tmpscr[(y*vid.width)+xoffset+newpix] = srcscr[(y*vid.width)+xoffset];
-					newpix--;
-				}
-			}
-			else
-			{
-				memcpy(&tmpscr[(y*vid.width)+xoffset+0], &srcscr[(y*vid.width)+xoffset+sine], viewwidth-newpix);
+					memcpy(&tmpscr[(y*vid.width)+xoffset+newpix], &srcscr[(y*vid.width)+xoffset], viewwidth-newpix);
 
-				// Cleanup edge
-				while (newpix)
+					// Cleanup edge
+					while (newpix)
+					{
+						tmpscr[(y*vid.width)+xoffset+newpix] = srcscr[(y*vid.width)+xoffset];
+						newpix--;
+					}
+				}
+				else
 				{
-					tmpscr[(y*vid.width)+xoffset+viewwidth-newpix] = srcscr[(y*vid.width)+xoffset+(viewwidth-1)];
-					newpix--;
+					memcpy(&tmpscr[(y*vid.width)+xoffset+0], &srcscr[(y*vid.width)+xoffset+sine], viewwidth-newpix);
+
+					// Cleanup edge
+					while (newpix)
+					{
+						tmpscr[(y*vid.width)+xoffset+viewwidth-newpix] = srcscr[(y*vid.width)+xoffset+(viewwidth-1)];
+						newpix--;
+					}
 				}
+
+				/*
+				Unoptimized version
+				for (x = 0; x < vid.width; x++)
+				{
+					newpix = (x + sine);
+
+					if (newpix < 0)
+						newpix = 0;
+					else if (newpix >= vid.width)
+						newpix = vid.width-1;
+
+					tmpscr[y*vid.width + x] = srcscr[y*vid.width+newpix]; // *(transme + (srcscr[y*vid.width+x]<<8) + srcscr[y*vid.width+newpix]);
+				}*/
+
+				disStart += 22;//the offset into the displacement map, increment each game loop
+				disStart &= FINEMASK; //clip it to FINEMASK
 			}
 
-			/*
-			 Unoptimized version
-			 for (x = 0; x < vid.width; x++)
-			 {
-			 	newpix = (x + sine);
-
-			 	if (newpix < 0)
-			 		newpix = 0;
-			 	else if (newpix >= vid.width)
-			 		newpix = vid.width-1;
-
-			 	tmpscr[y*vid.width + x] = srcscr[y*vid.width+newpix]; // *(transme + (srcscr[y*vid.width+x]<<8) + srcscr[y*vid.width+newpix]);
-			 }*/
-
-			disStart += 22;//the offset into the displacement map, increment each game loop
-			disStart &= FINEMASK; //clip it to FINEMASK
+			UINT8 *tmp = tmpscr;
+			tmpscr = srcscr;
+			srcscr = tmp;
 		}
-
-		UINT8 *tmp = tmpscr;
-		tmpscr = srcscr;
-		srcscr = tmp;
-	}
-	else if (thiscam->postimg & POSTIMG_HEAT) // Heat wave
-	{
-		INT32 y;
-
-		// Make sure table is built
-		if (heatshifter == NULL || lastheight != viewheight)
+		else if (thiscam->postimg & POSTIMG_HEAT) // Heat wave
 		{
-			if (heatshifter)
+			INT32 y;
+
+			// Make sure table is built
+			if (heatshifter == NULL || lastheight != viewheight)
+			{
 				Z_Free(heatshifter);
+				heatshifter = Z_Calloc(viewheight * sizeof(boolean), PU_STATIC, NULL);
 
-			heatshifter = Z_Calloc(viewheight * sizeof(boolean), PU_STATIC, NULL);
+				for (y = 0; y < viewheight; y++)
+				{
+					if (M_RandomChance(FRACUNIT/8)) // 12.5%
+						heatshifter[y] = true;
+				}
 
-			for (y = 0; y < viewheight; y++)
-			{
-				if (M_RandomChance(FRACUNIT/8)) // 12.5%
-					heatshifter[y] = true;
+				heatindex[0] = heatindex[1] = heatindex[2] = heatindex[3] = 0;
+				lastheight = viewheight;
 			}
 
-			heatindex[0] = heatindex[1] = heatindex[2] = heatindex[3] = 0;
-			lastheight = viewheight;
-		}
-
-		for (y = yoffset; y < yoffset+viewheight; y++)
-		{
-			if (heatshifter[heatindex[view]++])
+			for (y = yoffset; y < yoffset+viewheight; y++)
 			{
-				// Shift this row of pixels to the right by 2
-				tmpscr[(y*vid.width)+xoffset] = srcscr[(y*vid.width)+xoffset];
-				memcpy(&tmpscr[(y*vid.width)+xoffset], &srcscr[(y*vid.width)+xoffset+vid.dup], viewwidth-vid.dup);
+				if (heatshifter[heatindex[view]++])
+				{
+					// Shift this row of pixels to the right by 2
+					tmpscr[(y*vid.width)+xoffset] = srcscr[(y*vid.width)+xoffset];
+					memcpy(&tmpscr[(y*vid.width)+xoffset], &srcscr[(y*vid.width)+xoffset+vid.dup], viewwidth-vid.dup);
+				}
+				else
+					memcpy(&tmpscr[(y*vid.width)+xoffset], &srcscr[(y*vid.width)+xoffset], viewwidth);
+
+				heatindex[view] %= viewheight;
 			}
-			else
-				memcpy(&tmpscr[(y*vid.width)+xoffset], &srcscr[(y*vid.width)+xoffset], viewwidth);
 
-			heatindex[view] %= viewheight;
+			if (renderisnewtic) // This isn't interpolated... but how do you interpolate a one-pixel shift?
+			{
+				heatindex[view]++;
+				heatindex[view] %= vid.height;
+			}
+
+			UINT8 *tmp = tmpscr;
+			tmpscr = srcscr;
+			srcscr = tmp;
 		}
-
-		if (renderisnewtic) // This isn't interpolated... but how do you interpolate a one-pixel shift?
-		{
-			heatindex[view]++;
-			heatindex[view] %= vid.height;
-		}
-
-		UINT8 *tmp = tmpscr;
-		tmpscr = srcscr;
-		srcscr = tmp;
-	}
 
 #ifdef MOTIONBLUR
-	if (thiscam->postimg & POSTIMG_MOTION) // Motion Blur!
-	{
-		INT32 x, y;
-
-		// TODO: Add a postimg_param so that we can pick the translucency level...
-		UINT8 *transme = transtables + ((param-1)<<FF_TRANSSHIFT);
-
-		for (y = yoffset; y < yoffset+viewheight; y++)
+		if (thiscam->postimg & POSTIMG_MOTION) // Motion Blur!
 		{
-			for (x = xoffset; x < xoffset+viewwidth; x++)
-				tmpscr[y*vid.width + x] =     colormaps[*(transme     + (srcscr   [(y*vid.width)+x ] <<8) + (tmpscr[(y*vid.width)+x]))];
+			INT32 x, y;
+
+			// TODO: Add a postimg_param so that we can pick the translucency level...
+			UINT8 *transme = transtables + ((param-1)<<FF_TRANSSHIFT);
+
+			for (y = yoffset; y < yoffset+viewheight; y++)
+			{
+				for (x = xoffset; x < xoffset+viewwidth; x++)
+					tmpscr[y*vid.width + x] =     colormaps[*(transme     + (srcscr   [(y*vid.width)+x ] <<8) + (tmpscr[(y*vid.width)+x]))];
+			}
 		}
-	}
 #endif
+	}
 
 	if ((thiscam->postimg & POSTIMG_FLIP) && !(thiscam->postimg & POSTIMG_MIRROR)) // Flip the screen upside-down
 	{
@@ -3808,7 +3824,7 @@ void InitColorLUT(colorlookup_t *lut, RGBA_t *palette, boolean makecolors)
 		lut->init = true;
 		memcpy(lut->palette, palette, palsize);
 
-		for (i = 0; i < 0xFFFF; i++)
+		for (i = 0; i < 0x10000; i++)
 			lut->table[i] = 0xFFFF;
 
 		if (makecolors)
@@ -3821,7 +3837,9 @@ void InitColorLUT(colorlookup_t *lut, RGBA_t *palette, boolean makecolors)
 				{
 					for (b = 0; b < 0xFF; b++)
 					{
-						lut->table[i] = GetColorLUT(lut, r, g, b);
+						i = CLUTINDEX(r, g, b);
+						if (lut->table[i] == 0xFFFF)
+							lut->table[i] = NearestPaletteColor(r, g, b, palette);
 					}
 				}
 			}
@@ -3907,6 +3925,8 @@ void V_Recalc(void)
 		vid.dup = vid.height / BASEVIDHEIGHT;
 		vid.fdup = (vid.height*FRACUNIT) / BASEVIDHEIGHT;
 	}
+
+	vid.udup = vid.dup;
 
 	if (loaded_config // this could use a better name, since it is more and indicator that early startup is done and its safe to do sketchy shit now :chaosleep:
 	&& (vid.width > 720) && (vid.height > 1280)) // ehhhh well this thing has so many issues, so ill lock it to higher resolutions instead

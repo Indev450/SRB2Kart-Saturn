@@ -14,13 +14,13 @@
 #ifndef __R_MAIN__
 #define __R_MAIN__
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include "d_player.h"
 #include "r_data.h"
 #include "m_perfstats.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 //
 // POV related.
@@ -205,6 +205,7 @@ extern consvar_t cv_showhud, cv_translucenthud, cv_uncappedhud;
 extern consvar_t cv_homremoval;
 extern consvar_t cv_chasecam[MAXSPLITSCREENPLAYERS];
 extern consvar_t cv_flipcam[MAXSPLITSCREENPLAYERS];
+extern consvar_t cv_flipcammode;
 extern consvar_t cv_shadow, cv_shadowoffs;
 extern consvar_t cv_ffloorclip, cv_spriteclip;
 extern consvar_t cv_softcyancut;

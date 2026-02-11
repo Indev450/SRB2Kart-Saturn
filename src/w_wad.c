@@ -122,7 +122,9 @@ void W_Shutdown(void)
 
 		if (wad->handle)
 			fclose(wad->handle);
+
 		Z_Free(wad->filename);
+
 		while (wad->numlumps--)
 		{
 			Z_Free(wad->lumpinfo[wad->numlumps].longname);
@@ -453,7 +455,7 @@ static lumpinfo_t* ResGetLumpsWad(FILE* handle, UINT16* nlmp, const char* filena
 	header.infotableofs = LONG(header.infotableofs);
 
 	// read wad file directory
-	i = header.numlumps * sizeof (*fileinfo);
+	i = header.numlumps * sizeof(*fileinfo);
 	fileinfov = fileinfo = malloc(i);
 
 	if (fseek(handle, header.infotableofs, SEEK_SET) == -1
@@ -697,12 +699,12 @@ static lumpinfo_t* ResGetLumpsZip(FILE* handle, UINT16* nlmp)
 		strlcpy(fullname, (char*)(zentry + 1), SHORT(zentry->namelen) + 1);
 
 		// Strip away file address and extension for the 8char name.
-		if ((trimname = strrchr(fullname, '/')) != 0)
+		if ((trimname = strrchr(fullname, '/')) != NULL)
 			trimname++;
 		else
 			trimname = fullname; // Care taken for root files.
 
-		if ((dotpos = strrchr(trimname, '.')) == 0)
+		if ((dotpos = strrchr(trimname, '.')) == NULL)
 			dotpos = fullname + strlen(fullname); // Watch for files without extension.
 
 		memset(lump_p->name, '\0', 9); // Making sure they're initialized to 0. Is it necessary?
@@ -1667,9 +1669,9 @@ size_t W_ReadLumpHeaderPwad(UINT16 wad, UINT16 lump, void *dest, size_t size, si
 			if (fread(rawData, 1, rawSize, handle) < rawSize)
 				I_Error("wad %d, lump %d: cannot read compressed data", wad, lump);
 
-			strm.zalloc = Z_NULL;
-			strm.zfree = Z_NULL;
-			strm.opaque = Z_NULL;
+			strm.zalloc = NULL;
+			strm.zfree  = NULL;
+			strm.opaque = NULL;
 
 			strm.total_in = strm.avail_in = rawSize;
 			strm.total_out = strm.avail_out = decSize;
@@ -1997,11 +1999,16 @@ void *W_CachePatchNameRotated(const char *name, INT32 rotationangle, INT32 tag)
 
 	rspr = (rotsprite_t *)W_GetCachedRotPatchPwad(WADFILENUM(num),LUMPNUM(num));
 
+	if (rspr == NULL)
+		return W_CachePatchNum(W_GetNumForName("MISSING"), tag);
+
 	if (rspr->patches[idx] == NULL)
 	{
 		INT32 xpivot = 0, ypivot = 0;
 
 		ptr = (patch_t *)W_CachePatchNum(num, PU_PATCH);
+		if (ptr == NULL)
+			return W_CachePatchNum(W_GetNumForName("MISSING"), tag);
 
 		// >y pivot centered
 		// >x pivot not centered
@@ -2233,14 +2240,14 @@ static int W_VerifyPK3(FILE *fp, lumpchecklist_t *checklist, boolean status)
 			strlcpy(fullname, (char*)(zentry + 1), SHORT(zentry->namelen) + 1);
 
 			// Strip away file address and extension for the 8char name.
-			if ((trimname = strrchr(fullname, '/')) != 0)
+			if ((trimname = strrchr(fullname, '/')) != NULL)
 				trimname++;
 			else
 				trimname = fullname; // Care taken for root files.
 
 			if (*trimname) // Ignore directories, well kinda
 			{
-				if ((dotpos = strrchr(trimname, '.')) == 0)
+				if ((dotpos = strrchr(trimname, '.')) == NULL)
 					dotpos = fullname + strlen(fullname); // Watch for files without extension.
 
 				memset(lumpname, '\0', 9); // Making sure they're initialized to 0. Is it necessary?
@@ -2478,14 +2485,14 @@ static int W_CheckPK3Contains(FILE *fp, lumpchecklist_t *checklist)
 		strlcpy(fullname, (char*)(zentry + 1), SHORT(zentry->namelen) + 1);
 
 		// Strip away file address and extension for the 8char name.
-		if ((trimname = strrchr(fullname, '/')) != 0)
+		if ((trimname = strrchr(fullname, '/')) != NULL)
 			trimname++;
 		else
 			trimname = fullname; // Care taken for root files.
 
 		if (*trimname) // Ignore directories, well kinda
 		{
-			if ((dotpos = strrchr(trimname, '.')) == 0)
+			if ((dotpos = strrchr(trimname, '.')) == NULL)
 				dotpos = fullname + strlen(fullname); // Watch for files without extension.
 
 			memset(lumpname, '\0', 9); // Making sure they're initialized to 0. Is it necessary?
@@ -2612,6 +2619,9 @@ virtres_t* vres_GetMap(lumpnum_t lumpnum)
 
 		// Remember that we're assuming that the WAD will have a specific set of lumps in a specific order.
 		UINT8 *wadData = (UINT8*)(W_CacheLumpNum(lumpnum, PU_LEVEL));
+		if (wadData == NULL)
+			I_Error("vres_GetMap: Invalid WadData!\n");
+
 		filelump_t *fileinfo = (filelump_t *)(wadData + LONG(((wadinfo_t *)wadData)->infotableofs));
 
 		i = LONG(((wadinfo_t *)wadData)->numlumps);
@@ -2628,6 +2638,8 @@ virtres_t* vres_GetMap(lumpnum_t lumpnum)
 		}
 
 		vlumps = (virtlump_t*)(Z_Malloc(sizeof(virtlump_t)*numlumps, PU_LEVEL, NULL));
+		if (vlumps == NULL)
+			I_Error("vres_GetMap: Out of memory!\n");
 
 		// Build the lumps, skipping over empty entries.
 		for (i = 0, realentry = 0; i < numlumps; realentry++)
@@ -2663,7 +2675,11 @@ virtres_t* vres_GetMap(lumpnum_t lumpnum)
 		lumpnum_t lumppos = lumpnum + 1;
 		for (i = LUMPNUM(lumppos); i < wadfiles[WADFILENUM(lumpnum)]->numlumps; i++, lumppos++, numlumps++)
 		{
-			if (memcmp(W_CheckNameForNum(lumppos), "MAP", 3) == 0 || W_LumpLength(lumppos) == 0)
+			const char *name = W_CheckNameForNum(lumppos);
+			if (name == NULL)
+				continue;
+
+			if (memcmp(name, "MAP", 3) == 0 || W_LumpLength(lumppos) == 0)
 			{
 				break;
 			}
@@ -2671,10 +2687,15 @@ virtres_t* vres_GetMap(lumpnum_t lumpnum)
 		numlumps++;
 
 		vlumps = (virtlump_t*)(Z_Malloc(sizeof(virtlump_t)*numlumps, PU_LEVEL, NULL));
+		if (vlumps == NULL)
+			I_Error("vres_GetMap: Out of memory!\n");
+
 		for (i = 0; i < numlumps; i++, lumpnum++)
 		{
 			// Check if it is map marker. It is not always first lump sadly, so we need to expect it anywhere
 			const char *name = W_CheckNameForNum(lumpnum);
+			if (name == NULL)
+				continue;
 
 			if (strlen(name) == 5 && memcmp(name, "MAP", 3) == 0)
 			{
@@ -2711,10 +2732,7 @@ void vres_Free(virtres_t* vres)
 
 	while (vres->numlumps--)
 	{
-		if (vres->vlumps[vres->numlumps].data)
-		{
-			Z_Free(vres->vlumps[vres->numlumps].data);
-		}
+		Z_Free(vres->vlumps[vres->numlumps].data);
 	}
 
 	Z_Free(vres->vlumps);

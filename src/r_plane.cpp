@@ -57,8 +57,11 @@ visffloor_t visffloor[MAXFFLOORS] = {};
 INT32 numffloors = 0;
 
 //SoM: 3/23/2000: Boom visplane hashing routine.
-#define visplane_hash(picnum,lightlevel,height) \
-  ((unsigned)((picnum)*3+(lightlevel)+(height)*7) & VISPLANEHASHMASK)
+constexpr unsigned int visplane_hash(const unsigned int picnum, const unsigned int lightlevel,
+									 const unsigned int height)
+{
+	return ((picnum * 3) + lightlevel + (height * 7)) & VISPLANEHASHMASK;
+}
 
 //
 // Clip values are the solid pixel bounding the range.
@@ -136,7 +139,7 @@ void R_AllocPlaneMemory(void)
 	}
 
 	yslopetab = static_cast<fixed_t*>(Z_Realloc(yslopetab, sizeof(*yslopetab) * (viewheight * 16), PU_STATIC, NULL));
-	spanstart = static_cast<fixed_t*>(Z_Realloc(spanstart, sizeof(*spanstart) * viewheight, PU_STATIC, NULL));
+	spanstart = static_cast<INT32*>(Z_Realloc(spanstart, sizeof(*spanstart) * viewheight, PU_STATIC, NULL));
 }
 
 //
@@ -451,7 +454,7 @@ visplane_t *R_FindPlane(fixed_t height, INT32 picnum, INT32 lightlevel,
 			}
 		}
 
-		hash = visplane_hash(picnum, lightlevel, height);
+		hash = visplane_hash(picnum, lightlevel, height >> FRACBITS);
 
 		for (check = visplanes[hash]; check; check = check->next)
 		{
@@ -562,7 +565,7 @@ visplane_t *R_CheckPlane(visplane_t *pl, INT32 start, INT32 stop)
 		}
 		else
 		{
-			unsigned hash = visplane_hash(pl->picnum, pl->lightlevel, pl->height);
+			unsigned hash = visplane_hash(pl->picnum, pl->lightlevel, pl->height >> FRACBITS);
 			new_pl = new_visplane(hash);
 		}
 
@@ -920,12 +923,12 @@ static void R_SetSlopePlane(drawspandata_t* ds, pslope_t *slope, fixed_t xpos, f
 
 	// m is the v direction vector in view space
 	ang = ANG2RAD(ANGLE_180 - (angle + plangle));
-	m->x = cos(ang);
-	m->z = sin(ang);
+	m->x = cosf(ang);
+	m->z = sinf(ang);
 
 	// n is the u direction vector in view space
-	n->x = sin(ang);
-	n->z = -cos(ang);
+	n->x = sinf(ang);
+	n->z = -cosf(ang);
 
 	plangle >>= ANGLETOFINESHIFT;
 	temp = P_GetSlopeZAt(slope, xpos + FINESINE(plangle), ypos + FINECOSINE(plangle));

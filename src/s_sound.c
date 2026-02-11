@@ -473,12 +473,11 @@ void S_StartSoundAtVolume(const void *origin_p, sfxenum_t sfx_id, INT32 volume)
 		return;
 
 	memset(listener, 0, sizeof(listener));
+	memset(listenmobj, 0, sizeof(listenmobj));
 
 	for (i = 0; i <= splitscreen; i++)
 	{
 		player_t *player = &players[displayplayers[i]];
-
-		listenmobj[i] = NULL;
 
 		if (player->awayviewtics)
 		{
@@ -772,14 +771,9 @@ void S_UpdateSounds(void)
 				volume = c->volume; // 8 bits internal volume precision
 				sep = NORM_SEP;
 
-				if (P_MobjWasRemoved(c->origin))
-				{
-					// origin was removed, stop the music
-					S_StopChannel(cnum);
-				}
 				// check non-local sounds for distance clipping
 				//  or modify their params
-				else
+				if (c->origin)
 				{
 					boolean itsUs = false;
 
@@ -889,7 +883,7 @@ static void S_StopChannel(INT32 cnum)
 			if (cnum != i && c->sfxinfo == channels[i].sfxinfo)
 				break;
 
-		c->sfxinfo = 0;
+		c->sfxinfo = NULL;
 	}
 
 	c->origin = NULL;
@@ -1276,7 +1270,7 @@ static musicdef_t *S_AddMusicCredit(void)
 	return &musicdefs[chunk][i];
 }
 
-struct cursongcredit cursongcredit = {0}; // Currently displayed song credit info
+struct cursongcredit cursongcredit = {}; // Currently displayed song credit info
 
 static boolean ReadMusicDefFields(UINT16 wadnum, int line, char *stoken, musicdef_t **defp)
 {
@@ -1496,6 +1490,9 @@ musicdef_t *S_FindMusicCredit(const char *musname)
 	{
 		def = S_GetMusicCredit(i);
 
+		if (!def)
+			continue;
+
 		if (hash != def->hash)
 			continue;
 
@@ -1706,7 +1703,7 @@ static void S_UnloadMusic(void)
 	music.flags = 0;
 	music.looping = false;
 
-	music_refade_cv = 0;
+	music_refade_cv = NULL;
 }
 
 static boolean S_PlayMusic(boolean looping, UINT32 fadeinms)

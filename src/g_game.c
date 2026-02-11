@@ -132,7 +132,7 @@ UINT8 skincolor_bluering = SKINCOLOR_STEEL;
 tic_t countdowntimer = 0;
 boolean countdowntimeup = false;
 
-cutscene_t *cutscenes[128];
+cutscene_t *cutscenes[128] = {};
 
 INT16 nextmapoverride = 0;
 boolean skipstats = false;
@@ -144,7 +144,7 @@ mobj_t *blueflag = NULL;
 mapthing_t *rflagpoint = NULL;
 mapthing_t *bflagpoint = NULL;
 
-struct quake quake;
+struct quake quake = {};
 
 // Map Header Information
 mapheader_t* mapheaderinfo[NUMMAPS] = {};
@@ -228,7 +228,7 @@ tic_t racecountdown = 0, exitcountdown = 0; // for racing
 fixed_t gravity = 0;
 fixed_t mapobjectscale = FRACUNIT;
 
-struct maplighting maplighting;
+struct maplighting maplighting = {};
 
 INT16 autobalance = 0; //for CTF team balance
 INT16 teamscramble = 0; //for CTF team scramble
@@ -454,6 +454,14 @@ consvar_t cv_litesteer[MAXSPLITSCREENPLAYERS] = {
 	{"litesteer4", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL}
 };
 
+//static CV_PossibleValue_t autoaccelcons_t[] = {{0, "Off"}, {1, "Manual"}, {2, "Automatic"}, {0, NULL}};
+consvar_t cv_autoaccel[MAXSPLITSCREENPLAYERS] = {
+	{"kartautoaccel",  "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"kartautoaccel2", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"kartautoaccel3", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"kartautoaccel4", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL}
+};
+
 static CV_PossibleValue_t driftsparkpulse_t[] = {{0, "MIN"}, {FRACUNIT*3, "MAX"}, {0, NULL}};
 consvar_t cv_driftsparkpulse = {"driftsparkpulse", "1.4", CV_FLOAT | CV_SAVE, driftsparkpulse_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
@@ -515,11 +523,8 @@ void G_ClearRecords(void)
 	INT16 i;
 	for (i = 0; i < NUMMAPS; ++i)
 	{
-		if (mainrecords[i])
-		{
-			Z_Free(mainrecords[i]);
-			mainrecords[i] = NULL;
-		}
+		Z_Free(mainrecords[i]);
+		mainrecords[i] = NULL;
 	}
 }
 
@@ -800,6 +805,10 @@ static fixed_t forwardmove[2] = {25<<FRACBITS>>16, 50<<FRACBITS>>16};
 static fixed_t sidemove[2] = {2<<FRACBITS>>16, 4<<FRACBITS>>16};
 static fixed_t angleturn[3] = {KART_FULLTURN/2, KART_FULLTURN, KART_FULLTURN/4}; // + slow turn
 
+//
+// G_HandleLocalDriftturn
+// Hack for Lua menus that check directional inputs with driftturn
+//
 static void G_HandleLocalDriftturn(ticcmd_t *cmd, UINT8 ssplayer)
 {
 	INT32 axis = 0;
@@ -862,9 +871,8 @@ static void G_HandleLocalDriftturn(ticcmd_t *cmd, UINT8 ssplayer)
 //
 static void G_BuildLocalTiccmd(ticcmd_t *cmd, UINT8 ssplayer, boolean freecam)
 {
-	boolean moveinput = false;
 	INT32 axis = 0;
-	const boolean usejoystick = (cv_usejoystick[(ssplayer-1)].value);
+	const boolean usejoystick = cv_usejoystick[(ssplayer-1)].value;
 
 	// check for inputs and return button commands
 	// for stuff like joining with item button, saltyhop, honking, etc.
@@ -899,15 +907,11 @@ static void G_BuildLocalTiccmd(ticcmd_t *cmd, UINT8 ssplayer, boolean freecam)
 
 #undef CHECKINPUT
 
-	moveinput = (InputDown(gc_turnleft, ssplayer) || InputDown(gc_turnright, ssplayer)
-	|| InputDown(gc_aimforward, ssplayer) || InputDown(gc_aimbackward, ssplayer) ||
-	(usejoystick && JoyAxis(AXISAIM, ssplayer) != 0) || (usejoystick && JoyAxis(AXISTURN, ssplayer) != 0));
-
 	axis = JoyAxis(AXISLOOKBACK, ssplayer);
 	camspin[ssplayer-1] = (InputDown(gc_lookback, ssplayer) || (usejoystick && axis > 0));
 
 	// Reset to our spec player if we watch someone else.
-	if ((moveinput || cmd->buttons)
+	if ((cmd->driftturn || cmd->buttons)
 		&& displayplayers[0] != consoleplayer && ssplayer == 1)
 	{
 		if (cv_director.value)
@@ -916,6 +920,63 @@ static void G_BuildLocalTiccmd(ticcmd_t *cmd, UINT8 ssplayer, boolean freecam)
 		displayplayers[0] = consoleplayer;
 		R_ResetViewInterpolation(0);
 		camera[0].reset_aiming = true;
+	}
+}
+
+//
+// G_HandleAutoAcceleration
+//
+static void G_HandleAutoAcceleration(ticcmd_t *cmd, player_t *player, UINT8 forplayer)
+{
+	if (!cv_autoaccel[forplayer].value)
+		return;
+
+	if (gamestate != GS_LEVEL)
+		return;
+
+	// dont accel before and during countdown
+	if (leveltime <= starttime)
+		return;
+
+	// dont do this in menus or when console is onscreen
+	if (menuactive || CON_Ready())
+		return;
+
+	// gotta have a player that aint respawning
+	if (!player->mo || player->kartstuff[k_respawn])
+		return;
+
+	// dont need for "finished" players
+	if (player->exiting || (player->pflags & PF_TIMEOVER))
+		return;
+
+	// dont do during spinout
+	if (player->kartstuff[k_spinouttimer])
+		return;
+
+	// spectators and freecam dont need special handling, see G_BuildTiccmd
+
+	if (cmd->buttons & BT_BRAKE)
+	{
+		if (cmd->buttons & BT_DRIFT ||
+			player->kartstuff[k_sneakertimer] ||
+			player->kartstuff[k_squishedtimer])
+		{
+			cmd->forwardmove = (SINT8)forwardmove[0];
+			cmd->buttons |= BT_ACCELERATE;
+		}
+		else
+		{
+			// allows us to drive backwards if we need to
+			if (cmd->forwardmove > 0)
+				cmd->forwardmove = 0;
+			cmd->buttons &= ~BT_ACCELERATE;
+		}
+	}
+	else
+	{
+		cmd->forwardmove = (SINT8)forwardmove[1];
+		cmd->buttons |= BT_ACCELERATE;
 	}
 }
 
@@ -1066,7 +1127,7 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 		if (InputDown(gc_accelerate, ssplayer) || (gamepadjoystickmove && axis > 0) || player->kartstuff[k_sneakertimer])
 		{
 			cmd->buttons |= BT_ACCELERATE;
-			forward = forwardmove[1];	// 50
+			forward = forwardmove[1]; // 50
 		}
 		else if (analogjoystickmove && axis > 0)
 		{
@@ -1146,6 +1207,8 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 		cmd->forwardmove = (SINT8)(cmd->forwardmove + forward);
 		cmd->sidemove = (SINT8)(cmd->sidemove + side);
 	}
+
+	G_HandleAutoAcceleration(cmd, player, forplayer);
 
 	//{ SRB2kart - Drift support
 	// Not grouped with the rest of turn stuff because it needs to know what buttons you're pressing for rubber-burn turn
@@ -3435,7 +3498,7 @@ void G_LoadGameData(void)
 	INT32 i, j;
 	UINT8 modded = false;
 	UINT8 rtemp;
-	savebuffer_t save = {0};
+	savebuffer_t save = {};
 
 	//For records
 	tic_t rectime;
@@ -3568,7 +3631,7 @@ void G_SaveGameData(boolean force)
 	size_t length;
 	INT32 i, j;
 	UINT8 btemp;
-	savebuffer_t save = {0};
+	savebuffer_t save = {};
 	(void)force;
 	char backupfile[MAX_WADPATH+4];
 
@@ -3739,7 +3802,7 @@ void G_LoadGame(UINT32 slot, INT16 mapoverride)
 	size_t length;
 	char vcheck[VERSIONSIZE];
 	char savename[255];
-	savebuffer_t save = {0};
+	savebuffer_t save = {};
 
 	// memset savedata to all 0, fixes calling perfectly valid saves corrupt because of bots
 	memset(&savedata, 0, sizeof(savedata));
@@ -3825,7 +3888,7 @@ void G_SaveGame(UINT32 savegameslot)
 	boolean saved;
 	char savename[256] = "";
 	const char *backup;
-	savebuffer_t save = {0};
+	savebuffer_t save = {};
 
 	sprintf(savename, savegamename, savegameslot);
 	backup = va("%s",savename);
@@ -4095,7 +4158,7 @@ static void measurekeywords(mapsearchfreq_t *fr,
 				PU_STATIC, NULL);
 	for (qp = strtok(va("%s", q), " ");
 			qp && fr->total < 255;
-			qp = strtok(0, " "))
+			qp = strtok(NULL, " "))
 	{
 		if (( sp = strcasestr(s, qp) ))
 		{
@@ -4176,7 +4239,7 @@ INT32 G_FindMap(const char *mapname, char **foundmapnamep,
 			{
 				newmapnum = mapnum;
 				newmapname = realmapname;
-				realmapname = 0;
+				realmapname = NULL;
 				Z_Free(apromapname);
 				if (!wanttable)
 					break;
@@ -4197,7 +4260,7 @@ INT32 G_FindMap(const char *mapname, char **foundmapnamep,
 				{
 					apromapnum = mapnum;
 					apromapname = realmapname;
-					realmapname = 0;
+					realmapname = NULL;
 				}
 			}
 			else/* ...match individual keywords */

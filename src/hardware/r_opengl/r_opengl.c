@@ -98,10 +98,10 @@ static size_t textureBufferSize = 0;
 static LTListItem *LightTablesTail = NULL;
 static LTListItem *LightTablesHead = NULL;
 
-static RGBA_t screenPalette[256] = {0}; // the palette for the postprocessing step in palette rendering
+static RGBA_t screenPalette[256] = {}; // the palette for the postprocessing step in palette rendering
 static GLuint screenPaletteTex = 0; // 1D texture containing the screen palette
 static GLuint paletteLookupTex = 0; // 3D texture containing RGB -> palette index lookup table
-RGBA_t  myPaletteData[256] = {0}; // the palette for converting textures to RGBA
+RGBA_t myPaletteData[256] = {}; // the palette for converting textures to RGBA
 
 static GLint gltexformat = GL_RGB5_A1;
 GLint   screen_width     = 0;               // used by Draw2DLine()
@@ -127,9 +127,9 @@ GLuint gl_num_extensions;
 int majorGL = 0, minorGL = 0;
 
 //Hurdler: 04/10/2000: added for the kick ass coronas as Boris wanted;-)
-GLfloat modelMatrix[16] = {0};
-GLfloat projMatrix[16] = {0};
-static GLint   viewport[4];
+GLfloat modelMatrix[16] = {};
+GLfloat projMatrix[16] = {};
+static GLint viewport[4];
 
 #ifdef USE_FBO_OGL
 enum
@@ -171,7 +171,7 @@ boolean supportstencil = false;
 //			flush all of the stored textures, leaving them unavailable at times such as between levels
 //			These need to start at 0 and be set to their number, and be reset to 0 when deleted so that Intel GPUs
 //			can know when the textures aren't there, as textures are always considered resident in their virtual memory
-static GLuint screenTextures[NUMSCREENTEXTURES] = {0};
+static GLuint screenTextures[NUMSCREENTEXTURES] = {};
 
 #define byte2float(byte) (GLfloat)(byte / 255.0f)
 
@@ -403,6 +403,14 @@ typedef void (APIENTRY * PFNglEnableClientState) (GLenum cap);
 static PFNglEnableClientState pglEnableClientState;
 typedef void (APIENTRY * PFNglDisableClientState) (GLenum cap);
 static PFNglDisableClientState pglDisableClientState;
+
+typedef void (APIENTRY * PFNglOrtho) (GLdouble left,
+									  GLdouble right,
+									  GLdouble bottom,
+									  GLdouble top,
+									  GLdouble nearVal,
+									  GLdouble farVal);
+static PFNglOrtho pglOrtho;
 
 /* Lighting */
 typedef void (APIENTRY * PFNglShadeModel) (GLenum mode);
@@ -745,7 +753,7 @@ typedef struct gl_shaderstate_s
 static gl_shaderstate_t gl_shaderstate;
 
 // Shader info
-static float shader_leveltime = 0;
+static float shader_leveltime = 0.0f;
 static float shader_light_x = 0.0f;
 static float shader_light_y = 0.0f;
 static float shader_light_z = 0.0f;
@@ -857,6 +865,8 @@ void SetupGLFunc4(void)
 	GetGLfunc(glUniform2fv);
 	GetGLfunc(glUniform3fv);
 	GetGLfunc(glGetUniformLocation);
+
+	GetGLfunc(glOrtho);
 
 #ifdef GLDEBUGMESSAGE
 	GetGLfunc(glDebugMessageCallback);
@@ -3090,6 +3100,39 @@ void GL_DrawModelEx(model_t *model, INT32 frameIndex, float duration, float tics
 	pglDisable(GL_NORMALIZE);
 }
 
+void GL_Draw2DModel(model_t *model, INT32 frameIndex, INT32 duration, INT32 tics, INT32 nextFrameIndex,
+                      FTransform *pos, float hscale, float vscale, UINT8 flipped, UINT8 hflipped, FSurfaceInfo *Surface)
+{
+	// save our matrix´s
+	pglMatrixMode(GL_PROJECTION);
+	pglPushMatrix();
+	pglMatrixMode(GL_MODELVIEW);
+	pglPushMatrix();
+
+	pglMatrixMode(GL_PROJECTION);
+	pglLoadIdentity();
+
+	// switch to ortho mode to make our lives easier
+	// thisll make sure our coords will be remapped to pixel coords
+	pglOrtho(0.0f, (float)vid.width, (float)vid.height, 0.0f, NZCLIP_PLANE, FAR_ZCLIP_DEFAULT);
+
+	pglMatrixMode(GL_MODELVIEW);
+	pglLoadIdentity();
+
+	pglEnable(GL_DEPTH_TEST);
+	pglDepthMask(GL_TRUE);
+	pglClear(GL_DEPTH_BUFFER_BIT);
+
+	GL_DrawModelEx(model, frameIndex, duration, tics, nextFrameIndex,
+	               pos, hscale, vscale, flipped, hflipped, Surface);
+
+	// restore the matrix´s
+	pglMatrixMode(GL_PROJECTION);
+	pglPopMatrix();
+	pglMatrixMode(GL_MODELVIEW);
+	pglPopMatrix();
+}
+
 // -----------------+
 // SetTransform     :
 // -----------------+
@@ -3548,22 +3591,30 @@ void GL_RenderVhsEffect(fixed_t upbary, fixed_t downbary, UINT8 updistort, UINT8
 		 1.0f, -1.0f, 1.0f
 	};
 
-	xfix = 1/((float)screen_texsizew/(float)screen_width);
-	yfix = 1/((float)screen_texsizeh/(float)screen_height);
-
 	const GLfloat scrwf = (float)screen_width;
 	const GLfloat scrwh = (float)screen_height;
 
+	xfix = 1/((float)screen_texsizew/scrwf);
+	yfix = 1/((float)screen_texsizeh/scrwh);
+
+	GL_SetBlend(PF_Modulated|PF_Translucent|PF_NoDepthTest);
+
 	// Slight fuzziness
 	GL_MakeScreenTexture(HWD_SCREENTEXTURE_VHS);
-	GL_SetBlend(PF_Modulated|PF_Translucent|PF_NoDepthTest);
 	pglBindTexture(GL_TEXTURE_2D, screenTextures[HWD_SCREENTEXTURE_VHS]);
 
-	const float stride = 2.f/scrwh;
+	uint32_t r = rand();
 
-	for (i = 0; i < 1; i += stride)
+	const float ystep = 2.f/scrwh * (float)vid.udup/4.f;
+
+	for (i = 0; i < 1; i += ystep)
 	{
-		fix[2] = (float)(rand() % 128) / -22000.f * xfix;
+		// avoid calling rand thousands of times
+		r ^= r >> 13;
+		r ^= r >> 11;
+		r ^= r << 21;
+
+		fix[2] = (float)(r & 127) / -22000.f * xfix;
 		fix[0] = fix[2];
 		fix[6] = fix[0] + xfix;
 		fix[4] = fix[2] + xfix;
@@ -3581,8 +3632,8 @@ void GL_RenderVhsEffect(fixed_t upbary, fixed_t downbary, UINT8 updistort, UINT8
 	}
 
 	// Upward bar
-	//GL_MakeScreenTexture(HWD_SCREENTEXTURE_VHS);
-	//pglBindTexture(GL_TEXTURE_2D, screenTextures[HWD_SCREENTEXTURE_VHS]);
+	GL_MakeScreenTexture(HWD_SCREENTEXTURE_VHS);
+	pglBindTexture(GL_TEXTURE_2D, screenTextures[HWD_SCREENTEXTURE_VHS]);
 
 	color[0] = color[1] = color[2] = 190;
 	color[3] = 250;
@@ -3605,13 +3656,14 @@ void GL_RenderVhsEffect(fixed_t upbary, fixed_t downbary, UINT8 updistort, UINT8
 
 	fix[1] = fix[7] += (fix[3] - fix[7])*2;
 	screenVerts[1] = screenVerts[10] += (screenVerts[4] - screenVerts[1])*2;
+
 	pglTexCoordPointer(2, GL_FLOAT, 0, fix);
 	pglVertexPointer(3, GL_FLOAT, 0, screenVerts);
 	pglDrawArrays(GL_TRIANGLE_FAN, 0, 4);
 
 	// Downward bar
-	//GL_MakeScreenTexture(HWD_SCREENTEXTURE_VHS);
-	//pglBindTexture(GL_TEXTURE_2D, screenTextures[HWD_SCREENTEXTURE_VHS]);
+	GL_MakeScreenTexture(HWD_SCREENTEXTURE_VHS);
+	pglBindTexture(GL_TEXTURE_2D, screenTextures[HWD_SCREENTEXTURE_VHS]);
 
 	fix[0] = 0.0f;
 	fix[6] = xfix;
@@ -3630,6 +3682,7 @@ void GL_RenderVhsEffect(fixed_t upbary, fixed_t downbary, UINT8 updistort, UINT8
 
 	fix[1] = fix[7] += (fix[3] - fix[7])*2;
 	screenVerts[1] = screenVerts[10] += (screenVerts[4] - screenVerts[1])*2;
+
 	pglTexCoordPointer(2, GL_FLOAT, 0, fix);
 	pglVertexPointer(3, GL_FLOAT, 0, screenVerts);
 	pglDrawArrays(GL_TRIANGLE_FAN, 0, 4);
@@ -3669,7 +3722,7 @@ void GL_DrawScreenFinalTexture(int tex, INT32 width, INT32 height, boolean usesh
 {
 	float xfix, yfix;
 	float origaspect, newaspect;
-	float xoff = 1, yoff = 1; // xoffset and yoffset for the polygon to have black bars around the screen
+	float xoff = 1.0f, yoff = 1.0f; // xoffset and yoffset for the polygon to have black bars around the screen
 
 	static float off[12] =
 	{
@@ -3692,19 +3745,19 @@ void GL_DrawScreenFinalTexture(int tex, INT32 width, INT32 height, boolean usesh
 	if (origaspect < newaspect)
 	{
 		xoff = origaspect / newaspect;
-		yoff = 1;
+		yoff = 1.0f;
 	}
 	else if (origaspect > newaspect)
 	{
-		xoff = 1;
+		xoff = 1.0f;
 		yoff = newaspect / origaspect;
 	}
 
 	// float off[12];
 	off[0] = off[3]  = -xoff;
 	off[1] = off[10] = -yoff;
-	off[4] = off[7]  = yoff;
-	off[6] = off[9]  = xoff;
+	off[4] = off[7]  =  yoff;
+	off[6] = off[9]  =  xoff;
 
 	// float fix[8];
 	fix[3] = fix[5] = yfix;

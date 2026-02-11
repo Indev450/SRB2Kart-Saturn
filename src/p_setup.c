@@ -320,9 +320,7 @@ void P_AddGradesForMare(INT16 i, UINT8 mare, char *gtext)
   */
 void P_DeleteGrades(INT16 i)
 {
-	if (mapheaderinfo[i]->grades)
-		Z_Free(mapheaderinfo[i]->grades);
-
+	Z_Free(mapheaderinfo[i]->grades);
 	mapheaderinfo[i]->grades = NULL;
 	mapheaderinfo[i]->numGradedMares = 0;
 }
@@ -812,8 +810,6 @@ static void P_LoadSectors(UINT8 *data)
 		ss->tag = SHORT(ms->tag);
 
 		ss->flags |= SF_FLIPSPECIAL_FLOOR;
-
-		ss->soundorg.thinker.function = (actionf_p1)P_MobjThinker;
 	}
 
 	// set the sky flat num
@@ -1024,7 +1020,7 @@ void P_WriteThings(lumpnum_t lumpnum)
 	size_t i, length;
 	mapthing_t *mt;
 	UINT8 *data;
-	savebuffer_t save = {0};
+	savebuffer_t save = {};
 	INT16 temp;
 
 	data = W_CacheLumpNum(lumpnum, PU_LEVEL);
@@ -1168,7 +1164,7 @@ static void P_LoadLineDefs2(void)
 	for (; i--; ld++)
 	{
 		ld->frontsector = sides[ld->sidenum[0]].sector; //e6y: Can't be -1 here
-		ld->backsector  = ld->sidenum[1] != 0xffff ? sides[ld->sidenum[1]].sector : 0;
+		ld->backsector  = ld->sidenum[1] != 0xffff ? sides[ld->sidenum[1]].sector : NULL;
 
 		// Repeat count for midtexture
 		if ((ld->flags & ML_EFFECT5) && (ld->sidenum[1] != 0xffff))
@@ -2862,6 +2858,10 @@ boolean P_SetupLevel(boolean fromnetsave, boolean reloadinggamestate)
 	P_LoadMapFromFile();
 
 	P_ResetDynamicSlopes();
+
+	// Pre-calculate this lookup, because it was wasting
+	// a shit ton of time loading mobj thinkers.
+	CalculateDoomednumToMobjtype();
 
 	P_SpawnMapThings();
 
