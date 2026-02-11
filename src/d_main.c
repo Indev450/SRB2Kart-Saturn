@@ -2018,7 +2018,7 @@ void D_SRB2Main(void)
 	if (M_CheckProtoParam("replay"))
 	{
 		const char *replayurl = M_GetProtoParam();
-		char *replayname = strrchr(replayurl, '/');
+		const char *replayname = strrchr(replayurl, '/');
 
 		if (!replayname || !replayurl)
 			I_Error("REPLAY: Invalid URL.");
