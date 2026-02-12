@@ -4399,7 +4399,7 @@ static void P_RunSpecialSectorCheck(player_t *player, sector_t *sector)
 
 	// The list of specials that activate without floor touch
 	// Check Section 1
-	switch(GETSECSPECIAL(sector->special, 1))
+	switch (GETSECSPECIAL(sector->special, 1))
 	{
 		//case 2: // Damage (water)
 		case 8: // Instant kill
@@ -4410,7 +4410,7 @@ static void P_RunSpecialSectorCheck(player_t *player, sector_t *sector)
 	}
 
 	// Check Section 2
-	switch(GETSECSPECIAL(sector->special, 2))
+	switch (GETSECSPECIAL(sector->special, 2))
 	{
 		case 2: // Linedef executor (All players needed)
 		case 4: // Linedef executor
@@ -4421,7 +4421,7 @@ static void P_RunSpecialSectorCheck(player_t *player, sector_t *sector)
 	}
 
 	// Check Section 4
-	switch(GETSECSPECIAL(sector->special, 4))
+	switch (GETSECSPECIAL(sector->special, 4))
 	{
 		case 2: // Level Exit / GOAL Sector / Flag Return
 		case 1: // Starpost activator
