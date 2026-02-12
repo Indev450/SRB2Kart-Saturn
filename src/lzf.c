@@ -221,7 +221,7 @@ typedef struct
 #if USE_REP_MOVSB /* small win on amd, big loss on intel */
 #if (defined (__i386) || defined (__amd64)) && __GNUC__ >= 3
 # define lzf_movsb(dst, src, len)                \
-   asm ("rep movsb"                              \
+   __asm__ ("rep movsb"                          \
         : "=D" (dst), "=S" (src), "=c" (len)     \
         :  "0" (dst),  "1" (src),  "2" (len));
 #endif
