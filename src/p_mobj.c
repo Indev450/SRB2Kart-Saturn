@@ -949,12 +949,7 @@ static void P_PlayerFlip(mobj_t *mo)
 	G_GhostAddFlip((INT32) (mo->player - players));
 	// Flip aiming to match!
 
-	if (UNLIKELY(mo->player->pflags & PF_NIGHTSMODE)) // NiGHTS doesn't use flipcam
-	{
-		if (mo->tracer)
-			mo->tracer->eflags ^= MFE_VERTICALFLIP;
-	}
-	else if (mo->player->pflags & PF_FLIPCAM)
+	if (mo->player->pflags & PF_FLIPCAM)
 	{
 		UINT8 i;
 
@@ -975,6 +970,11 @@ static void P_PlayerFlip(mobj_t *mo)
 			if (mo->eflags & MFE_VERTICALFLIP)
 				camera[i].z += FixedMul(20*FRACUNIT, mo->scale);
 		}
+	}
+	else if (UNLIKELY(mo->player->pflags & PF_NIGHTSMODE)) // NiGHTS doesn't use flipcam
+	{
+		if (mo->tracer)
+			mo->tracer->eflags ^= MFE_VERTICALFLIP;
 	}
 }
 
@@ -3347,7 +3347,7 @@ void P_CalcChasePostImg(player_t *player, camera_t *thiscam)
 		player_flipcam = cv_flipcam[pnum].value;
 	}
 
-	const boolean flipcam = (player_flipcam && !(player->pflags & PF_NIGHTSMODE) && player->mo->eflags & MFE_VERTICALFLIP);
+	const boolean flipcam = (player_flipcam && player->mo->eflags & MFE_VERTICALFLIP && LIKELY(!(player->pflags & PF_NIGHTSMODE)));
 	UINT8 postimgtype = 0;
 
 	if (encoremode)
@@ -8693,7 +8693,7 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 
 				if (mobj->tracer && mobj->tracer->player)
 				{
-					if (!(mobj->tracer->player->pflags & PF_NIGHTSMODE))
+					if (LIKELY(!(mobj->tracer->player->pflags & PF_NIGHTSMODE)))
 					{
 						mobj->flags &= ~MF_NOGRAVITY;
 						mobj->flags2 &= ~MF2_DONTDRAW;
@@ -8717,7 +8717,7 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 						P_SetTarget(&mobj->target, NULL);
 					}
 
-					if (mobj->tracer->player->pflags & PF_NIGHTSMODE)
+					if (UNLIKELY(mobj->tracer->player->pflags & PF_NIGHTSMODE))
 					{
 						if (mobj->tracer->player->bonustime)
 						{
