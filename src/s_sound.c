@@ -531,7 +531,7 @@ void S_StartSoundAtVolume(const void *origin_p, sfxenum_t sfx_id, INT32 volume)
 	}
 
 	// i seriously get an aneurism by this shitty egg
-	if (strncmp(sfx->name, "DNLT", 4) == 0)
+	if (fastncmp(sfx->name, "DNLT", 4))
 		return;
 
 	initial_volume = (origin ? S_ScaleVolumeWithSplitscreen(volume) : volume);
