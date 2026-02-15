@@ -1178,7 +1178,7 @@ consvar_t *CV_FindVar(const char *name)
 	consvar_t *cvar;
 
 	for (cvar = consvar_vars; cvar; cvar = cvar->next)
-		if (fasticmp(name,cvar->name))
+		if (fasticmp(name, cvar->name))
 			return cvar;
 
 	return NULL;
