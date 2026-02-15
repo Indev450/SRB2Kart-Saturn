@@ -173,7 +173,7 @@ FUNCPRINTF static void deh_warning(const char *first, ...)
 	vsnprintf(buf, 1000, first, argptr); // sizeof only returned 4 here. it didn't like that pointer.
 	va_end(argptr);
 
-	if(dbg_line == -1) // Not in a SOC, line number unknown.
+	if (dbg_line == -1) // Not in a SOC, line number unknown.
 		CONS_Alert(CONS_WARNING, "%s\n", buf);
 	else
 		CONS_Alert(CONS_WARNING, "Line %u: %s\n", dbg_line, buf);
@@ -8545,7 +8545,7 @@ static inline int lib_action(lua_State *L)
 
 // Hardcoded A_Action name to call for super() or NULL if super() would be invalid.
 // Set in lua_infolib.
-const char *superactions[MAXRECURSION];
+const char *superactions[MAXRECURSION] = {};
 UINT8 superstack = 0;
 
 static int lib_dummysuper(lua_State *L)
