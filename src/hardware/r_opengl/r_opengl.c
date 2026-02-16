@@ -1383,19 +1383,19 @@ void GL_Flush(void)
 // -----------------+
 INT32 GL_isExtAvailable(const char *extension, const GLubyte *start)
 {
-	const GLubyte *where, *terminator;
+	GLubyte         *where, *terminator;
 
 	if (!extension || !start)
 		return 0;
 
-	where = (const GLubyte *)strchr(extension, ' ');
+	where = (GLubyte *) strchr(extension, ' ');
 
 	if (where || *extension == '\0')
 		return 0;
 
 	for (;;)
 	{
-		where = (const GLubyte *)strstr((const char *) start, extension);
+		where = (GLubyte *) strstr((const char *) start, extension);
 
 		if (!where)
 			break;
