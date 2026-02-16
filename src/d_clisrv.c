@@ -4703,7 +4703,7 @@ void CL_RemoveSplitscreenPlayer(UINT8 p)
 // is there a game running
 boolean Playing(void)
 {
-	return (server && serverrunning) || (client && cl_mode == CL_CONNECTED);
+	return ((server && serverrunning) || (client && cl_mode == CL_CONNECTED));
 }
 
 boolean SV_SpawnServer(void)
