@@ -707,11 +707,20 @@ INT32 K_GetSkinNum(player_t *player)
 
 //
 // returns the mobj skinnumber
-// accounts for localskins
+// accounts for localskins ?
 //
 INT32 K_GetMobjSkinNum(const skin_t *skin, boolean local)
 {
 	return skin - K_GetSkinArray(local);
+}
+
+//
+// returns the mobj skinnumber
+// accounts for localskins
+//
+INT32 K_GetMobjLocalSkinNum(const skin_t *skin, const skin_t *localskin, boolean local)
+{
+	return localskin ? (localskin - K_GetSkinArray(local)) : (skin - skins);
 }
 
 //
