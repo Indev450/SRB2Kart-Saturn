@@ -90,9 +90,7 @@ static unsigned hash_sparse(const char *str, size_t len)
 {
   /* Constants taken from lookup3 hash by Bob Jenkins. */
   unsigned int a, b, h = cast(unsigned int, len);
-
   if (len == 0) return 0;
-
 #define rol(x, n) (((x)<<(n)) | ((x)>>(-cast(int, n)&(8*sizeof(x)-1))))
   if (len >= 4) {  /* Caveat: unaligned access! */
     a  = getu32(str);
@@ -136,7 +134,9 @@ TString *luaS_newlstr (lua_State *L, const char *str, size_t l) {
        o != NULL;
        o = o->gch.next) {
     TString *ts = rawgco2ts(o);
-    if (ts->tsv.len == l && (memcmp(str, getstr(ts), l) == 0)) {
+    if (ts->tsv.hash == h &&
+        ts->tsv.len == l &&
+       (memcmp(str, getstr(ts), l) == 0)) {
       /* string may be dead */
       if (isdead(G(L), o)) changewhite(o);
       return ts;
