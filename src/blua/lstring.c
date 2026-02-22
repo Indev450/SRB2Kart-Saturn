@@ -90,7 +90,6 @@ static unsigned hash_sparse(const char *str, size_t len)
 {
   /* Constants taken from lookup3 hash by Bob Jenkins. */
   unsigned int a, b, h = cast(unsigned int, len);
-  if (len == 0) return 0;
 #define rol(x, n) (((x)<<(n)) | ((x)>>(-cast(int, n)&(8*sizeof(x)-1))))
   if (len >= 4) {  /* Caveat: unaligned access! */
     a  = getu32(str);
@@ -98,11 +97,13 @@ static unsigned hash_sparse(const char *str, size_t len)
     b  = getu32(str+(len>>1)-2);
     h ^= b; h -= rol(b, 14);
     b += getu32(str+(len>>2)-1);
-  } else {
+  } else if (len > 0) {
     a  = getu8(str);
     h ^= getu8(str+len-1);
     b  = getu8(str+(len>>1));
     h ^= b; h -= rol(b, 14);
+  } else {
+    return 0;
   }
   a ^= h; a -= rol(h, 11);
   b ^= a; b -= rol(a, 25);
