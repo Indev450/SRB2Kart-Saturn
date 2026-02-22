@@ -262,6 +262,7 @@ Finish_registration (void)
 	{
 		CONS_Printf("\n");
 		CONS_Alert(CONS_NOTICE, "%s\n", rules);
+		free(rules);
 	}
 
 	if (registered)
