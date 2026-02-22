@@ -437,8 +437,7 @@ UINT8* R_GetTranslationColormap(INT32 skinnum, skincolors_t color, UINT8 flags)
 
 UINT8* R_GetLocalTranslationColormap(skin_t *skin, skin_t *localskin, skincolors_t color, UINT8 flags, boolean local)
 {
-	const INT32 skinnum = localskin ? (localskin - K_GetSkinArray(local)) : (skin - skins);
-	return RGetTranslationColormap(skinnum, color, flags, (localskin && local));
+	return RGetTranslationColormap(K_GetMobjLocalSkinNum(skin, localskin, local), color, flags, (localskin && local));
 }
 
 patch_t* R_GetSkinFaceRank(player_t* ply)

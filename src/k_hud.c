@@ -3816,7 +3816,7 @@ static void K_drawKartMinimap(void)
 
 		if (cv_showminimapangle.value && (minidoticon || minilighticon) && !playertimedout)
 		{
-			UINT8 *colormap;
+			UINT8 *colormap = NULL;
 			drawinfo_t dims;
 			fixed_t interpx, interpy;
 			fixed_t xoff = 0, yoff = 0;
@@ -3827,10 +3827,27 @@ static void K_drawKartMinimap(void)
 			if (encoremode)
 				ang = ANGLE_180 - ang;
 
-			if (mobj->colorized)
-				colormap = R_GetTranslationColormap(TC_RAINBOW, mobj->color, GTC_CACHE);
-			else
-				colormap = R_GetLocalTranslationColormap(mobj->skin, mobj->localskin, mobj->color, GTC_CACHE, mobj->skinlocal);
+			if (mobj->color)
+			{
+				if (mobj->colorized)
+				{
+					colormap = R_GetTranslationColormap(TC_RAINBOW, mobj->color, GTC_CACHE);
+				}
+				else
+				{
+					const INT32 skinnum = K_GetMobjLocalSkinNum(mobj->skin, mobj->localskin, mobj->skinlocal);
+
+					// special case if startcolor is not the default (160 / Green)
+					if (skinnum && skins[skinnum].starttranscolor != skins[0].starttranscolor)
+					{
+						colormap = R_GetTranslationColormap(TC_DEFAULT, mobj->color, GTC_CACHE);
+					}
+					else
+					{
+						colormap = R_GetLocalTranslationColormap(mobj->skin, mobj->localskin, mobj->color, GTC_CACHE, mobj->skinlocal);
+					}
+				}
+			}
 
 			interpx = lerp(mobj->old_x, mobj->x);
 			interpy = lerp(mobj->old_y, mobj->y);
