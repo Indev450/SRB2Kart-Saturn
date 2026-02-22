@@ -318,6 +318,7 @@ static void
 HMS_end (struct HMS_buffer *buffer)
 {
 	curl_easy_cleanup(buffer->curl);
+	free(buffer->errbuf);
 	free(buffer->buffer);
 	free(buffer);
 }
