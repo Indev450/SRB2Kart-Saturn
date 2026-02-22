@@ -931,21 +931,21 @@ const char *K_GetItemPatch(UINT8 item, boolean tiny)
 
 //}
 
-INT32 ITEM_X, ITEM_Y;	// Item Window
-INT32 TIME_X, TIME_Y;	// Time Sticker
-INT32 LAPS_X, LAPS_Y;	// Lap Sticker
-INT32 SPDM_X, SPDM_Y;	// Speedometer
-INT32 POSI_X, POSI_Y;	// Position Number
-INT32 FACE_X, FACE_Y;	// Top-four Faces
-INT32 STCD_X, STCD_Y;	// Starting countdown
-INT32 CHEK_Y;			// CHECK graphic
-INT32 MINI_X, MINI_Y;	// Minimap
-INT32 WANT_X, WANT_Y;	// Battle WANTED poster
+static INT32 ITEM_X, ITEM_Y;	// Item Window
+static INT32 TIME_X, TIME_Y;	// Time Sticker
+static INT32 LAPS_X, LAPS_Y;	// Lap Sticker
+static INT32 SPDM_X, SPDM_Y;	// Speedometer
+static INT32 POSI_X, POSI_Y;	// Position Number
+static INT32 FACE_X, FACE_Y;	// Top-four Faces
+static INT32 STCD_X, STCD_Y;	// Starting countdown
+static INT32 CHEK_Y;			// CHECK graphic
+static INT32 MINI_X, MINI_Y;	// Minimap
+static INT32 WANT_X, WANT_Y;	// Battle WANTED poster
 
 // This is for the P2 and P4 side of splitscreen. Then we'll flip P1's and P2's to the bottom with V_SPLITSCREEN.
-INT32 ITEM2_X, ITEM2_Y;
-INT32 LAPS2_X, LAPS2_Y;
-INT32 POSI2_X, POSI2_Y;
+static INT32 ITEM2_X, ITEM2_Y;
+static INT32 LAPS2_X, LAPS2_Y;
+static INT32 POSI2_X, POSI2_Y;
 
 static void K_initKartHUD(void)
 {
