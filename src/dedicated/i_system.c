@@ -1002,7 +1002,7 @@ void I_SleepDuration(precise_t duration)
 #endif
 }
 
-boolean g_in_exiting_signal_handler = false;
+static volatile sig_atomic_t g_in_exiting_signal_handler = false;
 
 static void I_PrintSignal(INT32 signal_num, boolean core_dumped, char *signal_msg)
 {
@@ -1064,6 +1064,11 @@ static void I_ReportSignal(int num, int coredumped)
 	size_t len = strlen(sigmsg);
 	snprintf(sigmsg + len, sizeof(sigmsg) - len, "\n\nCrash report has been saved into %s", CRASH_LOGFILE_NAME);
 	I_OutputMsg("\nProcess killed by signal: %s\n\n", sigmsg);
+}
+
+boolean I_In_Exiting_Signal_Handler(void)
+{
+	return g_in_exiting_signal_handler;
 }
 
 #ifndef NEWSIGNALHANDLER

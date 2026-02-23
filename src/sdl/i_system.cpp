@@ -1624,7 +1624,7 @@ static void write_backtrace(bt_crash_reason_t reason)
 static std::thread::id g_main_thread_id;
 #endif
 
-boolean g_in_exiting_signal_handler = false;
+static volatile sig_atomic_t g_in_exiting_signal_handler = false;
 
 static void I_PrintSignal(INT32 signal_num, boolean core_dumped, char *signal_msg, char *signal_name)
 {
@@ -1759,6 +1759,11 @@ static void I_ReportSignal(int num, int coredumped)
 	I_ShowErrorBox(sigttl, sigmsg);
 }
 
+boolean I_In_Exiting_Signal_Handler(void)
+{
+	return g_in_exiting_signal_handler;
+}
+
 #ifndef NEWSIGNALHANDLER
 FUNCNORETURN static ATTRNORETURN void signal_handler(INT32 num)
 {
@@ -1788,7 +1793,7 @@ FUNCNORETURN static ATTRNORETURN void signal_handler(INT32 num)
 }
 #endif
 
-static volatile sig_atomic_t interrupted = 0;
+static volatile sig_atomic_t interrupted = false;
 
 boolean I_Interrupted(void)
 {
@@ -1798,7 +1803,7 @@ boolean I_Interrupted(void)
 static void quit_handler(int num)
 {
 	(void)num;
-	interrupted = 1;
+	interrupted = true;
 }
 
 static void I_RegisterSignals(void)
