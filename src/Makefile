@@ -300,6 +300,7 @@ opts+=$(debug_opts)
 
 opts+=$(foreach v,$(passthru_opts),$(if $($(v)),-D$(v)))
 
+CWFLAGS+=-std=gnu17
 CXXFLAGS+=-std=c++17 # force c17 for c++ since most vpss run older ubuntu versions with old compilers
 
 opts+=$(WFLAGS) $(CFLAGS)
