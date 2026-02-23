@@ -202,6 +202,10 @@ INT32 I_StartupSystem(void);
 */
 void I_ShutdownSystem(void);
 
+/**	\brief To check if a Interrupt or Terminate Signal was fired
+ */
+boolean I_Interrupted(void);
+
 /**	\brief	The I_GetDiskFreeSpace function
 
 	\param	freespace	a INT64 pointer to hold the free space amount

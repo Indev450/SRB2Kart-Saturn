@@ -2208,7 +2208,8 @@ void I_ShutdownGraphics(void)
 		SDL_DestroyWindow(window);
 	window = NULL;
 
-	SDL_QuitSubSystem(SDL_INIT_VIDEO);
+	if (SDL_WasInit(SDL_INIT_VIDEO) == SDL_INIT_VIDEO)
+		SDL_QuitSubSystem(SDL_INIT_VIDEO);
 	framebuffer = SDL_FALSE;
 }
 

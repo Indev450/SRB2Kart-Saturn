@@ -828,6 +828,11 @@ void D_SRB2Loop(void)
 
 	for (;;)
 	{
+		if (I_Interrupted())
+		{
+			I_Quit();
+		}
+
 		precise_t elapsed;
 		precise_t enterprecise, finishprecise;
 

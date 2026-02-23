@@ -1788,21 +1788,17 @@ FUNCNORETURN static ATTRNORETURN void signal_handler(INT32 num)
 }
 #endif
 
-FUNCNORETURN static ATTRNORETURN void quit_handler(int num)
-{
-#ifdef HAVE_THREADS
-	if (g_main_thread_id != std::this_thread::get_id())
-	{
-		// Do not attempt any sort of recovery if this signal triggers off the main thread
-		signal(num, SIG_DFL);
-		raise(num);
-		exit(-2);
-	}
-#endif
+static volatile sig_atomic_t interrupted = 0;
 
-	signal(num, SIG_DFL); //default signal action
-	raise(num);
-	I_Quit();
+boolean I_Interrupted(void)
+{
+	return interrupted;
+}
+
+static void quit_handler(int num)
+{
+	(void)num;
+	interrupted = 1;
 }
 
 static void I_RegisterSignals(void)
