@@ -2960,7 +2960,7 @@ fixed_t R_DoPlayerFade(mobj_t *thing)
 	fixed_t fadealpha = FRACUNIT;
 	static constexpr tic_t countdownstarttime = (15 * TICRATE) / 4; // starttime - (3*TICRATE)
 
-	if (thing->player == viewplayer || viewplayer->exiting || camera[R_GetViewNumber()].freecam || leveltime < countdownstarttime)
+	if (thing->player == viewplayer || viewplayer->exiting || viewplayer->spectator || camera[R_GetViewNumber()].freecam || leveltime < countdownstarttime)
 		return fadealpha;
 
 	const INT32 playerdist     = (FixedMul((thing->x - viewx), viewcos) + FixedMul((thing->y - viewy), viewsin)) >> FRACBITS;
