@@ -30,7 +30,10 @@
 #endif
 
 #include <signal.h>
+
+#if defined (__unix__) || defined(__APPLE__) || defined (UNIXCOMMON)
 #include <poll.h>
+#endif
 
 #ifdef _WIN32
 #define RPC_NO_WINDOWS_H
@@ -723,7 +726,9 @@ static void JoyReset(SDLJoyInfo_t *JoySet)
 
 	JoySet->dev = NULL;
 	JoySet->oldjoy = -1;
+#if (SDL_VERSION_ATLEAST(2,32,4))
 	JoySet->id = -1;
+#endif
 }
 
 /**	\brief SDL info about joystick
@@ -780,7 +785,11 @@ void I_UpdateJoystickDeviceIndex(UINT8 player)
 	///////////////////////////////////////////////
 	if (JoyInfo[player].dev)
 	{
+#if (SDL_VERSION_ATLEAST(2,32,4))
 		cv_usejoystick[player].value = JoyInfo[player].id + 1;
+#else
+		cv_usejoystick[player].value = I_GetJoystickDeviceIndex(JoyInfo[player].dev) + 1;
+#endif
 	}
 	else
 	{
@@ -936,7 +945,9 @@ static int joy_open(int playerIndex, int joyIndex)
 
 	CONS_Debug(DBG_GAMELOGIC, "Joystick %d: %s\n", playerIndex+1, SDL_GameControllerName(JoyInfo[playerIndex].dev));
 
+#if (SDL_VERSION_ATLEAST(2,32,4))
 	JoyInfo[playerIndex].id = I_GetJoystickDeviceIndex(JoyInfo[playerIndex].dev);
+#endif
 
 	return SDL_CONTROLLER_AXIS_MAX;
 }
@@ -982,7 +993,9 @@ void I_InitJoystick(UINT8 index)
 
 	JoyInfo[index].dev = NULL;
 	JoyInfo[index].oldjoy = -1;
+#if (SDL_VERSION_ATLEAST(2,32,4))
 	JoyInfo[index].id = -1;
+#endif
 
 	if (cv_usejoystick[index].value)
 		newcontroller = SDL_GameControllerOpen(cv_usejoystick[index].value-1);
@@ -996,17 +1009,27 @@ void I_InitJoystick(UINT8 index)
 			break;
 	}
 
+#if (SDL_VERSION_ATLEAST(2,32,4))
 	JoyInfo[index].id = I_GetJoystickDeviceIndex(JoyInfo[index].dev);
+#endif
 
 	if (newcontroller && i < MAXSPLITSCREENPLAYERS) // don't override an active device
 	{
+#if (SDL_VERSION_ATLEAST(2,32,4))
 		cv_usejoystick[index].value = JoyInfo[index].id + 1;
+#else
+		cv_usejoystick[index].value = I_GetJoystickDeviceIndex(JoyInfo[index].dev) + 1;
+#endif
 	}
 	else if (newcontroller && joy_open(index, cv_usejoystick[index].value) != -1)
 	{
+#if (SDL_VERSION_ATLEAST(2,32,4))
+		JoyInfo[index].oldjoy = JoyInfo[index].id + 1;
+#else
 		// SDL's device indexes are unstable, so cv_usejoystick may not match
 		// the actual device index. So let's cheat a bit and find the device's current index.
-		JoyInfo[index].oldjoy = JoyInfo[index].id + 1;
+		JoyInfo[index].oldjoy = I_GetJoystickDeviceIndex(JoyInfo[index].dev) + 1;
+#endif
 	}
 	else
 	{
@@ -1554,7 +1577,7 @@ static void write_backtrace(bt_crash_reason_t reason)
 static std::thread::id g_main_thread_id;
 #endif
 
-boolean g_in_exiting_signal_handler = false;
+static volatile sig_atomic_t g_in_exiting_signal_handler = false;
 
 static void I_PrintSignal(INT32 signal_num, boolean core_dumped, char *signal_msg, char *signal_name)
 {
@@ -1689,6 +1712,11 @@ static void I_ReportSignal(int num, int coredumped)
 	I_ShowErrorBox(sigttl, sigmsg);
 }
 
+boolean I_In_Exiting_Signal_Handler(void)
+{
+	return g_in_exiting_signal_handler;
+}
+
 #ifndef NEWSIGNALHANDLER
 FUNCNORETURN static ATTRNORETURN void signal_handler(INT32 num)
 {
@@ -1718,21 +1746,17 @@ FUNCNORETURN static ATTRNORETURN void signal_handler(INT32 num)
 }
 #endif
 
-FUNCNORETURN static ATTRNORETURN void quit_handler(int num)
-{
-#ifdef HAVE_THREADS
-	if (g_main_thread_id != std::this_thread::get_id())
-	{
-		// Do not attempt any sort of recovery if this signal triggers off the main thread
-		signal(num, SIG_DFL);
-		raise(num);
-		exit(-2);
-	}
-#endif
+static volatile sig_atomic_t interrupted = false;
 
-	signal(num, SIG_DFL); //default signal action
-	raise(num);
-	I_Quit();
+boolean I_Interrupted(void)
+{
+	return interrupted;
+}
+
+static void quit_handler(int num)
+{
+	(void)num;
+	interrupted = true;
 }
 
 static void I_RegisterSignals(void)
@@ -1818,18 +1842,15 @@ static void I_Fork(void)
 			I_RegisterChildSignals();
 			break;
 		default:
+#ifdef LOGMESSAGES
 			if (logstream)
 				fclose(logstream);/* the child has this */
-
+#endif
 			c = wait(&status);
-
 #ifdef LOGMESSAGES
 			/* By the way, exit closes files. */
 			logstream = fopen(logfilename, "at");
-#else
-			logstream = 0;
 #endif
-
 			if (c == -1)
 			{
 				kill(child, SIGKILL);

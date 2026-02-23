@@ -2605,7 +2605,7 @@ void G_DoPlayDemo(char *defdemoname)
 	boolean skiperrors = false;
 #endif
 	boolean spectator;
-	UINT8 slots[MAXPLAYERS], kartspeed[MAXPLAYERS], kartweight[MAXPLAYERS], numslots = 0;
+	UINT8 slots[MAXPLAYERS] = {}, kartspeed[MAXPLAYERS] = {}, kartweight[MAXPLAYERS] = {}, numslots = 0;
 
 	G_InitDemoRewind();
 

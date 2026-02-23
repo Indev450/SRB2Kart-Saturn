@@ -660,11 +660,20 @@ INT32 K_GetSkinNum(player_t *player)
 
 //
 // returns the mobj skinnumber
-// accounts for localskins
+// accounts for localskins ?
 //
 INT32 K_GetMobjSkinNum(const skin_t *skin, boolean local)
 {
 	return skin - K_GetSkinArray(local);
+}
+
+//
+// returns the mobj skinnumber
+// accounts for localskins
+//
+INT32 K_GetMobjLocalSkinNum(const skin_t *skin, const skin_t *localskin, boolean local)
+{
+	return localskin ? (localskin - K_GetSkinArray(local)) : (skin - skins);
 }
 
 //
@@ -1480,7 +1489,6 @@ void K_KartBouncing(mobj_t *mobj1, mobj_t *mobj2, boolean bounce, boolean solid)
 		fixed_t nx = FixedDiv(distx, dist);
 		fixed_t ny = FixedDiv(disty, dist);
 
-		dist = dist ? dist : 1;
 		distx = FixedMul(mobj1->radius+mobj2->radius, nx);
 		disty = FixedMul(mobj1->radius+mobj2->radius, ny);
 

@@ -453,10 +453,10 @@ consvar_t cv_litesteer[MAXSPLITSCREENPLAYERS] = {
 
 //static CV_PossibleValue_t autoaccelcons_t[] = {{0, "Off"}, {1, "Manual"}, {2, "Automatic"}, {0, NULL}};
 consvar_t cv_autoaccel[MAXSPLITSCREENPLAYERS] = {
-	{"autoaccel",  "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL},
-	{"autoaccel2", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL},
-	{"autoaccel3", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL},
-	{"autoaccel4", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL}
+	{"kartautoaccel",  "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"kartautoaccel2", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"kartautoaccel3", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL},
+	{"kartautoaccel4", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL}
 };
 
 static CV_PossibleValue_t driftsparkpulse_t[] = {{0, "MIN"}, {FRACUNIT*3, "MAX"}, {0, NULL}};
@@ -520,11 +520,8 @@ void G_ClearRecords(void)
 	INT16 i;
 	for (i = 0; i < NUMMAPS; ++i)
 	{
-		if (mainrecords[i])
-		{
-			Z_Free(mainrecords[i]);
-			mainrecords[i] = NULL;
-		}
+		Z_Free(mainrecords[i]);
+		mainrecords[i] = NULL;
 	}
 }
 

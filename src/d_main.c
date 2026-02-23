@@ -274,21 +274,17 @@ static void D_Renderview(void)
 
 	R_ApplyLevelInterpolators(R_GetTimeFrac(RTF_LEVEL));
 
-	if (rendermode == render_soft)
+	if (rendermode == render_soft && cv_homremoval.value)
 	{
-		// if this is display player 1
-		if (cv_homremoval.value)
+		if (cv_homremoval.value == 1)
 		{
-			if (cv_homremoval.value == 1)
-			{
-				// Clear the software screen buffer to remove HOM
-				memset(vid.screens[0], 31, vid.width * vid.height);
-			}
-			else if (cv_homremoval.value == 2)
-			{
-				//'development' HOM removal -- makes it blindingly obvious if HOM is spotted.
-				memset(vid.screens[0], 32+(timeinmap&15), vid.width * vid.height);
-			}
+			// Clear the software screen buffer to remove HOM
+			memset(vid.screens[0], 31, vid.width * vid.height);
+		}
+		else if (cv_homremoval.value == 2)
+		{
+			//'development' HOM removal -- makes it blindingly obvious if HOM is spotted.
+			memset(vid.screens[0], 32+(timeinmap&15), vid.width * vid.height);
 		}
 	}
 
@@ -322,7 +318,6 @@ static void D_Renderview(void)
 					break;
 				default: // Initialize for P1
 					viewwindowy = viewwindowx = 0;
-					objectsdrawn = 0;
 					break;
 			}
 
@@ -333,19 +328,17 @@ static void D_Renderview(void)
 			}
 			else if (rendermode == render_soft)
 #endif
+			{
 				R_RenderPlayerView(&players[displayplayers[i]]);
-		}
 
-		if (rendermode == render_soft)
-		{
-			if (i == 0)
-				R_ApplyViewMorph();
-
+				if (i == 0)
+					R_ApplyViewMorph();
 #ifdef MOTIONBLUR
-			V_DoPostProcessor(i, postimgparam[i]);
+				V_DoPostProcessor(i, postimgparam[i]);
 #else
-			V_DoPostProcessor(i, 0);
+				V_DoPostProcessor(i, 0);
 #endif
+			}
 		}
 	}
 
@@ -704,6 +697,11 @@ void D_SRB2Loop(void)
 
 	for (;;)
 	{
+		if (I_Interrupted())
+		{
+			I_Quit();
+		}
+
 		// capbudget is the minimum precise_t duration of a single loop iteration
 		precise_t capbudget;
 		precise_t elapsed;
@@ -783,11 +781,6 @@ void D_SRB2Loop(void)
 
 				doDisplay = true;
 			}
-
-			if (!dedicated)
-			{
-				G_DeviceLEDTick();
-			}
 		}
 
 		if (interp)
@@ -828,6 +821,13 @@ void D_SRB2Loop(void)
 			M_SaveFrame();
 		if (takescreenshot)
 			M_DoScreenShot();
+
+#ifndef DEDICATED
+		if (!dedicated && renderisnewtic)
+		{
+			G_DeviceLEDTick();
+		}
+#endif
 
 		// consoleplayer -> displayplayers (hear sounds from viewpoint)
 		S_UpdateSounds(); // move positional sounds
@@ -907,7 +907,9 @@ void D_ClearState(void)
 
 	// okay, stop now
 	// (otherwise the game still thinks we're playing!)
+#ifdef HAVE_CURL
 	CURLAbortFile();
+#endif
 	SV_StopServer();
 	SV_ResetServer();
 
@@ -1640,12 +1642,6 @@ void D_SRB2Main(void)
 	strcpy(title, "SRB2Kart");
 	strcpy(srb2, "SRB2Kart");
 	D_MakeTitleString(srb2);
-
-#if defined (__OS2__) && !defined (HAVE_SDL)
-	// set PM window title
-	snprintf(pmData->title, sizeof (pmData->title), "SRB2Kart" VERSIONSTRING ": %s", title);
-	pmData->title[sizeof (pmData->title) - 1] = '\0';
-#endif
 
 	if (devparm)
 		CONS_Printf(M_GetText("Development mode ON.\n"));

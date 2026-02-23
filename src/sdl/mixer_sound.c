@@ -237,7 +237,8 @@ void I_ShutdownSound(void)
 	Mix_Quit();
 #endif
 
-	SDL_QuitSubSystem(SDL_INIT_AUDIO);
+	if (SDL_WasInit(SDL_INIT_AUDIO) == SDL_INIT_AUDIO)
+		SDL_QuitSubSystem(SDL_INIT_AUDIO);
 
 #ifdef HAVE_LIBGME
 	if (gme)
@@ -1107,7 +1108,7 @@ UINT32 I_GetSongPosition(void)
 
 void I_UpdateSongLagThreshold(void)
 {
-	stutter_threshold = cv_music_resync_powerups_only.value ? 0 : (cv_music_resync_threshold.value/1000.0*(4*44100));
+	stutter_threshold = (UINT32)(cv_music_resync_powerups_only.value ? 0 : (cv_music_resync_threshold.value/1000.0*(4*44100)));
 }
 
 /// ------------------------

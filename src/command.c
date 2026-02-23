@@ -1178,7 +1178,7 @@ consvar_t *CV_FindVar(const char *name)
 	consvar_t *cvar;
 
 	for (cvar = consvar_vars; cvar; cvar = cvar->next)
-		if (fasticmp(name,cvar->name))
+		if (fasticmp(name, cvar->name))
 			return cvar;
 
 	return NULL;
@@ -1793,7 +1793,7 @@ void CV_AddValue(consvar_t *var, INT32 increment)
 					if (newvalue == oldvalue)
 						break; // don't loop forever if there's none of a certain gametype
 
-					if (newvalue >= 0 && !mapheaderinfo[newvalue])
+					if (newvalue >= 0 && newvalue < NUMMAPS && !mapheaderinfo[newvalue])
 						continue; // Don't allocate the header.  That just makes memory usage skyrocket.
 
 				} while (!M_CanShowLevelInList(newvalue, gt));

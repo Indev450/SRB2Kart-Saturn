@@ -219,8 +219,9 @@ static void Get_masterserver_rules(boolean checkfirst)
 	if (HMS_fetch_rules(rules, sizeof rules))
 	{
 		Lock_state();
-		Z_Free(MSRules);
-		MSRules = Z_StrDup(rules);
+		if (MSRules)
+			free(MSRules);
+		MSRules = strdup(rules);
 
 		if (MSRegistered == true)
 		{
@@ -261,6 +262,7 @@ Finish_registration (void)
 	{
 		CONS_Printf("\n");
 		CONS_Alert(CONS_NOTICE, "%s\n", rules);
+		free(rules);
 	}
 
 	if (registered)
@@ -507,7 +509,7 @@ char *GetMasterServerRules(void)
 	char *rules;
 
 	Lock_state();
-	rules = MSRules ? Z_StrDup(MSRules) : NULL;
+	rules = MSRules ? strdup(MSRules) : NULL;
 	Unlock_state();
 
 	return rules;

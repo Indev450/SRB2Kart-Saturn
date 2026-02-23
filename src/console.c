@@ -46,16 +46,16 @@
 #ifdef HAVE_THREADS
 I_mutex con_mutex;
 
-// g_in_exiting_signal_handler is an evil hack
+// I_In_Exiting_Signal_Handler is an evil hack
 // to avoid infinite SIGABRT recursion in the signal handler
 // due to poisoned locks or mach-o kernel not supporting locks in signals
 // or something like that. idk
-#  define Lock_state()    if (!g_in_exiting_signal_handler) { I_lock_mutex(&con_mutex); }
-#  define Unlock_state()  if (!g_in_exiting_signal_handler) { I_unlock_mutex(con_mutex); }
-#else/*HAVE_THREADS*/
+#  define Lock_state()    if (!I_In_Exiting_Signal_Handler()) { I_LockMutex(&con_mutex); }
+#  define Unlock_state()  if (!I_In_Exiting_Signal_Handler()) { I_UnlockMutex(con_mutex); }
+#else /*HAVE_THREADS*/
 #  define Lock_state()
 #  define Unlock_state()
-#endif/*HAVE_THREADS*/
+#endif /*HAVE_THREADS*/
 
 static boolean con_started = false; // console has been initialised
        boolean con_startup = false; // true at game startup, screen need refreshing

@@ -3326,7 +3326,7 @@ void CL_ClearPlayer(INT32 playernum)
 	if (players[playernum].mo)
 	{
 		// Don't leave a NiGHTS ghost!
-		if ((players[playernum].pflags & PF_NIGHTSMODE) && players[playernum].mo->tracer)
+		if (UNLIKELY((players[playernum].pflags & PF_NIGHTSMODE) && players[playernum].mo->tracer))
 			P_RemoveMobj(players[playernum].mo->tracer);
 		P_RemoveMobj(players[playernum].mo);
 	}
@@ -3472,6 +3472,7 @@ static void Command_GetPlayerNum(void)
 	INT32 i;
 
 	for (i = 0; i < MAXPLAYERS; i++)
+	{
 		if (playeringame[i])
 		{
 			if (serverplayer == i)
@@ -3479,6 +3480,7 @@ static void Command_GetPlayerNum(void)
 			else
 				CONS_Printf(M_GetText("\x82num:%2d  node:%2d  %s\n"), i, playernode[i], player_names[i]);
 		}
+	}
 }
 
 SINT8 nametonum(const char *name)

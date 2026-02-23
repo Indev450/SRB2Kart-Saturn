@@ -1172,9 +1172,7 @@ void F_StartWaitingPlayers(void)
 	randskin = M_RandomKey(numskins);
 	boolean waithires = skins[randskin].flags && SF_HIRES;
 
-	if (waitcolormap)
-		Z_Free(waitcolormap);
-
+	Z_Free(waitcolormap);
 	waitcolormap = R_GetTranslationColormap(randskin, skins[randskin].prefcolor, 0);
 
 	if (waithires)

@@ -91,7 +91,7 @@ void Z_Init(void);
 
 // Z_Free and alloc with alignment
 #ifdef ZDEBUG
-#define Z_Free(p)                 Z_Free2(p, __FILE__, __LINE__)
+#define Z_Free(p)          Z_Free2(p, __FILE__, __LINE__)
 #define Z_Malloc(s,t,u)    Z_Malloc2(s, t, u, __FILE__, __LINE__)
 #define Z_Calloc(s,t,u)    Z_Calloc2(s, t, u, __FILE__, __LINE__)
 #define Z_Realloc(p,s,t,u) Z_Realloc2(p,s, t, u, __FILE__, __LINE__)
