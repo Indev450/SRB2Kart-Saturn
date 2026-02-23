@@ -4016,16 +4016,16 @@ boolean replaynamesloaded = false;
 #ifdef HAVE_THREADS
 I_mutex replayquerymutex;
 
-// g_in_exiting_signal_handler is an evil hack
+// I_In_Exiting_Signal_Handler is an evil hack
 // to avoid infinite SIGABRT recursion in the signal handler
 // due to poisoned locks or mach-o kernel not supporting locks in signals
 // or something like that. idk
-#  define Lock_search_state()    if (!g_in_exiting_signal_handler) { I_lock_mutex(&replayquerymutex); }
-#  define Unlock_search_state()  if (!g_in_exiting_signal_handler) { I_unlock_mutex(replayquerymutex); }
-#else/*HAVE_THREADS*/
+#  define Lock_search_state()    if (!I_In_Exiting_Signal_Handler()) { I_LockMutex(&replayquerymutex); }
+#  define Unlock_search_state()  if (!I_In_Exiting_Signal_Handler()) { I_UnlockMutex(replayquerymutex); }
+#else /*HAVE_THREADS*/
 #  define Lock_search_state()
 #  define Unlock_search_state()
-#endif/*HAVE_THREADS*/
+#endif /*HAVE_THREADS*/
 
 
 #define MAXREPLAYQUERY 37
