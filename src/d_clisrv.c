@@ -4148,7 +4148,7 @@ static void Command_ResendGamestate(void)
 	}
 
 	playernum = nametonum(COM_Argv(1));
-	if (playernum == -1 || playernum == 0)
+	if (playernum <= 0)
 		return;
 
 	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
@@ -4618,7 +4618,7 @@ static boolean SV_AddWaitingPlayers(SINT8 node)
 
 			for (n = 0; n < MAXNETNODES; n++)
 			{
-				if (nodetoplayer[n] == newplayernum ||
+				if (nodetoplayer[n]  == newplayernum ||
 					nodetoplayer2[n] == newplayernum ||
 					nodetoplayer3[n] == newplayernum ||
 					nodetoplayer4[n] == newplayernum)
@@ -4909,10 +4909,6 @@ static const char *GetRefuseMessage(SINT8 node)
 	else if (connectedplayers >= maxplayers)
 	{
 		return va("Maximum players reached: %d", maxplayers);
-	}
-	else if (cc->localplayers != 1)
-	{
-		return "Wrong player count.";
 	}
 	else if (netgame && !cc->localplayers) // Stealth join?
 	{
