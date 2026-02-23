@@ -68,6 +68,15 @@ extern "C" {
 	#define strnicmp(x,y,n) strncasecmp(x,y,n)
 #endif
 
+// glibc 2.43 made alot of standard lib functions propagate the constness of its input pointers
+// to not cause warnings or compile issues on older glibc versions we do this silly thing
+// to not have a gazillion glibc version checks
+#if __GLIBC_PREREQ(2, 43)
+	#define gconst const
+#else
+	#define gconst
+#endif
+
 #ifndef _GNU_SOURCE
 char *nongnu_strcasestr(const char *in, const char *what);
 #define strcasestr nongnu_strcasestr
