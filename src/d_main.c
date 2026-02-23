@@ -697,6 +697,11 @@ void D_SRB2Loop(void)
 
 	for (;;)
 	{
+		if (I_Interrupted())
+		{
+			I_Quit();
+		}
+
 		// capbudget is the minimum precise_t duration of a single loop iteration
 		precise_t capbudget;
 		precise_t elapsed;
