@@ -50,8 +50,8 @@ I_mutex con_mutex;
 // to avoid infinite SIGABRT recursion in the signal handler
 // due to poisoned locks or mach-o kernel not supporting locks in signals
 // or something like that. idk
-#  define Lock_state()    if (!I_In_Exiting_Signal_Handler()) { I_LockMutex(&con_mutex); }
-#  define Unlock_state()  if (!I_In_Exiting_Signal_Handler()) { I_UnlockMutex(con_mutex); }
+#  define Lock_state()    if (!I_In_Exiting_Signal_Handler()) { I_lock_mutex(&con_mutex); }
+#  define Unlock_state()  if (!I_In_Exiting_Signal_Handler()) { I_unlock_mutex(con_mutex); }
 #else /*HAVE_THREADS*/
 #  define Lock_state()
 #  define Unlock_state()
