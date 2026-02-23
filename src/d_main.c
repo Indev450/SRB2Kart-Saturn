@@ -2023,7 +2023,7 @@ void D_SRB2Main(void)
 	if (M_CheckProtoParam("replay"))
 	{
 		const char *replayurl = M_GetProtoParam();
-		char *replayname = strrchr(replayurl, '/');
+		gconst char *replayname = strrchr(replayurl, '/');
 
 		if (!replayname || !replayurl)
 			I_Error("REPLAY: Invalid URL.");

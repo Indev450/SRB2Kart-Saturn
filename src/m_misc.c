@@ -1454,9 +1454,9 @@ INT32 axtoi(const char *hexStg)
 
 void CopyCaretColors(char *p, const char *s, int n)
 {
-	char *t;
-	int   m;
-	int   c;
+	gconst char *t;
+	int          m;
+	int          c;
 
 	if (!n)
 		return;

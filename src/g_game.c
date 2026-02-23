@@ -4153,6 +4153,7 @@ static void measurekeywords(mapsearchfreq_t *fr,
 {
 	char *qp;
 	char *sp;
+
 	if (wanttable)
 		(*dimp) = Z_Realloc((*dimp), 255 * sizeof (struct searchdim),
 				PU_STATIC, NULL);
@@ -4167,10 +4168,12 @@ static void measurekeywords(mapsearchfreq_t *fr,
 				(*dimp)[(*cuntp)].pos = sp - s;
 				(*dimp)[(*cuntp)].siz = strlen(qp);
 			}
+
 			(*cuntp)++;
 			fr->total++;
 		}
 	}
+
 	if (wanttable)
 		(*dimp) = Z_Realloc((*dimp), (*cuntp) * sizeof (struct searchdim),
 				PU_STATIC, NULL);
