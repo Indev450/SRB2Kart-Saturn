@@ -23,24 +23,26 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
+#ifndef _GNU_SOURCE
+
 #include <string.h>
 #include <ctype.h>
 #include <stddef.h>
 
-static inline int
-trycmp (char **pp, char *cp,
-		const char *q, size_t qn)
+static inline int trycmp(char **pp, char *cp, const char *q, size_t qn)
 {
 	char *p;
 	p = (*pp);
+
 	if (strncasecmp(p, q, qn) == 0)
 		return 0;
+
 	(*pp) = strchr(&p[1], (*cp));
+
 	return 1;
 }
 
-static inline void
-swapp (char ***ppap, char ***ppbp, char **cpap, char **cpbp)
+static inline void swapp(char ***ppap, char ***ppbp, char **cpap, char **cpbp)
 {
 	char **pp;
 	char  *p;
@@ -54,8 +56,7 @@ swapp (char ***ppap, char ***ppbp, char **cpap, char **cpbp)
 	*cpbp =   p;
 }
 
-char *
-nongnu_strcasestr (const char *s, const char *q)
+char *nongnu_strcasestr(const char *s, const char *q)
 {
 	size_t  qn;
 
@@ -113,3 +114,5 @@ nongnu_strcasestr (const char *s, const char *q)
 
 	return NULL;
 }
+
+#endif
