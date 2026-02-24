@@ -439,6 +439,16 @@ License (MIT):
 /*                                               Common header section                                                */
 /*--------------------------------------------------------------------------------------------------------------------*/
 
+#ifdef __GNUC__
+  #if (__GNUC__ > 3) || (__GNUC__ == 3 && __GNUC_MINOR__ >= 1) // >= GCC 3.1
+    #define FORCEINLINE __attribute__((always_inline))
+  #else
+    #define FORCEINLINE
+  #endif
+#else
+  #define FORCEINLINE
+#endif
+
 #ifndef VERSTABLE_H
 #define VERSTABLE_H
 
@@ -472,7 +482,7 @@ License (MIT):
 
 // Extracts a hash fragment from a uint64_t hash code.
 // We take the highest four bits so that keys that map (via modulo) to the same bucket have distinct hash fragments.
-static inline uint16_t vt_hashfrag( uint64_t hash )
+static inline FORCEINLINE uint16_t vt_hashfrag( uint64_t hash )
 {
   return ( hash >> 48 ) & VT_HASH_FRAG_MASK;
 }
@@ -480,7 +490,7 @@ static inline uint16_t vt_hashfrag( uint64_t hash )
 // Standard quadratic probing formula that guarantees that all buckets are visited when the bucket count is a power of
 // two (at least in theory, because the displacement limit could terminate the search early when the bucket count is
 // high).
-static inline size_t vt_quadratic( uint16_t displacement )
+static inline FORCEINLINE size_t vt_quadratic( uint16_t displacement )
 {
   return ( (size_t)displacement * displacement + displacement ) / 2;
 }
@@ -493,7 +503,7 @@ static inline size_t vt_quadratic( uint16_t displacement )
 
 #if defined( __GNUC__ ) && ULLONG_MAX == 0xFFFFFFFFFFFFFFFF
 
-static inline int vt_first_nonzero_uint16( uint64_t val )
+static inline FORCEINLINE int vt_first_nonzero_uint16( uint64_t val )
 {
   const uint16_t endian_checker = 0x0001;
   if( *(const char *)&endian_checker ) // Little-endian (the compiler will optimize away the check at -O1 and above).
@@ -508,7 +518,7 @@ static inline int vt_first_nonzero_uint16( uint64_t val )
 #pragma intrinsic(_BitScanForward64)
 #pragma intrinsic(_BitScanReverse64)
 
-static inline int vt_first_nonzero_uint16( uint64_t val )
+static inline FORCEINLINE int vt_first_nonzero_uint16( uint64_t val )
 {
   unsigned long result;
 
@@ -526,7 +536,7 @@ static inline int vt_first_nonzero_uint16( uint64_t val )
 
 #else
 
-static inline int vt_first_nonzero_uint16( uint64_t val )
+static inline FORCEINLINE int vt_first_nonzero_uint16( uint64_t val )
 {
   int result = 0;
 
@@ -554,7 +564,7 @@ static const uint16_t vt_empty_placeholder_metadatum = VT_EMPTY;
 // Fast-hash, as described by https://jonkagstrom.com/bit-mixer-construction and
 // https://code.google.com/archive/p/fast-hash.
 // In testing, this hash function provided slightly better performance than the Murmur3 mixer.
-static inline uint64_t vt_hash_integer( uint64_t key )
+static inline FORCEINLINE uint64_t vt_hash_integer( uint64_t key )
 {
   key ^= key >> 23;
   key *= 0x2127599bf4325c37ull;
@@ -568,7 +578,7 @@ static inline uint64_t vt_hash_integer( uint64_t key )
 // * We do not handle endianness, so the result will differ depending on the platform.
 // * We omit the code optimized for 32-bit platforms.
 
-static inline void vt_wymum( uint64_t *a, uint64_t *b )
+static inline FORCEINLINE void vt_wymum( uint64_t *a, uint64_t *b )
 {
 #if defined( __SIZEOF_INT128__ )
   __uint128_t r = *a;
@@ -596,32 +606,32 @@ static inline void vt_wymum( uint64_t *a, uint64_t *b )
 #endif
 }
 
-static inline uint64_t vt_wymix( uint64_t a, uint64_t b )
+static inline FORCEINLINE uint64_t vt_wymix( uint64_t a, uint64_t b )
 {
   vt_wymum( &a, &b );
   return a ^ b;
 }
 
-static inline uint64_t vt_wyr8( const unsigned char *p )
+static inline FORCEINLINE uint64_t vt_wyr8( const unsigned char *p )
 {
   uint64_t v;
   memcpy( &v, p, 8 );
   return v;
 }
 
-static inline uint64_t vt_wyr4( const unsigned char *p )
+static inline FORCEINLINE uint64_t vt_wyr4( const unsigned char *p )
 {
   uint32_t v;
   memcpy( &v, p, 4 );
   return v;
 }
 
-static inline uint64_t vt_wyr3( const unsigned char *p, size_t k )
+static inline FORCEINLINE uint64_t vt_wyr3( const unsigned char *p, size_t k )
 {
   return ( ( (uint64_t)p[ 0 ] ) << 16 ) | ( ( (uint64_t)p[ k >> 1 ] ) << 8 ) | p[ k - 1 ];
 }
 
-static inline size_t vt_wyhash( const void *key, size_t len )
+static inline FORCEINLINE size_t vt_wyhash( const void *key, size_t len )
 {
   const unsigned char *p = (const unsigned char *)key;
   uint64_t seed = 0xca813bf4c7abf0a9ull;
@@ -680,41 +690,41 @@ static inline size_t vt_wyhash( const void *key, size_t len )
   return (size_t)vt_wymix( a ^ 0x2d358dccaa6c78a5ull ^ len, b ^ 0x8bb84b93962eacc9ull );
 }
 
-static inline uint64_t vt_hash_string( const char *key )
+static inline FORCEINLINE uint64_t vt_hash_string( const char *key )
 {
   return vt_wyhash( key, strlen( key ) );
 }
 
-static inline bool vt_cmpr_integer( uint64_t key_1, uint64_t key_2 )
+static inline FORCEINLINE bool vt_cmpr_integer( uint64_t key_1, uint64_t key_2 )
 {
   return key_1 == key_2;
 }
 
-static inline bool vt_cmpr_string( const char *key_1, const char *key_2 )
+static inline FORCEINLINE bool vt_cmpr_string( const char *key_1, const char *key_2 )
 {
   return strcmp( key_1, key_2 ) == 0;
 }
 
 // Default allocation and free functions.
 
-static inline void *vt_malloc( size_t size )
+static inline FORCEINLINE void *vt_malloc( size_t size )
 {
   return malloc( size );
 }
 
-static inline void vt_free( void *ptr, size_t size )
+static inline FORCEINLINE void vt_free( void *ptr, size_t size )
 {
   (void)size;
   free( ptr );
 }
 
-static inline void *vt_malloc_with_ctx( size_t size, void *ctx )
+static inline FORCEINLINE void *vt_malloc_with_ctx( size_t size, void *ctx )
 {
   (void)ctx;
   return malloc( size );
 }
 
-static inline void vt_free_with_ctx( void *ptr, size_t size, void *ctx )
+static inline FORCEINLINE void vt_free_with_ctx( void *ptr, size_t size, void *ctx )
 {
   (void)size;
   (void)ctx;
@@ -881,7 +891,7 @@ typedef struct
 #if defined( HEADER_MODE ) || defined( IMPLEMENTATION_MODE )
 #define VT_API_FN_QUALIFIERS
 #else
-#define VT_API_FN_QUALIFIERS static inline
+#define VT_API_FN_QUALIFIERS static inline FORCEINLINE
 #endif
 
 #ifndef IMPLEMENTATION_MODE
@@ -953,7 +963,7 @@ VT_API_FN_QUALIFIERS bool VT_CAT( NAME, _erase_itr_raw ) ( NAME *, VT_CAT( NAME,
 // This function must be inlined to ensure that the compiler optimizes away the NAME_fast_forward call if the returned
 // iterator is discarded.
 #ifdef __GNUC__
-static inline __attribute__((always_inline))
+static inline FORCEINLINE
 #elif defined( _MSC_VER )
 static __forceinline
 #else
@@ -1070,7 +1080,7 @@ VT_API_FN_QUALIFIERS void VT_CAT( NAME, _init )(
 // This function returns the offset of the beginning of the metadata, i.e. the size of the buckets array plus the
 // (usually zero) padding.
 // It assumes that the bucket count is not zero.
-static inline size_t VT_CAT( NAME, _metadata_offset )( NAME *table )
+static inline FORCEINLINE size_t VT_CAT( NAME, _metadata_offset )( NAME *table )
 {
   // Use sizeof, rather than alignof, for C99 compatibility.
   return ( ( ( table->buckets_mask + 1 ) * sizeof( VT_CAT( NAME, _bucket ) ) + sizeof( uint16_t ) - 1 ) /
@@ -1079,7 +1089,7 @@ static inline size_t VT_CAT( NAME, _metadata_offset )( NAME *table )
 
 // Returns the total allocation size, including the buckets array, padding, metadata, and excess metadata.
 // As above, this function assumes that the bucket count is not zero.
-static inline size_t VT_CAT( NAME, _total_alloc_size )( NAME *table )
+static inline FORCEINLINE size_t VT_CAT( NAME, _total_alloc_size )( NAME *table )
 {
   return VT_CAT( NAME, _metadata_offset )( table ) + ( table->buckets_mask + 1 + 4 ) * sizeof( uint16_t );
 }
@@ -1150,7 +1160,7 @@ VT_API_FN_QUALIFIERS bool VT_CAT( NAME, _is_end )( VT_CAT( NAME, _itr ) itr )
 // other chains might have freed up buckets that could fall in this chain before the final key.
 // Returns true if an empty bucket within the range of the displacement limit was found, in which case the final two
 // pointer arguments contain the index of the empty bucket and its quadratic displacement from home_bucket.
-static inline bool VT_CAT( NAME, _find_first_empty )(
+static inline FORCEINLINE bool VT_CAT( NAME, _find_first_empty )(
   NAME *table,
   size_t home_bucket,
   size_t *empty,
@@ -1177,7 +1187,7 @@ static inline bool VT_CAT( NAME, _find_first_empty )(
 // quadratic displacement and returns the index of the bucket containing that key.
 // Although the new key could simply be linked to the end of the chain, keeping the chain ordered by displacement
 // theoretically improves cache locality during lookups.
-static inline size_t VT_CAT( NAME, _find_insert_location_in_chain )(
+static inline FORCEINLINE size_t VT_CAT( NAME, _find_insert_location_in_chain )(
   NAME *table,
   size_t home_bucket,
   uint16_t displacement_to_empty
@@ -1206,7 +1216,7 @@ static inline size_t VT_CAT( NAME, _find_insert_location_in_chain )(
 // * Re-linking the key to the chain.
 // Returns true if the eviction succeeded, or false if no empty bucket to which to evict the occupying key could be
 // found within the displacement limit.
-static inline bool VT_CAT( NAME, _evict )( NAME *table, size_t bucket )
+static inline FORCEINLINE bool VT_CAT( NAME, _evict )( NAME *table, size_t bucket )
 {
   // Find the previous key in chain.
   size_t home_bucket = HASH_FN( table->buckets[ bucket ].key ) & table->buckets_mask;
@@ -1248,7 +1258,7 @@ static inline bool VT_CAT( NAME, _evict )( NAME *table, size_t bucket )
 
 // Returns an end iterator, i.e. any iterator for which .metadatum == .metadata_end.
 // This function just cleans up the library code in functions that return an end iterator as a failure indicator.
-static inline VT_CAT( NAME, _itr ) VT_CAT( NAME, _end_itr )( void )
+static inline FORCEINLINE VT_CAT( NAME, _itr ) VT_CAT( NAME, _end_itr )( void )
 {
   VT_CAT( NAME, _itr ) itr = { NULL, NULL, NULL, 0 };
   return itr;
@@ -1269,7 +1279,7 @@ static inline VT_CAT( NAME, _itr ) VT_CAT( NAME, _end_itr )( void )
 // inserted because of the maximum load factor or displacement limit constraints.
 // If replace is false, then the return value is as described above, except that if the key already exists, the function
 // returns an iterator to the existing key.
-static inline VT_CAT( NAME, _itr ) VT_CAT( NAME, _insert_raw )(
+static inline FORCEINLINE VT_CAT( NAME, _itr ) VT_CAT( NAME, _insert_raw )(
   NAME *table,
   KEY_TY key,
   #ifdef VAL_TY
@@ -1402,7 +1412,7 @@ static inline VT_CAT( NAME, _itr ) VT_CAT( NAME, _insert_raw )(
 // In testing, the no-inline approach showed a performance benefit when inserting existing keys (i.e. replacing).
 #ifdef __GNUC__
 #pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wattributes" // Silence warning about combining noinline with static inline.
+#pragma GCC diagnostic ignored "-Wattributes" // Silence warning about combining noinline with static inline FORCEINLINE.
 __attribute__((noinline)) static inline
 #elif defined( _MSC_VER )
 __declspec(noinline) static inline
@@ -1725,7 +1735,7 @@ VT_API_FN_QUALIFIERS bool VT_CAT( NAME, _erase )( NAME *table, KEY_TY key )
 
 // Finds the first occupied bucket at or after the bucket pointed to by itr.
 // This function scans four buckets at a time, ideally using intrinsics.
-static inline void VT_CAT( NAME, _fast_forward )( VT_CAT( NAME, _itr ) *itr )
+static inline FORCEINLINE void VT_CAT( NAME, _fast_forward )( VT_CAT( NAME, _itr ) *itr )
 {
   while( true )
   {
@@ -1755,7 +1765,7 @@ VT_API_FN_QUALIFIERS VT_CAT( NAME, _itr ) VT_CAT( NAME, _next )( VT_CAT( NAME, _
 
 // Returns the minimum bucket count required to accommodate a certain number of keys, which is governed by the maximum
 // load factor.
-static inline size_t VT_CAT( NAME, _min_bucket_count_for_size )( size_t size )
+static inline FORCEINLINE size_t VT_CAT( NAME, _min_bucket_count_for_size )( size_t size )
 {
   if( size == 0 )
     return 0;
@@ -1880,7 +1890,7 @@ VT_API_FN_QUALIFIERS void VT_CAT( NAME, _cleanup )( NAME *table )
 typedef NAME VT_CAT( vt_table_, VT_TEMPLATE_COUNT );
 typedef VT_CAT( NAME, _itr ) VT_CAT( vt_table_itr_, VT_TEMPLATE_COUNT );
 
-static inline void VT_CAT( vt_init_, VT_TEMPLATE_COUNT )(
+static inline FORCEINLINE void VT_CAT( vt_init_, VT_TEMPLATE_COUNT )(
   NAME *table
   #ifdef CTX_TY
   , CTX_TY ctx
@@ -1895,7 +1905,7 @@ static inline void VT_CAT( vt_init_, VT_TEMPLATE_COUNT )(
   );
 }
 
-static inline bool VT_CAT( vt_init_clone_, VT_TEMPLATE_COUNT )(
+static inline FORCEINLINE bool VT_CAT( vt_init_clone_, VT_TEMPLATE_COUNT )(
   NAME *table,
   const NAME* source
   #ifdef CTX_TY
@@ -1912,22 +1922,22 @@ static inline bool VT_CAT( vt_init_clone_, VT_TEMPLATE_COUNT )(
   );
 }
 
-static inline size_t VT_CAT( vt_size_, VT_TEMPLATE_COUNT )( const NAME *table )
+static inline FORCEINLINE size_t VT_CAT( vt_size_, VT_TEMPLATE_COUNT )( const NAME *table )
 {
   return VT_CAT( NAME, _size )( table );
 }
 
-static inline size_t VT_CAT( vt_bucket_count_, VT_TEMPLATE_COUNT )( const NAME *table )
+static inline FORCEINLINE size_t VT_CAT( vt_bucket_count_, VT_TEMPLATE_COUNT )( const NAME *table )
 {
   return VT_CAT( NAME, _bucket_count )( table );
 }
 
-static inline bool VT_CAT( vt_is_end_, VT_TEMPLATE_COUNT )( VT_CAT( NAME, _itr ) itr )
+static inline FORCEINLINE bool VT_CAT( vt_is_end_, VT_TEMPLATE_COUNT )( VT_CAT( NAME, _itr ) itr )
 {
   return VT_CAT( NAME, _is_end )( itr );
 }
 
-static inline VT_CAT( NAME, _itr ) VT_CAT( vt_insert_, VT_TEMPLATE_COUNT )(
+static inline FORCEINLINE VT_CAT( NAME, _itr ) VT_CAT( vt_insert_, VT_TEMPLATE_COUNT )(
   NAME *table,
   KEY_TY key
   #ifdef VAL_TY
@@ -1944,7 +1954,7 @@ static inline VT_CAT( NAME, _itr ) VT_CAT( vt_insert_, VT_TEMPLATE_COUNT )(
   );
 }
 
-static inline VT_CAT( NAME, _itr ) VT_CAT( vt_get_or_insert_, VT_TEMPLATE_COUNT )(
+static inline FORCEINLINE VT_CAT( NAME, _itr ) VT_CAT( vt_get_or_insert_, VT_TEMPLATE_COUNT )(
   NAME *table,
   KEY_TY key
   #ifdef VAL_TY
@@ -1961,47 +1971,47 @@ static inline VT_CAT( NAME, _itr ) VT_CAT( vt_get_or_insert_, VT_TEMPLATE_COUNT 
   );
 }
 
-static inline VT_CAT( NAME, _itr ) VT_CAT( vt_get_, VT_TEMPLATE_COUNT )( const NAME *table, KEY_TY key )
+static inline FORCEINLINE VT_CAT( NAME, _itr ) VT_CAT( vt_get_, VT_TEMPLATE_COUNT )( const NAME *table, KEY_TY key )
 {
   return VT_CAT( NAME, _get )( table, key );
 }
 
-static inline bool VT_CAT( vt_erase_, VT_TEMPLATE_COUNT )( NAME *table, KEY_TY key )
+static inline FORCEINLINE bool VT_CAT( vt_erase_, VT_TEMPLATE_COUNT )( NAME *table, KEY_TY key )
 {
   return VT_CAT( NAME, _erase )( table, key );
 }
 
-static inline VT_CAT( NAME, _itr ) VT_CAT( vt_next_, VT_TEMPLATE_COUNT )( VT_CAT( NAME, _itr ) itr )
+static inline FORCEINLINE VT_CAT( NAME, _itr ) VT_CAT( vt_next_, VT_TEMPLATE_COUNT )( VT_CAT( NAME, _itr ) itr )
 {
   return VT_CAT( NAME, _next )( itr );
 }
 
-static inline VT_CAT( NAME, _itr ) VT_CAT( vt_erase_itr_, VT_TEMPLATE_COUNT )( NAME *table, VT_CAT( NAME, _itr ) itr )
+static inline FORCEINLINE VT_CAT( NAME, _itr ) VT_CAT( vt_erase_itr_, VT_TEMPLATE_COUNT )( NAME *table, VT_CAT( NAME, _itr ) itr )
 {
   return VT_CAT( NAME, _erase_itr )( table, itr );
 }
 
-static inline bool VT_CAT( vt_reserve_, VT_TEMPLATE_COUNT )( NAME *table, size_t bucket_count )
+static inline FORCEINLINE bool VT_CAT( vt_reserve_, VT_TEMPLATE_COUNT )( NAME *table, size_t bucket_count )
 {
   return VT_CAT( NAME, _reserve )( table, bucket_count );
 }
 
-static inline bool VT_CAT( vt_shrink_, VT_TEMPLATE_COUNT )( NAME *table )
+static inline FORCEINLINE bool VT_CAT( vt_shrink_, VT_TEMPLATE_COUNT )( NAME *table )
 {
   return VT_CAT( NAME, _shrink )( table );
 }
 
-static inline VT_CAT( NAME, _itr ) VT_CAT( vt_first_, VT_TEMPLATE_COUNT )( const NAME *table )
+static inline FORCEINLINE VT_CAT( NAME, _itr ) VT_CAT( vt_first_, VT_TEMPLATE_COUNT )( const NAME *table )
 {
   return VT_CAT( NAME, _first )( table );
 }
 
-static inline void VT_CAT( vt_clear_, VT_TEMPLATE_COUNT )( NAME *table )
+static inline FORCEINLINE void VT_CAT( vt_clear_, VT_TEMPLATE_COUNT )( NAME *table )
 {
   VT_CAT( NAME, _clear )( table );
 }
 
-static inline void VT_CAT( vt_cleanup_, VT_TEMPLATE_COUNT )( NAME *table )
+static inline FORCEINLINE void VT_CAT( vt_cleanup_, VT_TEMPLATE_COUNT )( NAME *table )
 {
   VT_CAT( NAME, _cleanup )( table );
 }
@@ -2100,3 +2110,5 @@ C99 prefixed function API to circumvent this restriction.
 #undef HEADER_MODE
 #undef IMPLEMENTATION_MODE
 #undef VT_API_FN_QUALIFIERS
+
+#undef FORCEINLINE
