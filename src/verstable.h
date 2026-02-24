@@ -452,6 +452,9 @@ License (MIT):
 #ifndef VERSTABLE_H
 #define VERSTABLE_H
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Waggregate-return"
+
 #include <limits.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -2092,6 +2095,8 @@ C99 prefixed function API to circumvent this restriction.
 #endif
 #endif
 #endif
+
+#pragma GCC diagnostic pop
 
 #endif
 
