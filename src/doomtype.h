@@ -68,8 +68,21 @@ extern "C" {
 	#define strnicmp(x,y,n) strncasecmp(x,y,n)
 #endif
 
-char *nongnu_strcasestr(const char *in, const char *what);
+// glibc 2.43 made alot of standard lib functions propagate the constness of its input pointers
+// to not cause warnings or compile issues on older glibc versions we do this silly thing
+// to not have a gazillion glibc version checks
+#if defined(__GLIBC_PREREQ)
+#if __GLIBC_PREREQ(2, 43)
+	#define gconst const
+#else
+	#define gconst
+#endif
+#else
+	#define gconst
+#endif
+
 #ifndef _GNU_SOURCE
+char *nongnu_strcasestr(const char *in, const char *what);
 #define strcasestr nongnu_strcasestr
 #endif
 
@@ -127,9 +140,9 @@ size_t strlcpy(char *dst, const char *src, size_t dsize);
 #define STRBUFCPY(dst,src) strlcpy(dst, src, sizeof dst)
 
 /* Boolean type definition */
+#include <stdbool.h>
 
 #ifndef _WIN32
-#include <stdbool.h>
 // dont use stdbools _BOOL type
 // its smaller (1 byte) than the old interger bool (4 bytes)
 // which results in packed struct sizes being mismatched between vanilla and this
@@ -137,9 +150,7 @@ size_t strlcpy(char *dst, const char *src, size_t dsize);
 // which we cant use as enumeration constants
 typedef int32_t boolean;
 #else
-#define false FALSE
-#define true TRUE
-#define boolean BOOL
+#define boolean int32_t
 #endif
 
 /* 7.18.2.1  Limits of exact-width integer types */

@@ -116,6 +116,9 @@ extern consvar_t cv_rumble[MAXSPLITSCREENPLAYERS];
 extern consvar_t cv_rumblestrength[MAXSPLITSCREENPLAYERS];
 extern consvar_t cv_gamepadled[MAXSPLITSCREENPLAYERS];
 
+extern consvar_t cv_gamepadledifunfocused;
+extern consvar_t cv_rumbleifunfocused;
+
 extern INT32 mousex, mousey;
 
 extern INT32 joyxmove[MAXSPLITSCREENPLAYERS][JOYAXISSET], joyymove[MAXSPLITSCREENPLAYERS][JOYAXISSET];

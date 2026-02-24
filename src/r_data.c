@@ -1720,8 +1720,7 @@ void R_InitData(void)
 
 void R_ClearTextureNumCache(boolean btell)
 {
-	if (tidcache)
-		Z_Free(tidcache);
+	Z_Free(tidcache);
 	tidcache = NULL;
 	if (btell)
 		CONS_Debug(DBG_SETUP, "Fun Fact: There are %d textures used in this map.\n", tidcachelen);

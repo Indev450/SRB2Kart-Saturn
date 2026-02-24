@@ -497,7 +497,9 @@ static void HU_removeChatText_Log(void)
 	{
 		chat_log[i] = chat_log[i+1];
 	}
+
 	chat_nummsg_log--; // lost 1 msg.
+	chat_log[chat_nummsg_log] = NULL;
 }
 
 static void Chatlogsize_OnChange(void)
@@ -516,6 +518,7 @@ static void Chatlogsize_OnChange(void)
 	if (new_chat_log == NULL)
 	{
         free(chat_log);
+		chat_log = NULL;
 		return;
 	}
 	chat_log = new_chat_log;
@@ -1072,8 +1075,7 @@ static void Got_Saycmd(const UINT8 **p, INT32 playernum)
 
 		HU_AddChatText(va(fmt2, prefix, cstart, dispname, textcolor, msg), cv_chatnotifications.value); // add to chat
 
-		if (tempchar)
-			Z_Free(tempchar);
+		Z_Free(tempchar);
 	}
 #ifdef _DEBUG
 	// I just want to point out while I'm here that because the data is still
@@ -1484,6 +1486,7 @@ static char *CHAT_WordWrap(INT32 x, INT32 w, INT32 option, const char *string)
 			x = 0;
 		}
 	}
+
 	return newstring;
 }
 
@@ -1522,7 +1525,7 @@ static void HU_drawMiniChat(void)
 		emote_t *emote = NULL;
 		int emotelen = 0;
 
-		while(msg[j]) // iterate through msg
+		while (msg[j]) // iterate through msg
 		{
 			if (msg[j] < HU_FONTSTART) // don't draw
 			{
@@ -1554,19 +1557,21 @@ static void HU_drawMiniChat(void)
 			{
 				j++;
 			}
+
 			prev_linereturn = false;
 			dx += charwidth;
+
 			if (dx >= boxw)
 			{
 				dx = 0;
 				linescount += 1;
 			}
 		}
+
 		dy = 0;
 		dx = 0;
 		msglines += linescount+1;
-		if (msg)
-			Z_Free(msg);
+		Z_Free(msg);
 	}
 
 	y = chaty - charheight*(msglines+1);
@@ -1598,7 +1603,7 @@ static void HU_drawMiniChat(void)
 		emote_t *emote = NULL;
 		int emotelen = 0;
 
-		while(msg[j]) // iterate through msg
+		while (msg[j]) // iterate through msg
 		{
 			if (msg[j] < HU_FONTSTART) // don't draw
 			{
@@ -1643,16 +1648,17 @@ static void HU_drawMiniChat(void)
 
 			dx += charwidth;
 			prev_linereturn = false;
+
 			if (dx >= boxw)
 			{
 				dx = 0;
 				dy += charheight;
 			}
 		}
+
 		dy += charheight;
 		dx = 0;
-		if (msg)
-			Z_Free(msg);
+		Z_Free(msg);
 	}
 
 	// decrement addy and make that shit smooth:
@@ -1704,7 +1710,7 @@ static void HU_drawChatLog(INT32 offset)
 
 	V_DrawFillConsoleMap(chatx, chat_topy, boxw, boxh*charheight +2, 239|V_SNAPTOBOTTOM|V_SNAPTOLEFT); // log box
 
-	for (i=0; i<chat_nummsg_log; i++) // iterate through our chatlog
+	for (i = 0; i < chat_nummsg_log; i++) // iterate through our chatlog
 	{
 		INT32 clrflag = 0;
 		INT32 j = 0;
@@ -1713,7 +1719,7 @@ static void HU_drawChatLog(INT32 offset)
 		emote_t *emote = NULL;
 		int emotelen = 0;
 
-		while(msg[j]) // iterate through msg
+		while (msg[j]) // iterate through msg
 		{
 			if (msg[j] < HU_FONTSTART) // don't draw
 			{
@@ -1758,10 +1764,10 @@ static void HU_drawChatLog(INT32 offset)
 				dy += charheight;
 			}
 		}
+
 		dy += charheight;
 		dx = 0;
-		if (msg)
-			Z_Free(msg);
+		Z_Free(msg);
 	}
 
 	if (((chat_scroll >= chat_maxscroll) || (chat_scrollmedown)) && !(justscrolleddown || justscrolledup || chat_scrolltime)) // was already at the bottom of the page before new maxscroll calculation and was NOT scrolling.

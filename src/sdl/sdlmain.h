@@ -23,6 +23,8 @@
 extern "C" {
 #endif
 
+#include "SDL_version.h"
+
 #include "../m_fixed.h"
 
 // SDL2 stub macro
@@ -39,8 +41,10 @@ typedef struct SDLJoyInfo_s
 {
 	/// Controller handle
 	SDL_GameController *dev;
+#if (SDL_VERSION_ATLEAST(2,32,4))
 	/// Controller index
 	INT32 id;
+#endif
 	/// number of old joystick
 	int oldjoy;
 	/// number of axies

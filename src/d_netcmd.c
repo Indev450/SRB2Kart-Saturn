@@ -1009,6 +1009,9 @@ void D_RegisterClientCommands(void)
 		CV_RegisterVar(&cv_gamepadled[i]);
 	}
 
+	CV_RegisterVar(&cv_gamepadledifunfocused);
+	CV_RegisterVar(&cv_rumbleifunfocused);
+
 	CV_RegisterVar(&cv_usemouse);
 	CV_RegisterVar(&cv_invertmouse);
 	CV_RegisterVar(&cv_mousexsens);
@@ -2654,7 +2657,6 @@ static void Command_Map_f(void)
 		CONS_Alert(CONS_WARNING, "Map command is used too frequently!\n");
 		return;
 	}
-
 
 	last_map_cmd = I_GetTime();
 

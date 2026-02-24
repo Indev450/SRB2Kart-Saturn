@@ -2936,7 +2936,7 @@ static void M_PrepareLevelSelect(void)
 boolean M_CanShowLevelInList(INT32 mapnum, INT32 gt)
 {
 	// invalid mapnum
-	if (mapnum < -1)
+	if (mapnum < -1 || mapnum >= NUMMAPS)
 		return false;
 
 	// Random map!
@@ -4016,16 +4016,16 @@ boolean replaynamesloaded = false;
 #ifdef HAVE_THREADS
 I_mutex replayquerymutex;
 
-// g_in_exiting_signal_handler is an evil hack
+// I_In_Exiting_Signal_Handler is an evil hack
 // to avoid infinite SIGABRT recursion in the signal handler
 // due to poisoned locks or mach-o kernel not supporting locks in signals
 // or something like that. idk
-#  define Lock_search_state()    if (!g_in_exiting_signal_handler) { I_lock_mutex(&replayquerymutex); }
-#  define Unlock_search_state()  if (!g_in_exiting_signal_handler) { I_unlock_mutex(replayquerymutex); }
-#else/*HAVE_THREADS*/
+#  define Lock_search_state()    if (!I_In_Exiting_Signal_Handler()) { I_lock_mutex(&replayquerymutex); }
+#  define Unlock_search_state()  if (!I_In_Exiting_Signal_Handler()) { I_unlock_mutex(replayquerymutex); }
+#else /*HAVE_THREADS*/
 #  define Lock_search_state()
 #  define Unlock_search_state()
-#endif/*HAVE_THREADS*/
+#endif /*HAVE_THREADS*/
 
 
 #define MAXREPLAYQUERY 37
@@ -4719,7 +4719,7 @@ static void M_DrawReplayHut(void)
 	if (y > scaledviewheight-80)
 	{
 		V_DrawFill(BASEVIDWIDTH-4, 75, 4, scaledviewheight-80, V_SNAPTOTOP|V_SNAPTORIGHT|239);
-		V_DrawFill(BASEVIDWIDTH-3, 76 + (scaledviewheight-80) * replayhutmenuy / y, 2, (((scaledviewheight-80) * (scaledviewheight-80))-1) / y - 1, V_SNAPTOTOP|V_SNAPTORIGHT|229);
+		V_DrawFill(BASEVIDWIDTH-3, 76 + (scaledviewheight-80) * replayhutmenuy / y, 2, max((((scaledviewheight-80) * (scaledviewheight-80))-1) / y - 1, 1), V_SNAPTOTOP|V_SNAPTORIGHT|229);
 	}
 
 	// Draw the cursor
@@ -5356,7 +5356,7 @@ void M_PopupMasterServerRules(void)
 		{
 			firstDismissedRulesThisBoot = false;
 			M_StartMessage(va("%s\n(press any key)", rules), NULL, MM_NOTHING);
-			Z_Free(rules);
+			free(rules);
 		}
 	}
 #endif
@@ -5522,7 +5522,6 @@ static void M_DrawChecklist(void)
 
 		if (conditionSets[unlockables[i].conditionset - 1].numconditions)
 		{
-			c = 0;
 			lastid = -1;
 
 			for (c = 0; c < conditionSets[unlockables[i].conditionset - 1].numconditions; c++)
@@ -5681,9 +5680,6 @@ static void M_MusicTest(INT32 choice)
 static void M_DrawMusicTest(void)
 {
 	INT32 x, y, i;
-
-	x = 90<<FRACBITS;
-	y = (BASEVIDHEIGHT-32)<<FRACBITS;
 
 	y = (BASEVIDWIDTH-vid.scaledwidth)/2;
 
@@ -6560,17 +6556,22 @@ static void M_EraseGuest(INT32 choice)
 
 static void M_OverwriteGuest(const char *which)
 {
-	char *rguest = Z_StrDup(va("%s"PATHSEP"replay"PATHSEP"%s"PATHSEP"%s-guest.lmp", srb2home, timeattackfolder, G_BuildMapName(cv_nextmap.value)));
+	char *rguest;
 	UINT8 *buf;
 	size_t len;
 	len = FIL_ReadFile(va("%s"PATHSEP"replay"PATHSEP"%s"PATHSEP"%s-%s-%s.lmp", srb2home, timeattackfolder, G_BuildMapName(cv_nextmap.value), cv_chooseskin.string, which), &buf);
-	if (!len) {
+
+	if (!len)
 		return;
-	}
-	if (FIL_FileExists(rguest)) {
+
+	rguest = Z_StrDup(va("%s"PATHSEP"replay"PATHSEP"%s"PATHSEP"%s-guest.lmp", srb2home, timeattackfolder, G_BuildMapName(cv_nextmap.value)));
+
+	if (FIL_FileExists(rguest))
+	{
 		M_StopMessage(0);
 		remove(rguest);
 	}
+
 	FIL_WriteFile(rguest, buf, len);
 	Z_Free(rguest);
 
@@ -7587,7 +7588,6 @@ static void M_DrawLevelSelectOnly(boolean leftfade, boolean rightfade)
 
 static void M_DrawServerMenu(void)
 {
-
 	M_DrawLevelSelectOnly(false, false);
 #ifdef MASTERSERVER
 	if (currentMenu == &MP_ServerDef && cv_advertise.value) // Remind players where they're hosting.
@@ -7996,13 +7996,8 @@ static void M_DrawSetupMultiPlayerMenu(void)
 #define GETSELECTEDSPEED (itemOn == 1 && setupm_skinselect < numskins ? skins[skinsorted[setupm_skinselect]].kartspeed : skins[setupm_fakeskin].kartspeed)
 #define GETSELECTEDWEIGHT (itemOn == 1 && setupm_skinselect < numskins ? skins[skinsorted[setupm_skinselect]].kartweight : skins[setupm_fakeskin].kartweight)
 
-			statoffset = 0;
 			tw = V_StringWidth("Character", 0);//V_StringWidth(GETSELECTEDSKINNAME, 0);
 			st = V_StringWidth(GETSELECTEDSKINNAME, 0);
-
-			INT32 selectedskin = (itemOn == 1 && setupm_skinselect < numskins ? skinsorted[setupm_skinselect] : setupm_fakeskin);
-			speed = skins[selectedskin].kartspeed;
-			weight = skins[selectedskin].kartweight;
 
 			V_DrawString((mx+(tw/2)) - (st/2), my + 37,
 				((MP_PlayerSetupMenu[2].status & IT_TYPE) == IT_SPACE ? V_TRANSLUCENT : 0) | highlightflags | V_ALLOWLOWERCASE,

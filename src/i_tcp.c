@@ -1510,11 +1510,8 @@ static boolean SOCK_SetBanUsername(const char *username)
 		username = "Direct IP ban";
 	}
 
-	if (banned[numbans - 1].username)
-	{
-		Z_Free(banned[numbans - 1].username);
-		banned[numbans - 1].username = NULL;
-	}
+	Z_Free(banned[numbans - 1].username);
+	banned[numbans - 1].username = NULL;
 
 	banned[numbans - 1].username = Z_StrDup(username);
 
@@ -1528,11 +1525,8 @@ static boolean SOCK_SetBanReason(const char *reason)
 		reason = "No reason given";
 	}
 
-	if (banned[numbans - 1].reason)
-	{
-		Z_Free(banned[numbans - 1].reason);
-		banned[numbans - 1].reason = NULL;
-	}
+	Z_Free(banned[numbans - 1].reason);
+	banned[numbans - 1].reason = NULL;
 
 	banned[numbans - 1].reason = Z_StrDup(reason);
 

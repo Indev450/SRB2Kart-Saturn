@@ -1822,7 +1822,6 @@ void P_DoJumpShield(player_t *player)
 
 	player->pflags &= ~PF_JUMPED;
 	//P_DoJump(player, false);
-	player->pflags &= ~PF_JUMPED;
 	player->secondjump = 0;
 	player->jumping = 0;
 	player->pflags |= PF_THOKKED;
@@ -1894,7 +1893,6 @@ static void P_3dMovement(player_t *player)
 	ticcmd_t *cmd;
 	angle_t movepushangle, movepushsideangle; // Analog
 	fixed_t movepushforward = 0, movepushside = 0;
-	angle_t dangle; // replaces old quadrants bits
 	boolean analogmove = false;
 	fixed_t oldMagnitude, newMagnitude;
 	vector3_t totalthrust;
@@ -1951,15 +1949,6 @@ static void P_3dMovement(player_t *player)
 
 	// Calculates player's speed based on distance-of-a-line formula
 	player->speed = R_PointToDist2(0, 0, player->rmomx, player->rmomy);
-
-	// Monster Iestyn - 04-11-13
-	// Quadrants are stupid, excessive and broken, let's do this a much simpler way!
-	// Get delta angle from rmom angle and player angle first
-	dangle = R_PointToAngle2(0,0, player->rmomx, player->rmomy) - player->mo->angle;
-	if (dangle > ANGLE_180) //flip to keep to one side
-	{
-		dangle = InvAngle(dangle);
-	}
 
 	// When sliding, don't allow forward/back
 	if (player->pflags & PF_SLIDING)
@@ -4120,7 +4109,7 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 			angle -= (angle - thiscam->pitch)/2;
 	}
 
-	if (player->playerstate != PST_DEAD && !((player->pflags & PF_NIGHTSMODE) && player->exiting))
+	if (player->playerstate != PST_DEAD && LIKELY(!((player->pflags & PF_NIGHTSMODE) && player->exiting)))
 		angle += (focusaiming < ANGLE_180 ? focusaiming/2 : InvAngle(InvAngle(focusaiming)/2)); // overcomplicated version of '((signed)focusaiming)/2;'
 
 	if (!camstill && !timeover) // Keep the view still...
@@ -4464,7 +4453,7 @@ static INT32 Quaketilt(player_t *player)
 
 	lowb = FixedMul(lowb, player->mo->scale);
 	moma = FixedMul(FixedDiv(delta, ANGLE_90), tilt);
-	speed = abs( player->mo->momx + player->mo->momy );
+	speed = abs(player->mo->momx + player->mo->momy);
 
 	if (speed < lowb)
 	{

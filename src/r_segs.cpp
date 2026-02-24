@@ -2880,7 +2880,7 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 	if (markceiling)
 	{
 		if (ceilingplane) //SoM: 3/29/2000: Check for null ceiling planes
-			ceilingplane = R_CheckPlane (ceilingplane, rw_x, rw_stopx-1);
+			ceilingplane = R_CheckPlane(ceilingplane, rw_x, rw_stopx-1);
 		else
 			markceiling = false;
 
@@ -2894,7 +2894,7 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 	if (markfloor)
 	{
 		if (floorplane) //SoM: 3/29/2000: Check for null planes
-			floorplane = R_CheckPlane (floorplane, rw_x, rw_stopx-1);
+			floorplane = R_CheckPlane(floorplane, rw_x, rw_stopx-1);
 		else
 			markfloor = false;
 

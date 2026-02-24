@@ -43,7 +43,7 @@ extern UINT8 graphics_started;
 extern UINT8 keyboard_started;
 
 /** \brief Set to true when inside a signal handler that will exit the program. */
-extern boolean g_in_exiting_signal_handler;
+boolean I_In_Exiting_Signal_Handler(void);
 
 /**	\brief	The I_GetFreeMem function
 
@@ -194,6 +194,10 @@ INT32 I_StartupSystem(void);
 /**	\brief Shutdown systems
 */
 void I_ShutdownSystem(void);
+
+/**	\brief To check if a Interrupt or Terminate Signal was fired
+ */
+boolean I_Interrupted(void);
 
 /**	\brief	The I_GetDiskFreeSpace function
 

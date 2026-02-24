@@ -248,12 +248,9 @@ void M_AddRawCondition(UINT8 set, UINT8 id, conditiontype_t c, INT32 r, INT16 x1
 
 void M_ClearConditionSet(UINT8 set)
 {
-	if (conditionSets[set - 1].numconditions)
-	{
-		Z_Free(conditionSets[set - 1].condition);
-		conditionSets[set - 1].condition = NULL;
-		conditionSets[set - 1].numconditions = 0;
-	}
+	Z_Free(conditionSets[set - 1].condition);
+	conditionSets[set - 1].condition = NULL;
+	conditionSets[set - 1].numconditions = 0;
 	conditionSets[set - 1].achieved = false;
 }
 

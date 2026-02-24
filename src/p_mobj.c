@@ -335,7 +335,7 @@ static boolean P_SetPrecipMobjState(precipmobj_t *mobj, statenum_t state)
 	mobj->tics = st->tics;
 	mobj->sprite = st->sprite;
 	mobj->frame = st->frame;
-	mobj->anim_duration = (UINT16)st->var2; // only used if FF_ANIMATE is set
+	//mobj->anim_duration = (UINT16)st->var2; // only used if FF_ANIMATE is set
 
 	return true;
 }
@@ -919,12 +919,7 @@ static void P_PlayerFlip(mobj_t *mo)
 	G_GhostAddFlip((INT32) (mo->player - players));
 	// Flip aiming to match!
 
-	if (UNLIKELY(mo->player->pflags & PF_NIGHTSMODE)) // NiGHTS doesn't use flipcam
-	{
-		if (mo->tracer)
-			mo->tracer->eflags ^= MFE_VERTICALFLIP;
-	}
-	else if (mo->player->pflags & PF_FLIPCAM)
+	if (mo->player->pflags & PF_FLIPCAM)
 	{
 		UINT8 i;
 
@@ -945,6 +940,11 @@ static void P_PlayerFlip(mobj_t *mo)
 			if (mo->eflags & MFE_VERTICALFLIP)
 				camera[i].z += FixedMul(20*FRACUNIT, mo->scale);
 		}
+	}
+	else if (UNLIKELY(mo->player->pflags & PF_NIGHTSMODE)) // NiGHTS doesn't use flipcam
+	{
+		if (mo->tracer)
+			mo->tracer->eflags ^= MFE_VERTICALFLIP;
 	}
 }
 
@@ -3252,7 +3252,7 @@ void P_CalcChasePostImg(player_t *player, camera_t *thiscam)
 		player_flipcam = cv_flipcam[pnum].value;
 	}
 
-	const boolean flipcam = (player_flipcam && !(player->pflags & PF_NIGHTSMODE) && player->mo->eflags & MFE_VERTICALFLIP);
+	const boolean flipcam = (player_flipcam && player->mo->eflags & MFE_VERTICALFLIP && LIKELY(!(player->pflags & PF_NIGHTSMODE)));
 	UINT8 postimgtype = 0;
 
 	if (encoremode)
@@ -3620,7 +3620,7 @@ boolean P_PrecipThinker(precipmobj_t *mobj)
 	mobj->lastThink = leveltime;
 
 	R_ResetPrecipitationMobjInterpolationState(mobj);
-	P_CycleStateAnimation((mobj_t *)mobj);
+	//P_CycleStateAnimation((mobj_t *)mobj); // if we ever want animated precip, readd a specific function which does not need casting
 
 	if (mobj->state == &states[S_RAINRETURN])
 	{
@@ -6986,7 +6986,7 @@ static boolean P_MobjDeadThink(mobj_t *mobj)
 				fixed_t ns;
 				mobj_t *mo2;
 
-				i = P_RandomByte();
+				i = P_RandomByte(); // grrrrrr
 				z = mobj->subsector->sector->floorheight + ((P_RandomByte()&63)*FRACUNIT);
 
 				for (j = 0; j < 2; j++)
@@ -8553,7 +8553,7 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 
 				if (mobj->tracer && mobj->tracer->player)
 				{
-					if (!(mobj->tracer->player->pflags & PF_NIGHTSMODE))
+					if (LIKELY(!(mobj->tracer->player->pflags & PF_NIGHTSMODE)))
 					{
 						mobj->flags &= ~MF_NOGRAVITY;
 						mobj->flags2 &= ~MF2_DONTDRAW;
@@ -8577,7 +8577,7 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 						P_SetTarget(&mobj->target, NULL);
 					}
 
-					if (mobj->tracer->player->pflags & PF_NIGHTSMODE)
+					if (UNLIKELY(mobj->tracer->player->pflags & PF_NIGHTSMODE))
 					{
 						if (mobj->tracer->player->bonustime)
 						{
@@ -10034,7 +10034,7 @@ static precipmobj_t *P_SpawnPrecipMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype
 
 	mobj->x = x;
 	mobj->y = y;
-	mobj->flags = info->flags;
+	//mobj->flags = info->flags;
 
 	// do not set the state with P_SetMobjState,
 	// because action routines can not be called yet
@@ -10044,7 +10044,7 @@ static precipmobj_t *P_SpawnPrecipMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype
 	mobj->tics = st->tics;
 	mobj->sprite = st->sprite;
 	mobj->frame = st->frame; // FF_FRAMEMASK for frame, and other bits..
-	mobj->anim_duration = (UINT16)st->var2; // only used if FF_ANIMATE is set
+	//mobj->anim_duration = (UINT16)st->var2; // only used if FF_ANIMATE is set
 
 	// set subsector and/or block links
 	P_SetPrecipitationThingPosition(mobj);

@@ -92,6 +92,7 @@ INT32 R_LocalSkinAvailable(const char *name, boolean local);
 // had to move those here Zzz...
 INT32 K_GetSkinNum(player_t *player);
 INT32 K_GetMobjSkinNum(const skin_t *skin, boolean local);
+INT32 K_GetMobjLocalSkinNum(const skin_t *skin, const skin_t *localskin, boolean local);
 skin_t *K_GetPlayerSkin(player_t *player);
 skin_t *K_GetMobjSkin(const mobj_t *mobj);
 patch_t *K_GetFacePrefix(player_t *player, INT32 skinnum);

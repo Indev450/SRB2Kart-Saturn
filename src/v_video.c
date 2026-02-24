@@ -465,7 +465,7 @@ void V_CubeApply(RGBA_t *input)
 	if (!Cubeapply)
 		return;
 
-	linear = ((*input).s.red/255.0);
+	linear = ((*input).s.red/255.0f);
 #define dolerp(e1, e2) ((1 - linear)*e1 + linear*e2)
 	for (q = 0; q < 3; q++)
 	{
@@ -475,21 +475,21 @@ void V_CubeApply(RGBA_t *input)
 		working[3][q] = dolerp(Cubepal[0][1][1][q], Cubepal[1][1][1][q]);
 	}
 
-	linear = ((*input).s.green/255.0);
+	linear = ((*input).s.green/255.0f);
 	for (q = 0; q < 3; q++)
 	{
 		working[0][q] = dolerp(working[0][q], working[1][q]);
 		working[1][q] = dolerp(working[2][q], working[3][q]);
 	}
 
-	linear = ((*input).s.blue/255.0);
+	linear = ((*input).s.blue/255.0f);
 	for (q = 0; q < 3; q++)
 	{
 		working[0][q] = 255*dolerp(working[0][q], working[1][q]);
 		if (working[0][q] > 255.0f)
 			working[0][q] = 255.0f;
 		else if (working[0][q] < 0.0f)
-			working[0][q] = 0.0;
+			working[0][q] = 0.0f;
 	}
 #undef dolerp
 
@@ -1760,17 +1760,15 @@ void V_DrawVhsEffect(boolean rewind)
 	if (cv_reducevfx.value)
 		return;
 
-	const INT32 dup = min(vid.width / BASEVIDWIDTH, vid.height / BASEVIDHEIGHT);
-
-	barsize = dup << 5;
-	updistort = dup << (rewind ? 5 : 3);
+	barsize = vid.udup << 5;
+	updistort = vid.udup << (rewind ? 5 : 3);
 	downdistort = updistort >> 1;
 
 	if (rewind)
 		V_DrawVhsEffect(false); // experimentation
 
-	upbary -= renderdeltatics * (fixed_t)(dup * (rewind ? 3 : 1.8f));
-	downbary += renderdeltatics * (dup * (rewind ? 2 : 1));
+	upbary -= renderdeltatics * (fixed_t)(vid.udup * (rewind ? 3 : 1.8f));
+	downbary += renderdeltatics * (vid.udup * (rewind ? 2 : 1));
 
 	if (upbary < -barsize*FRACUNIT)
 		upbary = vid.height << FRACBITS;
@@ -3718,9 +3716,7 @@ void V_DoPostProcessor(INT32 view, INT32 param)
 			// Make sure table is built
 			if (heatshifter == NULL || lastheight != viewheight)
 			{
-				if (heatshifter)
-					Z_Free(heatshifter);
-
+				Z_Free(heatshifter);
 				heatshifter = Z_Calloc(viewheight * sizeof(boolean), PU_STATIC, NULL);
 
 				for (y = 0; y < viewheight; y++)
@@ -3929,6 +3925,8 @@ void V_Recalc(void)
 		vid.dup = vid.height / BASEVIDHEIGHT;
 		vid.fdup = (vid.height*FRACUNIT) / BASEVIDHEIGHT;
 	}
+
+	vid.udup = vid.dup;
 
 	if (loaded_config // this could use a better name, since it is more and indicator that early startup is done and its safe to do sketchy shit now :chaosleep:
 	&& (vid.width > 720) && (vid.height > 1280)) // ehhhh well this thing has so many issues, so ill lock it to higher resolutions instead

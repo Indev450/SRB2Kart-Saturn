@@ -784,7 +784,11 @@ static void Impl_HandleControllerAxisEvent(SDL_ControllerAxisEvent evt)
 	// Determine the Joystick IDs for each current open joystick
 	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
 	{
+#if (SDL_VERSION_ATLEAST(2,32,4))
 		if (evt.which == JoyInfo[i].id)
+#else
+		if (evt.which == SDL_JoystickInstanceID(SDL_GameControllerGetJoystick(JoyInfo[i].dev)))
+#endif
 		{
 			event.type = ev_joystick + i;
 			break;
@@ -844,7 +848,11 @@ static void Impl_HandleControllerHatEvent(SDL_ControllerButtonEvent evt, Uint32 
 	// Determine the Joystick IDs for each current open joystick
 	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
 	{
+#if (SDL_VERSION_ATLEAST(2,32,4))
 		if (evt.which == JoyInfo[i].id)
+#else
+		if (evt.which == SDL_JoystickInstanceID(SDL_GameControllerGetJoystick(JoyInfo[i].dev)))
+#endif
 		{
 			event.data1 = hat_buttons_base[i];
 			break;
@@ -906,7 +914,11 @@ static void Impl_HandleControllerButtonEvent(SDL_ControllerButtonEvent evt, Uint
 	// Determine the Joystick IDs for each current open joystick
 	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
 	{
+#if (SDL_VERSION_ATLEAST(2,32,4))
 		if (evt.which == JoyInfo[i].id)
+#else
+		if (evt.which == SDL_JoystickInstanceID(SDL_GameControllerGetJoystick(JoyInfo[i].dev)))
+#endif
 		{
 			event.data1 = buttons_base[i];
 			break;
@@ -1152,8 +1164,8 @@ void I_GetEvent(void)
 		SDL_GetWindowSize(window, &wwidth, &wheight);
 		event.type = ev_mouse;
 		event.data1 = 0;
-		event.data2 = (INT32)lround(mousemovex * ((float)wwidth / (float)realwidth));
-		event.data3 = (INT32)lround(mousemovey * ((float)wheight / (float)realheight));
+		event.data2 = (INT32)lroundf(mousemovex * ((float)wwidth / (float)realwidth));
+		event.data3 = (INT32)lroundf(mousemovey * ((float)wheight / (float)realheight));
 		D_PostEvent(&event);
 	}
 
@@ -2015,7 +2027,8 @@ void I_ShutdownGraphics(void)
 		SDL_DestroyWindow(window);
 	window = NULL;
 
-	SDL_QuitSubSystem(SDL_INIT_VIDEO);
+	if (SDL_WasInit(SDL_INIT_VIDEO) == SDL_INIT_VIDEO)
+		SDL_QuitSubSystem(SDL_INIT_VIDEO);
 	framebuffer = SDL_FALSE;
 }
 

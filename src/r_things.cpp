@@ -70,7 +70,7 @@ INT16 *screenheightarray = NULL;
 
 typedef struct drawseg_xrange_item_s
 {
-	INT16 x1, x2;
+	INT32 x1, x2;
 	drawseg_t *user;
 } drawseg_xrange_item_t;
 
@@ -391,7 +391,7 @@ boolean R_AddSingleSpriteDef(const char *sprname, spritedef_t *spritedef, UINT16
 
 	// allocate space for the frames present and copy sprtemp to it
 	if (spritedef->numframes &&             // has been allocated
-		spritedef->numframes < maxframe)   // more frames are defined ?
+		spritedef->numframes < maxframe)    // more frames are defined ?
 	{
 
 		Z_Free(spritedef->spriteframes);
@@ -489,8 +489,8 @@ void R_InitSprites(void)
 	for (angle = 1; angle < ROTANGLES; angle++)
 	{
 		fa = ANG2RAD(FixedAngle((ROTANGDIFF * angle)<<FRACBITS));
-		rollcosang[angle] = FLOAT_TO_FIXED(cos(-fa));
-		rollsinang[angle] = FLOAT_TO_FIXED(sin(-fa));
+		rollcosang[angle] = FLOAT_TO_FIXED(cosf(-fa));
+		rollsinang[angle] = FLOAT_TO_FIXED(sinf(-fa));
 	}
 #endif
 
@@ -1855,9 +1855,6 @@ static void R_ProjectSprite(mobj_t *thing)
 
 	if (thing->subsector->sector->numlights)
 		R_SplitSprite(vis);
-
-	// Debug
-	++objectsdrawn;
 }
 
 static void R_ProjectPrecipitationSprite(precipmobj_t *thing)
@@ -2963,7 +2960,7 @@ fixed_t R_DoPlayerFade(mobj_t *thing)
 	fixed_t fadealpha = FRACUNIT;
 	static constexpr tic_t countdownstarttime = (15 * TICRATE) / 4; // starttime - (3*TICRATE)
 
-	if (thing->player == viewplayer || viewplayer->exiting || camera[R_GetViewNumber()].freecam || leveltime < countdownstarttime)
+	if (thing->player == viewplayer || viewplayer->exiting || viewplayer->spectator || camera[R_GetViewNumber()].freecam || leveltime < countdownstarttime)
 		return fadealpha;
 
 	const INT32 playerdist     = (FixedMul((thing->x - viewx), viewcos) + FixedMul((thing->y - viewy), viewsin)) >> FRACBITS;

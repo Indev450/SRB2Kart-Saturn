@@ -141,7 +141,9 @@ void W_Shutdown(void)
 
 		if (wad->handle)
 			fclose(wad->handle);
+
 		Z_Free(wad->filename);
+
 		while (wad->numlumps--)
 		{
 			//Z_Free(wad->lumpinfo[wad->numlumps].longname);
@@ -713,7 +715,8 @@ static lumpinfo_t* ResGetLumpsZip(FILE* handle, UINT16* nlmp)
 		lump_p->size = LONG(zentry->size);
 
 		fullname = static_cast<char *>(malloc(SHORT(zentry->namelen) + 1));
-		strlcpy(fullname, reinterpret_cast<char *>(zentry + 1), SHORT(zentry->namelen) + 1);
+		strncpy(fullname, (char *)(zentry + 1), SHORT(zentry->namelen));
+		fullname[zentry->namelen] = 0;
 
 		// Strip away file address and extension for the 8char name.
 		if ((trimname = strrchr(fullname, '/')) != NULL)
@@ -2238,7 +2241,8 @@ static int W_VerifyPK3(FILE *fp, lumpchecklist_t *checklist, boolean status)
 		if (verified == true)
 		{
 			fullname = static_cast<char *>(malloc(SHORT(zentry->namelen) + 1));
-			strlcpy(fullname, reinterpret_cast<char *>(zentry + 1), SHORT(zentry->namelen) + 1);
+			strncpy(fullname, (char *)(zentry + 1), SHORT(zentry->namelen));
+			fullname[zentry->namelen] = 0;
 
 			// Strip away file address and extension for the 8char name.
 			if ((trimname = strrchr(fullname, '/')) != NULL)
@@ -2483,7 +2487,8 @@ static int W_CheckPK3Contains(FILE *fp, lumpchecklist_t *checklist)
 		}
 
 		fullname = static_cast<char *>(malloc(SHORT(zentry->namelen) + 1));
-		strlcpy(fullname, reinterpret_cast<char *>(zentry + 1), SHORT(zentry->namelen) + 1);
+		strncpy(fullname, (char *)(zentry + 1), SHORT(zentry->namelen));
+		fullname[zentry->namelen] = 0;
 
 		// Strip away file address and extension for the 8char name.
 		if ((trimname = strrchr(fullname, '/')) != NULL)
@@ -2733,10 +2738,7 @@ void vres_Free(virtres_t* vres)
 
 	while (vres->numlumps--)
 	{
-		if (vres->vlumps[vres->numlumps].data)
-		{
-			Z_Free(vres->vlumps[vres->numlumps].data);
-		}
+		Z_Free(vres->vlumps[vres->numlumps].data);
 	}
 
 	Z_Free(vres->vlumps);
