@@ -126,7 +126,6 @@ typedef enum restype
 	RET_UNKNOWN,
 } restype_t;
 
-
 typedef struct wadfile_s
 {
 	char *filename;
@@ -155,6 +154,7 @@ extern wadfile_t *wadfiles[MAX_WADFILES];
 
 // =========================================================================
 
+void W_Startup(void);
 void W_Shutdown(void);
 
 // Opens a WAD file. Returns the FILE * handle for the file, or NULL if not found or could not be opened
