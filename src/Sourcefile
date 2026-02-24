@@ -45,7 +45,7 @@ sounds.c
 st_stuff.c
 tables.c
 v_video.c
-w_wad.cpp
+w_wad.c
 y_inter.c
 z_zone.cpp
 r_bsp.cpp
