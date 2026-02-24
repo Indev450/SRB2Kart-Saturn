@@ -90,6 +90,9 @@ typedef struct
 #define LUMPNUMCACHESIZE 2048 // should be reasonable ig
 #define LUMPNUMCACHENAME 32
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Waggregate-return"
+
 #define NAME      lumpnum_map
 #define KEY_TY    char *
 #define KEY_GET_CONST
@@ -107,6 +110,8 @@ typedef struct
 #define CMPR_FN   vt_cmpr_string
 #define KEY_DTOR_FN free
 #include "verstable.h"
+
+#pragma GCC diagnostic pop
 
 static lumpnum_map lumpnumcache;
 
