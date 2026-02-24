@@ -2782,6 +2782,11 @@ static boolean CL_ServerConnectionTicker(const char *tmpsave, tic_t *oldtic, tic
 	{
 		INT32 key;
 
+		if (I_Interrupted())
+		{
+			I_Quit();
+		}
+
 		I_OsPolling();
 
 		if (cl_mode == CL_CONFIRMCONNECT)
