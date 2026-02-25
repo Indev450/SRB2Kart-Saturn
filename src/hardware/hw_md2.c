@@ -1336,8 +1336,8 @@ void HWR_DrawMD2(gl_vissprite_t *spr)
 		if (spr->mobj->frame & FF_ANIMATE)
 		{
 			// set duration and tics to be the correct values for FF_ANIMATE states
-			durs = (float)spr->mobj->state->var2;
-			tics = (float)spr->mobj->anim_duration;
+			durs = spr->mobj->state->var2;
+			tics = (INT32)spr->mobj->anim_duration;
 		}
 
 		//FIXME: this is not yet correct
