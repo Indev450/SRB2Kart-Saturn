@@ -20,7 +20,8 @@ $(foreach v,$(join $(wordlist 2,$(_n),- $(gcc_versions)),\
 CXXFLAGS+= -Wno-aggregate-return
 
 # -W -Wno-unused
-WFLAGS:=-Wall -Wno-trigraphs -Wnull-dereference
+WFLAGS:=-Wall -Wnull-dereference
+#WFLAGS+=-Wno-trigraphs
 ifdef GCC152
 WFLAGS+=-Wzero-as-null-pointer-constant
 endif
@@ -31,7 +32,7 @@ ifndef RELAXWARNINGS
  WFLAGS+=-W
 #WFLAGS+=-Wno-sign-compare
 ifndef GCC295
- WFLAGS+=-Wno-div-by-zero
+# WFLAGS+=-Wno-div-by-zero
 endif
 #WFLAGS+=-Wsystem-headers
 WFLAGS+=-Wfloat-equal
@@ -62,7 +63,7 @@ endif
 endif
  WFLAGS+=-Wsign-compare
 ifdef GCC91
- WFLAGS+=-Wno-error=address-of-packed-member
+# WFLAGS+=-Wno-error=address-of-packed-member
 endif
 ifdef GCC45
  WFLAGS+=-Wlogical-op
@@ -105,14 +106,14 @@ endif
 endif
 WFLAGS+=-Wformat-y2k
 ifdef GCC71
-WFLAGS+=-Wno-error=format-overflow=2
+#WFLAGS+=-Wno-error=format-overflow=2
 endif
 WFLAGS+=-Wformat-security
 ifndef GCC29
 #WFLAGS+=-Winit-self
 endif
 ifdef GCC46
-WFLAGS+=-Wno-suggest-attribute=noreturn
+#WFLAGS+=-Wno-suggest-attribute=noreturn
 endif
 
 ifdef NOLDWARNING
@@ -130,21 +131,21 @@ ifdef GCC44
 #WFLAGS+=-Wno-error=array-bounds
 endif
 ifdef GCC46
- WFLAGS+=-Wno-error=suggest-attribute=noreturn
+# WFLAGS+=-Wno-error=suggest-attribute=noreturn
 endif
 ifdef GCC54
- WFLAGS+=-Wno-logical-op -Wno-error=logical-op
+# WFLAGS+=-Wno-logical-op -Wno-error=logical-op
 endif
 ifdef GCC61
- WFLAGS+=-Wno-tautological-compare -Wno-error=tautological-compare
+# WFLAGS+=-Wno-tautological-compare -Wno-error=tautological-compare
 endif
 ifdef GCC71
  WFLAGS+=-Wimplicit-fallthrough=4
 endif
 ifdef GCC81
- WFLAGS+=-Wno-error=format-overflow
- WFLAGS+=-Wno-format-overflow
- WFLAGS+=-Wno-error=multistatement-macros
+# WFLAGS+=-Wno-error=format-overflow
+# WFLAGS+=-Wno-format-overflow
+# WFLAGS+=-Wno-error=multistatement-macros
 endif
 
 ifneq (,$(filter $(CC) $(CXX),clang clang++))
@@ -183,6 +184,6 @@ endif
 # Lua
 ifdef GCC43
 ifndef GCC44
-WFLAGS+=-Wno-logical-op
+#WFLAGS+=-Wno-logical-op
 endif
 endif
