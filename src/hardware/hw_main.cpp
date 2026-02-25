@@ -4861,7 +4861,7 @@ static void HWR_ProjectSprite(mobj_t *thing)
 		flip = sprframe->flip; // Will only be 0x00 or 0xFF
 
 		if (papersprite && ang < ANGLE_180)
-			flip ^= 0xFFFF;
+			flip ^= 0xFF;
 	}
 	else
 	{
