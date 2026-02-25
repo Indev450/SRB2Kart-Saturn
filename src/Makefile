@@ -269,13 +269,13 @@ endif
 
 ifdef USEASAN
 # compile with asan
-opts+=-fsanitize=address
+opts+=-O1 -fsanitize=address -fno-omit-frame-pointer -fno-common
 libs+=-fsanitize=address
 endif
 
 ifdef USEUBSAN
-# compile with asan
-opts+=-fsanitize=undefined
+# compile with ubsan
+opts+=-O1 -fsanitize=undefined -fno-omit-frame-pointer
 libs+=-fsanitize=undefined
 endif
 
