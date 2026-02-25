@@ -1431,7 +1431,7 @@ UINT8 W_LumpExists(const char *name)
 	// Check the lumpnumcache first.
 	lumpnum_t cachenum = CheckLumpInCache(name);
 	if (cachenum != LUMPERROR)
-		return cachenum;
+		return true;
 
 	namelen = strlen(name);
 	hash = W_HashLumpName(name);
