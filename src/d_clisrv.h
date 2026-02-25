@@ -654,9 +654,9 @@ void D_ResetTiccmds(void);
 
 tic_t GetLag(INT32 node);
 
-extern UINT8 hu_resynching;
+extern boolean hu_resynching;
 #ifdef SATURNPAK
-extern UINT8 hu_redownloadinggamestate;
+extern boolean hu_redownloadinggamestate;
 #endif
 extern boolean hu_stopped; // kart, true when the game is stopped for players due to a disconnecting or connecting player
 

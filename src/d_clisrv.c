@@ -177,11 +177,11 @@ static UINT16 resynch_delay[MAXNETNODES]; // delay time before the player can be
 static UINT32 resynch_status[MAXNETNODES]; // 0 bit means synched for that player, 1 means possibly desynched
 static UINT8 resynch_sent[MAXNETNODES][MAXPLAYERS]; // what synch packets have we attempted to send to the player
 static UINT8 resynch_inprogress[MAXNETNODES];
-static UINT8 resynch_local_inprogress = false; // WE are desynched and getting packets to fix it.
-UINT8 hu_resynching = 0;
+static boolean resynch_local_inprogress = false; // WE are desynched and getting packets to fix it.
+boolean hu_resynching = false;
 
 #ifdef SATURNPAK
-UINT8 hu_redownloadinggamestate = 0;
+boolean hu_redownloadinggamestate = false;
 static UINT8 gamestate_resend_counter[MAXNETNODES];
 #endif
 
@@ -196,7 +196,7 @@ static UINT8 mynode; // my address pointofview server
 
 #ifdef SATURNPAK
 static boolean cl_redownloadinggamestate = false;
-boolean is_client_saturn[MAXNETNODES];
+static boolean is_client_saturn[MAXNETNODES];
 #endif
 
 #ifdef SATURNJOIN
