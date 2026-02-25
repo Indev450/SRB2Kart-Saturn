@@ -6175,6 +6175,13 @@ void K_KartUpdatePosition(player_t *player)
 						}
 					}
 
+					// the player should NOT be checked against themselves! lol
+					// otherwise prevcheck will effectively be halved
+					// sadly this stuff is exposed to lua and atleast one script uses those so we cant fix it
+					// oh well
+					//if (player == &players[i])
+						//continue;
+
 					const boolean isprevcheckpointi = mo->health == players[i].starpostnum;
 					const boolean isnextcheckpointi = mo->health == (players[i].starpostnum + 1);
 
