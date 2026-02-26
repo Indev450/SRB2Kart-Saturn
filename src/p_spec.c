@@ -3700,10 +3700,7 @@ DoneSection2:
 
 				P_SetTarget(&player->mo->tracer, waypoint);
 				player->speed = speed;
-				player->pflags &= ~PF_SPINNING; // SRB2kart 200117
 				player->pflags &= ~PF_JUMPED;
-				player->pflags &= ~PF_GLIDING;
-				player->climbing = 0;
 
 				if (!(player->mo->state >= &states[S_KART_RUN1] && player->mo->state <= &states[S_KART_RUN2]))
 					P_SetPlayerMobjState(player->mo, S_KART_RUN1);
@@ -3773,7 +3770,6 @@ DoneSection2:
 
 				P_SetTarget(&player->mo->tracer, waypoint);
 				player->speed = speed;
-				player->pflags &= ~PF_SPINNING; // SRB2kart 200117
 				player->pflags &= ~PF_JUMPED;
 
 				if (!(player->mo->state >= &states[S_KART_RUN1] && player->mo->state <= &states[S_KART_RUN2]))
@@ -3819,9 +3815,6 @@ DoneSection2:
 						player->kartstuff[k_laphand] = 0; // No hands in FREE PLAY
 
 					player->kartstuff[k_lapanimation] = 80;
-
-					if (UNLIKELY(player->pflags & PF_NIGHTSMODE))
-						player->drillmeter += 48*20;
 
 					if (netgame && player->laps >= (UINT8)cv_numlaps.value)
 						CON_LogMessage(va(M_GetText("%s has finished the race.\n"), player_names[player-players]));
@@ -4143,9 +4136,8 @@ DoneSection2:
 				S_StartSound(player->mo, sfx_s3k4a);
 
 				player->pflags &= ~PF_JUMPED;
-				player->pflags &= ~PF_GLIDING;
 				player->pflags &= ~PF_SLIDING;
-				player->climbing = 0;
+
 				P_SetThingPosition(player->mo);
 				//P_SetPlayerMobjState(player->mo, S_PLAY_CARRY); // SRB2kart
 			}
@@ -5249,7 +5241,6 @@ void P_SpawnSpecials(INT32 fromnetsave, boolean reloadinggamestate)
 
 	// Defaults in case levels don't have them set.
 	sstimer = 90*TICRATE + 6;
-	totalrings = 1;
 
 	CheckForBustableBlocks = CheckForBouncySector = CheckForQuicksand = CheckForMarioBlocks = CheckForFloatBob = CheckForReverseGravity = false;
 
@@ -5277,7 +5268,6 @@ void P_SpawnSpecials(INT32 fromnetsave, boolean reloadinggamestate)
 		{
 			case 10: // Time for special stage
 				sstimer = (sector->floorheight>>FRACBITS) * TICRATE + 6; // Time to finish
-				totalrings = sector->ceilingheight>>FRACBITS; // Ring count for special stage
 				break;
 
 			case 11: // Custom global gravity!
@@ -6290,9 +6280,7 @@ static void P_DoScrollMove(mobj_t *thing, fixed_t dx, fixed_t dy, INT32 exclusiv
 		}
 	}
 
-	if (thing->player && (thing->player->pflags & PF_SPINNING) && (thing->player->rmomx || thing->player->rmomy) && !(thing->player->pflags & PF_STARTDASH))
-		fuckaj = FixedDiv(549*ORIG_FRICTION,500*FRACUNIT);
-	else if (thing->friction != ORIG_FRICTION)
+	if (thing->friction != ORIG_FRICTION)
 		fuckaj = thing->friction;
 
 	if (fuckaj)
@@ -7031,7 +7019,7 @@ static inline boolean PIT_PushThing(mobj_t *thing)
 		return false;
 
 	// Allow this to affect pushable objects at some point?
-	if (thing->player && (!(thing->flags & (MF_NOGRAVITY | MF_NOCLIP)) || UNLIKELY(thing->player->pflags & PF_NIGHTSMODE)))
+	if (thing->player && (!(thing->flags & (MF_NOGRAVITY | MF_NOCLIP))))
 	{
 		INT32 dist;
 		INT32 speed;
@@ -7062,75 +7050,14 @@ static inline boolean PIT_PushThing(mobj_t *thing)
 		// Written with bits and pieces of P_HomingAttack
 		if ((speed > 0) && (P_CheckSight(thing, tmpusher->source)))
 		{
-			if (LIKELY(!(thing->player->pflags & PF_NIGHTSMODE)))
+			// only push wrt Z if health & 1 (mapthing has ambush flag)
+			if (tmpusher->source->health & 1)
 			{
-				// only push wrt Z if health & 1 (mapthing has ambush flag)
-				if (tmpusher->source->health & 1)
-				{
-					fixed_t tmpmomx, tmpmomy, tmpmomz;
-
-					tmpmomx = FixedMul(FixedDiv(sx - thing->x, dist), speed);
-					tmpmomy = FixedMul(FixedDiv(sy - thing->y, dist), speed);
-					tmpmomz = FixedMul(FixedDiv(sz - thing->z, dist), speed);
-					if (tmpusher->source->type == MT_PUSH) // away!
-					{
-						tmpmomx *= -1;
-						tmpmomy *= -1;
-						tmpmomz *= -1;
-					}
-
-					thing->momx += tmpmomx;
-					thing->momy += tmpmomy;
-					thing->momz += tmpmomz;
-
-					if (thing->player)
-					{
-						thing->player->cmomx += tmpmomx;
-						thing->player->cmomy += tmpmomy;
-						thing->player->cmomx = FixedMul(thing->player->cmomx, ORIG_FRICTION);
-						thing->player->cmomy = FixedMul(thing->player->cmomy, ORIG_FRICTION);
-					}
-				}
-				else
-				{
-					angle_t pushangle;
-
-					pushangle = R_PointToAngle2(thing->x, thing->y, sx, sy);
-					if (tmpusher->source->type == MT_PUSH)
-						pushangle += ANGLE_180; // away
-					pushangle >>= ANGLETOFINESHIFT;
-					thing->momx += FixedMul(speed, FINECOSINE(pushangle));
-					thing->momy += FixedMul(speed, FINESINE(pushangle));
-
-					if (thing->player)
-					{
-						thing->player->cmomx += FixedMul(speed, FINECOSINE(pushangle));
-						thing->player->cmomy += FixedMul(speed, FINESINE(pushangle));
-						thing->player->cmomx = FixedMul(thing->player->cmomx, ORIG_FRICTION);
-						thing->player->cmomy = FixedMul(thing->player->cmomy, ORIG_FRICTION);
-					}
-				}
-			}
-			else
-			{
-				//NiGHTS-specific handling.
-				//By default, pushes and pulls only affect the Z-axis.
-				//By having the ambush flag, it affects the X-axis.
-				//By having the object special flag, it affects the Y-axis.
 				fixed_t tmpmomx, tmpmomy, tmpmomz;
 
-				if (tmpusher->source->health & 1)
-					tmpmomx = FixedMul(FixedDiv(sx - thing->x, dist), speed);
-				else
-					tmpmomx = 0;
-
-				if (tmpusher->source->health & 2)
-					tmpmomy = FixedMul(FixedDiv(sy - thing->y, dist), speed);
-				else
-					tmpmomy = 0;
-
+				tmpmomx = FixedMul(FixedDiv(sx - thing->x, dist), speed);
+				tmpmomy = FixedMul(FixedDiv(sy - thing->y, dist), speed);
 				tmpmomz = FixedMul(FixedDiv(sz - thing->z, dist), speed);
-
 				if (tmpusher->source->type == MT_PUSH) // away!
 				{
 					tmpmomx *= -1;
@@ -7146,6 +7073,25 @@ static inline boolean PIT_PushThing(mobj_t *thing)
 				{
 					thing->player->cmomx += tmpmomx;
 					thing->player->cmomy += tmpmomy;
+					thing->player->cmomx = FixedMul(thing->player->cmomx, ORIG_FRICTION);
+					thing->player->cmomy = FixedMul(thing->player->cmomy, ORIG_FRICTION);
+				}
+			}
+			else
+			{
+				angle_t pushangle;
+
+				pushangle = R_PointToAngle2(thing->x, thing->y, sx, sy);
+				if (tmpusher->source->type == MT_PUSH)
+					pushangle += ANGLE_180; // away
+				pushangle >>= ANGLETOFINESHIFT;
+				thing->momx += FixedMul(speed, FINECOSINE(pushangle));
+				thing->momy += FixedMul(speed, FINESINE(pushangle));
+
+				if (thing->player)
+				{
+					thing->player->cmomx += FixedMul(speed, FINECOSINE(pushangle));
+					thing->player->cmomy += FixedMul(speed, FINESINE(pushangle));
 					thing->player->cmomx = FixedMul(thing->player->cmomx, ORIG_FRICTION);
 					thing->player->cmomy = FixedMul(thing->player->cmomy, ORIG_FRICTION);
 				}

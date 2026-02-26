@@ -137,8 +137,9 @@ static void P_NetArchivePlayers(savebuffer_t *save, boolean resending)
 		WRITEINT32(save->p, player->awayviewtics);
 		WRITEINT32(save->p, player->health);
 
-		WRITESINT8(save->p, player->pity);
-		WRITEINT32(save->p, player->currentweapon);
+		WRITESINT8(save->p, 0); //player->pity
+		WRITEINT32(save->p, 0); //player->currentweapon
+
 		WRITEINT32(save->p, player->ringweapons);
 
 		for (j = 0; j < NUMPOWERS; j++)
@@ -163,23 +164,23 @@ static void P_NetArchivePlayers(savebuffer_t *save, boolean resending)
 		}
 
 		WRITEUINT32(save->p, player->score);
-		WRITEFIXED(save->p, player->dashspeed);
-		WRITEINT32(save->p, player->dashtime);
+		WRITEFIXED(save->p, 0); //player->dashspeed
+		WRITEINT32(save->p, 0); //player->dashtime
 		WRITESINT8(save->p, player->lives);
 		WRITESINT8(save->p, player->continues);
-		WRITESINT8(save->p, player->xtralife);
-		WRITEUINT8(save->p, player->gotcontinue);
+		WRITESINT8(save->p, 0); //player->xtralife
+		WRITEUINT8(save->p, 0); //player->gotcontinue
 		WRITEFIXED(save->p, player->speed);
-		WRITEUINT8(save->p, player->jumping);
-		WRITEUINT8(save->p, player->secondjump);
-		WRITEUINT8(save->p, player->fly1);
-		WRITEUINT8(save->p, player->scoreadd);
-		WRITEUINT32(save->p, player->glidetime);
-		WRITEUINT8(save->p, player->climbing);
+		WRITEUINT8(save->p, 0); //player->jumping
+		WRITEUINT8(save->p, 0); //player->secondjump
+		WRITEUINT8(save->p, 0); //player->fly1
+		WRITEUINT8(save->p, 0); //player->scoreadd
+		WRITEUINT32(save->p, 0); //player->glidetime
+		WRITEUINT8(save->p, 0); //player->climbing
 		WRITEINT32(save->p, player->deadtimer);
 		WRITEUINT32(save->p, player->exiting);
-		WRITEUINT8(save->p, player->homing);
-		WRITEUINT32(save->p, player->skidtime);
+		WRITEUINT8(save->p, 0); //player->homing
+		WRITEUINT32(save->p, 0); //player->skidtime
 
 		////////////////////////////
 		// Conveyor Belt Movement //
@@ -192,7 +193,7 @@ static void P_NetArchivePlayers(savebuffer_t *save, boolean resending)
 		/////////////////////
 		// Race Mode Stuff //
 		/////////////////////
-		WRITEINT16(save->p, player->numboxes);
+		WRITEINT16(save->p, 0); //player->numboxes
 		WRITEINT16(save->p, player->totalring);
 		WRITEUINT32(save->p, player->realtime);
 		WRITEUINT8(save->p, player->laps);
@@ -203,7 +204,7 @@ static void P_NetArchivePlayers(savebuffer_t *save, boolean resending)
 		WRITEINT32(save->p, player->ctfteam);
 		WRITEUINT16(save->p, player->gotflag);
 
-		WRITEINT32(save->p, player->weapondelay);
+		WRITEINT32(save->p, 0); //player->weapondelay
 		WRITEINT32(save->p, player->tossdelay);
 
 		WRITEUINT32(save->p, player->starposttime);
@@ -213,50 +214,43 @@ static void P_NetArchivePlayers(savebuffer_t *save, boolean resending)
 		WRITEINT32(save->p, player->starpostnum);
 		WRITEANGLE(save->p, player->starpostangle);
 
-		WRITEANGLE(save->p, player->angle_pos);
-		WRITEANGLE(save->p, player->old_angle_pos);
+		WRITEANGLE(save->p, 0); //player->angle_pos
+		WRITEANGLE(save->p, 0); //player->old_angle_pos
 
 		WRITEINT32(save->p, player->flyangle);
-		WRITEUINT32(save->p, player->drilltimer);
+		WRITEUINT32(save->p, 0); //player->drilltimer
 		WRITEINT32(save->p, player->linkcount);
 		WRITEUINT32(save->p, player->linktimer);
-		WRITEINT32(save->p, player->anotherflyangle);
+		WRITEINT32(save->p, 0); //player->anotherflyangle
 		WRITEUINT32(save->p, player->nightstime);
 		WRITEUINT32(save->p, player->bumpertime);
-		WRITEINT32(save->p, player->drillmeter);
-		WRITEUINT8(save->p, player->drilldelay);
-		WRITEUINT8(save->p, player->bonustime);
+		WRITEINT32(save->p, 0); //player->drillmeter
+		WRITEUINT8(save->p, 0); //player->drilldelay
+		WRITEUINT8(save->p, 0); // player->bonustime
 		WRITEUINT8(save->p, player->mare);
 
-		WRITEUINT32(save->p, player->marebegunat);
-		WRITEUINT32(save->p, player->startedtime);
-		WRITEUINT32(save->p, player->finishedtime);
-		WRITEINT16(save->p, player->finishedrings);
-		WRITEUINT32(save->p, player->marescore);
-		WRITEUINT32(save->p, player->lastmarescore);
-		WRITEUINT8(save->p, player->lastmare);
-		WRITEINT32(save->p, player->maxlink);
-		WRITEUINT8(save->p, player->texttimer);
-		WRITEUINT8(save->p, player->textvar);
+		WRITEUINT32(save->p, 0); // player->marebegunat
+		WRITEUINT32(save->p, 0); // player->startedtime
+		WRITEUINT32(save->p, 0); // player->finishedtime
+		WRITEINT16(save->p, 0); // player->finishedrings
 
-		if (player->capsule)
-			flags |= CAPSULE;
+		WRITEUINT32(save->p, player->marescore);
+
+		WRITEUINT32(save->p,0); // player->lastmarescore
+		WRITEUINT8(save->p, 0); // player->lastmare
+		WRITEINT32(save->p, 0); // player->maxlink
+		WRITEUINT8(save->p, 0); // player->texttimer
+		WRITEUINT8(save->p, 0); // player->textvar
 
 		if (player->awayviewmobj)
 			flags |= AWAYVIEW;
 
-		if (player->axis1)
-			flags |= FIRSTAXIS;
+		WRITEINT16(save->p, 0); //player->lastsidehit
+		WRITEINT16(save->p, 0); //player->lastlinehit
 
-		if (player->axis2)
-			flags |= SECONDAXIS;
+		WRITEUINT32(save->p, 0); // player->losstime
 
-		WRITEINT16(save->p, player->lastsidehit);
-		WRITEINT16(save->p, player->lastlinehit);
-
-		WRITEUINT32(save->p, player->losstime);
-
-		WRITEUINT8(save->p, player->timeshit);
+		WRITEUINT8(save->p, 0); //player->timeshit
 
 		WRITEINT32(save->p, player->onconveyor);
 
@@ -270,19 +264,11 @@ static void P_NetArchivePlayers(savebuffer_t *save, boolean resending)
 
 		WRITEUINT16(save->p, flags);
 
-		if (flags & CAPSULE)
-			WRITEUINT32(save->p, player->capsule->mobjnum);
-
-		if (flags & FIRSTAXIS)
-			WRITEUINT32(save->p, player->axis1->mobjnum);
-
-		if (flags & SECONDAXIS)
-			WRITEUINT32(save->p, player->axis2->mobjnum);
-
 		if (flags & AWAYVIEW)
 			WRITEUINT32(save->p, player->awayviewmobj->mobjnum);
 
-		WRITEUINT32(save->p, player->charflags);
+		WRITEUINT32(save->p, 0); // player->charflags
+
 		// SRB2kart
 		WRITEUINT8(save->p, player->kartspeed);
 		WRITEUINT8(save->p, player->kartweight);
@@ -330,8 +316,9 @@ static void P_NetUnArchivePlayers(savebuffer_t *save, boolean reloading)
 		player->awayviewtics = READINT32(save->p);
 		player->health = READINT32(save->p);
 
-		player->pity = READSINT8(save->p);
-		player->currentweapon = READINT32(save->p);
+		save->p += sizeof(SINT8); // player->pity
+		save->p += sizeof(INT32); // player->currentweapon
+
 		player->ringweapons = READINT32(save->p);
 
 		for (j = 0; j < NUMPOWERS; j++)
@@ -356,23 +343,23 @@ static void P_NetUnArchivePlayers(savebuffer_t *save, boolean reloading)
 		}
 
 		player->score = READUINT32(save->p);
-		player->dashspeed = READFIXED(save->p); // dashing speed
-		player->dashtime = READINT32(save->p); // dashing speed
+		save->p += sizeof(fixed_t); // player->dashspeed
+		save->p += sizeof(INT32); // player->dashtime
 		player->lives = READSINT8(save->p);
 		player->continues = READSINT8(save->p); // continues that player has acquired
-		player->xtralife = READSINT8(save->p); // Ring Extra Life counter
-		player->gotcontinue = READUINT8(save->p); // got continue from stage
+		save->p += sizeof(SINT8); // player->xtralife
+		save->p += sizeof(UINT8); // player->gotcontinue
 		player->speed = READFIXED(save->p); // Player's speed (distance formula of MOMX and MOMY values)
-		player->jumping = READUINT8(save->p); // Jump counter
-		player->secondjump = READUINT8(save->p);
-		player->fly1 = READUINT8(save->p); // Tails flying
-		player->scoreadd = READUINT8(save->p); // Used for multiple enemy attack bonus
-		player->glidetime = READUINT32(save->p); // Glide counter for thrust
-		player->climbing = READUINT8(save->p); // Climbing on the wall
+		save->p += sizeof(UINT8); // player->jumping
+		save->p += sizeof(UINT8); // player->secondjump
+		save->p += sizeof(UINT8); // player->fly1
+		save->p += sizeof(UINT8); // player->scoreadd
+		save->p += sizeof(UINT32); // player->glidetime
+		save->p += sizeof(UINT8); // player->climbing
 		player->deadtimer = READINT32(save->p); // End game if game over lasts too long
 		player->exiting = READUINT32(save->p); // Exitlevel timer
-		player->homing = READUINT8(save->p); // Are you homing?
-		player->skidtime = READUINT32(save->p); // Skid timer
+		save->p += sizeof(UINT8); // player->homing
+		save->p += sizeof(UINT32); // player->skidtime
 
 		////////////////////////////
 		// Conveyor Belt Movement //
@@ -385,7 +372,7 @@ static void P_NetUnArchivePlayers(savebuffer_t *save, boolean reloading)
 		/////////////////////
 		// Race Mode Stuff //
 		/////////////////////
-		player->numboxes = READINT16(save->p); // Number of item boxes obtained for Race Mode
+		save->p += sizeof(INT16); // player->numboxes
 		player->totalring = READINT16(save->p); // Total number of rings obtained for Race Mode
 		player->realtime = READUINT32(save->p); // integer replacement for leveltime
 		player->laps = READUINT8(save->p); // Number of laps (optional)
@@ -396,7 +383,7 @@ static void P_NetUnArchivePlayers(savebuffer_t *save, boolean reloading)
 		player->ctfteam = READINT32(save->p); // 1 == Red, 2 == Blue
 		player->gotflag = READUINT16(save->p); // 1 == Red, 2 == Blue Do you have the flag?
 
-		player->weapondelay = READINT32(save->p);
+		save->p += sizeof(INT32); // player->weapondelay
 		player->tossdelay = READINT32(save->p);
 
 		player->starposttime = READUINT32(save->p);
@@ -406,38 +393,37 @@ static void P_NetUnArchivePlayers(savebuffer_t *save, boolean reloading)
 		player->starpostnum = READINT32(save->p);
 		player->starpostangle = READANGLE(save->p);
 
-		player->angle_pos = READANGLE(save->p);
-		player->old_angle_pos = READANGLE(save->p);
+		save->p += sizeof(angle_t); // player->angle_pos
+		save->p += sizeof(angle_t); // player->old_angle_pos
 
 		player->flyangle = READINT32(save->p);
-		player->drilltimer = READUINT32(save->p);
+		save->p += sizeof(UINT32); // player->drilltimer
 		player->linkcount = READINT32(save->p);
 		player->linktimer = READUINT32(save->p);
-		player->anotherflyangle = READINT32(save->p);
+		save->p += sizeof(INT32); // player->anotherflyangle
 		player->nightstime = READUINT32(save->p);
 		player->bumpertime = READUINT32(save->p);
-		player->drillmeter = READINT32(save->p);
-		player->drilldelay = READUINT8(save->p);
-		player->bonustime = (boolean)READUINT8(save->p);
+		save->p += sizeof(INT32); // player->drillmeter
+		save->p += sizeof(UINT8); // player->drilldelay
+		save->p += sizeof(UINT8); // player->bonustime
 		player->mare = READUINT8(save->p);
 
-		player->marebegunat = READUINT32(save->p);
-		player->startedtime = READUINT32(save->p);
-		player->finishedtime = READUINT32(save->p);
-		player->finishedrings = READINT16(save->p);
+		save->p += sizeof(UINT32); // player->marebegunat
+		save->p += sizeof(UINT32); // player->startedtime
+		save->p += sizeof(UINT32); // player->finishedtime
+		save->p += sizeof(INT16); // player->finishedrings
+
 		player->marescore = READUINT32(save->p);
-		player->lastmarescore = READUINT32(save->p);
-		player->lastmare = READUINT8(save->p);
-		player->maxlink = READINT32(save->p);
-		player->texttimer = READUINT8(save->p);
-		player->textvar = READUINT8(save->p);
 
-		player->lastsidehit = READINT16(save->p);
-		player->lastlinehit = READINT16(save->p);
-
-		player->losstime = READUINT32(save->p);
-
-		player->timeshit = READUINT8(save->p);
+		save->p += sizeof(UINT32); // player->lastmarescore
+		save->p += sizeof(UINT8); // player->lastmare
+		save->p += sizeof(INT32); // player->maxlink
+		save->p += sizeof(UINT8); // player->texttimer
+		save->p += sizeof(UINT8); // player->textvar
+		save->p += sizeof(INT16); // player->lastsidehit
+		save->p += sizeof(INT16); // player->lastlinehit
+		save->p += sizeof(UINT32); // player->losstime
+		save->p += sizeof(UINT8); // player->timeshit
 
 		player->onconveyor = READINT32(save->p);
 
@@ -451,22 +437,14 @@ static void P_NetUnArchivePlayers(savebuffer_t *save, boolean reloading)
 
 		flags = READUINT16(save->p);
 
-		if (flags & CAPSULE)
-			player->capsule = (mobj_t *)(size_t)READUINT32(save->p);
-
-		if (flags & FIRSTAXIS)
-			player->axis1 = (mobj_t *)(size_t)READUINT32(save->p);
-
-		if (flags & SECONDAXIS)
-			player->axis2 = (mobj_t *)(size_t)READUINT32(save->p);
-
 		if (flags & AWAYVIEW)
 			player->awayviewmobj = (mobj_t *)(size_t)READUINT32(save->p);
 
 		player->viewheight = 32<<FRACBITS;
 
 		//SetPlayerSkinByNum(i, player->skin);
-		player->charflags = READUINT32(save->p);
+		save->p += sizeof(UINT32); // player->charflags
+
 		// SRB2kart
 		player->kartspeed = READUINT8(save->p);
 		player->kartweight = READUINT8(save->p);
@@ -3211,9 +3189,6 @@ static void P_RelinkPointers(void)
 
 		if (player)
 		{
-			RELINK(player->capsule, "capsule");
-			RELINK(player->axis1, "axis1");
-			RELINK(player->axis2, "axis2");
 			RELINK(player->awayviewmobj, "awayviewmobj");
 		}
 #undef RELINK
@@ -3388,7 +3363,7 @@ static void P_NetArchiveMisc(savebuffer_t *save, boolean resending)
 	WRITEUINT8(save->p, encoremode);
 
 	WRITEUINT32(save->p, leveltime);
-	WRITEUINT32(save->p, totalrings);
+	WRITEUINT32(save->p, 0); // totalrings
 	WRITEINT16(save->p, lastmap);
 
 	for (i = 0; i < 4; i++)
@@ -3602,7 +3577,7 @@ FUNCINLINE static ATTRINLINE boolean P_NetUnArchiveMisc(savebuffer_t *save, bool
 
 	// get the time
 	leveltime = READUINT32(save->p);
-	totalrings = READUINT32(save->p);
+	save->p += sizeof(UINT32); // totalrings
 	lastmap = READINT16(save->p);
 
 	for (i = 0; i < 4; i++)

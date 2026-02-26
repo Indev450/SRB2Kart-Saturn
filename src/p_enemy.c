@@ -5063,7 +5063,7 @@ void A_CrawlaCommanderThink(void *thing)
 	if (actor->target->player && actor->health > 1)
 	{
 		if (dist < FixedMul(128*FRACUNIT, actor->scale)
-			&& ((actor->target->player->pflags & PF_JUMPED) || (actor->target->player->pflags & PF_SPINNING)))
+			&& (actor->target->player->pflags & PF_JUMPED))
 		{
 			// Auugh! He's trying to kill you! Strafe! STRAAAAFFEEE!!
 			if (actor->target->momx || actor->target->momy)
@@ -5537,7 +5537,6 @@ void A_RecyclePowers(void *thing)
 
 	UINT16 powers[MAXPLAYERS][NUMPOWERS];
 	INT32 weapons[MAXPLAYERS];
-	INT32 weaponheld[MAXPLAYERS];
 
 	if (LUA_CallAction(A_RECYCLEPOWERS, actor))
 		return;
@@ -5564,7 +5563,6 @@ void A_RecyclePowers(void *thing)
 				powers[i][k] = players[i].powers[k];
 			//1.1: ring weapons too
 			weapons[i] = players[i].ringweapons;
-			weaponheld[i] = players[i].currentweapon;
 
 			j++;
 		}
@@ -5612,7 +5610,6 @@ void A_RecyclePowers(void *thing)
 
 		//1.1: weapon rings too
 		players[recv_pl].ringweapons = weapons[send_pl];
-		players[recv_pl].currentweapon = weaponheld[send_pl];
 
 		P_SpawnShieldOrb(&players[recv_pl]);
 		if (P_IsLocalPlayer(&players[recv_pl]))

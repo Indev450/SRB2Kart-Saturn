@@ -111,35 +111,19 @@ void P_DoNightsScore(player_t *player)
 		player = &players[consoleplayer];
 
 	// Individual link counts
-	if (++player->linkcount > player->maxlink)
-		player->maxlink = player->linkcount;
+	++player->linkcount;
+
 	player->linktimer = 2*TICRATE;
 
 	if (player->linkcount < 10)
 	{
-		if (player->bonustime)
-		{
-			P_AddPlayerScore(player, player->linkcount*20);
-			P_SetMobjState(dummymo, dummymo->info->xdeathstate+player->linkcount-1);
-		}
-		else
-		{
-			P_AddPlayerScore(player, player->linkcount*10);
-			P_SetMobjState(dummymo, dummymo->info->spawnstate+player->linkcount-1);
-		}
+		P_AddPlayerScore(player, player->linkcount*10);
+		P_SetMobjState(dummymo, dummymo->info->spawnstate+player->linkcount-1);
 	}
 	else
 	{
-		if (player->bonustime)
-		{
-			P_AddPlayerScore(player, 200);
-			P_SetMobjState(dummymo, dummymo->info->xdeathstate+9);
-		}
-		else
-		{
-			P_AddPlayerScore(player, 100);
-			P_SetMobjState(dummymo, dummymo->info->spawnstate+9);
-		}
+		P_AddPlayerScore(player, 100);
+		P_SetMobjState(dummymo, dummymo->info->spawnstate+9);
 	}
 
 	// Hoops are the only things that should add to your drill meter
@@ -831,50 +815,37 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 			{
 				S_StartSound(toucher, special->info->seesound);
 
-				if (UNLIKELY(player->pflags & PF_NIGHTSMODE))
-				{
-					player->bumpertime = TICRATE/2;
-					if (special->threshold > 0)
-						player->flyangle = (special->threshold*30)-1;
-					else
-						player->flyangle = special->threshold;
+				// More like a spring
+				angle_t fa;
+				fixed_t xspeed, yspeed;
+				const fixed_t speed = FixedMul(FixedDiv(special->info->speed*FRACUNIT,75*FRACUNIT), FixedSqrt(FixedMul(toucher->scale,special->scale)));
 
-					player->speed = FixedMul(special->info->speed, special->scale);
-					toucher->z = special->z+(special->height/4);
-				}
-				else // More like a spring
-				{
-					angle_t fa;
-					fixed_t xspeed, yspeed;
-					const fixed_t speed = FixedMul(FixedDiv(special->info->speed*FRACUNIT,75*FRACUNIT), FixedSqrt(FixedMul(toucher->scale,special->scale)));
+				player->bumpertime = TICRATE/2;
 
-					player->bumpertime = TICRATE/2;
+				P_UnsetThingPosition(toucher);
+				toucher->x = special->x;
+				toucher->y = special->y;
+				P_SetThingPosition(toucher);
+				toucher->z = special->z+(special->height/4);
 
-					P_UnsetThingPosition(toucher);
-					toucher->x = special->x;
-					toucher->y = special->y;
-					P_SetThingPosition(toucher);
-					toucher->z = special->z+(special->height/4);
+				if (special->threshold > 0)
+					fa = (FixedAngle(((special->threshold*30)-1)*FRACUNIT)>>ANGLETOFINESHIFT) & FINEMASK;
+				else
+					fa = 0;
 
-					if (special->threshold > 0)
-						fa = (FixedAngle(((special->threshold*30)-1)*FRACUNIT)>>ANGLETOFINESHIFT) & FINEMASK;
-					else
-						fa = 0;
+				xspeed = FixedMul(FINECOSINE(fa),speed);
+				yspeed = FixedMul(FINESINE(fa),speed);
 
-					xspeed = FixedMul(FINECOSINE(fa),speed);
-					yspeed = FixedMul(FINESINE(fa),speed);
+				P_InstaThrust(toucher, special->angle, xspeed/10);
+				toucher->momz = yspeed/11;
 
-					P_InstaThrust(toucher, special->angle, xspeed/10);
-					toucher->momz = yspeed/11;
+				toucher->angle = special->angle;
 
-					toucher->angle = special->angle;
+				P_ForceLocalAngle(player, toucher->angle);
 
-					P_ForceLocalAngle(player, toucher->angle);
+				P_ResetPlayer(player);
 
-					P_ResetPlayer(player);
-
-					P_SetPlayerMobjState(toucher, S_KART_STND1); // SRB2kart - was S_PLAY_FALL1
-				}
+				P_SetPlayerMobjState(toucher, S_KART_STND1); // SRB2kart - was S_PLAY_FALL1
 			}
 			return;
 		case MT_NIGHTSWING:
@@ -910,13 +881,6 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 
 			P_DoNightsScore(player);
 
-			// Hoops are the only things that should add to the drill meter
-			// Also, one tic's worth of drill is too much.
-			if (player->bot)
-				players[consoleplayer].drillmeter += TICRATE/2;
-			else
-				player->drillmeter += TICRATE/2;
-
 			// Play hoop sound -- pick one depending on the current link.
 			if (player->linkcount <= 5)
 				S_StartSound(toucher, sfx_hoop1);
@@ -924,6 +888,7 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 				S_StartSound(toucher, sfx_hoop2);
 			else
 				S_StartSound(toucher, sfx_hoop3);
+
 			return;
 
 // ***** //
@@ -1054,11 +1019,6 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 				toucher->momx = P_ReturnThrustX(special, angle, touchspeed);
 				toucher->momy = P_ReturnThrustY(special, angle, touchspeed);
 				toucher->momz = -toucher->momz;
-				if (player->pflags & PF_GLIDING)
-				{
-					player->pflags &= ~(PF_GLIDING|PF_JUMPED);
-					P_SetPlayerMobjState(toucher, S_KART_STND1); // SRB2kart - was S_PLAY_FALL1
-				}
 
 				// Play a bounce sound?
 				S_StartSound(toucher, special->info->painsound);
@@ -1121,17 +1081,12 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 					toucher->momx = P_ReturnThrustX(special, special->angle, touchspeed);
 					toucher->momy = P_ReturnThrustY(special, special->angle, touchspeed);
 					toucher->momz = -toucher->momz;
-					if (player->pflags & PF_GLIDING)
-					{
-						player->pflags &= ~(PF_GLIDING|PF_JUMPED);
-						P_SetPlayerMobjState(toucher, S_KART_STND1); // SRB2kart - was S_PLAY_FALL1
-					}
 
 					// Play a bounce sound?
 					S_StartSound(toucher, special->info->painsound);
 					return;
 				}
-				else if (UNLIKELY((player->pflags & PF_NIGHTSMODE) && (player->pflags & PF_DRILLING)) || (player->pflags & (PF_JUMPED|PF_SPINNING|PF_GLIDING))
+				else if ((player->pflags & PF_JUMPED)
 						|| player->powers[pw_invulnerability] || player->powers[pw_super]) // Do you possess the ability to subdue the object?
 				{
 					// Shatter the shield!
@@ -1580,7 +1535,7 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source)
 		if (target->flags & MF_MONITOR || target->type == MT_RANDOMITEM)
 		{
 			P_SetTarget(&target->target, source);
-			source->player->numboxes++;
+
 			if (cv_itemrespawn.value && (netgame || multiplayer))
 			{
 				target->fuse = cv_itemrespawntime.value*TICRATE + 2; // Random box generation
@@ -1994,68 +1949,7 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source)
 	   Graue 12-22-2003 */
 }
 
-static inline void P_NiGHTSDamage(mobj_t *target, mobj_t *source)
-{
-	player_t *player = target->player;
-	tic_t oldnightstime = player->nightstime;
-
-	if (!player->powers[pw_flashing]
-		&& !(player->pflags & PF_GODMODE))
-	{
-		angle_t fa;
-
-		player->angle_pos = player->old_angle_pos;
-		player->speed /= 5;
-		player->flyangle += 180; // Shuffle's BETTERNIGHTSMOVEMENT?
-		player->flyangle %= 360;
-
-		if (G_RaceGametype())
-			player->drillmeter -= 5*20;
-		else
-		{
-			if (source && source->player)
-			{
-				if (player->nightstime > 20*TICRATE)
-					player->nightstime -= 20*TICRATE;
-				else
-					player->nightstime = 1;
-			}
-			else
-			{
-				if (player->nightstime > 5*TICRATE)
-					player->nightstime -= 5*TICRATE;
-				else
-					player->nightstime = 1;
-			}
-		}
-
-		if (player->pflags & PF_TRANSFERTOCLOSEST)
-		{
-			target->momx = -target->momx;
-			target->momy = -target->momy;
-		}
-		else
-		{
-			fa = player->old_angle_pos>>ANGLETOFINESHIFT;
-
-			target->momx = FixedMul(FINECOSINE(fa),target->target->radius);
-			target->momy = FixedMul(FINESINE(fa),target->target->radius);
-		}
-
-		player->powers[pw_flashing] = K_GetKartFlashing(player);
-		P_SetMobjState(target->tracer, S_NIGHTSHURT1);
-		S_StartSound(target, sfx_nghurt);
-
-		if (oldnightstime > 10*TICRATE
-			&& player->nightstime < 10*TICRATE)
-		{
-			//S_StartSound(NULL, sfx_timeup); // that creepy "out of time" music from NiGHTS. Dummied out, as some on the dev team thought it wasn't Sonic-y enough (Mystic, notably). Uncomment to restore. -SH
-			S_ChangeMusicInternal("drown",false);
-		}
-	}
-}
-
-static inline boolean P_TagDamage(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 damage)
+static boolean P_TagDamage(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 damage)
 {
 	player_t *player = target->player;
 	(void)damage; //unused parm
@@ -2123,14 +2017,13 @@ static inline boolean P_TagDamage(mobj_t *target, mobj_t *inflictor, mobj_t *sou
 	return true;
 }
 
-static inline boolean P_PlayerHitsPlayer(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 damage)
+static boolean P_PlayerHitsPlayer(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 damage)
 {
-	player_t *player = target->player;
-
 	// Tag handling
 	if (G_TagGametype())
 		return P_TagDamage(target, inflictor, source, damage);
-	else if (G_GametypeHasTeams()) // CTF + Team Match
+
+	if (G_GametypeHasTeams()) // CTF + Team Match
 	{
 		// Don't allow players on the same team to hurt one another,
 		// unless cv_friendlyfire is on.
@@ -2149,17 +2042,12 @@ static inline boolean P_PlayerHitsPlayer(mobj_t *target, mobj_t *inflictor, mobj
 		}
 	}
 
-	// Add pity.
-	if (!player->powers[pw_flashing] && !player->powers[pw_invulnerability] && !player->powers[pw_super]
-	&& source->player->score > player->score)
-		player->pity++;
-
 	return true;
 }
 
 static void P_KillPlayer(player_t *player, mobj_t *source)
 {
-	player->pflags &= ~(PF_CARRIED|PF_SLIDING|PF_ITEMHANG|PF_MACESPIN|PF_ROPEHANG|PF_NIGHTSMODE);
+	player->pflags &= ~(PF_CARRIED|PF_SLIDING|PF_ITEMHANG|PF_MACESPIN|PF_ROPEHANG);
 
 	// Burst weapons and emeralds in Match/CTF only
 	if (source && (G_BattleGametype()))
@@ -2386,27 +2274,8 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 			if (player->exiting)
 				return false;
 
-			if (UNLIKELY(!(target->player->pflags & (PF_NIGHTSMODE|PF_NIGHTSFALL)) && (maptol & TOL_NIGHTS)))
+			if (UNLIKELY(maptol & TOL_NIGHTS))
 				return false;
-		}
-
-		if (UNLIKELY(player->pflags & PF_NIGHTSMODE)) // NiGHTS damage handling
-		{
-			if (!force)
-			{
-				if (source == target)
-					return false; // Don't hit yourself with your own paraloop, baka
-				if (source && source->player && !cv_friendlyfire.value
-				&& (gametype == GT_COOP
-				|| (G_GametypeHasTeams() && target->player->ctfteam == source->player->ctfteam)))
-					return false; // Don't run eachother over in special stages and team games and such
-			}
-
-			if (LUA_HookMobjDamage(target, inflictor, source, damage))
-				return true;
-
-			P_NiGHTSDamage(target, source); // -5s :(
-			return true;
 		}
 
 		if (LUA_HookMobjDamage(target, inflictor, source, damage))
@@ -2594,7 +2463,7 @@ void P_PlayerRingBurst(player_t *player, INT32 num_rings)
 	if (player->mo->health <= 1)
 		num_rings = 5;
 
-	if (num_rings > 32 && !(player->pflags & PF_NIGHTSFALL))
+	if (num_rings > 32)
 		num_rings = 32;
 
 	if (player->powers[pw_emeralds])
@@ -2627,54 +2496,34 @@ void P_PlayerRingBurst(player_t *player, INT32 num_rings)
 		// Angle offset by player angle, then slightly offset by amount of rings
 		fa = ((i*FINEANGLES/16) + (player->mo->angle>>ANGLETOFINESHIFT) - ((num_rings-1)*FINEANGLES/32)) & FINEMASK;
 
-		// Make rings spill out around the player in 16 directions like SA, but spill like Sonic 2.
-		// Technically a non-SA way of spilling rings. They just so happen to be a little similar.
-		if (player->pflags & PF_NIGHTSFALL)
+		fixed_t momxy, momz; // base horizonal/vertical thrusts
+
+		if (i > 15)
 		{
-			ns = FixedMul(((i*FRACUNIT)/16)+2*FRACUNIT, mo->scale);
-			mo->momx = FixedMul(FINECOSINE(fa),ns);
-
-			if (LIKELY(!(twodlevel || (player->mo->flags2 & MF2_TWOD))))
-				mo->momy = FixedMul(FINESINE(fa),ns);
-
-			P_SetObjectMomZ(mo, 8*FRACUNIT, false);
-			mo->fuse = 20*TICRATE; // Adjust fuse for NiGHTS
+			momxy = 3*FRACUNIT;
+			momz = 4*FRACUNIT;
 		}
 		else
 		{
-			fixed_t momxy, momz; // base horizonal/vertical thrusts
-
-			if (i > 15)
-			{
-				momxy = 3*FRACUNIT;
-				momz = 4*FRACUNIT;
-			}
-			else
-			{
-				momxy = 28*FRACUNIT;
-				momz = 3*FRACUNIT;
-			}
-
-			ns = FixedMul(momxy, mo->scale);
-			mo->momx = FixedMul(FINECOSINE(fa),ns);
-
-			if (LIKELY(!(twodlevel || (player->mo->flags2 & MF2_TWOD))))
-				mo->momy = FixedMul(FINESINE(fa),ns);
-
-			ns = momz;
-			P_SetObjectMomZ(mo, ns, false);
-
-			if (i & 1)
-				P_SetObjectMomZ(mo, ns, true);
+			momxy = 28*FRACUNIT;
+			momz = 3*FRACUNIT;
 		}
+
+		ns = FixedMul(momxy, mo->scale);
+		mo->momx = FixedMul(FINECOSINE(fa),ns);
+
+		if (LIKELY(!(twodlevel || (player->mo->flags2 & MF2_TWOD))))
+			mo->momy = FixedMul(FINESINE(fa),ns);
+
+		ns = momz;
+		P_SetObjectMomZ(mo, ns, false);
+
+		if (i & 1)
+			P_SetObjectMomZ(mo, ns, true);
+
 		if (player->mo->eflags & MFE_VERTICALFLIP)
 			mo->momz *= -1;
 	}
-
-	player->losstime += 10*TICRATE;
-
-	if (P_IsObjectOnGround(player->mo))
-		player->pflags &= ~PF_NIGHTSFALL;
 
 	return;
 }

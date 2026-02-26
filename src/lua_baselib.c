@@ -871,7 +871,6 @@ static int lib_pResetScore(lua_State *L)
 	NOHUD
 	if (!player)
 		return LUA_ErrInvalid(L, "player_t");
-	P_ResetScore(player);
 	return 0;
 }
 

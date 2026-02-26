@@ -397,8 +397,6 @@ typedef struct player_s
 	/// \todo Remove this.  We don't need a second health definition for players.
 	INT32 health;
 
-	SINT8 pity; // i pity the fool.
-	INT32 currentweapon; // current weapon selected.
 	INT32 ringweapons; // weapons currently obtained.
 
 	// Power ups. invinc and invis are tic counters.
@@ -434,36 +432,19 @@ typedef struct player_s
 	boolean skinlocal; // determines if localskin is a skin already loaded in the server
 
 	UINT32 score; // player score
-	fixed_t dashspeed; // dashing speed
-	INT32 dashtime; // tics dashing, used for rev sound
 
 	// SRB2kart
 	UINT8 kartspeed; // Kart speed stat between 1 and 9
 	UINT8 kartweight; // Kart weight stat between 1 and 9
 	//
 
-	UINT32 charflags; // Extra abilities/settings for skins (combinable stuff)
-	                 // See SF_ flags
 	SINT8 lives;
 	SINT8 continues; // continues that player has acquired
 
-	SINT8 xtralife; // Ring Extra Life counter
-	UINT8 gotcontinue; // Got continue from this stage?
-
 	fixed_t speed; // Player's speed (distance formula of MOMX and MOMY values)
-	UINT8 jumping; // Jump counter
-	UINT8 secondjump;
 
-	UINT8 fly1; // Tails flying
-	UINT8 scoreadd; // Used for multiple enemy attack bonus
-	tic_t glidetime; // Glide counter for thrust
-	UINT8 climbing; // Climbing on the wall
 	INT32 deadtimer; // End game if game over lasts too long
 	tic_t exiting; // Exitlevel timer
-
-	UINT8 homing; // Are you homing?
-
-	tic_t skidtime; // Skid timer
 
 	////////////////////////////
 	// Conveyor Belt Movement //
@@ -476,7 +457,6 @@ typedef struct player_s
 	/////////////////////
 	// Race Mode Stuff //
 	/////////////////////
-	INT16 numboxes; // Number of item boxes obtained for Race Mode
 	INT16 totalring; // Total number of rings obtained for Race Mode
 	tic_t realtime; // integer replacement for leveltime
 	tic_t laptime[LAP__MAX];
@@ -488,7 +468,6 @@ typedef struct player_s
 	INT32 ctfteam; // 0 == Spectator, 1 == Red, 2 == Blue
 	UINT16 gotflag; // 1 == Red, 2 == Blue Do you have the flag?
 
-	INT32 weapondelay; // Delay (if any) to fire the weapon again
 	INT32 tossdelay;   // Delay (if any) to toss a flag/emeralds again
 
 	// Starpost information
@@ -502,40 +481,18 @@ typedef struct player_s
 	/////////////////
 	// NiGHTS Stuff//
 	/////////////////
-	angle_t angle_pos;
-	angle_t old_angle_pos;
-
-	mobj_t *axis1;
-	mobj_t *axis2;
 	tic_t bumpertime; // Currently being bounced by MT_NIGHTSBUMPER
 	INT32 flyangle;
-	tic_t drilltimer;
+
 	INT32 linkcount;
 	tic_t linktimer;
-	INT32 anotherflyangle;
+
 	tic_t nightstime; // How long you can fly as NiGHTS.
-	INT32 drillmeter;
-	UINT8 drilldelay;
-	boolean bonustime; // Capsule destroyed, now it's bonus time!
-	mobj_t *capsule; // Go inside the capsule
+
 	UINT8 mare; // Current mare
 
 	// Statistical purposes.
-	tic_t marebegunat; // Leveltime when mare begun
-	tic_t startedtime; // Time which you started this mare with.
-	tic_t finishedtime; // Time it took you to finish the mare (used for display)
-	INT16 finishedrings; // The rings you had left upon finishing the mare
 	UINT32 marescore; // SRB2Kart: Battle score
-	UINT32 lastmarescore; // score for the last mare
-	UINT8 lastmare; // previous mare
-	INT32 maxlink; // maximum link obtained
-	UINT8 texttimer; // nights_texttime should not be local
-	UINT8 textvar; // which line of NiGHTS text to show -- let's not use cheap hacks
-
-	INT16 lastsidehit, lastlinehit;
-
-	tic_t losstime;
-	UINT8 timeshit; // That's TIMES HIT, not TIME SHIT, you doofus!
 
 	INT32 onconveyor; // You are on a conveyor belt if nonzero
 

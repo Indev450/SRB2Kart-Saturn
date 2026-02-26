@@ -193,8 +193,8 @@ boolean P_PlayerMoving(INT32 pnum)
 		&& (abs(p->rmomx) >= FixedMul(FRACUNIT/2, p->mo->scale)
 			|| abs(p->rmomy) >= FixedMul(FRACUNIT/2, p->mo->scale)
 			|| abs(p->mo->momz) >= FixedMul(FRACUNIT/2, p->mo->scale)
-			|| p->climbing || p->powers[pw_tailsfly]
-			|| (p->pflags & PF_JUMPED) || (p->pflags & PF_SPINNING));
+			|| p->powers[pw_tailsfly]
+			|| (p->pflags & PF_JUMPED));
 }
 
 // P_GetNextEmerald
@@ -244,16 +244,6 @@ void P_GiveEmerald(boolean spawnObj)
 				mobjinfo[MT_GOTEMERALD].spawnstate + em);
 		}
 	}
-}
-
-//
-// P_ResetScore
-//
-// This is called when your chain is reset.
-void P_ResetScore(player_t *player)
-{
-	// Formally a host for Chaos mode behavior
-	player->scoreadd = 0;
 }
 
 //
@@ -398,9 +388,6 @@ void P_DoPlayerPain(player_t *player, mobj_t *source, mobj_t *inflictor)
 	P_ResetPlayer(player);
 	P_SetPlayerMobjState(player->mo, player->mo->info->painstate);
 	player->powers[pw_flashing] = K_GetKartFlashing(player);
-
-	if (player->timeshit != UINT8_MAX)
-		++player->timeshit;
 }
 
 //
@@ -409,15 +396,9 @@ void P_DoPlayerPain(player_t *player, mobj_t *source, mobj_t *inflictor)
 // Useful when you want to kill everything the player is doing.
 void P_ResetPlayer(player_t *player)
 {
-	player->pflags &= ~(PF_ROPEHANG|PF_ITEMHANG|PF_MACESPIN|PF_SPINNING|PF_JUMPED|PF_GLIDING|PF_THOKKED|PF_CARRIED);
-	player->jumping = 0;
-	player->secondjump = 0;
-	player->glidetime = 0;
-	player->homing = 0;
-	player->climbing = 0;
+	player->pflags &= ~(PF_ROPEHANG|PF_ITEMHANG|PF_MACESPIN|PF_JUMPED|PF_THOKKED|PF_CARRIED);
 	player->powers[pw_tailsfly] = 0;
 	player->onconveyor = 0;
-	player->skidtime = 0;
 }
 
 //
@@ -434,8 +415,6 @@ void P_GivePlayerRings(player_t *player, INT32 num_rings)
 	if (!player->mo)
 		return;
 
-	//player->mo->health += num_rings;
-	//player->health += num_rings;
 	player->totalring += num_rings;
 
 	//{ SRB2kart - rings don't really do anything, but we don't want the player spilling them later.
@@ -1425,16 +1404,14 @@ static void P_CheckBustableBlocks(player_t *player)
 				{
 					// If it's an FF_SPINBUST, you have to either be jumping, or coming down
 					// onto the top from a spin.
-					if (rover->flags & FF_SPINBUST && ((!(player->pflags & PF_JUMPED) && !(player->pflags & PF_SPINNING)) || (player->pflags & PF_STARTDASH)))
+					if (rover->flags & FF_SPINBUST && !(player->pflags & PF_JUMPED))
 						continue;
 
 					// if it's not an FF_SHATTER, you must be spinning (and not jumping)
 					// or have Knuckles's abilities (or Super Sonic)
 					// ...or are drilling in NiGHTS (or Metal Sonic)
 					if (!(rover->flags & FF_SHATTER) && !(rover->flags & FF_SPINBUST)
-						&& !((player->pflags & PF_SPINNING) && !(player->pflags & PF_JUMPED))
-						&& (!player->powers[pw_super])
-						&& !(player->pflags & PF_DRILLING))
+						&& (!player->powers[pw_super]))
 						continue;
 
 					topheight = P_GetFOFTopZ(player->mo, node->m_sector, rover, player->mo->x, player->mo->y, NULL);
@@ -1606,31 +1583,11 @@ static void P_CheckBouncySectors(player_t *player)
 						player->mo->momx = momentum.x;
 						player->mo->momy = momentum.y;
 						player->mo->momz = momentum.z/2;
-
-						if (player->pflags & PF_SPINNING)
-						{
-							player->pflags &= ~PF_SPINNING;
-							player->pflags |= PF_JUMPED;
-							player->pflags |= PF_THOKKED;
-						}
 					}
 					else
 					{
 						player->mo->momx = -FixedMul(player->mo->momx,linedist);
 						player->mo->momy = -FixedMul(player->mo->momy,linedist);
-
-						if (player->pflags & PF_SPINNING)
-						{
-							player->pflags &= ~PF_SPINNING;
-							player->pflags |= PF_JUMPED;
-							player->pflags |= PF_THOKKED;
-						}
-					}
-
-					if ((player->pflags & PF_SPINNING) && player->speed < FixedMul(1<<FRACBITS, player->mo->scale) && player->mo->momz)
-					{
-						player->pflags &= ~PF_SPINNING;
-						player->pflags |= PF_JUMPED;
 					}
 
 					goto bouncydone;
@@ -1742,7 +1699,7 @@ static void P_DoBubbleBreath(player_t *player)
 	else
 		zh = player->mo->z + FixedDiv(player->mo->height,5*(FRACUNIT/4));
 
-	if (!(player->mo->eflags & MFE_UNDERWATER) || player->spectator || ((player->powers[pw_shield] & SH_NOSTACK) == SH_ELEMENTAL && !(player->pflags & PF_NIGHTSMODE)))
+	if (!(player->mo->eflags & MFE_UNDERWATER) || player->spectator || ((player->powers[pw_shield] & SH_NOSTACK) == SH_ELEMENTAL))
 		return;
 
 	if (P_RandomChance(FRACUNIT/16))
@@ -1822,10 +1779,7 @@ void P_DoJumpShield(player_t *player)
 
 	player->pflags &= ~PF_JUMPED;
 	//P_DoJump(player, false);
-	player->secondjump = 0;
-	player->jumping = 0;
 	player->pflags |= PF_THOKKED;
-	player->pflags &= ~PF_SPINNING;
 	//P_SetPlayerMobjState(player->mo, S_PLAY_FALL1);
 	S_StartSound(player->mo, sfx_wdjump);
 }
@@ -1914,7 +1868,7 @@ static void P_3dMovement(player_t *player)
 			cmd->forwardmove = 50;
 	}
 
-	if (!(player->pflags & PF_FORCESTRAFE) && !player->kartstuff[k_pogospring])
+	if (!player->kartstuff[k_pogospring])
 		cmd->sidemove = 0;
 
 	if (analogmove)
@@ -2206,8 +2160,6 @@ static void P_MovePlayer(player_t *player)
 	// Control relinquishing stuff!
 	if (player->powers[pw_ingoop])
 		player->pflags |= PF_FULLSTASIS;
-	else if (player->pflags & PF_GLIDING && player->skidtime)
-		player->pflags |= PF_FULLSTASIS;
 	else if (player->powers[pw_nocontrol])
 	{
 		player->pflags |= PF_STASIS;
@@ -2233,8 +2185,6 @@ static void P_MovePlayer(player_t *player)
 			if (!(player->pflags & PF_TAGIT))
 			{
 				forcestasis = true;
-				if (player->pflags & PF_TAGGED) // Already hit.
-					player->powers[pw_flashing] = 5;
 			}
 		}
 
@@ -2394,28 +2344,18 @@ static void P_MovePlayer(player_t *player)
 //////////////////
 
 	// Make sure you're not "jumping" on the ground
-	if (onground && player->pflags & PF_JUMPED && !(player->pflags & PF_GLIDING)
+	if (onground && player->pflags & PF_JUMPED
 	&& P_MobjFlip(player->mo)*player->mo->momz < 0)
 	{
 		player->pflags &= ~PF_JUMPED;
-		player->jumping = 0;
-		player->secondjump = 0;
 		player->pflags &= ~PF_THOKKED;
 		P_SetPlayerMobjState(player->mo, S_KART_STND1); // SRB2kart - was S_PLAY_STND
 	}
 
-	if (UNLIKELY(player->gotflag)) // If you can't glide, then why the heck would you be gliding?
-	{
-		player->pflags &= ~PF_GLIDING;
-		player->glidetime = 0;
-		player->climbing = 0;
-	}
-
 	// If you're running fast enough, you can create splashes as you run in shallow water.
-	if (!player->climbing
-	&& ((!(player->mo->eflags & MFE_VERTICALFLIP) && player->mo->z + player->mo->height >= player->mo->watertop && player->mo->z <= player->mo->watertop)
+	if (((!(player->mo->eflags & MFE_VERTICALFLIP) && player->mo->z + player->mo->height >= player->mo->watertop && player->mo->z <= player->mo->watertop)
 		|| (player->mo->eflags & MFE_VERTICALFLIP && player->mo->z + player->mo->height >= player->mo->waterbottom && player->mo->z <= player->mo->waterbottom))
-	&& (player->speed > runspd || (player->pflags & PF_STARTDASH))
+	&& (player->speed > runspd)
 	&& leveltime % (TICRATE/7) == 0 && player->mo->momz == 0 && !(player->pflags & PF_SLIDING) && !player->spectator)
 	{
 		mobj_t *water = P_SpawnMobj(player->mo->x, player->mo->y,
@@ -3527,7 +3467,7 @@ static boolean P_CheckNoclipCameraPosition(player_t *player, camera_t *thiscam, 
 	boolean cameranoclip;
 	mobj_t *mo = player->mo;
 
-	cameranoclip = ((player->pflags & (PF_NOCLIP|PF_NIGHTSMODE))
+	cameranoclip = ((player->pflags & PF_NOCLIP)
 	|| (mo->flags & (MF_NOCLIP|MF_NOCLIPHEIGHT)) // Noclipping player camera noclips too!!
 	|| (leveltime < introtime)); // Kart intro cam
 
@@ -4113,7 +4053,7 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 			angle -= (angle - thiscam->pitch)/2;
 	}
 
-	if (player->playerstate != PST_DEAD && LIKELY(!((player->pflags & PF_NIGHTSMODE) && player->exiting)))
+	if (player->playerstate != PST_DEAD)
 		angle += (focusaiming < ANGLE_180 ? focusaiming/2 : InvAngle(InvAngle(focusaiming)/2)); // overcomplicated version of '((signed)focusaiming)/2;'
 
 	if (!camstill && !timeover) // Keep the view still...
@@ -4884,8 +4824,7 @@ void P_PlayerThink(player_t *player)
 	}
 
 	// Even if not NiGHTS, pull in nearby objects when walking around as John Q. Elliot.
-	if (UNLIKELY(!objectplacing && !((netgame || multiplayer) && player->spectator)
-	&& maptol & TOL_NIGHTS && (!(player->pflags & PF_NIGHTSMODE) || player->powers[pw_nights_helper])))
+	if (UNLIKELY(maptol & TOL_NIGHTS && !objectplacing && !((netgame || multiplayer) && player->spectator)))
 	{
 		thinker_t *th;
 		mobj_t *mo2;
@@ -4930,7 +4869,6 @@ void P_PlayerThink(player_t *player)
 	{
 		P_DoZoomTube(player);
 		player->rmomx = player->rmomy = 0; // no actual momentum from your controls
-		P_ResetScore(player);
 	}
 	else
 	{
@@ -4987,26 +4925,10 @@ void P_PlayerThink(player_t *player)
 #endif
 
 	// check for use
-	if (LIKELY(!(player->pflags & PF_NIGHTSMODE)))
-	{
-		if (cmd->buttons & BT_BRAKE)
-			player->pflags |= PF_USEDOWN;
-		else
-			player->pflags &= ~PF_USEDOWN;
-	}
-	else if (player->mo->tracer) // match tracer's position with yours when NiGHTS
-	{
-		P_UnsetThingPosition(player->mo->tracer);
-		player->mo->tracer->x = player->mo->x;
-		player->mo->tracer->y = player->mo->y;
-		if (player->mo->eflags & MFE_VERTICALFLIP)
-			player->mo->tracer->z = player->mo->z + player->mo->height - player->mo->tracer->height;
-		else
-			player->mo->tracer->z = player->mo->z;
-		player->mo->tracer->floorz = player->mo->floorz;
-		player->mo->tracer->ceilingz = player->mo->ceilingz;
-		P_SetThingPosition(player->mo->tracer);
-	}
+	if (cmd->buttons & BT_BRAKE)
+		player->pflags |= PF_USEDOWN;
+	else
+		player->pflags &= ~PF_USEDOWN;
 
 	// Counters, time dependent power ups.
 	// Time Bonus & Ring Bonus count settings
@@ -5063,33 +4985,8 @@ void P_PlayerThink(player_t *player)
 	if (player->bumpertime)
 		player->bumpertime--;
 
-	if (player->skidtime)
-		player->skidtime--;
-
-	if (player->weapondelay)
-		player->weapondelay--;
-
 	if (player->tossdelay)
 		player->tossdelay--;
-
-	if (player->homing)
-		player->homing--;
-
-	if (player->texttimer)
-	{
-		--player->texttimer;
-		if (!player->texttimer && !player->exiting && player->textvar >= 4)
-		{
-			player->texttimer = 4*TICRATE;
-			player->textvar = 2; // GET n RINGS!
-
-			if (player->capsule && player->capsule->health != player->capsule->spawnpoint->angle)
-				player->textvar++; // GET n MORE RINGS!
-		}
-	}
-
-	if (player->losstime && !player->powers[pw_flashing])
-		player->losstime--;
 
 	if (cv_squishdance.value && (cmd->buttons & BT_CUSTOM3))
 	{
@@ -5173,11 +5070,6 @@ void P_PlayerAfterThink(player_t *player)
 		}
 	}
 
-	if (UNLIKELY(player->pflags & PF_NIGHTSMODE))
-	{
-		player->powers[pw_gravityboots] = 0;
-	}
-
 	if (player->pflags & PF_SLIDING)
 		P_SetPlayerMobjState(player->mo, player->mo->info->painstate);
 
@@ -5190,7 +5082,6 @@ void P_PlayerAfterThink(player_t *player)
 		player->mo->momz = (player->mo->tracer->z - (player->mo->height-player->mo->tracer->height/2) - player->mo->z)*2;
 		P_MoveOrigin(player->mo, player->mo->tracer->x, player->mo->tracer->y, player->mo->tracer->z - (player->mo->height-player->mo->tracer->height/2));
 		player->pflags |= PF_JUMPED;
-		player->secondjump = 0;
 		player->pflags &= ~PF_THOKKED;
 
 		if (cmd->forwardmove > 0)

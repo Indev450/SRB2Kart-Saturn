@@ -1026,7 +1026,9 @@ static void Polyobj_pushThing(polyobj_t *po, line_t *line, mobj_t *mo)
 //
 static void Polyobj_slideThing(mobj_t *mo, fixed_t dx, fixed_t dy)
 {
-	if (mo->player) { // Do something similar to conveyor movement. -Red
+	// Do something similar to conveyor movement. -Red
+	if (mo->player)
+	{
 		mo->player->cmomx += dx;
 		mo->player->cmomy += dy;
 
@@ -1036,18 +1038,12 @@ static void Polyobj_slideThing(mobj_t *mo, fixed_t dx, fixed_t dy)
 		mo->player->cmomx -= dx;
 		mo->player->cmomy -= dy;
 
-		if (mo->player->pflags & PF_SPINNING && (mo->player->rmomx || mo->player->rmomy) && !(mo->player->pflags & PF_STARTDASH)) {
-#define SPINMULT 5184 // Consider this a substitute for properly calculating FRACUNIT-friction. I'm tired. -Red
-			dx = FixedMul(dx, SPINMULT);
-			dy = FixedMul(dy, SPINMULT);
-#undef SPINMULT
-		}
-
 		mo->momx += dx;
 		mo->momy += dy;
 
 		mo->player->onconveyor = 1;
-	} else
+	}
+	else
 		P_TryMove(mo, mo->x+dx, mo->y+dy, true);
 }
 

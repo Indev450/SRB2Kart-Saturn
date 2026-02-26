@@ -773,9 +773,6 @@ boolean OP_FreezeObjectplace(void)
 	if (!objectplacing)
 		return false;
 
-	if ((maptol & TOL_NIGHTS) && (players[consoleplayer].pflags & PF_NIGHTSMODE))
-		return false;
-
 	return true;
 }
 
@@ -794,7 +791,6 @@ void OP_NightsObjectplace(player_t *player)
 	mapthing_t *mt;
 
 	player->nightstime = 3*TICRATE;
-	player->drillmeter = TICRATE;
 
 	if (player->pflags & PF_ATTACKDOWN)
 	{
@@ -809,7 +805,7 @@ void OP_NightsObjectplace(player_t *player)
 	// This places a hoop!
 	if (cmd->buttons & BT_ATTACK)
 	{
-		UINT16 angle = (UINT16)(player->anotherflyangle % 360);
+		UINT16 angle = 0;
 		INT16 temp = (INT16)FixedInt(AngleFixed(player->mo->angle)); // Traditional 2D Angle
 		sector_t *sec = player->mo->subsector->sector;
 		fixed_t fheight = P_GetSectorFloorZAt(sec, (player->mo->x & 0xFFFF0000), (player->mo->y & 0xFFFF0000));
@@ -821,10 +817,7 @@ void OP_NightsObjectplace(player_t *player)
 		// Tilt
 		mt->angle = (INT16)FixedInt(FixedDiv(angle*FRACUNIT, 360*(FRACUNIT/256)));
 
-		if (player->anotherflyangle < 90 || player->anotherflyangle > 270)
-			temp -= 90;
-		else
-			temp += 90;
+		temp -= 90;
 		temp %= 360;
 
 		mt->options = (UINT16)((player->mo->z - fheight)>>FRACBITS);
@@ -866,14 +859,14 @@ void OP_NightsObjectplace(player_t *player)
 			CONS_Alert(CONS_WARNING, "Set op_mapthingnum first!\n");
 			return;
 		}
+
 		if (!OP_HeightOkay(player, false))
 			return;
 
-		if (player->mo->target->flags2 & MF2_AMBUSH)
-			angle = (UINT16)player->anotherflyangle;
-		else
+		angle = 0;
+
+		if (!(player->mo->target->flags2 & MF2_AMBUSH))
 		{
-			angle = (UINT16)((360-player->anotherflyangle) % 360);
 			if (angle > 90 && angle < 270)
 			{
 				angle += 180;
@@ -907,7 +900,7 @@ void OP_ObjectplaceMovement(player_t *player)
 {
 	ticcmd_t *cmd = &player->cmd;
 
-	if (!player->climbing && (netgame || (player->pflags & PF_SPINNING)))
+	if (netgame)
 		player->mo->angle = (cmd->angleturn << TICCMD_REDUCE);
 
 	ticruned++;
@@ -1057,9 +1050,6 @@ void Command_ObjectPlace_f(void)
 	{
 		objectplacing = true;
 
-		if ((players[0].pflags & PF_NIGHTSMODE))
-			return;
-
 		if (!COM_CheckParm("-silent"))
 		{
 			HU_SetCEchoFlags(V_RETURN8|V_MONOSPACE);
@@ -1128,7 +1118,7 @@ void Command_ObjectPlace_f(void)
 
 		// Don't touch the NiGHTS Objectplace stuff.
 		// ... or if the mo mysteriously vanished.
-		if (!players[0].mo || (players[0].pflags & PF_NIGHTSMODE))
+		if (!players[0].mo)
 			return;
 
 		// If still in dummy state, get out of it.

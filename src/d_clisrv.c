@@ -552,7 +552,7 @@ static inline void resynch_write_player(resynch_pak *rsp, const size_t i)
 	rsp->panim  = (UINT8)players[i].panim; //panim_t
 
 	rsp->aiming = (angle_t)LONG(players[i].aiming);
-	rsp->currentweapon = LONG(players[i].currentweapon);
+	rsp->currentweapon = 0;
 	rsp->ringweapons = LONG(players[i].ringweapons);
 
 	for (j = 0; j < NUMPOWERS; ++j)
@@ -566,36 +566,38 @@ static inline void resynch_write_player(resynch_pak *rsp, const size_t i)
 	rsp->health = 0; // resynched with mo health
 	rsp->lives = players[i].lives;
 	rsp->continues = players[i].continues;
-	rsp->scoreadd = players[i].scoreadd;
-	rsp->xtralife = players[i].xtralife;
-	rsp->pity = players[i].pity;
+	rsp->scoreadd = 0;
+	rsp->xtralife = 0;
+	rsp->pity = 0;
 
 	rsp->skincolor = players[i].skincolor;
 	rsp->skin = LONG(players[i].skin);
+
 	// Just in case Lua does something like
 	// modify these at runtime
 	// SRB2kart
 	rsp->kartspeed = (UINT8)players[i].kartspeed;
 	rsp->kartweight = (UINT8)players[i].kartweight;
 	//
-	rsp->charflags = (UINT32)LONG(players[i].charflags);
+
+	rsp->charflags = 0;
 
 	rsp->speed = (fixed_t)LONG(players[i].speed);
-	rsp->jumping = players[i].jumping;
-	rsp->secondjump = players[i].secondjump;
-	rsp->fly1 = players[i].fly1;
-	rsp->glidetime = (tic_t)LONG(players[i].glidetime);
-	rsp->climbing = players[i].climbing;
+	rsp->jumping = 0;
+	rsp->secondjump = 0;
+	rsp->fly1 = 0;
+	rsp->glidetime = 0;
+	rsp->climbing = 0;
 	rsp->deadtimer = players[i].deadtimer;
 	rsp->exiting = (tic_t)LONG(players[i].exiting);
-	rsp->homing = players[i].homing;
-	rsp->skidtime = (tic_t)LONG(players[i].skidtime);
+	rsp->homing = 0;
+	rsp->skidtime = 0;
 	rsp->cmomx = (fixed_t)LONG(players[i].cmomx);
 	rsp->cmomy = (fixed_t)LONG(players[i].cmomy);
 	rsp->rmomx = (fixed_t)LONG(players[i].rmomx);
 	rsp->rmomy = (fixed_t)LONG(players[i].rmomy);
 
-	rsp->weapondelay = LONG(players[i].weapondelay);
+	rsp->weapondelay = 0;
 	rsp->tossdelay = LONG(players[i].tossdelay);
 
 	rsp->starpostx = SHORT(players[i].starpostx);
@@ -605,27 +607,27 @@ static inline void resynch_write_player(resynch_pak *rsp, const size_t i)
 	rsp->starposttime = (tic_t)LONG(players[i].starposttime);
 	rsp->starpostangle = (angle_t)LONG(players[i].starpostangle);
 
-	rsp->maxlink = LONG(players[i].maxlink);
-	rsp->dashspeed = (fixed_t)LONG(players[i].dashspeed);
-	rsp->dashtime = LONG(players[i].dashtime);
-	rsp->angle_pos = (angle_t)LONG(players[i].angle_pos);
-	rsp->old_angle_pos = (angle_t)LONG(players[i].old_angle_pos);
+	rsp->maxlink = 0;
+	rsp->dashspeed = 0;
+	rsp->dashtime = 0;
+	rsp->angle_pos = 0;
+	rsp->old_angle_pos = 0;
 	rsp->bumpertime = (tic_t)LONG(players[i].bumpertime);
 	rsp->flyangle = LONG(players[i].flyangle);
-	rsp->drilltimer = (tic_t)LONG(players[i].drilltimer);
+	rsp->drilltimer = 0;
 	rsp->linkcount = LONG(players[i].linkcount);
 	rsp->linktimer = (tic_t)LONG(players[i].linktimer);
-	rsp->anotherflyangle = LONG(players[i].anotherflyangle);
+	rsp->anotherflyangle = 0;
 	rsp->nightstime = (tic_t)LONG(players[i].nightstime);
-	rsp->drillmeter = LONG(players[i].drillmeter);
-	rsp->drilldelay = players[i].drilldelay;
-	rsp->bonustime = players[i].bonustime;
+	rsp->drillmeter = 0;
+	rsp->drilldelay = 0;
+	rsp->bonustime = false;
 	rsp->mare = players[i].mare;
-	rsp->lastsidehit = SHORT(players[i].lastsidehit);
-	rsp->lastlinehit = SHORT(players[i].lastlinehit);
+	rsp->lastsidehit = 0;
+	rsp->lastlinehit = 0;
 
-	rsp->losstime = (tic_t)LONG(players[i].losstime);
-	rsp->timeshit = players[i].timeshit;
+	rsp->losstime = 0;
+	rsp->timeshit = 0;
 	rsp->onconveyor = LONG(players[i].onconveyor);
 
 	rsp->jointime = (tic_t)LONG(players[i].jointime);
@@ -681,7 +683,6 @@ static void resynch_read_player(resynch_pak *rsp)
 	players[i].panim  = (UINT8)rsp->panim; //panim_t
 
 	players[i].aiming = (angle_t)LONG(rsp->aiming);
-	players[i].currentweapon = LONG(rsp->currentweapon);
 	players[i].ringweapons = LONG(rsp->ringweapons);
 
 	for (j = 0; j < NUMPOWERS; ++j)
@@ -695,35 +696,23 @@ static void resynch_read_player(resynch_pak *rsp)
 	players[i].health = rsp->health;
 	players[i].lives = rsp->lives;
 	players[i].continues = rsp->continues;
-	players[i].scoreadd = rsp->scoreadd;
-	players[i].xtralife = rsp->xtralife;
-	players[i].pity = rsp->pity;
 
 	players[i].skincolor = rsp->skincolor;
 	players[i].skin = LONG(rsp->skin);
+
 	// Just in case Lua does something like
 	// modify these at runtime
 	players[i].kartspeed = (UINT8)rsp->kartspeed;
 	players[i].kartweight = (UINT8)rsp->kartweight;
 
-	players[i].charflags = (UINT32)LONG(rsp->charflags);
-
 	players[i].speed = (fixed_t)LONG(rsp->speed);
-	players[i].jumping = rsp->jumping;
-	players[i].secondjump = rsp->secondjump;
-	players[i].fly1 = rsp->fly1;
-	players[i].glidetime = (tic_t)LONG(rsp->glidetime);
-	players[i].climbing = rsp->climbing;
 	players[i].deadtimer = rsp->deadtimer;
 	players[i].exiting = (tic_t)LONG(rsp->exiting);
-	players[i].homing = rsp->homing;
-	players[i].skidtime = (tic_t)LONG(rsp->skidtime);
 	players[i].cmomx = (fixed_t)LONG(rsp->cmomx);
 	players[i].cmomy = (fixed_t)LONG(rsp->cmomy);
 	players[i].rmomx = (fixed_t)LONG(rsp->rmomx);
 	players[i].rmomy = (fixed_t)LONG(rsp->rmomy);
 
-	players[i].weapondelay = LONG(rsp->weapondelay);
 	players[i].tossdelay = LONG(rsp->tossdelay);
 
 	players[i].starpostx = SHORT(rsp->starpostx);
@@ -733,27 +722,13 @@ static void resynch_read_player(resynch_pak *rsp)
 	players[i].starposttime = (tic_t)LONG(rsp->starposttime);
 	players[i].starpostangle = (angle_t)LONG(rsp->starpostangle);
 
-	players[i].maxlink = LONG(rsp->maxlink);
-	players[i].dashspeed = (fixed_t)LONG(rsp->dashspeed);
-	players[i].dashtime = LONG(rsp->dashtime);
-	players[i].angle_pos = (angle_t)LONG(rsp->angle_pos);
-	players[i].old_angle_pos = (angle_t)LONG(rsp->old_angle_pos);
 	players[i].bumpertime = (tic_t)LONG(rsp->bumpertime);
 	players[i].flyangle = LONG(rsp->flyangle);
-	players[i].drilltimer = (tic_t)LONG(rsp->drilltimer);
 	players[i].linkcount = LONG(rsp->linkcount);
 	players[i].linktimer = (tic_t)LONG(rsp->linktimer);
-	players[i].anotherflyangle = LONG(rsp->anotherflyangle);
 	players[i].nightstime = (tic_t)LONG(rsp->nightstime);
-	players[i].drillmeter = LONG(rsp->drillmeter);
-	players[i].drilldelay = rsp->drilldelay;
-	players[i].bonustime = rsp->bonustime;
 	players[i].mare = rsp->mare;
-	players[i].lastsidehit = SHORT(rsp->lastsidehit);
-	players[i].lastlinehit = SHORT(rsp->lastlinehit);
 
-	players[i].losstime = (tic_t)LONG(rsp->losstime);
-	players[i].timeshit = rsp->timeshit;
 	players[i].onconveyor = LONG(rsp->onconveyor);
 
 	players[i].jointime = (tic_t)LONG(rsp->jointime);
@@ -3355,9 +3330,6 @@ void CL_ClearPlayer(INT32 playernum)
 {
 	if (players[playernum].mo)
 	{
-		// Don't leave a NiGHTS ghost!
-		if (UNLIKELY((players[playernum].pflags & PF_NIGHTSMODE) && players[playernum].mo->tracer))
-			P_RemoveMobj(players[playernum].mo->tracer);
 		P_RemoveMobj(players[playernum].mo);
 	}
 

@@ -178,8 +178,6 @@ extern cutscene_t *cutscenes[128];
 extern INT16 nextmapoverride;
 extern boolean skipstats;
 
-extern UINT32 totalrings; //  Total # of rings in a level
-
 // Fun extra stuff
 extern INT16 lastmap; // Last level you were at (returning from special stages).
 extern mobj_t *redflag, *blueflag; // Pointers to physical flags
