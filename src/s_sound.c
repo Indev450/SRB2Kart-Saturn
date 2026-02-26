@@ -116,9 +116,7 @@ consvar_t cv_ignoremusicchanges = {"ignoremusicchanges", "No", CV_SAVE, CV_YesNo
 
 boolean keepmapmusic = false; // keep the current music on map restart
 boolean skipintromus = false; // skip the intro fanfare
-static boolean resumekeepmusic = false;
 static music_t keepmusic;
-static void S_SetKeepMusResume(void);
 
 #ifdef HAVE_OPENMPT
 openmpt_module *openmpt_mhandle = NULL;
@@ -1852,8 +1850,6 @@ void S_StopMusic(void)
 
 	mapmusic.resume = (cv_resume.value && fasticmp(music.name, mapmusic.name)) ? I_GetSongPosition() : 0;
 
-	S_SetKeepMusResume();
-
 	if (I_SongPaused())
 		I_ResumeSong();
 
@@ -1985,18 +1981,6 @@ boolean S_MapMusPlaying(void)
 	return S_MusicPlaying() && (strcasecmp(music.name, mapmusic.name) == 0);
 }
 
-// saves the current song position everytime a song stops
-// so we can resume it in some cases
-static void S_SetKeepMusResume(void)
-{
-	keepmusic.resume = 0;
-
-	if (fasticmp(music.name, keepmusic.name))
-	{
-		keepmusic.resume = I_GetSongPosition();
-	}
-}
-
 // determine if we should keep the music on a map restart
 // this gets called BEFORE the level gets loaded in G_DoLoadLevel
 void S_KeepMusic(void)
@@ -2004,7 +1988,7 @@ void S_KeepMusic(void)
 	static INT16 oldmap = -1;
 	static boolean oldencore = false;
 
-	keepmapmusic = resumekeepmusic = false;
+	keepmapmusic = false;
 
 	if (!cv_keepmusic.value)
 	{
@@ -2018,9 +2002,7 @@ void S_KeepMusic(void)
 
 	if (oldmap == gamemap && oldencore == encoremode)
 	{
-		const boolean musicchanged = S_CheckMusicException();
-		resumekeepmusic = (musicchanged && keepmusic.resume);
-		keepmapmusic = (!musicchanged || resumekeepmusic);
+		keepmapmusic = (S_CheckMusicException() == false);
 	}
 
 	oldencore = encoremode;
@@ -2081,17 +2063,8 @@ void S_InitMapMusic(void)
 
 	if (keepmapmusic)
 	{
-		// this is kinda silly, but we can use it to fade back into the map song at the saved point, should the current music be different from the map music
-		if (resumekeepmusic)
-		{
-			S_ChangeMusicEx(mapmusic.name, mapmusic.flags, true, keepmusic.resume, 0, 500);
-		}
-
-		keepmusic.resume = 0;
 		return;
 	}
-
-	keepmusic.resume = 0;
 
 	// Starting ambience should always be restarted
 	// lug: but not when we keep the map music lol
@@ -2219,8 +2192,6 @@ static void Command_Tunes_f(void)
 	mapmusic.flags = (track & MUSIC_TRACKMASK);
 	mapmusic.position = position;
 	mapmusic.resume = 0;
-
-	keepmusic.resume = 0;
 
 	S_ChangeMusicEx(mapmusic.name, mapmusic.flags, true, mapmusic.position, 0, 0);
 
