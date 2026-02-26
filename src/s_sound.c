@@ -1438,7 +1438,7 @@ void S_LoadMusicDefs(UINT16 wadnum)
 			stoken = strtok(stoken, " ");
 			if (stoken)
 			{
-				if (! ReadMusicDefFields(wadnum, line, stoken, &def))
+				if (!ReadMusicDefFields(wadnum, line, stoken, &def))
 					break;
 			}
 
@@ -1982,7 +1982,7 @@ static void S_SetKeepMusResume(void)
 {
 	keepmusic.resume = 0;
 
-	if (fasticmp(music.name, mapmusic.name))
+	if (fasticmp(music.name, keepmusic.name))
 	{
 		keepmusic.resume = I_GetSongPosition();
 	}
@@ -2078,8 +2078,11 @@ void S_InitMapMusic(void)
 			S_ChangeMusicEx(mapmusic.name, mapmusic.flags, true, keepmusic.resume, 0, 500);
 		}
 
+		keepmusic.resume = 0;
 		return;
 	}
+
+	keepmusic.resume = 0;
 
 	// Starting ambience should always be restarted
 	// lug: but not when we keep the map music lol
@@ -2207,6 +2210,8 @@ static void Command_Tunes_f(void)
 	mapmusic.flags = (track & MUSIC_TRACKMASK);
 	mapmusic.position = position;
 	mapmusic.resume = 0;
+
+	keepmusic.resume = 0;
 
 	S_ChangeMusicEx(mapmusic.name, mapmusic.flags, true, mapmusic.position, 0, 0);
 
