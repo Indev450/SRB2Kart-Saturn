@@ -612,7 +612,7 @@ void HWR_FreeMapTextures(void)
 	gl_numtextures = 0;
 }
 
-#define NAME    lumpset
+#define NAME    flatcheck
 #define KEY_TY  UINT32
 #define HASH_FN vt_hash_integer
 #define CMPR_FN vt_cmpr_integer
@@ -621,10 +621,12 @@ void HWR_FreeMapTextures(void)
 static void HWR_PrecacheLevelFlats(void)
 {
 	// lookup for flats that may´ve been already loaded
-	lumpset flatpresent;
-	lumpset_init(&flatpresent);
+	flatcheck flatpresent;
 	size_t i, j;
 	INT32 k;
+
+	flatcheck_init(&flatpresent);
+	flatcheck_reserve(&flatpresent, numlevelflats);
 
 	// special case for encore
 #ifdef GLENCORE
@@ -643,10 +645,10 @@ static void HWR_PrecacheLevelFlats(void)
 
 				const levelflat_t *levelflat = &levelflats[pic];
 
-				if (lumpset_is_end(lumpset_get(&flatpresent, levelflat->lumpnum)))
+				if (flatcheck_is_end(flatcheck_get(&flatpresent, levelflat->lumpnum)))
 				{
 					HWR_GetFlat(levelflat->lumpnum, R_NoEncore(sec, ceiling));
-					lumpset_insert(&flatpresent, levelflat->lumpnum);
+					flatcheck_insert(&flatpresent, levelflat->lumpnum);
 				}
 
 				if (levelflat->speed) // is it an animated flat ?
@@ -655,10 +657,10 @@ static void HWR_PrecacheLevelFlats(void)
 					for (k = 0; k < levelflat->numpics; k++)
 					{
 						lumpnum_t lump = levelflat->baselumpnum + k;
-						if (lumpset_is_end(lumpset_get(&flatpresent, lump)))
+						if (flatcheck_is_end(flatcheck_get(&flatpresent, lump)))
 						{
 							HWR_GetFlat(lump, R_NoEncore(sec, ceiling));
-							lumpset_insert(&flatpresent, lump);
+							flatcheck_insert(&flatpresent, lump);
 						}
 					}
 				}
@@ -674,10 +676,10 @@ static void HWR_PrecacheLevelFlats(void)
 		{
 			const levelflat_t *levelflat = &levelflats[i];
 
-			if (lumpset_is_end(lumpset_get(&flatpresent, levelflat->lumpnum)))
+			if (flatcheck_is_end(flatcheck_get(&flatpresent, levelflat->lumpnum)))
 			{
 				HWR_GetFlat(levelflat->lumpnum, false);
-				lumpset_insert(&flatpresent, levelflat->lumpnum);
+				flatcheck_insert(&flatpresent, levelflat->lumpnum);
 			}
 
 			if (levelflat->speed) // is it an animated flat ?
@@ -686,17 +688,17 @@ static void HWR_PrecacheLevelFlats(void)
 				for (k = 0; k < levelflat->numpics; k++)
 				{
 					lumpnum_t lump = levelflat->baselumpnum + k;
-					if (lumpset_is_end(lumpset_get(&flatpresent, lump)))
+					if (flatcheck_is_end(flatcheck_get(&flatpresent, lump)))
 					{
 						HWR_GetFlat(lump, false);
-						lumpset_insert(&flatpresent, lump);
+						flatcheck_insert(&flatpresent, lump);
 					}
 				}
 			}
 		}
 	}
 
-	lumpset_cleanup(&flatpresent);
+	flatcheck_cleanup(&flatpresent);
 }
 
 static void HWR_PrecacheLevelTextures(void)
