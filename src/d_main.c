@@ -1124,9 +1124,18 @@ static void D_FindAddonsToAutoload(void)
 		if (newline)
 			*newline = '\0';
 
+		// ok so theres still issues with players adding stuff to autoload by accident
+		// sometimes this stuff contains maps
+		// you can probably imagine how that goes in a netgame....
+		if (W_CheckAutoLoadContainsMap(wadsToAutoload))
+		{
+			CONS_Printf("Autoload: file %s contains map data! skipping...", wadsToAutoload);
+			continue;
+		}
+
 		if (!postload && W_CheckPostLoadList(wadsToAutoload))
 		{
-			CONS_Printf("forcing postload for file %s\n", wadsToAutoload);
+			CONS_Printf("Autoload: forcing postload for file %s\n", wadsToAutoload);
 			postload = true;
 		}
 

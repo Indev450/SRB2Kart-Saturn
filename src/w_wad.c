@@ -2576,6 +2576,18 @@ static int W_CheckFileContains(const char *filename, lumpchecklist_t *checklist)
 	return contains;
 }
 
+int W_CheckAutoLoadContainsMap(const char *filename)
+{
+	// for now this checks for map marker
+	static lumpchecklist_t autoloadblacklist[] =
+	{
+		{"MAP", 3},
+		{NULL,  0},
+	};
+
+	return W_CheckFileContains(filename, autoloadblacklist);
+}
+
 int W_CheckPostLoadList(const char *filename)
 {
 	static lumpchecklist_t postloadlist[] =
@@ -2588,7 +2600,6 @@ int W_CheckPostLoadList(const char *filename)
 		{"SOC_", 		4},
 		{"MAINCFG",		7},
 		{"OBJCTCFG", 	8},
-		{"MAP",			3},
 
 		{NULL, 0},
 	};
