@@ -1042,6 +1042,12 @@ static void D_AutoloadFile(const char *file, char **filearray, size_t *index)
 	char *newfile;
 	INT32 fileType = D_DetectFileType(file);
 
+	if (*index >= MAX_WADFILES)
+	{
+		CONS_Printf("D_AutoloadFile: Failed to add file %s! Too many autoloaded files\n", file);
+		return;
+	}
+
 	if (!fileType)
 	{
 		CONS_Printf("D_AutoloadFile: File %s is unknown or invalid\n", file);
