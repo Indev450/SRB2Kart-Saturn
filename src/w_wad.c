@@ -339,7 +339,7 @@ static inline INT32 W_MakeFileMD5(const char *filename, void *resblock)
 
 	if ((fhandle = fopen(filename, "rb")) != NULL)
 	{
-		tic_t t = I_GetTime();
+		precise_t t = I_GetPreciseTime();
 
 		CONS_Debug(DBG_SETUP, "Making MD5 for %s\n",filename);
 
@@ -350,7 +350,7 @@ static inline INT32 W_MakeFileMD5(const char *filename, void *resblock)
 		}
 
 		CONS_Debug(DBG_SETUP, "MD5 calc for %s took %f seconds\n",
-			filename, (float)(I_GetTime() - t)/NEWTICRATE);
+			filename, (float)(I_GetPreciseTime() - t)/I_GetPrecisePrecision());
 
 		fclose(fhandle);
 		return 0;
