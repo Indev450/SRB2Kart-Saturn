@@ -555,7 +555,7 @@ void V_SetPalette(INT32 palettenum)
 		{
 			palettenum = cv_palettenum.value;
 
-			if (palettenum * 256U > currentPaletteSize - 256)
+			if (palettenum * 256U > (currentPaletteSize - 256) / 3)
 			{
 				CONS_Alert(CONS_WARNING, "cv_palettenum %d out of range\n", palettenum);
 				palettenum = 0;
