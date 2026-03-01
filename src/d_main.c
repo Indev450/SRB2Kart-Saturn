@@ -1054,6 +1054,12 @@ static void D_AutoloadFile(const char *file, char **filearray, size_t *index)
 		return;
 	}
 
+	if (fileType == 1)
+	{
+		CONS_Printf("D_AutoloadFile: File %s is a directory\n", file);
+		return;
+	}
+
 	if (fileType <= 6)
 	{
 		newfile = malloc(strlen(file) + 1);
