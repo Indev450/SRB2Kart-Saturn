@@ -523,11 +523,19 @@ void Z_CheckHeap(INT32 tag)
 #ifdef VALGRIND_MEMPOOL_EXISTS
 		if (!VALGRIND_MEMPOOL_EXISTS(block))
 		{
-			I_Error("Z_CheckHeap %d: block %u"
+			I_Error("Z_CheckHeap :"
+#ifdef ZDEBUG
+				" %s %d"
+#endif
+				" block %u"
 #ifdef ZDEBUG
 				" (owned by %s:%d)"
 #endif
-				" should not exist", i, blocknumon
+				" should not exist"
+#ifdef ZDEBUG
+				, file, line
+#endif
+				, blocknumon
 #ifdef ZDEBUG
 				, block->ownerfile, block->ownerline
 #endif
