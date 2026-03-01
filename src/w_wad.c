@@ -2671,11 +2671,12 @@ virtres_t* vres_GetMap(lumpnum_t lumpnum)
 		{
 			if (vsizecache[realentry] == 0)
 				continue;
+
 			vlumps[i].size = vsizecache[realentry];
 
 			const char *name = (fileinfo + realentry)->name;
 
-			if (strlen(name) == 5 && memcmp(name, "MAP", 3) == 0)
+			if (strnlen(name, 8) == 5 && memcmp(name, "MAP", 3) == 0)
 			{
 				numlumps--; // We skip map marker, so 1 of entries becomes empty
 				continue; // This will skip i++ so we will write to same entry
