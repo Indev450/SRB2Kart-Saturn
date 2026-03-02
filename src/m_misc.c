@@ -788,10 +788,10 @@ static void M_PNGText(png_structp png_ptr, png_infop png_info_ptr, PNG_CONST png
 	else
 		snprintf(locationtxt, 40, "Unknown");
 
-	memset(png_infotext,0x00,sizeof (png_infotext));
+	memset(png_infotext, 0x00, sizeof(png_infotext));
 
 	for (i = 0; i < SRB2PNGTXT; i++)
-		png_infotext[i].key  = keytxt[i];
+		png_infotext[i].key = keytxt[i];
 
 	png_infotext[0].text = titletxt;
 	if (movie)
@@ -804,9 +804,15 @@ static void M_PNGText(png_structp png_ptr, png_infop png_info_ptr, PNG_CONST png
 	png_infotext[5].text = locationtxt;
 	png_infotext[6].text = interfacetxt;
 	png_infotext[7].text = rendermodetxt;
-	png_infotext[8].text = strncpy(ctrevision, comprevision, sizeof(ctrevision)-1);
-	png_infotext[9].text = strncpy(ctdate, compdate, sizeof(ctdate)-1);
-	png_infotext[10].text = strncpy(cttime, comptime, sizeof(cttime)-1);
+	strncpy(ctrevision, comprevision, sizeof(ctrevision)-1);
+	ctrevision[sizeof(ctrevision)-1] = '\0';
+	png_infotext[8].text = ctrevision;
+	strncpy(ctdate, compdate, sizeof(ctdate)-1);
+	ctdate[sizeof(ctdate)-1] = '\0';
+	png_infotext[9].text = ctdate;
+	strncpy(cttime, comptime, sizeof(cttime)-1);
+	cttime[sizeof(cttime)-1] = '\0';
+	png_infotext[10].text = cttime;
 
 	png_set_text(png_ptr, png_info_ptr, png_infotext, SRB2PNGTXT);
 #undef SRB2PNGTXT
@@ -1564,6 +1570,7 @@ char *M_GetToken(const char *inputString)
 	{
 		startPos = endPos;
 	}
+
 	if (stringToUse == NULL)
 		return NULL;
 
@@ -1634,7 +1641,8 @@ char *M_GetToken(const char *inputString)
 	}
 
 	// If the end of the string is reached, no token is to be read
-	if (startPos == stringLength) {
+	if (startPos == stringLength)
+	{
 		endPos = stringLength;
 		return NULL;
 	}
@@ -1644,7 +1652,7 @@ char *M_GetToken(const char *inputString)
 			|| stringToUse[startPos] == '}')
 	{
 		endPos = startPos + 1;
-		texturesToken = (char *)Z_Malloc(2*sizeof(char),PU_STATIC,NULL);
+		texturesToken = (char *)Z_Malloc(2*sizeof(char), PU_STATIC, NULL);
 		texturesToken[0] = stringToUse[startPos];
 		texturesToken[1] = '\0';
 		return texturesToken;
@@ -1855,8 +1863,10 @@ int M_PathParts(const char *path)
 	int n;
 	const char *p;
 	const char *t;
+
 	if (path == NULL)
 		return 0;
+
 	for (n = 0, p = path ;; ++n)
 	{
 		t = p;
@@ -1869,6 +1879,7 @@ int M_PathParts(const char *path)
 			break;
 		}
 	}
+
 	return n;
 }
 
@@ -1911,7 +1922,9 @@ void M_MkdirEachUntil(const char *cpath, int start, int end, int mode)
 		if (!( p = strchr(p, PATHSEP[0]) ))
 			return;
 	}
+
 	p += strspn(p, PATHSEP);
+
 	for (;;)
 	{
 		if (end > 0 && !--end)
