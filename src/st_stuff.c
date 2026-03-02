@@ -180,7 +180,7 @@ static void ST_doPaletteStuff(void)
 	INT32 palette = 0;
 
 #ifdef HWRENDER
-	if (rendermode == render_opengl && !HWR_PalRenderFlashpal())
+	if (rendermode == render_opengl && !HWR_ShouldUsePaletteRendering())
 		return;
 #endif
 

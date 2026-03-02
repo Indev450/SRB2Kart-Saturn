@@ -91,97 +91,7 @@ consvar_t cv_menucaps = {"menucaps", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NUL
 // local copy of the palette for V_GetColor()
 RGBA_t *pLocalPalette = NULL;
 RGBA_t *pGammaCorrectedPalette = NULL;
-
-// huge ass array les gooooooo!
-// this is basically the white flashpal byte for byte from our main palette lmao
-static RGBA_t pFallbackFlashPal[] = {
-	{.s={253, 253, 253, 255}}, {.s={251, 251, 251, 255}}, {.s={249, 249, 249, 255}},
-	{.s={247, 247, 247, 255}}, {.s={245, 245, 245, 255}}, {.s={243, 243, 243, 255}},
-	{.s={241, 241, 241, 255}}, {.s={239, 239, 239, 255}}, {.s={237, 237, 237, 255}},
-	{.s={235, 235, 235, 255}}, {.s={233, 233, 233, 255}}, {.s={231, 231, 231, 255}},
-	{.s={229, 229, 229, 255}}, {.s={227, 227, 227, 255}}, {.s={225, 225, 225, 255}},
-	{.s={223, 223, 223, 255}}, {.s={221, 221, 221, 255}}, {.s={219, 219, 219, 255}},
-	{.s={217, 217, 217, 255}}, {.s={215, 215, 215, 255}}, {.s={213, 213, 213, 255}},
-	{.s={211, 211, 211, 255}}, {.s={209, 209, 209, 255}}, {.s={207, 207, 207, 255}},
-	{.s={205, 205, 205, 255}}, {.s={203, 203, 203, 255}}, {.s={201, 201, 201, 255}},
-	{.s={199, 199, 199, 255}}, {.s={197, 197, 197, 255}}, {.s={195, 195, 195, 255}},
-	{.s={193, 193, 193, 255}}, {.s={192, 192, 192, 255}}, {.s={239, 233, 227, 255}},
-	{.s={237, 231, 225, 255}}, {.s={235, 229, 223, 255}}, {.s={233, 227, 221, 255}},
-	{.s={231, 225, 219, 255}}, {.s={229, 223, 217, 255}}, {.s={227, 221, 215, 255}},
-	{.s={225, 220, 214, 255}}, {.s={223, 218, 212, 255}}, {.s={220, 216, 210, 255}},
-	{.s={218, 214, 208, 255}}, {.s={216, 212, 206, 255}}, {.s={214, 210, 204, 255}},
-	{.s={212, 208, 202, 255}}, {.s={210, 206, 200, 255}}, {.s={208, 204, 198, 255}},
-	{.s={239, 222, 210, 255}}, {.s={236, 220, 209, 255}}, {.s={234, 219, 208, 255}},
-	{.s={232, 218, 207, 255}}, {.s={230, 216, 206, 255}}, {.s={227, 215, 205, 255}},
-	{.s={225, 213, 204, 255}}, {.s={223, 212, 203, 255}}, {.s={221, 211, 202, 255}},
-	{.s={218, 209, 201, 255}}, {.s={215, 208, 200, 255}}, {.s={212, 207, 199, 255}},
-	{.s={210, 205, 198, 255}}, {.s={207, 203, 197, 255}}, {.s={204, 202, 196, 255}},
-	{.s={202, 200, 195, 255}}, {.s={255, 250, 247, 255}}, {.s={255, 248, 244, 255}},
-	{.s={255, 246, 241, 255}}, {.s={255, 244, 238, 255}}, {.s={255, 243, 236, 255}},
-	{.s={255, 241, 233, 255}}, {.s={255, 239, 230, 255}}, {.s={255, 238, 228, 255}},
-	{.s={255, 236, 224, 255}}, {.s={253, 234, 222, 255}}, {.s={251, 232, 220, 255}},
-	{.s={249, 230, 218, 255}}, {.s={247, 228, 216, 255}}, {.s={245, 226, 214, 255}},
-	{.s={243, 224, 212, 255}}, {.s={242, 223, 211, 255}}, {.s={255, 250, 246, 255}},
-	{.s={255, 246, 237, 255}}, {.s={255, 242, 229, 255}}, {.s={255, 237, 220, 255}},
-	{.s={255, 233, 213, 255}}, {.s={255, 229, 205, 255}}, {.s={255, 225, 198, 255}},
-	{.s={255, 220, 192, 255}}, {.s={252, 218, 192, 255}}, {.s={248, 216, 192, 255}},
-	{.s={245, 214, 192, 255}}, {.s={242, 213, 192, 255}}, {.s={238, 211, 192, 255}},
-	{.s={235, 209, 192, 255}}, {.s={232, 207, 192, 255}}, {.s={229, 205, 192, 255}},
-	{.s={255, 255, 251, 255}}, {.s={255, 255, 243, 255}}, {.s={255, 255, 235, 255}},
-	{.s={255, 255, 227, 255}}, {.s={255, 255, 219, 255}}, {.s={255, 255, 211, 255}},
-	{.s={255, 255, 203, 255}}, {.s={255, 255, 195, 255}}, {.s={255, 255, 192, 255}},
-	{.s={243, 243, 192, 255}}, {.s={235, 235, 192, 255}}, {.s={227, 227, 192, 255}},
-	{.s={219, 219, 192, 255}}, {.s={211, 211, 192, 255}}, {.s={203, 203, 192, 255}},
-	{.s={195, 195, 192, 255}}, {.s={255, 255, 220, 255}}, {.s={250, 246, 213, 255}},
-	{.s={245, 238, 208, 255}}, {.s={240, 230, 203, 255}}, {.s={235, 222, 199, 255}},
-	{.s={230, 214, 196, 255}}, {.s={225, 208, 193, 255}}, {.s={220, 202, 192, 255}},
-	{.s={255, 255, 255, 255}}, {.s={255, 247, 247, 255}}, {.s={255, 239, 239, 255}},
-	{.s={255, 231, 231, 255}}, {.s={255, 223, 223, 255}}, {.s={255, 215, 215, 255}},
-	{.s={255, 207, 207, 255}}, {.s={255, 199, 199, 255}}, {.s={255, 192, 192, 255}},
-	{.s={251, 192, 192, 255}}, {.s={247, 192, 192, 255}}, {.s={243, 192, 192, 255}},
-	{.s={239, 192, 192, 255}}, {.s={235, 192, 192, 255}}, {.s={231, 192, 192, 255}},
-	{.s={227, 192, 192, 255}}, {.s={223, 192, 192, 255}}, {.s={219, 192, 192, 255}},
-	{.s={215, 192, 192, 255}}, {.s={211, 192, 192, 255}}, {.s={207, 192, 192, 255}},
-	{.s={203, 192, 192, 255}}, {.s={199, 192, 192, 255}}, {.s={195, 192, 192, 255}},
-	{.s={255, 237, 237, 255}}, {.s={252, 232, 232, 255}}, {.s={249, 227, 227, 255}},
-	{.s={246, 222, 222, 255}}, {.s={242, 218, 218, 255}}, {.s={239, 214, 214, 255}},
-	{.s={236, 211, 211, 255}}, {.s={233, 207, 207, 255}}, {.s={227, 203, 192, 255}},
-	{.s={225, 201, 192, 255}}, {.s={223, 199, 192, 255}}, {.s={220, 198, 192, 255}},
-	{.s={218, 196, 192, 255}}, {.s={216, 194, 192, 255}}, {.s={214, 193, 192, 255}},
-	{.s={213, 192, 192, 255}}, {.s={221, 255, 211, 255}}, {.s={219, 251, 210, 255}},
-	{.s={217, 247, 209, 255}}, {.s={215, 243, 208, 255}}, {.s={214, 239, 206, 255}},
-	{.s={212, 235, 205, 255}}, {.s={210, 231, 204, 255}}, {.s={208, 227, 203, 255}},
-	{.s={206, 223, 201, 255}}, {.s={205, 219, 200, 255}}, {.s={203, 215, 199, 255}},
-	{.s={201, 211, 198, 255}}, {.s={199, 207, 196, 255}}, {.s={197, 203, 195, 255}},
-	{.s={195, 199, 194, 255}}, {.s={193, 195, 192, 255}}, {.s={246, 255, 233, 255}},
-	{.s={241, 248, 228, 255}}, {.s={234, 241, 223, 255}}, {.s={228, 234, 218, 255}},
-	{.s={222, 228, 213, 255}}, {.s={216, 221, 208, 255}}, {.s={210, 214, 203, 255}},
-	{.s={204, 207, 199, 255}}, {.s={192, 255, 192, 255}}, {.s={192, 247, 192, 255}},
-	{.s={192, 239, 192, 255}}, {.s={192, 231, 192, 255}}, {.s={192, 223, 192, 255}},
-	{.s={192, 215, 192, 255}}, {.s={192, 207, 192, 255}}, {.s={192, 199, 192, 255}},
-	{.s={255, 219, 255, 255}}, {.s={255, 192, 255, 255}}, {.s={247, 192, 247, 255}},
-	{.s={239, 192, 239, 255}}, {.s={231, 192, 231, 255}}, {.s={223, 192, 223, 255}},
-	{.s={215, 192, 215, 255}}, {.s={207, 192, 207, 255}}, {.s={249, 249, 252, 255}},
-	{.s={240, 240, 247, 255}}, {.s={230, 230, 242, 255}}, {.s={221, 221, 238, 255}},
-	{.s={212, 212, 233, 255}}, {.s={208, 208, 224, 255}}, {.s={203, 203, 214, 255}},
-	{.s={198, 198, 204, 255}}, {.s={244, 251, 255, 255}}, {.s={239, 250, 255, 255}},
-	{.s={234, 248, 255, 255}}, {.s={228, 246, 255, 255}}, {.s={223, 244, 255, 255}},
-	{.s={218, 243, 255, 255}}, {.s={213, 241, 255, 255}}, {.s={207, 239, 255, 255}},
-	{.s={205, 230, 247, 255}}, {.s={203, 227, 239, 255}}, {.s={201, 221, 231, 255}},
-	{.s={199, 215, 223, 255}}, {.s={192, 239, 239, 255}}, {.s={192, 223, 223, 255}},
-	{.s={192, 215, 215, 255}}, {.s={192, 207, 207, 255}}, {.s={249, 249, 255, 255}},
-	{.s={240, 240, 255, 255}}, {.s={234, 234, 255, 255}}, {.s={226, 226, 255, 255}},
-	{.s={220, 220, 255, 255}}, {.s={212, 212, 255, 255}}, {.s={204, 204, 255, 255}},
-	{.s={197, 197, 255, 255}}, {.s={192, 192, 255, 255}}, {.s={192, 192, 249, 255}},
-	{.s={192, 192, 242, 255}}, {.s={192, 192, 236, 255}}, {.s={192, 192, 230, 255}},
-	{.s={192, 192, 224, 255}}, {.s={192, 192, 218, 255}}, {.s={192, 192, 212, 255}},
-	{.s={192, 192, 211, 255}}, {.s={192, 192, 207, 255}}, {.s={192, 192, 205, 255}},
-	{.s={192, 192, 201, 255}}, {.s={192, 192, 199, 255}}, {.s={192, 192, 195, 255}},
-	{.s={192, 192, 193, 255}}, {.s={192, 255, 255, 255}}, {.s={243, 223, 243, 255}},
-	{.s={237, 219, 237, 255}}, {.s={231, 215, 231, 255}}, {.s={225, 211, 225, 255}},
-	{.s={219, 207, 219, 255}}, {.s={213, 203, 213, 255}}, {.s={207, 199, 207, 255}},
-	{.s={201, 195, 201, 255}}
-};
+static RGBA_t *pFallbackFlashPal = NULL;
 
 static size_t currentPaletteSize;
 
@@ -500,6 +410,58 @@ UINT32 V_GammaCorrect(UINT32 input, double power)
 	return result.rgba;
 }
 
+#include "v_paldeltas.h"
+// remaps a palette with given "deltas"
+// this is used with premade deltas between the srb2 palette and its both flashpals
+// so we may approximate generate our own, should the current palette miss them
+static void ApplyPaletteDelta(const RGBA_t *pal_in, RGBA_t *pal_out, const INT16 pal_delta[][3])
+{
+	size_t i;
+
+	for (i = 0; i < 256; i++)
+	{
+		INT16 r = (INT16)pal_in[i].s.red   + pal_delta[i][0];
+		INT16 g = (INT16)pal_in[i].s.green + pal_delta[i][1];
+		INT16 b = (INT16)pal_in[i].s.blue  + pal_delta[i][2];
+		pal_out[i].s.red   = (UINT8)CLAMP(r, 0 , 255);
+		pal_out[i].s.green = (UINT8)CLAMP(g, 0 , 255);
+		pal_out[i].s.blue  = (UINT8)CLAMP(b, 0 , 255);
+		pal_out[i].s.alpha = 0xFF; // pal_in[i].s.alpha
+	}
+}
+
+static void GenerateFlashPalettes(void)
+{
+	size_t i, palsize;
+	RGBA_t *pFlashPalGammaCorrectedPalette = NULL;
+
+	// generate flashpalettes if the current palette does not provide any subpalettes
+	if (currentPaletteSize >= (14 * (256 * 3))) // 14 palettes are in playpal
+		return;
+
+	palsize = (2*256);
+
+	pFallbackFlashPal = Z_Malloc(sizeof(*pFallbackFlashPal)*palsize, PU_STATIC, NULL);
+	pFlashPalGammaCorrectedPalette = Z_Malloc(sizeof (*pFlashPalGammaCorrectedPalette)*palsize, PU_STATIC, NULL);
+
+	// apply our deltas to the palettes to get the white and red "flashes"
+	ApplyPaletteDelta(pLocalPalette, pFallbackFlashPal, pPaletteDeltaFlash);
+	ApplyPaletteDelta(pLocalPalette, pFallbackFlashPal+256, pPaletteDeltaNuke);
+
+	// apply colour and gamma correction if needed
+	if (Cubeapply)
+	{
+		for (i = 0; i < palsize; i++)
+		{
+			pFlashPalGammaCorrectedPalette[i].rgba = V_GammaDecode(pFallbackFlashPal[i].rgba);
+			V_CubeApply(&pFlashPalGammaCorrectedPalette[i]);
+			pFallbackFlashPal[i].rgba = V_GammaEncode(pFlashPalGammaCorrectedPalette[i].rgba);
+		}
+	}
+
+	Z_Free(pFlashPalGammaCorrectedPalette);
+}
+
 // keep a copy of the palette so that we can get the RGB value for a color index at any time.
 static void LoadPalette(const char *lumpname)
 {
@@ -519,6 +481,8 @@ static void LoadPalette(const char *lumpname)
 
 	Z_Free(pLocalPalette);
 	Z_Free(pGammaCorrectedPalette);
+	Z_Free(pFallbackFlashPal);
+	pFallbackFlashPal = NULL;
 
 	pLocalPalette = Z_Malloc(sizeof (*pLocalPalette)*palsize, PU_STATIC, NULL);
 	pGammaCorrectedPalette = Z_Malloc(sizeof (*pGammaCorrectedPalette)*palsize, PU_STATIC, NULL);
@@ -538,12 +502,19 @@ static void LoadPalette(const char *lumpname)
 		pLocalPalette[i].s.alpha = 0xFF;
 
 		pGammaCorrectedPalette[i].rgba = V_GammaDecode(pLocalPalette[i].rgba);
+	}
 
-		if (!Cubeapply)
-			continue;
+	GenerateFlashPalettes();
 
-		V_CubeApply(&pGammaCorrectedPalette[i]);
-		pLocalPalette[i].rgba = V_GammaEncode(pGammaCorrectedPalette[i].rgba);
+	// gotta apply any colour and gamma adjustments afterwards
+	// so we dont double apply it to the generated flashpals
+	if (Cubeapply)
+	{
+		for (i = 0; i < palsize; i++)
+		{
+			V_CubeApply(&pGammaCorrectedPalette[i]);
+			pLocalPalette[i].rgba = V_GammaEncode(pGammaCorrectedPalette[i].rgba);
+		}
 	}
 }
 
@@ -646,25 +617,32 @@ void V_SetPalette(INT32 palettenum)
 		if (palettenum == 0)
 		{
 			palettenum = cv_palettenum.value;
-
-			if (palettenum * 256U > (currentPaletteSize - 256) / 3)
-			{
-				CONS_Alert(CONS_WARNING, "cv_palettenum %d out of range\n", palettenum);
-				palettenum = 0;
-			}
 		}
 	}
 
-	// if the palettenum goes beyond our current palette, then just fallback to the white flash pal
-	// our srb2 palette mostly just contains that as subpalettes, so everything uses this
-	// and makes it a good fallback case
-	// otherwise we will throw random garbage to the renderer which calls memcpy on it
-	// which is not really a good thing lol
-	// we probably could just memcpy from localpalette, but i dont trust -file nor autoload so
-	if (palettenum * 256U > (currentPaletteSize - 256) / 3)
+	// in many cases custom palettes do not provide the needed subpalettes for flashpals to work
+	// before this would mean the renderer gets passed random data out of allocated memory bounds
+	// which was not very cool :chonkbuncle:
+	// gladly 2.1 only actually has 2 different subpalettes
+	// one for "white flash" and one red/pinkish one for nuke
+	// since we checked the palette earlier we should have generated those ourselves
+	if (((size_t)palettenum >= currentPaletteSize / (256 * 3)))
 	{
 		CONS_Debug(DBG_RENDER, "palettenum %d out of range\n", palettenum);
-		pal = pFallbackFlashPal;
+
+		// if for some reason we did not generate flashpals
+		// just fall back to the main palette i guess?
+		if (pFallbackFlashPal != NULL)
+		{
+			if (palettenum == PAL_NUKE)
+				pal = &pFallbackFlashPal[256];
+			else
+				pal = pFallbackFlashPal;
+		}
+		else
+		{
+			pal = pLocalPalette;
+		}
 	}
 	else
 	{

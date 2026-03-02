@@ -208,7 +208,6 @@ extern consvar_t cv_glportals;
 
 extern consvar_t cv_glpaletterendering;
 extern consvar_t cv_glpalettedepth;
-extern consvar_t cv_glflashpal;
 
 FUNCINLINE static ATTRINLINE boolean HWR_UseShader(void)
 {
@@ -218,11 +217,6 @@ FUNCINLINE static ATTRINLINE boolean HWR_UseShader(void)
 FUNCINLINE static ATTRINLINE boolean HWR_ShouldUsePaletteRendering(void)
 {
 	return (cv_glpaletterendering.value && (pLocalPalette != NULL) && HWR_UseShader());
-}
-
-FUNCINLINE static ATTRINLINE boolean HWR_PalRenderFlashpal(void)
-{
-	return (cv_glflashpal.value && HWR_ShouldUsePaletteRendering());
 }
 
 // Returns a pointer to the palette which should be used for caching textures.
