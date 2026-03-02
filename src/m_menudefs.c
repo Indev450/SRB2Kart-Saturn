@@ -1023,8 +1023,6 @@ static menuitem_t OP_OpenGLOptionsMenu[] =
 	{IT_STRING | IT_CVAR,	NULL, "Fallback Player 3D Model",	&cv_glfallbackplayermodel,	20},
 	{IT_STRING | IT_CVAR,	NULL, "Shaders",					&cv_glshaders,				25},
 	{IT_STRING | IT_CVAR,	NULL, "Palette Rendering",			&cv_glpaletterendering,		30},
-	{IT_STRING | IT_CVAR,   NULL, "Palette Rendering Flashpals",&cv_glflashpal,				35},
-	//{IT_STRING | IT_CVAR, 	NULL, "Min Shader Brightness", 		&cv_glsecbright,			40},
 
 	{IT_STRING | IT_CVAR,	NULL, "Texture Quality",			&cv_gltexturedepth,			45},
 	{IT_STRING | IT_CVAR,	NULL, "Texture Filter",				&cv_glfiltermode,			50},

@@ -242,7 +242,6 @@ consvar_t cv_glportals = {"gr_portals", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, 
 
 consvar_t cv_glpaletterendering = {"gr_paletteshader", "Off", CV_CALL|CV_SAVE, CV_OnOff, CV_glpaletterendering_OnChange, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_glpalettedepth = {"gr_palettedepth", "16 bits", CV_SAVE|CV_CALL, glpalettedepth_cons_t, CV_glpalettedepth_OnChange, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_glflashpal = {"gr_flashpal", "On", CV_CALL|CV_SAVE, CV_OnOff, CV_glpaletterendering_OnChange, 0, NULL, NULL, 0, 0, NULL};
 
 consvar_t cv_gltexturedepth = {"gr_texturedepth", "32 bits", CV_CALL|CV_SAVE, gltexdepth_cons_t, CV_gltextureformat_OnChange, 0, NULL, NULL, 0, 0, NULL};
 
@@ -5913,7 +5912,6 @@ void HWR_AddCommands(void)
 
 	CV_RegisterVar(&cv_glpaletterendering);
 	CV_RegisterVar(&cv_glpalettedepth);
-	CV_RegisterVar(&cv_glflashpal);
 }
 
 // --------------------------------------------------------------------------
@@ -6070,7 +6068,7 @@ static void HWR_DoPostProcessor(void)
 {
 	// Armageddon Blast Flash!
 	// Could this even be considered postprocessor?
-	if (!HWR_PalRenderFlashpal())
+	if (!HWR_ShouldUsePaletteRendering())
 	{
 		const player_t *player = &players[displayplayers[viewssnum]];
 
