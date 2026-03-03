@@ -550,7 +550,7 @@ static FUINT HWR_CalcSlopeLight(FUINT lightnum, pslope_t *slope, const sector_t 
 // Render a floor or ceiling convex polygon
 static void HWR_RenderPlane(subsector_t *subsector, extrasubsector_t *xsub, boolean isceiling, fixed_t fixedheight, FBITFIELD PolyFlags, INT32 lightlevel, lumpnum_t lumpnum, sector_t *FOFsector, UINT8 alpha, extracolormap_t *planecolormap)
 {
-	FSurfaceInfo Surf;
+	FSurfaceInfo Surf = {};
 	FOutVector *v3d;
 	polyvertex_t *pv;
 	pslope_t *slope = NULL;
@@ -1387,7 +1387,7 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 	extracolormap_t *colormap = gl_frontsector->extra_colormap;
 	lightnum = HWR_CalcWallLight(lightnum, gl_curline, colormap);
 
-	FSurfaceInfo Surf;
+	FSurfaceInfo Surf = {};
 
 	Surf.PolyColor.s.alpha = 255;
 
@@ -2686,7 +2686,7 @@ static void HWR_RenderPolyObjectPlane(polyobj_t *polysector, boolean isceiling, 
 	float           scrollx = 0.0f, scrolly = 0.0f;
 	float           anglef  = 0.0f, cosangf = 0.0f, sinangf = 0.0f;
 	angle_t         angle = 0;
-	FSurfaceInfo    Surf;
+	FSurfaceInfo    Surf = {};
 	fixed_t         tempxsow, tempytow;
 	size_t          nrPlaneVerts;
 
@@ -2853,9 +2853,8 @@ static void HWR_AddPolyObjectPlanes(void)
 			light = R_GetPlaneLight(gl_frontsector, polyobjsector->floorheight, true);
 			if (po_ptrs[i]->translucency > 0)
 			{
-				FSurfaceInfo Surf;
+				FSurfaceInfo Surf = {};
 				FBITFIELD blendmode;
-				memset(&Surf, 0x00, sizeof(Surf));
 				blendmode = HWR_TranstableToAlpha(po_ptrs[i]->translucency, &Surf);
 				HWR_AddTransparentPolyobjectFloor(levelflats[polyobjsector->floorpic].lumpnum, po_ptrs[i], false, polyobjsector->floorheight,
 												(light == -1 ? gl_frontsector->lightlevel : *gl_frontsector->lightlist[light].lightlevel), Surf.PolyColor.s.alpha, polyobjsector, blendmode, (light == -1 ? gl_frontsector->extra_colormap : gl_frontsector->lightlist[light].extra_colormap));
@@ -2876,9 +2875,8 @@ static void HWR_AddPolyObjectPlanes(void)
 			light = R_GetPlaneLight(gl_frontsector, polyobjsector->ceilingheight, true);
 			if (po_ptrs[i]->translucency > 0)
 			{
-				FSurfaceInfo Surf;
+				FSurfaceInfo Surf = {};
 				FBITFIELD blendmode;
-				memset(&Surf, 0x00, sizeof(Surf));
 				blendmode = HWR_TranstableToAlpha(po_ptrs[i]->translucency, &Surf);
 				HWR_AddTransparentPolyobjectFloor(levelflats[polyobjsector->ceilingpic].lumpnum, po_ptrs[i], true, polyobjsector->ceilingheight,
 												(light == -1 ? gl_frontsector->lightlevel : *gl_frontsector->lightlist[light].lightlevel), Surf.PolyColor.s.alpha, polyobjsector, blendmode, (light == -1 ? gl_frontsector->extra_colormap : gl_frontsector->lightlist[light].extra_colormap));
@@ -3430,7 +3428,7 @@ static void HWR_DrawSpriteShadow(gl_vissprite_t *spr, patch_t *gpatch, GLPatch_t
 {
 	float this_scale = 1.0f;
 	FOutVector swallVerts[4];
-	FSurfaceInfo sSurf;
+	FSurfaceInfo sSurf = {};
 	FBITFIELD blendmode = 0;
 	fixed_t floorheight, mobjfloor;
 	pslope_t *floorslope;
@@ -3666,7 +3664,7 @@ static void HWR_SplitSprite(gl_vissprite_t *spr, const boolean papersprite)
 	FOutVector baseWallVerts[4]; // This is what the verts should end up as
 	patch_t *gpatch;
 	GLPatch_t *hwrpatch;
-	FSurfaceInfo Surf;
+	FSurfaceInfo Surf = {};
 	extracolormap_t *colormap;
 	INT32 lightlevel;
 	boolean lightset = true;
@@ -3951,7 +3949,7 @@ static void HWR_DrawSprite(gl_vissprite_t *spr)
 	FOutVector wallVerts[4];
 	patch_t *gpatch; // sprite patch converted to hardware
 	GLPatch_t *hwrpatch;
-	FSurfaceInfo Surf;
+	FSurfaceInfo Surf = {};
 	FBITFIELD blend = 0;
 
 	INT32 shader = SHADER_NONE;
@@ -4116,7 +4114,7 @@ static void HWR_DrawPrecipitationSprite(gl_vissprite_t *spr)
 	FOutVector wallVerts[4];
 	patch_t *gpatch; // sprite patch converted to hardware
 	GLPatch_t *hwrpatch;
-	FSurfaceInfo Surf;
+	FSurfaceInfo Surf = {};
 
 	INT32 shader = SHADER_NONE;
 
@@ -6102,7 +6100,7 @@ static void HWR_DoPostProcessor(void)
 				{-4.0f, -4.0f, 4.0f, 0.0f, 0.0f}
 			};
 
-			FSurfaceInfo Surf;
+			FSurfaceInfo Surf = {};
 
 			// This won't change if the flash palettes are changed unfortunately, but it works for its purpose
 			if (player->flashpal == PAL_NUKE)
