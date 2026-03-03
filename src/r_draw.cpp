@@ -425,7 +425,7 @@ static UINT8* RGetTranslationColormap(INT32 skinnum, skincolors_t color, UINT8 f
 	// Generate the colormap if necessary
 	if (!ret)
 	{
-		ret = static_cast<UINT8*>(Z_Malloc(NUM_PALETTE_ENTRIES, (flags & GTC_CACHE) ? PU_LEVEL : PU_STATIC, NULL));
+		ret = static_cast<UINT8*>(Z_Malloc(NUM_PALETTE_ENTRIES, PU_STATIC, NULL));
 		K_GenerateKartColormap(ret, skinnum, color, local); //R_GenerateTranslationColormap(ret, skinnum, color);		// SRB2kart
 
 		// Cache the colormap if desired
@@ -493,6 +493,10 @@ patch_t* R_GetSkinFaceMini(player_t* ply)
 
 	\return	void
 */
+
+/* There seems to be no reason to free cached colormaps tho? Not like they can change :ChonkBunckle: */
+
+/*
 void R_FlushTranslationColormapCache(void)
 {
 	INT32 i;
@@ -505,6 +509,7 @@ void R_FlushTranslationColormapCache(void)
 		if (localtranslationtablecache[i])
 			memset(localtranslationtablecache[i], 0, MAXTRANSLATIONS * sizeof(UINT8**));
 }
+*/
 
 // ==========================================================================
 //               COMMON DRAWER FOR 8 AND 16 BIT COLOR MODES

@@ -2671,7 +2671,8 @@ void P_FreeLevelState(void)
 	}
 
 	// Clear pointers that would be left dangling by the purge
-	R_FlushTranslationColormapCache();
+	// Pointers are now PU_STATIC so they won't be freed :)
+	//R_FlushTranslationColormapCache();
 
 #ifdef HWRENDER
 	// Free GPU textures before freeing patches.
