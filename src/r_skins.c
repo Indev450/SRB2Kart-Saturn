@@ -774,7 +774,7 @@ void R_AddSkins(UINT16 wadnum, boolean local)
 			// So just let the function in the while loop take care of it for us.
 		}
 
-		R_FlushTranslationColormapCache();
+		//R_FlushTranslationColormapCache();
 
 		CONS_Printf(M_GetText("Added skin '%s'\n"), skin->name);
 #ifdef SKINVALUES
