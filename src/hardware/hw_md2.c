@@ -1099,7 +1099,7 @@ void HWR_DrawMD2(gl_vissprite_t *spr)
 	INT32 frame = 0;
 	INT32 nextFrame = -1;
 	FTransform p;
-	FSurfaceInfo Surf;
+	FSurfaceInfo Surf = {};
 
 	if (!cv_glmdls.value || spr->precip)
 		return;
@@ -1475,7 +1475,7 @@ void HWR_Draw2DModel(md2_t *md2, INT32 x, INT32 y, INT32 skinnum, skincolors_t c
 	patch_t *gpatch, *blendgpatch;
 	GLPatch_t *hwrPatch = NULL, *hwrBlendPatch = NULL;
 	FTransform p;
-	FSurfaceInfo Surf;
+	FSurfaceInfo Surf = {};
 
 	if (!md2->model)
 	{
@@ -1526,7 +1526,6 @@ void HWR_Draw2DModel(md2_t *md2, INT32 x, INT32 y, INT32 skinnum, skincolors_t c
 	if (blendgpatch)
 		hwrBlendPatch = ((GLPatch_t *)blendgpatch->hardware);
 
-	memset(&Surf, 0x00, sizeof(FSurfaceInfo));
 	Surf.PolyColor.rgba = 0xFFFFFFFF;
 	Surf.PolyFlags = PF_Occlude | PF_Modulated;
 

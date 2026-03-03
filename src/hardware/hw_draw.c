@@ -222,7 +222,7 @@ void HWR_DrawStretchyFixedPatch(patch_t *gpatch, fixed_t x, fixed_t y, fixed_t p
 
 	if (alphalevel)
 	{
-		FSurfaceInfo Surf;
+		FSurfaceInfo Surf = {};
 		Surf.PolyColor.s.red = Surf.PolyColor.s.green = Surf.PolyColor.s.blue = 0xff;
 
 		switch (alphalevel)
@@ -385,7 +385,7 @@ void HWR_DrawCroppedPatch(patch_t *gpatch, fixed_t x, fixed_t y, fixed_t pscale,
 	// clip it since it is used for bunny scroll in doom I
 	if (alphalevel)
 	{
-		FSurfaceInfo Surf;
+		FSurfaceInfo Surf = {};
 		Surf.PolyColor.s.red = Surf.PolyColor.s.green = Surf.PolyColor.s.blue = 0xff;
 
 		switch (alphalevel)
@@ -490,7 +490,7 @@ void HWR_DrawFlatFill(INT32 x, INT32 y, INT32 w, INT32 h, lumpnum_t flatlumpnum)
 void HWR_FadeScreenMenuBack(UINT16 color, UINT8 strength)
 {
 	FOutVector  v[4];
-	FSurfaceInfo Surf;
+	FSurfaceInfo Surf = {};
 	FBITFIELD poly_flags = PF_NoTexture|PF_Modulated|PF_NoDepthTest;
 
 	v[0].x = v[3].x = -1.0f;
@@ -543,7 +543,7 @@ void HWR_FadeScreenMenuBack(UINT16 color, UINT8 strength)
 void HWR_DrawConsoleBack(UINT32 color, INT32 height)
 {
 	FOutVector  v[4];
-	FSurfaceInfo Surf;
+	FSurfaceInfo Surf = {};
 
 	// setup some neat-o translucency effect
 	if (!height) //cool hack 0 height is full height
@@ -598,7 +598,7 @@ void HWR_drawAMline(const fline_t *fl, INT32 color)
 void HWR_DrawDiag(INT32 x, INT32 y, INT32 wh, INT32 color)
 {
 	FOutVector v[4];
-	FSurfaceInfo Surf;
+	FSurfaceInfo Surf = {};
 	float fx, fy, fw, fh, fwait = 0;
 	RGBA_t *palette;
 
@@ -702,7 +702,7 @@ void HWR_DrawDiag(INT32 x, INT32 y, INT32 wh, INT32 color)
 void HWR_DrawConsoleFill(INT32 x, INT32 y, INT32 w, INT32 h, UINT32 color, INT32 options)
 {
 	FOutVector v[4];
-	FSurfaceInfo Surf;
+	FSurfaceInfo Surf = {};
 	float fx, fy, fw, fh;
 
 	if (w < 0 || h < 0)
@@ -820,7 +820,7 @@ void HWR_DrawConsoleFill(INT32 x, INT32 y, INT32 w, INT32 h, UINT32 color, INT32
 void HWR_DrawFill(INT32 x, INT32 y, INT32 w, INT32 h, INT32 color)
 {
 	FOutVector v[4];
-	FSurfaceInfo Surf;
+	FSurfaceInfo Surf = {};
 	float fx, fy, fw, fh;
 
 	if (w < 0 || h < 0)
