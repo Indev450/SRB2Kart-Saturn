@@ -715,6 +715,13 @@ void G_WriteGhostTic(mobj_t *ghost, INT32 playernum)
 	if (!(demoflags & DF_GHOST))
 		return; // No ghost data to write.
 
+	if (ghost->player && ghost->player->pflags & PF_NIGHTSMODE && ghost->tracer)
+	{
+		// We're talking about the NiGHTS thing, not the normal platforming thing!
+		ziptic |= GZT_NIGHTS;
+		ghost = ghost->tracer;
+	}
+
 	ziptic_p = demobuf.p++; // the ziptic, written at the end of this function
 
 #define MAXMOM (0x7FFF<<8)
@@ -929,6 +936,7 @@ void G_ConsGhostTic(INT32 playernum)
 	fixed_t px,py,pz,gx,gy,gz;
 	mobj_t *testmo;
 	fixed_t syncleeway;
+	boolean nightsfail = false;
 
 	if (!(demoflags & DF_GHOST))
 		return; // No ghost data to use.
@@ -967,6 +975,14 @@ void G_ConsGhostTic(INT32 playernum)
 
 	if (ziptic & GZT_SPRITE)
 		demobuf.p++;
+
+	if (ziptic & GZT_NIGHTS)
+	{
+		if (!testmo || !testmo->player || !(testmo->player->pflags & PF_NIGHTSMODE) || !testmo->tracer)
+			nightsfail = true;
+		else
+			testmo = testmo->tracer;
+	}
 
 	if (ziptic & GZT_EXTRA)
 	{ // But wait, there's more!
@@ -1050,7 +1066,7 @@ void G_ConsGhostTic(INT32 playernum)
 		gy = oldghost[playernum].y;
 		gz = oldghost[playernum].z;
 
-		if (abs(px-gx) > syncleeway || abs(py-gy) > syncleeway || abs(pz-gz) > syncleeway)
+		if (nightsfail || abs(px-gx) > syncleeway || abs(py-gy) > syncleeway || abs(pz-gz) > syncleeway)
 		{
 			ghostext[playernum].desyncframes++;
 

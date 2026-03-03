@@ -338,6 +338,8 @@ void SetPlayerSkinByNum(INT32 playernum, INT32 skinnum)
 		if (player->mo)
 			player->mo->skin = skin;
 
+		player->charflags = (UINT32)skin->flags;
+
 		// SRB2kart
 		player->kartspeed = skin->kartspeed;
 		player->kartweight = skin->kartweight;

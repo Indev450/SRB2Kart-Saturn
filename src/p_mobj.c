@@ -971,6 +971,11 @@ static void P_PlayerFlip(mobj_t *mo)
 				camera[i].z += FixedMul(20*FRACUNIT, mo->scale);
 		}
 	}
+	else if (UNLIKELY(mo->player->pflags & PF_NIGHTSMODE)) // NiGHTS doesn't use flipcam
+	{
+		if (mo->tracer)
+			mo->tracer->eflags ^= MFE_VERTICALFLIP;
+	}
 }
 
 //
@@ -1038,15 +1043,16 @@ fixed_t P_GetMobjGravity(mobj_t *mo)
 
 	if (mo->player)
 	{
+		if (UNLIKELY(mo->player->climbing || (mo->player->pflags & PF_NIGHTSMODE)))
+			return 0;
+
 		if (!(mo->flags2 & MF2_OBJECTFLIP) != !(mo->player->powers[pw_gravityboots])) // negated to turn numeric into bool - would be double negated, but not needed if both would be
 		{
 			gravityadd = -gravityadd;
 			mo->eflags ^= MFE_VERTICALFLIP;
 		}
-
 		if (wasflip == !(mo->eflags & MFE_VERTICALFLIP)) // note!! == ! is not equivalent to != here - turns numeric into bool this way
 			P_PlayerFlip(mo);
-
 		if (mo->player->kartstuff[k_pogospring])
 			gravityadd = (5*gravityadd)/2;
 	}
@@ -1209,9 +1215,16 @@ static void P_XYFriction(mobj_t *mo, fixed_t oldx, fixed_t oldy)
 
 	if (player) // valid only if player avatar
 	{
-		if (abs(player->rmomx) < mo->scale
+		// spinning friction
+		if (player->pflags & PF_SPINNING && (player->rmomx || player->rmomy) && !(player->pflags & PF_STARTDASH))
+		{
+			const fixed_t ns = FixedDiv(549*ORIG_FRICTION, 500*FRACUNIT); //const fixed_t ns = FixedDiv(549*FRICTION,500*FRACUNIT);
+			mo->momx = FixedMul(mo->momx, ns);
+			mo->momy = FixedMul(mo->momy, ns);
+		}
+		else if (abs(player->rmomx) < mo->scale
 		    && abs(player->rmomy) < mo->scale
-		    && (!(player->cmd.forwardmove && !(twodlevel || mo->flags2 & MF2_TWOD)) && !player->cmd.sidemove)
+		    && (!(player->cmd.forwardmove && !(twodlevel || mo->flags2 & MF2_TWOD)) && !player->cmd.sidemove && !(player->pflags & PF_SPINNING))
 			&& !(player->mo->standingslope && (!(player->mo->standingslope->flags & SL_NOPHYSICS)) && (abs(player->mo->standingslope->zdelta) >= FRACUNIT/2))
 				)
 		{
@@ -1649,6 +1662,42 @@ void P_XYMovement(mobj_t *mo)
 	// Check the gravity status.
 	P_CheckGravity(mo, false);
 
+	if (UNLIKELY(player && !moved && player->pflags & PF_NIGHTSMODE && mo->target))
+	{
+		angle_t fa;
+
+		P_UnsetThingPosition(mo);
+		player->angle_pos = player->old_angle_pos;
+		player->speed = FixedMul(player->speed, 4*FRACUNIT/5);
+
+		if (player->flyangle >= 0 && player->flyangle < 90)
+			player->flyangle = 135;
+		else if (player->flyangle >= 90 && player->flyangle < 180)
+			player->flyangle = 45;
+		else if (player->flyangle >= 180 && player->flyangle < 270)
+			player->flyangle = 315;
+		else
+			player->flyangle = 225;
+
+		player->flyangle %= 360;
+
+		if (player->pflags & PF_TRANSFERTOCLOSEST)
+		{
+			mo->x -= mo->momx;
+			mo->y -= mo->momy;
+		}
+		else
+		{
+			fa = player->old_angle_pos>>ANGLETOFINESHIFT;
+
+			mo->x = mo->target->x + FixedMul(FINECOSINE(fa),mo->target->radius);
+			mo->y = mo->target->y + FixedMul(FINESINE(fa),mo->target->radius);
+		}
+
+		mo->momx = mo->momy = 0;
+		P_SetThingPosition(mo);
+	}
+
 	if (mo->flags & MF_NOCLIPHEIGHT)
 		return; // no frictions for objects that can pass through floors
 
@@ -1662,6 +1711,12 @@ void P_XYMovement(mobj_t *mo)
 
 	if (mo->flags & MF_MISSILE || mo->flags2 & MF2_SKULLFLY || mo->type == MT_SHELL || mo->type == MT_VULTURE)
 		return; // no friction for missiles ever
+
+	if (player && player->homing) // no friction for homing
+		return;
+
+	if (UNLIKELY(player && player->pflags & PF_NIGHTSMODE))
+		return; // no friction for NiGHTS players
 
 	if ((mo->type == MT_BIGTUMBLEWEED || mo->type == MT_LITTLETUMBLEWEED)
 			&& (mo->standingslope && abs(mo->standingslope->zdelta) > FRACUNIT>>8)) // Special exception for tumbleweeds on slopes
@@ -2426,6 +2481,20 @@ static void P_PlayerZMovement(mobj_t *mo)
 		else
 			mo->z = mo->floorz;
 
+		if (UNLIKELY(mo->player->pflags & PF_NIGHTSMODE))
+		{
+			// bounce off floor if you were flying towards it
+			if ((mo->eflags & MFE_VERTICALFLIP && mo->player->flyangle > 0 && mo->player->flyangle < 180)
+			|| (!(mo->eflags & MFE_VERTICALFLIP) && mo->player->flyangle > 180 && mo->player->flyangle <= 359))
+			{
+				if (mo->player->flyangle < 90 || mo->player->flyangle >= 270)
+					mo->player->flyangle += P_MobjFlip(mo)*90;
+				else
+					mo->player->flyangle -= P_MobjFlip(mo)*90;
+				mo->player->speed = FixedMul(mo->player->speed, 4*FRACUNIT/5);
+			}
+			goto nightsdone;
+		}
 		// Get up if you fell.
 		if ((mo->state == &states[mo->info->painstate] || mo->state == &states[S_KART_SPIN])
 			&& mo->player->kartstuff[k_spinouttimer] == 0 && mo->player->kartstuff[k_squishedtimer] == 0) // SRB2kart
@@ -2533,17 +2602,34 @@ static void P_PlayerZMovement(mobj_t *mo)
 
 				if (mo->health)
 				{
-					if ((mo->player->pflags & PF_JUMPED || ((mo->player->pflags & PF_USEDOWN) != PF_USEDOWN)
+					if (mo->player->pflags & PF_GLIDING) // ground gliding
+					{
+						mo->player->skidtime = TICRATE;
+						mo->tics = -1;
+					}
+					else if ((mo->player->pflags & PF_JUMPED || (mo->player->pflags & (PF_SPINNING|PF_USEDOWN)) != (PF_SPINNING|PF_USEDOWN)
 						|| mo->player->powers[pw_tailsfly]) && (mo->player->kartstuff[k_spinouttimer] == 0)) // SRB2kart
 					{
 						K_KartMoveAnimation(mo->player);
 					}
 
-					mo->player->pflags &= ~PF_JUMPED;
+					if (mo->player->pflags & PF_JUMPED)
+						mo->player->pflags &= ~PF_SPINNING;
+					else if (!(mo->player->pflags & PF_USEDOWN))
+						mo->player->pflags &= ~PF_SPINNING;
+
+					if (!(mo->player->pflags & PF_GLIDING))
+						mo->player->pflags &= ~PF_JUMPED;
 					mo->player->pflags &= ~PF_THOKKED;
+					mo->player->jumping = 0;
+					mo->player->secondjump = 0;
+					mo->player->glidetime = 0;
+					mo->player->climbing = 0;
 					mo->player->powers[pw_tailsfly] = 0;
 				}
 			}
+			if (!(mo->player->pflags & PF_SPINNING))
+				mo->player->pflags &= ~PF_STARTDASH;
 
 			if (tmfloorthing && (tmfloorthing->flags & (MF_PUSHABLE|MF_MONITOR)
 			|| tmfloorthing->flags2 & MF2_STANDONME || tmfloorthing->type == MT_PLAYER))
@@ -2575,6 +2661,8 @@ static void P_PlayerZMovement(mobj_t *mo)
 		P_CheckGravity(mo, true);
 	}
 
+nightsdone:
+
 	if (((mo->eflags & MFE_VERTICALFLIP && mo->z < mo->floorz) || (!(mo->eflags & MFE_VERTICALFLIP) && mo->z + mo->height > mo->ceilingz))
 		&& !(mo->flags & MF_NOCLIPHEIGHT))
 	{
@@ -2582,6 +2670,21 @@ static void P_PlayerZMovement(mobj_t *mo)
 			mo->z = mo->floorz;
 		else
 			mo->z = mo->ceilingz - mo->height;
+
+		if (UNLIKELY(mo->player->pflags & PF_NIGHTSMODE))
+		{
+			// bounce off ceiling if you were flying towards it
+			if ((mo->eflags & MFE_VERTICALFLIP && mo->player->flyangle > 180 && mo->player->flyangle <= 359)
+			|| (!(mo->eflags & MFE_VERTICALFLIP) && mo->player->flyangle > 0 && mo->player->flyangle < 180))
+				{
+				if (mo->player->flyangle < 90 || mo->player->flyangle >= 270)
+					mo->player->flyangle -= P_MobjFlip(mo)*90;
+				else
+					mo->player->flyangle += P_MobjFlip(mo)*90;
+				mo->player->flyangle %= 360;
+				mo->player->speed = FixedMul(mo->player->speed, 4*FRACUNIT/5);
+			}
+		}
 
 		// Check for "Mario" blocks to hit and bounce them
 		if (P_MobjFlip(mo)*mo->momz > 0)
@@ -2616,7 +2719,8 @@ static void P_PlayerZMovement(mobj_t *mo)
 			if (UNLIKELY(mariomode))
 				S_StartSound(mo, sfx_mario1);
 
-			mo->momz = 0;
+			if (!mo->player->climbing)
+				mo->momz = 0;
 		}
 	}
 }
@@ -3243,7 +3347,7 @@ void P_CalcChasePostImg(player_t *player, camera_t *thiscam)
 		player_flipcam = cv_flipcam[pnum].value;
 	}
 
-	const boolean flipcam = (player_flipcam && (player->mo->eflags & MFE_VERTICALFLIP));
+	const boolean flipcam = (player_flipcam && player->mo->eflags & MFE_VERTICALFLIP && LIKELY(!(player->pflags & PF_NIGHTSMODE)));
 	UINT8 postimgtype = 0;
 
 	if (encoremode)
@@ -3528,10 +3632,14 @@ static void P_PlayerMobjThinker(mobj_t *mobj)
 	}
 	else
 	{
+		if (LIKELY(!(mobj->player->pflags & PF_NIGHTSMODE))) // "jumping" is used for drilling
+			mobj->player->jumping = 0;
+
 		mobj->player->pflags &= ~PF_JUMPED;
 
-		if (mobj->player->powers[pw_tailsfly])
+		if (mobj->player->secondjump || mobj->player->powers[pw_tailsfly])
 		{
+			mobj->player->secondjump = 0;
 			mobj->player->powers[pw_tailsfly] = 0;
 			P_SetPlayerMobjState(mobj, S_KART_WALK1); // SRB2kart - was S_PLAY_RUN1
 		}
@@ -4955,7 +5063,7 @@ static void P_Boss9Thinker(mobj_t *mobj)
 	if ((!mobj->target || !(mobj->target->flags & MF_SHOOTABLE)))
 	{
 		P_BossTargetPlayer(mobj, false);
-		if (mobj->target && !P_IsObjectOnGround(mobj->target))
+		if (mobj->target && (!P_IsObjectOnGround(mobj->target) || mobj->target->player->pflags & PF_SPINNING))
 			P_SetTarget(&mobj->target, NULL); // Wait for them to hit the ground first
 
 		if (!mobj->target) // Still no target, aww.
@@ -5336,7 +5444,7 @@ static void P_Boss9Thinker(mobj_t *mobj)
 				mobj->angle -= InvAngle(angle)/8;
 
 			// Check if we're being attacked
-			if (!(mobj->target->player->pflags & PF_JUMPED
+			if (!(mobj->target->player->pflags & (PF_JUMPED|PF_SPINNING)
 			|| mobj->target->player->powers[pw_tailsfly]
 			|| mobj->target->player->powers[pw_invulnerability]
 			|| mobj->target->player->powers[pw_super]))
@@ -5645,6 +5753,7 @@ void P_SetScale(mobj_t *mobj, fixed_t newscale)
 	{
 		G_GhostAddScale((INT32) (player - players), newscale);
 		player->viewheight = FixedMul(FixedDiv(player->viewheight, oldscale), newscale); // Nonono don't calculate viewheight elsewhere, this is the best place for it!
+		player->dashspeed = FixedMul(FixedDiv(player->dashspeed, oldscale), newscale); // Prevents the player from having to re-charge up spindash if the player grew in size
 	}
 }
 
@@ -8584,9 +8693,17 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 
 				if (mobj->tracer && mobj->tracer->player)
 				{
-					mobj->flags &= ~MF_NOGRAVITY;
-					mobj->flags2 &= ~MF2_DONTDRAW;
-					P_SetMobjState(mobj, S_NIGHTSDRONE1);
+					if (LIKELY(!(mobj->tracer->player->pflags & PF_NIGHTSMODE)))
+					{
+						mobj->flags &= ~MF_NOGRAVITY;
+						mobj->flags2 &= ~MF2_DONTDRAW;
+						P_SetMobjState(mobj, S_NIGHTSDRONE1);
+					}
+					else if (!mobj->tracer->player->bonustime)
+					{
+						mobj->flags &= ~MF_NOGRAVITY;
+						P_SetMobjState(mobj, S_NIGHTSDRONE1);
+					}
 				}
 			}
 			else
@@ -8600,8 +8717,18 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 						P_SetTarget(&mobj->target, NULL);
 					}
 
-					// Not NiGHTS
-					mobj->flags2 &= ~MF2_DONTDRAW;
+					if (UNLIKELY(mobj->tracer->player->pflags & PF_NIGHTSMODE))
+					{
+						if (mobj->tracer->player->bonustime)
+						{
+							P_SetMobjState(mobj, S_NIGHTSDRONE_SPARKLING1);
+							mobj->flags |= MF_NOGRAVITY;
+						}
+						else
+							mobj->flags2 |= MF2_DONTDRAW;
+					}
+					else // Not NiGHTS
+						mobj->flags2 &= ~MF2_DONTDRAW;
 				}
 
 				mobj->angle += ANG10;
@@ -10730,6 +10857,7 @@ void P_SpawnPlayer(INT32 playernum)
 	mobj->health = p->health;
 	p->playerstate = PST_LIVE;
 
+	p->bonustime = false;
 	p->realtime = leveltime;
 
 	//awayview stuff
@@ -10836,6 +10964,7 @@ void P_AfterPlayerSpawn(INT32 playernum)
 		p->viewz = p->mo->z + p->viewheight;
 
 	P_SetPlayerMobjState(p->mo, S_KART_STND1); // SRB2kart - was S_PLAY_STND
+	p->pflags &= ~PF_SPINNING;
 
 	if (playernum == consoleplayer)
 	{

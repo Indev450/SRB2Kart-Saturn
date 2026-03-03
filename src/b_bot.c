@@ -42,26 +42,25 @@ static inline void B_BuildTailsTiccmd(mobj_t *sonic, mobj_t *tails, ticcmd_t *cm
 	if (tails->player->pflags & (PF_MACESPIN|PF_ITEMHANG))
 	{
 		dist = P_AproxDistance(tails->x-sonic->x, tails->y-sonic->y);
-
 		if (sonic->player->cmd.buttons & BT_DRIFT && sonic->player->pflags & (PF_JUMPED|PF_MACESPIN|PF_ITEMHANG))
 			cmd->buttons |= BT_DRIFT;
-
 		if (sonic->player->pflags & (PF_MACESPIN|PF_ITEMHANG))
 		{
 			cmd->forwardmove = sonic->player->cmd.forwardmove;
 			cmd->angleturn = abs((signed)(tails->angle - sonic->angle)) >> TICCMD_REDUCE;
 			if (sonic->angle < tails->angle)
 				cmd->angleturn = -cmd->angleturn;
-		}
-		else if (dist > FixedMul(512*FRACUNIT, tails->scale))
+		} else if (dist > FixedMul(512*FRACUNIT, tails->scale))
 			cmd->buttons |= BT_DRIFT;
-
 		return;
 	}
 
 	// Gather data about the environment
 	dist = P_AproxDistance(tails->x-sonic->x, tails->y-sonic->y);
-	angle = R_PointToAngle2(tails->x, tails->y, sonic->x, sonic->y);
+	if (tails->player->pflags & PF_STARTDASH)
+		angle = sonic->angle;
+	else
+		angle = R_PointToAngle2(tails->x, tails->y, sonic->x, sonic->y);
 
 	// Decide which direction to turn
 	angle = (tails->angle - angle);
@@ -91,6 +90,11 @@ static inline void B_BuildTailsTiccmd(mobj_t *sonic, mobj_t *tails, ticcmd_t *cm
 		if (sonic->floorz > tails->floorz) // He's still above us? Jump HIGHER, then!
 			jump = true;
 	}
+
+	// Decide when to spin
+	if (sonic->player->pflags & PF_STARTDASH
+	&& (tails->player->pflags & PF_STARTDASH || (P_AproxDistance(tails->momx, tails->momy) < 2*FRACUNIT && !forward)))
+		spin = true;
 
 	// Turn the virtual keypresses into ticcmd_t.
 	B_KeysToTiccmd(tails, cmd, forward, backward, left, right, false, false, jump, spin);
@@ -129,35 +133,41 @@ void B_BuildTiccmd(player_t *player, ticcmd_t *cmd)
 void B_KeysToTiccmd(mobj_t *mo, ticcmd_t *cmd, boolean forward, boolean backward, boolean left, boolean right, boolean strafeleft, boolean straferight, boolean jump, boolean spin)
 {
 	// Turn the virtual keypresses into ticcmd_t.
-	if (twodlevel || mo->flags2 & MF2_TWOD)
-	{
-		// In standard 2D mode, interpret "forward" as "the way you're facing" and everything else as "the way you're not facing"
-		if (left || right)
-			backward = true;
-		left = right = false;
-
-		if (forward)
-		{
-			if (mo->angle < ANGLE_90 || mo->angle > ANGLE_270)
-				right = true;
-			else
-				left = true;
+	if (twodlevel || mo->flags2 & MF2_TWOD) {
+		if (players[consoleplayer].climbing
+		|| mo->player->pflags & PF_GLIDING) {
+			// Don't mess with bot inputs during these unhandled movement conditions.
+			// The normal AI doesn't use abilities, so custom AI should be sending us exactly what it wants anyway.
+			if (forward)
+				cmd->forwardmove += MAXPLMOVE << FRACBITS >> TICCMD_REDUCE;
+			if (backward)
+				cmd->forwardmove -= MAXPLMOVE<<FRACBITS >> TICCMD_REDUCE;
+			if (left || strafeleft)
+				cmd->sidemove -= MAXPLMOVE << FRACBITS >> TICCMD_REDUCE;
+			if (right || straferight)
+				cmd->sidemove += MAXPLMOVE << FRACBITS >> TICCMD_REDUCE;
+		} else {
+			// In standard 2D mode, interpret "forward" as "the way you're facing" and everything else as "the way you're not facing"
+			if (left || right)
+				backward = true;
+			left = right = false;
+			if (forward) {
+				if (mo->angle < ANGLE_90 || mo->angle > ANGLE_270)
+					right = true;
+				else
+					left = true;
+			} else if (backward) {
+				if (mo->angle < ANGLE_90 || mo->angle > ANGLE_270)
+					left = true;
+				else
+					right = true;
+			}
+			if (left || strafeleft)
+				cmd->sidemove -= MAXPLMOVE << FRACBITS >> TICCMD_REDUCE;
+			if (right || straferight)
+				cmd->sidemove += MAXPLMOVE << FRACBITS >> TICCMD_REDUCE;
 		}
-		else if (backward)
-		{
-			if (mo->angle < ANGLE_90 || mo->angle > ANGLE_270)
-				left = true;
-			else
-				right = true;
-		}
-
-		if (left || strafeleft)
-			cmd->sidemove -= MAXPLMOVE << FRACBITS >> TICCMD_REDUCE;
-		if (right || straferight)
-			cmd->sidemove += MAXPLMOVE << FRACBITS >> TICCMD_REDUCE;
-	}
-	else
-	{
+	} else {
 		if (forward)
 			cmd->forwardmove += MAXPLMOVE << FRACBITS >> TICCMD_REDUCE;
 		if (backward)
@@ -171,7 +181,6 @@ void B_KeysToTiccmd(mobj_t *mo, ticcmd_t *cmd, boolean forward, boolean backward
 		if (straferight)
 			cmd->sidemove += MAXPLMOVE << FRACBITS >> TICCMD_REDUCE;
 	}
-
 	if (jump)
 		cmd->buttons |= BT_DRIFT;
 	if (spin)
@@ -195,7 +204,7 @@ boolean B_CheckRespawn(player_t *player)
 
 	// Check if Sonic is busy first.
 	// If he's doing any of these things, he probably doesn't want to see us.
-	if (sonic->player->pflags & (PF_ROPEHANG|PF_CARRIED|PF_SLIDING|PF_ITEMHANG|PF_MACESPIN)
+	if (sonic->player->pflags & (PF_ROPEHANG|PF_GLIDING|PF_CARRIED|PF_SLIDING|PF_ITEMHANG|PF_MACESPIN|PF_NIGHTSMODE)
 	|| (sonic->player->panim != PA_IDLE && sonic->player->panim != PA_WALK))
 		return false;
 
@@ -204,8 +213,7 @@ boolean B_CheckRespawn(player_t *player)
 		return false;
 
 	// If you're dead, wait a few seconds to respawn.
-	if (player->playerstate == PST_DEAD)
-	{
+	if (player->playerstate == PST_DEAD) {
 		if (player->deadtimer > 4*TICRATE)
 			return true;
 		return false;
@@ -233,17 +241,12 @@ void B_RespawnBot(INT32 playernum)
 
 	x = sonic->x;
 	y = sonic->y;
-
-	if (sonic->eflags & MFE_VERTICALFLIP)
-	{
+	if (sonic->eflags & MFE_VERTICALFLIP) {
 		tails->eflags |= MFE_VERTICALFLIP;
-
 		z = sonic->z - FixedMul(512*FRACUNIT,sonic->scale);
 		if (z < sonic->floorz)
 			z = sonic->floorz;
-	}
-	else
-	{
+	} else {
 		z = sonic->z + sonic->height + FixedMul(512*FRACUNIT,sonic->scale);
 		if (z > sonic->ceilingz - sonic->height)
 			z = sonic->ceilingz - sonic->height;
@@ -255,7 +258,6 @@ void B_RespawnBot(INT32 playernum)
 		tails->flags2 |= MF2_TWOD;
 	if (sonic->eflags & MFE_UNDERWATER)
 		tails->eflags |= MFE_UNDERWATER;
-
 	player->powers[pw_underwater] = sonic->player->powers[pw_underwater];
 	player->powers[pw_spacetime] = sonic->player->powers[pw_spacetime];
 	player->powers[pw_gravityboots] = sonic->player->powers[pw_gravityboots];

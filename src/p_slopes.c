@@ -950,14 +950,31 @@ void P_ButteredSlope(mobj_t *mo)
 	{
 		const int zeedelta = abs(mo->standingslope->zdelta);
 
-		if (zeedelta < FRACUNIT/4)
-			return; // Don't slide on non-steep slopes
+		if (zeedelta < FRACUNIT/4 && !(mo->player->pflags & PF_SPINNING))
+			return; // Don't slide on non-steep slopes unless spinning
 
 		if (zeedelta < FRACUNIT/2 && !(mo->player->rmomx || mo->player->rmomy))
 			return; // Allow the player to stand still on slopes below a certain steepness
 	}
 
 	thrust = FINESINE(mo->standingslope->zangle>>ANGLETOFINESHIFT) * 15 / 16 * (mo->eflags & MFE_VERTICALFLIP ? 1 : -1);
+
+	if (mo->player && (mo->player->pflags & PF_SPINNING))
+	{
+		fixed_t mult = 0;
+
+		if (mo->momx || mo->momy)
+		{
+			angle_t angle = R_PointToAngle2(0, 0, mo->momx, mo->momy) - mo->standingslope->xydirection;
+
+			if (P_MobjFlip(mo) * mo->standingslope->zdelta < 0)
+				angle ^= ANGLE_180;
+
+			mult = FINECOSINE(angle >> ANGLETOFINESHIFT);
+		}
+
+		thrust = FixedMul(thrust, FRACUNIT*2/3 + mult/8);
+	}
 
 	if (mo->momx || mo->momy) // Slightly increase thrust based on the object's speed
 		thrust = FixedMul(thrust, FRACUNIT+P_AproxDistance(mo->momx, mo->momy)/16);

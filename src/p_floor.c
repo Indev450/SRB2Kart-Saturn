@@ -2256,7 +2256,7 @@ void T_RaiseSector(levelspecthink_t *raise)
 				continue;
 
 			// Option to require spindashing.
-			if (raise->vars[1])
+			if (raise->vars[1] && !(thing->player->pflags & PF_STARTDASH))
 				continue;
 
 			if (!(thing->z == P_GetSpecialTopZ(thing, raise->sector, sector)))

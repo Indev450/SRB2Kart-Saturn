@@ -37,6 +37,8 @@ int player_aiming_setter(lua_State *L);
 int player_powers_noset(lua_State *L);
 int player_kartstuff_noset(lua_State *L);
 int player_skincolor_setter(lua_State *L);
+int player_axis_setter(lua_State *L);
+int player_capsule_setter(lua_State *L);
 int player_awayviewmobj_setter(lua_State *L);
 int player_awayviewtics_setter(lua_State *L);
 int player_bot_noset(lua_State *L);
@@ -64,6 +66,8 @@ static const udata_field_t player_fields[] = {
     FIELD(player_t, viewheight,       udatalib_getter_fixed,       udatalib_setter_fixed),
     FIELD(player_t, aiming,           udatalib_getter_angle,       player_aiming_setter),
     FIELD(player_t, health,           udatalib_getter_int32,       udatalib_setter_int32),
+    FIELD(player_t, pity,             udatalib_getter_sint8,       udatalib_setter_sint8),
+    FIELD(player_t, currentweapon,    udatalib_getter_int32,       udatalib_setter_int32),
     FIELD(player_t, ringweapons,      udatalib_getter_int32,       udatalib_setter_int32),
     FIELD(player_t, powers,           udatalib_getter_powers,      player_powers_noset),
     FIELD(player_t, kartstuff,        udatalib_getter_kartstuff,   player_kartstuff_noset),
@@ -75,22 +79,37 @@ static const udata_field_t player_fields[] = {
     FIELD(player_t, skincolor,        udatalib_getter_uint8,       player_skincolor_setter),
     FIELD(player_t, localskin,        player_localskin_getter,     player_localskin_setter),
     FIELD(player_t, score,            udatalib_getter_uint32,      udatalib_setter_uint32),
+    FIELD(player_t, dashspeed,        udatalib_getter_fixed,       udatalib_setter_fixed),
+    FIELD(player_t, dashtime,         udatalib_getter_int32,       udatalib_setter_int32),
     FIELD(player_t, kartspeed,        udatalib_getter_uint8,       udatalib_setter_uint8),
     FIELD(player_t, kartweight,       udatalib_getter_uint8,       udatalib_setter_uint8),
+    FIELD(player_t, charflags,        udatalib_getter_uint32,      udatalib_setter_uint32),
     FIELD(player_t, lives,            udatalib_getter_sint8,       udatalib_setter_sint8),
     FIELD(player_t, continues,        udatalib_getter_sint8,       udatalib_setter_sint8),
+    FIELD(player_t, xtralife,         udatalib_getter_sint8,       udatalib_setter_sint8),
+    FIELD(player_t, gotcontinue,      udatalib_getter_uint8,       udatalib_setter_uint8),
     FIELD(player_t, speed,            udatalib_getter_fixed,       udatalib_setter_fixed),
+    FIELD(player_t, jumping,          udatalib_getter_boolean,     udatalib_setter_boolean),
+    FIELD(player_t, secondjump,       udatalib_getter_uint8,       udatalib_setter_uint8),
+    FIELD(player_t, fly1,             udatalib_getter_uint8,       udatalib_setter_uint8),
+    FIELD(player_t, scoreadd,         udatalib_getter_uint8,       udatalib_setter_uint8),
+    FIELD(player_t, glidetime,        udatalib_getter_tic,         udatalib_setter_tic),
+    FIELD(player_t, climbing,         udatalib_getter_uint8,       udatalib_setter_sint8), // For whatever reason, original setter casted to INT32...
     FIELD(player_t, deadtimer,        udatalib_getter_int32,       udatalib_setter_int32),
     FIELD(player_t, exiting,          udatalib_getter_tic,         udatalib_setter_tic),
+    FIELD(player_t, homing,           udatalib_getter_uint8,       udatalib_setter_uint8),
+    FIELD(player_t, skidtime,         udatalib_getter_tic,         udatalib_setter_tic),
     FIELD(player_t, cmomx,            udatalib_getter_fixed,       udatalib_setter_fixed),
     FIELD(player_t, cmomy,            udatalib_getter_fixed,       udatalib_setter_fixed),
     FIELD(player_t, rmomx,            udatalib_getter_fixed,       udatalib_setter_fixed),
     FIELD(player_t, rmomy,            udatalib_getter_fixed,       udatalib_setter_fixed),
+    FIELD(player_t, numboxes,         udatalib_getter_int16,       udatalib_setter_int16),
     FIELD(player_t, totalring,        udatalib_getter_int16,       udatalib_setter_int16),
     FIELD(player_t, realtime,         udatalib_getter_tic,         udatalib_setter_tic),
     FIELD(player_t, laps,             udatalib_getter_uint8,       udatalib_setter_uint8),
     FIELD(player_t, ctfteam,          udatalib_getter_int32,       udatalib_setter_int32),
     FIELD(player_t, gotflag,          udatalib_getter_uint16,      udatalib_setter_uint16),
+    FIELD(player_t, weapondelay,      udatalib_getter_int32,       udatalib_setter_int32),
     FIELD(player_t, tossdelay,        udatalib_getter_int32,       udatalib_setter_int32),
     FIELD(player_t, starpostx,        udatalib_getter_int16,       udatalib_setter_int16),
     FIELD(player_t, starposty,        udatalib_getter_int16,       udatalib_setter_int16),
@@ -98,13 +117,36 @@ static const udata_field_t player_fields[] = {
     FIELD(player_t, starpostnum,      udatalib_getter_int32,       udatalib_setter_int32),
     FIELD(player_t, starposttime,     udatalib_getter_tic,         udatalib_setter_tic),
     FIELD(player_t, starpostangle,    udatalib_getter_angle,       udatalib_setter_angle),
+    FIELD(player_t, angle_pos,        udatalib_getter_angle,       udatalib_setter_angle),
+    FIELD(player_t, old_angle_pos,    udatalib_getter_angle,       udatalib_setter_angle),
+    FIELD(player_t, axis1,            udatalib_getter_mobj,        player_axis_setter),
+    FIELD(player_t, axis2,            udatalib_getter_mobj,        player_axis_setter),
     FIELD(player_t, bumpertime,       udatalib_getter_tic,         udatalib_setter_tic),
     FIELD(player_t, flyangle,         udatalib_getter_int32,       udatalib_setter_int32),
+    FIELD(player_t, drilltimer,       udatalib_getter_tic,         udatalib_setter_tic),
     FIELD(player_t, linkcount,        udatalib_getter_int32,       udatalib_setter_int32),
     FIELD(player_t, linktimer,        udatalib_getter_tic,         udatalib_setter_tic),
+    FIELD(player_t, anotherflyangle,  udatalib_getter_int32,       udatalib_setter_int32),
     FIELD(player_t, nightstime,       udatalib_getter_tic,         udatalib_setter_tic),
+    FIELD(player_t, drillmeter,       udatalib_getter_int32,       udatalib_setter_int32),
+    FIELD(player_t, drilldelay,       udatalib_getter_uint8,       udatalib_setter_uint8),
+    FIELD(player_t, bonustime,        udatalib_getter_boolean,     udatalib_setter_boolean),
+    FIELD(player_t, capsule,          udatalib_getter_mobj,        player_capsule_setter),
     FIELD(player_t, mare,             udatalib_getter_uint8,       udatalib_setter_uint8),
+    FIELD(player_t, marebegunat,      udatalib_getter_tic,         udatalib_setter_tic),
+    FIELD(player_t, startedtime,      udatalib_getter_tic,         udatalib_setter_tic),
+    FIELD(player_t, finishedtime,     udatalib_getter_tic,         udatalib_setter_tic),
+    FIELD(player_t, finishedrings,    udatalib_getter_int16,       udatalib_setter_int16),
     FIELD(player_t, marescore,        udatalib_getter_uint32,      udatalib_setter_uint32),
+    FIELD(player_t, lastmarescore,    udatalib_getter_uint32,      udatalib_setter_uint32),
+    FIELD(player_t, lastmare,         udatalib_getter_uint8,       udatalib_setter_uint8),
+    FIELD(player_t, maxlink,          udatalib_getter_int32,       udatalib_setter_int32),
+    FIELD(player_t, texttimer,        udatalib_getter_uint8,       udatalib_setter_uint8),
+    FIELD(player_t, textvar,          udatalib_getter_uint8,       udatalib_setter_uint8),
+    FIELD(player_t, lastsidehit,      udatalib_getter_int16,       udatalib_setter_int16),
+    FIELD(player_t, lastlinehit,      udatalib_getter_int16,       udatalib_setter_int16),
+    FIELD(player_t, losstime,         udatalib_getter_tic,         udatalib_setter_tic),
+    FIELD(player_t, timeshit,         udatalib_getter_uint8,       udatalib_setter_uint8), // Haha, time shit, funni
     FIELD(player_t, onconveyor,       udatalib_getter_int32,       udatalib_setter_int32),
     FIELD(player_t, awayviewmobj,     udatalib_getter_mobj,        player_awayviewmobj_setter),
     FIELD(player_t, awayviewtics,     udatalib_getter_int32,       player_awayviewtics_setter),
@@ -268,6 +310,29 @@ int player_localskin_setter(lua_State *L)
 	SetLocalPlayerSkin(plr - players, luaL_optstring(L, 2, "none"), NULL);
 
 	return 0;
+}
+
+int player_axis_setter(lua_State *L)
+{
+    mobj_t **axis;
+
+    UDATALIB_GETFIELD(mobj_t*, axis);
+
+	P_SetTarget(axis, *((mobj_t **)luaL_checkudata(L, 2, META_MOBJ)));
+
+    return 0;
+}
+
+int player_capsule_setter(lua_State *L)
+{
+    player_t *plr = GETPLAYER();
+
+    mobj_t *mo = NULL;
+    if (!lua_isnil(L, 2))
+        mo = *((mobj_t **)luaL_checkudata(L, 2, META_MOBJ));
+    P_SetTarget(&plr->capsule, mo);
+
+    return 0;
 }
 
 // Probably can do same thing as with axis1 and axis2

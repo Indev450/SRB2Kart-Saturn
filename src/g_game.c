@@ -111,6 +111,7 @@ INT32 displayplayers[MAXSPLITSCREENPLAYERS] = {}; // view being displayed
 
 tic_t gametic = 0;
 tic_t levelstarttic = 0; // gametic at level start
+UINT32 totalrings = 0; // for intermission
 INT16 lastmap = 0; // last level you were at (returning from special stages)
 tic_t timeinmap = 0; // Ticker for time spent in level (used for levelcard display)
 
@@ -2105,6 +2106,7 @@ void G_PlayerReborn(INT32 player)
 	UINT8 kartspeed;
 	UINT8 kartweight;
 	//
+	INT32 charflags;
 	INT32 pflags;
 	INT32 ctfteam;
 	INT32 starposttime;
@@ -2114,6 +2116,7 @@ void G_PlayerReborn(INT32 player)
 	INT32 starpostnum;
 	INT32 starpostangle;
 	INT32 exiting;
+	INT16 numboxes;
 	INT16 totalring;
 	UINT8 laps;
 	UINT8 mare;
@@ -2125,6 +2128,7 @@ void G_PlayerReborn(INT32 player)
 	UINT8 splitscreenindex;
 	boolean spectator;
 	INT16 bot;
+	SINT8 pity;
 
 	// SRB2kart
 	INT32 starpostwp;
@@ -2158,12 +2162,13 @@ void G_PlayerReborn(INT32 player)
 	jointime = players[player].jointime;
 	splitscreenindex = players[player].splitscreenindex;
 	spectator = players[player].spectator;
-	pflags = (players[player].pflags & (PF_TIMEOVER|PF_FLIPCAM|PF_TAGIT|PF_ANALOGMODE|PF_WANTSTOJOIN));
+	pflags = (players[player].pflags & (PF_TIMEOVER|PF_FLIPCAM|PF_TAGIT|PF_TAGGED|PF_ANALOGMODE|PF_WANTSTOJOIN));
 
 	// As long as we're not in multiplayer, carry over cheatcodes from map to map
 	if (!(netgame || multiplayer))
 		pflags |= (players[player].pflags & (PF_GODMODE|PF_NOCLIP|PF_INVIS));
 
+	numboxes = players[player].numboxes;
 	laps = players[player].laps;
 	totalring = players[player].totalring;
 
@@ -2175,6 +2180,7 @@ void G_PlayerReborn(INT32 player)
 	kartspeed = players[player].kartspeed;
 	kartweight = players[player].kartweight;
 	//
+	charflags = players[player].charflags;
 
 	starposttime = players[player].starposttime;
 	starpostx = players[player].starpostx;
@@ -2186,6 +2192,7 @@ void G_PlayerReborn(INT32 player)
 
 	mare = players[player].mare;
 	bot = players[player].bot;
+	pity = players[player].pity;
 
 	// SRB2kart
 	if (leveltime <= starttime || spectator == true)
@@ -2274,6 +2281,7 @@ void G_PlayerReborn(INT32 player)
 	p->kartspeed = kartspeed;
 	p->kartweight = kartweight;
 	//
+	p->charflags = charflags;
 
 	p->starposttime = starposttime;
 	p->starpostx = starpostx;
@@ -2283,6 +2291,7 @@ void G_PlayerReborn(INT32 player)
 	p->starpostangle = starpostangle;
 	p->exiting = exiting;
 
+	p->numboxes = numboxes;
 	p->laps = laps;
 	p->totalring = totalring;
 
@@ -2294,6 +2303,7 @@ void G_PlayerReborn(INT32 player)
 	p->mare = mare;
 	if (bot)
 		p->bot = 1; // reset to AI-controlled
+	p->pity = pity;
 
 	// SRB2kart
 	p->kartstuff[k_starpostwp] = starpostwp; // TODO: get these out of kartstuff, it causes desync
@@ -4024,7 +4034,7 @@ void G_InitNew(UINT8 pencoremode, const char *mapname, boolean resetplayer, bool
 			players[i].awayviewmobj = NULL;
 
 			// The latter two should clear by themselves, but just in case
-			players[i].pflags &= ~(PF_TAGIT|PF_FULLSTASIS);
+			players[i].pflags &= ~(PF_TAGIT|PF_TAGGED|PF_FULLSTASIS);
 
 			// Clear cheatcodes too, just in case.
 			players[i].pflags &= ~(PF_GODMODE|PF_NOCLIP|PF_INVIS);

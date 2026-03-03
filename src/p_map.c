@@ -140,6 +140,12 @@ boolean P_DoSpring(mobj_t *spring, mobj_t *object)
 	if (object->player && object->player->spectator)
 		return false;
 
+	if (UNLIKELY(object->player && (object->player->pflags & PF_NIGHTSMODE)))
+	{
+		/*Someone want to make these work like bumpers?*/
+		return false;
+	}
+
 	object->standingslope = NULL; // Okay, now we can't return - no launching off at silly angles for you.
 
 	object->eflags |= MFE_SPRUNG; // apply this flag asap!
@@ -221,6 +227,7 @@ boolean P_DoSpring(mobj_t *spring, mobj_t *object)
 			}
 		}
 
+		//pflags = object->player->pflags & (PF_JUMPED|PF_SPINNING|PF_THOKKED); // I still need these.
 		P_ResetPlayer(object->player);
 	}
 	return true;
@@ -258,6 +265,8 @@ static void P_DoFanAndGasJet(mobj_t *spring, mobj_t *object)
 			if (zdist > (spring->health << FRACBITS)) // max z distance determined by health (set by map thing angle)
 				break;
 			if (flipval*object->momz >= FixedMul(speed, spring->scale)) // if object's already moving faster than your best, don't bother
+				break;
+			if (p && (p->climbing || p->pflags & PF_GLIDING)) // doesn't affect Knux when he's using his abilities!
 				break;
 
 			object->momz += flipval*FixedMul(speed/4, spring->scale);
@@ -342,6 +351,11 @@ static boolean PIT_CheckThing(mobj_t *thing)
 #endif
 
 	if (!(thing->flags & (MF_SOLID|MF_SPECIAL|MF_PAIN|MF_SHOOTABLE)) || (thing->flags & MF_NOCLIPTHING))
+		return true;
+
+	// Don't collide with your buddies while NiGHTS-flying.
+	if (UNLIKELY(tmthing->player && thing->player && (maptol & TOL_NIGHTS)
+		&& ((tmthing->player->pflags & PF_NIGHTSMODE) || (thing->player->pflags & PF_NIGHTSMODE))))
 		return true;
 
 	blockdist = thing->radius + tmthing->radius;
@@ -1379,7 +1393,7 @@ static boolean PIT_CheckThing(mobj_t *thing)
 			&& thing->z + thing->height + FixedMul(FRACUNIT, thing->scale) >= tmthing->z)
 		{
 			if (thing->flags & MF_MONITOR
-				&& tmthing->player->pflags & PF_JUMPED)
+				&& tmthing->player->pflags & (PF_JUMPED|PF_SPINNING|PF_GLIDING))
 			{
 				SINT8 flipval = P_MobjFlip(thing); // Save this value in case monitor gets removed.
 				fixed_t *momz = &tmthing->momz; // tmthing gets changed by P_DamageMobj, so we need a new pointer?! X_x;;

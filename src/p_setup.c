@@ -2071,6 +2071,7 @@ static void P_LevelInitStuff(boolean reloadinggamestate)
 	// circuit, race and competition stuff
 	circuitmap = false;
 	numstarposts = 0;
+	totalrings = 0;
 
 	if (!reloadinggamestate)
 		timeinmap = 0;
@@ -2100,17 +2101,28 @@ static void P_LevelInitStuff(boolean reloadinggamestate)
 
 		player->driftsparkGrowTimer = 0;
 
-		player->deadtimer = player->totalring = player->laps = 0;
+		player->gotcontinue = false;
+
+		player->xtralife = player->deadtimer = player->numboxes = player->totalring = player->laps = 0;
 		player->health = 1;
 		player->aiming = 0;
 		player->pflags &= ~PF_TIMEOVER;
 
-		player->marescore = 0;
+		player->losstime = 0;
+		player->timeshit = 0;
+
+		player->marescore = player->lastmarescore = player->maxlink = 0;
+		player->startedtime = player->finishedtime = player->finishedrings = 0;
+		player->lastmare = player->marebegunat = 0;
+
+		// Don't show anything
+		player->textvar = player->texttimer = 0;
 
 		player->linkcount = player->linktimer = 0;
-
-		player->flyangle = 0;
+		player->flyangle = player->anotherflyangle = 0;
 		player->nightstime = player->mare = 0;
+		P_SetTarget(&player->capsule, NULL);
+		player->drillmeter = 40*20;
 
 		player->exiting = 0;
 		P_ResetPlayer(player);
@@ -2118,6 +2130,12 @@ static void P_LevelInitStuff(boolean reloadinggamestate)
 		player->spectatorreentry = 0; // SRB2Kart 1.4
 
 		player->mo = NULL;
+
+		// we must unset axis details too
+		player->axis1 = player->axis2 = NULL;
+
+		// and this stupid flag as a result
+		player->pflags &= ~PF_TRANSFERTOCLOSEST;
 	}
 
 	// SRB2Kart: map load variables
@@ -2547,6 +2565,11 @@ static void P_SetupPlayer(void)
 	{
 		if (playeringame[i])
 		{
+			players[i].pflags &= ~PF_NIGHTSMODE;
+
+			// Start players with pity shields if possible
+			players[i].pity = -1;
+
 			if (!G_RaceGametype())
 			{
 				players[i].mo = NULL;
