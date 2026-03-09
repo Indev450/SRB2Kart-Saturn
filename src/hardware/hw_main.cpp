@@ -1178,7 +1178,6 @@ static void HWR_SplitWall(sector_t *sector, FOutVector *wallVerts, INT32 texnum,
 
 static FOutVector* skyWallVertexArray = NULL;
 static int skyWallVertexArraySize = 0;
-static int skyWallVertexArrayAllocSize = 65536;// what a mouthful
 
 static boolean gl_collect_skywalls = false;
 
@@ -1189,13 +1188,14 @@ static void HWR_SkyWallList_Clear(void)
 
 static void HWR_SkyWallList_Add(FOutVector *wallVerts)
 {
+	static int skyWallVertexArrayAllocSize = 65536; // what a mouthful
+
 	if (!skyWallVertexArray)
 	{
 		// array has not been allocated yet. allocate it now
 		skyWallVertexArray = static_cast<FOutVector*>(Z_Malloc(sizeof(FOutVector) * 4 * skyWallVertexArrayAllocSize, PU_STATIC, NULL));
 	}
-
-	if (skyWallVertexArraySize == skyWallVertexArrayAllocSize)
+	else if (skyWallVertexArraySize >= skyWallVertexArrayAllocSize)
 	{
 		// allocated array got full, allocate more space
 		skyWallVertexArrayAllocSize *= 2;
@@ -1242,6 +1242,7 @@ static void HWR_DrawSkyWall(FOutVector *wallVerts, FSurfaceInfo *Surf)
 		HWR_SetCurrentTexture(NULL);
 		HWR_ProjectWall(wallVerts, Surf, PF_Invisible|PF_NoTexture|PF_Skydecal, 255, NULL);
 	}
+
 	// PF_Invisible so it's not drawn into the colour buffer
 	// PF_NoTexture for no texture
 	// PF_Occlude is set in HWR_ProjectWall to draw into the depth buffer
@@ -1869,6 +1870,7 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 
 				HWR_DrawSkyWall(wallVerts, &Surf);
 			}
+
 			if (gl_frontsector->floorpic == skyflatnum)
 			{
 				wallVerts[3].y = FixedToFloat(worldbottom);
@@ -2134,6 +2136,7 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 
 					break;
 				}
+
 				if (r2)
 					continue;
 
