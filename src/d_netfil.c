@@ -116,6 +116,8 @@ static I_mutex downloadmutex;
 #endif
 char downloaddir[512] = "DOWNLOAD";
 
+INT32 addontypes[NUMADDONTYPES] = {0};
+
 file_download_t filedownload = {};
 
 #ifdef HAVE_CURL
@@ -134,6 +136,8 @@ HTTP_login *curl_logins = NULL;
 
 static void CURLGetFile(void);
 #endif
+
+static addontype_t GetAddonType(const char *name);
 
 /** Fills a serverinfo packet with information about wad files loaded.
   *
@@ -227,6 +231,9 @@ void D_ParseFileneeded(INT32 fileneedednum_parm, UINT8 *fileneededstr, UINT16 fi
 		fileneeded[i].file = NULL; // The file isn't open yet
 		READSTRINGL(p, fileneeded[i].filename, MAX_WADPATH); // The next bytes are the file name
 		READMEM(p, fileneeded[i].md5sum, 16); // The last 16 bytes are the file checksum
+
+		// Should be good place to calculate that?
+		fileneeded[i].type = GetAddonType(fileneeded[i].filename);
 	}
 }
 
@@ -573,6 +580,48 @@ INT32 CL_CheckFiles(void)
 		return 0; //some stuff is FS_NOTFOUND, needs download
 	else
 		return 1; //everything is FS_OPEN or FS_FOUND, proceed to loading
+}
+
+static addontype_t GetAddonType(const char *name)
+{
+	const char *prefix = strchr(name, '_');
+
+	// Doesn't have prefix (no '_' character or it is too far and is probably not for prefix but for something like version)
+	// KRBCL_ is longest prefix i can think of so this should be enough
+	if (prefix == NULL || prefix - name > 5)
+		return ADDON_MISC;
+
+	// Skip 'K'
+	if (*name == 'K')
+		++name;
+
+	switch (*name)
+	{
+		case 'L':
+			return ADDON_SCRIPT;
+		break;
+
+		case 'R':
+		case 'B':
+			return ADDON_MAP;
+		break;
+
+		case 'C':
+			return ADDON_CHARACTER;
+		break;
+	}
+
+	return ADDON_MISC;
+}
+
+void CL_CheckAddonTypes(void)
+{
+	memset(&addontypes, 0, sizeof(addontypes));
+
+	for (INT32 i = 0; i < fileneedednum; i++)
+	{
+		addontypes[fileneeded[i].type]++;
+	}
 }
 
 // Load it now
