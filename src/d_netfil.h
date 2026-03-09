@@ -40,6 +40,15 @@ typedef enum
 	FS_FALLBACK, // HTTP failed
 } filestatus_t;
 
+typedef enum addontype_e
+{
+	ADDON_SCRIPT,
+	ADDON_MAP,
+	ADDON_CHARACTER,
+	ADDON_MISC,
+	NUMADDONTYPES,
+} addontype_t;
+
 typedef struct
 {
 	UINT8 willsend; // Is the server willing to send it?
@@ -51,11 +60,13 @@ typedef struct
 	UINT32 totalsize;
 	filestatus_t status; // The value returned by recsearch
 	boolean justdownloaded; // To prevent late fragments from causing an I_Error
+	addontype_t type;
 } fileneeded_t;
 
 extern INT32 fileneedednum;
 extern fileneeded_t fileneeded[MAX_WADFILES];
 extern char downloaddir[512];
+extern INT32 addontypes[NUMADDONTYPES];
 
 typedef struct
 {
@@ -91,6 +102,7 @@ void D_ParseFileneeded(INT32 fileneedednum_parm, UINT8 *fileneededstr, UINT16 fi
 void CL_PrepareDownloadSaveGame(const char *tmpsave);
 
 INT32 CL_CheckFiles(void);
+void CL_CheckAddonTypes(void);
 boolean CL_LoadServerFiles(void);
 void SV_SendRam(INT32 node, void *data, size_t size, freemethod_t freemethod,
 	UINT8 fileid);
