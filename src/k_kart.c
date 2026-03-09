@@ -2159,7 +2159,13 @@ static void K_GetKartBoostPower(player_t *player)
 		&& player->speed > 0
 		&& !player->spectator)
 	{
-		K_SpawnWipeoutTrail(player->mo, true);
+		mobj_t *dust = K_SpawnWipeoutTrail(player->mo, true);
+
+		// Technically, all mobjs that think can cause desynchs if they are spawned conditionally, so best we can do
+		// is to hide them if you are in saltyhop jump
+		if (dust && player->mo->salty.jump)
+			dust->flags2 |= MF2_DONTDRAW;
+
 		if (leveltime % 6 == 0)
 			S_StartSound(player->mo, sfx_cdfm70);
 	}
@@ -3634,7 +3640,7 @@ void K_SpawnSparkleTrail(mobj_t *mo)
 	P_SetMobjState(sparkle, S_KARTINVULN_LARGE1);
 }
 
-void K_SpawnWipeoutTrail(mobj_t *mo, boolean translucent)
+mobj_t *K_SpawnWipeoutTrail(mobj_t *mo, boolean translucent)
 {
 	mobj_t *dust;
 	angle_t aoff;
@@ -3675,6 +3681,8 @@ void K_SpawnWipeoutTrail(mobj_t *mo, boolean translucent)
 
 	if (translucent)
 		dust->flags2 |= MF2_SHADOW;
+
+	return dust;
 }
 
 //	K_DriftDustHandling
