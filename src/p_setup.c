@@ -414,7 +414,7 @@ void P_UpdateSegLightOffset(seg_t *li)
 		angle_t liAngle = R_PointToAngle2(0, 0, (li->v1->x - li->v2->x), (li->v1->y - li->v2->y)) - ANGLE_90;
 
 		light = FixedMul(FINECOSINE(liAngle >> ANGLETOFINESHIFT), FINECOSINE(maplighting.angle >> ANGLETOFINESHIFT))
-		+ FixedMul(FINESINE(liAngle >> ANGLETOFINESHIFT), FINESINE(maplighting.angle >> ANGLETOFINESHIFT));
+			  + FixedMul(FINESINE(liAngle >> ANGLETOFINESHIFT), FINESINE(maplighting.angle >> ANGLETOFINESHIFT));
 		light = (light + FRACUNIT) / 2;
 	}
 	else
@@ -1914,7 +1914,7 @@ static void P_LoadMapBSP(const virtres_t* virt)
 	if (numsubsectors <= 0)
 		I_Error("Level has no subsectors (did you forget to run it through a nodesbuilder?)");
 	if (numnodes <= 0)
-		I_Error("Level has no nodes");
+		I_Error("Level has no nodes (does your map have at least 2 sectors?)");
 	if (numsegs <= 0)
 		I_Error("Level has no segs");
 
@@ -2077,10 +2077,10 @@ static void P_LevelInitStuff(boolean reloadinggamestate)
 	stagefailed = false;
 
 	// earthquake camera
-	memset(&quake,0,sizeof(struct quake));
+	memset(&quake, 0, sizeof(struct quake));
 
 	// song credit init
-	memset(&cursongcredit,0,sizeof(struct cursongcredit));
+	memset(&cursongcredit, 0, sizeof(struct cursongcredit));
 	cursongcredit.trans = NUMTRANSMAPS;
 
 	for (i = 0; i < MAXPLAYERS; i++)
