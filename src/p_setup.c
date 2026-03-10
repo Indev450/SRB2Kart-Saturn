@@ -2174,14 +2174,14 @@ static INT32 P_MakeBufferMD5(const char *buffer, size_t len, void *resblock)
 	memset(resblock, 0x00, 16);
 	return 1;
 #else
-	tic_t t = I_GetTime();
+	precise_t t = I_GetPreciseTime();
 
 	CONS_Debug(DBG_SETUP, "Making MD5\n");
 
 	if (md5_buffer(buffer, len, resblock) == NULL)
 		return 1;
 
-	CONS_Debug(DBG_SETUP, "MD5 calc took %f seconds\n", (float)(I_GetTime() - t)/NEWTICRATE);
+	CONS_Debug(DBG_SETUP, "MD5 calc took %f seconds\n", (float)(I_GetPreciseTime() - t)/I_GetPrecisePrecision());
 
 	return 0;
 #endif
@@ -2203,10 +2203,10 @@ static void P_MakeMapMD5(virtres_t *virt, void *dest)
 	virtlump_t* virtmthings = vres_Find(virt, "THINGS");
 	virtlump_t* virtsides   = vres_Find(virt, "SIDEDEFS");
 
-	P_MakeBufferMD5((char*)virtlines->data,   virtlines->size, linemd5);
-	P_MakeBufferMD5((char*)virtsectors->data, virtsectors->size,  sectormd5);
-	P_MakeBufferMD5((char*)virtmthings->data, virtmthings->size,   thingmd5);
-	P_MakeBufferMD5((char*)virtsides->data,   virtsides->size, sidedefmd5);
+	P_MakeBufferMD5((char*)virtlines->data,   virtlines->size,   linemd5);
+	P_MakeBufferMD5((char*)virtsectors->data, virtsectors->size, sectormd5);
+	P_MakeBufferMD5((char*)virtmthings->data, virtmthings->size, thingmd5);
+	P_MakeBufferMD5((char*)virtsides->data,   virtsides->size,   sidedefmd5);
 
 	for (i = 0; i < 16; i++)
 		resmd5[i] = (linemd5[i] + sectormd5[i] + thingmd5[i] + sidedefmd5[i]) & 0xFF;
