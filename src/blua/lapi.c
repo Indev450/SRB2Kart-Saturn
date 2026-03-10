@@ -434,7 +434,7 @@ LUA_API void lua_pushnumber (lua_State *L, lua_Number n) {
 LUA_API void lua_pushlstring (lua_State *L, const char *s, size_t len) {
   lua_lock(L);
   luaC_checkGC(L);
-  setsvalue2s(L, L->top, (len == 0) ? luaS_new(L, "") : luaS_newlstr(L, s, len));
+  setsvalue2s(L, L->top, (len == 0) ? luaS_newlstr(L, "", 0) : luaS_newlstr(L, s, len));
   api_incr_top(L);
   lua_unlock(L);
 }

@@ -986,7 +986,7 @@ static const char* OP_ExpTooltips[] =
 	"Skips rendering frames if game logic takes too long\npreventing gameplay issues during performance drops.", // idk im shit as describing things
 	"Different methods of scaling the votescreen backgrounds.",
 #ifdef HWRENDER
-	"Should the game do Screen Textures? Provides a good boost to frames\nat the cost of some visual effects not working when disabled.",
+	"Disabling Screen Textures may result in a performance boost\nbut will break certain effects.\nScreen textures are required at resolutions lower than your desktop resolution!"
 #ifdef USE_FBO_OGL
 	"Allows the game to downsample from a higher resolution\nthan your display in OpenGL renderer mode.\nRequires a GPU with atleast OpenGL 2.1 support.",
 #endif
@@ -1642,29 +1642,25 @@ static menuitem_t OP_AccessibilityMenu[] =
 
 	{IT_STRING|IT_CVAR,                NULL,   "Minimum Sector Brightness",      &cv_secbright,          45},
 
-#ifdef HWRENDER
-	{IT_STRING|IT_CVAR,                NULL,   "Screen Textures",                &cv_glscreentextures,   50},
-#endif
+	{IT_STRING|IT_CVAR,                NULL,   "Water Surface Ripples",          &cv_ripplewater,        50},
 
-	{IT_STRING|IT_CVAR,                NULL,   "Water Surface Ripples",          &cv_ripplewater,        55},
+	{IT_STRING|IT_CVAR,                NULL,   "Fade Players near Camera",       &cv_playerfade,         55},
 
-	{IT_STRING|IT_CVAR,                NULL,   "Fade Players near Camera",       &cv_playerfade,         60},
+	{IT_STRING|IT_CVAR,                NULL,   "Quake Screenshakes",             &cv_screenquake,        60},
 
-	{IT_STRING|IT_CVAR,                NULL,   "Quake Screenshakes",             &cv_screenquake,        65},
+	{IT_CALL|IT_STRING,                NULL,   "Camera Options...",              M_CameraMenu,           65},
 
-	{IT_CALL|IT_STRING,                NULL,   "Camera Options...",              M_CameraMenu,           70},
+	{IT_HEADER, NULL, "Audio", NULL, 75},
 
-	{IT_HEADER, NULL, "Audio", NULL, 80},
+	{IT_STRING|IT_CVAR,                NULL,   "Reverse L/R Channels",           &stereoreverse,         85},
+	{IT_STRING|IT_CVAR,                NULL,   "Same Sound Limit",               &cv_samesoundlimit,     90},
 
-	{IT_STRING|IT_CVAR,                NULL,   "Reverse L/R Channels",           &stereoreverse,         90},
-	{IT_STRING|IT_CVAR,                NULL,   "Same Sound Limit",               &cv_samesoundlimit,     95},
+	{IT_HEADER, NULL, "Controls", NULL, 100},
 
-	{IT_HEADER, NULL, "Controls", NULL, 105},
-
-	{IT_STRING|IT_CVAR,                NULL,   "Automatic Acceleration (P1)",    &cv_autoaccel[0],       115},
-	{IT_STRING|IT_CVAR,                NULL,   "Automatic Acceleration (P2)",    &cv_autoaccel[1],       120},
-	{IT_STRING|IT_CVAR,                NULL,   "Automatic Acceleration (P3)",    &cv_autoaccel[2],       125},
-	{IT_STRING|IT_CVAR,                NULL,   "Automatic Acceleration (P4)",    &cv_autoaccel[3],       130},
+	{IT_STRING|IT_CVAR,                NULL,   "Automatic Acceleration (P1)",    &cv_autoaccel[0],       110},
+	{IT_STRING|IT_CVAR,                NULL,   "Automatic Acceleration (P2)",    &cv_autoaccel[1],       115},
+	{IT_STRING|IT_CVAR,                NULL,   "Automatic Acceleration (P3)",    &cv_autoaccel[2],       120},
+	{IT_STRING|IT_CVAR,                NULL,   "Automatic Acceleration (P4)",    &cv_autoaccel[3],       125},
 };
 
 static const char* OP_AccessibilityTooltips[] =
@@ -1677,9 +1673,6 @@ static const char* OP_AccessibilityTooltips[] =
 	"Reduces or disables certain effects players might be sensitive to\nSuch as flashing, flickering, certain screen effects and more.",
 	"Disables the flicker effect on Midnight Channel.",
 	"Sets minimum sector brightness, useful for dark areas",
-#ifdef HWRENDER
-	"Disabling Screen Textures will disable the Underwater and Heat screen effects.",
-#endif
 	"Toggles the ripple effect on water surfaces",
 	"Fades other Players that are close to the camera in and out",
 	"Toggles the screen shake effect during Earthquakes",
