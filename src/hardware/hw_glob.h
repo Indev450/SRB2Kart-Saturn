@@ -52,12 +52,12 @@ void HWR_ObjectLightLevelPost(gl_vissprite_t *spr, const sector_t *sector, INT32
 // --------
 // hw_bsp.c
 // --------
-extern extrasubsector_t *extrasubsectors;
+extern poly_subsector_t *poly_subsectors;
 #ifdef PARANOIA
-extern size_t addsubsector;
+extern size_t num_poly_subsector;
 #endif
-
-void HWR_FreeExtraSubsectors(void);
+void HWR_InitPolyPool(void);
+void HWR_FreePolyPool(void);
 
 // --------
 // hw_cache.c
