@@ -1179,6 +1179,9 @@ static void CV_LoadPlayerNames(UINT8 **p)
 
 static void CL_DrawAddonTypes(void)
 {
+	if (!cv_serveraddoninfo.value)
+		return;
+
 	INT32 y = 0;
 
 	INT32 addontypes_downloaded[NUMADDONTYPES] = {0};
@@ -4284,6 +4287,8 @@ static CV_PossibleValue_t connectawaittime_cons_t[] = {{1, "MIN"}, {60, "MAX"}, 
 consvar_t cv_connectawaittime = {"connectawaittime", "5", CV_SAVE, connectawaittime_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 consvar_t cv_serverinfoscreen = {"serverinfoscreen", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+
+consvar_t cv_serveraddoninfo = {"serveraddoninfo", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 static void Got_AddPlayer(const UINT8 **p, INT32 playernum);
 static void Got_RemovePlayer(const UINT8 **p, INT32 playernum);
