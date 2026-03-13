@@ -612,12 +612,8 @@ void Net_WaitAllAckReceived(UINT32 timeout)
 
 static void InitNode(node_t *node)
 {
-	node->acktosend_head = node->acktosend_tail = 0;
-	memset(node->acktosend, 0, sizeof(node->acktosend));
-	node->firstacktosend = 0;
+	memset(node, 0, sizeof(node_t));
 	node->nextacknum = 1;
-	node->remotefirstack = 0;
-	node->flags = 0;
 }
 
 static void InitAck(void)

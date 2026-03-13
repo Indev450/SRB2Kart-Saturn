@@ -280,22 +280,22 @@ static void Fov_OnChange(void)
 
 static void FlipCam_OnChange(void)
 {
-	SendWeaponPref();
+	SendWeaponPref(0);
 }
 
 static void FlipCam2_OnChange(void)
 {
-	SendWeaponPref2();
+	SendWeaponPref(1);
 }
 
 static void FlipCam3_OnChange(void)
 {
-	SendWeaponPref3();
+	SendWeaponPref(2);
 }
 
 static void FlipCam4_OnChange(void)
 {
-	SendWeaponPref4();
+	SendWeaponPref(3);
 }
 
 static void Precipstuff_OnChange(void)
