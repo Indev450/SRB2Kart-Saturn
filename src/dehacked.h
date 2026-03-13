@@ -13,6 +13,10 @@
 #ifndef __DEHACKED_H__
 #define __DEHACKED_H__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "m_fixed.h" // for get_number
 #include "info.h"
 
@@ -71,4 +75,9 @@ typedef struct
 } MYFILE;
 #define myfeof(a) (a->data + a->size <= a->curpos)
 char *myfgets(char *buf, size_t bufsize, MYFILE *f);
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
+
 #endif
