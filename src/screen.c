@@ -42,8 +42,8 @@ INT32 setmodeneeded = 0; // video mode change needed if > 0 (the mode number to 
 static CV_PossibleValue_t shittyscreen_cons_t[] = {{0, "Okay"}, {1, "Shitty"}, {2, "Extra Shitty"}, {0, NULL}};
 
 //added : 03-02-98: default screen mode, as loaded/saved in config
-consvar_t cv_scr_width = {"scr_width", "1280", CV_SAVE, CV_Unsigned, NULL, 0, NULL, NULL, 0, 0, NULL};
-consvar_t cv_scr_height = {"scr_height", "800", CV_SAVE, CV_Unsigned, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_scr_width = {"scr_width", "1280", CV_SAVE|CV_CALL, CV_Unsigned, VID_RefreshModeList, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_scr_height = {"scr_height", "800", CV_SAVE|CV_CALL, CV_Unsigned, VID_RefreshModeList, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_renderview = {"renderview", "On", 0, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 consvar_t cv_frameskip = {"frameskip", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
@@ -315,8 +315,9 @@ void SCR_CheckDefaultMode(void)
 void SCR_SetDefaultMode(void)
 {
 	// remember the default screen size
-	CV_SetValue(&cv_scr_width, vid.width);
-	CV_SetValue(&cv_scr_height, vid.height);
+	CV_StealthSetValue(&cv_scr_width, vid.width);
+	CV_StealthSetValue(&cv_scr_height, vid.height);
+	VID_RefreshModeList(); // probably not needed but justin käs
 }
 
 // Change fullscreen on/off according to cv_fullscreen

@@ -95,6 +95,7 @@ INT32 VID_SetMode(INT32 modenum);
 */
 const char *VID_GetModeName(INT32 modenum);
 
+void VID_RefreshModeList(void);
 void VID_PrepareModeList(void);
 
 /**	\brief can video system do fullscreen
@@ -121,6 +122,7 @@ void I_ReadScreen(UINT8 * restrict scr, INT32 scale);
 
 UINT32 I_GetRefreshRate(void);
 
+boolean I_CheckAboveDesktopRes(INT32 width, INT32 height);
 boolean I_CheckNativeRes(void);
 
 void I_SetBorderlessWindow(void);
