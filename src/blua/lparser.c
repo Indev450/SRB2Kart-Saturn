@@ -881,10 +881,10 @@ static const struct {
   lu_byte right; /* right priority */
 } priority[] = {  /* ORDER OPR */
    {6, 6}, {6, 6}, {7, 7}, {7, 7}, {7, 7},  /* `+' `-' `/' `%' */
-   {10, 9}, {5, 4},                 /* power and concat (right associative) */
-   {3, 3}, {3, 3},                  /* equality and inequality */
-   {3, 3}, {3, 3}, {3, 3}, {3, 3},  /* order */
-   {2, 2}, {1, 1}                   /* logical (and/or) */
+   {10, 9}, {5, 4},                 /* ^, .. (right associative) */
+   {3, 3}, {3, 3}, {3, 3},          /* ==, <, <= */
+   {3, 3}, {3, 3}, {3, 3},          /* ~=, >, >= */
+   {2, 2}, {1, 1}                   /* and, or */
    ,{6, 6}, {6, 6}, {6, 6},           /* bit-wise (band/bor/bxor) */
    {7, 7}, {7, 7}		    /* shl/shr */
 };
