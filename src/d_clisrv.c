@@ -100,6 +100,10 @@ static int map_icon_request_count; // current count of icon requests sent
 static UINT8 *map_icon_data;
 static patch_t *map_icon;
 
+// if true, signals the game to only load addons AND gamestate
+// instead of fully joining a server
+static boolean cl_addonsonly = false;
+
 plrinfo playerinfo[MAXPLAYERS] = {};
 SINT8 joinnode = 0; // used for CL_VIEWSERVER
 
@@ -1411,6 +1415,7 @@ static void CL_DrawConnectionStatus(void)
 			// Buttons
 			V_DrawFill(8, BASEVIDHEIGHT - 14, BASEVIDWIDTH - 16, 12, 239);
 			V_DrawThinString(16, BASEVIDHEIGHT - 12, V_ALLOWLOWERCASE, va("[%sESC%s] = Abort", "\x82", "\x80"));
+			V_DrawCenteredThinString(BASEVIDWIDTH/2, BASEVIDHEIGHT - 12, V_ALLOWLOWERCASE, va("[%sSPACE%s] = Load Addons", "\x82", "\x80"));
 			V_DrawRightAlignedThinString(BASEVIDWIDTH - 12, BASEVIDHEIGHT - 12, V_ALLOWLOWERCASE, va("[%sENTER%s] = Join", "\x82", "\x80"));
 		}
 		else if (filedownload.current != -1)
@@ -2553,7 +2558,7 @@ static boolean CL_ServerConnectionSearchTicker(tic_t *asksent)
 				return true;
 			}
 
-			cl_mode = (cv_serverinfoscreen.value) ? CL_VIEWSERVER : CL_CHECKFILES;
+			cl_mode = cv_serverinfoscreen.value ? CL_VIEWSERVER : CL_CHECKFILES;
 		}
 		else
 		{
@@ -2572,6 +2577,17 @@ static boolean CL_ServerConnectionSearchTicker(tic_t *asksent)
 	}
 
 	return true;
+}
+
+static void FreeMapIcon(void)
+{
+	if (map_icon != NULL)
+		Patch_Free(map_icon);
+	map_icon = NULL;
+	if (map_icon_data != NULL)
+		Z_Free(map_icon_data);
+	map_icon_data = NULL;
+	map_icon_request_count = 0;
 }
 
 /** Called by CL_ConnectToServer
@@ -2598,7 +2614,7 @@ static boolean CL_ServerConnectionTicker(const char *tmpsave, tic_t *oldtic, tic
 
 		case CL_ASKFULLFILELIST:
 			if (cl_lastcheckedfilecount == UINT16_MAX) // All files retrieved
-				cl_mode = (cv_serverinfoscreen.value) ? CL_VIEWSERVER : CL_CHECKFILES;
+				cl_mode = cv_serverinfoscreen.value ? CL_VIEWSERVER : CL_CHECKFILES;
 			else if (fileneedednum != cl_lastcheckedfilecount || I_GetTime() >= *asksent)
 			{
 				if (CL_AskFileList(fileneedednum))
@@ -2731,7 +2747,19 @@ static boolean CL_ServerConnectionTicker(const char *tmpsave, tic_t *oldtic, tic
 			{
 				// Gamestate is now handled within CL_LoadReceivedSavegame()
 				CL_LoadReceivedSavegame(false);
-				cl_mode = CL_CONNECTED;
+
+				if (cl_addonsonly)
+				{
+					// close connection after savegame load
+					// we want the actual server state
+					// in case theres some stuff like records to be synched
+					cl_mode = CL_ABORTED;
+				}
+				else
+				{
+					cl_mode = CL_CONNECTED;
+				}
+
 				break;
 			} // don't break case continue to CL_CONNECTED
 			else
@@ -2745,7 +2773,6 @@ static boolean CL_ServerConnectionTicker(const char *tmpsave, tic_t *oldtic, tic
 		case CL_ABORTED:
 			cl_mode = CL_SEARCHING;
 			return false;
-
 	}
 
 	GetPackets();
@@ -2772,24 +2799,21 @@ static boolean CL_ServerConnectionTicker(const char *tmpsave, tic_t *oldtic, tic
 		{
 			if (key == KEY_ENTER || key == KEY_JOY1)
 			{
+				cl_addonsonly = false;
 				cl_mode = CL_CHECKFILES;
-				if (map_icon != NULL)
-					Patch_Free(map_icon);
-				map_icon = NULL;
-				if (map_icon_data != NULL)
-					Z_Free(map_icon_data);
-				map_icon_data = NULL;
+				FreeMapIcon();
 			}
 			else if (key == KEY_ESCAPE || key == KEY_JOY1+1)
 			{
 				cl_mode = CL_ABORTED;
-				if (map_icon != NULL)
-					Patch_Free(map_icon);
-				map_icon = NULL;
-				if (map_icon_data != NULL)
-					Z_Free(map_icon_data);
-				map_icon_data = NULL;
-				map_icon_request_count = 0;
+				cl_addonsonly = false;
+				FreeMapIcon();
+			}
+			else if (key == KEY_SPACE || key == KEY_JOY1+2)
+			{
+				cl_addonsonly = true;
+				cl_mode = CL_CHECKFILES;
+				FreeMapIcon();
 			}
 		}
 
@@ -2798,6 +2822,7 @@ static boolean CL_ServerConnectionTicker(const char *tmpsave, tic_t *oldtic, tic
 		{
 			CONS_Printf(M_GetText("Network game synchronization aborted.\n"));
 			CL_AbortConnection();
+			cl_addonsonly = false;
 
 			return false;
 		}
