@@ -519,6 +519,23 @@ LUA_API int lua_pushthread (lua_State *L) {
 ** get functions (Lua -> stack)
 */
 
+static void auxgetstr (lua_State *L, TValue *t, const char *k) {
+  TValue *slot;
+  TValue key;
+  TString *str = luaS_new(L, k);
+  api_checkvalidindex(L, t);
+  if (luaV_fastget(L, t, str, slot, luaH_getstr)) {
+    setobj2s(L, L->top, slot);
+    api_incr_top(L);
+  }
+  else {
+    setsvalue(L, &key, str);
+    luaV_finishget(L, t, L->top, L->top, slot);
+    api_incr_top(L);
+  }
+  lua_unlock(L);
+}
+
 
 LUA_API void lua_gettable (lua_State *L, int idx) {
   StkId t;
@@ -531,15 +548,8 @@ LUA_API void lua_gettable (lua_State *L, int idx) {
 
 
 LUA_API void lua_getfield (lua_State *L, int idx, const char *k) {
-  StkId t;
-  TValue key;
   lua_lock(L);
-  t = index2adr(L, idx);
-  api_checkvalidindex(L, t);
-  setsvalue(L, &key, luaS_new(L, k));
-  luaV_gettable(L, t, &key, L->top);
-  api_incr_top(L);
-  lua_unlock(L);
+  auxgetstr(L, index2adr(L, idx), k);
 }
 
 
@@ -631,6 +641,25 @@ LUA_API void lua_getfenv (lua_State *L, int idx) {
 */
 
 
+static void auxsetstr (lua_State *L, TValue *t, const char *k) {
+  TValue key;
+  TValue *slot;
+  TString *str = luaS_new(L, k);
+  api_checknelems(L, 1);
+  api_checkvalidindex(L, t);
+  if (luaV_fastset(L, t, str, slot, luaH_setstr, L->top)) {
+    setobj2t(L, cast(TValue *, slot), L->top - 1);
+    L->top--;  /* pop value */
+  }
+  else {
+    setsvalue2s(L, &key, str);
+    luaV_finishset(L, t, &key, L->top - 1, slot);
+    L->top--;  /* pop value */
+  }
+  lua_unlock(L);
+}
+
+
 LUA_API void lua_settable (lua_State *L, int idx) {
   StkId t;
   lua_lock(L);
@@ -644,16 +673,8 @@ LUA_API void lua_settable (lua_State *L, int idx) {
 
 
 LUA_API void lua_setfield (lua_State *L, int idx, const char *k) {
-  StkId t;
-  TValue key;
   lua_lock(L);
-  api_checknelems(L, 1);
-  t = index2adr(L, idx);
-  api_checkvalidindex(L, t);
-  setsvalue(L, &key, luaS_new(L, k));
-  luaV_settable(L, t, &key, L->top - 1);
-  L->top--;  /* pop value */
-  lua_unlock(L);
+  auxsetstr(L, index2adr(L, idx), k);
 }
 
 

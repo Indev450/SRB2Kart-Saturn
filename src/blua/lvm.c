@@ -105,57 +105,88 @@ static void callTM (lua_State *L, const TValue *f, const TValue *p1,
 }
 
 
-void luaV_gettable (lua_State *L, TValue *t, TValue *key, StkId val) {
-  int loop;
+/*
+** Finish the table access 'val = t[key]'.
+** if 'slot' is NULL, 't' is not a table; otherwise, 'slot' points to
+** t[k] entry (which must be nil).
+*/
+void luaV_finishget (lua_State *L, TValue *t, TValue *key, StkId val,
+                     TValue *slot) {
+  int loop;  /* counter to avoid infinite loops */
+  TValue *tm;  /* metamethod */
   for (loop = 0; loop < MAXTAGLOOP; loop++) {
-    TValue *tm;
-    if (ttistable(t)) {  /* `t' is a table? */
-      Table *h = hvalue(t);
-      const TValue *res = luaH_get(h, key); /* do a primitive get */
-      if (!ttisnil(res) ||  /* result is no nil? */
-          (tm = fasttm(L, h->metatable, TM_INDEX)) == NULL) { /* or no TM? */
-        setobj2s(L, val, res);
+    if (slot == NULL) {  /* 't' is not a table? */
+      lua_assert(!ttistable(t));
+      tm = luaT_gettmbyobj(L, t, TM_INDEX);
+      if (l_unlikely(ttisnil(tm)))
+        luaG_typeerror(L, t, "index");  /* no metamethod */
+      /* else will try the metamethod */
+    }
+    else {  /* 't' is a table */
+      lua_assert(ttisnil(slot));
+      tm = fasttm(L, hvalue(t)->metatable, TM_INDEX);  /* table's metamethod */
+      if (tm == NULL) {  /* no metamethod? */
+        setnilvalue(val);  /* result is nil */
         return;
       }
-      /* else will try the tag method */
+      /* else will try the metamethod */
     }
-    else if (l_unlikely(ttisnil(tm = luaT_gettmbyobj(L, t, TM_INDEX))))
-      luaG_typeerror(L, t, "index");
-    if (ttisfunction(tm)) {
-      callTMres(L, val, tm, t, key);
+    if (ttisfunction(tm)) {  /* is metamethod a function? */
+      callTMres(L, val, tm, t, key);  /* call it */
       return;
     }
-    t = tm;  /* else repeat with `tm' */
+    t = tm;  /* else try to access 'tm[key]' */
+    if (luaV_fastget(L,t,key,slot,luaH_get)) {  /* fast track? */
+      setobj2s(L, val, slot);  /* done */
+      return;
+    }
+    /* else repeat (tail call 'luaV_finishget') */
   }
-  luaG_runerror(L, "loop in gettable");
+  luaG_runerror(L, "'__index' chain too long; possible loop");
 }
 
 
-void luaV_settable (lua_State *L, TValue *t, TValue *key, StkId val) {
-  int loop;
+/*
+** Finish a table assignment 't[key] = val'.
+** If 'slot' is NULL, 't' is not a table.  Otherwise, 'slot' points
+** to the entry 't[key]', or to 'luaO_nilobject' if there is no such
+** entry.  (The value at 'slot' must be nil, otherwise 'luaV_fastset'
+** would have done the job.)
+*/
+void luaV_finishset (lua_State *L, TValue *t, TValue *key,
+                     StkId val, TValue *slot) {
+  int loop;  /* counter to avoid infinite loops */
   for (loop = 0; loop < MAXTAGLOOP; loop++) {
-    TValue *tm = NULL;
-    if (ttistable(t)) {  /* `t' is a table? */
+    TValue *tm;
+    if (slot != NULL) {
+      lua_assert(ttistable(t) && ttisnil(slot));
       Table *h = hvalue(t);
-      TValue *oldval = luaH_set(L, h, key); /* do a primitive set */
-      /* oldval is nil=> look for newindex, oldval is not nil => look for usedindex */
-      if (!((ttisnil(oldval) && ((tm = fasttm(L, h->metatable, TM_NEWINDEX)) != NULL)) ||
-         ((!ttisnil(oldval)) && ((tm = fasttm(L, h->metatable, TM_USEDINDEX)) != NULL)))) {
-        setobj2t(L, oldval, val);
+      /* must check the metamethod */
+      /* slot is nil=> look for newindex, slot is not nil => look for usedindex */
+      if (!((ttisnil(slot) && ((tm = fasttm(L, h->metatable, TM_NEWINDEX)) != NULL)) ||
+         ((!ttisnil(slot)) && ((tm = fasttm(L, h->metatable, TM_USEDINDEX)) != NULL)))) {
+        /* no metamethod and (now) there is an entry with given key */
+        setobj2t(L, cast(TValue *, slot), val);
         luaC_barriert(L, h, val);
         return;
       }
-      /* else will try the tag method */
+      /* else will try the metamethod */
     }
-    else if (l_unlikely(ttisnil(tm = luaT_gettmbyobj(L, t, TM_NEWINDEX))))
-      luaG_typeerror(L, t, "index");
+    else {  /* not a table; check metamethod */
+      if (l_unlikely(ttisnil(tm = luaT_gettmbyobj(L, t, TM_NEWINDEX))))
+        luaG_typeerror(L, t, "index");
+    }
+    /* try the metamethod */
     if (ttisfunction(tm)) {
       callTM(L, tm, t, key, val);
       return;
     }
-    t = tm;  /* else repeat with `tm' */
+    t = tm;  /* else repeat assignment over 'tm' */
+    if (luaV_fastset(L, t, key, slot, luaH_set, val))
+      return;  /* done */
+    /* else loop */
   }
-  luaG_runerror(L, "loop in settable");
+  luaG_runerror(L, "settable chain too long; possible loop");
 }
 
 
@@ -378,6 +409,21 @@ static void Arith (lua_State *L, StkId ra, TValue *rb,
       }
 
 
+/*
+** copy of 'luaV_gettable', but protecting call to potential metamethod
+** (which can reallocate the stack)
+*/
+#define gettableProtected(L,t,k,v)  { TValue *slot; \
+  if (luaV_fastget(L,t,k,slot,luaH_get)) { setobj2s(L, v, slot); } \
+  else Protect(luaV_finishget(L,t,k,v,slot)); }
+
+
+/* same for 'luaV_settable' */
+#define settableProtected(L,t,k,v) { TValue *slot; \
+  if (!luaV_fastset(L,t,k,slot,luaH_set,v)) \
+    Protect(luaV_finishset(L,t,k,v,slot)); }
+
+
 
 void luaV_execute (lua_State *L, int nexeccalls) {
   LClosure *cl;
@@ -387,9 +433,9 @@ void luaV_execute (lua_State *L, int nexeccalls) {
  reentry:  /* entry point */
   lua_assert(isLua(L->ci));
   pc = L->savedpc;
-  cl = &clvalue(L->ci->func)->l;
-  base = L->base;
-  k = cl->p->k;
+  cl = &clvalue(L->ci->func)->l;  /* local reference to function's closure */
+  k = cl->p->k;  /* local reference to function's constant table */
+  base = L->base;  /* local copy of function's base */
   /* main loop of interpreter */
   for (;;) {
     const Instruction i = *pc++;
@@ -449,7 +495,7 @@ void luaV_execute (lua_State *L, int nexeccalls) {
         StkId ra = RA(i);
         StkId rb = RB(i);
         TValue *rc = RKC(i);
-        Protect(luaV_gettable(L, rb, rc, ra));
+        gettableProtected(L, rb, rc, ra);
         continue;
       }
       case OP_SETGLOBAL: {
@@ -471,7 +517,7 @@ void luaV_execute (lua_State *L, int nexeccalls) {
         StkId ra = RA(i);
         TValue *rb = RKB(i);
         TValue *rc = RKC(i);
-        Protect(luaV_settable(L, ra, rb, rc));
+        settableProtected(L, ra, rb, rc);
         continue;
       }
       case OP_NEWTABLE: {
@@ -483,10 +529,16 @@ void luaV_execute (lua_State *L, int nexeccalls) {
         continue;
       }
       case OP_SELF: {
+        TValue *slot;
         StkId ra = RA(i);
         StkId rb = RB(i);
-        setobjs2s(L, ra+1, rb);
-        Protect(luaV_gettable(L, rb, RKC(i), ra));
+        TValue *rc = RKC(i);
+        TString *key = rawtsvalue(rc);  /* key must be a string */
+        setobjs2s(L, ra + 1, rb);
+        if (luaV_fastget(L, rb, key, slot, luaH_getstr)) {
+          setobj2s(L, ra, slot);
+        }
+        else Protect(luaV_finishget(L, rb, rc, ra, slot));
         continue;
       }
       case OP_ADD: {
