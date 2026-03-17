@@ -1154,6 +1154,67 @@ static void CV_LoadPlayerNames(UINT8 **p)
 	}
 }
 
+static void CL_DrawAddonTypes(void)
+{
+	if (!cv_serveraddoninfo.value)
+		return;
+
+	INT32 y = 0;
+
+	INT32 addontypes_downloaded[NUMADDONTYPES] = {0};
+
+	for (INT32 i = 0; i < fileneedednum; ++i)
+	{
+		switch (fileneeded[i].status)
+		{
+			case FS_FOUND:
+			case FS_OPEN:
+				addontypes_downloaded[fileneeded[i].type]++;
+			break;
+
+			default:
+			break;
+		}
+	}
+
+	for (addontype_t type = 0; type < NUMADDONTYPES; ++type)
+	{
+		if (addontypes[type] == 0)
+			continue;
+
+		INT32 flags = V_SNAPTOTOP|V_SNAPTOLEFT|V_ALLOWLOWERCASE;
+
+		if (addontypes[type] == addontypes_downloaded[type])
+			flags |= V_GREENMAP;
+		else
+			flags |= V_YELLOWMAP;
+
+		const char *typestr = "Misc";
+
+		switch (type)
+		{
+			case ADDON_SCRIPT:
+				typestr = "Script";
+			break;
+
+			case ADDON_MAP:
+				typestr = "Map";
+			break;
+
+			case ADDON_CHARACTER:
+				typestr = "Character";
+			break;
+
+			default:
+			break;
+		}
+
+		V_DrawSmallString(4, 4 + y, flags, va("%s addons", typestr));
+		V_DrawRightAlignedSmallString(100, 4 + y, flags, va("%d/%d", addontypes_downloaded[type], addontypes[type]));
+		y += 6;
+	}
+}
+
 //
 // CL_DrawConnectionStatus
 //
@@ -1269,6 +1330,8 @@ static void CL_DrawConnectionStatus(void)
 			V_DrawFill(BASEVIDWIDTH/2-128, BASEVIDHEIGHT-24, totalfileslength, 8, 160);
 			V_DrawCenteredString(BASEVIDWIDTH/2, BASEVIDHEIGHT-24, V_20TRANS|V_MONOSPACE|MENUCAPS,
 				va(" %2u/%2u Files", checkednum, fileneedednum));
+
+			CL_DrawAddonTypes();
 		}
 		else if (cl_mode == CL_LOADFILES)
 		{
@@ -1292,6 +1355,8 @@ static void CL_DrawConnectionStatus(void)
 			V_DrawFill(BASEVIDWIDTH/2-128, BASEVIDHEIGHT-24, totalfileslength, 8, 160);
 			V_DrawCenteredString(BASEVIDWIDTH/2, BASEVIDHEIGHT-24, V_20TRANS|V_MONOSPACE|MENUCAPS,
 				va(" %2u/%2u Files", loadcompletednum, fileneedednum));
+
+			CL_DrawAddonTypes();
 		}
 		else if (cl_mode == CL_VIEWSERVER)
 		{
@@ -1495,6 +1560,8 @@ static void CL_DrawConnectionStatus(void)
 
 			V_DrawRightAlignedString(BASEVIDWIDTH/2+128, BASEVIDHEIGHT-24, V_20TRANS|V_MONOSPACE|MENUCAPS,
 					va("%2u/%2u Files ", filedownload.completednum, filedownload.totalnum));
+
+			CL_DrawAddonTypes();
 		}
 		else
 		{
@@ -1511,6 +1578,8 @@ static void CL_DrawConnectionStatus(void)
 
 			V_DrawCenteredString(BASEVIDWIDTH/2, BASEVIDHEIGHT-24-32, V_YELLOWMAP|MENUCAPS,
 				M_GetText("Waiting to download files..."));
+
+			CL_DrawAddonTypes();
 		}
 	}
 }
@@ -2559,6 +2628,7 @@ static boolean CL_ServerConnectionSearchTicker(tic_t *asksent)
 			}
 
 			cl_mode = cv_serverinfoscreen.value ? CL_VIEWSERVER : CL_CHECKFILES;
+			CL_CheckAddonTypes();
 		}
 		else
 		{
@@ -2614,7 +2684,10 @@ static boolean CL_ServerConnectionTicker(const char *tmpsave, tic_t *oldtic, tic
 
 		case CL_ASKFULLFILELIST:
 			if (cl_lastcheckedfilecount == UINT16_MAX) // All files retrieved
+			{
 				cl_mode = cv_serverinfoscreen.value ? CL_VIEWSERVER : CL_CHECKFILES;
+				CL_CheckAddonTypes();
+			}
 			else if (fileneedednum != cl_lastcheckedfilecount || I_GetTime() >= *asksent)
 			{
 				if (CL_AskFileList(fileneedednum))
@@ -4215,6 +4288,8 @@ static CV_PossibleValue_t connectawaittime_cons_t[] = {{1, "MIN"}, {60, "MAX"}, 
 consvar_t cv_connectawaittime = {"connectawaittime", "5", CV_SAVE, connectawaittime_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 consvar_t cv_serverinfoscreen = {"serverinfoscreen", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+
+consvar_t cv_serveraddoninfo = {"serveraddoninfo", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 static void Got_AddPlayer(const UINT8 **p, INT32 playernum);
 static void Got_RemovePlayer(const UINT8 **p, INT32 playernum);
