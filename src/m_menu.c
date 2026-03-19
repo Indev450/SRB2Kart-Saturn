@@ -2074,7 +2074,6 @@ void M_Init(void)
 			OP_OpenGLOptionsMenu[op_gl_shader].status = IT_GRAYEDOUT;
 			OP_OpenGLOptionsMenu[op_gl_lightdither].status = IT_GRAYEDOUT;
 			OP_OpenGLOptionsMenu[op_gl_palrender].status = IT_GRAYEDOUT;
-			OP_OpenGLOptionsMenu[op_gl_flashpal].status = IT_GRAYEDOUT;
 
 			OP_ExpOptionsMenu[op_exp_paldepth].status = IT_GRAYEDOUT;
 		}
