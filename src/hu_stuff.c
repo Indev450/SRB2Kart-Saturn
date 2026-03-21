@@ -97,7 +97,6 @@ static textinput_t w_chat;
 static boolean headsupactive = false;
 boolean hu_showscores = false; // draw rankings
 static char hu_tick;
-static tic_t hu_emoteanim = 0;
 emote_autocomplete_t emote_autocomplete = {0};
 
 static huddrawlist_h luahuddrawlist_scores = NULL;
@@ -1095,7 +1094,6 @@ void HU_Ticker(void)
 		return;
 
 	hu_tick++;
-	hu_emoteanim++;
 	hu_tick &= 7; // currently only to blink chat input cursor
 
 	if (PLAYER1INPUTDOWN(gc_scores))
@@ -1810,6 +1808,7 @@ static void HU_DrawChat(void)
 	INT32 t = 0, c = 0, y = chaty - (typelines*charheight);
 	UINT32 i = 0, saylen = strlen(w_chat_buf); // You learn new things everyday!
 	INT32 cflag = 0;
+	INT32 pm_offset = 0; // for cases when you type emote while also doing /pm
 	size_t select_start = 0, select_end = 0;
 	const char *ntalk = "Say: ", *ttalk = "Team: ";
 	const char *talk = ntalk;
@@ -1921,64 +1920,6 @@ static void HU_DrawChat(void)
 		}
 	}
 
-	if (emote_autocomplete.emotestart != -1 && (emote_autocomplete.complete[0] || (w_chat.cursor - emote_autocomplete.emotestart) > 1))
-	{
-		emote_t *suggest;
-		int skip = 0;
-
-		const char *complete;
-		int complete_len;
-
-		if (emote_autocomplete.complete[0])
-		{
-			complete = emote_autocomplete.complete;
-			complete_len = strlen(complete);
-		}
-		else
-		{
-			complete = &w_chat_buf[emote_autocomplete.emotestart];
-			complete_len = w_chat.cursor - emote_autocomplete.emotestart;
-		}
-
-		// A bit of copy-paste from /pm code :p
-		INT32 suggesty = chaty - charheight - 1;
-		size_t longest_suggestion_length = 0;
-
-		while ((suggest = M_FindEmote(complete, complete_len, skip)) != NULL)
-		{
-			longest_suggestion_length = max(longest_suggestion_length, strlen(suggest->name));
-			++skip;
-		}
-
-		skip = 0;
-
-#ifdef NETSPLITSCREEN
-		if (splitscreen)
-		{
-			suggesty -= BASEVIDHEIGHT/2;
-			if (splitscreen > 1)
-				suggesty += 16;
-		}
-		else
-#endif
-			suggesty -= (cv_kartspeedometer.value ? 16 : 0);
-
-		while ((suggest = M_FindEmote(complete, complete_len, skip)) != NULL)
-		{
-			V_DrawFillConsoleMap(chatx + boxw + 2, suggesty - (7*skip), (longest_suggestion_length+2)*4 + EMOTEWIDTH, 6, V_SNAPTOBOTTOM|V_SNAPTOLEFT);
-
-			// Highlight currently suggested emote
-			int hlflag = 0;
-			if (skip == emote_autocomplete.skip && emote_autocomplete.complete[0])
-				hlflag = V_YELLOWMAP;
-
-			V_DrawSmallString(chatx + boxw + 4 + EMOTEWIDTH, suggesty - (7*skip), hlflag|V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_ALLOWLOWERCASE, va(":%s:", suggest->name));
-			M_DrawEmote(chatx + boxw + 2, suggesty - skip*7, suggest, V_SNAPTOBOTTOM|V_SNAPTOLEFT);
-
-			++skip;
-		}
-	}
-
 	// handle /pm list. It's messy, horrible and I don't care.
 	if (strnicmp(w_chat_buf, "/pm", 3) == 0 && vid.width >= 400 && !teamtalk) // 320x200 unsupported kthxbai
 	{
@@ -2059,8 +2000,73 @@ static void HU_DrawChat(void)
 
 		if (count == 0) // no results.
 		{
+			pm_offset = 48 + 2;
 			V_DrawFillConsoleMap(chatx + boxw + 2, p_dispy - (6*count), 48, 6, 239 | V_SNAPTOBOTTOM | V_SNAPTOLEFT); // fill it like the chat so the text doesn't become hard to read because of the hud.
 			V_DrawSmallString(chatx + boxw + 4, p_dispy - (6*count), V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_ALLOWLOWERCASE, "NO RESULT.");
+		}
+		else
+		{
+			pm_offset = (longest_name_length+4)*4 + 2;
+		}
+	}
+
+	if (emote_autocomplete.emotestart != -1 && (emote_autocomplete.complete[0] || (w_chat.cursor - emote_autocomplete.emotestart) > 1))
+	{
+		emote_t *suggest;
+		int skip = 0;
+
+		const char *complete;
+		int complete_len;
+
+		if (emote_autocomplete.complete[0])
+		{
+			complete = emote_autocomplete.complete;
+			complete_len = strlen(complete);
+		}
+		else
+		{
+			complete = &w_chat_buf[emote_autocomplete.emotestart];
+			complete_len = w_chat.cursor - emote_autocomplete.emotestart;
+		}
+
+		// A bit of copy-paste from /pm code :p
+		INT32 suggesty = chaty - charheight - 1;
+		size_t longest_suggestion_length = 0;
+
+		while ((suggest = M_FindEmote(complete, complete_len, skip)) != NULL)
+		{
+			longest_suggestion_length = max(longest_suggestion_length, strlen(suggest->name));
+			++skip;
+		}
+
+		INT32 emote_suggest_boxw = (longest_suggestion_length+2)*4 + EMOTEWIDTH;
+
+		skip = 0;
+
+#ifdef NETSPLITSCREEN
+		if (splitscreen)
+		{
+			suggesty -= BASEVIDHEIGHT/2;
+			if (splitscreen > 1)
+				suggesty += 16;
+		}
+		else
+#endif
+			suggesty -= (cv_kartspeedometer.value ? 16 : 0);
+
+		while ((suggest = M_FindEmote(complete, complete_len, skip)) != NULL)
+		{
+			V_DrawFillConsoleMap(chatx + boxw + pm_offset + 2, suggesty - (7*skip), emote_suggest_boxw, 6, V_SNAPTOBOTTOM|V_SNAPTOLEFT);
+
+			// Highlight currently suggested emote
+			int hlflag = 0;
+			if (skip == emote_autocomplete.skip && emote_autocomplete.complete[0])
+				hlflag = V_YELLOWMAP;
+
+			V_DrawSmallString(chatx + boxw + pm_offset + 4 + EMOTEWIDTH, suggesty - (7*skip), hlflag|V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_ALLOWLOWERCASE, va(":%s:", suggest->name));
+			M_DrawEmote(chatx + boxw + pm_offset + 2, suggesty - skip*7, suggest, V_SNAPTOBOTTOM|V_SNAPTOLEFT);
+
+			++skip;
 		}
 	}
 
