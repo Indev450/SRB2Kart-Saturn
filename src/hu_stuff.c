@@ -906,7 +906,7 @@ static void Got_Saycmd(const UINT8 **p, INT32 playernum)
 	target = READSINT8(*p);
 	flags = READUINT8(*p);
 	msg = buf;
-	READSTRINGL(*p, msg, HU_MAXMSGLEN + 1);
+	READSTRINGN(*p, msg, HU_MAXMSGLEN + 1);
 
 	if ((cv_mute.value || flags & (HU_CSAY|HU_SERVER_SAY)) && playernum != serverplayer && !(IsPlayerAdmin(playernum)))
 	{
