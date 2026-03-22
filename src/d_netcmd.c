@@ -900,6 +900,7 @@ void D_RegisterClientCommands(void)
 	CV_RegisterVar(&cv_mindelay);
 	CV_RegisterVar(&cv_gentlemens);
 	CV_RegisterVar(&cv_serverinfoscreen);
+	CV_RegisterVar(&cv_serveraddoninfo);
 
 #ifdef NETGAME_DEVMODE
 	CV_RegisterVar(&cv_fishcake);
