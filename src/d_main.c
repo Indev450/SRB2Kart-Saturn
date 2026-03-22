@@ -1318,7 +1318,7 @@ void D_AddPostloadFiles(void)
 
 static boolean AddIWAD(const char * file, const char *dir)
 {
-	char * path = va(pandf, dir, file);
+	char *path = va(pandf, dir, file);
 
 	if (FIL_ReadFileOK(path))
 	{

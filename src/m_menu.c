@@ -7955,7 +7955,7 @@ static void M_DrawSetupMultiPlayerMenu(void)
 	patch_t *statbg  = (patch_t *)W_CachePatchName("K_STATBG", PU_PATCH);
 	patch_t *statlr  = (patch_t *)W_CachePatchName("K_STATLR", PU_PATCH);
 	patch_t *statud  = (patch_t *)W_CachePatchName("K_STATUD", PU_PATCH);
-	patch_t *statdot = (patch_t *)W_CachePatchName("K_SDOT0", PU_PATCH);
+	patch_t *statdot = (patch_t *)W_CachePatchName("K_SDOT0" , PU_PATCH);
 	patch_t *patch;
 	UINT8 frame;
 	UINT8 speed;
