@@ -1182,18 +1182,9 @@ void CON_LogMessage(const char *msg)
 // Console print! Wahooo! Lots o fun!
 //
 
-void CONS_Printf(const char *fmt, ...)
+static inline void CONS_PrintMsg(char *txt)
 {
-	va_list argptr;
-	static char *txt = NULL;
 	boolean startup;
-
-	if (txt == NULL)
-		txt = malloc(8192);
-
-	va_start(argptr, fmt);
-	vsnprintf(txt, 8192, fmt, argptr);
-	va_end(argptr);
 
 	// echo console prints to log file
 	DEBFILE(txt);
@@ -1218,6 +1209,21 @@ void CONS_Printf(const char *fmt, ...)
 		CON_Drawer();
 		I_FinishUpdate(); // page flip or blit buffer
 	}
+}
+
+void CONS_Printf(const char *fmt, ...)
+{
+	va_list argptr;
+	static char *txt = NULL;
+
+	if (txt == NULL)
+		txt = malloc(8192);
+
+	va_start(argptr, fmt);
+	vsnprintf(txt, 8192, fmt, argptr);
+	va_end(argptr);
+
+	CONS_PrintMsg(txt);
 }
 
 void CONS_Alert(alerttype_t level, const char *fmt, ...)
@@ -1248,9 +1254,7 @@ void CONS_Alert(alerttype_t level, const char *fmt, ...)
 			break;
 	}
 
-	// I am lazy and I feel like just letting CONS_Printf take care of things.
-	// Is that okay?
-	CONS_Printf("%s", txt);
+	CONS_PrintMsg(txt);
 }
 
 void CONS_Debug(INT32 debugflags, const char *fmt, ...)
@@ -1268,10 +1272,8 @@ void CONS_Debug(INT32 debugflags, const char *fmt, ...)
 	vsnprintf(txt, 8192, fmt, argptr);
 	va_end(argptr);
 
-	// Again I am lazy, oh well
-	CONS_Printf("%s", txt);
+	CONS_PrintMsg(txt);
 }
-
 
 // Print an error message, and wait for ENTER key to continue.
 // To make sure the user has seen the message
