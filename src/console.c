@@ -640,65 +640,25 @@ INT32 CON_ShiftChar(INT32 ch)
 
 	if ((ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z'))
 	{
-		if (cv_keyboardlayout.value == 3)
-		{
-			if (shiftdown ^ capslock)
-				ch = shiftxform[ch];
-			else if (altdown & 0x2)
-				ch = french_altgrxform[ch];
-			else
-				ch = HU_FallBackFrSpecialLetter(ch);
-		}
-		else
-		{
-			if (shiftdown ^ capslock)
-				ch = shiftxform[ch];
-		}
-	}
-	else	// if we're holding shift we should still shift non letter symbols
-	{
-		if (cv_keyboardlayout.value == 3)
-		{
-			if (shiftdown)
-				ch = shiftxform[ch];
-			else if (altdown & 0x2)
-				ch = french_altgrxform[ch];
-			else
-				ch = HU_FallBackFrSpecialLetter(ch);
-		}
-		else
-		{
-			if (shiftdown)
-				ch = shiftxform[ch];
-		}
-	}
-
-	return ch;
-}
-
-INT32 CON_ShitAndAltGrChar(INT32 ch)
-{
-	if ((ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z'))
-	{
 		if (shiftdown ^ capslock)
 			ch = shiftxform[ch];
 	}
-	else	// if we're holding shift we should still shift non letter symbols
+	else // if we're holding shift we should still shift non letter symbols
 	{
 		if (shiftdown)
 			ch = shiftxform[ch];
-		else if (altdown & 0x2)
+		else if (cv_keyboardlayout.value == 3)
 		{
-			ch = french_altgrxform[ch];
-		}
-		else
-		{
-			ch = HU_FallBackFrSpecialLetter(ch);
+			if (altdown & 0x2)
+				ch = french_altgrxform[ch];
+			else
+				ch = HU_FallBackFrSpecialLetter(ch);
 		}
 	}
 
 	return ch;
 }
+
 
 // Clear time of console heads up messages
 //
@@ -892,7 +852,7 @@ boolean CON_Responder(event_t *ev)
 		return true;
 
 	// ctrl modifier -- changes behavior, adds shortcuts
-	if ((cv_keyboardlayout.value != 3 && ctrldown) || (cv_keyboardlayout.value == 3 && ctrldown && !altdown))
+	if (ctrldown && (cv_keyboardlayout.value != 3 || (cv_keyboardlayout.value == 3 && !altdown)))
 	{
 		// show all cvars/commands that match what we have inputted
 		if (key == KEY_TAB)
