@@ -3090,6 +3090,9 @@ post_compat:
 	if (cv_director.value)
 		CV_SetValue(&cv_director, 0);
 
+	if (demo.timing)
+		G_DoneLevelLoad();
+
 	demo.deferstart = true;
 }
 #undef SKIPERRORS

@@ -2074,7 +2074,6 @@ void M_Init(void)
 			OP_OpenGLOptionsMenu[op_gl_shader].status = IT_GRAYEDOUT;
 			OP_OpenGLOptionsMenu[op_gl_lightdither].status = IT_GRAYEDOUT;
 			OP_OpenGLOptionsMenu[op_gl_palrender].status = IT_GRAYEDOUT;
-			OP_OpenGLOptionsMenu[op_gl_flashpal].status = IT_GRAYEDOUT;
 
 			OP_ExpOptionsMenu[op_exp_paldepth].status = IT_GRAYEDOUT;
 		}
@@ -7950,7 +7949,7 @@ static void M_DrawSetupMultiPlayerMenu(void)
 	patch_t *statbg  = (patch_t *)W_CachePatchName("K_STATBG", PU_PATCH);
 	patch_t *statlr  = (patch_t *)W_CachePatchName("K_STATLR", PU_PATCH);
 	patch_t *statud  = (patch_t *)W_CachePatchName("K_STATUD", PU_PATCH);
-	patch_t *statdot = (patch_t *)W_CachePatchName("K_SDOT0", PU_PATCH);
+	patch_t *statdot = (patch_t *)W_CachePatchName("K_SDOT0" , PU_PATCH);
 	patch_t *patch;
 	UINT8 frame;
 	UINT8 speed;

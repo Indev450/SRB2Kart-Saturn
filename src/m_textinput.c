@@ -256,7 +256,7 @@ static boolean M_TextInputHandleBase(textinput_t *input, INT32 key, boolean emot
 		return true;
 	}
 
-	if ((cv_keyboardlayout.value != 3 && ctrldown) || (cv_keyboardlayout.value == 3 && ctrldown && !altdown))
+	if (ctrldown && (cv_keyboardlayout.value != 3 || (cv_keyboardlayout.value == 3 && !altdown)))
 	{
 		if (key == 'x' || key == 'X')
 		{
@@ -392,7 +392,7 @@ static boolean M_TextInputHandleBase(textinput_t *input, INT32 key, boolean emot
 		key = '/';
 
 	// same capslock code as hu_stuff.c's HU_responder. Check there for details.
-	key = cv_keyboardlayout.value == 3 ? CON_ShitAndAltGrChar(key) : CON_ShiftChar(key);
+	key = CON_ShiftChar(key);
 
 	// enter a char into the command prompt
 	if (key < 32 || key > 127)

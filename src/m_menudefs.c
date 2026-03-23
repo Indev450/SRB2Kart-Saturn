@@ -1043,7 +1043,6 @@ static const char* OP_OpenGLTooltips[] =
 	"Fallback 3D model for characters that don't have any.",
 	"Graphical Shaders.",
 	"Recreates the look of software mode.",
-	"Flash palettes for palette rendering.",
 	"Bit-depth of textures.",
 	"Filter to use on textures.",
 	"Anisotropic filtering.",
@@ -1062,7 +1061,6 @@ enum
 	op_gl_falbckmdls,
 	op_gl_shader,
 	op_gl_palrender,
-	op_gl_flashpal,
 	op_gl_scrdepth,
 	op_gl_filter,
 	op_gl_anis,
@@ -2772,6 +2770,5 @@ void M_UpdateOGLMenu(void)
 	OP_OpenGLOptionsMenu[op_gl_lightdither].status = (!HWR_UseShader()) ? IT_GRAYEDOUT : IT_STRING | IT_CVAR;
 
 	OP_OpenGLOptionsMenu[op_gl_palrender].status = (cv_glscreentextures.value != 2 || !HWR_UseShader()) ? IT_GRAYEDOUT : IT_STRING | IT_CVAR;
-	OP_OpenGLOptionsMenu[op_gl_flashpal].status = (!HWR_ShouldUsePaletteRendering()) ? IT_GRAYEDOUT : IT_STRING | IT_CVAR;
 }
 #endif

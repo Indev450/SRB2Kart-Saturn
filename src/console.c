@@ -640,65 +640,25 @@ INT32 CON_ShiftChar(INT32 ch)
 
 	if ((ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z'))
 	{
-		if (cv_keyboardlayout.value == 3)
-		{
-			if (shiftdown ^ capslock)
-				ch = shiftxform[ch];
-			else if (altdown & 0x2)
-				ch = french_altgrxform[ch];
-			else
-				ch = HU_FallBackFrSpecialLetter(ch);
-		}
-		else
-		{
-			if (shiftdown ^ capslock)
-				ch = shiftxform[ch];
-		}
-	}
-	else	// if we're holding shift we should still shift non letter symbols
-	{
-		if (cv_keyboardlayout.value == 3)
-		{
-			if (shiftdown)
-				ch = shiftxform[ch];
-			else if (altdown & 0x2)
-				ch = french_altgrxform[ch];
-			else
-				ch = HU_FallBackFrSpecialLetter(ch);
-		}
-		else
-		{
-			if (shiftdown)
-				ch = shiftxform[ch];
-		}
-	}
-
-	return ch;
-}
-
-INT32 CON_ShitAndAltGrChar(INT32 ch)
-{
-	if ((ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z'))
-	{
 		if (shiftdown ^ capslock)
 			ch = shiftxform[ch];
 	}
-	else	// if we're holding shift we should still shift non letter symbols
+	else // if we're holding shift we should still shift non letter symbols
 	{
 		if (shiftdown)
 			ch = shiftxform[ch];
-		else if (altdown & 0x2)
+		else if (cv_keyboardlayout.value == 3)
 		{
-			ch = french_altgrxform[ch];
-		}
-		else
-		{
-			ch = HU_FallBackFrSpecialLetter(ch);
+			if (altdown & 0x2)
+				ch = french_altgrxform[ch];
+			else
+				ch = HU_FallBackFrSpecialLetter(ch);
 		}
 	}
 
 	return ch;
 }
+
 
 // Clear time of console heads up messages
 //
@@ -892,7 +852,7 @@ boolean CON_Responder(event_t *ev)
 		return true;
 
 	// ctrl modifier -- changes behavior, adds shortcuts
-	if ((cv_keyboardlayout.value != 3 && ctrldown) || (cv_keyboardlayout.value == 3 && ctrldown && !altdown))
+	if (ctrldown && (cv_keyboardlayout.value != 3 || (cv_keyboardlayout.value == 3 && !altdown)))
 	{
 		// show all cvars/commands that match what we have inputted
 		if (key == KEY_TAB)
@@ -1222,18 +1182,9 @@ void CON_LogMessage(const char *msg)
 // Console print! Wahooo! Lots o fun!
 //
 
-void CONS_Printf(const char *fmt, ...)
+static inline void CONS_PrintMsg(char *txt)
 {
-	va_list argptr;
-	static char *txt = NULL;
 	boolean startup;
-
-	if (txt == NULL)
-		txt = malloc(8192);
-
-	va_start(argptr, fmt);
-	vsnprintf(txt, 8192, fmt, argptr);
-	va_end(argptr);
 
 	// echo console prints to log file
 	DEBFILE(txt);
@@ -1258,6 +1209,21 @@ void CONS_Printf(const char *fmt, ...)
 		CON_Drawer();
 		I_FinishUpdate(); // page flip or blit buffer
 	}
+}
+
+void CONS_Printf(const char *fmt, ...)
+{
+	va_list argptr;
+	static char *txt = NULL;
+
+	if (txt == NULL)
+		txt = malloc(8192);
+
+	va_start(argptr, fmt);
+	vsnprintf(txt, 8192, fmt, argptr);
+	va_end(argptr);
+
+	CONS_PrintMsg(txt);
 }
 
 void CONS_Alert(alerttype_t level, const char *fmt, ...)
@@ -1288,9 +1254,7 @@ void CONS_Alert(alerttype_t level, const char *fmt, ...)
 			break;
 	}
 
-	// I am lazy and I feel like just letting CONS_Printf take care of things.
-	// Is that okay?
-	CONS_Printf("%s", txt);
+	CONS_PrintMsg(txt);
 }
 
 void CONS_Debug(INT32 debugflags, const char *fmt, ...)
@@ -1308,10 +1272,8 @@ void CONS_Debug(INT32 debugflags, const char *fmt, ...)
 	vsnprintf(txt, 8192, fmt, argptr);
 	va_end(argptr);
 
-	// Again I am lazy, oh well
-	CONS_Printf("%s", txt);
+	CONS_PrintMsg(txt);
 }
-
 
 // Print an error message, and wait for ENTER key to continue.
 // To make sure the user has seen the message
