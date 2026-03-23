@@ -158,8 +158,7 @@ void W_Shutdown(void)
 }
 
 // the lumpnum cache needs to be initialized before use
-// call this as early as possible!
-void W_Startup(void)
+CONSTRUCTOR static void W_Startup(void)
 {
 	lumpnum_map_init(&lumpnumcache);
 	lumpnum_map_reserve(&lumpnumcache, LUMPNUMCACHESIZE);
@@ -367,7 +366,7 @@ static inline INT32 W_MakeFileMD5(const char *filename, void *resblock)
 	{
 		precise_t t = I_GetPreciseTime();
 
-		CONS_Debug(DBG_SETUP, "Making MD5 for %s\n",filename);
+		CONS_Debug(DBG_SETUP, "Making MD5 for %s\n", filename);
 
 		if (md5_stream(fhandle, resblock) == 1)
 		{
