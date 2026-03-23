@@ -2970,10 +2970,16 @@ fixed_t R_DoPlayerFade(mobj_t *thing)
 	{
 		if (playerdist < viewplayerdist / 2) // stronger fade when very close
 		{
+			if (viewplayerdist < 2)
+				return fadealpha; // avoid zero division
+
 			fadealpha = (playerdist * FRACUNIT) / (viewplayerdist / 2) / 3;
 		}
 		else
 		{
+			if (viewplayerdist == 0)
+				return fadealpha; // avoid zero division
+
 			fadealpha = (playerdist * FRACUNIT) / viewplayerdist;
 		}
 	}
