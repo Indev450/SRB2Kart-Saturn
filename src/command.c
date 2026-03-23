@@ -1165,6 +1165,39 @@ void VS_Print(vsbuf_t *buf, const char *data)
 //
 // =========================================================================
 
+#define NAME      cvar_map_t
+#define KEY_TY    const char *
+#define VAL_TY    consvar_t *
+#define HASH_FN   vt_hash_string
+#define CMPR_FN   vt_cmpr_string
+#include "verstable.h"
+
+#define NAME      netvar_map_t
+#define KEY_TY    UINT16
+#define VAL_TY    consvar_t *
+#define HASH_FN   vt_hash_integer
+#define CMPR_FN   vt_cmpr_integer
+#include "verstable.h"
+
+static cvar_map_t cvar_map;
+static netvar_map_t netvar_map;
+
+CONSTRUCTOR static void CV_InitMap(void)
+{
+	// ensure the map is initialized
+	cvar_map_t_init(&cvar_map);
+	cvar_map_t_reserve(&cvar_map, 512);
+
+	netvar_map_t_init(&netvar_map);
+	netvar_map_t_reserve(&netvar_map, 256);
+}
+
+DESTRUCTOR static void CV_DestroyMap(void)
+{
+	cvar_map_t_cleanup(&cvar_map);
+	netvar_map_t_cleanup(&netvar_map);
+}
+
 static const char *cv_null_string = "";
 
 /** Searches if a variable has been registered.
@@ -1175,11 +1208,17 @@ static const char *cv_null_string = "";
   */
 consvar_t *CV_FindVar(const char *name)
 {
-	consvar_t *cvar;
+	cvar_map_t_itr it = cvar_map_t_get(&cvar_map, name);
+	if (!cvar_map_t_is_end(it))
+		return it.data->val;
 
+	// fallback linear search
+	/*
+	consvar_t *cvar;
 	for (cvar = consvar_vars; cvar; cvar = cvar->next)
 		if (fasticmp(name, cvar->name))
 			return cvar;
+	*/
 
 	return NULL;
 }
@@ -1213,11 +1252,17 @@ static inline UINT16 CV_ComputeNetid(const char *s)
   */
 static consvar_t *CV_FindNetVar(UINT16 netid)
 {
+	netvar_map_t_itr it = netvar_map_t_get(&netvar_map, netid);
+	if (!netvar_map_t_is_end(it))
+		return it.data->val;
+
+	/*
 	consvar_t *cvar;
 
 	for (cvar = consvar_vars; cvar; cvar = cvar->next)
 		if (cvar->netid == netid)
 			return cvar;
+	*/
 
 	if (netid == 44542) // ouch this hack
 		return &cv_karteliminatelast;
@@ -1283,6 +1328,11 @@ void CV_RegisterVar(consvar_t *variable)
 
 	// the SetValue will set this bit
 	variable->flags &= ~CV_MODIFIED;
+
+	cvar_map_t_insert(&cvar_map, variable->name, variable);
+
+	if (variable->flags & CV_NETVAR)
+		netvar_map_t_insert(&netvar_map, variable->netid, variable);
 }
 
 /** Finds the string value of a console variable.
@@ -1588,9 +1638,21 @@ size_t CV_LoadNetVars(const UINT8 *bufstart)
 	// prevent "invalid command received"
 	serverloading = true;
 
+	// we can use our netvar map instead of going through all cvars each time
+	netvar_map_t_itr it;
+	for (it = netvar_map_t_first(&netvar_map);
+		 !netvar_map_t_is_end(it);
+		 it = netvar_map_t_next(it))
+	{
+		cvar = it.data->val;
+		Setvalue(cvar, cvar->defaultvalue, true);
+	}
+
+	/*
 	for (cvar = consvar_vars; cvar; cvar = cvar->next)
 		if (cvar->flags & CV_NETVAR)
 			Setvalue(cvar, cvar->defaultvalue, true);
+	*/
 
 	count = READUINT16(p);
 	while (count--)
