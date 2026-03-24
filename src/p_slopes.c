@@ -76,8 +76,8 @@ static void P_UpdateSlopeLightOffset(pslope_t *slope)
 		 */
 
 		light = FixedMul(nX, FINECOSINE(maplighting.angle >> ANGLETOFINESHIFT))
-		+ FixedMul(nY, FINESINE(maplighting.angle >> ANGLETOFINESHIFT));
-		light = (light + FRACUNIT) / 2;
+			  + FixedMul(nY, FINESINE(maplighting.angle >> ANGLETOFINESHIFT));
+				light = (light + FRACUNIT) / 2;
 	}
 	else
 	{

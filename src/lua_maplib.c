@@ -1506,7 +1506,6 @@ enum mapheaderinfo_e
 	mapheaderinfo_saveoverride,
 	mapheaderinfo_levelflags,
 	mapheaderinfo_menuflags,
-	//mapheaderinfo_automap,
 	mapheaderinfo_mobj_scale,
 };
 
@@ -1542,7 +1541,6 @@ static const char *const mapheaderinfo_opt[] = {
 	"saveoverride",
 	"levelflags",
 	"menuflags",
-	//"automap",
 	"mobj_scale",
 	NULL,
 };
@@ -1584,10 +1582,11 @@ static int mapheaderinfo_get(lua_State *L)
 		lua_pushinteger(L, header->muspos);
 		break;
 	case mapheaderinfo_musinterfadeout:
-		lua_pushinteger(L, header->musinterfadeout);
+		lua_pushinteger(L, 0); // unused
 		break;
 	case mapheaderinfo_musintername:
-		lua_pushstring(L, header->musintername);
+		// uhh psure its fine to just push nil instead of empty string?
+		lua_pushstring(L, NULL);
 		break;
 	case mapheaderinfo_forcecharacter:
 		lua_pushstring(L, header->forcecharacter);
@@ -1641,10 +1640,10 @@ static int mapheaderinfo_get(lua_State *L)
 		lua_pushinteger(L, header->levelselect);
 		break;
 	case mapheaderinfo_bonustype:
-		lua_pushinteger(L, header->bonustype);
+		lua_pushinteger(L, 0); // unused
 		break;
 	case mapheaderinfo_saveoverride:
-		lua_pushinteger(L, header->saveoverride);
+		lua_pushinteger(L, SAVE_DEFAULT); // unused
 		break;
 	case mapheaderinfo_levelflags:
 		lua_pushinteger(L, header->levelflags);
@@ -1652,13 +1651,9 @@ static int mapheaderinfo_get(lua_State *L)
 	case mapheaderinfo_menuflags:
 		lua_pushinteger(L, header->menuflags);
 		break;
-	/*case mapheaderinfo_automap:
-		lua_pushstring(L, header->selectheading);
-		break;*/
 	case mapheaderinfo_mobj_scale:
 		lua_pushfixed(L, header->mobj_scale);
 		break;
-	// TODO add support for reading numGradedMares and grades
 	default:
 	{
 		// Read custom vars now

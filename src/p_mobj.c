@@ -3189,30 +3189,6 @@ static boolean P_CameraCheckWater(camera_t *thiscam)
 	return false;
 }
 
-void P_DestroyRobots(void)
-{
-	// Search through all the thinkers for enemies.
-	mobj_t *mo;
-	thinker_t *think;
-
-	for (think = thinkercap.next; think != &thinkercap; think = think->next)
-	{
-		if (think->function != (actionf_p1)P_MobjThinker)
-			continue; // not a mobj thinker
-
-		mo = (mobj_t *)think;
-
-		if (mo->health <= 0 || !(mo->flags & MF_ENEMY || mo->flags & MF_BOSS))
-			continue; // not a valid enemy
-
-		if (mo->type == MT_PLAYER) // Don't chase after other players!
-			continue;
-
-		// Found a target enemy
-		P_KillMobj(mo, players[consoleplayer].mo, players[consoleplayer].mo);
-	}
-}
-
 // the below is chasecam only, if you're curious. check out P_CalcPostImg in p_user.c for first person
 void P_CalcChasePostImg(player_t *player, camera_t *thiscam)
 {
@@ -11094,8 +11070,6 @@ void P_SpawnMapThing(mapthing_t *mthing)
 	{
 		if (!cv_powerstones.value || !G_BattleGametype())
 			return;
-
-		runemeraldmanager = true;
 	}
 
 	if (!G_RaceGametype()) // No enemies in match or CTF modes
