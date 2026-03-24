@@ -406,7 +406,7 @@ static UINT8* RGetTranslationColormap(INT32 skinnum, skincolors_t color, UINT8 f
 			case TC_ALLWHITE:   skintableindex = ALLWHITE_TT_CACHE_INDEX; break;
 			case TC_RAINBOW:    skintableindex = RAINBOW_TT_CACHE_INDEX; break;
 			case TC_BLINK:      skintableindex = BLINK_TT_CACHE_INDEX; break;
-			default:       skintableindex = skinnum; break;
+			default:            skintableindex = skinnum; break;
 		}
 	}
 
