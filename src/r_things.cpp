@@ -2971,18 +2971,21 @@ fixed_t R_DoPlayerFade(mobj_t *thing)
 	if (thing->player == viewplayer || viewplayer->exiting || viewplayer->spectator || camera[R_GetViewNumber()].freecam || leveltime < countdownstarttime)
 		return fadealpha;
 
-	const INT32 playerdist     = (FixedMul((thing->x - viewx), viewcos) + FixedMul((thing->y - viewy), viewsin)) >> FRACBITS;
-	const INT32 viewplayerdist = (FixedMul((viewplayer->mo->x - viewx), viewcos) + FixedMul((viewplayer->mo->y - viewy), viewsin)) >> FRACBITS;
+	const INT32 otherplayerdist = (FixedMul((thing->x - viewx), viewcos) + FixedMul((thing->y - viewy), viewsin)) >> FRACBITS;
+	const INT32 viewplayerdist  = (FixedMul((viewplayer->mo->x - viewx), viewcos) + FixedMul((viewplayer->mo->y - viewy), viewsin)) >> FRACBITS;
 
-	if (playerdist < viewplayerdist)
+	if (viewplayerdist < 2)
+		return fadealpha; // avoid zero division
+
+	if (otherplayerdist < viewplayerdist)
 	{
-		if (playerdist < viewplayerdist / 2) // stronger fade when very close
+		if (otherplayerdist < viewplayerdist / 2) // stronger fade when very close
 		{
-			fadealpha = (playerdist * FRACUNIT) / (viewplayerdist / 2) / 3;
+			fadealpha = (otherplayerdist * FRACUNIT) / (viewplayerdist / 2) / 3;
 		}
 		else
 		{
-			fadealpha = (playerdist * FRACUNIT) / viewplayerdist;
+			fadealpha = (otherplayerdist * FRACUNIT) / viewplayerdist;
 		}
 	}
 
