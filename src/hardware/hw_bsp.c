@@ -35,7 +35,7 @@ static int  trigger_subsector = 0xFFFFFFFF;
 static byte trigger_trace = 0;
 #endif
 
-#define POLYTILE
+//#define POLYTILE
 
 // when loading the map, this is set to true if portals are found.
 // if no portals are found, the portal scanning phase can be skipped while rendering, saving a bit of time.
@@ -135,16 +135,46 @@ static polyvertex_t *find_close_polyvertex(float x, float y, float ep)
 {
 	polyvertex_store_t *psv;
 	polyvertex_t *pv;
+	float dx, dy;
 	INT32 i;
+
+	// eep!
+	const float eep = ep*ep;
+
+	// we do some lööp unrollin
+	// those checks stink in debug builds and take literal ages
+	// unrolling the loops to check 8 at a time with extra early rejects
+	// cuts the total time by around 54% on my maschine
+
+#define CHECKVERTEX(p) \
+	dx = (p)->x - x; \
+	/* reject vertices that are waaay off by checking in a square */ \
+	if (!(dx < -ep || dx > ep)) { \
+		dy = (p)->y - y; \
+		if (!(dy < -ep || dy > ep)) \
+			if (dx*dx + dy*dy < eep) /* close enough to be the same vertex */ \
+				return (p); \
+	}
 
 	// Search level map vertexes.
 	pv = poly_vert;
-	for (i = numvertexes; i > 0; i--)
+	for (i = numvertexes; i >= 8; i -= 8)
 	{
-		const float dx = pv->x - x;
-		const float dy = pv->y - y;
-		if (dx*dx + dy*dy < ep*ep)
-			return pv;  // close enough to be the same vertex
+		CHECKVERTEX(pv);
+		CHECKVERTEX(pv + 1);
+		CHECKVERTEX(pv + 2);
+		CHECKVERTEX(pv + 3);
+		CHECKVERTEX(pv + 4);
+		CHECKVERTEX(pv + 5);
+		CHECKVERTEX(pv + 6);
+		CHECKVERTEX(pv + 7);
+
+		pv += 8;
+	}
+
+	for (; i > 0; i--)
+	{
+		CHECKVERTEX(pv);
 		pv++;
 	}
 
@@ -152,20 +182,33 @@ static polyvertex_t *find_close_polyvertex(float x, float y, float ep)
 	psv = polyvert_store;
 	while (psv)
 	{
-		// Search all vertex in a polyvertex_store_t
 		pv = psv->pv;
-		for (i = psv->num_vert_used; i > 0; i--)
+		for (i = psv->num_vert_used; i >= 8; i -= 8)
 		{
-			const float dx = pv->x - x;
-			const float dy = pv->y - y;
-			if (dx*dx + dy*dy < ep*ep)
-				return pv;  // close enough to be the same vertex
+			CHECKVERTEX(pv);
+			CHECKVERTEX(pv + 1);
+			CHECKVERTEX(pv + 2);
+			CHECKVERTEX(pv + 3);
+			CHECKVERTEX(pv + 4);
+			CHECKVERTEX(pv + 5);
+			CHECKVERTEX(pv + 6);
+			CHECKVERTEX(pv + 7);
+
+			pv += 8;
+		}
+
+		for (; i > 0; i--)
+		{
+			CHECKVERTEX(pv);
 			pv++;
 		}
+
 		psv = psv->next;
 	}
+#undef CHECKVERTEX
 
-	return NULL;  // none found
+	// none found
+	return NULL;
 }
 
 // Store a new polyvertex.
@@ -2631,6 +2674,38 @@ static void finalize_polygons(void)
 		for (ps = 0; ps < wpoly->numpts; ps++)
 		{
 			*pv++ = *(wpoly->ppts[ps]);  // copy of each vertex
+		}
+
+		// look for portals and horizonlines
+		// doing this on mapload will save on runtime performance!
+		if (!cv_glpolyshape.value && (!gl_maphasportals || !gl_maphashorizonlines))
+		{
+			const subsector_t *subsec = &subsectors[ssnum];
+			const seg_t *seg = &segs[subsec->firstline];
+			size_t segcount = subsec->numlines;
+
+			// For each seg of the subsector
+			for (; segcount--; seg++)
+			{
+				//x,y,dx,dy (like a divline)
+				const line_t *line = seg->linedef;
+
+				if (!line)
+					continue;
+
+				// portal check
+				if (!gl_maphasportals && line->special == PORTALSPECIAL && seg->side == 0)
+				{
+					INT32 line2 = P_FindSpecialLineFromTag(PORTALSPECIAL, line->tag, -1);
+					if (line == &lines[line2])
+						line2 = P_FindSpecialLineFromTag(PORTALSPECIAL, line->tag, line2);
+					if (line2 >= 0)
+						gl_maphasportals = true;
+				}
+
+				if (!gl_maphashorizonlines && line->special == HORIZONSPECIAL)
+					gl_maphashorizonlines = true;
+			}
 		}
 	}
 }
