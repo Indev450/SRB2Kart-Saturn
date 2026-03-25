@@ -4123,6 +4123,9 @@ static void AddCheckedReplay(void)
 // Check up to maxnum replays if they match with query
 static void M_HutCheckReplays(size_t maxnum)
 {
+	// Stripped of color codes
+	char demo_title[sizeof(demolist_all[0].title)];
+
 	if (!replaynamesloaded)
 		return;
 
@@ -4155,7 +4158,9 @@ static void M_HutCheckReplays(size_t maxnum)
 			case MD_NOTLOADED:
 			case MD_OUTDATED:
 			case MD_LOADED:
-				if (demolist_all[replayquerycheck].title[0] && strcasestr(demolist_all[replayquerycheck].title, replayqueryinput.buffer) != NULL)
+				StripColors(demo_title, demolist_all[replayquerycheck].title, sizeof(demo_title));
+
+				if (demolist_all[replayquerycheck].title[0] && strcasestr(demo_title, replayqueryinput.buffer) != NULL)
 					AddCheckedReplay(); // It matches, add it!
 				else
 					replayquerycheck++; // Doesn't match, moving on...
