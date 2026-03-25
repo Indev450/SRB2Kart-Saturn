@@ -125,7 +125,7 @@ ps_metric_t ps_hw_batchdrawtime = {};
 static void HWR_SplitWall(sector_t *sector, FOutVector *wallVerts, INT32 texnum, boolean noencore, FSurfaceInfo* Surf, INT32 cutflag, ffloor_t *pfloor, FBITFIELD polyflags);
 static void HWR_RenderWall(FOutVector *wallVerts, FSurfaceInfo *pSurf, FBITFIELD blend, boolean fogwall, INT32 lightlevel, extracolormap_t *wallcolormap);
 
-static void HWR_AddTransparentFloor(lumpnum_t lumpnum, extrasubsector_t *xsub, boolean isceiling, fixed_t fixedheight, INT32 lightlevel, INT32 alpha, sector_t *FOFSector, FBITFIELD blend, boolean fogplane, extracolormap_t *planecolormap);
+static void HWR_AddTransparentFloor(lumpnum_t lumpnum, poly_subsector_t *xsub, boolean isceiling, fixed_t fixedheight, INT32 lightlevel, INT32 alpha, sector_t *FOFSector, FBITFIELD blend, boolean fogplane, extracolormap_t *planecolormap);
 static void HWR_AddTransparentWall(FOutVector *wallVerts, FSurfaceInfo *pSurf, INT32 texnum, boolean noencore, FBITFIELD blend, boolean fogwall, INT32 lightlevel, extracolormap_t *wallcolormap);
 static void HWR_AddTransparentPolyobjectFloor(lumpnum_t lumpnum, polyobj_t *polysector, boolean isceiling, fixed_t fixedheight, INT32 lightlevel, INT32 alpha, sector_t *FOFSector, FBITFIELD blend, extracolormap_t *planecolormap);
 
@@ -230,6 +230,17 @@ consvar_t cv_glfiltermode = {"gr_filtermode", "Nearest", CV_CALL|CV_SAVE, glfilt
 consvar_t cv_glanisotropicmode = {"gr_anisotropicmode", "1", CV_CALL|CV_SAVE, glanisotropicmode_cons_t, CV_anisotropic_OnChange, 0, NULL, NULL, 0, 0, NULL};
 
 consvar_t cv_glsolvetjoin = {"gr_solvetjoin", "On", 0, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+
+consvar_t cv_glpolytile = {"gr_polytile", "On", 0, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+
+CV_PossibleValue_t grpolyshape_cons_t[] = {
+	{0, "Subsector"},
+	{1, "Fat"},
+	{2, "Trim"},
+	{3, "NotConvex"},
+	{0, NULL}
+};
+consvar_t cv_glpolyshape = {"gr_polygon_shape", "Trim", CV_SAVE, grpolyshape_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 consvar_t cv_glbatching = {"gr_batching", "On", 0, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
@@ -548,7 +559,7 @@ static FUINT HWR_CalcSlopeLight(FUINT lightnum, pslope_t *slope, const sector_t 
 
 // HWR_RenderPlane
 // Render a floor or ceiling convex polygon
-static void HWR_RenderPlane(subsector_t *subsector, extrasubsector_t *xsub, boolean isceiling, fixed_t fixedheight, FBITFIELD PolyFlags, INT32 lightlevel, lumpnum_t lumpnum, sector_t *FOFsector, UINT8 alpha, extracolormap_t *planecolormap)
+static void HWR_RenderPlane(subsector_t *subsector, poly_subsector_t *xsub, boolean isceiling, fixed_t fixedheight, FBITFIELD PolyFlags, INT32 lightlevel, lumpnum_t lumpnum, sector_t *FOFsector, UINT8 alpha, extracolormap_t *planecolormap)
 {
 	FSurfaceInfo Surf = {};
 	FOutVector *v3d;
@@ -2821,7 +2832,7 @@ static void HWR_AddPolyObjectPlanes(void)
 	sector_t *polyobjsector;
 	INT32 light = 0;
 
-	// Polyobject Planes need their own function for drawing because they don't have extrasubsectors by themselves
+	// Polyobject Planes need their own function for drawing because they don't have poly_subsectors by themselves
 	// It should be okay because polyobjects should always be convex anyway
 
 	for (i = 0; i < numpolys; i++)
@@ -2949,9 +2960,9 @@ static void HWR_Subsector(size_t num)
 	ffloor_t *rover;
 
 #ifdef PARANOIA // no risk while developing, enough debugging nights!
-	if (num >= addsubsector)
+	if (num >= num_poly_subsector)
 		I_Error("HWR_Subsector: ss %s with numss = %s, addss = %s\n",
-			sizeu1(num), sizeu2(numsubsectors), sizeu3(addsubsector));
+			sizeu1(num), sizeu2(numsubsectors), sizeu3(num_poly_subsector));
 #endif
 
 	if (num < numsubsectors)
@@ -3046,7 +3057,7 @@ static void HWR_Subsector(size_t num)
 			if (sub->validcount != validcount)
 			{
 				HWR_GetFlat(levelflats[gl_frontsector->floorpic].lumpnum, R_NoEncore(gl_frontsector, false));
-				HWR_RenderPlane(sub, &extrasubsectors[num], false,
+				HWR_RenderPlane(sub, &poly_subsectors[num], false,
 					gl_frontsector->floorheight,
 					// We now return you to your regularly scheduled rendering.
 					PF_Occlude, floorlightlevel, levelflats[gl_frontsector->floorpic].lumpnum, NULL, 255, floorcolormap);
@@ -3061,7 +3072,7 @@ static void HWR_Subsector(size_t num)
 			if (sub->validcount != validcount)
 			{
 				HWR_GetFlat(levelflats[gl_frontsector->ceilingpic].lumpnum, R_NoEncore(gl_frontsector, true));
-				HWR_RenderPlane(sub, &extrasubsectors[num], true,
+				HWR_RenderPlane(sub, &poly_subsectors[num], true,
 					gl_frontsector->ceilingheight,
 					// We now return you to your regularly scheduled rendering.
 					PF_Occlude, ceilinglightlevel, levelflats[gl_frontsector->ceilingpic].lumpnum, NULL, 255, ceilingcolormap);
@@ -3108,7 +3119,7 @@ static void HWR_Subsector(size_t num)
 					alpha = HWR_FogBlockAlpha(*gl_frontsector->lightlist[light].lightlevel, rover->master->frontsector->extra_colormap);
 
 					HWR_AddTransparentFloor(0,
-											&extrasubsectors[num],
+											&poly_subsectors[num],
 											false,
 											*rover->bottomheight,
 											*gl_frontsector->lightlist[light].lightlevel,
@@ -3120,7 +3131,7 @@ static void HWR_Subsector(size_t num)
 					light = R_GetPlaneLight(gl_frontsector, centerHeight, (viewz < bottomCullHeight));
 
 					HWR_AddTransparentFloor(levelflats[*rover->bottompic].lumpnum,
-											&extrasubsectors[num],
+											&poly_subsectors[num],
 											false,
 											*rover->bottomheight,
 											*gl_frontsector->lightlist[light].lightlevel,
@@ -3132,7 +3143,7 @@ static void HWR_Subsector(size_t num)
 					HWR_GetFlat(levelflats[*rover->bottompic].lumpnum, R_NoEncore(gl_frontsector, false));
 					light = R_GetPlaneLight(gl_frontsector, centerHeight, (viewz < bottomCullHeight));
 
-					HWR_RenderPlane(sub, &extrasubsectors[num], false, *rover->bottomheight, HWR_RippleBlend(gl_frontsector, rover, false)|PF_Occlude, *gl_frontsector->lightlist[light].lightlevel, levelflats[*rover->bottompic].lumpnum,
+					HWR_RenderPlane(sub, &poly_subsectors[num], false, *rover->bottomheight, HWR_RippleBlend(gl_frontsector, rover, false)|PF_Occlude, *gl_frontsector->lightlist[light].lightlevel, levelflats[*rover->bottompic].lumpnum,
 									rover->master->frontsector, 255, gl_frontsector->lightlist[light].extra_colormap);
 				}
 			}
@@ -3154,7 +3165,7 @@ static void HWR_Subsector(size_t num)
 					alpha = HWR_FogBlockAlpha(*gl_frontsector->lightlist[light].lightlevel, rover->master->frontsector->extra_colormap);
 
 					HWR_AddTransparentFloor(0,
-											&extrasubsectors[num],
+											&poly_subsectors[num],
 											true,
 											*rover->topheight,
 											*gl_frontsector->lightlist[light].lightlevel,
@@ -3166,7 +3177,7 @@ static void HWR_Subsector(size_t num)
 					light = R_GetPlaneLight(gl_frontsector, centerHeight, (viewz < topCullHeight));
 
 					HWR_AddTransparentFloor(levelflats[*rover->toppic].lumpnum,
-											&extrasubsectors[num],
+											&poly_subsectors[num],
 											true,
 											*rover->topheight,
 											*gl_frontsector->lightlist[light].lightlevel,
@@ -3178,7 +3189,7 @@ static void HWR_Subsector(size_t num)
 					HWR_GetFlat(levelflats[*rover->toppic].lumpnum, R_NoEncore(gl_frontsector, true));
 					light = R_GetPlaneLight(gl_frontsector, centerHeight, (viewz < topCullHeight));
 
-					HWR_RenderPlane(sub, &extrasubsectors[num], true, *rover->topheight, HWR_RippleBlend(gl_frontsector, rover, false)|PF_Occlude, *gl_frontsector->lightlist[light].lightlevel, levelflats[*rover->toppic].lumpnum,
+					HWR_RenderPlane(sub, &poly_subsectors[num], true, *rover->topheight, HWR_RippleBlend(gl_frontsector, rover, false)|PF_Occlude, *gl_frontsector->lightlist[light].lightlevel, levelflats[*rover->toppic].lumpnum,
 									rover->master->frontsector, 255, gl_frontsector->lightlist[light].extra_colormap);
 				}
 			}
@@ -4259,7 +4270,7 @@ typedef struct
 
 typedef struct
 {
-	extrasubsector_t *xsub;
+	poly_subsector_t *xsub;
 	boolean isceiling;
 	fixed_t fixedheight;
 	INT32 lightlevel;
@@ -4343,7 +4354,7 @@ static void HWR_AddTransparentWall(FOutVector *wallVerts, FSurfaceInfo *pSurf, I
 	wallinfo->wallcolormap = wallcolormap;
 }
 
-static void HWR_AddTransparentFloor(lumpnum_t lumpnum, extrasubsector_t *xsub, boolean isceiling, fixed_t fixedheight, INT32 lightlevel, INT32 alpha, sector_t *FOFSector, FBITFIELD blend, boolean fogplane, extracolormap_t *planecolormap)
+static void HWR_AddTransparentFloor(lumpnum_t lumpnum, poly_subsector_t *xsub, boolean isceiling, fixed_t fixedheight, INT32 lightlevel, INT32 alpha, sector_t *FOFSector, FBITFIELD blend, boolean fogplane, extracolormap_t *planecolormap)
 {
 	planeinfo_t *planeinfo = static_cast<planeinfo_t*>(HWR_CreateDrawNode(DRAWNODE_PLANE));
 
@@ -5813,6 +5824,7 @@ void HWR_RenderPlayerView(void)
 
 void HWR_LoadLevel(void)
 {
+	HWR_FreePolyPool();
 	HWR_CreatePlanePolygons((INT32)numnodes - 1);
 
 	// Build the sky dome
@@ -5897,6 +5909,8 @@ void HWR_AddCommands(void)
 	CV_RegisterVar(&cv_glanisotropicmode);
 
 	CV_RegisterVar(&cv_glsolvetjoin);
+	CV_RegisterVar(&cv_glpolytile);
+	CV_RegisterVar(&cv_glpolyshape);
 
 	CV_RegisterVar(&cv_glbatching);
 
@@ -5924,6 +5938,7 @@ void HWR_Startup(void)
 		CONS_Printf("HWR_Startup()...\n");
 		textureformat = patchformat = GL_TEXFMT_RGBA;
 
+		HWR_InitPolyPool();
 		HWR_InitMapTextures();
 		HWR_InitMD2();
 
@@ -6015,7 +6030,7 @@ static void COM_HWR_glinfo(void)
 void HWR_Shutdown(void)
 {
 	CONS_Printf("HWR_Shutdown()\n");
-	HWR_FreeExtraSubsectors();
+	HWR_FreePolyPool();
 	HWR_FreeMapTextures();
 	GL_FlushScreenTextures();
 	HWR_ClearAllTextures();
