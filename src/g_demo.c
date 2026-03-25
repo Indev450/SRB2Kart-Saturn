@@ -2616,7 +2616,7 @@ void G_DoPlayDemo(char *defdemoname)
 	if (defdemoname == NULL)
 	{
 		demobuf.p = demobuf.buffer;
-		pdemoname = ZZ_Alloc(1); // Easier than adding checks for this everywhere it's freed
+		pdemoname = ZZ_Calloc(1); // Easier than adding checks for this everywhere it's freed
 	}
 	else
 	{
@@ -2628,7 +2628,7 @@ void G_DoPlayDemo(char *defdemoname)
 			n++;
 
 		pdemoname = ZZ_Alloc(strlen(n)+1);
-		strcpy(pdemoname,n);
+		strcpy(pdemoname, n);
 
 		M_SetPlaybackMenuPointer();
 
