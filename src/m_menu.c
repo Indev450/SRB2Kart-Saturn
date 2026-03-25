@@ -4922,6 +4922,7 @@ static void M_HutStartReplay(INT32 choice)
 	demo.loadfiles = (itemOn == 0);
 	demo.ignorefiles = (itemOn != 0);
 
+	CONS_Printf(M_GetText("Playing back demo '%s'.\n"), demolist[dir_on[menudepthleft]].filepath);
 	G_DoPlayDemo(demolist[dir_on[menudepthleft]].filepath);
 }
 
@@ -6483,7 +6484,7 @@ static void M_ChooseTimeAttack(INT32 choice)
 static void M_HandleStaffReplay(INT32 choice)
 {
 	boolean exitmenu = false; // exit to previous menu
-	lumpnum_t l = W_CheckNumForName(va("%sS%02u",G_BuildMapName(cv_nextmap.value),cv_dummystaff.value));
+	lumpnum_t l = W_CheckNumForName(va("%sS%02u", G_BuildMapName(cv_nextmap.value), cv_dummystaff.value));
 
 	switch (choice)
 	{
@@ -6513,7 +6514,7 @@ static void M_HandleStaffReplay(INT32 choice)
 			M_ClearMenus(true);
 			modeattacking = ATTACKING_RECORD;
 			demo.loadfiles = false; demo.ignorefiles = true; // Just assume that record attack replays have the files needed
-			G_DoPlayDemo(va("%sS%02u",G_BuildMapName(cv_nextmap.value),cv_dummystaff.value));
+			G_DoPlayDemo(va("%sS%02u", G_BuildMapName(cv_nextmap.value), cv_dummystaff.value));
 			break;
 		default:
 			break;
