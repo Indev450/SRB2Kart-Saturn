@@ -97,7 +97,6 @@ boolean savemoddata = false;
 UINT8 paused = 0;
 UINT8 modeattacking = ATTACKING_NONE;
 boolean imcontinuing = false;
-boolean runemeraldmanager = false;
 
 boolean netgame = false; // only true if packets are broadcast
 boolean multiplayer = false;
@@ -210,7 +209,6 @@ const INT32 wantedfrequency = 10*TICRATE;
 INT32 gameovertics = 15*TICRATE;
 
 UINT8 use1upSound = 0;
-UINT8 maxXtraLife = 2; // Max extra lives from rings
 
 UINT8 introtoplay = 0;
 UINT8 creditscutscene = 0;

@@ -479,32 +479,13 @@ UINT8 M_CheckLevelEmblems(void)
 	// Update Score, Time, Rings emblems
 	for (i = 0; i < numemblems; ++i)
 	{
-		if (emblemlocations[i].type <= ET_SKIN || emblemlocations[i].collected)
+		// Requires time on map <= x
+		if (emblemlocations[i].type != ET_TIME || emblemlocations[i].collected)
 			continue;
 
 		levelnum = emblemlocations[i].level;
 		valToReach = emblemlocations[i].var;
-
-		switch (emblemlocations[i].type)
-		{
-			/*case ET_SCORE: // Requires score on map >= x
-				res = (G_GetBestScore(levelnum) >= (unsigned)valToReach);
-				break;*/
-			case ET_TIME: // Requires time on map <= x
-				res = (G_GetBestTime(levelnum) <= (unsigned)valToReach);
-				break;
-			/*case ET_RINGS: // Requires rings on map >= x
-				res = (G_GetBestRings(levelnum) >= valToReach);
-				break;
-			case ET_NGRADE: // Requires NiGHTS grade on map >= x
-				res = (G_GetBestNightsGrade(levelnum, 0) >= valToReach);
-				break;
-			case ET_NTIME: // Requires NiGHTS time on map <= x
-				res = (G_GetBestNightsTime(levelnum, 0) <= (unsigned)valToReach);
-				break;*/
-			default: // unreachable but shuts the compiler up.
-				continue;
-		}
+		res = (G_GetBestTime(levelnum) <= (unsigned)valToReach);
 
 		emblemlocations[i].collected = res;
 		if (res)

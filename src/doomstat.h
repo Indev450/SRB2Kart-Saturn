@@ -205,12 +205,6 @@ extern struct quake
 	fixed_t radius, intensity;
 } quake;
 
-// NiGHTS grades
-typedef struct
-{
-	UINT32 grade[6]; // D, C, B, A, S, X (F: failed to reach any of these)
-} nightsgrades_t;
-
 // Custom Lua values
 // (This is not ifdeffed so the map header structure can stay identical, just in case.)
 typedef struct
@@ -261,27 +255,15 @@ typedef struct
 	UINT8 numlaps;        ///< Number of laps in circuit mode, unless overridden.
 	SINT8 unlockrequired; ///< Is an unlockable required to play this level? -1 if no.
 	UINT8 levelselect;    ///< Is this map available in the level select? If so, which map list is it available in?
-	SINT8 bonustype;      ///< What type of bonus does this level have? (-1 for null.)
-	SINT8 saveoverride;   ///< Set how the game is allowed to save (1 for always, -1 for never, 0 is 2.1 default)
-
 	UINT8 levelflags;     ///< LF_flags:  merged eight booleans into one UINT8 for space, see below
 	UINT8 menuflags;      ///< LF2_flags: options that affect record attack / nights mode menus
 
-	// NiGHTS stuff.
-	UINT8 numGradedMares;   ///< Internal. For grade support.
-	nightsgrades_t *grades; ///< NiGHTS grades. Allocated dynamically for space reasons. Be careful.
-
 	// SRB2kart
-	//boolean automap;    ///< Displays a level's white map outline in modified games
 	fixed_t mobj_scale;   ///< Replacement for TOL_ERZ3
 
 	mapheader_lighting_t lighting;			///< Wall and sprite lighting
 	mapheader_lighting_t lighting_encore;	///< Alternative lighting for Encore mode
 	boolean use_encore_lighting;			///< Whether to use separate Encore lighting
-
-	// Music stuff.
-	UINT32 musinterfadeout;  ///< Fade out level music on intermission screen in milliseconds
-	char musintername[7];    ///< Intermission screen music.
 
 	// Lua stuff.
 	// (This is not ifdeffed so the map header structure can stay identical, just in case.)
@@ -379,8 +361,6 @@ typedef struct
 {
 	tic_t time; ///< Time in which the level was finished.
 	tic_t lap;  ///< Best lap time for this level.
-	//UINT32 score; ///< Score when the level was finished.
-	//UINT16 rings; ///< Rings when the level was finished.
 } recorddata_t;
 
 /** Setup for one NiGHTS map.
@@ -394,34 +374,19 @@ typedef struct
 #define GRADE_A 5
 #define GRADE_S 6
 
-/*typedef struct
-{
-	// 8 mares, 1 overall (0)
-	UINT8	nummares;
-	UINT32	score[9];
-	UINT8	grade[9];
-	tic_t	time[9];
-} nightsdata_t;*/
-
-//extern nightsdata_t *nightsrecords[NUMMAPS];
 extern recorddata_t *mainrecords[NUMMAPS];
 
 // mapvisited is now a set of flags that says what we've done in the map.
 #define MV_VISITED     1
 #define MV_BEATEN      2
 #define MV_ALLEMERALDS 4
-//#define MV_ULTIMATE     8
-//#define MV_PERFECT     16
 #define MV_MAX         7 // used in gamedata check
 extern UINT8 mapvisited[NUMMAPS];
 
-// Temporary holding place for nights data for the current map
-//nightsdata_t ntemprecords;
-
-extern UINT32 token; ///< Number of tokens collected in a level
+extern UINT32 token;     ///< Number of tokens collected in a level
 extern UINT32 tokenlist; ///< List of tokens collected
-extern INT32 tokenbits; ///< Used for setting token bits
-extern INT32 sstimer; ///< Time allotted in the special stage
+extern INT32  tokenbits; ///< Used for setting token bits
+extern INT32  sstimer;   ///< Time allotted in the special stage
 extern UINT32 bluescore; ///< Blue Team Scores
 extern UINT32 redscore;  ///< Red Team Scores
 
@@ -461,7 +426,6 @@ extern UINT8 introtoplay;
 extern UINT8 creditscutscene;
 
 extern UINT8 use1upSound;
-extern UINT8 maxXtraLife; // Max extra lives from rings
 
 extern mobj_t *hunt1, *hunt2, *hunt3; // Emerald hunt locations
 
