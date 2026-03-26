@@ -432,14 +432,17 @@ static void ApplyPaletteDelta(const RGBA_t *pal_in, RGBA_t *pal_out, const INT16
 
 static void GenerateFlashPalettes(void)
 {
-	size_t i, palsize;
+	size_t i;
+	static const size_t palsize = (2*256); // two flashpals
 	RGBA_t *pFlashPalGammaCorrectedPalette = NULL;
 
 	// generate flashpalettes if the current palette does not provide any subpalettes
 	if (currentPaletteSize >= (14 * (256 * 3))) // 14 palettes are in playpal
+	{
 		return;
+	}
 
-	palsize = (2*256);
+	CONS_Debug(DBG_RENDER, "Current palette does not provide enough subpalettes for flashpalettes to work!\nCreating fallback palettes...\n");
 
 	pFallbackFlashPal = Z_Malloc(sizeof(*pFallbackFlashPal)*palsize, PU_STATIC, NULL);
 	pFlashPalGammaCorrectedPalette = Z_Malloc(sizeof (*pFlashPalGammaCorrectedPalette)*palsize, PU_STATIC, NULL);
