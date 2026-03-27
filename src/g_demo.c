@@ -1653,10 +1653,12 @@ void G_RecordDemo(const char *name)
 		maxsize = cv_maxdemosize.value*1024*1024;
 
 		demobuf.buffer = Z_Malloc(maxsize + 100*1024, PU_STATIC, NULL);
-		demoend = demobuf.buffer + maxsize;
 
 		if (demobuf.buffer)
+		{
+			demoend = demobuf.buffer + maxsize;
 			demo.recording = true;
+		}
 		else
 			CONS_Alert(CONS_ERROR, "Failed to allocate demo buffer\n");
 	}
