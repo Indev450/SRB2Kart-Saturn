@@ -1252,7 +1252,8 @@ static boolean ReadMusicDefFields(UINT16 wadnum, int line, char *stoken, musicde
 			CONS_Alert(CONS_WARNING,
 					"MUSICDEF: Field '%s' is missing name. (file %s, line %d)\n",
 					stoken, wadfiles[wadnum]->filename, line);
-			goto skip_lump;
+			(void)strtok(NULL, " ");
+			return true;
 		}
 		else
 		{
@@ -1270,14 +1271,10 @@ static boolean ReadMusicDefFields(UINT16 wadnum, int line, char *stoken, musicde
 
 			(*defp) = def;
 		}
-
-skip_lump:
-			stoken = strtok(NULL, " ");
-			line++;
 	}
 	else
 	{
-		value = strtok(NULL, "");
+		value = strtok(NULL, " ");
 
 		if (value)
 		{
@@ -1290,7 +1287,8 @@ skip_lump:
 			CONS_Alert(CONS_WARNING,
 					"MUSICDEF: Field '%s' is missing value. (file %s, line %d)\n",
 					stoken, wadfiles[wadnum]->filename, line);
-			goto skip_field;
+			(void)strtok(NULL, " ");
+			return true;
 		}
 		else
 		{
@@ -1342,10 +1340,6 @@ skip_lump:
 			else
 				CONS_Alert(CONS_WARNING, "MUSICDEF: Invalid field '%s'. (file %s, line %d)\n", stoken, wadfiles[wadnum]->filename, line);
 #undef ADDDEF
-
-skip_field:
-			stoken = strtok(NULL, "= ");
-			line++;
 		}
 	}
 
@@ -1370,7 +1364,8 @@ void S_LoadMusicDefs(UINT16 wadnum)
 
 	for (int k = 0; k < 2; k++)
 	{
-		lumpnum = W_CheckNumForNamePwad((k == 1 ? "MUSCINFO" : "MUSICDEF") , wadnum, 0); //check for MUSCINFO lump on 2nd iteration
+		const char *lumpname = (k == 1 ? "MUSCINFO" : "MUSICDEF");
+		lumpnum = W_CheckNumForNamePwad(lumpname, wadnum, 0); //check for MUSCINFO lump on 2nd iteration
 
 		if (lumpnum == INT16_MAX)
 			continue;
@@ -1396,7 +1391,7 @@ void S_LoadMusicDefs(UINT16 wadnum)
 					nlf = 1;
 				else
 					nlf = 0;
-				*lf++ = '\0';/* now we can delimit to here */
+				*lf++ = '\0'; /* now we can delimit to here */
 			}
 
 			stoken = strtok(stoken, " ");
@@ -1418,10 +1413,10 @@ void S_LoadMusicDefs(UINT16 wadnum)
 				}
 				while (nlf || ncr) ;
 
-				stoken = lf;/* now the next nonempty line */
+				stoken = lf; /* now the next nonempty line */
 			}
 			else
-				break;/* EOF */
+				break; /* EOF */
 		}
 
 		free(musdeftext);

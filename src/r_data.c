@@ -1366,7 +1366,7 @@ void R_ReInitColormaps(UINT16 num, lumpnum_t newencoremap)
 		colormap_p = colormap_p2 = colormaps;
 		colormap_p += COLORMAP_REMAPOFFSET;
 
-		for (p = 0; p < 32; p++)
+		for (p = 0; p < LIGHTLEVELS; p++)
 		{
 			for (i = 0; i < 256; i++)
 			{
@@ -1588,7 +1588,7 @@ INT32 R_CreateColormap(char *p1, char *p2, char *p3)
 
 		// Calculate the palette index for each palette index, for each light level
 		// (as well as the two unused colormap lines we inherited from Doom)
-		for (p = 0; p < 32; p++)
+		for (p = 0; p < LIGHTLEVELS; p++)
 		{
 			for (i = 0; i < 256; i++)
 			{
@@ -1622,7 +1622,7 @@ INT32 R_CreateColormap(char *p1, char *p2, char *p3)
 		{
 			lighttable_t *colormap_p2 = extra_colormaps[mapnum].colormap;
 
-			for (p = 0; p < 32; p++)
+			for (p = 0; p < LIGHTLEVELS; p++)
 			{
 				for (i = 0; i < 256; i++)
 				{

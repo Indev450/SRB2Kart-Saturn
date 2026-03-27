@@ -1632,7 +1632,7 @@ static void SendNameAndColor(UINT8 splitplayer)
 static void Got_NameAndColor(const UINT8 **cp, INT32 playernum)
 {
 	player_t *player = &players[playernum];
-	char name[MAXPLAYERNAME+1];
+	char name[MAXPLAYERNAME+1] = {};
 	UINT8 color, skin;
 
 #ifdef PARANOIA

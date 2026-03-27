@@ -2942,16 +2942,16 @@ static void HWR_Subsector(size_t num)
 			if (sub->validcount == validcount)
 				continue;
 
-			// rendering heights for bottom and top planes
-			// yes there were functions for this stuff, no idea why it wasnt used but bleh
-			bottomCullHeight = P_GetFFloorBottomZAt(rover, viewx, viewy);
-			topCullHeight    = P_GetFFloorTopZAt(rover, viewx, viewy);
-
 			if (gl_frontsector->cullheight)
 			{
 				if (HWR_DoCulling(gl_frontsector->cullheight, viewsector->cullheight, gl_viewz, FixedToFloat(*rover->bottomheight), FixedToFloat(*rover->topheight)))
 					continue;
 			}
+
+			// rendering heights for bottom and top planes
+			// yes there were functions for this stuff, no idea why it wasnt used but bleh
+			bottomCullHeight = P_GetFFloorBottomZAt(rover, viewx, viewy);
+			topCullHeight    = P_GetFFloorTopZAt(rover, viewx, viewy);
 
 			auto render_plane = [&](boolean bottom)
 			{

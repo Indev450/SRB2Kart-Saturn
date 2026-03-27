@@ -5715,12 +5715,14 @@ void P_SetScale(mobj_t *mobj, fixed_t newscale)
 void P_Attract(mobj_t *source, mobj_t *dest, boolean nightsgrab) // Home in on your target
 {
 	fixed_t dist, ndist, speedmul;
-	fixed_t tx = dest->x;
-	fixed_t ty = dest->y;
-	fixed_t tz = dest->z + (dest->height/2); // Aim for center
+	fixed_t tx, ty, tz;
 
 	if (!dest || dest->health <= 0 || !dest->player || !source->tracer)
 		return;
+
+	tx = dest->x;
+	ty = dest->y;
+	tz = dest->z + (dest->height/2); // Aim for center
 
 	// change slope
 	dist = P_AproxDistance(P_AproxDistance(tx - source->x, ty - source->y), tz - source->z);

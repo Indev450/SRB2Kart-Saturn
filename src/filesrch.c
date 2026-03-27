@@ -111,10 +111,12 @@ filestatus_t filesearch(char *filename, const char *startpath, const UINT8 *want
 	char *searchname;
 	int depthleft = maxsearchdepth;
 	char searchpath[MAXFILEPATH];
-	size_t *searchpathindex;
+	size_t *searchpathindex = NULL;
 
 	dirhandle = (DIR**)malloc(maxsearchdepth * sizeof(DIR*));
 	searchpathindex = (size_t *)malloc(maxsearchdepth * sizeof(size_t));
+	if (!searchpathindex)
+		I_Error("out of memory while searching for file %s\n", filename);
 
 	strcpy(searchpath, startpath);
 	searchpathindex[--depthleft] = strlen(searchpath) + 1;

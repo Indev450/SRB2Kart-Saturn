@@ -603,9 +603,14 @@ Update_parameters (void)
 			delayed = MSInProgress;
 
 			if (delayed)/* do another update after the current one */
+			{
+				registered = 0;
 				MSUpdateAgain = true;
+			}
 			else
+			{
 				registered = MSRegistered;
+			}
 		}
 		Unlock_state();
 

@@ -2812,12 +2812,6 @@ static void DEH_LoadDehackedFile(MYFILE *f, UINT16 wad)
 
 	deh_num_warning = 0;
 	// save values for cross reference
-	/*
-	for (i = 0; i < NUMSTATES; i++)
-		saveactions[i] = states[i].action;
-	for (i = 0; i < NUMSPRITES; i++)
-		savesprnames[i] = sprnames[i];
-	*/
 	for (i = 0; i < NUMSFX; i++)
 		savesfxnames[i] = S_sfx[i].name;
 
@@ -3124,11 +3118,8 @@ static void DEH_LoadDehackedFile(MYFILE *f, UINT16 wad)
 	if (deh_num_warning)
 	{
 		CONS_Printf(M_GetText("%d warning%s in the SOC lump\n"), deh_num_warning, deh_num_warning == 1 ? "" : "s");
-		if (devparm) {
+		if (devparm)
 			I_Error("%s%s",va(M_GetText("%d warning%s in the SOC lump\n"), deh_num_warning, deh_num_warning == 1 ? "" : "s"), M_GetText("See log.txt for details.\n"));
-			//while (!I_GetKey())
-				//I_OsPolling();
-		}
 	}
 
 	deh_loaded = true;

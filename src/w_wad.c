@@ -1268,7 +1268,7 @@ FUNCINLINE static ATTRINLINE lumpnum_t CheckLumpInCache(const char *name)
 
 FUNCINLINE static ATTRINLINE void AddLumpToCache(lumpnum_t lumpnum, const char *name)
 {
-	I_Assert(strlen(name) <= 8); // we dont have longnames, so assume this is a non terminated string
+	I_Assert(strnlen(name, 9) <= 8); // we dont have longnames, so assume this is a non terminated string
 	lumpnum_map_insert(&lumpnumcache, strdup(name), lumpnum);
 }
 

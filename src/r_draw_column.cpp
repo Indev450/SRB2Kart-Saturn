@@ -204,7 +204,7 @@ static void R_DrawColumnTemplate(drawcolumndata_t *dc)
 		intptr_t frac;
 		// Looks familiar.
 		const intptr_t fracstep = dc->iscale;
-		const intptr_t heightmask = dc->sourcelength-1; // CPhipps - specify type
+		intptr_t heightmask = dc->sourcelength-1; // CPhipps - specify type
 		constexpr INT32 npow2min = -1;
 		const INT32 npow2max = dc->sourcelength;
 
@@ -237,10 +237,10 @@ static void R_DrawColumnTemplate(drawcolumndata_t *dc)
 		// Determine scaling, which is the only mapping to be done.
 		frac = (dc->texturemid + FixedMul((dc->yl << FRACBITS) - centeryfrac, fracstep));
 
-		switch (heightmask)
+		switch (dc->sourcelength)
 		{
-			case 255:
-			case 127:
+			case 256:
+			case 128:
 				{
 					while (count--)
 					{
@@ -251,7 +251,7 @@ static void R_DrawColumnTemplate(drawcolumndata_t *dc)
 					}
 				}
 				break;
-			case npow2min:
+			case 0:
 				{
 					if (frac < 0)
 						// adjust in case we underread
@@ -269,42 +269,22 @@ static void R_DrawColumnTemplate(drawcolumndata_t *dc)
 				break;
 			default:
 				{
-					if (!(dc->sourcelength & heightmask))   // power of 2 -- killough
+					if (dc->sourcelength & heightmask)   // not a power of 2 -- killough
 					{
-						while ((count -= 2) >= 0) // texture height is a power of 2 -- killough
-						{
-							*dest = R_DrawColumnPixel<Type>(dc, dest, (frac>>FRACBITS) & heightmask, source, colormap);
-
-							dest += stride;
-							frac += fracstep;
-
-							*dest = R_DrawColumnPixel<Type>(dc, dest, (frac>>FRACBITS) & heightmask, source, colormap);
-
-							dest += stride;
-							frac += fracstep;
-						}
-
-						if (count & 1)
-						{
-							*dest = R_DrawColumnPixel<Type>(dc, dest, (frac>>FRACBITS) & heightmask, source, colormap);
-						}
-					}
-					else
-					{
-						const intptr_t fixed_heightmask = dc->texheight << FRACBITS;
+						heightmask = dc->texheight << FRACBITS;
 
 						if (frac < 0)
 						{
-							while ((frac += fixed_heightmask) < 0)
+							while ((frac += heightmask) < 0)
 							{
 								;
 							}
 						}
 						else
 						{
-							while (frac >= fixed_heightmask)
+							while (frac >= heightmask)
 							{
-								frac -= fixed_heightmask;
+								frac -= heightmask;
 							}
 						}
 
@@ -324,7 +304,7 @@ static void R_DrawColumnTemplate(drawcolumndata_t *dc)
 							// Avoid overflow.
 							if (fracstep > 0x7FFFFFFF - frac)
 							{
-								frac += fracstep - fixed_heightmask;
+								frac += fracstep - heightmask;
 							}
 							else
 #endif
@@ -332,12 +312,32 @@ static void R_DrawColumnTemplate(drawcolumndata_t *dc)
 								frac += fracstep;
 							}
 
-							while (frac >= fixed_heightmask)
+							while (frac >= heightmask)
 							{
-								frac -= fixed_heightmask;
+								frac -= heightmask;
 							}
 						}
 						while (--count);
+					}
+					else
+					{
+						while ((count -= 2) >= 0) // texture height is a power of 2 -- killough
+						{
+							*dest = R_DrawColumnPixel<Type>(dc, dest, ((frac>>FRACBITS) & heightmask), source, colormap);
+
+							dest += stride;
+							frac += fracstep;
+
+							*dest = R_DrawColumnPixel<Type>(dc, dest, ((frac>>FRACBITS) & heightmask), source, colormap);
+
+							dest += stride;
+							frac += fracstep;
+						}
+
+						if (count & 1)
+						{
+							*dest = R_DrawColumnPixel<Type>(dc, dest, ((frac>>FRACBITS) & heightmask), source, colormap);
+						}
 					}
 				}
 				break;

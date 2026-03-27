@@ -5344,6 +5344,11 @@ void A_MixUp(void *thing)
 				}
 			}
 
+		// idk if we ever really end up here
+		// but bad things would happen if we do without this
+		if (one == -1)
+			return;
+
 		//get this done first!
 		tempthing = players[one].mo->tracer;
 		P_SetTarget(&players[one].mo->tracer, players[two].mo->tracer);
