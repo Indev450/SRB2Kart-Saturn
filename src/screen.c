@@ -106,8 +106,6 @@ static void SCR_SetDrawFuncs(enum columncontext_e _columncontext)
 		colfuncs[COLDRAWFUNC_TRANS] = R_DrawTranslatedColumn_Flush;
 		colfuncs[COLDRAWFUNC_SHADOWED] = R_DrawColumnShadowed_Flush;
 		colfuncs[COLDRAWFUNC_TRANSTRANS] = R_DrawTranslatedTranslucentColumn_Flush;
-		colfuncs[COLDRAWFUNC_TWOSMULTIPATCH] = R_Draw2sMultiPatchColumn_Flush;
-		colfuncs[COLDRAWFUNC_TWOSMULTIPATCHTRANS] = R_Draw2sMultiPatchTranslucentColumn_Flush;
 	}
 	else
 	{
@@ -116,9 +114,10 @@ static void SCR_SetDrawFuncs(enum columncontext_e _columncontext)
 		colfuncs[COLDRAWFUNC_TRANS] = R_DrawTranslatedColumn;
 		colfuncs[COLDRAWFUNC_SHADOWED] = R_DrawColumnShadowed;
 		colfuncs[COLDRAWFUNC_TRANSTRANS] = R_DrawTranslatedTranslucentColumn;
-		colfuncs[COLDRAWFUNC_TWOSMULTIPATCH] = R_Draw2sMultiPatchColumn;
-		colfuncs[COLDRAWFUNC_TWOSMULTIPATCHTRANS] = R_Draw2sMultiPatchTranslucentColumn;
 	}
+
+	colfuncs[COLDRAWFUNC_TWOSMULTIPATCH] = R_Draw2sMultiPatchColumn;
+	colfuncs[COLDRAWFUNC_TWOSMULTIPATCHTRANS] = R_Draw2sMultiPatchTranslucentColumn;
 
 	colfuncs[COLDRAWFUNC_FOG] = R_DrawFogColumn;
 
