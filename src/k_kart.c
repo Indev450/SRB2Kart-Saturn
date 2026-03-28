@@ -2372,6 +2372,7 @@ void K_SpawnBattlePoints(player_t *source, player_t *victim, UINT8 amount)
 			break;
 		case 3:
 			st = S_BATTLEPOINT3A;
+			break;
 		default:
 			return; // NO STATE!
 	}
