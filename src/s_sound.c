@@ -1274,7 +1274,7 @@ static boolean ReadMusicDefFields(UINT16 wadnum, int line, char *stoken, musicde
 	}
 	else
 	{
-		value = strtok(NULL, " ");
+		value = strtok(NULL, "");
 
 		if (value)
 		{
