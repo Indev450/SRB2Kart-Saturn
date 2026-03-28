@@ -1219,24 +1219,6 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 
 		case MT_EXTRALARGEBUBBLE:
 			return; // SRB2kart - don't need bubbles mucking with the player
-			if ((player->powers[pw_shield] & SH_NOSTACK) == SH_ELEMENTAL)
-				return;
-			if (UNLIKELY(maptol & TOL_NIGHTS))
-				return;
-			if (UNLIKELY(mariomode))
-				return;
-			else if (toucher->eflags & MFE_VERTICALFLIP)
-			{
-				if (special->z+special->height < toucher->z + toucher->height / 3
-				 || special->z+special->height > toucher->z + (toucher->height*2/3))
-					return; // Only go in the mouth
-			}
-			else if (special->z < toucher->z + toucher->height / 3
-				|| special->z > toucher->z + (toucher->height*2/3))
-				return; // Only go in the mouth
-
-			toucher->momx = toucher->momy = toucher->momz = 0;
-			break;
 
 		case MT_WATERDROP:
 			if (special->state == &states[special->info->spawnstate])
@@ -1917,10 +1899,8 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source)
 		P_InstaThrust(target,target->angle,FixedMul(2*FRACUNIT, target->scale));
 		target->momz = FixedMul(7*FRACUNIT, target->scale);
 		if (flip)
-			target->momz = -target->momz;
-
-		if (flip)
 		{
+			target->momz = -target->momz;
 			target = P_SpawnMobj(x,y,z-FixedMul(12*FRACUNIT, target->scale),MT_SPIKE);
 			target->eflags |= MFE_VERTICALFLIP;
 		}

@@ -2578,7 +2578,7 @@ static boolean CL_FinishedFileList(void)
   * \sa CL_ConnectToServer
   *
   */
-static boolean CL_ServerConnectionSearchTicker(tic_t *asksent)
+static void CL_ServerConnectionSearchTicker(tic_t *asksent)
 {
 	INT32 i;
 
@@ -2596,7 +2596,7 @@ static boolean CL_ServerConnectionSearchTicker(tic_t *asksent)
 		{
 			i = SL_SearchServer(servernode);
 			if (i < 0)
-				return true;
+				return;
 		}
 
 		joinnode = i;
@@ -2624,7 +2624,7 @@ static boolean CL_ServerConnectionSearchTicker(tic_t *asksent)
 			{
 				cl_mode = CL_ASKFULLFILELIST;
 				cl_lastcheckedfilecount = 0;
-				return true;
+				return;
 			}
 
 			cl_mode = cv_serverinfoscreen.value ? CL_VIEWSERVER : CL_CHECKFILES;
@@ -2636,7 +2636,7 @@ static boolean CL_ServerConnectionSearchTicker(tic_t *asksent)
 			*asksent = 0;
 		}
 
-		return true;
+		return;
 	}
 
 	// Ask the info to the server (askinfo packet)
@@ -2646,7 +2646,6 @@ static boolean CL_ServerConnectionSearchTicker(tic_t *asksent)
 		*asksent = I_GetTime() + NEWTICRATE;
 	}
 
-	return true;
 }
 
 static void FreeMapIcon(void)
@@ -2678,8 +2677,7 @@ static boolean CL_ServerConnectionTicker(const char *tmpsave, tic_t *oldtic, tic
 	switch (cl_mode)
 	{
 		case CL_SEARCHING:
-			if (!CL_ServerConnectionSearchTicker(asksent))
-				return false;
+			CL_ServerConnectionSearchTicker(asksent);
 			break;
 
 		case CL_ASKFULLFILELIST:
@@ -5980,13 +5978,11 @@ static void PT_ServerTics(SINT8 node)
 		realend = gametic + CLIENTBACKUPTICS;
 	cl_packetmissed = realstart > neededtic;
 
-	UINT8 *pak = (UINT8 *)&packet->cmds;
-	UINT8 *txtpak = (UINT8 *)&packet->cmds[packet->numslots * packet->numtics];
-
 	if (realstart <= neededtic && realend > neededtic)
 	{
 		tic_t i, j;
-		pak = (UINT8 *)&packet->cmds;
+		UINT8 *pak = (UINT8 *)&packet->cmds;
+		UINT8 *txtpak = (UINT8 *)&packet->cmds[packet->numslots * packet->numtics];
 
 		for (i = realstart; i < realend; i++)
 		{

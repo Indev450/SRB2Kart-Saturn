@@ -221,32 +221,6 @@ UINT8 P_GetNextEmerald(void)
 }
 
 //
-// P_GiveEmerald
-//
-// Award an emerald upon completion
-// of a special stage.
-//
-void P_GiveEmerald(boolean spawnObj)
-{
-	INT32 i;
-	UINT8 em;
-
-	S_StartSound(NULL, sfx_cgot); // Got the emerald!
-	em = P_GetNextEmerald();
-	emeralds |= (1 << em);
-
-	if (spawnObj)
-	{
-		for (i = 0; i < MAXPLAYERS; i++)
-		{
-			if (playeringame[i])
-				P_SetMobjState(P_SpawnMobj(players[i].mo->x, players[i].mo->y, players[i].mo->z + players[i].mo->info->height, MT_GOTEMERALD),
-				mobjinfo[MT_GOTEMERALD].spawnstate + em);
-		}
-	}
-}
-
-//
 // P_ResetScore
 //
 // This is called when your chain is reset.
@@ -1226,7 +1200,6 @@ mobj_t *P_SpawnGhostMobj(mobj_t *mobj)
 
 	ghost->pitch = mobj->pitch;
 	ghost->roll = mobj->roll;
-	ghost->sloperoll = mobj->sloperoll;
 	ghost->rollangle = mobj->rollangle;
 	ghost->sloperoll = mobj->sloperoll;
 	ghost->slopepitch = mobj->slopepitch;
@@ -3130,19 +3103,16 @@ void P_ToggleDemoCamera(UINT8 viewnum)
 		return;
 	}
 
-	if (!cam->freecam)	// toggle on
+	if (!cam->freecam) // toggle on
 	{
 		cam->freecam = true;
 		cam->button_a_held = 2;
 		cam->reset_aiming = true;
 
 		// get rid of some hud elements
-		if (displayplayers[0] != consoleplayer)
-		{
-			displayplayers[0] = consoleplayer;
-		}
+		displayplayers[0] = consoleplayer;
 	}
-	else				// toggle off
+	else			   // toggle off
 	{
 		cam->freecam = false;
 		G_FixCamera(viewnum+1);
@@ -4056,7 +4026,7 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 
 	if (timeover)
 		thiscam->angle = angle;
-	else if (!camstill && !resetcalled && !paused && timeover != 1)
+	else if (!camstill && !resetcalled && !paused)
 		thiscam->angle = R_PointToAngle2(thiscam->x, thiscam->y, viewpointx, viewpointy);
 
 	if (timeover == 1)

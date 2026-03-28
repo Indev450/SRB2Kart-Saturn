@@ -256,7 +256,7 @@ static boolean M_TextInputHandleBase(textinput_t *input, INT32 key, boolean emot
 		return true;
 	}
 
-	if (ctrldown && (cv_keyboardlayout.value != 3 || (cv_keyboardlayout.value == 3 && !altdown)))
+	if (ctrldown && (cv_keyboardlayout.value!=3 || !altdown))
 	{
 		if (key == 'x' || key == 'X')
 		{
@@ -381,10 +381,10 @@ static boolean M_TextInputHandleBase(textinput_t *input, INT32 key, boolean emot
 	// allow people to use keypad in console (good for typing IP addresses) - Calum
 	if (key >= KEY_KEYPAD7 && key <= KEY_KPADDEL)
 	{
-		char keypad_translation[] = {'7','8','9','-',
-		                             '4','5','6','+',
-		                             '1','2','3',
-		                             '0','.'};
+		const char keypad_translation[] = {'7','8','9','-',
+		                                   '4','5','6','+',
+		                                   '1','2','3',
+		                                   '0',    '.'};
 
 		key = keypad_translation[key - KEY_KEYPAD7];
 	}

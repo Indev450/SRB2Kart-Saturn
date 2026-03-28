@@ -650,34 +650,34 @@ void LUA_HUD_DrawList(huddrawlist_h list)
 			case DI_DrawString:
 				switch(item->align)
 				{
-				// hu_font
-				case align_left:
-					V_DrawString(LERPS(x), LERPS(y), item->flags, itemstr);
-					break;
-				case align_center:
-					V_DrawCenteredString(LERPS(x), LERPS(y), item->flags, itemstr);
-					break;
-				case align_right:
-					V_DrawRightAlignedString(LERPS(x), LERPS(y), item->flags, itemstr);
-					break;
-				case align_fixed:
-					V_DrawStringAtFixed(LERPS(x), LERPS(y), item->flags, itemstr);
-					break;
-				// hu_font, 0.5x scale
-				case align_small:
-					V_DrawSmallString(LERPS(x), LERPS(y), item->flags, itemstr);
-					break;
-				case align_smallright:
-					V_DrawRightAlignedSmallString(LERPS(x), LERPS(y), item->flags, itemstr);
-					break;
-				// tny_font
-				case align_thin:
-					V_DrawThinString(LERPS(x), LERPS(y), item->flags, itemstr);
-					break;
-				case align_thinright:
-					V_DrawRightAlignedThinString(LERPS(x), LERPS(y), item->flags, itemstr);
-					break;
-				}
+					// hu_font
+					case align_left:
+						V_DrawString(LERPS(x), LERPS(y), item->flags, itemstr);
+						break;
+					case align_center:
+						V_DrawCenteredString(LERPS(x), LERPS(y), item->flags, itemstr);
+						break;
+					case align_right:
+						V_DrawRightAlignedString(LERPS(x), LERPS(y), item->flags, itemstr);
+						break;
+					case align_fixed:
+						V_DrawStringAtFixed(LERPS(x), LERPS(y), item->flags, itemstr);
+						break;
+					// hu_font, 0.5x scale
+					case align_small:
+						V_DrawSmallString(LERPS(x), LERPS(y), item->flags, itemstr);
+						break;
+					case align_smallright:
+						V_DrawRightAlignedSmallString(LERPS(x), LERPS(y), item->flags, itemstr);
+						break;
+					// tny_font
+					case align_thin:
+						V_DrawThinString(LERPS(x), LERPS(y), item->flags, itemstr);
+						break;
+					case align_thinright:
+						V_DrawRightAlignedThinString(LERPS(x), LERPS(y), item->flags, itemstr);
+						break;
+					}
 				break;
 			case DI_DrawKartString:
 				V_DrawKartString(LERPS(x), LERPS(y), item->flags, itemstr);
@@ -690,7 +690,6 @@ void LUA_HUD_DrawList(huddrawlist_h list)
 				break;
 			default:
 				I_Error("can't draw draw list item: invalid draw list item type");
-				continue;
 		}
 	}
 }

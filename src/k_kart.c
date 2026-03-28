@@ -2001,11 +2001,9 @@ static void K_PlayGenericCombatSound(mobj_t *source, mobj_t *other, sfxenum_t sf
 	if (!skin)
 		return;
 
-	boolean alwaysHear = false;
-
 	if (cv_kartvoices.value && !P_MobjWasRemoved(other) && other->player != NULL)
 	{
-		alwaysHear = P_IsDisplayPlayer(other->player);
+		boolean alwaysHear = P_IsDisplayPlayer(other->player);
 		S_StartSound(alwaysHear ? NULL : source, skin->soundsid[S_sfx[sfx_id].skinsound]);
 	}
 
@@ -3724,10 +3722,8 @@ mobj_t *K_SpawnWipeoutTrail(mobj_t *mo, boolean translucent)
 		dust->momx = mo->momx/2;
 		dust->momy = mo->momy/2;
 		dust->momz = mo->momz/2;
-	}
-
-	if (translucent)
 		dust->flags2 |= MF2_SHADOW;
+	}
 
 	return dust;
 }
@@ -4740,8 +4736,7 @@ void K_RepairOrbitChain(mobj_t *orbit)
 				prev->movedir = num;
 		}
 
-		if (player->kartstuff[k_itemamount] != num)
-			player->kartstuff[k_itemamount] = num;
+		player->kartstuff[k_itemamount] = num;
 	}
 }
 
@@ -6399,7 +6394,6 @@ void K_SpawnWaterRunParticles(mobj_t *mobj)
 	fixed_t runSpeed = 14 * mobj->scale;
 	fixed_t curSpeed = INT32_MAX;
 	fixed_t topSpeed = INT32_MAX;
-	fixed_t trailScale = FRACUNIT;
 
 	if (mobj->player != NULL)
 	{
@@ -6430,6 +6424,8 @@ void K_SpawnWaterRunParticles(mobj_t *mobj)
 	if ((!(mobj->eflags & MFE_VERTICALFLIP) && mobj->z + mobj->height >= mobj->watertop && mobj->z <= mobj->watertop)
 		|| (mobj->eflags & MFE_VERTICALFLIP && mobj->z + mobj->height >= mobj->waterbottom && mobj->z <= mobj->waterbottom))
 	{
+		fixed_t trailScale = FRACUNIT;
+
 		if (topSpeed > runSpeed)
 		{
 			trailScale = FixedMul(FixedDiv(curSpeed - runSpeed, topSpeed - runSpeed), mapobjectscale);

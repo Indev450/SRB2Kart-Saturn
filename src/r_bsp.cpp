@@ -991,7 +991,6 @@ static void R_Subsector(size_t num)
 				visffloor[numffloors].height = polysec->floorheight;
 				visffloor[numffloors].polyobj = po;
 				visffloor[numffloors].slope = NULL;
-//				visffloor[numffloors].ffloor = rover;
 				po->visplane = visffloor[numffloors].plane;
 				numffloors++;
 			}

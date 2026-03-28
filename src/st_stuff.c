@@ -185,7 +185,7 @@ static void ST_doPaletteStuff(void)
 #endif
 
 	if (stplyr && stplyr->flashcount)
-		palette = CLAMP(stplyr->flashpal, 0, 13);
+		palette = min(stplyr->flashpal, 13);
 
 	if (palette != st_palette)
 	{

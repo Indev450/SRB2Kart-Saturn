@@ -38,44 +38,6 @@
 #include <errno.h>
 
 //
-// Texture definition.
-// Each texture is composed of one or more patches,
-// with patches being lumps stored in the WAD.
-// The lumps are referenced by number, and patched
-// into the rectangular texture space using origin
-// and possibly other attributes.
-//
-typedef struct
-{
-	INT16 originx, originy;
-	INT16 patch, stepdir, colormap;
-} ATTRPACK mappatch_t;
-
-//
-// Texture definition.
-// An SRB2 wall texture is a list of patches
-// which are to be combined in a predefined order.
-//
-typedef struct
-{
-	char name[8];
-	INT32 masked;
-	INT16 width;
-	INT16 height;
-	INT32 columndirectory; // FIXTHIS: OBSOLETE
-	INT16 patchcount;
-	mappatch_t patches[1];
-} ATTRPACK maptexture_t;
-
-// Store lists of lumps for F_START/F_END etc.
-typedef struct
-{
-	UINT16 wadfile;
-	UINT16 firstlump;
-	size_t numlumps;
-} lumplist_t;
-
-//
 // Graphics.
 // SRB2 graphics for walls and sprites
 // is stored in vertical runs of opaque pixels (posts).
@@ -836,11 +798,7 @@ static texpatch_t *R_ParsePatch(boolean actuallyLoadPatch)
 	}
 	else
 	{
-		if (patchName != NULL)
-		{
-			Z_Free(patchName);
-		}
-
+		Z_Free(patchName);
 		patchName = (char *)Z_Malloc((texturesTokenLength+1)*sizeof(char),PU_STATIC,NULL);
 		memcpy(patchName,texturesToken,texturesTokenLength*sizeof(char));
 		patchName[texturesTokenLength] = '\0';

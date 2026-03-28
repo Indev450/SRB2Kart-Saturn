@@ -51,13 +51,6 @@
 #include "hardware/hw_main.h"
 #endif
 
-typedef struct
-{
-	char patch[9];
-	 INT32 points;
-	UINT8 display;
-} y_bonus_t;
-
 static y_data_t data;
 
 // graphics
@@ -1607,9 +1600,6 @@ void Y_SetupVoteFinish(SINT8 pick, SINT8 level)
 				votes[i] = 3;
 
 			if (votes[i] == -1 || endtype > 1) // Don't need to go on
-				continue;
-
-			if (endtype == 2)
 				continue;
 
 			if (votecompare == -1)
