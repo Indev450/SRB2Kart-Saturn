@@ -1209,13 +1209,13 @@ static void R_DrawWallColumn(drawcolumndata_t* dc, INT32 yl, INT32 yh, fixed_t m
 		dc->source = holecol;
 
 		// so it can cut the "holes"
-		if (R_CheckColumnFunc(BASEDRAWFUNC) == true)
-		{
-			colfunccopy = colfuncs[COLDRAWFUNC_TWOSMULTIPATCH];
-		}
-		else if (R_CheckColumnFunc(COLDRAWFUNC_FUZZY) == true)
+		if (R_CheckColumnFunc(COLDRAWFUNC_FUZZY) == true)
 		{
 			colfunccopy = colfuncs[COLDRAWFUNC_TWOSMULTIPATCHTRANS];
+		}
+		else
+		{
+			colfunccopy = colfuncs[COLDRAWFUNC_TWOSMULTIPATCH];
 		}
 	}
 
