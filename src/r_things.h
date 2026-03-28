@@ -50,7 +50,7 @@ extern fixed_t windowtop;
 extern fixed_t windowbottom;
 extern INT32 lengthcol;
 
-FUNCINLINE static ATTRINLINE INT32 R_ThingLightLevel(mobj_t* thing)
+FUNCINLINE static ATTRINLINE INT32 R_ThingLightLevel(const mobj_t* thing)
 {
 	return (INT32)thing->lightlevel;
 }

@@ -1282,10 +1282,7 @@ void R_DrawSinglePlane(drawspandata_t* ds, visplane_t *pl, boolean allow_paralle
 	else
 	{
 		// Don't mess with angle on slopes! We'll handle this ourselves later
-		if (viewangle != pl->viewangle + pl->plangle)
-		{
-			viewangle = pl->viewangle + pl->plangle;
-		}
+		viewangle = pl->viewangle + pl->plangle;
 
 		ds->planeheight = abs(pl->height - pl->viewz);
 		ds->planezlight = zlight[light];

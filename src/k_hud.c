@@ -2094,7 +2094,7 @@ static void K_DrawKartPositionNum(INT32 num)
 			fy = POSI_Y;
 			fflags = V_SNAPTOLEFT|((stplyrnum == 2) ? V_SPLITSCREEN|V_SNAPTOBOTTOM : 0);	// flip P3 to the bottom.
 			flipdraw = true;
-			if (num && num >= 10)
+			if (num >= 10)
 				fx += W;	// this seems dumb, but we need to do this in order for positions above 10 going off screen.
 		}
 		else // else, that means we're P2 or P4.
@@ -4076,7 +4076,7 @@ static void K_drawBattleFullscreen(void)
 		{
 			if (i == displayplayers[0])
 				continue;
-			if (playeringame[i] && !stplyr->spectator)
+			if (playeringame[i])
 				return;
 		}
 

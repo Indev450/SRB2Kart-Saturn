@@ -852,7 +852,7 @@ boolean CON_Responder(event_t *ev)
 		return true;
 
 	// ctrl modifier -- changes behavior, adds shortcuts
-	if (ctrldown && (cv_keyboardlayout.value != 3 || (cv_keyboardlayout.value == 3 && !altdown)))
+	if (ctrldown && (cv_keyboardlayout.value != 3 || !altdown))
 	{
 		// show all cvars/commands that match what we have inputted
 		if (key == KEY_TAB)
