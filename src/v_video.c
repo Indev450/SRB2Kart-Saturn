@@ -3235,7 +3235,7 @@ INT32 V_SubStringWidth(const char *string, INT32 length, INT32 option)
 			break;
 	}
 
-	for (i = 0; string[i] && i < length; i++)
+	for (i = 0; i < length && string[i]; i++)
 	{
 		c = string[i];
 		if ((UINT8)c >= 0x80 && (UINT8)c <= 0x8F) //color parsing! -Inuyasha 2.16.09
@@ -3280,7 +3280,7 @@ INT32 V_SmallSubStringWidth(const char *string, INT32 length, INT32 option)
 			break;
 	}
 
-	for (i = 0; string[i] && i < length; i++)
+	for (i = 0; i < length && string[i]; i++)
 	{
 		c = string[i];
 		if ((UINT8)c >= 0x80 && (UINT8)c <= 0x8F) //color parsing! -Inuyasha 2.16.09
@@ -3329,7 +3329,7 @@ INT32 V_ThinSubStringWidth(const char *string, INT32 length, INT32 option)
 			break;
 	}
 
-	for (i = 0; string[i] && i < length; i++)
+	for (i = 0; i < length && string[i]; i++)
 	{
 		c = string[i];
 		if ((UINT8)c >= 0x80 && (UINT8)c <= 0x8F) //color parsing! -Inuyasha 2.16.09
