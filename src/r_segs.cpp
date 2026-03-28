@@ -1168,6 +1168,7 @@ static inline void R_ExpandPlaneY(visplane_t *pl, INT32 x, INT16 top, INT16 bott
 
 static void R_DrawWallColumn(drawcolumndata_t* dc, INT32 yl, INT32 yh, fixed_t mid, fixed_t texturecolumn, INT32 texture, boolean remap)
 {
+	UINT8 *holecol = NULL;
 	const INT32 itexturecolumn = texturecolumn >> FRACBITS;
 	dc->yl = yl;
 	dc->yh = yh;
@@ -1175,14 +1176,59 @@ static void R_DrawWallColumn(drawcolumndata_t* dc, INT32 yl, INT32 yh, fixed_t m
 	dc->source = R_GetColumn(texture, itexturecolumn);
 	dc->texheight = textureheight[texture] >> FRACBITS;
 	dc->sourcelength = dc->texheight;
+
 	R_SetColumnFunc(colfunctype);
 	coldrawfunc_t* colfunccopy = colfunc;
+
+	// ok so this thing cannot handle "holey" textures
+	// since it just reads the data as pixels directly
+	// but the holey ones dont have any data there or smth
+	// plug missing "data" with cyan so multipatch drawer can cut them
+	// fixes reading oob garbo and the "melty" effect on maps like spelunky or hyakaykuykiukikykooekyk streets
+	// caveat: this is mostly done on single sided walls which may cause some other issues, but mostly seems to work fineish
+	// this is probably inefficient as hell but oh well
+	if (textures[texture]->holes)
+	{
+		holecol = static_cast<UINT8*>(malloc(dc->texheight));
+		column_t *col = (column_t *)(dc->source - 3);
+		// fill in everything with cyan so we can skip it
+		memset(holecol, TRANSPARENTPIXEL, dc->texheight);
+
+		// shamelessly copy pasted from R_GenerateTexture
+		INT32 topdelta, prevdelta = -1;
+		while (col->topdelta != 0xff)
+		{
+			topdelta = col->topdelta;
+			if (topdelta <= prevdelta)
+				topdelta += prevdelta;
+			prevdelta = topdelta;
+			memcpy(holecol + topdelta, (UINT8*)col + 4, col->length);
+			col = (column_t *)((UINT8*)col + col->length + 4);
+		}
+
+		dc->source = holecol;
+
+		// so it can cut the "holes"
+		if (R_CheckColumnFunc(BASEDRAWFUNC) == true)
+		{
+			colfunccopy = colfuncs[COLDRAWFUNC_TWOSMULTIPATCH];
+		}
+		else if (R_CheckColumnFunc(COLDRAWFUNC_FUZZY) == true)
+		{
+			colfunccopy = colfuncs[COLDRAWFUNC_TWOSMULTIPATCHTRANS];
+		}
+	}
+
 	drawcolumndata_t dc_copy = *dc;
+
 	if (remap)
 	{
 		dc_copy.colormap += COLORMAP_REMAPOFFSET;
 	}
+
 	colfunccopy(const_cast<drawcolumndata_t*>(&dc_copy));
+
+	free(holecol);
 }
 
 static boolean didsolidcol; // True if at least one column was marked solid
@@ -1390,7 +1436,7 @@ static void R_RenderSegLoop(drawcolumndata_t* dc)
 			// calculate lighting
 			pindex = FixedMul(rw_scale, LIGHTRESOLUTIONFIX)>>LIGHTSCALESHIFT;
 
-			if (pindex >=  MAXLIGHTSCALE)
+			if (pindex >= MAXLIGHTSCALE)
 				pindex = MAXLIGHTSCALE-1;
 
 			dc->colormap = walllights[pindex];
@@ -1425,7 +1471,7 @@ static void R_RenderSegLoop(drawcolumndata_t* dc)
 
 				pindex = FixedMul(rw_scale, LIGHTRESOLUTIONFIX)>>LIGHTSCALESHIFT;
 
-				if (pindex >=  MAXLIGHTSCALE)
+				if (pindex >= MAXLIGHTSCALE)
 					pindex = MAXLIGHTSCALE-1;
 
 				if (dc->lightlist[i].extra_colormap)
