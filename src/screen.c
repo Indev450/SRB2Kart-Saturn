@@ -154,7 +154,6 @@ void SCR_SetMode(void)
 // effectively adding massive overhead due to excessive flushing, so we draw our masked thing directly to screen instead
 void R_SetColumnContext(enum columncontext_e _columncontext)
 {
-	columncontext = _columncontext;
 	SCR_SetDrawFuncs(_columncontext); // set our column drawers
 }
 

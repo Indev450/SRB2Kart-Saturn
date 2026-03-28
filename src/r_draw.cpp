@@ -521,8 +521,6 @@ void R_FlushTranslationColormapCache(void)
 // in reality, the few routines that can work for either mode, are
 // put here
 
-enum columncontext_e columncontext = COLUMNCONTEXT_DIRECT;
-
 enum ColumnFlushType
 {
 	FLUSH_NONE				= 0x0000,

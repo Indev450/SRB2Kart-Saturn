@@ -105,7 +105,6 @@ enum columncontext_e
 	COLUMNCONTEXT_FLUSH,
 };
 
-extern enum columncontext_e columncontext;
 void R_SetColumnContext(enum columncontext_e _columncontext);
 
 void R_ResetColumnBuffer(void);
