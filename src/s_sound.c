@@ -1346,7 +1346,6 @@ static boolean ReadMusicDefFields(UINT16 wadnum, int line, char *stoken, musicde
 
 // turn _ into spaces.
 #define ADDDEF(field)\
-	CONS_Printf("%s = %s\n",#field, textline); \
 	STRBUFCPY(def->field, textline);\
 	for (textline = def->field; *textline; textline++)\
 		if (*textline == '_') *textline = ' ';
