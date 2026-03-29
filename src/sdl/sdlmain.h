@@ -57,6 +57,10 @@ typedef struct SDLJoyInfo_s
 	//int hats;
 	/// number of balls
 	//int balls;
+	///
+	boolean hasled;
+	///
+	boolean hasrumble;
 } SDLJoyInfo_t;
 
 /**	\brief SDL info about controller 1
