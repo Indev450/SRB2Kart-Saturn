@@ -729,6 +729,8 @@ static void JoyReset(SDLJoyInfo_t *JoySet)
 #if (SDL_VERSION_ATLEAST(2,32,4))
 	JoySet->id = -1;
 #endif
+	JoySet->hasled = false;
+	JoySet->hasrumble = false;
 }
 
 /**	\brief SDL info about joystick
@@ -949,6 +951,13 @@ static int joy_open(int playerIndex, int joyIndex)
 	JoyInfo[playerIndex].id = I_GetJoystickDeviceIndex(JoyInfo[playerIndex].dev);
 #endif
 
+#if (SDL_VERSION_ATLEAST(2,0,14))
+	JoyInfo[playerIndex].hasled = SDL_GameControllerHasLED(JoyInfo[playerIndex].dev);
+#endif
+#if (SDL_VERSION_ATLEAST(2,0,18))
+	JoyInfo[playerIndex].hasrumble = SDL_GameControllerHasRumble(JoyInfo[playerIndex].dev);
+#endif
+
 	return SDL_CONTROLLER_AXIS_MAX;
 }
 
@@ -996,6 +1005,8 @@ void I_InitJoystick(UINT8 index)
 #if (SDL_VERSION_ATLEAST(2,32,4))
 	JoyInfo[index].id = -1;
 #endif
+	JoyInfo[index].hasled = false;
+	JoyInfo[index].hasrumble = false;
 
 	if (cv_usejoystick[index].value)
 		newcontroller = SDL_GameControllerOpen(cv_usejoystick[index].value-1);
@@ -1130,6 +1141,26 @@ const char *I_GetJoyName(INT32 joyindex)
 	return joyname;
 }
 
+boolean I_GamepadHasLED(INT32 playernum)
+{
+#if !(SDL_VERSION_ATLEAST(2,0,14))
+	(void)playernum;
+	return false;
+#else
+	return (JoyInfo[playernum].dev != NULL && JoyInfo[playernum].hasled);
+#endif
+}
+
+boolean I_GamepadHasRumble(INT32 playernum)
+{
+#if !(SDL_VERSION_ATLEAST(2,0,18))
+	(void)playernum;
+	return false;
+#else
+	return (JoyInfo[playernum].dev != NULL && JoyInfo[playernum].hasrumble);
+#endif
+}
+
 void I_GamepadRumble(INT32 playernum, UINT16 low_strength, UINT16 high_strength, UINT32 duration)
 {
 #if !(SDL_VERSION_ATLEAST(2,0,14))
@@ -1141,6 +1172,11 @@ void I_GamepadRumble(INT32 playernum, UINT16 low_strength, UINT16 high_strength,
 	SDL_GameController *controller = JoyInfo[playernum].dev;
 
 	if (controller == NULL)
+	{
+		return;
+	}
+
+	if (!I_GamepadHasRumble(playernum))
 	{
 		return;
 	}
@@ -1160,6 +1196,11 @@ void I_SetGamepadIndicatorColor(INT32 playernum, UINT8 red, UINT8 green, UINT8 b
 	SDL_GameController *controller = JoyInfo[playernum].dev;
 
 	if (controller == NULL)
+	{
+		return;
+	}
+
+	if (!I_GamepadHasLED(playernum))
 	{
 		return;
 	}
