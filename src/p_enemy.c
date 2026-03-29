@@ -3650,7 +3650,7 @@ static inline boolean PIT_GrenadeRing(mobj_t *thing)
 		return true;
 
 	if (thing->player && (thing->player->kartstuff[k_hyudorotimer]
-		|| (G_BattleGametype() && thing->player && thing->player->kartstuff[k_bumper] <= 0 && thing->player->kartstuff[k_comebacktimer])))
+		|| (G_BattleGametype() && thing->player->kartstuff[k_bumper] <= 0 && thing->player->kartstuff[k_comebacktimer])))
 		return true;
 
 	if ((gametype == GT_CTF || gametype == GT_TEAMMATCH)
@@ -5301,7 +5301,7 @@ void A_MixUp(void *thing)
 		if (playeringame[i] && players[i].mo && players[i].mo->health > 0 && players[i].playerstate == PST_LIVE
 			&& !players[i].exiting && !players[i].powers[pw_super])
 		{
-			if ((netgame || multiplayer) && players[i].spectator) // Ignore spectators
+			if (netgame && players[i].spectator) // Ignore spectators
 				continue;
 
 			numplayers++;
@@ -5343,6 +5343,11 @@ void A_MixUp(void *thing)
 					break;
 				}
 			}
+
+		// idk if we ever really end up here
+		// but bad things would happen if we do without this
+		if (one == -1)
+			return;
 
 		//get this done first!
 		tempthing = players[one].mo->tracer;
@@ -7918,7 +7923,7 @@ void A_ItemPop(void *thing)
 
 	if (!(actor->target && actor->target->player))
 	{
-		if (cv_debug && !(actor->target && actor->target->player))
+		if (cv_debug)
 			CONS_Printf("ERROR: Powerup has no target!\n");
 		return;
 	}
@@ -8780,7 +8785,7 @@ void A_ReaperThinker(void *thing)
 		actor->angle = R_PointToAngle2(actor->x, actor->y, actor->target->x, actor->target->y);
 
 		// The player we should target if it's near us:
-		for (i = 0; i<MAXPLAYERS; i++)
+		for (i = 0; i < MAXPLAYERS; i++)
 		{
 
 			if (!playeringame[i])

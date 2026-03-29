@@ -2812,12 +2812,6 @@ static void DEH_LoadDehackedFile(MYFILE *f, UINT16 wad)
 
 	deh_num_warning = 0;
 	// save values for cross reference
-	/*
-	for (i = 0; i < NUMSTATES; i++)
-		saveactions[i] = states[i].action;
-	for (i = 0; i < NUMSPRITES; i++)
-		savesprnames[i] = sprnames[i];
-	*/
 	for (i = 0; i < NUMSFX; i++)
 		savesfxnames[i] = S_sfx[i].name;
 
@@ -3124,11 +3118,8 @@ static void DEH_LoadDehackedFile(MYFILE *f, UINT16 wad)
 	if (deh_num_warning)
 	{
 		CONS_Printf(M_GetText("%d warning%s in the SOC lump\n"), deh_num_warning, deh_num_warning == 1 ? "" : "s");
-		if (devparm) {
+		if (devparm)
 			I_Error("%s%s",va(M_GetText("%d warning%s in the SOC lump\n"), deh_num_warning, deh_num_warning == 1 ? "" : "s"), M_GetText("See log.txt for details.\n"));
-			//while (!I_GetKey())
-				//I_OsPolling();
-		}
 	}
 
 	deh_loaded = true;
@@ -8217,84 +8208,109 @@ struct {
 	{NULL,0}
 };
 
+// Returns the vlaue of MT_ enumerations
 static mobjtype_t get_mobjtype(const char *word)
-{ // Returns the vlaue of MT_ enumerations
+{
 	mobjtype_t i;
+
 	if (*word >= '0' && *word <= '9')
 		return atoi(word);
+
 	if (fastncmp("MT_",word,3))
 		word += 3; // take off the MT_
-	for (i = 0; i < NUMMOBJFREESLOTS; i++) {
+
+	for (i = 0; i < NUMMOBJFREESLOTS; i++)
+	{
 		if (!FREE_MOBJS[i])
 			break;
 		if (fastcmp(word, FREE_MOBJS[i]))
 			return MT_FIRSTFREESLOT+i;
 	}
+
 	for (i = 0; i < MT_FIRSTFREESLOT; i++)
 		if (fastcmp(word, MOBJTYPE_LIST[i]+3))
 			return i;
+
 	deh_warning("Couldn't find mobjtype named 'MT_%s'",word);
 	return MT_BLUECRAWLA;
 }
 
+// Returns the value of S_ enumerations
 static statenum_t get_state(const char *word)
-{ // Returns the value of S_ enumerations
+{
 	statenum_t i;
 	if (*word >= '0' && *word <= '9')
 		return atoi(word);
+
 	if (fastncmp("S_",word,2))
 		word += 2; // take off the S_
-	for (i = 0; i < NUMSTATEFREESLOTS; i++) {
+
+	for (i = 0; i < NUMSTATEFREESLOTS; i++)
+	{
 		if (!FREE_STATES[i])
 			break;
+
 		if (fastcmp(word, FREE_STATES[i]))
 			return S_FIRSTFREESLOT+i;
 	}
+
 	for (i = 0; i < S_FIRSTFREESLOT; i++)
 		if (fastcmp(word, STATE_LIST[i]+2))
 			return i;
+
 	deh_warning("Couldn't find state named 'S_%s'",word);
 	return S_NULL;
 }
 
+// Returns the value of SPR_ enumerations
 static spritenum_t get_sprite(const char *word)
-{ // Returns the value of SPR_ enumerations
+{
 	spritenum_t i;
 	if (*word >= '0' && *word <= '9')
 		return atoi(word);
+
 	if (fastncmp("SPR_",word,4))
 		word += 4; // take off the SPR_
+
 	for (i = 0; i < NUMSPRITES; i++)
-		if (!sprnames[i][4] && memcmp(word,sprnames[i],4)==0)
+		if (!sprnames[i][4] && memcmp(word,sprnames[i],4) == 0)
 			return i;
+
 	deh_warning("Couldn't find sprite named 'SPR_%s'",word);
 	return SPR_NULL;
 }
 
+// Returns the value of SFX_ enumerations
 static sfxenum_t get_sfx(const char *word)
-{ // Returns the value of SFX_ enumerations
+{
 	sfxenum_t i;
+
 	if (*word >= '0' && *word <= '9')
 		return atoi(word);
+
 	if (fastncmp("SFX_",word,4))
 		word += 4; // take off the SFX_
 	else if (fastncmp("DS",word,2))
 		word += 2; // take off the DS
+
 	for (i = 0; i < NUMSFX; i++)
 		if (S_sfx[i].name && fasticmp(word, S_sfx[i].name))
 			return i;
+
 	deh_warning("Couldn't find sfx named 'SFX_%s'",word);
 	return sfx_None;
 }
 
 #ifdef MUSICSLOT_COMPATIBILITY
+// Returns the value of MUS_ enumerations
 static UINT16 get_mus(const char *word, UINT8 dehacked_mode)
-{ // Returns the value of MUS_ enumerations
+{
 	UINT16 i;
 	char lumptmp[4];
 
 	if (*word >= '0' && *word <= '9')
 		return atoi(word);
+
 	if (!word[2] && toupper(word[0]) >= 'A' && toupper(word[0]) <= 'Z')
 		return (UINT16)M_MapNumber(word[0], word[1]);
 
@@ -8318,25 +8334,33 @@ static UINT16 get_mus(const char *word, UINT8 dehacked_mode)
 			deh_warning("Couldn't find music named 'MUS_%s'",word);
 		return 0;
 	}
+
 	for (i = 0; compat_special_music_slots[i][0]; ++i)
 		if (fasticmp(word, compat_special_music_slots[i]))
 			return i + 1036;
+
 	if (dehacked_mode)
 		deh_warning("Couldn't find music named 'MUS_%s'",word);
+
 	return 0;
 }
 #endif
 
+// Returns the value of HUD_ enumerations
 static hudnum_t get_huditem(const char *word)
-{ // Returns the value of HUD_ enumerations
+{
 	hudnum_t i;
+
 	if (*word >= '0' && *word <= '9')
 		return atoi(word);
+
 	if (fastncmp("HUD_",word,4))
 		word += 4; // take off the HUD_
+
 	for (i = 0; i < NUMHUDITEMS; i++)
 		if (fastcmp(word, HUDITEMS_LIST[i]))
 			return i;
+
 	deh_warning("Couldn't find huditem named 'HUD_%s'",word);
 	return HUD_LIVESNAME;
 }
@@ -8383,15 +8407,16 @@ static inline int lib_freeslot(lua_State *L)
 {
 	int n = lua_gettop(L);
 	int r = 0; // args returned
-	char *s, *type,*word;
+	char *s, *type, *word;
 
-  while (n-- > 0)
-  {
+	while (n-- > 0)
+	{
 		s = Z_StrDup(luaL_checkstring(L,1));
 		type = strtok(s, "_");
 		if (type)
 			strupr(type);
-		else {
+		else
+		{
 			Z_Free(s);
 			return luaL_error(L, "Unknown enum type in '%s'\n", luaL_checkstring(L, 1));
 		}
@@ -8399,19 +8424,25 @@ static inline int lib_freeslot(lua_State *L)
 		word = strtok(NULL, "\n");
 		if (word)
 			strupr(word);
-		else {
+		else
+		{
 			Z_Free(s);
 			return luaL_error(L, "Missing enum name in '%s'\n", luaL_checkstring(L, 1));
 		}
-		if (fastcmp(type, "SFX")) {
+
+		if (fastcmp(type, "SFX"))
+		{
 			sfxenum_t sfx;
 			strlwr(word);
 			CONS_Printf("Sound sfx_%s allocated.\n",word);
 			sfx = S_AddSoundFx(word, false, 0, false);
-			if (sfx != sfx_None) {
+
+			if (sfx != sfx_None)
+			{
 				lua_pushinteger(L, sfx);
 				r++;
-			} else
+			}
+			else
 				I_Error("Out of Sfx Freeslots while allocating \"%s\"\nLoad less addons to fix this.", word); //Should never get here since S_AddSoundFx was changed to throw I_Error when it can't allocate
 		}
 		else if (fastcmp(type, "SPR"))
@@ -8425,7 +8456,7 @@ static inline int lib_freeslot(lua_State *L)
 			{
 				if (used_spr[(j-SPR_FIRSTFREESLOT)/8] & (1<<(j%8)))
 				{
-					if (!sprnames[j][4] && memcmp(sprnames[j],word,4)==0)
+					if (!sprnames[j][4] && memcmp(sprnames[j], word, 4) == 0)
 						sprnames[j][4] = wad;
 					continue; // Already allocated, next.
 				}
@@ -8443,6 +8474,7 @@ static inline int lib_freeslot(lua_State *L)
 				r++;
 				break;
 			}
+
 			if (j > SPR_LASTFREESLOT)
 				I_Error("Out of Sprite Freeslots while allocating \"%s\"\nLoad less addons to fix this.", word);
 		}
@@ -8450,7 +8482,9 @@ static inline int lib_freeslot(lua_State *L)
 		{
 			statenum_t i;
 			for (i = 0; i < NUMSTATEFREESLOTS; i++)
-				if (!FREE_STATES[i]) {
+			{
+				if (!FREE_STATES[i])
+				{
 					CONS_Printf("State S_%s allocated.\n",word);
 
 					lua_pushcfunction(L, lua_glib_invalidate_cache);
@@ -8464,6 +8498,8 @@ static inline int lib_freeslot(lua_State *L)
 					r++;
 					break;
 				}
+			}
+
 			if (i == NUMSTATEFREESLOTS)
 				I_Error("Out of State Freeslots while allocating \"%s\"\nLoad less addons to fix this.", word);
 		}
@@ -8471,7 +8507,9 @@ static inline int lib_freeslot(lua_State *L)
 		{
 			mobjtype_t i;
 			for (i = 0; i < NUMMOBJFREESLOTS; i++)
-				if (!FREE_MOBJS[i]) {
+			{
+				if (!FREE_MOBJS[i])
+				{
 					CONS_Printf("MobjType MT_%s allocated.\n",word);
 
 					lua_pushcfunction(L, lua_glib_invalidate_cache);
@@ -8485,13 +8523,17 @@ static inline int lib_freeslot(lua_State *L)
 					r++;
 					break;
 				}
+			}
+
 			if (i == NUMMOBJFREESLOTS)
 				I_Error("Out of Mobj Freeslots while allocating \"%s\"\nLoad less addons to fix this.", word);
 		}
+
 		Z_Free(s);
 		lua_remove(L, 1);
 		continue;
 	}
+
 	return r;
 }
 
@@ -8504,8 +8546,10 @@ static inline int lib_action(lua_State *L)
 	mobj_t *actor = *((mobj_t **)luaL_checkudata(L,1,META_MOBJ));
 	var1 = (INT32)luaL_optinteger(L,2,0);
 	var2 = (INT32)luaL_optinteger(L,3,0);
+
 	if (!actor)
 		return LUA_ErrInvalid(L, "mobj_t");
+
 	(*action)(actor);
 	return 0;
 }
@@ -8527,23 +8571,29 @@ FUNCINLINE static ATTRINLINE int lib_getenum(lua_State *L)
 
 	const char *word;
 	boolean mathlib = lua_toboolean(L, UV_MATHLIB);
+
 	if (lua_type(L,2) != LUA_TSTRING)
 		return 0;
+
 	word = lua_tostring(L,2);
 
 	/* First check actions, as they can be overridden. */
-	if (!mathlib && fastncmp("A_",word,2)) {
+	if (!mathlib && fastncmp("A_",word,2))
+	{
 		char *caps;
 		// Try to get a Lua action first.
 		/// \todo Push a closure that sets superactions[] and superstack.
 		lua_getfield(L, LUA_REGISTRYINDEX, LREG_ACTIONS);
+
 		// actions are stored in all uppercase.
 		caps = Z_StrDup(word);
 		strupr(caps);
 		lua_getfield(L, -1, caps);
 		Z_Free(caps);
+
 		if (!lua_isnil(L, -1))
 			return 1; // Success! :D That was easy.
+
 		// Welp, that failed.
 		lua_pop(L, 2); // pop nil and LREG_ACTIONS
 		// Hardcoded actions are handled by the proxy.
@@ -8552,12 +8602,14 @@ FUNCINLINE static ATTRINLINE int lib_getenum(lua_State *L)
 	/* Then check the globals proxy table. */
 	lua_pushvalue(L, 2);
 	lua_gettable(L, GLIB_PROXY);
+
 	if (!lua_isnil(L, -1))
 	{
 		return 1;
 	}
 
-	if (mathlib) return luaL_error(L, "constant '%s' could not be parsed.\n", word);
+	if (mathlib)
+		return luaL_error(L, "constant '%s' could not be parsed.\n", word);
 
 	return 0;
 }
@@ -8615,6 +8667,7 @@ static int lua_enumlib_server_get(lua_State *L)
 {
 	if ((!multiplayer || !(netgame || demo.playback)) && !playeringame[serverplayer])
 		return 0;
+
 	LUA_PushUserdata(L, &players[serverplayer], META_PLAYER);
 	return 1;
 }
@@ -8623,6 +8676,7 @@ static int lua_enumlib_consoleplayer_get(lua_State *L)
 {
 	if (consoleplayer < 0 || !playeringame[consoleplayer])
 		return 0;
+
 	LUA_PushUserdata(L, &players[consoleplayer], META_PLAYER);
 	return 1;
 }
@@ -8815,12 +8869,15 @@ static int lua_enumlib_action_get(lua_State *L)
 	const char *action = lua_tostring(L, 1);
 
 	for (int i = 0; actionpointers[i].name; i++)
-		if (fasticmp(action, actionpointers[i].name)) {
+	{
+		if (fasticmp(action, actionpointers[i].name))
+		{
 			// push lib_action as a C closure with the actionf_t* as an upvalue.
 			lua_pushlightuserdata(L, &actionpointers[i].action);
 			lua_pushcclosure(L, lib_action, 1);
 			return 1;
 		}
+	}
 
 	return 0;
 }
@@ -8838,8 +8895,13 @@ static char *lua_enumlib_sprintf_upper(char **buf, int* size, const char *format
 	va_list va;
 	va_start(va, format);
 
-	int length = vsnprintf(*buf, *size, format, va);
-	if (length > *size)
+	va_list vacpy;
+	va_copy(vacpy, va);
+
+	int length = vsnprintf(*buf, *size, format, vacpy);
+	va_end(vacpy);
+
+	if (length >= *size)
 	{
 		void *ptr = realloc(*buf, length+1);
 		if (!ptr)
@@ -8847,12 +8909,13 @@ static char *lua_enumlib_sprintf_upper(char **buf, int* size, const char *format
 			va_end(va);
 			return NULL;
 		}
+
 		*buf = ptr;
 		*size = length+1;
 
-		va_start(va, format);
-		vsnprintf(*buf, *size, format, va);
+		length = vsnprintf(*buf, *size, format, va);
 	}
+
 	va_end(va);
 
 	for (int i = 0; i < length; i++)
@@ -8877,11 +8940,14 @@ static int lua_enumlib_super_get(lua_State *L)
 	}
 
 	for (int i = 0; actionpointers[i].name; i++)
-		if (fasticmp(superactions[superstack-1], actionpointers[i].name)) {
+	{
+		if (fasticmp(superactions[superstack-1], actionpointers[i].name))
+		{
 			lua_pushlightuserdata(L, &actionpointers[i].action);
 			lua_pushcclosure(L, lib_action, 1);
 			return 1;
 		}
+	}
 
 	return 0;
 }
@@ -9350,7 +9416,10 @@ enum actionnum LUA_GetActionNumByName(const char *actiontocompare)
 {
 	size_t z;
 	for (z = 0; actionpointers[z].name; z++)
+	{
 		if (fasticmp(actiontocompare, actionpointers[z].name))
 			return z;
+	}
+
 	return z;
 }

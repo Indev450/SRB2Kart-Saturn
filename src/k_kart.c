@@ -1955,11 +1955,9 @@ static void K_PlayGenericCombatSound(mobj_t *source, mobj_t *other, sfxenum_t sf
 	if (!skin)
 		return;
 
-	boolean alwaysHear = false;
-
 	if (cv_kartvoices.value && !P_MobjWasRemoved(other) && other->player != NULL)
 	{
-		alwaysHear = P_IsDisplayPlayer(other->player);
+		boolean alwaysHear = P_IsDisplayPlayer(other->player);
 		S_StartSound(alwaysHear ? NULL : source, skin->soundsid[S_sfx[sfx_id].skinsound]);
 	}
 
@@ -2372,6 +2370,7 @@ void K_SpawnBattlePoints(player_t *source, player_t *victim, UINT8 amount)
 			break;
 		case 3:
 			st = S_BATTLEPOINT3A;
+			break;
 		default:
 			return; // NO STATE!
 	}
@@ -3677,10 +3676,8 @@ mobj_t *K_SpawnWipeoutTrail(mobj_t *mo, boolean translucent)
 		dust->momx = mo->momx/2;
 		dust->momy = mo->momy/2;
 		dust->momz = mo->momz/2;
-	}
-
-	if (translucent)
 		dust->flags2 |= MF2_SHADOW;
+	}
 
 	return dust;
 }
@@ -4657,8 +4654,7 @@ void K_RepairOrbitChain(mobj_t *orbit)
 				prev->movedir = num;
 		}
 
-		if (player->kartstuff[k_itemamount] != num)
-			player->kartstuff[k_itemamount] = num;
+		player->kartstuff[k_itemamount] = num;
 	}
 }
 

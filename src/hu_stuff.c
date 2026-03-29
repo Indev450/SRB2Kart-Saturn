@@ -543,6 +543,8 @@ void HU_AddChatText(const char *text, boolean playsound)
 		HU_removeChatText_Log();
 
 	chat_log[chat_nummsg_log] = malloc(HU_MSGBUFSIZE);
+	if (!chat_log[chat_nummsg_log])
+		I_Error("HU_AddChatText: out of memory for chat log\n");
 	strcpy(chat_log[chat_nummsg_log], text);
 	++chat_nummsg_log;
 
@@ -625,7 +627,10 @@ static void DoSayCommand(SINT8 target, size_t usedargs, UINT8 flags)
 		// with that logic, characters 4 and 5 are our numbers:
 		const char *newmsg;
 		INT32 spc = 1; // used if nodenum[1] is a space.
-		CLEANUP(pfree) char *nodenum = (char*) malloc(3);
+		CLEANUP(pfree) char *nodenum = (char*)malloc(3);
+		if (!nodenum)
+			I_Error("DoSayCommand: out of memory for sending pm\n");
+
 		memcpy(nodenum, msg+3, 2);
 		nodenum[2] = '\0';
 
@@ -1230,7 +1235,9 @@ static void HU_SendChatMessage(void)
 	{
 		INT32 spc = 1; // used if nodenum[1] is a space.
 		const char *newmsg;
-		CLEANUP(pfree) char *nodenum = (char*) malloc(3);
+		CLEANUP(pfree) char *nodenum = (char*)malloc(3);
+		if (!nodenum)
+			I_Error("HU_SendChatMessage: out of memory for sending pm\n");
 
 		// what we're gonna do now is check if the node exists
 		// with that logic, characters 4 and 5 are our numbers:

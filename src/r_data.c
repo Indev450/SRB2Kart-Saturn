@@ -38,44 +38,6 @@
 #include <errno.h>
 
 //
-// Texture definition.
-// Each texture is composed of one or more patches,
-// with patches being lumps stored in the WAD.
-// The lumps are referenced by number, and patched
-// into the rectangular texture space using origin
-// and possibly other attributes.
-//
-typedef struct
-{
-	INT16 originx, originy;
-	INT16 patch, stepdir, colormap;
-} ATTRPACK mappatch_t;
-
-//
-// Texture definition.
-// An SRB2 wall texture is a list of patches
-// which are to be combined in a predefined order.
-//
-typedef struct
-{
-	char name[8];
-	INT32 masked;
-	INT16 width;
-	INT16 height;
-	INT32 columndirectory; // FIXTHIS: OBSOLETE
-	INT16 patchcount;
-	mappatch_t patches[1];
-} ATTRPACK maptexture_t;
-
-// Store lists of lumps for F_START/F_END etc.
-typedef struct
-{
-	UINT16 wadfile;
-	UINT16 firstlump;
-	size_t numlumps;
-} lumplist_t;
-
-//
 // Graphics.
 // SRB2 graphics for walls and sprites
 // is stored in vertical runs of opaque pixels (posts).
@@ -836,11 +798,7 @@ static texpatch_t *R_ParsePatch(boolean actuallyLoadPatch)
 	}
 	else
 	{
-		if (patchName != NULL)
-		{
-			Z_Free(patchName);
-		}
-
+		Z_Free(patchName);
 		patchName = (char *)Z_Malloc((texturesTokenLength+1)*sizeof(char),PU_STATIC,NULL);
 		memcpy(patchName,texturesToken,texturesTokenLength*sizeof(char));
 		patchName[texturesTokenLength] = '\0';
@@ -1366,7 +1324,7 @@ void R_ReInitColormaps(UINT16 num, lumpnum_t newencoremap)
 		colormap_p = colormap_p2 = colormaps;
 		colormap_p += COLORMAP_REMAPOFFSET;
 
-		for (p = 0; p < 32; p++)
+		for (p = 0; p < LIGHTLEVELS; p++)
 		{
 			for (i = 0; i < 256; i++)
 			{
@@ -1588,7 +1546,7 @@ INT32 R_CreateColormap(char *p1, char *p2, char *p3)
 
 		// Calculate the palette index for each palette index, for each light level
 		// (as well as the two unused colormap lines we inherited from Doom)
-		for (p = 0; p < 32; p++)
+		for (p = 0; p < LIGHTLEVELS; p++)
 		{
 			for (i = 0; i < 256; i++)
 			{
@@ -1622,7 +1580,7 @@ INT32 R_CreateColormap(char *p1, char *p2, char *p3)
 		{
 			lighttable_t *colormap_p2 = extra_colormaps[mapnum].colormap;
 
-			for (p = 0; p < 32; p++)
+			for (p = 0; p < LIGHTLEVELS; p++)
 			{
 				for (i = 0; i < 256; i++)
 				{

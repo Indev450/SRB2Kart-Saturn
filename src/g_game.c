@@ -4047,7 +4047,6 @@ void G_InitNew(UINT8 pencoremode, const char *mapname, boolean resetplayer, bool
 	if (W_CheckNumForName(mapname) == LUMPERROR)
 	{
 		I_Error("Internal game map '%s' not found\n", mapname);
-		Command_ExitGame_f();
 		return;
 	}
 

@@ -1653,10 +1653,12 @@ void G_RecordDemo(const char *name)
 		maxsize = cv_maxdemosize.value*1024*1024;
 
 		demobuf.buffer = Z_Malloc(maxsize + 100*1024, PU_STATIC, NULL);
-		demoend = demobuf.buffer + maxsize;
 
 		if (demobuf.buffer)
+		{
+			demoend = demobuf.buffer + maxsize;
 			demo.recording = true;
+		}
 		else
 			CONS_Alert(CONS_ERROR, "Failed to allocate demo buffer\n");
 	}
@@ -1994,7 +1996,6 @@ static UINT8 G_CheckDemoExtraFiles(UINT8 **pp, boolean quick)
 	UINT8 totalfiles, filesloaded, nmusfilecount;
 	char filename[MAX_WADPATH];
 	UINT8 md5sum[16];
-	boolean toomany = false;
 	boolean alreadyloaded;
 	UINT8 i, j;
 	UINT8 error = 0;
@@ -2004,53 +2005,44 @@ static UINT8 G_CheckDemoExtraFiles(UINT8 **pp, boolean quick)
 
 	for (i = 0; i < totalfiles; ++i)
 	{
-		if (toomany)
-			SKIPSTRING((*pp));
-		else
-		{
-			strlcpy(filename, (char *)(*pp), sizeof filename);
-			SKIPSTRING((*pp));
-		}
+		strlcpy(filename, (char *)(*pp), sizeof filename);
+		SKIPSTRING((*pp));
 
 		READMEM((*pp), md5sum, 16); // hue hue peepee
 
-		if (!toomany)
+		alreadyloaded = false;
+		nmusfilecount = 0;
+
+		for (j = 0; j < numwadfiles; ++j)
 		{
-			alreadyloaded = false;
-			nmusfilecount = 0;
-
-			for (j = 0; j < numwadfiles; ++j)
-			{
-				if (wadfiles[j]->important && j > mainwads)
-					nmusfilecount++;
-				else
-					continue;
-
-				if (memcmp(md5sum, wadfiles[j]->md5sum, 16) == 0)
-				{
-					alreadyloaded = true;
-
-					if (i != nmusfilecount-1 && error < DFILE_ERROR_OUTOFORDER)
-						error |= DFILE_ERROR_OUTOFORDER;
-
-					break;
-				}
-			}
-
-			if (alreadyloaded)
-			{
-				filesloaded++;
+			if (wadfiles[j]->important && j > mainwads)
+				nmusfilecount++;
+			else
 				continue;
-			}
 
-			if (numwadfiles >= MAX_WADFILES)
-				error = DFILE_ERROR_CANNOTLOAD;
-			else if (!quick && findfile(filename, md5sum, false) != FS_FOUND)
-				error = DFILE_ERROR_CANNOTLOAD;
-			else if (error < DFILE_ERROR_INCOMPLETEOUTOFORDER)
-				error |= DFILE_ERROR_NOTLOADED;
-		} else
+			if (memcmp(md5sum, wadfiles[j]->md5sum, 16) == 0)
+			{
+				alreadyloaded = true;
+
+				if (i != nmusfilecount-1 && error < DFILE_ERROR_OUTOFORDER)
+					error |= DFILE_ERROR_OUTOFORDER;
+
+				break;
+			}
+		}
+
+		if (alreadyloaded)
+		{
+			filesloaded++;
+			continue;
+		}
+
+		if (numwadfiles >= MAX_WADFILES)
 			error = DFILE_ERROR_CANNOTLOAD;
+		else if (!quick && findfile(filename, md5sum, false) != FS_FOUND)
+			error = DFILE_ERROR_CANNOTLOAD;
+		else if (error < DFILE_ERROR_INCOMPLETEOUTOFORDER)
+			error |= DFILE_ERROR_NOTLOADED;
 	}
 
 	// Get final file count

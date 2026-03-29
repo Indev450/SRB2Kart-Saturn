@@ -432,14 +432,17 @@ static void ApplyPaletteDelta(const RGBA_t *pal_in, RGBA_t *pal_out, const INT16
 
 static void GenerateFlashPalettes(void)
 {
-	size_t i, palsize;
+	size_t i;
+	static const size_t palsize = (2*256); // two flashpals
 	RGBA_t *pFlashPalGammaCorrectedPalette = NULL;
 
 	// generate flashpalettes if the current palette does not provide any subpalettes
 	if (currentPaletteSize >= (14 * (256 * 3))) // 14 palettes are in playpal
+	{
 		return;
+	}
 
-	palsize = (2*256);
+	CONS_Debug(DBG_RENDER, "Current palette does not provide enough subpalettes for flashpalettes to work!\nCreating fallback palettes...\n");
 
 	pFallbackFlashPal = Z_Malloc(sizeof(*pFallbackFlashPal)*palsize, PU_STATIC, NULL);
 	pFlashPalGammaCorrectedPalette = Z_Malloc(sizeof (*pFlashPalGammaCorrectedPalette)*palsize, PU_STATIC, NULL);
@@ -3232,7 +3235,7 @@ INT32 V_SubStringWidth(const char *string, INT32 length, INT32 option)
 			break;
 	}
 
-	for (i = 0; string[i] && i < length; i++)
+	for (i = 0; i < length && string[i]; i++)
 	{
 		c = string[i];
 		if ((UINT8)c >= 0x80 && (UINT8)c <= 0x8F) //color parsing! -Inuyasha 2.16.09
@@ -3277,7 +3280,7 @@ INT32 V_SmallSubStringWidth(const char *string, INT32 length, INT32 option)
 			break;
 	}
 
-	for (i = 0; string[i] && i < length; i++)
+	for (i = 0; i < length && string[i]; i++)
 	{
 		c = string[i];
 		if ((UINT8)c >= 0x80 && (UINT8)c <= 0x8F) //color parsing! -Inuyasha 2.16.09
@@ -3326,7 +3329,7 @@ INT32 V_ThinSubStringWidth(const char *string, INT32 length, INT32 option)
 			break;
 	}
 
-	for (i = 0; string[i] && i < length; i++)
+	for (i = 0; i < length && string[i]; i++)
 	{
 		c = string[i];
 		if ((UINT8)c >= 0x80 && (UINT8)c <= 0x8F) //color parsing! -Inuyasha 2.16.09
@@ -3842,12 +3845,12 @@ void V_Recalc(void)
 	// Set dup based on width or height, whichever is less
 	if (((vid.width*FRACUNIT) / BASEVIDWIDTH) < ((vid.height*FRACUNIT) / BASEVIDHEIGHT))
 	{
-		vid.dup = vid.width / BASEVIDWIDTH;
+		vid.dup = max(vid.width / BASEVIDWIDTH, 1);
 		vid.fdup = (vid.width*FRACUNIT) / BASEVIDWIDTH;
 	}
 	else
 	{
-		vid.dup = vid.height / BASEVIDHEIGHT;
+		vid.dup = max(vid.height / BASEVIDHEIGHT, 1);
 		vid.fdup = (vid.height*FRACUNIT) / BASEVIDHEIGHT;
 	}
 

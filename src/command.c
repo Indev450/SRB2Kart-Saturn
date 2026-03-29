@@ -1194,7 +1194,7 @@ consvar_t *CV_FindVar(const char *name)
 static inline UINT16 CV_ComputeNetid(const char *s)
 {
 	UINT16 ret = 0, i = 0;
-	static UINT16 premiers[16] = {2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53};
+	static const UINT16 premiers[16] = {2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53};
 
 	while (*s)
 	{
