@@ -35,6 +35,7 @@ extern consvar_t cv_darkitembox;
 extern consvar_t cv_biglaps;
 extern consvar_t cv_highresportrait;
 extern consvar_t cv_showstats;
+extern consvar_t cv_showstats_skinname;
 extern consvar_t cv_fancyroulette;
 extern consvar_t cv_showlaptimes;
 extern consvar_t cv_battlespeedo;

@@ -83,6 +83,7 @@ IMPL_HUD_OFFSET(stat);   // Stats
 
 // extra hud things
 consvar_t cv_showstats = {"showstats", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_showstats_skinname = {"showstats_skinname", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 consvar_t cv_highresportrait = {"highresportrait", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL}; // make char potraits use their high-res version instead
 
@@ -208,6 +209,7 @@ void K_RegisterKartHudStuff(void)
 	CV_RegisterVar(&cv_kartspeedometer);
 
 	CV_RegisterVar(&cv_showstats);
+	CV_RegisterVar(&cv_showstats_skinname);
 	CV_RegisterVar(&cv_showinput);
 
 	CV_RegisterVar(&cv_posanim);
@@ -1436,13 +1438,16 @@ static void K_drawKartStats(void)
 		fakeskin = K_GetPlayerSkin(stplyr);
 
 		// Skin name
-		if (K_IsHighResolution()) // V_DrawSmallString becomes a mess at low resolutions lel
+		if (cv_showstats_skinname.value)
 		{
-			V_DrawSmallString(x+20, y+12, flags2, fakeskin->realname);
-		}
-		else
-		{
-			V_DrawThinString(x+20, y+7, flags2, fakeskin->realname);
+			if (K_IsHighResolution()) // V_DrawSmallString becomes a mess at low resolutions lel
+			{
+				V_DrawSmallString(x+20, y+12, flags2, fakeskin->realname);
+			}
+			else
+			{
+				V_DrawThinString(x+20, y+7, flags2, fakeskin->realname);
+			}
 		}
 
 		// Icon and stats
