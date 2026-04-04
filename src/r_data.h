@@ -81,6 +81,7 @@ void R_CheckTextureCache(INT32 tex);
 
 // Retrieve column data for span blitting.
 UINT8 *R_GetColumn(fixed_t tex, INT32 col);
+UINT8 *R_GetHoleColumn(INT32 tex, INT32 col);
 
 UINT8 *R_GetFlat(lumpnum_t flatnum);
 

@@ -1168,7 +1168,6 @@ static inline void R_ExpandPlaneY(visplane_t *pl, INT32 x, INT16 top, INT16 bott
 
 static void R_DrawWallColumn(drawcolumndata_t* dc, INT32 yl, INT32 yh, fixed_t mid, fixed_t texturecolumn, INT32 texture, boolean remap)
 {
-	UINT8 *holecol = NULL;
 	const INT32 itexturecolumn = texturecolumn >> FRACBITS;
 	dc->yl = yl;
 	dc->yh = yh;
@@ -1180,42 +1179,18 @@ static void R_DrawWallColumn(drawcolumndata_t* dc, INT32 yl, INT32 yh, fixed_t m
 	R_SetColumnFunc(colfunctype);
 	coldrawfunc_t* colfunccopy = colfunc;
 
-	// ok so this thing cannot handle "holey" textures
-	// since it just reads the data as pixels directly
-	// but the holey ones dont have any data there or smth
-	// plug missing "data" with cyan so multipatch drawer can cut them
-	// fixes reading oob garbo and the "melty" effect on maps like spelunky or hyakaykuykiukikykooekyk streets
-	// caveat: this is mostly done on single sided walls which may cause some other issues, but mostly seems to work fineish
-	// this is probably inefficient as hell but oh well
 	if (textures[texture]->holes)
 	{
-		holecol = static_cast<UINT8*>(malloc(dc->texheight));
-		column_t *col = (column_t *)(dc->source - 3);
-		// fill in everything with cyan so we can skip it
-		memset(holecol, TRANSPARENTPIXEL, dc->texheight);
+		dc->source = R_GetHoleColumn(texture, itexturecolumn);
 
-		// shamelessly copy pasted from R_GenerateTexture
-		INT32 topdelta, prevdelta = -1;
-		while (col->topdelta != 0xff)
-		{
-			topdelta = col->topdelta;
-			if (topdelta <= prevdelta)
-				topdelta += prevdelta;
-			prevdelta = topdelta;
-			memcpy(holecol + topdelta, (UINT8*)col + 4, col->length);
-			col = (column_t *)((UINT8*)col + col->length + 4);
-		}
-
-		dc->source = holecol;
-
-		// so it can cut the "holes"
+		// need to use multipatch drawers to cut cyan pixels
 		if (R_CheckColumnFunc(COLDRAWFUNC_FUZZY) == true)
 		{
-			colfunccopy = colfuncs[COLDRAWFUNC_TWOSMULTIPATCHTRANS];
+			colfunccopy = colfuncs[COLDRAWFUNC_TWOSMULTIPATCHTRANS_DIRECT];
 		}
 		else
 		{
-			colfunccopy = colfuncs[COLDRAWFUNC_TWOSMULTIPATCH];
+			colfunccopy = colfuncs[COLDRAWFUNC_TWOSMULTIPATCH_DIRECT];
 		}
 	}
 
@@ -1227,8 +1202,6 @@ static void R_DrawWallColumn(drawcolumndata_t* dc, INT32 yl, INT32 yh, fixed_t m
 	}
 
 	colfunccopy(const_cast<drawcolumndata_t*>(&dc_copy));
-
-	free(holecol);
 }
 
 static boolean didsolidcol; // True if at least one column was marked solid
