@@ -573,6 +573,13 @@ INT32 I_GetKey(void);
 // NOTE: you WILL have nasal troubles if the variable is not initialized
 #define CLEANUP(f) __attribute__((__cleanup__(f)))
 
+// the GNU constructor and destructor attributes
+// The constructor attribute causes the function to be called automatically before execution enters main ().
+// Similarly, the destructor attribute causes the function to be called automatically after main () has completed or exit () has been called.
+// Functions with these attributes are useful for initializing data that will be used implicitly during the execution of the program.
+#define CONSTRUCTOR __attribute__((constructor, used))
+#define DESTRUCTOR __attribute__((destructor, used))
+
 // An assert-type mechanism.
 #ifdef PARANOIA
 #define I_Assert(e) ((e) ? (void)0 : I_Error("assert failed: %s, file %s, line %d", #e, __FILE__, __LINE__))

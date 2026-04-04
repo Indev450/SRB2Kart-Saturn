@@ -1396,7 +1396,6 @@ static void I_Fork(void)
 
 INT32 I_StartupSystem(void)
 {
-	W_Startup();
 	I_StartupConsole();
 #ifdef NEWSIGNALHANDLER
 	// This is useful when debugging. It lets GDB attach to
