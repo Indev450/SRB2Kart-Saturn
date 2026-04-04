@@ -83,6 +83,7 @@ IMPL_HUD_OFFSET(stat);   // Stats
 
 // extra hud things
 consvar_t cv_showstats = {"showstats", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_showstats_skinname = {"showstats_skinname", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 consvar_t cv_highresportrait = {"highresportrait", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL}; // make char potraits use their high-res version instead
 
@@ -92,6 +93,7 @@ consvar_t cv_showinput = {"showinput", "Off", CV_SAVE, inputdisplay_cons_t, NULL
 static CV_PossibleValue_t minihead_cons_t[] = {{0, "Off"}, {1, "On"}, {2, "Others"}, {0, NULL}};
 consvar_t cv_minihead         = {"smallminimapplayers", "Off", CV_SAVE, minihead_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_showminimapnames = {"showminimapnames", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+consvar_t cv_showminimapfinished = {"showminimapfinished", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 CV_PossibleValue_t minimapdot_cons_t[NUMMINIMAPDOTSTUFF];
 consvar_t cv_showminimapangle = {"showminimapangle", "Off", CV_SAVE, minimapdot_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
@@ -207,6 +209,7 @@ void K_RegisterKartHudStuff(void)
 	CV_RegisterVar(&cv_kartspeedometer);
 
 	CV_RegisterVar(&cv_showstats);
+	CV_RegisterVar(&cv_showstats_skinname);
 	CV_RegisterVar(&cv_showinput);
 
 	CV_RegisterVar(&cv_posanim);
@@ -221,6 +224,7 @@ void K_RegisterKartHudStuff(void)
 
 	CV_RegisterVar(&cv_minihead);
 	CV_RegisterVar(&cv_showminimapnames);
+	CV_RegisterVar(&cv_showminimapfinished);
 	CV_RegisterVar(&cv_showminimapangle);
 
 	CV_RegisterVar(&cv_showlapemblem);
@@ -1434,13 +1438,16 @@ static void K_drawKartStats(void)
 		fakeskin = K_GetPlayerSkin(stplyr);
 
 		// Skin name
-		if (K_IsHighResolution()) // V_DrawSmallString becomes a mess at low resolutions lel
+		if (cv_showstats_skinname.value)
 		{
-			V_DrawSmallString(x+20, y+12, flags2, fakeskin->realname);
-		}
-		else
-		{
-			V_DrawThinString(x+20, y+7, flags2, fakeskin->realname);
+			if (K_IsHighResolution()) // V_DrawSmallString becomes a mess at low resolutions lel
+			{
+				V_DrawSmallString(x+20, y+12, flags2, fakeskin->realname);
+			}
+			else
+			{
+				V_DrawThinString(x+20, y+7, flags2, fakeskin->realname);
+			}
 		}
 
 		// Icon and stats
@@ -3770,6 +3777,9 @@ static void K_drawKartMinimap(void)
 				continue;
 
 			if (!players[i].mo || players[i].spectator)
+				continue;
+
+			if (!cv_showminimapfinished.value && players[i].exiting)
 				continue;
 
 			if (P_IsDisplayPlayer(&players[i]))

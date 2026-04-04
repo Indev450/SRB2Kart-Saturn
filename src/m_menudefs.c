@@ -1828,47 +1828,49 @@ static menuitem_t OP_SaturnHudMenu[] =
 {
 	{IT_HEADER, NULL, "Saturn Hud Options", NULL, 0},
 
-	{IT_STRING|IT_CVAR,    NULL, "Speedometer Style",           &cv_newspeedometer,    10},
-	{IT_STRING|IT_CVAR,    NULL, "Battle Speedometer",          &cv_battlespeedo,      15},
+	{IT_STRING|IT_CVAR,    NULL, "Speedometer Style",           &cv_newspeedometer,       10},
+	{IT_STRING|IT_CVAR,    NULL, "Battle Speedometer",          &cv_battlespeedo,         15},
 
-	{IT_STRING|IT_CVAR,    NULL, "Colourized HUD",              &cv_colorizedhud,      25},
-	{IT_STRING|IT_CVAR,    NULL, "Colourized Itembox",          &cv_colorizeditembox,  30},
-	{IT_STRING|IT_CVAR,    NULL, "Colourized HUD Color",        &cv_colorizedhudcolor, 35},
+	{IT_STRING|IT_CVAR,    NULL, "Colourized HUD",              &cv_colorizedhud,         25},
+	{IT_STRING|IT_CVAR,    NULL, "Colourized Itembox",          &cv_colorizeditembox,     30},
+	{IT_STRING|IT_CVAR,    NULL, "Colourized HUD Color",        &cv_colorizedhudcolor,    35},
 
-	{IT_STRING|IT_CVAR,    NULL, "Input Display",               &cv_showinput,         45},
+	{IT_STRING|IT_CVAR,    NULL, "Input Display",               &cv_showinput,            45},
 
-	{IT_STRING|IT_CVAR,    NULL, "Stat Display",                &cv_showstats,         55},
+	{IT_STRING|IT_CVAR,    NULL, "Stat Display",                &cv_showstats,            55},
+	{IT_STRING|IT_CVAR,    NULL, "Skin Name in Stat Display",   &cv_showstats_skinname,   60},
 
-	{IT_STRING|IT_CVAR,    NULL, "Higher Resolution Portraits", &cv_highresportrait,   65},
+	{IT_STRING|IT_CVAR,    NULL, "Higher Resolution Portraits", &cv_highresportrait,      70},
 
-	{IT_STRING|IT_CVAR,    NULL, "Small Positionnumber",        &cv_smallposnum,       75},
-	{IT_STRING|IT_CVAR,    NULL, "Positionnumber Animation",    &cv_posanim,           80},
+	{IT_STRING|IT_CVAR,    NULL, "Small Positionnumber",        &cv_smallposnum,          80},
+	{IT_STRING|IT_CVAR,    NULL, "Positionnumber Animation",    &cv_posanim,              85},
 
-	{IT_STRING|IT_CVAR,    NULL, "Flash Lap Times",             &cv_showlaptimes,      90},
+	{IT_STRING|IT_CVAR,    NULL, "Flash Lap Times",             &cv_showlaptimes,         95},
 
-	{IT_STRING|IT_CVAR,    NULL, "Multi-Item icons",            &cv_multiitemicon,    100},
-	{IT_STRING|IT_CVAR,    NULL, "Item Amount Number",          &cv_huditemamount,    105},
-	{IT_STRING|IT_CVAR,    NULL, "Animated Roulette",           &cv_fancyroulette,    110},
+	{IT_STRING|IT_CVAR,    NULL, "Multi-Item icons",            &cv_multiitemicon,       105},
+	{IT_STRING|IT_CVAR,    NULL, "Item Amount Number",          &cv_huditemamount,       110},
+	{IT_STRING|IT_CVAR,    NULL, "Animated Roulette",           &cv_fancyroulette,       115},
 
-	{IT_STRING|IT_CVAR,    NULL, "Show Lap Emblem",             &cv_showlapemblem,    120},
-	{IT_STRING|IT_CVAR,    NULL, "Show Cecho Messages",         &cv_cechotoggle,      125},
+	{IT_STRING|IT_CVAR,    NULL, "Show Lap Emblem",             &cv_showlapemblem,       125},
+	{IT_STRING|IT_CVAR,    NULL, "Show Cecho Messages",         &cv_cechotoggle,         130},
 
-	{IT_STRING|IT_CVAR,    NULL, "Show Names on Minimap",       &cv_showminimapnames, 135},
-	{IT_STRING|IT_CVAR,    NULL, "Small Minimap Players",       &cv_minihead,         140},
-	{IT_STRING|IT_CVAR,    NULL, "Spin Minimap Icons",          &cv_spinoutroll,      145},
-	{IT_STRING|IT_CVAR,    NULL, "Player Angle Visual",         &cv_showminimapangle, 150},
+	{IT_STRING|IT_CVAR,    NULL, "Show Names on Minimap",       &cv_showminimapnames,    140},
+	{IT_STRING|IT_CVAR,    NULL, "Show Finished on Minimap",    &cv_showminimapfinished, 145},
+	{IT_STRING|IT_CVAR,    NULL, "Small Minimap Players",       &cv_minihead,            150},
+	{IT_STRING|IT_CVAR,    NULL, "Spin Minimap Icons",          &cv_spinoutroll,         155},
+	{IT_STRING|IT_CVAR,    NULL, "Player Angle Visual",         &cv_showminimapangle,    160},
 
-	{IT_STRING|IT_CVAR,    NULL, "Music Credits",               &cv_songcredits,      160},
-	{IT_STRING|IT_CVAR,    NULL, "Music Credits on Pause",      &cv_pausesongcredits, 165},
+	{IT_STRING|IT_CVAR,    NULL, "Music Credits",               &cv_songcredits,         170},
+	{IT_STRING|IT_CVAR,    NULL, "Music Credits on Pause",      &cv_pausesongcredits,    175},
 
-	{IT_STRING|IT_CVAR,    NULL, "Beta Intermissionscreen",     &cv_betainterscreen,  175},
+	{IT_STRING|IT_CVAR,    NULL, "Beta Intermissionscreen",     &cv_betainterscreen,     185},
 
-	{IT_STRING|IT_CVAR,    NULL, "Show Director Prompt",        &cv_showdirectorhud,  185},
+	{IT_STRING|IT_CVAR,    NULL, "Show Director Prompt",        &cv_showdirectorhud,     195},
 
-	{IT_STRING|IT_SUBMENU, NULL, "Nametags...",                 &OP_NametagDef,       195},
-	{IT_STRING|IT_SUBMENU, NULL, "Driftgauge...",               &OP_DriftGaugeDef,    200},
+	{IT_STRING|IT_SUBMENU, NULL, "Nametags...",                 &OP_NametagDef,          205},
+	{IT_STRING|IT_SUBMENU, NULL, "Driftgauge...",               &OP_DriftGaugeDef,       210},
 
-	{IT_SUBMENU|IT_STRING, NULL, "Hud Offsets...",              &OP_HudOffsetDef,     210},
+	{IT_SUBMENU|IT_STRING, NULL, "Hud Offsets...",              &OP_HudOffsetDef,        220},
 };
 
 static const char* OP_SaturnHudTooltips[] =
@@ -1881,6 +1883,7 @@ static const char* OP_SaturnHudTooltips[] =
 	"The color to use instead of the player color when\ncolourized hud is enabled.",
 	"Displays the input display and lets you choose its style.",
 	"Enable the stat display.",
+	"Show skin name in the stat display.",
 	"Enable the use of the higher resolution want icons instead of rank\nfor some places.",
 	"Make the Postionnumber half the size.",
 	"Disable the animation of the Positionnumber\nwhen overtaking someone.",
@@ -1891,6 +1894,7 @@ static const char* OP_SaturnHudTooltips[] =
 	"Show the big 'LAP' text on a lap change.",
 	"Show the big Cecho Messages.",
 	"Show player names on the minimap.",
+	"Show players that have finished already on the minimap.",
 	"Minimize the player icons on the minimap.",
 	"Erratically rotate player icons during spinouts.",
 	"Visualize the player facing angle.",
