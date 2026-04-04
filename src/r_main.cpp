@@ -342,14 +342,14 @@ angle_t R_PointToAngle64(INT64 x, INT64 y)
 	return (y -= viewy, (x -= viewx) || y) ?
 	x >= 0 ?
 	y >= 0 ?
-		(x > y) ? tantoangle[SlopeDivEx(y,x)] :                            // octant 0
-		ANGLE_90-tantoangle[SlopeDivEx(x,y)] :                               // octant 1
-		x > (y = -y) ? 0-tantoangle[SlopeDivEx(y,x)] :                    // octant 8
-		ANGLE_270+tantoangle[SlopeDivEx(x,y)] :                              // octant 7
+		(x > y) ? tantoangle[SlopeDivEx(y,x)] :                          // octant 0
+		ANGLE_90-tantoangle[SlopeDivEx(x,y)] :                           // octant 1
+		x > (y = -y) ? 0-tantoangle[SlopeDivEx(y,x)] :                   // octant 8
+		ANGLE_270+tantoangle[SlopeDivEx(x,y)] :                          // octant 7
 		y >= 0 ? (x = -x) > y ? ANGLE_180-tantoangle[SlopeDivEx(y,x)] :  // octant 3
-		ANGLE_90 + tantoangle[SlopeDivEx(x,y)] :                             // octant 2
+		ANGLE_90 + tantoangle[SlopeDivEx(x,y)] :                         // octant 2
 		(x = -x) > (y = -y) ? ANGLE_180+tantoangle[SlopeDivEx(y,x)] :    // octant 4
-		ANGLE_270-tantoangle[SlopeDivEx(x,y)] :                              // octant 5
+		ANGLE_270-tantoangle[SlopeDivEx(x,y)] :                          // octant 5
 		0;
 }
 

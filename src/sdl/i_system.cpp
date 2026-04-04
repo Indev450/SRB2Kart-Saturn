@@ -310,7 +310,7 @@ static void I_StartupConsole(void)
 	if (!consolevent)
 		return;
 
-	if (isatty(STDIN_FILENO)!=1)
+	if (isatty(STDIN_FILENO) != 1)
 	{
 		I_OutputMsg("stdin is not a tty, tty console mode failed\n");
 		consolevent = false;
@@ -1997,12 +1997,14 @@ FUNCNORETURN void ATTRNORETURN I_Quit(void)
 	I_ShutdownInput();
 	I_ShutdownSystem();
 	SDL_Quit();
+
 	/* if option -noendtxt is set, don't print the text */
 	if (!M_CheckParm("-noendtxt") && W_CheckNumForName("ENDOOM") != LUMPERROR)
 	{
 		printf("\r");
 		ShowEndTxt();
 	}
+
 	if (myargmalloc)
 		free(myargv); // Deallocate allocated memory
 
