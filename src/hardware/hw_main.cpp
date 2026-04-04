@@ -388,11 +388,11 @@ void HWR_ObjectLightLevelPost(gl_vissprite_t *spr, const sector_t *sector, INT32
 			extralight = FixedMul(extralight, std::min(std::max(0, *lightlevel), 255) * FRACUNIT / 255);
 
 			// simple OGL approximation
-			fixed_t tr = R_QuickCamDist(spr->mobj->x, spr->mobj->y);
-			fixed_t xscale = FixedDiv((vid.width / 2) << FRACBITS, tr);
+			const fixed_t tr = R_QuickCamDist(spr->mobj->x, spr->mobj->y);
+			const fixed_t xscale = FixedDiv((vid.width / 2) << FRACBITS, tr);
 
 			// Less change in contrast at further distances, to counteract DOOM diminished light
-			fixed_t n = FixedDiv(FixedMul(xscale, LIGHTRESOLUTIONFIX), ((MAXLIGHTSCALE-1) << LIGHTSCALESHIFT));
+			const fixed_t n = FixedDiv(FixedMul(xscale, LIGHTRESOLUTIONFIX), ((MAXLIGHTSCALE-1) << LIGHTSCALESHIFT));
 			extralight = FixedMul(extralight, std::min(n, FRACUNIT));
 
 			// Contrast is stronger for normal sprites, stronger than wall lighting is at the same distance
@@ -515,7 +515,7 @@ static FUINT HWR_CalcWallLight(FUINT lightnum, seg_t *seg, extracolormap_t *colo
 
 	if (seg != NULL && P_ApplyLightOffsetFine(lightnum, seg->frontsector))
 	{
-		INT16 offset = (cv_glfakecontrast.value == 2) ? seg->hwLightOffset : ((INT16)seg->lightOffset * 8);
+		const INT16 offset = (cv_glfakecontrast.value == 2) ? seg->hwLightOffset : ((INT16)seg->lightOffset * 8);
 
 		finallight += offset;
 		finallight = CLAMP(finallight, 0 , 255);
@@ -533,7 +533,7 @@ static FUINT HWR_CalcSlopeLight(FUINT lightnum, pslope_t *slope, const sector_t 
 
 	if (slope != NULL && sector != NULL && P_ApplyLightOffsetFine(lightnum, sector))
 	{
-		INT16 offset = (cv_glfakecontrast.value == 2) ? slope->hwLightOffset : ((INT16)slope->lightOffset * 8);
+		const INT16 offset = (cv_glfakecontrast.value == 2) ? slope->hwLightOffset : ((INT16)slope->lightOffset * 8);
 
 		finallight += (fof ? -offset : offset);
 		finallight = CLAMP(finallight, 0 , 255);
@@ -1420,6 +1420,11 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 					{
 						draw_sky_walls(0, 1, worldhigh, worldhighslope);
 					}
+
+					// hack to allow height changes in outdoor areas
+					// This is what gets rid of the upper textures if there should be sky
+					worldtop = worldhigh;
+					worldtopslope = worldhighslope;
 				}
 				else
 				{
@@ -1462,15 +1467,6 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 				// Only the backsector has sky, just draw a skywall from the back floor if there's no bottomtexture
 				draw_sky_walls(3, 2, worldlow, worldlowslope);
 			}
-		}
-
-		// hack to allow height changes in outdoor areas
-		// This is what gets rid of the upper textures if there should be sky
-		if (gl_frontsector->ceilingpic == skyflatnum
-			&& gl_backsector->ceilingpic  == skyflatnum)
-		{
-			worldtop = worldhigh;
-			worldtopslope = worldhighslope;
 		}
 
 		gl_toptexture = R_GetTextureNum(gl_sidedef->toptexture);
@@ -2263,7 +2259,7 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 
 static inline boolean HWR_UsePortals(void)
 {
-	return supportstencil && cv_glportals.value && gl_maphasportals;
+	return supportstencil && gl_maphasportals && cv_glportals.value;
 }
 
 // From PrBoom:
@@ -2407,7 +2403,8 @@ static inline void DoAddLine(seg_t* line, angle_t angle1, angle_t angle2)
 	// SoM: Backsector needs to be run through R_FakeFlat
 	static sector_t tempsec;
 
-	auto do_addline = [&](bool dontdraw) {
+	auto do_addline = [&](bool dontdraw)
+	{
 		// Single sided line?
 		if (!line->backsector)
 		{
@@ -2688,14 +2685,6 @@ static void HWR_RenderPolyObjectPlane(polyobj_t *polysector, boolean isceiling, 
 	if (nrPlaneVerts < 3) // not even a triangle ?
 		return;
 
-	if (nrPlaneVerts > INT16_MAX) // FIXME: exceeds plVerts size
-	{
-		CONS_Debug(DBG_RENDER, "polygon size of %s exceeds max value of %d vertices\n", sizeu1(nrPlaneVerts), UINT16_MAX);
-		return;
-	}
-
-	const sector_t *sec = FOFsector ? FOFsector : gl_frontsector;
-
 	// Allocate plane-vertex buffer if we need to
 	if (!planeVerts || nrPlaneVerts > numAllocedPlaneVerts)
 	{
@@ -2703,6 +2692,8 @@ static void HWR_RenderPolyObjectPlane(polyobj_t *polysector, boolean isceiling, 
 		Z_Free(planeVerts);
 		Z_Malloc(numAllocedPlaneVerts * sizeof(FOutVector), PU_LEVEL, &planeVerts);
 	}
+
+	const sector_t *sec = FOFsector ? FOFsector : gl_frontsector;
 
 	height = FixedToFloat(fixedheight);
 

@@ -365,13 +365,17 @@ static void HWR_CompileShader(int index)
 	if (vertex_source)
 	{
 		char *preprocessed = HWR_PreprocessShader(vertex_source);
-		if (!preprocessed) return;
+		if (!preprocessed)
+			return;
+
 		GL_LoadShader(index, preprocessed, HWD_SHADERSTAGE_VERTEX);
 	}
 	if (fragment_source)
 	{
 		char *preprocessed = HWR_PreprocessShader(fragment_source);
-		if (!preprocessed) return;
+		if (!preprocessed)
+			return;
+
 		GL_LoadShader(index, preprocessed, HWD_SHADERSTAGE_FRAGMENT);
 	}
 
@@ -387,8 +391,10 @@ void HWR_CompileShaders(void)
 	{
 		int custom_index = gl_shadertargets[i].custom_shader;
 		HWR_CompileShader(i);
+
 		if (!gl_shaders[i].compiled)
 			CONS_Alert(CONS_ERROR, "HWR_CompileShaders: Compilation failed for base %s shader!\n", shaderxlat[i].type);
+
 		if (custom_index != -1)
 		{
 			HWR_CompileShader(custom_index);
