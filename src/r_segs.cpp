@@ -16,6 +16,7 @@
 #include "r_sky.h"
 
 #include <algorithm>
+#include <vector>
 
 #include "r_portal.h"
 #include "r_splats.h"
@@ -1166,6 +1167,37 @@ static inline void R_ExpandPlaneY(visplane_t *pl, INT32 x, INT16 top, INT16 bott
 // CALLED: CORE LOOPING ROUTINE.
 //
 
+static std::vector<UINT8> holecol(256);
+
+// used for R_DrawWallColumn
+// convert "holey" columns into contigous columns
+// filled with cyan in place of holes
+static UINT8 *R_GetHoleColumn(drawcolumndata_t* dc)
+{
+	column_t *col = (column_t *)(dc->source - 3);
+
+	const INT32 texheight = dc->texheight;
+	holecol.resize(texheight);
+
+	// fill in everything with cyan so we can skip it
+	memset(holecol.data(), TRANSPARENTPIXEL, texheight);
+
+	// shamelessly copy pasted from R_GenerateTexture
+	INT32 topdelta, prevdelta = -1;
+	while (col->topdelta != 0xff)
+	{
+		topdelta = col->topdelta;
+		if (topdelta <= prevdelta)
+			topdelta += prevdelta;
+		prevdelta = topdelta;
+
+		memcpy(holecol.data() + topdelta, (UINT8*)col + 4, col->length);
+		col = (column_t *)((UINT8*)col + col->length + 4);
+	}
+
+	return holecol.data();
+}
+
 static void R_DrawWallColumn(drawcolumndata_t* dc, INT32 yl, INT32 yh, fixed_t mid, fixed_t texturecolumn, INT32 texture, boolean remap)
 {
 	const INT32 itexturecolumn = texturecolumn >> FRACBITS;
@@ -1175,13 +1207,35 @@ static void R_DrawWallColumn(drawcolumndata_t* dc, INT32 yl, INT32 yh, fixed_t m
 	dc->source = R_GetColumn(texture, itexturecolumn);
 	dc->texheight = textureheight[texture] >> FRACBITS;
 	dc->sourcelength = dc->texheight;
+
 	R_SetColumnFunc(colfunctype);
 	coldrawfunc_t* colfunccopy = colfunc;
+
+	if (textures[texture]->holes)
+	{
+		dc->source = R_GetHoleColumn(dc);
+
+		if (cv_softcyancut.value)
+		{
+			// need to use multipatch drawers to cut cyan pixels
+			if (R_CheckColumnFunc(COLDRAWFUNC_FUZZY) == true)
+			{
+				colfunccopy = colfuncs[COLDRAWFUNC_TWOSMULTIPATCHTRANS_DIRECT];
+			}
+			else
+			{
+				colfunccopy = colfuncs[COLDRAWFUNC_TWOSMULTIPATCH_DIRECT];
+			}
+		}
+	}
+
 	drawcolumndata_t dc_copy = *dc;
+
 	if (remap)
 	{
 		dc_copy.colormap += COLORMAP_REMAPOFFSET;
 	}
+
 	colfunccopy(const_cast<drawcolumndata_t*>(&dc_copy));
 }
 
@@ -1390,7 +1444,7 @@ static void R_RenderSegLoop(drawcolumndata_t* dc)
 			// calculate lighting
 			pindex = FixedMul(rw_scale, LIGHTRESOLUTIONFIX)>>LIGHTSCALESHIFT;
 
-			if (pindex >=  MAXLIGHTSCALE)
+			if (pindex >= MAXLIGHTSCALE)
 				pindex = MAXLIGHTSCALE-1;
 
 			dc->colormap = walllights[pindex];
@@ -1425,7 +1479,7 @@ static void R_RenderSegLoop(drawcolumndata_t* dc)
 
 				pindex = FixedMul(rw_scale, LIGHTRESOLUTIONFIX)>>LIGHTSCALESHIFT;
 
-				if (pindex >=  MAXLIGHTSCALE)
+				if (pindex >= MAXLIGHTSCALE)
 					pindex = MAXLIGHTSCALE-1;
 
 				if (dc->lightlist[i].extra_colormap)
