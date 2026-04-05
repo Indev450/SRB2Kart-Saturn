@@ -120,6 +120,10 @@ static void SCR_SetDrawFuncs(enum columncontext_e _columncontext)
 		colfuncs[COLDRAWFUNC_TWOSMULTIPATCHTRANS] = R_Draw2sMultiPatchTranslucentColumn;
 	}
 
+	// gotta keep a copy of those for R_DrawWallColumn.....
+	colfuncs[COLDRAWFUNC_TWOSMULTIPATCH_DIRECT] = R_Draw2sMultiPatchColumn;
+	colfuncs[COLDRAWFUNC_TWOSMULTIPATCHTRANS_DIRECT] = R_Draw2sMultiPatchTranslucentColumn;
+
 	colfuncs[COLDRAWFUNC_FOG] = R_DrawFogColumn;
 
 	R_SetColumnFunc(BASEDRAWFUNC);
@@ -154,7 +158,6 @@ void SCR_SetMode(void)
 // effectively adding massive overhead due to excessive flushing, so we draw our masked thing directly to screen instead
 void R_SetColumnContext(enum columncontext_e _columncontext)
 {
-	columncontext = _columncontext;
 	SCR_SetDrawFuncs(_columncontext); // set our column drawers
 }
 
