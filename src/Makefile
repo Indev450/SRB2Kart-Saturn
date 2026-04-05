@@ -93,7 +93,7 @@
 # NOLDWARNING=1 - ?
 # NOSDLMAIN=1 - ?
 # SDLMAIN=1 - ?
-# USELTO=1 - Enable building with LTO.
+# NOLTO=1 - Disable link time optimizations
 #
 # Library configuration flags:
 # Everything here is an override.
@@ -260,7 +260,7 @@ debug_opts=-D_DEBUG
 else # build a normal optimized version
 debug_opts=-DNDEBUG
 opts+=-O3
-ifdef USELTO
+ifndef NOLTO
 # compile with LTO
 opts+=-flto=auto
 libs+=-flto=auto
