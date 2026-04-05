@@ -16,6 +16,7 @@
 #include "r_sky.h"
 
 #include <algorithm>
+#include <vector>
 
 #include "r_portal.h"
 #include "r_splats.h"
@@ -1166,7 +1167,7 @@ static inline void R_ExpandPlaneY(visplane_t *pl, INT32 x, INT16 top, INT16 bott
 // CALLED: CORE LOOPING ROUTINE.
 //
 
-#include <vector>
+
 static std::vector<UINT8> holecol(256);
 
 // used for R_DrawWallColumn
@@ -1215,14 +1216,17 @@ static void R_DrawWallColumn(drawcolumndata_t* dc, INT32 yl, INT32 yh, fixed_t m
 	{
 		dc->source = R_GetHoleColumn(dc);
 
-		// need to use multipatch drawers to cut cyan pixels
-		if (R_CheckColumnFunc(COLDRAWFUNC_FUZZY) == true)
+		if (cv_softcyancut.value)
 		{
-			colfunccopy = colfuncs[COLDRAWFUNC_TWOSMULTIPATCHTRANS_DIRECT];
-		}
-		else
-		{
-			colfunccopy = colfuncs[COLDRAWFUNC_TWOSMULTIPATCH_DIRECT];
+			// need to use multipatch drawers to cut cyan pixels
+			if (R_CheckColumnFunc(COLDRAWFUNC_FUZZY) == true)
+			{
+				colfunccopy = colfuncs[COLDRAWFUNC_TWOSMULTIPATCHTRANS_DIRECT];
+			}
+			else
+			{
+				colfunccopy = colfuncs[COLDRAWFUNC_TWOSMULTIPATCH_DIRECT];
+			}
 		}
 	}
 
