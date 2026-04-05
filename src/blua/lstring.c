@@ -51,7 +51,7 @@ static TString *newlstr (lua_State *L, const char *str, size_t l,
                                        unsigned int h) {
   TString *ts;
   stringtable *tb;
-  if (l+1 > (MAX_SIZET - sizeof(TString))/sizeof(char))
+  if (l_unlikely(l+1 > (MAX_SIZET - sizeof(TString))/sizeof(char)))
     luaM_toobig(L);
   ts = cast(TString *, luaM_malloc(L, (l+1)*sizeof(char)+sizeof(TString)));
   ts->tsv.len = l;
@@ -72,18 +72,72 @@ static TString *newlstr (lua_State *L, const char *str, size_t l,
 }
 
 
-TString *luaS_newlstr (lua_State *L, const char *str, size_t l) {
-  GCObject *o;
+// string hash taken from luaJIT
+
+/* Unaligned load of uint32_t. */
+static inline __attribute__((always_inline)) uint32_t getu32(const void* ptr)
+{
+  uint32_t result;
+  memcpy(&result, ptr, 4);
+  return result;
+}
+
+// smol macro to look a little less messy lul
+#define getu8(p) *cast(const uint8_t *, p)
+
+/* Keyed sparse ARX string hash. Constant time. */
+static unsigned hash_sparse(const char *str, size_t len)
+{
+  /* Constants taken from lookup3 hash by Bob Jenkins. */
+  unsigned int a, b, h = cast(unsigned int, len);
+#define rol(x, n) (((x)<<(n)) | ((x)>>(-cast(int, n)&(8*sizeof(x)-1))))
+  if (len >= 4) {  /* Caveat: unaligned access! */
+    a  = getu32(str);
+    h ^= getu32(str+len-4);
+    b  = getu32(str+(len>>1)-2);
+    h ^= b; h -= rol(b, 14);
+    b += getu32(str+(len>>2)-1);
+  } else if (len > 0) {
+    a  = getu8(str);
+    h ^= getu8(str+len-1);
+    b  = getu8(str+(len>>1));
+    h ^= b; h -= rol(b, 14);
+  } else {
+    return 0;
+  }
+  a ^= h; a -= rol(h, 11);
+  b ^= a; b -= rol(a, 25);
+  h ^= b; h -= rol(b, 16);
+#undef rol
+  return h;
+}
+
+#undef getu8
+
+
+static inline __attribute__((always_inline)) unsigned luaS_hash (const char *str, size_t l) {
+#if 0
   unsigned int h = cast(unsigned int, l);  /* seed */
   size_t step = (l>>5)+1;  /* if string is too long, don't hash all its chars */
   size_t l1;
   for (l1=l; l1>=step; l1-=step)  /* compute hash */
     h = h ^ ((h<<5)+(h>>2)+cast(unsigned char, str[l1-1]));
+  return h;
+#else
+  return hash_sparse(str, l);
+#endif
+}
+
+TString *luaS_newlstr (lua_State *L, const char *str, size_t l) {
+  GCObject *o;
+  unsigned int h = luaS_hash(str, l);
   for (o = G(L)->strt.hash[lmod(h, G(L)->strt.size)];
        o != NULL;
        o = o->gch.next) {
     TString *ts = rawgco2ts(o);
-    if (l_unlikely(ts->tsv.len == l && (memcmp(str, getstr(ts), l) == 0))) {
+    if (ts->tsv.hash == h &&
+        ts->tsv.len == l &&
+       (memcmp(str, getstr(ts), l) == 0)) {
       /* string may be dead */
       if (isdead(G(L), o)) changewhite(o);
       return ts;
