@@ -1727,7 +1727,7 @@ static const char* OP_SaturnTooltips[] =
 	"Practice for online play! 0 = instant response.",
 	"Simulate online input delay when hosting a server.\nValue choosen by Player with the lowest ping",
 	"Show a screen before joining a server displaying important information about it",
-	"Show a amount and types of addons loaded by server when joining",
+	"Show amount and types of addons that are loaded by server when joining",
 	"How much speen do you want?",
 	"Colourize the speedlines in your skincolor if you go fast enough!",
 	"Colourize the sneaker flame trails in your skincolor!",
