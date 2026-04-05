@@ -504,45 +504,6 @@ UINT8 *R_GetColumn(fixed_t tex, INT32 col)
 	return texturecache[tex] + LONG(texturecolumnofs[tex][wrap_column(tex, col)]);
 }
 
-static UINT8 ***holecols;
-
-// used for R_DrawWallColumn
-// convert "holey" columns into contigous columns
-// filled with cyan in place of holes
-UINT8 *R_GetHoleColumn(INT32 tex, INT32 col)
-{
-	col = wrap_column(tex, col);
-
-	if (!holecols[tex][col])
-	{
-		UINT8 *src = texturecache[tex] + LONG(texturecolumnofs[tex][col]);
-		column_t *coldata = (column_t *)(src - 3);
-
-		INT32 texheight = textureheight[tex] >> FRACBITS;
-
-		UINT8 *holecole = Z_Malloc(texheight, PU_STATIC, NULL);
-		// fill in everything with cyan so we can skip it
-		memset(holecole, TRANSPARENTPIXEL, texheight);
-
-		// shamelessly copy pasted from R_GenerateTexture
-		INT32 topdelta, prevdelta = -1;
-		while (coldata->topdelta != 0xff)
-		{
-			topdelta = coldata->topdelta;
-			if (topdelta <= prevdelta)
-				topdelta += prevdelta;
-			prevdelta = topdelta;
-
-			memcpy(holecole + topdelta, (UINT8*)coldata + 4, coldata->length);
-			coldata = (column_t *)((UINT8*)coldata + coldata->length + 4);
-		}
-
-		holecols[tex][col] = holecole;
-	}
-
-	return holecols[tex][col];
-}
-
 // convert flats to hicolor as they are requested
 //
 UINT8 *R_GetFlat(lumpnum_t flatlumpnum)
@@ -718,30 +679,6 @@ static INT32 R_CountTextures(UINT16 wadnum)
 	return count;
 }
 
-static void R_AllocHoleColes(INT32 add)
-{
-	// only needed for software
-	if (rendermode != render_soft)
-		return;
-
-	const INT32 newtextures = (numtextures + add);
-
-	Z_Realloc(holecols, newtextures * sizeof(UINT8**), PU_STATIC, &holecols);
-
-	for (INT32 tex = numtextures; tex < newtextures; tex++)
-	{
-		// FIXME: kinda wasteful but idk how to make shit not die skipping textures without holes....
-		INT32 width = texturewidth[tex];
-
-		holecols[tex] = Z_Malloc(width * sizeof(UINT8*), PU_STATIC, NULL);
-
-		for (INT32 col = 0; col < width; col++)
-		{
-			holecols[tex][col] = NULL;
-		}
-	}
-}
-
 static void R_AllocateTextures(INT32 add)
 {
 	const INT32 newtextures = (numtextures + add);
@@ -786,7 +723,6 @@ static INT32 R_DefineTextures(INT32 i, UINT16 w)
 
 static void R_FinishLoadingTextures(INT32 add)
 {
-	R_AllocHoleColes(add);
 	numtextures += add;
 
 #ifdef HWRENDER
