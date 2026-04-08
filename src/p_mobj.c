@@ -11303,16 +11303,7 @@ void P_SpawnMapThing(mapthing_t *mthing)
 		}
 	}
 
-	if (ultimatemode)
-	{
-		if (i == MT_PITYTV || i == MT_GREENTV || i == MT_YELLOWTV || i == MT_BLUETV || i == MT_BLACKTV || i == MT_WHITETV)
-			return; // No shields in Ultimate mode
-
-		if (i == MT_SUPERRINGBOX)
-			return; // No rings in Ultimate mode (except special stages)
-	}
-
-	if (i == MT_EMMY && (gametype != GT_COOP || ultimatemode || tokenbits == 30 || tokenlist & (1 << tokenbits++)))
+	if (i == MT_EMMY && (gametype != GT_COOP || tokenbits == 30 || tokenlist & (1 << tokenbits++)))
 		return; // you already got this token, or there are too many, or the gametype's not right
 
 	// Objectplace landing point

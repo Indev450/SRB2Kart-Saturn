@@ -3698,7 +3698,7 @@ static void HWR_SplitSprite(gl_vissprite_t *spr, const boolean papersprite)
 		wallVerts[1].y = endbot;
 
 		// The x and y only need to be adjusted in the case that it's not a papersprite
-		if (cv_glspritebillboarding.value && sprmo && !papersprite)
+		if (cv_glspritebillboarding.value && !papersprite)
 		{
 			// Get the x and z of the vertices so billboarding draws correctly
 			realheight = realbot - realtop;

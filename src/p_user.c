@@ -3478,8 +3478,6 @@ void P_ResetCamera(player_t *player, camera_t *thiscam)
 		}
 	}
 
-	thiscam->relativex = 0;
-
 	thiscam->subsector = R_PointInSubsectorFast(thiscam->x, thiscam->y);
 
 	thiscam->radius = 20*FRACUNIT;

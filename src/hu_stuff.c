@@ -1581,7 +1581,6 @@ static void HU_drawMiniChat(void)
 
 	y = chaty - charheight*(msglines+1);
 
-#ifdef NETSPLITSCREEN
 	if (splitscreen)
 	{
 		y -= BASEVIDHEIGHT/2;
@@ -1589,7 +1588,6 @@ static void HU_drawMiniChat(void)
 			y += 16;
 	}
 	else
-#endif
 		y -= (cv_kartspeedometer.value ? 16 : 0);
 
 	dx = 0;
@@ -1687,18 +1685,15 @@ static void HU_drawChatLog(INT32 offset)
 	if (chat_scroll > chat_maxscroll)
 		chat_scroll = chat_maxscroll;
 
-#ifdef NETSPLITSCREEN
 	if (splitscreen)
 	{
 		boxh = max(6, boxh/2);
 		if (splitscreen > 1)
 			boxw = max(64, boxw/2);
 	}
-#endif
 
 	y = chaty - offset*charheight - (chat_scroll*charheight) - boxh*charheight - 12;
 
-#ifdef NETSPLITSCREEN
 	if (splitscreen)
 	{
 		y -= BASEVIDHEIGHT/2;
@@ -1706,7 +1701,6 @@ static void HU_drawChatLog(INT32 offset)
 			y += 16;
 	}
 	else
-#endif
 		y -= (cv_kartspeedometer.value ? 16 : 0);
 
 
@@ -1821,7 +1815,6 @@ static void HU_DrawChat(void)
 	const char *talk = ntalk;
 	const char *mute = "Chat has been muted.";
 
-#ifdef NETSPLITSCREEN
 	if (splitscreen)
 	{
 		y -= BASEVIDHEIGHT/2;
@@ -1832,7 +1825,6 @@ static void HU_DrawChat(void)
 		}
 	}
 	else
-#endif
 		y -= (cv_kartspeedometer.value ? 16 : 0);
 
 	if (teamtalk)
@@ -1933,7 +1925,7 @@ static void HU_DrawChat(void)
 		INT32 count = 0;
 		INT32 p_dispy = chaty - charheight - 1;
 		size_t longest_name_length = 0;
-#ifdef NETSPLITSCREEN
+
 		if (splitscreen)
 		{
 			p_dispy -= BASEVIDHEIGHT/2;
@@ -1941,13 +1933,13 @@ static void HU_DrawChat(void)
 				p_dispy += 16;
 		}
 		else
-#endif
 			p_dispy -= (cv_kartspeedometer.value ? 16 : 0);
 
 		// Find longest player name, for drawing background for /pm list later
 		for (i = 0; i < MAXPLAYERS; i++)
 		{
-			if (!playeringame[i]) continue;
+			if (!playeringame[i])
+				continue;
 
 			longest_name_length = max(longest_name_length, strlen(player_names[i]));
 		}
@@ -2050,7 +2042,6 @@ static void HU_DrawChat(void)
 
 		skip = 0;
 
-#ifdef NETSPLITSCREEN
 		if (splitscreen)
 		{
 			suggesty -= BASEVIDHEIGHT/2;
@@ -2058,7 +2049,6 @@ static void HU_DrawChat(void)
 				suggesty += 16;
 		}
 		else
-#endif
 			suggesty -= (cv_kartspeedometer.value ? 16 : 0);
 
 		while ((suggest = M_FindEmote(complete, complete_len, skip)) != NULL)

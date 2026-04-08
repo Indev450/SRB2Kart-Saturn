@@ -1531,10 +1531,7 @@ void A_LobShot(void *thing)
 
 	if (!(actor->flags & MF_BOSS))
 	{
-		if (ultimatemode)
-			actor->reactiontime = actor->info->reactiontime*TICRATE;
-		else
-			actor->reactiontime = actor->info->reactiontime*TICRATE*2;
+		actor->reactiontime = actor->info->reactiontime*TICRATE*2;
 	}
 }
 
@@ -1570,10 +1567,7 @@ void A_FireShot(void *thing)
 
 	if (!(actor->flags & MF_BOSS))
 	{
-		if (ultimatemode)
-			actor->reactiontime = actor->info->reactiontime*TICRATE;
-		else
-			actor->reactiontime = actor->info->reactiontime*TICRATE*2;
+		actor->reactiontime = actor->info->reactiontime*TICRATE*2;
 	}
 }
 
@@ -1613,10 +1607,7 @@ void A_SuperFireShot(void *thing)
 
 	if (!(actor->flags & MF_BOSS))
 	{
-		if (ultimatemode)
-			actor->reactiontime = actor->info->reactiontime*TICRATE;
-		else
-			actor->reactiontime = actor->info->reactiontime*TICRATE*2;
+		actor->reactiontime = actor->info->reactiontime*TICRATE*2;
 	}
 }
 
@@ -2870,12 +2861,6 @@ void A_ExtraLife(void *thing)
 	if (actor->type == MT_1UPICO && !actor->tracer)
 		actor->frame -= 2; // No lives icon for this player, use the default.
 
-	if (ultimatemode) //I don't THINK so!
-	{
-		S_StartSound(player->mo, sfx_lose);
-		return;
-	}
-
 	// In shooter gametypes, give the player 100 rings instead of an extra life.
 	if (gametype != GT_COOP && gametype != GT_COMPETITION)
 		P_GivePlayerRings(player, 100);
@@ -4015,26 +4000,13 @@ void A_JetChase(void *thing)
 	}
 
 	// chase towards player
-	if (ultimatemode)
-		P_Thrust(actor, actor->angle, FixedMul(actor->info->speed/2, actor->scale));
-	else
-		P_Thrust(actor, actor->angle, FixedMul(actor->info->speed/4, actor->scale));
+	P_Thrust(actor, actor->angle, FixedMul(actor->info->speed/4, actor->scale));
 
 	// must adjust height
-	if (ultimatemode)
-	{
-		if (actor->z < (actor->target->z + actor->target->height + FixedMul((64<<FRACBITS), actor->scale)))
-			actor->momz += FixedMul(FRACUNIT/2, actor->scale);
-		else
-			actor->momz -= FixedMul(FRACUNIT/2, actor->scale);
-	}
+	if (actor->z < (actor->target->z + actor->target->height + FixedMul((32<<FRACBITS), actor->scale)))
+		actor->momz += FixedMul(FRACUNIT/2, actor->scale);
 	else
-	{
-		if (actor->z < (actor->target->z + actor->target->height + FixedMul((32<<FRACBITS), actor->scale)))
-			actor->momz += FixedMul(FRACUNIT/2, actor->scale);
-		else
-			actor->momz -= FixedMul(FRACUNIT/2, actor->scale);
-	}
+		actor->momz -= FixedMul(FRACUNIT/2, actor->scale);
 }
 
 // Function: A_JetbThink
@@ -4137,10 +4109,7 @@ void A_JetgShoot(void *thing)
 	A_FaceTarget(actor);
 	P_SpawnMissile(actor, actor->target, (mobjtype_t)actor->info->raisestate);
 
-	if (ultimatemode)
-		actor->reactiontime = actor->info->reactiontime*TICRATE;
-	else
-		actor->reactiontime = actor->info->reactiontime*TICRATE*2;
+	actor->reactiontime = actor->info->reactiontime*TICRATE*2;
 
 	if (actor->info->attacksound)
 		S_StartSound(actor, actor->info->attacksound);
@@ -6463,12 +6432,8 @@ void A_BuzzFly(void *thing)
 	// chase towards player
 	{
 		INT32 dist, realspeed;
-		const fixed_t mf = 5*(FRACUNIT/4);
 
-		if (ultimatemode)
-			realspeed = FixedMul(FixedMul(actor->info->speed,mf), actor->scale);
-		else
-			realspeed = FixedMul(actor->info->speed, actor->scale);
+		realspeed = FixedMul(actor->info->speed, actor->scale);
 
 		dist = P_AproxDistance(P_AproxDistance(actor->target->x - actor->x,
 			actor->target->y - actor->y), actor->target->z - actor->z);
@@ -9256,10 +9221,7 @@ void A_MultiShot(void *thing)
 
 	if (!(actor->flags & MF_BOSS))
 	{
-		if (ultimatemode)
-			actor->reactiontime = actor->info->reactiontime*TICRATE;
-		else
-			actor->reactiontime = actor->info->reactiontime*TICRATE*2;
+		actor->reactiontime = actor->info->reactiontime*TICRATE*2;
 	}
 }
 
@@ -10868,10 +10830,7 @@ void A_BrakFireShot(void *thing)
 
 	if (!(actor->flags & MF_BOSS))
 	{
-		if (ultimatemode)
-			actor->reactiontime = actor->info->reactiontime*TICRATE;
-		else
-			actor->reactiontime = actor->info->reactiontime*TICRATE*2;
+		actor->reactiontime = actor->info->reactiontime*TICRATE*2;
 	}
 }
 

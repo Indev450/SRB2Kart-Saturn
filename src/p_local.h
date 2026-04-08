@@ -99,9 +99,6 @@ typedef struct camera_s
 	// Hold up/down to pan the camera vertically
 	SINT8 dpad_y_held;
 
-	// Things used by FS cameras.
-	fixed_t viewheight;
-	angle_t startangle;
 
 	// Camera demobjerization
 	// Info for drawing: position.
@@ -120,8 +117,6 @@ typedef struct camera_s
 	// For movement checking.
 	fixed_t radius;
 	fixed_t height;
-
-	fixed_t relativex;
 
 	// Momentums, used to update position.
 	fixed_t momx, momy, momz;
@@ -219,7 +214,6 @@ void P_DoJumpShield(player_t *player);
 void P_BlackOw(player_t *player);
 void P_ElementalFireTrail(player_t *player);
 
-//void P_DoPityCheck(player_t *player);
 void P_PlayerThink(player_t *player);
 void P_PlayerAfterThink(player_t *player);
 void P_DoPlayerExit(player_t *player);
@@ -280,7 +274,6 @@ void P_RemoveMobj(mobj_t *th);
 void P_RemoveSavegameMobj(mobj_t *th);
 boolean P_SetPlayerMobjState(mobj_t *mobj, statenum_t state);
 boolean P_SetMobjState(mobj_t *mobj, statenum_t state);
-//void P_RunShields(void);
 void P_RunOverlays(void);
 void P_RunShadows(void);
 void P_MobjThinker(mobj_t *mobj);
