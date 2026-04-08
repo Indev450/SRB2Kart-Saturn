@@ -2503,25 +2503,11 @@ static void readmaincfg(MYFILE *f)
 			{
 				flashingtics = (UINT16)get_number(word2);
 			}
-			else if (fastcmp(word, "TAILSFLYTICS"))
-			{
-				tailsflytics = (UINT16)get_number(word2);
-			}
-			else if (fastcmp(word, "UNDERWATERTICS"))
-			{
-				underwatertics = (UINT16)get_number(word2);
-			}
-			else if (fastcmp(word, "SPACETIMETICS"))
-			{
-				spacetimetics = (UINT16)get_number(word2);
-			}
 			else if (fastcmp(word, "EXTRALIFETICS"))
 			{
+				// this modifies player->powers[pw_extralife]
+				// which still has some game behaviour attached to it...
 				extralifetics = (UINT16)get_number(word2);
-			}
-			else if (fastcmp(word, "GAMEOVERTICS"))
-			{
-				gameovertics = get_number(word2);
 			}
 
 			else if (fastcmp(word, "INTROTOPLAY"))
@@ -2546,10 +2532,7 @@ static void readmaincfg(MYFILE *f)
 				if (creditscutscene > 128)
 					creditscutscene = 128;
 			}
-			else if (fastcmp(word, "NUMDEMOS"))
-			{
-				numDemos = (UINT8)get_number(word2);
-			}
+
 			else if (fastcmp(word, "DEMODELAYTIME"))
 			{
 				demoDelayTime = get_number(word2);
@@ -2561,10 +2544,6 @@ static void readmaincfg(MYFILE *f)
 			else if (fastcmp(word, "USE1UPSOUND"))
 			{
 				use1upSound = (UINT8)(value || word2[0] == 'T' || word2[0] == 'Y');
-			}
-			else if (fastcmp(word, "MAXXTRALIFE"))
-			{
-				continue; // unused
 			}
 			else if (fastcmp(word, "GAMEDATA"))
 			{
@@ -2603,6 +2582,30 @@ static void readmaincfg(MYFILE *f)
 			else if (fastcmp(word, "CUSTOMVERSION"))
 			{
 				strlcpy(customversionstring, word2, sizeof (customversionstring));
+			}
+			else if (fastcmp(word, "NUMDEMOS"))
+			{
+				continue; // unused
+			}
+			else if (fastcmp(word, "TAILSFLYTICS"))
+			{
+				continue; // unused
+			}
+			else if (fastcmp(word, "UNDERWATERTICS"))
+			{
+				continue; // unused
+			}
+			else if (fastcmp(word, "SPACETIMETICS"))
+			{
+				continue; // unused
+			}
+			else if (fastcmp(word, "GAMEOVERTICS"))
+			{
+				continue; // unused
+			}
+			else if (fastcmp(word, "MAXXTRALIFE"))
+			{
+				continue; // unused
 			}
 			else
 				deh_warning("Maincfg: unknown word '%s'", word);
@@ -8572,13 +8575,13 @@ FUNCINLINE static ATTRINLINE int lib_getenum(lua_State *L)
 	const char *word;
 	boolean mathlib = lua_toboolean(L, UV_MATHLIB);
 
-	if (lua_type(L,2) != LUA_TSTRING)
+	if (lua_type(L, 2) != LUA_TSTRING)
 		return 0;
 
-	word = lua_tostring(L,2);
+	word = lua_tostring(L, 2);
 
 	/* First check actions, as they can be overridden. */
-	if (!mathlib && fastncmp("A_",word,2))
+	if (!mathlib && fastncmp("A_", word, 2))
 	{
 		char *caps;
 		// Try to get a Lua action first.

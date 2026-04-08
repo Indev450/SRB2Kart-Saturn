@@ -54,7 +54,6 @@ extern INT16 maptol;
 extern UINT8 globalweather;
 extern INT32 curWeather;
 extern INT32 cursaveslot;
-extern INT16 lastmapsaved;
 extern boolean gamecomplete;
 
 #define PRECIP_NONE  0
@@ -78,7 +77,6 @@ extern boolean imcontinuing; // Temporary flag while continuing
 extern UINT8 modeattacking;
 
 // menu demo things
-extern UINT8  numDemos;
 extern UINT32 demoDelayTime;
 extern UINT32 demoIdleTime;
 
@@ -114,7 +112,6 @@ extern UINT8 paused; // Game paused?
 extern UINT8 window_notinfocus; // are we in focus? (backend independant -- handles auto pausing and display of "focus lost" message)
 
 extern boolean nodrawers;
-extern boolean noblit;
 extern boolean lastdraw;
 
 #ifdef MOTIONBLUR
@@ -402,9 +399,6 @@ extern boolean CheckForReverseGravity;
 extern UINT16 invulntics;
 extern UINT16 sneakertics;
 extern UINT16 flashingtics;
-extern UINT16 tailsflytics;
-extern UINT16 underwatertics;
-extern UINT16 spacetimetics;
 extern UINT16 extralifetics;
 
 // SRB2kart
@@ -490,7 +484,6 @@ extern UINT32 timesBeatenWithEmeralds;
 //  WAD, partly set at startup time.
 
 extern tic_t gametic;
-#define localgametic leveltime
 
 // Player spawn spots.
 extern mapthing_t *playerstarts[MAXPLAYERS]; // Cooperative

@@ -88,7 +88,6 @@ INT16 maptol = 0;
 UINT8 globalweather = 0;
 INT32 curWeather = PRECIP_NONE;
 INT32 cursaveslot = -1; // Auto-save 1p savegame slot
-INT16 lastmapsaved = 0; // Last map we auto-saved at
 boolean gamecomplete = false;
 
 UINT16 mainwads = 0;
@@ -109,7 +108,6 @@ INT32 consoleplayer = 0; // player taking events and displaying
 INT32 displayplayers[MAXSPLITSCREENPLAYERS] = {}; // view being displayed
 
 tic_t gametic = 0;
-tic_t levelstarttic = 0; // gametic at level start
 UINT32 totalrings = 0; // for intermission
 INT16 lastmap = 0; // last level you were at (returning from special stages)
 tic_t timeinmap = 0; // Ticker for time spent in level (used for levelcard display)
@@ -187,9 +185,6 @@ boolean CheckForReverseGravity = false;
 UINT16 invulntics = 20*TICRATE;
 UINT16 sneakertics = 20*TICRATE;
 UINT16 flashingtics = 3*TICRATE/2; // SRB2kart
-UINT16 tailsflytics = 8*TICRATE;
-UINT16 underwatertics = 30*TICRATE;
-UINT16 spacetimetics = 11*TICRATE + (TICRATE/2);
 UINT16 extralifetics = 4*TICRATE;
 
 // SRB2kart
@@ -206,8 +201,6 @@ const INT32 bumptime = 6;
 const INT32 wipeoutslowtime = 20;
 const INT32 wantedreduce = 5*TICRATE;
 const INT32 wantedfrequency = 10*TICRATE;
-
-INT32 gameovertics = 15*TICRATE;
 
 UINT8 use1upSound = 0;
 
@@ -1298,8 +1291,6 @@ static void G_DoLoadLevel(boolean resetplayer)
 
 	// Make sure objectplace is OFF when you first start the level!
 	OP_ResetObjectplace();
-
-	levelstarttic = gametic; // for time calculation
 
 	if (wipegamestate == GS_LEVEL)
 		wipegamestate = -1; // force a wipe

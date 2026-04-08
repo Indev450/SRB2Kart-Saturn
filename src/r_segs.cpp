@@ -1167,7 +1167,6 @@ static inline void R_ExpandPlaneY(visplane_t *pl, INT32 x, INT16 top, INT16 bott
 // CALLED: CORE LOOPING ROUTINE.
 //
 
-
 static std::vector<UINT8> holecol(256);
 
 // used for R_DrawWallColumn

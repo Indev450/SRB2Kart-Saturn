@@ -706,6 +706,7 @@ void P_Ticker(boolean run)
 
 		if (indirectitemcooldown > 0)
 			indirectitemcooldown--;
+
 		if (hyubgone > 0)
 			hyubgone--;
 
@@ -713,8 +714,7 @@ void P_Ticker(boolean run)
 		{
 			K_UpdateSpectateGrief();
 		}
-
-		if (G_BattleGametype())
+		else if (G_BattleGametype())
 		{
 			if (wantedcalcdelay && --wantedcalcdelay <= 0)
 				K_CalculateBattleWanted();

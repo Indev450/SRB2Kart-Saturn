@@ -1110,14 +1110,6 @@ void F_TitleScreenTicker(boolean run)
 			return;
 		}
 
-		// Replay intro when done cycling through demos
-		/*if (curDemo == numDemos) -- uuuh... we have a LOT of maps AND a big devteam... probably not gonna see a repeat unless you're super unlucky :V
-		{
-			curDemo = 0;
-			F_StartIntro();
-			return;
-		}*/
-
 		mapname = G_BuildMapName(G_RandMap(TOL_RACE, -2, false, 0, false, NULL)+1);
 
 		numstaff = 1;

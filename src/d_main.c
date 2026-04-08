@@ -828,13 +828,13 @@ void D_SRB2Loop(void)
 
 	for (;;)
 	{
+		precise_t elapsed;
+		precise_t enterprecise, finishprecise;
+
 		if (I_Interrupted())
 		{
 			I_Quit();
 		}
-
-		precise_t elapsed;
-		precise_t enterprecise, finishprecise;
 
 		enterprecise = I_GetPreciseTime();
 
@@ -2277,8 +2277,8 @@ void D_SRB2Main(void)
 
 	if (dedicated && server)
 	{
-		levelstarttic = gametic;
 		G_SetGamestate(GS_LEVEL);
+
 		if (!P_SetupLevel(false, false))
 			I_Quit(); // fail so reset game stuff
 	}

@@ -1430,6 +1430,7 @@ void I_Quit(void)
 	/* prevent recursive I_Quit() */
 	if (quiting)
 		goto death;
+
 	quiting = false;
 	I_ShutdownConsole();
 	M_SaveConfig(NULL); //save game config, cvars..
@@ -1447,14 +1448,17 @@ void I_Quit(void)
 	// use this for 1.28 19990220 by Kin
 	I_ShutdownGraphics();
 	I_ShutdownSystem();
+
 	/* if option -noendtxt is set, don't print the text */
 	if (!M_CheckParm("-noendtxt") && W_CheckNumForName("ENDOOM") != LUMPERROR)
 	{
 		printf("\r");
 		ShowEndTxt();
 	}
+
 	if (myargmalloc)
 		free(myargv); // Deallocate allocated memory
+
 death:
 	W_Shutdown();
 	exit(0);
