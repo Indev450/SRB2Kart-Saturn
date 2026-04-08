@@ -1297,7 +1297,7 @@ static int lib_hudsetvotebackground(lua_State *L)
 
 		if (strlen(prefix) != 4)
 		{
-			return luaL_argerror(L, 1, "prefix should 4 characters wide");
+			return luaL_argerror(L, 1, "prefix should be 4 characters wide");
 		}
 
 		strncpy(VoteScreen.luaPrefix, prefix, 4);
