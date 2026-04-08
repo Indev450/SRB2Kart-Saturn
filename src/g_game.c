@@ -61,7 +61,6 @@
 
 gameaction_t gameaction = 0;
 gamestate_t gamestate = GS_NULL;
-UINT8 ultimatemode = false;
 
 boolean botingame = false;
 UINT8 botskin = 0;
@@ -3394,7 +3393,7 @@ static void G_DoContinued(void)
 	token = 0;
 
 	// Reset # of lives
-	pl->lives = (ultimatemode) ? 1 : 3;
+	pl->lives = 3;
 
 	D_MapChange(gamemap, gametype, false, false, 0, false, false);
 

@@ -43,6 +43,9 @@
 
 #include "m_cond.h"
 
+// idk how PUSHGETTER works, but this is unused
+static UINT8 ultimatemode = false;
+
 #define REQUIRE_MATHLIB_GUID "{748fcbc8-6480-4013-ac4e-7afce6cab766}"
 
 // Free slot names

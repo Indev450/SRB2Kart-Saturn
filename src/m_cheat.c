@@ -249,9 +249,6 @@ boolean cht_Responder(event_t *ev)
 #define REQUIRE_SINGLEPLAYER if (netgame || multiplayer)\
 { CONS_Printf(M_GetText("This only works in single player.\n")); return; }
 
-#define REQUIRE_NOULTIMATE if (ultimatemode)\
-{ CONS_Printf(M_GetText("You're too good to be cheating!\n")); return; }
-
 // command that can be typed at the console!
 void Command_CheatNoClip_f(void)
 {
@@ -259,7 +256,6 @@ void Command_CheatNoClip_f(void)
 
 	REQUIRE_INLEVEL;
 	REQUIRE_SINGLEPLAYER;
-	REQUIRE_NOULTIMATE;
 
 	plyr = &players[consoleplayer];
 	plyr->pflags ^= PF_NOCLIP;
@@ -274,7 +270,6 @@ void Command_CheatGod_f(void)
 
 	REQUIRE_INLEVEL;
 	REQUIRE_SINGLEPLAYER;
-	REQUIRE_NOULTIMATE;
 
 	plyr = &players[consoleplayer];
 	plyr->pflags ^= PF_GODMODE;
@@ -289,7 +284,6 @@ void Command_CheatNoTarget_f(void)
 
 	REQUIRE_INLEVEL;
 	REQUIRE_SINGLEPLAYER;
-	REQUIRE_NOULTIMATE;
 
 	plyr = &players[consoleplayer];
 	plyr->pflags ^= PF_INVIS;
@@ -593,7 +587,6 @@ void Command_Devmode_f(void)
 #ifndef _DEBUG
 	REQUIRE_SINGLEPLAYER;
 #endif
-	REQUIRE_NOULTIMATE;
 
 	if (COM_Argc() > 1)
 	{
@@ -1048,7 +1041,6 @@ void Command_ObjectPlace_f(void)
 {
 	REQUIRE_INLEVEL;
 	REQUIRE_SINGLEPLAYER;
-	REQUIRE_NOULTIMATE;
 
 	G_SetGameModified(multiplayer, true);
 

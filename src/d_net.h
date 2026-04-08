@@ -27,7 +27,6 @@ extern "C" {
 // SINT8 is used for nodes sometimes >:(
 #define MAXNETNODES 127
 #define BROADCASTADDR MAXNETNODES
-#define NETSPLITSCREEN // Kart's splitscreen netgame feature
 
 #define STATLENGTH (TICRATE*2)
 
