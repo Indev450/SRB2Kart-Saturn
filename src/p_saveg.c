@@ -3308,8 +3308,6 @@ FUNCINLINE static ATTRINLINE void P_ArchiveMisc(savebuffer_t *save)
 	else
 		WRITEINT16(save->p, gamemap);
 
-	lastmapsaved = gamemap;
-
 	WRITEUINT16(save->p, (botskin ? (emeralds|(1<<10)) : emeralds)+357);
 	WRITESTRINGN(save->p, timeattackfolder, sizeof(timeattackfolder));
 }
@@ -3332,8 +3330,6 @@ FUNCINLINE static ATTRINLINE void P_UnArchiveSPGame(savebuffer_t *save, INT16 ma
 	// so make it so
 	if (!mapheaderinfo[gamemap-1])
 		P_AllocMapHeader(gamemap-1);
-
-	lastmapsaved = gamemap;
 
 	tokenlist = 0;
 	token = 0;

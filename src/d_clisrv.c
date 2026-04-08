@@ -4361,7 +4361,7 @@ void D_ClientServerInit(void)
 		playerinfo[i].node = 255;
 
 	gametic = 0;
-	localgametic = 0;
+	leveltime = 0;
 
 	// do not send anything before the real begin
 	SV_StopServer();
@@ -6819,7 +6819,7 @@ boolean TryRunTics(tic_t realtics)
 		{
 			boolean update_stats = !(paused || P_AutoPause());
 
-			DEBFILE(va("============ Running tic %d (local %d)\n", gametic, localgametic));
+			DEBFILE(va("============ Running tic %d (local %d)\n", gametic, leveltime));
 
 			if (update_stats)
 				PS_START_TIMING(ps_tictime);

@@ -66,12 +66,10 @@
 #include <locale.h>
 
 // menu demo things
-UINT8  numDemos      = 0; //3; -- i'm FED UP of losing my skincolour to a broken demo. change this back when we make new ones
 UINT32 demoDelayTime = 15*TICRATE;
 UINT32 demoIdleTime  = 3*TICRATE;
 
 boolean nodrawers = false; // for comparative timing purposes
-boolean noblit = false; // for comparative timing purposes
 static tic_t demostarttime; // for comparative timing purposes
 
 //@TODO put these all in a struct for namespacing purposes?
@@ -3512,10 +3510,11 @@ static INT32 restorecv_vidwait;
 void G_TimeDemo(const char *name)
 {
 	nodrawers = M_CheckParm("-nodraw");
-	noblit = M_CheckParm("-noblit");
+
 	restorecv_vidwait = cv_vidwait.value;
 	if (cv_vidwait.value)
 		CV_Set(&cv_vidwait, "0");
+
 	demo.timing = true;
 	singletics = true;
 	framecount = 0;

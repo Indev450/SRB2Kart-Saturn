@@ -39,12 +39,8 @@ extern INT32 player_name_changes[MAXPLAYERS];
 extern player_t players[MAXPLAYERS];
 extern boolean playeringame[MAXPLAYERS];
 
-// gametic at level start
-extern tic_t levelstarttic;
-
 // for modding?
 extern INT16 prevmap, nextmap;
-extern INT32 gameovertics;
 extern tic_t timeinmap; // Ticker for time spent in level (used for levelcard display)
 extern INT16 rw_maximums[NUM_WEAPONS];
 

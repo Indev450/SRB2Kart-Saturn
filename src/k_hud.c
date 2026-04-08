@@ -4022,6 +4022,7 @@ static void K_drawBattleFullscreen(void)
 	{
 		if (stplyrnum == 0)
 			V_DrawFadeScreen(0xFF00, 16);
+
 		if (stplyr->exiting < 6*TICRATE && !stplyr->spectator)
 		{
 			if (stplyr->kartstuff[k_position] == 1)
@@ -4337,7 +4338,7 @@ static void K_drawInput(void)
 		}
 		else
 		{
-			const boolean analogjoystickmove = cv_usejoystick[stplyrnum].value && !Joystick[stplyrnum].bGamepadStyle;
+			const boolean analogjoystickmove  = cv_usejoystick[stplyrnum].value && !Joystick[stplyrnum].bGamepadStyle;
 			const boolean gamepadjoystickmove = cv_usejoystick[stplyrnum].value && Joystick[stplyrnum].bGamepadStyle;
 			const UINT8 ssplayer = stplyrnum+1;
 
@@ -4354,9 +4355,10 @@ static void K_drawInput(void)
 				{
 					hudforward += KART_FULLTURN;
 				}
+
 				if (InputDown(gc_aimbackward, ssplayer) || (gamepadjoystickmove && axis > 0))
 				{
-					hudforward-= KART_FULLTURN;
+					hudforward -= KART_FULLTURN;
 				}
 			}
 
@@ -4442,6 +4444,7 @@ static void K_drawChallengerScreen(void)
 		19,20,19,20,19,20,19,20,19,20, // frame 20-21, 1 tic, 5 alternating: all text vibrates from impact
 		21,22,23,24 // frame 22-25, 1 tic: CHALLENGER turns gold
 	};
+
 	const UINT8 offset = min(52-1, (3*TICRATE)-mapreset);
 
 	V_DrawFadeScreen(0xFF00, 16); // Fade out
@@ -4543,6 +4546,7 @@ static void K_drawDistributionDebugger(void)
 		kp_orbinaut[4],
 		kp_jawz[1]
 	};
+
 	INT32 useodds = 0;
 	INT32 pingame = 0, bestbumper = 0;
 	INT32 i;
@@ -4559,8 +4563,10 @@ static void K_drawDistributionDebugger(void)
 		if (!playeringame[i] || players[i].spectator)
 			continue;
 		pingame++;
+
 		if (players[i].exiting)
 			dontforcespb = true;
+
 		if (players[i].kartstuff[k_bumper] > bestbumper)
 			bestbumper = players[i].kartstuff[k_bumper];
 	}
@@ -4714,6 +4720,7 @@ void K_drawKartHUD(void)
 	{
 		if (LUA_HudEnabled(hud_battlefullscreen))
 			K_drawBattleFullscreen();
+
 		return;
 	}
 

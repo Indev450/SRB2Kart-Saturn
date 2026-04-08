@@ -697,15 +697,15 @@ void D_SRB2Loop(void)
 
 	for (;;)
 	{
-		if (I_Interrupted())
-		{
-			I_Quit();
-		}
-
 		// capbudget is the minimum precise_t duration of a single loop iteration
 		precise_t capbudget;
 		precise_t elapsed;
 		precise_t enterprecise, finishprecise;
+
+		if (I_Interrupted())
+		{
+			I_Quit();
+		}
 
 		enterprecise = I_GetPreciseTime();
 
@@ -2163,8 +2163,8 @@ void D_SRB2Main(void)
 
 	if (dedicated && server)
 	{
-		levelstarttic = gametic;
 		G_SetGamestate(GS_LEVEL);
+
 		if (!P_SetupLevel(false, false))
 			I_Quit(); // fail so reset game stuff
 	}

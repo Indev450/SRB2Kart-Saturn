@@ -1398,8 +1398,8 @@ void S_LoadMusicDefs(UINT16 wadnum)
 
 	for (int k = 0; k < 2; k++)
 	{
-		const char *lumpname = (k == 1 ? "MUSCINFO" : "MUSICDEF");
-		lumpnum = W_CheckNumForNamePwad(lumpname, wadnum, 0); //check for MUSCINFO lump on 2nd iteration
+		const char *lumpname = (k == 1 ? "MUSCINFO" : "MUSICDEF"); //check for MUSCINFO lump on 2nd iteration
+		lumpnum = W_CheckNumForNamePwad(lumpname, wadnum, 0);
 
 		if (lumpnum == INT16_MAX)
 			continue;
