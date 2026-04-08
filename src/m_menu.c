@@ -7958,25 +7958,24 @@ static void M_DrawSetupMultiPlayerMenu(void)
 	INT32 tw = 0;
 	spritedef_t *sprdef;
 	spriteframe_t *sprframe;
-	patch_t *statbg  = (patch_t *)W_CachePatchName("K_STATBG", PU_PATCH);
-	patch_t *statlr  = (patch_t *)W_CachePatchName("K_STATLR", PU_PATCH);
-	patch_t *statud  = (patch_t *)W_CachePatchName("K_STATUD", PU_PATCH);
-	patch_t *statdot = (patch_t *)W_CachePatchName("K_SDOT0" , PU_PATCH);
 	patch_t *patch;
 	UINT8 frame;
 	UINT8 speed;
 	UINT8 weight;
 	UINT8 i;
 	UINT8 s, w;
-	const UINT8 *flashcol = V_GetStringColormap(highlightflags);
 	INT32 skinnum = 0;
 	INT32 statx, staty;
 	UINT32 speenframe;
 	INT32 sltw, actw, hetw;
 	UINT8 skintodisplay;
 	INT32 nameboxaddy = 0;
-	int statoffset = 0;
-	int gridyoffset = 0;
+
+	const UINT8 *flashcol = V_GetStringColormap(highlightflags);
+	patch_t *statbg  = (patch_t *)W_CachePatchName("K_STATBG", PU_PATCH);
+	patch_t *statlr  = (patch_t *)W_CachePatchName("K_STATLR", PU_PATCH);
+	patch_t *statud  = (patch_t *)W_CachePatchName("K_STATUD", PU_PATCH);
+	patch_t *statdot = (patch_t *)W_CachePatchName("K_SDOT0" , PU_PATCH);
 
 	mx = MP_PlayerSetupDef.x;
 	my = MP_PlayerSetupDef.y;
@@ -7991,8 +7990,6 @@ static void M_DrawSetupMultiPlayerMenu(void)
 	switch (cv_skinselectmenu.value)
 	{
 		case SKINMENUTYPE_EXTENDED:
-			nameboxaddy = 6;
-			break;
 		case SKINMENUTYPE_GRID:
 			nameboxaddy = 6;
 			break;
@@ -8008,39 +8005,23 @@ static void M_DrawSetupMultiPlayerMenu(void)
 	else
 		M_DrawTextInput(mx + 40, my + nameboxaddy, &setupm_input, 0);
 
+#define GETSELECTEDSKINNAME (itemOn == 1 && setupm_skinselect < numskins ? skins[skinsorted[setupm_skinselect]].realname : skins[setupm_fakeskin].realname)
+#define GETSELECTEDSPEED (itemOn == 1 && setupm_skinselect < numskins ? skins[skinsorted[setupm_skinselect]].kartspeed : skins[setupm_fakeskin].kartspeed)
+#define GETSELECTEDWEIGHT (itemOn == 1 && setupm_skinselect < numskins ? skins[skinsorted[setupm_skinselect]].kartweight : skins[setupm_fakeskin].kartweight)
+
 	// draw skin string
 	st = V_StringWidth(skins[setupm_fakeskin].realname, 0);
 	switch (cv_skinselectmenu.value)
 	{
 		case SKINMENUTYPE_EXTENDED:
-#define GETSELECTEDSKINNAME (itemOn == 1 && setupm_skinselect < numskins ? skins[skinsorted[setupm_skinselect]].realname : skins[setupm_fakeskin].realname)
-#define GETSELECTEDSPEED (itemOn == 1 && setupm_skinselect < numskins ? skins[skinsorted[setupm_skinselect]].kartspeed : skins[setupm_fakeskin].kartspeed)
-#define GETSELECTEDWEIGHT (itemOn == 1 && setupm_skinselect < numskins ? skins[skinsorted[setupm_skinselect]].kartweight : skins[setupm_fakeskin].kartweight)
-
-			tw = V_StringWidth("Character", 0);//V_StringWidth(GETSELECTEDSKINNAME, 0);
-			st = V_StringWidth(GETSELECTEDSKINNAME, 0);
-
-			V_DrawString((mx+(tw/2)) - (st/2), my + 37,
-				((MP_PlayerSetupMenu[2].status & IT_TYPE) == IT_SPACE ? V_TRANSLUCENT : 0) | highlightflags | V_ALLOWLOWERCASE,
-				GETSELECTEDSKINNAME);
-			if (statdp == true)
-				statoffset = 50;
-			else
-				statoffset = 113;
-
-			V_DrawString(statx - statoffset, staty - 10, V_6WIDTHSPACE, va("\x84%dS \x87%dW", GETSELECTEDSPEED, GETSELECTEDWEIGHT));
-#undef GETSELECTEDSKINNAME
-#undef GETSELECTEDSPEED
-#undef GETSELECTEDWEIGHT
-			break;
+			V_DrawString(statx - (statdp ? 50 : 113), staty - 10, V_6WIDTHSPACE, va("\x84%dS \x87%dW", GETSELECTEDSPEED, GETSELECTEDWEIGHT));
+			/* FALLTHRU */
 		case SKINMENUTYPE_GRID:
-#define GETSELECTEDSKINNAME (itemOn == 1 && setupm_skinselect < numskins ? skins[skinsorted[setupm_skinselect]].realname : skins[setupm_fakeskin].realname)
-			tw = V_StringWidth("Character", 0);//V_StringWidth(GETSELECTEDSKINNAME, 0);
+			tw = V_StringWidth("Character", 0);
 			st = V_StringWidth(GETSELECTEDSKINNAME, 0);
 			V_DrawString((mx+(tw/2)) - (st/2), my + 37,
 				((MP_PlayerSetupMenu[2].status & IT_TYPE) == IT_SPACE ? V_TRANSLUCENT : 0) | highlightflags | V_ALLOWLOWERCASE,
 				GETSELECTEDSKINNAME);
-#undef GETSELECTEDSKINNAME
 			break;
 		case SKINMENUTYPE_2D:
 
@@ -8118,8 +8099,6 @@ static void M_DrawSetupMultiPlayerMenu(void)
 			break;
 	}
 
-#define GRIDSTATOFFSET 0
-
 	switch (cv_skinselectmenu.value)
 	{
 		case SKINMENUTYPE_EXTENDED:
@@ -8130,9 +8109,6 @@ static void M_DrawSetupMultiPlayerMenu(void)
 			V_DrawSmallString(statx+17, staty-37, V_6WIDTHSPACE|highlightflags, sortNames[cv_skinselectgridsort.value]);
 			if (itemOn == 1)
 				V_DrawSmallString(statx+101, staty-37, V_6WIDTHSPACE|highlightflags, "BS: change");
-
-#define GETSELECTEDSPEED (itemOn == 1 && setupm_skinselect < numskins ? skins[skinsorted[setupm_skinselect]].kartspeed : skins[setupm_fakeskin].kartspeed)
-#define GETSELECTEDWEIGHT (itemOn == 1 && setupm_skinselect < numskins ? skins[skinsorted[setupm_skinselect]].kartweight : skins[setupm_fakeskin].kartweight)
 
 			if (statdp == true)
 			{
@@ -8163,22 +8139,19 @@ static void M_DrawSetupMultiPlayerMenu(void)
 				}
 			}
 
-#undef GETSELECTEDSPEED
-#undef GETSELECTEDWEIGHT
-
 			break;
 		case SKINMENUTYPE_GRID:
 			// SRB2Kart: draw the stat backer
 			// labels
-			V_DrawSmallString(statx+12+GRIDSTATOFFSET, staty+67, V_6WIDTHSPACE|highlightflags, "Acceleration");
-			V_DrawSmallString(statx+76+GRIDSTATOFFSET, staty+67, V_6WIDTHSPACE|highlightflags, "Max Speed");
-			V_DrawSmallString(statx+14+GRIDSTATOFFSET, staty+75, V_6WIDTHSPACE|highlightflags, "Handling");
-			V_DrawSmallString(statx+21+GRIDSTATOFFSET, staty+108, V_6WIDTHSPACE|highlightflags, "Weight");
+			V_DrawSmallString(statx+12, staty+67, V_6WIDTHSPACE|highlightflags, "Acceleration");
+			V_DrawSmallString(statx+76, staty+67, V_6WIDTHSPACE|highlightflags, "Max Speed");
+			V_DrawSmallString(statx+14, staty+75, V_6WIDTHSPACE|highlightflags, "Handling");
+			V_DrawSmallString(statx+21, staty+108, V_6WIDTHSPACE|highlightflags, "Weight");
 			// label arrows
-			V_DrawFixedPatch(((statx+61+GRIDSTATOFFSET)<<FRACBITS) + (FRACUNIT>>1), (staty+67)<<FRACBITS, FRACUNIT>>1, 0, statlr, flashcol);
-			V_DrawFixedPatch((statx+40+GRIDSTATOFFSET)<<FRACBITS, (staty+80)<<FRACBITS, FRACUNIT>>1, 0, statud, flashcol);
+			V_DrawFixedPatch(((statx+61)<<FRACBITS) + (FRACUNIT>>1), (staty+67)<<FRACBITS, FRACUNIT>>1, 0, statlr, flashcol);
+			V_DrawFixedPatch((statx+40)<<FRACBITS, (staty+80)<<FRACBITS, FRACUNIT>>1, 0, statud, flashcol);
 			// bg
-			V_DrawFixedPatch(((statx+48+GRIDSTATOFFSET)<<FRACBITS)+(FRACUNIT>>1), (staty+73)<<FRACBITS, FRACUNIT>>1, 0, statbg, NULL);
+			V_DrawFixedPatch(((statx+48)<<FRACBITS)+(FRACUNIT>>1), (staty+73)<<FRACBITS, FRACUNIT>>1, 0, statbg, NULL);
 
 			for (i = 0; i < numskins; i++) // draw the stat dots
 			{
@@ -8186,7 +8159,7 @@ static void M_DrawSetupMultiPlayerMenu(void)
 				{
 					speed = skins[i].kartspeed;
 					weight = skins[i].kartweight;
-					V_DrawFixedPatch((((statx+46+GRIDSTATOFFSET) + (speed*4))<<FRACBITS) + (FRACUNIT>>1), (((staty+71) + (weight*4))<<FRACBITS), FRACUNIT>>1, 0, statdot, NULL);
+					V_DrawFixedPatch((((statx+46) + (speed*4))<<FRACBITS) + (FRACUNIT>>1), (((staty+71) + (weight*4))<<FRACBITS), FRACUNIT>>1, 0, statdot, NULL);
 				}
 			}
 
@@ -8212,9 +8185,9 @@ static void M_DrawSetupMultiPlayerMenu(void)
 #define TEXTVERTSHIFT 10
 
 			DRAWSLOW(statx - sltw - 2, staty);
-			DRAWSLOW(statx - sltw - 2, staty - TEXTVERTSHIFT+ (9 * 18) - 11);
+			DRAWSLOW(statx - sltw - 2, staty - TEXTVERTSHIFT + (9 * 18) - 11);
 			DRAWFAST(statx + (9 * 18), staty);
-			DRAWFAST(statx + (9 * 18), staty - TEXTVERTSHIFT+ (9 * 18) - 11);
+			DRAWFAST(statx + (9 * 18), staty - TEXTVERTSHIFT + (9 * 18) - 11);
 			DRAWACCEL(statx - actw - 2, staty + TEXTVERTSHIFT);
 			DRAWACCEL(statx + (9 * 18), staty + TEXTVERTSHIFT);
 			DRAWHEAVY(statx - hetw - 2, staty + (9 * 18) - 11);
@@ -8251,15 +8224,18 @@ static void M_DrawSetupMultiPlayerMenu(void)
 			break;
 	}
 
+#undef GETSELECTEDSKINNAME
+#undef GETSELECTEDSPEE
+#undef GETSELECTEDWEIGHT
+
 	switch (cv_skinselectmenu.value)
 	{
-			//Skin grid stuff
-			case SKINMENUTYPE_EXTENDED:
-			gridyoffset = 10;
+		//Skin grid stuff
+		case SKINMENUTYPE_EXTENDED:
 			for (s = 0; s < SKINGRIDNEWWIDTH*SKINGRIDNEWHEIGHT; s++)
 			{
 				INT32 x = ((s % SKINGRIDNEWWIDTH) * 18) + ((BASEVIDWIDTH / 2) - (18 * SKINGRIDNEWWIDTH) - 8) + 100 + SKINXSHIFT; //BASEVIDWIDTH / 2 - ((icons + 1) * 24) - 4;
-				INT32 y = ((s / SKINGRIDNEWWIDTH) * 18) + ((BASEVIDHEIGHT / 2) - (18 * (SKINGRIDNEWWIDTH/2)) + gridyoffset); //BASEVIDWIDTH / 2 - ((icons + 1) * 24) - 4;
+				INT32 y = ((s / SKINGRIDNEWWIDTH) * 18) + ((BASEVIDHEIGHT / 2) - (18 * (SKINGRIDNEWWIDTH/2)) + 10); //BASEVIDWIDTH / 2 - ((icons + 1) * 24) - 4;
 				INT32 calcs = s + (setupm_skinypos * SKINGRIDNEWWIDTH);
 				INT32 skinn;
 				patch_t *face;
@@ -8285,7 +8261,7 @@ static void M_DrawSetupMultiPlayerMenu(void)
 			{
 				patch_t *cursor;
 				INT32 curx = (((setupm_skinselect % SKINGRIDNEWWIDTH) * 18) + ((BASEVIDWIDTH / 2) - (18 * SKINGRIDNEWWIDTH/2)) + SKINXSHIFT) + 20;
-				INT32 cury = (((setupm_skinselect / SKINGRIDNEWWIDTH) - setupm_skinypos) * 18) + ((BASEVIDHEIGHT / 2) - (18 * (SKINGRIDNEWWIDTH/2))+ gridyoffset);
+				INT32 cury = (((setupm_skinselect / SKINGRIDNEWWIDTH) - setupm_skinypos) * 18) + ((BASEVIDHEIGHT / 2) - (18 * (SKINGRIDNEWWIDTH/2))+ 10);
 
 				UINT8 cursorframe = (I_GetTime() / 4) % 7;
 				cursor = (patch_t *)W_CachePatchName(va("K_CHILI%d", cursorframe + 1), PU_PATCH);
@@ -8345,13 +8321,13 @@ static void M_DrawSetupMultiPlayerMenu(void)
 				weight = skins[selectedskin].kartweight;
 				statdot = (patch_t *)W_CachePatchName("K_SDOT1", PU_PATCH);
 				if (skullAnimCounter < 4) // SRB2Kart: we draw this dot later so that it's not covered if there's multiple skins with the same stats
-					V_DrawFixedPatch((((statx+46+GRIDSTATOFFSET) + (speed*4))<<FRACBITS) + (FRACUNIT>>1), (((staty+71) + (weight*4))<<FRACBITS), FRACUNIT>>1, 0, statdot, flashcol);
+					V_DrawFixedPatch((((statx+46) + (speed*4))<<FRACBITS) + (FRACUNIT>>1), (((staty+71) + (weight*4))<<FRACBITS), FRACUNIT>>1, 0, statdot, flashcol);
 				else
-					V_DrawFixedPatch((((statx+46+GRIDSTATOFFSET) + (speed*4))<<FRACBITS) + (FRACUNIT>>1), (((staty+71) + (weight*4))<<FRACBITS), FRACUNIT>>1, 0, statdot, NULL);
+					V_DrawFixedPatch((((statx+46) + (speed*4))<<FRACBITS) + (FRACUNIT>>1), (((staty+71) + (weight*4))<<FRACBITS), FRACUNIT>>1, 0, statdot, NULL);
 
 				statdot = (patch_t *)W_CachePatchName("K_SDOT2", PU_PATCH); // coloured center
 				if (setupm_fakecolor)
-					V_DrawFixedPatch((((statx+46+GRIDSTATOFFSET) + (speed*4))<<FRACBITS) + (FRACUNIT>>1), (((staty+71) + (weight*4))<<FRACBITS), FRACUNIT>>1, 0, statdot, R_GetTranslationColormap(0, setupm_fakecolor, GTC_MENUCACHE));
+					V_DrawFixedPatch((((statx+46) + (speed*4))<<FRACBITS) + (FRACUNIT>>1), (((staty+71) + (weight*4))<<FRACBITS), FRACUNIT>>1, 0, statdot, R_GetTranslationColormap(0, setupm_fakecolor, GTC_MENUCACHE));
 			}
 			break;
 		case SKINMENUTYPE_2D:
@@ -8402,7 +8378,6 @@ static void M_DrawSetupMultiPlayerMenu(void)
 				}
 			}
 			break;
-#undef GRIDSTATOFFSET
 #undef SKINXSHIFT
 		default:
 			speed = skins[setupm_fakeskin].kartspeed;
