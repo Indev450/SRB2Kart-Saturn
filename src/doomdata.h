@@ -61,7 +61,7 @@ enum
 typedef struct
 {
 	INT16 x, y;
-}ATTRPACK  mapvertex_t;
+} ATTRPACK  mapvertex_t;
 
 // A SideDef, defining the visual appearance of a wall,
 // by setting textures and offsets.

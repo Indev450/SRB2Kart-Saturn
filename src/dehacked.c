@@ -280,149 +280,6 @@ static void clear_levels(void)
 	P_AllocMapHeader(gamemap-1);
 }
 
-static boolean findFreeSlot(INT32 *num)
-{
-	// Send the character select entry to a free slot.
-	while (*num < MAXSKINS && PlayerMenu[*num].status != IT_DISABLED)
-		*num = *num+1;
-
-	// No more free slots. :(
-	if (*num >= MAXSKINS)
-		return false;
-
-	// Found one! ^_^
-	return true;
-}
-
-// Reads a player.
-// For modifying the character select screen
-static void readPlayer(MYFILE *f, INT32 num)
-{
-	char *s = Z_Malloc(MAXLINELEN, PU_STATIC, NULL);
-	char *word;
-	char *word2;
-	INT32 i;
-	boolean slotfound = false;
-
-	do
-	{
-		if (myfgets(s, MAXLINELEN, f))
-		{
-			if (s[0] == '\n')
-				break;
-
-			word = strtok(s, " ");
-			if (word)
-				strupr(word);
-			else
-				break;
-
-			if (fastcmp(word, "PLAYERTEXT"))
-			{
-				char *playertext = NULL;
-
-				if (!slotfound && (slotfound = findFreeSlot(&num)) == false)
-					goto done;
-				PlayerMenu[num].status = IT_CALL;
-
-				// A friendly neighborhood alias for brevity's sake
-				const size_t note_size = sizeof(description[num].notes);
-
-				for (i = 0; i < (INT32)(MAXLINELEN-note_size-3); i++)
-				{
-					if (s[i] == '=')
-					{
-						playertext = &s[i+2];
-						break;
-					}
-				}
-
-				if (playertext)
-				{
-					strlcpy(description[num].notes, playertext, note_size);
-					strlcat(description[num].notes,
-							myhashfgets(playertext, note_size, f), note_size);
-				}
-				else
-					strcpy(description[num].notes, "");
-
-				// For some reason, cutting the string did not work above. Most likely due to strcpy or strcat...
-				// It works down here, though.
-				{
-					INT32 numline = 0;
-					for (i = 0; (size_t)i < note_size-1; i++)
-					{
-						if (numline < 20 && description[num].notes[i] == '\n')
-							numline++;
-
-						if (numline >= 20 || description[num].notes[i] == '\0' || description[num].notes[i] == '#')
-							break;
-					}
-				}
-
-				description[num].notes[strlen(description[num].notes)-1] = '\0';
-				description[num].notes[i] = '\0';
-				continue;
-			}
-
-			word2 = strtok(NULL, " = ");
-			if (word2)
-				strupr(word2);
-			else
-				break;
-
-			if (word2[strlen(word2)-1] == '\n')
-				word2[strlen(word2)-1] = '\0';
-			i = atoi(word2);
-
-			if (fastcmp(word, "PICNAME"))
-			{
-				if (!slotfound && (slotfound = findFreeSlot(&num)) == false)
-					goto done;
-				PlayerMenu[num].status = IT_CALL;
-				strncpy(description[num].picname, word2, 8);
-			}
-			else if (fastcmp(word, "STATUS"))
-			{
-				// Limit the status to only IT_DISABLED and IT_CALL
-				if (i)
-					i = IT_CALL;
-				else
-					i = IT_DISABLED;
-
-				/*
-					You MAY disable previous entries if you so desire...
-					But try to enable something that's already enabled and you will be sent to a free slot.
-
-					Because of this, you are allowed to edit any previous entrys you like, but only if you
-					signal that you are purposely doing so by disabling and then reenabling the slot.
-
-					... Or use MENUPOSITION first, that works too. Hell, you could edit multiple character
-					slots in a single section that way, due to how SOC editing works.
-				*/
-				if (i != IT_DISABLED && !slotfound && (slotfound = findFreeSlot(&num)) == false)
-					goto done;
-				PlayerMenu[num].status = (INT16)i;
-			}
-			else if (fastcmp(word, "SKINNAME"))
-			{
-				// Send to free slot.
-				if (!slotfound && (slotfound = findFreeSlot(&num)) == false)
-					goto done;
-				PlayerMenu[num].status = IT_CALL;
-
-				strlcpy(description[num].skinname, word2, sizeof description[num].skinname);
-				strlwr(description[num].skinname);
-			}
-			else
-				deh_warning("readPlayer %d: unknown word '%s'", num, word);
-		}
-	} while (!myfeof(f)); // finish when the line is empty
-
-done:
-	Z_Free(s);
-}
-
 static int freeslotusage[2][2] = {{0, 0}, {0, 0}}; // [S_, MT_][max, previous .wad's max]
 
 void DEH_UpdateMaxFreeslots(void)
@@ -2820,6 +2677,7 @@ static void DEH_LoadDehackedFile(MYFILE *f, UINT16 wad)
 
 	// it doesn't test the version of SRB2 and version of dehacked file
 	dbg_line = -1; // start at -1 so the first line is 0.
+
 	while (!myfeof(f))
 	{
 		char origpos[256];
@@ -2847,11 +2705,15 @@ static void DEH_LoadDehackedFile(MYFILE *f, UINT16 wad)
 		strncpy(origpos, s, size);
 		origpos[size] = '\0';
 
-		if (NULL != (word = strtok(s, " "))) {
+		if (NULL != (word = strtok(s, " ")))
+		{
 			strupr(word);
-			if (word[strlen(word)-1] == '\n')
-				word[strlen(word)-1] = '\0';
+			const size_t wordlen = strlen(word);
+
+			if (word[wordlen-1] == '\n')
+				word[wordlen-1] = '\0';
 		}
+
 		if (word)
 		{
 			if (fastcmp(word, "FREESLOT"))
@@ -2872,32 +2734,46 @@ static void DEH_LoadDehackedFile(MYFILE *f, UINT16 wad)
 				// This is not a major mod.
 				continue;
 			}
+
 			word2 = strtok(NULL, " ");
+
 			if (fastcmp(word, "CHARACTER"))
 			{
-				if (word2) {
+				if (word2)
+				{
 					strupr(word2);
-					if (word2[strlen(word2)-1] == '\n')
-						word2[strlen(word2)-1] = '\0';
+					const size_t wordlen = strlen(word2);
+
+					if (word2[wordlen-1] == '\n')
+						word2[wordlen-1] = '\0';
+
 					i = atoi(word2);
-				} else
+				}
+				else
 					i = 0;
+
 				if (i >= 0 && i < 32)
-					readPlayer(f, i);
+					ignorelines(f); // unused
 				else
 				{
 					deh_warning("Character %d out of range (0 - 31)", i);
 					ignorelines(f);
 				}
+
 				// This is not a major mod.
 				continue;
 			}
+
 			if (word2)
 			{
 				strupr(word2);
-				if (word2[strlen(word2)-1] == '\n')
-					word2[strlen(word2)-1] = '\0';
+				const size_t wordlen = strlen(word2);
+
+				if (word2[wordlen-1] == '\n')
+					word2[wordlen-1] = '\0';
+
 				i = atoi(word2);
+
 				if (fastcmp(word, "PATCH"))
 				{
 					// Read patch from spec file.
@@ -2908,6 +2784,7 @@ static void DEH_LoadDehackedFile(MYFILE *f, UINT16 wad)
 				{
 					if (i == 0 && word2[0] != '0') // If word2 isn't a number
 						i = get_mobjtype(word2); // find a thing by name
+
 					if (i < NUMMOBJTYPES && i >= 0)
 					{
 						if (i < (MT_FIRSTFREESLOT+freeslotusage[1][1]))
@@ -2955,6 +2832,7 @@ static void DEH_LoadDehackedFile(MYFILE *f, UINT16 wad)
 				{
 					if (i == 0 && word2[0] != '0') // If word2 isn't a number
 						i = get_state(word2); // find a state by name
+
 					if (i < NUMSTATES && i >= 0)
 					{
 						if (i < (S_FIRSTFREESLOT+freeslotusage[0][1]))
@@ -2971,6 +2849,7 @@ static void DEH_LoadDehackedFile(MYFILE *f, UINT16 wad)
 				{
 					if (i == 0 && word2[0] != '0') // If word2 isn't a number
 						i = get_sfx(word2); // find a sound by name
+
 					if (i < NUMSFX && i >= 0)
 						readsound(f, i, savesfxnames);
 					else
@@ -2984,6 +2863,7 @@ static void DEH_LoadDehackedFile(MYFILE *f, UINT16 wad)
 				{
 					if (i == 0 && word2[0] != '0') // If word2 isn't a number
 						i = get_huditem(word2); // find a huditem by name
+
 					if (i >= 0 && i < NUMHUDITEMS)
 						readhuditem(f, i);
 					else
