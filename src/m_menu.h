@@ -50,9 +50,6 @@ void M_Drawer(void);
 // Called by D_SRB2Main, loads the config file.
 void M_Init(void);
 
-// Called by D_SRB2Main also, sets up the playermenu and description tables.
-void M_InitCharacterTables(void);
-
 // Called by intro code to force menu up upon a keypress,
 // does nothing if menu is already up.
 void M_StartControlPanel(void);
@@ -83,11 +80,6 @@ typedef enum
 	                // and routine is void routine(event_t *) (ex: set control)
 } menumessagetype_t;
 void M_StartMessage(const char *string, void *routine, menumessagetype_t itemtype);
-
-extern boolean DPADUPSCROLL;
-extern boolean DPADDOWNSCROLL;
-extern boolean DPADLEFTSCROLL;
-extern boolean DPADRIGHTSCROLL;
 
 typedef enum
 {
@@ -168,8 +160,6 @@ boolean M_CanShowLevelInList(INT32 mapnum, INT32 gt);
 
 #define MAXMENUCCVARS 999
 
-#define MAXTOOLTIPS 255
-
 typedef union
 {
 	struct menu_s *submenu;      // IT_SUBMENU
@@ -194,8 +184,6 @@ typedef struct menuitem_s
 	// hotkey in menu or y of the item
 	UINT16 alphaKey;
 } menuitem_t;
-
-extern menuitem_t PlayerMenu[MAXSKINS];
 
 typedef struct menu_s
 {
@@ -227,14 +215,6 @@ extern menu_t SP_LoadDef;
 void M_SetupJoystickMenu(INT32 choice);
 extern menu_t OP_JoystickSetDef;
 
-// Stuff for customizing the player select screen
-typedef struct
-{
-	char notes[441];
-	char picname[8];
-	char skinname[SKINNAMESIZE*2+2]; // skin&skin\0
-} description_t;
-
 // mode descriptions for video mode menu
 typedef struct
 {
@@ -261,8 +241,6 @@ typedef struct
 } saveinfo_t;
 
 extern INT32 mapwads[NUMMAPS];
-
-extern description_t description[MAXSKINS];
 
 extern consvar_t cv_replaysearchrate;
 extern consvar_t cv_showfocuslost;

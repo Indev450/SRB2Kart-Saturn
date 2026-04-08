@@ -495,12 +495,6 @@ static menuitem_t SP_LevelStatsMenu[] =
 	{IT_KEYHANDLER | IT_NOTHING, NULL, "", M_HandleLevelStats, '\0'},     // dummy menuitem for the control func
 };
 
-// A rare case.
-// External files modify this menu, so we can't call it static.
-// And I'm too lazy to go through and rename it everywhere. ARRGH!
-#define M_ChoosePlayer NULL
-menuitem_t PlayerMenu[MAXSKINS];
-
 // -----------------------------------
 // Multiplayer and all of its submenus
 // -----------------------------------
