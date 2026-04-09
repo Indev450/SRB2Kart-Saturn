@@ -462,6 +462,8 @@ License (MIT):
 #include <stdbool.h>
 #include <string.h>
 
+#include "fastcmp.h"
+
 // Two-way concatenation macro.
 #define VT_CAT_( a, b ) a##b
 #define VT_CAT( a, b ) VT_CAT_( a, b )
@@ -705,7 +707,12 @@ static inline FORCE_INLINE bool vt_cmpr_integer( uint64_t key_1, uint64_t key_2 
 
 static inline FORCE_INLINE bool vt_cmpr_string( const char *key_1, const char *key_2 )
 {
-  return strcmp( key_1, key_2 ) == 0;
+  return fastcmp( key_1, key_2 );
+}
+
+static inline FORCE_INLINE bool vt_cmpr_casestring( const char *key_1, const char *key_2 )
+{
+  return fasticmp( key_1, key_2 );
 }
 
 // Default allocation and free functions.

@@ -1168,8 +1168,8 @@ void VS_Print(vsbuf_t *buf, const char *data)
 #define NAME      cvar_map_t
 #define KEY_TY    const char *
 #define VAL_TY    consvar_t *
-#define HASH_FN   vt_hash_string
-#define CMPR_FN   vt_cmpr_string
+#define HASH_FN   FNV1a_HashLowercaseString
+#define CMPR_FN   vt_cmpr_casestring
 #include "verstable.h"
 
 #define NAME      netvar_map_t
