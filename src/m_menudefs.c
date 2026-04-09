@@ -1688,29 +1688,30 @@ static menuitem_t OP_SaturnMenu[] =
 	{IT_STRING | IT_CVAR, NULL, "Minimum Input Delay", 					&cv_mindelay, 	 	 		 20},
 	{IT_STRING | IT_CVAR, NULL, "Gentlemens Ping", 						&cv_gentlemens, 	 	 	 25},
 	{IT_STRING | IT_CVAR, NULL, "Server Info Screen", 				    &cv_serverinfoscreen, 	 	 30},
+	{IT_STRING | IT_CVAR, NULL, "Server Addons Info", 				    &cv_serveraddoninfo, 	 	 35},
 
-	{IT_STRING | IT_CVAR, NULL, "Skin Select Spinning Speed",		 	&cv_skinselectspin, 	 	 40},
+	{IT_STRING | IT_CVAR, NULL, "Skin Select Spinning Speed",		 	&cv_skinselectspin, 	 	 45},
 
-	{IT_STRING | IT_CVAR, NULL, "Colorized Speedlines", 				&cv_coloredspeedlines, 		 50},
-	{IT_STRING | IT_CVAR, NULL, "Colorized Sneakertrails", 				&cv_coloredsneakertrail, 	 55},
+	{IT_STRING | IT_CVAR, NULL, "Colorized Speedlines", 				&cv_coloredspeedlines, 		 55},
+	{IT_STRING | IT_CVAR, NULL, "Colorized Sneakertrails", 				&cv_coloredsneakertrail, 	 60},
 
-	{IT_STRING | IT_CVAR, NULL, "Player Blendeffects", 					&cv_playerblendeffects, 	 65},
+	{IT_STRING | IT_CVAR, NULL, "Player Blendeffects", 					&cv_playerblendeffects, 	 70},
 
-	{IT_STRING | IT_CVAR, NULL, "Bananadrag Jitter", 					&cv_bananajitter, 	 		 75},
+	{IT_STRING | IT_CVAR, NULL, "Bananadrag Jitter", 					&cv_bananajitter, 	 		 80},
 
-	{IT_STRING | IT_CVAR, NULL, "Midair Driftsparks", 					&cv_airsparks, 	 		 	 85},
+	{IT_STRING | IT_CVAR, NULL, "Midair Driftsparks", 					&cv_airsparks, 	 		 	 90},
 
-	{IT_STRING | IT_CVAR, NULL, "Show Localskin Menus", 				&cv_showlocalskinmenus, 	 95},
+	{IT_STRING | IT_CVAR, NULL, "Show Localskin Menus", 				&cv_showlocalskinmenus, 	100},
 
-	{IT_STRING | IT_CVAR, NULL, "Uppercase Menu",						&cv_menucaps,   		    105},
+	{IT_STRING | IT_CVAR, NULL, "Uppercase Menu",						&cv_menucaps,   		    110},
 
-	{IT_STRING | IT_CVAR, NULL, "Keyboard Layout",						&cv_keyboardlayout,   	   	115},
+	{IT_STRING | IT_CVAR, NULL, "Keyboard Layout",						&cv_keyboardlayout,   	   	120},
 
-	{IT_STRING | IT_CVAR, NULL, "Less Midnight Channel Flicker", 		&cv_lessflicker, 		   	125},
+	{IT_STRING | IT_CVAR, NULL, "Less Midnight Channel Flicker", 		&cv_lessflicker, 		   	130},
 
-	{IT_SUBMENU|IT_STRING,	NULL,	"Saturn Hud...", 					&OP_SaturnHudDef,		   	135},
-	{IT_SUBMENU|IT_STRING,	NULL,	"Sprite Distortion...", 			&OP_PlayerDistortDef,	   	140},
-	{IT_SUBMENU|IT_STRING,	NULL,	"Saturn Credits", 					&OP_SaturnCreditsDef,	   	145}, // uwu
+	{IT_SUBMENU|IT_STRING,	NULL,	"Saturn Hud...", 					&OP_SaturnHudDef,		   	140},
+	{IT_SUBMENU|IT_STRING,	NULL,	"Sprite Distortion...", 			&OP_PlayerDistortDef,	   	145},
+	{IT_SUBMENU|IT_STRING,	NULL,	"Saturn Credits", 					&OP_SaturnCreditsDef,	   	150}, // uwu
 };
 
 static const char* OP_SaturnTooltips[] =
@@ -1720,6 +1721,7 @@ static const char* OP_SaturnTooltips[] =
 	"Practice for online play! 0 = instant response.",
 	"Simulate online input delay when hosting a server.\nValue choosen by Player with the lowest ping",
 	"Show a screen before joining a server displaying important information about it",
+	"Show amount and types of addons that are loaded by server when joining",
 	"How much speen do you want?",
 	"Colourize the speedlines in your skincolor if you go fast enough!",
 	"Colourize the sneaker flame trails in your skincolor!",
@@ -1822,8 +1824,8 @@ static menuitem_t OP_SaturnHudMenu[] =
 {
 	{IT_HEADER, NULL, "Saturn Hud Options", NULL, 0},
 
-	{IT_STRING|IT_CVAR,    NULL, "Speedometer Style",           &cv_newspeedometer,    10},
-	{IT_STRING|IT_CVAR,    NULL, "Battle Speedometer",          &cv_battlespeedo,      15},
+	{IT_STRING|IT_CVAR,    NULL, "Speedometer Style",           &cv_newspeedometer,       10},
+	{IT_STRING|IT_CVAR,    NULL, "Battle Speedometer",          &cv_battlespeedo,         15},
 
 	{IT_STRING|IT_CVAR,    NULL, "Colourized HUD",              &cv_colorizedhud,         25},
 	{IT_STRING|IT_CVAR,    NULL, "Colourized Itembox",          &cv_colorizeditembox,     30},
@@ -1832,38 +1834,39 @@ static menuitem_t OP_SaturnHudMenu[] =
 	{IT_STRING|IT_CVAR,    NULL, "Input Display",               &cv_showinput,            45},
 
 	{IT_STRING|IT_CVAR,    NULL, "Stat Display",                &cv_showstats,            55},
+	{IT_STRING|IT_CVAR,    NULL, "Skin Name in Stat Display",   &cv_showstats_skinname,   60},
 
-	{IT_STRING|IT_CVAR,    NULL, "Higher Resolution Portraits", &cv_highresportrait,      65},
+	{IT_STRING|IT_CVAR,    NULL, "Higher Resolution Portraits", &cv_highresportrait,      70},
 
-	{IT_STRING|IT_CVAR,    NULL, "Small Positionnumber",        &cv_smallposnum,          75},
-	{IT_STRING|IT_CVAR,    NULL, "Positionnumber Animation",    &cv_posanim,              80},
+	{IT_STRING|IT_CVAR,    NULL, "Small Positionnumber",        &cv_smallposnum,          80},
+	{IT_STRING|IT_CVAR,    NULL, "Positionnumber Animation",    &cv_posanim,              85},
 
-	{IT_STRING|IT_CVAR,    NULL, "Flash Lap Times",             &cv_showlaptimes,         90},
+	{IT_STRING|IT_CVAR,    NULL, "Flash Lap Times",             &cv_showlaptimes,         95},
 
-	{IT_STRING|IT_CVAR,    NULL, "Multi-Item icons",            &cv_multiitemicon,       100},
-	{IT_STRING|IT_CVAR,    NULL, "Item Amount Number",          &cv_huditemamount,       105},
-	{IT_STRING|IT_CVAR,    NULL, "Animated Roulette",           &cv_fancyroulette,       110},
+	{IT_STRING|IT_CVAR,    NULL, "Multi-Item icons",            &cv_multiitemicon,       105},
+	{IT_STRING|IT_CVAR,    NULL, "Item Amount Number",          &cv_huditemamount,       110},
+	{IT_STRING|IT_CVAR,    NULL, "Animated Roulette",           &cv_fancyroulette,       115},
 
-	{IT_STRING|IT_CVAR,    NULL, "Show Lap Emblem",             &cv_showlapemblem,       120},
-	{IT_STRING|IT_CVAR,    NULL, "Show Cecho Messages",         &cv_cechotoggle,         125},
+	{IT_STRING|IT_CVAR,    NULL, "Show Lap Emblem",             &cv_showlapemblem,       125},
+	{IT_STRING|IT_CVAR,    NULL, "Show Cecho Messages",         &cv_cechotoggle,         130},
 
-	{IT_STRING|IT_CVAR,    NULL, "Show Names on Minimap",       &cv_showminimapnames,    135},
-	{IT_STRING|IT_CVAR,    NULL, "Show Finished on Minimap",    &cv_showminimapfinished, 140},
-	{IT_STRING|IT_CVAR,    NULL, "Small Minimap Players",       &cv_minihead,            145},
-	{IT_STRING|IT_CVAR,    NULL, "Spin Minimap Icons",          &cv_spinoutroll,         150},
-	{IT_STRING|IT_CVAR,    NULL, "Player Angle Visual",         &cv_showminimapangle,    155},
+	{IT_STRING|IT_CVAR,    NULL, "Show Names on Minimap",       &cv_showminimapnames,    140},
+	{IT_STRING|IT_CVAR,    NULL, "Show Finished on Minimap",    &cv_showminimapfinished, 145},
+	{IT_STRING|IT_CVAR,    NULL, "Small Minimap Players",       &cv_minihead,            150},
+	{IT_STRING|IT_CVAR,    NULL, "Spin Minimap Icons",          &cv_spinoutroll,         155},
+	{IT_STRING|IT_CVAR,    NULL, "Player Angle Visual",         &cv_showminimapangle,    160},
 
-	{IT_STRING|IT_CVAR,    NULL, "Music Credits",               &cv_songcredits,         165},
-	{IT_STRING|IT_CVAR,    NULL, "Music Credits on Pause",      &cv_pausesongcredits,    170},
+	{IT_STRING|IT_CVAR,    NULL, "Music Credits",               &cv_songcredits,         170},
+	{IT_STRING|IT_CVAR,    NULL, "Music Credits on Pause",      &cv_pausesongcredits,    175},
 
-	{IT_STRING|IT_CVAR,    NULL, "Beta Intermissionscreen",     &cv_betainterscreen,     180},
+	{IT_STRING|IT_CVAR,    NULL, "Beta Intermissionscreen",     &cv_betainterscreen,     185},
 
-	{IT_STRING|IT_CVAR,    NULL, "Show Director Prompt",        &cv_showdirectorhud,     190},
+	{IT_STRING|IT_CVAR,    NULL, "Show Director Prompt",        &cv_showdirectorhud,     195},
 
-	{IT_STRING|IT_SUBMENU, NULL, "Nametags...",                 &OP_NametagDef,          200},
-	{IT_STRING|IT_SUBMENU, NULL, "Driftgauge...",               &OP_DriftGaugeDef,       205},
+	{IT_STRING|IT_SUBMENU, NULL, "Nametags...",                 &OP_NametagDef,          205},
+	{IT_STRING|IT_SUBMENU, NULL, "Driftgauge...",               &OP_DriftGaugeDef,       210},
 
-	{IT_SUBMENU|IT_STRING, NULL, "Hud Offsets...",              &OP_HudOffsetDef,        215},
+	{IT_SUBMENU|IT_STRING, NULL, "Hud Offsets...",              &OP_HudOffsetDef,        220},
 };
 
 static const char* OP_SaturnHudTooltips[] =
@@ -1876,6 +1879,7 @@ static const char* OP_SaturnHudTooltips[] =
 	"The color to use instead of the player color when\ncolourized hud is enabled.",
 	"Displays the input display and lets you choose its style.",
 	"Enable the stat display.",
+	"Show skin name in the stat display.",
 	"Enable the use of the higher resolution want icons instead of rank\nfor some places.",
 	"Make the Postionnumber half the size.",
 	"Disable the animation of the Positionnumber\nwhen overtaking someone.",

@@ -8162,7 +8162,7 @@ static void M_DrawSetupMultiPlayerMenu(void)
 	}
 
 #undef GETSELECTEDSKINNAME
-#undef GETSELECTEDSPEE
+#undef GETSELECTEDSPEED
 #undef GETSELECTEDWEIGHT
 
 	switch (cv_skinselectmenu.value)
