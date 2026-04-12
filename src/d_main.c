@@ -367,16 +367,22 @@ static void D_LimitFps(void);
 
 static void D_MakeIntermissionBG(void)
 {
-	if (rendermode == render_none)
-		return;
-
 	if (!lastdraw)
 		return;
+
+	if (rendermode == render_none)
+	{
+		lastdraw = false;
+		return;
+	}
 
 	// no more valid map
 	// shouldnt happen at this point, but better safe than sorry!
 	if (!numsectors)
+	{
+		lastdraw = false;
 		return;
+	}
 
 	// need to render level again for this
 	// should be fine since at this point we did not unload it yet
@@ -384,7 +390,6 @@ static void D_MakeIntermissionBG(void)
 	{
 		D_Renderview();
 	}
-
 #ifdef HWRENDER
 	if (rendermode == render_opengl)
 	{
