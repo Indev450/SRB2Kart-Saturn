@@ -277,6 +277,10 @@ void SCR_Recalc(void)
 	// vid.recalc lasts only for the next refresh...
 	con_recalc = true;
 	am_recalc = true;
+
+	// HACK: set lastdraw so intermission bg can refresh after resolution change
+	if (gamestate == GS_INTERMISSION)
+		lastdraw = true;
 }
 
 // Check for screen cmd-line parms: to force a resolution.

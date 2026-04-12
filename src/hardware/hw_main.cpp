@@ -254,11 +254,13 @@ static void CV_screentextures_OnChange(void)
 	{
 		if (cv_glpaletterendering.value != 0)
 			CV_SetValue(&cv_glpaletterendering, 0);
-
 #ifdef USE_FBO_OGL
 		if (cv_glframebuffer.value != 0)
 			CV_SetValue(&cv_glframebuffer, 0);
 #endif
+		// HACK: set lastdraw so intermission bg can refresh after toggling screentextures
+		if (gamestate == GS_INTERMISSION)
+			lastdraw = true;
 	}
 	GL_SetSpecialState(HWD_SET_SCREEN_TEXTURES, cv_glscreentextures.value);
 	M_UpdateOGLMenu();
