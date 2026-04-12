@@ -5830,13 +5830,15 @@ static void COM_HWR_glinfo(void)
 		// if the GPU is super new and supports a bajillion extensions - xyzzy
 
 		char *copy = strdup((const char*)gl_extensions);
-		char *ext = strtok(copy, " ");
+		char *ext;
 
 		if (copy == NULL)
 		{
 			CONS_Printf("Ran out of memory listing extensions?!?!");
 			return;
 		}
+
+		ext = strtok(copy, " ");
 
 		do
 		{
