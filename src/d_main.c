@@ -362,6 +362,40 @@ static void D_Renderview(void)
 // added comment : there is a wipe eatch change of the gamestate
 gamestate_t wipegamestate = GS_LEVEL;
 
+static void D_MakeIntermissionBG(void)
+{
+	if (rendermode == render_none)
+		return;
+
+	if (!lastdraw)
+		return;
+
+	// no more valid map
+	// shouldnt happen at this point, but better safe than sorry!
+	if (!numsectors)
+		return;
+
+	// need to render level again for this
+	// should be fine since at this point we did not unload it yet
+	if (cv_renderview.value)
+	{
+		D_Renderview();
+	}
+
+#ifdef HWRENDER
+	if (rendermode == render_opengl)
+	{
+		HWR_MakeScreenTexture();
+	}
+	else
+#endif
+	{
+		VID_BlitLinearScreen(vid.screens[0], vid.screens[1], vid.width, vid.height, vid.width, vid.width);
+	}
+
+	lastdraw = false;
+}
+
 static boolean D_Display(void)
 {
 	boolean ranwipe = false;
@@ -519,6 +553,8 @@ static boolean D_Display(void)
 			break;
 	}
 
+	D_MakeIntermissionBG();
+
 	if (gamestate == GS_LEVEL)
 	{
 		// draw the view directly
@@ -527,16 +563,6 @@ static boolean D_Display(void)
 			PS_START_TIMING(ps_rendercalltime);
 			D_Renderview();
 			PS_STOP_TIMING(ps_rendercalltime);
-		}
-
-		if (lastdraw)
-		{
-			if (rendermode == render_soft)
-			{
-				VID_BlitLinearScreen(vid.screens[0], vid.screens[1], vid.width, vid.height, vid.width, vid.width);
-			}
-
-			lastdraw = false;
 		}
 
 		PS_START_TIMING(ps_uitime);
