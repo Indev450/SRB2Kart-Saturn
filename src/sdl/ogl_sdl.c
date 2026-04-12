@@ -137,13 +137,13 @@ boolean OglSdlSurface(INT32 w, INT32 h)
 
 		GL_DBG_Printf("OpenGL %s\n", gl_version);
 		GL_DBG_Printf("GPU: %s\n", gl_renderer);
-		GL_DBG_Printf("Extensions:");
+		GL_DBG_Printf("Extensions: \n");
 
 		{
 			// Need to do it with strtok for same reason its done like that in gr_glinfo command
 
 			char *copy = strdup((const char*)gl_extensions);
-			char *ext = strtok(copy, " ");
+			char *ext;
 
 			if (copy == NULL)
 			{
@@ -151,9 +151,11 @@ boolean OglSdlSurface(INT32 w, INT32 h)
 			}
 			else
 			{
+				ext = strtok(copy, " ");
+
 				do
 				{
-					GL_DBG_Printf(" %s", ext);
+					GL_DBG_Printf(" - %s\n", ext);
 				} while ((ext = strtok(NULL, " ")) != NULL);
 
 				free(copy);
