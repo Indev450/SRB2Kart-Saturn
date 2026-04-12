@@ -151,6 +151,11 @@ FUNCINLINE static ATTRINLINE void HWR_RenderVhsEffect(fixed_t upbary, fixed_t do
 	GL_RenderVhsEffect(upbary, downbary, updistort, downdistort, barsize);
 }
 
+FUNCINLINE static ATTRINLINE void HWR_MakeScreenTexture(void)
+{
+	GL_MakeScreenTexture(HWD_SCREENTEXTURE_GENERIC1);
+}
+
 FUNCINLINE static ATTRINLINE void HWR_MakeScreenFinalTexture(void)
 {
 	GL_MakeScreenTexture(HWD_SCREENTEXTURE_GENERIC2);

@@ -5944,61 +5944,62 @@ static void HWR_DoPostProcessor(void)
 	if (cv_glscreentextures.value != 2) // screen textures are needed for the rest of the effects
 		return;
 
-	//UINT8 viewnum = R_GetViewNumber(); // see below
+	// Not supported in splitscreen - someone want to add support?
+	if (splitscreen || cv_reducevfx.value)
+		return;
+
+	//UINT8 viewnum = R_GetViewNumber();
 	//camera_t *thiscam = &camera[viewnum];
 	const camera_t *thiscam = &camera[0];
 
-	// Not supported in splitscreen - someone want to add support?
-	const boolean screenwave = (!splitscreen && !cv_reducevfx.value && (thiscam->postimg & POSTIMG_WATER || thiscam->postimg & POSTIMG_HEAT));
+	if (!(thiscam->postimg & POSTIMG_WATER || thiscam->postimg & POSTIMG_HEAT))
+		return;
 
 	// Capture the screen for intermission and screen waving
-	if ((lastdraw || screenwave) && gamestate != GS_INTERMISSION)
+	if (gamestate != GS_INTERMISSION)
 		GL_MakeScreenTexture(HWD_SCREENTEXTURE_GENERIC1);
 
 	// Drunken vision! WooOOooo~
-	if (screenwave)
+	// 10 by 10 grid. 2 coordinates (xy)
+	float v[SCREENVERTS][SCREENVERTS][2];
+	float disStart = (leveltime-1) + FixedToFloat(R_GetTimeFrac(RTF_LEVEL));
+
+	UINT8 x, y;
+	float WAVELENGTH;
+	float AMPLITUDE;
+	float FREQUENCY;
+
+	// Modifies the wave.
+	if (thiscam->postimg & POSTIMG_WATER)
 	{
-		// 10 by 10 grid. 2 coordinates (xy)
-		float v[SCREENVERTS][SCREENVERTS][2];
-		float disStart = (leveltime-1) + FixedToFloat(R_GetTimeFrac(RTF_LEVEL));
-
-		UINT8 x, y;
-		float WAVELENGTH;
-		float AMPLITUDE;
-		float FREQUENCY;
-
-		// Modifies the wave.
-		if (thiscam->postimg & POSTIMG_WATER)
-		{
-			WAVELENGTH = 5.0f;
-			AMPLITUDE = 40.0f;
-			FREQUENCY = 8.0f;
-		}
-		else
-		{
-			WAVELENGTH = 10.0f;
-			AMPLITUDE = 60.0f;
-			FREQUENCY = 4.0f;
-		}
-
-		//static constexpr float scale = ((float)SCREENVERTS - 1.0f) / 9.0f; // well this evals to just 1.0f and what is x / 1? kek
-
-		for (x = 0; x < SCREENVERTS; x++)
-		{
-			for (y = 0; y < SCREENVERTS; y++)
-			{
-				// Change X position based on its Y position.
-				v[x][y][0] = x-4.5f + sinf(((disStart+(static_cast<float>(y) * WAVELENGTH)) / FREQUENCY)) / AMPLITUDE; // (x / scale)
-				v[x][y][1] = y-4.5f; // (y / scale)
-			}
-		}
-
-		GL_PostImgRedraw(v);
-
-		// Capture the screen again for screen waving on the intermission
-		if (gamestate != GS_INTERMISSION)
-			GL_MakeScreenTexture(HWD_SCREENTEXTURE_GENERIC1);
+		WAVELENGTH = 5.0f;
+		AMPLITUDE = 40.0f;
+		FREQUENCY = 8.0f;
 	}
+	else
+	{
+		WAVELENGTH = 10.0f;
+		AMPLITUDE = 60.0f;
+		FREQUENCY = 4.0f;
+	}
+
+	//static constexpr float scale = ((float)SCREENVERTS - 1.0f) / 9.0f; // well this evals to just 1.0f and what is x / 1? kek
+
+	for (x = 0; x < SCREENVERTS; x++)
+	{
+		for (y = 0; y < SCREENVERTS; y++)
+		{
+			// Change X position based on its Y position.
+			v[x][y][0] = x-4.5f + sinf(((disStart+(static_cast<float>(y) * WAVELENGTH)) / FREQUENCY)) / AMPLITUDE; // (x / scale)
+			v[x][y][1] = y-4.5f; // (y / scale)
+		}
+	}
+
+	GL_PostImgRedraw(v);
+
+	// Capture the screen again for screen waving on the intermission
+	if (gamestate != GS_INTERMISSION)
+		GL_MakeScreenTexture(HWD_SCREENTEXTURE_GENERIC1);
 	// Flipping of the screen isn't done here anymore
 }
 
