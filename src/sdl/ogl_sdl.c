@@ -256,10 +256,12 @@ void OglSdlFinishUpdate(SDL_Window *window)
 	// Sryder:	We need to draw the final screen texture again into the other buffer in the original position so that
 	//			effects that want to take the old screen can do so after this
 	// well we dont need it on native res it seems
+#if 0
 #ifdef USE_FBO_OGL
 	if ((!I_CheckNativeRes() && !usefbo) || WipeInAction)
 #else
 	if (!I_CheckNativeRes() || WipeInAction)
+#endif
 #endif
 		HWR_DrawScreenFinalTexture(realwidth, realheight, false);
 }
