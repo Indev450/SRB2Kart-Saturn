@@ -496,32 +496,6 @@ static consvar_t cv_dummystaff = {"dummystaff", "0", CV_HIDEN|CV_CALL, dummystaf
 // all the menu definitions and onchanges reside in here now
 #include "m_menudefs.c"
 
-static INT32 M_ShiftChar(INT32 ch)
-{
-	if (I_UseNativeKeyboard())
-		return ch;
-
-	if (cv_keyboardlayout.value == 3)
-	{
-		if (ch >= 32 && ch <= 141)
-		{
-			if (shiftdown)
-				ch = shiftxform[ch];
-			else if (altdown & 0x2)
-				ch = french_altgrxform[ch];
-			else
-				ch = HU_FallBackFrSpecialLetter(ch);
-		}
-	}
-	else
-	{
-		if (shiftdown && ch >= 32 && ch <= 127)
-			ch = shiftxform[ch];
-	}
-
-	return ch;
-}
-
 //
 // M_GetGametypeColor
 //
@@ -1250,7 +1224,7 @@ boolean M_Responder(event_t *ev)
 	// Handle menuitems which need a specific key handling
 	if (routine && (currentMenu->menuitems[itemOn].status & IT_TYPE) == IT_KEYHANDLER)
 	{
-		ch = M_ShiftChar(ch);
+		ch = CON_ShiftChar(ch);
 		routine(ch);
 		return true;
 	}
@@ -1280,6 +1254,7 @@ boolean M_Responder(event_t *ev)
 				void (*otherroutine)(event_t *sev) = currentMenu->menuitems[itemOn].itemaction;
 				otherroutine(ev); //Alam: what a hack
 			}
+
 			return true;
 		}
 	}

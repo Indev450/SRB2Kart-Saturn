@@ -108,7 +108,6 @@ static void KeyboardLayout_OnChange(void)
 {
 	if (cv_keyboardlayout.value != 2)
 		SDL_StopTextInput();
-	HU_Shiftform();
 }
 
 static CV_PossibleValue_t keyboardlayout_cons_t[] = {{1,"Default US"}, {2, "Native"}, {3, "AZERTY"}, {0, NULL}};
