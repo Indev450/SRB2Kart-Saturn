@@ -208,14 +208,6 @@ static void CONS_Clear_f(void)
 	Unlock_state();
 }
 
-// Choose english keymap
-//
-/*static void CONS_English_f(void)
-{
-	shiftxform = english_shiftxform;
-	CONS_Printf(M_GetText("%s keymap.\n"), M_GetText("English"));
-}*/
-
 static char *bindtable[NUMINPUTS];
 
 static void CONS_Bind_f(void)
@@ -633,27 +625,186 @@ void CON_MoveConsole(void)
 	Unlock_state();
 }
 
+//======================================================================
+//                 KEYBOARD LAYOUTS FOR ENTERING TEXT
+//======================================================================
+
+static char english_shiftxform[] =
+{
+	0,
+	1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
+	11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
+	21, 22, 23, 24, 25, 26, 27, 28, 29, 30,
+	31,
+	' ', '!', '"', '#', '$', '%', '&',
+	'"', // shift-'
+	'(', ')', '*', '+',
+	'<', // shift-,
+	'_', // shift--
+	'>', // shift-.
+	'?', // shift-/
+	')', // shift-0
+	'!', // shift-1
+	'@', // shift-2
+	'#', // shift-3
+	'$', // shift-4
+	'%', // shift-5
+	'^', // shift-6
+	'&', // shift-7
+	'*', // shift-8
+	'(', // shift-9
+	':',
+	':', // shift-;
+	'<',
+	'+', // shift-=
+	'>', '?', '@',
+	'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N',
+	'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
+	'{', // shift-[
+	'|', // shift-backslash - OH MY GOD DOES WATCOM SUCK
+	'}', // shift-]
+	'"', '_',
+	'~', // shift-`
+	'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N',
+	'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
+	'{', '|', '}', '~', 127
+};
+
+static char french_shiftxform[] =
+{
+	0,
+	1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
+	11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
+	21, 22, 23, 24, 25, 26, 27, 28, 29, 30,
+	31,
+	' ','$', //shift-!
+	'3', //shift-"
+	'#', '$', '%',
+	'1', //shift-&
+	'4', // shift-'
+	'5', // shift-(
+	')', // shift-)
+	'*', '+',
+	'?', // shift-,
+	'6', // shift--
+	'.', '/',
+	'0', '1', '2', '3', '4', '5',
+	'6', '7', '8', '9',
+	'/', // shitf-:
+	'.', // shift-;
+	'>', // shift-<
+	'+', // shift-=
+	'>', '?', '@',
+	'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N',
+	'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
+	'[', '\\', ']', '^',
+	'8', //shift-_
+	'`',
+	'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N',
+	'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
+	'{', '|', '}', '~', 127,
+	128, 129,
+	'2',
+	131, 132,
+	'0',
+	134,
+	'9',
+	136, 137,
+	'7',
+	139, 140,
+	'%'
+};
+
+static char french_altgrxform[] =
+{
+	0,
+	1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
+	11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
+	21, 22, 23, 24, 25, 26, 27, 28, 29, 30,
+	31,
+	' ', '!',
+	'#', //altgr-"
+	'#', '$', '%', '&',
+	'{', //altgr-'
+	'[', //altgr-(
+	']', //altgr-)
+	'*', '+', ',',
+	'|', //altg--
+	'.', '/',
+	'0', '1', '2', '3', '4', '5',
+	'6', '7', '8', '9',
+	':', ';', '<',
+	'}', //altgr-=
+	'>', '?', '@',
+    'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N',
+	'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
+	'[', '\\', ']', '^',
+	'\\', //altgr-backslash
+	'`',
+	'a', 'b', 'c', 'd', 'E', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n',
+	'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
+	'{', '|', '}', '~', 127,
+	128, 129,
+	'~',
+	131, 132,
+	'@',
+	134,
+	'^',
+	136, 137,
+	'`',
+	139, 140,
+	KEY_FR_U_GRAVE
+};
+
+// fallback for special letter non displayable in the game (i.e.: 'é','à',etc.)
+static INT32 CON_FallBackFrSpecialLetter(INT32 key)
+{
+	switch (key)
+	{
+		case KEY_FR_E_AIGUE:     return 'e';
+		case KEY_FR_E_GRAVE:     return 'e';
+		case KEY_FR_C_CEDILLE:   return 'c';
+		case KEY_FR_A_GRAVE:     return 'a';
+		case KEY_FR_U_GRAVE:     return 'u';
+		default:       return key;
+	}
+}
+
+// goddang AZERTY
+static size_t CON_GetShiftSize(void)
+{
+	return ((cv_keyboardlayout.value == 3) ? sizeof(french_shiftxform) : sizeof(english_shiftxform));
+}
+
+static char *CON_Shiftform(void)
+{
+	return (cv_keyboardlayout.value == 3) ? french_shiftxform : english_shiftxform;
+}
+
 INT32 CON_ShiftChar(INT32 ch)
 {
-	if (I_UseNativeKeyboard())
+	if (I_UseNativeKeyboard() || ch >= (INT32)CON_GetShiftSize())
 		return ch;
 
+	// warning: shiftdown is NOT a boolean, it's 1 or 2 for lshift/rshift
 	if ((ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z'))
 	{
-		if (shiftdown ^ capslock)
-			ch = shiftxform[ch];
+		return !!shiftdown != capslock ? CON_Shiftform()[ch] : ch;
 	}
-	else // if we're holding shift we should still shift non letter symbols
+
+	// if we're holding shift we should still shift non letter symbols
+	if (shiftdown)
 	{
-		if (shiftdown)
-			ch = shiftxform[ch];
-		else if (cv_keyboardlayout.value == 3)
-		{
-			if (altdown & 0x2)
-				ch = french_altgrxform[ch];
-			else
-				ch = HU_FallBackFrSpecialLetter(ch);
-		}
+		return CON_Shiftform()[ch];
+	}
+
+	// AZERTY
+	if (cv_keyboardlayout.value == 3)
+	{
+		if (altdown & 0x2)
+			return french_altgrxform[ch];
+
+		return CON_FallBackFrSpecialLetter(ch);
 	}
 
 	return ch;
