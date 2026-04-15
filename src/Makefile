@@ -94,6 +94,7 @@
 # NOSDLMAIN=1 - ?
 # SDLMAIN=1 - ?
 # NOLTO=1 - Disable link time optimizations
+# USEJEMALLOC=1 Enable building with jemalloc Allocator to replace GLibc malloc, might improve performance
 #
 # Library configuration flags:
 # Everything here is an override.
@@ -277,6 +278,10 @@ ifdef USEUBSAN
 # compile with ubsan
 opts+=-O1 -fsanitize=undefined -fno-omit-frame-pointer
 libs+=-fsanitize=undefined
+endif
+
+ifdef USEJEMALLOC
+libs+=-ljemalloc
 endif
 
 ifneq (,$(filter $(CC) $(CXX),clang clang++))
