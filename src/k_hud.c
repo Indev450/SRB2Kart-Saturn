@@ -1362,10 +1362,12 @@ INT32 K_getMinimapTrans(void)
 		return -1;
 
 	if (timeinmap <= 113)
+	{
 		minimaptrans = ((((INT32)timeinmap) - 105)*minimaptrans)/(113-105);
 
-	if (!minimaptrans)
-		return -1;
+		if (!minimaptrans)
+			return -1;
+	}
 
 	return (10-minimaptrans)<<FF_TRANSSHIFT;
 }
@@ -2190,8 +2192,9 @@ static boolean K_drawKartPositionFaces(void)
 	UINT8 *colormap;
 
 	ranklines = 0;
-	memset(completed, 0, sizeof (completed));
-	memset(rankplayer, 0, sizeof (rankplayer));
+
+	if (!LUA_HudEnabled(hud_minirankings))
+		return false; // Don't proceed but still return true for free play above if HUD is disabled.
 
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
@@ -2206,8 +2209,7 @@ static boolean K_drawKartPositionFaces(void)
 	if (numplayersingame <= 1)
 		return true;
 
-	if (!LUA_HudEnabled(hud_minirankings))
-		return false; // Don't proceed but still return true for free play above if HUD is disabled.
+	memset(completed, 0, sizeof (completed));
 
 	for (j = 0; j < numplayersingame; j++)
 	{
@@ -2264,6 +2266,7 @@ static boolean K_drawKartPositionFaces(void)
 
 		if (!playeringame[rankplayer[i]])
 			continue;
+
 		if (player->spectator || !player->mo)
 			continue;
 
@@ -2441,7 +2444,7 @@ void HU_DrawTabRankings(INT32 x, INT32 y, playersort_t *tab, INT32 scorelines, I
 
 static boolean K_BigLap(void)
 {
-	return (cv_biglaps.value && (cv_numlaps.value > 9) && (K_UseColorHud() ? big_lap_color : big_lap) && (!stplyr->exiting));
+	return (cv_biglaps.value && (cv_numlaps.value > 9) && !stplyr->exiting && (K_UseColorHud() ? big_lap_color : big_lap));
 }
 
 static void K_drawKartLaps(void)
@@ -2650,7 +2653,7 @@ static void K_drawKartSpeedometer(void)
 		return;
 
 	// index 0 is the raw value, index 1 is the converted value
-	fixed_t convSpeed[2] = {0,0};
+	fixed_t convSpeed[2] = {0, 0};
 #ifdef ROTSPRITE
 	fixed_t dial_divisor = DIALSPDDIV;
 #endif
@@ -2719,34 +2722,27 @@ static void K_drawKartSpeedometer(void)
 
 		V_DrawKartString(SPDM_X, SPDM_Y, V_HUDTRANS|splitflags, metric);
 	}
-	else if (speedostyle == SPEEDO_EXTRA) // why bother if we dont?
+	else if (speedostyle == SPEEDO_EXTRA || speedostyle == SPEEDO_ACHII) // why bother if we dont?
 	{
-		if (K_UseColorSpeedo(SPEEDO_EXTRA)) //Colourized hud
+		patch_t *speedopat;
+
+		if (K_UseColorSpeedo(speedostyle)) //Colourized hud
 		{
+			speedopat = ((speedostyle == SPEEDO_EXTRA) ? skp_smallstickerclr : skp_smallstickerachiclr);
 			UINT8 *colormap = R_GetTranslationColormap(TC_DEFAULT, K_GetHudColor(), GTC_CACHE);
-			V_DrawMappedPatch(SPDM_X + 1, SPDM_Y + 4, V_HUDTRANS|splitflags, skp_smallstickerclr, colormap);
+
+			V_DrawMappedPatch(SPDM_X + 1, SPDM_Y + 4, V_HUDTRANS|splitflags, speedopat, colormap);
 		}
 		else
-			V_DrawScaledPatch(SPDM_X + 1, SPDM_Y + 4, V_HUDTRANS|splitflags, skp_smallsticker);
+		{
+			speedopat = ((speedostyle == SPEEDO_EXTRA) ? skp_smallsticker : skp_smallstickerachi);
+			V_DrawScaledPatch(SPDM_X + 1, SPDM_Y + 4, V_HUDTRANS|splitflags, speedopat);
+		}
 
 		V_DrawRankNum(SPDM_X + 26, SPDM_Y + 4, V_HUDTRANS|splitflags, convSpeed[1], 3, NULL);
-		V_DrawScaledPatch(SPDM_X + 31, SPDM_Y + 4, V_HUDTRANS|splitflags, skp_speedpatches[cv_kartspeedometer.value]);
-	}
-	else if (speedostyle == SPEEDO_ACHII) // why bother if we dont?
-	{
-		if (K_UseColorSpeedo(SPEEDO_ACHII)) //Colourized hud
-		{
-			UINT8 *colormap = R_GetTranslationColormap(TC_DEFAULT, K_GetHudColor(), GTC_CACHE);
-			V_DrawMappedPatch(SPDM_X + 1, SPDM_Y + 4, V_HUDTRANS|splitflags, skp_smallstickerachiclr, colormap);
-			V_DrawRankNum(SPDM_X + 26, SPDM_Y + 4, V_HUDTRANS|splitflags, convSpeed[1], 3, NULL);
-			V_DrawMappedPatch(SPDM_X + 31, SPDM_Y + 4, V_HUDTRANS|splitflags, skp_speedpatchesachiclr[cv_kartspeedometer.value], colormap);
-		}
-		else
-		{
-			V_DrawScaledPatch(SPDM_X + 1, SPDM_Y + 4, V_HUDTRANS|splitflags, skp_smallstickerachi);
-			V_DrawRankNum(SPDM_X + 26, SPDM_Y + 4, V_HUDTRANS|splitflags, convSpeed[1], 3, NULL);
-			V_DrawScaledPatch(SPDM_X + 31, SPDM_Y + 4, V_HUDTRANS|splitflags, skp_speedpatchesachi[cv_kartspeedometer.value]);
-		}
+
+		speedopat = ((speedostyle == SPEEDO_EXTRA) ? skp_speedpatches[cv_kartspeedometer.value] : skp_speedpatchesachi[cv_kartspeedometer.value]);
+		V_DrawScaledPatch(SPDM_X + 31, SPDM_Y + 4, V_HUDTRANS|splitflags, speedopat);
 	}
 #ifdef ROTSPRITE
 	else if (speedostyle == SPEEDO_DIAL)  // why bother if we dont?
@@ -2776,28 +2772,31 @@ static void K_drawKartSpeedometer(void)
 	// Draw the Speed counter.
 	else if ((speedostyle == SPEEDO_PMETER) || (speedostyle == SPEEDO_PMETERSMOL))
 	{
-		fixed_t fuspeed = 0;
 		INT32 spdpatch = 0;
-		static const INT32 speedIntervals[22] = {2, 5, 7, 10, 12, 15, 17,
-												20, 22, 25, 27, 30, 32,
-												35, 37, 40, 42, 45, 47,
-												50, 52, 55};
+		static const INT32 spdinterval[22] = { 2,  5,  7, 10,
+											  12, 15, 17, 20,
+											  22, 25, 27, 30,
+											  32, 35, 37, 40,
+											  42, 45, 47, 50,
+											  52, 55};
 
-		fuspeed = FixedDiv(stplyr->speed, mapobjectscale)/FRACUNIT;
+		const fixed_t spd = FixedDiv(stplyr->speed, mapobjectscale) / FRACUNIT;
 
-		for (INT32 i = 0; i < 22; ++i)
+		if (spd > 54)
 		{
-			if (fuspeed < speedIntervals[i])
+			spdpatch = (leveltime & 4) ? 24 : 23;
+		}
+		else
+		{
+			for (INT32 i = 0; i < 22; ++i)
 			{
-				spdpatch = i;
-				break;
+				if (spd < spdinterval[i])
+				{
+					spdpatch = i;
+					break;
+				}
 			}
 		}
-
-		if (((fuspeed < 57 && fuspeed > 54) || (fuspeed < 60 && fuspeed > 56) || (fuspeed > 59)) && (leveltime & 4))
-			spdpatch = 24;
-		else if (((fuspeed < 57 && fuspeed > 54) || (fuspeed < 60 && fuspeed > 56) || (fuspeed > 59)) && !(leveltime & 4))
-			spdpatch = 23;
 
 		V_DrawScaledPatch(SPDM_X, SPDM_Y, V_HUDTRANS|splitflags, (speedostyle == SPEEDO_PMETER) ? kp_kartzspeedo[spdpatch] : kp_kartzspeedo_smol[spdpatch]);
 	}
@@ -2918,10 +2917,12 @@ static boolean K_GetScreenCoords(vector2_t *vec, player_t *player, mobj_t *targe
 	x = (fixed_t)(viewangle - R_PointToAngle(targx, targy));
 
 	distfact = FINECOSINE((x>>ANGLETOFINESHIFT) & FINEMASK);
-    if (!distfact) distfact = 1;
+    if (!distfact)
+		distfact = 1;
 
 	if (encoremode)
 		x = -x;
+
 	if (x < (fixed_t)ANGLE_270 || x > (fixed_t)ANGLE_90)
 		return false;
 
@@ -3003,7 +3004,7 @@ static boolean K_GetScreenCoords(vector2_t *vec, player_t *player, mobj_t *targe
 		if (stplyrnum > 0)
 			y = y + yres;
 	}
-	if (splitscreen >= 2) // 3P or 4P
+	else if (splitscreen >= 2) // 3P or 4P
 	{
 		x = x>>1;
 		y = y>>1;
@@ -3063,9 +3064,11 @@ static void K_drawNameTags(void)
 		if (players[i].kartstuff[k_hyudorotimer]) // player is invisible
 			continue;
 		if (maxdistance)
+		{
 			distance = R_PointToDist(players[i].mo->x, players[i].mo->y);
-		if (distance > maxdistance)
-			continue;
+			if (distance > maxdistance)
+				continue;
+		}
 		if (!P_CheckSightFast(stplyr->mo, players[i].mo))
 			continue;
 
@@ -3274,13 +3277,12 @@ static void K_drawDriftGauge(void)
 	if (!splitscreen && !camera->chase)
 		return;
 
-	if (forceshowhud)
-		goto skipcrap; // i will skip the drift early return and you cant stop me!
-
-	if (!stplyr->kartstuff[k_drift])
-		return;
-
-skipcrap:
+	// i will skip the drift early return and you cant stop me!
+	if (!forceshowhud)
+	{
+		if (!stplyr->kartstuff[k_drift])
+			return;
+	}
 
 	if (P_MobjWasRemoved(stplyr->mo))
 		return;
@@ -3644,7 +3646,7 @@ static void K_drawKartMinimapHead(mobj_t *mo, INT32 x, INT32 y, INT32 flags)
 		V_DrawCenteredSmallStringAtFixed(amxpos + (4*FRACUNIT), amypos - (3*FRACUNIT), V_ALLOWLOWERCASE|flags|V_SkinColorToHighlightcolor(mo->color), player_names[player - players]);
 	}
 
-	const boolean minihead = K_useSmallMinimapHead(mo->player);
+	const boolean minihead = K_useSmallMinimapHead(player);
 
 	// thx wanted reticle for having weird offsets very cool
 	wntdamxpos = minihead ? amxpos + (1<<FRACBITS) : amxpos - (4<<FRACBITS);

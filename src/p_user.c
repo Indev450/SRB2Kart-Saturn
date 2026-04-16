@@ -157,6 +157,7 @@ void P_CalcHeight(player_t *player)
 			if (player->viewz > mo->ceilingz - FixedMul(FRACUNIT, mo->scale))
 				player->viewz = mo->ceilingz - FixedMul(FRACUNIT, mo->scale);
 		}
+
 		return;
 	}
 
@@ -2271,7 +2272,8 @@ static void P_MovePlayer(player_t *player)
 			}
 			//CONS_Printf("applied turn: %d\n", angle_diff);
 
-			if (add_delta) {
+			if (add_delta)
+			{
 				player->mo->angle += angle_diff << TICCMD_REDUCE;
 				player->mo->angle &= ~0xFFFF; // Try to keep the turning somewhat similar to how it was before?
 				//CONS_Printf("leftover turn (%s): %5d or %4d%%\n",
@@ -2393,15 +2395,18 @@ static void P_MovePlayer(player_t *player)
 	{
 		mobj_t *water = P_SpawnMobj(player->mo->x, player->mo->y,
 			((player->mo->eflags & MFE_VERTICALFLIP) ? player->mo->waterbottom - FixedMul(mobjinfo[MT_SPLISH].height, player->mo->scale) : player->mo->watertop), MT_SPLISH);
+
 		if (player->mo->eflags & MFE_GOOWATER)
 			S_StartSound(water, sfx_ghit);
 		else
 			S_StartSound(water, sfx_wslap);
+
 		if (player->mo->eflags & MFE_VERTICALFLIP)
 		{
 			water->flags2 |= MF2_OBJECTFLIP;
 			water->eflags |= MFE_VERTICALFLIP;
 		}
+
 		water->destscale = player->mo->scale;
 		P_SetScale(water, player->mo->scale);
 	}
@@ -3970,9 +3975,12 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 		{
 			fixed_t panmax = (dist/5);
 			const INT32 sparkval = K_GetKartDriftSparkValue(player);
+
 			pan = FixedDiv(FixedMul(min((fixed_t)player->kartstuff[k_driftcharge], sparkval), panmax), sparkval);
+
 			if (pan > panmax)
 				pan = panmax;
+
 			if (player->kartstuff[k_drift] < 0)
 				pan *= -1;
 		}
@@ -4749,6 +4757,7 @@ void P_PlayerThink(player_t *player)
 			player->mo->flags2 |= MF2_SHADOW;
 		else
 			player->mo->flags2 &= ~MF2_SHADOW;
+
 		P_DeathThink(player);
 		LUA_HookPlayer(player, HOOK(PlayerThink));
 		return;

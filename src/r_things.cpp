@@ -166,11 +166,13 @@ static void R_InstallSpriteLump(UINT16 wad,            // graphics patch
 			CONS_Debug(DBG_SETUP, "R_InitSprites: Sprite %s frame %c has rotations and a rot = 0 lump\n", spritename, cn);
 
 		sprtemp[frame].rotate = SRF_SINGLE;
+
 		for (r = 0; r < 8; r++)
 		{
 			sprtemp[frame].lumppat[r] = lumppat;
 			sprtemp[frame].lumpid[r] = lumpid;
 		}
+
 		sprtemp[frame].flip = flipped ? UINT8_MAX : 0; // 11111111 in binary
 		return;
 	}
@@ -267,8 +269,7 @@ boolean R_AddSingleSpriteDef(const char *sprname, spritedef_t *spritedef, UINT16
 	if (spritedef->numframes) // (then spriteframes is not null)
 	{
 		// copy the already defined sprite frames
-		memcpy(sprtemp, spritedef->spriteframes,
-		 spritedef->numframes * sizeof (spriteframe_t));
+		memcpy(sprtemp, spritedef->spriteframes, spritedef->numframes * sizeof (spriteframe_t));
 		maxframe = spritedef->numframes - 1;
 	}
 
@@ -1147,7 +1148,7 @@ fixed_t R_GetSpriteDirectionalLighting(angle_t angle)
 	fixed_t extralight = 0;
 
 	light = FixedMul(FINECOSINE(angle >> ANGLETOFINESHIFT), FINECOSINE(maplighting.angle >> ANGLETOFINESHIFT))
-		+ FixedMul(FINESINE(angle >> ANGLETOFINESHIFT), FINESINE(maplighting.angle >> ANGLETOFINESHIFT));
+		  + FixedMul(FINESINE(angle >> ANGLETOFINESHIFT), FINESINE(maplighting.angle >> ANGLETOFINESHIFT));
 	light = (light + FRACUNIT) / 2;
 
 	light = FixedMul(light, FRACUNIT - FSIN(abs(AngleDeltaSigned(angle, maplighting.angle)) / 2));

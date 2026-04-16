@@ -538,9 +538,12 @@ typedef struct drawcolumndata_temp_s
 	// e6y: resolution limitation is removed
 	UINT8 *buf;
 
-	INT32    startx;
-	ColumnFlushType    type;
-	INT32   commontop, commonbot;
+	INT32 startx;
+
+	ColumnFlushType type;
+
+	INT32 commontop, commonbot;
+
 	UINT8 *transmap;
 	// SoM 7-28-04: Fix the fuzz problem.
 	UINT8 *translation;
@@ -568,8 +571,8 @@ FUNCNORETURN static ATTRNORETURN void R_QuadFlushError(void)
 }
 
 static void (*R_FlushWholeColumns)(void) = R_FlushWholeError;
-static void (*R_FlushHTColumns)(void) = R_FlushHTError;
-static void (*R_FlushQuadColumn)(void) = R_QuadFlushError;
+static void (*R_FlushHTColumns)(void)    = R_FlushHTError;
+static void (*R_FlushQuadColumn)(void)   = R_QuadFlushError;
 
 static void R_FlushColumns(void)
 {
@@ -601,8 +604,8 @@ void R_ResetColumnBuffer(void)
 
 	temp_dc.type = FLUSH_NONE;
 	R_FlushWholeColumns = R_FlushWholeError;
-	R_FlushHTColumns = R_FlushHTError;
-	R_FlushQuadColumn = R_QuadFlushError;
+	R_FlushHTColumns    = R_FlushHTError;
+	R_FlushQuadColumn   = R_QuadFlushError;
 }
 
 /**	\brief	The R_InitViewBuffer function
