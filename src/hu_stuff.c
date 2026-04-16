@@ -979,7 +979,8 @@ void HU_Ticker(void)
 		}
 	}
 
-	if (cechotimer > 0) --cechotimer;
+	if (cechotimer > 0)
+		--cechotimer;
 
 	// Animate the desynch dots
 	if (hu_resynching

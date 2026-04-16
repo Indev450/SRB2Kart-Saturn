@@ -161,7 +161,7 @@ static void R_ParseSpriteInfo(boolean spr2)
 			if (i == NUMSPRITES)
 				I_Error("Error parsing SPRTINFO lump: Unknown sprite name \"%s\"", newSpriteName);
 
-			if (!memcmp(newSpriteName,sprnames[i], 4))
+			if (!memcmp(newSpriteName, sprnames[i], 4))
 			{
 				sprnum = static_cast<spritenum_t>(i);
 				break;
@@ -443,6 +443,7 @@ void *Patch_AllocateHardwarePatch(patch_t *patch)
 		GLPatch_t *glPatch = static_cast<GLPatch_t*>(Z_Calloc(sizeof(GLPatch_t), PU_HWRPATCHINFO, &patch->hardware));
 		glPatch->mipmap = static_cast<GLMipmap_t*>(Z_Calloc(sizeof(GLMipmap_t), PU_HWRPATCHINFO, &glPatch->mipmap));
 	}
+
 	return (void *)(patch->hardware);
 }
 
