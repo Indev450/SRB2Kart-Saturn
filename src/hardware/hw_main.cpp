@@ -3700,7 +3700,7 @@ static void HWR_SplitSprite(gl_vissprite_t *spr, const boolean papersprite)
 		wallVerts[1].y = endbot;
 
 		// The x and y only need to be adjusted in the case that it's not a papersprite
-		if (cv_glspritebillboarding.value && !papersprite)
+		if (cv_glspritebillboarding.value && !cv_glshearing.value && !papersprite)
 		{
 			// Get the x and z of the vertices so billboarding draws correctly
 			realheight = realbot - realtop;
@@ -4219,9 +4219,7 @@ static int CompareDrawNodePlanes(const void *p1, const void *p2)
 static void HWR_RenderDrawNodes(void)
 {
 	size_t i = 0, run_start = 0;
-	static std::vector<INT32> sortindex;
-
-	sortindex.reserve(DRAWNODES_INIT_SIZE);
+	static std::vector<INT32> sortindex(DRAWNODES_INIT_SIZE);
 
 	// Array for storing the rendering order.
 	// A list of indices into the drawnodes array.
@@ -5558,7 +5556,7 @@ static void HWR_RenderFrame(boolean skybox, boolean drawsky)
 					 viewwindowy,
 					(viewwindowx + viewwidth),
 					(viewwindowy + viewheight),
-					ZCLIP_PLANE, clipping_distances[renderdist - 1]);
+					 ZCLIP_PLANE, clipping_distances[renderdist - 1]);
 		current_bsp_culling_distance = bsp_culling_distances[renderdist- 1];
 	}
 
@@ -5942,7 +5940,8 @@ static void HWR_DoPostProcessor(void)
 		}
 	}
 
-	if (cv_glscreentextures.value != 2) // screen textures are needed for the rest of the effects
+	// screen textures are needed for the rest of the effects
+	if (cv_glscreentextures.value != 2)
 		return;
 
 	// Not supported in splitscreen - someone want to add support?
