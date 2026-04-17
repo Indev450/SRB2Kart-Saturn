@@ -116,6 +116,7 @@ extern consvar_t cv_rumble[MAXSPLITSCREENPLAYERS];
 extern consvar_t cv_rumblestrength[MAXSPLITSCREENPLAYERS];
 extern consvar_t cv_gamepadled[MAXSPLITSCREENPLAYERS];
 
+extern consvar_t cv_gamepadifunfocused;
 extern consvar_t cv_gamepadledifunfocused;
 extern consvar_t cv_rumbleifunfocused;
 

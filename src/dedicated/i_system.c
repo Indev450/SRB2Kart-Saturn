@@ -735,6 +735,10 @@ const char *I_GetJoyName(INT32 joyindex)
 	return NULL;
 }
 
+void I_SetJoystickFocus(void)
+{
+}
+
 boolean I_GamepadHasLED(INT32 playernum)
 {
 	(void)playernum;

@@ -961,6 +961,11 @@ static int joy_open(int playerIndex, int joyIndex)
 	return SDL_CONTROLLER_AXIS_MAX;
 }
 
+void I_SetJoystickFocus(void)
+{
+	SDL_SetHint(SDL_HINT_JOYSTICK_ALLOW_BACKGROUND_EVENTS, cv_gamepadifunfocused.value ? "1" : "0");
+}
+
 //
 // I_InitJoystick
 //

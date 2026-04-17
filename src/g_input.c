@@ -81,6 +81,7 @@ consvar_t cv_gamepadled[MAXSPLITSCREENPLAYERS] = {
 	{"gamepadled4", "Skincolor", CV_SAVE|CV_CALL|CV_NOINIT, gamepadled_cons_t, led_off_handle4, 0, NULL, NULL, 0, 0, NULL}
 };
 
+consvar_t cv_gamepadifunfocused = {"gamepadunfocused",  "Off", CV_SAVE|CV_CALL, CV_OnOff, I_SetJoystickFocus, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_gamepadledifunfocused = {"gamepadledunfocused",  "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_rumbleifunfocused = {"rumbleifunfocused",  "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 

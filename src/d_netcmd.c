@@ -1010,6 +1010,7 @@ void D_RegisterClientCommands(void)
 		CV_RegisterVar(&cv_gamepadled[i]);
 	}
 
+	CV_RegisterVar(&cv_gamepadifunfocused);
 	CV_RegisterVar(&cv_gamepadledifunfocused);
 	CV_RegisterVar(&cv_rumbleifunfocused);
 
