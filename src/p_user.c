@@ -775,7 +775,7 @@ boolean P_IsObjectInGoop(mobj_t *mo)
 //
 boolean P_IsObjectOnGround(mobj_t *mo)
 {
-	if (UNLIKELY(P_IsObjectInGoop(mo)))
+	if (P_IsObjectInGoop(mo))
 	{
 		// but I don't want you to ever 'stand' while submerged in goo.
 		// You're in constant vertical momentum, even if you get stuck on something.
