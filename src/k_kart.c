@@ -1646,8 +1646,10 @@ static UINT8 K_CheckOffroadCollide(mobj_t *mo)
 	sector_t *s2;		// FOF sector shortcut
 	ffloor_t *rover;	// FOF
 
-	fixed_t flr;
-	fixed_t cel;	// floor & ceiling for height checks to make sure we're touching the offroad sector.
+	fixed_t flr = 0, cel = 0; // floor & ceiling for height checks to make sure we're touching the offroad sector.
+
+	boolean checkfloor = false;
+	boolean checkceiling = false;
 
 	I_Assert(mo != NULL);
 	I_Assert(!P_MobjWasRemoved(mo));
@@ -1655,48 +1657,64 @@ static UINT8 K_CheckOffroadCollide(mobj_t *mo)
 	for (node = mo->touching_sectorlist; node; node = node->m_sectorlist_next)
 	{
 		if (!node->m_sector)
-			break;	// shouldn't happen.
+			break; // shouldn't happen.
 
 		s = node->m_sector;
 		// 1: Check for the main sector, make sure we're on the floor of that sector and see if we can apply offroad.
 		// Make arbitrary Z checks because we want to check for 1 sector in particular, we don't want to affect the player if the offroad sector is way below them and they're lineriding a normal sector above.
 
-		flr = P_MobjFloorZ(mo, s, s, mo->x, mo->y, NULL, false, true);
-		cel = P_MobjCeilingZ(mo, s, s, mo->x, mo->y, NULL, true, true);	// get Z coords of both floors and ceilings for this sector (this accounts for slopes properly.)
+		checkfloor   = (s->flags & SF_FLIPSPECIAL_FLOOR);
+		checkceiling = (mo->eflags & MFE_VERTICALFLIP && (s->flags & SF_FLIPSPECIAL_CEILING));
+
+		if (checkfloor)
+			flr = P_MobjFloorZ(mo, s, s, mo->x, mo->y, NULL, false, true);
+		if (checkceiling)
+			cel = P_MobjCeilingZ(mo, s, s, mo->x, mo->y, NULL, true, true); // get Z coords of both floors and ceilings for this sector (this accounts for slopes properly.)
 		// NOTE: we don't use P_GetZAt with our x/y directly because the mobj won't have the same height because of its hitbox on the slope. Complex garbage but tldr it doesn't work.
 
-		if ( ((s->flags & SF_FLIPSPECIAL_FLOOR) && mo->z == flr)	// floor check
-			|| ((mo->eflags & MFE_VERTICALFLIP && (s->flags & SF_FLIPSPECIAL_CEILING) && (mo->z + mo->height) == cel)) )	// ceiling check.
-
-			for (i = 2; i < 5; i++)	// check for sector special
-
-				if (GETSECSPECIAL(s->special, 1) == i)
-					return i-1;	// return offroad type
+		if (    (checkfloor && mo->z == flr) // floor check
+			|| ((checkceiling && (mo->z + mo->height) == cel))) // ceiling check.
+		{
+			const INT32 special = GETSECSPECIAL(s->special, 1);
+			for (i = 2; i < 5; i++) // check for sector special
+			{
+				if (special == i)
+					return i-1; // return offroad type
+			}
+		}
 
 		// 2: If we're here, we haven't found anything. So let's try looking for FOFs in the sectors using the same logic.
 		for (rover = s->ffloors; rover; rover = rover->next)
 		{
-			if (!(rover->flags & FF_EXISTS))	// This FOF doesn't exist anymore.
+			if (!(rover->flags & FF_EXISTS)) // This FOF doesn't exist anymore.
 				continue;
 
-			s2 = &sectors[rover->secnum];	// makes things easier for us
+			s2 = &sectors[rover->secnum]; // makes things easier for us
 
-			flr = P_GetFOFBottomZ(mo, s, rover, mo->x, mo->y, NULL);
-			cel = P_GetFOFTopZ(mo, s, rover, mo->x, mo->y, NULL);	// Z coords for fof top/bottom.
+			checkfloor   = (s2->flags & SF_FLIPSPECIAL_FLOOR);
+			checkceiling = (s2->flags & SF_FLIPSPECIAL_CEILING);
+
+			if (checkfloor)
+				flr = P_GetFOFBottomZ(mo, s, rover, mo->x, mo->y, NULL);
+			if (checkceiling)
+				cel = P_GetFOFTopZ(mo, s, rover, mo->x, mo->y, NULL); // Z coords for fof top/bottom.
 
 			// we will do essentially the same checks as above instead of bothering with top/bottom height of the FOF.
 			// Reminder that an FOF's floor is its bottom, silly!
-			if (   ((s2->flags & SF_FLIPSPECIAL_FLOOR) && mo->z == cel)	// "floor" check
-				|| ((s2->flags & SF_FLIPSPECIAL_CEILING) && (mo->z + mo->height) == flr) )	// "ceiling" check.
-
-				for (i = 2; i < 5; i++)	// check for sector special
-
-					if (GETSECSPECIAL(s2->special, 1) == i)
-						return i-1;	// return offroad type
-
+			if (   (checkfloor && mo->z == cel) // "floor" check
+				|| (checkceiling && (mo->z + mo->height) == flr)) // "ceiling" check.
+			{
+				const INT32 special = GETSECSPECIAL(s2->special, 1);
+				for (i = 2; i < 5; i++) // check for sector special
+				{
+					if (special == i)
+						return i-1; // return offroad type
+				}
+			}
 		}
 	}
-	return 0;	// couldn't find any offroad
+
+	return 0; // couldn't find any offroad
 }
 
 /**	\brief	Updates the Player's offroad value once per frame
@@ -2363,10 +2381,13 @@ fixed_t K_3dKartMovement(player_t *player, boolean onground, fixed_t forwardmove
 	finalspeed *= forwardmove/25;
 	finalspeed /= 2;
 
-	if (forwardmove < 0 && finalspeed > mapobjectscale*2)
-		return finalspeed/2;
-	else if (forwardmove < 0)
+	if (forwardmove < 0)
+	{
+		if (finalspeed > mapobjectscale*2)
+			return finalspeed/2;
+
 		return -mapobjectscale/2;
+	}
 
 	if (finalspeed < 0)
 		finalspeed = 0;
@@ -3739,7 +3760,7 @@ void K_DriftDustHandling(mobj_t *spawner)
 {
 	angle_t anglediff;
 
-	if (!P_IsObjectOnGround(spawner) || leveltime % 2 != 0)
+	if (leveltime % 2 != 0 || !P_IsObjectOnGround(spawner))
 		return;
 
 	if (spawner->player)
@@ -4158,7 +4179,7 @@ static void K_DoThunderShield(player_t *player)
 	mo->scale = player->mo->scale*3 + (player->mo->scale/2);
 
 	// spawn horizontal bolts;
-	for (i=0; i<7; i++)
+	for (i = 0; i < 7; i++)
 	{
 		mo = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_THOK);
 		mo->angle = P_RandomRange(0, 359)*ANG1;
@@ -4169,7 +4190,7 @@ static void K_DoThunderShield(player_t *player)
 
 	// spawn the radius thing:
 	an = ANGLE_22h;
-	for (i=0; i<15; i++)
+	for (i = 0; i < 15; i++)
 	{
 		sx = player->mo->x + FixedMul((player->mo->scale*THUNDERRADIUS), FINECOSINE((an*i)>>ANGLETOFINESHIFT));
 		sy = player->mo->y + FixedMul((player->mo->scale*THUNDERRADIUS), FINESINE((an*i)>>ANGLETOFINESHIFT));
@@ -4261,12 +4282,12 @@ static void K_DoHyudoroSteal(player_t *player)
 
 void K_DoSneaker(player_t *player, INT32 type)
 {
-	const fixed_t intendedboost = K_GetSneakerBoostSpeed();
-
 	if (!player->kartstuff[k_floorboost] || player->kartstuff[k_floorboost] == 3)
 	{
 		S_StartSound(player->mo, sfx_cdfm01);
 		K_SpawnDashDustRelease(player);
+
+		const fixed_t intendedboost = K_GetSneakerBoostSpeed();
 		if (intendedboost > player->kartstuff[k_speedboost])
 			player->kartstuff[k_destboostcam] = FixedMul(FRACUNIT, FixedDiv((intendedboost - player->kartstuff[k_speedboost]), intendedboost));
 	}
