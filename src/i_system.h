@@ -152,6 +152,8 @@ extern INT32 numcontrollers;
 */
 const char *I_GetJoyName(INT32 joyindex);
 
+void I_SetJoystickFocus(void);
+
 boolean I_GamepadHasLED(INT32 playernum);
 boolean I_GamepadHasRumble(INT32 playernum);
 

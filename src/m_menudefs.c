@@ -1185,20 +1185,20 @@ static menuitem_t OP_FocusOptionsMenu[] =
 {
 	{IT_HEADER, NULL, "Game Focus Options", NULL, 0},
 
-	{IT_STRING|IT_CVAR,	NULL, "Play Music While Unfocused",					&cv_playmusicifunfocused, 	30},
-	{IT_STRING|IT_CVAR,	NULL, "Play SFX While Unfocused",					&cv_playsoundifunfocused, 	40},
+	{IT_STRING|IT_CVAR,	NULL, "Play Music While Unfocused",					&cv_playmusicifunfocused, 	 10},
+	{IT_STRING|IT_CVAR,	NULL, "Play SFX While Unfocused",					&cv_playsoundifunfocused, 	 20},
 
-	{IT_STRING|IT_CVAR,	NULL, "Pause Game While Unfocused",					&cv_pauseifunfocused,		60},
+	{IT_STRING|IT_CVAR,	NULL, "Pause Game While Unfocused",					&cv_pauseifunfocused,		 40},
 
-	{IT_STRING|IT_CVAR,	NULL, "Background FPS Cap",         				&cv_fpscapbg,          		80},
+	{IT_STRING|IT_CVAR,	NULL, "Background FPS Cap",         				&cv_fpscapbg,          		 60},
 
-	{IT_STRING|IT_CVAR,	NULL, "Show \"FOCUS LOST\"",						&cv_showfocuslost,		   100},
+	{IT_STRING|IT_CVAR,	NULL, "Show \"FOCUS LOST\"",						&cv_showfocuslost,		     80},
 
-	{IT_STRING|IT_CVAR,	NULL, "Visible Mouse",								&cv_mousevisible,	       120},
+	{IT_STRING|IT_CVAR,	NULL, "Visible Mouse",								&cv_mousevisible,	        100},
 
-	{IT_STRING|IT_CVAR,	NULL, "Gamepad LED Color While Unfocused ",			&cv_gamepadledifunfocused, 	140},
-	{IT_STRING|IT_CVAR,	NULL, "Gamepad Rumble While Unfocused",				&cv_rumbleifunfocused, 	    150},
-
+	{IT_STRING|IT_CVAR,	NULL, "Gamepad Inputs While Unfocused",				&cv_gamepadifunfocused, 	120},
+	{IT_STRING|IT_CVAR,	NULL, "Gamepad LED Color While Unfocused ",			&cv_gamepadledifunfocused, 	130},
+	{IT_STRING|IT_CVAR,	NULL, "Gamepad Rumble While Unfocused",				&cv_rumbleifunfocused, 	    140},
 };
 
 static const char* OP_FocusOptionsTooltips[] =
@@ -1210,6 +1210,7 @@ static const char* OP_FocusOptionsTooltips[] =
 	"Set manual framerate cap while the game is unfocused.",
 	"Should the FOCUS LOST window appear\n while the game is unfocused?",
 	"Displays the mouse cursor while the game is in focus.",
+	"Should gamepad still control the game when unfocused?",
 	"Should gamepad LED indicator change color when unfocused?",
 	"Should gamepad rumble apply when unfocused?",
 };
@@ -1304,29 +1305,29 @@ static menuitem_t OP_DiscordOptionsMenu[] =
 
 static menuitem_t OP_HUDOptionsMenu[] =
 {
-	{IT_STRING | IT_CVAR, NULL,		"Show HUD (F3)",			&cv_showhud,			 10},
+	{IT_STRING | IT_CVAR, NULL,		"Show HUD (F3)",			&cv_showhud,			     10},
 	{IT_STRING | IT_CVAR | IT_CV_SLIDER,
-	                      NULL,		"HUD Visibility",			&cv_translucenthud,		 20},
+	                      NULL,		"HUD Visibility",			&cv_translucenthud,		     20},
 
-	{IT_STRING | IT_SUBMENU, NULL,	"Online HUD options...",	&OP_ChatOptionsDef,		 35},
-	{IT_STRING | IT_CVAR, NULL,		"Background Glass",			&cons_backcolor,		 45},
+	{IT_STRING | IT_SUBMENU, NULL,	"Online HUD options...",	&OP_ChatOptionsDef,		     35},
+	{IT_STRING | IT_CVAR, NULL,		"Background Glass",			&cons_backcolor,		     45},
 
 	{IT_STRING | IT_CVAR | IT_CV_SLIDER,
-						  NULL,		"Minimap Visibility",		&cv_kartminimap,		 60},
-	{IT_STRING | IT_CVAR, NULL,		"Speedometer Display",		&cv_kartspeedometer,	 70},
-	{IT_STRING | IT_CVAR, NULL,		"Show \"CHECK\"",			&cv_kartcheck,			 80},
+						  NULL,		"Minimap Visibility",		&cv_kartminimap,		     60},
+	{IT_STRING | IT_CVAR, NULL,		"Speedometer Display",		&cv_kartspeedometer,	     70},
+	{IT_STRING | IT_CVAR, NULL,		"Show \"CHECK\"",			&cv_kartcheck,			     80},
 
-	{IT_STRING | IT_CVAR, NULL,		"Menu Highlights",			&cons_menuhighlight,	 95},
+	{IT_STRING | IT_CVAR, NULL,		"Menu Highlights",			&cons_menuhighlight,	     95},
 	// highlight info - (GOOD HIGHLIGHT, WARNING HIGHLIGHT) - 110 (see M_DrawHUDOptions)
 
-	{IT_STRING | IT_CVAR, NULL,		"Console Text Size",		  &cv_constextsize,		120},
-	{IT_STRING | IT_CVAR, NULL,		"Show Console Prints in Menu",&cons_consoleprintinmenu,		130},
+	{IT_STRING | IT_CVAR, NULL,		"Console Text Size",		  &cv_constextsize,		    120},
+	{IT_STRING | IT_CVAR, NULL,		"Show Console Prints in Menu",&cons_consoleprintinmenu, 130},
 
-	{IT_STRING | IT_CVAR, NULL,		"Show Track Addon Name",	&cv_showtrackaddon,   	145},
+	{IT_STRING | IT_CVAR, NULL,		"Show Track Addon Name",	&cv_showtrackaddon,   	    145},
 
-	{IT_STRING | IT_CVAR, NULL,		"Show All Maps",			&cv_showallmaps,		155},
+	{IT_STRING | IT_CVAR, NULL,		"Show All Maps",			&cv_showallmaps,		    155},
 
-	{IT_STRING | IT_CVAR, NULL,		"2D character select",		&cv_skinselectmenu,		165},
+	{IT_STRING | IT_CVAR, NULL,		"2D character select",		&cv_skinselectmenu,		    165},
 };
 
 static menuitem_t OP_CamOptionsMenu[] =
