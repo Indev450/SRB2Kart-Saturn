@@ -1694,9 +1694,10 @@ static UINT8 K_CheckOffroadCollide(mobj_t *mo)
 			checkfloor   = (s2->flags & SF_FLIPSPECIAL_FLOOR);
 			checkceiling = (s2->flags & SF_FLIPSPECIAL_CEILING);
 
-			if (checkfloor)
-				flr = P_GetFOFBottomZ(mo, s, rover, mo->x, mo->y, NULL);
+			// def not confusing at all.....
 			if (checkceiling)
+				flr = P_GetFOFBottomZ(mo, s, rover, mo->x, mo->y, NULL);
+			if (checkfloor)
 				cel = P_GetFOFTopZ(mo, s, rover, mo->x, mo->y, NULL); // Z coords for fof top/bottom.
 
 			// we will do essentially the same checks as above instead of bothering with top/bottom height of the FOF.
