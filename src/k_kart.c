@@ -1646,10 +1646,8 @@ static UINT8 K_CheckOffroadCollide(mobj_t *mo)
 	sector_t *s2;		// FOF sector shortcut
 	ffloor_t *rover;	// FOF
 
-	fixed_t flr = 0, cel = 0; // floor & ceiling for height checks to make sure we're touching the offroad sector.
-
-	boolean checkfloor = false;
-	boolean checkceiling = false;
+	fixed_t flr, cel; // floor & ceiling for height checks to make sure we're touching the offroad sector.
+	INT32 special;
 
 	I_Assert(mo != NULL);
 	I_Assert(!P_MobjWasRemoved(mo));
@@ -1660,25 +1658,28 @@ static UINT8 K_CheckOffroadCollide(mobj_t *mo)
 			break; // shouldn't happen.
 
 		s = node->m_sector;
+
 		// 1: Check for the main sector, make sure we're on the floor of that sector and see if we can apply offroad.
 		// Make arbitrary Z checks because we want to check for 1 sector in particular, we don't want to affect the player if the offroad sector is way below them and they're lineriding a normal sector above.
 
-		checkfloor   = (s->flags & SF_FLIPSPECIAL_FLOOR);
-		checkceiling = (mo->eflags & MFE_VERTICALFLIP && (s->flags & SF_FLIPSPECIAL_CEILING));
-
-		if (checkfloor)
-			flr = P_MobjFloorZ(mo, s, s, mo->x, mo->y, NULL, false, true);
-		if (checkceiling)
-			cel = P_MobjCeilingZ(mo, s, s, mo->x, mo->y, NULL, true, true); // get Z coords of both floors and ceilings for this sector (this accounts for slopes properly.)
-		// NOTE: we don't use P_GetZAt with our x/y directly because the mobj won't have the same height because of its hitbox on the slope. Complex garbage but tldr it doesn't work.
-
-		if (    (checkfloor && mo->z == flr) // floor check
-			|| ((checkceiling && (mo->z + mo->height) == cel))) // ceiling check.
+		special = GETSECSPECIAL(s->special, 1);
+		for (i = 2; i < 5; i++) // check for sector special
 		{
-			const INT32 special = GETSECSPECIAL(s->special, 1);
-			for (i = 2; i < 5; i++) // check for sector special
+			if (special != i)
+				continue;
+
+			if (s->flags & SF_FLIPSPECIAL_FLOOR)
 			{
-				if (special == i)
+				flr = P_MobjFloorZ(mo, s, s, mo->x, mo->y, NULL, false, true);
+				if (mo->z == flr) // floor check
+					return i-1; // return offroad type
+			}
+
+			if (mo->eflags & MFE_VERTICALFLIP && (s->flags & SF_FLIPSPECIAL_CEILING))
+			{
+				cel = P_MobjCeilingZ(mo, s, s, mo->x, mo->y, NULL, true, true);
+				// NOTE: we don't use P_GetZAt with our x/y directly because the mobj won't have the same height because of its hitbox on the slope. Complex garbage but tldr it doesn't work.
+				if ((mo->z + mo->height) == cel) // ceiling check
 					return i-1; // return offroad type
 			}
 		}
@@ -1691,24 +1692,26 @@ static UINT8 K_CheckOffroadCollide(mobj_t *mo)
 
 			s2 = &sectors[rover->secnum]; // makes things easier for us
 
-			checkfloor   = (s2->flags & SF_FLIPSPECIAL_FLOOR);
-			checkceiling = (s2->flags & SF_FLIPSPECIAL_CEILING);
-
-			// def not confusing at all.....
-			if (checkceiling)
-				flr = P_GetFOFBottomZ(mo, s, rover, mo->x, mo->y, NULL);
-			if (checkfloor)
-				cel = P_GetFOFTopZ(mo, s, rover, mo->x, mo->y, NULL); // Z coords for fof top/bottom.
-
-			// we will do essentially the same checks as above instead of bothering with top/bottom height of the FOF.
-			// Reminder that an FOF's floor is its bottom, silly!
-			if (   (checkfloor && mo->z == cel) // "floor" check
-				|| (checkceiling && (mo->z + mo->height) == flr)) // "ceiling" check.
+			special = GETSECSPECIAL(s2->special, 1);
+			for (i = 2; i < 5; i++) // check for sector special
 			{
-				const INT32 special = GETSECSPECIAL(s2->special, 1);
-				for (i = 2; i < 5; i++) // check for sector special
+				if (special != i)
+					continue;
+
+				// we will do essentially the same checks as above instead of bothering with top/bottom height of the FOF.
+				// Reminder that an FOF's floor is its bottom, silly!
+
+				if (s2->flags & SF_FLIPSPECIAL_FLOOR)
 				{
-					if (special == i)
+					cel = P_GetFOFTopZ(mo, s, rover, mo->x, mo->y, NULL); // Z coords for fof top/bottom.
+					if (mo->z == cel) // "floor" check
+						return i-1; // return offroad type
+				}
+
+				if (s2->flags & SF_FLIPSPECIAL_CEILING)
+				{
+					flr = P_GetFOFBottomZ(mo, s, rover, mo->x, mo->y, NULL);
+					if ((mo->z + mo->height) == flr) // "ceiling" check
 						return i-1; // return offroad type
 				}
 			}
