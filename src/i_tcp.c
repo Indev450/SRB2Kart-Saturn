@@ -392,6 +392,9 @@ static const char *SOCK_GetNodeAddress(INT32 node)
 	if (node == 0)
 		return "self";
 
+	if (node < 0 || node > MAXNETNODES)
+		return NULL;
+
 	if (!nodeconnected[node])
 		return NULL;
 
