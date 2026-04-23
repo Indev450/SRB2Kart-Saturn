@@ -1416,8 +1416,6 @@ static inline void D_MakeTitleString(char *s)
 // extra graphic patches for saturn specific thingies
 boolean xtra_speedo       = false; // extra speedometer check
 boolean xtra_speedo_clr   = false; // extra speedometer colour check
-boolean xtra_speedo3      = false; // 80x 11 extra speedometer check
-boolean xtra_speedo_clr3  = false; // 80x 11 extra speedometer colour check
 boolean achi_speedo       = false; // achiiro speedometer check
 boolean achi_speedo_clr   = false; // extra speedometer colour check
 boolean dial_speedo       = false; // dial speedometer check
@@ -1447,7 +1445,6 @@ static void D_CheckSaturnExtraFiles(void)
 	CV_PossibleValue_t minimapdot_cons_temp[NUMMINIMAPDOTSTUFF] = {{0, "Off"}, {0, NULL}, {0, NULL}, {0, NULL}, {0, NULL}};
 
 	unsigned last_speedo_i = 0;
-	unsigned last_driftgauge_i = 3;
 	unsigned last_inputdisplay_i = 2;
 	unsigned last_minimapdot_i = 0;
 #define PUSHCONS(cons, i, id, name) { ++i; cons[i].value = id; cons[i].strvalue = name; }
@@ -1606,20 +1603,6 @@ static void D_CheckSaturnExtraFiles(void)
 	if (found_extra3_kart)
 	{
 		mainwads++;
-
-		// 80x11 speedometer crap
-		if (W_LumpExists("SP_SM3TC"))
-		{
-			xtra_speedo3 = true;
-			PUSHCONS(speedo_cons_temp, last_speedo_i, 7, "Extra");
-			PUSHCONS(driftgaugestyle_cons_temp, last_driftgauge_i, 5, "Extra");
-		}
-
-		// 80x11 speedometer crap but colour
-		if (W_LumpExists("SC_SM3TC"))
-		{
-			xtra_speedo_clr3 = true;
-		}
 	}
 
 #undef PUSHCONS
