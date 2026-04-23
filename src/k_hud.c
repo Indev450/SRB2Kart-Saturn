@@ -2725,24 +2725,25 @@ static void K_drawKartSpeedometer(void)
 	else if (speedostyle == SPEEDO_EXTRA || speedostyle == SPEEDO_ACHII) // why bother if we dont?
 	{
 		patch_t *speedopat;
+		UINT8 *colormap = NULL;
 
 		if (K_UseColorSpeedo(speedostyle)) //Colourized hud
 		{
-			speedopat = ((speedostyle == SPEEDO_EXTRA) ? skp_smallstickerclr : skp_smallstickerachiclr);
-			UINT8 *colormap = R_GetTranslationColormap(TC_DEFAULT, K_GetHudColor(), GTC_CACHE);
+			colormap = R_GetTranslationColormap(TC_DEFAULT, K_GetHudColor(), GTC_CACHE);
 
+			speedopat = ((speedostyle == SPEEDO_EXTRA) ? skp_smallstickerclr : skp_smallstickerachiclr);
 			V_DrawMappedPatch(SPDM_X + 1, SPDM_Y + 4, V_HUDTRANS|splitflags, speedopat, colormap);
+			speedopat = ((speedostyle == SPEEDO_EXTRA) ? skp_speedpatches[cv_kartspeedometer.value] : skp_speedpatchesachiclr[cv_kartspeedometer.value]);
 		}
 		else
 		{
 			speedopat = ((speedostyle == SPEEDO_EXTRA) ? skp_smallsticker : skp_smallstickerachi);
 			V_DrawScaledPatch(SPDM_X + 1, SPDM_Y + 4, V_HUDTRANS|splitflags, speedopat);
+			speedopat = ((speedostyle == SPEEDO_EXTRA) ? skp_speedpatches[cv_kartspeedometer.value] : skp_speedpatchesachi[cv_kartspeedometer.value]);
 		}
 
 		V_DrawRankNum(SPDM_X + 26, SPDM_Y + 4, V_HUDTRANS|splitflags, convSpeed[1], 3, NULL);
-
-		speedopat = ((speedostyle == SPEEDO_EXTRA) ? skp_speedpatches[cv_kartspeedometer.value] : skp_speedpatchesachi[cv_kartspeedometer.value]);
-		V_DrawScaledPatch(SPDM_X + 31, SPDM_Y + 4, V_HUDTRANS|splitflags, speedopat);
+		V_DrawMappedPatch(SPDM_X + 31, SPDM_Y + 4, V_HUDTRANS|splitflags, speedopat, colormap);
 	}
 #ifdef ROTSPRITE
 	else if (speedostyle == SPEEDO_DIAL)  // why bother if we dont?
