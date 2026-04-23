@@ -274,7 +274,6 @@ void K_RegisterKartHudStuff(void)
 
 // Smol speedo
 static patch_t *skp_smallsticker    = NULL;
-static patch_t *skp_smallsticker3   = NULL;
 
 static patch_t *skp_speedpatches[5] = {NULL};
 
@@ -312,7 +311,6 @@ static patch_t *kp_bumperstickerwideclr  =  NULL;
 static patch_t *kp_karmastickerclr       =  NULL;
 static patch_t *kp_timeoutstickerclr     =  NULL;
 static patch_t *skp_smallstickerclr      =  NULL;
-static patch_t *skp_smallstickerclr3     =  NULL;
 static patch_t *kp_itemmulstickerclr[2]  = {NULL};
 static patch_t *kp_itembgclr[4]          = {NULL};
 
@@ -478,11 +476,6 @@ static void K_LoadSaturnHUDGraphics(void)
 			skp_smallstickerclr = (patch_t *)W_CachePatchName("SC_SMSTC", PU_HUDGFX);
 		}
 
-		if (xtra_speedo_clr3)
-		{
-			skp_smallstickerclr3 = (patch_t *)W_CachePatchName("SC_SM3TC", PU_HUDGFX);
-		}
-
 		if (achi_speedo_clr)
 		{
 			skp_smallstickerachiclr    = (patch_t *)W_CachePatchName("SC_AMSTC", PU_HUDGFX);
@@ -535,14 +528,6 @@ static void K_LoadSaturnHUDGraphics(void)
 			kp_itembgclr[3]         = (patch_t *)W_CachePatchName("K_ISBCD" , PU_HUDGFX);
 			kp_itemmulstickerclr[1] = (patch_t *)W_CachePatchName("K_ISMULC", PU_HUDGFX);
 			kp_itemmulstickerclr[0] = (patch_t *)W_CachePatchName("K_ITMULC", PU_HUDGFX);
-		}
-	}
-
-	if (found_extra3_kart)
-	{
-		if (xtra_speedo3) // 80x11 patch scaled to size
-		{
-			skp_smallsticker3 = (patch_t *)W_CachePatchName("SP_SM3TC", PU_HUDGFX);
 		}
 	}
 }
@@ -879,7 +864,7 @@ void K_LoadKartHUDGraphics(void)
 
 	kp_yougotem = (patch_t *)W_CachePatchName("YOUGOTEM", PU_HUDGFX);
 
-	if (found_extra_kart || found_extra2_kart || found_extra3_kart)
+	if (found_extra_kart || found_extra2_kart)
 		K_LoadSaturnHUDGraphics();
 }
 
@@ -1149,7 +1134,6 @@ enum
 	SPEEDO_DIAL,
 	SPEEDO_PMETER,
 	SPEEDO_PMETERSMOL,
-	SPEEDO_EXTRA3,
 };
 
 static SINT8 K_GetSpeedometerStyle(void)
@@ -1164,8 +1148,6 @@ static SINT8 K_GetSpeedometerStyle(void)
 		return SPEEDO_PMETER;
 	else if (cv_newspeedometer.value == 6 && kartz_speedo_smol)
 		return SPEEDO_PMETERSMOL;
-	else if (cv_newspeedometer.value == 7 && xtra_speedo3)
-		return SPEEDO_EXTRA3;
 	else
 		return SPEEDO_VANILLA;
 }
@@ -1183,8 +1165,6 @@ static boolean K_UseColorSpeedo(int speedostyle)
 			return achi_speedo_clr;
 		case SPEEDO_DIAL:
 			return dial_speedo_clr;
-		case SPEEDO_EXTRA3:
-			return xtra_speedo_clr3;
 		default:
 			return false;
 	}
@@ -1196,7 +1176,6 @@ enum
 	GAUGE_SMALL,
 	GAUGE_BIGNUM,
 	GAUGE_NUMONLY,
-	GAUGE_EXTRA,
 };
 
 static SINT8 K_GetDriftgaugeStyle(void)
@@ -1209,8 +1188,6 @@ static SINT8 K_GetDriftgaugeStyle(void)
 			return GAUGE_SMALL;
 		else if (cv_driftgaugestyle.value == 3)
 			return GAUGE_BIGNUM;
-		else if (cv_driftgaugestyle.value == 5 && xtra_speedo3)
-			return GAUGE_EXTRA;
 	}
 
 	// Fallback
@@ -1409,7 +1386,6 @@ static void K_drawKartStats(void)
 		{
 			case SPEEDO_EXTRA:
 			case SPEEDO_ACHII:
-			case SPEEDO_EXTRA3:
 				spdoffset = -10;
 				break;
 			case SPEEDO_DIAL:
@@ -2756,19 +2732,6 @@ static void K_drawKartSpeedometer(void)
 							(K_UseColorSpeedo(SPEEDO_DIAL)));
 	}
 #endif
-	else if (speedostyle == SPEEDO_EXTRA3) // why bother if we dont?
-	{
-		if (K_UseColorSpeedo(SPEEDO_EXTRA3)) //Colourized hud
-		{
-			UINT8 *colormap = R_GetTranslationColormap(TC_DEFAULT, K_GetHudColor(), GTC_CACHE);
-			V_DrawStretchyFixedPatch((SPDM_X-1)<<FRACBITS, (SPDM_Y + 5)<<FRACBITS, XTRA3PSCALE, XTRA3VSCALE, V_HUDTRANS|splitflags, skp_smallstickerclr3, colormap, 0);
-		}
-		else
-			V_DrawStretchyFixedPatch((SPDM_X-1)<<FRACBITS, (SPDM_Y + 5)<<FRACBITS, XTRA3PSCALE, XTRA3VSCALE, V_HUDTRANS|splitflags, skp_smallsticker3, NULL, 0);
-
-		V_DrawRankNum(SPDM_X + 26, SPDM_Y + 4, V_HUDTRANS|splitflags, convSpeed[1], 3, NULL);
-		V_DrawScaledPatch(SPDM_X + 31, SPDM_Y + 4, V_HUDTRANS|splitflags, skp_speedpatches[cv_kartspeedometer.value]);
-	}
 	// Kart Z speedo bullshit...
 	// Draw the Speed counter.
 	else if ((speedostyle == SPEEDO_PMETER) || (speedostyle == SPEEDO_PMETERSMOL))
@@ -2826,7 +2789,7 @@ static void K_drawKartBumpersOrKarma(void)
 	{
 		const UINT8 speedostyle = K_GetSpeedometerStyle();
 
-		if ((speedostyle == SPEEDO_EXTRA) || (speedostyle == SPEEDO_ACHII) || (speedostyle == SPEEDO_EXTRA3))
+		if ((speedostyle == SPEEDO_EXTRA) || (speedostyle == SPEEDO_ACHII))
 			fy += 5;
 		else
 			fy += 7;
@@ -3308,12 +3271,11 @@ static void K_drawDriftGauge(void)
 	{
 		case GAUGE_DEFAULT:
 		case GAUGE_SMALL:
-		case GAUGE_EXTRA:
 		case GAUGE_BIGNUM:
 			{
 				patch_t *driftpatch = NULL;
 
-				if (gaugestyle == GAUGE_DEFAULT || gaugestyle == GAUGE_BIGNUM || gaugestyle == GAUGE_EXTRA)
+				if (gaugestyle == GAUGE_DEFAULT || gaugestyle == GAUGE_BIGNUM)
 				{
 					barx = basex - vid.dup*23;
 					BAR_WIDTH = vid.dup*47;
@@ -3326,30 +3288,15 @@ static void K_drawDriftGauge(void)
 
 				bary = basey - vid.dup*2;
 
-				if (gaugestyle == GAUGE_EXTRA) // i hate hud code i hate hud code i hate hud code i hate hud code i hate hud code.....
+				if (K_UseColorHud()) // Colourized hud
 				{
-					if (K_UseColorSpeedo(SPEEDO_EXTRA3)) // We reuse the extra speedometer patch hence this check
-					{
-						colormap = R_GetTranslationColormap(TC_DEFAULT, K_GetHudColor(), GTC_CACHE);
-						driftpatch = skp_smallstickerclr3;
-					}
-					else
-						driftpatch = skp_smallsticker3;
-
-					V_DrawStretchyFixedPatch((basex - vid.dup*30)<<FRACBITS, ((basey<<FRACBITS) - FixedMul(vid.dup<<FRACBITS, 21*FRACUNIT/10)), XTRA3PSCALE, XTRA3VSCALE, V_NOSCALESTART|V_OFFSET|drifttrans, driftpatch, colormap, 0);
+					colormap = R_GetTranslationColormap(TC_DEFAULT, K_GetHudColor(), GTC_CACHE);
+					driftpatch = (gaugestyle == GAUGE_SMALL ? driftgaugesmallcolor : driftgaugecolor);
 				}
 				else
-				{
-					if (K_UseColorHud()) // Colourized hud
-					{
-						colormap = R_GetTranslationColormap(TC_DEFAULT, K_GetHudColor(), GTC_CACHE);
-						driftpatch = (gaugestyle == GAUGE_SMALL ? driftgaugesmallcolor : driftgaugecolor);
-					}
-					else
-						driftpatch = (gaugestyle == GAUGE_SMALL ? driftgaugesmall : driftgauge);
+					driftpatch = (gaugestyle == GAUGE_SMALL ? driftgaugesmall : driftgauge);
 
-					V_DrawMappedPatch(gaugestyle == GAUGE_SMALL ? basex + vid.dup*11 : basex, basey, V_NOSCALESTART|V_OFFSET|drifttrans, driftpatch, colormap);
-				}
+				V_DrawMappedPatch(gaugestyle == GAUGE_SMALL ? basex + vid.dup*11 : basex, basey, V_NOSCALESTART|V_OFFSET|drifttrans, driftpatch, colormap);
 
 				if (driftcharge >= driftval*4) // rainbow sparks
 				{

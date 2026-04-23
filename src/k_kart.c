@@ -6307,6 +6307,7 @@ void K_KartUpdatePosition(player_t *player)
 							players[i].kartstuff[k_prevcheck] += imo;
 							ipcd++;
 						}
+
 						if (isnextcheckpointi)
 						{
 							players[i].kartstuff[k_nextcheck] += imo;
