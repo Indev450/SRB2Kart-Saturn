@@ -3402,16 +3402,14 @@ static void Command_connect(void)
 			D_QuitNetGame(); // this will also call D_CloseConnection for us
 			CL_Reset();
 			servernode = 0; // not sure if this is cool, but if this is -1 then bad things happen in alot of networking code
-			multiplayer = false;
-			netgame = false;
-
 			D_StartTitle();
 			M_StartMessage(M_GetText("Failed to connect to server\nMake sure you put in a valid Address!\n"), NULL, MM_NOTHING);
 			return;
 		}
 	}
 
-	CV_Set(&cv_lastserver, I_GetNodeAddress(servernode));
+	if (I_GetNodeAddress)
+		CV_Set(&cv_lastserver, I_GetNodeAddress(servernode));
 
 	if (splitscreen != cv_splitplayers.value-1)
 	{
