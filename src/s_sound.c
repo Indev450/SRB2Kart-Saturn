@@ -722,11 +722,11 @@ void S_UpdateSounds(void)
 	if (dedicated || sound_disabled)
 		return;
 
+	memset(listenmobj, 0, sizeof(listenmobj));
+
 	for (i = 0; i <= splitscreen; i++)
 	{
 		player_t *player = &players[displayplayers[i]];
-
-		listenmobj[i] = NULL;
 
 		if (player->awayviewtics)
 		{
