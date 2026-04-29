@@ -1357,9 +1357,9 @@ static void R_ProjectSprite(mobj_t *thing)
 
 	I_Assert(lump < max_spritelumps);
 
-	spr_width = spritecachedinfo[lump].width;
-	spr_height = spritecachedinfo[lump].height;
-	spr_offset = spritecachedinfo[lump].offset;
+	spr_width     = spritecachedinfo[lump].width;
+	spr_height    = spritecachedinfo[lump].height;
+	spr_offset    = spritecachedinfo[lump].offset;
 	spr_topoffset = spritecachedinfo[lump].topoffset;
 
 #ifdef ROTSPRITE
@@ -1408,10 +1408,10 @@ static void R_ProjectSprite(mobj_t *thing)
 
 			if (rotsprite != NULL)
 			{
-				spr_width = rotsprite->width << FRACBITS;
-				spr_height = rotsprite->height << FRACBITS;
-				spr_offset = rotsprite->leftoffset << FRACBITS;
-				spr_topoffset = rotsprite->topoffset << FRACBITS;
+				spr_width      = rotsprite->width << FRACBITS;
+				spr_height     = rotsprite->height << FRACBITS;
+				spr_offset     = rotsprite->leftoffset << FRACBITS;
+				spr_topoffset  = rotsprite->topoffset << FRACBITS;
 				spr_topoffset += FEETADJUST;
 
 				// flip -> rotate, not rotate -> flip
