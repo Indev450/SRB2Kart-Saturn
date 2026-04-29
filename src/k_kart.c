@@ -3445,7 +3445,7 @@ static void K_QuiteSaltyHop(player_t *player)
 			pmo->spritexscale -= (FRACUNIT/8);
 		}
 
-		pmo->spriteyoffset = FixedMul(psalt->zoffset, cv_saltyheight.value);
+		pmo->spriteyoffset += FixedMul(psalt->zoffset, cv_saltyheight.value);
 
 		if (cv_saltyhopsfx.value)
 		{
