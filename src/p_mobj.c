@@ -3717,7 +3717,7 @@ boolean P_PrecipThinker(precipmobj_t *mobj)
 		return true;
 
 	// only recalc this twice a second (doubt anyone will notice this lulul)
-	if ((leveltime % 17) == 0)
+	if ((leveltime % (TICRATE/2)) == 0)
 		P_CalculatePrecipFloor(mobj);
 
 	// adjust height
