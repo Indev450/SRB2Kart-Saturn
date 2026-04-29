@@ -979,7 +979,7 @@ static void ArchiveExtVars(UINT8 **p, void *pointer, const char *ptype)
 
 	if (!gL)
 	{
-		if (fastcmp(ptype,"player")) // players must always be included, even if no vars
+		if (fastcmp(ptype, "player")) // players must always be included, even if no vars
 			WRITEUINT16(*p, 0);
 		return;
 	}
@@ -995,7 +995,7 @@ static void ArchiveExtVars(UINT8 **p, void *pointer, const char *ptype)
 	if (!lua_istable(gL, -1))
 	{ // no extra values table
 		lua_pop(gL, 1);
-		if (fastcmp(ptype,"player")) // players must always be included, even if no vars
+		if (fastcmp(ptype, "player")) // players must always be included, even if no vars
 			WRITEUINT16(*p, 0);
 		return;
 	}
@@ -1007,13 +1007,13 @@ static void ArchiveExtVars(UINT8 **p, void *pointer, const char *ptype)
 	// skip anything that has an empty table and isn't a player.
 	if (i == 0)
 	{
-		if (fastcmp(ptype,"player")) // always include players even if they have no extra variables
+		if (fastcmp(ptype, "player")) // always include players even if they have no extra variables
 			WRITEUINT16(*p, 0);
 		lua_pop(gL, 1);
 		return;
 	}
 
-	if (fastcmp(ptype,"mobj")) // mobjs must write their mobjnum as a header
+	if (fastcmp(ptype, "mobj")) // mobjs must write their mobjnum as a header
 		WRITEUINT32(*p, ((mobj_t *)pointer)->mobjnum);
 
 	WRITEUINT16(*p, i);
@@ -1083,8 +1083,8 @@ static void ArchiveTables(UINT8 **p)
 				CONS_Alert(CONS_ERROR, "Type of value for table %d entry '%s' (%s) could not be archived!\n", i, lua_tostring(gL, -2), luaL_typename(gL, -1));
 
 			lua_pop(gL, 1);
-
 		}
+
 		lua_pop(gL, 1);
 		WRITEUINT8(*p, ARCH_TEND);
 	}

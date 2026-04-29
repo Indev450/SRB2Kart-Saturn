@@ -890,6 +890,7 @@ fixed_t P_CameraCeilingZ(camera_t *mobj, sector_t *sector, sector_t *boundsec, f
 	else // Well, that makes it easy. Just get the ceiling height
 		return sector->ceilingheight;
 }
+
 static void P_PlayerFlip(mobj_t *mo)
 {
 	if (!mo->player)
@@ -2443,6 +2444,7 @@ static void P_PlayerZMovement(mobj_t *mo)
 			}
 			goto nightsdone;
 		}
+
 		// Get up if you fell.
 		if ((mo->state == &states[mo->info->painstate] || mo->state == &states[S_KART_SPIN])
 			&& mo->player->kartstuff[k_spinouttimer] == 0 && mo->player->kartstuff[k_squishedtimer] == 0) // SRB2kart
@@ -2495,7 +2497,7 @@ static void P_PlayerZMovement(mobj_t *mo)
 								polyobj_t *po = newsubsec->polyList;
 								sector_t *polysec;
 
-								while(po)
+								while (po)
 								{
 									if (!P_MobjInsidePolyobj(po, mo) || !(po->flags & POF_SOLID))
 									{
@@ -3375,20 +3377,23 @@ static void P_PlayerMobjThinker(mobj_t *mobj)
 	mobj->eflags &= ~MFE_JUSTSTEPPEDDOWN;
 
 	// Zoom tube
-	if (UNLIKELY(mobj->tracer && mobj->tracer->type == MT_TUBEWAYPOINT))
+	if (mobj->tracer)
 	{
-		P_UnsetThingPosition(mobj);
-		mobj->x += mobj->momx;
-		mobj->y += mobj->momy;
-		mobj->z += mobj->momz;
-		P_SetThingPosition(mobj);
-		P_CheckPosition(mobj, mobj->x, mobj->y);
-		goto animonly;
-	}
-	else if (UNLIKELY(mobj->player->pflags & PF_MACESPIN && mobj->tracer))
-	{
-		P_CheckPosition(mobj, mobj->x, mobj->y);
-		goto animonly;
+		if (mobj->tracer->type == MT_TUBEWAYPOINT)
+		{
+			P_UnsetThingPosition(mobj);
+			mobj->x += mobj->momx;
+			mobj->y += mobj->momy;
+			mobj->z += mobj->momz;
+			P_SetThingPosition(mobj);
+			P_CheckPosition(mobj, mobj->x, mobj->y);
+			goto animonly;
+		}
+		else if (UNLIKELY(mobj->player->pflags & PF_MACESPIN))
+		{
+			P_CheckPosition(mobj, mobj->x, mobj->y);
+			goto animonly;
+		}
 	}
 
 	// Needed for gravity boots
@@ -3404,7 +3409,7 @@ static void P_PlayerMobjThinker(mobj_t *mobj)
 	else
 		P_TryMove(mobj, mobj->x, mobj->y, true);
 
-	if (LIKELY(!(netgame && mobj->player->spectator)))
+	if (!(netgame && mobj->player->spectator))
 	{
 		// Crumbling platforms
 		for (node = mobj->touching_sectorlist; node; node = node->m_sectorlist_next)
