@@ -2019,7 +2019,6 @@ FUNCNORETURN void ATTRNORETURN I_Quit(void)
 	if (myargmalloc)
 		free(myargv); // Deallocate allocated memory
 
-	W_Shutdown();
 	exit(0);
 }
 
@@ -2079,7 +2078,6 @@ FUNCIERROR void ATTRNORETURN I_Error(const char *error, ...)
 			sigttl = "SRB2Kart " VERSIONSTRING " Recursive Error";
 			I_ShowSimpleErrorBox(sigttl, buffer);
 
-			W_Shutdown();
 			exit(-1); // recursive errors detected
 		}
 	}
@@ -2120,8 +2118,6 @@ FUNCIERROR void ATTRNORETURN I_Error(const char *error, ...)
 	sigttl = "SRB2Kart " VERSIONSTRING " Error";
 	//I_ShowSimpleErrorBox(sigttl, buffer);
 	I_ShowErrorBox(sigttl, buffer);
-
-	W_Shutdown();
 
 #if defined (PARANOIA) && defined (__CYGWIN__)
 	*(INT32 *)2 = 4; //Alam: Debug!
