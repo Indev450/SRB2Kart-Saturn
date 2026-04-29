@@ -128,7 +128,7 @@ wadfile_t *wadfiles[MAX_WADFILES] = {}; // 0 to numwadfiles-1 are valid
 // If not done on a Mac then open wad files
 // can prevent removable media they are on from
 // being ejected
-void W_Shutdown(void)
+DESTRUCTOR static void W_Shutdown(void)
 {
 	lumpnum_map_cleanup(&lumpnumcache);
 

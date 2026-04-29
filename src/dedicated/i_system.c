@@ -1464,7 +1464,6 @@ void I_Quit(void)
 		free(myargv); // Deallocate allocated memory
 
 death:
-	W_Shutdown();
 	exit(0);
 }
 
@@ -1510,7 +1509,6 @@ FUNCIERROR void ATTRNORETURN I_Error(const char *error, ...)
 
 			I_OutputMsg("SRB2Kart %s Recursive Error", buffer);
 
-			W_Shutdown();
 			exit(-1); // recursive errors detected
 		}
 	}
@@ -1544,8 +1542,6 @@ FUNCIERROR void ATTRNORETURN I_Error(const char *error, ...)
 	// use this for 1.28 19990220 by Kin
 	I_ShutdownGraphics();
 	I_ShutdownSystem();
-
-	W_Shutdown();
 
 #if defined (PARANOIA) && defined (__CYGWIN__)
 	*(INT32 *)2 = 4; //Alam: Debug!
