@@ -1255,20 +1255,18 @@ static void CL_DrawConnectionStatus(void)
 			case CL_DOWNLOADSAVEGAME:
 				if (filedownload.current != -1)
 				{
-					INT32 dldlength = 0;
+					UINT32 dldlength = 0;
 					fileneeded_t *file = &fileneeded[filedownload.current];
-					UINT32 currentsize = file->currentsize;
 					UINT32 totalsize   = file->totalsize;
+					UINT32 currentsize = min(file->currentsize, totalsize);
 
 					cltext = M_GetText("Downloading game state...");
 					Net_GetNetStat();
 
 					if (totalsize != 0)
-						dldlength = (INT32)((currentsize/(double)totalsize) * 256);
-					if (dldlength > 256)
-						dldlength = 256;
+						dldlength = (UINT32)((currentsize/(double)totalsize) * 256);
 					V_DrawFill(BASEVIDWIDTH/2-128, BASEVIDHEIGHT-24, 256, 8, 111);
-					V_DrawFill(BASEVIDWIDTH/2-128, BASEVIDHEIGHT-24, dldlength, 8, 96);
+					V_DrawFill(BASEVIDWIDTH/2-128, BASEVIDHEIGHT-24, (INT32)dldlength, 8, 96);
 
 					V_DrawString(BASEVIDWIDTH/2-128, BASEVIDHEIGHT-24, V_20TRANS|V_MONOSPACE,
 						va(" %4uK/%4uK", currentsize>>10, totalsize>>10));
@@ -1485,14 +1483,14 @@ static void CL_DrawConnectionStatus(void)
 		}
 		else if (filedownload.current != -1)
 		{
-			INT32 dldlength = 0;
-			INT32 totalfileslength = 0;
+			UINT32 dldlength = 0;
 			UINT32 totaldldsize = 0;
+			UINT32 totalfileslength = filedownload.totalsize;
 			static char tempname[28];
 			fileneeded_t *file = &fileneeded[filedownload.current];
 			char *filename = file->filename;
 			UINT32 totalsize   = file->totalsize;
-			UINT32 currentsize = min(file->currentsize, file->totalsize);
+			UINT32 currentsize = min(file->currentsize, totalsize);
 
 			// Draw the bottom box.
 			M_DrawTextBox(BASEVIDWIDTH/2-128-8, BASEVIDHEIGHT-58-8, 32, 1);
@@ -1500,11 +1498,9 @@ static void CL_DrawConnectionStatus(void)
 
 			Net_GetNetStat();
 			if (totalsize != 0)
-				dldlength = (INT32)((currentsize/(double)totalsize) * 256);
-			if (dldlength > 256)
-				dldlength = 256;
+				dldlength = (UINT32)((currentsize/(double)totalsize) * 256);
 			V_DrawFill(BASEVIDWIDTH/2-128, BASEVIDHEIGHT-58, 256, 8, 175);
-			V_DrawFill(BASEVIDWIDTH/2-128, BASEVIDHEIGHT-58, dldlength, 8, 160);
+			V_DrawFill(BASEVIDWIDTH/2-128, BASEVIDHEIGHT-58, (INT32)dldlength, 8, 160);
 
 			memset(tempname, 0, sizeof(tempname));
 
@@ -1545,18 +1541,18 @@ static void CL_DrawConnectionStatus(void)
 				totaldldsize = filedownload.completedsize;
 
 			V_DrawCenteredString(BASEVIDWIDTH/2, BASEVIDHEIGHT-24-14, V_YELLOWMAP|MENUCAPS, "Overall Download Progress");
-			if (filedownload.totalsize != 0)
-				totalfileslength = (INT32)((totaldldsize/(double)filedownload.totalsize) * 256);
+			if (totalfileslength != 0)
+				totalfileslength = (UINT32)((totaldldsize/(double)totalfileslength) * 256);
 			M_DrawTextBox(BASEVIDWIDTH/2-128-8, BASEVIDHEIGHT-24-8, 32, 1);
 			V_DrawFill(BASEVIDWIDTH/2-128, BASEVIDHEIGHT-24, 256, 8, 175);
-			V_DrawFill(BASEVIDWIDTH/2-128, BASEVIDHEIGHT-24, totalfileslength, 8, 160);
+			V_DrawFill(BASEVIDWIDTH/2-128, BASEVIDHEIGHT-24, (INT32)totalfileslength, 8, 160);
 
-			if (filedownload.totalsize>>20 >= 10) // display in MB if over 10MB
+			if (totalfileslength>>20 >= 10) // display in MB if over 10MB
 				V_DrawString(BASEVIDWIDTH/2-128, BASEVIDHEIGHT-24, V_20TRANS|V_MONOSPACE|MENUCAPS,
-					va(" %4uM/%4uM", totaldldsize>>20, filedownload.totalsize>>20));
+					va(" %4uM/%4uM", (INT32)(totaldldsize>>20), (INT32)(totalfileslength>>20)));
 			else
 				V_DrawString(BASEVIDWIDTH/2-128, BASEVIDHEIGHT-24, V_20TRANS|V_MONOSPACE|MENUCAPS,
-					va(" %4uK/%4uK", totaldldsize>>10, filedownload.totalsize>>10));
+					va(" %4uK/%4uK", (INT32)(totaldldsize>>10), (INT32)(totalfileslength>>10)));
 
 			V_DrawRightAlignedString(BASEVIDWIDTH/2+128, BASEVIDHEIGHT-24, V_20TRANS|V_MONOSPACE|MENUCAPS,
 					va("%2u/%2u Files ", filedownload.completednum, filedownload.totalnum));
