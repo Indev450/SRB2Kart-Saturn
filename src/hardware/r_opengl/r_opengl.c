@@ -1068,6 +1068,13 @@ void GL_SetShader(int slot)
 	gl_shadersenabled = false;
 }
 
+void GL_EnableShader(void)
+{
+	// we can just use GL_Shader_SetUniforms as itll enable the shader for us
+	// and handle any failures
+	GL_Shader_SetUniforms(NULL, NULL, NULL, NULL);
+}
+
 void GL_UnSetShader(void)
 {
 	if (gl_shadersenabled) // don't repeatedly call glUseProgram if not needed
@@ -3718,7 +3725,7 @@ void GL_MakeScreenTexture(int tex)
 	tex_downloaded = screenTextures[tex];
 }
 
-void GL_DrawScreenFinalTexture(int tex, INT32 width, INT32 height, boolean useshader)
+void GL_DrawScreenFinalTexture(int tex, INT32 width, INT32 height)
 {
 	float xfix, yfix;
 	float origaspect, newaspect;
@@ -3771,18 +3778,12 @@ void GL_DrawScreenFinalTexture(int tex, INT32 width, INT32 height, boolean usesh
 
 	pglBindTexture(GL_TEXTURE_2D, screenTextures[tex]);
 
-	if (useshader)
-		pglUseProgram(gl_shaders[SHADER_PALETTE_POSTPROCESS].program); // Final postprocess step of palette rendering, after everything else has been drawn.
-
 	pglColor4ubv(white);
 
 	pglTexCoordPointer(2, GL_FLOAT, 0, fix);
 	pglVertexPointer(3, GL_FLOAT, 0, off);
 
 	pglDrawArrays(GL_TRIANGLE_FAN, 0, 4);
-
-	if (useshader)
-		pglUseProgram(0);
 
 	tex_downloaded = screenTextures[tex];
 }

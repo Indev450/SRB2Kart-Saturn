@@ -240,7 +240,18 @@ void OglSdlFinishUpdate(SDL_Window *window)
 	}
 #endif
 
-	HWR_DrawScreenFinalTexture(sdlw, sdlh, HWR_ShouldUsePaletteRendering());
+	if (HWR_ShouldUsePaletteRendering())
+	{
+		// Final postprocess step of palette rendering, after everything else has been drawn.
+		GL_SetShader(HWR_GetShaderFromTarget(SHADER_PALETTE_POSTPROCESS));
+		GL_EnableShader();
+		HWR_DrawScreenFinalTexture(sdlw, sdlh);
+		GL_UnSetShader();
+	}
+	else
+	{
+		HWR_DrawScreenFinalTexture(sdlw, sdlh);
+	}
 
 #ifdef USE_FBO_OGL
 	if (usefbo)
@@ -261,7 +272,7 @@ void OglSdlFinishUpdate(SDL_Window *window)
 #else
 	if (!I_CheckNativeRes() || WipeInAction)
 #endif
-		HWR_DrawScreenFinalTexture(realwidth, realheight, false);
+		HWR_DrawScreenFinalTexture(realwidth, realheight);
 }
 
 #endif //HWRENDER
