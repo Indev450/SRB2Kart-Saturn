@@ -102,7 +102,6 @@ void GL_Framebuffer_Unbind(void);
 void GL_Framebuffer_Enable(void);
 void GL_Framebuffer_Disable(void);
 extern int supportFBO;
-extern boolean fbo_shader;
 #endif
 
 // ==========================================================================

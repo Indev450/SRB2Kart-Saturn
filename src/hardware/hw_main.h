@@ -161,9 +161,9 @@ FUNCINLINE static ATTRINLINE void HWR_MakeScreenFinalTexture(void)
 	GL_MakeScreenTexture(HWD_SCREENTEXTURE_GENERIC2);
 }
 
-FUNCINLINE static ATTRINLINE void HWR_DrawScreenFinalTexture(INT32 width, INT32 height, boolean useshader)
+FUNCINLINE static ATTRINLINE void HWR_DrawScreenFinalTexture(INT32 width, INT32 height)
 {
-	GL_DrawScreenFinalTexture(HWD_SCREENTEXTURE_GENERIC2, width, height, useshader);
+	GL_DrawScreenFinalTexture(HWD_SCREENTEXTURE_GENERIC2, width, height);
 }
 
 // hw_main.c: Segs
