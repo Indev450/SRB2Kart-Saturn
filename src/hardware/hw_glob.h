@@ -34,8 +34,8 @@ typedef struct gl_vissprite_s
 	float gz, gzt;
 	float tz;
 	float scale;
-	float spritexscale, spriteyscale;
-	float spritexoffset, spriteyoffset;
+	//float spritexscale, spriteyscale;
+	//float spritexoffset, spriteyoffset;
 	patch_t *gpatch;
 	boolean flip;
 	UINT8 translucency;       //alpha level 0-255

@@ -4852,10 +4852,10 @@ static void HWR_ProjectSprite(mobj_t *thing)
 	vis->flip = flip;
 
 	vis->scale = thing_scale;
-	vis->spritexscale = spritexscale;
+	/*vis->spritexscale = spritexscale;
 	vis->spriteyscale = spriteyscale;
 	vis->spritexoffset = FixedToFloat(spr_offset);
-	vis->spriteyoffset = FixedToFloat(spr_topoffset);
+	vis->spriteyoffset = FixedToFloat(spr_topoffset);*/
 
 #ifdef ROTSPRITE
 	if (rotsprite != NULL)
