@@ -433,6 +433,7 @@ void Y_IntermissionDrawer(void)
 		return;
 
 	if (cv_betainterscreen.value == 1
+	|| !intermissionbginit
 #ifdef HWRENDER
 	|| (rendermode == render_opengl && cv_glscreentextures.value != 2) // use the neato kart bg for intermission on disabled screen textures
 #endif
@@ -794,6 +795,7 @@ void Y_EndIntermission(void)
 	endtic = -1;
 	sorttic = -1;
 	intertype = int_none;
+	intermissionbginit = false; // not sure if this is the right place to reset, but i guess it works for now....
 }
 
 //

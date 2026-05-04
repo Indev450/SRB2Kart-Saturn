@@ -258,9 +258,7 @@ static void CV_screentextures_OnChange(void)
 		if (cv_glframebuffer.value != 0)
 			CV_SetValue(&cv_glframebuffer, 0);
 #endif
-		// HACK: set lastdraw so intermission bg can refresh after toggling screentextures
-		if (gamestate == GS_INTERMISSION)
-			lastdraw = true;
+		intermissionbginit = false;
 	}
 	GL_SetSpecialState(HWD_SET_SCREEN_TEXTURES, cv_glscreentextures.value);
 	M_UpdateOGLMenu();
@@ -277,6 +275,7 @@ static void CV_glframebuffer_OnChange(void)
 	I_DownSample();
 	RefreshOGLSDLSurface();
 	M_UpdateOGLMenu();
+	intermissionbginit = false;
 }
 #endif
 
