@@ -113,6 +113,7 @@ extern UINT8 window_notinfocus; // are we in focus? (backend independant -- hand
 
 extern boolean nodrawers;
 extern boolean lastdraw;
+extern boolean intermissionbginit;
 
 #ifdef MOTIONBLUR
 extern INT32 postimgparam[MAXSPLITSCREENPLAYERS];

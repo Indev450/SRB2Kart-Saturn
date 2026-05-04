@@ -139,6 +139,7 @@ boolean devparm = false; // started game with -devparm
 
 boolean singletics = false; // timedemo
 boolean lastdraw = false;
+boolean intermissionbginit = false;
 
 #ifdef MOTIONBLUR
 INT32 postimgparam[MAXSPLITSCREENPLAYERS];
@@ -373,23 +374,10 @@ static void D_MakeIntermissionBG(void)
 	if (rendermode == render_none)
 	{
 		lastdraw = false;
+		intermissionbginit = false;
 		return;
 	}
 
-	// no more valid map
-	// shouldnt happen at this point, but better safe than sorry!
-	if (!numsectors)
-	{
-		lastdraw = false;
-		return;
-	}
-
-	// need to render level again for this
-	// should be fine since at this point we did not unload it yet
-	if (cv_renderview.value)
-	{
-		D_Renderview();
-	}
 #ifdef HWRENDER
 	if (rendermode == render_opengl)
 	{
@@ -402,6 +390,7 @@ static void D_MakeIntermissionBG(void)
 	}
 
 	lastdraw = false;
+	intermissionbginit = true;
 }
 
 static boolean D_Display(void)
@@ -564,8 +553,6 @@ static boolean D_Display(void)
 			break;
 	}
 
-	D_MakeIntermissionBG();
-
 	if (gamestate == GS_LEVEL)
 	{
 		// draw the view directly
@@ -574,6 +561,8 @@ static boolean D_Display(void)
 			PS_START_TIMING(ps_rendercalltime);
 			D_Renderview();
 			PS_STOP_TIMING(ps_rendercalltime);
+
+			D_MakeIntermissionBG();
 		}
 
 		PS_START_TIMING(ps_uitime);
