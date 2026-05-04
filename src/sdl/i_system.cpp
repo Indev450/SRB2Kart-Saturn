@@ -2008,7 +2008,6 @@ FUNCNORETURN void ATTRNORETURN I_Quit(void)
 	is_quitting = true;
 	SDL_ShowCursor(SDL_TRUE);
 
-	I_ShutdownConsole();
 	M_SaveConfig(NULL); //save game config, cvars..
 	D_SaveBan(); // save the ban list
 	G_SaveGameData(false); // Tails 12-08-2002
@@ -2113,8 +2112,6 @@ FUNCIERROR void ATTRNORETURN I_Error(const char *error, ...)
 #endif
 
 	// ---
-
-	I_ShutdownConsole();
 
 	M_SaveConfig(NULL); // save game config, cvars..
 	D_SaveBan(); // save the ban list

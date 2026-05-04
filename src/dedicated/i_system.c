@@ -1378,14 +1378,12 @@ static void I_Fork(void)
 				fclose(logstream);/* the child has this */
 
 			c = wait(&status);
-
 #ifdef LOGMESSAGES
 			/* By the way, exit closes files. */
 			logstream = fopen(logfilename, "at");
 #else
 			logstream = 0;
 #endif
-
 			if (c == -1)
 			{
 				kill(child, SIGKILL);
@@ -1447,7 +1445,6 @@ void I_Quit(void)
 		goto death;
 
 	quiting = false;
-	I_ShutdownConsole();
 	M_SaveConfig(NULL); //save game config, cvars..
 	D_SaveBan(); // save the ban list
 	G_SaveGameData(false); // Tails 12-08-2002
@@ -1536,8 +1533,6 @@ FUNCIERROR void ATTRNORETURN I_Error(const char *error, ...)
 	write_backtrace(BT_CRASH_REASON_ERRORMSG(buffer));
 #endif
 	// ---
-
-	I_ShutdownConsole();
 
 	M_SaveConfig(NULL); // save game config, cvars..
 	D_SaveBan(); // save the ban list
@@ -1659,9 +1654,10 @@ void I_ShutdownSystem(void)
 {
 	INT32 c;
 
-#ifndef NEWSIGNALHANDLER
-	I_ShutdownConsole();
+#ifdef NEWSIGNALHANDLER
+	if (M_CheckParm("-nofork"))
 #endif
+		I_ShutdownConsole();
 
 	for (c = MAX_QUIT_FUNCS-1; c >= 0; c--)
 		if (quit_funcs[c])
