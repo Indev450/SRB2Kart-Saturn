@@ -1362,6 +1362,18 @@ static void I_Fork(void)
 			I_RegisterChildSignals();
 			break;
 		default:
+			// ignore those, those are handled by child process
+			// otherwise parent might exit before it
+			// and the below stuff wont run and your terminal will be left in an awkward state
+#ifdef SIGINT
+			signal(SIGINT,   SIG_IGN);
+#endif
+#ifdef SIGBREAK
+			signal(SIGBREAK, SIG_IGN);
+#endif
+#ifdef SIGTERM
+			signal(SIGTERM,  SIG_IGN);
+#endif
 			if (logstream)
 				fclose(logstream);/* the child has this */
 

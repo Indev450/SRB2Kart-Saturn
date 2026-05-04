@@ -1868,9 +1868,7 @@ static void I_RegisterChildSignals(void)
 	signal(SIGABRT, signal_handler_child);
 	signal(SIGFPE,  signal_handler_child);
 }
-#endif
 
-#ifdef NEWSIGNALHANDLER
 FUNCNORETURN static ATTRNORETURN void newsignalhandler_Warn(const char *pr)
 {
 	char text[128];
@@ -1906,6 +1904,18 @@ static void I_Fork(void)
 			I_RegisterChildSignals();
 			break;
 		default:
+			// ignore those, those are handled by child process
+			// otherwise parent might exit before it
+			// and the below stuff wont run and your terminal will be left in an awkward state
+#ifdef SIGINT
+			signal(SIGINT,   SIG_IGN);
+#endif
+#ifdef SIGBREAK
+			signal(SIGBREAK, SIG_IGN);
+#endif
+#ifdef SIGTERM
+			signal(SIGTERM,  SIG_IGN);
+#endif
 #ifdef LOGMESSAGES
 			if (logstream)
 				fclose(logstream);/* the child has this */
@@ -1914,6 +1924,8 @@ static void I_Fork(void)
 #ifdef LOGMESSAGES
 			/* By the way, exit closes files. */
 			logstream = fopen(logfilename, "at");
+#else
+			logstream = 0;
 #endif
 			if (c == -1)
 			{
@@ -2324,7 +2336,6 @@ char *I_GetUserName(void)
 		}
 		strncpy(username, p, MAXPLAYERNAME);
 	}
-
 
 	if (!fastcmp(username, ""))
 		return username;
