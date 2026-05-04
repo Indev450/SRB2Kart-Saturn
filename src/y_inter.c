@@ -330,7 +330,7 @@ static void Y_PlayerStandingsDrawer(y_data_t *standings, INT32 x, INT32 hilicol)
 			V_DrawCenteredString(x+6, y, 0, va("%d", standings->pos[i]));
 
 			// localskins are amazing
-			if (standings->color[i] != SKINCOLOR_NONE)
+			if (*standings->color[i] != SKINCOLOR_NONE)
 			{
 				UINT8 *colormap = R_GetTranslationColormap(*standings->character[i], *standings->color[i], GTC_CACHE);
 				INT32 skinnum = (player->localskin ? (player->localskin - 1) : *standings->character[i]);
