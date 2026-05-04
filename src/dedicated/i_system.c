@@ -1023,8 +1023,13 @@ static void I_PrintSignal(INT32 signal_num, boolean core_dumped, char *signal_ms
 			sigmsg = ("SIGSEGV - SRB2Kart-Saturn has attempted to access a memory location that it shouldn't and needs to close.");
 			break;
 #ifdef SIGTERM
-		case SIGTERM: // Software termination signal from kill
-			sigmsg = ("SIGTERM - SRB2Kart-Saturn was terminated by a kill signal.");
+		case SIGTERM: // Software termination signal from terminate
+			sigmsg = ("SIGTERM - SRB2Kart-Saturn was terminated by a terminate signal.");
+			break;
+#endif
+#ifdef SIGKILL
+		case SIGKILL: // Software termination signal from kill
+			sigmsg = ("SIGKILL - SRB2Kart-Saturn was terminated by a kill signal.");
 			break;
 #endif
 #ifdef SIGBREAK

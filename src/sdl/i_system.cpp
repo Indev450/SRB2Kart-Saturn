@@ -1662,9 +1662,15 @@ static void I_PrintSignal(INT32 signal_num, boolean core_dumped, char *signal_ms
 			signame = "SIGSEGV";
 			break;
 #ifdef SIGTERM
-		case SIGTERM: // Software termination signal from kill
-			sigmsg = ("SRB2Kart-Saturn was terminated by a kill signal.");
+		case SIGTERM: // Software termination signal from terminate
+			sigmsg = ("SRB2Kart-Saturn was terminated by a terminate signal.");
 			signame = "SIGTERM";
+			break;
+#endif
+#ifdef SIGKILL
+		case SIGKILL: // Software termination signal from kill
+			sigmsg = ("SRB2Kart-Saturn was terminated by a kill signal.");
+			signame = "SIGKILL";
 			break;
 #endif
 #ifdef SIGBREAK
