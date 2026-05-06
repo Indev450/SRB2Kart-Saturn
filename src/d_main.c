@@ -851,14 +851,14 @@ void D_SRB2Loop(void)
 		precise_t elapsed;
 		precise_t enterprecise, finishprecise;
 
+		boolean ranwipe = false;
+
+		enterprecise = I_GetPreciseTime();
+
 		if (I_Interrupted())
 		{
 			I_Quit();
 		}
-
-		enterprecise = I_GetPreciseTime();
-
-		boolean ranwipe = false;
 
 		memset(&g_dc, 0, sizeof(g_dc));
 		Z_Frame_Reset();

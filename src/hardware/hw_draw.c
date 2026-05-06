@@ -32,20 +32,6 @@
 
 #include <fcntl.h>
 
-typedef struct
-{
-	UINT8 id_field_length ; // 1
-	UINT8 color_map_type  ; // 2
-	UINT8 image_type      ; // 3
-	UINT8 dummy[5]        ; // 4,  8
-	INT16 x_origin        ; // 9, 10
-	INT16 y_origin        ; //11, 12
-	INT16 width           ; //13, 14
-	INT16 height          ; //15, 16
-	UINT8 image_pix_size  ; //17
-	UINT8 image_descriptor; //18
-} ATTRPACK TGAHeader; // sizeof is 18
-
 static const UINT8 softwaretranstogl[11]    = {  0, 25, 51, 76,102,127,153,178,204,229,255};
 static const UINT8 softwaretranstogl_hi[11] = {  0, 51,102,153,204,255,255,255,255,255,255};
 static const UINT8 softwaretranstogl_lo[11] = {  0, 12, 24, 36, 48, 60, 71, 83, 95,111,127};
@@ -57,8 +43,7 @@ void HWR_DrawStretchyFixedPatch(patch_t *gpatch, fixed_t x, fixed_t y, fixed_t p
 {
 	FOutVector v[4];
 	FBITFIELD flags;
-	float cx = FIXED_TO_FLOAT(x);
-	float cy = FIXED_TO_FLOAT(y);
+	float cx, cy;
 	UINT8 alphalevel = ((option & V_ALPHAMASK) >> V_ALPHASHIFT);
 	UINT8 blendmode = ((bflags & V_BLENDMASK) >> V_BLENDSHIFT);
 	GLPatch_t *hwrPatch;
@@ -71,6 +56,9 @@ void HWR_DrawStretchyFixedPatch(patch_t *gpatch, fixed_t x, fixed_t y, fixed_t p
 
 	if (alphalevel >= 10 && alphalevel < 13)
 		return;
+
+	cx = FIXED_TO_FLOAT(x);
+	cy = FIXED_TO_FLOAT(y);
 
 	const float fvw = (float)vid.width;
 	const float fvh = (float)vid.height;
@@ -244,8 +232,7 @@ void HWR_DrawCroppedPatch(patch_t *gpatch, fixed_t x, fixed_t y, fixed_t pscale,
 {
 	FOutVector v[4];
 	FBITFIELD flags;
-	float cx = FIXED_TO_FLOAT(x);
-	float cy = FIXED_TO_FLOAT(y);
+	float cx, cy;
 	UINT8 alphalevel = ((option & V_ALPHAMASK) >> V_ALPHASHIFT);
 	GLPatch_t *hwrPatch;
 
@@ -257,6 +244,9 @@ void HWR_DrawCroppedPatch(patch_t *gpatch, fixed_t x, fixed_t y, fixed_t pscale,
 
 	if (alphalevel >= 10 && alphalevel < 13)
 		return;
+
+	cx = FIXED_TO_FLOAT(x);
+	cy = FIXED_TO_FLOAT(y);
 
 	const float fvw = (float)vid.width;
 	const float fvh = (float)vid.height;
@@ -968,6 +958,20 @@ void HWR_DrawFill(INT32 x, INT32 y, INT32 w, INT32 h, INT32 color)
 #endif
 
 #ifndef USE_PNG
+typedef struct
+{
+	UINT8 id_field_length ; // 1
+	UINT8 color_map_type  ; // 2
+	UINT8 image_type      ; // 3
+	UINT8 dummy[5]        ; // 4,  8
+	INT16 x_origin        ; // 9, 10
+	INT16 y_origin        ; //11, 12
+	INT16 width           ; //13, 14
+	INT16 height          ; //15, 16
+	UINT8 image_pix_size  ; //17
+	UINT8 image_descriptor; //18
+} ATTRPACK TGAHeader; // sizeof is 18
+
 // --------------------------------------------------------------------------
 // save screenshots with TGA format
 // --------------------------------------------------------------------------

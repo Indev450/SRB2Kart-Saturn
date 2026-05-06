@@ -522,7 +522,7 @@ static FUINT HWR_CalcWallLight(FUINT lightnum, seg_t *seg, extracolormap_t *colo
 {
 	INT16 finallight = lightnum;
 
-	if (cv_glfakecontrast.value == 0 || (HWR_ShouldUsePaletteRendering() && colormap))
+	if (cv_glfakecontrast.value == 0 || (colormap && HWR_ShouldUsePaletteRendering()))
 		return (FUINT)finallight;
 
 	if (seg != NULL && P_ApplyLightOffsetFine(lightnum, seg->frontsector))
@@ -3637,7 +3637,7 @@ static void HWR_SplitSprite(gl_vissprite_t *spr, const boolean papersprite)
 	{
 		const fixed_t h = P_GetLightZAt(&sector->lightlist[i], sprmo->x, sprmo->y);
 
-		if (!(h <= temp))
+		if (h > temp)
 			continue;
 
 		if (!lightset)
@@ -3772,7 +3772,7 @@ static void HWR_DrawSprite(gl_vissprite_t *spr)
 
 	mobj_t *sprmo = spr->mobj;
 
-	if (UNLIKELY(!sprmo->subsector))
+	if (!sprmo->subsector)
 		return;
 
 	const boolean papersprite = (sprmo->frame & FF_PAPERSPRITE);
@@ -3936,7 +3936,7 @@ static void HWR_DrawPrecipitationSprite(gl_vissprite_t *spr)
 
 	const precipmobj_t *sprmo = spr->precip;
 
-	if (UNLIKELY(!sprmo->subsector))
+	if (!sprmo->subsector)
 		return;
 
 	// cache sprite graphics
@@ -4136,22 +4136,23 @@ static std::vector<gl_drawnode_t> drawnodes;
 
 static void *HWR_CreateDrawNode(gl_drawnode_type_t type)
 {
-	// if we didnt alloc anything yet, reserve atleast 64 nodes
-	// dont declare with it as we want our size to be 0!
+	gl_drawnode_t *drawnode;
 	drawnodes.reserve(DRAWNODES_INIT_SIZE);
 
 	drawnodes.emplace_back();
-	drawnodes.back().type = type;
+
+	drawnode = &drawnodes.back();
+	drawnode->type = type;
 
 	// not sure if returning different pointers to a union is necessary
 	switch (type)
 	{
 		case DRAWNODE_PLANE:
-			return &drawnodes.back().u.plane;
+			return &drawnode->u.plane;
 		case DRAWNODE_POLYOBJECT_PLANE:
-			return &drawnodes.back().u.polyplane;
+			return &drawnode->u.polyplane;
 		case DRAWNODE_WALL:
-			return &drawnodes.back().u.wall;
+			return &drawnode->u.wall;
 	}
 
 	return NULL;
@@ -4653,11 +4654,9 @@ static void HWR_ProjectSprite(mobj_t *thing)
 	)
 	{
 		ang = R_PointToAngle(interp.x, interp.y);
-
 #ifdef ROTSPRITE
 		camang = ang;
 #endif
-
 		ang -= interp.angle;
 
 		if (mirrored)
@@ -4788,11 +4787,11 @@ static void HWR_ProjectSprite(mobj_t *thing)
 	// if the sprite is out of our view, dont need to draw it X)
 	if (!gld_SphereInFrustum(
 							(FixedToFloat(interp.x)) + cos_inv_yaw * (x1 + x2) / 2.0f,
-							FixedToFloat(interp.z) + (y1 + y2) / 2.0f,
-							FixedToFloat(interp.y) - sin_inv_yaw * (x1 + x2) / 2.0f,
-							//1.5 == sqrt(2) + small delta for MF_FOREGROUND
-							std::max<float>(FixedToFloat(spr_width)  * spritexscale,
-											FixedToFloat(spr_height) * spriteyscale) / 2.0f * 1.5f))
+							 FixedToFloat(interp.z) + (y1 + y2) / 2.0f,
+							 FixedToFloat(interp.y) - sin_inv_yaw * (x1 + x2) / 2.0f,
+							 //1.5 == sqrt(2) + small delta for MF_FOREGROUND
+							 std::max<float>(FixedToFloat(spr_width)  * spritexscale,
+											 FixedToFloat(spr_height) * spriteyscale) / 2.0f * 1.5f))
 	{
 		return;
 	}
@@ -5008,11 +5007,11 @@ static void HWR_ProjectPrecipitationSprite(precipmobj_t *thing)
 
 	if (!gld_SphereInFrustum(
 							(FixedToFloat(interp.x)) + cos_inv_yaw * (x1 + x2) / 2.0f,
-							FixedToFloat(interp.z) + (y1 + y2) / 2.0f,
-							FixedToFloat(interp.y) - sin_inv_yaw * (x1 + x2) / 2.0f,
-							//1.5 == sqrt(2) + small delta for MF_FOREGROUND
-							std::max<float>(FixedToFloat(spr_width)  * thing_scale,
-											FixedToFloat(spr_height) * thing_scale) / 2.0f * 1.5f))
+							 FixedToFloat(interp.z) + (y1 + y2) / 2.0f,
+							 FixedToFloat(interp.y) - sin_inv_yaw * (x1 + x2) / 2.0f,
+							 //1.5 == sqrt(2) + small delta for MF_FOREGROUND
+							 std::max<float>(FixedToFloat(spr_width)  * thing_scale,
+											 FixedToFloat(spr_height) * thing_scale) / 2.0f * 1.5f))
 	{
 		return;
 	}
