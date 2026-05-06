@@ -596,8 +596,10 @@ fixed_t P_MobjFloorZ(mobj_t *mobj, sector_t *sector, sector_t *boundsec, fixed_t
 				fixed_t highline;
 				ld = boundsec->lines[i];
 
-				if (bbox[BOXRIGHT] <= ld->bbox[BOXLEFT] || bbox[BOXLEFT] >= ld->bbox[BOXRIGHT]
-				|| bbox[BOXTOP] <= ld->bbox[BOXBOTTOM] || bbox[BOXBOTTOM] >= ld->bbox[BOXTOP])
+				if (bbox[BOXRIGHT]  <= ld->bbox[BOXLEFT]   ||
+					bbox[BOXLEFT]   >= ld->bbox[BOXRIGHT]  ||
+					bbox[BOXTOP]    <= ld->bbox[BOXBOTTOM] ||
+					bbox[BOXBOTTOM] >= ld->bbox[BOXTOP])
 					continue;
 
 				if (P_BoxOnLineSide(bbox, ld) != -1)
@@ -683,8 +685,10 @@ fixed_t P_MobjCeilingZ(mobj_t *mobj, sector_t *sector, sector_t *boundsec, fixed
 				fixed_t highline;
 				ld = boundsec->lines[i];
 
-				if (bbox[BOXRIGHT] <= ld->bbox[BOXLEFT] || bbox[BOXLEFT] >= ld->bbox[BOXRIGHT]
-				|| bbox[BOXTOP] <= ld->bbox[BOXBOTTOM] || bbox[BOXBOTTOM] >= ld->bbox[BOXTOP])
+				if (bbox[BOXRIGHT]  <= ld->bbox[BOXLEFT]   ||
+					bbox[BOXLEFT]   >= ld->bbox[BOXRIGHT]  ||
+					bbox[BOXTOP]    <= ld->bbox[BOXBOTTOM] ||
+					bbox[BOXBOTTOM] >= ld->bbox[BOXTOP])
 					continue;
 
 				if (P_BoxOnLineSide(bbox, ld) != -1)
@@ -771,8 +775,10 @@ fixed_t P_CameraFloorZ(camera_t *mobj, sector_t *sector, sector_t *boundsec, fix
 				fixed_t highline;
 				ld = boundsec->lines[i];
 
-				if (bbox[BOXRIGHT] <= ld->bbox[BOXLEFT] || bbox[BOXLEFT] >= ld->bbox[BOXRIGHT]
-				|| bbox[BOXTOP] <= ld->bbox[BOXBOTTOM] || bbox[BOXBOTTOM] >= ld->bbox[BOXTOP])
+				if (bbox[BOXRIGHT]  <= ld->bbox[BOXLEFT]   ||
+					bbox[BOXLEFT]   >= ld->bbox[BOXRIGHT]  ||
+					bbox[BOXTOP]    <= ld->bbox[BOXBOTTOM] ||
+					bbox[BOXBOTTOM] >= ld->bbox[BOXTOP])
 					continue;
 
 				if (P_BoxOnLineSide(bbox, ld) != -1)
@@ -858,8 +864,10 @@ fixed_t P_CameraCeilingZ(camera_t *mobj, sector_t *sector, sector_t *boundsec, f
 				fixed_t highline;
 				ld = boundsec->lines[i];
 
-				if (bbox[BOXRIGHT] <= ld->bbox[BOXLEFT] || bbox[BOXLEFT] >= ld->bbox[BOXRIGHT]
-				|| bbox[BOXTOP] <= ld->bbox[BOXBOTTOM] || bbox[BOXBOTTOM] >= ld->bbox[BOXTOP])
+				if (bbox[BOXRIGHT]  <= ld->bbox[BOXLEFT]   ||
+					bbox[BOXLEFT]   >= ld->bbox[BOXRIGHT]  ||
+					bbox[BOXTOP]    <= ld->bbox[BOXBOTTOM] ||
+					bbox[BOXBOTTOM] >= ld->bbox[BOXTOP])
 					continue;
 
 				if (P_BoxOnLineSide(bbox, ld) != -1)

@@ -321,7 +321,7 @@ static boolean PIT_CheckThing(mobj_t *thing)
 
 	// Ignore spectators
 	if ((tmthing->player && tmthing->player->spectator)
-	|| (thing->player && thing->player->spectator))
+	 || (thing->player && thing->player->spectator))
 		return true;
 
 #ifdef SEENAMES
@@ -1509,14 +1509,14 @@ static boolean PIT_CheckThing(mobj_t *thing)
 // Adjusts tmfloorz and tmceilingz as lines are contacted - FOR CAMERA ONLY
 static boolean PIT_CheckCameraLine(line_t *ld)
 {
-	if (ld->polyobj && !(ld->polyobj->flags & POF_SOLID))
+	if (tmbbox[BOXRIGHT]  <= ld->bbox[BOXLEFT]   ||
+		tmbbox[BOXLEFT]   >= ld->bbox[BOXRIGHT]  ||
+		tmbbox[BOXTOP]    <= ld->bbox[BOXBOTTOM] ||
+		tmbbox[BOXBOTTOM] >= ld->bbox[BOXTOP])
 		return true;
 
-	if (tmbbox[BOXRIGHT] <= ld->bbox[BOXLEFT] || tmbbox[BOXLEFT] >= ld->bbox[BOXRIGHT]
-		|| tmbbox[BOXTOP] <= ld->bbox[BOXBOTTOM] || tmbbox[BOXBOTTOM] >= ld->bbox[BOXTOP])
-	{
+	if (ld->polyobj && !(ld->polyobj->flags & POF_SOLID))
 		return true;
-	}
 
 	if (P_BoxOnLineSide(tmbbox, ld) != -1)
 		return true;
@@ -1571,11 +1571,13 @@ static boolean PIT_CheckCameraLine(line_t *ld)
 //
 static boolean PIT_CheckLine(line_t *ld)
 {
-	if (ld->polyobj && !(ld->polyobj->flags & POF_SOLID))
+	if (tmbbox[BOXRIGHT]  <= ld->bbox[BOXLEFT]   ||
+		tmbbox[BOXLEFT]   >= ld->bbox[BOXRIGHT]  ||
+		tmbbox[BOXTOP]    <= ld->bbox[BOXBOTTOM] ||
+		tmbbox[BOXBOTTOM] >= ld->bbox[BOXTOP])
 		return true;
 
-	if (tmbbox[BOXRIGHT] <= ld->bbox[BOXLEFT] || tmbbox[BOXLEFT] >= ld->bbox[BOXRIGHT]
-	|| tmbbox[BOXTOP] <= ld->bbox[BOXBOTTOM] || tmbbox[BOXBOTTOM] >= ld->bbox[BOXTOP])
+	if (ld->polyobj && !(ld->polyobj->flags & POF_SOLID))
 		return true;
 
 	if (P_BoxOnLineSide(tmbbox, ld) != -1)
@@ -1584,10 +1586,12 @@ static boolean PIT_CheckLine(line_t *ld)
 	if (tmthing->flags & MF_PAPERCOLLISION) // Caution! Turning whilst up against a wall will get you stuck. You probably shouldn't give the player this flag.
 	{
 		fixed_t cosradius, sinradius;
+
 		cosradius = FixedMul(tmthing->radius, FINECOSINE(tmthing->angle>>ANGLETOFINESHIFT));
 		sinradius = FixedMul(tmthing->radius, FINESINE(tmthing->angle>>ANGLETOFINESHIFT));
+
 		if (P_PointOnLineSide(tmx - cosradius, tmy - sinradius, ld)
-		== P_PointOnLineSide(tmx + cosradius, tmy + sinradius, ld))
+		 == P_PointOnLineSide(tmx + cosradius, tmy + sinradius, ld))
 			return true; // the line doesn't cross between collider's start or end
 	}
 
@@ -4001,10 +4005,10 @@ static inline boolean PIT_GetSectors(line_t *ld)
 		tmbbox[BOXBOTTOM] >= ld->bbox[BOXTOP])
 		return true;
 
-	if (P_BoxOnLineSide(tmbbox, ld) != -1)
+	if (ld->polyobj) // line belongs to a polyobject, don't add it
 		return true;
 
-	if (ld->polyobj) // line belongs to a polyobject, don't add it
+	if (P_BoxOnLineSide(tmbbox, ld) != -1)
 		return true;
 
 	// This line crosses through the object.

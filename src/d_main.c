@@ -722,12 +722,14 @@ void D_SRB2Loop(void)
 		precise_t elapsed;
 		precise_t enterprecise, finishprecise;
 
+		boolean ranwipe = false;
+
+		enterprecise = I_GetPreciseTime();
+
 		if (I_Interrupted())
 		{
 			I_Quit();
 		}
-
-		enterprecise = I_GetPreciseTime();
 
 		memset(&g_dc, 0, sizeof(g_dc));
 		Z_Frame_Reset();
@@ -735,8 +737,6 @@ void D_SRB2Loop(void)
 		// Casting the return value of a function is bad practice (apparently)
 		const UINT32 framecap = R_GetFramerateCap();
 		capbudget = (framecap == 0) ? 0 : (precise_t)((double)precision / (double)framecap + 0.5); // + 0.5 instead of round
-
-		boolean ranwipe = false;
 
 		I_UpdateTime(cv_timescale.value);
 
