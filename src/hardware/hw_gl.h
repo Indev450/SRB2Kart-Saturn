@@ -32,7 +32,11 @@ void GL_SetSpecialState(hwdspecialstate_t IdState, INT32 Value);
 void GL_SetTransform(FTransform *stransform);
 void GL_SetBlend(FBITFIELD PolyFlags);
 void GL_SetPalette(RGBA_t *palette);
+
 void GL_ClearBuffer(FBOOLEAN ColorMask, FBOOLEAN DepthMask, FBOOLEAN StencilMask, FRGBAFloat * ClearColor);
+
+void GL_EnableStencilTest(void);
+void GL_DisableStencilTest(void);
 
 void GL_DrawPolygon(FSurfaceInfo *pSurf, FOutVector *pOutVerts, FUINT iNumPts, FBITFIELD PolyFlags);
 void GL_DrawIndexedTriangles(FSurfaceInfo *pSurf, FOutVector *pOutVerts, FUINT iNumPts, FBITFIELD PolyFlags, unsigned int *IndexArray);
