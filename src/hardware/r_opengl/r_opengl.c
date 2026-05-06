@@ -1284,7 +1284,7 @@ void GL_SetStates(void)
 
 	pglColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 
-	pglEnable(GL_STENCIL_TEST);
+	pglDisable(GL_STENCIL_TEST);
 	pglEnable(GL_DEPTH_TEST);    // check the depth buffer
 	pglDepthMask(GL_TRUE);       // enable writing to depth buffer
 	pglClearDepth(1.0f);
@@ -1312,6 +1312,16 @@ void GL_SetStates(void)
 	pglEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
 	pglDebugMessageCallback(&DebugMessage, NULL);
 #endif
+}
+
+void GL_EnableStencilTest(void)
+{
+	pglEnable(GL_STENCIL_TEST);
+}
+
+void GL_DisableStencilTest(void)
+{
+	pglDisable(GL_STENCIL_TEST);
 }
 
 // -----------------+
