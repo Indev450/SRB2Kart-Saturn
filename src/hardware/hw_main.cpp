@@ -5691,7 +5691,11 @@ extern "C" {
 // ==========================================================================
 static void HWR_RenderFrame(boolean skybox, boolean drawsky)
 {
-	GL_EnableStencilTest();
+	// NetUpdate below may cause this to be false midrender if toggled
+	const boolean useportals = HWR_UsePortals();
+
+	if (useportals)
+		GL_EnableStencilTest();
 
 	// Clear view, set viewport (glViewport), set perspective...
 	HWR_ClearView();
@@ -5718,12 +5722,13 @@ static void HWR_RenderFrame(boolean skybox, boolean drawsky)
 	NetUpdate();
 
 	portalclipline = NULL;
-	if (UNLIKELY(HWR_UsePortals()))
+	if (useportals)
 		HWR_RenderViewpoint<RenderViewpointType::kPortal>(NULL, 0, !skybox);
 	else
 		HWR_RenderViewpoint<RenderViewpointType::kNormal>(NULL, 0, !skybox);
 
-	GL_DisableStencilTest();
+	if (useportals)
+		GL_DisableStencilTest();
 
 	// Check for new console commands.
 	NetUpdate();
