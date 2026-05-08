@@ -1513,10 +1513,11 @@ static void P_CheckBouncySectors(player_t *player)
 					continue; // this sector type is required for FOFs to be bouncy
 
 				topheight = P_GetFOFTopZ(player->mo, node->m_sector, rover, player->mo->x, player->mo->y, NULL);
-				bottomheight = P_GetFOFBottomZ(player->mo, node->m_sector, rover, player->mo->x, player->mo->y, NULL);
 
 				if (player->mo->z > topheight)
 					continue;
+
+				bottomheight = P_GetFOFBottomZ(player->mo, node->m_sector, rover, player->mo->x, player->mo->y, NULL);
 
 				if (player->mo->z + player->mo->height < bottomheight)
 					continue;
