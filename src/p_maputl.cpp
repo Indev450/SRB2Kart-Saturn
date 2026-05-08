@@ -823,16 +823,20 @@ void P_SetThingPosition(mobj_t *thing)
 	// sector's floor is the same height.
 	if (thing->player && oldsec != NULL && thing->subsector && oldsec != thing->subsector->sector)
 	{
-		tfloorz = P_GetFloorZ(thing, ss->sector, thing->x, thing->y, NULL);
-		tceilz = P_GetCeilingZ(thing, ss->sector, thing->x, thing->y, NULL);
-
 		if (thing->eflags & MFE_VERTICALFLIP)
 		{
+			tceilz = P_GetCeilingZ(thing, ss->sector, thing->x, thing->y, NULL);
+
 			if (thing->z + thing->height >= tceilz)
 				thing->eflags |= MFE_JUSTSTEPPEDDOWN;
 		}
-		else if (thing->z <= tfloorz)
-			thing->eflags |= MFE_JUSTSTEPPEDDOWN;
+		else
+		{
+			tfloorz = P_GetFloorZ(thing, ss->sector, thing->x, thing->y, NULL);
+
+			if (thing->z <= tfloorz)
+				thing->eflags |= MFE_JUSTSTEPPEDDOWN;
+		}
 	}
 }
 
