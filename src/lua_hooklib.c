@@ -293,17 +293,17 @@ typedef struct Hook_State Hook_State;
 typedef void (*Hook_Callback)(Hook_State *);
 
 struct Hook_State {
-	INT32        status;/* return status to calling function */
-	void       * userdata;
-	int          hook_type;
-	mobjtype_t   mobj_type;/* <NUMMOBJTYPES if mobj hook */
-	const char * string;/* used to fetch table, ran first if set */
-	int          top;/* index of last argument passed to hook */
-	int          id;/* id to fetch ref */
-	boolean      important;/* is this hook from local addon */
-	int          values;/* num arguments passed to hook */
-	int          results;/* num values returned by hook */
-	Hook_Callback results_handler;/* callback when hook successfully returns */
+	INT32         status;          /* return status to calling function */
+	void        * userdata;
+	int           hook_type;
+	mobjtype_t    mobj_type;       /* < NUMMOBJTYPES if mobj hook */
+	const char  * string;          /* used to fetch table, ran first if set */
+	int           top;             /* index of last argument passed to hook */
+	int           id;              /* id to fetch ref */
+	bool          important;       /* is this hook from local addon */
+	int           values;          /* num arguments passed to hook */
+	int           results;         /* num values returned by hook */
+	Hook_Callback results_handler; /* callback when hook successfully returns */
 };
 
 enum {
