@@ -423,40 +423,42 @@ void P_LineOpening(line_t *linedef, mobj_t *mobj)
 	// Set open and high/low values here
 	fixed_t frontheight, backheight;
 
-	frontheight = P_GetCeilingZ(mobj, front, tmx, tmy, linedef);
-	backheight = P_GetCeilingZ(mobj, back, tmx, tmy, linedef);
-
-	if (frontheight < backheight)
-	{
-		opentop = frontheight;
-		highceiling = backheight;
-		opentopslope = front->c_slope;
-	}
-	else
-	{
-		opentop = backheight;
-		highceiling = frontheight;
-		opentopslope = back->c_slope;
-	}
-
-	frontheight = P_GetFloorZ(mobj, front, tmx, tmy, linedef);
-	backheight = P_GetFloorZ(mobj, back, tmx, tmy, linedef);
-
-	if (frontheight > backheight)
-	{
-		openbottom = frontheight;
-		lowfloor = backheight;
-		openbottomslope = front->f_slope;
-	}
-	else
-	{
-		openbottom = backheight;
-		lowfloor = frontheight;
-		openbottomslope = back->f_slope;
-	}
+	I_Assert(mobj != NULL);
 
 	if (mobj)
 	{
+		frontheight = P_GetCeilingZ(mobj, front, tmx, tmy, linedef);
+		backheight  = P_GetCeilingZ(mobj, back, tmx, tmy, linedef);
+
+		if (frontheight < backheight)
+		{
+			opentop = frontheight;
+			highceiling = backheight;
+			opentopslope = front->c_slope;
+		}
+		else
+		{
+			opentop = backheight;
+			highceiling = frontheight;
+			opentopslope = back->c_slope;
+		}
+
+		frontheight = P_GetFloorZ(mobj, front, tmx, tmy, linedef);
+		backheight  = P_GetFloorZ(mobj, back, tmx, tmy, linedef);
+
+		if (frontheight > backheight)
+		{
+			openbottom = frontheight;
+			lowfloor = backheight;
+			openbottomslope = front->f_slope;
+		}
+		else
+		{
+			openbottom = backheight;
+			lowfloor = frontheight;
+			openbottomslope = back->f_slope;
+		}
+
 		fixed_t thingtop = mobj->z + mobj->height;
 
 		// Check for collision with front side's midtexture if Effect 4 is set
@@ -648,6 +650,43 @@ void P_LineOpening(line_t *linedef, mobj_t *mobj)
 
 			if (lowestfloor > lowfloor)
 				lowfloor = lowestfloor;
+		}
+	}
+	else
+	{
+		// this is what P_LineOpening did before the addition of slopes
+		// so i´ll just use it as the fallback case
+		// not that we will ever likely hit this
+		frontheight = front->ceilingheight;
+		backheight  = back->ceilingheight;
+
+		if (frontheight < backheight)
+		{
+			opentop = frontheight;
+			highceiling = backheight;
+			opentopslope = front->c_slope;
+		}
+		else
+		{
+			opentop = backheight;
+			highceiling = frontheight;
+			opentopslope = back->c_slope;
+		}
+
+		frontheight = front->floorheight;
+		backheight  = back->floorheight;
+
+		if (frontheight > backheight)
+		{
+			openbottom = frontheight;
+			lowfloor = backheight;
+			openbottomslope = front->f_slope;
+		}
+		else
+		{
+			openbottom = backheight;
+			lowfloor = frontheight;
+			openbottomslope = back->f_slope;
 		}
 	}
 
