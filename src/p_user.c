@@ -1393,7 +1393,8 @@ static void P_CheckBustableBlocks(player_t *player)
 
 			for (rover = node->m_sector->ffloors; rover; rover = rover->next)
 			{
-				if (!(rover->flags & FF_EXISTS)) continue;
+				if (!(rover->flags & FF_EXISTS))
+					continue;
 
 				if ((rover->flags & FF_BUSTUP)/* && !rover->master->frontsector->crumblestate*/)
 				{

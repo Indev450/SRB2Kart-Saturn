@@ -421,10 +421,6 @@ typedef struct mobj_s
 //
 // For precipitation
 //
-// Sometimes this is casted to a mobj_t,
-// so please keep the start of the
-// structure the same.
-//
 typedef struct precipmobj_s
 {
 	// List: thinker links.

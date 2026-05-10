@@ -5816,7 +5816,6 @@ static void BaseNumLaps_OnChange(void)
 	}
 }
 
-
 static void KartFrantic_OnChange(void)
 {
 	if ((boolean)cv_kartfrantic.value != franticitems && gamestate == GS_LEVEL && leveltime > starttime)
