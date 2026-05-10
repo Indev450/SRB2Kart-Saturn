@@ -1658,17 +1658,22 @@ static int mapheaderinfo_get(lua_State *L)
 	{
 		// Read custom vars now
 		// (note: don't include the "LUA." in your lua scripts!)
-		UINT8 j = 0;
-		for (;j < header->numCustomOptions && !fastcmp(lua_tostring(L, 2), header->customopts[j].option); ++j);
+		if (!header->numCustomOptions) {
+			lua_pushnil(L);
+			break;
+		}
 
-		if(j < header->numCustomOptions)
+		UINT8 j = 0;
+		const char *cusoptstr = lua_tostring(L, 2);
+		for (;j < header->numCustomOptions && !fastcmp(cusoptstr, header->customopts[j].option); ++j);
+
+		if (j < header->numCustomOptions)
 			lua_pushstring(L, header->customopts[j].value);
 		else
 			lua_pushnil(L);
 	}
 	}
 	return 1;
-
 }
 
 int LUA_MapLib(lua_State *L)
