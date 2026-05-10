@@ -420,14 +420,18 @@ boolean P_InsideANonSolidFFloor(mobj_t *mobj, ffloor_t *rover)
 	if (!(rover->flags & FF_EXISTS))
 		return false;
 
-	if ((((rover->flags & FF_BLOCKPLAYER) && mobj->player)
-		|| ((rover->flags & FF_BLOCKOTHERS) && !mobj->player)))
+	if ((((rover->flags & FF_BLOCKPLAYER) &&  mobj->player) ||
+		 ((rover->flags & FF_BLOCKOTHERS) && !mobj->player)))
 		return false;
 
-	topheight    = P_GetFFloorTopZAt   (rover, mobj->x, mobj->y);
+	topheight = P_GetFFloorTopZAt(rover, mobj->x, mobj->y);
+
+	if (mobj->z > topheight)
+		return false;
+
 	bottomheight = P_GetFFloorBottomZAt(rover, mobj->x, mobj->y);
 
-	if (mobj->z > topheight || (mobj->z + mobj->height < bottomheight))
+	if (mobj->z + mobj->height < bottomheight)
 		return false;
 
 	return true;
@@ -1450,7 +1454,7 @@ void P_XYMovement(mobj_t *mo)
 		// blocked move
 		moved = false;
 
-		if (player && player->bot)
+		if (UNLIKELY(player && player->bot))
 		{
 			B_MoveBlocked(player);
 		}
@@ -1486,24 +1490,24 @@ void P_XYMovement(mobj_t *mo)
 					fx->eflags &= ~MFE_VERTICALFLIP;
 				fx->scale = mo->scale;
 				fx->lightlevel = 255;
-			}
 
-			if (mo->type == MT_ORBINAUT) // Orbinaut speed decreasing
-			{
-				if (mo->health > 1)
+				if (mo->type == MT_ORBINAUT) // Orbinaut speed decreasing
 				{
-					S_StartSound(mo, mo->info->attacksound);
-					mo->health--;
-					mo->threshold = 0;
-				}
-				else if (mo->health == 1)
-				{
-					// This Item Damage
-					S_StartSound(mo, mo->info->deathsound);
-					P_KillMobj(mo, NULL, NULL);
+					if (mo->health > 1)
+					{
+						S_StartSound(mo, mo->info->attacksound);
+						mo->health--;
+						mo->threshold = 0;
+					}
+					else if (mo->health == 1)
+					{
+						// This Item Damage
+						S_StartSound(mo, mo->info->deathsound);
+						P_KillMobj(mo, NULL, NULL);
 
-					P_SetObjectMomZ(mo, 8*FRACUNIT, false);
-					P_InstaThrust(mo, R_PointToAngle2(mo->x, mo->y, mo->x, mo->y)+ANGLE_90, 16*FRACUNIT);
+						P_SetObjectMomZ(mo, 8*FRACUNIT, false);
+						P_InstaThrust(mo, R_PointToAngle2(mo->x, mo->y, mo->x, mo->y)+ANGLE_90, 16*FRACUNIT);
+					}
 				}
 			}
 			//}
@@ -1607,43 +1611,46 @@ void P_XYMovement(mobj_t *mo)
 	if (P_MobjWasRemoved(mo)) // MF_SPECIAL touched a player! O_o;;
 		return;
 
-	if (moved && oldslope) // Check to see if we ran off
+	if (moved)
 	{
-		if (oldslope != mo->standingslope) // First, compare different slopes
+		if (oldslope) // Check to see if we ran off
 		{
-			angle_t oldangle, newangle;
-			angle_t moveangle = R_PointToAngle2(0, 0, mo->momx, mo->momy);
-
-			oldangle = FixedMul((signed)oldslope->zangle, FINECOSINE((moveangle - oldslope->xydirection) >> ANGLETOFINESHIFT));
-
-			if (mo->standingslope)
-				newangle = FixedMul((signed)mo->standingslope->zangle, FINECOSINE((moveangle - mo->standingslope->xydirection) >> ANGLETOFINESHIFT));
-			else
-				newangle = 0;
-
-			// Now compare the Zs of the different quantizations
-			if (oldangle-newangle > ANG30 && oldangle-newangle < ANGLE_180) // Allow for a bit of sticking - this value can be adjusted later
+			if (oldslope != mo->standingslope) // First, compare different slopes
 			{
-				mo->standingslope = oldslope;
+				angle_t oldangle, newangle;
+				angle_t moveangle = R_PointToAngle2(0, 0, mo->momx, mo->momy);
+
+				oldangle = FixedMul((signed)oldslope->zangle, FINECOSINE((moveangle - oldslope->xydirection) >> ANGLETOFINESHIFT));
+
+				if (mo->standingslope)
+					newangle = FixedMul((signed)mo->standingslope->zangle, FINECOSINE((moveangle - mo->standingslope->xydirection) >> ANGLETOFINESHIFT));
+				else
+					newangle = 0;
+
+				// Now compare the Zs of the different quantizations
+				if (oldangle-newangle > ANG30 && oldangle-newangle < ANGLE_180) // Allow for a bit of sticking - this value can be adjusted later
+				{
+					mo->standingslope = oldslope;
+					P_SlopeLaunch(mo);
+				}
+			}
+			else if (predictedz-mo->z > abs(slopemom.z/2) // Sryder 2018-11-26: Don't launch here if it's a slope without physics, we stick to those like glue anyway
+				&& !(mo->standingslope->flags & SL_NOPHYSICS)) // Now check if we were supposed to stick to this slope
+			{
 				P_SlopeLaunch(mo);
 			}
 		}
-		else if (predictedz-mo->z > abs(slopemom.z/2) // Sryder 2018-11-26: Don't launch here if it's a slope without physics, we stick to those like glue anyway
-			&& !(mo->standingslope->flags & SL_NOPHYSICS)) // Now check if we were supposed to stick to this slope
+		else if (mo->standingslope && predictedz)
 		{
-			P_SlopeLaunch(mo);
-		}
-	}
-	else if (moved && mo->standingslope && predictedz)
-	{
-		angle_t moveangle = R_PointToAngle2(0, 0, mo->momx, mo->momy);
-		angle_t newangle = FixedMul((signed)mo->standingslope->zangle, FINECOSINE((moveangle - mo->standingslope->xydirection) >> ANGLETOFINESHIFT));
+			angle_t moveangle = R_PointToAngle2(0, 0, mo->momx, mo->momy);
+			angle_t newangle = FixedMul((signed)mo->standingslope->zangle, FINECOSINE((moveangle - mo->standingslope->xydirection) >> ANGLETOFINESHIFT));
 
-		if (ANGLE_MAX-newangle > ANG30 && newangle > ANGLE_180)
-		{
-			mo->momz = P_MobjFlip(mo)*FRACUNIT/2;
-			mo->z = predictedz + P_MobjFlip(mo);
-			mo->standingslope = NULL;
+			if (ANGLE_MAX-newangle > ANG30 && newangle > ANGLE_180)
+			{
+				mo->momz = P_MobjFlip(mo)*FRACUNIT/2;
+				mo->z = predictedz + P_MobjFlip(mo);
+				mo->standingslope = NULL;
+			}
 		}
 	}
 
@@ -1852,7 +1859,7 @@ static void P_AdjustMobjFloorZ_PolyObjs(mobj_t *mo, subsector_t *subsec)
 
 	while (po)
 	{
-		if (!P_MobjInsidePolyobj(po, mo) || !(po->flags & POF_SOLID))
+		if (!(po->flags & POF_SOLID) || !P_MobjInsidePolyobj(po, mo))
 		{
 			po = (polyobj_t *)(po->link.next);
 			continue;
@@ -2764,6 +2771,7 @@ static boolean P_SceneryZMovement(mobj_t *mo)
 				P_RemoveMobj(mo);
 				return false;
 			}
+
 			if ((!(mo->eflags & MFE_VERTICALFLIP) && mo->z <= mo->floorz)
 			|| (mo->eflags & MFE_VERTICALFLIP && mo->z+mo->height >= mo->ceilingz)) // Hit the floor, so split!
 			{
@@ -2801,6 +2809,7 @@ static boolean P_SceneryZMovement(mobj_t *mo)
 				P_RemoveMobj(mo);
 				return false;
 			}
+
 			// Soniccd seed turns into a flower!
 			if ((!(mo->eflags & MFE_VERTICALFLIP) && mo->z <= mo->floorz)
 			|| (mo->eflags & MFE_VERTICALFLIP && mo->z+mo->height >= mo->ceilingz))
@@ -2972,21 +2981,28 @@ void P_MobjCheckWater(mobj_t *mobj)
 		 || ((rover->flags & FF_BLOCKOTHERS) && !mobj->player)))
 			continue;
 
-		topheight    = P_GetFFloorTopZAt(rover, mobj->x, mobj->y);
-		bottomheight = P_GetFFloorBottomZAt(rover, mobj->x, mobj->y);
+		fixed_t topcheck, bottomcheck;
 
 		if (mobj->eflags & MFE_VERTICALFLIP)
 		{
-			if (topheight < (thingtop - FixedMul(mobj->info->height/2, mobj->scale))
-			 || bottomheight > thingtop)
-				continue;
+			topcheck = (thingtop - FixedMul(mobj->info->height/2, mobj->scale));
+			bottomcheck = thingtop;
 		}
 		else
 		{
-			if (topheight < mobj->z
-			 || bottomheight > (mobj->z + FixedMul(mobj->info->height/2, mobj->scale)))
-				continue;
+			topcheck = mobj->z;
+			bottomcheck = (mobj->z + FixedMul(mobj->info->height/2, mobj->scale));
 		}
+
+		topheight = P_GetFFloorTopZAt(rover, mobj->x, mobj->y);
+
+		if (topheight < topcheck)
+			continue;
+
+		bottomheight = P_GetFFloorBottomZAt(rover, mobj->x, mobj->y);
+
+		if (bottomheight > bottomcheck)
+			continue;
 
 		// Set the watertop and waterbottom
 		mobj->watertop = topheight;
@@ -3196,11 +3212,14 @@ static void P_SceneryCheckWater(mobj_t *mobj)
 			if (!(rover->flags & FF_EXISTS) || !(rover->flags & FF_SWIMMABLE) || rover->flags & FF_BLOCKOTHERS)
 				continue;
 
-			topheight    = P_GetFFloorTopZAt(rover, mobj->x, mobj->y);
+			topheight = P_GetFFloorTopZAt(rover, mobj->x, mobj->y);
+
+			if (topheight <= mobj->z)
+				continue;
+
 			bottomheight = P_GetFFloorBottomZAt(rover, mobj->x, mobj->y);
 
-			if (topheight <= mobj->z
-				|| bottomheight > (mobj->z + FixedMul(mobj->info->height >> 1, mobj->scale)))
+			if (bottomheight > (mobj->z + FixedMul(mobj->info->height >> 1, mobj->scale)))
 				continue;
 
 			if (mobj->z + FixedMul(mobj->info->height, mobj->scale) > topheight)
@@ -3517,19 +3536,25 @@ static void P_PlayerMobjThinker(mobj_t *mobj)
 		// Crumbling platforms
 		for (node = mobj->touching_sectorlist; node; node = node->m_sectorlist_next)
 		{
-			fixed_t topheight, bottomheight;
 			ffloor_t *rover;
 
 			for (rover = node->m_sector->ffloors; rover; rover = rover->next)
 			{
+				boolean oncrumble;
+
 				if (!(rover->flags & FF_EXISTS) || !(rover->flags & FF_CRUMBLE))
 					continue;
 
-				topheight = P_GetSpecialTopZ(mobj, sectors + rover->secnum, node->m_sector);
-				bottomheight = P_GetSpecialBottomZ(mobj, sectors + rover->secnum, node->m_sector);
+				if (mobj->eflags & MFE_VERTICALFLIP)
+				{
+					oncrumble = P_GetSpecialBottomZ(mobj, sectors + rover->secnum, node->m_sector) == mobj->z + mobj->height; // You nut.
+				}
+				else
+				{
+					oncrumble = P_GetSpecialTopZ(mobj, sectors + rover->secnum, node->m_sector) == mobj->z;
+				}
 
-				if ((topheight == mobj->z && !(mobj->eflags & MFE_VERTICALFLIP))
-				|| (bottomheight == mobj->z + mobj->height && mobj->eflags & MFE_VERTICALFLIP)) // You nut.
+				if (oncrumble)
 					EV_StartCrumble(rover->master->frontsector, rover, (rover->flags & FF_FLOATBOB), mobj->player, rover->alpha, !(rover->flags & FF_NORETURN));
 			}
 		}
@@ -3632,11 +3657,9 @@ animonly:
 static void P_CalculatePrecipFloor(precipmobj_t *mobj)
 {
 	// recalculate floorz each time
-	const sector_t *sec;
+	const sector_t *sec = (mobj && mobj->subsector) ? mobj->subsector->sector : NULL;
 
-	if (mobj && mobj->subsector && mobj->subsector->sector)
-		sec = mobj->subsector->sector;
-	else
+	if (!sec)
 		return;
 
 	mobj->floorz = P_GetSectorFloorZAt(sec, mobj->x, mobj->y);
@@ -3731,7 +3754,9 @@ boolean P_PrecipThinker(precipmobj_t *mobj)
 
 	// only recalc this twice a second (doubt anyone will notice this lulul)
 	if ((leveltime % (TICRATE/2)) == 0)
+	{
 		P_CalculatePrecipFloor(mobj);
+	}
 
 	// adjust height
 	if ((mobj->z += mobj->momz) <= mobj->floorz)
@@ -4394,7 +4419,7 @@ static void P_Boss4PopSpikeballs(mobj_t *mobj)
 {
 	mobj_t *base = mobj->tracer, *seg, *next;
 	P_SetTarget(&mobj->tracer, NULL);
-	while(base)
+	while (base)
 	{
 		next = base->tracer;
 		P_SetTarget(&base->tracer, NULL);
@@ -9163,7 +9188,7 @@ void P_MobjThinker(mobj_t *mobj)
 	I_Assert(mobj != NULL);
 	I_Assert(!P_MobjWasRemoved(mobj));
 
-	if (UNLIKELY(mobj->flags & MF_NOTHINK))
+	if (mobj->flags & MF_NOTHINK)
 		return;
 
 	// Remove dead target/tracer.
@@ -9424,12 +9449,13 @@ void P_PushableThinker(mobj_t *mobj)
 				x = mobj->spawnpoint->x << FRACBITS;
 				y = mobj->spawnpoint->y << FRACBITS;
 
-				ss = R_PointInSubsector(x, y);
-
 				if (mobj->spawnpoint->z != 0)
 					z = mobj->spawnpoint->z << FRACBITS;
 				else
+				{
+					ss = R_PointInSubsector(x, y);
 					z = ss->sector->floorheight;
+				}
 
 				spawnmo = P_SpawnMobj(x, y, z, mobj->type);
 				if (spawnmo)
@@ -10410,7 +10436,7 @@ void P_SpawnPrecipitation(void)
 			if (curWeather == PRECIP_BLANK)
 				rainmo->precipflags |= PCF_INVISIBLE;
 
-			floorz = rainmo->floorz >> FRACBITS;
+			floorz   = rainmo->floorz >> FRACBITS;
 			ceilingz = rainmo->ceilingz >> FRACBITS;
 
 			if (floorz < ceilingz)
@@ -10477,8 +10503,6 @@ void P_PrecipitationEffects(void)
 			return;
 	}
 
-	boolean sounds_rain = ((cv_drawdist_precip.value != 0) && rainsfx && (!leveltime || leveltime % 80 == 1));
-
 	// Currently thunderstorming with lightning, and we're sounding the thunder...
 	// and where there's thunder, there's gotta be lightning!
 	if (effects_lightning && lightningStrike)
@@ -10499,6 +10523,8 @@ void P_PrecipitationEffects(void)
 
 	if (sound_disabled)
 		return; // Sound off? D'aw, no fun.
+
+	const boolean sounds_rain = ((cv_drawdist_precip.value != 0) && rainsfx && (!leveltime || leveltime % 80 == 1));
 
 	if (!sounds_rain && !sounds_thunder)
 		return; // no need to calculate volume at ALL
@@ -11988,8 +12014,6 @@ void P_SpawnHoops(mapthing_t *mthing)
 	x = mthing->x << FRACBITS;
 	y = mthing->y << FRACBITS;
 
-	sec = R_PointInSubsector(x, y)->sector;
-
 	// Save our flags!
 	if (mthing->type == 1713)
 		z = (mthing->options >> ZSHIFT) << FRACBITS;
@@ -12000,6 +12024,8 @@ void P_SpawnHoops(mapthing_t *mthing)
 
 	if (P_MobjWasRemoved(hoopcenter))
 		return;
+
+	sec = R_PointInSubsector(x, y)->sector;
 
 	hoopcenter->spawnpoint = mthing;
 
