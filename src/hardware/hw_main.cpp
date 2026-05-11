@@ -2673,7 +2673,7 @@ static void HWR_RenderPolyObjectPlane(polyobj_t *polysector, boolean isceiling, 
 	float           anglef  = 0.0f, cosangf = 0.0f, sinangf = 0.0f;
 	angle_t         angle = 0;
 	FSurfaceInfo    Surf = {};
-	fixed_t         tempxsow, tempytow;
+	float           tempxsow, tempytow;
 	size_t          nrPlaneVerts;
 
 	static FOutVector *planeVerts = NULL;
