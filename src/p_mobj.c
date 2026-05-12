@@ -1859,7 +1859,7 @@ static void P_AdjustMobjFloorZ_PolyObjs(mobj_t *mo, subsector_t *subsec)
 
 	while (po)
 	{
-		if (!(po->flags & POF_SOLID) || !P_MobjInsidePolyobj(po, mo))
+		if (!P_MobjInsidePolyobj(po, mo) || !(po->flags & POF_SOLID))
 		{
 			po = (polyobj_t *)(po->link.next);
 			continue;

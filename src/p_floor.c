@@ -1894,7 +1894,6 @@ void T_NoEnemiesSector(levelspecthink_t *nobaddies)
 	{
 		if (nobaddies->sector->lines[i]->special == 223)
 		{
-
 			upperbound = nobaddies->sector->ceilingheight;
 			lowerbound = nobaddies->sector->floorheight;
 
