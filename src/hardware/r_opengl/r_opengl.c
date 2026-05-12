@@ -779,15 +779,15 @@ static int GLFramebuffer_CheckExt(void)
 	// gl versions from 2.1 may still support framebuffer objects
 
 	// maybe, just maybe, we support the standart extensions
-	if (GL_isExtAvailable("GL_ARB_framebuffer_no_attachments", gl_extensions)
-		&& GL_isExtAvailable("GL_ARB_framebuffer_object", gl_extensions)
-		&& GL_isExtAvailable("GL_ARB_framebuffer_sRGB", gl_extensions))
+	if (GL_isExtAvailable("GL_ARB_framebuffer_no_attachments", gl_extensions) &&
+		GL_isExtAvailable("GL_ARB_framebuffer_object", gl_extensions) &&
+		GL_isExtAvailable("GL_ARB_framebuffer_sRGB", gl_extensions))
 		return FBO_ARB;
 
 	// nope, try the older 2.1 extensions
-	if (GL_isExtAvailable("GL_EXT_framebuffer_no_attachments", gl_extensions)
-		&& GL_isExtAvailable("GL_EXT_framebuffer_object", gl_extensions)
-		&& GL_isExtAvailable("GL_EXT_framebuffer_sRGB", gl_extensions))
+	if (GL_isExtAvailable("GL_EXT_framebuffer_no_attachments", gl_extensions) &&
+		GL_isExtAvailable("GL_EXT_framebuffer_object", gl_extensions) &&
+		GL_isExtAvailable("GL_EXT_framebuffer_sRGB", gl_extensions))
 	{
 		// perhaps we may even support a stencil attachment
 		if (GL_isExtAvailable("GL_EXT_packed_depth_stencil", gl_extensions))
@@ -3281,14 +3281,6 @@ static void GL_Framebuffer_Generate(void)
 	if (!framebufferobject.fboobj)
 		pglGenFramebuffers(1, &framebufferobject.fboobj);
 
-	if (pglCheckFramebufferStatus(GL_FRAMEBUFFER_EXT) != GL_FRAMEBUFFER_COMPLETE_EXT)
-	{
-		// if this fails, dont retry it a gazillion times
-		// this wouldnt recover
-		supportFBO = false;
-		return;
-	}
-
 	// Bind the framebuffer
 	pglBindFramebuffer(GL_FRAMEBUFFER_EXT, framebufferobject.fboobj);
 
@@ -3340,6 +3332,18 @@ static void GL_Framebuffer_Generate(void)
 		pglBindRenderbuffer(GL_RENDERBUFFER_EXT, 0);
 	}
 
+	if (pglCheckFramebufferStatus(GL_FRAMEBUFFER_EXT) != GL_FRAMEBUFFER_COMPLETE_EXT)
+	{
+		//pglGetError(); TODO:implement this or smth
+		GL_MSG_Error("GL_Framebuffer_Generate: Failed to create Framebuffer Object");
+
+		// if this fails, dont retry it a gazillion times
+		// this wouldnt recover
+		supportFBO = false;
+		pglBindFramebuffer(GL_FRAMEBUFFER_EXT, 0);
+		return;
+	}
+
 	// Unbind the framebuffer
 	pglBindFramebuffer(GL_FRAMEBUFFER_EXT, 0);
 
@@ -3361,6 +3365,10 @@ void GL_Framebuffer_Enable(void)
 		return;
 
 	GL_Framebuffer_Generate();
+
+	// failed
+	if (!supportFBO || !framebufferobject.init)
+		return;
 
 	pglBindFramebuffer(GL_FRAMEBUFFER_EXT, framebufferobject.fboobj);
 	pglBindRenderbuffer(GL_RENDERBUFFER_EXT, framebufferobject.rboobj);
