@@ -4441,11 +4441,12 @@ static void P_RunSpecialSectorCheck(player_t *player, sector_t *sector)
 	}
 
 	f_affectpoint = P_GetSpecialBottomZ(player->mo, sector, sector);
-	c_affectpoint = P_GetSpecialTopZ(player->mo, sector, sector);
 
 	// Only go further if on the ground
 	if ((sector->flags & SF_FLIPSPECIAL_FLOOR) && !(sector->flags & SF_FLIPSPECIAL_CEILING) && player->mo->z != f_affectpoint)
 		return;
+
+	c_affectpoint = P_GetSpecialTopZ(player->mo, sector, sector);
 
 	if ((sector->flags & SF_FLIPSPECIAL_CEILING) && !(sector->flags & SF_FLIPSPECIAL_FLOOR) && player->mo->z + player->mo->height != c_affectpoint)
 		return;
