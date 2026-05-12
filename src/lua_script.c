@@ -1065,8 +1065,9 @@ static void ArchiveTables(UINT8 **p)
 				n++; // the table contained a new table we'll have to archive. :(
 			else if (e == 2) // invalid key type (function, thread, lightuserdata, or anything we don't recognise)
 			{
-				CONS_Alert(CONS_ERROR, "Index '%s' (%s) of table %d could not be archived!\n", lua_tostring(gL, -2), luaL_typename(gL, -2), i);
-				lua_pop(gL, 1);
+				lua_pushvalue(gL, -2); // copy key for error message (lua_tostring may mutate it which confuses lua_next)
+				CONS_Alert(CONS_ERROR, "Index '%s' (%s) of table %d could not be archived!\n", lua_tostring(gL, -1), luaL_typename(gL, -1), i);
+				lua_pop(gL, 2); // pop key copy and value
 				continue;
 			}
 			else if (e == 3) // nil key due to invalid userdata. NOT an error.
@@ -1080,7 +1081,11 @@ static void ArchiveTables(UINT8 **p)
 			if (e == 1)
 				n++; // the table contained a new table we'll have to archive. :(
 			else if (e == 2) // invalid value type
-				CONS_Alert(CONS_ERROR, "Type of value for table %d entry '%s' (%s) could not be archived!\n", i, lua_tostring(gL, -2), luaL_typename(gL, -1));
+			{
+				lua_pushvalue(gL, -2); // copy key for error message (same as above)
+				CONS_Alert(CONS_ERROR, "Type of value for table %d entry '%s' (%s) could not be archived!\n", i, lua_tostring(gL, -1), luaL_typename(gL, -2));
+				lua_pop(gL, 1); // pop key copy
+			}
 
 			lua_pop(gL, 1);
 		}
