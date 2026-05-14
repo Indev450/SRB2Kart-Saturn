@@ -1496,7 +1496,9 @@ static void ForceAllSkins(INT32 forcedskin)
 }
 
 static INT32 chmappending;
+#ifdef PARANOIA
 static INT32 snacpending[MAXSPLITSCREENPLAYERS];
+#endif
 
 // wonky compat, idk if anything uses this....
 #define playerisbot (splitplayer == 1 && botingame)
@@ -1596,7 +1598,9 @@ static void SendNameAndColor(UINT8 splitplayer)
 		return;
 	}
 
+#ifdef PARANOIA
 	snacpending[splitplayer]++;
+#endif
 
 	// Don't change name if muted
 	if (player_name_changes[pnum] >= MAXNAMECHANGES)
@@ -1632,7 +1636,7 @@ static void SendNameAndColor(UINT8 splitplayer)
 
 static void Got_NameAndColor(const UINT8 **cp, INT32 playernum)
 {
-	player_t *player = &players[playernum];
+	player_t *player;
 	char name[MAXPLAYERNAME+1] = {};
 	UINT8 color, skin;
 
@@ -1641,14 +1645,18 @@ static void Got_NameAndColor(const UINT8 **cp, INT32 playernum)
 		I_Error("There is no player %d!", playernum);
 #endif
 
+	player = &players[playernum];
+
+#ifdef PARANOIA
 	if (P_IsLocalPlayer(player))
 	{
-		snacpending[playernum]--;
-#ifdef PARANOIA
-		if (snacpending[playernum] < 0)
+		const INT32 localpnum = P_GetLocalPlayerNumForPlayer(player);
+		snacpending[localpnum]--;
+
+		if (snacpending[localpnum] < 0)
 			I_Error("snacpending negative!");
-#endif
 	}
+#endif
 
 	READSTRINGN(*cp, name, MAXPLAYERNAME);
 	color = READUINT8(*cp);
@@ -2188,7 +2196,6 @@ void D_SetupVote(void)
 		WRITEUINT8(p, gt);
 	WRITEUINT8(p, secondgt);
 	secondgt &= ~0x80;
-
 
 	for (i = 0; i < 4; i++)
 	{
