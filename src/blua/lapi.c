@@ -526,13 +526,12 @@ static void auxgetstr (lua_State *L, TValue *t, const char *k) {
   api_checkvalidindex(L, t);
   if (luaV_fastget(L, t, str, slot, luaH_getstr)) {
     setobj2s(L, L->top, slot);
-    api_incr_top(L);
   }
   else {
     setsvalue(L, &key, str);
-    luaV_finishget(L, t, L->top, L->top, slot);
-    api_incr_top(L);
+    luaV_finishget(L, t, &key, L->top, slot);
   }
+  api_incr_top(L);
   lua_unlock(L);
 }
 
