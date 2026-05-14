@@ -1485,12 +1485,13 @@ static void CL_DrawConnectionStatus(void)
 		{
 			UINT32 dldlength = 0;
 			UINT32 totaldldsize = 0;
-			UINT32 totalfileslength = filedownload.totalsize;
+			UINT32 totalfileslength = 0;
 			static char tempname[28];
 			fileneeded_t *file = &fileneeded[filedownload.current];
 			char *filename = file->filename;
 			UINT32 totalsize   = file->totalsize;
 			UINT32 currentsize = min(file->currentsize, totalsize);
+			UINT32 fdtotalsize = filedownload.totalsize;
 
 			// Draw the bottom box.
 			M_DrawTextBox(BASEVIDWIDTH/2-128-8, BASEVIDHEIGHT-58-8, 32, 1);
@@ -1541,18 +1542,18 @@ static void CL_DrawConnectionStatus(void)
 				totaldldsize = filedownload.completedsize;
 
 			V_DrawCenteredString(BASEVIDWIDTH/2, BASEVIDHEIGHT-24-14, V_YELLOWMAP|MENUCAPS, "Overall Download Progress");
-			if (totalfileslength != 0)
-				totalfileslength = (UINT32)((totaldldsize/(double)totalfileslength) * 256);
+			if (fdtotalsize != 0)
+				totalfileslength = (UINT32)((totaldldsize/(double)fdtotalsize) * 256);
 			M_DrawTextBox(BASEVIDWIDTH/2-128-8, BASEVIDHEIGHT-24-8, 32, 1);
 			V_DrawFill(BASEVIDWIDTH/2-128, BASEVIDHEIGHT-24, 256, 8, 175);
 			V_DrawFill(BASEVIDWIDTH/2-128, BASEVIDHEIGHT-24, (INT32)totalfileslength, 8, 160);
 
-			if (totalfileslength>>20 >= 10) // display in MB if over 10MB
+			if ((fdtotalsize>>20) >= 10) // display in MB if over 10MB
 				V_DrawString(BASEVIDWIDTH/2-128, BASEVIDHEIGHT-24, V_20TRANS|V_MONOSPACE|MENUCAPS,
-					va(" %4uM/%4uM", (INT32)(totaldldsize>>20), (INT32)(totalfileslength>>20)));
+					va(" %4uM/%4uM", (INT32)(totaldldsize>>20), (INT32)(fdtotalsize>>20)));
 			else
 				V_DrawString(BASEVIDWIDTH/2-128, BASEVIDHEIGHT-24, V_20TRANS|V_MONOSPACE|MENUCAPS,
-					va(" %4uK/%4uK", (INT32)(totaldldsize>>10), (INT32)(totalfileslength>>10)));
+					va(" %4uK/%4uK", (INT32)(totaldldsize>>10), (INT32)(fdtotalsize>>10)));
 
 			V_DrawRightAlignedString(BASEVIDWIDTH/2+128, BASEVIDHEIGHT-24, V_20TRANS|V_MONOSPACE|MENUCAPS,
 					va("%2u/%2u Files ", filedownload.completednum, filedownload.totalnum));
