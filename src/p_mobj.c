@@ -222,11 +222,6 @@ boolean P_SetMobjState(mobj_t *mobj, statenum_t state)
 
 	INT32 recursion = 0;
 
-#ifdef PARANOIA
-	if (mobj->player != NULL)
-		I_Error("P_SetMobjState used for player mobj. Use P_SetPlayerMobjState instead!\n(State called: %d)", state);
-#endif
-
 	if (mobj->player != NULL)
 		return P_SetPlayerMobjState(mobj, state);
 
