@@ -1654,7 +1654,7 @@ static void Got_NameAndColor(const UINT8 **cp, INT32 playernum)
 		snacpending[localpnum]--;
 
 		if (snacpending[localpnum] < 0)
-			I_Error("snacpending negative!");
+			I_Error("snacpending negative for player %d!", localpnum);
 	}
 #endif
 
