@@ -132,45 +132,31 @@ void luaV_finishget (lua_State *L, TValue *t, TValue *key, StkId val,
   luaG_runerror(L, "gettable chain too long; possible loop");
 }
 
-
-/*
-** Main function for table assignment (invoking metamethods if needed).
-** Compute 't[key] = val'
-*/
-void luaV_finishset (lua_State *L, TValue *t, TValue *key,
-                     StkId val, TValue *oldval) {
-  int loop;  /* counter to avoid infinite loops */
+void luaV_settable (lua_State *L, TValue *t, TValue *key, StkId val) {
+  int loop;
   for (loop = 0; loop < MAXTAGLOOP; loop++) {
-    TValue *tm;
-    if (oldval != NULL) {
-      lua_assert(ttistable(t) && ttisnil(oldval));
+    TValue *tm = NULL;
+    if (ttistable(t)) {  /* `t' is a table? */
       Table *h = hvalue(t);
-      /* must check the metamethod */
+      TValue *oldval = luaH_set(L, h, key); /* do a primitive set */
       /* oldval is nil=> look for newindex, oldval is not nil => look for usedindex */
       if (!((ttisnil(oldval) && ((tm = fasttm(L, h->metatable, TM_NEWINDEX)) != NULL)) ||
          ((!ttisnil(oldval)) && ((tm = fasttm(L, h->metatable, TM_USEDINDEX)) != NULL)))) {
-        /* no metamethod and (now) there is an entry with given key */
-        setobj2t(L, cast(TValue *, oldval), val);
+        setobj2t(L, oldval, val);
         luaC_barriert(L, h, val);
         return;
       }
-      /* else will try the metamethod */
+      /* else will try the tag method */
     }
-    else {  /* not a table; check metamethod */
-      if (l_unlikely(ttisnil(tm = luaT_gettmbyobj(L, t, TM_NEWINDEX))))
-        luaG_typeerror(L, t, "index");
-    }
-    /* try the metamethod */
+    else if (l_unlikely(ttisnil(tm = luaT_gettmbyobj(L, t, TM_NEWINDEX))))
+      luaG_typeerror(L, t, "index");
     if (ttisfunction(tm)) {
       callTM(L, tm, t, key, val);
       return;
     }
-    t = tm;  /* else repeat assignment over 'tm' */
-    if (luaV_fastset(L, t, key, oldval, luaH_set, val))
-      return;  /* done */
-    /* else loop */
+    t = tm;  /* else repeat with `tm' */
   }
-  luaG_runerror(L, "settable chain too long; possible loop");
+  luaG_runerror(L, "loop in settable");
 }
 
 
