@@ -134,10 +134,9 @@ static GLint viewport[4];
 #ifdef USE_FBO_OGL
 enum
 {
-	FBO_NONE,
-	FBO_ARB,
-	FBO_EXT,
-	FBO_EXT_STENCIL // supports stencil attachment
+	FBOext_NONE,
+	FBOext_ARB,
+	FBOext_EXT,
 };
 
 typedef struct
@@ -148,20 +147,12 @@ typedef struct
 	boolean init;
 } fboobj_t;
 
-static fboobj_t framebufferobject = {};
+static fboobj_t fbos[NUMFBOOBJS] = {};
 
-int supportFBO = FBO_NONE;
+int supportFBO = FBOext_NONE;
 
-// older gl versions might not have these, so prevent compile errors
-// this should still give a simple depth only rbo
-#ifndef GL_DEPTH24_STENCIL8
-GL_DEPTH24_STENCIL8 GL_DEPTH_COMPONENT_EXT
-#endif
-#ifndef GL_DEPTH_STENCIL_ATTACHMENT
-GL_DEPTH_STENCIL_ATTACHMENT GL_DEPTH_ATTACHMENT_EXT
-#endif
-
-static void GL_Framebuffer_DeleteAttachments(void);
+static void GL_FBO_DeleteAttachments(int fbonum);
+static void GL_FBO_DeleteAllAttachments(void);
 #endif
 
 // needed for glportals
@@ -774,7 +765,7 @@ static int GLFramebuffer_CheckExt(void)
 {
 	// in opengl 3.0 and up fbos are standart and always supported
 	if (majorGL >= 3)
-		return FBO_ARB;
+		return FBOext_ARB;
 
 	// gl versions from 2.1 may still support framebuffer objects
 
@@ -782,23 +773,19 @@ static int GLFramebuffer_CheckExt(void)
 	if (GL_isExtAvailable("GL_ARB_framebuffer_no_attachments", gl_extensions) &&
 		GL_isExtAvailable("GL_ARB_framebuffer_object", gl_extensions) &&
 		GL_isExtAvailable("GL_ARB_framebuffer_sRGB", gl_extensions))
-		return FBO_ARB;
+		return FBOext_ARB;
 
 	// nope, try the older 2.1 extensions
 	if (GL_isExtAvailable("GL_EXT_framebuffer_no_attachments", gl_extensions) &&
 		GL_isExtAvailable("GL_EXT_framebuffer_object", gl_extensions) &&
-		GL_isExtAvailable("GL_EXT_framebuffer_sRGB", gl_extensions))
+		GL_isExtAvailable("GL_EXT_framebuffer_sRGB", gl_extensions) &&
+		GL_isExtAvailable("GL_EXT_packed_depth_stencil", gl_extensions)) // dont feel like making a mess to work around portals
 	{
-		// perhaps we may even support a stencil attachment
-		if (GL_isExtAvailable("GL_EXT_packed_depth_stencil", gl_extensions))
-			return FBO_EXT_STENCIL;
-
-		// no stencil support, sad
-		return FBO_EXT;
+		return FBOext_EXT;
 	}
 
 	// no fbo support for you :c
-	return FBO_NONE;
+	return FBOext_NONE;
 }
 #endif
 
@@ -894,9 +881,9 @@ void SetupGLFunc4(void)
 
 	const int fbocheck = GLFramebuffer_CheckExt();
 
-	if (fbocheck != FBO_NONE)
+	if (fbocheck != FBOext_NONE)
 	{
-		if (fbocheck == FBO_ARB)
+		if (fbocheck == FBOext_ARB)
 		{
 			GetGLfunc(glGenFramebuffers);
 			GetGLfunc(glBindFramebuffer);
@@ -908,10 +895,8 @@ void SetupGLFunc4(void)
 			GetGLfunc(glDeleteRenderbuffers);
 			GetGLfunc(glRenderbufferStorage);
 			GetGLfunc(glFramebufferRenderbuffer);
-
-			GL_DBG_Printf("\nFBO: ARB extensions found\n");
 		}
-		else if (fbocheck == FBO_EXT || fbocheck == FBO_EXT_STENCIL) // uh oh only support for EXT prefix fbos...
+		else if (fbocheck == FBOext_EXT) // uh oh only support for EXT prefix fbos...
 		{
 			GetGLfunc(glGenFramebuffersEXT);
 			GetGLfunc(glBindFramebufferEXT);
@@ -937,10 +922,7 @@ void SetupGLFunc4(void)
 			pglRenderbufferStorage = pglRenderbufferStorageEXT;
 			pglFramebufferRenderbuffer = pglFramebufferRenderbufferEXT;
 
-			if (fbocheck == FBO_EXT)
-				GL_DBG_Printf("\nFBO: EXT extensions found, no stencil\n");
-			else if (fbocheck == FBO_EXT_STENCIL)
-				GL_DBG_Printf("\nFBO: EXT extensions with packed depth-stencil\n");
+			GL_DBG_Printf("\nFBO: Using OpenGL EXT extensions\n");
 		}
 
 		supportFBO = fbocheck;
@@ -1154,7 +1136,8 @@ void GL_SetModelView(GLint w, GLint h)
 		GL_FlushScreenTextures();
 
 #ifdef USE_FBO_OGL
-		GL_Framebuffer_DeleteAttachments();
+		// gotta wipe all of em
+		GL_FBO_DeleteAllAttachments();
 #endif
 	}
 
@@ -3252,44 +3235,80 @@ void GL_SetTransform(FTransform *stransform)
 }
 
 #ifdef USE_FBO_OGL
-static void GL_Framebuffer_DeleteAttachments(void)
+static void GL_FBO_DeleteAllAttachments(void)
 {
-	if (!supportFBO || !framebufferobject.init)
+	if (!supportFBO)
 		return;
 
-	// Unbind the framebuffer
+	// bind back the main framebuffer
 	pglBindFramebuffer(GL_FRAMEBUFFER_EXT, 0);
 	pglBindRenderbuffer(GL_RENDERBUFFER_EXT, 0);
 
-	if (framebufferobject.tex)
-		pglDeleteTextures(1, &framebufferobject.tex);
+	for (int i = 0; i < NUMFBOOBJS; i++)
+	{
+		fboobj_t *fbo = &fbos[i];
 
-	if (framebufferobject.rboobj)
-		pglDeleteRenderbuffers(1, &framebufferobject.rboobj);
+		if (!fbo->init)
+			continue;
 
-	framebufferobject.tex = 0;
-	framebufferobject.rboobj = 0;
-	framebufferobject.init = false;
+		// destroy texture
+		if (fbo->tex)
+			pglDeleteTextures(1, &fbo->tex);
+
+		// destroy rbo
+		if (fbo->rboobj)
+			pglDeleteRenderbuffers(1, &fbo->rboobj);
+
+		fbo->tex = 0;
+		fbo->rboobj = 0;
+		fbo->init = false;
+	}
 }
 
-static void GL_Framebuffer_Generate(void)
+static void GL_FBO_DeleteAttachments(int fbonum)
 {
-	if (!supportFBO || framebufferobject.init || !UseScreenFBO())
+	fboobj_t *fbo = &fbos[fbonum];
+
+	if (!supportFBO || !fbo->init)
+		return;
+
+	// bind back the main framebuffer
+	pglBindFramebuffer(GL_FRAMEBUFFER_EXT, 0);
+	pglBindRenderbuffer(GL_RENDERBUFFER_EXT, 0);
+
+	// destroy texture
+	if (fbo->tex)
+		pglDeleteTextures(1, &fbo->tex);
+
+	// destroy rbo
+	if (fbo->rboobj)
+		pglDeleteRenderbuffers(1, &fbo->rboobj);
+
+	fbo->tex = 0;
+	fbo->rboobj = 0;
+	fbo->init = false;
+}
+
+static void GL_FBO_Generate(int fbonum, int width, int height)
+{
+	fboobj_t *fbo = &fbos[fbonum];
+
+	if (!supportFBO || fbo->init)
 		return;
 
 	// Generate the framebuffer
-	if (!framebufferobject.fboobj)
-		pglGenFramebuffers(1, &framebufferobject.fboobj);
+	if (!fbo->fboobj)
+		pglGenFramebuffers(1, &fbo->fboobj);
 
 	// Bind the framebuffer
-	pglBindFramebuffer(GL_FRAMEBUFFER_EXT, framebufferobject.fboobj);
+	pglBindFramebuffer(GL_FRAMEBUFFER_EXT, fbo->fboobj);
 
 	// Generate the framebuffer texture
-	if (!framebufferobject.tex)
+	if (!fbo->tex)
 	{
-		pglGenTextures(1, &framebufferobject.tex);
-		pglBindTexture(GL_TEXTURE_2D, framebufferobject.tex);
-		pglTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, screen_width, screen_height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+		pglGenTextures(1, &fbo->tex);
+		pglBindTexture(GL_TEXTURE_2D, fbo->tex);
+		pglTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
 		pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 		pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 		Clamp2D(GL_TEXTURE_WRAP_S);
@@ -3297,33 +3316,29 @@ static void GL_Framebuffer_Generate(void)
 		pglBindTexture(GL_TEXTURE_2D, 0);
 
 		// Attach the framebuffer texture to the framebuffer
-		pglFramebufferTexture2D(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_2D, framebufferobject.tex, 0);
+		pglFramebufferTexture2D(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_2D, fbo->tex, 0);
 	}
 
 	// Generate the renderbuffer
-	if (!framebufferobject.rboobj)
+	if (!fbo->rboobj)
 	{
-		pglGenRenderbuffers(1, &framebufferobject.rboobj);
+		pglGenRenderbuffers(1, &fbo->rboobj);
 
-		pglBindRenderbuffer(GL_RENDERBUFFER_EXT, framebufferobject.rboobj);
+		pglBindRenderbuffer(GL_RENDERBUFFER_EXT, fbo->rboobj);
 
-		if (supportFBO == FBO_ARB)
+		if (supportFBO == FBOext_ARB)
 		{
-			pglRenderbufferStorage(GL_RENDERBUFFER_EXT, GL_DEPTH24_STENCIL8, screen_width, screen_height);
-			pglFramebufferRenderbuffer(GL_FRAMEBUFFER_EXT, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER_EXT, framebufferobject.rboobj);
+			pglRenderbufferStorage(GL_RENDERBUFFER_EXT, GL_DEPTH24_STENCIL8, width, height);
+			pglFramebufferRenderbuffer(GL_FRAMEBUFFER_EXT, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER_EXT, fbo->rboobj);
 		}
-		else if (supportFBO == FBO_EXT || supportFBO == FBO_EXT_STENCIL)
+		else if (supportFBO == FBOext_EXT)
 		{
-			pglRenderbufferStorage(GL_RENDERBUFFER_EXT, (supportFBO == FBO_EXT_STENCIL) ? GL_DEPTH_STENCIL_EXT : GL_DEPTH_COMPONENT, screen_width, screen_height);
+			pglRenderbufferStorage(GL_RENDERBUFFER_EXT, GL_DEPTH_STENCIL_EXT, width, height);
 
 			// attach a renderbuffer to depth attachment point
-			pglFramebufferRenderbuffer(GL_FRAMEBUFFER_EXT, GL_DEPTH_ATTACHMENT_EXT, GL_RENDERBUFFER_EXT, framebufferobject.rboobj);
-
-			if (supportFBO == FBO_EXT_STENCIL)
-			{
-				// attach a renderbuffer to stencil attachment point
-				pglFramebufferRenderbuffer(GL_FRAMEBUFFER_EXT, GL_STENCIL_ATTACHMENT_EXT, GL_RENDERBUFFER_EXT, framebufferobject.rboobj);
-			}
+			pglFramebufferRenderbuffer(GL_FRAMEBUFFER_EXT, GL_DEPTH_ATTACHMENT_EXT, GL_RENDERBUFFER_EXT, fbo->rboobj);
+			// attach a renderbuffer to stencil attachment point
+			pglFramebufferRenderbuffer(GL_FRAMEBUFFER_EXT, GL_STENCIL_ATTACHMENT_EXT, GL_RENDERBUFFER_EXT, fbo->rboobj);
 		}
 
 		// Clear the renderbuffer
@@ -3332,62 +3347,97 @@ static void GL_Framebuffer_Generate(void)
 		pglBindRenderbuffer(GL_RENDERBUFFER_EXT, 0);
 	}
 
+	// check for fbo completeness, we dont wanna have black screens!
 	if (pglCheckFramebufferStatus(GL_FRAMEBUFFER_EXT) != GL_FRAMEBUFFER_COMPLETE_EXT)
 	{
 		//pglGetError(); TODO:implement this or smth
-		GL_MSG_Error("GL_Framebuffer_Generate: Failed to create Framebuffer Object");
+		GL_MSG_Error("GL_FBO_Generate: Failed to create Framebuffer Object");
 
 		// if this fails, dont retry it a gazillion times
 		// this wouldnt recover
 		supportFBO = false;
-		pglBindFramebuffer(GL_FRAMEBUFFER_EXT, 0);
-		return;
+	}
+	else
+	{
+		fbo->init = true;
 	}
 
-	// Unbind the framebuffer
+	// bind back to main framebuffer
 	pglBindFramebuffer(GL_FRAMEBUFFER_EXT, 0);
-
-	framebufferobject.init = true;
 }
 
-void GL_Framebuffer_Unbind(void)
+void GL_FBO_BindMainFramebuffer(int fbonum)
 {
-	if (!supportFBO || !framebufferobject.init)
+	fboobj_t *fbo = &fbos[fbonum];
+
+	if (!supportFBO || !fbo->init)
 		return;
 
 	pglBindFramebuffer(GL_FRAMEBUFFER_EXT, 0);
 	pglBindRenderbuffer(GL_RENDERBUFFER_EXT, 0);
 }
 
-void GL_Framebuffer_Enable(void)
+void GL_FBO_Enable(int fbonum, int width, int height)
 {
-	if (!supportFBO || !UseScreenFBO())
+	fboobj_t *fbo = &fbos[fbonum];
+
+	if (!supportFBO)
 		return;
 
-	GL_Framebuffer_Generate();
+	// if the fbo doesent exist, create it!
+	if (!fbo->init)
+		GL_FBO_Generate(fbonum, width, height);
 
 	// failed
-	if (!supportFBO || !framebufferobject.init)
+	if (!supportFBO || !fbo->init)
 		return;
 
-	pglBindFramebuffer(GL_FRAMEBUFFER_EXT, framebufferobject.fboobj);
-	pglBindRenderbuffer(GL_RENDERBUFFER_EXT, framebufferobject.rboobj);
+	pglBindFramebuffer(GL_FRAMEBUFFER_EXT, fbo->fboobj);
+	pglBindRenderbuffer(GL_RENDERBUFFER_EXT, fbo->rboobj);
 }
 
-void GL_Framebuffer_Disable(void)
+void GL_FBO_DestroyAll(void)
 {
-	if (!supportFBO || !framebufferobject.init)
+	if (!supportFBO)
 		return;
 
+	// bind back the main framebuffer
+	pglBindFramebuffer(GL_FRAMEBUFFER_EXT, 0);
+	pglBindRenderbuffer(GL_RENDERBUFFER_EXT, 0);
+
+	for (int i = 0; i < NUMFBOOBJS; i++)
+	{
+		fboobj_t *fbo = &fbos[i];
+
+		if (!fbo->init)
+			continue;
+
+		// delet our fbo
+		if (fbo->fboobj)
+			pglDeleteFramebuffers(1, &fbo->fboobj);
+		fbo->fboobj = 0;
+
+		GL_FBO_DeleteAttachments(i);
+	}
+}
+
+void GL_FBO_Destroy(int fbonum)
+{
+	fboobj_t *fbo = &fbos[fbonum];
+
+	if (!supportFBO || !fbo->init)
+		return;
+
+	// bind back the main framebuffer
 	pglBindFramebuffer(GL_FRAMEBUFFER_EXT, 0);
 	pglBindRenderbuffer(GL_RENDERBUFFER_EXT, 0);
 
 	// delet our fbo
-	if (framebufferobject.fboobj)
-		pglDeleteFramebuffers(1, &framebufferobject.fboobj);
-	framebufferobject.fboobj = 0;
+	if (fbo->fboobj)
+		pglDeleteFramebuffers(1, &fbo->fboobj);
+	fbo->fboobj = 0;
 
-	GL_Framebuffer_DeleteAttachments();
+	GL_FBO_DeleteAttachments(fbonum);
 }
 #endif
 
