@@ -4455,7 +4455,7 @@ static void K_drawLapStartAnim(void)
 		char *lapnum = va("%02d", stplyr->laps + 1);
 		const size_t laplength = strlen(lapnum);
 
-		for (int i = 0; i < (int)laplength; i++)
+		for (size_t i = 0; i < laplength; i++)
 		{
 			int digit = lapnum[i] - '0';
 			int frame = min(2, progress/2 - 8 - (i*2));

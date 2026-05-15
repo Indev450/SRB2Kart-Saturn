@@ -707,7 +707,7 @@ static void HWR_RenderPlane(subsector_t *subsector, poly_subsector_t *xsub, bool
 		vert->z = (vy);\
 \
 }
-	for (i = 0, v3d = planeVerts; i < (INT32)nrPlaneVerts; i++,v3d++, pv++)
+	for (i = 0, v3d = planeVerts; i < (INT32)nrPlaneVerts; i++, v3d++, pv++)
 		SETUP3DVERT(v3d, pv->x, pv->y);
 
 	if (slope)
