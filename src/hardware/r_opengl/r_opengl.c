@@ -492,6 +492,12 @@ typedef void (APIENTRY * PFNglRenderbufferStorageEXT) (GLenum target, GLenum int
 static PFNglRenderbufferStorageEXT pglRenderbufferStorageEXT;
 typedef void (APIENTRY * PFNglFramebufferRenderbufferEXT) (GLenum target, GLenum attachment, GLenum renderbuffertarget, GLenum renderbuffer);
 static PFNglFramebufferRenderbufferEXT pglFramebufferRenderbufferEXT;
+
+/* 3.0 functions for framebuffer stuff*/
+typedef void (APIENTRY * PFNglBlitFramebuffer) (GLint srcX0, GLint srcY0, GLint srcX1, GLint srcY1,
+												GLint dstX0, GLint dstY0, GLint dstX1, GLint dstY1,
+												GLbitfield mask, GLenum filter);
+static PFNglBlitFramebuffer pglBlitFramebuffer;
 #endif // USE_FBO_OGL
 
 #endif //!STATIC_OPENGL
@@ -895,6 +901,7 @@ void SetupGLFunc4(void)
 			GetGLfunc(glDeleteRenderbuffers);
 			GetGLfunc(glRenderbufferStorage);
 			GetGLfunc(glFramebufferRenderbuffer);
+			GetGLfunc(glBlitFramebuffer);
 		}
 		else if (fbocheck == FBOext_EXT) // uh oh only support for EXT prefix fbos...
 		{
@@ -921,6 +928,9 @@ void SetupGLFunc4(void)
 			pglDeleteRenderbuffers = pglDeleteRenderbuffersEXT;
 			pglRenderbufferStorage = pglRenderbufferStorageEXT;
 			pglFramebufferRenderbuffer = pglFramebufferRenderbufferEXT;
+
+			// unsupported before gl 3.0
+			pglBlitFramebuffer = NULL;
 
 			GL_DBG_Printf("\nFBO: Using OpenGL EXT extensions\n");
 		}
