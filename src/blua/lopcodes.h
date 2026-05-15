@@ -232,8 +232,6 @@ OP_VARARG/*	A B	R(A), R(A+1), ..., R(A+B-1) = vararg		*/
   (*) In OP_SETLIST, if (B == 0) then B = `top';
       if (C == 0) then next `instruction' is real C
 
-  (*) In OP_SELF, the index must be a string.
-
   (*) For comparisons, A specifies what condition the test should accept
       (true or false).
 
