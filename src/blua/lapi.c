@@ -520,17 +520,17 @@ LUA_API int lua_pushthread (lua_State *L) {
 */
 
 static void auxgetstr (lua_State *L, TValue *t, const char *k) {
-  TValue *slot;
+  TValue *aux;
   TValue key;
   TString *str = luaS_new(L, k);
   api_checkvalidindex(L, t);
-  if (luaV_fastget(L, t, str, slot, luaH_getstr)) {
-    setobj2s(L, L->top, slot);
+  if (luaV_fastget(L, t, str, aux, luaH_getstr)) {
+    setobj2s(L, L->top, aux);
     api_incr_top(L);
   }
   else {
     setsvalue(L, &key, str);
-    luaV_finishget(L, t, L->top, L->top, slot);
+    luaV_finishget(L, t, L->top, L->top, aux);
     api_incr_top(L);
   }
   lua_unlock(L);
@@ -643,17 +643,17 @@ LUA_API void lua_getfenv (lua_State *L, int idx) {
 
 static void auxsetstr (lua_State *L, TValue *t, const char *k) {
   TValue key;
-  TValue *slot;
+  TValue *aux;
   TString *str = luaS_new(L, k);
   api_checknelems(L, 1);
   api_checkvalidindex(L, t);
-  if (luaV_fastset(L, t, str, slot, luaH_setstr, L->top)) {
-    setobj2t(L, cast(TValue *, slot), L->top - 1);
+  if (luaV_fastset(L, t, str, aux, luaH_setstr, L->top)) {
+    setobj2t(L, cast(TValue *, aux), L->top - 1);
     L->top--;  /* pop value */
   }
   else {
     setsvalue2s(L, &key, str);
-    luaV_finishset(L, t, &key, L->top - 1, slot);
+    luaV_finishset(L, t, &key, L->top - 1, aux);
     L->top--;  /* pop value */
   }
   lua_unlock(L);
