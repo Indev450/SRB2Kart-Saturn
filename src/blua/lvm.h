@@ -22,35 +22,12 @@
 	(ttype(o1) == ttype(o2) && luaV_equalval(L, o1, o2))
 
 
-/*
-** fast track for 'gettable': 1 means 'aux' points to resulted value;
-** 0 means 'aux' is metamethod (if 't' is a table) or NULL. 'f' is
-** the raw get function to use.
-*/
-#define luaV_fastget(L,t,k,aux,f) \
-  (!ttistable(t)  \
-   ? (aux = NULL, 0)  /* not a table; 'aux' is NULL and result is 0 */  \
-   : (aux = f(hvalue(t), k),  /* else, do raw access */  \
-      !ttisnil(aux) ? 1  /* result not nil? 'aux' has it */  \
-      : (aux = fasttm(L, hvalue(t)->metatable, TM_INDEX),  /* get metamethod */\
-         aux != NULL  ? 0  /* has metamethod? must call it */  \
-         : (aux = luaO_nilobject, 1))))  /* else, final result is nil */
-
-/*
-** standard implementation for 'gettable'
-*/
-#define luaV_gettable(L,t,k,v) { TValue *aux; \
-  if (luaV_fastget(L,t,k,aux,luaH_get)) { setobj2s(L, v, aux); } \
-  else luaV_finishget(L,t,k,v,aux); }
-
-
-
 LUAI_FUNC int luaV_lessthan (lua_State *L, TValue *l, TValue *r);
 LUAI_FUNC int luaV_equalval (lua_State *L, const TValue *t1, const TValue *t2);
 LUAI_FUNC const TValue *luaV_tonumber (const TValue *obj, TValue *n);
 LUAI_FUNC int luaV_tostring (lua_State *L, StkId obj);
-LUAI_FUNC void luaV_finishget (lua_State *L, TValue *t, TValue *key,
-                               StkId val, TValue *tm);
+LUAI_FUNC void luaV_gettable (lua_State *L, TValue *t, TValue *key,
+                                            StkId val);
 LUAI_FUNC void luaV_settable (lua_State *L, TValue *t, TValue *key,
                                             StkId val);
 LUAI_FUNC void luaV_execute (lua_State *L, int nexeccalls);
