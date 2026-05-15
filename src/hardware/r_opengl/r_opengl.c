@@ -875,7 +875,7 @@ void SetupGLFunc4(void)
 	{ \
 		GL_MSG_Warning("failed to get OpenGL FBO function: %s\n", #func); \
 		GL_DBG_Printf("\nFBO: No framebuffer object support\n"); \
-		supportFBO = false; \
+		supportFBO = FBOext_NONE; \
 		return; \
 	} \
 
@@ -3237,7 +3237,7 @@ void GL_SetTransform(FTransform *stransform)
 #ifdef USE_FBO_OGL
 static void GL_FBO_DeleteAllAttachments(void)
 {
-	if (!supportFBO)
+	if (supportFBO == FBOext_NONE)
 		return;
 
 	// bind back the main framebuffer
@@ -3269,7 +3269,7 @@ static void GL_FBO_DeleteAttachments(int fbonum)
 {
 	fboobj_t *fbo = &fbos[fbonum];
 
-	if (!supportFBO || !fbo->init)
+	if (supportFBO == FBOext_NONE || !fbo->init)
 		return;
 
 	// bind back the main framebuffer
@@ -3293,7 +3293,7 @@ static void GL_FBO_Generate(int fbonum, int width, int height)
 {
 	fboobj_t *fbo = &fbos[fbonum];
 
-	if (!supportFBO || fbo->init)
+	if (supportFBO == FBOext_NONE || fbo->init)
 		return;
 
 	// Generate the framebuffer
@@ -3355,7 +3355,7 @@ static void GL_FBO_Generate(int fbonum, int width, int height)
 
 		// if this fails, dont retry it a gazillion times
 		// this wouldnt recover
-		supportFBO = false;
+		supportFBO = FBOext_NONE;
 	}
 	else
 	{
@@ -3370,7 +3370,7 @@ void GL_FBO_BindMainFramebuffer(int fbonum)
 {
 	fboobj_t *fbo = &fbos[fbonum];
 
-	if (!supportFBO || !fbo->init)
+	if (supportFBO == FBOext_NONE || !fbo->init)
 		return;
 
 	pglBindFramebuffer(GL_FRAMEBUFFER_EXT, 0);
@@ -3381,7 +3381,7 @@ void GL_FBO_Enable(int fbonum, int width, int height)
 {
 	fboobj_t *fbo = &fbos[fbonum];
 
-	if (!supportFBO)
+	if (supportFBO == FBOext_NONE)
 		return;
 
 	// if the fbo doesent exist, create it!
@@ -3389,7 +3389,7 @@ void GL_FBO_Enable(int fbonum, int width, int height)
 		GL_FBO_Generate(fbonum, width, height);
 
 	// failed
-	if (!supportFBO || !fbo->init)
+	if (supportFBO == FBOext_NONE || !fbo->init)
 		return;
 
 	pglBindFramebuffer(GL_FRAMEBUFFER_EXT, fbo->fboobj);
@@ -3398,7 +3398,7 @@ void GL_FBO_Enable(int fbonum, int width, int height)
 
 void GL_FBO_DestroyAll(void)
 {
-	if (!supportFBO)
+	if (supportFBO == FBOext_NONE)
 		return;
 
 	// bind back the main framebuffer
@@ -3425,7 +3425,7 @@ void GL_FBO_Destroy(int fbonum)
 {
 	fboobj_t *fbo = &fbos[fbonum];
 
-	if (!supportFBO || !fbo->init)
+	if (supportFBO == FBOext_NONE || !fbo->init)
 		return;
 
 	// bind back the main framebuffer
