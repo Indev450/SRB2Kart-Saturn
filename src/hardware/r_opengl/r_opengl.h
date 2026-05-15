@@ -104,7 +104,7 @@ enum fboobjectnum
     NUMFBOOBJS
 };
 
-void GL_FBO_BindMainFramebuffer(int fbonum);
+void GL_FBO_BindMainFramebuffer(void);
 void GL_FBO_Enable(int fbonum, int width, int height);
 void GL_FBO_Destroy(int fbonum);
 void GL_FBO_DestroyAll(void);
