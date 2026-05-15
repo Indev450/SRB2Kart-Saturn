@@ -3355,18 +3355,6 @@ static void G_DoStartVote(void)
 	gameaction = ga_nothing;
 }
 
-//
-// G_UseContinue
-//
-void G_UseContinue(void)
-{
-	if (gamestate == GS_LEVEL && !netgame && !multiplayer)
-	{
-		gameaction = ga_startcont;
-		lastdraw = true;
-	}
-}
-
 static void G_DoStartContinue(void)
 {
 	I_Assert(!netgame && !multiplayer);

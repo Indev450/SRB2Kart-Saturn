@@ -423,8 +423,6 @@ void P_LineOpening(line_t *linedef, mobj_t *mobj)
 	// Set open and high/low values here
 	fixed_t frontheight, backheight;
 
-	I_Assert(mobj != NULL);
-
 	if (mobj)
 	{
 		frontheight = P_GetCeilingZ(mobj, front, tmx, tmy, linedef);
@@ -707,7 +705,6 @@ void P_LineOpening(line_t *linedef, mobj_t *mobj)
 //
 void P_UnsetThingPosition(mobj_t *thing)
 {
-	I_Assert(thing != NULL);
 	I_Assert(!P_MobjWasRemoved(thing));
 
 	if (!(thing->flags & MF_NOSECTOR))
@@ -811,7 +808,6 @@ void P_SetThingPosition(mobj_t *thing)
 	sector_t *oldsec = NULL;
 	fixed_t tfloorz, tceilz;
 
-	I_Assert(thing != NULL);
 	I_Assert(!P_MobjWasRemoved(thing));
 
 	if (thing->player && thing->z <= thing->floorz && thing->subsector)

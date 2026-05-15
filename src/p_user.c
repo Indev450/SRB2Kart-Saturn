@@ -2112,7 +2112,6 @@ void P_ElementalFireTrail(player_t *player)
 	INT32 i;
 
 	I_Assert(player != NULL);
-	I_Assert(player->mo != NULL);
 	I_Assert(!P_MobjWasRemoved(player->mo));
 
 	if (player->mo->eflags & MFE_VERTICALFLIP)

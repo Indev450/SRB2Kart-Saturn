@@ -1649,7 +1649,6 @@ static UINT8 K_CheckOffroadCollide(mobj_t *mo)
 	fixed_t flr, cel; // floor & ceiling for height checks to make sure we're touching the offroad sector.
 	INT32 special;
 
-	I_Assert(mo != NULL);
 	I_Assert(!P_MobjWasRemoved(mo));
 
 	for (node = mo->touching_sectorlist; node; node = node->m_sectorlist_next)
@@ -1789,7 +1788,6 @@ static void K_SpawnDashDustRelease(player_t *player)
 	INT32 i;
 
 	I_Assert(player != NULL);
-	I_Assert(player->mo != NULL);
 	I_Assert(!P_MobjWasRemoved(player->mo));
 
 	if (!player->speed && !player->kartstuff[k_startboost])
@@ -1827,7 +1825,6 @@ static void K_SpawnBrakeDriftSparks(player_t *player) // Be sure to update the m
 	mobj_t *sparks;
 
 	I_Assert(player != NULL);
-	I_Assert(player->mo != NULL);
 	I_Assert(!P_MobjWasRemoved(player->mo));
 
 	// Position & etc are handled in its thinker, and its spawned invisible.
@@ -3227,7 +3224,6 @@ static void K_SpawnDriftSparks(player_t *player)
 	INT32 i;
 
 	I_Assert(player != NULL);
-	I_Assert(player->mo != NULL);
 	I_Assert(!P_MobjWasRemoved(player->mo));
 
 	if (leveltime % 2 == 1)
@@ -3599,7 +3595,6 @@ void K_SpawnBoostTrail(player_t *player)
 	INT32 i;
 
 	I_Assert(player != NULL);
-	I_Assert(player->mo != NULL);
 	I_Assert(!P_MobjWasRemoved(player->mo));
 
 	if (!P_IsObjectOnGround(player->mo)
@@ -3681,7 +3676,6 @@ void K_SpawnSparkleTrail(mobj_t *mo)
 	mobj_t *sparkle;
 	INT32 i;
 
-	I_Assert(mo != NULL);
 	I_Assert(!P_MobjWasRemoved(mo));
 
 	const boolean shouldblend = (mo->player && K_PlayerEffectsShouldBlend(mo->player));
@@ -3715,7 +3709,6 @@ mobj_t *K_SpawnWipeoutTrail(mobj_t *mo, boolean translucent)
 	mobj_t *dust;
 	angle_t aoff;
 
-	I_Assert(mo != NULL);
 	I_Assert(!P_MobjWasRemoved(mo));
 
 	if (mo->player)

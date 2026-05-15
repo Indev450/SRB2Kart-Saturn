@@ -306,7 +306,6 @@ void P_NewChaseDir(mobj_t *actor)
 	dirtype_t d[3];
 	dirtype_t tdir = DI_NODIR, olddir, turnaround;
 
-	I_Assert(actor->target != NULL);
 	I_Assert(!P_MobjWasRemoved(actor->target));
 
 	olddir = actor->movedir;
@@ -619,7 +618,6 @@ void A_Chase(void *thing)
 	if (LUA_CallAction(A_CHASE, actor))
 		return;
 
-	I_Assert(actor != NULL);
 	I_Assert(!P_MobjWasRemoved(actor));
 
 	if (actor->reactiontime)

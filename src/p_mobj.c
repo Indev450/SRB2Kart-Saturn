@@ -222,11 +222,6 @@ boolean P_SetMobjState(mobj_t *mobj, statenum_t state)
 
 	INT32 recursion = 0;
 
-#ifdef PARANOIA
-	if (mobj->player != NULL)
-		I_Error("P_SetMobjState used for player mobj. Use P_SetPlayerMobjState instead!\n(State called: %d)", state);
-#endif
-
 	if (mobj->player != NULL)
 		return P_SetPlayerMobjState(mobj, state);
 
@@ -339,7 +334,6 @@ void P_ExplodeMissile(mobj_t *mo)
 {
 	mobj_t *explodemo;
 
-	I_Assert(mo != NULL);
 	I_Assert(!P_MobjWasRemoved(mo));
 
 	mo->momx = mo->momy = mo->momz = 0;
@@ -983,7 +977,6 @@ fixed_t P_GetMobjGravity(mobj_t *mo)
 	boolean goopgravity = false;
 	boolean wasflip;
 
-	I_Assert(mo != NULL);
 	I_Assert(!P_MobjWasRemoved(mo));
 
 	wasflip = (mo->eflags & MFE_VERTICALFLIP) != 0;
@@ -1156,7 +1149,6 @@ void P_CheckGravity(mobj_t *mo, boolean affect)
 //
 static void P_SceneryXYFriction(mobj_t *mo, fixed_t oldx, fixed_t oldy)
 {
-	I_Assert(mo != NULL);
 	I_Assert(!P_MobjWasRemoved(mo));
 
 	const fixed_t fric_scale = FixedMul(FRACUNIT/32, mo->scale);
@@ -1200,7 +1192,6 @@ static void P_XYFriction(mobj_t *mo, fixed_t oldx, fixed_t oldy)
 {
 	player_t *player;
 
-	I_Assert(mo != NULL);
 	I_Assert(!P_MobjWasRemoved(mo));
 
 	player = mo->player;
@@ -1252,7 +1243,6 @@ static void P_PushableCheckBustables(mobj_t *mo)
 	fixed_t oldx;
 	fixed_t oldy;
 
-	I_Assert(mo != NULL);
 	I_Assert(!P_MobjWasRemoved(mo));
 
 	if (netgame && mo->player && mo->player->spectator)
@@ -1371,7 +1361,6 @@ void P_XYMovement(mobj_t *mo)
 	vector3_t slopemom = {0, 0, 0};
 	fixed_t predictedz = 0;
 
-	I_Assert(mo != NULL);
 	I_Assert(!P_MobjWasRemoved(mo));
 
 	// if it's stopped
@@ -1726,7 +1715,6 @@ void P_XYMovement(mobj_t *mo)
 
 static void P_RingXYMovement(mobj_t *mo)
 {
-	I_Assert(mo != NULL);
 	I_Assert(!P_MobjWasRemoved(mo));
 
 	if (!P_SceneryTryMove(mo, mo->x + mo->momx, mo->y + mo->momy))
@@ -1737,7 +1725,6 @@ static void P_SceneryXYMovement(mobj_t *mo)
 {
 	fixed_t oldx, oldy; // reducing bobbing/momentum on ice when up against walls
 
-	I_Assert(mo != NULL);
 	I_Assert(!P_MobjWasRemoved(mo));
 
 	oldx = mo->x;
@@ -1775,7 +1762,6 @@ static void P_AdjustMobjFloorZ_FFloors(mobj_t *mo, sector_t *sector, UINT8 motyp
 	fixed_t delta1, delta2, thingtop;
 	fixed_t topheight, bottomheight;
 
-	I_Assert(mo != NULL);
 	I_Assert(!P_MobjWasRemoved(mo));
 
 	thingtop = mo->z + mo->height;
@@ -1852,7 +1838,6 @@ static void P_AdjustMobjFloorZ_PolyObjs(mobj_t *mo, subsector_t *subsec)
 	fixed_t delta1, delta2, thingtop;
 	fixed_t polytop, polybottom;
 
-	I_Assert(mo != NULL);
 	I_Assert(!P_MobjWasRemoved(mo));
 
 	thingtop = mo->z + mo->height;
@@ -1896,7 +1881,6 @@ static void P_AdjustMobjFloorZ_PolyObjs(mobj_t *mo, subsector_t *subsec)
 
 static void P_RingZMovement(mobj_t *mo)
 {
-	I_Assert(mo != NULL);
 	I_Assert(!P_MobjWasRemoved(mo));
 
 	// Intercept the stupid 'fall through 3dfloors' bug
@@ -1931,7 +1915,6 @@ static void P_RingZMovement(mobj_t *mo)
 
 boolean P_CheckDeathPitCollide(mobj_t *mo)
 {
-	I_Assert(mo != NULL);
 	I_Assert(!P_MobjWasRemoved(mo));
 
 	const INT32 secspecial = GETSECSPECIAL(mo->subsector->sector->special, 1);
@@ -1948,7 +1931,6 @@ boolean P_CheckDeathPitCollide(mobj_t *mo)
 
 boolean P_CheckSolidLava(mobj_t *mo, ffloor_t *rover)
 {
-	I_Assert(mo != NULL);
 	I_Assert(!P_MobjWasRemoved(mo));
 
 	if (rover->flags & FF_SWIMMABLE && GETSECSPECIAL(rover->master->frontsector->special, 1) == 3
@@ -1967,7 +1949,6 @@ static boolean P_ZMovement(mobj_t *mo)
 {
 	fixed_t dist, delta;
 
-	I_Assert(mo != NULL);
 	I_Assert(!P_MobjWasRemoved(mo));
 
 	// Intercept the stupid 'fall through 3dfloors' bug
@@ -2424,7 +2405,6 @@ static boolean P_ZMovement(mobj_t *mo)
 
 static void P_PlayerZMovement(mobj_t *mo)
 {
-	I_Assert(mo != NULL);
 	I_Assert(!P_MobjWasRemoved(mo));
 
 	if (!mo->player)
@@ -3484,7 +3464,6 @@ static void P_PlayerMobjThinker(mobj_t *mobj)
 {
 	msecnode_t *node;
 
-	I_Assert(mobj != NULL);
 	I_Assert(mobj->player != NULL);
 	I_Assert(!P_MobjWasRemoved(mobj));
 
@@ -9185,7 +9164,6 @@ static void P_FiringThink(mobj_t *mobj)
 //
 void P_MobjThinker(mobj_t *mobj)
 {
-	I_Assert(mobj != NULL);
 	I_Assert(!P_MobjWasRemoved(mobj));
 
 	if (mobj->flags & MF_NOTHINK)
@@ -9289,7 +9267,6 @@ void P_MobjThinker(mobj_t *mobj)
 	if (mobj->fuse && !P_FuseThink(mobj))
 		return;
 
-	I_Assert(mobj != NULL);
 	I_Assert(!P_MobjWasRemoved(mobj));
 
 	if (mobj->momx || mobj->momy || (mobj->flags2 & MF2_SKULLFLY))
@@ -9385,7 +9362,6 @@ boolean P_RailThinker(mobj_t *mobj)
 {
 	fixed_t x, y, z;
 
-	I_Assert(mobj != NULL);
 	I_Assert(!P_MobjWasRemoved(mobj));
 
 	x = mobj->x, y = mobj->y, z = mobj->z;
@@ -9411,7 +9387,6 @@ void P_PushableThinker(mobj_t *mobj)
 {
 	sector_t *sec;
 
-	I_Assert(mobj != NULL);
 	I_Assert(!P_MobjWasRemoved(mobj));
 
 	if (!mobj)
