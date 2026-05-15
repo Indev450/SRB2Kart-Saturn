@@ -905,7 +905,12 @@ static void P_PlayerFlip(mobj_t *mo)
 	G_GhostAddFlip((INT32) (mo->player - players));
 	// Flip aiming to match!
 
-	if (mo->player->pflags & PF_FLIPCAM)
+	if (UNLIKELY(mo->player->pflags & PF_NIGHTSMODE)) // NiGHTS doesn't use flipcam
+	{
+		if (mo->tracer)
+			mo->tracer->eflags ^= MFE_VERTICALFLIP;
+	}
+	else if (mo->player->pflags & PF_FLIPCAM)
 	{
 		UINT8 i;
 
@@ -926,11 +931,6 @@ static void P_PlayerFlip(mobj_t *mo)
 			if (mo->eflags & MFE_VERTICALFLIP)
 				camera[i].z += FixedMul(20*FRACUNIT, mo->scale);
 		}
-	}
-	else if (UNLIKELY(mo->player->pflags & PF_NIGHTSMODE)) // NiGHTS doesn't use flipcam
-	{
-		if (mo->tracer)
-			mo->tracer->eflags ^= MFE_VERTICALFLIP;
 	}
 }
 

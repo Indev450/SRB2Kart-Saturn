@@ -221,8 +221,9 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec, INT32 *floorlightlevel,
 		tempsec->floorheight = s->floorheight;
 		tempsec->ceilingheight = s->ceilingheight;
 
-		if ((underwater && (tempsec->  floorheight = sec->floorheight,
-			tempsec->ceilingheight = s->floorheight - 1, !back)) || viewz <= s->floorheight)
+		if ((underwater && (tempsec->floorheight = sec->floorheight,
+							tempsec->ceilingheight = s->floorheight - 1, !back)) ||
+							viewz <= s->floorheight)
 		{ // head-below-floor hack
 			tempsec->floorpic = s->floorpic;
 			tempsec->floor_xoffs = s->floor_xoffs;
@@ -258,8 +259,8 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec, INT32 *floorlightlevel,
 				*ceilinglightlevel = s->ceilinglightsec == -1 ? s->lightlevel
 					: sectors[s->ceilinglightsec].lightlevel;
 		}
-		else if (heightsec != -1 && viewz >= sectors[heightsec].ceilingheight
-			&& sec->ceilingheight > s->ceilingheight)
+		else if (heightsec != -1 && viewz >= sectors[heightsec].ceilingheight &&
+				 sec->ceilingheight > s->ceilingheight)
 		{ // Above-ceiling hack
 			tempsec->ceilingheight = s->ceilingheight;
 			tempsec->floorheight = s->ceilingheight + 1;
@@ -296,7 +297,8 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec, INT32 *floorlightlevel,
 				*ceilinglightlevel = s->ceilinglightsec == -1 ? s->lightlevel :
 			sectors[s->ceilinglightsec].lightlevel;
 		}
-		sec = tempsec;
+
+		sec = tempsec; // Use other sector
 	}
 
 	return sec;
