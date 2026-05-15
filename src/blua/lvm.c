@@ -529,16 +529,11 @@ void luaV_execute (lua_State *L, int nexeccalls) {
         continue;
       }
       case OP_SELF: {
-        TValue *slot;
         StkId ra = RA(i);
         StkId rb = RB(i);
         TValue *rc = RKC(i);
-        TString *key = rawtsvalue(rc);  /* key must be a string */
         setobjs2s(L, ra + 1, rb);
-        if (luaV_fastget(L, rb, key, slot, luaH_getstr)) {
-          setobj2s(L, ra, slot);
-        }
-        else Protect(luaV_finishget(L, rb, rc, ra, slot));
+        gettableProtected(L, rb, rc, ra);
         continue;
       }
       case OP_ADD: {
