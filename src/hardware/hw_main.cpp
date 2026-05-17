@@ -2838,9 +2838,6 @@ static void HWR_Subsector(size_t num)
 
 	floorcolormap = ceilingcolormap = gl_frontsector->extra_colormap;
 
-	cullFloorHeight   = P_GetSectorFloorZAt  (gl_frontsector, viewx, viewy);
-	cullCeilingHeight = P_GetSectorCeilingZAt(gl_frontsector, viewx, viewy);
-
 	if (gl_frontsector->ffloors)
 	{
 		locFloorHeight    = P_GetSectorFloorZAt  (gl_frontsector, gl_frontsector->soundorg.x, gl_frontsector->soundorg.y);
@@ -2890,13 +2887,15 @@ static void HWR_Subsector(size_t num)
 
 	sub->sector->extra_colormap = gl_frontsector->extra_colormap;
 
-	// render floor ?
-	// yeah, easy backface cull! :)
-	if (cullFloorHeight < viewz)
+	if (sub->validcount != validcount)
 	{
 		if (gl_frontsector->floorpic != skyflatnum)
 		{
-			if (sub->validcount != validcount)
+			cullFloorHeight = P_GetSectorFloorZAt(gl_frontsector, viewx, viewy);
+
+			// render floor ?
+			// yeah, easy backface cull! :)
+			if (cullFloorHeight < viewz)
 			{
 				HWR_GetFlat(levelflats[gl_frontsector->floorpic].lumpnum, R_NoEncore(gl_frontsector, false));
 				HWR_RenderPlane(sub, &poly_subsectors[num], false,
@@ -2905,13 +2904,12 @@ static void HWR_Subsector(size_t num)
 					PF_Occlude, floorlightlevel, levelflats[gl_frontsector->floorpic].lumpnum, NULL, 255, floorcolormap);
 			}
 		}
-	}
 
-	if (cullCeilingHeight > viewz)
-	{
 		if (gl_frontsector->ceilingpic != skyflatnum)
 		{
-			if (sub->validcount != validcount)
+			cullCeilingHeight = P_GetSectorCeilingZAt(gl_frontsector, viewx, viewy);
+
+			if (cullCeilingHeight > viewz)
 			{
 				HWR_GetFlat(levelflats[gl_frontsector->ceilingpic].lumpnum, R_NoEncore(gl_frontsector, true));
 				HWR_RenderPlane(sub, &poly_subsectors[num], true,
@@ -2931,6 +2929,7 @@ static void HWR_Subsector(size_t num)
 
 			if (!(rover->flags & FF_EXISTS) || !(rover->flags & FF_RENDERPLANES) || !(rover->flags & FF_RENDERALL))
 				continue;
+
 			if (sub->validcount == validcount)
 				continue;
 
@@ -2947,9 +2946,22 @@ static void HWR_Subsector(size_t num)
 
 			auto render_plane = [&](boolean bottom)
 			{
-				const fixed_t cullheight = bottom ? bottomCullHeight : topCullHeight;
-				const levelflat_t *flat = bottom ? &levelflats[*rover->bottompic] : &levelflats[*rover->toppic];
-				const fixed_t roverheight = bottom ? *rover->bottomheight : *rover->topheight;
+				fixed_t cullheight;
+				fixed_t roverheight;
+				lumpnum_t flatlump;
+
+				if (bottom)
+				{
+					cullheight  = bottomCullHeight;
+					roverheight = *rover->bottomheight;
+					flatlump    = levelflats[*rover->bottompic].lumpnum;
+				}
+				else
+				{
+					cullheight  = topCullHeight;
+					roverheight = *rover->topheight;
+					flatlump    = levelflats[*rover->toppic].lumpnum;
+				}
 
 				if (rover->flags & FF_FOG)
 				{
@@ -2971,7 +2983,7 @@ static void HWR_Subsector(size_t num)
 				{
 					light = R_GetPlaneLight(gl_frontsector, centerHeight, (viewz < cullheight));
 
-					HWR_AddTransparentFloor(flat->lumpnum,
+					HWR_AddTransparentFloor(flatlump,
 											&poly_subsectors[num],
 											!bottom,
 											roverheight,
@@ -2981,10 +2993,10 @@ static void HWR_Subsector(size_t num)
 				}
 				else
 				{
-					HWR_GetFlat(flat->lumpnum, R_NoEncore(gl_frontsector, !bottom));
+					HWR_GetFlat(flatlump, R_NoEncore(gl_frontsector, !bottom));
 					light = R_GetPlaneLight(gl_frontsector, centerHeight, (viewz < cullheight));
 
-					HWR_RenderPlane(sub, &poly_subsectors[num], !bottom, roverheight, HWR_RippleBlend(gl_frontsector, rover, false)|PF_Occlude, *gl_frontsector->lightlist[light].lightlevel, flat->lumpnum,
+					HWR_RenderPlane(sub, &poly_subsectors[num], !bottom, roverheight, HWR_RippleBlend(gl_frontsector, rover, false)|PF_Occlude, *gl_frontsector->lightlist[light].lightlevel, flatlump,
 									rover->master->frontsector, 255, gl_frontsector->lightlist[light].extra_colormap);
 				}
 			};
