@@ -2977,9 +2977,6 @@ static void HWR_Subsector(size_t num)
 
 	floorcolormap = ceilingcolormap = gl_frontsector->extra_colormap;
 
-	cullFloorHeight   = P_GetSectorFloorZAt  (gl_frontsector, viewx, viewy);
-	cullCeilingHeight = P_GetSectorCeilingZAt(gl_frontsector, viewx, viewy);
-
 	if (gl_frontsector->ffloors)
 	{
 		locFloorHeight    = P_GetSectorFloorZAt  (gl_frontsector, gl_frontsector->soundorg.x, gl_frontsector->soundorg.y);
@@ -3029,13 +3026,15 @@ static void HWR_Subsector(size_t num)
 
 	sub->sector->extra_colormap = gl_frontsector->extra_colormap;
 
-	// render floor ?
-	// yeah, easy backface cull! :)
-	if (cullFloorHeight < viewz)
+	if (sub->validcount != validcount)
 	{
 		if (gl_frontsector->floorpic != skyflatnum)
 		{
-			if (sub->validcount != validcount)
+			cullFloorHeight = P_GetSectorFloorZAt(gl_frontsector, viewx, viewy);
+
+			// render floor ?
+			// yeah, easy backface cull! :)
+			if (cullFloorHeight < viewz)
 			{
 				HWR_GetFlat(levelflats[gl_frontsector->floorpic].lumpnum, R_NoEncore(gl_frontsector, false));
 				HWR_RenderPlane(sub, &extrasubsectors[num], false,
@@ -3044,13 +3043,12 @@ static void HWR_Subsector(size_t num)
 					PF_Occlude, floorlightlevel, levelflats[gl_frontsector->floorpic].lumpnum, NULL, 255, floorcolormap);
 			}
 		}
-	}
 
-	if (cullCeilingHeight > viewz)
-	{
 		if (gl_frontsector->ceilingpic != skyflatnum)
 		{
-			if (sub->validcount != validcount)
+			cullCeilingHeight = P_GetSectorCeilingZAt(gl_frontsector, viewx, viewy);
+
+			if (cullCeilingHeight > viewz)
 			{
 				HWR_GetFlat(levelflats[gl_frontsector->ceilingpic].lumpnum, R_NoEncore(gl_frontsector, true));
 				HWR_RenderPlane(sub, &extrasubsectors[num], true,
@@ -3070,6 +3068,7 @@ static void HWR_Subsector(size_t num)
 
 			if (!(rover->flags & FF_EXISTS) || !(rover->flags & FF_RENDERPLANES) || !(rover->flags & FF_RENDERALL))
 				continue;
+
 			if (sub->validcount == validcount)
 				continue;
 
