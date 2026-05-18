@@ -2632,7 +2632,6 @@ static boolean HWR_CheckBBox(const fixed_t *bspcoord)
 	return gld_clipper_SafeCheckRange(angle2, angle1);
 }
 
-
 //
 // HWR_AddPolyObjectSegs
 //
@@ -3231,11 +3230,11 @@ doaddline:
 		//         without talking about the overdraw of course.
 		sub->sector->validcount = validcount;/// \todo fix that in a better way
 
-		if (UNLIKELY(numpolys))
+		if (UNLIKELY(sub->polyList))
 		{
 			while (count--)
 			{
-				if (LIKELY(!line->polyseg)) // ignore segs that belong to polyobjects
+				if (!line->polyseg) // ignore segs that belong to polyobjects
 				{
 					HWR_AddLine(line);
 				}
