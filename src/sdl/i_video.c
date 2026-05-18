@@ -1855,6 +1855,9 @@ void I_StartupGraphics(void)
 			{
 				word = strtok(line, " \n");
 
+				if (!word)
+					continue;
+
 				if (rendermode == render_none)
 				{
 					if (fasticmp(word, "software"))
