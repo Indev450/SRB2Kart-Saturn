@@ -1018,17 +1018,17 @@ static menuitem_t OP_OpenGLOptionsMenu[] =
 	{IT_STRING | IT_CVAR,	NULL, "Shaders",					&cv_glshaders,				25},
 	{IT_STRING | IT_CVAR,	NULL, "Palette Rendering",			&cv_glpaletterendering,		30},
 
-	{IT_STRING | IT_CVAR,	NULL, "Texture Quality",			&cv_gltexturedepth,			45},
-	{IT_STRING | IT_CVAR,	NULL, "Texture Filter",				&cv_glfiltermode,			50},
-	{IT_STRING | IT_CVAR,	NULL, "Anisotropic",				&cv_glanisotropicmode,		55},
-	{IT_STRING | IT_CVAR,	NULL, "Visual Portals",		  		&cv_glportals,				60},
+	{IT_STRING | IT_CVAR,	NULL, "Texture Quality",			&cv_gltexturedepth,			40},
+	{IT_STRING | IT_CVAR,	NULL, "Texture Filter",				&cv_glfiltermode,			45},
+	{IT_STRING | IT_CVAR,	NULL, "Anisotropic",				&cv_glanisotropicmode,		50},
+	{IT_STRING | IT_CVAR,	NULL, "Visual Portals",		  		&cv_glportals,				55},
 
-	{IT_STRING | IT_CVAR,	NULL, "Wall Contrast Style",		&cv_glfakecontrast,			70},
-	{IT_STRING | IT_CVAR,	NULL, "Slope Contrast",				&cv_glslopecontrast,		75},
-	{IT_STRING | IT_CVAR, 	NULL, "Dithered Lightning", 		&cv_gllightdither,			80},
-	{IT_STRING | IT_CVAR,	NULL, "Sprite Billboarding",		&cv_glspritebillboarding,	85},
-	{IT_STRING | IT_CVAR,	NULL, "Software Perspective",		&cv_glshearing,				90},
-	{IT_STRING | IT_CVAR,	NULL, "Rendering Distance",			&cv_glrenderdistance,		95},
+	{IT_STRING | IT_CVAR,	NULL, "Wall Contrast Style",		&cv_glfakecontrast,			65},
+	{IT_STRING | IT_CVAR,	NULL, "Slope Contrast",				&cv_glslopecontrast,		70},
+	{IT_STRING | IT_CVAR, 	NULL, "Dithered Lightning", 		&cv_gllightdither,			75},
+	{IT_STRING | IT_CVAR,	NULL, "Sprite Billboarding",		&cv_glspritebillboarding,	80},
+	{IT_STRING | IT_CVAR,	NULL, "Software Perspective",		&cv_glshearing,				85},
+	{IT_STRING | IT_CVAR,	NULL, "Rendering Distance",			&cv_glrenderdistance,		90},
 };
 
 static const char* OP_OpenGLTooltips[] =
