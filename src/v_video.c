@@ -423,9 +423,9 @@ static void ApplyPaletteDelta(const RGBA_t *pal_in, RGBA_t *pal_out, const INT16
 		INT16 r = (INT16)pal_in[i].s.red   + pal_delta[i][0];
 		INT16 g = (INT16)pal_in[i].s.green + pal_delta[i][1];
 		INT16 b = (INT16)pal_in[i].s.blue  + pal_delta[i][2];
-		pal_out[i].s.red   = (UINT8)CLAMP(r, 0 , 255);
-		pal_out[i].s.green = (UINT8)CLAMP(g, 0 , 255);
-		pal_out[i].s.blue  = (UINT8)CLAMP(b, 0 , 255);
+		pal_out[i].s.red   = (UINT8)CLAMP(r, 0, 255);
+		pal_out[i].s.green = (UINT8)CLAMP(g, 0, 255);
+		pal_out[i].s.blue  = (UINT8)CLAMP(b, 0, 255);
 		pal_out[i].s.alpha = 0xFF; // pal_in[i].s.alpha
 	}
 }

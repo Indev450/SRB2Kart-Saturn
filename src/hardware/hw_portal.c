@@ -170,7 +170,7 @@ void HWR_RenderPortal(gl_portal_t* portal, gl_portal_t* rootportal, const float 
 	HWR_PortalFrame(portal);
 
 	// call HWR_RenderViewpoint
-	HWR_RenderPortalViewpoint(portal, stencil_level + 1, true);
+	HWR_RenderPortalViewpoint(portal, stencil_level + 1);
 
 	// return to current frame
 	if (rootportal)
