@@ -320,7 +320,7 @@ static void R_AddLine(seg_t *line)
 	INT32 x1, x2;
 	angle_t angle1, angle2, span, tspan;
 	static sector_t tempsec;
-	boolean bothfloorssky   = false;
+	boolean bothfloorssky = false;
 
 	g_portal = NULL;
 

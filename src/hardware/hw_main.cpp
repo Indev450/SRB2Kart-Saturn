@@ -1078,15 +1078,15 @@ static void HWR_SplitWall(sector_t *sector, FOutVector *wallVerts, INT32 texnum,
 		{
 			bheight    = FixedToFloat(P_GetFFloorBottomZAt(list[i].caster, v1x, v1y));
 			endbheight = FixedToFloat(P_GetFFloorBottomZAt(list[i].caster, v2x, v2y));
-		}
 
-		if (endheight >= endtop && height >= top)
-		{
-			if (solid && top > bheight)
-				top = bheight;
+			if (endheight >= endtop && height >= top)
+			{
+				if (top > bheight)
+					top = bheight;
 
-			if (solid && endtop > endbheight)
-				endtop = endbheight;
+				if (endtop > endbheight)
+					endtop = endbheight;
+			}
 		}
 
 		if (i + 1 < sector->numlights)
@@ -2504,11 +2504,11 @@ static void HWR_AddLine(seg_t *line)
 
 	gl_curline = line;
 
-	v1x = gl_curline->v1->x;
-	v1y = gl_curline->v1->y;
+	v1x = line->v1->x;
+	v1y = line->v1->y;
 
-	v2x = gl_curline->v2->x;
-	v2y = gl_curline->v2->y;
+	v2x = line->v2->x;
+	v2y = line->v2->y;
 
 	// OPTIMIZE: quickly reject orthogonal back sides.
 	angle1 = R_PointToAngle64(v1x, v1y);
@@ -2544,6 +2544,7 @@ static boolean HWR_CheckBBox(const fixed_t *bspcoord)
 {
 	fixed_t px1, py1, px2, py2;
 	angle_t angle1, angle2;
+	const INT32* check;
 
 	// Find the corners of the box
 	// that define the edges from current viewpoint.
@@ -2555,10 +2556,12 @@ static boolean HWR_CheckBBox(const fixed_t *bspcoord)
 	if (boxpos == 5)
 		return true;
 
-	px1 = bspcoord[checkcoord[boxpos][0]];
-	py1 = bspcoord[checkcoord[boxpos][1]];
-	px2 = bspcoord[checkcoord[boxpos][2]];
-	py2 = bspcoord[checkcoord[boxpos][3]];
+	check = checkcoord[boxpos];
+
+	px1 = bspcoord[check[0]];
+	py1 = bspcoord[check[1]];
+	px2 = bspcoord[check[2]];
+	py2 = bspcoord[check[3]];
 
 	if (current_bsp_culling_distance)
 	{
@@ -3212,15 +3215,12 @@ doaddline:
 	// hurdler: false: we only add the sprites, the walls are drawn first
 	if (line)
 	{
-		if (sub->sector->validcount != validcount)
-		{
-			// draw sprites first, coz they are clipped to the solidsegs of
-			// subsectors more 'in front'
-			if (cv_drawdist.value || current_bsp_culling_distance)
-				HWR_AddSprites<AddSpritesType::kLimitDist>(gl_frontsector);
-			else
-				HWR_AddSprites<AddSpritesType::kNoLimitDist>(gl_frontsector);
-		}
+		// draw sprites first, coz they are clipped to the solidsegs of
+		// subsectors more 'in front'
+		if (cv_drawdist.value || current_bsp_culling_distance)
+			HWR_AddSprites<AddSpritesType::kLimitDist>(gl_frontsector);
+		else
+			HWR_AddSprites<AddSpritesType::kNoLimitDist>(gl_frontsector);
 
 		//Hurdler: at this point validcount must be the same, but is not because
 		//         gl_frontsector doesn't point anymore to sub->sector due to
@@ -5679,8 +5679,8 @@ static void HWR_RenderViewpoint(gl_portal_t *rootportal, int stencil_level, bool
 };
 
 extern "C" {
-	void HWR_RenderPortalViewpoint(gl_portal_t *rootportal, int stencil_level, boolean allow_portals) {
-		HWR_RenderViewpoint<RenderViewpointType::kPortal>(rootportal, stencil_level, allow_portals);
+	void HWR_RenderPortalViewpoint(gl_portal_t *rootportal, int stencil_level) {
+		HWR_RenderViewpoint<RenderViewpointType::kPortal>(rootportal, stencil_level, true);
 	}
 }
 
