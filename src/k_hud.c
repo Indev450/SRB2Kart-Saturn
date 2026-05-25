@@ -4261,6 +4261,7 @@ static void K_drawInput(void)
 
 	y -= FRACUNIT;
 
+	// stick displays
 	if (cv_showinput.value == 2 || cv_showinput.value == 3)
 	{
 		INT32 axis;
@@ -4288,39 +4289,19 @@ static void K_drawInput(void)
 		// kart does not have anything we can get analogue joystick y axis values from
 		// during normal gameplay, so replicate shit here
 
-		// this is horrid but we cant get actual input in replays so uhh
-		if (demo.playback || !P_IsLocalPlayer(stplyr)) // yeah...........
+		const boolean analogjoystickmove = (!demo.playback && P_IsLocalPlayer(stplyr) && cv_usejoystick[stplyrnum].value && !Joystick[stplyrnum].bGamepadStyle);
+		axis = analogjoystickmove ? JoyAxis(AXISAIM, stplyrnum+1) : 0;
+
+		if (axis != 0)
 		{
-			hudforward = stplyr->kartstuff[k_throwdir] * KART_FULLTURN;
+			hudforward -= ((axis * KART_FULLTURN) / JOYAXISRANGE);
 		}
 		else
 		{
-			const boolean analogjoystickmove  = cv_usejoystick[stplyrnum].value && !Joystick[stplyrnum].bGamepadStyle;
-			const boolean gamepadjoystickmove = cv_usejoystick[stplyrnum].value && Joystick[stplyrnum].bGamepadStyle;
-			const UINT8 ssplayer = stplyrnum+1;
-
-			axis = JoyAxis(AXISAIM, ssplayer);
-
-			if (analogjoystickmove && axis != 0)
-			{
-				// JOYAXISRANGE is supposed to be 1023 (divide by 1024)
-				hudforward -= ((axis * KART_FULLTURN) / (JOYAXISRANGE-1));
-			}
-			else
-			{
-				if (InputDown(gc_aimforward, ssplayer) || (gamepadjoystickmove && axis < 0))
-				{
-					hudforward += KART_FULLTURN;
-				}
-
-				if (InputDown(gc_aimbackward, ssplayer) || (gamepadjoystickmove && axis > 0))
-				{
-					hudforward -= KART_FULLTURN;
-				}
-			}
-
-			hudforward = CLAMP(hudforward, -KART_FULLTURN, KART_FULLTURN);
+			hudforward = stplyr->kartstuff[k_throwdir] * KART_FULLTURN;
 		}
+
+		hudforward = CLAMP(hudforward, -KART_FULLTURN, KART_FULLTURN);
 
 		if (cmd->driftturn || hudforward)
 		{
@@ -4354,7 +4335,7 @@ static void K_drawInput(void)
 			}
 		}
 	}
-	else
+	else // wheel
 	{
 		if (!cmd->driftturn) // no turn
 			target = 0;
