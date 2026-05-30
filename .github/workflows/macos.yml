@@ -26,6 +26,17 @@ jobs:
     - name: Install dependencies
       run: brew install --formula sdl2 sdl2_mixer game-music-emu libopenmpt
 
+    - name: Download Kart assets
+      run: |
+        curl -L \
+        -o AssetsLinuxOnly.zip \
+        "https://github.com/STJr/Kart-Public/releases/download/v1.6/AssetsLinuxOnly.zip"
+
+    - name: Extract Kart assets
+      run: |
+        mkdir -p assets/installer
+        unzip -q AssetsLinuxOnly.zip -d assets/installer
+
     - name: Configure CMake
       run: cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
 
