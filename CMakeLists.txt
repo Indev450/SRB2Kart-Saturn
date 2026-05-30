@@ -29,7 +29,7 @@ if("${SRB2_CPACK_GENERATOR}" STREQUAL "")
 	elseif("${CMAKE_SYSTEM_NAME}" MATCHES "Linux")
 		set(SRB2_CPACK_GENERATOR "TGZ")
 	elseif("${CMAKE_SYSTEM_NAME}" MATCHES "Darwin")
-		set(SRB2_CPACK_GENERATOR "TGZ")
+		set(SRB2_CPACK_GENERATOR "DragNDrop")
 	endif()
 endif()
 
