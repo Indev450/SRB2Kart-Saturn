@@ -1,0 +1,39 @@
+name: macOS
+
+on:
+  push:
+    branches: [ "next", "master", "ci" ]
+  pull_request:
+    branches: [ "next", "master" ]
+
+jobs:
+  build:
+    continue-on-error: true
+    strategy:
+      matrix:
+        arch:
+          - runner: macos-latest
+            name: aarch64
+          - runner: macos-15-intel
+            name: x86_64
+
+    name: ${{ matrix.arch.name }}
+    runs-on: ${{ matrix.arch.runner }}
+
+    steps:
+    - uses: actions/checkout@v6.0.1
+
+    - name: Install dependencies
+      run: brew install --formula sdl2 sdl2_mixer game-music-emu miniupnpc libopenmpt
+
+    - name: Configure CMake
+      run: cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+
+    - name: Build SRB2Kart-Saturn
+      run: ninja -C build
+
+    - name: Upload build artifact
+      uses: actions/upload-artifact@v6.0.0
+      with:
+        name: srb2kartsaturn-macOS-${{ matrix.arch.name }}-${{ github.sha }}
+        path: build/bin
