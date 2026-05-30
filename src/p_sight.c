@@ -73,13 +73,15 @@ static inline INT32 P_DivlineCrossedFast(fixed_t x1, fixed_t y1, fixed_t x2, fix
 	return (P_DivlineSideFast(x1, y1, node) == P_DivlineSideFast(x2, y2, node));
 }
 
-static boolean P_CrossSubsecPolyObj(polyobj_t *po, register los_t *los)
+static boolean P_CrossSubsecPolyObj(polyobj_t *po, register los_t *los, boolean fast)
 {
 	size_t i;
 	sector_t *polysec;
 
 	if (!(po->flags & POF_RENDERALL))
 		return true; // the polyobject isn't visible, so we can ignore it
+
+	const divlinecrossfunc divlinecrossFunc = fast ? P_DivlineCrossedFast : P_DivlineCrossed;
 
 	polysec = po->lines[0]->backsector;
 
@@ -108,21 +110,21 @@ static boolean P_CrossSubsecPolyObj(polyobj_t *po, register los_t *los)
 		v2 = line->v2;
 
 		// line isn't crossed?
-		if (P_DivlineCrossed(v1->x, v1->y, v2->x, v2->y, &los->strace))
+		if (divlinecrossFunc(v1->x, v1->y, v2->x, v2->y, &los->strace))
 			continue;
 
 		divl.dx = v2->x - (divl.x = v1->x);
 		divl.dy = v2->y - (divl.y = v1->y);
 
 		// line isn't crossed?
-		if (P_DivlineCrossed(los->strace.x, los->strace.y, los->t2x, los->t2y, &divl))
+		if (divlinecrossFunc(los->strace.x, los->strace.y, los->t2x, los->t2y, &divl))
 			continue;
 
 		frac = P_InterceptVector(&los->strace, &divl);
 
 		// get slopes of top and bottom of this polyobject line
-		topslope = FixedDiv(polysec->ceilingheight - los->sightzstart , frac);
-		bottomslope = FixedDiv(polysec->floorheight - los->sightzstart , frac);
+		topslope = FixedDiv(polysec->ceilingheight - los->sightzstart, frac);
+		bottomslope = FixedDiv(polysec->floorheight - los->sightzstart, frac);
 
 		if (topslope >= los->topslope && bottomslope <= los->bottomslope)
 			return false; // view completely blocked
@@ -147,6 +149,8 @@ static boolean P_CrossSubsector(size_t num, register los_t *los, boolean fast)
 		I_Error("P_CrossSubsector: ss %s with numss = %s\n", sizeu1(num), sizeu2(numsubsectors));
 #endif
 
+	const divlinecrossfunc divlinecrossFunc = fast ? P_DivlineCrossedFast : P_DivlineCrossed;
+
 	// haleyjd 02/23/06: this assignment should be after the above check
 	seg = segs + subsectors[num].firstline;
 
@@ -158,14 +162,12 @@ static boolean P_CrossSubsector(size_t num, register los_t *los, boolean fast)
 			if (po->validcount != validcount)
 			{
 				po->validcount = validcount;
-				if (!P_CrossSubsecPolyObj(po, los))
+				if (!P_CrossSubsecPolyObj(po, los, fast))
 					return false;
 			}
 			po = (polyobj_t *)(po->link.next);
 		}
 	}
-
-	const divlinecrossfunc divlinecrossFunc = fast ? P_DivlineCrossedFast : P_DivlineCrossed;
 
 	for (count = subsectors[num].numlines; --count >= 0; seg++)  // check lines
 	{
@@ -214,14 +216,17 @@ static boolean P_CrossSubsector(size_t num, register los_t *los, boolean fast)
 
 		front = seg->frontsector;
 		back  = seg->backsector;
+
 		// calculate position at intercept
 		fracx = los->strace.x + FixedMul(los->strace.dx, frac);
 		fracy = los->strace.y + FixedMul(los->strace.dy, frac);
+
 		// calculate sector heights
 		frontf = P_GetSectorFloorZAt  (front, fracx, fracy);
 		frontc = P_GetSectorCeilingZAt(front, fracx, fracy);
 		backf  = P_GetSectorFloorZAt  (back , fracx, fracy);
 		backc  = P_GetSectorCeilingZAt(back , fracx, fracy);
+
 		// crosses a two sided line
 		// no wall to block sight with?
 		if (frontf == backf && frontc == backc
@@ -262,6 +267,7 @@ static boolean P_CrossSubsector(size_t num, register los_t *los, boolean fast)
 			ffloor_t *rover;
 			fixed_t topslope, bottomslope;
 			fixed_t topz, bottomz;
+
 			// check front sector's FOFs first
 			for (rover = front->ffloors; rover; rover = rover->next)
 			{
@@ -275,9 +281,11 @@ static boolean P_CrossSubsector(size_t num, register los_t *los, boolean fast)
 				bottomz = P_GetFFloorBottomZAt(rover, fracx, fracy);
 				topslope    = FixedDiv(   topz - los->sightzstart, frac);
 				bottomslope = FixedDiv(bottomz - los->sightzstart, frac);
+
 				if (topslope >= los->topslope && bottomslope <= los->bottomslope)
 					return false; // view completely blocked
 			}
+
 			// check back sector's FOFs as well
 			for (rover = back->ffloors; rover; rover = rover->next)
 			{
@@ -291,6 +299,7 @@ static boolean P_CrossSubsector(size_t num, register los_t *los, boolean fast)
 				bottomz = P_GetFFloorBottomZAt(rover, fracx, fracy);
 				topslope    = FixedDiv(   topz - los->sightzstart, frac);
 				bottomslope = FixedDiv(bottomz - los->sightzstart, frac);
+
 				if (topslope >= los->topslope && bottomslope <= los->bottomslope)
 					return false; // view completely blocked
 			}
@@ -315,10 +324,10 @@ static boolean P_CrossBSPNode(INT32 bspnum, register los_t *los, boolean fast)
 
 	while (!(bspnum & NF_SUBSECTOR))
 	{
-		register node_t *bsp = nodes + bspnum;
+		register const node_t *bsp = nodes + bspnum;
 
-		INT32 side = divlineFunc(los->strace.x, los->strace.y, (divline_t *)bsp) & 1;
-		INT32 side2 = divlineFunc(los->t2x, los->t2y, (divline_t *) bsp);
+		INT32 side  = divlineFunc(los->strace.x, los->strace.y, (const divline_t *)bsp) & 1;
+		INT32 side2 = divlineFunc(los->t2x, los->t2y, (const divline_t *)bsp);
 
 		if (side == side2)
 		{
