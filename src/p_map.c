@@ -3544,6 +3544,12 @@ static boolean PIT_RadiusAttack(mobj_t *thing)
 	if (thing->flags & MF_MONITOR)
 		return true;
 
+	if (thing->floorz > bombspot->z && bombspot->ceilingz < thing->z)
+		return true;
+
+	if (thing->ceilingz < bombspot->z && bombspot->floorz > thing->z)
+		return true;
+
 	dx = abs(thing->x - bombspot->x);
 	dy = abs(thing->y - bombspot->y);
 	dz = abs(thing->z + (thing->height>>1) - bombspot->z);
@@ -3557,14 +3563,9 @@ static boolean PIT_RadiusAttack(mobj_t *thing)
 	if (dist >= bombdamage)
 		return true; // out of range
 
-	if (thing->floorz > bombspot->z && bombspot->ceilingz < thing->z)
-		return true;
-
-	if (thing->ceilingz < bombspot->z && bombspot->floorz > thing->z)
-		return true;
-
+	// must be in direct path
 	if (P_CheckSight(thing, bombspot))
-	{	// must be in direct path
+	{
 		P_DamageMobj(thing, bombspot, bombsource, 1); // Tails 01-11-2001
 	}
 
