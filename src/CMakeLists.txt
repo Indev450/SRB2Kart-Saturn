@@ -54,7 +54,7 @@ set(SRB2_CORE_SOURCES
 	string.c
 	tables.c
 	v_video.c
-	w_wad.cpp
+	w_wad.c
 	y_inter.c
 	z_zone.cpp
 )
@@ -518,7 +518,7 @@ if(${SRB2_CONFIG_HWRENDER})
 		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_batching.c
 		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_shaders.c
 		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_bsp.c
-		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_cache.cpp
+		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_cache.c
 		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_clip.c
 		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_draw.c
 		${CMAKE_CURRENT_SOURCE_DIR}/hardware/hw_main.cpp

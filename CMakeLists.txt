@@ -1,5 +1,8 @@
 cmake_minimum_required(VERSION 3.5)
 
+# needed for lto to work for some reason
+cmake_policy(SET CMP0069 NEW)
+
 if(${PROJECT_SOURCE_DIR} MATCHES ${PROJECT_BINARY_DIR})
 	message(FATAL_ERROR "In-source builds will bring you a world of pain. Please make a separate directory to invoke CMake from.")
 endif()
