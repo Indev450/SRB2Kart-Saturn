@@ -4271,7 +4271,7 @@ static void K_drawInput(void)
 		const INT32 joyy = y>>FRACBITS;
 		static const INT32 joyxoffs = -8;
 		static const INT32 joyyoffs = -24;
-		const boolean usejoysprite  = (cv_showinput.value == 3 && joystickicon);
+		const boolean usejoysprite = (cv_showinput.value == 3 && joystickicon);
 
 		// O backing
 		if (usejoysprite)

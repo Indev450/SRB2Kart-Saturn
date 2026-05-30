@@ -3092,17 +3092,24 @@ static mobj_t *K_SpawnKartMissile(mobj_t *source, mobjtype_t type, angle_t an, I
 	fixed_t finalspeed = speed;
 	mobj_t *throwmo;
 
-	if (source->player && source->player->speed > K_GetKartSpeed(source->player, false))
+	if (source->player)
 	{
-		angle_t input = source->angle - an;
-		boolean invert = (input > ANGLE_180);
-		if (invert)
-			input = InvAngle(input);
+		const fixed_t kartspd = K_GetKartSpeed(source->player, false);
 
-		finalspeed = max(speed, FixedMul(speed, FixedMul(
-			FixedDiv(source->player->speed, K_GetKartSpeed(source->player, false)), // Multiply speed to be proportional to your own, boosted maxspeed.
-			(((180<<FRACBITS) - AngleFixed(input)) / 180) // multiply speed based on angle diff... i.e: don't do this for firing backward :V
-			)));
+		if (source->player->speed > kartspd)
+		{
+			angle_t input = source->angle - an;
+			boolean invert = (input > ANGLE_180);
+			if (invert)
+				input = InvAngle(input);
+
+			finalspeed = FixedMul(speed, FixedMul(
+				FixedDiv(source->player->speed, kartspd),     // Multiply speed to be proportional to your own, boosted maxspeed.
+				(((180<<FRACBITS) - AngleFixed(input)) / 180) // multiply speed based on angle diff... i.e: don't do this for firing backward :V
+			));
+
+			finalspeed = max(speed, finalspeed);
+		}
 	}
 
 	x = source->x + source->momx + FixedMul(finalspeed, FINECOSINE(an>>ANGLETOFINESHIFT));
@@ -3344,6 +3351,8 @@ static void K_SpawnAIZDust(player_t *player)
 
 static void K_StretchPlayerGravity(player_t *player)
 {
+	fixed_t stretchScaleFactor;
+
 	I_Assert(player != NULL);
 	I_Assert(!P_MobjWasRemoved(player->mo));
 
@@ -3352,7 +3361,8 @@ static void K_StretchPlayerGravity(player_t *player)
 	fixed_t tempxscale = pmo->realxscale;
 	fixed_t tempyscale = pmo->realyscale;
 
-	const fixed_t stretchScaleFactor = min(FixedDiv(FRACUNIT*60, cv_gravstretch.value), MAXSTRETCHDIV);
+	stretchScaleFactor = FixedDiv(FRACUNIT*60, cv_gravstretch.value);
+	stretchScaleFactor = min(stretchScaleFactor, MAXSTRETCHDIV);
 
 	if (pmo->slamsoundtimer)
 		pmo->slamsoundtimer--;
@@ -3408,7 +3418,7 @@ static void K_SaltySquish(player_t *player)
 
 	if (pmo->stretchslam > 0)
 	{
-		const fixed_t slamDiv = FixedDiv(pmo->stretchslam, 3932160); // stretchScaleFactor = FixedDiv(FRACUNIT*60, FRACUNIT)
+		const fixed_t slamDiv = FixedDiv(pmo->stretchslam, FRACUNIT*60); // stretchScaleFactor = FixedDiv(FRACUNIT*60, FRACUNIT)
 
 		pmo->spritexscale = (tempxscale + (((slamDiv*2)/3)*2));
 		pmo->spriteyscale = (tempyscale - slamDiv);
@@ -3974,6 +3984,7 @@ static mobj_t *K_ThrowKartItem(player_t *player, boolean missile, mobjtype_t map
 			// Shoot forward
 			mo = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z + player->mo->height/2, mapthing);
 			//K_FlipFromObject(mo, player->mo);
+
 			// These are really weird so let's make it a very specific case to make SURE it works...
 			if (player->mo->eflags & MFE_VERTICALFLIP)
 			{
@@ -5404,7 +5415,7 @@ static void K_UpdateEngineSounds(player_t *player, ticcmd_t *cmd)
 		}
 
 		dist = P_AproxDistance(
-			P_AproxDistance(
+			   P_AproxDistance(
 				player->mo->x - players[i].mo->x,
 				player->mo->y - players[i].mo->y),
 				player->mo->z - players[i].mo->z) / 2;
@@ -5532,7 +5543,7 @@ typedef INT32 (*randomFunc)(INT32 min, INT32 max);
 
 FUNCINLINE static ATTRINLINE void K_SpawnNormalSpeedLines(player_t *player, boolean synched)
 {
-	randomFunc randomfunc = synched ? P_RandomRange : M_RandomRange;
+	const randomFunc randomfunc = synched ? P_RandomRange : M_RandomRange;
 
 	fixed_t rand_x;
 	fixed_t rand_y;
@@ -5972,7 +5983,7 @@ static INT16 K_GetKartDriftValue(player_t *player, fixed_t countersteer)
 
 	//basedrift = 90*player->kartstuff[k_drift]; // 450
 	//basedrift = 93*player->kartstuff[k_drift] - driftweight*3*player->kartstuff[k_drift]/10; // 447 - 303
-	basedrift = 83*player->kartstuff[k_drift] - (driftweight - 14)*player->kartstuff[k_drift]/5; // 415 - 303
+	basedrift  = 83*player->kartstuff[k_drift] - (driftweight - 14)*player->kartstuff[k_drift]/5; // 415 - 303
 	driftangle = abs((252 - driftweight)*player->kartstuff[k_drift]/5);
 
 	return basedrift + FixedMul(driftangle, countersteer);
