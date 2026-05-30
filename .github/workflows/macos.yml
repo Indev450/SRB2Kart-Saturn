@@ -43,8 +43,20 @@ jobs:
     - name: Build SRB2Kart-Saturn
       run: ninja -C build
 
-    - name: Upload build artifact
+      #idk what im doing here tbh i pray this works
+    - name: Package DMG
+      run: |
+        cd build
+        cpack -G DragNDrop
+
+    #- name: Upload build artifact
+    #  uses: actions/upload-artifact@v6.0.0
+    #  with:
+    #    name: srb2kartsaturn-macOS-${{ matrix.arch.name }}-${{ github.sha }}
+    #    path: build/bin
+
+    - name: Upload DMG
       uses: actions/upload-artifact@v6.0.0
       with:
         name: srb2kartsaturn-macOS-${{ matrix.arch.name }}-${{ github.sha }}
-        path: build/bin
+        path: build/*.dmg
