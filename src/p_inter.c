@@ -1624,7 +1624,7 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source)
 	// Drop stuff.
 	// This determines the kind of object spawned
 	// during the death frame of a thing.
-	if (!mariomode // Don't show birds, etc. in Mario Mode Tails 12-23-2001
+	if (LIKELY(!mariomode) // Don't show birds, etc. in Mario Mode Tails 12-23-2001
 	&& target->flags & MF_ENEMY)
 	{
 		if (cv_soniccd.value)

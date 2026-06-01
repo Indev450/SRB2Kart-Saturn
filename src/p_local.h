@@ -99,7 +99,6 @@ typedef struct camera_s
 	// Hold up/down to pan the camera vertically
 	SINT8 dpad_y_held;
 
-
 	// Camera demobjerization
 	// Info for drawing: position.
 	fixed_t x, y, z;

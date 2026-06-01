@@ -1897,6 +1897,7 @@ void K_RespawnChecker(player_t *player)
 void K_KartMoveAnimation(player_t *player)
 {
 	ticcmd_t *cmd = &player->cmd;
+
 	// Standing frames - S_KART_STND1   S_KART_STND1_L   S_KART_STND1_R
 	if (player->speed == 0)
 	{
@@ -2102,16 +2103,22 @@ static void K_HandleDelayedHitByEm(player_t *player)
 
 void K_MomentumToFacing(player_t *player)
 {
-	angle_t dangle = player->mo->angle - R_PointToAngle2(0, 0, player->mo->momx, player->mo->momy);
-
-	if (dangle > ANGLE_180)
-		dangle = InvAngle(dangle);
-
 	// If you aren't on the ground or are moving in too different of a direction don't do this
 	if (player->mo->eflags & MFE_JUSTHITFLOOR)
 		; // Just hit floor ALWAYS redirects
-	else if (!P_IsObjectOnGround(player->mo) || dangle > ANGLE_90)
-		return;
+	else
+	{
+		if (!P_IsObjectOnGround(player->mo))
+			return;
+
+		angle_t dangle = player->mo->angle - R_PointToAngle2(0, 0, player->mo->momx, player->mo->momy);
+
+		if (dangle > ANGLE_180)
+			dangle = InvAngle(dangle);
+
+		if (dangle > ANGLE_90)
+			return;
+	}
 
 	P_Thrust(player->mo, player->mo->angle, player->speed - FixedMul(player->speed, player->mo->friction));
 	player->mo->momx = FixedMul(player->mo->momx - player->cmomx, player->mo->friction) + player->cmomx;
@@ -2492,6 +2499,7 @@ void K_SpinPlayer(player_t *player, mobj_t *source, INT32 type, mobj_t *inflicto
 		if (!player->kartstuff[k_bumper])
 		{
 			player->kartstuff[k_comebacktimer] = comebacktime;
+
 			if (player->kartstuff[k_comebackmode] == 2)
 			{
 				mobj_t *poof = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_EXPLODE);
@@ -2507,9 +2515,12 @@ void K_SpinPlayer(player_t *player, mobj_t *source, INT32 type, mobj_t *inflicto
 
 	if (player->kartstuff[k_spinouttype] <= 0) // type 0 is spinout, type 1 is wipeout, type 2 is spb
 	{
+		const fixed_t spd = K_GetKartSpeed(player, true)/4;
+
 		// At spinout, player speed is increased to 1/4 their regular speed, moving them forward
-		if (player->speed < K_GetKartSpeed(player, true)/4)
-			P_InstaThrust(player->mo, player->mo->angle, FixedMul(K_GetKartSpeed(player, true)/4, player->mo->scale));
+		if (player->speed < spd)
+			P_InstaThrust(player->mo, player->mo->angle, FixedMul(spd, player->mo->scale));
+
 		S_StartSound(player->mo, sfx_slip);
 	}
 
@@ -2520,10 +2531,12 @@ void K_SpinPlayer(player_t *player, mobj_t *source, INT32 type, mobj_t *inflicto
 		P_SetPlayerMobjState(player->mo, S_KART_SPIN);
 
 	player->kartstuff[k_instashield] = 15;
+
 	if (cv_kartdebughuddrop.value && !modeattacking)
 		K_DropItems(player);
 	else
 		K_DropHnextList(player);
+
 	return;
 }
 
@@ -3943,6 +3956,7 @@ static mobj_t *K_ThrowKartItem(player_t *player, boolean missile, mobjtype_t map
 			// this is the small graphic effect that plops in you when you throw an item:
 			throwmo = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z + player->mo->height/2, MT_FIREDITEM);
 			P_SetTarget(&throwmo->target, player->mo);
+
 			// Ditto:
 			if (player->mo->eflags & MFE_VERTICALFLIP)
 			{
@@ -3986,6 +4000,7 @@ static mobj_t *K_ThrowKartItem(player_t *player, boolean missile, mobjtype_t map
 				// floorz and ceilingz aren't properly set to account for FOFs and Polyobjects on spawn
 				// This should set it for FOFs
 				P_SetOrigin(mo, mo->x, mo->y, mo->z); // however, THIS can fuck up your day. just absolutely ruin you.
+
 				if (P_MobjWasRemoved(mo))
 					return NULL;
 
@@ -4296,8 +4311,10 @@ static void K_DoShrink(player_t *user)
 				{
 					players[i].mo->scalespeed = mapobjectscale/TICRATE;
 					players[i].mo->destscale = (6*mapobjectscale)/8;
+
 					if (cv_kartdebugshrink.value && !modeattacking && !players[i].bot)
 						players[i].mo->destscale = (6*players[i].mo->destscale)/8;
+
 					S_StartSound(players[i].mo, sfx_kc59);
 				}
 			}
@@ -4546,6 +4563,7 @@ void K_DropHnextList(player_t *player)
 		// we need this here too because this is done in afterthink - pointers are cleaned up at the START of each tic...
 		P_SetTarget(&player->mo->hnext, NULL);
 		player->kartstuff[k_bananadrag] = 0;
+
 		if (player->kartstuff[k_eggmanheld])
 			player->kartstuff[k_eggmanheld] = 0;
 		else if (player->kartstuff[k_itemheld]
@@ -4629,6 +4647,7 @@ void K_DropRocketSneaker(player_t *player)
 
 		leftshoe = false;
 	}
+
 	P_SetTarget(&player->mo->hnext, NULL);
 	player->kartstuff[k_rocketsneakertimer] = 0;
 }
@@ -4843,6 +4862,7 @@ static void K_MoveHeldObjects(player_t *player)
 			player->kartstuff[k_itemamount] = player->kartstuff[k_itemheld] = 0;
 			player->kartstuff[k_itemtype] = KITEM_NONE;
 		}
+
 		return;
 	}
 
@@ -4859,6 +4879,7 @@ static void K_MoveHeldObjects(player_t *player)
 			player->kartstuff[k_itemamount] = player->kartstuff[k_itemheld] = 0;
 			player->kartstuff[k_itemtype] = KITEM_NONE;
 		}
+
 		return;
 	}
 
@@ -4874,7 +4895,6 @@ static void K_MoveHeldObjects(player_t *player)
 
 				while (!P_MobjWasRemoved(cur))
 				{
-					const fixed_t radius = FixedHypot(player->mo->radius, player->mo->radius) + FixedHypot(cur->radius, cur->radius); // mobj's distance from its Target, or Radius.
 					fixed_t z;
 
 					if (!cur->health)
@@ -4882,6 +4902,8 @@ static void K_MoveHeldObjects(player_t *player)
 						cur = cur->hnext;
 						continue;
 					}
+
+					const fixed_t radius = FixedHypot(player->mo->radius, player->mo->radius) + FixedHypot(cur->radius, cur->radius); // mobj's distance from its Target, or Radius.
 
 					cur->color = player->skincolor;
 
@@ -4954,7 +4976,6 @@ static void K_MoveHeldObjects(player_t *player)
 
 				while (!P_MobjWasRemoved(cur))
 				{
-					const fixed_t radius = FixedHypot(targ->radius, targ->radius) + FixedHypot(cur->radius, cur->radius);
 					angle_t ang;
 					fixed_t targx, targy, targz;
 					fixed_t speed, dist;
@@ -4966,6 +4987,8 @@ static void K_MoveHeldObjects(player_t *player)
 						cur = cur->hnext;
 						continue;
 					}
+
+					const fixed_t radius = FixedHypot(targ->radius, targ->radius) + FixedHypot(cur->radius, cur->radius);
 
 					if (cur->extravalue1 < radius)
 						cur->extravalue1 += FixedMul(P_AproxDistance(cur->extravalue1, radius), FRACUNIT/12);
@@ -5045,11 +5068,10 @@ static void K_MoveHeldObjects(player_t *player)
 
 				while (!P_MobjWasRemoved(cur))
 				{
-					const fixed_t radius = FixedHypot(player->mo->radius, player->mo->radius) + FixedHypot(cur->radius, cur->radius);
-					boolean vibrate = ((leveltime & 1) && !cur->tracer);
 					angle_t angoffset;
 					fixed_t targx, targy, targz;
-
+					const boolean vibrate = ((leveltime & 1) && !cur->tracer);
+					
 					cur->flags &= ~MF_NOCLIPTHING;
 
 					if (player->kartstuff[k_rocketsneakertimer] <= TICRATE && (leveltime & 1))
@@ -5068,6 +5090,8 @@ static void K_MoveHeldObjects(player_t *player)
 						cur = cur->hnext;
 						continue;
 					}
+
+					const fixed_t radius = FixedHypot(player->mo->radius, player->mo->radius) + FixedHypot(cur->radius, cur->radius);
 
 					if (cur->extravalue1 < radius)
 						cur->extravalue1 += FixedMul(P_AproxDistance(cur->extravalue1, radius), FRACUNIT/12);
@@ -5105,7 +5129,6 @@ static void K_MoveHeldObjects(player_t *player)
 						targz = (player->mo->z + (player->mo->height/2)) + sine;
 						if (player->mo->eflags & MFE_VERTICALFLIP)
 							targz += (player->mo->height/2 - 32*player->mo->scale)*6;
-
 					}
 
 					if (!P_MobjWasRemoved(cur->tracer))
@@ -5182,9 +5205,11 @@ player_t *K_FindJawzTarget(mobj_t *actor, player_t *source)
 			// Don't go for people who are behind you
 			if (thisang > ANGLE_67h)
 				continue;
+
 			// Don't pay attention to people who aren't above your position
 			if (player->kartstuff[k_position] >= source->kartstuff[k_position])
 				continue;
+
 			if ((best == -1) || (player->kartstuff[k_position] > best))
 			{
 				wtarg = player;
@@ -5506,6 +5531,8 @@ FUNCINLINE static ATTRINLINE void K_SpawnNormalSpeedLines(player_t *player, bool
 */
 void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 {
+	const boolean onground = P_IsObjectOnGround(player->mo);
+
 	K_UpdateOffroad(player);
 	K_UpdateEngineSounds(player, cmd); // Thanks, VAda!
 
@@ -5622,7 +5649,7 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 
 	if (player->kartstuff[k_spinouttimer])
 	{
-		if ((P_IsObjectOnGround(player->mo) || ((player->kartstuff[k_spinouttype]+1)/2 == 1)) // spinouttype 1 and 2 - explosion and spb
+		if ((onground || ((player->kartstuff[k_spinouttype]+1)/2 == 1)) // spinouttype 1 and 2 - explosion and spb
 			&& (player->kartstuff[k_sneakertimer] == 0))
 		{
 			player->kartstuff[k_spinouttimer]--;
@@ -5721,7 +5748,7 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 	if (G_BattleGametype() && player->kartstuff[k_bumper] > 0)
 		player->kartstuff[k_wanted]++;
 
-	if (P_IsObjectOnGround(player->mo))
+	if (onground)
 		player->kartstuff[k_waterskip] = 0;
 
 	if (player->kartstuff[k_instashield])
@@ -5765,7 +5792,7 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 	if (player->kartstuff[k_comebacktimer])
 		player->kartstuff[k_comebackmode] = 0;
 
-	if (P_IsObjectOnGround(player->mo) && player->kartstuff[k_pogospring])
+	if (onground && player->kartstuff[k_pogospring])
 	{
 		if (P_MobjFlip(player->mo)*player->mo->momz <= 0)
 			player->kartstuff[k_pogospring] = 0;
@@ -7362,6 +7389,7 @@ void K_CheckSpectateStatus(void)
 	{
 		UINT8 oldrespawnlist[MAXPLAYERS];
 		memcpy(oldrespawnlist, respawnlist, numjoiners);
+
 		for (i = 0; i < numjoiners; i++)
 		{
 			UINT8 pos = 0;

@@ -1122,22 +1122,26 @@ void P_SpawnShieldOrb(player_t *player)
 		P_SetTarget(&ov->target, shieldobj);
 		P_SetMobjState(ov, shieldobj->info->seestate);
 	}
+
 	if (shieldobj->info->meleestate)
 	{
 		ov = P_SpawnMobj(shieldobj->x, shieldobj->y, shieldobj->z, MT_OVERLAY);
 		P_SetTarget(&ov->target, shieldobj);
 		P_SetMobjState(ov, shieldobj->info->meleestate);
 	}
+
 	if (shieldobj->info->missilestate)
 	{
 		ov = P_SpawnMobj(shieldobj->x, shieldobj->y, shieldobj->z, MT_OVERLAY);
 		P_SetTarget(&ov->target, shieldobj);
 		P_SetMobjState(ov, shieldobj->info->missilestate);
 	}
+
 	if (player->powers[pw_shield] & SH_FORCE)
 	{
 		//Copy and pasted from P_ShieldLook in p_mobj.c
 		shieldobj->movecount = (player->powers[pw_shield] & 0xFF);
+
 		if (shieldobj->movecount < 1)
 		{
 			if (shieldobj->info->painstate)
@@ -1569,10 +1573,12 @@ static void P_CheckBouncySectors(player_t *player)
 								newmom = -8*FRACUNIT;
 						}
 
-						if (newmom > P_GetPlayerHeight(player)/2)
-							newmom = P_GetPlayerHeight(player)/2;
-						else if (newmom < -P_GetPlayerHeight(player)/2)
-							newmom = -P_GetPlayerHeight(player)/2;
+						const fixed_t halfpheight = P_GetPlayerHeight(player)/2;
+
+						if (newmom > halfpheight)
+							newmom = halfpheight;
+						else if (newmom < -halfpheight)
+							newmom = -halfpheight;
 
 						momentum.z = newmom*2;
 
@@ -1835,6 +1841,9 @@ void P_Telekinesis(player_t *player, fixed_t thrust, fixed_t range)
 		if (!((mo2->flags & MF_SHOOTABLE && mo2->flags & MF_ENEMY) || mo2->type == MT_EGGGUARD || mo2->player))
 			continue;
 
+		if (mo2->health <= 0)
+			continue;
+
 		dist = P_AproxDistance(P_AproxDistance(player->mo->x-mo2->x, player->mo->y-mo2->y), player->mo->z-mo2->z);
 
 		if (range < dist)
@@ -1843,15 +1852,12 @@ void P_Telekinesis(player_t *player, fixed_t thrust, fixed_t range)
 		if (!P_CheckSight(player->mo, mo2))
 			continue; // if your psychic powers can't "see" it don't bother
 
-		if (mo2->health > 0)
-		{
-			an = R_PointToAngle2(player->mo->x, player->mo->y, mo2->x, mo2->y);
+		an = R_PointToAngle2(player->mo->x, player->mo->y, mo2->x, mo2->y);
 
-			P_Thrust(mo2, an, thrust);
+		P_Thrust(mo2, an, thrust);
 
-			if (mo2->type == MT_GOLDBUZZ || mo2->type == MT_REDBUZZ)
-				mo2->tics += 8;
-		}
+		if (mo2->type == MT_GOLDBUZZ || mo2->type == MT_REDBUZZ)
+			mo2->tics += 8;
 	}
 
 	//P_SpawnThokMobj(player);
@@ -2736,16 +2742,16 @@ boolean P_LookForEnemies(player_t *player)
 		|| ((mo->z+mo->height < player->mo->z+player->mo->height-FixedMul(MAXSTEPMOVE, mapobjectscale)) && (player->mo->eflags & MFE_VERTICALFLIP))) // Reverse gravity check - Flame.
 			continue; // Don't home upwards!
 
-		if (P_AproxDistance(P_AproxDistance(player->mo->x-mo->x, player->mo->y-mo->y),
-			player->mo->z-mo->z) > FixedMul(RING_DIST, player->mo->scale))
+		const fixed_t modist = P_AproxDistance(P_AproxDistance(player->mo->x-mo->x, player->mo->y-mo->y), player->mo->z-mo->z);
+
+		if (modist > FixedMul(RING_DIST, player->mo->scale))
 			continue; // out of range
 
 		if (UNLIKELY((twodlevel || player->mo->flags2 & MF2_TWOD)
 		&& abs(player->mo->y-mo->y) > player->mo->radius))
 			continue; // not in your 2d plane
 
-		if (closestmo && P_AproxDistance(P_AproxDistance(player->mo->x-mo->x, player->mo->y-mo->y),
-			player->mo->z-mo->z) > P_AproxDistance(P_AproxDistance(player->mo->x-closestmo->x,
+		if (closestmo && modist > P_AproxDistance(P_AproxDistance(player->mo->x-closestmo->x,
 			player->mo->y-closestmo->y), player->mo->z-closestmo->z))
 			continue;
 
@@ -4580,6 +4586,7 @@ void P_PlayerThink(player_t *player)
 			{
 				short int i;
 				mo->flags |= MF_NOCLIPHEIGHT;
+
 				for (i = 0; i < 32; i++)
 				{
 					// Debug drawing

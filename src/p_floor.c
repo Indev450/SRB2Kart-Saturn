@@ -1107,13 +1107,12 @@ void T_SpikeSector(levelspecthink_t *spikes)
 
 		if (affectsec == spikes->sector) // Applied to an actual sector
 		{
-			fixed_t affectfloor = P_GetSpecialBottomZ(thing, affectsec, affectsec);
-			fixed_t affectceil = P_GetSpecialTopZ(thing, affectsec, affectsec);
-
 			if (affectsec->flags & SF_FLIPSPECIAL_FLOOR)
 			{
 				if (!(thing->eflags & MFE_VERTICALFLIP) && thing->momz > 0)
 					continue;
+
+				fixed_t affectfloor = P_GetSpecialBottomZ(thing, affectsec, affectsec);
 
 				if (thing->z == affectfloor)
 					dothepain = true;
@@ -1124,18 +1123,20 @@ void T_SpikeSector(levelspecthink_t *spikes)
 				if ((thing->eflags & MFE_VERTICALFLIP) && thing->momz < 0)
 					continue;
 
+				fixed_t affectceil = P_GetSpecialTopZ(thing, affectsec, affectsec);
+
 				if (thing->z + thing->height == affectceil)
 					dothepain = true;
 			}
 		}
 		else
 		{
-			fixed_t affectfloor = P_GetSpecialBottomZ(thing, affectsec, spikes->sector);
-			fixed_t affectceil = P_GetSpecialTopZ(thing, affectsec, spikes->sector);
 			if (affectsec->flags & SF_FLIPSPECIAL_FLOOR)
 			{
 				if (!(thing->eflags & MFE_VERTICALFLIP) && thing->momz > 0)
 					continue;
+
+				fixed_t affectceil = P_GetSpecialTopZ(thing, affectsec, spikes->sector);
 
 				if (thing->z == affectceil)
 					dothepain = true;
@@ -1145,6 +1146,8 @@ void T_SpikeSector(levelspecthink_t *spikes)
 			{
 				if ((thing->eflags & MFE_VERTICALFLIP) && thing->momz < 0)
 					continue;
+
+				fixed_t affectfloor = P_GetSpecialBottomZ(thing, affectsec, spikes->sector);
 
 				if (thing->z + thing->height == affectfloor)
 					dothepain = true;
@@ -1652,6 +1655,7 @@ wegotit:
 static mobj_t *SearchMarioNode(msecnode_t *node)
 {
 	mobj_t *thing = NULL;
+
 	for (; node; node = node->m_thinglist_next)
 	{
 		// Things which should NEVER be ejected from a MarioBlock, by type.
@@ -2079,10 +2083,11 @@ void T_EachTimeThinker(levelspecthink_t *eachtime)
 						continue;
 
 					topheight = P_GetSpecialTopZ(players[j].mo, sec, targetsec);
-					bottomheight = P_GetSpecialBottomZ(players[j].mo, sec, targetsec);
 
 					if (players[j].mo->z > topheight)
 						continue;
+
+					bottomheight = P_GetSpecialBottomZ(players[j].mo, sec, targetsec);
 
 					if (players[j].mo->z + players[j].mo->height < bottomheight)
 						continue;
