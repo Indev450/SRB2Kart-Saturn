@@ -328,7 +328,7 @@ void P_NewChaseDir(mobj_t *actor)
 	else
 		d[1] = DI_NODIR;
 
-	if (twodlevel || actor->flags2 & MF2_TWOD)
+	if (UNLIKELY(twodlevel || actor->flags2 & MF2_TWOD))
 		d[2] = DI_NODIR;
 	if (deltay < -FixedMul(10*FRACUNIT, actor->scale))
 		d[2] = DI_SOUTH;
@@ -872,7 +872,7 @@ void A_PointyThink(void *thing)
 	TVector v;
 	TVector *res;
 	angle_t fa;
-	fixed_t radius = FixedMul(actor->info->radius*actor->info->reactiontime, actor->scale);
+	fixed_t radius;
 	boolean firsttime = true;
 	INT32 sign;
 
@@ -929,6 +929,8 @@ void A_PointyThink(void *thing)
 
 	if (!actor->tracer) // For some reason we do not have spike balls...
 		return;
+
+	radius = FixedMul(actor->info->radius*actor->info->reactiontime, actor->scale);
 
 	// Position spike balls relative to the value of 'lastlook'.
 	ball = actor->tracer;
@@ -2759,9 +2761,11 @@ void A_Invincibility(void *thing)
 	if (P_IsLocalPlayer(player) && !player->powers[pw_super])
 	{
 		S_StopMusic();
-		if (mariomode)
+
+		if (UNLIKELY(mariomode))
 			G_GhostAddColor((INT32) (player - players), GHC_INVINCIBLE);
-		S_ChangeMusicInternal((mariomode) ? "minvnc" : "invinc", false);
+
+		S_ChangeMusicInternal((UNLIKELY(mariomode)) ? "minvnc" : "invinc", false);
 	}
 }
 
