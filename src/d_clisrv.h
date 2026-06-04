@@ -650,6 +650,8 @@ extern UINT8 playernode[MAXPLAYERS];
 
 extern boolean player_muted[MAXPLAYERS];
 
+extern UINT32 localplayerping;
+
 INT32 D_NumPlayers(void);
 
 void D_ResetTiccmds(void);

@@ -2203,6 +2203,7 @@ void V_DrawString(INT32 x, INT32 y, INT32 option, const char *string)
 	{
 		if (!*ch)
 			break;
+
 		if (*ch & 0x80) //color parsing -x 2.16.09
 		{
 			// manually set flags override color codes
@@ -2213,6 +2214,7 @@ void V_DrawString(INT32 x, INT32 y, INT32 option, const char *string)
 			}
 			continue;
 		}
+
 		if (*ch == '\n')
 		{
 			cx = x;
@@ -2247,6 +2249,7 @@ void V_DrawString(INT32 x, INT32 y, INT32 option, const char *string)
 
 		if (cx > scrwidth)
 			break;
+
 		if (cx+left + w < 0) //left boundary check
 		{
 			cx += w;
@@ -2304,6 +2307,7 @@ void V_DrawKartString(INT32 x, INT32 y, INT32 option, const char *string)
 	{
 		if (!*ch)
 			break;
+
 		if (*ch & 0x80) //color parsing -x 2.16.09
 		{
 			// manually set flags override color codes
@@ -2314,6 +2318,7 @@ void V_DrawKartString(INT32 x, INT32 y, INT32 option, const char *string)
 			}
 			continue;
 		}
+
 		if (*ch == '\n')
 		{
 			cx = x;
@@ -2348,6 +2353,7 @@ void V_DrawKartString(INT32 x, INT32 y, INT32 option, const char *string)
 
 		if (cx > scrwidth)
 			break;
+
 		if (cx+left + w < 0) //left boundary check
 		{
 			cx += w;
@@ -2422,6 +2428,7 @@ void V_DrawSmallString(INT32 x, INT32 y, INT32 option, const char *string)
 	{
 		if (!*ch)
 			break;
+
 		if (*ch & 0x80) //color parsing -x 2.16.09
 		{
 			// manually set flags override color codes
@@ -2432,6 +2439,7 @@ void V_DrawSmallString(INT32 x, INT32 y, INT32 option, const char *string)
 			}
 			continue;
 		}
+
 		if (*ch == '\n')
 		{
 			cx = x;
@@ -2540,6 +2548,7 @@ void V_DrawThinString(INT32 x, INT32 y, INT32 option, const char *string)
 	{
 		if (!*ch)
 			break;
+
 		if (*ch & 0x80) //color parsing -x 2.16.09
 		{
 			// manually set flags override color codes
@@ -2550,6 +2559,7 @@ void V_DrawThinString(INT32 x, INT32 y, INT32 option, const char *string)
 			}
 			continue;
 		}
+
 		if (*ch == '\n')
 		{
 			cx = x;
