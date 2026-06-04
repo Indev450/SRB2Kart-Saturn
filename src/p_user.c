@@ -3155,8 +3155,8 @@ static ticcmd_t *P_CameraCmd(camera_t *cam, UINT8 num)
 	cmd->angleturn = (INT16)(lang >> TICCMD_REDUCE);
 	cmd->aiming = G_ClipAimingPitch(&laim);
 
-	const boolean analogjoystickmove = cv_usejoystick[num].value && !Joystick[num].bGamepadStyle;
-	const boolean gamepadjoystickmove = cv_usejoystick[num].value && Joystick[num].bGamepadStyle;
+	const boolean analogjoystickmove  = cv_usejoystick[num].value && !DigitalGamepadStyle(num);
+	const boolean gamepadjoystickmove = cv_usejoystick[num].value && DigitalGamepadStyle(num);
 
 	usejoystick = (analogjoystickmove || gamepadjoystickmove);
 

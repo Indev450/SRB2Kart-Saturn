@@ -4289,7 +4289,7 @@ static void K_drawInput(void)
 		// kart does not have anything we can get analogue joystick y axis values from
 		// during normal gameplay, so replicate shit here
 
-		const boolean analogjoystickmove = (!demo.playback && P_IsLocalPlayer(stplyr) && cv_usejoystick[stplyrnum].value && !Joystick[stplyrnum].bGamepadStyle);
+		const boolean analogjoystickmove = (!demo.playback && P_IsLocalPlayer(stplyr) && cv_usejoystick[stplyrnum].value && !DigitalGamepadStyle(stplyrnum));
 		axis = analogjoystickmove ? JoyAxis(AXISAIM, stplyrnum+1) : 0;
 
 		if (axis != 0)
