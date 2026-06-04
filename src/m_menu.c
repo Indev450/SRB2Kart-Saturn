@@ -1025,11 +1025,12 @@ boolean M_Responder(event_t *ev)
 			const INT32 jxdeadzone = ((JOYAXISRANGE-1) * max(cv_xdeadzone[0].value, FRACUNIT/2)) >> FRACBITS;
 			const INT32 jydeadzone = ((JOYAXISRANGE-1) * max(cv_ydeadzone[0].value, FRACUNIT/2)) >> FRACBITS;
 			INT32 accelaxis = abs(cv_moveaxis[0].value);
+
 			if (ev->data1 == 0)
 			{
 				if (ev->data3 != INT32_MAX)
 				{
-					if (Joystick[0].bGamepadStyle || abs(ev->data3) > jydeadzone)
+					if (DigitalGamepadStyle(0) || abs(ev->data3) > jydeadzone)
 					{
 						if (joywaity < thistime
 							&& (pjoyy == 0 || (ev->data3 < 0) != (pjoyy < 0))) // no previous direction OR change direction
@@ -1045,7 +1046,7 @@ boolean M_Responder(event_t *ev)
 
 				if (ev->data2 != INT32_MAX && joywaitx < thistime)
 				{
-					if (Joystick[0].bGamepadStyle || abs(ev->data2) > jxdeadzone)
+					if (DigitalGamepadStyle(0) || abs(ev->data2) > jxdeadzone)
 					{
 						if (joywaitx < thistime
 							&& (pjoyx == 0 || (ev->data2 < 0) != (pjoyx < 0))) // no previous direction OR change direction
@@ -1064,19 +1065,22 @@ boolean M_Responder(event_t *ev)
 				// The following borrows heavily from Joy1Axis.
 				const boolean xmode = (accelaxis%2);
 				INT32 retaxis = 0;
+
 				if (!xmode)
 					accelaxis--;
 				accelaxis /= 2;
+
 				if (ev->data1 == accelaxis)
 				{
 					const INT32 jacceldeadzone = xmode ? jxdeadzone : jydeadzone;
 					retaxis = xmode ? ev->data2 : ev->data3;
+
 					if (retaxis != INT32_MAX)
 					{
 						if (cv_moveaxis[0].value < 0)
 							retaxis = -retaxis;
 
-						if (Joystick[0].bGamepadStyle || retaxis > jacceldeadzone)
+						if (DigitalGamepadStyle(0) || retaxis > jacceldeadzone)
 						{
 							if (joywaitaccel < thistime && retaxis > pjoyaccel) // only on upwards event
 							{

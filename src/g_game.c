@@ -66,8 +66,6 @@ boolean botingame = false;
 UINT8 botskin = 0;
 UINT8 botcolor = 0;
 
-JoyType_t Joystick[MAXSPLITSCREENPLAYERS] = {};
-
 // SRB2kart
 char gamedatafilename[64] = "kartdata.dat";
 char timeattackfolder[64] = "kart";
@@ -755,7 +753,7 @@ INT32 JoyAxis(axis_input_e axissel, UINT8 player)
 	if (retaxis > (+JOYAXISRANGE))
 		retaxis = +JOYAXISRANGE;
 
-	if (!Joystick[pnum].bGamepadStyle && axissel < AXISDEAD)
+	if (!DigitalGamepadStyle(pnum) && axissel < AXISDEAD)
 	{
 		const INT32 jdeadzone = ((JOYAXISRANGE-1) * deadzone) >> FRACBITS;
 
@@ -803,8 +801,8 @@ static void G_HandleLocalDriftturn(ticcmd_t *cmd, UINT8 ssplayer)
 
 	const UINT8 forplayer = (ssplayer-1);
 
-	const boolean analogjoystickmove = cv_usejoystick[forplayer].value && !Joystick[forplayer].bGamepadStyle;
-	const boolean gamepadjoystickmove = cv_usejoystick[forplayer].value && Joystick[forplayer].bGamepadStyle;
+	const boolean analogjoystickmove  = cv_usejoystick[forplayer].value && !DigitalGamepadStyle(forplayer);
+	const boolean gamepadjoystickmove = cv_usejoystick[forplayer].value && DigitalGamepadStyle(forplayer);
 
 	turnright = InputDown(gc_turnright, ssplayer);
 	turnleft = InputDown(gc_turnleft, ssplayer);
@@ -992,10 +990,7 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 	player_t *player = P_GetLocalPlayerForNum(forplayer);
 
 	camera_t *thiscam = &camera[forplayer];
-	const boolean freecam = camera[forplayer].freecam;
-
-	const boolean analogjoystickmove = cv_usejoystick[forplayer].value && !Joystick[forplayer].bGamepadStyle;
-	const boolean gamepadjoystickmove = cv_usejoystick[forplayer].value && Joystick[forplayer].bGamepadStyle;
+	const boolean freecam = thiscam->freecam;
 
 	lang = localangle[forplayer];
 	laim = localaiming[forplayer];
@@ -1026,6 +1021,9 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 
 		return;
 	}
+
+	const boolean analogjoystickmove  = cv_usejoystick[forplayer].value && !DigitalGamepadStyle(forplayer);
+	const boolean gamepadjoystickmove = cv_usejoystick[forplayer].value && DigitalGamepadStyle(forplayer);
 
 	usejoystick = (analogjoystickmove || gamepadjoystickmove);
 	turnright = InputDown(gc_turnright, ssplayer);
@@ -4089,6 +4087,7 @@ char *G_BuildMapTitle(INT32 mapnum)
 		const char *actnum = NULL;
 
 		len += strlen(mapheaderinfo[mapnum-1]->lvlttl);
+
 		if (strlen(mapheaderinfo[mapnum-1]->zonttl) > 0)
 		{
 			zonetext = M_GetText(mapheaderinfo[mapnum-1]->zonttl);
@@ -4099,6 +4098,7 @@ char *G_BuildMapTitle(INT32 mapnum)
 			zonetext = M_GetText("Zone");
 			len += strlen(zonetext) + 1;	// ' ' + zonetext
 		}
+
 		if (strlen(mapheaderinfo[mapnum-1]->actnum) > 0)
 		{
 			actnum = M_GetText(mapheaderinfo[mapnum-1]->actnum);
@@ -4112,8 +4112,10 @@ char *G_BuildMapTitle(INT32 mapnum)
 
 		sprintf(title, "%s", mapheaderinfo[mapnum-1]->lvlttl);
 
-		if (zonetext) sprintf(title + strlen(title), " %s", zonetext);
-		if (actnum) sprintf(title + strlen(title), " %s", actnum);
+		if (zonetext)
+			sprintf(title + strlen(title), " %s", zonetext);
+		if (actnum)
+			sprintf(title + strlen(title), " %s", actnum);
 	}
 
 	return title;

@@ -454,7 +454,7 @@ static INT32 SDLJoyAxis(const Sint16 axis, evtype_t which)
 			return 0;
 	}
 
-	if (Joystick[pid].bGamepadStyle)
+	if (DigitalGamepadStyle(pid))
 	{
 		// gamepad control type, on or off, live or die
 		if (raxis < -(JOYAXISRANGE/2))
