@@ -125,6 +125,7 @@ static tic_t freezetimeout[MAXNETNODES]; // Until when can this node freeze the 
 UINT16 pingmeasurecount = 1;
 UINT32 realpingtable[MAXPLAYERS] = {}; //the base table of ping where an average will be sent to everyone.
 UINT32 playerpingtable[MAXPLAYERS] = {}; //table of player latency values.
+UINT32 localplayerping = 0;
 
 #define GENTLEMANSMOOTHING (TICRATE)
 static tic_t reference_lag = 0;
@@ -4447,6 +4448,7 @@ void SV_ResetServer(void)
 	pingmeasurecount = 1;
 	memset(realpingtable, 0, sizeof(realpingtable));
 	memset(playerpingtable, 0, sizeof(playerpingtable));
+	localplayerping = 0;
 
 	ClearAdminPlayers();
 
@@ -6983,10 +6985,12 @@ static void UpdatePingTable(void)
 
 	INT32 i;
 
+	const boolean playing = Playing();
+
 	if (server)
 	{
-		//if (Playing() && !(gametime % 8)) // Value chosen based on _my vibes man_ << dont do this for v8 atleast, this is placeboeing ppl to hell and back
-		if (Playing() && !(gametime % 35))	// update once per second.
+		//if (playing && !(gametime % 8)) // Value chosen based on _my vibes man_ << dont do this for v8 atleast, this is placeboeing ppl to hell and back
+		if (playing && !(gametime % 35))	// update once per second.
 			PingUpdate();
 
 		fastest = 0;
@@ -7045,6 +7049,10 @@ static void UpdatePingTable(void)
 		else
 			lowest_lag = simulated_lag = 0;
 	}
+
+	// this is really dumb but oh well
+	if (playing && !(gametime % 35))
+		localplayerping = playerpingtable[consoleplayer];
 }
 
 #ifdef HOLEPUNCH

@@ -104,6 +104,7 @@ void HU_Drawer(void);
 char HU_dequeueChatChar(void);
 void HU_clearChatChars(void);
 void HU_drawPlayerPing(INT32 x, INT32 y, INT32 pnum, INT32 flags);	// Lat': Ping drawer for scoreboard.
+void HU_drawLocalPlayerPing(INT32 x, INT32 y, INT32 flags);
 void HU_DrawTabRankings(INT32 x, INT32 y, playersort_t *tab, INT32 scorelines, INT32 hilicol);
 void HU_DrawEmeralds(INT32 x, INT32 y, INT32 pemeralds);
 const char *HU_SkinColorToConsoleColor(skincolors_t color);

@@ -2478,6 +2478,26 @@ void HU_drawPlayerPing(INT32 x, INT32 y, INT32 pnum, INT32 flags)
 	}
 }
 
+void HU_drawLocalPlayerPing(INT32 x, INT32 y, INT32 flags)
+{
+	UINT32 lag = localplayerping;
+	const boolean gentleman = (cv_mindelay.value && (lag < (tic_t)simulated_lag));
+
+	if (gentleman)
+	{
+		lag = simulated_lag;
+	}
+
+	if (cv_pingstyle.value == 0) // kart
+	{
+		HU_drawKartPing(x, y, lag, flags, gentleman);
+	}
+	else if (cv_pingstyle.value == 1) // old style ping
+	{
+		HU_drawOldPing(x, y, lag, flags, gentleman);
+	}
+}
+
 //
 // HU_DrawSpectatorTicker
 //
