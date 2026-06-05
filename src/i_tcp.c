@@ -753,9 +753,14 @@ static inline ssize_t SOCK_SendToAddr(SOCKET_TYPE socket, mysockaddr_t *sockaddr
 
 static void SOCK_Send(void)
 {
-	ssize_t c = ERRSOCKET;
-	int e = 0; // save error code so it can't be modified later code and avoid calling WSAGetLastError() more then once
 	size_t i, j;
+	int retrycount = 0;
+	ssize_t c;
+	int e; // save error code so it can't be modified later code and avoid calling WSAGetLastError() more then once
+
+retry:
+	c = ERRSOCKET;
+	e = 0;
 
 	if (doomcom->remotenode < 0 || !nodeconnected[doomcom->remotenode])
 		return;
@@ -809,10 +814,32 @@ static void SOCK_Send(void)
 
 	if (c == ERRSOCKET && e != 0) // 0 means no socket for the address family was found
 	{
-		if (!ALLOWEDERROR(e))
-			I_Error("SOCK_Send, error sending to node %d (%s) #%u, %s", doomcom->remotenode,
+		if (ALLOWEDERROR(e))
+			return;
+
+		//if (!ALLOWEDERROR(e))
+			//I_Error("SOCK_Send, error sending to node %d (%s) #%u, %s", doomcom->remotenode,
+				//SOCK_GetNodeAddress(doomcom->remotenode), e, strerror(e));
+
+		CONS_Alert(CONS_ERROR, "SOCK_Send, error sending to node %d (%s) #%u, %s", doomcom->remotenode,
+				SOCK_GetNodeAddress(doomcom->remotenode), e, strerror(e));
+
+		if (retrycount <= 3)
+		{
+			CONS_Printf("SOCK_Send: retrying... Attempt %d", retrycount);
+			retrycount++;
+			// wait quarter of a second or smth
+			I_Sleep(250);
+			goto retry;
+		}
+
+		// no recovery
+		I_Error("SOCK_Send, error sending to node %d (%s) #%u, %s", doomcom->remotenode,
 				SOCK_GetNodeAddress(doomcom->remotenode), e, strerror(e));
 	}
+
+	if (retrycount > 0)
+		CONS_Alert(CONS_NOTICE, "SOCK_Send: successfully reconnected on Attempt %d", retrycount);
 }
 #undef ALLOWEDERROR
 
