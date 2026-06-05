@@ -559,7 +559,8 @@ INT32 CL_CheckFiles(void)
 		{
 			if (!memcmp(wadfiles[j]->md5sum, fileneeded[i].md5sum, 16))
 			{
-				strcpy(wadfilename, wadfiles[j]->filename);
+				strncpy(wadfilename, wadfiles[j]->filename, MAX_WADPATH);
+				wadfilename[MAX_WADPATH-1] = '\0';
 				nameonly(wadfilename);
 
 				if (fasticmp(wadfilename, fileneeded[i].filename))
