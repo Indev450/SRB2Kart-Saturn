@@ -549,7 +549,7 @@ INT32 CL_CheckFiles(void)
 		if (fileneeded[i].status != FS_OPEN)
 			filestoload++;
 
-		if (fileneeded[i].status != FS_NOTCHECKED) //since we're running this over multiple tics now, its possible for us to come across files checked in previous tics
+		if (fileneeded[i].status != FS_NOTCHECKED) // since we're running this over multiple tics now, its possible for us to come across files checked in previous tics
 			continue;
 
 		CONS_Debug(DBG_NETPLAY, "searching for '%s' ", fileneeded[i].filename);
@@ -557,14 +557,17 @@ INT32 CL_CheckFiles(void)
 		// Check in already loaded files
 		for (j = mainwads+1; j < numwadfiles; j++)
 		{
-			nameonly(strcpy(wadfilename, wadfiles[j]->filename));
-
-			if (fasticmp(wadfilename, fileneeded[i].filename) &&
-				!memcmp(wadfiles[j]->md5sum, fileneeded[i].md5sum, 16))
+			if (!memcmp(wadfiles[j]->md5sum, fileneeded[i].md5sum, 16))
 			{
-				CONS_Debug(DBG_NETPLAY, "already loaded\n");
-				fileneeded[i].status = FS_OPEN;
-				return 4;
+				strcpy(wadfilename, wadfiles[j]->filename);
+				nameonly(wadfilename);
+
+				if (fasticmp(wadfilename, fileneeded[i].filename))
+				{
+					CONS_Debug(DBG_NETPLAY, "already loaded\n");
+					fileneeded[i].status = FS_OPEN;
+					return 4;
+				}
 			}
 		}
 
@@ -645,7 +648,7 @@ boolean CL_LoadServerFiles(void)
 		else
 		{
 			const char *s;
-			switch(fileneeded[i].status)
+			switch (fileneeded[i].status)
 			{
 			case FS_NOTFOUND:
 				s = "FS_NOTFOUND";
@@ -1066,7 +1069,7 @@ void Got_Filetxpak(void)
 	{
 		const char *s;
 
-		switch(file->status)
+		switch (file->status)
 		{
 			case FS_NOTFOUND:
 				s = "FS_NOTFOUND";
@@ -1194,7 +1197,7 @@ filestatus_t checkfilemd5(char *filename, const UINT8 *wantedmd5sum)
 	fhandle = fopen(filename, "rb");
 	if (fhandle)
 	{
-		md5_stream(fhandle,md5sum);
+		md5_stream(fhandle, md5sum);
 		fclose(fhandle);
 		if (!memcmp(wantedmd5sum, md5sum, 16))
 			return FS_FOUND;
