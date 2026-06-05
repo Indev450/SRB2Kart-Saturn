@@ -691,7 +691,7 @@ static boolean SV_SendFile(INT32 node, const char *filename, UINT8 fileid)
 
 	char wadfilename[MAX_WADPATH];
 
-	if (cv_noticedownload.value)
+	if (cv_noticedownload.value && I_GetNodeAddress)
 		CONS_Printf("Sending file \"%s\" (id %d) to node %d (%s)\n", filename, fileid, node, I_GetNodeAddress(node));
 
 	// Find the last file in the list and set a pointer to its "next" field
