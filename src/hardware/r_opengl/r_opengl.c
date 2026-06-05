@@ -1122,7 +1122,7 @@ static void GL_Perspective(GLfloat fovy, GLfloat aspect)
 
 	const GLfloat deltaZ = FAR_CLIPPING_PLANE - NEAR_CLIPPING_PLANE;
 
-	if ((fabsf((float)deltaZ) < 1.0E-36f) || fpclassify(aspect) == FP_ZERO)
+	if ((fabsf(deltaZ) < 1.0E-36f) || fpclassify(aspect) == FP_ZERO)
 	{
 		return;
 	}
@@ -1583,6 +1583,7 @@ void GL_Draw2DLine(F2DCoord * v1, F2DCoord * v2, RGBA_t Color)
 		angle = atanf((v2->y-v1->y)/(v2->x-v1->x));
 	else
 		angle = (float)N_PI_DEMI;
+
 	dx = sinf(angle) / (float)screen_width;
 	dy = cosf(angle) / (float)screen_height;
 

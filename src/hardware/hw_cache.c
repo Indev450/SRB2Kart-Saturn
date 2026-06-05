@@ -446,7 +446,7 @@ typedef struct
 } GLMapTextureSet_t; // idk i suck at naming things
 
 static size_t gl_numtextures = 0; // Texture count
-static GLMapTextureSet_t *gl_textures; // For all textures
+static GLMapTextureSet_t *gl_textures = NULL; // For all textures
 
 static void HWR_FreeTextureData(patch_t *patch)
 {
@@ -570,7 +570,8 @@ void HWR_ClearAllTextures(void)
 /*static void HWR_FreeColormapCache(void)
 {
 	HWR_FreePatchCache(false);
-}*/
+}
+*/
 
 void HWR_InitMapTextures(void)
 {
@@ -622,9 +623,11 @@ static void HWR_PrecacheLevelFlats(void)
 {
 	// lookup for flats that may´ve been already loaded
 	flatcheck flatpresent;
-	flatcheck_init(&flatpresent);
 	size_t i, j;
 	INT32 k;
+
+	flatcheck_init(&flatpresent);
+	flatcheck_reserve(&flatpresent, numlevelflats);
 
 	// special case for encore
 #ifdef GLENCORE
@@ -989,7 +992,6 @@ static void HWR_CacheFlat(GLMipmap_t *glMipmap, lumpnum_t flatlumpnum)
 
 		flat[steppy] = glMipmap->colormap->source[flat[steppy]];
 	}
-#endif
 
 	if (haschromakey)
 	{
@@ -1001,6 +1003,7 @@ static void HWR_CacheFlat(GLMipmap_t *glMipmap, lumpnum_t flatlumpnum)
 			glMipmap->flags &= ~TF_CHROMAKEYED;
 		}
 	}
+#endif
 }
 
 // Download a Doom 'flat' to the hardware cache and make it ready for use
@@ -1127,7 +1130,9 @@ void HWR_GetMappedPatch(patch_t *patch, const UINT8 *colormap)
 				HWR_UpdatePatchMipmap(patch, glMipmap);
 			}
 			else
+			{
 				HWR_LoadPatchMipmap(patch, glMipmap);
+			}
 
 			return;
 		}
