@@ -1426,11 +1426,12 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 			// Sky Ceilings
 			wallVerts[3].y = wallVerts[2].y = FLOATMAX;
 
-			auto draw_sky_walls = [&](int vert1, int vert2, fixed_t world, fixed_t worldslope)
+			auto draw_sky_walls = []
+			(int vert1, int vert2, fixed_t world, fixed_t worldslope, auto& wwallVerts, auto& sSurf) FUNCINLINE
 			{
-				wallVerts[vert1].y = FixedToFloat(world);
-				wallVerts[vert2].y = FixedToFloat(worldslope);
-				HWR_DrawSkyWall(wallVerts, &Surf);
+				wwallVerts[vert1].y = FixedToFloat(world);
+				wwallVerts[vert2].y = FixedToFloat(worldslope);
+				HWR_DrawSkyWall(wwallVerts, &sSurf);
 			};
 
 			if (gl_frontsector->ceilingpic == skyflatnum)
@@ -1443,7 +1444,7 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 						&& (worldhigh != worldtop || worldhighslope != worldtopslope))
 					// Removing the second line above will render more rarely visible skywalls. Example: Cave garden ceiling in Dark race
 					{
-						draw_sky_walls(0, 1, worldhigh, worldhighslope);
+						draw_sky_walls(0, 1, worldhigh, worldhighslope, wallVerts, Surf);
 					}
 
 					// hack to allow height changes in outdoor areas
@@ -1454,13 +1455,13 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 				else
 				{
 					// Only the frontsector is sky, just draw a skywall from the front ceiling
-					draw_sky_walls(0, 1, worldtop, worldtopslope);
+					draw_sky_walls(0, 1, worldtop, worldtopslope, wallVerts, Surf);
 				}
 			}
 			else if (gl_backsector->ceilingpic == skyflatnum)
 			{
 				// Only the backsector is sky, just draw a skywall from the front ceiling
-				draw_sky_walls(0, 1, worldtop, worldtopslope);
+				draw_sky_walls(0, 1, worldtop, worldtopslope, wallVerts, Surf);
 			}
 
 			// Sky Floors
@@ -1478,19 +1479,19 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 					// Removing the second line above will render more rarely visible skywalls. Example: Cave garden ceiling in Dark race
 					&& !(gl_sidedef->bottomtexture))
 					{
-						draw_sky_walls(3, 2, worldlow, worldlowslope);
+						draw_sky_walls(3, 2, worldlow, worldlowslope, wallVerts, Surf);
 					}
 				}
 				else
 				{
 					// Only the backsector has sky, just draw a skywall from the back floor
-					draw_sky_walls(3, 2, worldbottom, worldbottomslope);
+					draw_sky_walls(3, 2, worldbottom, worldbottomslope, wallVerts, Surf);
 				}
 			}
 			else if ((gl_backsector->floorpic == skyflatnum) && !(gl_sidedef->bottomtexture))
 			{
 				// Only the backsector has sky, just draw a skywall from the back floor if there's no bottomtexture
-				draw_sky_walls(3, 2, worldlow, worldlowslope);
+				draw_sky_walls(3, 2, worldlow, worldlowslope, wallVerts, Surf);
 			}
 		}
 
@@ -1901,7 +1902,7 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 		lowcutslope  = std::max(worldbottomslope, worldlowslope);
 		highcutslope = std::min(worldtopslope, worldhighslope);
 
-		auto process_ffloors = [&](boolean backsec)
+		auto process_ffloors = [&](boolean backsec) FUNCINLINE
 		{
 			ffloor_t *rover;
 			INT32 texnum;
@@ -2265,7 +2266,7 @@ static inline void DoAddLine(seg_t* line, angle_t angle1, angle_t angle2)
 	// SoM: Backsector needs to be run through R_FakeFlat
 	static sector_t tempsec;
 
-	auto do_addline = [&](bool dontdraw)
+	auto do_addline = [&](bool dontdraw) FUNCINLINE
 	{
 		// Single sided line?
 		if (!line->backsector)
@@ -2681,19 +2682,20 @@ static void HWR_AddPolyObjectPlanes(void)
 
 	for (i = 0; i < numpolys; i++)
 	{
-		polyobjsector = po_ptrs[i]->lines[0]->backsector; // the in-level polyobject sector
-
 		if (!(po_ptrs[i]->flags & POF_RENDERPLANES)) // Only render planes when you should
 			continue;
 
 		if (po_ptrs[i]->translucency >= NUMTRANSMAPS)
 			continue;
 
+		polyobjsector = po_ptrs[i]->lines[0]->backsector; // the in-level polyobject sector
+
 		if (polyobjsector->floorheight <= gl_frontsector->ceilingheight
 			&& polyobjsector->floorheight >= gl_frontsector->floorheight
 			&& (viewz < polyobjsector->floorheight))
 		{
 			light = R_GetPlaneLight(gl_frontsector, polyobjsector->floorheight, true);
+
 			if (po_ptrs[i]->translucency > 0)
 			{
 				FSurfaceInfo Surf = {};
@@ -2716,6 +2718,7 @@ static void HWR_AddPolyObjectPlanes(void)
 			&& (viewz > polyobjsector->ceilingheight))
 		{
 			light = R_GetPlaneLight(gl_frontsector, polyobjsector->ceilingheight, true);
+
 			if (po_ptrs[i]->translucency > 0)
 			{
 				FSurfaceInfo Surf = {};
@@ -2941,26 +2944,18 @@ static void HWR_Subsector(size_t num)
 					continue;
 			}
 
-			// rendering heights for bottom and top planes
-			// yes there were functions for this stuff, no idea why it wasnt used but bleh
-			bottomCullHeight = P_GetFFloorBottomZAt(rover, viewx, viewy);
-			topCullHeight    = P_GetFFloorTopZAt(rover, viewx, viewy);
-
-			auto render_plane = [&](boolean bottom)
+			auto render_plane = [&](boolean bottom, fixed_t cullheight) FUNCINLINE
 			{
-				fixed_t cullheight;
 				fixed_t roverheight;
 				lumpnum_t flatlump;
 
 				if (bottom)
 				{
-					cullheight  = bottomCullHeight;
 					roverheight = *rover->bottomheight;
 					flatlump    = levelflats[*rover->bottompic].lumpnum;
 				}
 				else
 				{
-					cullheight  = topCullHeight;
 					roverheight = *rover->topheight;
 					flatlump    = levelflats[*rover->toppic].lumpnum;
 				}
@@ -3006,23 +3001,29 @@ static void HWR_Subsector(size_t num)
 			// bottom plane
 			centerHeight = P_GetFFloorBottomZAt(rover, gl_frontsector->soundorg.x, gl_frontsector->soundorg.y);
 
-			if (centerHeight <= locCeilingHeight &&
-				centerHeight >= locFloorHeight &&
-				((viewz < bottomCullHeight && !(rover->flags & FF_INVERTPLANES)) ||
-				 (viewz > bottomCullHeight && (rover->flags & FF_BOTHPLANES || rover->flags & FF_INVERTPLANES))))
+			if (centerHeight <= locCeilingHeight && centerHeight >= locFloorHeight)
 			{
-				render_plane(true);
+				bottomCullHeight = P_GetFFloorBottomZAt(rover, viewx, viewy);
+
+				if ((viewz < bottomCullHeight && !(rover->flags & FF_INVERTPLANES)) ||
+					(viewz > bottomCullHeight && (rover->flags & FF_BOTHPLANES || rover->flags & FF_INVERTPLANES)))
+				{
+					render_plane(true, bottomCullHeight);
+				}
 			}
 
 			// top plane
 			centerHeight = P_GetFFloorTopZAt(rover, gl_frontsector->soundorg.x, gl_frontsector->soundorg.y);
 
-			if (centerHeight >= locFloorHeight &&
-				centerHeight <= locCeilingHeight &&
-				((viewz > topCullHeight && !(rover->flags & FF_INVERTPLANES)) ||
-				 (viewz < topCullHeight && (rover->flags & FF_BOTHPLANES || rover->flags & FF_INVERTPLANES))))
+			if (centerHeight >= locFloorHeight && centerHeight <= locCeilingHeight)
 			{
-				render_plane(false);
+				topCullHeight = P_GetFFloorTopZAt(rover, viewx, viewy);
+
+				if ((viewz > topCullHeight && !(rover->flags & FF_INVERTPLANES)) ||
+					(viewz < topCullHeight && (rover->flags & FF_BOTHPLANES || rover->flags & FF_INVERTPLANES)))
+				{
+					render_plane(false, topCullHeight);
+				}
 			}
 		}
 	}
@@ -5388,9 +5389,9 @@ static void HWR_RenderViewpoint(gl_portal_t *rootportal, int stencil_level, bool
 	player_t *viewplayer = &players[displayplayers[viewssnum]];
 	const float fpov = FixedToFloat(R_GetPlayerFov(viewplayer));
 
-	auto reset_viewstate = [&]()
+	auto reset_viewstate = [](const float pfov) FUNCINLINE
 	{
-		HWR_SetTransform(fpov);
+		HWR_SetTransform(pfov);
 		HWR_ClearSprites();
 		HWR_ClearClipper();
 	};
@@ -5408,7 +5409,7 @@ static void HWR_RenderViewpoint(gl_portal_t *rootportal, int stencil_level, bool
 			currentportallist = &portallist;
 			HWR_SetPortalState(GLPORTAL_SEARCH);
 
-			reset_viewstate();
+			reset_viewstate(fpov);
 
 			if (rootportal)
 			{
@@ -5434,7 +5435,7 @@ static void HWR_RenderViewpoint(gl_portal_t *rootportal, int stencil_level, bool
 	// draw normal things in current frame in current incremented stencil buffer area
 	HWR_SetStencilState(HWR_STENCIL_NORMAL, stencil_level);
 
-	reset_viewstate();
+	reset_viewstate(fpov);
 
 	if constexpr (Type == RenderViewpointType::kPortal)
 	{
