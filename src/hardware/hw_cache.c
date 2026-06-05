@@ -991,7 +991,6 @@ static void HWR_CacheFlat(GLMipmap_t *glMipmap, lumpnum_t flatlumpnum)
 
 		flat[steppy] = glMipmap->colormap->source[flat[steppy]];
 	}
-#endif
 
 	if (haschromakey)
 	{
@@ -1003,6 +1002,7 @@ static void HWR_CacheFlat(GLMipmap_t *glMipmap, lumpnum_t flatlumpnum)
 			glMipmap->flags &= ~TF_CHROMAKEYED;
 		}
 	}
+#endif
 }
 
 // Download a Doom 'flat' to the hardware cache and make it ready for use
