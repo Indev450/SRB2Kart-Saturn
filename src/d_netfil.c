@@ -167,7 +167,9 @@ UINT8 *PutFileNeeded(UINT16 firstfile)
 			continue;
 		}
 
-		nameonly(strcpy(wadfilename, wadfiles[i]->filename));
+		strncpy(wadfilename, wadfiles[i]->filename, MAX_WADPATH);
+		wadfilename[MAX_WADPATH-1] = '\0';
+		nameonly(wadfilename);
 
 		// Look below at the WRITE macros to understand what these numbers mean.
 		const size_t len = strlen(wadfilename) + 1;
@@ -717,7 +719,9 @@ static boolean SV_SendFile(INT32 node, const char *filename, UINT8 fileid)
 	// Look for the requested file through all loaded files
 	for (wadnum = 0; wadfiles[wadnum]; wadnum++)
 	{
-		strlcpy(wadfilename, wadfiles[wadnum]->filename, MAX_WADPATH);
+		// im a certified strlcpy hater
+		strncpy(wadfilename, wadfiles[wadnum]->filename, MAX_WADPATH);
+		wadfilename[MAX_WADPATH-1] = '\0';
 		nameonly(wadfilename);
 
 		if (fasticmp(wadfilename, p->id.filename))
