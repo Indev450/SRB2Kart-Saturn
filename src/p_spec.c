@@ -881,7 +881,7 @@ static boolean PolyDoor(line_t *line)
 
 	pdd.polyObjNum = line->tag; // polyobject id
 
-	switch(line->special)
+	switch (line->special)
 	{
 		case 480: // Polyobj_DoorSlide
 			pdd.doorType = POLY_DOOR_SLIDE;
@@ -1597,19 +1597,21 @@ void P_LinedefExecute(INT16 tag, mobj_t *actor, sector_t *caller)
 		if (lines[masterline].tag != tag)
 			continue;
 
+		const INT16 specialtype = lines[masterline].special;
+
 		// "No More Enemies" and "Level Load" take care of themselves.
-		if (lines[masterline].special == 313
-		 || lines[masterline].special == 399
-		 || lines[masterline].special == 328
-		 || lines[masterline].special == 323
+		if (specialtype == 313
+		 || specialtype == 399
+		 || specialtype == 328
+		 || specialtype == 323
 		 // Each-time executors handle themselves, too
-		 || lines[masterline].special == 301 // Each time
-		 || lines[masterline].special == 306 // Character ability - Each time
-		 || lines[masterline].special == 310 // CTF Red team - Each time
-		 || lines[masterline].special == 312 // CTF Blue team - Each time
-		 || lines[masterline].special == 322 // Trigger on X calls - Each Time
-		 || lines[masterline].special < 300
-		 || lines[masterline].special > 399)
+		 || specialtype == 301 // Each time
+		 || specialtype == 306 // Character ability - Each time
+		 || specialtype == 310 // CTF Red team - Each time
+		 || specialtype == 312 // CTF Blue team - Each time
+		 || specialtype == 322 // Trigger on X calls - Each Time
+		 || specialtype < 300
+		 || specialtype > 399)
 			continue;
 
 		if (!P_RunTriggerLinedef(&lines[masterline], actor, caller))
@@ -4736,7 +4738,7 @@ static ffloor_t *P_AddFakeFloor(sector_t *sec, sector_t *sec2, line_t *master, f
 				P_AddSpikeThinker(sec, (INT32)sec2num);
 		}
 		// Should this FOF have friction?
-		else if(th->function == (actionf_p1)T_Friction)
+		else if (th->function == (actionf_p1)T_Friction)
 		{
 			f = (friction_t *)th;
 
@@ -4744,7 +4746,7 @@ static ffloor_t *P_AddFakeFloor(sector_t *sec, sector_t *sec2, line_t *master, f
 				Add_Friction(f->friction, f->movefactor, (INT32)(sec-sectors), f->affectee);
 		}
 		// Should this FOF have wind/current/pusher?
-		else if(th->function == (actionf_p1)T_Pusher)
+		else if (th->function == (actionf_p1)T_Pusher)
 		{
 			p = (pusher_t *)th;
 
@@ -6946,6 +6948,7 @@ static void P_SpawnFriction(void)
 	INT32 movefactor; // applied to each player move to simulate inertia
 
 	for (i = 0; i < numlines; i++, l++)
+	{
 		if (l->special == 540)
 		{
 			//length = P_AproxDistance(l->dx, l->dy)>>FRACBITS;
@@ -6979,6 +6982,7 @@ static void P_SpawnFriction(void)
 			for (s = -1; (s = P_FindSectorFromLineTag(l, s)) >= 0 ;)
 				Add_Friction(friction, movefactor, s, -1);
 		}
+	}
 }
 
 /*
@@ -7293,13 +7297,16 @@ void T_Pusher(pusher_t *p)
 		if (thing->flags2 & MF2_PUSHED)
 			continue;
 
-		if (thing->player && thing->player->pflags & PF_ROPEHANG)
-			continue;
+		if (thing->player)
+		{
+			if (thing->player->pflags & PF_ROPEHANG)
+				continue;
 
-		if (thing->player && (thing->state == &states[thing->info->painstate])
-			&& (thing->player->powers[pw_flashing] > (K_GetKartFlashing(thing->player)/4)*3
-			&& thing->player->powers[pw_flashing] <= K_GetKartFlashing(thing->player)))
-			continue;
+			if ((thing->state == &states[thing->info->painstate])
+				&& (thing->player->powers[pw_flashing] > (K_GetKartFlashing(thing->player)/4)*3
+				&& thing->player->powers[pw_flashing] <= K_GetKartFlashing(thing->player)))
+				continue;
+		}
 
 		inFOF = touching = moved = false;
 
@@ -7429,7 +7436,7 @@ void T_Pusher(pusher_t *p)
 			if (p->slider && thing->player)
 			{
 				boolean jumped = (thing->player->pflags & PF_JUMPED);
-				P_ResetPlayer (thing->player);
+				P_ResetPlayer(thing->player);
 
 				if (jumped)
 					thing->player->pflags |= PF_JUMPED;
