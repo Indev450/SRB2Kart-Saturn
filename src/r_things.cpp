@@ -773,6 +773,7 @@ static void R_DrawVisSprite(vissprite_t *vis)
 
 	R_SetColumnFunc(BASEDRAWFUNC); // hack: this isn't resetting properly somewhere.
 	dc.colormap = vis->colormap;
+
 	if ((vis->mobj->flags & MF_BOSS) && (vis->mobj->flags2 & MF2_FRET) && (leveltime & 1)) // Bosses "flash"
 	{
 		R_SetColumnFunc(COLDRAWFUNC_TRANS); // translate certain pixels to white
@@ -825,6 +826,7 @@ static void R_DrawVisSprite(vissprite_t *vis)
 		else
 			dc.colormap = &vis->extra_colormap->colormap[dc.colormap - colormaps];
 	}
+
 	if (!dc.colormap)
 		dc.colormap = colormaps;
 
@@ -849,6 +851,7 @@ static void R_DrawVisSprite(vissprite_t *vis)
 			vis->xiscale = FixedDiv(vis->xiscale, this_scale);
 			vis->isScaled = true;
 		}
+
 		dc.texturemid = FixedDiv(dc.texturemid, this_scale);
 	}
 

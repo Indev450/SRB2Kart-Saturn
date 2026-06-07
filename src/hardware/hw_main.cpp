@@ -1245,7 +1245,7 @@ static void HWR_DrawSkyWall(FOutVector *wallVerts, FSurfaceInfo *Surf)
 	wallVerts[0].s = wallVerts[3].s = 0;
 	wallVerts[2].s = wallVerts[1].s = 0;
 
-	if (UNLIKELY(gl_collect_skywalls))
+	if (gl_collect_skywalls)
 	{
 		HWR_SkyWallList_Add(wallVerts);
 	}
@@ -2346,7 +2346,7 @@ static inline void DoAddLine(seg_t* line, angle_t angle1, angle_t angle2)
 				}
 			}
 			else
-				return;// dont do anything with the other side i guess?
+				return; // dont do anything with the other side i guess?
 		}
 
 	doaddline:
@@ -2852,21 +2852,21 @@ static void HWR_Subsector(size_t num)
 
 		if (anyMoved == false)
 		{
-			for (rover = gl_frontsector->ffloors; rover; rover = rover->next)
+			if (sub->validcount != validcount)
 			{
-				if (!(rover->flags & FF_EXISTS) || !(rover->flags & FF_RENDERPLANES))
-					continue;
+				for (rover = gl_frontsector->ffloors; rover; rover = rover->next)
+				{
+					if (!(rover->flags & FF_EXISTS) || !(rover->flags & FF_RENDERPLANES))
+						continue;
 
-				if (sub->validcount == validcount)
-					continue;
+					const sector_t *controlSec = &sectors[rover->secnum];
 
-				const sector_t *controlSec = &sectors[rover->secnum];
+					if (controlSec->moved != true)
+						continue;
 
-				if (controlSec->moved != true)
-					continue;
-
-				anyMoved = true;
-				break;
+					anyMoved = true;
+					break;
+				}
 			}
 		}
 
@@ -2923,106 +2923,103 @@ static void HWR_Subsector(size_t num)
 					PF_Occlude, ceilinglightlevel, levelflats[gl_frontsector->ceilingpic].lumpnum, NULL, 255, ceilingcolormap);
 			}
 		}
-	}
 
-	if (gl_frontsector->ffloors)
-	{
-		/// \todo fix light, xoffs, yoffs, extracolormap ?
-		for (rover = gl_frontsector->ffloors; rover; rover = rover->next)
+		if (gl_frontsector->ffloors)
 		{
-			fixed_t bottomCullHeight, topCullHeight, centerHeight;
-
-			if (!(rover->flags & FF_EXISTS) || !(rover->flags & FF_RENDERPLANES) || !(rover->flags & FF_RENDERALL))
-				continue;
-
-			if (sub->validcount == validcount)
-				continue;
-
-			if (gl_frontsector->cullheight)
+			/// \todo fix light, xoffs, yoffs, extracolormap ?
+			for (rover = gl_frontsector->ffloors; rover; rover = rover->next)
 			{
-				if (HWR_DoCulling(gl_frontsector->cullheight, viewsector->cullheight, gl_viewz, FixedToFloat(*rover->bottomheight), FixedToFloat(*rover->topheight)))
+				fixed_t bottomCullHeight, topCullHeight, centerHeight;
+
+				if (!(rover->flags & FF_EXISTS) || !(rover->flags & FF_RENDERPLANES) || !(rover->flags & FF_RENDERALL))
 					continue;
-			}
 
-			auto render_plane = [&](boolean bottom, fixed_t cullheight) FUNCINLINE
-			{
-				fixed_t roverheight;
-				lumpnum_t flatlump;
-
-				if (bottom)
+				if (gl_frontsector->cullheight)
 				{
-					roverheight = *rover->bottomheight;
-					flatlump    = levelflats[*rover->bottompic].lumpnum;
-				}
-				else
-				{
-					roverheight = *rover->topheight;
-					flatlump    = levelflats[*rover->toppic].lumpnum;
+					if (HWR_DoCulling(gl_frontsector->cullheight, viewsector->cullheight, gl_viewz, FixedToFloat(*rover->bottomheight), FixedToFloat(*rover->topheight)))
+						continue;
 				}
 
-				if (rover->flags & FF_FOG)
+				auto render_fof_plane = [&](boolean bottom, boolean underside) FUNCINLINE
 				{
-					UINT8 alpha;
+					fixed_t roverheight;
+					lumpnum_t flatlump;
 
-					light = R_GetPlaneLight(gl_frontsector, centerHeight, (viewz < cullheight));
+					if (bottom)
+					{
+						roverheight = *rover->bottomheight;
+						flatlump    = levelflats[*rover->bottompic].lumpnum;
+					}
+					else
+					{
+						roverheight = *rover->topheight;
+						flatlump    = levelflats[*rover->toppic].lumpnum;
+					}
 
-					alpha = HWR_FogBlockAlpha(*gl_frontsector->lightlist[light].lightlevel, rover->master->frontsector->extra_colormap);
+					if (rover->flags & FF_FOG)
+					{
+						UINT8 alpha;
 
-					HWR_AddTransparentFloor(0,
-											&poly_subsectors[num],
-											!bottom,
-											roverheight,
-											*gl_frontsector->lightlist[light].lightlevel,
-											alpha, rover->master->frontsector, PF_Fog|PF_NoTexture,
-											true, rover->master->frontsector->extra_colormap);
+						light = R_GetPlaneLight(gl_frontsector, centerHeight, underside);
+
+						alpha = HWR_FogBlockAlpha(*gl_frontsector->lightlist[light].lightlevel, rover->master->frontsector->extra_colormap);
+
+						HWR_AddTransparentFloor(0,
+												&poly_subsectors[num],
+												!bottom,
+												roverheight,
+												*gl_frontsector->lightlist[light].lightlevel,
+												alpha, rover->master->frontsector, PF_Fog|PF_NoTexture,
+												true, rover->master->frontsector->extra_colormap);
+					}
+					else if ((rover->flags & FF_TRANSLUCENT && rover->alpha < 256) || rover->blend) // SoM: Flags are more efficient
+					{
+						light = R_GetPlaneLight(gl_frontsector, centerHeight, underside);
+
+						HWR_AddTransparentFloor(flatlump,
+												&poly_subsectors[num],
+												!bottom,
+												roverheight,
+												*gl_frontsector->lightlist[light].lightlevel,
+												CLAMP(rover->alpha, 0, 255), rover->master->frontsector, HWR_RippleBlend(gl_frontsector, rover, false) | (rover->blend ? HWR_GetBlendModeFlag(rover->blend) : static_cast<FBITFIELD>(PF_Translucent)),
+												false, gl_frontsector->lightlist[light].extra_colormap);
+					}
+					else
+					{
+						HWR_GetFlat(flatlump, R_NoEncore(gl_frontsector, !bottom));
+						light = R_GetPlaneLight(gl_frontsector, centerHeight, underside);
+
+						HWR_RenderPlane(sub, &poly_subsectors[num], !bottom, roverheight, HWR_RippleBlend(gl_frontsector, rover, false)|PF_Occlude, *gl_frontsector->lightlist[light].lightlevel, flatlump,
+										rover->master->frontsector, 255, gl_frontsector->lightlist[light].extra_colormap);
+					}
+				};
+
+				// bottom plane
+				centerHeight = P_GetFFloorBottomZAt(rover, gl_frontsector->soundorg.x, gl_frontsector->soundorg.y);
+
+				if (centerHeight <= locCeilingHeight && centerHeight >= locFloorHeight)
+				{
+					bottomCullHeight = P_GetFFloorBottomZAt(rover, viewx, viewy);
+
+					if ((viewz < bottomCullHeight && !(rover->flags & FF_INVERTPLANES)) ||
+						(viewz > bottomCullHeight && (rover->flags & FF_BOTHPLANES || rover->flags & FF_INVERTPLANES)))
+					{
+						render_fof_plane(true, (viewz < bottomCullHeight));
+					}
 				}
-				else if ((rover->flags & FF_TRANSLUCENT && rover->alpha < 256) || rover->blend) // SoM: Flags are more efficient
+
+				// top plane
+				centerHeight = P_GetFFloorTopZAt(rover, gl_frontsector->soundorg.x, gl_frontsector->soundorg.y);
+
+				if (centerHeight >= locFloorHeight && centerHeight <= locCeilingHeight)
 				{
-					light = R_GetPlaneLight(gl_frontsector, centerHeight, (viewz < cullheight));
+					topCullHeight = P_GetFFloorTopZAt(rover, viewx, viewy);
 
-					HWR_AddTransparentFloor(flatlump,
-											&poly_subsectors[num],
-											!bottom,
-											roverheight,
-											*gl_frontsector->lightlist[light].lightlevel,
-											CLAMP(rover->alpha, 0, 255), rover->master->frontsector, HWR_RippleBlend(gl_frontsector, rover, false) | (rover->blend ? HWR_GetBlendModeFlag(rover->blend) : static_cast<FBITFIELD>(PF_Translucent)),
-											false, gl_frontsector->lightlist[light].extra_colormap);
-				}
-				else
-				{
-					HWR_GetFlat(flatlump, R_NoEncore(gl_frontsector, !bottom));
-					light = R_GetPlaneLight(gl_frontsector, centerHeight, (viewz < cullheight));
-
-					HWR_RenderPlane(sub, &poly_subsectors[num], !bottom, roverheight, HWR_RippleBlend(gl_frontsector, rover, false)|PF_Occlude, *gl_frontsector->lightlist[light].lightlevel, flatlump,
-									rover->master->frontsector, 255, gl_frontsector->lightlist[light].extra_colormap);
-				}
-			};
-
-			// bottom plane
-			centerHeight = P_GetFFloorBottomZAt(rover, gl_frontsector->soundorg.x, gl_frontsector->soundorg.y);
-
-			if (centerHeight <= locCeilingHeight && centerHeight >= locFloorHeight)
-			{
-				bottomCullHeight = P_GetFFloorBottomZAt(rover, viewx, viewy);
-
-				if ((viewz < bottomCullHeight && !(rover->flags & FF_INVERTPLANES)) ||
-					(viewz > bottomCullHeight && (rover->flags & FF_BOTHPLANES || rover->flags & FF_INVERTPLANES)))
-				{
-					render_plane(true, bottomCullHeight);
-				}
-			}
-
-			// top plane
-			centerHeight = P_GetFFloorTopZAt(rover, gl_frontsector->soundorg.x, gl_frontsector->soundorg.y);
-
-			if (centerHeight >= locFloorHeight && centerHeight <= locCeilingHeight)
-			{
-				topCullHeight = P_GetFFloorTopZAt(rover, viewx, viewy);
-
-				if ((viewz > topCullHeight && !(rover->flags & FF_INVERTPLANES)) ||
-					(viewz < topCullHeight && (rover->flags & FF_BOTHPLANES || rover->flags & FF_INVERTPLANES)))
-				{
-					render_plane(false, topCullHeight);
+					if ((viewz > topCullHeight && !(rover->flags & FF_INVERTPLANES)) ||
+						(viewz < topCullHeight && (rover->flags & FF_BOTHPLANES || rover->flags & FF_INVERTPLANES)))
+					{
+						render_fof_plane(false, (viewz < topCullHeight));
+					}
 				}
 			}
 		}

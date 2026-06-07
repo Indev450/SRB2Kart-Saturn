@@ -2361,7 +2361,7 @@ static void P_MovePlayer(player_t *player)
 	if (onground && leveltime % 50 == 0 && player->kartstuff[k_drift] != 0)
 		S_StartSound(player->mo, sfx_drift);
 	// Leveltime being 50 might take a while at times. We'll start it up once, isntantly.
-	else if (onground && !S_SoundPlaying(player->mo, sfx_drift) && player->kartstuff[k_drift] != 0)
+	else if (onground && player->kartstuff[k_drift] != 0 && !S_SoundPlaying(player->mo, sfx_drift))
 		S_StartSound(player->mo, sfx_drift);
 	// Ok, we'll stop now.
 	else if (player->kartstuff[k_drift] == 0 || !onground)

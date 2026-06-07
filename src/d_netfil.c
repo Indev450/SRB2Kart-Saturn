@@ -259,9 +259,10 @@ void CL_PrepareDownloadSaveGame(const char *tmpsave)
   */
 boolean CL_CheckDownloadable(void)
 {
-	UINT8 i,dlstatus = 0;
+	UINT8 i, dlstatus = 0;
 
 	for (i = 0; i < fileneedednum; i++)
+	{
 		if (fileneeded[i].status != FS_FOUND && fileneeded[i].status != FS_OPEN)
 		{
 			if (fileneeded[i].willsend == 1)
@@ -272,6 +273,7 @@ boolean CL_CheckDownloadable(void)
 			else //if (fileneeded[i].willsend == 2)
 				dlstatus = 2;
 		}
+	}
 
 	// Downloading locally disabled
 	if (!dlstatus && M_CheckParm("-nodownload"))
@@ -282,15 +284,17 @@ boolean CL_CheckDownloadable(void)
 
 	// not downloadable, put reason in console
 	CONS_Alert(CONS_NOTICE, M_GetText("You need additional files to connect to this server:\n"));
+
 	for (i = 0; i < fileneedednum; i++)
+	{
 		if (fileneeded[i].status != FS_FOUND && fileneeded[i].status != FS_OPEN)
 		{
 			CONS_Printf(" * \"%s\" (%dK)", fileneeded[i].filename, fileneeded[i].totalsize >> 10);
 
-				if (fileneeded[i].status == FS_MD5SUMBAD)
-					CONS_Printf(M_GetText(" wrong version, md5: "));
-				else
-					CONS_Printf(M_GetText(" not found, md5: "));
+			if (fileneeded[i].status == FS_MD5SUMBAD)
+				CONS_Printf(M_GetText(" wrong version, md5: "));
+			else
+				CONS_Printf(M_GetText(" not found, md5: "));
 
 			{
 				INT32 j;
@@ -301,6 +305,7 @@ boolean CL_CheckDownloadable(void)
 			}
 			CONS_Printf("\n");
 		}
+	}
 
 	switch (dlstatus)
 	{
@@ -314,6 +319,7 @@ boolean CL_CheckDownloadable(void)
 			CONS_Printf(M_GetText("All files downloadable, but you have chosen to disable downloading locally.\n"));
 			break;
 	}
+
 	return false;
 }
 
