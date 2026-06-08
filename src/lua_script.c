@@ -713,9 +713,12 @@ static UINT8 GetUserdataArchType(int index)
 
 static UINT8 ArchiveValue(UINT8 **p, int TABLESINDEX, int myindex)
 {
+	int type = lua_type(gL, myindex);
+
 	if (myindex < 0)
 		myindex = lua_gettop(gL)+1+myindex;
-	switch (lua_type(gL, myindex))
+
+	switch (type)
 	{
 	case LUA_TNONE:
 	case LUA_TNIL:
@@ -725,8 +728,12 @@ static UINT8 ArchiveValue(UINT8 **p, int TABLESINDEX, int myindex)
 	case LUA_TLIGHTUSERDATA:
 	case LUA_TTHREAD:
 	case LUA_TFUNCTION:
+	{
+		const char *typestr = (type == LUA_TLIGHTUSERDATA ? "light userdata" : (type == LUA_TTHREAD ? "thread" : (type == LUA_TFUNCTION ? "function" : "??")));
+		CONS_Alert(CONS_ERROR, M_GetText("Archived an invalid value! (%s)\n"), typestr);
 		WRITEUINT8(*p, ARCH_NULL);
 		return 2;
+	}
 	case LUA_TBOOLEAN:
 		WRITEUINT8(*p, ARCH_BOOLEAN);
 		WRITEUINT8(*p, lua_toboolean(gL, myindex));
