@@ -1215,14 +1215,14 @@ static void P_LoadSideChangeMusic(boolean firstside, mapsidedef_t *msd, side_t *
 
 	if (msd->bottomtexture[0] != '-' || msd->bottomtexture[1] != '\0')
 	{
-		memcpy(process,msd->bottomtexture,8);
+		memcpy(process, msd->bottomtexture, 8);
 		process[8] = '\0';
 		sd->bottomtexture = get_number(process);
 	}
 
 	if (!(msd->midtexture[0] == '-' && msd->midtexture[1] == '\0') || msd->midtexture[1] != '\0')
 	{
-		memcpy(process,msd->midtexture,8);
+		memcpy(process, msd->midtexture, 8);
 		process[8] = '\0';
 		sd->midtexture = get_number(process);
 	}
@@ -1232,7 +1232,7 @@ static void P_LoadSideChangeMusic(boolean firstside, mapsidedef_t *msd, side_t *
 
 	if (firstside || msd->toptexture[0] != '-' || msd->toptexture[1] != '\0')
 	{
-		memcpy(process,msd->toptexture,8);
+		memcpy(process, msd->toptexture, 8);
 		process[8] = '\0';
 
 		// If they type in O_ or D_ and their music name, just shrug,
@@ -1272,7 +1272,7 @@ static void P_LoadSidedefs(void *data)
 		// Colormaps!
 		switch (sd->special)
 		{
-			case 63: // variable colormap via 242 linedef
+			case 63:  // variable colormap via 242 linedef
 			case 606: //SoM: 4/4/2000: Just colormap transfer
 				// SoM: R_CreateColormap will only create a colormap in software mode...
 				// Perhaps we should just call it instead of doing the calculations here.
@@ -1288,21 +1288,21 @@ static void P_LoadSidedefs(void *data)
 				if (msd->toptexture[0] != '-' || msd->toptexture[1] != '\0')
 				{
 					char process[8+1];
-					memcpy(process,msd->toptexture,8);
+					memcpy(process, msd->toptexture, 8);
 					process[8] = '\0';
 					sd->toptexture = get_number(process);
 				}
 				break;
 			}
-			case 9: // Mace parameters
-			case 14: // Bustable block parameters
-			case 15: // Fan particle spawner parameters
+			case 9:   // Mace parameters
+			case 14:  // Bustable block parameters
+			case 15:  // Fan particle spawner parameters
 			case 425: // Calls P_SetMobjState on calling mobj
 			case 434: // Custom Power
 			case 442: // Calls P_SetMobjState on mobjs of a given type in the tagged sectors
 			{
 				char process[8*3+1];
-				memset(process,0,8*3+1);
+				memset(process, 0, 8*3+1);
 				sd->toptexture = sd->midtexture = sd->bottomtexture = 0;
 				if (msd->toptexture[0] == '-' && msd->toptexture[1] == '\0')
 					break;
@@ -1319,7 +1319,7 @@ static void P_LoadSidedefs(void *data)
 			case 443: // Calls a named Lua function
 			{
 				char process[8*3+1];
-				memset(process,0,8*3+1);
+				memset(process, 0, 8*3+1);
 				sd->toptexture = sd->midtexture = sd->bottomtexture = 0;
 				if (msd->toptexture[0] == '-' && msd->toptexture[1] == '\0')
 					break;
@@ -2927,7 +2927,7 @@ static size_t sreplaces = 0, mreplaces = 0, digmreplaces = 0;
 static boolean P_CheckSoundReplacements(UINT16 wadnum, char *name, size_t i)
 {
 	size_t j;
-	lumpnum_t lumpnum = (i|(wadnum<<16));
+	lumpnum_t lumpnum = (i | (wadnum<<16));
 
 	if (name[0] == 'D')
 	{
@@ -2935,8 +2935,8 @@ static boolean P_CheckSoundReplacements(UINT16 wadnum, char *name, size_t i)
 		{
 			for (j = 1; j < NUMSFX; j++)
 			{
-				if (S_sfx[j].name && !strnicmp(S_sfx[j].name, name + 2, 6)
-				&& (S_sfx[j].lumpnum != lumpnum) && (S_sfx[j].lumpnum != LUMPERROR))
+				if ((S_sfx[j].lumpnum != lumpnum) && (S_sfx[j].lumpnum != LUMPERROR) &&
+					 S_sfx[j].name && !strnicmp(S_sfx[j].name, name + 2, 6))
 				{
 					// the sound will be reloaded when needed,
 					// since sfx->data will be NULL
