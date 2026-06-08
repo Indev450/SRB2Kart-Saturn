@@ -3473,6 +3473,7 @@ DoneSection2:
 
 			if (i != -1)
 			{
+				INT32 sfxnum;
 				angle_t lineangle;
 				fixed_t linespeed;
 
@@ -3515,7 +3516,14 @@ DoneSection2:
 				player->kartstuff[k_drift] = 0;
 				player->kartstuff[k_driftcharge] = 0;
 				player->kartstuff[k_pogospring] = 0;
-				S_StartSound(player->mo, sfx_spdpad);
+
+				sfxnum = sides[line->sidenum[0]].toptexture;
+
+				// none or invalid sound?
+				if (sfxnum <= sfx_None || sfxnum >= NUMSFX)
+					sfxnum = sfx_spdpad; // use the zippy sound then!
+
+				S_StartSound(player->mo, sfxnum);
 
 				{
 					sfxenum_t pick = P_RandomKey(2); // Gotta roll the RNG every time this is called for sync reasons
