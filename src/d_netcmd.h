@@ -51,10 +51,6 @@ extern consvar_t cv_mousevisible;
 //WTF
 extern consvar_t cv_mouseturn;
 extern consvar_t cv_usejoystick[4]; //MAXSPLITSCREENPLAYERS
-#ifdef LJOYSTICK
-extern consvar_t cv_joyport;
-extern consvar_t cv_joyport2;
-#endif
 extern consvar_t cv_joyscale[4]; //MAXSPLITSCREENPLAYERS
 
 // normally in p_mobj but the .h is not read

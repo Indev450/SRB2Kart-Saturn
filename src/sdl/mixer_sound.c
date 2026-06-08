@@ -945,7 +945,7 @@ UINT32 I_GetSongLength(void)
 
 boolean I_SetSongLoopPoint(UINT32 looppoint)
 {
-	if (!music|| !is_looping)
+	if (!music || !is_looping)
 		return false;
 
 	const musictype_t mustype = I_SongType();
@@ -958,7 +958,7 @@ boolean I_SetSongLoopPoint(UINT32 looppoint)
 	if (length > 0)
 		looppoint %= length;
 
-	loop_point = max((float)(looppoint / 1000.0L), 0);
+	loop_point = max((float)(looppoint / 1000.0L), 0.0f);
 	return true;
 }
 

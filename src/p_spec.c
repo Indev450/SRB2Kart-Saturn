@@ -881,7 +881,7 @@ static boolean PolyDoor(line_t *line)
 
 	pdd.polyObjNum = line->tag; // polyobject id
 
-	switch(line->special)
+	switch (line->special)
 	{
 		case 480: // Polyobj_DoorSlide
 			pdd.doorType = POLY_DOOR_SLIDE;
@@ -1338,6 +1338,7 @@ boolean P_RunTriggerLinedef(line_t *triggerline, mobj_t *actor, sector_t *caller
 		else if (secspecial == 7) // SRB2Kart: reusing for Race Lap executor
 		{
 			UINT8 lap;
+			INT32 targlap;
 
 			if (actor && actor->player && triggerline->flags & ML_EFFECT4)
 			{
@@ -1348,19 +1349,21 @@ boolean P_RunTriggerLinedef(line_t *triggerline, mobj_t *actor, sector_t *caller
 				lap = P_FindLowestLap();
 			}
 
+			targlap = (INT32)(sides[triggerline->sidenum[0]].textureoffset >> FRACBITS);
+
 			if (triggerline->flags & ML_NOCLIMB) // Need higher than or equal to
 			{
-				if (lap < (sides[triggerline->sidenum[0]].textureoffset >> FRACBITS))
+				if (lap < targlap)
 					return false;
 			}
 			else if (triggerline->flags & ML_BLOCKMONSTERS) // Need lower than or equal to
 			{
-				if (lap > (sides[triggerline->sidenum[0]].textureoffset >> FRACBITS))
+				if (lap > targlap)
 					return false;
 			}
 			else // Need equal to
 			{
-				if (lap != (sides[triggerline->sidenum[0]].textureoffset >> FRACBITS))
+				if (lap != targlap)
 					return false;
 			}
 
@@ -1452,6 +1455,7 @@ boolean P_RunTriggerLinedef(line_t *triggerline, mobj_t *actor, sector_t *caller
 	if (triggerline->flags & ML_EFFECT5) // disregard order for efficiency
 	{
 		for (i = 0; i < linecnt; i++)
+		{
 			if (ctlsector->lines[i]->special >= 400
 				&& ctlsector->lines[i]->special < 500)
 			{
@@ -1460,6 +1464,7 @@ boolean P_RunTriggerLinedef(line_t *triggerline, mobj_t *actor, sector_t *caller
 				else
 					P_ProcessLineSpecial(ctlsector->lines[i], actor, caller);
 			}
+		}
 	}
 	else // walk around the sector in a defined order
 	{
@@ -1467,11 +1472,13 @@ boolean P_RunTriggerLinedef(line_t *triggerline, mobj_t *actor, sector_t *caller
 		size_t j, masterlineindex = (size_t)-1;
 
 		for (i = 0; i < linecnt; i++)
+		{
 			if (ctlsector->lines[i] == triggerline)
 			{
 				masterlineindex = i;
 				break;
 			}
+		}
 
 #ifdef PARANOIA
 		if (masterlineindex == (size_t)-1)
@@ -1490,11 +1497,13 @@ boolean P_RunTriggerLinedef(line_t *triggerline, mobj_t *actor, sector_t *caller
 				{
 					if (i == j)
 						continue;
+
 					if (ctlsector->lines[i]->v1 == ctlsector->lines[j]->v2)
 					{
 						i = j;
 						break;
 					}
+
 					if (ctlsector->lines[i]->v1 == ctlsector->lines[j]->v1)
 					{
 						i = j;
@@ -1502,6 +1511,7 @@ boolean P_RunTriggerLinedef(line_t *triggerline, mobj_t *actor, sector_t *caller
 						break;
 					}
 				}
+
 				if (j == linecnt)
 				{
 					const size_t vertexei = (size_t)(ctlsector->lines[i]->v1 - vertexes);
@@ -1516,11 +1526,13 @@ boolean P_RunTriggerLinedef(line_t *triggerline, mobj_t *actor, sector_t *caller
 				{
 					if (i == j)
 						continue;
+
 					if (ctlsector->lines[i]->v2 == ctlsector->lines[j]->v1)
 					{
 						i = j;
 						break;
 					}
+
 					if (ctlsector->lines[i]->v2 == ctlsector->lines[j]->v2)
 					{
 						i = j;
@@ -1597,19 +1609,21 @@ void P_LinedefExecute(INT16 tag, mobj_t *actor, sector_t *caller)
 		if (lines[masterline].tag != tag)
 			continue;
 
+		const INT16 specialtype = lines[masterline].special;
+
 		// "No More Enemies" and "Level Load" take care of themselves.
-		if (lines[masterline].special == 313
-		 || lines[masterline].special == 399
-		 || lines[masterline].special == 328
-		 || lines[masterline].special == 323
+		if (specialtype == 313
+		 || specialtype == 399
+		 || specialtype == 328
+		 || specialtype == 323
 		 // Each-time executors handle themselves, too
-		 || lines[masterline].special == 301 // Each time
-		 || lines[masterline].special == 306 // Character ability - Each time
-		 || lines[masterline].special == 310 // CTF Red team - Each time
-		 || lines[masterline].special == 312 // CTF Blue team - Each time
-		 || lines[masterline].special == 322 // Trigger on X calls - Each Time
-		 || lines[masterline].special < 300
-		 || lines[masterline].special > 399)
+		 || specialtype == 301 // Each time
+		 || specialtype == 306 // Character ability - Each time
+		 || specialtype == 310 // CTF Red team - Each time
+		 || specialtype == 312 // CTF Blue team - Each time
+		 || specialtype == 322 // Trigger on X calls - Each Time
+		 || specialtype < 300
+		 || specialtype > 399)
 			continue;
 
 		if (!P_RunTriggerLinedef(&lines[masterline], actor, caller))
@@ -2421,7 +2435,8 @@ static void P_ProcessLineSpecial(line_t *line, mobj_t *mo, sector_t *callsec)
 				P_SetPlayerMobjState(mo, S_KART_STND1); // SRB2kart - was S_PLAY_STND
 
 				// Reset bot too.
-				if (bot) {
+				if (bot)
+				{
 					if (line->flags & ML_NOCLIMB)
 						P_SetOrigin(bot, mo->x, mo->y, mo->z);
 					bot->momx = bot->momy = bot->momz = 1;
@@ -2504,6 +2519,7 @@ static void P_ProcessLineSpecial(line_t *line, mobj_t *mo, sector_t *callsec)
 					P_SetTarget(&dummy->target, bot);
 					A_CustomPower(dummy);
 				}
+
 				P_RemoveMobj(dummy);
 			}
 			break;
@@ -2567,11 +2583,15 @@ static void P_ProcessLineSpecial(line_t *line, mobj_t *mo, sector_t *callsec)
 			if (mo && mo->player)
 			{
 				UINT16 fractime = (UINT16)(sides[line->sidenum[0]].textureoffset>>FRACBITS);
+
 				if (fractime < 1)
 					fractime = 1; //instantly wears off upon leaving
+
 				if (line->flags & ML_NOCLIMB)
 					fractime |= 1<<15; //more crazy &ing, as if music stuff wasn't enough
+
 				mo->player->powers[pw_nocontrol] = fractime;
+
 				if (bot)
 					bot->player->powers[pw_nocontrol] = fractime;
 			}
@@ -2581,8 +2601,10 @@ static void P_ProcessLineSpecial(line_t *line, mobj_t *mo, sector_t *callsec)
 			if (mo)
 			{
 				mo->destscale = FixedDiv(P_AproxDistance(line->dx, line->dy), 100<<FRACBITS);
+
 				if (mo->destscale < FRACUNIT/100)
 					mo->destscale = FRACUNIT/100;
+
 				if (mo->player && bot)
 					bot->destscale = mo->destscale;
 			}
@@ -2667,9 +2689,11 @@ static void P_ProcessLineSpecial(line_t *line, mobj_t *mo, sector_t *callsec)
 			{
 				boolean tryagain;
 				sec = sectors + secnum;
+
 				do {
 					tryagain = false;
 					for (thing = sec->thinglist; thing; thing = thing->snext)
+					{
 						if (thing->type == type)
 						{
 							if (state != NUMSTATES)
@@ -2686,6 +2710,7 @@ static void P_ProcessLineSpecial(line_t *line, mobj_t *mo, sector_t *callsec)
 								break;
 							}
 						}
+					}
 				} while (tryagain);
 			}
 			break;
@@ -3261,6 +3286,7 @@ void P_ProcessSpecialSector(player_t *player, sector_t *sector, sector_t *rovers
 		case 3: // Linedef executor requires all players present // Trigger Linedef Exec (Floor Touch, All Players)
 			/// \todo check continues for proper splitscreen support?
 			for (i = 0; i < MAXPLAYERS; i++)
+			{
 				if (playeringame[i] && !players[i].bot && players[i].mo && (gametype != GT_COOP || players[i].lives > 0))
 				{
 					if (roversector)
@@ -3314,6 +3340,7 @@ void P_ProcessSpecialSector(player_t *player, sector_t *sector, sector_t *rovers
 							goto DoneSection2;
 					}
 				}
+			}
 			/* FALLTHRU */
 		case 4: // Linedef executor that doesn't require touching floor // Trigger Linedef Exec (Anywhere in Sector)
 		case 5: // Linedef executor // Trigger Linedef Exec (Floor Touch)
@@ -3446,11 +3473,14 @@ DoneSection2:
 
 			if (i != -1)
 			{
+				INT32 sfxnum;
 				angle_t lineangle;
 				fixed_t linespeed;
 
-				lineangle = lines[i].angle;
-				linespeed = P_AproxDistance(lines[i].v2->x-lines[i].v1->x, lines[i].v2->y-lines[i].v1->y);
+				const line_t *line = &lines[i];
+
+				lineangle = line->angle;
+				linespeed = P_AproxDistance(line->v2->x-line->v1->x, line->v2->y-line->v1->y);
 
 				player->mo->angle = lineangle;
 
@@ -3464,7 +3494,7 @@ DoneSection2:
 					P_ForceLocalAngle(player, player->mo->angle);
 				}
 
-				if (!(lines[i].flags & ML_EFFECT4))
+				if (!(line->flags & ML_EFFECT4))
 				{
 					P_UnsetThingPosition(player->mo);
 					if (roversector) // make FOF speed pads work
@@ -3486,7 +3516,14 @@ DoneSection2:
 				player->kartstuff[k_drift] = 0;
 				player->kartstuff[k_driftcharge] = 0;
 				player->kartstuff[k_pogospring] = 0;
-				S_StartSound(player->mo, sfx_spdpad);
+
+				sfxnum = sides[line->sidenum[0]].toptexture;
+
+				// none or invalid sound?
+				if (sfxnum <= sfx_None || sfxnum >= NUMSFX)
+					sfxnum = sfx_spdpad; // use the zippy sound then!
+
+				S_StartSound(player->mo, sfxnum);
 
 				{
 					sfxenum_t pick = P_RandomKey(2); // Gotta roll the RNG every time this is called for sync reasons
@@ -3535,21 +3572,25 @@ DoneSection2:
 				P_DoPlayerExit(player);
 
 				P_SetupSignExit(player);
-				// important: use sector->tag on next line instead of player->mo->subsector->tag
-				// this part is different from in P_PlayerThink, this is what was causing
-				// FOF custom exits not to work.
-				lineindex = P_FindSpecialLineFromTag(2, sector->tag, -1);
 
-				if (gametype == GT_COOP && lineindex != -1) // Custom exit!
+				if (gametype == GT_COOP)
 				{
-					// Special goodies with the block monsters flag depending on emeralds collected
-					if ((lines[lineindex].flags & ML_BLOCKMONSTERS) && ALL7EMERALDS(emeralds))
-						nextmapoverride = (INT16)(lines[lineindex].frontsector->ceilingheight>>FRACBITS);
-					else
-						nextmapoverride = (INT16)(lines[lineindex].frontsector->floorheight>>FRACBITS);
+					// important: use sector->tag on next line instead of player->mo->subsector->tag
+					// this part is different from in P_PlayerThink, this is what was causing
+					// FOF custom exits not to work.
+					lineindex = P_FindSpecialLineFromTag(2, sector->tag, -1);
 
-					if (lines[lineindex].flags & ML_NOCLIMB)
-						skipstats = true;
+					if (lineindex != -1) // Custom exit!)
+					{
+						// Special goodies with the block monsters flag depending on emeralds collected
+						if ((lines[lineindex].flags & ML_BLOCKMONSTERS) && ALL7EMERALDS(emeralds))
+							nextmapoverride = (INT16)(lines[lineindex].frontsector->ceilingheight>>FRACBITS);
+						else
+							nextmapoverride = (INT16)(lines[lineindex].frontsector->floorheight>>FRACBITS);
+
+						if (lines[lineindex].flags & ML_NOCLIMB)
+							skipstats = true;
+					}
 				}
 			}
 			break;
@@ -3655,7 +3696,6 @@ DoneSection2:
 				thinker_t *th;
 				mobj_t *waypoint = NULL;
 				mobj_t *mo2;
-
 
 				if (player->mo->tracer && player->mo->tracer->type == MT_TUBEWAYPOINT)
 					break;
@@ -4521,26 +4561,12 @@ void P_PlayerInSpecialSector(player_t *player)
 
 #undef TELEPORTED
 
-/** Animate planes, scroll walls, etc. and keeps track of level timelimit and exits if time is up.
-  *
-  * \sa P_CheckTimeLimit, P_CheckPointLimit
-  */
-void P_UpdateSpecials(void)
+static void P_UpdateAnimFlats(void)
 {
 	anim_t *anim;
 	INT32 i;
 	size_t j;
 	levelflat_t *foundflats; // for flat animation
-
-	// LEVEL TIMER
-	P_CheckTimeLimit();
-
-	// POINT LIMIT
-	P_CheckPointLimit();
-
-	// Dynamic slopeness
-	if (!midgamejoin) // run here when not joined midgame to prevent any potential issues that may arise
-		P_RunDynamicSlopes();
 
 	// ANIMATE TEXTURES
 	for (anim = anims; anim < lastanim; anim++)
@@ -4571,15 +4597,38 @@ void P_UpdateSpecials(void)
 	}
 }
 
+/** Animate planes, scroll walls, etc. and keeps track of level timelimit and exits if time is up.
+  *
+  * \sa P_CheckTimeLimit, P_CheckPointLimit
+  */
+void P_UpdateSpecials(void)
+{
+	// LEVEL TIMER
+	P_CheckTimeLimit();
+
+	// POINT LIMIT
+	P_CheckPointLimit();
+
+	// Dynamic slopeness
+	// we run this here only when not joined midrace
+	// for vanilla compat reasons :chaosleep:
+	if (!midgamejoin)
+		P_RunDynamicSlopes();
+
+	P_UpdateAnimFlats();
+}
+
 static inline ffloor_t *P_GetFFloorBySec(sector_t *sec, sector_t *sec2)
 {
 	ffloor_t *rover;
 
 	if (!sec->ffloors)
 		return NULL;
+
 	for (rover = sec->ffloors; rover; rover = rover->next)
 		if (rover->secnum == (size_t)(sec2 - sectors))
 			return rover;
+
 	return NULL;
 }
 
@@ -4630,6 +4679,7 @@ static ffloor_t *P_AddFakeFloor(sector_t *sec, sector_t *sec2, line_t *master, f
 
 	if (sec == sec2)
 		return NULL; //Don't need a fake floor on a control sector.
+
 	if ((ffloor = (P_GetFFloorBySec(sec, sec2))))
 		return ffloor; // If this ffloor already exists, return it
 
@@ -4736,7 +4786,7 @@ static ffloor_t *P_AddFakeFloor(sector_t *sec, sector_t *sec2, line_t *master, f
 				P_AddSpikeThinker(sec, (INT32)sec2num);
 		}
 		// Should this FOF have friction?
-		else if(th->function == (actionf_p1)T_Friction)
+		else if (th->function == (actionf_p1)T_Friction)
 		{
 			f = (friction_t *)th;
 
@@ -4744,7 +4794,7 @@ static ffloor_t *P_AddFakeFloor(sector_t *sec, sector_t *sec2, line_t *master, f
 				Add_Friction(f->friction, f->movefactor, (INT32)(sec-sectors), f->affectee);
 		}
 		// Should this FOF have wind/current/pusher?
-		else if(th->function == (actionf_p1)T_Pusher)
+		else if (th->function == (actionf_p1)T_Pusher)
 		{
 			p = (pusher_t *)th;
 
@@ -6946,6 +6996,7 @@ static void P_SpawnFriction(void)
 	INT32 movefactor; // applied to each player move to simulate inertia
 
 	for (i = 0; i < numlines; i++, l++)
+	{
 		if (l->special == 540)
 		{
 			//length = P_AproxDistance(l->dx, l->dy)>>FRACBITS;
@@ -6979,6 +7030,7 @@ static void P_SpawnFriction(void)
 			for (s = -1; (s = P_FindSectorFromLineTag(l, s)) >= 0 ;)
 				Add_Friction(friction, movefactor, s, -1);
 		}
+	}
 }
 
 /*
@@ -7027,9 +7079,9 @@ static void Add_Pusher(pushertype_e type, fixed_t x_mag, fixed_t y_mag, mobj_t *
 	// "The right triangle of the square of the length of the hypotenuse is equal to the sum of the squares of the lengths of the other two sides."
 	// "Bah! Stupid brains! Don't you know anything besides the Pythagorean Theorem?" - Earthworm Jim
 	if (type == p_downcurrent || type == p_upcurrent || type == p_upwind || type == p_downwind)
-		p->magnitude = P_AproxDistance(p->x_mag,p->y_mag)<<(FRACBITS-PUSH_FACTOR);
+		p->magnitude = P_AproxDistance(p->x_mag, p->y_mag)<<(FRACBITS-PUSH_FACTOR);
 	else
-		p->magnitude = P_AproxDistance(p->x_mag,p->y_mag);
+		p->magnitude = P_AproxDistance(p->x_mag, p->y_mag);
 
 	if (source) // point source exist?
 	{
@@ -7293,13 +7345,16 @@ void T_Pusher(pusher_t *p)
 		if (thing->flags2 & MF2_PUSHED)
 			continue;
 
-		if (thing->player && thing->player->pflags & PF_ROPEHANG)
-			continue;
+		if (thing->player)
+		{
+			if (thing->player->pflags & PF_ROPEHANG)
+				continue;
 
-		if (thing->player && (thing->state == &states[thing->info->painstate])
-			&& (thing->player->powers[pw_flashing] > (K_GetKartFlashing(thing->player)/4)*3
-			&& thing->player->powers[pw_flashing] <= K_GetKartFlashing(thing->player)))
-			continue;
+			if ((thing->state == &states[thing->info->painstate])
+				&& (thing->player->powers[pw_flashing] > (K_GetKartFlashing(thing->player)/4)*3
+				&& thing->player->powers[pw_flashing] <= K_GetKartFlashing(thing->player)))
+				continue;
+		}
 
 		inFOF = touching = moved = false;
 
@@ -7429,7 +7484,7 @@ void T_Pusher(pusher_t *p)
 			if (p->slider && thing->player)
 			{
 				boolean jumped = (thing->player->pflags & PF_JUMPED);
-				P_ResetPlayer (thing->player);
+				P_ResetPlayer(thing->player);
 
 				if (jumped)
 					thing->player->pflags |= PF_JUMPED;

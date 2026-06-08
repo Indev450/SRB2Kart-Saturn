@@ -477,6 +477,11 @@ void S_StartSoundAtVolume(const void *origin_p, sfxenum_t sfx_id, INT32 volume)
 	{
 		player_t *player = &players[displayplayers[i]];
 
+		if (!player)
+		{
+			continue;
+		}
+
 		if (player->awayviewtics)
 		{
 			listenmobj[i] = player->awayviewmobj;
@@ -535,79 +540,84 @@ void S_StartSoundAtVolume(const void *origin_p, sfxenum_t sfx_id, INT32 volume)
 
 	i = 0; // sensible default
 
+	// Check to see if it is audible, and if not, modify the params
+	if (origin && !itsUs)
 	{
-		// Check to see if it is audible, and if not, modify the params
-		if (origin && !itsUs)
+		boolean audible = false;
+
+		if (splitscreen > 0)
 		{
-			boolean audible = false;
-			if (splitscreen > 0)
-			{
-				fixed_t recdist = INT32_MAX;
-				UINT8 j = 0;
+			fixed_t recdist = INT32_MAX;
+			UINT8 j = 0;
 
-				for (; j <= splitscreen; j++)
+			for (; j <= splitscreen; j++)
+			{
+				fixed_t thisdist = INT32_MAX;
+
+				if (!listenmobj[j])
 				{
-					fixed_t thisdist = INT32_MAX;
-
-					if (!listenmobj[j])
-					{
-						continue;
-					}
-
-					thisdist = P_AproxDistance(listener[j].x - origin->x, listener[j].y - origin->y);
-
-					if (thisdist >= recdist)
-					{
-						continue;
-					}
-
-					recdist = thisdist;
-					i = j;
+					continue;
 				}
-			}
 
-			if (listenmobj[i])
-			{
-				audible = S_AdjustSoundParams(listenmobj[i], origin, &volume, &sep, sfx);
-			}
+				thisdist = P_AproxDistance(listener[j].x - origin->x, listener[j].y - origin->y);
 
-			if (!audible)
-			{
-				return;
+				if (thisdist >= recdist)
+				{
+					continue;
+				}
+
+				recdist = thisdist;
+				i = j;
 			}
 		}
 
-		// This is supposed to handle the loading/caching.
-		// For some odd reason, the caching is done nearly
-		// each time the sound is needed?
+		if (listenmobj[i])
+		{
+			audible = S_AdjustSoundParams(listenmobj[i], origin, &volume, &sep, sfx);
+		}
 
-		// cache data if necessary
-		// NOTE: set sfx->data NULL sfx->lump -1 to force a reload
+		if (!audible)
+		{
+			return;
+		}
+	}
+
+	// This is supposed to handle the loading/caching.
+	// For some odd reason, the caching is done nearly
+	// each time the sound is needed?
+
+	// cache data if necessary
+	// NOTE: set sfx->data NULL sfx->lump -1 to force a reload
+	if (!sfx->data)
+	{
+		sfx->data = I_GetSfx(sfx);
+
 		if (!sfx->data)
 		{
-			sfx->data = I_GetSfx(sfx);
+			CONS_Alert(CONS_WARNING, "Tried to load invalid sfx_%s\n", sfx->name);
+			return; /* don't play it */
 		}
-
-		// Avoid channel reverse if surround
-		if (reverse)
-		{
-			sep = (~sep) & 255;
-		}
-
-		// At this point it is determined that a sound can and should be played, so find a free channel to play it on
-		cnum = S_getChannel(origin, sfx);
-
-		if (cnum < 0)
-		{
-			return; // If there's no free channels, there won't be any for anymore players either
-		}
-
-		// Now that we know we are going to play a sound, fill out this info
-		channels[cnum].sfxinfo = sfx;
-		channels[cnum].origin = origin;
-		channels[cnum].volume = initial_volume;
-		channels[cnum].handle = I_StartSound(sfx_id, volume, sep, cnum);
 	}
+
+	// Avoid channel reverse if surround
+	if (reverse)
+	{
+		sep = (~sep) & 255;
+	}
+
+	// At this point it is determined that a sound can and should be played, so find a free channel to play it on
+	cnum = S_getChannel(origin, sfx);
+
+	if (cnum < 0)
+	{
+		return; // If there's no free channels, there won't be any for anymore players either
+	}
+
+	// Now that we know we are going to play a sound, fill out this info
+	channels[cnum].sfxinfo = sfx;
+	channels[cnum].origin = origin;
+	channels[cnum].volume = initial_volume;
+	channels[cnum].handle = I_StartSound(sfx_id, volume, sep, cnum);
 }
 
 void S_StartSound(const void *origin, sfxenum_t sfx_id)
@@ -728,6 +738,11 @@ void S_UpdateSounds(void)
 	{
 		player_t *player = &players[displayplayers[i]];
 
+		if (!player)
+		{
+			continue;
+		}
+
 		if (player->awayviewtics)
 		{
 			listenmobj[i] = player->awayviewmobj;
@@ -761,84 +776,83 @@ void S_UpdateSounds(void)
 	{
 		c = &channels[cnum];
 
-		if (c->sfxinfo)
+		if (c->sfxinfo == NULL)
+			continue;
+
+		// if channel is allocated but sound has stopped, free it
+		if (!I_SoundIsPlaying(c->handle))
 		{
-			if (I_SoundIsPlaying(c->handle))
+			S_StopChannel(cnum);
+			continue;
+		}
+
+		if (c->origin == NULL)
+			continue;
+
+		// initialize parameters
+		volume = c->volume; // 8 bits internal volume precision
+		sep = NORM_SEP;
+
+		// check non-local sounds for distance clipping
+		//  or modify their params
+		boolean itsUs = false;
+
+		for (i = splitscreen; i >= 0; i--)
+		{
+			if (camera[i].freecam)
+				continue;
+
+			if (c->origin != listenmobj[i])
+				continue;
+
+			itsUs = true;
+		}
+
+		if (itsUs == false)
+		{
+			const mobj_t *origin = c->origin;
+
+			i = 0;
+
+			if (splitscreen > 0)
 			{
-				// initialize parameters
-				volume = c->volume; // 8 bits internal volume precision
-				sep = NORM_SEP;
+				fixed_t recdist = INT32_MAX;
+				UINT8 j = 0;
 
-				// check non-local sounds for distance clipping
-				//  or modify their params
-				if (c->origin)
+				for (; j <= splitscreen; j++)
 				{
-					boolean itsUs = false;
+					fixed_t thisdist = INT32_MAX;
 
-					for (i = splitscreen; i >= 0; i--)
+					if (!listenmobj[j])
 					{
-						if (camera[i].freecam)
-							continue;
-
-						if (c->origin != listenmobj[i])
-							continue;
-
-						itsUs = true;
+						continue;
 					}
 
-					if (itsUs == false)
+					thisdist = P_AproxDistance(listener[j].x - origin->x, listener[j].y - origin->y);
+
+					if (thisdist >= recdist)
 					{
-						const mobj_t *origin = c->origin;
-
-						i = 0;
-
-						if (splitscreen > 0)
-						{
-							fixed_t recdist = INT32_MAX;
-							UINT8 j = 0;
-
-							for (; j <= splitscreen; j++)
-							{
-								fixed_t thisdist = INT32_MAX;
-
-								if (!listenmobj[j])
-								{
-									continue;
-								}
-
-								thisdist = P_AproxDistance(listener[j].x - origin->x, listener[j].y - origin->y);
-
-								if (thisdist >= recdist)
-								{
-									continue;
-								}
-
-								recdist = thisdist;
-								i = j;
-							}
-						}
-
-						if (listenmobj[i])
-						{
-							audible = S_AdjustSoundParams(
-								listenmobj[i], c->origin,
-								&volume, &sep,
-								c->sfxinfo
-							);
-						}
-
-						if (audible)
-							I_UpdateSoundParams(c->handle, volume, sep);
-						else
-							S_StopChannel(cnum);
+						continue;
 					}
+
+					recdist = thisdist;
+					i = j;
 				}
 			}
-			else
+
+			if (listenmobj[i])
 			{
-				// if channel is allocated but sound has stopped, free it
-				S_StopChannel(cnum);
+				audible = S_AdjustSoundParams(
+					listenmobj[i], c->origin,
+					&volume, &sep,
+					c->sfxinfo
+				);
 			}
+
+			if (audible)
+				I_UpdateSoundParams(c->handle, volume, sep);
+			else
+				S_StopChannel(cnum);
 		}
 	}
 
@@ -866,7 +880,6 @@ void S_ClearSfx(void)
 
 static void S_StopChannel(INT32 cnum)
 {
-	INT32 i;
 	channel_t *c = &channels[cnum];
 
 	if (c->sfxinfo)
@@ -874,12 +887,6 @@ static void S_StopChannel(INT32 cnum)
 		// stop the sound playing
 		if (I_SoundIsPlaying(c->handle))
 			I_StopSound(c->handle);
-
-		// check to see
-		//  if other channels are playing the sound
-		for (i = 0; i < numofchannels; i++)
-			if (cnum != i && c->sfxinfo == channels[i].sfxinfo)
-				break;
 
 		c->sfxinfo = NULL;
 	}
@@ -1046,12 +1053,14 @@ static boolean S_AdjustSoundParams(const mobj_t *listener, const mobj_t *source,
 INT32 S_OriginPlaying(void *origin)
 {
 	INT32 cnum;
+
 	if (!origin)
 		return false;
 
 	for (cnum = 0; cnum < numofchannels; cnum++)
 		if (channels[cnum].origin == origin)
 			return 1;
+
 	return 0;
 }
 
@@ -1064,6 +1073,7 @@ INT32 S_IdPlaying(sfxenum_t id)
 	for (cnum = 0; cnum < numofchannels; cnum++)
 		if ((size_t)(channels[cnum].sfxinfo - S_sfx) == (size_t)id)
 			return 1;
+
 	return 0;
 }
 
@@ -1072,6 +1082,7 @@ INT32 S_IdPlaying(sfxenum_t id)
 INT32 S_SoundPlaying(void *origin, sfxenum_t id)
 {
 	INT32 cnum;
+
 	if (!origin)
 		return 0;
 
@@ -1081,6 +1092,7 @@ INT32 S_SoundPlaying(void *origin, sfxenum_t id)
 		 && (size_t)(channels[cnum].sfxinfo - S_sfx) == (size_t)id)
 			return 1;
 	}
+
 	return 0;
 }
 
@@ -1093,6 +1105,7 @@ static sfxenum_t newsounds[MAXNEWSOUNDS] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 void S_StartSoundName(void *mo, const char *soundname)
 {
 	INT32 i, soundnum = 0;
+
 	// Search existing sounds...
 	for (i = sfx_None + 1; i < NUMSFX; i++)
 	{

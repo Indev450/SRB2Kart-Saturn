@@ -387,10 +387,10 @@ void R_InterpolatePrecipMobjState(precipmobj_t *mobj, fixed_t frac, interpmobjst
 		return;
 	}
 
-		out->x = R_LerpFixed(mobj->old_x, mobj->x, frac);
-		out->y = R_LerpFixed(mobj->old_y, mobj->y, frac);
-		out->z = R_LerpFixed(mobj->old_z, mobj->z, frac);
-		out->scale = mapobjectscale;
+	out->x = R_LerpFixed(mobj->old_x, mobj->x, frac);
+	out->y = R_LerpFixed(mobj->old_y, mobj->y, frac);
+	out->z = R_LerpFixed(mobj->old_z, mobj->z, frac);
+	out->scale = mapobjectscale;
 }
 
 static levelinterpolator_t *CreateInterpolator(levelinterpolator_type_e type, thinker_t *thinker)

@@ -975,7 +975,7 @@ sfxinfo_t S_sfx[NUMSFX] =
 char freeslotnames[sfx_freeslot0 + NUMSFXFREESLOTS + NUMSKINSFXSLOTS][7] = {};
 
 // Prepare free sfx slots to add sfx at run time
-void S_InitRuntimeSounds (void)
+void S_InitRuntimeSounds(void)
 {
 	sfxenum_t i;
 	INT32 value;
@@ -1040,6 +1040,7 @@ sfxenum_t S_AddSoundFx(const char *name, boolean singular, INT32 flags, boolean 
 			return i;
 		}
 	}
+
 	I_Error("Out of Sound Freeslots while allocating \"%s\"\nLoad less addons to fix this.", name);
 	return 0;
 }

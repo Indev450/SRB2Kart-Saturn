@@ -167,7 +167,9 @@ UINT8 *PutFileNeeded(UINT16 firstfile)
 			continue;
 		}
 
-		nameonly(strcpy(wadfilename, wadfiles[i]->filename));
+		strncpy(wadfilename, wadfiles[i]->filename, MAX_WADPATH);
+		wadfilename[MAX_WADPATH-1] = '\0';
+		nameonly(wadfilename);
 
 		// Look below at the WRITE macros to understand what these numbers mean.
 		const size_t len = strlen(wadfilename) + 1;
@@ -257,9 +259,10 @@ void CL_PrepareDownloadSaveGame(const char *tmpsave)
   */
 boolean CL_CheckDownloadable(void)
 {
-	UINT8 i,dlstatus = 0;
+	UINT8 i, dlstatus = 0;
 
 	for (i = 0; i < fileneedednum; i++)
+	{
 		if (fileneeded[i].status != FS_FOUND && fileneeded[i].status != FS_OPEN)
 		{
 			if (fileneeded[i].willsend == 1)
@@ -270,6 +273,7 @@ boolean CL_CheckDownloadable(void)
 			else //if (fileneeded[i].willsend == 2)
 				dlstatus = 2;
 		}
+	}
 
 	// Downloading locally disabled
 	if (!dlstatus && M_CheckParm("-nodownload"))
@@ -280,15 +284,17 @@ boolean CL_CheckDownloadable(void)
 
 	// not downloadable, put reason in console
 	CONS_Alert(CONS_NOTICE, M_GetText("You need additional files to connect to this server:\n"));
+
 	for (i = 0; i < fileneedednum; i++)
+	{
 		if (fileneeded[i].status != FS_FOUND && fileneeded[i].status != FS_OPEN)
 		{
 			CONS_Printf(" * \"%s\" (%dK)", fileneeded[i].filename, fileneeded[i].totalsize >> 10);
 
-				if (fileneeded[i].status == FS_MD5SUMBAD)
-					CONS_Printf(M_GetText(" wrong version, md5: "));
-				else
-					CONS_Printf(M_GetText(" not found, md5: "));
+			if (fileneeded[i].status == FS_MD5SUMBAD)
+				CONS_Printf(M_GetText(" wrong version, md5: "));
+			else
+				CONS_Printf(M_GetText(" not found, md5: "));
 
 			{
 				INT32 j;
@@ -299,6 +305,7 @@ boolean CL_CheckDownloadable(void)
 			}
 			CONS_Printf("\n");
 		}
+	}
 
 	switch (dlstatus)
 	{
@@ -312,6 +319,7 @@ boolean CL_CheckDownloadable(void)
 			CONS_Printf(M_GetText("All files downloadable, but you have chosen to disable downloading locally.\n"));
 			break;
 	}
+
 	return false;
 }
 
@@ -549,7 +557,7 @@ INT32 CL_CheckFiles(void)
 		if (fileneeded[i].status != FS_OPEN)
 			filestoload++;
 
-		if (fileneeded[i].status != FS_NOTCHECKED) //since we're running this over multiple tics now, its possible for us to come across files checked in previous tics
+		if (fileneeded[i].status != FS_NOTCHECKED) // since we're running this over multiple tics now, its possible for us to come across files checked in previous tics
 			continue;
 
 		CONS_Debug(DBG_NETPLAY, "searching for '%s' ", fileneeded[i].filename);
@@ -557,14 +565,18 @@ INT32 CL_CheckFiles(void)
 		// Check in already loaded files
 		for (j = mainwads+1; j < numwadfiles; j++)
 		{
-			nameonly(strcpy(wadfilename, wadfiles[j]->filename));
-
-			if (fasticmp(wadfilename, fileneeded[i].filename) &&
-				!memcmp(wadfiles[j]->md5sum, fileneeded[i].md5sum, 16))
+			if (!memcmp(wadfiles[j]->md5sum, fileneeded[i].md5sum, 16))
 			{
-				CONS_Debug(DBG_NETPLAY, "already loaded\n");
-				fileneeded[i].status = FS_OPEN;
-				return 4;
+				strncpy(wadfilename, wadfiles[j]->filename, MAX_WADPATH);
+				wadfilename[MAX_WADPATH-1] = '\0';
+				nameonly(wadfilename);
+
+				if (fasticmp(wadfilename, fileneeded[i].filename))
+				{
+					CONS_Debug(DBG_NETPLAY, "already loaded\n");
+					fileneeded[i].status = FS_OPEN;
+					return 4;
+				}
 			}
 		}
 
@@ -645,7 +657,7 @@ boolean CL_LoadServerFiles(void)
 		else
 		{
 			const char *s;
-			switch(fileneeded[i].status)
+			switch (fileneeded[i].status)
 			{
 			case FS_NOTFOUND:
 				s = "FS_NOTFOUND";
@@ -688,7 +700,7 @@ static boolean SV_SendFile(INT32 node, const char *filename, UINT8 fileid)
 
 	char wadfilename[MAX_WADPATH];
 
-	if (cv_noticedownload.value)
+	if (cv_noticedownload.value && I_GetNodeAddress)
 		CONS_Printf("Sending file \"%s\" (id %d) to node %d (%s)\n", filename, fileid, node, I_GetNodeAddress(node));
 
 	// Find the last file in the list and set a pointer to its "next" field
@@ -713,7 +725,9 @@ static boolean SV_SendFile(INT32 node, const char *filename, UINT8 fileid)
 	// Look for the requested file through all loaded files
 	for (wadnum = 0; wadfiles[wadnum]; wadnum++)
 	{
-		strlcpy(wadfilename, wadfiles[wadnum]->filename, MAX_WADPATH);
+		// im a certified strlcpy hater
+		strncpy(wadfilename, wadfiles[wadnum]->filename, MAX_WADPATH);
+		wadfilename[MAX_WADPATH-1] = '\0';
 		nameonly(wadfilename);
 
 		if (fasticmp(wadfilename, p->id.filename))
@@ -1066,7 +1080,7 @@ void Got_Filetxpak(void)
 	{
 		const char *s;
 
-		switch(file->status)
+		switch (file->status)
 		{
 			case FS_NOTFOUND:
 				s = "FS_NOTFOUND";
@@ -1194,7 +1208,7 @@ filestatus_t checkfilemd5(char *filename, const UINT8 *wantedmd5sum)
 	fhandle = fopen(filename, "rb");
 	if (fhandle)
 	{
-		md5_stream(fhandle,md5sum);
+		md5_stream(fhandle, md5sum);
 		fclose(fhandle);
 		if (!memcmp(wantedmd5sum, md5sum, 16))
 			return FS_FOUND;
