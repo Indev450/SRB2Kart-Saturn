@@ -395,6 +395,11 @@ FUNCINLINE static ATTRINLINE UINT32 W_HashLumpName(const char *name)
 	return FNV1a_HashLowercaseString(name);
 }
 
+FUNCINLINE static ATTRINLINE UINT32 W_HashLumpNameLen(const char *name, size_t len)
+{
+	return FNV1a_QuickCaseHash(name, len);
+}
+
 /** Detect a file type.
  * \todo Actually detect the wad/pkzip headers and whatnot, instead of just checking the extensions.
  */
@@ -1094,18 +1099,15 @@ const char *W_CheckNameForNum(lumpnum_t lumpnum)
 UINT16 W_CheckNumForNamePwad(const char *name, UINT16 wad, UINT16 startlump)
 {
 	UINT16 i;
-	static char uname[8 + 1];
 	UINT32 hash;
 	size_t namelen;
 
 	if (!TestValidLump(wad, 0))
 		return INT16_MAX;
 
-	memset(uname, 0, sizeof(uname));
-	strncpy(uname, name, sizeof(uname)-1);
-	strupr(uname);
-	namelen = strlen(uname);
-	hash = W_HashLumpName(uname);
+	namelen = strlen(name);
+	namelen = min(namelen, 8); // :chaosleep:
+	hash = W_HashLumpNameLen(name, namelen);
 
 	//
 	// scan forward
@@ -1120,7 +1122,7 @@ UINT16 W_CheckNumForNamePwad(const char *name, UINT16 wad, UINT16 startlump)
 		{
 			if (lump_p->namelength == namelen
 				&& lump_p->hash.name == hash
-				&& !memcmp(lump_p->name, uname, sizeof(uname) - 1))
+				&& !strncasecmp(lump_p->name, name, namelen))
 				return i;
 		}
 	}
