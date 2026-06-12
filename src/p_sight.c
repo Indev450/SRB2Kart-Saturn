@@ -31,8 +31,6 @@ typedef struct {
 	fixed_t bbox[4];
 } los_t;
 
-static INT32 sightcounts[2];
-
 typedef INT32 (*divlinefunc)(fixed_t x, fixed_t y, const divline_t *node);
 typedef INT32 (*divlinecrossfunc)(fixed_t x1, fixed_t y1, fixed_t x2, fixed_t y2, const divline_t *node);
 
@@ -366,18 +364,25 @@ boolean P_CheckSight2(mobj_t *t1, mobj_t *t2, boolean fast)
 	I_Assert(!P_MobjWasRemoved(t2));
 
 	if (!t1->subsector || !t2->subsector
-	|| !t1->subsector->sector || !t2->subsector->sector)
+		|| !t1->subsector->sector || !t2->subsector->sector)
+	{
 		return false;
+	}
 
 	s1 = t1->subsector->sector;
 	s2 = t2->subsector->sector;
 	pnum = (s1-sectors)*numsectors + (s2-sectors);
 
-	if (rejectmatrix != NULL)
+	if (rejectmatrix.data != NULL)
 	{
+		const size_t shiftnum = pnum>>3;
+
 		// Check in REJECT table.
-		if (rejectmatrix[pnum>>3] & (1 << (pnum&7))) // can't possibly be connected
+		if (shiftnum < rejectmatrix.size && // check for overflow
+			(rejectmatrix.data[shiftnum] & (1 << (pnum&7)))) // can't possibly be connected
+		{
 			return false;
+		}
 	}
 
 	// killough 11/98: shortcut for melee situations
@@ -385,11 +390,9 @@ boolean P_CheckSight2(mobj_t *t1, mobj_t *t2, boolean fast)
 	// haleyjd 02/23/06: can't do this if there are polyobjects in the subsec
 	if (!t1->subsector->polyList &&
 		t1->subsector == t2->subsector)
+	{
 		return true;
-
-	// An unobstructed LOS is possible.
-	// Now look from eyes of t1 to any part of t2.
-	sightcounts[1]++;
+	}
 
 	validcount++;
 
