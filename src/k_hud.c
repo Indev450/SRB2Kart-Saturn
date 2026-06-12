@@ -109,8 +109,11 @@ consvar_t cv_huditemamount = {"showitemamountnumber", "Vanilla", CV_SAVE, hudite
 consvar_t cv_fancyroulette = {"animatedroulette", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_darkitembox   = {"darkitembox", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL}; // itembox gets a dark border with specific items
 consvar_t cv_multiitemicon = {"multiitemicon", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
-static CV_PossibleValue_t roulettecolor_cons_t[] = {{0, "Player"}, {1, "Item"}, {0, NULL}};
-consvar_t cv_roulettecolor = {"roulettecolor", "Player", CV_SAVE, roulettecolor_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
+
+enum { ROULETTECOLOR_NONE = -1, ROULETTECOLOR_HUD, ROULETTECOLOR_PLAYER, ROULETTECOLOR_ITEM };
+static CV_PossibleValue_t roulettecolor_cons_t[] = {
+	{ROULETTECOLOR_NONE, "None"}, {ROULETTECOLOR_HUD, "Hud"}, {ROULETTECOLOR_PLAYER, "Player"}, {ROULETTECOLOR_ITEM, "Item"}, {0, NULL}};
+consvar_t cv_roulettecolor = {"roulettecolor", "Hud", CV_SAVE, roulettecolor_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 consvar_t cv_showlaptimes = {"showlaptimes", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
@@ -1505,7 +1508,7 @@ static void K_drawKartItem(void)
 	INT32 maxl = 0; // itembar's normal highest value
 	const INT32 barlength = (splitscreen > 1 ? 12 : 26);
 	UINT8 localcolor = SKINCOLOR_NONE;
-	SINT8 colormode = TC_RAINBOW;
+	SINT8 colormode = cv_roulettecolor.value == ROULETTECOLOR_NONE ? TC_DEFAULT : TC_RAINBOW;
 	UINT8 *colmap = NULL;
 	UINT8 *colormap = NULL;
 
@@ -1513,72 +1516,75 @@ static void K_drawKartItem(void)
 	{
 		localcolor = K_GetHudColor();
 
+		if (cv_roulettecolor.value == ROULETTECOLOR_PLAYER)
+			localcolor = stplyr->skincolor;
+
 		switch ((stplyr->kartstuff[k_itemroulette] % (14*3)) / 3)
 		{
 			// Each case is handled in threes, to give three frames of in-game time to see the item on the roulette
 			case 0: // Sneaker
 				localpatch = kp_sneaker[offset];
-				if (cv_roulettecolor.value == 1) localcolor = SKINCOLOR_RASPBERRY;
+				if (cv_roulettecolor.value == ROULETTECOLOR_ITEM) localcolor = SKINCOLOR_RASPBERRY;
 				break;
 			case 1: // Banana
 				localpatch = kp_banana[offset];
-				if (cv_roulettecolor.value == 1) localcolor = SKINCOLOR_YELLOW;
+				if (cv_roulettecolor.value == ROULETTECOLOR_ITEM) localcolor = SKINCOLOR_YELLOW;
 				break;
 			case 2: // Orbinaut
 				localpatch = kp_orbinaut[3+offset];
-				if (cv_roulettecolor.value == 1) localcolor = SKINCOLOR_STEEL;
+				if (cv_roulettecolor.value == ROULETTECOLOR_ITEM) localcolor = SKINCOLOR_STEEL;
 				break;
 			case 3: // Mine
 				localpatch = kp_mine[offset];
-				if (cv_roulettecolor.value == 1) localcolor = SKINCOLOR_JET;
+				if (cv_roulettecolor.value == ROULETTECOLOR_ITEM) localcolor = SKINCOLOR_JET;
 				break;
 			case 4: // Grow
 				localpatch = kp_grow[offset];
-				if (cv_roulettecolor.value == 1) localcolor = SKINCOLOR_TEAL;
+				if (cv_roulettecolor.value == ROULETTECOLOR_ITEM) localcolor = SKINCOLOR_TEAL;
 				break;
 			case 5: // Hyudoro
 				localpatch = kp_hyudoro[offset];
-				if (cv_roulettecolor.value == 1) localcolor = SKINCOLOR_STEEL;
+				if (cv_roulettecolor.value == ROULETTECOLOR_ITEM) localcolor = SKINCOLOR_STEEL;
 				break;
 			case 6: // Rocket Sneaker
 				localpatch = kp_rocketsneaker[offset];
-				if (cv_roulettecolor.value == 1) localcolor = SKINCOLOR_TANGERINE;
+				if (cv_roulettecolor.value == ROULETTECOLOR_ITEM) localcolor = SKINCOLOR_TANGERINE;
 				break;
 			case 7: // Jawz
 				localpatch = kp_jawz[offset];
-				if (cv_roulettecolor.value == 1) localcolor = SKINCOLOR_JAWZ;
+				if (cv_roulettecolor.value == ROULETTECOLOR_ITEM) localcolor = SKINCOLOR_JAWZ;
 				break;
 			case 8: // Self-Propelled Bomb
 				localpatch = kp_selfpropelledbomb[offset];
-				if (cv_roulettecolor.value == 1) localcolor = SKINCOLOR_JET;
+				if (cv_roulettecolor.value == ROULETTECOLOR_ITEM) localcolor = SKINCOLOR_JET;
 				break;
 			case 9: // Shrink
 				localpatch = kp_shrink[offset];
-				if (cv_roulettecolor.value == 1) localcolor = SKINCOLOR_ORANGE;
+				if (cv_roulettecolor.value == ROULETTECOLOR_ITEM) localcolor = SKINCOLOR_ORANGE;
 				break;
 			case 10: // Invincibility
 				localpatch = localinv;
-				if (cv_roulettecolor.value == 1) localcolor = SKINCOLOR_GREY;
+				if (cv_roulettecolor.value == ROULETTECOLOR_ITEM) localcolor = SKINCOLOR_GREY;
 				break;
 			case 11: // Eggman Monitor
 				localpatch = kp_eggman[offset];
-				if (cv_roulettecolor.value == 1) localcolor = SKINCOLOR_ROSE;
+				if (cv_roulettecolor.value == ROULETTECOLOR_ITEM) localcolor = SKINCOLOR_ROSE;
 				break;
 			case 12: // Ballhog
 				localpatch = kp_ballhog[offset];
-				if (cv_roulettecolor.value == 1) localcolor = SKINCOLOR_LILAC;
+				if (cv_roulettecolor.value == ROULETTECOLOR_ITEM) localcolor = SKINCOLOR_LILAC;
 				break;
 			case 13: // Thunder Shield
 				localpatch = kp_thundershield[offset];
-				if (cv_roulettecolor.value == 1) localcolor = SKINCOLOR_CYAN;
+				if (cv_roulettecolor.value == ROULETTECOLOR_ITEM) localcolor = SKINCOLOR_CYAN;
 				break;
 			/*case 14: // Pogo Spring
 				localpatch = kp_pogospring[offset];
-				if (cv_roulettecolor.value == 1) localcolor = SKINCOLOR_TANGERINE;
+				if (cv_roulettecolor.value == ROULETTECOLOR_ITEM) localcolor = SKINCOLOR_TANGERINE;
 				break;
 			case 15: // Kitchen Sink
 				localpatch = kp_kitchensink[offset];
-				if (cv_roulettecolor.value == 1) localcolor = SKINCOLOR_STEEL;
+				if (cv_roulettecolor.value == ROULETTECOLOR_ITEM) localcolor = SKINCOLOR_STEEL;
 				break;*/
 			default:
 				break;

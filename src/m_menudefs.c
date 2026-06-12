@@ -1890,7 +1890,7 @@ static const char* OP_SaturnHudTooltips[] =
 	"Use extra graphics for multiple sneakers, bananas and jawz.",
 	"Change when the item amount is to be displayed.\nMultiple will always display the number.\nWhen you have multiple of the same Item.\nAlways will always display the number regardless of Item amount.",
 	"Enables an animation while the roulette is active.",
-	"Changes whether items in roulette have same color as player or an item-specific one.",
+	"Changes the way items are colorized in roulette.",
 	"Show the big 'LAP' text on a lap change.",
 	"Show the big Cecho Messages.",
 	"Show player names on the minimap.",
