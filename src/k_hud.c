@@ -1508,16 +1508,16 @@ static void K_drawKartItem(void)
 	INT32 maxl = 0; // itembar's normal highest value
 	const INT32 barlength = (splitscreen > 1 ? 12 : 26);
 	UINT8 localcolor = SKINCOLOR_NONE;
-	SINT8 colormode = cv_roulettecolor.value == ROULETTECOLOR_NONE ? TC_DEFAULT : TC_RAINBOW;
+	SINT8 colormode = TC_RAINBOW;
 	UINT8 *colmap = NULL;
 	UINT8 *colormap = NULL;
 
 	if (stplyr->kartstuff[k_itemroulette])
 	{
-		localcolor = K_GetHudColor();
-
 		if (cv_roulettecolor.value == ROULETTECOLOR_PLAYER)
 			localcolor = stplyr->skincolor;
+		else if (cv_roulettecolor.value != ROULETTECOLOR_NONE)
+			localcolor = K_GetHudColor();
 
 		switch ((stplyr->kartstuff[k_itemroulette] % (14*3)) / 3)
 		{
