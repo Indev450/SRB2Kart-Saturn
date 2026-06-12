@@ -208,7 +208,7 @@ typedef enum
 static menuitem_t MPauseMenu[] =
 {
 	{IT_STRING | IT_CALL,     NULL, "Addons...",          M_Addons,               8},
-	{IT_STRING | IT_CALL,     NULL, "Add local skins...", M_LocalSkins,           16},
+	{IT_STRING | IT_CALL,     NULL, "Local Add-ons...",   M_LocalAddons,          8},
 	{IT_STRING | IT_SUBMENU,  NULL, "Scramble Teams...", &MISC_ScrambleTeamDef,  24},
 	{IT_STRING | IT_CALL,     NULL, "Switch Map..."    , M_MapChange,            32},
 
@@ -238,7 +238,7 @@ static menuitem_t MPauseMenu[] =
 typedef enum
 {
 	mpause_addons = 0,
-	mpause_addlocalskins,
+	mpause_localaddons,
 	mpause_scramble,
 	mpause_switchmap,
 #ifdef HAVE_DISCORDRPC

@@ -151,8 +151,6 @@ const char *quitmsg[NUM_QUITMESSAGES] = {};
 
 INT32 mapwads[NUMMAPS] = {};
 
-boolean browselocalskins = false;
-
 boolean menuactive = false;
 boolean fromlevelselect = false;
 
@@ -220,6 +218,11 @@ static INT32 setupm_skinselect;
 static boolean setupm_skinlockedselect;
 
 static UINT8 setupm_playernum; //brap
+
+// Addons Menu: Local mode
+static void M_LocalAddons(INT32 choice);
+#define LOCALMODE_KEY (KEY_RALT)
+static boolean addons_localmode = false;
 
 //
 // PROTOTYPES
@@ -325,7 +328,6 @@ static void M_EraseData(INT32 choice);
 
 static void M_AddonsInternal();
 static void M_Addons(INT32 choice);
-static void M_LocalSkins(INT32 choice);
 static void M_AddonsOptions(INT32 choice);
 #define addonmenusize 9 // number of items actually displayed in the addons menu view, formerly (2*numaddonsshown + 1)
 #define numaddonsshown 4 // number of items to each side of the currently selected item, unless at top/bottom ends of directory
@@ -1013,6 +1015,24 @@ boolean M_Responder(event_t *ev)
 				break;
 			case KEY_HAT1 + 3:
 				ch = KEY_RIGHTARROW;
+				break;
+			//Local Addon Mode
+			case LOCALMODE_KEY:
+				{
+					if (!(server || IsPlayerAdmin(consoleplayer)))
+						break;
+
+					if (!addons_localmode)
+					{
+						S_StartSound(NULL, sfx_ding);
+						addons_localmode = true;
+					}
+					else
+					{
+						S_StartSound(NULL, sfx_jshard);
+						addons_localmode = false;
+					}
+				}
 				break;
 		}
 	}
@@ -1718,19 +1738,16 @@ void M_StartControlPanel(void)
 		MPauseMenu[mpause_switchteam].status = IT_DISABLED;
 		MPauseMenu[mpause_switchspectate].status = IT_DISABLED;
 		MPauseMenu[mpause_psetup].status = IT_DISABLED;
+		MPauseMenu[mpause_localaddons].status = IT_STRING | IT_CALL;
+
 		MISC_ChangeTeamMenu[0].status = IT_DISABLED;
 		MISC_ChangeSpectateMenu[0].status = IT_DISABLED;
 
-		MPauseMenu[mpause_addlocalskins].status = IT_STRING | IT_CALL;
 		MPauseMenu[mpause_localskin].status = IT_STRING | IT_CALL;
 
 		// Reset these in case splitscreen messes things up
 		MPauseMenu[mpause_addons].alphaKey = 8;
-
-		if (IsPlayerAdmin(consoleplayer))
-			MPauseMenu[mpause_addlocalskins].alphaKey = 16;
-		else
-			MPauseMenu[mpause_addlocalskins].alphaKey = 24;
+		MPauseMenu[mpause_localaddons].alphaKey = 24;
 
 		MPauseMenu[mpause_scramble].alphaKey = 8;
 		MPauseMenu[mpause_switchmap].alphaKey = 24;
@@ -1748,21 +1765,19 @@ void M_StartControlPanel(void)
 		{
 			MPauseMenu[mpause_switchmap].status = IT_STRING | IT_CALL;
 			MPauseMenu[mpause_addons].status = IT_STRING | IT_CALL;
-
+			MPauseMenu[mpause_localaddons].status = IT_DISABLED;
 			if (G_GametypeHasTeams())
 				MPauseMenu[mpause_scramble].status = IT_STRING | IT_SUBMENU;
 		}
 
 		if (server || (!cv_showlocalskinmenus.value))
 		{
-			MPauseMenu[mpause_addlocalskins].status = IT_DISABLED;
 			MPauseMenu[mpause_localskin].status = IT_DISABLED;
 
 			MPauseMenu[mpause_options].alphaKey = 64;
 			MPauseMenu[mpause_title].alphaKey = 80;
 			MPauseMenu[mpause_quit].alphaKey = 88;
 		}
-
 
 		if (splitscreen)
 		{
@@ -3308,14 +3323,14 @@ static void M_AddonsInternal(void)
 static void M_Addons(INT32 choice)
 {
 	(void)choice;
-	browselocalskins = false;
+	addons_localmode = false;
 	M_AddonsInternal();
 }
 
-static void M_LocalSkins(INT32 choice)
+static void M_LocalAddons(INT32 choice)
 {
 	(void)choice;
-	browselocalskins = true;
+	addons_localmode = true;
 	M_AddonsInternal();
 }
 
@@ -3484,8 +3499,8 @@ static void M_DrawAddons(void)
 
 	if (Playing())
 	{
-		if (browselocalskins)
-			V_DrawCenteredString(BASEVIDWIDTH/2, 5, V_ALLOWLOWERCASE, "Load \x83local skins\x80 from addons!");
+		if (addons_localmode) // Draw notice that you're adding locally
+			V_DrawCenteredString(BASEVIDWIDTH/2, 5, V_ALLOWLOWERCASE, "Load addons or \x83local skins\x80 locally!");
 		else
 			V_DrawCenteredString(BASEVIDWIDTH/2, 5, warningflags, "Adding files mid-game may cause problems.");
 	}
@@ -3649,6 +3664,9 @@ static void M_DrawAddons(void)
 	//V_DrawCenteredString(BASEVIDWIDTH/2, y+24, (majormods ? highlightflags : V_TRANSLUCENT), va("%d ADD-ON%s LOADED", (int)m, (m == 1) ? "" : "S")); //+2 for music, sounds, +1 for main.kart
 
 	V_DrawThinString(0, BASEVIDHEIGHT-10, V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_TRANSLUCENT|V_ALLOWLOWERCASE, ("END Key - Add addon to autoload"));
+
+	if (Playing() && (server || IsPlayerAdmin(consoleplayer)))
+		V_DrawThinString(0, BASEVIDHEIGHT-20, V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_TRANSLUCENT|V_ALLOWLOWERCASE, ("Right ALT Key - Switch to local addon mode"));
 }
 
 static void M_AddonExec(INT32 ch)
@@ -3838,14 +3856,14 @@ static void M_HandleAddons(INT32 choice)
 						case EXT_KART:
 #endif
 						case EXT_PK3:
-							if (browselocalskins)
+							if (addons_localmode)
 							{
-								if (DumbStartsWith("KC_", dirmenu[dir_on[menudepthleft]]+DIR_STRING) || DumbStartsWith("kc_", dirmenu[dir_on[menudepthleft]]+DIR_STRING)) {
+								if (DumbStartsWith("KC_", dirmenu[dir_on[menudepthleft]]+DIR_STRING) || DumbStartsWith("kc_", dirmenu[dir_on[menudepthleft]]+DIR_STRING))
+								{
 									M_StartMessage(va("%c%s\x80\nYou are loading a local skin.\nLocal skins will not be usable\nafter going back from\nthe title screen.\n\n(Press a key)\n", ('\x80' + (highlightflags>>V_CHARCOLORSHIFT)), dirmenu[dir_on[menudepthleft]]+DIR_STRING),NULL,MM_NOTHING);
-									COM_BufAddText(va("addfilelocal \"%s%s\"", menupath, dirmenu[dir_on[menudepthleft]]+DIR_STRING));
 								}
-								else
-									S_StartSound(NULL, sfx_s26d);
+
+								COM_BufAddText(va("addfilelocal \"%s%s\"", menupath, dirmenu[dir_on[menudepthleft]]+DIR_STRING));
 							}
 							else
 							{
@@ -3928,6 +3946,8 @@ static void M_HandleAddons(INT32 choice)
 			M_SetupNextMenu(currentMenu->prevMenu);
 		else
 			M_ClearMenus(true);
+
+		addons_localmode = false; //Exiting this menu, disable addons_localmode already.
 	}
 }
 
