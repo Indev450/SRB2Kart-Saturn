@@ -145,7 +145,7 @@ precipmobj_t **precipblocklinks = NULL;
 // Speeds up enemy AI by skipping detailed LineOf Sight calculation.
 // Without special effect, this could be used as a PVS lookup as well.
 //
-UINT8 *rejectmatrix = NULL;
+reject_t rejectmatrix = {};
 
 // Maintain single and multi player starting spots.
 INT32 numdmstarts = 0, numcoopstarts = 0, numredctfstarts = 0, numbluectfstarts = 0;
@@ -1307,7 +1307,7 @@ static void P_LoadSidedefs(void *data)
 				if (msd->toptexture[0] == '-' && msd->toptexture[1] == '\0')
 					break;
 				else
-					memcpy(process,msd->toptexture,8);
+					memcpy(process, msd->toptexture, 8);
 				if (msd->midtexture[0] != '-' || msd->midtexture[1] != '\0')
 					memcpy(process+strlen(process), msd->midtexture, 8);
 				if (msd->bottomtexture[0] != '-' || msd->bottomtexture[1] != '\0')
@@ -1324,7 +1324,7 @@ static void P_LoadSidedefs(void *data)
 				if (msd->toptexture[0] == '-' && msd->toptexture[1] == '\0')
 					break;
 				else
-					memcpy(process,msd->toptexture,8);
+					memcpy(process,msd->toptexture, 8);
 				if (msd->midtexture[0] != '-' || msd->midtexture[1] != '\0')
 					memcpy(process+strlen(process), msd->midtexture, 8);
 				if (msd->bottomtexture[0] != '-' || msd->bottomtexture[1] != '\0')
@@ -1787,14 +1787,16 @@ static void P_LoadReject(UINT8 *data, size_t count)
 {
 	if (!count) // zero length, someone probably used ZDBSP
 	{
-		rejectmatrix = NULL;
+		rejectmatrix.data = NULL;
 		CONS_Debug(DBG_SETUP, "P_LoadReject: REJECT lump has size 0, will not be loaded\n");
 	}
 	else
 	{
-		rejectmatrix = Z_Malloc(count, PU_LEVEL, NULL); // allocate memory for the reject matrix
-		memcpy(rejectmatrix, data, count); // copy the data into it
+		rejectmatrix.data = Z_Malloc(count, PU_LEVEL, NULL); // allocate memory for the reject matrix
+		memcpy(rejectmatrix.data, data, count); // copy the data into it
 	}
+
+	rejectmatrix.size = count;
 }
 
 static void P_LoadMapBSP(const virtres_t* virt)
@@ -1833,7 +1835,10 @@ static void P_LoadMapLUT(const virtres_t* virt)
 	if (virtreject)
 		P_LoadReject(virtreject->data, virtreject->size);
 	else
-		rejectmatrix = NULL;
+	{
+		rejectmatrix.data = NULL;
+		rejectmatrix.size = 0;
+	}
 
 	if (!(virtblockmap && P_LoadRawBlockMap(virtblockmap->data, virtblockmap->size)))
 		P_CreateBlockMap();
