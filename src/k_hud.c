@@ -109,6 +109,8 @@ consvar_t cv_huditemamount = {"showitemamountnumber", "Vanilla", CV_SAVE, hudite
 consvar_t cv_fancyroulette = {"animatedroulette", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_darkitembox   = {"darkitembox", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL}; // itembox gets a dark border with specific items
 consvar_t cv_multiitemicon = {"multiitemicon", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
+static CV_PossibleValue_t roulettecolor_cons_t[] = {{0, "Player"}, {1, "Item"}, {0, NULL}};
+consvar_t cv_roulettecolor = {"roulettecolor", "Player", CV_SAVE, roulettecolor_cons_t, NULL, 0, NULL, NULL, 0, 0, NULL};
 
 consvar_t cv_showlaptimes = {"showlaptimes", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
@@ -242,6 +244,8 @@ void K_RegisterKartHudStuff(void)
 
 	CV_RegisterVar(&cv_multiitemicon);
 	CV_RegisterVar(&cv_huditemamount);
+
+	CV_RegisterVar(&cv_roulettecolor);
 
 	CV_RegisterVar(&cv_highresportrait);
 
@@ -1514,67 +1518,67 @@ static void K_drawKartItem(void)
 			// Each case is handled in threes, to give three frames of in-game time to see the item on the roulette
 			case 0: // Sneaker
 				localpatch = kp_sneaker[offset];
-				//localcolor = SKINCOLOR_RASPBERRY;
+				if (cv_roulettecolor.value == 1) localcolor = SKINCOLOR_RASPBERRY;
 				break;
 			case 1: // Banana
 				localpatch = kp_banana[offset];
-				//localcolor = SKINCOLOR_YELLOW;
+				if (cv_roulettecolor.value == 1) localcolor = SKINCOLOR_YELLOW;
 				break;
 			case 2: // Orbinaut
 				localpatch = kp_orbinaut[3+offset];
-				//localcolor = SKINCOLOR_STEEL;
+				if (cv_roulettecolor.value == 1) localcolor = SKINCOLOR_STEEL;
 				break;
 			case 3: // Mine
 				localpatch = kp_mine[offset];
-				//localcolor = SKINCOLOR_JET;
+				if (cv_roulettecolor.value == 1) localcolor = SKINCOLOR_JET;
 				break;
 			case 4: // Grow
 				localpatch = kp_grow[offset];
-				//localcolor = SKINCOLOR_TEAL;
+				if (cv_roulettecolor.value == 1) localcolor = SKINCOLOR_TEAL;
 				break;
 			case 5: // Hyudoro
 				localpatch = kp_hyudoro[offset];
-				//localcolor = SKINCOLOR_STEEL;
+				if (cv_roulettecolor.value == 1) localcolor = SKINCOLOR_STEEL;
 				break;
 			case 6: // Rocket Sneaker
 				localpatch = kp_rocketsneaker[offset];
-				//localcolor = SKINCOLOR_TANGERINE;
+				if (cv_roulettecolor.value == 1) localcolor = SKINCOLOR_TANGERINE;
 				break;
 			case 7: // Jawz
 				localpatch = kp_jawz[offset];
-				//localcolor = SKINCOLOR_JAWZ;
+				if (cv_roulettecolor.value == 1) localcolor = SKINCOLOR_JAWZ;
 				break;
 			case 8: // Self-Propelled Bomb
 				localpatch = kp_selfpropelledbomb[offset];
-				//localcolor = SKINCOLOR_JET;
+				if (cv_roulettecolor.value == 1) localcolor = SKINCOLOR_JET;
 				break;
 			case 9: // Shrink
 				localpatch = kp_shrink[offset];
-				//localcolor = SKINCOLOR_ORANGE;
+				if (cv_roulettecolor.value == 1) localcolor = SKINCOLOR_ORANGE;
 				break;
 			case 10: // Invincibility
 				localpatch = localinv;
-				//localcolor = SKINCOLOR_GREY;
+				if (cv_roulettecolor.value == 1) localcolor = SKINCOLOR_GREY;
 				break;
 			case 11: // Eggman Monitor
 				localpatch = kp_eggman[offset];
-				//localcolor = SKINCOLOR_ROSE;
+				if (cv_roulettecolor.value == 1) localcolor = SKINCOLOR_ROSE;
 				break;
 			case 12: // Ballhog
 				localpatch = kp_ballhog[offset];
-				//localcolor = SKINCOLOR_LILAC;
+				if (cv_roulettecolor.value == 1) localcolor = SKINCOLOR_LILAC;
 				break;
 			case 13: // Thunder Shield
 				localpatch = kp_thundershield[offset];
-				//localcolor = SKINCOLOR_CYAN;
+				if (cv_roulettecolor.value == 1) localcolor = SKINCOLOR_CYAN;
 				break;
 			/*case 14: // Pogo Spring
 				localpatch = kp_pogospring[offset];
-				localcolor = SKINCOLOR_TANGERINE;
+				if (cv_roulettecolor.value == 1) localcolor = SKINCOLOR_TANGERINE;
 				break;
 			case 15: // Kitchen Sink
 				localpatch = kp_kitchensink[offset];
-				localcolor = SKINCOLOR_STEEL;
+				if (cv_roulettecolor.value == 1) localcolor = SKINCOLOR_STEEL;
 				break;*/
 			default:
 				break;

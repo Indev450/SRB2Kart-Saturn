@@ -1848,26 +1848,28 @@ static menuitem_t OP_SaturnHudMenu[] =
 	{IT_STRING|IT_CVAR,    NULL, "Item Amount Number",          &cv_huditemamount,       110},
 	{IT_STRING|IT_CVAR,    NULL, "Animated Roulette",           &cv_fancyroulette,       115},
 
-	{IT_STRING|IT_CVAR,    NULL, "Show Lap Emblem",             &cv_showlapemblem,       125},
-	{IT_STRING|IT_CVAR,    NULL, "Show Cecho Messages",         &cv_cechotoggle,         130},
+	{IT_STRING|IT_CVAR,    NULL, "Item Roulette Color",         &cv_roulettecolor,       120},
 
-	{IT_STRING|IT_CVAR,    NULL, "Show Names on Minimap",       &cv_showminimapnames,    140},
-	{IT_STRING|IT_CVAR,    NULL, "Show Finished on Minimap",    &cv_showminimapfinished, 145},
-	{IT_STRING|IT_CVAR,    NULL, "Small Minimap Players",       &cv_minihead,            150},
-	{IT_STRING|IT_CVAR,    NULL, "Spin Minimap Icons",          &cv_spinoutroll,         155},
-	{IT_STRING|IT_CVAR,    NULL, "Player Angle Visual",         &cv_showminimapangle,    160},
+	{IT_STRING|IT_CVAR,    NULL, "Show Lap Emblem",             &cv_showlapemblem,       130},
+	{IT_STRING|IT_CVAR,    NULL, "Show Cecho Messages",         &cv_cechotoggle,         135},
 
-	{IT_STRING|IT_CVAR,    NULL, "Music Credits",               &cv_songcredits,         170},
-	{IT_STRING|IT_CVAR,    NULL, "Music Credits on Pause",      &cv_pausesongcredits,    175},
+	{IT_STRING|IT_CVAR,    NULL, "Show Names on Minimap",       &cv_showminimapnames,    145},
+	{IT_STRING|IT_CVAR,    NULL, "Show Finished on Minimap",    &cv_showminimapfinished, 150},
+	{IT_STRING|IT_CVAR,    NULL, "Small Minimap Players",       &cv_minihead,            155},
+	{IT_STRING|IT_CVAR,    NULL, "Spin Minimap Icons",          &cv_spinoutroll,         160},
+	{IT_STRING|IT_CVAR,    NULL, "Player Angle Visual",         &cv_showminimapangle,    165},
 
-	{IT_STRING|IT_CVAR,    NULL, "Beta Intermissionscreen",     &cv_betainterscreen,     185},
+	{IT_STRING|IT_CVAR,    NULL, "Music Credits",               &cv_songcredits,         175},
+	{IT_STRING|IT_CVAR,    NULL, "Music Credits on Pause",      &cv_pausesongcredits,    180},
 
-	{IT_STRING|IT_CVAR,    NULL, "Show Director Prompt",        &cv_showdirectorhud,     195},
+	{IT_STRING|IT_CVAR,    NULL, "Beta Intermissionscreen",     &cv_betainterscreen,     190},
 
-	{IT_STRING|IT_SUBMENU, NULL, "Nametags...",                 &OP_NametagDef,          205},
-	{IT_STRING|IT_SUBMENU, NULL, "Driftgauge...",               &OP_DriftGaugeDef,       210},
+	{IT_STRING|IT_CVAR,    NULL, "Show Director Prompt",        &cv_showdirectorhud,     200},
 
-	{IT_SUBMENU|IT_STRING, NULL, "Hud Offsets...",              &OP_HudOffsetDef,        220},
+	{IT_STRING|IT_SUBMENU, NULL, "Nametags...",                 &OP_NametagDef,          210},
+	{IT_STRING|IT_SUBMENU, NULL, "Driftgauge...",               &OP_DriftGaugeDef,       215},
+
+	{IT_SUBMENU|IT_STRING, NULL, "Hud Offsets...",              &OP_HudOffsetDef,        225},
 };
 
 static const char* OP_SaturnHudTooltips[] =
@@ -1888,6 +1890,7 @@ static const char* OP_SaturnHudTooltips[] =
 	"Use extra graphics for multiple sneakers, bananas and jawz.",
 	"Change when the item amount is to be displayed.\nMultiple will always display the number.\nWhen you have multiple of the same Item.\nAlways will always display the number regardless of Item amount.",
 	"Enables an animation while the roulette is active.",
+	"Changes whether items in roulette have same color as player or an item-specific one.",
 	"Show the big 'LAP' text on a lap change.",
 	"Show the big Cecho Messages.",
 	"Show player names on the minimap.",
