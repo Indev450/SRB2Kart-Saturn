@@ -611,6 +611,16 @@ void P_Ticker(boolean run)
 #ifdef DEMO_COMPAT_100
 			}
 #endif
+
+			// Lookback is normally handled inside G_BuildTiccmd, which isn't called in replays so we're doing that manually
+			// idk if this is best place to handle this tho...
+			// TODO - make it actually work for players other than player 1, other splitscreen players still ignore camspin for some reason
+			for (INT32 i = 0; i <= splitscreen; ++i)
+			{
+				const boolean usejoystick = cv_usejoystick[i].value;
+				INT32 axis = JoyAxis(AXISLOOKBACK, i);
+				camspin[i] = (InputDown(gc_lookback, i) || (usejoystick && axis > 0));
+			}
 		}
 
 		ps_lua_mobjhooks.value.i = 0;
