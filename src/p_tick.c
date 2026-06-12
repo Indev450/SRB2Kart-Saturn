@@ -611,6 +611,15 @@ void P_Ticker(boolean run)
 #ifdef DEMO_COMPAT_100
 			}
 #endif
+
+			// Lookback is normally handled inside G_BuildTiccmd, which isn't called in replays so we're doing that manually
+			// idk if this is best place to handle this tho...
+			for (i = 0; i <= splitscreen; ++i)
+			{
+				const boolean usejoystick = cv_usejoystick[i].value;
+				INT32 axis = JoyAxis(AXISLOOKBACK, i+1);
+				camspin[i] = (InputDown(gc_lookback, i+1) || (usejoystick && axis > 0));
+			}
 		}
 
 		ps_lua_mobjhooks.value.i = 0;
