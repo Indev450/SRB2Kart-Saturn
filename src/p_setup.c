@@ -1740,15 +1740,23 @@ static boolean P_LoadRawBlockMap(UINT8 *data, size_t count)
 
 	bmaporgx = blockmaplump[0]<<FRACBITS;
 	bmaporgy = blockmaplump[1]<<FRACBITS;
-	bmapwidth = blockmaplump[2];
+	bmapwidth  = blockmaplump[2];
 	bmapheight = blockmaplump[3];
 
 	// haleyjd 03/04/10: check for blockmap problems
 	// http://www.doomworld.com/idgames/index.php?id=12935
 	if (!P_VerifyBlockMap(count))
 	{
+#ifdef PARANOIA
+		I_Error("P_LoadBlockMap: erroneous BLOCKMAP lump may cause crashes.\n");
+#endif
 		CONS_Alert(CONS_ERROR, "P_LoadBlockMap: erroneous BLOCKMAP lump may cause crashes.\n");
-		//CONS_Alert(CONS_NOTICE, "P_LoadBlockMap: use \"-blockmap\" command line switch for rebuilding\n");
+
+		//Z_Free(blockmaplump);
+		//blockmaplump = NULL;
+		//return false; // ideally we would just let the game rebuild the blockmap
+						// but this has a chance of desynching vanilla clients
+						// not sure whats worse honestly and i do not want to decide that :chaosleep:
 	}
 
 	// clear out mobj chains
@@ -1878,7 +1886,10 @@ static void P_LoadReject(UINT8 *data, size_t rejectsize)
 	{
 		if (rejectsize < neededsize)
 		{
-			CONS_Alert(CONS_ERROR, "REJECT is %s byte%s too small. REJECT might be invalid and might crash vanilla clients!\n", sizeu1(neededsize - rejectsize), (neededsize - rejectsize) == 1 ? "" : "s");
+#ifdef PARANOIA
+			I_Error("REJECT is %s byte%s too small. REJECT might be invalid and crash vanilla clients!\n", sizeu1(neededsize - rejectsize), (neededsize - rejectsize) == 1 ? "" : "s");
+#endif
+			CONS_Alert(CONS_ERROR, "REJECT is %s byte%s too small. REJECT might be invalid and crash vanilla clients!\n", sizeu1(neededsize - rejectsize), (neededsize - rejectsize) == 1 ? "" : "s");
 			allocsize = neededsize;
 		}
 
