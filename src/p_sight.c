@@ -373,13 +373,10 @@ boolean P_CheckSight2(mobj_t *t1, mobj_t *t2, boolean fast)
 	s2 = t2->subsector->sector;
 	pnum = (s1-sectors)*numsectors + (s2-sectors);
 
-	if (rejectmatrix.data != NULL)
+	if (rejectmatrix != NULL)
 	{
-		const size_t shiftnum = pnum>>3;
-
 		// Check in REJECT table.
-		if (shiftnum < rejectmatrix.size && // check for overflow
-			(rejectmatrix.data[shiftnum] & (1 << (pnum&7)))) // can't possibly be connected
+		if (rejectmatrix[pnum>>3] & (1 << (pnum&7))) // can't possibly be connected
 		{
 			return false;
 		}
@@ -435,21 +432,30 @@ boolean P_CheckSight2(mobj_t *t1, mobj_t *t2, boolean fast)
 				continue;
 			}
 
-			topz1    = P_GetFFloorTopZAt   (rover, t1->x, t1->y);
-			topz2    = P_GetFFloorTopZAt   (rover, t2->x, t2->y);
-			bottomz1 = P_GetFFloorBottomZAt(rover, t1->x, t1->y);
-			bottomz2 = P_GetFFloorBottomZAt(rover, t2->x, t2->y);
+			if (rover->flags & FF_SOLID)
+			{
+				continue; // shortcut since neither mobj can be inside the 3dfloor
+			}
 
 			// Check for blocking floors here.
-			if ((los.sightzstart < bottomz1 && t2->z >= topz2)
-				|| (los.sightzstart >= topz1 && t2->z + t2->height < bottomz2))
+
+			topz2    = P_GetFFloorTopZAt   (rover, t2->x, t2->y);
+			bottomz1 = P_GetFFloorBottomZAt(rover, t1->x, t1->y);
+
+			if (los.sightzstart < bottomz1 && t2->z >= topz2)
 			{
 				// no way to see through that
 				return false;
 			}
 
-			if (rover->flags & FF_SOLID)
-				continue; // shortcut since neither mobj can be inside the 3dfloor
+			topz1    = P_GetFFloorTopZAt   (rover, t1->x, t1->y);
+			bottomz2 = P_GetFFloorBottomZAt(rover, t2->x, t2->y);
+
+			if (los.sightzstart >= topz1 && t2->z + t2->height < bottomz2)
+			{
+				// no way to see through that
+				return false;
+			}
 
 			if (rover->flags & FF_BOTHPLANES || !(rover->flags & FF_INVERTPLANES))
 			{

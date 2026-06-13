@@ -145,7 +145,7 @@ precipmobj_t **precipblocklinks = NULL;
 // Speeds up enemy AI by skipping detailed LineOf Sight calculation.
 // Without special effect, this could be used as a PVS lookup as well.
 //
-reject_t rejectmatrix = {};
+UINT8 *rejectmatrix = NULL;
 
 // Maintain single and multi player starting spots.
 INT32 numdmstarts = 0, numcoopstarts = 0, numredctfstarts = 0, numbluectfstarts = 0;
@@ -1625,6 +1625,80 @@ static void P_CreateBlockMap(void)
 	}
 }
 
+//
+// P_VerifyBlockMap
+//
+// haleyjd 03/04/10: do verification on validity of blockmap.
+//
+static boolean P_VerifyBlockMap(INT32 count)
+{
+	// FIXME: should any of this shit be unsinged?
+	INT32 x, y;
+	INT32 *maxoffs = blockmaplump + count;
+
+	//skipblstart = true;
+
+	for (y = 0; y < bmapheight; y++)
+	{
+		for (x = 0; x < bmapwidth; x++)
+		{
+			INT32 offset;
+			INT32 *list, *tmplist;
+			INT32 *blockoffset;
+
+			offset = y * bmapwidth + x;
+			blockoffset = blockmaplump + offset + 4;
+
+			// check that block offset is in bounds
+			if (blockoffset >= maxoffs)
+			{
+				CONS_Alert(CONS_ERROR, "P_VerifyBlockMap: block offset overflow\n");
+				return false;
+			}
+
+			offset = *blockoffset;
+
+			// check that list offset is in bounds
+			if (offset < 4 || offset >= count)
+			{
+				CONS_Alert(CONS_ERROR, "P_VerifyBlockMap: list offset overflow\n");
+				return false;
+			}
+
+			list = blockmaplump + offset;
+
+			//if (*list != 0)
+				//skipblstart = false;
+
+			// scan forward for a -1 terminator before maxoffs
+			for (tmplist = list; ; tmplist++)
+			{
+				// we have overflowed the lump?
+				if (tmplist >= maxoffs)
+				{
+					CONS_Alert(CONS_ERROR, "P_VerifyBlockMap: open blocklist\n");
+					return false;
+				}
+
+				if (*tmplist == -1) // found -1
+					break;
+			}
+
+			// scan the list for out-of-range linedef indicies in list
+			for (tmplist = list; *tmplist != -1; tmplist++)
+			{
+				if (*tmplist < 0 || *tmplist >= (INT32)numlines)
+				{
+					CONS_Alert(CONS_ERROR, "P_VerifyBlockMap: index >= numlines\n");
+					return false;
+				}
+			}
+		}
+	}
+
+	return true;
+}
+
 // Split from P_LoadBlockMap for convenience
 // -- Monster Iestyn 08/01/18
 static void P_ReadBlockMapLump(INT16 *wadblockmaplump, size_t count)
@@ -1668,6 +1742,14 @@ static boolean P_LoadRawBlockMap(UINT8 *data, size_t count)
 	bmaporgy = blockmaplump[1]<<FRACBITS;
 	bmapwidth = blockmaplump[2];
 	bmapheight = blockmaplump[3];
+
+	// haleyjd 03/04/10: check for blockmap problems
+	// http://www.doomworld.com/idgames/index.php?id=12935
+	if (!P_VerifyBlockMap(count))
+	{
+		CONS_Alert(CONS_ERROR, "P_LoadBlockMap: erroneous BLOCKMAP lump may cause crashes.\n");
+		//CONS_Alert(CONS_NOTICE, "P_LoadBlockMap: use \"-blockmap\" command line switch for rebuilding\n");
+	}
 
 	// clear out mobj chains
 	count = sizeof (*blocklinks)* bmapwidth*bmapheight;
@@ -1780,23 +1862,29 @@ static void P_GroupLines(void)
 	}
 }
 
-
 // PK3 version
 // -- Monster Iestyn 09/01/18
-static void P_LoadReject(UINT8 *data, size_t count)
+static void P_LoadReject(UINT8 *data, size_t rejectsize)
 {
-	if (!count) // zero length, someone probably used ZDBSP
+	const size_t neededsize = (numsectors * numsectors + 7) >> 3;
+	size_t allocsize = rejectsize;
+
+	if (!rejectsize) // zero length, someone probably used ZDBSP
 	{
-		rejectmatrix.data = NULL;
+		rejectmatrix = NULL;
 		CONS_Debug(DBG_SETUP, "P_LoadReject: REJECT lump has size 0, will not be loaded\n");
 	}
 	else
 	{
-		rejectmatrix.data = Z_Malloc(count, PU_LEVEL, NULL); // allocate memory for the reject matrix
-		memcpy(rejectmatrix.data, data, count); // copy the data into it
-	}
+		if (rejectsize < neededsize)
+		{
+			CONS_Alert(CONS_ERROR, "REJECT is %lu byte%s too small. REJECT might be invalid and might crash vanilla clients!\n", (neededsize - rejectsize), (neededsize - rejectsize) == 1 ? "" : "s");
+			allocsize = neededsize;
+		}
 
-	rejectmatrix.size = count;
+		rejectmatrix = Z_Calloc(allocsize, PU_LEVEL, NULL); // allocate memory for the reject matrix
+		memcpy(rejectmatrix, data, rejectsize); // copy the data into it
+	}
 }
 
 static void P_LoadMapBSP(const virtres_t* virt)
@@ -1833,11 +1921,12 @@ static void P_LoadMapLUT(const virtres_t* virt)
 
 	// Lookup tables
 	if (virtreject)
+	{
 		P_LoadReject(virtreject->data, virtreject->size);
+	}
 	else
 	{
-		rejectmatrix.data = NULL;
-		rejectmatrix.size = 0;
+		rejectmatrix = NULL;
 	}
 
 	if (!(virtblockmap && P_LoadRawBlockMap(virtblockmap->data, virtblockmap->size)))
