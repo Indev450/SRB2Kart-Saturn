@@ -145,7 +145,7 @@ precipmobj_t **precipblocklinks = NULL;
 // Speeds up enemy AI by skipping detailed LineOf Sight calculation.
 // Without special effect, this could be used as a PVS lookup as well.
 //
-reject_t rejectmatrix = {};
+UINT8 *rejectmatrix = NULL;
 
 // Maintain single and multi player starting spots.
 INT32 numdmstarts = 0, numcoopstarts = 0, numredctfstarts = 0, numbluectfstarts = 0;
@@ -1783,23 +1783,29 @@ static void P_GroupLines(void)
 	}
 }
 
-
 // PK3 version
 // -- Monster Iestyn 09/01/18
-static void P_LoadReject(UINT8 *data, size_t count)
+static void P_LoadReject(UINT8 *data, size_t rejectsize)
 {
-	if (!count) // zero length, someone probably used ZDBSP
+	const size_t neededsize = (numsectors * numsectors + 7) >> 3;
+	size_t allocsize = rejectsize;
+
+	if (!rejectsize) // zero length, someone probably used ZDBSP
 	{
-		rejectmatrix.data = NULL;
+		rejectmatrix = NULL;
 		CONS_Debug(DBG_SETUP, "P_LoadReject: REJECT lump has size 0, will not be loaded\n");
 	}
 	else
 	{
-		rejectmatrix.data = Z_Malloc(count, PU_LEVEL, NULL); // allocate memory for the reject matrix
-		memcpy(rejectmatrix.data, data, count); // copy the data into it
-	}
+		if (rejectsize < neededsize)
+		{
+			CONS_Alert(CONS_WARNING, "REJECT is %lu byte%s too small. REJECT might be invalid and might crash vanilla clients!\n", (neededsize - rejectsize), (neededsize - rejectsize) == 1 ? "" : "s");
+			allocsize = neededsize;
+		}
 
-	rejectmatrix.size = count;
+		rejectmatrix = Z_Calloc(allocsize, PU_LEVEL, NULL); // allocate memory for the reject matrix
+		memcpy(rejectmatrix, data, rejectsize); // copy the data into it
+	}
 }
 
 static void P_LoadMapBSP(const virtres_t* virt)
@@ -1836,11 +1842,12 @@ static void P_LoadMapLUT(const virtres_t* virt)
 
 	// Lookup tables
 	if (virtreject)
+	{
 		P_LoadReject(virtreject->data, virtreject->size);
+	}
 	else
 	{
-		rejectmatrix.data = NULL;
-		rejectmatrix.size = 0;
+		rejectmatrix = NULL;
 	}
 
 	if (!(virtblockmap && P_LoadRawBlockMap(virtblockmap->data, virtblockmap->size)))

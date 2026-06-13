@@ -373,13 +373,10 @@ boolean P_CheckSight2(mobj_t *t1, mobj_t *t2, boolean fast)
 	s2 = t2->subsector->sector;
 	pnum = (s1-sectors)*numsectors + (s2-sectors);
 
-	if (rejectmatrix.data != NULL)
+	if (rejectmatrix != NULL)
 	{
-		const size_t shiftnum = pnum>>3;
-
 		// Check in REJECT table.
-		if (shiftnum < rejectmatrix.size && // check for overflow
-			(rejectmatrix.data[shiftnum] & (1 << (pnum&7)))) // can't possibly be connected
+		if (rejectmatrix[pnum>>3] & (1 << (pnum&7))) // can't possibly be connected
 		{
 			return false;
 		}

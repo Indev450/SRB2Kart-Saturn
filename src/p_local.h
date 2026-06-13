@@ -417,13 +417,7 @@ boolean P_DoSpring(mobj_t *spring, mobj_t *object);
 //
 // P_SETUP
 //
-typedef struct
-{
-	UINT8* data;
-	size_t size;
-} reject_t;
-
-extern reject_t rejectmatrix; // for fast sight rejection
+extern UINT8 *rejectmatrix; // for fast sight rejection
 extern INT32 *blockmaplump; // offsets in blockmap are from here
 extern INT32 *blockmap; // Big blockmap
 extern INT32 bmapwidth;
