@@ -432,21 +432,30 @@ boolean P_CheckSight2(mobj_t *t1, mobj_t *t2, boolean fast)
 				continue;
 			}
 
-			topz1    = P_GetFFloorTopZAt   (rover, t1->x, t1->y);
-			topz2    = P_GetFFloorTopZAt   (rover, t2->x, t2->y);
-			bottomz1 = P_GetFFloorBottomZAt(rover, t1->x, t1->y);
-			bottomz2 = P_GetFFloorBottomZAt(rover, t2->x, t2->y);
+			if (rover->flags & FF_SOLID)
+			{
+				continue; // shortcut since neither mobj can be inside the 3dfloor
+			}
 
 			// Check for blocking floors here.
-			if ((los.sightzstart < bottomz1 && t2->z >= topz2)
-				|| (los.sightzstart >= topz1 && t2->z + t2->height < bottomz2))
+
+			topz2    = P_GetFFloorTopZAt   (rover, t2->x, t2->y);
+			bottomz1 = P_GetFFloorBottomZAt(rover, t1->x, t1->y);
+
+			if (los.sightzstart < bottomz1 && t2->z >= topz2)
 			{
 				// no way to see through that
 				return false;
 			}
 
-			if (rover->flags & FF_SOLID)
-				continue; // shortcut since neither mobj can be inside the 3dfloor
+			topz1    = P_GetFFloorTopZAt   (rover, t1->x, t1->y);
+			bottomz2 = P_GetFFloorBottomZAt(rover, t2->x, t2->y);
+
+			if (los.sightzstart >= topz1 && t2->z + t2->height < bottomz2)
+			{
+				// no way to see through that
+				return false;
+			}
 
 			if (rover->flags & FF_BOTHPLANES || !(rover->flags & FF_INVERTPLANES))
 			{
