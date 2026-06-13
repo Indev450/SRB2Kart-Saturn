@@ -1799,7 +1799,7 @@ static void P_LoadReject(UINT8 *data, size_t rejectsize)
 	{
 		if (rejectsize < neededsize)
 		{
-			CONS_Alert(CONS_WARNING, "REJECT is %lu byte%s too small. REJECT might be invalid and might crash vanilla clients!\n", (neededsize - rejectsize), (neededsize - rejectsize) == 1 ? "" : "s");
+			CONS_Alert(CONS_ERROR, "REJECT is %lu byte%s too small. REJECT might be invalid and might crash vanilla clients!\n", (neededsize - rejectsize), (neededsize - rejectsize) == 1 ? "" : "s");
 			allocsize = neededsize;
 		}
 
