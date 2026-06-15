@@ -203,6 +203,11 @@ void I_ShutdownSystem(void);
 /**	\brief To check if a Interrupt or Terminate Signal was fired
  */
 boolean I_Interrupted(void);
+static inline void I_HandleInterrupt(void)
+{
+	if (I_Interrupted())
+		I_Quit();
+}
 
 /**	\brief	The I_GetDiskFreeSpace function
 

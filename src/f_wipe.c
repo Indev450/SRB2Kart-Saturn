@@ -361,10 +361,7 @@ void F_RunWipe(UINT8 wipetype, boolean drawMenu)
 	// on for fade-to-black
 	for (;;)
 	{
-		if (I_Interrupted())
-		{
-			I_Quit();
-		}
+		I_HandleInterrupt();
 
 		// get fademask first so we can tell if it exists or not
 		fmask = F_GetFadeMask(wipetype, wipeframe++);
