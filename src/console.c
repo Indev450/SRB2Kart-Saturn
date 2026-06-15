@@ -1437,6 +1437,8 @@ void CONS_Error(const char *msg)
 	// dirty quick hack, but for the good cause
 	while (I_GetKey() != KEY_ENTER)
 	{
+		I_HandleInterrupt();
+
 		// Sleep so we don't take too much of cpu usage
 		I_Sleep(1.f/TICRATE*1000);
 

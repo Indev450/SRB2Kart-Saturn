@@ -855,10 +855,7 @@ void D_SRB2Loop(void)
 
 		enterprecise = I_GetPreciseTime();
 
-		if (I_Interrupted())
-		{
-			I_Quit();
-		}
+		I_HandleInterrupt();
 
 		memset(&g_dc, 0, sizeof(g_dc));
 		Z_Frame_Reset();
