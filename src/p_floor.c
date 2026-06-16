@@ -845,7 +845,7 @@ void T_BounceCheese(levelspecthink_t *bouncer)
 			T_MovePlane(bouncer->sector, 0, bouncer->sector->ceilingheight, 0, 1, -1); // update things on ceiling
 			T_MovePlane(bouncer->sector, 0, bouncer->sector->floorheight, 0, 0, -1); // update things on floor
 			bouncer->sector->ceilingdata = NULL;
-			bouncer->sector->floordata = NULL;;
+			bouncer->sector->floordata = NULL;
 			bouncer->sector->moved = true;
 			P_RemoveThinker(&bouncer->thinker);    // remove bouncer from actives
 		}
