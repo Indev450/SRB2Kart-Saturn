@@ -518,49 +518,49 @@ void G_WriteDemoTiccmd(ticcmd_t *cmd, INT32 playernum)
 
 	if (cmd->forwardmove != oldcmd[playernum].forwardmove)
 	{
-		WRITEUINT8(demobuf.p,cmd->forwardmove);
+		WRITEUINT8(demobuf.p, cmd->forwardmove);
 		oldcmd[playernum].forwardmove = cmd->forwardmove;
 		ziptic |= ZT_FWD;
 	}
 
 	if (cmd->sidemove != oldcmd[playernum].sidemove)
 	{
-		WRITEUINT8(demobuf.p,cmd->sidemove);
+		WRITEUINT8(demobuf.p, cmd->sidemove);
 		oldcmd[playernum].sidemove = cmd->sidemove;
 		ziptic |= ZT_SIDE;
 	}
 
 	if (cmd->angleturn != oldcmd[playernum].angleturn)
 	{
-		WRITEINT16(demobuf.p,cmd->angleturn);
+		WRITEINT16(demobuf.p, cmd->angleturn);
 		oldcmd[playernum].angleturn = cmd->angleturn;
 		ziptic |= ZT_ANGLE;
 	}
 
 	if (cmd->buttons != oldcmd[playernum].buttons)
 	{
-		WRITEUINT16(demobuf.p,cmd->buttons);
+		WRITEUINT16(demobuf.p, cmd->buttons);
 		oldcmd[playernum].buttons = cmd->buttons;
 		ziptic |= ZT_BUTTONS;
 	}
 
 	if (cmd->aiming != oldcmd[playernum].aiming)
 	{
-		WRITEINT16(demobuf.p,cmd->aiming);
+		WRITEINT16(demobuf.p, cmd->aiming);
 		oldcmd[playernum].aiming = cmd->aiming;
 		ziptic |= ZT_AIMING;
 	}
 
 	if (cmd->driftturn != oldcmd[playernum].driftturn)
 	{
-		WRITEINT16(demobuf.p,cmd->driftturn);
+		WRITEINT16(demobuf.p, cmd->driftturn);
 		oldcmd[playernum].driftturn = cmd->driftturn;
 		ziptic |= ZT_DRIFT;
 	}
 
 	if (cmd->latency != oldcmd[playernum].latency)
 	{
-		WRITEUINT8(demobuf.p,cmd->latency);
+		WRITEUINT8(demobuf.p, cmd->latency);
 		oldcmd[playernum].latency = cmd->latency;
 		ziptic |= ZT_LATENCY;
 	}
@@ -729,8 +729,8 @@ void G_WriteGhostTic(mobj_t *ghost, INT32 playernum)
 
 	// GZT_XYZ is only useful if you've moved 256 FRACUNITS or more in a single tic.
 	if (abs(ghost->x-oldghost[playernum].x) > MAXMOM
-	|| abs(ghost->y-oldghost[playernum].y) > MAXMOM
-	|| abs(ghost->z-oldghost[playernum].z) > MAXMOM
+	||  abs(ghost->y-oldghost[playernum].y) > MAXMOM
+	||  abs(ghost->z-oldghost[playernum].z) > MAXMOM
 	|| ((UINT8)(leveltime & 255) > 0 && (UINT8)(leveltime & 255) <= (UINT8)cv_netdemosyncquality.value)) // Hack to enable slightly nicer resyncing
 	{
 		oldghost[playernum].x = ghost->x;
@@ -1378,7 +1378,7 @@ fadeghost:
 				UINT16 i, health;
 				UINT16 count = READUINT16(g->p);
 				//UINT32 type;
-				fixed_t x,y,z;
+				fixed_t x, y, z;
 				angle_t angle;
 				mobj_t *poof;
 

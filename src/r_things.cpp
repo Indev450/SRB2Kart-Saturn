@@ -182,14 +182,13 @@ static void R_InstallSpriteLump(UINT16 wad,            // graphics patch
 		UINT8 rightfactor = ((rotation == ROT_R) ? 4 : 0);
 
 		// the lump should be used for half of all rotations
-		if (sprtemp[frame].rotate == SRF_SINGLE)
+		if (sprtemp[frame].rotate == SRF_NONE)
+			sprtemp[frame].rotate = SRF_SINGLE;
+		else if (sprtemp[frame].rotate == SRF_SINGLE)
 			CONS_Debug(DBG_SETUP, "R_InitSprites: Sprite %s frame %c has L/R rotations and a rot = 0 lump\n", spritename, cn);
 		else if (sprtemp[frame].rotate == SRF_3D)
 			CONS_Debug(DBG_SETUP, "R_InitSprites: Sprite %s frame %c has both L/R and 1-8 rotations\n", spritename, cn);
 		// Let's not complain about multiple L/R rotations. It's not worth the effort.
-
-		if (sprtemp[frame].rotate == SRF_NONE)
-			sprtemp[frame].rotate = SRF_SINGLE;
 
 		sprtemp[frame].rotate |= ((rotation == ROT_R) ? SRF_RIGHT : SRF_LEFT);
 
@@ -233,6 +232,7 @@ static void R_InstallSpriteLump(UINT16 wad,            // graphics patch
 	// when using sprites in pwad : the lumppat points the new graphics
 	sprtemp[frame].lumppat[rotation] = lumppat;
 	sprtemp[frame].lumpid[rotation] = lumpid;
+
 	if (flipped)
 		sprtemp[frame].flip |= (1<<rotation);
 	else
@@ -261,8 +261,10 @@ boolean R_AddSingleSpriteDef(const char *sprname, spritedef_t *spritedef, UINT16
 	softwarepatch_t patch;
 	UINT8 numadded = 0;
 
-	memset(sprtemp,0xFF, sizeof (sprtemp));
+	memset(sprtemp, 0xFF, sizeof(sprtemp));
 	maxframe = (size_t)-1;
+
+	spritename = sprname;
 
 	// are we 'patching' a sprite already loaded ?
 	// if so, it might patch only certain frames, not all
@@ -289,7 +291,7 @@ boolean R_AddSingleSpriteDef(const char *sprname, spritedef_t *spritedef, UINT16
 
 		if (frame >= 64 || !(R_ValidSpriteAngle(rotation))) // Give an actual NAME error -_-...
 		{
-			CONS_Alert(CONS_WARNING, M_GetText("Bad sprite name: %s\n"), W_CheckNameForNumPwad(wadnum,l));
+			CONS_Alert(CONS_WARNING, M_GetText("Bad sprite name: %s\n"), W_CheckNameForNumPwad(wadnum, l));
 			continue;
 		}
 
@@ -315,6 +317,15 @@ boolean R_AddSingleSpriteDef(const char *sprname, spritedef_t *spritedef, UINT16
 		{
 			frame = R_Char2Frame(lumpinfo[l].name[6]);
 			rotation = (UINT8)(lumpinfo[l].name[7] - '0');
+
+			/*
+			if (frame >= 64 || !(R_ValidSpriteAngle(rotation))) // Give an actual NAME error -_-...
+			{
+				CONS_Alert(CONS_WARNING, M_GetText("Bad sprite name: %s\n"), W_CheckNameForNumPwad(wadnum, l));
+				continue;
+			}
+			*/
+
 			R_InstallSpriteLump(wadnum, l, numspritelumps, frame, rotation, 1);
 		}
 
@@ -363,30 +374,32 @@ boolean R_AddSingleSpriteDef(const char *sprname, spritedef_t *spritedef, UINT16
 		switch (sprtemp[frame].rotate)
 		{
 			case SRF_NONE:
-			// no rotations were found for that frame at all
-			I_Error("R_AddSingleSpriteDef: No patches found for %.4s frame %c", sprname, R_Frame2Char(frame));
-			break;
+				// no rotations were found for that frame at all
+				I_Error("R_AddSingleSpriteDef: No patches found for %.4s frame %c", sprname, R_Frame2Char(frame));
+				break;
 
 			case SRF_SINGLE:
-			// only the first rotation is needed
-			break;
+				// only the first rotation is needed
+				break;
 
 			case SRF_2D: // both Left and Right rotations
 				// we test to see whether the left and right slots are present
 				if ((sprtemp[frame].lumppat[2] == LUMPERROR) || (sprtemp[frame].lumppat[6] == LUMPERROR))
 					I_Error("R_AddSingleSpriteDef: Sprite %s frame %c is missing rotations",
 					        sprname, R_Frame2Char(frame));
-			break;
+				break;
 
 			default:
-			// must have all 8 frames
-			for (rotation = 0; rotation < 8; rotation++)
-				// we test the patch lump, or the id lump whatever
-				// if it was not loaded the two are LUMPERROR
-				if (sprtemp[frame].lumppat[rotation] == LUMPERROR)
-					I_Error("R_AddSingleSpriteDef: Sprite %.4s frame %c is missing rotations",
-					        sprname, R_Frame2Char(frame));
-			break;
+				// must have all 8 frames
+				for (rotation = 0; rotation < 8; rotation++)
+				{
+					// we test the patch lump, or the id lump whatever
+					// if it was not loaded the two are LUMPERROR
+					if (sprtemp[frame].lumppat[rotation] == LUMPERROR)
+						I_Error("R_AddSingleSpriteDef: Sprite %.4s frame %c is missing rotations",
+								sprname, R_Frame2Char(frame));
+				}
+				break;
 		}
 	}
 
@@ -394,7 +407,6 @@ boolean R_AddSingleSpriteDef(const char *sprname, spritedef_t *spritedef, UINT16
 	if (spritedef->numframes &&             // has been allocated
 		spritedef->numframes < maxframe)    // more frames are defined ?
 	{
-
 		Z_Free(spritedef->spriteframes);
 		spritedef->spriteframes = NULL;
 	}
@@ -451,12 +463,10 @@ void R_AddSpriteDefs(UINT16 wadnum)
 	//
 	for (i = 0; i < numsprites; i++)
 	{
-		spritename = sprnames[i];
-
-		if (spritename[4] && wadnum >= (UINT16)spritename[4])
+		if (sprnames[i][4] && wadnum >= (UINT16)sprnames[i][4])
 			continue;
 
-		if (R_AddSingleSpriteDef(spritename, &sprites[i], wadnum, start, end))
+		if (R_AddSingleSpriteDef(sprnames[i], &sprites[i], wadnum, start, end))
 		{
 #ifdef HWRENDER
 			if (rendermode == render_opengl)
@@ -464,9 +474,7 @@ void R_AddSpriteDefs(UINT16 wadnum)
 #endif
 			// if a new sprite was added (not just replaced)
 			addsprites++;
-#ifndef ZDEBUG
-			CONS_Debug(DBG_SETUP, "sprite %s set in pwad %d\n", spritename, wadnum);
-#endif
+			CONS_Debug(DBG_SETUP, "sprite %s set in pwad %d\n", sprnames[i], wadnum);
 		}
 	}
 
