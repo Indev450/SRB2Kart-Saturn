@@ -1698,7 +1698,7 @@ static void GL_SetBlendMode(FBITFIELD flags)
 
 void GL_SetBlend(FBITFIELD PolyFlags)
 {
-	const FBITFIELD Xor = CurrentPolyFlags^PolyFlags;;
+	const FBITFIELD Xor = CurrentPolyFlags^PolyFlags;
 
 	if (Xor & (PF_Blending|PF_RemoveYWrap|PF_ForceWrapX|PF_ForceWrapY|PF_Occlude|PF_NoTexture|PF_Modulated|PF_NoDepthTest|PF_Decal|PF_Skydecal|PF_Invisible))
 	{
