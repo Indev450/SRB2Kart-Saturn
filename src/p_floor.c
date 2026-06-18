@@ -2338,7 +2338,7 @@ void T_RaiseSector(levelspecthink_t *raise)
 		fixed_t origspeed = raise->vars[3];
 
 		// Slow down as you get closer to the bottom
-		raise->vars[3] = FixedMul(raise->vars[3],FixedDiv(raise->sector->ceilingheight - raise->vars[7], (raise->vars[5] - raise->vars[7])>>5));
+		raise->vars[3] = FixedMul(raise->vars[3], FixedDiv(raise->sector->ceilingheight - raise->vars[7], (raise->vars[5] - raise->vars[7])>>5));
 
 		if (raise->vars[3] <= origspeed/16)
 			raise->vars[3] = origspeed/16;
@@ -2349,7 +2349,7 @@ void T_RaiseSector(levelspecthink_t *raise)
 	{
 		fixed_t origspeed = raise->vars[3];
 		// Slow down as you get closer to the top
-		raise->vars[3] = FixedMul(raise->vars[3],FixedDiv(raise->vars[5] - raise->sector->ceilingheight, (raise->vars[5] - raise->vars[7])>>5));
+		raise->vars[3] = FixedMul(raise->vars[3], FixedDiv(raise->vars[5] - raise->sector->ceilingheight, (raise->vars[5] - raise->vars[7])>>5));
 
 		if (raise->vars[3] <= origspeed/16)
 			raise->vars[3] = origspeed/16;
