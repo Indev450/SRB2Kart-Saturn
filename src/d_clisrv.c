@@ -3497,6 +3497,9 @@ void CL_RemovePlayer(INT32 playernum, INT32 reason)
 	while ((doomcom->numslots > 1) && !playeringame[doomcom->numslots-1])
 		doomcom->numslots--;
 
+	// Unmute slot if player was muted
+	player_muted[playernum] = false;
+
 	// Reset the name
 	sprintf(player_names[playernum], "Player %d", playernum+1);
 
