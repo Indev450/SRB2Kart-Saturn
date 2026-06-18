@@ -1281,13 +1281,15 @@ boolean HU_Responder(event_t *ev)
 			chat_on = false;
 			I_SetTextInput(false);
 		}
-		else if ((c == KEY_UPARROW || c == KEY_MOUSEWHEELUP) && chat_scroll > 0 && !OLDCHAT) // CHAT SCROLLING YAYS!
+		else if ((c == KEY_UPARROW || c == KEY_PGUP || c == KEY_MOUSEWHEELUP) &&
+			     ((chat_scroll > 0) && !OLDCHAT)) // CHAT SCROLLING YAYS!
 		{
 			chat_scroll--;
 			justscrolledup = true;
 			chat_scrolltime = 4;
 		}
-		else if ((c == KEY_DOWNARROW || c == KEY_MOUSEWHEELDOWN) && chat_scroll < chat_maxscroll && chat_maxscroll > 0 && !OLDCHAT)
+		else if ((c == KEY_DOWNARROW || c == KEY_PGDN || c == KEY_MOUSEWHEELDOWN) &&
+			    ((chat_scroll < chat_maxscroll) && (chat_maxscroll > 0) && !OLDCHAT))
 		{
 			chat_scroll++;
 			justscrolleddown = true;
