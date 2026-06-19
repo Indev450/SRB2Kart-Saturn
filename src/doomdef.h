@@ -602,6 +602,9 @@ extern const char *compdate, *comptime, *comprevision, *compbranch;
 // None of these that are disabled in the normal build are guaranteed to work perfectly
 // Compile them at your own risk!
 
+// undefine to enable fixes and features that are not vanilla compatible
+#define COMPAT_VANILLA
+
 //-- SATURN __
 /// Detect if a client is on Saturn in the clientconfig.
 /// To seperately allow them to join or block joining from vanilla clients.
@@ -664,6 +667,14 @@ extern const char *compdate, *comptime, *comprevision, *compbranch;
 #endif
 #else
 #undef UPDATE_ALERT
+#endif
+
+// overwrite some of those
+// when not compiling in vanilla compat mode
+#ifndef COMPAT_VANILLA
+	#define SATURNJOIN
+	#define SATURNPAK
+	#undef SEENAMES
 #endif
 
 #ifdef __cplusplus

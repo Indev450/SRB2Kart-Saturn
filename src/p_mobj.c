@@ -11181,7 +11181,11 @@ void P_SpawnMapThing(mapthing_t *mthing)
 	{
 		if (mthing->type > MAXPLAYERS) // be wary of playerstarts size!  playerstarts[MAXPLAYERS]
 		{
+#ifdef COMPAT_VANILLA
 			CONS_Alert(CONS_ERROR, "Excess player start detected %d This will crash vanilla clients!\n", mthing->type);
+#else
+			CONS_Debug(DBG_SETUP, "Excess player start detected %d\n", mthing->type);
+#endif
 		}
 		else
 		{
@@ -11432,7 +11436,11 @@ void P_SpawnMapThing(mapthing_t *mthing)
 
 	if (P_MobjWasRemoved(mobj))
 	{
+#ifdef COMPAT_VANILLA
 		CONS_Alert(CONS_ERROR, "Failed to spawn map thing #%d at %d, %d. This will crash vanilla clients!\n", mthing->type, x>>FRACBITS, y>>FRACBITS);
+#else
+		CONS_Debug(DBG_SETUP, "Failed to spawn map thing #%d at %d, %d.\n", mthing->type, x>>FRACBITS, y>>FRACBITS);
+#endif
 		return;
 	}
 
