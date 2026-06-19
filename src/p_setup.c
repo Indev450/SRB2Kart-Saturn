@@ -511,7 +511,7 @@ static void P_LoadSegs(UINT8 *data)
 			I_Error("P_LoadSegs: seg %s contains wrong side index %d.\n", sizeu1(i), rawside);
 #else
 			rawside = 1;
-			CONS_Debug(DBG_SETUP, "P_LoadSegs: seg %s contains wrong side index %d.\n", sizeu1(i), rawside);
+			CONS_Debug(DBG_SETUP, "P_LoadSegs: seg %s contains wrong side index %d, replaced with 1.\n", sizeu1(i), rawside);
 #endif
 		}
 
@@ -549,12 +549,8 @@ static void P_LoadSegs(UINT8 *data)
 #ifdef COMPAT_VANILLA
 				I_Error("P_LoadSegs: back of seg %s has no sidedef while being marked as double sided\n", sizeu1(i));
 #else
-				I_Error("P_LoadSegs: back of seg %s has no sidedef while being marked as double sided\n", sizeu1(i));
-
-				// FIXME: port GetSectorAtNullAddress
-				// this is wrong
-				//li->backsector = GetSectorAtNullAddress();
-				//CONS_Debug(DBG_SETUP, "P_LoadSegs: back of seg %s has no sidedef while being marked as double sided\n", sizeu1(i));
+				li->backsector = NULL;
+				CONS_Debug(DBG_SETUP, "P_LoadSegs: back of seg %s has no sidedef while being marked as double sided\n", sizeu1(i));
 #endif
 			}
 			else
