@@ -889,7 +889,7 @@ static boolean PolyDoor(line_t *line)
 			pdd.angle    = line->angle; // angle of motion
 			pdd.distance = sides[line->sidenum[0]].rowoffset;
 
-			if (line->sidenum[1] != 0xffff)
+			if (line->sidenum[1] != NO_INDEX)
 				pdd.delay = sides[line->sidenum[1]].textureoffset >> FRACBITS; // delay in tics
 			else
 				pdd.delay = 0;
@@ -899,7 +899,7 @@ static boolean PolyDoor(line_t *line)
 			pdd.speed    = sides[line->sidenum[0]].textureoffset >> FRACBITS; // angular speed
 			pdd.distance = sides[line->sidenum[0]].rowoffset >> FRACBITS; // angular distance
 
-			if (line->sidenum[1] != 0xffff)
+			if (line->sidenum[1] != NO_INDEX)
 				pdd.delay = sides[line->sidenum[1]].textureoffset >> FRACBITS; // delay in tics
 			else
 				pdd.delay = 0;
@@ -1989,8 +1989,8 @@ static void P_ProcessLineSpecial(line_t *line, mobj_t *mo, sector_t *callsec)
 				INT32 position = (INT32)max(sides[line->sidenum[0]].midtexture, 0);
 				UINT32 prefadems = (UINT32)max(sides[line->sidenum[0]].textureoffset >> FRACBITS, 0);
 				UINT32 postfadems = (UINT32)max(sides[line->sidenum[0]].rowoffset >> FRACBITS, 0);
-				UINT8 fadetarget = (UINT8)max((line->sidenum[1] != 0xffff) ? sides[line->sidenum[1]].textureoffset >> FRACBITS : 0, 0);
-				INT16 fadesource = (INT16)max((line->sidenum[1] != 0xffff) ? sides[line->sidenum[1]].rowoffset >> FRACBITS : -1, -1);
+				UINT8 fadetarget = (UINT8)max((line->sidenum[1] != NO_INDEX) ? sides[line->sidenum[1]].textureoffset >> FRACBITS : 0, 0);
+				INT16 fadesource = (INT16)max((line->sidenum[1] != NO_INDEX) ? sides[line->sidenum[1]].rowoffset >> FRACBITS : -1, -1);
 
 				// Seek offset from current song position
 				if (line->flags & ML_EFFECT1)
@@ -2504,7 +2504,7 @@ static void P_ProcessLineSpecial(line_t *line, mobj_t *mo, sector_t *callsec)
 
 				var1 = sides[line->sidenum[0]].toptexture; //(line->dx>>FRACBITS)-1;
 
-				if (line->sidenum[1] != 0xffff && line->flags & ML_BLOCKMONSTERS) // read power from back sidedef
+				if (line->sidenum[1] != NO_INDEX && line->flags & ML_BLOCKMONSTERS) // read power from back sidedef
 					var2 = sides[line->sidenum[1]].toptexture;
 				else if (line->flags & ML_NOCLIMB) // 'Infinite'
 					var2 = UINT16_MAX;
@@ -2633,7 +2633,7 @@ static void P_ProcessLineSpecial(line_t *line, mobj_t *mo, sector_t *callsec)
 					if (always || this->bottomtexture)
 						this->bottomtexture = set->bottomtexture;
 
-					if (lines[linenum].sidenum[1] == 0xffff)
+					if (lines[linenum].sidenum[1] == NO_INDEX)
 						continue; // One-sided stops here.
 
 					// Back side
@@ -2682,7 +2682,7 @@ static void P_ProcessLineSpecial(line_t *line, mobj_t *mo, sector_t *callsec)
 			sector_t *sec;
 			mobj_t *thing;
 
-			if (line->sidenum[1] != 0xffff)
+			if (line->sidenum[1] != NO_INDEX)
 				state = (statenum_t)sides[line->sidenum[1]].toptexture;
 
 			while ((secnum = P_FindSectorFromLineTag(line, secnum)) >= 0)
@@ -6056,7 +6056,7 @@ void P_SpawnSpecials(INT32 fromnetsave, boolean reloadinggamestate)
 				break;
 
 			case 259: // Make-Your-Own FOF!
-				if (lines[i].sidenum[1] != 0xffff)
+				if (lines[i].sidenum[1] != NO_INDEX)
 				{
 					UINT8 *data;
 					UINT16 b;
@@ -6785,7 +6785,7 @@ static void P_SpawnScrollers(void)
 			case 506:
 				s = lines[i].sidenum[1];
 
-				if (s != 0xffff)
+				if (s != NO_INDEX)
 					Add_Scroller(sc_side, -sides[s].textureoffset, sides[s].rowoffset, -1, lines[i].sidenum[0], accel, 0);
 				else
 					CONS_Debug(DBG_GAMELOGIC, "Line special 506 (line #%s) missing 2nd side!\n", sizeu1(i));

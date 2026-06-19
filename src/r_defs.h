@@ -430,7 +430,7 @@ typedef struct line_s
 	INT16 tag;
 
 	// Visual appearance: sidedefs.
-	UINT16 sidenum[2]; // sidenum[1] will be 0xffff if one-sided
+	UINT16 sidenum[2]; // sidenum[1] will be NO_INDEX if one-sided
 	fixed_t alpha; // translucency
 	UINT8 blendmode; // blendmode
 
