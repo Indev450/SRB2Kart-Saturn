@@ -242,7 +242,7 @@ void P_CameraLineOpening(line_t *linedef)
 	sector_t *back;
 	fixed_t frontfloor, frontceiling, backfloor, backceiling;
 
-	if (linedef->sidenum[1] == 0xffff)
+	if (linedef->sidenum[1] == NO_INDEX)
 	{
 		// single sided line
 		openrange = 0;
@@ -398,7 +398,7 @@ void P_LineOpening(line_t *linedef, mobj_t *mobj)
 {
 	sector_t *front, *back;
 
-	if (linedef->sidenum[1] == 0xffff)
+	if (linedef->sidenum[1] == NO_INDEX)
 	{
 		// single sided line
 		openrange = 0;

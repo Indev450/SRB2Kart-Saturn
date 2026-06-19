@@ -2204,7 +2204,7 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 			topremap = (encoremap && !(curline->linedef->flags & ML_TFERLINE));
 
 			if ((linedef->flags & (ML_DONTPEGTOP) && (linedef->flags & ML_DONTPEGBOTTOM))
-				&& linedef->sidenum[1] != 0xffff)
+				&& linedef->sidenum[1] != NO_INDEX)
 			{
 				// Special case... use offsets from 2nd side but only if it has a texture.
 				side_t *def = &sides[linedef->sidenum[1]];

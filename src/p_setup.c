@@ -1004,9 +1004,9 @@ static void P_InitializeLinedef(line_t *ld)
 	// cph 2002/07/20 - these errors are fatal if not fixed, so apply them
 	for (j = 0; j < 2; j++)
 	{
-		if (ld->sidenum[j] != 0xffff && ld->sidenum[j] >= (UINT16)numsides)
+		if (ld->sidenum[j] != NO_INDEX && ld->sidenum[j] >= (UINT16)numsides)
 		{
-			ld->sidenum[j] = 0xffff;
+			ld->sidenum[j] = NO_INDEX;
 			CONS_Debug(DBG_SETUP, "P_InitializeLinedef: Linedef %s has out-of-range sidedef number\n", sizeu1((size_t)(ld - lines)));
 		}
 	}
@@ -1014,23 +1014,23 @@ static void P_InitializeLinedef(line_t *ld)
 	ld->firsttag = ld->nexttag = -1;
 
 	// killough 11/98: fix common wad errors (missing sidedefs):
-	if (ld->sidenum[0] == 0xffff)
+	if (ld->sidenum[0] == NO_INDEX)
 	{
 		ld->sidenum[0] = 0;  // Substitute dummy sidedef for missing right side
 		// cph - print a warning about the bug
 		CONS_Debug(DBG_SETUP, "P_InitializeLinedef: Linedef %s missing first sidedef\n", sizeu1((size_t)(ld - lines)));
 	}
 
-	if ((ld->sidenum[1] == 0xffff) && (ld->flags & ML_TWOSIDED))
+	if ((ld->sidenum[1] == NO_INDEX) && (ld->flags & ML_TWOSIDED))
 	{
 		ld->flags &= ~ML_TWOSIDED;  // Clear 2s flag for missing left side
 		// cph - print a warning about the bug
 		CONS_Debug(DBG_SETUP, "P_InitializeLinedef: Linedef %s has two-sided flag set, but no second sidedef\n", sizeu1((size_t)(ld - lines)));
 	}
 
-	if (ld->sidenum[0] != 0xffff && ld->special)
+	if (ld->sidenum[0] != NO_INDEX && ld->special)
 		sides[ld->sidenum[0]].special = ld->special;
-	if (ld->sidenum[1] != 0xffff && ld->special)
+	if (ld->sidenum[1] != NO_INDEX && ld->special)
 		sides[ld->sidenum[1]].special = ld->special;
 }
 
@@ -1063,10 +1063,10 @@ static void P_LoadLineDefs2(void)
 	for (; i--; ld++)
 	{
 		ld->frontsector = sides[ld->sidenum[0]].sector; //e6y: Can't be -1 here
-		ld->backsector  = ld->sidenum[1] != 0xffff ? sides[ld->sidenum[1]].sector : NULL;
+		ld->backsector  = ld->sidenum[1] != NO_INDEX ? sides[ld->sidenum[1]].sector : NULL;
 
 		// Repeat count for midtexture
-		if ((ld->flags & ML_EFFECT5) && (ld->sidenum[1] != 0xffff))
+		if ((ld->flags & ML_EFFECT5) && (ld->sidenum[1] != NO_INDEX))
 		{
 			sides[ld->sidenum[0]].repeatcnt = (INT16)(((unsigned)sides[ld->sidenum[0]].textureoffset >> FRACBITS) >> 12);
 			sides[ld->sidenum[0]].textureoffset = (((unsigned)sides[ld->sidenum[0]].textureoffset >> FRACBITS) & 2047) << FRACBITS;
@@ -1082,13 +1082,13 @@ static void P_LoadLineDefs2(void)
 				{
 					size_t len = strlen(sides[ld->sidenum[0]].text)+1;
 
-					if (ld->sidenum[1] != 0xffff && sides[ld->sidenum[1]].text)
+					if (ld->sidenum[1] != NO_INDEX && sides[ld->sidenum[1]].text)
 						len += strlen(sides[ld->sidenum[1]].text);
 
 					ld->text = Z_Malloc(len, PU_LEVEL, NULL);
 					memcpy(ld->text, sides[ld->sidenum[0]].text, strlen(sides[ld->sidenum[0]].text)+1);
 
-					if (ld->sidenum[1] != 0xffff && sides[ld->sidenum[1]].text)
+					if (ld->sidenum[1] != NO_INDEX && sides[ld->sidenum[1]].text)
 						memcpy(ld->text+strlen(ld->text)+1, sides[ld->sidenum[1]].text, strlen(sides[ld->sidenum[1]].text)+1);
 				}
 				break;

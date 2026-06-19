@@ -1696,7 +1696,7 @@ static void CutOutSubsecPoly(INT32 ssindex, /*INOUT*/ wpoly_t* poly)
 		if (!gl_maphashorizonlines && line->special == HORIZONSPECIAL)
 			gl_maphashorizonlines = true;
 
-		if (line->sidenum[1] != 0xffff)
+		if (line->sidenum[1] != NO_INDEX)
 		{
 			if (sides[line->sidenum[0]].sector == sides[line->sidenum[1]].sector)
 			{
