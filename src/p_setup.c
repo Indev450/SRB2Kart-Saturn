@@ -437,8 +437,41 @@ static void P_LoadSegs(UINT8 *data)
 
 	for (i = 0; i < numsegs; i++, li++, ml++)
 	{
-		li->v1 = &vertexes[SHORT(ml->v1)];
-		li->v2 = &vertexes[SHORT(ml->v2)];
+		INT16 v1, v2;
+
+		v1 = SHORT(ml->v1);
+		v2 = SHORT(ml->v2);
+
+		// e6y
+		// check and fix wrong references to non-existent vertexes
+		// see e1m9 @ NIVELES.WAD
+		// http://www.doomworld.com/idgames/index.php?id=12647
+		if ((unsigned)v1 >= numvertexes || (unsigned)v2 >= numvertexes)
+		{
+			if ((unsigned)v1 >= numvertexes)
+				I_Error("P_LoadSegs: seg %s references a non-existent vertex %d\n", sizeu1(i), v1);
+			if ((unsigned)v2 >= numvertexes)
+				I_Error("P_LoadSegs: seg %s references a non-existent vertex %d\n", sizeu1(i), v2);
+
+			/*
+			if (li->sidedef == &sides[li->linedef->sidenum[0]])
+			{
+				li->v1 = lines[ml->linedef].v1;
+				li->v2 = lines[ml->linedef].v2;
+			}
+			else
+			{
+				li->v1 = lines[ml->linedef].v2;
+				li->v2 = lines[ml->linedef].v1;
+			}
+			*/
+		}
+		else
+		{
+			li->v1 = &vertexes[v1];
+			li->v2 = &vertexes[v2];
+		}
+
 #ifdef HWRENDER
 		if (rendermode == render_opengl)
 		{
@@ -455,14 +488,60 @@ static void P_LoadSegs(UINT8 *data)
 		li->angle = (SHORT(ml->angle))<<FRACBITS;
 		li->offset = (SHORT(ml->offset))<<FRACBITS;
 		rawlinedef = SHORT(ml->linedef);
+
+		//e6y: check for wrong indexes
+		if ((unsigned)rawlinedef >= numlines)
+		{
+			I_Error("P_LoadSegs: seg %s references a non-existent linedef %d", sizeu1(i), (unsigned)rawlinedef);
+		}
+
 		ldef = &lines[rawlinedef];
 		li->linedef = ldef;
-		li->side = rawside = SHORT(ml->side);
+		rawside = SHORT(ml->side);
+
+		//e6y: fix wrong side index
+		if (rawside != 0 && rawside != 1)
+		{
+			I_Error("P_LoadSegs: seg %s contains wrong side index %d.\n", sizeu1(i), rawside);
+			//rawside = 1;
+		}
+
+		//e6y: check for wrong indexes
+		if (ldef->sidenum[rawside] >= numsides)
+		{
+			I_Error("P_LoadSegs: linedef %d for seg %s references a non-existent sidedef %d", rawlinedef, sizeu1(i), ldef->sidenum[rawside]);
+		}
+
+		li->side = rawside;
+
 		li->sidedef = &sides[ldef->sidenum[rawside]];
-		li->frontsector = sides[ldef->sidenum[rawside]].sector;
+
+		/* cph 2006/09/30 - our frontsector can be the second side of the
+		 * linedef, so must check for NO_INDEX in case we are incorrectly
+		 * referencing the back of a 1S line */
+		if (ldef->sidenum[rawside] == NO_INDEX)
+		{
+			I_Error("P_LoadSegs: front of seg %s has no sidedef\n", sizeu1(i));
+			//li->frontsector = 0;
+		}
+		else
+		{
+			li->frontsector = sides[ldef->sidenum[rawside]].sector;
+		}
 
 		if (ldef->flags & ML_TWOSIDED)
-			li->backsector = sides[ldef->sidenum[rawside^1]].sector;
+		{
+			if (ldef->sidenum[rawside^1] == NO_INDEX)
+			{
+				I_Error("P_LoadSegs: back of seg %s has no sidedef while being marked as double sided\n", sizeu1(i));
+				// this is wrong
+				//li->backsector = GetSectorAtNullAddress();
+			}
+			else
+			{
+				li->backsector = sides[ldef->sidenum[rawside^1]].sector;
+			}
+		}
 
 		P_UpdateSegLightOffset(li);
 	}
@@ -738,7 +817,33 @@ static void P_LoadNodes(UINT8 *data)
 
 		for (j = 0; j < 2; j++)
 		{
-			no->children[j] = SHORT(mn->children[j]);
+			UINT16 child;
+
+			child = SHORT(mn->children[j]);
+
+			if (child & NF_SUBSECTOR)
+			{
+				// Convert to extended type
+				child &= ~NF_SUBSECTOR;
+
+				// haleyjd 11/06/10: check for invalid subsector reference
+				if (child >= numsubsectors)
+				{
+					I_Error("P_LoadNodes: BSP tree %s references invalid subsector %d\n", sizeu1(i), child);
+					//child = 0;
+				}
+
+				child |= NF_SUBSECTOR;
+			}
+			else if (child >= numnodes)
+			{
+				I_Error("P_LoadNodes: BSP node %s references invalid node.\n", sizeu1(i));
+				//I_Error("P_LoadNodes: BSP node %d references invalid node %d.\n", sizeu1(i), Index(((node_t *)no->children[j])));
+				//child = 0;
+			}
+
+			no->children[j] = child;
+
 			for (k = 0; k < 4; k++)
 				no->bbox[j][k] = SHORT(mn->bbox[j][k])<<FRACBITS;
 		}
@@ -1793,22 +1898,35 @@ static void P_GroupLines(void)
 	for (i = 0; i < numsubsectors; i++, ss++)
 	{
 		if (ss->firstline >= numsegs)
+		{
 			CorruptMapError(va("P_GroupLines: ss->firstline invalid "
 				"(subsector %s, firstline refers to %d of %s)", sizeu1(i), ss->firstline,
 				sizeu2(numsegs)));
+		}
+
 		seg = &segs[ss->firstline];
 		sidei = (size_t)(seg->sidedef - sides);
+
 		if (!seg->sidedef)
+		{
 			CorruptMapError(va("P_GroupLines: seg->sidedef is NULL "
 				"(subsector %s, firstline is %d)", sizeu1(i), ss->firstline));
+		}
+
 		if (seg->sidedef - sides < 0 || seg->sidedef - sides > (UINT16)numsides)
+		{
 			CorruptMapError(va("P_GroupLines: seg->sidedef refers to sidedef %s of %s "
 				"(subsector %s, firstline is %d)", sizeu1(sidei), sizeu2(numsides),
 				sizeu3(i), ss->firstline));
+		}
+
 		if (!seg->sidedef->sector)
+		{
 			CorruptMapError(va("P_GroupLines: seg->sidedef->sector is NULL "
 				"(subsector %s, firstline is %d, sidedef is %s)", sizeu1(i), ss->firstline,
 				sizeu1(sidei)));
+		}
+
 		ss->sector = seg->sidedef->sector;
 	}
 
