@@ -448,12 +448,17 @@ static void P_LoadSegs(UINT8 *data)
 		// http://www.doomworld.com/idgames/index.php?id=12647
 		if ((unsigned)v1 >= numvertexes || (unsigned)v2 >= numvertexes)
 		{
+#ifdef COMPAT_VANILLA
 			if ((unsigned)v1 >= numvertexes)
 				I_Error("P_LoadSegs: seg %s references a non-existent vertex %d\n", sizeu1(i), v1);
 			if ((unsigned)v2 >= numvertexes)
 				I_Error("P_LoadSegs: seg %s references a non-existent vertex %d\n", sizeu1(i), v2);
+#else
+			if ((unsigned)v1 >= numvertexes)
+				CONS_Debug(DBG_SETUP, "P_LoadSegs: seg %s references a non-existent vertex %d\n", sizeu1(i), v1);
+			if ((unsigned)v2 >= numvertexes)
+				CONS_Debug(DBG_SETUP, "P_LoadSegs: seg %s references a non-existent vertex %d\n", sizeu1(i), v2);
 
-			/*
 			if (li->sidedef == &sides[li->linedef->sidenum[0]])
 			{
 				li->v1 = lines[ml->linedef].v1;
@@ -464,7 +469,7 @@ static void P_LoadSegs(UINT8 *data)
 				li->v1 = lines[ml->linedef].v2;
 				li->v2 = lines[ml->linedef].v1;
 			}
-			*/
+#endif
 		}
 		else
 		{
@@ -502,8 +507,12 @@ static void P_LoadSegs(UINT8 *data)
 		//e6y: fix wrong side index
 		if (rawside != 0 && rawside != 1)
 		{
+#ifdef COMPAT_VANILLA
 			I_Error("P_LoadSegs: seg %s contains wrong side index %d.\n", sizeu1(i), rawside);
-			//rawside = 1;
+#else
+			rawside = 1;
+			CONS_Debug(DBG_SETUP, "P_LoadSegs: seg %s contains wrong side index %d.\n", sizeu1(i), rawside);
+#endif
 		}
 
 		//e6y: check for wrong indexes
@@ -521,8 +530,12 @@ static void P_LoadSegs(UINT8 *data)
 		 * referencing the back of a 1S line */
 		if (ldef->sidenum[rawside] == NO_INDEX)
 		{
+#ifdef COMPAT_VANILLA
 			I_Error("P_LoadSegs: front of seg %s has no sidedef\n", sizeu1(i));
-			//li->frontsector = 0;
+#else
+			li->frontsector = NULL;
+			CONS_Debug(DBG_SETUP, "P_LoadSegs: front of seg %s has no sidedef\n", sizeu1(i));
+#endif
 		}
 		else
 		{
@@ -533,9 +546,16 @@ static void P_LoadSegs(UINT8 *data)
 		{
 			if (ldef->sidenum[rawside^1] == NO_INDEX)
 			{
+#ifdef COMPAT_VANILLA
 				I_Error("P_LoadSegs: back of seg %s has no sidedef while being marked as double sided\n", sizeu1(i));
+#else
+				I_Error("P_LoadSegs: back of seg %s has no sidedef while being marked as double sided\n", sizeu1(i));
+
+				// FIXME: port GetSectorAtNullAddress
 				// this is wrong
 				//li->backsector = GetSectorAtNullAddress();
+				//CONS_Debug(DBG_SETUP, "P_LoadSegs: back of seg %s has no sidedef while being marked as double sided\n", sizeu1(i));
+#endif
 			}
 			else
 			{
@@ -829,17 +849,25 @@ static void P_LoadNodes(UINT8 *data)
 				// haleyjd 11/06/10: check for invalid subsector reference
 				if (child >= numsubsectors)
 				{
+#ifdef COMPAT_VANILLA
 					I_Error("P_LoadNodes: BSP tree %s references invalid subsector %d\n", sizeu1(i), child);
-					//child = 0;
+#else
+					child = 0;
+					CONS_Debug(DBG_SETUP, "P_LoadNodes: BSP tree %s references invalid subsector %d\n", sizeu1(i), child);
+#endif
 				}
 
 				child |= NF_SUBSECTOR;
 			}
 			else if (child >= numnodes)
 			{
+#ifdef COMPAT_VANILLA
 				I_Error("P_LoadNodes: BSP node %s references invalid node.\n", sizeu1(i));
 				//I_Error("P_LoadNodes: BSP node %d references invalid node %d.\n", sizeu1(i), Index(((node_t *)no->children[j])));
-				//child = 0;
+#else
+				child = 0;
+				CONS_Debug(DBG_SETUP, "P_LoadNodes: BSP node %s references invalid node.\n", sizeu1(i));
+#endif
 			}
 
 			no->children[j] = child;
@@ -1852,16 +1880,19 @@ static boolean P_LoadRawBlockMap(UINT8 *data, size_t count)
 	// http://www.doomworld.com/idgames/index.php?id=12935
 	if (!P_VerifyBlockMap(count))
 	{
+#ifdef COMPAT_VANILLA
 #ifdef PARANOIA
 		I_Error("P_LoadBlockMap: erroneous BLOCKMAP lump may cause crashes.\n");
 #endif
 		CONS_Alert(CONS_ERROR, "P_LoadBlockMap: erroneous BLOCKMAP lump may cause crashes.\n");
-
-		//Z_Free(blockmaplump);
-		//blockmaplump = NULL;
-		//return false; // ideally we would just let the game rebuild the blockmap
+#else
+		CONS_Debug(DBG_SETUP, "P_LoadBlockMap: corrupted or invalid BLOCKMAP lump!\nRebuilding...\n");
+		Z_Free(blockmaplump);
+		blockmaplump = NULL;
+		return false; // ideally we would just let the game rebuild the blockmap
 						// but this has a chance of desynching vanilla clients
 						// not sure whats worse honestly and i do not want to decide that :chaosleep:
+#endif
 	}
 
 	// clear out mobj chains
@@ -2004,11 +2035,17 @@ static void P_LoadReject(UINT8 *data, size_t rejectsize)
 	{
 		if (rejectsize < neededsize)
 		{
+#ifdef COMPAT_VANILLA
 #ifdef PARANOIA
-			I_Error("REJECT is %s byte%s too small. REJECT might be invalid and crash vanilla clients!\n", sizeu1(neededsize - rejectsize), (neededsize - rejectsize) == 1 ? "" : "s");
+			I_Error("P_LoadReject: REJECT is %s byte%s too small. REJECT might be invalid and crash vanilla clients!\n", sizeu1(neededsize - rejectsize), (neededsize - rejectsize) == 1 ? "" : "s");
 #endif
-			CONS_Alert(CONS_ERROR, "REJECT is %s byte%s too small. REJECT might be invalid and crash vanilla clients!\n", sizeu1(neededsize - rejectsize), (neededsize - rejectsize) == 1 ? "" : "s");
+			CONS_Alert(CONS_ERROR, "P_LoadReject: REJECT is %s byte%s too small. REJECT might be invalid and crash vanilla clients!\n", sizeu1(neededsize - rejectsize), (neededsize - rejectsize) == 1 ? "" : "s");
 			allocsize = neededsize;
+#else
+			CONS_Debug(DBG_SETUP, "P_LoadReject: REJECT is %s byte%s too small and might be invalid, will not be loaded\n", sizeu1(neededsize - rejectsize), (neededsize - rejectsize) == 1 ? "" : "s");
+			rejectmatrix = NULL;
+			return;
+#endif
 		}
 
 		rejectmatrix = Z_Calloc(allocsize, PU_LEVEL, NULL); // allocate memory for the reject matrix
