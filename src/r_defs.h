@@ -326,6 +326,15 @@ typedef struct sector_s
 	pslope_t *f_slope; // floor slope
 	pslope_t *c_slope; // ceiling slope
 
+	// killough 10/98: support skies coming from sidedefs. Allows scrolling
+	// skies and other effects. No "level info" kind of lump is needed,
+	// because you can use an arbitrary number of skies per level with this
+	// method. This field only applies when skyflatnum is used for floorpic
+	// or ceilingpic, because the rest of Doom needs to know which is sky
+	// and which isn't, etc.
+
+	int sky;
+
 	// floor and ceiling texture offsets
 	fixed_t floor_xoffs, floor_yoffs;
 	fixed_t ceiling_xoffs, ceiling_yoffs;

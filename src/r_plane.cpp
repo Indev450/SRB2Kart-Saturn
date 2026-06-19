@@ -506,7 +506,11 @@ visplane_t *R_FindPlane(fixed_t height, INT32 picnum, INT32 lightlevel,
 	check->polyobj = polyobj;
 	check->slope = slope;
 	check->noencore = noencore;
-	check->cyan = levelflats[picnum].cyan;
+	// sky transfers might mess this up....
+	if ((UINT32)picnum < numlevelflats)
+		check->cyan = levelflats[picnum].cyan;
+	else
+		check->cyan = false;
 
 	memset(check->top, 0xff, sizeof(*check->top) * viewwidth);
 	memset(check->bottom, 0x00, sizeof(*check->bottom) * viewwidth);
@@ -762,10 +766,11 @@ void R_DrawSkyPlanes(void)
 	{
 		for (pl = visplanes[i]; pl; pl = pl->next)
 		{
-			if (pl->picnum != skyflatnum || pl->ffloor || pl->polyobj)
+			if (pl->ffloor || pl->polyobj)
 				continue;
 
-			R_DrawSkyPlane(pl, colfunc, cv_parallelsoftware.value);
+			if (pl->picnum == skyflatnum || pl->picnum & PL_SKYFLAT)
+				R_DrawSkyPlane(pl, colfunc, cv_parallelsoftware.value);
 		}
 	}
 #ifdef HAVE_THREADS
@@ -782,12 +787,66 @@ static void R_DrawSkyPlane(visplane_t *pl, void(*skycolfunc)(drawcolumndata_t*),
 	if (!(pl->minx <= pl->maxx))
 		return;
 
+	INT32 texture;
 	drawcolumndata_t dc = {};
-	const INT32 texture = texturetranslation[skytexture];
+	angle_t viewang = pl->viewangle;
 
 	// Reset column drawer function (note: couldn't we just call colfuncs[BASEDRAWFUNC] directly?)
 	// (that is, unless we'll need to switch drawers in future for some reason)
 	R_SetColumnFunc(BASEDRAWFUNC);
+
+	if (pl->picnum & PL_SKYFLAT_LINE)
+	{
+		// Sky Linedef
+		const line_t *l = &lines[pl->picnum & ~PL_SKYFLAT_LINE];
+
+		// Sky transferred from first sidedef
+		const side_t *s = *l->sidenum + sides;
+
+		// Texture comes from upper texture of reference sidedef
+		texture = texturetranslation[s->toptexture];
+
+		// Horizontal offset is turned into an angle offset,
+		// to allow sky rotation as well as careful positioning.
+		// However, the offset is scaled very small, so that it
+		// allows a long-period of sky rotation.
+
+		viewang += s->textureoffset;
+
+		// Vertical offset allows careful sky positioning.
+
+		dc.texturemid = s->rowoffset - 28*FRACUNIT;
+
+		// We sometimes flip the picture horizontally.
+		//
+		// Doom always flipped the picture, so we make it optional,
+		// to make it easier to use the new feature, while to still
+		// allow old sky textures to be used.
+
+		/*
+		flip = l->special==272 ? 0u : ~0u;
+
+		if (skystretch)
+		{
+			int skyheight = textureheight[texture]>>FRACBITS;
+			dc.texturemid = (int)((int64_t)dc.texturemid * skyheight / SKYSTRETCH_HEIGHT);
+		}
+		*/
+	}
+	/* // unused fow now
+	else if (pl->picnum & PL_SKYFLAT_SECTOR)
+	{
+		dc.texturemid = skytexturemid;
+		texture = pl->picnum & ~PL_SKYFLAT_SECTOR;
+		//flip = 0;
+	}
+	*/
+	else
+	{   // Normal Doom sky, only one allowed per level
+		dc.texturemid = skytexturemid;            // Default y-offset
+		texture = texturetranslation[skytexture]; // Default texture
+		//flip = 0;                               // Doom flips it
+	}
 
 	// use correct aspect ratio scale
 	dc.iscale = skyscale;
@@ -801,7 +860,6 @@ static void R_DrawSkyPlane(visplane_t *pl, void(*skycolfunc)(drawcolumndata_t*),
 	if (encoremap)
 		dc.colormap += COLORMAP_REMAPOFFSET;
 
-	dc.texturemid = skytexturemid;
 	dc.texheight = textureheight[texture] >>FRACBITS;
 	dc.sourcelength = dc.texheight;
 
@@ -828,7 +886,7 @@ static void R_DrawSkyPlane(visplane_t *pl, void(*skycolfunc)(drawcolumndata_t*),
 					continue;
 				}
 
-				INT32 angle = (pl->viewangle + xtoviewangle[x + i])>>ANGLETOSKYSHIFT;
+				INT32 angle = (viewang + xtoviewangle[x + i])>>ANGLETOSKYSHIFT;
 				angle -= (skytextureoffset >> FRACBITS);
 
 				dc.iscale = FixedMul(skyscale, FINECOSINE(xtoviewangle[x + i]>>ANGLETOFINESHIFT));
@@ -863,7 +921,7 @@ static void R_DrawSkyPlane(visplane_t *pl, void(*skycolfunc)(drawcolumndata_t*),
 			continue;
 		}
 
-		INT32 angle = (pl->viewangle + xtoviewangle[x])>>ANGLETOSKYSHIFT;
+		INT32 angle = (viewang + xtoviewangle[x])>>ANGLETOSKYSHIFT;
 		angle -= (skytextureoffset >> FRACBITS);
 
 		dc.iscale = FixedMul(skyscale, FINECOSINE(xtoviewangle[x]>>ANGLETOFINESHIFT));
@@ -1016,7 +1074,7 @@ void R_DrawSinglePlane(drawspandata_t* ds, visplane_t *pl, boolean allow_paralle
 		return;
 
 	// sky flat
-	if (pl->picnum == skyflatnum)
+	if (pl->picnum == skyflatnum || pl->picnum & PL_SKYFLAT)
 	{
 		// horrific
 		if (!newview->sky)

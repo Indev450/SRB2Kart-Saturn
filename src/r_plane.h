@@ -22,6 +22,10 @@ extern "C" {
 #include "r_data.h"
 #include "p_polyobj.h"
 
+#define PL_SKYFLAT_LINE (0x80000000)
+#define PL_SKYFLAT_SECTOR (0x40000000)
+#define PL_SKYFLAT (PL_SKYFLAT_LINE|PL_SKYFLAT_SECTOR)
+
 //SoM: 3/23/2000: Use Boom visplane hashing.
 #define VISPLANEHASHBITS 9
 #define VISPLANEHASHMASK ((1<<VISPLANEHASHBITS)-1)

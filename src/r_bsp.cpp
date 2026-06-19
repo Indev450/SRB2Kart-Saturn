@@ -851,11 +851,15 @@ static void R_Subsector(size_t num)
 		|| frontsector->floorpic == skyflatnum
 		|| (frontsector->heightsec != -1 && sectors[frontsector->heightsec].ceilingpic == skyflatnum))
 	{
-		floorplane = R_FindPlane(frontsector->floorheight, frontsector->floorpic, floorlightlevel,
-			frontsector->floor_xoffs, frontsector->floor_yoffs, frontsector->floorpic_angle, floorcolormap, NULL
-			, NULL
-			, frontsector->f_slope
-			, R_NoEncore(frontsector, false), false, frontsector);
+		floorplane = R_FindPlane(frontsector->floorheight,
+								 frontsector->floorpic == skyflatnum &&  // kilough 10/98
+								 frontsector->sky & PL_SKYFLAT ? frontsector->sky :
+								 frontsector->floorpic,
+								 floorlightlevel,
+								 frontsector->floor_xoffs, frontsector->floor_yoffs, frontsector->floorpic_angle, floorcolormap, NULL
+								 , NULL
+								 , frontsector->f_slope
+								 , R_NoEncore(frontsector, false), false, frontsector);
 	}
 	else
 		floorplane = NULL;
@@ -864,12 +868,15 @@ static void R_Subsector(size_t num)
 		|| frontsector->ceilingpic == skyflatnum
 		|| (frontsector->heightsec != -1 && sectors[frontsector->heightsec].floorpic == skyflatnum))
 	{
-		ceilingplane = R_FindPlane(frontsector->ceilingheight, frontsector->ceilingpic,
-			ceilinglightlevel, frontsector->ceiling_xoffs, frontsector->ceiling_yoffs, frontsector->ceilingpic_angle,
-			ceilingcolormap, NULL
-			, NULL
-			, frontsector->c_slope
-			, R_NoEncore(frontsector, true), true, frontsector);
+		ceilingplane = R_FindPlane(frontsector->ceilingheight,
+								   frontsector->ceilingpic == skyflatnum &&  // kilough 10/98
+								   frontsector->sky & PL_SKYFLAT ? frontsector->sky :
+								   frontsector->ceilingpic,
+								   ceilinglightlevel, frontsector->ceiling_xoffs, frontsector->ceiling_yoffs, frontsector->ceilingpic_angle,
+								   ceilingcolormap, NULL
+								   , NULL
+								   , frontsector->c_slope
+								   , R_NoEncore(frontsector, true), true, frontsector);
 	}
 	else
 		ceilingplane = NULL;

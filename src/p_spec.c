@@ -6092,6 +6092,12 @@ void P_SpawnSpecials(INT32 fromnetsave, boolean reloadinggamestate)
 					I_Error("Make-Your-Own FOF (tag %d) found without a 2nd linedef side!", lines[i].tag);
 				break;
 
+			case 271:   // Regular sky
+			//case 272:   // Same, only flipped
+				for (s = -1; (s = P_FindSectorFromLineTag(lines + i, s)) >= 0 ;)
+					sectors[s].sky = i | PL_SKYFLAT_LINE;
+				break;
+
 			case 300: // Linedef executor (combines with sector special 974/975) and commands
 			case 302:
 			case 303:
