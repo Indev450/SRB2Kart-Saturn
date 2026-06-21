@@ -150,6 +150,7 @@ static void Command_ListWADS_f(void);
 static void Command_LocateLump_f(void);
 static void Command_ListDoomednums_f(void);
 static void Command_ListUnusedSprites_f(void);
+static void Command_ListUnusedMapSlots_f(void);
 static void Command_RunSOC(void);
 static void Command_Pause(void);
 static void Command_Respawn(void);
@@ -645,6 +646,7 @@ void D_RegisterServerCommands(void)
 	COM_AddCommand("locatelump", Command_LocateLump_f);
 	COM_AddCommand("listmapthings", Command_ListDoomednums_f);
 	COM_AddCommand("listunusedsprites", Command_ListUnusedSprites_f);
+	COM_AddCommand("listunusedmapslots", Command_ListUnusedMapSlots_f);
 
 	COM_AddCommand("runsoc", Command_RunSOC);
 	COM_AddCommand("pause", Command_Pause);
@@ -4590,6 +4592,23 @@ void Command_ListUnusedSprites_f(void)
 		break;
 	}
 }
+
+void Command_ListUnusedMapSlots_f(void)
+{
+	INT32 i;
+
+	CONS_Printf("\x82Printing map slot non-usage...\n");
+
+	for (i = 0; i < NUMMAPS; i++)
+	{
+		// is checking this enough?
+		if (mapheaderinfo[i])
+			continue;
+
+		CONS_Printf("%s\n", G_BuildMapName(i+1));
+	}
+}
+
 
 // =========================================================================
 //                            MISC. COMMANDS
