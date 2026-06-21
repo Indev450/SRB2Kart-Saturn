@@ -903,6 +903,7 @@ static boolean S_AdjustSoundParams(const mobj_t *listener, const mobj_t *source,
 	listener_t listensource;
 	INT32 i;
 
+	// e6y
 	if (!listener)
 		return false;
 

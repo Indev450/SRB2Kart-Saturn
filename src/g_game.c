@@ -858,7 +858,8 @@ static void G_HandleLocalDriftturn(ticcmd_t *cmd, UINT8 ssplayer)
 static void G_BuildLocalTiccmd(ticcmd_t *cmd, UINT8 ssplayer, boolean freecam)
 {
 	INT32 axis = 0;
-	const boolean usejoystick = cv_usejoystick[(ssplayer-1)].value;
+	const UINT8 forplayer = (ssplayer-1);
+	const boolean usejoystick = cv_usejoystick[forplayer].value;
 
 	// check for inputs and return button commands
 	// for stuff like joining with item button, saltyhop, honking, etc.
@@ -894,7 +895,7 @@ static void G_BuildLocalTiccmd(ticcmd_t *cmd, UINT8 ssplayer, boolean freecam)
 #undef CHECKINPUT
 
 	axis = JoyAxis(AXISLOOKBACK, ssplayer);
-	camspin[ssplayer-1] = (InputDown(gc_lookback, ssplayer) || (usejoystick && axis > 0));
+	camspin[forplayer] = (InputDown(gc_lookback, ssplayer) || (usejoystick && axis > 0));
 
 	// Reset to our spec player if we watch someone else.
 	if ((cmd->driftturn || cmd->buttons)

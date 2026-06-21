@@ -1579,13 +1579,13 @@ static boolean PIT_CheckLine(line_t *ld)
 		tmbbox[BOXLEFT]   >= ld->bbox[BOXRIGHT]  ||
 		tmbbox[BOXTOP]    <= ld->bbox[BOXBOTTOM] ||
 		tmbbox[BOXBOTTOM] >= ld->bbox[BOXTOP])
-		return true;
+		return true; // didn't hit it
 
 	if (ld->polyobj && !(ld->polyobj->flags & POF_SOLID))
 		return true;
 
 	if (P_BoxOnLineSide(tmbbox, ld) != -1)
-		return true;
+		return true; // didn't hit it
 
 	if (tmthing->flags & MF_PAPERCOLLISION) // Caution! Turning whilst up against a wall will get you stuck. You probably shouldn't give the player this flag.
 	{

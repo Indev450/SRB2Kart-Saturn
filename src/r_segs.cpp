@@ -311,6 +311,7 @@ static void R_RenderMaskedSegLoop(drawcolumndata_t* dc, drawseg_t *drawseg, INT3
 		{
 			rw_scalestep = drawseg->scalestep;
 			spryscale = drawseg->scale1 + (x1 - drawseg->x1)*rw_scalestep;
+
 			if (dc->numlights)
 			{ // reset all lights to their starting heights
 				for (i = 0; i < dc->numlights; i++)
@@ -435,6 +436,7 @@ static void R_RenderMaskedSegLoop(drawcolumndata_t* dc, drawseg_t *drawseg, INT3
 					windowtop = windowbottom + 1;
 					set_colormap_below_light();
 				}
+
 				windowbottom = realbot;
 				if (windowtop < windowbottom)
 					colfunc_2s(dc, col);
@@ -2615,8 +2617,8 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 
 		auto set_topstep_normal = [&]
 		{
-			topstep = -FixedMul (rw_scalestep, worldtop);
-			topfrac = (centeryfrac>>4) - FixedMul (worldtop, rw_scale);
+			topstep = -FixedMul(rw_scalestep, worldtop);
+			topfrac = (centeryfrac>>4) - FixedMul(worldtop, rw_scale);
 		};
 
 		// untextured seg
@@ -2625,7 +2627,7 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 			const bool tophigh = (worldhigh <= worldtop && worldhighslope <= worldtopslope);
 
 			// if we cant see the goddamn skyplane, well there wont be any skybox
-			// we could kill skyVisible instead, but i want to keep the performance improvemnts it yields
+			// we could kill skyVisible instead, but i want to keep the performance improvements it yields
 			// so we do this absolute trash
 			if ((tophigh
 				&& (frontsector->floorpic != skyflatnum && frontsector->ceilingpic != skyflatnum)) // try to guess if its a "window"
@@ -2637,14 +2639,16 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 			// this is an attempt to fix issues with textureless single sided lines drawing nothing where they should just draw sky instead
 			if (tophigh && !backsector && frontsector->ceilingpic == skyflatnum)
 			{
-				topstep = -FixedMul (rw_scalestep, worldbottom);
-				topfrac = (centeryfrac>>4) - FixedMul (worldbottom, rw_scale);
-
 				// account for slopes to try and get rid of sharp edges from the black void
 				if (frontsector->f_slope || (backsector && backsector->f_slope))
 				{
-					topstep = -FixedMul (rw_scalestep, worldbottomslope);
-					topfrac = (centeryfrac>>4) - FixedMul (worldbottomslope, rw_scale);
+					topstep = -FixedMul(rw_scalestep, worldbottomslope);
+					topfrac = (centeryfrac>>4) - FixedMul(worldbottomslope, rw_scale);
+				}
+				else
+				{
+					topstep = -FixedMul(rw_scalestep, worldbottom);
+					topfrac = (centeryfrac>>4) - FixedMul(worldbottom, rw_scale);
 				}
 			}
 			else
@@ -2653,18 +2657,18 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 		else
 			set_topstep_normal();
 
-		bottomstep = -FixedMul (rw_scalestep, worldbottom);
-		bottomfrac = (centeryfrac>>4) - FixedMul (worldbottom, rw_scale);
+		bottomstep = -FixedMul(rw_scalestep, worldbottom);
+		bottomfrac = (centeryfrac>>4) - FixedMul(worldbottom, rw_scale);
 
 		if (frontsector->c_slope)
 		{
-			fixed_t topfracend = (centeryfrac>>4) - FixedMul (worldtopslope, ds_p->scale2);
+			fixed_t topfracend = (centeryfrac>>4) - FixedMul(worldtopslope, ds_p->scale2);
 			topstep = (topfracend-topfrac)/(range);
 		}
 
 		if (frontsector->f_slope)
 		{
-			fixed_t bottomfracend = (centeryfrac>>4) - FixedMul (worldbottomslope, ds_p->scale2);
+			fixed_t bottomfracend = (centeryfrac>>4) - FixedMul(worldbottomslope, ds_p->scale2);
 			bottomstep = (bottomfracend-bottomfrac)/(range);
 		}
 	}
@@ -2782,7 +2786,7 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 
 		if (bottomtexture)
 		{
-			fixed_t bottomfracend = (centeryfrac>>4) - FixedMul (worldlowslope, ds_p->scale2);
+			fixed_t bottomfracend = (centeryfrac>>4) - FixedMul(worldlowslope, ds_p->scale2);
 
 			pixlow = (centeryfrac>>4) - FixedMul (worldlow, rw_scale);
 			pixlowstep = (bottomfracend-pixlow)/(range);
@@ -3045,6 +3049,7 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 			ds_p->silhouette |= SIL_BOTTOM;
 			ds_p->bsilheight = backsector->f_slope ? INT32_MAX : backsector->floorheight;
 		}
+
 		if (!(ds_p->silhouette & SIL_TOP))
 		{
 			ds_p->silhouette |= SIL_TOP;

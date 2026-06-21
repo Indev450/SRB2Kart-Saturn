@@ -1157,6 +1157,7 @@ static void P_InitializeLinedef(line_t *ld)
 		CONS_Debug(DBG_SETUP, "P_InitializeLinedef: Linedef %s has two-sided flag set, but no second sidedef\n", sizeu1((size_t)(ld - lines)));
 	}
 
+	// killough 4/4/98: support special sidedef interpretation below
 	if (ld->sidenum[0] != NO_INDEX && ld->special)
 		sides[ld->sidenum[0]].special = ld->special;
 	if (ld->sidenum[1] != NO_INDEX && ld->special)
@@ -2483,7 +2484,9 @@ static void P_LoadRecordGhosts(void)
 	if (!gpath)
 		return;
 
-	sprintf(gpath,"%s"PATHSEP"replay"PATHSEP"%s"PATHSEP"%s", srb2home, timeattackfolder, G_BuildMapName(gamemap));
+	const char *mapname = G_BuildMapName(gamemap);
+
+	sprintf(gpath,"%s"PATHSEP"replay"PATHSEP"%s"PATHSEP"%s", srb2home, timeattackfolder, mapname);
 
 	// Best Time ghost
 	if (cv_ghost_besttime.value)
@@ -2533,9 +2536,10 @@ static void P_LoadRecordGhosts(void)
 	{
 		lumpnum_t l;
 		UINT8 j = 1;
-		while (j <= 99 && (l = W_CheckNumForName(va("%sS%02u",G_BuildMapName(gamemap),j))) != LUMPERROR)
+
+		while (j <= 99 && (l = W_CheckNumForName(va("%sS%02u", mapname, j))) != LUMPERROR)
 		{
-			G_AddGhost(va("%sS%02u",G_BuildMapName(gamemap),j));
+			G_AddGhost(va("%sS%02u", mapname, j));
 			j++;
 		}
 	}
@@ -2577,10 +2581,12 @@ static void P_InitMinimapInfo(void)
 		Patch_Free(minimapinfo.minimap_pic);
 	minimapinfo.minimap_pic = NULL;
 
-	lumpnum = W_CheckNumForName(va("%sR", G_BuildMapName(gamemap)));
+	const char *mapname = G_BuildMapName(gamemap);
+
+	lumpnum = W_CheckNumForName(va("%sR", mapname));
 
 	if (lumpnum != LUMPERROR)
-		minimapinfo.minimap_pic = W_CachePatchName(va("%sR", G_BuildMapName(gamemap)), PU_PATCH);
+		minimapinfo.minimap_pic = W_CachePatchName(va("%sR", mapname), PU_PATCH);
 
 	minimapinfo.min_x = bsp->bbox[0][BOXLEFT];
 	minimapinfo.max_x = bsp->bbox[0][BOXRIGHT];
