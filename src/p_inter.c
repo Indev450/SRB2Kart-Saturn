@@ -1466,8 +1466,11 @@ static void P_UpdateRemovedOrbital(mobj_t *target, mobj_t *inflictor, mobj_t *so
 {
 	// SRB2kart
 	// I wish I knew a better way to do this
-	//if (!P_MobjWasRemoved(target->target) && target->target->player && !P_MobjWasRemoved(target->target->player->mo))
+#ifndef COMPAT_VANILLA
+	if (!P_MobjWasRemoved(target->target) && target->target->player && !P_MobjWasRemoved(target->target->player->mo))
+#else
 	if (target->target && target->target->player && target->target->player->mo)
+#endif
 	{
 		if (target->target->player->kartstuff[k_eggmanheld] && target->type == MT_EGGMANITEM_SHIELD)
 			target->target->player->kartstuff[k_eggmanheld] = 0;
@@ -1480,7 +1483,11 @@ static void P_UpdateRemovedOrbital(mobj_t *target, mobj_t *inflictor, mobj_t *so
 			{
 				if (target->movedir != 0 && target->movedir < (UINT16)target->target->player->kartstuff[k_itemamount])
 				{
-					if (target->target->hnext) // !P_MobjWasRemoved(target->target->hnext))
+#ifndef COMPAT_VANILLA
+					if (!P_MobjWasRemoved(target->target->hnext))
+#else
+					if (target->target->hnext)
+#endif
 						K_KillBananaChain(target->target->hnext, inflictor, source);
 
 					target->target->player->kartstuff[k_itemamount] = 0;

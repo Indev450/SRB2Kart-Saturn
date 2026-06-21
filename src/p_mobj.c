@@ -3372,7 +3372,11 @@ static void P_PlayerMobjThinker(mobj_t *mobj)
 	I_Assert(mobj->player != NULL);
 	I_Assert(!P_MobjWasRemoved(mobj));
 
+#ifndef COMPAT_VANILLA
+	if (P_MobjWasRemoved(mobj))
+#else
 	if (!mobj)
+#endif
 		return;
 
 	P_MobjCheckWater(mobj);
@@ -5614,7 +5618,11 @@ void P_SetScale(mobj_t *mobj, fixed_t newscale)
 	player_t *player;
 	fixed_t oldscale;
 
+#ifndef COMPAT_VANILLA
+	if (P_MobjWasRemoved(mobj))
+#else
 	if (!mobj)
+#endif
 		return;
 
 	oldscale = mobj->scale; //keep for adjusting stuff below
@@ -8962,7 +8970,11 @@ static boolean P_FuseThink(mobj_t *mobj)
 static boolean P_MobjPushableThink(mobj_t *mobj)
 {
 	// would be cool if we could use P_MobjWasRemoved Zzz...
+#ifndef COMPAT_VANILLA
+	if (P_MobjWasRemoved(mobj))
+#else
 	if (!mobj)
+#endif
 		return false;
 
 	P_MobjCheckWater(mobj);
@@ -9168,8 +9180,11 @@ void P_MobjThinker(mobj_t *mobj)
 	{
 		P_TryMove(mobj, mobj->x, mobj->y, true); // Sets mo->standingslope correctly
 
-		//if (P_MobjWasRemoved(mobj))
+#ifndef COMPAT_VANILLA
+		if (P_MobjWasRemoved(mobj)) // anything that calls checkposition can be lethal
+#else
 		if (!mobj) // anything that calls checkposition can be lethal
+#endif
 			return;
 
 		P_ButteredSlope(mobj);
@@ -9197,8 +9212,11 @@ void P_MobjThinker(mobj_t *mobj)
 		}
 	}
 
-	//if (P_MobjWasRemoved(mobj))
+#ifndef COMPAT_VANILLA
+	if (P_MobjWasRemoved(mobj))
+#else
 	if (!mobj)
+#endif
 		return; // obligatory paranoia check
 
 	// Can end up here if a player dies.
@@ -9258,7 +9276,11 @@ void P_PushableThinker(mobj_t *mobj)
 
 	I_Assert(!P_MobjWasRemoved(mobj));
 
+#ifndef COMPAT_VANILLA
+	if (P_MobjWasRemoved(mobj))
+#else
 	if (!mobj)
+#endif
 		return;
 
 	sec = mobj->subsector->sector;
