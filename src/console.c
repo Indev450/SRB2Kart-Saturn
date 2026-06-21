@@ -103,7 +103,6 @@ static void CON_InputInit(void);
 static void CON_RecalcSize(void);
 static void CON_ChangeHeight(void);
 
-static void CON_DrawBackpic(void);
 static void CONS_height_Change(void);
 static void CONS_hudlines_Change(void);
 static void CONS_backcolor_Change(void);
