@@ -9167,6 +9167,11 @@ void P_MobjThinker(mobj_t *mobj)
 		|| P_WeaponOrPanel(mobj->type))
 	{
 		P_TryMove(mobj, mobj->x, mobj->y, true); // Sets mo->standingslope correctly
+
+		//if (P_MobjWasRemoved(mobj))
+		if (!mobj) // anything that calls checkposition can be lethal
+			return;
+
 		P_ButteredSlope(mobj);
 	}
 
@@ -9191,6 +9196,10 @@ void P_MobjThinker(mobj_t *mobj)
 			return;
 		}
 	}
+
+	//if (P_MobjWasRemoved(mobj))
+	if (!mobj)
+		return; // obligatory paranoia check
 
 	// Can end up here if a player dies.
 	P_CycleMobjState(mobj);
