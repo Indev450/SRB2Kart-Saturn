@@ -1135,6 +1135,7 @@ static void HU_SendChatMessage(void)
 				return;
 			}
 		}
+
 		// I'm very bad at C, I swear I am, additional checks eww!
 		if (spc != 0)
 		{
