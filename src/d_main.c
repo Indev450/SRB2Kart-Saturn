@@ -1353,7 +1353,7 @@ static void IdentifyVersion(void)
 //
 // search for maps
 //
-static void D_CheckMaps(boolean checkreplaced)
+static void D_CheckMapReplacements(boolean checkreplaced)
 {
 	INT32 i;
 	char *name;
@@ -1829,17 +1829,19 @@ void D_SRB2Main(void)
 	// conversion sometimes needs the palette
 	V_ReloadPalette();
 
-	D_CheckMaps(false);
+	D_CheckMapReplacements(false);
 
-	W_InitMultipleFiles(startuppwads, startuppwadcount, true);
-
-	// Only search for pwad maps if we actually have a pwad added
 	if (startuppwadcount > 0)
 	{
-		D_CheckMaps(true);
+		CONS_Printf("W_InitMultipleFiles(): Adding extra PWADs.\n");
+		W_InitMultipleFiles(startuppwads, startuppwadcount, true);
+
+		// Only search for pwad maps if we actually have a pwad added
+		D_CheckMapReplacements(true);
+
+		D_CleanFile(startuppwads, startuppwadcount);
 	}
 
-	D_CleanFile(startuppwads, startuppwadcount);
 	startuppwadcount = 0;
 
 	cht_Init();
@@ -1926,7 +1928,7 @@ void D_SRB2Main(void)
 	CONS_Printf("R_Init(): Init SRB2 refresh daemon.\n");
 	R_Init();
 
-#if SOUND==SOUND_DUMMY
+#if SOUND == SOUND_DUMMY
 	sound_disabled = true;
 	music_disabled = true;
 #else
