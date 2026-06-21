@@ -4559,50 +4559,59 @@ void K_DropHnextList(player_t *player)
 		P_RemoveMobj(work);
 	}
 
-	{
-		// we need this here too because this is done in afterthink - pointers are cleaned up at the START of each tic...
-		P_SetTarget(&player->mo->hnext, NULL);
-		player->kartstuff[k_bananadrag] = 0;
+	// we need this here too because this is done in afterthink - pointers are cleaned up at the START of each tic...
+	P_SetTarget(&player->mo->hnext, NULL);
+	player->kartstuff[k_bananadrag] = 0;
 
-		if (player->kartstuff[k_eggmanheld])
-			player->kartstuff[k_eggmanheld] = 0;
-		else if (player->kartstuff[k_itemheld]
-			&& (dropall || (--player->kartstuff[k_itemamount] <= 0)))
-		{
-			player->kartstuff[k_itemamount] = player->kartstuff[k_itemheld] = 0;
-			player->kartstuff[k_itemtype] = KITEM_NONE;
-		}
+	if (player->kartstuff[k_eggmanheld])
+		player->kartstuff[k_eggmanheld] = 0;
+	else if (player->kartstuff[k_itemheld]
+		&& (dropall || (--player->kartstuff[k_itemamount] <= 0)))
+	{
+		player->kartstuff[k_itemamount] = player->kartstuff[k_itemheld] = 0;
+		player->kartstuff[k_itemtype] = KITEM_NONE;
 	}
+}
+
+static void K_DropPaperItem(player_t *player, boolean thunderhack, INT32 itemamount)
+{
+	const mobj_t *pmo = player->mo;
+
+	if (P_MobjWasRemoved(pmo))
+	{
+		return;
+	}
+
+	mobj_t *drop = P_SpawnMobj(pmo->x, pmo->y, (pmo->z + pmo->height/2), MT_FLOATINGITEM);
+	P_SetScale(drop, drop->scale>>4);
+
+	drop->destscale = (3*drop->destscale)/2;
+
+	drop->angle = pmo->angle + ANGLE_90;
+	P_Thrust(drop, FixedAngle(P_RandomFixed()*180) + pmo->angle + ANGLE_90, 16*mapobjectscale);
+	drop->momz = P_MobjFlip(pmo)*3*mapobjectscale;
+	if (drop->eflags & MFE_UNDERWATER)
+		drop->momz = (117 * drop->momz) / 200;
+
+	drop->threshold = (thunderhack ? KITEM_THUNDERSHIELD : player->kartstuff[k_itemtype]);
+	drop->movecount = itemamount;
+
+	drop->flags |= MF_NOCLIPTHING;
 }
 
 // For getting EXTRA hit!
 void K_DropItems(player_t *player)
 {
-	boolean thunderhack = (player->kartstuff[k_curshield] && player->kartstuff[k_itemtype] == KITEM_THUNDERSHIELD);
+	const boolean thunderhack = (player->kartstuff[k_curshield] && player->kartstuff[k_itemtype] == KITEM_THUNDERSHIELD);
 
 	if (thunderhack)
 		player->kartstuff[k_itemtype] = KITEM_NONE;
 
 	K_DropHnextList(player);
 
-	if (!P_MobjWasRemoved(player->mo) && player->kartstuff[k_itemamount])
+	if (player->kartstuff[k_itemamount])
 	{
-		mobj_t *drop = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z + player->mo->height/2, MT_FLOATINGITEM);
-		P_SetScale(drop, drop->scale>>4);
-		drop->destscale = (3*drop->destscale)/2;
-
-		drop->angle = player->mo->angle + ANGLE_90;
-		P_Thrust(drop,
-			FixedAngle(P_RandomFixed()*180) + player->mo->angle + ANGLE_90,
-			16*mapobjectscale);
-		drop->momz = P_MobjFlip(player->mo)*3*mapobjectscale;
-		if (drop->eflags & MFE_UNDERWATER)
-			drop->momz = (117 * drop->momz) / 200;
-
-		drop->threshold = (thunderhack ? KITEM_THUNDERSHIELD : player->kartstuff[k_itemtype]);
-		drop->movecount = player->kartstuff[k_itemamount];
-
-		drop->flags |= MF_NOCLIPTHING;
+		K_DropPaperItem(player, thunderhack, player->kartstuff[k_itemamount]);
 	}
 
 	K_StripItems(player);
@@ -4658,7 +4667,7 @@ void K_DropKitchenSink(player_t *player)
 		return;
 
 	if (player->mo->hnext->type != MT_SINK_SHIELD)
-		return; //so we can just call this function regardless of what is being held
+		return; // so we can just call this function regardless of what is being held
 
 	P_KillMobj(player->mo->hnext, NULL, NULL);
 
@@ -4934,8 +4943,10 @@ static void K_MoveHeldObjects(player_t *player)
 					cur->momx = FixedMul(FINECOSINE(cur->angle>>ANGLETOFINESHIFT), cur->extravalue1);
 					cur->momy = FixedMul(FINESINE(cur->angle>>ANGLETOFINESHIFT), cur->extravalue1);
 					cur->flags &= ~MF_NOCLIPTHING;
+
 					if (!P_TryMove(cur, player->mo->x + cur->momx, player->mo->y + cur->momy, true))
 						P_SlideMove(cur, true);
+
 					if (P_IsObjectOnGround(player->mo))
 					{
 						if (P_MobjFlip(cur) > 0)
