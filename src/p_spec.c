@@ -4609,11 +4609,13 @@ void P_UpdateSpecials(void)
 	// POINT LIMIT
 	P_CheckPointLimit();
 
+#ifdef COMPAT_VANILLA
 	// Dynamic slopeness
 	// we run this here only when not joined midrace
 	// for vanilla compat reasons :chaosleep:
 	if (!midgamejoin)
 		P_RunDynamicSlopes();
+#endif
 
 	P_UpdateAnimFlats();
 }
